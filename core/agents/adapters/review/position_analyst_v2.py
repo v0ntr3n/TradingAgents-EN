@@ -1,7 +1,7 @@
 """
-仓位分析师 v2.0 (复盘分析)
+Position Analyst v2.0 (Review analysis)
 
-基于ResearcherAgent基类实现的仓位分析师
+Position analyst implemented based on ResearcherAgent base class
 """
 
 import logging
@@ -13,11 +13,11 @@ from ...registry import register_agent
 
 logger = logging.getLogger(__name__)
 
-# 尝试导入模板系统
+# Try importing the template system
 try:
     from tradingagents.utils.template_client import get_agent_prompt, get_user_prompt
 except (ImportError, KeyError) as e:
-    logger.warning(f"无法导入模板系统: {e}")
+    logger.warning(f"Unable to import template system: {e}")
     get_agent_prompt = None
     get_user_prompt = None
 
@@ -25,19 +25,19 @@ except (ImportError, KeyError) as e:
 @register_agent
 class PositionAnalystV2(ResearcherAgent):
     """
-    仓位分析师 v2.0 (复盘分析)
+    Position Analyst v2.0 (Review analysis)
     
-    功能：
-    - 复盘仓位控制与仓位变化依据
-    - 评估仓位与风险的匹配度
-    - 分析资金利用效率与集中度风险
+    Function:
+    - Review position control and position change basis
+    - Assess position compatibility with risk
+    - Analyze capital utilization efficiency and concentration risks
     
-    工作流程：
-    1. 读取交易信息和仓位历史
-    2. 使用LLM分析仓位管理
-    3. 生成仓位分析报告
+    Workflow:
+    1. Read transaction information and position history
+    2. Analyze position management using LLM
+    3. Generate position analysis report
     
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent
 
@@ -49,24 +49,24 @@ class PositionAnalystV2(ResearcherAgent):
         })
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="position_analyst_v2",
-        name="仓位分析师 v2.0",
-        description="复盘仓位控制与仓位变化依据的合理性",
+        name="Position Analyst v2.0",
+        description="The rationality of review position control and position change basis",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="trade_records", type="string", description="交易记录"),
-            AgentInput(name="trade_info", type="object", description="交易信息详情", required=False),
-            AgentInput(name="market_data", type="object", description="市场行情数据", required=False),
-            AgentInput(name="benchmark_data", type="object", description="基准数据", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="trade_records", type="string", description="transaction history"),
+            AgentInput(name="trade_info", type="object", description="Transaction information details", required=False),
+            AgentInput(name="market_data", type="object", description="market data", required=False),
+            AgentInput(name="benchmark_data", type="object", description="Benchmark data", required=False),
         ],
         outputs=[
-            AgentOutput(name="position_analysis", type="string", description="仓位分析结果"),
+            AgentOutput(name="position_analysis", type="string", description="Position analysis results"),
         ],
         growth_role="extractor",
         growth_outputs=["position_analysis"],
@@ -80,58 +80,58 @@ class PositionAnalystV2(ResearcherAgent):
     output_field = "position_analysis"
 
     def __init__(self, *args, **kwargs):
-        """初始化仓位分析师 v2.0"""
+        """Initialize position analyst v2.0"""
         super().__init__(*args, **kwargs)
-        self._current_state = None  # 用于在 _build_system_prompt() 中访问 state
+        self._current_state = None  # used in _build_system_prompt() Visit in state
 
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """执行分析（重写以支持交易计划规则注入）"""
-        # 保存 state 到实例变量，以便在 _build_system_prompt() 中访问
+        """Execution analysis (rewritten to support trading plan rule injection)"""
+        # Save state to instance variables for use in _build_system_prompt() Visit in
         self._current_state = state
         try:
-            # 调用父类的 execute() 方法
+            # Call parent class execute() method
             return super().execute(state)
         finally:
-            # 清理实例变量
+            # Clean up instance variables
             self._current_state = None
 
     def _build_system_prompt(self, stance: str, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词（包含交易计划规则）
+        Build system prompt words (including trading plan rules)
         
         Args:
-            stance: 研究立场
-            state: 工作流状态（可选，用于提取变量如 company_name, ticker 等）
+            stance: research stance
+            state: Workflow status (optional, used to extract variables such as company_name, ticker etc.)
         """
-        # 降级提示词（当模板系统不可用时使用）
-        fallback_prompt = """您是一位专业的仓位分析师 v2.0。
+        # Downgrade prompt word (used when the template system is unavailable)
+        fallback_prompt = """You are a professional position analyst v2.0.
 
-    您的职责是复盘仓位管理的合理性，并识别仓位依据、风险暴露和纪律执行问题。
+    Your responsibility is to review the rationale of position management and identify position basis, risk exposure and discipline enforcement issues.
 
-    **分析要点**：
-    1. 初始仓位 - 首次建仓比例是否合理
-    2. 仓位变化依据 - 每次仓位变化是否有清晰依据
-    3. 风险匹配 - 仓位与风险的匹配度
-    4. 资金效率 - 资金利用效率与集中度风险
-    5. 需补强的仓位纪律要点 - 本次复盘后应补充哪些依据记录与风险约束
+    **Analysis points**: 
+    1. Initial position - Is the ratio of opening a position for the first time reasonable?
+    2. Basis for position changes - Is there a clear basis for each position change?
+    3. Risk matching - the match between position and risk
+    4. Fund Efficiency - Fund Utilization Efficiency and Concentration Risk
+    5. Key points of position discipline that need to be strengthened - What evidence records and risk constraints should be added after this review
 
-**重要约束**：
-- 必须使用用户提示词中提供的真实数据（股票代码、股票名称、收益金额、收益率等）
-- 不要在报告中编造或硬编码任何数据
-- 报告中的所有数字必须与提示词中提供的数据完全一致
-- 不要生成日期信息（如"分析日期：2025年4月5日"），日期由系统自动生成
+**important constraints**: 
+- The real data provided in the user prompts must be used (stock code, stock name, income amount, rate of return, etc.)
+- Don t make up or hardcode any data in your reports
+- All numbers in the report must exactly match the data provided in the prompt word
+- Do not generate date information (e.g."Analysis date: April 5, 2025") , The date is automatically generated by the system
 
-请使用中文，基于真实数据进行客观分析。"""
+Please use Chinese and conduct objective analysis based on real data."""
 
-        # 🆕 从 state 获取交易计划（如果有）
+        # 🆕 Get the trading plan from state (if any)
         trading_plan = None
         if self._current_state:
             trading_plan = self._current_state.get('trading_plan')
 
-        # 🆕 构建交易计划规则文本
+        # 🆕 Construct trading plan rules text
         trading_plan_section = ''
         if trading_plan:
-            plan_name = trading_plan.get('plan_name', '未命名计划')
+            plan_name = trading_plan.get('plan_name', 'unnamed plan')
             position_rules = trading_plan.get('rules', {}).get('position', {})
             single_stock_limit = position_rules.get('single_stock_limit')
             max_stocks = position_rules.get('max_stocks')
@@ -139,39 +139,39 @@ class PositionAnalystV2(ResearcherAgent):
             if single_stock_limit or max_stocks:
                 trading_plan_section = f"""
 
-=== 关联的交易计划 ===
-本次交易关联了交易计划：**{plan_name}**
+=== Associated trading plans ===
+This transaction is associated with a trading plan:**{plan_name}**
 
-**仓位规则**：
-- 单只股票上限: {single_stock_limit}%
-- 最大持股数: {max_stocks}只
+**Position rules**: 
+- Single stock upper limit: {single_stock_limit}%
+- Maximum number of shares held: {max_stocks}only
 
-**请在分析中重点检查**：
-1. 仓位是否超过单只股票上限
-2. 仓位变化是否有清晰依据
-3. 如有违反规则的地方，请明确指出，并说明应如何改进仓位纪律"""
+**Please check the key points in the analysis**: 
+1. Whether the position exceeds the upper limit of a single stock
+2. Is there a clear basis for position changes?
+3. If there are any violations of the rules, please clearly point them out and explain how position discipline should be improved."""
 
-        # 使用基类的通用方法从模板系统获取提示词（支持注入交易计划规则，参考 research_manager_v2）
-        logger.info("🔍 [PositionAnalystV2] 开始构建系统提示词")
+        # Use the general method of the base class to obtain prompt words from the template system (supports injecting trading plan rules, refer to research_manager_v2)
+        logger.info("🔍 [PositionAnalystV2] Start building system prompt words")
         
         variables = {'trading_plan_section': trading_plan_section} if trading_plan_section else {}
         prompt = self._get_prompt_from_template(
             agent_type="reviewers_v2",
             agent_name="position_analyst_v2",
-            variables=variables,  # 特殊变量：trading_plan_section（如果有）
-            state=self._current_state if self._current_state else state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=self._current_state.get("context") if self._current_state else (state.get("context") if state else None),  # 从 state 中获取 context
+            variables=variables,  # Special variable: trading_plan_section (if any)
+            state=self._current_state if self._current_state else state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=self._current_state.get("context") if self._current_state else (state.get("context") if state else None),  # Get from state context
             fallback_prompt=fallback_prompt,
-            prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+            prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
         )
         
-        logger.info(f"📝 系统提示词长度: {len(prompt)} 字符")
+        logger.info(f"📝 System prompt word length: {len(prompt)} character")
         if prompt:
-            has_plan = "（包含交易计划规则）" if trading_plan else "（无交易计划）"
-            logger.info(f"✅ 从模板系统获取仓位分析师提示词 {has_plan} (长度: {len(prompt)})")
+            has_plan = " (Contains trading plan rules)" if trading_plan else " (No transaction plan)"
+            logger.info(f"✅ Obtain position analyst prompt words from the template system {has_plan} (length: {len(prompt)})")
             return prompt
 
-        # 降级提示词也要包含交易计划规则
+        # The downgrade prompt word must also include the trading plan rules
         return fallback_prompt + trading_plan_section
 
     def _build_user_prompt(
@@ -182,16 +182,16 @@ class PositionAnalystV2(ResearcherAgent):
         historical_context: str,
         state: Dict[str, Any]
     ) -> str:
-        """构建用户提示词（从模板系统获取并渲染）
+        """Construct user prompt words (obtained from template system and rendered)
 
-        注意：交易计划规则已经在系统提示词中注入，这里只需要提供交易数据。
+        Note: The trading plan rules have been injected into the system prompt word, and only transaction data needs to be provided here.
         """
         trade_info = state.get("trade_info", {})
         code = trade_info.get("code", ticker)
-        name = trade_info.get("name", code)  # 获取股票名称，如果没有则使用代码
+        name = trade_info.get("name", code)  # Get the stock name, or ticker if not available
         trades = trade_info.get("trades", [])
 
-        # 分析仓位变化
+        # Analyze position changes
         position_changes = []
         current_position = 0
         for t in trades:
@@ -202,26 +202,26 @@ class PositionAnalystV2(ResearcherAgent):
             else:
                 current_position -= qty
             position_changes.append(
-                f"- {t.get('date', 'N/A')}: {side} {qty}股, 当前持仓: {current_position}股"
+                f"- {t.get('date', 'N/A')}: {side} {qty}shares, Current position: {current_position}shares"
             )
-        position_str = "\n".join(position_changes) if position_changes else "无仓位变化"
+        position_str = "\n".join(position_changes) if position_changes else "No position changes"
 
-        # 格式化收益信息
+        # Format revenue information
         realized_pnl = trade_info.get('realized_pnl', 0)
         realized_pnl_pct = trade_info.get('realized_pnl_pct', 0)
-        # 🆕 获取浮动盈亏（持仓中时）
+        # 🆕 Obtain floating profit and loss (when holding a position)
         unrealized_pnl = trade_info.get('unrealized_pnl', 0)
         unrealized_pnl_pct = trade_info.get('unrealized_pnl_pct', 0)
         is_holding = trade_info.get('is_holding', False)
         
-        # 🆕 计算总盈亏（已实现 + 浮动）
+        # 🆕 Calculate total profit and loss (realized + float)
         total_pnl = realized_pnl + unrealized_pnl if is_holding else realized_pnl
         total_pnl_pct = realized_pnl_pct + unrealized_pnl_pct if is_holding else realized_pnl_pct
         
         pnl_sign = "+" if total_pnl >= 0 else ""
         unrealized_sign = "+" if unrealized_pnl >= 0 else ""
 
-        # 准备模板变量
+        # Prepare template variables
         template_variables = {
             'code': code,
             'name': name,
@@ -229,62 +229,62 @@ class PositionAnalystV2(ResearcherAgent):
             'pnl_sign': pnl_sign,
             'realized_pnl': f"{realized_pnl:.2f}",
             'realized_pnl_pct': f"{realized_pnl_pct:.2f}",
-            # 🆕 添加浮动盈亏和总盈亏
+            # 🆕 Add floating profit and loss and total profit and loss
             'unrealized_pnl': f"{unrealized_pnl:.2f}",
             'unrealized_pnl_pct': f"{unrealized_pnl_pct:.2f}",
             'unrealized_sign': unrealized_sign,
             'total_pnl': f"{total_pnl:.2f}",
             'total_pnl_pct': f"{total_pnl_pct:.2f}",
-            'is_holding': "是" if is_holding else "否",
+            'is_holding': "Yes" if is_holding else "No",
             'position_changes': position_str
         }
 
-        # 🆕 构建收益信息文本（包含浮动盈亏）- 用于模板变量
+        # 🆕 Construct profit information text (including floating profit and loss) - used for template variables
         if is_holding and unrealized_pnl != 0:
-            pnl_info_text = f"{pnl_sign}{total_pnl:.2f}元 (已实现: {realized_pnl:+.2f}元, 浮动: {unrealized_sign}{unrealized_pnl:.2f}元)"
-            return_info_text = f"{pnl_sign}{total_pnl_pct:.2f}% (已实现: {realized_pnl_pct:+.2f}%, 浮动: {unrealized_sign}{unrealized_pnl_pct:.2f}%)"
+            pnl_info_text = f"{pnl_sign}{total_pnl:.2f}Yuan (Realized: {realized_pnl:+.2f}Yuan, float: {unrealized_sign}{unrealized_pnl:.2f}Yuan)"
+            return_info_text = f"{pnl_sign}{total_pnl_pct:.2f}% (Realized: {realized_pnl_pct:+.2f}%, float: {unrealized_sign}{unrealized_pnl_pct:.2f}%)"
         else:
-            pnl_info_text = f"{pnl_sign}{total_pnl:.2f}元"
+            pnl_info_text = f"{pnl_sign}{total_pnl:.2f}Yuan"
             return_info_text = f"{pnl_sign}{total_pnl_pct:.2f}%"
         
         template_variables['pnl_info'] = pnl_info_text
         template_variables['return_info'] = return_info_text
-        template_variables['holding_status'] = f"{'持仓中' if is_holding else '已平仓'}"
+        template_variables['holding_status'] = f"{'In position' if is_holding else 'Position closed'}"
         
-        # 降级提示词（如果模板系统不可用）
-        fallback_prompt = f"""请分析以下交易的仓位复盘：
+        # Downgrade prompt word (if template system is not available)
+        fallback_prompt = f"""Please analyze the position review of the following transactions:
 
-=== 交易信息 ===
-- 股票代码: {code}
-- 股票名称: {name}
-- 交易次数: {len(trades)}
-- 盈亏金额: {pnl_info_text}
-- 收益率: {return_info_text}
-- 持仓状态: {'持仓中' if is_holding else '已平仓'}
+=== transaction information ===
+- Stock code: {code}
+- Stock name: {name}
+- Number of transactions: {len(trades)}
+- Profit and loss amount: {pnl_info_text}
+- Yield: {return_info_text}
+- Position status: {'In position' if is_holding else 'Position closed'}
 
-=== 仓位变化 ===
+=== Position changes ===
 {position_str}
 
-**重要提示**：
-- 请在报告标题中使用上述提供的股票代码和股票名称
-- 报告中的所有数据（收益金额、收益率等）必须与上述提供的数据完全一致
-- 不要编造或修改任何数据
+**Important tips**: 
+- Please use the ticker symbol and stock name provided above in the report title
+- All data in the report (profit amount, rate of return, etc.) must be exactly consistent with the data provided above
+- Do not make up or modify any data
 
-请撰写详细的仓位分析报告，包括：
-1. 初始仓位评估
-2. 仓位变化依据分析
-3. 仓位与风险匹配度
-4. 资金利用效率与集中度风险
-5. 需补强的仓位纪律要点
+Please write a detailed position analysis report, including:
+1. Initial position evaluation
+2. Position change basis analysis
+3. Position and risk matching
+4. Fund Utilization Efficiency and Concentration Risk
+5. Key points of position discipline that need to be strengthened
 
-禁止输出未来加减仓方案、目标仓位或具体执行动作。"""
+It is prohibited to output future positions increase or decrease plans, target positions or specific execution actions."""
 
-        # 打印模板变量（调试用）
-        logger.info(f"📊 [仓位分析师] 模板变量:")
+        # Print template variables (for debugging)
+        logger.info(f"📊 [Position Analyst] Template variables:")
         for key, value in template_variables.items():
             logger.info(f"  - {key}: {value}")
 
-        # 尝试从模板系统获取用户提示词
+        # Try to get the user prompt word from the template system
         if get_user_prompt:
             try:
                 prompt = get_user_prompt(
@@ -295,17 +295,17 @@ class PositionAnalystV2(ResearcherAgent):
                     fallback_prompt=fallback_prompt
                 )
                 if prompt:
-                    logger.info(f"✅ 从模板系统获取仓位分析师用户提示词 (长度: {len(prompt)})")
-                    logger.info(f"📝 [仓位分析师] 最终用户提示词:\n{prompt}")
+                    logger.info(f"✅ Obtain position analyst user prompt words from the template system (length: {len(prompt)})")
+                    logger.info(f"📝 [Position Analyst] end user prompts:\n{prompt}")
                     return prompt
             except Exception as e:
-                logger.warning(f"从模板系统获取用户提示词失败: {e}")
+                logger.warning(f"Failed to obtain user prompt words from template system: {e}")
 
-        # 降级：使用硬编码提示词
-        logger.info(f"📝 [仓位分析师] 使用降级提示词:\n{fallback_prompt}")
+        # Downgrade: Use hardcoded prompt words
+        logger.info(f"📝 [Position Analyst] Use demotion prompts:\n{fallback_prompt}")
         return fallback_prompt
 
     def _get_required_reports(self) -> List[str]:
-        """获取需要的数据列表"""
+        """Get the required data list"""
         return ["trade_info"]
 

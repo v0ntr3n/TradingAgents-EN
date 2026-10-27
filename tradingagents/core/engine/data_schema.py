@@ -1,11 +1,11 @@
 # tradingagents/core/engine/data_schema.py
 """
-动态数据字典
+dynamic data dictionary
 
-管理所有合法的数据字段定义，支持三种字段来源：
-1. 核心字段 - 代码硬编码，系统必需
-2. Agent 字段 - Agent 注册时自动添加
-3. 扩展字段 - YAML 配置文件定义
+Manages all legal data field definitions and supports three field sources:
+1. Core fields - code hardcoded, system required
+2. Agent Field - automatically added when Agent registers
+3. Extension fields - YAML configuration file definition
 """
 
 from dataclasses import dataclass, field
@@ -24,15 +24,15 @@ from tradingagents.core.engine.data_contract import DataLayer
 @dataclass
 class FieldDefinition:
     """
-    字段定义
+    Field definition
     
     Attributes:
-        name: 字段名称
-        field_type: 字段类型（string, object, array, number, boolean, any）
-        required: 是否必填
-        default: 默认值
-        description: 字段描述
-        source: 数据来源（Agent ID 或 'core' 或 'config'）
+        name: Field name
+        field_type: field type (string, object, array, number, boolean, any) 
+        required: Is it required?
+        default: Default value
+        description: Field description
+        source: Data source (Agent ID or 'core' or 'config') 
     """
     name: str
     field_type: str = "any"
@@ -42,7 +42,7 @@ class FieldDefinition:
     source: str = ""
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
+        """Convert to dictionary"""
         return {
             "name": self.name,
             "type": self.field_type,
@@ -55,14 +55,14 @@ class FieldDefinition:
 
 class DynamicDataSchema:
     """
-    动态数据字典
+    dynamic data dictionary
     
-    支持三种字段来源：
-    1. 核心字段 - 代码硬编码，系统必需
-    2. Agent 字段 - Agent 注册时自动添加
-    3. 扩展字段 - YAML 配置文件定义
+    Three field sources are supported:
+    1. Core fields - code hardcoded, system required
+    2. Agent Field - automatically added when Agent registers
+    3. Extension fields - YAML configuration file definition
     
-    使用单例模式，确保全局只有一个数据字典实例。
+    Use singleton mode to ensure that there is only one data dictionary instance globally.
     """
     
     _instance = None
@@ -78,59 +78,59 @@ class DynamicDataSchema:
             return
         self._initialized = True
         
-        # 1️⃣ 核心字段（硬编码，系统必需）
+        # 1️⃣ Core fields (hardcoded, system required)
         self._core_fields: Dict[DataLayer, Dict[str, FieldDefinition]] = self._init_core_fields()
         
-        # 2️⃣ Agent 动态字段（Agent 注册时添加）
+        # 2️⃣ Agent Dynamic fields (added when Agent registers)
         self._agent_fields: Dict[DataLayer, Dict[str, FieldDefinition]] = {
             layer: {} for layer in DataLayer
         }
         
-        # 3️⃣ 扩展字段（从 YAML 加载）
+        # 3️⃣ Extension fields (loaded from YAML)
         self._extend_fields: Dict[DataLayer, Dict[str, FieldDefinition]] = {
             layer: {} for layer in DataLayer
         }
         
-        # 加载 YAML 配置
+        # Load YAML configuration
         self._load_extend_schema()
     
     def _init_core_fields(self) -> Dict[DataLayer, Dict[str, FieldDefinition]]:
-        """初始化核心字段（硬编码）"""
+        """Initialize core fields (hardcoded)"""
         return {
             DataLayer.CONTEXT: {
                 "ticker": FieldDefinition(
                     name="ticker",
                     field_type="string",
                     required=True,
-                    description="股票代码，如 000858.SZ",
+                    description="Stock code, such as 000858.SZ",
                     source="core"
                 ),
                 "trade_date": FieldDefinition(
                     name="trade_date",
                     field_type="string",
                     required=True,
-                    description="分析日期，格式 YYYY-MM-DD",
+                    description="parse date, format YYYY-MM-DD",
                     source="core"
                 ),
                 "market_type": FieldDefinition(
                     name="market_type",
                     field_type="string",
                     default="A_SHARE",
-                    description="市场类型: A_SHARE, HK, US",
+                    description="market type: A_SHARE, HK, US",
                     source="core"
                 ),
                 "company_name": FieldDefinition(
                     name="company_name",
                     field_type="string",
                     default="",
-                    description="公司名称",
+                    description="Company name",
                     source="core"
                 ),
                 "currency": FieldDefinition(
                     name="currency",
                     field_type="string",
                     default="CNY",
-                    description="货币代码: CNY, HKD, USD",
+                    description="currency code: CNY, HKD, USD",
                     source="core"
                 ),
             },
@@ -141,31 +141,31 @@ class DynamicDataSchema:
                 "investment_debate": FieldDefinition(
                     name="investment_debate",
                     field_type="object",
-                    description="投资辩论历史",
+                    description="Investment Debate History",
                     source="core"
                 ),
                 "investment_plan": FieldDefinition(
                     name="investment_plan",
                     field_type="string",
-                    description="投资计划",
+                    description="investment plan",
                     source="core"
                 ),
                 "trade_signal": FieldDefinition(
                     name="trade_signal",
                     field_type="object",
-                    description="交易信号",
+                    description="trading signals",
                     source="core"
                 ),
                 "risk_assessment": FieldDefinition(
                     name="risk_assessment",
                     field_type="object",
-                    description="风险评估",
+                    description="risk assessment",
                     source="core"
                 ),
                 "final_decision": FieldDefinition(
                     name="final_decision",
                     field_type="string",
-                    description="最终分析结果",
+                    description="Final analysis results",
                     source="core"
                 ),
             },
@@ -173,13 +173,13 @@ class DynamicDataSchema:
 
     def _load_extend_schema(self, config_path: str = None):
         """
-        从 YAML 配置文件加载扩展字段
+        Load extension fields from YAML configuration file
 
         Args:
-            config_path: 配置文件路径，默认为 config/data_schema.yaml
+            config_path: Configuration file path, default is config/data_schema.yaml
         """
         if config_path is None:
-            # 尝试多个可能的路径
+            # Try multiple possible paths
             possible_paths = [
                 Path("config/data_schema.yaml"),
                 Path(__file__).parent.parent.parent.parent / "config" / "data_schema.yaml",
@@ -213,7 +213,7 @@ class DynamicDataSchema:
 
             fields = layer_config.get("fields", {})
             for field_name, field_config in fields.items():
-                # 跳过核心字段（不允许覆盖）
+                # Skip core fields (overrides not allowed)
                 if field_name in self._core_fields.get(layer, {}):
                     continue
 
@@ -228,15 +228,15 @@ class DynamicDataSchema:
 
     def register_agent_fields(self, agent_id: str, outputs: List) -> None:
         """
-        Agent 注册时，自动将其输出字段添加到数据字典
+        Agent When registering, automatically add its output fields to the data dictionary
 
         Args:
-            agent_id: Agent 标识
-            outputs: Agent 的输出声明列表 [DataAccess, ...]
+            agent_id: Agent logo
+            outputs: Agent list of output declarations [DataAccess, ...]
         """
         for access in outputs:
             for field_name in access.fields:
-                # 跳过核心字段
+                # Skip core fields
                 if field_name in self._core_fields.get(access.layer, {}):
                     continue
 
@@ -244,55 +244,55 @@ class DynamicDataSchema:
                     name=field_name,
                     field_type="dynamic",
                     source=agent_id,
-                    description=f"由 {agent_id} 产出"
+                    description=f"by {agent_id} output"
                 )
 
     def get_all_fields(self, layer: DataLayer) -> Dict[str, FieldDefinition]:
         """
-        获取某层的所有字段（合并三个来源）
+        Get all fields of a certain layer (merging three sources)
 
-        优先级：核心字段 > Agent 字段 > 扩展字段
+        Priority: core fields > Agent Field > extension fields
 
         Args:
-            layer: 数据层
+            layer: data layer
 
         Returns:
-            字段名 -> FieldDefinition 的字典
+            Field name -> FieldDefinition dictionary
         """
         result = {}
 
-        # 先加载扩展字段（最低优先级）
+        # Load extension fields first (lowest priority)
         result.update(self._extend_fields.get(layer, {}))
 
-        # 再加载 Agent 字段
+        # Reload the Agent field
         result.update(self._agent_fields.get(layer, {}))
 
-        # 最后加载核心字段（最高优先级）
+        # Load core fields last (highest priority)
         result.update(self._core_fields.get(layer, {}))
 
         return result
 
     def get_field_names(self, layer: DataLayer) -> Set[str]:
-        """获取某层的所有字段名"""
+        """Get all field names of a certain layer"""
         return set(self.get_all_fields(layer).keys())
 
     def is_valid_field(self, layer: DataLayer, field_name: str) -> bool:
-        """检查字段是否合法"""
+        """Check if the field is legal"""
         return field_name in self.get_field_names(layer)
 
     def get_field_info(self, layer: DataLayer, field_name: str) -> Optional[FieldDefinition]:
-        """获取字段详细信息"""
+        """Get field details"""
         return self.get_all_fields(layer).get(field_name)
 
     def get_fields_by_source(self, source: str) -> Dict[DataLayer, List[str]]:
         """
-        获取某个来源产出的所有字段
+        Get all fields output by a source
 
         Args:
-            source: 数据来源（Agent ID 或 'core' 或 'config'）
+            source: Data source (Agent ID or 'core' or 'config') 
 
         Returns:
-            数据层 -> 字段名列表 的字典
+            data layer -> A dictionary of field name lists
         """
         result = {}
         for layer in DataLayer:
@@ -305,19 +305,19 @@ class DynamicDataSchema:
         return result
 
     def is_core_field(self, layer: DataLayer, field_name: str) -> bool:
-        """检查是否为核心字段"""
+        """Check if it is a core field"""
         return field_name in self._core_fields.get(layer, {})
 
     def reset_agent_fields(self) -> None:
-        """重置所有 Agent 动态字段（用于测试）"""
+        """Reset all Agent dynamic fields (for testing)"""
         self._agent_fields = {layer: {} for layer in DataLayer}
 
     def reload_extend_schema(self, config_path: str = None) -> None:
-        """重新加载扩展字段配置"""
+        """Reload extension field configuration"""
         self._extend_fields = {layer: {} for layer in DataLayer}
         self._load_extend_schema(config_path)
 
 
-# 全局单例
+# Global singleton
 data_schema = DynamicDataSchema()
 

@@ -1,14 +1,14 @@
 """
-资源收集器 — 从系统中收集可用资源供 AI 规划使用
+resource collector — Collect available resources from the system for use by AI planning
 
-收集内容：
-1. BUILTIN_AGENTS — 内置 Agent 列表（id, name, description, category, tools）
-2. BUILTIN_TOOLS — 内置工具列表（id, name, description, category）
-3. skills/external_skills — MongoDB 中的标准 Skill 和外部 Skill
-4. agent_configs — MongoDB 中的 Agent 配置（可能包含用户自定义 Agent）
-5. prompt_templates — 提示词模板摘要（用于理解 Agent 默认能力）
+Collection content:
+1. BUILTIN_AGENTS — Built-in Agent list (id, name, description, category, tools) 
+2. BUILTIN_TOOLS — List of built-in tools (id, name, description, category) 
+3. skills/external_skills — MongoDB Standard Skills in and external Skill
+4. agent_configs — MongoDB Agent configuration in (may include user-defined Agent)
+5. prompt_templates — Prompt word template summary (used to understand the Agent s default capabilities)
 
-参考: docs/05-design/v3.0/ai-workflow-generation.md §4.1
+Reference: docs/05-design/v3.0/ai-workflow-generation.md §4.1
 """
 
 import logging
@@ -17,25 +17,25 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
-# 通用 Agent：无论什么流程都需要（报告生成、数据准备）
+# Universal Agent: required for any process (report generation, data preparation)
 _UNIVERSAL_AGENT_IDS = {"report_generator_v2", "data_preparer_v2"}
 
-# 相关性过滤：Agent 数上限（搜索 top-K 最相关的）
+# Relevance filtering: upper limit of Agent number (search top-K most relevant ones)
 _MAX_RELEVANT_AGENTS = 15
 
 
 class ResourceCollector:
     """
-    资源收集器
+    resource collector
 
-    从代码配置和 MongoDB 收集所有可用资源，
-    构建 LLM 可理解的上下文文本（控制在 ~4000-6000 tokens）。
+    Collect all available resources from code configuration and MongoDB,
+    Construct contextual text understandable by LLM (controlled in ~4000-6000 tokens) . 
     """
 
     def __init__(self, db=None):
         """
         Args:
-            db: MongoDB 数据库实例（可选，不传则只使用内置配置）
+            db: MongoDB Database instance (optional, if not passed, only the built-in configuration will be used)
         """
         self._db = db
 
@@ -47,13 +47,13 @@ class ResourceCollector:
         capability_index=None
     ) -> Dict[str, Any]:
         """
-        收集所有可用资源
+        Gather all available resources
 
         Args:
-            user_query: 用户的工作流需求描述，用于 Agent 相关性过滤。
-                       传 None 则返回全部 Agent。
-            capability_index: CapabilityIndexService 实例（可选）。
-                             提供时启用向量语义搜索过滤 Agent。
+            user_query: User s workflow requirement description, used for Agent relevance filtering.
+                       Passing None returns all Agents.
+            capability_index: CapabilityIndexService Instance (optional).
+                             Enables vector semantic search filtering agent when provided.
 
         Returns:
             {
@@ -62,12 +62,12 @@ class ResourceCollector:
                 "external_skills": [...],
                 "prompt_summaries": [...],
                 "node_types": [...],
-                "context_text": "..."   # 汇总的文本描述
+                "context_text": "..."   # Summary text description
             }
         """
         agents = await self._collect_agents()
 
-        # 🎯 向量语义搜索过滤：通过 CapabilityIndex 找到最相关的 Agent
+        # 🎯 Vector Semantic Search Filtering: Find the Most Relevant by CapabilityIndex Agent
         if user_query and capability_index and agents:
             agents = await self._filter_agents_via_capability_index(
                 agents, user_query, capability_index
@@ -96,19 +96,19 @@ class ResourceCollector:
         capability_index
     ) -> List[Dict[str, Any]]:
         """
-        通过 CapabilityIndex 的向量语义搜索筛选最相关的 Agent
+        Filter the most relevant ones via vector semantic search of CapabilityIndex Agent
 
-        规则：
-        1. 用 user_query 搜索 source_type="agent" 的能力项
-        2. source=database 的自定义 Agent 始终保留（用户显式创建的）
-        3. 始终保留通用 Agent（report_generator_v2, data_preparer_v2）
+        Rules:
+        1. Search with user_query source_type="agent" ability items
+        2. source=database Custom Agents are always retained (those explicitly created by the user)
+        3. Always keep the generic Agent (report_generator_v2, data_preparer_v2) 
         """
-        # 分离内置和自定义 Agent
+        # Separate built-in and custom Agent
         builtin = [a for a in agents if a.get("source") != "database"]
         custom = [a for a in agents if a.get("source") == "database"]
 
         if not builtin:
-            return custom  # 没有内置 Agent，直接返回自定义的
+            return custom  # There is no built-in Agent, and the customized one is returned directly.
 
         try:
             hits = await capability_index.search_capabilities(
@@ -118,61 +118,61 @@ class ResourceCollector:
             )
         except Exception as e:
             logger.warning(
-                f"[ResourceCollector] CapabilityIndex Agent 搜索失败，回退到全部 Agent: {e}"
+                f"[ResourceCollector] CapabilityIndex Agent Search failed, fallback to all Agent: {e}"
             )
             return agents
 
         if not hits:
-            logger.info("[ResourceCollector] CapabilityIndex 未找到相关 Agent，使用全部")
+            logger.info("[ResourceCollector] CapabilityIndex No relevant Agent found, use all")
             return agents
 
-        # 构建搜索结果 ID 集合
+        # Build a collection of search result IDs
         hit_ids = {h.capability.capability_id for h in hits}
         hit_scores = {h.capability.capability_id: h.score for h in hits}
 
-        # 🔍 调试：打印 CapabilityIndex 搜索命中的 Agent
+        # 🔍 Debugging: Print CapabilityIndex search hits Agent
         logger.info(
-            f"🔍 [ResourceCollector] CapabilityIndex 向量搜索结果 (top_k={max(_MAX_RELEVANT_AGENTS - len(custom), 5)}): "
+            f"🔍 [ResourceCollector] CapabilityIndex Vector search results (top_k={max(_MAX_RELEVANT_AGENTS - len(custom), 5)}): "
             f"{[(cid, round(score, 3)) for cid, score in sorted(hit_scores.items(), key=lambda x: -x[1])]}"
         )
 
-        # 始终加入通用 Agent
+        # Always join the universal Agent
         hit_ids.update(_UNIVERSAL_AGENT_IDS)
 
-        # 按 ID 匹配内置 Agent
+        # Match built-in by ID Agent
         matched_builtin = [a for a in builtin if a["id"] in hit_ids]
         matched_ids = {a["id"] for a in matched_builtin}
         filtered_out = [a["id"] for a in builtin if a["id"] not in hit_ids]
 
-        # 合并：自定义 Agent（全部保留） + 匹配到的内置 Agent
+        # Merge: Custom Agent (keep all) + Matched built-in Agent
         result = custom + matched_builtin
 
         total_in = len(builtin) + len(custom)
         total_out = len(result)
         logger.info(
-            f"🎯 [ResourceCollector] CapabilityIndex 向量过滤: "
+            f"🎯 [ResourceCollector] CapabilityIndex Vector filtering: "
             f"{total_in} → {total_out} Agent "
-            f"(内置: {len(builtin)}→{len(matched_builtin)}, "
-            f"自定义: {len(custom)} 全部保留, "
-            f"查询='{user_query[:80]}')"
+            f"(Built-in: {len(builtin)}→{len(matched_builtin)}, "
+            f"Customize: {len(custom)} keep all, "
+            f"Query='{user_query[:80]}')"
         )
         logger.info(
-            f"   ✅ 保留的内置: {sorted(matched_ids)}"
+            f"   ✅ reserved built-in: {sorted(matched_ids)}"
         )
         if filtered_out and len(filtered_out) <= 30:
-            logger.info(f"   ❌ 过滤掉的内置: {sorted(filtered_out)}")
+            logger.info(f"   ❌ Filtered out built-in: {sorted(filtered_out)}")
 
         return result
 
     async def _collect_agents(self) -> List[Dict[str, Any]]:
-        """收集可用的 Agent 列表（仅 MAINTANED 状态，过滤掉 DEPRECATED/UNMAINTAINED）"""
+        """Collect available Agent list (MAINTANED status only, filter out DEPRECATED/UNMAINTAINED)"""
         agents = []
 
-        # 1. 从内置配置收集（仅 MAINTAINED）
+        # 1. Collect from built-in configuration (MAINTAINED only)
         try:
             from core.agents.config import BUILTIN_AGENTS, AgentMaintenanceStatus
             for agent_id, meta in BUILTIN_AGENTS.items():
-                # 🛡️ 过滤掉已废弃的 Agent，防止 LLM 在过大的列表中迷失
+                # 🛡️ Filter out abandoned Agents to prevent LLM from getting lost in overly large lists
                 if meta.maintenance_status == AgentMaintenanceStatus.DEPRECATED:
                     continue
                 if meta.maintenance_status == AgentMaintenanceStatus.UNMAINTAINED:
@@ -189,19 +189,19 @@ class ResourceCollector:
                     "source": "builtin",
                 })
         except Exception as e:
-            logger.warning(f"加载内置 Agent 失败: {e}")
+            logger.warning(f"Failed to load built-in Agent: {e}")
 
-        # 2. 从 MongoDB 补充（用户可能创建了自定义 Agent）
+        # 2. Supplemented from MongoDB (user may have created a custom Agent)
         if self._db is not None:
             try:
                 builtin_ids = {a["id"] for a in agents}
 
-                # 🛡️ 构建 v1→v2 阻止列表：过滤掉数据库中残留的旧版 v1 Agent
-                #    例如 market_analyst (v1) 已有 market_analyst_v2 (v2) 替代
+                # 🛡️ build v1→v2 Blocklist: Filter out old versions remaining in the database v1 Agent
+                #    For example market_analyst (v1) Already market_analyst_v2 (v2) substitute
                 v1_to_block: set = set()
                 for builtin_id in builtin_ids:
                     if builtin_id.endswith("_v2"):
-                        base = builtin_id[:-3]  # 去掉 _v2 后缀
+                        base = builtin_id[:-3]  # Remove the _v2 suffix
                         if base not in builtin_ids:
                             v1_to_block.add(base)
 
@@ -210,10 +210,10 @@ class ResourceCollector:
                 async for doc in db_agents:
                     aid = doc.get("agent_id", "")
                     if aid and aid not in builtin_ids:
-                        # 过滤掉数据库中的旧版 v1 Agent（已有 v2 替代）
+                        # Filter out old version v1 Agent in the database (has been replaced by v2)
                         if aid in v1_to_block:
                             blocked_count += 1
-                            logger.debug(f"🚫 [ResourceCollector] 过滤数据库旧版 Agent: {aid} (已有 v2)")
+                            logger.debug(f"🚫 [ResourceCollector] Filter old version of database Agent: {aid} (Already v2)")
                             continue
                         agents.append({
                             "id": aid,
@@ -227,16 +227,16 @@ class ResourceCollector:
                         })
                 if blocked_count > 0:
                     logger.info(
-                        f"🛡️ [ResourceCollector] 过滤了 {blocked_count} 个数据库旧版 Agent"
-                        f"（已有 v2 内置版本替代）"
+                        f"🛡️ [ResourceCollector] filtered {blocked_count} database old version Agent"
+                        f" (Already replaced by v2 built-in version)"
                     )
             except Exception as e:
-                logger.warning(f"从数据库加载 Agent 配置失败: {e}")
+                logger.warning(f"Failed to load Agent configuration from database: {e}")
 
         return agents
 
     def _collect_tools(self) -> List[Dict[str, Any]]:
-        """收集可用的工具列表"""
+        """Collect a list of available tools"""
         tools = []
         try:
             from core.tools.config import BUILTIN_TOOLS
@@ -249,11 +249,11 @@ class ResourceCollector:
                     "source": "builtin",
                 })
         except Exception as e:
-            logger.warning(f"加载内置工具失败: {e}")
+            logger.warning(f"Failed to load built-in tools: {e}")
         return tools
 
     async def _collect_external_skills(self) -> List[Dict[str, Any]]:
-        """收集标准 Skill 和外部 Skill"""
+        """Collect standard skills and external Skill"""
         skills = []
         if self._db is None:
             return skills
@@ -279,21 +279,21 @@ class ResourceCollector:
                     "source": "external_skill",
                 })
         except Exception as e:
-            logger.warning(f"从数据库加载 Skill 失败: {e}")
+            logger.warning(f"Failed to load Skill from database: {e}")
         return skills
 
     async def _collect_prompt_summaries(self) -> List[Dict[str, str]]:
         """
-        收集提示词模板摘要
+        Collection prompt word template summary
 
-        获取每个 Agent 是否有自定义模板，并读取系统默认提示词的内容摘要，
-        帮助 AI 基于实际提示词内容判断"复用 vs 优化"。
+        Get whether each Agent has a custom template and read the content summary of the system s default prompt words.
+        Help AI judge based on actual prompt word content"Reuse vs optimization". 
         """
         summaries = []
         if self._db is None:
             return summaries
         try:
-            # 获取系统默认提示词的摘要（含 system_prompt 内容前 800 字）
+            # Get a summary of the system's default prompt words (including the first 800 words of system_prompt content)
             pipeline = [
                 {"$match": {"status": "active", "is_system": True, "workflow_id": None}},
                 {"$group": {
@@ -303,43 +303,43 @@ class ResourceCollector:
                         "$sum": {"$cond": [{"$ne": ["$workflow_id", None]}, 1, 0]}
                     },
                     "count": {"$sum": 1},
-                    # 读取第一个模板的 system_prompt 内容（前 800 字作为摘要）
+                    # Read the system_prompt content of the first template (first 800 words as summary)
                     "system_prompt_preview": {"$first": "$content.system_prompt"},
                 }},
             ]
             results = await self._db.prompt_templates.aggregate(pipeline).to_list(length=500)
             for r in results:
                 preview = r.get("system_prompt_preview") or ""
-                # 截取前 800 字作为预览，避免上下文过长
+                # Extract the first 800 words as a preview to avoid too long context
                 if len(preview) > 800:
-                    preview = preview[:800] + "...(截断)"
+                    preview = preview[:800] + "...(Truncate)"
                 summaries.append({
                     "agent_type": r["_id"]["agent_type"],
                     "agent_name": r["_id"]["agent_name"],
                     "template_count": r["count"],
                     "has_workflow_specific": r["has_workflow_specific"] > 0,
-                    "template_names": r["template_names"][:3],  # 最多展示3个
+                    "template_names": r["template_names"][:3],  # Display up to 3
                     "system_prompt_preview": preview,
                 })
         except Exception as e:
-            logger.warning(f"收集提示词模板摘要失败: {e}")
+            logger.warning(f"Failed to collect prompt word template summary: {e}")
         return summaries
 
     def _get_node_types(self) -> List[Dict[str, str]]:
-        """获取可用的节点类型说明"""
+        """Get descriptions of available node types"""
         return [
-            {"type": "start", "description": "工作流起始节点，每个工作流必须有且仅有一个"},
-            {"type": "end", "description": "工作流结束节点，每个工作流必须有且仅有一个"},
-            {"type": "analyst", "description": "分析师节点，执行特定分析任务（技术分析、基本面、新闻等），需要关联 agent_id"},
-            {"type": "researcher", "description": "研究员节点，综合分析报告进行研究（看多/看空），需要关联 agent_id"},
-            {"type": "trader", "description": "研究整合员节点，生成用户版研究简报，需要关联 agent_id"},
-            {"type": "risk", "description": "风险分析节点，评估风险（高弹性/防御/基准），需要关联 agent_id"},
-            {"type": "manager", "description": "管理者节点，综合多方观点形成研究结论，需要关联 agent_id"},
-            {"type": "parallel", "description": "并行开始节点，之后的多个分支并行执行"},
-            {"type": "merge", "description": "并行合并节点，等待多个分支完成"},
-            {"type": "debate", "description": "多情景研究节点，多个 Agent 进行多轮情景研究（如积极/谨慎情景研究、风险情景研究）"},
-            {"type": "post_processor", "description": "后处理节点，对分析结果进行汇总或格式化"},
-            {"type": "condition", "description": "条件节点，根据条件选择不同分支"},
+            {"type": "start", "description": "Workflow starting node, each workflow must have one and only one"},
+            {"type": "end", "description": "Workflow end node, each workflow must have and only one"},
+            {"type": "analyst", "description": "Analyst nodes perform specific analysis tasks (technical analysis, fundamentals, news, etc.) and need to be associated agent_id"},
+            {"type": "researcher", "description": "Researcher node, comprehensive analysis report for research (long/short), need to be associated agent_id"},
+            {"type": "trader", "description": "Research integrator node, generates user version of research briefing, needs to be associated agent_id"},
+            {"type": "risk", "description": "Risk analysis node, assess risk (high resilience/defense/baseline), need to be associated agent_id"},
+            {"type": "manager", "description": "Manager node, integrating multiple perspectives to form research conclusions, requires correlation agent_id"},
+            {"type": "parallel", "description": "Start nodes in parallel, and then execute multiple branches in parallel"},
+            {"type": "merge", "description": "Merge nodes in parallel, waiting for multiple branches to complete"},
+            {"type": "debate", "description": "Multi-scenario research node, multiple Agents conduct multiple rounds of scenario research (such as proactive/cautious scenario research, risk scenario research)"},
+            {"type": "post_processor", "description": "Post-processing nodes summarize or format analysis results"},
+            {"type": "condition", "description": "Conditional nodes, select different branches based on conditions"},
         ]
 
     def _build_context_text(
@@ -349,27 +349,27 @@ class ResourceCollector:
         node_types: List[Dict[str, str]],
     ) -> str:
         """
-        构建 LLM 可理解的上下文文本
+        Build contextual text that LLM understands
 
-        压缩策略:
-        - Agent: 只传 id, name, description, category（不传完整 tools 列表）
-        - 提示词: 只传摘要（哪些 agent 有自定义模板）
-        - 按 category 分组
-        - 不传工具/技能列表（由 CapabilityIndex 精准搜索替代）
+        Compression strategy:
+        - Agent: Pass only id, name, description, category (Not sending the complete tools list)
+        - prompt word: Only the summary is transmitted (which agents have custom templates)
+        - Group by category
+        - Do not upload tool/skill list (replaced by CapabilityIndex precise search)
         """
         sections = []
 
-        # Agent 列表
+        # Agent list
         prompt_map = {s["agent_name"]: s for s in prompt_summaries}
 
-        # 🔍 调试：打印传给 LLM 的 Agent 完整列表
+        # 🔍 Debugging: Print the complete list of Agents passed to LLM
         agent_ids = [a["id"] for a in agents]
         logger.info(
-            f"📋 [ResourceCollector] 传给 LLM 的 Agent 列表 (共 {len(agents)} 个): "
+            f"📋 [ResourceCollector] Agent list passed to LLM (total {len(agents)} a): "
             f"{agent_ids}"
         )
 
-        sections.append("## 可用的 Agent（智能体）\n")
+        sections.append("## Available Agents\n")
         categories: Dict[str, List] = {}
         for a in agents:
             cat = a.get("category", "other")
@@ -378,28 +378,28 @@ class ResourceCollector:
             sections.append(f"### {cat}")
             for a in items:
                 line = f"- **{a['id']}** ({a['name']}): {a['description']}"
-                # 维护状态标记（非 MAINTAINED 时警告 LLM）
+                # Maintenance status flag (warn LLM when not MAINTAINED)
                 status = a.get("maintenance_status", "maintained")
                 if status and status != "maintained":
-                    line += f"  ⚠️ [状态: {status}]"
-                # 产出字段（帮助 LLM 理解数据流和 Agent 间协作）
+                    line += f"  ⚠️ [Status: {status}]"
+                # Output fields (help LLM understand data flow and collaboration between agents)
                 output_field = a.get("output_field", "")
                 if output_field:
-                    line += f"  [→ 产出字段: `{output_field}`]"
-                # 附加提示词摘要和实际内容预览
+                    line += f"  [→ output field: `{output_field}`]"
+                # Additional prompt word summary and actual content preview
                 ps = prompt_map.get(a["id"])
                 if ps:
-                    line += f"  [默认提示词: 有{ps['template_count']}个模板]"
+                    line += f"  [Default prompt word: Yes{ps['template_count']}templates]"
                     preview = ps.get("system_prompt_preview", "")
                     if preview:
-                        line += f"\n  <提示词预览>\n{preview}\n  </提示词预览>"
+                        line += f"\n  <Prompt word preview>\n{preview}\n  </Prompt word preview>"
                 else:
-                    line += "  [默认提示词: 通用]"
+                    line += "  [Default prompt word: Universal]"
                 sections.append(line)
             sections.append("")
 
-        # 节点类型
-        sections.append("## 可用的工作流节点类型\n")
+        # Node type
+        sections.append("## Available workflow node types\n")
         for nt in node_types:
             sections.append(f"- **{nt['type']}**: {nt['description']}")
         sections.append("")

@@ -1,11 +1,11 @@
 # TradingAgents-CN Acceptance Test Runner
-# 按版本号运行验收测试，自动匹配 start_dev.ps1 中的端口配置。
+# Run acceptance tests by version number and automatically match the port configuration in start_dev.ps1.
 #
-# 用法:
-#   .\run_acceptance.ps1 api 3.0        # 运行后端 API 验收测试
-#   .\run_acceptance.ps1 e2e 3.0        # 运行前端 E2E 验收测试
-#   .\run_acceptance.ps1 all 3.0        # 运行 API + E2E
-#   .\run_acceptance.ps1 status         # 查看版本端口配置
+# Usage:
+#   .\run_acceptance.ps1 api 3.0        # Run backend API acceptance tests
+#   .\run_acceptance.ps1 e2e 3.0        # Run front-end E2E acceptance tests
+#   .\run_acceptance.ps1 all 3.0        # run API + E2E
+#   .\run_acceptance.ps1 status         # View version port configuration
 
 [CmdletBinding()]
 param(
@@ -37,15 +37,15 @@ function Show-Help {
     Write-Host "  .\run_acceptance.ps1 <command> [version] [options]"
     Write-Host ""
     Write-Host "Commands:" -ForegroundColor Yellow
-    Write-Host "  api <version>       运行后端 API 验收测试"
-    Write-Host "  e2e <version>       运行前端 E2E 验收测试"
-    Write-Host "  all <version>       运行 API + E2E 验收测试"
-    Write-Host "  status              查看版本端口配置"
+    Write-Host "  api <version>       Run backend API acceptance tests"
+    Write-Host "  e2e <version>       Run front-end E2E acceptance tests"
+    Write-Host "  all <version>       run API + E2E Acceptance testing"
+    Write-Host "  status              View version port configuration"
     Write-Host ""
     Write-Host "Options:" -ForegroundColor Yellow
-    Write-Host "  -IncludeETF         包含 ETF GA 测试（可能访问外部数据源，耗时更长）"
-    Write-Host "  -DryRun             只打印将要执行的命令，不实际运行"
-    Write-Host "  -Help               显示帮助"
+    Write-Host "  -IncludeETF         Includes ETF GA testing (may access external data sources, takes longer)"
+    Write-Host "  -DryRun             Only prints the command to be executed without actually running it"
+    Write-Host "  -Help               show help"
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Yellow
     Write-Host "  .\start_dev.ps1 all 3.0"
@@ -62,7 +62,7 @@ if ($Help -or -not $Command) {
 if ($Command -eq "status") {
     Write-Host ""
     Write-Host "=========================================" -ForegroundColor Cyan
-    Write-Host "  验收测试版本端口配置" -ForegroundColor Cyan
+    Write-Host "  Acceptance test version port configuration" -ForegroundColor Cyan
     Write-Host "=========================================" -ForegroundColor Cyan
     Write-Host ""
     foreach ($v in @("2.0", "2.1", "3.0")) {
@@ -76,7 +76,7 @@ if ($Command -eq "status") {
 }
 
 if (-not $Version) {
-    Write-Host "[ERROR] 需要指定版本号，例如: .\run_acceptance.ps1 all 3.0" -ForegroundColor Red
+    Write-Host "[ERROR] You need to specify the version number, for example: .\run_acceptance.ps1 all 3.0" -ForegroundColor Red
     exit 1
 }
 
@@ -150,4 +150,4 @@ if ($Command -eq "e2e" -or $Command -eq "all") {
 }
 
 Write-Host ""
-Write-Host "[OK] 验收测试执行完成" -ForegroundColor Green
+Write-Host "[OK] Acceptance test execution completed" -ForegroundColor Green

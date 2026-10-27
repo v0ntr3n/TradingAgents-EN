@@ -4,25 +4,25 @@
       <div class="header-left">
         <h1>
           <el-icon class="header-icon"><Coin /></el-icon>
-          股票对象记忆
+          Stock object memory
         </h1>
-        <span class="subtitle">只展示带市场、标的、日期、结论的对象化长期记忆，原始自由文本已从用户视图隐藏。</span>
+        <span class="subtitle">Only the objectized long-term memory with markets, targets, dates, and conclusions is displayed, the original free text is hidden from user view.</span>
       </div>
       <div class="header-right">
         <el-button @click="fetchAll" :loading="loading || searching">
           <el-icon><Refresh /></el-icon>
-          刷新
+          Refresh
         </el-button>
         <el-popconfirm
-          title="确定要清除全部股票对象记忆？此操作不可恢复。"
-          confirm-button-text="确认清除"
-          cancel-button-text="取消"
+          title="Are you sure you want to clear all stock object memories? This operation is irreversible."
+          confirm-button-text="Confirm clear"
+          cancel-button-text="Cancel"
           @confirm="handleDeleteAllObjects"
         >
           <template #reference>
             <el-button type="danger" plain :disabled="objectMemoryTotal === 0">
               <el-icon><Delete /></el-icon>
-              清除全部对象记忆
+              Clear all object memories
             </el-button>
           </template>
         </el-popconfirm>
@@ -31,8 +31,8 @@
 
     <el-alert
       v-if="!stats.enabled"
-      title="记忆功能未启用"
-      description="请在 .env 中设置 MEM0_ENABLED=true 并配置 LLM API Key 以启用对象化记忆。"
+      title="Memory function is not enabled"
+      description="Please set it in .env MEM0_ENABLED=true And configure the LLM API Key to enable objectized memory."
       type="warning"
       show-icon
       :closable="false"
@@ -40,8 +40,8 @@
     />
     <el-alert
       v-else-if="stats.available === false"
-      title="记忆服务不可用"
-      :description="stats.message || 'mem0 初始化失败，请检查配置。'"
+      title="Memory service is unavailable"
+      :description="stats.message || 'mem0 Initialization failed, please check configuration.'"
       type="error"
       show-icon
       :closable="false"
@@ -50,15 +50,15 @@
 
     <el-card shadow="never" class="overview-card">
       <div class="overview-item">
-        <div class="overview-label">对象记忆总数</div>
+        <div class="overview-label">Total number of object memories</div>
         <div class="overview-value">{{ objectMemoryTotal }}</div>
       </div>
       <div class="overview-item">
-        <div class="overview-label">当前结果</div>
+        <div class="overview-label">Current results</div>
         <div class="overview-value">{{ isSearchMode ? memories.length : totalMemories }}</div>
       </div>
       <div class="overview-item overview-note">
-        <div class="overview-label">当前模式</div>
+        <div class="overview-label">Current mode</div>
         <div class="overview-badges">
           <el-tag type="warning" effect="plain">analysis_insight</el-tag>
           <el-tag type="info" effect="plain">stock_analysis</el-tag>
@@ -72,7 +72,7 @@
         <el-col :xs="24" :md="10">
           <el-input
             v-model="searchQuery"
-            placeholder="搜索结论、建议或证据..."
+            placeholder="Search for conclusions, recommendations or evidence..."
             clearable
             @keyup.enter="handleSearch"
             @clear="handleClearSearch"
@@ -81,14 +81,14 @@
               <el-icon><Search /></el-icon>
             </template>
             <template #append>
-              <el-button @click="handleSearch" :loading="searching">搜索</el-button>
+              <el-button @click="handleSearch" :loading="searching">Search</el-button>
             </template>
           </el-input>
         </el-col>
         <el-col :xs="12" :md="5">
           <el-input
             v-model="symbolFilter"
-            placeholder="股票代码，如 000858"
+            placeholder="Stock code, such as 000858"
             clearable
             @keyup.enter="handleFilterChange"
             @clear="handleFilterChange"
@@ -97,7 +97,7 @@
         <el-col :xs="12" :md="4">
           <el-select
             v-model="marketFilter"
-            placeholder="全部市场"
+            placeholder="All markets"
             clearable
             @change="handleFilterChange"
             style="width: 100%"
@@ -111,7 +111,7 @@
           </el-select>
         </el-col>
         <el-col :xs="24" :md="5" class="filter-actions">
-          <el-button @click="handleResetFilters">重置筛选</el-button>
+          <el-button @click="handleResetFilters">Reset filter</el-button>
           <el-button
             type="danger"
             plain
@@ -119,14 +119,14 @@
             @click="handleBatchDelete"
           >
             <el-icon><Delete /></el-icon>
-            删除选中 ({{ selectedIds.length }})
+            Remove selected ({{ selectedIds.length }})
           </el-button>
         </el-col>
       </el-row>
       <div class="filter-hint">
-        <span v-if="isSearchMode">语义搜索结果：{{ memories.length }} 条</span>
-        <span v-else>当前筛选命中：{{ totalMemories }} 条</span>
-        <span v-if="hasActiveFilters">已启用对象筛选</span>
+        <span v-if="isSearchMode">Semantic search results:{{ memories.length }} Article</span>
+        <span v-else>Current filter hits:{{ totalMemories }} Article</span>
+        <span v-if="hasActiveFilters">Object filtering enabled</span>
       </div>
     </el-card>
 
@@ -166,10 +166,10 @@
                       size="small"
                       effect="plain"
                     >
-                      相关度 {{ formatScore(item.score) }}
+                      Relevance {{ formatScore(item.score) }}
                     </el-tag>
                     <el-popconfirm
-                      title="确定删除这条对象记忆？"
+                      title="Are you sure you want to delete this object memory?"
                       @confirm="handleDeleteOne(item.id)"
                     >
                       <template #reference>
@@ -183,22 +183,22 @@
               </template>
 
               <div class="card-meta">
-                <span>分析日期：{{ item.analysisDate || '-' }}</span>
-                <span>记录时间：{{ formatTime(item.timestamp) }}</span>
+                <span>Analysis date:{{ item.analysisDate || '-' }}</span>
+                <span>Recording time:{{ formatTime(item.timestamp) }}</span>
               </div>
 
               <div class="card-section">
-                <div class="section-label">结论</div>
+                <div class="section-label">Conclusion</div>
                 <p class="section-text">{{ item.summary }}</p>
               </div>
 
               <div v-if="item.recommendation" class="card-section">
-                <div class="section-label">建议</div>
+                <div class="section-label">Suggestions</div>
                 <p class="section-text accent-text">{{ item.recommendation }}</p>
               </div>
 
               <div v-if="item.nextChecks.length" class="card-section">
-                <div class="section-label">后续检查</div>
+                <div class="section-label">Follow-up examination</div>
                 <div class="tag-list">
                   <el-tag
                     v-for="check in item.nextChecks"
@@ -214,7 +214,7 @@
               </div>
 
               <div v-if="item.evidence.length" class="card-section">
-                <div class="section-label">证据</div>
+                <div class="section-label">evidence</div>
                 <div class="tag-list">
                   <el-tag
                     v-for="evidence in item.evidence"
@@ -230,8 +230,8 @@
               </div>
 
               <div class="card-footer">
-                <span>来源：{{ item.source }}</span>
-                <span v-if="item.taskId">任务：{{ item.taskId }}</span>
+                <span>Source:{{ item.source }}</span>
+                <span v-if="item.taskId">Task:{{ item.taskId }}</span>
               </div>
             </el-card>
           </el-col>
@@ -240,9 +240,9 @@
 
       <el-empty v-else-if="!loading && !searching" :image-size="120">
         <template #description>
-          <p v-if="isSearchMode">没有匹配到对象化记忆，换个关键词试试。</p>
-          <p v-else-if="hasActiveFilters">当前筛选下没有对象化股票记忆。</p>
-          <p v-else>暂无对象化股票记忆，新的分析完成后会在这里生成卡片。</p>
+          <p v-if="isSearchMode">If the objectized memory is not matched, try changing the keyword.</p>
+          <p v-else-if="hasActiveFilters">There are no objected stock memories under the current filter.</p>
+          <p v-else>There is currently no objectized stock memory. Cards will be generated here after the new analysis is completed.</p>
         </template>
       </el-empty>
 
@@ -259,33 +259,33 @@
       </div>
     </el-card>
 
-    <!-- 偏好与纪律记忆（user_preference + trade_pattern）-->
+    <!-- Preference and Discipline Memory (user_preference + trade_pattern) -->
     <el-card shadow="never" class="preference-card">
       <template #header>
         <div class="preference-header">
           <div class="preference-title">
             <el-icon><Memo /></el-icon>
-            <span>我的偏好与纪律记忆</span>
+            <span>My Preferences and Discipline Memory</span>
             <el-tag size="small" effect="plain">user_preference</el-tag>
             <el-tag size="small" type="warning" effect="plain">trade_pattern</el-tag>
           </div>
           <div class="preference-actions">
             <el-button :loading="preferenceLoading" @click="fetchPreferenceList">
               <el-icon><Refresh /></el-icon>
-              刷新
+              Refresh
             </el-button>
           </div>
         </div>
         <p class="preference-hint">
-          这里展示助手通过 `remember_this` 工具登记的用户偏好，以及交易复盘和投资计划同步的纪律要点。
-          可以在对话中直接说"请记住……"让助手主动记下偏好。
+          Here the assistant passes `remember_this` User preferences for instrument registration, as well as disciplinary points for synchronization of trading reviews and investment plans.
+          You can say it directly in the conversation"please remember……"Let your assistant proactively take note of preferences.
         </p>
       </template>
 
       <div v-loading="preferenceLoading">
         <el-empty v-if="!preferenceList.length" :image-size="100">
           <template #description>
-            <p>暂无偏好/纪律记忆。试试在助手对话中说："请记住我偏好分红率高的蓝筹股"。</p>
+            <p>No preference/discipline memory yet. Try saying this in an Assistant conversation:"Remember I prefer blue chip stocks with high dividend yields". </p>
           </template>
         </el-empty>
 
@@ -301,11 +301,11 @@
                 size="small"
                 effect="plain"
               >
-                {{ item.scope === 'trade_pattern' ? '交易纪律' : '用户偏好' }}
+                {{ item.scope === 'trade_pattern' ? 'Trading discipline' : 'User preferences' }}
               </el-tag>
               <span class="preference-item-time">{{ formatTime(item.created_at || item.updated_at || '') }}</span>
               <el-popconfirm
-                title="确定删除这条记忆？"
+                title="Are you sure you want to delete this memory?"
                 @confirm="handleDeletePreference(item.id)"
               >
                 <template #reference>
@@ -332,19 +332,19 @@
       </div>
     </el-card>
 
-    <!-- 智能助手事实记忆（assistant_memory_facts）-->
+    <!-- Intelligent Assistant Fact Memory (assistant_memory_facts)-->
     <el-card shadow="never" class="fact-card">
       <template #header>
         <div class="fact-header">
           <div class="fact-title">
             <el-icon><Memo /></el-icon>
-            <span>智能助手事实记忆</span>
+            <span>Intelligent assistant fact memory</span>
             <el-tag size="small" effect="plain">assistant_memory_facts</el-tag>
           </div>
           <div class="fact-actions">
             <el-input
               v-model="factSearch"
-              placeholder="搜索事实内容或主题..."
+              placeholder="Search for factual content or topics..."
               clearable
               style="width: 280px"
               @keyup.enter="fetchFacts(1)"
@@ -358,7 +358,7 @@
             </el-input>
             <el-button :loading="factLoading" @click="fetchFacts(currentFactPage)">
               <el-icon><Refresh /></el-icon>
-              刷新
+              Refresh
             </el-button>
             <el-button
               type="danger"
@@ -367,20 +367,20 @@
               @click="handleBatchDeleteFacts"
             >
               <el-icon><Delete /></el-icon>
-              删除选中 ({{ selectedFactIds.length }})
+              Remove selected ({{ selectedFactIds.length }})
             </el-button>
           </div>
         </div>
         <p class="fact-hint">
-          这里展示智能助手通过联网工具提取并保存的事实（含数据采集时间与有效期），跨会话自动引用；引用时会标注数据采集日期。
-          无需手动录入，助手在对话中获取到关键数据后会自动生成。
+          Here we show the facts (including data collection time and validity period) extracted and saved by the intelligent assistant through the Internet tool, and automatically quoted across sessions; the date of data collection will be marked when quoting.
+          There is no need to manually enter it, the assistant will automatically generate it after obtaining key data during the conversation.
         </p>
       </template>
 
       <div v-loading="factLoading">
         <el-empty v-if="!factList.length" :image-size="100">
           <template #description>
-            <p>暂无事实记忆。在助手对话中提问具体数据（如"赛力斯7月销量多少"）后，提取出的事实会自动保存在这里。</p>
+            <p>No memory of the facts yet. Ask for specific data (e.g."How much did Cyrus sell in July?") Finally, the extracted facts will be automatically saved here.</p>
           </template>
         </el-empty>
 
@@ -400,9 +400,9 @@
                 {{ FACT_CATEGORY_LABELS[item.category || 'default'] }}
               </el-tag>
               <span v-if="item.symbol" class="fact-symbol">{{ item.symbol }}</span>
-              <span class="fact-item-time">采集于 {{ formatTime(item.fetched_at) }}</span>
+              <span class="fact-item-time">Collected from {{ formatTime(item.fetched_at) }}</span>
               <el-popconfirm
-                title="确定删除这条事实记忆？"
+                title="Are you sure you want to delete this fact memory?"
                 @confirm="handleDeleteFact(item.id)"
               >
                 <template #reference>
@@ -414,8 +414,8 @@
             </div>
             <p class="fact-item-content">{{ item.content }}</p>
             <div class="fact-item-meta">
-              <span>有效期至 {{ formatTime(item.valid_until) }}</span>
-              <span v-if="item.tool_id">来源工具：{{ item.tool_id }}</span>
+              <span>Valid until {{ formatTime(item.valid_until) }}</span>
+              <span v-if="item.tool_id">Source tool:{{ item.tool_id }}</span>
             </div>
           </div>
         </div>
@@ -489,7 +489,7 @@ const stats = reactive<{
 })
 
 const marketOptions = [
-  { label: 'A股', value: 'cn' },
+  { label: 'A shares', value: 'cn' },
 ]
 
 const normalizedSymbol = computed(() => symbolFilter.value.trim().toUpperCase())
@@ -535,7 +535,7 @@ function getScopeColor(scope: string): ElTagType {
 
 function getMarketLabel(market: string) {
   const normalized = String(market || '').trim().toLowerCase()
-  if (normalized === 'cn') return 'A股'
+  if (normalized === 'cn') return 'A shares'
   return normalized || '-'
 }
 
@@ -575,7 +575,7 @@ function toTextArray(value: unknown): string[] {
 
 function normalizeMemoryCard(item: MemoryItem): MemoryCardItem {
   const meta = item.metadata || {}
-  const symbol = String(item.symbol || meta.symbol || '').trim().toUpperCase() || '未知标的'
+  const symbol = String(item.symbol || meta.symbol || '').trim().toUpperCase() || 'unknown target'
   const market = String(item.market || meta.market || '').trim().toLowerCase() || 'cn'
   const objectKey = String(item.object_key || meta.object_key || `${market}:${symbol}`).trim()
   return {
@@ -584,7 +584,7 @@ function normalizeMemoryCard(item: MemoryItem): MemoryCardItem {
     market,
     marketLabel: getMarketLabel(market),
     objectKey,
-    summary: String(meta.summary || item.memory || '暂无结构化结论').trim(),
+    summary: String(meta.summary || item.memory || 'No structured conclusion yet').trim(),
     recommendation: String(meta.recommendation || '').trim(),
     analysisDate: String(meta.analysis_date || '').trim(),
     evidence: toTextArray(meta.evidence),
@@ -650,7 +650,7 @@ async function fetchList() {
     memories.value = data.items
     totalMemories.value = data.total
   } catch (e: any) {
-    ElMessage.error(e?.message || '加载对象记忆失败')
+    ElMessage.error(e?.message || 'Failed to load object memory')
   } finally {
     loading.value = false
   }
@@ -672,7 +672,7 @@ async function handleSearch() {
     memories.value = data.items
     totalMemories.value = data.count
   } catch (e: any) {
-    ElMessage.error(e?.message || '搜索失败')
+    ElMessage.error(e?.message || 'Search failed')
   } finally {
     searching.value = false
   }
@@ -707,10 +707,10 @@ function handleResetFilters() {
 async function handleDeleteOne(id: string) {
   const ok = await memoryApi.deleteMemory(id)
   if (ok) {
-    ElMessage.success('对象记忆已删除')
+    ElMessage.success('Object memory deleted')
     await fetchAll()
   } else {
-    ElMessage.error('删除失败')
+    ElMessage.error('Delete failed')
   }
 }
 
@@ -718,8 +718,8 @@ async function handleBatchDelete() {
   if (selectedIds.value.length === 0) return
   try {
     await ElMessageBox.confirm(
-      `确定删除选中的 ${selectedIds.value.length} 条对象记忆？`,
-      '批量删除',
+      `Confirm to delete selected ${selectedIds.value.length} Object memory?`,
+      'Batch delete',
       { type: 'warning' },
     )
   } catch {
@@ -733,7 +733,7 @@ async function handleBatchDelete() {
     deleted += result.deleted
   }
 
-  ElMessage.success(`已删除 ${deleted} 条对象记忆`)
+  ElMessage.success(`Deleted ${deleted} object memory`)
   selectedIds.value = []
   await fetchAll()
 }
@@ -763,7 +763,7 @@ async function handleDeleteAllObjects() {
   try {
     const ids = await collectObjectMemoryIds()
     if (ids.length === 0) {
-      ElMessage.info('暂无对象记忆可清理')
+      ElMessage.info('There is currently no object memory to clear')
       return
     }
 
@@ -774,11 +774,11 @@ async function handleDeleteAllObjects() {
       deleted += result.deleted
     }
 
-    ElMessage.success(`已清除 ${deleted} 条对象记忆`)
+    ElMessage.success(`cleared ${deleted} object memory`)
     selectedIds.value = []
     await fetchAll()
   } catch (e: any) {
-    ElMessage.error(e?.message || '清除失败')
+    ElMessage.error(e?.message || 'Clear failed')
   } finally {
     loading.value = false
   }
@@ -794,8 +794,8 @@ async function fetchAll() {
 }
 
 // ============================================================================
-// 偏好与纪律记忆（user_preference + trade_pattern）
-// 参考：docs/05-design/v3.0/unified-memory-layer-mem0.md §15.5 P0-3
+// Preference and Discipline Memory (user_preference + trade_pattern) 
+// Reference:docs/05-design/v3.0/unified-memory-layer-mem0.md §15.5 P0-3
 // ============================================================================
 
 const preferenceList = ref<MemoryItem[]>([])
@@ -804,7 +804,7 @@ const preferenceLoading = ref(false)
 async function fetchPreferenceList() {
   preferenceLoading.value = true
   try {
-    // 并行获取 user_preference + trade_pattern
+    // Parallel acquisition user_preference + trade_pattern
     const [prefRes, patternRes] = await Promise.all([
       memoryApi.getList({ scope: 'user_preference', page: 1, page_size: 50 }),
       memoryApi.getList({ scope: 'trade_pattern', page: 1, page_size: 50 }),
@@ -816,7 +816,7 @@ async function fetchPreferenceList() {
     if (patternRes?.items) {
       items.push(...patternRes.items)
     }
-    // 按时间倒序
+    // in reverse chronological order
     items.sort((a, b) => {
       const ta = String(a.created_at || a.updated_at || '')
       const tb = String(b.created_at || b.updated_at || '')
@@ -824,7 +824,7 @@ async function fetchPreferenceList() {
     })
     preferenceList.value = items
   } catch (e: any) {
-    ElMessage.error(`加载偏好记忆失败：${e?.message || e}`)
+    ElMessage.error(`Failed to load preference memory:${e?.message || e}`)
   } finally {
     preferenceLoading.value = false
   }
@@ -834,18 +834,18 @@ async function handleDeletePreference(id: string) {
   try {
     const ok = await memoryApi.deleteMemory(id)
     if (ok) {
-      ElMessage.success('已删除')
+      ElMessage.success('Deleted')
       await fetchPreferenceList()
     } else {
-      ElMessage.error('删除失败')
+      ElMessage.error('Delete failed')
     }
   } catch (e: any) {
-    ElMessage.error(`删除失败：${e?.message || e}`)
+    ElMessage.error(`Delete failed:${e?.message || e}`)
   }
 }
 
 function normalizeMetadataTags(metadata: Record<string, any>): Record<string, string> {
-  // 只展示用户关心的字段，过滤内部字段
+  // Only display the fields that users care about and filter internal fields
   const KEEP_KEYS = ['category', 'source', 'symbol', 'name', 'review_id', 'system_id']
   const result: Record<string, string> = {}
   for (const key of KEEP_KEYS) {
@@ -857,8 +857,8 @@ function normalizeMetadataTags(metadata: Record<string, any>): Record<string, st
 }
 
 // ============================================================================
-// 智能助手事实记忆（assistant_memory_facts）
-// 参考：app/services/intelligent_assistant_service.py 事实记忆层
+// Intelligent Assistant Fact Memory (assistant_memory_facts)
+// Reference: app/services/intelligent_assistant_service.py fact memory layer
 // ============================================================================
 
 const FACT_PAGE_SIZE = 10
@@ -894,7 +894,7 @@ async function fetchFacts(page = 1) {
     currentFactPage.value = data.page
     selectedFactIds.value = []
   } catch (e: any) {
-    ElMessage.error(e?.message || '加载事实记忆失败')
+    ElMessage.error(e?.message || 'Failed to load fact memory')
   } finally {
     factLoading.value = false
   }
@@ -914,10 +914,10 @@ function toggleFactSelected(id: string, checked: unknown) {
 async function handleDeleteFact(id: string) {
   const ok = await memoryApi.deleteAssistantFact(id)
   if (ok) {
-    ElMessage.success('事实记忆已删除')
+    ElMessage.success('Factual memory deleted')
     await fetchFacts(currentFactPage.value)
   } else {
-    ElMessage.error('删除失败')
+    ElMessage.error('Delete failed')
   }
 }
 
@@ -925,15 +925,15 @@ async function handleBatchDeleteFacts() {
   if (selectedFactIds.value.length === 0) return
   try {
     await ElMessageBox.confirm(
-      `确定删除选中的 ${selectedFactIds.value.length} 条事实记忆？`,
-      '批量删除',
+      `Confirm to delete selected ${selectedFactIds.value.length} Factual memory?`,
+      'Batch delete',
       { type: 'warning' },
     )
   } catch {
     return
   }
   const result = await memoryApi.batchDeleteAssistantFacts(selectedFactIds.value)
-  ElMessage.success(`已删除 ${result.deleted} 条事实记忆`)
+  ElMessage.success(`Deleted ${result.deleted} memory of facts`)
   await fetchFacts(currentFactPage.value)
 }
 

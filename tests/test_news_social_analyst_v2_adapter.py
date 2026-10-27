@@ -24,7 +24,7 @@ def test_news_execute_uses_default_analysis_prompt(monkeypatch):
         {
             "ticker": "000001",
             "analysis_date": "2026-04-13",
-            "company_name": "平安银行",
+            "company_name": "Ping An Bank",
         }
     )
 
@@ -39,14 +39,14 @@ def test_news_default_analysis_prompt_contains_legacy_structure_guards():
     agent = module.NewsAnalystV2()
     prompt = agent._build_analysis_prompt("000001")
 
-    assert "最新新闻汇总" in prompt
-    assert "新闻影响分析" in prompt
-    assert "市场情绪评估" in prompt
-    assert "分析观点" in prompt
-    assert "多个标题本质上描述同一事件" in prompt
-    assert "短期反应预期" in prompt
-    assert "无需单列章节" in prompt
-    assert "不要输出投资建议、目标价、价格区间、仓位或执行计划" in prompt
+    assert "Latest news summary" in prompt
+    assert "News impact analysis" in prompt
+    assert "Market Sentiment Assessment" in prompt
+    assert "analysis point of view" in prompt
+    assert "Multiple headlines essentially describing the same event" in prompt
+    assert "short term response expectations" in prompt
+    assert "No need for separate chapters" in prompt
+    assert "Do not output investment recommendations, target prices, price ranges, positions, or execution plans" in prompt
 
 
 def test_social_execute_uses_default_analysis_prompt(monkeypatch):
@@ -75,7 +75,7 @@ def test_social_execute_uses_default_analysis_prompt(monkeypatch):
         {
             "ticker": "000001",
             "analysis_date": "2026-04-13",
-            "company_name": "平安银行",
+            "company_name": "Ping An Bank",
         }
     )
 
@@ -90,7 +90,7 @@ def test_social_default_analysis_prompt_contains_dimension_guards():
     agent = module.SocialMediaAnalystV2()
     prompt = agent._build_analysis_prompt("000001")
 
-    assert "如果工具明确说明当前结果来自新闻回退情绪摘要" in prompt
-    assert "不要分析该维度" in prompt
-    assert "不要使用“情绪拐点已至”" in prompt
-    assert "不要输出投资建议、目标价、价格区间、仓位或执行计划" in prompt
+    assert "If the tool explicitly states that the current results are from news fallback sentiment summaries" in prompt
+    assert "Do not analyze this dimension" in prompt
+    assert "Do not use The emotional turning point has arrived " in prompt
+    assert "Do not output investment recommendations, target prices, price ranges, positions, or execution plans" in prompt

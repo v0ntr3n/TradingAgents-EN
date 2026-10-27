@@ -1,5 +1,5 @@
 """
-分析相关数据模型
+Analyze related data models
 """
 
 from datetime import datetime
@@ -13,17 +13,17 @@ from .agent_growth import TaskGrowthContext
 
 
 class AnalysisStatus(str, Enum):
-    """分析状态枚举"""
+    """Analysis status enum"""
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
-    SUSPENDED = "suspended"  # 挂起状态（服务重启后未完成的任务）
+    SUSPENDED = "suspended"  # Pending status (unfinished tasks after service restart)
 
 
 class BatchStatus(str, Enum):
-    """批次状态枚举"""
+    """Batch status enum"""
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -33,56 +33,56 @@ class BatchStatus(str, Enum):
 
 
 class AnalysisEngine(str, Enum):
-    """分析引擎类型"""
-    LEGACY = "legacy"       # 旧引擎: TradingAgentsGraph
-    UNIFIED = "unified"     # 新引擎: UnifiedAnalysisService + WorkflowEngine
-    V2 = "v2"               # v2.0引擎: 使用v2.0工作流模板
+    """Analysis engine type"""
+    LEGACY = "legacy"       # old engine: TradingAgentsGraph
+    UNIFIED = "unified"     # new engine: UnifiedAnalysisService + WorkflowEngine
+    V2 = "v2"               # v2.0 engine: Using v2.0 workflow template
 
 
 class AnalysisParameters(BaseModel):
-    """分析参数模型
+    """Analyze parametric models
 
-    研究深度说明：
-    - 快速: 1级 - 快速分析 (2-4分钟)
-    - 基础: 2级 - 基础分析 (4-6分钟)
-    - 标准: 3级 - 标准分析 (6-10分钟，推荐)
-    - 深度: 4级 - 深度分析 (10-15分钟)
-    - 全面: 5级 - 全面分析 (15-25分钟)
+    Research depth description:
+    - fast: 1 Level - Quick Analysis (2-4 minutes)
+    - Basics: 2 Level - Basic Analysis (4-6 minutes)
+    - Standard: 3 Level - Standard Analysis (6-10 minutes, recommended)
+    - Depth: 4 Level - In-Depth Analysis (10-15 minutes)
+    - Comprehensive: 5 Level - Comprehensive Analysis (15-25 minutes)
 
-    引擎选择 (AB 测试):
-    - legacy: 使用旧引擎 TradingAgentsGraph (默认)
-    - unified: 使用新的统一引擎 WorkflowEngine (LangGraph 动态构建)
+    Engine selection (AB test):
+    - legacy: Use old engine TradingAgentsGraph (Default)
+    - unified: Use the new unified engine WorkflowEngine (LangGraph dynamic build)
     """
-    market_type: str = "A股"
+    market_type: str = "A shares"
     analysis_date: Optional[datetime] = None
-    research_depth: str = "标准"  # 默认使用3级标准分析（推荐）
+    research_depth: str = "Standard"  # Use level 3 standard analysis by default (recommended)
     selected_analysts: List[str] = Field(default_factory=lambda: ["market", "fundamentals", "news", "social"])
     custom_prompt: Optional[str] = None
     include_sentiment: bool = True
     include_risk: bool = True
     language: str = "zh-CN"
-    # 模型配置
+    # Model configuration
     quick_analysis_model: Optional[str] = "qwen-turbo"
     deep_analysis_model: Optional[str] = "qwen-max"
-    # 引擎选择（默认使用 v2.0 引擎）
+    # Engine selection (default uses v2.0 engine)
     engine: AnalysisEngine = Field(
         default=AnalysisEngine.V2,
-        description="分析引擎: v2=v2.0引擎（推荐）, unified=统一引擎, legacy=旧引擎（已废弃）"
+        description="Analysis engine: v2=v2.0 Engine (recommended), unified=unified engine, legacy=Old engine (obsolete)"
     )
-    # 新引擎工作流配置
+    # New engine workflow configuration
     workflow_id: Optional[str] = Field(
         default=None,
-        description="工作流 ID (仅 unified 引擎有效)，不指定则使用系统默认工作流"
+        description="Workflow ID (Only valid for unified engine), If not specified, the system default workflow will be used."
     )
-    # 执行轨迹开关（单次任务级别）
+    # Execution trajectory switch (single mission level)
     enable_trace: bool = Field(
         default=False,
-        description="是否记录本次分析的执行轨迹（Prompt全文、LLM原始返回、校验结果）。默认关闭，排查问题时可开启。"
+        description="Whether to record the execution trace of this analysis (full text of Prompt, original return from LLM, verification results). It is turned off by default and can be turned on when troubleshooting problems."
     )
 
 
 class AnalysisResult(BaseModel):
-    """分析结果模型"""
+    """Analysis results model"""
     analysis_id: Optional[str] = None
     summary: Optional[str] = None
     recommendation: Optional[str] = None
@@ -94,33 +94,33 @@ class AnalysisResult(BaseModel):
     tokens_used: int = 0
     execution_time: float = 0.0
     error_message: Optional[str] = None
-    model_info: Optional[str] = None  # 🔥 添加模型信息字段
+    model_info: Optional[str] = None  # 🔥 Add model information fields
 
 
 class AnalysisTask(BaseModel):
-    """分析任务模型"""
+    """Analysis task model"""
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
-    task_id: str = Field(..., description="任务唯一标识")
+    task_id: str = Field(..., description="Task unique identifier")
     batch_id: Optional[str] = None
     user_id: PyObjectId
-    symbol: str = Field(..., description="6位股票代码")
-    stock_code: Optional[str] = Field(None, description="股票代码(已废弃,使用symbol)")
+    symbol: str = Field(..., description="6 stock code")
+    stock_code: Optional[str] = Field(None, description="Stock code(Deprecated,Use symbol)")
     stock_name: Optional[str] = None
     status: AnalysisStatus = AnalysisStatus.PENDING
 
-    progress: int = Field(default=0, ge=0, le=100, description="任务进度 0-100")
+    progress: int = Field(default=0, ge=0, le=100, description="Task progress 0-100")
 
-    # 时间戳
+    # Timestamp
     created_at: datetime = Field(default_factory=now_tz)
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     
-    # 执行信息
+    # execution information
     worker_id: Optional[str] = None
     parameters: AnalysisParameters = Field(default_factory=AnalysisParameters)
     result: Optional[AnalysisResult] = None
     
-    # 重试机制
+    # Retry mechanism
     retry_count: int = 0
     max_retries: int = 3
     last_error: Optional[str] = None
@@ -132,30 +132,30 @@ class AnalysisTask(BaseModel):
 
 
 class AnalysisBatch(BaseModel):
-    """分析批次模型"""
+    """Analyze batch models"""
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
-    batch_id: str = Field(..., description="批次唯一标识")
+    batch_id: str = Field(..., description="Batch unique identifier")
     user_id: PyObjectId
-    title: str = Field(..., description="批次标题")
+    title: str = Field(..., description="Batch title")
     description: Optional[str] = None
     status: BatchStatus = BatchStatus.PENDING
     
-    # 任务统计
+    # Task statistics
     total_tasks: int = 0
     completed_tasks: int = 0
     failed_tasks: int = 0
     cancelled_tasks: int = 0
-    progress: int = Field(default=0, ge=0, le=100, description="整体进度 0-100")
+    progress: int = Field(default=0, ge=0, le=100, description="overall progress 0-100")
     
-    # 时间戳
+    # Timestamp
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     
-    # 配置参数
+    # Configuration parameters
     parameters: AnalysisParameters = Field(default_factory=AnalysisParameters)
     
-    # 结果摘要
+    # summary of results
     results_summary: Optional[Dict[str, Any]] = None
     
     model_config = ConfigDict(
@@ -165,11 +165,11 @@ class AnalysisBatch(BaseModel):
 
 
 class StockInfo(BaseModel):
-    """股票信息模型"""
-    symbol: str = Field(..., description="6位股票代码")
-    code: Optional[str] = Field(None, description="股票代码(已废弃,使用symbol)")
-    name: str = Field(..., description="股票名称")
-    market: str = Field(..., description="市场类型")
+    """stock information model"""
+    symbol: str = Field(..., description="6 stock code")
+    code: Optional[str] = Field(None, description="Stock code(Deprecated,Use symbol)")
+    name: str = Field(..., description="Stock name")
+    market: str = Field(..., description="market type")
     industry: Optional[str] = None
     sector: Optional[str] = None
     market_cap: Optional[float] = None
@@ -177,38 +177,38 @@ class StockInfo(BaseModel):
     change_percent: Optional[float] = None
 
 
-# API请求/响应模型
+# API request/response model
 
 class SingleAnalysisRequest(BaseModel):
-    """单股分析请求"""
-    symbol: Optional[str] = Field(None, description="6位股票代码")
-    stock_code: Optional[str] = Field(None, description="股票代码(已废弃,使用symbol)")
+    """Single stock analysis request"""
+    symbol: Optional[str] = Field(None, description="6 stock code")
+    stock_code: Optional[str] = Field(None, description="Stock code(Deprecated,Use symbol)")
     parameters: Optional[AnalysisParameters] = None
 
     def get_symbol(self) -> str:
-        """获取股票代码(兼容旧字段)"""
+        """Get stock code(Compatible with old fields)"""
         return self.symbol or self.stock_code or ""
 
 
 class BatchAnalysisRequest(BaseModel):
-    """批量分析请求"""
-    title: str = Field(..., description="批次标题")
+    """Batch analysis requests"""
+    title: str = Field(..., description="Batch title")
     description: Optional[str] = None
-    symbols: Optional[List[str]] = Field(None, min_items=1, max_items=10, description="股票代码列表（最多10个）")
-    stock_codes: Optional[List[str]] = Field(None, min_items=1, max_items=10, description="股票代码列表(已废弃,使用symbols，最多10个)")
+    symbols: Optional[List[str]] = Field(None, min_items=1, max_items=10, description="List of stock symbols (up to 10)")
+    stock_codes: Optional[List[str]] = Field(None, min_items=1, max_items=10, description="Stock code list(Deprecated,Use symbols, up to 10)")
     parameters: Optional[AnalysisParameters] = None
 
     def get_symbols(self) -> List[str]:
-        """获取股票代码列表(兼容旧字段)"""
+        """Get a list of stock symbols(Compatible with old fields)"""
         return self.symbols or self.stock_codes or []
 
 
 class AnalysisTaskResponse(BaseModel):
-    """分析任务响应"""
+    """Analyze task responses"""
     task_id: str
     batch_id: Optional[str]
     symbol: str
-    stock_code: Optional[str] = None  # 兼容字段
+    stock_code: Optional[str] = None  # Compatible fields
     stock_name: Optional[str]
     status: AnalysisStatus
     progress: int
@@ -219,14 +219,14 @@ class AnalysisTaskResponse(BaseModel):
 
     @field_serializer('created_at', 'started_at', 'completed_at')
     def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
-        """序列化 datetime 为 ISO 8601 格式，保留时区信息"""
+        """Serialize datetime to ISO 8601 format, preserving time zone information"""
         if dt:
             return dt.isoformat()
         return None
 
 
 class AnalysisBatchResponse(BaseModel):
-    """分析批次响应"""
+    """Analyze batch responses"""
     batch_id: str
     title: str
     description: Optional[str]
@@ -242,57 +242,57 @@ class AnalysisBatchResponse(BaseModel):
 
     @field_serializer('created_at', 'started_at', 'completed_at')
     def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
-        """序列化 datetime 为 ISO 8601 格式，保留时区信息"""
+        """Serialize datetime to ISO 8601 format, preserving time zone information"""
         if dt:
             return dt.isoformat()
         return None
 
 
 class AnalysisHistoryQuery(BaseModel):
-    """分析历史查询参数"""
+    """Analyze historical query parameters"""
     status: Optional[AnalysisStatus] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     symbol: Optional[str] = None
-    stock_code: Optional[str] = None  # 兼容字段
+    stock_code: Optional[str] = None  # Compatible fields
     batch_id: Optional[str] = None
     page: int = Field(default=1, ge=1)
     page_size: int = Field(default=20, ge=1, le=100)
 
     def get_symbol(self) -> Optional[str]:
-        """获取股票代码(兼容旧字段)"""
+        """Get stock code(Compatible with old fields)"""
         return self.symbol or self.stock_code
 
 
-# ==================== 统一分析任务模型 (v2.0) ====================
+# ==================== Unified analysis task model (v2.0) ====================
 
 class AnalysisTaskType(str, Enum):
-    """分析任务类型
+    """Analysis task type
 
-    支持多种分析流程，每种类型对应一个工作流模板
+    Supports multiple analysis processes, each type corresponds to a workflow template
     """
-    STOCK_ANALYSIS = "stock_analysis"           # 股票分析（完整TradingAgents流程）
-    ETF_ANALYSIS = "etf_analysis"               # ETF 分析（简化流程）
-    POSITION_ANALYSIS = "position_analysis"     # 持仓分析
-    TRADE_REVIEW = "trade_review"               # 交易复盘
-    PORTFOLIO_HEALTH = "portfolio_health"       # 组合健康度分析
-    RISK_ASSESSMENT = "risk_assessment"         # 风险评估
-    MARKET_OVERVIEW = "market_overview"         # 市场概览
-    SECTOR_ANALYSIS = "sector_analysis"         # 板块分析
-    # 未来可扩展更多类型...
+    STOCK_ANALYSIS = "stock_analysis"           # Stock analysis (complete TradingAgents process)
+    ETF_ANALYSIS = "etf_analysis"               # ETF Analysis (simplifying the process)
+    POSITION_ANALYSIS = "position_analysis"     # Position analysis
+    TRADE_REVIEW = "trade_review"               # Transaction review
+    PORTFOLIO_HEALTH = "portfolio_health"       # Portfolio health analysis
+    RISK_ASSESSMENT = "risk_assessment"         # risk assessment
+    MARKET_OVERVIEW = "market_overview"         # Market overview
+    SECTOR_ANALYSIS = "sector_analysis"         # Sector analysis
+    # More types can be expanded in the future...
 
 
 class UnifiedAnalysisTask(BaseModel):
-    """统一分析任务模型 (v2.0)
+    """Unified analysis task model (v2.0)
 
-    设计目标：
-    1. 支持多种分析流程（股票分析、持仓分析、交易复盘等）
-    2. 统一的任务管理和状态跟踪
-    3. 灵活的参数配置和引擎选择
-    4. 向后兼容现有系统
+    Design goals:
+    1. Supports a variety of analysis processes (stock analysis, position analysis, transaction review, etc.)
+    2. Unified task management and status tracking
+    3. Flexible parameter configuration and engine selection
+    4. Backwards compatible with existing systems
 
-    使用示例：
-        # 股票分析任务
+    Usage example:
+        # Stock analysis tasks
         task = UnifiedAnalysisTask(
             task_id=str(uuid.uuid4()),
             user_id=user_id,
@@ -300,64 +300,64 @@ class UnifiedAnalysisTask(BaseModel):
             task_params={
                 "symbol": "000858",
                 "market_type": "cn",
-                "research_depth": "标准"
+                "research_depth": "Standard"
             }
         )
 
-        # 持仓分析任务
+        # Position analysis task
         task = UnifiedAnalysisTask(
             task_id=str(uuid.uuid4()),
             user_id=user_id,
             task_type=AnalysisTaskType.POSITION_ANALYSIS,
             task_params={
                 "position_id": "pos_123",
-                "research_depth": "深度"
+                "research_depth": "Depth"
             }
         )
     """
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
-    task_id: str = Field(..., description="任务唯一标识")
-    user_id: PyObjectId = Field(..., description="用户ID")
+    task_id: str = Field(..., description="Task unique identifier")
+    user_id: PyObjectId = Field(..., description="User ID")
 
-    # 任务类型和参数
-    task_type: AnalysisTaskType = Field(..., description="任务类型")
-    task_params: Dict[str, Any] = Field(default_factory=dict, description="任务参数（JSON格式，根据task_type不同而不同）")
+    # Task type and parameters
+    task_type: AnalysisTaskType = Field(..., description="Task type")
+    task_params: Dict[str, Any] = Field(default_factory=dict, description="Task parameters (JSON format, different according to task_type)")
 
-    # 执行配置
-    workflow_id: Optional[str] = Field(None, description="工作流ID（如果使用工作流引擎）")
-    engine_type: str = Field("auto", description="引擎类型: auto(自动选择)/workflow(工作流引擎)/legacy(旧引擎)/llm(直接LLM)")
-    preference_type: str = Field("neutral", description="分析偏好: aggressive(激进)/neutral(中性)/conservative(保守)")
+    # Execute configuration
+    workflow_id: Optional[str] = Field(None, description="Workflow ID (if using a workflow engine)")
+    engine_type: str = Field("auto", description="Engine type: auto(automatic selection)/workflow(workflow engine)/legacy(old engine)/llm(direct LLM)")
+    preference_type: str = Field("neutral", description="Analyze preferences: aggressive(Radical)/neutral(Neutral)/conservative(conservative)")
 
-    # 状态和进度
-    status: AnalysisStatus = Field(default=AnalysisStatus.PENDING, description="任务状态")
-    progress: int = Field(default=0, ge=0, le=100, description="任务进度 0-100")
-    current_step: Optional[str] = Field(None, description="当前执行步骤（简短名称）")
-    message: Optional[str] = Field(None, description="当前步骤的详细描述")
+    # status and progress
+    status: AnalysisStatus = Field(default=AnalysisStatus.PENDING, description="Task status")
+    progress: int = Field(default=0, ge=0, le=100, description="Task progress 0-100")
+    current_step: Optional[str] = Field(None, description="Current execution step (short name)")
+    message: Optional[str] = Field(None, description="Detailed description of current step")
 
-    # 结果
-    result: Optional[Dict[str, Any]] = Field(None, description="分析结果（JSON格式）")
-    growth_context: Optional[TaskGrowthContext] = Field(None, description="成长提取结果摘要")
+    # result
+    result: Optional[Dict[str, Any]] = Field(None, description="Analysis results (JSON format)")
+    growth_context: Optional[TaskGrowthContext] = Field(None, description="Summary of growth extraction results")
 
-    # 元数据
-    created_at: datetime = Field(default_factory=now_tz, description="创建时间")
-    started_at: Optional[datetime] = Field(None, description="开始时间")
-    completed_at: Optional[datetime] = Field(None, description="完成时间")
-    execution_time: float = Field(default=0.0, description="执行时间（秒）")
+    # metadata
+    created_at: datetime = Field(default_factory=now_tz, description="creation time")
+    started_at: Optional[datetime] = Field(None, description="start time")
+    completed_at: Optional[datetime] = Field(None, description="completion time")
+    execution_time: float = Field(default=0.0, description="Execution time (seconds)")
 
-    # 错误处理
-    error_message: Optional[str] = Field(None, description="错误信息")
-    retry_count: int = Field(default=0, description="重试次数")
-    max_retries: int = Field(default=3, description="最大重试次数")
+    # Error handling
+    error_message: Optional[str] = Field(None, description="error message")
+    retry_count: int = Field(default=0, description="Number of retries")
+    max_retries: int = Field(default=3, description="Maximum number of retries")
 
-    # 资源使用
-    tokens_used: int = Field(default=0, description="使用的Token数")
-    cost: float = Field(default=0.0, description="成本（元）")
+    # Resource usage
+    tokens_used: int = Field(default=0, description="Number of Tokens used")
+    cost: float = Field(default=0.0, description="Cost (yuan)")
 
-    # 批次信息（可选）
-    batch_id: Optional[str] = Field(None, description="批次ID（如果属于批量任务）")
+    # Batch information (optional)
+    batch_id: Optional[str] = Field(None, description="Batch ID (if it belongs to a batch task)")
 
-    # 工作节点信息（可选）
-    worker_id: Optional[str] = Field(None, description="执行节点ID")
+    # Work node information (optional)
+    worker_id: Optional[str] = Field(None, description="execution node ID")
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -370,7 +370,7 @@ class UnifiedAnalysisTask(BaseModel):
 
     @field_serializer('created_at', 'started_at', 'completed_at')
     def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
-        """序列化日期时间"""
+        """serialized datetime"""
         if dt:
             return dt.isoformat()
         return None

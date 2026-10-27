@@ -1,8 +1,8 @@
 """
-投资组合绩效指标工具
+Portfolio Performance Metrics Tool
 
-提供 Beta 系数、夏普比率、VaR 风险价值等专业投资组合绩效指标计算。
-所有指标基于纯数学计算，无需 LLM 参与。
+Provides professional portfolio performance indicator calculations such as Beta coefficient, Sharpe ratio, VaR value at risk, etc.
+All indicators are based on purely mathematical calculations without the involvement of LLM.
 """
 
 import json
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-#  辅助函数
+#  Helper function
 # ============================================================
 
 def _safe_float(value) -> Optional[float]:
@@ -45,14 +45,14 @@ def _days_ago(days: int) -> str:
 
 
 # ============================================================
-#  Tool 1: Beta 系数计算
+#  Tool 1: Beta Coefficient calculation
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_beta_calculation",
     name="Beta 系数计算",
-    description="计算个股相对基准指数的 Beta、Alpha、R² 和相关系数，返回回归统计、残差分析和数据点信息，用于衡量系统风险敞口",
+    description="Calculate the Beta, Alpha, and R² and correlation coefficients, returning regression statistics, residual analysis, and data point information used to measure systemic risk exposure",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -61,37 +61,37 @@ def _days_ago(days: int) -> str:
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["beta_calculation", "systematic_risk"],
-    when_to_use="当需要衡量个股相对大盘的系统风险敞口，或评估股票与基准的联动性时使用。",
-    when_not_to_use="当数据不足（少于30个交易日）或基准数据缺失且无法回退时返回警告。",
-    returns="返回 JSON，包含 symbol、beta、alpha_annualized、r_squared、correlation、data_points、period_days、warnings。",
+    when_to_use="Used when it is necessary to measure the systemic risk exposure of an individual stock relative to the broader market, or to assess the co-movement of a stock with a benchmark.",
+    when_not_to_use="Returns a warning when there is insufficient data (less than 30 trading days) or when baseline data is missing and cannot be rolled back.",
+    returns="Returns JSON containing symbol, beta, alpha_annualized, r_squared, correlation, data_points, period_days, warnings.",
     example="get_beta_calculation(symbol='600519', benchmark='000300', lookback_days=252)",
     related_tools=["get_sharpe_ratio", "get_var_calculation"],
 )
 def get_beta_calculation(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    benchmark: Annotated[Optional[str], "基准指数代码，默认 000300（沪深300）"] = "000300",
-    lookback_days: Annotated[int, "回看交易日数，默认252（约1年）"] = 252,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    benchmark: Annotated[Optional[str], "Benchmark index code, default 000300 (CSI 300)"] = "000300",
+    lookback_days: Annotated[int, "Number of trading days to look back, default is 252 (approximately 1 year)"] = 252,
 ) -> str:
-    """计算个股相对基准指数的 Beta 系数。同时给出 Alpha、R²、相关系数等回归指标，衡量系统风险敞口。
+    """Calculate the beta coefficient of an individual stock relative to a benchmark index. Also gives Alpha,R², Regression indicators such as correlation coefficients measure systemic risk exposure.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        benchmark: 基准指数代码，默认 "000300"（沪深300）
-        lookback_days: 回看交易日数，默认 252（约 1 年）
+        symbol: A stock code, such as 600519,000001
+        benchmark: Benchmark index code, default "000300" (CSI 300)
+        lookback_days: Number of trading days to look back, default is 252 (about 1 year)
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            symbol: 标的股票代码
-            beta: Beta 系数（基准缺失或方差为 0 时回退为 1.0）
-            alpha_annualized: 年化 Alpha（基准不可用时为 None）
-            r_squared: 决定系数 R²（基准不可用时为 None）
-            correlation: 相关系数（基准不可用时为 None）
-            data_points: 实际使用的有效收益率样本数
-            period_days: 入参 lookback_days
-            benchmark: 实际使用的基准代码
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            symbol: Underlying stock code
+            beta: Beta Coefficient (fallback to 1.0 when baseline is missing or variance is 0)
+            alpha_annualized: Annualized Alpha (None if baseline is not available)
+            r_squared: coefficient of determination R² (None if the baseline is not available)
+            correlation: Correlation coefficient (None if benchmark is not available)
+            data_points: The actual number of effective rate of return samples used
+            period_days: Add ginseng lookback_days
+            benchmark: Actual benchmark code used
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         end_date = _today()
@@ -121,12 +121,12 @@ def get_beta_calculation(
 
         if len(stock_df) < 30:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 有效收益率数据少于30个交易日，无法可靠计算 Beta。",
+                {"status": "error", "message": f"{symbol} The effective return data is less than 30 trading days, so beta cannot be reliably calculated.",
                  "warnings": warnings},
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 处理基准数据
+        # Process benchmark data
         no_benchmark = False
         if not benchmark_quotes:
             warnings.append(f"未获取到基准指数 {benchmark} 的日线数据，使用市场默认 beta=1.0。")
@@ -158,7 +158,7 @@ def get_beta_calculation(
             }
             return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
-        # 对齐日期
+        # Align dates
         merged = pd.merge(
             stock_df[["trade_date", "return"]],
             bench_df[["trade_date", "return"]],
@@ -188,7 +188,7 @@ def get_beta_calculation(
                 "data_points": len(merged),
                 "period_days": int(lookback_days),
                 "benchmark": str(benchmark),
-                "warnings": warnings + ["基准收益率方差为零，无法计算 Beta。"],
+                "warnings": warnings + ["The benchmark return variance is zero and beta cannot be calculated."],
             }
             return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
@@ -219,19 +219,19 @@ def get_beta_calculation(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("Beta 系数计算失败: %s", exc, exc_info=True)
+        logger.error("Beta Coefficient calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ============================================================
-#  Tool 2: 夏普比率
+#  Tool 2: Sharpe ratio
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_sharpe_ratio",
     name="夏普比率",
-    description="计算综合风险调整收益指标，返回夏普比率、索提诺比率、卡尔玛比率、年化收益率、波动率、最大回撤等综合指标，用于评估风险收益",
+    description="Calculate comprehensive risk-adjusted return indicators and return Sharpe ratio, Sortino ratio, Kalmar ratio, annualized return, volatility, maximum drawdown and other comprehensive indicators for evaluating risk returns",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -240,39 +240,39 @@ def get_beta_calculation(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["risk_adjusted_return", "performance_evaluation"],
-    when_to_use="当需要评估股票的风险调整后收益，或比较不同资产的风险收益特征时使用。",
-    when_not_to_use="当数据不足（少于30个交易日）时，指标参考价值有限。",
-    returns="返回 JSON，包含 sharpe_ratio、sortino_ratio、calmar_ratio、annual_return、annual_volatility、max_drawdown、data_points、interpretation。",
+    when_to_use="Use when you need to evaluate the risk-adjusted return of a stock or compare the risk-return characteristics of different assets.",
+    when_not_to_use="When there is insufficient data (less than 30 trading days), the indicator has limited reference value.",
+    returns="Returns JSON containing sharpe_ratio, sortino_ratio, calmar_ratio, annual_return, annual_volatility, max_drawdown, data_points, interpretation.",
     example="get_sharpe_ratio(symbol='600519', risk_free_rate=0.025, lookback_days=252)",
     related_tools=["get_beta_calculation", "get_var_calculation"],
 )
 def get_sharpe_ratio(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    risk_free_rate: Annotated[Optional[float], "无风险利率，默认 0.025（2.5%）"] = 0.025,
-    lookback_days: Annotated[int, "回看交易日数，默认252（约1年）"] = 252,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    risk_free_rate: Annotated[Optional[float], "Risk-free interest rate, default 0.025 (2.5%)"] = 0.025,
+    lookback_days: Annotated[int, "Number of trading days to look back, default is 252 (approximately 1 year)"] = 252,
 ) -> str:
-    """计算综合风险调整收益指标。包括夏普、索提诺、卡尔玛比率，以及年化收益、年化波动率、最大回撤。
+    """Calculate a comprehensive risk-adjusted return metric. Including Sharpe, Sortino, and Kalmar ratios, as well as annualized returns, annualized volatility, and maximum drawdowns.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        risk_free_rate: 无风险利率，默认 0.025（2.5%）
-        lookback_days: 回看交易日数，默认 252（约 1 年）
+        symbol: A stock code, such as 600519,000001
+        risk_free_rate: Risk-free interest rate, default 0.025 (2.5%)
+        lookback_days: Number of trading days to look back, default is 252 (about 1 year)
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            symbol: 标的股票代码
-            sharpe_ratio: 年化夏普比率（不可计算时为 None）
-            sortino_ratio: 年化索提诺比率（下行样本不足时为 None）
-            calmar_ratio: 卡尔玛比率（最大回撤为 0 时为 None）
-            annual_return: 年化收益率
-            annual_volatility: 年化波动率
-            max_drawdown: 最大回撤（负数）
-            risk_free_rate: 实际使用的无风险利率
-            data_points: 有效收益率样本数
-            interpretation: 风险调整收益评价文案
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            symbol: Underlying stock code
+            sharpe_ratio: Annualized Sharpe ratio (None if not computable)
+            sortino_ratio: Annualized Sortino Ratio (None if there are insufficient downside samples)
+            calmar_ratio: Kalmar Ratio (None when maximum drawdown is 0)
+            annual_return: annualized rate of return
+            annual_volatility: annualized volatility
+            max_drawdown: Maximum drawdown (negative number)
+            risk_free_rate: The actual risk-free rate used
+            data_points: Effective rate of return sample number
+            interpretation: Risk-adjusted return evaluation copy
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         end_date = _today()
@@ -346,15 +346,15 @@ def get_sharpe_ratio(
 
         # Interpretation
         if sharpe_ratio > 2:
-            interpretation = "优秀 — 风险调整收益极佳"
+            interpretation = "Excellent — Excellent risk-adjusted returns"
         elif sharpe_ratio > 1:
-            interpretation = "良好 — 风险调整收益较好"
+            interpretation = "good — Better risk-adjusted returns"
         elif sharpe_ratio > 0.5:
-            interpretation = "一般 — 风险调整收益适中"
+            interpretation = "Average — Moderate risk-adjusted returns"
         elif sharpe_ratio > 0:
-            interpretation = "较差 — 风险调整收益偏低"
+            interpretation = "Poor — Risk-adjusted returns are low"
         else:
-            interpretation = "差 — 收益未跑赢无风险利率"
+            interpretation = "Poor — Returns did not beat the risk-free rate"
 
         payload = {
             "status": "success",
@@ -378,14 +378,14 @@ def get_sharpe_ratio(
 
 
 # ============================================================
-#  Tool 3: VaR 风险价值计算
+#  Tool 3: VaR Value at Risk Calculation
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_var_calculation",
     name="VaR 风险价值计算",
-    description="计算历史模拟法和参数法的 VaR（在险价值）与 CVaR（条件在险价值/预期亏损），支持日度和年化输出。",
+    description="Calculate VaR (value at risk) and CVaR (conditional value at risk/expected loss) for historical simulation and parametric methods, supporting daily and annualized output.",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -394,41 +394,41 @@ def get_sharpe_ratio(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["var_calculation", "tail_risk", "risk_management"],
-    when_to_use="当需要量化下尾风险，评估在给定置信度下的最大可能亏损时使用。",
-    when_not_to_use="当数据不足（少于30个交易日）时，VaR 参考价值有限。",
-    returns="返回 JSON，包含 method、confidence、var_daily、var_annual、cvar_daily、cvar_annual、data_points、interpretation。",
+    when_to_use="Used when you need to quantify lower tail risk and estimate the maximum possible loss at a given confidence level.",
+    when_not_to_use="When there is insufficient data (less than 30 trading days), VaR has limited reference value.",
+    returns="Returns JSON, containing method, confidence, var_daily, var_annual, cvar_daily, cvar_annual, data_points, interpretation.",
     example="get_var_calculation(symbol='600519', confidence=0.95, lookback_days=252, method='historical')",
     related_tools=["get_beta_calculation", "get_sharpe_ratio"],
 )
 def get_var_calculation(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    confidence: Annotated[float, "置信度水平，默认 0.95"] = 0.95,
-    lookback_days: Annotated[int, "回看交易日数，默认252（约1年）"] = 252,
-    method: Annotated[str, "计算方法：historical（历史模拟法）或 parametric（参数法）"] = "historical",
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    confidence: Annotated[float, "Confidence level, default 0.95"] = 0.95,
+    lookback_days: Annotated[int, "Number of trading days to look back, default is 252 (approximately 1 year)"] = 252,
+    method: Annotated[str, "Calculation method: historical (historical simulation method) or parametric (parametric method)"] = "historical",
 ) -> str:
-    """计算 VaR 风险价值。基于历史模拟法或参数法计算日度/年化 VaR 与 CVaR（预期亏损）。
+    """Calculate VaR value at risk. Calculate daily/annualized VaR and CVaR (expected loss) based on historical simulation or parametric methods.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        confidence: 置信度水平，默认 0.95
-        lookback_days: 回看交易日数，默认 252（约 1 年）
-        method: 计算方法，默认 "historical"；可选 "historical"（历史模拟法）或 "parametric"（参数法），
-            非法值会回退为 "historical"
+        symbol: A stock code, such as 600519,000001
+        confidence: Confidence level, default 0.95
+        lookback_days: Number of trading days to look back, default is 252 (about 1 year)
+        method: Calculation method, default "historical"; Optional "historical" (historical simulation method) or "parametric" (parametric method),
+            Illegal values will fall back to "historical"
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            symbol: 标的股票代码
-            method: 实际使用的计算方法，"historical" 或 "parametric"
-            confidence: 实际使用的置信度（被夹取到 [0.5, 0.999]）
-            var_daily: 日度 VaR（负数表示亏损）
-            var_annual: 年化 VaR
-            cvar_daily: 日度 CVaR / 预期亏损
-            cvar_annual: 年化 CVaR / 预期亏损
-            data_points: 有效收益率样本数
-            interpretation: 风险等级评价文案（scipy 缺失重试场景下为 None）
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            symbol: Underlying stock code
+            method: The calculation method actually used,"historical" or "parametric"
+            confidence: The confidence level actually used (clipped to [0.5, 0.999]) 
+            var_daily: Daily VaR (negative number indicates loss)
+            var_annual: annualized VaR
+            cvar_daily: Daily CVaR / expected loss
+            cvar_annual: Annualized CVaR / expected loss
+            data_points: Effective rate of return sample number
+            interpretation: Risk level evaluation copy (None in scipy missing retry scenario)
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         end_date = _today()
@@ -505,15 +505,15 @@ def get_var_calculation(
         # Interpretation
         var_pct = abs(var_daily) * 100
         if var_pct > 6:
-            interpretation = "极高风险 — 日VaR超过6%"
+            interpretation = "extremely high risk — Daily VaR exceeds 6%"
         elif var_pct > 4:
-            interpretation = "高风险 — 日VaR在4%-6%之间"
+            interpretation = "high risk — Daily VaR is between 4%-6%"
         elif var_pct > 2:
-            interpretation = "中等风险 — 日VaR在2%-4%之间"
+            interpretation = "medium risk — Daily VaR is between 2%-4%"
         elif var_pct > 1:
-            interpretation = "低风险 — 日VaR在1%-2%之间"
+            interpretation = "low risk — Daily VaR is between 1%-2%"
         else:
-            interpretation = "极低风险 — 日VaR低于1%"
+            interpretation = "Very low risk — Daily VaR is lower than 1%"
 
         payload = {
             "status": "success",
@@ -531,8 +531,8 @@ def get_var_calculation(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except ImportError:
-        logger.warning("scipy 未安装，VaR 参数法不可用，回退至历史模拟法。")
-        # 重试仅历史模拟法
+        logger.warning("scipy Not installed, VaR parameter method is not available, fallback to historical simulation method.")
+        # Retry history-only simulation method
         try:
             end_date = _today()
             start_date = _days_ago(int(lookback_days) * 2 + 50)
@@ -565,7 +565,7 @@ def get_var_calculation(
                 "cvar_annual": float(round(cvar_daily * sqrt252, 6)),
                 "data_points": len(returns),
                 "interpretation": None,
-                "warnings": ["scipy 未安装，仅支持历史模拟法。"],
+                "warnings": ["scipy Not installed, only historical simulation method is supported."],
             }
             return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
         except Exception as exc2:

@@ -35,13 +35,13 @@ def test_legacy_news_analyst_migration_keeps_inline_validation_note_only() -> No
     legacy_system_prompt = module.transform_text("original", "news_analyst", "system_prompt", "news_analyst")
     v2_output_format = module.transform_text("original", "news_analyst", "output_format", "news_analyst_v2")
 
-    assert "四、待验证问题" not in legacy_output_format
-    assert "无需另起章节" in legacy_output_format
-    assert "4. 待继续验证的问题" not in legacy_user_prompt
-    assert "无需另起章节" in legacy_user_prompt
-    assert "只输出研究观察、证据说明与影响评估" in legacy_system_prompt
-    assert "风险提示和待验证问题" not in legacy_system_prompt
-    assert "四、待验证问题" in v2_output_format
+    assert "4. Issues to be verified" not in legacy_output_format
+    assert "No need to start a new chapter" in legacy_output_format
+    assert "4. Questions to be further verified" not in legacy_user_prompt
+    assert "No need to start a new chapter" in legacy_user_prompt
+    assert "Only research observations, evidence descriptions and impact assessments are output" in legacy_system_prompt
+    assert "Risk warnings and issues to be verified" not in legacy_system_prompt
+    assert "4. Issues to be verified" in v2_output_format
 
 
 def test_legacy_news_analyst_export_template_uses_three_section_format() -> None:
@@ -61,13 +61,13 @@ def test_legacy_news_analyst_export_template_uses_three_section_format() -> None
     analysis_requirements = str(content.get("analysis_requirements", ""))
     output_format = str(content.get("output_format", ""))
 
-    assert "四、待验证问题" not in output_format
-    assert output_format.startswith("使用 Markdown 输出：一、核心观察；二、关键证据；三、影响评估。")
-    assert "无需另起章节" in output_format
-    assert "只输出研究观察、证据说明与影响评估" in system_prompt
-    assert "风险提示和待验证问题" not in system_prompt
-    assert "必须同时给出证据来源与结论影响" in analysis_requirements
-    assert "无需另起章节" in analysis_requirements
+    assert "4. Issues to be verified" not in output_format
+    assert output_format.startswith("Use Markdown to output: 1. Core observations; 2. Key evidence; 3. Impact assessment.")
+    assert "No need to start a new chapter" in output_format
+    assert "Only research observations, evidence descriptions and impact assessments are output" in system_prompt
+    assert "Risk warnings and issues to be verified" not in system_prompt
+    assert "The source of evidence and the impact of the conclusion must be given simultaneously" in analysis_requirements
+    assert "No need to start a new chapter" in analysis_requirements
 
 
 @pytest.mark.parametrize(
@@ -86,40 +86,40 @@ def test_news_analyst_v2_templates_follow_legacy_structure_with_compliance(relat
         if item.get("agent_name") == "news_analyst_v2"
         and item.get("template_name")
         in {
-            "新闻分析师 v2.0 - 激进型",
-            "新闻分析师 v2.0 - 中性型",
-            "新闻分析师 v2.0 - 保守型",
+            "News Analyst v2.0 - Aggressive",
+            "News Analyst v2.0 - Neutral",
+            "News Analyst v2.0 - Conservative",
         }
     ]
 
     assert len(target_templates) == 3
 
     required_phrases = [
-        "最新新闻汇总",
-        "新闻影响分析",
-        "市场情绪评估",
-        "分析观点",
-        "短期反应预期",
-        "对整体研究结论的影响",
-        "新闻面评估",
-        "对整体研究结论的影响",
+        "Latest news summary",
+        "News impact analysis",
+        "Market Sentiment Assessment",
+        "analysis point of view",
+        "short term response expectations",
+        "Impact on overall research conclusions",
+        "News evaluation",
+        "Impact on overall research conclusions",
         "get_stock_news_unified",
-        "多个标题本质上描述同一事件",
-        "如果工具只返回标题",
-        "工具结果未提供",
-        "偏积极",
-        "偏审慎",
-        "重大利好",
-        "短期市场反应预期",
-        "不少于700字",
+        "Multiple headlines essentially describing the same event",
+        "If the tool only returns the title",
+        "Tool results not provided",
+        "Positive side",
+        "Cautious",
+        "major benefits",
+        "Short-term market reaction expectations",
+        "No less than 700 words",
     ]
 
     output_format_forbidden_phrases = [
-        "目标价",
-        "价格区间",
-        "支撑位",
-        "阻力位",
-        "仓位",
+        "target price",
+        "price range",
+        "support level",
+        "resistance level",
+        "position",
     ]
 
     for template in target_templates:
@@ -136,24 +136,24 @@ def test_news_analyst_v2_templates_follow_legacy_structure_with_compliance(relat
         for phrase in output_format_forbidden_phrases:
             assert phrase not in output_format
 
-        assert "客观中立" in user_prompt
-        assert "最新新闻事件汇总" in user_prompt
-        assert "市场情绪变化评估" in user_prompt
-        assert "短期市场反应预期" in user_prompt
-        assert "工具结果未提供" in user_prompt
-        assert "不得补造细节" in user_prompt
-        assert "不要输出投资建议、目标价、价格区间、仓位计划或任何执行指令" in user_prompt
-        assert "新闻分类分析" in analysis_requirements
-        assert "影响评估" in analysis_requirements
-        assert "分析观点" in analysis_requirements
-        assert "无需单列章节" in analysis_requirements
-        assert "对整体研究结论的影响" in analysis_requirements
-        assert "短期市场反应预期（1-3天）" in analysis_requirements
-        assert "新闻分析报告" in output_format
-        assert "市场情绪评估" in output_format
-        assert "分析观点" in output_format
-        assert "待验证问题" not in output_format
-        assert "禁止在报告中添加任何署名信息" in constraints
+        assert "objective and neutral" in user_prompt
+        assert "Summary of latest news events" in user_prompt
+        assert "Assessment of changes in market sentiment" in user_prompt
+        assert "Short-term market reaction expectations" in user_prompt
+        assert "Tool results not provided" in user_prompt
+        assert "Do not make up details" in user_prompt
+        assert "Do not output investment recommendations, target prices, price ranges, position plans, or any execution instructions" in user_prompt
+        assert "News classification analysis" in analysis_requirements
+        assert "impact assessment" in analysis_requirements
+        assert "analysis point of view" in analysis_requirements
+        assert "No need for separate chapters" in analysis_requirements
+        assert "Impact on overall research conclusions" in analysis_requirements
+        assert "Short-term market reaction expectations (1-3 days)" in analysis_requirements
+        assert "News analysis report" in output_format
+        assert "Market Sentiment Assessment" in output_format
+        assert "analysis point of view" in output_format
+        assert "Questions to be verified" not in output_format
+        assert "Do not add any attribution information to the report" in constraints
 
 
 @pytest.mark.parametrize(
@@ -172,38 +172,38 @@ def test_social_analyst_v2_templates_follow_legacy_structure_with_compliance(rel
         if item.get("agent_name") == "social_analyst_v2"
         and item.get("template_name")
         in {
-            "社交分析师 v2.0 - 激进型",
-            "社交分析师 v2.0 - 中性型",
-            "社交分析师 v2.0 - 保守型",
+            "Social Analyst v2.0 - Aggressive",
+            "Social Analyst v2.0 - Neutral",
+            "Social Analyst v2.0 - Conservative",
         }
     ]
 
     assert len(target_templates) == 3
 
     required_phrases = [
-        "情绪方向与热度",
-        "观点结构与渠道差异",
-        "情绪变化与分化",
-        "噪音与风险",
-        "对整体研究结论的影响",
-        "后续观察事项",
+        "Emotional direction and heat",
+        "Opinion structure and channel differences",
+        "Emotional changes and differentiation",
+        "Noise and risk",
+        "Impact on overall research conclusions",
+        "Follow-up observations",
         "get_stock_sentiment_unified",
-        "如果工具明确说明当前结果来自新闻回退情绪摘要",
-        "不要分析该维度",
-        "工具结果未提供",
-        "偏积极",
-        "偏审慎",
-        "情绪拐点已至",
-        "全面看多",
-        "不少于700字",
+        "If the tool explicitly states that the current results are from news fallback sentiment summaries",
+        "Do not analyze this dimension",
+        "Tool results not provided",
+        "Positive side",
+        "Cautious",
+        "The emotional turning point has arrived",
+        "Bullish across the board",
+        "No less than 700 words",
     ]
 
     output_format_forbidden_phrases = [
-        "目标价",
-        "价格区间",
-        "支撑位",
-        "阻力位",
-        "仓位",
+        "target price",
+        "price range",
+        "support level",
+        "resistance level",
+        "position",
     ]
 
     for template in target_templates:
@@ -220,12 +220,12 @@ def test_social_analyst_v2_templates_follow_legacy_structure_with_compliance(rel
         for phrase in output_format_forbidden_phrases:
             assert phrase not in output_format
 
-        assert "客观中立" in user_prompt
-        assert "该维度暂不分析" in user_prompt
-        assert "新闻回退情绪摘要" in user_prompt
-        assert "持续升温" in user_prompt
-        assert "不要输出投资建议、目标价、价格区间、仓位计划或任何执行指令" in user_prompt
-        assert "观点结构与渠道差异" in analysis_requirements
-        assert "情绪变化与分化" in analysis_requirements
-        assert "对整体研究结论的影响" in analysis_requirements
-        assert "禁止在报告中添加任何署名信息" in constraints
+        assert "objective and neutral" in user_prompt
+        assert "This dimension is not analyzed yet" in user_prompt
+        assert "News Fallback Sentiment Summary" in user_prompt
+        assert "Continue to heat up" in user_prompt
+        assert "Do not output investment recommendations, target prices, price ranges, position plans, or any execution instructions" in user_prompt
+        assert "Opinion structure and channel differences" in analysis_requirements
+        assert "Emotional changes and differentiation" in analysis_requirements
+        assert "Impact on overall research conclusions" in analysis_requirements
+        assert "Do not add any attribution information to the report" in constraints

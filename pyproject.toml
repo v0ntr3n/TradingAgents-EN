@@ -9,38 +9,38 @@ description = "TradingAgents-CN Pro - Multi-agent stock analysis system with adv
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    # 后端API框架和服务器
+    # Backend API framework and server
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "python-multipart>=0.0.6",
 
-    # 数据库和缓存
+    # Database and cache
     "motor>=3.3.0",
     "pymongo>=4.0.0",
     "redis>=6.2.0",
 
-    # 认证和安全
+    # Authentication and security
     "PyJWT>=2.0.0",
     "bcrypt>=4.0.0",
-    "itsdangerous>=2.0.0",  # Session 签名（SessionMiddleware 需要）
+    "itsdangerous>=2.0.0",  # Session Signature (required by SessionMiddleware)
 
-    # 任务调度和异步
+    # Task scheduling and asynchronous
     "apscheduler>=3.10.0",
     "aiofiles>=0.8.0",
 
-    # HTTP客户端和SSE
+    # HTTP client and SSE
     "httpx>=0.24.0",
     "sse-starlette>=1.0.0",
     "mcp>=1.12.0",
     "mem0ai>=1.0.7",
-    "jinja2>=3.0.0",  # 模板引擎（邮件模板需要）
+    "jinja2>=3.0.0",  # Template engine (required for email templates)
 
-    # 日志处理
-    "concurrent-log-handler>=0.9.24",  # Windows 友好的日志轮转处理器
+    # Log processing
+    "concurrent-log-handler>=0.9.24",  # Windows Friendly log rotation handler
 
-    # 数据源和金融数据
+    # Data sources and financial data
     "akshare>=1.17.86",
     "baostock>=0.8.8",
     "eodhd>=1.0.32",
@@ -49,38 +49,38 @@ dependencies = [
     "yfinance>=0.2.63",
     "stockstats>=0.6.5",
 
-    # AI和LLM
+    # AI and LLM
     "chromadb>=1.0.12",
     "dashscope>=1.20.0",
     "google-generativeai>=0.8.3",  # Google Gemini SDK
     "langchain-anthropic>=0.3.15",
     "langchain-experimental>=0.3.4",
-    "langchain-google-genai>=2.1.12",  # 修复 client_options 未定义错误
+    "langchain-google-genai>=2.1.12",  # Fix client_options undefined error
     "langchain-openai>=0.3.23",
     "langgraph>=0.4.8",
     "openai>=1.0.0,<2.0.0",
-    "qdrant-client>=1.7.0",  # 向量数据库客户端
+    "qdrant-client>=1.7.0",  # Vector database client
 
-    # 数据处理和分析
+    # Data processing and analysis
     "pandas>=2.3.0",
     "xlrd>=2.0.2",
-    "openpyxl>=3.1.0",  # 估值测算 Excel 交付物（A10-D1）
+    "openpyxl>=3.1.0",  # Valuation Calculation Excel Deliverables (A10-D1)
 
-    # 网络爬虫和解析
-    "curl-cffi>=0.6.0",  # 模拟真实浏览器TLS指纹，绕过反爬虫检测
+    # Web crawling and parsing
+    "curl-cffi>=0.6.0",  # Simulate real browser TLS fingerprints and bypass anti-crawler detection
     "feedparser>=6.0.11",
     "parsel>=1.10.0",
     "praw>=7.8.1",
     "requests>=2.32.4",
 
-    # 文档和格式化
+    # Documentation and formatting
     "markdown>=3.4.0",
     "pypandoc>=1.11",
-    "python-docx>=0.8.11",  # Word文档处理，用于修复文本方向
-    "pdfkit>=1.0.0",  # PDF生成工具，需要wkhtmltopdf（外部工具）
-    "weasyprint>=62.0",  # PDF生成工具（纯Python，推荐，无需外部工具）
+    "python-docx>=0.8.11",  # Word Document processing for fixing text orientation
+    "pdfkit>=1.0.0",  # PDF Generation tool, requires wkhtmltopdf (external tool)
+    "weasyprint>=62.0",  # PDF Build tools (pure Python, recommended, no external tools required)
 
-    # 工具和辅助
+    # Tools and Aids
     "psutil>=6.1.0",
     "pystray>=0.19.0",
     "Pillow>=10.0.0",

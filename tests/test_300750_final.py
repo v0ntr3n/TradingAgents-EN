@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试更新后的统一基本面分析函数
-验证300750的估值指标是否正确显示
+Testing the updated unified fundamental analysis functions
+Verify that the valuation indicator of 300750 is displayed correctly
 """
 
 import sys
@@ -13,44 +13,44 @@ from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.agents.utils.agent_utils import Toolkit
 
 def test_300750_fundamentals():
-    """测试300750的基本面分析"""
-    print("🔍 测试300750基本面分析...")
+    """Fundamental analysis of test 300750"""
+    print("🔍 Test 300750 fundamental analysis...")
     
-    # 设置研究深度
+    # Set research depth
     config = DEFAULT_CONFIG.copy()
-    config['research_depth'] = '标准'
+    config['research_depth'] = 'Standard'
     
-    # 创建Toolkit实例
+    # Create Toolkit instance
     toolkit = Toolkit(config=config)
     
-    # 测试300750（不带后缀）
+    # Test 300750 (without suffix)
     ticker = "300750"
-    print(f"\n📊 分析股票: {ticker}")
+    print(f"\n📊 Analyze stocks: {ticker}")
     
     try:
         result = toolkit.get_stock_fundamentals_unified(ticker)
-        print(f"✅ 成功获取基本面数据")
+        print(f"✅ Successfully obtained fundamental data")
         
-        # 检查是否包含估值指标
-        if "PE" in result or "市盈率" in result:
-            print("✅ 发现PE估值指标")
+        # Check if valuation metrics are included
+        if "PE" in result or "P/E ratio" in result:
+            print("✅ Discover PE Valuation Metrics")
         else:
-            print("❌ 未发现PE估值指标")
+            print("❌ No PE valuation indicators found")
             
-        if "PB" in result or "市净率" in result:
-            print("✅ 发现PB估值指标")
+        if "PB" in result or "price to book ratio" in result:
+            print("✅ Discover PB Valuation Metrics")
         else:
-            print("❌ 未发现PB估值指标")
+            print("❌ No PB valuation indicators found")
             
-        # 打印完整的分析结果
+        # Print complete analysis results
         print(f"\n" + "="*80)
-        print(f"📋 完整分析结果:")
+        print(f"📋 Complete analysis results:")
         print("="*80)
         print(result)
         print("="*80)
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
 

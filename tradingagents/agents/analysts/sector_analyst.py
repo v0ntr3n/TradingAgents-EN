@@ -1,12 +1,12 @@
 """
-行业/板块分析师 - 兼容函数接口
+Industry/sector analyst - compatible function interface
 
-为了与现有的 LangGraph 工作流兼容，提供函数式接口
+To be compatible with existing LangGraph workflows, a functional interface is provided
 
-⚠️ 重要：行业报告不支持缓存
-- 行业报告是结合了具体股票进行分析的，包含该股票的代码和名称
-- 如果缓存行业报告，同行业其他股票分析时会错误地使用其他股票的代码和名称
-- 因此，每次分析都必须重新生成行业报告，不能使用缓存
+⚠️ Important: Industry reports do not support caching
+- Industry reports are analyzed based on specific stocks and include the code and name of the stock.
+- If industry reports are cached, the symbols and names of other stocks will be incorrectly used when analyzing other stocks in the same industry.
+- Therefore, industry reports must be regenerated for each analysis and caching cannot be used
 """
 
 import logging
@@ -21,32 +21,32 @@ from tradingagents.agents.utils.compliance_prompting import apply_compliance_gua
 
 logger = get_logger("default")
 
-# 缓存配置（已废弃）
-# ⚠️ 行业报告不支持缓存：行业报告包含具体股票的代码和名称，缓存会导致同行业其他股票分析时出现错误信息
-SECTOR_REPORT_CACHE_TTL_HOURS = 12  # 板块分析报告缓存有效期（小时）- 已废弃，不再使用
+# Cache configuration (deprecated)
+# ⚠️ Industry reports do not support caching: industry reports contain the codes and names of specific stocks, and caching will cause error messages to appear when analyzing other stocks in the same industry.
+SECTOR_REPORT_CACHE_TTL_HOURS = 12  # Sector analysis report cache validity period (hours) - obsolete and no longer used
 
 
 def _get_cache_manager():
-    """获取缓存管理器（延迟加载避免循环导入）"""
+    """Get cache manager (lazy loading to avoid circular imports)"""
     try:
         from tradingagents.dataflows.cache import get_cache
         return get_cache()
     except Exception as e:
-        logger.warning(f"⚠️ 无法获取缓存管理器: {e}")
+        logger.warning(f"⚠️ Unable to get cache manager: {e}")
         return None
 
 
 def _get_cached_sector_report(ticker: str, trade_date: str) -> Optional[str]:
     """
-    ⚠️ 已废弃：行业报告不支持缓存
-    行业报告包含具体股票的代码和名称，缓存会导致同行业其他股票分析时出现错误信息
+    ⚠️ Deprecated: Industry reports do not support caching
+    Industry reports contain the codes and names of specific stocks, and caching will cause error messages to appear when analyzing other stocks in the same industry.
     
     Args:
-        ticker: 股票代码
-        trade_date: 交易日期
+        ticker: Stock code
+        trade_date: transaction date
 
     Returns:
-        缓存的报告内容，如果没有命中则返回 None
+        The cached report content, returned if there is no hit None
     """
     cache = _get_cache_manager()
     if not cache:
@@ -62,26 +62,26 @@ def _get_cached_sector_report(ticker: str, trade_date: str) -> Optional[str]:
         if cache_key:
             report = cache.load_analysis_report(cache_key)
             if report and len(report) > 100:
-                logger.info(f"📦 [板块分析] 命中缓存: {ticker} @ {trade_date}")
+                logger.info(f"📦 [Sector analysis] hit cache: {ticker} @ {trade_date}")
                 return report
     except Exception as e:
-        logger.warning(f"⚠️ 读取板块分析缓存失败: {e}")
+        logger.warning(f"⚠️ Failed to read section analysis cache: {e}")
 
     return None
 
 
 def _save_sector_report_to_cache(ticker: str, trade_date: str, report: str) -> bool:
     """
-    ⚠️ 已废弃：行业报告不支持缓存
-    行业报告包含具体股票的代码和名称，缓存会导致同行业其他股票分析时出现错误信息
+    ⚠️ Deprecated: Industry reports do not support caching
+    Industry reports contain the codes and names of specific stocks, and caching will cause error messages to appear when analyzing other stocks in the same industry.
     
     Args:
-        ticker: 股票代码
-        trade_date: 交易日期
-        report: 报告内容
+        ticker: Stock code
+        trade_date: transaction date
+        report: Report content
 
     Returns:
-        是否保存成功
+        Is the save successful?
     """
     cache = _get_cache_manager()
     if not cache:
@@ -94,76 +94,76 @@ def _save_sector_report_to_cache(ticker: str, trade_date: str, report: str) -> b
             symbol=ticker,
             trade_date=trade_date
         )
-        logger.info(f"💾 [板块分析] 已缓存: {ticker} @ {trade_date}")
+        logger.info(f"💾 [Sector analysis] Cached: {ticker} @ {trade_date}")
         return True
     except Exception as e:
-        logger.warning(f"⚠️ 保存板块分析缓存失败: {e}")
+        logger.warning(f"⚠️ Failed to save section analysis cache: {e}")
         return False
 
 
 def create_sector_analyst(llm, toolkit):
     """
-    创建行业/板块分析师节点
+    Create an industry/sector analyst node
 
     Args:
-        llm: 语言模型实例
-        toolkit: 工具包实例
+        llm: Language model example
+        toolkit: Toolkit Example
 
     Returns:
-        分析师节点函数
+        Analyst node function
     """
 
     @log_analyst_module("sector")
     def sector_analyst_node(state):
         """
-        行业/板块分析师节点
+        Industry/sector analyst node
 
-        分析行业趋势、板块轮动和同业对比
+        Analyze industry trends, sector rotations and peer comparisons
 
-        🔥 重要：此分析师采用"自包含"模式，不使用 LangGraph 的工具调用机制。
-        它在单次调用中完成所有工作：获取数据 + LLM 分析。
-        返回的 AIMessage 不包含 tool_calls，确保图立即结束。
+        🔥 Important: This analyst uses"self contained"mode, does not use LangGraph s tool calling mechanism.
+        It does all the work in a single call: Get the data + LLM Analysis.
+        The returned AIMessage does not contain tool_calls, ensuring that the graph ends immediately.
         """
         ticker = state.get("company_of_interest", "")
         trade_date = state.get("trade_date", "")
 
-        # 🔍 调试日志：打印当前状态
-        logger.info(f"🔍 [sector_analyst] 节点被调用")
+        # 🔍 Debug log: print current status
+        logger.info(f"🔍 [sector_analyst] Node is called")
         logger.info(f"🔍 [sector_analyst] ticker={ticker}, trade_date={trade_date}")
-        logger.info(f"🔍 [sector_analyst] 当前 messages 数量: {len(state.get('messages', []))}")
-        logger.info(f"🔍 [sector_analyst] 当前 sector_report 长度: {len(state.get('sector_report', ''))}")
-        logger.info(f"🔍 [sector_analyst] 当前 sector_tool_call_count: {state.get('sector_tool_call_count', 0)}")
+        logger.info(f"🔍 [sector_analyst] Current number of messages: {len(state.get('messages', []))}")
+        logger.info(f"🔍 [sector_analyst] Current sector_report length: {len(state.get('sector_report', ''))}")
+        logger.info(f"🔍 [sector_analyst] current sector_tool_call_count: {state.get('sector_tool_call_count', 0)}")
 
-        # 打印最后一条消息的信息
+        # Print the information of the last message
         messages = state.get("messages", [])
         if messages:
             last_msg = messages[-1]
-            logger.info(f"🔍 [sector_analyst] 最后一条消息类型: {type(last_msg).__name__}")
+            logger.info(f"🔍 [sector_analyst] last message type: {type(last_msg).__name__}")
             if hasattr(last_msg, 'tool_calls'):
-                logger.info(f"🔍 [sector_analyst] 最后一条消息 tool_calls: {last_msg.tool_calls}")
+                logger.info(f"🔍 [sector_analyst] last message tool_calls: {last_msg.tool_calls}")
             if hasattr(last_msg, 'name'):
-                logger.info(f"🔍 [sector_analyst] 最后一条消息 name: {last_msg.name}")
+                logger.info(f"🔍 [sector_analyst] last message name: {last_msg.name}")
 
-        # 🔥 防止死循环：检查是否已经生成过报告
+        # 🔥 Prevent infinite loops: check whether a report has been generated
         existing_report = state.get("sector_report", "")
         if existing_report and len(existing_report) > 100:
-            logger.info(f"🏭 板块分析师: 已存在报告 ({len(existing_report)} 字符)，跳过重复分析")
-            # 返回空更新，保持状态不变
+            logger.info(f"🏭 Sector Analyst: Report already exists ({len(existing_report)} character), Skip duplicate analysis")
+            # Returns an empty update, leaving the state unchanged
             return {}
 
-        # ⚠️ 行业报告不支持缓存：行业报告包含具体股票的代码和名称，缓存会导致同行业其他股票分析时出现错误信息
-        # 因此，每次分析都必须重新生成，不能使用缓存
-        logger.info(f"🏭 板块分析师: 跳过缓存检查（行业报告不支持缓存），直接生成新报告")
+        # ⚠️ Industry reports do not support caching: industry reports contain the codes and names of specific stocks, and caching will cause error messages to appear when analyzing other stocks in the same industry.
+        # Therefore, each analysis must be regenerated and caching cannot be used
+        logger.info(f"🏭 Sector Analyst: Skip the cache check (industry reports do not support caching) and directly generate a new report")
 
-        logger.info(f"🏭 板块分析师开始分析: {ticker} @ {trade_date}")
+        logger.info(f"🏭 Sector analysts begin to analyze: {ticker} @ {trade_date}")
 
         try:
-            # 导入并调用板块分析工具
+            # Import and call sector analysis tools
             from core.tools.sector_tools import analyze_sector
             import asyncio
             import concurrent.futures
 
-            # 在线程池中运行异步函数以避免事件循环冲突
+            # Run asynchronous functions in thread pool to avoid event loop conflicts
             def run_async_in_thread():
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
@@ -176,9 +176,9 @@ def create_sector_analyst(llm, toolkit):
                 future = executor.submit(run_async_in_thread)
                 sector_data = future.result()
 
-            logger.info(f"✅ 板块数据获取完成: {ticker}")
+            logger.info(f"✅ Sector data acquisition completed: {ticker}")
 
-            # 🆕 使用 LLM 对数据进行分析解读
+            # 🆕 Use LLM to analyze and interpret data
             sector_report = _analyze_with_llm(
                 llm=llm,
                 ticker=ticker,
@@ -187,29 +187,29 @@ def create_sector_analyst(llm, toolkit):
                 state=state
             )
 
-            logger.info(f"✅ 板块分析报告生成完成: {ticker}")
+            logger.info(f"✅ Sector analysis report generation completed: {ticker}")
 
-            # ⚠️ 行业报告不支持缓存：行业报告包含具体股票的代码和名称，缓存会导致同行业其他股票分析时出现错误信息
-            # 因此，不保存到缓存
+            # ⚠️ Industry reports do not support caching: industry reports contain the codes and names of specific stocks, and caching will cause error messages to appear when analyzing other stocks in the same industry.
+            # Therefore, it is not saved to cache
 
-            # 🔥 返回 AIMessage 而不是 HumanMessage
-            # AIMessage 没有 tool_calls 属性（或 tool_calls 为空列表），
-            # 这样 should_continue 函数会检测到没有工具调用，直接结束图
+            # 🔥 Return AIMessage instead HumanMessage
+            # AIMessage There is no tool_calls attribute (or tool_calls is an empty list),
+            # In this way, the should_continue function will detect that there is no tool call and end the graph directly.
             final_message = AIMessage(content=sector_report, name="sector_analyst")
 
-            # 只返回需要更新的字段（LangGraph 会自动合并）
+            # Only return fields that need to be updated (LangGraph will automatically merge)
             return {
                 "sector_report": sector_report,
                 "messages": [final_message],
             }
 
         except Exception as e:
-            logger.error(f"❌ 板块分析失败: {e}")
+            logger.error(f"❌ Sector analysis failed: {e}")
             import traceback
-            logger.error(f"❌ 详细错误: {traceback.format_exc()}")
-            error_msg = f"板块分析遇到错误: {str(e)}"
+            logger.error(f"❌ detailed error: {traceback.format_exc()}")
+            error_msg = f"Sector analysis encountered an error: {str(e)}"
 
-            # 返回错误消息
+            # Return error message
             error_message = AIMessage(content=error_msg, name="sector_analyst")
 
             return {
@@ -222,29 +222,29 @@ def create_sector_analyst(llm, toolkit):
 
 def _analyze_with_llm(llm, ticker: str, trade_date: str, sector_data: str, state: dict) -> str:
     """
-    使用 LLM 对板块数据进行分析解读
+    Use LLM to analyze and interpret sector data
 
     Args:
-        llm: 语言模型实例
-        ticker: 股票代码
-        trade_date: 交易日期
-        sector_data: 板块数据报告
-        state: 状态字典
+        llm: Language model example
+        ticker: Stock code
+        trade_date: transaction date
+        sector_data: Sector data report
+        state: status dictionary
 
     Returns:
-        LLM 生成的分析报告
+        LLM Generated analysis report
     """
     try:
-        # 获取 AgentContext
+        # get AgentContext
         ctx = state.get("agent_context") or {}
 
-        # 准备模板变量
+        # Prepare template variables
         template_variables = {
             "ticker": ticker,
             "trade_date": trade_date,
         }
 
-        # 尝试从模板系统获取提示词
+        # Try to get the prompt word from the template system
         try:
             from tradingagents.utils.template_client import get_template_client
             tpl_info = get_template_client().get_effective_template(
@@ -255,7 +255,7 @@ def _analyze_with_llm(llm, ticker: str, trade_date: str, sector_data: str, state
                 context=None
             )
             if tpl_info:
-                logger.info(f"📚 [模板选择] source={tpl_info.get('source')} id={tpl_info.get('template_id')} agent=analysts/sector_analyst")
+                logger.info(f"📚 [Template selection] source={tpl_info.get('source')} id={tpl_info.get('template_id')} agent=analysts/sector_analyst")
 
             system_prompt = get_agent_prompt(
                 agent_type="analysts",
@@ -267,95 +267,95 @@ def _analyze_with_llm(llm, ticker: str, trade_date: str, sector_data: str, state
                 context=None
             )
             system_prompt = apply_compliance_guardrails(system_prompt, "sector_analyst")
-            logger.info(f"✅ [板块分析师] 成功从模板系统获取提示词 (长度: {len(system_prompt)})")
+            logger.info(f"✅ [Sector Analyst] Successfully obtained the prompt word from the template system (length: {len(system_prompt)})")
 
         except Exception as e:
-            logger.warning(f"⚠️ [板块分析师] 从模板系统获取提示词失败: {e}，使用默认提示词")
+            logger.warning(f"⚠️ [Sector Analyst] Failed to obtain prompt word from template system: {e}, Use default prompt word")
             system_prompt = _get_default_system_prompt(ticker, trade_date)
 
-        # 构建完整的分析请求
+        # Build a complete analysis request
         analysis_request = f"""{system_prompt}
 
-## 📊 板块数据
+## 📊 Sector data
 
-以下是通过数据工具获取的板块分析数据：
+The following is sector analysis data obtained through data tools:
 
 {sector_data}
 
-## 🎯 分析要求
+## 🎯 Analysis requirements
 
-请基于以上数据，生成一份专业的板块分析报告。报告必须包含：
+Please generate a professional sector analysis report based on the above data. The report must contain:
 
-1. **板块表现总结**
-   - 目标股票所属的主要板块
-   - 各板块近期表现评价
-   - 板块相对大盘的强弱
+1. **Sector Performance Summary**
+   - The main sector to which the target stock belongs
+   - Recent performance evaluation of each sector
+   - The strength of the sector relative to the broader market
 
-2. **板块轮动分析**
-   - 当前市场热点板块识别
-   - 资金流向趋势判断
-   - 板块轮动阶段判断
+2. **Sector rotation analysis**
+   - Identification of current market hot sectors
+   - Determining the trend of capital flow
+   - Judgment of plate rotation stage
 
-3. **同业对比评估**
-   - 目标股票在行业中的地位
-   - 估值水平评价（PE/PB）
-   - 与行业龙头的差距
+3. **Comparative evaluation with peers**
+   - The position of the target stock in the industry
+   - Valuation level evaluation (PE/PB)
+   - The gap with industry leaders
 
-4. **研究结论**
-   - 板块热度评估：🔥热门 / ⚡一般 / ❄️冷门
-   - 资金方向：💰流入 / 💸流出 / ⚖️平衡
-   - 个股位置：👑龙头 / 🥈第二梯队 / 🥉跟随
-    - 后续观察点：基于板块趋势需要继续跟踪的信号
+4. **Research conclusion**
+   - Sector popularity assessment:🔥Popular / ⚡Average / ❄️Unpopular
+   - Funding direction:💰inflow / 💸flow out / ⚖️balance
+   - Individual stock position:👑faucet / 🥈Second echelon / 🥉follow
+    - Follow-up observation points: Signals that need to be followed based on sector trends
 
-请用中文输出，分析要有理有据，结论要明确，但不得形成投资建议或操作指令。"""
+Please output in Chinese, the analysis must be well-founded, and the conclusion must be clear, but it must not form investment recommendations or operating instructions."""
 
-        # 调用 LLM 生成分析报告
-        logger.info(f"📤 [板块分析师] 调用 LLM 生成分析报告...")
+        # Call LLM to generate analysis reports
+        logger.info(f"📤 [Sector Analyst] Call LLM to generate analysis reports...")
         response = llm.invoke(analysis_request)
 
-        # 提取响应内容
+        # Extract response content
         if hasattr(response, 'content'):
             report = response.content
         else:
             report = str(response)
 
-        logger.info(f"✅ [板块分析师] LLM 分析报告生成完成 (长度: {len(report)})")
+        logger.info(f"✅ [Sector Analyst] LLM Analysis report generation completed (length: {len(report)})")
         return report
 
     except Exception as e:
-        logger.error(f"❌ [板块分析师] LLM 分析失败: {e}")
-        # 如果 LLM 分析失败，返回原始数据报告
+        logger.error(f"❌ [Sector Analyst] LLM Analysis failed: {e}")
+        # If LLM analysis fails, return raw data report
         return sector_data
 
 
 def _get_default_system_prompt(ticker: str, trade_date: str) -> str:
     """
-    获取默认的系统提示词
+    Get the default system prompt word
 
     Args:
-        ticker: 股票代码
-        trade_date: 交易日期
+        ticker: Stock code
+        trade_date: transaction date
 
     Returns:
-        默认系统提示词
+        Default system prompt word
     """
-    prompt = f"""你是一位专业的行业/板块分析师，专注于板块轮动和同业对比分析。
+    prompt = f"""You are a professional industry/sector analyst, focusing on sector rotation and peer comparison analysis.
 
-📋 **分析对象：**
-- 股票代码：{ticker}
-- 分析日期：{trade_date}
+📋 **Analysis objects:**
+- Stock code:{ticker}
+- Analysis date:{trade_date}
 
-🎯 **你的职责：**
-1. 分析目标股票所属行业的整体表现
-2. 识别板块轮动趋势和资金流向
-3. 进行同业竞争对手对比分析
-4. 评估个股在行业中的地位和估值水平
+🎯 **Your responsibilities:**
+1. Analyze the overall performance of the industry to which the target stock belongs
+2. Identify sector rotation trends and capital flows
+3. Conduct comparative analysis of competitors in the same industry
+4. Evaluate the position and valuation level of individual stocks in the industry
 
-📊 **分析维度：**
-- 板块表现：涨跌幅、相对强弱
-- 资金流向：主力资金进出方向
-- 估值对比：PE/PB相对行业水平
-- 行业地位：市值排名、龙头地位
+📊 **Analysis dimensions:**
+- Sector performance: rise and fall, relative strength
+- Fund flow direction: the main direction of capital entry and exit
+- Valuation comparison: PE/PB relative to industry level
+- Industry status: market value ranking, leading position
 
-请基于提供的数据进行专业分析，给出明确的研究结论、风险提示和后续观察点。"""
+Please conduct professional analysis based on the data provided and give clear research conclusions, risk tips and follow-up observation points."""
     return apply_compliance_guardrails(prompt, "sector_analyst")

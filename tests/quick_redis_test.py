@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Redis快速连接测试脚本
+Redis Quick connection test script
 """
 
 import redis
@@ -8,17 +8,17 @@ import time
 import sys
 
 def quick_redis_test(host=None, port=None, password=None):
-    """快速Redis连接和性能测试"""
+    """Quick Redis connection and performance testing"""
     
-    # 从环境变量获取配置
+    # Get configuration from environment variables
     host = host or os.getenv('REDIS_HOST', 'localhost')
     port = port or int(os.getenv('REDIS_PORT', 6379))
     password = password or os.getenv('REDIS_PASSWORD')
     
-    print(f"🔍 测试Redis连接: {host}:{port}")
+    print(f"🔍 Test Redis connection: {host}:{port}")
     
     try:
-        # 创建Redis连接
+        # Create a Redis connection
         start_time = time.time()
         r = redis.Redis(
             host=host, 
@@ -28,27 +28,27 @@ def quick_redis_test(host=None, port=None, password=None):
             socket_connect_timeout=5
         )
         
-        # 测试连接
+        # test connection
         r.ping()
         connect_time = (time.time() - start_time) * 1000
-        print(f"✅ 连接成功! 连接时间: {connect_time:.2f} ms")
+        print(f"✅ Connection successful! connection time: {connect_time:.2f} ms")
         
-        # 测试基本操作延迟
-        print("\n📊 基本操作延迟测试:")
+        # Test basic operational delays
+        print("\n📊 Basic Operation Latency Test:")
         
-        # SET操作测试
+        # SET Operational test
         start_time = time.time()
         r.set("test_key", "test_value")
         set_time = (time.time() - start_time) * 1000
-        print(f"  SET操作: {set_time:.2f} ms")
+        print(f"  SET Operation: {set_time:.2f} ms")
         
-        # GET操作测试
+        # GET Operational test
         start_time = time.time()
         value = r.get("test_key")
         get_time = (time.time() - start_time) * 1000
-        print(f"  GET操作: {get_time:.2f} ms")
+        print(f"  GET Operation: {get_time:.2f} ms")
         
-        # PING操作测试
+        # PING Operational test
         ping_times = []
         for i in range(10):
             start_time = time.time()
@@ -60,11 +60,11 @@ def quick_redis_test(host=None, port=None, password=None):
         min_ping = min(ping_times)
         max_ping = max(ping_times)
         
-        print(f"  PING操作 (10次平均): {avg_ping:.2f} ms")
-        print(f"  PING最小/最大: {min_ping:.2f} / {max_ping:.2f} ms")
+        print(f"  PING Operation (10 average): {avg_ping:.2f} ms")
+        print(f"  PING min/max: {min_ping:.2f} / {max_ping:.2f} ms")
         
-        # 简单吞吐量测试
-        print("\n🚀 简单吞吐量测试 (100次操作):")
+        # Simple throughput test
+        print("\n🚀 Simple throughput test (100 operations):")
         
         start_time = time.time()
         for i in range(100):
@@ -78,36 +78,36 @@ def quick_redis_test(host=None, port=None, password=None):
         get_duration = time.time() - start_time
         get_throughput = 100 / get_duration
         
-        print(f"  SET吞吐量: {set_throughput:.2f} 操作/秒")
-        print(f"  GET吞吐量: {get_throughput:.2f} 操作/秒")
+        print(f"  SET Throughput: {set_throughput:.2f} operations/second")
+        print(f"  GET Throughput: {get_throughput:.2f} operations/second")
         
-        # 清理测试数据
+        # Clean test data
         r.delete("test_key")
         for i in range(100):
             r.delete(f"throughput_test_{i}")
         
-        # 连接信息
-        print(f"\n📋 Redis服务器信息:")
+        # connection information
+        print(f"\n📋 Redis Server information:")
         info = r.info()
-        print(f"  Redis版本: {info.get('redis_version', 'N/A')}")
-        print(f"  运行模式: {info.get('redis_mode', 'N/A')}")
-        print(f"  已连接客户端: {info.get('connected_clients', 'N/A')}")
-        print(f"  内存使用: {info.get('used_memory_human', 'N/A')}")
+        print(f"  Redis version: {info.get('redis_version', 'N/A')}")
+        print(f"  operating mode: {info.get('redis_mode', 'N/A')}")
+        print(f"  Client connected: {info.get('connected_clients', 'N/A')}")
+        print(f"  memory usage: {info.get('used_memory_human', 'N/A')}")
         
         return True
         
     except redis.ConnectionError as e:
-        print(f"❌ Redis连接失败: {e}")
+        print(f"❌ Redis Connection failed: {e}")
         return False
     except redis.TimeoutError as e:
-        print(f"❌ Redis连接超时: {e}")
+        print(f"❌ Redis Connection timeout: {e}")
         return False
     except Exception as e:
-        print(f"❌ 测试过程中出错: {e}")
+        print(f"❌ An error occurred during testing: {e}")
         return False
 
 def main():
-    """主函数"""
+    """main function"""
     if len(sys.argv) > 1:
         host = sys.argv[1]
     else:
@@ -126,9 +126,9 @@ def main():
     success = quick_redis_test(host, port, password)
     
     if success:
-        print("\n✅ Redis连接测试完成!")
+        print("\n✅ Redis Connection test completed!")
     else:
-        print("\n❌ Redis连接测试失败!")
+        print("\n❌ Redis Connection test failed!")
         sys.exit(1)
 
 if __name__ == "__main__":

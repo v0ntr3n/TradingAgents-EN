@@ -1,6 +1,6 @@
 """
-数据库连接管理模块
-增强版本，支持连接池、健康检查和错误恢复
+Database connection management module
+Enhanced version with support for connection pooling, health checking and error recovery
 """
 
 import logging
@@ -15,7 +15,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import AuthenticationError as RedisAuthenticationError
 from .config import settings
 
-# 同步Redis客户端类型（延迟导入避免循环依赖）
+# Synchronous Redis client types (lazy import to avoid circular dependencies)
 try:
     import redis as redis_sync
 except ImportError:
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def _should_retry_redis_without_password(error: Exception) -> bool:
-    """判断是否应在本地无密码 Redis 场景下回退重试。"""
+    """Determine whether it should fall back and try again in the local passwordless Redis scenario."""
     if not isinstance(error, RedisAuthenticationError):
         return False
 
@@ -34,10 +34,10 @@ def _should_retry_redis_without_password(error: Exception) -> bool:
 
 
 def _build_redis_url_without_password() -> str:
-    """构建不带密码的 Redis URL，用于本地无密码实例回退。"""
+    """Construct a passwordless Redis URL for local passwordless instance fallback."""
     return f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
 
-# 全局连接实例
+# Global connection instance
 mongo_client: Optional[AsyncIOMotorClient] = None
 mongo_db: Optional[AsyncIOMotorDatabase] = None
 redis_client: Optional[Redis] = None
@@ -49,13 +49,13 @@ _mongo_client_proxy = None
 _redis_client_proxy = None
 _mongo_loop_bindings: Dict[int, Tuple[asyncio.AbstractEventLoop, AsyncIOMotorClient, AsyncIOMotorDatabase]] = {}
 
-# 同步 MongoDB 连接（用于非异步上下文）
+# Synchronous MongoDB connection (for non-async context)
 _sync_mongo_client: Optional[MongoClient] = None
 _sync_mongo_db: Optional[Database] = None
 
 
 class DatabaseManager:
-    """数据库连接管理器"""
+    """Database connection manager"""
 
     def __init__(self):
         self.mongo_client: Optional[AsyncIOMotorClient] = None
@@ -67,34 +67,34 @@ class DatabaseManager:
         self._redis_healthy = False
 
     async def init_mongodb(self):
-        """初始化MongoDB连接"""
+        """Initialize MongoDB connection"""
         try:
-            logger.info("🔄 正在初始化MongoDB连接...")
+            logger.info("🔄 Initializing MongoDB connection...")
 
-            # 创建MongoDB客户端，配置连接池
+            # Create MongoDB client and configure connection pool
             self.mongo_client = _create_async_mongo_client()
 
-            # 获取数据库实例
+            # Get database instance
             self.mongo_db = self.mongo_client[settings.MONGO_DB]
 
-            # 测试连接
+            # test connection
             await self.mongo_client.admin.command('ping')
             self._mongo_healthy = True
 
-            logger.info("✅ MongoDB连接成功建立")
-            logger.info(f"📊 数据库: {settings.MONGO_DB}")
-            logger.info(f"🔗 连接池: {settings.MONGO_MIN_CONNECTIONS}-{settings.MONGO_MAX_CONNECTIONS}")
-            logger.info(f"⏱️  超时配置: connectTimeout={settings.MONGO_CONNECT_TIMEOUT_MS}ms, socketTimeout={settings.MONGO_SOCKET_TIMEOUT_MS}ms")
+            logger.info("✅ MongoDB Connection established successfully")
+            logger.info(f"📊 database: {settings.MONGO_DB}")
+            logger.info(f"🔗 connection pool: {settings.MONGO_MIN_CONNECTIONS}-{settings.MONGO_MAX_CONNECTIONS}")
+            logger.info(f"⏱️  Timeout configuration: connectTimeout={settings.MONGO_CONNECT_TIMEOUT_MS}ms, socketTimeout={settings.MONGO_SOCKET_TIMEOUT_MS}ms")
 
         except Exception as e:
-            logger.error(f"❌ MongoDB连接失败: {e}")
+            logger.error(f"❌ MongoDB Connection failed: {e}")
             self._mongo_healthy = False
             raise
 
     async def init_redis(self):
-        """初始化Redis连接"""
+        """Initialize Redis connection"""
         try:
-            logger.info("🔄 正在初始化Redis连接...")
+            logger.info("🔄 Initializing Redis connection...")
 
             async def _connect(redis_url: str) -> tuple[ConnectionPool, Redis]:
                 pool = ConnectionPool.from_url(
@@ -102,8 +102,8 @@ class DatabaseManager:
                     max_connections=settings.REDIS_MAX_CONNECTIONS,
                     retry_on_timeout=settings.REDIS_RETRY_ON_TIMEOUT,
                     decode_responses=True,
-                    socket_connect_timeout=5,  # 5秒连接超时
-                    socket_timeout=10,  # 10秒套接字超时
+                    socket_connect_timeout=5,  # 5 Seconds connection timeout
+                    socket_timeout=10,  # 10 seconds socket timeout
                 )
                 client = Redis(connection_pool=pool)
                 try:
@@ -122,8 +122,8 @@ class DatabaseManager:
                     raise
 
                 logger.warning(
-                    "⚠️ 当前 Redis 实例未配置密码，但环境变量提供了 REDIS_PASSWORD；"
-                    "将自动回退为无密码连接。"
+                    "⚠️ The current Redis instance does not have a password configured, but the environment variable provides REDIS_PASSWORD;"
+                    "Will automatically fall back to passwordless connection."
                 )
                 fallback_url = _build_redis_url_without_password()
                 self.redis_pool, self.redis_client = await _connect(fallback_url)
@@ -131,51 +131,51 @@ class DatabaseManager:
 
             self._redis_healthy = True
 
-            logger.info("✅ Redis连接成功建立")
-            logger.info(f"🔗 连接池大小: {settings.REDIS_MAX_CONNECTIONS}")
+            logger.info("✅ Redis Connection established successfully")
+            logger.info(f"🔗 Connection pool size: {settings.REDIS_MAX_CONNECTIONS}")
 
         except Exception as e:
-            logger.error(f"❌ Redis连接失败: {e}")
+            logger.error(f"❌ Redis Connection failed: {e}")
             self._redis_healthy = False
             raise
 
     async def close_connections(self):
-        """关闭所有数据库连接"""
-        logger.info("🔄 正在关闭数据库连接...")
+        """Close all database connections"""
+        logger.info("🔄 Closing database connection...")
 
-        # 关闭MongoDB连接
+        # Close MongoDB connection
         try:
             await _close_all_async_mongo_bindings(log_message=False)
             self._mongo_healthy = False
-            logger.info("✅ MongoDB连接已关闭")
+            logger.info("✅ MongoDB connection closed")
         except Exception as e:
-            logger.error(f"❌ 关闭MongoDB连接时出错: {e}")
+            logger.error(f"❌ Error closing MongoDB connection: {e}")
 
-        # 关闭Redis连接
+        # Close Redis connection
         if self.redis_client:
             try:
                 await self.redis_client.close()
                 self._redis_healthy = False
-                logger.info("✅ Redis连接已关闭")
+                logger.info("✅ Redis connection closed")
             except Exception as e:
-                logger.error(f"❌ 关闭Redis连接时出错: {e}")
+                logger.error(f"❌ Error closing Redis connection: {e}")
 
-        # 关闭Redis连接池
+        # Close the Redis connection pool
         if self.redis_pool:
             try:
                 await self.redis_pool.disconnect()
-                logger.info("✅ Redis连接池已关闭")
+                logger.info("✅ Redis Connection pool is closed")
             except Exception as e:
-                logger.error(f"❌ 关闭Redis连接池时出错: {e}")
+                logger.error(f"❌ Error closing Redis connection pool: {e}")
 
     async def health_check(self) -> dict:
-        """数据库健康检查"""
+        """Database health check"""
         health_status = {
             "mongodb": {"status": "unknown", "details": None},
             "redis": {"status": "unknown", "details": None}
         }
 
-        # 检查MongoDB
+        # Check MongoDB
         try:
             try:
                 mongo = _get_bound_mongo_client()
@@ -198,7 +198,7 @@ class DatabaseManager:
             }
             self._mongo_healthy = False
 
-        # 检查Redis
+        # Check Redis
         try:
             if self.redis_client:
                 result = await self.redis_client.ping()
@@ -220,11 +220,11 @@ class DatabaseManager:
 
     @property
     def is_healthy(self) -> bool:
-        """检查所有数据库连接是否健康"""
+        """Check whether all database connections are healthy"""
         return self._mongo_healthy and self._redis_healthy
 
 
-# 全局数据库管理器实例
+# Global database manager instance
 db_manager = DatabaseManager()
 
 
@@ -295,11 +295,11 @@ def _prune_closed_mongo_loop_bindings() -> None:
             try:
                 client.close()
             except Exception as exc:
-                logger.warning(f"⚠️ 关闭失效 MongoDB 客户端失败（忽略）: {exc}")
+                logger.warning(f"⚠️ Failed to close dead MongoDB client (ignored): {exc}")
 
 
 class _LoopSafeMongoCollectionProxy:
-    """集合代理：即使对象被缓存，也总是转发到当前 loop 绑定的 collection。"""
+    """Collection proxy: Even if the object is cached, it is always forwarded to the collection bound by the current loop."""
 
     def __init__(self, resolver: Callable[[], AsyncIOMotorCollection]):
         self._resolver = resolver
@@ -312,7 +312,7 @@ class _LoopSafeMongoCollectionProxy:
 
 
 class _LoopSafeMongoDatabaseProxy:
-    """数据库代理：避免调用方缓存旧 loop 绑定的 AsyncIOMotorDatabase。"""
+    """Database proxy: Avoid callers caching old loop bound AsyncIOMotorDatabase."""
 
     def __init__(self, resolver: Optional[Callable[[], AsyncIOMotorDatabase]] = None):
         self._resolver = resolver or _get_bound_mongo_db
@@ -331,7 +331,7 @@ class _LoopSafeMongoDatabaseProxy:
 
 
 class _LoopSafeMongoClientProxy:
-    """客户端代理：避免缓存旧 loop 绑定的 AsyncIOMotorClient。"""
+    """Client Proxy: Avoid caching old loop bound AsyncIOMotorClient."""
 
     def _target(self) -> AsyncIOMotorClient:
         return _get_bound_mongo_client()
@@ -344,7 +344,7 @@ class _LoopSafeMongoClientProxy:
 
 
 class _LoopSafeRedisClientProxy:
-    """Redis 代理：即使对象被缓存，也总是转发到当前 loop 绑定的 Redis 客户端。"""
+    """Redis Proxy: Even if the object is cached, it is always forwarded to the Redis client bound to the current loop."""
 
     def _target(self) -> Redis:
         return _get_bound_redis_client()
@@ -354,7 +354,7 @@ class _LoopSafeRedisClientProxy:
 
 
 async def init_database():
-    """初始化数据库连接"""
+    """Initialize database connection"""
     global mongo_client, mongo_db, redis_client, redis_pool, _mongo_runtime_loop, _redis_runtime_loop
 
     current_loop: Optional[asyncio.AbstractEventLoop]
@@ -369,12 +369,12 @@ async def init_database():
     redis_ready = redis_client is not None and redis_pool is not None and db_manager._redis_healthy
 
     if mongo_ready and redis_ready:
-        logger.debug("数据库连接已初始化且健康，跳过重复初始化")
+        logger.debug("The database connection has been initialized and healthy, skip repeated initialization")
         return
 
     try:
         if not mongo_ready:
-            # 初始化MongoDB
+            # initialization MongoDB
             await db_manager.init_mongodb()
             if current_loop is not None and db_manager.mongo_client is not None and db_manager.mongo_db is not None:
                 _store_mongo_loop_binding(current_loop, db_manager.mongo_client, db_manager.mongo_db)
@@ -384,24 +384,24 @@ async def init_database():
                 _mongo_runtime_loop = current_loop
 
         if not redis_ready:
-            # 初始化Redis
+            # initialization Redis
             await db_manager.init_redis()
             redis_client = db_manager.redis_client
             redis_pool = db_manager.redis_pool
             _redis_runtime_loop = asyncio.get_running_loop()
 
-        logger.info("🎉 所有数据库连接初始化完成")
+        logger.info("🎉 All database connections are initialized")
 
-        # 🔥 初始化数据库视图和索引
+        # 🔥 Initialize database views and indexes
         await init_database_views_and_indexes()
 
     except Exception as e:
-        logger.error(f"💥 数据库初始化失败: {e}")
+        logger.error(f"💥 Database initialization failed: {e}")
         raise
 
 
 async def init_redis_binding() -> None:
-    """仅初始化 Redis 绑定，供兼容层和独立组件复用。"""
+    """Only Redis bindings are initialized for reuse by compatibility layers and independent components."""
     global redis_client, redis_pool, _redis_runtime_loop
 
     if redis_client is not None and redis_pool is not None:
@@ -422,57 +422,57 @@ async def init_redis_binding() -> None:
 
 
 async def init_database_views_and_indexes():
-    """初始化数据库视图和索引"""
+    """Initialize database views and indexes"""
     try:
         db = get_mongo_db()
 
-        # 1. 创建股票筛选视图
+        # 1. Create a stock screener view
         await create_stock_screening_view(db)
 
-        # 2. 创建必要的索引
+        # 2. Create necessary indexes
         await create_database_indexes(db)
 
-        # 3. 创建 agent 执行轨迹集合索引（P1 机器可读执行轨迹）
-        # 局部导入避免循环依赖；服务初始化失败不影响应用启动
+        # 3. Create agent execution trace collection index (P1 machine-readable execution trace)
+        # Partial import avoids circular dependencies; service initialization failure does not affect application startup
         try:
             from app.pro.services.execution_trace_service import execution_trace_service
             await execution_trace_service.create_indexes()
         except Exception as trace_exc:
-            logger.warning(f"⚠️ 执行轨迹索引初始化失败（不影响应用启动）: {trace_exc}")
+            logger.warning(f"⚠️ Execution track index initialization failed (does not affect application startup): {trace_exc}")
 
-        # 4. 创建 agent 断言集合索引（P2 可执行断言）
+        # 4. Create agent assertion collection index (P2 executable assertion)
         try:
             from app.pro.services.agent_assertion_service import agent_assertion_service
             await agent_assertion_service.create_indexes()
         except Exception as assertion_exc:
-            logger.warning(f"⚠️ 断言索引初始化失败（不影响应用启动）: {assertion_exc}")
+            logger.warning(f"⚠️ Assert that index initialization failed (does not affect application startup): {assertion_exc}")
 
-        # 5. 创建助手质量埋点集合索引（A11 阶段4 S9）
+        # 5. Create assistant quality buried point collection index (A11 stage 4 S9)
         try:
             from core.assistant import quality_metrics
             await quality_metrics.create_indexes(db)
         except Exception as metrics_exc:
-            logger.warning(f"⚠️ 质量埋点索引初始化失败（不影响应用启动）: {metrics_exc}")
+            logger.warning(f"⚠️ Quality index index initialization failed (does not affect application startup): {metrics_exc}")
 
-        logger.info("✅ 数据库视图和索引初始化完成")
+        logger.info("✅ Database view and index initialization completed")
 
     except Exception as e:
-        logger.warning(f"⚠️ 数据库视图和索引初始化失败: {e}")
-        # 不抛出异常，允许应用继续启动
+        logger.warning(f"⚠️ Database view and index initialization failed: {e}")
+        # Do not throw an exception and allow the application to continue launching
 
 
 async def create_stock_screening_view(db):
-    """创建股票筛选视图"""
+    """Create a stock screener view"""
     try:
-        # 检查视图是否已存在
+        # Check if the view already exists
         collections = await db.list_collection_names()
         if "stock_screening_view" in collections:
-            logger.info("📋 视图 stock_screening_view 已存在，跳过创建")
+            logger.info("📋 View stock_screening_view already exists, skip creation")
             return
 
-        # 创建视图：将 stock_basic_info、market_quotes 和 stock_financial_data 关联
+        # Create a view: Relate stock_basic_info, market_quotes, and stock_financial_data
         pipeline = [
-            # 第一步：关联实时行情数据 (market_quotes)
+            # Step 1: Correlate real-time market data (market_quotes)
             {
                 "$lookup": {
                     "from": "market_quotes",
@@ -481,14 +481,14 @@ async def create_stock_screening_view(db):
                     "as": "quote_data"
                 }
             },
-            # 第二步：展开 quote_data 数组
+            # Step 2: Expand the quote_data array
             {
                 "$unwind": {
                     "path": "$quote_data",
                     "preserveNullAndEmptyArrays": True
                 }
             },
-            # 第三步：关联财务数据 (stock_financial_data)
+            # Step Three: Link Financial Data (stock_financial_data)
             {
                 "$lookup": {
                     "from": "stock_financial_data",
@@ -510,17 +510,17 @@ async def create_stock_screening_view(db):
                     "as": "financial_data"
                 }
             },
-            # 第四步：展开 financial_data 数组
+            # Step 4: Expand the financial_data array
             {
                 "$unwind": {
                     "path": "$financial_data",
                     "preserveNullAndEmptyArrays": True
                 }
             },
-            # 第五步：重新组织字段结构
+            # Step 5: Reorganize the field structure
             {
                 "$project": {
-                    # 基础信息字段
+                    # Basic information fields
                     "code": 1,
                     "name": 1,
                     "industry": 1,
@@ -528,24 +528,24 @@ async def create_stock_screening_view(db):
                     "market": 1,
                     "list_date": 1,
                     "source": 1,
-                    # 市值信息
+                    # Market capitalization information
                     "total_mv": 1,
                     "circ_mv": 1,
-                    # 估值指标
+                    # Valuation indicators
                     "pe": 1,
                     "pb": 1,
                     "pe_ttm": 1,
                     "pb_mrq": 1,
-                    # 财务指标
+                    # financial indicators
                     "roe": "$financial_data.roe",
                     "roa": "$financial_data.roa",
                     "netprofit_margin": "$financial_data.netprofit_margin",
                     "gross_margin": "$financial_data.gross_margin",
                     "report_period": "$financial_data.report_period",
-                    # 交易指标
+                    # trading indicators
                     "turnover_rate": 1,
                     "volume_ratio": 1,
-                    # 实时行情数据
+                    # Real-time market data
                     "close": "$quote_data.close",
                     "open": "$quote_data.open",
                     "high": "$quote_data.high",
@@ -555,7 +555,7 @@ async def create_stock_screening_view(db):
                     "amount": "$quote_data.amount",
                     "volume": "$quote_data.volume",
                     "trade_date": "$quote_data.trade_date",
-                    # 时间戳
+                    # Timestamp
                     "updated_at": 1,
                     "quote_updated_at": "$quote_data.updated_at",
                     "financial_updated_at": "$financial_data.updated_at"
@@ -563,33 +563,33 @@ async def create_stock_screening_view(db):
             }
         ]
 
-        # 创建视图
+        # Create view
         await db.command({
             "create": "stock_screening_view",
             "viewOn": "stock_basic_info",
             "pipeline": pipeline
         })
 
-        logger.info("✅ 视图 stock_screening_view 创建成功")
+        logger.info("✅ View stock_screening_view created successfully")
 
     except Exception as e:
-        logger.warning(f"⚠️ 创建视图失败: {e}")
+        logger.warning(f"⚠️ Failed to create view: {e}")
 
 
 async def create_database_indexes(db):
-    """创建数据库索引"""
+    """Create database index"""
     try:
-        # stock_basic_info 的索引
+        # stock_basic_info Index of
         basic_info = db["stock_basic_info"]
         await basic_info.create_index([("code", 1), ("source", 1)], unique=True)
-        await basic_info.create_index([("source", 1)])  # 🔥 单独的 source 索引，优化按数据源筛选的查询
-        await basic_info.create_index([("source", 1), ("total_mv", -1)])  # 🔥 复合索引：优化按数据源筛选+市值排序的查询（视图查询常用场景）
+        await basic_info.create_index([("source", 1)])  # 🔥 Separate source index to optimize queries filtered by data source
+        await basic_info.create_index([("source", 1), ("total_mv", -1)])  # 🔥 Composite index: Optimize filtering by data source+Market value sorting query (common scenario for view query)
         await basic_info.create_index([("industry", 1)])
         await basic_info.create_index([("total_mv", -1)])
         await basic_info.create_index([("pe", 1)])
         await basic_info.create_index([("pb", 1)])
 
-        # market_quotes 的索引
+        # market_quotes Index of
         market_quotes = db["market_quotes"]
         await market_quotes.create_index([("code", 1)], unique=True)
         await market_quotes.create_index([("pct_chg", -1)])
@@ -600,19 +600,19 @@ async def create_database_indexes(db):
         await industry_mapping.create_index([("code", 1)], unique=True)
         await industry_mapping.create_index([("provider", 1), ("updated_at", -1)])
 
-        logger.info("✅ 数据库索引创建完成")
+        logger.info("✅ Database index creation completed")
 
     except Exception as e:
-        logger.warning(f"⚠️ 创建索引失败: {e}")
+        logger.warning(f"⚠️ Index creation failed: {e}")
 
 
 async def close_database():
-    """关闭数据库连接"""
+    """Close database connection"""
     global mongo_client, mongo_db, redis_client, redis_pool, _mongo_runtime_loop, _redis_runtime_loop
 
     await db_manager.close_connections()
 
-    # 清空全局变量
+    # Clear global variables
     mongo_client = None
     mongo_db = None
     redis_client = None
@@ -622,20 +622,20 @@ async def close_database():
 
 
 async def close_redis_binding() -> None:
-    """仅关闭 Redis 绑定，供兼容层和独立组件复用。"""
+    """Only the Redis binding is turned off for reuse by the compatibility layer and independent components."""
     global redis_client, redis_pool, _redis_runtime_loop
 
     if db_manager.redis_client:
         try:
             await db_manager.redis_client.close()
         except Exception as exc:
-            logger.error(f"❌ 关闭Redis连接时出错: {exc}")
+            logger.error(f"❌ Error closing Redis connection: {exc}")
 
     if db_manager.redis_pool:
         try:
             await db_manager.redis_pool.disconnect()
         except Exception as exc:
-            logger.error(f"❌ 关闭Redis连接池时出错: {exc}")
+            logger.error(f"❌ Error closing Redis connection pool: {exc}")
 
     db_manager.redis_client = None
     db_manager.redis_pool = None
@@ -647,7 +647,7 @@ async def close_redis_binding() -> None:
 
 
 def _recreate_async_mongo_binding() -> None:
-    """按当前事件循环重建异步 MongoDB 绑定，避免跨 loop 复用旧 Motor 客户端。"""
+    """Rebuild asynchronous MongoDB bindings based on the current event loop to avoid reusing old Motor clients across loops."""
     current_loop = asyncio.get_running_loop()
     existing = _get_current_mongo_loop_binding()
     if existing is not None:
@@ -660,7 +660,7 @@ def _recreate_async_mongo_binding() -> None:
 
 
 def _recreate_async_redis_binding() -> None:
-    """按当前事件循环重建异步 Redis 绑定，避免跨 loop 复用旧客户端。"""
+    """Rebuild asynchronous Redis bindings according to the current event loop to avoid reusing old clients across loops."""
     global redis_client, redis_pool, _redis_runtime_loop
 
     current_loop = asyncio.get_running_loop()
@@ -681,11 +681,11 @@ def _recreate_async_redis_binding() -> None:
 
 
 def _ensure_async_redis_binding() -> None:
-    """确保返回的异步 Redis 连接绑定到当前运行中的事件循环。"""
+    """Make sure the returned asynchronous Redis connection is bound to the currently running event loop."""
     global _redis_runtime_loop
 
     if redis_client is None or redis_pool is None:
-        raise RuntimeError("Redis客户端未初始化")
+        raise RuntimeError("Redis Client not initialized")
 
     try:
         current_loop = asyncio.get_running_loop()
@@ -697,12 +697,12 @@ def _ensure_async_redis_binding() -> None:
         return
 
     if _redis_runtime_loop.is_closed() or _redis_runtime_loop is not current_loop:
-        logger.warning("⚠️ 检测到异步 Redis 客户端绑定的事件循环已变化，正在重建连接")
+        logger.warning("⚠️ Detected that the event loop of the asynchronous Redis client binding has changed and the connection is being re-established")
         _recreate_async_redis_binding()
 
 
 def _ensure_async_mongo_binding() -> None:
-    """确保返回的异步 MongoDB 连接绑定到当前运行中的事件循环。"""
+    """Ensures that the returned asynchronous MongoDB connection is bound to the currently running event loop."""
     try:
         asyncio.get_running_loop()
     except RuntimeError:
@@ -713,12 +713,12 @@ def _ensure_async_mongo_binding() -> None:
         return
 
     if mongo_client is None or mongo_db is None:
-        raise RuntimeError("MongoDB客户端未初始化")
+        raise RuntimeError("MongoDB Client not initialized")
 
     if _is_async_mongo_client_closed(mongo_client):
-        logger.warning("⚠️ 检测到异步 MongoDB 客户端已关闭，正在为当前事件循环重建连接")
+        logger.warning("⚠️ Detected that the asynchronous MongoDB client has closed and the connection is being re-established for the current event loop")
     else:
-        logger.warning("⚠️ 检测到异步 MongoDB 客户端绑定的事件循环已变化，正在为当前事件循环创建独立连接")
+        logger.warning("⚠️ Detected that the event loop bound to the asynchronous MongoDB client has changed, creating a separate connection for the current event loop")
 
     _recreate_async_mongo_binding()
 
@@ -742,7 +742,7 @@ def _get_bound_redis_client() -> Redis:
 
 
 def get_mongo_client() -> AsyncIOMotorClient:
-    """获取MongoDB客户端"""
+    """Get the MongoDB client"""
     global _mongo_client_proxy
     if _mongo_client_proxy is None:
         _mongo_client_proxy = _LoopSafeMongoClientProxy()
@@ -750,7 +750,7 @@ def get_mongo_client() -> AsyncIOMotorClient:
 
 
 def get_mongo_db() -> AsyncIOMotorDatabase:
-    """获取MongoDB数据库实例"""
+    """Get a MongoDB database instance"""
     global _mongo_db_proxy
     if _mongo_db_proxy is None:
         _mongo_db_proxy = _LoopSafeMongoDatabaseProxy()
@@ -758,14 +758,14 @@ def get_mongo_db() -> AsyncIOMotorDatabase:
 
 
 def bind_loop_safe_mongo_db(target: object, attr_name: str = "db") -> AsyncIOMotorDatabase:
-    """将 loop-safe MongoDB 代理绑定到对象属性，替代手动重建 AsyncIOMotorClient。"""
+    """Bind loop-safe MongoDB proxy to object properties instead of manually rebuilding AsyncIOMotorClient."""
     db = get_mongo_db()
     setattr(target, attr_name, db)
     return db
 
 
 def create_isolated_async_mongo_binding() -> Tuple[AsyncIOMotorClient, AsyncIOMotorDatabase]:
-    """创建与当前调用方独立的异步 MongoDB 连接，适用于线程池或临时隔离任务。"""
+    """Creates an asynchronous MongoDB connection independent of the current caller, suitable for thread pools or temporary isolation tasks."""
     client = _create_async_mongo_client()
     return client, client[settings.MONGO_DB]
 
@@ -800,7 +800,7 @@ async def _close_all_async_mongo_bindings(log_message: bool = True) -> None:
     global mongo_client, mongo_db, _mongo_runtime_loop
 
     if log_message:
-        logger.info("🔄 正在关闭全部 MongoDB 事件循环绑定...")
+        logger.info("🔄 Closing all MongoDB event loop bindings...")
 
     _prune_closed_mongo_loop_bindings()
     closed_client_ids = set()
@@ -817,7 +817,7 @@ async def _close_all_async_mongo_bindings(log_message: bool = True) -> None:
         try:
             client.close()
         except Exception as exc:
-            logger.warning(f"⚠️ 关闭 MongoDB 客户端失败（忽略）: {exc}")
+            logger.warning(f"⚠️ Failed to close MongoDB client (ignored): {exc}")
 
         closed_client_ids.add(client_id)
 
@@ -832,15 +832,15 @@ async def _close_all_async_mongo_bindings(log_message: bool = True) -> None:
 
 def get_mongo_db_sync() -> Database:
     """
-    获取同步版本的MongoDB数据库实例
-    用于非异步上下文（如普通函数调用）
+    Get a synchronized version of a MongoDB database instance
+    For use in non-asynchronous contexts (such as ordinary function calls)
     """
     global _sync_mongo_client, _sync_mongo_db
 
     if _sync_mongo_db is not None:
         return _sync_mongo_db
 
-    # 创建同步 MongoDB 客户端
+    # Create a synchronous MongoDB client
     if _sync_mongo_client is None:
         _sync_mongo_client = MongoClient(
             settings.MONGO_URI,
@@ -855,50 +855,50 @@ def get_mongo_db_sync() -> Database:
 
 
 def get_redis_client() -> Redis:
-    """获取Redis客户端（异步）"""
+    """Get Redis client (asynchronous)"""
     global _redis_client_proxy
     if _redis_client_proxy is None:
         _redis_client_proxy = _LoopSafeRedisClientProxy()
     return _redis_client_proxy
 
 
-# 同步Redis客户端（用于同步上下文）
+# Synchronous Redis client (for synchronization context)
 _redis_sync_client: Optional[redis_sync.Redis] = None
 
 
 def get_redis_sync_client() -> redis_sync.Redis:
     """
-    获取同步Redis客户端（用于同步上下文）
+    Get sync Redis client (for sync context)
     
-    使用系统的Redis配置，但创建同步连接以避免事件循环问题
-    统一使用系统的REDIS_URL配置
+    Use the system s Redis configuration, but create a synchronous connection to avoid event loop issues
+    Use the system s REDIS_URL configuration uniformly
     """
     global _redis_sync_client
     
     if _redis_sync_client is None:
         if redis_sync is None:
-            raise RuntimeError("redis模块未安装，无法创建同步Redis客户端")
+            raise RuntimeError("redis The module is not installed and the synchronous Redis client cannot be created.")
         
         redis_url = settings.REDIS_URL
         
         try:
-            # 使用redis.from_url自动解析URL，使用系统配置
+            # Use redis.from_url to automatically parse URLs, using system configuration
             _redis_sync_client = redis_sync.from_url(
                 redis_url,
                 decode_responses=True,
                 socket_connect_timeout=5,
                 socket_timeout=10
             )
-            # 测试连接
+            # test connection
             _redis_sync_client.ping()
-            logger.debug("✅ 同步Redis客户端连接成功（使用系统配置）")
+            logger.debug("✅ Synchronous Redis client connection successful (using system configuration)")
         except Exception as e:
             if settings.REDIS_PASSWORD and _should_retry_redis_without_password(e):
                 try:
                     fallback_url = _build_redis_url_without_password()
                     logger.warning(
-                        "⚠️ 同步 Redis 客户端检测到本地实例未配置密码，"
-                        "将自动回退为无密码连接。"
+                        "⚠️ The synchronization Redis client detects that the local instance does not have a password configured,"
+                        "Will automatically fall back to passwordless connection."
                     )
                     _redis_sync_client = redis_sync.from_url(
                         fallback_url,
@@ -907,27 +907,27 @@ def get_redis_sync_client() -> redis_sync.Redis:
                         socket_timeout=10
                     )
                     _redis_sync_client.ping()
-                    logger.debug("✅ 同步Redis客户端连接成功（无密码回退）")
+                    logger.debug("✅ Synchronous Redis client connection successful (no password fallback)")
                 except Exception as fallback_error:
-                    logger.warning(f"⚠️ 同步Redis客户端初始化失败: {fallback_error}", exc_info=True)
-                    raise RuntimeError(f"同步Redis客户端初始化失败: {fallback_error}")
+                    logger.warning(f"⚠️ Synchronous Redis client initialization failed: {fallback_error}", exc_info=True)
+                    raise RuntimeError(f"Synchronous Redis client initialization failed: {fallback_error}")
             else:
-                logger.warning(f"⚠️ 同步Redis客户端初始化失败: {e}", exc_info=True)
-                raise RuntimeError(f"同步Redis客户端初始化失败: {e}")
+                logger.warning(f"⚠️ Synchronous Redis client initialization failed: {e}", exc_info=True)
+                raise RuntimeError(f"Synchronous Redis client initialization failed: {e}")
     
     return _redis_sync_client
 
 
 async def get_database_health() -> dict:
-    """获取数据库健康状态"""
+    """Get database health status"""
     return await db_manager.health_check()
 
 
-# 兼容性别名
+# Compatible gender names
 init_db = init_database
 close_db = close_database
 
 
 def get_database():
-    """获取数据库实例"""
+    """Get database instance"""
     return get_mongo_db()

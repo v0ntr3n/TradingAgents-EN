@@ -1,15 +1,15 @@
-﻿﻿<template>
+﻿<template>
   <div class="general-analysis">
-    <!-- 页面头部 -->
+    <!-- Page header -->
     <div class="page-header">
       <div class="header-content">
         <div class="title-section">
           <h1 class="page-title">
             <el-icon class="title-icon"><Document /></el-icon>
-            通用研究分析
+            General Research Analysis
           </h1>
 
-          <!-- 风险提示 -->
+          <!-- Risk warning -->
           <div class="risk-disclaimer">
             <el-alert
               type="warning"
@@ -18,40 +18,40 @@
             >
               <template #title>
                 <span style="font-size: 14px;">
-                  <strong>⚠️ 重要提示：</strong>本次分析所有结论用于学习和验证AI证券分析技术，不作为真实交易操盘指导。
+                  <strong>⚠️ IMPORTANT NOTE:</strong>All conclusions of this analysis are used to learn and verify AI securities analysis technology and are not intended to be used as real trading guidance.
                 </span>
               </template>
             </el-alert>
           </div>
 
           <p class="page-description">
-            基于通用流程的灵活研究工作台，支持自定义分析目标与参数
+            Flexible research workbench based on common processes, supporting customized analysis goals and parameters
           </p>
         </div>
       </div>
     </div>
 
-    <!-- 主要内容区（标签页切换） -->
+    <!-- Main content area (tab switching) -->
     <el-tabs v-model="activeTab" class="main-tabs">
-      <el-tab-pane label="新分析" name="new">
-        <!-- 流程选择 + 动态表单 -->
+      <el-tab-pane label="new analysis" name="new">
+        <!-- Process selection + dynamic form -->
         <div class="analysis-container">
           <el-card class="main-form-card" shadow="hover">
             <template #header>
               <div class="card-header">
-                <h3>分析配置</h3>
-                <el-tag type="info" size="small">必填信息</el-tag>
+                <h3>Analysis configuration</h3>
+                <el-tag type="info" size="small">Required information</el-tag>
               </div>
             </template>
 
-            <!-- 流程选择 -->
+            <!-- Process selection -->
             <el-form label-width="100px" class="analysis-form">
               <div class="form-section">
-                <h4 class="section-title">📋 分析流程</h4>
-                <el-form-item label="流程选择">
+                <h4 class="section-title">📋 Analysis process</h4>
+                <el-form-item label="Process selection">
                   <el-select
                     v-model="selectedWorkflowId"
-                    placeholder="请选择通用分析流程"
+                    placeholder="Please select a general analysis process"
                     size="large"
                     style="width: 100%"
                     :loading="loadingWorkflows"
@@ -73,30 +73,30 @@
                         effect="plain"
                         style="margin-left: 8px;"
                       >
-                        默认
+                        Default
                       </el-tag>
                     </el-option>
                   </el-select>
                   <div v-if="selectedWorkflow" class="workflow-description">
                     <el-icon><InfoFilled /></el-icon>
-                    <span>{{ selectedWorkflow.description || '暂无流程描述' }}</span>
+                    <span>{{ selectedWorkflow.description || 'No process description yet' }}</span>
                   </div>
                   <el-empty
                     v-else-if="!loadingWorkflows && workflows.length === 0"
-                    description="暂无可用的通用分析流程"
+                    description="No general analysis process is available yet"
                     :image-size="60"
                   />
                 </el-form-item>
               </div>
             </el-form>
 
-            <!-- 动态表单（仅当选中流程时显示） -->
+            <!-- Dynamic form (shown only when process is selected) -->
             <template v-if="selectedWorkflowId && selectedWorkflow">
-              <el-divider content-position="left">执行参数</el-divider>
+              <el-divider content-position="left">Execution parameters</el-divider>
               <el-form :model="formValues" label-position="top" class="analysis-form">
-                <!-- 加载中 -->
-                <el-empty v-if="loadingSelectedWorkflow" description="加载参数配置..." :image-size="60"></el-empty>
-                <!-- 动态表单：从 selectedWorkflowFull.input_config.fields 生成 -->
+                <!-- Loading -->
+                <el-empty v-if="loadingSelectedWorkflow" description="Load parameter configuration..." :image-size="60"></el-empty>
+                <!-- Dynamic form: generated from selectedWorkflowFull.input_config.fields -->
                 <template v-else-if="inputFields.length > 0">
                   <template v-for="group in groupedFields" :key="group.name">
                     <div v-if="group.name" class="field-group-title">{{ group.name }}</div>
@@ -106,14 +106,14 @@
                       :label="field.label || field.name"
                       :required="field.required"
                     >
-                      <!-- string: 单行文本 -->
+                      <!-- string: single line of text -->
                       <el-input
                         v-if="field.type === 'string'"
                         v-model="formValues[field.name]"
                         :placeholder="field.placeholder || ''"
                       />
 
-                      <!-- textarea: 多行文本 -->
+                      <!-- textarea: multiline text -->
                       <el-input
                         v-else-if="field.type === 'textarea'"
                         v-model="formValues[field.name]"
@@ -124,7 +124,7 @@
                         show-word-limit
                       />
 
-                      <!-- number: 数字 -->
+                      <!-- number: numbers -->
                       <el-input-number
                         v-else-if="field.type === 'number'"
                         v-model="formValues[field.name]"
@@ -133,31 +133,31 @@
                         style="width: 100%"
                       />
 
-                      <!-- boolean: 开关 -->
+                      <!-- boolean: switch -->
                       <el-switch
                         v-else-if="field.type === 'boolean'"
                         v-model="formValues[field.name]"
                       />
 
-                      <!-- date: 日期选择 -->
+                      <!-- date: date selection -->
                       <el-date-picker
                         v-else-if="field.type === 'date'"
                         v-model="formValues[field.name]"
                         type="date"
-                        placeholder="选择日期"
+                        placeholder="Select date"
                         style="width: 100%"
                         value-format="YYYY-MM-DD"
                       />
 
-                      <!-- select: 下拉单选 -->
+                      <!-- select: Drop down radio selection -->
                       <el-select
                         v-else-if="field.type === 'select'"
                         v-model="formValues[field.name]"
-                        :placeholder="field.placeholder || '请选择'"
+                        :placeholder="field.placeholder || 'Please select'"
                         style="width: 100%"
                         :loading="modelsLoading"
                       >
-                        <!-- 模型字段特殊处理：从 enabledModels 动态填充选项 -->
+                        <!-- Special handling of model fields: dynamically populate options from enabledModels -->
                         <template v-if="field.name === 'quick_analysis_model' || field.name === 'deep_analysis_model'">
                           <el-option
                             v-for="model in enabledModels"
@@ -166,7 +166,7 @@
                             :value="model.model_name"
                           />
                         </template>
-                        <!-- 普通选项 -->
+                        <!-- Normal options -->
                         <template v-else>
                           <el-option
                             v-for="(opt, idx) in (field.options || [])"
@@ -177,12 +177,12 @@
                         </template>
                       </el-select>
 
-                      <!-- multiselect: 下拉多选 -->
+                      <!-- multiselect: Drop-down multiple selection -->
                       <el-select
                         v-else-if="field.type === 'multiselect'"
                         v-model="formValues[field.name]"
                         multiple
-                        :placeholder="field.placeholder || '请选择'"
+                        :placeholder="field.placeholder || 'Please select'"
                         style="width: 100%"
                       >
                         <el-option
@@ -193,16 +193,16 @@
                         />
                       </el-select>
 
-                      <!-- 参数描述 -->
+                      <!-- Parameter description -->
                       <div v-if="field.description" class="field-description">{{ field.description }}</div>
                     </el-form-item>
                   </template>
                 </template>
 
-                <!-- 无输入参数提示 -->
+                <!-- No input parameter prompt -->
                 <el-empty
                   v-else
-                  description="此流程无需输入参数"
+                  description="This process requires no input parameters"
                   :image-size="60"
                 />
 
@@ -216,18 +216,18 @@
                     class="submit-btn"
                   >
                     <el-icon><TrendCharts /></el-icon>
-                    开始分析
+                    Start analysis
                   </el-button>
                 </el-form-item>
               </el-form>
             </template>
           </el-card>
 
-          <!-- 执行状态展示 -->
+          <!-- Execution status display -->
           <el-card v-if="taskStatus !== 'idle'" class="status-card" shadow="hover">
             <template #header>
               <div class="card-header">
-                <h3>执行状态</h3>
+                <h3>Execution status</h3>
                 <el-tag :type="statusTagType" size="small">{{ statusTagText }}</el-tag>
               </div>
             </template>
@@ -235,7 +235,7 @@
             <div class="status-content">
               <div class="status-info">
                 <div class="info-item">
-                  <span class="info-label">任务ID</span>
+                  <span class="info-label">Task ID</span>
                   <span class="info-value">
                     <el-text class="task-id-text" truncated>{{ taskId || '—' }}</el-text>
                     <el-button
@@ -246,28 +246,28 @@
                       @click="copyTaskId"
                     >
                       <el-icon><CopyDocument /></el-icon>
-                      复制
+                      Copy
                     </el-button>
                   </span>
                 </div>
 
                 <div class="info-item">
-                  <span class="info-label">分析目标</span>
+                  <span class="info-label">Analyze goals</span>
                   <span class="info-value">{{ formValues.analysis_target || formValues.ticker || '—' }}</span>
                 </div>
 
                 <div class="info-item">
-                  <span class="info-label">开始时间</span>
+                  <span class="info-label">start time</span>
                   <span class="info-value">{{ startedAt || '—' }}</span>
                 </div>
 
                 <div v-if="taskStatus === 'running'" class="info-item">
-                  <span class="info-label">已用时间</span>
+                  <span class="info-label">elapsed time</span>
                   <span class="info-value">{{ elapsedText }}</span>
                 </div>
               </div>
 
-              <!-- 进度条 -->
+              <!-- progress bar -->
               <div v-if="taskStatus === 'running'" class="progress-section">
                 <el-progress
                   :percentage="progressPercent"
@@ -281,7 +281,7 @@
                 </div>
               </div>
 
-              <!-- 错误信息 -->
+              <!-- error message -->
               <el-alert
                 v-if="taskStatus === 'failed' && errorMessage"
                 type="error"
@@ -291,21 +291,21 @@
                 style="margin-top: 12px;"
               />
 
-              <!-- 完成提示 -->
+              <!-- Completion prompt -->
               <el-alert
                 v-if="taskStatus === 'completed'"
                 type="success"
                 :closable="false"
                 show-icon
-                title="分析任务已完成"
+                title="Analysis task completed"
                 style="margin-top: 12px;"
               >
                 <template #default>
-                  <div>点击上方"查看结果"按钮，可前往任务中心查看完整分析报告。</div>
+                  <div>Click above"View results"button to go to the task center to view the complete analysis report.</div>
                 </template>
               </el-alert>
 
-              <!-- 结果链接 -->
+              <!-- Results link -->
               <div v-if="taskStatus === 'completed'" class="result-link-section">
                 <el-button
                   type="primary"
@@ -314,7 +314,7 @@
                   class="submit-btn"
                 >
                   <el-icon><Document /></el-icon>
-                  查看结果
+                  View results
                 </el-button>
                 <el-button
                   size="large"
@@ -322,11 +322,11 @@
                   class="submit-btn"
                 >
                   <el-icon><Refresh /></el-icon>
-                  重新分析
+                  Reanalyze
                 </el-button>
               </div>
 
-              <!-- 失败链接 -->
+              <!-- failed link -->
               <div v-if="taskStatus === 'failed'" class="result-link-section">
                 <el-button
                   type="danger"
@@ -335,7 +335,7 @@
                   class="submit-btn"
                 >
                   <el-icon><Refresh /></el-icon>
-                  重新分析
+                  Reanalyze
                 </el-button>
               </div>
             </div>
@@ -343,16 +343,16 @@
         </div>
       </el-tab-pane>
 
-      <!-- 历史结果标签页（保留原逻辑） -->
-      <el-tab-pane label="历史结果" name="history">
+      <!-- Historical results tab page (retain original logic) -->
+      <el-tab-pane label="historical results" name="history">
         <div class="history-container">
-          <!-- 筛选栏 -->
+          <!-- filter bar -->
           <el-card shadow="never" class="filter-card">
             <el-form :inline="true" :model="historyFilters" size="default">
-              <el-form-item label="流程">
+              <el-form-item label="process">
                 <el-select
                   v-model="historyFilters.workflow_id"
-                  placeholder="全部流程"
+                  placeholder="All processes"
                   clearable
                   style="width: 200px"
                 >
@@ -365,57 +365,57 @@
                 </el-select>
               </el-form-item>
 
-              <el-form-item label="时间范围">
+              <el-form-item label="time range">
                 <el-date-picker
                   v-model="historyDateRange"
                   type="daterange"
-                  range-separator="至"
-                  start-placeholder="开始日期"
-                  end-placeholder="结束日期"
+                  range-separator="to"
+                  start-placeholder="start date"
+                  end-placeholder="end date"
                   format="YYYY-MM-DD"
                   value-format="YYYY-MM-DD"
                   style="width: 260px"
                 />
               </el-form-item>
 
-              <el-form-item label="关键字">
+              <el-form-item label="Keywords">
                 <el-input
                   v-model="historyFilters.keyword"
-                  placeholder="搜索分析目标"
+                  placeholder="Search analytics goals"
                   clearable
                   style="width: 200px"
                   @keyup.enter="loadHistory"
                 />
               </el-form-item>
 
-              <el-form-item label="状态">
+              <el-form-item label="Status">
                 <el-select
                   v-model="historyFilters.status"
-                  placeholder="全部状态"
+                  placeholder="All status"
                   clearable
                   style="width: 120px"
                 >
-                  <el-option label="已完成" value="completed" />
-                  <el-option label="进行中" value="processing" />
-                  <el-option label="失败" value="failed" />
-                  <el-option label="等待中" value="pending" />
+                  <el-option label="Completed" value="completed" />
+                  <el-option label="In progress" value="processing" />
+                  <el-option label="failed" value="failed" />
+                  <el-option label="Waiting" value="pending" />
                 </el-select>
               </el-form-item>
 
               <el-form-item>
                 <el-button type="primary" @click="loadHistory" :loading="historyLoading">
                   <el-icon><Search /></el-icon>
-                  查询
+                  Query
                 </el-button>
                 <el-button @click="resetHistoryFilters">
                   <el-icon><Refresh /></el-icon>
-                  重置
+                  reset
                 </el-button>
               </el-form-item>
             </el-form>
           </el-card>
 
-          <!-- 历史结果表格 -->
+          <!-- Historical results table -->
           <el-card shadow="never" class="history-table-card">
             <el-table
               :data="historyList"
@@ -424,10 +424,10 @@
               style="width: 100%"
             >
               <template #empty>
-                <el-empty description="暂无历史记录，执行新分析后可在此查看结果" />
+                <el-empty description="There is no history yet. After performing a new analysis, you can view the results here." />
               </template>
 
-              <el-table-column label="分析目标" min-width="220">
+              <el-table-column label="Analyze goals" min-width="220">
                 <template #default="{ row }">
                   <el-link
                     type="primary"
@@ -439,13 +439,13 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="流程" min-width="160">
+              <el-table-column label="process" min-width="160">
                 <template #default="{ row }">
                   {{ getWorkflowName(row.workflow_id) }}
                 </template>
               </el-table-column>
 
-              <el-table-column label="状态" width="100" align="center">
+              <el-table-column label="Status" width="100" align="center">
                 <template #default="{ row }">
                   <el-tag :type="getHistoryStatusColor(row.status)" size="small">
                     {{ getHistoryStatusName(row.status) }}
@@ -453,7 +453,7 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="进度" width="120">
+              <el-table-column label="Progress" width="120">
                 <template #default="{ row }">
                   <el-progress
                     v-if="row.status === 'processing'"
@@ -465,30 +465,30 @@
                 </template>
               </el-table-column>
 
-              <el-table-column label="创建时间" width="170">
+              <el-table-column label="creation time" width="170">
                 <template #default="{ row }">
                   {{ formatHistoryTime(row.created_at) }}
                 </template>
               </el-table-column>
 
-              <el-table-column label="耗时" width="100" align="center">
+              <el-table-column label="Time consuming" width="100" align="center">
                 <template #default="{ row }">
                   <span v-if="row.execution_time > 0">{{ formatDuration(row.execution_time) }}</span>
                   <span v-else style="color: #909399">—</span>
                 </template>
               </el-table-column>
 
-              <el-table-column label="操作" width="120" fixed="right" align="center">
+              <el-table-column label="Operation" width="120" fixed="right" align="center">
                 <template #default="{ row }">
                   <el-button link type="primary" size="small" @click="showHistoryDetail(row)">
                     <el-icon><View /></el-icon>
-                    查看详情
+                    View details
                   </el-button>
                 </template>
               </el-table-column>
             </el-table>
 
-            <!-- 分页 -->
+            <!-- Pagination -->
             <div class="pagination-wrapper" v-if="historyTotal > 0">
               <el-pagination
                 v-model:current-page="historyCurrentPage"
@@ -505,10 +505,10 @@
       </el-tab-pane>
     </el-tabs>
 
-    <!-- 历史结果详情对话框（保留原逻辑） -->
+    <!-- Historical result details dialog box (retain original logic) -->
     <el-dialog
       v-model="detailDialogVisible"
-      title="分析结果详情"
+      title="Analysis result details"
       width="90%"
       top="3vh"
       :close-on-click-modal="false"
@@ -516,65 +516,65 @@
     >
       <div v-loading="detailLoading" class="detail-container">
         <template v-if="detailData">
-          <!-- 基本信息 -->
+          <!-- Basic information -->
           <el-card shadow="never" class="detail-section">
             <template #header>
               <div class="detail-card-header">
                 <el-icon><InfoFilled /></el-icon>
-                <span>基本信息</span>
+                <span>Basic information</span>
               </div>
             </template>
             <el-descriptions :column="3" border>
-              <el-descriptions-item label="分析目标" :span="2">
+              <el-descriptions-item label="Analyze goals" :span="2">
                 <strong>{{ detailData.task_params?.symbol || detailData.task_params?.analysis_target || detailData.task_params?.ticker || '—' }}</strong>
               </el-descriptions-item>
-              <el-descriptions-item label="状态">
+              <el-descriptions-item label="Status">
                 <el-tag :type="getHistoryStatusColor(detailData.status)">
                   {{ getHistoryStatusName(detailData.status) }}
                 </el-tag>
               </el-descriptions-item>
-              <el-descriptions-item label="流程">
+              <el-descriptions-item label="process">
                 {{ getWorkflowName(detailData.workflow_id) }}
               </el-descriptions-item>
-              <el-descriptions-item label="创建时间">
+              <el-descriptions-item label="creation time">
                 {{ formatHistoryTime(detailData.created_at) }}
               </el-descriptions-item>
-              <el-descriptions-item label="耗时">
+              <el-descriptions-item label="Time consuming">
                 {{ detailData.execution_time > 0 ? formatDuration(detailData.execution_time) : '—' }}
               </el-descriptions-item>
             </el-descriptions>
           </el-card>
 
-          <!-- 错误信息 -->
+          <!-- error message -->
           <el-card v-if="detailData.error_message" shadow="never" class="detail-section error-section">
             <template #header>
               <div class="detail-card-header">
                 <el-icon><Warning /></el-icon>
-                <span>错误信息</span>
+                <span>error message</span>
               </div>
             </template>
             <el-alert :title="detailData.error_message" type="error" :closable="false" show-icon />
           </el-card>
 
-          <!-- 分析摘要 -->
+          <!-- Analysis summary -->
           <el-card v-if="detailData.result" shadow="never" class="detail-section">
             <template #header>
               <div class="detail-card-header">
                 <el-icon><Document /></el-icon>
-                <span>分析摘要</span>
+                <span>Analysis summary</span>
               </div>
             </template>
             <div class="summary-content">
               <div class="summary-item" v-if="detailData.result.summary">
-                <div class="summary-label">总结：</div>
+                <div class="summary-label">Summary:</div>
                 <div class="summary-value">{{ detailData.result.summary }}</div>
               </div>
               <div class="summary-item" v-if="detailData.result.recommendation">
-                <div class="summary-label">建议：</div>
+                <div class="summary-label">Suggestions:</div>
                 <div class="summary-value">{{ detailData.result.recommendation }}</div>
               </div>
               <div class="summary-item" v-if="detailData.result.risk_level">
-                <div class="summary-label">风险等级：</div>
+                <div class="summary-label">Risk level:</div>
                 <div class="summary-value">
                   <el-tag size="small">{{ detailData.result.risk_level }}</el-tag>
                 </div>
@@ -582,12 +582,12 @@
             </div>
           </el-card>
 
-          <!-- 完整工作流输出 -->
+          <!-- Complete workflow output -->
           <el-card v-if="detailData.result?.report_manifest?.length" shadow="never" class="detail-section">
             <template #header>
               <div class="detail-card-header">
                 <el-icon><DataAnalysis /></el-icon>
-                <span>完整工作流输出</span>
+                <span>Complete workflow output</span>
               </div>
             </template>
             <el-collapse v-model="activeReportNames" class="report-collapse">
@@ -607,7 +607,7 @@
                       effect="plain"
                       style="margin-left: 8px;"
                     >
-                      主报告
+                      main report
                     </el-tag>
                     <el-tag
                       v-if="!item.has_content"
@@ -616,7 +616,7 @@
                       effect="plain"
                       style="margin-left: 8px;"
                     >
-                      无内容
+                      No content
                     </el-tag>
                   </div>
                 </template>
@@ -624,35 +624,35 @@
                   <template v-if="getReportContent(item.field)">
                     <div class="markdown-content" v-html="renderMarkdown(getReportContent(item.field))"></div>
                   </template>
-                  <el-text v-else type="info">该报告暂无内容</el-text>
+                  <el-text v-else type="info">This report has no content yet</el-text>
                 </div>
               </el-collapse-item>
             </el-collapse>
           </el-card>
 
-          <!-- 研究结论信息 -->
+          <!-- Research conclusion information -->
           <el-card v-if="detailData.result?.decision" shadow="never" class="detail-section">
             <template #header>
               <div class="detail-card-header">
                 <el-icon><Tickets /></el-icon>
-                <span>研究结论信息</span>
+                <span>Research conclusion information</span>
               </div>
             </template>
             <el-descriptions :column="2" border>
-              <el-descriptions-item label="研究结论倾向">
+              <el-descriptions-item label="research conclusion tendency">
                 <el-tag :type="getDecisionColor(detailData.result.decision.action)">
                   {{ detailData.result.decision.action || '—' }}
                 </el-tag>
               </el-descriptions-item>
-              <el-descriptions-item label="置信度">
+              <el-descriptions-item label="Confidence">
                 {{ formatPercent(detailData.result.decision.confidence) }}
               </el-descriptions-item>
-              <el-descriptions-item label="风险评分" :span="2">
+              <el-descriptions-item label="risk score" :span="2">
                 {{ detailData.result.decision.risk_score ?? '—' }}
               </el-descriptions-item>
               <el-descriptions-item
                 v-if="detailData.result.decision.reasoning"
-                label="研究依据"
+                label="Research basis"
                 :span="2"
               >
                 {{ detailData.result.decision.reasoning }}
@@ -660,26 +660,26 @@
             </el-descriptions>
           </el-card>
 
-          <!-- 原始数据 -->
+          <!-- raw data -->
           <el-card shadow="never" class="detail-section">
             <template #header>
               <div class="detail-card-header">
                 <el-icon><Document /></el-icon>
-                <span>原始数据（JSON）</span>
+                <span>Raw data (JSON)</span>
               </div>
             </template>
             <el-collapse>
-              <el-collapse-item title="展开查看完整 JSON" name="raw">
+              <el-collapse-item title="Expand to view complete JSON" name="raw">
                 <pre class="json-content">{{ JSON.stringify(detailData, null, 2) }}</pre>
               </el-collapse-item>
             </el-collapse>
           </el-card>
         </template>
-        <el-empty v-else-if="!detailLoading" description="暂无数据" />
+        <el-empty v-else-if="!detailLoading" description="No data yet" />
       </div>
 
       <template #footer>
-        <el-button @click="detailDialogVisible = false">关闭</el-button>
+        <el-button @click="detailDialogVisible = false">close</el-button>
       </template>
     </el-dialog>
   </div>
@@ -719,27 +719,27 @@ import { renderMarkdown as safeMarkdown } from '@/utils/markdown'
 
 const router = useRouter()
 
-// ==================== 标签页切换 ====================
+// ==================== Tab switching ====================
 const activeTab = ref<'new' | 'history'>('new')
 
-// 流程选择
+// Process selection
 const workflows = ref<WorkflowSummary[]>([])
 const selectedWorkflowId = ref('')
 const loadingWorkflows = ref(false)
 
-// 选中流程的完整数据（包含 input_config）
+// Complete data of the selected process (including input_config)
 const selectedWorkflowFull = ref<WorkflowDefinition | null>(null)
 const loadingSelectedWorkflow = ref(false)
 
-// 模型列表（仅用于 select 类型的模型字段动态填充选项）
+// Model list (only for select type model field dynamic filling option)
 const modelsLoading = ref(false)
 const allModels = ref<LLMConfig[]>([])
 const enabledModels = computed(() => allModels.value.filter(m => m.enabled))
 
-// 动态表单值：formValues[field.name] = 值
+// Dynamic form values:formValues[field.name] = value
 const formValues = ref<Record<string, any>>({})
 
-// 输入参数字段列表（从 workflow.input_config.fields 读取）
+// List of input parameter fields (read from workflow.input_config.fields)
 const selectedWorkflow = computed(() => {
   return workflows.value.find(w => w.id === selectedWorkflowId.value)
 })
@@ -747,7 +747,7 @@ const inputFields = computed<InputFieldConfig[]>(() => {
   return selectedWorkflowFull.value?.input_config?.fields || []
 })
 
-// 按分组组织字段
+// Organize fields into groups
 const groupedFields = computed(() => {
   const fields = [...inputFields.value].sort((a, b) => (a.order || 0) - (b.order || 0))
   const groups: Array<{ name: string; fields: InputFieldConfig[] }> = []
@@ -765,7 +765,7 @@ const groupedFields = computed(() => {
   return groups
 })
 
-// 执行状态
+// Execution status
 const executing = ref(false)
 const taskId = ref('')
 const taskStatus = ref<'idle' | 'running' | 'completed' | 'failed'>('idle')
@@ -778,7 +778,7 @@ const elapsedSeconds = ref(0)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let elapsedTimer: ReturnType<typeof setInterval> | null = null
 
-// 状态标签
+// status label
 const statusTagType = computed<'info' | 'warning' | 'success' | 'danger'>(() => {
   switch (taskStatus.value) {
     case 'running': return 'warning'
@@ -790,42 +790,42 @@ const statusTagType = computed<'info' | 'warning' | 'success' | 'danger'>(() => 
 
 const statusTagText = computed(() => {
   switch (taskStatus.value) {
-    case 'running': return '运行中'
-    case 'completed': return '已完成'
-    case 'failed': return '执行失败'
-    default: return '等待中'
+    case 'running': return 'Running'
+    case 'completed': return 'Completed'
+    case 'failed': return 'Execution failed'
+    default: return 'Waiting'
   }
 })
 
-// 进度条状态
+// progress bar status
 const progressStatus = computed<'' | 'success' | 'exception'>(() => {
   if (taskStatus.value === 'completed') return 'success'
   if (taskStatus.value === 'failed') return 'exception'
   return ''
 })
 
-// 已用时间格式化
+// Elapsed time formatting
 const elapsedText = computed(() => {
   const s = elapsedSeconds.value
-  if (s < 60) return `${s} 秒`
+  if (s < 60) return `${s} seconds`
   const m = Math.floor(s / 60)
   const rest = s % 60
-  return `${m} 分 ${rest} 秒`
+  return `${m} points ${rest} seconds`
 })
 
-// ==================== 初始化 ====================
+// ==================== initialization ====================
 
-// 加载模型配置
+// Load model configuration
 const loadModels = async () => {
   modelsLoading.value = true
   try {
-    // 🔥 京东云模式：先从后端加载可用模型列表，覆盖默认值
+    // 🔥 Jingdong Cloud mode: first load the list of available models from the backend, overwriting the default value
     await loadJdyunChatModels()
 
     const response = await configApi.getLLMConfigs()
     let models = Array.isArray(response) ? response : []
 
-    // 🔧 京东云模式：仅保留预置的 4 个模型
+    // 🔧 JD Cloud mode: only retain the 4 preset models
     if (isJdyunMode()) {
       const jdyunModelSet = new Set<string>(JDYUN_CHAT_MODELS)
       models = models.filter((m: any) => jdyunModelSet.has(m.model_name))
@@ -840,8 +840,8 @@ const loadModels = async () => {
     }
     allModels.value = models
   } catch (error) {
-    console.error('加载模型配置失败:', error)
-    // 京东云模式兜底
+    console.error('Failed to load model configuration:', error)
+    // Jingdong cloud model tells the story
     if (isJdyunMode()) {
       allModels.value = JDYUN_CHAT_MODELS.map(name => ({
         model_name: name,
@@ -855,7 +855,7 @@ const loadModels = async () => {
   }
 }
 
-// 加载流程列表
+// Load process list
 const loadWorkflows = async () => {
   loadingWorkflows.value = true
   try {
@@ -863,7 +863,7 @@ const loadWorkflows = async () => {
     const list = Array.isArray(data) ? data : []
     workflows.value = list.filter((w: WorkflowSummary) => w.workflow_type === 'general')
 
-    // 自动选中默认流程
+    // Automatically select default process
     const defaultWf = workflows.value.find(w => w.is_default)
     if (defaultWf) {
       selectedWorkflowId.value = defaultWf.id
@@ -871,27 +871,27 @@ const loadWorkflows = async () => {
       selectedWorkflowId.value = workflows.value[0].id
     }
   } catch (e) {
-    console.error('加载流程失败', e)
-    ElMessage.error('加载流程列表失败')
+    console.error('Loading process failed', e)
+    ElMessage.error('Failed to load process list')
   } finally {
     loadingWorkflows.value = false
   }
 }
 
-// 初始化表单默认值
+// Initialize form default values
 const initFormValues = async () => {
   const values: Record<string, any> = {}
-  // 京东云模式：预置模型白名单，用于校验默认模型
+  // Jingdong Cloud mode: preset model whitelist, used to verify the default model
   const jdyunModelSet = isJdyunMode() ? new Set<string>(JDYUN_CHAT_MODELS) : null
   for (const field of inputFields.value) {
     let defaultVal = field.default
-    // 特殊处理模型字段：从系统配置加载默认模型
+    // Special handling of model fields: loading default model from system configuration
     if (field.name === 'quick_analysis_model' && !defaultVal) {
       try {
         const defaultModels = await configApi.getDefaultModels()
         defaultVal = defaultModels.quick_analysis_model || ''
       } catch { defaultVal = '' }
-      // 🔧 京东云模式：默认模型不在白名单内时回退到第一个预置模型
+      // 🔧 JD Cloud Mode: Fall back to the first preset model when the default model is not in the whitelist
       if (isJdyunMode() && defaultVal && jdyunModelSet && !jdyunModelSet.has(defaultVal)) {
         defaultVal = JDYUN_CHAT_MODELS[0]
       }
@@ -900,7 +900,7 @@ const initFormValues = async () => {
         const defaultModels = await configApi.getDefaultModels()
         defaultVal = defaultModels.deep_analysis_model || ''
       } catch { defaultVal = '' }
-      // 🔧 京东云模式：默认模型不在白名单内时回退到第一个预置模型
+      // 🔧 JD Cloud Mode: Fall back to the first preset model when the default model is not in the whitelist
       if (isJdyunMode() && defaultVal && jdyunModelSet && !jdyunModelSet.has(defaultVal)) {
         defaultVal = JDYUN_CHAT_MODELS[0]
       }
@@ -934,19 +934,19 @@ const initFormValues = async () => {
   formValues.value = values
 }
 
-// 深度值转换
+// Depth value conversion
 const convertDepthToText = (depth: number) => {
   switch (depth) {
-    case 1: return '快速'
-    case 2: return '基础'
-    case 3: return '标准'
-    case 4: return '深度'
-    case 5: return '全面'
-    default: return '标准'
+    case 1: return 'fast'
+    case 2: return 'Basics'
+    case 3: return 'Standard'
+    case 4: return 'Depth'
+    case 5: return 'Comprehensive'
+    default: return 'Standard'
   }
 }
 
-// 选中流程变化时加载完整 workflow 数据
+// Load complete workflow data when process changes are selected
 watch(selectedWorkflowId, async (newVal) => {
   if (!newVal) {
     selectedWorkflowFull.value = null
@@ -959,41 +959,41 @@ watch(selectedWorkflowId, async (newVal) => {
     selectedWorkflowFull.value = await workflowApi.get(newVal)
     await initFormValues()
   } catch (e) {
-    console.error('加载流程详情失败:', e)
-    ElMessage.error('加载流程详情失败')
+    console.error('Failed to load process details:', e)
+    ElMessage.error('Failed to load process details')
   } finally {
     loadingSelectedWorkflow.value = false
   }
 })
 
-// ==================== 执行分析 ====================
+// ==================== Perform analysis ====================
 
-// 复制任务ID
+// Copy task ID
 const copyTaskId = async () => {
   if (!taskId.value) return
   try {
     await navigator.clipboard.writeText(taskId.value)
-    ElMessage.success('任务ID已复制')
+    ElMessage.success('Task ID copied')
   } catch {
-    ElMessage.warning('复制失败，请手动选择文本复制')
+    ElMessage.warning('Copy failed, please manually select text to copy')
   }
 }
 
-// 执行分析
+// Perform analysis
 const handleExecute = async () => {
   if (!selectedWorkflowId.value) {
-    ElMessage.warning('请先选择分析流程')
+    ElMessage.warning('Please select the analysis process first')
     return
   }
 
-  // 校验必填字段
+  // Validate required fields
   for (const field of inputFields.value) {
     if (field.required) {
       const val = formValues.value[field.name]
       const empty = val === null || val === undefined || val === '' ||
         (Array.isArray(val) && val.length === 0)
       if (empty) {
-        ElMessage.warning(`请填写${field.label || field.name}`)
+        ElMessage.warning(`Please fill in${field.label || field.name}`)
         return
       }
     }
@@ -1003,15 +1003,15 @@ const handleExecute = async () => {
   taskStatus.value = 'running'
   errorMessage.value = ''
   progressPercent.value = 0
-  currentStep.value = '正在初始化分析引擎...'
+  currentStep.value = 'Initializing analysis engine...'
   startedAt.value = new Date().toLocaleString('zh-CN', { hour12: false })
   elapsedSeconds.value = 0
 
-  // 启动计时
+  // Start timing
   startElapsedTimer()
 
   try {
-    // 构造请求参数
+    // Construct request parameters
     const params: Record<string, any> = {}
     for (const field of inputFields.value) {
       const val = formValues.value[field.name]
@@ -1020,14 +1020,14 @@ const handleExecute = async () => {
       }
     }
 
-    // 如果没有 ticker 字段但有 analysis_target，复用作为 ticker（工作流引擎需要 ticker 做参数映射）
+    // If there is no ticker field but there is analysis_target, reuse it as ticker (the workflow engine needs ticker for parameter mapping)
     if (!params.ticker) {
       if (params.analysis_target) {
         params.ticker = params.analysis_target
       }
     }
 
-    // 所有参数合并到 custom_params 中
+    // All parameters merged into custom_params
     const customParams: Record<string, any> = { ...params }
     delete customParams.ticker
     params.custom_params = customParams
@@ -1036,14 +1036,14 @@ const handleExecute = async () => {
 
     if (result.success && result.task_id) {
       taskId.value = result.task_id
-      ElMessage.success('分析任务已创建')
+      ElMessage.success('Analysis task has been created')
       startPolling()
     } else {
-      throw new Error(result.error || result.message || '未获取到任务ID')
+      throw new Error(result.error || result.message || 'Task not obtained ID')
     }
   } catch (e: any) {
     taskStatus.value = 'failed'
-    errorMessage.value = e?.message || '执行失败'
+    errorMessage.value = e?.message || 'Execution failed'
     ElMessage.error(errorMessage.value)
     stopElapsedTimer()
   } finally {
@@ -1051,7 +1051,7 @@ const handleExecute = async () => {
   }
 }
 
-// 开始轮询任务状态
+// Start polling task status
 const startPolling = () => {
   if (pollTimer) clearInterval(pollTimer)
   pollTimer = setInterval(async () => {
@@ -1076,16 +1076,16 @@ const startPolling = () => {
         progressPercent.value = 100
         stopPolling()
         stopElapsedTimer()
-        ElMessage.success('分析完成')
+        ElMessage.success('Analysis completed')
       } else if (st === 'failed' || st === 'error') {
         taskStatus.value = 'failed'
-        errorMessage.value = status.error || status.error_message || '任务执行失败'
+        errorMessage.value = status.error || status.error_message || 'Task execution failed'
         stopPolling()
         stopElapsedTimer()
-        ElMessage.error('分析失败')
+        ElMessage.error('Analysis failed')
       }
     } catch (e) {
-      console.error('查询任务状态失败', e)
+      console.error('Failed to query task status', e)
     }
   }, 3000)
 }
@@ -1128,7 +1128,7 @@ const viewResult = () => {
   router.push({ path: '/tasks/unified', query: { task_id: taskId.value } })
 }
 
-// ==================== 历史结果管理 ====================
+// ==================== Historical results management ====================
 
 const historyList = ref<GeneralTaskListItem[]>([])
 const historyLoading = ref(false)
@@ -1174,8 +1174,8 @@ const loadHistory = async () => {
     historyList.value = data.tasks || []
     historyTotal.value = data.total || 0
   } catch (e: any) {
-    console.error('加载历史结果失败', e)
-    ElMessage.error(e?.message || '加载历史结果失败')
+    console.error('Failed to load historical results', e)
+    ElMessage.error(e?.message || 'Failed to load historical results')
   } finally {
     historyLoading.value = false
   }
@@ -1200,8 +1200,8 @@ const showHistoryDetail = async (item: GeneralTaskListItem) => {
     const data = await getTaskDetail(item.task_id)
     detailData.value = (data as any)?.data || data
   } catch (e: any) {
-    console.error('加载详情失败', e)
-    ElMessage.error(e?.message || '加载详情失败')
+    console.error('Failed to load details', e)
+    ElMessage.error(e?.message || 'Failed to load details')
   } finally {
     detailLoading.value = false
   }
@@ -1266,17 +1266,17 @@ const renderMarkdown = (text: string) => {
 const getDecisionColor = (action: string) => {
   if (!action) return 'info'
   const a = action.toLowerCase()
-  // 新合规术语"乐观/审慎/中性"优先匹配（语义为研究结论倾向，非交易指令）
-  if (a.includes('乐观')) return 'success'   // 绿色：积极倾向
-  if (a.includes('审慎')) return 'warning'   // 黄色：需要谨慎
-  if (a.includes('中性')) return 'info'      // 灰色：无明显倾向
-  // 旧市场观点术语"看涨/看跌" + 旧交易指令"买入/卖出"（兼容存量数据）
-  if (a.includes('buy') || a.includes('做多') || a.includes('买入') || a.includes('看涨')) return 'success'
-  if (a.includes('sell') || a.includes('做空') || a.includes('卖出') || a.includes('看跌')) return 'danger'
+  // New Compliance Terminology"Optimistic/cautious/neutral"Priority matching (semantics are research conclusion tendencies, not transaction instructions)
+  if (a.includes('optimistic')) return 'success'   // Green: Positive tendencies
+  if (a.includes('Prudence')) return 'warning'   // Yellow: need to be cautious
+  if (a.includes('Neutral')) return 'info'      // Gray: no obvious tendency
+  // old market view terminology"Bullish/Putish" + Old trading instructions"Buy/Sell" (Compatible with existing data)
+  if (a.includes('buy') || a.includes('Go long') || a.includes('buy') || a.includes('bullish')) return 'success'
+  if (a.includes('sell') || a.includes('short') || a.includes('sell') || a.includes('Bearish')) return 'danger'
   return 'info'
 }
 
-// ==================== 生命周期 ====================
+// ==================== life cycle ====================
 
 onMounted(async () => {
   await Promise.all([
@@ -1465,7 +1465,7 @@ onUnmounted(() => {
   gap: 12px;
 }
 
-/* 历史结果 */
+/* historical results */
 .history-container {
   display: flex;
   flex-direction: column;

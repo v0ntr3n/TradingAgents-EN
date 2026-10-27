@@ -5,72 +5,72 @@
       <div class="hero-content">
         <div class="hero-text">
           <h1 class="hero-title">
-            {{ isJdyun ? 'TradingAgents-CN 京东云合作版' : 'TradingAgents-CN' }}
-            <span class="version-badge">{{ isJdyun ? '京东云版' : 'v3.0' }}</span>
+            {{ isJdyun ? 'TradingAgents-CN JD Cloud Cooperation Edition' : 'TradingAgents-CN' }}
+            <span class="version-badge">{{ isJdyun ? 'Jingdong cloud version' : 'v3.0' }}</span>
           </h1>
           <p class="hero-subtitle">
-            AI辅助股票分析技术学习平台
+            AI Assisted stock analysis technology learning platform
           </p>
           <p class="hero-description" v-if="!isJdyun">
-            专注于AI辅助分析技术的学习与验证平台。通过优化的工作流引擎和全流程分析辅助，
-            帮助您系统学习股票分析方法，提升分析能力。
+            A learning and verification platform focusing on AI-assisted analysis technology. Assisted by optimized workflow engines and full-process analysis,
+            Help you systematically learn stock analysis methods and improve your analysis capabilities.
           </p>
           <p class="hero-description" v-else>
-            <strong>您是否还在被这些问题困扰？</strong><br/>
-            配 Key、选模型、搭环境，半天过去了还没开始研究；<br/>
-            研究做到一半模型被限流，结果出不来；<br/>
-            网上信息鱼龙混杂，不知道该信什么…
+            <strong>Are you still troubled by these problems?</strong><br/>
+            Half a day has passed since I assigned keys, selected models, and set up environments, and I still haven t started researching yet;<br/>
+            Halfway through the research, the model was restricted and the results could not be produced;<br/>
+            There is so much information online that I don t know what to believe.…
           </p>
           <p class="hero-description" v-else style="margin-top:-10px;">
-            <strong>京东云合作版帮您一键解决：</strong><br/>
-            开通即用，Key 和数据源全部预配置；<br/>
-            内置 429 限流应对，深度分析稳稳跑完全流程；<br/>
-            14 个维度的结构化研究报告 + 乐观/审慎双情景研究员，帮您系统建立自己的分析方法论。
+            <strong>JD Cloud Cooperation Edition helps you solve the following problems with one click:</strong><br/>
+            Ready to use, keys and data sources are all pre-configured;<br/>
+            Built-in 429 current limiting response, in-depth analysis and stable running of the complete process;<br/>
+            14 Structured research report across dimensions + Optimistic/cautious dual-scenario researcher helps you systematically establish your own analysis methodology.
           </p>
           <div class="hero-positioning" v-if="!isJdyun">
             <div class="positioning-item">
               <el-icon><CircleCheck /></el-icon>
-              <span>用于学习AI股票分析技术</span>
+              <span>Used to learn AI stock analysis technology</span>
             </div>
             <div class="positioning-item">
               <el-icon><CircleCheck /></el-icon>
-              <span>不作操盘指导</span>
+              <span>No operating guidance</span>
             </div>
             <div class="positioning-item">
               <el-icon><CircleCheck /></el-icon>
-              <span>实践学习方法论</span>
+              <span>Practical Learning Methodology</span>
             </div>
           </div>
           <div class="hero-positioning" v-else>
             <div class="positioning-item">
               <el-icon><CircleCheck /></el-icon>
-              <span>0 配置，开通即用</span>
+              <span>0 Configuration, ready to use</span>
             </div>
             <div class="positioning-item">
               <el-icon><CircleCheck /></el-icon>
-              <span>429 自动重试 8 次</span>
+              <span>429 Automatically retry 8 times</span>
             </div>
             <div class="positioning-item">
               <el-icon><CircleCheck /></el-icon>
-              <span>14 维度研究报告</span>
+              <span>14 Dimensional research report</span>
             </div>
             <div class="positioning-item">
               <el-icon><CircleCheck /></el-icon>
-              <span>仅支持A 股</span>
+              <span>Only supports A shares</span>
             </div>
           </div>
           <div class="hero-acknowledgment" v-if="!isJdyun">
             <el-icon><Star /></el-icon>
-            <span>基于 <a href="https://github.com/TauricResearch/TradingAgents" target="_blank" rel="noopener noreferrer">TradingAgents</a> 项目开发，感谢原项目的贡献</span>
+            <span>Based on <a href="https://github.com/TauricResearch/TradingAgents" target="_blank" rel="noopener noreferrer">TradingAgents</a> Project development, thanks to the contribution of the original project</span>
           </div>
           <div class="hero-actions">
             <el-button type="primary" size="large" @click="goToAnalysis">
               <el-icon><TrendCharts /></el-icon>
-              开始分析
+              Start analysis
             </el-button>
             <el-button size="large" @click="goToLearning">
               <el-icon><Reading /></el-icon>
-              查看课程
+              View courses
             </el-button>
           </div>
         </div>
@@ -79,15 +79,15 @@
             <div class="hero-stats">
               <div class="stat-item">
                 <div class="stat-number">v3.0</div>
-                <div class="stat-label">全新升级</div>
+                <div class="stat-label">Brand new upgrade</div>
               </div>
               <div class="stat-item">
-                <div class="stat-number">多</div>
-                <div class="stat-label">智能体协作</div>
+                <div class="stat-number">Much</div>
+                <div class="stat-label">Agent collaboration</div>
               </div>
               <div class="stat-item">
                 <div class="stat-number">AI</div>
-                <div class="stat-label">辅助分析</div>
+                <div class="stat-label">Auxiliary analysis</div>
               </div>
             </div>
           </div>
@@ -95,32 +95,32 @@
       </div>
     </div>
 
-    <!-- 学习中心引导 -->
+    <!-- Learning Center Guide -->
     <div class="learning-banner">
       <div class="banner-content">
         <div class="banner-text">
           <el-icon class="banner-icon"><Reading /></el-icon>
           <div>
-            <h3>系统化学习课程</h3>
-            <p>从入门到实战，24学时核心课程 + 入门/提高/全流程方法构建，助您掌握 AI 辅助股票分析技术</p>
+            <h3>Systematic learning courses</h3>
+            <p>From entry to practice, 24 hours of core courses + Entry/improvement/full-process method construction to help you master AI-assisted stock analysis technology</p>
           </div>
         </div>
         <el-button type="primary" @click="goToLearning">
-          查看课程
+          View courses
           <el-icon class="el-icon--right"><ArrowRight /></el-icon>
         </el-button>
       </div>
     </div>
 
-    <!-- 核心功能 / 京东云版特色 -->
+    <!-- Core functions / JD Cloud version features -->
     <div class="features-section">
       <div class="section-header" v-if="!isJdyun">
-        <h2 class="section-title">核心功能</h2>
-        <p class="section-subtitle">优化分析引擎，全流程分析辅助，提升股票分析学习能力</p>
+        <h2 class="section-title">Core functions</h2>
+        <p class="section-subtitle">Optimize the analysis engine, provide full-process analysis assistance, and improve stock analysis and learning capabilities</p>
       </div>
       <div class="section-header" v-else>
-        <h2 class="section-title">京东云版特色</h2>
-        <p class="section-subtitle">开箱即用、零配置、限速友好、合规研究，专为京东云用户定制</p>
+        <h2 class="section-title">Features of JD Cloud Edition</h2>
+        <p class="section-subtitle">Ready-to-use, zero-configuration, speed limit-friendly, compliance research, specially customized for JD Cloud users</p>
       </div>
 
       <div class="features-grid" v-if="!isJdyun">
@@ -129,14 +129,14 @@
             <div class="feature-icon primary">
               <el-icon><TrendCharts /></el-icon>
             </div>
-            <h3>优化分析引擎</h3>
+            <h3>Optimize analysis engine</h3>
           </div>
-          <p>v3.0 工作流引擎全面升级，支持可视化流程定义、Agent 工坊、Skill 中心和 MCP 服务器。多智能体协作，从基本面、技术面、新闻、社媒等多维度提供全方位分析视角</p>
+          <p>v3.0 The workflow engine has been fully upgraded to support visual process definition, Agent workshop, Skill center and MCP server. Multi-agent collaboration provides a comprehensive analysis perspective from multiple dimensions such as fundamentals, technology, news, and social media.</p>
           <div class="feature-tags">
-            <el-tag size="small">工作流引擎</el-tag>
-            <el-tag size="small">可视化配置</el-tag>
-            <el-tag size="small">多智能体</el-tag>
-            <el-tag size="small">配置化架构</el-tag>
+            <el-tag size="small">workflow engine</el-tag>
+            <el-tag size="small">Visual configuration</el-tag>
+            <el-tag size="small">multi-agent</el-tag>
+            <el-tag size="small">Configurable architecture</el-tag>
           </div>
         </div>
 
@@ -145,13 +145,13 @@
             <div class="feature-icon success">
               <el-icon><Search /></el-icon>
             </div>
-            <h3>全流程分析辅助</h3>
+            <h3>Full process analysis assistance</h3>
           </div>
-          <p>从数据收集、指标计算、智能体分析到报告生成的完整流程辅助。支持单股分析、批量分析、持仓分析、交易复盘等多种分析场景，帮助您系统学习完整的分析流程</p>
+          <p>Complete process assistance from data collection, indicator calculation, agent analysis to report generation. Supports multiple analysis scenarios such as single stock analysis, batch analysis, position analysis, transaction review, etc., helping you systematically learn the complete analysis process</p>
           <div class="feature-tags">
-            <el-tag size="small" type="success">全流程辅助</el-tag>
-            <el-tag size="small" type="success">多场景分析</el-tag>
-            <el-tag size="small" type="success">流程学习</el-tag>
+            <el-tag size="small" type="success">Full process assistance</el-tag>
+            <el-tag size="small" type="success">Multi-scenario analysis</el-tag>
+            <el-tag size="small" type="success">process learning</el-tag>
           </div>
         </div>
 
@@ -160,13 +160,13 @@
             <div class="feature-icon warning">
               <el-icon><Files /></el-icon>
             </div>
-            <h3>提升学习能力</h3>
+            <h3>Improve learning ability</h3>
           </div>
-          <p>通过AI辅助分析，学习专业的股票分析方法论。查看详细的分析过程、推理逻辑和决策依据，理解不同分析维度的作用，逐步提升您的股票分析技能</p>
+          <p>Learn professional stock analysis methodology through AI-assisted analysis. View the detailed analysis process, reasoning logic and decision-making basis, understand the role of different analysis dimensions, and gradually improve your stock analysis skills</p>
           <div class="feature-tags">
-            <el-tag size="small" type="warning">方法论学习</el-tag>
-            <el-tag size="small" type="warning">过程透明</el-tag>
-            <el-tag size="small" type="warning">技能提升</el-tag>
+            <el-tag size="small" type="warning">methodological learning</el-tag>
+            <el-tag size="small" type="warning">Transparent process</el-tag>
+            <el-tag size="small" type="warning">Skill improvement</el-tag>
           </div>
         </div>
 
@@ -175,31 +175,31 @@
             <div class="feature-icon primary">
               <el-icon><Setting /></el-icon>
             </div>
-            <h3>配置化架构</h3>
+            <h3>Configurable architecture</h3>
           </div>
-          <p>v3.0 配置化架构，工作流、智能体、工具、提示词均可动态配置。支持可视化工作流编辑器、Agent 工坊和 Skill 中心，无需修改代码即可调整分析流程，灵活适应不同学习需求</p>
+          <p>v3.0 Configurable architecture, workflow, agents, tools, and prompt words can all be dynamically configured. Supports visual workflow editor, Agent Workshop and Skill Center, allowing you to adjust the analysis process without modifying the code and flexibly adapt to different learning needs</p>
           <div class="feature-tags">
-            <el-tag size="small">动态配置</el-tag>
-            <el-tag size="small">可视化编辑</el-tag>
-            <el-tag size="small">灵活调整</el-tag>
+            <el-tag size="small">Dynamic configuration</el-tag>
+            <el-tag size="small">Visual editing</el-tag>
+            <el-tag size="small">Flexible adjustment</el-tag>
           </div>
         </div>
       </div>
 
-      <!-- 京东云版特色卡片 -->
+      <!-- JD Cloud Version Featured Cards -->
       <div class="features-grid" v-else>
         <div class="feature-card">
           <div class="feature-header">
             <div class="feature-icon primary">
               <el-icon><Box /></el-icon>
             </div>
-            <h3>开箱即用</h3>
+            <h3>Ready out of the box</h3>
           </div>
-          <p>登录就能用，连 5 分钟都不用折腾。不用装环境、不用配数据库、不用敲一行命令，京东云都帮你搞定了</p>
+          <p>Just log in and use it, it doesn t even take 5 minutes. No need to install an environment, configure a database, or type a single line of commands, JD Cloud does it all for you.</p>
           <div class="feature-tags">
-            <el-tag size="small">免安装</el-tag>
-            <el-tag size="small">免部署</el-tag>
-            <el-tag size="small">登录即用</el-tag>
+            <el-tag size="small">No installation required</el-tag>
+            <el-tag size="small">No deployment required</el-tag>
+            <el-tag size="small">Log in and use</el-tag>
           </div>
         </div>
 
@@ -208,13 +208,13 @@
             <div class="feature-icon success">
               <el-icon><Key /></el-icon>
             </div>
-            <h3>零配置</h3>
+            <h3>Zero configuration</h3>
           </div>
-          <p>不用懂 API 是什么、不用去申请 Key、不用纠结选哪个模型。模型、数据源、向量库全部京东云预配好，你只管用就行</p>
+          <p>There is no need to understand what the API is, no need to apply for a Key, and no need to worry about which model to choose. Models, data sources, and vector libraries are all pre-configured on JD Cloud, so you just need to use them.</p>
           <div class="feature-tags">
-            <el-tag size="small" type="success">免Key</el-tag>
-            <el-tag size="small" type="success">免选模型</el-tag>
-            <el-tag size="small" type="success">零门槛</el-tag>
+            <el-tag size="small" type="success">Free Key</el-tag>
+            <el-tag size="small" type="success">free model</el-tag>
+            <el-tag size="small" type="success">Zero threshold</el-tag>
           </div>
         </div>
 
@@ -223,13 +223,13 @@
             <div class="feature-icon warning">
               <el-icon><DataAnalysis /></el-icon>
             </div>
-            <h3>覆盖全流程</h3>
+            <h3>Cover the whole process</h3>
           </div>
-          <p>想研究一只股票？想知道哪些股票值得看？想知道自己的操作对不对？单股分析、智能筛选、持仓复盘、交易计划，一个系统全搞定</p>
+          <p>Want to research a stock? Want to know which stocks are worth watching? Want to know if what you are doing is correct? Single stock analysis, intelligent screening, position review, and trading plan, all done in one system</p>
           <div class="feature-tags">
-            <el-tag size="small" type="warning">单股研究</el-tag>
-            <el-tag size="small" type="warning">智能选股</el-tag>
-            <el-tag size="small" type="warning">持仓复盘</el-tag>
+            <el-tag size="small" type="warning">single stock research</el-tag>
+            <el-tag size="small" type="warning">Smart stock selection</el-tag>
+            <el-tag size="small" type="warning">Position review</el-tag>
           </div>
         </div>
 
@@ -238,22 +238,22 @@
             <div class="feature-icon info">
               <el-icon><ChatDotRound /></el-icon>
             </div>
-            <h3>不会用？问 AI 就行</h3>
+            <h3>Don t know how to use it? Just ask the AI</h3>
           </div>
-          <p>右下角那个小圆点就是你的随身助手。"报告怎么导出？""筛选条件怎么设？"——直接问它，比翻文档快多了</p>
+          <p>The little dot in the lower right corner is your portable assistant."How to export the report?""How to set filter conditions?"——Asking it directly is much faster than flipping through documents</p>
           <div class="feature-tags">
-            <el-tag size="small" type="info">随时提问</el-tag>
-            <el-tag size="small" type="info">看手册</el-tag>
-            <el-tag size="small" type="info">配操作</el-tag>
+            <el-tag size="small" type="info">Ask questions anytime</el-tag>
+            <el-tag size="small" type="info">read manual</el-tag>
+            <el-tag size="small" type="info">configuration operation</el-tag>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 版本信息 -->
+    <!-- Version information -->
     <div class="version-section">
       <div class="section-header">
-        <h2 class="section-title">版本信息</h2>
+        <h2 class="section-title">Version information</h2>
       </div>
 
       <div class="version-info" v-loading="systemInfoLoading">
@@ -264,40 +264,40 @@
           </div>
           <div class="version-details">
             <div class="version-item" v-if="systemInfo.full_version">
-              <span class="label">完整版本</span>
+              <span class="label">full version</span>
               <span class="value">{{ systemInfo.full_version }}</span>
             </div>
             <div class="version-item" v-if="systemInfo.build_date">
-              <span class="label">构建时间</span>
+              <span class="label">Build time</span>
               <span class="value">{{ formatBuildDate(systemInfo.build_date) }}</span>
             </div>
             <div class="version-item" v-if="systemInfo.build_type">
-              <span class="label">构建类型</span>
+              <span class="label">Build type</span>
               <span class="value">{{ formatBuildType(systemInfo.build_type) }}</span>
             </div>
             <div class="version-item" v-if="systemInfo.git_commit">
-              <span class="label">Git提交</span>
+              <span class="label">Git Submit</span>
               <span class="value code">{{ systemInfo.git_commit }}</span>
             </div>
             <div class="version-item" v-if="!systemInfo.build_date">
-              <span class="label">构建时间</span>
+              <span class="label">Build time</span>
               <span class="value">{{ buildTime }}</span>
             </div>
             <div class="version-item">
-              <span class="label">API版本</span>
+              <span class="label">API version</span>
               <span class="value">v3.0</span>
             </div>
           </div>
           <div class="version-actions" v-if="systemInfo.full_version">
             <el-button type="primary" size="small" @click="copyVersionInfo" plain>
               <el-icon><DocumentCopy /></el-icon>
-              复制版本信息
+              Copy version information
             </el-button>
           </div>
         </div>
 
         <div class="framework-info">
-          <h4>技术版本</h4>
+          <h4>Technical version</h4>
           <div class="framework-list">
             <div class="framework-item">
               <span class="name">Vue</span>
@@ -320,11 +320,11 @@
       </div>
     </div>
 
-    <!-- 技术架构 -->
+    <!-- Technical architecture -->
     <div class="tech-section">
       <div class="section-header">
-        <h2 class="section-title">技术架构</h2>
-        <p class="section-subtitle">v3.0 全新架构，配置化设计，为学习平台提供强大支撑</p>
+        <h2 class="section-title">Technical architecture</h2>
+        <p class="section-subtitle">v3.0 New architecture and configurable design provide strong support for the learning platform</p>
       </div>
 
       <div class="tech-stack">
@@ -333,28 +333,28 @@
             <div class="tech-icon frontend">
               <el-icon><Monitor /></el-icon>
             </div>
-            <h3>前端技术</h3>
+            <h3>Front-end technology</h3>
           </div>
           <div class="tech-list">
             <div class="tech-item">
               <span class="tech-name">Vue 3</span>
-              <span class="tech-desc">现代化前端框架</span>
+              <span class="tech-desc">Modern front-end framework</span>
             </div>
             <div class="tech-item">
               <span class="tech-name">TypeScript</span>
-              <span class="tech-desc">类型安全开发</span>
+              <span class="tech-desc">Type-safe development</span>
             </div>
             <div class="tech-item">
               <span class="tech-name">Element Plus</span>
-              <span class="tech-desc">企业级UI组件库</span>
+              <span class="tech-desc">Enterprise-level UI component library</span>
             </div>
             <div class="tech-item">
               <span class="tech-name">Pinia</span>
-              <span class="tech-desc">状态管理</span>
+              <span class="tech-desc">Status management</span>
             </div>
             <div class="tech-item">
               <span class="tech-name">Vite</span>
-              <span class="tech-desc">快速构建工具</span>
+              <span class="tech-desc">Quick build tool</span>
             </div>
           </div>
         </div>
@@ -364,28 +364,28 @@
             <div class="tech-icon backend">
               <el-icon><Monitor /></el-icon>
             </div>
-            <h3>后端技术</h3>
+            <h3>Backend technology</h3>
           </div>
           <div class="tech-list">
             <div class="tech-item">
               <span class="tech-name">FastAPI</span>
-              <span class="tech-desc">高性能API框架</span>
+              <span class="tech-desc">High performance API framework</span>
             </div>
             <div class="tech-item">
               <span class="tech-name">Python 3.11.9</span>
-              <span class="tech-desc">现代Python开发</span>
+              <span class="tech-desc">Modern Python Development</span>
             </div>
             <div class="tech-item">
               <span class="tech-name">Redis</span>
-              <span class="tech-desc">高性能缓存和队列</span>
+              <span class="tech-desc">High performance caching and queuing</span>
             </div>
             <div class="tech-item">
               <span class="tech-name">MongoDB</span>
-              <span class="tech-desc">文档数据库</span>
+              <span class="tech-desc">document database</span>
             </div>
             <div class="tech-item">
-              <span class="tech-name">异步处理</span>
-              <span class="tech-desc">高并发任务处理</span>
+              <span class="tech-name">Asynchronous processing</span>
+              <span class="tech-desc">Highly concurrent task processing</span>
             </div>
           </div>
         </div>
@@ -395,39 +395,39 @@
             <div class="tech-icon ai">
               <el-icon><Cpu /></el-icon>
             </div>
-            <h3>v3.0 核心引擎</h3>
+            <h3>v3.0 core engine</h3>
           </div>
           <div class="tech-list">
             <div class="tech-item">
-              <span class="tech-name">工作流引擎</span>
-              <span class="tech-desc">可视化流程定义</span>
+              <span class="tech-name">workflow engine</span>
+              <span class="tech-desc">Visual process definition</span>
             </div>
             <div class="tech-item">
-              <span class="tech-name">Agent 工坊</span>
-              <span class="tech-desc">自定义智能体开发</span>
+              <span class="tech-name">Agent workshop</span>
+              <span class="tech-desc">Custom agent development</span>
             </div>
             <div class="tech-item">
-              <span class="tech-name">Skill 中心</span>
-              <span class="tech-desc">AI 生成分析工具</span>
+              <span class="tech-name">Skill Center</span>
+              <span class="tech-desc">AI Generate analysis tools</span>
             </div>
             <div class="tech-item">
-              <span class="tech-name">MCP 服务器</span>
-              <span class="tech-desc">外部能力扩展</span>
+              <span class="tech-name">MCP server</span>
+              <span class="tech-desc">External capability expansion</span>
             </div>
             <div class="tech-item">
-              <span class="tech-name">能力索引面板</span>
-              <span class="tech-desc">能力发现与缺口分析</span>
+              <span class="tech-name">Capability Index Panel</span>
+              <span class="tech-desc">Capability discovery and gap analysis</span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 项目来源（京东云版隐藏） -->
+    <!-- Project source (hidden in JD Cloud version) -->
     <div class="origin-section" v-if="!isJdyun">
       <div class="section-header">
-        <h2 class="section-title">项目来源</h2>
-        <p class="section-subtitle">致敬开源，感谢原项目的贡献</p>
+        <h2 class="section-title">Project source</h2>
+        <p class="section-subtitle">Pay tribute to open source and thank you for your contribution to the original project</p>
       </div>
 
       <div class="origin-content">
@@ -450,60 +450,60 @@
 
           <div class="origin-description">
             <p>
-              <strong>TradingAgents-CN</strong> 是基于 <strong>TradingAgents</strong> 项目开发的中文本地化版本。
-              原项目由 Tauric Research 团队开发，是一个创新的多智能体股票分析框架。
+              <strong>TradingAgents-CN</strong> is based on <strong>TradingAgents</strong> Chinese localized version of project development.
+              The original project was developed by the Tauric Research team and is an innovative multi-agent stock analysis framework.
             </p>
             <p>
-              我们在原项目的基础上进行了以下改进和扩展：
+              We have made the following improvements and expansions based on the original project:
             </p>
             <ul class="origin-improvements">
               <li>
                 <el-icon class="check-icon"><CircleCheck /></el-icon>
-                <span><strong>v3.0 工作流引擎：</strong>配置化架构，支持 Agent 工坊、Skill 中心和 MCP 服务器</span>
+                <span><strong>v3.0 Workflow engine:</strong>Configurable architecture, supporting Agent workshop, Skill center and MCP server</span>
               </li>
               <li>
                 <el-icon class="check-icon"><CircleCheck /></el-icon>
-                <span><strong>全流程分析辅助：</strong>从数据收集到报告生成的完整流程支持，多场景分析学习</span>
+                <span><strong>Full process analysis assistance:</strong>Complete process support from data collection to report generation, multi-scenario analysis and learning</span>
               </li>
               <li>
                 <el-icon class="check-icon"><CircleCheck /></el-icon>
-                <span><strong>中文本地化：</strong>针对中国A股市场优化，集成 Tushare/AKShare 等中文数据源</span>
+                <span><strong>Chinese localization:</strong>Optimized for China s A-share market, integrating Chinese data sources such as Tushare/AKShare</span>
               </li>
               <li>
                 <el-icon class="check-icon"><CircleCheck /></el-icon>
-                <span><strong>完整的中文支持：</strong>针对中国A股市场优化，支持中文数据源和分析</span>
+                <span><strong>Full Chinese support:</strong>Optimized for China s A-share market, supporting Chinese data sources and analysis</span>
               </li>
               <li>
                 <el-icon class="check-icon"><CircleCheck /></el-icon>
-                <span><strong>现代化Web界面：</strong>基于 Vue 3 + Element Plus 开发的全新前端界面</span>
+                <span><strong>Modern web interface:</strong>Based on Vue 3 + Element Plus Developed new front-end interface</span>
               </li>
               <li>
                 <el-icon class="check-icon"><CircleCheck /></el-icon>
-                <span><strong>增强的数据源：</strong>集成 Tushare、AKShare 等中国市场数据源</span>
+                <span><strong>Enhanced data sources:</strong>Integrate Chinese market data sources such as Tushare and AKShare</span>
               </li>
               <li>
                 <el-icon class="check-icon"><CircleCheck /></el-icon>
-                <span><strong>多LLM支持：</strong>支持国内外主流大语言模型（OpenAI、Claude、智谱AI、DeepSeek等），推荐使用火山方舟平台统一接入多厂商模型</span>
+                <span><strong>Multiple LLM support:</strong>Supports domestic and foreign mainstream large language models (OpenAI, Claude, Zhipu AI, DeepSeek, etc.). It is recommended to use the Volcano Ark platform to uniformly access multi-vendor models.</span>
               </li>
               <li>
                 <el-icon class="check-icon"><CircleCheck /></el-icon>
-                <span><strong>批量分析功能：</strong>支持批量股票分析和任务管理，适合对比学习</span>
+                <span><strong>Batch analysis function:</strong>Supports batch stock analysis and task management, suitable for comparative learning</span>
               </li>
             </ul>
             <p class="origin-thanks">
               <el-icon><Star /></el-icon>
-              <strong>特别感谢</strong> Tauric Research 团队的开源贡献，为我们提供了优秀的技术基础和设计理念。
+              <strong>special thanks</strong> Tauric Research The team s open source contributions provide us with excellent technical foundation and design concepts.
             </p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 赞助商（京东云版隐藏） -->
+    <!-- Sponsor (hidden in JD Cloud version) -->
     <div class="sponsor-section" v-if="!isJdyun">
       <div class="section-header">
-        <h2 class="section-title">赞助商</h2>
-        <p class="section-subtitle">感谢以下企业对本项目的赞助与支持</p>
+        <h2 class="section-title">Sponsor</h2>
+        <p class="section-subtitle">Thanks to the following companies for their sponsorship and support of this project</p>
       </div>
       <div class="sponsor-content">
         <div class="sponsor-card">
@@ -512,16 +512,16 @@
               <el-icon><Star /></el-icon>
             </div>
             <div class="sponsor-info">
-              <h3>字节火山引擎</h3>
+              <h3>Byte Volcano Engine</h3>
             </div>
           </div>
           <div class="sponsor-description">
-            <p>感谢字节火山引擎赞助本项目！</p>
-            <p><strong>【专属活动优惠】19元Tokens包！</strong>享字节自研豆包模型+满血版开源 SOTA模型，覆盖文本、VLM、图像生成，全模态一站配齐：Seed-2.1、Seedream-5.0、GLM-5.2、DeepSeek等。不止编程、更能解决 Agent 复杂长程任务。</p>
+            <p>Thanks to Byte Volcano Engine for sponsoring this project!</p>
+            <p><strong> [Exclusive event discount] 19 yuan Tokens package!</strong>Xiangbyte s self-developed bean bag model+The full-blooded version of the open source SOTA model covers text, VLM, and image generation, and is available in one stop for all modes: Seed-2.1, Seedream-5.0, GLM-5.2, DeepSeek, etc. Not only programming, but also capable of solving Agent s complex long-term tasks.</p>
             <p>
               <el-button type="primary" size="small" @click="goToVolcengine">
                 <el-icon><Link /></el-icon>
-                注册即领2500万Tokens，立即前往
+                Register and receive 25 million Tokens, go now
               </el-button>
             </p>
           </div>
@@ -529,79 +529,79 @@
       </div>
     </div>
 
-    <!-- 联系我们 / 京东云版支持渠道 -->
+    <!-- Contact us / JD Cloud version support channels -->
     <div class="contact-section">
       <div class="section-header" v-if="!isJdyun">
-        <h2 class="section-title">联系我们</h2>
-        <p class="section-subtitle">获取支持、反馈问题或加入社区讨论</p>
+        <h2 class="section-title">Contact us</h2>
+        <p class="section-subtitle">Get support, report questions or join community discussions</p>
       </div>
       <div class="section-header" v-else>
-        <h2 class="section-title">支持与反馈</h2>
-        <p class="section-subtitle">京东云合作版专属支持渠道</p>
+        <h2 class="section-title">Support and feedback</h2>
+        <p class="section-subtitle">Exclusive support channel for JD Cloud Cooperation Edition</p>
       </div>
 
-      <!-- 标准版联系渠道 -->
+      <!-- Standard version contact channels -->
       <div class="contact-grid" v-if="!isJdyun">
         <div class="contact-card">
           <div class="contact-icon email">
             <el-icon><Message /></el-icon>
           </div>
-          <h4>邮箱联系</h4>
+          <h4>Email contact</h4>
           <p>hsliup@163.com</p>
-          <span class="contact-desc">技术支持和商务合作</span>
+          <span class="contact-desc">Technical support and business cooperation</span>
         </div>
 
         <div class="contact-card">
           <div class="contact-icon qq">
             <el-icon><ChatDotRound /></el-icon>
           </div>
-          <h4>QQ交流群</h4>
+          <h4>QQ Communication group</h4>
           <p>1079484482</p>
-          <span class="contact-desc">用户交流和问题讨论</span>
+          <span class="contact-desc">User communication and problem discussion</span>
         </div>
 
         <div class="contact-card">
           <div class="contact-icon wechat">
             <el-icon><ChatDotRound /></el-icon>
           </div>
-          <h4>微信公众号</h4>
+          <h4>WeChat public account</h4>
           <p>TradingAgents-CN</p>
-          <span class="contact-desc">最新动态和使用教程</span>
+          <span class="contact-desc">Latest news and tutorials</span>
         </div>
 
         <div class="contact-card">
           <div class="contact-icon docs">
             <el-icon><Document /></el-icon>
           </div>
-          <h4>使用文档</h4>
+          <h4>Use documentation</h4>
           <p>
             <a href="https://mp.weixin.qq.com/s/ppsYiBncynxlsfKFG8uEbw"
                target="_blank"
                rel="noopener noreferrer"
                class="doc-link">
-              查看详细文档
+              View detailed documentation
             </a>
           </p>
-          <span class="contact-desc">完整的使用指南和API文档</span>
+          <span class="contact-desc">Complete usage guide and API documentation</span>
         </div>
       </div>
 
-      <!-- 京东云版支持渠道 -->
+      <!-- JD Cloud version support channels -->
       <div class="contact-grid" v-else>
         <div class="contact-card">
           <div class="contact-icon wechat">
             <el-icon><ChatDotRound /></el-icon>
           </div>
-          <h4>京东云技术支持</h4>
-          <p>联系您的京东云客户经理</p>
-          <span class="contact-desc">开通账号、权限、限速等问题</span>
+          <h4>JD Cloud technical support</h4>
+          <p>Contact your JD Cloud account manager</p>
+          <span class="contact-desc">Issues such as account opening, permissions, speed limits, etc.</span>
         </div>
 
         <div class="contact-card">
           <div class="contact-icon docs">
             <el-icon><Document /></el-icon>
           </div>
-          <h4>系统 Bug 反馈</h4>
+          <h4>System bug feedback</h4>
           <p>
             <a href="https://github.com/hsliuping/TradingAgents-CN-Pro/issues"
                target="_blank"
@@ -610,25 +610,25 @@
               GitHub Issues
             </a>
           </p>
-          <span class="contact-desc">提交系统缺陷与异常问题</span>
+          <span class="contact-desc">Submit system defects and anomalies</span>
         </div>
 
         <div class="contact-card">
           <div class="contact-icon email">
             <el-icon><Message /></el-icon>
           </div>
-          <h4>功能建议</h4>
-          <p>系统内"反馈"按钮</p>
-          <span class="contact-desc">右上角反馈入口提交建议</span>
+          <h4>Feature suggestions</h4>
+          <p>within the system"feedback"button</p>
+          <span class="contact-desc">Submit suggestions through the feedback portal in the upper right corner</span>
         </div>
 
         <div class="contact-card">
           <div class="contact-icon qq">
             <el-icon><Reading /></el-icon>
           </div>
-          <h4>使用文档</h4>
-          <p>京东云版使用手册</p>
-          <span class="contact-desc">系统内"帮助"按钮查看完整手册</span>
+          <h4>Use documentation</h4>
+          <p>JD Cloud Edition User Manual</p>
+          <span class="contact-desc">within the system"help"button to view the full manual</span>
         </div>
       </div>
     </div>
@@ -637,9 +637,9 @@
     <div class="footer-section">
       <div class="footer-content">
         <p v-if="!isJdyun">&copy; 2025-2026 TradingAgents-CN. All rights reserved.</p>
-        <p v-else>&copy; 2025-2026 TradingAgents-CN 京东云合作版. All rights reserved.</p>
-        <p v-if="!isJdyun">许可证说明：tradingagents 目录内的代码采用了部分原 TradingAgents 项目的代码，遵循 Apache 2.0 开源许可证；其他部分因 1.0 版开源后被盗用代码，因此不再开源。</p>
-        <p v-else>本系统由京东云提供模型服务支持，仅供 A 股研究学习使用，所有输出不构成投资建议。</p>
+        <p v-else>&copy; 2025-2026 TradingAgents-CN JD Cloud Cooperation Edition. All rights reserved.</p>
+        <p v-if="!isJdyun">License description: The code in the tradingagents directory uses part of the original TradingAgents project code and follows the Apache 2.0 open source license; other parts are no longer open source because the code was stolen after version 1.0 was open sourced.</p>
+        <p v-else>This system is supported by model services provided by JD Cloud and is only used for A-share research and study. All output does not constitute investment advice.</p>
       </div>
     </div>
   </div>
@@ -686,23 +686,23 @@ const systemInfo = ref<{
   build_type?: string
 }>({})
 
-// 版本状态文本（根据版本号自动判断）
+// Version status text (automatically determined based on version number)
 const versionStatusText = computed(() => {
   const v = systemInfo.value.version || systemInfo.value.full_version || ''
-  if (v.includes('beta') || v.includes('alpha') || v.includes('rc')) return '测试版'
-  if (v.includes('dev')) return '开发版'
-  return '正式版'
+  if (v.includes('beta') || v.includes('alpha') || v.includes('rc')) return 'beta version'
+  if (v.includes('dev')) return 'Development version'
+  return 'Official version'
 })
 
-// 版本状态样式类
+// Version status style class
 const versionStatusClass = computed(() => {
   const text = versionStatusText.value
-  if (text === '测试版') return 'status-beta'
-  if (text === '开发版') return 'status-dev'
+  if (text === 'beta version') return 'status-beta'
+  if (text === 'Development version') return 'status-dev'
   return 'status-stable'
 })
 
-// 加载系统信息
+// Load system information
 const loadSystemInfo = async () => {
   systemInfoLoading.value = true
   try {
@@ -711,13 +711,13 @@ const loadSystemInfo = async () => {
       systemInfo.value = response.data
     }
   } catch (error) {
-    console.error('加载系统信息失败:', error)
+    console.error('Failed to load system information:', error)
   } finally {
     systemInfoLoading.value = false
   }
 }
 
-// 格式化构建日期
+// Format build date
 const formatBuildDate = (dateStr: string) => {
   if (!dateStr) return '-'
   try {
@@ -736,32 +736,32 @@ const formatBuildDate = (dateStr: string) => {
   }
 }
 
-// 格式化构建类型
+// Format build type
 const formatBuildType = (type: string) => {
   const typeMap: Record<string, string> = {
-    docker: 'Docker镜像',
-    installer: 'Windows安装版',
-    portable: '便携版'
+    docker: 'Docker mirror',
+    installer: 'Windows Installation version',
+    portable: 'Portable version'
   }
   return typeMap[type] || type
 }
 
-// 复制版本信息
+// Copy version information
 const copyVersionInfo = async () => {
   const info = [
-    `版本号: ${systemInfo.value.version || 'v3.0'}`,
-    systemInfo.value.full_version ? `完整版本: ${systemInfo.value.full_version}` : '',
-    systemInfo.value.build_date ? `构建时间: ${formatBuildDate(systemInfo.value.build_date)}` : '',
-    systemInfo.value.build_type ? `构建类型: ${formatBuildType(systemInfo.value.build_type)}` : '',
-    systemInfo.value.git_commit ? `Git提交: ${systemInfo.value.git_commit}` : ''
+    `version number: ${systemInfo.value.version || 'v3.0'}`,
+    systemInfo.value.full_version ? `full version: ${systemInfo.value.full_version}` : '',
+    systemInfo.value.build_date ? `Build time: ${formatBuildDate(systemInfo.value.build_date)}` : '',
+    systemInfo.value.build_type ? `Build type: ${formatBuildType(systemInfo.value.build_type)}` : '',
+    systemInfo.value.git_commit ? `Git Submit: ${systemInfo.value.git_commit}` : ''
   ].filter(Boolean).join('\n')
 
   try {
     await navigator.clipboard.writeText(info)
-    ElMessage.success('版本信息已复制到剪贴板')
+    ElMessage.success('Version information copied to clipboard')
   } catch (error) {
-    console.error('复制失败:', error)
-    ElMessage.error('复制失败，请手动复制')
+    console.error('Copy failed:', error)
+    ElMessage.error('Copy failed, please copy manually')
   }
 }
 
@@ -777,7 +777,7 @@ const goToVolcengine = () => {
   window.open('https://www.volcengine.com/product/ark?utm_campaign=hw&utm_content=TradingAgents-CN&utm_medium=devrel-1&utm_source=OWO&utm_term=TradingAgents-CN', '_blank')
 }
 
-// 页面加载时获取系统信息
+// Get system information when page loads
 onMounted(() => {
   loadSystemInfo()
 })
@@ -1621,7 +1621,7 @@ onMounted(() => {
   }
 }
 
-// 响应式设计
+// Responsive design
 @media (max-width: 1024px) {
   .about {
     .version-section .version-info {

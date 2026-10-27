@@ -1,17 +1,17 @@
-"""智能助手 HITL 集成（v3.5.0 项4）。
+"""Smart Assistant HITL integration (v3.5.0 item 4).
 
-在智能助手 ReAct 循环中，对"关键操作"实现真正的 HITL：
-1. LLM 调用关键工具时，不直接执行，而是保存 pending 操作到 MongoDB
-2. 返回"需要确认"消息给 LLM，LLM 转告用户
-3. 用户通过前端确认/拒绝（调用 /api/assistant/hitl/{pending_id}/confirm 或 reject）
-4. 确认后执行真正的工作；拒绝则丢弃
+In the Smart Assistant ReAct loop, do"critical operations"Achieve real HITL:
+1. LLM When calling key tools, they are not executed directly, but the pending operations are saved to MongoDB
+2. Return"Need confirmation"Message to LLM, LLM relays to user
+3. The user confirms/denies via the frontend (calling /api/assistant/hitl/{pending_id}/confirm or reject)
+4. Perform real work after confirmation; discard if rejected
 
-关键操作清单（基于 system prompt 中的"先确认再执行"原则）：
-- trigger_stock_analysis（触发分析）
-- trigger_batch_analysis（批量分析）
-- remove_stock_from_watchlist（移除自选股）
-- delete_scheduled_config（删除定时配置）
-- delete_topic（删除研究主题）
+List of key actions (based on the"Confirm before executing"principle):
+- trigger_stock_analysis (Trigger analysis)
+- trigger_batch_analysis (batch analysis)
+- remove_stock_from_watchlist (Remove discretionary stocks)
+- delete_scheduled_config (Delete timing configuration)
+- delete_topic (Delete research topic)
 """
 
 from __future__ import annotations
@@ -26,48 +26,48 @@ from .checkpoint_store import HITLCheckpointService, get_hitl_service
 logger = logging.getLogger(__name__)
 
 
-# 需要 HITL 确认的关键工具 ID 列表
+# List of key tool IDs requiring HITL confirmation
 CRITICAL_TOOL_IDS: Dict[str, Dict[str, Any]] = {
     "trigger_stock_analysis": {
-        "display_name": "触发股票分析",
+        "display_name": "Trigger stock analysis",
         "risk_level": "medium",
-        "reason": "分析任务会消耗较多 Token 和时间",
+        "reason": "Analysis tasks will consume more Tokens and time",
     },
     "trigger_batch_analysis": {
-        "display_name": "触发批量分析",
+        "display_name": "Trigger batch analysis",
         "risk_level": "high",
-        "reason": "批量分析会同时消耗大量资源",
+        "reason": "Batch analysis consumes a lot of resources at the same time",
     },
     "remove_stock_from_watchlist": {
-        "display_name": "移除自选股",
+        "display_name": "Remove discretionary stocks",
         "risk_level": "medium",
-        "reason": "移除操作不可自动恢复",
+        "reason": "The removal operation cannot be automatically restored",
     },
     "delete_scheduled_config": {
-        "display_name": "删除定时分析配置",
+        "display_name": "Delete scheduled analysis configuration",
         "risk_level": "high",
-        "reason": "删除配置会影响后续自动分析",
+        "reason": "Deleting the configuration will affect subsequent automatic analysis",
     },
     "delete_topic": {
-        "display_name": "删除研究主题",
+        "display_name": "Delete research topic",
         "risk_level": "high",
-        "reason": "删除主题会丢失相关对话历史",
+        "reason": "Deleting a topic will lose related conversation history",
     },
 }
 
 
-# 用户确认意图的关键词
-CONFIRM_KEYWORDS = {"确认", "确定", "yes", "ok", "好的", "同意", "执行", "确认执行", "确认删除", "继续"}
-REJECT_KEYWORDS = {"取消", "no", "不", "不要", "拒绝", "算了", "放弃", "不执行", "取消执行"}
+# Keywords for user confirmation of intent
+CONFIRM_KEYWORDS = {"Confirm", "OK", "yes", "ok", "OK", "Agree", "execute", "Confirm execution", "Confirm deletion", "continue"}
+REJECT_KEYWORDS = {"Cancel", "no", "No", "Don t", "reject", "Forget it", "give up", "Not executed", "Cancel execution"}
 
 
 def is_critical_tool(tool_id: str) -> bool:
-    """判断工具是否为关键操作（需要 HITL）"""
+    """Determine whether the tool is a critical operation (requires HITL)"""
     return tool_id in CRITICAL_TOOL_IDS
 
 
 def is_user_confirming(user_message: str) -> bool:
-    """判断用户消息是否为确认意图"""
+    """Determine whether the user message is a confirmation intention"""
     if not user_message:
         return False
     msg = user_message.strip().lower()
@@ -75,7 +75,7 @@ def is_user_confirming(user_message: str) -> bool:
 
 
 def is_user_rejecting(user_message: str) -> bool:
-    """判断用户消息是否为拒绝意图"""
+    """Determine whether the user message is intended to reject"""
     if not user_message:
         return False
     msg = user_message.strip().lower()
@@ -83,7 +83,7 @@ def is_user_rejecting(user_message: str) -> bool:
 
 
 def generate_pending_id() -> str:
-    """生成唯一的 pending_id"""
+    """generate unique pending_id"""
     return f"hitl_{uuid.uuid4().hex[:12]}"
 
 
@@ -96,18 +96,18 @@ async def save_pending_critical_action(
     tool_arguments: Dict[str, Any],
     display_message: str = "",
 ) -> Optional[str]:
-    """保存待确认的关键操作。
+    """Save key operations pending confirmation.
 
     Args:
-        db: MongoDB 句柄
-        user_id: 用户 ID
-        conversation_id: 会话 ID
-        tool_id: 工具 ID
-        tool_arguments: 工具参数（用户确认后用于执行）
-        display_message: 给用户看的说明
+        db: MongoDB handle
+        user_id: User ID
+        conversation_id: session ID
+        tool_id: Tools ID
+        tool_arguments: Tool parameters (used for execution after user confirmation)
+        display_message: Instructions for users
 
     Returns:
-        pending_id 或 None（保存失败时）
+        pending_id or None (when saving fails)
     """
     if not is_critical_tool(tool_id):
         return None
@@ -130,20 +130,20 @@ async def save_pending_critical_action(
                 "tool_name": tool_meta["display_name"],
                 "risk_level": tool_meta["risk_level"],
                 "reason": tool_meta["reason"],
-                "display_message": display_message or f"即将执行：{tool_meta['display_name']}",
+                "display_message": display_message or f"About to execute:{tool_meta['display_name']}",
                 "arguments_preview": _format_arguments_preview(tool_arguments),
             },
         )
         return pending_id
     except Exception as e:
-        logger.warning("[HITL·助手] 保存待确认操作失败: %s", e)
+        logger.warning("[HITL·Assistant] Failed to save pending confirmation operation: %s", e)
         return None
 
 
 def _format_arguments_preview(arguments: Dict[str, Any]) -> str:
-    """格式化参数预览（给用户看）"""
+    """Format parameter preview (for users to see)"""
     if not arguments:
-        return "（无参数）"
+        return " (no parameters)"
     parts = []
     for k, v in list(arguments.items())[:5]:
         v_str = str(v)
@@ -158,7 +158,7 @@ def build_pending_confirmation_reply(
     tool_arguments: Dict[str, Any],
     pending_id: str,
 ) -> str:
-    """构建"需要确认"的回复文本（LLM 看到后会转告用户）"""
+    """build"Need confirmation"The reply text (LLM will forward it to the user after seeing it)"""
     tool_meta = CRITICAL_TOOL_IDS.get(tool_id, {})
     display_name = tool_meta.get("display_name", tool_id)
     reason = tool_meta.get("reason", "")
@@ -168,12 +168,12 @@ def build_pending_confirmation_reply(
     args_preview = _format_arguments_preview(tool_arguments)
 
     return (
-        f"{risk_emoji} 即将执行关键操作：**{display_name}**\n\n"
-        f"- 操作参数：{args_preview}\n"
-        f"- 风险等级：{risk_level}\n"
-        f"- 原因：{reason}\n\n"
-        f"请确认是否执行（回复「确认」执行，回复「取消」放弃）。\n"
-        f"确认 ID：`{pending_id}`"
+        f"{risk_emoji} Key operations are about to be performed:**{display_name}**\n\n"
+        f"- Operating parameters:{args_preview}\n"
+        f"- Risk level:{risk_level}\n"
+        f"- Reason:{reason}\n\n"
+        f"Please confirm whether to execute (reply Confirm to execute, reply Cancel to give up).\n"
+        f"Confirm ID:`{pending_id}`"
     )
 
 
@@ -184,14 +184,14 @@ async def try_resolve_pending_action(
     conversation_id: str,
     user_message: str,
 ) -> Optional[Dict[str, Any]]:
-    """尝试解析用户的确认/拒绝意图，执行或丢弃待确认操作。
+    """Attempts to parse the user s confirm/deny intent and perform or discard the pending action.
 
-    在 chat() 主流程开始时调用，如果用户在确认/拒绝，则执行相应操作并返回结果。
+    in chat() Called at the beginning of the main process, if the user is confirming/denying, the corresponding operation is performed and the result is returned.
 
     Returns:
-        - None：用户消息不是确认/拒绝，或没有 pending 操作
-        - {"type": "confirmed", "result": ...}：已确认并执行
-        - {"type": "rejected", "message": ...}：已拒绝
+        - None: The user message is not a confirmation/deny, or there is no pending operation
+        - {"type": "confirmed", "result": ...}: Confirmed and executed
+        - {"type": "rejected", "message": ...}: Rejected
     """
     svc = get_hitl_service(db)
     pending_list = await svc.list_pending(
@@ -202,7 +202,7 @@ async def try_resolve_pending_action(
     if not pending_list:
         return None
 
-    # 取最新的 pending 操作
+    # Get the latest pending operation
     pending = pending_list[0]
     if pending.status != "pending":
         return None
@@ -211,13 +211,13 @@ async def try_resolve_pending_action(
         await svc.decide(pending_id=pending.pending_id, decision="rejected")
         return {
             "type": "rejected",
-            "message": f"已取消操作：{pending.display_data.get('tool_name', '')}",
+            "message": f"Operation canceled:{pending.display_data.get('tool_name', '')}",
         }
 
     if not is_user_confirming(user_message):
         return None
 
-    # 用户确认 → 执行真正的工作
+    # User confirmation → perform real work
     tool_id = pending.operation_payload.get("tool_id", "")
     tool_arguments = pending.operation_payload.get("tool_arguments", {})
 
@@ -230,11 +230,11 @@ async def try_resolve_pending_action(
             "tool_id": tool_id,
         }
     except Exception as e:
-        logger.error("[HITL·助手] 执行确认操作失败: %s", e, exc_info=True)
+        logger.error("[HITL·Assistant] Failed to perform confirmation operation: %s", e, exc_info=True)
         await svc.decide(pending_id=pending.pending_id, decision="rejected")
         return {
             "type": "rejected",
-            "message": f"操作执行失败：{e}",
+            "message": f"Operation execution failed:{e}",
         }
 
 
@@ -245,17 +245,17 @@ async def _execute_critical_tool(
     *,
     user_id: str = "",
 ) -> str:
-    """执行真正的关键工具（用户确认后调用）"""
+    """Execute the real key tool (called after user confirmation)"""
     import inspect
     from core.tools import get_tool_registry
     registry = get_tool_registry()
     func = registry.get_function(tool_id)
     if func is None:
-        raise ValueError(f"工具 {tool_id} 未注册")
+        raise ValueError(f"Tools {tool_id} Not registered")
 
     call_args = dict(arguments or {})
 
-    # 检查工具签名：是否接受 user_id / 是否接受 **kwargs
+    # Check tool signature: accept user_id / accept **kwargs
     try:
         sig = inspect.signature(func)
         param_names = set(sig.parameters.keys())
@@ -267,9 +267,9 @@ async def _execute_critical_tool(
         param_names = set()
         accepts_var_kwargs = False
 
-    # 仅当工具签名接受 user_id 时才注入（如 remember_this 闭包）；
-    # 不接受 user_id 的工具（如 trigger_stock_analysis 内部自行取当前用户）不注入，
-    # 否则 func(**arguments) 会抛 TypeError
+    # Inject only if tool signature accepts user_id (such as remember_this closure);
+    # Tools that do not accept user_id (such as trigger_stock_analysis internally takes the current user) will not be injected.
+    # Otherwise func(**arguments) Can throw TypeError
     if (
         user_id
         and "user_id" not in call_args
@@ -277,7 +277,7 @@ async def _execute_critical_tool(
     ):
         call_args["user_id"] = user_id
 
-    # 过滤工具不接受的参数（LLM 可能编造多余参数导致 TypeError），**kwargs 除外
+    # Parameters not accepted by the filtering tool (LLM may make up redundant parameters to cause TypeError),**kwargs Except
     if not accepts_var_kwargs and param_names:
         call_args = {k: v for k, v in call_args.items() if k in param_names}
 
@@ -294,7 +294,7 @@ async def list_pending_for_user(
     user_id: str,
     conversation_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """列出用户待确认操作（前端展示用）"""
+    """List user operations to be confirmed (for front-end display)"""
     svc = get_hitl_service(db)
     pending_list = await svc.list_pending(
         user_id=user_id,
@@ -321,15 +321,15 @@ async def confirm_pending(
     pending_id: str,
     user_id: str,
 ) -> Dict[str, Any]:
-    """API 端点用：确认执行待确认操作"""
+    """API Endpoint use: Confirm execution of pending operations"""
     svc = get_hitl_service(db)
     pending = await svc.load_pending(pending_id)
     if not pending:
-        return {"success": False, "error": "操作不存在"}
+        return {"success": False, "error": "Operation does not exist"}
     if pending.user_id != user_id:
-        return {"success": False, "error": "无权操作"}
+        return {"success": False, "error": "No permission to operate"}
     if pending.status != "pending":
-        return {"success": False, "error": f"操作已处理（状态：{pending.status}）"}
+        return {"success": False, "error": f"Operation processed (status:{pending.status}) "}
 
     tool_id = pending.operation_payload.get("tool_id", "")
     tool_arguments = pending.operation_payload.get("tool_arguments", {})
@@ -353,15 +353,15 @@ async def reject_pending(
     pending_id: str,
     user_id: str,
 ) -> Dict[str, Any]:
-    """API 端点用：拒绝执行待确认操作"""
+    """API Endpoint use: Deny execution of pending operations"""
     svc = get_hitl_service(db)
     pending = await svc.load_pending(pending_id)
     if not pending:
-        return {"success": False, "error": "操作不存在"}
+        return {"success": False, "error": "Operation does not exist"}
     if pending.user_id != user_id:
-        return {"success": False, "error": "无权操作"}
+        return {"success": False, "error": "No permission to operate"}
     if pending.status != "pending":
-        return {"success": False, "error": f"操作已处理（状态：{pending.status}）"}
+        return {"success": False, "error": f"Operation processed (status:{pending.status}) "}
 
     await svc.decide(pending_id=pending_id, decision="rejected")
-    return {"success": True, "message": "已拒绝操作"}
+    return {"success": True, "message": "Operation denied"}

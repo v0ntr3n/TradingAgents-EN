@@ -1,8 +1,8 @@
 # tradingagents/core/engine/phase_executors/__init__.py
 """
-阶段执行器模块
+stage executor module
 
-提供股票分析各阶段的执行器实现
+Provides executor implementation for each stage of stock analysis
 """
 
 from .base import PhaseExecutor, PhaseContext

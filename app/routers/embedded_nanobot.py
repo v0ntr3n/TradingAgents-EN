@@ -22,7 +22,7 @@ NANOBOT_EVENT_LOG_DIR = WORKSPACE_ROOT / "logs" / "embedded_nanobot_events"
 
 
 def _append_nanobot_event_log(*, chat_id: str, session_key: str, event: str, payload: dict) -> None:
-    """将前端流式事件追加写入 ndjson，方便刷新后排查。"""
+    """Append front-end streaming events to ndjson to facilitate troubleshooting after refreshing."""
     try:
         NANOBOT_EVENT_LOG_DIR.mkdir(parents=True, exist_ok=True)
         safe_chat_id = "".join(ch if ch.isalnum() or ch in {"-", "_"} else "_" for ch in str(chat_id or session_key or "default"))[:120]
@@ -67,7 +67,7 @@ async def get_embedded_nanobot_thread_messages(
     service = EmbeddedNanobotService(db=db, workspace=WORKSPACE_ROOT)
     thread, messages = await service.get_thread_messages(user_id=user_id, thread_id=thread_id)
     if not thread:
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session does not exist")
     return EmbeddedNanobotThreadMessagesResponse(thread=thread, messages=messages)
 
 
@@ -81,7 +81,7 @@ async def delete_embedded_nanobot_thread(
     service = EmbeddedNanobotService(db=db, workspace=WORKSPACE_ROOT)
     result = await service.delete_thread(user_id=user_id, thread_id=thread_id)
     if not result.get("archived"):
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session does not exist")
     return result
 
 
@@ -95,7 +95,7 @@ async def restore_embedded_nanobot_thread(
     service = EmbeddedNanobotService(db=db, workspace=WORKSPACE_ROOT)
     result = await service.restore_thread(user_id=user_id, thread_id=thread_id)
     if not result.get("restored"):
-        raise HTTPException(status_code=404, detail="会话不存在")
+        raise HTTPException(status_code=404, detail="Session does not exist")
     return result
 
 
@@ -116,7 +116,7 @@ async def update_embedded_nanobot_thread_context(
         thread_context=request.thread_context.model_dump(exclude_none=True),
     )
     if not thread:
-        raise HTTPException(status_code=400, detail="无法更新会话上下文")
+        raise HTTPException(status_code=400, detail="Unable to update session context")
     _, messages = await service.get_thread_messages(user_id=user_id, thread_id=thread_id)
     return EmbeddedNanobotThreadMessagesResponse(thread=thread, messages=messages)
 
@@ -139,7 +139,7 @@ async def embedded_nanobot_chat(
     message = request.message.strip()
     display_message = str(request.display_message or "").strip()
     if not message:
-        raise HTTPException(status_code=400, detail="消息不能为空")
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     user_id = str(current_user["id"])
     session_key = request.session_key or f"embedded:user:{user_id}"
@@ -162,7 +162,7 @@ async def embedded_nanobot_chat(
     except HTTPException:
         raise
     except Exception as exc:
-        logger.exception("[EmbeddedNanobot API] 对话失败")
+        logger.exception("[EmbeddedNanobot API] Conversation failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     return EmbeddedNanobotChatResponse(
@@ -186,7 +186,7 @@ async def embedded_nanobot_chat_stream(
     message = request.message.strip()
     display_message = str(request.display_message or "").strip()
     if not message:
-        raise HTTPException(status_code=400, detail="消息不能为空")
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     user_id = str(current_user["id"])
     session_key = request.session_key or f"embedded:user:{user_id}"
@@ -206,7 +206,7 @@ async def embedded_nanobot_chat_stream(
             )
             await queue.put((event, payload_with_meta))
 
-        await emit("started", {"message": "助手已开始处理请求", "session_key": session_key})
+        await emit("started", {"message": "The assistant has started processing the request", "session_key": session_key})
 
         async def on_progress(progress_message: str) -> None:
             await emit("progress", {"message": progress_message, "session_key": session_key})
@@ -250,7 +250,7 @@ async def embedded_nanobot_chat_stream(
                     "thread_context": result.get("thread_context"),
                 })
             except Exception as exc:
-                logger.exception("[EmbeddedNanobot API] 流式对话失败")
+                logger.exception("[EmbeddedNanobot API] Streaming conversation failed")
                 await emit("error", {"message": str(exc), "session_key": session_key})
             finally:
                 await queue.put(None)

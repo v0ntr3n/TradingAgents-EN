@@ -1,12 +1,12 @@
 """
-Prompt 注入策略数据模型
+Prompt Inject strategy data model
 
-按 Agent + 场景精细控制上下文注入规则：
-- 是否注入行业/个股画像
-- 注入粒度（none / summary / full）
-- 是否继承行业画像（个股场景）
-- 是否附带能力块
-- 注入到模板的哪个字段
+press Agent + Scenario fine control context injection rules:
+- Whether to inject industry/stock portraits
+- Injection granularity (none/summary/full)
+- Whether to inherit the industry portrait (individual stock scenario)
+- Does it come with ability blocks?
+- Which field to inject into the template
 """
 
 from datetime import datetime
@@ -18,55 +18,55 @@ from app.utils.timezone import now_tz
 
 class PromptInjectionPolicy(BaseModel):
     """
-    Prompt 注入策略
+    Prompt Injection strategy
     
-    对应设计文档 §7.2，控制不同 Agent 在不同场景下如何注入上下文。
+    Corresponding design documents §7.2, Control how different Agents inject context in different scenarios.
     """
-    agent_type: str = Field(..., description="Agent 类型，如 analysts_v2")
-    agent_name: str = Field(..., description="Agent 名称，如 market_analyst_v2")
+    agent_type: str = Field(..., description="Agent Type, such as analysts_v2")
+    agent_name: str = Field(..., description="Agent name, such as market_analyst_v2")
     scope: str = Field(
         default="general",
-        description="场景: general / industry / stock"
+        description="scene: general / industry / stock"
     )
-    enabled: bool = Field(default=True, description="是否启用")
+    enabled: bool = Field(default=True, description="Whether to enable")
     injection_mode: str = Field(
         default="summary",
-        description="注入粒度: none / summary / full"
+        description="Injection granularity: none / summary / full"
     )
     inherit_industry_for_stock: bool = Field(
         default=True,
-        description="个股分析时是否继承行业画像"
+        description="Whether to inherit industry portraits when analyzing individual stocks"
     )
     include_capability_block: bool = Field(
         default=True,
-        description="是否附带能力边界说明块"
+        description="Whether to include a capability boundary description block"
     )
     include_external_gap_notice: bool = Field(
         default=True,
-        description="是否附带外部依赖提醒"
+        description="Whether it comes with external dependency reminder"
     )
     include_comparable_companies: bool = Field(
         default=True,
-        description="是否注入可比公司"
+        description="Whether to inject comparable companies"
     )
     inject_position: str = Field(
         default="analysis_requirements",
-        description="注入到哪个模板字段: system_prompt / analysis_requirements / constraints"
+        description="Which template field to inject into: system_prompt / analysis_requirements / constraints"
     )
-    version: int = Field(default=1, description="版本号")
+    version: int = Field(default=1, description="version number")
     created_at: Optional[datetime] = Field(default_factory=now_tz)
     updated_at: Optional[datetime] = Field(default_factory=now_tz)
 
     model_config = ConfigDict(populate_by_name=True)
 
 
-# === Request/Response 模型 ===
+# === Request/Response model ===
 
 class PromptInjectionPolicyCreate(BaseModel):
-    """创建策略请求"""
-    agent_type: str = Field(..., description="Agent 类型")
-    agent_name: str = Field(..., description="Agent 名称")
-    scope: str = Field(default="general", description="场景")
+    """Create policy request"""
+    agent_type: str = Field(..., description="Agent Type")
+    agent_name: str = Field(..., description="Agent Name")
+    scope: str = Field(default="general", description="scene")
     enabled: bool = True
     injection_mode: str = "summary"
     inherit_industry_for_stock: bool = True
@@ -77,7 +77,7 @@ class PromptInjectionPolicyCreate(BaseModel):
 
 
 class PromptInjectionPolicyUpdate(BaseModel):
-    """更新策略请求（所有字段可选）"""
+    """Update policy request (all fields optional)"""
     enabled: Optional[bool] = None
     injection_mode: Optional[str] = None
     inherit_industry_for_stock: Optional[bool] = None

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-金融数据自然语言取数脚本
-通过自然语言查询金融数据
+Financial data natural language script
+Query financial data through natural language
 
-用法:
-    python fetch_data.py "同花顺收盘价"
+Usage:
+    python fetch_data.py "Flush closing price"
 """
 
 import sys
@@ -25,48 +25,48 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 
 
 def get_config():
-    """读取配置文件"""
+    """Read configuration file"""
     if not CONFIG_FILE.exists():
         return {}
     try:
         with open(CONFIG_FILE) as f:
             return json.load(f)
     except json.JSONDecodeError:
-        print(f"错误: 配置文件 {CONFIG_FILE} 格式无效，请检查 JSON 格式是否正确", file=sys.stderr)
+        print(f"Error: Configuration file {CONFIG_FILE} The format is invalid, please check whether the JSON format is correct", file=sys.stderr)
         return {}
 
 
 def get_base_url():
-    """获取 base URL"""
+    """get base URL"""
     config = get_config()
     return config.get("base_url", DEFAULT_BASE_URL).rstrip("/")
 
 
 def get_token():
-    """获取认证 token"""
+    """Get certified token"""
     config = get_config()
     token = config.get("auth_token")
     if not token:
-        raise ValueError(f"请先配置 auth_token，参考 {CONFIG_FILE}")
+        raise ValueError(f"Please configure auth_token first, refer to {CONFIG_FILE}")
     return token
 
 
 def fetch_data(query: str) -> dict:
     """
-    查询金融数据
+    Query financial data
 
     Args:
-        query: 查询问句
+        query: query sentence
 
     Returns:
-        API 返回的 JSON 数据
+        API Returned JSON data
 
     Raises:
-        ValueError: 参数无效或认证失败
-        RuntimeError: API 调用失败
+        ValueError: Invalid parameters or authentication failure
+        RuntimeError: API call failed
     """
     if not query or not query.strip():
-        raise ValueError("query 参数不能为空")
+        raise ValueError("query Parameter cannot be empty")
 
     token = get_token()
     base_url = get_base_url()
@@ -83,41 +83,41 @@ def fetch_data(query: str) -> dict:
         with urllib.request.urlopen(request, timeout=30) as response:
             result = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        raise RuntimeError(f"API HTTP 错误: {e.code} {e.reason}")
+        raise RuntimeError(f"API HTTP Error: {e.code} {e.reason}")
     except urllib.error.URLError as e:
-        raise RuntimeError(f"网络错误: {e.reason}")
+        raise RuntimeError(f"network error: {e.reason}")
     except json.JSONDecodeError as e:
-        raise RuntimeError(f"响应 JSON 解析失败: {e}")
+        raise RuntimeError(f"Response JSON parsing failed: {e}")
 
     if result.get("code") != 1:
-        error_msg = result.get("msg", "未知错误")
+        error_msg = result.get("msg", "unknown error")
         sub_msg = result.get("subMsg") or result.get("sub_msg", "")
-        raise RuntimeError(f"API 返回失败: {error_msg} {sub_msg}".strip())
+        raise RuntimeError(f"API Return failure: {error_msg} {sub_msg}".strip())
 
     return result
 
 
 def check_token():
-    """检查 token 配置状态"""
+    """Check token configuration status"""
     config = get_config()
 
-    print("Token 检查:")
+    print("Token Check:")
     print("-" * 40)
 
     if config.get("auth_token"):
-        print("√ auth_token 已配置")
+        print("√ auth_token configured")
         return True
     else:
-        print("× auth_token 未配置")
-        print(f"\n请运行: python fetch_data.py --set-token <your_token>")
-        print(f"或手动创建 {CONFIG_FILE}:")
+        print("× auth_token Not configured")
+        print(f"\n Please run: python fetch_data.py --set-token <your_token>")
+        print(f"or create manually {CONFIG_FILE}:")
         print(f'  mkdir -p {CONFIG_DIR}')
         print(f'  echo \'{{"auth_token": "your_token_here"}}\' > {CONFIG_FILE}')
         return False
 
 
 def set_config(key: str, value: str):
-    """设置配置项"""
+    """Set configuration items"""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
     config = get_config()
@@ -126,13 +126,13 @@ def set_config(key: str, value: str):
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=2)
 
-    print(f"已保存到 {CONFIG_FILE}")
+    print(f"saved to {CONFIG_FILE}")
     return True
 
 
 def main():
     if len(sys.argv) < 2:
-        print("用法: python fetch_data.py <查询问句>", file=sys.stderr)
+        print("Usage: python fetch_data.py <query sentence>", file=sys.stderr)
         print("      python fetch_data.py --check-token", file=sys.stderr)
         print("      python fetch_data.py --set-token <token>", file=sys.stderr)
         print("      python fetch_data.py --set-url <url>", file=sys.stderr)
@@ -144,16 +144,16 @@ def main():
 
     if sys.argv[1] == "--set-token":
         if len(sys.argv) < 3:
-            print("错误: 请提供 token 值", file=sys.stderr)
-            print("用法: python fetch_data.py --set-token <token>", file=sys.stderr)
+            print("Error: Please provide token value", file=sys.stderr)
+            print("Usage: python fetch_data.py --set-token <token>", file=sys.stderr)
             sys.exit(1)
         set_config("auth_token", sys.argv[2])
         sys.exit(0)
 
     if sys.argv[1] == "--set-url":
         if len(sys.argv) < 3:
-            print("错误: 请提供 url 值", file=sys.stderr)
-            print("用法: python fetch_data.py --set-url <url>", file=sys.stderr)
+            print("Error: Please provide url value", file=sys.stderr)
+            print("Usage: python fetch_data.py --set-url <url>", file=sys.stderr)
             sys.exit(1)
         set_config("base_url", sys.argv[2])
         sys.exit(0)
@@ -168,7 +168,7 @@ def main():
         else:
             print(json.dumps(data, ensure_ascii=False, indent=2))
     except (ValueError, RuntimeError) as e:
-        print(f"错误: {e}", file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
 

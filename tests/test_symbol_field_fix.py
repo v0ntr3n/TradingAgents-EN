@@ -1,141 +1,141 @@
 #!/usr/bin/env python3
 """
-测试 symbol 字段修复
+Test symbol field fix
 
-验证内容：
-1. 同步服务是否正确添加了 symbol 字段
-2. 查询逻辑是否能正确处理 symbol 字段
-3. 股票名称是否能正确对应
+Verify content:
+1. Whether the synchronization service correctly adds the symbol field
+2. Check whether the query logic can correctly handle the symbol field
+3. Whether the stock name can be correctly matched
 """
 
 import sys
 from pathlib import Path
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 def test_basics_sync_service_has_symbol_field():
-    """测试 basics_sync_service.py 是否添加了 symbol 字段"""
+    """Test whether basics_sync_service.py adds the symbol field"""
     print("\n" + "=" * 60)
-    print("测试1: basics_sync_service.py 是否添加了 symbol 字段")
+    print("test 1: basics_sync_service.py Whether the symbol field is added")
     print("=" * 60)
     
     with open("app/services/basics_sync_service.py", "r", encoding="utf-8") as f:
         content = f.read()
     
-    # 检查是否有 "symbol": code 的代码
+    # Check if there is "symbol": code code
     if '"symbol": code' in content or "'symbol': code" in content:
-        print("✅ 发现 symbol 字段添加代码")
+        print("✅ Find the symbol field and add code")
         return True
     else:
-        print("❌ 未发现 symbol 字段添加代码")
+        print("❌ symbol field added code not found")
         return False
 
 
 def test_multi_source_sync_service_has_symbol_field():
-    """测试 multi_source_basics_sync_service.py 是否添加了 symbol 字段"""
+    """Test whether multi_source_basics_sync_service.py adds symbol field"""
     print("\n" + "=" * 60)
-    print("测试2: multi_source_basics_sync_service.py 是否添加了 symbol 字段")
+    print("test 2: multi_source_basics_sync_service.py Whether the symbol field is added")
     print("=" * 60)
     
     with open("app/services/multi_source_basics_sync_service.py", "r", encoding="utf-8") as f:
         content = f.read()
     
-    # 检查是否有 "symbol": code 的代码
+    # Check if there is "symbol": code code
     if '"symbol": code' in content or "'symbol': code" in content:
-        print("✅ 发现 symbol 字段添加代码")
+        print("✅ Find the symbol field and add code")
         return True
     else:
-        print("❌ 未发现 symbol 字段添加代码")
+        print("❌ symbol field added code not found")
         return False
 
 
 def test_baostock_sync_service_has_symbol_field():
-    """测试 baostock_sync_service.py 是否添加了 symbol 字段"""
+    """Test whether the symbol field is added to baostock_sync_service.py"""
     print("\n" + "=" * 60)
-    print("测试3: baostock_sync_service.py 是否添加了 symbol 字段")
+    print("test 3: baostock_sync_service.py Whether the symbol field is added")
     print("=" * 60)
     
     with open("app/worker/baostock_sync_service.py", "r", encoding="utf-8") as f:
         content = f.read()
     
-    # 检查是否有添加 symbol 字段的代码
+    # Check if there is code to add symbol field
     if 'basic_info["symbol"]' in content or "basic_info['symbol']" in content:
-        print("✅ 发现 symbol 字段添加代码")
+        print("✅ Find the symbol field and add code")
         return True
     else:
-        print("❌ 未发现 symbol 字段添加代码")
+        print("❌ symbol field added code not found")
         return False
 
 
 def test_app_adapter_query_logic():
-    """测试 app_adapter.py 是否支持 symbol 字段查询"""
+    """Test whether app_adapter.py supports symbol field query"""
     print("\n" + "=" * 60)
-    print("测试4: app_adapter.py 是否支持 symbol 字段查询")
+    print("test 4: app_adapter.py Whether to support symbol field query")
     print("=" * 60)
     
     with open("tradingagents/dataflows/cache/app_adapter.py", "r", encoding="utf-8") as f:
         content = f.read()
     
-    # 检查是否有 $or 查询逻辑
+    # Check if there is $or Query logic
     if '"$or"' in content and '"symbol"' in content and '"code"' in content:
-        print("✅ 发现 symbol 和 code 的 $or 查询逻辑")
+        print("✅ Find symbol and code $or Query logic")
         return True
     else:
-        print("❌ 未发现 $or 查询逻辑")
+        print("❌ not found $or Query logic")
         return False
 
 
 def test_migration_script_exists():
-    """测试迁移脚本是否存在"""
+    """Test whether the migration script exists"""
     print("\n" + "=" * 60)
-    print("测试5: 迁移脚本是否存在")
+    print("test 5: Does the migration script exist?")
     print("=" * 60)
     
     migration_script = Path("scripts/migrations/add_symbol_field_to_stock_basic_info.py")
     if migration_script.exists():
-        print(f"✅ 迁移脚本存在: {migration_script}")
+        print(f"✅ Migration script exists: {migration_script}")
         return True
     else:
-        print(f"❌ 迁移脚本不存在: {migration_script}")
+        print(f"❌ Migration script does not exist: {migration_script}")
         return False
 
 
 def main():
-    """运行所有测试"""
+    """Run all tests"""
     print("\n" + "=" * 60)
-    print("symbol 字段修复验证测试")
+    print("symbol Field fix validation testing")
     print("=" * 60)
     
     results = []
     
-    # 运行所有测试
+    # Run all tests
     results.append(("basics_sync_service", test_basics_sync_service_has_symbol_field()))
     results.append(("multi_source_sync_service", test_multi_source_sync_service_has_symbol_field()))
     results.append(("baostock_sync_service", test_baostock_sync_service_has_symbol_field()))
     results.append(("app_adapter_query", test_app_adapter_query_logic()))
     results.append(("migration_script", test_migration_script_exists()))
     
-    # 总结
+    # Summary
     print("\n" + "=" * 60)
-    print("测试总结")
+    print("Test summary")
     print("=" * 60)
     
     passed = sum(1 for _, result in results if result)
     total = len(results)
     
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{test_name:30s} - {status}")
     
-    print(f"\n总体: {passed}/{total} 测试通过")
+    print(f"\n Overall: {passed}/{total} Test passed")
     
     if passed == total:
-        print("\n✅ 所有测试通过！symbol 字段修复已完成")
+        print("\n✅ All tests passed! symbol field repair completed")
         return 0
     else:
-        print(f"\n❌ 有 {total - passed} 个测试失败")
+        print(f"\n❌ Yes {total - passed} tests failed")
         return 1
 
 

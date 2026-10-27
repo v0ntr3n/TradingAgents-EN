@@ -1,237 +1,237 @@
 <template>
   <div class="guide-page">
-    <!-- 欢迎标题 -->
+    <!-- welcome title -->
     <div class="guide-header">
       <h1 class="guide-title">
         <el-icon><Document /></el-icon>
-        欢迎使用 TradingAgents-CN
+        Welcome TradingAgents-CN
       </h1>
       <p class="guide-subtitle">
-        {{ isJdyunModeRef ? '按照以下步骤完成初始设置，开始使用 AI 辅助股票分析' : '按照以下步骤完成初始设置，开始学习AI辅助股票分析技术' }}
+        {{ isJdyunModeRef ? 'Follow the steps below to complete the initial setup and start using AI-assisted stock analysis' : 'Follow the steps below to complete the initial setup and start learning AI-assisted stock analysis technology' }}
       </p>
       <el-button v-if="!loading" text type="primary" @click="loadAllStatus" class="refresh-btn">
         <el-icon><Refresh /></el-icon>
-        刷新进度
+        Refresh progress
       </el-button>
     </div>
 
-    <!-- 京东云版引导：4 步 -->
-    <div v-if="isJdyunModeRef" class="steps-container" v-loading="loading" element-loading-text="正在检测配置进度...">
+    <!-- JD Cloud Edition Guide: 4 steps -->
+    <div v-if="isJdyunModeRef" class="steps-container" v-loading="loading" element-loading-text="Checking configuration progress...">
       <el-steps :active="jdyunCurrentStep" direction="vertical" finish-status="success">
-        <!-- 京东云版步骤 1：欢迎（系统已就绪） -->
-        <el-step title="欢迎使用" description="您的系统已由管理员配置完成">
+        <!-- JD Cloud Version Step 1: Welcome (system is ready) -->
+        <el-step title="Welcome" description="Your system has been configured by your administrator">
           <template #description>
             <div class="step-content">
               <div class="jdyun-ready-list">
                 <div class="ready-item">
                   <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                  <span>大模型：<strong>{{ jdyunStatus.current_model || 'GLM-5.1' }}</strong>（已就绪）</span>
+                  <span>Large model:<strong>{{ jdyunStatus.current_model || 'GLM-5.1' }}</strong> (ready)</span>
                 </div>
                 <div class="ready-item">
                   <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                  <span>数据源：<strong>Tushare + AKShare</strong>（已就绪）</span>
+                  <span>Data source:<strong>Tushare + AKShare</strong> (ready)</span>
                 </div>
                 <div class="ready-item">
                   <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                  <span>全功能开放（无需激活 License）</span>
+                  <span>Fully functional and open (no license activation required)</span>
                 </div>
               </div>
               <p class="step-tip" style="margin-top: 12px;">
-                接下来只需 3 步即可开始分析：同步数据 → 添加股票关注列表 → 完成首次研究
+                Start analyzing in just 3 steps: Sync your data → Add a stock watchlist → Complete first study
               </p>
             </div>
           </template>
         </el-step>
 
-        <!-- 京东云版步骤 2：同步股票数据 -->
-        <el-step title="同步股票数据" description="同步基础股票数据到系统">
+        <!-- JD Cloud Version Step 2: Synchronize stock data -->
+        <el-step title="Sync stock data" description="Synchronize basic stock data to the system">
           <template #description>
             <div class="step-content">
               <p v-if="stepStatus.dataSynced" class="step-completed-tip">
                 <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                股票数据已同步完成
+                Stock data has been synchronized
               </p>
               <template v-else>
-                <p>同步基础股票数据，获取最新的股票信息：</p>
+                <p>Synchronize basic stock data and obtain the latest stock information:</p>
                 <ul class="step-list">
-                  <li><strong>第一步：</strong>同步基础数据（股票列表、基本信息）</li>
-                  <li><strong>第二步：</strong>同步历史数据（K线、行情）</li>
-                  <li><strong>第三步：</strong>同步财务数据（财报、指标）</li>
+                  <li><strong>Step one:</strong>Synchronize basic data (stock list, basic information)</li>
+                  <li><strong>Step two:</strong>Synchronize historical data (K line, market)</li>
+                  <li><strong>Step three:</strong>Synchronize financial data (financial reports, indicators)</li>
                   <li>
-                    <strong style="color: var(--el-color-warning);">注意：</strong>
-                    数据未同步完成时进行分析，可能因数据不全导致结果不准确
+                    <strong style="color: var(--el-color-warning);">Note:</strong>
+                    Analysis is performed when the data is not synchronized, and the results may be inaccurate due to incomplete data.
                   </li>
                 </ul>
               </template>
               <el-button type="primary" @click="goToSync">
                 <el-icon><Refresh /></el-icon>
-                前往数据同步
+                Go to data sync
               </el-button>
             </div>
           </template>
         </el-step>
 
-        <!-- 京东云版步骤 3：搜索并添加股票关注列表 -->
-        <el-step title="搜索并添加股票关注列表" description="搜索感兴趣的股票并添加到自选列表">
+        <!-- JD Cloud Version Step 3: Search and add stocks to watch list -->
+        <el-step title="Search and add stocks to watchlist" description="Search for stocks of interest and add to your watchlist">
           <template #description>
             <div class="step-content">
               <p v-if="stepStatus.hasFavorites" class="step-completed-tip">
                 <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                已添加股票关注列表
+                Stock watchlist added
               </p>
               <template v-else>
-                <p>开始使用股票筛选功能：</p>
+                <p>Get started with the stock screener:</p>
                 <ul class="step-list">
-                  <li>在"股票筛选"页面搜索股票代码或名称</li>
-                  <li>查看股票详情信息</li>
-                  <li>将感兴趣的股票添加到"股票关注列表"</li>
+                  <li>in"stock screen"Page search for stock symbol or name</li>
+                  <li>View stock details</li>
+                  <li>Add stocks of interest to"Stock Watchlist"</li>
                 </ul>
               </template>
               <el-button type="primary" @click="goToScreening">
                 <el-icon><Search /></el-icon>
-                前往股票筛选
+                Go to stock screener
               </el-button>
             </div>
           </template>
         </el-step>
 
-        <!-- 京东云版步骤 4：完成首次分析 -->
-        <el-step title="完成第一次研究" description="对股票关注列表进行 AI 研究">
+        <!-- JD Cloud Version Step 4: Complete the first analysis -->
+        <el-step title="Complete your first study" description="AI research on stock watchlists">
           <template #description>
             <div class="step-content">
               <p v-if="stepStatus.hasAnalysis" class="step-completed-tip">
                 <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                已完成首次研究分析
+                First research analysis completed
               </p>
               <template v-else>
-                <p>开始您的第一次 AI 股票研究：</p>
+                <p>Start your first AI stock research:</p>
                 <ul class="step-list">
-                  <li>在"单股研究"页面输入股票代码（如：600519）</li>
-                  <li>选择研究深度（1-5 级，从快速到全面）</li>
-                  <li>点击"开始研究"，等待多智能体协作完成</li>
-                  <li>低深度约 5-8 分钟，高深度可能 15-20 分钟</li>
+                  <li>in"single stock research"Enter the stock code on the page (eg: 600519)</li>
+                  <li>Select research depth (level 1-5, quick to comprehensive)</li>
+                  <li>Click"Start researching", Waiting for multi-agent collaboration to complete</li>
+                  <li>About 5-8 minutes at low depth, maybe 15-20 minutes at high depth</li>
                 </ul>
               </template>
               <el-button type="primary" @click="goToAnalysis">
                 <el-icon><TrendCharts /></el-icon>
-                开始研究
+                Start researching
               </el-button>
             </div>
           </template>
         </el-step>
       </el-steps>
 
-      <!-- 完成引导按钮 -->
+      <!-- Complete boot button -->
       <div v-if="jdyunAllCompleted" class="jdyun-complete-section">
         <el-alert
-          title="引导已完成"
+          title="Boot is complete"
           type="success"
-          description="您已完成所有初始设置步骤，可以开始使用系统的全部功能了。"
+          description="You have completed all the initial setup steps and are ready to use the full functionality of the system."
           :closable="false"
           show-icon
         />
         <div class="complete-actions">
           <el-button @click="goToLearning">
             <el-icon><Reading /></el-icon>
-            查看学习中心
+            View Learning Center
           </el-button>
           <el-button type="primary" size="large" @click="completeJdyunGuide">
-            进入仪表板
+            Go to dashboard
             <el-icon class="el-icon--right"><ArrowRight /></el-icon>
           </el-button>
         </div>
       </div>
 
-      <!-- 跳过引导：未完成所有步骤时也允许进入仪表板，避免死循环 -->
+      <!-- Skip boot: Allow entry to the dashboard even if all steps are not completed to avoid an infinite loop -->
       <div v-else class="jdyun-complete-section">
         <el-alert
-          title="您可以随时跳过引导"
+          title="You can skip booting at any time"
           type="info"
-          description="未完成所有步骤也可进入仪表板开始使用，后续可从侧边栏「使用指南」回来查看。"
+          description="You can still enter the dashboard to start using it before completing all the steps. You can check back later from the Usage Guide in the sidebar."
           :closable="false"
           show-icon
         />
         <div class="complete-actions">
           <el-button @click="goToLearning">
             <el-icon><Reading /></el-icon>
-            查看学习中心
+            View Learning Center
           </el-button>
           <el-button type="primary" size="large" @click="completeJdyunGuide">
-            进入仪表板
+            Go to dashboard
             <el-icon class="el-icon--right"><ArrowRight /></el-icon>
           </el-button>
         </div>
       </div>
     </div>
 
-    <!-- 标准版引导：7 步（原有逻辑保持不变） -->
-    <div v-else class="steps-container" v-loading="loading" element-loading-text="正在检测配置进度...">
+    <!-- Standard version boot: 7 steps (the original logic remains unchanged) -->
+    <div v-else class="steps-container" v-loading="loading" element-loading-text="Checking configuration progress...">
       <el-steps :active="currentStep" direction="vertical" finish-status="success">
-        <!-- 步骤1：获取大模型API密钥 -->
-        <el-step title="获取大模型API密钥" description="选择并获取大语言模型的API密钥">
+        <!-- Step 1: Get the Big Model API Key -->
+        <el-step title="Get the big model API key" description="Select and get an API key for a large language model">
           <template #description>
             <div class="step-content">
               <p v-if="stepStatus.llmKey" class="step-completed-tip">
                 <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                大模型 API 密钥已配置
+                Large model API key configured
               </p>
               <template v-else>
-              <p>系统支持多种主流大语言模型，推荐优先使用国内模型，您需要选择其中一个并获取API密钥：</p>
+              <p>The system supports a variety of mainstream large language models. It is recommended to use domestic models first. You need to choose one of them and obtain an API key:</p>
               <ul class="step-list">
                 <li>
-                  <strong>火山方舟：</strong>豆包大模型 Seed 系列（推荐国内用户）<br>
-                  <span style="font-size: 13px; color: var(--el-text-color-secondary);">感谢字节火山引擎赞助本项目！注册即领2500万Tokens</span>
+                  <strong>Volcano Ark:</strong>Bean bag large model Seed series (recommended for domestic users)<br>
+                  <span style="font-size: 13px; color: var(--el-text-color-secondary);">Thanks to Byte Volcano Engine for sponsoring this project! Sign up and get 25 million Tokens</span>
                   <div class="register-link-wrapper">
                     <el-link href="https://www.volcengine.com/product/ark?utm_campaign=hw&utm_content=TradingAgents-CN&utm_medium=devrel-1&utm_source=OWO&utm_term=TradingAgents-CN" target="_blank" type="primary" :underline="false" class="register-link">
                       <el-icon><Link /></el-icon>
-                      注册即领2500万Tokens，立即前往
+                      Register and receive 25 million Tokens, go now
                     </el-link>
                   </div>
                 </li>
                 <li>
-                  <strong>DeepSeek：</strong>DeepSeek-V4-Pro、V4-Flash模型（推荐国内用户）
+                  <strong>DeepSeek: </strong>DeepSeek-V4-Pro, V4-Flash Model (recommended for domestic users)
                   <div class="register-link-wrapper">
                     <el-link href="https://platform.deepseek.com/" target="_blank" type="primary" :underline="false" class="register-link">
                       <el-icon><Link /></el-icon>
-                      立即注册 DeepSeek 账号
+                      Register a DeepSeek account now
                     </el-link>
                   </div>
                 </li>
-                <li><strong>智谱AI：</strong>GLM-5、GLM-5.2 等模型</li>
-                <li><strong>OpenAI：</strong>GPT-5、GPT-5.4 等模型</li>
-                <li><strong>Claude：</strong>Claude Opus 5、Opus 4.8 等模型</li>
-                <li><strong>其他：</strong>Kimi、小米 MiMo、AIHubMix、硅基流动等</li>
-                <li><strong>本地模型：</strong>Ollama（无需 API Key，本地部署）</li>
+                <li><strong>Wisdom spectrum AI:</strong>GLM-5, GLM-5.2 Other models</li>
+                <li><strong>OpenAI: </strong>GPT-5, GPT-5.4 Other models</li>
+                <li><strong>Claude: </strong>Claude Opus 5, Opus 4.8 Other models</li>
+                <li><strong>Others:</strong>Kimi, Xiaomi MiMo, AIHubMix, silicon-based mobile, etc.</li>
+                <li><strong>Local model:</strong>Ollama (No API Key required, local deployment)</li>
               </ul>
-              <p class="step-tip">💡 提示：国内用户推荐优先使用火山方舟或 DeepSeek，访问速度更快，使用更稳定</p>
+              <p class="step-tip">💡 Tip: Domestic users are recommended to use Volcano Ark or DeepSeek first for faster access and more stable use.</p>
               </template>
             </div>
           </template>
         </el-step>
 
-        <!-- 步骤2：获取数据源API密钥 -->
-        <el-step title="获取数据源API密钥" description="注册Tushare账号并获取API Token">
+        <!-- Step 2: Get the data source API key -->
+        <el-step title="Get data source API key" description="Register a Tushare account and get API Token">
           <template #description>
             <div class="step-content">
               <p v-if="stepStatus.dataKey" class="step-completed-tip">
                 <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                数据源 Token 已配置
+                Data source Token configured
               </p>
               <template v-else>
-              <p>系统使用 <strong>Tushare</strong> 作为数据源，您需要注册账号并获取API Token：</p>
+              <p>System usage <strong>Tushare</strong> As a data source, you need to register an account and obtain an API Token:</p>
               <ul class="step-list">
-                <li>访问 Tushare 官网注册账号</li>
-                <li>登录后在个人中心获取API Token</li>
-                <li>将Token保存好，后续配置时需要用到</li>
+                <li>Visit Tushare official website to register an account</li>
+                <li>Get it in your personal center after logging in API Token</li>
+                <li>Save the token, you will need it for subsequent configuration.</li>
               </ul>
               <div class="register-link-wrapper">
                 <el-link href="https://tushare.pro/weborder/#/login?reg=tacn" target="_blank" type="primary" :underline="false" class="register-link">
                   <el-icon><Link /></el-icon>
-                  立即注册 Tushare 账号
+                  Register a Tushare account now
                 </el-link>
                 <el-link href="https://tushare.pro/user/index" target="_blank" type="info" :underline="false" class="register-link" style="margin-left: 12px;">
                   <el-icon><Link /></el-icon>
-                  前往个人中心获取Token
+                  Go to personal center to get Token
                 </el-link>
               </div>
               </template>
@@ -239,175 +239,175 @@
           </template>
         </el-step>
 
-        <!-- 步骤3：填写Token配置 -->
-        <el-step title="填写Token配置" description="在设置页面填写您的API密钥">
+        <!-- Step 3: Fill in the Token configuration -->
+        <el-step title="Fill in the Token configuration" description="Fill in your API key on the settings page">
           <template #description>
             <div class="step-content">
-              <p>在设置页面完成以下配置：</p>
+              <p>Complete the following configuration on the settings page:</p>
               <ul class="step-list">
                 <li>
-                  <strong>配置大模型API密钥：</strong>
+                  <strong>Configure the large model API key:</strong>
                   <ol style="margin-top: 8px; padding-left: 24px;">
-                    <li>进入"配置管理" → "厂家管理"菜单</li>
-                    <li>找到对应的厂家（如火山方舟、DeepSeek等）</li>
-                    <li>点击"编辑"按钮</li>
-                    <li>在API密钥字段中填入步骤1获取的密钥</li>
-                    <li>保存配置</li>
+                    <li>enter"Configuration management" → "Factory management"menu</li>
+                    <li>Find the corresponding manufacturer (such as Volcano Ark, DeepSeek, etc.)</li>
+                    <li>Click"Edit"button</li>
+                    <li>Fill in the API key field with the key obtained in step 1</li>
+                    <li>Save configuration</li>
                   </ol>
                 </li>
                 <li>
-                  <strong>配置数据源API密钥：</strong>
+                  <strong>Configure data source API key:</strong>
                   <div style="margin-top: 8px; padding-left: 0;">
                     <p style="margin-bottom: 8px; color: var(--el-text-color-regular); font-size: 14px;">
-                      <strong>重要提示：</strong>Tushare 数据源需要账户积分达到 <strong style="color: var(--el-color-warning);">2000积分以上</strong>才能使用完整功能。
-                      如果积分不足，系统会自动使用免费的开源数据源（AKShare）作为替代。
-                      <strong style="color: var(--el-color-warning);">请注意：</strong>开源数据源因稳定性问题，<strong>仅作为体验本平台使用</strong>，不建议用于正式学习或分析场景。
+                      <strong>IMPORTANT NOTE:</strong>Tushare The data source requires account points to reach <strong style="color: var(--el-color-warning);">2000 Points or more</strong>to use the full functionality.
+                      If there are insufficient points, the system will automatically use the free open source data source (AKShare) as an alternative.
+                      <strong style="color: var(--el-color-warning);">Please note:</strong>Due to stability issues, open source data sources<strong>Used only to experience this platform</strong>, Not recommended for formal learning or analysis scenarios.
                     </p>
                     <ol style="margin-top: 8px; padding-left: 24px;">
-                      <li>进入"配置管理" → "数据源配置"菜单</li>
-                      <li>找到 Tushare 数据源并点击"编辑"</li>
-                      <li>填入步骤2获取的Token（在 <a href="https://tushare.pro/user/index" target="_blank" rel="noopener noreferrer" class="tushare-link">Tushare个人中心</a> 获取）</li>
-                      <li>保存配置</li>
-                      <li>如果积分不足2000，系统会自动使用 AKShare 等免费数据源（仅用于体验，不建议正式使用）</li>
+                      <li>enter"Configuration management" → "Data source configuration"menu</li>
+                      <li>Find the Tushare data source and click"Edit"</li>
+                      <li>Fill in the Token obtained in step 2 (in <a href="https://tushare.pro/user/index" target="_blank" rel="noopener noreferrer" class="tushare-link">Tushare Personal center</a> Get)</li>
+                      <li>Save configuration</li>
+                      <li>If the points are less than 2000, the system will automatically use free data sources such as AKShare (for experience only, not recommended for official use)</li>
                     </ol>
                   </div>
                 </li>
-                <li>保存配置后，可以点击"测试"按钮验证连接是否正常</li>
+                <li>After saving the configuration, you can click"test"Button to verify the connection is normal</li>
               </ul>
               <el-button type="primary" @click="goToSettings">
                 <el-icon><Setting /></el-icon>
-                前往设置页面
+                Go to settings page
               </el-button>
             </div>
           </template>
         </el-step>
 
-        <!-- 步骤4：激活License（社区版无此接口，运行时自动隐藏） -->
-        <el-step v-if="licenseSupported" title="激活 License 授权" description="输入 License 密钥激活系统">
+        <!-- Step 4: Activate License (the community version does not have this interface and is automatically hidden during runtime) -->
+        <el-step v-if="licenseSupported" title="Activate License Authorization" description="Enter the License key to activate the system">
           <template #description>
             <div class="step-content">
               <p v-if="stepStatus.licenseValid" class="step-completed-tip">
                 <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                License 已激活，无需重复操作
+                License Already activated, no need to repeat the operation
               </p>
               <template v-else>
-                <p>v3.0 版本需要激活 License 才能使用完整功能：</p>
+                <p>v3.0 The version requires license activation to use full functionality:</p>
                 <ul class="step-list">
-                  <li>进入"设置" → "个人设置" → "授权管理"页面</li>
-                  <li>输入收到的 License 密钥</li>
-                  <li>点击"激活"按钮完成激活</li>
-                  <li>激活后即可使用所有功能</li>
+                  <li>enter"settings" → "personal settings" → "Authorization management"Page</li>
+                  <li>Enter the License Key you received</li>
+                  <li>Click"activate"Button completes activation</li>
+                  <li>All features available upon activation</li>
                 </ul>
-                <p class="step-tip">💡 提示：如果未收到 License 密钥，请联系管理员获取</p>
+                <p class="step-tip">💡 Tip: If you do not receive the license key, please contact the administrator to obtain it</p>
               </template>
               <el-button type="primary" @click="goToLicense">
                 <el-icon><Key /></el-icon>
-                前往授权管理
+                Go to authorization management
               </el-button>
             </div>
           </template>
         </el-step>
 
-        <!-- 步骤5：同步数据 -->
-        <el-step title="同步股票数据" description="同步基础股票数据到系统">
+        <!-- Step 5: Sync data -->
+        <el-step title="Sync stock data" description="Synchronize basic stock data to the system">
           <template #description>
             <div class="step-content">
               <p v-if="stepStatus.dataSynced" class="step-completed-tip">
                 <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                股票数据已同步完成
+                Stock data has been synchronized
               </p>
               <template v-else>
-              <p>完成数据同步，获取最新的股票基础信息：</p>
+              <p>Complete data synchronization and obtain the latest basic stock information:</p>
               <ul class="step-list">
                 <li>
-                  <strong>重要说明：</strong>目前数据同步功能<strong style="color: var(--el-color-warning);">仅支持A股市场</strong>。
+                  <strong>Important note:</strong>Current data synchronization function<strong style="color: var(--el-color-warning);">Only supports A-share market</strong>. 
                 </li>
                 <li>
-                  <strong>多数据源同步步骤：</strong>
+                  <strong>Multiple data source synchronization steps:</strong>
                   <ol style="margin-top: 8px; padding-left: 24px;">
-                    <li>进入"设置" → "多数据源同步"功能</li>
-                    <li><strong>第一步：</strong>同步基础数据（股票列表、基本信息等）</li>
-                    <li><strong>第二步：</strong>同步历史数据（K线数据、历史行情等）</li>
-                    <li><strong>第三步：</strong>同步财务数据（财报数据、财务指标等）</li>
-                    <li>等待所有同步任务完成（可能需要较长时间）</li>
+                    <li>enter"settings" → "Synchronization of multiple data sources"Function</li>
+                    <li><strong>Step one:</strong>Synchronize basic data (stock list, basic information, etc.)</li>
+                    <li><strong>Step two:</strong>Synchronize historical data (K-line data, historical market conditions, etc.)</li>
+                    <li><strong>Step three:</strong>Synchronize financial data (financial report data, financial indicators, etc.)</li>
+                    <li>Wait for all sync tasks to complete (may take longer)</li>
                   </ol>
                 </li>
                 <li>
-                  <strong style="color: var(--el-color-danger);">⚠️ 重要提示：</strong>
-                  如果数据同步未完成，进行股票分析时可能<strong>拿不到完整数据</strong>，导致分析结果<strong>不准确</strong>。
-                  建议等待数据同步完成后再进行分析。
+                  <strong style="color: var(--el-color-danger);">⚠️ IMPORTANT NOTE:</strong>
+                  If data synchronization is not completed, stock analysis may<strong>Unable to get complete data</strong>, lead to analysis results<strong>Inaccurate</strong>. 
+                  It is recommended to wait for data synchronization to complete before performing analysis.
                 </li>
               </ul>
               <el-button type="primary" @click="goToSync">
                 <el-icon><Refresh /></el-icon>
-                前往数据同步
+                Go to data sync
               </el-button>
               </template>
             </div>
           </template>
         </el-step>
 
-        <!-- 步骤6：搜索股票 -->
-        <el-step title="搜索并添加股票关注列表" description="搜索感兴趣的股票并添加到自选列表">
+        <!-- Step 6: Search for stocks -->
+        <el-step title="Search and add stocks to watchlist" description="Search for stocks of interest and add to your watchlist">
           <template #description>
             <div class="step-content">
-              <p>开始使用股票筛选功能：</p>
+              <p>Get started with the stock screener:</p>
               <ul class="step-list">
-                <li>在"股票筛选"页面搜索股票代码或名称</li>
-                <li>查看股票详情信息</li>
-                <li>将感兴趣的股票添加到"股票关注列表"</li>
+                <li>in"stock screen"Page search for stock symbol or name</li>
+                <li>View stock details</li>
+                <li>Add stocks of interest to"Stock Watchlist"</li>
                 <li>
-                  <strong style="color: var(--el-color-warning);">💡 提示：</strong>
-                  如果使用 AKShare（AK）数据源，由于数据同步的限制，<strong>无法使用分类筛选功能</strong>。
-                  建议使用 Tushare 数据源以获得完整的筛选功能。
+                  <strong style="color: var(--el-color-warning);">💡 Tips:</strong>
+                  If you use the AKShare (AK) data source, due to data synchronization limitations,<strong>Unable to use category filtering function</strong>. 
+                  It is recommended to use the Tushare data source for complete filtering capabilities.
                 </li>
               </ul>
               <el-button type="primary" @click="goToScreening">
                 <el-icon><Search /></el-icon>
-                前往股票筛选
+                Go to stock screener
               </el-button>
             </div>
           </template>
         </el-step>
 
-        <!-- 步骤7：完成第一次研究 -->
-        <el-step title="完成第一次研究" description="对股票关注列表进行 AI 研究">
+        <!-- Step 7: Complete your first research -->
+        <el-step title="Complete your first study" description="AI research on stock watchlists">
           <template #description>
             <div class="step-content">
               <p v-if="stepStatus.hasAnalysis" class="step-completed-tip">
                 <el-icon color="#67c23a"><CircleCheck /></el-icon>
-                已完成首次研究分析
+                First research analysis completed
               </p>
               <template v-else>
-              <p>开始您的第一次 AI 股票研究：</p>
+              <p>Start your first AI stock research:</p>
               <ul class="step-list">
                 <li>
-                  <strong>填写股票代码：</strong>
-                  在"单股研究"页面输入股票代码（如：000001、600000等）
+                  <strong>Fill in the stock code:</strong>
+                  in"single stock research"Enter the stock code on the page (such as: 000001, 600000, etc.)
                 </li>
                 <li>
-                  <strong>检测数据是否完整：</strong>
-                  系统会自动检测该股票的基础数据、历史数据、财务数据是否完整
+                  <strong>Check whether the data is complete:</strong>
+                  The system will automatically detect whether the basic data, historical data, and financial data of the stock are complete.
                 </li>
                 <li>
-                  <strong>选择研究深度和研究团队：</strong>
+                  <strong>Select research depth and research team:</strong>
                   <ol style="margin-top: 8px; padding-left: 24px;">
-                    <li>选择研究深度等级（1-5级，从快速到全面）</li>
-                    <li>选择研究团队（可选择多个研究模块，如市场、基本面、新闻等）</li>
+                    <li>Select the research depth level (levels 1-5, from fast to comprehensive)</li>
+                    <li>Select a research team (you can choose multiple research modules, such as market, fundamentals, news, etc.)</li>
                   </ol>
                 </li>
                 <li>
-                  <strong>开始研究：</strong>
-                  点击"开始研究"按钮，系统将启动多智能体协作研究流程
+                  <strong>Start researching:</strong>
+                  Click"Start researching"button, the system will start the multi-agent collaborative research process
                 </li>
                 <li>
-                  <strong>等待并查看结果：</strong>
-                  等待研究完成（低深度约 5-8 分钟，高深度可能 15-20 分钟），研究完成后查看详细的研究报告和研究结论
+                  <strong>Wait and see the results:</strong>
+                  Wait for the study to complete (about 5-8 minutes for low depth, maybe 15-20 minutes for high depth) and view the detailed research report and study conclusions after the study is completed
                 </li>
               </ul>
               <el-button type="primary" @click="goToAnalysis">
                 <el-icon><TrendCharts /></el-icon>
-                开始研究
+                Start researching
               </el-button>
               </template>
             </div>
@@ -416,20 +416,20 @@
       </el-steps>
     </div>
 
-    <!-- 提示信息 -->
+    <!-- Prompt message -->
     <el-alert
-      title="提示"
+      title="Tips"
       type="info"
       :closable="false"
       show-icon
       class="info-alert"
     >
       <template #default>
-        <p>如果您在设置过程中遇到问题，可以：</p>
+        <p>If you have trouble setting up, you can:</p>
         <ul>
-          <li>查看 <a href="/about" target="_blank">关于页面</a> 了解更多信息</li>
-          <li>访问 <a href="/learning" target="_blank">学习中心</a> 查看使用教程</li>
-          <li>联系技术支持获取帮助</li>
+          <li>View <a href="/about" target="_blank">About page</a> Learn more</li>
+          <li>visit <a href="/learning" target="_blank">Learning Center</a> View tutorial</li>
+          <li>Contact technical support for assistance</li>
         </ul>
       </template>
     </el-alert>
@@ -458,26 +458,26 @@ const router = useRouter()
 const isJdyunModeRef = isJdyunMode()
 const currentStep = ref(0)
 const loading = ref(true)
-// License 步骤是否可用（社区版无 /api/license/status 接口，404 时自动隐藏该步骤）
+// License Whether the step is available (the community version does not have the /api/license/status interface, and this step is automatically hidden when 404 occurs)
 const licenseSupported = ref(true)
 
-// 京东云版状态
+// JD Cloud version status
 const jdyunStatus = ref({
   current_model: ''
 })
 
-// 各步骤完成状态
+// Completion status of each step
 const stepStatus = ref({
-  llmKey: false,        // 步骤1: LLM API密钥
-  dataKey: false,       // 步骤2: 数据源Token
-  configDone: false,    // 步骤3: 填写配置
-  dataSynced: false,    // 步骤5: 数据同步
-  hasFavorites: false,  // 步骤6: 添加股票关注列表
-  hasAnalysis: false,   // 步骤7: 完成研究
-  licenseValid: false   // License激活
+  llmKey: false,        // steps 1: LLM API key
+  dataKey: false,       // steps 2: data source Token
+  configDone: false,    // steps 3: Fill in the configuration
+  dataSynced: false,    // steps 5: Data synchronization
+  hasFavorites: false,  // steps 6: Add a stock watchlist
+  hasAnalysis: false,   // steps 7: Complete research
+  licenseValid: false   // License activate
 })
 
-// 检查股票关注列表状态
+// Check stock watchlist status
 const checkFavorites = async () => {
   try {
     const resp = await ApiClient.get('/api/favorites')
@@ -486,11 +486,11 @@ const checkFavorites = async () => {
       stepStatus.value.hasFavorites = favorites.length > 0
     }
   } catch (e) {
-    console.error('检查股票关注列表失败:', e)
+    console.error('Checking stock watchlist failed:', e)
   }
 }
 
-// 检查京东云版配置（当前模型名）
+// Check JD Cloud version configuration (current model name)
 const checkJdyunConfig = async () => {
   try {
     const resp = await ApiClient.get('/api/config/jdyun/status')
@@ -498,33 +498,33 @@ const checkJdyunConfig = async () => {
       jdyunStatus.value.current_model = resp.data.current_model || resp.data.model || ''
     }
   } catch (e) {
-    // 接口不存在时使用默认值
+    // Use default value if interface does not exist
     jdyunStatus.value.current_model = 'GLM-5.1'
   }
 }
 
-// 京东云版当前步骤（基于 stepStatus）
+// Current steps of JD Cloud version (based on stepStatus)
 const jdyunCurrentStep = computed(() => {
-  // 4 步：欢迎 → 同步 → 股票关注列表 → 首次分析
+  // 4 Step: Welcome → sync → Stock Watchlist → first analysis
   if (!stepStatus.value.dataSynced) return 1
   if (!stepStatus.value.hasFavorites) return 2
   if (!stepStatus.value.hasAnalysis) return 3
   return 4
 })
 
-// 京东云版是否全部完成
+// Is Jingdong Cloud version fully completed?
 const jdyunAllCompleted = computed(() =>
   stepStatus.value.dataSynced &&
   stepStatus.value.hasFavorites &&
   stepStatus.value.hasAnalysis
 )
 
-// 完成京东云版引导
+// Complete JD Cloud version guidance
 const completeJdyunGuide = () => {
   try {
     localStorage.setItem('jdyun_guide_completed', 'true')
   } catch (e) {
-    console.warn('写入 localStorage 失败:', e)
+    console.warn('Writing to localStorage failed:', e)
   }
   router.push('/dashboard')
 }
@@ -533,7 +533,7 @@ const goToLearning = () => {
   router.push('/learning')
 }
 
-// 检测 LLM API 密钥配置状态
+// Detect LLM API key configuration status
 const checkLLMKey = async () => {
   try {
     const resp = await ApiClient.get('/api/config/llm/providers')
@@ -542,16 +542,16 @@ const checkLLMKey = async () => {
       stepStatus.value.llmKey = providers.some((p: any) => p.has_api_key || p.has_api_secret)
     }
   } catch (e) {
-    console.error('检查LLM配置失败:', e)
+    console.error('Checking LLM configuration failed:', e)
   }
 }
 
-// 检测数据源同步状态（间接判断Token是否配置）
+// Detect data source synchronization status (indirectly determine whether Token is configured)
 const checkDataSync = async () => {
   try {
     const resp = await ApiClient.get('/api/sync/stock_basics/status')
     if (resp.success && resp.data) {
-      // 如果有同步记录或数据量 > 0，说明 Token 已配置并同步过
+      // If there are synchronized records or data volumes > 0, Description Token has been configured and synchronized
       const status = resp.data
       if (status.total_count > 0 || status.status === 'completed') {
         stepStatus.value.dataKey = true
@@ -559,11 +559,11 @@ const checkDataSync = async () => {
       }
     }
   } catch (e) {
-    console.error('检查数据同步状态失败:', e)
+    console.error('Checking data sync status failed:', e)
   }
 }
 
-// 检测是否已完成过分析任务
+// Check whether the analysis task has been completed
 const checkAnalysisHistory = async () => {
   try {
     const resp = await ApiClient.get('/api/v2/tasks/list', {
@@ -573,33 +573,33 @@ const checkAnalysisHistory = async () => {
       stepStatus.value.hasAnalysis = (resp.data.total || 0) > 0
     }
   } catch (e) {
-    console.error('检查分析历史失败:', e)
+    console.error('Check analysis history failed:', e)
   }
 }
 
-// 检测 License 状态
+// Check License Status
 const checkLicense = async () => {
   try {
-    // 注意：第三参数才是 RequestConfig；误传到第二参数会变成 URL query，
-    // 导致 skipErrorHandler 失效、社区版 404 弹窗
+    // Note: The third parameter is RequestConfig; if it is mistransmitted to the second parameter, it will become URL query.
+    // Causes skipErrorHandler to fail and community version 404 pop-up window
     const resp = await ApiClient.get('/api/license/status', undefined, { skipErrorHandler: true })
     if (resp.success && resp.data) {
       stepStatus.value.licenseValid = resp.data.is_valid || resp.data.has_token || false
     }
   } catch (e: any) {
-    // 404 = 社区版（无 License 激活功能），隐藏引导中的激活步骤
+    // 404 = Community Edition (without License activation function), hides the activation steps in the boot
     if (e?.response?.status === 404) {
       licenseSupported.value = false
-      console.debug('License 接口不可用（社区版），已隐藏激活步骤')
+      console.debug('License The interface is not available (community version), the activation steps have been hidden')
     } else {
-      console.error('检查License状态失败:', e)
+      console.error('Failed to check license status:', e)
     }
   }
 }
 
-// 根据完成状态计算当前步骤
+// Calculate current step based on completion status
 const updateCurrentStep = () => {
-  // 社区版隐藏 License 步骤后，后续步骤索引前移一位
+  // After the Community Edition hides the License step, the index of subsequent steps is moved forward one position.
   const hasLicenseStep = licenseSupported.value
   let step = 0
   if (stepStatus.value.llmKey) step = 1
@@ -611,11 +611,11 @@ const updateCurrentStep = () => {
   currentStep.value = step
 }
 
-// 加载所有状态
+// Load all states
 const loadAllStatus = async () => {
   loading.value = true
   if (isJdyunModeRef) {
-    // 京东云版：只检查同步、股票关注列表、分析历史
+    // JD Cloud version: only check synchronization, stock watch list, analysis history
     await Promise.allSettled([
       checkDataSync(),
       checkFavorites(),
@@ -623,7 +623,7 @@ const loadAllStatus = async () => {
       checkJdyunConfig()
     ])
   } else {
-    // 标准版：检查所有配置
+    // Standard Edition: Check all configurations
     await Promise.allSettled([
       checkLLMKey(),
       checkDataSync(),
@@ -909,7 +909,7 @@ const goToLicense = () => {
   }
 }
 
-// 响应式设计
+// Responsive design
 @media (max-width: 768px) {
   .guide-page {
     padding: 24px 16px;
@@ -967,7 +967,7 @@ const goToLicense = () => {
 }
 </style>
 
-// 京东云版引导样式
+// Jingdong cloud version guide style
 .jdyun-ready-list {
   display: flex;
   flex-direction: column;

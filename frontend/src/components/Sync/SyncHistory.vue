@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <el-icon class="header-icon"><Clock /></el-icon>
-          <span class="header-title">同步历史</span>
+          <span class="header-title">Sync history</span>
           <el-button
             type="primary"
             size="small"
@@ -12,7 +12,7 @@
             @click="refreshHistory"
           >
             <el-icon><Refresh /></el-icon>
-            刷新
+            Refresh
           </el-button>
         </div>
       </template>
@@ -51,14 +51,14 @@
                 
                 <div class="item-stats">
                   <div class="stats-row">
-                    <span class="stat-item">总数: {{ item.total }}</span>
-                    <span class="stat-item success">新增: {{ item.inserted }}</span>
-                    <span class="stat-item primary">更新: {{ item.updated }}</span>
-                    <span class="stat-item danger">错误: {{ item.errors }}</span>
+                    <span class="stat-item">total: {{ item.total }}</span>
+                    <span class="stat-item success">New: {{ item.inserted }}</span>
+                    <span class="stat-item primary">update: {{ item.updated }}</span>
+                    <span class="stat-item danger">Error: {{ item.errors }}</span>
                   </div>
                   
                   <div v-if="item.data_sources_used?.length" class="sources-row">
-                    <span class="sources-label">数据源:</span>
+                    <span class="sources-label">data source:</span>
                     <el-tag 
                       v-for="source in item.data_sources_used" 
                       :key="source"
@@ -71,7 +71,7 @@
                   </div>
                   
                   <div v-if="item.last_trade_date" class="trade-date-row">
-                    <span class="trade-date-label">交易日期:</span>
+                    <span class="trade-date-label">transaction date:</span>
                     <span class="trade-date-value">{{ item.last_trade_date }}</span>
                   </div>
                 </div>
@@ -94,7 +94,7 @@
             </el-timeline-item>
           </el-timeline>
           
-          <!-- 加载更多 -->
+          <!-- load more -->
           <div v-if="hasMore" class="load-more">
             <el-button 
               type="primary" 
@@ -102,13 +102,13 @@
               :loading="loadingMore"
               @click="loadMore"
             >
-              加载更多
+              load more
             </el-button>
           </div>
         </div>
 
         <div v-else class="empty-state">
-          <el-empty description="暂无同步历史" />
+          <el-empty description="No sync history yet" />
         </div>
       </div>
     </el-card>
@@ -121,7 +121,7 @@ import { ElMessage } from 'element-plus'
 import { Clock, Refresh, SuccessFilled, CircleCloseFilled, Warning } from '@element-plus/icons-vue'
 import { getSyncHistory, type SyncStatus } from '@/api/sync'
 
-// 响应式数据
+// Responsive data
 const loading = ref(false)
 const loadingMore = ref(false)
 const error = ref('')
@@ -130,7 +130,7 @@ const hasMore = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
-// 获取同步历史
+// Get sync history
 const fetchHistory = async (page = 1) => {
   try {
     if (page === 1) {
@@ -143,9 +143,9 @@ const fetchHistory = async (page = 1) => {
 
     error.value = ''
 
-    console.log(`📚 获取同步历史，页码: ${page}`)
+    console.log(`📚 Get synchronization history, page number: ${page}`)
 
-    // 调用真实的历史记录API
+    // Call the real history API
     const response = await getSyncHistory({
       page,
       page_size: pageSize.value
@@ -154,7 +154,7 @@ const fetchHistory = async (page = 1) => {
     if (response.success) {
       const { records, total, has_more } = response.data
 
-      console.log(`📊 获取到 ${records.length} 条历史记录，总数: ${total}`)
+      console.log(`📊 Get ${records.length} historical records, total: ${total}`)
 
       if (page === 1) {
         historyList.value = records
@@ -164,20 +164,20 @@ const fetchHistory = async (page = 1) => {
 
       hasMore.value = has_more
 
-      // 如果没有历史记录，显示空状态
+      // If there is no history, display empty status
       if (records.length === 0 && page === 1) {
-        console.log('📝 暂无同步历史记录')
+        console.log('📝 No sync history yet')
       }
     } else {
-      throw new Error(response.message || '获取历史记录失败')
+      throw new Error(response.message || 'Failed to get history')
     }
   } catch (err: any) {
-    console.error('获取同步历史失败:', err)
-    error.value = err.message || '网络请求失败'
+    console.error('Failed to obtain synchronization history:', err)
+    error.value = err.message || 'Network request failed'
 
-    // 如果是第一页加载失败，显示错误信息
+    // If the first page fails to load, an error message is displayed.
     if (page === 1) {
-      ElMessage.error(`获取同步历史失败: ${err.message}`)
+      ElMessage.error(`Failed to obtain synchronization history: ${err.message}`)
     }
   } finally {
     loading.value = false
@@ -185,20 +185,20 @@ const fetchHistory = async (page = 1) => {
   }
 }
 
-// 加载更多
+// load more
 const loadMore = async () => {
   currentPage.value++
   await fetchHistory(currentPage.value)
 }
 
-// 刷新历史记录
+// Refresh history
 const refreshHistory = async () => {
-  console.log('🔄 手动刷新同步历史')
+  console.log('🔄 Manually refresh sync history')
   await fetchHistory(1)
-  ElMessage.success('同步历史已刷新')
+  ElMessage.success('Sync history has been refreshed')
 }
 
-// 获取状态类型
+// Get status type
 const getStatusType = (status: string): 'success' | 'warning' | 'info' | 'danger' => {
   const typeMap: Record<string, 'success' | 'warning' | 'info' | 'danger'> = {
     idle: 'info',
@@ -211,20 +211,20 @@ const getStatusType = (status: string): 'success' | 'warning' | 'info' | 'danger
   return typeMap[status] || 'info'
 }
 
-// 获取状态文本
+// Get status text
 const getStatusText = (status: string) => {
   const textMap: Record<string, string> = {
-    idle: '空闲',
-    running: '运行中',
-    success: '成功',
-    success_with_errors: '部分成功',
-    failed: '失败',
-    never_run: '未运行'
+    idle: 'free',
+    running: 'Running',
+    success: 'success',
+    success_with_errors: 'Partially successful',
+    failed: 'failed',
+    never_run: 'Not running'
   }
-  return textMap[status] || '未知'
+  return textMap[status] || 'unknown'
 }
 
-// 获取时间线类型
+// Get timeline type
 const getTimelineType = (status: string): 'primary' | 'success' | 'warning' | 'danger' | 'info' => {
   const typeMap: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
     success: 'success',
@@ -235,7 +235,7 @@ const getTimelineType = (status: string): 'primary' | 'success' | 'warning' | 'd
   return typeMap[status] || 'info'
 }
 
-// 获取时间线图标
+// Get timeline icon
 const getTimelineIcon = (status: string) => {
   const iconMap: Record<string, any> = {
     success: SuccessFilled,
@@ -246,7 +246,7 @@ const getTimelineIcon = (status: string) => {
   return iconMap[status] || Clock
 }
 
-// 格式化时间
+// Format time
 const formatTime = (timeStr?: string) => {
   if (!timeStr) return ''
   
@@ -254,7 +254,7 @@ const formatTime = (timeStr?: string) => {
   const now = new Date()
   const diff = now.getTime() - date.getTime()
   
-  // 如果是今天
+  // if it were today
   if (diff < 24 * 60 * 60 * 1000) {
     return date.toLocaleTimeString('zh-CN', { 
       hour: '2-digit', 
@@ -263,7 +263,7 @@ const formatTime = (timeStr?: string) => {
     })
   }
   
-  // 如果是昨天或更早
+  // if it was yesterday or earlier
   return date.toLocaleString('zh-CN', {
     month: '2-digit',
     day: '2-digit',
@@ -272,7 +272,7 @@ const formatTime = (timeStr?: string) => {
   })
 }
 
-// 计算持续时间
+// Calculate duration
 const getDuration = (startTime?: string, endTime?: string) => {
   if (!startTime || !endTime) return ''
   
@@ -291,7 +291,7 @@ const getDuration = (startTime?: string, endTime?: string) => {
   }
 }
 
-// 组件挂载时获取数据
+// Get data when component is mounted
 onMounted(() => {
   fetchHistory()
 })
@@ -408,7 +408,7 @@ onMounted(() => {
   }
 }
 
-// 自定义时间线样式
+// Customize timeline style
 :deep(.el-timeline-item__timestamp) {
   font-size: 12px;
   color: var(--el-text-color-secondary);

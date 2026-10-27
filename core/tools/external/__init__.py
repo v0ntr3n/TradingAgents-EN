@@ -1,21 +1,21 @@
 """
-外部 Skill 生成系统
+External Skill Generation System
 
-提供 Skill 需求分析、代码生成、验证、评估和迭代控制的完整管线。
+Provides a complete pipeline of Skill requirement analysis, code generation, verification, evaluation and iteration control.
 
-使用方法::
+How to use::
 
     from core.tools.external import RequirementAnalyzer, IterationController
 
-    # 1. 需求沟通
+    # 1. Requirements communication
     analyzer = RequirementAnalyzer(provider="deepseek")
     session = analyzer.create_session(user_id="u1")
-    session, reply = analyzer.process_user_input(session, "我需要获取个股新闻")
+    session, reply = analyzer.process_user_input(session, "I need to get individual stock news")
 
-    # 2. 确认规格后，生成代码
-    session, spec = analyzer.confirm_spec(session, "确认")
+    # 2. After confirming the specifications, generate the code
+    session, spec = analyzer.confirm_spec(session, "Confirm")
 
-    # 3. 迭代生成
+    # 3. iterative generation
     controller = IterationController(provider="deepseek")
     result = controller.run(spec)
 """
@@ -25,7 +25,7 @@ from typing import Dict
 
 
 _EXPORT_MAP: Dict[str, str] = {
-    # 数据模型
+    # data model
     "BoundaryCheck": ".skill_spec",
     "BusinessRuleFailure": ".skill_spec",
     "BusinessVerificationResult": ".skill_spec",
@@ -52,7 +52,7 @@ _EXPORT_MAP: Dict[str, str] = {
     "TestCase": ".skill_spec",
     "ValidationResult": ".skill_spec",
     "ValidationCheck": ".skill_spec",
-    # 管线模块
+    # pipeline module
     "BusinessVerifier": ".business_verifier",
     "BusinessVerifierRegistry": ".business_verifier",
     "CodeGenerator": ".code_generator",
@@ -83,7 +83,7 @@ def __dir__():
     return sorted(list(globals().keys()) + list(__all__))
 
 __all__ = [
-    # 数据模型
+    # data model
     "BoundaryCheck",
     "BusinessRuleFailure",
     "BusinessVerificationResult",
@@ -110,7 +110,7 @@ __all__ = [
     "TestCase",
     "ValidationResult",
     "ValidationCheck",
-    # 管线模块
+    # pipeline module
     "BusinessVerifier",
     "BusinessVerifierRegistry",
     "CodeGenerator",

@@ -1,4 +1,4 @@
-"""L4 项目长期记忆的数据模型。"""
+"""L4 A data model of item long-term memory."""
 
 from __future__ import annotations
 

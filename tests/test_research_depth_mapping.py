@@ -1,174 +1,174 @@
 """
-测试研究深度映射是否正确
-验证前端数字等级到后端中文等级的转换
+Test whether the study depth mapping is correct
+Verify conversion of front-end numeric grade to back-end Chinese grade
 """
 import pytest
 from app.services.simple_analysis_service import create_analysis_config
 
 
 class TestResearchDepthMapping:
-    """测试研究深度映射"""
+    """Testing Study Depth Mapping"""
 
     def test_level_1_fast(self):
-        """测试1级 - 快速分析"""
+        """Test Level 1 - Quick Analysis"""
         config = create_analysis_config(
-            research_depth=1,  # 前端传入数字1
+            research_depth=1,  # Front-end incoming numbers 1
             selected_analysts=["market"],
             quick_model="qwen-turbo",
             deep_model="qwen-plus",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
         assert config["max_debate_rounds"] == 1
         assert config["max_risk_discuss_rounds"] == 1
         assert config["memory_enabled"] is False
-        assert config["research_depth"] == "快速"
+        assert config["research_depth"] == "fast"
 
     def test_level_2_basic(self):
-        """测试2级 - 基础分析"""
+        """Test Level 2 - Basic Analysis"""
         config = create_analysis_config(
-            research_depth=2,  # 前端传入数字2
+            research_depth=2,  # Front-end incoming numbers 2
             selected_analysts=["market"],
             quick_model="qwen-turbo",
             deep_model="qwen-plus",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
         assert config["max_debate_rounds"] == 1
         assert config["max_risk_discuss_rounds"] == 1
         assert config["memory_enabled"] is True
-        assert config["research_depth"] == "基础"
+        assert config["research_depth"] == "Basics"
 
     def test_level_3_standard(self):
-        """测试3级 - 标准分析"""
+        """Test Level 3 - Standard Analysis"""
         config = create_analysis_config(
-            research_depth=3,  # 前端传入数字3
+            research_depth=3,  # Front-end incoming numbers 3
             selected_analysts=["market"],
             quick_model="qwen-plus",
             deep_model="qwen-max",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
         assert config["max_debate_rounds"] == 1
         assert config["max_risk_discuss_rounds"] == 2
         assert config["memory_enabled"] is True
-        assert config["research_depth"] == "标准"
+        assert config["research_depth"] == "Standard"
 
     def test_level_4_deep(self):
-        """测试4级 - 深度分析 (关键测试)"""
+        """Test Level 4 - In-Depth Analysis (critical test)"""
         config = create_analysis_config(
-            research_depth=4,  # 前端传入数字4
+            research_depth=4,  # Front-end incoming numbers 4
             selected_analysts=["market"],
             quick_model="qwen-plus",
             deep_model="qwen-max",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
-        # 🔥 关键断言：4级应该有2轮辩论
-        assert config["max_debate_rounds"] == 2, "4级深度分析应该有2轮辩论"
-        assert config["max_risk_discuss_rounds"] == 2, "4级深度分析应该有2轮风险讨论"
+        # 🔥 Key assertion: Level 4 should have 2 rounds of debate
+        assert config["max_debate_rounds"] == 2, "4 Level 1 in-depth analysis should have 2 rounds of debate"
+        assert config["max_risk_discuss_rounds"] == 2, "4 Level 1 in-depth analysis should have 2 rounds of risk discussions"
         assert config["memory_enabled"] is True
-        assert config["research_depth"] == "深度"
+        assert config["research_depth"] == "Depth"
 
     def test_level_5_comprehensive(self):
-        """测试5级 - 全面分析"""
+        """Test Level 5 - Full Analysis"""
         config = create_analysis_config(
-            research_depth=5,  # 前端传入数字5
+            research_depth=5,  # Front-end incoming numbers 5
             selected_analysts=["market"],
             quick_model="qwen-max",
             deep_model="qwen-max",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
-        # 🔥 关键断言：5级应该有3轮辩论
-        assert config["max_debate_rounds"] == 3, "5级全面分析应该有3轮辩论"
-        assert config["max_risk_discuss_rounds"] == 3, "5级全面分析应该有3轮风险讨论"
+        # 🔥 Key assertion: Level 5 should have 3 rounds of debate
+        assert config["max_debate_rounds"] == 3, "5 Level comprehensive analysis should have 3 rounds of debate"
+        assert config["max_risk_discuss_rounds"] == 3, "5 A comprehensive analysis should have three rounds of risk discussions"
         assert config["memory_enabled"] is True
-        assert config["research_depth"] == "全面"
+        assert config["research_depth"] == "Comprehensive"
 
     def test_chinese_depth_fast(self):
-        """测试中文深度 - 快速"""
+        """Test Chinese depth - fast"""
         config = create_analysis_config(
-            research_depth="快速",  # 直接传入中文
+            research_depth="fast",  # Directly import Chinese
             selected_analysts=["market"],
             quick_model="qwen-turbo",
             deep_model="qwen-plus",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
         assert config["max_debate_rounds"] == 1
         assert config["max_risk_discuss_rounds"] == 1
-        assert config["research_depth"] == "快速"
+        assert config["research_depth"] == "fast"
 
     def test_chinese_depth_deep(self):
-        """测试中文深度 - 深度"""
+        """Test Chinese Depth - Depth"""
         config = create_analysis_config(
-            research_depth="深度",  # 直接传入中文
+            research_depth="Depth",  # Directly import Chinese
             selected_analysts=["market"],
             quick_model="qwen-plus",
             deep_model="qwen-max",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
         assert config["max_debate_rounds"] == 2
         assert config["max_risk_discuss_rounds"] == 2
-        assert config["research_depth"] == "深度"
+        assert config["research_depth"] == "Depth"
 
     def test_chinese_depth_comprehensive(self):
-        """测试中文深度 - 全面"""
+        """Test Chinese Depth - Comprehensive"""
         config = create_analysis_config(
-            research_depth="全面",  # 直接传入中文
+            research_depth="Comprehensive",  # Directly import Chinese
             selected_analysts=["market"],
             quick_model="qwen-max",
             deep_model="qwen-max",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
         assert config["max_debate_rounds"] == 3
         assert config["max_risk_discuss_rounds"] == 3
-        assert config["research_depth"] == "全面"
+        assert config["research_depth"] == "Comprehensive"
 
     def test_string_number_depth(self):
-        """测试字符串数字深度"""
+        """Test string numeric depth"""
         config = create_analysis_config(
-            research_depth="4",  # 字符串形式的数字
+            research_depth="4",  # Number as string
             selected_analysts=["market"],
             quick_model="qwen-plus",
             deep_model="qwen-max",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
         assert config["max_debate_rounds"] == 2
         assert config["max_risk_discuss_rounds"] == 2
-        assert config["research_depth"] == "深度"
+        assert config["research_depth"] == "Depth"
 
     def test_invalid_depth_fallback(self):
-        """测试无效深度回退到默认值"""
+        """Test invalid depth and fall back to default value"""
         config = create_analysis_config(
-            research_depth=99,  # 无效的数字
+            research_depth=99,  # Invalid number
             selected_analysts=["market"],
             quick_model="qwen-plus",
             deep_model="qwen-max",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         
-        # 应该回退到标准分析
+        # Should fall back to standard analysis
         assert config["max_debate_rounds"] == 1
         assert config["max_risk_discuss_rounds"] == 2
-        assert config["research_depth"] == "标准"
+        assert config["research_depth"] == "Standard"
 
     def test_debate_rounds_progression(self):
-        """测试辩论轮次的递进关系"""
+        """Testing the progression of debate rounds"""
         levels = [1, 2, 3, 4, 5]
         expected_debate_rounds = [1, 1, 1, 2, 3]
         expected_risk_rounds = [1, 1, 2, 2, 3]
@@ -180,13 +180,13 @@ class TestResearchDepthMapping:
                 quick_model="qwen-plus",
                 deep_model="qwen-max",
                 llm_provider="dashscope",
-                market_type="A股"
+                market_type="A shares"
             )
             
             assert config["max_debate_rounds"] == expected_debate, \
-                f"级别{level}的辩论轮次应该是{expected_debate}，实际是{config['max_debate_rounds']}"
+                f"level{level}The debate round should be{expected_debate}, Actually{config['max_debate_rounds']}"
             assert config["max_risk_discuss_rounds"] == expected_risk, \
-                f"级别{level}的风险讨论轮次应该是{expected_risk}，实际是{config['max_risk_discuss_rounds']}"
+                f"level{level}The risk discussion round should be{expected_risk}, Actually{config['max_risk_discuss_rounds']}"
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 """
-LLM 策略生成
-用户确认参数后，生成 Backtrader Python 代码 + config
-支持 L2 语义校验、L3 执行校验与自修正循环
+LLM Strategy generation
+After the user confirms the parameters, the Backtrader Python code is generated + config
+Supports L2 semantic verification, L3 execution verification and self-correction loop
 """
 import json
 import logging
@@ -13,13 +13,13 @@ from core.llm.models import Message, MessageRole
 
 logger = logging.getLogger(__name__)
 
-RETRY_MAX = 2  # 最多重试 2 次，共 3 次尝试
+RETRY_MAX = 2  # Retries up to 2 times, for a total of 3 attempts
 
-GENERATE_SYSTEM = """你是一个策略代码生成器。根据用户的策略描述，生成 **Backtrader** Python 策略代码和配置。
+GENERATE_SYSTEM = """You are a strategy code generator. Based on the user s policy description, generate **Backtrader** Python Policy code and configuration.
 
-【输出格式】必须输出纯 JSON，格式如下：
+ [Output format] Must output pure JSON, the format is as follows:
 {
-  "code": "完整的 Python 代码字符串",
+  "code": "Complete Python code string",
   "config": {
     "start_year": 2016,
     "end_year": 2025,
@@ -32,97 +32,97 @@ GENERATE_SYSTEM = """你是一个策略代码生成器。根据用户的策略�
   }
 }
 
-【重要：避免生存者偏差】
-⚠️ 用现在的龙头股回测过去10-20年会导致严重的生存者偏差！
+ [Important: Avoid Survivor Bias]
+⚠️ Using current leading stocks to backtest the past 10-20 years will lead to serious survivor bias!
 
-**推荐做法（优先级从高到低）**：
+**Recommended practices (priority from high to low)**: 
 
-1. **🆕 使用行业分类 + 历史市值**：universe.type = "industry"
-   - 系统会自动获取回测开始日期时该行业市值最大的股票
-   - 例如回测2010-2020年白酒策略，会用2010年时的白酒龙头（而非现在的）
-   - 示例：{"type": "industry", "industry": "白酒", "max_symbols": 10}
+1. **🆕 Use industry classification + Historical market capitalization**: universe.type = "industry"
+   - The system will automatically obtain the stock with the largest market capitalization in the industry on the start date of the backtest
+   - For example, when backtesting the liquor strategy from 2010 to 2020, the liquor faucet in 2010 will be used (rather than the current one).
+   - Example:{"type": "industry", "industry": "Liquor", "max_symbols": 10}
 
-2. **使用行业指数**：universe.type = "index"
-   - 使用指数历史成分股（如成分股数据有限制，可能获取不到很早的数据）
-   - 示例：{"type": "index", "index_code": "000932.SH"}
+2. **Use industry indices**: universe.type = "index"
+   - Use the historical constituent stocks of the index (if there are restrictions on constituent stock data, very early data may not be obtained)
+   - Example:{"type": "index", "index_code": "000932.SH"}
 
-3. **缩短回测周期**：静态股票池回测不超过5年（如2020-2025）
+3. **Shorten the backtest cycle**: Static stock pool backtesting does not exceed 5 years (such as 2020-2025)
 
-【行业分类】（推荐 universe.type="industry"）⭐ 最佳选择
-支持的行业名称：
-- 消费类：白酒、食品、家电、消费（综合）
-- 金融类：银行、保险、券商、金融（综合）
-- 科技类：半导体、软件、通信、科技（综合）
-- 新能源：光伏、锂电、新能源、新能源车
-- 医药类：医药
-- 其他：房地产、建材、钢铁、化工
+ [Industry Classification] (Recommended universe.type="industry") ⭐ best choice
+Supported industry names:
+- Consumer categories: liquor, food, home appliances, consumption (comprehensive)
+- Financial: Banking, insurance, securities dealers, finance (comprehensive)
+- Technology: semiconductors, software, communications, technology (comprehensive)
+- New energy: photovoltaic, lithium battery, new energy, new energy vehicles
+- Pharmaceutical category: medicine
+- Others: real estate, building materials, steel, chemical industry
 
-示例配置：
+Example configuration:
 ```json
-"universe": {"type": "industry", "industry": "白酒", "max_symbols": 10}
+"universe": {"type": "industry", "industry": "Liquor", "max_symbols": 10}
 ```
 
-【行业指数代码】（备选 universe.type="index"）
-- 消费类：000932.SH（中证消费）、399997.SZ（中证白酒）
-- 金融类：399986.SZ（中证银行）、000914.SH（300金融）
-- 科技类：399006.SZ（创业板指）、000993.SH（全指信息）
+ [Industry index code] (optional universe.type="index") 
+- Consumer category: 000932.SH (CSI Consumer), 399997.SZ (CSI Liquor)
+- Financial: 399986.SZ (China Securities Bank), 000914.SH (300 Finance)
+- Technology: 399006.SZ (GEM Index), 000993.SH (All Index Information)
 
-【静态股票池】（仅用于近3-5年回测，不推荐长期回测）
-消费类：600519、000858、000568、603288、000651、000333、600887
+ [Static stock pool] (only used for backtesting in the past 3-5 years, long-term backtesting is not recommended)
+Consumer category: 600519, 000858, 000568, 603288, 000651, 000333,600887
 
-【Backtrader 使用说明】
-- 必须定义类名：`GeneratedStrategy`，继承 `bt.Strategy`
-- `self.datas` 为数据列表，`self.datas[i]._name` 为股票代码
-- 买入：`self.buy(data=..., size=数量)` 或 `self.buy(data=...)`（不指定 size 时全仓）
-- 卖出：`self.sell(data=...)` 或 `self.close(data=...)`
-- 持仓：`self.getposition(data).size`
-- 在 `next()` 中实现每日逻辑
-- **K线索引**：`data.close[0]` 当前 bar，`data.close[-1]` 上一 bar；历史 N 根最低价用 `min(data.low[-i] for i in range(1, N+1))`，且需先判断 `len(self) >= N`
-- **日期**：用 `data.datetime.date(0)` 获取当前 bar 日期
-- **突破策略关键**：唐奇安/通道突破必须用**前一根**的通道值！`Highest(high, 20)[0]` 含当日 high，导致 `close > entry_high` 几乎不可能（close≤high）。正确：`entry_high = highest_ind[-1]`（上一根的 20 日最高），且 `next()` 开头加 `if len(self) < period+1: return` 跳过预热
+ [Backtrader Instructions for use]
+- Class name must be defined:`GeneratedStrategy`, inheritance `bt.Strategy`
+- `self.datas` is the data list,`self.datas[i]._name` for stock code
+- Buy:`self.buy(data=..., size=Quantity)` or `self.buy(data=...)` (Full position when size is not specified)
+- Sell:`self.sell(data=...)` or `self.close(data=...)`
+- Position:`self.getposition(data).size`
+- in `next()` Implement daily logic in
+- **K thread index**: `data.close[0]` current bar,`data.close[-1]` Previous bar; historical N lowest price is used `min(data.low[-i] for i in range(1, N+1))`, and need to judge first `len(self) >= N`
+- **Date**: use `data.datetime.date(0)` Get the current bar date
+- **Breakthrough strategy key**: Tang Qian/channel breakthrough must be used**previous one**channel value!`Highest(high, 20)[0]` Contains the day s high, resulting in `close > entry_high` Almost impossible (close≤high) . Correct:`entry_high = highest_ind[-1]` (the 20-day highest of the previous root), and `next()` Add at the beginning `if len(self) < period+1: return` Skip warm-up
 
-【仓位计算易错点】
-- 若自定义 size：`size` 必须是**股数**（≥100 且为 100 的整数倍）
-- 错误示例：`units_to_buy = min(unit_count, cash//(price*100)*100)` 若 unit_count 是「手数」会得到 <100 股，导致 `if size>=100` 永远不成立
-- 正确：手数转股数 `shares = unit_count * 100`，再 `size = min(shares, cash//price//100*100)` 且 `size >= 100`
+ [Easy mistakes in position calculation]
+- If you customize size:`size` must be**Number of shares** (≥100 and is an integer multiple of 100)
+- Error example:`units_to_buy = min(unit_count, cash//(price*100)*100)` If unit_count is lot size , you will get <100 shares, leading to `if size>=100` never established
+- Correct: Number of lots converted into shares `shares = unit_count * 100`, Again `size = min(shares, cash//price//100*100)` and `size >= 100`
 
-【中国 A 股规则】
-- 最小交易单位 100 股（1手），回测引擎自动按 100 股取整
-- 未指定仓位时默认全仓（使用全部可用资金买入）
+ [China A-share rules]
+- The minimum trading unit is 100 shares (1 lot), and the backtesting engine automatically rounds to 100 shares.
+- When no position is specified, the default is full position (use all available funds to buy)
 
-【策略逻辑注意事项】
-- 在 `__init__` 中初始化所有用到的状态变量（如 `_last_sell_date`、`_checked_year`），避免 `hasattr` 导致首次执行被跳过
-- 循环逻辑（如每年春节）：确保回测区间内每一年都能触发，检查数据起始年（如 600519 从 2001 年有数据）和策略条件覆盖全区间
-- 卖出条件要明确：有持仓且满足卖出时机时立即 `self.close(data)` 或 `self.sell(data)`
+ [Notes on strategy logic]
+- in `__init__` Initialize all state variables used (such as `_last_sell_date`, `_checked_year`) , avoid `hasattr` causing the first execution to be skipped
+- Circular logic (such as every Spring Festival): ensure that it can be triggered every year within the backtest interval, check the starting year of the data (for example, 600519 has data from 2001) and the strategy conditions cover the entire interval
+- The selling conditions must be clear: immediately when you have a position and meet the selling opportunity `self.close(data)` or `self.sell(data)`
 
-【规则】
-- universe.type 支持 "static"（symbols 为 6 位股票代码列表）或 "index"（index_code 如 "000300"，由主平台解析）
-- config.data_source: 数据源，可选 tushare/akshare/baostock
-- code 中只 import backtrader（as bt）；datetime、date、timedelta 已注入，可直接使用（如 datetime(2024,1,1)、date(2024,1,1)、timedelta(days=30)），无需 import
-- 必须输出纯 JSON，code 为字符串（内部换行用 \\n），不要 markdown 代码块包裹
+ [Rules]
+- universe.type support "static" (symbols for a list of 6-digit ticker symbols) or "index" (index_code Such as "000300", parsed by the main platform)
+- config.data_source: data source, optional tushare/akshare/baostock
+- code Only import backtrader (as bt); datetime, date, timedelta have been injected and can be used directly (such as datetime(2024,1,1), date(2024,1,1), timedelta(days=30)) , No need import
+- Pure JSON must be output, code is a string (internal line breaks are \\n) , Do not wrap markdown code blocks
 """
 
 
-RETRY_USER_TEMPLATE = """上次生成的策略存在以下问题，请修正后重新输出纯 JSON：
+RETRY_USER_TEMPLATE = """The policy generated last time has the following problems. Please correct it and re-output pure JSON:
 
-【上次输出】
+ [Last output]
 {output}
 
-【错误】
+ [Error]
 {errors}
 
-请根据上述错误修正，输出修正后的完整 JSON（含 code 和 config），不要 markdown 代码块。"""
+Please correct the above errors and output the corrected complete JSON (including code and config) without markdown code blocks."""
 
 
 def _parse_llm_json(raw: str) -> Dict[str, Any]:
-    """解析 LLM 输出的 JSON（含 code 和 config）"""
+    """Parse the JSON output by LLM (including code and config)"""
     raw = (raw or "").strip()
     if raw.startswith("```"):
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
         raw = re.sub(r"\s*```$", "", raw)
     data = json.loads(raw)
     if "code" not in data or "config" not in data:
-        raise ValueError("输出必须包含 code 和 config 字段")
+        raise ValueError("Output must contain code and config fields")
     return data
 
 
@@ -133,14 +133,14 @@ async def generate_strategy_dsl(
     run_execution_check: bool = True,
 ) -> Dict[str, Any]:
     """
-    生成策略（Python 代码 + config），支持评估与自修正
+    Generate strategy (Python code + config) , Support evaluation and self-correction
     Args:
-        user_description: 用户描述（可包含确认的参数）
-        llm_client: 可选 LLM 客户端
-        validate_on_generate: 是否进行 L2/L3 校验
-        run_execution_check: 是否进行 L3 执行校验（需 validate_on_generate=True）
+        user_description: User description (can include confirmed parameters)
+        llm_client: Optional LLM client
+        validate_on_generate: Whether to perform L2/L3 verification
+        run_execution_check: Whether to perform L3 execution verification (requires validate_on_generate=True) 
     Returns:
-        {"code": str, "config": dict}，若解析失败则抛出
+        {"code": str, "config": dict}, Throws if parsing fails
     """
     client = llm_client
     if not client:
@@ -148,7 +148,7 @@ async def generate_strategy_dsl(
 
         cfg = await get_coding_llm_config()
         if not cfg:
-            raise ValueError("未配置 LLM，无法生成策略")
+            raise ValueError("LLM is not configured and policy cannot be generated")
         client = UnifiedLLMClient.from_config(cfg)
 
     from .dsl_evaluator import evaluate_strategy_python_full
@@ -165,8 +165,8 @@ async def generate_strategy_dsl(
         try:
             result = _parse_llm_json(raw)
         except (json.JSONDecodeError, ValueError) as e:
-            logger.warning("策略解析失败 (attempt %d): %s", attempt + 1, e)
-            last_error = f"生成的策略格式有误: {e}"
+            logger.warning("Policy parsing failed (attempt %d): %s", attempt + 1, e)
+            last_error = f"The generated policy is in the wrong format: {e}"
             if attempt < RETRY_MAX:
                 messages.append(Message(role=MessageRole.ASSISTANT, content=raw))
                 messages.append(
@@ -191,7 +191,7 @@ async def generate_strategy_dsl(
             return result
 
         last_error = "; ".join(errors)
-        logger.warning("策略评估未通过 (attempt %d): %s", attempt + 1, last_error)
+        logger.warning("Strategy evaluation failed (attempt %d): %s", attempt + 1, last_error)
         if attempt < RETRY_MAX:
             messages.append(Message(role=MessageRole.ASSISTANT, content=raw))
             messages.append(
@@ -205,6 +205,6 @@ async def generate_strategy_dsl(
                 )
             )
             continue
-        raise ValueError(f"策略校验未通过（已重试{RETRY_MAX}次）: {last_error}")
+        raise ValueError(f"Policy verification failed (retried{RETRY_MAX}times): {last_error}")
 
-    raise ValueError(last_error or "生成失败")
+    raise ValueError(last_error or "Build failed")

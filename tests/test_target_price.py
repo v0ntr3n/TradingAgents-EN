@@ -1,153 +1,153 @@
 #!/usr/bin/env python3
 """
-测试优化后的目标价生成系统
+Testing the optimized target price generation system
 """
 
 import sys
 import os
 from pathlib import Path
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 def test_signal_processor():
-    """测试信号处理器的价格提取功能"""
-    print("🧪 测试信号处理器价格提取功能...")
+    """Testing the price extraction function of the signal processor"""
+    print("🧪 Test the signal processor price extraction function...")
     
     try:
         from tradingagents.agents.signal_processing import SignalProcessor
         
         processor = SignalProcessor()
         
-        # 测试用例1: 包含明确目标价的文本
+        # test case 1: Text containing a clear target price
         test_text1 = """
-        基于技术分析，AAPL当前价格为180美元，建议买入。
-        目标价位：200美元
-        止损价位：170美元
-        预期涨幅：11%
+        Based on technical analysis, AAPL is currently priced at $180 and a buy recommendation is recommended.
+        Target price: $200
+        Stop loss price: $170
+        Expected increase:11%
         """
         
         result1 = processor._extract_target_price(test_text1, "AAPL", "USD")
-        print(f"✅ 测试1 - 明确目标价: {result1}")
+        print(f"✅ Test 1 - Define target price: {result1}")
         
-        # 测试用例2: 需要智能推算的文本
+        # test case 2: Text that requires intelligent inference
         test_text2 = """
-        腾讯控股(0700.HK)当前价格为320港元，
-        基于基本面分析建议买入，预期上涨15%。
+        Tencent Holdings(0700.HK)The current price is HKD 320,
+        It is recommended to buy based on fundamental analysis, with an expected increase of 15%.
         """
         
         result2 = processor._extract_target_price(test_text2, "0700.HK", "HKD")
-        print(f"✅ 测试2 - 智能推算: {result2}")
+        print(f"✅ Test 2 - Smart Extrapolation: {result2}")
         
-        # 测试用例3: A股示例
+        # test case 3: A stock example
         test_text3 = """
-        贵州茅台(600519)现价1800元，基于估值分析，
-        合理价位区间为1900-2100元，建议持有。
+        Kweichow Moutai(600519)The current price is 1,800 yuan, based on valuation analysis.
+        The reasonable price range is 1,900-2,100 yuan, and it is recommended to hold it.
         """
         
         result3 = processor._extract_target_price(test_text3, "600519", "CNY")
-        print(f"✅ 测试3 - A股价格: {result3}")
+        print(f"✅ Test 3 - A Share Price: {result3}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 信号处理器测试失败: {e}")
+        print(f"❌ Signal handler test failed: {e}")
         return False
 
 def test_smart_price_estimation():
-    """测试智能价格推算功能"""
-    print("\n🧪 测试智能价格推算功能...")
+    """Test the smart price calculation function"""
+    print("\n🧪 Test the smart price calculation function...")
     
     try:
         from tradingagents.agents.signal_processing import SignalProcessor
         
         processor = SignalProcessor()
         
-        # 测试推算逻辑
+        # Test inference logic
         test_cases = [
-            ("当前价格100美元，预期上涨20%", "buy", 120.0),
-            ("现价50元，建议卖出，预计下跌10%", "sell", 45.0),
-            ("股价200港元，持有，预期涨幅5%", "hold", 210.0)
+            ("Current price $100, expected to rise 20%", "buy", 120.0),
+            ("The current price is 50 yuan. It is recommended to sell. It is expected to fall.10%", "sell", 45.0),
+            ("The stock price is HK$200, hold, expected increase 5%", "hold", 210.0)
         ]
         
         for text, action, expected in test_cases:
             result = processor._smart_price_estimation(text, action)
-            print(f"✅ 文本: '{text}' -> 推算价格: {result} (预期: {expected})")
+            print(f"✅ text: '{text}' -> estimated price: {result} (expected: {expected})")
         
         return True
         
     except Exception as e:
-        print(f"❌ 智能推算测试失败: {e}")
+        print(f"❌ Smart extrapolation test failed: {e}")
         return False
 
 def test_trader_prompt():
-    """测试交易员提示词是否包含目标价要求"""
-    print("\n🧪 检查交易员提示词优化...")
+    """Test whether the trader prompt word contains a target price requirement"""
+    print("\n🧪 Check trader tip word optimization...")
     
     try:
         from tradingagents.agents.trader import trader_node
         import inspect
         
-        # 获取trader_node函数的源代码
+        # Get the source code of trader_node function
         source = inspect.getsource(trader_node)
         
-        # 检查关键词
-        keywords = ["目标价", "target_price", "具体价位", "禁止回复"]
+        # Check keywords
+        keywords = ["target price", "target_price", "Specific price", "No reply"]
         found_keywords = []
         
         for keyword in keywords:
             if keyword in source:
                 found_keywords.append(keyword)
         
-        print(f"✅ 交易员提示词包含关键词: {found_keywords}")
+        print(f"✅ Trader tip words contain keywords: {found_keywords}")
         
         if len(found_keywords) >= 2:
-            print("✅ 交易员模块已优化")
+            print("✅ Trader module has been optimized")
             return True
         else:
-            print("⚠️ 交易员模块可能需要进一步优化")
+            print("⚠️ The trader module may need further optimization")
             return False
             
     except Exception as e:
-        print(f"❌ 交易员提示词检查失败: {e}")
+        print(f"❌ Trader prompt word check failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("🚀 开始测试优化后的目标价生成系统")
+    """Main test function"""
+    print("🚀 Start testing the optimized target price generation system")
     print("=" * 60)
     
     test_results = []
     
-    # 运行各项测试
+    # Run various tests
     test_results.append(test_signal_processor())
     test_results.append(test_smart_price_estimation())
     test_results.append(test_trader_prompt())
     
-    # 汇总结果
+    # Summary results
     print("\n" + "=" * 60)
-    print("📊 测试结果汇总:")
+    print("📊 Summary of test results:")
     
     passed = sum(test_results)
     total = len(test_results)
     
-    print(f"✅ 通过测试: {passed}/{total}")
+    print(f"✅ Pass test: {passed}/{total}")
     
     if passed == total:
-        print("🎉 所有测试通过！目标价生成系统优化成功！")
-        print("\n💡 系统现在能够:")
-        print("   • 从分析文本中提取明确的目标价")
-        print("   • 基于当前价格和涨跌幅智能推算目标价")
-        print("   • 强制要求所有分析师提供目标价信息")
-        print("   • 支持多种货币和股票市场")
+        print("🎉 All tests passed! The target price generation system has been optimized successfully!")
+        print("\n💡 The system is now able to:")
+        print("   • Extract explicit target prices from analytical text")
+        print("   • Intelligent calculation of target price based on current price and increase or decrease")
+        print("   • Mandate all analysts to provide target price information")
+        print("   • Supports multiple currencies and stock markets")
     else:
-        print(f"⚠️ 有 {total - passed} 项测试未通过，需要进一步检查")
+        print(f"⚠️ Yes {total - passed} Test failed and requires further inspection")
     
-    print("\n🔧 下一步建议:")
-    print("   1. 运行完整的股票分析流程测试")
-    print("   2. 验证实际LLM响应中的目标价生成")
-    print("   3. 测试不同类型股票的分析效果")
+    print("\n🔧 Suggestions for next steps:")
+    print("   1. Run a complete stock analysis process test")
+    print("   2. Verify target price generation in actual LLM responses")
+    print("   3. Test the analysis effect of different types of stocks")
 
 if __name__ == "__main__":
     main()

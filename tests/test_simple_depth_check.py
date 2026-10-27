@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-简单的深度级别验证脚本
+Simple depth level validation script
 """
 
 import sys
@@ -11,15 +11,15 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from tradingagents.agents.utils.agent_utils import Toolkit
 
 def test_depth_level(depth):
-    """测试指定深度级别"""
+    """Test specified depth level"""
     print(f"\n{'='*50}")
-    print(f"测试深度级别: {depth}")
+    print(f"Test depth level: {depth}")
     print(f"{'='*50}")
     
-    # 设置研究深度
+    # Set research depth
     Toolkit._config['research_depth'] = depth
     
-    # 调用基本面分析
+    # Call fundamental analysis
     result = Toolkit.get_stock_fundamentals_unified.invoke({
         'ticker': '300750',
         'start_date': "2024-10-10",
@@ -27,24 +27,24 @@ def test_depth_level(depth):
         'curr_date': "2024-10-11"
     })
     
-    # 分析结果
+    # Analyze results
     lines = result.split('\n')
     char_count = len(result)
     
-    # 查找数据深度级别
-    depth_level = "未知"
+    # Find data depth level
+    depth_level = "unknown"
     for line in lines:
-        if "数据深度级别" in line:
+        if "Data depth level" in line:
             depth_level = line.split(":")[-1].strip()
             break
     
-    print(f"📊 结果统计:")
-    print(f"   - 数据深度级别: {depth_level}")
-    print(f"   - 总行数: {len(lines)}")
-    print(f"   - 总字符数: {char_count}")
+    print(f"📊 Result statistics:")
+    print(f"   - Data depth level: {depth_level}")
+    print(f"   - Total number of rows: {len(lines)}")
+    print(f"   - Total characters: {char_count}")
     
-    # 显示前几行内容
-    print(f"\n📝 前10行内容:")
+    # Show the first few lines of content
+    print(f"\n📝 The first 10 lines of content:")
     for i, line in enumerate(lines[:10]):
         if line.strip():
             print(f"   {i+1}: {line[:100]}...")
@@ -57,41 +57,41 @@ def test_depth_level(depth):
     }
 
 def main():
-    """主函数"""
-    print("🔍 简单深度级别验证测试")
+    """main function"""
+    print("🔍 Simple depth level verification test")
     
-    # 保存原始配置
+    # Save original configuration
     original_depth = Toolkit._config.get('research_depth', 3)
     
     results = {}
     
     try:
-        # 测试不同深度级别
+        # Test different depth levels
         for depth in [1, 3, 5]:
             results[depth] = test_depth_level(depth)
         
-        # 比较结果
+        # Compare results
         print(f"\n{'='*60}")
-        print("📊 结果对比")
+        print("📊 Results comparison")
         print(f"{'='*60}")
         
         for depth in [1, 3, 5]:
             result = results[depth]
-            print(f"深度 {depth}: {result['depth_level']} | {result['lines']} 行 | {result['chars']} 字符")
+            print(f"Depth {depth}: {result['depth_level']} | {result['lines']} OK | {result['chars']} character")
         
-        # 检查差异
+        # Check differences
         levels = [results[d]['depth_level'] for d in [1, 3, 5]]
         chars = [results[d]['chars'] for d in [1, 3, 5]]
         
-        print(f"\n✅ 验证结果:")
-        print(f"   - 深度级别是否不同: {len(set(levels)) > 1}")
-        print(f"   - 字符数变化: {chars[0]} → {chars[1]} → {chars[2]}")
-        print(f"   - 数据量增长倍数: {chars[2] / chars[0]:.1f}x")
+        print(f"\n✅ Verification results:")
+        print(f"   - Are the depth levels different?: {len(set(levels)) > 1}")
+        print(f"   - Character count changes: {chars[0]} → {chars[1]} → {chars[2]}")
+        print(f"   - Data volume growth multiple: {chars[2] / chars[0]:.1f}x")
         
     finally:
-        # 恢复原始配置
+        # Restore original configuration
         Toolkit._config['research_depth'] = original_depth
-        print(f"\n🔧 已恢复原始配置: research_depth = {original_depth}")
+        print(f"\n🔧 Original configuration restored: research_depth = {original_depth}")
 
 if __name__ == "__main__":
     main()

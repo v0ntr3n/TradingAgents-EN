@@ -3,7 +3,7 @@
 from typing import Dict, Any
 from langchain_openai import ChatOpenAI
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
@@ -52,7 +52,7 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
 
     def _extract_current_situation(self, current_state: Dict[str, Any]) -> str:
         """Extract the current market situation from the state."""
-        # 使用 .get() 安全访问，支持用户只选择部分分析师的情况
+        # Use .get() Secure access, supporting the situation where users only select some analysts
         curr_market_report = current_state.get("market_report", "")
         curr_sentiment_report = current_state.get("sentiment_report", "")
         curr_news_report = current_state.get("news_report", "")

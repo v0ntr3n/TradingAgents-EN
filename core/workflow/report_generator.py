@@ -1,14 +1,14 @@
 """
-通用报告生成器
+Universal report generator
 
-根据报告模板和 Agent 输出，生成结构化报告。
-支持 LLM 辅助生成和规则提取两种模式。
+Generate structured reports based on report templates and Agent output.
+Supports LLM-assisted generation and rule extraction modes.
 
-使用流程：
-1. 工作流执行完成，收集所有 Agent 输出
-2. 根据 workflow_id 获取关联的报告模板
-3. 调用报告生成器生成结构化报告
-4. 保存报告到 analysis_reports 集合
+Usage process:
+1. The workflow execution is completed and all Agent outputs are collected
+2. Get the associated report template based on workflow_id
+3. Call the report generator to generate a structured report
+4. Save reports to analysis_reports collection
 """
 import json
 import logging
@@ -20,39 +20,39 @@ logger = logging.getLogger(__name__)
 
 class ReportGenerator:
     """
-    通用报告生成器
+    Universal report generator
     
-    支持两种生成模式：
-    1. LLM 生成：使用报告模板的 generator_prompt 调用 LLM 生成报告
-    2. 规则提取：从 Agent 输出中按规则提取字段
+    Two generation modes are supported:
+    1. LLM Generation: Use the generator_prompt of the report template to call LLM to generate the report
+    2. Rule Extraction: Extract fields by rules from Agent output
     """
     
     def __init__(self, db=None):
         """
-        初始化报告生成器
+        Initialize report generator
         
         Args:
-            db: MongoDB 数据库连接（可选，用于获取报告模板）
+            db: MongoDB Database connection (optional, used to obtain report templates)
         """
         self.db = db
         self._templates_cache: Dict[str, Any] = {}
     
     async def get_template(self, workflow_id: str) -> Optional[Dict[str, Any]]:
         """
-        获取工作流关联的报告模板
+        Get the report template associated with the workflow
         
         Args:
-            workflow_id: 工作流ID
+            workflow_id: Workflow ID
             
         Returns:
-            报告模板字典，如果没有则返回 None
+            Dictionary of report templates, returned if none None
         """
-        # 检查缓存
+        # Check cache
         if workflow_id in self._templates_cache:
             return self._templates_cache[workflow_id]
         
         if not self.db:
-            logger.warning("数据库连接未设置，无法获取报告模板")
+            logger.warning("Database connection not set up, unable to get report template")
             return None
         
         try:
@@ -63,13 +63,13 @@ class ReportGenerator:
             
             if template:
                 self._templates_cache[workflow_id] = template
-                logger.info(f"✅ 获取报告模板: {template.get('name')} (workflow_id={workflow_id})")
+                logger.info(f"✅ Get report template: {template.get('name')} (workflow_id={workflow_id})")
             else:
-                logger.info(f"📝 工作流 {workflow_id} 没有关联报告模板，将使用默认格式")
+                logger.info(f"📝 Workflow {workflow_id} There is no associated report template, the default format will be used")
             
             return template
         except Exception as e:
-            logger.error(f"❌ 获取报告模板失败: {e}")
+            logger.error(f"❌ Failed to obtain report template: {e}")
             return None
     
     async def generate_report(
@@ -80,21 +80,21 @@ class ReportGenerator:
         use_llm: bool = True
     ) -> Dict[str, Any]:
         """
-        生成报告
+        Generate report
         
         Args:
-            workflow_id: 工作流ID
-            agent_outputs: 各 Agent 的输出字典
-            workflow_state: 工作流状态（包含 ticker、context 等）
-            use_llm: 是否使用 LLM 生成报告
+            workflow_id: Workflow ID
+            agent_outputs: Output dictionary of each Agent
+            workflow_state: Workflow status (including ticker, context, etc.)
+            use_llm: Whether to use LLM to generate reports
             
         Returns:
-            结构化报告字典
+            Structured reporting dictionary
         """
         template = await self.get_template(workflow_id)
         
         if not template:
-            # 没有模板，返回原始 Agent 输出
+            # Without template, return raw Agent output
             return self._generate_default_report(agent_outputs, workflow_state)
         
         if use_llm and template.get("generator_prompt"):
@@ -107,7 +107,7 @@ class ReportGenerator:
         agent_outputs: Dict[str, Any],
         workflow_state: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """生成默认格式报告（无模板时使用）"""
+        """Generate default format report (used when no template is available)"""
         return {
             "report_type": "default",
             "generated_at": datetime.utcnow().isoformat(),
@@ -118,7 +118,7 @@ class ReportGenerator:
         }
     
     def _extract_summary_from_outputs(self, agent_outputs: Dict[str, Any]) -> str:
-        """从 Agent 输出中提取摘要"""
+        """Extract summaries from Agent output"""
         summaries = []
         for agent_name, output in agent_outputs.items():
             if isinstance(output, dict):
@@ -126,7 +126,7 @@ class ReportGenerator:
                     summaries.append(f"【{agent_name}】{output['summary']}")
                 elif "conclusion" in output:
                     summaries.append(f"【{agent_name}】{output['conclusion']}")
-        return "\n".join(summaries) if summaries else "暂无摘要"
+        return "\n".join(summaries) if summaries else "No abstract yet"
     
     def _generate_with_rules(
         self,
@@ -134,7 +134,7 @@ class ReportGenerator:
         agent_outputs: Dict[str, Any],
         workflow_state: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """使用规则从 Agent 输出中提取字段"""
+        """Use rules to extract fields from Agent output"""
         output_schema = template.get("output_schema", [])
         result = {
             "report_type": template.get("template_id"),
@@ -144,17 +144,17 @@ class ReportGenerator:
             "ticker": workflow_state.get("ticker") if workflow_state else None,
         }
         
-        # 按 output_schema 提取字段
+        # Extract fields by output_schema
         for field_def in output_schema:
             field_name = field_def.get("name")
             field_type = field_def.get("type", "string")
             default = field_def.get("default")
             
-            # 尝试从 agent_outputs 中提取
+            # Try to extract from agent_outputs
             value = self._extract_field_value(field_name, agent_outputs, field_type)
             result[field_name] = value if value is not None else default
         
-        # 添加原始 agent_outputs（可选，用于调试）
+        # Add raw agent_outputs (optional, for debugging)
         result["agent_outputs"] = agent_outputs
 
         return result
@@ -165,20 +165,20 @@ class ReportGenerator:
         agent_outputs: Dict[str, Any],
         field_type: str
     ) -> Any:
-        """从 Agent 输出中提取字段值"""
-        # 遍历所有 Agent 输出，查找匹配的字段
+        """Extract field values from Agent output"""
+        # Iterate through all Agent output, looking for matching fields
         for agent_name, output in agent_outputs.items():
             if isinstance(output, dict):
                 if field_name in output:
                     return self._convert_type(output[field_name], field_type)
-                # 尝试嵌套查找
+                # Try nested search
                 for key, value in output.items():
                     if isinstance(value, dict) and field_name in value:
                         return self._convert_type(value[field_name], field_type)
         return None
 
     def _convert_type(self, value: Any, target_type: str) -> Any:
-        """类型转换"""
+        """type conversion"""
         try:
             if target_type == "string":
                 return str(value) if value is not None else None
@@ -202,53 +202,53 @@ class ReportGenerator:
         agent_outputs: Dict[str, Any],
         workflow_state: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """使用 LLM 生成报告"""
+        """Generate reports using LLM"""
         try:
             from core.llm.unified_client import UnifiedLLMClient
 
             llm_client = UnifiedLLMClient()
 
-            # 构建提示词
+            # Build prompt words
             generator_prompt = template.get("generator_prompt", "")
             output_schema = template.get("output_schema", [])
 
-            # 格式化 output_schema 为 JSON Schema 描述
+            # Format output_schema as JSON Schema description
             schema_description = self._format_output_schema(output_schema)
 
-            # 构建完整提示词
-            prompt = f"""你是一个专业的金融分析报告生成器。
+            # Build a complete prompt word
+            prompt = f"""You are a professional financial analysis report generator.
 
-## 任务
-根据以下分析师的分析结果，生成一份结构化的分析报告。
+## Task
+Generate a structured analysis report based on the following analysts analysis results.
 
-## 分析结果
+## Analyze results
 {json.dumps(agent_outputs, ensure_ascii=False, indent=2)}
 
-## 报告要求
+## reporting requirements
 {generator_prompt}
 
-## 输出格式
-请按照以下 JSON 格式输出报告：
+## Output format
+Please output the report in the following JSON format:
 {schema_description}
 
-## 注意事项
-1. 只输出 JSON 格式，不要包含其他文字
-2. 确保所有必填字段都有值
-3. 数值类型的字段请使用数字而非字符串
-4. 保持客观中立，基于分析结果得出结论
+## Things to note
+1. Only output JSON format, do not include other text
+2. Make sure all required fields have values
+3. Please use numbers instead of strings for numerical fields.
+4. Remain objective and neutral and draw conclusions based on analysis results
 
-请生成报告："""
+Please generate a report:"""
 
-            # 调用 LLM
+            # call LLM
             response = await llm_client.chat_async(
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3
             )
 
-            # 解析 LLM 响应
+            # Parse LLM response
             result = self._parse_llm_response(response, template)
 
-            # 添加元数据
+            # Add metadata
             result["report_type"] = template.get("template_id")
             result["template_name"] = template.get("name")
             result["generated_at"] = datetime.utcnow().isoformat()
@@ -259,11 +259,11 @@ class ReportGenerator:
             return result
 
         except Exception as e:
-            logger.error(f"❌ LLM 报告生成失败: {e}，降级到规则提取")
+            logger.error(f"❌ LLM Report generation failed: {e}, Downgrade to rule extraction")
             return self._generate_with_rules(template, agent_outputs, workflow_state)
 
     def _format_output_schema(self, output_schema: List[Dict[str, Any]]) -> str:
-        """格式化 output_schema 为易读的描述"""
+        """Format output_schema into a human-readable description"""
         lines = ["{"]
         for field in output_schema:
             name = field.get("name")
@@ -274,9 +274,9 @@ class ReportGenerator:
 
             type_hint = field_type
             if enum_values:
-                type_hint = f"string, 可选值: {enum_values}"
+                type_hint = f"string, Optional value: {enum_values}"
 
-            req_mark = "*必填*" if required else "可选"
+            req_mark = "*Required*" if required else "Optional"
             lines.append(f'  "{name}": {type_hint},  // {desc} ({req_mark})')
 
         lines.append("}")
@@ -287,12 +287,12 @@ class ReportGenerator:
         response: str,
         template: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """解析 LLM 响应"""
+        """Parse LLM response"""
         try:
-            # 尝试提取 JSON
+            # Try to extract JSON
             content = response.strip()
 
-            # 处理 markdown 代码块
+            # Processing markdown code blocks
             if "```json" in content:
                 start = content.find("```json") + 7
                 end = content.find("```", start)
@@ -304,6 +304,6 @@ class ReportGenerator:
 
             return json.loads(content)
         except json.JSONDecodeError as e:
-            logger.warning(f"⚠️ LLM 响应 JSON 解析失败: {e}")
+            logger.warning(f"⚠️ LLM Response JSON parsing failed: {e}")
             return {"raw_response": response, "parse_error": str(e)}
 

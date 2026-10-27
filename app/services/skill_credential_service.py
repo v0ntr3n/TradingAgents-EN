@@ -1,31 +1,31 @@
 """
-Skill 凭证管理服务
+Skill Credential Management Services
 
-负责管理 ClawHub Skill 的凭证（API Key、Auth Token 等）。
+Responsible for managing ClawHub Skill s credentials (API Key, Auth Token, etc.).
 
-支持两种凭证配置方式：
-1. **frontmatter env 声明** - 在 SKILL.md 的 YAML frontmatter 中声明需要的环境变量
+Two credential configuration methods are supported:
+1. **frontmatter env Statement** - Declare the required environment variables in the YAML frontmatter of SKILL.md
    ```yaml
    metadata:
      openclaw:
        env:
          - name: IFIND_AUTH_TOKEN
-           description: "认证 token"
+           description: "Certification token"
            required: true
    ```
-   执行脚本时，将凭证值注入为环境变量。
+   When the script is executed, the credential values ​​are injected as environment variables.
 
-2. **命令行参数式配置** - 通过脚本自身的配置命令（如 `--set-token`）配置
-   例如 ifind-repilot-finance-data-search Skill：
+2. **Command line parameter configuration** - Through the configuration commands of the script itself (such as `--set-token`) Configuration
+   For example ifind-repilot-finance-data-search Skill:
    ```bash
    python3 <skill_dir>/scripts/fetch_data.py --set-token <your_auth_token>
    ```
-   凭证存储在脚本指定的位置（如 ~/.config/ifind-repilot/config.json）。
+   Credentials are stored in a location specified by the script (e.g. ~/.config/ifind-repilot/config.json) . 
 
-凭证加密存储：
-- 使用 Fernet 加密（AES-128-CBC + HMAC-SHA256）
-- 密钥从 JWT_SECRET 派生（复用项目已有机制）
-- 存储在 MongoDB skill_credentials 集合
+Credentials encrypted storage:
+- Use Fernet encryption (AES-128-CBC + HMAC-SHA256) 
+- The key is derived from JWT_SECRET (reuse project s existing mechanism)
+- Stored in the MongoDB skill_credentials collection
 """
 
 import base64
@@ -41,14 +41,14 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 logger = logging.getLogger("webapi")
 
-# 凭证存储集合
+# Credential storage collection
 CREDENTIALS_COLLECTION = "skill_credentials"
 
 
 def _get_encryption_key() -> bytes:
-    """获取加密密钥（基于 JWT_SECRET 派生）
+    """Get the encryption key (derived based on JWT_SECRET)
 
-    复用 mcp.py 中的加密机制，保持一致性。
+    Reuse the encryption mechanism in mcp.py to maintain consistency.
     """
     secret = os.getenv("JWT_SECRET", "trading-agents-default-secret")
     return hashlib.sha256(secret.encode()).digest()
@@ -62,9 +62,9 @@ def _get_fernet():
 
 
 def _encrypt_value(plain: str) -> str:
-    """加密凭证值
+    """Encrypted credential value
 
-    输出格式：v2:<fernet_token>
+    Output format:v2:<fernet_token>
     """
     f = _get_fernet()
     token = f.encrypt(plain.encode("utf-8")).decode("ascii")
@@ -72,18 +72,18 @@ def _encrypt_value(plain: str) -> str:
 
 
 def _decrypt_value(cipher: str) -> str:
-    """解密凭证值
+    """Decrypt credential value
 
-    支持两种格式：
-    - v2:<fernet_token>：新格式，Fernet 解密
-    - <base64>：旧格式，XOR + base64 解密（向后兼容）
+    Two formats are supported:
+    - v2:<fernet_token>: New format, Fernet decryption
+    - <base64>: old format,XOR + base64 Decryption (backwards compatible)
     """
     if cipher.startswith("v2:"):
         f = _get_fernet()
         token = cipher[3:].encode("ascii")
         return f.decrypt(token).decode("utf-8")
     else:
-        # 旧格式兼容
+        # Old format compatible
         key = _get_encryption_key()
         data = base64.b64decode(cipher)
         decrypted = bytes(b ^ key[i % len(key)] for i, b in enumerate(data))
@@ -91,7 +91,7 @@ def _decrypt_value(cipher: str) -> str:
 
 
 def _mask_value(value: str) -> str:
-    """遮蔽显示：只显示前4位和后4位"""
+    """Masked display: only the first 4 digits and the last 4 digits are displayed"""
     if not value:
         return ""
     if len(value) <= 8:
@@ -100,7 +100,7 @@ def _mask_value(value: str) -> str:
 
 
 class CredentialDeclaration:
-    """凭证声明（从 SKILL.md 解析）"""
+    """Credential declaration (parsed from SKILL.md)"""
 
     def __init__(
         self,
@@ -108,13 +108,13 @@ class CredentialDeclaration:
         description: str = "",
         required: bool = False,
         config_type: str = "env",  # env | script_arg
-        config_command: str = "",  # 仅 script_arg 类型，如 "--set-token"
-        config_position: int = 0,  # 配置命令在 instructions 中的位置
+        config_command: str = "",  # Only script_arg types like "--set-token"
+        config_position: int = 0,  # The location of the configuration command in instructions
     ):
         self.name = name
         self.description = description
         self.required = required
-        self.config_type = config_type  # env: 环境变量注入；script_arg: 脚本命令配置
+        self.config_type = config_type  # env: Environment variable injection;script_arg: Script command configuration
         self.config_command = config_command
         self.config_position = config_position
 
@@ -132,22 +132,22 @@ class SkillCredentialService:
     """Skill 凭证管理服务"""
 
     # =============================================================
-    # 凭证声明解析
+    # Credential claim parsing
     # =============================================================
 
     @staticmethod
     def parse_credentials_from_skill_md(skill_dir: str) -> List[CredentialDeclaration]:
-        """从 SKILL.md 解析需要的凭证声明
+        """Parse required credential declarations from SKILL.md
 
-        解析顺序：
-        1. 从 frontmatter metadata.openclaw.env 解析（标准方式）
-        2. 从 instructions 中解析 --set-token 等配置命令（命令行参数式）
+        Parsing order:
+        1. Parse from frontmatter metadata.openclaw.env (standard way)
+        2. Parse configuration commands such as --set-token (command line parameter type) from instructions
 
         Args:
-            skill_dir: Skill 包目录路径
+            skill_dir: Skill package directory path
 
         Returns:
-            凭证声明列表
+            Credential declaration list
         """
         skill_md_path = Path(skill_dir) / "SKILL.md"
         if not skill_md_path.exists():
@@ -158,10 +158,10 @@ class SkillCredentialService:
 
     @staticmethod
     def _parse_credentials_from_content(content: str) -> List[CredentialDeclaration]:
-        """从 SKILL.md 内容解析凭证声明"""
+        """Parse credential claims from SKILL.md content"""
         declarations: List[CredentialDeclaration] = []
 
-        # 1. 解析 frontmatter
+        # 1. parse frontmatter
         frontmatter, body = SkillCredentialService._split_frontmatter(content)
         if frontmatter:
             try:
@@ -171,15 +171,15 @@ class SkillCredentialService:
                         SkillCredentialService._parse_env_from_frontmatter(metadata)
                     )
             except yaml.YAMLError as e:
-                logger.warning(f"解析 SKILL.md frontmatter 失败: {e}")
+                logger.warning(f"Failed to parse SKILL.md frontmatter: {e}")
 
-        # 2. 从 instructions 中解析 --set-token 等配置命令
+        # 2. Parse configuration commands such as --set-token from instructions
         if body:
             declarations.extend(
                 SkillCredentialService._parse_config_commands_from_body(body)
             )
 
-        # 去重（按 name）
+        # Remove duplicates (by name)
         seen_names = set()
         unique: List[CredentialDeclaration] = []
         for decl in declarations:
@@ -191,7 +191,7 @@ class SkillCredentialService:
 
     @staticmethod
     def _split_frontmatter(content: str):
-        """分离 YAML frontmatter 和 body"""
+        """Separate YAML frontmatter and body"""
         pattern = r"^---\s*\n(.*?)\n---\s*\n?(.*)"
         match = re.match(pattern, content.strip(), re.DOTALL)
         if match:
@@ -200,13 +200,13 @@ class SkillCredentialService:
 
     @staticmethod
     def _parse_env_from_frontmatter(metadata: Dict[str, Any]) -> List[CredentialDeclaration]:
-        """从 frontmatter metadata.openclaw.env 解析凭证声明"""
+        """Parse credential claims from frontmatter metadata.openclaw.env"""
         declarations: List[CredentialDeclaration] = []
 
-        # 支持 metadata.openclaw.env
+        # support metadata.openclaw.env
         meta = metadata.get("metadata") or {}
         if isinstance(meta, str):
-            # 有些 SKILL.md 的 metadata 是 JSON 字符串
+            # Some SKILL.md metadata are JSON strings
             try:
                 import json
                 meta = json.loads(meta)
@@ -244,19 +244,19 @@ class SkillCredentialService:
 
     @staticmethod
     def _parse_config_commands_from_body(body: str) -> List[CredentialDeclaration]:
-        """从 instructions 中解析 --set-token 等配置命令
+        """Parse configuration commands such as --set-token from instructions
 
-        匹配模式：
+        Match pattern:
         - `--set-token <your_auth_token>`
         - `--set-api-key <your_api_key>`
         - `--config-token <token>`
         - `--set-key <key>`
 
-        提取变量名：set-token -> AUTH_TOKEN, set-api-key -> API_KEY
+        Extract variable names:set-token -> AUTH_TOKEN, set-api-key -> API_KEY
         """
         declarations: List[CredentialDeclaration] = []
 
-        # 匹配 --set-xxx 或 --config-xxx 后跟占位符
+        # Matches --set-xxx or --config-xxx followed by placeholder
         patterns = [
             (r"--set-(\w[\w-]*)\s+<([^>]+)>", "set"),
             (r"--config-(\w[\w-]*)\s+<([^>]+)>", "config"),
@@ -274,13 +274,13 @@ class SkillCredentialService:
                     continue
                 seen_commands.add(full_command)
 
-                # 从命令名推导环境变量名
+                # Deducing environment variable names from command names
                 # set-token -> AUTH_TOKEN
                 # set-api-key -> API_KEY
                 # set-auth-token -> AUTH_TOKEN
                 var_name = SkillCredentialService._derive_var_name(cmd_name)
 
-                # 从占位符推导描述
+                # Deriving descriptions from placeholders
                 description = f"通过 `{full_command}` 命令配置"
 
                 declarations.append(CredentialDeclaration(
@@ -295,22 +295,22 @@ class SkillCredentialService:
 
     @staticmethod
     def _derive_var_name(cmd_name: str) -> str:
-        """从命令名推导环境变量名
+        """Deducing environment variable names from command names
 
         set-token -> AUTH_TOKEN
         set-api-key -> API_KEY
         set-auth-token -> AUTH_TOKEN
         """
-        # 移除常见前缀
+        # Remove common prefixes
         parts = cmd_name.split("-")
-        # 过滤掉 set/config/auth 等前缀词
+        # Filter out prefix words such as set/config/auth
         filtered = [p for p in parts if p not in ("set", "config", "auth", "the", "your")]
         if not filtered:
             filtered = parts
         return "_".join(p.upper() for p in filtered)
 
     # =============================================================
-    # 凭证存储（MongoDB + Fernet 加密）
+    # Credential Storage (MongoDB + Fernet encryption)
     # =============================================================
 
     @staticmethod
@@ -319,12 +319,12 @@ class SkillCredentialService:
         skill_name: str,
         credentials: Dict[str, str],
     ) -> Dict[str, Any]:
-        """保存 Skill 凭证（加密存储）
+        """Save Skill Credentials (encrypted storage)
 
         Args:
-            db: MongoDB 数据库
-            skill_name: Skill 名称
-            credentials: 凭证键值对（明文）
+            db: MongoDB database
+            skill_name: Skill Name
+            credentials: Credential key-value pair (plain text)
 
         Returns:
             {success, skill_name, saved_count}
@@ -332,7 +332,7 @@ class SkillCredentialService:
         if not credentials:
             return {"success": False, "message": "凭证不能为空"}
 
-        # 加密所有凭证值
+        # Encrypt all credential values
         encrypted = {
             key: _encrypt_value(str(value))
             for key, value in credentials.items()
@@ -342,7 +342,7 @@ class SkillCredentialService:
         if not encrypted:
             return {"success": False, "message": "没有有效的凭证值"}
 
-        # 写入 MongoDB（upsert）
+        # Write to MongoDB (upsert)
         await db[CREDENTIALS_COLLECTION].update_one(
             {"skill_name": skill_name},
             {
@@ -370,17 +370,17 @@ class SkillCredentialService:
         db: AsyncIOMotorDatabase,
         skill_name: str,
     ) -> Dict[str, str]:
-        """获取 Skill 凭证（解密后的明文）
+        """Get Skill credentials (decrypted plain text)
 
-        注意：此方法返回明文，仅用于执行脚本时注入环境变量，
-        不要用于 API 响应。
+        Note: This method returns plain text and is only used to inject environment variables when executing scripts.
+        Do not use for API responses.
 
         Args:
-            db: MongoDB 数据库
-            skill_name: Skill 名称
+            db: MongoDB database
+            skill_name: Skill Name
 
         Returns:
-            凭证键值对（明文）
+            Credential key-value pair (plain text)
         """
         doc = await db[CREDENTIALS_COLLECTION].find_one({"skill_name": skill_name})
         if not doc:
@@ -402,20 +402,20 @@ class SkillCredentialService:
         skill_name: str,
         required_declarations: List[CredentialDeclaration] = None,
     ) -> Dict[str, Any]:
-        """获取凭证配置状态（不返回明文）
+        """Get the credential configuration status (do not return clear text)
 
-        用于 API 响应，显示已配置/未配置状态和遮蔽值。
+        Used in API responses to show configured/unconfigured status and masking values.
 
         Args:
-            db: MongoDB 数据库
-            skill_name: Skill 名称
-            required_declarations: 需要的凭证声明列表（可选）
+            db: MongoDB database
+            skill_name: Skill Name
+            required_declarations: List of required credential claims (optional)
 
         Returns:
             {
                 "skill_name": str,
                 "required": [{name, description, required, config_type, config_command, configured, masked_value}],
-                "extra": [{name, masked_value}],  # 已配置但未声明的凭证
+                "extra": [{name, masked_value}],  # Configured but undeclared credentials
                 "all_configured": bool,
                 "missing_required": [name]
             }
@@ -423,7 +423,7 @@ class SkillCredentialService:
         doc = await db[CREDENTIALS_COLLECTION].find_one({"skill_name": skill_name})
         stored_credentials = doc.get("credentials", {}) if doc else {}
 
-        # 解密以生成遮蔽值
+        # Decrypt to generate masked values
         decrypted = {}
         for key, encrypted_value in stored_credentials.items():
             try:
@@ -451,7 +451,7 @@ class SkillCredentialService:
                 if decl.required and not is_configured:
                     missing_required.append(decl.name)
 
-        # 已配置但未声明的凭证
+        # Configured but undeclared credentials
         declared_names = {d.name for d in required_declarations} if required_declarations else set()
         extra_list = []
         for key, value in decrypted.items():
@@ -475,22 +475,22 @@ class SkillCredentialService:
         skill_name: str,
         keys: List[str] = None,
     ) -> Dict[str, Any]:
-        """删除 Skill 凭证
+        """Delete Skill Credentials
 
         Args:
-            db: MongoDB 数据库
-            skill_name: Skill 名称
-            keys: 要删除的凭证键列表（None 表示删除全部）
+            db: MongoDB database
+            skill_name: Skill Name
+            keys: List of credential keys to delete (None means delete all)
 
         Returns:
             {success, deleted_count}
         """
         if keys is None:
-            # 删除全部
+            # Delete all
             result = await db[CREDENTIALS_COLLECTION].delete_many({"skill_name": skill_name})
             deleted = result.deleted_count
         else:
-            # 删除指定键
+            # Delete specified key
             doc = await db[CREDENTIALS_COLLECTION].find_one({"skill_name": skill_name})
             if not doc:
                 return {"success": True, "deleted_count": 0}
@@ -514,7 +514,7 @@ class SkillCredentialService:
         return {"success": True, "deleted_count": deleted}
 
     # =============================================================
-    # 命令行参数式凭证配置
+    # Command line parameter-based credential configuration
     # =============================================================
 
     @staticmethod
@@ -526,18 +526,18 @@ class SkillCredentialService:
         timeout: int = 30,
         python_executable: str = "python",
     ) -> Dict[str, Any]:
-        """通过脚本的配置命令配置凭证
+        """Configure credentials via script s configure command
 
-        适用于使用 --set-token 等命令配置凭证的 Skill。
-        例如：python scripts/fetch_data.py --set-token <token>
+        Applies to Skills that use commands such as --set-token to configure credentials.
+        For example:python scripts/fetch_data.py --set-token <token>
 
         Args:
-            skill_dir: Skill 包目录
-            script_path: 脚本相对路径（如 "scripts/fetch_data.py"）
-            config_command: 配置命令（如 "--set-token"）
-            credential_value: 凭证值
-            timeout: 超时秒数
-            python_executable: Python 解释器
+            skill_dir: Skill package directory
+            script_path: Script relative paths (e.g. "scripts/fetch_data.py") 
+            config_command: Configuration commands (such as "--set-token") 
+            credential_value: Voucher value
+            timeout: Timeout seconds
+            python_executable: Python interpreter
 
         Returns:
             {success, stdout, stderr, message}
@@ -553,7 +553,7 @@ class SkillCredentialService:
                 "message": f"脚本文件不存在: {full_script_path}",
             }
 
-        # 构建命令：python scripts/fetch_data.py --set-token <token>
+        # Build command:python scripts/fetch_data.py --set-token <token>
         cmd = [python_executable, str(full_script_path), config_command, credential_value]
 
         try:
@@ -589,18 +589,18 @@ class SkillCredentialService:
                 "message": f"配置命令执行超时（{timeout}秒）",
             }
         except Exception as e:
-            logger.error(f"❌ 凭证配置命令执行异常: {e}", exc_info=True)
+            logger.error(f"❌ Credential configuration command execution exception: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": str(e),
             }
 
     # =============================================================
-    # 辅助方法
+    # Helper methods
     # =============================================================
 
     @staticmethod
     def _now_iso() -> str:
-        """获取当前时间的 ISO 格式字符串"""
+        """Get the ISO format string of the current time"""
         from datetime import datetime, timezone
         return datetime.now(timezone.utc).isoformat()

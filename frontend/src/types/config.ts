@@ -1,6 +1,6 @@
-// 配置管理相关类型定义
+// Configuration management related type definitions
 
-// 大模型厂家
+// Large model manufacturer
 export interface LLMProvider {
   id: string
   name: string
@@ -16,7 +16,7 @@ export interface LLMProvider {
   api_secret?: string
   extra_config?: Record<string, any>
 
-  // 🆕 聚合渠道支持
+  // 🆕 Aggregation channel support
   is_aggregator?: boolean
   aggregator_type?: string
   model_name_format?: string
@@ -25,12 +25,12 @@ export interface LLMProvider {
   updated_at?: string
 }
 
-// 大模型配置
+// Large model configuration
 export interface LLMConfig {
   name: string
   provider: string
   model_name: string
-  api_key?: string  // 可选，优先从厂家配置获取
+  api_key?: string  // Optional, priority is given to obtaining configuration from the manufacturer.
   base_url?: string
   max_tokens?: number
   temperature?: number
@@ -41,7 +41,7 @@ export interface LLMConfig {
   updated_at?: string
 }
 
-// 数据源配置
+// Data source configuration
 export interface DataSourceConfig {
   name: string
   type: string
@@ -52,7 +52,7 @@ export interface DataSourceConfig {
   updated_at?: string
 }
 
-// 数据库配置
+// Database configuration
 export interface DatabaseConfig {
   name: string
   type: string
@@ -66,7 +66,7 @@ export interface DatabaseConfig {
   updated_at?: string
 }
 
-// 系统配置
+// System configuration
 export interface SystemConfig {
   app_name: string
   version: string
@@ -78,13 +78,13 @@ export interface SystemConfig {
   cache_ttl: number
 }
 
-// 配置测试请求
+// Configure test requests
 export interface ConfigTestRequest {
   type: 'llm' | 'datasource' | 'database'
   config: Record<string, any>
 }
 
-// 配置测试响应
+// Configure test response
 export interface ConfigTestResponse {
   success: boolean
   message: string

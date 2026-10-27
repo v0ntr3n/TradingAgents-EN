@@ -137,7 +137,7 @@ export const fetchTaskResultWithRetry = async (
         return bestResult
       }
     } catch (error) {
-      console.error(`获取任务结果失败（第 ${attempt + 1} 次）`, error)
+      console.error(`Failed to obtain task results (page ${attempt + 1} times)`, error)
     }
 
     if (attempt < attempts - 1) {

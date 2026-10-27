@@ -30,7 +30,7 @@
             size="small"
             effect="plain"
           >
-            {{ type === 'deep' ? '🧠深度' : '⚡快速' }}
+            {{ type === 'deep' ? '🧠Depth' : '⚡fast' }}
           </el-tag>
           <span style="font-size:12px;color:#909399;">{{ model.provider }}</span>
         </div>
@@ -53,7 +53,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '选择模型',
+  placeholder: 'Select model',
   type: 'deep',
   size: 'default',
   width: '100%'
@@ -73,13 +73,13 @@ const onChange = (val: string) => {
 
 const getCapabilityText = (level: number): string => {
   const texts: Record<number, string> = {
-    1: '⚡基础',
-    2: '📊标准',
-    3: '🎯高级',
-    4: '🔥专业',
-    5: '👑旗舰'
+    1: '⚡Basics',
+    2: '📊Standard',
+    3: '🎯Advanced',
+    4: '🔥Professional',
+    5: '👑flagship'
   }
-  return texts[level] || '📊标准'
+  return texts[level] || '📊Standard'
 }
 
 const getCapabilityTagType = (level: number): 'success' | 'info' | 'warning' | 'danger' => {

@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-测试详细进度显示效果
-验证用户在每个阶段都能看到系统在工作
+Test detailed progress display effect
+Verify that users can see the system working at every stage
 """
 
 import os
 import sys
 import time
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_complete_analysis_flow():
-    """测试完整的分析流程进度显示"""
-    print("🔄 测试完整分析流程进度显示")
+    """Test the complete analysis process progress display"""
+    print("🔄 Test complete analysis process progress display")
     print("=" * 80)
     
     try:
@@ -23,108 +23,108 @@ def test_complete_analysis_flow():
         ui = CLIUserInterface()
         completed_analysts = set()
         
-        print("🚀 模拟600036股票完整分析流程:")
+        print("🚀 Simulate the complete analysis process of 600036 stocks:")
         print("-" * 60)
         
-        # 步骤1: 准备分析环境
-        ui.show_step_header(1, "准备分析环境 | Preparing Analysis Environment")
-        ui.show_progress("正在分析股票: 600036")
+        # steps 1: Prepare the analysis environment
+        ui.show_step_header(1, "Prepare the analysis environment | Preparing Analysis Environment")
+        ui.show_progress("Analyzing stocks: 600036")
         time.sleep(0.2)
-        ui.show_progress("分析日期: 2025-07-16")
+        ui.show_progress("Analysis date: 2025-07-16")
         time.sleep(0.2)
-        ui.show_progress("选择的分析师: market, fundamentals")
+        ui.show_progress("Selected Analyst: market, fundamentals")
         time.sleep(0.2)
-        ui.show_progress("正在初始化分析系统...")
+        ui.show_progress("Initializing analysis system...")
         time.sleep(0.3)
-        ui.show_success("分析系统初始化完成")
+        ui.show_success("Analysis system initialization completed")
         
-        # 步骤2: 数据获取阶段
-        ui.show_step_header(2, "数据获取阶段 | Data Collection Phase")
-        ui.show_progress("正在获取股票基本信息...")
+        # steps 2: data acquisition phase
+        ui.show_step_header(2, "data acquisition phase | Data Collection Phase")
+        ui.show_progress("Obtaining basic stock information...")
         time.sleep(0.3)
-        ui.show_success("数据获取准备完成")
+        ui.show_success("Data acquisition preparation completed")
         
-        # 步骤3: 智能分析阶段
-        ui.show_step_header(3, "智能分析阶段 | AI Analysis Phase")
-        ui.show_progress("启动分析师团队...")
+        # steps 3: Intelligent analysis stage
+        ui.show_step_header(3, "Intelligent analysis stage | AI Analysis Phase")
+        ui.show_progress("Start an analyst team...")
         time.sleep(0.3)
         
-        # 基础分析师工作
+        # Fundamental Analyst Jobs
         if "market_report" not in completed_analysts:
-            ui.show_success("📈 市场分析完成")
+            ui.show_success("📈 Market analysis completed")
             completed_analysts.add("market_report")
         time.sleep(0.5)
         
         if "fundamentals_report" not in completed_analysts:
-            ui.show_success("📊 基本面分析完成")
+            ui.show_success("📊 Fundamental analysis completed")
             completed_analysts.add("fundamentals_report")
         time.sleep(0.5)
         
-        # 研究团队阶段（这里是用户感到"卡顿"的地方）
-        print("\n💡 [关键阶段] 基本面分析完成后的深度分析:")
+        # Research team stage (here is what users feel"Caton"place)
+        print("\n💡 [critical stage] In-depth analysis after completion of fundamental analysis:")
         print("-" * 50)
         
-        # 研究团队开始工作
+        # The research team gets to work
         if "research_team_started" not in completed_analysts:
-            ui.show_progress("🔬 研究团队开始深度分析...")
+            ui.show_progress("🔬 The research team begins in-depth analysis...")
             completed_analysts.add("research_team_started")
-        time.sleep(1.0)  # 模拟研究团队工作时间
+        time.sleep(1.0)  # Simulate research team working hours
         
-        # 研究团队完成
+        # Research team completes
         if "research_team" not in completed_analysts:
-            ui.show_success("🔬 研究团队分析完成")
+            ui.show_success("🔬 Research team analysis completed")
             completed_analysts.add("research_team")
         time.sleep(0.5)
         
-        # 交易团队阶段
+        # trading team stage
         if "trading_team_started" not in completed_analysts:
-            ui.show_progress("💼 交易团队制定投资计划...")
+            ui.show_progress("💼 Trading team develops investment plan...")
             completed_analysts.add("trading_team_started")
-        time.sleep(0.8)  # 模拟交易团队工作时间
+        time.sleep(0.8)  # Simulated trading team working hours
         
         if "trading_team" not in completed_analysts:
-            ui.show_success("💼 交易团队计划完成")
+            ui.show_success("💼 Trading team plans completed")
             completed_analysts.add("trading_team")
         time.sleep(0.5)
         
-        # 风险管理团队阶段
+        # risk management team stage
         if "risk_team_started" not in completed_analysts:
-            ui.show_progress("⚖️ 风险管理团队评估投资风险...")
+            ui.show_progress("⚖️ Risk management team assesses investment risks...")
             completed_analysts.add("risk_team_started")
-        time.sleep(1.0)  # 模拟风险评估时间
+        time.sleep(1.0)  # Simulation risk assessment time
         
         if "risk_management" not in completed_analysts:
-            ui.show_success("⚖️ 风险管理团队分析完成")
+            ui.show_success("⚖️ Risk management team analysis completed")
             completed_analysts.add("risk_management")
         time.sleep(0.5)
         
-        # 步骤4: 投资决策生成
-        ui.show_step_header(4, "投资决策生成 | Investment Decision Generation")
-        ui.show_progress("正在处理投资信号...")
+        # steps 4: investment decision generation
+        ui.show_step_header(4, "investment decision generation | Investment Decision Generation")
+        ui.show_progress("Processing investment signals...")
         time.sleep(0.5)
-        ui.show_success("🤖 投资信号处理完成")
+        ui.show_success("🤖 Investment signal processing completed")
         
-        # 步骤5: 分析报告生成
-        ui.show_step_header(5, "分析报告生成 | Analysis Report Generation")
-        ui.show_progress("正在生成最终报告...")
+        # steps 5: Analysis report generation
+        ui.show_step_header(5, "Analysis report generation | Analysis Report Generation")
+        ui.show_progress("Generating final report...")
         time.sleep(0.5)
-        ui.show_success("📋 分析报告生成完成")
-        ui.show_success("🎉 600036 股票分析全部完成！")
+        ui.show_success("📋 Analysis report generation completed")
+        ui.show_success("🎉 600036 Stock analysis is all done!")
         
-        print("\n✅ 完整分析流程模拟完成")
-        print(f"📋 总共显示了 {len(completed_analysts)} 个进度节点")
+        print("\n✅ Complete analysis process simulation completed")
+        print(f"📋 Shown in total {len(completed_analysts)} progress nodes")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_problem_solving_effect():
-    """测试问题解决效果"""
-    print("\n🎯 测试问题解决效果")
+    """Test problem solving effect"""
+    print("\n🎯 Test problem solving effect")
     print("=" * 80)
     
     try:
@@ -132,47 +132,47 @@ def test_problem_solving_effect():
         
         ui = CLIUserInterface()
         
-        print("📊 对比修复前后的用户体验:")
+        print("📊 Compare user experience before and after repair:")
         print("-" * 50)
         
-        print("\n❌ 修复前的用户体验:")
-        print("   ✅ 📊 基本面分析完成")
-        print("   [长时间等待，用户不知道系统在做什么...]")
-        print("   [用户可能以为程序卡死了...]")
-        print("   步骤 4: 投资决策生成")
+        print("\n❌ User experience before repair:")
+        print("   ✅ 📊 Fundamental analysis completed")
+        print("   [Waiting for a long time, the user does not know what the system is doing...]")
+        print("   [Users may think that the program is stuck...]")
+        print("   steps 4: investment decision generation")
         
-        print("\n✅ 修复后的用户体验:")
-        ui.show_success("📊 基本面分析完成")
+        print("\n✅ Fixed user experience:")
+        ui.show_success("📊 Fundamental analysis completed")
         time.sleep(0.3)
-        ui.show_progress("🔬 研究团队开始深度分析...")
+        ui.show_progress("🔬 The research team begins in-depth analysis...")
         time.sleep(0.5)
-        ui.show_success("🔬 研究团队分析完成")
+        ui.show_success("🔬 Research team analysis completed")
         time.sleep(0.3)
-        ui.show_progress("💼 交易团队制定投资计划...")
+        ui.show_progress("💼 Trading team develops investment plan...")
         time.sleep(0.5)
-        ui.show_success("💼 交易团队计划完成")
+        ui.show_success("💼 Trading team plans completed")
         time.sleep(0.3)
-        ui.show_progress("⚖️ 风险管理团队评估投资风险...")
+        ui.show_progress("⚖️ Risk management team assesses investment risks...")
         time.sleep(0.5)
-        ui.show_success("⚖️ 风险管理团队分析完成")
+        ui.show_success("⚖️ Risk management team analysis completed")
         time.sleep(0.3)
-        ui.show_step_header(4, "投资决策生成 | Investment Decision Generation")
+        ui.show_step_header(4, "investment decision generation | Investment Decision Generation")
         
-        print("\n📋 改进效果:")
-        print("   ✅ 用户知道系统在每个阶段都在工作")
-        print("   ✅ 清晰的进度指示，消除等待焦虑")
-        print("   ✅ 专业的分析流程展示")
-        print("   ✅ 增强用户对系统的信任")
+        print("\n📋 Improve results:")
+        print("   ✅ Users know the system is working at every stage")
+        print("   ✅ Clear progress instructions eliminate waiting anxiety")
+        print("   ✅ Professional analysis process display")
+        print("   ✅ Enhance user trust in the system")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def test_analysis_stages():
-    """测试分析阶段划分"""
-    print("\n📈 测试分析阶段划分")
+    """Test analysis stage division"""
+    print("\n📈 Test analysis stage division")
     print("=" * 80)
     
     try:
@@ -180,118 +180,118 @@ def test_analysis_stages():
         
         ui = CLIUserInterface()
         
-        print("📊 TradingAgents完整分析流程:")
+        print("📊 TradingAgents Complete analysis process:")
         print("-" * 50)
         
         stages = [
             {
-                "name": "基础分析阶段",
-                "analysts": ["📈 市场分析师", "📊 基本面分析师", "🔍 技术分析师", "💭 情感分析师"],
-                "description": "获取和分析基础数据"
+                "name": "Basic analysis stage",
+                "analysts": ["📈 market analyst", "📊 fundamental analyst", "🔍 technical analyst", "💭 sentiment analyst"],
+                "description": "Obtain and analyze basic data"
             },
             {
-                "name": "研究团队阶段", 
-                "analysts": ["🐂 Bull研究员", "🐻 Bear研究员", "⚖️ Neutral研究员", "👨‍💼 研究经理"],
-                "description": "多角度深度研究和辩论"
+                "name": "research team stage", 
+                "analysts": ["🐂 Bull researcher", "🐻 Bear researcher", "⚖️ Neutral researcher", "👨‍💼 research manager"],
+                "description": "In-depth research and debate from multiple perspectives"
             },
             {
-                "name": "研究整合阶段",
-                "analysts": ["💼 研究整合员"],
-                "description": "生成研究观察汇总"
+                "name": "Research integration stage",
+                "analysts": ["💼 research integrator"],
+                "description": "Generate summary of research observations"
             },
             {
-                "name": "风险管理阶段",
-                "analysts": ["⚡ 高弹性情景研究员", "🛡️ 防御情景研究员", "⚖️ 基准情景研究员", "👔 风险评估师"],
-                "description": "评估风险和形成审阅结论"
+                "name": "risk management stage",
+                "analysts": ["⚡ Highly Resilient Scenario Researcher", "🛡️ Defense scenario researcher", "⚖️ Baseline Scenario Researcher", "👔 risk assessor"],
+                "description": "Assess risks and formulate review conclusions"
             },
             {
-                "name": "研究结论生成阶段",
-                "analysts": ["🤖 信号处理器"],
-                "description": "生成最终研究结论"
+                "name": "Research conclusion generation stage",
+                "analysts": ["🤖 signal processor"],
+                "description": "Generate final research conclusions"
             }
         ]
         
         for i, stage in enumerate(stages, 1):
-            print(f"\n阶段 {i}: {stage['name']}")
-            print(f"   描述: {stage['description']}")
-            print(f"   参与者: {', '.join(stage['analysts'])}")
+            print(f"\n stage {i}: {stage['name']}")
+            print(f"   Description: {stage['description']}")
+            print(f"   participants: {', '.join(stage['analysts'])}")
             
             if i == 1:
-                print("   ✅ 用户能看到每个分析师的完成状态")
+                print("   ✅ Users can see the completion status of each analyst")
             elif i in [2, 3, 4]:
-                print("   ✅ 新增进度显示，用户知道系统在工作")
+                print("   ✅ Added progress display to let users know that the system is working")
             else:
-                print("   ✅ 清晰的最终决策过程")
+                print("   ✅ Clear final decision-making process")
         
-        print(f"\n📋 总结:")
-        print(f"   - 总共 {len(stages)} 个主要阶段")
-        print(f"   - 每个阶段都有明确的进度指示")
-        print(f"   - 用户不会感到系统'卡顿'")
-        print(f"   - 专业的投资分析流程")
+        print(f"\n📋 Summary:")
+        print(f"   - total {len(stages)} main stage")
+        print(f"   - Each stage has clear progress instructions")
+        print(f"   - Users will not feel the system'Caton'")
+        print(f"   - Professional investment analysis process")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("🚀 开始测试详细进度显示效果")
+    """Main test function"""
+    print("🚀 Start testing the detailed progress display effect")
     print("=" * 100)
     
     results = []
     
-    # 测试1: 完整分析流程
+    # test 1: Complete analysis process
     results.append(test_complete_analysis_flow())
     
-    # 测试2: 问题解决效果
+    # test 2: Problem solving effect
     results.append(test_problem_solving_effect())
     
-    # 测试3: 分析阶段划分
+    # test 3: Analysis stage division
     results.append(test_analysis_stages())
     
-    # 总结结果
+    # Summary results
     print("\n" + "=" * 100)
-    print("📋 测试结果总结")
+    print("📋 Summary of test results")
     print("=" * 100)
     
     passed = sum(results)
     total = len(results)
     
     test_names = [
-        "完整分析流程进度显示",
-        "问题解决效果验证",
-        "分析阶段划分测试"
+        "Complete analysis process progress display",
+        "Problem solving effect verification",
+        "Analyze Phase Divide Testing"
     ]
     
     for i, (name, result) in enumerate(zip(test_names, results)):
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{i+1}. {name}: {status}")
     
-    print(f"\n📊 总体结果: {passed}/{total} 测试通过")
+    print(f"\n📊 Overall results: {passed}/{total} Test passed")
     
     if passed == total:
-        print("🎉 所有测试通过！详细进度显示效果优秀")
-        print("\n📋 解决的核心问题:")
-        print("1. ✅ 消除了基本面分析后的'卡顿'感")
-        print("2. ✅ 用户知道每个阶段系统都在工作")
-        print("3. ✅ 清晰的多团队协作流程展示")
-        print("4. ✅ 专业的投资分析体验")
+        print("🎉 All tests passed! Excellent detailed progress display")
+        print("\n📋 Core issues to be solved:")
+        print("1. ✅ After eliminating fundamental analysis'Caton'sense")
+        print("2. ✅ Users know that the system is working at every stage")
+        print("3. ✅ Clear display of multi-team collaboration processes")
+        print("4. ✅ Professional investment analysis experience")
         
-        print("\n🎯 用户体验提升:")
-        print("- 不再担心程序卡死或出错")
-        print("- 了解TradingAgents的专业分析流程")
-        print("- 对系统的工作过程有信心")
-        print("- 等待时间感知大大减少")
+        print("\n🎯 Improved user experience:")
+        print("- No more worries about program freezes or errors")
+        print("- Understand TradingAgents professional analysis process")
+        print("- Have confidence in the system s working process")
+        print("- Wait time perception is greatly reduced")
         
-        print("\n🔧 技术实现亮点:")
-        print("- 多阶段进度跟踪")
-        print("- 智能重复提示防止")
-        print("- 用户友好的进度描述")
-        print("- 完整的分析流程可视化")
+        print("\n🔧 Technology implementation highlights:")
+        print("- Multi-stage progress tracking")
+        print("- Intelligent duplicate reminder prevention")
+        print("- User-friendly progress description")
+        print("- Visualization of the complete analysis process")
     else:
-        print("⚠️ 部分测试失败，需要进一步优化")
+        print("⚠️ Some tests failed and need further optimization")
     
     return passed == total
 

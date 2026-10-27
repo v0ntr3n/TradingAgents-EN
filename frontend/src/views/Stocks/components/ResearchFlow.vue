@@ -2,11 +2,11 @@
   <div class="research-flow" :class="{ stuck: isStuck }" ref="flowRef">
     <div class="section-header">
       <div class="section-title">
-        研究路径
-        <span class="badge">{{ steps.length }} 步</span>
+        research path
+        <span class="badge">{{ steps.length }} step</span>
       </div>
       <div class="progress-summary">
-        已完成 <b>{{ doneCount }}</b> / {{ steps.length }}
+        Completed <b>{{ doneCount }}</b> / {{ steps.length }}
       </div>
     </div>
     <div class="flow-steps">
@@ -61,15 +61,15 @@ const activeIndex = computed(() => {
 const doneCount = computed(() => props.steps.filter(s => s.status === 'done').length)
 
 function statusLabel(status: StepStatus): string {
-  if (status === 'done') return '已完成'
-  if (status === 'active') return '进行中'
-  return '待使用'
+  if (status === 'done') return 'Completed'
+  if (status === 'active') return 'In progress'
+  return 'To be used'
 }
 
 function handleScroll() {
   if (!flowRef.value) return
   const rect = flowRef.value.getBoundingClientRect()
-  // 当卡片顶部贴近视口顶部时，认为已吸附
+  // When the top of the card is close to the top of the viewport, it is considered to be adsorbed
   isStuck.value = rect.top <= 0
 }
 

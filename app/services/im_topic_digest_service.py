@@ -16,7 +16,7 @@ DIGEST_TOOL_NAME = "im_topic_digest_sync"
 
 
 class IMTopicDigestService:
-    """定期将无主题的外部会话沉淀到研究主题中。"""
+    """Periodically precipitate untopiced external sessions into research topics."""
 
     def __init__(self, db):
         self.db = db
@@ -53,9 +53,9 @@ class IMTopicDigestService:
                     stats["skipped"] += 1
             except Exception as exc:
                 stats["failed"] += 1
-                logger.exception("[IMTopicDigest] 沉淀外部会话失败: thread=%s err=%s", session_thread.get("thread_id"), exc)
+                logger.exception("[IMTopicDigest] Precipitating external session failed: thread=%s err=%s", session_thread.get("thread_id"), exc)
 
-        logger.info("[IMTopicDigest] 完成: %s", stats)
+        logger.info("[IMTopicDigest] Complete: %s", stats)
         return stats
 
     async def _digest_session_thread(

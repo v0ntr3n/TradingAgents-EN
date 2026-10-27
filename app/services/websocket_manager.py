@@ -1,6 +1,6 @@
 """
-WebSocket 连接管理器
-用于实时推送分析进度更新
+WebSocket connection manager
+Used to push analysis progress updates in real time
 """
 
 import asyncio
@@ -12,15 +12,15 @@ from fastapi import WebSocket, WebSocketDisconnect
 logger = logging.getLogger(__name__)
 
 class WebSocketManager:
-    """WebSocket 连接管理器"""
+    """WebSocket connection manager"""
     
     def __init__(self):
-        # 存储活跃连接：{task_id: {websocket1, websocket2, ...}}
+        # Store active connections:{task_id: {websocket1, websocket2, ...}}
         self.active_connections: Dict[str, Set[WebSocket]] = {}
         self._lock = asyncio.Lock()
     
     async def connect(self, websocket: WebSocket, task_id: str):
-        """建立 WebSocket 连接"""
+        """Establish a WebSocket connection"""
         await websocket.accept()
         
         async with self._lock:
@@ -28,40 +28,40 @@ class WebSocketManager:
                 self.active_connections[task_id] = set()
             self.active_connections[task_id].add(websocket)
         
-        logger.info(f"🔌 WebSocket 连接建立: {task_id}")
+        logger.info(f"🔌 WebSocket Connection established: {task_id}")
     
     async def disconnect(self, websocket: WebSocket, task_id: str):
-        """断开 WebSocket 连接"""
+        """Disconnect WebSocket"""
         async with self._lock:
             if task_id in self.active_connections:
                 self.active_connections[task_id].discard(websocket)
                 if not self.active_connections[task_id]:
                     del self.active_connections[task_id]
         
-        logger.info(f"🔌 WebSocket 连接断开: {task_id}")
+        logger.info(f"🔌 WebSocket Lost connection: {task_id}")
     
     async def send_progress_update(self, task_id: str, message: Dict[str, Any]):
-        """发送进度更新到指定任务的所有连接"""
+        """Send progress updates to all connections for the specified task"""
         if task_id not in self.active_connections:
             return
         
-        # 复制连接集合以避免在迭代时修改
+        # Copy connection collection to avoid modification while iterating
         connections = self.active_connections[task_id].copy()
         
         for connection in connections:
             try:
                 await connection.send_text(json.dumps(message))
             except Exception as e:
-                logger.warning(f"⚠️ 发送 WebSocket 消息失败: {e}")
-                # 移除失效的连接
+                logger.warning(f"⚠️ Failed to send WebSocket message: {e}")
+                # Remove broken connections
                 async with self._lock:
                     if task_id in self.active_connections:
                         self.active_connections[task_id].discard(connection)
     
     async def broadcast_to_user(self, user_id: str, message: Dict[str, Any]):
         """向用户的所有连接广播消息"""
-        # 这里可以扩展为按用户ID管理连接
-        # 目前简化实现，只按任务ID管理
+        # This can be extended to manage connections by user ID
+        # Currently, the implementation is simplified and only managed by task ID.
         pass
     
     async def get_connection_count(self, task_id: str) -> int:
@@ -77,11 +77,11 @@ class WebSocketManager:
                 total += len(connections)
             return total
 
-# 全局实例
+# global instance
 _websocket_manager = None
 
 def get_websocket_manager() -> WebSocketManager:
-    """获取 WebSocket 管理器实例"""
+    """Get a WebSocket manager instance"""
     global _websocket_manager
     if _websocket_manager is None:
         _websocket_manager = WebSocketManager()

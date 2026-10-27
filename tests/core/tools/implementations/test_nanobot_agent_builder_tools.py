@@ -48,7 +48,7 @@ class _FakeCapabilityService:
         self.db = db
 
     async def search_capabilities(self, query, top_k, bindable_only, source_types):
-        assert query == "A股估值"
+        assert query == "A stock valuation"
         assert top_k == 5
         assert bindable_only is True
         assert source_types == ["builtin_tool", "skill"]
@@ -59,12 +59,12 @@ class _FakeCapabilityService:
                     registry_tool_id="get_value_factor_bundle_tool",
                     source_type="builtin_tool",
                     category="fundamentals",
-                    name="价值因子包",
-                    description="估值因子集合",
-                    when_to_use="估值分析",
+                    name="value factor package",
+                    description="Valuation factor set",
+                    when_to_use="Valuation analysis",
                     returns="JSON",
                     related_tools=["get_fundamental_factor_snapshot_tool"],
-                    coverage_terms=["估值", "PE", "PB"],
+                    coverage_terms=["Valuation", "PE", "PB"],
                     data_source="local",
                     metadata={"parameters": [{"name": "symbol"}]},
                     bindable=True,
@@ -240,8 +240,8 @@ def _build_agent(agent_id: str, name: str, description: str, tags: list[str], to
         tags=tags,
         tools=tools,
         default_tools=tools[:1],
-        inputs=[AgentInput(name="ticker", type="string", description="股票代码")],
-        outputs=[AgentOutput(name="report", type="string", description="分析结果")],
+        inputs=[AgentInput(name="ticker", type="string", description="Stock code")],
+        outputs=[AgentOutput(name="report", type="string", description="Analyze results")],
     )
 
 
@@ -257,7 +257,7 @@ async def test_search_project_capabilities_returns_formatted_hits(monkeypatch):
     )
 
     raw = await search_project_capabilities.ainvoke({
-        "query": "A股估值",
+        "query": "A stock valuation",
         "top_k": 5,
         "bindable_only": True,
         "source_types": "builtin_tool,skill",
@@ -271,15 +271,15 @@ async def test_search_project_capabilities_returns_formatted_hits(monkeypatch):
 
 def test_inspect_agent_blueprints_filters_keyword(monkeypatch):
     registry = _FakeRegistry([
-        _build_agent("valuation_analyst_v2", "估值分析师", "分析估值水平", ["估值分析"], ["get_value_factor_bundle_tool"]),
-        _build_agent("news_analyst_v2", "新闻分析师", "分析新闻事件", ["新闻"], ["get_stock_news_unified"]),
+        _build_agent("valuation_analyst_v2", "Valuation Analyst", "Analyze valuation levels", ["Valuation analysis"], ["get_value_factor_bundle_tool"]),
+        _build_agent("news_analyst_v2", "news analyst", "Analyze news events", ["News"], ["get_stock_news_unified"]),
     ])
     monkeypatch.setattr(
         "core.tools.implementations.agent_builder.nanobot_agent_builder_tools.get_registry",
         lambda: registry,
     )
 
-    raw = inspect_agent_blueprints.invoke({"keyword": "估值", "limit": 10, "maintained_only": False})
+    raw = inspect_agent_blueprints.invoke({"keyword": "Valuation", "limit": 10, "maintained_only": False})
     payload = json.loads(raw)
 
     assert payload["count"] == 1
@@ -288,7 +288,7 @@ def test_inspect_agent_blueprints_filters_keyword(monkeypatch):
 
 def test_get_agent_blueprint_details_returns_single_blueprint(monkeypatch):
     registry = _FakeRegistry([
-        _build_agent("valuation_analyst_v2", "估值分析师", "分析估值水平", ["估值分析"], ["get_value_factor_bundle_tool"]),
+        _build_agent("valuation_analyst_v2", "Valuation Analyst", "Analyze valuation levels", ["Valuation analysis"], ["get_value_factor_bundle_tool"]),
     ])
     monkeypatch.setattr(
         "core.tools.implementations.agent_builder.nanobot_agent_builder_tools.get_registry",
@@ -305,14 +305,14 @@ def test_get_agent_blueprint_details_returns_single_blueprint(monkeypatch):
 @pytest.mark.asyncio
 async def test_inspect_runtime_agent_configs_reads_db_defined_agents(monkeypatch):
     registry = _FakeRegistry([
-        _build_agent("valuation_analyst_v2", "估值分析师", "分析估值水平", ["估值分析"], ["get_value_factor_bundle_tool"]),
+        _build_agent("valuation_analyst_v2", "Valuation Analyst", "Analyze valuation levels", ["Valuation analysis"], ["get_value_factor_bundle_tool"]),
     ])
     fake_db = _FakeDb({
         "agent_configs": _FakeCollection([
             {
                 "agent_id": "custom_valuation_agent",
-                "name": "自定义估值 Agent",
-                "description": "数据库配置的估值 Agent",
+                "name": "Custom valuation Agent",
+                "description": "Valuation of database configuration Agent",
                 "output_field": "valuation_report",
                 "tools": ["get_value_factor_bundle_tool"],
                 "default_tools": ["get_stock_valuation_context"],
@@ -321,8 +321,8 @@ async def test_inspect_runtime_agent_configs_reads_db_defined_agents(monkeypatch
             },
             {
                 "agent_id": "valuation_analyst_v2",
-                "name": "估值分析师覆盖",
-                "description": "对内置 Agent 的数据库覆盖",
+                "name": "Valuation Analyst Coverage",
+                "description": "Database coverage of built-in Agent",
                 "tools": ["get_value_factor_bundle_tool"],
                 "updated_at": "2026-04-01T10:00:00",
             },
@@ -341,7 +341,7 @@ async def test_inspect_runtime_agent_configs_reads_db_defined_agents(monkeypatch
         lambda: registry,
     )
 
-    raw = await inspect_runtime_agent_configs.ainvoke({"keyword": "自定义估值", "limit": 5})
+    raw = await inspect_runtime_agent_configs.ainvoke({"keyword": "Custom valuation", "limit": 5})
     payload = json.loads(raw)
 
     assert payload["count"] == 1
@@ -359,8 +359,8 @@ async def test_inspect_runtime_agent_configs_filters_orphaned_nanobot_generated_
         "agent_configs": _FakeCollection([
             {
                 "agent_id": "valuation_analyst_v7",
-                "name": "A股估值分析师 v7",
-                "description": "已删除工坊资产后的残留候选",
+                "name": "A Stock Valuation Analyst v7",
+                "description": "Residual candidates after the workshop assets have been deleted",
                 "output_field": "valuation_report",
                 "metadata": {
                     "source": "nanobot_generated",
@@ -383,7 +383,7 @@ async def test_inspect_runtime_agent_configs_filters_orphaned_nanobot_generated_
         lambda: _FakeRegistry([]),
     )
 
-    raw = await inspect_runtime_agent_configs.ainvoke({"keyword": "估值", "limit": 10})
+    raw = await inspect_runtime_agent_configs.ainvoke({"keyword": "Valuation", "limit": 10})
     payload = json.loads(raw)
 
     assert payload["count"] == 0
@@ -395,10 +395,10 @@ async def test_inspect_agent_workshop_assets_returns_specs_and_versions(monkeypa
         "agent_specs": _FakeCollection([
             {
                 "spec_id": "spec_valuation_001",
-                "name": "估值 Agent 规格",
+                "name": "Valuation Agent Specifications",
                 "domain": "a_share",
-                "primary_goal": "输出估值结论",
-                "responsibilities": ["估值比较", "行业对比"],
+                "primary_goal": "Output valuation conclusion",
+                "responsibilities": ["Valuation comparison", "Industry comparison"],
                 "status": "active",
                 "version_count": 2,
                 "current_version_id": "ver_valuation_002",
@@ -411,7 +411,7 @@ async def test_inspect_agent_workshop_assets_returns_specs_and_versions(monkeypa
                 "spec_id": "spec_valuation_001",
                 "version": 2,
                 "status": "testing",
-                "agent_metadata": {"id": "custom_valuation_agent", "name": "自定义估值 Agent"},
+                "agent_metadata": {"id": "custom_valuation_agent", "name": "Custom valuation Agent"},
                 "required_tools": ["get_value_factor_bundle_tool"],
                 "required_capabilities": ["industry_valuation_compare"],
                 "prompt_template_ref": {"template_id": "tpl_001", "status": "active"},
@@ -424,7 +424,7 @@ async def test_inspect_agent_workshop_assets_returns_specs_and_versions(monkeypa
         lambda: fake_db,
     )
 
-    raw = await inspect_agent_workshop_assets.ainvoke({"keyword": "估值", "limit": 5})
+    raw = await inspect_agent_workshop_assets.ainvoke({"keyword": "Valuation", "limit": 5})
     payload = json.loads(raw)
 
     assert payload["spec_count"] == 1
@@ -440,10 +440,10 @@ async def test_inspect_agent_workshop_assets_supports_exact_spec_and_version_loo
         "agent_specs": _FakeCollection([
             {
                 "spec_id": "spec_valuation_001",
-                "name": "估值 Agent 规格",
+                "name": "Valuation Agent Specifications",
                 "domain": "a_share",
-                "primary_goal": "输出估值结论",
-                "responsibilities": ["估值比较"],
+                "primary_goal": "Output valuation conclusion",
+                "responsibilities": ["Valuation comparison"],
                 "status": "active",
                 "version_count": 2,
                 "current_version_id": "ver_valuation_003",
@@ -451,10 +451,10 @@ async def test_inspect_agent_workshop_assets_supports_exact_spec_and_version_loo
             },
             {
                 "spec_id": "spec_other_001",
-                "name": "其他 Agent 规格",
+                "name": "Other Agent Specifications",
                 "domain": "a_share",
-                "primary_goal": "其他输出",
-                "responsibilities": ["其他"],
+                "primary_goal": "Other outputs",
+                "responsibilities": ["Others"],
                 "status": "active",
                 "version_count": 1,
                 "current_version_id": "ver_other_001",
@@ -467,7 +467,7 @@ async def test_inspect_agent_workshop_assets_supports_exact_spec_and_version_loo
                 "spec_id": "spec_valuation_001",
                 "version": 2,
                 "status": "published",
-                "agent_metadata": {"id": "custom_valuation_agent", "name": "自定义估值 Agent"},
+                "agent_metadata": {"id": "custom_valuation_agent", "name": "Custom valuation Agent"},
                 "required_tools": ["get_value_factor_bundle_tool"],
                 "required_capabilities": ["industry_valuation_compare"],
                 "prompt_template_ref": {"template_id": "tpl_001", "status": "active"},
@@ -478,7 +478,7 @@ async def test_inspect_agent_workshop_assets_supports_exact_spec_and_version_loo
                 "spec_id": "spec_other_001",
                 "version": 1,
                 "status": "testing",
-                "agent_metadata": {"id": "other_agent", "name": "其他 Agent"},
+                "agent_metadata": {"id": "other_agent", "name": "Others Agent"},
                 "required_tools": ["other_tool"],
                 "required_capabilities": ["other_capability"],
                 "prompt_template_ref": {"template_id": "tpl_other", "status": "active"},
@@ -524,10 +524,10 @@ async def test_inspect_agent_workshop_assets_supports_workshop_session_lookup(mo
         "agent_specs": _FakeCollection([
             {
                 "spec_id": "spec_valuation_001",
-                "name": "估值 Agent 规格",
+                "name": "Valuation Agent Specifications",
                 "domain": "a_share",
-                "primary_goal": "输出估值结论",
-                "responsibilities": ["估值比较"],
+                "primary_goal": "Output valuation conclusion",
+                "responsibilities": ["Valuation comparison"],
                 "status": "active",
                 "version_count": 2,
                 "current_version_id": "ver_valuation_002",
@@ -540,7 +540,7 @@ async def test_inspect_agent_workshop_assets_supports_workshop_session_lookup(mo
                 "spec_id": "spec_valuation_001",
                 "version": 2,
                 "status": "testing",
-                "agent_metadata": {"id": "custom_valuation_agent", "name": "自定义估值 Agent"},
+                "agent_metadata": {"id": "custom_valuation_agent", "name": "Custom valuation Agent"},
                 "required_tools": ["get_value_factor_bundle_tool"],
                 "required_capabilities": ["industry_valuation_compare"],
                 "prompt_template_ref": {"template_id": "tpl_001", "status": "active"},
@@ -575,8 +575,8 @@ async def test_create_or_update_runtime_agent_config_upserts_candidate(monkeypat
 
     raw = await create_or_update_runtime_agent_config.ainvoke({
         "agent_id": "valuation_candidate_v1",
-        "agent_name": "估值候选Agent",
-        "description": "输出A股估值结论",
+        "agent_name": "Valuation candidates Agent",
+        "description": "Output A-share valuation conclusion",
     })
     payload = json.loads(raw)
 
@@ -608,12 +608,12 @@ async def test_create_or_update_agent_workshop_draft_creates_visible_spec_and_se
 
     raw = await create_or_update_agent_workshop_draft.ainvoke({
         "agent_id": "valuation_candidate_v1",
-        "agent_name": "估值候选Agent",
-        "target_responsibility": "输出A股估值结论",
+        "agent_name": "Valuation candidates Agent",
+        "target_responsibility": "Output A-share valuation conclusion",
         "output_field": "valuation_report",
         "tool_ids": "get_value_factor_bundle_tool",
         "preferred_methods": "PE,PB,PEG",
-        "constraints": "不要输出交易建议",
+        "constraints": "Do not output trading advice",
     })
     payload = json.loads(raw)
 
@@ -672,8 +672,8 @@ async def test_create_or_update_agent_workshop_draft_blocks_existing_active_vers
 
     raw = await create_or_update_agent_workshop_draft.ainvoke({
         "agent_id": "spec_nanobot_industry_comparison_researcher_v1_v1",
-        "agent_name": "行业比较研究员 v1",
-        "target_responsibility": "输出行业比较分析",
+        "agent_name": "Industry Comparative Researcher v1",
+        "target_responsibility": "Output industry comparative analysis",
     })
     payload = json.loads(raw)
 
@@ -728,8 +728,8 @@ async def test_create_or_update_agent_workshop_draft_blocks_existing_active_spec
 
     raw = await create_or_update_agent_workshop_draft.ainvoke({
         "agent_id": "spec_nanobot_industry_comparison_researcher_v1",
-        "agent_name": "行业比较研究员 v1",
-        "target_responsibility": "输出行业比较分析",
+        "agent_name": "Industry Comparative Researcher v1",
+        "target_responsibility": "Output industry comparative analysis",
     })
     payload = json.loads(raw)
 
@@ -756,7 +756,7 @@ async def test_analyze_agent_workshop_gaps_bridges_to_workshop_service(monkeypat
                 "gap_report": {
                     "existing_tools": ["get_value_factor_bundle_tool"],
                     "suggested_tools": ["get_peer_comparison_tool"],
-                    "blocking_gaps": ["缺少行业对比能力"],
+                    "blocking_gaps": ["Lack of industry comparison capabilities"],
                 },
             }
 
@@ -902,8 +902,8 @@ async def test_resolve_agent_workshop_blocking_gaps_requires_external_data_confi
             return types.SimpleNamespace(
                 spec_id="spec_ext_001",
                 user_id="user_001",
-                current_spec_snapshot=types.SimpleNamespace(name="外部数据Agent", primary_goal="联网数据分析"),
-                gap_report=types.SimpleNamespace(blocking_gaps=["需要 akshare 实时数据接口"]),
+                current_spec_snapshot=types.SimpleNamespace(name="external data Agent", primary_goal="Internet data analysis"),
+                gap_report=types.SimpleNamespace(blocking_gaps=["Requires akshare real-time data interface"]),
             )
 
     monkeypatch.setattr(
@@ -935,7 +935,7 @@ async def test_resolve_agent_workshop_blocking_gaps_reuses_high_similarity_skill
             return types.SimpleNamespace(
                 spec_id="spec_dedup_001",
                 user_id="user_001",
-                current_spec_snapshot=types.SimpleNamespace(name="估值Agent", primary_goal="估值输出"),
+                current_spec_snapshot=types.SimpleNamespace(name="Valuation Agent", primary_goal="Valuation output"),
                 gap_report=types.SimpleNamespace(blocking_gaps=[]),
             )
 
@@ -952,7 +952,7 @@ async def test_resolve_agent_workshop_blocking_gaps_reuses_high_similarity_skill
                         registry_tool_id="longhubang_query",
                         source_type="external_skill",
                         bindable=True,
-                        name="龙虎榜查询",
+                        name="Dragon and Tiger List Inquiry",
                     ),
                     score=0.92,
                 )
@@ -984,7 +984,7 @@ async def test_resolve_agent_workshop_blocking_gaps_reuses_high_similarity_skill
 
     raw = await resolve_agent_workshop_blocking_gaps.ainvoke({
         "session_id": "ws_dedup_high_001",
-        "blocking_gaps_json": json.dumps(["缺少龙虎榜数据查询能力"], ensure_ascii=False),
+        "blocking_gaps_json": json.dumps(["Lack of data query capabilities for Dragon and Tiger rankings"], ensure_ascii=False),
         "auto_continue_build": False,
         "confirm_external_data_risk": True,
     })
@@ -1008,7 +1008,7 @@ async def test_resolve_agent_workshop_blocking_gaps_medium_similarity_needs_conf
             return types.SimpleNamespace(
                 spec_id="spec_dedup_mid_001",
                 user_id="user_001",
-                current_spec_snapshot=types.SimpleNamespace(name="估值Agent", primary_goal="估值输出"),
+                current_spec_snapshot=types.SimpleNamespace(name="Valuation Agent", primary_goal="Valuation output"),
                 gap_report=types.SimpleNamespace(blocking_gaps=[]),
             )
 
@@ -1025,7 +1025,7 @@ async def test_resolve_agent_workshop_blocking_gaps_medium_similarity_needs_conf
                         registry_tool_id="industry_compare_skill",
                         source_type="external_skill",
                         bindable=True,
-                        name="行业对比能力",
+                        name="Industry comparison ability",
                     ),
                     score=0.72,
                 )
@@ -1057,7 +1057,7 @@ async def test_resolve_agent_workshop_blocking_gaps_medium_similarity_needs_conf
 
     raw = await resolve_agent_workshop_blocking_gaps.ainvoke({
         "session_id": "ws_dedup_mid_001",
-        "blocking_gaps_json": json.dumps(["缺少行业对比能力"], ensure_ascii=False),
+        "blocking_gaps_json": json.dumps(["Lack of industry comparison capabilities"], ensure_ascii=False),
         "auto_continue_build": False,
         "confirm_external_data_risk": True,
     })
@@ -1076,8 +1076,8 @@ async def test_resolve_agent_workshop_blocking_gaps_medium_similarity_can_autocr
                 "session_id": "skill_session_allowed_001",
                 "status": "completed",
                 "pipeline_stage": "registering",
-                "pipeline_message": "完成",
-                "spec": {"tool_id": "industry_compare_v2", "display_name": "行业对比能力V2"},
+                "pipeline_message": "Complete",
+                "spec": {"tool_id": "industry_compare_v2", "display_name": "Industry comparison ability V2"},
             }
         ])
     })
@@ -1091,7 +1091,7 @@ async def test_resolve_agent_workshop_blocking_gaps_medium_similarity_can_autocr
             return types.SimpleNamespace(
                 spec_id="spec_dedup_mid_allow_001",
                 user_id="user_001",
-                current_spec_snapshot=types.SimpleNamespace(name="估值Agent", primary_goal="估值输出"),
+                current_spec_snapshot=types.SimpleNamespace(name="Valuation Agent", primary_goal="Valuation output"),
                 gap_report=types.SimpleNamespace(blocking_gaps=[]),
             )
 
@@ -1108,7 +1108,7 @@ async def test_resolve_agent_workshop_blocking_gaps_medium_similarity_can_autocr
                         registry_tool_id="industry_compare_skill",
                         source_type="external_skill",
                         bindable=True,
-                        name="行业对比能力",
+                        name="Industry comparison ability",
                     ),
                     score=0.72,
                 )
@@ -1160,7 +1160,7 @@ async def test_resolve_agent_workshop_blocking_gaps_medium_similarity_can_autocr
 
     raw = await resolve_agent_workshop_blocking_gaps.ainvoke({
         "session_id": "ws_dedup_mid_allow_001",
-        "blocking_gaps_json": json.dumps(["缺少行业对比能力"], ensure_ascii=False),
+        "blocking_gaps_json": json.dumps(["Lack of industry comparison capabilities"], ensure_ascii=False),
         "auto_continue_build": False,
         "confirm_external_data_risk": True,
         "allow_medium_similarity_autocreate": True,
@@ -1183,8 +1183,8 @@ async def test_resolve_agent_workshop_blocking_gaps_auto_continue_builds_version
                 "session_id": "skill_session_auto_001",
                 "status": "completed",
                 "pipeline_stage": "registering",
-                "pipeline_message": "完成",
-                "spec": {"tool_id": "auto_gap_skill", "display_name": "自动补齐技能"},
+                "pipeline_message": "Complete",
+                "spec": {"tool_id": "auto_gap_skill", "display_name": "Automatically complete skills"},
             }
         ])
     })
@@ -1198,7 +1198,7 @@ async def test_resolve_agent_workshop_blocking_gaps_auto_continue_builds_version
             return types.SimpleNamespace(
                 spec_id="spec_auto_continue_001",
                 user_id="user_001",
-                current_spec_snapshot=types.SimpleNamespace(name="自动续建Agent", primary_goal="输出结构化研究"),
+                current_spec_snapshot=types.SimpleNamespace(name="Automatic renewal Agent", primary_goal="Output structured research"),
                 gap_report=types.SimpleNamespace(blocking_gaps=[]),
             )
 
@@ -1243,7 +1243,7 @@ async def test_resolve_agent_workshop_blocking_gaps_auto_continue_builds_version
                         registry_tool_id="auto_gap_skill",
                         source_type="external_skill",
                         bindable=True,
-                        name="自动补齐技能",
+                        name="Automatically complete skills",
                     ),
                     score=0.55,
                 )
@@ -1295,7 +1295,7 @@ async def test_resolve_agent_workshop_blocking_gaps_auto_continue_builds_version
 
     raw = await resolve_agent_workshop_blocking_gaps.ainvoke({
         "session_id": "ws_auto_continue_001",
-        "blocking_gaps_json": json.dumps(["缺少自动补齐能力"], ensure_ascii=False),
+        "blocking_gaps_json": json.dumps(["Lack of auto-complete capabilities"], ensure_ascii=False),
         "confirm_external_data_risk": True,
         "auto_continue_build": True,
         "max_wait_seconds": 60,
@@ -1323,7 +1323,7 @@ async def test_start_agent_workshop_gap_resolution_creates_job(monkeypatch):
             return types.SimpleNamespace(
                 spec_id="spec_job_001",
                 user_id="user_001",
-                gap_report=types.SimpleNamespace(blocking_gaps=["缺少行业对比能力"]),
+                gap_report=types.SimpleNamespace(blocking_gaps=["Lack of industry comparison capabilities"]),
             )
 
     monkeypatch.setattr(
@@ -1359,7 +1359,7 @@ async def test_start_agent_workshop_gap_resolution_is_idempotent(monkeypatch):
             return types.SimpleNamespace(
                 spec_id="spec_job_idempotent_001",
                 user_id="user_001",
-                gap_report=types.SimpleNamespace(blocking_gaps=["缺少行业对比能力"]),
+                gap_report=types.SimpleNamespace(blocking_gaps=["Lack of industry comparison capabilities"]),
             )
 
     monkeypatch.setattr(
@@ -1398,7 +1398,7 @@ async def test_inspect_cancel_retry_gap_resolution_job(monkeypatch):
                 "gaps": [
                     {
                         "gap_id": "gap_1",
-                        "description": "缺少行业对比能力",
+                        "description": "Lack of industry comparison capabilities",
                         "status": "failed",
                         "pipeline_stage": "validating",
                         "pipeline_message": "sandbox timeout",
@@ -1425,7 +1425,7 @@ async def test_inspect_cancel_retry_gap_resolution_job(monkeypatch):
     retry_raw = await retry_agent_workshop_gap_resolution_item.ainvoke({
         "job_id": "gap_job_manual_001",
         "gap_id": "gap_1",
-        "reason": "再次尝试",
+        "reason": "try again",
     })
     retry_payload = json.loads(retry_raw)
     assert retry_payload["status"] == "ok"
@@ -1434,7 +1434,7 @@ async def test_inspect_cancel_retry_gap_resolution_job(monkeypatch):
 
     cancel_raw = await cancel_agent_workshop_gap_resolution.ainvoke({
         "job_id": "gap_job_manual_001",
-        "reason": "用户停止",
+        "reason": "user stopped",
     })
     cancel_payload = json.loads(cancel_raw)
     assert cancel_payload["status"] == "ok"
@@ -1457,10 +1457,10 @@ async def test_worker_process_gap_resolution_job_pending_to_running(monkeypatch)
                 "gaps": [
                     {
                         "gap_id": "gap_1",
-                        "description": "缺少行业对比能力",
+                        "description": "Lack of industry comparison capabilities",
                         "status": "pending",
                         "pipeline_stage": "queued",
-                        "pipeline_message": "等待 worker 执行",
+                        "pipeline_message": "Wait for worker execution",
                         "retry_count": 0,
                         "created_at": "2026-06-27T00:00:00",
                         "updated_at": "2026-06-27T00:00:00",
@@ -1482,7 +1482,7 @@ async def test_worker_process_gap_resolution_job_pending_to_running(monkeypatch)
             return types.SimpleNamespace(
                 spec_id="spec_job_worker_001",
                 user_id="user_worker_001",
-                current_spec_snapshot=types.SimpleNamespace(name="测试 Agent", primary_goal="补齐能力缺口"),
+                current_spec_snapshot=types.SimpleNamespace(name="test Agent", primary_goal="Fill capability gaps"),
             )
 
     class _FakeCapabilityService:
@@ -1557,10 +1557,10 @@ async def test_worker_process_gap_resolution_job_running_to_completed(monkeypatc
                 "gaps": [
                     {
                         "gap_id": "gap_1",
-                        "description": "缺少行业对比能力",
+                        "description": "Lack of industry comparison capabilities",
                         "status": "running",
                         "pipeline_stage": "generating",
-                        "pipeline_message": "等待生成完成",
+                        "pipeline_message": "Wait for the build to complete",
                         "skill_session_id": "skill_session_worker_002",
                         "retry_count": 0,
                         "created_at": "2026-06-27T00:00:00",
@@ -1577,10 +1577,10 @@ async def test_worker_process_gap_resolution_job_running_to_completed(monkeypatc
                 "session_id": "skill_session_worker_002",
                 "status": "completed",
                 "pipeline_stage": "completed",
-                "pipeline_message": "完成",
+                "pipeline_message": "Complete",
                 "spec": {
                     "tool_id": "auto_gap_skill_worker_002",
-                    "display_name": "自动补齐技能#2",
+                    "display_name": "Automatically complete skills#2",
                 },
             }
         ]),
@@ -1626,10 +1626,10 @@ async def test_worker_process_gap_resolution_job_skips_other_worker_claim(monkey
                 "gaps": [
                     {
                         "gap_id": "gap_1",
-                        "description": "缺少行业对比能力",
+                        "description": "Lack of industry comparison capabilities",
                         "status": "pending",
                         "pipeline_stage": "queued",
-                        "pipeline_message": "等待 worker 执行",
+                        "pipeline_message": "Wait for worker execution",
                     }
                 ],
                 "created_at": "2026-06-27T00:00:00",
@@ -1665,8 +1665,8 @@ async def test_gap_resolution_job_e2e_start_worker_and_inspect(monkeypatch):
             return types.SimpleNamespace(
                 spec_id="spec_e2e_001",
                 user_id="user_e2e_001",
-                gap_report=types.SimpleNamespace(blocking_gaps=["缺少行业对比能力"]),
-                current_spec_snapshot=types.SimpleNamespace(name="测试 Agent", primary_goal="补齐能力缺口"),
+                gap_report=types.SimpleNamespace(blocking_gaps=["Lack of industry comparison capabilities"]),
+                current_spec_snapshot=types.SimpleNamespace(name="test Agent", primary_goal="Fill capability gaps"),
             )
 
     class _FakeCapabilityService:
@@ -1727,10 +1727,10 @@ async def test_gap_resolution_job_e2e_start_worker_and_inspect(monkeypatch):
         "session_id": "skill_session_e2e_001",
         "status": "completed",
         "pipeline_stage": "completed",
-        "pipeline_message": "完成",
+        "pipeline_message": "Complete",
         "spec": {
             "tool_id": "auto_gap_skill_e2e_001",
-            "display_name": "自动补齐技能E2E",
+            "display_name": "Automatically complete skills E2E",
         },
     })
 
@@ -1770,10 +1770,10 @@ async def test_worker_auto_retry_backoff_for_failed_skill_session(monkeypatch):
                 "gaps": [
                     {
                         "gap_id": "gap_1",
-                        "description": "缺少行业对比能力",
+                        "description": "Lack of industry comparison capabilities",
                         "status": "running",
                         "pipeline_stage": "generating",
-                        "pipeline_message": "等待生成完成",
+                        "pipeline_message": "Wait for the build to complete",
                         "skill_session_id": "skill_session_retry_001",
                         "retry_count": 0,
                         "auto_retry_count": 0,
@@ -1841,10 +1841,10 @@ async def test_worker_dead_letter_after_max_auto_retries(monkeypatch):
                 "gaps": [
                     {
                         "gap_id": "gap_1",
-                        "description": "缺少行业对比能力",
+                        "description": "Lack of industry comparison capabilities",
                         "status": "running",
                         "pipeline_stage": "generating",
-                        "pipeline_message": "等待生成完成",
+                        "pipeline_message": "Wait for the build to complete",
                         "skill_session_id": "skill_session_retry_002",
                         "retry_count": 0,
                         "auto_retry_count": 2,
@@ -1899,10 +1899,10 @@ async def test_worker_reuses_active_skill_session_and_passes_rich_handoff(monkey
                 "gaps": [
                     {
                         "gap_id": "gap_1",
-                        "description": "缺少行业对比能力",
+                        "description": "Lack of industry comparison capabilities",
                         "status": "pending",
                         "pipeline_stage": "queued",
-                        "pipeline_message": "等待 worker 执行",
+                        "pipeline_message": "Wait for worker execution",
                     }
                 ],
             }
@@ -1917,7 +1917,7 @@ async def test_worker_reuses_active_skill_session_and_passes_rich_handoff(monkey
                     "source_spec_id": "spec_reuse_001",
                     "workshop_session_id": "ws_reuse_001",
                     "gap_id": "gap_1",
-                    "target_capability": "缺少行业对比能力",
+                    "target_capability": "Lack of industry comparison capabilities",
                 },
             }
         ]),
@@ -1932,7 +1932,7 @@ async def test_worker_reuses_active_skill_session_and_passes_rich_handoff(monkey
             return types.SimpleNamespace(
                 spec_id="spec_reuse_001",
                 user_id="user_reuse_001",
-                current_spec_snapshot=types.SimpleNamespace(name="测试 Agent", primary_goal="补齐能力缺口"),
+                current_spec_snapshot=types.SimpleNamespace(name="test Agent", primary_goal="Fill capability gaps"),
             )
 
     class _FakeCapabilityService:
@@ -1962,7 +1962,7 @@ async def test_worker_reuses_active_skill_session_and_passes_rich_handoff(monkey
     gap_doc = fake_db["agent_workshop_gap_resolution_jobs"]._items[0]["gaps"][0]
     assert gap_doc["status"] == "running"
     assert gap_doc["skill_session_id"] == "skill_active_reuse_001"
-    assert "复用" in gap_doc["pipeline_message"]
+    assert "Reuse" in gap_doc["pipeline_message"]
 
 
 @pytest.mark.asyncio
@@ -1982,17 +1982,17 @@ async def test_worker_passes_known_context_and_rich_handoff_to_new_skill(monkeyp
                 "gaps": [
                     {
                         "gap_id": "gap_done",
-                        "description": "缺少估值数据能力",
+                        "description": "Lack of valuation data capabilities",
                         "status": "failed",
-                        "agentic_failure_summary": "pe_ttm 字段不存在",
-                        "agentic_verified_facts": ["valuation helper 返回 pb_mrq"],
+                        "agentic_failure_summary": "pe_ttm Field does not exist",
+                        "agentic_verified_facts": ["valuation helper Return pb_mrq"],
                     },
                     {
                         "gap_id": "gap_2",
-                        "description": "缺少行业对比能力",
+                        "description": "Lack of industry comparison capabilities",
                         "status": "pending",
                         "pipeline_stage": "queued",
-                        "pipeline_message": "等待 worker 执行",
+                        "pipeline_message": "Wait for worker execution",
                     },
                 ],
             }
@@ -2009,7 +2009,7 @@ async def test_worker_passes_known_context_and_rich_handoff_to_new_skill(monkeyp
             return types.SimpleNamespace(
                 spec_id="spec_context_001",
                 user_id="user_context_001",
-                current_spec_snapshot=types.SimpleNamespace(name="测试 Agent", primary_goal="补齐能力缺口"),
+                current_spec_snapshot=types.SimpleNamespace(name="test Agent", primary_goal="Fill capability gaps"),
             )
 
     class _FakeCapabilityService:
@@ -2059,9 +2059,9 @@ async def test_worker_passes_known_context_and_rich_handoff_to_new_skill(monkeyp
     assert payload["status"] == "ok"
     handoff = captured["handoff_context"]
     assert handoff["known_failure_summaries"]
-    assert handoff["known_verified_facts"] == ["valuation helper 返回 pb_mrq"]
+    assert handoff["known_verified_facts"] == ["valuation helper Return pb_mrq"]
     assert handoff["gap_context"]
-    assert "缺少估值数据能力" in handoff["related_gaps"]
+    assert "Lack of valuation data capabilities" in handoff["related_gaps"]
     assert handoff["searched_capabilities"]
 
 
@@ -2078,8 +2078,8 @@ async def test_create_or_update_universal_agent_prompt_template_writes_template(
 
     raw = await create_or_update_universal_agent_prompt_template.ainvoke({
         "agent_id": "valuation_candidate_v1",
-        "template_name": "估值候选模板",
-        "system_prompt": "你是一名A股估值分析师。",
+        "template_name": "Valuation candidate template",
+        "system_prompt": "You are an A-share valuation analyst.",
     })
     payload = json.loads(raw)
 
@@ -2087,8 +2087,8 @@ async def test_create_or_update_universal_agent_prompt_template_writes_template(
     assert payload["template"]["agent_type"] == "universal"
     assert payload["template"]["agent_name"] == "valuation_candidate_v1"
     template_doc = fake_db["prompt_templates"]._items[0]
-    assert "全局铁律：所有 Agent 一律禁止输出任何交易建议" in template_doc["content"]["system_prompt"]
-    assert "全局铁律：所有 Agent 一律禁止输出任何交易建议" in template_doc["content"]["constraints"]
+    assert "Global iron law: All Agents are prohibited from outputting any trading suggestions." in template_doc["content"]["system_prompt"]
+    assert "Global iron law: All Agents are prohibited from outputting any trading suggestions." in template_doc["content"]["constraints"]
     agent_config = fake_db["agent_configs"]._items[0]
     assert agent_config["metadata"]["default_prompt_template_id"]
 
@@ -2101,13 +2101,13 @@ async def test_inspect_prompt_templates_reads_database_templates(monkeypatch):
                 "_id": "tpl_001",
                 "agent_type": "universal",
                 "agent_name": "valuation_candidate_v1",
-                "template_name": "估值候选模板",
+                "template_name": "Valuation candidate template",
                 "workflow_id": None,
                 "node_id": None,
                 "status": "active",
                 "is_system": True,
                 "remark": "nanobot generated candidate template",
-                "content": {"system_prompt": "你是一名估值分析师"},
+                "content": {"system_prompt": "You are a valuation analyst"},
                 "updated_at": "2026-04-02T10:00:00",
                 "version": 2,
             },
@@ -2115,11 +2115,11 @@ async def test_inspect_prompt_templates_reads_database_templates(monkeypatch):
                 "_id": "tpl_002",
                 "agent_type": "researcher",
                 "agent_name": "news_researcher",
-                "template_name": "新闻研究模板",
+                "template_name": "News Research Template",
                 "status": "draft",
                 "is_system": False,
                 "remark": "internal",
-                "content": {"system_prompt": "研究新闻"},
+                "content": {"system_prompt": "research news"},
                 "updated_at": "2026-04-01T10:00:00",
                 "version": 1,
             },
@@ -2132,7 +2132,7 @@ async def test_inspect_prompt_templates_reads_database_templates(monkeypatch):
 
     raw = await inspect_prompt_templates.ainvoke({
         "agent_type": "universal",
-        "keyword": "估值",
+        "keyword": "Valuation",
         "status": "active",
         "limit": 10,
     })
@@ -2141,7 +2141,7 @@ async def test_inspect_prompt_templates_reads_database_templates(monkeypatch):
     assert payload["status"] == "ok"
     assert payload["count"] == 1
     assert payload["templates"][0]["template_id"] == "tpl_001"
-    assert payload["templates"][0]["template_name"] == "估值候选模板"
+    assert payload["templates"][0]["template_name"] == "Valuation candidate template"
 
 
 @pytest.mark.asyncio
@@ -2152,7 +2152,7 @@ async def test_get_prompt_template_detail_returns_full_content(monkeypatch):
                 "_id": "tpl_001",
                 "agent_type": "universal",
                 "agent_name": "valuation_candidate_v1",
-                "template_name": "估值候选模板",
+                "template_name": "Valuation candidate template",
                 "workflow_id": None,
                 "node_id": None,
                 "status": "active",
@@ -2160,12 +2160,12 @@ async def test_get_prompt_template_detail_returns_full_content(monkeypatch):
                 "remark": "nanobot generated candidate template",
                 "preference_type": None,
                 "content": {
-                    "system_prompt": "你是一名估值分析师。",
-                    "user_prompt": "请分析 {ticker}",
-                    "tool_guidance": "优先使用真实数据工具",
-                    "analysis_requirements": "给出关键依据",
-                    "output_format": "结构化输出",
-                    "constraints": "不要输出交易建议",
+                    "system_prompt": "You are a valuation analyst.",
+                    "user_prompt": "Please analyze {ticker}",
+                    "tool_guidance": "Prioritize real data tools",
+                    "analysis_requirements": "Give key evidence",
+                    "output_format": "Structured output",
+                    "constraints": "Do not output trading advice",
                 },
                 "created_at": "2026-04-02T09:00:00",
                 "updated_at": "2026-04-02T10:00:00",
@@ -2183,8 +2183,8 @@ async def test_get_prompt_template_detail_returns_full_content(monkeypatch):
 
     assert payload["status"] == "ok"
     assert payload["template"]["template_id"] == "tpl_001"
-    assert payload["template"]["content"]["system_prompt"] == "你是一名估值分析师。"
-    assert payload["template"]["content"]["output_format"] == "结构化输出"
+    assert payload["template"]["content"]["system_prompt"] == "You are a valuation analyst."
+    assert payload["template"]["content"]["output_format"] == "Structured output"
 
 
 @pytest.mark.asyncio
@@ -2204,7 +2204,7 @@ async def test_get_effective_prompt_template_uses_template_client_resolution(mon
                 "template_id": "tpl_debug_001",
                 "source": "debug",
                 "version": 3,
-                "system_prompt": "当前调试模板 system prompt",
+                "system_prompt": "Current debug template system prompt",
             }
 
     fake_template_client_module = types.SimpleNamespace(get_template_client=lambda: _FakeTemplateClient())
@@ -2255,7 +2255,7 @@ async def test_get_current_thread_effective_prompt_template_uses_thread_context(
                 "template_id": "tpl_debug_thread_001",
                 "source": "debug",
                 "version": 5,
-                "system_prompt": "当前线程调试模板 system prompt",
+                "system_prompt": "Current thread debugging template system prompt",
             }
 
     fake_db = _FakeDb({
@@ -2333,8 +2333,8 @@ async def test_bind_agent_tools_and_validate_candidate_updates_bindings_and_runs
         "agent_configs": _FakeCollection([
             {
                 "agent_id": "valuation_candidate_v1",
-                "name": "估值候选Agent",
-                "description": "输出A股估值结论",
+                "name": "Valuation candidates Agent",
+                "description": "Output A-share valuation conclusion",
                 "metadata": {
                     "spec_id": "spec_valuation_001",
                     "latest_workshop_version_id": "ver_valuation_002",
@@ -2364,7 +2364,7 @@ async def test_bind_agent_tools_and_validate_candidate_updates_bindings_and_runs
                 "_id": "tpl_001",
                 "agent_type": "universal",
                 "agent_name": "valuation_candidate_v1",
-                "template_name": "估值候选模板",
+                "template_name": "Valuation candidate template",
                 "workflow_id": None,
                 "node_id": None,
                 "status": "active",
@@ -2458,8 +2458,8 @@ def test_universal_agent_testing_mode_maps_to_template_debug_mode(monkeypatch):
         llm=_FakeLlm(),
         tool_ids=[],
         agent_id="spec_nanobot_financial_report_risk_tracker_v2_v1",
-        agent_name="财报风险跟踪助手 v2",
-        agent_description="测试说明",
+        agent_name="Financial Reporting Risk Tracking Assistant v2",
+        agent_description="Test instructions",
         output_field="risk_report",
         prompt_template_type="custom_agent",
         prompt_template_name="spec_nanobot_financial_report_risk_tracker_v2_v1",
@@ -2495,8 +2495,8 @@ async def test_bind_agent_tools_and_validate_candidate_skips_active_workshop_ver
         "agent_configs": _FakeCollection([
             {
                 "agent_id": "valuation_candidate_v1",
-                "name": "估值候选Agent",
-                "description": "输出A股估值结论",
+                "name": "Valuation candidates Agent",
+                "description": "Output A-share valuation conclusion",
                 "metadata": {
                     "latest_workshop_version_id": "ver_active_001",
                 },
@@ -2567,7 +2567,7 @@ async def test_bind_agent_tools_and_validate_candidate_skips_active_workshop_ver
 async def test_prepare_agent_generation_confirmation_reports_overwrite_risk(monkeypatch):
     fake_db = _FakeDb({
         "agent_configs": _FakeCollection([
-            {"agent_id": "valuation_candidate_v1", "name": "已存在估值Agent"}
+            {"agent_id": "valuation_candidate_v1", "name": "Valuation already exists Agent"}
         ]),
         "prompt_templates": _FakeCollection([
             {
@@ -2599,35 +2599,35 @@ async def test_prepare_agent_generation_confirmation_reports_overwrite_risk(monk
 
     raw = await prepare_agent_generation_confirmation.ainvoke({
         "agent_id": "valuation_candidate_v1",
-        "agent_name": "估值候选Agent",
-        "target_responsibility": "输出A股估值结论",
+        "agent_name": "Valuation candidates Agent",
+        "target_responsibility": "Output A-share valuation conclusion",
         "tool_ids": "get_value_factor_bundle_tool",
-        "non_goals": "不做交易建议,不做仓位决策",
-        "valuation_method_scope": "仅PE/PB/PEG与相对估值",
-        "test_strategy": "只做配置校验，不跑真实股票样例",
+        "non_goals": "No trading advice,Not making position decisions",
+        "valuation_method_scope": "Only PE/PB/PEG and relative valuation",
+        "test_strategy": "Only perform configuration verification, do not run real stock samples",
     })
     payload = json.loads(raw)
 
     assert payload["status"] == "ok"
     assert payload["confirmation_required"] is True
     assert payload["confirmation_brief"]["overwrite_risk"]["requires_explicit_overwrite"] is True
-    assert "全局铁律：所有 Agent 一律禁止输出任何交易建议" in payload["confirmation_brief"]["recommendation_policy"]
+    assert "Global iron law: All Agents are prohibited from outputting any trading suggestions." in payload["confirmation_brief"]["recommendation_policy"]
 
 
 @pytest.mark.asyncio
 async def test_generate_confirmed_candidate_agent_rejects_without_confirmation():
     raw = await generate_confirmed_candidate_agent.ainvoke({
         "agent_id": "valuation_candidate_v1",
-        "agent_name": "估值候选Agent",
-        "target_responsibility": "输出A股估值结论",
+        "agent_name": "Valuation candidates Agent",
+        "target_responsibility": "Output A-share valuation conclusion",
         "tool_ids": "get_value_factor_bundle_tool",
-        "system_prompt": "你是一名估值分析师。",
+        "system_prompt": "You are a valuation analyst.",
         "confirmed": False,
     })
     payload = json.loads(raw)
 
     assert payload["status"] == "error"
-    assert "未拿到用户明确确认" in payload["message"]
+    assert "No explicit confirmation from the user has been obtained" in payload["message"]
 
 
 @pytest.mark.asyncio
@@ -2710,10 +2710,10 @@ async def test_generate_confirmed_candidate_agent_runs_one_shot_after_confirmati
 
     raw = await generate_confirmed_candidate_agent.ainvoke({
         "agent_id": "valuation_candidate_v1",
-        "agent_name": "估值候选Agent",
-        "target_responsibility": "输出A股估值结论",
+        "agent_name": "Valuation candidates Agent",
+        "target_responsibility": "Output A-share valuation conclusion",
         "tool_ids": "get_value_factor_bundle_tool",
-        "system_prompt": "你是一名估值分析师。",
+        "system_prompt": "You are a valuation analyst.",
         "output_field": "valuation_report",
         "confirmed": True,
         "allow_overwrite": False,
@@ -2730,7 +2730,7 @@ async def test_generate_confirmed_candidate_agent_runs_one_shot_after_confirmati
     assert payload["governance_boundary"]["workshop_governance"]["version_generated"] is True
     assert payload["governance_boundary"]["workshop_governance"]["version_id"] == "spec_nanobot_valuation_candidate_v1_v1"
     assert payload["governance_boundary"]["workshop_governance"]["official_acceptance_status"] == "not_started"
-    assert "样例" in payload["governance_boundary"]["warnings"][1]
+    assert "Sample" in payload["governance_boundary"]["warnings"][1]
     saved_agent = fake_db["agent_configs"]._items[0]
     assert saved_agent["metadata"]["spec_id"] == "agent_valuation_candidate"
     assert saved_agent["metadata"]["session_id"]
@@ -2740,7 +2740,7 @@ async def test_generate_confirmed_candidate_agent_runs_one_shot_after_confirmati
 
 def test_prepare_agent_requirement_intake_returns_follow_up_questions_for_vague_request():
     raw = prepare_agent_requirement_intake.invoke({
-        "user_request": "帮我做一个估值分析 agent",
+        "user_request": "Help me do a valuation analysis agent",
     })
     payload = json.loads(raw)
 
@@ -2755,9 +2755,9 @@ def test_prepare_agent_requirement_intake_returns_follow_up_questions_for_vague_
 
 def test_prepare_agent_requirement_intake_detects_style_preview_scope_questions():
     raw = prepare_agent_requirement_intake.invoke({
-        "user_request": "估值分析 agent 的报告样式是什么样？",
-        "target_responsibility": "输出A股估值结论",
-        "desired_output_shape": "估值报告样式预览",
+        "user_request": "What is the reporting style of the valuation analysis agent?",
+        "target_responsibility": "Output A-share valuation conclusion",
+        "desired_output_shape": "Valuation report style preview",
     })
     payload = json.loads(raw)
 
@@ -2792,8 +2792,8 @@ async def test_prepare_agent_generation_confirmation_blocks_stock_agent_when_int
 
     raw = await prepare_agent_generation_confirmation.ainvoke({
         "agent_id": "valuation_candidate_v1",
-        "agent_name": "估值候选Agent",
-        "target_responsibility": "输出A股估值结论",
+        "agent_name": "Valuation candidates Agent",
+        "target_responsibility": "Output A-share valuation conclusion",
         "tool_ids": "get_value_factor_bundle_tool",
     })
     payload = json.loads(raw)
@@ -2827,13 +2827,13 @@ async def test_prepare_agent_generation_confirmation_blocks_style_preview_when_s
 
     raw = await prepare_agent_generation_confirmation.ainvoke({
         "agent_id": "valuation_candidate_v1",
-        "agent_name": "估值候选Agent",
-        "target_responsibility": "输出A股估值结论",
+        "agent_name": "Valuation candidates Agent",
+        "target_responsibility": "Output A-share valuation conclusion",
         "tool_ids": "get_value_factor_bundle_tool",
-        "desired_output_shape": "估值报告样式预览",
-        "non_goals": "不做交易建议,不做仓位决策",
-        "valuation_method_scope": "仅PE/PB/PEG与相对估值",
-        "test_strategy": "只做配置校验，不跑真实股票样例",
+        "desired_output_shape": "Valuation report style preview",
+        "non_goals": "No trading advice,Not making position decisions",
+        "valuation_method_scope": "Only PE/PB/PEG and relative valuation",
+        "test_strategy": "Only perform configuration verification, do not run real stock samples",
     })
     payload = json.loads(raw)
 
@@ -2866,22 +2866,22 @@ async def test_prepare_agent_generation_confirmation_does_not_treat_structured_r
 
     raw = await prepare_agent_generation_confirmation.ainvoke({
         "agent_id": "valuation_candidate_v2",
-        "agent_name": "估值候选Agent",
-        "target_responsibility": "输出A股估值结论",
+        "agent_name": "Valuation candidates Agent",
+        "target_responsibility": "Output A-share valuation conclusion",
         "tool_ids": "get_value_factor_bundle_tool",
-        "desired_output_shape": "结构化估值报告",
-        "non_goals": "不做交易建议,不做仓位决策",
-        "valuation_method_scope": "仅PE/PB/PEG与相对估值",
-        "test_strategy": "只做配置校验，不跑真实股票样例",
+        "desired_output_shape": "Structured Valuation Report",
+        "non_goals": "No trading advice,Not making position decisions",
+        "valuation_method_scope": "Only PE/PB/PEG and relative valuation",
+        "test_strategy": "Only perform configuration verification, do not run real stock samples",
     })
     payload = json.loads(raw)
 
     assert payload["status"] == "ok"
     assert payload["confirmation_brief"]["report_contract"]["style_preview_mode"] == "structure_skeleton"
-    assert "仅限当前已确认职责相关章节" in payload["confirmation_brief"]["report_contract"]["content_scope"]
-    assert payload["confirmation_brief"]["report_contract_display"]["style_preview_mode"] == "只看结构骨架"
-    assert "如果以上内容确认无误，请回复：确认" in payload["confirmation_brief"]["user_confirmation_template"]
-    assert "报告内容边界" in payload["confirmation_brief"]["user_confirmation_template"]
+    assert "Only chapters related to currently confirmed responsibilities" in payload["confirmation_brief"]["report_contract"]["content_scope"]
+    assert payload["confirmation_brief"]["report_contract_display"]["style_preview_mode"] == "Just look at the structural skeleton"
+    assert "If the above content is confirmed to be correct, please reply: Confirm" in payload["confirmation_brief"]["user_confirmation_template"]
+    assert "Report content boundaries" in payload["confirmation_brief"]["user_confirmation_template"]
 
 
 @pytest.mark.asyncio
@@ -3093,7 +3093,7 @@ async def test_run_agent_workshop_real_data_test_records_evaluation(monkeypatch)
                 "evaluation_type": evaluation_type,
                 "scores": {"overall": 0.93},
                 "issues": [],
-                "recommendations": [user_feedback or "可以发布"],
+                "recommendations": [user_feedback or "can be published"],
                 "runtime_result": runtime_result,
             },
         }
@@ -3119,7 +3119,7 @@ async def test_run_agent_workshop_real_data_test_records_evaluation(monkeypatch)
         "version_id": "spec_financial_risk_v1_v2",
         "stock_symbol": "600519",
         "analysis_date": "2026-04-03",
-        "user_feedback": "结构完整",
+        "user_feedback": "Complete structure",
     })
     payload = json.loads(raw)
 
@@ -3130,7 +3130,7 @@ async def test_run_agent_workshop_real_data_test_records_evaluation(monkeypatch)
     assert payload["summary"]["decision"] == "pass"
     assert payload["summary"]["recorded_in_workshop"] is True
     assert payload["summary"]["official_acceptance_passed"] is True
-    assert "必须由用户手动确认后才能正式发布" in payload["message"]
+    assert "It must be manually confirmed by the user before it can be officially released." in payload["message"]
     assert payload["evaluation"]["evaluation_type"] == "production-review"
     assert payload["evaluation"]["runtime_result"]["output_text"] == "final report"
     assert payload["evaluation"]["runtime_result"]["report"] == "final report"
@@ -3165,7 +3165,7 @@ async def test_run_agent_workshop_real_data_test_returns_failed_stage_events(mon
 
     async def _fake_debug_version(self, version_id, llm, stock, user_goal="", prompt_overrides=None):
         del self, version_id, llm, stock, user_goal, prompt_overrides
-        raise RuntimeError("默认推理模型调用失败")
+        raise RuntimeError("Default inference model call failed")
 
     monkeypatch.setattr(
         "core.tools.implementations.agent_builder.nanobot_agent_builder_tools.get_mongo_db",
@@ -3233,8 +3233,8 @@ async def test_run_agent_workshop_real_data_test_exposes_non_pass_acceptance_cle
                 "decision": "revise",
                 "evaluation_type": evaluation_type,
                 "scores": {"overall": 0.68},
-                "issues": ["结论解释不稳定"],
-                "recommendations": ["补充修正后重新测试"],
+                "issues": ["The conclusion is unstable"],
+                "recommendations": ["Retest after adding corrections"],
                 "runtime_result": runtime_result,
             },
         }
@@ -3268,7 +3268,7 @@ async def test_run_agent_workshop_real_data_test_exposes_non_pass_acceptance_cle
     assert payload["official_acceptance_passed"] is False
     assert payload["summary"]["decision"] == "revise"
     assert payload["summary"]["official_acceptance_passed"] is False
-    assert "当前不能视为通过" in payload["message"]
+    assert "Currently cannot be considered passed" in payload["message"]
 
 
 @pytest.mark.asyncio
@@ -3400,10 +3400,10 @@ async def test_evaluate_agent_workshop_version_calls_service(monkeypatch):
         assert version_id == "spec_financial_risk_v1_v2"
         assert evaluation_type == "production-review"
         assert sample_set_id == "sample_001"
-        assert user_feedback == "需要补充解释"
+        assert user_feedback == "Need additional explanation"
         assert benchmark_outputs == [{"case_id": "c1", "output_text": "ok"}]
         assert runtime_result == {
-            "output_text": "正式报告",
+            "output_text": "formal report",
             "review_worker_mode": "nanobot-assisted",
             "nanobot_evidence_workers": True,
         }
@@ -3414,8 +3414,8 @@ async def test_evaluate_agent_workshop_version_calls_service(monkeypatch):
                 "evaluation_type": evaluation_type,
                 "decision": "revise",
                 "scores": {"overall": 0.72},
-                "issues": ["解释不完整"],
-                "recommendations": ["补充原因分析"],
+                "issues": ["Incomplete explanation"],
+                "recommendations": ["Supplementary cause analysis"],
             },
         }
 
@@ -3432,9 +3432,9 @@ async def test_evaluate_agent_workshop_version_calls_service(monkeypatch):
         "version_id": "spec_financial_risk_v1_v2",
         "evaluation_type": "production-review",
         "sample_set_id": "sample_001",
-        "user_feedback": "需要补充解释",
+        "user_feedback": "Need additional explanation",
         "benchmark_outputs_json": '[{"case_id":"c1","output_text":"ok"}]',
-        "runtime_result_json": '{"output_text":"正式报告"}',
+        "runtime_result_json": '{"output_text":"formal report"}',
     })
     payload = json.loads(raw)
 
@@ -3513,7 +3513,7 @@ async def test_evaluate_agent_workshop_version_rejects_missing_runtime_evidence(
     payload = json.loads(raw)
 
     assert payload["status"] == "error"
-    assert "production-review 提供了 runtime_result_json，但其中缺少可用证据" in payload["message"]
+    assert "production-review runtime_result_json is provided but lacks available evidence" in payload["message"]
 
 
 @pytest.mark.asyncio
@@ -3532,9 +3532,9 @@ async def test_evaluate_agent_workshop_version_accepts_debug_shaped_runtime_resu
         assert version_id == "spec_financial_risk_v1_v2"
         assert evaluation_type == "production-review"
         assert runtime_result == {
-            "report": "正式报告",
+            "report": "formal report",
             "raw_result": {
-                "risk_report": "正式报告",
+                "risk_report": "formal report",
                 "tool_trace": [{"tool_name": "get_quality_factor_bundle_tool", "success": True}],
             },
             "review_worker_mode": "nanobot-assisted",
@@ -3564,7 +3564,7 @@ async def test_evaluate_agent_workshop_version_accepts_debug_shaped_runtime_resu
     raw = await evaluate_agent_workshop_version.ainvoke({
         "version_id": "spec_financial_risk_v1_v2",
         "evaluation_type": "production-review",
-        "runtime_result_json": '{"report":"正式报告","raw_result":{"risk_report":"正式报告","tool_trace":[{"tool_name":"get_quality_factor_bundle_tool","success":true}]}}',
+        "runtime_result_json": '{"report":"formal report","raw_result":{"risk_report":"formal report","tool_trace":[{"tool_name":"get_quality_factor_bundle_tool","success":true}]}}',
     })
     payload = json.loads(raw)
 
@@ -3633,14 +3633,14 @@ async def test_iterate_agent_workshop_version_calls_service(monkeypatch):
     async def _fake_iterate_version(self, version_id, feedback=""):
         del self
         assert version_id == "spec_financial_risk_v1_v2"
-        assert feedback == "补充风险分层"
+        assert feedback == "Supplementary risk stratification"
         return {
             "source_version_id": version_id,
             "session_id": "session_iter_001",
             "spec_id": "spec_financial_risk_v1",
             "version_id": "spec_financial_risk_v1_v3",
             "version_status": "draft",
-            "ai_message": "下一轮已创建",
+            "ai_message": "Next round has been created",
         }
 
     monkeypatch.setattr(
@@ -3654,7 +3654,7 @@ async def test_iterate_agent_workshop_version_calls_service(monkeypatch):
 
     raw = await iterate_agent_workshop_version.ainvoke({
         "version_id": "spec_financial_risk_v1_v2",
-        "feedback": "补充风险分层",
+        "feedback": "Supplementary risk stratification",
     })
     payload = json.loads(raw)
 

@@ -1,6 +1,6 @@
 /**
- * 认证工具函数
- * 统一处理认证相关的逻辑
+ * Authentication tool function
+ * Unified processing of authentication-related logic
  */
 
 import { useAuthStore } from '@/stores/auth'
@@ -8,108 +8,108 @@ import router from '@/router'
 import { ElMessage } from 'element-plus'
 
 /**
- * 检查是否是认证错误
+ * Check if it is an authentication error
  */
 export const isAuthError = (error: any): boolean => {
   if (!error) return false
 
-  // 检查 HTTP 状态码
+  // Check HTTP status codes
   if (error.response?.status === 401) {
     return true
   }
 
-  // 检查业务错误码
+  // Check business error codes
   const code = error.code || error.response?.data?.code
   if (code === 401 || code === 40101 || code === 40102 || code === 40103) {
     return true
   }
 
-  // 检查错误消息
+  // Check the error message
   const message = error.message || error.response?.data?.message || ''
   const authKeywords = [
-    '认证失败',
-    '登录已过期',
-    '未授权',
+    'Authentication failed',
+    'Login has expired',
+    'Unauthorized',
     'unauthorized',
     'token',
     'Token',
     'TOKEN',
-    '请重新登录'
+    'Please log in again'
   ]
 
   return authKeywords.some(keyword => message.includes(keyword))
 }
 
 /**
- * 处理认证错误
- * 清除认证信息并跳转到登录页
+ * Handle authentication errors
+ * Clear authentication information and jump to login page
  */
 export const handleAuthError = (error?: any, showMessage = true): void => {
-  console.log('🔒 处理认证错误:', error)
+  console.log('🔒 Handle authentication errors:', error)
 
   const authStore = useAuthStore()
 
-  // 清除认证信息
+  // Clear authentication information
   authStore.clearAuthInfo()
 
-  // 显示错误消息
+  // Show error message
   if (showMessage) {
-    const message = error?.message || error?.response?.data?.message || '登录已过期，请重新登录'
+    const message = error?.message || error?.response?.data?.message || 'Login has expired, please log in again'
     ElMessage.error(message)
   }
 
-  // 跳转到登录页
+  // Jump to login page
   const currentPath = router.currentRoute.value.fullPath
   if (currentPath !== '/login') {
-    // 保存当前路径，登录后跳转回来
+    // Save the current path and jump back after logging in
     authStore.setRedirectPath(currentPath)
     router.push('/login')
   }
 }
 
 /**
- * 检查 token 是否有效
+ * Check if the token is valid
  */
 export const isTokenValid = (token: string | null): boolean => {
   if (!token || typeof token !== 'string') {
     return false
   }
 
-  // 检查是否是 mock token
+  // Check if it is mock token
   if (token === 'mock-token' || token.startsWith('mock-')) {
-    console.warn('⚠️ 检测到 mock token')
+    console.warn('⚠️ detected mock token')
     return false
   }
 
-  // JWT token 应该有 3 个部分，用 . 分隔
+  // JWT token There should be 3 parts separated by .
   const parts = token.split('.')
   if (parts.length !== 3) {
-    console.warn('⚠️ Token 格式无效')
+    console.warn('⚠️ Token Invalid format')
     return false
   }
 
-  // 尝试解析 token payload
+  // try to parse token payload
   try {
     const payload = JSON.parse(atob(parts[1]))
     
-    // 检查是否过期
+    // Check if expired
     if (payload.exp) {
       const now = Math.floor(Date.now() / 1000)
       if (payload.exp < now) {
-        console.warn('⚠️ Token 已过期')
+        console.warn('⚠️ Token Expired')
         return false
       }
     }
 
     return true
   } catch (error) {
-    console.warn('⚠️ Token 解析失败:', error)
+    console.warn('⚠️ Token Parsing failed:', error)
     return false
   }
 }
 
 /**
- * 从 token 中提取用户信息
+ * Extract user information from token
  */
 export const parseToken = (token: string): any => {
   try {
@@ -121,13 +121,13 @@ export const parseToken = (token: string): any => {
     const payload = JSON.parse(atob(parts[1]))
     return payload
   } catch (error) {
-    console.error('❌ Token 解析失败:', error)
+    console.error('❌ Token Parsing failed:', error)
     return null
   }
 }
 
 /**
- * 获取 token 剩余有效时间（秒）
+ * Get the remaining validity time of the token (seconds)
  */
 export const getTokenRemainingTime = (token: string): number => {
   const payload = parseToken(token)
@@ -142,7 +142,7 @@ export const getTokenRemainingTime = (token: string): number => {
 }
 
 /**
- * 检查 token 是否即将过期（默认 5 分钟）
+ * Check if the token is about to expire (default 5 minutes)
  */
 export const isTokenExpiringSoon = (token: string, thresholdSeconds = 300): boolean => {
   const remaining = getTokenRemainingTime(token)
@@ -150,7 +150,7 @@ export const isTokenExpiringSoon = (token: string, thresholdSeconds = 300): bool
 }
 
 /**
- * 自动刷新 token（如果即将过期）
+ * Automatically refresh token (if it is about to expire)
  */
 export const autoRefreshToken = async (): Promise<boolean> => {
   const authStore = useAuthStore()
@@ -159,20 +159,20 @@ export const autoRefreshToken = async (): Promise<boolean> => {
     return false
   }
 
-  // 检查 token 是否即将过期
+  // Check if the token is about to expire
   if (isTokenExpiringSoon(authStore.token)) {
-    console.log('🔄 Token 即将过期，自动刷新...')
+    console.log('🔄 Token About to expire, automatically refresh...')
     try {
       const success = await authStore.refreshAccessToken()
       if (success) {
-        console.log('✅ Token 自动刷新成功')
+        console.log('✅ Token Automatic refresh successful')
         return true
       } else {
-        console.log('❌ Token 自动刷新失败')
+        console.log('❌ Token Auto refresh failed')
         return false
       }
     } catch (error) {
-      console.error('❌ Token 自动刷新异常:', error)
+      console.error('❌ Token Auto refresh exception:', error)
       return false
     }
   }
@@ -181,14 +181,14 @@ export const autoRefreshToken = async (): Promise<boolean> => {
 }
 
 /**
- * 设置定时刷新 token
+ * Set scheduled refresh token
  */
 export const setupTokenRefreshTimer = (): void => {
-  // 每分钟检查一次
+  // Check every minute
   setInterval(() => {
     autoRefreshToken()
   }, 60000)
 
-  console.log('✅ Token 自动刷新定时器已启动')
+  console.log('✅ Token Auto-refresh timer started')
 }
 

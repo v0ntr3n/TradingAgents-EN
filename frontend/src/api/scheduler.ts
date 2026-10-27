@@ -1,9 +1,9 @@
 /**
- * 定时任务相关API
+ * Related to scheduled tasks API
  */
 import { ApiClient } from './request'
 
-// 挂起的执行记录
+// Pending execution records
 export interface SuspendedExecution {
   execution_id: string
   progress: number
@@ -25,11 +25,11 @@ export interface RunningExecution {
   message?: string
 }
 
-// 任务状态
+// Task status
 export interface JobStatus {
-  id: string  // 后端返回的是 id，不是 job_id
+  id: string  // The backend returns the id, not job_id
   name: string
-  paused: boolean  // 后端返回的是 paused，不是 enabled
+  paused: boolean  // The backend returns paused, not enabled
   next_run_time?: string
   last_run_time?: string
   trigger?: string
@@ -37,24 +37,24 @@ export interface JobStatus {
   kwargs?: Record<string, unknown>
   display_name?: string
   description?: string
-  has_suspended_execution?: boolean  // 是否有挂起的执行记录
-  suspended_execution?: SuspendedExecution  // 挂起的执行记录详情
+  has_suspended_execution?: boolean  // Is there any pending execution record?
+  suspended_execution?: SuspendedExecution  // Pending execution record details
   has_running_execution?: boolean
   running_execution?: RunningExecution
 }
 
-// 任务进度
+// Task progress
 export interface JobProgress {
   job_id: string
-  execution_id?: string  // 🔥 执行记录ID，用于终止操作
+  execution_id?: string  // 🔥 Execution record ID, used to terminate the operation
   progress: number
   status: 'running' | 'cancelling' | 'suspended' | 'success' | 'failed' | 'cancelled' | 'unknown'
   message?: string
   current_item?: string
   total_items?: number
   processed_items?: number
-  started_at?: string  // 开始时间
-  updated_at?: string   // 更新时间
+  started_at?: string  // start time
+  updated_at?: string   // Update time
 }
 
 export interface JobHistory {
@@ -74,7 +74,7 @@ export interface SchedulerStats {
 
 export type Job = JobStatus
 
-// API响应格式
+// API response format
 export interface ApiResponse<T = any> {
   success: boolean
   message: string
@@ -82,32 +82,32 @@ export interface ApiResponse<T = any> {
 }
 
 /**
- * 获取所有定时任务列表
+ * Get a list of all scheduled tasks
  */
 export const getJobs = (): Promise<ApiResponse<JobStatus[]>> => {
   return ApiClient.get('/api/scheduler/jobs')
 }
 
 /**
- * 获取任务详情
+ * Get task details
  */
 export const getJobDetail = (jobId: string): Promise<ApiResponse<JobStatus>> => {
   return ApiClient.get(`/api/scheduler/jobs/${jobId}`)
 }
 
 /**
- * 获取任务实时进度
+ * Get real-time progress of tasks
  */
 export const getJobProgress = (jobId: string): Promise<ApiResponse<JobProgress>> => {
   return ApiClient.get(`/api/scheduler/jobs/${jobId}/progress`)
 }
 
 /**
- * 手动触发任务
+ * Manually trigger tasks
  */
 export const triggerJob = (jobId: string, options?: {
   force?: boolean
-  incremental?: boolean  // 是否增量同步（仅历史数据同步任务有效）
+  incremental?: boolean  // Whether to incrementally synchronize (only historical data synchronization tasks are valid)
 }): Promise<ApiResponse<void>> => {
   const params = new URLSearchParams()
   if (options?.force) {
@@ -121,42 +121,42 @@ export const triggerJob = (jobId: string, options?: {
 }
 
 /**
- * 暂停任务
+ * Pause task
  */
 export const pauseJob = (jobId: string): Promise<ApiResponse<void>> => {
   return ApiClient.post(`/api/scheduler/jobs/${jobId}/pause`)
 }
 
 /**
- * 恢复任务
+ * recovery task
  */
 export const resumeJob = (jobId: string): Promise<ApiResponse<void>> => {
   return ApiClient.post(`/api/scheduler/jobs/${jobId}/resume`)
 }
 
 /**
- * 恢复挂起的任务执行（从上次中断的位置继续）
+ * Resumes suspended task execution (continues where it left off)
  */
 export const resumeSuspendedExecution = (executionId: string): Promise<ApiResponse<void>> => {
   return ApiClient.post(`/api/scheduler/executions/${executionId}/resume`)
 }
 
 /**
- * 取消挂起的任务执行记录（用户选择重新开始时使用）
+ * Cancel the pending task execution record (used when the user chooses to restart)
  */
 export const cancelSuspendedExecution = (executionId: string): Promise<ApiResponse<void>> => {
   return ApiClient.post(`/api/scheduler/executions/${executionId}/cancel`)
 }
 
 /**
- * 获取调度器统计信息
+ * Get scheduler statistics
  */
 export const getSchedulerStats = (): Promise<ApiResponse<any>> => {
   return ApiClient.get('/api/scheduler/stats')
 }
 
 /**
- * 更新任务元数据（显示名称和描述）
+ * Update task metadata (display name and description)
  */
 export const updateJobMetadata = (
   jobId: string,
@@ -169,7 +169,7 @@ export const updateJobMetadata = (
 }
 
 /**
- * 重新调度任务（修改CRON表达式）
+ * Rescheduling tasks (modifying CRON expression)
  */
 export const rescheduleJob = (
   jobId: string,
@@ -179,7 +179,7 @@ export const rescheduleJob = (
 }
 
 /**
- * 获取任务执行历史（所有任务）
+ * Get task execution history (all tasks)
  */
 export const getJobExecutions = (params?: {
   job_id?: string
@@ -205,7 +205,7 @@ export const getJobExecutions = (params?: {
 }
 
 /**
- * 获取指定任务的执行历史
+ * Get the execution history of a specified task
  */
 export const getSingleJobExecutions = (
   jobId: string,
@@ -232,14 +232,14 @@ export const getSingleJobExecutions = (
 }
 
 /**
- * 取消执行记录（通用，包括挂起的执行）
+ * Cancel execution logging (general, including pending executions)
  */
 export const cancelExecution = (executionId: string): Promise<ApiResponse<void>> => {
   return ApiClient.post(`/api/scheduler/executions/${executionId}/cancel`)
 }
 
 /**
- * 标记执行记录为失败
+ * Mark execution record as failed
  */
 export const markExecutionFailed = (
   executionId: string,
@@ -254,29 +254,29 @@ export const markExecutionFailed = (
 }
 
 /**
- * 删除执行记录
+ * Delete execution record
  */
 export const deleteExecution = (executionId: string): Promise<ApiResponse<void>> => {
   return ApiClient.delete(`/api/scheduler/executions/${executionId}`)
 }
 
 /**
- * 重试失败的股票（只重试可重试的错误，跳过无数据的错误）
- * 适用于历史数据同步任务（Tushare/AKShare）
+ * Retry failed stocks (retry only retryable errors, skip errors with no data)
+ * Suitable for historical data synchronization tasks (Tushare/AKShare)
  */
 export const retryFailedSymbols = (
   executionId: string,
   options?: {
-    start_date?: string  // 开始日期（可选，默认使用原任务的日期）
-    end_date?: string     // 结束日期（可选，默认使用原任务的日期）
-    period?: 'daily' | 'weekly' | 'monthly'  // 数据周期，默认daily
+    start_date?: string  // Start date (optional, the date of the original task is used by default)
+    end_date?: string     // End date (optional, the date of the original task is used by default)
+    period?: 'daily' | 'weekly' | 'monthly'  // Data period, default daily
   }
 ): Promise<ApiResponse<{
-  total_retried: number      // 重试的股票总数
-  success_count: number      // 成功数
-  error_count: number        // 失败数
-  no_data_count: number     // 无数据数（已跳过）
-  retryable_errors_count: number  // 可重试错误数
+  total_retried: number      // Total number of stocks to retry
+  success_count: number      // Number of successes
+  error_count: number        // Number of failures
+  no_data_count: number     // No data count (skipped)
+  retryable_errors_count: number  // Number of retryable errors
 }>> => {
   const params = new URLSearchParams()
   if (options?.start_date) {

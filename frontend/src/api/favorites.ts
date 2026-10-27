@@ -1,8 +1,8 @@
 import { ApiClient } from './request'
 
 export interface FavoriteItem {
-  symbol?: string  // 主字段：6位股票代码
-  stock_code?: string  // 兼容字段（已废弃）
+  symbol?: string  // Main field: 6-digit stock code
+  stock_code?: string  // Compatible fields (deprecated)
   stock_name: string
   market: string
   board?: string
@@ -18,8 +18,8 @@ export interface FavoriteItem {
 }
 
 export interface AddFavoriteReq {
-  symbol?: string  // 主字段：6位股票代码
-  stock_code?: string  // 兼容字段（已废弃）
+  symbol?: string  // Main field: 6-digit stock code
+  stock_code?: string  // Compatible fields (deprecated)
   stock_name: string
   market?: string
   tags?: string[]
@@ -54,44 +54,44 @@ export interface FavoritesRealtimeSyncTaskStatus extends FavoritesRealtimeSyncTa
 
 export const favoritesApi = {
   /**
-   * 获取收藏列表
+   * Get list of favorites
    */
   list: () => ApiClient.get<FavoriteItem[]>('/api/favorites'),
 
   /**
-   * 添加收藏
-   * @param payload 收藏信息（需包含 symbol 或 stock_code）
+   * Add to favorites
+   * @param payload Collection information (need to include symbol or stock_code)
    */
   add: (payload: AddFavoriteReq) => ApiClient.post<{ message: string; symbol?: string; stock_code?: string }>('/api/favorites', payload),
 
   /**
-   * 更新收藏
-   * @param symbol 股票代码（6位）
-   * @param payload 更新内容
+   * Update collection
+   * @param symbol Stock code (6 digits)
+   * @param payload Update content
    */
   update: (symbol: string, payload: Partial<Pick<FavoriteItem, 'tags' | 'notes' | 'alert_price_high' | 'alert_price_low'>>) =>
     ApiClient.put<{ message: string; symbol?: string; stock_code?: string }>(`/api/favorites/${symbol}`, payload),
 
   /**
-   * 删除收藏
-   * @param symbol 股票代码（6位）
+   * Delete favorite
+   * @param symbol Stock code (6 digits)
    */
   remove: (symbol: string) => ApiClient.delete<{ message: string; symbol?: string; stock_code?: string }>(`/api/favorites/${symbol}`),
 
   /**
-   * 检查是否已收藏
-   * @param symbol 股票代码（6位）
+   * Check if it has been collected
+   * @param symbol Stock code (6 digits)
    */
   check: (symbol: string) => ApiClient.get<{ symbol?: string; stock_code?: string; is_favorite: boolean }>(`/api/favorites/check/${symbol}`),
 
   /**
-   * 获取所有标签
+   * Get all tags
    */
   tags: () => ApiClient.get<string[]>('/api/favorites/tags'),
 
   /**
-   * 同步股票关注列表实时行情
-   * @param data_source 数据源（tushare/akshare）
+   * Synchronize real-time quotes of stock watchlists
+   * @param data_source Data source (tushare/akshare)
    */
   syncRealtime: (data_source: string = 'tushare') =>
     ApiClient.post<FavoritesRealtimeSyncTaskSubmission>('/api/favorites/sync-realtime', { data_source }, {

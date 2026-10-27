@@ -1,4 +1,4 @@
-// 用户信息接口
+// User information interface
 export interface User {
   id: string
   username: string
@@ -11,14 +11,14 @@ export interface User {
   updated_at: string
   last_login?: string
   
-  // 用户偏好
+  // User preferences
   preferences: UserPreferences
   
-  // 配额和限制
+  // Quotas and limits
   daily_quota: number
   concurrent_limit: number
   
-  // 统计信息
+  // Statistics
   total_analyses: number
   successful_analyses: number
   failed_analyses: number
@@ -30,24 +30,24 @@ export interface AssistantSettings {
   custom_instructions?: string
 }
 
-// 用户偏好设置
+// User preferences
 export interface UserPreferences {
-  // 分析偏好
-  default_market: 'A股'
-  default_depth: '1' | '2' | '3' | '4' | '5'  // 1-5级分析深度
-  default_analysts?: string[]  // 默认分析师列表：市场分析师、基本面分析师、新闻分析师、社媒分析师
+  // Analyze preferences
+  default_market: 'A shares'
+  default_depth: '1' | '2' | '3' | '4' | '5'  // 1-5 level analysis depth
+  default_analysts?: string[]  // Default analyst list: market analysts, fundamental analysts, news analysts, social media analysts
   auto_refresh?: boolean
   refresh_interval?: number
-  risk_preference?: 'conservative' | 'neutral' | 'aggressive'  // 风险偏好：保守/中性/激进
+  risk_preference?: 'conservative' | 'neutral' | 'aggressive'  // Risk Appetite: Conservative/Neutral/Aggressive
 
-  // 外观设置
+  // Appearance settings
   ui_theme: 'light' | 'dark' | 'auto'
   sidebar_width?: number
 
-  // 语言和地区
+  // language and region
   language: 'zh-CN' | 'en-US'
 
-  // 通知设置
+  // Notification settings
   notifications_enabled: boolean
   email_notifications: boolean
   desktop_notifications?: boolean
@@ -60,7 +60,7 @@ export interface UserUpdatePayload extends Partial<Omit<User, 'preferences'>> {
   preferences?: Partial<UserPreferences>
 }
 
-// 登录表单
+// Login form
 export interface LoginForm {
   username: string
   password: string
@@ -68,7 +68,7 @@ export interface LoginForm {
   captcha?: string
 }
 
-// 注册表单
+// Registration form
 export interface RegisterForm {
   username: string
   email: string
@@ -79,26 +79,26 @@ export interface RegisterForm {
   invitation_code?: string
 }
 
-// 修改密码表单
+// Change password form
 export interface ChangePasswordForm {
   old_password: string
   new_password: string
   confirm_password: string
 }
 
-// 重置密码表单
+// Reset password form
 export interface ResetPasswordForm {
   email: string
   captcha?: string
 }
 
-// 用户权限信息
+// User permission information
 export interface UserPermissions {
   permissions: string[]
   roles: string[]
 }
 
-// 登录响应
+// Login response
 export interface LoginResponse {
   access_token: string
   refresh_token: string
@@ -107,14 +107,14 @@ export interface LoginResponse {
   user: User
 }
 
-// Token刷新响应
+// Token refresh response
 export interface RefreshTokenResponse {
   access_token: string
   refresh_token?: string
   expires_in: number
 }
 
-// 用户会话信息
+// User session information
 export interface UserSession {
   session_id: string
   user_id: string
@@ -125,7 +125,7 @@ export interface UserSession {
   user_agent?: string
 }
 
-// 用户统计信息
+// User statistics
 export interface UserStats {
   total_analyses: number
   successful_analyses: number
@@ -137,7 +137,7 @@ export interface UserStats {
   current_concurrent: number
 }
 
-// 用户活动日志
+// User activity log
 export interface UserActivity {
   id: string
   user_id: string
@@ -149,21 +149,21 @@ export interface UserActivity {
   created_at: string
 }
 
-// 用户配置更新
+// User configuration update
 export interface UserConfigUpdate {
   preferences?: Partial<UserPreferences>
   daily_quota?: number
   concurrent_limit?: number
 }
 
-// 验证码信息
+// Verification code information
 export interface CaptchaInfo {
   captcha_id: string
   captcha_image: string
   expires_in: number
 }
 
-// 邀请码信息
+// Invitation code information
 export interface InvitationCode {
   code: string
   created_by: string

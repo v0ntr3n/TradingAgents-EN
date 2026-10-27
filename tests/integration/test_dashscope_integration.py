@@ -1,54 +1,54 @@
 #!/usr/bin/env python3
 """
-阿里百炼大模型集成测试脚本
-用于验证 TradingAgents 中的阿里百炼集成是否正常工作
+Alibaba Bailian large model integration test script
+Used to verify whether the Alibaba Bailian integration in TradingAgents is working properly
 """
 
 import os
 import sys
 from pathlib import Path
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
 
-# 加载 .env 文件
+# Load .env file
 load_dotenv()
 
 def test_import():
-    """测试导入是否正常"""
-    print("🔍 测试1: 检查模块导入...")
+    """Test whether the import is normal"""
+    print("🔍 test 1: Check module imports...")
     try:
         from tradingagents.llm_adapters import ChatDashScope
-        print("✅ ChatDashScope 导入成功")
+        print("✅ ChatDashScope Import successful")
         
         from tradingagents.graph.trading_graph import TradingAgentsGraph
-        print("✅ TradingAgentsGraph 导入成功")
+        print("✅ TradingAgentsGraph Import successful")
         
         return True
     except ImportError as e:
-        print(f"❌ 导入失败: {e}")
+        print(f"❌ Import failed: {e}")
         return False
 
 def test_api_key():
-    """测试API密钥配置"""
-    print("\n🔍 测试2: 检查API密钥配置...")
+    """Test API key configuration"""
+    print("\n🔍 test 2: Check API key configuration...")
     
     dashscope_key = os.getenv('DASHSCOPE_API_KEY')
     finnhub_key = os.getenv('FINNHUB_API_KEY')
     
     if not dashscope_key:
-        print("❌ 未找到 DASHSCOPE_API_KEY 环境变量")
-        print("💡 请设置: set DASHSCOPE_API_KEY=your_api_key")
+        print("❌ DASHSCOPE_API_KEY environment variable not found")
+        print("💡 Please set: set DASHSCOPE_API_KEY=your_api_key")
         return False
     else:
         print(f"✅ DASHSCOPE_API_KEY: {dashscope_key[:10]}...")
     
     if not finnhub_key:
-        print("❌ 未找到 FINNHUB_API_KEY 环境变量")
-        print("💡 请设置: set FINNHUB_API_KEY=your_api_key")
+        print("❌ FINNHUB_API_KEY environment variable not found")
+        print("💡 Please set: set FINNHUB_API_KEY=your_api_key")
         return False
     else:
         print(f"✅ FINNHUB_API_KEY: {finnhub_key[:10]}...")
@@ -56,86 +56,86 @@ def test_api_key():
     return True
 
 def test_dashscope_connection():
-    """测试阿里百炼连接"""
-    print("\n🔍 测试3: 检查阿里百炼连接...")
+    """Test Alibaba Bailian connection"""
+    print("\n🔍 test 3: Check Ali Bailian connection...")
     
     try:
         import dashscope
         from dashscope import Generation
         
-        # 设置API密钥
+        # Set API key
         dashscope.api_key = os.getenv('DASHSCOPE_API_KEY')
         
-        # 测试简单调用
+        # Test simple calls
         response = Generation.call(
             model="qwen-turbo",
-            messages=[{"role": "user", "content": "你好，请回复'连接成功'"}],
+            messages=[{"role": "user", "content": "Hello, please reply'Connection successful'"}],
             result_format="message"
         )
         
         if response.status_code == 200:
             content = response.output.choices[0].message.content
-            print(f"✅ 阿里百炼连接成功: {content}")
+            print(f"✅ Alibaba Bailian connection successful: {content}")
             return True
         else:
-            print(f"❌ 阿里百炼连接失败: {response.code} - {response.message}")
+            print(f"❌ Alibaba Bailian connection failed: {response.code} - {response.message}")
             return False
             
     except Exception as e:
-        print(f"❌ 阿里百炼连接测试失败: {e}")
+        print(f"❌ Alibaba Bailian connection test failed: {e}")
         return False
 
 def test_langchain_adapter():
-    """测试LangChain适配器"""
-    print("\n🔍 测试4: 检查LangChain适配器...")
+    """Test the LangChain adapter"""
+    print("\n🔍 test 4: Check LangChain adapter...")
     
     try:
         from tradingagents.llm_adapters import ChatDashScope
         from langchain_core.messages import HumanMessage
         
-        # 创建适配器实例
+        # Create adapter instance
         llm = ChatDashScope(model="qwen-turbo")
         
-        # 测试调用
-        messages = [HumanMessage(content="请回复'适配器工作正常'")]
+        # test call
+        messages = [HumanMessage(content="please reply'Adapter works fine'")]
         response = llm.invoke(messages)
         
-        print(f"✅ LangChain适配器工作正常: {response.content}")
+        print(f"✅ LangChain Adapter works fine: {response.content}")
         return True
         
     except Exception as e:
-        print(f"❌ LangChain适配器测试失败: {e}")
+        print(f"❌ LangChain Adapter test failed: {e}")
         return False
 
 def test_trading_graph_config():
-    """测试TradingGraph配置"""
-    print("\n🔍 测试5: 检查TradingGraph配置...")
+    """Test TradingGraph configuration"""
+    print("\n🔍 test 5: Check TradingGraph configuration...")
     
     try:
         from tradingagents.graph.trading_graph import TradingAgentsGraph
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建阿里百炼配置
+        # Create Alibaba Bailian configuration
         config = DEFAULT_CONFIG.copy()
         config["llm_provider"] = "dashscope"
         config["deep_think_llm"] = "qwen-plus"
         config["quick_think_llm"] = "qwen-turbo"
         
-        # 尝试初始化（不运行分析）
+        # Attempt to initialize (do not run analysis)
         ta = TradingAgentsGraph(debug=False, config=config)
         
-        print("✅ TradingGraph 配置成功")
-        print(f"   深度思考模型: {config['deep_think_llm']}")
-        print(f"   快速思考模型: {config['quick_think_llm']}")
+        print("✅ TradingGraph Configuration successful")
+        print(f"   deep thinking model: {config['deep_think_llm']}")
+        print(f"   quick thinking model: {config['quick_think_llm']}")
         return True
         
     except Exception as e:
-        print(f"❌ TradingGraph 配置失败: {e}")
+        print(f"❌ TradingGraph Configuration failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("🚀 阿里百炼大模型集成测试")
+    """Main test function"""
+    print("🚀 Alibaba Bailian large model integration test")
     print("=" * 50)
     
     tests = [
@@ -154,23 +154,23 @@ def main():
             if test():
                 passed += 1
         except Exception as e:
-            print(f"❌ 测试异常: {e}")
+            print(f"❌ Test exception: {e}")
     
     print("\n" + "=" * 50)
-    print(f"📊 测试结果: {passed}/{total} 通过")
+    print(f"📊 Test results: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 所有测试通过！阿里百炼集成工作正常")
-        print("\n💡 下一步:")
-        print("   1. 运行 python demo_dashscope.py 进行完整测试")
-        print("   2. 或使用 python -m cli.main analyze 启动交互式分析")
+        print("🎉 All tests passed! Alibaba Bailian integration works normally")
+        print("\n💡 Next step:")
+        print("   1. Run python demo_dashscope.py for complete testing")
+        print("   2. Or use python -m cli.main analyze to start interactive analysis")
     else:
-        print("⚠️  部分测试失败，请检查配置")
-        print("\n🔧 故障排除:")
-        print("   1. 确认已安装 dashscope: pip install dashscope")
-        print("   2. 检查API密钥是否正确设置")
-        print("   3. 确认网络连接正常")
-        print("   4. 查看详细错误信息")
+        print("⚠️  Some tests failed, please check the configuration")
+        print("\n🔧 Troubleshooting:")
+        print("   1. Confirm installed dashscope: pip install dashscope")
+        print("   2. Check if the API key is set correctly")
+        print("   3. Confirm that the network connection is normal")
+        print("   4. View detailed error information")
     
     return passed == total
 

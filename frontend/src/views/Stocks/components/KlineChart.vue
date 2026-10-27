@@ -6,7 +6,7 @@
         <span>{{ title }}</span>
       </div>
       <div class="header-controls">
-        <!-- 技术指标切换 -->
+        <!-- Technical indicator switch -->
         <div class="indicator-tabs">
           <button
             v-for="ind in indicatorOptions"
@@ -18,7 +18,7 @@
             {{ ind.label }}
           </button>
         </div>
-        <!-- 周期切换 -->
+        <!-- Cycle switching -->
         <div class="period-tabs">
           <button
             v-for="p in periodOptions"
@@ -36,15 +36,15 @@
       <div class="kline-container">
         <v-chart class="k-chart" :option="kOption" autoresize />
         <div class="kline-legend">
-          <!-- 动态图例 -->
+          <!-- Dynamic legend -->
           <template v-if="activeIndicator === 'ma'">
             <div class="kline-legend-item"><span class="kline-legend-dot ma5"></span> MA5</div>
             <div class="kline-legend-item"><span class="kline-legend-dot ma20"></span> MA20</div>
           </template>
           <template v-else-if="activeIndicator === 'boll'">
-            <div class="kline-legend-item"><span class="kline-legend-dot boll-up"></span> BOLL 上轨</div>
-            <div class="kline-legend-item"><span class="kline-legend-dot boll-mid"></span> 中轨</div>
-            <div class="kline-legend-item"><span class="kline-legend-dot boll-low"></span> 下轨</div>
+            <div class="kline-legend-item"><span class="kline-legend-dot boll-up"></span> BOLL On track</div>
+            <div class="kline-legend-item"><span class="kline-legend-dot boll-mid"></span> middle track</div>
+            <div class="kline-legend-item"><span class="kline-legend-dot boll-low"></span> Lower track</div>
           </template>
           <template v-else-if="activeIndicator === 'macd'">
             <div class="kline-legend-item"><span class="kline-legend-dot macd-dif"></span> DIF</div>
@@ -61,13 +61,13 @@
             <div class="kline-legend-item"><span class="kline-legend-dot rsi-12"></span> RSI12</div>
             <div class="kline-legend-item"><span class="kline-legend-dot rsi-24"></span> RSI24</div>
           </template>
-          <div class="kline-legend-item"><span class="kline-legend-dot vol"></span> 成交量</div>
+          <div class="kline-legend-item"><span class="kline-legend-dot vol"></span> Volume</div>
           <span class="kline-meta">
-            数据源：{{ klineSource || '-' }} · 最近：{{ lastKTime || '-' }} · 收：{{ fmtPrice(lastKClose) }}
+            Data source:{{ klineSource || '-' }} · Recently:{{ lastKTime || '-' }} · Receive:{{ fmtPrice(lastKClose) }}
           </span>
         </div>
         <div v-if="!category.length" class="kline-empty">
-          <el-empty description="暂无K线数据" :image-size="80" />
+          <el-empty description="No K line data yet" :image-size="80" />
         </div>
       </div>
     </div>
@@ -83,7 +83,7 @@ import { CandlestickChart, LineChart, BarChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, DataZoomComponent, LegendComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 
-// 注册 K 线图所需的所有 ECharts 组件
+// Register all ECharts components required for candlestick charts
 echartsUse([
   CandlestickChart,
   LineChart,
@@ -113,7 +113,7 @@ defineEmits<{
   (e: 'updatePeriod', period: string): void
 }>()
 
-// 当前选中的技术指标
+// Currently selected technical indicator
 const activeIndicator = ref<IndicatorKey>('ma')
 
 const indicatorOptions: { key: IndicatorKey; label: string }[] = [
@@ -129,9 +129,9 @@ function fmtPrice(v: any) {
   return Number.isFinite(n) ? n.toFixed(2) : '-'
 }
 
-// ════════ 技术指标计算函数 ════════
+// ════════ Technical indicator calculation function ════════
 
-/** 移动平均线 MA */
+/** moving average MA */
 function calcMA(data: number[][], period: number): (number | null)[] {
   const result: (number | null)[] = []
   for (let i = 0; i < data.length; i++) {
@@ -141,14 +141,14 @@ function calcMA(data: number[][], period: number): (number | null)[] {
     }
     let sum = 0
     for (let j = 0; j < period; j++) {
-      sum += data[i - j][1] // 收盘价
+      sum += data[i - j][1] // closing price
     }
     result.push(Number((sum / period).toFixed(2)))
   }
   return result
 }
 
-/** KDJ(9,3,3) 随机指标 */
+/** KDJ(9,3,3) Stochastic */
 function calcKDJ(values: number[][], n = 9, m1 = 3, m2 = 3) {
   const kArr: (number | null)[] = []
   const dArr: (number | null)[] = []
@@ -180,7 +180,7 @@ function calcKDJ(values: number[][], n = 9, m1 = 3, m2 = 3) {
   return { k: kArr, d: dArr, j: jArr }
 }
 
-/** MACD(12,26,9) 指数平滑异同移动平均线 */
+/** MACD(12,26,9) Exponential Smoothing Convergence and Divergence Moving Average */
 function calcMACD(values: number[][], short = 12, long = 26, m = 9) {
   const difArr: (number | null)[] = []
   const deaArr: (number | null)[] = []
@@ -210,7 +210,7 @@ function calcMACD(values: number[][], short = 12, long = 26, m = 9) {
   return { dif: difArr, dea: deaArr, macd: macdArr }
 }
 
-/** RSI(6,12,24) 相对强弱指数 */
+/** RSI(6,12,24) relative strength index */
 function calcRSI(values: number[][], periods: number[] = [6, 12, 24]) {
   const closes = values.map(v => v[1])
   const result: Record<number, (number | null)[]> = {}
@@ -246,7 +246,7 @@ function calcRSI(values: number[][], periods: number[] = [6, 12, 24]) {
   return result
 }
 
-/** BOLL(20,2) 布林带 */
+/** BOLL(20,2) Bollinger Bands */
 function calcBOLL(values: number[][], n = 20, k = 2) {
   const up: (number | null)[] = []
   const mid: (number | null)[] = []
@@ -272,7 +272,7 @@ function calcBOLL(values: number[][], n = 20, k = 2) {
   return { up, mid, low }
 }
 
-// ════════ 预计算各指标 ════════
+// ════════ Precalculate each indicator ════════
 const ma5Data = computed(() => calcMA(props.values, 5))
 const ma20Data = computed(() => calcMA(props.values, 20))
 const kdjData = computed(() => calcKDJ(props.values))
@@ -280,10 +280,10 @@ const macdData = computed(() => calcMACD(props.values))
 const rsiData = computed(() => calcRSI(props.values))
 const bollData = computed(() => calcBOLL(props.values))
 
-// 是否有指标副图（MA 和 BOLL 叠加在主图，其他指标需要独立副图）
+// Is there an indicator sub-picture (MA and BOLL are superimposed on the main picture, other indicators need independent sub-pictures)
 const hasSubChart = computed(() => activeIndicator.value === 'macd' || activeIndicator.value === 'kdj' || activeIndicator.value === 'rsi')
 
-// ════════ ECharts option 构建 ════════
+// ════════ ECharts option build ════════
 const kOption = computed<EChartsOption>(() => {
   if (!props.category.length) {
     return {
@@ -297,21 +297,21 @@ const kOption = computed<EChartsOption>(() => {
   const ind = activeIndicator.value
   const hasSub = hasSubChart.value
 
-  // 布局：主图 + 成交量 + (可选)指标副图
-  // 有副图时：主图 48%, 成交量 16%, 指标 20%, dataZoom 底部
-  // 无副图时：主图 62%, 成交量 18%, dataZoom 底部
+  // Layout: Main image + Volume + (Optional)Indicator sub-picture
+  // When there is a secondary picture: main picture 48%, Volume 16%, indicator 20%, dataZoom bottom
+  // When there is no sub-picture: main picture 62%, Volume 18%, dataZoom bottom
   const grids: any[] = []
   const xAxes: any[] = []
   const yAxes: any[] = []
   const series: any[] = []
 
   if (hasSub) {
-    grids.push({ left: 55, right: 20, top: 15, height: '48%' })       // 主图
-    grids.push({ left: 55, right: 20, top: '68%', height: '14%' })    // 成交量
-    grids.push({ left: 55, right: 20, top: '85%', height: '12%' })    // 指标副图
+    grids.push({ left: 55, right: 20, top: 15, height: '48%' })       // Main picture
+    grids.push({ left: 55, right: 20, top: '68%', height: '14%' })    // Volume
+    grids.push({ left: 55, right: 20, top: '85%', height: '12%' })    // Indicator sub-picture
   } else {
-    grids.push({ left: 55, right: 20, top: 15, height: '62%' })       // 主图
-    grids.push({ left: 55, right: 20, top: '80%', height: '14%' })    // 成交量
+    grids.push({ left: 55, right: 20, top: 15, height: '62%' })       // Main picture
+    grids.push({ left: 55, right: 20, top: '80%', height: '14%' })    // Volume
   }
 
   const subCount = hasSub ? 3 : 2
@@ -326,7 +326,7 @@ const kOption = computed<EChartsOption>(() => {
     })
   }
 
-  // 主图 Y 轴
+  // Main graph Y axis
   yAxes.push({
     scale: true,
     type: 'value',
@@ -335,7 +335,7 @@ const kOption = computed<EChartsOption>(() => {
     splitLine: { lineStyle: { color: '#f1f5f9' } },
     axisLabel: { color: '#64748b', fontSize: 11 },
   })
-  // 成交量 Y 轴
+  // Volume Y-axis
   yAxes.push({
     scale: true,
     type: 'value',
@@ -347,13 +347,13 @@ const kOption = computed<EChartsOption>(() => {
       color: '#94a3b8',
       fontSize: 10,
       formatter: (v: number) => {
-        if (v >= 1e8) return (v / 1e8).toFixed(0) + '亿'
-        if (v >= 1e4) return (v / 1e4).toFixed(0) + '万'
+        if (v >= 1e8) return (v / 1e8).toFixed(0) + 'billion'
+        if (v >= 1e4) return (v / 1e4).toFixed(0) + 'million'
         return String(v)
       },
     },
   })
-  // 指标副图 Y 轴
+  // Indicator subgraph Y axis
   if (hasSub) {
     const indLabel: Record<string, string> = {
       macd: 'MACD',
@@ -373,11 +373,11 @@ const kOption = computed<EChartsOption>(() => {
     })
   }
 
-  // ── 主图 series ──
-  // K 线
+  // ── Main picture series ──
+  // K line
   series.push({
     type: 'candlestick',
-    name: 'K线',
+    name: 'K line',
     xAxisIndex: 0,
     yAxisIndex: 0,
     data: props.values,
@@ -389,7 +389,7 @@ const kOption = computed<EChartsOption>(() => {
     },
   })
 
-  // 主图叠加指标
+  // Main picture overlay indicator
   if (ind === 'ma') {
     series.push({
       type: 'line', name: 'MA5', xAxisIndex: 0, yAxisIndex: 0,
@@ -403,26 +403,26 @@ const kOption = computed<EChartsOption>(() => {
     })
   } else if (ind === 'boll') {
     series.push({
-      type: 'line', name: 'BOLL上轨', xAxisIndex: 0, yAxisIndex: 0,
+      type: 'line', name: 'BOLL On track', xAxisIndex: 0, yAxisIndex: 0,
       data: bollData.value.up, symbol: 'none',
       lineStyle: { color: '#ef4444', width: 1, type: 'dashed' },
     })
     series.push({
-      type: 'line', name: 'BOLL中轨', xAxisIndex: 0, yAxisIndex: 0,
+      type: 'line', name: 'BOLL middle track', xAxisIndex: 0, yAxisIndex: 0,
       data: bollData.value.mid, symbol: 'none',
       lineStyle: { color: '#6b5ce7', width: 1.5 },
     })
     series.push({
-      type: 'line', name: 'BOLL下轨', xAxisIndex: 0, yAxisIndex: 0,
+      type: 'line', name: 'BOLL Lower track', xAxisIndex: 0, yAxisIndex: 0,
       data: bollData.value.low, symbol: 'none',
       lineStyle: { color: '#16a34a', width: 1, type: 'dashed' },
     })
   }
 
-  // ── 成交量 series ──
+  // ── Volume series ──
   series.push({
     type: 'bar',
-    name: '成交量',
+    name: 'Volume',
     xAxisIndex: 1,
     yAxisIndex: 1,
     data: props.volumes.map((v, idx) => {
@@ -435,10 +435,10 @@ const kOption = computed<EChartsOption>(() => {
     }),
   })
 
-  // ── 指标副图 series ──
+  // ── Indicator sub-picture series ──
   if (ind === 'macd') {
     const m = macdData.value
-    // MACD 柱状图（红绿）
+    // MACD Histogram (red and green)
     series.push({
       type: 'bar',
       name: 'MACD',
@@ -506,16 +506,16 @@ const kOption = computed<EChartsOption>(() => {
     const fmt = (x: any) => (typeof x === 'number' ? x.toFixed(2) : '-')
     const lines: string[] = [
       p.name,
-      `开：${fmt(v[0])} 收：${fmt(v[1])}`,
-      `低：${fmt(v[2])} 高：${fmt(v[3])}`,
-      `成交量：${Number(vol).toLocaleString()} 手`,
+      `Open:${fmt(v[0])} Receive:${fmt(v[1])}`,
+      `Low:${fmt(v[2])} High:${fmt(v[3])}`,
+      `Volume:${Number(vol).toLocaleString()} hand`,
     ]
-    // 追加当前指标数值
+    // Append current indicator value
     if (ind === 'ma') {
       lines.push(`MA5：${fmt(ma5Data.value[idx])} MA20：${fmt(ma20Data.value[idx])}`)
     } else if (ind === 'boll') {
       const b = bollData.value
-      lines.push(`BOLL 上：${fmt(b.up[idx])} 中：${fmt(b.mid[idx])} 下：${fmt(b.low[idx])}`)
+      lines.push(`BOLL Above:${fmt(b.up[idx])} Medium:${fmt(b.mid[idx])} Next:${fmt(b.low[idx])}`)
     } else if (ind === 'macd') {
       const m = macdData.value
       lines.push(`DIF：${fmt(m.dif[idx])} DEA：${fmt(m.dea[idx])} MACD：${fmt(m.macd[idx])}`)
@@ -710,7 +710,7 @@ const kOption = computed<EChartsOption>(() => {
 .kline-legend-dot.rsi-12 { background: #f59e0b; }
 .kline-legend-dot.rsi-24 { background: #8b5cf6; }
 
-/* 成交量 */
+/* Volume */
 .kline-legend-dot.vol { background: #cbd5e1; }
 
 .kline-meta {

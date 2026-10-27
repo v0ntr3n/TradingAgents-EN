@@ -42,7 +42,7 @@ class _DummyCollection:
 class _DummyDb:
     def __init__(self):
         self.stock_basic_info = _DummyCollection(
-            [{"code": "000001", "name": "平安银行", "industry": "银行"}]
+            [{"code": "000001", "name": "Ping An Bank", "industry": "bank"}]
         )
         self.market_quotes = _DummyCollection(
             [

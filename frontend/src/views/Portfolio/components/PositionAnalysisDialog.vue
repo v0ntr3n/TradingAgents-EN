@@ -6,7 +6,7 @@
   >
     <template #header>
       <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-        <span>{{ isEtfPosition ? 'ETF持仓分析' : '单股持仓分析' }}</span>
+        <span>{{ isEtfPosition ? 'ETF Position analysis' : 'Single stock position analysis' }}</span>
         <el-button
           type="primary"
           size="small"
@@ -15,21 +15,21 @@
           style="margin-right: 40px;"
         >
           <el-icon><Clock /></el-icon>
-          历史记录
+          History
         </el-button>
       </div>
     </template>
 
-    <!-- 持仓信息展示 -->
+    <!-- Position information display -->
     <div v-if="position" class="position-info">
       <el-descriptions :column="2" border>
         <el-descriptions-item :label="securityCodeLabel">{{ position.code }}</el-descriptions-item>
         <el-descriptions-item :label="securityNameLabel">{{ position.name || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="持仓数量">{{ position.quantity }} 股</el-descriptions-item>
-        <el-descriptions-item label="成本价">¥{{ position.cost_price.toFixed(2) }}</el-descriptions-item>
-        <el-descriptions-item label="当前价">¥{{ position.current_price?.toFixed(2) || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="持仓市值">¥{{ position.market_value?.toFixed(2) || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="浮动盈亏">
+        <el-descriptions-item label="Position quantity">{{ position.quantity }} shares</el-descriptions-item>
+        <el-descriptions-item label="cost price">¥{{ position.cost_price.toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="current price">¥{{ position.current_price?.toFixed(2) || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="Position market value">¥{{ position.market_value?.toFixed(2) || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="floating profit and loss">
           <span :class="(position.unrealized_pnl || 0) >= 0 ? 'profit' : 'loss'">
             {{ (position.unrealized_pnl || 0) >= 0 ? '+' : '' }}{{ position.unrealized_pnl?.toFixed(2) || '0.00' }}
             ({{ (position.unrealized_pnl_pct || 0) >= 0 ? '+' : '' }}{{ position.unrealized_pnl_pct?.toFixed(2) || '0.00' }}%)
@@ -39,18 +39,18 @@
       </el-descriptions>
     </div>
 
-    <!-- 分析状态提示 -->
+    <!-- Analysis status prompt -->
     <div v-if="analysisStatus === 'pending' || analysisStatus === 'processing'" class="analysis-status">
       <el-alert type="info" :closable="false">
         <template #title>
           <el-icon class="is-loading"><Loading /></el-icon>
-          {{ analysisStatus === 'pending' ? '分析任务已提交' : '正在分析中' }}...
+          {{ analysisStatus === 'pending' ? 'Analysis task has been submitted' : 'Under analysis' }}...
         </template>
         <template #default>
-          <p>预计需要2-5分钟完成，您可以：</p>
+          <p>It is expected to take 2-5 minutes to complete. You can:</p>
           <ul>
-            <li>点击下方"手动刷新状态"按钮查看最新进度</li>
-            <li>或关闭对话框稍后再来查看（重新打开对话框即可查看结果）</li>
+            <li>Click below"Manually refresh status"button to view the latest progress</li>
+            <li>Or close the dialog box and check back later (reopen the dialog box to see the results)</li>
           </ul>
           <el-button
             type="primary"
@@ -60,25 +60,25 @@
             style="margin-top: 12px;"
           >
             <el-icon v-if="!refreshing"><Refresh /></el-icon>
-            {{ refreshing ? '刷新中...' : '手动刷新状态' }}
+            {{ refreshing ? 'Refreshing...' : 'Manually refresh status' }}
           </el-button>
         </template>
       </el-alert>
     </div>
 
-    <!-- 分析参数设置 -->
+    <!-- Analysis parameter settings -->
     <div class="analysis-params" v-if="!analysisResult && analysisStatus !== 'pending' && analysisStatus !== 'processing'">
-      <el-divider content-position="left">分析设置</el-divider>
+      <el-divider content-position="left">Analysis settings</el-divider>
       
-      <!-- 流程选择 -->
+      <!-- Process selection -->
       <div class="config-section" v-if="workflowsSorted.length > 0">
-        <el-form-item label="分析流程">
+        <el-form-item label="Analysis process">
           <div style="display: flex; align-items: center; width: 100%;">
             <el-select
               v-model="selectedWorkflowId"
               size="small"
               style="flex: 1;"
-              placeholder="选择分析流程"
+              placeholder="Select analysis process"
             >
               <el-option
                 v-for="workflow in workflowsSorted"
@@ -87,7 +87,7 @@
                 :value="workflow.id"
               />
             </el-select>
-            <el-tooltip content="选择不同的分析流程，系统会使用该流程对应的智能体和步骤进行分析" placement="top">
+            <el-tooltip content="Select different analysis processes, and the system will use the agents and steps corresponding to the process for analysis." placement="top">
               <el-icon style="margin-left: 8px; color: #909399; cursor: help;"><InfoFilled /></el-icon>
             </el-tooltip>
           </div>
@@ -95,16 +95,16 @@
       </div>
       
       <el-form :model="params" label-width="120px">
-        <el-form-item label="目标收益率">
+        <el-form-item label="target rate of return">
           <el-input-number v-model="params.target_profit_pct" :min="5" :max="100" :step="5" />
           <span class="unit">%</span>
         </el-form-item>
-        <el-form-item label="分析增持观点">
+        <el-form-item label="Analyze the view on overweighting">
           <el-switch v-model="params.include_add_position" />
         </el-form-item>
 
         <el-divider content-position="left">
-          <el-checkbox v-model="enableCapitalAnalysis">启用资金风险分析</el-checkbox>
+          <el-checkbox v-model="enableCapitalAnalysis">Enable funding risk analysis</el-checkbox>
         </el-divider>
 
         <template v-if="enableCapitalAnalysis">
@@ -114,7 +114,7 @@
             :closable="false"
             style="margin-bottom: 12px"
           >
-            已从资金账户自动获取数据，总投资资金: ¥{{ (accountSummary?.net_capital?.CNY || 0).toLocaleString() }}
+            Data has been automatically obtained from the capital account, total investment funds: ¥{{ (accountSummary?.net_capital?.CNY || 0).toLocaleString() }}
           </el-alert>
           <el-alert
             v-else
@@ -122,9 +122,9 @@
             :closable="false"
             style="margin-bottom: 12px"
           >
-            未设置资金账户，请手动输入资金总量或前往持仓页面设置资金账户
+            No capital account has been set up. Please enter the total amount of funds manually or go to the position page to set up a capital account.
           </el-alert>
-          <el-form-item label="投资资金总量">
+          <el-form-item label="Total amount of investment funds">
             <el-input-number
               v-model="params.total_capital"
               :min="10000"
@@ -134,14 +134,14 @@
               :controls="false"
               style="width: 200px"
             />
-            <span class="unit">元</span>
-            <span class="tip" v-if="!hasAccountCapital">用于计算仓位占比和风险敞口</span>
+            <span class="unit">Yuan</span>
+            <span class="tip" v-if="!hasAccountCapital">Used to calculate position proportion and risk exposure</span>
           </el-form-item>
-          <el-form-item label="单股最大仓位">
+          <el-form-item label="Maximum position of a single stock">
             <el-input-number v-model="params.max_position_pct" :min="5" :max="100" :step="5" />
             <span class="unit">%</span>
           </el-form-item>
-          <el-form-item label="最大亏损容忍">
+          <el-form-item label="maximum loss tolerance">
             <el-input-number v-model="params.max_loss_pct" :min="1" :max="50" :step="1" />
             <span class="unit">%</span>
           </el-form-item>
@@ -149,38 +149,38 @@
       </el-form>
     </div>
 
-    <!-- 分析失败提示 -->
+    <!-- Analysis failure prompt -->
     <div v-if="analysisResult && analysisResult.status === 'failed'" class="analysis-failed">
       <el-alert type="error" :closable="false">
-        <template #title>分析失败</template>
+        <template #title>Analysis failed</template>
         <template #default>
-          <p>{{ formatErrorMessage(analysisResult.error_message, '分析过程中出现错误，请稍后重试') }}</p>
+          <p>{{ formatErrorMessage(analysisResult.error_message, 'An error occurred during analysis, please try again later.') }}</p>
           <el-button type="primary" size="small" @click="resetAnalysis" style="margin-top: 10px">
-            重新分析
+            Reanalyze
           </el-button>
         </template>
       </el-alert>
     </div>
 
-    <!-- AI连接错误提示 -->
+    <!-- AI Connection error message -->
     <div v-else-if="analysisResult && isAIConnectionError" class="analysis-error">
       <el-alert type="warning" :closable="false">
-        <template #title>AI服务连接异常</template>
+        <template #title>AI Service connection exception</template>
         <template #default>
           <p>{{ analysisResult.action_reason }}</p>
           <p style="margin-top: 8px; color: #909399; font-size: 12px">
-            💡 请检查：1. 网络连接是否正常；2. API Key 是否已配置；3. API 服务是否可用
+            💡 Please check: 1. Whether the network connection is normal; 2. Whether the API Key has been configured; 3. Whether the API service is available
           </p>
           <el-button type="primary" size="small" @click="resetAnalysis" style="margin-top: 10px">
-            重新分析
+            Reanalyze
           </el-button>
         </template>
       </el-alert>
     </div>
 
-    <!-- 分析结果展示 -->
+    <!-- Analysis results display -->
     <div v-else-if="analysisResult" class="analysis-result">
-      <!-- 风险提示 -->
+      <!-- Risk warning -->
       <div class="risk-disclaimer">
         <el-alert
           type="warning"
@@ -191,15 +191,15 @@
             <div class="disclaimer-content">
               <el-icon class="disclaimer-icon"><WarningFilled /></el-icon>
               <div class="disclaimer-text">
-                <p style="margin: 0 0 8px 0;"><strong>⚠️ 重要风险提示与免责声明</strong></p>
+                <p style="margin: 0 0 8px 0;"><strong>⚠️ Important Risk Warnings and Disclaimers</strong></p>
                 <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
-                  <li><strong>平台性质：</strong>本平台为AI辅助分析技术学习平台，专注于AI技术在证券与ETF分析领域的应用验证和技术学习。</li>
-                  <li><strong>分析目的：</strong>所有分析结论仅用于学习和验证AI辅助分析技术，不作为真实交易操盘指导或投资依据。</li>
-                  <li><strong>非投资建议：</strong>所有分析结果、评分、建议仅为技术验证参考，不构成任何买卖建议或投资决策依据。</li>
-                  <li><strong>数据局限性：</strong>分析基于历史数据和公开信息，可能存在延迟、不完整或不准确的情况，无法预测未来市场走势。</li>
-                  <li><strong>投资风险：</strong>股票与ETF投资均存在市场风险、流动性风险、政策风险等多种风险，可能导致本金损失。</li>
-                  <li><strong>独立决策：</strong>投资者应基于自身风险承受能力、投资目标和财务状况独立做出投资决策。</li>
-                  <li><strong>责任声明：</strong>使用本平台产生的任何投资决策及其后果由使用者自行承担，本平台不承担任何责任。</li>
+                  <li><strong>Platform nature:</strong>This platform is an AI-assisted analysis technology learning platform, focusing on the application verification and technical learning of AI technology in the fields of securities and ETF analysis.</li>
+                  <li><strong>Analysis purpose:</strong>All analysis conclusions are only used to learn and verify AI-assisted analysis technology and are not used as real trading guidance or investment basis.</li>
+                  <li><strong>Non-investment advice:</strong>All analysis results, ratings, and recommendations are only for technical verification reference and do not constitute any buying and selling advice or the basis for investment decisions.</li>
+                  <li><strong>Data limitations:</strong>The analysis is based on historical data and public information, which may be delayed, incomplete or inaccurate, and cannot predict future market trends.</li>
+                  <li><strong>Investment risks:</strong>Both stock and ETF investments are subject to various risks such as market risk, liquidity risk, policy risk, etc., which may result in loss of principal.</li>
+                  <li><strong>Independent decision-making:</strong>Investors should make investment decisions independently based on their own risk tolerance, investment objectives and financial status.</li>
+                  <li><strong>Responsibility statement:</strong>Any investment decisions and consequences arising from the use of this platform are the sole responsibility of the user, and this platform does not assume any responsibility.</li>
                 </ul>
               </div>
             </div>
@@ -207,13 +207,13 @@
         </el-alert>
       </div>
 
-      <el-divider content-position="left">分析结果</el-divider>
+      <el-divider content-position="left">Analyze results</el-divider>
 
-      <!-- 当前结论 -->
+      <!-- current conclusion -->
       <div class="overview-panel">
         <div class="overview-header">
-          <h3>当前结论</h3>
-          <div class="conclusion-content markdown-content" v-html="renderMarkdown(userView.conclusion || '暂无结论')"></div>
+          <h3>current conclusion</h3>
+          <div class="conclusion-content markdown-content" v-html="renderMarkdown(userView.conclusion || 'No conclusion yet')"></div>
         </div>
         <div class="context-chip" v-if="userView.position_context">
           {{ userView.position_context }}
@@ -221,32 +221,32 @@
       </div>
 
       <div class="uncertainty-card" v-if="userView.uncertainty_note">
-        <h4>不确定性说明</h4>
+        <h4>uncertainty statement</h4>
         <p>{{ userView.uncertainty_note }}</p>
       </div>
 
-      <!-- 资金风险指标（如果启用） -->
+      <!-- Funding risk indicator (if enabled) -->
       <div v-if="analysisResult.risk_metrics" class="risk-metrics-section">
-        <h4><el-icon><WalletFilled /></el-icon> 仓位风险分析</h4>
+        <h4><el-icon><WalletFilled /></el-icon> Position risk analysis</h4>
         <el-descriptions :column="2" border size="small">
-          <el-descriptions-item label="仓位占比">
+          <el-descriptions-item label="Position proportion">
             <span :class="getRiskLevelClass(analysisResult.risk_metrics.risk_level)">
               {{ analysisResult.risk_metrics.position_pct?.toFixed(2) }}%
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="持仓市值">
+          <el-descriptions-item label="Position market value">
             ¥{{ analysisResult.risk_metrics.position_value?.toLocaleString() }}
           </el-descriptions-item>
-          <el-descriptions-item label="最大亏损金额">
+          <el-descriptions-item label="Maximum loss amount">
             <span class="loss">¥{{ analysisResult.risk_metrics.max_loss_amount?.toLocaleString() }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="对总资金影响">
+          <el-descriptions-item label="Impact on total funds">
             <span class="loss">{{ analysisResult.risk_metrics.max_loss_impact_pct?.toFixed(2) }}%</span>
           </el-descriptions-item>
-          <el-descriptions-item label="可增持金额">
+          <el-descriptions-item label="Amount that can be increased">
             <span class="profit">¥{{ analysisResult.risk_metrics.available_add_amount?.toLocaleString() }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="风险等级">
+          <el-descriptions-item label="risk level">
             <el-tag :type="getRiskTagType(analysisResult.risk_metrics.risk_level)" size="small">
               {{ getRiskLevelText(analysisResult.risk_metrics.risk_level) }}
             </el-tag>
@@ -255,9 +255,9 @@
         <p class="risk-summary">{{ analysisResult.risk_metrics.risk_summary }}</p>
       </div>
 
-      <!-- 研究附录 -->
+      <!-- Research Addendum -->
       <el-collapse>
-        <el-collapse-item title="查看研究附录" name="detail">
+        <el-collapse-item title="View study appendix" name="detail">
           <template v-if="appendixSections.length > 0">
             <div
               v-for="section in appendixSections"
@@ -271,7 +271,7 @@
           <div
             v-else
             class="detailed-analysis markdown-content"
-            v-html="renderMarkdown(analysisResult.detailed_analysis || '暂无详细分析')"
+            v-html="renderMarkdown(analysisResult.detailed_analysis || 'No detailed analysis yet')"
           ></div>
         </el-collapse-item>
       </el-collapse>
@@ -279,26 +279,26 @@
 
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="visible = false">关闭</el-button>
+        <el-button @click="visible = false">close</el-button>
         <el-button
           v-if="!analysisResult"
           type="primary"
           :loading="loading"
           @click="handleAnalyze"
         >
-          开始分析
+          Start analysis
         </el-button>
         <el-button
           v-else
           type="primary"
           @click="resetAnalysis"
         >
-          重新分析
+          Reanalyze
         </el-button>
       </span>
     </template>
 
-    <!-- 历史记录对话框 -->
+    <!-- History dialog box -->
     <PositionAnalysisHistoryDialog
       v-model="showHistoryDialog"
       :position="position"
@@ -317,9 +317,9 @@ import { getMarketByStockCode } from '@/utils/market'
 import { workflowApi, isSelectableAnalysisWorkflow, type WorkflowSummary } from '@/api/workflow'
 import PositionAnalysisHistoryDialog from './PositionAnalysisHistoryDialog.vue'
 
-// 配置marked选项
-// marked 配置已由 @/utils/markdown 统一管理
-// Markdown渲染函数（后端已经转换为Markdown格式，前端直接渲染）
+// Configure marked options
+// marked The configuration has been @/utils/markdown Unified management
+// Markdown Rendering function (the backend has been converted to Markdown format, and the frontend renders directly)
 const renderMarkdown = (content: string) => {
   if (!content) return ''
   
@@ -331,63 +331,63 @@ const renderMarkdown = (content: string) => {
 }
 
 /**
- * 将后端/网络错误消息转换为用户可理解的友好中文提示。
- * 针对常见的限流、网络、超时等情况做了专门处理。
+ * Convert backend/network error messages into user-friendly Chinese prompts that can be understood.
+ * Special processing is done for common current limiting, network, timeout and other situations.
  */
-const formatErrorMessage = (err: any, defaultMsg = '操作失败，请稍后重试'): string => {
+const formatErrorMessage = (err: any, defaultMsg = 'Operation failed, please try again later'): string => {
   if (!err) return defaultMsg
   const msg = String(err?.message || err?.data?.message || err?.error_message || err || '').toLowerCase()
 
-  // 限流类
+  // Current limiting class
   if (
     msg.includes('429') ||
     msg.includes('rate_limit') ||
     msg.includes('rate limit') ||
     msg.includes('tokens limit') ||
     msg.includes('rate_limited') ||
-    msg.includes('访问限制') ||
-    msg.includes('限流')
+    msg.includes('Access restrictions') ||
+    msg.includes('Current limiting')
   ) {
-    return '当前使用AI分析的人数较多，服务繁忙，请稍后再试。（提示：避免短时间内连续发起多次分析）'
+    return 'There are currently many people using AI analysis and the service is busy. Please try again later. (Tip: Avoid initiating multiple analyzes in a short period of time)'
   }
 
-  // 网络/连接类
+  // Network/Connectivity
   if (
     msg.includes('network error') ||
     msg.includes('connection error') ||
     msg.includes('failed to fetch') ||
-    msg.includes('连接失败') ||
-    msg.includes('网络错误')
+    msg.includes('Connection failed') ||
+    msg.includes('network error')
   ) {
-    return '网络连接失败，请检查您的网络状态后重试。'
+    return 'Network connection failed, please check your network status and try again.'
   }
 
-  // 超时类
-  if (msg.includes('timeout') || msg.includes('超时')) {
-    return '请求超时，请稍后重试。若频繁出现，请联系管理员。'
+  // timeout class
+  if (msg.includes('timeout') || msg.includes('timeout')) {
+    return 'The request timed out, please try again later. If it occurs frequently, please contact the administrator.'
   }
 
-  // 余额/额度不足
+  // Insufficient balance/limit
   if (
     msg.includes('insufficient balance') ||
     msg.includes('quota') ||
-    msg.includes('余额不足') ||
-    msg.includes('额度不足')
+    msg.includes('Insufficient balance') ||
+    msg.includes('Insufficient quota')
   ) {
-    return 'AI分析额度不足，请联系管理员补充额度后再试。'
+    return 'AI Analysis: The quota is insufficient. Please contact the administrator to replenish the quota and try again.'
   }
 
-  // 认证/权限类
-  if (msg.includes('401') || msg.includes('403') || msg.includes('unauthorized') || msg.includes('无权限')) {
-    return '登录已过期，请刷新页面重新登录后再试。'
+  // Authentication/Permission Class
+  if (msg.includes('401') || msg.includes('403') || msg.includes('unauthorized') || msg.includes('No permission')) {
+    return 'Login has expired, please refresh the page and log in again and try again.'
   }
 
-  // 服务端错误
+  // Server error
   if (msg.includes('500') || msg.includes('502') || msg.includes('503') || msg.includes('server error')) {
-    return '服务器暂时不可用，请稍后重试。'
+    return 'The server is temporarily unavailable, please try again later.'
   }
 
-  // 返回原始消息（如果是中文且可读，直接返回）
+  // Return the original message (if it is Chinese and readable, return it directly)
   const original = String(err?.message || err?.data?.message || err?.error_message || defaultMsg)
   if (/[\u4e00-\u9fa5]/.test(original) && original.length < 100) {
     return original
@@ -418,7 +418,7 @@ const enableCapitalAnalysis = ref(false)
 const accountSummary = ref<AccountSummary | null>(null)
 const showHistoryDialog = ref(false)
 
-// 流程选择
+// Process selection
 const workflows = ref<WorkflowSummary[]>([])
 const selectedWorkflowId = ref<string>('')
 
@@ -446,7 +446,7 @@ const workflowsSorted = computed(() => {
   return arr
 })
 
-// 异步分析相关状态
+// Asynchronous analysis related status
 const analysisId = ref<string | null>(null)
 const analysisStatus = ref<string>('idle')  // idle, pending, processing, completed, failed
 
@@ -458,30 +458,30 @@ const isEtfPosition = computed(() => {
   if (!props.position) return false
   return props.position.market === 'CN' && getMarketByStockCode(props.position.code) === 'ETF'
 })
-const securityCodeLabel = computed(() => isEtfPosition.value ? 'ETF代码' : '股票代码')
-const securityNameLabel = computed(() => isEtfPosition.value ? 'ETF名称' : '股票名称')
-const industryLabel = computed(() => isEtfPosition.value ? '产品分类' : '所属行业')
+const securityCodeLabel = computed(() => isEtfPosition.value ? 'ETF code' : 'Stock code')
+const securityNameLabel = computed(() => isEtfPosition.value ? 'ETF Name' : 'Stock name')
+const industryLabel = computed(() => isEtfPosition.value ? 'Product classification' : 'Industry')
 const industryValue = computed(() => {
   if (!props.position) return '-'
-  return isEtfPosition.value ? 'ETF/基金' : (props.position.industry || '未知')
+  return isEtfPosition.value ? 'ETF/fund' : (props.position.industry || 'unknown')
 })
 const params = ref<PositionAnalysisParams>({
-  research_depth: '标准',
+  research_depth: 'Standard',
   include_add_position: true,
   target_profit_pct: 20,
-  total_capital: 100000,    // 默认10万
-  max_position_pct: 30,     // 默认30%
-  max_loss_pct: 10          // 默认10%
+  total_capital: 100000,    // Default 100,000
+  max_position_pct: 30,     // Default 30%
+  max_loss_pct: 10          // Default 10%
 })
 
-// 加载资金账户信息
+// Load capital account information
 const loadAccountSummary = async () => {
   try {
     const res = await portfolioApi.getAccountSummary()
     if (res.success && res.data) {
       accountSummary.value = res.data
-      // 如果有资金账户，自动启用资金分析并填充数据
-      // 使用净入金（总投资资金）而不是总资产
+      // If there is a funding account, automatically enable funding analysis and populate the data
+      // Use net deposits (total invested funds) instead of total assets
       const netCapital = res.data.net_capital?.CNY || 0
       if (netCapital > 0) {
         enableCapitalAnalysis.value = true
@@ -491,12 +491,12 @@ const loadAccountSummary = async () => {
       }
     }
   } catch (e) {
-    console.error('加载资金账户失败', e)
+    console.error('Failed to load fund account', e)
   }
 }
 
-// 重置状态
-// 加载可用工作流
+// reset state
+// Load available workflows
 const loadWorkflows = async () => {
   try {
     const data = await workflowApi.listAll()
@@ -507,50 +507,50 @@ const loadWorkflows = async () => {
       selectedWorkflowId.value = defaultWf ? defaultWf.id : targetWorkflows[0].id
     }
   } catch (e) {
-    console.error('加载工作流列表失败:', e)
+    console.error('Failed to load workflow list:', e)
   }
 }
 
 watch(visible, (val) => {
   if (val) {
-    // 打开对话框时先重置状态，再加载数据
-    // 重要：必须先清空之前的分析结果，避免显示其他股票的缓存数据
+    // When opening the dialog box, reset the state first and then load the data.
+    // Important: Previous analysis results must be cleared first to avoid displaying cached data for other stocks.
     analysisResult.value = null
     analysisId.value = null
     analysisStatus.value = 'idle'
 
-    // 加载资金账户信息和已有分析报告
+    // Load capital account information and existing analysis reports
     loadAccountSummary()
     loadExistingAnalysis()
     loadWorkflows()
   }
 })
 
-// 不启用资金分析时清除相关参数
+// Clear related parameters when fund analysis is not enabled
 watch(enableCapitalAnalysis, (val) => {
   if (!val) {
     params.value.total_capital = undefined
   } else {
-    // 恢复资金账户数据或默认值（使用净入金而非总资产）
+    // Restore funding account data or default values (use net deposits instead of total assets)
     const netCapital = accountSummary.value?.net_capital?.CNY || 0
     params.value.total_capital = netCapital > 0 ? netCapital : 100000
   }
 })
 
-// 检查是否是AI连接错误
+// Check if it is an AI connection error
 const isAIConnectionError = computed(() => {
   if (!analysisResult.value) return false
   const reason = analysisResult.value.action_reason || ''
-  return reason.includes('AI服务') ||
-         reason.includes('连接失败') ||
+  return reason.includes('AI service') ||
+         reason.includes('Connection failed') ||
          reason.includes('Connection error') ||
-         reason.includes('AI分析暂时不可用') ||
+         reason.includes('AI Analysis is temporarily unavailable') ||
          (analysisResult.value.confidence === 0 && reason.includes('error'))
 })
 
-// 用户版展示内容（合规化后统一展示 user_view 字段）
+// User version display content (unified display of user_view field after compliance)
 const userView = computed(() => analysisResult.value?.user_view || {
-  conclusion: analysisResult.value?.action_reason || '暂无结论',
+  conclusion: analysisResult.value?.action_reason || 'No conclusion yet',
   position_context: '',
   key_points: [] as string[],
   risk_focus: [] as string[],
@@ -558,19 +558,19 @@ const userView = computed(() => analysisResult.value?.user_view || {
   uncertainty_note: ''
 })
 
-// 研究附录（仅展示有内容的分节）
+// Research appendix (only sections with content are displayed)
 const appendixSections = computed(() =>
   (analysisResult.value?.appendix_sections || []).filter(section => section?.content)
 )
 
-// 执行分析（异步模式）
+// Perform analysis (asynchronous mode)
 const handleAnalyze = async () => {
   if (!props.position) return
 
   loading.value = true
 
   try {
-    // 第一步：检查是否有单股分析报告缓存
+    // Step 1: Check whether there is a single stock analysis report cache
     const cacheRes = await portfolioApi.checkStockAnalysisCache(
       props.position.code,
       props.position.market
@@ -579,52 +579,52 @@ const handleAnalyze = async () => {
     if (cacheRes.success && cacheRes.data) {
       const hasCache = cacheRes.data.has_cache
 
-      // 如果没有缓存，提示用户选择
+      // If there is no cache, prompt the user to choose
       if (!hasCache) {
         loading.value = false
         try {
           await ElMessageBox.confirm(
-            '当前没有可用的单股分析报告缓存。\n\n' +
-            '建议先进行单股分析以获得更准确的持仓分析结果。\n\n' +
-            '您可以选择：\n' +
-            '• 继续分析：直接进行持仓分析（不使用单股分析报告）\n' +
-            '• 先去单股分析：先跳转到单股分析页面进行分析',
-            '提示：缺少单股分析报告',
+            'There is currently no single stock analysis report cache available.\n\n' +
+            'It is recommended to conduct single stock analysis first to obtain more accurate position analysis results.\n\n' +
+            'You can choose:\n' +
+            '• Continue analysis: conduct position analysis directly (without using single stock analysis report)\n' +
+            '• Go to single stock analysis first: Jump to the single stock analysis page for analysis first.',
+            'Tip: Missing single stock analysis report',
             {
-              confirmButtonText: '继续分析',
-              cancelButtonText: '先去单股分析',
+              confirmButtonText: 'Continue analysis',
+              cancelButtonText: 'Let s go to single stock analysis first',
               type: 'warning',
               distinguishCancelAndClose: true
             }
           )
-          // 用户选择"继续分析"，继续执行分析流程
+          // User selection"Continue analysis", Continue the analysis process
         } catch (action: any) {
-          // 用户选择"先去单股分析"或关闭对话框
+          // User selection"Let s go to single stock analysis first"or close the dialog
           if (action === 'cancel') {
-            // 跳转到单股分析页面，带上股票代码参数
+            // Jump to the single stock analysis page and bring the stock code parameters
             const marketName = props.position.market === 'CN'
               ? getMarketByStockCode(props.position.code)
-              : 'A股'
+              : 'A shares'
             router.push(`/analysis/single?stock_code=${props.position.code}&market=${marketName}`)
-            visible.value = false // 关闭当前对话框
+            visible.value = false // Close current dialog box
           }
-          return // 取消分析，不执行后续流程
+          return // Cancel analysis and do not perform subsequent processes
         }
       } else {
-        // 有缓存，可以显示缓存信息（可选）
+        // There is a cache and cache information can be displayed (optional)
         const ageMinutes = cacheRes.data.cache_age_minutes || 0
         const ageText = ageMinutes < 60 
-          ? `${ageMinutes}分钟前` 
-          : `${Math.floor(ageMinutes / 60)}小时前`
-        console.log(`使用缓存报告（${ageText}）`)
+          ? `${ageMinutes}minutes ago` 
+          : `${Math.floor(ageMinutes / 60)}hours ago`
+        console.log(`Use cached reports (${ageText}) `)
       }
     }
 
-    // 第二步：提交分析任务
+    // Step 2: Submit the analysis task
     loading.value = true
     analysisStatus.value = 'pending'
 
-    // 🔥 根据持仓来源设置 position_type：模拟持仓 -> simulated，用户持仓 -> real
+    // 🔥 Set position_type according to position source: simulate position -> simulated, User positions -> real
     const positionType = props.position.source === 'paper' ? 'simulated' : 'real'
     const analysisParams = {
       ...params.value,
@@ -638,30 +638,30 @@ const handleAnalyze = async () => {
       analysisParams
     )
 
-    console.log('[开始分析] 收到响应:', res)
+    console.log('[Start analysis] response received:', res)
     if (res.success && res.data) {
-      // 设置分析ID和状态
+      // Set analysis ID and status
       analysisId.value = res.data.analysis_id || null
       analysisStatus.value = res.data.status || 'pending'
       
-      console.log('[开始分析] 设置analysisId:', analysisId.value, 'status:', analysisStatus.value)
+      console.log('[Start analysis] settings analysisId:', analysisId.value, 'status:', analysisStatus.value)
 
       if (res.data.status === 'completed' && analysisId.value) {
-        // 已有完成的报告，直接获取结果
+        // Completed reports can be obtained directly
         await fetchAnalysisResult(analysisId.value)
-        ElMessage.success('已有最近的分析报告')
+        ElMessage.success('There are recent analysis reports')
       } else {
-        // 任务已提交，不自动轮询，用户可手动刷新
-        ElMessage.success(res.data.message || '分析任务已提交，预计需要2-5分钟，请稍后点击"手动刷新状态"查看结果')
+        // The task has been submitted and will not be polled automatically. The user can refresh it manually.
+        ElMessage.success(res.data.message || 'The analysis task has been submitted. It is expected to take 2-5 minutes. Please click later."Manually refresh status"View results')
       }
     } else {
-      ElMessage.error(formatErrorMessage(res.message, '提交分析任务失败'))
+      ElMessage.error(formatErrorMessage(res.message, 'Failed to submit analysis task'))
       analysisStatus.value = 'failed'
     }
   } catch (error: any) {
-    // 如果是MessageBox的取消操作，不显示错误
+    // If it is a cancellation operation of MessageBox, no error will be displayed.
     if (error !== 'cancel' && error !== 'close') {
-      ElMessage.error(formatErrorMessage(error, '提交分析任务失败'))
+      ElMessage.error(formatErrorMessage(error, 'Failed to submit analysis task'))
       analysisStatus.value = 'failed'
     }
   } finally {
@@ -671,7 +671,7 @@ const handleAnalyze = async () => {
 
 
 
-// 获取分析结果
+// Get analysis results
 const fetchAnalysisResult = async (id: string) => {
   try {
     const res = await portfolioApi.getPositionAnalysisStatus(id)
@@ -680,62 +680,62 @@ const fetchAnalysisResult = async (id: string) => {
       analysisStatus.value = res.data.status || 'completed'
     }
   } catch (error) {
-    console.error('获取分析结果失败:', error)
+    console.error('Failed to obtain analysis results:', error)
   }
 }
 
-// 手动刷新状态
+// Manually refresh status
 const manualRefreshStatus = async () => {
   if (!analysisId.value) {
-    console.warn('[手动刷新状态] analysisId为空，无法刷新')
-    ElMessage.warning('分析任务ID不存在，请重新开始分析')
+    console.warn('[Manually refresh status] analysisId Empty and cannot be refreshed')
+    ElMessage.warning('The analysis task ID does not exist, please restart the analysis.')
     return
   }
 
-  console.log('[手动刷新状态] 开始刷新，analysisId:', analysisId.value)
+  console.log('[Manually refresh status] Start refreshing,analysisId:', analysisId.value)
   refreshing.value = true
   try {
     const res = await portfolioApi.getPositionAnalysisStatus(analysisId.value)
-    console.log('[手动刷新状态] 收到响应:', res)
+    console.log('[Manually refresh status] response received:', res)
     if (res.success && res.data) {
       analysisStatus.value = res.data.status || 'unknown'
 
       if (res.data.status === 'completed') {
         analysisResult.value = res.data
-        ElMessage.success('分析完成！')
+        ElMessage.success('Analysis completed!')
       } else if (res.data.status === 'failed') {
-        ElMessage.error(formatErrorMessage(res.data.error_message, '分析失败，请稍后重试'))
+        ElMessage.error(formatErrorMessage(res.data.error_message, 'Analysis failed, please try again later'))
       } else {
-        ElMessage.info(`当前状态: ${res.data.status}`)
+        ElMessage.info(`Current status: ${res.data.status}`)
       }
     } else {
-      console.error('[手动刷新状态] 响应失败:', res)
-      ElMessage.error(formatErrorMessage(res.message, '获取分析状态失败'))
+      console.error('[Manually refresh status] Response failed:', res)
+      ElMessage.error(formatErrorMessage(res.message, 'Failed to get analysis status'))
     }
   } catch (error: any) {
-    console.error('[手动刷新状态] 请求失败:', error)
-    ElMessage.error(formatErrorMessage(error, '刷新状态失败，请稍后重试'))
+    console.error('[Manually refresh status] Request failed:', error)
+    ElMessage.error(formatErrorMessage(error, 'Failed to refresh status, please try again later'))
   } finally {
     refreshing.value = false
   }
 }
 
-// 加载已有的分析报告
-// 加载已有的分析报告
-// 注意：调用此函数前应先清空 analysisResult，避免显示其他股票的缓存数据
+// Load existing analysis report
+// Load existing analysis report
+// Note: analysisResult should be cleared before calling this function to avoid displaying cached data of other stocks.
 const loadExistingAnalysis = async () => {
   if (!props.position) return
 
   try {
-    // 🔥 根据持仓来源传递 source 参数：模拟持仓 -> paper，用户持仓 -> real
+    // 🔥 Pass the source parameter according to the position source: simulate a position -> paper, User positions -> real
     const source = props.position.source === 'paper' ? 'paper' : 'real'
     const res = await portfolioApi.getLatestPositionAnalysis(
       props.position.code,
       props.position.market,
       source
     )
-    // 只有当后端返回有效数据时才更新状态
-    // 如果 res.data 为 null，说明该股票没有分析报告，保持状态为 idle
+    // Only update status when the backend returns valid data
+    // If res.data is null, it means that there is no analysis report for this stock, and the status is idle
     if (res.success && res.data) {
       analysisId.value = res.data.analysis_id
       analysisStatus.value = res.data.status || 'unknown'
@@ -743,24 +743,24 @@ const loadExistingAnalysis = async () => {
       if (res.data.status === 'completed') {
         analysisResult.value = res.data
       } else if (res.data.status === 'pending' || res.data.status === 'processing') {
-        // 有正在进行的分析，不自动轮询，用户可手动刷新查看状态
-        ElMessage.info('检测到正在进行的分析任务，请点击"手动刷新状态"查看最新进度')
+        // There is ongoing analysis and no automatic polling. Users can manually refresh to view the status.
+        ElMessage.info('An analysis task in progress is detected, please click"Manually refresh status"View the latest progress')
       }
     }
-    // 如果 res.data 为 null，不做任何操作，保持之前 watch 中重置的 idle 状态
+    // If res.data is null, no operation is performed and the idle state reset in the previous watch is maintained.
   } catch (error) {
-    console.error('加载已有分析报告失败:', error)
+    console.error('Failed to load existing analysis report:', error)
   }
 }
 
-// 重新分析
+// Reanalyze
 const resetAnalysis = () => {
   analysisResult.value = null
   analysisId.value = null
   analysisStatus.value = 'idle'
 }
 
-// 风险等级相关辅助方法
+// Auxiliary methods related to risk levels
 const getRiskLevelClass = (level?: string) => {
   const map: Record<string, string> = {
     low: 'risk-low',
@@ -783,12 +783,12 @@ const getRiskTagType = (level?: string): 'success' | 'warning' | 'danger' | 'inf
 
 const getRiskLevelText = (level?: string) => {
   const map: Record<string, string> = {
-    low: '低风险',
-    medium: '中风险',
-    high: '高风险',
-    critical: '极高风险'
+    low: 'low risk',
+    medium: 'medium risk',
+    high: 'high risk',
+    critical: 'extremely high risk'
   }
-  return map[level || ''] || '未知'
+  return map[level || ''] || 'unknown'
 }
 </script>
 
@@ -797,10 +797,10 @@ const getRiskLevelText = (level?: string) => {
   margin-bottom: 16px;
 }
 
-.profit { color: #f56c6c; } /* 红色表示盈利（中国股市规范） */
-.loss { color: #67c23a; } /* 绿色表示亏损（中国股市规范） */
+.profit { color: #f56c6c; } /* Red indicates profit (Chinese stock market norm) */
+.loss { color: #67c23a; } /* Green indicates loss (Chinese stock market norm) */
 
-/* 风险提示样式 */
+/* Risk warning style */
 .risk-disclaimer {
   margin: 24px 0;
   animation: fadeInDown 0.5s ease-out;
@@ -1082,7 +1082,7 @@ const getRiskLevelText = (level?: string) => {
   color: #303133;
 }
 
-/* 资金风险指标样式 */
+/* Fund risk indicator style */
 .risk-metrics-section {
   margin: 16px 0;
   padding: 12px;

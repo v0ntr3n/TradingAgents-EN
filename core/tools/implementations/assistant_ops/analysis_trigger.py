@@ -1,8 +1,8 @@
 """
-分析触发类工具
+Analysis trigger tools
 
-提供股票分析任务的创建和状态查询功能。
-分析任务异步执行，工具立即返回 task_id，不阻塞等待结果。
+Provides stock analysis task creation and status query functions.
+The analysis task is executed asynchronously, and the tool returns task_id immediately without blocking waiting for results.
 """
 
 import asyncio
@@ -17,7 +17,7 @@ from core.tools.context import get_current_assistant_thread_id, get_current_im_c
 
 logger = logging.getLogger(__name__)
 
-# ── 深度映射 ──
+# ── Depth mapping ──
 _DEPTH_MAP = {1: "快速", 2: "基础", 3: "标准", 4: "深度", 5: "全面"}
 
 
@@ -26,10 +26,10 @@ def _depth_label(depth: int) -> str:
 
 
 def _analysis_models() -> tuple[str, str]:
-    """获取当前配置的快速/深度分析模型，写入 task_params 供报告页展示模型名。
+    """Get the currently configured fast/deep analysis model and write task_params for the report page to display the model name.
 
-    与前端/正常分析入口保持一致（analysis_service 亦从 unified_config 读取），
-    避免智能助手发起的分析报告显示 Unknown/Unknown。
+    Consistent with the front-end/normal analysis entry (analysis_service also reads from unified_config),
+    Prevent analysis reports initiated by smart assistants from displaying Unknown/Unknown.
     """
     try:
         from app.core.unified_config import unified_config
@@ -38,7 +38,7 @@ def _analysis_models() -> tuple[str, str]:
             unified_config.get_deep_analysis_model(),
         )
     except Exception as e:
-        logger.warning(f"[analysis_trigger] 读取分析模型配置失败: {e}")
+        logger.warning(f"[analysis_trigger] Failed to read analysis model configuration: {e}")
         return "qwen-turbo", "qwen-max"
 
 
@@ -46,7 +46,7 @@ def _analysis_models() -> tuple[str, str]:
 @register_tool(
     tool_id="trigger_stock_analysis",
     name="触发股票分析",
-    description="创建一个全新的多智能体深度分析任务，由多个 AI 智能体在后台协作生成一份新的分析报告（耗时 2-5 分钟）。",
+    description="Create a new multi-agent in-depth analysis task, with multiple AI agents collaborating in the background to generate a new analysis report (taking 2-5 minutes).",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -56,26 +56,26 @@ def _analysis_models() -> tuple[str, str]:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["stock_analysis_trigger", "deep_analysis_initiation", "multi_agent_analysis", "async_analysis_task_creation"],
-    returns="返回文本消息，包含任务ID、股票代码、分析深度和预计完成时间。",
-    when_to_use="当用户要求对某只股票发起深度分析、生成分析报告时使用，任务在后台异步执行。",
+    returns="Returns a text message containing the task ID, ticker, depth of analysis, and estimated completion time.",
+    when_to_use="It is used when the user requests to initiate in-depth analysis of a certain stock and generate an analysis report. The task is executed asynchronously in the background.",
 )
 async def trigger_stock_analysis(
-    symbol: Annotated[str, "股票代码，6位数字，如 000001、600519"],
-    depth: Annotated[int, "分析深度 1-5（1=快速 2=基础 3=标准 4=深度 5=全面），默认3"] = 3,
-    workflow_id: Annotated[Optional[str], "指定工作流ID，留空则自动选择"] = None,
+    symbol: Annotated[str, "Stock code, 6 digits, such as 000001,600519"],
+    depth: Annotated[int, "Analysis Depth 1-5 (1=fast 2=Basics 3=Standard 4=Depth 5=Comprehensive), default 3"] = 3,
+    workflow_id: Annotated[Optional[str], "Specify workflow ID, leave blank to automatically select"] = None,
 ) -> str:
-    """发起一次全新的股票分析任务。任务在后台异步执行（通常需要 2-5 分钟），返回任务ID以便后续查询状态或报告。"""
+    """Launch a new stock analysis task. The task is executed asynchronously in the background (usually takes 2-5 minutes), and the task ID is returned for subsequent status query or reporting."""
     try:
         from bson import ObjectId
         from app.services.task_analysis_service import get_task_analysis_service
         from app.models.analysis import AnalysisTaskType
 
         user_id = require_current_user_id()
-        logger.info("[trigger_stock_analysis] 开始创建任务: symbol=%s, depth=%s, user_id=%s", symbol, depth, user_id)
+        logger.info("[trigger_stock_analysis] Start creating tasks: symbol=%s, depth=%s, user_id=%s", symbol, depth, user_id)
 
         service = get_task_analysis_service()
 
-        # 构造任务参数，若在 IM 渠道触发则附加回调渠道信息（用于任务完成后推送通知）
+        # Construct task parameters, and append callback channel information if triggered on the IM channel (used for push notifications after task completion)
         quick_model, deep_model = _analysis_models()
         task_params: dict = {
             "symbol": symbol,
@@ -87,7 +87,7 @@ async def trigger_stock_analysis(
         im_channel = get_current_im_channel()
         if im_channel:
             task_params["_im_channel"] = im_channel
-            logger.info("[trigger_stock_analysis] IM 渠道回调: %s", im_channel)
+            logger.info("[trigger_stock_analysis] IM Channel callback: %s", im_channel)
         current_thread_id = (get_current_assistant_thread_id() or "").strip()
         if current_thread_id:
             task_params["_assistant_thread_id"] = current_thread_id
@@ -99,25 +99,25 @@ async def trigger_stock_analysis(
             engine_type="auto",
             workflow_id=workflow_id,
         )
-        logger.info("[trigger_stock_analysis] ✅ 任务已创建: task_id=%s", task.task_id)
+        logger.info("[trigger_stock_analysis] ✅ Task has been created: task_id=%s", task.task_id)
 
-        # 后台执行，不阻塞
+        # Background execution, no blocking
         bg_task = asyncio.create_task(service.execute_task(task.task_id))
         bg_task.add_done_callback(
-            lambda t: logger.error("[trigger_stock_analysis] ❌ 后台执行异常: %s", t.exception())
+            lambda t: logger.error("[trigger_stock_analysis] ❌ Background execution exception: %s", t.exception())
             if not t.cancelled() and t.exception() else None
         )
-        logger.info("[trigger_stock_analysis] 后台执行任务已提交")
+        logger.info("[trigger_stock_analysis] The background execution task has been submitted")
 
         return (
             f"✅ 分析任务已创建\n"
-            f"- 任务ID: {task.task_id}\n"
-            f"- 股票: {symbol}\n"
-            f"- 深度: {_depth_label(depth)}\n"
-            f"- 预计 2-5 分钟完成，届时可用「查看报告」功能查看结果。"
+            f"- Task ID: {task.task_id}\n"
+            f"- stocks: {symbol}\n"
+            f"- Depth: {_depth_label(depth)}\n"
+            f"- It is expected to take 2-5 minutes to complete. At that time, you can use the View Report function to view the results."
         )
     except Exception as e:
-        logger.exception("[trigger_stock_analysis] ❌ 创建任务失败: %s", e)
+        logger.exception("[trigger_stock_analysis] ❌ Failed to create task: %s", e)
         return f"❌ 创建分析任务失败: {e}"
 
 
@@ -125,7 +125,7 @@ async def trigger_stock_analysis(
 @register_tool(
     tool_id="trigger_batch_analysis",
     name="触发批量分析",
-    description="同时为多只股票创建分析任务（批量版本的 trigger_stock_analysis），返回批次ID和各任务ID。适用于用户要求一次分析多只股票的场景。",
+    description="Create analysis tasks (batch version of trigger_stock_analysis) for multiple stocks at the same time, returning the batch ID and each task ID. It is suitable for scenarios where users require to analyze multiple stocks at one time.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -135,14 +135,14 @@ async def trigger_stock_analysis(
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["批量股票分析触发", "多只股票同时分析", "批量分析任务创建", "组合分析快速发起"],
-    when_to_use="当用户要求一次分析多只股票、批量发起分析任务时使用，每只股票单独创建后台异步任务。",
-    returns="返回文本消息，包含批次ID、各股票任务ID、分析深度和预计完成时间。",
+    when_to_use="It is used when the user requires to analyze multiple stocks at one time and initiate analysis tasks in batches. Each stock will create a separate background asynchronous task.",
+    returns="Returns a text message containing the batch ID, each stock task ID, analysis depth and estimated completion time.",
 )
 async def trigger_batch_analysis(
-    symbols: Annotated[str, "股票代码列表，用逗号分隔，如 000001,600519,000858"],
-    depth: Annotated[int, "分析深度 1-5，默认3"] = 3,
+    symbols: Annotated[str, "List of stock symbols, separated by commas, such as 000001,600519,000858"],
+    depth: Annotated[int, "Analysis depth 1-5, default 3"] = 3,
 ) -> str:
-    """批量触发多只股票的分析任务。每只股票单独创建任务，全部后台异步执行。"""
+    """Trigger analysis tasks for multiple stocks in batches. Each stock creates a separate task, and all tasks are executed asynchronously in the background."""
     from bson import ObjectId
     from app.services.task_analysis_service import get_task_analysis_service
     from app.models.analysis import AnalysisTaskType
@@ -153,9 +153,9 @@ async def trigger_batch_analysis(
 
     symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
     if not symbol_list:
-        return "❌ 请提供至少一个股票代码"
+        return "❌ Please provide at least one ticker symbol"
     if len(symbol_list) > 10:
-        return "❌ 单次批量分析最多支持 10 只股票"
+        return "❌ A single batch analysis supports up to 10 stocks"
 
     task_ids = []
     for sym in symbol_list:
@@ -182,10 +182,10 @@ async def trigger_batch_analysis(
 
     return (
         f"✅ 批量分析已创建（{len(symbol_list)} 只股票）\n"
-        f"- 批次ID: {batch_id}\n"
-        f"- 深度: {_depth_label(depth)}\n"
+        f"- batch ID: {batch_id}\n"
+        f"- Depth: {_depth_label(depth)}\n"
         + "\n".join(task_ids)
-        + "\n- 每只股票预计 2-5 分钟完成。"
+        + "\n- Expect 2-5 minutes per stock to complete."
     )
 
 
@@ -193,7 +193,7 @@ async def trigger_batch_analysis(
 @register_tool(
     tool_id="get_analysis_status",
     name="查询分析状态",
-    description="根据任务ID查询分析任务的执行状态和进度（排队中/运行中/已完成/失败）。用于了解之前发起的分析是否完成。",
+    description="Query and analyze the execution status and progress of the task (queuing/running/completed/failed) based on the task ID. Used to know whether a previously initiated analysis is complete.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -203,13 +203,13 @@ async def trigger_batch_analysis(
     tool_role_hint="supporting",
     output_shape="text",
     preferred_for=["分析任务状态查询", "分析进度跟踪", "任务完成确认", "异步分析结果检查"],
-    when_to_use="当用户想了解之前发起的分析任务是否完成、当前进度或失败原因时使用。",
-    returns="返回文本消息，包含任务状态、进度百分比、当前步骤和（如已完成）研究结论倾向摘要。",
+    when_to_use="Used when the user wants to know whether a previously initiated analysis task has been completed, the current progress, or the cause of failure.",
+    returns="Returns a text message containing task status, progress percentage, current step, and (if completed) a summary of the research conclusion tendencies.",
 )
 async def get_analysis_status(
     task_id: Annotated[str, "分析任务ID"],
 ) -> str:
-    """查询指定分析任务的状态、进度和结果摘要。"""
+    """Query the status, progress, and result summary of a specified analysis task."""
     from app.services.task_analysis_service import get_task_analysis_service
 
     service = get_task_analysis_service()

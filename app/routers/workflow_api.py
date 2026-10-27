@@ -1,8 +1,8 @@
 """
-工作流 API 接口
+Workflow API interface
 
-提供给外部服务调用的工作流执行接口
-支持同步和异步两种执行模式
+Workflow execution interface provided for external service calls
+Supports both synchronous and asynchronous execution modes
 """
 
 import asyncio
@@ -23,41 +23,41 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/workflow", tags=["Workflow API"])
 
 
-# ========== 请求模型 ==========
+# ========== request model ==========
 
 class WorkflowExecuteRequest(BaseModel):
-    """工作流执行请求"""
+    """Workflow execution request"""
     
-    # 必填参数
-    workflow_id: str = Field(..., description="工作流ID（数据库中的工作流ID或系统预置工作流ID）")
+    # Required parameters
+    workflow_id: str = Field(..., description="Workflow ID (workflow ID in the database or system preset workflow ID)")
     
-    # 股票分析参数
-    ticker: Optional[str] = Field(None, description="股票代码（如：000001, AAPL）")
-    stock_code: Optional[str] = Field(None, description="股票代码（别名，与ticker二选一）")
-    analysis_date: Optional[str] = Field(None, description="分析日期（格式：YYYY-MM-DD，默认今天）")
-    market_type: Optional[str] = Field(None, description="市场类型（cn/us/hk，默认自动识别）")
+    # Stock analysis parameters
+    ticker: Optional[str] = Field(None, description="Stock code (e.g.:000001, AAPL) ")
+    stock_code: Optional[str] = Field(None, description="Stock code (alias, choose one from ticker)")
+    analysis_date: Optional[str] = Field(None, description="Analysis date (format: YYYY-MM-DD, default is today)")
+    market_type: Optional[str] = Field(None, description="Market type (cn/us/hk, automatically recognized by default)")
     
-    # 分析配置
-    research_depth: Optional[str] = Field("快速", description="研究深度（快速/标准/深度）")
-    preference_type: Optional[str] = Field("neutral", description="风险偏好（aggressive/neutral/conservative）")
+    # Analysis configuration
+    research_depth: Optional[str] = Field("fast", description="Research Depth (Quick/Standard/Deep)")
+    preference_type: Optional[str] = Field("neutral", description="Risk preference (aggressive/neutral/conservative)")
     
-    # 模型配置
-    quick_analysis_model: Optional[str] = Field(None, description="快速分析模型")
-    deep_analysis_model: Optional[str] = Field(None, description="深度分析模型")
+    # Model configuration
+    quick_analysis_model: Optional[str] = Field(None, description="Quickly analyze models")
+    deep_analysis_model: Optional[str] = Field(None, description="Deep analysis model")
     
-    # 工作流参数
-    lookback_days: Optional[int] = Field(30, description="回溯天数")
-    max_debate_rounds: Optional[int] = Field(2, description="最大辩论轮数")
+    # Workflow parameters
+    lookback_days: Optional[int] = Field(30, description="Lookback days")
+    max_debate_rounds: Optional[int] = Field(2, description="Maximum number of debate rounds")
     
-    # 自定义参数（传递给工作流的额外参数）
-    custom_params: Optional[Dict[str, Any]] = Field(default_factory=dict, description="自定义参数")
+    # Custom parameters (additional parameters passed to the workflow)
+    custom_params: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Custom parameters")
     
-    # 执行模式
-    async_mode: bool = Field(True, description="是否异步执行（True=返回task_id，False=等待结果）")
-    timeout: Optional[int] = Field(1800, description="同步模式下的超时时间（秒），默认30分钟")
+    # execution mode
+    async_mode: bool = Field(True, description="Whether to execute asynchronously (True=Return task_id,False=Waiting for results)")
+    timeout: Optional[int] = Field(1800, description="Timeout in synchronous mode (seconds), default 30 minutes")
     
-    # 回调配置
-    callback_url: Optional[str] = Field(None, description="异步模式下的回调URL（任务完成后POST结果）")
+    # Callback configuration
+    callback_url: Optional[str] = Field(None, description="Callback URL in asynchronous mode (POST result after task completion)")
     
     class Config:
         json_schema_extra = {
@@ -65,7 +65,7 @@ class WorkflowExecuteRequest(BaseModel):
                 "workflow_id": "stock_analysis_workflow",
                 "ticker": "000001",
                 "analysis_date": "2026-02-19",
-                "research_depth": "标准",
+                "research_depth": "Standard",
                 "preference_type": "neutral",
                 "async_mode": True
             }
@@ -73,45 +73,45 @@ class WorkflowExecuteRequest(BaseModel):
 
 
 class WorkflowExecuteResponse(BaseModel):
-    """工作流执行响应"""
+    """Workflow execution response"""
     
-    # 异步模式返回
-    task_id: Optional[str] = Field(None, description="任务ID（异步模式）")
-    status: Optional[str] = Field(None, description="任务状态")
-    message: Optional[str] = Field(None, description="提示信息")
+    # Asynchronous mode returns
+    task_id: Optional[str] = Field(None, description="Task ID (asynchronous mode)")
+    status: Optional[str] = Field(None, description="Task status")
+    message: Optional[str] = Field(None, description="Prompt message")
     
-    # 同步模式返回
-    success: Optional[bool] = Field(None, description="执行是否成功（同步模式）")
-    result: Optional[Dict[str, Any]] = Field(None, description="执行结果（同步模式）")
-    execution_time: Optional[float] = Field(None, description="执行时间（秒）")
+    # Synchronous mode returns
+    success: Optional[bool] = Field(None, description="Whether the execution is successful (synchronous mode)")
+    result: Optional[Dict[str, Any]] = Field(None, description="Execution results (synchronous mode)")
+    execution_time: Optional[float] = Field(None, description="Execution time (seconds)")
     
     class Config:
         json_schema_extra = {
             "example": {
                 "task_id": "550e8400-e29b-41d4-a716-446655440000",
                 "status": "pending",
-                "message": "任务已提交，正在后台执行"
+                "message": "The task has been submitted and is being executed in the background"
             }
         }
 
 
 class TaskStatusResponse(BaseModel):
-    """任务状态响应"""
+    """Task status response"""
     
-    task_id: str = Field(..., description="任务ID")
-    status: str = Field(..., description="任务状态（pending/running/completed/failed）")
-    progress: int = Field(0, description="执行进度（0-100）")
-    message: Optional[str] = Field(None, description="当前状态描述")
+    task_id: str = Field(..., description="Task ID")
+    status: str = Field(..., description="Task status (pending/running/completed/failed)")
+    progress: int = Field(0, description="Execution progress (0-100)")
+    message: Optional[str] = Field(None, description="Current status description")
     
-    # 任务信息
-    created_at: Optional[datetime] = Field(None, description="创建时间")
-    started_at: Optional[datetime] = Field(None, description="开始时间")
-    completed_at: Optional[datetime] = Field(None, description="完成时间")
-    execution_time: Optional[float] = Field(None, description="执行时间（秒）")
+    # Mission information
+    created_at: Optional[datetime] = Field(None, description="creation time")
+    started_at: Optional[datetime] = Field(None, description="start time")
+    completed_at: Optional[datetime] = Field(None, description="completion time")
+    execution_time: Optional[float] = Field(None, description="Execution time (seconds)")
     
-    # 结果（仅完成时）
-    result: Optional[Dict[str, Any]] = Field(None, description="执行结果")
-    error: Optional[str] = Field(None, description="错误信息（失败时）")
+    # Result (only when completed)
+    result: Optional[Dict[str, Any]] = Field(None, description="Execution result")
+    error: Optional[str] = Field(None, description="Error message (on failure)")
     
     class Config:
         json_schema_extra = {
@@ -119,40 +119,40 @@ class TaskStatusResponse(BaseModel):
                 "task_id": "550e8400-e29b-41d4-a716-446655440000",
                 "status": "completed",
                 "progress": 100,
-                "message": "任务执行完成",
+                "message": "Task execution completed",
                 "execution_time": 125.5,
                 "result": {
-                    "summary": "分析完成",
-                    "recommendation": "建议关注"
+                    "summary": "Analysis completed",
+                    "recommendation": "Recommended to pay attention to"
                 }
             }
         }
 
 
-# ========== API 端点 ==========
+# ========== API endpoint ==========
 
 @router.post("/execute", response_model=WorkflowExecuteResponse)
 async def execute_workflow(
     request: WorkflowExecuteRequest,
     background_tasks: BackgroundTasks,
-    user: dict = Depends(get_current_user)  # 支持 JWT Token 和 Session 认证
+    user: dict = Depends(get_current_user)  # Support JWT Token and Session authentication
 ):
     """
-    执行工作流
+    Execute workflow
     
-    支持两种模式：
-    1. **异步模式**（默认）：立即返回 task_id，通过 /task/{task_id}/status 查询状态
-    2. **同步模式**：等待执行完成后返回结果（适合超时时间短的工作流）
+    Two modes are supported:
+    1. **asynchronous mode** (Default): immediately returns task_id, passed /task/{task_id}/status Query status
+    2. **synchronous mode**: Wait for the execution to complete before returning the result (suitable for workflows with short timeouts)
     
-    认证方式：
+    Authentication method:
     - Header: `Authorization: Bearer <token>`
     - Header: `X-API-Key: <api_key>`
     """
     try:
         user_id = user.get("user_id") or user.get("_id")
-        logger.info(f"🎯 [工作流API] 收到执行请求: workflow_id={request.workflow_id}, user={user_id}")
+        logger.info(f"🎯 [Workflow API] Execution request received: workflow_id={request.workflow_id}, user={user_id}")
 
-        # 🆕 查询工作流类型，判断 ticker 是否必填
+        # 🆕 Query the workflow type and determine whether ticker is required.
         from app.core.database import get_mongo_db
         from app.models.analysis import AnalysisTaskType
         db = get_mongo_db()
@@ -163,13 +163,13 @@ async def execute_workflow(
         workflow_type = wf_doc.get("workflow_type", "stock_analysis") if wf_doc else "stock_analysis"
         input_config = wf_doc.get("input_config") if wf_doc else None
 
-        # 获取股票代码（仅 stock_analysis/etf_analysis 必填）
+        # Get stock code (required only for stock_analysis/etf_analysis)
         ticker = request.ticker or request.stock_code
         TICKER_REQUIRED_TYPES = {"stock_analysis", "etf_analysis"}
         if workflow_type in TICKER_REQUIRED_TYPES and not ticker:
-            raise HTTPException(status_code=400, detail=f"工作流类型 {workflow_type} 必须提供 ticker 或 stock_code 参数")
+            raise HTTPException(status_code=400, detail=f"Workflow type {workflow_type} The ticker or stock_code parameter must be provided")
 
-        # 🆕 根据 workflow_type 映射 task_type
+        # 🆕 Mapping based on workflow_type task_type
         WORKFLOW_TYPE_TO_TASK_TYPE = {
             "stock_analysis": AnalysisTaskType.STOCK_ANALYSIS,
             "etf_analysis": AnalysisTaskType.ETF_ANALYSIS,
@@ -179,7 +179,7 @@ async def execute_workflow(
         }
         task_type = WORKFLOW_TYPE_TO_TASK_TYPE.get(workflow_type, AnalysisTaskType.STOCK_ANALYSIS)
 
-        # 构建任务参数
+        # Build task parameters
         task_params = {}
         if ticker:
             task_params["symbol"] = ticker
@@ -192,7 +192,7 @@ async def execute_workflow(
         task_params["lookback_days"] = request.lookback_days
         task_params["max_debate_rounds"] = request.max_debate_rounds
 
-        # 🆕 根据 input_config.fields 的 default 值补充缺失参数
+        # 🆕 Supplement missing parameters based on the default value of input_config.fields
         if input_config and isinstance(input_config, dict):
             fields = input_config.get("fields", [])
             for field in fields:
@@ -202,18 +202,18 @@ async def execute_workflow(
                     if default_val is not None:
                         task_params[fname] = default_val
 
-        # 合并自定义参数
+        # Merge custom parameters
         task_params.update(request.custom_params)
 
-        # 为 general 类型打标记
+        # Mark the general type
         if workflow_type == "general":
             task_params["task_category"] = "general"
 
-        # 获取任务服务
+        # Get task service
         task_service = get_task_analysis_service()
 
         if request.async_mode:
-            # 异步模式：创建任务并返回 task_id
+            # Asynchronous mode: create task and return task_id
             task = await task_service.create_task(
                 user_id=PyObjectId(user_id),
                 task_type=task_type,
@@ -223,18 +223,18 @@ async def execute_workflow(
                 workflow_id=request.workflow_id
             )
 
-            # 异步执行任务
+            # Execute tasks asynchronously
             asyncio.create_task(task_service.execute_task(task))
 
-            logger.info(f"✅ [工作流API] 异步任务已创建: task_id={task.task_id}")
+            logger.info(f"✅ [Workflow API] Asynchronous task has been created: task_id={task.task_id}")
 
             return WorkflowExecuteResponse(
                 task_id=task.task_id,
                 status=task.status,
-                message="任务已提交，正在后台执行"
+                message="The task has been submitted and is being executed in the background"
             )
         else:
-            # 同步模式：等待执行完成
+            # Synchronous mode: wait for execution to complete
             task = await task_service.create_task(
                 user_id=PyObjectId(user_id),
                 task_type=task_type,
@@ -244,38 +244,38 @@ async def execute_workflow(
                 workflow_id=request.workflow_id
             )
 
-            logger.info(f"🔄 [工作流API] 同步执行任务: task_id={task.task_id}")
+            logger.info(f"🔄 [Workflow API] Execute tasks synchronously: task_id={task.task_id}")
 
-            # 同步执行任务（等待完成）
+            # Execute tasks synchronously (wait for completion)
             try:
                 result = await asyncio.wait_for(
                     task_service.execute_task(task),
                     timeout=request.timeout
                 )
 
-                # 重新获取任务状态
+                # Retrieve task status
                 task = await task_service.get_task(task.task_id)
 
-                logger.info(f"✅ [工作流API] 同步任务完成: task_id={task.task_id}")
+                logger.info(f"✅ [Workflow API] Synchronization task completed: task_id={task.task_id}")
 
                 return WorkflowExecuteResponse(
                     success=True,
                     result=task.result,
                     execution_time=task.execution_time,
-                    message="任务执行完成"
+                    message="Task execution completed"
                 )
             except asyncio.TimeoutError:
-                logger.warning(f"⏰ [工作流API] 同步任务超时: task_id={task.task_id}")
+                logger.warning(f"⏰ [Workflow API] Synchronization task timeout: task_id={task.task_id}")
                 return WorkflowExecuteResponse(
                     success=False,
                     task_id=task.task_id,
-                    message=f"任务执行超时（超过{request.timeout}秒），请使用异步模式或通过task_id查询结果"
+                    message=f"Task execution timeout (exceeds{request.timeout}seconds), please use asynchronous mode or query the results by task_id"
                 )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ [工作流API] 执行失败: {e}", exc_info=True)
+        logger.error(f"❌ [Workflow API] Execution failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -285,23 +285,23 @@ async def get_task_status(
     user: dict = Depends(get_current_user)
 ):
     """
-    查询任务状态
+    Query task status
 
-    用于异步模式下查询任务执行状态和进度
+    Used to query task execution status and progress in asynchronous mode
     """
     try:
         user_id = user.get("user_id") or user.get("_id")
-        logger.info(f"🔍 [工作流API] 查询任务状态: task_id={task_id}, user={user_id}")
+        logger.info(f"🔍 [Workflow API] Query task status: task_id={task_id}, user={user_id}")
 
         task_service = get_task_analysis_service()
         task = await task_service.get_task(task_id)
 
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task does not exist")
 
-        # 验证任务所有权
+        # Verify task ownership
         if str(task.user_id) != str(user_id):
-            raise HTTPException(status_code=403, detail="无权访问此任务")
+            raise HTTPException(status_code=403, detail="Don t have permission to access this task")
 
         return TaskStatusResponse(
             task_id=task.task_id,
@@ -319,7 +319,7 @@ async def get_task_status(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ [工作流API] 查询任务状态失败: {e}", exc_info=True)
+        logger.error(f"❌ [Workflow API] Failed to query task status: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -329,28 +329,28 @@ async def get_task_result(
     user: dict = Depends(get_current_user)
 ):
     """
-    获取任务结果
+    Get task results
 
-    返回已完成任务的详细结果
+    Return detailed results of completed tasks
     """
     try:
         user_id = user.get("user_id") or user.get("_id")
-        logger.info(f"📊 [工作流API] 获取任务结果: task_id={task_id}, user={user_id}")
+        logger.info(f"📊 [Workflow API] Get task results: task_id={task_id}, user={user_id}")
 
         task_service = get_task_analysis_service()
         task = await task_service.get_task(task_id)
 
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task does not exist")
 
-        # 验证任务所有权
+        # Verify task ownership
         if str(task.user_id) != str(user_id):
-            raise HTTPException(status_code=403, detail="无权访问此任务")
+            raise HTTPException(status_code=403, detail="Don t have permission to access this task")
 
         if task.status != "completed":
             raise HTTPException(
                 status_code=400,
-                detail=f"任务尚未完成，当前状态: {task.status}"
+                detail=f"The task has not been completed yet, current status: {task.status}"
             )
 
         return ok({
@@ -364,7 +364,7 @@ async def get_task_result(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ [工作流API] 获取任务结果失败: {e}", exc_info=True)
+        logger.error(f"❌ [Workflow API] Failed to obtain task results: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -374,42 +374,42 @@ async def cancel_task(
     user: dict = Depends(get_current_user)
 ):
     """
-    取消任务
+    Cancel task
 
-    取消正在执行或等待中的任务
+    Cancel an executing or waiting task
     """
     try:
         user_id = user.get("user_id") or user.get("_id")
-        logger.info(f"🛑 [工作流API] 取消任务: task_id={task_id}, user={user_id}")
+        logger.info(f"🛑 [Workflow API] Cancel task: task_id={task_id}, user={user_id}")
 
         task_service = get_task_analysis_service()
         task = await task_service.get_task(task_id)
 
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task does not exist")
 
-        # 验证任务所有权
+        # Verify task ownership
         if str(task.user_id) != str(user_id):
-            raise HTTPException(status_code=403, detail="无权访问此任务")
+            raise HTTPException(status_code=403, detail="Don t have permission to access this task")
 
         if task.status in ["completed", "failed", "cancelled"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"任务已结束，无法取消，当前状态: {task.status}"
+                detail=f"The task has ended and cannot be canceled. Current status: {task.status}"
             )
 
-        # 更新任务状态为已取消
+        # Update task status to Canceled
         await task_service.cancel_task(task_id)
 
         return ok({
             "task_id": task_id,
             "status": "cancelled",
-            "message": "任务已取消"
+            "message": "Task canceled"
         })
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ [工作流API] 取消任务失败: {e}", exc_info=True)
+        logger.error(f"❌ [Workflow API] Failed to cancel task: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 

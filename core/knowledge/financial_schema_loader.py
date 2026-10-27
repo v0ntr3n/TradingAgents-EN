@@ -1,4 +1,4 @@
-"""金融 schema bundle 加载器。"""
+"""Financial schema bundle loader."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class FinancialSchemaLoader:
-    """从外部 schema-content 项目读取 bundle 和对象文件。"""
+    """Read bundle and object files from external schema-content projects."""
 
     def __init__(self, root_path: Optional[str | Path] = None):
         self._root_path = Path(root_path).resolve() if root_path else None

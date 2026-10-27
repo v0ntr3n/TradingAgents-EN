@@ -1,6 +1,6 @@
 """
-增强版队列服务
-基于现有实现，添加并发控制、优先级队列、可见性超时等功能
+Enhanced version of queue service
+Based on the existing implementation, add concurrency control, priority queue, visibility timeout and other functions
 """
 
 import json
@@ -39,7 +39,7 @@ from app.services.queue import (
 
 logger = logging.getLogger(__name__)
 
-# Redis键名与配置常量由 app.services.queue.keys 提供（此处不再重复定义）
+# Redis Key names and configuration constants are provided by app.services.queue.keys (not repeated here)
 
 
 class QueueService:
@@ -52,13 +52,13 @@ class QueueService:
         self.visibility_timeout = VISIBILITY_TIMEOUT_SECONDS
 
     def _clean_params_for_json(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """清理参数，将不可序列化的对象转换为可序列化的格式
+        """Clean parameters and convert non-serializable objects to serializable format
         
         Args:
-            params: 原始参数字典
+            params: Original parameter dictionary
             
         Returns:
-            清理后的参数字典
+            Cleaned parameter dictionary
         """
         cleaned = {}
         for key, value in params.items():
@@ -66,40 +66,40 @@ class QueueService:
                 if value is None:
                     cleaned[key] = None
                 elif isinstance(value, (str, int, float, bool)):
-                    # 基本类型直接保留
+                    # Basic types are retained directly
                     cleaned[key] = value
                 elif isinstance(value, datetime):
-                    # 将 datetime 转换为 ISO 格式字符串
+                    # Convert datetime to ISO format string
                     cleaned[key] = value.isoformat()
                 elif isinstance(value, dict):
-                    # 递归处理嵌套字典
+                    # Recursively process nested dictionaries
                     cleaned[key] = self._clean_params_for_json(value)
                 elif isinstance(value, (list, tuple)):
-                    # 处理列表和元组
+                    # Working with lists and tuples
                     cleaned[key] = [
                         self._clean_single_value(item) for item in value
                     ]
                 elif hasattr(value, 'model_dump'):
-                    # Pydantic v2 模型
+                    # Pydantic v2 model
                     cleaned[key] = self._clean_params_for_json(value.model_dump())
                 elif hasattr(value, 'dict'):
-                    # Pydantic v1 模型
+                    # Pydantic v1 model
                     cleaned[key] = self._clean_params_for_json(value.dict())
                 elif hasattr(value, '__dict__'):
-                    # 其他对象，尝试转换为字典
+                    # Other objects, try converting to dictionary
                     try:
                         cleaned[key] = self._clean_params_for_json(value.__dict__)
                     except Exception:
                         cleaned[key] = str(value)
                 else:
-                    # 其他类型尝试 JSON 序列化，如果失败则转换为字符串
+                    # Other types attempt JSON serialization and convert to string if that fails
                     try:
-                        json.dumps(value)  # 测试是否可以序列化
+                        json.dumps(value)  # Test whether it can be serialized
                         cleaned[key] = value
                     except (TypeError, ValueError):
                         cleaned[key] = str(value)
             except Exception as e:
-                # 如果处理失败，记录警告并使用字符串表示
+                # If processing fails, log a warning and use a string representation
                 logger.warning(f"清理参数 {key} 时出错: {e}, 使用字符串表示")
                 cleaned[key] = str(value)
         return cleaned
@@ -135,31 +135,31 @@ class QueueService:
         batch_id: Optional[str] = None,
         task_id: Optional[str] = None
     ) -> str:
-        """任务入队（FIFO队列，不限制提交并发，由Worker控制处理并发）
+        """Task enqueue (FIFO queue, no limit on submission concurrency, worker controls processing concurrency)
 
         Args:
-            user_id: 用户ID
-            symbol: 股票代码
-            params: 任务参数
-            batch_id: 批次ID（可选）
-            task_id: 任务ID（可选，如果不提供则自动生成）
+            user_id: User ID
+            symbol: Stock code
+            params: Task parameters
+            batch_id: Batch ID (optional)
+            task_id: Task ID (optional, automatically generated if not provided)
         """
 
-        # 注释掉提交时的并发限制检查 - 让任务进入队列排队
-        # 并发控制由 Worker 在 dequeue_task 时处理
+        # Comment out the concurrency limit check on submission - let the task be queued
+        # Concurrency control is handled by Worker at dequeue_task time
         # if not await self._check_user_concurrent_limit(user_id):
-        #     raise ValueError(f"用户 {user_id} 达到并发限制 ({self.user_concurrent_limit})")
+        #     raise ValueError(f"User {user_id} Concurrency limit reached ({self.user_concurrent_limit})")
         # if not await self._check_global_concurrent_limit():
-        #     raise ValueError(f"系统达到全局并发限制 ({self.global_concurrent_limit})")
+        #     raise ValueError(f"The system reaches the global concurrency limit ({self.global_concurrent_limit})")
 
-        # 如果没有提供 task_id，则生成新的
+        # If task_id is not provided, a new one is generated
         if task_id is None:
             task_id = str(uuid.uuid4())
         
         key = TASK_PREFIX + task_id
         now = int(time.time())
 
-        # 🔥 清理参数，将不可序列化的对象转换为可序列化的格式
+        # 🔥 Clean parameters and convert non-serializable objects to serializable format
         cleaned_params = self._clean_params_for_json(params or {})
         
         mapping = {
@@ -175,10 +175,10 @@ class QueueService:
         if batch_id:
             mapping["batch_id"] = batch_id
 
-        # 保存任务数据
+        # Save task data
         await self.r.hset(key, mapping=mapping)
 
-        # 添加到FIFO队列
+        # Add to FIFO queue
         await self.r.lpush(READY_LIST, task_id)
 
         if batch_id:
@@ -190,12 +190,12 @@ class QueueService:
     async def dequeue_task(self, worker_id: str) -> Optional[Dict[str, Any]]:
         """从FIFO队列中取出任务"""
         try:
-            # 从FIFO队列获取任务
+            # Get tasks from FIFO queue
             task_id = await self.r.rpop(READY_LIST)
             if not task_id:
                 return None
 
-            # 获取任务详情
+            # Get task details
             task_data = await self.get_task(task_id)
             if not task_data:
                 logger.warning(f"任务数据不存在: {task_id}")
@@ -203,20 +203,20 @@ class QueueService:
 
             user_id = task_data.get("user")
 
-            # 注释掉 dequeue 时的并发限制检查 - 让 Worker 处理所有排队的任务
-            # Worker 的并发控制由 semaphore 实现，而不是这里的用户并发限制
+            # Concurrency limit check when dequeue is commented out - lets the Worker handle all queued tasks
+            # Worker The concurrency control is implemented by semaphore, not the user concurrency limit here
             # if not await self._check_user_concurrent_limit(user_id):
             #     await self.r.lpush(READY_LIST, task_id)
-            #     logger.warning(f"用户 {user_id} 并发限制，任务重新入队: {task_id}")
+            #     logger.warning(f"User {user_id} Concurrency limit, task requeue: {task_id}")
             #     return None
 
-            # 标记任务为处理中
+            # Mark task as in progress
             await self._mark_task_processing(task_id, user_id, worker_id)
 
-            # 设置可见性超时
+            # Set visibility timeout
             await self._set_visibility_timeout(task_id, worker_id)
 
-            # 更新任务状态
+            # Update task status
             await self.r.hset(TASK_PREFIX + task_id, mapping={
                 "status": "processing",
                 "worker_id": worker_id,
@@ -240,20 +240,20 @@ class QueueService:
             user_id = task_data.get("user")
             worker_id = task_data.get("worker_id")
 
-            # 从处理中集合移除
+            # Remove from processing collection
             await self._unmark_task_processing(task_id, user_id)
 
-            # 清除可见性超时
+            # Clear visibility timeout
             await self._clear_visibility_timeout(task_id)
 
-            # 更新任务状态
+            # Update task status
             status = "completed" if success else "failed"
             await self.r.hset(TASK_PREFIX + task_id, mapping={
                 "status": status,
                 "completed_at": str(int(time.time()))
             })
 
-            # 添加到相应的集合
+            # Add to corresponding collection
             if success:
                 await self.r.sadd(SET_COMPLETED, task_id)
             else:
@@ -324,25 +324,25 @@ class QueueService:
             "failed": int(failed or 0),
         }
 
-    # 新增：并发控制方法
+    # New: Concurrency control methods
     async def _check_user_concurrent_limit(self, user_id: str) -> bool:
-        """检查用户并发限制（委托 helpers）"""
+        """Check user concurrency limits (delegate helpers)"""
         return await check_user_concurrent_limit(self.r, user_id, self.user_concurrent_limit)
 
     async def _check_global_concurrent_limit(self) -> bool:
-        """检查全局并发限制（委托 helpers）"""
+        """Check global concurrency limits (delegate helpers)"""
         return await check_global_concurrent_limit(self.r, self.global_concurrent_limit)
 
     async def _mark_task_processing(self, task_id: str, user_id: str, worker_id: str):
-        """标记任务为处理中（委托 helpers）"""
+        """Mark a task as being processed (delegate helpers)"""
         await mark_task_processing(self.r, task_id, user_id)
 
     async def _unmark_task_processing(self, task_id: str, user_id: str):
-        """取消任务处理中标记（委托 helpers）"""
+        """Cancel the task processing mark (delegate helpers)"""
         await unmark_task_processing(self.r, task_id, user_id)
 
     async def _set_visibility_timeout(self, task_id: str, worker_id: str):
-        """设置可见性超时（委托 helpers）"""
+        """Set visibility timeout (delegate helpers)"""
         await set_visibility_timeout(self.r, task_id, worker_id, self.visibility_timeout)
 
     async def _clear_visibility_timeout(self, task_id: str):
@@ -361,9 +361,9 @@ class QueueService:
         }
 
     async def cleanup_expired_tasks(self):
-        """清理过期任务（可见性超时）"""
+        """Clean up expired tasks (visibility timeout)"""
         try:
-            # 获取所有可见性超时键
+            # Get all visibility timeout keys
             timeout_keys = await self.r.keys(VISIBILITY_TIMEOUT_PREFIX + "*")
 
             current_time = int(time.time())
@@ -378,7 +378,7 @@ class QueueService:
                         if task_id:
                             expired_tasks.append(task_id)
 
-            # 处理过期任务
+            # Handle overdue tasks
             for task_id in expired_tasks:
                 await self._handle_expired_task(task_id)
 
@@ -397,16 +397,16 @@ class QueueService:
 
             user_id = task_data.get("user")
 
-            # 从处理中集合移除
+            # Remove from processing collection
             await self._unmark_task_processing(task_id, user_id)
 
-            # 清除可见性超时
+            # Clear visibility timeout
             await self._clear_visibility_timeout(task_id)
 
-            # 重新加入队列
+            # rejoin queue
             await self.r.lpush(READY_LIST, task_id)
 
-            # 更新任务状态
+            # Update task status
             await self.r.hset(TASK_PREFIX + task_id, mapping={
                 "status": "queued",
                 "worker_id": "",
@@ -429,14 +429,14 @@ class QueueService:
             user_id = task_data.get("user")
 
             if status == "processing":
-                # 如果正在处理中，从处理集合移除
+                # If it is being processed, remove it from the processing collection
                 await self._unmark_task_processing(task_id, user_id)
                 await self._clear_visibility_timeout(task_id)
             elif status == "queued":
-                # 如果在队列中，从队列移除
+                # If in queue, remove from queue
                 await self.r.lrem(READY_LIST, 0, task_id)
 
-            # 更新任务状态
+            # Update task status
             await self.r.hset(TASK_PREFIX + task_id, mapping={
                 "status": "cancelled",
                 "cancelled_at": str(int(time.time()))

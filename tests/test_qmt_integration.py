@@ -1,23 +1,23 @@
 """
-QMT 数据源集成测试
+QMT Data source integration testing
 
-测试前置条件：
-1. 已安装 xtquant 库
-2. MiniQMT 客户端已启动
-3. 仅支持 Windows 系统
+Test prerequisites:
+1. xtquant library installed
+2. MiniQMT Client has started
+3. Only supports Windows systems
 
-测试内容：
-1. QMT 适配器可用性检查
-2. 获取股票列表
-3. 获取实时行情
-4. 获取 K 线数据
-5. QMT 同步服务测试
+Test content:
+1. QMT Adapter availability check
+2. Get a list of stocks
+3. Get real-time quotes
+4. Get K-line data
+5. QMT Sync service testing
 """
 import sys
 import os
 from pathlib import Path
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -25,7 +25,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-# 配置日志
+# Configuration log
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -34,9 +34,9 @@ logger = logging.getLogger(__name__)
 
 
 async def test_qmt_adapter():
-    """测试 QMT 适配器基本功能"""
+    """Test QMT adapter basic functionality"""
     print("\n" + "="*60)
-    print("🧪 测试 1: QMT 适配器可用性检查")
+    print("🧪 test 1: QMT Adapter availability check")
     print("="*60)
     
     try:
@@ -46,27 +46,27 @@ async def test_qmt_adapter():
         is_available = adapter.is_available()
         
         if is_available:
-            print("✅ QMT 适配器可用")
-            print("   - xtquant 库已安装")
-            print("   - MiniQMT 客户端已连接")
+            print("✅ QMT Adapters available")
+            print("   - xtquant Library installed")
+            print("   - MiniQMT Client is connected")
         else:
-            print("❌ QMT 适配器不可用")
-            print("   请检查：")
-            print("   1. 是否已安装 xtquant 库")
-            print("   2. MiniQMT 客户端是否已启动并登录")
+            print("❌ QMT Adapter not available")
+            print("   Please check:")
+            print("   1. Whether the xtquant library has been installed")
+            print("   2. MiniQMT Whether the client is started and logged in")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
     
     return True
 
 
 async def test_get_stock_list():
-    """测试获取股票列表"""
+    """Test to get the stock list"""
     print("\n" + "="*60)
-    print("🧪 测试 2: 获取股票列表")
+    print("🧪 test 2: Get a list of stocks")
     print("="*60)
     
     try:
@@ -76,25 +76,25 @@ async def test_get_stock_list():
         df = adapter.get_stock_list()
         
         if df is not None and not df.empty:
-            print(f"✅ 成功获取 {len(df)} 只股票")
-            print(f"\n前 5 只股票：")
+            print(f"✅ successfully obtained {len(df)} only stocks")
+            print(f"\n Top 5 stocks:")
             print(df.head().to_string())
             return True
         else:
-            print("❌ 未获取到股票列表")
+            print("❌ No stock list obtained")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 async def test_get_realtime_quotes():
-    """测试获取实时行情"""
+    """Test to get real-time quotes"""
     print("\n" + "="*60)
-    print("🧪 测试 3: 获取实时行情")
+    print("🧪 test 3: Get real-time quotes")
     print("="*60)
 
     try:
@@ -104,87 +104,87 @@ async def test_get_realtime_quotes():
         quotes = adapter.get_realtime_quotes()
 
         if quotes:
-            print(f"✅ 成功获取 {len(quotes)} 只股票的实时行情")
-            # 显示前 5 只
+            print(f"✅ successfully obtained {len(quotes)} Real-time quotes of individual stocks")
+            # Showing top 5
             count = 0
             for code, quote in quotes.items():
                 if count >= 5:
                     break
                 print(f"\n{code}:")
-                print(f"  最新价: {quote.get('close')}")
-                print(f"  涨跌幅: {quote.get('pct_chg')}%")
-                print(f"  成交额: {quote.get('amount')}")
+                print(f"  latest price: {quote.get('close')}")
+                print(f"  Increase or decrease: {quote.get('pct_chg')}%")
+                print(f"  Turnover: {quote.get('amount')}")
                 count += 1
             return True
         else:
-            print("⚠️  未获取到实时行情")
-            print("   可能原因：")
-            print("   1. 当前非交易时间")
-            print("   2. MiniQMT 未连接行情服务器")
-            print("   3. 需要在交易时间段测试")
+            print("⚠️  No real-time quotes were obtained")
+            print("   Possible reasons:")
+            print("   1. Current non-trading hours")
+            print("   2. MiniQMT Not connected to the market server")
+            print("   3. Need to test during trading hours")
             return False
 
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 async def test_get_kline():
-    """测试获取 K 线数据"""
+    """Test to obtain K-line data"""
     print("\n" + "="*60)
-    print("🧪 测试 4: 获取 K 线数据")
+    print("🧪 test 4: Get K-line data")
     print("="*60)
     
     try:
         from app.services.data_sources.qmt_adapter import QMTAdapter
         
         adapter = QMTAdapter()
-        # 测试获取平安银行（000001）的日线数据
+        # Test to obtain the daily data of Ping An Bank (000001)
         kline = adapter.get_kline("000001", period="day", limit=5)
         
         if kline:
-            print(f"✅ 成功获取 {len(kline)} 条 K 线数据（000001 平安银行）")
-            print("\n最近 5 个交易日：")
+            print(f"✅ successfully obtained {len(kline)} K-line data (000001 Ping An Bank)")
+            print("\n Last 5 trading days:")
             for item in kline:
-                print(f"  {item.get('date')}: 开{item.get('open')} 高{item.get('high')} "
-                      f"低{item.get('low')} 收{item.get('close')} 量{item.get('volume')}")
+                print(f"  {item.get('date')}: open{item.get('open')} high{item.get('high')} "
+                      f"low{item.get('low')} receive{item.get('close')} quantity{item.get('volume')}")
             return True
         else:
-            print("❌ 未获取到 K 线数据")
+            print("❌ K-line data not obtained")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 async def main():
-    """运行所有测试"""
+    """Run all tests"""
     print("\n" + "🚀 " + "="*58)
-    print("🚀 QMT 数据源集成测试")
+    print("🚀 QMT Data source integration testing")
     print("🚀 " + "="*58)
-    print(f"⏰ 测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"⏰ Test time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    # 测试 1: 可用性检查
+    # test 1: Availability check
     if not await test_qmt_adapter():
-        print("\n❌ QMT 不可用，跳过后续测试")
+        print("\n❌ QMT Not available, skip subsequent tests")
         return
     
-    # 测试 2: 获取股票列表
+    # test 2: Get a list of stocks
     await test_get_stock_list()
     
-    # 测试 3: 获取实时行情
+    # test 3: Get real-time quotes
     await test_get_realtime_quotes()
     
-    # 测试 4: 获取 K 线数据
+    # test 4: Get K-line data
     await test_get_kline()
     
     print("\n" + "="*60)
-    print("✅ 所有测试完成")
+    print("✅ All tests completed")
     print("="*60)
 
 

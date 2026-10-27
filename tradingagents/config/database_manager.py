@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-智能数据库管理器
-自动检测MongoDB和Redis可用性，提供降级方案
-使用项目现有的.env配置
+Intelligent database manager
+Automatically detect MongoDB and Redis availability and provide downgrade solutions
+Use the project s existing .env configuration
 """
 
 import logging
@@ -12,48 +12,48 @@ from typing import Dict, Any, Optional, Tuple
 
 
 def _should_retry_redis_without_password(error: Exception) -> bool:
-    """判断是否应在本地无密码 Redis 场景下回退重试。"""
+    """Determine whether it should fall back and try again in the local passwordless Redis scenario."""
     error_text = str(error).lower()
     return "without any password configured" in error_text
 
 class DatabaseManager:
-    """智能数据库管理器"""
+    """Intelligent database manager"""
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-        # 加载.env配置
+        # Load .env configuration
         self._load_env_config()
 
-        # 数据库连接状态
+        # Database connection status
         self.mongodb_available = False
         self.redis_available = False
         self.mongodb_client = None
         self.redis_client = None
 
-        # 检测数据库可用性
+        # Check database availability
         self._detect_databases()
 
-        # 初始化连接
+        # Initialize connection
         self._initialize_connections()
 
-        self.logger.info(f"数据库管理器初始化完成 - MongoDB: {self.mongodb_available}, Redis: {self.redis_available}")
+        self.logger.info(f"Database manager initialization completed - MongoDB: {self.mongodb_available}, Redis: {self.redis_available}")
     
     def _load_env_config(self):
-        """从.env文件加载配置"""
-        # 尝试加载python-dotenv
+        """Load configuration from .env file"""
+        # try to load python-dotenv
         try:
             from dotenv import load_dotenv
             load_dotenv()
         except ImportError:
-            self.logger.info("python-dotenv未安装，直接读取环境变量")
+            self.logger.info("python-dotenv Not installed, read environment variables directly")
 
-        # 使用强健的布尔值解析（兼容Python 3.13+）
+        # Uses robust boolean parsing (compatible with Python 3.13+) 
         from .env_utils import parse_bool_env
         self.mongodb_enabled = parse_bool_env("MONGODB_ENABLED", False)
         self.redis_enabled = parse_bool_env("REDIS_ENABLED", False)
 
-        # 从环境变量读取MongoDB配置
+        # Read MongoDB configuration from environment variables
         self.mongodb_config = {
             "enabled": self.mongodb_enabled,
             "host": os.getenv("MONGODB_HOST", "localhost"),
@@ -63,13 +63,13 @@ class DatabaseManager:
             "database": os.getenv("MONGODB_DATABASE", "tradingagents"),
             "auth_source": os.getenv("MONGODB_AUTH_SOURCE", "admin"),
             "timeout": 2000,
-            # MongoDB超时参数（毫秒）- 用于处理大量历史数据
+            # MongoDB Timeout parameter (milliseconds) - for processing large amounts of historical data
             "connect_timeout": int(os.getenv("MONGO_CONNECT_TIMEOUT_MS", "30000")),
             "socket_timeout": int(os.getenv("MONGO_SOCKET_TIMEOUT_MS", "60000")),
             "server_selection_timeout": int(os.getenv("MONGO_SERVER_SELECTION_TIMEOUT_MS", "5000"))
         }
 
-        # 从环境变量读取Redis配置
+        # Read Redis configuration from environment variables
         self.redis_config = {
             "enabled": self.redis_enabled,
             "host": os.getenv("REDIS_HOST", "localhost"),
@@ -79,26 +79,26 @@ class DatabaseManager:
             "timeout": 2
         }
 
-        self.logger.info(f"MongoDB启用: {self.mongodb_enabled}")
-        self.logger.info(f"Redis启用: {self.redis_enabled}")
+        self.logger.info(f"MongoDB enable: {self.mongodb_enabled}")
+        self.logger.info(f"Redis enable: {self.redis_enabled}")
         if self.mongodb_enabled:
-            self.logger.info(f"MongoDB配置: {self.mongodb_config['host']}:{self.mongodb_config['port']}")
+            self.logger.info(f"MongoDB Configuration: {self.mongodb_config['host']}:{self.mongodb_config['port']}")
         if self.redis_enabled:
-            self.logger.info(f"Redis配置: {self.redis_config['host']}:{self.redis_config['port']}")
+            self.logger.info(f"Redis Configuration: {self.redis_config['host']}:{self.redis_config['port']}")
     
 
     
     def _detect_mongodb(self) -> Tuple[bool, str]:
-        """检测MongoDB是否可用"""
-        # 首先检查是否启用
+        """Check whether MongoDB is available"""
+        # First check if it is enabled
         if not self.mongodb_enabled:
-            return False, "MongoDB未启用 (MONGODB_ENABLED=false)"
+            return False, "MongoDB Not enabled (MONGODB_ENABLED=false)"
 
         try:
             import pymongo
             from pymongo import MongoClient
 
-            # 构建连接参数
+            # Build connection parameters
             connect_kwargs = {
                 "host": self.mongodb_config["host"],
                 "port": self.mongodb_config["port"],
@@ -107,7 +107,7 @@ class DatabaseManager:
                 "socketTimeoutMS": self.mongodb_config["socket_timeout"]
             }
 
-            # 如果有用户名和密码，添加认证
+            # If you have a username and password, add authentication
             if self.mongodb_config["username"] and self.mongodb_config["password"]:
                 connect_kwargs.update({
                     "username": self.mongodb_config["username"],
@@ -117,22 +117,22 @@ class DatabaseManager:
 
             client = MongoClient(**connect_kwargs)
 
-            # 测试连接
+            # test connection
             client.server_info()
             client.close()
 
-            return True, "MongoDB连接成功"
+            return True, "MongoDB Connection successful"
 
         except ImportError:
-            return False, "pymongo未安装"
+            return False, "pymongo Not installed"
         except Exception as e:
-            return False, f"MongoDB连接失败: {str(e)}"
+            return False, f"MongoDB Connection failed: {str(e)}"
     
     def _detect_redis(self) -> Tuple[bool, str]:
-        """检测Redis是否可用"""
-        # 首先检查是否启用
+        """Check if Redis is available"""
+        # First check if it is enabled
         if not self.redis_enabled:
-            return False, "Redis未启用 (REDIS_ENABLED=false)"
+            return False, "Redis Not enabled (REDIS_ENABLED=false)"
 
         try:
             import redis
@@ -156,24 +156,24 @@ class DatabaseManager:
                 if not (self.redis_config["password"] and _should_retry_redis_without_password(e)):
                     raise
                 self.logger.warning(
-                    "检测到当前 Redis 实例未配置密码，但环境变量提供了 REDIS_PASSWORD；"
-                    "将自动回退为无密码连接。"
+                    "It is detected that the current Redis instance does not have a password configured, but the environment variable provides REDIS_PASSWORD;"
+                    "Will automatically fall back to passwordless connection."
                 )
                 client = redis.Redis(**_build_connect_kwargs(use_password=False))
                 client.ping()
 
-            return True, "Redis连接成功"
+            return True, "Redis Connection successful"
 
         except ImportError:
-            return False, "redis未安装"
+            return False, "redis Not installed"
         except Exception as e:
-            return False, f"Redis连接失败: {str(e)}"
+            return False, f"Redis Connection failed: {str(e)}"
     
     def _detect_databases(self):
-        """检测所有数据库"""
-        self.logger.info("开始检测数据库可用性...")
+        """Test all databases"""
+        self.logger.info("Start checking database availability...")
         
-        # 检测MongoDB
+        # Detection MongoDB
         mongodb_available, mongodb_msg = self._detect_mongodb()
         self.mongodb_available = mongodb_available
         
@@ -182,7 +182,7 @@ class DatabaseManager:
         else:
             self.logger.info(f"❌ MongoDB: {mongodb_msg}")
         
-        # 检测Redis
+        # Detection Redis
         redis_available, redis_msg = self._detect_redis()
         self.redis_available = redis_available
         
@@ -191,12 +191,12 @@ class DatabaseManager:
         else:
             self.logger.info(f"❌ Redis: {redis_msg}")
         
-        # 更新配置
+        # Update configuration
         self._update_config_based_on_detection()
     
     def _update_config_based_on_detection(self):
-        """根据检测结果更新配置"""
-        # 确定缓存后端
+        """Update configuration based on detection results"""
+        # Determine cache backend
         if self.redis_available:
             self.primary_backend = "redis"
         elif self.mongodb_available:
@@ -204,16 +204,16 @@ class DatabaseManager:
         else:
             self.primary_backend = "file"
 
-        self.logger.info(f"主要缓存后端: {self.primary_backend}")
+        self.logger.info(f"Main caching backend: {self.primary_backend}")
     
     def _initialize_connections(self):
-        """初始化数据库连接"""
-        # 初始化MongoDB连接
+        """Initialize database connection"""
+        # Initialize MongoDB connection
         if self.mongodb_available:
             try:
                 import pymongo
 
-                # 构建连接参数
+                # Build connection parameters
                 connect_kwargs = {
                     "host": self.mongodb_config["host"],
                     "port": self.mongodb_config["port"],
@@ -222,7 +222,7 @@ class DatabaseManager:
                     "socketTimeoutMS": self.mongodb_config["socket_timeout"]
                 }
 
-                # 如果有用户名和密码，添加认证
+                # If you have a username and password, add authentication
                 if self.mongodb_config["username"] and self.mongodb_config["password"]:
                     connect_kwargs.update({
                         "username": self.mongodb_config["username"],
@@ -231,12 +231,12 @@ class DatabaseManager:
                     })
 
                 self.mongodb_client = pymongo.MongoClient(**connect_kwargs)
-                self.logger.info("MongoDB客户端初始化成功")
+                self.logger.info("MongoDB Client initialization successful")
             except Exception as e:
-                self.logger.error(f"MongoDB客户端初始化失败: {e}")
+                self.logger.error(f"MongoDB Client initialization failed: {e}")
                 self.mongodb_available = False
 
-        # 初始化Redis连接
+        # Initialize Redis connection
         if self.redis_available:
             try:
                 import redis
@@ -259,53 +259,53 @@ class DatabaseManager:
                     if not (self.redis_config["password"] and _should_retry_redis_without_password(e)):
                         raise
                     self.logger.warning(
-                        "Redis客户端检测到本地实例未配置密码，将自动回退为无密码连接。"
+                        "Redis The client detects that the local instance is not configured with a password and will automatically fall back to a passwordless connection."
                     )
                     self.redis_client = redis.Redis(**_build_connect_kwargs(use_password=False))
                     self.redis_client.ping()
 
-                self.logger.info("Redis客户端初始化成功")
+                self.logger.info("Redis Client initialization successful")
             except Exception as e:
-                self.logger.error(f"Redis客户端初始化失败: {e}")
+                self.logger.error(f"Redis Client initialization failed: {e}")
                 self.redis_available = False
     
     def get_mongodb_client(self):
-        """获取MongoDB客户端"""
+        """Get the MongoDB client"""
         if self.mongodb_available and self.mongodb_client:
             return self.mongodb_client
         return None
 
     def get_mongodb_db(self):
-        """获取MongoDB数据库实例"""
+        """Get a MongoDB database instance"""
         if self.mongodb_available and self.mongodb_client:
             db_name = self.mongodb_config.get("database", "tradingagents")
             return self.mongodb_client[db_name]
         return None
 
     def get_redis_client(self):
-        """获取Redis客户端"""
+        """Get the Redis client"""
         if self.redis_available and self.redis_client:
             return self.redis_client
         return None
     
     def is_mongodb_available(self) -> bool:
-        """检查MongoDB是否可用"""
+        """Check if MongoDB is available"""
         return self.mongodb_available
     
     def is_redis_available(self) -> bool:
-        """检查Redis是否可用"""
+        """Check if Redis is available"""
         return self.redis_available
     
     def is_database_available(self) -> bool:
-        """检查是否有任何数据库可用"""
+        """Check if any database is available"""
         return self.mongodb_available or self.redis_available
     
     def get_cache_backend(self) -> str:
-        """获取当前缓存后端"""
+        """Get the current cache backend"""
         return self.primary_backend
 
     def get_config(self) -> Dict[str, Any]:
-        """获取配置信息"""
+        """Get configuration information"""
         return {
             "mongodb": self.mongodb_config,
             "redis": self.redis_config,
@@ -314,22 +314,22 @@ class DatabaseManager:
             "redis_available": self.redis_available,
             "cache": {
                 "primary_backend": self.primary_backend,
-                "fallback_enabled": True,  # 总是启用降级
+                "fallback_enabled": True,  # Always enable downgrade
                 "ttl_settings": {
-                    # 美股数据TTL（秒）
-                    "us_stock_data": 7200,  # 2小时
-                    "us_news": 21600,  # 6小时
-                    "us_fundamentals": 86400,  # 24小时
-                    # A股数据TTL（秒）
-                    "china_stock_data": 3600,  # 1小时
-                    "china_news": 14400,  # 4小时
-                    "china_fundamentals": 43200,  # 12小时
+                    # US stock data TTL (seconds)
+                    "us_stock_data": 7200,  # 2 hours
+                    "us_news": 21600,  # 6 hours
+                    "us_fundamentals": 86400,  # 24 hours
+                    # A Share data TTL (seconds)
+                    "china_stock_data": 3600,  # 1 hours
+                    "china_news": 14400,  # 4 hours
+                    "china_fundamentals": 43200,  # 12 hours
                 }
             }
         }
 
     def get_status_report(self) -> Dict[str, Any]:
-        """获取状态报告"""
+        """Get status report"""
         return {
             "database_available": self.is_database_available(),
             "mongodb": {
@@ -343,11 +343,11 @@ class DatabaseManager:
                 "port": self.redis_config["port"]
             },
             "cache_backend": self.get_cache_backend(),
-            "fallback_enabled": True  # 总是启用降级
+            "fallback_enabled": True  # Always enable downgrade
         }
 
     def get_cache_stats(self) -> Dict[str, Any]:
-        """获取缓存统计信息"""
+        """Get cache statistics"""
         stats = {
             "mongodb_available": self.mongodb_available,
             "redis_available": self.redis_available,
@@ -355,19 +355,19 @@ class DatabaseManager:
             "redis_memory": "N/A"
         }
 
-        # Redis统计
+        # Redis statistics
         if self.redis_available and self.redis_client:
             try:
                 info = self.redis_client.info()
                 stats["redis_keys"] = self.redis_client.dbsize()
                 stats["redis_memory"] = info.get("used_memory_human", "N/A")
             except Exception as e:
-                self.logger.error(f"获取Redis统计失败: {e}")
+                self.logger.error(f"Failed to obtain Redis statistics: {e}")
 
         return stats
 
     def cache_clear_pattern(self, pattern: str) -> int:
-        """清理匹配模式的缓存"""
+        """Clean cache of matching patterns"""
         cleared_count = 0
 
         if self.redis_available and self.redis_client:
@@ -376,37 +376,37 @@ class DatabaseManager:
                 if keys:
                     cleared_count += self.redis_client.delete(*keys)
             except Exception as e:
-                self.logger.error(f"Redis缓存清理失败: {e}")
+                self.logger.error(f"Redis Cache cleanup failed: {e}")
 
         return cleared_count
 
 
-# 全局数据库管理器实例
+# Global database manager instance
 _database_manager = None
 
 def get_database_manager() -> DatabaseManager:
-    """获取全局数据库管理器实例"""
+    """Get global database manager instance"""
     global _database_manager
     if _database_manager is None:
         _database_manager = DatabaseManager()
     return _database_manager
 
 def is_mongodb_available() -> bool:
-    """检查MongoDB是否可用"""
+    """Check if MongoDB is available"""
     return get_database_manager().is_mongodb_available()
 
 def is_redis_available() -> bool:
-    """检查Redis是否可用"""
+    """Check if Redis is available"""
     return get_database_manager().is_redis_available()
 
 def get_cache_backend() -> str:
-    """获取当前缓存后端"""
+    """Get the current cache backend"""
     return get_database_manager().get_cache_backend()
 
 def get_mongodb_client():
-    """获取MongoDB客户端"""
+    """Get the MongoDB client"""
     return get_database_manager().get_mongodb_client()
 
 def get_redis_client():
-    """获取Redis客户端"""
+    """Get the Redis client"""
     return get_database_manager().get_redis_client()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试信号处理器的调试脚本
+Debug script for testing signal handlers
 """
 
 import sys
@@ -8,125 +8,125 @@ import os
 sys.path.append('..')
 
 def test_signal_processor():
-    """测试信号处理器功能"""
-    print("🔍 测试信号处理器...")
+    """Test signal processor functionality"""
+    print("🔍 Test signal processor...")
     
     try:
         from tradingagents.graph.signal_processing import SignalProcessor
         from tradingagents.llm_adapters import ChatDashScope
         
-        # 创建LLM实例
+        # Create LLM instance
         llm = ChatDashScope(
             model="qwen-plus-latest",
             temperature=0.1,
             max_tokens=1000
         )
         
-        # 创建信号处理器
+        # Create signal handler
         processor = SignalProcessor(llm)
-        print("✅ 信号处理器创建成功")
+        print("✅ Signal handler created successfully")
         
-        # 测试信号
+        # test signal
         test_signal = """
-        基于全面分析，我建议对该股票采取持有策略。
+        Based on a thorough analysis, I recommend a hold strategy on the stock.
         
-        投资建议：持有
-        置信度：75%
-        目标价位：¥45.50
-        风险评分：40%
+        Investment advice: Hold
+        Confidence:75%
+        Target price:¥45.50
+        Risk score:40%
         
-        主要理由：
-        1. 技术面显示上升趋势
-        2. 基本面稳健
-        3. 市场情绪积极
+        Main reasons:
+        1. Technicals show an uptrend
+        2. Fundamentals are solid
+        3. Market sentiment is positive
         """
         
-        print(f"\n📊 测试信号内容:")
+        print(f"\n📊 Test signal content:")
         print(test_signal)
         
-        # 处理信号
-        print(f"\n🔄 开始处理信号...")
+        # Process signals
+        print(f"\n🔄 Start processing signals...")
         result = processor.process_signal(test_signal, "000001")
         
-        print(f"\n✅ 处理结果:")
-        print(f"类型: {type(result)}")
-        print(f"内容: {result}")
+        print(f"\n✅ Processing results:")
+        print(f"Type: {type(result)}")
+        print(f"content: {result}")
         
-        # 检查结果结构
+        # Check result structure
         if isinstance(result, dict):
-            print(f"\n📋 结果详情:")
+            print(f"\n📋 Result details:")
             for key, value in result.items():
                 print(f"  {key}: {value}")
         
         return result
         
     except Exception as e:
-        print(f"❌ 测试失败: {str(e)}")
+        print(f"❌ test failed: {str(e)}")
         import traceback
         traceback.print_exc()
         return None
 
 def test_trading_graph():
-    """测试完整的交易图"""
+    """Test the complete trading graph"""
     print("\n" + "="*50)
-    print("🔍 测试完整交易图...")
+    print("🔍 Test the complete transaction graph...")
     
     try:
         from tradingagents.graph.trading_graph import TradingAgentsGraph
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
-        config['llm_provider'] = '阿里百炼'
+        config['llm_provider'] = 'Ali Bailian'
         config['quick_think_llm'] = 'qwen-plus-latest'
         config['deep_think_llm'] = 'qwen-plus-latest'
         
-        print(f"📊 配置信息:")
-        print(f"  LLM提供商: {config['llm_provider']}")
-        print(f"  快速模型: {config['quick_think_llm']}")
-        print(f"  深度模型: {config['deep_think_llm']}")
+        print(f"📊 Configuration information:")
+        print(f"  LLM provider: {config['llm_provider']}")
+        print(f"  quick model: {config['quick_think_llm']}")
+        print(f"  deep model: {config['deep_think_llm']}")
         
-        # 创建交易图
-        print(f"\n🔄 创建交易图...")
+        # Create transaction diagram
+        print(f"\n🔄 Create transaction diagram...")
         graph = TradingAgentsGraph(analysts=['market'], config=config, debug=False)
-        print("✅ 交易图创建成功")
+        print("✅ Trading chart created successfully")
         
-        # 测试信号处理器
-        print(f"\n🔄 测试信号处理器...")
-        test_signal = "推荐：买入\n目标价位：¥50.00\n置信度：80%\n风险评分：30%"
+        # Test signal processor
+        print(f"\n🔄 Test signal processor...")
+        test_signal = "Recommendation: Buy\n Target price:¥50.00\n Confidence:80%\n Risk score:30%"
         result = graph.process_signal(test_signal, "000001")
         
-        print(f"✅ 信号处理结果:")
-        print(f"类型: {type(result)}")
-        print(f"内容: {result}")
+        print(f"✅ Signal processing results:")
+        print(f"Type: {type(result)}")
+        print(f"content: {result}")
         
         return result
         
     except Exception as e:
-        print(f"❌ 测试失败: {str(e)}")
+        print(f"❌ test failed: {str(e)}")
         import traceback
         traceback.print_exc()
         return None
 
 if __name__ == "__main__":
-    print("🚀 开始信号处理器调试测试")
+    print("🚀 Start signal handler debugging test")
     print("="*50)
     
-    # 检查API密钥
+    # Check API key
     api_key = os.getenv("DASHSCOPE_API_KEY")
     if not api_key:
-        print("❌ 请设置 DASHSCOPE_API_KEY 环境变量")
+        print("❌ Please set the DASHSCOPE_API_KEY environment variable")
         sys.exit(1)
     
-    print(f"✅ API密钥已配置: {api_key[:10]}...")
+    print(f"✅ API Key configured: {api_key[:10]}...")
     
-    # 测试信号处理器
+    # Test signal processor
     result1 = test_signal_processor()
     
-    # 测试交易图
+    # Test trading chart
     result2 = test_trading_graph()
     
     print("\n" + "="*50)
-    print("🎯 测试总结:")
-    print(f"信号处理器测试: {'✅ 成功' if result1 else '❌ 失败'}")
-    print(f"交易图测试: {'✅ 成功' if result2 else '❌ 失败'}")
+    print("🎯 Test summary:")
+    print(f"Signal Processor Test: {'✅ success' if result1 else '❌ failed'}")
+    print(f"Trading graph test: {'✅ success' if result2 else '❌ failed'}")

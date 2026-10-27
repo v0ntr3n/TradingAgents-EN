@@ -37,7 +37,7 @@ class _FakeDb:
             {
                 "_id": "user_a",
                 "favorite_stocks": [
-                    {"stock_code": "600519", "stock_name": "茅台", "market": "A股", "alert_gain_price": 1800}
+                    {"stock_code": "600519", "stock_name": "Moutai", "market": "A shares", "alert_gain_price": 1800}
                 ],
             }
         ])

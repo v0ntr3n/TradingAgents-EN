@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="欢迎使用 TradingAgents-CN"
+    title="Welcome TradingAgents-CN"
     width="600px"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
@@ -10,24 +10,24 @@
     <div class="guide-dialog-content">
       <div class="welcome-header">
         <el-icon class="welcome-icon"><Document /></el-icon>
-        <h3>欢迎使用 TradingAgents-CN</h3>
-        <p class="welcome-subtitle">按照以下步骤完成初始设置，开始使用AI辅助股票分析技术学习平台</p>
+        <h3>Welcome TradingAgents-CN</h3>
+        <p class="welcome-subtitle">Follow the steps below to complete the initial setup and start using the AI-assisted stock analysis technology learning platform</p>
       </div>
 
       <div class="steps-summary">
         <el-steps direction="vertical" :active="5" finish-status="success" size="small">
-          <el-step title="获取API Token" description="获取大模型和数据源的API密钥" />
-          <el-step title="填写Token配置" description="在设置页面填写您的API密钥" />
-          <el-step title="同步股票数据" description="同步基础股票数据到系统" />
-          <el-step title="搜索并添加股票关注列表" description="搜索感兴趣的股票并添加到股票关注列表" />
-          <el-step title="完成第一次分析" description="对自己关注股票进行AI分析" />
+          <el-step title="get API Token" description="Get API keys for large models and data sources" />
+          <el-step title="Fill in the Token configuration" description="Fill in your API key on the settings page" />
+          <el-step title="Sync stock data" description="Synchronize basic stock data to the system" />
+          <el-step title="Search and add stocks to watchlist" description="Search for stocks of interest and add to stock watchlist" />
+          <el-step title="Complete first analysis" description="Conduct AI analysis on the stocks you follow" />
         </el-steps>
       </div>
 
       <div class="quick-actions">
         <el-button type="primary" @click="goToGuide" style="width: 100%">
           <el-icon><Document /></el-icon>
-          查看完整使用指南
+          View full user guide
         </el-button>
       </div>
     </div>
@@ -35,12 +35,12 @@
     <template #footer>
       <div class="dialog-footer">
         <el-checkbox v-model="dontShowAgain" v-if="isFirstTime">
-          不再显示此提示
+          Don t show this again
         </el-checkbox>
         <div class="footer-buttons">
-          <el-button v-if="isFirstTime" @click="handleSkip">稍后再说</el-button>
+          <el-button v-if="isFirstTime" @click="handleSkip">Talk to you later</el-button>
           <el-button type="primary" @click="handleConfirm">
-            {{ isFirstTime ? '开始使用' : '知道了' }}
+            {{ isFirstTime ? 'Get started' : 'Got it' }}
           </el-button>
         </div>
       </div>
@@ -68,7 +68,7 @@ const emit = defineEmits<{
 const router = useRouter()
 const dontShowAgain = ref(false)
 
-// 京东云版不显示弹窗（首次登录由路由守卫直接跳转 /guide）
+// JD Cloud version does not display pop-up windows (the first login will jump directly to /guide from the routing guard)
 const visible = computed({
   get: () => !isJdyunMode() && props.modelValue,
   set: (val) => emit('update:modelValue', val)
@@ -81,7 +81,7 @@ const goToGuide = () => {
 
 const handleConfirm = () => {
   if (dontShowAgain.value && props.isFirstTime) {
-    // 保存到localStorage，不再显示
+    // Save to localStorage and never display again
     localStorage.setItem('guide_dialog_shown', 'true')
   }
   emit('confirm')

@@ -1,16 +1,16 @@
 """
-Skill 编排器 — 根据蓝图中的 Skill 缺口，自动创建并绑定缺失的工具
+Skill Orchestrator — Automatically create and bind missing tools based on Skill gaps in blueprints
 
-流程:
-1. 遍历 blueprint.gap_analysis.missing_skills
-2. 对每个 SkillCreationRequest:
-   a. 调用 SkillGenerationService.start_session(description)
-   b. 自动 confirm_spec → 触发代码生成 + 验证
-   c. 成功 → 回填 generated_skill_id + 绑定到 target_agent_id
-   d. 失败 → 标记 status=failed，记录错误
-3. 将所有新创建的 Skill 绑定到对应 Agent
+process:
+1. Traverse blueprint.gap_analysis.missing_skills
+2. for each SkillCreationRequest:
+   a. call SkillGenerationService.start_session(description)
+   b. automatic confirm_spec → Trigger code generation + Verify
+   c. success → backfill generated_skill_id + bind to target_agent_id
+   d. failed → mark status=failed, Log errors
+3. Bind all newly created Skills to the corresponding Agent
 
-参考: docs/05-design/v3.0/ai-workflow-generation.md §4.4
+Reference: docs/05-design/v3.0/ai-workflow-generation.md §4.4
 """
 
 import logging
@@ -21,37 +21,37 @@ from .workflow_spec import SkillCreationRequest, WorkflowBlueprint
 
 logger = logging.getLogger(__name__)
 
-# 单个 Skill 创建超时上限（秒），超过则标记为 failed
+# The upper limit of the timeout for creating a single Skill (seconds). If it exceeds the limit, it will be marked as failed
 SKILL_CREATION_TIMEOUT = 120
 
 
 class SkillOrchestrator:
     """
-    Skill 编排器
+    Skill Orchestrator
 
-    根据蓝图中的 gap_analysis.missing_skills，
-    批量调用 SkillGenerationService 管线创建缺失的工具，
-    并将其绑定到对应 Agent。
+    According to gap_analysis.missing_skills in the blueprint,
+    Batch calling the SkillGenerationService pipeline to create missing tools,
+    And bind it to the corresponding Agent.
     """
 
     def __init__(self, db, skill_generation_service=None):
         """
         Args:
-            db: MongoDB 异步数据库实例 (motor)
-            skill_generation_service: SkillGenerationService 实例
-                如果不传，将在首次使用时按需创建
+            db: MongoDB Asynchronous database instance (motor)
+            skill_generation_service: SkillGenerationService Example
+                If not passed, it will be created on demand when first used.
         """
         self._db = db
         self._skill_service = skill_generation_service
 
     def _ensure_service(self):
-        """延迟初始化 SkillGenerationService"""
+        """Lazy initialization SkillGenerationService"""
         if self._skill_service is None:
             from app.services.skill_generation_service import SkillGenerationService
             self._skill_service = SkillGenerationService(db=self._db)
 
     # ================================================================
-    # 公开方法
+    # public method
     # ================================================================
 
     async def create_missing_skills(
@@ -60,23 +60,23 @@ class SkillOrchestrator:
         user_id: str = "",
     ) -> List[Dict[str, Any]]:
         """
-        批量创建蓝图中标记为缺失的 Skill
+        Marked as missing in batch creation blueprints Skill
 
         Args:
-            blueprint: AI 生成的工作流蓝图（含 gap_analysis.missing_skills）
-            user_id: 发起人 ID
+            blueprint: AI Generated workflow blueprint (including gap_analysis.missing_skills)
+            user_id: initiator ID
 
         Returns:
-            每个 Skill 的创建结果列表:
+            List of creation results for each Skill:
             [{"skill_name", "status", "skill_id"?, "error"?}]
         """
         if not blueprint.gap_analysis:
-            logger.info("[SkillOrchestrator] 无缺口分析，跳过 Skill 创建")
+            logger.info("[SkillOrchestrator] No gap analysis, skip skill creation")
             return []
 
         missing = blueprint.gap_analysis.missing_skills
         if not missing:
-            logger.info("[SkillOrchestrator] 无缺失 Skill")
+            logger.info("[SkillOrchestrator] Nothing missing Skill")
             return []
 
         self._ensure_service()
@@ -86,7 +86,7 @@ class SkillOrchestrator:
             result = await self._create_one_skill(req, user_id, blueprint)
             results.append(result)
 
-        # 更新蓝图进度
+        # Update blueprint progress
         completed = sum(1 for r in results if r["status"] == "completed")
         blueprint.creation_progress["skills_completed"] = completed
 
@@ -98,17 +98,17 @@ class SkillOrchestrator:
         blueprint: WorkflowBlueprint,
     ) -> int:
         """
-        将新创建的 Skill 绑定到对应 Agent（通过 tool_agent_bindings）
+        Bind the newly created Skill to the corresponding Agent (via tool_agent_bindings)
 
-        只处理 status=completed 且有 generated_skill_id 的 Skill。
-        绑定级别：Agent 级别（无 node_id），作为默认保底。
+        only handle status=completed And there is a Skill with generated_skill_id.
+        Binding level: Agent level (no node_id), as the default guarantee.
 
         Args:
-            workflow_id: 工作流 ID（用于日志）
-            blueprint: 蓝图
+            workflow_id: Workflow ID (for logs)
+            blueprint: blueprint
 
         Returns:
-            成功绑定的数量
+            The number of successful bindings
         """
         if not blueprint.gap_analysis:
             return 0
@@ -124,11 +124,11 @@ class SkillOrchestrator:
                 await self._bind_one(req.target_agent_id, req.generated_skill_id)
                 bound_count += 1
                 logger.info(
-                    f"[SkillOrchestrator] ✅ 已绑定 {req.generated_skill_id} → {req.target_agent_id}"
+                    f"[SkillOrchestrator] ✅ Bound {req.generated_skill_id} → {req.target_agent_id}"
                 )
             except Exception as e:
                 logger.error(
-                    f"[SkillOrchestrator] ❌ 绑定失败 {req.generated_skill_id} → {req.target_agent_id}: {e}",
+                    f"[SkillOrchestrator] ❌ Binding failed {req.generated_skill_id} → {req.target_agent_id}: {e}",
                     exc_info=True,
                 )
 
@@ -141,18 +141,18 @@ class SkillOrchestrator:
         is_active: bool = False,
     ) -> int:
         """
-        为 agent_reshaping 中的 additional_tools 创建节点级别工具绑定。
+        Create node-level tool bindings for additional_tools in agent_reshaping.
 
-        对于同一 Agent 在不同节点出现的场景，通过 workflow_id + node_id 精确绑定，
-        避免工具污染其他节点。
+        For scenarios where the same Agent appears on different nodes, use workflow_id + node_id precise binding,
+        Avoid tools polluting other nodes.
 
         Args:
-            workflow_id: 工作流 ID
-            blueprint: 蓝图（含 agent_reshaping 列表）
-            is_active: 是否激活绑定（False=草稿，True=生产）
+            workflow_id: Workflow ID
+            blueprint: Blueprint (with agent_reshaping list)
+            is_active: Whether to activate binding (False=draft,True=production)
 
         Returns:
-            成功创建的绑定数量
+            The number of successfully created bindings
         """
         if not blueprint.gap_analysis or not blueprint.gap_analysis.agent_reshaping:
             return 0
@@ -165,8 +165,8 @@ class SkillOrchestrator:
                 continue
             if not reshaping.node_id:
                 logger.warning(
-                    f"[SkillOrchestrator] ⚠️ agent_reshaping 中 {reshaping.agent_id} 缺少 node_id，"
-                    f"跳过节点级工具绑定（additional_tools={reshaping.additional_tools}）"
+                    f"[SkillOrchestrator] ⚠️ agent_reshaping in {reshaping.agent_id} node_id is missing,"
+                    f"Skip node-level tool binding (additional_tools={reshaping.additional_tools}) "
                 )
                 continue
 
@@ -197,13 +197,13 @@ class SkillOrchestrator:
                     )
                     bound_count += 1
                     logger.info(
-                        f"[SkillOrchestrator] ✅ 节点级工具绑定: "
+                        f"[SkillOrchestrator] ✅ Node-level tool binding: "
                         f"{tool_id} → {reshaping.agent_id} "
                         f"(workflow={workflow_id}, node={reshaping.node_id}, active={is_active})"
                     )
                 except Exception as e:
                     logger.error(
-                        f"[SkillOrchestrator] ❌ 节点级工具绑定失败: "
+                        f"[SkillOrchestrator] ❌ Node level tool binding failed: "
                         f"{tool_id} → {reshaping.agent_id}: {e}",
                         exc_info=True,
                     )
@@ -211,7 +211,7 @@ class SkillOrchestrator:
         return bound_count
 
     # ================================================================
-    # 内部方法
+    # internal method
     # ================================================================
 
     async def _create_one_skill(
@@ -221,18 +221,18 @@ class SkillOrchestrator:
         blueprint: WorkflowBlueprint,
     ) -> Dict[str, Any]:
         """
-        创建单个 Skill
+        Create a single Skill
 
-        流程:
-        1. 检查同名 Skill 是否已存在 → 跳过
-        2. start_session(description) → 开始创建会话
-        3. confirm_spec(session_id) → 触发代码生成
-        4. 成功 → 回填 req.generated_skill_id，修改 req.status
-        5. 失败 → 标记 req.status='failed'，记录 req.error
+        process:
+        1. Check whether the Skill with the same name already exists → skip
+        2. start_session(description) → Start creating a session
+        3. confirm_spec(session_id) → Trigger code generation
+        4. success → Backfill req.generated_skill_id, modify req.status
+        5. failed → mark req.status='failed', record req.error
         """
         skill_name = req.skill_name
 
-        # 1. 检查同名 Skill 是否已存在
+        # 1. Check whether the Skill with the same name already exists
         existing = await self._db.external_skills.find_one(
             {"tool_id": skill_name, "status": "active"}
         )
@@ -240,7 +240,7 @@ class SkillOrchestrator:
             req.generated_skill_id = existing["tool_id"]
             req.status = "completed"
             logger.info(
-                f"[SkillOrchestrator] ⏭️ Skill '{skill_name}' 已存在，跳过创建"
+                f"[SkillOrchestrator] ⏭️ Skill '{skill_name}' Already exists, skip creation"
             )
             return {
                 "skill_name": skill_name,
@@ -249,7 +249,7 @@ class SkillOrchestrator:
                 "skipped": True,
             }
 
-        # 2. 开始创建会话（传入蓝图上下文，让 Skill 工坊理解大背景）
+        # 2. Start creating a session (pass in the blueprint context to let the Skill Workshop understand the big picture)
         req.status = "creating"
         description = self._build_skill_description(req, blueprint)
 
@@ -260,16 +260,16 @@ class SkillOrchestrator:
             )
             session_id = start_result.get("session_id")
             if not session_id:
-                raise ValueError("start_session 未返回 session_id")
+                raise ValueError("start_session Not returned session_id")
 
             logger.info(
-                f"[SkillOrchestrator] 🚀 开始创建 Skill '{skill_name}' (session: {session_id})"
+                f"[SkillOrchestrator] 🚀 Start creating Skill '{skill_name}' (session: {session_id})"
             )
 
-            # 3. 自动确认并生成代码
+            # 3. Automatically confirm and generate codes
             confirm_result = await self._skill_service.confirm_spec(
                 session_id=session_id,
-                user_message="确认，请直接生成代码",
+                user_message="Confirm, please generate code directly",
             )
 
             if confirm_result.get("success"):
@@ -277,8 +277,8 @@ class SkillOrchestrator:
                 req.generated_skill_id = skill_id
                 req.status = "completed"
 
-                # 将新创建的 Skill 标记为 draft 状态，避免污染生产数据
-                # 发布时再统一切换为 active
+                # Mark the newly created Skill as draft status to avoid contaminating production data
+                # When publishing, switch to active
                 try:
                     await self._db.external_skills.update_one(
                         {"tool_id": skill_id},
@@ -286,11 +286,11 @@ class SkillOrchestrator:
                     )
                 except Exception as draft_err:
                     logger.warning(
-                        f"[SkillOrchestrator] 标记 Skill '{skill_id}' 为 draft 失败: {draft_err}"
+                        f"[SkillOrchestrator] mark Skill '{skill_id}' failed for draft: {draft_err}"
                     )
 
                 logger.info(
-                    f"[SkillOrchestrator] ✅ Skill '{skill_name}' 创建成功(draft): {skill_id}"
+                    f"[SkillOrchestrator] ✅ Skill '{skill_name}' Created successfully(draft): {skill_id}"
                 )
                 return {
                     "skill_name": skill_name,
@@ -298,11 +298,11 @@ class SkillOrchestrator:
                     "skill_id": skill_id,
                 }
             else:
-                error = confirm_result.get("error", "代码生成失败")
+                error = confirm_result.get("error", "Code generation failed")
                 req.status = "failed"
                 req.error = error
                 logger.warning(
-                    f"[SkillOrchestrator] ⚠️ Skill '{skill_name}' 生成失败: {error}"
+                    f"[SkillOrchestrator] ⚠️ Skill '{skill_name}' Build failed: {error}"
                 )
                 return {
                     "skill_name": skill_name,
@@ -314,7 +314,7 @@ class SkillOrchestrator:
             req.status = "failed"
             req.error = str(e)
             logger.error(
-                f"[SkillOrchestrator] ❌ Skill '{skill_name}' 创建异常: {e}",
+                f"[SkillOrchestrator] ❌ Skill '{skill_name}' Create exception: {e}",
                 exc_info=True,
             )
             return {
@@ -325,12 +325,12 @@ class SkillOrchestrator:
 
     async def _bind_one(self, agent_id: str, tool_id: str, *, is_active: bool = False) -> None:
         """
-        将一个 Skill 绑定到 Agent（upsert 到 tool_agent_bindings）
+        Bind a Skill to an Agent (upsert to tool_agent_bindings)
 
         Args:
-            agent_id: 目标 Agent ID
-            tool_id: 要绑定的 Skill/工具 ID
-            is_active: 是否立即激活（默认 False 为草稿状态，发布后激活）
+            agent_id: target Agent ID
+            tool_id: Skill/tool to be bound ID
+            is_active: Whether to activate immediately (default False is draft status, activated after release)
         """
         now = datetime.utcnow().isoformat()
         await self._db.tool_agent_bindings.update_one(
@@ -340,7 +340,7 @@ class SkillOrchestrator:
                     "agent_id": agent_id,
                     "tool_id": tool_id,
                     "is_active": is_active,
-                    "priority": 99,  # 新创建的 Skill 优先级较低
+                    "priority": 99,  # Newly created Skills have lower priority
                     "updated_at": now,
                 },
                 "$setOnInsert": {
@@ -353,44 +353,44 @@ class SkillOrchestrator:
     @staticmethod
     def _build_skill_description(req: SkillCreationRequest, blueprint: WorkflowBlueprint) -> str:
         """
-        将 SkillCreationRequest 转为 SkillGenerationService 可用的自然语言描述
+        Convert SkillCreationRequest into a usable natural language description for SkillGenerationService
 
-        包含完整上下文：工作流背景 + Agent 角色 + 工具需求，
-        确保 Skill 工坊的代码生成流水线能理解大背景。
+        Contains full context: Workflow background + Agent role + tool requirements,
+        Make sure Skill Workshop s code generation pipeline understands the bigger picture.
         """
         parts = []
 
-        # ── 工作流背景 ──
+        # ── workflow background ──
         wf_name = blueprint.name or ""
         wf_desc = blueprint.description or blueprint.summary or ""
         if wf_name or wf_desc:
-            parts.append("## 工作流背景")
+            parts.append("## workflow background")
             if wf_name:
-                parts.append(f"- 工作流名称: {wf_name}")
+                parts.append(f"- Workflow name: {wf_name}")
             if wf_desc:
-                parts.append(f"- 工作流目的: {wf_desc}")
+                parts.append(f"- Workflow purpose: {wf_desc}")
 
-        # ── 目标 Agent 在本工作流中的角色 ──
+        # ── The role of the target agent in this workflow ──
         agent_context_parts = SkillOrchestrator._find_agent_context(req, blueprint)
         if agent_context_parts:
             parts.append("")
-            parts.append("## 目标 Agent 在本工作流中的角色")
+            parts.append("## The role of the target agent in this workflow")
             parts.append(f"- Agent ID: {req.target_agent_id}")
             for line in agent_context_parts:
                 parts.append(f"- {line}")
 
-        # ── 工具需求本身 ──
+        # ── Tool requirements themselves ──
         parts.append("")
-        parts.append("## 需要创建的工具")
-        parts.append(f"- 工具名称: {req.skill_name}")
+        parts.append("## Tools needed to create")
+        parts.append(f"- Tool name: {req.skill_name}")
         if req.skill_description:
-            parts.append(f"- 功能描述: {req.skill_description}")
-        parts.append(f"- 使用场景: 供 {req.target_agent_id} Agent 在上述工作流中使用")
+            parts.append(f"- Function description: {req.skill_description}")
+        parts.append(f"- Usage scenarios: supply {req.target_agent_id} Agent Used in the above workflow")
 
         result = "\n".join(parts)
         logger.info(
-            f"[SkillOrchestrator] 📝 Skill 创建描述 ({req.skill_name}, "
-            f"长度={len(result)} 字符)"
+            f"[SkillOrchestrator] 📝 Skill Create description ({req.skill_name}, "
+            f"length={len(result)} character)"
         )
         return result
 
@@ -399,36 +399,36 @@ class SkillOrchestrator:
         req: SkillCreationRequest, blueprint: WorkflowBlueprint
     ) -> List[str]:
         """
-        从蓝图中提取目标 Agent 在本工作流中的角色上下文
+        Extract the target Agent s role context in this workflow from the blueprint
 
-        优先级：
-        1. agent_reshaping（LLM 生成的角色重塑方案，信息最丰富）
-        2. nodes（节点的 label 和 description）
+        Priority:
+        1. agent_reshaping (LLM The generated character reshaping plan is the most informative)
+        2. nodes (node label and description)
         """
         context: List[str] = []
 
-        # 1. 从 agent_reshaping 获取角色重塑信息
+        # 1. Get role reshaping information from agent_reshaping
         if blueprint.gap_analysis:
             for reshaping in blueprint.gap_analysis.agent_reshaping:
                 if reshaping.agent_id == req.target_agent_id:
                     if reshaping.new_role:
-                        context.append(f"角色定位: {reshaping.new_role}")
+                        context.append(f"role positioning: {reshaping.new_role}")
                     if reshaping.reshaping_direction:
-                        context.append(f"定制方向: {reshaping.reshaping_direction}")
+                        context.append(f"Customized direction: {reshaping.reshaping_direction}")
                     if reshaping.key_focus_areas:
                         areas = ", ".join(reshaping.key_focus_areas)
-                        context.append(f"关键分析维度: {areas}")
+                        context.append(f"Key analytical dimensions: {areas}")
                     break
 
-        # 2. 从节点补充节点级别的信息
+        # 2. Supplement node-level information from nodes
         for node in blueprint.nodes:
             if node.agent_id == req.target_agent_id:
                 if node.label:
-                    # 避免重复（agent_reshaping 可能已经有类似信息）
-                    if not any("节点名称" in c for c in context):
-                        context.insert(0, f"节点名称: {node.label}")
+                    # Avoid duplication (agent_reshaping may already have similar information)
+                    if not any("Node name" in c for c in context):
+                        context.insert(0, f"Node name: {node.label}")
                 if node.description:
-                    context.append(f"节点说明: {node.description}")
+                    context.append(f"Node description: {node.description}")
                 break
 
         return context

@@ -1,35 +1,35 @@
 <template>
   <div class="skill-generate">
-    <!-- 创建任务列表（含进行中/失败/已完成） -->
+    <!-- Create task list (including ongoing/failed/completed) -->
     <el-card class="history-card session-card">
       <template #header>
         <div class="card-header">
-          <span>创建任务</span>
+          <span>Create task</span>
           <div class="header-right">
             <el-select v-model="sessionStatusFilter" size="small" style="width: 120px" @change="loadSessions">
-              <el-option label="全部" value="all" />
-              <el-option label="进行中" value="in_progress" />
-              <el-option label="仅失败" value="failed" />
-              <el-option label="仅已完成" value="completed" />
+              <el-option label="All" value="all" />
+              <el-option label="In progress" value="in_progress" />
+              <el-option label="only failed" value="failed" />
+              <el-option label="only completed" value="completed" />
             </el-select>
-            <el-button text size="small" @click="loadSessions">刷新</el-button>
+            <el-button text size="small" @click="loadSessions">Refresh</el-button>
           </div>
         </div>
       </template>
       <el-table :data="sessions" v-if="sessions.length" size="small">
-        <el-table-column label="需求描述" min-width="200">
+        <el-table-column label="Requirement description" min-width="200">
           <template #default="scope">
             {{ scope.row.spec?.description || scope.row.rounds?.[0]?.user_message || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="Status" width="100">
           <template #default="scope">
             <el-tag :type="getSessionTagType(scope.row.status)" size="small">
               {{ getSessionStatusLabel(scope.row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="进度" width="120">
+        <el-table-column label="Progress" width="120">
           <template #default="scope">
             <el-progress
               v-if="scope.row.status === 'generating'"
@@ -42,138 +42,138 @@
             <span v-else>—</span>
           </template>
         </el-table-column>
-        <el-table-column label="更新时间" width="170">
+        <el-table-column label="Update time" width="170">
           <template #default="scope">
             {{ formatTime(scope.row.updated_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="140">
+        <el-table-column label="Operation" width="140">
           <template #default="scope">
             <el-button
               v-if="scope.row.status === 'failed'"
               size="small"
               type="warning"
               @click="resumeSession(scope.row.session_id)"
-            >修复</el-button>
+            >Repair</el-button>
             <el-button
               v-if="scope.row.status === 'gathering' || scope.row.status === 'confirmed'"
               size="small"
               type="primary"
               @click="resumeSession(scope.row.session_id)"
-            >继续</el-button>
+            >continue</el-button>
             <el-button
               v-if="scope.row.status === 'generating'"
               size="small"
               disabled
-            >生成中</el-button>
+            >Generating</el-button>
             <el-button
               v-if="scope.row.status === 'completed'"
               size="small"
               @click="viewSessionSkill(scope.row)"
-            >查看</el-button>
+            >View</el-button>
             <el-button
               size="small"
               text
               type="danger"
               @click="deleteSession(scope.row.session_id)"
-            >删除</el-button>
+            >Delete</el-button>
           </template>
         </el-table-column>
       </el-table>
       <div v-else class="empty-hint">
-        <el-empty description="暂无创建任务" :image-size="60" />
+        <el-empty description="No tasks created yet" :image-size="60" />
       </div>
     </el-card>
 
-    <!-- 已完成的 Skill 列表 -->
+    <!-- Completed Skill List -->
     <el-card class="history-card">
       <template #header>
-        <span>AI 生成的 Skill</span>
+        <span>AI generated Skill</span>
       </template>
       <el-table :data="recentSkills" v-if="recentSkills.length">
-        <el-table-column prop="display_name" label="名称" />
-        <el-table-column prop="status" label="状态">
+        <el-table-column prop="display_name" label="Name" />
+        <el-table-column prop="status" label="Status">
           <template #default="scope">
             <el-tag :type="getStatusTagType(scope.row.status)">
               {{ getStatusLabel(scope.row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" label="生成时间" width="170" />
-        <el-table-column label="操作" width="300">
+        <el-table-column prop="created_at" label="Generation time" width="170" />
+        <el-table-column label="Operation" width="300">
           <template #default="scope">
             <div class="row-actions">
-              <el-button size="small" type="primary" @click="openTestDialog(scope.row)">测试</el-button>
-              <el-button size="small" @click="openEditDialog(scope.row)">编辑说明</el-button>
-              <el-button size="small" @click="viewSkill(scope.row)">查看</el-button>
-              <el-button size="small" @click="iterateSkill(scope.row)">迭代优化</el-button>
-              <el-button size="small" text type="danger" @click="deleteSkill(scope.row)">删除</el-button>
+              <el-button size="small" type="primary" @click="openTestDialog(scope.row)">test</el-button>
+              <el-button size="small" @click="openEditDialog(scope.row)">Editorial Notes</el-button>
+              <el-button size="small" @click="viewSkill(scope.row)">View</el-button>
+              <el-button size="small" @click="iterateSkill(scope.row)">iterative optimization</el-button>
+              <el-button size="small" text type="danger" @click="deleteSkill(scope.row)">Delete</el-button>
             </div>
           </template>
         </el-table-column>
       </el-table>
       <div v-else class="empty-hint">
-        <el-empty description="暂无生成记录" />
+        <el-empty description="No generation record yet" />
       </div>
     </el-card>
 
     <el-dialog
       v-model="detailVisible"
-      :title="`Skill 详情：${detailSkill?.display_name || ''}`"
+      :title="`Skill Details:${detailSkill?.display_name || ''}`"
       width="900px"
       destroy-on-close
       class="skill-detail-dialog"
     >
       <div v-if="detailSkill" class="skill-detail">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="名称">{{ detailSkill.display_name }}</el-descriptions-item>
+          <el-descriptions-item label="Name">{{ detailSkill.display_name }}</el-descriptions-item>
           <el-descriptions-item label="Tool ID">{{ detailSkill.tool_id }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item label="Status">
             <el-tag :type="getStatusTagType(detailSkill.status)" size="small">
               {{ getStatusLabel(detailSkill.status) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="分类">{{ detailSkill.category || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="描述" :span="2">{{ detailSkill.description || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="生成轮次">{{ detailSkill.generation_rounds || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="生成耗时">
+          <el-descriptions-item label="Classification">{{ detailSkill.category || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="Description" :span="2">{{ detailSkill.description || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="Generate rounds">{{ detailSkill.generation_rounds || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="Time consuming to generate">
             {{ detailSkill.generation_time ? detailSkill.generation_time + 's' : '-' }}
           </el-descriptions-item>
         </el-descriptions>
 
         <div v-if="detailSkill.parameters?.length" class="detail-section">
-          <div class="section-title">参数列表</div>
+          <div class="section-title">Parameter list</div>
           <el-table :data="detailSkill.parameters" size="small" border>
-            <el-table-column prop="name" label="参数名" width="140" />
-            <el-table-column prop="type" label="类型" width="100" />
-            <el-table-column prop="description" label="说明" />
-            <el-table-column prop="required" label="必填" width="60">
+            <el-table-column prop="name" label="Parameter name" width="140" />
+            <el-table-column prop="type" label="Type" width="100" />
+            <el-table-column prop="description" label="Description" />
+            <el-table-column prop="required" label="Required" width="60">
               <template #default="scope">
-                {{ scope.row.required ? '是' : '否' }}
+                {{ scope.row.required ? 'Yes' : 'No' }}
               </template>
             </el-table-column>
           </el-table>
         </div>
 
         <div class="detail-section">
-          <div class="section-title">源代码</div>
+          <div class="section-title">source code</div>
           <div v-loading="codeLoading" class="code-container">
             <pre v-if="skillCode"><code>{{ skillCode }}</code></pre>
           </div>
         </div>
       </div>
       <template #footer>
-        <el-button @click="detailVisible = false">关闭</el-button>
-        <el-button type="primary" @click="detailSkill && openTestDialog(detailSkill)">测试</el-button>
-        <el-button @click="detailSkill && openEditDialog(detailSkill)">编辑说明</el-button>
-        <el-button type="primary" plain @click="iterateSkill(detailSkill)">迭代优化</el-button>
+        <el-button @click="detailVisible = false">close</el-button>
+        <el-button type="primary" @click="detailSkill && openTestDialog(detailSkill)">test</el-button>
+        <el-button @click="detailSkill && openEditDialog(detailSkill)">Editorial Notes</el-button>
+        <el-button type="primary" plain @click="iterateSkill(detailSkill)">iterative optimization</el-button>
       </template>
     </el-dialog>
 
-    <!-- 在线测试对话框 -->
+    <!-- Online test dialog -->
     <el-dialog
       v-model="testVisible"
-      :title="`测试 Skill：${testSkill?.display_name || ''}`"
+      :title="`Test Skills:${testSkill?.display_name || ''}`"
       width="760px"
       destroy-on-close
       class="skill-test-dialog"
@@ -183,7 +183,7 @@
           type="info"
           :closable="false"
           show-icon
-          title="在沙箱中真实运行该 Skill，可直接修改参数后反复测试"
+          title="Really run the Skill in the sandbox, modify the parameters directly and test repeatedly."
           style="margin-bottom: 12px;"
         />
         <el-form label-position="top" size="small" class="test-form">
@@ -201,16 +201,16 @@
               v-model="testArgs[param.name]"
               :controls="false"
               style="width: 100%"
-              :placeholder="param.default !== undefined && param.default !== null ? String(param.default) : '未填写则使用函数默认值'"
+              :placeholder="param.default !== undefined && param.default !== null ? String(param.default) : 'If not filled in, the function default value will be used.'"
             />
             <el-input
               v-else
               v-model="testArgs[param.name]"
-              :placeholder="param.default !== undefined && param.default !== null ? String(param.default) : '未填写则使用函数默认值'"
+              :placeholder="param.default !== undefined && param.default !== null ? String(param.default) : 'If not filled in, the function default value will be used.'"
             />
           </el-form-item>
-          <el-form-item v-if="!testParamDefs.length" label="参数">
-            <span class="form-hint">该 Skill 没有定义参数，可直接运行。</span>
+          <el-form-item v-if="!testParamDefs.length" label="parameters">
+            <span class="form-hint">This Skill has no parameters defined and can be run directly.</span>
           </el-form-item>
         </el-form>
 
@@ -220,15 +220,15 @@
             :closable="false"
             show-icon
             :title="testResult.success
-              ? `执行成功（耗时 ${(testResult.execution_time || 0).toFixed(2)}s）`
-              : `执行失败（耗时 ${(testResult.execution_time || 0).toFixed(2)}s）`"
+              ? `Execution successful (time consuming) ${(testResult.execution_time || 0).toFixed(2)}s) `
+              : `Execution failed (time consuming ${(testResult.execution_time || 0).toFixed(2)}s) `"
             :description="testResult.error || ''"
             style="margin-bottom: 8px;"
           />
-          <div class="result-section-title">执行输出</div>
+          <div class="result-section-title">Execution output</div>
           <pre class="result-json">{{ formatJson(testResult.output) }}</pre>
           <el-collapse v-if="testResult.stderr" class="stderr-collapse">
-            <el-collapse-item title="错误日志（stderr）" name="stderr">
+            <el-collapse-item title="Error log (stderr)" name="stderr">
               <pre class="result-stderr">{{ testResult.stderr }}</pre>
             </el-collapse-item>
           </el-collapse>
@@ -238,16 +238,16 @@
         <el-button
           v-if="testSkill?.test_input && Object.keys(testSkill.test_input).length"
           @click="fillExampleArgs"
-        >填入示例参数</el-button>
-        <el-button @click="testVisible = false">关闭</el-button>
-        <el-button type="primary" :loading="testLoading" @click="runTest">运行测试</el-button>
+        >Fill in the sample parameters</el-button>
+        <el-button @click="testVisible = false">close</el-button>
+        <el-button type="primary" :loading="testLoading" @click="runTest">Run tests</el-button>
       </template>
     </el-dialog>
 
-    <!-- 编辑说明对话框 -->
+    <!-- Edit Description Dialog -->
     <el-dialog
       v-model="editVisible"
-      title="编辑 Skill 说明"
+      title="Edit skill description"
       width="560px"
       destroy-on-close
     >
@@ -255,27 +255,27 @@
         type="info"
         :closable="false"
         show-icon
-        title="这里修改的是展示名称和功能说明；参数、代码与接口契约如需变更，请使用「迭代优化」生成新版本。"
+        title="What is modified here is the display name and function description; if the parameters, code and interface contract need to be changed, please use Iterative Optimization to generate a new version."
         style="margin-bottom: 14px;"
       />
       <el-form label-position="top">
-        <el-form-item label="名称" required>
+        <el-form-item label="Name" required>
           <el-input v-model="editForm.display_name" maxlength="100" show-word-limit />
         </el-form-item>
-        <el-form-item label="功能说明">
+        <el-form-item label="Function description">
           <el-input
             v-model="editForm.description"
             type="textarea"
             :rows="5"
             maxlength="2000"
             show-word-limit
-            placeholder="说明这个 Skill 的用途、输入和返回内容"
+            placeholder="Describe the purpose, input and return content of this Skill"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button type="primary" :loading="editSaving" @click="saveEdit">保存</el-button>
+        <el-button @click="editVisible = false">Cancel</el-button>
+        <el-button type="primary" :loading="editSaving" @click="saveEdit">save</el-button>
       </template>
     </el-dialog>
   </div>
@@ -296,14 +296,14 @@ const detailSkill = ref<any>(null)
 const skillCode = ref('')
 const codeLoading = ref(false)
 
-// 在线测试
+// Online test
 const testVisible = ref(false)
 const testLoading = ref(false)
 const testSkill = ref<any>(null)
 const testArgs = ref<Record<string, any>>({})
 const testResult = ref<any>(null)
 
-// 编辑说明
+// Editorial Notes
 const editVisible = ref(false)
 const editSaving = ref(false)
 const editForm = ref<{ tool_id: string; display_name: string; description: string }>({
@@ -312,7 +312,7 @@ const editForm = ref<{ tool_id: string; display_name: string; description: strin
   description: '',
 })
 
-// 测试表单只展示 Skill 已定义的参数
+// The test form only displays the parameters defined by the Skill
 const testParamDefs = computed(() => {
   const params = testSkill.value?.parameters
   return Array.isArray(params) ? params : []
@@ -320,12 +320,12 @@ const testParamDefs = computed(() => {
 
 function getStatusLabel(status: string) {
   const labels: Record<string, string> = {
-    active: '已启用',
-    disabled: '已禁用',
-    draft: '草稿',
-    testing: '测试中',
-    archived: '已归档',
-    failed: '失败'
+    active: 'Enabled',
+    disabled: 'Disabled',
+    draft: 'draft',
+    testing: 'Under test',
+    archived: 'Archived',
+    failed: 'failed'
   }
   return labels[status] || status
 }
@@ -346,11 +346,11 @@ function getStatusTagType(status: string): ElTagType {
 
 function getSessionStatusLabel(status: string) {
   const labels: Record<string, string> = {
-    gathering: '需求沟通中',
-    confirmed: '已确认规格',
-    generating: '生成中',
-    completed: '已完成',
-    failed: '失败'
+    gathering: 'Requirements are being communicated',
+    confirmed: 'Specifications confirmed',
+    generating: 'Generating',
+    completed: 'Completed',
+    failed: 'failed'
   }
   return labels[status] || status
 }
@@ -380,7 +380,7 @@ async function viewSkill(skill: any) {
     const result = await skillGenerationApi.getSkillCode(skill.tool_id)
     skillCode.value = result.code || ''
   } catch (error: any) {
-    ElMessage.error(error?.response?.data?.detail || '加载代码失败')
+    ElMessage.error(error?.response?.data?.detail || 'Failed to load code')
   } finally {
     codeLoading.value = false
   }
@@ -403,7 +403,7 @@ function resumeSession(sessionId: string) {
 }
 
 function iterateSkill(skill: any) {
-  // 跳转到 Skill 生成页面，并带上现有 Skill 的信息用于迭代优化
+  // Jump to the Skill generation page and bring the existing Skill information for iterative optimization
   const params = new URLSearchParams()
   params.set('toolId', skill.tool_id)
   params.set('displayName', skill.display_name || '')
@@ -416,31 +416,31 @@ function iterateSkill(skill: any) {
 
 async function deleteSession(sessionId: string) {
   try {
-    await ElMessageBox.confirm('确认删除该创建任务？', '提示', { type: 'warning' })
+    await ElMessageBox.confirm('Confirm to delete this creation task?', 'Tips', { type: 'warning' })
     await skillGenerationApi.deleteSession(sessionId)
-    ElMessage.success('已删除')
+    ElMessage.success('Deleted')
     await loadSessions()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error?.response?.data?.detail || '删除失败')
+      ElMessage.error(error?.response?.data?.detail || 'Delete failed')
     }
   }
 }
 
 async function deleteSkill(skill: any) {
   try {
-    await ElMessageBox.confirm(`确认删除 Skill「${skill.display_name}」？删除后无法恢复。`, '提示', { type: 'warning' })
+    await ElMessageBox.confirm(`Confirm deletion of Skill ${skill.display_name}] ? It cannot be restored after deletion.`, 'Tips', { type: 'warning' })
     await skillGenerationApi.deleteSkill(skill.tool_id)
-    ElMessage.success('已删除')
+    ElMessage.success('Deleted')
     await loadRecentSkills()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error?.response?.data?.detail || '删除失败')
+      ElMessage.error(error?.response?.data?.detail || 'Delete failed')
     }
   }
 }
 
-// ==================== 在线测试 ====================
+// ==================== Online test ====================
 
 function buildInitialTestArgs(skill: any): Record<string, any> {
   const args: Record<string, any> = {}
@@ -455,7 +455,7 @@ function buildInitialTestArgs(skill: any): Record<string, any> {
     } else if (param.type === 'boolean') {
       args[name] = false
     } else {
-      // 键先置空，输入框显示 placeholder（未填写则使用函数默认值）
+      // The key is first left blank, and the input box displays placeholder (if not filled in, the function default value is used)
       args[name] = undefined
     }
   }
@@ -478,7 +478,7 @@ function fillExampleArgs() {
 
 async function runTest() {
   if (!testSkill.value) return
-  // 只提交已填写的参数；0/false 是合法入参，必须保留
+  // Only submit filled-in parameters; 0/false is a legal input parameter and must be retained
   const args: Record<string, any> = {}
   for (const [key, value] of Object.entries(testArgs.value)) {
     if (value !== null && value !== undefined && value !== '') {
@@ -495,7 +495,7 @@ async function runTest() {
       output: null,
       stderr: '',
       execution_time: 0,
-      error: error?.response?.data?.detail || error?.message || '测试请求失败',
+      error: error?.response?.data?.detail || error?.message || 'Test request failed',
     }
   } finally {
     testLoading.value = false
@@ -503,7 +503,7 @@ async function runTest() {
 }
 
 function formatJson(value: any): string {
-  if (value === null || value === undefined) return '（无输出）'
+  if (value === null || value === undefined) return ' (no output)'
   if (typeof value === 'string') return value
   try {
     return JSON.stringify(value, null, 2)
@@ -512,7 +512,7 @@ function formatJson(value: any): string {
   }
 }
 
-// ==================== 编辑说明 ====================
+// ==================== Editorial Notes ====================
 
 function openEditDialog(skill: any) {
   editForm.value = {
@@ -527,7 +527,7 @@ function openEditDialog(skill: any) {
 async function saveEdit() {
   const displayName = editForm.value.display_name.trim()
   if (!displayName) {
-    ElMessage.warning('名称不能为空')
+    ElMessage.warning('Name cannot be empty')
     return
   }
   editSaving.value = true
@@ -537,9 +537,9 @@ async function saveEdit() {
       displayName,
       editForm.value.description.trim(),
     )
-    ElMessage.success('说明已更新')
+    ElMessage.success('Description updated')
     editVisible.value = false
-    // 同步本地列表与详情缓存，避免重新拉取前展示旧名称
+    // Synchronize local list and detail cache to avoid displaying old names before re-pulling
     const target = recentSkills.value.find(s => s.tool_id === editForm.value.tool_id)
     if (target) {
       target.display_name = displayName
@@ -550,7 +550,7 @@ async function saveEdit() {
       detailSkill.value.description = editForm.value.description.trim()
     }
   } catch (error: any) {
-    ElMessage.error(error?.response?.data?.detail || '保存失败')
+    ElMessage.error(error?.response?.data?.detail || 'Save failed')
   } finally {
     editSaving.value = false
   }

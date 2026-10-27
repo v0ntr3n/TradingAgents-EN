@@ -2,40 +2,40 @@ import { test, expect } from '@playwright/test'
 import { login, waitForLoadingDone, waitForTableLoaded, selectStock } from './utils'
 
 /**
- * 智能选股 E2E 测试
+ * Intelligent stock selection E2E test
  *
- * 产品定位：基于基本面和技术面指标的多条件组合筛选
+ * Product positioning: multi-condition combination screening based on fundamental and technical indicators
  *
- * 覆盖：
- * - 基本面筛选（PE/PB/ROE）
- * - 技术指标筛选（均线/成交量）
- * - 行业板块筛选
- * - 筛选结果排序与保存
- * - 股票关注列表管理（添加/分组/批量操作）
+ * Coverage:
+ * - Fundamental screening (PE/PB/ROE)
+ * - Technical indicator screening (moving average/trading volume)
+ * - Industry sector screening
+ * - Sort and save filter results
+ * - Stock watch list management (add/group/batch operations)
  */
-test.describe('智能选股 - 基本面筛选', () => {
+test.describe('Intelligent Stock Picking - Fundamental Screening', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('PE/PB/ROE 多条件组合筛选', async ({ page }) => {
+  test('PE/PB/ROE Multiple condition combination filtering', async ({ page }) => {
     await page.goto('/screening')
     await waitForLoadingDone(page)
 
     await expect(page).toHaveURL(/\/screening/)
 
-    // 切换到高级模式标签页
-    const advancedTab = page.locator('.el-tabs__item:has-text("高级模式")').first()
+    // Switch to advanced mode tab
+    const advancedTab = page.locator('.el-tabs__item:has-text("Advanced mode")').first()
     if (await advancedTab.isVisible({ timeout: 5000 })) {
       await advancedTab.click()
       await page.waitForTimeout(2000)
     }
 
     const filterPanel = page.locator('.filter-panel').first()
-    // 等待 filter-panel 上的 v-loading 遮罩消失
+    // Wait for the v-loading mask on filter-panel to disappear
     await filterPanel.locator('.el-loading-mask').waitFor({ state: 'hidden', timeout: 30000 }).catch(() => {})
     await filterPanel.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {})
-    // 如果 filter-panel 仍然不可见，则跳过（数据源可能未配置）
+    // Skip if filter-panel is still not visible (data source may not be configured)
     const filterVisible = await filterPanel.isVisible().catch(() => false)
     if (!filterVisible) {
       return
@@ -51,40 +51,40 @@ test.describe('智能选股 - 基本面筛选', () => {
       await pbInput.fill('0-5')
     }
 
-    const screenBtn = page.locator('button:has-text("筛选")').first()
+    const screenBtn = page.locator('button:has-text("Filter")').first()
     if (await screenBtn.isVisible({ timeout: 3000 })) {
       await screenBtn.click()
       await page.waitForTimeout(5000)
     }
   })
 
-  test('行业板块筛选', async ({ page }) => {
+  test('Industry sector screening', async ({ page }) => {
     await page.goto('/screening')
     await waitForLoadingDone(page)
 
-    const industrySelector = page.locator('.industry-selector, .el-select:has-text("行业")').first()
+    const industrySelector = page.locator('.industry-selector, .el-select:has-text("Industry")').first()
     if (await industrySelector.isVisible({ timeout: 5000 })) {
       await industrySelector.click()
       await page.waitForTimeout(2000)
     }
   })
 
-  test('筛选结果排序', async ({ page }) => {
+  test('Sort filter results', async ({ page }) => {
     await page.goto('/screening')
     await waitForLoadingDone(page)
 
-    const sortButton = page.locator('button:has-text("排序"), .sort-selector').first()
+    const sortButton = page.locator('button:has-text("sort"), .sort-selector').first()
     if (await sortButton.isVisible({ timeout: 3000 })) {
       await sortButton.click()
       await page.waitForTimeout(2000)
     }
   })
 
-  test('保存筛选条件', async ({ page }) => {
+  test('Save filters', async ({ page }) => {
     await page.goto('/screening')
     await waitForLoadingDone(page)
 
-    const saveBtn = page.locator('button:has-text("保存"), button:has-text("收藏")').first()
+    const saveBtn = page.locator('button:has-text("save"), button:has-text("Collection")').first()
     if (await saveBtn.isVisible({ timeout: 3000 })) {
       await saveBtn.click()
       await page.waitForTimeout(2000)
@@ -92,27 +92,27 @@ test.describe('智能选股 - 基本面筛选', () => {
   })
 })
 
-test.describe('智能选股 - 技术指标筛选', () => {
+test.describe('Intelligent Stock Picking - Technical Indicator Screening', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('均线条件筛选', async ({ page }) => {
+  test('Moving average condition filter', async ({ page }) => {
     await page.goto('/screening')
     await waitForLoadingDone(page)
 
-    const maFilter = page.locator('text=均线, .ma-filter, .moving-average').first()
+    const maFilter = page.locator('text=moving average, .ma-filter, .moving-average').first()
     if (await maFilter.isVisible({ timeout: 5000 })) {
       await maFilter.click()
       await page.waitForTimeout(2000)
     }
   })
 
-  test('成交量条件筛选', async ({ page }) => {
+  test('Filter by trading volume conditions', async ({ page }) => {
     await page.goto('/screening')
     await waitForLoadingDone(page)
 
-    const volumeFilter = page.locator('text=成交量, .volume-filter').first()
+    const volumeFilter = page.locator('text=Volume, .volume-filter').first()
     if (await volumeFilter.isVisible({ timeout: 5000 })) {
       await volumeFilter.click()
       await page.waitForTimeout(2000)
@@ -120,27 +120,27 @@ test.describe('智能选股 - 技术指标筛选', () => {
   })
 })
 
-test.describe('股票关注列表管理', () => {
+test.describe('Stock watch list management', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('添加股票到自选', async ({ page }) => {
+  test('Add stocks to your selection', async ({ page }) => {
     await page.goto('/favorites')
     await waitForLoadingDone(page)
 
     await expect(page).toHaveURL(/\/favorites/)
 
-    const addBtn = page.locator('button:has-text("添加"), button:has(.el-icon-plus)').first()
+    const addBtn = page.locator('button:has-text("add"), button:has(.el-icon-plus)').first()
     if (await addBtn.isVisible({ timeout: 5000 })) {
       await addBtn.click()
 
-      const input = page.locator('input[placeholder*="股票代码"]').first()
+      const input = page.locator('input[placeholder*="Stock code"]').first()
       if (await input.isVisible({ timeout: 3000 })) {
         await input.fill('600519')
       }
 
-      const confirmBtn = page.locator('button:has-text("确定"), button[type="primary"]').first()
+      const confirmBtn = page.locator('button:has-text("OK"), button[type="primary"]').first()
       if (await confirmBtn.isVisible({ timeout: 3000 })) {
         await confirmBtn.click()
         await page.waitForTimeout(2000)
@@ -148,7 +148,7 @@ test.describe('股票关注列表管理', () => {
     }
   })
 
-  test('股票关注列表列表加载', async ({ page }) => {
+  test('Stock watchlist list loading', async ({ page }) => {
     await page.goto('/favorites')
     await waitForLoadingDone(page)
 
@@ -156,22 +156,22 @@ test.describe('股票关注列表管理', () => {
     await expect(favoritesTable).toBeVisible({ timeout: 10000 })
   })
 
-  test('股票关注列表分组管理', async ({ page }) => {
+  test('Stock watch list group management', async ({ page }) => {
     await page.goto('/favorites')
     await waitForLoadingDone(page)
 
-    const groupSelector = page.locator('.group-selector, .el-select:has-text("分组")').first()
+    const groupSelector = page.locator('.group-selector, .el-select:has-text("Group")').first()
     if (await groupSelector.isVisible({ timeout: 5000 })) {
       await groupSelector.click()
       await page.waitForTimeout(2000)
     }
   })
 
-  test('从股票关注列表发起分析', async ({ page }) => {
+  test('Initiate analysis from a stock watchlist', async ({ page }) => {
     await page.goto('/favorites')
     await waitForLoadingDone(page)
 
-    const analyzeBtn = page.locator('button:has-text("分析"), .analyze-btn').first()
+    const analyzeBtn = page.locator('button:has-text("analysis"), .analyze-btn').first()
     if (await analyzeBtn.isVisible({ timeout: 5000 })) {
       await analyzeBtn.click()
       await page.waitForTimeout(3000)

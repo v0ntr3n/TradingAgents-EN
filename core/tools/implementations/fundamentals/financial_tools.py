@@ -1,15 +1,15 @@
 """
-专项财务分析工具
+Special financial analysis tools
 
-提供 8 个细分财务工具：
-1. get_income_analysis - 利润表分析（营收、利润趋势）
-2. get_balance_sheet_analysis - 资产负债表分析（财务健康度）
-3. get_cashflow_analysis - 现金流量表分析
-4. get_goodwill_analysis - 商誉分析（估值、减值风险信号）
-5. get_dupont_analysis - 杜邦分析（ROE 三因子/五因子拆解）
-6. get_dividend_data - 分红送股数据
-7. get_main_business - 主营业务构成
-8. get_accounts_receivable_risk_analyzer - 应收账款风险三维分析（回收效率+收入质量+计提审慎性）
+8 segmented financial tools are available:
+1. get_income_analysis - Income statement analysis (revenue, profit trends)
+2. get_balance_sheet_analysis - Balance Sheet Analysis (Financial Health)
+3. get_cashflow_analysis - Cash Flow Statement Analysis
+4. get_goodwill_analysis - Goodwill analysis (valuation, impairment risk signals)
+5. get_dupont_analysis - DuPont analysis (ROE three-factor/five-factor dismantling)
+6. get_dividend_data - Dividend share data
+7. get_main_business - Main business composition
+8. get_accounts_receivable_risk_analyzer - Three-dimensional analysis of accounts receivable risk (recovery efficiency+Income quality+Provision prudence)
 """
 
 import logging
@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 def _get_tushare_provider():
-    """延迟导入获取 Tushare Provider"""
+    """Delayed import acquisition Tushare Provider"""
     from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
     return get_tushare_provider()
 
 
 def _get_mongodb_cache():
-    """延迟导入获取 MongoDB 缓存适配器"""
+    """Lazy Import Gets MongoDB Cache Adapter"""
     try:
         from tradingagents.dataflows.cache.mongodb_cache_adapter import get_mongodb_cache_adapter
         return get_mongodb_cache_adapter()
@@ -102,81 +102,81 @@ def _wan_yi(val) -> str:
 
 def _run_async(coro):
     """
-    在同步上下文中运行异步协程，兼容主线程和 worker 线程。
+    Run asynchronous coroutines in a synchronization context, compatible with main threads and worker threads.
 
-    - 如果当前线程有运行中的事件循环 → 在新线程中 asyncio.run()
-    - 如果当前线程没有事件循环 → 直接 asyncio.run()
+    - If the current thread has a running event loop → in new thread asyncio.run()
+    - If the current thread does not have an event loop → direct asyncio.run()
     """
     try:
         asyncio.get_running_loop()
-        # 当前线程有运行中的事件循环，不能直接 asyncio.run()
+        # The current thread has a running event loop and cannot directly asyncio.run()
         import concurrent.futures
         with concurrent.futures.ThreadPoolExecutor() as pool:
             return pool.submit(asyncio.run, coro).result(timeout=30)
     except RuntimeError:
-        # 当前线程没有运行中的事件循环，可以直接 asyncio.run()
+        # The current thread does not have a running event loop and can directly asyncio.run()
         return asyncio.run(coro)
 
 
 def _get_financial_data_from_cache_or_api(symbol: str, limit: int = 8) -> Optional[Dict[str, Any]]:
     """
-    从 MongoDB 缓存或 Tushare API 获取完整财务数据（含 raw_data）
+    Get complete financial data (with raw_data) from MongoDB cache or Tushare API
 
-    优先读 MongoDB stock_financial_data 集合，如果没有则调 Tushare API。
-    返回标准化后的数据（含 raw_data.income_statement 等列表）。
+    Read the MongoDB stock_financial_data collection first, if not, call the Tushare API.
+    Returns the standardized data (including lists such as raw_data.income_statement).
     """
     code6 = str(symbol).replace('.SH', '').replace('.SZ', '').replace('.BJ', '').zfill(6)
 
-    # 1. 尝试 MongoDB 缓存
+    # 1. Try MongoDB caching
     cache = _get_mongodb_cache()
     if cache and cache.use_app_cache:
         doc = cache.get_financial_data(code6)
         if doc and doc.get('raw_data'):
-            logger.info(f"💰 [专项财务] 使用 MongoDB 缓存: {symbol}")
+            logger.info(f"💰 [Special finance] Using MongoDB cache: {symbol}")
             return doc
 
-    # 2. 调 Tushare API
+    # 2. tune Tushare API
     try:
         provider = _get_tushare_provider()
         if provider and provider.is_available():
-            logger.info(f"📊 [专项财务] 从 Tushare 获取数据: {symbol}, limit={limit}")
+            logger.info(f"📊 [Special finance] Get data from Tushare: {symbol}, limit={limit}")
             data = _run_async(provider.get_financial_data(symbol, limit=limit))
             if data:
                 return data
     except Exception as e:
-        logger.warning(f"⚠️ [专项财务] Tushare 获取失败: {e}")
+        logger.warning(f"⚠️ [Special finance] Tushare Failed to obtain: {e}")
 
     return None
 
 
 # ============================================================
-# Tool 1: 利润表分析
+# Tool 1: Income statement analysis
 # ============================================================
 @tool
 @register_tool(
     tool_id="get_income_analysis",
     name="利润表分析",
-    description="分析股票利润表核心指标及多期增长趋势，结构化返回营收、净利润、毛利率、净利率、费用率等的多期序列数据",
+    description="Analyze the core indicators of stock income statements and multi-period growth trends, and return structured multi-period sequence data of revenue, net profit, gross profit margin, net profit rate, expense ratio, etc.",
     category="fundamentals",
     is_online=True,
     auto_register=True
 )
 def get_income_analysis(
-    ticker: Annotated[str, "股票代码，6位数字（如 600519、000001）"],
-    periods: Annotated[int, "分析期数（最近几个季度），默认8"] = 8
+    ticker: Annotated[str, "Stock code, 6 digits (such as 600519, 000001)"],
+    periods: Annotated[int, "Number of analysis periods (most recent quarters), default 8"] = 8
 ) -> str:
     """
-    利润表分析工具 —— 获取股票的营收、利润及增长趋势
+    Income statement analysis tools —— Get a stock s revenue, profits and growth trends
 
-    分析内容包括：营业收入、净利润、毛利率、净利率、费用率等。
-    支持多期（最近N个季度）趋势展示。
+    The analysis content includes: operating income, net profit, gross profit margin, net profit rate, expense ratio, etc.
+    Supports multi-period (last N quarters) trend display.
 
     Args:
-        ticker: 股票代码（如 600519、000001）
-        periods: 分析期数，默认8（最近8个季度）
+        ticker: Stock code (e.g. 600519, 000001)
+        periods: Number of analysis periods, default 8 (last 8 quarters)
 
     Returns:
-        str: 利润表分析报告（Markdown格式）
+        str: Income statement analysis report (Markdown format)
     """
     logger.info(f"📊 [利润表分析] 分析股票: {ticker}, 期数: {periods}")
     try:
@@ -190,13 +190,13 @@ def get_income_analysis(
 
         lines = [f"# {ticker} 利润表分析\n"]
 
-        # 最新一期概览
+        # Overview of the latest issue
         lines.append("## 📊 最新一期概览")
         lines.append(f"- **报告期**: {data.get('report_period', 'N/A')}")
         lines.append(f"- **营业收入**: {_wan_yi(data.get('revenue'))}")
-        lines.append(f"- **营业收入(TTM)**: {_wan_yi(data.get('revenue_ttm'))}")
+        lines.append(f"- **operating income(TTM)**: {_wan_yi(data.get('revenue_ttm'))}")
         lines.append(f"- **归母净利润**: {_wan_yi(data.get('net_profit'))}")
-        lines.append(f"- **归母净利润(TTM)**: {_wan_yi(data.get('net_profit_ttm'))}")
+        lines.append(f"- **Net profit attributable to parent company(TTM)**: {_wan_yi(data.get('net_profit_ttm'))}")
         lines.append(f"- **营业利润**: {_wan_yi(data.get('oper_profit'))}")
         lines.append(f"- **营业成本**: {_wan_yi(data.get('oper_cost'))}")
         lines.append(f"- **毛利率**: {_safe_pct(_resolve_gross_margin_percent(data, indicator_list))}")
@@ -204,19 +204,19 @@ def get_income_analysis(
         lines.append(f"- **研发费用**: {_wan_yi(data.get('rd_exp'))}")
         lines.append("")
 
-        # 费用结构
+        # fee structure
         lines.append("## 💰 费用结构")
-        lines.append(f"- **销售费用/营收**: {_safe_pct(data.get('saleexp_to_gr'))}")
-        lines.append(f"- **管理费用/营收**: {_safe_pct(data.get('adminexp_of_gr'))}")
-        lines.append(f"- **财务费用/营收**: {_safe_pct(data.get('finaexp_of_gr'))}")
+        lines.append(f"- **Selling expenses/revenue**: {_safe_pct(data.get('saleexp_to_gr'))}")
+        lines.append(f"- **overhead/revenue**: {_safe_pct(data.get('adminexp_of_gr'))}")
+        lines.append(f"- **Financial expenses/revenue**: {_safe_pct(data.get('finaexp_of_gr'))}")
         lines.append(f"- **销售成本率**: {_safe_pct(data.get('cogs_of_sales'))}")
         lines.append(f"- **期间费用率**: {_safe_pct(data.get('expense_of_sales'))}")
         lines.append("")
 
-        # 多期趋势
+        # multi-period trend
         if income_list and len(income_list) > 1:
             lines.append("## 📈 多期趋势")
-            lines.append("| 报告期 | 营业收入 | 归母净利润 | 营业利润 |")
+            lines.append("| reporting period | operating income | Net profit attributable to parent company | operating profit |")
             lines.append("|--------|----------|------------|----------|")
             for rec in income_list[:periods]:
                 period = rec.get('end_date', 'N/A')
@@ -226,10 +226,10 @@ def get_income_analysis(
                 lines.append(f"| {period} | {rev} | {np_} | {op} |")
             lines.append("")
 
-        # 盈利能力指标趋势
+        # Profitability indicator trends
         if indicator_list and len(indicator_list) > 1:
             lines.append("## 📊 盈利能力趋势")
-            lines.append("| 报告期 | 毛利率 | 净利率 | ROE |")
+            lines.append("| reporting period | Gross profit margin | net profit margin | ROE |")
             lines.append("|--------|--------|--------|-----|")
             for rec in indicator_list[:periods]:
                 period = rec.get('end_date', 'N/A')
@@ -240,43 +240,43 @@ def get_income_analysis(
             lines.append("")
 
         lines.append("---")
-        lines.append("*数据来源: Tushare / MongoDB 缓存*")
+        lines.append("*Data source: Tushare / MongoDB cache*")
         return "\n".join(lines)
 
     except Exception as e:
-        logger.error(f"❌ [利润表分析] 执行失败: {e}")
+        logger.error(f"❌ [Income statement analysis] Execution failed: {e}")
         return f"❌ 利润表分析执行失败: {e}"
 
 
 # ============================================================
-# Tool 2: 资产负债表分析
+# Tool 2: Balance Sheet Analysis
 # ============================================================
 @tool
 @register_tool(
     tool_id="get_balance_sheet_analysis",
     name="资产负债表分析",
-    description="分析股票资产负债结构、偿债能力与财务健康度，结构化返回资产负债率、流动比率、速动比率、权益乘数等指标",
+    description="Analyze the asset-liability structure, solvency and financial health of stocks, and structurally return indicators such as asset-liability ratio, current ratio, quick ratio, equity multiplier, etc.",
     category="fundamentals",
     is_online=True,
     auto_register=True
 )
 def get_balance_sheet_analysis(
-    ticker: Annotated[str, "股票代码，6位数字（如 600519、000001）"],
-    periods: Annotated[int, "分析期数（最近几个季度），默认8"] = 8
+    ticker: Annotated[str, "Stock code, 6 digits (such as 600519, 000001)"],
+    periods: Annotated[int, "Number of analysis periods (most recent quarters), default 8"] = 8
 ) -> str:
     """
-    资产负债表分析工具 —— 分析财务健康度
+    Balance Sheet Analysis Tools —— Analyze financial health
 
-    分析内容：资产负债率、流动比率、速动比率、现金比率、资产结构等。
+    Analysis content: asset-liability ratio, current ratio, quick ratio, cash ratio, asset structure, etc.
 
     Args:
-        ticker: 股票代码
-        periods: 分析期数，默认8
+        ticker: Stock code
+        periods: Number of analysis periods, default 8
 
     Returns:
-        str: 资产负债表分析报告
+        str: Balance Sheet Analysis Report
     """
-    logger.info(f"📊 [资产负债表分析] 分析股票: {ticker}")
+    logger.info(f"📊 [Balance Sheet Analysis] Analyze stocks: {ticker}")
     try:
         data = _get_financial_data_from_cache_or_api(ticker, limit=periods)
         if not data:
@@ -288,8 +288,8 @@ def get_balance_sheet_analysis(
 
         lines = [f"# {ticker} 资产负债表分析\n"]
 
-        # 最新一期
-        lines.append("## 📊 最新资产负债状况")
+        # Latest issue
+        lines.append("## 📊 Latest asset and liability status")
         lines.append(f"- **报告期**: {data.get('report_period', 'N/A')}")
         lines.append(f"- **总资产**: {_wan_yi(data.get('total_assets'))}")
         lines.append(f"- **总负债**: {_wan_yi(data.get('total_liab'))}")
@@ -299,15 +299,15 @@ def get_balance_sheet_analysis(
         lines.append(f"- **存货**: {_wan_yi(data.get('inventories'))}")
         lines.append(f"- **固定资产**: {_wan_yi(data.get('fix_assets'))}")
 
-        # 商誉（仅在年报披露时有效值）
+        # Goodwill (valid value only when disclosed in annual report)
         goodwill = data.get('goodwill')
         if goodwill is not None and goodwill > 0:
             lines.append(f"- **商誉**: {_wan_yi(goodwill)} | 商誉/净资产: {_safe_pct(goodwill / data.get('total_equity') * 100 if data.get('total_equity') else None)}")
         else:
-            lines.append(f"- **商誉**: 数据不足（季报通常不披露商誉明细，建议查询年报数据）")
+            lines.append(f"- **goodwill**: Insufficient data (quarterly reports usually do not disclose goodwill details, it is recommended to check annual report data)")
         lines.append("")
 
-        # 偿债能力
+        # Solvency
         lines.append("## 🏦 偿债能力指标")
         lines.append(f"- **资产负债率**: {_safe_pct(data.get('debt_to_assets'))}")
         lines.append(f"- **流动比率**: {_safe_val(data.get('current_ratio'))}")
@@ -316,20 +316,20 @@ def get_balance_sheet_analysis(
         lines.append(f"- **权益乘数**: {_safe_val(data.get('assets_to_eqt'))}")
         lines.append("")
 
-        # 资产结构
+        # Asset structure
         lines.append("## 📊 资产结构")
         lines.append(f"- **流动资产**: {_wan_yi(data.get('total_cur_assets'))}")
         lines.append(f"- **非流动资产**: {_wan_yi(data.get('total_nca'))}")
-        lines.append(f"- **流动资产占比**: {_safe_pct(data.get('ca_to_assets'))}")
-        lines.append(f"- **非流动资产占比**: {_safe_pct(data.get('nca_to_assets'))}")
+        lines.append(f"- **Proportion of current assets**: {_safe_pct(data.get('ca_to_assets'))}")
+        lines.append(f"- **Proportion of non-current assets**: {_safe_pct(data.get('nca_to_assets'))}")
         lines.append(f"- **流动负债**: {_wan_yi(data.get('total_cur_liab'))}")
         lines.append(f"- **非流动负债**: {_wan_yi(data.get('total_ncl'))}")
         lines.append("")
 
-        # 多期趋势
+        # multi-period trend
         if balance_list and len(balance_list) > 1:
             lines.append("## 📈 资产负债趋势")
-            lines.append("| 报告期 | 总资产 | 总负债 | 股东权益 | 货币资金 | 商誉 |")
+            lines.append("| reporting period | total assets | total liabilities | Shareholders equity | Monetary funds | goodwill |")
             lines.append("|--------|--------|--------|----------|----------|------|")
             for rec in balance_list[:periods]:
                 period = rec.get('end_date', 'N/A')
@@ -341,10 +341,10 @@ def get_balance_sheet_analysis(
                 lines.append(f"| {period} | {ta} | {tl} | {eq} | {mc} | {gw} |")
             lines.append("")
 
-        # 偿债能力趋势
+        # Solvency Trends
         if indicator_list and len(indicator_list) > 1:
             lines.append("## 📊 偿债能力趋势")
-            lines.append("| 报告期 | 资产负债率 | 流动比率 | 速动比率 |")
+            lines.append("| reporting period | Asset-liability ratio | current ratio | quick ratio |")
             lines.append("|--------|-----------|---------|---------|")
             for rec in indicator_list[:periods]:
                 period = rec.get('end_date', 'N/A')
@@ -355,25 +355,25 @@ def get_balance_sheet_analysis(
             lines.append("")
 
         lines.append("---")
-        lines.append("*数据来源: Tushare / MongoDB 缓存*")
+        lines.append("*Data source: Tushare / MongoDB cache*")
         return "\n".join(lines)
 
     except Exception as e:
-        logger.error(f"❌ [资产负债表分析] 执行失败: {e}")
-        return f"❌ 资产负债表分析执行失败: {e}"
+        logger.error(f"❌ [Balance Sheet Analysis] Execution failed: {e}")
+        return f"❌ Balance sheet analysis execution failed: {e}"
 
 
 # ============================================================
-# Tool 3: 现金流量表分析
+# Tool 3: Cash Flow Statement Analysis
 # ============================================================
 @tool
 @register_tool(
     tool_id="get_cashflow_analysis",
     name="现金流量表分析",
     description=(
-        "分析股票的经营/投资/筹资现金流，评估现金流健康度。"
-        "适合现金流恶化分析、经营现金流持续下滑识别、自由现金流为负识别、现金收入质量判断、"
-        "利润含金量评估和财务风险信号排查。"
+        "Analyze a stock s operating/investing/financing cash flows and assess cash flow health."
+        "Suitable for cash flow deterioration analysis, identification of continued decline in operating cash flow, identification of negative free cash flow, judgment of cash income quality,"
+        "Profit value assessment and financial risk signal investigation."
     ),
     category="fundamentals",
     is_online=True,
@@ -382,26 +382,26 @@ def get_balance_sheet_analysis(
     tool_role_hint="specialized",
     output_shape="markdown_report",
     preferred_for=["cashflow_quality_analysis", "financial_risk_signal_detection", "financial_statement_analysis"],
-    when_to_use="当需要解释财务报表口径的经营/投资/筹资现金流、多期现金流趋势、自由现金流、现金流健康度、现金流恶化风险和利润含金量时使用。",
-    when_not_to_use="不用于主力资金流、北向资金、成交资金流向或短线交易资金面分析；这些是市场资金流，不是财报现金流。若需要结构化长期现金流质量指标，优先用 get_cashflow_quality_trend_tool。",
+    when_to_use="Use it when you need to explain the operating/investing/financing cash flow, multi-period cash flow trend, free cash flow, cash flow health, cash flow deterioration risk and profit content in terms of financial statements.",
+    when_not_to_use="It is not used for analysis of main capital flow, northbound capital, transaction capital flow or short-term trading capital; these are market capital flows, not financial report cash flows. If you need structured long-term cash flow quality indicators, use get_cashflow_quality_trend_tool first.",
 )
 def get_cashflow_analysis(
-    ticker: Annotated[str, "股票代码，6位数字（如 600519、000001）"],
-    periods: Annotated[int, "分析期数（最近几个季度），默认8"] = 8
+    ticker: Annotated[str, "Stock code, 6 digits (such as 600519, 000001)"],
+    periods: Annotated[int, "Number of analysis periods (most recent quarters), default 8"] = 8
 ) -> str:
     """
-    现金流量表分析工具 —— 评估现金流健康度
+    Cash Flow Statement Analysis Tools —— Assess cash flow health
 
-    分析内容：经营现金流、投资现金流、筹资现金流、自由现金流等。
+    Analysis content: operating cash flow, investment cash flow, financing cash flow, free cash flow, etc.
 
     Args:
-        ticker: 股票代码
-        periods: 分析期数，默认8
+        ticker: Stock code
+        periods: Number of analysis periods, default 8
 
     Returns:
-        str: 现金流量表分析报告
+        str: Cash flow statement analysis report
     """
-    logger.info(f"📊 [现金流分析] 分析股票: {ticker}")
+    logger.info(f"📊 [cash flow analysis] Analyze stocks: {ticker}")
     try:
         data = _get_financial_data_from_cache_or_api(ticker, limit=periods)
         if not data:
@@ -412,34 +412,34 @@ def get_cashflow_analysis(
 
         lines = [f"# {ticker} 现金流量表分析\n"]
 
-        # 最新一期
+        # Latest issue
         lines.append("## 📊 最新现金流状况")
         lines.append(f"- **报告期**: {data.get('report_period', 'N/A')}")
         ocf = data.get('n_cashflow_act')
         icf = data.get('n_cashflow_inv_act')
         fcf_val = data.get('n_cashflow_fin_act')
-        lines.append(f"- **经营活动现金流净额**: {_wan_yi(ocf)}")
-        lines.append(f"- **投资活动现金流净额**: {_wan_yi(icf)}")
-        lines.append(f"- **筹资活动现金流净额**: {_wan_yi(fcf_val)}")
-        lines.append(f"- **期末现金及等价物**: {_wan_yi(data.get('c_cash_equ_end_period'))}")
-        lines.append(f"- **期初现金及等价物**: {_wan_yi(data.get('c_cash_equ_beg_period'))}")
+        lines.append(f"- **Net cash flow from operating activities**: {_wan_yi(ocf)}")
+        lines.append(f"- **Net cash flow from investing activities**: {_wan_yi(icf)}")
+        lines.append(f"- **Net cash flow from financing activities**: {_wan_yi(fcf_val)}")
+        lines.append(f"- **Closing cash and equivalents**: {_wan_yi(data.get('c_cash_equ_end_period'))}")
+        lines.append(f"- **Opening cash and equivalents**: {_wan_yi(data.get('c_cash_equ_beg_period'))}")
         lines.append("")
 
-        # 简易自由现金流估算
+        # Simple Free Cash Flow Estimate
         if ocf is not None and icf is not None:
             try:
                 free_cf = float(ocf) + float(icf)
-                lines.append(f"## 💡 自由现金流（简易估算）")
-                lines.append(f"- **自由现金流 ≈ 经营现金流 + 投资现金流**: {_wan_yi(free_cf)}")
+                lines.append(f"## 💡 Free cash flow (simple estimate)")
+                lines.append(f"- **free cash flow ≈ operating cash flow + investment cash flow**: {_wan_yi(free_cf)}")
                 if free_cf > 0:
-                    lines.append(f"- **判断**: ✅ 自由现金流为正，公司造血能力良好")
+                    lines.append(f"- **judge**: ✅ Free cash flow is positive, and the company s hematopoietic ability is good.")
                 else:
-                    lines.append(f"- **判断**: ⚠️ 自由现金流为负，需关注资金压力")
+                    lines.append(f"- **judge**: ⚠️ Free cash flow is negative, need to pay attention to financial pressure")
                 lines.append("")
             except (ValueError, TypeError):
                 pass
 
-        # 现金流质量分析
+        # Cash flow quality analysis
         net_profit = data.get('net_profit')
         if ocf is not None and net_profit is not None:
             try:
@@ -448,21 +448,21 @@ def get_cashflow_analysis(
                 if np_f != 0:
                     ratio = ocf_f / np_f
                     lines.append("## 🔍 现金流质量")
-                    lines.append(f"- **经营现金流/归母净利润**: {ratio:.2f}")
+                    lines.append(f"- **Operating cash flow/net profit attributable to parent company**: {ratio:.2f}")
                     if ratio > 1:
-                        lines.append("- **判断**: ✅ 现金流质量优秀（>1），利润含金量高")
+                        lines.append("- **judge**: ✅ Excellent cash flow quality (>1) , High profit content")
                     elif ratio > 0.5:
-                        lines.append("- **判断**: 🟡 现金流质量一般（0.5~1），部分利润尚未回款")
+                        lines.append("- **judge**: 🟡 Cash flow quality is average (0.5~1) , Part of the profit has not yet been repaid")
                     else:
-                        lines.append("- **判断**: ⚠️ 现金流质量偏弱（<0.5），利润含金量较低")
+                        lines.append("- **judge**: ⚠️ Cash flow quality is weak (<0.5) , Low profit content")
                     lines.append("")
             except (ValueError, TypeError):
                 pass
 
-        # 多期趋势
+        # multi-period trend
         if cashflow_list and len(cashflow_list) > 1:
             lines.append("## 📈 现金流趋势")
-            lines.append("| 报告期 | 经营现金流 | 投资现金流 | 筹资现金流 | 期末现金 |")
+            lines.append("| reporting period | operating cash flow | investment cash flow | Financing cash flow | Ending cash |")
             lines.append("|--------|-----------|-----------|-----------|---------|")
             for rec in cashflow_list[:periods]:
                 period = rec.get('end_date', 'N/A')
@@ -474,48 +474,48 @@ def get_cashflow_analysis(
             lines.append("")
 
         lines.append("---")
-        lines.append("*数据来源: Tushare / MongoDB 缓存*")
+        lines.append("*Data source: Tushare / MongoDB cache*")
         return "\n".join(lines)
 
     except Exception as e:
-        logger.error(f"❌ [现金流分析] 执行失败: {e}")
+        logger.error(f"❌ [cash flow analysis] Execution failed: {e}")
         return f"❌ 现金流分析执行失败: {e}"
 
 
 # ============================================================
-# Tool 4: 商誉分析
+# Tool 4: Goodwill analysis
 # ============================================================
 @tool
 @register_tool(
     tool_id="get_goodwill_analysis",
     name="商誉分析",
-    description="分析股票的商誉规模、占比及变动趋势，评估商誉减值风险。从年报资产负债表提取 goodwill 字段，计算商誉/净资产比率和同比变化。",
+    description="Analyze the size, proportion and change trend of goodwill of stocks, and assess the risk of goodwill impairment. Extract the goodwill field from the annual report balance sheet and calculate the goodwill/net assets ratio and year-on-year change.",
     category="fundamentals",
     is_online=True,
     auto_register=True
 )
 def get_goodwill_analysis(
-    ticker: Annotated[str, "股票代码，6位数字（如 002230、600519、000001）"],
-    years: Annotated[int, "回溯年数，默认5年"] = 5
+    ticker: Annotated[str, "Stock code, 6 digits (such as 002230, 600519, 000001)"],
+    years: Annotated[int, "Number of years to look back, default is 5 years"] = 5
 ) -> str:
     """
-    商誉分析工具 —— 评估商誉规模与减值风险
+    Goodwill Analysis Tool —— Assessing goodwill scale and impairment risk
 
-    从资产负债表年报数据中提取商誉(goodwill)字段，计算：
-    - 商誉账面金额
-    - 商誉/净资产比率
-    - 商誉/总资产比率
-    - 同比变化趋势（识别减值信号）
+    Extract goodwill from balance sheet annual report data(goodwill)Field, calculation:
+    - Carrying amount of goodwill
+    - Goodwill/Net Assets Ratio
+    - Goodwill/total assets ratio
+    - Year-on-year trend (identifying impairment signals)
 
-    ⚠️ 商誉仅在年报（Q4）完整披露，本工具从 raw_data 中筛选年报数据，
-    不会出现季报空值问题。
+    ⚠️ Goodwill is only fully disclosed in the annual report (Q4). This tool filters annual report data from raw_data.
+    There will be no issue of null values in quarterly reports.
 
     Args:
-        ticker: 股票代码（如 002230、600519）
-        years: 回溯年数，默认5年
+        ticker: Stock code (e.g. 002230, 600519)
+        years: Number of years to look back, default is 5 years
 
     Returns:
-        str: 商誉分析报告
+        str: Goodwill Analysis Report
     """
     logger.info(f"📊 [商誉分析] 分析股票: {ticker}, 回溯{years}年")
     try:
@@ -526,24 +526,24 @@ def get_goodwill_analysis(
         raw = data.get("raw_data", {})
         balance_list = raw.get("balance_sheet", [])
 
-        # 筛选年报：取每年最后一个报告期（end_date 含 -12-31 或按年度去重取最后一条）
+        # Filter annual reports: take the last reporting period of each year (end_date contains -12-31 or remove duplicates by year and take the last one)
         annual_records: List[Dict[str, Any]] = []
         seen_years: set = set()
         for rec in balance_list:
             end_date = str(rec.get('end_date', '') or rec.get('f_ann_date', ''))
             if not end_date:
                 continue
-            # 提取年份
+            # Year of extraction
             year = end_date[:4]
             if year not in seen_years:
                 seen_years.add(year)
                 annual_records.append(rec)
 
-        # 取最近 years 年的年报
+        # Get the annual report of the most recent years
         annual_records = sorted(annual_records, key=lambda r: str(r.get('end_date', '')), reverse=True)[:years]
 
         if not annual_records:
-            return f"📊 {ticker} 暂无商誉数据（资产负债表缓存中未找到年报记录，建议先拉取数据）"
+            return f"📊 {ticker} There is currently no goodwill data (annual report records are not found in the balance sheet cache, it is recommended to pull the data first)"
 
         goodwill_by_year: Dict[str, Optional[float]] = {}
         equity_by_year: Dict[str, Optional[float]] = {}
@@ -557,36 +557,36 @@ def get_goodwill_analysis(
 
         lines = [f"# {ticker} 商誉分析\n"]
 
-        # 最新一期商誉概况
+        # The latest issue of Goodwill Profile
         latest_year = list(goodwill_by_year.keys())[0]
         latest_gw = goodwill_by_year.get(latest_year)
         latest_equity = equity_by_year.get(latest_year)
         latest_assets = assets_by_year.get(latest_year)
 
-        lines.append("## 📊 最新一期商誉概况")
+        lines.append("## 📊 The latest issue of Goodwill Profile")
         lines.append(f"- **报告年度**: {latest_year}")
 
         if latest_gw is not None and latest_gw > 0:
-            lines.append(f"- **商誉账面金额**: {_wan_yi(latest_gw)}")
+            lines.append(f"- **Carrying amount of goodwill**: {_wan_yi(latest_gw)}")
             if latest_equity:
                 gw_to_equity = latest_gw / latest_equity * 100
-                lines.append(f"- **商誉/净资产**: {gw_to_equity:.1f}%")
-                risk_flag = "🔴 高风险（商誉占净资产比例过高，减值压力大）" if gw_to_equity > 20 else ("🟡 关注（商誉占比偏高）" if gw_to_equity > 10 else "🟢 正常")
+                lines.append(f"- **Goodwill/Net Assets**: {gw_to_equity:.1f}%")
+                risk_flag = "🔴 High risk (the ratio of goodwill to net assets is too high, and the pressure for impairment is high)" if gw_to_equity > 20 else ("🟡 关注（商誉占比偏高）" if gw_to_equity > 10 else "🟢 正常")
                 lines.append(f"- **风险信号**: {risk_flag}")
             if latest_assets:
-                lines.append(f"- **商誉/总资产**: {latest_gw / latest_assets * 100:.1f}%")
+                lines.append(f"- **Goodwill/Total Assets**: {latest_gw / latest_assets * 100:.1f}%")
         elif latest_gw is not None and latest_gw == 0:
-            lines.append(f"- **商誉账面金额**: 0（该公司无商誉）")
-            lines.append(f"- **风险信号**: 🟢 无商誉减值风险")
+            lines.append(f"- **Carrying amount of goodwill**: 0 (The company has no goodwill)")
+            lines.append(f"- **risk signal**: 🟢 No goodwill impairment risk")
         else:
-            lines.append(f"- **商誉账面金额**: 数据缺失（年报未披露 goodwill 字段）")
-            lines.append(f"- **风险信号**: ⬜ 数据不足，无法判断")
+            lines.append(f"- **Carrying amount of goodwill**: Missing data (the annual report does not disclose the goodwill field)")
+            lines.append(f"- **risk signal**: ⬜ Insufficient data to judge")
         lines.append("")
 
-        # 多年趋势
+        # Multi-year trend
         if len(annual_records) > 1:
             lines.append("## 📈 商誉年度趋势")
-            lines.append("| 报告年度 | 商誉 | 净资产 | 商誉/净资产 | 商誉/总资产 |")
+            lines.append("| reporting year | goodwill | net worth | Goodwill/Net Assets | Goodwill/Total Assets |")
             lines.append("|----------|------|--------|------------|------------|")
             sorted_years = sorted(goodwill_by_year.keys(), reverse=True)
             prev_gw = None
@@ -598,7 +598,7 @@ def get_goodwill_analysis(
                 gwt = f"{gw / ta * 100:.1f}%" if (gw is not None and ta and ta > 0) else "-"
                 lines.append(f"| {year} | {_wan_yi(gw)} | {_wan_yi(eq)} | {gwe} | {gwt} |")
 
-                # 检测同比大幅下降（减值信号）
+                # Detect significant year-on-year decline (impairment signal)
                 if prev_gw is not None and gw is not None and prev_gw > 0 and gw > 0:
                     change = (gw - prev_gw) / prev_gw * 100
                     if change < -20:
@@ -611,63 +611,63 @@ def get_goodwill_analysis(
             ratio = latest_gw / latest_equity * 100
             lines.append(f"- 商誉/净资产比率 = {ratio:.1f}%")
             if ratio > 20:
-                lines.append(f"- ⚠️ 超过 20% 警戒线，减值对净资产的冲击显著")
-                lines.append(f"- 建议关注：标的公司业绩承诺完成情况、行业景气度变化")
+                lines.append(f"- ⚠️ Exceeding the 20% warning line, impairment has a significant impact on net assets")
+                lines.append(f"- It is recommended to pay attention to: the completion of the target company s performance commitments and changes in industry prosperity")
             elif ratio > 10:
-                lines.append(f"- 处于 10%-20% 关注区间，需持续跟踪")
+                lines.append(f"- It is in the 10%-20% attention range and needs to be tracked continuously.")
             else:
-                lines.append(f"- 低于 10%，商誉减值对净资产影响有限")
+                lines.append(f"- Less than 10%, goodwill impairment has limited impact on net assets")
         lines.append("")
 
         lines.append("---")
-        lines.append("*数据来源: 年报资产负债表 (Tushare) | 商誉字段仅在年报中完整披露*")
+        lines.append("*Data source: Annual report balance sheet (Tushare) | The goodwill field is only fully disclosed in the annual report*")
         return "\n".join(lines)
 
     except Exception as e:
-        logger.error(f"❌ [商誉分析] 执行失败: {e}")
+        logger.error(f"❌ [Goodwill analysis] Execution failed: {e}")
         return f"❌ 商誉分析执行失败: {e}"
 
 
 # ============================================================
-# Tool 5: 杜邦分析
+# Tool 5: DuPont Analysis
 # ============================================================
 @tool
 @register_tool(
     tool_id="get_dupont_analysis",
     name="杜邦分析",
-    description="对股票进行杜邦分析，拆解ROE为三因子（净利率×资产周转率×权益乘数）和五因子（税负×利息负担×经营利润率×资产周转率×权益乘数），支持多年趋势对比。",
+    description="Conduct DuPont analysis on the stock and break down ROE into three factors (net interest rate×asset turnover rate×equity multiplier) and five factors (tax burden×interest burden×operating profit margin×asset turnover rate×Equity Multiplier), supporting multi-year trend comparisons.",
     category="fundamentals",
     is_online=True,
     auto_register=True
 )
 def get_dupont_analysis(
-    ticker: Annotated[str, "股票代码，6位数字（如 600519、000001、002230）"],
-    years: Annotated[int, "回溯年数，默认5年"] = 5
+    ticker: Annotated[str, "Stock code, 6 digits (such as 600519, 000001, 002230)"],
+    years: Annotated[int, "Number of years to look back, default is 5 years"] = 5
 ) -> str:
     """
-    杜邦分析工具 — ROE 三因子 / 五因子拆解
+    DuPont Analytical Tools — ROE Three-factor / five-factor decomposition
 
-    从缓存中读取 TTM 利润表和资产负债表数据，计算：
+    Read TTM income statement and balance sheet data from cache and calculate:
 
-    **三因子拆解**：
-    - 净利率 = 净利润(TTM) / 营业收入(TTM)
-    - 资产周转率 = 营业收入(TTM) / 总资产
-    - 权益乘数 = 总资产 / 净资产
-    - ROE = 净利率 × 资产周转率 × 权益乘数
+    **Three-factor decomposition**: 
+    - net profit margin = net profit(TTM) / operating income(TTM)
+    - asset turnover rate = operating income(TTM) / total assets
+    - equity multiplier = total assets/net assets
+    - ROE = net profit margin × asset turnover rate × equity multiplier
 
-    **五因子拆解**（需要营业利润数据）：
-    - 税负因子 = 净利润 / 利润总额
-    - 利息负担 = 利润总额 / 营业利润
-    - 经营利润率 = 营业利润 / 营业收入
-    - 资产周转率 = 营业收入 / 总资产
-    - 权益乘数 = 总资产 / 净资产
+    **Five factors breakdown** (Operating profit data required):
+    - tax burden factor = Net profit / total profit
+    - interest burden = Total profit/operating profit
+    - operating profit margin = Operating profit/operating income
+    - asset turnover rate = Operating income / total assets
+    - equity multiplier = total assets/net assets
 
     Args:
-        ticker: 股票代码（如 600519、002230）
-        years: 回溯年数，默认5年
+        ticker: Stock code (e.g. 600519, 002230)
+        years: Number of years to look back, default is 5 years
 
     Returns:
-        str: 杜邦分析报告
+        str: DuPont Analysis Report
     """
     logger.info(f"📊 [杜邦分析] 分析股票: {ticker}, 回溯{years}年")
     try:
@@ -677,7 +677,7 @@ def get_dupont_analysis(
 
         lines = [f"# {ticker} 杜邦分析\n"]
 
-        # ── 三因子杜邦 ──
+        # ── Three factor dupont ──
         npm, at, em, roe_3f = None, None, None, None
 
         revenue = _coerce_float(data.get('revenue_ttm'))
@@ -686,80 +686,80 @@ def get_dupont_analysis(
         total_equity = _coerce_float(data.get('total_equity'))
 
         if all([net_profit, revenue, total_assets, total_equity]) and revenue != 0 and total_equity != 0:
-            npm = net_profit / revenue  # 净利率（小数）
-            at = revenue / total_assets   # 资产周转率
-            em = total_assets / total_equity  # 权益乘数
-            roe_3f = npm * at * em * 100     # 杜邦 ROE（百分比）
+            npm = net_profit / revenue  # Net interest rate (decimal)
+            at = revenue / total_assets   # asset turnover rate
+            em = total_assets / total_equity  # equity multiplier
+            roe_3f = npm * at * em * 100     # DuPont ROE (percent)
             roe_direct = net_profit / total_equity * 100
 
-            lines.append("## 三因子拆解（标准杜邦）\n")
-            lines.append(f"**ROE = 净利率 × 资产周转率 × 权益乘数**\n")
-            lines.append("| 因子 | 含义 | 数值 |")
+            lines.append("## Three-factor breakdown (standard DuPont)\n")
+            lines.append(f"**ROE = net profit margin × asset turnover rate × equity multiplier**\n")
+            lines.append("| factor | meaning | numerical value |")
             lines.append("|------|------|------|")
-            lines.append(f"| 净利率 | 净利润(TTM) / 营业收入(TTM) | {npm*100:.2f}% |")
+            lines.append(f"| net profit margin | net profit(TTM) / operating income(TTM) | {npm*100:.2f}% |")
             lines.append(f"| 资产周转率 | 营业收入(TTM) / 总资产 | {at:.3f} 次 |")
-            lines.append(f"| 权益乘数 | 总资产 / 净资产 | {em:.2f} |")
-            lines.append(f"| **ROE** | 三因子相乘 | **{roe_3f:.2f}%** |")
+            lines.append(f"| equity multiplier | total assets/net assets | {em:.2f} |")
+            lines.append(f"| **ROE** | Multiplying three factors | **{roe_3f:.2f}%** |")
             lines.append("")
-            lines.append(f"- 验证：直接 ROE = 净利润/净资产 = {roe_direct:.2f}%（{'✅ 一致' if abs(roe_3f - roe_direct) < 0.1 else '⚠️ 偏差（可能因四舍五入）'}）")
+            lines.append(f"- Verification: Direct ROE = Net profit/net assets = {roe_direct:.2f}% ({'✅ consistent' if abs(roe_3f - roe_direct) < 0.1 else '⚠️ Deviation (may be due to rounding)'}) ")
             lines.append("")
 
-            # ROE 质量提示
-            lines.append("### ROE 驱动因素判断\n")
+            # ROE Quality Tips
+            lines.append("### ROE Driver judgment\n")
             parts = []
             if npm and npm * 100 > 15:
-                parts.append(f"- 🟢 **高利润率驱动**：净利率 {npm*100:.1f}%，产品/品牌壁垒强")
+                parts.append(f"- 🟢 **Driven by high profit margins**: net profit margin {npm*100:.1f}%, Strong product/brand barriers")
             elif npm and npm * 100 < 3:
-                parts.append(f"- 🔴 **低利润率**：净利率仅 {npm*100:.1f}%，盈利空间薄")
+                parts.append(f"- 🔴 **low profit margin**: net profit margin only {npm*100:.1f}%, Profit margin is thin")
             else:
-                parts.append(f"- 🟡 **中等利润率**：净利率 {npm*100:.1f}%")
+                parts.append(f"- 🟡 **medium profit margin**: net profit margin {npm*100:.1f}%")
             if at and at > 1:
-                parts.append(f"- 🟢 **高效资产周转**：周转率 {at:.2f} 次，轻资产模式或运营高效")
+                parts.append(f"- 🟢 **Efficient asset turnover**: turnover rate {at:.2f} times, light asset model or efficient operation")
             elif at and at < 0.3:
-                parts.append(f"- 🔴 **资产周转慢**：周转率仅 {at:.2f} 次，重资产或产能未充分利用")
+                parts.append(f"- 🔴 **Asset turnover is slow**: turnover rate only {at:.2f} times, heavy assets or production capacity are not fully utilized")
             if em and em > 3:
-                parts.append(f"- 🔴 **高杠杆**：权益乘数 {em:.1f}，财务杠杆放大收益也放大风险")
+                parts.append(f"- 🔴 **High leverage**: equity multiplier {em:.1f}, Financial leverage magnifies returns and risks")
             elif em and em < 1.5:
-                parts.append(f"- 🟢 **低杠杆**：权益乘数 {em:.1f}，财务结构稳健")
+                parts.append(f"- 🟢 **low leverage**: equity multiplier {em:.1f}, Stable financial structure")
             lines.extend(parts)
             lines.append("")
         else:
-            lines.append("## 三因子拆解（标准杜邦）\n")
-            lines.append("⚠️ 数据不足，无法完成三因子拆解。")
+            lines.append("## Three-factor breakdown (standard DuPont)\n")
+            lines.append("⚠️ There is insufficient data to complete the three-factor disassembly.")
             lines.append(f"  revenue_ttm={revenue}  net_profit_ttm={net_profit}  total_assets={total_assets}  total_equity={total_equity}")
             lines.append("")
 
-        # ── 五因子杜邦 ──
+        # ── Five Factor DuPont ──
         oper_profit = _coerce_float(data.get('oper_profit'))
         total_profit = _coerce_float(data.get('total_profit'))
 
         if all([net_profit, total_profit, oper_profit, revenue, total_assets, total_equity]) \
                 and revenue != 0 and total_equity != 0 and oper_profit != 0:
-            tb = net_profit / total_profit        # 税负因子
-            ib = total_profit / oper_profit       # 利息负担
-            om = oper_profit / revenue            # 经营利润率
+            tb = net_profit / total_profit        # tax burden factor
+            ib = total_profit / oper_profit       # interest burden
+            om = oper_profit / revenue            # operating profit margin
             roe_5f = tb * ib * om * at * em * 100
 
-            lines.append("## 五因子拆解（扩展杜邦）\n")
-            lines.append(f"**ROE = 税负因子 × 利息负担 × 经营利润率 × 资产周转率 × 权益乘数**\n")
-            lines.append("| 因子 | 含义 | 数值 |")
+            lines.append("## Five Factor Breakdown (Extended Dupont)\n")
+            lines.append(f"**ROE = tax burden factor × interest burden × operating profit margin × asset turnover rate × equity multiplier**\n")
+            lines.append("| factor | meaning | numerical value |")
             lines.append("|------|------|------|")
-            lines.append(f"| 税负因子 | 净利润 / 利润总额 | {tb:.3f}（{'所得税率 ' + str(int((1-tb)*100)) + '%' if 0 < tb <= 1 else '异常'}）|")
-            lines.append(f"| 利息负担 | 利润总额 / 营业利润 | {ib:.3f}（{'利息侵蚀小' if 0.9 < ib < 1.1 else '利息/非经常损益影响显著'}）|")
-            lines.append(f"| 经营利润率 | 营业利润 / 营业收入(TTM) | {om*100:.2f}% |")
+            lines.append(f"| tax burden factor | Net profit / total profit | {tb:.3f} ({'income tax rate ' + str(int((1-tb)*100)) + '%' if 0 < tb <= 1 else 'Abnormal'}) |")
+            lines.append(f"| interest burden | Total profit/operating profit | {ib:.3f} ({'Low interest erosion' if 0.9 < ib < 1.1 else 'Interest/non-recurring gains and losses have a significant impact'}) |")
+            lines.append(f"| operating profit margin | Operating profit/operating income(TTM) | {om*100:.2f}% |")
             lines.append(f"| 资产周转率 | 营业收入(TTM) / 总资产 | {at:.3f} 次 |")
-            lines.append(f"| 权益乘数 | 总资产 / 净资产 | {em:.2f} |")
-            lines.append(f"| **ROE** | 五因子相乘 | **{roe_5f:.2f}%** |")
+            lines.append(f"| equity multiplier | total assets/net assets | {em:.2f} |")
+            lines.append(f"| **ROE** | Multiplying five factors | **{roe_5f:.2f}%** |")
             lines.append("")
 
-            # 评价
+            # Evaluation
             qualifiers = []
             if 0.7 <= tb <= 0.9:
                 qualifiers.append("税负水平正常")
             if ib > 1.1:
-                qualifiers.append("⚠️ 利息负担因子 > 1，营业外收入对利润贡献大（非经营性收益）")
+                qualifiers.append("⚠️ interest burden factor > 1, Non-operating income contributes significantly to profits (non-operating income)")
             elif ib < 0.9:
-                qualifiers.append("⚠️ 利息负担因子 < 1，财务费用/非经常损失侵蚀营业利润")
+                qualifiers.append("⚠️ interest burden factor < 1, Financial charges/non-recurring losses erode operating profit")
             if om and om > 0.2:
                 qualifiers.append("经营利润率优秀")
             if qualifiers:
@@ -768,22 +768,22 @@ def get_dupont_analysis(
                     lines.append(f"- {q}")
                 lines.append("")
         elif oper_profit is None:
-            lines.append("## 五因子拆解（扩展杜邦）\n")
-            lines.append("⚠️ 营业利润数据缺失，无法完成五因子拆解。")
-            lines.append("*若数据源为 Tushare 且刚修复 `operate_profit` 字段映射，需重新拉取数据。*")
+            lines.append("## Five Factor Breakdown (Extended Dupont)\n")
+            lines.append("⚠️ The operating profit data is missing and the five-factor disassembly cannot be completed.")
+            lines.append("*If the data source is Tushare and has just been repaired `operate_profit` Field mapping requires re-pulling data.*")
             lines.append("")
         else:
-            lines.append("## 五因子拆解（扩展杜邦）\n")
-            lines.append("⚠️ 五因子拆解所需字段异常（可能有零值或数据不完整）。")
+            lines.append("## Five Factor Breakdown (Extended Dupont)\n")
+            lines.append("⚠️ The fields required for the five-factor split are abnormal (may have zero values or incomplete data).")
             lines.append("")
 
-        # ── 多年趋势 ──
+        # ── Multi-year trend ──
         raw = data.get("raw_data", {})
         inc_list = raw.get("income_statement", [])
         bs_list = raw.get("balance_sheet", [])
 
         if inc_list and bs_list:
-            # 取每年年报数据用于趋势
+            # Take annual report data for trends
             annual_inc = {}
             for rec in inc_list:
                 end = str(rec.get('end_date', ''))
@@ -802,12 +802,12 @@ def get_dupont_analysis(
                 if year not in annual_bs:
                     annual_bs[year] = rec
 
-            # 交叉对齐
+            # Cross alignment
             common_years = sorted(set(annual_inc.keys()) & set(annual_bs.keys()), reverse=True)[:years]
 
             if len(common_years) >= 2:
                 lines.append("## 杜邦因子年度趋势\n")
-                lines.append("| 年度 | 净利率 | 资产周转率 | 权益乘数 | ROE |")
+                lines.append("| annual | net profit margin | asset turnover rate | equity multiplier | ROE |")
                 lines.append("|------|--------|------------|----------|-----|")
                 for yr in common_years:
                     inc = annual_inc[yr]
@@ -825,43 +825,43 @@ def get_dupont_analysis(
                 lines.append("")
 
         lines.append("---")
-        lines.append("*杜邦分析 — ROE = 净利率 × 资产周转率 × 权益乘数*")
-        lines.append(f"*数据来源：Tushare | 基于TTM数据计算*")
+        lines.append("*DuPont Analysis — ROE = net profit margin × asset turnover rate × equity multiplier*")
+        lines.append(f"*Data source:Tushare | Calculated based on TTM data*")
         return "\n".join(lines)
 
     except Exception as e:
-        logger.error(f"❌ [杜邦分析] 执行失败: {e}")
+        logger.error(f"❌ [DuPont Analysis] Execution failed: {e}")
         return f"❌ 杜邦分析执行失败: {e}"
 
 
 # ============================================================
-# Tool 6: 分红送股数据
+# Tool 6: Dividend share data
 # ============================================================
 @tool
 @register_tool(
     tool_id="get_dividend_data",
     name="分红送股数据",
-    description="获取股票的历史分红送股记录，包括每股分红、送转比例、股息率等",
+    description="Obtain the historical dividend and share record of the stock, including dividend per share, transfer ratio, dividend rate, etc.",
     category="fundamentals",
     is_online=True,
     auto_register=True
 )
 def get_dividend_data(
-    ticker: Annotated[str, "股票代码，6位数字（如 600519、000001）"],
-    years: Annotated[int, "查询最近几年的分红记录，默认5"] = 5
+    ticker: Annotated[str, "Stock code, 6 digits (such as 600519, 000001)"],
+    years: Annotated[int, "Query the dividend records in recent years, default 5"] = 5
 ) -> str:
     """
-    分红送股数据工具 —— 获取历史分红记录和股息率
+    Dividend bonus data tool —— Get historical dividend records and dividend rates
 
-    分析内容：每股现金分红、送股转增比例、分红年度、实施进度等。
-    需要 Tushare 2000+ 积分权限。
+    Analysis content: cash dividend per share, bonus share conversion ratio, dividend year, implementation progress, etc.
+    need Tushare 2000+ Points authority.
 
     Args:
-        ticker: 股票代码（如 600519、000001）
-        years: 查询最近几年的分红记录，默认5年
+        ticker: Stock code (e.g. 600519, 000001)
+        years: Query the dividend records in recent years, the default is 5 years
 
     Returns:
-        str: 分红送股分析报告
+        str: Dividend share analysis report
     """
     logger.info(f"💰 [分红数据] 查询股票: {ticker}, 最近{years}年")
     try:
@@ -869,11 +869,11 @@ def get_dividend_data(
         if not provider or not provider.is_available():
             return f"❌ Tushare 服务不可用，无法获取 {ticker} 的分红数据"
 
-        # 调用 Tushare dividend API（使用 _run_async 兼容 worker 线程）
+        # Call Tushare dividend API (use _run_async compatible worker thread)
         try:
             records = _run_async(provider.get_dividend_data(ticker, limit=years * 3))
         except Exception as e:
-            logger.warning(f"⚠️ [分红数据] Tushare 调用失败: {e}")
+            logger.warning(f"⚠️ [Dividend data] Tushare call failed: {e}")
             return f"❌ 获取 {ticker} 分红数据失败: {e}（需要 Tushare 2000+ 积分权限）"
 
         if not records:
@@ -881,7 +881,7 @@ def get_dividend_data(
 
         lines = [f"# {ticker} 分红送股数据\n"]
 
-        # 统计概览
+        # Statistical overview
         implemented = [r for r in records if r.get('div_proc') == '实施']
         total_cash_div = sum(float(r.get('cash_div_tax', 0) or 0) for r in implemented)
 
@@ -891,9 +891,9 @@ def get_dividend_data(
         lines.append(f"- **累计每股分红（税前）**: {total_cash_div:.4f} 元")
         lines.append("")
 
-        # 分红明细表
+        # Dividend details table
         lines.append("## 💰 分红明细")
-        lines.append("| 分红年度 | 进度 | 每股分红(税前) | 每股分红(税后) | 每股送股 | 每股转增 | 除权除息日 |")
+        lines.append("| dividend year | Progress | Dividend per share(before tax) | Dividend per share(After tax) | Bonus shares per share | Conversion per share | ex-rights ex-dividend date |")
         lines.append("|---------|------|---------------|---------------|---------|---------|-----------|")
         for rec in records:
             end_date = rec.get('end_date', 'N/A')
@@ -906,59 +906,59 @@ def get_dividend_data(
             lines.append(f"| {end_date} | {proc} | {cash_tax} | {cash_after} | {stk_bo} | {stk_co} | {ex_date} |")
         lines.append("")
 
-        # 分红趋势分析
+        # Dividend trend analysis
         if len(implemented) >= 2:
             lines.append("## 📈 分红趋势")
             cash_vals = [float(r.get('cash_div_tax', 0) or 0) for r in implemented[:years]]
             if all(v > 0 for v in cash_vals):
                 if cash_vals[0] >= cash_vals[-1]:
-                    lines.append("- **趋势判断**: ✅ 分红金额整体上升或持平，股东回报意识良好")
+                    lines.append("- **Trend judgment**: ✅ The amount of dividends has generally increased or remained the same, and shareholders have a good awareness of returns.")
                 else:
-                    lines.append("- **趋势判断**: 🟡 近期分红金额有所下降，需关注原因")
+                    lines.append("- **Trend judgment**: 🟡 The amount of dividends has dropped recently, and we need to pay attention to the reasons.")
             elif any(v > 0 for v in cash_vals):
-                lines.append("- **趋势判断**: 🟡 分红不连续，部分年度无现金分红")
+                lines.append("- **Trend judgment**: 🟡 Dividends are discontinuous and there are no cash dividends in some years.")
             else:
-                lines.append("- **趋势判断**: ⚠️ 近几年无现金分红记录")
+                lines.append("- **Trend judgment**: ⚠️ No record of cash dividends in recent years")
             lines.append("")
 
         lines.append("---")
-        lines.append("*数据来源: Tushare dividend API（需 2000+ 积分权限）*")
+        lines.append("*Data source: Tushare dividend API (Need 2000+ points authority)*")
         return "\n".join(lines)
 
     except Exception as e:
-        logger.error(f"❌ [分红数据] 执行失败: {e}")
+        logger.error(f"❌ [Dividend data] Execution failed: {e}")
         return f"❌ 分红数据查询失败: {e}"
 
 
 # ============================================================
-# Tool 7: 主营业务构成
+# Tool 7: Main business composition
 # ============================================================
 @tool
 @register_tool(
     tool_id="get_main_business",
     name="主营业务构成",
-    description="获取股票主营业务构成并分析收入来源结构，结构化返回按产品/地区分部收入占比、毛利率、集中度等明细数据",
+    description="Obtain the main business structure of the stock and analyze the revenue source structure, and return structured data such as revenue proportion, gross profit margin, concentration, etc. by product/region segment",
     category="fundamentals",
     is_online=True,
     auto_register=True
 )
 def get_main_business(
-    ticker: Annotated[str, "股票代码，6位数字（如 600519、000001）"],
-    periods: Annotated[int, "分析期数（最近几个报告期），默认4"] = 4
+    ticker: Annotated[str, "Stock code, 6 digits (such as 600519, 000001)"],
+    periods: Annotated[int, "Number of analysis periods (the most recent reporting periods), default 4"] = 4
 ) -> str:
     """
-    主营业务构成工具 —— 分析收入来源和业务结构
+    Main business composition tools —— Analyze revenue sources and business structure
 
-    展示按产品/地区维度的主营业务收入构成。
+    Display the main business revenue structure by product/region dimension.
 
     Args:
-        ticker: 股票代码（如 600519、000001）
-        periods: 分析期数，默认4
+        ticker: Stock code (e.g. 600519, 000001)
+        periods: Number of analysis periods, default 4
 
     Returns:
-        str: 主营业务构成分析报告
+        str: Main business composition analysis report
     """
-    logger.info(f"📊 [主营业务] 分析股票: {ticker}")
+    logger.info(f"📊 [Main business] Analyze stocks: {ticker}")
     try:
         data = _get_financial_data_from_cache_or_api(ticker, limit=periods)
         if not data:
@@ -968,23 +968,23 @@ def get_main_business(
         mainbz_list = raw.get("main_business", [])
 
         if not mainbz_list:
-            return f"📊 {ticker} 暂无主营业务构成数据（部分公司可能尚未披露）"
+            return f"📊 {ticker} There is currently no main business composition data (some companies may not have disclosed it yet)"
 
         lines = [f"# {ticker} 主营业务构成\n"]
 
-        # 按报告期分组
+        # Group by reporting period
         from collections import defaultdict
         period_groups = defaultdict(list)
         for rec in mainbz_list:
             period = rec.get('end_date', 'N/A')
             period_groups[period].append(rec)
 
-        # 按报告期倒序展示
+        # Display in descending order of reporting period
         sorted_periods = sorted(period_groups.keys(), reverse=True)
 
         for idx, period in enumerate(sorted_periods[:periods]):
             items = period_groups[period]
-            # 按产品分类和地区分类
+            # By product category and region
             products = [r for r in items if r.get('bz_item') and r.get('bz_sales') is not None]
 
             if not products:
@@ -992,15 +992,15 @@ def get_main_business(
 
             lines.append(f"## 📊 {period} 主营业务构成")
 
-            # 计算总收入
+            # Calculate total revenue
             total_sales = sum(float(r.get('bz_sales', 0) or 0) for r in products)
 
             if total_sales > 0:
                 lines.append(f"**总营业收入**: {_wan_yi(total_sales)}\n")
-                lines.append("| 业务/产品 | 营业收入 | 营业成本 | 毛利率 | 收入占比 |")
+                lines.append("| Business/Products | operating income | operating costs | Gross profit margin | Revenue proportion |")
                 lines.append("|----------|---------|---------|--------|---------|")
 
-                # 按收入排序
+                # Sort by income
                 sorted_items = sorted(products, key=lambda x: float(x.get('bz_sales', 0) or 0), reverse=True)
                 for item in sorted_items:
                     name = item.get('bz_item', 'N/A')
@@ -1018,50 +1018,50 @@ def get_main_business(
                 lines.append("- 无有效数据\n")
 
         lines.append("---")
-        lines.append("*数据来源: Tushare fina_mainbz / MongoDB 缓存*")
+        lines.append("*Data source: Tushare fina_mainbz / MongoDB cache*")
         return "\n".join(lines)
 
     except Exception as e:
-        logger.error(f"❌ [主营业务] 执行失败: {e}")
-        return f"❌ 主营业务构成查询失败: {e}"
+        logger.error(f"❌ [Main business] Execution failed: {e}")
+        return f"❌ Main business composition query failed: {e}"
 
 
 # ============================================================
-# Tool 8: 应收账款风险分析
+# Tool 8: Accounts Receivable Risk Analysis
 # ============================================================
 @tool
 @register_tool(
     tool_id="get_accounts_receivable_risk_analyzer",
     name="应收账款风险分析",
-    description="三维评估应收账款风险：回收效率（周转天数）、收入质量（应收-营收增速偏离）、计提审慎性（信用减值损失趋势），交叉验证生成综合风险评级",
+    description="Three-dimensional assessment of accounts receivable risk: collection efficiency (turnover days), revenue quality (receivable-revenue growth rate deviation), accrual prudence (credit impairment loss trend), and cross-validation to generate a comprehensive risk rating",
     category="fundamentals",
     is_online=True,
     auto_register=True
 )
 def get_accounts_receivable_risk_analyzer(
-    ticker: Annotated[str, "股票代码，6位数字（如 600519、000001）"],
-    years: Annotated[int, "回溯年数，默认4年"] = 4
+    ticker: Annotated[str, "Stock code, 6 digits (such as 600519, 000001)"],
+    years: Annotated[int, "Number of years to look back, default is 4 years"] = 4
 ) -> str:
     """
-    应收账款风险分析工具 —— 三维交叉验证
+    Accounts Receivable Risk Analysis Tool —— Three-dimensional cross-validation
 
-    三个维度：
-    1. 回收效率：应收账款周转天数及变化趋势
-    2. 收入质量：应收账款增速 vs 营收增速的偏离度
-    3. 计提审慎性：信用减值损失/应收账款的变动，交叉对比周转天数
+    Three dimensions:
+    1. Collection efficiency: accounts receivable turnover days and changing trends
+    2. Income quality: the deviation between the growth rate of accounts receivable and the growth rate of revenue
+    3. Provision prudence: credit impairment losses/changes in accounts receivable, cross comparison of turnover days
 
-    综合规则：
-    - 三者正常 → 低风险
-    - 单项恶化 → 关注
-    - 周转恶化 + 计提下降 → 高风险（粉饰嫌疑）
-    - 三者同时恶化 → 极高风险
+    Comprehensive rules:
+    - All three are normal → low risk
+    - Single deterioration → Follow
+    - Deterioration in turnover + Decline in provision → High risk (suspected of whitewashing)
+    - All three worsen at the same time → extremely high risk
 
     Args:
-        ticker: 股票代码
-        years: 回溯年数
+        ticker: Stock code
+        years: Look back years
 
     Returns:
-        str: 应收账款风险分析报告
+        str: Accounts receivable risk analysis report
     """
     logger.info(f"📊 [应收账款风险分析] 分析股票: {ticker}, 回溯{years}年")
     try:
@@ -1074,39 +1074,39 @@ def get_accounts_receivable_risk_analyzer(
         income_list = raw.get("income_statement", [])
         indicator_list = raw.get("financial_indicators", [])
 
-        # ---- 提取年报数据（每年取最后一条记录） ----
+        # ---- Extract annual report data (get the last record for each year) ----
         def _extract_annual(records: list, fields: list) -> dict:
-            """从季度列表中提取每年最后一条记录，返回 {year: {field: value}}"""
+            """Extract the last record of each year from the quarter list and return {year: {field: value}}"""
             by_year: Dict[str, Dict[str, Any]] = {}
             for rec in records:
                 end_date = str(rec.get('end_date', '') or rec.get('f_ann_date', ''))
                 if not end_date:
                     continue
                 year = end_date[:4]
-                # 同一年取 end_date 更大的（即年报）
+                # For the same year, take the larger end_date (i.e. annual report)
                 if year not in by_year or str(rec.get('end_date', '')) > str(by_year[year].get('end_date', '')):
                     by_year[year] = rec
-            # 取最近 years 年，按年份降序
+            # Get the most recent years, in descending order of years
             sorted_years = sorted(by_year.keys(), reverse=True)[:years]
             result = {}
             for y in sorted_years:
                 result[y] = {f: _coerce_float(by_year[y].get(f)) for f in fields}
             return result
 
-        # 提取资产负债表年报：应收账款
+        # Extract Balance Sheet Annual Report: Accounts Receivable
         ar_annual = _extract_annual(balance_list, ['accounts_receiv'])
-        # 提取利润表年报：营业收入、信用减值损失
+        # Extract the income statement annual report: operating income, credit impairment losses
         income_annual = _extract_annual(income_list, ['revenue', 'credit_impa_loss', 'assets_impair_loss'])
-        # 提取财务指标年报：应收账款周转天数
+        # Extract financial indicators from the annual report: accounts receivable turnover days
         indicator_annual = _extract_annual(indicator_list, ['arturn_days'])
 
         year_keys = sorted(set(list(ar_annual.keys()) + list(income_annual.keys())), reverse=True)[:years]
 
-        # ---- 跳转缺少数据 ----
+        # ---- Jump to missing data ----
         if len(year_keys) < 2:
-            return f"📊 {ticker} 年报数据不足（需至少2年），无法进行趋势分析"
+            return f"📊 {ticker} Insufficient annual report data (requires at least 2 years) to conduct trend analysis"
 
-        # ---- 构建逐年数据表 ----
+        # ---- Build a year-by-year data table ----
         records = []
         for y in year_keys:
             ar_val = _coerce_float(ar_annual.get(y, {}).get('accounts_receiv'))
@@ -1122,20 +1122,20 @@ def get_accounts_receivable_risk_analyzer(
                 'arturn_days': arturn_days_val,
             })
 
-        # ---- 计算趋势指标 ----
+        # ---- Calculate trend indicators ----
         def _safe_ratio(curr, prev) -> Optional[float]:
             if curr is not None and prev is not None and prev != 0:
                 return (curr - prev) / abs(prev)
             return None
 
-        # 计算应收账款周转天数（自算，与 arturn_days 对照验证）
+        # Calculate the turnover days of accounts receivable (self-calculated, verified against arturn_days)
         for i, rec in enumerate(records):
             if rec['accounts_receiv'] and rec['revenue'] and rec['revenue'] != 0:
                 rec['ar_turnover_days_self'] = 365 * rec['accounts_receiv'] / rec['revenue']
             else:
                 rec['ar_turnover_days_self'] = None
 
-        # 计算增速和偏离度
+        # Calculate growth rate and deviation
         for i in range(len(records) - 1):
             curr, prev = records[i], records[i + 1]
             curr['ar_growth'] = _safe_ratio(curr['accounts_receiv'], prev['accounts_receiv'])
@@ -1144,16 +1144,16 @@ def get_accounts_receivable_risk_analyzer(
                 curr['deviation'] = curr['ar_growth'] - curr['rev_growth']
             else:
                 curr['deviation'] = None
-            # 计提比例
+            # Provision ratio
             if curr['credit_impa_loss'] is not None and curr['accounts_receiv'] is not None and curr['accounts_receiv'] != 0:
                 curr['impa_ratio'] = curr['credit_impa_loss'] / curr['accounts_receiv']
             else:
                 curr['impa_ratio'] = None
 
-        # ---- 输出报告 ----
+        # ---- Output report ----
         lines = [f"# {ticker} 应收账款风险三维分析\n"]
 
-        # 最新一期概览
+        # Overview of the latest issue
         latest = records[0]
         lines.append("## 📊 最新一期快照")
         lines.append(f"- **报告年度**: {latest['year']}")
@@ -1170,12 +1170,12 @@ def get_accounts_receivable_risk_analyzer(
         if latest.get('deviation') is not None:
             lines.append(f"- **增速偏离度**: {latest['deviation'] * 100:+.1f} 百分点（正值 = 应收跑赢营收，虚胖信号）")
         if latest.get('impa_ratio') is not None:
-            lines.append(f"- **信用减值损失/应收账款**: {latest['impa_ratio'] * 100:.2f}%")
+            lines.append(f"- **Credit impairment loss/accounts receivable**: {latest['impa_ratio'] * 100:.2f}%")
         lines.append("")
 
-        # 逐年趋势表
+        # Year-by-year trend table
         lines.append("## 📈 逐年趋势")
-        header = "| 年度 | 应收账款 | 营业收入 | 周转天数(源) | 周转天数(算) | 应收增速 | 营收增速 | 偏离度 | 减值/应收 |"
+        header = "| annual | Accounts receivable | operating income | Turnover days(source) | Turnover days(Calculate) | Growth rate of receivables | revenue growth | Deviation | Impairment/receivable |"
         lines.append(header)
         lines.append("|" + "|".join(["------"] * 9) + "|")
         for rec in records:
@@ -1190,16 +1190,16 @@ def get_accounts_receivable_risk_analyzer(
             lines.append(f"| {rec['year']} | {ar} | {rev} | {atd} | {atds} | {arg} | {revg} | {dev} | {impa} |")
         lines.append("")
 
-        # ---- 三维交叉风险评估 ----
+        # ---- Three-dimensional cross-risk assessment ----
         lines.append("## 🔍 三维风险评估")
 
-        # 判定各维度状态
+        # Determine the status of each dimension
         def _assess_turnover(rec) -> tuple:
-            """判定周转天数趋势：(方向, 程度)"""
+            """Determine the trend of turnover days:(direction, degree)"""
             atd = rec.get('arturn_days')
             if atd is None:
                 return ("unknown", "数据缺失")
-            # 与上一期比较
+            # Compare with previous issue
             idx = records.index(rec)
             if idx < len(records) - 1:
                 prev_atd = records[idx + 1].get('arturn_days')
@@ -1213,7 +1213,7 @@ def get_accounts_receivable_risk_analyzer(
                         return ("improving", f"改善 ({change_pct * 100:.0f}%)")
                     else:
                         return ("stable", "基本稳定")
-            # 绝对值判断
+            # Absolute value judgment
             if atd > 365:
                 return ("worsening", f"严重: {atd:.0f}天 (>1年)")
             elif atd > 180:
@@ -1237,15 +1237,15 @@ def get_accounts_receivable_risk_analyzer(
                 return ("stable", "正常")
 
         def _assess_provision(rec) -> tuple:
-            """判定计提审慎性：如果周转恶化但计提比例反而下降 → 粉饰嫌疑"""
+            """Determine the prudence of provision: If the turnover deteriorates but the provision ratio decreases instead → suspected of whitewashing"""
             impa = rec.get('impa_ratio')
             if impa is None:
-                # 检查是否有 assets_impair_loss 作为替代
+                # Check if there is assets_impair_loss as an alternative
                 return ("unknown", "信用减值损失数据缺失")
             idx = records.index(rec)
-            # 当前计提比例
+            # Current accrual ratio
             curr_ratio = impa
-            # 与上一期比较
+            # Compare with previous issue
             if idx < len(records) - 1:
                 prev_rec = records[idx + 1]
                 prev_ratio = prev_rec.get('impa_ratio')
@@ -1254,23 +1254,23 @@ def get_accounts_receivable_risk_analyzer(
                 if prev_ratio is not None and curr_atd is not None and prev_atd is not None:
                     ratio_change = (curr_ratio - prev_ratio) / prev_ratio if prev_ratio != 0 else 0
                     atd_change = (curr_atd - prev_atd) / prev_atd if prev_atd != 0 else 0
-                    # 核心逻辑：周转恶化 + 计提下降 = 粉饰嫌疑
+                    # Core logic: turnover deterioration + Decline in provision = suspected of whitewashing
                     if atd_change > 0.05 and ratio_change < -0.1:
                         return ("worsening", f"⚠️ 粉饰嫌疑: 周转恶化({atd_change * 100:+.0f}%)但计提下降({ratio_change * 100:+.0f}%)")
                     elif atd_change > 0.05 and ratio_change > 0.1:
                         return ("stable", f"正常响应: 周转恶化({atd_change * 100:+.0f}%)→计提同步上升({ratio_change * 100:+.0f}%)")
                     elif atd_change < -0.05 and ratio_change < -0.1:
-                        return ("stable", f"合理: 周转改善→计提下降")
+                        return ("stable", f"reasonable: Turnover improvement→Decline in provision")
                     else:
                         return ("stable", "基本稳定")
             return ("unknown", "缺少对比数据")
 
-        # 最新一期评估
+        # The latest assessment
         turnover_status, turnover_detail = _assess_turnover(latest)
         dev_status, dev_detail = _assess_deviation(latest)
         provision_status, provision_detail = _assess_provision(latest)
 
-        # 汇总信号
+        # Aggregate signals
         signals = []
         if turnover_status == "worsening":
             signals.append(f"🔴 回收效率: {turnover_detail}")
@@ -1296,7 +1296,7 @@ def get_accounts_receivable_risk_analyzer(
         for s in signals:
             lines.append(f"- {s}")
 
-        # 综合评级
+        # Overall rating
         worsening_count = sum(1 for status in [turnover_status, dev_status, provision_status] if status == "worsening")
         stable_count = sum(1 for status in [turnover_status, dev_status, provision_status] if status == "stable")
         unknown_count = sum(1 for status in [turnover_status, dev_status, provision_status] if status == "unknown")
@@ -1305,38 +1305,38 @@ def get_accounts_receivable_risk_analyzer(
         lines.append("## 🏷️ 综合风险评级")
 
         if worsening_count == 0 and unknown_count == 0:
-            lines.append("> ✅ **低风险** — 三项指标均正常，应收账款质量健康")
+            lines.append("> ✅ **low risk** — All three indicators are normal, and the quality of accounts receivable is healthy.")
         elif worsening_count == 1:
             if turnover_status == "worsening":
-                lines.append("> ⚠️ **关注（回收恶化）** — 回款速度下降，关注客户回款能力和信用政策变化")
+                lines.append("> ⚠️ **Concern (recycling deterioration)** — The speed of repayment is declining. Pay attention to the customer s repayment ability and changes in credit policies.")
             elif dev_status == "worsening":
-                lines.append("> ⚠️ **关注（收入质量问题）** — 应收账款膨胀速度超出营收增长，可能存在收入确认激进行为")
+                lines.append("> ⚠️ **Attention (income quality issues)** — The expansion of accounts receivable exceeds revenue growth, and there may be aggressive behavior in revenue recognition.")
             else:
-                lines.append("> ⚠️ **关注（计提问题）** — 计提行为异常")
+                lines.append("> ⚠️ **Attention (accrual issues)** — Abnormal accrual behavior")
         elif worsening_count == 2:
             if turnover_status == "worsening" and provision_status == "worsening":
-                lines.append("> 🔴 **高风险 — 财务粉饰嫌疑** — 回款恶化 + 计提不升反降，公司可能在刻意压低减值以美化利润")
+                lines.append("> 🔴 **high risk — Suspected of financial whitewashing** — Receipts worsen + Provisions fell instead of rising. The company may be deliberately lowering impairments to beautify profits.")
             elif turnover_status == "worsening" and dev_status == "worsening":
-                lines.append("> 🔴 **高风险 — 双重恶化** — 收入质量下降同时回款困难，经营性现金流承压")
+                lines.append("> 🔴 **high risk — double aggravation** — The quality of income has declined and it is difficult to collect payments, and operating cash flow has been under pressure.")
             elif dev_status == "worsening" and provision_status == "worsening":
-                lines.append("> 🔴 **高风险 — 收入虚胖 + 计提不足** — 应收膨胀的同时减值准备不充分，利润表可信度存疑")
+                lines.append("> 🔴 **high risk — Income puffiness + Insufficient provision** — While receivables are inflated, impairment provisions are insufficient, and the credibility of the income statement is questionable.")
             else:
-                lines.append("> 🔴 **高风险** — 两项指标恶化，需重点关注")
+                lines.append("> 🔴 **high risk** — Two indicators have deteriorated and need to be focused on")
         elif worsening_count == 3:
-            lines.append("> 🔴🔴 **极高风险 — 完美风暴** — 回收、收入质量、计提三者同时恶化，需高度警惕财务造假可能")
+            lines.append("> 🔴🔴 **extremely high risk — perfect storm** — Recovery, income quality, and accrual are all deteriorating at the same time, so we need to be highly vigilant about the possibility of financial fraud.")
         elif unknown_count >= 2:
-            lines.append("> ⬜ **数据不足** — 关键字段缺失，无法完成完整评估，建议检查数据源")
+            lines.append("> ⬜ **Not enough data** — Key fields are missing and a complete evaluation cannot be completed. It is recommended to check the data source.")
         else:
-            lines.append("> 🟡 **无法判定** — 请结合具体指标手动评估")
+            lines.append("> 🟡 **Unable to determine** — Please evaluate manually based on specific indicators.")
 
         lines.append("")
         lines.append("---")
-        lines.append("*说明: 增速偏离度 = 应收增速 - 营收增速，正值意味着应收账款膨胀快于收入增长，是'纸面富贵'信号*")
-        lines.append("*计提审慎性 = 信用减值损失/应收账款，周转恶化时该比率应同步上升，若背离则存粉饰嫌疑*")
-        lines.append("*数据来源: Tushare / MongoDB 缓存*")
+        lines.append("*Description: Growth rate deviation = Receivable growth rate - revenue growth rate, a positive value means that accounts receivable are expanding faster than revenue growth, which is'Wealth on paper'signal*")
+        lines.append("*Provision prudence = Credit impairment loss/accounts receivable. When turnover deteriorates, this ratio should rise simultaneously. If it deviates, it will be suspected of whitewashing.*")
+        lines.append("*Data source: Tushare / MongoDB cache*")
 
         return "\n".join(lines)
 
     except Exception as e:
-        logger.error(f"❌ [应收账款风险分析] 执行失败: {e}", exc_info=True)
-        return f"❌ 应收账款风险分析失败: {e}"
+        logger.error(f"❌ [Accounts Receivable Risk Analysis] Execution failed: {e}", exc_info=True)
+        return f"❌ Accounts receivable risk analysis failed: {e}"

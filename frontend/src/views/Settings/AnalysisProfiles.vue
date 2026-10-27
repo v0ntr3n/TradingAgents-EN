@@ -3,8 +3,8 @@
     <el-alert type="info" :closable="false" show-icon class="page-alert">
       <template #title>
         <span class="alert-title">
-          <el-tag type="info" size="small" effect="dark">智能</el-tag>
-          <span>行业/个股分析维度配置 — 用聊天式协作生成行业分析草案，并在保存前透明展示数据覆盖与外部依赖</span>
+          <el-tag type="info" size="small" effect="dark">Smart</el-tag>
+          <span>Industry/Stock Analysis Dimension Configuration — Use chat-style collaboration to generate industry analysis drafts and transparently display data coverage and external dependencies before saving</span>
         </span>
       </template>
     </el-alert>
@@ -14,14 +14,14 @@
         <template #header>
           <div class="card-header">
             <div>
-              <div class="card-title">🤖 行业配置助手</div>
-              <div class="card-subtitle">多轮沟通生成草案，最后再确认是否保存</div>
+              <div class="card-title">🤖 Industry Configuration Assistant</div>
+              <div class="card-subtitle">Multiple rounds of communication generate a draft, and finally confirm whether to save it.</div>
             </div>
             <div class="header-actions">
-              <el-tag type="info" effect="plain">当前行业：{{ currentIndustryLabel }}</el-tag>
+              <el-tag type="info" effect="plain">Current industry:{{ currentIndustryLabel }}</el-tag>
               <el-button text @click="resetConversation()">
                 <el-icon><RefreshRight /></el-icon>
-                新建对话
+                New conversation
               </el-button>
             </div>
           </div>
@@ -32,7 +32,7 @@
             v-model="chatIndustry"
             filterable
             clearable
-            placeholder="先选择行业，或直接在下方聊天里提到行业名称"
+            placeholder="Select an industry first, or mention the industry name directly in the chat below"
             class="industry-select"
             :loading="industryListLoading"
           >
@@ -41,11 +41,11 @@
           <div class="toolbar-actions">
             <el-button type="primary" plain :disabled="!chatIndustry" :loading="generating" @click="startDraftGeneration">
               <el-icon><MagicStick /></el-icon>
-              生成首版草案
+              Generate first draft
             </el-button>
             <el-button :disabled="!draftPreview" @click="openDraftInEditor">
               <el-icon><Edit /></el-icon>
-              手动精修
+              Manual finishing
             </el-button>
           </div>
         </div>
@@ -81,7 +81,7 @@
                   <el-icon><ChatDotRound /></el-icon>
                 </div>
                 <div class="message-content thinking-content">
-                  <span class="thinking-text">正在根据你的要求修订行业草案</span>
+                  <span class="thinking-text">The industry draft is being revised based on your request</span>
                   <span class="thinking-dots">
                     <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
                   </span>
@@ -91,13 +91,13 @@
           </div>
 
           <div v-if="draftPreview" class="quick-actions">
-            <span class="quick-actions-title">快捷调整</span>
-            <el-button size="small" @click="sendQuickPrompt('删除当前草案里需外部数据的维度和指标，保留更容易落地的内容')">删除需外部数据项</el-button>
-            <el-button size="small" @click="sendQuickPrompt('补充利润、现金流、资本开支和盈利质量相关维度')">补充利润/现金流</el-button>
-            <el-button size="small" @click="sendQuickPrompt('保留运营指标，但在说明里强调需要 MCP、Skill 或外部导入支持')">保留并标注外部依赖</el-button>
-            <el-button size="small" @click="sendQuickPrompt('把当前草案收敛成 5 个最关键的核心维度')">收敛成 5 个核心维度</el-button>
-            <el-button size="small" type="warning" plain @click="pruneUnsupported">一键裁剪不支持项</el-button>
-            <el-button size="small" type="success" @click="handleSaveDraft">保存当前配置</el-button>
+            <span class="quick-actions-title">Quick adjustment</span>
+            <el-button size="small" @click="sendQuickPrompt('Delete dimensions and indicators that require external data in the current draft and retain content that is easier to implement.')">Delete required external data items</el-button>
+            <el-button size="small" @click="sendQuickPrompt('Supplementary profit, cash flow, capital expenditure and earnings quality related dimensions')">Supplementary profit/cash flow</el-button>
+            <el-button size="small" @click="sendQuickPrompt('Keep operational indicators, but emphasize the need for MCP, Skill or external import support in the description')">Preserve and mark external dependencies</el-button>
+            <el-button size="small" @click="sendQuickPrompt('Condensing the current draft into the 5 most critical core dimensions')">Converged into 5 core dimensions</el-button>
+            <el-button size="small" type="warning" plain @click="pruneUnsupported">One-click cropping does not support items</el-button>
+            <el-button size="small" type="success" @click="handleSaveDraft">Save current configuration</el-button>
           </div>
 
           <div class="input-area">
@@ -107,7 +107,7 @@
                 type="textarea"
                 :rows="3"
                 :autosize="{ minRows: 3, maxRows: 6 }"
-                placeholder="例如：先给我一版互联网行业草案；删除没有数据来源的指标；增加现金流和利润质量；保留用户数据类指标但标记需要外部数据。"
+                placeholder="For example: give me a draft version of the Internet industry first; delete indicators without data sources; increase cash flow and profit quality; retain user data indicators but mark the need for external data."
                 :disabled="generating"
                 @keydown.enter.ctrl.prevent="handleSend"
               />
@@ -119,10 +119,10 @@
                 @click="handleSend"
               >
                 <el-icon><Promotion /></el-icon>
-                发送
+                send
               </el-button>
             </div>
-            <span class="input-tip">Ctrl + Enter 发送。你可以继续要求“删除不支持项 / 增加某类指标 / 收敛为更精简框架 / 现在保存”。</span>
+            <span class="input-tip">Ctrl + Enter Send. You can continue to ask for Delete unsupported items/Add certain types of indicators/Converge to a more streamlined framework/Save now . </span>
           </div>
         </div>
       </el-card>
@@ -131,8 +131,8 @@
         <template #header>
           <div class="card-header">
             <div>
-              <div class="card-title">📋 当前草案</div>
-              <div class="card-subtitle">结构化查看当前版本，随时微调后再保存</div>
+              <div class="card-title">📋 current draft</div>
+              <div class="card-subtitle">View the current version in a structured way and fine-tune it at any time before saving it.</div>
             </div>
             <el-tag v-if="draftPreview" :type="overallBadgeType" effect="dark">{{ draftPreview.coverage_summary.overall_label }}</el-tag>
           </div>
@@ -140,11 +140,11 @@
 
         <div v-if="draftPreview" class="draft-scroll">
           <el-descriptions :column="2" border size="small" class="summary-descriptions">
-            <el-descriptions-item label="行业">{{ draftPreview.profile.display_name || draftPreview.profile.industry }}</el-descriptions-item>
-            <el-descriptions-item label="维度数">{{ draftPreview.profile.analysis_dimensions.length }} 项</el-descriptions-item>
-            <el-descriptions-item label="关键指标">{{ draftPreview.profile.key_metrics.length }} 项</el-descriptions-item>
-            <el-descriptions-item label="可比公司">{{ draftPreview.profile.comparable_companies.length }} 家</el-descriptions-item>
-            <el-descriptions-item label="内置数据源">{{ draftPreview.capability_snapshot.counts.builtin_sources }} 类</el-descriptions-item>
+            <el-descriptions-item label="Industry">{{ draftPreview.profile.display_name || draftPreview.profile.industry }}</el-descriptions-item>
+            <el-descriptions-item label="number of dimensions">{{ draftPreview.profile.analysis_dimensions.length }} item</el-descriptions-item>
+            <el-descriptions-item label="key indicators">{{ draftPreview.profile.key_metrics.length }} item</el-descriptions-item>
+            <el-descriptions-item label="Comparable companies">{{ draftPreview.profile.comparable_companies.length }} home</el-descriptions-item>
+            <el-descriptions-item label="Built-in data source">{{ draftPreview.capability_snapshot.counts.builtin_sources }} class</el-descriptions-item>
             <el-descriptions-item label="MCP / Skill">
               {{ draftPreview.capability_snapshot.counts.enabled_mcp_servers }} / {{ draftPreview.capability_snapshot.counts.active_skills }}
             </el-descriptions-item>
@@ -160,19 +160,19 @@
           </el-alert>
 
           <div class="draft-section">
-            <div class="section-title">分析重点</div>
-            <div class="focus-text">{{ draftPreview.profile.analysis_focus || '暂无分析重点说明' }}</div>
+            <div class="section-title">Analysis focus</div>
+            <div class="focus-text">{{ draftPreview.profile.analysis_focus || 'No analysis highlights yet' }}</div>
           </div>
 
           <div class="draft-section">
-            <div class="section-title">分析维度</div>
+            <div class="section-title">Analysis Dimensions</div>
             <div class="draft-items">
               <div v-for="(dim, idx) in draftPreview.profile.analysis_dimensions" :key="`${dim.name}-${idx}`" class="draft-item">
                 <div class="draft-item-header">
                   <div class="item-title-group">
                     <span class="item-title">{{ dim.name }}</span>
                     <el-tag size="small" :type="statusTagType(draftPreview.dimension_assessments[idx]?.coverage_status)">
-                      {{ draftPreview.dimension_assessments[idx]?.coverage_label || '待评估' }}
+                      {{ draftPreview.dimension_assessments[idx]?.coverage_label || 'To be evaluated' }}
                     </el-tag>
                     <el-tag size="small" effect="plain">{{ dim.importance || 'high' }}</el-tag>
                   </div>
@@ -190,15 +190,15 @@
                   >
                     {{ src.type_label }} · {{ src.name }}
                   </el-tag>
-                  <span v-if="!(draftPreview.dimension_assessments[idx]?.matched_sources || []).length" class="meta-placeholder">暂无明确匹配来源</span>
+                  <span v-if="!(draftPreview.dimension_assessments[idx]?.matched_sources || []).length" class="meta-placeholder">No clear matching source yet</span>
                 </div>
-                <div class="item-note">{{ draftPreview.dimension_assessments[idx]?.user_note || '可继续通过聊天要求我改写或删除该维度。' }}</div>
+                <div class="item-note">{{ draftPreview.dimension_assessments[idx]?.user_note || 'You can continue to chat and ask me to rewrite or delete the dimension.' }}</div>
               </div>
             </div>
           </div>
 
           <div class="draft-section">
-            <div class="section-title">关键指标</div>
+            <div class="section-title">key indicators</div>
             <div class="metric-list">
               <div v-for="(metric, idx) in draftPreview.metric_assessments" :key="`${metric.name}-${idx}`" class="metric-item">
                 <div class="metric-main">
@@ -213,15 +213,15 @@
           </div>
 
           <div class="draft-section">
-            <div class="section-title">可比公司</div>
+            <div class="section-title">Comparable companies</div>
             <div class="tag-group">
               <el-tag v-for="company in draftPreview.profile.comparable_companies" :key="company" type="info">{{ company }}</el-tag>
-              <span v-if="!draftPreview.profile.comparable_companies.length" class="meta-placeholder">暂无可比公司</span>
+              <span v-if="!draftPreview.profile.comparable_companies.length" class="meta-placeholder">There is currently no comparable company</span>
             </div>
           </div>
 
           <div class="draft-section">
-            <div class="section-title">下一步建议</div>
+            <div class="section-title">Suggestions for next steps</div>
             <ul class="summary-list compact">
               <li v-for="(guide, idx) in draftPreview.next_step_guidance" :key="idx">{{ guide }}</li>
             </ul>
@@ -230,7 +230,7 @@
 
         <el-empty
           v-else
-          description="先在左侧和助手对话，生成首版行业草案后，这里会实时展示当前配置与数据覆盖情况。"
+          description="First talk to the assistant on the left side and after generating the first version of the industry draft, the current configuration and data coverage will be displayed in real time."
           :image-size="90"
         />
       </el-card>
@@ -240,23 +240,23 @@
       <template #header>
         <div class="card-header">
           <div>
-            <div class="card-title">🏭 已保存行业配置</div>
-            <div class="card-subtitle">保留列表管理，新增/编辑仍可手动处理</div>
+            <div class="card-title">🏭 Industry configuration saved</div>
+            <div class="card-subtitle">List management is retained, adding/editing can still be done manually</div>
           </div>
           <el-button type="primary" @click="showCreateDialog">
             <el-icon><Plus /></el-icon>
-            手动创建
+            Create manually
           </el-button>
         </div>
       </template>
 
-      <el-table :data="industryProfiles" v-loading="loading" empty-text="暂无行业配置，可先在上方通过聊天生成并保存">
-        <el-table-column prop="display_name" label="行业" min-width="140">
+      <el-table :data="industryProfiles" v-loading="loading" empty-text="There is currently no industry configuration. You can generate and save it through chat above.">
+        <el-table-column prop="display_name" label="Industry" min-width="140">
           <template #default="{ row }">
             <span class="industry-name">{{ row.display_name || row.industry }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="分析维度" min-width="260">
+        <el-table-column label="Analysis Dimensions" min-width="260">
           <template #default="{ row }">
             <el-tag v-for="dim in (row.analysis_dimensions || []).slice(0, 3)" :key="dim.name" size="small" class="table-tag">
               {{ dim.name }}
@@ -266,7 +266,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="关键指标" min-width="220">
+        <el-table-column label="key indicators" min-width="220">
           <template #default="{ row }">
             <el-tag v-for="metric in (row.key_metrics || []).slice(0, 3)" :key="metric" size="small" type="success" class="table-tag">
               {{ metric }}
@@ -276,33 +276,33 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="90" align="center">
+        <el-table-column label="Status" width="90" align="center">
           <template #default="{ row }">
             <el-tag :type="row.is_active ? 'success' : 'info'" size="small">
-              {{ row.is_active ? '启用' : '禁用' }}
+              {{ row.is_active ? 'enable' : 'Disable' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="Operation" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="editProfile(row)">
-              <el-icon><Edit /></el-icon> 编辑
+              <el-icon><Edit /></el-icon> Edit
             </el-button>
             <el-button link type="danger" @click="deleteProfile(row)">
-              <el-icon><Delete /></el-icon> 删除
+              <el-icon><Delete /></el-icon> Delete
             </el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
-    <el-dialog v-model="editDialogVisible" :title="editMode === 'create' ? '创建行业配置' : '编辑行业配置'" width="780px" top="5vh">
+    <el-dialog v-model="editDialogVisible" :title="editMode === 'create' ? 'Create industry configuration' : 'Edit industry configuration'" width="780px" top="5vh">
       <el-form :model="formData" label-width="100px">
-        <el-form-item label="行业名称" required>
+        <el-form-item label="Industry name" required>
           <el-select
             v-model="formData.industry"
             filterable
-            placeholder="搜索并选择行业"
+            placeholder="Search and select industry"
             style="width: 100%"
             :disabled="editMode === 'edit'"
             :loading="industryListLoading"
@@ -310,24 +310,24 @@
             <el-option v-for="name in industryList" :key="name" :label="name" :value="name" />
           </el-select>
         </el-form-item>
-        <el-form-item label="显示名称">
-          <el-input v-model="formData.display_name" placeholder="如：银行业（留空则使用行业名称）" />
+        <el-form-item label="display name">
+          <el-input v-model="formData.display_name" placeholder="For example: banking industry (leave blank to use the industry name)" />
         </el-form-item>
-        <el-form-item label="分析重点">
-          <el-input v-model="formData.analysis_focus" type="textarea" :rows="3" placeholder="该行业分析时的重点关注方向" />
+        <el-form-item label="Analysis focus">
+          <el-input v-model="formData.analysis_focus" type="textarea" :rows="3" placeholder="The key areas of focus when analyzing this industry" />
         </el-form-item>
-        <el-form-item label="启用状态">
+        <el-form-item label="Enabled status">
           <el-switch v-model="formData.is_active" />
         </el-form-item>
 
-        <el-divider>分析维度</el-divider>
+        <el-divider>Analysis Dimensions</el-divider>
         <div v-for="(dim, idx) in formData.analysis_dimensions" :key="idx" class="dimension-row">
-          <el-input v-model="dim.name" placeholder="维度名称" style="width: 160px" />
-          <el-input v-model="dim.description" placeholder="维度说明" style="flex: 1; margin: 0 8px" />
-          <el-select v-model="dim.importance" placeholder="重要性" style="width: 110px; margin-right: 8px">
-            <el-option label="关键" value="critical" />
-            <el-option label="高" value="high" />
-            <el-option label="中" value="medium" />
+          <el-input v-model="dim.name" placeholder="Dimension name" style="width: 160px" />
+          <el-input v-model="dim.description" placeholder="Dimension description" style="flex: 1; margin: 0 8px" />
+          <el-select v-model="dim.importance" placeholder="importance" style="width: 110px; margin-right: 8px">
+            <el-option label="key" value="critical" />
+            <el-option label="high" value="high" />
+            <el-option label="in" value="medium" />
           </el-select>
           <el-button link type="danger" @click="formData.analysis_dimensions.splice(idx, 1)">
             <el-icon><Delete /></el-icon>
@@ -340,10 +340,10 @@
           style="margin-top: 8px"
           @click="formData.analysis_dimensions.push({ name: '', description: '', importance: 'high', data_source: 'fundamentals' })"
         >
-          <el-icon><Plus /></el-icon> 添加维度
+          <el-icon><Plus /></el-icon> Add dimension
         </el-button>
 
-        <el-divider>关键指标</el-divider>
+        <el-divider>key indicators</el-divider>
         <el-select
           v-model="formData.key_metrics"
           multiple
@@ -351,11 +351,11 @@
           allow-create
           default-first-option
           :reserve-keyword="false"
-          placeholder="输入指标名称后回车"
+          placeholder="Enter the indicator name and press Enter"
           style="width: 100%"
         />
 
-        <el-divider>可比公司</el-divider>
+        <el-divider>Comparable companies</el-divider>
         <el-select
           v-model="formData.comparable_companies"
           multiple
@@ -363,13 +363,13 @@
           allow-create
           default-first-option
           :reserve-keyword="false"
-          placeholder="输入公司名称后回车"
+          placeholder="Enter the company name and press Enter"
           style="width: 100%"
         />
       </el-form>
       <template #footer>
-        <el-button @click="editDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitForm">保存</el-button>
+        <el-button @click="editDialogVisible = false">Cancel</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">save</el-button>
       </template>
     </el-dialog>
   </div>
@@ -454,7 +454,7 @@ const overallAlertType = computed<ElAlertType>(() => {
 })
 
 const currentIndustryLabel = computed(() => {
-  return chatIndustry.value || draftPreview.value?.profile?.industry || '未选择'
+  return chatIndustry.value || draftPreview.value?.profile?.industry || 'Not selected'
 })
 
 const countStatuses = (items: Array<{ coverage_status?: string }> = []) => {
@@ -473,7 +473,7 @@ const countStatuses = (items: Array<{ coverage_status?: string }> = []) => {
 
 const createDefaultCoverageSummary = () => ({
   overall_status: 'review_needed' as const,
-  overall_label: '建议人工复核后保存',
+  overall_label: 'It is recommended to save it after manual review.',
   dimension_counts: countStatuses(),
   metric_counts: countStatuses(),
   recommendations: [] as string[],
@@ -496,8 +496,8 @@ const normalizePreview = (preview: any): GeneratePreview => ({
     active_skills: [],
     manual_import: {
       available: true,
-      label: '手工导入',
-      description: '可手工补充外部数据',
+      label: 'Manual import',
+      description: 'External data can be supplemented manually',
     },
     counts: {
       builtin_sources: 0,
@@ -525,28 +525,28 @@ const pushMessage = (role: ChatMessage['role'], content: string) => {
 }
 
 const buildWelcomeMessage = () => {
-  return '你好，我会和你一起迭代生成行业分析配置。\n\n你可以先：\n1. 在上方选择一个行业，点击“生成首版草案”\n2. 或直接在下面发消息，例如“帮我做一个互联网行业配置，删除没有数据来源的项”\n\n我会在每一轮里告诉你哪些数据系统能支持，哪些需要 MCP / Skill / 外部导入，最后再问你是否保存。'
+  return 'Hello, I will work with you to iteratively generate industry analysis configurations.\n\n You can start by:\n1. Select an industry above and click Generate first draft \n2. Or send a message directly below, e.g. Help me make an Internet industry configuration and delete items without data sources \n\n I will tell you in each round which data systems can support it, which ones require MCP/Skill/external import, and finally ask you whether to save.'
 }
 
 const buildAssistantSummary = (preview: GeneratePreview, hadDraft: boolean) => {
   const dimensionCounts = preview.coverage_summary.dimension_counts || countStatuses()
   const metricCounts = preview.coverage_summary.metric_counts || countStatuses()
 
-  return `${hadDraft ? '我已经根据你的最新要求修订了当前草案。' : '我先给你生成了一版首版草案。'}
+  return `${hadDraft ? 'I have revised the current draft based on your latest request.' : 'I first generated a first draft for you.'}
 
-行业：${preview.profile.display_name || preview.profile.industry}
-当前状态：${preview.coverage_summary.overall_label}
-维度 ${preview.profile.analysis_dimensions.length} 项：可直接使用 ${dimensionCounts.directly_usable} / 部分可用 ${dimensionCounts.partially_usable} / 需外部数据 ${dimensionCounts.external_required} / 建议复核 ${dimensionCounts.review_recommended}
-指标 ${preview.profile.key_metrics.length} 项：可直接使用 ${metricCounts.directly_usable} / 部分可用 ${metricCounts.partially_usable} / 需外部数据 ${metricCounts.external_required} / 建议复核 ${metricCounts.review_recommended}
-系统能力：内置数据源 ${preview.capability_snapshot.counts.builtin_sources} 类，MCP ${preview.capability_snapshot.counts.enabled_mcp_servers} 个，Skill ${preview.capability_snapshot.counts.active_skills} 个。
+Industry:${preview.profile.display_name || preview.profile.industry}
+Current status:${preview.coverage_summary.overall_label}
+Dimensions ${preview.profile.analysis_dimensions.length} Item: Can be used directly ${dimensionCounts.directly_usable} / Partially available ${dimensionCounts.partially_usable} / external data required ${dimensionCounts.external_required} / Recommend review ${dimensionCounts.review_recommended}
+indicator ${preview.profile.key_metrics.length} Item: Can be used directly ${metricCounts.directly_usable} / Partially available ${metricCounts.partially_usable} / external data required ${metricCounts.external_required} / Recommend review ${metricCounts.review_recommended}
+System capabilities: built-in data sources ${preview.capability_snapshot.counts.builtin_sources} class,MCP ${preview.capability_snapshot.counts.enabled_mcp_servers} one,Skill ${preview.capability_snapshot.counts.active_skills} .
 
-你可以继续让我：
-- 删除需外部数据的项
-- 增加利润、现金流、资本开支等维度
-- 保留运营指标，但明确标注需要外部来源
-- 收敛成更精简的 5 个核心维度
+You can continue to let me:
+- Delete items that require external data
+- Increase profit, cash flow, capital expenditure and other dimensions
+- Maintain operational metrics, but clearly label the need for external sources
+- Converged into a more streamlined 5 core dimensions
 
-如果这版已经合适，我现在也可以帮你保存。`
+If this version is already suitable, I can help you save it now.`
 }
 
 const rebuildCoverageSummary = () => {
@@ -558,28 +558,28 @@ const rebuildCoverageSummary = () => {
   const totalReview = dimensionCounts.review_recommended + metricCounts.review_recommended
 
   let overall_status: 'ready' | 'review_needed' | 'prune_needed' = 'prune_needed'
-  let overall_label = '建议先裁剪再保存'
+  let overall_label = 'It is recommended to crop first and then save'
 
   if (totalExternal === 0 && totalReview <= 1) {
     overall_status = 'ready'
-    overall_label = '大部分内容已具备落地基础'
+    overall_label = 'Most of the content has already been implemented'
   } else if (totalExternal <= 2 && totalReview <= 3) {
     overall_status = 'review_needed'
-    overall_label = '建议人工复核后保存'
+    overall_label = 'It is recommended to save it after manual review.'
   }
 
   const recommendations: string[] = []
   if (dimensionCounts.directly_usable || metricCounts.directly_usable) {
-    recommendations.push('优先保留“可直接使用”的维度和指标，它们最容易被当前系统稳定支撑。')
+    recommendations.push('Priority reservation Can be used directly dimensions and indicators, which are most easily supported stably by the current system.')
   }
   if (totalExternal) {
-    recommendations.push(`当前仍有 ${totalExternal} 项被识别为“需外部数据”，保存前请确认 MCP / Skill / 手工导入方案。`)
+    recommendations.push(`There are still ${totalExternal} Item is identified as external data required , Please confirm the MCP/Skill/manual import plan before saving.`)
   }
   if (totalReview) {
-    recommendations.push(`当前仍有 ${totalReview} 项为“建议复核”，若无法确认来源，建议继续删改。`)
+    recommendations.push(`There are still ${totalReview} The item is Recommend review , If the source cannot be confirmed, it is recommended to continue deleting it.`)
   }
   if (!recommendations.length) {
-    recommendations.push('当前草案已经比较适合作为默认行业分析模板。')
+    recommendations.push('The current draft is more suitable as the default industry analysis template.')
   }
 
   draftPreview.value.coverage_summary = {
@@ -607,7 +607,7 @@ const inferIndustryFromText = (text: string) => {
 const requestDraft = async (userRequest: string) => {
   const industry = chatIndustry.value.trim()
   if (!industry) {
-    ElMessage.warning('请先选择行业，或在消息中明确提到行业名称')
+    ElMessage.warning('Please select your industry first, or clearly mention the industry name in your message')
     return
   }
 
@@ -623,12 +623,12 @@ const requestDraft = async (userRequest: string) => {
       draftPreview.value = normalizePreview(res.data)
       pushMessage('assistant', buildAssistantSummary(draftPreview.value, hadDraft))
     } else {
-      ElMessage.error(res?.message || '生成失败')
-      pushMessage('assistant', '这轮生成失败了。你可以稍后重试，或者换一种更明确的要求继续让我修订。')
+      ElMessage.error(res?.message || 'Build failed')
+      pushMessage('assistant', 'This round of generation failed. You can try again later, or change the request to a more specific one and let me revise it.')
     }
   } catch (error: any) {
-    ElMessage.error(error?.message || 'AI 生成失败，请稍后重试')
-    pushMessage('assistant', '我这轮没有成功生成草案。请稍后重试，或把要求描述得更具体一些。')
+    ElMessage.error(error?.message || 'AI Generation failed, please try again later')
+    pushMessage('assistant', 'I did not successfully generate the draft this round. Please try again later or be more specific with your request.')
   } finally {
     generating.value = false
   }
@@ -636,11 +636,11 @@ const requestDraft = async (userRequest: string) => {
 
 const startDraftGeneration = async () => {
   if (!chatIndustry.value.trim()) {
-    ElMessage.warning('请先选择行业')
+    ElMessage.warning('Please select an industry first')
     return
   }
 
-  const starter = `请先为「${chatIndustry.value.trim()}」生成一版行业分析配置草案，尽量兼顾当前系统内置数据、MCP、Skill 与手工导入的可行性。`
+  const starter = `Please first provide ${chatIndustry.value.trim()}] Generate a draft version of the industry analysis configuration, taking into account the feasibility of the current system s built-in data, MCP, Skills and manual import.`
   pushMessage('user', starter)
   await requestDraft(starter)
 }
@@ -658,12 +658,12 @@ const handleSend = async () => {
   pushMessage('user', text)
 
   if (!chatIndustry.value.trim()) {
-    pushMessage('assistant', '我还不知道你要配置哪个行业。请先在上方选择行业，或者在消息里直接说出数据库中存在的行业名称。')
+    pushMessage('assistant', 'I don t know yet which industry you want to configure. Please select the industry above first, or directly state the industry name in the database in the message.')
     return
   }
 
   const normalized = text.replace(/[。！？!?.\s]/g, '')
-  if (draftPreview.value && ['保存', '确认保存', '现在保存', '就这样保存'].includes(normalized)) {
+  if (draftPreview.value && ['save', 'Confirm to save', 'save now', 'Just save it'].includes(normalized)) {
     await handleSaveDraft()
     return
   }
@@ -673,7 +673,7 @@ const handleSend = async () => {
 
 const sendQuickPrompt = async (prompt: string) => {
   if (!draftPreview.value) {
-    ElMessage.warning('请先生成一版草案')
+    ElMessage.warning('Please generate a draft version')
     return
   }
   pushMessage('user', prompt)
@@ -685,7 +685,7 @@ const removeDimensionFromDraft = (index: number) => {
   draftPreview.value.profile.analysis_dimensions.splice(index, 1)
   draftPreview.value.dimension_assessments.splice(index, 1)
   rebuildCoverageSummary()
-  ElMessage.success('已删除该维度')
+  ElMessage.success('The dimension has been deleted')
 }
 
 const removeMetricFromDraft = (index: number) => {
@@ -696,7 +696,7 @@ const removeMetricFromDraft = (index: number) => {
     draftPreview.value.profile.key_metrics = draftPreview.value.profile.key_metrics.filter((item) => item !== metricName)
   }
   rebuildCoverageSummary()
-  ElMessage.success('已删除该指标')
+  ElMessage.success('The indicator has been deleted')
 }
 
 const pruneUnsupported = () => {
@@ -734,12 +734,12 @@ const pruneUnsupported = () => {
   rebuildCoverageSummary()
 
   const removedSummary = [
-    removableDimensions.length ? `删除维度：${removableDimensions.join('、')}` : '',
-    removableMetrics.length ? `删除指标：${removableMetrics.join('、')}` : '',
+    removableDimensions.length ? `Delete dimensions:${removableDimensions.join(', ')}` : '',
+    removableMetrics.length ? `Delete indicator:${removableMetrics.join(', ')}` : '',
   ].filter(Boolean).join('\n')
 
-  pushMessage('assistant', `${removedSummary || '当前没有明显需要裁剪的项。'}\n\n我已经把更难落地的项先裁掉了。现在这版更接近可直接保存的行业模板；如果你还想继续补充或调整，可以继续告诉我。`)
-  ElMessage.success('已裁剪不支持项')
+  pushMessage('assistant', `${removedSummary || 'There are currently no items that obviously need to be clipped.'}\n\n I have cut out the items that are more difficult to implement first. This version is now closer to an industry template that can be directly saved; if you want to continue to add or adjust, you can continue to tell me.`)
+  ElMessage.success('Unsupported items cropped')
 }
 
 const showCreateDialog = () => {
@@ -766,13 +766,13 @@ const editProfile = (row: IndustryProfile) => {
 
 const handleSaveDraft = async () => {
   if (!draftPreview.value) {
-    ElMessage.warning('请先生成草案')
+    ElMessage.warning('Please create a draft')
     return
   }
 
   const payload = normalizeProfile(draftPreview.value.profile)
   if (!payload.industry.trim()) {
-    ElMessage.warning('当前草案缺少行业名称，暂时无法保存')
+    ElMessage.warning('The current draft is missing an industry name and cannot be saved temporarily.')
     return
   }
 
@@ -780,12 +780,12 @@ const handleSaveDraft = async () => {
 
   try {
     const confirmMessage = existing
-      ? `行业「${payload.industry}」已存在配置。是否用当前聊天草案覆盖它？`
-      : `确认将当前「${payload.industry}」草案保存为行业配置吗？`
+      ? `Industry ${payload.industry}] Configuration already exists. Overwrite it with current chat draft?`
+      : `Confirm that the current ${payload.industry}] Draft saved as industry configuration?`
 
-    await ElMessageBox.confirm(confirmMessage, '确认保存', {
-      confirmButtonText: existing ? '覆盖保存' : '保存',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(confirmMessage, 'Confirm to save', {
+      confirmButtonText: existing ? 'Overwrite and save' : 'save',
+      cancelButtonText: 'Cancel',
       type: 'warning',
     })
 
@@ -796,14 +796,14 @@ const handleSaveDraft = async () => {
       try {
         res = await analysisProfilesApi.createIndustry(payload)
       } catch (createErr: any) {
-        // 409 = 行业已存在但本地列表过时，刷新列表后改走 update
+        // 409 = The industry already exists but the local list is out of date. Refresh the list and change it. update
         if (createErr?.response?.status === 409 || createErr?.status === 409) {
           await loadProfiles()
           const freshExisting = industryProfiles.value.find((item) => item.industry === payload.industry)
           if (freshExisting?.id) {
             res = await analysisProfilesApi.updateIndustry(freshExisting.id, payload)
           } else {
-            throw new Error('行业配置已存在但无法获取 ID，请刷新页面后重试')
+            throw new Error('The industry configuration already exists but the ID cannot be obtained. Please refresh the page and try again.')
           }
         } else {
           throw createErr
@@ -812,15 +812,15 @@ const handleSaveDraft = async () => {
     }
 
     if (res?.success) {
-      ElMessage.success(existing?.id ? '已覆盖保存' : '保存成功')
-      pushMessage('assistant', `好的，已经把当前草案${existing?.id ? '覆盖保存' : '保存'}为行业配置。后续如果你还想继续优化，也可以随时再回来和我对话。`)
+      ElMessage.success(existing?.id ? 'Overwritten and saved' : 'Saved successfully')
+      pushMessage('assistant', `Okay, the current draft has been put${existing?.id ? 'Overwrite and save' : 'save'}Configured for industry. If you want to continue optimizing later, you can come back and talk to me at any time.`)
       await loadProfiles()
     } else {
-      ElMessage.error(res?.message || '保存失败')
+      ElMessage.error(res?.message || 'Save failed')
     }
   } catch (error: any) {
     if (error !== 'cancel' && error !== 'close') {
-      ElMessage.error(error?.response?.data?.detail || error?.message || '保存失败')
+      ElMessage.error(error?.response?.data?.detail || error?.message || 'Save failed')
     }
   }
 }
@@ -833,7 +833,7 @@ const loadIndustryList = async () => {
       industryList.value = res.data || []
     }
   } catch (error) {
-    console.error('加载行业列表失败:', error)
+    console.error('Failed to load industry list:', error)
   } finally {
     industryListLoading.value = false
   }
@@ -847,8 +847,8 @@ const loadProfiles = async () => {
       industryProfiles.value = res.data || []
     }
   } catch (error) {
-    console.error('加载行业配置失败:', error)
-    ElMessage.error('加载行业配置失败')
+    console.error('Failed to load industry configuration:', error)
+    ElMessage.error('Failed to load industry configuration')
   } finally {
     loading.value = false
   }
@@ -856,7 +856,7 @@ const loadProfiles = async () => {
 
 const submitForm = async () => {
   if (!formData.value.industry.trim()) {
-    ElMessage.warning('请输入行业名称')
+    ElMessage.warning('Please enter the industry name')
     return
   }
 
@@ -871,14 +871,14 @@ const submitForm = async () => {
     }
 
     if (res?.success) {
-      ElMessage.success(editMode.value === 'create' ? '创建成功' : '更新成功')
+      ElMessage.success(editMode.value === 'create' ? 'Created successfully' : 'Update successful')
       editDialogVisible.value = false
       await loadProfiles()
     } else {
-      ElMessage.error(res?.message || '保存失败')
+      ElMessage.error(res?.message || 'Save failed')
     }
   } catch (error: any) {
-    ElMessage.error(error?.message || '保存失败')
+    ElMessage.error(error?.message || 'Save failed')
   } finally {
     submitting.value = false
   }
@@ -887,21 +887,21 @@ const submitForm = async () => {
 const deleteProfile = async (row: IndustryProfile) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除行业配置「${row.display_name || row.industry}」吗？`,
-      '确认删除',
-      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' },
+      `Confirm to delete the industry configuration ${row.display_name || row.industry}] ?`,
+      'Confirm deletion',
+      { confirmButtonText: 'OK', cancelButtonText: 'Cancel', type: 'warning' },
     )
 
     const res = await analysisProfilesApi.deleteIndustry(row.id!) as any
     if (res?.success) {
-      ElMessage.success('删除成功')
+      ElMessage.success('Delete successfully')
       await loadProfiles()
     } else {
-      ElMessage.error(res?.message || '删除失败')
+      ElMessage.error(res?.message || 'Delete failed')
     }
   } catch (error: any) {
     if (error !== 'cancel' && error !== 'close') {
-      ElMessage.error('删除失败')
+      ElMessage.error('Delete failed')
     }
   }
 }

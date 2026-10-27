@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试已有的分析结果
+Test existing analysis results
 """
 
 import requests
@@ -10,12 +10,12 @@ import os
 from dotenv import load_dotenv
 
 def get_existing_task_ids():
-    """从MongoDB获取已有的任务ID"""
+    """Get existing tasks from MongoDB ID"""
     try:
-        # 加载环境变量
+        # Load environment variables
         load_dotenv()
         
-        # 从环境变量获取MongoDB配置
+        # Get MongoDB configuration from environment variables
         mongodb_host = os.getenv("MONGODB_HOST", "localhost")
         mongodb_port = int(os.getenv("MONGODB_PORT", "27017"))
         mongodb_username = os.getenv("MONGODB_USERNAME")
@@ -23,7 +23,7 @@ def get_existing_task_ids():
         mongodb_database = os.getenv("MONGODB_DATABASE", "tradingagents")
         mongodb_auth_source = os.getenv("MONGODB_AUTH_SOURCE", "admin")
         
-        # 构建连接参数
+        # Build connection parameters
         connect_kwargs = {
             "host": mongodb_host,
             "port": mongodb_port,
@@ -31,7 +31,7 @@ def get_existing_task_ids():
             "connectTimeoutMS": 5000
         }
 
-        # 如果有用户名和密码，添加认证信息
+        # If you have a username and password, add authentication information
         if mongodb_username and mongodb_password:
             connect_kwargs.update({
                 "username": mongodb_username,
@@ -39,11 +39,11 @@ def get_existing_task_ids():
                 "authSource": mongodb_auth_source
             })
         
-        # 连接MongoDB
+        # connect MongoDB
         client = MongoClient(**connect_kwargs)
         db = client[mongodb_database]
         
-        # 从analysis_reports集合获取最近的任务
+        # Get the most recent tasks from the analysis_reports collection
         reports_collection = db['analysis_reports']
         recent_reports = reports_collection.find(
             {"source": "api", "task_id": {"$exists": True}},
@@ -63,20 +63,20 @@ def get_existing_task_ids():
         return task_ids
         
     except Exception as e:
-        print(f"❌ 获取任务ID失败: {e}")
+        print(f"❌ Failed to get task ID: {e}")
         return []
 
 def test_existing_result(task_id, stock_symbol):
-    """测试已有的分析结果"""
-    print(f"\n🔍 测试已有结果: {task_id} ({stock_symbol})")
+    """Test existing analysis results"""
+    print(f"\n🔍 Test results are available: {task_id} ({stock_symbol})")
     print("=" * 60)
     
-    # API基础URL
+    # API Basics URL
     base_url = "http://localhost:8000"
     
     try:
-        # 1. 登录获取token
-        print("1. 登录获取token...")
+        # 1. Log in to get token
+        print("1. Log in to get token...")
         login_data = {
             "username": "admin",
             "password": "admin123"
@@ -90,9 +90,9 @@ def test_existing_result(task_id, stock_symbol):
         if login_response.status_code == 200:
             login_result = login_response.json()
             access_token = login_result["data"]["access_token"]
-            print("✅ 登录成功")
+            print("✅ Login successful")
         else:
-            print(f"❌ 登录失败: {login_response.status_code}")
+            print(f"❌ Login failed: {login_response.status_code}")
             return False
         
         headers = {
@@ -100,8 +100,8 @@ def test_existing_result(task_id, stock_symbol):
             "Authorization": f"Bearer {access_token}"
         }
         
-        # 2. 检查任务状态
-        print(f"\n2. 检查任务状态...")
+        # 2. Check task status
+        print(f"\n2. Check task status...")
         status_response = requests.get(
             f"{base_url}/api/analysis/tasks/{task_id}/status",
             headers=headers
@@ -110,17 +110,17 @@ def test_existing_result(task_id, stock_symbol):
         if status_response.status_code == 200:
             status_data = status_response.json()
             status = status_data["data"]["status"]
-            print(f"   任务状态: {status}")
+            print(f"   Task status: {status}")
             
             if status != "completed":
-                print(f"   ⚠️ 任务未完成，跳过")
+                print(f"   ⚠️ Task not completed, skipped")
                 return False
         else:
-            print(f"   ❌ 获取状态失败: {status_response.status_code}")
+            print(f"   ❌ Failed to get status: {status_response.status_code}")
             return False
         
-        # 3. 获取分析结果
-        print(f"\n3. 获取分析结果...")
+        # 3. Get analysis results
+        print(f"\n3. Get analysis results...")
         result_response = requests.get(
             f"{base_url}/api/analysis/tasks/{task_id}/result",
             headers=headers
@@ -130,88 +130,88 @@ def test_existing_result(task_id, stock_symbol):
             result_data = result_response.json()
             data = result_data["data"]
             
-            print(f"✅ 成功获取分析结果")
+            print(f"✅ Successfully obtained analysis results")
             print(f"   stock_symbol: {data.get('stock_symbol')}")
             print(f"   analysts: {data.get('analysts', [])}")
             print(f"   research_depth: {data.get('research_depth')}")
             
-            # 检查reports字段的数据类型
+            # Check the data type of the reports field
             reports = data.get('reports', {})
             if reports:
-                print(f"✅ API返回包含 {len(reports)} 个报告:")
+                print(f"✅ API Return contains {len(reports)} reports:")
                 for report_type, content in reports.items():
                     content_type = type(content).__name__
                     if isinstance(content, str):
-                        print(f"   ✅ {report_type}: {content_type} ({len(content)} 字符)")
-                        # 检查内容是否包含有效的文本
+                        print(f"   ✅ {report_type}: {content_type} ({len(content)} character)")
+                        # Check if the content contains valid text
                         if len(content.strip()) > 10:
                             preview = content[:100].replace('\n', ' ').replace('\r', ' ')
-                            print(f"      预览: {preview}...")
+                            print(f"      Preview: {preview}...")
                         else:
-                            print(f"      ⚠️ 内容过短: '{content}'")
+                            print(f"      ⚠️ Content is too short: '{content}'")
                     else:
-                        print(f"   ❌ {report_type}: {content_type} (应该是str)")
-                        print(f"      值: {content}")
+                        print(f"   ❌ {report_type}: {content_type} (should be str)")
+                        print(f"      value: {content}")
                 
-                # 验证前端期望的字段
+                # Validate the fields expected by the front end
                 expected_fields = ['market_report', 'fundamentals_report', 'investment_plan', 'final_trade_decision']
-                print(f"\n🎯 检查前端期望的字段:")
+                print(f"\n🎯 Check the fields expected by the front end:")
                 for field in expected_fields:
                     if field in reports:
                         content = reports[field]
                         if isinstance(content, str) and len(content.strip()) > 10:
-                            print(f"   ✅ {field}: 有效字符串内容")
+                            print(f"   ✅ {field}: Valid string content")
                         else:
-                            print(f"   ⚠️ {field}: 内容无效或过短")
+                            print(f"   ⚠️ {field}: Content is invalid or too short")
                     else:
-                        print(f"   ❌ {field}: 缺失")
+                        print(f"   ❌ {field}: Missing")
                 
                 return True
             else:
-                print(f"❌ API返回未包含reports字段")
+                print(f"❌ API Return does not include reports field")
                 
-                # 显示完整的数据结构用于调试
-                print(f"\n🔍 完整数据结构:")
+                # Show complete data structure for debugging
+                print(f"\n🔍 Complete data structure:")
                 for key, value in data.items():
                     print(f"   {key}: {type(value).__name__}")
                     if isinstance(value, dict) and len(value) > 0:
-                        print(f"      子字段: {list(value.keys())}")
+                        print(f"      subfield: {list(value.keys())}")
                 
                 return False
         else:
-            print(f"❌ 获取API结果失败: {result_response.status_code}")
-            print(f"   响应: {result_response.text}")
+            print(f"❌ Failed to get API results: {result_response.status_code}")
+            print(f"   response: {result_response.text}")
             return False
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def main():
-    """主函数"""
-    print("🔍 测试已有的分析结果")
+    """main function"""
+    print("🔍 Test existing analysis results")
     print("=" * 80)
     
-    # 获取已有的任务ID
-    print("📋 获取已有的任务ID...")
+    # Get existing tasks ID
+    print("📋 Get existing tasks ID...")
     task_ids = get_existing_task_ids()
     
     if not task_ids:
-        print("❌ 没有找到已有的任务")
+        print("❌ No existing tasks found")
         return
     
-    print(f"✅ 找到 {len(task_ids)} 个任务:")
+    print(f"✅ found {len(task_ids)} tasks:")
     for i, task_info in enumerate(task_ids, 1):
         print(f"   {i}. {task_info['task_id']} - {task_info['stock_symbol']} ({task_info['created_at']})")
     
-    # 测试最新的任务
+    # Test the latest tasks
     latest_task = task_ids[0]
     success = test_existing_result(latest_task['task_id'], latest_task['stock_symbol'])
     
     if success:
-        print(f"\n🎉 测试成功! 任务 {latest_task['task_id']} 的API返回格式正确")
+        print(f"\n🎉 Test successful! Task {latest_task['task_id']} The API return format is correct")
     else:
-        print(f"\n💥 测试失败! 任务 {latest_task['task_id']} 的API返回格式有问题")
+        print(f"\n💥 test failed! Task {latest_task['task_id']} There is a problem with the API return format")
 
 if __name__ == "__main__":
     main()

@@ -1,18 +1,18 @@
 """
-通用 HITL checkpoint 服务。
+Generic HITL checkpoint service.
 
-从 core/embedded_nanobot/workflows/agent_builder_store.py 抽离 MongoDB checkpoint 模式，
-让非 LangGraph 场景（智能助手 ReAct 循环、Skill 生成异步管线）也能用 HITL。
+Extract MongoDB checkpoint mode from core/embedded_nanobot/workflows/agent_builder_store.py,
+Let non-LangGraph scenarios (smart assistant ReAct loop, Skill generate asynchronous pipeline) also use HITL.
 
-设计要点：
-- 不依赖 LangGraph 的 interrupt()（那是进程内内存）
-- 通过 MongoDB 持久化"待确认操作"，跨 HTTP 请求暂停/恢复
-- 每个待确认操作有唯一 pending_id，前端弹窗/列表用此 ID 跟踪
-- 支持 24h 超时自动过期清理
+Design points:
+- Does not rely on LangGraph interrupt() (That s in-process memory)
+- Persistence via MongoDB"Action to be confirmed", Pause/resume across HTTP requests
+- Each pending operation has a unique pending_id, and the front-end pop-up window/list uses this ID to track
+- Support 24h timeout automatic expiration cleanup
 
-使用场景：
-1. 智能助手关键操作（删除配置/触发批量分析）执行前暂停，等待用户确认
-2. Skill 生成完成后不自动绑定，等待用户审核代码和测试结果
+Usage scenarios:
+1. The smart assistant pauses before executing key operations (deleting configurations/triggering batch analysis) and waiting for user confirmation.
+2. Skill After the generation is completed, it will not be automatically bound and will wait for the user to review the code and test results.
 """
 
 from __future__ import annotations
@@ -29,14 +29,14 @@ COLLECTION_NAME = "hitl_pending_operations"
 
 
 class PendingOperation(BaseModel):
-    """待确认操作的统一数据模型。"""
+    """A unified data model for pending operations."""
 
-    pending_id: str  # 唯一 ID，前端用此 ID 跟踪
+    pending_id: str  # Unique ID, used by the front end for tracking
     user_id: str
-    thread_id: str  # 会话 ID（智能助手 conversation_id / agent_builder thread_id）
+    thread_id: str  # Session ID (smart assistant conversation_id / agent_builder thread_id)
     operation_type: str  # "assistant_critical_action" / "skill_binding_review" / ...
-    operation_payload: Dict[str, Any] = Field(default_factory=dict)  # 待执行的操作参数
-    display_data: Dict[str, Any] = Field(default_factory=dict)  # 前端展示用数据（标题/描述/风险等级）
+    operation_payload: Dict[str, Any] = Field(default_factory=dict)  # Operation parameters to be executed
+    display_data: Dict[str, Any] = Field(default_factory=dict)  # Data for front-end display (title/description/risk level)
     status: str = "pending"  # pending / confirmed / rejected / expired
     created_at: str = ""
     decided_at: str = ""
@@ -44,9 +44,9 @@ class PendingOperation(BaseModel):
 
 
 class HITLCheckpointService:
-    """通用 HITL 检查点服务。
+    """Generic HITL checkpoint service.
 
-    通过 MongoDB 持久化待确认操作，实现跨 HTTP 请求的暂停/恢复。
+    Pause/resume across HTTP requests by persisting pending operations with MongoDB.
     """
 
     def __init__(self, db: Any):
@@ -63,18 +63,18 @@ class HITLCheckpointService:
         operation_payload: Dict[str, Any],
         display_data: Dict[str, Any],
     ) -> PendingOperation:
-        """写入待确认操作，主流程在此暂停。
+        """Write operation to be confirmed, the main process is paused here.
 
         Args:
-            pending_id: 唯一 ID（调用方生成，如 f"hitl_{uuid.uuid4().hex[:12]}"）
-            user_id: 用户 ID
-            thread_id: 会话 ID
-            operation_type: 操作类型
-            operation_payload: 待执行的操作参数（用户确认后用于执行）
-            display_data: 前端展示用数据
+            pending_id: Unique ID (caller generated, e.g. f"hitl_{uuid.uuid4().hex[:12]}") 
+            user_id: User ID
+            thread_id: session ID
+            operation_type: Operation type
+            operation_payload: Operation parameters to be executed (used for execution after user confirmation)
+            display_data: Data for front-end display
 
         Returns:
-            写入的 PendingOperation
+            written PendingOperation
         """
         now = datetime.now(timezone.utc).isoformat()
         op = PendingOperation(
@@ -93,21 +93,21 @@ class HITLCheckpointService:
             upsert=True,
         )
         logger.info(
-            "[HITL] 已保存待确认操作: pending_id=%s type=%s thread=%s",
+            "[HITL] Action saved for confirmation: pending_id=%s type=%s thread=%s",
             pending_id, operation_type, thread_id,
         )
         return op
 
     async def load_pending(self, pending_id: str) -> Optional[PendingOperation]:
-        """加载单个待确认操作。
+        """Load a single pending action.
 
         Returns:
-            PendingOperation 或 None（不存在时）
+            PendingOperation or None (when not present)
         """
         doc = await self._collection.find_one({"pending_id": pending_id})
         if not doc:
             return None
-        # 过滤 _id 字段
+        # Filter on _id field
         clean = {k: v for k, v in doc.items() if k != "_id"}
         return PendingOperation(**clean)
 
@@ -118,15 +118,15 @@ class HITLCheckpointService:
         thread_id: Optional[str] = None,
         operation_type: Optional[str] = None,
     ) -> List[PendingOperation]:
-        """列出待确认操作（前端展示用）。
+        """List operations to be confirmed (for front-end display).
 
         Args:
-            user_id: 用户 ID
-            thread_id: 可选，限定会话
-            operation_type: 可选，限定操作类型
+            user_id: User ID
+            thread_id: Optional, session-limited
+            operation_type: Optional, limited operation type
 
         Returns:
-            PendingOperation 列表（按创建时间倒序，最多 20 条）
+            PendingOperation List (in descending order of creation time, up to 20 items)
         """
         query: Dict[str, Any] = {"user_id": user_id, "status": "pending"}
         if thread_id:
@@ -142,7 +142,7 @@ class HITLCheckpointService:
             try:
                 result.append(PendingOperation(**clean))
             except Exception as e:
-                logger.warning("[HITL] 跳过无法解析的记录: %s", e)
+                logger.warning("[HITL] Skip unresolved records: %s", e)
         return result
 
     async def decide(
@@ -152,15 +152,15 @@ class HITLCheckpointService:
         decision: str,  # "confirmed" / "rejected"
         decided_by: str = "user",
     ) -> Optional[PendingOperation]:
-        """用户确认/拒绝后更新状态。
+        """Update status after user confirm/deny.
 
         Args:
-            pending_id: 待确认操作 ID
-            decision: "confirmed" 或 "rejected"
-            decided_by: 决策者（默认 "user"）
+            pending_id: Action to be confirmed ID
+            decision: "confirmed" or "rejected"
+            decided_by: decision maker (default "user") 
 
         Returns:
-            更新后的 PendingOperation，或 None（不存在或已处理时）
+            The updated PendingOperation, or None if it does not exist or has been processed
         """
         now = datetime.now(timezone.utc).isoformat()
         result = await self._collection.update_one(
@@ -172,31 +172,31 @@ class HITLCheckpointService:
             }},
         )
         if result.modified_count == 0:
-            # 可能是不存在，或状态已不是 pending
+            # It may not exist, or the status is no longer pending
             existing = await self.load_pending(pending_id)
             if existing:
                 logger.warning(
-                    "[HITL] 操作已处理，无法再次决策: pending_id=%s 当前状态=%s",
+                    "[HITL] The operation has been processed and no decision can be made again: pending_id=%s Current status=%s",
                     pending_id, existing.status,
                 )
             else:
-                logger.warning("[HITL] 操作不存在: pending_id=%s", pending_id)
+                logger.warning("[HITL] Operation does not exist: pending_id=%s", pending_id)
             return None
 
         logger.info(
-            "[HITL] 操作已决策: pending_id=%s decision=%s by=%s",
+            "[HITL] The operation has been decided: pending_id=%s decision=%s by=%s",
             pending_id, decision, decided_by,
         )
         return await self.load_pending(pending_id)
 
     async def expire_stale(self, hours: int = 24) -> int:
-        """清理超时未决的操作（默认 24h）。
+        """Clean up pending operations with timeout (default 24h).
 
         Args:
-            hours: 超时小时数
+            hours: Timeout hours
 
         Returns:
-            过期的操作数量
+            Number of expired operations
         """
         cutoff_dt = datetime.now(timezone.utc).timestamp() - hours * 3600
         cutoff_str = datetime.fromtimestamp(cutoff_dt, tz=timezone.utc).isoformat()
@@ -205,17 +205,17 @@ class HITLCheckpointService:
             {"$set": {"status": "expired", "decided_by": "system_timeout"}},
         )
         if result.modified_count > 0:
-            logger.info("[HITL] 清理超时待确认操作: %d 条（超过 %dh）", result.modified_count, hours)
+            logger.info("[HITL] Cleanup timeout pending confirmation operation: %d (more than %dh)", result.modified_count, hours)
         return result.modified_count
 
 
 def get_hitl_service(db: Any) -> "HITLCheckpointService":
-    """工厂方法（无单例，调用方按需缓存）。
+    """Factory method (no singleton, caller caches on demand).
 
     Args:
-        db: MongoDB 数据库句柄
+        db: MongoDB Database handle
 
     Returns:
-        HITLCheckpointService 实例
+        HITLCheckpointService Example
     """
     return HITLCheckpointService(db)

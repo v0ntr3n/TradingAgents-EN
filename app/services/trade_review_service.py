@@ -1,6 +1,6 @@
 """
-交易复盘服务
-提供交易复盘和阶段性复盘功能
+Transaction review service
+Provide transaction review and periodic review functions
 """
 
 import os
@@ -12,30 +12,30 @@ from bson import ObjectId
 
 from app.core.database import get_mongo_db, get_database
 
-# ==================== 特性开关 ====================
-# 是否使用模板系统生成提示词（默认关闭，保持向后兼容）
-# 注意：使用函数动态读取，确保 .env 文件已加载
+# ==================== Feature switch ====================
+# Whether to use the template system to generate prompt words (off by default to maintain backward compatibility)
+# NOTE: Use functions to read dynamically and make sure the .env file is loaded
 def _use_template_prompts() -> bool:
-    """动态读取 USE_TEMPLATE_PROMPTS 环境变量"""
+    """Dynamically read the USE_TEMPLATE_PROMPTS environment variable"""
     value = os.getenv("USE_TEMPLATE_PROMPTS", "false").lower() == "true"
-    # 首次调用时打印日志
+    # Print log when first called
     if not hasattr(_use_template_prompts, '_logged'):
         _use_template_prompts._logged = True
         logging.getLogger("app.services.trade_review").info(
-            f"📋 [特性开关] USE_TEMPLATE_PROMPTS = {value}"
+            f"📋 [Feature switch] USE_TEMPLATE_PROMPTS = {value}"
         )
     return value
 
 def _use_workflow_review() -> bool:
-    """动态读取 USE_STOCK_ENGINE 环境变量（复用持仓研究的引擎开关）
+    """Dynamically read the USE_STOCK_ENGINE environment variable (reuse the engine switch for position research)
 
-    当 USE_STOCK_ENGINE=true 时，交易复盘也会使用工作流引擎进行多维度分析
+    When USE_STOCK_ENGINE=true At the same time, the transaction review will also use the workflow engine to conduct multi-dimensional analysis.
     """
     value = os.getenv("USE_STOCK_ENGINE", "false").lower() == "true"
     if not hasattr(_use_workflow_review, '_logged'):
         _use_workflow_review._logged = True
         logging.getLogger("app.services.trade_review").info(
-            f"📋 [特性开关] USE_STOCK_ENGINE (复盘工作流) = {value}"
+            f"📋 [Feature switch] USE_STOCK_ENGINE (Review workflow) = {value}"
         )
     return value
 
@@ -50,8 +50,8 @@ from app.models.review import (
 from app.utils.compliance import sanitize_periodic_review_payload, sanitize_trade_review_payload
 from app.utils.timezone import now_tz
 
-# ==================== v2.0 工具导入 ====================
-# 导入交易复盘工具集
+# ==================== v2.0 Tool import ====================
+# Import transaction review tool set
 try:
     from core.tools.implementations.trade_review import (
         get_trade_records as tool_get_trade_records,
@@ -62,10 +62,10 @@ try:
     TOOLS_AVAILABLE = True
 except ImportError:
     logger = logging.getLogger("app.services.trade_review")
-    logger.warning("⚠️ v2.0 交易复盘工具未加载，将使用传统方法")
+    logger.warning("⚠️ v2.0 The transaction review tool is not loaded and traditional methods will be used.")
     TOOLS_AVAILABLE = False
 
-# 导入统一数据源工具
+# Import unified data source tool
 from tradingagents.utils.stock_utils import StockUtils
 from tradingagents.dataflows.providers.hk.improved_hk import get_improved_hk_provider
 from tradingagents.dataflows.providers.us.optimized import get_optimized_us_data_provider
@@ -80,16 +80,16 @@ async def _store_trade_pattern_memory(
     ai_review,
     review_id: str,
 ) -> None:
-    """复盘完成后，将关键纪律要点写入 mem0 trade_pattern scope。
+    """After the review is completed, write the key discipline points into the mem0 trade_pattern scope.
 
-    只要 AI 复盘有产出（summary/strengths/weaknesses/suggestions/plan_deviation 任一非空），
-    就写入 trade_pattern 记忆，便于后续在智能助手中作为「交易纪律」展示与召回。
+    As long as the AI review has output (any summary/strengths/weaknesses/suggestions/plan_deviation is not empty),
+    Just write it into the trade_pattern memory so that it can be displayed and recalled as a trading discipline in the smart assistant later.
     """
     if not user_id:
-        logger.warning(f"[trade_review] trade_pattern 跳过：user_id 为空, review_id={review_id}")
+        logger.warning(f"[trade_review] trade_pattern Skip: user_id is empty, review_id={review_id}")
         return
     if ai_review is None:
-        logger.warning(f"[trade_review] trade_pattern 跳过：ai_review 为空, review_id={review_id}")
+        logger.warning(f"[trade_review] trade_pattern Skip: ai_review is empty, review_id={review_id}")
         return
     try:
         weaknesses = list(getattr(ai_review, "weaknesses", []) or [])
@@ -98,9 +98,9 @@ async def _store_trade_pattern_memory(
         plan_deviation = (getattr(ai_review, "plan_deviation", "") or "").strip()
         summary = (getattr(ai_review, "summary", "") or "").strip()
 
-        # 没有任何 AI 复盘产出则跳过
+        # If there is no AI review output, it will be skipped.
         if not weaknesses and not suggestions and not plan_deviation and not summary and not strengths:
-            logger.info(f"[trade_review] trade_pattern 跳过：AI 复盘内容为空, review_id={review_id}")
+            logger.info(f"[trade_review] trade_pattern Skip: AI review content is empty, review_id={review_id}")
             return
 
         code = getattr(trade_info, "code", "") or ""
@@ -119,7 +119,7 @@ async def _store_trade_pattern_memory(
 
         content = "\n".join(parts).strip()
         if not content:
-            logger.info(f"[trade_review] trade_pattern 跳过：content 为空, review_id={review_id}")
+            logger.info(f"[trade_review] trade_pattern Skip: content is empty, review_id={review_id}")
             return
 
         from core.memory.service import get_memory_service
@@ -136,16 +136,16 @@ async def _store_trade_pattern_memory(
                 "name": name,
                 "source": "trade_review_completed",
             },
-            infer=False,  # 已经是结构化要点
+            infer=False,  # Already a structural point
         )
         if result.success:
             logger.info(
-                f"[trade_review] 已写入 trade_pattern 记忆: user={user_id} symbol={code} review={review_id}"
+                f"[trade_review] Written to trade_pattern memory: user={user_id} symbol={code} review={review_id}"
             )
         else:
-            logger.warning(f"[trade_review] trade_pattern 写入失败: {result.error}")
+            logger.warning(f"[trade_review] trade_pattern Write failed: {result.error}")
     except Exception as e:
-        logger.warning(f"[trade_review] trade_pattern 写入异常: {e}", exc_info=True)
+        logger.warning(f"[trade_review] trade_pattern write exception: {e}", exc_info=True)
 
 
 async def _reflect_trade_review_lesson(
@@ -155,16 +155,16 @@ async def _reflect_trade_review_lesson(
     ai_review,
     review_id: str,
 ) -> None:
-    """复盘反思提炼（v3.5.0 项2）：把原文复盘结论转化为结构化经验。
+    """Review, reflection and refinement (v3.5.0 item 2): Transform the original review conclusions into structured experience.
 
-    在 _store_trade_pattern_memory 写入"原文 trade_pattern"之后调用，
-    用 LLM 提炼 4 维度结构化教训（reasoning/improvement/summary/query），
-    写入同一个 TRADE_PATTERN scope 但 metadata.memory_kind=trade_lesson，
-    便于下次同股票分析时优先召回结构化教训而非原文。
+    Write in _store_trade_pattern_memory"Original text trade_pattern"Then call,
+    Use LLM to extract 4-dimensional structured lessons (reasoning/improvement/summary/query),
+    Write to the same TRADE_PATTERN scope but metadata.memory_kind=trade_lesson, 
+    This makes it easier to recall structured lessons instead of the original text when analyzing the same stock next time.
 
-    降级策略：
-    - LLM 超时/返回非 JSON → fallback 写入原文（memory_kind 仍为 trade_lesson，但 reflection_success=False）
-    - mem0 不可用 → 跳过，不阻塞主流程
+    Downgrade strategy:
+    - LLM Timeout/return non JSON → fallback Write the original text (memory_kind is still trade_lesson, but reflection_success=False) 
+    - mem0 Not available → Skip, do not block the main process
     """
     if not user_id or ai_review is None or trade_info is None:
         return
@@ -180,7 +180,7 @@ async def _reflect_trade_review_lesson(
         code = str(getattr(trade_info, "code", "") or "").upper()
         name = getattr(trade_info, "name", "") or ""
 
-        # 用原文 trade_pattern 内容作为 fallback（反思失败时仍写入可召回的原文）
+        # Use the original text trade_pattern content as fallback (the recallable original text will still be written when reflection fails)
         summary = (getattr(ai_review, "summary", "") or "").strip()
         fallback_parts = [f"交易复盘 {name}({code})"]
         if summary:
@@ -189,7 +189,7 @@ async def _reflect_trade_review_lesson(
 
         user_prompt = build_trade_reflection_user_prompt(trade_info, ai_review)
         if not user_prompt.strip():
-            logger.info(f"[trade_review] 反思跳过：user_prompt 为空, review_id={review_id}")
+            logger.info(f"[trade_review] Reflection skipped: user_prompt is empty, review_id={review_id}")
             return
 
         success = await run_reflection(
@@ -210,10 +210,10 @@ async def _reflect_trade_review_lesson(
         )
         if success:
             logger.info(
-                f"[trade_review] 已写入 trade_lesson 教训: user={user_id} symbol={code} review={review_id}"
+                f"[trade_review] Trade_lesson lesson written: user={user_id} symbol={code} review={review_id}"
             )
     except Exception as e:
-        logger.warning(f"[trade_review] trade_lesson 反思异常: {e}", exc_info=True)
+        logger.warning(f"[trade_review] trade_lesson Reflection exception: {e}", exc_info=True)
 
 
 def _derive_risk_level(score) -> str:
@@ -243,17 +243,17 @@ class TradeReviewService:
         self.trading_systems_collection = "trading_systems"
 
     def _append_review_guardrails(self, prompt: str) -> str:
-        """为复盘提示词追加统一合规约束。"""
+        """Add unified compliance constraints to review prompt words."""
         guardrails = """
-## 输出约束
-- 仅允许输出复盘结论、做得好的地方、需要改进的地方、纪律反思和后续观察点。
-- 改进内容只限研究准备、规则执行、风险识别和记录方法，不得给出未来买卖、持有、加减仓、止损止盈、目标价或具体仓位比例建议。
-- 如需描述问题，请聚焦本次交易为何偏离计划，不要把输出写成下一次的交易指令。
+## Output constraints
+- Only the review conclusions, areas that have been done well, areas that need improvement, disciplinary reflections and follow-up observation points are allowed to be output.
+- The improvement content is limited to research preparation, rule execution, risk identification and recording methods. Suggestions for future buying and selling, holding, adding or subtracting positions, stop loss and profit, target price or specific position ratio are not allowed.
+- If you need to describe the problem, focus on why this transaction deviated from the plan. Do not write the output as the next transaction instruction.
 """.strip()
         return f"{prompt.rstrip()}\n\n{guardrails}\n"
 
     def _sanitize_trade_review_result(self, result: AITradeReview) -> AITradeReview:
-        """统一将交易复盘结果转换为复盘改进模式。"""
+        """Unifiedly convert the transaction review results into review improvement mode."""
         if result is None:
             return AITradeReview()
 
@@ -262,11 +262,11 @@ class TradeReviewService:
         return AITradeReview(**sanitized_data)
 
     def _sanitize_trade_review_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """统一清洗交易复盘详情和历史记录中的结果字段。"""
+        """Unified cleaning of result fields in transaction review details and history records."""
         return sanitize_trade_review_payload(data)
 
     def _sanitize_periodic_review_result(self, result: AIPeriodicReview) -> AIPeriodicReview:
-        """统一将阶段性复盘结果转换为复盘改进模式。"""
+        """Unify the phased review results into a review improvement model."""
         if result is None:
             return AIPeriodicReview()
 
@@ -275,23 +275,23 @@ class TradeReviewService:
         return AIPeriodicReview(**sanitized_data)
 
     def _sanitize_periodic_review_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """统一清洗阶段性复盘详情中的结果字段。"""
+        """Unified cleaning of the result fields in the staged review details."""
         return sanitize_periodic_review_payload(data)
 
-    # ==================== 辅助方法 ====================
+    # ==================== Helper methods ====================
 
     async def _get_current_price(self, code: str, market: str = "CN") -> Optional[float]:
-        """获取股票当前价格
+        """Get the current price of a stock
 
         Args:
-            code: 股票代码
-            market: 市场类型 (CN/HK/US)
+            code: Stock code
+            market: market type (CN/HK/US)
 
         Returns:
-            当前价格，如果获取失败则返回 None
+            Current price, returned if acquisition fails None
         """
         try:
-            # 🔥 使用与持仓研究服务相同的方法获取价格
+            # 🔥 Get prices using the same method as the position research service
             from app.services.portfolio_service import PortfolioService
             portfolio_service = PortfolioService()
             current_price = await portfolio_service._get_stock_price(code, market)
@@ -303,33 +303,33 @@ class TradeReviewService:
             logger.warning(f"⚠️ [获取当前价格] 未找到 {code} ({market}) 的行情数据")
             return None
         except Exception as e:
-            logger.warning(f"❌ [获取当前价格] 获取失败: {e}", exc_info=True)
+            logger.warning(f"❌ [Get current price] Failed to obtain: {e}", exc_info=True)
             return None
 
     async def _calculate_unrealized_pnl(self, trade_info: TradeInfo) -> TradeInfo:
-        """计算浮动盈亏（持仓中的交易）
+        """Calculate floating profit and loss (transactions in positions)
 
         Args:
-            trade_info: 交易信息
+            trade_info: transaction information
 
         Returns:
-            更新后的交易信息（包含浮动盈亏）
+            Updated transaction information (including floating profit and loss)
         """
         if not trade_info.is_holding or trade_info.remaining_quantity <= 0:
             return trade_info
 
-        # 🔥 获取当前价格（传递 market 参数）
+        # 🔥 Get the current price (pass the market parameter)
         current_price = await self._get_current_price(trade_info.code, trade_info.market)
         if not current_price:
-            logger.warning(f"⚠️ [计算浮动盈亏] 无法获取当前价格 ({trade_info.code}, {trade_info.market})，跳过浮动盈亏计算")
+            logger.warning(f"⚠️ [Calculate floating profit and loss] Unable to get current price ({trade_info.code}, {trade_info.market}), Skip floating profit and loss calculations")
             return trade_info
 
-        # 计算浮动盈亏
+        # Calculate floating profit and loss
         unrealized_pnl = (current_price - trade_info.avg_buy_price) * trade_info.remaining_quantity
         cost_basis = trade_info.avg_buy_price * trade_info.remaining_quantity
         unrealized_pnl_pct = (unrealized_pnl / cost_basis * 100) if cost_basis > 0 else 0.0
 
-        # 更新 trade_info
+        # update trade_info
         trade_info.current_price = current_price
         trade_info.unrealized_pnl = round(unrealized_pnl, 2)
         trade_info.unrealized_pnl_pct = round(unrealized_pnl_pct, 2)
@@ -346,7 +346,7 @@ class TradeReviewService:
         """获取交易计划信息"""
         try:
             from bson import ObjectId
-            logger.info(f"📋 [获取交易计划] user_id={user_id}, trading_system_id={trading_system_id}")
+            logger.info(f"📋 [Get a trading plan] user_id={user_id}, trading_system_id={trading_system_id}")
 
             system = await self.db[self.trading_systems_collection].find_one({
                 "_id": ObjectId(trading_system_id),
@@ -354,75 +354,75 @@ class TradeReviewService:
             })
 
             if system:
-                logger.info(f"✅ [获取交易计划] 成功获取: {system.get('name', 'N/A')}")
+                logger.info(f"✅ [Get a trading plan] successfully obtained: {system.get('name', 'N/A')}")
                 logger.info(f"   - 风格: {system.get('style', 'N/A')}")
                 logger.info(f"   - 选股规则: {len(system.get('stock_selection', {}).get('must_have', []))} 条必须满足")
                 logger.info(f"   - 择时规则: {len(system.get('timing', {}).get('entry_signals', []))} 条入场信号")
                 logger.info(f"   - 纪律规则: {len(system.get('discipline', {}).get('must_do', []))} 条必须做到")
             else:
-                logger.warning(f"⚠️ [获取交易计划] 未找到交易计划: {trading_system_id}")
+                logger.warning(f"⚠️ [Get a trading plan] Trading plan not found: {trading_system_id}")
 
             return system
         except Exception as e:
-            logger.warning(f"❌ [获取交易计划] 获取失败: {e}")
+            logger.warning(f"❌ [Get a trading plan] Failed to obtain: {e}")
             return None
 
-    # ==================== 交易复盘 ====================
+    # ==================== Transaction review ====================
 
     async def create_trade_review(
         self,
         user_id: str,
         request: CreateTradeReviewRequest,
-        progress_callback: Optional[Callable] = None  # 🔥 新增参数
+        progress_callback: Optional[Callable] = None  # 🔥 New parameters
     ) -> TradeReviewResponse:
         """创建交易复盘"""
         review_id = str(uuid.uuid4())
 
-        # 1. 获取交易记录
+        # 1. Get transaction records
         trade_records = await self._get_trade_records(user_id, request.trade_ids, request.source)
         if not trade_records:
             raise ValueError("未找到指定的交易记录")
 
-        # 2. 构建交易信息
+        # 2. Build transaction information
         trade_info = self._build_trade_info(trade_records, request.code)
 
-        # 🆕 2.5. 如果是持仓中的交易，计算浮动盈亏
+        # 🆕 2.5. If the transaction is a holding position, calculate the floating profit and loss
         if trade_info.is_holding:
-            logger.info(f"📊 [创建复盘] 检测到持仓中交易，计算浮动盈亏...")
+            logger.info(f"📊 [Create review] Detect transactions in positions and calculate floating profit and loss...")
             trade_info = await self._calculate_unrealized_pnl(trade_info)
 
-        # 3. 获取交易计划信息（如果关联了交易计划）
+        # 3. Get trading plan information (if a trading plan is associated)
         trading_system_name = None
         if request.trading_system_id:
             trading_system = await self._get_trading_system(user_id, request.trading_system_id)
             if trading_system:
                 trading_system_name = trading_system.get("name")
 
-        # 4. 创建复盘报告
-        # 统一 source 字段：real -> position, paper -> paper
+        # 4. Create review report
+        # Unify the source field:real -> position, paper -> paper
         source = request.source or "paper"
         if source == "real":
-            source = "position"  # 统一使用 position 表示持仓操作
+            source = "position"  # Uniformly use position to represent position operations
 
         report = TradeReviewReport(
             review_id=review_id,
             user_id=user_id,
             review_type=request.review_type,
             trade_info=trade_info,
-            source=source,  # 设置数据源
+            source=source,  # Set data source
             trading_system_id=request.trading_system_id,
             trading_system_name=trading_system_name,
             status=ReviewStatus.PROCESSING
         )
         
-        # 4. 保存初始报告
+        # 4. Save initial report
         report_dict = report.model_dump(by_alias=True, exclude={"id"})
         await self.db[self.trade_reviews_collection].insert_one(report_dict)
         
         try:
             start_time = datetime.now()
             
-            # 5. 获取市场数据快照
+            # 5. Get a snapshot of market data
             market_snapshot = await self._get_market_snapshot(
                 code=trade_info.code,
                 market=trade_info.market,
@@ -430,35 +430,35 @@ class TradeReviewService:
                 last_sell_date=trade_info.last_sell_date
             )
             
-            # 6. 获取交易计划信息（如果关联了交易计划）
+            # 6. Get trading plan information (if a trading plan is associated)
             trading_system = None
             if request.trading_system_id:
                 trading_system = await self._get_trading_system(user_id, request.trading_system_id)
 
-            # 7. 调用AI分析（传入 user_id、交易计划和分析版本）
+            # 7. Call AI analysis (pass in user_id, trading plan and analysis version)
             ai_review = await self._call_ai_trade_review(
                 trade_info,
                 market_snapshot,
                 user_id=user_id,
                 trading_system=trading_system,
                 use_workflow=request.use_workflow,
-                progress_callback=progress_callback  # 🔥 传递进度回调
+                progress_callback=progress_callback  # 🔥 Pass progress callback
             )
             ai_review = self._sanitize_trade_review_result(ai_review)
             
             execution_time = (datetime.now() - start_time).total_seconds()
 
-            # 🔍 详细日志：检查 ai_review 对象
-            logger.info(f"🔍 [创建复盘] ai_review 类型: {type(ai_review)}")
-            logger.info(f"🔍 [创建复盘] ai_review.plan_adherence: {ai_review.plan_adherence}")
-            logger.info(f"🔍 [创建复盘] ai_review.plan_deviation: {ai_review.plan_deviation}")
+            # 🔍 Verbose log: Check ai_review object
+            logger.info(f"🔍 [Create review] ai_review Type: {type(ai_review)}")
+            logger.info(f"🔍 [Create review] ai_review.plan_adherence: {ai_review.plan_adherence}")
+            logger.info(f"🔍 [Create review] ai_review.plan_deviation: {ai_review.plan_deviation}")
 
             ai_review_dict = ai_review.model_dump()
-            logger.info(f"🔍 [创建复盘] ai_review_dict 键: {list(ai_review_dict.keys())}")
-            logger.info(f"🔍 [创建复盘] ai_review_dict['plan_adherence']: {ai_review_dict.get('plan_adherence')}")
-            logger.info(f"🔍 [创建复盘] ai_review_dict['plan_deviation']: {ai_review_dict.get('plan_deviation')}")
+            logger.info(f"🔍 [Create review] ai_review_dict key: {list(ai_review_dict.keys())}")
+            logger.info(f"🔍 [Create review] ai_review_dict['plan_adherence']: {ai_review_dict.get('plan_adherence')}")
+            logger.info(f"🔍 [Create review] ai_review_dict['plan_deviation']: {ai_review_dict.get('plan_deviation')}")
 
-            # 8. 更新报告
+            # 8. update report
             await self.db[self.trade_reviews_collection].update_one(
                 {"review_id": review_id},
                 {"$set": {
@@ -471,9 +471,9 @@ class TradeReviewService:
 
             logger.info(f"✅ 交易复盘完成: {review_id}, 股票: {trade_info.code}")
 
-            # v3.6.0 fix：复盘完成后自动触发反思提炼
-            # 注意：这里触发的是结构化教训提炼（trade_lesson），不是原文写入（trade_pattern）
-            # trade_pattern 原文仍在用户主动「保存到案例库」时写入
+            # v3.6.0 fix: Automatically trigger reflection and refinement after review is completed
+            # Note: What is triggered here is structured lesson refining (trade_lesson), not original text writing (trade_pattern)
+            # trade_pattern The original text is still written when the user actively "saves to case library"
             try:
                 await _reflect_trade_review_lesson(
                     db=self.db,
@@ -483,9 +483,9 @@ class TradeReviewService:
                     review_id=review_id,
                 )
             except Exception as reflect_exc:
-                logger.warning(f"[创建复盘] 反思提炼失败（不阻塞）: {reflect_exc}")
+                logger.warning(f"[Create review] Reflection on refining failure (not blocking): {reflect_exc}")
 
-            # 🔍 详细日志：检查返回的 TradeReviewResponse
+            # 🔍 Detailed log: Check the returned TradeReviewResponse
             response = TradeReviewResponse(
                 review_id=review_id,
                 status=ReviewStatus.COMPLETED,
@@ -496,9 +496,9 @@ class TradeReviewService:
                 created_at=report.created_at
             )
 
-            logger.info(f"🔍 [创建复盘] response.ai_review 类型: {type(response.ai_review)}")
-            logger.info(f"🔍 [创建复盘] response.ai_review.plan_adherence: {response.ai_review.plan_adherence}")
-            logger.info(f"🔍 [创建复盘] response.ai_review.plan_deviation: {response.ai_review.plan_deviation}")
+            logger.info(f"🔍 [Create review] response.ai_review Type: {type(response.ai_review)}")
+            logger.info(f"🔍 [Create review] response.ai_review.plan_adherence: {response.ai_review.plan_adherence}")
+            logger.info(f"🔍 [Create review] response.ai_review.plan_deviation: {response.ai_review.plan_deviation}")
 
             return response
             
@@ -523,20 +523,20 @@ class TradeReviewService:
         user_id: str,
         request: CreateTradeReviewRequest
     ) -> TradeReviewResponse:
-        """创建交易复盘 v2.0 - 使用统一任务引擎
+        """Create transaction review v2.0 - using unified task engine
 
-        优势:
-        - 支持多引擎切换（workflow/legacy/llm）
-        - 统一的任务管理和进度跟踪
-        - 自动选择最佳引擎
-        - 任务可查询、可取消
+        Advantages:
+        - Support multi-engine switching (workflow/legacy/llm)
+        - Unified task management and progress tracking
+        - Automatically select the best engine
+        - Tasks can be queried and canceled
 
         Args:
-            user_id: 用户ID
-            request: 复盘请求
+            user_id: User ID
+            request: Review request
 
         Returns:
-            复盘报告响应
+            Review report response
         """
         from app.services.task_analysis_service import get_task_analysis_service
         from app.models.analysis import AnalysisTaskType
@@ -544,22 +544,22 @@ class TradeReviewService:
 
         review_id = str(uuid.uuid4())
 
-        logger.info(f"🚀 [交易复盘v2.0] 使用统一任务引擎创建复盘: {review_id}")
+        logger.info(f"🚀 [Transaction review v2.0] Create a review using the unified task engine: {review_id}")
 
-        # 1. 获取交易记录
+        # 1. Get transaction records
         trade_records = await self._get_trade_records(user_id, request.trade_ids, request.source)
         if not trade_records:
             raise ValueError("未找到指定的交易记录")
 
-        # 2. 构建交易信息
+        # 2. Build transaction information
         trade_info = self._build_trade_info(trade_records, request.code)
 
-        # 2.5. 如果是持仓中的交易，计算浮动盈亏
+        # 2.5. If the transaction is a holding position, calculate the floating profit and loss
         if trade_info.is_holding:
-            logger.info(f"📊 [复盘v2.0] 检测到持仓中交易，计算浮动盈亏...")
+            logger.info(f"📊 [Review v2.0] Detect transactions in positions and calculate floating profit and loss...")
             trade_info = await self._calculate_unrealized_pnl(trade_info)
 
-        # 3. 获取交易计划信息
+        # 3. Get trading plan information
         trading_system_name = None
         trading_system = None
         if request.trading_system_id:
@@ -567,12 +567,12 @@ class TradeReviewService:
             if trading_system:
                 trading_system_name = trading_system.get("name")
 
-        # 4. 统一 source 字段
+        # 4. Unify source field
         source = request.source or "paper"
         if source == "real":
             source = "position"
 
-        # 5. 创建初始报告
+        # 5. Create initial report
         report = TradeReviewReport(
             review_id=review_id,
             user_id=user_id,
@@ -584,12 +584,12 @@ class TradeReviewService:
             status=ReviewStatus.PROCESSING
         )
 
-        # 保存初始报告
+        # Save initial report
         report_dict = report.model_dump(by_alias=True, exclude={"id"})
         await self.db[self.trade_reviews_collection].insert_one(report_dict)
 
         try:
-            # 6. 获取市场数据快照
+            # 6. Get a snapshot of market data
             market_snapshot = await self._get_market_snapshot(
                 code=trade_info.code,
                 market=trade_info.market,
@@ -597,7 +597,7 @@ class TradeReviewService:
                 last_sell_date=trade_info.last_sell_date
             )
 
-            # 7. 准备任务参数
+            # 7. Prepare task parameters
             task_params = {
                 "review_id": review_id,
                 "code": trade_info.code,
@@ -608,17 +608,17 @@ class TradeReviewService:
                 "review_type": request.review_type
             }
 
-            # 8. 使用统一任务引擎
+            # 8. Use unified task engine
             task_service = get_task_analysis_service()
 
-            # 获取引擎类型和偏好
+            # Get engine type and preferences
             engine_type = "workflow" if request.use_workflow else "auto"
-            # 🔥 从用户偏好读取风险偏好设置
+            # 🔥 Read risk preference settings from user preferences
             from app.routers.analysis import get_user_risk_preference
             preference_type = await get_user_risk_preference(user_id)
-            logger.info(f"📊 [复盘分析服务] 使用用户风险偏好: {preference_type}")
+            logger.info(f"📊 [Review analysis service] Use user risk preferences: {preference_type}")
 
-            # 创建并执行任务
+            # Create and execute tasks
             task = await task_service.create_and_execute_task(
                 user_id=PyObjectId(user_id),
                 task_type=AnalysisTaskType.TRADE_REVIEW,
@@ -627,15 +627,15 @@ class TradeReviewService:
                 preference_type=preference_type
             )
 
-            # 9. 从任务结果中提取 AI 复盘
+            # 9. Extract AI review from task results
             if task.result and "ai_review" in task.result:
                 ai_review = self._sanitize_trade_review_result(
                     AITradeReview(**task.result["ai_review"])
                 )
             else:
-                raise ValueError("任务结果中缺少 ai_review 数据")
+                raise ValueError("ai_review data is missing from task results")
 
-            # 10. 更新报告
+            # 10. update report
             await self.db[self.trade_reviews_collection].update_one(
                 {"review_id": review_id},
                 {"$set": {
@@ -648,7 +648,7 @@ class TradeReviewService:
 
             logger.info(f"✅ [交易复盘v2.0] 复盘完成: {review_id}, 任务ID: {task.task_id}")
 
-            # v3.6.0 fix：复盘完成后自动触发反思提炼
+            # v3.6.0 fix: Automatically trigger reflection and refinement after review is completed
             try:
                 await _reflect_trade_review_lesson(
                     db=self.db,
@@ -658,9 +658,9 @@ class TradeReviewService:
                     review_id=review_id,
                 )
             except Exception as reflect_exc:
-                logger.warning(f"[复盘v2.0] 反思提炼失败（不阻塞）: {reflect_exc}")
+                logger.warning(f"[Review v2.0] Reflection on refining failure (not blocking): {reflect_exc}")
 
-            # 11. 返回响应
+            # 11. Return response
             return TradeReviewResponse(
                 review_id=review_id,
                 status=ReviewStatus.COMPLETED,
@@ -672,9 +672,9 @@ class TradeReviewService:
             )
 
         except Exception as e:
-            logger.error(f"❌ [交易复盘v2.0] 复盘失败: {e}", exc_info=True)
+            logger.error(f"❌ [Transaction review v2.0] Review failed: {e}", exc_info=True)
 
-            # 更新报告状态为失败
+            # Update report status is failed
             await self.db[self.trade_reviews_collection].update_one(
                 {"review_id": review_id},
                 {"$set": {
@@ -696,14 +696,14 @@ class TradeReviewService:
         trade_ids: List[str],
         source: str = "paper"
     ) -> List[Dict[str, Any]]:
-        """获取交易记录
+        """Get transaction records
 
         Args:
-            user_id: 用户ID
-            trade_ids: 交易ID列表
-            source: 数据源 (real=用户持仓, paper=模拟持仓)
+            user_id: User ID
+            trade_ids: Transaction ID list
+            source: data source (real=User positions, paper=Simulated position)
         """
-        # 交易记录使用 ObjectId 作为 _id
+        # Transaction record uses ObjectId as _id
         object_ids = []
         for tid in trade_ids:
             try:
@@ -714,13 +714,13 @@ class TradeReviewService:
         if not object_ids:
             return []
 
-        # 根据 source 选择集合
+        # Select collection based on source
         if source == "real":
-            # 用户持仓：从 position_changes 获取并转换
+            # User positions: get and convert from position_changes
             collection = "position_changes"
             logger.info(f"📊 从 position_changes 获取交易记录: {len(object_ids)} 条")
         else:
-            # 模拟持仓：从 paper_trades 获取
+            # Simulated position: obtained from paper_trades
             collection = self.paper_trades_collection
             logger.info(f"📊 从 paper_trades 获取交易记录: {len(object_ids)} 条")
 
@@ -730,7 +730,7 @@ class TradeReviewService:
         })
         records = await cursor.to_list(None)
 
-        # 如果是用户持仓，需要转换格式
+        # If it is a user position, the format needs to be converted
         if source == "real":
             converted_records = []
             for c in records:
@@ -739,42 +739,42 @@ class TradeReviewService:
                 quantity = abs(c.get("quantity_change", 0))
                 price = c.get("trade_price") or c.get("cost_price_after", 0)
 
-                # 处理 pnl：确保是数字
+                # Handle pnl: make sure it is a number
                 pnl = c.get("realized_profit")
                 if pnl is None:
                     pnl = 0.0
 
-                # 处理 timestamp：转换为 ISO 格式字符串
+                # Handle timestamp: convert to ISO format string
                 created_at = c.get("created_at")
                 timestamp_str = created_at.isoformat() if created_at else ""
 
-                # 处理 timestamp：优先使用 trade_time（实际交易时间），其次使用 created_at（记录创建时间）
+                # Processing timestamp: use trade_time (actual transaction time) first, followed by created_at (record creation time)
                 trade_time = c.get("trade_time")
                 created_at = c.get("created_at")
 
-                # 🔥 辅助函数：安全地将 datetime 或字符串转换为 ISO 格式字符串
+                # 🔥 Helper function: safely convert datetime or string to ISO format string
                 def to_iso_str(dt_value):
                     if not dt_value:
                         return ""
                     if isinstance(dt_value, str):
                         try:
-                            # 尝试解析 ISO 格式字符串
+                            # Try to parse ISO format string
                             dt_obj = datetime.fromisoformat(dt_value.replace('Z', '+00:00'))
                             return dt_obj.isoformat()
                         except (ValueError, AttributeError):
-                            # 如果解析失败，尝试其他格式
+                            # If parsing fails, try other formats
                             try:
                                 dt_obj = datetime.strptime(dt_value, "%Y-%m-%d %H:%M:%S")
                                 return dt_obj.isoformat()
                             except ValueError:
                                 logger.warning(f"⚠️ 无法解析时间格式: {dt_value}")
-                                return dt_value  # 返回原始字符串
+                                return dt_value  # Return original string
                     elif isinstance(dt_value, datetime):
                         return dt_value.isoformat()
                     else:
                         return str(dt_value)
 
-                # 优先使用 trade_time，如果没有则使用 created_at
+                # Use trade_time first, if not available then use created_at
                 if trade_time:
                     timestamp_str = to_iso_str(trade_time)
                 else:
@@ -783,7 +783,7 @@ class TradeReviewService:
                 converted_records.append({
                     "_id": c.get("_id"),
                     "code": c.get("code"),
-                    "name": c.get("name"),  # 添加股票名称
+                    "name": c.get("name"),  # Add stock name
                     "market": c.get("market", "CN"),
                     "side": side,
                     "quantity": quantity,
@@ -791,7 +791,7 @@ class TradeReviewService:
                     "amount": float(quantity * price) if price else 0.0,
                     "pnl": float(pnl),
                     "commission": 0.0,
-                    "timestamp": timestamp_str  # ISO 格式字符串（使用交易时间）
+                    "timestamp": timestamp_str  # ISO Format string (using transaction time)
                 })
             return converted_records
 
@@ -825,21 +825,21 @@ class TradeReviewService:
             key=lambda record: _parse_trade_time(record.get("timestamp"))
         )
 
-        # 打印输入的交易记录（调试用）
+        # Print entered transaction records (for debugging)
         logger.info(f"📊 [_build_trade_info] 收到 {len(trade_records)} 笔交易记录")
         for i, record in enumerate(trade_records):
             logger.info(f"  记录 {i+1}: side={record.get('side')}, qty={record.get('quantity')}, "
                        f"price={record.get('price')}, pnl={record.get('pnl')}, "
                        f"timestamp={record.get('timestamp')}")
 
-        # 使用第一条记录的股票信息
+        # Use the stock information from the first record
         first_trade = trade_records[0]
         stock_code = code or first_trade.get("code", "")
-        stock_name = first_trade.get("name") or first_trade.get("stock_name")  # 尝试从记录中获取股票名称
+        stock_name = first_trade.get("name") or first_trade.get("stock_name")  # Try to get the stock name from the record
         market = first_trade.get("market", "CN")
         currency = first_trade.get("currency", "CNY")
 
-        # 构建交易记录列表
+        # Build transaction list
         trades = []
         total_buy_qty = 0
         total_buy_amount = 0.0
@@ -881,24 +881,24 @@ class TradeReviewService:
                 total_pnl += trade.pnl
                 logger.info(f"  累加卖出 pnl: {trade.pnl}, 累计 total_pnl: {total_pnl}")
 
-        # 计算平均价格
+        # Calculate average price
         avg_buy_price = total_buy_amount / total_buy_qty if total_buy_qty > 0 else 0.0
         avg_sell_price = total_sell_amount / total_sell_qty if total_sell_qty > 0 else 0.0
 
-        # 计算盈亏百分比
+        # Calculate profit and loss percentage
         pnl_pct = (total_pnl / total_buy_amount * 100) if total_buy_amount > 0 else 0.0
 
-        logger.info(f"📊 [_build_trade_info] 统计结果:")
+        logger.info(f"📊 [_build_trade_info] Statistical results:")
         logger.info(f"  - total_buy_amount: {total_buy_amount}")
         logger.info(f"  - total_sell_amount: {total_sell_amount}")
         logger.info(f"  - total_pnl: {total_pnl}")
         logger.info(f"  - pnl_pct: {pnl_pct}%")
 
-        # 🆕 计算持仓状态
+        # 🆕 Calculate position status
         remaining_quantity = total_buy_qty - total_sell_qty
         is_holding = remaining_quantity > 0
         
-        # 计算持仓天数
+        # Calculate position holding days
         buy_timestamps.sort()
         sell_timestamps.sort()
         first_buy_date = buy_timestamps[0] if buy_timestamps else None
@@ -909,23 +909,23 @@ class TradeReviewService:
             try:
                 from app.utils.timezone import now_tz, ensure_timezone
                 
-                # 解析日期字符串，确保带时区
+                # Parse date string, ensuring time zone
                 first_dt_str = first_buy_date.replace('Z', '+00:00')
                 if '+' in first_dt_str or first_dt_str.endswith('Z'):
-                    # 带时区的ISO格式
+                    # ISO format with time zone
                     first_dt = datetime.fromisoformat(first_dt_str.replace('Z', '+00:00'))
                 else:
-                    # 不带时区的格式，先解析再添加时区
+                    # Format without time zone, parse first and then add time zone
                     first_dt = datetime.fromisoformat(first_dt_str.split('+')[0])
                     first_dt = ensure_timezone(first_dt)
                 
                 if is_holding:
-                    # 🔥 持仓中：从第一笔买入到当前日期
+                    # 🔥 Open position: from the first purchase to the current date
                     current_dt = now_tz()
                     holding_days = (current_dt - first_dt).days
                     logger.info(f"📊 [持仓天数] 持仓中交易，从 {first_buy_date} 到当前: {holding_days} 天")
                 else:
-                    # 已平仓：从第一笔买入到最后卖出
+                    # Closed position: from the first purchase to the last sale
                     if last_sell_date:
                         last_dt_str = last_sell_date.replace('Z', '+00:00')
                         if '+' in last_dt_str or last_dt_str.endswith('Z'):
@@ -936,19 +936,19 @@ class TradeReviewService:
                         holding_days = (last_dt - first_dt).days
                         logger.info(f"📊 [持仓天数] 已平仓交易，从 {first_buy_date} 到 {last_sell_date}: {holding_days} 天")
             except Exception as e:
-                logger.warning(f"⚠️ [持仓天数] 计算失败: {e}", exc_info=True)
+                logger.warning(f"⚠️ [Position holding days] Calculation failed: {e}", exc_info=True)
                 pass
 
-        # 🆕 计算浮动盈亏（初始值，实际计算在 _calculate_unrealized_pnl 中）
+        # 🆕 Calculate floating profit and loss (initial value, actual calculation is in _calculate_unrealized_pnl)
         unrealized_pnl = 0.0
         unrealized_pnl_pct = 0.0
         current_price = None
 
         if is_holding:
             logger.info(f"📊 [_build_trade_info] 检测到持仓中: 剩余 {remaining_quantity} 股")
-            # 获取当前价格（异步方法，在 create_trade_review 中调用 _calculate_unrealized_pnl 时获取）
+            # Get the current price (asynchronous method, obtained when calling _calculate_unrealized_pnl in create_trade_review)
 
-        logger.info(f"📊 [_build_trade_info] 持仓状态:")
+        logger.info(f"📊 [_build_trade_info] Position status:")
         logger.info(f"  - is_holding: {is_holding}")
         logger.info(f"  - remaining_quantity: {remaining_quantity}")
         logger.info(f"  - realized_pnl: {total_pnl}")
@@ -956,7 +956,7 @@ class TradeReviewService:
 
         return TradeInfo(
             code=stock_code,
-            name=stock_name,  # 添加股票名称
+            name=stock_name,  # Add stock name
             market=market,
             currency=currency,
             trades=trades,
@@ -985,17 +985,17 @@ class TradeReviewService:
         user_id: str,
         code: Optional[str] = None
     ) -> Dict[str, Any]:
-        """使用 v2.0 工具构建完整的交易信息（包括账户信息）
+        """Build complete transaction information (including account information) using v2.0 tools
 
-        这个方法使用 v2.0 工具系统来获取数据，符合系统架构
+        This method uses the v2.0 tool system to obtain data, which conforms to the system architecture.
         """
         if not TOOLS_AVAILABLE:
-            logger.warning("⚠️ v2.0 工具不可用，使用传统方法")
+            logger.warning("⚠️ v2.0 Tools unavailable, traditional methods used")
             trade_info = self._build_trade_info(trade_records, code)
             return trade_info.model_dump()
 
         try:
-            # 使用 v2.0 工具构建交易信息
+            # Build transaction information using v2.0 tools
             trade_info_result = tool_build_trade_info(trade_records, code)
 
             if not trade_info_result.get("success"):
@@ -1005,20 +1005,20 @@ class TradeReviewService:
 
             trade_info_data = trade_info_result.get("data", {})
 
-            # 使用 v2.0 工具获取账户信息
+            # Use v2.0 tools to obtain account information
             account_result = await tool_get_account_info(user_id)
 
             if account_result.get("success"):
                 account_info = account_result.get("data", {})
                 trade_info_data["account_info"] = account_info
-                logger.info(f"✅ 已添加账户信息到交易信息")
+                logger.info(f"✅ Account information has been added to transaction information")
             else:
                 logger.warning(f"⚠️ 获取账户信息失败: {account_result.get('error')}")
 
             return trade_info_data
 
         except Exception as e:
-            logger.error(f"❌ 使用 v2.0 工具构建交易信息失败: {e}")
+            logger.error(f"❌ Failed to build transaction information using v2.0 tool: {e}")
             trade_info = self._build_trade_info(trade_records, code)
             return trade_info.model_dump()
 
@@ -1036,42 +1036,42 @@ class TradeReviewService:
             return snapshot
 
         try:
-            # 解析日期
+            # parse date
             start_date = datetime.fromisoformat(first_buy_date.replace('Z', '+00:00').split('+')[0])
             end_date = datetime.fromisoformat(last_sell_date.replace('Z', '+00:00').split('+')[0]) if last_sell_date else datetime.now()
 
-            # 扩展日期范围（前后各10天）
+            # Extended date range (10 days before and after)
             query_start = (start_date - timedelta(days=10)).strftime("%Y-%m-%d")
             query_end = (end_date + timedelta(days=10)).strftime("%Y-%m-%d")
 
-            # 获取K线数据
+            # Get K-line data
             kline_data = await self._get_kline_data(code, market, query_start, query_end)
 
             if kline_data:
                 snapshot.kline_data = kline_data
 
-                # 查找持仓期间的最高最低价
+                # Find the highest and lowest price during the holding period
                 period_start = start_date.strftime("%Y-%m-%d")
                 period_end = end_date.strftime("%Y-%m-%d")
 
                 period_klines = [k for k in kline_data if period_start <= k.get("date", "") <= period_end]
 
                 if period_klines:
-                    # 找最高价
+                    # Find the highest price
                     max_kline = max(period_klines, key=lambda x: x.get("high", 0))
                     snapshot.period_high = max_kline.get("high")
                     snapshot.period_high_date = max_kline.get("date")
 
-                    # 找最低价
+                    # Find the lowest price
                     min_kline = min(period_klines, key=lambda x: x.get("low", float('inf')))
                     snapshot.period_low = min_kline.get("low")
                     snapshot.period_low_date = min_kline.get("date")
 
-                    # 最优买卖点
+                    # Best buying and selling point
                     snapshot.optimal_buy_price = snapshot.period_low
                     snapshot.optimal_sell_price = snapshot.period_high
 
-                # 买入当日行情
+                # Buy the current day's price
                 buy_date_str = start_date.strftime("%Y-%m-%d")
                 buy_kline = next((k for k in kline_data if k.get("date") == buy_date_str), None)
                 if buy_kline:
@@ -1080,7 +1080,7 @@ class TradeReviewService:
                     snapshot.buy_date_low = buy_kline.get("low")
                     snapshot.buy_date_close = buy_kline.get("close")
 
-                # 卖出当日行情
+                # Sell the day's price
                 if last_sell_date:
                     sell_date_str = end_date.strftime("%Y-%m-%d")
                     sell_kline = next((k for k in kline_data if k.get("date") == sell_date_str), None)
@@ -1104,7 +1104,7 @@ class TradeReviewService:
     ) -> List[Dict[str, Any]]:
         """获取K线数据"""
         try:
-            # 从数据库获取历史K线
+            # Get historical K-line from database
             cursor = self.db["stock_daily_history"].find({
                 "code": code,
                 "date": {"$gte": start_date, "$lte": end_date}
@@ -1125,8 +1125,8 @@ class TradeReviewService:
                     for k in klines
                 ]
 
-            # 如果数据库没有，尝试使用统一接口获取
-            logger.info(f"数据库无K线数据，尝试从统一接口获取: {code} ({market})")
+            # If the database does not exist, try to use the unified interface to obtain it.
+            logger.info(f"There is no K-line data in the database. Try to obtain it from the unified interface.: {code} ({market})")
             return await self._fetch_kline_unified(code, market, start_date, end_date)
 
         except Exception as e:
@@ -1140,9 +1140,9 @@ class TradeReviewService:
         start_date: str,
         end_date: str
     ) -> List[Dict[str, Any]]:
-        """从统一接口获取K线数据（支持A股、港股、美股）"""
+        """Obtain K-line data from the unified interface (supports A shares, Hong Kong stocks, and US stocks)"""
         try:
-            # 自动识别市场
+            # Automatically identify markets
             market_info = StockUtils.get_market_info(code)
             is_hk = market_info['is_hk']
             is_us = market_info['is_us']
@@ -1153,22 +1153,22 @@ class TradeReviewService:
             df = None
 
             if is_hk:
-                # 港股
+                # Hong Kong stocks
                 provider = get_improved_hk_provider()
                 df = provider.get_daily_data(code, start_date, end_date)
             
             elif is_us:
-                # 美股
+                # US stocks
                 provider = get_optimized_us_data_provider()
                 df = provider.get_daily_data(code, start_date, end_date)
                 
             elif is_china or market == 'CN':
-                # A股 (保持原有 akshare 逻辑)
+                # A shares (Keep the original akshare logic)
                 import akshare as ak
                 start = start_date.replace("-", "")
                 end = end_date.replace("-", "")
                 
-                # 尝试使用 akshare 获取
+                # Try using akshare to get
                 try:
                     df_ak = ak.stock_zh_a_hist(
                         symbol=code,
@@ -1178,7 +1178,7 @@ class TradeReviewService:
                         adjust="qfq"
                     )
                     if df_ak is not None and not df_ak.empty:
-                        # 统一列名
+                        # Unified listing
                         df = df_ak.rename(columns={
                             "日期": "date",
                             "开盘": "open",
@@ -1189,12 +1189,12 @@ class TradeReviewService:
                         })
                         df['date'] = df['date'].astype(str)
                 except Exception as e:
-                    logger.error(f"akshare获取A股数据失败: {e}")
+                    logger.error(f"akshare Failed to obtain A-share data: {e}")
             
-            # 处理返回的 DataFrame
+            # Process the returned DataFrame
             if df is not None and not df.empty:
                 klines = []
-                # 确保列名小写
+                # Make sure column names are lowercase
                 df.columns = [c.lower() for c in df.columns]
                 
                 for _, row in df.iterrows():
@@ -1207,7 +1207,7 @@ class TradeReviewService:
                             "close": float(row.get("close", 0)),
                             "volume": float(row.get("volume", 0))
                         }
-                        # 过滤无效日期
+                        # Filter invalid dates
                         if len(kline["date"]) >= 10:
                             kline["date"] = kline["date"][:10]
                             klines.append(kline)
@@ -1218,7 +1218,7 @@ class TradeReviewService:
                 return klines
                 
         except Exception as e:
-            logger.error(f"❌ [统一K线获取] 失败: {code} - {e}")
+            logger.error(f"❌ [Unified K-line acquisition] failed: {code} - {e}")
 
         return []
 
@@ -1229,40 +1229,40 @@ class TradeReviewService:
         user_id: Optional[str] = None,
         trading_system: Optional[Dict[str, Any]] = None,
         use_workflow: Optional[bool] = None,
-        progress_callback: Optional[Callable] = None  # 🔥 新增参数
+        progress_callback: Optional[Callable] = None  # 🔥 New parameters
     ) -> AITradeReview:
-        """调用AI进行交易复盘分析
+        """Call AI for transaction review analysis
 
-        如果启用工作流引擎（USE_WORKFLOW_REVIEW=true 或 use_workflow=True），使用多Agent工作流分析
-        否则使用单次LLM调用分析
+        If the workflow engine is enabled (USE_WORKFLOW_REVIEW=true or use_workflow=True) , Using multi-agent workflow analysis
+        Otherwise use a single LLM call to analyze
 
         Args:
-            trade_info: 交易信息
-            market_snapshot: 市场快照
-            user_id: 用户ID
-            trading_system: 关联的交易计划（如果有）
-            use_workflow: 是否使用工作流引擎。None表示使用环境变量设置
+            trade_info: transaction information
+            market_snapshot: market snapshot
+            user_id: User ID
+            trading_system: Associated trading plan (if any)
+            use_workflow: Whether to use a workflow engine. None means use environment variable settings
         """
-        # 判断是否使用工作流引擎（请求参数优先于环境变量）
+        # Determine whether to use the workflow engine (request parameters take precedence over environment variables)
         should_use_workflow = use_workflow if use_workflow is not None else _use_workflow_review()
 
         if should_use_workflow:
             try:
-                logger.info(f"🔄 [交易复盘] 使用工作流引擎进行多维度分析 (v2.0)")
+                logger.info(f"🔄 [Transaction review] Use workflow engines for multi-dimensional analysis (v2.0)")
                 return await self._call_workflow_trade_review(
                     trade_info, market_snapshot, user_id, trading_system,
-                    progress_callback=progress_callback  # 🔥 传递进度回调
+                    progress_callback=progress_callback  # 🔥 Pass progress callback
                 )
             except Exception as e:
                 import traceback
-                logger.warning(f"⚠️ [交易复盘] 工作流引擎执行失败，降级到单次LLM调用: {e}")
-                logger.warning(f"⚠️ [交易复盘] 完整堆栈跟踪:\n{traceback.format_exc()}")
-                # 降级到单次 LLM 调用
+                logger.warning(f"⚠️ [Transaction review] Workflow engine execution fails and is downgraded to a single LLM call: {e}")
+                logger.warning(f"⚠️ [Transaction review] Full stack trace:\n{traceback.format_exc()}")
+                # Downgrade to a single LLM call
 
-        logger.info(f"📝 [交易复盘] 使用传统分析方式 (v1.0)")
+        logger.info(f"📝 [Transaction review] Use traditional analysis methods (v1.0)")
 
         try:
-            # 如果启用模板系统，先获取大盘和行业基准数据
+            # If the template system is enabled, first obtain market and industry benchmark data
             benchmark_data = None
             if _use_template_prompts():
                 try:
@@ -1272,29 +1272,29 @@ class TradeReviewService:
                         start_date=trade_info.first_buy_date[:10] if trade_info.first_buy_date else "",
                         end_date=trade_info.last_sell_date[:10] if trade_info.last_sell_date else ""
                     )
-                    logger.info(f"📊 [交易复盘] 获取基准数据完成")
+                    logger.info(f"📊 [Transaction review] Obtaining benchmark data is completed")
                 except Exception as e:
-                    logger.warning(f"⚠️ [交易复盘] 获取基准数据失败: {e}")
+                    logger.warning(f"⚠️ [Transaction review] Failed to obtain benchmark data: {e}")
 
             prompt = self._build_trade_review_prompt(
                 trade_info, market_snapshot, user_id, benchmark_data, trading_system
             )
 
-            # 使用统一的 LLM 适配器
+            # Use unified LLM adapter
             from app.services.simple_analysis_service import get_provider_and_url_by_model_sync
             from tradingagents.graph.trading_graph import create_llm_by_provider
 
             model_name = "qwen-plus"
             provider_info = get_provider_and_url_by_model_sync(model_name)
 
-            logger.info(f"🏭 [AI复盘] 模型供应商: {provider_info.get('provider', '未知')}")
-            logger.info(f"🔗 [AI复盘] API地址: {provider_info.get('backend_url', '未配置')}")
-            logger.info(f"🔑 [AI复盘] API Key: {'已配置' if provider_info.get('api_key') else '未配置'}")
+            logger.info(f"🏭 [AI Review] model supplier: {provider_info.get('provider', 'unknown')}")
+            logger.info(f"🔗 [AI Review] API address: {provider_info.get('backend_url', 'Not configured')}")
+            logger.info(f"🔑 [AI Review] API Key: {'configured' if provider_info.get('api_key') else 'Not configured'}")
             logger.info(f"📝 [AI复盘] Prompt长度: {len(prompt)} 字符")
-            logger.info(f"📝 [AI复盘] Prompt前500字符:\n{prompt[:500]}")
+            logger.info(f"📝 [AI Review] Prompt first 500 characters:\n{prompt[:500]}")
 
-            # 使用统一的 LLM 适配器创建实例
-            logger.info(f"🔧 [AI复盘] 开始创建 LLM 实例...")
+            # Create an instance using the unified LLM adapter
+            logger.info(f"🔧 [AI Review] Start creating an LLM instance...")
             llm = create_llm_by_provider(
                 provider=provider_info.get("provider", "dashscope"),
                 model=model_name,
@@ -1304,13 +1304,13 @@ class TradeReviewService:
                 timeout=120,
                 api_key=provider_info.get("api_key")
             )
-            logger.info(f"✅ [AI复盘] LLM 实例创建成功: {type(llm).__name__}")
+            logger.info(f"✅ [AI Review] LLM Instance created successfully: {type(llm).__name__}")
 
-            # 异步调用 LLM
-            logger.info(f"🚀 [AI复盘] 开始调用 LLM API...")
+            # asynchronous call LLM
+            logger.info(f"🚀 [AI Review] Start calling LLM API...")
             response = await llm.ainvoke(prompt)
 
-            # 记录 token 使用
+            # Record token usage
             try:
                 from app.services.usage_statistics_service import usage_statistics_service
                 await usage_statistics_service.record_llm_usage(
@@ -1320,18 +1320,18 @@ class TradeReviewService:
                     stock_code=trade_info.code
                 )
             except Exception as e:
-                logger.warning(f"记录 token 使用失败: {e}")
+                logger.warning(f"Record token usage failure: {e}")
 
-            logger.info(f"✅ [AI复盘] LLM API 调用成功")
-            logger.info(f"📦 [AI复盘] Response 类型: {type(response).__name__}")
-            logger.info(f"📦 [AI复盘] Response 属性: {dir(response)}")
+            logger.info(f"✅ [AI Review] LLM API Call successful")
+            logger.info(f"📦 [AI Review] Response Type: {type(response).__name__}")
+            logger.info(f"📦 [AI Review] Response Properties: {dir(response)}")
 
             content = response.content if hasattr(response, 'content') else str(response)
             logger.info(f"📄 [AI复盘] 返回内容长度: {len(content)} 字符")
-            logger.info(f"📄 [AI复盘] 返回内容前500字符:\n{content[:500]}")
-            logger.info(f"📄 [AI复盘] 返回内容后500字符:\n{content[-500:]}")
+            logger.info(f"📄 [AI Review] Return the first 500 characters of the content:\n{content[:500]}")
+            logger.info(f"📄 [AI Review] Return 500 characters after content:\n{content[-500:]}")
 
-            logger.info(f"🔍 [AI复盘] 开始解析 AI 响应...")
+            logger.info(f"🔍 [AI Review] Start parsing AI responses...")
             result = self._parse_ai_trade_review(content, trade_info, market_snapshot)
             logger.info(f"✅ [AI复盘] 解析完成 - 总分: {result.overall_score}, 摘要长度: {len(result.summary)}")
 
@@ -1342,7 +1342,7 @@ class TradeReviewService:
             from app.utils.error_formatter import ErrorFormatter
 
             return self._sanitize_trade_review_result(AITradeReview(
-                summary=f"AI分析暂时不可用：{ErrorFormatter.format_user_message(str(e))}",
+                summary=f"AI Analysis is temporarily unavailable:{ErrorFormatter.format_user_message(str(e))}",
                 overall_score=50
             ))
 
@@ -1356,55 +1356,55 @@ class TradeReviewService:
         benchmark_data: Optional[Dict[str, Any]] = None,
         trading_system: Optional[Dict[str, Any]] = None
     ) -> str:
-        """构建交易复盘提示词
+        """Construct transaction review prompts
 
-        支持模板系统（通过 USE_TEMPLATE_PROMPTS 特性开关控制）
+        Support template system (controlled by USE_TEMPLATE_PROMPTS feature switch)
 
         Args:
-            trade_info: 交易信息
-            market_snapshot: 市场快照
-            user_id: 用户ID（用于模板系统）
-            benchmark_data: 大盘和行业基准数据（来自 index_analyst + sector_analyst）
-            trading_system: 关联的交易计划（如果有）
+            trade_info: transaction information
+            market_snapshot: market snapshot
+            user_id: User ID (used in the template system)
+            benchmark_data: Market and industry benchmark data (from index_analyst + sector_analyst) 
+            trading_system: Associated trading plan (if any)
         """
-        # 先构建硬编码版本作为降级兜底
+        # Build a hardcoded version first as a fallback for downgrades
         legacy_prompt = self._build_legacy_trade_review_prompt(
             trade_info, market_snapshot, benchmark_data, trading_system
         )
 
-        # 如果启用模板系统，尝试使用模板生成提示词
+        # If the template system is enabled, try to use templates to generate prompt words
         if _use_template_prompts():
             try:
                 from tradingagents.utils.template_client import get_agent_prompt
 
                 variables = self._build_trade_review_vars(trade_info, market_snapshot)
 
-                # 如果有基准数据，填充到变量中
+                # If there is baseline data, fill it into the variable
                 if benchmark_data:
                     variables["market_benchmark"] = benchmark_data.get("market_benchmark", {})
                     variables["industry_benchmark"] = benchmark_data.get("industry_benchmark", {})
                     variables["attribution"] = benchmark_data.get("attribution", {})
 
-                logger.info(f"📝 [交易复盘] 准备调用模板系统，变量数量: {len(variables)}")
-                logger.info(f"📝 [交易复盘] 变量键: {list(variables.keys())}")
+                logger.info(f"📝 [Transaction review] Prepare to call the template system, the number of variables: {len(variables)}")
+                logger.info(f"📝 [Transaction review] variable key: {list(variables.keys())}")
 
                 prompt = get_agent_prompt(
                     agent_type="managers",
                     agent_name="trade_reviewer",
                     variables=variables,
                     user_id=user_id,
-                    preference_id="neutral",  # 复盘分析默认使用中性风格
+                    preference_id="neutral",  # Review analysis uses neutral style by default
                     fallback_prompt=legacy_prompt
                 )
 
                 if prompt and prompt != legacy_prompt:
-                    logger.info(f"✅ [交易复盘] 使用模板系统生成提示词 (长度: {len(prompt)})")
-                    logger.info(f"📝 [交易复盘] 提示词前500字符:\n{prompt[:500]}")
-                    logger.info(f"📝 [交易复盘] 提示词后500字符:\n{prompt[-500:]}")
+                    logger.info(f"✅ [Transaction review] Use template system to generate prompt words (length: {len(prompt)})")
+                    logger.info(f"📝 [Transaction review] The first 500 characters of the prompt word:\n{prompt[:500]}")
+                    logger.info(f"📝 [Transaction review] 500 characters after the prompt word:\n{prompt[-500:]}")
                     return self._append_review_guardrails(prompt)
 
             except Exception as e:
-                logger.warning(f"⚠️ [交易复盘] 模板系统调用失败，使用硬编码提示词: {e}")
+                logger.warning(f"⚠️ [Transaction review] Template system call failed with hardcoded prompt word: {e}")
 
         return self._append_review_guardrails(legacy_prompt)
 
@@ -1415,15 +1415,15 @@ class TradeReviewService:
         benchmark_data: Optional[Dict[str, Any]] = None,
         trading_system: Optional[Dict[str, Any]] = None
     ) -> str:
-        """构建硬编码交易复盘提示词（旧版，作为降级兜底）
+        """Construct hard-coded transaction review prompt words (old version, as a cover for downgrade)
 
         Args:
-            trade_info: 交易信息
-            market_snapshot: 市场快照
-            benchmark_data: 大盘和行业基准数据（可选）
-            trading_system: 关联的交易计划（可选）
+            trade_info: transaction information
+            market_snapshot: market snapshot
+            benchmark_data: Market and industry benchmark data (optional)
+            trading_system: Associated trading plan (optional)
         """
-        # 交易记录明细
+        # Transaction record details
         trades_detail = ""
         for t in trade_info.trades:
             trades_detail += f"- {t.timestamp[:10]} {t.side.upper()} {t.quantity}股 @ {t.price}元"
@@ -1431,14 +1431,14 @@ class TradeReviewService:
                 trades_detail += f" (盈亏: {t.pnl}元)"
             trades_detail += "\n"
 
-        # K线数据摘要（最近10条）
+        # K Line data summary (last 10 items)
         kline_summary = ""
         if market_snapshot.kline_data:
             recent_klines = market_snapshot.kline_data[-20:]
             for k in recent_klines:
                 kline_summary += f"  {k['date']}: 开{k['open']:.2f} 高{k['high']:.2f} 低{k['low']:.2f} 收{k['close']:.2f}\n"
 
-        # 构建大盘和行业基准信息（如果有）
+        # Construct broad market and industry benchmark information (if available)
         benchmark_section = ""
         if benchmark_data:
             market_bench = benchmark_data.get("market_benchmark", {})
@@ -1465,24 +1465,24 @@ class TradeReviewService:
 
             if attribution.get("beta_contribution") is not None:
                 benchmark_section += f"""
-### 收益归因（初步）
-- 大盘贡献(Beta): {attribution.get('beta_contribution', 'N/A')}%
-- 行业超额: {attribution.get('industry_excess', 'N/A') or '待计算'}%
-- 个股Alpha: {attribution.get('alpha', 'N/A') or '待计算'}%
+### Revenue Attribution (Preliminary)
+- Market contribution(Beta): {attribution.get('beta_contribution', 'N/A')}%
+- industry excess: {attribution.get('industry_excess', 'N/A') or 'To be calculated'}%
+- individual stocks Alpha: {attribution.get('alpha', 'N/A') or 'To be calculated'}%
 """
 
-        # 构建交易计划规则部分
+        # Building a trading plan rules section
         trading_system_section = ""
         if trading_system:
             trading_system_section = f"""
-## 关联的交易计划
+## Associated trading plans
 
-本次交易关联了交易计划：**{trading_system.get('name', '未命名')}**
+This transaction is associated with a trading plan:**{trading_system.get('name', 'Unnamed')}**
 
-### 交易计划规则
+### trading plan rules
 
 """
-            # 添加选股规则
+            # Add stock selection rules
             stock_selection = trading_system.get('stock_selection', {})
             if stock_selection:
                 trading_system_section += "**选股规则**:\n"
@@ -1494,7 +1494,7 @@ class TradeReviewService:
                     trading_system_section += "- 排除条件: " + "; ".join(exclude) + "\n"
                 trading_system_section += "\n"
 
-            # 添加择时规则
+            # Add timing rules
             timing = trading_system.get('timing', {})
             if timing:
                 trading_system_section += "**择时规则**:\n"
@@ -1506,7 +1506,7 @@ class TradeReviewService:
                     trading_system_section += "- 出场信号: " + "; ".join(exit_signals) + "\n"
                 trading_system_section += "\n"
 
-            # 添加仓位规则
+            # Add position rules
             position = trading_system.get('position', {})
             if position:
                 trading_system_section += "**仓位规则**:\n"
@@ -1514,7 +1514,7 @@ class TradeReviewService:
                 trading_system_section += f"- 最大持股数: {position.get('max_stocks', 'N/A')}只\n"
                 trading_system_section += "\n"
 
-            # 添加风险管理规则
+            # Add risk management rules
             risk_management = trading_system.get('risk_management', {})
             if risk_management:
                 trading_system_section += "**风险管理规则**:\n"
@@ -1526,7 +1526,7 @@ class TradeReviewService:
                     trading_system_section += f"- 止盈: {take_profit.get('type', 'N/A')} {take_profit.get('value', 'N/A')}\n"
                 trading_system_section += "\n"
 
-            # 添加纪律规则
+            # Add disciplinary rules
             discipline = trading_system.get('discipline', {})
             if discipline:
                 trading_system_section += "**纪律规则**:\n"
@@ -1538,7 +1538,7 @@ class TradeReviewService:
                     trading_system_section += "- 严禁操作: " + "; ".join(forbidden) + "\n"
                 trading_system_section += "\n"
 
-            trading_system_section += "**请在复盘分析中，重点检查本次交易是否符合以上交易计划规则，指出违反规则的地方。**\n"
+            trading_system_section += "**In the review analysis, please focus on checking whether this transaction complies with the above trading plan rules and point out any violations of the rules.**\n"
 
         prompt = f"""# 交易复盘分析任务
 
@@ -1615,37 +1615,37 @@ class TradeReviewService:
         trade_info: TradeInfo,
         market_snapshot: MarketSnapshot
     ) -> AITradeReview:
-        """解析AI复盘结果
+        """Analyze AI review results
 
-        兼容两种 JSON 格式：
-        1. 标准格式: overall_score, summary, strengths, weaknesses, suggestions 等
-        2. 模板格式: analysis, improvement_recommendations, score_interpretation 等
+        Compatible with two JSON formats:
+        1. standard format: overall_score, summary, strengths, weaknesses, suggestions Wait
+        2. template format: analysis, improvement_recommendations, score_interpretation Wait
         """
         import re
         import json
 
-        logger.info(f"🔍 [解析AI响应] 开始解析，内容长度: {len(content)}")
+        logger.info(f"🔍 [Parse AI responses] Start parsing, content length: {len(content)}")
 
         result = AITradeReview(actual_pnl=trade_info.realized_pnl)
 
-        # 尝试提取JSON
-        logger.info(f"🔍 [解析AI响应] 尝试提取 JSON 代码块...")
+        # Try to extract JSON
+        logger.info(f"🔍 [Parse AI responses] Try to extract JSON code block...")
         json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
 
         if json_match:
-            logger.info(f"✅ [解析AI响应] 找到 JSON 代码块")
+            logger.info(f"✅ [Parse AI responses] Find the JSON code block")
             json_str = json_match.group(1)
-            logger.info(f"📄 [解析AI响应] JSON 内容长度: {len(json_str)}")
-            logger.info(f"📄 [解析AI响应] JSON 内容前500字符:\n{json_str[:500]}")
+            logger.info(f"📄 [Parse AI responses] JSON content length: {len(json_str)}")
+            logger.info(f"📄 [Parse AI responses] JSON The first 500 characters of the content:\n{json_str[:500]}")
 
             try:
                 data = json.loads(json_str)
-                logger.info(f"✅ [解析AI响应] JSON 解析成功")
-                logger.info(f"📊 [解析AI响应] JSON 键: {list(data.keys())}")
+                logger.info(f"✅ [Parse AI responses] JSON Parsed successfully")
+                logger.info(f"📊 [Parse AI responses] JSON key: {list(data.keys())}")
 
-                # 解析评分 - 兼容 0-100 和 1-10 两种评分体系
+                # Analytical scoring - compatible with both 0-100 and 1-10 scoring systems
                 def normalize_score(score_value, default=50):
-                    """统一评分转换逻辑：1-10 → 0-100"""
+                    """Unified scoring conversion logic:1-10 → 0-100"""
                     if isinstance(score_value, (int, float)) and score_value <= 10:
                         return int(score_value * 10)
                     return int(score_value)
@@ -1655,7 +1655,7 @@ class TradeReviewService:
                 result.position_score = normalize_score(data.get("position_score", 0))
                 result.discipline_score = normalize_score(data.get("discipline_score", 0))
 
-                # 解析摘要 - 兼容多种字段名
+                # Parse summary - compatible with a variety of field names
                 result.summary = (
                     data.get("summary") or
                     data.get("score_interpretation") or
@@ -1663,28 +1663,28 @@ class TradeReviewService:
                     ""
                 )
 
-                # 解析优点 - 兼容 strengths 和 analysis.strengths
+                # Parse strengths - Compatible with strengths and analysis.strengths
                 result.strengths = (
                     data.get("strengths") or
                     self._extract_nested_field(data, "analysis", "strengths") or
                     []
                 )
 
-                # 解析缺点 - 兼容 weaknesses 和 analysis.weaknesses
+                # Parsing Weaknesses - Compatible with weaknesses and analysis.weaknesses
                 result.weaknesses = (
                     data.get("weaknesses") or
                     self._extract_nested_field(data, "analysis", "weaknesses") or
                     []
                 )
 
-                # 解析建议 - 兼容 suggestions 和 improvement_recommendations
+                # Parse suggestions - compatible with suggestions and improvement_recommendations
                 result.suggestions = (
                     data.get("suggestions") or
                     data.get("improvement_recommendations") or
                     []
                 )
 
-                # 解析详细分析
+                # Analyze detailed analysis
                 result.timing_analysis = (
                     data.get("timing_analysis") or
                     self._extract_nested_field(data, "analysis", "timing") or
@@ -1701,35 +1701,35 @@ class TradeReviewService:
                     ""
                 )
 
-                # 🆕 解析交易计划执行情况（如果有）
+                # 🆕 Analyze the execution of the trading plan (if any)
                 result.plan_adherence = data.get("plan_adherence")
                 result.plan_deviation = data.get("plan_deviation")
 
                 logger.info(f"✅ [解析AI响应] 解析完成 - 总分: {result.overall_score}, 摘要: {result.summary[:100] if result.summary else '空'}")
                 if result.plan_adherence or result.plan_deviation:
-                    logger.info(f"✅ [解析AI响应] 包含交易计划分析: adherence={bool(result.plan_adherence)}, deviation={bool(result.plan_deviation)}")
+                    logger.info(f"✅ [Parse AI responses] Contains trading plan analysis: adherence={bool(result.plan_adherence)}, deviation={bool(result.plan_deviation)}")
                 return result
 
             except json.JSONDecodeError as e:
-                logger.warning(f"❌ [解析AI响应] JSON解析失败: {e}")
-                logger.warning(f"📄 [解析AI响应] 失败的JSON内容:\n{json_str}")
+                logger.warning(f"❌ [Parse AI responses] JSON Parsing failed: {e}")
+                logger.warning(f"📄 [Parse AI responses] Failed JSON content:\n{json_str}")
         else:
-            logger.warning(f"⚠️ [解析AI响应] 未找到 JSON 代码块")
-            logger.warning(f"📄 [解析AI响应] 完整内容:\n{content}")
+            logger.warning(f"⚠️ [Parse AI responses] JSON code block not found")
+            logger.warning(f"📄 [Parse AI responses] full content:\n{content}")
 
         result.summary = content[:200] if content else "AI分析完成"
-        logger.info(f"⚠️ [解析AI响应] 使用备用方案完成 - 摘要: {result.summary}")
+        logger.info(f"⚠️ [Parse AI responses] Complete with alternatives - Summary: {result.summary}")
         return result
 
     def _extract_nested_field(self, data: Dict[str, Any], *keys) -> Any:
-        """从嵌套字典中提取字段值
+        """Extract field value from nested dictionary
 
         Args:
-            data: 数据字典
-            *keys: 嵌套键路径，如 ("analysis", "strengths")
+            data: data dictionary
+            *keys: Nested key paths like ("analysis", "strengths")
 
         Returns:
-            找到的值，或 None
+            the value found, or None
         """
         current = data
         for key in keys:
@@ -1739,7 +1739,7 @@ class TradeReviewService:
                 return None
         return current
 
-    # ==================== 复盘历史查询 ====================
+    # ==================== Review history query ====================
 
     async def get_review_history(
         self,
@@ -1752,29 +1752,29 @@ class TradeReviewService:
         review_type: Optional[str] = None,
         source: Optional[str] = None
     ) -> Dict[str, Any]:
-        """获取复盘历史列表，支持按股票代码、时间段、复盘类型、数据源筛选
+        """Obtain the review history list and support filtering by stock code, time period, review type, and data source.
         
         Args:
-            source: 数据源过滤, paper(模拟交易) 或 position(持仓操作), 为空则获取全部
+            source: Data source filtering, paper(simulated trading) or position(Position operation), If empty, get all
         """
         skip = (page - 1) * page_size
 
-        # 构建查询条件
+        # Build query conditions
         query = {"user_id": user_id}
 
-        # 数据源筛选
+        # Data source filtering
         if source:
             query["source"] = source
 
-        # 股票代码筛选
+        # Stock code filter
         if code:
             query["trade_info.code"] = code
 
-        # 复盘类型筛选
+        # Review type filter
         if review_type:
             query["review_type"] = review_type
 
-        # 时间段筛选
+        # Time period filter
         if start_date or end_date:
             query["created_at"] = {}
             if start_date:
@@ -1786,7 +1786,7 @@ class TradeReviewService:
                 end_dt = end_dt.replace(hour=23, minute=59, second=59)
                 query["created_at"]["$lte"] = end_dt
 
-        # 查询交易复盘
+        # Query transaction review
         cursor = self.db[self.trade_reviews_collection].find(
             query
         ).sort("created_at", -1).skip(skip).limit(page_size)
@@ -1795,22 +1795,22 @@ class TradeReviewService:
         total = await self.db[self.trade_reviews_collection].count_documents(query)
 
         result = []
-        # 收集所有需要查询名称的股票代码（按市场分组）
+        # Collect all stock codes whose names need to be queried (grouped by market)
         codes_by_market = {}  # {market: [codes]}
         for item in items:
             trade_info = item.get("trade_info", {})
             code = trade_info.get("code")
             name = trade_info.get("name")
             market = trade_info.get("market", "CN")
-            # 如果没有名称，需要从数据库获取
+            # If there is no name, it needs to be obtained from the database
             if code and not name:
                 if market not in codes_by_market:
                     codes_by_market[market] = []
                 codes_by_market[market].append(code)
         
-        # 批量查询股票名称
+        # Query stock names in batches
         stock_names = {}
-        # A股：从 stock_basic_info 查询
+        # A Stock: Query from stock_basic_info
         if "CN" in codes_by_market:
             unique_codes = list(set(codes_by_market["CN"]))
             for code in unique_codes:
@@ -1818,17 +1818,17 @@ class TradeReviewService:
                 if stock_info and stock_info.get("name"):
                     stock_names[code] = stock_info.get("name")
         
-        # 港股/美股：从 paper_positions 或 positions 查询（这些表通常有 name 字段）
+        # Hong Kong stocks/US stocks: query from paper_positions or positions (these tables usually have a name field)
         for market in ["HK", "US"]:
             if market in codes_by_market:
                 unique_codes = list(set(codes_by_market[market]))
                 for code in unique_codes:
-                    # 先尝试从 paper_positions 获取
+                    # First try to get it from paper_positions
                     pos = await self.db["paper_positions"].find_one({"code": code})
                     if pos and pos.get("name"):
                         stock_names[code] = pos.get("name")
                         continue
-                    # 再尝试从 positions 获取
+                    # Try getting it from positions again
                     pos = await self.db["positions"].find_one({"code": code})
                     if pos and pos.get("name"):
                         stock_names[code] = pos.get("name")
@@ -1837,7 +1837,7 @@ class TradeReviewService:
             trade_info = item.get("trade_info", {})
             ai_review = item.get("ai_review", {})
             code = trade_info.get("code")
-            # 优先使用 trade_info 中的 name，如果没有则从 stock_names 中获取
+            # Prioritize using the name in trade_info, if not, get it from stock_names
             name = trade_info.get("name") or stock_names.get(code) or None
             
             result.append(ReviewListItem(
@@ -1865,14 +1865,14 @@ class TradeReviewService:
         stock_code: str
     ) -> Optional[Dict[str, Any]]:
         """
-        按股票代码获取最新复盘摘要（供股票详情页使用）
+        Get the latest review summary by stock code (for stock details page use)
         """
         try:
             from app.models.user import PyObjectId
             db = get_database()
             user_oid = PyObjectId(user_id)
 
-            # 查询 unified_analysis_tasks
+            # Query unified_analysis_tasks
             query_filter = {
                 "user_id": user_oid,
                 "task_type": "trade_review",
@@ -1883,30 +1883,30 @@ class TradeReviewService:
                     {"task_params.code": stock_code},
                 ]
             }
-            logger.info(f"[复盘摘要] DEBUG: user_id={user_id}, user_oid={user_oid}, stock_code={stock_code}")
-            logger.info(f"[复盘摘要] DEBUG: query={query_filter}")
+            logger.info(f"[Review summary] DEBUG: user_id={user_id}, user_oid={user_oid}, stock_code={stock_code}")
+            logger.info(f"[Review summary] DEBUG: query={query_filter}")
             
             task = await db.unified_analysis_tasks.find_one(query_filter, sort=[("completed_at", -1)])
 
             if not task:
                 count = await db.unified_analysis_tasks.count_documents({"task_type": "trade_review", "status": "completed"})
-                logger.warning(f"[复盘摘要] 未找到! completed_tasks总数={count}")
+                logger.warning(f"[Review summary] not found! completed_tasks total={count}")
                 sample = await db.unified_analysis_tasks.find_one({"task_type": "trade_review", "status": "completed"})
                 if sample:
-                    logger.warning(f"[复盘摘要] 样本: user_id={sample.get('user_id')}, stock_code={sample.get('task_params', {}).get('stock_code')}")
+                    logger.warning(f"[Review summary] sample: user_id={sample.get('user_id')}, stock_code={sample.get('task_params', {}).get('stock_code')}")
                 return None
 
             result = task.get("result", {})
             task_params = task.get("task_params", {})
 
-            # 兼容多种结果格式
-            # v2: result.review_summary 是 dict
-            # v1: result.ai_review 是 dict（当前主流格式）
-            # 旧v1: result 顶层有 summary/recommendation 等字段
+            # Compatible with multiple result formats
+            # v2: result.review_summary Yes dict
+            # v1: result.ai_review is dict (current mainstream format)
+            # old v1: result The top level has fields such as summary/recommendation
             is_v2 = bool(result and isinstance(result.get("review_summary"), dict))
             raw_ai = result.get("ai_review")
             ai_review = raw_ai if isinstance(raw_ai, dict) else {}
-            logger.info(f"[复盘摘要] DEBUG: result keys={list(result.keys())[:10]}, "
+            logger.info(f"[Review summary] DEBUG: result keys={list(result.keys())[:10]}, "
                        f"is_v2={is_v2}, has_ai_review={bool(ai_review)}, "
                        f"ai_review_type={type(raw_ai).__name__}")
 
@@ -1924,7 +1924,7 @@ class TradeReviewService:
                     "trade_count": len(result.get("trade_info", {}).get("trades", [])) if result.get("trade_info") else None
                 }
             elif ai_review:
-                # v1 格式：数据在 result.ai_review 中
+                # v1 Format: data in result.ai_review
                 suggestions = ai_review.get("suggestions", [])
                 suggestion_text = "\n".join([f"- {s}" for s in suggestions]) if suggestions else ""
                 trade_info = result.get("trade_info", {})
@@ -1962,58 +1962,58 @@ class TradeReviewService:
         review_id: str
     ) -> Optional[TradeReviewReport]:
         """
-        获取复盘详情
+        Get review details
 
-        支持两种数据源：
-        1. trade_reviews 集合（传统模式）
-        2. unified_analysis_tasks 集合（任务中心模式）
+        Two data sources are supported:
+        1. trade_reviews Collection (traditional mode)
+        2. unified_analysis_tasks Collection (mission-centric mode)
         """
-        # 1. 先从 trade_reviews 集合查询（传统模式）
+        # 1. First query from the trade_reviews collection (traditional mode)
         doc = await self.db[self.trade_reviews_collection].find_one({
             "user_id": user_id,
             "review_id": review_id
         })
 
         if doc:
-            logger.info(f"📊 [获取复盘详情] 从 trade_reviews 集合找到数据: {review_id}")
+            logger.info(f"📊 [Get review details] Find data from trade_reviews collection: {review_id}")
             doc = dict(doc)
             doc["ai_review"] = self._sanitize_trade_review_dict(doc.get("ai_review") or {})
             return TradeReviewReport(**doc)
 
-        # 2. 如果没找到，从 unified_analysis_tasks 集合查询（任务中心模式）
-        logger.info(f"🔍 [获取复盘详情] trade_reviews 中未找到，尝试从 unified_analysis_tasks 查询: {review_id}")
+        # 2. If not found, query from unified_analysis_tasks collection (task center mode)
+        logger.info(f"🔍 [Get review details] trade_reviews Not found in, try querying from unified_analysis_tasks: {review_id}")
 
-        # 注意：unified_analysis_tasks 中的 user_id 是 ObjectId 类型
+        # Note: user_id in unified_analysis_tasks is of type ObjectId
         from bson import ObjectId
         try:
             user_object_id = ObjectId(user_id)
         except Exception as e:
-            logger.error(f"❌ [获取复盘详情] user_id 转换失败: {user_id} - {e}")
+            logger.error(f"❌ [Get review details] user_id Conversion failed: {user_id} - {e}")
             return None
 
         task_doc = await self.db["unified_analysis_tasks"].find_one({
-            "user_id": user_object_id,  # 使用 ObjectId 类型
-            "task_id": review_id  # review_id 实际上是 task_id
+            "user_id": user_object_id,  # Use the ObjectId type
+            "task_id": review_id  # review_id actually task_id
         })
 
         if not task_doc:
-            logger.warning(f"❌ [获取复盘详情] 两个集合都未找到数据: {review_id}")
+            logger.warning(f"❌ [Get review details] No data found in both collections: {review_id}")
             return None
 
-        logger.info(f"✅ [获取复盘详情] 从 unified_analysis_tasks 找到数据: {review_id}")
+        logger.info(f"✅ [Get review details] Find data from unified_analysis_tasks: {review_id}")
 
-        # 3. 将任务数据转换为 TradeReviewReport 格式
+        # 3. Convert task data to TradeReviewReport format
         return self._convert_task_to_review_report(task_doc)
 
     def _convert_task_to_review_report(self, task_doc: dict) -> TradeReviewReport:
         """
-        将 unified_analysis_tasks 的任务数据转换为 TradeReviewReport 格式
+        Convert task data of unified_analysis_tasks to TradeReviewReport format
 
         Args:
-            task_doc: unified_analysis_tasks 集合中的文档
+            task_doc: unified_analysis_tasks Documents in the collection
 
         Returns:
-            TradeReviewReport 对象
+            TradeReviewReport object
         """
         from app.models.review import (
             TradeReviewReport, TradeInfo, MarketSnapshot, AITradeReview,
@@ -2021,18 +2021,18 @@ class TradeReviewService:
         )
         from datetime import datetime
 
-        # 从任务结果中提取数据
-        # 注意：result 可能是 None，需要使用 or {} 确保是字典
+        # Extract data from task results
+        # Note: result may be None, need to use or {} Make sure it's a dictionary
         result = task_doc.get("result") or {}
         task_params = task_doc.get("task_params") or {}
 
-        # 构建 TradeInfo
+        # build TradeInfo
         trade_info_data = result.get("trade_info", {})
         if trade_info_data and "code" in trade_info_data:
-            # 如果有完整的交易信息数据，直接使用
+            # If you have complete transaction information data, use it directly
             trade_info = TradeInfo(**trade_info_data)
         else:
-            # 如果没有数据，从 task_params 中获取股票代码创建默认对象
+            # If there is no data, get the stock symbol from task_params and create a default object
             stock_code = task_params.get("stock_code", "000000")
             stock_name = task_params.get("stock_name")
             trade_info = TradeInfo(
@@ -2042,17 +2042,17 @@ class TradeReviewService:
                 currency="CNY"
             )
 
-        # 构建 MarketSnapshot
+        # build MarketSnapshot
         market_snapshot_data = result.get("market_snapshot", {})
         market_snapshot = MarketSnapshot(**market_snapshot_data) if market_snapshot_data else MarketSnapshot()
 
-        # 构建 AITradeReview
+        # build AITradeReview
         ai_review_data = result.get("ai_review", {})
         ai_review = self._sanitize_trade_review_result(
             AITradeReview(**ai_review_data) if ai_review_data else AITradeReview()
         )
 
-        # 映射状态
+        # Mapping status
         status_mapping = {
             "pending": ReviewStatus.PENDING,
             "processing": ReviewStatus.PROCESSING,
@@ -2061,8 +2061,8 @@ class TradeReviewService:
         }
         status = status_mapping.get(task_doc.get("status", "pending"), ReviewStatus.PENDING)
 
-        # 构建 TradeReviewReport
-        # 注意：user_id 可能是 ObjectId 类型，需要转换为字符串
+        # build TradeReviewReport
+        # Note: user_id may be of type ObjectId and needs to be converted to a string
         user_id_value = task_doc.get("user_id")
         user_id_str = str(user_id_value) if user_id_value else ""
 
@@ -2076,7 +2076,7 @@ class TradeReviewService:
             status=status,
             error_message=task_doc.get("error_message"),
             execution_time=task_doc.get("execution_time", 0.0),
-            is_case_study=False,  # 任务中心模式暂不支持案例库
+            is_case_study=False,  # Task center mode does not currently support case libraries
             tags=[],
             source=task_params.get("source", "paper"),
             created_at=task_doc.get("created_at", datetime.now()),
@@ -2084,7 +2084,7 @@ class TradeReviewService:
             trading_system_name=task_params.get("trading_system_name")
         )
 
-    # ==================== 案例库功能 ====================
+    # ==================== Case library function ====================
 
     async def save_as_case(
         self,
@@ -2093,22 +2093,22 @@ class TradeReviewService:
         tags: List[str] = None,
         source: Optional[str] = None
     ) -> bool:
-        """保存为案例
+        """Save as case
         
         Args:
-            source: 数据源，如果提供则设置，否则保留原有值或使用默认值
+            source: Data source, set if provided, otherwise keep the original value or use the default value
         
         Returns:
-            True 如果成功，False 如果复盘报告不存在
+            True If successful, False if the review report does not exist
         """
-        # 🔍 先检查复盘报告是否存在（支持两种数据源）
-        # 1. 检查 trade_reviews 集合（传统模式）
+        # 🔍 First check whether the review report exists (two data sources are supported)
+        # 1. Check the trade_reviews collection (legacy mode)
         report = await self.db[self.trade_reviews_collection].find_one({
             "user_id": user_id,
             "review_id": review_id
         })
         
-        # 2. 如果没找到，检查 unified_analysis_tasks 集合（任务中心模式）
+        # 2. If not found, check unified_analysis_tasks collection (task-centric mode)
         if not report:
             from bson import ObjectId
             try:
@@ -2116,79 +2116,79 @@ class TradeReviewService:
                 task_doc = await self.db["unified_analysis_tasks"].find_one({
                     "user_id": user_object_id,
                     "task_id": review_id,
-                    "task_type": "trade_review"  # 确保是交易复盘任务
+                    "task_type": "trade_review"  # Make sure it is a transaction review task
                 })
                 if task_doc:
-                    logger.info(f"📊 [保存案例] 从 unified_analysis_tasks 找到复盘任务: {review_id}")
-                    # 如果任务已完成，先同步到 trade_reviews
+                    logger.info(f"📊 [save case] Find review tasks from unified_analysis_tasks: {review_id}")
+                    # If the task has been completed, first synchronize to trade_reviews
                     if task_doc.get("status") == "completed":
-                        logger.info(f"📊 [保存案例] 任务已完成，同步到 trade_reviews: {review_id}")
+                        logger.info(f"📊 [save case] The task has been completed and synchronized to trade_reviews: {review_id}")
                         try:
-                            # 调用 get_review_detail 获取报告对象（会自动转换格式）
+                            # Call get_review_detail to obtain the report object (the format will be automatically converted)
                             review_report = await self.get_review_detail(user_id, review_id)
                             if review_report:
-                                # 将报告保存到 trade_reviews 集合
+                                # Save report to trade_reviews collection
                                 report_dict = review_report.model_dump()
-                                # 确保包含必要的字段
+                                # Make sure to include the necessary fields
                                 report_dict["user_id"] = user_id
                                 report_dict["review_id"] = review_id
                                 report_dict["created_at"] = review_report.created_at or task_doc.get("created_at")
                                 
-                                # 插入到 trade_reviews（使用 upsert，避免重复）
+                                # Insert into trade_reviews (use upsert to avoid duplication)
                                 await self.db[self.trade_reviews_collection].update_one(
                                     {"user_id": user_id, "review_id": review_id},
                                     {"$set": report_dict},
                                     upsert=True
                                 )
-                                logger.info(f"✅ [保存案例] 已同步到 trade_reviews: {review_id}")
-                                # 重新查询
+                                logger.info(f"✅ [save case] Already synced to trade_reviews: {review_id}")
+                                # Query again
                                 report = await self.db[self.trade_reviews_collection].find_one({
                                     "user_id": user_id,
                                     "review_id": review_id
                                 })
                             else:
-                                logger.warning(f"⚠️ [保存案例] 无法从任务数据创建报告对象: {review_id}")
+                                logger.warning(f"⚠️ [save case] Unable to create report object from task data: {review_id}")
                                 return False
                         except Exception as sync_error:
-                            logger.error(f"❌ [保存案例] 同步到 trade_reviews 失败: {sync_error}", exc_info=True)
+                            logger.error(f"❌ [save case] Sync to trade_reviews failed: {sync_error}", exc_info=True)
                             return False
                     else:
-                        logger.warning(f"⚠️ [保存案例] 复盘任务还在处理中: {review_id}, status={task_doc.get('status')}")
+                        logger.warning(f"⚠️ [save case] The review task is still being processed: {review_id}, status={task_doc.get('status')}")
                         return False
             except Exception as e:
-                logger.error(f"❌ [保存案例] 查询 unified_analysis_tasks 失败: {e}", exc_info=True)
+                logger.error(f"❌ [save case] Query for unified_analysis_tasks failed: {e}", exc_info=True)
         
-        # 如果两个集合都没找到，返回 False
+        # If neither collection is found, return False
         if not report:
-            logger.warning(f"⚠️ [保存案例] 复盘报告不存在: user_id={user_id}, review_id={review_id}")
+            logger.warning(f"⚠️ [save case] The review report does not exist: user_id={user_id}, review_id={review_id}")
             return False
         
-        # 构建更新字段
+        # Build update fields
         update_fields = {
             "is_case_study": True,
             "tags": tags or []
         }
         
-        # 如果提供了 source，则设置；否则确保 source 字段存在（从复盘报告中读取或使用默认值）
+        # Set if source is provided; otherwise ensure source field exists (read from review report or use default value)
         if source:
             update_fields["source"] = source
         else:
-            # 如果复盘报告有 source 字段，保留它；否则设置默认值
+            # If the review report has a source field, keep it; otherwise set the default value
             if "source" not in report or not report.get("source"):
-                update_fields["source"] = "paper"  # 默认值
+                update_fields["source"] = "paper"  # Default value
         
         result = await self.db[self.trade_reviews_collection].update_one(
             {"user_id": user_id, "review_id": review_id},
             {"$set": update_fields}
         )
         
-        # 即使 modified_count == 0（字段值相同），也认为成功
+        # Even if modified_count == 0 (field values are the same), it is also considered successful.
         if result.matched_count > 0:
-            logger.info(f"✅ [保存案例] 成功: user_id={user_id}, review_id={review_id}, modified={result.modified_count > 0}")
+            logger.info(f"✅ [save case] success: user_id={user_id}, review_id={review_id}, modified={result.modified_count > 0}")
             
-            # 保存案例后，写入交易纪律记忆（mem0 trade_pattern scope）
+            # After saving the case, write the transaction discipline memory (mem0 trade_pattern scope)
             try:
-                # 重新读取完整报告（含 ai_review、trade_info）
+                # Reread the complete report (including ai_review, trade_info)
                 full_report = await self.db[self.trade_reviews_collection].find_one({
                     "user_id": user_id,
                     "review_id": review_id
@@ -2196,24 +2196,24 @@ class TradeReviewService:
                 if full_report:
                     ai_review_dict = full_report.get("ai_review") or {}
                     trade_info_dict = full_report.get("trade_info") or {}
-                    # 构造轻量对象供 _store_trade_pattern_memory 使用
+                    # Construct lightweight objects for use by _store_trade_pattern_memory
                     ai_review_obj = AITradeReview(**ai_review_dict) if ai_review_dict else None
                     trade_info_obj = TradeInfo(**trade_info_dict) if trade_info_dict else None
                     if ai_review_obj and trade_info_obj:
                         await _store_trade_pattern_memory(
                             self.db, user_id, trade_info_obj, ai_review_obj, review_id,
                         )
-                        # v3.5.0 项2：复盘反思提炼（在原文写入后追加结构化教训）
-                        # 失败时 helper 内部已降级，不阻塞主流程
+                        # v3.5.0 Item 2: Review, reflection and refinement (add structured lessons after writing the original text)
+                        # When it fails, the helper has been downgraded internally and does not block the main process.
                         await _reflect_trade_review_lesson(
                             self.db, user_id, trade_info_obj, ai_review_obj, review_id,
                         )
             except Exception as mem_err:
-                logger.warning(f"[保存案例] 写入 trade_pattern 记忆失败（已忽略）: {mem_err}", exc_info=True)
+                logger.warning(f"[save case] Failed to write trade_pattern memory (ignored): {mem_err}", exc_info=True)
             
             return True
         else:
-            logger.warning(f"⚠️ [保存案例] 更新失败: user_id={user_id}, review_id={review_id}")
+            logger.warning(f"⚠️ [save case] Update failed: user_id={user_id}, review_id={review_id}")
             return False
 
     async def get_cases(
@@ -2223,10 +2223,10 @@ class TradeReviewService:
         page_size: int = 10,
         source: Optional[str] = None
     ) -> Dict[str, Any]:
-        """获取案例库
+        """Get case library
 
         Args:
-            source: 数据源过滤, paper(模拟交易) 或 position(持仓操作), 为空则获取全部
+            source: Data source filtering, paper(simulated trading) or position(Position operation), If empty, get all
         """
         skip = (page - 1) * page_size
 
@@ -2236,7 +2236,7 @@ class TradeReviewService:
         }
         if source:
             if source == "position":
-                # 持仓操作复盘包含实盘交易(real)和持仓操作(position)
+                # Position operation review includes real trading(real)and position operations(position)
                 query["source"] = {"$in": ["position", "real"]}
             else:
                 query["source"] = source
@@ -2247,22 +2247,22 @@ class TradeReviewService:
         total = await self.db[self.trade_reviews_collection].count_documents(query)
 
         result = []
-        # 收集所有需要查询名称的股票代码（按市场分组）
+        # Collect all stock codes whose names need to be queried (grouped by market)
         codes_by_market = {}  # {market: [codes]}
         for item in items:
             trade_info = item.get("trade_info", {})
             code = trade_info.get("code")
             name = trade_info.get("name")
             market = trade_info.get("market", "CN")
-            # 如果没有名称，需要从数据库获取
+            # If there is no name, it needs to be obtained from the database
             if code and not name:
                 if market not in codes_by_market:
                     codes_by_market[market] = []
                 codes_by_market[market].append(code)
         
-        # 批量查询股票名称
+        # Query stock names in batches
         stock_names = {}
-        # A股：从 stock_basic_info 查询
+        # A Stock: Query from stock_basic_info
         if "CN" in codes_by_market:
             unique_codes = list(set(codes_by_market["CN"]))
             for code in unique_codes:
@@ -2270,17 +2270,17 @@ class TradeReviewService:
                 if stock_info and stock_info.get("name"):
                     stock_names[code] = stock_info.get("name")
         
-        # 港股/美股：从 paper_positions 或 positions 查询（这些表通常有 name 字段）
+        # Hong Kong stocks/US stocks: query from paper_positions or positions (these tables usually have a name field)
         for market in ["HK", "US"]:
             if market in codes_by_market:
                 unique_codes = list(set(codes_by_market[market]))
                 for code in unique_codes:
-                    # 先尝试从 paper_positions 获取
+                    # First try to get it from paper_positions
                     pos = await self.db["paper_positions"].find_one({"code": code})
                     if pos and pos.get("name"):
                         stock_names[code] = pos.get("name")
                         continue
-                    # 再尝试从 positions 获取
+                    # Try getting it from positions again
                     pos = await self.db["positions"].find_one({"code": code})
                     if pos and pos.get("name"):
                         stock_names[code] = pos.get("name")
@@ -2289,7 +2289,7 @@ class TradeReviewService:
             trade_info = item.get("trade_info", {})
             ai_review = item.get("ai_review", {})
             code = trade_info.get("code")
-            # 优先使用 trade_info 中的 name，如果没有则从 stock_names 中获取
+            # Prioritize using the name in trade_info, if not, get it from stock_names
             name = trade_info.get("name") or stock_names.get(code) or None
             
             result.append({
@@ -2333,7 +2333,7 @@ class TradeReviewService:
         )
         return result.deleted_count > 0
 
-    # ==================== 交易统计 ====================
+    # ==================== Transaction statistics ====================
 
     async def get_trading_statistics(
         self,
@@ -2351,7 +2351,7 @@ class TradeReviewService:
             if end_date:
                 query["timestamp"]["$lte"] = end_date
 
-        # 获取所有卖出交易
+        # Get all sell transactions
         cursor = self.db[self.paper_trades_collection].find(query)
         trades = await cursor.to_list(None)
 
@@ -2379,7 +2379,7 @@ class TradeReviewService:
 
             stats.total_pnl += pnl
 
-        # 计算统计指标
+        # Calculate statistical indicators
         if stats.total_trades > 0:
             stats.win_rate = round(stats.winning_trades / stats.total_trades * 100, 2)
 
@@ -2399,18 +2399,18 @@ class TradeReviewService:
 
         return stats
 
-    # ==================== 阶段性复盘 ====================
+    # ==================== Periodic review ====================
 
     async def create_periodic_review(
         self,
         user_id: str,
         request: CreatePeriodicReviewRequest
     ) -> PeriodicReviewResponse:
-        """创建阶段性复盘
+        """Create a staged review
 
-        支持两种数据源:
-        - paper: 模拟交易 (paper_trades)
-        - position: 持仓操作 (position_changes)
+        Supports two data sources:
+        - paper: simulated trading (paper_trades)
+        - position: Position operation (position_changes)
         """
         import time
         start_time = time.time()
@@ -2418,23 +2418,23 @@ class TradeReviewService:
         review_id = str(uuid.uuid4())
         source = getattr(request, 'source', 'paper') or 'paper'
 
-        # 解析日期
+        # parse date
         period_start = datetime.strptime(request.start_date, "%Y-%m-%d")
         period_end = datetime.strptime(request.end_date, "%Y-%m-%d").replace(
             hour=23, minute=59, second=59
         )
 
-        # 根据数据源选择集合和查询条件
+        # Select collections and query conditions based on data source
         if source == "position":
-            # 持仓操作数据源
+            # Position operation data source
             collection = "position_changes"
             date_field = "created_at"
         else:
-            # 模拟交易数据源
+            # Simulated trading data source
             collection = self.paper_trades_collection
             date_field = "timestamp"
 
-        # 获取该时间段内的所有交易
+        # Get all transactions within this time period
         query = {
             "user_id": user_id,
             date_field: {
@@ -2449,7 +2449,7 @@ class TradeReviewService:
         if not trades:
             raise ValueError(f"在 {request.start_date} 至 {request.end_date} 期间没有{source_name}记录")
 
-        # 计算交易统计 (根据数据源使用不同的处理方法)
+        # Calculate transaction statistics (Use different processing methods depending on the data source)
         if source == "position":
             statistics = await self._calculate_position_period_statistics(trades)
             trades_summary = self._build_position_trades_summary(trades)
@@ -2457,7 +2457,7 @@ class TradeReviewService:
             statistics = await self._calculate_period_statistics(trades)
             trades_summary = self._build_trades_summary(trades)
 
-        # 调用AI进行阶段性分析
+        # Call AI for staged analysis
         ai_review = await self._call_ai_periodic_review(
             period_type=request.period_type.value,
             start_date=request.start_date,
@@ -2469,7 +2469,7 @@ class TradeReviewService:
 
         execution_time = time.time() - start_time
 
-        # 保存复盘报告
+        # Save review report
         report = PeriodicReviewReport(
             review_id=review_id,
             user_id=user_id,
@@ -2529,7 +2529,7 @@ class TradeReviewService:
 
             stats.total_pnl += pnl
 
-        # 计算统计指标
+        # Calculate statistical indicators
         if stats.total_trades > 0:
             stats.win_rate = round(stats.winning_trades / stats.total_trades * 100, 2)
 
@@ -2578,18 +2578,18 @@ class TradeReviewService:
         self,
         changes: List[Dict[str, Any]]
     ) -> TradingStatistics:
-        """计算持仓操作的阶段性统计
+        """Calculate periodic statistics of position operations
 
-        position_changes 数据结构:
+        position_changes data structure:
         - change_type: BUY/SELL/ADJUST
-        - quantity_before/quantity_after: 变动前后数量
-        - cost_price_before/cost_price_after: 变动前后成本
-        - price: 交易价格
-        - realized_profit: 已实现盈亏 (卖出时有值)
+        - quantity_before/quantity_after: Quantity before and after change
+        - cost_price_before/cost_price_after: Cost before and after changes
+        - price: transaction price
+        - realized_profit: Realized profit and loss (Value when sold)
         """
         stats = TradingStatistics()
 
-        # 筛选出卖出操作
+        # Filter out sell operations
         sell_changes = [c for c in changes if c.get("change_type") == "SELL"]
         stats.total_trades = len(sell_changes)
 
@@ -2608,7 +2608,7 @@ class TradeReviewService:
 
             stats.total_pnl += pnl
 
-        # 计算统计指标
+        # Calculate statistical indicators
         if stats.total_trades > 0:
             stats.win_rate = round(stats.winning_trades / stats.total_trades * 100, 2)
 
@@ -2635,7 +2635,7 @@ class TradeReviewService:
         summary = []
         for change in changes:
             change_type = change.get("change_type", "")
-            # 只显示买卖操作
+            # Only show buying and selling operations
             if change_type not in ["BUY", "SELL"]:
                 continue
 
@@ -2645,7 +2645,7 @@ class TradeReviewService:
             qty_after = change.get("quantity_after", 0) or 0
             quantity = abs(qty_after - qty_before)
 
-            # 计算盈亏百分比
+            # Calculate profit and loss percentage
             cost_price = change.get("cost_price_before", 0) or 0
             pnl_pct = 0
             if cost_price > 0 and change_type == "SELL":
@@ -2675,11 +2675,11 @@ class TradeReviewService:
         statistics: TradingStatistics,
         trades_summary: List[TradeSummaryItem]
     ) -> AIPeriodicReview:
-        """调用AI进行阶段性复盘分析"""
+        """Call AI for periodic review analysis"""
         from app.services.simple_analysis_service import get_provider_and_url_by_model_sync
         import asyncio
 
-        # 构建提示词
+        # Build prompt words
         period_names = {
             "week": "周度",
             "month": "月度",
@@ -2688,10 +2688,10 @@ class TradeReviewService:
         }
         period_name = period_names.get(period_type, "阶段性")
 
-        # 构建交易明细
+        # Build transaction details
         trades_detail = "\n".join([
             f"- {t.code}: {t.side} {t.quantity}股 @ {t.price}, 盈亏: {t.pnl} ({t.pnl_pct}%)"
-            for t in trades_summary[:20]  # 最多显示20条
+            for t in trades_summary[:20]  # Display up to 20 items
         ])
         if len(trades_summary) > 20:
             trades_detail += f"\n... 还有 {len(trades_summary) - 20} 条交易记录"
@@ -2744,7 +2744,7 @@ class TradeReviewService:
             model_name = "qwen-plus"
             provider_info = get_provider_and_url_by_model_sync(model_name)
 
-            # 使用同步 requests 调用，避免异步 httpx 的代理问题
+            # Use synchronous requests calls to avoid proxy issues with asynchronous httpx
             content = await asyncio.get_event_loop().run_in_executor(
                 None,
                 self._call_llm_sync,
@@ -2754,11 +2754,11 @@ class TradeReviewService:
                 provider_info.get("api_key")
             )
 
-            # 解析JSON响应
+            # Parse JSON response
             import json
             import re
 
-            # 尝试提取JSON
+            # Try to extract JSON
             json_match = re.search(r'\{[\s\S]*\}', content)
             if json_match:
                 data = json.loads(json_match.group())
@@ -2773,7 +2773,7 @@ class TradeReviewService:
                     worst_trade=data.get("worst_trade")
                 ))
             else:
-                # 如果无法解析JSON，返回默认结果
+                # If the JSON cannot be parsed, return the default result
                 return self._sanitize_periodic_review_result(AIPeriodicReview(
                     overall_score=60,
                     summary=content[:500] if content else "AI分析完成"
@@ -2793,10 +2793,10 @@ class TradeReviewService:
         page_size: int = 10,
         source: Optional[str] = None
     ) -> Dict[str, Any]:
-        """获取阶段性复盘历史
+        """Get periodic review history
 
         Args:
-            source: 数据源过滤, paper(模拟交易) 或 position(持仓操作), 为空则获取全部
+            source: Data source filtering, paper(simulated trading) or position(Position operation), If empty, get all
         """
         skip = (page - 1) * page_size
 
@@ -2859,16 +2859,16 @@ class TradeReviewService:
         trade_info: TradeInfo,
         market_snapshot: MarketSnapshot
     ) -> Dict[str, Any]:
-        """构建交易复盘模板变量
+        """Construct transaction review template variables
 
         Args:
-            trade_info: 交易信息
-            market_snapshot: 市场快照
+            trade_info: transaction information
+            market_snapshot: market snapshot
 
         Returns:
-            模板变量字典
+            template variable dictionary
         """
-        # 构建交易记录明细
+        # Build transaction record details
         trades_detail = []
         for t in trade_info.trades:
             trade_record = {
@@ -2880,7 +2880,7 @@ class TradeReviewService:
             }
             trades_detail.append(trade_record)
 
-        # 构建K线数据摘要
+        # Construct K-line data summary
         kline_data = []
         if market_snapshot.kline_data:
             for k in market_snapshot.kline_data[-20:]:
@@ -2930,7 +2930,7 @@ class TradeReviewService:
                 },
                 "kline_data": kline_data
             },
-            # 大盘和行业基准数据（后续通过 _get_benchmark_data 填充）
+            # Market and industry benchmark data (subsequently populated through _get_benchmark_data)
             "market_benchmark": {},
             "industry_benchmark": {},
             "attribution": {}
@@ -2943,18 +2943,18 @@ class TradeReviewService:
         start_date: str,
         end_date: str
     ) -> Dict[str, Any]:
-        """获取大盘和行业基准数据
+        """Get broad market and industry benchmark data
 
-        使用统一的数据源管理器获取数据，根据数据库配置自动选择数据源
+        Obtain data using a unified data source manager and automatically select data sources based on database configuration
 
         Args:
-            stock_code: 股票代码
-            market: 市场类型
-            start_date: 开始日期 (YYYY-MM-DD)
-            end_date: 结束日期 (YYYY-MM-DD)
+            stock_code: Stock code
+            market: market type
+            start_date: start date (YYYY-MM-DD)
+            end_date: end date (YYYY-MM-DD)
 
         Returns:
-            包含大盘基准、行业基准、收益归因的字典
+            Dictionary containing market benchmarks, industry benchmarks, and earnings attribution
         """
         result = {
             "market_benchmark": {
@@ -2970,7 +2970,7 @@ class TradeReviewService:
                 "industry_name": "",
                 "index_code": "",
                 "change_pct": None,
-                "vs_market": None  # 相对大盘超额
+                "vs_market": None  # Relative to the market excess
             },
             "attribution": {
                 "beta_contribution": None,
@@ -2981,22 +2981,22 @@ class TradeReviewService:
         }
 
         try:
-            # 直接使用 tushare provider 获取指数数据（参考 index_tools.py 的实现）
+            # Directly use tushare provider to obtain index data (refer to the implementation of index_tools.py)
             from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
             from core.tools.sector_tools import get_stock_sector_info
 
             provider = get_tushare_provider()
 
-            # 1. 获取大盘基准数据（沪深300）
+            # 1. Get broad market benchmark data (CSI 300)
             benchmark_code = "000300.SH"
             benchmark_name = "沪深300"
 
             start_date_clean = start_date.replace('-', '')
             end_date_clean = end_date.replace('-', '')
 
-            logger.info(f"📊 [复盘] 获取大盘数据: {benchmark_code}, {start_date_clean} ~ {end_date_clean}")
+            logger.info(f"📊 [Review] Get market data: {benchmark_code}, {start_date_clean} ~ {end_date_clean}")
 
-            # 使用 tushare provider 的 get_index_daily 方法
+            # Use the get_index_daily method of tushare provider
             index_df = await provider.get_index_daily(
                 ts_code=benchmark_code,
                 start_date=start_date_clean,
@@ -3018,41 +3018,41 @@ class TradeReviewService:
                     "period_high": float(index_df['high'].max()),
                     "period_low": float(index_df['low'].min())
                 }
-                logger.info(f"✅ [复盘] 从 tushare 获取大盘数据成功: {market_change_pct:.2f}%")
+                logger.info(f"✅ [Review] Obtaining market data from tushare successfully: {market_change_pct:.2f}%")
             else:
-                logger.warning(f"⚠️ [复盘] 未获取到大盘数据")
+                logger.warning(f"⚠️ [Review] No market data was obtained")
 
-            # 2. 获取行业基准数据（使用统一工具函数）
+            # 2. Obtain industry benchmark data (using unified tool functions)
             sector_info = await get_stock_sector_info(stock_code)
             if sector_info and sector_info.get("industry"):
                 result["industry_benchmark"]["industry_name"] = sector_info["industry"]
                 logger.info(f"📊 [复盘] 股票 {stock_code} 所属行业: {sector_info['industry']}")
 
-            # 3. 计算收益归因（简化版）
+            # 3. Calculate revenue attribution (simplified version)
             if result["market_benchmark"]["change_pct"] is not None:
                 result["attribution"]["beta_contribution"] = result["market_benchmark"]["change_pct"]
 
-            logger.info(f"✅ [复盘] 基准数据获取完成: 大盘={result['market_benchmark']['change_pct']}%")
+            logger.info(f"✅ [Review] Baseline data acquisition completed: Market={result['market_benchmark']['change_pct']}%")
 
         except ImportError as e:
-            logger.warning(f"⚠️ [复盘] 数据工具模块不可用: {e}")
+            logger.warning(f"⚠️ [Review] Data Tools module is not available: {e}")
         except Exception as e:
-            logger.error(f"❌ [复盘] 获取基准数据失败: {e}", exc_info=True)
+            logger.error(f"❌ [Review] Failed to obtain benchmark data: {e}", exc_info=True)
 
         return result
 
     def _format_trading_plan_for_workflow(self, trading_system: Dict[str, Any]) -> Dict[str, Any]:
-        """格式化交易计划规则，用于工作流输入
+        """Format trading plan rules for workflow input
 
         Args:
-            trading_system: 交易计划数据
+            trading_system: Trading plan data
 
         Returns:
-            格式化后的交易计划规则字典
+            Formatted trading plan rules dictionary
         """
-        # 🔧 适配实际的数据库结构
-        # 数据库使用: stock_selection, timing, position, risk_management, discipline
-        # 而不是: stock_selection_rules, timing_rules, position_rules, risk_rules, discipline_rules
+        # 🔧 Adapt to actual database structure
+        # Database usage: stock_selection, timing, position, risk_management, discipline
+        # instead of: stock_selection_rules, timing_rules, position_rules, risk_rules, discipline_rules
 
         stock_selection = trading_system.get("stock_selection", {})
         timing = trading_system.get("timing", {})
@@ -3071,7 +3071,7 @@ class TradeReviewService:
                 },
                 "timing": {
                     "entry_signals": timing.get("entry_signals", []),
-                    "exit_signals": timing.get("exit_signals", []),  # 可能为空
+                    "exit_signals": timing.get("exit_signals", []),  # may be empty
                 },
                 "position": {
                     "single_stock_limit": position.get("max_per_stock", 0),  # 🔧 max_per_stock -> single_stock_limit
@@ -3086,24 +3086,24 @@ class TradeReviewService:
                     "forbidden": discipline.get("must_not", []),  # 🔧 must_not -> forbidden
                 },
             },
-            "rules_text": self._format_trading_plan_rules_text(trading_system),  # 文本格式，供提示词使用
+            "rules_text": self._format_trading_plan_rules_text(trading_system),  # Text format for use with prompt words
         }
 
     def _format_trading_plan_rules_text(self, trading_system: Dict[str, Any]) -> str:
-        """将交易计划规则格式化为文本，供提示词使用
+        """Format trading plan rules as text for use with prompt words
 
         Args:
-            trading_system: 交易计划数据
+            trading_system: Trading plan data
 
         Returns:
-            格式化后的规则文本
+            Formatted rule text
         """
         rules_parts = []
 
-        # 🔧 适配实际的数据库结构
-        # 数据库使用: stock_selection, timing, position, risk_management, discipline
+        # 🔧 Adapt to actual database structure
+        # Database usage: stock_selection, timing, position, risk_management, discipline
 
-        # 选股规则
+        # Stock selection rules
         stock_selection = trading_system.get("stock_selection", {})
         must_have = stock_selection.get("must_have", [])
         exclude = stock_selection.get("exclude", [])
@@ -3111,15 +3111,15 @@ class TradeReviewService:
         if must_have or exclude:
             rules_parts.append("**选股规则**:")
             if must_have:
-                # must_have 是对象数组，每个对象有 rule 和 description
+                # must_have is an array of objects, each object has rule and description
                 must_have_texts = [f"{item.get('rule', '')} ({item.get('description', '')})" for item in must_have]
                 rules_parts.append(f"- 必须满足: {'; '.join(must_have_texts)}")
             if exclude:
-                # exclude 也是对象数组
+                # exclude Also an array of objects
                 exclude_texts = [f"{item.get('rule', '')} ({item.get('description', '')})" for item in exclude]
                 rules_parts.append(f"- 排除条件: {'; '.join(exclude_texts)}")
 
-        # 择时规则
+        # timing rules
         timing = trading_system.get("timing", {})
         entry_signals = timing.get("entry_signals", [])
         exit_signals = timing.get("exit_signals", [])
@@ -3127,14 +3127,14 @@ class TradeReviewService:
         if entry_signals or exit_signals:
             rules_parts.append("\n**择时规则**:")
             if entry_signals:
-                # entry_signals 是对象数组，每个对象有 signal 和 description
+                # entry_signals is an array of objects, each object has signal and description
                 entry_texts = [f"{item.get('signal', '')} ({item.get('description', '')})" for item in entry_signals]
                 rules_parts.append(f"- 入场信号: {'; '.join(entry_texts)}")
             if exit_signals:
                 exit_texts = [f"{item.get('signal', '')} ({item.get('description', '')})" for item in exit_signals]
                 rules_parts.append(f"- 出场信号: {'; '.join(exit_texts)}")
 
-        # 仓位规则
+        # Position rules
         position = trading_system.get("position", {})
         max_per_stock = position.get("max_per_stock")
         max_holdings = position.get("max_holdings")
@@ -3146,7 +3146,7 @@ class TradeReviewService:
             if max_holdings:
                 rules_parts.append(f"- 最大持股数: {max_holdings}只")
 
-        # 风险管理规则
+        # risk management rules
         risk_management = trading_system.get("risk_management", {})
         stop_loss = risk_management.get("stop_loss", {})
         take_profit = risk_management.get("take_profit", {})
@@ -3163,7 +3163,7 @@ class TradeReviewService:
                 take_profit_desc = take_profit.get("description", "")
                 rules_parts.append(f"- 止盈: {take_profit_desc}")
 
-        # 纪律规则
+        # disciplinary rules
         discipline = trading_system.get("discipline", {})
         must_do = discipline.get("must_do", [])
         must_not = discipline.get("must_not", [])
@@ -3171,7 +3171,7 @@ class TradeReviewService:
         if must_do or must_not:
             rules_parts.append("\n**纪律规则**:")
             if must_do:
-                # must_do 是对象数组，每个对象有 rule 和 description
+                # must_do is an array of objects, each object has rule and description
                 must_do_texts = [f"{item.get('rule', '')} ({item.get('description', '')})" for item in must_do]
                 rules_parts.append(f"- 必须做到: {'; '.join(must_do_texts)}")
             if must_not:
@@ -3186,44 +3186,44 @@ class TradeReviewService:
         market_snapshot: MarketSnapshot,
         user_id: Optional[str] = None,
         trading_system: Optional[Dict[str, Any]] = None,
-        progress_callback: Optional[Callable] = None  # 🔥 新增参数
+        progress_callback: Optional[Callable] = None  # 🔥 New parameters
     ) -> AITradeReview:
-        """使用工作流引擎进行多维度交易复盘分析
+        """Use workflow engine to conduct multi-dimensional transaction review analysis
 
-        工作流包含:
-        1. 时机分析师 - 分析买卖时机
-        2. 仓位分析师 - 分析仓位管理
-        3. 情绪分析师 - 分析情绪控制
-        4. 归因分析师 - 分析收益来源
-        5. 复盘总结师 - 综合总结报告
+        Workflow contains:
+        1. Timing Analyst - Analyze buying and selling timing
+        2. Position Analyst - Analyze position management
+        3. Emotion Analyst - Analyze Emotional Control
+        4. Attribution Analyst - Analyze Revenue Sources
+        5. Review Summarizer - Comprehensive Summary Report
 
         Args:
-            trade_info: 交易信息
-            market_snapshot: 市场快照
-            user_id: 用户ID
-            trading_system: 关联的交易计划（如果有）
+            trade_info: transaction information
+            market_snapshot: market snapshot
+            user_id: User ID
+            trading_system: Associated trading plan (if any)
         """
         from core.workflow.engine import WorkflowEngine
         from core.workflow.default_workflow_provider import get_default_workflow_provider
 
-        logger.info(f"🚀 [工作流复盘] 开始执行交易复盘工作流")
+        logger.info(f"🚀 [Workflow review] Start execution of transaction review workflow")
 
-        # 🔍 调试：打印原始输入数据
-        logger.info(f"🔍 [工作流复盘] 原始数据 - trade_info.code: {trade_info.code}")
-        logger.info(f"🔍 [工作流复盘] 原始数据 - trade_info.name: {trade_info.name}")
-        logger.info(f"🔍 [工作流复盘] 原始数据 - trade_info.trades 数量: {len(trade_info.trades) if trade_info.trades else 0}")
+        # 🔍 Debugging: Print raw input data
+        logger.info(f"🔍 [Workflow review] raw data - trade_info.code: {trade_info.code}")
+        logger.info(f"🔍 [Workflow review] raw data - trade_info.name: {trade_info.name}")
+        logger.info(f"🔍 [Workflow review] Raw data - trade_info.trades quantity: {len(trade_info.trades) if trade_info.trades else 0}")
         if trade_info.trades:
-            logger.info(f"🔍 [工作流复盘] 原始数据 - 第一笔交易: side={trade_info.trades[0].side}, quantity={trade_info.trades[0].quantity}, price={trade_info.trades[0].price}")
-        logger.info(f"🔍 [工作流复盘] 原始数据 - trade_info 类型: {type(trade_info)}")
-        logger.info(f"🔍 [工作流复盘] 原始数据 - trade_info 属性: {[attr for attr in dir(trade_info) if not attr.startswith('_')]}")
+            logger.info(f"🔍 [Workflow review] Raw data - first transaction: side={trade_info.trades[0].side}, quantity={trade_info.trades[0].quantity}, price={trade_info.trades[0].price}")
+        logger.info(f"🔍 [Workflow review] Raw data - trade_info type: {type(trade_info)}")
+        logger.info(f"🔍 [Workflow review] Raw data - trade_info attribute: {[attr for attr in dir(trade_info) if not attr.startswith('_')]}")
 
-        # 1. 加载复盘工作流 (优先使用“我的分析流”中 trade_review 类型的默认流程)
+        # 1. Load review workflow (priority use"My analysis flow"Default process for trade_review type in)
         provider = get_default_workflow_provider()
         workflow_id = provider.get_active_workflow_id("trade_review")
         workflow = provider.load_workflow(workflow_id)
-        logger.info(f"✅ [工作流复盘] 加载工作流: {workflow.name} ({workflow.id})")
+        logger.info(f"✅ [Workflow review] Load workflow: {workflow.name} ({workflow.id})")
 
-        # 2. 获取基准数据
+        # 2. Get benchmark data
         benchmark_data = {}
         try:
             benchmark_data = await self._get_benchmark_data(
@@ -3232,39 +3232,39 @@ class TradeReviewService:
                 start_date=trade_info.first_buy_date[:10] if trade_info.first_buy_date else "",
                 end_date=trade_info.last_sell_date[:10] if trade_info.last_sell_date else ""
             )
-            logger.info(f"📊 [工作流复盘] 获取基准数据完成")
+            logger.info(f"📊 [Workflow review] Obtaining benchmark data is completed")
         except Exception as e:
-            logger.warning(f"⚠️ [工作流复盘] 获取基准数据失败: {e}")
+            logger.warning(f"⚠️ [Workflow review] Failed to obtain benchmark data: {e}")
 
-        # 构建K线日期索引，用于计算交易前价格变化
+        # Construct K-line date index for calculating pre-trade price changes
         kline_by_date = {}
         for k in (market_snapshot.kline_data or []):
             kd = k.get("date", "")
             if kd:
                 kline_by_date[kd[:10]] = k
 
-        # 3. 准备工作流输入
-        # 🆕 添加 user_id 和 trade_ids，供 Agent 通过工具获取完整数据
-        # ⚠️ 参数映射：Agent 期望 ticker 字段，必须从 code 映射，否则报 "Missing required parameters: ticker"
+        # 3. Prepare workflow input
+        # 🆕 Add user_id and trade_ids for Agent to obtain complete data through tools
+        # ⚠️ Parameter mapping: Agent expects the ticker field, which must be mapped from code, otherwise it will report "Missing required parameters: ticker"
         inputs = {
-            "ticker": trade_info.code,  # 🔥 关键：Agent 统一使用 ticker，从 code 映射
-            "user_id": user_id,  # 用户ID，供工具使用
-            "trade_ids": [str(t.trade_id) for t in trade_info.trades] if trade_info.trades else [],  # 交易ID列表
+            "ticker": trade_info.code,  # 🔥 Key: Agent uses ticker uniformly and maps from code
+            "user_id": user_id,  # User ID, used by the tool
+            "trade_ids": [str(t.trade_id) for t in trade_info.trades] if trade_info.trades else [],  # Transaction ID list
             "trade_info": {
                 "code": trade_info.code,
                 "name": trade_info.name,
                 "market": trade_info.market,
-                # 🔧 修复字段名，与分析师期望的字段名一致
-                "holding_days": trade_info.holding_days,  # 修改：holding_period -> holding_days
-                "realized_pnl": trade_info.realized_pnl,  # 修改：pnl -> realized_pnl
-                "realized_pnl_pct": trade_info.realized_pnl_pct,  # 新增：realized_pnl_pct
-                # 🆕 添加浮动盈亏字段
+                # 🔧 Fixed field names to be consistent with what analysts expect
+                "holding_days": trade_info.holding_days,  # Modification:holding_period -> holding_days
+                "realized_pnl": trade_info.realized_pnl,  # Modification:pnl -> realized_pnl
+                "realized_pnl_pct": trade_info.realized_pnl_pct,  # New:realized_pnl_pct
+                # 🆕 Add floating profit and loss field
                 "unrealized_pnl": trade_info.unrealized_pnl if hasattr(trade_info, 'unrealized_pnl') else 0.0,
                 "unrealized_pnl_pct": trade_info.unrealized_pnl_pct if hasattr(trade_info, 'unrealized_pnl_pct') else 0.0,
                 "current_price": trade_info.current_price if hasattr(trade_info, 'current_price') else None,
                 "is_holding": trade_info.is_holding if hasattr(trade_info, 'is_holding') else False,
                 "remaining_quantity": trade_info.remaining_quantity if hasattr(trade_info, 'remaining_quantity') else 0,
-                # 保留旧字段名以兼容
+                # Keep old field names for compatibility
                 "holding_period": trade_info.holding_days,
                 "return_rate": trade_info.realized_pnl_pct / 100.0 if trade_info.realized_pnl_pct else 0,
                 "pnl": trade_info.realized_pnl,
@@ -3300,68 +3300,68 @@ class TradeReviewService:
             "messages": [],
         }
 
-        # 🆕 如果关联了交易计划，添加交易计划规则到输入中
+        # 🆕 If a trading plan is associated, add trading plan rules to the input
         if trading_system:
-            logger.info(f"📋 [工作流复盘] 关联交易计划: {trading_system.get('name', 'N/A')}")
+            logger.info(f"📋 [Workflow review] Related party transaction plan: {trading_system.get('name', 'N/A')}")
             formatted_plan = self._format_trading_plan_for_workflow(trading_system)
             inputs["trading_plan"] = formatted_plan
-            logger.info(f"✅ [工作流复盘] 已添加 trading_plan 到 inputs")
+            logger.info(f"✅ [Workflow review] trading_plan added to inputs")
             logger.info(f"   - plan_name: {formatted_plan.get('plan_name', 'N/A')}")
-            logger.info(f"   - rules_text 长度: {len(formatted_plan.get('rules_text', ''))}")
+            logger.info(f"   - rules_text length: {len(formatted_plan.get('rules_text', ''))}")
         else:
-            logger.info(f"📋 [工作流复盘] 未关联交易计划")
+            logger.info(f"📋 [Workflow review] Unlinked transaction plan")
 
-        logger.info(f"📝 [工作流复盘] 工作流输入准备完成")
+        logger.info(f"📝 [Workflow review] Workflow input is ready")
         logger.info(f"📋 [工作流复盘] 股票: {trade_info.code}, 持仓周期: {trade_info.holding_days}天")
         logger.info(f"📋 [工作流复盘] 收益率: {trade_info.realized_pnl_pct:.2f}%, 盈亏: {trade_info.realized_pnl:.2f}元")
-        logger.info(f"📋 [工作流复盘] 交易记录数量: {len(trade_info.trades) if trade_info.trades else 0}")
+        logger.info(f"📋 [Workflow review] Number of transaction records: {len(trade_info.trades) if trade_info.trades else 0}")
         logger.info(f"📋 [工作流复盘] 基准数据: 大盘={benchmark_data.get('market_benchmark', {}).get('change_pct', 'N/A')}%, 行业={benchmark_data.get('industry_benchmark', {}).get('industry_name', 'N/A')}")
 
-        # 🔍 调试：打印实际传入工作流的数据
-        logger.info(f"🔍 [工作流复盘] 调试 - inputs['trade_info']['code']: {inputs['trade_info']['code']}")
-        logger.info(f"🔍 [工作流复盘] 调试 - inputs['trade_info']['trades'] 长度: {len(inputs['trade_info']['trades'])}")
+        # 🔍 Debugging: Print the actual data passed into the workflow
+        logger.info(f"🔍 [Workflow review] Debugging - inputs['trade_info']['code']: {inputs['trade_info']['code']}")
+        logger.info(f"🔍 [Workflow review] Debugging - inputs['trade_info']['trades'] length: {len(inputs['trade_info']['trades'])}")
         if inputs['trade_info']['trades']:
-            logger.info(f"🔍 [工作流复盘] 调试 - 第一笔交易: {inputs['trade_info']['trades'][0]}")
+            logger.info(f"🔍 [Workflow review] Debugging - First Transaction: {inputs['trade_info']['trades'][0]}")
 
-        # 4. 构建遗留配置（与单股分析流程保持一致，获取完整的LLM配置参数）
+        # 4. Build legacy configurations (consistent with the single-stock analysis process and obtain complete LLM configuration parameters)
         legacy_config = {}
         try:
             from app.services.config_provider import provider as config_provider
             from app.services.unified_analysis_engine import UnifiedAnalysisEngine
             
-            # 使用 config_provider 获取系统设置（包含 quick_analysis_model 和 deep_analysis_model）
+            # Use config_provider to obtain system settings (including quick_analysis_model and deep_analysis_model)
             effective_settings = await config_provider.get_effective_system_settings()
             
-            # 从 system_settings 中读取 quick_analysis_model 和 deep_analysis_model
+            # Read quick_analysis_model and deep_analysis_model
             quick_analysis_model = effective_settings.get("quick_analysis_model")
             deep_analysis_model = effective_settings.get("deep_analysis_model")
             
             if quick_analysis_model and deep_analysis_model:
-                # 🔥 使用 UnifiedAnalysisEngine 的 _build_llm_config 方法获取完整的LLM配置
-                # 这样可以获取 temperature, timeout, max_tokens 等参数
+                # 🔥 Get the complete LLM configuration using UnifiedAnalysisEngine's _build_llm_config method
+                # This way you can get temperature, timeout, max_tokens and other parameters
                 engine = UnifiedAnalysisEngine()
                 full_config = await engine._build_llm_config(quick_analysis_model, deep_analysis_model)
                 
                 if full_config:
                     legacy_config.update(full_config)
-                    logger.info(f"🔧 [工作流复盘] 从数据库获取完整模型配置: quick={quick_analysis_model}, deep={deep_analysis_model}")
+                    logger.info(f"🔧 [Workflow review] Get full model configuration from database: quick={quick_analysis_model}, deep={deep_analysis_model}")
                     logger.info(f"  quick: temperature={legacy_config.get('quick_temperature')}, max_tokens={legacy_config.get('quick_max_tokens')}, timeout={legacy_config.get('quick_timeout')}")
                     logger.info(f"  deep: temperature={legacy_config.get('deep_temperature')}, max_tokens={legacy_config.get('deep_max_tokens')}, timeout={legacy_config.get('deep_timeout')}")
                 else:
-                    # 如果获取失败，至少设置模型名称
+                    # If retrieval fails, at least set the model name
                     legacy_config["quick_think_llm"] = quick_analysis_model
                     legacy_config["deep_think_llm"] = deep_analysis_model
                     legacy_config["llm_provider"] = "dashscope"
-                    logger.warning(f"⚠️ [工作流复盘] 无法获取完整模型配置，仅设置模型名称")
+                    logger.warning(f"⚠️ [Workflow review] Unable to get full model configuration, only set model name")
             else:
-                logger.warning(f"⚠️ [工作流复盘] system_settings中未找到quick_analysis_model或deep_analysis_model，使用默认配置")
-                # 如果没有配置，使用默认值
+                logger.warning(f"⚠️ [Workflow review] system_settings quick_analysis_model or deep_analysis_model not found, use default configuration")
+                # If not configured, use default value
                 legacy_config["quick_think_llm"] = quick_analysis_model or "qwen-turbo"
                 legacy_config["deep_think_llm"] = deep_analysis_model or "qwen-plus"
                 legacy_config["llm_provider"] = "dashscope"
         except Exception as e:
-            logger.error(f"❌ [工作流复盘] 从数据库获取模型配置失败: {e}", exc_info=True)
-            # 失败时使用默认配置
+            logger.error(f"❌ [Workflow review] Failed to get model configuration from database: {e}", exc_info=True)
+            # Use default configuration on failure
             from app.services.simple_analysis_service import get_provider_and_url_by_model_sync
             model_name = "qwen-plus"
             provider_info = get_provider_and_url_by_model_sync(model_name)
@@ -3372,62 +3372,62 @@ class TradeReviewService:
                 "backend_url": provider_info.get("backend_url"),
                 "api_key": provider_info.get("api_key"),
             }
-            logger.info(f"🔧 [工作流复盘] 使用默认LLM配置: provider={legacy_config['llm_provider']}, model={model_name}")
+            logger.info(f"🔧 [Workflow review] Use default LLM configuration: provider={legacy_config['llm_provider']}, model={model_name}")
 
-        # 5. 创建并执行工作流引擎
+        # 5. Create and execute workflow engines
         engine = WorkflowEngine(legacy_config=legacy_config)
         engine.load(workflow)
         logger.info(f"🔨 [工作流复盘] 工作流引擎已加载，节点数: {len(workflow.nodes)}, 边数: {len(workflow.edges)}")
 
-        # 列出工作流节点
+        # List workflow nodes
         for node in workflow.nodes:
             agent_info = f" (agent: {node.agent_id})" if node.agent_id else ""
             logger.info(f"   📍 节点: {node.id} [{node.type}]{agent_info}")
 
         import asyncio
-        # 🔥 保存主事件循环的引用（在调用 asyncio.to_thread 之前）
+        # 🔥 Save a reference to the main event loop (before calling asyncio.to_thread)
         main_loop = asyncio.get_running_loop()
 
         def workflow_progress_callback(progress, message, **kwargs):
-            """包装的进度回调：打印日志并调用外部进度回调"""
+            """Wrapped progress callback: print log and call external progress callback"""
             step_name = kwargs.get("step_name", "")
             step_info = f" [{step_name}]" if step_name else ""
-            logger.info(f"📊 [工作流复盘] 进度: {progress:.1f}%{step_info} - {message}")
+            logger.info(f"📊 [Workflow review] Progress: {progress:.1f}%{step_info} - {message}")
 
-            # 🔥 调用外部进度回调（保存进度到数据库）
+            # 🔥 Call external progress callback (save progress to database)
             if progress_callback:
                 try:
                     if asyncio.iscoroutinefunction(progress_callback):
-                        # 如果是异步回调，需要在主事件循环中运行
+                        # If it is an asynchronous callback, it needs to be run in the main event loop
                         future = asyncio.run_coroutine_threadsafe(
                             progress_callback(progress, message, **kwargs),
                             main_loop
                         )
-                        # 等待回调完成（最多5秒）
+                        # Wait for callback to complete (up to 5 seconds)
                         try:
                             future.result(timeout=5)
                         except Exception as callback_error:
                             logger.warning(f"⚠️ 进度回调执行异常: {callback_error}")
                     else:
-                        # 同步回调可以直接调用
+                        # Synchronous callbacks can be called directly
                         progress_callback(progress, message, **kwargs)
                 except Exception as e:
                     logger.warning(f"⚠️ 进度回调调用失败: {e}")
 
-        logger.info(f"🚀 [工作流复盘] 开始执行工作流...")
-        logger.error(f"🔍 [工作流复盘] inputs keys: {list(inputs.keys())}, ticker={inputs.get('ticker')}, trade_info存在={('trade_info' in inputs)}, trade_info_code={inputs.get('trade_info', {}).get('code') if isinstance(inputs.get('trade_info'), dict) else 'N/A'}")
-        # 🔥 关键修复：使用 asyncio.to_thread 在独立线程中执行同步工作流
-        # 避免阻塞 uvicorn 事件循环（单股分析也是这么做的）
+        logger.info(f"🚀 [Workflow review] Start executing workflow...")
+        logger.error(f"🔍 [Workflow review] inputs keys: {list(inputs.keys())}, ticker={inputs.get('ticker')}, trade_info exist={('trade_info' in inputs)}, trade_info_code={inputs.get('trade_info', {}).get('code') if isinstance(inputs.get('trade_info'), dict) else 'N/A'}")
+        # 🔥 Key fix: Use asyncio.to_thread to execute synchronous workflows in separate threads
+        # Avoid blocking the uvicorn event loop (this is also done for single stock analysis)
         result = await asyncio.to_thread(engine.execute, inputs=inputs, progress_callback=workflow_progress_callback)
 
-        logger.info(f"✅ [工作流复盘] 工作流执行完成")
-        logger.info(f"📋 [工作流复盘] 输出字段: {list(result.keys())}")
+        logger.info(f"✅ [Workflow review] Workflow execution completed")
+        logger.info(f"📋 [Workflow review] output fields: {list(result.keys())}")
 
-        # 打印各维度分析结果摘要
+        # Print summary of analysis results for each dimension
         for key in ["timing_analysis", "position_analysis", "emotion_analysis", "attribution_analysis", "review_summary"]:
             if key in result:
                 content = result[key]
-                # 🔧 处理可能的字典格式（Agent 可能返回 {"content": "..."} 格式）
+                # 🔧 Handle possible dictionary formats (Agent may return {"content": "..."} format)
                 if isinstance(content, dict):
                     content_str = content.get("content", "") or content.get("text", "") or str(content)
                 elif isinstance(content, str):
@@ -3439,7 +3439,7 @@ class TradeReviewService:
                 preview = (content_str[:100] + "...") if content_len > 100 else content_str
                 logger.info(f"   📄 {key}: {content_len}字符, 预览: {preview}")
 
-        # 6. 解析工作流输出
+        # 6. Parse workflow output
         return self._parse_workflow_result(result, trade_info, market_snapshot)
 
     def _parse_workflow_result(
@@ -3448,77 +3448,77 @@ class TradeReviewService:
         trade_info: TradeInfo,
         market_snapshot: MarketSnapshot
     ) -> AITradeReview:
-        """解析工作流执行结果为 AITradeReview"""
+        """The analysis workflow execution result is AITradeReview"""
         import re
         import json
 
-        logger.info(f"🔍 [工作流复盘] 解析工作流结果")
-        logger.info(f"📋 [工作流复盘] 结果键: {list(workflow_result.keys())}")
+        logger.info(f"🔍 [Workflow review] Parse workflow results")
+        logger.info(f"📋 [Workflow review] result key: {list(workflow_result.keys())}")
 
-        # 🔍 打印各个分析师的具体输出
+        # 🔍 Print specific output for each analyst
         analysis_fields = ['timing_analysis', 'position_analysis', 'emotion_analysis', 'attribution_analysis', 'review_summary']
         for field in analysis_fields:
             if field in workflow_result:
                 content = workflow_result[field]
                 logger.info(f"📊 [工作流复盘] {field}: {content[:200] if isinstance(content, str) else str(content)[:200]}...")
             else:
-                logger.warning(f"⚠️ [工作流复盘] 缺失字段: {field}")
+                logger.warning(f"⚠️ [Workflow review] Missing fields: {field}")
 
         result = AITradeReview(actual_pnl=trade_info.realized_pnl)
 
-        # 提取各维度分析结果
+        # Extract analysis results of each dimension
         timing_analysis = workflow_result.get("timing_analysis", "")
         position_analysis = workflow_result.get("position_analysis", "")
         emotion_analysis = workflow_result.get("emotion_analysis", "")
         attribution_analysis = workflow_result.get("attribution_analysis", "")
         review_summary_raw = workflow_result.get("review_summary", "")
 
-        # 🔧 处理 Agent 返回的字典格式（提取 content 字段）
+        # 🔧 Process the dictionary format returned by Agent (extract content field)
         if isinstance(review_summary_raw, dict):
             review_summary = review_summary_raw.get("content", "") or review_summary_raw.get("text", "") or str(review_summary_raw)
-            logger.info(f"📄 [AI复盘] review_summary 是字典，提取 content 字段")
+            logger.info(f"📄 [AI Review] review_summary is a dictionary, extract the content field")
         else:
             review_summary = review_summary_raw if isinstance(review_summary_raw, str) else str(review_summary_raw)
 
-        # 设置分析结果（同样处理可能的字典格式）
+        # Set analysis results (also handles possible dictionary formats)
         result.timing_analysis = timing_analysis.get("content", str(timing_analysis)) if isinstance(timing_analysis, dict) else (timing_analysis if isinstance(timing_analysis, str) else str(timing_analysis))
         result.position_analysis = position_analysis.get("content", str(position_analysis)) if isinstance(position_analysis, dict) else (position_analysis if isinstance(position_analysis, str) else str(position_analysis))
         result.emotion_analysis = emotion_analysis.get("content", str(emotion_analysis)) if isinstance(emotion_analysis, dict) else (emotion_analysis if isinstance(emotion_analysis, str) else str(emotion_analysis))
         result.attribution_analysis = attribution_analysis.get("content", str(attribution_analysis)) if isinstance(attribution_analysis, dict) else (attribution_analysis if isinstance(attribution_analysis, str) else str(attribution_analysis))
 
-        # 从总结中提取评分和建议
+        # Extract ratings and recommendations from summary
         if review_summary:
-            logger.info(f"📄 [AI复盘] review_summary 长度: {len(review_summary)}")
-            logger.info(f"📄 [AI复盘] 前500字符: {review_summary[:500]}")
-            logger.info(f"📄 [AI复盘] 后500字符: {review_summary[-500:]}")
+            logger.info(f"📄 [AI Review] review_summary length: {len(review_summary)}")
+            logger.info(f"📄 [AI Review] first 500 characters: {review_summary[:500]}")
+            logger.info(f"📄 [AI Review] last 500 characters: {review_summary[-500:]}")
 
-            # 尝试从总结中提取 JSON（支持多种格式）
+            # Try to extract JSON from summary (multiple formats supported)
             json_match = re.search(r'```json\s*(.*?)\s*```', review_summary, re.DOTALL)
             if not json_match:
-                # 尝试不带 json 标记的代码块
+                # Try the code block without json tag
                 json_match = re.search(r'```\s*(\{.*?\})\s*```', review_summary, re.DOTALL)
             if not json_match:
-                # 尝试直接匹配 JSON 对象
+                # Try to match JSON object directly
                 json_match = re.search(r'(\{[^{]*?"overall_score".*?\})', review_summary, re.DOTALL)
 
             if json_match:
-                logger.info(f"✅ [AI复盘] 找到 JSON 匹配")
+                logger.info(f"✅ [AI Review] JSON match found")
                 try:
                     json_str = json_match.group(1)
-                    logger.info(f"📄 [AI复盘] JSON 字符串前500字符: {json_str[:500]}")
-                    logger.info(f"📄 [AI复盘] JSON 字符串后500字符: {json_str[-500:]}")
+                    logger.info(f"📄 [AI Review] JSON The first 500 characters of the string: {json_str[:500]}")
+                    logger.info(f"📄 [AI Review] JSON 500 characters after string: {json_str[-500:]}")
                     data = json.loads(json_str)
-                    logger.info(f"📄 [AI复盘] JSON 解析成功，顶层键: {list(data.keys())}")
+                    logger.info(f"📄 [AI Review] JSON Parsed successfully, top-level key: {list(data.keys())}")
 
-                    # 🔧 处理嵌套的 JSON 结构（如 {"复盘报告": {...}}）
+                    # 🔧 Handle nested JSON structures (such as {"Review report": {...}}) 
                     if len(data) == 1 and isinstance(list(data.values())[0], dict):
-                        logger.info(f"📄 [AI复盘] 检测到嵌套结构，提取内层数据")
+                        logger.info(f"📄 [AI Review] Detect nested structures and extract inner data")
                         data = list(data.values())[0]
-                        logger.info(f"📄 [AI复盘] 内层键: {list(data.keys())}")
+                        logger.info(f"📄 [AI Review] inner key: {list(data.keys())}")
 
-                    # 提取评分（支持多种字段名，统一转换 1-10 → 0-100）
+                    # Extract ratings (supports multiple field names, unified conversion 1-10 → 0-100) 
                     def normalize_score(score_value, default=50):
-                        """统一评分转换逻辑：1-10 → 0-100"""
+                        """Unified scoring conversion logic:1-10 → 0-100"""
                         if isinstance(score_value, (int, float)) and score_value <= 10:
                             return int(score_value * 10)
                         return int(score_value)
@@ -3530,7 +3530,7 @@ class TradeReviewService:
                     result.attribution_score = normalize_score(data.get("attribution_score") or data.get("归因评分") or data.get("收益归因评分") or 0)
                     result.discipline_score = normalize_score(data.get("discipline_score") or data.get("纪律评分") or data.get("执行纪律评分") or 0)
 
-                    # 提取文本字段（确保是字符串）
+                    # Extract text field (make sure it is a string)
                     summary_raw = data.get("summary") or data.get("综合评价") or data.get("核心结论") or ""
                     result.summary = summary_raw if isinstance(summary_raw, str) else str(summary_raw) if summary_raw else ""
 
@@ -3543,7 +3543,7 @@ class TradeReviewService:
                     suggestions_raw = data.get("suggestions") or data.get("建议") or data.get("改进建议") or []
                     result.suggestions = suggestions_raw if isinstance(suggestions_raw, list) else [str(suggestions_raw)] if suggestions_raw else []
 
-                    # 🆕 提取交易计划执行情况（如果有）
+                    # 🆕 Extract trading plan execution status (if any)
                     result.plan_adherence = data.get("plan_adherence")
                     result.plan_deviation = data.get("plan_deviation")
 
@@ -3551,37 +3551,37 @@ class TradeReviewService:
                     logger.info(f"✅ [AI复盘] 提取字段 - 摘要长度: {len(result.summary)}, 优点: {len(result.strengths)}, 不足: {len(result.weaknesses)}, 建议: {len(result.suggestions)}")
                     logger.info(f"✅ [AI复盘] 分析内容 - 时机: {len(result.timing_analysis)}字符, 仓位: {len(result.position_analysis)}字符, 情绪: {len(result.emotion_analysis)}字符, 归因: {len(result.attribution_analysis)}字符")
                     if result.plan_adherence or result.plan_deviation:
-                        logger.info(f"✅ [AI复盘] 包含交易计划分析: adherence={bool(result.plan_adherence)}, deviation={bool(result.plan_deviation)}")
+                        logger.info(f"✅ [AI Review] Contains trading plan analysis: adherence={bool(result.plan_adherence)}, deviation={bool(result.plan_deviation)}")
                 except Exception as e:
                     import traceback
-                    logger.warning(f"⚠️ [工作流复盘] 解析总结 JSON 失败: {e}")
-                    logger.warning(f"⚠️ [工作流复盘] 完整堆栈:\n{traceback.format_exc()}")
-                    logger.warning(f"⚠️ [工作流复盘] JSON 内容: {json_match.group(1)[:500]}")
+                    logger.warning(f"⚠️ [Workflow review] Parsing summary JSON failed: {e}")
+                    logger.warning(f"⚠️ [Workflow review] full stack:\n{traceback.format_exc()}")
+                    logger.warning(f"⚠️ [Workflow review] JSON content: {json_match.group(1)[:500]}")
             else:
-                logger.warning(f"⚠️ [AI复盘] 未找到 JSON 匹配")
+                logger.warning(f"⚠️ [AI Review] No JSON match found")
 
-            # 如果没有提取到摘要，使用总结文本
+            # If no summary is extracted, use summary text
             if not result.summary:
                 result.summary = review_summary[:200] if len(review_summary) > 200 else review_summary
 
-        logger.info(f"✅ [工作流复盘] 解析完成 - 总分: {result.overall_score}")
+        logger.info(f"✅ [Workflow review] Analysis Complete - Total Score: {result.overall_score}")
 
         return self._sanitize_trade_review_result(result)
 
     @staticmethod
     def _calc_price_change_before(trade, kline_by_date: dict) -> float:
-        """计算交易前价格变化：交易当日开盘价相对前一日收盘价的涨跌幅(%)。"""
+        """Calculate the price change before the transaction: the increase or decrease of the opening price on the day of the transaction relative to the closing price of the previous day(%). """
         try:
             trade_date = trade.timestamp[:10] if trade.timestamp else ""
             if not trade_date or not kline_by_date:
                 return 0.0
-            # 找到交易日K线和前一日K线
+            # Find the K-line of the trading day and the K-line of the previous day
             sorted_dates = sorted(kline_by_date.keys())
             if trade_date not in kline_by_date:
                 return 0.0
             idx = sorted_dates.index(trade_date)
             if idx == 0:
-                return 0.0  # 没有前一日数据
+                return 0.0  # No data for the previous day
             prev_kline = kline_by_date[sorted_dates[idx - 1]]
             trade_kline = kline_by_date[trade_date]
             prev_close = prev_kline.get("close", 0)
@@ -3605,7 +3605,7 @@ class TradeReviewService:
         return (market_snapshot.period_low - trade_info.avg_buy_price) / trade_info.avg_buy_price
 
 
-# 单例模式
+# Singleton pattern
 _trade_review_service: Optional[TradeReviewService] = None
 
 

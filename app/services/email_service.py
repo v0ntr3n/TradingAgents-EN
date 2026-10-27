@@ -1,6 +1,6 @@
 """
-邮件通知服务
-提供分析结果邮件推送功能
+Email notification service
+Provides email push function for analysis results
 """
 
 import smtplib
@@ -24,7 +24,7 @@ from app.utils.timezone import now_tz
 
 logger = logging.getLogger(__name__)
 
-# SMTP配置集合名
+# SMTP Configuration collection name
 SMTP_CONFIG_COLLECTION = "smtp_config"
 
 
@@ -35,24 +35,24 @@ class EmailService:
         self.collection = "email_records"
         self.user_collection = "users"
         self._smtp_config_cache: Optional[Dict[str, Any]] = None
-        # 初始化模板引擎
+        # Initialize template engine
         try:
             self.template_env = Environment(
                 loader=FileSystemLoader("prompts/email_templates"),
                 autoescape=True
             )
         except Exception as e:
-            logger.warning(f"邮件模板目录不存在，将使用简单文本邮件: {e}")
+            logger.warning(f"Email template directory does not exist, simple text email will be used: {e}")
             self.template_env = None
 
     async def get_smtp_config(self) -> Optional[Dict[str, Any]]:
         """
-        获取 SMTP 配置
-        优先从数据库读取，如果没有则使用 .env 配置
+        Get SMTP configuration
+        Read from the database first, if not, use .env configuration
         """
         db = get_mongo_db()
 
-        # 从数据库获取配置
+        # Get configuration from database
         db_config = await db[SMTP_CONFIG_COLLECTION].find_one({"_id": "default"})
 
         if db_config and db_config.get("enabled"):
@@ -69,7 +69,7 @@ class EmailService:
                 "source": "database"
             }
 
-        # 回退到 .env 配置
+        # Fallback to .env configuration
         if settings.SMTP_ENABLED and settings.SMTP_USERNAME and settings.SMTP_PASSWORD:
             return {
                 "enabled": True,
@@ -87,7 +87,7 @@ class EmailService:
         return None
 
     async def save_smtp_config(self, config: Dict[str, Any]) -> bool:
-        """保存 SMTP 配置到数据库"""
+        """Save SMTP configuration to database"""
         db = get_mongo_db()
 
         doc = {
@@ -110,7 +110,7 @@ class EmailService:
             upsert=True
         )
 
-        # 清除缓存
+        # clear cache
         self._smtp_config_cache = None
         return True
 
@@ -136,9 +136,9 @@ class EmailService:
 
             return {"success": True, "message": "SMTP 连接测试成功"}
         except smtplib.SMTPAuthenticationError:
-            return {"success": False, "message": "SMTP 认证失败，请检查用户名和密码"}
+            return {"success": False, "message": "SMTP Authentication failed, please check username and password"}
         except smtplib.SMTPConnectError:
-            return {"success": False, "message": "无法连接 SMTP 服务器，请检查地址和端口"}
+            return {"success": False, "message": "Unable to connect to SMTP server, please check address and port"}
         except Exception as e:
             return {"success": False, "message": f"连接失败: {str(e)}"}
 
@@ -153,25 +153,25 @@ class EmailService:
         attachments: Optional[List[Tuple[str, bytes, str]]] = None
     ) -> Optional[str]:
         """
-        发送分析结果邮件
+        Send analysis result email
 
         Args:
-            user_id: 用户ID
-            email_type: 邮件类型
-            template_name: 模板名称
-            template_data: 模板数据
-            reference_id: 关联ID
-            reference_type: 关联类型
-            attachments: 附件列表，每个元素为 (文件名, 文件内容bytes, MIME类型)
+            user_id: User ID
+            email_type: Email type
+            template_name: Template name
+            template_data: template data
+            reference_id: association ID
+            reference_type: Association type
+            attachments: Attachment list, each element is (file name, File content bytes, MIME Type)
         """
 
-        # 1. 获取 SMTP 配置
+        # 1. Get SMTP configuration
         smtp_config = await self.get_smtp_config()
         if not smtp_config:
-            logger.debug("SMTP未配置，跳过邮件发送")
+            logger.debug("SMTP Not configured, skip email sending")
             return None
 
-        # 2. 获取用户邮件设置
+        # 2. Get user email settings
         user = await self._get_user(user_id)
         if not user:
             logger.warning(f"用户 {user_id} 不存在")
@@ -183,33 +183,33 @@ class EmailService:
             logger.debug(f"用户 {user_id} 未开启邮件通知")
             return None
 
-        # 3. 检查该类型通知是否开启
+        # 3. Check whether this type of notification is enabled
         if not self._is_type_enabled(email_settings, email_type):
             logger.debug(f"用户 {user_id} 未开启 {email_type.value} 类型通知")
             return None
 
-        # 4. 检查免打扰时段
+        # 4. Check the do not disturb period
         if self._is_quiet_hours(email_settings):
-            logger.debug(f"当前处于免打扰时段，跳过邮件发送")
+            logger.debug(f"Currently in do not disturb period, skip email sending")
             return None
 
-        # 5. 频率限制检查
+        # 5. Frequency limit check
         if not await self._check_rate_limit(user_id, email_type, reference_id):
-            logger.debug(f"触发频率限制，跳过发送")
+            logger.debug(f"Trigger frequency limit, skip sending")
             return None
 
-        # 6. 确定收件邮箱
+        # 6. Confirm recipient email
         to_email = email_settings.email_address or user.get("email")
         if not to_email:
             logger.warning(f"用户 {user_id} 没有配置邮箱")
             return None
 
-        # 7. 渲染邮件内容
+        # 7. Render email content
         subject, html_content, text_content = self._render_template(
             template_name, template_data, email_settings.language
         )
 
-        # 8. 创建邮件记录
+        # 8. Create email record
         record_id = await self._create_record(
             user_id=user_id,
             to_email=to_email,
@@ -220,12 +220,12 @@ class EmailService:
             reference_type=reference_type
         )
 
-        # 9. 发送邮件（带附件）
+        # 9. Send email (with attachment)
         success = await self._send_smtp(
             to_email, subject, html_content, text_content, smtp_config, attachments
         )
 
-        # 10. 更新发送状态
+        # 10. Update sending status
         if success:
             await self._update_status(record_id, EmailStatus.SENT)
             logger.info(f"✅ 邮件发送成功: {to_email}, 类型: {email_type.value}")
@@ -243,7 +243,7 @@ class EmailService:
             template_name="test_email",
             template_data={
                 "test_time": now_tz().strftime("%Y-%m-%d %H:%M:%S"),
-                "message": "这是一封测试邮件，用于验证邮件通知功能是否正常工作。"
+                "message": "This is a test email to verify that email notifications are working properly."
             }
         )
         return result is not None
@@ -264,7 +264,7 @@ class EmailService:
         cursor = db[self.collection].find(query).sort("created_at", -1).skip(skip).limit(page_size)
         records = await cursor.to_list(length=page_size)
         
-        # 转换 _id 为字符串
+        # Convert _id to string
         for record in records:
             record["id"] = str(record.pop("_id"))
         
@@ -299,7 +299,7 @@ class EmailService:
             EmailType.SCHEDULED_ANALYSIS: settings.scheduled_analysis,
             EmailType.IMPORTANT_SIGNAL: settings.important_signals,
             EmailType.SYSTEM_NOTIFICATION: settings.system_notifications,
-            EmailType.TEST_EMAIL: True,  # 测试邮件始终允许
+            EmailType.TEST_EMAIL: True,  # Test messages are always allowed
         }
         return type_map.get(email_type, False)
 
@@ -313,7 +313,7 @@ class EmailService:
         start = email_settings.quiet_hours_start
         end = email_settings.quiet_hours_end
 
-        # 处理跨天情况（如22:00 - 08:00）
+        # Handle cross-day situations (such as 22:00 - 08:00) 
         if start > end:
             return current_time >= start or current_time < end
         else:
@@ -328,7 +328,7 @@ class EmailService:
         """检查频率限制"""
         db = get_mongo_db()
 
-        # 定义不同类型的限制
+        # Define different types of restrictions
         limits = {
             EmailType.SINGLE_ANALYSIS: {"hours": 1, "same_ref": True},
             EmailType.BATCH_ANALYSIS: {"hours": 0, "same_ref": False},
@@ -365,9 +365,9 @@ class EmailService:
         language: str = "zh"
     ) -> tuple:
         """渲染邮件模板"""
-        subject = data.get("subject", "TradingAgents-CN 通知")
+        subject = data.get("subject", "TradingAgents-CN Notification")
 
-        # 尝试加载HTML模板
+        # Try loading HTML template
         html_content = None
         if self.template_env:
             try:
@@ -376,18 +376,18 @@ class EmailService:
             except TemplateNotFound:
                 logger.debug(f"未找到模板 {language}/{template_name}.html，使用简单格式")
 
-        # 如果没有模板，生成简单HTML
+        # If there is no template, it is easy to generate HTML
         if not html_content:
             html_content = self._generate_simple_html(template_name, data)
 
-        # 生成纯文本版本
+        # Generate plain text version
         text_content = self._html_to_text(html_content)
 
         return subject, html_content, text_content
 
     def _generate_simple_html(self, template_name: str, data: Dict[str, Any]) -> str:
-        """生成简单的HTML邮件内容"""
-        title = data.get("title", "TradingAgents-CN 通知")
+        """Generate simple HTML email content"""
+        title = data.get("title", "TradingAgents-CN Notification")
         content = data.get("content", data.get("message", ""))
 
         return f"""
@@ -400,8 +400,8 @@ class EmailService:
                 <div style="color: #555; line-height: 1.6;">{content}</div>
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
                 <p style="font-size: 12px; color: #999;">
-                    此邮件由 TradingAgents-CN 自动发送<br>
-                    ⚠️ 免责声明：以上内容仅供参考，不构成投资建议。
+                    This email is automatically sent by TradingAgents-CN<br>
+                    ⚠️ Disclaimer: The above content is for reference only and does not constitute investment advice.
                 </p>
             </div>
         </body>
@@ -411,7 +411,7 @@ class EmailService:
     def _html_to_text(self, html: str) -> str:
         """将HTML转换为纯文本"""
         import re
-        # 简单处理：移除HTML标签
+        # Simple solution: remove HTML tags
         text = re.sub(r'<[^>]+>', '', html)
         text = re.sub(r'\s+', ' ', text).strip()
         return text
@@ -479,7 +479,7 @@ class EmailService:
         smtp_config: Dict[str, Any],
         attachments: Optional[List[Tuple[str, bytes, str]]] = None
     ) -> bool:
-        """通过SMTP发送邮件（在线程池中执行同步操作）"""
+        """Sending mail via SMTP (performing synchronous operations in a thread pool)"""
         import asyncio
         return await asyncio.get_event_loop().run_in_executor(
             None,
@@ -496,18 +496,18 @@ class EmailService:
         smtp_config: Dict[str, Any],
         attachments: Optional[List[Tuple[str, bytes, str]]] = None
     ) -> bool:
-        """同步SMTP发送（支持附件）"""
+        """Synchronous SMTP sending (supports attachments)"""
         try:
-            # 如果有附件，使用 mixed 类型；否则使用 alternative
+            # If there are attachments, use mixed type; otherwise use alternative
             if attachments:
                 msg = MIMEMultipart("mixed")
-                # 创建正文部分
+                # Create body section
                 body_part = MIMEMultipart("alternative")
                 body_part.attach(MIMEText(text_content, "plain", "utf-8"))
                 body_part.attach(MIMEText(html_content, "html", "utf-8"))
                 msg.attach(body_part)
 
-                # 添加附件
+                # Add attachment
                 for filename, content, mime_type in attachments:
                     try:
                         main_type, sub_type = mime_type.split("/", 1)
@@ -532,7 +532,7 @@ class EmailService:
             msg["From"] = f"{smtp_config['from_name']} <{smtp_config['from_email']}>"
             msg["To"] = to_email
 
-            # 发送邮件
+            # Send email
             if smtp_config.get("use_ssl"):
                 server = smtplib.SMTP_SSL(smtp_config["host"], smtp_config["port"])
             else:
@@ -551,7 +551,7 @@ class EmailService:
             return False
 
 
-# 全局实例
+# global instance
 _email_service: Optional[EmailService] = None
 
 

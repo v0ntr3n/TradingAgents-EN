@@ -1,45 +1,45 @@
 # Prompt Governance Checklist
 
-## 运行期模板检查
+## Runtime Template Checks
 
-- 是否先查了 `prompt_templates` 而不是只看 repo 文件。
-- 是否确认了 `agent_type`、`agent_name`、`preference_type`、`status=active`。
-- 是否分别核对了 with_cache 和 without_cache。
-- 修改 DB 后是否立刻回读。
+- Did you check `prompt_templates` in the database first rather than only inspecting repository files?
+- Did you verify `agent_type`, `agent_name`, `preference_type`, and `status=active`?
+- Did you check both `with_cache` and `without_cache` branches separately?
+- Did you read back the DB record immediately after modifying it?
 
-## 代码装配检查
+## Code Assembly Checks
 
-- 是否检查 `_build_system_prompt` 和 `_build_user_prompt`。
-- 是否检查无缓存 fallback 分支。
-- 是否检查 adapter 是否把上游原文直接透传。
-- 是否检查 service 是否仍在做 legacy action / price_targets / recommendation 提取。
+- Did you inspect `_build_system_prompt` and `_build_user_prompt`?
+- Did you inspect the cache-miss (`without_cache`) fallback branch?
+- Did you check whether the adapter passes raw upstream text through directly?
+- Did you check whether the service layer is still extracting legacy `action` / `price_targets` / `recommendation` fields?
 
-## 数据与参数检查
+## Data and Parameter Checks
 
-- 是否检查 analysis_date 在日志里的真实值。
-- 是否检查 tool args 里的 `start_date` / `end_date` / `ticker`。
-- 是否确认 current_price、technical latest_price、effective_data_date 是否来自同一口径。
-- 是否把“日期漂移”“价格口径漂移”“提示词污染”区分开。
+- Did you check the actual runtime value of `analysis_date` in the logs?
+- Did you check `start_date` / `end_date` / `ticker` in the tool arguments?
+- Did you verify whether `current_price`, technical `latest_price`, and `effective_data_date` come from the same data source and date basis?
+- Did you distinguish between "date drift", "price basis drift", and "prompt contamination"?
 
-## 合规与输出检查
+## Compliance and Output Checks
 
-- 是否只去掉表面建议词，而没有处理隐性触发语。
-- 是否同时检查上游 analyst、risk、advisor，而不是只看最终 manager。
-- 是否确认 user_view 和详细研究正文没有重复堆砌。
-- 是否确认最终 sanitizer 没有重新引入旧兼容字段。
+- Did you only strip surface-level recommendation words without addressing implicit trigger phrases?
+- Did you inspect upstream analysts, risk assessors, and advisors in addition to the final manager?
+- Did you verify that `user_view` and the detailed research body do not duplicate content?
+- Did you verify that the final sanitizer does not reintroduce legacy compatibility fields?
 
-## 验证检查
+## Verification Checks
 
-- 是否先跑最窄回归测试。
-- 是否对失败点做同一切片修复后重跑。
-- 是否再跑治理校验。
-- 如果改了 DB 模板，是否做了独立回读。
-- 如果改了运行期行为，是否建议或执行重跑目标 workflow 并查日志。
+- Did you run the narrowest regression test slice first?
+- Did you fix any failures within the same slice and re-run?
+- Did you run the governance validation suite afterward?
+- If DB templates were modified, did you perform an independent read-back verification?
+- If runtime behavior was changed, did you recommend or execute a re-run of the target workflow and inspect the logs?
 
-## TradingAgentsCN 常见根因
+## Common Root Causes in TradingAgentsCN
 
-- DB 模板已过时，repo fallback 其实没生效。
-- adapter 把上游原始报告直接塞进下游 prompt，导致合规触发语扩散。
-- 无缓存场景没有把 tool 参数写死到 `analysis_date`，LLM 自行猜了历史日期。
-- service 层仍在解析 neutral JSON 中的 legacy action / price_targets。
-- current_price 与技术分析使用的价格序列不是同一日期或同一来源。
+- The DB template is outdated, so the repository fallback never actually took effect.
+- The adapter injects raw upstream reports directly into downstream prompts, causing compliance trigger phrases to propagate.
+- The cache-miss path does not pin tool parameters to `analysis_date`, causing the LLM to guess historical dates on its own.
+- The service layer still parses legacy `action` / `price_targets` from neutral JSON outputs.
+- `current_price` and the price series used in technical analysis do not share the same date or data source.

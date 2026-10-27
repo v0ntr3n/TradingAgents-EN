@@ -1,18 +1,18 @@
 /**
- * 统一任务中心 API
+ * unified mission center API
  *
- * 对接后端 /api/v2/tasks/* 端点
- * 支持所有类型的分析任务（股票分析、持仓分析、交易复盘等）
+ * docking backend /api/v2/tasks/* endpoint
+ * Supports all types of analysis tasks (stock analysis, position analysis, transaction review, etc.)
  */
 
 import { ApiClient } from './request'
 
 export type TaskTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
 
-// ==================== 类型定义 ====================
+// ==================== type definition ====================
 
 /**
- * 任务类型枚举
+ * Task type enum
  */
 export enum TaskType {
   STOCK_ANALYSIS = 'stock_analysis',
@@ -26,7 +26,7 @@ export enum TaskType {
 }
 
 /**
- * 任务状态枚举
+ * Task status enum
  */
 export enum TaskStatus {
   PENDING = 'pending',
@@ -34,11 +34,11 @@ export enum TaskStatus {
   COMPLETED = 'completed',
   FAILED = 'failed',
   CANCELLED = 'cancelled',
-  SUSPENDED = 'suspended'  // 挂起状态（服务重启后未完成的任务）
+  SUSPENDED = 'suspended'  // Pending status (unfinished tasks after service restart)
 }
 
 /**
- * 任务列表项
+ * task list item
  */
 export interface TaskListItem {
   task_id: string
@@ -51,14 +51,14 @@ export interface TaskListItem {
   execution_time: number
   error_message?: string
   
-  // 任务参数（用于显示）
+  // Task parameters (for display)
   symbol?: string
   code?: string
   market?: string
 }
 
 /**
- * 任务详情
+ * Mission details
  */
 export interface TaskDetail {
   task_id: string
@@ -93,7 +93,7 @@ export interface TaskDetail {
 }
 
 /**
- * 任务统计
+ * Task statistics
  */
 export interface TaskStatistics {
   total: number
@@ -105,7 +105,7 @@ export interface TaskStatistics {
 }
 
 /**
- * 任务列表查询参数
+ * Task list query parameters
  */
 export interface TaskListParams {
   task_type?: TaskType
@@ -115,10 +115,10 @@ export interface TaskListParams {
   skip?: number
 }
 
-// ==================== API 方法 ====================
+// ==================== API method ====================
 
 /**
- * 获取任务列表
+ * Get task list
  */
 export function getTaskList(params?: TaskListParams) {
   return ApiClient.get<{
@@ -130,61 +130,61 @@ export function getTaskList(params?: TaskListParams) {
 }
 
 /**
- * 获取任务统计
+ * Get task statistics
  */
 export function getTaskStatistics() {
   return ApiClient.get<TaskStatistics>('/api/v2/tasks/statistics')
 }
 
 /**
- * 获取任务详情
+ * Get task details
  */
 export function getTaskDetail(taskId: string) {
   return ApiClient.get<TaskDetail>(`/api/v2/tasks/${taskId}`)
 }
 
 /**
- * 取消任务
+ * Cancel task
  */
 export function cancelTask(taskId: string) {
   return ApiClient.delete<{ success: boolean; message: string }>(`/api/v2/tasks/${taskId}`)
 }
 
 /**
- * 恢复挂起的任务
+ * Resume a suspended task
  */
 export function resumeTask(taskId: string) {
   return ApiClient.post<{ success: boolean; message: string }>(`/api/v2/tasks/${taskId}/resume`)
 }
 
 /**
- * 任务类型中文名称映射
+ * Task type Chinese name mapping
  */
 export const TaskTypeNames: Record<TaskType, string> = {
-  [TaskType.STOCK_ANALYSIS]: '股票分析',
-  [TaskType.ETF_ANALYSIS]: 'ETF 分析',
-  [TaskType.POSITION_ANALYSIS]: '持仓分析',
-  [TaskType.TRADE_REVIEW]: '交易复盘',
-  [TaskType.PORTFOLIO_HEALTH]: '组合健康度',
-  [TaskType.RISK_ASSESSMENT]: '风险评估',
-  [TaskType.MARKET_OVERVIEW]: '市场概览',
-  [TaskType.SECTOR_ANALYSIS]: '板块分析'
+  [TaskType.STOCK_ANALYSIS]: 'stock analysis',
+  [TaskType.ETF_ANALYSIS]: 'ETF analysis',
+  [TaskType.POSITION_ANALYSIS]: 'Position analysis',
+  [TaskType.TRADE_REVIEW]: 'Transaction review',
+  [TaskType.PORTFOLIO_HEALTH]: 'Combination health',
+  [TaskType.RISK_ASSESSMENT]: 'risk assessment',
+  [TaskType.MARKET_OVERVIEW]: 'Market overview',
+  [TaskType.SECTOR_ANALYSIS]: 'Sector analysis'
 }
 
 /**
- * 任务状态中文名称映射
+ * Task status Chinese name mapping
  */
 export const TaskStatusNames: Record<TaskStatus, string> = {
-  [TaskStatus.PENDING]: '等待中',
-  [TaskStatus.PROCESSING]: '进行中',
-  [TaskStatus.COMPLETED]: '已完成',
-  [TaskStatus.FAILED]: '失败',
-  [TaskStatus.CANCELLED]: '已取消',
-  [TaskStatus.SUSPENDED]: '已挂起'
+  [TaskStatus.PENDING]: 'Waiting',
+  [TaskStatus.PROCESSING]: 'In progress',
+  [TaskStatus.COMPLETED]: 'Completed',
+  [TaskStatus.FAILED]: 'failed',
+  [TaskStatus.CANCELLED]: 'Canceled',
+  [TaskStatus.SUSPENDED]: 'Pending'
 }
 
 /**
- * 任务状态颜色映射
+ * Task status color mapping
  */
 export const TaskStatusColors: Record<TaskStatus, TaskTagType> = {
   [TaskStatus.PENDING]: 'info',
@@ -196,10 +196,10 @@ export const TaskStatusColors: Record<TaskStatus, TaskTagType> = {
 }
 
 
-// ==================== 通用研究任务专用 API ====================
+// ==================== Dedicated to general research tasks API ====================
 
 /**
- * 通用研究任务列表项
+ * Common research task list items
  */
 export interface GeneralTaskListItem {
   task_id: string
@@ -218,7 +218,7 @@ export interface GeneralTaskListItem {
 }
 
 /**
- * 通用研究任务查询参数
+ * Common research task query parameters
  */
 export interface GeneralTaskListParams {
   workflow_id?: string
@@ -231,7 +231,7 @@ export interface GeneralTaskListParams {
 }
 
 /**
- * 获取通用研究任务列表
+ * Get a list of general research tasks
  */
 export function getGeneralTaskList(params?: GeneralTaskListParams) {
   return ApiClient.get<{
@@ -243,7 +243,7 @@ export function getGeneralTaskList(params?: GeneralTaskListParams) {
 }
 
 /**
- * 获取通用研究任务统计
+ * Get general research task statistics
  */
 export function getGeneralTaskStatistics() {
   return ApiClient.get<{
@@ -256,19 +256,19 @@ export function getGeneralTaskStatistics() {
 }
 
 /**
- * 通用研究任务状态中文名
+ * Chinese name of general research task status
  */
 export const GeneralTaskStatusNames: Record<string, string> = {
-  pending: '等待中',
-  processing: '进行中',
-  completed: '已完成',
-  failed: '失败',
-  cancelled: '已取消',
-  suspended: '已挂起'
+  pending: 'Waiting',
+  processing: 'In progress',
+  completed: 'Completed',
+  failed: 'failed',
+  cancelled: 'Canceled',
+  suspended: 'Pending'
 }
 
 /**
- * 通用研究任务状态颜色
+ * Common research task status colors
  */
 export const GeneralTaskStatusColors: Record<string, TaskTagType> = {
   pending: 'info',

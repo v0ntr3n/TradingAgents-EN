@@ -1,9 +1,9 @@
 {
   "collection": "stock_financial_data",
   "version": 1,
-  "summary": "统一财务主表。顶层是股票财务文档，常包含当前/汇总字段；多期明细通常位于 raw_data 下的嵌套数组中，而不是顶层多条文档逐期平铺。",
+  "summary": "Unified financial master table. The top level is a stock financial document, which often contains current/summary fields; multi-period details are usually located in nested arrays under raw_data, rather than multiple top-level documents being tiled period by period.",
   "structure": {
-    "top_level_shape": "优先按一股一文档理解；不要假设顶层每条文档只对应单一期财报。顶层 report_period 可表示当前主记录口径，但 raw_data 内部可能同时包含多期明细。",
+    "top_level_shape": "Prioritize understanding based on one share per document; do not assume that each top-level document only corresponds to a single financial report. The top-level report_period can represent the current main record diameter, but raw_data may contain multiple period details at the same time.",
     "query_keys": ["symbol", "code", "report_period", "report_date", "report_type", "data_source"],
     "stable_top_level_fields": [
       "symbol",
@@ -23,22 +23,22 @@
       {
         "path": "raw_data.income_statement",
         "type": "array",
-        "description": "多期利润表数组。常见元素字段包括 end_date、revenue、n_income_attr_p、oper_profit 等。"
+        "description": "Multi-period income statement array. Common element fields include end_date, revenue, n_income_attr_p, oper_profit, etc."
       },
       {
         "path": "raw_data.balance_sheet",
         "type": "array",
-        "description": "多期资产负债表数组。常见元素字段包括 end_date、total_assets、total_liab、total_hldr_eqy_exc_min_int 等。"
+        "description": "Multi-period balance sheet array. Common element fields include end_date, total_assets, total_liab, total_hldr_eqy_exc_min_int, etc."
       },
       {
         "path": "raw_data.cashflow_statement",
         "type": "array",
-        "description": "多期现金流量表数组。常见元素字段包括 end_date、n_cashflow_act、n_cashflow_inv_act、n_cash_flows_fnc_act 等。"
+        "description": "Multi-period cash flow statement array. Common element fields include end_date, n_cashflow_act, n_cashflow_inv_act, n_cash_flows_fnc_act, etc."
       },
       {
         "path": "raw_data.financial_indicators",
         "type": "array",
-        "description": "多期财务指标数组，不是单个对象。常见元素字段包括 end_date、netprofit_yoy、growth_YOYNI、roe、grossprofit_margin、netprofit_margin。"
+        "description": "An array of multi-period financial indicators, not a single object. Common element fields include end_date, netprofit_yoy, growth_YOYNI, roe, grossprofit_margin, netprofit_margin."
       }
     ]
   },
@@ -50,22 +50,22 @@
         "raw_data.financial_indicators[].growth_YOYNI"
       ],
       "fallback_paths": [
-        "顶层 net_profit / net_income 与 raw_data.income_statement[] 中同口径多期净利润做同比计算"
+        "Top level net_profit / net_income vs. raw_data.income_statement[] Year-on-year calculation of multi-period net profit of Zhongtong caliber"
       ],
       "notes": [
-        "必须先判断 financial_indicators 是数组，再遍历元素取增长率字段。",
-        "financial_indicators[].end_date / report_period 表示财报期末日期，常见为 0331、0630、0930、1231，对应季报/年报混合序列，不可默认当作连续年报。",
-        "当 growth_years=1 时，优先使用字段自带的同比增速（如 netprofit_yoy / growth_YOYNI）；若需手工计算，也必须做同口径同比，不能把 2025Q3 与 2024 年报直接相比。",
-        "如果增长率字段缺失，才能退回到多期净利润同比计算。",
-        "不要因为顶层只有一条文档就断定只有一期数据。"
+        "You must first determine whether financial_indicators is an array, and then traverse the elements to get the growth rate field.",
+        "financial_indicators[].end_date / report_period Indicates the end date of the financial report period. Commonly used are 0331, 0630, 0930, and 1231. It corresponds to the mixed sequence of quarterly report/annual report and cannot be regarded as continuous annual report by default.",
+        "When growth_years=1 When calculating, priority is given to using the year-on-year growth rate that comes with the field (such as netprofit_yoy / growth_YOYNI); if manual calculation is required, it must also be done year-on-year with the same caliber, and 2025Q3 cannot be directly compared with the 2024 annual report.",
+        "If the growth rate field is missing, you can return to the multi-period net profit year-on-year calculation.",
+        "Don t conclude that there is only one period of data just because there is only one document at the top level."
       ]
     }
   ],
   "pitfalls": [
-    "raw_data.financial_indicators 通常是数组，不是 dict；不能直接对整个 financial_indicators 调用 get('netprofit_yoy')。",
-    "顶层 report_period 不能代表 raw_data 下所有数组仅有一期。",
-    "不要把 end_date=20250331/20250630/20250930 这类记录误当成年报年份序列；这些通常是季度口径。",
-    "若数据库只有最近几份季报和一份年报，不可臆造更长的年度历史，更不能把季度序列当作 growth_years 对应的年数。",
-    "发现字段存在不等于已确认可直接用于当前任务，必须结合字段类型和层级。"
+    "raw_data.financial_indicators Usually an array, not a dict; cannot be called directly on the entire financial_indicators get('netprofit_yoy'). ",
+    "The top-level report_period cannot represent only one period for all arrays under raw_data.",
+    "don t put end_date=20250331/20250630/20250930 Such records are mistaken for annual report year series; these are usually on a quarterly basis.",
+    "If the database only has the most recent quarterly reports and one annual report, you cannot invent a longer annual history, let alone treat the quarterly sequence as the number of years corresponding to growth_years.",
+    "Finding that a field exists does not mean that it has been confirmed and can be directly used for the current task. It must be combined with the field type and level."
   ]
 }

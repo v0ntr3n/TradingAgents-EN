@@ -13,7 +13,7 @@ def test_analyze_a_share_dupont_uses_average_bases_and_quarter_annualization(mon
     monkeypatch.setattr(
         dupont_skill,
         "get_stock_basic_info",
-        lambda symbol: {"name": "测试公司", "industry": "白酒"},
+        lambda symbol: {"name": "testing company", "industry": "Liquor"},
     )
     monkeypatch.setattr(
         dupont_skill,
@@ -54,7 +54,7 @@ def test_analyze_a_share_dupont_preserves_zero_values(monkeypatch):
     monkeypatch.setattr(
         dupont_skill,
         "get_stock_basic_info",
-        lambda symbol: {"name": "测试公司", "industry": "制造业"},
+        lambda symbol: {"name": "testing company", "industry": "Manufacturing"},
     )
     monkeypatch.setattr(
         dupont_skill,

@@ -1,17 +1,17 @@
 """
-Embedding 服务管理模块
+Embedding Service management module
 
-支持多种 Embedding 服务，按优先级自动选择：
-1. Ollama (本地) - 完全离线，推荐
-2. 通义千问 DashScope - 免费额度大
-3. OpenAI - 效果好但需要翻墙
-4. 禁用 - 优雅降级
+Supports multiple Embedding services, automatically selected according to priority:
+1. Ollama (local) - Completely offline, recommended
+2. Tongyi Qianwen DashScope - Large free limit
+3. OpenAI - The effect is good but needs to be circumvented
+4. Disable - graceful degradation
 
-使用方法：
+How to use:
     from tradingagents.agents.utils.embedding_service import get_embedding_service
     
     service = get_embedding_service(config)
-    vector = service.get_embedding("要嵌入的文本")
+    vector = service.get_embedding("text to embed")
 """
 
 import os
@@ -24,7 +24,7 @@ logger = get_logger("agents.utils.embedding")
 
 
 class EmbeddingService(ABC):
-    """Embedding 服务基类"""
+    """Embedding Service base class"""
     
     @abstractmethod
     def get_embedding(self, text: str) -> List[float]:
@@ -42,7 +42,7 @@ class EmbeddingService(ABC):
 
 
 class OllamaEmbeddingService(EmbeddingService):
-    """Ollama 本地 Embedding 服务"""
+    """Ollama Local Embedding Services"""
     
     def __init__(self, base_url: str = "http://localhost:11434", model: str = "nomic-embed-text"):
         self.base_url = base_url.rstrip('/')
@@ -50,33 +50,33 @@ class OllamaEmbeddingService(EmbeddingService):
         self._available = None
     
     def is_available(self) -> bool:
-        """检测 Ollama 是否运行且模型可用"""
+        """Detect whether Ollama is running and the model is available"""
         if self._available is not None:
             return self._available
         
         try:
-            # 检查 Ollama 服务是否运行
+            # Check if the Ollama service is running
             response = requests.get(f"{self.base_url}/api/tags", timeout=2)
             if response.status_code != 200:
                 self._available = False
                 return False
             
-            # 检查模型是否已下载
+            # Check if the model has been downloaded
             models = response.json().get("models", [])
             model_names = [m.get("name", "").split(":")[0] for m in models]
             
             if self.model not in model_names and f"{self.model}:latest" not in [m.get("name", "") for m in models]:
                 logger.warning(f"⚠️ Ollama 运行中但未找到 {self.model} 模型")
-                logger.info(f"💡 请运行: ollama pull {self.model}")
+                logger.info(f"💡 Please run: ollama pull {self.model}")
                 self._available = False
                 return False
             
             self._available = True
-            logger.info(f"✅ Ollama Embedding 服务可用: {self.model}")
+            logger.info(f"✅ Ollama Embedding Service available: {self.model}")
             return True
             
         except requests.exceptions.ConnectionError:
-            logger.debug(f"Ollama 服务未运行 ({self.base_url})")
+            logger.debug(f"Ollama Service is not running ({self.base_url})")
             self._available = False
             return False
         except Exception as e:
@@ -85,7 +85,7 @@ class OllamaEmbeddingService(EmbeddingService):
             return False
     
     def get_embedding(self, text: str) -> List[float]:
-        """通过 Ollama API 获取嵌入向量"""
+        """Get embedding vectors via Ollama API"""
         try:
             response = requests.post(
                 f"{self.base_url}/api/embeddings",
@@ -95,10 +95,10 @@ class OllamaEmbeddingService(EmbeddingService):
             if response.status_code == 200:
                 return response.json().get("embedding", [])
             else:
-                logger.error(f"Ollama embedding 失败: {response.status_code}")
-                return [0.0] * 768  # nomic-embed-text 输出维度
+                logger.error(f"Ollama embedding failed: {response.status_code}")
+                return [0.0] * 768  # nomic-embed-text Output dimensions
         except Exception as e:
-            logger.error(f"Ollama embedding 异常: {e}")
+            logger.error(f"Ollama embedding Abnormal: {e}")
             return [0.0] * 768
     
     def get_service_name(self) -> str:
@@ -106,7 +106,7 @@ class OllamaEmbeddingService(EmbeddingService):
 
 
 class DashScopeEmbeddingService(EmbeddingService):
-    """通义千问 DashScope Embedding 服务"""
+    """Tongyi Qianwen DashScope Embedding Service"""
     
     def __init__(self):
         self.api_key = os.getenv('DASHSCOPE_API_KEY')
@@ -120,7 +120,7 @@ class DashScopeEmbeddingService(EmbeddingService):
             dashscope.api_key = self.api_key
             return True
         except ImportError:
-            logger.debug("dashscope 包未安装")
+            logger.debug("dashscope Package not installed")
             return False
     
     def get_embedding(self, text: str) -> List[float]:
@@ -133,10 +133,10 @@ class DashScopeEmbeddingService(EmbeddingService):
             if response.status_code == 200:
                 return response.output['embeddings'][0]['embedding']
             else:
-                logger.error(f"DashScope embedding 失败: {response.message}")
+                logger.error(f"DashScope embedding failed: {response.message}")
                 return [0.0] * 1536
         except Exception as e:
-            logger.error(f"DashScope embedding 异常: {e}")
+            logger.error(f"DashScope embedding Abnormal: {e}")
             return [0.0] * 1536
     
     def get_service_name(self) -> str:

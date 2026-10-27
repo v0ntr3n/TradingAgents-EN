@@ -1,11 +1,11 @@
 """
-通用 HITL（Human-in-the-Loop）模块。
+Universal HITL (Human-in-the-Loop) module.
 
-提供跨子系统的待确认操作管理：
-- 智能助手关键操作确认（项4）
-- Skill 生成后审核才绑定（项6）
+Provides management of pending operations across subsystems:
+- Intelligent assistant key operation confirmation (item 4)
+- Skill Bind only after review (item 6)
 
-核心服务：HITLCheckpointService
+Core services:HITLCheckpointService
 """
 
 from .checkpoint_store import (

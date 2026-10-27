@@ -1,14 +1,14 @@
-"""财经专家顾问模块
+"""Financial expert advisory module
 
-当 helper 返回 no_data 时，用 LLM 作为资深金融从业者判断：
-1. 该股票没有这类数据是否业务合理（如银行股无质押是合理的）
-2. 如果不合理，推荐更合适的测试股票
-3. 给出专家建议，反馈给 Skill 生成管道
+When the helper returns no_data, use LLM as a senior financial practitioner to judge:
+1. Is the business reasonable if the stock does not have such data (for example, it is reasonable for bank stocks to be unpledged)
+2. If it is unreasonable, recommend a more suitable test stock
+3. Give expert advice and feedback to the Skill generation pipeline
 
-适用场景：
-- 质押分析 helper 返回 no_data：银行股/白马股可能无质押（合理），民营股无质押可能不合理
-- 财务分析 helper 返回 no_data：次新股可能无年报（合理），老股无年报不合理
-- 新闻分析 helper 返回 no_data：冷门股可能无新闻（半合理），热点股无新闻不合理
+Applicable scenarios:
+- Pledge analysis helper returns no_data: bank stocks/white horse stocks may not be pledged (reasonable), private stocks may not be pledged and may be unreasonable
+- Financial analysis helper returns no_data: New stocks may not have annual reports (reasonable), old stocks may not have annual reports, which is unreasonable.
+- News analysis helper returns no_data: There may be no news for unpopular stocks (semi-reasonable), but it is unreasonable to have no news for hot stocks.
 """
 
 import json
@@ -24,23 +24,23 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ExpertJudgment:
-    """财经专家对 no_data 的判断结果"""
+    """Financial experts judgment results on no_data"""
 
-    is_rational: bool = True  # no_data 是否业务合理
-    reasoning: str = ""  # 判断理由
-    recommended_stocks: List[Dict[str, str]] = field(default_factory=list)  # 推荐的更合适测试股票
-    advice: str = ""  # 给 LLM 的建议（注入 feedback）
-    confidence: float = 0.0  # 判断置信度 0-1
+    is_rational: bool = True  # no_data Whether the business is reasonable
+    reasoning: str = ""  # Reasons for judgment
+    recommended_stocks: List[Dict[str, str]] = field(default_factory=list)  # Recommended stocks that are more suitable for testing
+    advice: str = ""  # Suggestions for LLM (inject feedback)
+    confidence: float = 0.0  # Judgment Confidence 0-1
 
     def to_feedback_text(self) -> str:
-        """转换为可注入 feedback 的文本"""
+        """Convert to text that can be injected with feedback"""
         lines = []
-        lines.append("【财经专家判断 — no_data 合理性分析】")
+        lines.append(" [Financial expert judgment — no_data Rationality analysis]")
         lines.append(f"判断结果: {'合理（该股票本应无此类数据）' if self.is_rational else '不合理（该股票本应有此类数据）'}")
         if self.reasoning:
             lines.append(f"判断理由: {self.reasoning}")
         if self.recommended_stocks:
-            lines.append("推荐换股重试（这些股票更可能有数据）:")
+            lines.append("It is recommended to exchange shares and try again (these stocks are more likely to have data):")
             for stock in self.recommended_stocks[:3]:
                 code = stock.get("code", "")
                 name = stock.get("name", "")
@@ -52,25 +52,25 @@ class ExpertJudgment:
 
 
 class FinancialExpertAdvisor:
-    """财经专家顾问：用 LLM 判断 no_data 是否业务合理 + 推荐更合适的测试股票"""
+    """Financial expert consultant: Use LLM to determine whether no_data is a reasonable business + Recommend more suitable test stocks"""
 
-    # A 股常见有质押数据的股票池（民营企业、高质押率典型）
-    # 用于 LLM 推荐时的参考，避免 LLM 凭空捏造
+    # A Common stock pools with pledge data (typical of private companies and high pledge rates)
+    # Used as a reference for LLM recommendations to avoid LLM fabrication.
     _PLEDGE_LIKELY_STOCKS = [
-        {"code": "000651", "name": "格力电器", "industry": "家电", "reason": "大股东有质押历史，数据完整"},
-        {"code": "002594", "name": "比亚迪", "industry": "汽车", "reason": "质押记录丰富（400+ 条）"},
-        {"code": "300750", "name": "宁德时代", "industry": "新能源", "reason": "有质押记录，数据规范"},
-        {"code": "600276", "name": "恒瑞医药", "industry": "医药", "reason": "白马股，质押较少但可能有"},
-        {"code": "600519", "name": "贵州茅台", "industry": "白酒", "reason": "蓝筹股，大股东通常不质押"},
+        {"code": "000651", "name": "格力电器", "industry": "家电", "reason": "The major shareholder has a pledge history and the data is complete"},
+        {"code": "002594", "name": "比亚迪", "industry": "汽车", "reason": "Rich pledge records (400+ Article)"},
+        {"code": "300750", "name": "宁德时代", "industry": "新能源", "reason": "There are pledge records and data specifications"},
+        {"code": "600276", "name": "恒瑞医药", "industry": "医药", "reason": "White horse stocks, less pledged but possible"},
+        {"code": "600519", "name": "贵州茅台", "industry": "白酒", "reason": "For blue chip stocks, major shareholders usually do not pledge"},
     ]
 
-    # 各类 Skill 推荐的测试股票通用池（有完整财务数据、有新闻、有质押等）
+    # A general pool of test stocks recommended by various Skills (with complete financial data, news, pledges, etc.)
     _GENERAL_TEST_STOCKS = [
-        {"code": "000651", "name": "格力电器", "industry": "家电", "reason": "数据完整，财务规范，有质押"},
-        {"code": "600519", "name": "贵州茅台", "industry": "白酒", "reason": "蓝筹龙头，财报完整，新闻丰富"},
-        {"code": "002594", "name": "比亚迪", "industry": "汽车", "reason": "热点股，数据齐全"},
-        {"code": "300750", "name": "宁德时代", "industry": "新能源", "reason": "创业板龙头，数据规范"},
-        {"code": "600036", "name": "招商银行", "industry": "银行", "reason": "金融蓝筹，财报完整"},
+        {"code": "000651", "name": "格力电器", "industry": "家电", "reason": "Complete data, financial standards, and pledge"},
+        {"code": "600519", "name": "贵州茅台", "industry": "白酒", "reason": "Blue chip leader, complete financial report, rich news"},
+        {"code": "002594", "name": "比亚迪", "industry": "汽车", "reason": "Hot stocks with complete data"},
+        {"code": "300750", "name": "宁德时代", "industry": "新能源", "reason": "GEM leader, data standardization"},
+        {"code": "600036", "name": "招商银行", "industry": "银行", "reason": "Financial blue chip, complete financial report"},
     ]
 
     def __init__(
@@ -103,20 +103,20 @@ class FinancialExpertAdvisor:
         skill_category: str = "",
     ) -> ExpertJudgment:
         """
-        判断 helper 返回 no_data 是否业务合理
+        Determine whether the helper returns no_data is business reasonable
 
         Args:
-            stock_symbol: 测试股票代码（如 "000001"）
-            stock_name: 测试股票名称（如 "平安银行"）
-            industry: 股票所属行业（如 "银行"）
-            skill_purpose: Skill 的功能描述（如 "股权质押风险画像与趋势分析"）
-            data_type: 数据类型描述（如 "质押数据"、"年报财务数据"）
-            helper_name: helper 函数名（如 "get_pledge_risk_profile"）
-            helper_warnings: helper 返回的 warnings 列表
-            skill_category: Skill 类别（如 "fundamentals"）
+            stock_symbol: Test a stock symbol (e.g. "000001") 
+            stock_name: Test stock name (e.g. "Ping An Bank") 
+            industry: The industry to which the stock belongs (e.g. "bank") 
+            skill_purpose: Skill Function description (such as "Equity Pledge Risk Portrait and Trend Analysis") 
+            data_type: Data type description (e.g. "Pledge data", "Annual report financial data") 
+            helper_name: helper Function name (such as "get_pledge_risk_profile") 
+            helper_warnings: helper Returned warnings list
+            skill_category: Skill categories (such as "fundamentals") 
 
         Returns:
-            ExpertJudgment: 专家判断结果
+            ExpertJudgment: Expert judgment results
         """
         try:
             client = self._get_client()
@@ -137,13 +137,13 @@ class FinancialExpertAdvisor:
             raw = response.content if hasattr(response, "content") else str(response)
             return self._parse_judgment(raw, stock_symbol, data_type)
         except Exception as e:
-            logger.warning(f"⚠️ 财经专家判断失败，降级为默认合理: {e}")
-            # 降级：默认认为 no_data 是合理的，避免误判
+            logger.warning(f"⚠️ The judgment of financial experts failed and was downgraded to reasonable by default.: {e}")
+            # Downgrade: By default, no_data is considered reasonable to avoid misjudgments.
             return ExpertJudgment(
                 is_rational=True,
                 reasoning=f"专家判断失败（{e}），默认认为 no_data 业务合理",
                 recommended_stocks=[],
-                advice="请人工确认 no_data 是否合理",
+                advice="Please manually confirm whether no_data is reasonable",
                 confidence=0.0,
             )
 
@@ -158,8 +158,8 @@ class FinancialExpertAdvisor:
         helper_warnings: List[str],
         skill_category: str,
     ) -> str:
-        """构建财经专家判断 prompt"""
-        # 根据数据类型提供参考股票池
+        """Build financial expert judgment prompt"""
+        # Provide reference stock pool based on data type
         reference_pool = ""
         if "质押" in data_type or "pledge" in helper_name.lower():
             reference_pool = "\n".join(
@@ -223,28 +223,28 @@ helper 返回的警告：
 
 
     def _parse_judgment(self, raw: str, original_symbol: str, data_type: str) -> ExpertJudgment:
-        """解析 LLM 返回的 JSON 判断"""
-        # 提取 JSON
+        """Parse JSON judgment returned by LLM"""
+        # Extract JSON
         json_match = re.search(r"\{[\s\S]*\}", raw)
         if not json_match:
-            logger.warning(f"⚠️ 财经专家返回非 JSON: {raw[:200]}")
+            logger.warning(f"⚠️ Financial experts return to Africa JSON: {raw[:200]}")
             return ExpertJudgment(
                 is_rational=True,
-                reasoning="专家返回格式异常，默认认为 no_data 业务合理",
+                reasoning="The expert returns an abnormal format and by default considers the no_data business to be reasonable.",
                 confidence=0.0,
             )
 
         try:
             data = json.loads(json_match.group(0))
         except json.JSONDecodeError as e:
-            logger.warning(f"⚠️ 财经专家 JSON 解析失败: {e}")
+            logger.warning(f"⚠️ Financial Expert JSON parsing failed: {e}")
             return ExpertJudgment(
                 is_rational=True,
-                reasoning="专家 JSON 解析失败，默认认为 no_data 业务合理",
+                reasoning="Expert JSON parsing fails, and the default is that no_data business is reasonable",
                 confidence=0.0,
             )
 
-        # 解析推荐股票
+        # Analyze recommended stocks
         recommended = []
         for stock in data.get("recommended_stocks", [])[:3]:
             if isinstance(stock, dict) and stock.get("code"):
@@ -265,7 +265,7 @@ helper 返回的警告：
         )
 
 
-# 全局单例
+# Global singleton
 _expert_advisor: Optional[FinancialExpertAdvisor] = None
 
 

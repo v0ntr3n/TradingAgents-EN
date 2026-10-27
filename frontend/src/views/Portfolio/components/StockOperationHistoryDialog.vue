@@ -1,12 +1,12 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="`📋 ${stockInfo.name || stockInfo.code} 操作历史`"
+    :title="`📋 ${stockInfo.name || stockInfo.code} Operation history`"
     width="800px"
     :close-on-click-modal="false"
     @close="handleClose"
   >
-    <!-- 股票信息摘要 -->
+    <!-- Stock Information Summary -->
     <div class="stock-summary">
       <div class="stock-info">
         <span class="stock-code">{{ stockInfo.code }}</span>
@@ -16,7 +16,7 @@
       <div class="analysis-controls">
         <el-select
           v-model="selectedTradingSystemId"
-          placeholder="选择交易计划（可选）"
+          placeholder="Choose a trading plan (optional)"
           clearable
           size="small"
           style="width: 200px; margin-right: 8px"
@@ -36,24 +36,24 @@
         </el-select>
         <el-button type="primary" size="small" :loading="analyzing" @click="handleAnalyze">
           <el-icon v-if="!analyzing"><DataAnalysis /></el-icon>
-          {{ analyzing ? '分析中...' : '操作分析' }}
+          {{ analyzing ? 'Analyzing...' : 'operational analysis' }}
         </el-button>
       </div>
     </div>
 
-    <!-- 操作记录表格 -->
+    <!-- Operation record form -->
     <el-table :data="changes" v-loading="loading" stripe size="small" max-height="400">
-      <el-table-column prop="trade_time" label="交易时间" width="150">
+      <el-table-column prop="trade_time" label="trading hours" width="150">
         <template #default="{ row }">
           {{ formatDateTime(row.trade_time) }}
         </template>
       </el-table-column>
-      <el-table-column prop="change_type" label="操作类型" width="90">
+      <el-table-column prop="change_type" label="Operation type" width="90">
         <template #default="{ row }">
           <el-tag :type="getChangeTypeTag(row.change_type)" size="small">{{ getChangeTypeName(row.change_type) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="数量变化" width="130">
+      <el-table-column label="Quantity change" width="130">
         <template #default="{ row }">
           <span :class="row.quantity_change >= 0 ? 'text-buy' : 'text-sell'">
             {{ row.quantity_change >= 0 ? '+' : '' }}{{ row.quantity_change }}
@@ -61,12 +61,12 @@
           <div class="sub-text">{{ row.quantity_before }} → {{ row.quantity_after }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="成交价" width="100">
+      <el-table-column label="Transaction price" width="100">
         <template #default="{ row }">
           {{ getCurrencySymbol(row.currency) }}{{ (row.price || 0).toFixed(2) }}
         </template>
       </el-table-column>
-      <el-table-column label="成本价变化" width="130">
+      <el-table-column label="Cost price changes" width="130">
         <template #default="{ row }">
           {{ getCurrencySymbol(row.currency) }}{{ row.cost_price_after.toFixed(2) }}
           <div class="sub-text" v-if="row.cost_price_before !== row.cost_price_after">
@@ -74,17 +74,17 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="资金变化" width="120">
+      <el-table-column label="Funding changes" width="120">
         <template #default="{ row }">
           <span :class="row.cash_change >= 0 ? 'text-buy' : 'text-sell'">
             {{ row.cash_change >= 0 ? '+' : '' }}{{ getCurrencySymbol(row.currency) }}{{ Math.abs(row.cash_change).toFixed(2) }}
           </span>
         </template>
       </el-table-column>
-      <el-table-column prop="description" label="说明" min-width="100" show-overflow-tooltip />
+      <el-table-column prop="description" label="Description" min-width="100" show-overflow-tooltip />
     </el-table>
 
-    <!-- 分页 -->
+    <!-- Pagination -->
     <div class="pagination-bar" v-if="total > pageSize">
       <el-pagination
         v-model:current-page="currentPage"
@@ -97,48 +97,48 @@
       />
     </div>
 
-    <!-- 空状态 -->
-    <el-empty v-if="!loading && changes.length === 0" description="暂无操作记录" />
+    <!-- Empty state -->
+    <el-empty v-if="!loading && changes.length === 0" description="No operation record yet" />
 
-    <!-- 操作分析报告展示 -->
+    <!-- Operation analysis report display -->
     <el-card v-if="reviewReport" class="review-card" shadow="never">
       <template #header>
         <div class="review-header">
-          <span>📊 操作分析报告</span>
+          <span>📊 Operational Analysis Report</span>
           <div style="display: flex; align-items: center; gap: 8px">
             <el-tag v-if="reviewReport.trading_system_name" type="success" size="small">
               🎯 {{ reviewReport.trading_system_name }}
             </el-tag>
             <el-tag :type="getScoreTagType(reviewReport.ai_review?.overall_score)" size="small">
-              评分: {{ reviewReport.ai_review?.overall_score || 0 }}分
+              Rating: {{ reviewReport.ai_review?.overall_score || 0 }}points
             </el-tag>
           </div>
         </div>
       </template>
       <div class="review-content">
-        <div class="review-summary">{{ reviewReport.ai_review?.summary || '暂无分析摘要' }}</div>
+        <div class="review-summary">{{ reviewReport.ai_review?.summary || 'No analysis summary yet' }}</div>
         <el-row :gutter="16" class="review-scores">
           <el-col :span="8" v-if="reviewReport.ai_review?.timing_score">
             <div class="score-item">
-              <span class="score-label">买卖时机</span>
-              <span class="score-value">{{ reviewReport.ai_review.timing_score }}分</span>
+              <span class="score-label">trading timing</span>
+              <span class="score-value">{{ reviewReport.ai_review.timing_score }}points</span>
             </div>
           </el-col>
           <el-col :span="8" v-if="reviewReport.ai_review?.position_score">
             <div class="score-item">
-              <span class="score-label">仓位控制</span>
-              <span class="score-value">{{ reviewReport.ai_review.position_score }}分</span>
+              <span class="score-label">Position control</span>
+              <span class="score-value">{{ reviewReport.ai_review.position_score }}points</span>
             </div>
           </el-col>
           <el-col :span="8" v-if="reviewReport.ai_review?.discipline_score">
             <div class="score-item">
-              <span class="score-label">交易纪律</span>
-              <span class="score-value">{{ reviewReport.ai_review.discipline_score }}分</span>
+              <span class="score-label">Trading discipline</span>
+              <span class="score-value">{{ reviewReport.ai_review.discipline_score }}points</span>
             </div>
           </el-col>
         </el-row>
         <div v-if="reviewReport.ai_review?.suggestions?.length" class="review-suggestions">
-          <div class="section-title">💡 改进建议</div>
+          <div class="section-title">💡 Improvement suggestions</div>
           <ul>
             <li v-for="(suggestion, idx) in reviewReport.ai_review.suggestions" :key="idx">{{ suggestion }}</li>
           </ul>
@@ -147,7 +147,7 @@
     </el-card>
 
     <template #footer>
-      <el-button @click="visible = false">关闭</el-button>
+      <el-button @click="visible = false">close</el-button>
     </template>
   </el-dialog>
 </template>
@@ -171,7 +171,7 @@ interface StockInfo {
 const props = defineProps<{
   modelValue: boolean
   stock: StockInfo | null
-  source?: 'real' | 'paper'  // 数据源：用户持仓或模拟持仓
+  source?: 'real' | 'paper'  // Data source: user positions or simulated positions
 }>()
 const emit = defineEmits(['update:modelValue'])
 
@@ -184,27 +184,27 @@ const currentPage = ref(1)
 const pageSize = ref(50)
 const reviewReport = ref<TradeReviewReport | null>(null)
 
-// 交易计划相关
+// Trading plan related
 const tradingSystems = ref<TradingSystem[]>([])
 const selectedTradingSystemId = ref<string>('')
 const loadingTradingSystems = ref(false)
 
 const stockInfo = computed(() => props.stock || { code: '', name: '', market: '' })
 
-// 加载交易计划列表
+// Load trading plan list
 const loadTradingSystems = async () => {
   loadingTradingSystems.value = true
   try {
     const res = await tradingSystemApi.getTradingSystems()
     tradingSystems.value = res.data?.systems || []
   } catch (e: any) {
-    console.error('加载交易计划列表失败:', e)
+    console.error('Failed to load trading plan list:', e)
   } finally {
     loadingTradingSystems.value = false
   }
 }
 
-// 组件挂载时加载交易计划列表
+// Load the transaction plan list when the component is mounted
 onMounted(() => {
   loadTradingSystems()
 })
@@ -213,10 +213,10 @@ watch(() => props.modelValue, (val) => {
   visible.value = val
   if (val && props.stock) {
     currentPage.value = 1
-    reviewReport.value = null  // 重置分析报告
-    selectedTradingSystemId.value = ''  // 重置交易计划选择
+    reviewReport.value = null  // Reset analysis report
+    selectedTradingSystemId.value = ''  // Reset trading plan selection
     loadData()
-    loadExistingReview()  // 加载已有的复盘报告
+    loadExistingReview()  // Load existing review report
   }
 })
 
@@ -235,7 +235,7 @@ const loadData = async () => {
     changes.value = res.data?.items || []
     total.value = res.data?.total || 0
   } catch (e: any) {
-    ElMessage.error(e.message || '加载操作历史失败')
+    ElMessage.error(e.message || 'Failed to load operation history')
   } finally {
     loading.value = false
   }
@@ -243,59 +243,59 @@ const loadData = async () => {
 
 const handleClose = () => emit('update:modelValue', false)
 
-// 加载已有的复盘报告
+// Load existing review report
 const loadExistingReview = async () => {
   if (!props.stock?.code) return
   try {
     const res = await reviewApi.getReviewHistory({ code: props.stock.code, pageSize: 1 })
     if (res.data?.items?.length > 0) {
       const latestReview = res.data.items[0]
-      // 获取详细报告
+      // Get detailed report
       const detailRes = await reviewApi.getReviewDetail(latestReview.review_id)
       if (detailRes.data) {
         reviewReport.value = detailRes.data
       }
     }
   } catch (e) {
-    // 没有报告不报错
-    console.log('暂无复盘报告')
+    // No report or error
+    console.log('No review report yet')
   }
 }
 
-// 操作分析
+// operational analysis
 const handleAnalyze = async () => {
   if (!props.stock?.code) return
 
   analyzing.value = true
   try {
-    // 根据 source 参数获取对应的交易记录
+    // Get the corresponding transaction record according to the source parameter
     const source = props.source || 'real'
     const tradesRes = await reviewApi.getTradesByCode(props.stock.code, source)
     const trades = tradesRes.data?.trades || []
 
     if (trades.length === 0) {
-      ElMessage.warning('该股票暂无可分析的交易记录')
+      ElMessage.warning('There is currently no analyzable transaction record for this stock.')
       return
     }
 
-    // 获取交易ID列表
+    // Get list of transaction IDs
     const tradeIds = trades.map(t => t.trade_id)
 
-    // 创建复盘分析
+    // Create review analysis
     const reviewRes = await reviewApi.createTradeReview({
       trade_ids: tradeIds,
       review_type: 'complete_trade',
       code: props.stock.code,
-      source: source,  // 传递数据源参数
-      trading_system_id: selectedTradingSystemId.value || undefined  // 传递交易计划ID
+      source: source,  // Pass data source parameters
+      trading_system_id: selectedTradingSystemId.value || undefined  // Deliver trading plan ID
     })
 
     if (reviewRes.data) {
       reviewReport.value = reviewRes.data
-      ElMessage.success('操作分析完成')
+      ElMessage.success('Operational analysis completed')
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '操作分析失败')
+    ElMessage.error(e.message || 'Operation analysis failed')
   } finally {
     analyzing.value = false
   }
@@ -309,14 +309,14 @@ const formatDateTime = (dt: string) => {
 
 const getMarketName = (m: string, code?: string) => {
   if (m === 'CN' && code && getMarketByStockCode(code) === 'ETF') return 'ETF'
-  return ({ CN: 'A股' }[m] || m)
+  return ({ CN: 'A shares' }[m] || m)
 }
 const getMarketTagType = (m: string, code?: string) => {
   if (m === 'CN' && code && getMarketByStockCode(code) === 'ETF') return 'success'
   return ({ CN: 'danger' }[m] || 'info') as any
 }
 const getCurrencySymbol = (c: string) => ({ CNY: '¥' }[c] || c)
-const getChangeTypeName = (t: string) => ({ buy: '买入', add: '加仓', reduce: '减仓', sell: '卖出', adjust: '调整', dividend: '分红', split: '拆股', merge: '合股' }[t] || t)
+const getChangeTypeName = (t: string) => ({ buy: 'buy', add: 'Add to position', reduce: 'Reduce positions', sell: 'sell', adjust: 'adjust', dividend: 'dividend', split: 'stock split', merge: 'partnership' }[t] || t)
 const getChangeTypeTag = (t: string) => ({ buy: 'success', add: 'primary', reduce: 'warning', sell: 'danger', adjust: 'info', dividend: '', split: '', merge: '' }[t] || 'info') as any
 const getScoreTagType = (score: number | undefined) => {
   if (!score) return 'info'
@@ -326,9 +326,9 @@ const getScoreTagType = (score: number | undefined) => {
 }
 const getStyleLabel = (style: string) => {
   const labels: Record<string, string> = {
-    short_term: '短线',
-    medium_term: '中线',
-    long_term: '长线'
+    short_term: 'short term',
+    medium_term: 'center line',
+    long_term: 'long term'
   }
   return labels[style] || style
 }
@@ -345,7 +345,7 @@ const getStyleLabel = (style: string) => {
 .text-sell { color: #67c23a; }
 .sub-text { font-size: 11px; color: #909399; }
 
-/* 复盘报告样式 */
+/* Review report style */
 .review-card { margin-top: 16px; background: #f8f9fa; }
 .review-header { display: flex; justify-content: space-between; align-items: center; }
 .review-content { font-size: 14px; }

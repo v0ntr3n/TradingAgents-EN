@@ -1,20 +1,20 @@
 /**
- * 前端配置工具
+ * Front-end configuration tool
  */
 
 /**
- * 检测是否为京东云合作版模式
- * 通过构建时注入的环境变量 VITE_JDYUN_MODE 控制
+ * Detect whether it is JD Cloud cooperation version mode
+ * Controlled by the environment variable VITE_JDYUN_MODE injected at build time
  */
 export const isJdyunMode = (): boolean => {
   return import.meta.env.VITE_JDYUN_MODE === 'true'
 }
 
 /**
- * 京东云对话模型列表（默认值）
+ * JD Cloud dialogue model list (default value)
  *
- * 🔥 运行时会被后端 `/api/config/jdyun/status` 返回的 available_models 覆盖，
- * 避免前端硬编码模型列表与后端 OPENAI_MODEL 环境变量不一致。
+ * 🔥 When running, it will be backend `/api/config/jdyun/status` The returned available_models override,
+ * Avoid inconsistency between the front-end hard-coded model list and the back-end OPENAI_MODEL environment variable.
  */
 export let JDYUN_CHAT_MODELS: string[] = [
   'GLM-5',
@@ -26,16 +26,16 @@ export let JDYUN_CHAT_MODELS: string[] = [
 let _jdyunModelsLoaded = false
 
 /**
- * 从后端加载京东云可用模型列表（启动/初始化时调用一次）
+ * Load the list of JD Cloud available models from the backend (called once during startup/initialization)
  *
- * 京东云模式下，模型列表以后端 OPENAI_MODEL 环境变量（逗号分隔）为准，
- * 前端只需在页面初始化时调用本函数，即可与后端保持一致。
- * 非京东云模式或加载失败时返回默认列表。
+ * In JD Cloud mode, the model list is based on the back-end OPENAI_MODEL environment variable (comma separated).
+ * The front end only needs to call this function when the page is initialized to be consistent with the back end.
+ * Return to the default list in non-JD Cloud mode or when loading fails.
  */
 export const loadJdyunChatModels = async (): Promise<string[]> => {
   if (!isJdyunMode() || _jdyunModelsLoaded) return JDYUN_CHAT_MODELS
   try {
-    // 动态 import 打破循环依赖：config -> request -> auth -> config
+    // Dynamic import breaks circular dependencies:config -> request -> auth -> config
     const { ApiClient } = await import('@/api/request')
     const resp: any = await ApiClient.get('/api/config/jdyun/status', undefined, { skipErrorHandler: true })
     const data = resp?.data || resp
@@ -44,7 +44,7 @@ export const loadJdyunChatModels = async (): Promise<string[]> => {
       JDYUN_CHAT_MODELS = models
     }
   } catch (e) {
-    console.warn('加载京东云模型列表失败，使用默认列表:', e)
+    console.warn('Failed to load JD Cloud model list, use default list:', e)
   } finally {
     _jdyunModelsLoaded = true
   }
@@ -52,8 +52,8 @@ export const loadJdyunChatModels = async (): Promise<string[]> => {
 }
 
 /**
- * 获取可用的模型列表
- * 京东云模式下返回预置模型，非京东云模式下返回 null（表示使用数据库配置的模型）
+ * Get a list of available models
+ * Returns the preset model in JD Cloud mode, returns null in non-JD Cloud mode (indicating the model configured using the database)
  */
 export const getAvailableModels = (): string[] | null => {
   if (isJdyunMode()) {

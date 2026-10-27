@@ -1,7 +1,7 @@
 {
   "name": "TradingAgents-CN Pro",
   "short_name": "TradingAgents Pro",
-  "description": "TradingAgents-CN Pro - 多智能体股票分析专业平台",
+  "description": "TradingAgents-CN Pro - Multi-agent stock analysis professional platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -1,14 +1,14 @@
 # tradingagents/core/engine/phase_executors/analysts.py
 """
-分析师阶段执行器
+Analyst stage executor
 
-并行执行多个分析师 Agent：
-- MarketAnalyst (技术面分析)
-- NewsAnalyst (新闻分析)
-- SentimentAnalyst (情绪分析)
-- FundamentalsAnalyst (基本面分析)
-- SectorAnalyst (板块分析)
-- IndexAnalyst (大盘分析)
+Execute multiple analyst agents in parallel:
+- MarketAnalyst (Technical analysis)
+- NewsAnalyst (news analysis)
+- SentimentAnalyst (sentiment analysis)
+- FundamentalsAnalyst (fundamental analysis)
+- SectorAnalyst (Sector analysis)
+- IndexAnalyst (Market analysis)
 """
 
 from typing import Any, Dict, List, Optional
@@ -27,10 +27,10 @@ logger = get_logger("default")
 
 class AnalystsPhase(PhaseExecutor):
     """
-    分析师阶段执行器
+    Analyst stage executor
 
-    并行执行所有选定的分析师 Agent，
-    收集分析报告写入 Reports 层
+    Execute all selected analyst agents in parallel,
+    Collect analysis reports and write them to the Reports layer
     """
 
     phase_name = "AnalystsPhase"
@@ -46,23 +46,23 @@ class AnalystsPhase(PhaseExecutor):
         use_stub: bool = False
     ):
         """
-        初始化分析师阶段
+        Initialize analyst phase
 
         Args:
-            llm_provider: LLM 提供者（用于创建 LLM）
-            config: 阶段配置
-            selected_analysts: 选择的分析师列表，None 表示全部
-            max_workers: 并行执行的最大工作线程数
-            llm: 已创建的 LLM 实例（优先使用）
-            toolkit: 工具集实例
-            use_stub: 是否使用桩实现（用于测试）
+            llm_provider: LLM Provider (used to create LLM)
+            config: stage configuration
+            selected_analysts: Selected analyst list, None means all
+            max_workers: Maximum number of worker threads for parallel execution
+            llm: Created LLM instance (preferred)
+            toolkit: Toolset examples
+            use_stub: Whether to use stub implementation (for testing)
         """
         super().__init__(llm_provider, config)
         self.selected_analysts = selected_analysts
         self.max_workers = max_workers
         self.use_stub = use_stub
 
-        # Agent 集成器（延迟初始化）
+        # Agent Integrator (lazy initialization)
         self._integrator: Optional[AgentIntegrator] = None
         self._llm = llm
         self._toolkit = toolkit
@@ -73,21 +73,21 @@ class AnalystsPhase(PhaseExecutor):
         data_manager: DataAccessManager
     ) -> Dict[str, Any]:
         """
-        执行分析师阶段
+        Executive analyst stage
         
         Args:
-            context: 分析上下文
-            data_manager: 数据访问管理器
+            context: Analyze context
+            data_manager: Data Access Manager
             
         Returns:
-            分析结果摘要
+            Summary of analysis results
         """
         self.log_start()
         
         ticker = context.get(DataLayer.CONTEXT, "ticker")
-        logger.info(f"📊 [{self.phase_name}] 分析股票: {ticker}")
+        logger.info(f"📊 [{self.phase_name}] Analyze stocks: {ticker}")
         
-        # 获取要执行的分析师列表
+        # Get the list of analysts to execute
         analysts_to_run = self._get_analysts_to_run()
         
         outputs = {
@@ -97,7 +97,7 @@ class AnalystsPhase(PhaseExecutor):
             "reports_generated": []
         }
         
-        # 并行执行分析师
+        # Parallel Execution Analyst
         if self.max_workers > 1 and len(analysts_to_run) > 1:
             self._run_parallel(analysts_to_run, context, data_manager, outputs)
         else:
@@ -107,8 +107,8 @@ class AnalystsPhase(PhaseExecutor):
         return outputs
     
     def _get_analysts_to_run(self) -> List[str]:
-        """获取要执行的分析师列表"""
-        # 默认分析师列表
+        """Get the list of analysts to execute"""
+        # Default analyst list
         default_analysts = [
             "market_analyst",
             "news_analyst",
@@ -129,7 +129,7 @@ class AnalystsPhase(PhaseExecutor):
         data_manager: DataAccessManager,
         outputs: Dict[str, Any]
     ) -> None:
-        """顺序执行分析师"""
+        """sequential execution analyst"""
         for analyst_id in analysts:
             try:
                 result = self._run_single_analyst(analyst_id, context, data_manager)
@@ -137,7 +137,7 @@ class AnalystsPhase(PhaseExecutor):
                 if result.get("report_field"):
                     outputs["reports_generated"].append(result["report_field"])
             except Exception as e:
-                logger.error(f"❌ [{self.phase_name}] {analyst_id} 执行失败: {e}")
+                logger.error(f"❌ [{self.phase_name}] {analyst_id} Execution failed: {e}")
                 outputs["analysts_failed"].append(analyst_id)
     
     def _run_parallel(
@@ -147,7 +147,7 @@ class AnalystsPhase(PhaseExecutor):
         data_manager: DataAccessManager,
         outputs: Dict[str, Any]
     ) -> None:
-        """并行执行分析师"""
+        """Parallel Execution Analyst"""
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = {
                 executor.submit(
@@ -164,17 +164,17 @@ class AnalystsPhase(PhaseExecutor):
                     if result.get("report_field"):
                         outputs["reports_generated"].append(result["report_field"])
                 except Exception as e:
-                    logger.error(f"❌ [{self.phase_name}] {analyst_id} 执行失败: {e}")
+                    logger.error(f"❌ [{self.phase_name}] {analyst_id} Execution failed: {e}")
                     outputs["analysts_failed"].append(analyst_id)
 
     def _get_integrator(self) -> Optional[AgentIntegrator]:
-        """获取或创建 Agent 集成器"""
+        """Get or create an Agent integrator"""
         if self._integrator is not None:
             return self._integrator
 
         if self._llm is not None and self._toolkit is not None:
             self._integrator = AgentIntegrator(self._llm, self._toolkit)
-            logger.debug(f"🔧 [{self.phase_name}] 创建 Agent 集成器")
+            logger.debug(f"🔧 [{self.phase_name}] Create Agent Integrator")
             return self._integrator
 
         return None
@@ -186,35 +186,35 @@ class AnalystsPhase(PhaseExecutor):
         data_manager: DataAccessManager
     ) -> Dict[str, Any]:
         """
-        执行单个分析师
+        Execute a single analyst
 
         Args:
-            analyst_id: 分析师 ID
-            context: 分析上下文
-            data_manager: 数据访问管理器
+            analyst_id: analyst ID
+            context: Analyze context
+            data_manager: Data Access Manager
 
         Returns:
-            执行结果
+            Execution result
         """
-        logger.info(f"🔍 [{self.phase_name}] 执行分析师: {analyst_id}")
+        logger.info(f"🔍 [{self.phase_name}] executive analyst: {analyst_id}")
 
-        # 强制使用桩或没有集成器时使用桩
+        # Force the use of stubs or use stubs when there is no integrator
         if self.use_stub:
             return self._run_stub_analyst(analyst_id, context)
 
-        # 获取 Agent 集成器
+        # Get Agent Integrator
         integrator = self._get_integrator()
         if integrator is None:
-            logger.debug(f"⚠️ [{self.phase_name}] 无集成器，使用桩: {analyst_id}")
+            logger.debug(f"⚠️ [{self.phase_name}] No integrator, use stubs: {analyst_id}")
             return self._run_stub_analyst(analyst_id, context)
 
-        # 获取 Agent
+        # get Agent
         agent = integrator.get_agent(analyst_id)
         if agent is None:
-            logger.debug(f"⚠️ [{self.phase_name}] Agent 不可用，使用桩: {analyst_id}")
+            logger.debug(f"⚠️ [{self.phase_name}] Agent Not available, use stub: {analyst_id}")
             return self._run_stub_analyst(analyst_id, context)
 
-        # 执行实际 Agent
+        # Execute actual Agent
         return self._run_real_analyst(analyst_id, agent, context, integrator)
 
     def _run_real_analyst(
@@ -225,40 +225,40 @@ class AnalystsPhase(PhaseExecutor):
         integrator: AgentIntegrator
     ) -> Dict[str, Any]:
         """
-        执行实际的分析师 Agent
+        Analysts who perform actual Agent
 
         Args:
-            analyst_id: 分析师 ID
-            agent: Agent 节点函数
-            context: 分析上下文
-            integrator: Agent 集成器
+            analyst_id: analyst ID
+            agent: Agent node function
+            context: Analyze context
+            integrator: Agent integrator
 
         Returns:
-            执行结果
+            Execution result
         """
         try:
-            # 转换 Context 为 AgentState
+            # Convert Context to AgentState
             state = integrator.context_to_state(context)
 
-            logger.debug(f"📤 [{self.phase_name}] 调用 Agent: {analyst_id}")
+            logger.debug(f"📤 [{self.phase_name}] call Agent: {analyst_id}")
 
-            # 使用完整的工具调用循环执行 Agent
+            # Use the complete tool to call loop execution Agent
             result = integrator.run_agent_with_tools(agent, state, analyst_id)
 
-            # 提取报告
+            # Extract report
             report_field, report_content = integrator.extract_report(analyst_id, result)
 
             if report_content:
-                # 写入 Reports 层
+                # Write to Reports layer
                 context.set(DataLayer.REPORTS, report_field, report_content, source=analyst_id)
-                logger.info(f"📝 [{self.phase_name}] 生成报告: {report_field} ({len(report_content)} 字符)")
+                logger.info(f"📝 [{self.phase_name}] Generate report: {report_field} ({len(report_content)} character)")
             else:
-                logger.warning(f"⚠️ [{self.phase_name}] Agent 未返回报告: {analyst_id}")
+                logger.warning(f"⚠️ [{self.phase_name}] Agent Report not returned: {analyst_id}")
 
             return {"analyst_id": analyst_id, "report_field": report_field}
 
         except Exception as e:
-            logger.error(f"❌ [{self.phase_name}] Agent 执行异常 {analyst_id}: {e}")
+            logger.error(f"❌ [{self.phase_name}] Agent Execution exception {analyst_id}: {e}")
             raise
 
     def _run_stub_analyst(
@@ -267,11 +267,11 @@ class AnalystsPhase(PhaseExecutor):
         context: AnalysisContext
     ) -> Dict[str, Any]:
         """
-        运行桩分析师（用于测试）
+        Run stub analyst (for testing)
 
-        生成占位报告，写入 Reports 层
+        Generate placeholder reports and write them to the Reports layer
         """
-        # 分析师输出字段映射
+        # Analyst output field mapping
         output_field_map = {
             "market_analyst": "market_report",
             "news_analyst": "news_report",
@@ -283,29 +283,29 @@ class AnalystsPhase(PhaseExecutor):
 
         report_field = output_field_map.get(analyst_id)
         if report_field:
-            # 生成占位报告
+            # Generate placeholder report
             ticker = context.get(DataLayer.CONTEXT, "ticker")
-            stub_report = f"[{analyst_id}] 分析报告占位 - {ticker}"
+            stub_report = f"[{analyst_id}] Analysis report placeholder - {ticker}"
 
-            # 写入 Reports 层
+            # Write to Reports layer
             context.set(DataLayer.REPORTS, report_field, stub_report, source=analyst_id)
 
-            logger.debug(f"📝 [{self.phase_name}] 生成桩报告: {report_field}")
+            logger.debug(f"📝 [{self.phase_name}] Generate stub report: {report_field}")
 
         return {"analyst_id": analyst_id, "report_field": report_field}
 
     def set_dependencies(self, llm: Any, toolkit: Any) -> "AnalystsPhase":
         """
-        设置依赖项
+        Set dependencies
 
         Args:
-            llm: LLM 实例
-            toolkit: 工具集实例
+            llm: LLM Example
+            toolkit: Toolset examples
 
         Returns:
-            self（支持链式调用）
+            self (Supports chain calls)
         """
         self._llm = llm
         self._toolkit = toolkit
-        self._integrator = None  # 重置集成器
+        self._integrator = None  # reset integrator
         return self

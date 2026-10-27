@@ -1,6 +1,6 @@
 """
-股票分析API路由
-增强版本，支持优先级、进度跟踪、任务管理等功能
+Stock Analysis API Routing
+Enhanced version, supporting functions such as priority, progress tracking, task management, etc.
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query, BackgroundTasks, WebSocket, WebSocketDisconnect
@@ -37,95 +37,95 @@ def format_http_error_detail(exc: Exception) -> str:
     return ErrorFormatter.format_user_message(str(exc))
 
 
-# 🔥 统一的结果数据格式化函数
+# 🔥 Unified result data formatting functions
 def normalize_result_data(result_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    统一格式化分析结果数据，确保所有接口返回一致的格式
+    Unified formatting of analysis result data to ensure that all interfaces return a consistent format
 
-    主要处理：
-    1. recommendation 字段：使用合规术语，不包含具体价格
-    2. key_points 字段：转换 JSON 字段名为中文描述
-    3. decision 字段：支持新旧字段名
-    4. action 字段：将旧术语（买入/卖出/持有）映射为合规术语（乐观/审慎/中性）
+    Main processing:
+    1. recommendation Field: Use compliance terms and do not include specific prices
+    2. key_points Field: Convert JSON field name to Chinese description
+    3. decision Field: supports old and new field names
+    4. action Field: Map old terms (buy/sell/hold) to compliance terms (optimistic/cautious/neutral)
     """
     if not result_data:
         return result_data
 
-    # 🔥 术语映射：将旧术语转换为合规术语
+    # 🔥 Term Mapping: Converting legacy terms into compliant terms
     ACTION_TRANSLATION = {
-        'BUY': '乐观', 'SELL': '审慎', 'HOLD': '中性',
-        'buy': '乐观', 'sell': '审慎', 'hold': '中性',
-        '买入': '乐观', '卖出': '审慎', '持有': '中性',  # 兼容旧数据
-        '看涨': '乐观', '看跌': '审慎', '中性': '中性',  # 兼容旧数据
-        '乐观': '乐观', '审慎': '审慎', '中性': '中性',  # 保持新术语不变
+        'BUY': 'optimistic', 'SELL': 'Prudence', 'HOLD': 'Neutral',
+        'buy': 'optimistic', 'sell': 'Prudence', 'hold': 'Neutral',
+        'buy': 'optimistic', 'sell': 'Prudence', 'hold': 'Neutral',  # Compatible with old data
+        'bullish': 'optimistic', 'Bearish': 'Prudence', 'Neutral': 'Neutral',  # Compatible with old data
+        'optimistic': 'optimistic', 'Prudence': 'Prudence', 'Neutral': 'Neutral',  # keep new terms unchanged
     }
 
-    # 1. 处理 decision 字段（支持新旧字段名）
+    # 1. Process decision field (supports old and new field names)
     decision = result_data.get('decision', {})
     if isinstance(decision, dict):
-        # 支持新旧字段名
+        # Support new and old field names
         raw_action = decision.get('analysis_view') or decision.get('action')
-        # 🔥 映射为合规术语
+        # 🔥 Map to compliance terms
         action = ACTION_TRANSLATION.get(raw_action, raw_action) if raw_action else None
 
-        # 🔥 更新 decision 对象中的 action 字段为合规术语
+        # 🔥 Update the action field in the decision object to the compliance term
         if action and raw_action != action:
             decision['action'] = action
-            # 如果有 analysis_view 字段，也更新它
+            # If there is an analysis_view field, update it as well
             if 'analysis_view' in decision:
                 decision['analysis_view'] = action
 
-        # 🔥 优先使用 price_analysis_range（价格区间），不使用 target_price（单个值）
+        # 🔥 Prefer price_analysis_range (price range) instead of target_price (single value)
         price_range = decision.get('price_analysis_range')
-        # 如果没有 price_analysis_range，才使用 target_price（但这是单个值，不应该用于价格区间显示）
+        # If there is no price_analysis_range, target_price is used (but this is a single value and should not be used for price range display)
         if not price_range:
             target_price = decision.get('target_price')
             if target_price:
-                logger.warning(f"⚠️ [normalize_result_data] decision 中没有 price_analysis_range，只有 target_price: {target_price}，前端将显示 '-'")
+                logger.warning(f"⚠️ [normalize_result_data] decision There is no price_analysis_range in , only target_price: {target_price}, The frontend will show '-'")
         
         confidence = decision.get('confidence')
-        # 🔥 优先从 decision 中获取 risk_score（风险经理的评估结果）
+        # 🔥 Prioritize getting risk_score (risk manager's assessment result) from decision
         risk_score = decision.get('risk_score')
         risk_level = decision.get('risk_level')
         reasoning = decision.get('reasoning', '')
         
-        # 🔥 调试日志：记录 decision 字段
-        logger.info(f"🔍 [normalize_result_data] decision 字段检查: price_analysis_range={price_range}, risk_score={risk_score}, target_price={decision.get('target_price')}")
+        # 🔥 Debug log: record decision field
+        logger.info(f"🔍 [normalize_result_data] decision Field check: price_analysis_range={price_range}, risk_score={risk_score}, target_price={decision.get('target_price')}")
 
-        # 2. 格式化 recommendation（如果为空或包含旧术语）
+        # 2. Format recommendation (if empty or contains old terms)
         recommendation = result_data.get('recommendation', '')
-        if not recommendation or '投资建议' in recommendation or '目标价格' in recommendation or '买入' in recommendation or '卖出' in recommendation:
-            # 重新生成合规的 recommendation
-            recommendation = f"分析观点：{action}；" if action else ""
+        if not recommendation or 'investment advice' in recommendation or 'target price' in recommendation or 'buy' in recommendation or 'sell' in recommendation:
+            # Regenerate compliant recommendation
+            recommendation = f"Analysis point of view:{action}; " if action else ""
             if reasoning and len(reasoning) < 100:
-                recommendation += f"分析依据：{reasoning}"
-            elif reasoning and reasoning != "暂无分析推理":
+                recommendation += f"Analysis basis:{reasoning}"
+            elif reasoning and reasoning != "No analytical reasoning yet":
                 short_reasoning = reasoning[:50] + "..." if len(reasoning) > 50 else reasoning
-                recommendation += f"分析依据：{short_reasoning}"
+                recommendation += f"Analysis basis:{short_reasoning}"
             result_data['recommendation'] = recommendation
 
-        # 3. 格式化 key_points（如果包含 JSON 字段名）
+        # 3. Format key_points (if containing JSON field names)
         key_points = result_data.get('key_points', [])
         if key_points and isinstance(key_points, list):
-            # 检查是否包含 JSON 字段名（如 "analysis_view": "中性"）
+            # Check if it contains a JSON field name (e.g. "analysis_view": "Neutral") 
             if any('"' in str(kp) and ':' in str(kp) for kp in key_points):
-                # 重新生成 key_points
+                # Regenerate key_points
                 new_key_points = []
                 if action:
-                    new_key_points.append(f"分析观点: {action}")
-                # 🔥 只显示价格区间，不显示单个值
+                    new_key_points.append(f"analysis point of view: {action}")
+                # 🔥 Only price ranges are shown, not individual values
                 if price_range:
                     if isinstance(price_range, (list, tuple)) and len(price_range) == 2:
-                        new_key_points.append(f"价格分析区间: {price_range[0]}-{price_range[1]}元")
+                        new_key_points.append(f"price analysis range: {price_range[0]}-{price_range[1]}Yuan")
                     else:
-                        logger.warning(f"⚠️ [normalize_result_data] price_range 不是有效的区间格式: {price_range}")
-                # 不添加 target_price 到 key_points（因为这是单个值，不符合合规要求）
+                        logger.warning(f"⚠️ [normalize_result_data] price_range Not a valid range format: {price_range}")
+                # Do not add target_price to key_points (because this is a single value and does not meet compliance requirements)
                 if confidence is not None:
-                    new_key_points.append(f"置信度: {confidence * 100:.1f}%" if confidence <= 1 else f"置信度: {confidence}%")
+                    new_key_points.append(f"Confidence: {confidence * 100:.1f}%" if confidence <= 1 else f"Confidence: {confidence}%")
                 if risk_level:
-                    new_key_points.append(f"风险等级: {risk_level}")
+                    new_key_points.append(f"risk level: {risk_level}")
                 if risk_score is not None:
-                    new_key_points.append(f"风险评分: {risk_score * 100:.1f}%" if risk_score <= 1 else f"风险评分: {risk_score}%")
+                    new_key_points.append(f"risk score: {risk_score * 100:.1f}%" if risk_score <= 1 else f"risk score: {risk_score}%")
 
                 result_data['key_points'] = new_key_points[:5]
 
@@ -174,7 +174,7 @@ def _summarize_result_completeness(result_data: Optional[Dict[str, Any]]) -> Dic
 def _log_result_completeness(source: str, task_id: str, result_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     completeness = _summarize_result_completeness(result_data)
     logger.info(
-        f"📊 [RESULT] 来源={source} task={task_id} 完整性: "
+        f"📊 [RESULT] Source={source} task={task_id} integrity: "
         f"summary={completeness['has_summary']} recommendation={completeness['has_recommendation']} "
         f"reports={completeness['report_count']} action={completeness['has_action']} "
         f"reasoning={completeness['has_reasoning']} price_range={completeness['has_price_range']} "
@@ -185,55 +185,55 @@ def _log_result_completeness(source: str, task_id: str, result_data: Optional[Di
 
 
 def get_market_type_from_symbol(symbol: str) -> str:
-    """根据股票代码获取 market_type
+    """Get based on stock code market_type
 
     Args:
-        symbol: 股票代码
+        symbol: Stock code
 
     Returns:
-        market_type: "cn" (A股), "hk" (港股), "us" (美股)
+        market_type: "cn" (A shares), "hk" (Hong Kong stocks), "us" (US stocks)
     """
     market = StockUtils.identify_stock_market(symbol)
 
-    # 映射 StockMarket 枚举到 market_type 字符串
+    # Mapping StockMarket enum to market_type string
     market_type_mapping = {
         StockMarket.CHINA_A: "cn",
         StockMarket.HONG_KONG: "hk",
         StockMarket.US: "us",
-        StockMarket.UNKNOWN: "cn"  # 默认为中国市场
+        StockMarket.UNKNOWN: "cn"  # Default is China market
     }
 
     return market_type_mapping.get(market, "cn")
 
 
 async def get_user_risk_preference(user_id: str) -> str:
-    """获取用户的风险偏好设置
+    """Get the user s risk preference settings
 
     Args:
-        user_id: 用户ID
+        user_id: User ID
 
     Returns:
-        风险偏好: 'conservative'(保守) / 'neutral'(中性) / 'aggressive'(激进)
-        默认返回 'neutral'
+        risk appetite: 'conservative'(conservative) / 'neutral'(Neutral) / 'aggressive'(Radical)
+        Return by default 'neutral'
     """
     try:
         db = get_mongo_db()
         users_collection = db["users"]
 
-        # 查询用户
+        # Query user
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if user and "preferences" in user:
             risk_pref = user["preferences"].get("risk_preference", "neutral")
-            logger.info(f"📊 获取用户 {user_id} 的风险偏好: {risk_pref}")
+            logger.info(f"📊 Get user {user_id} risk appetite: {risk_pref}")
             return risk_pref
 
-        logger.info(f"📊 用户 {user_id} 未设置风险偏好，使用默认值: neutral")
+        logger.info(f"📊 User {user_id} No risk preference is set, use default value: neutral")
         return "neutral"
     except Exception as e:
-        logger.warning(f"⚠️ 获取用户风险偏好失败: {e}，使用默认值: neutral")
+        logger.warning(f"⚠️ Failed to obtain user risk preference: {e}, Use default value: neutral")
         return "neutral"
 
-# 兼容性：保留原有的请求模型
+# Compatibility: retain the original request model
 class SingleAnalyzeRequest(BaseModel):
     symbol: str
     parameters: dict = Field(default_factory=dict)
@@ -241,10 +241,10 @@ class SingleAnalyzeRequest(BaseModel):
 class BatchAnalyzeRequest(BaseModel):
     symbols: List[str]
     parameters: dict = Field(default_factory=dict)
-    title: str = Field(default="批量分析", description="批次标题")
-    description: Optional[str] = Field(None, description="批次描述")
+    title: str = Field(default="Batch analysis", description="Batch title")
+    description: Optional[str] = Field(None, description="Batch description")
 
-# 新版API端点
+# New API endpoint
 @router.post("/single", response_model=Dict[str, Any])
 async def submit_single_analysis(
     request: SingleAnalysisRequest,
@@ -252,43 +252,43 @@ async def submit_single_analysis(
     user: dict = Depends(get_current_user)
 ):
     """
-    提交单股分析任务 - 支持 AB 测试
+    Submit a single stock analysis task - supports AB testing
 
-    通过 request.parameters.engine 参数选择引擎:
-    - v2 (默认): 使用新引擎 WorkflowEngine + v2 agent
-    - unified: 使用统一引擎 WorkflowEngine (LangGraph 动态构建)
-    - legacy: 已停用（v3.0 起封堵，返回 400）
+    Select the engine via the request.parameters.engine parameter:
+    - v2 (Default): Use new engine WorkflowEngine + v2 agent
+    - unified: Use unified engine WorkflowEngine (LangGraph dynamic build)
+    - legacy: Disabled (blocked since v3.0, returning 400)
     """
     try:
-        logger.info("🎯 收到单股分析请求")
-        logger.info(f"👤 用户信息: {user}")
-        logger.info(f"📊 请求数据: {request}")
+        logger.info("🎯 Single stock analysis request received")
+        logger.info(f"👤 User information: {user}")
+        logger.info(f"📊 Request data: {request}")
 
-        # 判断使用哪个引擎
-        # v3.0 起默认使用 V2 引擎（旧版 legacy 已停用）
+        # Determine which engine to use
+        # v3.0 The V2 engine is used by default from now on (the old version legacy has been discontinued)
         engine_type = AnalysisEngine.V2
         if request.parameters and hasattr(request.parameters, "engine"):
             engine_type = request.parameters.engine
-            logger.info(f"🔍 [引擎判断] 从 request.parameters.engine 获取: {engine_type} (类型: {type(engine_type)})")
-            # v3.0 起拒绝 legacy 引擎
+            logger.info(f"🔍 [Engine judgment] Get from request.parameters.engine: {engine_type} (Type: {type(engine_type)})")
+            # v3.0 Reject legacy engine
             if engine_type == AnalysisEngine.LEGACY:
                 raise HTTPException(
                     status_code=400,
-                    detail="[已停用] legacy 引擎已停用，请改用 v2 引擎（request.parameters.engine='v2'）。"
-                    "详见 docs/99-archive/deprecated-features/legacy-agents-deprecation.md"
+                    detail="[Deactivated] legacy Engine is retired, please use v2 engine instead (request.parameters.engine='v2') . "
+                    "See details docs/99-archive/deprecated-features/legacy-agents-deprecation.md"
                 )
         else:
-            logger.info(f"ℹ️ [引擎判断] request.parameters 中没有 engine 字段，使用默认引擎: {engine_type.value}")
+            logger.info(f"ℹ️ [Engine judgment] request.parameters If there is no engine field, the default engine is used.: {engine_type.value}")
             if request.parameters:
-                logger.info(f"🔍 [引擎判断] request.parameters 类型: {type(request.parameters)}")
-                logger.info(f"🔍 [引擎判断] request.parameters 内容: {request.parameters}")
+                logger.info(f"🔍 [Engine judgment] request.parameters Type: {type(request.parameters)}")
+                logger.info(f"🔍 [Engine judgment] request.parameters content: {request.parameters}")
                 if hasattr(request.parameters, "model_dump"):
-                    logger.info(f"🔍 [引擎判断] request.parameters.model_dump(): {request.parameters.model_dump()}")
+                    logger.info(f"🔍 [Engine judgment] request.parameters.model_dump(): {request.parameters.model_dump()}")
 
-        logger.info(f"🔧 [AB测试] 最终使用引擎: {engine_type.value} (枚举值: {engine_type})")
+        logger.info(f"🔧 [AB test] end use engine: {engine_type.value} (enumeration value: {engine_type})")
 
-        # 根据引擎类型选择任务创建方式
-        # 🔍 兼容性检查：同时支持枚举和字符串比较
+        # Select task creation method based on engine type
+        # 🔍 Compatibility check: supports both enumerations and string comparisons
         is_v2_engine = (
             engine_type == AnalysisEngine.V2 or 
             (isinstance(engine_type, str) and engine_type.lower() == "v2") or
@@ -296,66 +296,66 @@ async def submit_single_analysis(
         )
         
         if is_v2_engine:
-            logger.info(f"✅ [引擎判断] 确认为 v2 引擎，使用统一任务服务")
-            # v2 引擎：使用统一任务服务创建 UnifiedAnalysisTask
+            logger.info(f"✅ [Engine judgment] Confirmed as v2 engine, using unified task service")
+            # v2 Engine: Created using Unified Task Service UnifiedAnalysisTask
             from app.services.task_analysis_service import get_task_analysis_service
             from app.models.analysis import AnalysisTaskType
             from app.models.user import PyObjectId
 
             task_service = get_task_analysis_service()
 
-            # 准备任务参数 - 将 parameters 的内容展开到顶层
+            # Prepare task parameters - expand the contents of parameters to the top level
             symbol = request.get_symbol()
 
-            # 🔥 修复：根据股票代码自动识别市场类型
+            # 🔥 Fix: Automatic recognition of market type based on ticker
             market_type = get_market_type_from_symbol(symbol)
-            logger.info(f"📊 [单股分析] 股票 {symbol} 识别为市场: {market_type}")
+            logger.info(f"📊 [single stock analysis] stocks {symbol} identified as market: {market_type}")
 
             task_params = {
                 "symbol": symbol,
                 "stock_code": symbol,
-                "market_type": market_type,  # 🔑 根据股票代码自动识别市场类型
+                "market_type": market_type,  # 🔑 Automatically identify market types based on stock symbols
             }
 
-            # 将 request.parameters 的所有字段合并到 task_params
+            # Merge all fields of request.parameters into task_params
             if request.parameters:
                 params_dict = request.parameters.model_dump()
-                # 移除 engine 字段（这是路由层使用的，不是任务参数）
+                # Remove the engine field (this is used by the routing layer, not a task parameter)
                 params_dict.pop("engine", None)
                 task_params.update(params_dict)
 
-            # 如果用户在 parameters 中指定了 market_type，优先使用用户指定的
+            # If the user specifies market_type in parameters, the user-specified
             if request.parameters and hasattr(request.parameters, 'market_type') and request.parameters.market_type:
                 task_params["market_type"] = request.parameters.market_type
-                logger.info(f"📊 [单股分析] 使用用户指定的市场类型: {request.parameters.market_type}")
+                logger.info(f"📊 [single stock analysis] Use user-specified market type: {request.parameters.market_type}")
 
-            # 🔥 ETF 路由：用户选择 ETF 或代码识别为 ETF 时，使用 ETF 分析流程
+            # 🔥 ETF Routing: Use the ETF analysis process when the user selects an ETF or the symbol identifies as an ETF
             user_market = (request.parameters and getattr(request.parameters, 'market_type', None)) or market_type
             sec_type = StockUtils.identify_security_type(symbol)
             if user_market == "ETF" or sec_type == SecurityType.FUND:
                 task_type = AnalysisTaskType.ETF_ANALYSIS
-                task_params["market_type"] = "cn"  # ETF 仍属 A 股市场
-                task_params["selected_analysts"] = ["etf", "market", "news"]  # ETF 流程固定分析师
-                logger.info(f"📊 [单股分析] {symbol} 识别为 ETF，使用 ETF 分析流程")
+                task_params["market_type"] = "cn"  # ETF Still belongs to the A-share market
+                task_params["selected_analysts"] = ["etf", "market", "news"]  # ETF Process Fixed Analyst
+                logger.info(f"📊 [single stock analysis] {symbol} Identify as an ETF, use the ETF analysis process")
             else:
                 task_type = AnalysisTaskType.STOCK_ANALYSIS
 
-            logger.info(f"📦 v2任务参数: {task_params}")
+            logger.info(f"📦 v2 Task parameters: {task_params}")
 
-            # 🔥 从用户偏好读取风险偏好设置
+            # 🔥 Read risk preference settings from user preferences
             preference_type = await get_user_risk_preference(user["id"])
-            logger.info(f"📊 [单股分析] 使用用户风险偏好: {preference_type}")
+            logger.info(f"📊 [single stock analysis] Use user risk preferences: {preference_type}")
 
-            # 创建统一任务（不执行）
+            # Create unified task (not executed)
             task = await task_service.create_task(
                 user_id=PyObjectId(user["id"]),
                 task_type=task_type,
                 task_params=task_params,
-                engine_type="auto",  # 自动选择引擎
-                preference_type=preference_type  # 🔥 使用用户偏好设置
+                engine_type="auto",  # Automatic engine selection
+                preference_type=preference_type  # 🔥 Use user preferences
             )
 
-            # 🔑 关键：同时在内存中创建任务状态（用于快速查询）
+            # 🔑 Key: Create task status in memory at the same time (for fast querying)
             from app.services.memory_state_manager import get_memory_state_manager
             memory_manager = get_memory_state_manager()
             await memory_manager.create_task(
@@ -363,92 +363,92 @@ async def submit_single_analysis(
                 user_id=user["id"],
                 stock_code=request.get_symbol(),
                 parameters=task_params,
-                stock_name=None  # 可以后续补充
+                stock_name=None  # Can be added later
             )
-            logger.info(f"✅ [v2引擎] 任务已创建到内存: {task.task_id}")
+            logger.info(f"✅ [v2 engine] The task has been created in memory: {task.task_id}")
 
-            # 🔥 v2 引擎：将任务提交到队列，由 Worker 处理
+            # 🔥 v2 Engine: Submit tasks to the queue to be processed by Worker
             from app.services.queue_service import get_queue_service
             queue_service = get_queue_service()
             
-            # 准备队列参数
+            # Prepare queue parameters
             queue_params = {
-                "engine": "v2",  # 标记为 v2 引擎
+                "engine": "v2",  # Marked as v2 engine
                 "task_id": task.task_id,
                 "symbol": symbol,
                 "stock_code": symbol,
                 "user_id": user["id"],
-                **task_params  # 包含所有任务参数
+                **task_params  # Contains all task parameters
             }
             
-            # 提交到队列
+            # Submit to queue
             await queue_service.enqueue_task(
                 user_id=user["id"],
                 symbol=symbol,
                 params=queue_params,
-                batch_id=None,  # 单股分析没有批次ID
-                task_id=task.task_id  # 使用已生成的任务ID
+                batch_id=None,  # Single stock analysis without batches ID
+                task_id=task.task_id  # Use generated tasks ID
             )
-            logger.info(f"✅ [v2引擎] 任务已提交到队列: {task.task_id}")
+            logger.info(f"✅ [v2 engine] Task has been submitted to the queue: {task.task_id}")
 
             result = {
-                "task_id": task.task_id,  # 使用 UUID task_id，不是 ObjectId
+                "task_id": task.task_id,  # Use UUID task_id, not ObjectId
                 "status": task.status.value,
                 "created_at": task.created_at.isoformat() if task.created_at else None
             }
-            task_id = task.task_id  # 使用 UUID task_id
+            task_id = task.task_id  # Use UUID task_id
             user_id = user["id"]
         else:
-            # unified 引擎：使用 simple_analysis_service 创建任务并入队
-            # （legacy 引擎已在前面拦截抛 400；unified 实际走 WorkflowEngine，属于新引擎路径）
+            # unified Engine: Use simple_analysis_service to create tasks and add them to the queue
+            #  (legacy The engine has intercepted and thrown 400 in front; unified actually uses WorkflowEngine, which belongs to the new engine path)
             legacy_service = get_simple_analysis_service()
             result = await legacy_service.create_analysis_task(user["id"], request)
-            # 🔥 注意：create_analysis_task 内部已经将任务提交到队列，不需要后台执行
+            # 🔥 Note: create_analysis_task has internally submitted the task to the queue and does not require background execution.
 
-        # 🔥 所有引擎的任务都已提交到队列，由 Worker 进程处理
-        # 不再需要在 API 进程中后台执行任务
-        logger.info(f"✅ 分析任务已提交到队列: {result}")
+        # 🔥 Tasks for all engines have been submitted to the queue and processed by the Worker process
+        # No more background tasks in the API process
+        logger.info(f"✅ Analysis task has been submitted to the queue: {result}")
 
         return {
             "success": True,
             "data": result,
-            "message": f"分析任务已提交到队列，等待 Worker 处理 (引擎: {engine_type.value})"
+            "message": f"The analysis task has been submitted to the queue and is waiting for Worker processing (engine: {engine_type.value})"
         }
     except Exception as e:
-        logger.error(f"❌ 提交单股分析任务失败: {e}")
+        logger.error(f"❌ Failed to submit single stock analysis task: {e}")
         raise HTTPException(status_code=400, detail=format_http_error_detail(e))
 
 
-# 测试路由 - 验证路由是否被正确注册
+# Test routing - Verify that the route is registered correctly
 @router.get("/test-route")
 async def test_route():
-    """测试路由是否工作"""
-    logger.info("🧪 测试路由被调用了！")
-    return {"message": "测试路由工作正常", "timestamp": time.time()}
+    """Test if routing is working"""
+    logger.info("🧪 The test route is called!")
+    return {"message": "Test routing works fine", "timestamp": time.time()}
 
 
 # =============================================================================
-# 分析前预检接口
+# Pre-analysis interface
 # =============================================================================
 
-# 缓存层/非真实 API 数据源类型，不视为可用数据源
+# Cache layer/non-real API data source type, not considered a usable data source
 _CACHE_SOURCE_TYPES = {"local", "mongodb", "local_file"}
 
 
 @router.get("/precheck", response_model=Dict[str, Any])
 async def precheck_analysis(
-    symbol: Optional[str] = Query(None, description="待分析的股票代码（可选）"),
+    symbol: Optional[str] = Query(None, description="Stock symbol to analyze (optional)"),
     user: dict = Depends(get_current_user),
 ):
     """
-    分析提交前预检：检查数据源配置、基础数据同步状态、目标股票是否存在。
+    Pre-check before analysis submission: Check the data source configuration, basic data synchronization status, and whether the target stock exists.
 
-    返回 can_submit=False 时，前端应阻止提交并引导用户先完成对应步骤。
+    Return can_submit=False , the front end should prevent submission and guide the user to complete the corresponding steps first.
     """
     from app.services.config_service import config_service
 
     try:
-        # ── 1. 检查数据源配置 ──
+        # ── 1. Check data source configuration ──
         config = await config_service.get_system_config()
         enabled_real_sources: List[str] = []
         if config and config.data_source_configs:
@@ -460,20 +460,20 @@ async def precheck_analysis(
             return {
                 "can_submit": False,
                 "reason": "no_datasource",
-                "message": "尚未配置可用的数据源，请先完成数据源配置",
+                "message": "The available data sources have not been configured yet. Please complete the data source configuration first.",
                 "redirect": "/settings/config",
                 "redirect_tab": "datasource",
                 "details": {"enabled_real_sources": []},
             }
 
-        # ── 2. 检查基础数据同步 ──
+        # ── 2. Check basic data synchronization ──
         db = get_mongo_db()
         basics_count = await db["stock_basic_info"].count_documents({})
         if basics_count == 0:
             return {
                 "can_submit": False,
                 "reason": "no_basics",
-                "message": "股票基础数据尚未同步，请先执行数据同步",
+                "message": "The basic stock data has not been synchronized, please perform data synchronization first.",
                 "redirect": "/settings/sync",
                 "details": {
                     "enabled_real_sources": enabled_real_sources,
@@ -481,11 +481,11 @@ async def precheck_analysis(
                 },
             }
 
-        # ── 3. 检查目标股票是否存在（如果传了 symbol） ──
+        # ── 3. Check whether the target stock exists (if symbol is passed) ──
         target_exists = True
         if symbol:
             sym = symbol.strip()
-            # 同时匹配 code 和 symbol 字段
+            # Matches both code and symbol fields
             query = {"$or": [{"code": sym}, {"symbol": sym}]}
             doc = await db["stock_basic_info"].find_one(query)
             target_exists = doc is not None
@@ -494,7 +494,7 @@ async def precheck_analysis(
             return {
                 "can_submit": False,
                 "reason": "stock_not_found",
-                "message": f"股票 {symbol} 的基础数据未同步，请先同步该股票数据",
+                "message": f"stocks {symbol} The basic data of is not synchronized, please synchronize the stock data first",
                 "redirect": "/settings/sync",
                 "details": {
                     "enabled_real_sources": enabled_real_sources,
@@ -503,11 +503,11 @@ async def precheck_analysis(
                 },
             }
 
-        # ── 4. 全部通过 ──
+        # ── 4. All passed ──
         return {
             "can_submit": True,
             "reason": "ok",
-            "message": "数据就绪，可以开始分析",
+            "message": "Data is ready to start analysis",
             "details": {
                 "enabled_real_sources": enabled_real_sources,
                 "basics_count": basics_count,
@@ -516,12 +516,12 @@ async def precheck_analysis(
             },
         }
     except Exception as e:
-        logger.error(f"❌ 分析预检失败: {e}", exc_info=True)
-        # 预检本身失败不阻止分析（降级），让后续 Worker 的校验兜底
+        logger.error(f"❌ Analysis preflight failed: {e}", exc_info=True)
+        # Failure of the preflight itself does not prevent analysis (downgrade), leaving subsequent worker verification behind.
         return {
             "can_submit": True,
             "reason": "precheck_error",
-            "message": "预检服务异常，已放行提交",
+            "message": "The pre-check service is abnormal and the submission has been released.",
             "details": {"error": str(e)},
         }
 
@@ -531,118 +531,118 @@ async def get_task_status_new(
     task_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """获取分析任务状态（新版异步实现）
+    """Get analysis task status (new version of asynchronous implementation)
     
-    查询优先级：
-    1. MongoDB (unified_analysis_tasks) - 真实数据源，Worker 进程会更新这里
-    2. MongoDB (analysis_tasks) - 旧版任务
-    3. 内存状态管理器 - 仅作为缓存（进程内，Worker 和 API 进程分开）
+    Query priority:
+    1. MongoDB (unified_analysis_tasks) - Real data source, Worker process will update here
+    2. MongoDB (analysis_tasks) - Legacy tasks
+    3. Memory state manager - cache only (in-process, separate for Worker and API processes)
     """
     try:
-        logger.info(f"🔍 [NEW ROUTE] 进入新版状态查询路由: {task_id}")
-        logger.info(f"👤 [NEW ROUTE] 用户: {user}")
+        logger.info(f"🔍 [NEW ROUTE] Enter the new version status to query routing: {task_id}")
+        logger.info(f"👤 [NEW ROUTE] User: {user}")
 
-        # 🔥 优先从 MongoDB 查询（真实数据源，Worker 进程会更新这里）
-        # 因为 Worker 进程和 API 进程是分开的，内存状态管理器不共享
+        # 🔥 Query from MongoDB first (real data source, Worker process will update here)
+        # Because the Worker process and the API process are separate, the memory state manager is not shared
         from app.core.database import get_mongo_db
         from bson import ObjectId
         db = get_mongo_db()
 
-        # 首先尝试从 unified_analysis_tasks 集合中查找（v2 引擎任务）
+        # First try to find (v2 engine tasks) from unified_analysis_tasks collection
         unified_task = await db.unified_analysis_tasks.find_one({"task_id": task_id})
         if unified_task:
-            logger.info(f"✅ [STATUS] 从unified_analysis_tasks找到任务: {task_id}")
+            logger.info(f"✅ [STATUS] Find tasks from unified_analysis_tasks: {task_id}")
 
-            # 🔑 关键：区分步骤名称和消息
-            # current_step 存储的是简短的步骤名称（如 "市场分析师"）
-            # message 存储的是详细的描述（如 "📈 市场分析师正在分析技术指标和市场趋势..."）
+            # 🔑 Key: Distinguish between step names and messages
+            # current_step Stored are short step names (e.g. "market analyst") 
+            # message Stored is a detailed description (such as "📈 Market analysts are analyzing technical indicators and market trends...") 
             current_step_name = unified_task.get("current_step", "")
             current_step_description = unified_task.get("message", current_step_name)
 
-            # 获取状态，并做兼容性映射（前端期望 'running' 而不是 'processing'）
+            # Get the status and do compatibility mapping (the front-end expects 'running' instead of 'processing') 
             backend_status = unified_task.get("status", "pending")
-            # 🔥 状态映射：processing → running, cancelled → cancelled, failed → failed
+            # 🔥 Status mapping:processing → running, cancelled → cancelled, failed → failed
             if backend_status == "processing":
                 frontend_status = "running"
             elif backend_status == "cancelled":
-                frontend_status = "cancelled"  # 保持 cancelled 状态
+                frontend_status = "cancelled"  # Keep canceled status
             else:
                 frontend_status = backend_status
 
-            # 🔧 计算时间估算（遵循旧版本逻辑）
+            # 🔧 Compute time estimate (follows old version logic)
             from app.services.progress.tracker import RedisProgressTracker
             from datetime import datetime, timezone
 
-            # 获取任务参数
+            # Get task parameters
             task_params = unified_task.get("task_params", {})
             progress_pct = unified_task.get("progress", 0)
             start_time = unified_task.get("started_at")
             end_time = unified_task.get("completed_at")
 
-            # 计算时间估算
+            # Calculation time estimate
             elapsed_time = 0
             remaining_time = 0
             estimated_total_time = 0
 
             if end_time:
-                # 任务已完成，使用最终执行时间
+                # Task completed, using final execution time
                 from dateutil import parser
 
                 if isinstance(start_time, str):
                     try:
                         start_time = parser.parse(start_time)
                     except Exception as e:
-                        logger.warning(f"⚠️ 无法解析开始时间: {start_time}, 错误: {e}")
+                        logger.warning(f"⚠️ Unable to parse start time: {start_time}, Error: {e}")
                         start_time = None
 
                 if isinstance(end_time, str):
                     try:
                         end_time = parser.parse(end_time)
                     except Exception as e:
-                        logger.warning(f"⚠️ 无法解析结束时间: {end_time}, 错误: {e}")
+                        logger.warning(f"⚠️ Unable to parse end time: {end_time}, Error: {e}")
                         end_time = None
 
                 if start_time and end_time:
-                    # 确保时区一致
+                    # Make sure the time zone matches
                     if start_time.tzinfo is None:
                         start_time = start_time.replace(tzinfo=timezone.utc)
                     if end_time.tzinfo is None:
                         end_time = end_time.replace(tzinfo=timezone.utc)
 
                     elapsed_time = (end_time - start_time).total_seconds()
-                    estimated_total_time = elapsed_time  # 已完成任务的总时长就是已用时间
+                    estimated_total_time = elapsed_time  # The total time for completed tasks is the elapsed time
                     remaining_time = 0
 
             elif start_time:
-                # 任务进行中
+                # Task in progress
                 if isinstance(start_time, str):
                     try:
                         from dateutil import parser
                         start_time = parser.parse(start_time)
                     except Exception as e:
-                        logger.warning(f"⚠️ 无法解析开始时间: {start_time}, 错误: {e}")
+                        logger.warning(f"⚠️ Unable to parse start time: {start_time}, Error: {e}")
                         start_time = None
 
                 if start_time:
-                    # 确保使用本地时间（带时区）
+                    # Make sure to use local time (with time zone)
                     current_time = datetime.now(timezone.utc)
 
-                    # 确保 start_time 有时区信息
+                    # Make sure start_time has time zone information
                     if start_time.tzinfo is None:
-                        # 假设数据库中的时间是 UTC
+                        # Assume the time in the database is UTC
                         start_time = start_time.replace(tzinfo=timezone.utc)
 
-                    # 计算已用时间
+                    # Calculate elapsed time
                     elapsed_time = (current_time - start_time).total_seconds()
 
-                    # 🔑 关键：使用任务创建时预估的总时长（固定值），而不是根据进度动态计算
-                    # 获取分析师列表和研究深度
+                    # 🔑 Key: Use the total duration estimated when the task is created (fixed value), rather than dynamically calculating based on progress
+                    # Get analyst list and research depth
                     analysts = task_params.get("selected_analysts", [])
-                    research_depth = task_params.get("research_depth", "快速")
+                    research_depth = task_params.get("research_depth", "fast")
                     llm_model = task_params.get("quick_analysis_model", "dashscope")
                     llm_provider = llm_model.split("-")[0] if llm_model else "dashscope"
 
-                    # 使用 RedisProgressTracker 的内部方法计算基准时间（预估总时长）
+                    # Use the internal method of RedisProgressTracker to calculate the baseline time (estimated total time)
                     temp_tracker = RedisProgressTracker(
                         task_id="temp",
                         analysts=analysts,
@@ -651,155 +651,155 @@ async def get_task_status_new(
                     )
                     estimated_total_time = temp_tracker._get_base_total_time()
 
-                    # 预计剩余 = 预估总时长 - 已用时间
+                    # Estimated remaining = Estimated total time - elapsed time
                     remaining_time = max(0, estimated_total_time - elapsed_time)
 
-            # 🔑 尝试从 Redis 获取详细的步骤信息
+            # 🔑 Try to get detailed step information from Redis
             steps_info = []
             completed_steps = []
             try:
                 from app.core.redis_client import get_redis_service, RedisKeys
 
                 redis_service = get_redis_service()
-                # 🔥 检查 Redis 是否已初始化
+                # 🔥 Check if Redis has been initialized
                 try:
-                    # 尝试访问 redis 属性，如果未初始化会抛出异常
+                    # Try to access the redis property, an exception will be thrown if it is not initialized
                     _ = redis_service.redis
                 except RuntimeError as redis_err:
-                    # Redis 未初始化，跳过 Redis 查询，但不影响主流程
-                    logger.debug(f"📊 [STATUS] Redis未初始化，跳过步骤信息查询: {redis_err}")
+                    # Redis Not initialized, skips Redis query, but does not affect the main process
+                    logger.debug(f"📊 [STATUS] Redis Not initialized, skip step information query: {redis_err}")
                 else:
-                    # Redis 已初始化，可以安全查询
+                    # Redis Initialized, safe to query
                     progress_key = RedisKeys.TASK_PROGRESS.format(task_id=task_id)
                     progress_data = await redis_service.get_json(progress_key)
 
                     if progress_data and "steps" in progress_data:
                         steps_info = progress_data["steps"]
-                        # 提取已完成的步骤名称
+                        # Extract completed step names
                         completed_steps = [
                             step["name"] for step in steps_info
                             if step.get("status") == "completed"
                         ]
-                        logger.info(f"📊 [STATUS] 从Redis获取到步骤信息: {len(steps_info)}个步骤, {len(completed_steps)}个已完成")
+                        logger.info(f"📊 [STATUS] Get step information from Redis: {len(steps_info)}steps, {len(completed_steps)}completed")
             except Exception as e:
-                # 其他异常（如连接错误等）只记录警告，不影响主流程
-                logger.debug(f"📊 [STATUS] 从Redis获取步骤信息失败（不影响主流程）: {e}")
+                # Other exceptions (such as connection errors, etc.) only record warnings and do not affect the main process.
+                logger.debug(f"📊 [STATUS] Failed to obtain step information from Redis (does not affect the main process): {e}")
 
-            # 🔥 构造消息：根据状态决定显示内容
+            # 🔥 Constructing messages: determining display content based on status
             error_message = unified_task.get("error_message")
             if frontend_status == "cancelled":
-                # 取消状态：显示取消消息
-                display_message = error_message or "任务已被用户取消"
+                # Cancellation status: Show cancellation message
+                display_message = error_message or "The task has been canceled by the user"
             elif frontend_status == "failed":
-                # 失败状态：显示错误消息
-                display_message = error_message or "任务执行失败"
+                # Failure status: Show error message
+                display_message = error_message or "Task execution failed"
             elif frontend_status == "completed":
-                # 完成状态
-                display_message = "分析完成"
+                # completion status
+                display_message = "Analysis completed"
             else:
-                # 运行中：显示当前步骤
-                display_message = current_step_description or f"任务{frontend_status}中..."
+                # Running: displays the current step
+                display_message = current_step_description or f"Task{frontend_status}in..."
 
-            # 构造状态响应（统一任务格式，兼容前端期望的字段名）
+            # Construct status response (unified task format, compatible with field names expected by the front end)
             status_data = {
                 "task_id": unified_task.get("task_id"),
                 "user_id": str(unified_task.get("user_id", "")),
-                "status": frontend_status,  # 使用映射后的状态
+                "status": frontend_status,  # Use the mapped state
                 "progress": progress_pct,
-                "message": display_message,  # 🔥 使用优化后的消息
+                "message": display_message,  # 🔥 Use optimized messages
 
-                # 🔑 关键：区分步骤名称和描述
-                "current_step_name": current_step_name,  # ✅ 简短的步骤名称（如 "市场分析师"）
-                "current_step_description": current_step_description,  # ✅ 详细的描述（如 "📈 市场分析师正在分析..."）
-                "current_step": current_step_name,  # 保留兼容性
+                # 🔑 Key: Distinguish between step names and descriptions
+                "current_step_name": current_step_name,  # ✅ A short step name (e.g. "market analyst") 
+                "current_step_description": current_step_description,  # ✅ Detailed description (e.g. "📈 Market analysts are analyzing...") 
+                "current_step": current_step_name,  # Keep compatibility
 
                 "start_time": unified_task.get("started_at"),
                 "end_time": end_time,
-                "elapsed_time": elapsed_time,  # ✅ 使用计算后的值
-                "remaining_time": remaining_time,  # ✅ 使用计算后的值
-                "estimated_total_time": estimated_total_time,  # ✅ 使用计算后的值
+                "elapsed_time": elapsed_time,  # ✅ Use calculated value
+                "remaining_time": remaining_time,  # ✅ Use calculated value
+                "estimated_total_time": estimated_total_time,  # ✅ Use calculated value
                 "symbol": task_params.get("symbol") or task_params.get("stock_code"),
                 "stock_code": task_params.get("stock_code") or task_params.get("symbol"),
                 "stock_symbol": task_params.get("symbol") or task_params.get("stock_code"),
                 "task_type": unified_task.get("task_type"),
-                "source": "unified_tasks",  # 标记数据来源
+                "source": "unified_tasks",  # Mark data sources
 
-                # 🆕 添加步骤信息
-                "steps": steps_info,  # 所有步骤的详细信息
-                "completed_steps": completed_steps,  # 已完成的步骤名称列表
+                # 🆕 Add step information
+                "steps": steps_info,  # Detailed information on all steps
+                "completed_steps": completed_steps,  # List of completed step names
 
-                # 添加结果数据（如果有）
+                # Add result data (if any)
                 "result_data": unified_task.get("result"),
-                "error_message": error_message,  # 🔥 保留原始错误消息
-                "parameters": task_params,  # 添加参数信息
+                "error_message": error_message,  # 🔥 Keep original error message
+                "parameters": task_params,  # Add parameter information
                 "execution_time": unified_task.get("execution_time"),
                 "tokens_used": unified_task.get("tokens_used"),
             }
 
-            # 🔥 格式化 result_data（如果存在）
+            # 🔥 Format result_data if present
             if status_data.get("result_data"):
-                logger.info(f"📊 [STATUS] ========== unified_tasks result_data 格式化前 ==========")
+                logger.info(f"📊 [STATUS] ========== unified_tasks result_data Before formatting ==========")
                 logger.info(f"📊 [STATUS] recommendation: {status_data['result_data'].get('recommendation', '')[:200]}")
                 logger.info(f"📊 [STATUS] key_points: {status_data['result_data'].get('key_points', [])[:3]}")
 
                 status_data["result_data"] = normalize_result_data(status_data["result_data"])
 
-                logger.info(f"📊 [STATUS] ========== unified_tasks result_data 格式化后 ==========")
+                logger.info(f"📊 [STATUS] ========== unified_tasks result_data After formatting ==========")
                 logger.info(f"📊 [STATUS] recommendation: {status_data['result_data'].get('recommendation', '')[:200]}")
                 logger.info(f"📊 [STATUS] key_points: {status_data['result_data'].get('key_points', [])[:3]}")
 
-            logger.info(f"📊 [STATUS] 返回状态: status={status_data['status']}, progress={status_data['progress']}, step={status_data['current_step_name']}")
+            logger.info(f"📊 [STATUS] return status: status={status_data['status']}, progress={status_data['progress']}, step={status_data['current_step_name']}")
 
             return {
                 "success": True,
                 "data": status_data,
-                "message": "任务状态获取成功"
+                "message": "Task status obtained successfully"
             }
 
-        # 然后从analysis_tasks集合中查找（旧版任务）
+        # Then find (legacy tasks) from the analysis_tasks collection
         task_result = await db.analysis_tasks.find_one({"task_id": task_id})
 
         if task_result:
-                logger.info(f"✅ [STATUS] 从analysis_tasks找到任务: {task_id}")
+                logger.info(f"✅ [STATUS] Find tasks from analysis_tasks: {task_id}")
 
-                # 构造状态响应（正在进行的任务）
+                # Construct status response (ongoing task)
                 status = task_result.get("status", "pending")
                 progress = task_result.get("progress", 0)
                 current_step = task_result.get("current_step", "")
-                message = task_result.get("message", f"任务{status}中...")
+                message = task_result.get("message", f"Task{status}in...")
 
-                # 计算时间信息
+                # Compute time information
                 from datetime import datetime
                 start_time = task_result.get("started_at") or task_result.get("created_at")
 
-                # 如果是字符串，转换为 datetime
+                # If it is a string, convert to datetime
                 if isinstance(start_time, str):
                     try:
                         from dateutil import parser
                         start_time = parser.parse(start_time)
                     except Exception as e:
-                        logger.warning(f"⚠️ 无法解析开始时间: {start_time}, 错误: {e}")
+                        logger.warning(f"⚠️ Unable to parse start time: {start_time}, Error: {e}")
                         start_time = None
 
                 current_time = datetime.utcnow()
                 elapsed_time = 0
-                estimated_total_time = task_result.get("estimated_total_time", 225.0)  # 默认225秒
+                estimated_total_time = task_result.get("estimated_total_time", 225.0)  # Default 225 seconds
                 remaining_time = 0
 
                 if start_time:
-                    # 确保 start_time 是 naive datetime（移除时区信息）
+                    # Make sure start_time is a naive datetime (remove time zone information)
                     if start_time.tzinfo is not None:
                         start_time = start_time.replace(tzinfo=None)
                     elapsed_time = (current_time - start_time).total_seconds()
 
-                    # 根据进度估算剩余时间
+                    # Estimate remaining time based on progress
                     if progress > 0 and progress < 100:
                         remaining_time = max(0, estimated_total_time - elapsed_time)
 
-                # 🔥 状态映射：processing → running（前端期望 running）
+                # 🔥 Status mapping:processing → running (Frontend expects running)
                 frontend_status = "running" if status == "processing" else status
 
-                # 获取参数信息
+                # Get parameter information
                 parameters = task_result.get("parameters", {})
 
                 status_data = {
@@ -820,7 +820,7 @@ async def get_task_status_new(
                     "stock_code": task_result.get("symbol") or task_result.get("stock_code"),
                     "stock_symbol": task_result.get("symbol") or task_result.get("stock_code"),
                     "task_type": "stock_analysis",
-                    "source": "analysis_tasks",  # 标记数据来源
+                    "source": "analysis_tasks",  # Mark data sources
                     "steps": [],
                     "completed_steps": [],
                     "result_data": None,
@@ -833,17 +833,17 @@ async def get_task_status_new(
                 return {
                     "success": True,
                     "data": status_data,
-                    "message": "任务状态获取成功"
+                    "message": "Task status obtained successfully"
                 }
 
-        # 如果analysis_tasks中没有找到，再从analysis_reports集合中查找（已完成的任务）
+        # If not found in analysis_tasks, then search from the analysis_reports collection (completed tasks)
         mongo_result = await db.analysis_reports.find_one({"task_id": task_id})
 
         if mongo_result:
-            logger.info(f"✅ [STATUS] 从analysis_reports找到任务: {task_id}")
+            logger.info(f"✅ [STATUS] Find tasks from analysis_reports: {task_id}")
 
-            # 构造状态响应（模拟已完成的任务）
-            # 计算已完成任务的时间信息
+            # Construct status response (simulate completed tasks)
+            # Calculate time information for completed tasks
             start_time = mongo_result.get("created_at")
             end_time = mongo_result.get("updated_at")
             elapsed_time = 0
@@ -854,50 +854,50 @@ async def get_task_status_new(
                 "task_id": task_id,
                 "status": "completed",
                 "progress": 100,
-                "message": "分析完成（从历史记录恢复）",
+                "message": "Analysis completed (restore from history)",
                 "current_step": "completed",
                 "start_time": start_time,
                 "end_time": end_time,
                 "elapsed_time": elapsed_time,
                 "remaining_time": 0,
-                "estimated_total_time": elapsed_time,  # 已完成任务的总时长就是已用时间
+                "estimated_total_time": elapsed_time,  # The total time for completed tasks is the elapsed time
                 "stock_code": mongo_result.get("stock_symbol"),
                 "stock_symbol": mongo_result.get("stock_symbol"),
                 "analysts": mongo_result.get("analysts", []),
-                "research_depth": mongo_result.get("research_depth", "快速"),
-                "source": "mongodb_reports"  # 标记数据来源
+                "research_depth": mongo_result.get("research_depth", "fast"),
+                "source": "mongodb_reports"  # Mark data sources
             }
 
             return {
                 "success": True,
                 "data": status_data,
-                "message": "任务状态获取成功（从历史记录恢复）"
+                "message": "Task status obtained successfully (restored from history)"
             }
         else:
-            logger.warning(f"❌ [STATUS] MongoDB中也未找到: {task_id} trace={task_id}")
-            raise HTTPException(status_code=404, detail="任务不存在")
+            logger.warning(f"❌ [STATUS] MongoDB Not found in: {task_id} trace={task_id}")
+            raise HTTPException(status_code=404, detail="Task does not exist")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ 获取任务状态失败: {e}")
+        logger.error(f"❌ Failed to get task status: {e}")
         raise HTTPException(status_code=500, detail=format_http_error_detail(e))
 
 @router.get("/tasks/{task_id}/result", response_model=Dict[str, Any])
 async def get_task_result(
     task_id: str,
-    include_state: bool = Query(False, description="是否包含完整工作流状态（调试用）"),
-    include_detailed: bool = Query(False, description="是否包含详细分析数据（调试用）"),
+    include_state: bool = Query(False, description="Whether to include the complete workflow status (for debugging)"),
+    include_detailed: bool = Query(False, description="Whether to include detailed analysis data (for debugging)"),
     user: dict = Depends(get_current_user)
 ):
-    """获取分析任务结果
+    """Get analysis task results
     
-    默认只返回必要字段（reports, decision, summary等），不包含 state 和 detailed_analysis。
-    如需完整数据，可通过查询参数 include_state=true&include_detailed=true 获取。
+    By default, only necessary fields are returned (reports, decision, summary etc.), excluding state and detailed_analysis.
+    For complete data, query parameters include_state=true&include_detailed=true Get.
     """
     try:
-        logger.info(f"🔍 [RESULT] 获取任务结果: {task_id}")
-        logger.info(f"👤 [RESULT] 用户: {user}")
+        logger.info(f"🔍 [RESULT] Get task results: {task_id}")
+        logger.info(f"👤 [RESULT] User: {user}")
 
         analysis_service = get_simple_analysis_service()
         task_status = await analysis_service.get_task_status(task_id)
@@ -905,258 +905,258 @@ async def get_task_result(
         result_data = None
 
         if task_status and task_status.get('status') == 'completed':
-            # 从内存中获取结果数据
+            # Get result data from memory
             result_data = task_status.get('result_data')
-            logger.info(f"📊 [RESULT] 从内存中获取到结果数据")
+            logger.info(f"📊 [RESULT] Get result data from memory")
 
-            # 🔍 调试：检查内存中的数据结构
+            # 🔍 Debugging: Inspecting in-memory data structures
             if result_data:
-                logger.info(f"📊 [RESULT] ========== 格式化前 ==========")
-                logger.info(f"📊 [RESULT] 内存数据键: {list(result_data.keys())}")
+                logger.info(f"📊 [RESULT] ========== Before formatting ==========")
+                logger.info(f"📊 [RESULT] memory data key: {list(result_data.keys())}")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
                 if result_data.get('decision'):
                     decision = result_data['decision']
                     logger.info(f"📊 [RESULT] decision: action={decision.get('action')}, analysis_view={decision.get('analysis_view')}, target_price={decision.get('target_price')}, price_analysis_range={decision.get('price_analysis_range')}")
 
-                # 🔥 统一格式化结果数据
+                # 🔥 Uniformly formatted result data
                 result_data = normalize_result_data(result_data)
 
                 completeness = _log_result_completeness("memory", task_id, result_data)
 
-                logger.info(f"📊 [RESULT] ========== 格式化后 ==========")
+                logger.info(f"📊 [RESULT] ========== After formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
 
                 if not completeness["is_complete"]:
-                    logger.warning(f"⚠️ [RESULT] 内存中的 result_data 不完整，继续回退查询持久化结果: {task_id}")
+                    logger.warning(f"⚠️ [RESULT] The result_data in the memory is incomplete. Continue to roll back to query the persistent results.: {task_id}")
                     result_data = None
             else:
-                logger.warning(f"⚠️ [RESULT] 内存中result_data为空")
+                logger.warning(f"⚠️ [RESULT] result_data in memory is empty")
 
         if not result_data:
-            # 内存中没有找到，尝试从MongoDB中查找
-            logger.info(f"📊 [RESULT] 内存中未找到，尝试从MongoDB查找: {task_id}")
+            # Not found in memory, try to find it from MongoDB
+            logger.info(f"📊 [RESULT] Not found in memory, try to find from MongoDB: {task_id}")
 
             from app.core.database import get_mongo_db
             db = get_mongo_db()
 
-            # 🔧 首先从 unified_analysis_tasks 集合中查找（v2 引擎任务）
+            # 🔧 First find (v2 engine tasks) from unified_analysis_tasks collection
             unified_task = await db.unified_analysis_tasks.find_one({"task_id": task_id})
             if unified_task and unified_task.get("result"):
-                logger.info(f"✅ [RESULT] 从unified_analysis_tasks找到结果: {task_id}")
+                logger.info(f"✅ [RESULT] Find results from unified_analysis_tasks: {task_id}")
 
                 result = unified_task["result"]
                 task_params = unified_task.get("task_params", {})
 
-                # 计算执行时间
+                # Calculate execution time
                 execution_time = 0
                 completed_at = unified_task.get("completed_at")
                 started_at = unified_task.get("started_at")
                 if completed_at and started_at:
                     try:
-                        # 如果是 datetime 对象，直接相减
+                        # If it is a datetime object, subtract directly
                         if hasattr(completed_at, 'timestamp') and hasattr(started_at, 'timestamp'):
                             execution_time = (completed_at - started_at).total_seconds()
-                        # 如果是字符串，先解析
+                        # If it is a string, parse it first
                         elif isinstance(completed_at, str) and isinstance(started_at, str):
                             from dateutil import parser
                             completed_dt = parser.parse(completed_at)
                             started_dt = parser.parse(started_at)
                             execution_time = (completed_dt - started_dt).total_seconds()
                     except Exception as e:
-                        logger.warning(f"⚠️ 计算执行时间失败: {e}")
+                        logger.warning(f"⚠️ Failed to calculate execution time: {e}")
                         execution_time = 0
 
-                # 构造结果数据（兼容前端期望的格式）
+                # Construct result data (compatible with the format expected by the front end)
                 result_data = {
-                    "analysis_id": unified_task.get("task_id"),  # 使用 task_id 作为 analysis_id
+                    "analysis_id": unified_task.get("task_id"),  # Use task_id as analysis_id
                     "stock_symbol": task_params.get("symbol") or task_params.get("stock_code"),
                     "stock_code": task_params.get("stock_code") or task_params.get("symbol"),
                     "analysis_date": task_params.get("analysis_date"),
                     "summary": result.get("summary", ""),
                     "recommendation": result.get("recommendation", ""),
                     "confidence_score": result.get("confidence_score", 0.0),
-                    "risk_level": result.get("risk_level", "中等"),
+                    "risk_level": result.get("risk_level", "medium"),
                     "key_points": result.get("key_points", []),
                     "execution_time": execution_time,
                     "tokens_used": result.get("tokens_used", 0),
                     "analysts": task_params.get("selected_analysts", []),
-                    "research_depth": task_params.get("research_depth", "快速"),
+                    "research_depth": task_params.get("research_depth", "fast"),
                     "reports": result.get("reports", {}),
                     "created_at": unified_task.get("created_at"),
                     "updated_at": unified_task.get("completed_at"),
                     "status": "completed",
                     "decision": result.get("decision", {}),
-                    "source": "unified_tasks"  # 标记数据来源
+                    "source": "unified_tasks"  # Mark data sources
                 }
                 
-                # 🔥 可选字段：根据查询参数决定是否包含
+                # 🔥 Optional fields: decide whether to include them based on query parameters
                 if include_state:
                     result_data["state"] = result.get("state", {})
                 if include_detailed:
                     result_data["detailed_analysis"] = result.get("detailed_analysis", {})
 
-                logger.info(f"📊 [RESULT] ========== unified_tasks 格式化前 ==========")
+                logger.info(f"📊 [RESULT] ========== unified_tasks Before formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
                 if result_data.get('decision'):
                     decision = result_data['decision']
                     logger.info(f"📊 [RESULT] decision: action={decision.get('action')}, analysis_view={decision.get('analysis_view')}, target_price={decision.get('target_price')}, price_analysis_range={decision.get('price_analysis_range')}")
 
-                # 🔥 统一格式化结果数据
+                # 🔥 Uniformly formatted result data
                 result_data = normalize_result_data(result_data)
                 completeness = _log_result_completeness("unified_tasks", task_id, result_data)
 
-                logger.info(f"📊 [RESULT] ========== unified_tasks 格式化后 ==========")
+                logger.info(f"📊 [RESULT] ========== unified_tasks After formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
 
-                # 🔑 防御性检查：如果 unified_analysis_tasks 数据不完整，
-                # 回退到 analysis_reports（可能已经先保存了完整数据）
+                # 🔑 Defensive check: If unified_analysis_tasks data is incomplete,
+                # Fall back to analysis_reports (complete data may have been saved first)
                 if not completeness["is_complete"]:
-                    logger.warning(f"⚠️ [RESULT] unified_analysis_tasks 数据不完整，回退查询 analysis_reports: {task_id}")
+                    logger.warning(f"⚠️ [RESULT] unified_analysis_tasks Incomplete data, return query analysis_reports: {task_id}")
                     result_data = None
 
-            # 如果 unified_analysis_tasks 中没有找到或数据不完整，再从 analysis_reports 集合中查找
+            # If not found in unified_analysis_tasks or the data is incomplete, then search from the analysis_reports collection
             if not result_data:
                 mongo_result = await db.analysis_reports.find_one({"task_id": task_id})
 
                 if not mongo_result:
-                    # 兼容旧数据：旧记录可能没有 task_id，但 analysis_id 存在于 analysis_tasks.result
+                    # Compatible with old data: old records may not have task_id, but analysis_id exists in analysis_tasks.result
                     tasks_doc_for_id = await db.analysis_tasks.find_one({"task_id": task_id}, {"result.analysis_id": 1})
                     analysis_id = tasks_doc_for_id.get("result", {}).get("analysis_id") if tasks_doc_for_id else None
                     if analysis_id:
-                        logger.info(f"🔎 [RESULT] 按analysis_id兜底查询 analysis_reports: {analysis_id}")
+                        logger.info(f"🔎 [RESULT] Search by analysis_id analysis_reports: {analysis_id}")
                         mongo_result = await db.analysis_reports.find_one({"analysis_id": analysis_id})
             else:
-                # 如果从 unified_analysis_tasks 找到了结果，就不需要查询 analysis_reports
+                # If results are found from unified_analysis_tasks, no query is needed analysis_reports
                 mongo_result = None
 
             if mongo_result:
-                logger.info(f"✅ [RESULT] 从MongoDB找到结果: {task_id}")
+                logger.info(f"✅ [RESULT] Find results from MongoDB: {task_id}")
 
-                # 直接使用MongoDB中的数据结构（与web目录保持一致）
+                # Use data structures in MongoDB directly (consistent with web directories)
                 result_data = {
                     "analysis_id": mongo_result.get("analysis_id"),
                     "stock_symbol": mongo_result.get("stock_symbol"),
-                    "stock_code": mongo_result.get("stock_symbol"),  # 兼容性
+                    "stock_code": mongo_result.get("stock_symbol"),  # Compatibility
                     "analysis_date": mongo_result.get("analysis_date"),
                     "summary": mongo_result.get("summary", ""),
                     "recommendation": mongo_result.get("recommendation", ""),
                     "confidence_score": mongo_result.get("confidence_score", 0.0),
-                    "risk_level": mongo_result.get("risk_level", "中等"),
+                    "risk_level": mongo_result.get("risk_level", "medium"),
                     "key_points": mongo_result.get("key_points", []),
                     "execution_time": mongo_result.get("execution_time", 0),
                     "tokens_used": mongo_result.get("tokens_used", 0),
                     "analysts": mongo_result.get("analysts", []),
-                    "research_depth": mongo_result.get("research_depth", "快速"),
+                    "research_depth": mongo_result.get("research_depth", "fast"),
                     "reports": mongo_result.get("reports", {}),
                     "created_at": mongo_result.get("created_at"),
                     "updated_at": mongo_result.get("updated_at"),
                     "status": mongo_result.get("status", "completed"),
                     "decision": mongo_result.get("decision", {}),
-                    "source": "mongodb"  # 标记数据来源
+                    "source": "mongodb"  # Mark data sources
                 }
 
-                logger.info(f"📊 [RESULT] ========== MongoDB 格式化前 ==========")
+                logger.info(f"📊 [RESULT] ========== MongoDB Before formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
                 if result_data.get('decision'):
                     decision = result_data['decision']
                     logger.info(f"📊 [RESULT] decision: action={decision.get('action')}, analysis_view={decision.get('analysis_view')}")
 
-                # 🔥 统一格式化结果数据
+                # 🔥 Uniformly formatted result data
                 result_data = normalize_result_data(result_data)
                 _log_result_completeness("mongodb", task_id, result_data)
 
-                logger.info(f"📊 [RESULT] ========== MongoDB 格式化后 ==========")
+                logger.info(f"📊 [RESULT] ========== MongoDB After formatting ==========")
                 logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                 logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
             else:
-                # 兜底：analysis_tasks 集合中的 result 字段
+                # Bottom line: the result field in the analysis_tasks collection
                 tasks_doc = await db.analysis_tasks.find_one(
                     {"task_id": task_id},
                     {"result": 1, "symbol": 1, "stock_code": 1, "created_at": 1, "completed_at": 1}
                 )
                 if tasks_doc and tasks_doc.get("result"):
                     r = tasks_doc["result"] or {}
-                    logger.info("✅ [RESULT] 从analysis_tasks.result 找到结果")
-                    # 获取股票代码 (优先使用symbol)
+                    logger.info("✅ [RESULT] Find results from analysis_tasks.result")
+                    # Get stock code (priority use symbol)
                     symbol = (tasks_doc.get("symbol") or tasks_doc.get("stock_code") or
                              r.get("stock_symbol") or r.get("stock_code"))
-                    # 🔥 清理 reports 中的重复数据（如果存在）
+                    # 🔥 Clean duplicate data in reports (if present)
                     reports_raw = r.get("reports", {})
                     cleaned_reports = {}
                     if isinstance(reports_raw, dict):
                         for key, value in reports_raw.items():
-                            # 跳过 structured_reports（如果存在，避免重复）
+                            # Skip structured_reports (if present to avoid duplication)
                             if key != "structured_reports":
                                 cleaned_reports[key] = value
                     
                     result_data = {
                         "analysis_id": r.get("analysis_id"),
                         "stock_symbol": symbol,
-                        "stock_code": symbol,  # 兼容字段
+                        "stock_code": symbol,  # Compatible fields
                         "analysis_date": r.get("analysis_date"),
                         "summary": r.get("summary", ""),
                         "recommendation": r.get("recommendation", ""),
                         "confidence_score": r.get("confidence_score", 0.0),
-                        "risk_level": r.get("risk_level", "中等"),
+                        "risk_level": r.get("risk_level", "medium"),
                         "key_points": r.get("key_points", []),
                         "execution_time": r.get("execution_time", 0),
                         "tokens_used": r.get("tokens_used", 0),
                         "analysts": r.get("analysts", []),
-                        "research_depth": r.get("research_depth", "快速"),
-                        "reports": cleaned_reports,  # 🔥 使用清理后的 reports
+                        "research_depth": r.get("research_depth", "fast"),
+                        "reports": cleaned_reports,  # 🔥 Use the cleaned reports
                         "created_at": tasks_doc.get("created_at"),
                         "updated_at": tasks_doc.get("completed_at"),
                         "status": r.get("status", "completed"),
                         "decision": r.get("decision", {}),
-                        "source": "analysis_tasks"  # 数据来源标记
+                        "source": "analysis_tasks"  # Data source tag
                     }
                     
-                    # 🔥 可选字段：根据查询参数决定是否包含
+                    # 🔥 Optional fields: decide whether to include them based on query parameters
                     if include_state:
                         result_data["state"] = r.get("state", {})
                     if include_detailed:
                         result_data["detailed_analysis"] = r.get("detailed_analysis", {})
 
-                    logger.info(f"📊 [RESULT] ========== analysis_tasks 格式化前 ==========")
+                    logger.info(f"📊 [RESULT] ========== analysis_tasks Before formatting ==========")
                     logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                     logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
                     if result_data.get('decision'):
                         decision = result_data['decision']
                         logger.info(f"📊 [RESULT] decision: action={decision.get('action')}, analysis_view={decision.get('analysis_view')}")
 
-                    # 🔥 统一格式化结果数据
+                    # 🔥 Uniformly formatted result data
                     result_data = normalize_result_data(result_data)
                     _log_result_completeness("analysis_tasks", task_id, result_data)
 
-                    logger.info(f"📊 [RESULT] ========== analysis_tasks 格式化后 ==========")
+                    logger.info(f"📊 [RESULT] ========== analysis_tasks After formatting ==========")
                     logger.info(f"📊 [RESULT] recommendation: {result_data.get('recommendation', '')[:200]}")
                     logger.info(f"📊 [RESULT] key_points: {result_data.get('key_points', [])[:3]}")
 
         if not result_data:
-            logger.warning(f"❌ [RESULT] 所有数据源都未找到结果: {task_id}")
-            raise HTTPException(status_code=404, detail="分析结果不存在")
+            logger.warning(f"❌ [RESULT] No results found for all data sources: {task_id}")
+            raise HTTPException(status_code=404, detail="Analysis result does not exist")
 
         if not result_data:
-            raise HTTPException(status_code=404, detail="分析结果不存在")
+            raise HTTPException(status_code=404, detail="Analysis result does not exist")
 
-        # 处理reports字段 - 如果没有reports字段，优先尝试从文件系统加载，其次从state中提取
+        # Process reports field - if there is no reports field, first try to load from the file system, secondly extract from the state
         if 'reports' not in result_data or not result_data['reports']:
             import os
             from pathlib import Path
 
             stock_symbol = result_data.get('stock_symbol') or result_data.get('stock_code')
-            # analysis_date 可能是日期或时间戳字符串，这里只取日期部分
+            # analysis_date It may be a date or timestamp string. Only the date part is taken here.
             analysis_date_raw = result_data.get('analysis_date')
             analysis_date = str(analysis_date_raw)[:10] if analysis_date_raw else None
 
             loaded_reports = {}
             try:
-                # 1) 尝试从环境变量 TRADINGAGENTS_RESULTS_DIR 指定的位置读取
+                # 1) Attempts to read from the location specified by the environment variable TRADINGAGENTS_RESULTS_DIR
                 base_env = os.getenv('TRADINGAGENTS_RESULTS_DIR')
                 project_root = Path.cwd()
                 if base_env:
@@ -1169,7 +1169,7 @@ async def get_task_result(
                 candidate_dirs = []
                 if stock_symbol and analysis_date:
                     candidate_dirs.append(base_path / stock_symbol / analysis_date / 'reports')
-                # 2) 兼容其他保存路径
+                # 2) Compatible with other save paths
                 if stock_symbol and analysis_date:
                     candidate_dirs.append(project_root / 'data' / 'analysis_results' / stock_symbol / analysis_date / 'reports')
                     candidate_dirs.append(project_root / 'data' / 'analysis_results' / 'detailed' / stock_symbol / analysis_date / 'reports')
@@ -1185,24 +1185,24 @@ async def get_task_result(
                                 pass
                 if loaded_reports:
                     result_data['reports'] = loaded_reports
-                    # 若 summary / recommendation 缺失，尝试从同名报告补全
+                    # If summary / recommendation is missing, try to complete it from the report with the same name.
                     if not result_data.get('summary') and loaded_reports.get('summary'):
                         result_data['summary'] = loaded_reports.get('summary')
                     if not result_data.get('recommendation') and loaded_reports.get('recommendation'):
                         result_data['recommendation'] = loaded_reports.get('recommendation')
-                    logger.info(f"📁 [RESULT] 从文件系统加载到 {len(loaded_reports)} 个报告: {list(loaded_reports.keys())}")
+                    logger.info(f"📁 [RESULT] Load from file system to {len(loaded_reports)} reports: {list(loaded_reports.keys())}")
             except Exception as fs_err:
-                logger.warning(f"⚠️ [RESULT] 从文件系统加载报告失败: {fs_err}")
+                logger.warning(f"⚠️ [RESULT] Loading report from file system failed: {fs_err}")
 
             if 'reports' not in result_data or not result_data['reports']:
-                logger.info(f"📊 [RESULT] reports字段缺失，尝试从state中提取")
+                logger.info(f"📊 [RESULT] reports Field is missing, try to extract from state")
 
-                # 从state中提取报告内容
+                # Extract report content from state
                 reports = {}
                 state = result_data.get('state', {})
 
                 if isinstance(state, dict):
-                    # 优先从引擎产出的 structured_reports 动态提取报告字段
+                    # Prioritize dynamic extraction of report fields from structured_reports generated by the engine
                     structured_reports = state.get('structured_reports', {})
                     if isinstance(structured_reports, dict) and structured_reports:
                         report_fields = [
@@ -1210,7 +1210,7 @@ async def get_task_result(
                             if isinstance(entry, dict) and entry.get("success") and entry.get("content")
                         ]
                     else:
-                        # 回退：旧版硬编码列表
+                        # Fallback: Legacy hardcoded lists
                         report_fields = [
                             'market_report',
                             'sentiment_report',
@@ -1222,117 +1222,117 @@ async def get_task_result(
                             'final_trade_decision'
                         ]
 
-                    # 从state中提取报告内容
+                    # Extract report content from state
                     for field in report_fields:
                         value = state.get(field, "")
                         if isinstance(value, str) and len(value.strip()) > 10:
                             reports[field] = value.strip()
 
-                    # 处理研究团队辩论状态报告
+                    # Handle research team debate status report
                     investment_debate_state = state.get('investment_debate_state', {})
                     if isinstance(investment_debate_state, dict):
-                        # 提取多头研究员历史
+                        # Extract long researcher history
                         bull_content = investment_debate_state.get('bull_history', "")
                         if isinstance(bull_content, str) and len(bull_content.strip()) > 10:
                             reports['bull_researcher'] = bull_content.strip()
 
-                        # 提取空头研究员历史
+                        # Extract short researcher history
                         bear_content = investment_debate_state.get('bear_history', "")
                         if isinstance(bear_content, str) and len(bear_content.strip()) > 10:
                             reports['bear_researcher'] = bear_content.strip()
 
-                        # 提取研究经理分析
+                        # Extract Research Manager Analysis
                         judge_decision = investment_debate_state.get('judge_decision', "")
                         if isinstance(judge_decision, str) and len(judge_decision.strip()) > 10:
                             reports['research_team_decision'] = judge_decision.strip()
 
-                    # 处理风险管理团队辩论状态报告
+                    # Handle risk management team debate status report
                     risk_debate_state = state.get('risk_debate_state', {})
                     if isinstance(risk_debate_state, dict):
-                        # 提取激进分析师历史
+                        # Extract activist analyst history
                         risky_content = risk_debate_state.get('risky_history', "")
                         if isinstance(risky_content, str) and len(risky_content.strip()) > 10:
                             reports['risky_analyst'] = risky_content.strip()
 
-                        # 提取保守分析师历史
+                        # Extract conservative analyst history
                         safe_content = risk_debate_state.get('safe_history', "")
                         if isinstance(safe_content, str) and len(safe_content.strip()) > 10:
                             reports['safe_analyst'] = safe_content.strip()
 
-                        # 提取中性分析师历史
+                        # Extract neutral analyst history
                         neutral_content = risk_debate_state.get('neutral_history', "")
                         if isinstance(neutral_content, str) and len(neutral_content.strip()) > 10:
                             reports['neutral_analyst'] = neutral_content.strip()
 
-                        # 提取风险评估师决策
+                        # Extract risk assessor decisions
                         risk_decision = risk_debate_state.get('judge_decision', "")
                         if isinstance(risk_decision, str) and len(risk_decision.strip()) > 10:
                             reports['risk_management_decision'] = risk_decision.strip()
 
-                    logger.info(f"📊 [RESULT] 从state中提取到 {len(reports)} 个报告: {list(reports.keys())}")
+                    logger.info(f"📊 [RESULT] Extracted from state {len(reports)} reports: {list(reports.keys())}")
                     result_data['reports'] = reports
                 else:
-                    logger.warning(f"⚠️ [RESULT] state字段不是字典类型: {type(state)}")
+                    logger.warning(f"⚠️ [RESULT] state Field is not a dictionary type: {type(state)}")
 
-        # 确保reports字段中的所有内容都是字符串类型
+        # Make sure everything in the reports field is of type string
         if 'reports' in result_data and result_data['reports']:
             reports = result_data['reports']
             if isinstance(reports, dict):
-                # 确保每个报告内容都是字符串且不为空
+                # Make sure each report content is a string and not empty
                 cleaned_reports = {}
                 for key, value in reports.items():
                     if isinstance(value, str) and value.strip():
-                        # 确保字符串不为空
+                        # Make sure the string is not empty
                         cleaned_reports[key] = value.strip()
                     elif value is not None:
-                        # 如果不是字符串，转换为字符串
+                        # If not a string, convert to string
                         str_value = str(value).strip()
-                        if str_value:  # 只保存非空字符串
+                        if str_value:  # Only save non-empty strings
                             cleaned_reports[key] = str_value
-                    # 如果value为None或空字符串，则跳过该报告
+                    # If value is None or an empty string, the report is skipped
 
                 result_data['reports'] = cleaned_reports
-                logger.info(f"📊 [RESULT] 清理reports字段，包含 {len(cleaned_reports)} 个有效报告")
+                logger.info(f"📊 [RESULT] Clean the reports field, including {len(cleaned_reports)} valid reports")
 
-                # 如果清理后没有有效报告，设置为空字典
+                # If there are no valid reports after cleaning, set to an empty dictionary
                 if not cleaned_reports:
-                    logger.warning(f"⚠️ [RESULT] 清理后没有有效报告")
+                    logger.warning(f"⚠️ [RESULT] No valid reports after cleaning")
                     result_data['reports'] = {}
             else:
-                logger.warning(f"⚠️ [RESULT] reports字段不是字典类型: {type(reports)}")
+                logger.warning(f"⚠️ [RESULT] reports Field is not a dictionary type: {type(reports)}")
                 result_data['reports'] = {}
 
-        # 补全关键字段：recommendation/summary/key_points
+        # Complete key fields:recommendation/summary/key_points
         try:
             reports = result_data.get('reports', {}) or {}
             decision = result_data.get('decision', {}) or {}
 
-            # recommendation 优先使用决策摘要或报告中的决策
+            # recommendation Prioritize decisions in decision summaries or reports
             if not result_data.get('recommendation'):
                 rec_candidates = []
                 if isinstance(decision, dict):
-                    # 🔥 合规修改：支持新旧字段名
+                    # 🔥 Compliance modification: support new and old field names
                     action = decision.get('analysis_view') or decision.get('action')
                     price_range = decision.get('price_analysis_range') or decision.get('target_price')
                     confidence = decision.get('confidence')
 
                     if action:
                         parts = [
-                            f"分析观点: {action}",
-                            f"价格分析区间: {price_range}" if price_range else None,
-                            f"置信度: {confidence}" if confidence is not None else None
+                            f"analysis point of view: {action}",
+                            f"price analysis range: {price_range}" if price_range else None,
+                            f"Confidence: {confidence}" if confidence is not None else None
                         ]
                         rec_candidates.append("；".join([p for p in parts if p]))
-                # 从报告中兜底
+                # Get the scoop from the report
                 for k in ['final_trade_decision', 'investment_plan']:
                     v = reports.get(k)
                     if isinstance(v, str) and len(v.strip()) > 10:
                         rec_candidates.append(v.strip())
                 if rec_candidates:
-                    # 取最有信息量的一条（最长）
+                    # Take the most informative one (longest)
                     result_data['recommendation'] = max(rec_candidates, key=len)[:2000]
 
-            # summary 从若干报告拼接生成
+            # summary Generated from splicing several reports
             if not result_data.get('summary'):
                 sum_candidates = []
                 for k in ['market_report', 'fundamentals_report', 'sentiment_report', 'news_report']:
@@ -1342,29 +1342,29 @@ async def get_task_result(
                 if sum_candidates:
                     result_data['summary'] = ("\n\n".join(sum_candidates))[:3000]
 
-            # key_points 兜底
+            # key_points Keep everything in mind
             if not result_data.get('key_points'):
                 kp = []
                 if isinstance(decision, dict):
-                    # 🔥 合规修改：支持新旧字段名和新术语
+                    # 🔥 Compliance modification: support old and new field names and new terminology
                     action = decision.get('analysis_view') or decision.get('action')
                     price_range = decision.get('price_analysis_range') or decision.get('target_price')
                     confidence = decision.get('confidence')
                     risk_level = decision.get('risk_level')
 
                     if action:
-                        kp.append(f"分析观点: {action}")
+                        kp.append(f"analysis point of view: {action}")
                     if price_range:
-                        # 处理价格区间（可能是列表或单个值）
+                        # Handle price ranges (may be a list or a single value)
                         if isinstance(price_range, (list, tuple)) and len(price_range) == 2:
-                            kp.append(f"价格分析区间: {price_range[0]}-{price_range[1]}元")
+                            kp.append(f"price analysis range: {price_range[0]}-{price_range[1]}Yuan")
                         else:
-                            kp.append(f"参考价格: {price_range}元")
+                            kp.append(f"reference price: {price_range}Yuan")
                     if confidence is not None:
-                        kp.append(f"置信度: {confidence}")
+                        kp.append(f"Confidence: {confidence}")
                     if risk_level:
-                        kp.append(f"风险等级: {risk_level}")
-                # 从reports中截取前几句作为要点
+                        kp.append(f"risk level: {risk_level}")
+                # Extract the first few sentences from reports as key points
                 for k in ['investment_plan', 'final_trade_decision']:
                     v = reports.get(k)
                     if isinstance(v, str) and len(v.strip()) > 10:
@@ -1372,18 +1372,18 @@ async def get_task_result(
                 if kp:
                     result_data['key_points'] = kp[:5]
         except Exception as fill_err:
-            logger.warning(f"⚠️ [RESULT] 补全关键字段时出错: {fill_err}")
+            logger.warning(f"⚠️ [RESULT] Error completing key fields: {fill_err}")
 
 
-        # 进一步兜底：从 detailed_analysis 推断并补全
+        # Go further: infer and complete from detailed_analysis
         try:
             if not result_data.get('summary') or not result_data.get('recommendation') or not result_data.get('reports'):
                 da = result_data.get('detailed_analysis')
-                # 若reports仍为空，放入一份原始详细分析，便于前端“查看报告详情”
+                # If reports is still empty, put an original detailed analysis to facilitate the front-end"View report details"
                 if (not result_data.get('reports')) and isinstance(da, str) and len(da.strip()) > 20:
                     result_data['reports'] = {'detailed_analysis': da.strip()}
                 elif (not result_data.get('reports')) and isinstance(da, dict) and da:
-                    # 将字典的长文本项放入reports
+                    # Put long text items of dictionary into reports
                     extracted = {}
                     for k, v in da.items():
                         if isinstance(v, str) and len(v.strip()) > 20:
@@ -1391,27 +1391,27 @@ async def get_task_result(
                     if extracted:
                         result_data['reports'] = extracted
 
-                # 补 summary
+                # supplement summary
                 if not result_data.get('summary'):
                     if isinstance(da, str) and da.strip():
                         result_data['summary'] = da.strip()[:3000]
                     elif isinstance(da, dict) and da:
-                        # 取最长的文本作为摘要
+                        # Take the longest text as summary
                         texts = [v.strip() for v in da.values() if isinstance(v, str) and v.strip()]
                         if texts:
                             result_data['summary'] = max(texts, key=len)[:3000]
 
-                # 补 recommendation
+                # supplement recommendation
                 if not result_data.get('recommendation'):
                     rec = None
                     if isinstance(da, str):
-                        # 简单基于关键字提取包含“建议”的段落
+                        # Simple keyword extraction contains"Suggestions"paragraph
                         import re
-                        m = re.search(r'(投资建议|建议|结论)[:：]?\s*(.+)', da)
+                        m = re.search(r'(investment advice|Suggestions|Conclusion)[:: ]?\s*(.+)', da)
                         if m:
                             rec = m.group(0)
                     elif isinstance(da, dict):
-                        for key in ['final_trade_decision', 'investment_plan', '结论', '建议']:
+                        for key in ['final_trade_decision', 'investment_plan', 'Conclusion', 'Suggestions']:
                             v = da.get(key)
                             if isinstance(v, str) and len(v.strip()) > 10:
                                 rec = v.strip()
@@ -1419,11 +1419,11 @@ async def get_task_result(
                     if rec:
                         result_data['recommendation'] = rec[:2000]
         except Exception as da_err:
-            logger.warning(f"⚠️ [RESULT] 从detailed_analysis补全失败: {da_err}")
+            logger.warning(f"⚠️ [RESULT] Completion failed from detailed_analysis: {da_err}")
 
-        # 严格的数据格式化和验证
+        # Rigorous data formatting and validation
         def safe_string(value, default=""):
-            """安全地转换为字符串"""
+            """Safely convert to string"""
             if value is None:
                 return default
             if isinstance(value, str):
@@ -1431,7 +1431,7 @@ async def get_task_result(
             return str(value)
 
         def safe_number(value, default=0):
-            """安全地转换为数字"""
+            """Safely convert to numbers"""
             if value is None:
                 return default
             if isinstance(value, (int, float)):
@@ -1442,7 +1442,7 @@ async def get_task_result(
                 return default
 
         def safe_list(value, default=None):
-            """安全地转换为列表"""
+            """Safely convert to list"""
             if default is None:
                 default = []
             if value is None:
@@ -1452,7 +1452,7 @@ async def get_task_result(
             return default
 
         def safe_dict(value, default=None):
-            """安全地转换为字典"""
+            """Convert safely to dictionary"""
             if default is None:
                 default = {}
             if value is None:
@@ -1461,85 +1461,85 @@ async def get_task_result(
                 return value
             return default
 
-        # 🔍 调试：检查最终构建前的result_data
-        logger.info(f"🔍 [FINAL] 构建最终结果前，result_data键: {list(result_data.keys())}")
-        logger.info(f"🔍 [FINAL] result_data中有decision: {bool(result_data.get('decision'))}")
+        # 🔍 Debugging: Check before final build result_data
+        logger.info(f"🔍 [FINAL] Before building the final result, the result_data key: {list(result_data.keys())}")
+        logger.info(f"🔍 [FINAL] result_data There is decision: {bool(result_data.get('decision'))}")
         if result_data.get('decision'):
-            logger.info(f"🔍 [FINAL] decision内容: {result_data['decision']}")
+            logger.info(f"🔍 [FINAL] decision content: {result_data['decision']}")
 
-        # 构建严格验证的结果数据（基础字段，必须返回）
+        # Build strictly validated result data (basic fields, must be returned)
         final_result_data = {
             "analysis_id": safe_string(result_data.get("analysis_id"), "unknown"),
             "stock_symbol": safe_string(result_data.get("stock_symbol"), "UNKNOWN"),
             "stock_code": safe_string(result_data.get("stock_code"), "UNKNOWN"),
             "analysis_date": safe_string(result_data.get("analysis_date"), "2025-08-20"),
             "source": safe_string(result_data.get("source"), "unknown"),
-            "summary": safe_string(result_data.get("summary"), "分析摘要暂无"),
-            "recommendation": safe_string(result_data.get("recommendation"), "投资建议暂无"),
+            "summary": safe_string(result_data.get("summary"), "Analysis summary not yet available"),
+            "recommendation": safe_string(result_data.get("recommendation"), "No investment advice yet"),
             "confidence_score": safe_number(result_data.get("confidence_score"), 0.0),
-            "risk_level": safe_string(result_data.get("risk_level"), "中等"),
+            "risk_level": safe_string(result_data.get("risk_level"), "medium"),
             "key_points": safe_list(result_data.get("key_points")),
             "execution_time": safe_number(result_data.get("execution_time"), 0),
             "tokens_used": safe_number(result_data.get("tokens_used"), 0),
             "analysts": safe_list(result_data.get("analysts")),
-            "research_depth": safe_string(result_data.get("research_depth"), "快速"),
-            # 🔥 关键修复：添加decision字段！
+            "research_depth": safe_string(result_data.get("research_depth"), "fast"),
+            # 🔥 Key fix: add decision field!
             "decision": safe_dict(result_data.get("decision"))
         }
         
-        # 🔥 可选字段：根据查询参数决定是否返回
+        # 🔥 Optional fields: decide whether to return based on query parameters
         if include_state:
             final_result_data["state"] = safe_dict(result_data.get("state"))
         if include_detailed:
             final_result_data["detailed_analysis"] = safe_dict(result_data.get("detailed_analysis"))
 
-        # 特别处理reports字段 - 确保每个报告都是有效字符串
+        # Special handling of reports field - ensure every report is a valid string
         reports_data = safe_dict(result_data.get("reports"))
         validated_reports = {}
 
         for report_key, report_content in reports_data.items():
-            # 确保报告键是字符串
+            # Make sure report keys are strings
             safe_key = safe_string(report_key, "unknown_report")
 
-            # 确保报告内容是非空字符串
+            # Make sure the report content is a non-empty string
             if report_content is None:
-                validated_content = "报告内容暂无"
+                validated_content = "No report content yet"
             elif isinstance(report_content, str):
-                validated_content = report_content.strip() if report_content.strip() else "报告内容为空"
+                validated_content = report_content.strip() if report_content.strip() else "Report content is empty"
             else:
-                validated_content = str(report_content).strip() if str(report_content).strip() else "报告内容格式错误"
+                validated_content = str(report_content).strip() if str(report_content).strip() else "Report content format error"
 
             validated_reports[safe_key] = validated_content
 
         final_result_data["reports"] = validated_reports
 
-        logger.info(f"✅ [RESULT] 成功获取任务结果: {task_id}")
-        logger.info(f"📊 [RESULT] 最终返回 {len(final_result_data.get('reports', {}))} 个报告")
-        logger.info(f"📊 [RESULT] 报告列表: {list(validated_reports.keys())}")
+        logger.info(f"✅ [RESULT] Successfully obtained task results: {task_id}")
+        logger.info(f"📊 [RESULT] eventually return {len(final_result_data.get('reports', {}))} reports")
+        logger.info(f"📊 [RESULT] Report list: {list(validated_reports.keys())}")
 
-        # 🔍 调试：检查最终返回的数据
-        logger.info(f"🔍 [FINAL] 最终返回数据键: {list(final_result_data.keys())}")
-        logger.info(f"🔍 [FINAL] 最终返回中有decision: {bool(final_result_data.get('decision'))}")
+        # 🔍 Debugging: Examine the final returned data
+        logger.info(f"🔍 [FINAL] Finally return the data key: {list(final_result_data.keys())}")
+        logger.info(f"🔍 [FINAL] There are some in the final return decision: {bool(final_result_data.get('decision'))}")
         if final_result_data.get('decision'):
-            logger.info(f"🔍 [FINAL] 最终decision内容: {final_result_data['decision']}")
+            logger.info(f"🔍 [FINAL] final decision content: {final_result_data['decision']}")
 
         return {
             "success": True,
             "data": final_result_data,
-            "message": "分析结果获取成功"
+            "message": "Analysis results obtained successfully"
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ [RESULT] 获取任务结果失败: {e}")
+        logger.error(f"❌ [RESULT] Failed to obtain task results: {e}")
         raise HTTPException(status_code=400, detail=format_http_error_detail(e))
 
 
 class AnalysisFeedbackRequest(BaseModel):
-    """分析任务反馈请求"""
-    rating: int = Field(..., ge=1, le=5, description="评分 1-5")
-    comment: str = Field(default="", description="反馈内容")
+    """Analyze task feedback requests"""
+    rating: int = Field(..., ge=1, le=5, description="Rating 1-5")
+    comment: str = Field(default="", description="Feedback content")
 
 
 @router.post("/tasks/{task_id}/feedback")
@@ -1548,15 +1548,15 @@ async def submit_analysis_feedback(
     req: AnalysisFeedbackRequest,
     user: dict = Depends(get_current_user),
 ):
-    """提交分析任务反馈（评分+评论）"""
+    """Submit analysis task feedback (score+comments)"""
     try:
         db = get_mongo_db()
-        # 检查任务是否存在
+        # Check if the task exists
         task = await db.analysis_tasks.find_one({"task_id": task_id})
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task does not exist")
 
-        # 写入反馈
+        # Write feedback
         feedback_doc = {
             "task_id": task_id,
             "user_id": str(user["id"]),
@@ -1571,34 +1571,34 @@ async def submit_analysis_feedback(
             upsert=True,
         )
 
-        # 更新任务中的评分字段
+        # Update rating field in task
         await db.analysis_tasks.update_one(
             {"task_id": task_id},
             {"$set": {"user_rating": req.rating, "user_feedback": req.comment}},
         )
 
-        return {"message": "反馈提交成功", "rating": req.rating}
+        return {"message": "Feedback submitted successfully", "rating": req.rating}
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ 提交分析反馈失败: {e}")
+        logger.error(f"❌ Failed to submit analysis feedback: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/tasks/all", response_model=Dict[str, Any])
 async def list_all_tasks(
     user: dict = Depends(get_current_user),
-    status: Optional[str] = Query(None, description="任务状态过滤"),
-    limit: Optional[int] = Query(None, description="返回数量限制（可选，不设置则返回所有）"),
-    offset: int = Query(0, ge=0, description="偏移量")
+    status: Optional[str] = Query(None, description="Task status filter"),
+    limit: Optional[int] = Query(None, description="Return quantity limit (optional, if not set, all will be returned)"),
+    offset: int = Query(0, ge=0, description="offset")
 ):
-    """获取所有任务列表（不限用户）
+    """Get all task lists (not limited to users)
 
-    注意：如果不指定 limit，将返回所有记录，由前端处理分页
+    Note: If limit is not specified, all records will be returned and paging will be handled by the front end.
     """
     try:
-        logger.info(f"📋 查询所有任务列表")
+        logger.info(f"📋 Query all task lists")
 
-        # 如果没有指定 limit，则返回所有记录
+        # If limit is not specified, all records are returned
         actual_limit = limit if limit is not None else 999999
 
         tasks = await get_simple_analysis_service().list_all_tasks(
@@ -1615,28 +1615,28 @@ async def list_all_tasks(
                 "limit": limit,
                 "offset": offset
             },
-            "message": "任务列表获取成功"
+            "message": "Task list obtained successfully"
         }
 
     except Exception as e:
-        logger.error(f"❌ 获取任务列表失败: {e}")
+        logger.error(f"❌ Failed to get task list: {e}")
         raise HTTPException(status_code=500, detail=format_http_error_detail(e))
 
 @router.get("/tasks", response_model=Dict[str, Any])
 async def list_user_tasks(
     user: dict = Depends(get_current_user),
-    status: Optional[str] = Query(None, description="任务状态过滤"),
-    limit: Optional[int] = Query(None, description="返回数量限制（可选，不设置则返回所有）"),
-    offset: int = Query(0, ge=0, description="偏移量")
+    status: Optional[str] = Query(None, description="Task status filter"),
+    limit: Optional[int] = Query(None, description="Return quantity limit (optional, if not set, all will be returned)"),
+    offset: int = Query(0, ge=0, description="offset")
 ):
-    """获取用户的任务列表
+    """Get the user s task list
 
-    注意：如果不指定 limit，将返回所有记录，由前端处理分页
+    Note: If limit is not specified, all records will be returned and paging will be handled by the front end.
     """
     try:
-        logger.info(f"📋 查询用户任务列表: {user['id']}")
+        logger.info(f"📋 Query user task list: {user['id']}")
 
-        # 如果没有指定 limit，则返回所有记录
+        # If limit is not specified, all records are returned
         actual_limit = limit if limit is not None else 999999
 
         tasks = await get_simple_analysis_service().list_user_tasks(
@@ -1654,11 +1654,11 @@ async def list_user_tasks(
                 "limit": limit,
                 "offset": offset
             },
-            "message": "任务列表获取成功"
+            "message": "Task list obtained successfully"
         }
 
     except Exception as e:
-        logger.error(f"❌ 获取任务列表失败: {e}")
+        logger.error(f"❌ Failed to get task list: {e}")
         raise HTTPException(status_code=500, detail=format_http_error_detail(e))
 
 @router.post("/batch", response_model=Dict[str, Any])
@@ -1667,33 +1667,33 @@ async def submit_batch_analysis(
     user: dict = Depends(get_current_user)
 ):
     """
-    提交批量分析任务（真正的并发执行）- 支持 AB 测试
+    Submit batch analysis tasks (true concurrent execution) - supports AB testing
 
-    通过 request.parameters.engine 参数选择引擎:
-    - v2 (默认): 使用新引擎 WorkflowEngine + v2 agent
-    - unified: 使用统一引擎 WorkflowEngine
-    - legacy: 已停用（v3.0 起封堵，返回 400）
+    Select the engine via the request.parameters.engine parameter:
+    - v2 (Default): Use new engine WorkflowEngine + v2 agent
+    - unified: Use unified engine WorkflowEngine
+    - legacy: Disabled (blocked since v3.0, returning 400)
 
-    ⚠️ 注意：不使用 BackgroundTasks，因为它是串行执行的！
-    改用 asyncio.create_task 实现真正的并发执行。
+    ⚠️ NOTE: BackgroundTasks are not used as it is executed serially!
+    Use asyncio.create_task instead to achieve true concurrent execution.
     """
     try:
-        logger.info(f"🎯 [批量分析] 收到批量分析请求: title={request.title}")
+        logger.info(f"🎯 [Batch analysis] Receive batch analysis request: title={request.title}")
 
-        # 判断使用哪个引擎
-        # v3.0 起默认使用 V2 引擎（旧版 legacy 已停用）
+        # Determine which engine to use
+        # v3.0 The V2 engine is used by default from now on (the old version legacy has been discontinued)
         engine_type = AnalysisEngine.V2
         if request.parameters and hasattr(request.parameters, "engine"):
             engine_type = request.parameters.engine
-            # v3.0 起拒绝 legacy 引擎
+            # v3.0 Reject legacy engine
             if engine_type == AnalysisEngine.LEGACY:
                 raise HTTPException(
                     status_code=400,
-                    detail="[已停用] legacy 引擎已停用，请改用 v2 引擎（request.parameters.engine='v2'）。"
-                    "详见 docs/99-archive/deprecated-features/legacy-agents-deprecation.md"
+                    detail="[Deactivated] legacy Engine is retired, please use v2 engine instead (request.parameters.engine='v2') . "
+                    "See details docs/99-archive/deprecated-features/legacy-agents-deprecation.md"
                 )
 
-        logger.info(f"🔧 [AB测试-批量] 使用引擎: {engine_type.value}")
+        logger.info(f"🔧 [AB Test-Batch] use engine: {engine_type.value}")
 
         simple_service = get_simple_analysis_service()
         unified_service = get_unified_analysis_service()
@@ -1701,132 +1701,132 @@ async def submit_batch_analysis(
         task_ids: List[str] = []
         mapping: List[Dict[str, str]] = []
 
-        # 获取股票代码列表 (兼容旧字段)
+        # Get a list of stock symbols (Compatible with old fields)
         stock_symbols = request.get_symbols()
-        logger.info(f"📊 [批量分析] 股票代码列表: {stock_symbols}")
+        logger.info(f"📊 [Batch analysis] Stock code list: {stock_symbols}")
 
-        # 验证股票代码列表
+        # Verify ticker list
         if not stock_symbols:
-            raise ValueError("股票代码列表不能为空")
+            raise ValueError("Stock symbol list cannot be empty")
 
-        # 🔧 限制批量分析的股票数量（最多10个）
+        # 🔧 Limit the number of stocks analyzed in batches (maximum 10)
         MAX_BATCH_SIZE = 10
         if len(stock_symbols) > MAX_BATCH_SIZE:
-            raise ValueError(f"批量分析最多支持 {MAX_BATCH_SIZE} 个股票，当前提交了 {len(stock_symbols)} 个")
+            raise ValueError(f"Batch analysis supports up to {MAX_BATCH_SIZE} stocks, currently submitted {len(stock_symbols)} a")
 
-        # 为每只股票创建单股分析任务
+        # Create a single stock analysis task for each stock
         for i, symbol in enumerate(stock_symbols):
-            logger.info(f"📝 [批量分析] 正在创建第 {i+1}/{len(stock_symbols)} 个任务: {symbol}")
+            logger.info(f"📝 [Batch analysis] Creating the {i+1}/{len(stock_symbols)} tasks: {symbol}")
 
             single_req = SingleAnalysisRequest(
                 symbol=symbol,
-                stock_code=symbol,  # 兼容字段
+                stock_code=symbol,  # Compatible fields
                 parameters=request.parameters
             )
 
             try:
                 if engine_type == AnalysisEngine.V2:
-                    # v2 引擎：使用统一任务服务
+                    # v2 Engine: Use unified task service
                     from app.services.task_analysis_service import get_task_analysis_service
                     from app.models.analysis import AnalysisTaskType
                     from app.models.user import PyObjectId
 
                     task_service = get_task_analysis_service()
 
-                    # 🔥 修复：准备任务参数，确保包含必需的 market_type
-                    # 根据股票代码自动识别市场类型
+                    # 🔥 Fix: Prepare task parameters, making sure to include required market_type
+                    # Automatically identify market types based on stock symbols
                     market_type = get_market_type_from_symbol(symbol)
-                    logger.info(f"📊 [批量分析] 股票 {symbol} 识别为市场: {market_type}")
+                    logger.info(f"📊 [Batch analysis] stocks {symbol} identified as market: {market_type}")
 
                     task_params = {
                         "symbol": symbol,
                         "stock_code": symbol,
-                        "market_type": market_type,  # 🔑 根据股票代码自动识别市场类型
+                        "market_type": market_type,  # 🔑 Automatically identify market types based on stock symbols
                     }
 
-                    # 将 request.parameters 的所有字段合并到 task_params
+                    # Merge all fields of request.parameters into task_params
                     if request.parameters:
                         params_dict = request.parameters.model_dump()
-                        # 移除 engine 字段（这是路由层使用的，不是任务参数）
+                        # Remove the engine field (this is used by the routing layer, not a task parameter)
                         params_dict.pop("engine", None)
                         task_params.update(params_dict)
 
-                    # 如果用户在 parameters 中指定了 market_type，优先使用用户指定的
+                    # If the user specifies market_type in parameters, the user-specified
                     if request.parameters and hasattr(request.parameters, 'market_type') and request.parameters.market_type:
                         task_params["market_type"] = request.parameters.market_type
-                        logger.info(f"📊 [批量分析] 使用用户指定的市场类型: {request.parameters.market_type}")
+                        logger.info(f"📊 [Batch analysis] Use user-specified market type: {request.parameters.market_type}")
 
-                    # 🔥 从用户偏好读取风险偏好设置
+                    # 🔥 Read risk preference settings from user preferences
                     preference_type = await get_user_risk_preference(user["id"])
-                    logger.info(f"📊 [批量分析] 使用用户风险偏好: {preference_type}")
+                    logger.info(f"📊 [Batch analysis] Use user risk preferences: {preference_type}")
 
                     task = await task_service.create_task(
                         user_id=PyObjectId(user["id"]),
                         task_type=AnalysisTaskType.STOCK_ANALYSIS,
                         task_params=task_params,
                         engine_type="auto",
-                        preference_type=preference_type  # 🔥 使用用户偏好设置
+                        preference_type=preference_type  # 🔥 Use user preferences
                     )
-                    task_id = task.task_id  # 使用 UUID task_id，不是 ObjectId
+                    task_id = task.task_id  # Use UUID task_id, not ObjectId
                 else:
-                    # unified 引擎：使用 simple_analysis_service 创建任务（legacy 已在前面拦截）
+                    # unified Engine: Use simple_analysis_service to create tasks (legacy has been intercepted earlier)
                     create_res = await simple_service.create_analysis_task(user["id"], single_req)
                     task_id = create_res.get("task_id")
                     if not task_id:
-                        raise RuntimeError(f"创建任务失败：未返回task_id (symbol={symbol})")
+                        raise RuntimeError(f"Failed to create task: did not return task_id (symbol={symbol})")
 
                 task_ids.append(task_id)
                 mapping.append({"symbol": symbol, "stock_code": symbol, "task_id": task_id})
-                logger.info(f"✅ [批量分析] 已创建任务: {task_id} - {symbol}")
+                logger.info(f"✅ [Batch analysis] Task created: {task_id} - {symbol}")
             except Exception as create_error:
-                logger.error(f"❌ [批量分析] 创建任务失败: {symbol}, 错误: {create_error}", exc_info=True)
+                logger.error(f"❌ [Batch analysis] Failed to create task: {symbol}, Error: {create_error}", exc_info=True)
                 raise
 
-        # 🔧 使用队列系统统一管理任务，自动控制并发
-        # 不再使用 asyncio.create_task 直接并发，而是通过队列由 Worker 消费
+        # 🔧 Use the queue system to uniformly manage tasks and automatically control concurrency
+        # No longer use asyncio.create_task direct concurrency, but consumed by Worker through queue
         from app.services.queue_service import get_queue_service
         queue_service = get_queue_service()
 
-        # 为每个任务准备队列参数
+        # Prepare queue parameters for each task
         for i, symbol in enumerate(stock_symbols):
             task_id = task_ids[i]
             
-            # 准备队列参数
+            # Prepare queue parameters
             queue_params = {
                 "task_id": task_id,
                 "symbol": symbol,
                 "stock_code": symbol,
                 "user_id": user["id"],
                 "batch_id": batch_id,
-                "engine": engine_type.value,  # 记录引擎类型，Worker 需要知道
+                "engine": engine_type.value,  # Record engine type, Worker needs to know
             }
             
-            # 添加分析参数
+            # Add analysis parameters
             if request.parameters:
                 params_dict = request.parameters.model_dump()
-                # 移除 engine 字段（已在 queue_params 中）
+                # Remove engine field (already in queue_params)
                 params_dict.pop("engine", None)
                 queue_params.update(params_dict)
             
             try:
-                # 提交任务到队列（会自动检查并发限制）
-                # 使用已有的 task_id，而不是让队列生成新的
+                # Submit tasks to the queue (will automatically check concurrency limits)
+                # Use an existing task_id instead of letting the queue generate a new one
                 await queue_service.enqueue_task(
                     user_id=user["id"],
                     symbol=symbol,
                     params=queue_params,
                     batch_id=batch_id,
-                    task_id=task_id  # 使用已创建的任务ID
+                    task_id=task_id  # Use an already created task ID
                 )
-                logger.info(f"✅ [批量分析] 任务已入队: {task_id} - {symbol} (引擎: {engine_type.value})")
+                logger.info(f"✅ [Batch analysis] The task has been queued: {task_id} - {symbol} (engine: {engine_type.value})")
             except ValueError as e:
-                # 并发限制错误
-                logger.warning(f"⚠️ [批量分析] 任务入队失败（并发限制）: {task_id} - {symbol}, 错误: {e}")
-                # 继续处理其他任务，失败的会留在队列中等待
+                # Concurrency limit error
+                logger.warning(f"⚠️ [Batch analysis] Task enqueue failed (concurrency limit): {task_id} - {symbol}, Error: {e}")
+                # Continue to process other tasks, failed ones will stay in the queue waiting
             except Exception as e:
-                logger.error(f"❌ [批量分析] 任务入队失败: {task_id} - {symbol}, 错误: {e}", exc_info=True)
+                logger.error(f"❌ [Batch analysis] Task enqueue failed: {task_id} - {symbol}, Error: {e}", exc_info=True)
         
-        logger.info(f"🚀 [批量分析] 已提交 {len(task_ids)} 个任务到队列 (引擎: {engine_type.value})")
+        logger.info(f"🚀 [Batch analysis] Submitted {len(task_ids)} tasks to queue (engine: {engine_type.value})")
 
         return {
             "success": True,
@@ -1838,20 +1838,20 @@ async def submit_batch_analysis(
                 "status": "submitted",
                 "engine": engine_type.value
             },
-            "message": f"批量分析任务已提交到队列，共{len(task_ids)}个股票，Worker将按并发限制自动执行 (引擎: {engine_type.value})"
+            "message": f"Batch analysis tasks have been submitted to the queue, a total of{len(task_ids)}For each stock, the Worker will automatically execute according to the concurrency limit. (engine: {engine_type.value})"
         }
     except Exception as e:
-        logger.error(f"❌ [批量分析] 提交失败: {e}", exc_info=True)
+        logger.error(f"❌ [Batch analysis] Submission failed: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=format_http_error_detail(e))
 
-# 兼容性：保留原有端点
+# Compatibility: Keep original endpoints
 @router.post("/analyze")
 async def analyze_single(
     req: SingleAnalyzeRequest,
     user: dict = Depends(get_current_user),
     svc: QueueService = Depends(get_queue_service)
 ):
-    """单股分析（兼容性端点）"""
+    """Single Stock Analysis (Compatibility Endpoint)"""
     try:
         task_id = await svc.enqueue_task(
             user_id=user["id"],
@@ -1868,7 +1868,7 @@ async def analyze_batch(
     user: dict = Depends(get_current_user),
     svc: QueueService = Depends(get_queue_service)
 ):
-    """批量分析（兼容性端点）"""
+    """Batch Analysis (Compatibility Endpoint)"""
     try:
         batch_id, submitted = await svc.create_batch(
             user_id=user["id"],
@@ -1886,31 +1886,31 @@ async def get_batch(batch_id: str, user: dict = Depends(get_current_user), svc: 
         raise HTTPException(status_code=404, detail="batch not found")
     return b
 
-# 任务和批次查询端点
-# 注意：这个路由被移到了 /tasks/{task_id}/status 之后，避免路由冲突
+# Task and batch query endpoints
+# NOTE: This route has been moved to /tasks/{task_id}/status Afterwards, avoid routing conflicts
 # @router.get("/tasks/{task_id}")
 # async def get_task(
 #     task_id: str,
 #     user: dict = Depends(get_current_user),
 #     svc: QueueService = Depends(get_queue_service)
 # ):
-#     """获取任务详情"""
+#     """Get task details"""
 #     t = await svc.get_task(task_id)
 #     if not t or t.get("user") != user["id"]:
-#         raise HTTPException(status_code=404, detail="任务不存在")
+#         raise HTTPException(status_code=404, detail="Task does not exist")
 #     return t
 
-# 原有的路由已被新的异步实现替代
+# The original routing has been replaced by the new asynchronous implementation
 # @router.get("/tasks/{task_id}/status")
 # async def get_task_status_old(
 #     task_id: str,
 #     user: dict = Depends(get_current_user)
 # ):
-#     """获取任务状态和进度（旧版实现）"""
+#     """Get task status and progress (old version implementation)"""
 #     try:
 #         status = await get_analysis_service().get_task_status(task_id)
 #         if not status:
-#             raise HTTPException(status_code=404, detail="任务不存在")
+#             raise HTTPException(status_code=404, detail="Task does not exist")
 #         return {
 #             "success": True,
 #             "data": status
@@ -1924,18 +1924,18 @@ async def cancel_task(
     user: dict = Depends(get_current_user),
     svc: QueueService = Depends(get_queue_service)
 ):
-    """取消任务"""
+    """Cancel task"""
     try:
-        # 验证任务所有权
+        # Verify task ownership
         task = await svc.get_task(task_id)
         if not task or task.get("user") != user["id"]:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task does not exist")
 
         success = await svc.cancel_task(task_id)
         if success:
-            return {"success": True, "message": "任务已取消"}
+            return {"success": True, "message": "Task canceled"}
         else:
-            raise HTTPException(status_code=400, detail="取消任务失败")
+            raise HTTPException(status_code=400, detail="Failed to cancel task")
     except Exception as e:
         raise HTTPException(status_code=400, detail=format_http_error_detail(e))
 
@@ -1944,7 +1944,7 @@ async def get_user_queue_status(
     user: dict = Depends(get_current_user),
     svc: QueueService = Depends(get_queue_service)
 ):
-    """获取用户队列状态"""
+    """Get user queue status"""
     try:
         status = await svc.get_user_queue_status(user["id"])
         return {
@@ -1957,18 +1957,18 @@ async def get_user_queue_status(
 @router.get("/user/history")
 async def get_user_analysis_history(
     user: dict = Depends(get_current_user),
-    status: Optional[str] = Query(None, description="任务状态过滤"),
-    start_date: Optional[str] = Query(None, description="开始日期，YYYY-MM-DD"),
-    end_date: Optional[str] = Query(None, description="结束日期，YYYY-MM-DD"),
-    symbol: Optional[str] = Query(None, description="股票代码"),
-    stock_code: Optional[str] = Query(None, description="股票代码(已废弃,使用symbol)"),
-    market_type: Optional[str] = Query(None, description="市场类型"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页大小")
+    status: Optional[str] = Query(None, description="Task status filter"),
+    start_date: Optional[str] = Query(None, description="start date,YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="end date,YYYY-MM-DD"),
+    symbol: Optional[str] = Query(None, description="Stock code"),
+    stock_code: Optional[str] = Query(None, description="Stock code(Deprecated,Use symbol)"),
+    market_type: Optional[str] = Query(None, description="market type"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="page size")
 ):
-    """获取用户分析历史（支持基础筛选与分页）"""
+    """Obtain user analysis history (supports basic filtering and paging)"""
     try:
-        # 先获取用户任务列表（内存优先，MongoDB兜底）
+        # First get the user task list (memory first, MongoDB takes care of everything)
         raw_tasks = await get_simple_analysis_service().list_user_tasks(
             user_id=user["id"],
             status=status,
@@ -1976,7 +1976,7 @@ async def get_user_analysis_history(
             offset=(page - 1) * page_size
         )
 
-        # 进行基础筛选
+        # Perform basic screening
         from datetime import datetime
         def in_date_range(t: Optional[str]) -> bool:
             if not t:
@@ -1998,7 +1998,7 @@ async def get_user_analysis_history(
                     pass
             return ok
 
-        # 获取查询的股票代码 (兼容旧字段)
+        # Get the queried stock code (Compatible with old fields)
         query_symbol = symbol or stock_code
 
         filtered = []
@@ -2007,12 +2007,12 @@ async def get_user_analysis_history(
                 task_symbol = x.get("symbol") or x.get("stock_code") or x.get("stock_symbol")
                 if task_symbol not in [query_symbol]:
                     continue
-            # 市场类型暂时从参数内判断（如有）
+            # The market type is temporarily determined from the parameters (if any)
             if market_type:
                 params = x.get("parameters") or {}
                 if params.get("market_type") != market_type:
                     continue
-            # 时间范围（使用 start_time 或 created_at）
+            # Time range (use start_time or created_at)
             t = x.get("start_time") or x.get("created_at")
             if not in_date_range(t):
                 continue
@@ -2026,76 +2026,76 @@ async def get_user_analysis_history(
                 "page": page,
                 "page_size": page_size
             },
-            "message": "历史查询成功"
+            "message": "History query successful"
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=format_http_error_detail(e))
 
-# WebSocket 端点
+# WebSocket endpoint
 @router.websocket("/ws/task/{task_id}")
 async def websocket_task_progress(websocket: WebSocket, task_id: str):
-    """WebSocket 端点：实时获取任务进度"""
+    """WebSocket Endpoint: Get task progress in real time"""
     import json
     websocket_manager = get_websocket_manager()
 
     try:
         await websocket_manager.connect(websocket, task_id)
 
-        # 发送连接确认消息
+        # Send connection confirmation message
         await websocket.send_text(json.dumps({
             "type": "connection_established",
             "task_id": task_id,
-            "message": "WebSocket 连接已建立"
+            "message": "WebSocket Connection established"
         }))
 
-        # 保持连接活跃
+        # keep connection active
         while True:
             try:
-                # 接收客户端的心跳消息
+                # Receive heartbeat messages from the client
                 data = await websocket.receive_text()
-                # 可以处理客户端发送的消息
-                logger.debug(f"📡 收到 WebSocket 消息: {data}")
+                # Can handle messages sent by the client
+                logger.debug(f"📡 Receive WebSocket message: {data}")
             except WebSocketDisconnect:
                 break
             except Exception as e:
-                logger.warning(f"⚠️ WebSocket 消息处理错误: {e}")
+                logger.warning(f"⚠️ WebSocket Message processing error: {e}")
                 break
 
     except WebSocketDisconnect:
-        logger.info(f"🔌 WebSocket 客户端断开连接: {task_id}")
+        logger.info(f"🔌 WebSocket Client disconnects: {task_id}")
     except Exception as e:
-        logger.error(f"❌ WebSocket 连接错误: {e}")
+        logger.error(f"❌ WebSocket Connection error: {e}")
     finally:
         await websocket_manager.disconnect(websocket, task_id)
 
-# 任务详情查询路由（放在最后避免与 /tasks/{task_id}/status 冲突）
+# Task details query routing (put at the end to avoid confusion with /tasks/{task_id}/status conflict)
 @router.get("/tasks/{task_id}/details")
 async def get_task_details(
     task_id: str,
     user: dict = Depends(get_current_user),
     svc: QueueService = Depends(get_queue_service)
 ):
-    """获取任务详情（使用不同的路径避免冲突）"""
+    """Get task details (use different paths to avoid conflicts)"""
     t = await svc.get_task(task_id)
     if not t or t.get("user") != user["id"]:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail="Task does not exist")
     return t
 
 
-# ==================== 僵尸任务管理 ====================
+# ==================== Zombie task management ====================
 
 @router.get("/admin/zombie-tasks")
 async def get_zombie_tasks(
-    max_running_hours: int = Query(default=2, ge=1, le=72, description="最大运行时长（小时）"),
+    max_running_hours: int = Query(default=2, ge=1, le=72, description="Maximum run time (hours)"),
     user: dict = Depends(get_current_user)
 ):
-    """获取僵尸任务列表（仅管理员）
+    """Get zombie task list (admin only)
 
-    僵尸任务：长时间处于 processing/running/pending 状态的任务
+    Zombie tasks: tasks that are in the processing/running/pending state for a long time
     """
-    # 检查管理员权限
+    # Check admin rights
     if user.get("username") != "admin":
-        raise HTTPException(status_code=403, detail="仅管理员可访问")
+        raise HTTPException(status_code=403, detail="Accessible only to administrators")
 
     try:
         svc = get_simple_analysis_service()
@@ -2108,22 +2108,22 @@ async def get_zombie_tasks(
             "max_running_hours": max_running_hours
         }
     except Exception as e:
-        logger.error(f"❌ 获取僵尸任务失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取僵尸任务失败: {str(e)}")
+        logger.error(f"❌ Failed to get zombie mission: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get zombie mission: {str(e)}")
 
 
 @router.post("/admin/cleanup-zombie-tasks")
 async def cleanup_zombie_tasks(
-    max_running_hours: int = Query(default=2, ge=1, le=72, description="最大运行时长（小时）"),
+    max_running_hours: int = Query(default=2, ge=1, le=72, description="Maximum run time (hours)"),
     user: dict = Depends(get_current_user)
 ):
-    """清理僵尸任务（仅管理员）
+    """Clean zombie task (admin only)
 
-    将长时间处于 processing/running/pending 状态的任务标记为失败
+    Mark tasks that have been in the processing/running/pending state for a long time as failed
     """
-    # 检查管理员权限
+    # Check admin rights
     if user.get("username") != "admin":
-        raise HTTPException(status_code=403, detail="仅管理员可访问")
+        raise HTTPException(status_code=403, detail="Accessible only to administrators")
 
     try:
         svc = get_simple_analysis_service()
@@ -2132,11 +2132,11 @@ async def cleanup_zombie_tasks(
         return {
             "success": True,
             "data": result,
-            "message": f"已清理 {result.get('total_cleaned', 0)} 个僵尸任务"
+            "message": f"Cleaned {result.get('total_cleaned', 0)} zombie mission"
         }
     except Exception as e:
-        logger.error(f"❌ 清理僵尸任务失败: {e}")
-        raise HTTPException(status_code=500, detail=f"清理僵尸任务失败: {str(e)}")
+        logger.error(f"❌ Zombie clearing mission failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Zombie clearing mission failed: {str(e)}")
 
 
 @router.post("/tasks/{task_id}/mark-failed")
@@ -2144,23 +2144,23 @@ async def mark_task_as_failed(
     task_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """将指定任务标记为失败
+    """Mark the specified task as failed
 
-    用于手动清理卡住的任务
+    Used to manually clean up stuck tasks
     """
     try:
         svc = get_simple_analysis_service()
 
-        # 更新内存中的任务状态
+        # Update task status in memory
         from app.services.memory_state_manager import TaskStatus
         await svc.memory_manager.update_task_status(
             task_id=task_id,
             status=TaskStatus.FAILED,
-            message="手动标记为失败",
-            error_message="用户手动标记为失败"
+            message="Manually mark as failed",
+            error_message="User manually marks as failed"
         )
 
-        # 更新 MongoDB 中的任务状态
+        # Update task status in MongoDB
         from app.core.database import get_mongo_db
         from datetime import datetime
         db = get_mongo_db()
@@ -2170,7 +2170,7 @@ async def mark_task_as_failed(
             {
                 "$set": {
                     "status": "failed",
-                    "last_error": "用户手动标记为失败",
+                    "last_error": "User manually marks as failed",
                     "completed_at": datetime.utcnow(),
                     "updated_at": datetime.utcnow()
                 }
@@ -2178,22 +2178,22 @@ async def mark_task_as_failed(
         )
 
         if result.modified_count > 0:
-            logger.info(f"✅ 任务 {task_id} 已标记为失败")
+            logger.info(f"✅ Task {task_id} Marked as failed")
             return {
                 "success": True,
-                "message": "任务已标记为失败"
+                "message": "Task marked as failed"
             }
         else:
-            logger.warning(f"⚠️ 任务 {task_id} 未找到或已是失败状态")
+            logger.warning(f"⚠️ Task {task_id} Not found or already in failed state")
             return {
                 "success": True,
-                "message": "任务未找到或已是失败状态"
+                "message": "The task was not found or has failed."
             }
     except Exception as e:
-        logger.error(f"❌ 标记任务失败: {task_id} - {e}", exc_info=True)
+        logger.error(f"❌ Mark task failed: {task_id} - {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"标记任务失败: {str(e)}"
+            detail=f"Mark task failed: {str(e)}"
         )
 
 
@@ -2202,15 +2202,15 @@ async def retry_task(
     task_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """重新创建失败的分析任务
+    """Recreate a failed analysis task
 
-    使用相同的参数重新创建任务，用于复现问题或验证修复。
+    Recreate the task with the same parameters to reproduce the problem or verify the fix.
     
     Returns:
         {
             "success": True,
-            "task_id": "新任务的ID",
-            "message": "任务已重新创建"
+            "task_id": "new task ID",
+            "message": "Task has been recreated"
         }
     """
     try:
@@ -2222,14 +2222,14 @@ async def retry_task(
         
         db = get_mongo_db()
         
-        # 查找失败的任务
+        # Find failed tasks
         failed_task = await db.unified_analysis_tasks.find_one({
             "task_id": task_id,
             "user_id": ObjectId(user["id"])
         })
         
         if not failed_task:
-            # 尝试从旧的任务集合查找
+            # Try to find from old task collection
             old_task = await db.analysis_tasks.find_one({
                 "task_id": task_id,
                 "user_id": ObjectId(user["id"])
@@ -2237,13 +2237,13 @@ async def retry_task(
             if not old_task:
                 raise HTTPException(
                     status_code=404,
-                    detail="任务不存在或不属于当前用户"
+                    detail="The task does not exist or does not belong to the current user"
                 )
             
-            # 旧任务格式：需要转换为新格式
-            logger.info(f"🔄 [重试任务] 找到旧格式任务: {task_id}")
+            # Old task format: needs to be converted to new format
+            logger.info(f"🔄 [Retry task] Find old format tasks: {task_id}")
             
-            # 从旧任务中提取参数
+            # Extract parameters from old tasks
             task_params = old_task.get("parameters", {})
             symbol = task_params.get("symbol") or task_params.get("stock_code") or old_task.get("stock_code")
             market_type = task_params.get("market_type") or old_task.get("market_type", "cn")
@@ -2251,14 +2251,14 @@ async def retry_task(
             if not symbol:
                 raise HTTPException(
                     status_code=400,
-                    detail="无法从旧任务中提取股票代码"
+                    detail="Unable to extract ticker from old task"
                 )
             
-            # 🔥 从用户偏好读取风险偏好设置
+            # 🔥 Read risk preference settings from user preferences
             preference_type = await get_user_risk_preference(user["id"])
-            logger.info(f"📊 [重试任务] 使用用户风险偏好: {preference_type}")
+            logger.info(f"📊 [Retry task] Use user risk preferences: {preference_type}")
 
-            # 创建新任务
+            # Create new task
             task_service = get_task_analysis_service()
             new_task = await task_service.create_task(
                 user_id=PyObjectId(user["id"]),
@@ -2267,25 +2267,25 @@ async def retry_task(
                     "symbol": symbol,
                     "stock_code": symbol,
                     "market_type": market_type,
-                    **task_params  # 合并其他参数
+                    **task_params  # Incorporate other parameters
                 },
                 engine_type="auto",
-                preference_type=preference_type  # 🔥 使用用户偏好设置
+                preference_type=preference_type  # 🔥 Use user preferences
             )
             
-            logger.info(f"✅ [重试任务] 旧格式任务已重新创建: {task_id} -> {new_task.task_id}")
+            logger.info(f"✅ [Retry task] Old format tasks have been recreated: {task_id} -> {new_task.task_id}")
             
-            # 🔑 关键：将任务加入队列执行
+            # 🔑 Key: Add tasks to the queue for execution
             from app.services.queue_service import get_queue_service
             queue_service = get_queue_service()
             
-            # 准备队列参数
+            # Prepare queue parameters
             queue_params = {
-                "engine": "v2",  # 使用v2引擎
+                "engine": "v2",  # Use v2 engine
                 "symbol": symbol,
                 "stock_code": symbol,
                 "market_type": market_type,
-                **task_params  # 合并其他参数
+                **task_params  # Incorporate other parameters
             }
             
             try:
@@ -2293,20 +2293,20 @@ async def retry_task(
                     user_id=user["id"],
                     symbol=symbol,
                     params=queue_params,
-                    task_id=new_task.task_id  # 使用已创建的任务ID
+                    task_id=new_task.task_id  # Use an already created task ID
                 )
-                logger.info(f"✅ [重试任务] 旧格式任务已加入队列: {new_task.task_id}")
+                logger.info(f"✅ [Retry task] Old format task has been queued: {new_task.task_id}")
             except Exception as e:
-                logger.error(f"⚠️ [重试任务] 旧格式任务加入队列失败: {new_task.task_id} - {e}", exc_info=True)
-                # 即使入队失败，也返回成功（任务已创建，可以手动触发）
+                logger.error(f"⚠️ [Retry task] Old format task failed to join the queue: {new_task.task_id} - {e}", exc_info=True)
+                # Even if the enqueue fails, success is returned (the task has been created and can be triggered manually)
             
             return {
                 "success": True,
                 "task_id": new_task.task_id,
-                "message": "任务已重新创建并加入队列"
+                "message": "Task has been recreated and queued"
             }
         
-        # 检查任务状态
+        # Check task status
         task_status = failed_task.get("status")
         if isinstance(task_status, str):
             status_str = task_status
@@ -2318,57 +2318,57 @@ async def retry_task(
         if status_str not in ["failed", "cancelled"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"只能重新创建失败或已取消的任务，当前状态: {status_str}"
+                detail=f"Only failed or canceled tasks can be recreated, current status: {status_str}"
             )
         
-        # 获取任务参数
+        # Get task parameters
         task_params = failed_task.get("task_params", {})
         task_type_str = failed_task.get("task_type")
         
-        # 转换 task_type
+        # Convert task_type
         if isinstance(task_type_str, str):
             try:
                 task_type = AnalysisTaskType(task_type_str)
             except ValueError:
-                # 默认使用股票分析
+                # Use stock analysis by default
                 task_type = AnalysisTaskType.STOCK_ANALYSIS
-                logger.warning(f"⚠️ [重试任务] 未知的任务类型: {task_type_str}，使用默认类型: STOCK_ANALYSIS")
+                logger.warning(f"⚠️ [Retry task] Unknown task type: {task_type_str}, Use default type: STOCK_ANALYSIS")
         else:
             task_type = AnalysisTaskType.STOCK_ANALYSIS
         
-        # 确保必要的参数存在
+        # Make sure necessary parameters are present
         symbol = task_params.get("symbol") or task_params.get("stock_code")
         if not symbol:
             raise HTTPException(
                 status_code=400,
-                detail="任务参数中缺少股票代码"
+                detail="Stock symbol missing in task parameters"
             )
         
-        # 🔥 从用户偏好读取风险偏好设置
+        # 🔥 Read risk preference settings from user preferences
         preference_type = await get_user_risk_preference(user["id"])
-        logger.info(f"📊 [重试任务] 使用用户风险偏好: {preference_type}")
+        logger.info(f"📊 [Retry task] Use user risk preferences: {preference_type}")
 
-        # 创建新任务（使用相同的参数）
+        # Create new task (with same parameters)
         task_service = get_task_analysis_service()
         new_task = await task_service.create_task(
             user_id=PyObjectId(user["id"]),
             task_type=task_type,
-            task_params=task_params,  # 使用原始参数
+            task_params=task_params,  # Use original parameters
             engine_type="auto",
-            preference_type=preference_type  # 🔥 使用用户偏好设置
+            preference_type=preference_type  # 🔥 Use user preferences
         )
         
-        logger.info(f"✅ [重试任务] 任务已重新创建: {task_id} -> {new_task.task_id}")
+        logger.info(f"✅ [Retry task] Task has been recreated: {task_id} -> {new_task.task_id}")
         
-        # 🔑 关键：将任务加入队列执行
+        # 🔑 Key: Add tasks to the queue for execution
         from app.services.queue_service import get_queue_service
         queue_service = get_queue_service()
         
-        # 准备队列参数
+        # Prepare queue parameters
         symbol = task_params.get("symbol") or task_params.get("stock_code")
         queue_params = {
-            "engine": "v2",  # 使用v2引擎
-            **task_params  # 合并所有任务参数
+            "engine": "v2",  # Use v2 engine
+            **task_params  # Combine all task parameters
         }
         
         try:
@@ -2376,30 +2376,30 @@ async def retry_task(
                 user_id=user["id"],
                 symbol=symbol,
                 params=queue_params,
-                task_id=new_task.task_id  # 使用已创建的任务ID
+                task_id=new_task.task_id  # Use an already created task ID
             )
-            logger.info(f"✅ [重试任务] 任务已加入队列: {new_task.task_id}")
+            logger.info(f"✅ [Retry task] Task has been queued: {new_task.task_id}")
         except Exception as e:
-            logger.error(f"⚠️ [重试任务] 任务加入队列失败: {new_task.task_id} - {e}", exc_info=True)
-            # 即使入队失败，也返回成功（任务已创建，可以手动触发）
+            logger.error(f"⚠️ [Retry task] Failed to add task to queue: {new_task.task_id} - {e}", exc_info=True)
+            # Even if the enqueue fails, success is returned (the task has been created and can be triggered manually)
         
         return {
             "success": True,
             "task_id": new_task.task_id,
-            "message": "任务已重新创建并加入队列"
+            "message": "Task has been recreated and queued"
         }
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ [重试任务] 重新创建任务失败: {task_id} - {e}", exc_info=True)
+        logger.error(f"❌ [Retry task] Failed to recreate task: {task_id} - {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"重新创建任务失败: {str(e)}"
+            detail=f"Failed to recreate task: {str(e)}"
         )
     except Exception as e:
-        logger.error(f"❌ 标记任务失败: {e}")
-        raise HTTPException(status_code=500, detail=f"标记任务失败: {str(e)}")
+        logger.error(f"❌ Mark task failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Mark task failed: {str(e)}")
 
 
 @router.delete("/tasks/{task_id}")
@@ -2407,34 +2407,34 @@ async def delete_task(
     task_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """删除指定任务
+    """Delete specified task
 
-    从内存和数据库中删除任务记录
+    Delete task records from memory and database
     """
     try:
         svc = get_simple_analysis_service()
 
-        # 从内存中删除任务
+        # Remove tasks from memory
         await svc.memory_manager.remove_task(task_id)
 
-        # 从 MongoDB 中删除任务
+        # Delete tasks from MongoDB
         from app.core.database import get_mongo_db
         db = get_mongo_db()
 
         result = await db.analysis_tasks.delete_one({"task_id": task_id})
 
         if result.deleted_count > 0:
-            logger.info(f"✅ 任务 {task_id} 已删除")
+            logger.info(f"✅ Task {task_id} Deleted")
             return {
                 "success": True,
-                "message": "任务已删除"
+                "message": "Task deleted"
             }
         else:
-            logger.warning(f"⚠️ 任务 {task_id} 未找到")
+            logger.warning(f"⚠️ Task {task_id} not found")
             return {
                 "success": True,
-                "message": "任务未找到"
+                "message": "Task not found"
             }
     except Exception as e:
-        logger.error(f"❌ 删除任务失败: {e}")
-        raise HTTPException(status_code=500, detail=f"删除任务失败: {str(e)}")
+        logger.error(f"❌ Delete task failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Delete task failed: {str(e)}")

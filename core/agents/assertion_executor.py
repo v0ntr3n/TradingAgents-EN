@@ -1,14 +1,14 @@
-"""Agent 断言执行器（P2: 反思 lesson 升级为可执行断言）
+"""Agent assertexecutor(P2: Reflection lesson upgraded to executable assertion)
 
-在 manager agent 校验时同步执行召回的断言，违规结果合并到 validation_status。
+The recalled assertions are executed synchronously when the manager agent verifies, and the violation results are merged into validation_status.
 
-设计原则：
-1. 非阻塞：所有异常内部捕获，不影响 agent 执行
-2. 进程内缓存：enabled assertions 按 agent_id 缓存 60s（由 service 层管理）
-3. 结果合并：返回 AssertionRunResult，由基类合并到 validation_status
-4. 单条隔离：单条断言执行失败不影响其他断言
+Design principles:
+1. Non-blocking: All exceptions are caught internally and do not affect agent execution
+2. In-process cache: enabled assertions are cached by agent_id for 60s (managed by the service layer)
+3. Result merging: Returns AssertionRunResult, merged from the base class into validation_status
+4. Single isolation: Failure to execute a single assertion does not affect other assertions
 
-用法（在 ManagerAgent._run_assertions 中）：
+Usage (in ManagerAgent._run_assertions):
     from core.agents.assertion_executor import assertion_executor
     result = assertion_executor.run_assertions_sync(
         agent_id=self.agent_id,
@@ -16,11 +16,11 @@
         parsed=parsed_dict,
     )
     if result.has_error_violation:
-        # 降级 validation_status
+        # Downgrade validation_status
 """
 
-# 注解惰性化：社区版剔除 agent_assertion 模型后，类型注解（如 -> AssertionRunResult）
-# 在 def 执行时不求值，避免 NameError；必须位于其他 import 之前
+# Annotation inertization: After the community version eliminates the agent_assertion model, type annotations (such as -> AssertionRunResult) 
+# Not evaluated when def is executed to avoid NameError; must be placed before other imports
 from __future__ import annotations
 
 import logging
@@ -28,9 +28,9 @@ import re
 import threading
 from typing import Any, Dict, List, Optional
 
-# 后端依赖可选导入：社区版（Apache 2.0 开源版）已将 app/models/agent_assertion 与
-# app/services/agent_assertion_service 随 Pro 开源分离剔除。import 失败时本模块降级：
-# run_assertions_sync 直接 raise，由调用方（trader_v2 / manager，均在 try 内）捕获降级
+# Optional import of backend dependencies: Community Edition (Apache 2.0 Open Source Edition) has added app/models/agent_assertion with
+# app/services/agent_assertion_service Separate culling comes with Pro open source. This module is downgraded when import fails:
+# run_assertions_sync Directly raise, the caller (trader_v2/manager, both within try) catches the downgrade
 try:
     from app.pro.models.agent_assertion import (
         AgentAssertion,
@@ -41,17 +41,17 @@ try:
     )
     from app.pro.services.agent_assertion_service import agent_assertion_service
     _ASSERTION_BACKEND_AVAILABLE = True
-except ImportError:  # 社区版路径：断言后端不可用
+except ImportError:  # Community Edition Path: Assert backend is unavailable
     _ASSERTION_BACKEND_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
 
 def _get_field_by_path(parsed: Dict[str, Any], field_path: str) -> Any:
-    """按点路径从 parsed dict 中取值。
+    """Get values from parsed dict by dotted path.
 
-    例如 field_path="final_trade_decision.action" 从 {"final_trade_decision": {"action": "乐观"}} 取出 "乐观"。
-    返回 None 表示路径不存在或值为 None。
+    For example field_path="final_trade_decision.action" from {"final_trade_decision": {"action": "optimistic"}} take out "optimistic". 
+    Returns None if the path does not exist or has a value of None.
     """
     if not parsed or not field_path or field_path == "*":
         return None
@@ -65,10 +65,10 @@ def _get_field_by_path(parsed: Dict[str, Any], field_path: str) -> Any:
 
 
 class AssertionExecutor:
-    """断言执行器"""
+    """assertion executor"""
 
     def __init__(self):
-        # 命中计数异步触发用的线程锁（避免并发写日志）
+        # Thread lock for asynchronous triggering of hit count (to avoid concurrent log writing)
         self._hit_lock = threading.Lock()
 
     def run_assertions_sync(
@@ -77,20 +77,20 @@ class AssertionExecutor:
         raw_text: str,
         parsed: Optional[Dict[str, Any]] = None,
     ) -> AssertionRunResult:
-        """同步执行断言（在 manager agent execute 上下文调用）。
+        """Synchronous execution of assertions (called in the context of manager agent execute).
 
-        全程 try/except，失败返回 AssertionRunResult(ran=False)。
+        Try/except throughout, return on failure AssertionRunResult(ran=False). 
         """
-        # 后端不可用（社区版已剔除断言体系）→ 抛出，调用方 try/except 降级
+        # The backend is unavailable (the community version has eliminated the assertion system)→ Throws, caller try/except downgrade
         if not _ASSERTION_BACKEND_AVAILABLE:
-            raise ImportError("断言后端不可用（社区版无 agent_assertion 体系）")
+            raise ImportError("Assert that the backend is unavailable (the community version does not have the agent_assertion system)")
         try:
-            # 1. 加载启用断言（带缓存，由 service 层管理）
+            # 1. Load enabled assertions (with cache, managed by service layer)
             assertions = agent_assertion_service.load_enabled_assertions_sync(agent_id)
             if not assertions:
                 return AssertionRunResult(ran=False)
 
-            # 2. 按 assertion_type 分发执行
+            # 2. Distribute execution by assertion_type
             violations: List[AssertionViolation] = []
             hit_assertion_ids: List[str] = []
 
@@ -100,11 +100,11 @@ class AssertionExecutor:
                     violations.append(violation)
                     hit_assertion_ids.append(assertion.assertion_id)
 
-            # 3. 异步触发 hit_count 自增（fire-and-forget，不阻塞）
+            # 3. Asynchronous trigger hit_count auto-increment (fire-and-forget, non-blocking)
             if hit_assertion_ids:
                 self._fire_and_forget_hit_count(hit_assertion_ids)
 
-            # 4. 统计
+            # 4. statistics
             error_count = sum(1 for v in violations if v.severity == AssertionSeverity.ERROR)
             warning_count = sum(1 for v in violations if v.severity == AssertionSeverity.WARNING)
 
@@ -116,7 +116,7 @@ class AssertionExecutor:
                 warning_count=warning_count,
             )
         except Exception as e:
-            logger.warning(f"⚠️ [AssertionExecutor] 断言执行失败（不影响 agent）: {e}")
+            logger.warning(f"⚠️ [AssertionExecutor] Assertion execution failed (does not affect agent): {e}")
             return AssertionRunResult(ran=False)
 
     def _run_single_assertion(
@@ -125,37 +125,37 @@ class AssertionExecutor:
         raw_text: str,
         parsed: Optional[Dict[str, Any]],
     ) -> Optional[AssertionViolation]:
-        """执行单条断言，返回 violation 或 None（未违规）。
+        """Execute a single assertion and return violation or None (no violation).
 
-        单条断言执行失败不影响其他断言。
+        Failure to execute a single assertion does not affect other assertions.
         """
         try:
             handler = self._HANDLERS.get(assertion.assertion_type)
             if handler is None:
                 logger.warning(
-                    f"⚠️ [AssertionExecutor] 未知断言类型: {assertion.assertion_type}（跳过）"
+                    f"⚠️ [AssertionExecutor] Unknown assertion type: {assertion.assertion_type} (skip)"
                 )
                 return None
             return handler(self, assertion, raw_text, parsed)
         except Exception as e:
             logger.warning(
-                f"⚠️ [AssertionExecutor] 单条断言执行失败（跳过）: assertion_id={assertion.assertion_id}, error={e}"
+                f"⚠️ [AssertionExecutor] Single assertion execution failed (skipped): assertion_id={assertion.assertion_id}, error={e}"
             )
             return None
 
     @staticmethod
     def _constraint_get(assertion: AgentAssertion, key: str, default: Any = None) -> Any:
-        """从 constraint 中取值（兼容 pydantic extra 字段）。
+        """Get value from constraint (compatible with pydantic extra fields).
 
-        AssertionConstraint 用 extra="allow"，extra 字段存在 __pydantic_extra__ 中，
-        __dict__ 取不到，必须用 model_dump()。
+        AssertionConstraint use extra="allow", extra Fields exist in __pydantic_extra__,
+        __dict__ Can t get it, must use it model_dump(). 
         """
         try:
             return assertion.constraint.model_dump().get(key, default)
         except Exception:
             return default
 
-    # ==================== 7 种断言类型实现 ====================
+    # ==================== 7 assertion type implementation ====================
 
     def _check_term_forbidden(
         self,
@@ -163,7 +163,7 @@ class AssertionExecutor:
         raw_text: str,
         parsed: Optional[Dict[str, Any]],
     ) -> Optional[AssertionViolation]:
-        """禁用术语扫描（作用于原始文本）"""
+        """Disable term scanning (acts on raw text)"""
         terms = self._constraint_get(assertion, "terms") or []
         if not terms or not raw_text:
             return None
@@ -175,8 +175,8 @@ class AssertionExecutor:
                 assertion_type=assertion.assertion_type,
                 target_agent=assertion.target_agent,
                 severity=assertion.severity,
-                description=assertion.description or "禁用术语扫描",
-                violation_detail=f"命中禁用术语: {hit_terms}",
+                description=assertion.description or "Disable term scanning",
+                violation_detail=f"hit disabled term: {hit_terms}",
             )
         return None
 
@@ -186,7 +186,7 @@ class AssertionExecutor:
         raw_text: str,
         parsed: Optional[Dict[str, Any]],
     ) -> Optional[AssertionViolation]:
-        """必填字段检查（作用于 parsed dict）"""
+        """Required field check (applies to parsed dict)"""
         field = self._constraint_get(assertion, "field") or assertion.target_field
         if not field or field == "*":
             return None
@@ -196,8 +196,8 @@ class AssertionExecutor:
                 assertion_type=assertion.assertion_type,
                 target_agent=assertion.target_agent,
                 severity=assertion.severity,
-                description=assertion.description or "必填字段检查",
-                violation_detail=f"parsed 为空，无法检查字段 {field}",
+                description=assertion.description or "Required field check",
+                violation_detail=f"parsed is empty, field cannot be checked {field}",
             )
         value = _get_field_by_path(parsed, field)
         if value is None:
@@ -206,8 +206,8 @@ class AssertionExecutor:
                 assertion_type=assertion.assertion_type,
                 target_agent=assertion.target_agent,
                 severity=assertion.severity,
-                description=assertion.description or "必填字段检查",
-                violation_detail=f"字段缺失: {field}",
+                description=assertion.description or "Required field check",
+                violation_detail=f"Field missing: {field}",
             )
         return None
 
@@ -217,17 +217,17 @@ class AssertionExecutor:
         raw_text: str,
         parsed: Optional[Dict[str, Any]],
     ) -> Optional[AssertionViolation]:
-        """字段枚举约束"""
+        """Field enumeration constraints"""
         field = self._constraint_get(assertion, "field") or assertion.target_field
         allowed = self._constraint_get(assertion, "allowed") or []
         if not field or field == "*" or not allowed:
             return None
         if parsed is None:
-            return None  # parsed 为空时不报枚举违规（由 field_required 报）
+            return None  # parsed No enumeration violation is reported when it is empty (reported by field_required)
 
         value = _get_field_by_path(parsed, field)
         if value is None:
-            return None  # 字段缺失由 field_required 负责
+            return None  # Missing fields are handled by field_required
 
         if value not in allowed:
             return AssertionViolation(
@@ -235,8 +235,8 @@ class AssertionExecutor:
                 assertion_type=assertion.assertion_type,
                 target_agent=assertion.target_agent,
                 severity=assertion.severity,
-                description=assertion.description or "字段枚举约束",
-                violation_detail=f"字段 {field}={value!r} 不在允许值 {allowed} 内",
+                description=assertion.description or "Field enumeration constraints",
+                violation_detail=f"Field {field}={value!r} Not in allowed value {allowed} within",
             )
         return None
 
@@ -246,7 +246,7 @@ class AssertionExecutor:
         raw_text: str,
         parsed: Optional[Dict[str, Any]],
     ) -> Optional[AssertionViolation]:
-        """数值字段范围约束"""
+        """Numeric field range constraints"""
         field = self._constraint_get(assertion, "field") or assertion.target_field
         min_val = self._constraint_get(assertion, "min")
         max_val = self._constraint_get(assertion, "max")
@@ -265,8 +265,8 @@ class AssertionExecutor:
                 assertion_type=assertion.assertion_type,
                 target_agent=assertion.target_agent,
                 severity=assertion.severity,
-                description=assertion.description or "数值范围约束",
-                violation_detail=f"字段 {field}={value!r} 不是数值",
+                description=assertion.description or "Numeric range constraints",
+                violation_detail=f"Field {field}={value!r} Not a numerical value",
             )
 
         if min_val is not None and num_value < float(min_val):
@@ -275,8 +275,8 @@ class AssertionExecutor:
                 assertion_type=assertion.assertion_type,
                 target_agent=assertion.target_agent,
                 severity=assertion.severity,
-                description=assertion.description or "数值范围约束",
-                violation_detail=f"字段 {field}={num_value} 低于最小值 {min_val}",
+                description=assertion.description or "Numeric range constraints",
+                violation_detail=f"Field {field}={num_value} below minimum {min_val}",
             )
         if max_val is not None and num_value > float(max_val):
             return AssertionViolation(
@@ -284,8 +284,8 @@ class AssertionExecutor:
                 assertion_type=assertion.assertion_type,
                 target_agent=assertion.target_agent,
                 severity=assertion.severity,
-                description=assertion.description or "数值范围约束",
-                violation_detail=f"字段 {field}={num_value} 超过最大值 {max_val}",
+                description=assertion.description or "Numeric range constraints",
+                violation_detail=f"Field {field}={num_value} exceeds maximum value {max_val}",
             )
         return None
 
@@ -295,38 +295,38 @@ class AssertionExecutor:
         raw_text: str,
         parsed: Optional[Dict[str, Any]],
     ) -> Optional[AssertionViolation]:
-        """整个 parsed_dict 匹配指定 schema。
+        """The entire parsed_dict matches the specified schema.
 
-        P2.0 实现简化版：只检查 schema_name 是否在已知 schema 注册表中，
-        并尝试用对应 pydantic 模型校验。schema 校验本身已由 manager 的 _validate_* 完成，
-        此断言主要用于"显式记录某次执行违反了哪个 schema"的统计目的。
+        P2.0 Implement a simplified version: only check whether schema_name is in the known schema registry,
+        And try to verify it with the corresponding pydantic model. The schema verification itself has been performed by the manager s _validate_* done,
+        This assertion is mainly used for"Explicitly record which execution violated which schema"statistical purposes.
         """
         schema_name = self._constraint_get(assertion, "schema_name")
         if not schema_name or parsed is None:
             return None
 
-        # 延迟导入避免循环依赖
+        # Delayed import avoids circular dependencies
         try:
             schema_model = self._get_schema_model(schema_name)
         except Exception as e:
-            logger.warning(f"⚠️ [AssertionExecutor] schema {schema_name} 不可用: {e}")
+            logger.warning(f"⚠️ [AssertionExecutor] schema {schema_name} Not available: {e}")
             return None
 
         if schema_model is None:
-            logger.warning(f"⚠️ [AssertionExecutor] 未知 schema: {schema_name}")
+            logger.warning(f"⚠️ [AssertionExecutor] unknown schema: {schema_name}")
             return None
 
         try:
             schema_model(**parsed)
-            return None  # 校验通过
+            return None  # Verification passed
         except Exception as e:
             return AssertionViolation(
                 assertion_id=assertion.assertion_id,
                 assertion_type=assertion.assertion_type,
                 target_agent=assertion.target_agent,
                 severity=assertion.severity,
-                description=assertion.description or "schema 匹配检查",
-                violation_detail=f"不匹配 schema {schema_name}: {e}",
+                description=assertion.description or "schema Match check",
+                violation_detail=f"no match schema {schema_name}: {e}",
             )
 
     def _check_regex_match(
@@ -335,13 +335,13 @@ class AssertionExecutor:
         raw_text: str,
         parsed: Optional[Dict[str, Any]],
     ) -> Optional[AssertionViolation]:
-        """字段正则匹配"""
+        """Field regular matching"""
         field = self._constraint_get(assertion, "field") or assertion.target_field
         pattern = self._constraint_get(assertion, "pattern")
         if not pattern:
             return None
 
-        # 取值：field="*" 作用于 raw_text，否则作用于 parsed 字段
+        # Value:field="*" Acts on raw_text, otherwise on parsed fields
         if field == "*" or not field:
             value = raw_text
         elif parsed is not None:
@@ -359,11 +359,11 @@ class AssertionExecutor:
                     assertion_type=assertion.assertion_type,
                     target_agent=assertion.target_agent,
                     severity=assertion.severity,
-                    description=assertion.description or "正则匹配检查",
-                    violation_detail=f"字段 {field} 值不匹配正则 {pattern!r}",
+                    description=assertion.description or "Regular match check",
+                    violation_detail=f"Field {field} Value does not match regular {pattern!r}",
                 )
         except re.error as e:
-            logger.warning(f"⚠️ [AssertionExecutor] 正则无效 {pattern!r}: {e}")
+            logger.warning(f"⚠️ [AssertionExecutor] Regular expression is invalid {pattern!r}: {e}")
             return None
         return None
 
@@ -373,7 +373,7 @@ class AssertionExecutor:
         raw_text: str,
         parsed: Optional[Dict[str, Any]],
     ) -> Optional[AssertionViolation]:
-        """必备章节检查（作用于原始文本）"""
+        """Required section check (applies to original text)"""
         sections = self._constraint_get(assertion, "sections") or []
         if not sections or not raw_text:
             return None
@@ -385,17 +385,17 @@ class AssertionExecutor:
                 assertion_type=assertion.assertion_type,
                 target_agent=assertion.target_agent,
                 severity=assertion.severity,
-                description=assertion.description or "必备章节检查",
-                violation_detail=f"缺失章节: {missing}",
+                description=assertion.description or "Required Chapter Check",
+                violation_detail=f"missing chapter: {missing}",
             )
         return None
 
-    # ==================== 辅助方法 ====================
+    # ==================== Helper methods ====================
 
     def _get_schema_model(self, schema_name: str):
-        """按名称获取 pydantic schema 模型（延迟导入避免循环依赖）。
+        """Get pydantic schema model by name (lazy import avoids circular dependencies).
 
-        返回 None 表示未知 schema。
+        Return None if the schema is unknown.
         """
         if schema_name == "RiskAssessmentOutput":
             from core.agents.adapters.risk_manager_v2 import RiskAssessmentOutput
@@ -406,22 +406,22 @@ class AssertionExecutor:
         return None
 
     def _fire_and_forget_hit_count(self, assertion_ids: List[str]) -> None:
-        """异步触发命中计数（fire-and-forget，不阻塞主流程）"""
+        """Asynchronous trigger hit count (fire-and-forget, does not block the main process)"""
         try:
             for assertion_id in assertion_ids:
                 try:
                     agent_assertion_service.increment_hit_count_sync(assertion_id)
                 except Exception as e:
-                    logger.debug(f"hit_count 自增失败（不影响主流程）: assertion_id={assertion_id}, error={e}")
+                    logger.debug(f"hit_count Auto-increment failed (does not affect the main process): assertion_id={assertion_id}, error={e}")
         except Exception as e:
-            logger.debug(f"fire-and-forget hit_count 异常: {e}")
+            logger.debug(f"fire-and-forget hit_count Abnormal: {e}")
 
-    # 断言类型 -> handler 映射（在类定义后填充）
+    # assertion type -> handler Mapping (populated after class definition)
     _HANDLERS: Dict[AssertionType, Any] = {}
 
 
-# 填充 handler 映射（社区版无 agent_assertion 模型，AssertionType 不可用 → 跳过填充；
-# run_assertions_sync 在后端不可用时已提前 raise，不会访问 _HANDLERS）
+# Populate handler mapping (community version does not have agent_assertion model, AssertionType is not available → Skip padding;
+# run_assertions_sync Raised in advance when the backend is unavailable, _HANDLERS will not be accessed)
 try:
     AssertionExecutor._HANDLERS = {
         AssertionType.TERM_FORBIDDEN: AssertionExecutor._check_term_forbidden,
@@ -432,9 +432,9 @@ try:
         AssertionType.REGEX_MATCH: AssertionExecutor._check_regex_match,
         AssertionType.SECTION_REQUIRED: AssertionExecutor._check_section_required,
     }
-except NameError:  # 社区版路径：AssertionType 未定义
+except NameError:  # Community edition path: AssertionType is undefined
     pass
 
 
-# 全局单例
+# Global singleton
 assertion_executor = AssertionExecutor()

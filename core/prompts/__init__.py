@@ -1,7 +1,7 @@
 """
-提示词管理模块
+Prompt word management module
 
-管理多语言提示词模板
+Manage multilingual prompt word templates
 """
 
 from .manager import PromptManager

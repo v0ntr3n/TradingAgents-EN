@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-最终验证推荐的Gemini模型
+Final verification of the recommended Gemini model
 """
 
 import os
@@ -8,140 +8,140 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv(project_root / ".env", override=True)
 
 def test_recommended_model():
-    """测试推荐的gemini-2.0-flash模型"""
+    """Test the recommended gemini-2.0-flash model"""
     try:
-        print("🧪 最终验证推荐模型: gemini-2.0-flash")
+        print("🧪 Final verification of recommended model: gemini-2.0-flash")
         print("=" * 60)
         
         from tradingagents.graph.trading_graph import TradingAgentsGraph
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 检查API密钥
+        # Check API key
         google_key = os.getenv('GOOGLE_API_KEY')
         dashscope_key = os.getenv('DASHSCOPE_API_KEY')
         
-        print(f"🔑 API密钥状态:")
-        print(f"   Google API: {'✅ 已配置' if google_key else '❌ 未配置'}")
-        print(f"   阿里百炼API: {'✅ 已配置' if dashscope_key else '❌ 未配置'}")
+        print(f"🔑 API Key status:")
+        print(f"   Google API: {'✅ configured' if google_key else '❌ Not configured'}")
+        print(f"   Ali Bailian API: {'✅ configured' if dashscope_key else '❌ Not configured'}")
         
         if not google_key:
-            print("❌ Google API密钥未配置")
+            print("❌ Google API Key not configured")
             return False
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["llm_provider"] = "google"
         config["deep_think_llm"] = "gemini-2.0-flash"
         config["quick_think_llm"] = "gemini-2.0-flash"
-        config["online_tools"] = False  # 避免API限制
-        config["memory_enabled"] = True  # 启用内存功能
-        config["max_debate_rounds"] = 2  # 增加辩论轮次
+        config["online_tools"] = False  # Avoid API restrictions
+        config["memory_enabled"] = True  # Enable memory features
+        config["max_debate_rounds"] = 2  # Increase debate rounds
         config["max_risk_discuss_rounds"] = 1
         
-        # 修复路径
+        # repair path
         config["data_dir"] = str(project_root / "data")
         config["results_dir"] = str(project_root / "results")
         config["data_cache_dir"] = str(project_root / "tradingagents" / "dataflows" / "data_cache")
         
-        # 创建目录
+        # Create directory
         os.makedirs(config["data_dir"], exist_ok=True)
         os.makedirs(config["results_dir"], exist_ok=True)
         os.makedirs(config["data_cache_dir"], exist_ok=True)
         
-        print("✅ 配置创建成功")
-        print(f"   模型: {config['deep_think_llm']}")
-        print(f"   内存功能: {config['memory_enabled']}")
-        print(f"   辩论轮次: {config['max_debate_rounds']}")
+        print("✅ Configuration created successfully")
+        print(f"   model: {config['deep_think_llm']}")
+        print(f"   memory function: {config['memory_enabled']}")
+        print(f"   debate rounds: {config['max_debate_rounds']}")
         
-        # 创建TradingAgentsGraph实例
-        print("🚀 初始化TradingAgents图...")
+        # Create TradingAgentsGraph instance
+        print("🚀 Initialize TradingAgents graph...")
         graph = TradingAgentsGraph(["market", "fundamentals"], config=config, debug=False)
         
-        print("✅ TradingAgents图初始化成功")
-        print("   分析师: 市场分析师 + 基本面分析师")
+        print("✅ TradingAgents Graph initialization successful")
+        print("   analyst: market analyst + fundamental analyst")
         
-        # 测试分析
-        print("📊 开始完整股票分析...")
-        print("   使用gemini-2.0-flash + 阿里百炼嵌入")
-        print("   这可能需要几分钟时间...")
+        # Test analysis
+        print("📊 Start a complete stock analysis...")
+        print("   Use gemini-2.0-flash + Alibaba Bailian embedded")
+        print("   This may take a few minutes...")
         
         try:
             state, decision = graph.propagate("AAPL", "2025-06-27")
             
             if state and decision:
-                print("✅ gemini-2.0-flash驱动的完整分析成功！")
-                print(f"   最终决策: {decision}")
+                print("✅ gemini-2.0-flash Complete analysis of the driver successful!")
+                print(f"   final decision: {decision}")
                 
-                # 检查各种报告
+                # Check various reports
                 reports = {
-                    "market_report": "市场技术分析",
-                    "fundamentals_report": "基本面分析", 
-                    "sentiment_report": "情绪分析",
-                    "news_report": "新闻分析"
+                    "market_report": "Market technical analysis",
+                    "fundamentals_report": "fundamental analysis", 
+                    "sentiment_report": "sentiment analysis",
+                    "news_report": "news analysis"
                 }
                 
                 for report_key, report_name in reports.items():
                     if report_key in state and state[report_key]:
                         report_content = state[report_key]
-                        print(f"   {report_name}: {len(report_content)} 字符")
+                        print(f"   {report_name}: {len(report_content)} character")
                         if len(report_content) > 100:
-                            print(f"     预览: {report_content[:150]}...")
+                            print(f"     Preview: {report_content[:150]}...")
                         print()
                 
                 return True
             else:
-                print("❌ 分析完成但结果为空")
+                print("❌ Analysis completed but result is empty")
                 return False
                 
         except Exception as e:
-            print(f"❌ 股票分析失败: {e}")
+            print(f"❌ Stock analysis failed: {e}")
             import traceback
             print(traceback.format_exc())
             return False
             
     except Exception as e:
-        print(f"❌ 最终验证失败: {e}")
+        print(f"❌ Final verification failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def compare_models():
-    """比较不同模型的建议"""
-    print("\n📊 模型选择建议")
+    """Recommendations for comparing different models"""
+    print("\n📊 Model selection recommendations")
     print("=" * 60)
     
     models_comparison = {
         "gemini-2.5-pro": {
-            "状态": "❌ LangChain集成问题",
-            "优势": "最新版本，理论性能最强",
-            "劣势": "LangChain集成不稳定",
-            "推荐": "不推荐（集成问题）"
+            "Status": "❌ LangChain Integration issues",
+            "Advantages": "The latest version with the strongest theoretical performance",
+            "Disadvantages": "LangChain Integration is unstable",
+            "Recommended": "Not recommended (integration issues)"
         },
         "gemini-2.5-flash": {
-            "状态": "❌ LangChain集成问题", 
-            "优势": "最新版本，速度快",
-            "劣势": "LangChain集成不稳定",
-            "推荐": "不推荐（集成问题）"
+            "Status": "❌ LangChain Integration issues", 
+            "Advantages": "Latest version, fast",
+            "Disadvantages": "LangChain Integration is unstable",
+            "Recommended": "Not recommended (integration issues)"
         },
         "gemini-2.0-flash": {
-            "状态": "✅ 完全可用",
-            "优势": "新版本，LangChain稳定，性能优秀",
-            "劣势": "不是最新的2.5版本",
-            "推荐": "🏆 强烈推荐"
+            "Status": "✅ fully available",
+            "Advantages": "New version, LangChain is stable and has excellent performance",
+            "Disadvantages": "Not the latest version 2.5",
+            "Recommended": "🏆 Highly recommended"
         },
         "gemini-1.5-pro": {
-            "状态": "✅ 完全可用",
-            "优势": "稳定，功能强大",
-            "劣势": "版本较旧",
-            "推荐": "备选方案"
+            "Status": "✅ fully available",
+            "Advantages": "Stable and powerful",
+            "Disadvantages": "Older version",
+            "Recommended": "Alternatives"
         }
     }
     
@@ -151,37 +151,37 @@ def compare_models():
             print(f"   {key}: {value}")
 
 def main():
-    """主函数"""
-    print("🧪 Gemini模型最终验证")
+    """main function"""
+    print("🧪 Gemini Model final verification")
     print("=" * 70)
     
-    # 运行最终验证
+    # Run final verification
     success = test_recommended_model()
     
-    # 显示比较
+    # Show comparison
     compare_models()
     
-    # 最终建议
-    print(f"\n📊 最终测试结果:")
+    # Final recommendations
+    print(f"\n📊 Final test results:")
     print("=" * 50)
     
     if success:
-        print("✅ gemini-2.0-flash 完全验证成功！")
-        print("\n🎉 最终推荐配置:")
-        print("   LLM提供商: Google")
-        print("   模型名称: gemini-2.0-flash")
-        print("   嵌入服务: 阿里百炼 (text-embedding-v3)")
-        print("   内存功能: 启用")
-        print("\n💡 优势总结:")
-        print("   🧠 优秀的推理能力")
-        print("   🌍 完美的中文支持")
-        print("   🔧 稳定的LangChain集成")
-        print("   💾 完整的内存学习功能")
-        print("   📊 准确的金融分析")
-        print("\n🚀 您现在可以在Web界面中使用这个配置！")
+        print("✅ gemini-2.0-flash Complete verification successful!")
+        print("\n🎉 Final recommended configuration:")
+        print("   LLM provider: Google")
+        print("   Model name: gemini-2.0-flash")
+        print("   Embed services: Ali Bailian (text-embedding-v3)")
+        print("   memory function: enable")
+        print("\n💡 Summary of advantages:")
+        print("   🧠 Excellent reasoning skills")
+        print("   🌍 Perfect Chinese support")
+        print("   🔧 Stable LangChain integration")
+        print("   💾 Complete memory learning function")
+        print("   📊 Accurate financial analysis")
+        print("\n🚀 You can now use this configuration in the web interface!")
     else:
-        print("❌ 验证失败")
-        print("💡 建议使用gemini-1.5-pro作为备选方案")
+        print("❌ Authentication failed")
+        print("💡 It is recommended to use gemini-1.5-pro as an alternative")
 
 if __name__ == "__main__":
     main()

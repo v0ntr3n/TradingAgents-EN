@@ -1,6 +1,6 @@
 """
-迭代优化器 - 实现 OpenClaw 风格的策略迭代优化
-执行回测 → 评估结果 → 优化策略 → 再次回测 → 直到满意
+Iterative Optimizer - implements OpenClaw-style policy iterative optimization
+Perform backtesting → Assessment results → Optimization strategy → Backtest again → until satisfied
 """
 import logging
 from typing import Any, Dict, List, Optional, Tuple
@@ -15,11 +15,11 @@ from .dsl_evaluator import evaluate_strategy_python_full
 
 logger = logging.getLogger(__name__)
 
-MAX_ITERATIONS = 3  # 最大迭代次数，避免无限循环
+MAX_ITERATIONS = 3  # Maximum number of iterations to avoid infinite loops
 
 
 class IterationResult:
-    """单次迭代结果"""
+    """Single iteration result"""
     def __init__(
         self,
         iteration: int,
@@ -36,7 +36,7 @@ class IterationResult:
 
 
 class IterativeOptimizer:
-    """迭代优化器"""
+    """iterative optimizer"""
     
     def __init__(self, engine_client: Optional[BacktestEngineClient] = None):
         self.engine_client = engine_client or BacktestEngineClient()
@@ -49,12 +49,12 @@ class IterativeOptimizer:
         max_iterations: int = MAX_ITERATIONS,
     ) -> Dict[str, Any]:
         """
-        迭代优化策略直到满意或达到最大迭代次数
+        Iterate the optimization strategy until it is satisfied or reaches the maximum number of iterations
         
         Args:
-            user_description: 用户原始需求描述
-            initial_strategy: 初始策略（code + config）
-            max_iterations: 最大迭代次数
+            user_description: Description of original user needs
+            initial_strategy: Initial strategy (code + config) 
+            max_iterations: Maximum number of iterations
             
         Returns:
             {
@@ -62,44 +62,44 @@ class IterativeOptimizer:
                 "final_result": {...},
                 "final_evaluation": {...},
                 "iterations": [...],
-                "optimization_summary": "优化过程总结"
+                "optimization_summary": "Summary of optimization process"
             }
         """
         self.iterations = []
         current_strategy = initial_strategy
         
-        logger.info("开始迭代优化，最大迭代次数: %d", max_iterations)
+        logger.info("Start iterative optimization, maximum number of iterations: %d", max_iterations)
         
         for iteration in range(1, max_iterations + 1):
-            logger.info("=== 第 %d 次迭代 ===", iteration)
+            logger.info("=== Iteration %d ===", iteration)
             
-            # 1. 执行回测
-            logger.info("执行回测...")
+            # 1. Perform backtesting
+            logger.info("Perform backtesting...")
             backtest_result = await self._run_backtest(current_strategy)
             
             if not backtest_result.get("success"):
-                error_msg = backtest_result.get("error", "回测执行失败")
-                logger.error("回测失败: %s", error_msg)
-                # 如果是第一次迭代就失败，直接返回错误
+                error_msg = backtest_result.get("error", "Backtest execution failed")
+                logger.error("Backtest failed: %s", error_msg)
+                # If the first iteration fails, an error is returned directly.
                 if iteration == 1:
                     return {
                         "final_strategy": current_strategy,
                         "final_result": backtest_result,
                         "final_evaluation": {"overall_score": 0, "is_satisfactory": False},
                         "iterations": [],
-                        "optimization_summary": f"初始策略回测失败: {error_msg}",
+                        "optimization_summary": f"Initial strategy backtest failed: {error_msg}",
                         "error": error_msg
                     }
-                # 如果不是第一次，使用上一次的结果
+                # If it's not the first time, use the last result
                 break
             
-            # 2. 评估结果
-            logger.info("评估回测结果...")
+            # 2. Assessment results
+            logger.info("Evaluate backtest results...")
             evaluation = await evaluate_backtest_result(
                 user_description, current_strategy, backtest_result
             )
             
-            # 记录本次迭代
+            # Record this iteration
             iteration_result = IterationResult(
                 iteration=iteration,
                 strategy=current_strategy,
@@ -110,30 +110,30 @@ class IterativeOptimizer:
             self.iterations.append(iteration_result)
             
             logger.info(
-                "评估完成 - 评分: %d/100, 满意度: %s, 优化优先级: %s",
+                "Assessment Complete - Score: %d/100, Satisfaction: %s, Optimization priority: %s",
                 evaluation.get("overall_score", 0),
-                "满意" if evaluation.get("is_satisfactory") else "不满意",
+                "Satisfied" if evaluation.get("is_satisfactory") else "Not satisfied",
                 evaluation.get("optimization_priority", "unknown")
             )
             
-            # 3. 判断是否需要继续优化
+            # 3. Determine whether further optimization is needed
             if not should_optimize_strategy(evaluation):
-                logger.info("策略已满足要求，停止优化")
+                logger.info("The strategy has met the requirements and optimization has been stopped.")
                 break
             
             if iteration >= max_iterations:
-                logger.info("达到最大迭代次数，停止优化")
+                logger.info("The maximum number of iterations is reached and optimization is stopped.")
                 break
             
-            # 4. 生成优化版本
-            logger.info("生成优化策略...")
+            # 4. Generate optimized version
+            logger.info("Generate optimization strategy...")
             try:
                 optimized_strategy = await optimize_strategy_based_on_evaluation(
                     user_description, current_strategy, evaluation, backtest_result
                 )
                 
-                # 5. 验证优化后的策略
-                logger.info("验证优化策略...")
+                # 5. Verify the optimized strategy
+                logger.info("Validate optimization strategy...")
                 passed, errors = await evaluate_strategy_python_full(
                     optimized_strategy["code"], 
                     optimized_strategy["config"],
@@ -141,29 +141,29 @@ class IterativeOptimizer:
                 )
                 
                 if not passed:
-                    logger.warning("优化策略验证失败: %s", "; ".join(errors))
-                    # 如果优化失败，停止迭代
+                    logger.warning("Optimization strategy verification failed: %s", "; ".join(errors))
+                    # If optimization fails, stop iteration
                     break
                 
                 current_strategy = optimized_strategy
                 iteration_result.optimization_applied = True
                 
-                logger.info("策略优化完成，准备下一轮迭代")
+                logger.info("Strategy optimization is completed and ready for the next iteration")
                 
             except Exception as e:
-                logger.exception("策略优化失败: %s", e)
+                logger.exception("Strategy optimization failed: %s", e)
                 break
         
-        # 生成最终结果
+        # generate final result
         final_iteration = self.iterations[-1] if self.iterations else None
         if not final_iteration:
             return {
                 "final_strategy": initial_strategy,
-                "final_result": {"success": False, "error": "无有效迭代结果"},
+                "final_result": {"success": False, "error": "No valid iteration result"},
                 "final_evaluation": {"overall_score": 0, "is_satisfactory": False},
                 "iterations": [],
-                "optimization_summary": "优化过程异常终止",
-                "error": "无有效迭代结果"
+                "optimization_summary": "Optimization process terminated abnormally",
+                "error": "No valid iteration result"
             }
         
         optimization_summary = self._generate_optimization_summary()
@@ -186,35 +186,35 @@ class IterativeOptimizer:
         }
     
     async def _run_backtest(self, strategy: Dict[str, Any]) -> Dict[str, Any]:
-        """执行回测"""
+        """Perform backtesting"""
         try:
             if "code" in strategy and "config" in strategy:
-                # Python 策略
+                # Python Strategy
                 return await self.engine_client.run_python(
                     strategy["code"], strategy["config"]
                 )
             else:
-                # DSL 策略
+                # DSL Strategy
                 return await self.engine_client.run(strategy)
         except Exception as e:
-            logger.exception("回测执行异常")
+            logger.exception("Backtest execution exception")
             return {"success": False, "error": str(e)}
     
     def _generate_optimization_summary(self) -> str:
-        """生成优化过程总结"""
+        """Generate optimization process summary"""
         if not self.iterations:
-            return "无迭代记录"
+            return "No iteration record"
         
         first_score = self.iterations[0].evaluation.get("overall_score", 0)
         final_score = self.iterations[-1].evaluation.get("overall_score", 0)
         total_iterations = len(self.iterations)
         
-        summary = f"经过 {total_iterations} 轮迭代优化，"
-        summary += f"策略评分从 {first_score} 提升到 {final_score}。"
+        summary = f"passed {total_iterations} rounds of iterative optimization,"
+        summary += f"Strategy score from {first_score} promoted to {final_score}. "
         
         if final_score >= 70:
-            summary += "策略已达到满意水平。"
+            summary += "The strategy has reached a satisfactory level."
         else:
-            summary += "策略仍有改进空间，建议人工进一步调整。"
+            summary += "There is still room for improvement in the strategy, and further manual adjustments are recommended."
         
         return summary

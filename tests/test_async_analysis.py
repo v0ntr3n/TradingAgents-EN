@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-测试新的异步分析实现
-验证 BackgroundTasks + 内存状态管理 + WebSocket 的完整流程
+Test new asynchronous analysis implementation
+Verify BackgroundTasks + Memory state management + WebSocket The complete process
 """
 
 import asyncio
@@ -12,16 +12,16 @@ import time
 from datetime import datetime
 
 async def test_async_analysis():
-    """测试异步分析功能"""
+    """Testing asynchronous analysis capabilities"""
     
     base_url = "http://localhost:8000"
     ws_url = "ws://localhost:8000"
     
-    print("🧪 开始测试新的异步分析实现")
+    print("🧪 Start testing the new asynchronous analysis implementation")
     print("=" * 50)
     
-    # 1. 登录获取token
-    print("🔐 正在登录...")
+    # 1. Log in to get token
+    print("🔐 logging in...")
     async with aiohttp.ClientSession() as session:
         login_response = await session.post(f"{base_url}/api/auth/login", json={
             "username": "admin",
@@ -29,77 +29,77 @@ async def test_async_analysis():
         })
         
         if login_response.status != 200:
-            print(f"❌ 登录失败: {login_response.status}")
+            print(f"❌ Login failed: {login_response.status}")
             return
         
         login_data = await login_response.json()
         token = login_data["data"]["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
-        print("✅ 登录成功")
+        print("✅ Login successful")
         
-        # 2. 提交分析任务（应该立即返回）
-        print("\n📊 提交分析任务...")
+        # 2. Submit analysis task (should return immediately)
+        print("\n📊 Submit analysis task...")
         submit_start = time.time()
         
         analysis_response = await session.post(f"{base_url}/api/analysis/single", 
                                              json={
                                                  "stock_code": "000001",
                                                  "parameters": {
-                                                     "research_depth": 1,  # 快速分析
+                                                     "research_depth": 1,  # Quick analysis
                                                      "selected_analysts": ["market"]
                                                  }
                                              }, 
                                              headers=headers)
         
         submit_time = time.time() - submit_start
-        print(f"⏱️ 任务提交耗时: {submit_time:.2f}秒")
+        print(f"⏱️ Task submission time: {submit_time:.2f}seconds")
         
         if analysis_response.status != 200:
-            print(f"❌ 任务提交失败: {analysis_response.status}")
+            print(f"❌ Task submission failed: {analysis_response.status}")
             response_text = await analysis_response.text()
-            print(f"错误信息: {response_text}")
+            print(f"error message: {response_text}")
             return
         
         analysis_data = await analysis_response.json()
         task_id = analysis_data["data"]["task_id"]
-        print(f"✅ 任务提交成功: {task_id}")
+        print(f"✅ Task submitted successfully: {task_id}")
         
-        # 验证API响应速度
+        # Verify API response speed
         if submit_time < 2.0:
-            print("🎉 API响应迅速，非阻塞实现成功！")
+            print("🎉 API The response is fast and the non-blocking implementation is successful!")
         else:
-            print("⚠️ API响应较慢，可能仍有阻塞问题")
+            print("⚠️ API Slow response, may still have blocking issues")
         
-        # 3. 立即测试其他API（验证非阻塞）
-        print("\n🔍 测试其他API响应性...")
+        # 3. Test other APIs now (verify non-blocking)
+        print("\n🔍 Test other API responsiveness...")
         
-        # 健康检查
+        # health check
         health_start = time.time()
         health_response = await session.get(f"{base_url}/api/health")
         health_time = time.time() - health_start
-        print(f"🏥 健康检查: {health_response.status} - {health_time:.2f}秒")
+        print(f"🏥 health check: {health_response.status} - {health_time:.2f}seconds")
         
-        # 任务状态查询
+        # Task status query
         status_start = time.time()
         status_response = await session.get(f"{base_url}/api/analysis/task/{task_id}", 
                                           headers=headers)
         status_time = time.time() - status_start
-        print(f"📋 任务状态查询: {status_response.status} - {status_time:.2f}秒")
+        print(f"📋 Task status query: {status_response.status} - {status_time:.2f}seconds")
         
         if status_response.status == 200:
             status_data = await status_response.json()
-            print(f"📊 当前状态: {status_data['data']['status']} ({status_data['data']['progress']}%)")
+            print(f"📊 Current status: {status_data['data']['status']} ({status_data['data']['progress']}%)")
         
-        # 4. 测试 WebSocket 实时进度
-        print(f"\n🔌 测试 WebSocket 实时进度...")
+        # 4. Test WebSocket real-time progress
+        print(f"\n🔌 Test WebSocket real-time progress...")
         try:
             await test_websocket_progress(task_id, ws_url)
         except Exception as e:
-            print(f"⚠️ WebSocket 测试失败: {e}")
+            print(f"⚠️ WebSocket test failed: {e}")
         
-        # 5. 轮询任务状态直到完成
-        print(f"\n⏳ 等待任务完成...")
-        max_wait_time = 300  # 最多等待5分钟
+        # 5. Poll task status until completion
+        print(f"\n⏳ Wait for task to complete...")
+        max_wait_time = 300  # Wait up to 5 minutes
         start_wait = time.time()
         
         while time.time() - start_wait < max_wait_time:
@@ -112,14 +112,14 @@ async def test_async_analysis():
                 progress = status_data['data']['progress']
                 message = status_data['data'].get('message', '')
                 
-                print(f"📊 状态: {task_status} ({progress}%) - {message}")
+                print(f"📊 Status: {task_status} ({progress}%) - {message}")
                 
                 if task_status in ['completed', 'failed', 'cancelled']:
                     break
             
-            await asyncio.sleep(5)  # 每5秒查询一次
+            await asyncio.sleep(5)  # Query every 5 seconds
         
-        # 6. 获取最终结果
+        # 6. Get final result
         final_response = await session.get(f"{base_url}/api/analysis/task/{task_id}", 
                                          headers=headers)
         
@@ -127,39 +127,39 @@ async def test_async_analysis():
             final_data = await final_response.json()
             task_data = final_data['data']
             
-            print(f"\n📈 最终结果:")
-            print(f"  状态: {task_data['status']}")
-            print(f"  进度: {task_data['progress']}%")
-            print(f"  执行时间: {task_data.get('execution_time', 'N/A')}秒")
+            print(f"\n📈 final result:")
+            print(f"  Status: {task_data['status']}")
+            print(f"  Progress: {task_data['progress']}%")
+            print(f"  Execution time: {task_data.get('execution_time', 'N/A')}seconds")
             
             if task_data['status'] == 'completed' and task_data.get('result_data'):
                 result = task_data['result_data']
-                print(f"  股票代码: {result.get('stock_code', 'N/A')}")
-                print(f"  推荐: {result.get('recommendation', 'N/A')}")
-                print(f"  置信度: {result.get('confidence_score', 'N/A')}")
+                print(f"  Stock code: {result.get('stock_code', 'N/A')}")
+                print(f"  Recommended: {result.get('recommendation', 'N/A')}")
+                print(f"  Confidence: {result.get('confidence_score', 'N/A')}")
         
-        # 7. 测试任务列表
-        print(f"\n📋 测试任务列表...")
+        # 7. Test task list
+        print(f"\n📋 Test task list...")
         tasks_response = await session.get(f"{base_url}/api/analysis/tasks", 
                                          headers=headers)
         
         if tasks_response.status == 200:
             tasks_data = await tasks_response.json()
             tasks = tasks_data['data']['tasks']
-            print(f"✅ 获取到 {len(tasks)} 个任务")
-            for task in tasks[:3]:  # 显示前3个任务
+            print(f"✅ Get {len(tasks)} tasks")
+            for task in tasks[:3]:  # Show first 3 tasks
                 print(f"  - {task['task_id'][:8]}... : {task['status']} ({task['progress']}%)")
 
 async def test_websocket_progress(task_id: str, ws_url: str):
-    """测试 WebSocket 实时进度"""
+    """Test WebSocket real-time progress"""
     try:
         uri = f"{ws_url}/api/analysis/ws/task/{task_id}"
-        print(f"🔌 连接 WebSocket: {uri}")
+        print(f"🔌 connect WebSocket: {uri}")
         
         async with websockets.connect(uri) as websocket:
-            print("✅ WebSocket 连接成功")
+            print("✅ WebSocket Connection successful")
             
-            # 接收消息，最多等待30秒
+            # Receive message, wait up to 30 seconds
             timeout = 30
             start_time = time.time()
             
@@ -169,30 +169,30 @@ async def test_websocket_progress(task_id: str, ws_url: str):
                     data = json.loads(message)
                     
                     if data.get("type") == "connection_established":
-                        print("🔗 WebSocket 连接确认")
+                        print("🔗 WebSocket Connection confirmation")
                     elif data.get("type") == "progress_update":
-                        print(f"📡 实时进度: {data.get('status')} ({data.get('progress')}%) - {data.get('message')}")
+                        print(f"📡 Real-time progress: {data.get('status')} ({data.get('progress')}%) - {data.get('message')}")
                     
-                    # 如果任务完成，退出
+                    # If the task is completed, exit
                     if data.get("status") in ["completed", "failed", "cancelled"]:
                         break
                         
                 except asyncio.TimeoutError:
-                    # 发送心跳
+                    # Send heartbeat
                     await websocket.send("ping")
                     continue
                 except Exception as e:
-                    print(f"⚠️ WebSocket 消息处理错误: {e}")
+                    print(f"⚠️ WebSocket Message processing error: {e}")
                     break
             
-            print("🔌 WebSocket 测试完成")
+            print("🔌 WebSocket Test completed")
             
     except Exception as e:
-        print(f"❌ WebSocket 连接失败: {e}")
+        print(f"❌ WebSocket Connection failed: {e}")
 
 async def test_concurrent_requests():
-    """测试并发请求能力"""
-    print("\n🔄 测试并发请求能力...")
+    """Test concurrent request capabilities"""
+    print("\n🔄 Test concurrent request capabilities...")
     
     base_url = "http://localhost:8000"
     
@@ -203,30 +203,30 @@ async def test_concurrent_requests():
                 duration = time.time() - start_time
                 return resp.status, duration
     
-    # 并发发送10个健康检查请求
+    # Send 10 health check requests concurrently
     tasks = [make_health_check() for _ in range(10)]
     results = await asyncio.gather(*tasks)
     
-    print("🏥 并发健康检查结果:")
+    print("🏥 Concurrent health check results:")
     for i, (status, duration) in enumerate(results):
-        print(f"  请求 {i+1}: 状态 {status}, 耗时 {duration:.3f}秒")
+        print(f"  Request {i+1}: Status {status}, Time consuming {duration:.3f}seconds")
     
     avg_time = sum(duration for _, duration in results) / len(results)
     max_time = max(duration for _, duration in results)
     
-    print(f"📊 性能统计:")
-    print(f"  平均响应时间: {avg_time:.3f}秒")
-    print(f"  最大响应时间: {max_time:.3f}秒")
+    print(f"📊 Performance statistics:")
+    print(f"  average response time: {avg_time:.3f}seconds")
+    print(f"  Maximum response time: {max_time:.3f}seconds")
     
     if max_time < 1.0:
-        print("🎉 并发性能良好！")
+        print("🎉 Concurrency performance is good!")
     else:
-        print("⚠️ 并发性能需要优化")
+        print("⚠️ Concurrency performance needs to be optimized")
 
 if __name__ == "__main__":
-    print(f"🚀 开始测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🚀 Start test time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     asyncio.run(test_async_analysis())
     asyncio.run(test_concurrent_requests())
     
-    print(f"\n✅ 测试完成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n✅ Test completion time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

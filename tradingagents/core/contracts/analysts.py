@@ -1,8 +1,8 @@
 # tradingagents/core/contracts/analysts.py
 """
-分析师数据契约定义
+Analyst Data Contract Definition
 
-定义各类分析师 Agent 的输入/输出字段和依赖关系
+Define the input/output fields and dependencies of various analyst Agents
 """
 
 from tradingagents.core.engine.data_contract import (
@@ -13,11 +13,11 @@ from tradingagents.core.engine.data_contract import (
 
 
 # =========================================
-# 市场分析师 (Market Analyst)
+# market analyst (Market Analyst)
 # =========================================
 MARKET_ANALYST_CONTRACT = AgentDataContract(
     agent_id="market_analyst",
-    description="技术面分析师 - 分析价格走势、技术指标",
+    description="Technical Analyst - Analyze price trends, technical indicators",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -40,16 +40,16 @@ MARKET_ANALYST_CONTRACT = AgentDataContract(
             fields=["market_report"]
         ),
     ],
-    depends_on=set()  # 第一阶段，无依赖
+    depends_on=set()  # The first stage, no dependence
 )
 
 
 # =========================================
-# 新闻分析师 (News Analyst)
+# news analyst (News Analyst)
 # =========================================
 NEWS_ANALYST_CONTRACT = AgentDataContract(
     agent_id="news_analyst",
-    description="新闻分析师 - 分析新闻舆情、市场热点",
+    description="News Analyst - Analyze news public opinion and market hot spots",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -59,7 +59,7 @@ NEWS_ANALYST_CONTRACT = AgentDataContract(
         DataAccess(
             layer=DataLayer.RAW_DATA,
             fields=["news_data"],
-            required=False  # 新闻可能没有
+            required=False  # News may not be
         ),
     ],
     outputs=[
@@ -77,11 +77,11 @@ NEWS_ANALYST_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 社媒/情绪分析师 (Sentiment Analyst)
+# Social Media/Sentiment Analyst (Sentiment Analyst)
 # =========================================
 SENTIMENT_ANALYST_CONTRACT = AgentDataContract(
     agent_id="sentiment_analyst",
-    description="情绪分析师 - 分析社交媒体情绪、投资者情绪",
+    description="Sentiment Analyst - Analyze social media sentiment, investor sentiment",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -109,11 +109,11 @@ SENTIMENT_ANALYST_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 基本面分析师 (Fundamentals Analyst)
+# fundamental analyst (Fundamentals Analyst)
 # =========================================
 FUNDAMENTALS_ANALYST_CONTRACT = AgentDataContract(
     agent_id="fundamentals_analyst",
-    description="基本面分析师 - 分析财务数据、估值指标",
+    description="Fundamental Analyst - Analyzes financial data, valuation metrics",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -141,11 +141,11 @@ FUNDAMENTALS_ANALYST_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 板块分析师 (Sector Analyst)
+# Sector Analyst (Sector Analyst)
 # =========================================
 SECTOR_ANALYST_CONTRACT = AgentDataContract(
     agent_id="sector_analyst",
-    description="板块分析师 - 分析行业趋势、板块轮动、同业对比",
+    description="Sector Analyst - Analyze industry trends, sector rotation, and peer comparisons",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -173,11 +173,11 @@ SECTOR_ANALYST_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 大盘/指数分析师 (Index Analyst)
+# Market/Index Analyst (Index Analyst)
 # =========================================
 INDEX_ANALYST_CONTRACT = AgentDataContract(
     agent_id="index_analyst",
-    description="大盘分析师 - 分析指数走势、市场环境、系统性风险",
+    description="Market Analyst - Analyze index trends, market environment, and systemic risks",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -205,7 +205,7 @@ INDEX_ANALYST_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 分析师契约汇总
+# Analyst Contract Summary
 # =========================================
 ANALYST_CONTRACTS = {
     "market_analyst": MARKET_ANALYST_CONTRACT,

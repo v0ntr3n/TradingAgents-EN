@@ -1,398 +1,378 @@
-> ⚠️ **合规说明**：本文档为 TradingAgents 原始论文的中文翻译，保留原作者的术语和表述（如"交易员""交易决策""多头/空头"等）。当前 TradingAgents-CN v3.0 产品已全面转向研究辅助定位：AI 输出统一使用"乐观 / 审慎 / 中性"表达研究结论倾向，不再输出买入/卖出/加仓/减仓/持有/清仓等交易指令，也不提供目标价、止损止盈等操作建议。请以实际产品界面和当前版本文档为准。
+> ⚠️ **Compliance Notice**: This document is a translation/summary of the original TradingAgents academic paper and retains the original authors' terminology and expressions (such as "trader", "trading decision", "bull/bear", etc.). The current TradingAgents v3.0 product is positioned strictly as a research assistance tool: AI outputs uniformly express research conclusions as "Optimistic / Cautious / Neutral" and do not issue buy/sell/add/reduce/hold/liquidate trading orders or target/stop-loss/take-profit operational advice. Please refer to the actual product interface and current version documentation.
 
-# TradingAgents: 多智能体大语言模型金融交易框架
+# TradingAgents: Multi-Agent LLM Financial Trading Framework
 
-**作者**: Yijia Xiao¹'³, Edward Sun¹'³, Di Luo¹'², Wei Wang¹'³
+**Authors**: Yijia Xiao¹'³, Edward Sun¹'³, Di Luo¹'², Wei Wang¹'³
 
-¹ 加州大学洛杉矶分校 (UCLA)  
-² 麻省理工学院 (MIT)  
+¹ UCLA  
+² MIT  
 ³ Tauric Research
 
-**项目地址**: https://github.com/TauricResearch/TradingAgents
+**Project Repository**: https://github.com/TauricResearch/TradingAgents
 
 ---
 
-## 摘要
+## Abstract
 
-在使用大语言模型(LLM)驱动的智能体社会进行自动化问题解决方面已经取得了重大进展。在金融领域，研究主要集中在处理特定任务的单智能体系统或独立收集数据的多智能体框架上。然而，多智能体系统复制真实世界交易公司协作动态的潜力仍未得到充分探索。
+Significant progress has been made in automated problem-solving using societies of agents powered by Large Language Models (LLMs). In finance, research has largely focused on single-agent systems handling specific tasks or multi-agent frameworks that independently gather data. However, the potential of multi-agent systems to replicate the collaborative dynamics of real-world trading firms remains underexplored.
 
-**TradingAgents** 提出了一个受交易公司启发的新颖股票交易框架，具有专门角色的LLM驱动智能体，如基本面分析师、情绪分析师、技术分析师和具有不同风险偏好的交易员。该框架包括评估市场状况的多头和空头研究员智能体、监控风险敞口的风险管理团队，以及综合辩论见解和历史数据做出明智决策的交易员。
+**TradingAgents** proposes a novel stock trading framework inspired by trading firms, featuring LLM-powered agents with specialized roles such as fundamental analysts, sentiment analysts, technical analysts, and traders with diverse risk profiles. The framework includes bull and bear researcher agents that evaluate market conditions, a risk management team that monitors exposure, and traders that synthesize debate insights and historical data to make informed decisions.
 
-通过模拟动态、协作的交易环境，该框架旨在提高交易表现。详细的架构设计和广泛的实验表明其相对于基准模型的优越性，在累积收益、夏普比率和最大回撤方面都有显著改进，突出了多智能体LLM框架在金融交易中的潜力。
+By simulating a dynamic, collaborative trading environment, this framework aims to improve trading performance. Detailed architectural design and extensive experiments demonstrate its superiority over baseline models, achieving notable improvements in cumulative return, Sharpe ratio, and maximum drawdown, highlighting the potential of multi-agent LLM frameworks in financial trading.
 
 ---
 
-## 1. 引言
+## 1. Introduction
 
-金融市场的复杂性和动态性质使得有效的交易策略开发成为一项具有挑战性的任务。传统的交易方法通常依赖于预定义的规则、技术指标或机器学习模型，这些方法在适应快速变化的市场条件方面存在局限性。近年来，大语言模型(LLM)的出现为金融应用开辟了新的可能性，特别是在自动化交易和投资决策方面。
+The complexity and dynamic nature of financial markets make developing effective trading strategies a challenging task. Traditional trading methods typically rely on predefined rules, technical indicators, or machine learning models, which have limitations in adapting to rapidly changing market conditions. Recently, the emergence of Large Language Models (LLMs) has opened new possibilities for financial applications, especially in automated trading and investment decision-making.
 
-LLM在理解和生成人类语言方面表现出了卓越的能力，使其能够处理和分析大量的文本数据，包括新闻文章、财务报告和社交媒体内容。这种能力使LLM特别适合金融应用，在这些应用中，定性信息通常与定量数据一样重要。
+LLMs have demonstrated strong capabilities in understanding and generating human language, enabling them to process and analyze large volumes of textual data, including news articles, financial reports, and social media content. This capability makes LLMs particularly well-suited for financial applications where qualitative information is often as important as quantitative data.
 
-然而，大多数现有的基于LLM的交易计划都是作为单智能体框架设计的，其中单个模型负责整个交易过程。虽然这些系统在某些任务上表现出了有希望的结果，但它们未能捕捉到真实世界交易公司的协作和专业化性质。
+However, most existing LLM-based trading frameworks are designed as single-agent systems in which a single model is responsible for the entire trading workflow. While these systems show promising results on certain tasks, they fail to capture the collaborative and specialized nature of real-world trading firms.
 
-在实际的交易环境中，决策是通过多个专家的协作努力做出的，每个专家都有自己的专业领域和观点。基本面分析师评估公司的财务健康状况，技术分析师研究价格模式和市场趋势，而风险管理者确保交易决策符合风险参数。这种专业化和协作使交易公司能够做出更明智和平衡的投资决策。
+In real trading environments, decisions are made through the collaborative efforts of multiple specialists, each bringing domain expertise and distinct perspectives. Fundamental analysts evaluate a company's financial health, technical analysts study price patterns and market trends, and risk managers ensure trading decisions remain within risk parameters. This specialization and collaboration enable trading firms to make more informed and balanced investment decisions.
 
-受这种现实世界结构的启发，我们提出了**TradingAgents**，这是一个多智能体LLM框架，模拟交易公司的协作动态。我们的框架由几个专门的智能体组成，每个智能体都有明确定义的角色和责任：
+Inspired by this real-world structure, we propose **TradingAgents**, a multi-agent LLM framework that simulates the collaborative dynamics of a trading firm. Our framework consists of several specialized agents, each with clearly defined roles and responsibilities:
 
-- **分析师团队**: 包括基本面分析师、情绪分析师、新闻分析师和技术分析师
-- **研究团队**: 由持多头和空头观点的研究员组成，进行辩论和评估
-- **交易员**: 基于分析师和研究员的见解做出交易决策
-- **风险管理团队**: 监控和控制投资组合的风险敞口
+- **Analyst Team**: Includes fundamental analysts, sentiment analysts, news analysts, and technical analysts
+- **Research Team**: Composed of researchers holding bullish and bearish views who engage in structured debate and evaluation
+- **Trader**: Makes trading decisions based on insights from the analysts and researchers
+- **Risk Management Team**: Monitors and controls portfolio risk exposure
 
-这些智能体通过结构化的通信协议进行交互，确保信息在整个系统中有效流动。通过利用多个专门智能体的集体智慧，TradingAgents旨在做出更准确和稳健的交易决策。
+These agents interact through structured communication protocols to ensure effective information flow across the system. By leveraging the collective intelligence of multiple specialized agents, TradingAgents aims to produce more accurate and robust trading decisions.
 
-我们在2024年1月1日至3月29日期间对包括苹果、英伟达、微软、Meta和谷歌在内的主要科技股进行了全面的回测评估。结果表明，TradingAgents在累积收益、年化收益、夏普比率和最大回撤等关键财务指标上显著优于传统的交易策略。
+We conducted comprehensive backtesting evaluations between January 1, 2024 and March 29, 2024 on major technology stocks including Apple, NVIDIA, Microsoft, Meta, and Google. Results show that TradingAgents significantly outperforms traditional trading strategies across key financial metrics including cumulative return, annualized return, Sharpe ratio, and maximum drawdown.
 
-## 2. 相关工作
+## 2. Related Work
 
-### 2.1 LLM作为金融助手
+### 2.1 LLMs as Financial Assistants
 
-大语言模型通过在金融数据上进行微调或在金融语料库上训练来应用于金融领域。这提高了模型对金融术语和数据的理解，使其能够成为分析支持、洞察和信息检索的专业助手，而不是交易执行。
+Large language models are applied to finance by fine-tuning on financial data or pre-training on financial corpora. This improves the model's grasp of financial terminology and data, enabling it to serve as a specialized assistant for analytical support, insights, and information retrieval rather than direct trade execution.
 
-**金融领域微调的LLM**
+**Domain Fine-Tuned Financial LLMs**
 
-微调增强了特定领域的性能。例子包括PIXIU (FinMA)，它在136K金融相关指令上微调了LLaMA；FinGPT，使用LoRA微调了LLaMA和ChatGLM等模型，使用了约50K金融特定样本；以及Instruct-FinGPT，在来自金融情绪分析数据集的10K指令样本上进行微调。这些模型在金融分类任务上优于其基础版本和其他开源LLM如BLOOM和OPT，甚至在几个评估中超过了BloombergGPT。然而，在生成任务中，它们的表现与强大的通用模型如GPT-4相似或略差，表明需要更多高质量的特定领域数据集。
+Fine-tuning enhances domain-specific performance. Examples include PIXIU (FinMA), which fine-tunes LLaMA on 136K finance-related instructions; FinGPT, which uses LoRA to fine-tune models like LLaMA and ChatGLM on roughly 50K finance-specific samples; and Instruct-FinGPT, fine-tuned on 10K instruction samples from financial sentiment analysis datasets. These models outperform their base versions and other open-source LLMs like BLOOM and OPT on financial classification tasks, and even surpass BloombergGPT in several evaluations. However, on generative tasks, their performance is similar to or slightly below strong general-purpose models like GPT-4, indicating the need for higher-quality domain-specific datasets.
 
-**从头开始训练的金融LLM**
+**Financial LLMs Trained from Scratch**
 
-在金融特定语料库上从头开始训练LLM旨在更好的领域适应。像BloombergGPT、XuanYuan 2.0和Fin-T5这样的模型在预训练期间将公共数据集与金融特定数据相结合。例如，BloombergGPT在通用和金融文本上训练，专有的Bloomberg数据增强了其在金融基准上的性能。这些模型在市场情绪分类和摘要等任务上优于通用对应模型如BLOOM-176B和T5。虽然它们可能无法匹配更大的闭源模型如GPT-3或PaLM，但它们在类似规模的开源模型中提供了竞争性能，而不会损害一般语言理解。
+Training LLMs from scratch on finance-specific corpora aims for deeper domain adaptation. Models such as BloombergGPT, XuanYuan 2.0, and Fin-T5 combine public datasets with financial data during pre-training. For instance, BloombergGPT is trained on both general and financial text, with proprietary Bloomberg data boosting its performance on financial benchmarks. These models outperform general counterparts such as BLOOM-176B and T5 on tasks like market sentiment classification and summarization. While they may not match larger closed-source models like GPT-3 or PaLM, they offer competitive performance among similarly sized open-source models without compromising general language understanding.
 
-总之，通过微调或从头开始训练开发的金融特定LLM在特定领域任务上显示出显著改进，强调了领域适应的重要性以及通过高质量金融特定数据集进一步增强的潜力。
+In summary, finance-specific LLMs developed via fine-tuning or pre-training from scratch show significant improvements on domain-specific tasks, underscoring the importance of domain adaptation and the potential for further gains through high-quality financial datasets.
 
-### 2.2 LLM作为交易员
+### 2.2 LLMs as Traders
 
-LLM作为交易员智能体，通过分析新闻、财务报告和股价等外部数据做出直接的交易决策。提出的架构包括新闻驱动、推理驱动和强化学习(RL)驱动的智能体。
+LLMs acting as trader agents make direct trading decisions by analyzing external data such as news, financial reports, and stock prices. Proposed architectures include news-driven, reasoning-driven, and reinforcement learning (RL)-driven agents.
 
-**新闻驱动智能体**
+**News-Driven Agents**
 
-新闻驱动架构将股票新闻和宏观经济更新整合到LLM提示中，以预测股价走势。评估闭源模型(如GPT-3.5、GPT-4)和开源LLM(如Qwen、Baichuan)在金融情绪分析中的研究显示了基于情绪评分的简单多空策略的有效性。对微调LLM如FinGPT和OPT的进一步研究表明，通过特定领域对齐可以改善性能。高级方法涉及总结新闻数据并推理它们与股价的关系。
+News-driven architectures integrate stock news and macroeconomic updates into LLM prompts to predict price movements. Studies evaluating both closed-source models (such as GPT-3.5, GPT-4) and open-source LLMs (such as Qwen, Baichuan) in financial sentiment analysis demonstrate the effectiveness of simple long-short strategies based on sentiment scores. Further research on fine-tuned LLMs such as FinGPT and OPT shows that domain-specific alignment improves performance. Advanced approaches involve summarizing news data and reasoning about its relationship with stock prices.
 
-**推理驱动智能体**
+**Reasoning-Driven Agents**
 
-推理驱动智能体通过反思和辩论等机制增强交易决策。反思驱动智能体，如FinMem和FinAgent，使用分层记忆化和多模态数据将输入总结为记忆，为决策提供信息，并结合技术指标，在减轻幻觉的同时实现优越的回测性能。辩论驱动智能体，如异构框架和TradingGPT中的那些，通过在具有不同角色的智能体之间进行LLM辩论来增强推理和事实有效性，改善情绪分类并增加交易决策的稳健性。
+Reasoning-driven agents enhance trading decisions through mechanisms like reflection and debate. Reflection-driven agents, such as FinMem and FinAgent, use layered memorization and multimodal data to summarize inputs into memories that inform decisions and incorporate technical indicators, achieving superior backtesting performance while mitigating hallucinations. Debate-driven agents, such as those in heterogeneous frameworks and TradingGPT, enhance reasoning and factual validity by conducting LLM debates among agents with distinct roles, improving sentiment classification and increasing the robustness of trading decisions.
 
-**强化学习驱动智能体**
+**Reinforcement Learning-Driven Agents**
 
-强化学习方法将LLM输出与预期行为对齐，使用回测作为奖励。SEP采用带有记忆化和反思的RL来基于市场历史细化LLM预测。经典RL方法也用于将LLM生成的嵌入与股票特征集成的交易框架中，通过近端策略优化(PPO)等算法进行训练。
+Reinforcement learning approaches align LLM outputs with desired behaviors using backtesting returns as rewards. SEP employs RL with memorization and reflection to refine LLM predictions based on market history. Classical RL methods are also used in trading frameworks that integrate LLM-generated embeddings with stock features, trained via algorithms such as Proximal Policy Optimization (PPO).
 
-### 2.3 LLM作为Alpha挖掘器
+### 2.3 LLMs as Alpha Miners
 
-LLM也被用于生成alpha因子而不是做出直接的交易决策。QuantAgent通过利用LLM通过内循环和外循环架构产生alpha因子来证明这一点。在内循环中，写手智能体从交易员的想法生成脚本，而评判智能体提供反馈。在外循环中，代码在真实市场中测试，交易结果增强评判智能体。这种方法能够逐步逼近最优行为。
+LLMs are also used to generate alpha factors rather than making direct trading decisions. QuantAgent demonstrates this by leveraging LLMs to produce alpha factors via an inner-loop and outer-loop architecture. In the inner loop, a writer agent generates scripts from a trader's ideas while a judge agent provides feedback. In the outer loop, code is tested in the real market, and trading outcomes refine the judge agent. This approach progressively approximates optimal behavior.
 
-后续研究，如AlphaGPT，提出了一个用于alpha挖掘的人在环框架，具有类似的架构。这两项研究都展示了LLM驱动的alpha挖掘系统的有效性，突出了它们在通过生成和细化alpha因子来自动化和加速交易策略开发方面的潜力。
+Subsequent studies, such as AlphaGPT, propose human-in-the-loop frameworks for alpha mining with similar architectures. Both studies demonstrate the effectiveness of LLM-driven alpha mining systems, highlighting their potential to automate and accelerate trading strategy development by generating and refining alpha factors.
 
-## 3. TradingAgents: 角色专业化
+## 3. TradingAgents: Role Specialization
 
-为LLM智能体分配清晰、明确定义的角色和特定目标，能够将复杂的目标分解为更小、可管理的子任务。金融交易是这种复杂性的典型例子，需要整合多样化的信号、输入和专业知识。在现实世界中，这种管理复杂性的方法通过依赖专家团队协作和做出高风险决策的交易公司得到证明，强调了任务的多面性。
+Assigning LLM agents clear, well-defined roles and specific goals makes it possible to decompose complex objectives into smaller, manageable subtasks. Financial trading is a prime example of such complexity, requiring the integration of diverse signals, inputs, and expertise. In the real world, this approach to managing complexity is demonstrated by trading firms that rely on teams of specialists collaborating to make high-stakes decisions.
 
-在典型的交易公司中，收集大量数据，包括财务指标、价格走势、交易量、历史表现、经济指标和新闻情绪。然后由量化专家(量化分析师)分析这些数据，包括数学家、数据科学家和工程师，使用先进的工具和算法来识别趋势和预测市场走势。
+In a typical trading firm, vast amounts of data are collected, including financial metrics, price trends, trading volumes, historical performance, economic indicators, and news sentiment. This data is then analyzed by quantitative specialists (quants), including mathematicians, data scientists, and engineers, using advanced tools and algorithms to identify trends and forecast market movements.
 
-受这种组织结构的启发，TradingAgents在模拟交易公司内定义了七个不同的智能体角色：基本面分析师、情绪分析师、新闻分析师、技术分析师、研究员、交易员和风险管理者。每个智能体都被分配了特定的名称、角色、目标和一套约束，以及为其功能量身定制的预定义上下文、技能和工具。例如，情绪分析师配备了网络搜索引擎、Reddit搜索API、X/Twitter搜索工具和情绪评分计算算法等工具，而技术分析师可以执行代码、计算技术指标和分析交易模式。更具体地说，TradingAgents假设以下团队。
+Inspired by this organizational structure, TradingAgents defines seven distinct agent roles within a simulated trading firm: Fundamental Analyst, Sentiment Analyst, News Analyst, Technical Analyst, Researcher, Trader, and Risk Manager. Each agent is assigned a specific name, role, goal, and set of constraints, along with predefined context, skills, and tools tailored to its function. For example, the Sentiment Analyst is equipped with web search engines, Reddit Search API, X/Twitter search tools, and sentiment scoring algorithms, whereas the Technical Analyst can execute code, compute technical indicators, and analyze trading patterns.
 
-### 3.1 分析师团队
+### 3.1 Analyst Team
 
-分析师团队由负责收集和分析各种类型市场数据以为交易决策提供信息的专业智能体组成。每个智能体专注于市场分析的特定方面，汇集市场状况的全面视图。
+The Analyst Team consists of specialized agents responsible for gathering and analyzing various types of market data to inform trading decisions. Each agent focuses on a specific aspect of market analysis, assembling a comprehensive view of market conditions.
 
-- **基本面分析师智能体**: 这些智能体通过分析财务报表、收益报告、内部交易和其他相关数据来评估公司基本面。它们评估公司的内在价值以识别被低估或高估的股票，提供对长期投资潜力的洞察。
+- **Fundamental Analyst Agent**: Evaluates company fundamentals by analyzing financial statements, earnings reports, insider transactions, and related data to assess intrinsic value and identify undervalued or overvalued stocks.
+- **Sentiment Analyst Agent**: Processes large volumes of social media posts, sentiment scores, and insider sentiment derived from public filings and social activity to gauge how collective investor behavior may impact short-term prices.
+- **News Analyst Agent**: Analyzes news articles, government announcements, and macroeconomic indicators to assess macroeconomic conditions, major world events, and significant corporate developments.
+- **Technical Analyst Agent**: Computes and selects relevant technical indicators such as Moving Average Convergence Divergence (MACD) and Relative Strength Index (RSI) customized for specific assets, analyzing price patterns and volume to forecast future price movements.
 
-- **情绪分析师智能体**: 这些智能体处理大量社交媒体帖子、情绪评分和从公共信息和社交媒体活动中得出的内部情绪。它们衡量市场情绪以预测集体投资者行为如何在短期内影响股价。
+The Analyst Team synthesizes data from multiple sources to provide holistic market analysis. Their combined insights form the foundational input for the Research Team, ensuring all facets of the market are considered in subsequent decision-making.
 
-- **新闻分析师智能体**: 这些智能体分析新闻文章、政府公告和其他宏观经济指标，以评估市场的宏观经济状态、重大世界事件和重要公司变化。它们识别可能影响市场走势的新闻事件，帮助预测市场动态的突然变化。
+### 3.2 Research Team
 
-- **技术分析师智能体**: 这些智能体计算和选择相关的技术指标，如移动平均收敛发散(MACD)和相对强弱指数(RSI)，为特定资产定制。它们分析价格模式和交易量以预测未来价格走势，协助确定进入和退出点的时机。
+The Research Team is responsible for critically evaluating the information provided by the Analyst Team. Composed of agents adopting bullish and bearish perspectives, they engage in multi-round debates to assess the potential risks and rewards of investment decisions.
 
-分析师团队综合来自多个来源的数据，提供全面的市场分析。他们的综合洞察构成了研究团队的基础输入，确保在后续决策过程中考虑市场的所有方面。
+- **Bull Researcher**: Advocates for investment opportunities by highlighting positive indicators, growth potential, and favorable market conditions, constructing arguments in support of initiating or continuing positions.
+- **Bear Researcher**: Focuses on potential downside risks, vulnerabilities, and unfavorable market signals, providing cautious insights that question the viability of investment strategies and highlight possible negative outcomes.
 
-### 3.2 研究团队
+Through this dialectical process, the Research Team aims to reach a balanced understanding of market conditions. Their thorough analysis helps identify the most promising investment strategies while anticipating potential challenges, assisting the Trader Agent in making informed decisions.
 
-研究团队负责批判性评估分析师团队提供的信息。由采用多头和空头观点的智能体组成，他们进行多轮辩论以评估投资决策的潜在风险和收益。
+### 3.3 Trader Agent
 
-- **多头研究员**: 这些智能体通过突出积极指标、增长潜力和有利的市场条件来倡导投资机会。他们构建支持在某些资产中启动或继续持仓的论据。
+The Trader Agent is responsible for executing trading decisions based on the comprehensive analysis provided by the Analyst Team and the nuanced perspectives of the Research Team. They evaluate synthesized information, considering both quantitative data and qualitative insights, to determine optimal trading actions.
 
-- **空头研究员**: 相反，这些智能体专注于潜在的下行风险、风险和不利的市场信号。他们提供谨慎的洞察，质疑投资策略的可行性并突出可能的负面结果。
+The Trader Agent's tasks include:
 
-通过这种辩证过程，研究团队旨在达到对市场情况的平衡理解。他们的彻底分析有助于识别最有前景的投资策略，同时预测可能的挑战，从而帮助交易员智能体做出明智的决策。
+- Evaluating recommendations and insights from analysts and researchers
+- Deciding trade timing and sizing to maximize returns
+- Placing buy or sell orders in the market
+- Adjusting portfolio allocations in response to market changes and new information
 
-### 3.3 交易员智能体
+The Trader Agent must balance potential returns against associated risks, making timely decisions in a dynamic market environment.
 
-交易员智能体负责基于分析师团队提供的综合分析和研究团队的细致观点执行交易决策。他们评估综合信息，考虑定量数据和定性洞察，以确定最优的交易行动。
+### 3.4 Risk Management Team
 
-TradingAgents交易员的任务包括：
+The Risk Management Team monitors and controls the firm's exposure to various market risks. These agents continuously evaluate the portfolio's risk profile, ensuring trading activities remain within predefined risk parameters and comply with regulatory requirements.
 
-- 评估来自分析师和研究员的建议和洞察
-- 决定交易的时机和规模以最大化交易回报
-- 在市场中下达买入或卖出订单
-- 响应市场变化和新信息调整投资组合配置
+The Risk Management Team's responsibilities include:
 
-交易员智能体必须平衡潜在回报与相关风险，在动态市场环境中做出及时决策。他们的行动直接影响公司的表现，需要高度的精确性和战略思维。
+- Evaluating factors such as market volatility, liquidity, and counterparty risk
+- Implementing risk mitigation strategies such as stop-loss limits or position diversification
+- Providing feedback to the Trader Agent regarding risk exposure and recommending strategy adjustments
+- Ensuring the overall portfolio aligns with the firm's risk tolerance and investment objectives
 
-### 3.4 风险管理团队
+By providing oversight and guidance, the Risk Management Team helps maintain financial stability and guard against adverse market events.
 
-风险管理团队监控和控制公司对各种市场风险的敞口。这些智能体持续评估投资组合的风险概况，确保交易活动保持在预定义的风险参数内并符合监管要求。
+All agents in TradingAgents follow the ReAct prompting framework, which synergizes reasoning and action. The environment state is shared and monitored by the agents, enabling them to take context-appropriate actions such as conducting research, executing trades, participating in debates, or managing risk.
 
-风险管理团队的职责包括：
+## 4. TradingAgents: Agent Workflow
 
-- 评估市场波动性、流动性和交易对手风险等因素
-- 实施风险缓解策略，如设置止损订单或分散持仓
-- 向交易员智能体提供关于风险敞口的反馈并建议调整交易策略
-- 确保整体投资组合与公司的风险承受能力和投资目标保持一致
+### 4.1 Communication Protocol
 
-通过提供监督和指导，风险管理团队帮助维持公司的财务稳定并防范不利的市场事件。他们在保护资产和确保可持续的长期表现方面发挥关键作用。
+Most existing LLM-based agent frameworks use natural language as the primary communication interface, typically via structured message histories or collections of agent-generated messages. However, relying solely on natural language is often insufficient for solving complex, long-horizon tasks that require extensive planning. Pure natural language communication can resemble a game of telephone—over multiple iterations, initial information may be forgotten or distorted due to context length limits and text overload obscuring critical early details.
 
-TradingAgents中的所有智能体都遵循ReAct提示框架，该框架协同推理和行动。环境状态由智能体共享和监控，使他们能够采取适合上下文的行动，如进行研究、执行交易、参与辩论或管理风险。这种设计确保了反映真实世界交易计划的协作、动态决策过程。
+To address this limitation, we draw inspiration from frameworks like MetaGPT and adopt a structured communication approach. Our model introduces a structured communication protocol to govern agent interactions. By clearly defining each agent's state, we ensure each role only extracts or queries necessary information, processes it, and returns a completed report. This streamlined approach reduces unnecessary steps, lowers the risk of message corruption, and keeps interactions focused and efficient.
 
-## 4. TradingAgents: 智能体工作流程
+### 4.2 Types of Agent Interactions
 
-### 4.1 通信协议
+Unlike prior multi-agent trading frameworks that rely heavily on natural language dialogue, TradingAgents agents communicate primarily through structured documents and diagrams. These documents encapsulate agent insights in concise, well-organized reports that preserve essential content while avoiding irrelevant noise. By leveraging structured reports, agents can query necessary details directly from the global state, eliminating the need for lengthy conversations that dilute information.
 
-大多数现有的基于LLM的智能体框架使用自然语言作为主要通信接口，通常通过结构化消息历史或智能体生成消息的集合。然而，仅依赖自然语言通常不足以解决需要广泛规划视野的复杂、长期任务。在这种情况下，纯自然语言通信可能类似于传话游戏——在多次迭代中，由于上下文长度限制和掩盖关键早期细节的文本过载，初始信息可能被遗忘或扭曲。
+**I. Analyst Team**: Fundamental, sentiment, news, and technical analysts compile their research and findings into concise analytical reports specific to their domain, including key metrics, insights, and recommendations.
 
-为了解决这一限制，我们从MetaGPT等框架中汲取灵感，采用结构化的通信方法。我们的模型引入了结构化通信协议来管理智能体交互。通过清楚地定义每个智能体的状态，我们确保每个角色只提取或查询必要的信息，处理它，并返回完成的报告。这种简化的方法减少了不必要的步骤，降低了消息损坏的风险，并保持交互的专注和高效，即使在复杂的长期任务中也是如此。
+**II. Trader**: The trader reviews and analyzes reports from the analysts, deliberating carefully to produce clear decision signals accompanied by detailed rationales and supporting evidence, which are subsequently utilized by the Risk Management Team.
 
-### 4.2 智能体交互类型
+Agents engage in natural language dialogue only during inter-agent discussions and debates. These concise, focused discussions promote deeper reasoning and integrate diverse viewpoints, enabling more balanced decisions in complex long-horizon scenarios. Conversation state is recorded as structured entries within the overall agent state.
 
-与以往严重依赖自然语言对话的多智能体交易框架相比，TradingAgents智能体主要通过结构化文档和图表进行通信。这些文档将智能体的洞察封装在简洁、组织良好的报告中，保留基本内容同时避免无关信息。通过利用结构化报告，智能体可以直接从全局状态查询必要的细节，消除了可能稀释信息、无限期延长消息状态并导致数据丢失的冗长对话的需要。
+**III. Research Team**: Each researcher agent queries the global agent state for analyst reports and carefully forms its opinion. Two researchers represent opposing viewpoints: one bullish and one bearish. They engage in $n$ rounds of natural language dialogue moderated by a debate facilitator agent. Finally, the facilitator reviews the debate history, selects the prevailing perspective, and records it as a structured entry in the communication protocol.
 
-**I. 分析师团队**: 基本面、情绪、新闻和技术分析师将他们的研究和发现编译成特定于其专业领域的简洁分析报告。这些报告包括基于其专业分析的关键指标、洞察和建议。
+**IV. Risk Management Team**: The Risk Management Team, similar to the Research Team, queries the trader's decision and accompanying report. They then deliberate from three perspectives—risk-seeking, neutral, and risk-conservative—to adjust the trading plan within risk constraints over $n$ rounds of natural language discussion guided by a facilitator agent.
 
-**II. 交易员**: 交易员审查和分析来自分析师的报告，仔细考虑以产生清晰的决策信号。他们在这些决策中附上详细的报告，解释其理由和支持证据，这些后来被风险管理团队利用。
+**V. Fund Manager**: The Fund Manager reviews the discussion from the Risk Management Team, determines appropriate risk adjustments, and updates the trader's decision and report state within the communication protocol.
 
-智能体仅在智能体间对话和辩论期间进行自然语言对话。这些简洁、专注的讨论已被证明能促进更深入的推理并整合多样化的观点，在复杂的长期场景中实现更平衡的决策——这种方法特别适用于交易的复杂环境。这种方法与我们的结构化框架无缝集成，因为对话状态被记录为整体智能体状态内的结构化条目。
+### 4.3 Backbone LLMs
 
-**III. 研究团队**: 每个研究员智能体查询全局智能体状态以获取分析师报告并仔细形成其意见。两个研究员代表对立的观点：一个多头和一个空头。他们进行n轮自然语言对话，由辩论主持人智能体确定。最后，主持人审查辩论历史，选择占优势的观点，并将其记录为通信协议中的结构化条目。
+To meet the diverse complexity and speed demands of tasks in our framework, we strategically select Large Language Models (LLMs) according to their strengths. Fast-thinking models, such as `gpt-4o-mini` and `gpt-4o`, efficiently handle rapid, low-depth tasks such as summarization, data retrieval, and converting tabular data to text. In contrast, deep-thinking models such as `o1-preview` excel at reasoning-intensive tasks such as decision-making, evidence-based report writing, and data analysis. These models leverage their architecture for multi-round reasoning to produce logically sound, in-depth insights.
 
-**IV. 风险管理团队**: 风险管理团队，类似于研究团队，查询交易员的决策和随附报告。然后他们从三个角度进行考虑——风险寻求、中性和风险保守——在风险约束内调整交易计划。他们在主持人智能体的指导下进行n轮自然语言讨论。
+Specifically, all analyst nodes rely on deep-thinking models to ensure robust analysis, while fast-thinking models handle data retrieval from APIs and tools to improve efficiency. Researchers and traders use deep-thinking models to generate valuable insights and support informed decisions. By aligning LLM selection with the specific requirements of each task, our framework achieves a balance between efficiency and reasoning depth.
 
-**V. 基金经理**: 基金经理审查来自风险管理团队的讨论，确定适当的风险调整，并在通信协议内更新交易员的决策和报告状态。
+This implementation strategy ensures TradingAgents can be deployed without GPUs, relying solely on API credits. It also introduces seamless interchangeability of backbone models, enabling researchers to easily replace models with locally hosted or API-accessible alternatives in the future.
 
-### 4.3 骨干LLM
+## 5. Experiments
 
-为了满足我们框架中任务的多样化复杂性和速度需求，我们根据大语言模型(LLM)的优势战略性地选择它们。快速思考模型，如gpt-4o-mini和gpt-4o，有效处理快速、低深度任务，如摘要、数据检索和将表格数据转换为文本。相比之下，深度思考模型如o1-preview在推理密集型任务中表现出色，如决策制定、基于证据的报告写作和数据分析。这些模型利用其架构进行多轮推理，产生逻辑合理、深入的洞察。此外，我们优先考虑具有经过验证的可靠性和可扩展性的模型，以确保在各种市场条件下的最佳性能。我们还为情绪分析等专门任务使用辅助专家模型。
+### 5.1 Simulation Setup
 
-具体来说，所有分析师节点依赖深度思考模型以确保稳健的分析，而快速思考模型处理来自API和工具的数据检索以提高效率。研究员和交易员使用深度思考模型生成有价值的洞察并支持明智的决策。通过将LLM的选择与每个任务的特定要求对齐，我们的框架在效率和推理深度之间实现了平衡，这对有效的交易策略至关重要。
+We evaluate the TradingAgents framework using a comprehensive backtesting simulation from January 1, 2024 to March 29, 2024 across major technology stocks including Apple, NVIDIA, Microsoft, Meta, and Google. TradingAgents facilitates seamless plug-and-play strategies during simulation, making direct comparison with any baseline straightforward. Agents make decisions based solely on data available on each trading day, ensuring no future data is used (eliminating look-ahead bias). Based on their analysis, TradingAgents generates trading signals to buy, sell, or hold assets, which are then executed before advancing to the next day's data.
 
-这种实施策略确保TradingAgents可以在不需要GPU的情况下部署，仅依赖API积分。它还引入了骨干模型的无缝可交换性，使研究人员能够在未来轻松地用任何本地托管或API可访问的替代方案替换模型。这种适应性支持集成改进的推理模型或为特定任务定制的金融调优模型。因此，TradingAgents具有高度可扩展性和面向未来，提供灵活性以适应其任何智能体的任何骨干模型。
+We compare against five established baseline strategies: Buy and Hold, MACD, KDJ+RSI, ZMR, and SMA (baseline descriptions in the Appendix). Performance is evaluated using four key metrics: Cumulative Return (CR), Annualized Return (AR), Sharpe Ratio (SR), and Maximum Drawdown (MDD).
 
-## 5. 实验
+### 5.2 Backtesting Data
 
-### 5.1 模拟设置
+To simulate a realistic trading environment, we utilize a multi-asset and multimodal financial dataset comprising stocks such as Apple, NVIDIA, Microsoft, Meta, and Google. Our multimodal dataset integrates historical stock prices, news articles, social media sentiment, insider transactions, financial statements, and 60 technical indicators per asset:
 
-我们使用从2024年1月1日到3月29日的综合回测模拟来评估TradingAgents框架，涵盖包括苹果、英伟达、微软、Meta和谷歌在内的主要科技股。TradingAgents在模拟期间促进无缝的即插即用策略，使与任何基准的直接比较变得简单。智能体仅基于每个交易日可用的数据做出决策，确保不使用未来数据(消除前瞻偏差)。基于他们的分析，TradingAgents生成买入、卖出或持有资产的交易信号，然后执行。之后，在进行下一天的数据之前计算分析指标。
+- **Historical Stock Prices**: Open, high, low, close, volume, and adjusted close prices from January 1, 2024 to March 29, 2024.
+- **News Articles**: Daily news updates gathered from diverse sources such as Bloomberg, Yahoo, EODHD, FinnHub, and Reddit covering company-specific developments, global events, macroeconomic trends, and government updates.
+- **Social Media Posts and Sentiment**: Posts from Reddit, X/Twitter, and other platforms along with post sentiment scores computed by auxiliary language models.
+- **Insider Sentiment and Transactions**: Sentiment derived from public disclosures, including transactions from SEDI and relevant corporate filings.
+- **Financial Statements and Earnings Reports**: Quarterly and annual reports filed by companies.
+- **Company Profiles and Financial History**: Descriptions of company profiles, target industries, and financial history reported by third parties.
+- **Technical Indicators**: Sixty standard technical analysis indicators computed for each asset, including MACD, RSI, Bollinger Bands, etc.
 
-我们与五种既定策略进行基准比较：买入持有、MACD、KDJ+RSI、ZMR和SMA(基准描述见附录)。性能使用四个关键指标进行评估：累积收益(CR)、年化收益(AR)、夏普比率(SR)和最大回撤(MDD)(公式见附录)。
+## 6. Results and Analysis
 
-### 5.2 回测交易
+In this section, we present experimental results and analyze the performance of TradingAgents relative to baseline models.
 
-为了模拟现实的交易环境，我们利用包含各种股票如苹果、英伟达、微软、Meta、谷歌等的多资产和多模态金融数据集。我们的多模态数据集整合了历史股价、新闻文章、社交媒体情绪、内部交易、财务报表和每个资产60个技术指标。数据集包括：
+### 6.1 Performance Comparison
 
-**历史股价**: 2024年1月1日至3月29日的开盘价、最高价、最低价、收盘价、成交量和调整收盘价。
+#### Cumulative and Annualized Returns
 
-**新闻文章**: 从Bloomberg、Yahoo、EODHD、FinnHub和Reddit等多样化来源收集的每日新闻更新，涵盖特定公司发展、全球事件、宏观经济趋势和政府更新。
+Tables and figures show that our method outperforms existing rule-based trading baselines, particularly in profitability measured by returns. TradingAgents achieved at least 23.21% cumulative return and 24.90% annualized return across the sampled stocks, outperforming the best-performing baseline by 6.1%. Notably, on Apple stock—a particularly challenging case due to market volatility during the test period—traditional methods struggled because their patterns failed to generalize to these conditions. In contrast, TradingAgents excelled under these adverse conditions, achieving over 26% return within a few months.
 
-**社交媒体帖子和情绪**: 来自Reddit、X/Twitter和其他平台的帖子，以及由辅助语言模型计算的帖子情绪评分。
+#### Sharpe Ratio
 
-**内部情绪和交易**: 从公共信息中得出的情绪，包括来自SEDI的交易和相关公司文件。
+Sharpe ratio performance highlights TradingAgents' strong capability in delivering superior risk-adjusted returns, surpassing all baseline models. This result underscores TradingAgents' effectiveness in balancing return and risk—a critical factor for sustainable and predictable investment growth. TradingAgents consistently outperforms market benchmarks such as Buy and Hold and rule-based strategies, demonstrating its adaptability.
 
-**财务报表和收益报告**: 公司提交的季度和年度报告。
+**Note**: We benchmarked TradingAgents over a 3-month period due to intensive LLM and tool usage (each prediction requires 11 LLM calls and 20+ tool calls). The highest Sharpe ratios exceeded typical empirical ranges (an SR above 2 is very good, and above 3 is excellent). We exported TradingAgents' decision sequences and inspected them to verify calculation accuracy. We attribute the unusually high SR to minimal drawdowns during this period. Future work will optimize LLM inference and tool usage to enable longer backtests under limited budgets.
 
-**公司概况和财务历史**: 第三方报告的公司概况、目标行业和财务历史的描述。
+#### Maximum Drawdown
 
-**技术指标**: 为每个资产计算的六十个标准技术分析指标，包括MACD、RSI、布林带等。
+While rule-based baselines demonstrated strong performance in controlling risk as reflected by their maximum drawdown scores, they fell short in capturing high returns. This trade-off between risk and reward highlights TradingAgents' advantage as a balanced approach. Even though higher returns are typically associated with higher risk, TradingAgents maintained a relatively low maximum drawdown compared to many baselines. Its effective risk control mechanisms, facilitated through debates among risk control agents, ensured maximum drawdown remained within manageable limits, not exceeding 2%.
 
-## 6. 结果和分析
+#### Interpretability
 
-在本节中，我们展示实验结果并分析TradingAgents相对于基准模型的性能。
+A major drawback of current deep learning trading methods is their dense, opaque architecture, which often makes trading agent decisions difficult to understand. This challenge, rooted in AI interpretability, is critical for trading agents operating in real-world financial markets where erroneous decisions can cause severe losses.
 
-### 6.1 性能比较
+In contrast, an LLM-based agent framework offers a transformative advantage: its decisions are communicated in natural language, enhancing interpretability. To illustrate this, we provide a complete single-day trading log of TradingAgents in the Appendix, demonstrating its use of the ReAct-style prompting framework. Each decision includes detailed reasoning, tool usage, and thought processes, enabling traders to understand and debug the system.
 
-#### 累积和年度收益
+### 6.2 Discussion
 
-表格和图表显示，我们的方法优于现有的基于规则的交易基准，特别是在以收益衡量的盈利能力方面。TradingAgents在三个采样股票上至少实现了23.21%的累积收益和24.90%的年化收益，超过表现最佳的基准6.1%。值得注意的是，在苹果股票上——由于测试期间的市场波动性，这是一个特别具有挑战性的案例——传统方法表现困难，因为它们的模式未能推广到这种情况。相比之下，TradingAgents在这些不利条件下表现出色，在几个月内实现了超过26%的收益。
+Our results indicate that integrating multiple specialized LLM agents and facilitating inter-agent debate significantly enhances trading performance. The framework effectively synthesizes diverse data sources and expert analyses, enabling the trader agent to make informed decisions tailored to specific risk profiles. The inclusion of reflective agents and a dedicated risk management team plays a pivotal role in refining strategies and mitigating risk. Furthermore, the natural-language operation of the multi-agent LLM framework ensures high interpretability, giving TradingAgents a clear advantage in transparency and interoperability over traditional and deep learning methods.
 
-#### 夏普比率
+## 7. Conclusion
 
-夏普比率性能突出了TradingAgents在提供优越风险调整收益方面的卓越能力，超过了所有基准模型。这一结果强调了TradingAgents在平衡收益和风险方面的有效性——这是可持续和可预测投资增长的关键因素。TradingAgents始终优于买入持有和基于规则的策略等市场基准，展示了其适应性。其在保持受控风险敞口的同时最大化收益的能力为多智能体和基于辩论的自动化交易算法建立了坚实的基础。
+We introduced TradingAgents, a multi-agent LLM financial trading framework that realistically simulates a trading firm environment with multiple specialized agents engaging in debate and dialogue. Leveraging the advanced capabilities of LLMs to process and analyze diverse financial data sources, the framework makes more informed trading decisions while utilizing multi-agent interactions to enhance performance through comprehensive reasoning and debate prior to action.
 
-**注释**: 我们在3个月内对TradingAgents进行基准测试，这是由于密集的LLM和工具使用(每次预测需要11次LLM调用和20+次工具调用)。最高的夏普比率超过了我们预期的经验范围(SR高于2为很好，高于3为优秀)。我们导出了TradingAgents的决策序列并检查它们以确保计算的正确性。我们认为异常高的SR是由于在该期间TradingAgents很少出现回撤的现象。我们如实报告实验中的结果。未来的工作将优化LLM推理和工具使用，以在有限预算下实现更长的回测。
-
-#### 最大回撤
-
-虽然基于规则的基准在控制风险方面表现出优越的性能，如其最大回撤分数所反映的，但它们在捕获高收益方面表现不足。这种风险和回报之间的权衡强调了TradingAgents作为平衡方法的优势。尽管更高的收益通常与更高的风险相关，但TradingAgents相对于许多基准保持了相对较低的最大回撤。其有效的风险控制机制，通过风险控制智能体之间的辩论促进，确保最大回撤保持在可管理的限度内，不超过2。这展示了TradingAgents在最大化收益和有效管理风险之间取得稳健平衡的能力。
-
-#### 可解释性
-
-当前深度学习交易方法的一个主要缺点是其密集、复杂的架构，通常使交易智能体的决策难以理解。这一挑战根植于AI可解释性，对于在真实世界金融市场中运营的交易智能体至关重要，因为错误的决策可能导致严重损失。
-
-相比之下，基于LLM的智能体框架提供了变革性优势：其决策以自然语言传达，增强了可解释性。为了说明这一点，我们在附录中提供了TradingAgents单日的完整交易日志，展示了其使用ReAct风格提示框架。每个决策都包括详细的推理、工具使用和思维过程，使交易员能够理解和调试系统。这种透明度使交易员能够微调框架，考虑决策因素，相对于深度学习交易算法提供了优越的可解释性。
-
-### 6.2 讨论
-
-我们的结果表明，整合多个专业LLM智能体并促进智能体辩论显著增强了交易性能。该框架有效地综合了多样化的数据源和专家分析，使交易员智能体能够做出针对特定风险概况的明智决策。包含反思智能体和专门的风险管理团队在细化策略和缓解风险方面起着关键作用。因此，该框架在保持强大的风险管理指标的同时实现了卓越的收益捕获，在最大化回报和最小化风险之间取得了最佳平衡。此外，多智能体LLM框架基于自然语言的操作确保了高可解释性，使TradingAgents在透明度和互操作性方面相对于传统和深度学习方法具有明显优势。
-
-## 7. 结论
-
-我们介绍了TradingAgents，这是一个多智能体LLM金融交易框架，真实地模拟了交易公司环境，具有多个专业智能体参与智能体辩论和对话。利用LLM处理和分析多样化金融数据源的先进能力，该框架能够做出更明智的交易决策，同时利用多智能体交互通过在行动前进行全面推理和辩论来增强性能。
-
-通过整合具有不同角色和风险概况的智能体，以及反思智能体和专门的风险团队，TradingAgents相对于基准模型显著改善了交易结果和风险管理。此外，这些智能体的协作性质确保了对变化市场条件的适应性。
-
-实验表明，TradingAgents在累积收益、夏普比率和其他关键财务指标方面优于传统交易策略和基准。未来的工作将专注于在实时交易环境中部署该框架，扩展智能体角色，并整合实时数据源以进一步增强性能。
+By integrating agents with distinct roles and risk profiles alongside reflective agents and a dedicated risk team, TradingAgents significantly improves trading outcomes and risk management compared to baseline models. Experiments demonstrate that TradingAgents outperforms traditional trading strategies and benchmarks across cumulative return, Sharpe ratio, and other key financial metrics. Future work will focus on deploying the framework in live environments, expanding agent roles, and integrating real-time data sources.
 
 ---
 
-## 附录
+## Appendix
 
-### A. 基准模型
+### A. Baseline Models
 
-我们将TradingAgents框架与几个基准进行比较：
+We compare the TradingAgents framework against several baselines:
 
-- **买入持有**: 在所有选定股票中投资等额资金并在整个模拟期间持有。
+- **Buy and Hold**: Invests equal capital across selected stocks and holds throughout the simulation period.
+- **MACD (Moving Average Convergence Divergence)**: A trend-following momentum strategy that generates buy/sell signals based on crossovers between the MACD line and signal line.
+- **KDJ and RSI (Relative Strength Index)**: A momentum strategy combining KDJ (Stochastic Oscillator) and RSI indicators to identify overbought and oversold conditions.
+- **ZMR (Zero Mean Reversion)**: A mean-reversion trading strategy that generates signals based on price deviations from and subsequent reversions to a zero reference line.
+- **SMA (Simple Moving Average)**: A trend-following strategy that generates trading signals based on crossovers between short-term and long-term moving averages.
 
-- **MACD (移动平均收敛发散)**: 基于MACD线和信号线交叉点生成买卖信号的趋势跟踪动量策略。
+### B. Evaluation Metrics
 
-- **KDJ和RSI (相对强弱指数)**: 结合KDJ(随机振荡器)和RSI(相对强弱指数)指标识别超买和超卖条件的动量策略。
+To comprehensively evaluate the performance of the TradingAgents framework, we use widely recognized metrics to assess risk management, profitability, and safety relative to baseline methods.
 
-- **ZMR (零均值回归)**: 基于价格偏离零参考线和随后回归生成信号的均值回归交易策略。
+#### B.1 Cumulative Return (CR)
 
-- **SMA (简单移动平均)**: 基于短期和长期移动平均线交叉生成交易信号的趋势跟踪策略。
+Cumulative return measures the total return generated over the simulation period:
 
-### B. 评估指标
+$$CR = \left(\frac{V_{\text{end}} - V_{\text{start}}}{V_{\text{start}}}\right) \times 100\%$$
 
-为了全面评估TradingAgents框架的性能，我们使用广泛认可的指标来评估TradingAgents策略相对于基准方法的风险管理、盈利能力和安全性。
+where $V_{\text{end}}$ is the portfolio value at the end of the simulation and $V_{\text{start}}$ is the initial portfolio value.
 
-#### B.1 累积收益 (CR)
+#### B.2 Annualized Return (AR)
 
-累积收益衡量模拟期间产生的总收益：
+Annualized return normalizes cumulative return over the number of years:
 
-CR = ((V_end - V_start) / V_start) × 100%
+$$AR = \left(\left(\frac{V_{\text{end}}}{V_{\text{start}}}\right)^{1/N} - 1\right) \times 100\%$$
 
-其中V_end是模拟结束时的投资组合价值，V_start是初始投资组合价值。
+where $N$ is the number of years in the simulation.
 
-#### B.2 年化收益 (AR)
+#### B.3 Sharpe Ratio (SR)
 
-年化收益将累积收益标准化为年数：
+The Sharpe ratio measures risk-adjusted return by comparing the portfolio's excess return over the risk-free rate to its volatility:
 
-AR = ((V_end / V_start)^(1/N) - 1) × 100%
+$$SR = \frac{\bar{R} - R_f}{\sigma}$$
 
-其中N是模拟中的年数。
+where $\bar{R}$ is the average portfolio return, $R_f$ is the risk-free rate (e.g., 3-month Treasury yield), and $\sigma$ is the standard deviation of portfolio returns.
 
-#### B.3 夏普比率 (SR)
+#### B.4 Maximum Drawdown (MDD)
 
-夏普比率通过比较投资组合相对于无风险利率的超额收益与其波动性来衡量风险调整收益：
+Maximum drawdown measures the largest peak-to-trough decline in portfolio value:
 
-SR = (R̄ - R_f) / σ
+$$MDD = \max_{t \in [0,T]} \left(\frac{\text{Peak}_t - \text{Trough}_t}{\text{Peak}_t}\right) \times 100\%$$
 
-其中R̄是平均投资组合收益，R_f是无风险利率(如3个月国债收益率)，σ是投资组合收益的标准差。
+### C. Cumulative Returns and Trading History for AMZN and GOOGL
 
-#### B.4 最大回撤 (MDD)
+We provide additional charts for `$AMZN` and `$GOOGL` stocks to supplement the `AAPL` data discussed in the main paper, highlighting the consistency and robustness of TradingAgents across multiple equities.
 
-最大回撤衡量投资组合价值的最大峰谷下降：
+### D. TradingAgents Case Study — Apple Inc. (AAPL)
 
-MDD = max_{t∈[0,T]} ((Peak_t - Trough_t) / Peak_t) × 100%
+Below is a complete case study of the TradingAgents system analyzing and making decisions on Apple (`AAPL`) stock, illustrating the collaborative workflow across agents:
 
-### C. AMZN和GOOGL的累积收益和交易历史
+#### D.1 Market Analyst Team Report
 
-我们提供了$AMZN和$GOOGL股票的额外图表，以补充论文主体中讨论的AAPL数据。这些补充视觉效果提供了我们交易框架在多个股票上性能的更广阔视角，突出了TradingAgents结果的一致性和稳健性。
+**Analytical report based on recent AAPL market data and selected technical indicators:**
 
-### D. TradingAgents系统运行案例研究 - 苹果股票(AAPL)
+**Momentum Indicators**
+- **RSI (Relative Strength Index)**: RSI values show notable fluctuations, with overbought conditions on November 5 and November 7 reaching 100 and 89.85 respectively, indicating strong upward momentum that could lead to a price correction. By the end of the period, RSI stabilized, indicating moderate buying momentum.
 
-以下是TradingAgents系统针对苹果股票进行分析和决策的完整案例，展示了各个智能体的协作过程：
+**Trend Indicators**
+- **ADX (Average Directional Index)**: Initial ADX values were very high, indicating a strong trend, followed by a notable decline suggesting weakening trend strength and a potential transition into consolidation.
+- **Supertrend**: The Supertrend indicator remained steady, indicating a stable market trend with moderate volatility and potential for a future breakout.
 
-#### D.1 市场分析师团队报告
+**Volatility Indicators**
+- **ATR (Average True Range)**: ATR values show increasing market volatility, indicating wider price swings that require careful risk management.
 
-**基于AAPL近期市场数据和选定技术指标的分析报告：**
+#### D.2 Fundamental Analyst Report
 
-**动量指标**
-- **RSI (相对强弱指数)**: RSI值显示显著波动，特别是在11月5日和11月7日出现超买条件，RSI值分别达到100和89.85。这表明强劲的上涨动力，可能导致价格修正。期末RSI趋于稳定，表明适度的买入动力。
+**Apple Inc. Fundamental Analysis:**
 
-**趋势指标**
-- **ADX (平均方向指数)**: 初期ADX值极高，表明强劲趋势，但随后显著下降，表明趋势强度减弱。这种模式暗示从强方向性运动向潜在整理阶段的转变。
-- **超级趋势**: 超级趋势指标保持稳定，表明市场趋势稳定，波动性不大。这种稳定性可能表明整理阶段，未来有突破的潜力。
+**Financial Health**
+- Market Cap: $3.39 trillion, reflecting massive scale and market dominance
+- P/E Ratio: 33.26, indicating a high valuation relative to earnings
+- P/B Ratio: 45.95, indicating a significant premium relative to book value
+- Debt-to-Equity Ratio: 1.96, indicating moderate financial leverage
 
-**波动性指标**
-- **ATR (平均真实范围)**: ATR值显示市场波动性增加，表明价格波动幅度扩大，需要谨慎管理风险。
+**Profitability Metrics**
+- Gross Margin: 46.04%, demonstrating strong pricing power and operational efficiency
+- Net Profit Margin: 23.31%, indicating excellent profitability
+- ROE: 160.58%, showing exceptional return on shareholders' equity
 
-#### D.2 基本面分析师报告
+#### D.3 Sentiment Analyst Report
 
-**苹果公司基本面分析：**
+**Market Sentiment Analysis:**
 
-**财务健康状况**
-- 市值：3.39万亿美元，显示公司规模庞大和市场主导地位
-- P/E比率：33.26，表明相对于收益的高估值
-- P/B比率：45.95，表明相对于账面价值的显著溢价
-- 债务股本比：1.96，表明适度的财务杠杆
+**Social Media Sentiment**
+- Reddit Sentiment Score: 0.65 (Positive)
+- Twitter Sentiment Score: 0.72 (Positive)
+- Overall Sentiment Trend: Positive; investors maintain confidence in Apple's innovation capability and market position
 
-**盈利能力指标**
-- 毛利率：46.04%，显示强劲的定价能力和运营效率
-- 净利率：23.31%，表明优秀的盈利能力
-- ROE：160.58%，显示对股东权益的卓越回报
+**News Sentiment**
+- Recent news focuses primarily on Apple's AI technology developments and new product launches
+- Market sentiment is optimistic regarding Apple's investments in artificial intelligence
+- Geopolitical risks have a minor negative impact on sentiment
 
-#### D.3 情绪分析师报告
+#### D.4 Research Team Debate
 
-**市场情绪分析：**
+**Bull Researcher Perspective:**
+"Based on current technical indicators and fundamental analysis, I strongly advocate a bullish stance on Apple stock. RSI and MACD indicators show upward momentum, and positive sentiment spikes point to favorable developments. Apple's innovative investments in AI and frontier technologies lay a solid foundation for future growth."
 
-**社交媒体情绪**
-- Reddit情绪评分：0.65 (积极)
-- Twitter情绪评分：0.72 (积极)
-- 整体情绪趋势：积极，投资者对苹果的创新能力和市场地位保持信心
+**Bear Researcher Perspective:**
+"Although technical indicators show some positive signals, we must consider high valuation risks. A P/E ratio of 33.26 and a P/B ratio of 45.95 suggest Apple may be trading at a steep premium. Insider selling activity is also a cautionary signal, and geopolitical tensions and macroeconomic uncertainty add to investment risk."
 
-**新闻情绪**
-- 近期新闻主要关注苹果的AI技术发展和新产品发布
-- 市场对苹果在人工智能领域的投资表示乐观
-- 地缘政治风险对情绪有轻微负面影响
+**Debate Conclusion:**
+Following an in-depth debate, the bullish perspective prevailed. Despite valuation concerns, Apple's strong fundamentals, innovation capabilities, and market leadership support a positive outlook.
 
-#### D.4 研究团队辩论
+#### D.5 Trader Decision
 
-**多头研究员观点：**
-"基于当前的技术指标和基本面分析，我强烈建议买入苹果股票。RSI和MACD指标显示上涨动力，积极的情绪峰值可能预示着有利的发展。苹果在AI和其他前沿技术方面的创新投资为未来增长奠定了基础。"
+**Trading Decision: Buy Apple Stock (Historical Paper Example)**
 
-**空头研究员观点：**
-"虽然技术指标显示一些积极信号，但我们必须考虑高估值风险。P/E比率33.26和P/B比率45.95表明苹果可能以溢价交易。内部人士的抛售活动也是一个警告信号。地缘政治紧张局势和经济不确定性增加了投资风险。"
+**Decision Rationale:**
+1. Technical indicators show upward momentum
+2. Strong fundamentals and excellent profitability
+3. Positive market sentiment
+4. Favorable long-term growth prospects
 
-**辩论结论：**
-经过深入辩论，多头观点占据优势。尽管存在估值担忧，但苹果的强劲基本面、创新能力和市场领导地位支持买入决策。
+**Risk Management Measures:**
+- Set stop-loss boundaries to limit downside risk
+- Build positions in tranches to reduce timing risk
+- Closely monitor market changes
 
-#### D.5 交易员决策
+#### D.6 Risk Management Team Evaluation
 
-**交易决策：买入苹果股票**
+**Risk Assessment:**
+- Market Risk: Medium, given current volatility
+- Liquidity Risk: Low, as Apple stock has ample liquidity
+- Concentration Risk: Portfolio diversification should be maintained
 
-**决策理由：**
-1. 技术指标显示上涨动力
-2. 基本面强劲，盈利能力优秀
-3. 市场情绪积极
-4. 长期增长前景良好
+**Risk Adjustment Recommendations:**
+- Limit position size to a reasonable proportion of the portfolio
+- Consider hedging strategies for downside protection
+- Periodically re-evaluate the investment thesis
 
-**风险管理措施：**
-- 设置止损订单以限制下行风险
-- 分批建仓以降低时机风险
-- 密切监控市场变化
+> ⚠️ The section above is an early system research example illustrating the multi-agent collaboration workflow and does not represent the current version's output format. The current version is positioned as a research assistance tool and outputs only research conclusion tendencies (Optimistic / Cautious / Neutral) and supporting rationale rather than buy/sell/hold instructions.
 
-#### D.6 风险管理团队评估
+#### D.7 Research Coordinator Final Review
 
-**风险评估：**
-- 市场风险：中等，考虑到当前波动性
-- 流动性风险：低，苹果股票流动性充足
-- 集中度风险：需要注意投资组合多样化
+**Final Research Conclusion: Optimistic Research Stance on Apple Stock**
 
-**风险调整建议：**
-- 将仓位限制在投资组合的合理比例内
-- 使用期权策略对冲下行风险
-- 定期重新评估投资论点
-
-> ⚠️ 以下内容为系统早期研究示例，仅说明多智能体协作流程，不代表当前版本输出格式。当前版本已改为研究辅助工具定位，不输出买入/卖出/持有等交易指令，仅输出研究结论倾向（乐观/审慎/中性）及研究依据。
-
-#### D.7 研究整合员最终审阅
-
-**最终研究结论：对苹果股票持乐观研究倾向**
-
-**研究摘要：**
-基于研究计划和多空观点分析，当前研究倾向为乐观。苹果的强劲基本面、创新能力和市场领导地位超过了估值担忧。风险审阅中识别的风险因素提供了审慎的观察要点，需持续跟踪。
+**Research Summary:**
+Based on the research plan and bull/bear analysis, the current research stance is Optimistic. Apple's strong fundamentals, innovation capabilities, and market leadership outweigh valuation concerns, while the risk factors identified during the risk review provide cautious monitoring points for ongoing tracking.
 
 ---
 
-**项目开源地址**: https://github.com/TauricResearch/TradingAgents
+**Open-Source Repository**: https://github.com/TauricResearch/TradingAgents
 
-**许可证**: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)
-
----
-
-*本文档是对原英文论文的完整中文翻译，包含了详细的案例研究，旨在为中文读者提供对TradingAgents框架的全面理解。翻译保持了原文的学术严谨性和技术准确性，并展示了系统的实际运行过程。*
+**License**: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)

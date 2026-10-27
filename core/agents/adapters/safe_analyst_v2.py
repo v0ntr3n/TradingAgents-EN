@@ -1,9 +1,9 @@
 """
-防御情景分析师 v2.0
+Defense Scenario Analyst v2.0
 
-基于 ResearcherAgent 基类的防御情景分析师实现。
-从保守角度审阅综合研究结论，优先识别脆弱点、失效条件与下行风险。
-支持多轮辩论和缓存系统。
+Defense Scenario Analyst implementation based on the ResearcherAgent base class.
+Review comprehensive research conclusions from a conservative perspective, prioritizing the identification of vulnerabilities, failure conditions and downside risks.
+Supports multi-round debate and caching system.
 """
 
 import logging
@@ -16,37 +16,37 @@ from ..config import AgentMetadata, AgentCategory, LicenseTier, AgentInput, Agen
 
 logger = logging.getLogger(__name__)
 
-# 尝试导入模板系统
+# Try importing the template system
 try:
     from tradingagents.utils.template_client import get_agent_prompt
 except (ImportError, KeyError):
-    logger.warning("无法导入get_agent_prompt，将使用默认提示词")
+    logger.warning("Unable to import get_agent_prompt, default prompt word will be used")
     get_agent_prompt = None
 
-# 不再需要直接导入 get_agent_prompt，使用基类的 _get_prompt_from_template 方法
+# It is no longer necessary to import get_agent_prompt directly, use the _get_prompt_from_template method of the base class
 
 
 @register_agent
 class SafeAnalystV2(ResearcherAgent):
     """
-    防御情景分析师 v2.0
+    Defense Scenario Analyst v2.0
 
-    功能：
-    - 从保守角度审阅综合研究结论
-    - 优先识别脆弱点和关键风险来源
-    - 关注失效条件与下行情景
-    - 强调需要先澄清的信息缺口
-    - 支持多轮辩论（与激进、中性分析师辩论）
-    - 支持缓存系统（避免重复分析）
+    Function:
+    - Review comprehensive research conclusions from a conservative perspective
+    - Prioritize identification of vulnerabilities and key sources of risk
+    - Focus on failure conditions and downside scenarios
+    - Highlight information gaps that need to be clarified first
+    - Supports multiple rounds of debate (with aggressive and neutral analysts)
+    - Supports caching system (avoids repeated analysis)
 
-    工作流程：
-    1. 读取综合研究结论和市场分析
-    2. 读取辩论历史和对手观点
-    3. 使用LLM从保守角度审阅结论脆弱点并反驳对手
-    4. 生成防御情景观点
-    5. 更新辩论状态
+    Workflow:
+    1. Read comprehensive research conclusions and market analysis
+    2. Read debate history and opponents views
+    3. Use LLM to review conclusion vulnerabilities from a conservative perspective and refute opponents
+    4. Generate defensive scenario views
+    5. Update debate status
 
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent
 
@@ -69,36 +69,36 @@ class SafeAnalystV2(ResearcherAgent):
         })
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="safe_analyst_v2",
-        name="防御情景分析师 v2.0",
-        description="从研究结论最易失效的角度审阅，识别脆弱前提、风险来源与下修触发条件",
+        name="Defense Scenario Analyst v2.0",
+        description="Review the research conclusions from the perspective that are most likely to fail, and identify fragile premises, risk sources and downward revision triggering conditions",
         category=AgentCategory.RISK,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
-        default_tools=[],  # 风险分析师不需要工具
+        default_tools=[],  # Risk analysts don't need tools
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="investment_plan", type="string", description="综合研究结论", source="state", state_field="investment_plan", source_state_fields=["trader_investment_plan"], producer_hint="research_manager_v2"),
-            AgentInput(name="bull_opinion", type="string", description="乐观情景观点", required=False, source="state", state_field="bull_report", producer_hint="bull_researcher_v2"),
-            AgentInput(name="bear_opinion", type="string", description="审慎情景观点", required=False, source="state", state_field="bear_report", producer_hint="bear_researcher_v2"),
-            AgentInput(name="risk_debate_state", type="dict", description="辩论状态", required=False, source="state", state_field="risk_debate_state", producer_hint="risk_manager_v2"),
-            AgentInput(name="market_report", type="string", description="市场分析报告", required=False, source="state", state_field="market_report", producer_hint="market_analyst_v2"),
-            AgentInput(name="fundamentals_report", type="string", description="基本面分析报告", required=False, source="state", state_field="fundamentals_report", producer_hint="fundamentals_analyst_v2"),
-            AgentInput(name="news_report", type="string", description="新闻分析报告", required=False, source="state", state_field="news_report", producer_hint="news_analyst_v2"),
-            AgentInput(name="sentiment_report", type="string", description="情绪分析报告", required=False, source="state", state_field="sentiment_report", producer_hint="social_analyst_v2"),
-            AgentInput(name="index_report", type="string", description="大盘分析报告", required=False, source="state", state_field="index_report", producer_hint="index_analyst_v2"),
-            AgentInput(name="sector_report", type="string", description="板块分析报告", required=False, source="state", state_field="sector_report", producer_hint="sector_analyst_v2"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="investment_plan", type="string", description="Comprehensive research conclusion", source="state", state_field="investment_plan", source_state_fields=["trader_investment_plan"], producer_hint="research_manager_v2"),
+            AgentInput(name="bull_opinion", type="string", description="optimistic scenario view", required=False, source="state", state_field="bull_report", producer_hint="bull_researcher_v2"),
+            AgentInput(name="bear_opinion", type="string", description="prudent situational view", required=False, source="state", state_field="bear_report", producer_hint="bear_researcher_v2"),
+            AgentInput(name="risk_debate_state", type="dict", description="debate status", required=False, source="state", state_field="risk_debate_state", producer_hint="risk_manager_v2"),
+            AgentInput(name="market_report", type="string", description="Market analysis report", required=False, source="state", state_field="market_report", producer_hint="market_analyst_v2"),
+            AgentInput(name="fundamentals_report", type="string", description="Fundamental Analysis Report", required=False, source="state", state_field="fundamentals_report", producer_hint="fundamentals_analyst_v2"),
+            AgentInput(name="news_report", type="string", description="News analysis report", required=False, source="state", state_field="news_report", producer_hint="news_analyst_v2"),
+            AgentInput(name="sentiment_report", type="string", description="Sentiment Analysis Report", required=False, source="state", state_field="sentiment_report", producer_hint="social_analyst_v2"),
+            AgentInput(name="index_report", type="string", description="Market analysis report", required=False, source="state", state_field="index_report", producer_hint="index_analyst_v2"),
+            AgentInput(name="sector_report", type="string", description="Sector analysis report", required=False, source="state", state_field="sector_report", producer_hint="sector_analyst_v2"),
         ],
         outputs=[
-            AgentOutput(name="safe_opinion", type="string", description="防御情景观点"),
-            AgentOutput(name="risk_debate_state", type="dict", description="更新后的辩论状态"),
+            AgentOutput(name="safe_opinion", type="string", description="defensive situational view"),
+            AgentOutput(name="risk_debate_state", type="dict", description="Updated debate status"),
         ],
         requires_tools=False,
         output_field="safe_opinion",
-        report_label="【防御情景研究】",
+        report_label=" [Defense Scenario Study]",
         workflow_stage="risk",
         growth_role="reviewer",
         growth_outputs=["safe_opinion"],
@@ -111,80 +111,80 @@ class SafeAnalystV2(ResearcherAgent):
         callable_surfaces=["assistant", "workflow", "agent"],
     )
 
-    # 研究立场（风险分析师使用 "safe"）
+    # research stance (used by risk analysts "safe") 
     stance = "safe"
 
-    # 输出字段名
+    # Output field name
     output_field = "safe_opinion"
 
-    # 🆕 辩论历史字段（用于多轮辩论）
+    # 🆕 Debate history field (for multi-round debates)
     history_field = "safe_history"
     opponent_history_fields = ["risky_history", "neutral_history"]
     
     def _build_system_prompt(self, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词
+        Build system prompt words
 
         Args:
-            state: 工作流状态（可选，用于提取变量如 company_name, ticker 等）
+            state: Workflow status (optional, used to extract variables such as company_name, ticker etc.)
 
         Returns:
-            系统提示词
+            System prompt word
         """
-        # 风险分析师不需要模板变量（不依赖股票信息）
-        # 使用基类的通用方法从模板系统获取提示词（参考 research_manager_v2）
-        logger.info("🔍 [SafeAnalystV2] 开始构建系统提示词")
+        # Risk analysts do not need template variables (do not rely on stock information)
+        # Use the base class's general method to obtain prompt words from the template system (refer to research_manager_v2)
+        logger.info("🔍 [SafeAnalystV2] Start building system prompt words")
         
         prompt = self._get_prompt_from_template(
             agent_type="debators_v2",
             agent_name="safe_analyst_v2",
-            variables={},  # 系统提示词不需要变量（参考 research_manager_v2）
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=state.get("context") if state else None,  # 从 state 中获取 context
+            variables={},  # System prompt words do not require variables (refer to research_manager_v2)
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=state.get("context") if state else None,  # Get from state context
             fallback_prompt=None,
-            prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+            prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
         )
         
-        logger.info(f"📝 系统提示词长度: {len(prompt)} 字符")
+        logger.info(f"📝 System prompt word length: {len(prompt)} character")
         if prompt:
-            logger.debug("✅ 从模板系统获取防御情景分析师系统提示词")
+            logger.debug("✅ Obtain defense scenario analyst system prompt words from the template system")
             return prompt
 
-        # 降级：使用默认提示词
-        return """你是一位防御情景分析师。
+        # Downgrade: Use default prompt word
+        return """You are a defensive scenario analyst.
 
-你的角色特点：
-    - 🛡️ 稳健保守，优先识别研究结论的脆弱点
-    - 🔒 宁可错过机会，也不接受前提不清或证据不足的结论强化
-    - 📉 关注潜在风险来源、失效条件与下行情景
-    - ⚠️ 强调需要先澄清的问题，而不是直接给执行建议
+Your character features:
+    - 🛡️ Be robust and conservative and prioritize identifying the vulnerabilities of research conclusions.
+    - 🔒 It is better to miss the opportunity than to accept the strengthening of the conclusion with unclear premises or insufficient evidence.
+    - 📉 Pay attention to potential risk sources, failure conditions and downside scenarios
+    - ⚠️ Emphasize issues that need clarification first rather than giving direct implementation suggestions
 
-你的任务是：
-    1. 从保守角度审阅当前研究结论的脆弱点。
-    2. 识别关键风险来源、失效条件与信息缺口。
-    3. 说明哪些负面信号会使当前判断下修。
-    4. 不输出仓位、止损止盈、价格区间或交易建议。
+Your task is:
+    1. Review the weaknesses of current research conclusions from a conservative perspective.
+    2. Identify key risk sources, failure conditions and information gaps.
+    3. Explain which negative signals would cause the current judgment to be revised downward.
+    4. No positions, stops, price ranges or trading recommendations are output.
 
-评估要点：
-    - 研究结论最脆弱的前提
-    - 关键风险来源与潜在冲击
-    - 需要重点监测的负面公开信号
-    - 当前材料中尚未覆盖的信息缺口
+Assessment points:
+    - The most fragile premise for research conclusions
+    - Key risk sources and potential impacts
+    - Negative public signals that need to be monitored carefully
+    - Information gaps not covered by current materials
 
-要求：
-    - 保持保守但不失客观
-    - 用数据支持你的观点
-    - 使用中文撰写报告"""
+Requirements:
+    - Be conservative but objective
+    - Support your opinion with data
+    - Write reports in Chinese"""
 
     def _build_user_prompt(self, ticker: str, analysis_date: str, state: Dict[str, Any]) -> str:
-        """构建用户提示词（从模板系统获取并渲染）"""
-        # 🆕 获取辩论状态
+        """Construct user prompt words (obtained from template system and rendered)"""
+        # 🆕 Get debate status
         risk_debate_state = state.get("risk_debate_state", {})
         history = risk_debate_state.get("history", "")
         current_risky_response = risk_debate_state.get("current_risky_response", "")
         current_neutral_response = risk_debate_state.get("current_neutral_response", "")
 
-        # 准备模板变量（从 state 中提取所有数据）
+        # Prepare template variables (extract all data from state)
         template_variables = {
             "ticker": ticker,
             "analysis_date": analysis_date,
@@ -197,104 +197,104 @@ class SafeAnalystV2(ResearcherAgent):
             "sentiment_report": state.get("sentiment_report", ""),
             "index_report": state.get("index_report", ""),
             "sector_report": state.get("sector_report", ""),
-            # 🆕 辩论相关变量
+            # 🆕 debate related variables
             "history": history,
             "current_risky_response": current_risky_response,
             "current_neutral_response": current_neutral_response,
         }
 
-        # 📊 记录输入数据长度
-        logger.info(f"📊 [Safe Analyst] 输入数据长度统计:")
-        logger.info(f"  - market_report: {len(template_variables['market_report']):,} 字符")
-        logger.info(f"  - sentiment_report: {len(template_variables['sentiment_report']):,} 字符")
-        logger.info(f"  - news_report: {len(template_variables['news_report']):,} 字符")
-        logger.info(f"  - fundamentals_report: {len(template_variables['fundamentals_report']):,} 字符")
-        logger.info(f"  - investment_plan: {len(template_variables['investment_plan']):,} 字符")
-        logger.info(f"  - history: {len(history):,} 字符")
+        # 📊 Record input data length
+        logger.info(f"📊 [Safe Analyst] Input data length statistics:")
+        logger.info(f"  - market_report: {len(template_variables['market_report']):,} character")
+        logger.info(f"  - sentiment_report: {len(template_variables['sentiment_report']):,} character")
+        logger.info(f"  - news_report: {len(template_variables['news_report']):,} character")
+        logger.info(f"  - fundamentals_report: {len(template_variables['fundamentals_report']):,} character")
+        logger.info(f"  - investment_plan: {len(template_variables['investment_plan']):,} character")
+        logger.info(f"  - history: {len(history):,} character")
         total_length = (len(template_variables['market_report']) + len(template_variables['sentiment_report']) +
                        len(template_variables['news_report']) + len(template_variables['fundamentals_report']) +
                        len(template_variables['investment_plan']) + len(history) +
                        len(current_risky_response) + len(current_neutral_response))
-        logger.info(f"  - 总Prompt长度: {total_length:,} 字符 (~{total_length//4:,} tokens)")
+        logger.info(f"  - Total prompt length: {total_length:,} character (~{total_length//4:,} tokens)")
 
-        # 降级提示词（如果模板系统不可用）
-        fallback_prompt = f"""请从防御情景分析师的视角审阅以下综合研究结论，并说明哪些风险会导致判断下修：
+        # Downgrade prompt word (if template system is not available)
+        fallback_prompt = f"""Please review the following comprehensive research findings from the perspective of a defense scenario analyst and describe the risks that would lead to downward revisions:
 
-    【综合研究结论】
-    {template_variables['investment_plan'] or '无综合研究结论'}
+     [Comprehensive research conclusion]
+    {template_variables['investment_plan'] or 'No comprehensive research conclusion'}
 
-    【乐观情景观点】
-    {template_variables['bull_opinion'] or '无乐观情景观点'}
+     [Optimistic Scenario View]
+    {template_variables['bull_opinion'] or 'No optimistic scenario view'}
 
-    【审慎情景观点】
-    {template_variables['bear_opinion'] or '无审慎情景观点'}
+     [Prudent Scenario Perspective]
+    {template_variables['bear_opinion'] or 'no prudence scenario view'}
 
-    【市场分析报告】
-    {template_variables['market_report'] or '无市场分析报告'}
+     [Market analysis report]
+    {template_variables['market_report'] or 'No market analysis report'}
 
-    【社交媒体情绪报告】
-    {template_variables['sentiment_report'] or '无情绪分析报告'}
+     [Social Media Sentiment Report]
+    {template_variables['sentiment_report'] or 'No sentiment analysis report'}
 
-    【新闻分析报告】
-    {template_variables['news_report'] or '无新闻分析报告'}
+     [News analysis report]
+    {template_variables['news_report'] or 'No news analysis report'}
 
-    【基本面分析报告】
-    {template_variables['fundamentals_report'] or '无基本面分析报告'}
+     [Fundamental analysis report]
+    {template_variables['fundamentals_report'] or 'No fundamental analysis report'}
 
-    【当前辩论历史】
-    {history or '无辩论历史'}
+     [Current Debate History]
+    {history or 'No debate history'}
 
-    【高弹性情景分析师最新回应】
-    {current_risky_response or '无'}
+     [Latest response from highly elastic scenario analysts] 
+    {current_risky_response or 'None'}
 
-    【基准情景分析师最新回应】
-    {current_neutral_response or '无'}
+     [Latest response from base case analysts]
+    {current_neutral_response or 'None'}
 
-    请输出你的防御情景观点，重点说明：
-    1. 当前研究结论最脆弱的前提是什么。
-    2. 哪些负面信号会使当前判断下修。
-    3. 还缺少哪些关键信息或验证。
-    4. 不要输出仓位、止损止盈、价格区间或交易建议。"""
+    Please output your view of the defense scenario, focusing on:
+    1. What is the weakest premise for the conclusions of the current study.
+    2. What negative signals will cause the current judgment to be revised downwards.
+    3. What key information or verification is missing?
+    4. Do not output positions, stops, price ranges, or trading recommendations."""
 
-        # 打印模板变量（调试用）
-        logger.info(f"📊 [防御情景分析师] 模板变量:")
+        # Print template variables (for debugging)
+        logger.info(f"📊 [Defense Scenario Analyst] Template variables:")
         for key, value in template_variables.items():
             if isinstance(value, str) and len(value) > 100:
                 logger.info(f"  - {key}: {value[:100]}...")
             else:
                 logger.info(f"  - {key}: {value}")
 
-        # 使用基类的通用方法获取用户提示词（会从 context/state 中提取 preference_id）
+        # Use the general method of the base class to obtain the user prompt word (preference_id will be extracted from context/state)
         prompt = self._get_prompt_from_template(
             agent_type="debators_v2",
             agent_name="safe_analyst_v2",
             variables=template_variables,
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=state.get("context") if isinstance(state, dict) else state,  # 从 state 中获取 context
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=state.get("context") if isinstance(state, dict) else state,  # Get from state context
             fallback_prompt=fallback_prompt,
-            prompt_type="user"  # 🔑 明确指定获取用户提示词
+            prompt_type="user"  # 🔑 Explicitly specify the user prompt word to obtain
         )
         if prompt:
-            logger.info(f"✅ 从模板系统获取防御情景分析师用户提示词 (长度: {len(prompt)})")
+            logger.info(f"✅ Get defense scenario analyst user prompt words from template system (length: {len(prompt)})")
             return prompt
 
-        # 降级：使用硬编码提示词
-        logger.info(f"📝 [防御情景分析师] 使用降级提示词 (长度: {len(fallback_prompt)})")
+        # Downgrade: Use hardcoded prompt words
+        logger.info(f"📝 [Defense Scenario Analyst] Use demotion prompts (length: {len(fallback_prompt)})")
         return fallback_prompt
 
     def _get_required_reports(self) -> list:
         """
-        获取需要的报告列表
+        Get a list of required reports
 
         Returns:
-            报告字段名列表
+            Report field name list
         """
         return [
-            # 必需的报告
+            # Required reports
             "investment_plan",
             "bull_opinion",
             "bear_opinion",
-            # 🆕 可选的分析报告（提供更多上下文）
+            # 🆕 Optional analysis report (provides more context)
             "market_report",
             "fundamentals_report",
             "news_report",
@@ -305,48 +305,48 @@ class SafeAnalystV2(ResearcherAgent):
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行保守风险审阅（支持多轮辩论）
+        Perform conservative risk review (supports multiple rounds of debate)
 
         Args:
-            state: 包含以下键的状态字典:
-                - ticker: 股票代码
-                - analysis_date: 分析日期
-                - investment_plan: 综合研究结论
-                - bull_opinion: 乐观情景观点（可选）
-                - bear_opinion: 审慎情景观点（可选）
-                - risk_debate_state: 辩论状态（可选）
+            state: A status dictionary containing the following keys:
+                - ticker: Stock code
+                - analysis_date: Analysis date
+                - investment_plan: Comprehensive research conclusion
+                - bull_opinion: Optimistic Scenario View (optional)
+                - bear_opinion: Prudential scenario perspective (optional)
+                - risk_debate_state: Debate status (optional)
 
         Returns:
-            更新后的状态，包含:
-                - safe_opinion: 防御情景观点
-                - risk_debate_state: 更新后的辩论状态
+            The updated status includes:
+                - safe_opinion: defensive situational view
+                - risk_debate_state: Updated debate status
         """
         ticker = state.get("ticker", "") or state.get("company_of_interest", "")
         analysis_date = state.get("analysis_date", "") or state.get("trade_date", "")
 
-        logger.info(f"🛡️ 防御情景分析师开始评估 {ticker} @ {analysis_date}")
+        logger.info(f"🛡️ Defense scenario analysts begin assessment {ticker} @ {analysis_date}")
 
-        # 🆕 获取辩论状态
+        # 🆕 Get debate status
         risk_debate_state = state.get("risk_debate_state", {})
         history = risk_debate_state.get("history", "")
         safe_history = risk_debate_state.get("safe_history", "")
 
         try:
-            # 构建提示词
+            # Build prompt words
             system_prompt = self._build_system_prompt(state)
             user_prompt = self._build_user_prompt(ticker, analysis_date, state)
 
-            # 调用LLM
+            # call LLM
             system_prompt = self._apply_global_trading_advice_guard(system_prompt)
             messages = [
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=user_prompt)
             ]
 
-            logger.info(f"系统提示词: {system_prompt}")
-            logger.info(f"用户提示词: {user_prompt}")
+            logger.info(f"System prompt word: {system_prompt}")
+            logger.info(f"User prompt words: {user_prompt}")
 
-            logger.info(f"⏱️ [Safe Analyst] 开始调用LLM...")
+            logger.info(f"⏱️ [Safe Analyst] Start calling LLM...")
             import time
             llm_start_time = time.time()
 
@@ -357,14 +357,14 @@ class SafeAnalystV2(ResearcherAgent):
                 raise ValueError("LLM not initialized")
 
             llm_elapsed = time.time() - llm_start_time
-            logger.info(f"⏱️ [Safe Analyst] LLM调用完成，耗时: {llm_elapsed:.2f}秒")
+            logger.info(f"⏱️ [Safe Analyst] LLM The call is completed and takes time: {llm_elapsed:.2f}seconds")
 
-            # 🆕 格式化论点（参考旧版）
+            # 🆕 Formatting arguments (refer to the old version)
             argument = f"Safe Analyst: {opinion}"
 
-            # 🆕 更新辩论状态
+            # 🆕 Update debate status
             new_count = risk_debate_state.get("count", 0) + 1
-            logger.info(f"🛡️ [防御情景分析师] 发言完成，计数: {risk_debate_state.get('count', 0)} -> {new_count}")
+            logger.info(f"🛡️ [Defense Scenario Analyst] Finished speaking, counting: {risk_debate_state.get('count', 0)} -> {new_count}")
 
             new_risk_debate_state = {
                 "history": history + "\n" + argument,
@@ -378,18 +378,18 @@ class SafeAnalystV2(ResearcherAgent):
                 "count": new_count,
             }
 
-            logger.info(f"✅ 保守风险分析完成")
+            logger.info(f"✅ Conservative risk analysis completed")
 
-            # 返回新增字段和更新后的辩论状态
+            # Return the newly added fields and updated debate status
             return {
                 "safe_opinion": opinion,
                 "risk_debate_state": new_risk_debate_state
             }
 
         except Exception as e:
-            logger.error(f"❌ 保守风险分析失败: {e}", exc_info=True)
+            logger.error(f"❌ Conservative risk analysis failed: {e}", exc_info=True)
             return {
-                "safe_opinion": f"保守风险分析失败: {str(e)}",
-                "risk_debate_state": risk_debate_state  # 保持原状态
+                "safe_opinion": f"Conservative risk analysis failed: {str(e)}",
+                "risk_debate_state": risk_debate_state  # Keep it as it is
             }
 

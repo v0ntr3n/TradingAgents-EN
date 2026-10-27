@@ -1,4 +1,4 @@
-"""扩展估值模型工具集合：DCF三阶段、DDM、剩余收益、EVA、FCFF/FCFE、PEG、格雷厄姆、CAPM、增长质量调整估值"""
+"""Expanded set of valuation model tools: DCF three-stage, DDM, residual income, EVA, FCFF/FCFE, PEG, Graham, CAPM, growth quality adjusted valuation"""
 
 import json
 import logging
@@ -26,38 +26,38 @@ def _cagr(latest, earliest, periods):
 
 
 def _resolve_shares(basic_info: dict, current_price=None, warnings: Optional[list] = None):
-    """统一解析总股本，返回单位为「股」的数值。
+    """Unified analysis of the total share capital returns the value in units of shares .
 
-    基础信息表中：
-      - total_share / float_share 单位为「万股」→ 需 ×1e4 换算成股
-      - total_mv / circ_mv 单位为「亿元」→ 需 ×1e8 换算成元
-    财报口径（equity_value/net_profit/total_equity 等）单位为「元」，
-    若直接用「万股」做除数，每股结果会放大 1e4 倍（如茅台会算出千万级/股）。
+    In the basic information table:
+      - total_share / float_share The unit is 10,000 shares → Need ×1e4 Convert to shares
+      - total_mv / circ_mv The unit is billion yuan → Need ×1e8 Convert to yuan
+    Financial report caliber (equity_value/net_profit/total_equity, etc.) unit is yuan ,
+    If you directly use 10,000 shares as the divisor, the result per share will be magnified 1e4 times (for example, Maotai will calculate tens of millions per share).
     """
     raw_shares = (
         basic_info.get("total_shares")
-        or basic_info.get("total_share")   # 万股
+        or basic_info.get("total_share")   # 10,000 shares
         or basic_info.get("float_shares")
-        or basic_info.get("float_share")   # 万股
+        or basic_info.get("float_share")   # 10,000 shares
     )
     if raw_shares is not None and raw_shares > 0:
-        return float(raw_shares) * 1e4  # 万股 → 股
+        return float(raw_shares) * 1e4  # 10,000 shares → shares
 
-    # 兜底：市值 / 当前价推算
+    # Bottom line: market value / current price calculation
     raw_mv = basic_info.get("total_mv") or basic_info.get("circ_mv")
     market_cap = basic_info.get("market_cap") or basic_info.get("market_value")
     if raw_mv and raw_mv > 0:
-        market_cap = float(raw_mv) * 1e8  # 亿元 → 元
+        market_cap = float(raw_mv) * 1e8  # billion → Yuan
     if market_cap and current_price and current_price > 0:
         return market_cap / current_price
 
     if warnings is not None:
-        warnings.append("无法获取总股本，默认使用约 12.5 亿股估算。")
+        warnings.append("Total share capital is not available and the default estimate of approximately 1.25 billion shares is used.")
     return 1.256e9
 
 
 # ─────────────────────────────────────────────────────────────
-# Tool 1: DCF 三阶段估值
+# Tool 1: DCF Three-stage valuation
 # ─────────────────────────────────────────────────────────────
 
 
@@ -65,7 +65,7 @@ def _resolve_shares(basic_info: dict, current_price=None, warnings: Optional[lis
 @register_tool(
     tool_id="get_dcf_three_stage_valuation",
     name="DCF 三阶段估值",
-    description="基于三阶段 DCF 模型对 A 股绝对估值，返回三阶段现金流预测、折现值、内在价值、安全边际和敏感性分析，适用于高增长企业",
+    description="Absolute valuation of A-shares based on the three-stage DCF model, returning three-stage cash flow forecast, discounted value, intrinsic value, safety margin and sensitivity analysis, suitable for high-growth companies",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -74,85 +74,85 @@ def _resolve_shares(basic_info: dict, current_price=None, warnings: Optional[lis
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["absolute_valuation", "intrinsic_value_estimation", "three_stage_dcf"],
-    when_to_use="当需要进行三阶段 DCF 绝对估值、估算高增长企业内在价值时使用。适合有明确高增长期后增速放缓的企业。",
-    when_not_to_use="不适合 FCF 持续为负的企业。不适合金融类企业。不适合简单成熟企业（两阶段 DCF 即可）。",
-    returns="返回 JSON 字符串，包含三阶段参数、情景分析、敏感性矩阵和每股内在价值。",
+    when_to_use="It is used when three-stage DCF absolute valuation is required to estimate the intrinsic value of high-growth companies. Suitable for companies with clear growth slowdown after a period of high growth.",
+    when_not_to_use="Not suitable for businesses with consistently negative FCF. Not suitable for financial companies. Not suitable for simple and mature enterprises (two-stage DCF is sufficient).",
+    returns="Returns a JSON string containing three-stage parameters, scenario analysis, sensitivity matrix, and intrinsic value per share.",
     example="get_dcf_three_stage_valuation(symbol='600519')",
     related_tools=["get_dcf_valuation", "get_wacc_calculation"],
 )
 def get_dcf_three_stage_valuation(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    growth_rate: Annotated[Optional[float], "预测期年化增长率，默认 None 由历史数据自动估算"] = None,
-    wacc: Annotated[Optional[float], "折现率（加权平均资本成本），默认 None 自动计算"] = None,
-    terminal_growth_rate: Annotated[float, "永续增长率，默认 2.5%"] = 2.5,
-    high_growth_years: Annotated[int, "高增长期年数，默认 5"] = 5,
-    transition_years: Annotated[int, "过渡期年数，默认 3"] = 3,
-    high_growth_rate: Annotated[Optional[float], "高增长期增长率，默认 None 使用 growth_rate"] = None,
-    transition_end_rate: Annotated[float, "过渡期结束时的增长率（即永续前增速），默认 5%"] = 0.05,
-    base_fcf: Annotated[Optional[float], "基期自由现金流覆盖值，默认 None 使用最新年报数据"] = None,
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    growth_rate: Annotated[Optional[float], "Annualized growth rate during the forecast period, default None, automatically estimated from historical data"] = None,
+    wacc: Annotated[Optional[float], "Discount rate (weighted average cost of capital), default None automatically calculated"] = None,
+    terminal_growth_rate: Annotated[float, "Perpetual growth rate, default 2.5%"] = 2.5,
+    high_growth_years: Annotated[int, "Number of years of high growth period, default 5"] = 5,
+    transition_years: Annotated[int, "Number of years of transition period, default 3"] = 3,
+    high_growth_rate: Annotated[Optional[float], "Growth rate in high growth period, default used is None growth_rate"] = None,
+    transition_end_rate: Annotated[float, "The growth rate at the end of the transition period (that is, the growth rate before sustainability), default 5%"] = 0.05,
+    base_fcf: Annotated[Optional[float], "Base period free cash flow coverage value, default None Use the latest annual report data"] = None,
 ) -> str:
-    """DCF 三阶段估值模型：高增长 → 过渡（线性递减） → 永续
+    """DCF Three-stage valuation model: high growth → Transition (linear decrease) → Sustainable
 
     Args:
-        symbol: A 股股票代码，如 600519
-        growth_rate: 预测期年化增长率（小数形式），默认 None 由历史营收数据自动估算并夹钳到 [0.03, 0.25]
-        wacc: 折现率（小数形式），默认 None 自动计算并夹钳到 [0.05, 0.20]
-        terminal_growth_rate: 永续增长率，默认 2.5（>1 时视为百分比，自动除以 100）
-        high_growth_years: 高增长期年数，默认 5，自动夹钳到 [1, 15]
-        transition_years: 过渡期年数，默认 3，自动夹钳到 [1, 10]
-        high_growth_rate: 高增长期增长率（小数形式），默认 None 时使用 growth_rate
-        transition_end_rate: 过渡期结束时的增长率（即永续前增速），默认 0.05
-        base_fcf: 基期自由现金流覆盖值，默认 None 使用最新年报数据；若 ≤0 依次回退到 operating_cashflow、net_profit×0.7
+        symbol: A stock stock code, such as 600519
+        growth_rate: Annualized growth rate during the forecast period (in decimal form), default None. Automatically estimated from historical revenue data and clamped to [0.03, 0.25]
+        wacc: Discount rate (in decimal form), default None Automatically calculated and clamped to [0.05, 0.20]
+        terminal_growth_rate: Perpetual growth rate, default 2.5 (>1 regarded as a percentage and automatically divided by 100)
+        high_growth_years: Number of years of high growth period, default 5, automatic clamp to [1, 15]
+        transition_years: Number of years of transition period, default 3, automatic clamp to [1, 10]
+        high_growth_rate: Growth rate in the high growth period (in decimal form), used when None is used by default growth_rate
+        transition_end_rate: The growth rate at the end of the transition period (that is, the growth rate before sustainability), default 0.05
+        base_fcf: Base period free cash flow coverage value, default None, use the latest annual report data; if ≤0 Return to operating_cashflow,net_profit×0.7
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
-            symbol: 股票代码
+            message: Error description
+            symbol: Stock code
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
-            method: "三阶段DCF"
-            stages: 三阶段参数 dict —
-                high_growth_years: 高增长期年数
-                transition_years: 过渡期年数
-                perpetual_growth_rate: 永续增长率（小数）
-            parameters: 估值参数 dict —
-                high_growth_rate: 高增长期增长率（小数）
-                transition_end_rate: 过渡期结束增长率（小数）
-                terminal_growth_rate: 永续增长率（小数）
-                wacc: 折现率（小数）
-            base_year: 基期信息 dict —
-                year: 基期年份
-                free_cashflow: 基期自由现金流
-            valuation: 估值结果 dict —
-                pv_stage1_high_growth: 高增长期现值合计
-                pv_stage2_transition: 过渡期现值合计
-                pv_terminal: 永续期现值
-                enterprise_value: 企业价值
-                equity_value: 股权价值
-                per_share_value: 每股内在价值
-                current_price: 当前股价
-                upside_pct: 相对当前价格的上行空间百分比
-                net_debt_adjustment: 净债务调整额
-            scenarios: 情景分析 dict —
-                base: 基准情景 dict — per_share_value, upside_pct
-                bull: 乐观情景 dict — per_share_value, upside_pct
-                bear: 悲观情景 dict — per_share_value, upside_pct
-            sensitivity: 敏感性分析 dict —
-                wacc_range: WACC 取值列表（3 个值）
-                growth_range: 高增长率取值列表（3 个值）
-                matrix: 每股价值矩阵 [[值, 值, 值], ...]
-            data_quality: 数据质量 dict —
-                years_available: 可用年报期数
-                base_fcf_source: FCF 来源："parameter_override" | "free_cashflow" | "operating_cashflow" | "net_profit_estimated"
-                growth_source: 增长率来源："parameter_override" | "revenue_historical_mean"
-                wacc_source: WACC 来源："parameter_override" | "auto_computed"
-                warnings: 警告信息列表
+        In case of success, return dict, fields:
+            symbol: Stock code
+            method: "three stages DCF"
+            stages: Three stage parameters dict —
+                high_growth_years: Years of high growth period
+                transition_years: Number of years of transition period
+                perpetual_growth_rate: Perpetual growth rate (decimal)
+            parameters: Valuation parameters dict —
+                high_growth_rate: Growth rate during high growth period (decimal)
+                transition_end_rate: Growth rate at the end of the transition period (decimal)
+                terminal_growth_rate: Perpetual growth rate (decimal)
+                wacc: Discount rate (decimal)
+            base_year: Base period information dict —
+                year: base year
+                free_cashflow: Base period free cash flow
+            valuation: Valuation results dict —
+                pv_stage1_high_growth: Total present value of high growth period
+                pv_stage2_transition: Total present value during transition period
+                pv_terminal: Perpetual present value
+                enterprise_value: enterprise value
+                equity_value: equity value
+                per_share_value: intrinsic value per share
+                current_price: current stock price
+                upside_pct: Percent upside relative to current price
+                net_debt_adjustment: Net debt adjustment
+            scenarios: Scenario analysis dict —
+                base: Baseline scenario dict — per_share_value, upside_pct
+                bull: optimistic scenario dict — per_share_value, upside_pct
+                bear: pessimistic scenario dict — per_share_value, upside_pct
+            sensitivity: sensitivity analysis dict —
+                wacc_range: WACC list of values (3 values)
+                growth_range: High growth rate value list (3 values)
+                matrix: per share value matrix [[value, value, value], ...]
+            data_quality: Data quality dict —
+                years_available: Available annual report periods
+                base_fcf_source: FCF Source:"parameter_override" | "free_cashflow" | "operating_cashflow" | "net_profit_estimated"
+                growth_source: Source of growth rate:"parameter_override" | "revenue_historical_mean"
+                wacc_source: WACC Source:"parameter_override" | "auto_computed"
+                warnings: Warning message list
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         from core.skill_runtime.standard_financial_apis import get_historical_financial_annual_series
@@ -187,7 +187,7 @@ def get_dcf_three_stage_valuation(
                     {
                         "status": "error",
                         "message": (
-                            f"无法确定有效的基期自由现金流。"
+                            f"The effective base period free cash flow cannot be determined."
                             f"free_cashflow={cf_fcf}, operating_cashflow={cf_ocf}, net_profit={cf_np}"
                         ),
                         "symbol": symbol,
@@ -195,7 +195,7 @@ def get_dcf_three_stage_valuation(
                     ensure_ascii=False, indent=2, default=str,
                 )
 
-        # 确定增长率
+        # Determine the growth rate
         if growth_rate is not None:
             resolved_growth = growth_rate
             growth_source = "parameter_override"
@@ -220,7 +220,7 @@ def get_dcf_three_stage_valuation(
 
         resolved_high_growth = high_growth_rate if high_growth_rate is not None else resolved_growth
 
-        # 计算 WACC
+        # Calculate WACC
         if wacc is not None:
             resolved_wacc = wacc
             wacc_source = "parameter_override"
@@ -237,7 +237,7 @@ def get_dcf_three_stage_valuation(
                     debt_weight = total_liab / total_assets
                 else:
                     debt_weight = 0.4
-                    warnings.append("负债率数据缺失，采用默认债权权重 40%。")
+                    warnings.append("The debt ratio data is missing, and the default debt weight of 40% is used.")
             equity_weight = 1.0 - debt_weight
             resolved_wacc = equity_weight * cost_of_equity + debt_weight * cost_of_debt * (1 - 0.25)
             resolved_wacc = max(0.05, min(0.20, resolved_wacc))
@@ -248,13 +248,13 @@ def get_dcf_three_stage_valuation(
         n_trans = max(1, min(10, int(transition_years)))
         total_years = n_high + n_trans
 
-        # Stage 1: 高增长期
+        # Stage 1: high growth period
         stage1_fcfs = []
         for yr in range(1, n_high + 1):
             fcf = resolved_fcf * (1 + resolved_high_growth) ** yr
             stage1_fcfs.append(fcf)
 
-        # Stage 2: 过渡期（线性递减）
+        # Stage 2: Transition period (linear decrease)
         last_high_fcf = stage1_fcfs[-1] if stage1_fcfs else resolved_fcf
         stage2_fcfs = []
         for yr in range(1, n_trans + 1):
@@ -267,20 +267,20 @@ def get_dcf_three_stage_valuation(
 
         last_trans_fcf = last_trans_fcf if stage2_fcfs else last_high_fcf
 
-        # Stage 3: 永续增长
+        # Stage 3: sustainable growth
         terminal_value = last_trans_fcf * (1 + tgr) / (resolved_wacc - tgr)
 
-        # 折现到现值
+        # Discounted to present value
         pv_stage1 = sum(fcf / (1 + resolved_wacc) ** yr for yr, fcf in enumerate(stage1_fcfs, 1))
         pv_stage2 = sum(fcf / (1 + resolved_wacc) ** (n_high + yr) for yr, fcf in enumerate(stage2_fcfs, 1))
         pv_terminal = terminal_value / (1 + resolved_wacc) ** total_years
         enterprise_value = pv_stage1 + pv_stage2 + pv_terminal
 
-        # 净债务调整
+        # net debt adjustment
         net_debt = latest.get("total_liab") or 0
         equity_value = enterprise_value - net_debt
 
-        # 股本和当前价格
+        # Share capital and current price
         from core.skill_runtime.data_access import get_stock_basic_info, get_latest_stock_price
 
         basic_info = get_stock_basic_info(symbol) or {}
@@ -291,7 +291,7 @@ def get_dcf_three_stage_valuation(
         per_share_value = equity_value / shares if shares and shares > 0 else None
         upside_pct = ((per_share_value - current_price) / current_price * 100) if (per_share_value and current_price and current_price > 0) else None
 
-        # 情景分析
+        # Scenario analysis
         def _scenario(hg: float, tr: float, w: float) -> dict:
             s1 = [resolved_fcf * (1 + hg) ** y for y in range(1, n_high + 1)]
             ls1 = s1[-1] if s1 else resolved_fcf
@@ -316,7 +316,7 @@ def get_dcf_three_stage_valuation(
             "bear": _scenario(resolved_high_growth * 0.7, transition_end_rate * 0.7, resolved_wacc * 1.3),
         }
 
-        # 敏感性矩阵
+        # sensitivity matrix
         wacc_range = [resolved_wacc - 0.01, resolved_wacc, resolved_wacc + 0.01]
         growth_range = [resolved_high_growth - 0.01, resolved_high_growth, resolved_high_growth + 0.01]
         matrix = []
@@ -372,12 +372,12 @@ def get_dcf_three_stage_valuation(
         }
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
     except Exception as exc:
-        logger.error("DCF三阶段估值失败: %s", exc, exc_info=True)
+        logger.error("DCF Three-stage valuation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ─────────────────────────────────────────────────────────────
-# Tool 2: DDM 股利贴现模型
+# Tool 2: DDM dividend discount model
 # ─────────────────────────────────────────────────────────────
 
 
@@ -385,7 +385,7 @@ def get_dcf_three_stage_valuation(
 @register_tool(
     tool_id="get_ddm_valuation",
     name="股利贴现模型",
-    description="基于 Gordon Growth 模型对 A 股股利贴现估值，返回预期股利、贴现率、股利增长率、内在价值和安全边际，适用于稳定派息企业",
+    description="A-share dividend discount valuation based on Gordon Growth model, returns expected dividends, discount rate, dividend growth rate, intrinsic value and safety margin, suitable for stable dividend-paying companies",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -394,60 +394,60 @@ def get_dcf_three_stage_valuation(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["dividend_valuation", "mature_dividend_stock_valuation"],
-    when_to_use="适用于稳定派息的成熟企业估值，判断股价相对于股利折现价值的合理性。",
-    when_not_to_use="不适合不派息或派息不稳定的公司（会返回 no_dividend_data）。不适合高增长未盈利企业。",
-    returns="返回 JSON 字符串，包含当前股利、增长率、必要回报率、内在价值及上涨空间。",
+    when_to_use="It is suitable for the valuation of mature companies that pay stable dividends, and determines the rationality of stock prices relative to the discounted value of dividends.",
+    when_not_to_use="Not suitable for companies that do not pay dividends or have unstable dividends (no_dividend_data will be returned). Not suitable for high growth unprofitable enterprises.",
+    returns="Returns a JSON string containing current dividend, growth rate, required rate of return, intrinsic value and upside.",
     example="get_ddm_valuation(symbol='600519')",
     related_tools=["get_dcf_valuation", "get_shareholder_return_metrics"],
 )
 def get_ddm_valuation(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    growth_rate: Annotated[float, "股利永续增长率，默认 5%"] = 0.05,
-    required_return: Annotated[float, "必要回报率（折现率），默认 8%"] = 0.08,
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    growth_rate: Annotated[float, "Perpetual growth rate of dividends, default 5%"] = 0.05,
+    required_return: Annotated[float, "Required rate of return (discount rate), default 8%"] = 0.08,
 ) -> str:
-    """股利贴现模型（Gordon Growth Model）
+    """Dividend Discount Model (Gordon Growth Model)
 
     Args:
-        symbol: A 股股票代码，如 600519
-        growth_rate: 股利永续增长率（小数形式），默认 0.05；若 ≥ required_return，自动调整为 required_return + 0.03
-        required_return: 必要回报率/折现率（小数形式），默认 0.08
+        symbol: A stock stock code, such as 600519
+        growth_rate: Perpetual growth rate of dividends (in decimal form), default 0.05; if ≥ required_return, automatically adjust to required_return + 0.03
+        required_return: Required rate of return/discount rate (decimal form), default 0.08
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        无分红数据情形返回 dict，字段：
+        If there is no dividend data, return dict, fields:
             status: "no_dividend_data"
-            symbol: 股票代码
-            message: 描述信息
+            symbol: Stock code
+            message: Description information
 
-        错误/异常情形返回 dict，字段：
+        Error/Exception cases return dict, fields:
             status: "error"
-            message: 错误描述
+            message: Error description
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
+        In case of success, return dict, fields:
+            symbol: Stock code
             method: "gordon_growth_model"
-            parameters: 参数 dict —
-                current_dividend_per_share: 当前每股股利
-                expected_dividend_d1: 预期下一期股利 D1
-                growth_rate: 永续增长率（小数）
-                required_return: 必要回报率（小数）
-            valuation: 估值结果 dict —
-                intrinsic_value: 内在价值
-                current_price: 当前股价
-                upside_pct: 相对当前价格的上行空间百分比
-            dividend_history: 历年分红记录列表（最多 5 条）
-            data_quality: 数据质量 dict —
-                dividend_records_count: 分红记录条数
-                dividend_positive_years: 正分红年数
-                latest_dividend_yield: 最新股息率
-                warnings: 警告信息列表
+            parameters: parameters dict —
+                current_dividend_per_share: Current dividend per share
+                expected_dividend_d1: Expected next dividend D1
+                growth_rate: Perpetual growth rate (decimal)
+                required_return: Required rate of return (decimal)
+            valuation: Valuation results dict —
+                intrinsic_value: intrinsic value
+                current_price: current stock price
+                upside_pct: Percent upside relative to current price
+            dividend_history: List of dividend records over the years (up to 5 records)
+            data_quality: Data quality dict —
+                dividend_records_count: Number of dividend records
+                dividend_positive_years: Number of positive dividend years
+                latest_dividend_yield: Latest dividend yield
+                warnings: Warning message list
     """
     try:
         from core.skill_runtime.data_access import get_latest_stock_price
         from core.skill_runtime.standard_financial_apis import get_shareholder_return_metrics
 
-        # 获取分红数据
+        # Get dividend data
         div_metrics = get_shareholder_return_metrics(symbol, years=5)
         records = div_metrics.get("records") or []
         annual = div_metrics.get("annual") or []
@@ -460,7 +460,7 @@ def get_ddm_valuation(
                 {
                     "status": "no_dividend_data",
                     "symbol": symbol,
-                    "message": "未找到有效的现金分红数据，无法进行股利贴现估值。该股票可能不派息或分红数据未同步。",
+                    "message": "No valid cash dividend data was found, and dividend discount valuation cannot be performed. The stock may not pay a dividend or the dividend data may be out of sync.",
                 },
                 ensure_ascii=False, indent=2, default=str,
             )
@@ -503,7 +503,7 @@ def get_ddm_valuation(
 
 
 # ─────────────────────────────────────────────────────────────
-# Tool 3: 剩余收益估值
+# Tool 3: residual income valuation
 # ─────────────────────────────────────────────────────────────
 
 
@@ -511,7 +511,7 @@ def get_ddm_valuation(
 @register_tool(
     tool_id="get_residual_income_valuation",
     name="剩余收益估值",
-    description="基于剩余收益模型对 A 股进行绝对估值，返回账面价值、剩余收益序列、内在价值、溢价和适用场景判断，适用于银行等资产密集型企业",
+    description="Absolute valuation of A shares based on the residual income model, returns book value, residual income sequence, intrinsic value, premium and applicable scenario judgment, suitable for asset-intensive enterprises such as banks",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -520,58 +520,58 @@ def get_ddm_valuation(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["residual_income_valuation", "book_value_based_valuation"],
-    when_to_use="适用于有正账面价值和 ROE 数据的企业，特别适合银行业和保险业等资产密集型行业。",
-    when_not_to_use="不适合账面价值为负的企业。不适合轻资产高无形资产企业（估值偏差较大）。",
-    returns="返回 JSON 字符串，包含每股净资产、ROE、股权成本、剩余收益序列和内在价值。",
+    when_to_use="Suitable for companies with positive book value and ROE data, especially for asset-intensive industries such as banking and insurance.",
+    when_not_to_use="Not suitable for businesses with negative book value. Not suitable for companies with light assets and high intangible assets (large valuation deviation).",
+    returns="Returns a JSON string containing net assets per share, ROE, cost of equity, residual earnings series, and intrinsic value.",
     example="get_residual_income_valuation(symbol='600519')",
     related_tools=["get_dcf_valuation", "get_wacc_calculation"],
 )
 def get_residual_income_valuation(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    growth_years: Annotated[int, "预测期年数，默认 5"] = 5,
-    terminal_growth: Annotated[float, "终值增长率，默认 3%"] = 0.03,
-    cost_of_equity: Annotated[Optional[float], "股权成本，默认 None 自动估算"] = None,
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    growth_years: Annotated[int, "Number of years in the forecast period, default 5"] = 5,
+    terminal_growth: Annotated[float, "Terminal value growth rate, default 3%"] = 0.03,
+    cost_of_equity: Annotated[Optional[float], "Equity cost, default None, automatically estimated"] = None,
 ) -> str:
-    """剩余收益估值模型：RI_t = (ROE_t - r_e) × BV_{t-1}
+    """Residual income valuation model:RI_t = (ROE_t - r_e) × BV_{t-1}
 
     Args:
-        symbol: A 股股票代码，如 600519
-        growth_years: 预测期年数，默认 5，自动夹钳到 [3, 15]
-        terminal_growth: 终值增长率（小数形式），默认 0.03
-        cost_of_equity: 股权成本（小数形式），默认 None 时使用 0.035 + 1.0 × 0.06 自动估算
+        symbol: A stock stock code, such as 600519
+        growth_years: Number of years in the forecast period, default 5, automatically clamped to [3, 15]
+        terminal_growth: Growth rate of terminal value (decimal form), default 0.03
+        cost_of_equity: Cost of equity (in decimal form), used when None is used by default 0.035 + 1.0 × 0.06 Automatic estimation
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
-            symbol: 股票代码
+            message: Error description
+            symbol: Stock code
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
+        In case of success, return dict, fields:
+            symbol: Stock code
             method: "residual_income_model"
-            parameters: 参数 dict —
-                book_value_per_share: 每股净资产
-                roe: 最新 ROE（小数）
-                cost_of_equity: 股权成本（小数）
-                forecast_years: 预测期年数
-                terminal_growth: 终值增长率（小数）
-            valuation: 估值结果 dict —
-                current_book_value_per_share: 当前每股净资产
-                cumulative_pv_ri: 预测期剩余收益现值合计
-                pv_terminal_ri: 终值剩余收益现值
-                intrinsic_value: 内在价值
-                current_price: 当前股价
-                upside_pct: 相对当前价格的上行空间百分比
-            residual_income_stream: 各期剩余收益流列表 [{"year": ..., "roe": ..., "book_value_per_share": ..., "residual_income_per_share": ..., "pv_residual_income": ...}, ...]
-            data_quality: 数据质量 dict —
-                years_available: 可用年报期数
-                roe_source: ROE 来源："latest_roe" | "estimated"
-                cost_of_equity_source: 股权成本来源："parameter_override" | "auto_estimated"
-                warnings: 警告信息列表
+            parameters: parameters dict —
+                book_value_per_share: Net assets per share
+                roe: Latest ROE (decimal)
+                cost_of_equity: Cost of equity (decimal)
+                forecast_years: Years of forecast period
+                terminal_growth: Growth rate of terminal value (decimal)
+            valuation: Valuation results dict —
+                current_book_value_per_share: Current net assets per share
+                cumulative_pv_ri: The total present value of residual income during the forecast period
+                pv_terminal_ri: future value present value of residual income
+                intrinsic_value: intrinsic value
+                current_price: current stock price
+                upside_pct: Percent upside relative to current price
+            residual_income_stream: List of residual income streams for each period [{"year": ..., "roe": ..., "book_value_per_share": ..., "residual_income_per_share": ..., "pv_residual_income": ...}, ...]
+            data_quality: Data quality dict —
+                years_available: Available annual report periods
+                roe_source: ROE Source:"latest_roe" | "estimated"
+                cost_of_equity_source: Source of equity cost:"parameter_override" | "auto_estimated"
+                warnings: Warning message list
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         from core.skill_runtime.data_access import get_latest_stock_price, get_stock_basic_info, get_stock_financial_periods
@@ -592,29 +592,29 @@ def get_residual_income_valuation(
         roe = latest.get("roe")
         current_price = get_latest_stock_price(symbol)
 
-        # 获取总股本
+        # Get total share capital
         basic_info = get_stock_basic_info(symbol) or {}
         shares = _resolve_shares(basic_info, current_price, warnings)
 
         total_equity = latest.get("total_equity")
         if total_equity is None or total_equity <= 0 or shares is None or shares <= 0:
             return json.dumps(
-                {"status": "error", "message": f"净资产数据无效（equity={total_equity}, shares={shares}），无法估值", "symbol": symbol},
+                {"status": "error", "message": f"Net worth data is invalid (equity={total_equity}, shares={shares}) , Unable to value", "symbol": symbol},
                 ensure_ascii=False, indent=2, default=str,
             )
 
         bvps = total_equity / shares
 
         if roe is None or roe <= 0:
-            # 从记录中推算 ROE
+            # extrapolated from records ROE
             net_profit = latest.get("net_profit")
             if net_profit and total_equity > 0:
                 roe = net_profit / total_equity
             else:
                 roe = 0.08
-                warnings.append(f"ROE 数据缺失，默认使用 8% 估算。")
+                warnings.append(f"ROE For missing data, the 8% imputation was used by default.")
 
-        # 股权成本
+        # cost of equity
         if cost_of_equity is not None:
             re = cost_of_equity
             re_source = "parameter_override"
@@ -625,9 +625,9 @@ def get_residual_income_valuation(
         n_years = max(3, min(15, int(growth_years)))
         tg = terminal_growth
 
-        # 估算各期 ROE（假设线性回归至行业均值）
+        # Estimate ROE for each period (assuming linear regression to industry mean)
         roe_start = roe
-        roe_end = 0.10  # 假设长期回归至 10%
+        roe_end = 0.10  # Assume that the long-term return to 10%
         ri_stream = []
         prev_bv = bvps
         cumulative_ri_pv = 0
@@ -645,13 +645,13 @@ def get_residual_income_valuation(
                 "pv_residual_income": round(pv_ri, 4),
             })
             cumulative_ri_pv += pv_ri
-            # 更新 BV: 假设股利支付率 = 1 - g/ROE
+            # update BV: Assuming dividend payout ratio = 1 - g/ROE
             implied_payout = 1 - tg / roe_t if roe_t > 0 else 0.6
             implied_payout = max(0, min(1, implied_payout))
             retention = 1 - implied_payout
-            prev_bv = prev_bv + ri_t + roe_t * prev_bv * (1 - retention)  # 简化BV演进
+            prev_bv = prev_bv + ri_t + roe_t * prev_bv * (1 - retention)  # Simplifying BV evolution
 
-        # 终值
+        # future value
         last_ri = ri_stream[-1]["residual_income_per_share"] if ri_stream else 0
         pv_terminal_ri = (last_ri * (1 + tg) / (re - tg)) / (1 + re) ** n_years if re > tg else 0
 
@@ -691,7 +691,7 @@ def get_residual_income_valuation(
 
 
 # ─────────────────────────────────────────────────────────────
-# Tool 4: EVA 估值
+# Tool 4: EVA Valuation
 # ─────────────────────────────────────────────────────────────
 
 
@@ -699,7 +699,7 @@ def get_residual_income_valuation(
 @register_tool(
     tool_id="get_eva_valuation",
     name="EVA 估值",
-    description="基于 EVA 模型计算 A 股经济利润以反映价值创造能力，返回 NOPAT、资本占用、WACC、EVA 序列和价值创造评估",
+    description="Calculate A-share economic profits based on the EVA model to reflect value creation capabilities, returning NOPAT, capital occupation, WACC, EVA sequence and value creation assessment",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -708,46 +708,46 @@ def get_residual_income_valuation(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["economic_profit_analysis", "value_creation_assessment"],
-    when_to_use="当需要评估企业真实经济利润（超过资本成本的价值创造）时使用。适合资本密集型企业。",
-    when_not_to_use="不适合没有有效财务数据的企业。EVA 为正不意味着股价低估，需结合其他估值方法。",
-    returns="返回 JSON 字符串，包含 NOPAT、WACC、投入资本、EVA 值、EVA 利差及多期趋势。",
+    when_to_use="Used when it is necessary to evaluate the true economic profit of the enterprise (value creation exceeding the cost of capital). Suitable for capital-intensive enterprises.",
+    when_not_to_use="Not suitable for businesses without valid financial data. A positive EVA does not mean that the stock price is undervalued and needs to be combined with other valuation methods.",
+    returns="Returns a JSON string containing NOPAT, WACC, invested capital, EVA value, EVA spread and multi-period trend.",
     example="get_eva_valuation(symbol='600519')",
     related_tools=["get_wacc_calculation", "get_dcf_valuation"],
 )
 def get_eva_valuation(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    tax_rate: Annotated[float, "企业所得税率，默认 25%"] = 0.25,
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    tax_rate: Annotated[float, "Corporate income tax rate, default 25%"] = 0.25,
 ) -> str:
-    """EVA 估值：EVA = NOPAT - WACC × Invested_Capital
+    """EVA Valuation:EVA = NOPAT - WACC × Invested_Capital
 
     Args:
-        symbol: A 股股票代码，如 600519
-        tax_rate: 企业所得税率（小数形式），默认 0.25，自动夹钳到 [0, 0.5]
+        symbol: A stock stock code, such as 600519
+        tax_rate: Corporate income tax rate (decimal form), default 0.25, automatically clamped to [0, 0.5]
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
-            symbol: 股票代码
+            message: Error description
+            symbol: Stock code
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
+        In case of success, return dict, fields:
+            symbol: Stock code
             method: "economic_value_added"
-            current_eva: 最新期 EVA 指标 dict —
-                nopat: 税后净营业利润
-                wacc: 加权平均资本成本（小数）
-                invested_capital: 投入资本
-                eva_value: EVA 值
-                eva_spread: EVA 利差（EVA / 投入资本）
-            trend: 多期 EVA 趋势列表 [{"year": ..., "nopat": ..., "wacc": ..., "invested_capital": ..., "eva": ..., "eva_spread": ...}, ...]
-            current_price: 当前股价
-            data_quality: 数据质量 dict —
-                years_available: 可用年报期数
-                warnings: 警告信息列表
+            current_eva: The latest EVA indicator dict —
+                nopat: Net operating profit after tax
+                wacc: Weighted average cost of capital (decimal)
+                invested_capital: Invest capital
+                eva_value: EVA value
+                eva_spread: EVA Interest rate spread (EVA/invested capital)
+            trend: Multi-issue EVA trend list [{"year": ..., "nopat": ..., "wacc": ..., "invested_capital": ..., "eva": ..., "eva_spread": ...}, ...]
+            current_price: current stock price
+            data_quality: Data quality dict —
+                years_available: Available annual report periods
+                warnings: Warning message list
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         from core.skill_runtime.data_access import get_stock_financial_periods, get_latest_stock_price, get_stock_basic_info
@@ -766,7 +766,7 @@ def get_eva_valuation(
         trend = []
         tax = max(0, min(0.5, tax_rate))
 
-        # 计算 WACC
+        # Calculate WACC
         rf = 0.025
         erp = 0.06
         cost_of_equity = rf + 1.0 * erp
@@ -838,7 +838,7 @@ def get_eva_valuation(
 
 
 # ─────────────────────────────────────────────────────────────
-# Tool 5: FCFF / FCFE 自由现金流计算
+# Tool 5: FCFF / FCFE free cash flow calculation
 # ─────────────────────────────────────────────────────────────
 
 
@@ -846,7 +846,7 @@ def get_eva_valuation(
 @register_tool(
     tool_id="get_fcff_fcfe_calculation",
     name="自由现金流计算",
-    description="计算公司自由现金流 FCFF 和股权自由现金流 FCFE，返回 EBIT、税率、NOPAT、资本支出、营运资本变化及多期序列",
+    description="Calculate corporate free cash flow FCFF and equity free cash flow FCFE, returning EBIT, tax rate, NOPAT, capital expenditures, changes in working capital, and multi-period series",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -855,51 +855,51 @@ def get_eva_valuation(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["free_cashflow_analysis", "dcf_input_preparation"],
-    when_to_use="当需要获取 FCFF/FCFE 及其各组成部分的详细分解和多期趋势时使用。",
-    when_not_to_use="不适合没有详细现金流数据的企业。",
-    returns="返回 JSON 字符串，包含 FCFF、FCFE 及其各组成部分的多期趋势。",
+    when_to_use="Used when a detailed breakdown and multi-period trends of FCFF/FCFE and its components are required.",
+    when_not_to_use="Not suitable for businesses without detailed cash flow data.",
+    returns="Returns a JSON string containing multi-period trends for FCFF, FCFE, and their components.",
     example="get_fcff_fcfe_calculation(symbol='600519')",
     related_tools=["get_dcf_valuation", "get_cashflow_quality_trend"],
 )
 def get_fcff_fcfe_calculation(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    tax_rate: Annotated[float, "企业所得税率，默认 25%"] = 0.25,
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    tax_rate: Annotated[float, "Corporate income tax rate, default 25%"] = 0.25,
 ) -> str:
-    """计算 FCFF = NOPAT + D&A - CapEx - ΔWC 和 FCFE = FCFF - Interest×(1-t) + NetBorrowing
+    """Calculate FCFF = NOPAT + D&A - CapEx - ΔWC and FCFE = FCFF - Interest×(1-t) + NetBorrowing
 
     Args:
-        symbol: A 股股票代码，如 600519
-        tax_rate: 企业所得税率（小数形式），默认 0.25，自动夹钳到 [0, 0.5]
+        symbol: A stock stock code, such as 600519
+        tax_rate: Corporate income tax rate (decimal form), default 0.25, automatically clamped to [0, 0.5]
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
-            symbol: 股票代码
+            message: Error description
+            symbol: Stock code
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
-            method: "FCFF/FCFE计算"
-            latest: 最新一期数据 dict —
-                fcff: 公司自由现金流
-                fcfe: 股权自由现金流
-                components: FCFF/FCFE 组成 dict —
-                    nopat: 税后净营业利润
-                    depreciation_amortization: 折旧摊销估算
-                    capex: 资本支出
-                    delta_working_capital: 营运资本变动
-                    interest_expense: 利息费用
-                    net_borrowing: 净新增借款
-            trend: 多期趋势列表 [{"year": ..., "nopat": ..., "depreciation_amortization": ..., "capex": ..., "delta_working_capital": ..., "fcff": ..., "interest_expense": ..., "net_borrowing": ..., "fcfe": ...}, ...]
-            data_quality: 数据质量 dict —
-                years_available: 可用年报期数
-                da_source: 折旧摊销来源（"estimated_percent_of_revenue"）
-                capex_source: 资本支出来源（"delta_fixed_assets_plus_da"）
-                warnings: 警告信息列表
+        In case of success, return dict, fields:
+            symbol: Stock code
+            method: "FCFF/FCFE Calculate"
+            latest: The latest data dict —
+                fcff: company free cash flow
+                fcfe: free cash flow to equity
+                components: FCFF/FCFE composition dict —
+                    nopat: Net operating profit after tax
+                    depreciation_amortization: Depreciation and amortization estimates
+                    capex: capital expenditure
+                    delta_working_capital: working capital changes
+                    interest_expense: interest expense
+                    net_borrowing: Net new borrowings
+            trend: Multi-period trend list [{"year": ..., "nopat": ..., "depreciation_amortization": ..., "capex": ..., "delta_working_capital": ..., "fcff": ..., "interest_expense": ..., "net_borrowing": ..., "fcfe": ...}, ...]
+            data_quality: Data quality dict —
+                years_available: Available annual report periods
+                da_source: Source of depreciation and amortization ("estimated_percent_of_revenue") 
+                capex_source: Sources of capital expenditure ("delta_fixed_assets_plus_da") 
+                warnings: Warning message list
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         from core.skill_runtime.data_access import get_stock_financial_periods
@@ -917,7 +917,7 @@ def get_fcff_fcfe_calculation(
         tax = max(0, min(0.5, tax_rate))
         raw_periods = get_stock_financial_periods(symbol, limit=max(len(records) + 2, 10))
 
-        # 🔑 按年份分组时，同一年优先取年报（12-31 结束），避免季报累计值被当作年报
+        # 🔑 When grouping by year, the annual report of the same year (ends on 12-31) is given priority to avoid the cumulative value of the quarterly report being regarded as the annual report.
         from core.tools.implementations.risk.extended_risk_models import (
             _detect_period_type, _PERIOD_LABELS,
         )
@@ -928,7 +928,7 @@ def get_fcff_fcfe_calculation(
             if y.isdigit():
                 year_int = int(y)
                 p_type = _detect_period_type(p)
-                # 同一年份已有数据时，优先保留口径更大的
+                # When data for the same year are available, priority will be given to retaining data with a larger caliber.
                 if year_int not in period_by_year:
                     period_by_year[year_int] = p
                 else:
@@ -953,12 +953,12 @@ def get_fcff_fcfe_calculation(
             if nopat is None and net_profit is not None:
                 nopat = net_profit * (1 + tax / (1 - tax)) * (1 - tax) if tax < 1 else net_profit
 
-            # D&A 估算：revenue 的 3%（典型制造业/服务业水平）
+            # D&A Estimate: 3% of revenue (typical manufacturing/service industry levels)
             da_estimate = revenue * 0.03 if revenue is not None else 0
 
-            # CapEx = Δ(fix_assets) + D&A（近似）
+            # CapEx = Δ(fix_assets) + D&A (Approximately)
             cur_fa = item.get("fix_assets") or 0
-            # 找到前一期
+            # Find the previous issue
             prev_fa = None
             for r in records:
                 if r.get("year") == year - 1:
@@ -968,10 +968,10 @@ def get_fcff_fcfe_calculation(
                 prev_fa = cur_fa
             delta_fa = cur_fa - prev_fa
             capex = delta_fa + da_estimate if delta_fa >= 0 else da_estimate
-            # 如果 capex 为负或异常，使用 OCF 的 30% 作为估算
+            # If capex is negative or abnormal, use 30% of OCF as an estimate
             if capex < 0 and ocf is not None and ocf > 0:
                 capex = ocf * 0.3
-                warnings.append(f"{year}年固定资产减少，CapEx 按 OCF 的 30% 估算")
+                warnings.append(f"{year}Annual fixed assets reduction, CapEx estimated at 30% of OCF")
 
             # ΔWorkingCapital
             cur_ca = item.get("total_cur_assets") or 0
@@ -991,7 +991,7 @@ def get_fcff_fcfe_calculation(
 
             # FCFE
             interest = item.get("fin_exp") or 0
-            net_borrowing = 0  # 简化处理
+            net_borrowing = 0  # Simplified processing
             fcfe = fcff - interest * (1 - tax) + net_borrowing if fcff is not None else None
 
             trend.append({
@@ -1033,12 +1033,12 @@ def get_fcff_fcfe_calculation(
         }
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
     except Exception as exc:
-        logger.error("FCFF/FCFE计算失败: %s", exc, exc_info=True)
+        logger.error("FCFF/FCFE Calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ─────────────────────────────────────────────────────────────
-# Tool 6: PEG 估值
+# Tool 6: PEG Valuation
 # ─────────────────────────────────────────────────────────────
 
 
@@ -1046,7 +1046,7 @@ def get_fcff_fcfe_calculation(
 @register_tool(
     tool_id="get_peg_valuation",
     name="PEG 估值",
-    description="基于 PEG 指标评估 A 股成长股估值合理性，返回 PE、3 年净利润 CAGR、PEG 比率、估值判断和行业对比，适用于成长股",
+    description="Evaluate the rationality of the valuation of A-share growth stocks based on the PEG indicator, return PE, 3-year net profit CAGR, PEG ratio, valuation judgment and industry comparison, applicable to growth stocks",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -1055,43 +1055,43 @@ def get_fcff_fcfe_calculation(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["growth_stock_valuation", "peg_analysis"],
-    when_to_use="适用于有正盈利和明确增长趋势的企业，用于判断成长股的估值合理性。PEG < 1 通常表示低估。",
-    when_not_to_use="不适合净利润为负的公司（PE 无法计算）。不适合增长波动极大的企业（CAGR 失真）。",
-    returns="返回 JSON 字符串，包含 PE、3 年净利润 CAGR、PEG 比率和评估结论。",
+    when_to_use="It is suitable for companies with positive profits and clear growth trends, and is used to judge the reasonableness of the valuation of growth stocks.PEG < 1 Usually indicates an underestimation.",
+    when_not_to_use="Not suitable for companies with negative net profits (PE cannot be calculated). Not suitable for businesses with extremely volatile growth (CAGR distortion).",
+    returns="Returns a JSON string containing PE, 3-year net profit CAGR, PEG ratio and valuation conclusion.",
     example="get_peg_valuation(symbol='600519')",
     related_tools=["get_comparable_company_valuation", "get_growth_quality_metrics"],
 )
 def get_peg_valuation(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
 ) -> str:
     """PEG = PE / Earnings_Growth_Rate
 
     Args:
-        symbol: A 股股票代码，如 600519
+        symbol: A stock stock code, such as 600519
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
-            symbol: 股票代码
+            message: Error description
+            symbol: Stock code
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
+        In case of success, return dict, fields:
+            symbol: Stock code
             method: "peg_valuation"
-            parameters: 参数 dict —
-                pe_ttm: 滚动市盈率
-                growth_rate_3y_cagr: 3 年净利润 CAGR（小数），无法计算时为 None
-                peg_ratio: PEG 比率，无法计算时为 None
-            valuation: 估值结论 dict —
-                assessment: 评估结论："低估" | "合理" | "高估" | "无法评估（增长率不足或为负）"
-                current_price: 当前股价
-            data_quality: 数据质量 dict —
-                years_of_profit_data: 正利润数据期数
-                warnings: 警告信息列表
+            parameters: parameters dict —
+                pe_ttm: rolling price to earnings ratio
+                growth_rate_3y_cagr: 3 Annual net profit CAGR (decimal), when it cannot be calculated None
+                peg_ratio: PEG Ratio, when it cannot be calculated, it is None
+            valuation: Valuation conclusion dict —
+                assessment: Assessment conclusion:"underestimate" | "reasonable" | "overestimate" | "Unable to evaluate (growth rate is insufficient or negative)"
+                current_price: current stock price
+            data_quality: Data quality dict —
+                years_of_profit_data: Number of periods with positive profit data
+                warnings: Warning message list
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         from core.skill_runtime.data_access import get_stock_basic_info, get_latest_stock_price
@@ -1107,7 +1107,7 @@ def get_peg_valuation(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 获取 3 年净利润 CAGR
+        # Obtain 3 years of net profit CAGR
         series = get_historical_financial_annual_series(symbol, years=5)
         records = series.get("records") or []
         profit_values = [r.get("net_profit") for r in records if r.get("net_profit") is not None and r.get("net_profit") > 0]
@@ -1139,7 +1139,7 @@ def get_peg_valuation(
             else:
                 assessment = "高估"
         else:
-            assessment = "无法评估（增长率不足或为负）"
+            assessment = "Unable to evaluate (growth rate is insufficient or negative)"
 
         payload = {
             "symbol": symbol,
@@ -1155,7 +1155,7 @@ def get_peg_valuation(
             },
             "data_quality": {
                 "years_of_profit_data": len(profit_values),
-                "warnings": [] if growth_rate_3y_cagr else ["净利润 CAGR 无法计算，请检查盈利数据是否充足"],
+                "warnings": [] if growth_rate_3y_cagr else ["Net profit CAGR cannot be calculated, please check whether the profit data is sufficient"],
             },
         }
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
@@ -1165,7 +1165,7 @@ def get_peg_valuation(
 
 
 # ─────────────────────────────────────────────────────────────
-# Tool 7: 格雷厄姆估值
+# Tool 7: Graham Valuation
 # ─────────────────────────────────────────────────────────────
 
 
@@ -1173,7 +1173,7 @@ def get_peg_valuation(
 @register_tool(
     tool_id="get_graham_valuation",
     name="格雷厄姆估值",
-    description="基于格雷厄姆公式计算 A 股内在价值与安全边际，返回 EPS、账面价值、格雷厄姆数、当前股价、上涨空间和安全边际百分比，适合价值投资",
+    description="Calculate the intrinsic value and safety margin of A shares based on Graham s formula, return EPS, book value, Graham s number, current stock price, upside potential and safety margin percentage, suitable for value investment",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -1182,46 +1182,46 @@ def get_peg_valuation(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["value_investing_analysis", "safety_margin_calculation"],
-    when_to_use="适用于寻找价值型股票的投资者，判断股价相对于格雷厄姆数的安全边际。适合有稳定盈利和净资产的企业。",
-    when_not_to_use="不适合高成长但盈利为负的企业。格雷厄姆数对轻资产高科技公司可能过于保守。",
-    returns="返回 JSON 字符串，包含 EPS、BVPS、格雷厄姆数、当前价格、上涨空间和安全边际。",
+    when_to_use="It is suitable for investors looking for value stocks to determine the safety margin of the stock price relative to the Graham number. Suitable for companies with stable profits and net assets.",
+    when_not_to_use="Not suitable for companies with high growth but negative profits. The Graham number may be too conservative for asset-light high-tech companies.",
+    returns="Returns a JSON string containing EPS, BVPS, Graham Number, current price, upside, and margin of safety.",
     example="get_graham_valuation(symbol='600519')",
     related_tools=["get_dcf_valuation", "get_comparable_company_valuation", "get_graham_screen"],
 )
 def get_graham_valuation(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
 ) -> str:
     """Graham Number = √(22.5 × EPS × BVPS)
 
     Args:
-        symbol: A 股股票代码，如 600519
+        symbol: A stock stock code, such as 600519
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
-            symbol: 股票代码
+            message: Error description
+            symbol: Stock code
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
-            method: "格雷厄姆估值"
-            parameters: 参数 dict —
-                eps: 每股收益
-                bvps: 每股净资产
-                graham_number: 格雷厄姆数
-            valuation: 估值结果 dict —
-                graham_number: 格雷厄姆数
-                current_price: 当前股价
-                upside_pct: 相对当前价格的上行空间百分比
-                safety_margin: 安全边际百分比
-                safety_margin_level: 安全边际等级："高安全边际" | "中等安全边际" | "低安全边际" | "无安全边际"
-            data_quality: 数据质量 dict —
-                shares_source: 股本来源："basic_info" | "estimated"
-                warnings: 警告信息列表
+        In case of success, return dict, fields:
+            symbol: Stock code
+            method: "Graham Valuation"
+            parameters: parameters dict —
+                eps: earnings per share
+                bvps: Net assets per share
+                graham_number: Graham number
+            valuation: Valuation results dict —
+                graham_number: Graham number
+                current_price: current stock price
+                upside_pct: Percent upside relative to current price
+                safety_margin: safety margin percentage
+                safety_margin_level: Safety margin level:"high margin of safety" | "medium margin of safety" | "low margin of safety" | "no margin of safety"
+            data_quality: Data quality dict —
+                shares_source: Source of equity capital:"basic_info" | "estimated"
+                warnings: Warning message list
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         from core.skill_runtime.data_access import get_latest_stock_price, get_stock_basic_info, get_stock_financial_periods
@@ -1242,7 +1242,7 @@ def get_graham_valuation(
         warnings: list = []
         latest = records[0]
 
-        # 获取总股本
+        # Get total share capital
         shares = _resolve_shares(basic_info, current_price, warnings)
 
         # EPS
@@ -1257,7 +1257,7 @@ def get_graham_valuation(
             return json.dumps(
                 {
                     "status": "error",
-                    "message": f"EPS={eps}, BVPS={bvps}，EPS 或 BVPS 无效（可能净利润为负或净资产为负），无法计算格雷厄姆数",
+                    "message": f"EPS={eps}, BVPS={bvps}, EPS Or the BVPS is invalid (maybe the net profit is negative or the net assets are negative) and the Graham number cannot be calculated",
                     "symbol": symbol,
                 },
                 ensure_ascii=False, indent=2, default=str,
@@ -1306,7 +1306,7 @@ def get_graham_valuation(
 
 
 # ─────────────────────────────────────────────────────────────
-# Tool 8: CAPM 股权成本
+# Tool 8: CAPM cost of equity
 # ─────────────────────────────────────────────────────────────
 
 
@@ -1314,7 +1314,7 @@ def get_graham_valuation(
 @register_tool(
     tool_id="get_capm_cost_of_equity",
     name="CAPM 股权成本",
-    description="基于资本资产定价模型（CAPM）计算 A 股的股权资本成本，返回无风险利率、Beta、市场风险溢价、股权成本率等",
+    description="Calculate the equity capital cost of A-shares based on the capital asset pricing model (CAPM) and return the risk-free interest rate, Beta, market risk premium, equity cost rate, etc.",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -1323,50 +1323,50 @@ def get_graham_valuation(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["cost_of_equity_calculation", "capm_analysis"],
-    when_to_use="当需要估算股权资本成本、为 DCF 或剩余收益模型提供折现率参数时使用。",
-    when_not_to_use="不适合无 Beta 数据的新上市企业（少于 60 个交易日）。不适合非 A 股标的。",
-    returns="返回 JSON 字符串，包含股权成本、Beta、无风险利率、股权风险溢价及各组成部分。",
+    when_to_use="Used when estimating the cost of equity capital or providing discount rate parameters for DCF or residual income models.",
+    when_not_to_use="Not suitable for newly public companies (less than 60 trading days) without beta data. Not suitable for non-A share targets.",
+    returns="Returns a JSON string containing equity cost, beta, risk-free rate, equity risk premium and each component.",
     example="get_capm_cost_of_equity(symbol='600519')",
     related_tools=["get_wacc_calculation", "get_beta_calculation", "get_residual_income_valuation"],
 )
 def get_capm_cost_of_equity(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    risk_free_rate: Annotated[float, "无风险利率（10 年期国债收益率），默认 2.5%"] = 0.025,
-    equity_risk_premium: Annotated[float, "股权风险溢价，默认 6%"] = 0.06,
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    risk_free_rate: Annotated[float, "Risk-free rate (10-year Treasury bond yield), default 2.5%"] = 0.025,
+    equity_risk_premium: Annotated[float, "Equity risk premium, default 6%"] = 0.06,
 ) -> str:
     """CAPM = Rf + β × ERP
 
     Args:
-        symbol: A 股股票代码，如 600519
-        risk_free_rate: 无风险利率（小数形式，如 0.025 表示 2.5%），默认 0.025
-        equity_risk_premium: 股权风险溢价（小数形式），默认 0.06
+        symbol: A stock stock code, such as 600519
+        risk_free_rate: Risk-free interest rate (in decimal form, such as 0.025 for 2.5%), default 0.025
+        equity_risk_premium: Equity risk premium (decimal form), default 0.06
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
+            message: Error description
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
+        In case of success, return dict, fields:
+            symbol: Stock code
             method: "capm"
-            parameters: 参数 dict —
-                risk_free_rate: 无风险利率（小数）
-                beta: Beta 系数
-                equity_risk_premium: 股权风险溢价（小数）
-            cost_of_equity: 股权成本（小数）
-            components: 各组成部分 dict —
-                risk_free_rate: dict — value: 无风险利率值, description: 描述
-                beta: dict — value: Beta 值, source: Beta 来源："default" | "price_returns_estimated"
-                equity_risk_premium: dict — value: ERP 值, description: 描述
-            formula: 公式文本 "cost_of_equity = Rf + β × ERP"
-            calculation: 计算过程文本
-            data_quality: 数据质量 dict —
-                beta_source: Beta 来源："default" | "price_returns_estimated"
-                warnings: 警告信息列表
+            parameters: parameters dict —
+                risk_free_rate: Risk-free interest rate (decimal)
+                beta: Beta coefficient
+                equity_risk_premium: Equity risk premium (decimal)
+            cost_of_equity: Cost of equity (decimal)
+            components: components dict —
+                risk_free_rate: dict — value: risk-free interest rate, description: Description
+                beta: dict — value: Beta value, source: Beta Source:"default" | "price_returns_estimated"
+                equity_risk_premium: dict — value: ERP value, description: Description
+            formula: formula text "cost_of_equity = Rf + β × ERP"
+            calculation: Calculation process text
+            data_quality: Data quality dict —
+                beta_source: Beta Source:"default" | "price_returns_estimated"
+                warnings: Warning message list
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         from core.skill_runtime.data_access import get_stock_daily_quotes
@@ -1377,7 +1377,7 @@ def get_capm_cost_of_equity(
         erp = equity_risk_premium if equity_risk_premium is not None else 0.06
         warnings: list = []
 
-        # 计算 Beta
+        # Calculate Beta
         beta = 1.0
         beta_source = "default"
         try:
@@ -1401,7 +1401,7 @@ def get_capm_cost_of_equity(
                             beta = max(0.2, min(2.5, np.sqrt(var_ret) / 0.015))
                             beta_source = "price_returns_estimated"
         except Exception as e:
-            warnings.append(f"Beta 计算失败，使用默认值 1.0: {e}")
+            warnings.append(f"Beta Calculation failed, default value used 1.0: {e}")
 
         cost_of_equity = rf + beta * erp
 
@@ -1419,7 +1419,7 @@ def get_capm_cost_of_equity(
             "components": {
                 "risk_free_rate": {
                     "value": round(rf, 4),
-                    "description": "10 年期中国国债收益率（近似值）",
+                    "description": "10 1-year Chinese government bond yield (approximate value)",
                 },
                 "beta": {
                     "value": round(beta, 4),
@@ -1427,7 +1427,7 @@ def get_capm_cost_of_equity(
                 },
                 "equity_risk_premium": {
                     "value": round(erp, 4),
-                    "description": "中国股权市场风险溢价（近似值）",
+                    "description": "China equity market risk premium (approximate value)",
                 },
             },
             "formula": "cost_of_equity = Rf + β × ERP",
@@ -1439,12 +1439,12 @@ def get_capm_cost_of_equity(
         }
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
     except Exception as exc:
-        logger.error("CAPM股权成本计算失败: %s", exc, exc_info=True)
+        logger.error("CAPM Equity cost calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ─────────────────────────────────────────────────────────────
-# Tool 9: 增长质量调整估值
+# Tool 9: Growth quality adjusted valuation
 # ─────────────────────────────────────────────────────────────
 
 
@@ -1452,7 +1452,7 @@ def get_capm_cost_of_equity(
 @register_tool(
     tool_id="get_growth_adjusted_valuation",
     name="增长质量调整估值",
-    description="基于增长质量评分（营收稳健性、ROIC、现金流质量）调整 PE 估值，返回质量评分、调整后 PE、合理估值区间和调整因子明细",
+    description="Adjust PE valuation based on growth quality score (revenue robustness, ROIC, cash flow quality) and return quality score, adjusted PE, reasonable valuation range and adjustment factor details",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -1461,58 +1461,58 @@ def get_capm_cost_of_equity(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["growth_quality_analysis", "quality_adjusted_valuation"],
-    when_to_use="当需要判断高增长是否具有可持续性，以及当前 PE 是否合理反映增长质量时使用。",
-    when_not_to_use="不适合净利润为负导致 PE 无效的企业。不适合数据不足 3 年的企业。",
-    returns="返回 JSON 字符串，包含原始 PE、增长质量评分、调整后 PE、公允价值和评估方法。",
+    when_to_use="Used when it is necessary to judge whether high growth is sustainable and whether the current PE reasonably reflects the quality of growth.",
+    when_not_to_use="It is not suitable for companies whose net profits are negative and PE is invalid. Not suitable for businesses with less than 3 years of data.",
+    returns="Returns a JSON string containing raw PE, growth quality score, adjusted PE, fair value, and valuation methodology.",
     example="get_growth_adjusted_valuation(symbol='600519')",
     related_tools=["get_peg_valuation", "get_growth_quality_metrics", "get_cashflow_quality_trend"],
 )
 def get_growth_adjusted_valuation(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
 ) -> str:
-    """基于增长质量评分调整 PE
+    """Adjustment based on growth quality score PE
 
     Args:
-        symbol: A 股股票代码，如 600519
+        symbol: A stock stock code, such as 600519
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
-            symbol: 股票代码
+            message: Error description
+            symbol: Stock code
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
-            method: "增长质量调整估值"
-            parameters: 参数 dict —
-                raw_pe_ttm: 原始滚动市盈率
-            growth_quality: 增长质量评分 dict —
-                total_score: 综合评分（0-100）
-                quality_label: 质量标签："优秀" | "良好" | "一般" | "较差" | "差"
-                components: 评分组成 dict —
-                    revenue_consistency: 营收一致性评分
-                    roic_sustainability: ROIC 可持续性评分
-                    cashflow_quality: 现金流质量评分
-                detail: 评分明细 dict —
-                    revenue_growth_std: 营收增长率标准差（数据不足时为 None）
-                    mean_roe: ROE 均值（数据不足时为 None）
-                    mean_ocf_to_net_profit: OCF/净利润 均值（数据不足时为 None）
-            valuation: 估值结果 dict —
-                pe_adjustment_factor: PE 调整因子
-                adjusted_pe: 调整后 PE
-                industry_median_pe: 行业中位数 PE（缺失时为 None）
-                fair_pe: 公允 PE
-                fair_value: 公允价值（EPS 不可计算时为 None）
-                current_price: 当前股价
-            methodology: 方法论文本
-            data_quality: 数据质量 dict —
-                industry: 所属行业
-                years_available: 可用年报期数
-                warnings: 警告信息列表
+        In case of success, return dict, fields:
+            symbol: Stock code
+            method: "Growth quality adjusted valuation"
+            parameters: parameters dict —
+                raw_pe_ttm: Raw rolling P/E ratio
+            growth_quality: Growth quality score dict —
+                total_score: Overall rating (0-100)
+                quality_label: Quality label:"Excellent" | "good" | "Average" | "Poor" | "Poor"
+                components: Rating composition dict —
+                    revenue_consistency: revenue consistency score
+                    roic_sustainability: ROIC sustainability score
+                    cashflow_quality: Cash Flow Quality Score
+                detail: Rating details dict —
+                    revenue_growth_std: Standard deviation of revenue growth rate (None if data is insufficient)
+                    mean_roe: ROE Mean (None if there is insufficient data)
+                    mean_ocf_to_net_profit: OCF/Net profit mean (None if there is insufficient data)
+            valuation: Valuation results dict —
+                pe_adjustment_factor: PE adjustment factor
+                adjusted_pe: After adjustment PE
+                industry_median_pe: Industry median PE (None if missing)
+                fair_pe: fair PE
+                fair_value: Fair value (None if EPS cannot be calculated)
+                current_price: current stock price
+            methodology: Methodology text
+            data_quality: Data quality dict —
+                industry: Industry
+                years_available: Available annual report periods
+                warnings: Warning message list
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         from core.skill_runtime.data_access import get_stock_basic_info, get_latest_stock_price
@@ -1534,7 +1534,7 @@ def get_growth_adjusted_valuation(
 
         warnings: list = []
 
-        # 1. 营收增长一致性评分
+        # 1. Revenue Growth Consistency Score
         growth_metrics = get_growth_quality_metrics(symbol, years=5)
         growth_records = growth_metrics.get("annual_growth") or []
         revenue_growth_rates = [g.get("revenue_growth") for g in growth_records if g.get("revenue_growth") is not None]
@@ -1542,7 +1542,7 @@ def get_growth_adjusted_valuation(
         if len(revenue_growth_rates) >= 3:
             std_rev_growth = pstdev(revenue_growth_rates) if len(revenue_growth_rates) > 1 else 0
             mean_rev_growth = mean(revenue_growth_rates)
-            # 低波动 = 高评分 (std < 0.1 -> 满分)
+            # low volatility = high rating (std < 0.1 -> Full marks)
             consistency_score = max(0, min(30, 30 * (1 - std_rev_growth / 0.3)))
             if mean_rev_growth <= 0:
                 consistency_score *= 0.5
@@ -1550,7 +1550,7 @@ def get_growth_adjusted_valuation(
             consistency_score = 15
             warnings.append(f"营收增长率数据不足（{len(revenue_growth_rates)} 期），一致性评分采用默认值。")
 
-        # 2. ROIC 可持续性评分
+        # 2. ROIC sustainability score
         series = get_historical_financial_annual_series(symbol, years=5)
         records = series.get("records") or []
         roe_values = [r.get("roe") for r in records if r.get("roe") is not None]
@@ -1558,23 +1558,23 @@ def get_growth_adjusted_valuation(
         if len(roe_values) >= 3:
             mean_roe = mean(roe_values)
             std_roe = pstdev(roe_values) if len(roe_values) > 1 else 0
-            roe_score = min(30, (mean_roe * 100) * 2)  # ROE 越高分越高, 20% ROE -> 40 capped at 30
+            roe_score = min(30, (mean_roe * 100) * 2)  # ROE The higher the score, the higher the score, 20% ROE -> 40 capped at 30
             roe_score = max(0, roe_score)
-            # 稳定性因子
+            # stability factor
             if std_roe > 0.05:
                 roe_score *= max(0.5, 1 - (std_roe - 0.05) / 0.1)
         else:
             roe_score = 15
             warnings.append(f"ROE 数据不足（{len(roe_values)} 期），可持续性评分采用默认值。")
 
-        # 3. 现金流质量评分
+        # 3. Cash Flow Quality Score
         cf_quality = get_cashflow_quality_trend(symbol, years=5)
         cf_trend = cf_quality.get("trend") or []
         ocf_to_np_values = [c.get("ocf_to_net_profit") for c in cf_trend if c.get("ocf_to_net_profit") is not None]
 
         if ocf_to_np_values:
             mean_ocf_np = mean(ocf_to_np_values)
-            # OCF/NP > 1.0 = 高质量（满分）, < 0.5 = 低质量
+            # OCF/NP > 1.0 = High quality (full score), < 0.5 = low quality
             if mean_ocf_np >= 1.0:
                 cf_score = 40
             elif mean_ocf_np >= 0.7:
@@ -1585,33 +1585,33 @@ def get_growth_adjusted_valuation(
                 cf_score = max(0, mean_ocf_np * 40)
         else:
             cf_score = 20
-            warnings.append("现金流质量数据不足，评分采用默认值。")
+            warnings.append("Insufficient cash flow quality data, the score uses the default value.")
 
-        # 总分 0-100
+        # total score 0-100
         quality_score = round(consistency_score + roe_score + cf_score, 1)
         quality_score = max(0, min(100, quality_score))
 
-        # PE 调整
+        # PE adjust
         if quality_score >= 80:
-            pe_adjustment_factor = 1.3       # 高质量: +30% PE 溢价
+            pe_adjustment_factor = 1.3       # high quality: +30% PE premium
             quality_label = "优秀"
         elif quality_score >= 60:
-            pe_adjustment_factor = 1.15      # 良好: +15% 溢价
+            pe_adjustment_factor = 1.15      # good: +15% premium
             quality_label = "良好"
         elif quality_score >= 40:
-            pe_adjustment_factor = 1.0       # 一般: 无调整
+            pe_adjustment_factor = 1.0       # Average: No adjustment
             quality_label = "一般"
         elif quality_score >= 20:
-            pe_adjustment_factor = 0.85      # 较差: -15% 折价
+            pe_adjustment_factor = 0.85      # Poor: -15% Discount
             quality_label = "较差"
         else:
-            pe_adjustment_factor = 0.7       # 差: -30% 折价
+            pe_adjustment_factor = 0.7       # Poor: -30% Discount
             quality_label = "差"
 
         adjusted_pe = pe_ttm * pe_adjustment_factor
 
-        # 公允价值估算：行业平均 PE × 质量调整因子
-        # 使用行业平均 PE 作为参考基准
+        # Fair Value Estimate: Industry Average PE × quality adjustment factor
+        # Use the industry average PE as a reference benchmark
         from core.skill_runtime.data_access import summarize_industry_valuation
 
         master = series if isinstance(series, dict) else {}
@@ -1626,10 +1626,10 @@ def get_growth_adjusted_valuation(
             ind_stats = summarize_industry_valuation(industry, metric="pe", exclude_symbol=symbol)
             industry_pe = ind_stats.get("median")
 
-        # 公允 PE = 行业中位数 PE × 质量调整因子
+        # fair PE = Industry median PE × quality adjustment factor
         fair_pe = industry_pe * pe_adjustment_factor if industry_pe and industry_pe > 0 else adjusted_pe
 
-        # 从 EPS 推算公允价值
+        # Deriving fair value from EPS
         eps = None
         if records:
             net_profit = records[0].get("net_profit")
@@ -1667,7 +1667,7 @@ def get_growth_adjusted_valuation(
                 "fair_value": round(fair_value, 2) if fair_value is not None else None,
                 "current_price": current_price,
             },
-            "methodology": "基于营收增长一致性(30%)、ROIC可持续性(30%)、现金流质量(40%)综合评分调整PE",
+            "methodology": "Based on revenue growth consistency(30%), ROIC sustainability(30%), cash flow quality(40%)Comprehensive rating adjustment PE",
             "data_quality": {
                 "industry": industry,
                 "years_available": len(records),
@@ -1676,7 +1676,7 @@ def get_growth_adjusted_valuation(
         }
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
     except Exception as exc:
-        logger.error("增长质量调整估值失败: %s", exc, exc_info=True)
+        logger.error("Growth quality adjustment valuation fails: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 

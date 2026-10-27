@@ -1,8 +1,8 @@
 """
-支撑压力位计算工具
+Support pressure level calculation tool
 
-基于枢轴点（Pivot Points）和历史价格极值两种方法，自动识别股票的支撑位和压力位。
-所有计算基于纯数学规则，无需 LLM 参与。
+Based on two methods: pivot points and historical price extremes, the support and pressure levels of stocks are automatically identified.
+All calculations are based on purely mathematical rules and do not require the involvement of LLM.
 """
 
 import json
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-#  辅助函数
+#  Helper function
 # ============================================================
 
 def _safe_float(value) -> Optional[float]:
@@ -45,7 +45,7 @@ def _days_ago(days: int) -> str:
 
 
 def _calc_pivot_points(high: float, low: float, close: float, current_price: float) -> dict:
-    """计算标准枢轴点及支撑阻力位。"""
+    """Calculate standard pivot points and support and resistance levels."""
     pivot = (high + low + close) / 3.0
 
     resistances = [
@@ -80,7 +80,7 @@ def _calc_pivot_points(high: float, low: float, close: float, current_price: flo
 
 
 def _find_local_extrema(prices: np.ndarray, n_neighbors: int = 5) -> tuple:
-    """识别局部极值点——峰值（阻力候选）和谷值（支撑候选）。"""
+    """Identify local extreme points——Peaks (resistance candidates) and troughs (support candidates)."""
     highs = np.array([_safe_float(row["high"]) or 0 for row in prices])
     lows = np.array([_safe_float(row["low"]) or 0 for row in prices])
 
@@ -107,7 +107,7 @@ def _find_local_extrema(prices: np.ndarray, n_neighbors: int = 5) -> tuple:
 
 
 def _cluster_levels(levels: list, threshold_pct: float = 0.02) -> list:
-    """聚类附近的价格水平（阈值内合并），按触及次数排序。"""
+    """Price levels around clusters (pooled within threshold), sorted by number of hits."""
     if not levels:
         return []
 
@@ -140,7 +140,7 @@ def _cluster_levels(levels: list, threshold_pct: float = 0.02) -> list:
 
 
 def _calc_historical_levels(quotes: list, current_price: float) -> dict:
-    """基于历史价格极值计算支撑和阻力位。"""
+    """Calculate support and resistance levels based on historical price extremes."""
     prices_data = []
     for q in quotes:
         high_val = _safe_float(q.get("high"))
@@ -149,12 +149,12 @@ def _calc_historical_levels(quotes: list, current_price: float) -> dict:
             prices_data.append({"high": high_val, "low": low_val})
 
     if len(prices_data) < 30:
-        return {"resistances": [], "supports": [], "warnings": ["历史数据不足30条，支撑压力位参考价值有限。"]}
+        return {"resistances": [], "supports": [], "warnings": ["There are less than 30 pieces of historical data, and the reference value of the support and pressure level is limited."]}
 
     peak_levels, trough_levels = _find_local_extrema(prices_data, n_neighbors=5)
 
     resistance_clusters = _cluster_levels(peak_levels)
-    support_clusters = _cluster_levels([-level for level in trough_levels])  # 负值排序
+    support_clusters = _cluster_levels([-level for level in trough_levels])  # Negative sorting
     support_clusters_positive = [
         {"price": round(abs(item["price"]), 2), "touches": item["touches"], "strength": item["strength"]}
         for item in support_clusters
@@ -177,14 +177,14 @@ def _calc_historical_levels(quotes: list, current_price: float) -> dict:
 
 
 # ============================================================
-#  Tool: 支撑压力位计算
+#  Tool: Support pressure level calculation
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_support_resistance_levels",
     name="支撑压力位计算",
-    description="基于枢轴点公式和历史价格极值聚类，计算股票的关键支撑位和压力位。",
+    description="Calculate key support and pressure levels for stocks based on pivot point formulas and historical price extreme value clustering.",
     category="technical",
     is_online=False,
     auto_register=True,
@@ -193,53 +193,53 @@ def _calc_historical_levels(quotes: list, current_price: float) -> dict:
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["支撑压力位", "关键价格水平"],
-    when_to_use="当需要识别股票的关键支撑/压力价格区间，辅助入场离场决策时使用。",
-    when_not_to_use="当数据不足（少于20条K线）时，结果参考价值有限。",
-    returns="返回 JSON，包含 symbol、current_price、date、pivot_points（枢轴点）、historical_levels（历史极值聚类）、data_quality。",
+    when_to_use="Use it when you need to identify the key support/pressure price range of a stock to assist in entry and exit decisions.",
+    when_not_to_use="When there is insufficient data (less than 20 K lines), the results have limited reference value.",
+    returns="Returns JSON, including symbol, current_price, date, pivot_points (pivot points), historical_levels (historical extreme value clustering), data_quality.",
     example="get_support_resistance_levels(symbol='600519', lookback_days=120, method='all')",
     related_tools=["get_candlestick_patterns", "get_crossover_signals", "get_pivot_points", "get_fibonacci_retracement"],
 )
 def get_support_resistance_levels(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看天数，默认120"] = 120,
-    method: Annotated[str, "计算方法：pivot（枢轴点）、historical（历史极值聚类）、all（两者都计算）"] = "all",
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "Number of days to look back, default 120"] = 120,
+    method: Annotated[str, "Calculation method: pivot (pivot point), historical (historical extreme value clustering), all (calculate both)"] = "all",
 ) -> str:
-    """计算股票支撑位和压力位，基于枢轴点公式和历史价格极值聚类。
+    """Calculate stock support and resistance levels based on pivot point formulas and clustering of historical price extremes.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看天数，默认 120
-        method: 计算方法，取值 "pivot"（枢轴点） | "historical"（历史极值聚类） | "all"（两者都计算），默认 "all"
+        symbol: A stock code, such as 600519,000001
+        lookback_days: Number of days to look back, default 120
+        method: Calculation method, value "pivot" (pivot point) | "historical" (historical extreme value clustering) | "all" (Both are calculated), default "all"
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 股票代码
-            current_price: 最新收盘价
-            date: 最新交易日
-            pivot_points: 枢轴点结果（method 不含 pivot 时为 None），子字段 —
-                pivot: 枢轴点价格
-                resistances: 阻力位列表，每个元素结构 —
-                    level: 阻力位标识，取值 "R1" | "R2" | "R3" | "R1-R2_MP"
-                    price: 价格
-                    distance_pct: 距离当前价的百分比
-                supports: 支撑位列表，每个元素结构 —
-                    level: 支撑位标识，取值 "S1" | "S2" | "S3" | "S1-S2_MP"
-                    price: 价格
-                    distance_pct: 距离当前价的百分比
-            historical_levels: 历史极值聚类结果（method 不含 historical 时为 None），子字段 —
-                resistances: 阻力位列表，每个元素结构 —
-                    price: 价格
-                    touches: 触及次数
-                    strength: 强度，取值 "very_strong" | "strong" | "moderate"
-                    distance_pct: 距离当前价的百分比
-                supports: 支撑位列表，元素结构同 resistances
-            data_quality: 数据质量，子字段 —
-                bars_analyzed: 分析的 K 线数量
-                warnings: 警告信息列表
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Stock code
+            current_price: latest closing price
+            date: Latest trading day
+            pivot_points: Pivot point result (None when method does not contain pivot), subfield —
+                pivot: pivot point price
+                resistances: List of resistance levels, per element structure —
+                    level: Resistance level identifier, value "R1" | "R2" | "R3" | "R1-R2_MP"
+                    price: price
+                    distance_pct: Percentage from current price
+                supports: List of support bits, per element structure —
+                    level: Support position identifier, value "S1" | "S2" | "S3" | "S1-S2_MP"
+                    price: price
+                    distance_pct: Percentage from current price
+            historical_levels: Historical extreme value clustering results (None when method does not contain historical), subfield —
+                resistances: List of resistance levels, per element structure —
+                    price: price
+                    touches: touches
+                    strength: Strength, value "very_strong" | "strong" | "moderate"
+                    distance_pct: Percentage from current price
+                supports: Support bit list, the element structure is the same as resistances
+            data_quality: Data quality, subfield —
+                bars_analyzed: Number of candlesticks analyzed
+                warnings: Warning message list
+        Field returned on exception —
             status: "error"
-            message: 错误信息
-            warnings: 可选，警告信息列表
+            message: error message
+            warnings: Optional, warning message list
     """
     try:
         end_date = _today()
@@ -269,7 +269,7 @@ def get_support_resistance_levels(
 
         if len(df) < 5:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 有效 OHLC 数据不足5条。", "warnings": warnings},
+                {"status": "error", "message": f"{symbol} There are less than 5 valid OHLC data.", "warnings": warnings},
                 ensure_ascii=False, indent=2, default=str,
             )
 
@@ -317,7 +317,7 @@ def get_support_resistance_levels(
         return json.dumps(result, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("支撑压力位计算失败: %s", exc, exc_info=True)
+        logger.error("Support pressure level calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 

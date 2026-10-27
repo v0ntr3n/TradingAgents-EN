@@ -9,7 +9,7 @@ from app.core.config import settings
 class TokenData(BaseModel):
     sub: str
     exp: int
-    session_id: Optional[str] = None  # 添加 session_id
+    session_id: Optional[str] = None  # add session_id
 
 class AuthService:
     @staticmethod
@@ -17,18 +17,18 @@ class AuthService:
         sub: str,
         expires_minutes: int | None = None,
         expires_delta: int | None = None,
-        session_id: Optional[str] = None  # 添加 session_id 参数
+        session_id: Optional[str] = None  # Add session_id parameter
     ) -> str:
         if expires_delta:
-            # 如果指定了秒数，使用秒数
+            # If seconds are specified, use seconds
             expire = now_tz() + timedelta(seconds=expires_delta)
         else:
-            # 否则使用分钟数
+            # Otherwise use minutes
             expire = now_tz() + timedelta(minutes=expires_minutes or settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
         payload = {"sub": sub, "exp": expire}
 
-        # 如果提供了 session_id，添加到 payload
+        # If session_id is provided, add to payload
         if session_id:
             payload["session_id"] = session_id
 
@@ -53,14 +53,14 @@ class AuthService:
             token_data = TokenData(
                 sub=payload.get("sub"),
                 exp=int(payload.get("exp", time.time())),
-                session_id=payload.get("session_id")  # 解析 session_id
+                session_id=payload.get("session_id")  # parse session_id
             )
-            logger.debug(f"🎯 Token数据: sub={token_data.sub}, exp={token_data.exp}, session_id={token_data.session_id[:16] if token_data.session_id else 'None'}...")
+            logger.debug(f"🎯 Token data: sub={token_data.sub}, exp={token_data.exp}, session_id={token_data.session_id[:16] if token_data.session_id else 'None'}...")
 
-            # 检查是否过期
+            # Check if expired
             current_time = int(time.time())
             if token_data.exp < current_time:
-                logger.warning(f"⏰ Token已过期: exp={token_data.exp}, now={current_time}")
+                logger.warning(f"⏰ Token Expired: exp={token_data.exp}, now={current_time}")
                 return None
 
             logger.debug(f"✅ Token验证成功")

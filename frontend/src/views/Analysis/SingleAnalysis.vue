@@ -1,15 +1,15 @@
 <template>
   <div class="single-analysis">
-    <!-- 页面头部 -->
+    <!-- Page header -->
     <div class="page-header">
       <div class="header-content">
         <div class="title-section">
           <h1 class="page-title">
             <el-icon class="title-icon"><Document /></el-icon>
-            {{ analysisForm.market === 'ETF' ? 'ETF分析' : '单股分析' }}
+            {{ analysisForm.market === 'ETF' ? 'ETF analysis' : 'single stock analysis' }}
           </h1>
           
-          <!-- 风险提示 -->
+          <!-- Risk warning -->
           <div class="risk-disclaimer">
             <el-alert
               type="warning"
@@ -18,42 +18,42 @@
             >
               <template #title>
                 <span style="font-size: 14px;">
-                  <strong>⚠️ 重要提示：</strong>本次分析所有分析结论用于学习和验证AI证券分析技术，不作为真实交易操盘指导。
+                  <strong>⚠️ IMPORTANT NOTE:</strong>All analysis conclusions in this analysis are used to learn and verify AI securities analysis technology and are not used as real trading guidance.
                 </span>
               </template>
             </el-alert>
           </div>
           
           <p class="page-description">
-            AI驱动的智能证券分析，多维度评估投资价值与风险
+            AI Driven intelligent securities analysis, multi-dimensional assessment of investment value and risk
           </p>
         </div>
       </div>
     </div>
 
-    <!-- 主要分析表单 -->
+    <!-- Main analysis form -->
     <div class="analysis-container">
       <el-row :gutter="24">
-        <!-- 左侧：基础配置 -->
+        <!-- Left: Basic configuration -->
         <el-col :span="18">
           <el-card class="main-form-card" shadow="hover">
             <template #header>
               <div class="card-header">
-                <h3>分析配置</h3>
-                <el-tag type="info" size="small">必填信息</el-tag>
+                <h3>Analysis configuration</h3>
+                <el-tag type="info" size="small">Required information</el-tag>
               </div>
             </template>
 
             <el-form :model="analysisForm" label-width="100px" class="analysis-form">
-              <!-- 标的信息 -->
+              <!-- Target information -->
               <div class="form-section">
-                <h4 class="section-title">📊 {{ analysisForm.market === 'ETF' ? 'ETF信息' : '股票信息' }}</h4>
+                <h4 class="section-title">📊 {{ analysisForm.market === 'ETF' ? 'ETF information' : 'stock information' }}</h4>
                 <el-row :gutter="16">
                   <el-col :span="12">
-                    <el-form-item :label="analysisForm.market === 'ETF' ? 'ETF代码' : '股票代码'" required>
+                    <el-form-item :label="analysisForm.market === 'ETF' ? 'ETF code' : 'Stock code'" required>
                       <el-input
                         v-model="analysisForm.stockCode"
-                        placeholder="如：000001、512400(ETF)"
+                        placeholder="Such as: 000001,512400(ETF)"
                         clearable
                         size="large"
                         class="stock-input"
@@ -76,33 +76,33 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
-                    <el-form-item label="市场类型">
+                    <el-form-item label="market type">
                       <el-select
                         v-model="analysisForm.market"
-                        placeholder="选择市场"
+                        placeholder="Choose a market"
                         size="large"
                         style="width: 100%"
                         @change="onMarketChange"
                       >
-                        <el-option label="🇨🇳 A股市场" value="A股">
-                          <span>🇨🇳 A股市场</span>
-                          <span style="color: #909399; font-size: 12px; margin-left: 8px;">（6位数字）</span>
+                        <el-option label="🇨🇳 A stock market" value="A shares">
+                          <span>🇨🇳 A stock market</span>
+                          <span style="color: #909399; font-size: 12px; margin-left: 8px;"> (6 digits)</span>
                         </el-option>
-                        <el-option label="📈 ETF 基金" value="ETF">
-                          <span>📈 ETF 基金</span>
-                          <span style="color: #909399; font-size: 12px; margin-left: 8px;">（510050、159919 等）</span>
+                        <el-option label="📈 ETF fund" value="ETF">
+                          <span>📈 ETF fund</span>
+                          <span style="color: #909399; font-size: 12px; margin-left: 8px;"> (510050, 159919 etc.)</span>
                         </el-option>
                       </el-select>
                     </el-form-item>
                   </el-col>
                 </el-row>
 
-                <el-form-item label="分析日期">
+                <el-form-item label="Analysis date">
                   <div style="display: flex; align-items: center; gap: 8px; width: 100%">
                     <el-date-picker
                       v-model="analysisForm.analysisDate"
                       type="date"
-                      placeholder="选择分析基准日期"
+                      placeholder="Select analysis base date"
                       size="large"
                       style="flex: 1"
                       :disabled-date="disabledDate"
@@ -116,15 +116,15 @@
                       style="white-space: nowrap"
                     >
                       <el-icon><DocumentChecked /></el-icon>
-                      数据检验
+                      Data inspection
                     </el-button>
                   </div>
                 </el-form-item>
               </div>
 
-              <!-- 分析深度 -->
+              <!-- Analysis depth -->
               <div class="form-section">
-                <h4 class="section-title">🎯 分析深度</h4>
+                <h4 class="section-title">🎯 Analysis depth</h4>
                 <div class="depth-selector">
                   <div
                     v-for="(depth, index) in depthOptions"
@@ -143,9 +143,9 @@
                 </div>
               </div>
 
-              <!-- 分析师团队 -->
+              <!-- Analyst Team -->
               <div class="form-section">
-                <h4 class="section-title">👥 分析师团队</h4>
+                <h4 class="section-title">👥 Analyst Team</h4>
                 <div class="analysts-grid">
                   <div
                     v-for="analyst in availableAnalysts"
@@ -166,7 +166,7 @@
                       <div class="analyst-name">
                         {{ analyst.name }}
                         <el-tag v-if="analyst.disabled" size="small" type="info" style="margin-left: 8px;">
-                          仅A股
+                          A shares only
                         </el-tag>
                       </div>
                       <div class="analyst-desc">{{ analyst.description }}</div>
@@ -180,17 +180,17 @@
                 </div>
               </div>
 
-              <!-- 操作按钮 -->
+              <!-- Action button -->
               <div class="form-section">
-                <!-- 执行轨迹开关 -->
+                <!-- Execution trajectory switch -->
                 <div style="display: flex; justify-content: center; margin-bottom: 12px;">
                   <el-tooltip
-                    content="开启后，系统会记录每个 Agent 的完整执行过程（Prompt全文、LLM原始返回、校验结果），用于排查分析问题。数据量较大，平时不需要时建议关闭。"
+                    content="After being turned on, the system will record the complete execution process of each Agent (full text of Prompt, original return from LLM, verification results) for troubleshooting and analysis problems. The amount of data is large, so it is recommended to close it when not needed."
                     placement="top"
                   >
                     <el-checkbox v-model="analysisForm.enableTrace" size="small">
                       <el-icon style="margin-right: 4px;"><View /></el-icon>
-                      记录执行轨迹（排查问题时开启）
+                      Record execution trace (enabled when troubleshooting)
                     </el-checkbox>
                   </el-tooltip>
                 </div>
@@ -207,7 +207,7 @@
                     style="width: 280px; height: 56px; font-size: 18px; font-weight: 700; border-radius: 16px;"
                   >
                     <el-icon><TrendCharts /></el-icon>
-                    开始智能分析
+                    Start smart analysis
                   </el-button>
 
                   <el-button
@@ -219,7 +219,7 @@
                     style="width: 280px; height: 56px; font-size: 18px; font-weight: 700; border-radius: 16px;"
                   >
                     <el-icon><Loading /></el-icon>
-                    分析进行中...
+                    Analysis in progress...
                   </el-button>
 
                   <div v-else-if="analysisStatus === 'completed'" style="display: flex; gap: 12px;">
@@ -231,7 +231,7 @@
                       style="width: 180px; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px;"
                     >
                       <el-icon><Document /></el-icon>
-                      {{ showResults ? '隐藏结果' : '查看结果' }}
+                      {{ showResults ? 'Hide results' : 'View results' }}
                     </el-button>
 
                     <el-button
@@ -242,7 +242,7 @@
                       style="width: 180px; height: 56px; font-size: 16px; font-weight: 700; border-radius: 16px;"
                     >
                       <el-icon><Refresh /></el-icon>
-                      重新分析
+                      Reanalyze
                     </el-button>
                   </div>
 
@@ -255,12 +255,12 @@
                     style="width: 280px; height: 56px; font-size: 18px; font-weight: 700; border-radius: 16px;"
                   >
                     <el-icon><Refresh /></el-icon>
-                    重新分析
+                    Reanalyze
                   </el-button>
                 </div>
               </div>
 
-              <!-- 分析进度显示 -->
+              <!-- Analysis progress display -->
               <div v-if="analysisStatus === 'running'" class="progress-section">
                 <el-card class="progress-card" shadow="hover">
                   <template #header>
@@ -269,7 +269,7 @@
                         <el-icon class="rotating-icon">
                           <Loading />
                         </el-icon>
-                        分析进行中...
+                        Analysis in progress...
                       </h4>
                       <el-button
                         type="primary"
@@ -278,47 +278,47 @@
                         style="margin-left: auto;"
                       >
                         <el-icon><Plus /></el-icon>
-                        开始新分析
+                        Start a new analysis
                       </el-button>
-                      <!-- 任务ID已隐藏 -->
+                      <!-- Task ID is hidden -->
                       <!-- <el-tag type="warning">{{ currentTaskId }}</el-tag> -->
                     </div>
                   </template>
 
                   <div class="progress-content">
-                    <!-- 总体进度信息 -->
+                    <!-- Overall progress information -->
                     <div class="overall-progress-info">
                       <div class="progress-stats">
-                        <!-- 当前步骤已隐藏 -->
+                        <!-- The current step is hidden -->
                         <!--
                         <div class="stat-item">
-                          <div class="stat-label">当前步骤</div>
-                          <div class="stat-value">{{ progressInfo.currentStep || '初始化中...' }}</div>
+                          <div class="stat-label">current step</div>
+                          <div class="stat-value">{{ progressInfo.currentStep || 'Initializing...' }}</div>
                         </div>
                         -->
-                        <!-- 整体进度已隐藏 -->
+                        <!-- Overall progress has been hidden -->
                         <!--
                         <div class="stat-item">
-                          <div class="stat-label">整体进度</div>
+                          <div class="stat-label">overall progress</div>
                           <div class="stat-value">{{ progressInfo.progress.toFixed(1) }}%</div>
                         </div>
                         -->
                         <div class="stat-item">
-                          <div class="stat-label">已用时间</div>
+                          <div class="stat-label">elapsed time</div>
                           <div class="stat-value">{{ formatTime(progressInfo.elapsedTime) }}</div>
                         </div>
                         <div class="stat-item">
-                          <div class="stat-label">预计剩余</div>
+                          <div class="stat-label">Estimated remaining</div>
                           <div class="stat-value">{{ formatTime(progressInfo.remainingTime) }}</div>
                         </div>
                         <div class="stat-item">
-                          <div class="stat-label">预计总时长</div>
+                          <div class="stat-label">Estimated total duration</div>
                           <div class="stat-value">{{ formatTime(progressInfo.totalTime) }}</div>
                         </div>
                       </div>
                     </div>
 
-                    <!-- 进度条 -->
+                    <!-- progress bar -->
                     <div class="progress-bar-section">
                       <el-progress
                         :percentage="Math.round(progressInfo.progress)"
@@ -329,26 +329,26 @@
                       />
                     </div>
 
-                    <!-- 当前任务详情 -->
+                    <!-- Current task details -->
                     <div class="current-task-info">
                       <div class="task-title">
                         <el-icon class="task-icon">
                           <Loading />
                         </el-icon>
-                        {{ progressInfo.currentStep || '正在初始化分析引擎...' }}
+                        {{ progressInfo.currentStep || 'Initializing analysis engine...' }}
                       </div>
                       <div
                         class="task-description"
                         style="white-space: pre-wrap; line-height: 1.6;"
                       >
-                        {{ progressInfo.currentStepDescription || progressInfo.message || 'AI正在根据您的要求重点分析相关内容' }}
+                        {{ progressInfo.currentStepDescription || progressInfo.message || 'AI We are analyzing relevant content based on your request.' }}
                       </div>
                     </div>
 
-                    <!-- 分析步骤显示 - 已隐藏 -->
+                    <!-- Analysis steps shown - hidden -->
                     <!--
                     <div v-if="analysisSteps.length > 0" class="analysis-steps">
-                      <h5 class="steps-title">📋 分析步骤</h5>
+                      <h5 class="steps-title">📋 Analysis steps</h5>
                       <div class="steps-container">
                         <div
                           v-for="(step, index) in analysisSteps"
@@ -386,25 +386,25 @@
           </el-card>
         </el-col>
 
-        <!-- 右侧：高级配置 -->
+        <!-- Right: Advanced configuration -->
         <el-col :span="6">
           <el-card class="config-card" shadow="hover">
             <template #header>
               <div class="card-header">
-                <h3>高级配置</h3>
-                <el-tag type="warning" size="small">可选设置</el-tag>
+                <h3>Advanced configuration</h3>
+                <el-tag type="warning" size="small">Optional settings</el-tag>
               </div>
             </template>
 
             <div class="config-content">
-              <!-- AI模型配置 -->
+              <!-- AI Model configuration -->
               <div class="config-section">
-                <h4 class="config-title">🤖 AI模型配置</h4>
+                <h4 class="config-title">🤖 AI Model configuration</h4>
                 <div class="model-config">
                   <div class="model-item">
                     <div class="model-label">
-                      <span>快速分析模型</span>
-                      <el-tooltip content="用于市场分析、新闻分析、基本面分析等" placement="top">
+                      <span>Quickly analyze models</span>
+                      <el-tooltip content="Used for market analysis, news analysis, fundamental analysis, etc." placement="top">
                         <el-icon class="help-icon"><InfoFilled /></el-icon>
                       </el-tooltip>
                     </div>
@@ -418,7 +418,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                           <span style="flex: 1;">{{ model.model_display_name || model.model_name }}</span>
                           <div style="display: flex; align-items: center; gap: 4px;">
-                            <!-- 能力等级徽章 -->
+                            <!-- Ability Level Badge -->
                             <el-tag
                               v-if="model.capability_level"
                               :type="getCapabilityTagType(model.capability_level)"
@@ -427,14 +427,14 @@
                             >
                               {{ getCapabilityText(model.capability_level) }}
                             </el-tag>
-                            <!-- 角色标签 -->
+                            <!-- role tag -->
                             <el-tag
                               v-if="isQuickAnalysisRole(model.suitable_roles)"
                               type="success"
                               size="small"
                               effect="plain"
                             >
-                              ⚡快速
+                              ⚡fast
                             </el-tag>
                             <span style="font-size: 12px; color: #909399;">{{ model.provider }}</span>
                           </div>
@@ -445,8 +445,8 @@
 
                   <div class="model-item">
                     <div class="model-label">
-                      <span>深度决策模型</span>
-                      <el-tooltip content="用于研究整合员综合决策、风险评估师最终评估" placement="top">
+                      <span>Deep decision-making model</span>
+                      <el-tooltip content="Used for comprehensive decision-making by research integrators and final assessment by risk assessors" placement="top">
                         <el-icon class="help-icon"><InfoFilled /></el-icon>
                       </el-tooltip>
                     </div>
@@ -454,7 +454,7 @@
                   </div>
                 </div>
 
-                <!-- 🆕 模型推荐提示 -->
+                <!-- 🆕 Model recommendation tips -->
                 <el-alert
                   v-if="modelRecommendation"
                   :title="modelRecommendation.title"
@@ -474,22 +474,22 @@
                         @click="applyRecommendedModels"
                         style="flex-shrink: 0;"
                       >
-                        应用推荐
+                        Application recommendations
                       </el-button>
                     </div>
                   </template>
                 </el-alert>
               </div>
 
-              <!--  流程选择器 -->
+              <!--  process selector -->
               <div class="config-section" v-if="workflowsSorted.length > 0">
-                <h4 class="config-title">📋 分析流程</h4>
+                <h4 class="config-title">📋 Analysis process</h4>
                 <el-select
                   :key="`workflow-select-${analysisForm.market}`"
                   v-model="selectedWorkflowId"
                   size="small"
                   style="width: 100%"
-                  placeholder="选择分析流程"
+                  placeholder="Select analysis process"
                 >
                   <el-option
                     v-for="workflow in workflowsSorted"
@@ -498,38 +498,38 @@
                     :value="workflow.id"
                   />
                 </el-select>
-                <el-tooltip content="选择不同的分析流程，系统会使用该流程对应的智能体和步骤进行分析" placement="top">
+                <el-tooltip content="Select different analysis processes, and the system will use the agents and steps corresponding to the process for analysis." placement="top">
                   <el-icon style="margin-left: 8px; color: #909399; cursor: help;"><InfoFilled /></el-icon>
                 </el-tooltip>
               </div>
 
-              <!-- 分析选项 - 已隐藏，流程内置 -->
+              <!-- Analysis options - hidden, built-in process -->
               <!--
               <div class="config-section">
-                <h4 class="config-title">⚙️ 分析选项</h4>
+                <h4 class="config-title">⚙️ Analysis options</h4>
                 <div class="option-list">
                   <div class="option-item">
                     <div class="option-info">
-                      <span class="option-name">情绪分析</span>
-                      <span class="option-desc">分析市场情绪和投资者心理</span>
+                      <span class="option-name">sentiment analysis</span>
+                      <span class="option-desc">Analyze market sentiment and investor psychology</span>
                     </div>
                     <el-switch v-model="analysisForm.includeSentiment" />
                   </div>
 
                   <div class="option-item">
                     <div class="option-info">
-                      <span class="option-name">风险评估</span>
-                      <span class="option-desc">包含详细的风险因素分析</span>
+                      <span class="option-name">risk assessment</span>
+                      <span class="option-desc">Contains detailed risk factor analysis</span>
                     </div>
                     <el-switch v-model="analysisForm.includeRisk" />
                   </div>
 
                   <div class="option-item">
                     <div class="option-info">
-                      <span class="option-name">语言偏好</span>
+                      <span class="option-name">Language preference</span>
                     </div>
                     <el-select v-model="analysisForm.language" size="small" style="width: 100px">
-                      <el-option label="中文" value="zh-CN" />
+                      <el-option label="Chinese" value="zh-CN" />
                       <el-option label="English" value="en-US" />
                     </el-select>
                   </div>
@@ -542,14 +542,14 @@
         </el-col>
       </el-row>
 
-      <!-- 分析结果显示 -->
+      <!-- Analysis results show -->
       <div v-if="showResults && analysisResults" class="results-section">
         <el-row :gutter="24">
           <el-col :span="24">
             <el-card class="results-card" shadow="hover">
               <template #header>
                 <div class="results-header">
-                  <h3>📊 分析结果</h3>
+                  <h3>📊 Analyze results</h3>
                   <div class="result-meta">
                     <el-tag type="success">{{ analysisResults.symbol || analysisResults.stock_symbol || analysisForm.symbol || analysisForm.stockCode }}</el-tag>
                     <el-tag>{{ analysisResults.analysis_date }}</el-tag>
@@ -562,7 +562,7 @@
               </template>
 
               <div class="results-content">
-                <!-- 风险提示 -->
+                <!-- Risk warning -->
                 <div class="risk-disclaimer">
                   <el-alert
                     type="warning"
@@ -573,15 +573,15 @@
                       <div class="disclaimer-content">
                         <el-icon class="disclaimer-icon"><WarningFilled /></el-icon>
                         <div class="disclaimer-text">
-                          <p style="margin: 0 0 8px 0;"><strong>⚠️ 重要风险提示与免责声明</strong></p>
+                          <p style="margin: 0 0 8px 0;"><strong>⚠️ Important Risk Warnings and Disclaimers</strong></p>
                           <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
-                            <li><strong>平台性质：</strong>本平台为AI辅助分析技术学习平台，专注于AI技术在证券与ETF分析领域的应用验证和技术学习。</li>
-                            <li><strong>分析目的：</strong>所有分析结论仅用于学习和验证AI辅助分析技术，不作为真实交易操盘指导或投资依据。</li>
-                            <li><strong>非投资建议：</strong>所有分析结果、评分、建议仅为技术验证参考，不构成任何买卖建议或投资决策依据。</li>
-                            <li><strong>数据局限性：</strong>分析基于历史数据和公开信息，可能存在延迟、不完整或不准确的情况，无法预测未来市场走势。</li>
-                            <li><strong>投资风险：</strong>股票与ETF投资均存在市场风险、流动性风险、政策风险等多种风险，可能导致本金损失。</li>
-                            <li><strong>独立决策：</strong>投资者应基于自身风险承受能力、投资目标和财务状况独立做出投资决策。</li>
-                            <li><strong>责任声明：</strong>使用本平台产生的任何投资决策及其后果由使用者自行承担，本平台不承担任何责任。</li>
+                            <li><strong>Platform nature:</strong>This platform is an AI-assisted analysis technology learning platform, focusing on the application verification and technical learning of AI technology in the fields of securities and ETF analysis.</li>
+                            <li><strong>Analysis purpose:</strong>All analysis conclusions are only used to learn and verify AI-assisted analysis technology and are not used as real trading guidance or investment basis.</li>
+                            <li><strong>Non-investment advice:</strong>All analysis results, ratings, and recommendations are only for technical verification reference and do not constitute any buying and selling advice or the basis for investment decisions.</li>
+                            <li><strong>Data limitations:</strong>The analysis is based on historical data and public information, which may be delayed, incomplete or inaccurate, and cannot predict future market trends.</li>
+                            <li><strong>Investment risks:</strong>Both stock and ETF investments are subject to various risks such as market risk, liquidity risk, policy risk, etc., which may result in loss of principal.</li>
+                            <li><strong>Independent decision-making:</strong>Investors should make investment decisions independently based on their own risk tolerance, investment objectives and financial status.</li>
+                            <li><strong>Responsibility statement:</strong>Any investment decisions and consequences arising from the use of this platform are the sole responsibility of the user, and this platform does not assume any responsibility.</li>
                           </ul>
                         </div>
                       </div>
@@ -589,7 +589,7 @@
                   </el-alert>
                 </div>
 
-                <!-- 降级节点警告 -->
+                <!-- Downgrade node warning -->
                 <el-alert
                   v-if="analysisResults.degraded_nodes && Object.keys(analysisResults.degraded_nodes).length > 0"
                   type="warning"
@@ -597,24 +597,24 @@
                   show-icon
                   style="margin-bottom: 16px"
                 >
-                  <template #title>部分分析节点执行失败（已降级）</template>
+                  <template #title>Some analysis nodes failed to execute (downgraded)</template>
                   <div style="margin-top: 4px; font-size: 13px; line-height: 1.6">
                     <div v-for="(info, nodeId) in analysisResults.degraded_nodes" :key="nodeId">
-                      <strong>{{ info.label || nodeId }}</strong>：{{ info.error ? info.error.substring(0, 120) : '未知错误' }}
+                      <strong>{{ info.label || nodeId }}</strong>: {{ info.error ? info.error.substring(0, 120) : 'unknown error' }}
                     </div>
-                    <div style="margin-top: 4px; color: #909399">其余节点的分析结果不受影响。</div>
+                    <div style="margin-top: 4px; color: #909399">The analysis results of other nodes are not affected.</div>
                   </div>
                 </el-alert>
 
-                <!-- 分析概览 -->
+                <!-- Analysis overview -->
                 <div v-if="overviewBriefContent" class="overview-section">
-                  <h4>📊 分析概览</h4>
+                  <h4>📊 Analysis overview</h4>
                   <div class="overview-card">
                     <div class="overview-summary">
                       <div class="markdown-content" v-html="renderMarkdown(overviewBriefContent)"></div>
                     </div>
 
-                    <!-- v2.1.0 结果页以研究简报为主入口，不再在这里重复堆叠另一张决策卡 -->
+                    <!-- v2.1.0 The results page uses the research brief as the main entrance and no longer stacks another decision card here. -->
                   </div>
                 </div>
 
@@ -624,11 +624,11 @@
                   :task-id="growthTaskId"
                 />
 
-                <!-- 详细分析报告 -->
+                <!-- Detailed analysis report -->
                 <div v-if="analysisResults.state || analysisResults.reports" class="reports-section">
-                  <h4>📋 详细分析报告</h4>
+                  <h4>📋 Detailed analysis report</h4>
 
-                  <!-- 美观的标签页展示 -->
+                  <!-- Beautiful tab display -->
                   <div class="analysis-tabs-container">
                     <el-tabs
                       v-model="activeReportTab"
@@ -644,7 +644,7 @@
                         :label="report.title"
                         class="report-tab-pane"
                       >
-                        <!-- 标签页内容头部 -->
+                        <!-- Tab content header -->
                         <div class="report-header">
                           <div class="report-title">
                             <span class="report-icon">{{ getReportIcon(report.field, report.title) }}</span>
@@ -653,9 +653,9 @@
                           <div class="report-description">{{ getReportDescription(report.field, report.title) }}</div>
                         </div>
 
-                        <!-- 报告内容 -->
+                        <!-- Report content -->
                         <div class="report-content-wrapper">
-                          <!-- AI分析免责声明 -->
+                          <!-- AI Analysis Disclaimer -->
                           <el-alert
                             type="info"
                             :closable="false"
@@ -664,7 +664,7 @@
                           >
                             <template #title>
                               <span style="font-size: 13px;">
-                                ⚠️ 重要提示：本报告由AI基于有限资料分析生成，仅供参考，不构成投资建议。投资有风险，决策需谨慎。
+                                ⚠️ Important note: This report is generated by AI based on limited data analysis and is for reference only and does not constitute investment advice. Investment is risky and decisions need to be made with caution.
                               </span>
                             </template>
                           </el-alert>
@@ -675,7 +675,7 @@
                             v-if="report.content"
                           ></div>
                           <div v-else class="no-content">
-                            <el-empty description="暂无内容" />
+                            <el-empty description="No content yet" />
                           </div>
                         </div>
                       </el-tab-pane>
@@ -683,12 +683,12 @@
                   </div>
                 </div>
 
-                <!-- 操作按钮 -->
+                <!-- Action button -->
                 <div class="result-actions">
                   <el-dropdown trigger="click" @command="downloadReport">
                     <el-button type="primary">
                       <el-icon><Download /></el-icon>
-                      下载报告
+                      Download report
                       <el-icon class="el-icon--right"><arrow-down /></el-icon>
                     </el-button>
                     <template #dropdown>
@@ -697,20 +697,20 @@
                           <el-icon><document /></el-icon> Markdown
                         </el-dropdown-item>
                         <el-dropdown-item command="docx">
-                          <el-icon><document /></el-icon> Word 文档
+                          <el-icon><document /></el-icon> Word Documentation
                         </el-dropdown-item>
                         <el-dropdown-item command="pdf">
                           <el-icon><document /></el-icon> PDF
                         </el-dropdown-item>
                         <el-dropdown-item command="json" divided>
-                          <el-icon><document /></el-icon> JSON (原始数据)
+                          <el-icon><document /></el-icon> JSON (raw data)
                         </el-dropdown-item>
                       </el-dropdown-menu>
                     </template>
                   </el-dropdown>
                 </div>
 
-                <!-- 风险提示 -->
+                <!-- Risk warning -->
                 <el-alert
                   type="warning"
                   :closable="false"
@@ -718,7 +718,7 @@
                   class="risk-disclaimer"
                 >
                   <template #title>
-                    <span style="font-weight: bold;">报告依据真实交易数据使用AI分析生成，仅供参考，不构成任何投资建议。市场有风险，投资需谨慎。</span>
+                    <span style="font-weight: bold;">The report is generated using AI analysis based on real transaction data and is for reference only and does not constitute any investment advice. The market is risky and investment needs to be cautious.</span>
                   </template>
                 </el-alert>
               </div>
@@ -728,15 +728,15 @@
       </div>
     </div>
 
-    <!-- 数据校验结果对话框 -->
+    <!-- Data verification results dialog box -->
     <el-dialog
       v-model="showValidationDialog"
-      title="数据检验结果"
+      title="Data inspection results"
       width="800px"
       :close-on-click-modal="false"
     >
       <div v-if="validationResult" class="validation-result">
-        <!-- 总体状态 -->
+        <!-- overall status -->
         <el-alert
           :type="validationResult.is_valid ? 'success' : 'warning'"
           :closable="false"
@@ -744,12 +744,12 @@
           style="margin-bottom: 20px"
         >
           <template #title>
-            <strong>{{ validationResult.is_valid ? '✅ 数据正常' : '⚠️ 数据不完整' }}</strong>
+            <strong>{{ validationResult.is_valid ? '✅ Data is normal' : '⚠️ Data is incomplete' }}</strong>
             <span style="margin-left: 10px; font-weight: normal;">{{ validationResult.message }}</span>
           </template>
         </el-alert>
 
-        <!-- 缺失数据提示 -->
+        <!-- Missing data prompt -->
         <el-alert
           v-if="validationResult.missing_data && validationResult.missing_data.length > 0"
           type="error"
@@ -758,11 +758,11 @@
           style="margin-bottom: 20px"
         >
           <template #title>
-            <strong>缺失数据：</strong>{{ validationResult.missing_data.join('、') }}
+            <strong>Missing data:</strong>{{ validationResult.missing_data.join(', ') }}
           </template>
         </el-alert>
 
-        <!-- 详细数据表格 -->
+        <!-- Detailed data table -->
         <div v-if="validationResult.details" class="validation-details">
           <div
             v-for="(table, index) in formatValidationDetails(validationResult.details)"
@@ -780,12 +780,12 @@
               style="width: 100%"
               :show-header="false"
             >
-              <el-table-column prop="label" width="180" label="项目">
+              <el-table-column prop="label" width="180" label="Project">
                 <template #default="{ row }">
                   <strong>{{ row.label }}</strong>
                 </template>
               </el-table-column>
-              <el-table-column prop="value" label="值">
+              <el-table-column prop="value" label="value">
                 <template #default="{ row }">
                   <span v-html="row.value"></span>
                 </template>
@@ -807,14 +807,14 @@
             <el-icon v-else style="color: #f56c6c;">
               <WarningFilled />
             </el-icon>
-            <span>{{ syncStatus === 'running' ? '正在同步...' : syncStatus === 'success' ? '同步完成' : '同步失败' }}</span>
+            <span>{{ syncStatus === 'running' ? 'Synchronizing...' : syncStatus === 'success' ? 'Synchronization completed' : 'Sync failed' }}</span>
           </div>
           <div style="display: flex; gap: 12px;">
             <el-button type="primary" :disabled="syncStatus === 'running'" @click="handleSyncMissingData">
               <el-icon><Refresh /></el-icon>
-              同步缺失数据
+              Sync missing data
             </el-button>
-            <el-button @click="showValidationDialog = false">关闭</el-button>
+            <el-button @click="showValidationDialog = false">close</el-button>
           </div>
         </div>
       </template>
@@ -859,19 +859,19 @@ import { normalizeMarketForAnalysis, getMarketByStockCode } from '@/utils/market
 import { fetchTaskResultWithRetry, hasTaskResultContent, mergeTaskResult } from '@/utils/taskResult'
 import type { StockInfo } from '@/types/analysis'
 
-// 配置marked选项
+// Configure marked options
 marked.setOptions({
-  breaks: true,        // 支持换行符转换为<br>
-  gfm: true           // 启用GitHub风格的Markdown
+  breaks: true,        // Supports newline conversion to<br>
+  gfm: true           // Enable GitHub style Markdown
 })
 
-// 市场类型定义
-type MarketType = 'A股' | 'ETF'
+// Market type definition
+type MarketType = 'A shares' | 'ETF'
 
-// 分析引擎类型
+// Analysis engine type
 type AnalysisEngineType = 'legacy' | 'v2'
 
-// 表单类型定义
+// Form type definition
 interface AnalysisForm {
   stockCode: string
   symbol: string
@@ -882,11 +882,11 @@ interface AnalysisForm {
   includeSentiment: boolean
   includeRisk: boolean
   language: 'zh-CN' | 'en-US'
-  engine: AnalysisEngineType  // 分析引擎: 固定使用 v2.0 引擎
-  enableTrace: boolean  // 执行轨迹开关：默认关闭，排查问题时可开启
+  engine: AnalysisEngineType  // Analysis engine: Fixed using v2.0 engine
+  enableTrace: boolean  // Execution trajectory switch: turned off by default, can be turned on when troubleshooting problems
 }
 
-// 使用store
+// Use store
 const router = useRouter()
 const route = useRoute()
 
@@ -899,22 +899,22 @@ const factorPreview = ref<FundamentalsResponse | null>(null)
 const syncStatus = ref<'idle' | 'running' | 'success' | 'error'>('idle')
 const syncPollingTimer = ref<any>(null)
 
-// 分析进度和结果相关状态
+// Analyze progress and results related status
 const currentTaskId = ref('')
 const analysisStatus = ref('idle') // 'idle', 'running', 'completed', 'failed'
 const showResults = ref(false)
 const analysisResults = ref<any>(null)
 const analysisReportManifest = ref<Array<{ field: string; display_name: string; icon?: string; description?: string }>>([])
-const activeReportTab = ref('') // 当前激活的报告标签页
+const activeReportTab = ref('') // Currently active reporting tab
 const growthTaskId = computed(() => analysisResults.value?.task_id || currentTaskId.value || null)
 const progressInfo = ref({
   progress: 0,
   currentStep: '',
-  currentStepDescription: '',  // 当前步骤描述
+  currentStepDescription: '',  // Current step description
   message: '',
-  elapsedTime: 0,      // 已用时间（秒）
-  remainingTime: 0,    // 预计剩余时间（秒）
-  totalTime: 0         // 预计总时长（秒）
+  elapsedTime: 0,      // Elapsed time (seconds)
+  remainingTime: 0,    // Estimated remaining time (seconds)
+  totalTime: 0         // Estimated total duration (seconds)
 })
 const pollingTimer = ref<any>(null)
 
@@ -929,7 +929,7 @@ const loadCompletedAnalysisResult = async (taskId: string, status?: any) => {
     seedData: statusResult,
     isComplete: result => {
       const merged = mergeTaskResult(statusResult, result)
-      console.log('📦 获取分析结果尝试:', {
+      console.log('📦 Try to get analysis results:', {
         hasContent: hasTaskResultContent(merged),
         hasDecision: !!merged?.decision,
         hasSummary: !!merged?.summary,
@@ -942,10 +942,10 @@ const loadCompletedAnalysisResult = async (taskId: string, status?: any) => {
   return mergeTaskResult(statusResult, finalResult)
 }
 
-// 分析步骤定义（动态生成）
+// Analysis step definition (dynamically generated)
 const analysisSteps = ref<any[]>([])
 
-// 从后端步骤数据生成前端步骤
+// Generate front-end steps from back-end step data
 const generateStepsFromBackend = (backendSteps: any[]) => {
   if (!backendSteps || !Array.isArray(backendSteps)) {
     return []
@@ -953,29 +953,29 @@ const generateStepsFromBackend = (backendSteps: any[]) => {
 
   return backendSteps.map((step: any, index: number) => ({
     key: `step_${index}`,
-    title: step.name || `步骤 ${index + 1}`,
-    description: step.description || '处理中...',
+    title: step.name || `steps ${index + 1}`,
+    description: step.description || 'Processing...',
     status: 'pending'
   }))
 }
 
-// 模型设置
+// Model settings
 const modelSettings = ref({
   quickAnalysisModel: 'qwen-turbo',
   deepAnalysisModel: 'qwen-max'
 })
 
-// 可用的模型列表（从配置中获取）
+// List of available models (obtained from configuration)
 const availableModels = ref<any[]>([])
 const workflows = ref<WorkflowSummary[]>([])
 const workflowsSorted = computed(() => {
-  // 根据市场类型做级联过滤
+  // Perform cascade filtering based on market type
   const expectedType = analysisForm.market === 'ETF' ? 'etf_analysis' : 'stock_analysis'
   const arr = workflows.value.filter(
     (w: WorkflowSummary) => isSelectableAnalysisWorkflow(w, expectedType)
   )
   
-  // 按版本号倒序排序
+  // Sort by version number in descending order
   arr.sort((a, b) => {
     const vA = a.version || ''
     const vB = b.version || ''
@@ -995,14 +995,14 @@ const workflowsSorted = computed(() => {
   return arr
 })
 
-// 解析版本号为数字数组
+// Parse version number as numeric array
 function parseVersion(v: string | number): number[] {
   const str = String(v || '')
   return str.split('.').map(p => parseInt(p.trim(), 10) || 0)
 }
 const selectedWorkflowId = ref<string>('v2_stock_analysis')
 
-// 🆕 模型推荐提示
+// 🆕 Model recommendation tips
 const modelRecommendation = ref<{
   title: string
   message: string
@@ -1011,55 +1011,55 @@ const modelRecommendation = ref<{
   deepModel?: string
 } | null>(null)
 
-// 分析表单
+// Analysis form
 const analysisForm = reactive<AnalysisForm>({
-  stockCode: '',  // 保留用于表单绑定
-  symbol: '',     // 标准化后的代码
-  market: 'A股',
+  stockCode: '',  // Reserved for form binding
+  symbol: '',     // standardized code
+  market: 'A shares',
   analysisDate: new Date(),
-  researchDepth: 3, // 默认选中3级标准分析（推荐），将在 onMounted 中从用户偏好加载
-  selectedAnalysts: ['市场分析师', '基本面分析师'], // 将在 onMounted 中从用户偏好加载
+  researchDepth: 3, // Level 3 standard analysis is selected by default (recommended) and will be loaded from user preferences in onMounted
+  selectedAnalysts: ['market analyst', 'fundamental analyst'], // will be loaded from user preferences in onMounted
   includeSentiment: true,
   includeRisk: true,
   language: 'zh-CN',
-  engine: 'v2',  // 固定使用 v2.0 引擎
-  enableTrace: false  // 执行轨迹：默认关闭，排查问题时可开启
+  engine: 'v2',  // Fixed using v2.0 engine
+  enableTrace: false  // Execution trace: turned off by default, can be turned on when troubleshooting problems
 })
 
-// 监听市场类型变化，自动切换到对应类型的默认流程
+// Monitor market type changes and automatically switch to the default process of the corresponding type
 watch(
   () => analysisForm.market,
   () => {
-    // 使用已过滤（排除 v1.0/快速/空白流程）并按版本排序的列表
+    // Use a list filtered (excluding v1.0/quick/blank flows) and sorted by version
     const targetWorkflows = workflowsSorted.value
     
     if (targetWorkflows.length > 0) {
-      // 优先找 is_default 的
+      // Look for is_default first
       const defaultWf = targetWorkflows.find(w => w.is_default)
       if (defaultWf) {
         selectedWorkflowId.value = defaultWf.id
       } else {
-        // 没找到的话选第一个（最高版本）
+        // If not found, select the first one (highest version)
         selectedWorkflowId.value = targetWorkflows[0].id
       }
     }
   }
 )
 
-// 股票代码验证相关
+// Stock code verification related
 const stockCodeError = ref<string>('')
 const stockCodeHelp = ref<string>('')
 
-// 深度选项（5个级别，基于实际测试数据更新）
+// Depth options (5 levels, updated based on actual test data)
 const depthOptions = [
-  { icon: '⚡', name: '1级 - 快速分析', description: '基础数据概览，快速决策', time: '2-5分钟' },
-  { icon: '📈', name: '2级 - 基础分析', description: '常规投资决策', time: '3-6分钟' },
-  { icon: '🎯', name: '3级 - 标准分析', description: '技术+基本面，推荐', time: '4-8分钟' },
-  { icon: '🔍', name: '4级 - 深度分析', description: '多轮辩论，深度研究', time: '6-11分钟' },
-  { icon: '🏆', name: '5级 - 全面分析', description: '最全面的分析报告', time: '8-16分钟' }
+  { icon: '⚡', name: '1 Level - Quick Analysis', description: 'Basic data overview, quick decision-making', time: '2-5 minutes' },
+  { icon: '📈', name: '2 Level - Basic Analysis', description: 'Routine investment decisions', time: '3-6 minutes' },
+  { icon: '🎯', name: '3 Level - Standard Analysis', description: 'technology+Fundamentals, recommended', time: '4-8 minutes' },
+  { icon: '🔍', name: '4 Level - In-Depth Analysis', description: 'Multiple rounds of debate and in-depth research', time: '6-11 minutes' },
+  { icon: '🏆', name: '5 Level - Comprehensive Analysis', description: 'The most comprehensive analysis report', time: '8-16 minutes' }
 ]
 
-// 禁用日期
+// Ban date
 const disabledDate = (time: Date) => {
   return time.getTime() > Date.now()
 }
@@ -1078,7 +1078,7 @@ const clearFactorPreview = () => {
 }
 
 const fetchFactorPreview = async (normalizedCode?: string) => {
-  if (analysisForm.market !== 'A股') {
+  if (analysisForm.market !== 'A shares') {
     clearFactorPreview()
     return
   }
@@ -1094,40 +1094,40 @@ const fetchFactorPreview = async (normalizedCode?: string) => {
     const response = await stocksApi.getFundamentals(targetCode)
     factorPreview.value = ((response as any)?.data || null) as FundamentalsResponse | null
   } catch (error) {
-    console.warn('获取因子预览失败', error)
+    console.warn('Failed to get factor preview', error)
     clearFactorPreview()
   } finally {
     factorPreviewLoading.value = false
   }
 }
 
-// 股票代码输入时的处理
+// Processing when entering stock code
 const onStockCodeInput = () => {
-  // 清除错误信息
+  // Clear error message
   stockCodeError.value = ''
   clearFactorPreview()
-  // 显示格式提示
+  // Show format tips
   stockCodeHelp.value = getStockCodeFormatHelp(analysisForm.market)
 }
 
-const ETF_ANALYST_NAMES = ['ETF分析师', '市场分析师', '新闻分析师']
+const ETF_ANALYST_NAMES = ['ETF analyst', 'market analyst', 'news analyst']
 
 const normalizeSelectedAnalystsForMarket = (market: MarketType, analysts: string[]) => {
   if (market === 'ETF') {
     return [...ETF_ANALYST_NAMES]
   }
 
-  const disallowedAnalysts = ['ETF分析师']
-  if (market !== 'A股') {
-    disallowedAnalysts.push('大盘分析师', '板块分析师')
+  const disallowedAnalysts = ['ETF analyst']
+  if (market !== 'A shares') {
+    disallowedAnalysts.push('Market Analyst', 'Sector Analyst')
   }
 
   return analysts.filter(name => !disallowedAnalysts.includes(name))
 }
 
-// 🔥 根据市场类型过滤可用的分析师（大盘和板块分析师仅支持A股，ETF 仅显示 etf/market/news）
+// 🔥 Filter available analysts based on market type (large market and sector analysts only support A shares, ETF only displays etf/market/news)
 const availableAnalysts = computed(() => {
-  const isAStock = analysisForm.market === 'A股'
+  const isAStock = analysisForm.market === 'A shares'
   const isETF = analysisForm.market === 'ETF'
   const etfAnalystIds = ['etf', 'market', 'news']
 
@@ -1144,18 +1144,18 @@ const availableAnalysts = computed(() => {
   })
 })
 
-// 市场类型变更时的处理
+// What to do when the market type changes
 const onMarketChange = () => {
   clearFactorPreview()
-  // 重新验证股票代码
+  // Re-verify ticker
   if (analysisForm.stockCode.trim()) {
     validateStockCodeInput()
   } else {
-    // 显示新市场的格式提示
+    // Show format tips for new markets
     stockCodeHelp.value = getStockCodeFormatHelp(analysisForm.market)
   }
 
-  // 🔥 ETF 市场：固定使用 ETF / 市场 / 新闻 分析师
+  // 🔥 ETF Markets: Fixed Use ETFs / Markets / News Analysts
   if (analysisForm.market === 'ETF') {
     analysisForm.selectedAnalysts = [...ETF_ANALYST_NAMES]
     return
@@ -1167,7 +1167,7 @@ const onMarketChange = () => {
   )
 }
 
-// 验证股票代码输入
+// Validate stock code input
 const validateStockCodeInput = () => {
   const code = analysisForm.stockCode.trim()
 
@@ -1177,47 +1177,47 @@ const validateStockCodeInput = () => {
     return
   }
 
-  // 验证股票代码格式
+  // Validate ticker format
   let validation = validateStockCode(code, analysisForm.market)
 
   if (!validation.valid) {
-    // 🔥 智能提示：A股验证失败但代码符合ETF格式时，提示用户切换市场
-    if (analysisForm.market === 'A股') {
+    // 🔥 Smart reminder: When A-share verification fails but the code complies with the ETF format, the user is prompted to switch markets
+    if (analysisForm.market === 'A shares') {
       const etfCheck = validateStockCode(code, 'ETF')
       if (etfCheck.valid) {
-        stockCodeError.value = '该代码为ETF基金，请将市场类型改为「ETF 基金」'
+        stockCodeError.value = 'The code is ETF fund, please change the market type to ETF Fund '
         stockCodeHelp.value = ''
         return
       }
     }
-    stockCodeError.value = validation.message || '股票代码格式不正确'
+    stockCodeError.value = validation.message || 'Stock symbol format is incorrect'
     stockCodeHelp.value = ''
   } else {
     stockCodeError.value = ''
-    stockCodeHelp.value = `✓ ${validation.market}代码格式正确`
+    stockCodeHelp.value = `✓ ${validation.market}The code format is correct`
 
-    // 自动更新市场类型（如果识别出的市场与当前选择不同）
-    // V3.0 聚焦 A 股，港美股已暂停
+    // Automatically update market types (if the recognized market is different from the current selection)
+    // V3.0 Focus on A shares, Hong Kong and US stocks have been suspended
     if (validation.market && validation.market !== analysisForm.market) {
-      const validMarkets: MarketType[] = ['A股', 'ETF']
+      const validMarkets: MarketType[] = ['A shares', 'ETF']
       if ((validMarkets as string[]).includes(validation.market)) {
         analysisForm.market = validation.market as MarketType
-        onMarketChange()  // 同步更新分析师选择（如 ETF 固定分析师）
-        ElMessage.success(`已自动识别为${validation.market}`)
+        onMarketChange()  // Simultaneously update analyst selections (e.g. ETF fixed analysts)
+        ElMessage.success(`has been automatically recognized as${validation.market}`)
       }
     }
 
-    // 标准化代码
+    // standardized code
     if (validation.normalizedCode) {
       analysisForm.stockCode = validation.normalizedCode
     }
   }
 
-  // 获取股票信息
+  // Get stock information
   fetchStockInfo()
 }
 
-// 获取股票信息（实时行情，用于显示股票名称和当前价格）
+// Get stock information (real-time quotes, used to display stock names and current prices)
 const fetchStockInfo = async () => {
   const code = analysisForm.stockCode.trim()
   if (!code) return
@@ -1226,18 +1226,18 @@ const fetchStockInfo = async () => {
     const response = await stocksApi.getQuote(code)
     const data = (response as any)?.data
     if (data) {
-      // 更新 factorPreviewRow 中的名称（如果行情返回了名称）
+      // Update the name in factorPreviewRow (if the quote returns a name)
       if (data.name && factorPreviewRow.value) {
         factorPreviewRow.value.name = data.name
       }
     }
   } catch (error) {
-    // 行情获取失败不影响主流程，静默处理
-    console.warn('获取股票行情失败', error)
+    // Failure to obtain market data does not affect the main process and is handled silently.
+    console.warn('Failed to get stock quotes', error)
   }
 }
 
-// 切换分析师
+// Switch analyst
 const toggleAnalyst = (analystName: string) => {
   const index = analysisForm.selectedAnalysts.indexOf(analystName)
   if (index > -1) {
@@ -1247,39 +1247,39 @@ const toggleAnalyst = (analystName: string) => {
   }
 }
 
-// 数据校验
+// Data verification
 const handleValidateData = async () => {
   const stockCode = analysisForm.stockCode.trim()
   if (!stockCode) {
-    ElMessage.warning('请先输入股票代码')
+    ElMessage.warning('Please enter the stock code first')
     return
   }
 
-  // 验证股票代码格式
+  // Validate ticker format
   let validation = validateStockCode(stockCode, analysisForm.market)
   if (!validation.valid) {
-    if (analysisForm.market === 'A股') {
+    if (analysisForm.market === 'A shares') {
       const etfCheck = validateStockCode(stockCode, 'ETF')
       if (etfCheck.valid) {
-        ElMessage.warning('该代码为ETF基金，请将市场类型改为「ETF 基金」后再进行数据校验')
+        ElMessage.warning('This code is an ETF fund. Please change the market type to ETF Fund before verifying the data.')
         return
       }
     }
-    ElMessage.error(validation.message || '股票代码格式不正确')
+    ElMessage.error(validation.message || 'Stock symbol format is incorrect')
     return
   }
 
-  // 使用标准化后的代码
+  // Use standardized code
   const normalizedCode = validation.normalizedCode || stockCode.toUpperCase()
 
-  // 确定市场类型（用于API调用）
+  // Determine market type (for API calls)
   const marketTypeMap: Record<string, string> = {
-    'A股': 'cn',
-    'ETF': 'cn'  // ETF 为 A 股场内基金
+    'A shares': 'cn',
+    'ETF': 'cn'  // ETF For A-share exchange-traded funds
   }
   const marketType = marketTypeMap[analysisForm.market] || 'cn'
 
-  // 格式化分析日期
+  // Format analysis date
   const analysisDate = analysisForm.analysisDate instanceof Date
     ? analysisForm.analysisDate.toISOString().split('T')[0]
     : analysisForm.analysisDate
@@ -1303,14 +1303,14 @@ const handleValidateData = async () => {
       const result = response.data
       await fetchFactorPreview(normalizedCode)
       
-      // 显示校验结果对话框
+      // Show verification results dialog box
       showValidationResultDialog(result)
     } else {
-      ElMessage.error('数据校验失败：未返回结果')
+      ElMessage.error('Data verification failed: no result returned')
     }
   } catch (error: any) {
-    console.error('数据校验失败:', error)
-    ElMessage.error(`数据校验失败：${error.response?.data?.detail || error.message || '未知错误'}`)
+    console.error('Data verification failed:', error)
+    ElMessage.error(`Data verification failed:${error.response?.data?.detail || error.message || 'unknown error'}`)
   } finally {
     validatingData.value = false
   }
@@ -1325,32 +1325,32 @@ const isTerminalStockSyncStatus = (status?: string): boolean => {
 const buildSingleSyncTaskMessage = (task: StockSyncTaskStatus, symbol: string): string => {
   const result = task.result as SingleStockSyncResponse | null | undefined
   if (!result) {
-    return task.error || task.message || `股票 ${symbol} 同步失败`
+    return task.error || task.message || `stocks ${symbol} Sync failed`
   }
 
-  const parts = [`股票 ${symbol} 数据同步完成`]
+  const parts = [`stocks ${symbol} Data synchronization completed`]
 
   if (result.realtime_sync) {
     if (result.realtime_sync.success) {
       const dataSourceUsed = (result.realtime_sync as any).data_source_used
       if (dataSourceUsed) {
-        parts.push(`实时行情同步成功（数据源 ${String(dataSourceUsed).toUpperCase()}）`)
+        parts.push(`Real-time market synchronization successful (data source ${String(dataSourceUsed).toUpperCase()}) `)
       } else {
-        parts.push('实时行情同步成功')
+        parts.push('Real-time market synchronization successful')
       }
     } else {
-      parts.push(`实时行情同步失败: ${result.realtime_sync.error || '未知错误'}`)
+      parts.push(`Real-time market synchronization failed: ${result.realtime_sync.error || 'unknown error'}`)
     }
   }
 
   if (result.historical_sync) {
-    parts.push(result.historical_sync.success ? `历史数据 ${result.historical_sync.records || 0} 条` : `历史数据同步失败: ${result.historical_sync.error || '未知错误'}`)
+    parts.push(result.historical_sync.success ? `historical data ${result.historical_sync.records || 0} Article` : `Historical data synchronization failed: ${result.historical_sync.error || 'unknown error'}`)
   }
   if (result.financial_sync) {
-    parts.push(result.financial_sync.success ? '财务数据同步成功' : `财务数据同步失败: ${result.financial_sync.error || '未知错误'}`)
+    parts.push(result.financial_sync.success ? 'Financial data synchronization successful' : `Financial data synchronization failed: ${result.financial_sync.error || 'unknown error'}`)
   }
   if (result.basic_sync) {
-    parts.push(result.basic_sync.success ? '基础数据同步成功' : `基础数据同步失败: ${result.basic_sync.error || '未知错误'}`)
+    parts.push(result.basic_sync.success ? 'Basic data synchronization successful' : `Basic data synchronization failed: ${result.basic_sync.error || 'unknown error'}`)
   }
 
   return parts.join('；')
@@ -1369,7 +1369,7 @@ const waitForStockSyncTask = async (taskId: string): Promise<StockSyncTaskStatus
     await sleep(STOCK_SYNC_POLL_INTERVAL_MS)
   }
 
-  throw new Error('同步任务执行超时，请稍后刷新页面查看结果')
+  throw new Error('The synchronization task execution timed out, please refresh the page later to view the results.')
 }
 
 const monitorSingleSyncTask = async (taskId: string, symbol: string) => {
@@ -1384,38 +1384,38 @@ const monitorSingleSyncTask = async (taskId: string, symbol: string) => {
       ElMessage.error(message)
     }
 
-    // 同步完成后，重新调用数据检验
+    // After synchronization is completed, call the data verification again
     await handleValidateData()
   } catch (error: any) {
-    if (error?.message !== '页面已离开，停止等待同步结果') {
-      ElMessage.error(error?.message || '同步结果查询失败，请稍后刷新页面查看')
+    if (error?.message !== 'The page has been left, stop waiting for synchronization results') {
+      ElMessage.error(error?.message || 'Synchronization result query failed, please refresh the page later to view')
     }
   } finally {
     clearSyncPolling()
   }
 }
 
-// 同步缺失数据
+// Sync missing data
 const handleSyncMissingData = async () => {
   const stockCode = analysisForm.stockCode.trim()
   const validation = validateStockCode(stockCode, analysisForm.market)
 
   if (!validation.valid) {
-    ElMessage.error('股票代码不正确')
+    ElMessage.error('Incorrect stock symbol')
     return
   }
 
   const normalizedCode = validation.normalizedCode || stockCode.toUpperCase()
   const missingData = validationResult.value?.missing_data || [] as string[]
 
-  // 根据缺失数据确定同步什么
+  // Determine what to sync based on missing data
   const syncTypes: string[] = []
-  if (missingData.includes('实时行情')) syncTypes.push('realtime')
-  if (missingData.includes('历史数据')) syncTypes.push('historical')
-  if (missingData.includes('财务数据')) syncTypes.push('financial')
-  if (missingData.includes('基础信息')) syncTypes.push('basic')
+  if (missingData.includes('Real-time quotes')) syncTypes.push('realtime')
+  if (missingData.includes('historical data')) syncTypes.push('historical')
+  if (missingData.includes('financial data')) syncTypes.push('financial')
+  if (missingData.includes('Basic information')) syncTypes.push('basic')
 
-  // 如果没有明确指定缺失，默认都同步
+  // If missing is not explicitly specified, everything will be synchronized by default.
   if (syncTypes.length === 0) {
     syncTypes.push('realtime', 'historical', 'financial', 'basic')
   }
@@ -1433,20 +1433,20 @@ const handleSyncMissingData = async () => {
     })
 
     if (res.success) {
-      ElMessage.success(`股票 ${normalizedCode} 同步任务已提交，后台执行中`)
+      ElMessage.success(`stocks ${normalizedCode} The synchronization task has been submitted and is being executed in the background`)
       void monitorSingleSyncTask(res.data.task_id, normalizedCode)
     } else {
       syncStatus.value = 'error'
-      ElMessage.error(res.message || '同步失败')
+      ElMessage.error(res.message || 'Sync failed')
     }
   } catch (error: any) {
-    console.error('同步失败:', error)
+    console.error('Sync failed:', error)
     syncStatus.value = 'error'
-    ElMessage.error(error.message || '同步失败，请稍后重试')
+    ElMessage.error(error.message || 'Synchronization failed, please try again later')
   }
 }
 
-// 清理同步轮询定时器
+// Clean up synchronous polling timer
 const clearSyncPolling = () => {
   if (syncPollingTimer.value) {
     clearInterval(syncPollingTimer.value)
@@ -1454,69 +1454,69 @@ const clearSyncPolling = () => {
   }
 }
 
-// 显示校验结果对话框
+// Show verification results dialog box
 const showValidationResultDialog = (result: any) => {
   validationResult.value = result
   showValidationDialog.value = true
-  syncStatus.value = 'idle' // 重置同步状态
+  syncStatus.value = 'idle' // Reset sync status
 }
 
-// 格式化校验结果详情为表格数据
+// Formatted verification result details are tabular data
 const formatValidationDetails = (details: any) => {
   const tables: Array<{ title: string; data: Array<{ label: string; value: any }> }> = []
   
-  // 基础信息
+  // Basic information
   if (details.basic_info) {
     const basicInfo = details.basic_info
     tables.push({
-      title: '基础信息',
+      title: 'Basic information',
       data: [
-        { label: '状态', value: basicInfo.exists ? '✅ 存在' : '❌ 不存在' },
-        { label: analysisForm.market === 'ETF' ? 'ETF名称' : '股票名称', value: basicInfo.name || '-' },
-        { label: '上市日期', value: basicInfo.list_date || '-' }
+        { label: 'Status', value: basicInfo.exists ? '✅ exist' : '❌ does not exist' },
+        { label: analysisForm.market === 'ETF' ? 'ETF Name' : 'Stock name', value: basicInfo.name || '-' },
+        { label: 'Listing date', value: basicInfo.list_date || '-' }
       ]
     })
   }
   
-  // 历史数据
+  // historical data
   if (details.historical_data) {
     const histData = details.historical_data
     tables.push({
-      title: '历史数据',
+      title: 'historical data',
       data: [
-        { label: '状态', value: histData.exists ? '✅ 存在' : '❌ 不存在' },
-        { label: '数据条数', value: histData.count || 0 },
-        { label: '最早日期', value: histData.earliest_date || '-' },
-        { label: '最新日期', value: histData.latest_date || '-' },
-        { label: '分析日期数据', value: histData.analysis_date_exists ? '✅ 存在' : '⚠️ 不存在' },
-        { label: '日期范围', value: histData.date_range || '-' },
-        { label: '警告', value: histData.warning ? '⚠️ 是' : '✅ 否' }
+        { label: 'Status', value: histData.exists ? '✅ exist' : '❌ does not exist' },
+        { label: 'Number of data items', value: histData.count || 0 },
+        { label: 'earliest date', value: histData.earliest_date || '-' },
+        { label: 'latest date', value: histData.latest_date || '-' },
+        { label: 'Analyze date data', value: histData.analysis_date_exists ? '✅ exist' : '⚠️ does not exist' },
+        { label: 'date range', value: histData.date_range || '-' },
+        { label: 'warning', value: histData.warning ? '⚠️ Yes' : '✅ No' }
       ]
     })
   }
   
-  // 财务数据
+  // financial data
   if (details.financial_data !== undefined) {
     const finData = details.financial_data
     tables.push({
-      title: '财务数据',
+      title: 'financial data',
       data: [
-        { label: '状态', value: finData.exists ? '✅ 存在' : '❌ 不存在' },
-        { label: '最新报告期', value: finData.latest_report_period || '-' },
-        { label: '报告类型', value: finData.report_type || '-' }
+        { label: 'Status', value: finData.exists ? '✅ exist' : '❌ does not exist' },
+        { label: 'Latest reporting period', value: finData.latest_report_period || '-' },
+        { label: 'report type', value: finData.report_type || '-' }
       ]
     })
   }
   
-  // 实时行情
+  // Real-time quotes
   if (details.realtime_quotes !== undefined) {
     const quotesData = details.realtime_quotes
     tables.push({
-      title: '实时行情',
+      title: 'Real-time quotes',
       data: [
-        { label: '状态', value: quotesData.exists ? '✅ 存在' : '❌ 不存在' },
-        { label: '当前价格', value: quotesData.current_price ? `¥${quotesData.current_price}` : '-' },
-        { label: '更新时间', value: quotesData.update_time || '-' }
+        { label: 'Status', value: quotesData.exists ? '✅ exist' : '❌ does not exist' },
+        { label: 'current price', value: quotesData.current_price ? `¥${quotesData.current_price}` : '-' },
+        { label: 'Update time', value: quotesData.update_time || '-' }
       ]
     })
   }
@@ -1526,51 +1526,51 @@ const formatValidationDetails = (details: any) => {
 
 
 
-// 提交分析
+// Submit analysis
 const submitAnalysis = async () => {
   const stockCode = analysisForm.stockCode.trim()
   if (!stockCode) {
-    ElMessage.warning('请输入股票代码')
+    ElMessage.warning('Please enter stock code')
     return
   }
 
-  // 验证股票代码格式
+  // Validate ticker format
   let validation = validateStockCode(stockCode, analysisForm.market)
   if (!validation.valid) {
-    if (analysisForm.market === 'A股') {
+    if (analysisForm.market === 'A shares') {
       const etfCheck = validateStockCode(stockCode, 'ETF')
       if (etfCheck.valid) {
-        const msg = '该代码为ETF基金，请将市场类型改为「ETF 基金」后再开始分析'
+        const msg = 'This code is an ETF fund. Please change the market type to ETF Fund before starting analysis.'
         ElMessage.warning(msg)
         stockCodeError.value = msg
         return
       }
     }
-    ElMessage.error(validation.message || '股票代码格式不正确')
-    stockCodeError.value = validation.message || '股票代码格式不正确'
+    ElMessage.error(validation.message || 'Stock symbol format is incorrect')
+    stockCodeError.value = validation.message || 'Stock symbol format is incorrect'
     return
   }
 
-  // 使用标准化后的代码
+  // Use standardized code
   analysisForm.symbol = validation.normalizedCode || stockCode.toUpperCase()
   await fetchFactorPreview(analysisForm.symbol)
 
   if (analysisForm.selectedAnalysts.length === 0) {
-    ElMessage.warning('请至少选择一个分析师')
+    ElMessage.warning('Please select at least one analyst')
     return
   }
 
-  // 🔥 分析前预检：检查数据源配置、基础数据同步状态
+  // 🔥 Pre-analysis: Check data source configuration and basic data synchronization status
   try {
     const precheckResp = await analysisApi.precheck(analysisForm.symbol)
     const precheck = precheckResp.data || precheckResp
     if (!precheck.can_submit) {
-      // 阻止提交，引导用户先完成配置/同步
+      // Prevent submission and guide users to complete configuration/synchronization first
       const redirect = precheck.redirect || '/settings/config'
       const reason = precheck.reason || 'unknown'
-      const message = precheck.message || '请先完成系统配置'
+      const message = precheck.message || 'Please complete system configuration first'
 
-      // 根据原因设置跳转参数
+      // Set jump parameters according to reason
       let redirectUrl = redirect
       if (precheck.redirect_tab) {
         redirectUrl = `${redirect}?tab=${precheck.redirect_tab}`
@@ -1578,10 +1578,10 @@ const submitAnalysis = async () => {
 
       await ElMessageBox.confirm(
         message,
-        '无法开始分析',
+        'Unable to start analysis',
         {
-          confirmButtonText: reason === 'no_datasource' ? '去配置数据源' : '去同步数据',
-          cancelButtonText: '取消',
+          confirmButtonText: reason === 'no_datasource' ? 'Go to configure data source' : 'To synchronize data',
+          cancelButtonText: 'Cancel',
           type: 'warning',
           showClose: true,
         }
@@ -1590,25 +1590,25 @@ const submitAnalysis = async () => {
       return
     }
   } catch (precheckErr: any) {
-    // 用户点击取消或预检异常时，不继续提交
+    // When the user clicks cancel or the preflight is abnormal, the submission will not continue.
     if (precheckErr === 'cancel' || precheckErr?.toString?.().includes('cancel')) {
       return
     }
-    // 预检接口本身异常，降级放行（后端 Worker 还有兜底校验）
-    console.warn('⚠️ 分析预检异常，降级放行:', precheckErr)
+    // If the pre-check interface itself is abnormal, it will be allowed to be downgraded (the back-end worker also performs full verification)
+    console.warn('⚠️ Analyze pre-check exceptions, downgrade and release:', precheckErr)
   }
 
   submitting.value = true
 
   try {
-    // 确保 analysisDate 是 Date 对象
+    // Make sure analysisDate is a Date object
     const analysisDate = analysisForm.analysisDate instanceof Date
       ? analysisForm.analysisDate
       : new Date(analysisForm.analysisDate)
 
     const request: SingleAnalysisRequest = {
       symbol: analysisForm.symbol,
-      stock_code: analysisForm.symbol,  // 兼容字段
+      stock_code: analysisForm.symbol,  // Compatible fields
       parameters: {
         market_type: analysisForm.market,
         analysis_date: analysisDate.toISOString().split('T')[0],
@@ -1619,32 +1619,32 @@ const submitAnalysis = async () => {
         language: analysisForm.language,
         quick_analysis_model: modelSettings.value.quickAnalysisModel,
         deep_analysis_model: modelSettings.value.deepAnalysisModel,
-        engine: 'v2',  // 🔥 固定使用 v2.0 引擎（旧版引擎已隐藏）
+        engine: 'v2',  // 🔥 Fixed use of v2.0 engine (older engine has been hidden)
         workflow_id: selectedWorkflowId.value,
-        enable_trace: analysisForm.enableTrace  // 执行轨迹开关
+        enable_trace: analysisForm.enableTrace  // Execution trajectory switch
       }
     }
 
     const response = await analysisApi.startSingleAnalysis(request)
 
-    console.log('🔍 分析响应数据:', response)
-    console.log('🔍 响应数据结构:', response.data)
-    console.log('🔍 任务ID:', response.data?.task_id)
+    console.log('🔍 Analyze response data:', response)
+    console.log('🔍 response data structure:', response.data)
+    console.log('🔍 Task ID:', response.data?.task_id)
 
-    ElMessage.success('分析任务已提交，正在处理中...')
+    ElMessage.success('The analysis task has been submitted and is being processed...')
 
-    // 响应拦截器已返回 response.data，所以直接访问 response.data.task_id
+    // The response interceptor has returned response.data, so access it directly response.data.task_id
     currentTaskId.value = response.data.task_id
 
     if (!currentTaskId.value) {
-      console.error('❌ 任务ID为空:', response)
-      ElMessage.error('任务ID获取失败，请重试')
+      console.error('❌ Task ID is empty:', response)
+      ElMessage.error('Failed to obtain task ID, please try again')
       return
     }
 
-    console.log('✅ 任务ID设置成功:', currentTaskId.value)
+    console.log('✅ Task ID set successfully:', currentTaskId.value)
 
-    // 保存任务状态到缓存
+    // Save task status to cache
     saveTaskToCache(currentTaskId.value, {
       parameters: { ...analysisForm },
       submitTime: new Date().toISOString()
@@ -1656,75 +1656,75 @@ const submitAnalysis = async () => {
     activeReportTab.value = ''
     progressInfo.value = {
       progress: 0,
-      currentStep: '正在初始化分析...',
-      currentStepDescription: '分析任务已提交，正在启动分析流程',
-      message: '分析任务已提交，正在启动分析流程',
+      currentStep: 'Initializing analysis...',
+      currentStepDescription: 'The analysis task has been submitted and the analysis process is being started.',
+      message: 'The analysis task has been submitted and the analysis process is being started.',
       elapsedTime: 0,
       remainingTime: 0,
       totalTime: 0
     }
 
-    // 初始化空的步骤列表，等待后端数据
+    // Initialize an empty step list and wait for backend data
     analysisSteps.value = []
 
-    // 开始轮询任务状态
+    // Start polling task status
     startPollingTaskStatus()
 
-    // 立即查询一次状态（不等待第一次轮询）
+    // Query the status once immediately (without waiting for the first poll)
     setTimeout(async () => {
       try {
         const response = await analysisApi.getTaskStatus(currentTaskId.value)
-        const status = response.data // 响应拦截器已返回 response.data
-        console.log('🔄 立即查询状态:', status)
-        console.log('🔄 当前 analysisStatus:', analysisStatus.value)
+        const status = response.data // Response interceptor returned response.data
+        console.log('🔄 Check status now:', status)
+        console.log('🔄 current analysisStatus:', analysisStatus.value)
         if (status.status === 'pending' || status.status === 'running') {
           analysisStatus.value = 'running'
-          console.log('✅ 设置 analysisStatus 为 running')
+          console.log('✅ Set analysisStatus to running')
           updateProgressInfo(status)
         }
       } catch (error) {
-        console.error('立即查询状态失败:', error)
+        console.error('Immediate query status failed:', error)
       }
-    }, 1000) // 1秒后查询
+    }, 1000) // 1 Query after seconds
 
   } catch (error: any) {
-    ElMessage.error(error.message || '提交分析失败')
+    ElMessage.error(error.message || 'Failed to submit analysis')
   } finally {
     submitting.value = false
   }
 }
 
-// 轮询任务状态
+// Polling task status
 const startPollingTaskStatus = () => {
   if (pollingTimer.value) {
     clearInterval(pollingTimer.value)
   }
 
-  // 检查任务ID是否有效
+  // Check if the task ID is valid
   if (!currentTaskId.value) {
-    console.error('❌ 任务ID为空，无法开始轮询')
+    console.error('❌ The task ID is empty and polling cannot be started.')
     return
   }
 
-  console.log('🔄 开始轮询任务状态:', currentTaskId.value)
+  console.log('🔄 Start polling task status:', currentTaskId.value)
 
   pollingTimer.value = setInterval(async () => {
     try {
       if (!currentTaskId.value) {
-        console.error('❌ 轮询中任务ID为空')
+        console.error('❌ The task ID in polling is empty')
         if (pollingTimer.value) {
           clearInterval(pollingTimer.value)
         }
         return
       }
 
-      console.log('🔄 开始查询任务状态:', currentTaskId.value)
+      console.log('🔄 Start querying task status:', currentTaskId.value)
       const response = await analysisApi.getTaskStatus(currentTaskId.value)
-      const status = response.data // 响应拦截器已返回 response.data
+      const status = response.data // Response interceptor returned response.data
 
-      console.log('🔍 任务状态响应:', response)
-      console.log('🔍 任务状态数据:', status)
-      console.log('🔍 当前状态:', status.status, '进度:', status.progress)
+      console.log('🔍 Task status response:', response)
+      console.log('🔍 Task status data:', status)
+      console.log('🔍 Current status:', status.status, 'Progress:', status.progress)
 
       if (status.status === 'completed') {
         if (pollingTimer.value) {
@@ -1732,16 +1732,16 @@ const startPollingTaskStatus = () => {
           pollingTimer.value = null
         }
 
-        // 分析完成，调用专门的结果API获取完整数据
-        console.log('🎉 分析完成，正在获取完整结果...')
+        // After the analysis is completed, call the dedicated results API to obtain complete data.
+        console.log('🎉 Analysis completed, getting full results...')
 
         try {
           const finalResult = await loadCompletedAnalysisResult(currentTaskId.value, status)
           applyAnalysisResult(finalResult)
-          console.log('✅ 获取完整分析结果成功:', finalResult)
+          console.log('✅ Obtaining complete analysis results successfully:', finalResult)
 
-          // 添加调试信息
-          console.log('🔍 完整结果数据结构:', {
+          // Add debugging information
+          console.log('🔍 Complete result data structure:', {
             hasDecision: !!finalResult?.decision,
             hasState: !!finalResult?.state,
             hasReports: !!finalResult?.reports,
@@ -1750,28 +1750,28 @@ const startPollingTaskStatus = () => {
             keys: Object.keys(finalResult || {})
           })
         } catch (error) {
-          console.error('❌ 获取分析结果异常:', error)
+          console.error('❌ Exception in obtaining analysis results:', error)
           applyAnalysisResult(status.result_data || null)
         }
 
         analysisStatus.value = 'completed'
         showResults.value = true
         progressInfo.value.progress = 100
-        progressInfo.value.currentStep = '分析完成'
-        progressInfo.value.message = '分析已完成！'
+        progressInfo.value.currentStep = 'Analysis completed'
+        progressInfo.value.message = 'Analysis is complete!'
 
-        // 任务完成后保持缓存，以便刷新后能看到结果
-        // clearTaskCache() // 不清除，让用户能在30分钟内刷新查看结果
+        // Keep the cache after the task is completed so that you can see the results after refreshing
+        // clearTaskCache() // Not cleared, allowing users to refresh and view results within 30 minutes
 
-        ElMessage.success('分析完成！')
+        ElMessage.success('Analysis completed!')
 
       } else if (status.status === 'failed') {
-        // 分析失败
+        // Analysis failed
         analysisStatus.value = 'failed'
-        progressInfo.value.currentStep = '分析失败'
+        progressInfo.value.currentStep = 'Analysis failed'
 
-        // 格式化错误消息（保留换行符）
-        const errorMessage = status.error_message || '分析过程中发生错误'
+        // Format error message (preserve newlines)
+        const errorMessage = status.error_message || 'An error occurred during analysis'
         progressInfo.value.message = errorMessage
 
         if (pollingTimer.value) {
@@ -1779,59 +1779,59 @@ const startPollingTaskStatus = () => {
           pollingTimer.value = null
         }
 
-        // 任务失败时清除缓存
+        // Clear cache when task fails
         clearTaskCache()
 
-        // 显示友好的错误提示（使用 dangerouslyUseHTMLString 支持换行）
+        // Display friendly error prompts (use dangerouslyUseHTMLString to support line breaks)
         ElMessage({
           type: 'error',
           message: errorMessage.replace(/\n/g, '<br>'),
           dangerouslyUseHTMLString: true,
-          duration: 10000, // 显示10秒，让用户有时间阅读
+          duration: 10000, // Display for 10 seconds to give users time to read
           showClose: true
         })
 
       } else if (status.status === 'pending' || status.status === 'running') {
-        // 分析进行中，更新进度
-        console.log('🔄 轮询中设置 analysisStatus 为 running')
+        // Analysis in progress, update progress
+        console.log('🔄 Set analysisStatus in polling to running')
         analysisStatus.value = 'running'
         updateProgressInfo(status)
       }
 
     } catch (error) {
-      console.error('获取任务状态失败:', error)
-      // 继续轮询，不中断
+      console.error('Failed to get task status:', error)
+      // Continue polling without interruption
     }
-  }, 5000) // 每5秒轮询一次
+  }, 5000) // Poll every 5 seconds
 }
 
-// 更新进度信息
+// Update progress information
 const updateProgressInfo = (status: any) => {
-  console.log('🔄 更新进度信息:', status)
-  console.log('🔄 当前进度信息:', progressInfo.value)
+  console.log('🔄 Update progress information:', status)
+  console.log('🔄 Current progress information:', progressInfo.value)
 
-  // 使用后端返回的实际进度数据
+  // Use the actual progress data returned by the backend
   if (status.progress !== undefined) {
-    console.log('📊 更新进度:', status.progress)
+    console.log('📊 update progress:', status.progress)
     progressInfo.value.progress = status.progress
   }
 
   if (status.current_step_name) {
-    console.log('📋 更新步骤:', status.current_step_name)
+    console.log('📋 Update steps:', status.current_step_name)
     progressInfo.value.currentStep = status.current_step_name
   }
 
   if (status.current_step_description) {
-    console.log('📝 更新步骤描述:', status.current_step_description)
+    console.log('📝 Update step description:', status.current_step_description)
     progressInfo.value.currentStepDescription = status.current_step_description
   }
 
   if (status.message) {
-    console.log('💬 更新消息:', status.message)
+    console.log('💬 Update news:', status.message)
     progressInfo.value.message = status.message
   }
 
-  // 接收后端返回的时间数据
+  // Receive time data returned by the backend
   if (status.elapsed_time !== undefined) {
     progressInfo.value.elapsedTime = status.elapsed_time
   }
@@ -1844,27 +1844,27 @@ const updateProgressInfo = (status: any) => {
     progressInfo.value.totalTime = status.estimated_total_time
   }
 
-  // 如果后端提供了步骤数据，更新步骤列表
+  // If the backend provides step data, update the step list
   if (status.steps && Array.isArray(status.steps)) {
     if (analysisSteps.value.length === 0) {
-      // 首次生成步骤列表
+      // Generate step list for the first time
       analysisSteps.value = generateStepsFromBackend(status.steps)
-      console.log('📋 从后端生成步骤列表:', analysisSteps.value.length, '个步骤')
+      console.log('📋 Generate a list of steps from the backend:', analysisSteps.value.length, 'steps')
     }
   }
 
-  console.log('🔄 更新后进度信息:', progressInfo.value)
+  console.log('🔄 Updated progress information:', progressInfo.value)
 
-  // 更新分析步骤状态
+  // Update analysis step status
   updateAnalysisSteps(status)
 
-  // 前端不进行估算，只展示后端返回的数据
-  progressInfo.value.message = status.message || '分析正在进行中...'
+  // The front end does not perform estimation, but only displays the data returned by the back end.
+  progressInfo.value.message = status.message || 'Analysis in progress...'
 }
 
-// 重新开始分析
+// Restart analysis
 const restartAnalysis = () => {
-  // 清除任务缓存
+  // Clear task cache
   clearTaskCache()
 
   analysisStatus.value = 'idle'
@@ -1887,20 +1887,20 @@ const restartAnalysis = () => {
   }
 }
 
-// 开始新分析（保留当前分析在后台运行）
+// Start a new analysis (leave the current analysis running in the background)
 const startNewAnalysis = () => {
-  // 停止当前任务的轮询（但不清除任务ID，让后台继续运行）
+  // Stop polling for the current task (but do not clear the task ID and allow the background to continue running)
   if (pollingTimer.value) {
     clearInterval(pollingTimer.value)
     pollingTimer.value = null
   }
 
-  // 重置分析状态和结果，但不清除任务ID（让用户可以在任务中心查看）
+  // Resets the analysis status and results, but does not clear the task ID (so users can view it in the task center)
   analysisStatus.value = 'idle'
   showResults.value = false
   analysisResults.value = null
   
-  // 重置进度信息
+  // Reset progress information
   progressInfo.value = {
     progress: 0,
     currentStep: '',
@@ -1911,39 +1911,39 @@ const startNewAnalysis = () => {
     totalTime: 0
   }
 
-  // 清空股票代码，让用户输入新的股票代码
+  // Clear the stock code and let the user enter a new stock code
   analysisForm.stockCode = ''
   
-  // 滚动到顶部，方便用户输入新的股票代码
+  // Scroll to the top so users can enter a new stock symbol
   window.scrollTo({ top: 0, behavior: 'smooth' })
   
-  ElMessage.success('可以开始分析新的股票了，之前的分析任务仍在后台进行中')
+  ElMessage.success('You can start analyzing new stocks, while the previous analysis tasks are still in progress in the background.')
 }
 
 
 const analysisModuleMeta: Record<string, { title: string; description: string }> = {
-  index_report: { title: '📊 大盘环境研究', description: '大盘指数走势、市场环境与系统性风险研究' },
-  sector_report: { title: '🏭 行业板块研究', description: '行业趋势、板块轮动与同业比较研究' },
-  market_report: { title: '📈 市场技术研究', description: '技术指标、趋势结构与关键位置研究' },
-  fundamentals_report: { title: '💰 基本面研究', description: '财务质量、估值水平与盈利能力研究' },
-  sentiment_report: { title: '💭 情绪研究', description: '市场热度、投资者情绪与讨论偏差研究' },
-  news_report: { title: '📰 新闻研究', description: '公告、新闻事件与催化影响研究' },
-  bull_researcher: { title: '🐂 乐观情景研究员', description: '围绕结论上修空间的研究论证' },
-  bull_report: { title: '🐂 乐观情景研究员', description: '围绕结论上修空间的研究论证' },
-  bear_researcher: { title: '🐻 审慎情景研究员', description: '围绕脆弱前提与下修风险的研究论证' },
-  bear_report: { title: '🐻 审慎情景研究员', description: '围绕脆弱前提与下修风险的研究论证' },
-  research_team_decision: { title: '🔬 平衡研究结论', description: '综合乐观与审慎材料后的研究层结论' },
-  investment_plan: { title: '📋 研究经理简报', description: '研究经理对多维分析的整合摘要' },
-  trader_investment_plan: { title: '🧩 研究简报', description: '面向用户的综合研究简报与阅读入口' },
-  risky_analyst: { title: '🔥 高弹性情景观点', description: '结论上修条件与强化催化研究' },
-  risky_opinion: { title: '🔥 高弹性情景观点', description: '结论上修条件与强化催化研究' },
-  safe_analyst: { title: '🛡️ 防御情景观点', description: '脆弱前提、关键风险与下修条件研究' },
-  safe_opinion: { title: '🛡️ 防御情景观点', description: '脆弱前提、关键风险与下修条件研究' },
-  neutral_analyst: { title: '⚖️ 基准情景观点', description: '基准情景、证据质量与信息缺口研究' },
-  neutral_opinion: { title: '⚖️ 基准情景观点', description: '基准情景、证据质量与信息缺口研究' },
-  risk_management_decision: { title: '⚠️ 风险审阅结论', description: '综合情景审阅后的最终稳健性结论' },
-  risk_assessment: { title: '⚠️ 风险审阅结论', description: '综合情景审阅后的最终稳健性结论' },
-  final_trade_decision: { title: '📝 综合研究结论', description: '融合研究结论与风险审阅后的总览结论' },
+  index_report: { title: '📊 market environment research', description: 'Research on market index trends, market environment and systemic risks' },
+  sector_report: { title: '🏭 Industry sector research', description: 'Industry trends, sector rotation and peer comparison research' },
+  market_report: { title: '📈 Market Technology Research', description: 'Technical Indicators, Trend Structure and Key Position Research' },
+  fundamentals_report: { title: '💰 fundamental research', description: 'Research on financial quality, valuation level and profitability' },
+  sentiment_report: { title: '💭 emotion research', description: 'Research on market popularity, investor sentiment and discussion bias' },
+  news_report: { title: '📰 Journalism Research', description: 'Announcements, News Events and Catalytic Impact Research' },
+  bull_researcher: { title: '🐂 Optimistic Scenario Researcher', description: 'Research and argumentation on revising the space around the conclusion' },
+  bull_report: { title: '🐂 Optimistic Scenario Researcher', description: 'Research and argumentation on revising the space around the conclusion' },
+  bear_researcher: { title: '🐻 Prudential Scenario Researcher', description: 'Research and argumentation around fragile premises and downward revision risks' },
+  bear_report: { title: '🐻 Prudential Scenario Researcher', description: 'Research and argumentation around fragile premises and downward revision risks' },
+  research_team_decision: { title: '🔬 Balanced Study Conclusions', description: 'Research conclusions based on a combination of optimistic and cautious materials' },
+  investment_plan: { title: '📋 Research Manager Briefing', description: 'Integrated summary of multidimensional analysis for research managers' },
+  trader_investment_plan: { title: '🧩 research brief', description: 'Comprehensive research briefing and reading portal for users' },
+  risky_analyst: { title: '🔥 Highly resilient scenario perspective', description: 'Conclusion: Improved Conditions and Enhanced Catalysis Research' },
+  risky_opinion: { title: '🔥 Highly resilient scenario perspective', description: 'Conclusion: Improved Conditions and Enhanced Catalysis Research' },
+  safe_analyst: { title: '🛡️ defensive situational view', description: 'Research on fragile premises, key risks and downward revision conditions' },
+  safe_opinion: { title: '🛡️ defensive situational view', description: 'Research on fragile premises, key risks and downward revision conditions' },
+  neutral_analyst: { title: '⚖️ base case view', description: 'Research on baseline scenarios, evidence quality and information gaps' },
+  neutral_opinion: { title: '⚖️ base case view', description: 'Research on baseline scenarios, evidence quality and information gaps' },
+  risk_management_decision: { title: '⚠️ Risk review conclusion', description: 'Final robustness conclusion after comprehensive scenario review' },
+  risk_assessment: { title: '⚠️ Risk review conclusion', description: 'Final robustness conclusion after comprehensive scenario review' },
+  final_trade_decision: { title: '📝 Comprehensive research conclusion', description: 'Integrating research conclusions and risk review overview conclusions' },
 }
 
 const getResearchContentFingerprint = (moduleData: any) => {
@@ -1992,31 +1992,31 @@ const normalizeDisplayedResearchText = (content: string) => {
   if (!content) return ''
 
   const replacements: Array<[RegExp, string]> = [
-    [/交易分析计划/g, '研究简报'],
-    [/交易员计划/g, '研究简报'],
-    [/初步投资计划/g, '平衡研究结论'],
-    [/投资计划/g, '研究结论'],
-    [/投资建议/g, '研究结论'],
-    [/操作建议/g, '研究观点'],
-    [/大盘指数分析/g, '大盘环境研究'],
-    [/行业板块分析/g, '行业板块研究'],
-    [/市场情绪分析/g, '情绪研究'],
-    [/新闻事件分析/g, '新闻研究'],
-    [/风险管理决策/g, '风险审阅结论'],
-    [/风险审阅摘要/g, '风险审阅结论'],
-    [/综合研究简报/g, '综合研究结论'],
-    [/最终分析结果/g, '综合研究结论'],
-    [/激进风险分析师/g, '高弹性情景分析师'],
-    [/保守风险分析师/g, '防御情景分析师'],
-    [/中性风险分析师/g, '基准情景分析师'],
+    [/Transaction Analysis Plan/g, 'research brief'],
+    [/trader plan/g, 'research brief'],
+    [/Initial investment plan/g, 'Balanced Study Conclusions'],
+    [/investment plan/g, 'Research conclusion'],
+    [/investment advice/g, 'Research conclusion'],
+    [/Operation suggestions/g, 'research perspective'],
+    [/Market index analysis/g, 'market environment research'],
+    [/Industry sector analysis/g, 'Industry sector research'],
+    [/Market Sentiment Analysis/g, 'emotion research'],
+    [/News event analysis/g, 'Journalism Research'],
+    [/risk management decisions/g, 'Risk review conclusion'],
+    [/Risk review summary/g, 'Risk review conclusion'],
+    [/Comprehensive Research Brief/g, 'Comprehensive research conclusion'],
+    [/Final analysis results/g, 'Comprehensive research conclusion'],
+    [/activist risk analyst/g, 'Highly Resilient Scenario Analyst'],
+    [/conservative risk analyst/g, 'Defense Scenario Analyst'],
+    [/Neutral Risk Analyst/g, 'Baseline Scenario Analyst'],
   ]
 
   return replacements.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), content)
 }
 
 /**
- * 将风险审阅 JSON 对象渲染为可读的 Markdown 文本。
- * 字段与后端 risk_assessment / risk_management_decision 结构保持一致。
+ * Render a risk review JSON object to readable Markdown text.
+ * Fields are consistent with the backend risk_assessment / risk_management_decision structures.
  */
 const formatRiskAssessment = (value: any): string | null => {
   if (!value || typeof value !== 'object') return null
@@ -2033,33 +2033,33 @@ const formatRiskAssessment = (value: any): string | null => {
 
   const parts: string[] = []
   if (riskLevel !== undefined) {
-    parts.push(`**风险等级**：${riskLevel}`)
+    parts.push(`**risk level**: ${riskLevel}`)
   }
   if (riskScore !== undefined) {
     const score = typeof riskScore === 'number' ? riskScore.toFixed(2) : riskScore
-    parts.push(`**风险评分**：${score}`)
+    parts.push(`**risk score**: ${score}`)
   }
   if (reasoning) {
-    parts.push(`**评估结论**：${reasoning}`)
+    parts.push(`**Assessment conclusion**: ${reasoning}`)
   }
   if (Array.isArray(keyRisks) && keyRisks.length > 0) {
-    parts.push(`**核心风险**：`)
+    parts.push(`**core risk**: `)
     keyRisks.forEach((risk: any) => {
       if (risk) parts.push(`- ${String(risk).trim()}`)
     })
   }
   if (riskControl) {
-    parts.push(`**风控建议**：${riskControl}`)
+    parts.push(`**Risk control suggestions**: ${riskControl}`)
   }
   if (investmentAdjustment) {
-    parts.push(`**投资调整建议**：${investmentAdjustment}`)
+    parts.push(`**Investment adjustment suggestions**: ${investmentAdjustment}`)
   }
 
   return parts.join('\n\n')
 }
 
 const _stripJsonCodeFence = (text: string): string => {
-  // 去除 ```json ... ``` 或 ``` ... ``` 代码块包裹
+  // remove ```json ... ``` or ``` ... ``` code block wrapper
   let t = text.trim()
   const fenceMatch = t.match(/^```(?:json|JSON)?\s*\n([\s\S]*?)\n```\s*$/i)
   if (fenceMatch) {
@@ -2085,7 +2085,7 @@ const extractStructuredText = (value: any): string | null => {
   if (!value) return null
 
   if (typeof value === 'string') {
-    // 先剥离 ```json 代码块，再判断是否为风险审阅 JSON
+    // Peel first ```json code block, and then determine whether it is a risk review JSON
     const stripped = _stripJsonCodeFence(value.trim())
     if (!stripped) return null
 
@@ -2095,20 +2095,20 @@ const extractStructuredText = (value: any): string | null => {
         const riskText = formatRiskAssessment(parsed)
         if (riskText) return riskText
       } catch {
-        // 不是合法 JSON，按普通文本返回
+        // Not valid JSON, return as normal text
       }
     }
-    // 如果原文是 ```json 代码块但不是风险 JSON，返回剥离后的内容
+    // If the original text is ```json Code block but not risky JSON, returns stripped content
     return stripped !== value.trim() ? stripped : value.trim()
   }
 
   if (typeof value === 'object') {
-    // 风险审阅结构化对象直接渲染为可读文本
+    // Risk review structured objects are rendered directly as readable text
     const riskText = formatRiskAssessment(value)
     if (riskText) return riskText
 
-    // 对象里嵌套 content/text 字段时，递归尝试解析
-    // 真实数据结构: { content: "```json\n{...}\n```", success: true }
+    // When content/text fields are nested in objects, recursive attempts are made to parse them.
+    // real data structure: { content: "```json\n{...}\n```", success: true }
     for (const key of ['content', 'markdown', 'text', 'message', 'report', 'judge_decision', 'risk_assessment', 'risk_management_decision']) {
       const item = value[key]
       if (item) {
@@ -2175,7 +2175,7 @@ const getOverviewBriefContent = (data: any): string | null => {
 
 const overviewBriefContent = computed(() => getOverviewBriefContent(analysisResults.value))
 
-// 获取分析报告
+// Get analysis report
 const getAnalysisReports = (data: any) => {
   const reports: Array<{field: string, title: string, content: any}> = []
 
@@ -2195,7 +2195,7 @@ const getAnalysisReports = (data: any) => {
     reports.push({ field: key, title, content })
   }
 
-  // 动态模式：使用 report_manifest（自定义工作流产出物描述）
+  // Dynamic mode: use report_manifest (custom workflow output description)
   const manifest = data?.report_manifest as Array<{
     field: string; display_name: string; icon?: string; description?: string; category: string; order: number; is_primary: boolean
   }> | undefined
@@ -2210,35 +2210,35 @@ const getAnalysisReports = (data: any) => {
     }
   }
 
-  // --- 旧逻辑：内置工作流使用硬编码映射 ---
+  // --- Old logic: Built-in workflows use hard-coded mappings ---
   const reportMappings = [
-    { key: 'index_report', title: '📊 大盘环境研究' },
-    { key: 'sector_report', title: '🏭 行业板块研究' },
-    { key: 'market_report', title: '📈 市场技术研究' },
-    { key: 'fundamentals_report', title: isEtfAnalysis ? '📊 ETF 分析' : '💰 基本面研究' },
-    { key: 'sentiment_report', title: '💭 情绪研究' },
-    { key: 'news_report', title: '📰 新闻研究' },
-    { key: 'chip_report', title: '🧮 筹码分布研究' },
-    // 工坊 Agent 新增
-    { key: 'valuation_report', title: '📊 多维度估值分析' },
-    // 研究团队（去重：优先用带后缀的）
-    { key: 'bull_report', title: '🐂 乐观情景研究员' },
-    { key: 'bear_report', title: '🐻 审慎情景研究员' },
-    { key: 'research_team_decision', title: '🔬 平衡研究结论' },
-    { key: 'investment_plan', title: '📋 研究经理简报' },
-    { key: 'trader_investment_plan', title: '🧩 研究简报' },
-    // 风险团队（去重：优先用带后缀的）
-    { key: 'risky_opinion', title: '🔥 高弹性情景观点' },
-    { key: 'safe_opinion', title: '🛡️ 防御情景观点' },
-    { key: 'neutral_opinion', title: '⚖️ 基准情景观点' },
-    { key: 'risk_assessment', title: '⚠️ 风险审阅结论' },
-    { key: 'final_trade_decision', title: '📝 综合研究结论' },
+    { key: 'index_report', title: '📊 market environment research' },
+    { key: 'sector_report', title: '🏭 Industry sector research' },
+    { key: 'market_report', title: '📈 Market Technology Research' },
+    { key: 'fundamentals_report', title: isEtfAnalysis ? '📊 ETF analysis' : '💰 fundamental research' },
+    { key: 'sentiment_report', title: '💭 emotion research' },
+    { key: 'news_report', title: '📰 Journalism Research' },
+    { key: 'chip_report', title: '🧮 Chip distribution research' },
+    // Workshop Agent added
+    { key: 'valuation_report', title: '📊 Multi-dimensional valuation analysis' },
+    // Research team (remove duplicates: give priority to those with suffixes)
+    { key: 'bull_report', title: '🐂 Optimistic Scenario Researcher' },
+    { key: 'bear_report', title: '🐻 Prudential Scenario Researcher' },
+    { key: 'research_team_decision', title: '🔬 Balanced Study Conclusions' },
+    { key: 'investment_plan', title: '📋 Research Manager Briefing' },
+    { key: 'trader_investment_plan', title: '🧩 research brief' },
+    // Risk team (remove duplicates: use those with suffixes first)
+    { key: 'risky_opinion', title: '🔥 Highly resilient scenario perspective' },
+    { key: 'safe_opinion', title: '🛡️ defensive situational view' },
+    { key: 'neutral_opinion', title: '⚖️ base case view' },
+    { key: 'risk_assessment', title: '⚠️ Risk review conclusion' },
+    { key: 'final_trade_decision', title: '📝 Comprehensive research conclusion' },
   ]
 
   reportMappings.forEach(mapping => {
     if (addedKeys.has(mapping.key)) return
     if (shouldHideDuplicateResearchManagerBrief(mapping.key, reportsData)) {
-      addedKeys.add(mapping.key)  // 标记为已处理，避免兜底遍历重复添加
+      addedKeys.add(mapping.key)  // Mark as processed to avoid repeated additions
       return
     }
     const content = reportsData?.[mapping.key]
@@ -2252,16 +2252,16 @@ const getAnalysisReports = (data: any) => {
       return
     }
 
-    // 跳过重复的 key（避免 researcher/analyst 后缀的重复项）
+    // Skip duplicate keys (avoid duplicates with researcher/analyst suffix)
     const skipPatterns = [
-      // 研究团队：跳过 _researcher 后缀（优先用 _report）
+      // Research Team: Skip the _researcher suffix (use _report first)
       /^bull_researcher$/,
       /^bear_researcher$/,
-      // 风险团队：跳过 _analyst 后缀（优先用 _opinion）
+      // Risk Team: Skip the _analyst suffix (prefer _opinion)
       /^risky_analyst$/,
       /^safe_analyst$/,
       /^neutral_analyst$/,
-      /^risk_management_decision$/, // 跳过这个（优先用 risk_assessment）
+      /^risk_management_decision$/, // Skip this (use risk_assessment first)
     ]
     if (skipPatterns.some(p => p.test(key))) {
       addedKeys.add(key)
@@ -2274,9 +2274,9 @@ const getAnalysisReports = (data: any) => {
     }
   })
 
-  console.log(`📊 总共找到 ${reports.length} 个报告`)
+  console.log(`📊 Total found ${reports.length} reports`)
 
-  // 设置第一个报告为默认激活标签页
+  // Set the first report as the default active tab
   if (reports.length > 0 && !activeReportTab.value) {
     activeReportTab.value = '0'
   }
@@ -2284,75 +2284,75 @@ const getAnalysisReports = (data: any) => {
   return reports
 }
 
-// 获取报告图标
+// Get report icon
 const getReportIcon = (field: string, title: string) => {
-  // 1. 优先从 manifest 获取 icon
+  // 1. Get it from manifest first icon
   const manifestEntry = analysisReportManifest.value.find((m) => m.field === field)
   if (manifestEntry?.icon) {
     return manifestEntry.icon
   }
-  // 2. 回退到硬编码 iconMap
+  // 2. Fallback to hardcoding iconMap
   const iconMap: Record<string, string> = {
-    // 🆕 宏观分析师图标
-    '📊 大盘指数分析': '📊',
-    '🏭 行业板块分析': '🏭',
-    // 分析师团队图标
-    '📈 市场技术分析': '📈',
-    '💰 基本面分析': '💰',
-    '📊 ETF 分析': '📊',
-    '📰 新闻事件分析': '📰',
-    '💭 市场情绪分析': '💭',
-    '💡 初步研究观察': '💡',
-    '🔬 研究团队分析': '🔬',
-    '🐂 积极证据研究': '🐂',
-    '🐻 谨慎证据研究': '🐻',
-    '💼 研究简报': '💼',
-    '⚖️ 风险管理团队': '⚖️',
-    '🔥 高弹性情景研究观察': '🔥',
-    '🛡️ 防御情景研究观察': '🛡️',
-    '⚖️ 基准情景研究观察': '⚖️',
-    '⚠️ 风险评估': '⚠️',
-    '🎯 最终分析结果': '🎯'
+    // 🆕 Macro analyst icon
+    '📊 Market index analysis': '📊',
+    '🏭 Industry sector analysis': '🏭',
+    // Analyst team icon
+    '📈 Market technical analysis': '📈',
+    '💰 fundamental analysis': '💰',
+    '📊 ETF analysis': '📊',
+    '📰 News event analysis': '📰',
+    '💭 Market Sentiment Analysis': '💭',
+    '💡 Preliminary research observations': '💡',
+    '🔬 Research team analysis': '🔬',
+    '🐂 positive evidence research': '🐂',
+    '🐻 careful evidence research': '🐻',
+    '💼 research brief': '💼',
+    '⚖️ risk management team': '⚖️',
+    '🔥 Highly elastic scenario research observations': '🔥',
+    '🛡️ Defense Scenario Research Observations': '🛡️',
+    '⚖️ Baseline Scenario Research Observations': '⚖️',
+    '⚠️ risk assessment': '⚠️',
+    '🎯 Final analysis results': '🎯'
   }
   return iconMap[title] || '📊'
 }
 
-// 获取报告名称（去掉图标前缀）
+// Get the report name (remove the icon prefix)
 const getReportName = (title: string) => {
   return title.replace(/^[^\s]+\s/, '')
 }
 
-// 获取报告描述
+// Get report description
 const getReportDescription = (field: string, title: string) => {
-  // 1. 优先从 manifest 获取 description
+  // 1. Get it from manifest first description
   const manifestEntry = analysisReportManifest.value.find((m) => m.field === field)
   if (manifestEntry?.description) {
     return manifestEntry.description
   }
-  // 2. 回退到硬编码 analysisModuleMeta
+  // 2. Fallback to hardcoding analysisModuleMeta
   const plainTitle = title.replace(/^[^\s]+\s/, '')
   return Object.values(analysisModuleMeta).find(meta => meta.title === title)?.description
     || Object.values(analysisModuleMeta).find(meta => meta.title.endsWith(plainTitle))?.description
-    || '详细研究报告'
+    || 'Detailed research report'
 }
 
-// 格式化报告内容
+// Format report content
 const formatReportContent = (content: any) => {
   const normalizedContent = getModuleContent(content)
   return normalizedContent ? renderMarkdown(normalizedContent) : ''
 }
 
-// 下载报告
+// Download report
 const downloadReport = async (format: string = 'markdown') => {
   try {
     if (!analysisResults.value && !currentTaskId.value) {
-      ElMessage.error('报告尚未生成，无法下载')
+      ElMessage.error('The report has not been generated and cannot be downloaded')
       return
     }
 
-    // 显示加载提示
+    // Show loading prompt
     const loadingMsg = ElMessage({
-      message: `正在生成${getFormatName(format)}格式报告...`,
+      message: `Generating${getFormatName(format)}Format report...`,
       type: 'info',
       duration: 0
     })
@@ -2362,7 +2362,7 @@ const downloadReport = async (format: string = 'markdown') => {
 
     loadingMsg.close()
 
-    // 响应拦截器直接返回 Blob（response.data）；兼容返回 { data: Blob } 的旧实现
+    // The response interceptor directly returns Blob (response.data); compatible return { data: Blob } old implementation of
     const blob = res instanceof Blob ? res : (res?.data instanceof Blob ? res.data : new Blob([res]))
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -2374,37 +2374,37 @@ const downloadReport = async (format: string = 'markdown') => {
       'stock'
     const dateStr = analysisResults.value?.analysis_date || new Date().toISOString().slice(0, 10)
 
-    // 根据格式设置文件扩展名
+    // Set file extension based on format
     const ext = getFileExtension(format)
-    a.download = `${String(code)}_分析报告_${String(dateStr).slice(0, 10)}.${ext}`
+    a.download = `${String(code)}_analysis report_${String(dateStr).slice(0, 10)}.${ext}`
 
     document.body.appendChild(a)
     a.click()
     window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
 
-    ElMessage.success(`${getFormatName(format)}报告下载成功`)
+    ElMessage.success(`${getFormatName(format)}Report download successful`)
   } catch (err: any) {
-    console.error('下载报告出错:', err)
+    console.error('Error downloading report:', err)
 
-    // 显示详细错误信息
+    // Show detailed error information
     if (err.message && err.message.includes('pandoc')) {
       ElMessage.error({
-        message: 'Word 导出需要安装 pandoc 工具（PDF 导出不需要 pandoc）',
+        message: 'Word Exporting requires the pandoc tool to be installed (PDF export does not require pandoc)',
         duration: 5000
       })
     } else if (err.message && (err.message.includes('weasyprint') || err.message.includes('pdfkit'))) {
       ElMessage.error({
-        message: 'PDF 导出需要安装 PDF 引擎：pip install weasyprint（推荐）',
+        message: 'PDF Exporting requires installing the PDF engine: pip install weasyprint (recommended)',
         duration: 5000
       })
     } else {
-      ElMessage.error(`下载报告失败: ${err.message || '未知错误'}`)
+      ElMessage.error(`Download report failed: ${err.message || 'unknown error'}`)
     }
   }
 }
 
-// 辅助函数：获取格式名称
+// Helper function: get format name
 const getFormatName = (format: string): string => {
   const names: Record<string, string> = {
     'markdown': 'Markdown',
@@ -2415,7 +2415,7 @@ const getFormatName = (format: string): string => {
   return names[format] || format
 }
 
-// 辅助函数：获取文件扩展名
+// Helper function: get file extension
 const getFileExtension = (format: string): string => {
   const extensions: Record<string, string> = {
     'markdown': 'md',
@@ -2426,7 +2426,7 @@ const getFileExtension = (format: string): string => {
   return extensions[format] || 'txt'
 }
 
-// 组件销毁时清理定时器
+// Cleanup timer when component is destroyed
 onUnmounted(() => {
   if (pollingTimer.value) {
     clearInterval(pollingTimer.value)
@@ -2435,89 +2435,89 @@ onUnmounted(() => {
   clearSyncPolling()
 })
 
-// 页面可见性变化时的处理
+// Handling when page visibility changes
 const handleVisibilityChange = () => {
   if (document.hidden) {
-    console.log('📱 页面隐藏，暂停轮询')
+    console.log('📱 Page hidden, polling paused')
   } else {
-    console.log('📱 页面显示，恢复轮询')
-    // 页面重新可见时，立即查询一次状态
+    console.log('📱 The page is displayed and polling resumes.')
+    // When the page becomes visible again, immediately query the status once
     if (currentTaskId.value && analysisStatus.value === 'running') {
       setTimeout(async () => {
         try {
           const response = await analysisApi.getTaskStatus(currentTaskId.value)
-          const status = response.data // 响应拦截器已返回 response.data
-          console.log('🔄 页面恢复查询状态:', status)
+          const status = response.data // Response interceptor returned response.data
+          console.log('🔄 Page recovery query status:', status)
           if (status.status === 'pending' || status.status === 'running') {
             analysisStatus.value = 'running'
             updateProgressInfo(status)
           }
         } catch (error) {
-          console.error('页面恢复查询状态失败:', error)
+          console.error('Page recovery query status failed:', error)
         }
       }, 500)
     }
   }
 }
 
-// 监听页面可见性变化
+// Monitor page visibility changes
 document.addEventListener('visibilitychange', handleVisibilityChange)
 
-// 获取深度描述
+// Get in-depth description
 const getDepthDescription = (depth: number) => {
-  const descriptions = ['快速', '基础', '标准', '深度', '全面']
-  return descriptions[depth - 1] || '标准'
+  const descriptions = ['fast', 'Basics', 'Standard', 'Depth', 'Comprehensive']
+  return descriptions[depth - 1] || 'Standard'
 }
 
-// 获取进度条状态
+// Get progress bar status
 const getProgressStatus = () => {
   if (analysisStatus.value === 'completed') {
     return 'success'
   } else if (analysisStatus.value === 'failed') {
     return 'exception'
   } else if (analysisStatus.value === 'running') {
-    return '' // 默认状态，显示蓝色进度条
+    return '' // In the default state, a blue progress bar is displayed.
   }
   return ''
 }
 
-// 简单的时间格式化方法（只用于显示后端返回的时间）
+// Simple time formatting method (only used to display the time returned by the backend)
 const formatTime = (seconds: number) => {
   if (!seconds || seconds <= 0) {
-    return '计算中...'
+    return 'Calculating...'
   }
 
   if (seconds < 60) {
-    return `${Math.floor(seconds)}秒`
+    return `${Math.floor(seconds)}seconds`
   } else if (seconds < 3600) {
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = Math.floor(seconds % 60)
-    return remainingSeconds > 0 ? `${minutes}分${remainingSeconds}秒` : `${minutes}分钟`
+    return remainingSeconds > 0 ? `${minutes}points${remainingSeconds}seconds` : `${minutes}minutes`
   } else {
     const hours = Math.floor(seconds / 3600)
     const minutes = Math.floor((seconds % 3600) / 60)
-    return `${hours}小时${minutes}分钟`
+    return `${hours}hours${minutes}minutes`
   }
 }
 
-// 更新分析步骤状态
+// Update analysis step status
 const updateAnalysisSteps = (status: any) => {
-  console.log('📋 步骤更新输入:', status)
+  console.log('📋 step update input:', status)
 
   if (analysisSteps.value.length === 0) {
-    console.log('📋 没有步骤定义，跳过更新')
+    console.log('📋 No step definition, skip update')
     return
   }
 
-  // 优先使用后端提供的详细步骤信息
+  // Prioritize detailed step-by-step information provided by the backend
   let currentStepIndex = 0
 
   if (status.current_step !== undefined) {
-    // 后端提供了精确的步骤索引
+    // The backend provides precise step indexing
     currentStepIndex = status.current_step
-    console.log('📋 使用后端步骤索引:', currentStepIndex)
+    console.log('📋 Using backend step index:', currentStepIndex)
   } else {
-    // 兜底方案：使用进度百分比估算
+    // Fault Solution: Use Progress Percent Estimates
     const progress = status.progress_percentage || status.progress || 0
     if (progress > 0) {
       const progressRatio = progress / 100
@@ -2526,15 +2526,15 @@ const updateAnalysisSteps = (status: any) => {
         currentStepIndex = 1
       }
     }
-    console.log('📋 使用进度估算步骤索引:', currentStepIndex, '进度:', progress)
+    console.log('📋 Using the progress estimation step index:', currentStepIndex, 'Progress:', progress)
   }
 
-  // 确保索引在有效范围内
+  // Make sure the index is within the valid range
   currentStepIndex = Math.max(0, Math.min(currentStepIndex, analysisSteps.value.length - 1))
 
-  console.log('📋 最终步骤索引:', currentStepIndex, '/', analysisSteps.value.length)
+  console.log('📋 final step index:', currentStepIndex, '/', analysisSteps.value.length)
 
-  // 更新所有步骤状态
+  // Update all step status
   analysisSteps.value.forEach((step, index) => {
     if (index < currentStepIndex) {
       step.status = 'completed'
@@ -2546,43 +2546,43 @@ const updateAnalysisSteps = (status: any) => {
   })
 
   const statusSummary = analysisSteps.value.map((s, i) => `${i}:${s.status}`).join(', ')
-  console.log('📋 步骤状态更新完成:', statusSummary)
+  console.log('📋 Step status update completed:', statusSummary)
 }
 
-// 初始化模型设置
+// Initialize model settings
 const initializeModelSettings = async () => {
   try {
-    // 获取默认模型
+    // Get the default model
     const defaultModels = await configApi.getDefaultModels()
     modelSettings.value.quickAnalysisModel = defaultModels.quick_analysis_model
     modelSettings.value.deepAnalysisModel = defaultModels.deep_analysis_model
 
-    // 获取所有可用的模型列表
+    // Get a list of all available models
     const llmConfigs = await configApi.getLLMConfigs()
     availableModels.value = llmConfigs.filter((config: any) => config.enabled)
 
-    console.log('✅ 加载模型配置成功:', {
+    console.log('✅ Loading model configuration successfully:', {
       quick: modelSettings.value.quickAnalysisModel,
       deep: modelSettings.value.deepAnalysisModel,
       available: availableModels.value.length
     })
-    console.log('🔍 可用模型详细信息:', availableModels.value.map(m => ({
+    console.log('🔍 Available model details:', availableModels.value.map(m => ({
       model_name: m.model_name,
       model_display_name: m.model_display_name,
       provider: m.provider
     })))
   } catch (error) {
-    console.error('加载默认模型配置失败:', error)
+    console.error('Failed to load default model configuration:', error)
     modelSettings.value.quickAnalysisModel = 'qwen-turbo'
     modelSettings.value.deepAnalysisModel = 'qwen-max'
   }
 }
 
-// 任务状态缓存管理
+// Task status cache management
 const TASK_CACHE_KEY = 'trading_analysis_task'
-const TASK_CACHE_DURATION = 30 * 60 * 1000 // 30分钟
+const TASK_CACHE_DURATION = 30 * 60 * 1000 // 30 minutes
 
-// 保存任务状态到缓存
+// Save task status to cache
 const saveTaskToCache = (taskId: string, taskData: any) => {
   const cacheData = {
     taskId,
@@ -2590,10 +2590,10 @@ const saveTaskToCache = (taskId: string, taskData: any) => {
     timestamp: Date.now()
   }
   localStorage.setItem(TASK_CACHE_KEY, JSON.stringify(cacheData))
-  console.log('💾 任务状态已缓存:', taskId)
+  console.log('💾 Task status cached:', taskId)
 }
 
-// 从缓存获取任务状态
+// Get task status from cache
 const getTaskFromCache = () => {
   try {
     const cached = localStorage.getItem(TASK_CACHE_KEY)
@@ -2602,123 +2602,123 @@ const getTaskFromCache = () => {
     const cacheData = JSON.parse(cached)
     const now = Date.now()
 
-    // 检查是否过期（30分钟）
+    // Check if expired (30 minutes)
     if (now - cacheData.timestamp > TASK_CACHE_DURATION) {
       localStorage.removeItem(TASK_CACHE_KEY)
-      console.log('🗑️ 缓存已过期，已清理')
+      console.log('🗑️ The cache has expired and has been cleared')
       return null
     }
 
-    console.log('📦 从缓存恢复任务:', cacheData.taskId)
+    console.log('📦 Restore tasks from cache:', cacheData.taskId)
     return cacheData
   } catch (error) {
-    console.error('❌ 读取缓存失败:', error)
+    console.error('❌ Failed to read cache:', error)
     localStorage.removeItem(TASK_CACHE_KEY)
     return null
   }
 }
 
-// 清除任务缓存
+// Clear task cache
 const clearTaskCache = () => {
   localStorage.removeItem(TASK_CACHE_KEY)
-  console.log('🗑️ 任务缓存已清除')
+  console.log('🗑️ Task cache cleared')
 }
 
-// 恢复任务状态
+// Restore task status
 const restoreTaskFromCache = async () => {
   const cached = getTaskFromCache()
   if (!cached) return false
 
   try {
-    console.log('🔄 尝试恢复任务状态:', cached.taskId)
+    console.log('🔄 Try to restore task status:', cached.taskId)
 
-    // 查询任务当前状态
+    // Query the current status of a task
     const response = await analysisApi.getTaskStatus(cached.taskId)
-    const status = response.data // 响应拦截器已返回 response.data
+    const status = response.data // Response interceptor returned response.data
 
-    console.log('📊 恢复的任务状态:', status)
+    console.log('📊 Restored task status:', status)
 
     if (status.status === 'completed') {
-      // 任务已完成，显示结果
+      // Task completed, results displayed
       currentTaskId.value = cached.taskId
       analysisStatus.value = 'completed'
       showResults.value = true
       applyAnalysisResult(await loadCompletedAnalysisResult(cached.taskId, status))
       progressInfo.value.progress = 100
-      progressInfo.value.currentStep = '分析完成'
-      progressInfo.value.message = '分析已完成'
+      progressInfo.value.currentStep = 'Analysis completed'
+      progressInfo.value.message = 'Analysis completed'
 
-      // 恢复分析参数
+      // Restoring analysis parameters
       if (cached.taskData.parameters) {
         Object.assign(analysisForm, cached.taskData.parameters)
       }
 
-      console.log('✅ 任务已完成，显示结果')
+      console.log('✅ Task completed, results displayed')
       return true
 
     } else if (status.status === 'pending' || status.status === 'running') {
-      // 任务仍在运行，恢复进度显示
+      // The task is still running and the recovery progress is shown
       currentTaskId.value = cached.taskId
       analysisStatus.value = 'running'
       showResults.value = false
       updateProgressInfo(status)
 
-      // 恢复分析参数
+      // Restoring analysis parameters
       if (cached.taskData.parameters) {
         Object.assign(analysisForm, cached.taskData.parameters)
       }
 
-      // 启动轮询
+      // Start polling
       startPollingTaskStatus()
 
-      console.log('🔄 任务仍在运行，恢复进度显示')
+      console.log('🔄 The task is still running and the recovery progress is shown')
       return true
 
     } else if (status.status === 'failed') {
-      // 任务失败
+      // Task failed
       analysisStatus.value = 'failed'
-      progressInfo.value.currentStep = '分析失败'
-      progressInfo.value.message = status.error_message || '分析过程中发生错误'
+      progressInfo.value.currentStep = 'Analysis failed'
+      progressInfo.value.message = status.error_message || 'An error occurred during analysis'
 
-      // 清除缓存
+      // clear cache
       clearTaskCache()
 
-      console.log('❌ 任务失败')
+      console.log('❌ Task failed')
       return true
 
     } else {
-      // 其他状态，清除缓存
+      // Other status, clear cache
       clearTaskCache()
-      console.log('🤔 未知任务状态，清除缓存')
+      console.log('🤔 Unknown task status, clear cache')
       return false
     }
 
   } catch (error) {
-    console.error('❌ 恢复任务状态失败:', error)
-    // 如果查询失败，可能是任务不存在了，清除缓存
+    console.error('❌ Failed to restore task status:', error)
+    // If the query fails, it may be that the task does not exist. Clear the cache.
     clearTaskCache()
     return false
   }
 }
 
-// 🆕 模型能力相关辅助函数
+// 🆕 Model capability related auxiliary functions
 
 /**
- * 获取能力等级文本
+ * Get ability level text
  */
 const getCapabilityText = (level: number): string => {
   const texts: Record<number, string> = {
-    1: '⚡基础',
-    2: '📊标准',
-    3: '🎯高级',
-    4: '🔥专业',
-    5: '👑旗舰'
+    1: '⚡Basics',
+    2: '📊Standard',
+    3: '🎯Advanced',
+    4: '🔥Professional',
+    5: '👑flagship'
   }
-  return texts[level] || '📊标准'
+  return texts[level] || '📊Standard'
 }
 
 /**
- * 获取能力等级标签类型
+ * Get ability level label type
  */
 const getCapabilityTagType = (level: number): 'success' | 'info' | 'warning' | 'danger' => {
   if (level >= 4) return 'danger'
@@ -2728,7 +2728,7 @@ const getCapabilityTagType = (level: number): 'success' | 'info' | 'warning' | '
 }
 
 /**
- * 判断是否适合快速分析
+ * Determine whether it is suitable for rapid analysis
  */
 const isQuickAnalysisRole = (roles: string[] | undefined): boolean => {
   if (!roles || !Array.isArray(roles)) return false
@@ -2736,139 +2736,139 @@ const isQuickAnalysisRole = (roles: string[] | undefined): boolean => {
 }
 
 /**
- * 判断是否适合深度分析
+ * Determine whether it is suitable for in-depth analysis
  */
 /**
- * 显示分析深度的模型推荐说明
+ * Model recommendation description showing depth of analysis
  */
 const checkModelSuitability = async () => {
   const depthNames: Record<number, string> = {
-    1: '快速',
-    2: '基础',
-    3: '标准',
-    4: '深度',
-    5: '全面'
+    1: 'fast',
+    2: 'Basics',
+    3: 'Standard',
+    4: 'Depth',
+    5: 'Comprehensive'
   }
-  const depthName = depthNames[analysisForm.researchDepth] || '标准'
+  const depthName = depthNames[analysisForm.researchDepth] || 'Standard'
 
   try {
-    // 获取推荐模型
+    // Get recommended models
     const recommendRes = await recommendModels(depthName)
     const responseData = recommendRes?.data?.data
 
     if (responseData) {
-      const quickModel = responseData.quick_model || '未知'
-      const deepModel = responseData.deep_model || '未知'
+      const quickModel = responseData.quick_model || 'unknown'
+      const deepModel = responseData.deep_model || 'unknown'
 
-      // 获取模型的显示名称
+      // Get the display name of the model
       const quickModelInfo = availableModels.value.find(m => m.model_name === quickModel)
       const deepModelInfo = availableModels.value.find(m => m.model_name === deepModel)
 
       const quickDisplayName = quickModelInfo?.model_display_name || quickModel
       const deepDisplayName = deepModelInfo?.model_display_name || deepModel
 
-      // 获取推荐理由
+      // Get recommendation reasons
       const reason = responseData.reason || ''
 
-      // 构建推荐说明
+      // Build recommended instructions
       const depthDescriptions: Record<number, string> = {
-        1: '快速浏览，获取基本信息',
-        2: '基础分析，了解主要指标',
-        3: '标准分析，全面评估股票',
-        4: '深度研究，挖掘投资机会',
-        5: '全面分析，专业投资决策'
+        1: 'Browse quickly to get basic information',
+        2: 'Basic analysis to understand the main indicators',
+        3: 'Standard analysis to fully evaluate stocks',
+        4: 'Conduct in-depth research and explore investment opportunities',
+        5: 'Comprehensive analysis and professional investment decisions'
       }
 
-      const message = `${depthDescriptions[analysisForm.researchDepth] || '标准分析'}\n\n推荐模型配置：\n• 快速模型：${quickDisplayName}\n• 深度模型：${deepDisplayName}\n\n${reason}`
+      const message = `${depthDescriptions[analysisForm.researchDepth] || 'standard analysis'}\n\n Recommended model configuration:\n• Quick model:${quickDisplayName}\n• Deep model:${deepDisplayName}\n\n${reason}`
 
       modelRecommendation.value = {
-        title: '💡 模型推荐',
+        title: '💡 Model recommendation',
         message,
         type: 'info',
         quickModel,
         deepModel
       }
     } else {
-      // 如果没有推荐数据，显示通用说明
+      // If there is no recommended data, show a general description
       const generalDescriptions: Record<number, string> = {
-        1: '快速分析：使用基础模型即可，注重速度和成本',
-        2: '基础分析：快速模型用基础级，深度模型用标准级',
-        3: '标准分析：快速模型用基础级，深度模型用标准级以上',
-        4: '深度分析：快速模型用标准级，深度模型用高级以上，需要推理能力',
-        5: '全面分析：快速模型用标准级，深度模型用专业级以上，强推理能力'
+        1: 'Quick analysis: Just use the basic model, focusing on speed and cost',
+        2: 'Basic analysis: use the basic level for fast models and the standard level for deep models.',
+        3: 'Standard analysis: Use basic level for fast models, and use standard level or above for deep models.',
+        4: 'Depth analysis: Use standard level for fast models, and use advanced level or higher for deep models, which require reasoning capabilities.',
+        5: 'Comprehensive analysis: use standard level for fast models, professional level or above for deep models, strong reasoning ability'
       }
 
       modelRecommendation.value = {
-        title: '💡 模型推荐',
+        title: '💡 Model recommendation',
         message: generalDescriptions[analysisForm.researchDepth] || generalDescriptions[3],
         type: 'info'
       }
     }
   } catch (error) {
-    console.error('获取模型推荐失败:', error)
-    // 显示通用说明
+    console.error('Failed to obtain model recommendations:', error)
+    // Show general description
     const generalDescriptions: Record<number, string> = {
-      1: '快速分析：使用基础模型即可，注重速度和成本',
-      2: '基础分析：快速模型用基础级，深度模型用标准级',
-      3: '标准分析：快速模型用基础级，深度模型用标准级以上',
-      4: '深度分析：快速模型用标准级，深度模型用高级以上，需要推理能力',
-      5: '全面分析：快速模型用标准级，深度模型用专业级以上，强推理能力'
+      1: 'Quick analysis: Just use the basic model, focusing on speed and cost',
+      2: 'Basic analysis: use the basic level for fast models and the standard level for deep models.',
+      3: 'Standard analysis: Use basic level for fast models, and use standard level or above for deep models.',
+      4: 'Depth analysis: Use standard level for fast models, and use advanced level or higher for deep models, which require reasoning capabilities.',
+      5: 'Comprehensive analysis: use standard level for fast models, professional level or above for deep models, strong reasoning ability'
     }
 
     modelRecommendation.value = {
-      title: '💡 模型推荐',
+      title: '💡 Model recommendation',
       message: generalDescriptions[analysisForm.researchDepth] || generalDescriptions[3],
       type: 'info'
     }
   }
 }
 
-// 应用推荐的模型配置
+// Apply the recommended model configuration
 const applyRecommendedModels = () => {
   if (modelRecommendation.value?.quickModel && modelRecommendation.value?.deepModel) {
     modelSettings.value.quickAnalysisModel = modelRecommendation.value.quickModel
     modelSettings.value.deepAnalysisModel = modelRecommendation.value.deepModel
 
-    // 清除推荐提示
+    // Clear recommendations
     modelRecommendation.value = null
 
-    ElMessage.success('已应用推荐的模型配置')
+    ElMessage.success('Recommended model configuration applied')
   }
 }
 
-// 监听分析深度变化
+// Monitor and analyze depth changes
 import { watch } from 'vue'
 watch(() => analysisForm.researchDepth, () => {
   checkModelSuitability()
 })
 
-// 监听模型选择变化
+// Listen for model selection changes
 watch([() => modelSettings.value.quickAnalysisModel, () => modelSettings.value.deepAnalysisModel], () => {
   checkModelSuitability()
 })
 
-// 页面初始化
+// Page initialization
 onMounted(async () => {
   initializeModelSettings()
 
-  // 🆕 从用户偏好加载默认设置
+  // 🆕 Load default settings from user preferences
   const authStore = useAuthStore()
   const appStore = useAppStore()
 
-  // 优先从 authStore.user.preferences 读取，其次从 appStore.preferences 读取
+  // Read from authStore.user.preferences first, then appStore.preferences
   const userPrefs = authStore.user?.preferences
   if (userPrefs) {
-    // 加载默认市场
+    // Load default market
     if (userPrefs.default_market) {
       analysisForm.market = userPrefs.default_market as MarketType
     }
 
-    // 加载默认分析深度（转换为数字）
+    // Load default analysis depth (convert to number)
     if (userPrefs.default_depth) {
       analysisForm.researchDepth = parseInt(userPrefs.default_depth)
     }
 
-    // 加载默认分析师
+    // Load default analyst
     if (userPrefs.default_analysts && userPrefs.default_analysts.length > 0) {
       analysisForm.selectedAnalysts = normalizeSelectedAnalystsForMarket(
         analysisForm.market,
@@ -2876,32 +2876,32 @@ onMounted(async () => {
       )
     }
 
-    console.log('✅ 已加载用户偏好设置:', {
+    console.log('✅ User preferences loaded:', {
       market: analysisForm.market,
       depth: analysisForm.researchDepth,
       analysts: analysisForm.selectedAnalysts
     })
   } else {
-    // 降级到 appStore.preferences
+    // downgrade to appStore.preferences
     if (appStore.preferences.defaultMarket) {
       analysisForm.market = appStore.preferences.defaultMarket as MarketType
     }
     if (appStore.preferences.defaultDepth) {
       analysisForm.researchDepth = parseInt(appStore.preferences.defaultDepth)
     }
-    console.log('✅ 已加载应用偏好设置（降级）')
+    console.log('✅ App preferences loaded (downgrade)')
   }
 
-  // 接收一次路由参数（从筛选页带入）- 路由参数优先级最高
+  // Receive routing parameters once (brought in from the filtering page) - routing parameters have the highest priority
   const q = route.query as any
   const hasNewStock = !!q?.stock
   if (hasNewStock) {
     analysisForm.stockCode = String(q.stock)
-    // 🔥 关键修复：如果有新的股票代码，清除旧任务缓存
+    // 🔥 Critical fix: Clear old task cache if there are new tickers
     clearTaskCache()
-    console.log('🔄 检测到新股票代码，已清除旧任务缓存:', q.stock)
+    console.log('🔄 New stock symbol detected, old task cache cleared:', q.stock)
 
-    // 🆕 自动识别市场类型（如果URL中没有明确指定market参数）
+    // 🆕 Automatic recognition of market type (if market parameter is not explicitly specified in the URL)
     if (!q?.market) {
       const detectedMarket = getMarketByStockCode(analysisForm.stockCode)
       analysisForm.market = detectedMarket as MarketType
@@ -2913,12 +2913,12 @@ onMounted(async () => {
           analysisForm.selectedAnalysts
         )
       }
-      console.log('🔍 自动识别市场类型:', analysisForm.stockCode, '->', detectedMarket)
+      console.log('🔍 Automatically identify market types:', analysisForm.stockCode, '->', detectedMarket)
     }
   }
   if (q?.market) {
     analysisForm.market = normalizeMarketForAnalysis(q.market) as MarketType
-    // 🔥 如果从路由参数设置市场类型，也需要同步分析师
+    // 🔥 Analyst synchronization is also required if market type is set from routing parameters
     if (analysisForm.market === 'ETF') {
       analysisForm.selectedAnalysts = [...ETF_ANALYST_NAMES]
     } else {
@@ -2929,34 +2929,34 @@ onMounted(async () => {
     }
   }
 
-  if (analysisForm.market === 'A股' && analysisForm.stockCode) {
+  if (analysisForm.market === 'A shares' && analysisForm.stockCode) {
     await fetchFactorPreview(analysisForm.stockCode)
   }
 
-  // 尝试恢复任务状态（仅当没有新股票代码时）
+  // Try to restore task status (only if there is no new ticker)
   if (!hasNewStock) {
     await restoreTaskFromCache()
   }
 
-  // 🆕 初始检查模型适用性
+  // 🆕 Initial check of model suitability
   await checkModelSuitability()
   try {
     workflows.value = await workflowApi.listAll()
-    console.log('[SingleAnalysis] 加载的所有流程:', workflows.value)
-    console.log('[SingleAnalysis] 过滤后的流程:', workflowsSorted.value)
+    console.log('[SingleAnalysis] All processes loaded:', workflows.value)
+    console.log('[SingleAnalysis] filtered process:', workflowsSorted.value)
     
-    // 优先选择标记为 is_default 的流程
+    // Prefer processes marked is_default
     const defaultWorkflow = workflowsSorted.value.find(w => w.is_default)
     if (defaultWorkflow) {
       selectedWorkflowId.value = defaultWorkflow.id
-      console.log('[SingleAnalysis] 选中默认流程:', defaultWorkflow.id, defaultWorkflow.name)
+      console.log('[SingleAnalysis] Select the default process:', defaultWorkflow.id, defaultWorkflow.name)
     } else if (workflowsSorted.value.length > 0) {
-      // 如果没有标记默认，选择第一个
+      // If no default is marked, the first one is selected
       selectedWorkflowId.value = workflowsSorted.value[0].id
-      console.log('[SingleAnalysis] 没有默认流程，选中第一个:', workflowsSorted.value[0].id, workflowsSorted.value[0].name)
+      console.log('[SingleAnalysis] There is no default process, select the first one:', workflowsSorted.value[0].id, workflowsSorted.value[0].name)
     }
   } catch (error) {
-    console.debug('[SingleAnalysis] 加载工作流失败，保留当前默认模板:', error)
+    console.debug('[SingleAnalysis] Failed to load workflow, retaining current default template:', error)
   }
 })
 
@@ -3264,7 +3264,7 @@ onMounted(async () => {
             color: #1e40af;
           }
 
-          // 🔥 禁用状态样式
+          // 🔥 Disabled state style
           &.disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -3468,7 +3468,7 @@ onMounted(async () => {
   }
 }
 
-// 分析步骤样式
+// Analysis step style
 .step-item {
   display: flex;
   align-items: flex-start;
@@ -3581,7 +3581,7 @@ onMounted(async () => {
   opacity: 0.9;
 }
 
-/* 脉冲动画 */
+/* pulse animation */
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
@@ -3593,14 +3593,14 @@ onMounted(async () => {
   }
 }
 
-/* 为当前步骤图标添加脉冲效果 */
+/* Add a pulsing effect to the current step icon */
 .step-current .step-icon {
   animation: pulse 2s ease-in-out infinite;
 }
 </style>
 
 <style>
-/* 全局样式确保按钮样式生效 */
+/* Global styles ensure that button styles take effect */
 .action-buttons {
   display: flex !important;
   justify-content: center !important;
@@ -3646,7 +3646,7 @@ onMounted(async () => {
   font-weight: 700 !important;
 }
 
-/* 进度显示样式 */
+/* Progress display style */
 .progress-section {
   margin-top: 24px;
 }
@@ -3667,7 +3667,7 @@ onMounted(async () => {
   flex: 1;
 }
 
-/* 旋转动画 */
+/* Rotation animation */
 .rotating-icon {
   animation: rotate 2s linear infinite;
 }
@@ -3681,7 +3681,7 @@ onMounted(async () => {
   }
 }
 
-/* 总体进度信息 */
+/* Overall progress information */
 .overall-progress-info {
   margin-bottom: 24px;
 }
@@ -3714,7 +3714,7 @@ onMounted(async () => {
   color: var(--el-text-color-primary);
 }
 
-/* 进度条区域 */
+/* progress bar area */
 .progress-bar-section {
   margin-bottom: 24px;
 }
@@ -3737,7 +3737,7 @@ onMounted(async () => {
   }
 }
 
-/* 当前任务信息 */
+/* Current task information */
 .current-task-info {
   background: var(--el-fill-color-light);
   border: 1px solid #3b82f6;
@@ -3766,7 +3766,7 @@ onMounted(async () => {
   line-height: 1.5;
 }
 
-/* 分析步骤 */
+/* Analysis steps */
 .analysis-steps {
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color);
@@ -3786,7 +3786,7 @@ onMounted(async () => {
   overflow-y: auto;
 }
 
-/* 结果显示样式 */
+/* Result display style */
 .results-section {
   margin-top: 24px;
 }
@@ -3836,7 +3836,7 @@ onMounted(async () => {
   margin-bottom: 0;
 }
 
-/* 风险提示样式 */
+/* Risk warning style */
 .risk-disclaimer {
   margin-bottom: 24px;
   animation: fadeInDown 0.5s ease-out;
@@ -4010,13 +4010,13 @@ onMounted(async () => {
   border-top: 1px solid #e5e7eb;
 }
 
-/* 分析报告标签页样式 */
+/* Analysis report tab style */
 .analysis-tabs-container {
   margin-top: 16px;
 }
 
 .analysis-tabs {
-  /* 标签页头部样式 */
+  /* Tab header style */
   :deep(.el-tabs__header) {
     margin: 0 0 20px 0;
     background: var(--el-fill-color-light);
@@ -4026,14 +4026,14 @@ onMounted(async () => {
     border: 1px solid var(--el-border-color);
   }
 
-  /* 标签页导航 */
+  /* Tab navigation */
   :deep(.el-tabs__nav-wrap) {
     &::after {
-      display: none; /* 隐藏默认的底部边框 */
+      display: none; /* Hide default bottom border */
     }
   }
 
-  /* 单个标签页样式 */
+  /* Single tab style */
   :deep(.el-tabs__item) {
     height: 55px !important;
     line-height: 55px !important;
@@ -4048,7 +4048,7 @@ onMounted(async () => {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
     position: relative !important;
     overflow: hidden !important;
-    border-bottom: 2px solid var(--el-border-color) !important; /* 确保底部边框存在 */
+    border-bottom: 2px solid var(--el-border-color) !important; /* Make sure the bottom border exists */
 
     &:hover {
       background: var(--el-fill-color-light) !important;
@@ -4079,7 +4079,7 @@ onMounted(async () => {
     }
   }
 
-  /* 标签页内容区域 */
+  /* Tab content area */
   :deep(.el-tabs__content) {
     padding: 0;
   }
@@ -4094,7 +4094,7 @@ onMounted(async () => {
   }
 }
 
-/* 报告头部样式 */
+/* Report header style */
 .report-header {
   margin-bottom: 25px;
   padding: 20px;
@@ -4124,11 +4124,11 @@ onMounted(async () => {
     color: #6c757d;
     font-size: 16px;
     line-height: 1.5;
-    margin-left: 36px; /* 对齐图标后的文字 */
+    margin-left: 36px; /* Align text after icon */
   }
 }
 
-/* 报告内容包装器 */
+/* Report content wrapper */
 .report-content-wrapper {
   background: var(--el-bg-color);
   padding: 25px;
@@ -4137,14 +4137,14 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* 报告内容样式增强 */
+/* Report content style enhancement */
 .report-content,
 .markdown-content {
   line-height: 1.7;
   color: #495057;
   font-size: 16px;
 
-  /* 标题样式 */
+  /* Title style */
   h1, h2, h3, h4, h5, h6 {
     color: #1f2937 !important;
     margin: 20px 0 12px 0 !important;
@@ -4156,25 +4156,25 @@ onMounted(async () => {
   h3 { font-size: 18px !important; line-height: 1.5 !important; }
   h4 { font-size: 16px !important; }
 
-  /* 段落样式 */
+  /* paragraph style */
   p {
     margin: 12px 0 !important;
     line-height: 1.7 !important;
   }
 
-  /* 强调文本 */
+  /* emphasize text */
   strong, b {
     color: #1f2937 !important;
     font-weight: 600 !important;
   }
 
-  /* 斜体文本 */
+  /* italicized text */
   em, i {
     color: #4b5563 !important;
     font-style: italic !important;
   }
 
-  /* 列表样式 */
+  /* list style */
   ul, ol {
     margin: 12px 0 !important;
     padding-left: 24px !important;
@@ -4185,7 +4185,7 @@ onMounted(async () => {
     }
   }
 
-  /* 代码样式 */
+  /* code style */
   code {
     background: var(--el-fill-color-light) !important;
     padding: 2px 6px !important;
@@ -4195,7 +4195,7 @@ onMounted(async () => {
     color: #e11d48 !important;
   }
 
-  /* 引用样式 */
+  /* Reference style */
   blockquote {
     border-left: 4px solid #3b82f6 !important;
     padding-left: 16px !important;
@@ -4208,7 +4208,7 @@ onMounted(async () => {
   }
 }
 
-/* 风险提示样式 */
+/* Risk warning style */
 .risk-disclaimer {
   margin-top: 24px;
   border-radius: 8px;

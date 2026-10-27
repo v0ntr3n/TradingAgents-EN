@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-简化的估值指标测试
+Simplified Valuation Metric Testing
 """
 
 import sys
@@ -13,15 +13,15 @@ from tradingagents.agents.utils.agent_utils import Toolkit
 from tradingagents.default_config import DEFAULT_CONFIG
 
 def test_valuation_simple():
-    """简化的估值指标测试"""
-    print("简化测试300750估值指标...")
+    """Simplified Valuation Metric Testing"""
+    print("Simplified Testing of the 300750 Valuation Indicator...")
     
-    # 创建工具包
+    # Create toolkit
     config = DEFAULT_CONFIG.copy()
     config["online_tools"] = True
     toolkit = Toolkit(config)
     
-    # 获取基本面数据
+    # Get fundamental data
     result = toolkit.get_stock_fundamentals_unified.invoke({
         'ticker': '300750',
         'start_date': '2025-06-01',
@@ -29,24 +29,24 @@ def test_valuation_simple():
         'curr_date': '2025-07-15'
     })
     
-    # 查找估值指标部分
+    # Find the Valuation Metrics section
     lines = result.split('\n')
     
-    print("\n=== 查找估值指标 ===")
+    print("\n=== Find valuation metrics ===")
     for i, line in enumerate(lines):
-        if "估值指标" in line:
-            print(f"找到估值指标部分在第{i+1}行:")
-            # 打印估值指标及其后面的几行
+        if "Valuation indicators" in line:
+            print(f"Find the Valuation Metrics section in section{i+1}OK:")
+            # Print the valuation indicator and the following lines
             for j in range(max(0, i-1), min(len(lines), i+10)):
                 print(f"{j+1:3d}: {lines[j]}")
             break
     else:
-        print("未找到估值指标部分")
+        print("Valuation metrics section not found")
         
-        # 搜索包含PE、PB、PS的行
-        print("\n=== 搜索PE、PB、PS相关行 ===")
+        # Search for lines containing PE, PB, PS
+        print("\n=== Search for PE, PB, PS related lines ===")
         for i, line in enumerate(lines):
-            if any(keyword in line for keyword in ["市盈率", "市净率", "市销率", "PE", "PB", "PS"]):
+            if any(keyword in line for keyword in ["P/E ratio", "price to book ratio", "price to sales ratio", "PE", "PB", "PS"]):
                 print(f"{i+1:3d}: {line}")
 
 if __name__ == "__main__":

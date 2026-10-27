@@ -1,19 +1,19 @@
 """
-Memory 管理器 v2.0
+Memory Manager v2.0
 
-支持多种向量数据库后端的记忆系统，用于存储和检索 Agent 的历史经验。
+A memory system that supports multiple vector database backends for storing and retrieving the Agent s historical experience.
 
-支持的后端：
-- MongoDB (默认，与业务数据统一存储，客户端 cosine 相似度)
-- Qdrant (可选回退，服务器模式适合大数据量)
-- ChromaDB (有线程安全问题，不推荐)
+Supported backends:
+- MongoDB (By default, it is stored uniformly with business data, and the client cosine similarity)
+- Qdrant (Optional fallback, server mode is suitable for large data volumes)
+- ChromaDB (There are thread safety issues, not recommended)
 
-特性：
-- 支持多个 Agent 的独立记忆空间
-- 基于语义相似度的记忆检索
-- 自动管理向量数据库集合
-- 与 EmbeddingManager 集成
-- 通过环境变量切换后端
+Features:
+- Supports independent memory spaces for multiple Agents
+- Memory retrieval based on semantic similarity
+- Automatically manage vector database collections
+- Integrate with EmbeddingManager
+- Switching backends via environment variables
 """
 
 import logging
@@ -60,7 +60,7 @@ def _run_async_sync(coro):
     def _runner() -> None:
         try:
             result["value"] = asyncio.run(coro)
-        except BaseException as exc:  # pragma: no cover - 仅用于跨线程异常传递
+        except BaseException as exc:  # pragma: no cover - Only used for cross-thread exception propagation
             error["value"] = exc
         finally:
             done.set()
@@ -74,7 +74,7 @@ def _run_async_sync(coro):
 
 
 class Mem0AgentMemory:
-    """为 v2 AgentMemory 接口提供 mem0 兼容层。"""
+    """Provides mem0 compatibility layer for v2 AgentMemory interface."""
 
     def __init__(self, agent_id: str):
         self.agent_id = agent_id
@@ -129,11 +129,11 @@ class Mem0AgentMemory:
                 )
             )
             if result.success:
-                logger.info("✅ mem0 AgentMemory 写入成功 agent_id=%s", self.agent_ids[0])
+                logger.info("✅ mem0 AgentMemory Write successfully agent_id=%s", self.agent_ids[0])
                 return True
             raise RuntimeError(result.error or "mem0 store failed")
         except Exception as exc:
-            logger.warning("⚠️ mem0 AgentMemory 写入失败 %s: %s", self.agent_id, exc)
+            logger.warning("⚠️ mem0 AgentMemory Write failed %s: %s", self.agent_id, exc)
         return False
 
     def search_memories(
@@ -177,11 +177,11 @@ class Mem0AgentMemory:
                 if len(memories) >= n_results:
                     break
             if memories:
-                logger.info("✅ mem0 AgentMemory 命中 agent_id=%s recalled=%d aliases=%s", self.agent_id, len(memories), self.agent_ids)
+                logger.info("✅ mem0 AgentMemory hit agent_id=%s recalled=%d aliases=%s", self.agent_id, len(memories), self.agent_ids)
                 return memories
-            logger.info("📭 mem0 AgentMemory 未命中 agent_id=%s aliases=%s", self.agent_id, self.agent_ids)
+            logger.info("📭 mem0 AgentMemory miss agent_id=%s aliases=%s", self.agent_id, self.agent_ids)
         except Exception as exc:
-            logger.warning("⚠️ mem0 AgentMemory 召回失败 %s: %s", self.agent_id, exc)
+            logger.warning("⚠️ mem0 AgentMemory Recall failed %s: %s", self.agent_id, exc)
         return []
 
     def get_memory_count(self) -> int:
@@ -193,14 +193,14 @@ class Mem0AgentMemory:
 
 class VectorStoreManager:
     """
-    向量数据库管理器（单例）
+    Vector database manager (singleton)
 
-    支持多种后端：
-    - mongodb (默认，与业务数据统一存储，客户端 cosine 相似度)
-    - qdrant (可选回退，服务器模式适合大数据量)
-    - chromadb (有线程安全问题，不推荐)
+    Supports multiple backends:
+    - mongodb (By default, it is stored uniformly with business data, and the client cosine similarity)
+    - qdrant (Optional fallback, server mode is suitable for large data volumes)
+    - chromadb (There are thread safety issues, not recommended)
 
-    通过环境变量 VECTOR_STORE_BACKEND 切换后端
+    Switch the backend through the environment variable VECTOR_STORE_BACKEND
     """
 
     _instance = None
@@ -213,7 +213,7 @@ class VectorStoreManager:
 
     def __init__(self):
         if not self._initialized:
-            # 读取后端配置（默认使用 mongodb，减少运维组件）
+            # Read backend configuration (mongodb is used by default, reducing operation and maintenance components)
             backend = os.getenv("VECTOR_STORE_BACKEND", "mongodb").lower()
             self.backend = backend
 
@@ -221,17 +221,17 @@ class VectorStoreManager:
                 if backend == "mongodb":
                     from .mongodb_vector_adapter import MongoDBVectorAdapter
                     self._adapter = MongoDBVectorAdapter()
-                    logger.info("✅ 向量数据库后端: MongoDB (客户端 cosine，与业务数据统一存储)")
+                    logger.info("✅ Vector database backend: MongoDB (Client cosine, unified storage with business data)")
                 elif backend == "qdrant":
                     from .qdrant_adapter import QdrantAdapter
                     self._adapter = QdrantAdapter()
-                    logger.info("✅ 向量数据库后端: Qdrant (线程安全)")
+                    logger.info("✅ Vector database backend: Qdrant (Thread safety)")
                 elif backend == "chromadb":
                     from .chromadb_adapter import ChromaDBAdapter
                     self._adapter = ChromaDBAdapter()
-                    logger.warning("⚠️ 向量数据库后端: ChromaDB (有线程安全问题，不推荐)")
+                    logger.warning("⚠️ Vector database backend: ChromaDB (There are thread safety issues, not recommended)")
                 else:
-                    logger.error(f"❌ 不支持的向量数据库后端: {backend}，使用默认 MongoDB")
+                    logger.error(f"❌ Unsupported vector database backend: {backend}, Use default MongoDB")
                     from .mongodb_vector_adapter import MongoDBVectorAdapter
                     self._adapter = MongoDBVectorAdapter()
                     self.backend = "mongodb"
@@ -239,68 +239,68 @@ class VectorStoreManager:
                 VectorStoreManager._initialized = True
 
             except ImportError as e:
-                logger.error(f"❌ 向量数据库后端初始化失败: {e}")
+                logger.error(f"❌ Vector database backend initialization failed: {e}")
                 raise
 
     def get_or_create_collection(self, name: str, vector_size: int = 1024):
         """
-        获取或创建集合
+        Get or create a collection
 
         Args:
-            name: 集合名称
-            vector_size: 向量维度（默认 1024，兼容更多 embedding 模型）
+            name: Collection name
+            vector_size: Vector dimension (default 1024, compatible with more embedding models)
 
         Returns:
-            集合对象（实现 VectorStoreInterface）
+            Collection object (implements VectorStoreInterface)
         """
         return self._adapter.get_or_create_collection(name, vector_size)
 
     def delete_collection(self, name: str) -> bool:
         """
-        删除集合
+        Delete collection
 
         Args:
-            name: 集合名称
+            name: Collection name
 
         Returns:
-            是否成功
+            Is it successful?
         """
         return self._adapter.delete_collection(name)
 
 
 class AgentMemory:
     """
-    Agent 记忆管理器
+    Agent memory manager
 
-    为单个 Agent 提供记忆存储和检索功能。
+    Provide memory storage and retrieval capabilities for a single Agent.
 
-    记忆写入（add_memory）为异步非阻塞操作：
-    - 调用 add_memory() 会将任务提交到后台队列，立即返回
-    - 后台守护线程依次处理队列中的 embedding 生成 + 向量存储
-    - 避免分析主流程被 embedding API 调用和磁盘写入阻塞
+    Memory writing (add_memory) is an asynchronous non-blocking operation:
+    - call add_memory() Will submit the task to the background queue and return immediately
+    - The background daemon thread processes the embedding generation in the queue in sequence. + vector storage
+    - Avoid the main analysis process being blocked by embedding API calls and disk writes
     """
 
-    # 所有 AgentMemory 实例共享的后台工作线程和队列（节省线程资源）
+    # Background worker threads and queues shared by all AgentMemory instances (save thread resources)
     _shared_queue: Optional[queue.Queue] = None
     _shared_worker: Optional[threading.Thread] = None
     _shared_lock = threading.Lock()
 
     def __init__(self, agent_id: str, embedding_manager):
         """
-        初始化 Agent 记忆
+        Initialize Agent memory
 
         Args:
-            agent_id: Agent ID（用作向量数据库集合名称）
-            embedding_manager: EmbeddingManager 实例
+            agent_id: Agent ID (used as vector database collection names)
+            embedding_manager: EmbeddingManager Example
         """
         self.agent_id = agent_id
         self.embedding_manager = embedding_manager
 
-        # 获取或创建向量数据库集合
+        # Get or create a vector database collection
         self.vector_store_manager = VectorStoreManager()
 
-        # 获取 embedding 维度
-        vector_size = 1024  # 🔥 默认维度 1024（兼容更多模型）
+        # Get embedding dimensions
+        vector_size = 1024  # 🔥 Default dimension 1024 (compatible with more models)
         if hasattr(embedding_manager, 'get_embedding_dimension'):
             vector_size = embedding_manager.get_embedding_dimension()
 
@@ -310,14 +310,14 @@ class AgentMemory:
         )
 
         backend = self.vector_store_manager.backend
-        logger.info(f"🧠 初始化 Agent 记忆: {agent_id} (后端: {backend})")
+        logger.info(f"🧠 Initialize Agent memory: {agent_id} (backend: {backend})")
 
-        # 确保共享后台工作线程已启动
+        # Make sure the shared background worker thread is started
         self._ensure_worker_started()
 
     @classmethod
     def _ensure_worker_started(cls):
-        """确保共享后台工作线程已启动（线程安全）"""
+        """Make sure the shared background worker thread is started (thread safe)"""
         if cls._shared_worker is not None and cls._shared_worker.is_alive():
             return
         with cls._shared_lock:
@@ -330,22 +330,22 @@ class AgentMemory:
                 daemon=True,
             )
             cls._shared_worker.start()
-            logger.info("🚀 记忆后台保存线程已启动")
+            logger.info("🚀 Memory background saving thread has been started")
 
     @classmethod
     def _worker_loop(cls):
-        """后台线程：持续从队列取任务并执行同步写入"""
+        """Background thread: continue to fetch tasks from the queue and perform synchronous writing"""
         while True:
             try:
                 task = cls._shared_queue.get()
                 if task is None:
-                    # 收到哨兵值，退出
-                    logger.info("🛑 记忆后台保存线程收到退出信号")
+                    # Receive sentinel value, exit
+                    logger.info("🛑 The memory background saving thread receives the exit signal")
                     break
                 agent_memory, content, metadata, memory_id = task
                 agent_memory._do_add_memory(content, metadata, memory_id)
             except Exception as e:
-                logger.error(f"❌ 记忆后台保存线程异常: {e}", exc_info=True)
+                logger.error(f"❌ Memory background saving thread exception: {e}", exc_info=True)
             finally:
                 try:
                     cls._shared_queue.task_done()
@@ -359,29 +359,29 @@ class AgentMemory:
         memory_id: Optional[str] = None
     ) -> bool:
         """
-        添加记忆（非阻塞）
+        Add memory (non-blocking)
 
-        将任务提交到后台队列，立即返回。后台线程负责实际的
-        embedding 生成和向量存储操作。
+        Submit the task to the background queue and return immediately. The background thread is responsible for the actual
+        embedding Generation and vector storage operations.
 
         Args:
-            content: 记忆内容（文本）
-            metadata: 元数据（如时间、股票代码等）
-            memory_id: 记忆ID（可选，默认自动生成）
+            content: Memory content (text)
+            metadata: Metadata (such as time, ticker, etc.)
+            memory_id: Memory ID (optional, automatically generated by default)
 
         Returns:
-            是否成功入队（True=已提交，False=队列已满或异常）
+            Whether successfully joined the team (True=Submitted,False=Queue is full or abnormal)
         """
         try:
             self._ensure_worker_started()
             self._shared_queue.put_nowait((self, content, metadata, memory_id))
-            logger.debug(f"📨 记忆已提交到后台队列: {self.agent_id} (队列长度: {self._shared_queue.qsize()})")
+            logger.debug(f"📨 The memory has been submitted to the background queue: {self.agent_id} (queue length: {self._shared_queue.qsize()})")
             return True
         except queue.Full:
-            logger.warning(f"⚠️ 记忆保存队列已满，跳过: {self.agent_id}")
+            logger.warning(f"⚠️ Memory save queue is full, skipping: {self.agent_id}")
             return False
         except Exception as e:
-            logger.error(f"❌ 提交记忆到队列失败: {e}")
+            logger.error(f"❌ Failed to commit memory to queue: {e}")
             return False
 
     def _do_add_memory(
@@ -391,33 +391,33 @@ class AgentMemory:
         memory_id: Optional[str] = None
     ) -> bool:
         """
-        实际执行记忆写入（在后台线程中调用）
+        actually performs the memory write (called in a background thread)
 
         Args:
-            content: 记忆内容（文本）
-            metadata: 元数据
-            memory_id: 记忆ID
+            content: Memory content (text)
+            metadata: metadata
+            memory_id: memory ID
         """
         try:
-            # 获取 embedding
+            # get embedding
             embedding, provider = self.embedding_manager.get_embedding(content)
             if embedding is None:
-                logger.warning(f"⚠️ 无法获取 embedding，跳过记忆存储")
+                logger.warning(f"⚠️ Unable to obtain embedding, skipping memory storage")
                 return False
 
-            # 生成 ID
+            # generate ID
             if memory_id is None:
                 import hashlib
                 import time
                 memory_id = hashlib.md5(f"{content[:100]}_{time.time()}".encode()).hexdigest()
 
-            # 准备元数据
+            # Prepare metadata
             if metadata is None:
                 metadata = {}
             metadata["agent_id"] = self.agent_id
             metadata["provider"] = provider
 
-            # 存储到向量数据库（适配器内部已处理线程安全）
+            # Store to vector database (thread safety is handled internally in the adapter)
             self.collection.add(
                 documents=[content],
                 embeddings=[embedding],
@@ -425,11 +425,11 @@ class AgentMemory:
                 ids=[memory_id]
             )
 
-            logger.debug(f"✅ 记忆已存储: {self.agent_id}, ID={memory_id[:8]}...")
+            logger.debug(f"✅ memory stored: {self.agent_id}, ID={memory_id[:8]}...")
             return True
 
         except Exception as e:
-            logger.error(f"❌ 存储记忆失败: {e}")
+            logger.error(f"❌ Failed to store memory: {e}")
             return False
 
     def search_memories(
@@ -439,70 +439,70 @@ class AgentMemory:
         filter_metadata: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """
-        搜索相似记忆
+        Search for similar memories
 
         Args:
-            query: 查询文本
-            n_results: 返回结果数量
-            filter_metadata: 元数据过滤条件
+            query: Query text
+            n_results: Number of results returned
+            filter_metadata: Metadata filters
 
         Returns:
-            记忆列表，每个记忆包含 content, metadata, similarity
+            Memory list, each memory contains content, metadata, similarity
         """
         try:
-            # 获取查询的 embedding
+            # Get the query embedding
             query_embedding, provider = self.embedding_manager.get_embedding(query)
             if query_embedding is None:
-                logger.warning(f"⚠️ 无法获取查询 embedding")
+                logger.warning(f"⚠️ Unable to get query embedding")
                 return []
 
-            # 🔥 重要：确保查询时使用与存储时相同的 Embedding 模型
+            # 🔥 Important: Make sure to use the same Embedding model when querying as when storing
             #
-            # 原因：
-            # 1. 不同模型的向量维度可能不同（DashScope 1024维，OpenAI 1536维等）
-            # 2. 不同模型的语义空间不同，即使维度相同也不能互相查询
-            # 3. 只有使用相同模型生成的向量才能进行准确的相似度计算
+            # Reason:
+            # 1. The vector dimensions of different models may be different (DashScope 1024 dimensions, OpenAI 1536 dimensions, etc.)
+            # 2. Different models have different semantic spaces and cannot query each other even if they have the same dimensions.
+            # 3. Accurate similarity calculations are only possible using vectors generated by the same model
             #
-            # 方案：在元数据过滤中添加 provider 过滤，只查询使用相同 provider 的记忆
+            # Solution: Add provider filtering to metadata filtering and only query memories using the same provider
             if filter_metadata is None:
                 filter_metadata = {}
 
-            # 🔥 添加 provider 过滤，确保只查询使用相同 Embedding 模型的记忆
-            # 注意：
-            # - 如果集合中有使用不同 provider 的记忆，它们会被过滤掉
-            # - 这意味着切换 Embedding 模型后，只能查询到使用新模型存储的记忆
-            # - 旧模型的记忆仍然存在，但不会被查询到（除非切换回旧模型）
+            # 🔥 Add provider filtering to ensure that only memories using the same Embedding model are queried
+            # Note:
+            # - If there are memories in the collection that use different providers, they will be filtered out
+            # - This means that after switching the Embedding model, only the memory stored using the new model can be queried
+            # - The memory of the old model still exists, but will not be queried (unless switching back to the old model)
             filter_metadata["provider"] = provider
 
-            logger.debug(f"🔍 查询记忆（使用 {provider} Embedding 模型，只查询相同 provider 的记忆）")
+            logger.debug(f"🔍 Query memory (using {provider} Embedding Model, only query the memory of the same provider)")
 
-            # 🔥 修复 ChromaDB 查询语法问题
-            # ChromaDB 的 where 查询语法要求：
-            # - 单个条件：{"key": "value"}
-            # - 多个条件：{"$and": [{"key1": "value1"}, {"key2": "value2"}]}
-            # 不能直接传递包含多个键的字典
+            # 🔥 Fix ChromaDB query syntax issue
+            # ChromaDB The where query syntax requires:
+            # - Single condition:{"key": "value"}
+            # - Multiple conditions:{"$and": [{"key1": "value1"}, {"key2": "value2"}]}
+            # You cannot directly pass a dictionary containing multiple keys
             where_clause = None
             if len(filter_metadata) == 1:
-                # 单个条件，直接使用
+                # Single condition, used directly
                 key, value = next(iter(filter_metadata.items()))
                 where_clause = {key: value}
             elif len(filter_metadata) > 1:
-                # 多个条件，使用 $and 操作符
+                # For multiple conditions, use $and Operator
                 where_clause = {
                     "$and": [{key: value} for key, value in filter_metadata.items()]
                 }
-            # 如果 filter_metadata 为空，where_clause 为 None，不进行过滤
+            # If filter_metadata is empty and where_clause is None, no filtering will be performed
 
-            # 检查集合是否为空（适配器内部已处理线程安全）
+            # Check if the collection is empty (thread safety is handled internally in the adapter)
             count = self.collection.count()
             if count == 0:
-                logger.debug(f"📭 记忆库为空: {self.agent_id}")
+                logger.debug(f"📭 Memory bank is empty: {self.agent_id}")
                 return []
 
-            # 调整结果数量
+            # Adjust the number of results
             n_results = min(n_results, count)
 
-            # 执行查询
+            # Execute query
             query_kwargs = {
                 "query_embeddings": [query_embedding],
                 "n_results": n_results,
@@ -512,7 +512,7 @@ class AgentMemory:
 
             results = self.collection.query(**query_kwargs)
 
-            # 格式化结果
+            # Format results
             memories = []
             if results and 'documents' in results and results['documents']:
                 documents = results['documents'][0]
@@ -526,38 +526,38 @@ class AgentMemory:
                     memory = {
                         'content': doc,
                         'metadata': metadata,
-                        'similarity': 1.0 - distance,  # 转换为相似度
+                        'similarity': 1.0 - distance,  # Convert to similarity
                         'distance': distance
                     }
                     memories.append(memory)
 
-                logger.debug(f"🔍 找到 {len(memories)} 个相似记忆")
+                logger.debug(f"🔍 found {len(memories)} similar memories")
 
             return memories
 
         except Exception as e:
-            logger.error(f"❌ 搜索记忆失败: {e}")
+            logger.error(f"❌ Search memory failed: {e}")
             return []
 
     def get_memory_count(self) -> int:
-        """获取记忆数量"""
+        """Get the number of memories"""
         try:
-            # 适配器内部已处理线程安全
+            # Thread safety is handled internally in the adapter
             count = self.collection.count()
             return count
         except Exception as e:
-            logger.error(f"❌ 获取记忆数量失败: {e}")
+            logger.error(f"❌ Failed to obtain memory quantity: {e}")
             return 0
 
     def clear_memories(self):
-        """清空所有记忆"""
+        """Clear all memories"""
         try:
-            # 适配器内部已处理线程安全
-            # 删除旧集合
+            # Thread safety is handled internally in the adapter
+            # Delete old collection
             self.vector_store_manager.delete_collection(f"memory_{self.agent_id}")
 
-            # 重新创建集合
-            vector_size = 1024  # 🔥 默认维度 1024（兼容更多模型）
+            # Recreate the collection
+            vector_size = 1024  # 🔥 Default dimension 1024 (compatible with more models)
             if hasattr(self.embedding_manager, 'get_embedding_dimension'):
                 vector_size = self.embedding_manager.get_embedding_dimension()
 
@@ -565,44 +565,44 @@ class AgentMemory:
                 f"memory_{self.agent_id}",
                 vector_size=vector_size
             )
-            logger.info(f"🗑️ 清空记忆: {self.agent_id}")
+            logger.info(f"🗑️ clear memory: {self.agent_id}")
         except Exception as e:
-            logger.error(f"❌ 清空记忆失败: {e}")
+            logger.error(f"❌ Failed to clear memory: {e}")
 
 
 class MemoryManager:
     """
-    全局记忆管理器
+    global memory manager
 
-    管理所有 Agent 的记忆实例
+    Manage memory instances for all Agents
     """
 
     def __init__(self, embedding_manager):
         """
-        初始化记忆管理器
+        Initialize memory manager
 
         Args:
-            embedding_manager: EmbeddingManager 实例
+            embedding_manager: EmbeddingManager Example
         """
         self.embedding_manager = embedding_manager
         self._agent_memories: Dict[str, Any] = {}
         self._use_mem0_compat = str(os.getenv("MEMORY_USE_MEM0_COMPAT", "true")).strip().lower() in {"1", "true", "yes", "on"}
-        # A3: mem0 实例构造非线程安全（并发构造 AsyncMemory 会死锁），
-        # get_agent_memory 的 check-then-create 需串行化（并行开局场景两研究员同时取记忆）
+        # A3: mem0 Instance construction is not thread-safe (concurrent construction of AsyncMemory will deadlock),
+        # get_agent_memory The check-then-create needs to be serialized (in the parallel start scenario, two researchers access the memory at the same time)
         self._memory_lock = threading.Lock()
-        logger.info("🧠 记忆管理器初始化完成")
+        logger.info("🧠 Memory manager initialization completed")
         if not self._use_mem0_compat:
-            logger.warning("⚠️ MemoryManager 当前显式使用 legacy-only AgentMemory 路径，建议迁回 mem0 主路径")
+            logger.warning("⚠️ MemoryManager The legacy-only AgentMemory path is currently explicitly used, and it is recommended to move back to the mem0 main path.")
 
     def get_agent_memory(self, agent_id: str) -> Any:
         """
-        获取指定 Agent 的记忆实例（线程安全：mem0 构造串行化）
+        Get the memory instance of the specified Agent (thread-safe: mem0 construction serialization)
 
         Args:
             agent_id: Agent ID
 
         Returns:
-            AgentMemory 实例
+            AgentMemory Example
         """
         with self._memory_lock:
             if agent_id not in self._agent_memories:
@@ -614,8 +614,8 @@ class MemoryManager:
         return self._agent_memories[agent_id]
 
     def clear_all_memories(self):
-        """清空所有 Agent 的记忆"""
+        """Clear the memory of all Agents"""
         for agent_id, memory in self._agent_memories.items():
             memory.clear_memories()
-        logger.info("🗑️ 清空所有记忆")
+        logger.info("🗑️ Clear all memories")
 

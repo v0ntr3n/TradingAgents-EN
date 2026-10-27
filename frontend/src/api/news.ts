@@ -1,7 +1,7 @@
 import { ApiClient } from './request'
 
 /**
- * 新闻数据接口
+ * News data interface
  */
 export interface NewsItem {
   id?: string
@@ -19,7 +19,7 @@ export interface NewsItem {
 }
 
 /**
- * 最新新闻响应
+ * Latest news response
  */
 export interface LatestNewsResponse {
   symbol?: string
@@ -30,7 +30,7 @@ export interface LatestNewsResponse {
 }
 
 /**
- * 新闻查询响应
+ * News query response
  */
 export interface NewsQueryResponse {
   symbol: string
@@ -40,7 +40,7 @@ export interface NewsQueryResponse {
 }
 
 /**
- * 新闻同步响应
+ * News synchronization response
  */
 export interface NewsSyncResponse {
   sync_type: string
@@ -51,14 +51,14 @@ export interface NewsSyncResponse {
 }
 
 /**
- * 新闻API
+ * News API
  */
 export const newsApi = {
   /**
-   * 获取最新新闻
-   * @param symbol 股票代码，为空则获取市场新闻
-   * @param limit 返回数量限制
-   * @param hours_back 回溯小时数
+   * Get the latest news
+   * @param symbol Stock code, if empty, get market news
+   * @param limit Return quantity limit
+   * @param hours_back Lookback hours
    */
   async getLatestNews(symbol?: string, limit: number = 10, hours_back: number = 24) {
     const params: any = { limit, hours_back }
@@ -69,10 +69,10 @@ export const newsApi = {
   },
 
   /**
-   * 查询股票新闻
-   * @param symbol 股票代码
-   * @param hours_back 回溯小时数
-   * @param limit 返回数量限制
+   * Check stock news
+   * @param symbol Stock code
+   * @param hours_back Lookback hours
+   * @param limit Return quantity limit
    */
   async queryStockNews(symbol: string, hours_back: number = 24, limit: number = 20) {
     return ApiClient.get<NewsQueryResponse>(`/api/news-data/query/${symbol}`, {
@@ -82,9 +82,9 @@ export const newsApi = {
   },
 
   /**
-   * 同步市场新闻（后台任务）
-   * @param hours_back 回溯小时数
-   * @param max_news_per_source 每个数据源最大新闻数量
+   * Synchronize market news (background task)
+   * @param hours_back Lookback hours
+   * @param max_news_per_source Maximum number of news per data source
    */
   async syncMarketNews(hours_back: number = 24, max_news_per_source: number = 50) {
     return ApiClient.post<NewsSyncResponse>('/api/news-data/sync/start', {

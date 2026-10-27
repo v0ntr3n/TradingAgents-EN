@@ -1,6 +1,6 @@
 """
-进度日志处理器
-监控TradingAgents的日志输出，自动更新进度跟踪器
+Progress log handler
+Monitor the log output of TradingAgents and automatically update the progress tracker
 """
 
 import logging
@@ -13,99 +13,99 @@ logger = logging.getLogger("app.services.progress_log_handler")
 
 
 class ProgressLogHandler(logging.Handler):
-    """进度日志处理器，监控TradingAgents日志并更新进度"""
+    """Progress log processor, monitors TradingAgents logs and updates progress"""
 
     def __init__(self):
         super().__init__()
         self._trackers: Dict[str, RedisProgressTracker] = {}
         self._lock = threading.Lock()
 
-        # 日志模式匹配
+        # log pattern matching
         self.progress_patterns = {
-            # 基础阶段
-            r"验证.*股票代码|检查.*数据源": "📋 准备阶段",
-            r"检查.*API.*密钥|环境.*配置": "🔧 环境检查",
-            r"预估.*成本|成本.*估算": "💰 成本估算",
-            r"配置.*参数|参数.*设置": "⚙️ 参数设置",
-            r"初始化.*引擎|启动.*引擎": "🚀 启动引擎",
+            # basic stage
+            r"Verify.*Stock code|Check.*data source": "📋 准备阶段",
+            r"Check.*API.*key|environment.*Configuration": "🔧 环境检查",
+            r"Estimate.*cost|cost.*Estimate": "💰 成本估算",
+            r"Configuration.*parameters|parameters.*settings": "⚙️ 参数设置",
+            r"initialization.*engine|start.*engine": "🚀 启动引擎",
 
-            # 分析师阶段
-            r"市场分析师.*开始|开始.*市场分析|市场.*数据.*分析": "📊 市场分析师正在分析",
-            r"基本面分析师.*开始|开始.*基本面分析|财务.*数据.*分析": "💼 基本面分析师正在分析",
-            r"新闻分析师.*开始|开始.*新闻分析|新闻.*数据.*分析": "📰 新闻分析师正在分析",
-            r"社交媒体分析师.*开始|开始.*社交媒体分析|情绪.*分析": "💬 社交媒体分析师正在分析",
+            # analyst stage
+            r"market analyst.*start|start.*market analysis|market.*data.*analysis": "📊 市场分析师正在分析",
+            r"fundamental analyst.*start|start.*fundamental analysis|Finance.*data.*analysis": "💼 基本面分析师正在分析",
+            r"news analyst.*start|start.*news analysis|News.*data.*analysis": "📰 新闻分析师正在分析",
+            r"social media analyst.*start|start.*social media analysis|emotions.*analysis": "💬 Social media analysts are analyzing",
 
-            # 研究团队阶段
-            r"看涨研究员|多头研究员|bull.*researcher|积极证据研究员": "🐂 积极证据研究员构建论据",
-            r"看跌研究员|空头研究员|bear.*researcher|谨慎证据研究员": "🐻 谨慎证据研究员识别风险",
-            r"研究.*辩论|辩论.*开始|debate.*start|多情景研究": "🎯 多情景研究进行中",
-            r"研究经理|research.*manager|研究整合员": "👔 研究整合员汇总",
+            # research team stage
+            r"bullish researcher|multi-investigator|bull.*researcher|Positive Evidence Researcher": "🐂 Active evidence researcher constructs argument",
+            r"bearish researcher|short researcher|bear.*researcher|cautious evidence researcher": "🐻 Cautious Evidence Researchers Identify Risks",
+            r"Research.*Debate|Debate.*start|debate.*start|multi-scenario research": "🎯 多情景研究进行中",
+            r"research manager|research.*manager|research integrator": "👔 研究整合员汇总",
 
-            # 研究整合阶段
-            r"交易员.*决策|trader.*decision|制定.*交易策略|研究整合员.*汇总|研究整合.*意见": "🧩 研究整合员汇总",
+            # Research integration stage
+            r"trader.*decision making|trader.*decision|formulate.*trading strategy|research integrator.*Summary|research integration.*opinion": "🧩 研究整合员汇总",
 
-            # 风险管理阶段
-            r"激进.*风险|risky.*risk|高弹性情景": "🔥 高弹性情景研究",
-            r"保守.*风险|conservative.*risk|防御情景": "🛡️ 防御情景研究",
-            r"中性.*风险|neutral.*risk|基准情景": "⚖️ 基准情景研究",
-            r"风险经理|risk.*manager|风险评估师": "🎯 风险评估师形成结论",
+            # risk management stage
+            r"Radical.*risk|risky.*risk|high elasticity scenario": "🔥 高弹性情景研究",
+            r"conservative.*risk|conservative.*risk|defense scenario": "🛡️ 防御情景研究",
+            r"Neutral.*risk|neutral.*risk|Baseline scenario": "⚖️ 基准情景研究",
+            r"risk manager|risk.*manager|risk assessor": "🎯 风险评估师形成结论",
 
-            # 最终阶段
-            r"信号处理|signal.*process|结果处理": "📡 结果处理",
-            r"生成.*报告|report.*generat": "📊 生成研究报告",
-            r"分析.*完成|analysis.*complet": "✅ 研究完成",
+            # final stage
+            r"signal processing|signal.*process|Result processing": "📡 结果处理",
+            r"generate.*report|report.*generat": "📊 生成研究报告",
+            r"analysis.*Complete|analysis.*complet": "✅ 研究完成",
         }
 
-        logger.info("📊 [进度日志] 日志处理器初始化完成")
+        logger.info("📊 [progress log] Log processor initialization completed")
 
     def register_tracker(self, task_id: str, tracker: RedisProgressTracker):
         """注册进度跟踪器"""
         with self._lock:
             self._trackers[task_id] = tracker
-            logger.info(f"📊 [进度日志] 注册跟踪器: {task_id}")
+            logger.info(f"📊 [progress log] Register tracker: {task_id}")
 
     def unregister_tracker(self, task_id: str):
         """注销进度跟踪器"""
         with self._lock:
             if task_id in self._trackers:
                 del self._trackers[task_id]
-                logger.info(f"📊 [进度日志] 注销跟踪器: {task_id}")
+                logger.info(f"📊 [progress log] Unregister tracker: {task_id}")
 
     def emit(self, record):
         """处理日志记录"""
         try:
             message = record.getMessage()
 
-            # 检查是否是我们关心的日志消息
+            # Check if it is a log message we care about
             progress_message = self._extract_progress_message(message)
             if not progress_message:
                 return
 
-            # 查找匹配的跟踪器（减少锁持有时间）
+            # Find matching trackers (reduce lock holding time)
             trackers_copy = {}
             with self._lock:
                 trackers_copy = self._trackers.copy()
 
-            # 在锁外面处理跟踪器更新
+            # Handle tracker updates outside of lock
             for task_id, tracker in trackers_copy.items():
                 try:
-                    # 检查跟踪器状态
+                    # Check tracker status
                     if hasattr(tracker, 'progress_data') and tracker.progress_data.get('status') == 'running':
                         tracker.update_progress(progress_message)
-                        logger.debug(f"📊 [进度日志] 更新进度: {task_id} -> {progress_message}")
-                        break  # 只更新第一个匹配的跟踪器
+                        logger.debug(f"📊 [progress log] update progress: {task_id} -> {progress_message}")
+                        break  # Only update the first matching tracker
                 except Exception as e:
-                    logger.warning(f"📊 [进度日志] 更新失败: {task_id} - {e}")
+                    logger.warning(f"📊 [progress log] Update failed: {task_id} - {e}")
 
         except Exception as e:
-            # 不要让日志处理器的错误影响主程序
-            logger.error(f"📊 [进度日志] 日志处理错误: {e}")
+            # Do not let errors in the log processor affect the main program
+            logger.error(f"📊 [progress log] Log processing error: {e}")
 
     def _extract_progress_message(self, message: str) -> Optional[str]:
         """从日志消息中提取进度信息"""
         message_lower = message.lower()
 
-        # 检查是否包含进度相关的关键词
+        # Check whether progress-related keywords are included
         progress_keywords = [
             "开始", "完成", "分析", "处理", "执行", "生成",
             "start", "complete", "analysis", "process", "execute", "generate"
@@ -114,7 +114,7 @@ class ProgressLogHandler(logging.Handler):
         if not any(keyword in message_lower for keyword in progress_keywords):
             return None
 
-        # 匹配具体的进度模式
+        # Match specific progress patterns
         for pattern, progress_msg in self.progress_patterns.items():
             if re.search(pattern, message_lower):
                 return progress_msg
@@ -123,11 +123,11 @@ class ProgressLogHandler(logging.Handler):
 
     def _extract_stock_symbol(self, message: str) -> Optional[str]:
         """从消息中提取股票代码"""
-        # 匹配常见的股票代码格式
+        # Matches common ticker formats
         patterns = [
-            r'\b(\d{6})\b',  # 6位数字（A股）
-            r'\b([A-Z]{1,5})\b',  # 1-5位大写字母（美股）
-            r'\b(\d{4,5}\.HK)\b',  # 港股格式
+            r'\b(\d{6})\b',  # 6 Digits (A shares)
+            r'\b([A-Z]{1,5})\b',  # 1-5 uppercase letters (U.S. stocks)
+            r'\b(\d{4,5}\.HK)\b',  # Hong Kong stock format
         ]
 
         for pattern in patterns:
@@ -138,20 +138,20 @@ class ProgressLogHandler(logging.Handler):
         return None
 
 
-# 全局日志处理器实例
+# Global log handler instance
 _progress_log_handler = None
 _handler_lock = threading.Lock()
 
 
 def get_progress_log_handler() -> ProgressLogHandler:
-    """获取全局进度日志处理器实例"""
+    """Get the global progress log processor instance"""
     global _progress_log_handler
 
     with _handler_lock:
         if _progress_log_handler is None:
             _progress_log_handler = ProgressLogHandler()
 
-            # 将处理器添加到相关的日志记录器
+            # Add handler to relevant logger
             loggers_to_monitor = [
                 "agents",
                 "tradingagents",
@@ -179,7 +179,7 @@ def register_analysis_tracker(task_id: str, tracker: RedisProgressTracker):
 
 
 def unregister_analysis_tracker(task_id: str):
-    """从日志监控中注销分析跟踪器"""
+    """Unregister an analytics tracker from log monitoring"""
     handler = get_progress_log_handler()
     handler.unregister_tracker(task_id)
 

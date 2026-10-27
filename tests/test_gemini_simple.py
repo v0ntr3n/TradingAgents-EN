@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-简化的Gemini测试（禁用内存功能）
+Simplified Gemini testing (memory features disabled)
 """
 
 import os
@@ -8,100 +8,100 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv(project_root / ".env", override=True)
 
 def test_gemini_simple_analysis():
-    """测试Gemini的简单分析功能"""
+    """Test Gemini s simple analysis capabilities"""
     try:
-        print("🧪 测试Gemini简单分析功能")
+        print("🧪 Test Gemini simple analysis function")
         print("=" * 60)
         
         from tradingagents.graph.trading_graph import TradingAgentsGraph
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 检查API密钥
+        # Check API key
         google_api_key = os.getenv('GOOGLE_API_KEY')
         if not google_api_key:
-            print("❌ Google API密钥未配置")
+            print("❌ Google API Key not configured")
             return False
         
-        print(f"✅ Google API密钥已配置: {google_api_key[:20]}...")
+        print(f"✅ Google API Key configured: {google_api_key[:20]}...")
         
-        # 创建简化配置（禁用内存和在线工具）
+        # Create a simplified configuration (disable memory and online tools)
         config = DEFAULT_CONFIG.copy()
         config["llm_provider"] = "google"
         config["deep_think_llm"] = "gemini-2.5-flash-lite-preview-06-17"
         config["quick_think_llm"] = "gemini-2.5-flash-lite-preview-06-17"
-        config["online_tools"] = False  # 禁用在线工具避免API限制
-        config["memory_enabled"] = False  # 禁用内存避免OpenAI依赖
-        config["max_debate_rounds"] = 1  # 减少轮次
+        config["online_tools"] = False  # Disable online tools to avoid API restrictions
+        config["memory_enabled"] = False  # Disable memory to avoid OpenAI dependencies
+        config["max_debate_rounds"] = 1  # Reduce rounds
         config["max_risk_discuss_rounds"] = 1
         
-        # 修复路径
+        # repair path
         config["data_dir"] = str(project_root / "data")
         config["results_dir"] = str(project_root / "results")
         config["data_cache_dir"] = str(project_root / "tradingagents" / "dataflows" / "data_cache")
         
-        # 创建目录
+        # Create directory
         os.makedirs(config["data_dir"], exist_ok=True)
         os.makedirs(config["results_dir"], exist_ok=True)
         os.makedirs(config["data_cache_dir"], exist_ok=True)
         
-        print("✅ 简化配置创建成功")
-        print(f"   LLM提供商: {config['llm_provider']}")
-        print(f"   模型: {config['deep_think_llm']}")
-        print(f"   在线工具: {config['online_tools']}")
-        print(f"   内存功能: {config['memory_enabled']}")
+        print("✅ Simplified configuration created successfully")
+        print(f"   LLM provider: {config['llm_provider']}")
+        print(f"   model: {config['deep_think_llm']}")
+        print(f"   Online tools: {config['online_tools']}")
+        print(f"   memory function: {config['memory_enabled']}")
         
-        # 创建TradingAgentsGraph实例
-        print("🚀 初始化TradingAgents图...")
+        # Create TradingAgentsGraph instance
+        print("🚀 Initialize TradingAgents graph...")
         graph = TradingAgentsGraph(["market"], config=config, debug=False)
         
-        print("✅ TradingAgents图初始化成功")
+        print("✅ TradingAgents Graph initialization successful")
         
-        # 测试简单分析
-        print("📊 开始简化股票分析...")
-        print("   使用离线数据，避免API限制...")
+        # Test simple analysis
+        print("📊 Start Simplifying Stock Analysis...")
+        print("   Use offline data to avoid API restrictions...")
         
         try:
             state, decision = graph.propagate("AAPL", "2025-06-27")
             
             if state and decision:
-                print("✅ Gemini驱动的股票分析成功完成！")
-                print(f"   最终决策: {decision}")
+                print("✅ Gemini Driven stock analysis successfully completed!")
+                print(f"   final decision: {decision}")
                 
-                # 检查市场报告
+                # Check market reports
                 if "market_report" in state and state["market_report"]:
                     market_report = state["market_report"]
-                    print(f"   市场报告长度: {len(market_report)} 字符")
-                    print(f"   报告预览: {market_report[:200]}...")
+                    print(f"   Market report length: {len(market_report)} character")
+                    print(f"   Report preview: {market_report[:200]}...")
                 
                 return True
             else:
-                print("❌ 分析完成但结果为空")
+                print("❌ Analysis completed but result is empty")
                 return False
                 
         except Exception as e:
-            print(f"❌ 股票分析失败: {e}")
+            print(f"❌ Stock analysis failed: {e}")
             import traceback
             print(traceback.format_exc())
             return False
             
     except Exception as e:
-        print(f"❌ 简化测试失败: {e}")
+        print(f"❌ Simplified test failure: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def test_gemini_analyst_direct():
-    """直接测试Gemini分析师"""
+    """Test Gemini Analyst Directly"""
     try:
-        print("\n🧪 直接测试Gemini分析师")
+        print("\n🧪 Test Gemini Analyst Directly")
         print("=" * 60)
         
         from tradingagents.agents.analysts.market_analyst import create_market_analyst
@@ -110,11 +110,11 @@ def test_gemini_analyst_direct():
         from tradingagents.default_config import DEFAULT_CONFIG
         from langchain_core.messages import HumanMessage
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = False
         
-        # 创建Gemini LLM
+        # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash-lite-preview-06-17",
             temperature=0.1,
@@ -122,98 +122,98 @@ def test_gemini_analyst_direct():
             google_api_key=os.getenv('GOOGLE_API_KEY')
         )
         
-        # 创建工具包
+        # Create toolkit
         toolkit = Toolkit(config=config)
         
-        print("✅ 组件创建成功")
+        print("✅ Component created successfully")
         
-        # 创建市场分析师
+        # Create a market analyst
         market_analyst = create_market_analyst(llm, toolkit)
         
-        print("✅ 市场分析师创建成功")
+        print("✅ Market analyst created successfully")
         
-        # 创建测试状态
+        # Create test state
         test_state = {
-            "messages": [HumanMessage(content="分析AAPL的市场技术指标")],
+            "messages": [HumanMessage(content="Analyzing AAPL s Market Technical Indicators")],
             "company_of_interest": "AAPL",
             "trade_date": "2025-06-27"
         }
         
-        print("📊 开始市场分析...")
+        print("📊 Start market analysis...")
         
-        # 执行分析
+        # Perform analysis
         result = market_analyst(test_state)
         
         if result and "market_report" in result:
             market_report = result["market_report"]
             if market_report and len(market_report) > 100:
-                print("✅ 市场分析成功完成")
-                print(f"   报告长度: {len(market_report)} 字符")
-                print(f"   报告预览: {market_report[:200]}...")
+                print("✅ Market analysis successfully completed")
+                print(f"   Report length: {len(market_report)} character")
+                print(f"   Report preview: {market_report[:200]}...")
                 return True
             else:
-                print("⚠️ 市场分析完成但报告内容较少")
+                print("⚠️ The market analysis is completed but the report content is less")
                 return True
         else:
-            print("⚠️ 市场分析完成但没有生成报告")
+            print("⚠️ Market analysis completed but no report generated")
             return False
             
     except Exception as e:
-        print(f"❌ 直接分析师测试失败: {e}")
+        print(f"❌ Direct analyst testing failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def main():
-    """主测试函数"""
-    print("🧪 Gemini简化集成测试")
+    """Main test function"""
+    print("🧪 Gemini Simplify integration testing")
     print("=" * 70)
     
-    # 检查环境变量
+    # Check environment variables
     google_api_key = os.getenv('GOOGLE_API_KEY')
     if not google_api_key:
-        print("❌ Google API密钥未配置")
-        print("💡 请在.env文件中设置 GOOGLE_API_KEY")
+        print("❌ Google API Key not configured")
+        print("💡 Please set it in the .env file GOOGLE_API_KEY")
         return
     
-    # 运行测试
+    # Run tests
     results = {}
     
-    print("第1步: 直接分析师测试")
+    print("Step 1: direct analyst testing")
     print("-" * 30)
-    results['直接分析师'] = test_gemini_analyst_direct()
+    results['direct analyst'] = test_gemini_analyst_direct()
     
-    print("\n第2步: 简化TradingAgents测试")
+    print("\n Step 2: Simplifying TradingAgents testing")
     print("-" * 30)
-    results['简化TradingAgents'] = test_gemini_simple_analysis()
+    results['Simplify TradingAgents'] = test_gemini_simple_analysis()
     
-    # 总结结果
-    print(f"\n📊 简化测试结果总结:")
+    # Summary results
+    print(f"\n📊 Simplified test results summary:")
     print("=" * 50)
     
     for test_name, success in results.items():
-        status = "✅ 通过" if success else "❌ 失败"
+        status = "✅ Pass" if success else "❌ failed"
         print(f"  {test_name}: {status}")
     
     successful_tests = sum(results.values())
     total_tests = len(results)
     
-    print(f"\n🎯 总体结果: {successful_tests}/{total_tests} 测试通过")
+    print(f"\n🎯 Overall results: {successful_tests}/{total_tests} Test passed")
     
     if successful_tests == total_tests:
-        print("🎉 Gemini模型核心功能完全可用！")
-        print("\n💡 使用建议:")
-        print("   1. Gemini基础功能正常工作")
-        print("   2. 可以在TradingAgents中使用Gemini")
-        print("   3. 建议禁用内存功能避免OpenAI依赖")
-        print("   4. 可以使用离线模式避免API限制")
-        print("   5. 支持中文分析和推理")
+        print("🎉 Gemini The core functions of the model are fully available!")
+        print("\n💡 Usage suggestions:")
+        print("   1. Gemini Basic functions work normally")
+        print("   2. Can be used in TradingAgents Gemini")
+        print("   3. It is recommended to disable the memory function to avoid OpenAI dependency")
+        print("   4. Can use offline mode to avoid API restrictions")
+        print("   5. Support Chinese analysis and reasoning")
     elif successful_tests > 0:
-        print("⚠️ Gemini部分功能可用")
-        print("💡 核心功能正常，可以进行基础分析")
+        print("⚠️ Gemini Some features are available")
+        print("💡 The core functions are normal and basic analysis can be performed")
     else:
-        print("❌ Gemini模型不可用")
-        print("💡 请检查API密钥和网络连接")
+        print("❌ Gemini Model not available")
+        print("💡 Please check API key and network connection")
 
 if __name__ == "__main__":
     main()

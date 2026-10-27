@@ -1,11 +1,11 @@
-"""估值测算规格生成层（A10-D1 件①）
+"""Valuation calculation specification generation layer (A10-D1 piece ①) 
 
-三层架构中的规格生成层：LLM（Seed-Evolving）从研究报告包提取判断，
-输出模型规格 JSON；历史数据、现价、总股本由管道注入（真实数据锚点，
-模型只生成判断类字段——预测假设与估值情景），压缩幻觉面。
+The specification generation layer in the three-tier architecture: LLM (Seed-Evolving) extracts judgment from the research report package,
+Output model specifications JSON; historical data, current price, and total equity are injected by the pipeline (real data anchor,
+The model only generates judgment class fields——Forecast assumptions and valuation scenarios), compressing the illusion surface.
 
-校验失败自动反馈重试（对齐 Skill 生成管线的迭代修复叙事）。
-确定性层见 valuation_excel.py。
+Automatic feedback and retries for verification failures (aligned with the iterative repair narrative of the Skill generation pipeline).
+See valuation_excel.py for the deterministic layer.
 """
 
 import json
@@ -25,42 +25,42 @@ from .valuation_excel import (
 
 logger = logging.getLogger(__name__)
 
-# ==================== 提示词 ====================
+# ==================== prompt word ====================
 
-SPEC_SYSTEM_PROMPT = """你是一位严谨的估值建模分析师。你的任务：基于研究报告结论与结构化财务数据，产出估值测算表的模型规格（JSON）。
+SPEC_SYSTEM_PROMPT = """You are a rigorous valuation modeling analyst. Your task: Based on the conclusions of the research report and structured financial data, produce the model specification (JSON) of the valuation calculation table.
 
-分工边界（最高优先级）：
-- 历史财务数据、现价、总股本由系统注入，你不得编造、改动或输出这些字段
-- 你只输出判断类字段：未来 2 年预测假设、估值情景与风险提示
+Division of labor boundaries (highest priority):
+- Historical financial data, current prices, and total equity are injected by the system. You are not allowed to fabricate, alter, or export these fields.
+- You only output judgment fields: forecast assumptions, valuation scenarios and risk warnings for the next two years
 
-输出要求：
-- 只输出一个 JSON 对象，无 markdown 围栏、无解释文字
-- JSON 只含两个字段：earnings_forecast、valuation
+Output requirements:
+- Only output a JSON object, no markdown fence, no explanation text
+- JSON Contains only two fields: earnings_forecast,valuation
 
-字段规范：
-1. earnings_forecast.assumptions：未来 2 年预测数组，每项：
-   - period：年份+E，如 "2026E"、"2027E"（与预测起点衔接）
-   - revenue_growth：营收同比增速，小数（0.25 表示 25%）；必须 > -1 且不为 0
-   - net_margin：净利率，小数；必须在 (0, 1] 区间且不为 0
-   - rationale：50 字内依据，必须引用研究材料中的具体论据，不得编造材料外数据
-2. valuation.scenarios：至少 3 个情景（悲观/中性/乐观），每项：
-   - name：情景名
-   - method：固定为 "PE"
-   - multiple：PE 倍数，必须为正
-   - eps_period：EPS 基准期间，必须是给定历史期间或你的预测期间之一
-   - benchmark_basis：比较基准（同业区间、历史分位等，须可说明来源）
-   - applicability_check：{"passed": true, "notes": ["归母净利润为正"]}（PE 要求基准期净利润为正）
-3. valuation.risk_notes：3-5 条风险提示
+Field specifications:
+1. earnings_forecast.assumptions: Array of forecasts for the next 2 years, each item:
+   - period: Year+E, Such as "2026E", "2027E" (Connected with the forecast starting point)
+   - revenue_growth: Year-on-year revenue growth rate, decimal (0.25 means 25%); required > -1 And not for 0
+   - net_margin: Net interest rate, decimal; must be within (0, 1] range and not 0
+   - rationale: 50 The in-text basis must cite specific arguments in research materials, and no fabrication of extra-material data is allowed.
+2. valuation.scenarios: At least 3 scenarios (pessimistic/neutral/optimistic), each:
+   - name: scene name
+   - method: fixed to "PE"
+   - multiple: PE multiple, must be positive
+   - eps_period: EPS Base period, must be the given historical period or one of your forecast periods
+   - benchmark_basis: Comparison benchmark (peer range, historical quantile, etc., source must be explained)
+   - applicability_check: {"passed": true, "notes": ["Net profit attributable to parent company is positive"]} (PE Net profit in the base period is required to be positive)
+3. valuation.risk_notes: 3-5 risk warning
 
-方法适用性（必须自查）：
-- 预测期净利润 = 上一期营收 × (1 + 增速) × 净利率（营收逐期滚动）
-- PE 的 eps_period 若落在亏损期，必须换用盈利期
+Method applicability (must self-check):
+- Net profit during the forecast period = Revenue of the previous period × (1 + Growth rate) × Net profit margin (revenue rolling from period to period)
+- PE If the eps_period falls in the loss period, it must be replaced by the profit period.
 
-数值纪律：
-- 假设方向须与研究结论一致（中性结论不应给极端假设）
-- 倍数须有基准可依，不得凭空给数"""
+Numerical discipline:
+- The direction of the hypothesis must be consistent with the research conclusion (neutral conclusions should not be given to extreme hypotheses)
+- The multiple must be based on a benchmark and cannot be given out of thin air."""
 
-# 材料 truncation 上限（字符）
+# Material truncation upper limit (chars)
 _MAX_PLAN = 2500
 _MAX_FUNDAMENTALS = 2500
 _MAX_RESEARCHER = 1500
@@ -68,46 +68,46 @@ _MAX_RESEARCHER = 1500
 
 def _truncate(text: Any, limit: int) -> str:
     s = str(text or "").strip()
-    return s if len(s) <= limit else s[:limit] + "…（后文截断）"
+    return s if len(s) <= limit else s[:limit] + "… (Truncated later)"
 
 
 def build_spec_user_prompt(bundle: Dict[str, Any]) -> str:
-    """组装规格生成用户提示词（结构化数据 + 研究材料）"""
+    """Assembly specifications generate user prompt words (structured data + research materials)"""
     hist_rows = "\n".join(
         f"  | {h['period']} | {h['revenue']:.1f} | {h['net_profit']:.2f} |"
         for h in bundle["financial_history"]
     )
     last_period = bundle["financial_history"][-1]["period"]
 
-    return f"""【股票】{bundle['stock_name']}（{bundle['ticker']}）　分析日期：{bundle.get('analysis_date', '')}
+    return f""" [Stocks]{bundle['stock_name']} ({bundle['ticker']})  Analysis date:{bundle.get('analysis_date', '')}
 
-【结构化数据（系统注入，真实值，禁止改动）】
-- 现价：{bundle['current_price']} 元
-- 总股本：{bundle['share_count']} 亿股
-- 财务历史（单位：亿元）：
-  | 期间 | 营收 | 归母净利润 |
+ [Structured data (system injection, real value, modification prohibited)] 
+- Current price:{bundle['current_price']} Yuan
+- Total share capital:{bundle['share_count']} 100 million shares
+- Financial history (unit: 100 million yuan):
+  | period | Revenue | Net profit attributable to parent company |
 {hist_rows}
-- 预测期净利润计算链：{last_period}营收 × (1+增速) × 净利率，逐期滚动
+- Net profit calculation chain during the forecast period:{last_period}Revenue × (1+Growth rate) × Net interest rate, rolling period by period
 
-【综合研究结论】
+ [Comprehensive research conclusion]
 {_truncate(bundle.get('investment_plan'), _MAX_PLAN)}
 
-【基本面分析要点】
+ [Key points of fundamental analysis]
 {_truncate(bundle.get('fundamentals_report'), _MAX_FUNDAMENTALS)}
 
-【乐观研究员要点】
+ [Key Points for Optimistic Researchers]
 {_truncate(bundle.get('bull_report'), _MAX_RESEARCHER)}
 
-【审慎研究员要点】
+ [Points for prudent researchers]
 {_truncate(bundle.get('bear_report'), _MAX_RESEARCHER)}
 
-请输出模型规格 JSON（只含 earnings_forecast 与 valuation 两个字段，无围栏无解释）。"""
+Please output the model specification JSON (containing only earnings_forecast and valuation fields, no fences and no explanation)."""
 
 
-# ==================== 解析与合并 ====================
+# ==================== Parse and merge ====================
 
 def extract_json_block(text: str) -> Optional[dict]:
-    """从模型输出提取 JSON（兼容围栏、前后杂文本）"""
+    """Extract JSON from model output (compatible with fences, pre- and post-text)"""
     if not text or not text.strip():
         return None
     candidates: List[str] = []
@@ -128,7 +128,7 @@ def extract_json_block(text: str) -> Optional[dict]:
 
 
 def merge_spec(model_output: Dict[str, Any], bundle: Dict[str, Any]) -> Dict[str, Any]:
-    """合并模型输出与注入数据：真实数据字段一律以 bundle 为准"""
+    """Merge model output and injected data: real data fields are always subject to bundle"""
     ef = model_output.get("earnings_forecast") or {}
     val = model_output.get("valuation") or {}
     return {
@@ -145,20 +145,20 @@ def merge_spec(model_output: Dict[str, Any], bundle: Dict[str, Any]) -> Dict[str
     }
 
 
-# ==================== 生成（含反馈重试） ====================
+# ==================== Generate (retry with feedback) ====================
 
 def generate_valuation_spec(
     bundle: Dict[str, Any],
     llm: Any,
     max_attempts: int = 3,
 ) -> Dict[str, Any]:
-    """调用 LLM 生成模型规格，校验失败自动反馈重试
+    """Call LLM to generate model specifications. If verification fails, automatic feedback will be given to try again.
 
     Args:
-        bundle: 报告包（financial_history/current_price/share_count 为注入的真实数据；
-                investment_plan/fundamentals_report/bull_report/bear_report 为研究材料）
-        llm: 具有 .chat(messages) -> response(.content) 的客户端（UnifiedLLMClient）
-        max_attempts: 最大尝试次数
+        bundle: The report package (financial_history/current_price/share_count is the real data injected;
+                investment_plan/fundamentals_report/bull_report/bear_report for research materials)
+        llm: Have .chat(messages) -> response(.content) Client (UnifiedLLMClient)
+        max_attempts: Maximum number of attempts
 
     Returns:
         {passed, spec, attempts, errors, elapsed}
@@ -168,7 +168,7 @@ def generate_valuation_spec(
         Message(role="system", content=SPEC_SYSTEM_PROMPT),
         Message(role="user", content=build_spec_user_prompt(bundle)),
     ]
-    last_errors = ["未调用 LLM"]
+    last_errors = ["Not called LLM"]
 
     for attempt in range(1, max_attempts + 1):
         resp = llm.chat(messages)
@@ -177,29 +177,29 @@ def generate_valuation_spec(
             text = resp if isinstance(resp, str) else ""
         parsed = extract_json_block(text)
         if parsed is None:
-            last_errors = ["输出无法解析为 JSON（可能含围栏外文本或格式错误）"]
+            last_errors = ["Output cannot be parsed as JSON (may contain unfenced text or be malformed)"]
         else:
             spec = merge_spec(parsed, bundle)
             last_errors = validate_spec(spec)
             if not last_errors:
-                logger.info(f"[ValuationSpec] 规格生成成功（第 {attempt} 次尝试）")
+                logger.info(f"[ValuationSpec] Specifications generated successfully (No. {attempt} attempts)")
                 return {"passed": True, "spec": spec, "attempts": attempt,
                         "errors": [], "elapsed": time.time() - t0}
-        logger.warning(f"[ValuationSpec] 第 {attempt} 次尝试失败: {last_errors}")
+        logger.warning(f"[ValuationSpec] No. {attempt} failed attempts: {last_errors}")
 
-        # 反馈重试：把错误回传给模型修正
+        # Feedback retry: pass errors back to the model for correction
         messages.append(Message(role="assistant", content=str(text)[:4000]))
         messages.append(Message(
             role="user",
-            content="上次输出存在以下问题：\n- " + "\n- ".join(last_errors)
-                    + "\n请修正后重新输出完整 JSON（只含 earnings_forecast 与 valuation，无围栏无解释）。",
+            content="The last output has the following issues:\n- " + "\n- ".join(last_errors)
+                    + "\n Please correct and re-output the complete JSON (only earnings_forecast and valuation, no fences and no explanation).",
         ))
 
     return {"passed": False, "spec": None, "attempts": max_attempts,
             "errors": last_errors, "elapsed": time.time() - t0}
 
 
-# ==================== 端到端入口 ====================
+# ==================== end-to-end portal ====================
 
 def generate_valuation_deliverable(
     bundle: Dict[str, Any],
@@ -207,9 +207,9 @@ def generate_valuation_deliverable(
     output_path: str = "",
     max_attempts: int = 3,
 ) -> Dict[str, Any]:
-    """端到端：报告包 → LLM 规格生成 → 渲染 xlsx → 文件校验
+    """End-to-end: reporting package → LLM Specification generation → rendering xlsx → File verification
 
-    供智能助手层按声明式交付物调度（demo 环节 5 链路）。
+    Provides the intelligent assistant layer with declarative deliverable scheduling (demo link 5 link).
     """
     spec_result = generate_valuation_spec(bundle, llm, max_attempts=max_attempts)
     if not spec_result["passed"]:
@@ -226,7 +226,7 @@ def generate_valuation_deliverable(
 
     try:
         path = render_valuation_excel(spec, output_path)
-    except ValuationSpecError as e:  # 已过 validate_spec，理论不可达，防御性兜底
+    except ValuationSpecError as e:  # Passed validate_spec, theoretically unreachable, defensive
         return {"success": False, "stage": "render", "error": str(e)}
 
     report = validate_valuation_excel(spec, path)

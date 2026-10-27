@@ -1,6 +1,6 @@
 """
-最后交易日期缓存服务
-使用Redis缓存各数据源的最后有效交易日期，避免频繁调用API
+Last transaction date caching service
+Use Redis to cache the last valid transaction date of each data source to avoid frequent calls API
 """
 import json
 import logging
@@ -9,7 +9,7 @@ from typing import Optional, Dict
 
 logger = logging.getLogger(__name__)
 
-# Redis键名
+# Redis Key name
 CACHE_KEY_PREFIX = "trade_date:latest"
 CACHE_KEY_TUSHARE = f"{CACHE_KEY_PREFIX}:tushare"
 CACHE_KEY_AKSHARE = f"{CACHE_KEY_PREFIX}:akshare"
@@ -21,24 +21,24 @@ class TradeDateCacheService:
     
     @property
     def redis(self):
-        """获取同步Redis客户端（用于同步方法）。"""
+        """Get the synchronous Redis client (for sync methods)."""
         try:
             from app.core.database import get_redis_sync_client
 
             return get_redis_sync_client()
         except Exception as e:
-            logger.warning(f"⚠️  同步Redis客户端初始化失败: {e}，将直接调用API获取交易日期", exc_info=True)
+            logger.warning(f"⚠️  Synchronous Redis client initialization failed: {e}, Will directly call the API to get the transaction date", exc_info=True)
             return None
     
     @property
     def redis_async(self):
-        """获取异步Redis客户端（用于异步方法）。"""
+        """Get an asynchronous Redis client (for async methods)."""
         try:
             from app.core.database import get_redis_client
 
             return get_redis_client()
         except RuntimeError:
-            logger.warning("异步Redis客户端未初始化，异步方法可能不可用")
+            logger.warning("Asynchronous Redis client is not initialized and asynchronous methods may not be available")
             return None
     
     def _is_today(self, date_str: str) -> bool:
@@ -52,13 +52,13 @@ class TradeDateCacheService:
     
     def get_cached_trade_date_sync(self, source: str) -> Optional[str]:
         """
-        从缓存获取最后交易日期（同步版本）
+        Get last transaction date from cache (sync version)
         
         Args:
-            source: 数据源名称 ('tushare', 'akshare', 'baostock')
+            source: Data source name ('tushare', 'akshare', 'baostock')
             
         Returns:
-            如果缓存存在且是当天更新的，返回交易日期（YYYYMMDD格式），否则返回None
+            If the cache exists and was updated today, return the transaction date (YYYYMMDD format), otherwise return None
         """
         if not self.redis:
             return None
@@ -72,12 +72,12 @@ class TradeDateCacheService:
                 update_date = data.get("update_date")
                 trade_date = data.get("trade_date")
                 
-                # 判断是否是当天更新的
+                # Determine whether it was updated on the same day
                 if self._is_today(update_date):
                     logger.debug(f"✅ [{source}] 从缓存获取最后交易日期: {trade_date} (更新于: {update_date})")
                     return trade_date
                 else:
-                    logger.debug(f"⚠️  [{source}] 缓存已过期 (更新于: {update_date})，需要重新获取")
+                    logger.debug(f"⚠️  [{source}] Cache has expired (updated on: {update_date}), Need to reacquire")
                     return None
             
             return None
@@ -99,12 +99,12 @@ class TradeDateCacheService:
                 update_date = data.get("update_date")
                 trade_date = data.get("trade_date")
                 
-                # 判断是否是当天更新的
+                # Determine whether it was updated on the same day
                 if self._is_today(update_date):
                     logger.debug(f"✅ [{source}] 从缓存获取最后交易日期: {trade_date} (更新于: {update_date})")
                     return trade_date
                 else:
-                    logger.debug(f"⚠️  [{source}] 缓存已过期 (更新于: {update_date})，需要重新获取")
+                    logger.debug(f"⚠️  [{source}] Cache has expired (updated on: {update_date}), Need to reacquire")
                     return None
             
             return None
@@ -114,26 +114,26 @@ class TradeDateCacheService:
     
     async def get_cached_trade_date(self, source: str) -> Optional[str]:
         """
-        从缓存获取最后交易日期（异步版本）
+        Get last transaction date from cache (async version)
         
         Args:
-            source: 数据源名称 ('tushare', 'akshare', 'baostock')
+            source: Data source name ('tushare', 'akshare', 'baostock')
             
         Returns:
-            如果缓存存在且是当天更新的，返回交易日期（YYYYMMDD格式），否则返回None
+            If the cache exists and was updated today, return the transaction date (YYYYMMDD format), otherwise return None
         """
         return await self._get_cached_trade_date_async(source)
     
     def set_cached_trade_date_sync(self, source: str, trade_date: str) -> bool:
         """
-        将最后交易日期保存到缓存（同步版本）
+        Save last transaction date to cache (sync version)
         
         Args:
-            source: 数据源名称 ('tushare', 'akshare', 'baostock')
-            trade_date: 交易日期（YYYYMMDD格式）
+            source: Data source name ('tushare', 'akshare', 'baostock')
+            trade_date: Transaction date (YYYYMMDD format)
             
         Returns:
-            是否保存成功
+            Is the save successful?
         """
         if not self.redis:
             return False
@@ -148,10 +148,10 @@ class TradeDateCacheService:
                 "source": source
             }
             
-            # 保存到Redis，设置TTL为7天（防止缓存永久存在）
+            # Save to Redis, set TTL to 7 days (prevent cache from persisting forever)
             self.redis.setex(
                 cache_key,
-                7 * 24 * 3600,  # 7天TTL
+                7 * 24 * 3600,  # 7 day TTL
                 json.dumps(data, ensure_ascii=False)
             )
             
@@ -176,10 +176,10 @@ class TradeDateCacheService:
                 "source": source
             }
             
-            # 保存到Redis，设置TTL为7天（防止缓存永久存在）
+            # Save to Redis, set TTL to 7 days (prevent cache from persisting forever)
             await self.redis_async.setex(
                 cache_key,
-                7 * 24 * 3600,  # 7天TTL
+                7 * 24 * 3600,  # 7 day TTL
                 json.dumps(data, ensure_ascii=False)
             )
             
@@ -191,14 +191,14 @@ class TradeDateCacheService:
     
     async def set_cached_trade_date(self, source: str, trade_date: str) -> bool:
         """
-        将最后交易日期保存到缓存（异步版本）
+        Save last transaction date to cache (asynchronous version)
         
         Args:
-            source: 数据源名称 ('tushare', 'akshare', 'baostock')
-            trade_date: 交易日期（YYYYMMDD格式）
+            source: Data source name ('tushare', 'akshare', 'baostock')
+            trade_date: Transaction date (YYYYMMDD format)
             
         Returns:
-            是否保存成功
+            Is the save successful?
         """
         return await self._set_cached_trade_date_async(source, trade_date)
     
@@ -213,13 +213,13 @@ class TradeDateCacheService:
     
     def clear_cache_sync(self, source: Optional[str] = None) -> bool:
         """
-        清除缓存（同步版本）
+        Clear cache (sync version)
         
         Args:
-            source: 数据源名称，如果为None则清除所有缓存
+            source: Data source name, if None clears all caches
             
         Returns:
-            是否清除成功
+            Is the clearing successful?
         """
         if not self.redis:
             return False
@@ -230,11 +230,11 @@ class TradeDateCacheService:
                 self.redis.delete(cache_key)
                 logger.info(f"✅ [{source}] 缓存已清除")
             else:
-                # 清除所有交易日期缓存
+                # Clear all transaction date cache
                 keys = [CACHE_KEY_TUSHARE, CACHE_KEY_AKSHARE, CACHE_KEY_BAOSTOCK]
                 for key in keys:
                     self.redis.delete(key)
-                logger.info("✅ 所有交易日期缓存已清除")
+                logger.info("✅ All transaction date cache cleared")
             return True
         except Exception as e:
             logger.warning(f"⚠️  清除缓存失败: {e}")
@@ -251,11 +251,11 @@ class TradeDateCacheService:
                 await self.redis_async.delete(cache_key)
                 logger.info(f"✅ [{source}] 缓存已清除")
             else:
-                # 清除所有交易日期缓存
+                # Clear all transaction date cache
                 keys = [CACHE_KEY_TUSHARE, CACHE_KEY_AKSHARE, CACHE_KEY_BAOSTOCK]
                 for key in keys:
                     await self.redis_async.delete(key)
-                logger.info("✅ 所有交易日期缓存已清除")
+                logger.info("✅ All transaction date cache cleared")
             return True
         except Exception as e:
             logger.warning(f"⚠️  清除缓存失败: {e}")
@@ -263,18 +263,18 @@ class TradeDateCacheService:
     
     async def clear_cache(self, source: Optional[str] = None) -> bool:
         """
-        清除缓存（异步版本）
+        Clear cache (asynchronous version)
         
         Args:
-            source: 数据源名称，如果为None则清除所有缓存
+            source: Data source name, if None clears all caches
             
         Returns:
-            是否清除成功
+            Is the clearing successful?
         """
         return await self._clear_cache_async(source)
 
 
-# 单例实例
+# Singleton instance
 _trade_date_cache_service: Optional[TradeDateCacheService] = None
 
 

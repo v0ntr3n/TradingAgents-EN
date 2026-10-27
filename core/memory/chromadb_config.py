@@ -1,7 +1,7 @@
 """
-ChromaDB 配置模块
+ChromaDB Configuration module
 
-提供针对不同操作系统优化的 ChromaDB 配置
+Provides ChromaDB configurations optimized for different operating systems
 """
 
 import platform
@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 def is_windows_11() -> bool:
-    """检测是否为 Windows 11"""
+    """Check whether it is Windows 11"""
     if platform.system() != "Windows":
         return False
     
     try:
         version = platform.version()
-        # Windows 11 的构建号 >= 22000
+        # Windows 11 build number >= 22000
         build_number = int(version.split('.')[-1])
         return build_number >= 22000
     except Exception:
@@ -29,36 +29,36 @@ def is_windows_11() -> bool:
 
 def get_optimal_chromadb_client():
     """
-    获取针对当前操作系统优化的 ChromaDB 客户端
+    Get a ChromaDB client optimized for your current operating system
     
     Returns:
-        chromadb.Client 实例
+        chromadb.Client Example
         
     Raises:
-        Exception: 如果所有初始化方式都失败
+        Exception: If all initialization methods fail
     """
     import os
     import shutil
     
     system = platform.system()
-    # 🔥 规范化路径，避免 Windows 路径问题
+    # 🔥 Normalize paths to avoid Windows path issues
     persist_dir = os.path.normpath(os.path.join(os.getcwd(), "data", "chromadb"))
     
-    # 🔥 确保目录存在
+    # 🔥 Make sure the directory exists
     try:
         os.makedirs(persist_dir, exist_ok=True)
     except Exception as e:
-        logger.warning(f"⚠️ 创建 ChromaDB 目录失败: {e}")
+        logger.warning(f"⚠️ Failed to create ChromaDB directory: {e}")
     
-    # 🔥 优先使用持久化模式，添加多个持久化配置尝试
+    # 🔥 Prioritize the use of persistence mode and add multiple persistence configuration attempts
     configs_to_try = []
     
-    # 1. 首先尝试持久化模式（根据操作系统优化）
+    # 1. Try persistence mode first (optimized according to operating system)
     if system == "Windows":
         if is_windows_11():
-            # Windows 11 优化配置（持久化）
+            # Windows 11 Optimize configuration (persistence)
             configs_to_try.append({
-                "name": "Windows 11 持久化配置",
+                "name": "Windows 11 Persistence configuration",
                 "settings": Settings(
                     allow_reset=True,
                     anonymized_telemetry=False,
@@ -67,9 +67,9 @@ def get_optimal_chromadb_client():
                 )
             })
         else:
-            # Windows 10 兼容配置（持久化）
+            # Windows 10 Compatible configuration (persistence)
             configs_to_try.append({
-                "name": "Windows 10 持久化配置",
+                "name": "Windows 10 Persistence configuration",
                 "settings": Settings(
                     allow_reset=True,
                     anonymized_telemetry=False,
@@ -79,7 +79,7 @@ def get_optimal_chromadb_client():
             })
     elif system == "Linux":
         configs_to_try.append({
-            "name": "Linux 持久化配置",
+            "name": "Linux Persistence configuration",
             "settings": Settings(
                 allow_reset=True,
                 anonymized_telemetry=False,
@@ -89,7 +89,7 @@ def get_optimal_chromadb_client():
         })
     elif system == "Darwin":
         configs_to_try.append({
-            "name": "macOS 持久化配置",
+            "name": "macOS Persistence configuration",
             "settings": Settings(
                 allow_reset=True,
                 anonymized_telemetry=False,
@@ -99,7 +99,7 @@ def get_optimal_chromadb_client():
         })
     else:
         configs_to_try.append({
-            "name": f"默认持久化配置 ({system})",
+            "name": f"Default persistence configuration ({system})",
             "settings": Settings(
                 allow_reset=True,
                 anonymized_telemetry=False,
@@ -108,9 +108,9 @@ def get_optimal_chromadb_client():
             )
         })
     
-    # 🔥 添加内存模式作为最后的备用方案（只有在所有持久化方案都失败时才使用）
+    # 🔥 Add in-memory mode as a last resort (only used if all persistence options fail)
     configs_to_try.append({
-        "name": "内存模式（最后备用）",
+        "name": "Memory mode (last standby)",
         "settings": Settings(
             allow_reset=True,
             anonymized_telemetry=False,
@@ -118,107 +118,107 @@ def get_optimal_chromadb_client():
         )
     })
     
-    # 🔥 优先尝试持久化模式，自动清理损坏的数据库
+    # 🔥 Give priority to persistence mode and automatically clean up damaged databases
     last_error = None
-    persistent_cleaned = False  # 标记是否已经清理过数据库
+    persistent_cleaned = False  # Mark whether the database has been cleaned
     
     for i, config in enumerate(configs_to_try):
         try:
             config_name = config['name']
             is_persistent = config['settings'].is_persistent
             
-            logger.info(f"📚 尝试配置 {i+1}/{len(configs_to_try)}: {config_name}")
+            logger.info(f"📚 try config {i+1}/{len(configs_to_try)}: {config_name}")
             
-            # 🔥 如果是持久化模式且之前失败过（且还没清理过），先清理数据库目录
+            # 🔥 If it is persistence mode and has failed before (and has not been cleaned yet), clean the database directory first.
             if is_persistent and last_error and not persistent_cleaned:
                 error_msg = str(last_error)
-                # 检查是否是数据库损坏相关的错误
+                # Check whether it is an error related to database corruption
                 if any(keyword in error_msg.lower() for keyword in [
                     "panic", "panicked", "panicException",
                     "range start index", "out of range", 
-                    "corrupt", "损坏", "sqlite", "index"
+                    "corrupt", "damaged", "sqlite", "index"
                 ]):
-                    logger.warning(f"⚠️ 检测到可能的数据库损坏，自动清理目录: {persist_dir}")
+                    logger.warning(f"⚠️ Possible database corruption detected, automatic directory cleanup: {persist_dir}")
                     try:
-                        # 备份旧数据
+                        # Back up old data
                         backup_dir = f"{persist_dir}.backup"
                         if os.path.exists(backup_dir):
                             shutil.rmtree(backup_dir)
                         if os.path.exists(persist_dir):
                             shutil.move(persist_dir, backup_dir)
-                            logger.info(f"✅ 已备份旧数据库到: {backup_dir}")
-                        # 重新创建目录
+                            logger.info(f"✅ Old database has been backed up to: {backup_dir}")
+                        # Recreate directory
                         os.makedirs(persist_dir, exist_ok=True)
-                        logger.info(f"✅ 数据库目录已清理，准备重新初始化")
+                        logger.info(f"✅ The database directory has been cleaned and is ready for re-initialization")
                         persistent_cleaned = True
                     except Exception as cleanup_error:
-                        logger.warning(f"⚠️ 清理数据库目录失败: {cleanup_error}")
-                        # 如果清理失败，尝试强制删除后重建
+                        logger.warning(f"⚠️ Failed to clean database directory: {cleanup_error}")
+                        # If cleanup fails, try force deletion and rebuild
                         try:
                             if os.path.exists(persist_dir):
                                 shutil.rmtree(persist_dir)
                             os.makedirs(persist_dir, exist_ok=True)
-                            logger.info(f"✅ 强制清理数据库目录成功")
+                            logger.info(f"✅ Forced cleanup of database directory successful")
                             persistent_cleaned = True
                         except Exception as force_cleanup_error:
-                            logger.error(f"❌ 强制清理也失败: {force_cleanup_error}")
+                            logger.error(f"❌ Forced cleanup also failed: {force_cleanup_error}")
             
-            # 🔥 创建 ChromaDB 客户端
+            # 🔥 Create a ChromaDB client
             client = chromadb.Client(config['settings'])
             
-            # 🔥 测试连接（验证客户端是否正常工作）
+            # 🔥 Test the connection (verify that the client is working properly)
             try:
                 client.heartbeat()
             except Exception as heartbeat_error:
-                # 如果是持久化模式且还没清理过，尝试清理后重试
+                # If it is in persistence mode and has not been cleaned yet, try cleaning it and try again.
                 if is_persistent and not persistent_cleaned:
-                    logger.warning(f"⚠️ ChromaDB 心跳测试失败，尝试清理后重试...")
+                    logger.warning(f"⚠️ ChromaDB Heartbeat test failed, try cleaning and trying again...")
                     try:
-                        # 备份并清理
+                        # Back up and clean
                         backup_dir = f"{persist_dir}.backup"
                         if os.path.exists(backup_dir):
                             shutil.rmtree(backup_dir)
                         if os.path.exists(persist_dir):
                             shutil.move(persist_dir, backup_dir)
                         os.makedirs(persist_dir, exist_ok=True)
-                        logger.info(f"✅ 已清理数据库目录")
+                        logger.info(f"✅ Database directory cleaned")
                         persistent_cleaned = True
                         
-                        # 重新创建客户端
+                        # Recreate the client
                         client = chromadb.Client(config['settings'])
                         client.heartbeat()
-                        logger.info(f"✅ 清理后重新初始化成功")
+                        logger.info(f"✅ Reinitialization successful after cleaning")
                     except Exception as retry_error:
-                        logger.warning(f"⚠️ 清理后重试也失败: {retry_error}")
+                        logger.warning(f"⚠️ Even retrying after cleaning failed.: {retry_error}")
                         raise heartbeat_error
                 else:
                     raise heartbeat_error
             
-            # 🔥 初始化成功，记录运行模式
+            # 🔥 Initialization successful, recording running mode
             if is_persistent:
-                logger.info(f"✅ ChromaDB 客户端初始化成功: {config_name}")
-                logger.info(f"   📁 运行模式: 持久化模式")
-                logger.info(f"   📂 数据目录: {persist_dir}")
+                logger.info(f"✅ ChromaDB Client initialization successful: {config_name}")
+                logger.info(f"   📁 operating mode: persistence mode")
+                logger.info(f"   📂 data directory: {persist_dir}")
             else:
-                logger.info(f"✅ ChromaDB 客户端初始化成功: {config_name}")
-                logger.warning(f"   ⚠️ 运行模式: 内存模式（数据不会持久化）")
+                logger.info(f"✅ ChromaDB Client initialization successful: {config_name}")
+                logger.warning(f"   ⚠️ operating mode: Memory mode (data will not be persisted)")
             
             return client
             
         except Exception as e:
             last_error = e
             error_msg = str(e)
-            logger.warning(f"⚠️ 配置 {config['name']} 失败: {error_msg}")
+            logger.warning(f"⚠️ Configuration {config['name']} failed: {error_msg}")
             
-            # 🔥 如果是 Rust panic 错误，记录详细信息
+            # 🔥 If it's a Rust panic error, log details
             if "PanicException" in error_msg or "panicked" in error_msg:
-                logger.error(f"❌ ChromaDB Rust panic 错误，可能是版本不兼容或数据库损坏")
+                logger.error(f"❌ ChromaDB Rust panic Error, possibly version incompatibility or database corruption")
                 if config['settings'].is_persistent and not persistent_cleaned:
-                    logger.info(f"   🔄 下次尝试时将自动清理数据库目录")
+                    logger.info(f"   🔄 The database directory will be automatically cleaned the next time you try")
             
-            # 继续尝试下一个配置
+            # Continue to try the next configuration
             continue
     
-    # 🔥 所有配置都失败，抛出最后一个错误
-    raise Exception(f"所有 ChromaDB 配置都失败，最后一个错误: {last_error}")
+    # 🔥 All configurations fail throwing the last error
+    raise Exception(f"All ChromaDB configurations fail with the last error: {last_error}")
 

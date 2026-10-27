@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Skill 代码生成思考过程流式展示 — 单元测试
+Skill Streaming display of code generation thinking process — Unit testing
 
-覆盖：
-1. OpenAICompatAdapter.chat_stream_deltas：reasoning/content 增量产出
-2. UnifiedLLMClient.chat_stream：增量回调 + 完整 content 拼接
-3. UnifiedLLMClient.chat_stream：适配器不支持流式时回退普通 chat
+Coverage:
+1. OpenAICompatAdapter.chat_stream_deltas: reasoning/content incremental output
+2. UnifiedLLMClient.chat_stream: Incremental callback + Complete content splicing
+3. UnifiedLLMClient.chat_stream: Fallback to normal when adapter does not support streaming chat
 """
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
@@ -34,7 +34,7 @@ def _make_chunk(reasoning: Optional[str] = None, content: Optional[str] = None):
 
 
 class _FakeStreamClient:
-    """模拟 OpenAI 同步客户端的流式返回"""
+    """Simulate streaming returns from OpenAI sync client"""
 
     def __init__(self, chunks):
         self._chunks = chunks
@@ -52,7 +52,7 @@ class _FakeStreamClient:
 
 
 class _FakeNonStreamAdapter:
-    """无 chat_stream_deltas 的适配器，验证回退路径"""
+    """Adapter without chat_stream_deltas, verify fallback path"""
 
     def __init__(self):
         self.config = LLMConfig(
@@ -64,18 +64,18 @@ class _FakeNonStreamAdapter:
         )
 
     def chat(self, messages, tools=None, **kwargs) -> LLMResponse:
-        return LLMResponse(content="完整回复", model="deepseek-chat", finish_reason="stop")
+        return LLMResponse(content="Full reply", model="deepseek-chat", finish_reason="stop")
 
 
 def _messages() -> List[Message]:
-    return [Message(role="user", content="生成代码")]
+    return [Message(role="user", content="Generate code")]
 
 
 def test_adapter_stream_yields_reasoning_and_content():
     adapter = _make_adapter()
     adapter._sync_client = _FakeStreamClient([
-        _make_chunk(reasoning="先分析需求"),
-        _make_chunk(reasoning="，再看数据结构"),
+        _make_chunk(reasoning="Analyze needs first"),
+        _make_chunk(reasoning=", Let s look at the data structure again"),
         _make_chunk(content="```python"),
         _make_chunk(content="\nprint('hi')\n```"),
     ])
@@ -83,8 +83,8 @@ def test_adapter_stream_yields_reasoning_and_content():
     deltas = list(adapter.chat_stream_deltas(_messages(), max_tokens=128))
 
     assert deltas == [
-        {"type": "reasoning", "text": "先分析需求"},
-        {"type": "reasoning", "text": "，再看数据结构"},
+        {"type": "reasoning", "text": "Analyze needs first"},
+        {"type": "reasoning", "text": ", Let s look at the data structure again"},
         {"type": "content", "text": "```python"},
         {"type": "content", "text": "\nprint('hi')\n```"},
     ]
@@ -93,7 +93,7 @@ def test_adapter_stream_yields_reasoning_and_content():
 def test_client_chat_stream_collects_content_and_calls_on_delta():
     adapter = _make_adapter()
     adapter._sync_client = _FakeStreamClient([
-        _make_chunk(reasoning="思考中"),
+        _make_chunk(reasoning="Thinking"),
         _make_chunk(content="print"),
         _make_chunk(content="('hi')"),
     ])
@@ -110,7 +110,7 @@ def test_client_chat_stream_collects_content_and_calls_on_delta():
     assert response.model == "deepseek-reasoner"
     assert events == [
         {"kind": "reset", "text": ""},
-        {"kind": "reasoning", "text": "思考中"},
+        {"kind": "reasoning", "text": "Thinking"},
         {"kind": "content", "text": "print"},
         {"kind": "content", "text": "('hi')"},
     ]
@@ -126,5 +126,5 @@ def test_client_chat_stream_falls_back_to_chat_without_stream_adapter():
         max_tokens=128,
     )
 
-    assert response.content == "完整回复"
-    assert events == [{"kind": "content", "text": "完整回复"}]
+    assert response.content == "Full reply"
+    assert events == [{"kind": "content", "text": "Full reply"}]

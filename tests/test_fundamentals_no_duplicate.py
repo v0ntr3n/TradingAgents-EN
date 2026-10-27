@@ -1,39 +1,39 @@
 """
-测试基本面分析师是否还会重复调用工具
+Test whether fundamental analysts will call the tool repeatedly
 """
 import os
 import sys
 from datetime import datetime
 
-# 添加项目根目录到路径
+# Add project root directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def test_fundamentals_analyst():
-    """测试基本面分析师"""
+    """Test Fundamental Analyst"""
     print("=" * 80)
-    print("测试基本面分析师 - 检查是否重复调用工具")
+    print("Test Fundamental Analyst - Check if the tool is called repeatedly")
     print("=" * 80)
     
-    # 导入必要的模块
+    # Import necessary modules
     from tradingagents.agents.trading_graph import create_trading_graph
     
-    # 创建交易图
-    print("\n1️⃣ 创建交易图...")
+    # Create transaction diagram
+    print("\n1️⃣ Create transaction diagram...")
     graph = create_trading_graph()
     
-    # 准备测试输入
-    test_ticker = "000001"  # 平安银行
+    # Prepare test input
+    test_ticker = "000001"  # Ping An Bank
     test_date = datetime.now().strftime("%Y-%m-%d")
     
-    print(f"\n2️⃣ 测试股票: {test_ticker}")
-    print(f"   测试日期: {test_date}")
+    print(f"\n2️⃣ test stocks: {test_ticker}")
+    print(f"   Test date: {test_date}")
     
-    # 执行基本面分析
-    print("\n3️⃣ 开始执行基本面分析...")
-    print("   请查看日志，检查以下关键信息：")
-    print("   - 是否只调用了1次工具")
-    print("   - 是否出现 '跳过重复调用' 的日志")
-    print("   - 工具调用总耗时是否减少")
+    # Perform fundamental analysis
+    print("\n3️⃣ Start performing fundamental analysis...")
+    print("   Please review the logs to check the following key information:")
+    print("   - Whether the tool was only called once")
+    print("   - Does it appear 'Skip repeated calls' log")
+    print("   - Is the total time spent on tool calls reduced?")
     print("-" * 80)
     
     try:
@@ -51,29 +51,29 @@ def test_fundamentals_analyst():
         })
         
         print("-" * 80)
-        print("\n✅ 基本面分析完成！")
+        print("\n✅ Fundamental analysis complete!")
         
-        # 检查结果
+        # Check results
         if result.get("fundamentals_report"):
             report = result["fundamentals_report"]
-            print(f"\n📊 基本面报告长度: {len(report)} 字符")
-            print(f"\n📊 报告预览(前500字符):")
+            print(f"\n📊 Fundamental report length: {len(report)} character")
+            print(f"\n📊 Report preview(first 500 characters):")
             print(report[:500])
             print("...")
         else:
-            print("\n⚠️ 未生成基本面报告")
+            print("\n⚠️ Fundamentals report not generated")
         
         print("\n" + "=" * 80)
-        print("测试完成！请检查日志文件 logs/tradingagents.log")
-        print("关键检查点：")
-        print("1. 搜索 '工具调用' - 应该只有1次工具调用")
-        print("2. 搜索 '重复调用检查' - 查看检查逻辑是否生效")
-        print("3. 搜索 '跳过强制工具调用' - 如果出现说明修复生效")
-        print("4. 搜索 '强制调用统一工具' - 如果出现2次说明仍有问题")
+        print("Test completed! Please check the log file logs/tradingagents.log")
+        print("Key checkpoints:")
+        print("1. Search 'Tool call' - There should only be 1 tool call")
+        print("2. Search 'Repeat call check' - Check whether the check logic is effective")
+        print("3. Search 'Skip force tool call' - If it appears, the repair has taken effect.")
+        print("4. Search 'Force call to unified tool' - If it appears twice, it means there is still a problem")
         print("=" * 80)
         
     except Exception as e:
-        print(f"\n❌ 测试失败: {e}")
+        print(f"\n❌ test failed: {e}")
         import traceback
         traceback.print_exc()
 

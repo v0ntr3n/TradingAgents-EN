@@ -1,188 +1,188 @@
-# TradingAgents-CN 前端应用
+# TradingAgents-CN Frontend Application
 
-现代化的Vue3前端界面，为TradingAgents-CN提供优秀的用户体验。
+A modern Vue 3 frontend interface providing a smooth user experience for TradingAgents-CN.
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 环境要求
+### Prerequisites
 
 - Node.js >= 18.0.0
 - npm >= 8.0.0
 
-### 安装依赖
+### Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 启动开发服务器
+### Start Development Server
 
 ```bash
 npm run dev
 ```
 
-访问 http://localhost:3000
+Visit http://localhost:3000
 
-### 构建生产版本
+### Build for Production
 
 ```bash
 npm run build
 ```
 
-### 预览生产版本
+### Preview Production Build
 
 ```bash
 npm run preview
 ```
 
-## 📁 项目结构
+## 📁 Project Structure
 
 ```
 frontend/
-├── public/                 # 静态资源
+├── public/                 # Static assets
 ├── src/
-│   ├── api/               # API接口
-│   ├── components/        # 组件
-│   │   ├── Global/       # 全局组件
-│   │   └── Layout/       # 布局组件
-│   ├── layouts/          # 页面布局
-│   ├── router/           # 路由配置
-│   ├── stores/           # 状态管理
-│   ├── styles/           # 样式文件
-│   ├── types/            # 类型定义
-│   ├── utils/            # 工具函数
-│   ├── views/            # 页面组件
-│   ├── App.vue           # 根组件
-│   └── main.ts           # 应用入口
-├── index.html            # HTML模板
-├── package.json          # 项目配置
-├── tsconfig.json         # TypeScript配置
-├── vite.config.ts        # Vite配置
-└── README.md             # 说明文档
+│   ├── api/               # API interfaces
+│   ├── components/        # Components
+│   │   ├── Global/       # Global components
+│   │   └── Layout/       # Layout components
+│   ├── layouts/          # Page layouts
+│   ├── router/           # Router configuration
+│   ├── stores/           # State management
+│   ├── styles/           # Stylesheets
+│   ├── types/            # Type definitions
+│   ├── utils/            # Utility functions
+│   ├── views/            # View components
+│   ├── App.vue           # Root component
+│   └── main.ts           # Application entry point
+├── index.html            # HTML template
+├── package.json          # Project configuration
+├── tsconfig.json         # TypeScript configuration
+├── vite.config.ts        # Vite configuration
+└── README.md             # Documentation
 ```
 
-## 🎨 主要功能
+## 🎨 Key Features
 
-### 📊 仪表板
-- 数据概览和统计
-- 快速操作入口
-- 系统状态监控
-- 最近分析记录
+### 📊 Dashboard
+- Data overview and statistics
+- Quick action entry points
+- System status monitoring
+- Recent analysis records
 
-### 🔍 股票筛选
-- 多维度筛选条件
-- 实时结果展示
-- 批量操作支持
-- 筛选结果导出
+### 🔍 Stock Screening
+- Multi-dimensional filtering criteria
+- Real-time results display
+- Batch operation support
+- Screening results export
 
-### 📈 股票分析
-- 单股深度分析
-- 批量分析处理
-- 分析历史查看
-- 进度实时跟踪
+### 📈 Stock Analysis
+- Single-stock deep analysis
+- Batch analysis processing
+- Analysis history viewing
+- Real-time progress tracking
 
-### 📋 队列管理
-- 任务队列监控
-- 实时状态更新
-- 任务优先级管理
-- 批量操作支持
+### 📋 Queue Management
+- Task queue monitoring
+- Real-time status updates
+- Task priority management
+- Batch operation support
 
-### 📄 分析报告
-- 报告生成和管理
-- 多格式导出支持
-- 报告分享功能
-- 历史报告查看
+### 📄 Analysis Reports
+- Report generation and management
+- Multi-format export support
+- Report sharing functionality
+- Historical report viewing
 
-### ⚙️ 系统设置
-- 个人偏好配置
-- 主题和外观设置
-- 分析参数配置
-- 安全设置管理
+### ⚙️ System Settings
+- Personal preference configuration
+- Theme and appearance settings
+- Analysis parameter configuration
+- Security settings management
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
-### 核心框架
-- **Vue 3** - 渐进式JavaScript框架
-- **TypeScript** - 类型安全的JavaScript
-- **Vite** - 现代化构建工具
+### Core Framework
+- **Vue 3** - Progressive JavaScript framework
+- **TypeScript** - Type-safe JavaScript
+- **Vite** - Next-generation frontend build tool
 
-### UI组件库
-- **Element Plus** - 企业级Vue组件库
-- **@element-plus/icons-vue** - 图标组件
+### UI Component Library
+- **Element Plus** - Enterprise-grade Vue 3 UI component library
+- **@element-plus/icons-vue** - Icon components
 
-### 状态管理
-- **Pinia** - Vue官方状态管理库
-- **@vueuse/core** - Vue组合式API工具集
+### State Management
+- **Pinia** - Official Vue state management library
+- **@vueuse/core** - Collection of Vue Composition API utilities
 
-### 路由和网络
-- **Vue Router 4** - 官方路由管理器
-- **Axios** - HTTP客户端
+### Routing & Networking
+- **Vue Router 4** - Official router for Vue.js
+- **Axios** - Promise-based HTTP client
 
-### 开发工具
-- **ESLint** - 代码质量检查
-- **Prettier** - 代码格式化
-- **unplugin-auto-import** - 自动导入
-- **unplugin-vue-components** - 组件自动导入
+### Development Tools
+- **ESLint** - Code quality linting
+- **Prettier** - Code formatting
+- **unplugin-auto-import** - Auto-importing APIs
+- **unplugin-vue-components** - On-demand component auto-importing
 
-## 🎯 特色功能
+## 🎯 Highlights
 
-### 🌈 现代化设计
-- 响应式布局设计
-- 明暗主题切换
-- 流畅的动画效果
-- 移动端适配
+### 🌈 Modern Design
+- Responsive layout design
+- Light and dark theme switching
+- Smooth animations and transitions
+- Mobile device adaptation
 
-### 🔧 开发体验
-- TypeScript类型安全
-- 组件自动导入
-- 热模块替换
-- 代码分割优化
+### 🔧 Developer Experience
+- TypeScript type safety
+- Automatic component importing
+- Hot Module Replacement (HMR)
+- Code splitting optimization
 
-### 🚀 性能优化
-- 路由懒加载
-- 组件按需加载
-- 图片懒加载
-- 缓存策略优化
+### 🚀 Performance Optimization
+- Route lazy loading
+- On-demand component loading
+- Image lazy loading
+- Caching strategy optimization
 
-### 🔒 安全特性
-- JWT认证集成
-- 权限路由守卫
-- XSS防护
-- CSRF保护
+### 🔒 Security Features
+- JWT authentication integration
+- Permission navigation guards
+- XSS protection
+- CSRF protection
 
-## 📱 响应式设计
+## 📱 Responsive Design
 
-支持多种设备尺寸：
+Supports multiple device screen sizes:
 
-- **桌面端**: >= 1200px
-- **平板端**: 768px - 1199px  
-- **手机端**: < 768px
+- **Desktop**: >= 1200px
+- **Tablet**: 768px - 1199px  
+- **Mobile**: < 768px
 
-## 🎨 主题定制
+## 🎨 Theme Customization
 
-支持多种主题模式：
+Supports multiple theme modes:
 
-- **浅色主题**: 适合白天使用
-- **深色主题**: 适合夜间使用
-- **自动模式**: 跟随系统设置
+- **Light Theme**: Suitable for daytime use
+- **Dark Theme**: Suitable for nighttime use
+- **Auto Mode**: Follows system preferences
 
-## 🔧 配置说明
+## 🔧 Configuration
 
-### 环境变量
+### Environment Variables
 
-创建 `.env.local` 文件：
+Create a `.env.local` file:
 
 ```env
-# API基础URL
+# API Base URL
 VITE_API_BASE_URL=http://localhost:8000/api
 
-# 应用标题
+# Application Title
 VITE_APP_TITLE=TradingAgents-CN
 ```
 
-### 代理配置
+### Proxy Configuration
 
-开发环境自动代理API请求到后端服务：
+The development environment automatically proxies API requests to the backend service:
 
 ```typescript
 // vite.config.ts
@@ -196,15 +196,15 @@ server: {
 }
 ```
 
-## 🚀 部署指南
+## 🚀 Deployment Guide
 
-### 构建应用
+### Build Application
 
 ```bash
 npm run build
 ```
 
-### 部署到Nginx
+### Deploy with Nginx
 
 ```nginx
 server {
@@ -225,88 +225,88 @@ server {
 }
 ```
 
-## 🤝 开发指南
+## 🤝 Development Guide
 
-### 添加新页面
+### Adding a New Page
 
-1. 在 `src/views/` 创建页面组件
-2. 在 `src/router/index.ts` 添加路由
-3. 在侧边栏菜单中添加导航
+1. Create a view component in `src/views/`
+2. Add the route in `src/router/index.ts`
+3. Add a navigation entry in the sidebar menu
 
-### 添加新API
+### Adding a New API
 
-1. 在 `src/types/` 定义类型
-2. 在 `src/api/` 创建API模块
-3. 在组件中使用API
+1. Define types in `src/types/`
+2. Create an API module in `src/api/`
+3. Call the API in your component
 
-### 状态管理
+### State Management
 
-使用Pinia进行状态管理：
+Use Pinia for state management:
 
 ```typescript
-// 定义store
+// Define a store
 export const useExampleStore = defineStore('example', {
   state: () => ({
     data: []
   }),
   actions: {
     async fetchData() {
-      // 获取数据逻辑
+      // Data fetching logic
     }
   }
 })
 
-// 在组件中使用
+// Use in a component
 const exampleStore = useExampleStore()
 ```
 
-## 📝 代码规范
+## 📝 Coding Standards
 
-### 命名规范
-- 组件名：PascalCase
-- 文件名：kebab-case
-- 变量名：camelCase
-- 常量名：UPPER_SNAKE_CASE
+### Naming Conventions
+- Component names: PascalCase
+- File names: kebab-case
+- Variable names: camelCase
+- Constant names: UPPER_SNAKE_CASE
 
-### 提交规范
-- feat: 新功能
-- fix: 修复bug
-- docs: 文档更新
-- style: 代码格式调整
-- refactor: 代码重构
-- test: 测试相关
-- chore: 构建过程或辅助工具的变动
+### Commit Conventions
+- feat: New feature
+- fix: Bug fix
+- docs: Documentation update
+- style: Code formatting changes
+- refactor: Code refactoring
+- test: Test-related changes
+- chore: Build process or auxiliary tool changes
 
-## 🐛 问题排查
+## 🐛 Troubleshooting
 
-### 常见问题
+### Common Issues
 
-1. **依赖安装失败**
+1. **Dependency installation failed**
    ```bash
    rm -rf node_modules package-lock.json
    npm install
    ```
 
-2. **端口被占用**
+2. **Port already in use**
    ```bash
-   # 修改端口
+   # Specify a different port
    npm run dev -- --port 3001
    ```
 
-3. **类型错误**
+3. **Type errors**
    ```bash
-   # 重新生成类型文件
+   # Run type checking
    npm run type-check
    ```
 
-## 📞 技术支持
+## 📞 Technical Support
 
-如有问题，请通过以下方式联系：
+If you have any questions, please reach out via:
 
-- 📧 邮箱: hsliup@163.com
-- 💬 微信群: 扫描README中的二维码
-- 🐛 问题反馈: GitHub Issues
+- 📧 Email: hsliup@163.com
+- 💬 WeChat Group: Scan the QR code in the README
+- 🐛 Issue Tracker: GitHub Issues
 
 ---
 
-**TradingAgents-CN Frontend v3.0.0** - 面向 AI 助手与智能投研工作流的现代化前端
+**TradingAgents-CN Frontend v3.0.0** - A modern frontend for AI assistants and intelligent investment research workflows

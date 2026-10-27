@@ -1,221 +1,221 @@
-# 第 3 课:单股研究入门——从 50 只缩到 10 只
+# Lesson 3:An Introduction to Single Stock Research——Shrunk from 50 to 10
 
-> **课时**: 30 分钟 | **难度**: ⭐⭐ 进阶 | **前置**: 第 1-2 课
+> **Class hours**: 30 minutes | **difficulty**: ⭐⭐ Advanced | **prefix**: Lesson 1-2
 
-> ⚠️ **风险提示**:本课程内容仅为平台功能教学,AI 输出的研究报告不构成投资建议,最终决策由你自己负责。
+> ⚠️ **Risk warning**:The content of this course is only for teaching platform functions.,AI The research report output does not constitute investment advice.,The final decision is yours.
 
-## 🎯 学完后能做什么
+## 🎯 What can you do after studying?
 
-- 对**单只 A 股**做 5 级深度的全面研究
-- 理解报告的 **14 个子报告 Tab** 是什么、怎么读
-- 读懂报告里的"决策"标签(乐观/审慎/中性)
-- 区分 v3.0 的**合规术语**(乐观/审慎/中性,不用"买入/卖出/持有")
+- Yes**Single A share**Do comprehensive research at Level 5 depth
+- understand the report **14 subreport Tab** What is it and how to pronounce it
+- Read the report"decision making"label(Optimistic/cautious/neutral)
+- Distinguish between v3.0**Compliance terminology**(Optimistic/cautious/neutral,No need"Buy/Sell/Hold")
 
-## 📍 入口
+## 📍 entrance
 
-- **侧边栏**: 股票分析 → 单股研究
-- **Dashboard**: 点击"快速分析"按钮
-- **股票详情页**: 在任意列表或报告中点击某只股票进入详情页,点顶部「分析」按钮
+- **sidebar**: stock analysis → single stock research
+- **Dashboard**: Click"Quick analysis"button
+- **Stock details page**: Click on a stock in any list or report to enter the details page,Click the "Analyze" button at the top
 
-## 🖱️ 操作步骤
+## 🖱️ Operation steps
 
-### 步骤 1:进入单股研究页
+### steps 1:Go to single stock research page
 
-1. 左侧菜单"股票分析 → 单股研究"
-2. 默认显示单股分析表单
+1. left menu"stock analysis → single stock research"
+2. The single stock analysis form is displayed by default
 
-### 步骤 2:输入股票代码(必填)
+### steps 2:Enter stock code(Required)
 
-在"股票代码"输入框填 6 位 A 股代码,如:
-- `600519` 贵州茅台
-- `601398` 工商银行
-- `300750` 宁德时代
-- `601919` 中远海控
+in"Stock code"Fill in the 6-digit A-share code in the input box,Such as:
+- `600519` Kweichow Moutai
+- `601398` ICBC
+- `300750` Ningde era
+- `601919` COSCO Shipping Holdings
 
-⚠️ **v3.0 限制**:仅支持 A 股(6 位数字代码)。ETF 用 `510050`、`159919` 等代码,需先在"市场"下拉切到 ETF。
+⚠️ **v3.0 Limit**:Only supports A shares(6 digit code). ETF use `510050`, `159919` Wait for code,Need to be in first"market"Scroll down to ETF.
 
-### 步骤 3:(可选)选择分析基准日期
+### steps 3:(Optional)Select analysis base date
 
-- 默认是**今天**
-- 如果你想**回溯研究**(比如"回到 2025-12-31 那天,这只股票怎么样"),可以选过去的日期
-- 系统会从历史数据库里取该日期的数据进行分析
+- The default is**today**
+- if you want**retrospective research**(For example"Back to the day 2025-12-31,How is this stock?"),You can select a date in the past
+- The system will fetch the data of that date from the historical database for analysis.
 
-### 步骤 4:数据检验(强烈推荐)
+### steps 4:Data inspection(Highly recommended)
 
-填完代码后,点"**数据检验**"按钮:
-- 系统检查:历史数据/财务数据/最新行情是否都已同步
-- 弹出对话框告诉你**缺哪些数据**,提供"去同步"快捷入口
-- **强烈建议**在提交分析前点这个,否则任务可能因为缺数据而失败
+After filling in the code,point"**Data inspection**"button:
+- System check:Are historical data/financial data/latest market prices all synchronized?
+- A pop-up dialog box will tell you**What data is missing?**,provide"desync"Quick entrance
+- **Strongly recommended**Click here before submitting your analysis,Otherwise the task may fail due to lack of data
 
-### 步骤 5:选择分析深度(5 级)
+### steps 5:Select analysis depth(5 level)
 
-页面里"分析深度"下拉框的实际展示名:
+In the page"Analysis depth"The actual display name of the drop-down box:
 
-| 级别 | 页面显示名 | 耗时 |
+| level | Page display name | Time consuming |
 |------|------|------|
-| 1 | ⚡ **1级 - 快速分析** | 2-4 分钟 |
-| 2 | 📈 **2级 - 基础分析** | 4-6 分钟 |
-| 3 | 🎯 **3级 - 标准分析**(推荐) | 6-10 分钟 |
-| 4 | 🔍 **4级 - 深度分析** | 10-15 分钟 |
-| 5 | 🏆 **5级 - 全面分析** | 15-25 分钟 |
+| 1 | ⚡ **1 Level - Quick Analysis** | 2-4 minutes |
+| 2 | 📈 **2 Level - Basic Analysis** | 4-6 minutes |
+| 3 | 🎯 **3 Level - Standard Analysis**(Recommended) | 6-10 minutes |
+| 4 | 🔍 **4 Level - In-Depth Analysis** | 10-15 minutes |
+| 5 | 🏆 **5 Level - Comprehensive Analysis** | 15-25 minutes |
 
-**实战建议**:
-- **第一次研究某只股票** → 选 3级 标准分析
-- **要写研究报告/做决策** → 选 4-5 级
-- **跟踪某只已研究的股票** → 选 1-2 级快速更新
+**Practical suggestions**:
+- **Researching a stock for the first time** → Select Level 3 Standard Analysis
+- **To write research reports/make decisions** → Choose level 4-5
+- **Follow a researched stock** → Choose level 1-2 for quick updates
 
-### 步骤 6:选择分析师团队(关键)
+### steps 6:Choose an analyst team(key)
 
-**重要**:页面"分析师团队"里**能勾选的只有 7 个**(A 股场景):
+**important**:Page"Analyst Team"inside**Only 7 can be checked**(A stock scene):
 
-| 页面显示名 | 实际 ID | 作用 |
+| Page display name | actual ID | function |
 |---------|---------|------|
-| 📈 市场分析师 | `market` | 技术面(MA/MACD/RSI/BOLL)+ 盘面 |
-| 💰 基本面分析师 | `fundamentals` | 财务+估值 |
-| 📰 新闻分析师 | `news` | 实时新闻 |
-| 💬 社媒分析师 | `social` | 舆论情绪 |
-| 📊 大盘分析师 | `index_analyst` | 大盘环境 |
-| 🏭 板块分析师 | `sector_analyst` | 行业地位 |
-| ETF分析师 | `etf` | 仅 ETF 市场时可选 |
+| 📈 market analyst | `market` | technical aspect(MA/MACD/RSI/BOLL)+ Disk |
+| 💰 fundamental analyst | `fundamentals` | Finance+Valuation |
+| 📰 news analyst | `news` | real time news |
+| 💬 social media analyst | `social` | public opinion sentiment |
+| 📊 Market Analyst | `index_analyst` | Market environment |
+| 🏭 Sector Analyst | `sector_analyst` | Industry status |
+| ETF analyst | `etf` | Optional only for ETF market |
 
-**系统默认勾选**:`["市场分析师", "基本面分析师"]`
+**System checked by default**:`["market analyst", "fundamental analyst"]`
 
-**报告里另外出现的"研究角色"**是工作流自动跑出来的,不是手动勾选:
-- 🐂 乐观情景研究员 / 🐻 审慎情景研究员(2 角色辩论)
-- ⚡ 高弹性情景分析师 / 🛡️ 防御情景分析师 / ⚖️ 基准情景分析师(3 风险视角)
-- 🔬 研究整合员 / 👔 风险评估师(综合决策)
+**additionally in the report"research role"**It's automatically generated by the workflow.,Not manually checked:
+- 🐂 Optimistic Scenario Researcher / 🐻 Prudential Scenario Researcher(2 role debate)
+- ⚡ Highly Resilient Scenario Analyst / 🛡️ Defense Scenario Analyst / ⚖️ Baseline Scenario Analyst(3 risk perspective)
+- 🔬 research integrator / 👔 risk assessor(Comprehensive decision-making)
 
-**实战选择**(由浅入深):
+**Practical options**(From shallow to deep):
 
-| 场景 | 推荐勾选 |
+| scene | Recommended to check |
 |------|---------|
-| 快速了解 | 📈 市场 + 💰 基本面(2 个,默认) |
-| 日常研究 | 上述 2 个 + (报告里自动跑出研究整合员+风险评估师) |
-| 深度研究 | 4级/5级,辩论轮数更多、研究更充分 |
-| 全面尽调 | 5级全面,勾全 7 个分析师 + 全部辩论角色 |
+| Get to know quickly | 📈 market + 💰 Fundamentals(2 a,Default) |
+| daily research | 2 of the above + (The research integrator automatically pops up in the report+risk assessor) |
+| in-depth research | 4 Level/Level 5,More debate rounds and better research |
+| Comprehensive due diligence | 5 Comprehensive level,Check all 7 analysts + All debate roles |
 
-> 💡 **机制说明**:所有深度级别都会自动跑出辩论角色(🐂 乐观情景研究员 / 🐻 审慎情景研究员)和 3 个风险情景分析师,区别只在**辩论轮数**——1-3 级辩论 1 轮,4 级辩论 2 轮,5 级辩论 3 轮。深度越深,辩论越充分,研究越全面。
+> 💡 **Mechanism description**:All depth levels automatically run out of debate roles(🐂 Optimistic Scenario Researcher / 🐻 Prudential Scenario Researcher)and 3 Risk Scenario Analysts,The only difference is**Debate rounds**——1-3 Level Debate 1 round,4 Level Debate Round 2,5 Level Debate 3 rounds. The deeper the depth,The more debate there is,The more comprehensive the research.
 
-### 步骤 7:(可选)开启"执行轨迹"
+### steps 7:(Optional)turn on"Execution trace"
 
-- 勾选"**记录执行轨迹(排查问题时开启)**"
-- 默认关闭
-- 开启后,系统会记录每个 Agent 的完整执行过程(Prompt 全文、LLM 原始返回、校验结果)
-- **数据量较大**,平时不开,排查问题时再开
-- 第 7 阶段讲调试时会用到
+- Check"**Record execution trace(Turn on when troubleshooting)**"
+- Off by default
+- After opening,The system will record the complete execution process of each Agent(Prompt Full text, LLM original return, verification results)
+- **Large amount of data**,Not open at ordinary times,Restart when troubleshooting
+- It will be used when debugging in stage 7
 
-### 步骤 8:提交分析
+### steps 8:Submit analysis
 
-- 点"开始智能分析"按钮
-- 任务入队,状态变成"分析进行中..."
-- 京东云版单并发,如果前面有任务会排队
+- point"Start smart analysis"button
+- Task enqueue,The status becomes"Analysis in progress..."
+- JD Cloud version order concurrency,If there are tasks ahead, they will be queued
 
-### 步骤 9:查看分析结果
+### steps 9:View analysis results
 
-任务完成后,页面会显示"**查看结果**"和"**重新分析**"两个按钮。
+After the task is completed,The page will display"**View results**"and"**Reanalyze**"Two buttons.
 
-点"查看结果"显示完整报告(下文重点讲)。
+point"View results"Show full report(The following focuses on). 
 
-## 📊 报告结构详解(用户能看到的部分)
+## 📊 Detailed explanation of report structure(The part that users can see)
 
-### 1. 报告页面顶部的"研究简报"卡片
+### 1. at the top of the report page"research brief"card
 
-报告最上方有一个 **"🧾 研究简报"** 卡片,内容是 Markdown 渲染的摘要文本。
+At the top of the report there is a **"🧾 research brief"** card,The content is a Markdown-rendered summary text.
 
-### 2. 报告页面底部的"详细研究报告"卡片
+### 2. at the bottom of the report page"Detailed research report"card
 
-研究简报下面有一个 **"📄 详细研究报告"** 卡片,里面是按阶段的 Tab 列表。
+There is a research brief below **"📄 Detailed research report"** card,Inside is a Tab list by stage.
 
-### 3. 详细研究报告的 14 个 Tab(用户实际看到的名字)
+### 3. 14 detailed research reports Tab(The name the user actually sees)
 
-下面这些是用户**在 Tab 上看到的名字**:
+These are the users**Name seen on Tab**:
 
-| 阶段 | 用户看到的 Tab 名(带图标) | 来自 |
+| stage | The tab name that users see(with icon) | from |
 |------|--------|------|
-| **宏观** | 📊 大盘分析师 | index_analyst |
-| | 🏭 板块分析师 | sector_analyst |
-| **个股面** | 📈 市场分析师 | market_analyst |
-| | 💰 基本面分析师 | fundamentals_analyst |
-| | 💬 社交媒体分析师 | social_analyst |
-| | 📰 新闻分析师 | news_analyst |
-| **多情景研究** | 🐂 乐观情景研究员 | bull_researcher |
-| | 🐻 审慎情景研究员 | bear_researcher |
-| | 🔬 研究整合员 | research_team_decision |
-| **研究整合** | 🧩 研究整合员 | trader |
-| **风险辩论** | ⚡ 高弹性情景分析师 | risky_analyst |
-| | 🛡️ 防御情景分析师 | safe_analyst |
-| | ⚖️ 基准情景分析师 | neutral_analyst |
-| | 👔 风险评估师 | risk_manager |
-| **最终** | 🧾 综合研究结论 | 综合 |
+| **Macro** | 📊 Market Analyst | index_analyst |
+| | 🏭 Sector Analyst | sector_analyst |
+| **Individual stocks** | 📈 market analyst | market_analyst |
+| | 💰 fundamental analyst | fundamentals_analyst |
+| | 💬 social media analyst | social_analyst |
+| | 📰 news analyst | news_analyst |
+| **multi-scenario research** | 🐂 Optimistic Scenario Researcher | bull_researcher |
+| | 🐻 Prudential Scenario Researcher | bear_researcher |
+| | 🔬 research integrator | research_team_decision |
+| **research integration** | 🧩 research integrator | trader |
+| **risk debate** | ⚡ Highly Resilient Scenario Analyst | risky_analyst |
+| | 🛡️ Defense Scenario Analyst | safe_analyst |
+| | ⚖️ Baseline Scenario Analyst | neutral_analyst |
+| | 👔 risk assessor | risk_manager |
+| **eventually** | 🧾 Comprehensive research conclusion | Comprehensive |
 
-> **Tab 显示数和深度的关系**:
-> 所有深度级别都会跑相同的分析角色(含辩论和风险分析),因此报告的 Tab 集合基本一致(共 14 个 Tab)。深度主要影响**辩论轮数**(1-3 级 1 轮、4 级 2 轮、5 级 3 轮),轮数越多研究越充分、耗时越长。
+> **Tab The relationship between display number and depth**:
+> All depth levels will run the same analytics role(Contains debate and risk analysis),So the reported Tab collection is basically the same(14 in total Tab). Depth main effect**Debate rounds**(1-3 1 round for level 4, 2 rounds for level 4, 3 rounds for level 5),The more rounds, the more complete the research will be and the longer it will take.
 
-### 4. "风险审阅" Tab 里的结构化字段
+### 4. "risk review" Tab structured fields in
 
-报告里如果包含"⚠️ 风险审阅" Tab,里面会用以下标签展示:
+If the report contains"⚠️ risk review" Tab,It will be displayed with the following tags:
 
-| 页面显示的标签 | 含义 |
+| Labels displayed on the page | meaning |
 |----------|------|
-| **风险等级** | 低 / 中 / 高 |
-| **风险评分** | 0-1 之间的小数 |
-| **评估结论** | 风险综合判断(长文本) |
-| **核心风险** | 风险点列表(`- ` 开头的项) |
-| **风控建议** | 风险控制建议 |
-| **投资调整建议** | 投资策略调整建议 |
+| **risk level** | low/medium/high |
+| **risk score** | 0-1 decimal between |
+| **Assessment conclusion** | Comprehensive risk judgment(long text) |
+| **core risk** | Risk point list(`- ` items starting with) |
+| **Risk control suggestions** | Risk control suggestions |
+| **Investment adjustment suggestions** | Investment strategy adjustment suggestions |
 
-### 5. 决策标签(报告里所有"决策"位置)
+### 5. Decision label(All in the report"decision making"location)
 
-| v2.x 老术语 | v3.0 合规术语 | 含义 |
+| v2.x old term | v3.0 Compliance terminology | meaning |
 |------------|------------|------|
-| BUY / 买入 / 看涨 | **乐观** | 系统看好 |
-| SELL / 卖出 / 看跌 | **审慎** | 系统谨慎 |
-| HOLD / 持有 / 中性 | **中性** | 系统中性 |
+| BUY / Buy/Call | **optimistic** | The system is optimistic |
+| SELL / Sell/Put | **Prudence** | Systematic caution |
+| HOLD / Hold / Neutral | **Neutral** | system neutral |
 
-> v3.0 不再显示"目标价/止损价/建议仓位"等具体交易指令,统一为"乐观/审慎/中性"+ 评估结论/核心风险/风控建议/投资调整建议。
+> v3.0 Don't show again"Target price/stop price/recommended position"Waiting for specific trading instructions,unified as"Optimistic/cautious/neutral"+ Assessment conclusions/core risks/risk control recommendations/investment adjustment recommendations.
 
-## ⚠️ v3.0 重要变化
+## ⚠️ v3.0 Important changes
 
-- ✅ **5 级分析深度**(从 3 级扩展)
-- ✅ **合规术语统一**(乐观/审慎/中性)
-- ✅ **不再输出"目标价/止损/仓位"等交易指令**(符合监管要求)
-- ✅ **风险评估结构化**(风险等级/风险评分/评估结论/核心风险/风控建议/投资调整建议)
-- ⚠️ **平台仅支持 A 股和 ETF**
+- ✅ **5 level analysis depth**(Expanding from Level 3)
+- ✅ **Harmonization of compliance terminology**(Optimistic/cautious/neutral)
+- ✅ **No more output"Target Price/Stop Loss/Position"Waiting for trading instructions**(Meet regulatory requirements)
+- ✅ **Risk assessment structure**(Risk level/risk score/assessment conclusion/core risk/risk control suggestions/investment adjustment suggestions)
+- ⚠️ **The platform only supports A shares and ETF**
 
-## 🛠️ 实操作业
+## 🛠️ Practical operations
 
-1. 点侧边栏「单股研究」菜单
-2. 输入 `601919` 中远海控
-3. 点"**数据检验**",看是否缺数据(缺的话去同步)
-4. 分析深度选 **3级 - 标准分析**
-5. 分析师勾选:**📈 市场分析师 + 💰 基本面分析师**(就是默认的 2 个)
-6. 提交分析
-7. 等完成后,重点看:
-   - 顶部 **"🧾 研究简报"** 卡片写了什么?
-   - 底部"📄 详细研究报告"里**出现了几个 Tab**?
-   - **"🧾 综合研究结论"** Tab 里的"决策标签"是 乐观 / 审慎 / 中性 中的哪个?
-   - 报告里,有没有"⚠️ 风险审阅"Tab?里面的"风险等级/风险评分"是多少?
+1. Click the "Single Stock Research" menu on the sidebar
+2. input `601919` COSCO Shipping Holdings
+3. point"**Data inspection**",Check if there is any missing data(If missing, synchronize)
+4. Analysis depth selection **3 Level - Standard Analysis**
+5. Analyst check:**📈 market analyst + 💰 fundamental analyst**(Just the default 2)
+6. Submit analysis
+7. After completion,Focus on:
+   - top **"🧾 research brief"** what is written on the card?
+   - bottom"📄 Detailed research report"inside**Several appeared Tab**?
+   - **"🧾 Comprehensive research conclusion"** Tab inside"Decision label"Which one is optimistic/cautious/neutral??
+   - in the report,Is there any"⚠️ risk review"Tab?inside"Risk Level/Risk Score"how much?
 
-**做完这次作业**,你就掌握了 v3.0 单股研究的完整流程和报告阅读方法。
+**Finish this assignment**,You have mastered the complete process and report reading method of v3.0 single stock research.
 
 ## ❓ FAQ
 
-**Q:为什么我提交的分析报告里有的 Tab 内容看起来较少?**
-A: 所有深度级别都会跑辩论角色(🐂 乐观情景研究员 / 🐻 审慎情景研究员)和 3 个风险情景分析师(⚡ 高弹性 / 🛡️ 防御 / ⚖️ 基准),区别在**辩论轮数**。1-3 级辩论 1 轮、4 级 2 轮、5 级 3 轮,轮数越多各 Tab 内容越充分。
+**Q:Why do some tab contents in the analysis report I submit appear to be smaller??**
+A: Debate roles will run at all depth levels(🐂 Optimistic Scenario Researcher / 🐻 Prudential Scenario Researcher)and 3 Risk Scenario Analysts(⚡ High elasticity / 🛡️ defense / ⚖️ benchmark),The difference is**Debate rounds**. 1-3 Level 1 debate, Level 4 2 rounds, Level 5 3 rounds,The more rounds there are, the more complete the content of each Tab will be.
 
-**Q:报告里的"决策"显示"中性",是不是系统没给建议?**
-A: 不是。"中性"是合规术语,意思是"建议持有/观望,无明确加仓或减仓信号"。要看 "⚠️ 风险审阅" Tab 里的"评估结论"了解原因。
+**Q:in the report"decision making"show"Neutral",Is it because the system didn't give suggestions??**
+A: No."Neutral"is a compliance term,means"Recommended to hold/wait and see,No clear signal to add or reduce positions". Want to see "⚠️ risk review" Tab inside"Assessment conclusion"Learn why.
 
-**Q:报告里为什么不显示目标价了?**
-A: v3.0 平台定位为**研究辅助工具**,根据合规要求不再提供目标价、止损止盈、买卖时机等具体交易指令。改为"风险等级/风险评分/评估结论/核心风险/风控建议/投资调整建议"等研究参考。
+**Q:Why is the target price not displayed in the report??**
+A: v3.0 The platform is positioned as**research aids**,In accordance with compliance requirements, specific trading instructions such as target price, stop loss and profit, and buying and selling timing will no longer be provided. Change to"Risk level/risk score/assessment conclusion/core risk/risk control suggestions/investment adjustment suggestions"and other research references.
 
-**Q:为什么我看到 5 级分析的耗时是 15-25 分钟,实际跑了 40 分钟?**
-A: 耗时是单 Agent 估算,实际 = 所有 Agent 总耗时 + LLM 调用耗时 + 数据查询耗时 + 任务调度耗时。京东云版排队时还会更慢。
+**Q:Why I see level 5 analysis taking 15-25 minutes,Actually ran for 40 minutes.?**
+A: The time consumption is estimated by a single agent,actual = The total time spent by all Agents + LLM The call takes time + Data query takes time + Task scheduling takes time. Jingdong cloud version will be even slower when queuing.
 
-**Q:数据检验通过就能保证任务成功吗?**
-A: 不一定,数据检验只查"必备数据是否已同步"。任务还可能因为:Token 耗尽、模型不可用、LLM 超时 等原因失败。
+**Q:Does passing the data verification guarantee the success of the task??**
+A: Not necessarily,Data inspection only checks"Whether the necessary data has been synchronized". The task may also be due to:Token Failure due to exhaustion, model unavailability, LLM timeout, etc.
 
-## 📚 延伸阅读
+## 📚 Further reading
 
-- [第 4 课:多角色辩论——怎么读懂 AI 的"🐂 积极 vs 🐻 谨慎"研究](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-04-single-analysis-multi-scenario.md)
-- [第 5 课:发现阶段的常见错误](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-05-discover-pitfalls.md)
+- [Lesson 4:multi-role debate——How to read AI"🐂 Positive vs 🐻 cautious"Research](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-04-single-analysis-multi-scenario.md)
+- [Lesson 5:Common mistakes in the discovery phase](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-05-discover-pitfalls.md)

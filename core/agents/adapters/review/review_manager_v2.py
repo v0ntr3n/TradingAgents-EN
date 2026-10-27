@@ -1,7 +1,7 @@
 """
-复盘总结师 v2.0 (复盘分析)
+Review summary expert v2.0 (Review analysis)
 
-基于ManagerAgent基类实现的复盘总结师
+Review summarizer implemented based on ManagerAgent base class
 """
 
 import logging
@@ -13,11 +13,11 @@ from ...registry import register_agent
 
 logger = logging.getLogger(__name__)
 
-# 尝试导入模板系统
+# Try importing the template system
 try:
     from tradingagents.utils.template_client import get_agent_prompt, get_user_prompt
 except (ImportError, KeyError) as e:
-    logger.warning(f"无法导入模板系统: {e}")
+    logger.warning(f"Unable to import template system: {e}")
     get_agent_prompt = None
     get_user_prompt = None
 
@@ -25,19 +25,19 @@ except (ImportError, KeyError) as e:
 @register_agent
 class ReviewManagerV2(ManagerAgent):
     """
-    复盘总结师 v2.0 (复盘分析)
+    Review summary expert v2.0 (Review analysis)
     
-    功能：
-    - 综合所有分析维度
-    - 生成完整复盘报告
-    - 给出非执行性的改进方向
+    Function:
+    - Integrating all dimensions of analysis
+    - Generate a complete review report
+    - Provide non-executive improvement directions
     
-    工作流程：
-    1. 读取各维度分析结果
-    2. 使用LLM综合总结
-    3. 生成复盘报告和改进建议
+    Workflow:
+    1. Read the analysis results of each dimension
+    2. Comprehensive summary using LLM
+    3. Generate review reports and improvement suggestions
     
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent
 
@@ -53,28 +53,28 @@ class ReviewManagerV2(ManagerAgent):
         })
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="review_manager_v2",
-        name="复盘总结师 v2.0",
-        description="综合所有分析维度，生成完整复盘报告和改进方向",
+        name="Review summary expert v2.0",
+        description="Comprehensive all analysis dimensions to generate a complete review report and improvement directions",
         category=AgentCategory.MANAGER,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="trade_records", type="string", description="交易记录"),
-            AgentInput(name="trade_info", type="object", description="交易信息详情", required=False),
-            AgentInput(name="market_data", type="object", description="市场行情数据", required=False),
-            AgentInput(name="benchmark_data", type="object", description="基准数据", required=False),
-            AgentInput(name="timing_analysis", type="string", description="时机分析结果", required=False),
-            AgentInput(name="position_analysis", type="string", description="仓位分析结果", required=False),
-            AgentInput(name="emotion_analysis", type="string", description="情绪分析结果", required=False),
-            AgentInput(name="attribution_analysis", type="string", description="归因分析结果", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="trade_records", type="string", description="transaction history"),
+            AgentInput(name="trade_info", type="object", description="Transaction information details", required=False),
+            AgentInput(name="market_data", type="object", description="market data", required=False),
+            AgentInput(name="benchmark_data", type="object", description="Benchmark data", required=False),
+            AgentInput(name="timing_analysis", type="string", description="Timing analysis results", required=False),
+            AgentInput(name="position_analysis", type="string", description="Position analysis results", required=False),
+            AgentInput(name="emotion_analysis", type="string", description="Sentiment analysis results", required=False),
+            AgentInput(name="attribution_analysis", type="string", description="Attribution analysis results", required=False),
         ],
         outputs=[
-            AgentOutput(name="review_summary", type="string", description="复盘总结报告"),
+            AgentOutput(name="review_summary", type="string", description="Review summary report"),
         ],
         growth_role="optimizer",
         growth_outputs=["review_summary"],
@@ -88,98 +88,98 @@ class ReviewManagerV2(ManagerAgent):
     enable_debate = False
 
     def __init__(self, *args, **kwargs):
-        """初始化复盘总结师 v2.0"""
+        """Initial review summary division v2.0"""
         super().__init__(*args, **kwargs)
-        self._current_state = None  # 用于在 _build_system_prompt() 中访问 state
+        self._current_state = None  # used in _build_system_prompt() Visit in state
 
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """执行分析（重写以支持交易计划规则注入）"""
-        # 保存 state 到实例变量，以便在 _build_system_prompt() 中访问
+        """Execution analysis (rewritten to support trading plan rule injection)"""
+        # Save state to instance variables for use in _build_system_prompt() Visit in
         self._current_state = state
         try:
-            # 调用父类的 execute() 方法
+            # Call parent class execute() method
             return super().execute(state)
         finally:
-            # 清理实例变量
+            # Clean up instance variables
             self._current_state = None
 
     def _build_system_prompt(self, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词（包含交易计划规则）
+        Build system prompt words (including trading plan rules)
         
         Args:
-            state: 工作流状态（可选，用于提取变量如 company_name, ticker 等）
+            state: Workflow status (optional, used to extract variables such as company_name, ticker etc.)
         """
-        fallback_prompt = """您是一位专业的复盘总结师 v2.0。
+        fallback_prompt = """You are a professional review summarizer v2.0.
 
-您的职责是综合各维度分析，生成完整的复盘报告与改进方向。
+Your responsibility is to comprehensively analyze all dimensions and generate a complete review report and improvement directions.
 
-**总结要点**：
-1. 复盘结论 - 用直白语言总结这笔交易最核心的得失
-2. 优点识别 - 本次交易做对了什么
-3. 不足分析 - 本次交易暴露了什么问题
-4. 改进方向 - 聚焦纪律、研究和流程的优化方向
-5. 经验总结 - 可复用的经验教训
+**Summary points**: 
+1. Review conclusion - summarize the core gains and losses of this transaction in straightforward language
+2. Strengths Identification – What did this transaction do right?
+3. Weakness Analysis - What problems were exposed in this transaction?
+4. Directions for improvement - Focus on discipline, research and optimization of processes
+5. Experience Summary - Reusable Lessons Learned
 
-请使用中文，基于真实数据进行客观总结。
+Please use Chinese and make an objective summary based on real data.
 
-输出格式要求：
-请给出JSON格式的复盘报告：
+Output format requirements:
+Please provide the review report in JSON format:
 ```json
 {
-    "summary": "2-3句话的复盘结论，突出核心得失与关键问题（必须是字符串，不能是对象）",
-    "strengths": ["优点1", "优点2", "优点3"],
-    "weaknesses": ["不足1", "不足2", "不足3"],
-    "suggestions": ["改进重点1", "改进重点2", "改进重点3"],
-    "lessons": "经验教训总结（必须是字符串）"
+    "summary": "2-3 A review conclusion of one sentence, highlighting the core gains and losses and key issues (must be a string, not an object)",
+    "strengths": ["Advantages 1", "Advantages 2", "Advantages 3"],
+    "weaknesses": ["Insufficient 1", "Insufficient 2", "Insufficient 3"],
+    "suggestions": ["Improvement points 1", "Improvement points 2", "Improvement points 3"],
+    "lessons": "Summary of lessons learned (must be a string)"
 }
 ```
 
-**重要提示**：
-1. 兼容链路如仍要求 overall_score、timing_score、position_score、discipline_score，可选填 0-100 的整数，但不要让叙述围绕分数展开
-2. summary 和 lessons 必须是字符串，不能是对象或数组
-3. strengths、weaknesses、suggestions 必须是字符串数组
-4. suggestions 只能写成复盘改进方向、研究补强点或流程优化点，不得写成买卖、加减仓、止损止盈等未来执行动作
-5. 不要在输出中包含日期（如"2025年4月5日"），日期由系统自动生成"""
+**Important tips**: 
+1. If the compatible link still requires overall_score, timing_score, position_score, discipline_score, you can optionally fill in an integer from 0 to 100, but do not let the narrative revolve around the score.
+2. summary and lessons must be strings, not objects or arrays
+3. strengths, weaknesses, suggestions Must be a string array
+4. suggestions It can only be written as review improvement directions, research reinforcement points or process optimization points. It is not allowed to be written as future execution actions such as buying and selling, increasing or decreasing positions, stop loss and profit.
+5. Do not include dates in the output (e.g."2025 April 5") , The date is automatically generated by the system"""
 
-        # 🆕 从 state 获取交易计划（如果有）
+        # 🆕 Get the trading plan from state (if any)
         trading_plan = None
         if self._current_state:
             trading_plan = self._current_state.get('trading_plan')
 
-        # 🆕 构建交易计划规则文本
+        # 🆕 Construct trading plan rules text
         trading_plan_section = ''
         if trading_plan:
-            plan_name = trading_plan.get('plan_name', '未命名计划')
+            plan_name = trading_plan.get('plan_name', 'unnamed plan')
             trading_plan_section = f"""
 
-=== 交易计划合规性 ===
-本次交易关联了交易计划：**{plan_name}**
+=== Trading Plan Compliance ===
+This transaction is associated with a trading plan:**{plan_name}**
 
-请在复盘报告中增加"交易计划合规性"部分，总结：
-1. 各维度分析中发现的规则违反情况
-2. 合规性总体评价
-3. 针对规则违反的改进方向，不得写成未来交易指令"""
+Please add it to the review report"Trading Plan Compliance"Part, summary:
+1. Rule violations found in each dimension analysis
+2. Overall Compliance Rating
+3. Improvement directions for rule violations shall not be written as future trading instructions."""
 
-        # 使用基类的通用方法从模板系统获取提示词（支持注入交易计划规则）
+        # Use the general method of the base class to obtain prompt words from the template system (supports injecting trading plan rules)
         variables = {'trading_plan_section': trading_plan_section}
         prompt = self._get_prompt_from_template(
             agent_type="reviewers_v2",
             agent_name="review_manager_v2",
             variables=variables,
-            state=self._current_state if self._current_state else state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=self._current_state.get("context") if self._current_state else (state.get("context") if state else None),  # 从 state 中获取 context
+            state=self._current_state if self._current_state else state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=self._current_state.get("context") if self._current_state else (state.get("context") if state else None),  # Get from state context
             fallback_prompt=fallback_prompt,
-            prompt_type="system"  # ✅ 关键：指定获取系统提示词（包含output_format）
+            prompt_type="system"  # ✅ Key: Specify to obtain system prompt words (including output_format)
         )
         if prompt:
-            has_plan = "（包含交易计划规则）" if trading_plan else "（无交易计划）"
-            logger.info(f"✅ 从模板系统获取复盘总结师提示词 {has_plan} (长度: {len(prompt)})")
-            logger.info(f"📝 [系统提示词] 完整内容:\n{prompt}")
+            has_plan = " (Contains trading plan rules)" if trading_plan else " (No transaction plan)"
+            logger.info(f"✅ Obtain the review summary expert s prompt words from the template system {has_plan} (length: {len(prompt)})")
+            logger.info(f"📝 [System prompt word] full content:\n{prompt}")
             return prompt
 
-        logger.info(f"⚠️ 使用降级提示词 (长度: {len(fallback_prompt + trading_plan_section)})")
-        logger.info(f"📝 [降级提示词] 完整内容:\n{fallback_prompt + trading_plan_section}")
+        logger.info(f"⚠️ Use demotion prompts (length: {len(fallback_prompt + trading_plan_section)})")
+        logger.info(f"📝 [Downgrade prompt word] full content:\n{fallback_prompt + trading_plan_section}")
         return fallback_prompt + trading_plan_section
 
     def _build_user_prompt(
@@ -190,63 +190,63 @@ class ReviewManagerV2(ManagerAgent):
         debate_summary: str,
         state: Dict[str, Any]
     ) -> str:
-        """构建用户提示词（从模板系统获取并渲染）
+        """Construct user prompt words (obtained from template system and rendered)
 
-        注意：交易计划规则已经在系统提示词中注入，这里只需要提供分析数据。
+        Note: The trading plan rules have been injected into the system prompt words, and only the analysis data needs to be provided here.
         """
         trade_info = state.get("trade_info", {})
         code = trade_info.get("code", ticker)
         name = trade_info.get("name", code)
 
-        # 提取各维度分析（在 f-string 外进行切片）
-        timing = state.get("timing_analysis", "无时机分析")
-        position = state.get("position_analysis", "无仓位分析")
-        emotion = state.get("emotion_analysis", "无情绪分析")
-        attribution = state.get("attribution_analysis", "无归因分析")
+        # Extract analysis of each dimension (slicing outside the f-string)
+        timing = state.get("timing_analysis", "No opportunity analysis")
+        position = state.get("position_analysis", "No position analysis")
+        emotion = state.get("emotion_analysis", "No sentiment analysis")
+        attribution = state.get("attribution_analysis", "No attribution analysis")
 
-        # 🔧 从字典中提取 content 字段（ResearcherAgent 返回的是字典）
+        # 🔧 Extract the content field from the dictionary (ResearcherAgent returns a dictionary)
         def extract_content(data):
-            """从分析结果中提取内容"""
+            """Extract content from analysis results"""
             if isinstance(data, dict):
                 return data.get('content', str(data))
             return str(data)
 
-        # 截断长文本（避免 token 过多）
+        # Truncate long text (to avoid too many tokens)
         timing_text = extract_content(timing)[:1500]
         position_text = extract_content(position)[:1500]
         emotion_text = extract_content(emotion)[:1500]
         attribution_text = extract_content(attribution)[:1500]
 
-        # 格式化收益信息（使用正确的字段名）
+        # Format revenue information (using correct field names)
         realized_pnl = trade_info.get('realized_pnl', 0)
         realized_pnl_pct = trade_info.get('realized_pnl_pct', 0)
-        # 🆕 获取浮动盈亏（持仓中时）
+        # 🆕 Obtain floating profit and loss (when holding a position)
         unrealized_pnl = trade_info.get('unrealized_pnl', 0)
         unrealized_pnl_pct = trade_info.get('unrealized_pnl_pct', 0)
         is_holding = trade_info.get('is_holding', False)
         current_price = trade_info.get('current_price')
         
-        # 🆕 计算总盈亏（已实现 + 浮动）
+        # 🆕 Calculate total profit and loss (realized + float)
         total_pnl = realized_pnl + unrealized_pnl if is_holding else realized_pnl
         total_pnl_pct = realized_pnl_pct + unrealized_pnl_pct if is_holding else realized_pnl_pct
         
         pnl_sign = "+" if total_pnl >= 0 else ""
         unrealized_sign = "+" if unrealized_pnl >= 0 else ""
 
-        # 准备模板变量
+        # Prepare template variables
         template_variables = {
             'code': code,
             'name': name,
             'pnl_sign': pnl_sign,
             'realized_pnl': f"{realized_pnl:.2f}",
             'realized_pnl_pct': f"{realized_pnl_pct:.2f}",
-            # 🆕 添加浮动盈亏和总盈亏
+            # 🆕 Add floating profit and loss and total profit and loss
             'unrealized_pnl': f"{unrealized_pnl:.2f}",
             'unrealized_pnl_pct': f"{unrealized_pnl_pct:.2f}",
             'unrealized_sign': unrealized_sign,
             'total_pnl': f"{total_pnl:.2f}",
             'total_pnl_pct': f"{total_pnl_pct:.2f}",
-            'is_holding': "是" if is_holding else "否",
+            'is_holding': "Yes" if is_holding else "No",
             'current_price': f"{current_price:.2f}" if current_price else "N/A",
             'holding_days': trade_info.get('holding_days', 0),
             'timing_analysis': timing_text,
@@ -255,14 +255,14 @@ class ReviewManagerV2(ManagerAgent):
             'attribution_analysis': attribution_text
         }
 
-        # 🆕 如果有交易计划，添加交易计划变量
-        logger.info(f"🔍 [复盘管理器] 检查 state 中的 trading_plan...")
-        logger.info(f"🔍 [复盘管理器] state 的所有键: {list(state.keys())}")
+        # 🆕 If there is a trading plan, add trading plan variables
+        logger.info(f"🔍 [Review manager] Check the state in trading_plan...")
+        logger.info(f"🔍 [Review manager] state all keys of: {list(state.keys())}")
 
         trading_plan = state.get('trading_plan')
         if trading_plan:
-            # 🔧 模板使用嵌套变量引用（如 {{trading_plan.plan_name}}）
-            # 需要传递整个 trading_plan 字典，但确保所有值都是字符串或基本类型
+            # 🔧 Templates use nested variable references (such as {{trading_plan.plan_name}}) 
+            # The entire trading_plan dictionary needs to be passed, but make sure all values are strings or primitive types
             template_variables['trading_plan'] = {
                 'plan_name': str(trading_plan.get('plan_name', '')),
                 'style': str(trading_plan.get('style', '')),
@@ -270,79 +270,79 @@ class ReviewManagerV2(ManagerAgent):
             }
             template_variables['trading_analysis_plan'] = dict(template_variables['trading_plan'])
 
-            logger.info(f"✅ [复盘管理器] 检测到交易计划: {trading_plan.get('plan_name', 'N/A')}")
+            logger.info(f"✅ [Review manager] Trading plan detected: {trading_plan.get('plan_name', 'N/A')}")
             logger.info(f"   - plan_id: {trading_plan.get('plan_id', 'N/A')}")
             logger.info(f"   - style: {trading_plan.get('style', 'N/A')}")
-            logger.info(f"   - rules_text 长度: {len(trading_plan.get('rules_text', ''))}")
+            logger.info(f"   - rules_text length: {len(trading_plan.get('rules_text', ''))}")
         else:
-            logger.warning(f"⚠️ [复盘管理器] state 中没有 trading_plan 字段！")
+            logger.warning(f"⚠️ [Review manager] state There is no trading_plan field in!")
 
-        # 🆕 构建收益信息文本（包含浮动盈亏）- 用于模板变量
-        # 根据条件构建完整的文本，而不是让模板处理条件
+        # 🆕 Construct profit information text (including floating profit and loss) - used for template variables
+        # Build the complete text based on the condition instead of letting the template handle the condition
         if is_holding and unrealized_pnl != 0:
-            pnl_info_text = f"{pnl_sign}{total_pnl:.2f}元 (已实现: {realized_pnl:+.2f}元, 浮动: {unrealized_sign}{unrealized_pnl:.2f}元)"
-            return_info_text = f"{pnl_sign}{total_pnl_pct:.2f}% (已实现: {realized_pnl_pct:+.2f}%, 浮动: {unrealized_sign}{unrealized_pnl_pct:.2f}%)"
+            pnl_info_text = f"{pnl_sign}{total_pnl:.2f}Yuan (Realized: {realized_pnl:+.2f}Yuan, float: {unrealized_sign}{unrealized_pnl:.2f}Yuan)"
+            return_info_text = f"{pnl_sign}{total_pnl_pct:.2f}% (Realized: {realized_pnl_pct:+.2f}%, float: {unrealized_sign}{unrealized_pnl_pct:.2f}%)"
         else:
-            pnl_info_text = f"{pnl_sign}{total_pnl:.2f}元"
+            pnl_info_text = f"{pnl_sign}{total_pnl:.2f}Yuan"
             return_info_text = f"{pnl_sign}{total_pnl_pct:.2f}%"
         
-        holding_status_text = f"{'持仓中' if is_holding else '已平仓'}"
+        holding_status_text = f"{'In position' if is_holding else 'Position closed'}"
         if is_holding and current_price:
-            holding_status_text += f" (当前价格: {current_price:.2f})"
+            holding_status_text += f" (current price: {current_price:.2f})"
         
-        # 添加到模板变量中
+        # Add to template variables
         template_variables['pnl_info'] = pnl_info_text
         template_variables['return_info'] = return_info_text
         template_variables['holding_status'] = holding_status_text
         
-        # 降级提示词（如果模板系统不可用）
-        fallback_prompt = f"""请综合以下分析，生成复盘报告：
+        # Downgrade prompt word (if template system is not available)
+        fallback_prompt = f"""Please combine the following analysis to generate a review report:
 
-=== 交易信息 ===
-- 股票代码: {code}
-- 股票名称: {name}
-- 盈亏金额: {pnl_info_text}
-- 收益率: {return_info_text}
-- 持仓状态: {holding_status_text}
-- 持仓周期: {trade_info.get('holding_days', 0)}天
+=== transaction information ===
+- Stock code: {code}
+- Stock name: {name}
+- Profit and loss amount: {pnl_info_text}
+- Yield: {return_info_text}
+- Position status: {holding_status_text}
+- Position period: {trade_info.get('holding_days', 0)}day
 
-=== 时机分析 ===
+=== Timing analysis ===
 {timing_text}
 
-=== 仓位分析 ===
+=== Position analysis ===
 {position_text}
 
-=== 情绪分析 ===
+=== sentiment analysis ===
 {emotion_text}
 
-=== 归因分析 ===
+=== attribution analysis ===
 {attribution_text}
 
-**重要提示**：
-- 如果交易还在持仓中，请综合考虑已实现盈亏和浮动盈亏来评价整体表现
-- 浮动盈亏反映了当前持仓的潜在收益/亏损，是评价交易决策的重要指标
-- 不要仅基于已实现盈亏（可能为0）就认为交易"收益归零"，要结合浮动盈亏进行综合评价
+**Important tips**: 
+- If the trade is still open, please consider the realized profit and loss and floating profit and loss to evaluate the overall performance.
+- Floating profit and loss reflects the potential profit/loss of the current position and is an important indicator for evaluating trading decisions.
+- Don t think of a trade solely based on realized P&L (which may be 0)"Return to zero", Comprehensive evaluation should be conducted based on floating profits and losses
 
-请给出JSON格式的复盘报告。
+Please provide the review report in JSON format.
 
-注意：分数字段仅作兼容保留，复盘结论应以问题识别、经验总结和后续研究改进重点为主。
-禁止把 suggestions 写成买卖、加减仓、止损止盈、仓位调整或“下次应在某价位执行”之类的未来动作。"""
+Note: The score field is reserved for compatibility only. The review conclusion should focus on problem identification, experience summary and subsequent research and improvement.
+It is prohibited to write suggestions as buying or selling, adding or subtracting positions, stop loss and take profit, position adjustment or It should be executed at a certain price next time Such future actions."""
 
-        # 打印模板变量（调试用）
-        logger.info(f"📊 [复盘管理器] 模板变量:")
+        # Print template variables (for debugging)
+        logger.info(f"📊 [Review manager] Template variables:")
         for key, value in template_variables.items():
-            # 分析报告内容太长，只打印前100个字符
+            # The analysis report content is too long, only the first 100 characters are printed.
             if key.endswith('_analysis'):
                 logger.info(f"  - {key}: {str(value)[:100]}...")
             else:
                 logger.info(f"  - {key}: {value}")
 
-        # 尝试从模板系统获取用户提示词
+        # Try to get the user prompt word from the template system
         if get_user_prompt:
             try:
-                # 🆕 根据是否有交易计划，选择不同的 preference_id
+                # 🆕 Choose different ones depending on whether you have a trading plan preference_id
                 preference_id = "with_plan" if trading_plan else "neutral"
-                logger.info(f"📋 [复盘管理器] 使用 preference_id: {preference_id}")
+                logger.info(f"📋 [Review manager] Use preference_id: {preference_id}")
 
                 prompt = get_user_prompt(
                     agent_type="reviewers_v2",
@@ -352,19 +352,19 @@ class ReviewManagerV2(ManagerAgent):
                     fallback_prompt=fallback_prompt
                 )
                 if prompt:
-                    has_plan_tag = "（含交易计划）" if trading_plan else "（无交易计划）"
-                    logger.info(f"✅ 从模板系统获取复盘管理器用户提示词 {has_plan_tag} (长度: {len(prompt)})")
-                    logger.info(f"📝 [复盘管理器] 最终用户提示词:\n{prompt}")
+                    has_plan_tag = " ((Including trading plan)" if trading_plan else " (No transaction plan)"
+                    logger.info(f"✅ Obtain the review manager user prompt word from the template system {has_plan_tag} (length: {len(prompt)})")
+                    logger.info(f"📝 [Review manager] end user prompts:\n{prompt}")
                     return prompt
             except Exception as e:
-                logger.warning(f"从模板系统获取用户提示词失败: {e}")
+                logger.warning(f"Failed to obtain user prompt words from template system: {e}")
 
-        # 降级：使用硬编码提示词
-        logger.info(f"📝 [复盘管理器] 使用降级提示词:\n{fallback_prompt}")
+        # Downgrade: Use hardcoded prompt words
+        logger.info(f"📝 [Review manager] Use demotion prompts:\n{fallback_prompt}")
         return fallback_prompt
 
     def _get_required_inputs(self) -> List[str]:
-        """获取需要的输入列表"""
+        """Get the required input list"""
         return [
             "timing_analysis",
             "position_analysis",

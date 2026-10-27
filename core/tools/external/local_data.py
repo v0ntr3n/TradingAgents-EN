@@ -1,10 +1,10 @@
 """
-本地数据访问模块 — 供生成的 Skill 从数据库获取数据
+local data access module — For the generated Skill to get data from the database
 
-生成的 Skill 可从此模块导入，直接查询系统已同步的股票数据，
-无需调用外部 API。适用于数据组合、二次加工等场景。
+The generated Skill can be imported from this module to directly query the stock data synchronized by the system.
+No need to call external API. Suitable for data combination, secondary processing and other scenarios.
 
-用法示例：
+Usage examples:
     from core.tools.external.local_data import (
         get_stock_basic_info,
         get_stock_daily_quotes,
@@ -21,20 +21,20 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# 集合名（A 股）
+# Collection name (A shares)
 _COL_BASIC = "stock_basic_info"
 _COL_DAILY = "stock_daily_quotes"
 _COL_NEWS = "stock_news"
 _COL_QUOTES = "market_quotes"
 _COL_FINANCIAL = "stock_financial_data"
 
-# 集合名（ETF）
+# Collection name (ETF)
 _COL_ETF_BASIC = "etf_basic_info"
 _COL_ETF_DAILY = "etf_daily_quotes"
 
 
 def _get_db():
-    """获取同步 MongoDB 连接"""
+    """Get a synchronous MongoDB connection"""
     from app.core.database import get_mongo_db_sync
     return get_mongo_db_sync()
 
@@ -50,14 +50,14 @@ def _get_sources(market: str = "a_shares") -> List[str]:
 
 def get_stock_basic_info(symbol: str, source: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """
-    获取股票基础信息（从本地数据库）
+    Get basic stock information (from local database)
 
     Args:
-        symbol: 6 位股票代码，如 600519
-        source: 指定数据源（可选），不传则按系统优先级查询
+        symbol: 6 digit stock code, such as 600519
+        source: Specify the data source (optional). If not passed, the query will be based on system priority.
 
     Returns:
-        股票基础信息字典，含 name、industry、total_mv、pe_ttm 等；无数据返回 None
+        Dictionary of basic stock information, including name, industry, total_mv, pe_ttm, etc.; no data returned None
     """
     symbol = str(symbol).strip().zfill(6)
     db = _get_db()
@@ -86,18 +86,18 @@ def get_stock_daily_quotes(
     limit: int = 1000,
 ) -> List[Dict[str, Any]]:
     """
-    获取股票日线/K 线数据（从本地数据库）
+    Get stock daily/K line data (from local database)
 
     Args:
-        symbol: 6 位股票代码
-        start_date: 开始日期，格式 YYYYMMDD 或 YYYY-MM-DD
-        end_date: 结束日期，格式同上
-        period: 周期，daily/weekly/monthly，默认 daily
-        source: 指定数据源（可选）
-        limit: 最大条数，默认 1000
+        symbol: 6 stock code
+        start_date: Start date in the format YYYYMMDD or YYYY-MM-DD
+        end_date: End date, the format is the same as above
+        period: Period, daily/weekly/monthly, default daily
+        source: Specify data source (optional)
+        limit: Maximum number of entries, default 1000
 
     Returns:
-        日线列表，按 trade_date 升序
+        Daily list, in ascending order by trade_date
     """
     symbol = str(symbol).strip().zfill(6)
     start = start_date.replace("-", "")[:8]
@@ -131,16 +131,16 @@ def get_stock_news(
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
     """
-    获取股票新闻（从本地数据库）
+    Get stock news (from local database)
 
     Args:
-        symbol: 6 位股票代码
-        start_date: 开始时间（可选）
-        end_date: 结束时间（可选）
-        limit: 最大条数，默认 20
+        symbol: 6 stock code
+        start_date: Start time (optional)
+        end_date: End time (optional)
+        limit: Maximum number of entries, default 20
 
     Returns:
-        新闻列表，含 title、content、publish_time、url 等
+        News list, including title, content, publish_time, url, etc.
     """
     symbol = str(symbol).strip().zfill(6)
     db = _get_db()
@@ -168,16 +168,16 @@ def get_stock_news_by_date_range(
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
     """
-    按日期范围获取股票新闻（从本地数据库）
+    Get stock news by date range (from local database)
 
     Args:
-        symbol: 6 位股票代码
-        start_date: 开始日期 YYYY-MM-DD
-        end_date: 结束日期 YYYY-MM-DD
-        limit: 最大条数
+        symbol: 6 stock code
+        start_date: start date YYYY-MM-DD
+        end_date: end date YYYY-MM-DD
+        limit: Maximum number of items
 
     Returns:
-        新闻列表
+        News list
     """
     symbol = str(symbol).strip().zfill(6)
     try:
@@ -190,13 +190,13 @@ def get_stock_news_by_date_range(
 
 def get_market_quotes(symbol: str) -> Optional[Dict[str, Any]]:
     """
-    获取股票实时行情（从本地数据库）
+    Get real-time stock quotes (from local database)
 
     Args:
-        symbol: 6 位股票代码
+        symbol: 6 stock code
 
     Returns:
-        行情字典，含 close、pct_chg、volume、amount 等；无数据返回 None
+        Quote dictionary, including close, pct_chg, volume, amount, etc.; no data returned None
     """
     symbol = str(symbol).strip().zfill(6)
     db = _get_db()
@@ -207,10 +207,10 @@ def get_market_quotes(symbol: str) -> Optional[Dict[str, Any]]:
 
 def get_latest_stock_price(symbol: str) -> Optional[float]:
     """
-    获取股票最新可用价格。
+    Get the latest available price for a stock.
 
-    优先使用 market_quotes，其次回退到 stock_basic_info 中的 close/current_price/pre_close。
-    若无正数价格则返回 None。
+    Use market_quotes first, then fall back to close/current_price/pre_close in stock_basic_info.
+    If there is no positive price, None is returned.
     """
     symbol = str(symbol).strip().zfill(6)
 
@@ -236,16 +236,16 @@ def get_stock_financial_data(
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
     """
-    获取股票财务数据（从本地数据库）
+    Get stock financial data (from local database)
 
     Args:
-        symbol: 6 位股票代码
-        start_date: 开始日期 YYYYMMDD（可选）
-        end_date: 结束日期 YYYYMMDD（可选）
-        limit: 最大条数
+        symbol: 6 stock code
+        start_date: Start date YYYYMMDD (optional)
+        end_date: End date YYYYMMDD (optional)
+        limit: Maximum number of items
 
     Returns:
-        财务数据列表
+        Financial data list
     """
     symbol = str(symbol).strip().zfill(6)
     db = _get_db()
@@ -259,8 +259,8 @@ def get_stock_financial_data(
             q["$lte"] = end_date.replace("-", "")[:8]
         query["$and"] = [{"$or": [{"report_period": q}, {"report_date": q}]}]
 
-    # 财务数据历史上同时存在 report_period / report_date 两种口径，
-    # 这里统一拉取后在 Python 侧兼容排序，避免生成的 Skill 因字段差异取到错误记录。
+    # Historically, financial data has existed in two calibers: report_period / report_date.
+    # After unified pulling, the sorting is compatible on the Python side to prevent the generated Skill from getting wrong records due to field differences.
     items = list(col.find(query, {"_id": 0}).limit(max(limit * 3, 50)))
     items.sort(
         key=lambda item: str(item.get("report_period") or item.get("report_date") or ""),
@@ -271,14 +271,14 @@ def get_stock_financial_data(
 
 def get_stock_valuation_context(symbol: str, financial_limit: int = 8) -> Dict[str, Any]:
     """
-    获取估值场景的标准输入上下文。
+    Gets the standard input context of the valuation scenario.
 
-    返回值包含：
-    - basic_info: 基础信息
-    - market_quotes: 实时行情
-    - current_price: 最新可用价格
-    - pe_ttm / pb / ps_ttm: 常用估值指标
-    - financial_data: 最近若干期财务数据
+    The return value contains:
+    - basic_info: Basic information
+    - market_quotes: Real-time quotes
+    - current_price: Latest available prices
+    - pe_ttm / pb / ps_ttm: Common valuation indicators
+    - financial_data: Financial data for the most recent periods
     """
     symbol = str(symbol).strip().zfill(6)
     basic_info = get_stock_basic_info(symbol) or {}
@@ -297,19 +297,19 @@ def get_stock_valuation_context(symbol: str, financial_limit: int = 8) -> Dict[s
     }
 
 
-# ─── ETF 数据访问 ──────────────────────────────────────────────
+# ─── ETF data access ──────────────────────────────────────────────
 
 
 def get_etf_basic_info(symbol: str) -> Optional[Dict[str, Any]]:
     """
-    获取 ETF 基础信息（从本地数据库）
+    Get underlying ETF information (from local database)
 
     Args:
-        symbol: 6 位 ETF 代码，如 510050、159919
+        symbol: 6 Bit ETF code, such as 510050,159919
 
     Returns:
-        ETF 基础信息字典，含 name、fund_type、track_index、fund_scale、
-        management_fee、unit_nav、accum_nav 等；无数据返回 None
+        ETF Basic information dictionary, including name, fund_type, track_index, fund_scale,
+        management_fee, unit_nav, accum_nav Wait; no data returned None
     """
     symbol = str(symbol).strip().zfill(6)
     db = _get_db()
@@ -324,16 +324,16 @@ def get_etf_daily_quotes(
     limit: int = 1000,
 ) -> List[Dict[str, Any]]:
     """
-    获取 ETF 日线数据（从本地数据库）
+    Get ETF daily data (from local database)
 
     Args:
-        symbol: 6 位 ETF 代码
-        start_date: 开始日期，格式 YYYYMMDD 或 YYYY-MM-DD
-        end_date: 结束日期，格式同上
-        limit: 最大条数，默认 1000
+        symbol: 6 Bit ETF ticker
+        start_date: Start date in the format YYYYMMDD or YYYY-MM-DD
+        end_date: End date, the format is the same as above
+        limit: Maximum number of entries, default 1000
 
     Returns:
-        日线列表，按 trade_date 升序；含 close、pct_chg、volume、amount、unit_nav、accum_nav
+        Daily list, in ascending order by trade_date; including close, pct_chg, volume, amount, unit_nav,accum_nav
     """
     symbol = str(symbol).strip().zfill(6)
     start = start_date.replace("-", "")[:8]
@@ -351,54 +351,54 @@ def get_etf_daily_quotes(
     return list(cursor)
 
 
-# ─── API 文档（供代码生成器引用）────────────────────────────────
+# ─── API Documentation (for reference by code generators)────────────────────────────────
 
 
-# 供代码生成器 Prompt 引用的文档
+# Documentation referenced by the code generator Prompt
 LOCAL_DATA_API_DOC = """
-【本地数据访问 — 可从数据库获取已有数据】
+ [local data access — Existing data can be obtained from the database]
 
-本系统已同步的股票数据存储在 MongoDB 中，生成的 Skill 可直接查询，无需调用外部 API。
-优先考虑从本地数据获取，再考虑外部数据源。数据不足时再调用 akshare、tushare 等。
+The synchronized stock data of this system is stored in MongoDB, and the generated Skill can be queried directly without calling external API.
+Prioritize obtaining local data before considering external data sources. When there is insufficient data, call akshare, tushare, etc.
 
-允许导入：from core.tools.external.local_data import ...
+Allow import:from core.tools.external.local_data import ...
 
-可用函数（均为同步函数，直接调用即可）：
+Available functions (all are synchronous functions, just call them directly):
 
 1. get_stock_basic_info(symbol: str, source=None) -> dict | None
-   - 股票基础信息：name、industry、total_mv、pe_ttm、pb 等
-   - symbol: 6 位代码
+   - Basic stock information: name, industry, total_mv, pe_ttm, pb, etc.
+   - symbol: 6 bit code
 
 2. get_stock_daily_quotes(symbol, start_date, end_date, period="daily", source=None, limit=1000) -> list
-   - 日线/K 线数据：open、high、low、close、volume 等
-   - 日期格式：YYYYMMDD 或 YYYY-MM-DD
+   - Daily/K line data: open, high, low, close, volume, etc.
+   - Date format: YYYYMMDD or YYYY-MM-DD
 
 3. get_stock_news(symbol, start_date=None, end_date=None, limit=20) -> list
-   或 get_stock_news_by_date_range(symbol, start_date, end_date, limit=20) -> list
-   - 股票新闻：title、content、publish_time、url
+   or get_stock_news_by_date_range(symbol, start_date, end_date, limit=20) -> list
+   - Stock news: title, content, publish_time,url
 
 4. get_market_quotes(symbol) -> dict | None
-   - 实时行情：close、pct_chg、volume、amount
+   - Real-time quotes: close, pct_chg, volume,amount
 
 5. get_latest_stock_price(symbol) -> float | None
-   - 标准价格入口：优先 market_quotes，再回退 basic_info
-   - 估值类 Skill 优先用这个函数取 current_price，不要把价格默默设成 0
+   - Standard price entry: give priority to market_quotes, then fall back basic_info
+   - Valuation Skills should first use this function to get current_price. Do not set the price silently to 0
 
 6. get_stock_financial_data(symbol, start_date=None, end_date=None, limit=20) -> list
-   - 财务数据：兼容 report_period / report_date 两种报告期字段
+   - Financial data: compatible with report_period / report_date two reporting period fields
 
 7. get_stock_valuation_context(symbol, financial_limit=8) -> dict
-   - 估值场景标准入口：一次返回 basic_info、market_quotes、current_price、pe_ttm、pb、ps_ttm、financial_data
+   - Valuation scenario standard entry: return basic_info, market_quotes, current_price, pe_ttm, pb, ps_ttm,financial_data
 
 8. get_etf_basic_info(symbol: str) -> dict | None
-   - ETF 基础信息：name、fund_type、track_index、fund_scale、management_fee、unit_nav、accum_nav 等
-   - symbol: 6 位 ETF 代码，如 510050、159919
+   - ETF Basic information: name, fund_type, track_index, fund_scale, management_fee, unit_nav, accumulate_nav, etc.
+   - symbol: 6 Bit ETF code, such as 510050,159919
 
 9. get_etf_daily_quotes(symbol, start_date, end_date, limit=1000) -> list
-   - ETF 日线数据：close、pct_chg、volume、amount、unit_nav、accum_nav
-   - 日期格式：YYYYMMDD 或 YYYY-MM-DD
+   - ETF Daily data: close, pct_chg, volume, amount, unit_nav,accum_nav
+   - Date format: YYYYMMDD or YYYY-MM-DD
 
-示例1：先查本地，无数据再调外部 API
+Example 1: Check local first, if there is no data, then transfer externally API
     from core.tools.external.local_data import get_stock_basic_info, get_stock_daily_quotes
     info = get_stock_basic_info("600519")
     if info:
@@ -406,20 +406,20 @@ LOCAL_DATA_API_DOC = """
     else:
         ...
 
-示例2：估值类 Skill 的推荐写法
+Example 2: Recommended writing method for valuation skills
     from core.tools.external.local_data import get_stock_valuation_context
     ctx = get_stock_valuation_context("600519")
     current_price = ctx["current_price"]
     if current_price is None or current_price <= 0:
-        return {"status": "error", "message": "未获取到有效现价，无法估值"}
+        return {"status": "error", "message": "No effective current price has been obtained and cannot be valued."}
 
     pe_ttm = ctx["pe_ttm"]
     pb = ctx["pb"]
     ps_ttm = ctx["ps_ttm"]
     financial_data = ctx["financial_data"]
 
-硬规则：
-- 估值类 Skill 不允许把 current_price 默默设为 0 后继续计算
-- fair_value、valuation_range 若缺少必要输入，应返回 invalid / error，而不是输出 0
-- 财务数据排序优先使用 report_period，其次兼容 report_date
+Hard rules:
+- Valuation skills do not allow silently setting current_price to 0 and then continuing the calculation.
+- fair_value, valuation_range If necessary input is missing, invalid / error should be returned instead of output 0
+- When sorting financial data, use report_period first, followed by compatibility. report_date
 """

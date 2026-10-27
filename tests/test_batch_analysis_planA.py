@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-测试方案A的批量分析链路：
-- POST /api/analysis/batch 提交
-- 读取返回的 mapping[{stock_code, task_id}]
-- 轮询 /api/analysis/tasks/{task_id}/status 直至 completed
-- 获取 /api/analysis/tasks/{task_id}/result 并验证关键字段
+Batch analysis link of test plan A:
+- POST /api/analysis/batch Submit
+- Read the returned mapping[{stock_code, task_id}]
+- polling /api/analysis/tasks/{task_id}/status until completed
+- get /api/analysis/tasks/{task_id}/result and validate key fields
 """
 import time
 import json
@@ -33,12 +33,12 @@ def login():
 def submit_batch(token: str):
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     payload = {
-        "title": "测试批量分析-方案A",
-        "description": "自动化测试",
+        "title": "Test batch analysis-scheme A",
+        "description": "Automated testing",
         "stock_codes": STOCKS,
         "parameters": {
-            "market_type": "A股",
-            "research_depth": "标准",
+            "market_type": "A shares",
+            "research_depth": "Standard",
             "selected_analysts": ["market", "fundamentals"],
             "include_sentiment": True,
             "include_risk": True,
@@ -68,10 +68,10 @@ def poll_status(token: str, task_id: str, timeout_sec: int = 300):
             if status == "completed":
                 return True
             elif status == "failed":
-                print(f"❌ 任务失败: {task_id}")
+                print(f"❌ Task failed: {task_id}")
                 return False
         time.sleep(3)
-    print(f"⏰ 任务超时: {task_id}")
+    print(f"⏰ Task timeout: {task_id}")
     return False
 
 
@@ -85,41 +85,41 @@ def fetch_result(token: str, task_id: str):
 
 
 def main():
-    print("开始方案A批量链路测试...")
+    print("Start Plan A Batch Link Test...")
     token = login()
-    print("✅ 登录成功")
+    print("✅ Login successful")
 
     batch_id, mapping = submit_batch(token)
-    print(f"✅ 批量提交成功 batch_id={batch_id}，任务数={len(mapping)}")
+    print(f"✅ Batch submission successful batch_id={batch_id}, Number of tasks={len(mapping)}")
 
     all_ok = True
     results = {}
     for m in mapping:
         stock = m["stock_code"]
         task_id = m["task_id"]
-        print(f"⏳ 等待任务完成: {stock} ({task_id})")
+        print(f"⏳ Wait for task to complete: {stock} ({task_id})")
         ok = poll_status(token, task_id, timeout_sec=420)
         all_ok = all_ok and ok
         if ok:
             res = fetch_result(token, task_id)
             results[stock] = res
-            # 验证关键字段
+            # Validate key fields
             assert "decision" in res and isinstance(res["decision"], dict), f"missing decision for {stock}"
             assert "summary" in res and isinstance(res["summary"], str), f"missing summary for {stock}"
             assert "recommendation" in res and isinstance(res["recommendation"], str), f"missing recommendation for {stock}"
             assert "reports" in res and isinstance(res["reports"], dict), f"missing reports for {stock}"
-            print(f"🎉 {stock} 结果OK：summary={len(res['summary'])} chars, rec={len(res['recommendation'])} chars")
+            print(f"🎉 {stock} The result is OK:summary={len(res['summary'])} chars, rec={len(res['recommendation'])} chars")
         else:
-            print(f"❌ 任务未完成: {stock} ({task_id})")
+            print(f"❌ Task not completed: {stock} ({task_id})")
 
     with open('batch_results_sample.json', 'w', encoding='utf-8') as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
-    print("💾 已保存结果样本到 batch_results_sample.json")
+    print("💾 Result sample saved to batch_results_sample.json")
 
     if all_ok:
-        print("✅ 方案A批量链路测试通过！")
+        print("✅ Solution A batch link test passed!")
     else:
-        print("⚠️ 部分任务未完成或失败，请检查日志")
+        print("⚠️ Some tasks are not completed or failed, please check the logs")
 
 
 if __name__ == '__main__':

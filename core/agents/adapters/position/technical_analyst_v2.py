@@ -1,7 +1,7 @@
 """
-技术面分析师 v2.0 (持仓分析)
+technical analyst v2.0 (Position analysis)
 
-基于ResearcherAgent基类实现的技术面分析师
+Technical analyst implemented based on ResearcherAgent base class
 """
 
 import logging
@@ -16,33 +16,33 @@ logger = logging.getLogger(__name__)
 
 def _build_market_data_tool_date_guard(code: str, analysis_date: str) -> str:
     return (
-        "\n\n## 工具调用参数约束\n"
-        f"- 如需调用 get_stock_market_data_unified，ticker 必须使用 {code}\n"
-        f"- start_date 必须严格填写为 {analysis_date}\n"
-        f"- end_date 必须严格填写为 {analysis_date}\n"
-        "- 不得使用示例日期、历史占位日期或自行推测其他日期\n"
+        "\n\n## Tool call parameter constraints\n"
+        f"- To call get_stock_market_data_unified, ticker must be used {code}\n"
+        f"- start_date Must be filled in strictly as {analysis_date}\n"
+        f"- end_date Must be filled in strictly as {analysis_date}\n"
+        "- Do not use sample dates, historical placeholder dates, or extrapolate other dates.\n"
     )
 
 
-# 不再需要直接导入 get_agent_prompt，使用基类的 _get_prompt_from_template 方法
+# It is no longer necessary to import get_agent_prompt directly, use the _get_prompt_from_template method of the base class
 
 
 @register_agent
 class TechnicalAnalystV2(ResearcherAgent):
     """
-    技术面分析师 v2.0 (持仓分析)
+    technical analyst v2.0 (Position analysis)
     
-    功能：
-    - 分析K线走势和技术指标
-    - 评估支撑阻力位
-    - 判断短期走势
+    Function:
+    - Analyze K-line trends and technical indicators
+    - Evaluate support and resistance levels
+    - Determine short-term trends
     
-    工作流程：
-    1. 读取持仓信息和市场数据
-    2. 使用LLM分析技术面
-    3. 生成技术面分析报告
+    Workflow:
+    1. Read position information and market data
+    2. Using LLM to analyze technical aspects
+    3. Generate technical analysis reports
     
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent
 
@@ -55,22 +55,22 @@ class TechnicalAnalystV2(ResearcherAgent):
         })
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="pa_technical_v2",
-        name="技术面分析师 v2.0",
-        description="分析持仓股票的技术面，包括K线形态、技术指标、支撑阻力位",
+        name="technical analyst v2.0",
+        description="Analyze the technical aspects of held stocks, including K-line patterns, technical indicators, support and resistance levels",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
-        default_tools=["get_stock_market_data_unified"],  # 🔧 修复：当没有缓存时需要调用工具获取市场数据
+        default_tools=["get_stock_market_data_unified"],  # 🔧 Fix: Need to call tools to obtain market data when there is no cache
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="position_info", type="object", description="持仓信息详情", required=False),
-            AgentInput(name="market_data", type="object", description="市场行情数据", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="position_info", type="object", description="Position information details", required=False),
+            AgentInput(name="market_data", type="object", description="market data", required=False),
         ],
         outputs=[
-            AgentOutput(name="technical_analysis", type="string", description="技术面分析结果"),
+            AgentOutput(name="technical_analysis", type="string", description="Technical analysis results"),
         ],
         growth_role="extractor",
         growth_outputs=["technical_analysis"],
@@ -79,27 +79,27 @@ class TechnicalAnalystV2(ResearcherAgent):
         growth_source_type="analysis_report",
     )
 
-    # 研究员类型
+    # Researcher type
     researcher_type = "position_technical"
     
-    # 立场（中性）
+    # Position (Neutral)
     stance = "neutral"
     
-    # 输出字段名
+    # Output field name
     output_field = "technical_analysis"
 
     def _build_system_prompt(self, stance: str, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词
+        Build system prompt words
         
         Args:
-            stance: 立场（对于技术分析师，始终为neutral）
-            state: 工作流状态（可选，用于提取变量）
+            stance: Position (for technical analysts, always neutral)
+            state: Workflow status (optional, used to extract variables)
             
         Returns:
-            系统提示词
+            System prompt word
         """
-        # 准备模板变量（如果有state）
+        # Prepare template variables (if there is state)
         variables = {}
         if state:
             position_info = state.get("position_info", {})
@@ -111,64 +111,64 @@ class TechnicalAnalystV2(ResearcherAgent):
             variables = {
                 "code": code,
                 "name": name,
-                "ticker": code,  # 兼容旧模板的变量名
-                "company_name": name,  # 兼容旧模板的变量名
+                "ticker": code,  # Variable names compatible with old templates
+                "company_name": name,  # Variable names compatible with old templates
                 "current_date": datetime.now().strftime("%Y-%m-%d"),
-                "market_name": "A股" if market == "CN" else "港股" if market == "HK" else "美股",
+                "market_name": "A shares" if market == "CN" else "Hong Kong stocks" if market == "HK" else "US stocks",
                 "market": market,
             }
         
-        # 使用基类的通用方法从模板系统获取提示词（持仓分析专用Agent，参考 research_manager_v2）
-        logger.info("🔍 [TechnicalAnalystV2] 开始构建系统提示词")
+        # Use the general method of the base class to obtain prompt words from the template system (Special Agent for position analysis, refer to research_manager_v2)
+        logger.info("🔍 [TechnicalAnalystV2] Start building system prompt words")
         
         prompt = self._get_prompt_from_template(
             agent_type="position_analysis_v2",
             agent_name="pa_technical_v2",
-            variables=variables,  # 🔧 修复：传递准备好的变量给模板系统
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=state.get("context") if state else None,  # 从 state 中获取 context
+            variables=variables,  # 🔧 Fix: Pass prepared variables to template system
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=state.get("context") if state else None,  # Get from state context
             fallback_prompt=None,
-            prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+            prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
         )
         
-        logger.info(f"📝 系统提示词长度: {len(prompt)} 字符")
+        logger.info(f"📝 System prompt word length: {len(prompt)} character")
         if prompt:
-            logger.info(f"✅ 从模板系统获取技术面分析师提示词 (长度: {len(prompt)})")
+            logger.info(f"✅ Obtain technical analyst prompt words from the template system (length: {len(prompt)})")
             return prompt
         
-        # 降级：使用默认提示词
-        return """您是一位专业的技术面分析师。
+        # Downgrade: Use default prompt word
+        return """You are a professional technical analyst.
 
-    您的职责是分析持仓股票的技术面状态，并提炼趋势结构、信号强弱与后续验证重点。
+    Your responsibility is to analyze the technical status of the stocks you hold, and refine the trend structure, signal strength and subsequent verification points.
 
-    分析要点：
-    1. 趋势判断 - 当前处于上升/下降/震荡趋势中的哪一类结构
-    2. 技术指标 - MACD/KDJ/RSI等指标状态及其一致性
-    3. 动量与波动 - 成交量、波动水平和情绪变化
-    4. 验证信号 - 后续需要继续跟踪的技术面公开信号
-    5. 技术评分 - 1-10分的技术面评分
+    Analysis points:
+    1. Trend Judgment - Which type of structure is currently in an upward/downward/concussive trend?
+    2. Technical indicators - MACD/KDJ/RSI and other indicators status and consistency
+    3. Momentum and Volatility - Volume, Volatility Levels and Sentiment Changes
+    4. Verification signals - technical public signals that need to be followed up in the future
+    5. Technical Rating - technical rating on a scale of 1-10
 
-    严格要求：禁止输出买卖建议、支撑阻力具体价位、目标价或止损止盈。
+    Strict requirements: It is prohibited to output buying and selling recommendations, specific support and resistance prices, target prices or stop-loss and take-profit.
 
-    请使用中文，基于真实数据进行分析。"""
+    Please use Chinese and conduct analysis based on real data."""
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行技术面分析（覆盖基类方法，以便传递state给_build_system_prompt）
+        Perform technical analysis (override base class method to pass state to _build_system_prompt)
         """
-        logger.info(f"开始执行技术面分析师: {self.agent_id}")
+        logger.info(f"Start performing technical analysis: {self.agent_id}")
 
         try:
-            # 1. 提取输入参数（兼容多种参数名）
+            # 1. Extract input parameters (compatible with multiple parameter names)
             ticker = state.get("ticker") or state.get("company_of_interest")
             
-            # 🆕 从 position_info 中提取 code 作为 ticker
+            # 🆕 Extract code from position_info as ticker
             if not ticker and "position_info" in state:
                 position_info = state.get("position_info", {})
                 if isinstance(position_info, dict):
                     ticker = position_info.get("code")
             
-            # 🆕 支持交易复盘场景：从 trade_info 中提取 code
+            # 🆕 Support transaction review scenario: extracted from trade_info code
             if not ticker and "trade_info" in state:
                 trade_info = state.get("trade_info", {})
                 if isinstance(trade_info, dict):
@@ -176,7 +176,7 @@ class TechnicalAnalystV2(ResearcherAgent):
 
             analysis_date = state.get("analysis_date") or state.get("trade_date") or state.get("end_date")
             
-            # 🆕 支持交易复盘场景：使用当前日期作为分析日期
+            # 🆕 Support transaction review scenario: use the current date as the analysis date
             if not analysis_date:
                 from datetime import datetime
                 analysis_date = datetime.now().strftime("%Y-%m-%d")
@@ -184,45 +184,45 @@ class TechnicalAnalystV2(ResearcherAgent):
             if not ticker:
                 raise ValueError("Missing required parameters: ticker")
             
-            # 2. 收集所需的报告
+            # 2. Collect required reports
             reports = self._collect_reports(state)
             
             if not reports:
                 raise ValueError("No reports available for analysis")
             
-            # 🔧 关键修复：根据缓存情况生成 preference_id，并设置到 state["context"] 中
-            # 这样 _build_system_prompt 和 _build_user_prompt 都会使用同一个 preference_id
+            # 🔧 Key fix: Generate preference_id based on cache situation and set to state["context"] in
+            # This way both _build_system_prompt and _build_user_prompt will use the same preference_id
             stock_report = state.get("stock_analysis_report", {})
             has_cache = stock_report.get("has_cache", False)
             user_preference = state.get("user_preference", "neutral")
             cache_scenario = "with_cache" if has_cache else "without_cache"
             preference_id = f"{cache_scenario}_{user_preference}"
             
-            # 更新 state["context"] 中的 preference_id
+            # update state["context"] in preference_id
             context = state.get("context")
             if context:
                 if isinstance(context, dict):
                     context = {**context, "preference_id": preference_id}
                 else:
-                    # 如果是对象，创建字典包装
+                    # If it is an object, create a dictionary wrapper
                     context_dict = {"user_id": getattr(context, "user_id", None)}
                     context_dict["preference_id"] = preference_id
                     context = context_dict
             else:
                 context = {"preference_id": preference_id}
             
-            # 将更新后的 context 设置回 state，确保后续方法都能使用
+            # Set the updated context back to state to ensure that subsequent methods can be used
             state["context"] = context
-            logger.info(f"🔧 [技术面分析师] 在 execute 中生成 preference_id: {preference_id}")
+            logger.info(f"🔧 [technical analyst] generated in execute preference_id: {preference_id}")
             
-            # 3. 从记忆系统获取历史上下文（如果有）
+            # 3. Get the historical context from the memory system (if any)
             historical_context = self._get_historical_context(ticker) if self.memory else None
             
-            # 4. 构建提示词（传递state给_build_system_prompt）
+            # 4. Build prompt word (pass state to _build_system_prompt)
             system_prompt = self._build_system_prompt(self.stance, state)
             user_prompt = self._build_user_prompt(ticker, analysis_date, reports, historical_context, state)
             
-            # 5. 调用LLM分析
+            # 5. Call LLM analysis
             from langchain_core.messages import SystemMessage, HumanMessage
             system_prompt = self._apply_global_trading_advice_guard(system_prompt)
             messages = [
@@ -230,51 +230,51 @@ class TechnicalAnalystV2(ResearcherAgent):
                 HumanMessage(content=user_prompt)
             ]
 
-            logger.info(f"系统提示词: {system_prompt}")
-            logger.info(f"用户提示词: {user_prompt}")
+            logger.info(f"System prompt word: {system_prompt}")
+            logger.info(f"User prompt words: {user_prompt}")
             
             if self._llm:
-                # 🔧 修复：使用 invoke_with_tools 支持工具调用（当没有缓存时需要调用工具获取市场数据）
+                # 🔧 Fix: Use invoke_with_tools to support tool calls (tools need to be called to obtain market data when there is no cache)
                 if self._langchain_tools:
-                    logger.info(f"🔧 [技术面分析师] 检测到工具，使用 invoke_with_tools 方法")
-                    # 准备分析提示词（工具执行后生成报告）
-                    analysis_prompt = """✅ 工具调用已完成，所有需要的数据都已获取。
+                    logger.info(f"🔧 [technical analyst] Tools detected, use invoke_with_tools method")
+                    # Prepare analysis prompt words (generate report after tool execution)
+                    analysis_prompt = """✅ The tool call has been completed and all required data has been obtained.
 
-🚫 **严格禁止再次调用工具**
+🚫 **It is strictly prohibited to call the tool again**
 
-📝 **现在请立即执行**：
-基于上述工具返回的真实数据，按照之前的分析要求和输出格式，直接撰写完整的持仓技术面分析报告。
+📝 **Please do it now**: 
+Based on the real data returned by the above tools, a complete position technical analysis report is directly written according to the previous analysis requirements and output format.
 
-⚠️ **重要提醒**：
-- 不要返回任何工具调用（tool_calls）
-- 不要说"我需要调用工具"或"让我先获取数据"
-- 直接输出中文分析报告内容
+⚠️ **Important reminder**: 
+- Do not return any tool calls (tool_calls)
+- don t say"I need to call the tool"or"Let me get the data first"
+- Directly output Chinese analysis report content
 
-请立即开始撰写报告："""
+Start writing your report now:"""
                     report_content = self.invoke_with_tools(messages, analysis_prompt=analysis_prompt)
                     report = self._parse_response(report_content)
                 else:
-                    logger.info(f"🔧 [技术面分析师] 无工具，直接调用 LLM")
+                    logger.info(f"🔧 [technical analyst] No tools, call directly LLM")
                     response = self._llm.invoke(messages)
                     report = self._parse_response(response.content)
             else:
                 raise ValueError("LLM not initialized")
             
-            # 6. 保存到记忆系统（如果有）
+            # 6. Save to memory system (if available)
             if self.memory:
                 self._save_to_memory(ticker, report)
             
-            # 7. 输出到state（只返回新增的字段，避免并发冲突）
+            # 7. Output to state (only newly added fields are returned to avoid concurrency conflicts)
             output_key = self.output_field or f"{self.researcher_type}_report"
 
-            logger.info(f"技术面分析师 {self.agent_id} 执行成功")
+            logger.info(f"technical analyst {self.agent_id} Executed successfully")
             return {
                 output_key: report
             }
 
         except Exception as e:
-            logger.error(f"技术面分析师 {self.agent_id} 执行失败: {e}", exc_info=True)
-            # 返回错误状态（只返回新增的字段）
+            logger.error(f"technical analyst {self.agent_id} Execution failed: {e}", exc_info=True)
+            # Return error status (only newly added fields are returned)
             output_key = self.output_field or f"{self.researcher_type}_report"
             return {
                 output_key: {
@@ -292,19 +292,19 @@ class TechnicalAnalystV2(ResearcherAgent):
         state: Dict[str, Any]
     ) -> str:
         """
-        构建用户提示词
+        Build user prompt words
         
-        根据是否有单股分析报告缓存，选择不同的提示词模板
+        Choose different prompt word templates based on whether there is a single stock analysis report cache.
         
         Args:
-            ticker: 股票代码（从position_info中提取）
-            analysis_date: 分析日期
-            reports: 各类数据（position_info, market_data等）
-            historical_context: 历史上下文
-            state: 当前状态
+            ticker: Stock symbol (extracted from position_info)
+            analysis_date: Analysis date
+            reports: Various types of data (position_info, market_data etc.)
+            historical_context: historical context
+            state: Current status
             
         Returns:
-            用户提示词
+            User prompt words
         """
         position_info = state.get("position_info", {})
         market_data = state.get("market_data", {})
@@ -313,12 +313,12 @@ class TechnicalAnalystV2(ResearcherAgent):
         code = position_info.get("code", ticker)
         name = position_info.get("name", "N/A")
         
-        # 检查是否有缓存报告
+        # Check if there are cached reports
         has_cache = stock_report.get("has_cache", False)
-        logger.info(f"🔧 [技术面分析师] 检查缓存状态: has_cache={has_cache}, code={code}")
+        logger.info(f"🔧 [technical analyst] Check cache status: has_cache={has_cache}, code={code}")
         
-        # 🔧 关键修复：preference_id 已经在 execute 方法中生成并设置到 state["context"] 中
-        # 这里直接从 context 中获取，确保与 _build_system_prompt 使用同一个 preference_id
+        # 🔧 Critical fix: preference_id has been generated and set to state["context"] in
+        # Get it directly from context here, make sure to use the same one as _build_system_prompt preference_id
         context = state.get("context")
         if context:
             if isinstance(context, dict):
@@ -326,140 +326,140 @@ class TechnicalAnalystV2(ResearcherAgent):
             else:
                 preference_id = getattr(context, "preference_id", "neutral")
         else:
-            # 降级：如果没有 context，使用默认值（这种情况不应该发生）
+            # Downgrade: if there is no context, use the default value (this should not happen)
             user_preference = state.get("user_preference", "neutral")
             cache_scenario = "with_cache" if has_cache else "without_cache"
             preference_id = f"{cache_scenario}_{user_preference}"
-            logger.warning(f"⚠️ [技术面分析师] context 不存在，使用降级 preference_id: {preference_id}")
+            logger.warning(f"⚠️ [technical analyst] context Does not exist, use downgrade preference_id: {preference_id}")
         
-        logger.info(f"🔧 [技术面分析师] 从 context 获取 preference_id: {preference_id}")
+        logger.info(f"🔧 [technical analyst] Get from context preference_id: {preference_id}")
         
-        # 准备模板变量（支持多种变量名映射，兼容不同模板）
+        # Prepare template variables (supports multiple variable name mappings and is compatible with different templates)
         from datetime import datetime
         cost_price = position_info.get('cost_price', 0)
         current_price = position_info.get('current_price', 0)
         
         variables = {
-            # 标准变量名
+            # Standard variable name
             "code": code,
             "name": name,
-            "ticker": code,  # 兼容旧模板的变量名
-            "company_name": name,  # 兼容旧模板的变量名
+            "ticker": code,  # Variable names compatible with old templates
+            "company_name": name,  # Variable names compatible with old templates
             "cost_price": f"{cost_price:.2f}",
             "current_price": f"{current_price:.2f}",
-            # 🔧 修复：unrealized_pnl_pct 在数据源中已经是百分比格式（如 6.05），不需要再用 :.2% 格式化
+            # 🔧 Fix: unrealized_pnl_pct is already in percentage format (such as 6.05) in the data source and does not need to be used anymore :.2% Format
             "unrealized_pnl_pct": f"{position_info.get('unrealized_pnl_pct', 0):.2f}%",
-            "market_data_summary": market_data.get('summary', '无K线数据'),
-            "technical_indicators": market_data.get('technical_indicators', '无技术指标数据'),
-            # 日期相关
+            "market_data_summary": market_data.get('summary', 'No K line data'),
+            "technical_indicators": market_data.get('technical_indicators', 'No technical indicator data'),
+            # Date related
             "current_date": datetime.now().strftime("%Y-%m-%d"),
             "analysis_date": analysis_date,
-            # 价格相关（从市场数据中提取，如果没有则使用默认值）
-            "resistance_price": market_data.get('resistance_price', f"{current_price * 1.05:.2f}"),  # 默认5%上涨
-            "support_price": market_data.get('support_price', f"{current_price * 0.95:.2f}"),  # 默认5%下跌
+            # Price related (extracted from market data, default value used if none)
+            "resistance_price": market_data.get('resistance_price', f"{current_price * 1.05:.2f}"),  # Default 5% increase
+            "support_price": market_data.get('support_price', f"{current_price * 0.95:.2f}"),  # Default 5% drop
             "secondary_resistance": market_data.get('secondary_resistance', f"{current_price * 1.08:.2f}"),
             "secondary_support": market_data.get('secondary_support', f"{current_price * 0.92:.2f}"),
-            # 货币符号
+            # currency symbol
             "currency_symbol": "¥",
-            "currency_name": "人民币",
-            # RSI值（从市场数据中提取，如果没有则使用默认值）
+            "currency_name": "RMB",
+            # RSI Value (extracted from market data, default value used if none)
             "rsi_value": market_data.get('rsi', "50"),
-            # 其他持仓信息
+            # Other position information
             "holding_days": position_info.get('holding_days', 0),
-            "industry": position_info.get('industry', '未知'),
+            "industry": position_info.get('industry', 'unknown'),
             "quantity": position_info.get('quantity', 0),
             "market_value": f"{position_info.get('market_value', 0):.2f}",
         }
         
-        # 如果有缓存，添加市场报告内容（模板会根据是否有内容来显示）
+        # If there is cache, add market report content (the template will be displayed based on whether there is content)
         if has_cache:
             reports_data = stock_report.get("reports", {})
             market_report_content = reports_data.get("market_report", "")[:2000]
             variables["market_report"] = market_report_content
-            variables["has_cache"] = "true"  # 标志位，模板可以用这个判断
-            logger.info(f"🔧 [技术面分析师] 模板变量准备完成: market_report存在=True, 长度={len(market_report_content)}")
+            variables["has_cache"] = "true"  # Flag bit, the template can use this to judge
+            logger.info(f"🔧 [technical analyst] Template variables are ready: market_report exist=True, length={len(market_report_content)}")
         else:
-            variables["market_report"] = ""  # 空字符串，模板不会显示这部分
+            variables["market_report"] = ""  # Empty string, the template will not display this part
             variables["has_cache"] = "false"
-            logger.info(f"🔧 [技术面分析师] 模板变量准备完成: market_report存在=False")
+            logger.info(f"🔧 [technical analyst] Template variables are ready: market_report exist=False")
         
-        # 尝试从数据库加载模板（preference_id 已经在 execute 方法中设置到 context 中）
+        # Try loading the template from the database (preference_id has been set to the context in the execute method)
         try:
-            # 从 state 中提取 context（已经包含 preference_id）
+            # Extract context from state (already contains preference_id)
             context = state.get("context") if state else None
             
-            logger.info(f"🔧 [技术面分析师] 传递 preference_id 到模板系统: {preference_id}")
+            logger.info(f"🔧 [technical analyst] Pass preference_id to template system: {preference_id}")
 
             prompt = self._get_prompt_from_template(
-                agent_type="position_analysis_v2",  # 持仓分析Agent类型 v2.0（与工作流ID一致）
-                agent_name="pa_technical_v2",    # 持仓技术面分析师v2.0
+                agent_type="position_analysis_v2",  # Position analysis Agent type v2.0 (consistent with workflow ID)
+                agent_name="pa_technical_v2",    # Position Technical Analyst v2.0
                 variables=variables,
-                context=context,  # context 已经包含 preference_id
+                context=context,  # context Already included preference_id
                 fallback_prompt=None
             )
             if prompt:
-                logger.info(f"✅ [技术面分析师] 从数据库加载提示词模板 (场景: {preference_id}, 长度: {len(prompt)})")
+                logger.info(f"✅ [technical analyst] Load prompt word template from database (scene: {preference_id}, length: {len(prompt)})")
                 if not has_cache:
                     return prompt.rstrip() + _build_market_data_tool_date_guard(code, analysis_date)
                 return prompt
         except Exception as e:
-            logger.warning(f"⚠️ [技术面分析师] 从数据库加载提示词失败: {e}，使用降级提示词")
+            logger.warning(f"⚠️ [technical analyst] Failed to load prompt words from database: {e}, Use demotion prompts")
         
-        # 降级：使用硬编码提示词（根据has_cache选择不同内容）
+        # Downgrade: Use hardcoded prompt words (select different content based on has_cache)
         if has_cache:
             reports_data = stock_report.get("reports", {})
             market_report = reports_data.get("market_report", "")[:2000]
-            return f"""请基于以下单股技术面分析报告和持仓信息，进行持仓技术面分析：
+            return f"""Please conduct position technical analysis based on the following single stock technical analysis report and position information:
 
-=== 单股技术面分析报告（参考）===
+=== Single stock technical analysis report (reference)===
 {market_report}
 
-=== 持仓信息 ===
-- 股票代码: {code}
-- 股票名称: {name}
-- 成本价: {position_info.get('cost_price', 0):.2f}
-- 现价: {position_info.get('current_price', 0):.2f}
-- 浮动盈亏: {position_info.get('unrealized_pnl_pct', 0):.2f}%
+=== Position information ===
+- Stock code: {code}
+- Stock name: {name}
+- cost price: {position_info.get('cost_price', 0):.2f}
+- Current price: {position_info.get('current_price', 0):.2f}
+- floating profit and loss: {position_info.get('unrealized_pnl_pct', 0):.2f}%
 
-请结合持仓情况（成本价、盈亏等），对技术面进行持仓视角的分析：
-1. 当前趋势结构与持仓成本的关系
-2. 动量、成交量与波动是否改善或走弱
-3. 乐观与审慎证据之间是否一致
-4. 需要继续跟踪的技术验证信号
-5. 技术面评分（1-10分）
+Please combine the position situation (cost price, profit and loss, etc.) to analyze the technical position perspective:
+1. The relationship between the current trend structure and the cost of holding a position
+2. Are Momentum, Volume and Volatility Improving or Weakening?
+3. Is there consistency between optimism and caution evidence?
+4. Technical verification signals that need to be followed up
+5. Technical score (1-10 points)
 
-禁止输出买卖建议、支撑阻力具体价位、目标价或止损止盈。"""
+It is prohibited to output buying and selling recommendations, specific support and resistance prices, target prices or stop-loss and take-profit."""
         else:
-            return f"""请分析以下持仓股票的技术面：
+            return f"""Please analyze the technical aspects of the following stocks:
 
-=== 持仓信息 ===
-- 股票代码: {code}
-- 股票名称: {name}
-- 成本价: {position_info.get('cost_price', 0):.2f}
-- 现价: {position_info.get('current_price', 0):.2f}
-- 浮动盈亏: {position_info.get('unrealized_pnl_pct', 0):.2f}%
+=== Position information ===
+- Stock code: {code}
+- Stock name: {name}
+- cost price: {position_info.get('cost_price', 0):.2f}
+- Current price: {position_info.get('current_price', 0):.2f}
+- floating profit and loss: {position_info.get('unrealized_pnl_pct', 0):.2f}%
 
-=== 市场数据 ===
-{market_data.get('summary', '无K线数据')}
+=== market data ===
+{market_data.get('summary', 'No K line data')}
 
-=== 技术指标 ===
-{market_data.get('technical_indicators', '无技术指标数据')}
+=== Technical indicators ===
+{market_data.get('technical_indicators', 'No technical indicator data')}
 
-请撰写详细的技术面分析报告，包括：
-1. 趋势判断
-2. 技术指标分析
-3. 动量与波动状态
-4. 需要继续跟踪的技术验证信号
-5. 技术面评分（1-10分）
+Please write a detailed technical analysis report, including:
+1. Trend judgment
+2. Technical indicator analysis
+3. Momentum and wave states
+4. Technical verification signals that need to be followed up
+5. Technical score (1-10 points)
 
-禁止输出买卖建议、支撑阻力具体价位、目标价或止损止盈。""" + _build_market_data_tool_date_guard(code, analysis_date)
+It is prohibited to output buying and selling recommendations, specific support and resistance prices, target prices or stop-loss and take-profit.""" + _build_market_data_tool_date_guard(code, analysis_date)
 
     def _get_required_reports(self) -> List[str]:
         """
-        获取需要的数据列表
+        Get the required data list
         
         Returns:
-            数据字段名列表
+            List of data field names
         """
         return [
             "position_info",

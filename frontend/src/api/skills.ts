@@ -1,6 +1,6 @@
 import request from './request'
 
-// Skill 参数
+// Skill parameters
 export interface SkillParameter {
   name: string
   type: string
@@ -9,14 +9,14 @@ export interface SkillParameter {
   default?: any
 }
 
-// Skill 返回值
+// Skill return value
 export interface SkillReturns {
   type: string
   description: string
   json_schema?: Record<string, any>
 }
 
-// Skill 实现
+// Skill realize
 export interface SkillImplementation {
   type: 'python' | 'http' | 'mcp'
   // python
@@ -36,7 +36,7 @@ export interface SkillImplementation {
   tool_name?: string
 }
 
-// Skill 响应
+// Skill response
 export interface SkillData {
   id: string
   name: string
@@ -61,14 +61,14 @@ export interface SkillData {
   updated_at: string | null
 }
 
-// Skill 分类统计
+// Skill Classification statistics
 export interface SkillCategory {
   id: string
   name: string
   count: number
 }
 
-// 创建/更新 Skill 请求
+// Create/Update Skill Request
 export interface SkillCreateRequest {
   name: string
   description: string
@@ -87,18 +87,18 @@ export interface SkillCreateRequest {
   fc_enabled?: boolean
 }
 
-// 导入 SKILL.md 请求
+// Import SKILL.md request
 export interface SkillImportRequest {
   content: string
 }
 
-// 导出 Skill 响应
+// Export skill response
 export interface SkillExportResponse {
   content: string
   filename: string
 }
 
-// 测试 Skill 请求
+// Test Skill Request
 export interface SkillTestRequest {
   skill_name: string
   args: Record<string, any>
@@ -106,7 +106,7 @@ export interface SkillTestRequest {
   timeout?: number
 }
 
-// 测试 Skill 响应
+// Test Skill Response
 export interface SkillTestResult {
   success: boolean
   result?: any
@@ -114,7 +114,7 @@ export interface SkillTestResult {
   execution_time_ms: number
 }
 
-// GitHub 仓库中的 Skill
+// GitHub in warehouse Skill
 export interface GitHubRepoSkill {
   path: string
   name: string
@@ -123,7 +123,7 @@ export interface GitHubRepoSkill {
   size: number
 }
 
-// GitHub 仓库响应
+// GitHub warehouse response
 export interface GitHubRepoResponse {
   owner: string
   repo: string
@@ -131,7 +131,7 @@ export interface GitHubRepoResponse {
   readme?: string
 }
 
-// 从 GitHub 导入请求
+// Import requests from GitHub
 export interface ImportFromGitHubRequest {
   owner: string
   repo: string
@@ -139,7 +139,7 @@ export interface ImportFromGitHubRequest {
   test_args?: Record<string, any>
 }
 
-// 导入并测试响应
+// Import and test the response
 export interface ImportWithTestResponse {
   skill: SkillData
   test_result?: SkillTestResult
@@ -155,7 +155,7 @@ export interface SmitheryServer {
   install_command: string
 }
 
-// 腾讯 SkillHub 技能
+// Tencent SkillHub skills
 export interface SkillHubSkill {
   skill_id: string
   display_name: string
@@ -170,20 +170,20 @@ export interface SkillHubSkill {
   install_command: string
 }
 
-// SkillHub 列表响应
+// SkillHub list response
 export interface SkillHubListResponse {
   total: string
   skills: SkillHubSkill[]
   featured: SkillHubSkill[]
 }
 
-// 从 SkillHub 导入请求
+// Import requests from SkillHub
 export interface ImportFromSkillHubRequest {
   skill_id: string
   test_args?: Record<string, any>
 }
 
-// MCP Hub 中国服务器
+// MCP Hub China server
 export interface MCPHubServer {
   server_id: number
   qualified_name: string
@@ -197,7 +197,7 @@ export interface MCPHubServer {
   package_url: string
 }
 
-// MCP Hub 列表响应
+// MCP Hub list response
 export interface MCPHubListResponse {
   total: number
   page: number
@@ -205,7 +205,7 @@ export interface MCPHubListResponse {
   servers: MCPHubServer[]
 }
 
-// AgentHub 资源项
+// AgentHub Resource item
 export interface AgentHubItem {
   id: number
   pkg_id: string
@@ -221,13 +221,13 @@ export interface AgentHubItem {
   icon_url: string
 }
 
-// AgentHub 搜索响应
+// AgentHub search response
 export interface AgentHubSearchResponse {
   total: number
   items: AgentHubItem[]
 }
 
-// 从 AgentHub 导入请求
+// Import requests from AgentHub
 export interface ImportFromAgentHubRequest {
   pkg_id: string
   test_args?: Record<string, any>
@@ -263,7 +263,7 @@ export interface ClawHubInstallResponse {
   message: string
 }
 
-// ZIP / URL 导入响应
+// ZIP / URL Import response
 export interface ImportZipResponse {
   success: boolean
   skill_name: string
@@ -317,34 +317,34 @@ export interface CredentialStatusResponse {
   missing_required: string[]
 }
 
-// API 函数
+// API function
 export const skillsApi = {
-  // 获取所有 Skill
+  // Get all Skill
   listSkills: async (params?: { category?: string; enabled?: boolean; skill_type?: string }): Promise<SkillData[]> => {
     return await request.get<SkillData[]>('/api/skills', { params }) as unknown as SkillData[]
   },
 
-  // 获取 Skill 分类统计
+  // Get Skill category statistics
   listCategories: async (): Promise<SkillCategory[]> => {
     return await request.get<SkillCategory[]>('/api/skills/categories') as unknown as SkillCategory[]
   },
 
-  // 创建 Skill
+  // Create Skill
   createSkill: async (data: SkillCreateRequest): Promise<SkillData> => {
     return await request.post<SkillData>('/api/skills', data) as unknown as SkillData
   },
 
-  // 导入 SKILL.md 内容
+  // Import SKILL.md content
   importSkill: async (content: string): Promise<SkillData> => {
     return await request.post<SkillData>('/api/skills/import', { content }) as unknown as SkillData
   },
 
-  // 从 URL 导入 SKILL.md
+  // Import from URL SKILL.md
   importSkillFromUrl: async (url: string): Promise<SkillData> => {
     return await request.post<SkillData>('/api/skills/import-url', { url }) as unknown as SkillData
   },
 
-  // 上传 SKILL.md 文件
+  // Upload SKILL.md file
   importSkillFile: async (file: File): Promise<SkillData> => {
     const formData = new FormData()
     formData.append('file', file)
@@ -353,87 +353,87 @@ export const skillsApi = {
     }) as unknown as SkillData
   },
 
-  // 获取 Skill 详情
+  // Get Skill details
   getSkill: async (skillName: string): Promise<SkillData> => {
     return await request.get<SkillData>(`/api/skills/${skillName}`) as unknown as SkillData
   },
 
-  // 更新 Skill
+  // update Skill
   updateSkill: async (skillName: string, data: SkillCreateRequest): Promise<SkillData> => {
     return await request.put<SkillData>(`/api/skills/${skillName}`, data) as unknown as SkillData
   },
 
-  // 删除 Skill
+  // Delete Skill
   deleteSkill: async (skillName: string): Promise<{ success?: boolean; message?: string }> => {
     return await request.delete(`/api/skills/${skillName}`) as unknown as { success?: boolean; message?: string }
   },
 
-  // 启用/禁用 Skill
+  // enable/disable Skill
   toggleSkill: async (skillName: string, enabled: boolean) => {
     return await request.post(`/api/skills/${skillName}/toggle`, { enabled })
   },
 
-  // 导出 Skill 为 SKILL.md
+  // Export Skill as SKILL.md
   exportSkill: async (skillName: string): Promise<SkillExportResponse> => {
     return await request.get<SkillExportResponse>(`/api/skills/${skillName}/export`) as unknown as SkillExportResponse
   },
 
-  // 测试 Skill
+  // test Skill
   testSkill: async (data: SkillTestRequest): Promise<SkillTestResult> => {
     return await request.post<SkillTestResult>('/api/skills/test', data) as unknown as SkillTestResult
   },
 
-  // 获取 GitHub 仓库中的 Skill 列表
+  // Get the list of Skills in the GitHub repository
   listGitHubRepoSkills: async (owner: string, repo: string): Promise<GitHubRepoResponse> => {
     return await request.get<GitHubRepoResponse>(`/api/skills/github/repo/${owner}/${repo}`) as unknown as GitHubRepoResponse
   },
 
-  // 从 GitHub 导入 Skill
+  // Import from GitHub Skill
   importFromGitHub: async (data: ImportFromGitHubRequest): Promise<ImportWithTestResponse> => {
     return await request.post<ImportWithTestResponse>('/api/skills/import-github', data) as unknown as ImportWithTestResponse
   },
 
-  // 获取 Smithery MCP Server 列表
+  // Get Smithery MCP Server list
   listSmitheryServers: async (): Promise<SmitheryServer[]> => {
     return await request.get<SmitheryServer[]>('/api/skills/smithery/servers') as unknown as SmitheryServer[]
   },
 
-  // 获取腾讯 SkillHub 技能列表
+  // Get Tencent SkillHub skill list
   listSkillHubSkills: async (params?: { keyword?: string }): Promise<SkillHubListResponse> => {
     return await request.get<SkillHubListResponse>('/api/skills/skillhub/skills', { params }) as unknown as SkillHubListResponse
   },
 
-  // 从 SkillHub 导入 Skill
+  // Import from SkillHub Skill
   importFromSkillHub: async (data: ImportFromSkillHubRequest): Promise<ImportWithTestResponse> => {
     return await request.post<ImportWithTestResponse>('/api/skills/import-skillhub', data) as unknown as ImportWithTestResponse
   },
 
-  // 获取 MCP Hub 中国服务器列表
+  // Get MCP Hub China server list
   listMCPHubServers: async (params?: { page?: number; page_size?: number; keyword?: string }): Promise<MCPHubListResponse> => {
     return await request.get<MCPHubListResponse>('/api/skills/mcphub/servers', { params }) as unknown as MCPHubListResponse
   },
 
-  // 搜索 AgentHub 资源
+  // Search AgentHub resources
   searchAgentHub: async (params?: { q?: string; type_filter?: string; page?: number; page_size?: number }): Promise<AgentHubSearchResponse> => {
     return await request.get<AgentHubSearchResponse>('/api/skills/agenthub/search', { params }) as unknown as AgentHubSearchResponse
   },
 
-  // 从 AgentHub 导入 Skill
+  // Import from AgentHub Skill
   importFromAgentHub: async (data: ImportFromAgentHubRequest): Promise<ImportWithTestResponse> => {
     return await request.post<ImportWithTestResponse>('/api/skills/import-agenthub', data) as unknown as ImportWithTestResponse
   },
 
-  // 搜索 ClawHub Skill
+  // Search ClawHub Skill
   searchClawHub: async (params: { q: string; limit?: number }): Promise<ClawHubSearchResponse> => {
     return await request.get<ClawHubSearchResponse>('/api/skills/clawhub/search', { params }) as unknown as ClawHubSearchResponse
   },
 
-  // 从 ClawHub 安装 Skill
+  // Install from ClawHub Skill
   installClawHub: async (data: { slug: string; version?: string; tag?: string }): Promise<ClawHubInstallResponse> => {
     return await request.post<ClawHubInstallResponse>('/api/skills/install-clawhub', data) as unknown as ClawHubInstallResponse
   },
 
-  // 上传 ZIP 文件导入 Skill
+  // Upload ZIP file to import Skill
   importZip: async (file: File): Promise<ImportZipResponse> => {
     const formData = new FormData()
     formData.append('file', file)
@@ -442,12 +442,12 @@ export const skillsApi = {
     }) as unknown as ImportZipResponse
   },
 
-  // 通过 URL 下载导入 Skill
+  // Import via URL download Skill
   importFromUrl: async (data: ImportUrlRequest): Promise<ImportZipResponse> => {
     return await request.post<ImportZipResponse>('/api/skills/import-url', data) as unknown as ImportZipResponse
   },
 
-  // 手动安装某个 Skill 的依赖（requirements.txt）
+  // Manually install the dependencies of a Skill (requirements.txt)
   installSkillDeps: async (skillName: string): Promise<InstallDepsResponse> => {
     return await request.post<InstallDepsResponse>(
       `/api/skills/${encodeURIComponent(skillName)}/install-deps`,
@@ -455,27 +455,27 @@ export const skillsApi = {
     ) as unknown as InstallDepsResponse
   },
 
-  // 导入本地 Skill 包
+  // Import local skill package
   importLocalSkill: async (data: { skill_dir: string }) => {
     return await request.post('/api/skills/import-local', data)
   },
 
-  // 列出本地 Skill 包
+  // List local skill packages
   listLocalSkills: async (): Promise<LocalSkillItem[]> => {
     return await request.get<LocalSkillItem[]>('/api/skills/local') as unknown as LocalSkillItem[]
   },
 
-  // 获取 Skill 凭证状态
+  // Get Skill Credential Status
   getCredentialStatus: async (skillName: string): Promise<CredentialStatusResponse> => {
     return await request.get<CredentialStatusResponse>(`/api/skills/${skillName}/credentials`) as unknown as CredentialStatusResponse
   },
 
-  // 保存 Skill 凭证
+  // Save Skill Credentials
   saveCredentials: async (skillName: string, credentials: Record<string, string>) => {
     return await request.post(`/api/skills/${skillName}/credentials`, { credentials })
   },
 
-  // 通过脚本命令配置凭证
+  // Configure credentials via script commands
   configureCredentialViaScript: async (skillName: string, data: { config_command: string; credential_value: string; script_path?: string; timeout?: number }) => {
     return await request.post(`/api/skills/${skillName}/credentials/configure-script`, data)
   },

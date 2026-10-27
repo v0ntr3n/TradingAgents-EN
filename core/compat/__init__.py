@@ -1,7 +1,7 @@
 """
-兼容层模块
+Compatibility layer module
 
-提供旧代码到新架构的适配器
+Provides adapters from old code to new architecture
 """
 
 from .legacy_adapter import LegacyToolkitAdapter

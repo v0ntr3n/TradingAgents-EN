@@ -1,30 +1,30 @@
 <template>
   <div class="case-library-table">
-    <el-empty v-if="!loading && items.length === 0" description="暂无案例，将复盘结果加入案例库以便日后回顾" />
+    <el-empty v-if="!loading && items.length === 0" description="There are no cases yet. The review results will be added to the case library for future review." />
     
     <el-table v-else :data="items" v-loading="loading" stripe>
-      <el-table-column prop="code" label="股票代码" width="100">
+      <el-table-column prop="code" label="Stock code" width="100">
         <template #default="{ row }">
           <el-link type="primary" :href="`/stocks/${row.code}`" class="stock-link">
             {{ row.code }}
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column prop="name" label="股票名称" width="120">
+      <el-table-column prop="name" label="Stock name" width="120">
         <template #default="{ row }">
           <el-link type="primary" :href="`/stocks/${row.code}`" class="stock-link">
             {{ row.name }}
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column prop="realized_pnl" label="实现盈亏" width="120" align="right">
+      <el-table-column prop="realized_pnl" label="Realize profit and loss" width="120" align="right">
         <template #default="{ row }">
           <span :class="row.realized_pnl >= 0 ? 'positive' : 'negative'">
             {{ formatPnl(row.realized_pnl) }}
           </span>
         </template>
       </el-table-column>
-      <el-table-column prop="tags" label="标签" min-width="150">
+      <el-table-column prop="tags" label="label" min-width="150">
         <template #default="{ row }">
           <el-tag 
             v-for="tag in (row.tags || [])" 
@@ -37,19 +37,19 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="created_at" label="创建时间" width="160">
+      <el-table-column prop="created_at" label="creation time" width="160">
         <template #default="{ row }">
           {{ formatDateTime(row.created_at) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="150" fixed="right">
+      <el-table-column label="Operation" width="150" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" size="small" @click="$emit('view', row.review_id)">
-            查看详情
+            View details
           </el-button>
-          <el-popconfirm title="确定从案例库移除？" @confirm="$emit('delete', row.review_id)">
+          <el-popconfirm title="Are you sure you want to remove it from the case library?" @confirm="$emit('delete', row.review_id)">
             <template #reference>
-              <el-button link type="danger" size="small">移除</el-button>
+              <el-button link type="danger" size="small">Remove</el-button>
             </template>
           </el-popconfirm>
         </template>
@@ -114,8 +114,8 @@ const handlePageChange = (page: number) => {
     }
   }
   
-  .positive { color: #f56c6c; }  // 中国习惯：红色表示盈利（正数）
-  .negative { color: #67c23a; }  // 中国习惯：绿色表示亏损（负数）
+  .positive { color: #f56c6c; }  // Chinese custom: red indicates profit (positive number)
+  .negative { color: #67c23a; }  // Chinese custom: green indicates loss (negative number)
   
   .pagination {
     margin-top: 16px;

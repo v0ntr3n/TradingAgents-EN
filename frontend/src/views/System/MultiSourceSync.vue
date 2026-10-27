@@ -1,15 +1,15 @@
 <template>
   <div class="multi-source-sync">
-    <!-- 页面头部 -->
+    <!-- Page header -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-info">
           <h1 class="page-title">
             <el-icon class="title-icon"><Connection /></el-icon>
-            多数据源同步
+            Synchronization of multiple data sources
           </h1>
           <p class="page-description">
-            管理和监控多个数据源的股票基础信息同步，支持自动fallback和优先级配置
+            Manage and monitor the synchronization of basic stock information from multiple data sources, supporting automatic fallback and priority configuration
           </p>
         </div>
         <div class="header-actions">
@@ -20,23 +20,23 @@
             @click="runFullTest"
           >
             <el-icon><Operation /></el-icon>
-            全面测试
+            Comprehensive testing
           </el-button>
         </div>
       </div>
     </div>
 
-    <!-- 主要内容 -->
+    <!-- Main content -->
     <div class="page-content">
       <el-row :gutter="24">
-        <!-- 左侧列 -->
+        <!-- left column -->
         <el-col :lg="12" :md="24" :sm="24">
-          <!-- 数据源状态 -->
+          <!-- Data source status -->
           <div class="content-section">
             <DataSourceStatus ref="dataSourceStatusRef" />
           </div>
           
-          <!-- 使用建议 -->
+          <!-- Usage suggestions -->
           <div class="content-section">
             <SyncRecommendations 
               @task-triggered="handleTaskTriggered"
@@ -45,14 +45,14 @@
           </div>
         </el-col>
 
-        <!-- 右侧列 -->
+        <!-- right column -->
         <el-col :lg="12" :md="24" :sm="24">
-          <!-- 同步控制 -->
+          <!-- Synchronous control -->
           <div class="content-section">
             <SyncControl @sync-completed="handleSyncCompleted" />
           </div>
           
-          <!-- 同步历史 -->
+          <!-- Sync history -->
           <div class="content-section">
             <SyncHistory />
           </div>
@@ -60,17 +60,17 @@
       </el-row>
     </div>
 
-    <!-- 测试结果对话框 -->
+    <!-- Test results dialog box -->
     <el-dialog
       v-model="testDialogVisible"
-      title="全面测试结果"
+      title="Comprehensive test results"
       width="80%"
       :close-on-click-modal="false"
     >
       <div v-if="testResults" class="test-results-dialog">
         <div class="test-summary">
           <el-alert
-            :title="`测试完成，共测试 ${testResults.length} 个数据源`"
+            :title="`Test completed, total tests ${testResults.length} data sources`"
             :type="getOverallTestResult()"
             :closable="false"
             show-icon
@@ -94,7 +94,7 @@
                   >
                     {{ result.name.toUpperCase() }}
                   </el-tag>
-                  <span class="priority-info">优先级: {{ result.priority }}</span>
+                  <span class="priority-info">priority: {{ result.priority }}</span>
                 </div>
 
                 <div class="result-message">
@@ -112,10 +112,10 @@
       </div>
       
       <template #footer>
-        <el-button @click="testDialogVisible = false">关闭</el-button>
+        <el-button @click="testDialogVisible = false">close</el-button>
         <el-button type="primary" @click="exportTestResults">
           <el-icon><Download /></el-icon>
-          导出结果
+          Export results
         </el-button>
       </template>
     </el-dialog>
@@ -137,48 +137,48 @@ import SyncRecommendations from '@/components/Sync/SyncRecommendations.vue'
 import SyncHistory from '@/components/Sync/SyncHistory.vue'
 import { isJdyunMode } from '@/utils/config'
 
-// 响应式数据
+// Responsive data
 const testing = ref(false)
 const testDialogVisible = ref(false)
 const testResults = ref<DataSourceTestResult[] | null>(null)
 const dataSourceStatusRef = ref()
 
-// 京东云版只展示 Tushare 和 AKShare
+// JD Cloud version only displays Tushare and AKShare
 const JDYUN_ALLOWED_SOURCES = new Set(['tushare', 'akshare'])
 const filterJdyunResults = (results: DataSourceTestResult[]) => {
   if (!isJdyunMode()) return results
   return results.filter(r => JDYUN_ALLOWED_SOURCES.has(r.name?.toLowerCase()))
 }
 
-// 运行全面测试
+// Run comprehensive tests
 const runFullTest = async () => {
   try {
     testing.value = true
-    ElMessage.info('正在进行全面测试，请稍候...')
+    ElMessage.info('Full testing in progress, please wait....')
 
-    // 不传递 sourceName，测试所有数据源
+    // Without passing sourceName, test all data sources
     const response = await testDataSources()
     if (response.success) {
       testResults.value = filterJdyunResults(response.data.test_results || [])
       testDialogVisible.value = true
       const availableCount = testResults.value.filter(r => r.available).length
-      ElMessage.success(`全面测试完成: ${availableCount}/${testResults.value.length} 数据源可用`)
+      ElMessage.success(`Comprehensive testing completed: ${availableCount}/${testResults.value.length} Data source available`)
     } else {
-      ElMessage.error(`测试失败: ${response.message}`)
+      ElMessage.error(`test failed: ${response.message}`)
     }
   } catch (err: any) {
-    console.error('全面测试失败:', err)
+    console.error('Full test failed:', err)
     if (err.code === 'ECONNABORTED') {
-      ElMessage.error('测试超时，请稍后重试。请确保网络连接稳定。')
+      ElMessage.error('Test timed out, please try again later. Please make sure your network connection is stable.')
     } else {
-      ElMessage.error(`测试失败: ${err.message}`)
+      ElMessage.error(`test failed: ${err.message}`)
     }
   } finally {
     testing.value = false
   }
 }
 
-// 获取整体测试结果
+// Get overall test results
 const getOverallTestResult = (): 'success' | 'warning' | 'info' | 'error' => {
   if (!testResults.value) return 'info'
 
@@ -187,7 +187,7 @@ const getOverallTestResult = (): 'success' | 'warning' | 'info' | 'error' => {
   return hasFailure ? 'warning' : 'success'
 }
 
-// 导出测试结果
+// Export test results
 const exportTestResults = () => {
   if (!testResults.value) return
 
@@ -208,28 +208,28 @@ const exportTestResults = () => {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
   
-  ElMessage.success('测试结果已导出')
+  ElMessage.success('Test results have been exported')
 }
 
-// 处理同步完成事件
+// Handle synchronization completion event
 const handleSyncCompleted = (status: string) => {
-  console.log('🎉 收到同步完成事件，状态:', status)
-  // 这里可以触发历史记录刷新
-  // 由于我们使用了组件引用，可以直接调用子组件的刷新方法
-  // 或者发射一个全局事件让历史组件监听
+  console.log('🎉 Received synchronization completion event, status:', status)
+  // Here you can trigger history refresh
+  // Since we use component references, we can directly call the refresh method of the subcomponent
+  // Or emit a global event for the history component to listen to
 }
 
-// 🔥 处理任务触发事件，刷新数据源状态
+// 🔥 Process task trigger events and refresh data source status
 const handleTaskTriggered = async () => {
-  console.log('🔄 任务已触发，刷新数据源状态')
+  console.log('🔄 The task has been triggered, refresh the data source status')
   if (dataSourceStatusRef.value && typeof dataSourceStatusRef.value.refreshStatus === 'function') {
     await dataSourceStatusRef.value.refreshStatus()
   }
 }
 
-// 🔥 处理任务恢复事件，刷新数据源状态
+// 🔥 Handle task recovery events and refresh data source status
 const handleTaskResumed = async () => {
-  console.log('🔄 任务已恢复，刷新数据源状态')
+  console.log('🔄 Task has been resumed, refresh data source status')
   if (dataSourceStatusRef.value && typeof dataSourceStatusRef.value.refreshStatus === 'function') {
     await dataSourceStatusRef.value.refreshStatus()
   }

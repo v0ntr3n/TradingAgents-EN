@@ -8,7 +8,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 const COURSE_IMAGES_DIR = resolve(__dirname, '../docs/07-courses/advanced/expanded/images')
 
-/** 开发时将 /course-images/* 映射到 docs 目录，构建后复制到 dist */
+/** When developing /course-images/* Map to the docs directory and copy to after building dist */
 function courseImagesPlugin() {
   return {
     name: 'course-images',
@@ -55,7 +55,7 @@ export default defineConfig({
         enabled: true
       }
     }),
-    // 自动按需组件导入
+    // Automatic on-demand component import
     Components({
       resolvers: [ElementPlusResolver()],
       dts: true
@@ -78,11 +78,11 @@ export default defineConfig({
     hmr: {
       overlay: false
     },
-    // 允许从项目根目录之外（例如 /docs）导入原始文件
+    // Allow importing raw files from outside the project root (e.g. /docs)
     fs: {
       allow: [
-        resolve(__dirname, '..'),  // 允许访问项目根目录
-        resolve(__dirname, '../docs')  // 明确允许访问 docs 目录
+        resolve(__dirname, '..'),  // Allow access to project root directory
+        resolve(__dirname, '../docs')  // Explicitly allow access to the docs directory
       ]
     },
     proxy: {
@@ -90,7 +90,7 @@ export default defineConfig({
         target: process.env.VITE_API_TARGET || 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
-        ws: true  // 启用 WebSocket 代理支持
+        ws: true  // Enable WebSocket proxy support
       }
     }
   },

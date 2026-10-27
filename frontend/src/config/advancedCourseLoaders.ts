@@ -1,19 +1,19 @@
 /**
- * 高级课程旧版加载器兼容层
+ * Advanced Course Legacy Loader Compatibility Layer
  *
- * 历史上这里会把高级课程正文直接打包进前端。为避免再次暴露高级内容，
- * 旧同步加载方式保留空实现，不再提供正文内容。
+ * Historically, the text of advanced courses has been packaged directly into the front end. To avoid exposure of advanced content again,
+ * The old synchronous loading method retains an empty implementation and no longer provides text content.
  */
 
 /**
- * 课程文件映射表
+ * Course file mapping table
  *
- * 旧版同步正文映射已下线，保留空对象仅用于兼容历史导入。
+ * The old version of synchronization body mapping has been offline, and empty objects are retained only for compatibility with historical import.
  */
 export const courseFileMap: Record<string, string> = {}
 
 /**
- * 根据文件名获取课程内容
+ * Get course content based on file name
  */
 export function getCourseContent(fileName: string): string | null {
   void fileName

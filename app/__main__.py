@@ -2,14 +2,14 @@ import os
 import sys
 import faulthandler
 
-# 🔧 确保项目根目录在 sys.path 中，以便能够导入 app 模块
-# 这对于便携版特别重要，因为虚拟环境可能不包含项目根目录
+# 🔧 Make sure the project root is in sys.path so that you can import the app module
+# This is especially important for portable versions, as the virtual environment may not contain the project root
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# 🔧 启用 faulthandler 捕获 segfault 等崩溃
-# 崩溃时会将 Python 调用栈输出到 logs/crash.log
+# 🔧 Enable faulthandler to capture crashes such as segfault
+# When crashing, the Python call stack will be output to logs/crash.log
 logs_dir = os.path.join(project_root, "logs")
 os.makedirs(logs_dir, exist_ok=True)
 crash_log_path = os.path.join(logs_dir, "crash.log")
@@ -18,15 +18,15 @@ try:
     faulthandler.enable(file=crash_log_file)
     print(f"🔧 Faulthandler enabled, crash log: {crash_log_path}")
 except (PermissionError, OSError) as e:
-    # crash.log 打开失败不阻塞启动（可能是权限问题或路径限制）
+    # crash.log Failure to open does not block startup (may be a permission issue or path restriction)
     faulthandler.enable()
     print(f"⚠️  Faulthandler enabled (stderr only), crash.log open failed: {e}")
 
 import uvicorn
 
 def main():
-    # 🔧 使用 pydantic settings 读取配置（会自动加载 .env 文件）
-    # 而不是 os.getenv()（只读取系统环境变量，不加载 .env）
+    # 🔧 Use pydantic settings to read the configuration (the .env file will be automatically loaded)
+    # instead of os.getenv() (Only read system environment variables, do not load .env)
     from app.core.config import settings
 
     uvicorn.run(

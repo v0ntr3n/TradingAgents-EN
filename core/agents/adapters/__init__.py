@@ -1,12 +1,12 @@
 """
-智能体适配器
+agent adapter
 
-将现有的函数式智能体适配为 BaseAgent 子类
+Adapt an existing functional agent to a BaseAgent subclass
 
-⚠️ 废弃警告：
-- 所有 v1.0 Agent（不带 _v2 后缀）已废弃，将在未来版本中移除。
-- 请使用对应的 v2 版本（如 MarketAnalystV2 替代 MarketAnalystAgent）。
-- v1 Agent 仍保留以支持向后兼容，但不应在新代码中使用。
+⚠️ Obsolete warning:
+- All v1.0 Agents (without the _v2 suffix) are deprecated and will be removed in a future release.
+- Please use the corresponding v2 version (such as MarketAnalystV2 instead of MarketAnalystAgent).
+- v1 Agent Still retained to support backward compatibility, but should not be used in new code.
 """
 
 import logging
@@ -15,10 +15,10 @@ from .legacy_adapter import LegacyAgentAdapter
 
 logger = logging.getLogger(__name__)
 
-# 🔥 发出模块级废弃警告
+# 🔥 Issue module-level deprecation warnings
 warnings.warn(
-    "v1.0 Agent（不带 _v2 后缀）已废弃，请使用 v2 版本。"
-    "v1 Agent 将在 TradingAgentsCN v4.0 中被移除。",
+    "v1.0 Agent (without _v2 suffix) is deprecated, please use v2 version."
+    "v1 Agent Will be removed in TradingAgentsCN v4.0.",
     DeprecationWarning,
     stacklevel=2
 )
@@ -32,7 +32,7 @@ from .social_analyst import SocialMediaAnalystAgent
 from .sector_analyst import SectorAnalystAgent
 from .index_analyst import IndexAnalystAgent
 
-# v2.0 基于基类的Agent
+# v2.0 Based on base class Agent
 from .bull_researcher_v2 import BullResearcherV2
 from .bear_researcher_v2 import BearResearcherV2
 from .research_manager_v2 import ResearchManagerV2
@@ -48,7 +48,7 @@ from .neutral_analyst_v2 import NeutralAnalystV2
 from .risk_self_debate_v2 import RiskSelfDebateV2
 from .chip_distribution_analyst_v2 import ChipDistributionAnalystV2
 
-# 复盘相关智能体 (v1 & v2)
+# Review related intelligence agents (v1 & v2)
 from .review import (
     # v1.0
     TimingAnalystAgent,
@@ -64,7 +64,7 @@ from .review import (
     ReviewManagerV2,
 )
 
-# 持仓分析相关智能体 (v1 & v2)
+# Intelligent agents related to position analysis (v1 & v2)
 from .position import (
     # v1.0
     TechnicalAnalystAgent,
@@ -88,7 +88,7 @@ __all__ = [
     "SocialMediaAnalystAgent",
     "SectorAnalystAgent",
     "IndexAnalystAgent",
-    # v2.0 基于基类的Agent
+    # v2.0 Based on base class Agent
     "BullResearcherV2",
     "BearResearcherV2",
     "ResearchManagerV2",
@@ -100,24 +100,24 @@ __all__ = [
     "IndexAnalystV2",
     "ChipDistributionAnalystV2",
     "RiskSelfDebateV2",
-    # 复盘相关 (v1)
+    # Review related (v1)
     "TimingAnalystAgent",
     "PositionAnalystAgent",
     "EmotionAnalystAgent",
     "AttributionAnalystAgent",
     "ReviewManagerAgent",
-    # 复盘相关 (v2)
+    # Review related (v2)
     "TimingAnalystV2",
     "PositionAnalystV2",
     "EmotionAnalystV2",
     "AttributionAnalystV2",
     "ReviewManagerV2",
-    # 持仓分析相关 (v1)
+    # Position analysis related (v1)
     "TechnicalAnalystAgent",
     "FundamentalAnalystAgent",
     "RiskAssessorAgent",
     "ActionAdvisorAgent",
-    # 持仓分析相关 (v2)
+    # Position analysis related (v2)
     "TechnicalAnalystV2",
     "FundamentalAnalystV2",
     "RiskAssessorV2",
@@ -126,24 +126,24 @@ __all__ = [
 
 
 # ============================================================
-# 自动注册新分析师到 AnalystRegistry
+# Automatically register new analysts to AnalystRegistry
 # ============================================================
 
 def _register_new_analysts():
     """
-    注册新的分析师到 AnalystRegistry
+    Register new analyst to AnalystRegistry
 
-    这些分析师不需要工具调用循环，直接执行并返回结果
+    These analysts do not require tool call loops, execute directly and return results
     
-    🔥 v3.0: 统一使用 _v2 后缀的 BUILTIN_AGENTS 元数据注册，
-    不再使用 v1 DEPRECATED 的 agent_id
+    🔥 v3.0: Unified use of BUILTIN_AGENTS metadata registration with _v2 suffix,
+    v1 DEPRECATED is no longer used agent_id
     """
     from ..analyst_registry import get_analyst_registry
     from ..config import BUILTIN_AGENTS
 
     registry = get_analyst_registry()
 
-    # 注册板块分析师 v2
+    # Registered sector analyst v2
     if "sector_analyst_v2" in BUILTIN_AGENTS:
         registry.register(
             "sector_analyst_v2",
@@ -152,7 +152,7 @@ def _register_new_analysts():
             override=True
         )
 
-    # 注册大盘分析师 v2
+    # Register as a market analyst v2
     if "index_analyst_v2" in BUILTIN_AGENTS:
         registry.register(
             "index_analyst_v2",
@@ -161,7 +161,7 @@ def _register_new_analysts():
             override=True
         )
 
-    # 注册复盘相关智能体 v2 到 AnalystRegistry
+    # Register review related intelligent agent v2 to AnalystRegistry
     review_agents = [
         ("timing_analyst_v2", TimingAnalystAgent),
         ("position_analyst_v2", PositionAnalystAgent),
@@ -179,7 +179,7 @@ def _register_new_analysts():
                 override=True
             )
 
-    # 注册持仓分析相关智能体 v2 到 AnalystRegistry
+    # Register position analysis related intelligent agent v2 to AnalystRegistry
     position_agents = [
         ("pa_technical_v2", TechnicalAnalystAgent),
         ("pa_fundamental_v2", FundamentalAnalystAgent),
@@ -196,7 +196,7 @@ def _register_new_analysts():
                 override=True
             )
 
-    # 同时注册到 AgentRegistry（用于工作流引擎）
+    # Also registered to AgentRegistry (for workflow engine)
     from ..registry import get_registry
     agent_registry = get_registry()
 
@@ -205,11 +205,11 @@ def _register_new_analysts():
         if agent_id in BUILTIN_AGENTS:
             try:
                 agent_registry.register(agent_class, override=True)
-                logger.info(f"✅ [AgentRegistry] 注册智能体: {agent_id}")
+                logger.info(f"✅ [AgentRegistry] Register agent: {agent_id}")
             except Exception as e:
-                logger.warning(f"⚠️ [AgentRegistry] 注册失败 {agent_id}: {e}")
+                logger.warning(f"⚠️ [AgentRegistry] Registration failed {agent_id}: {e}")
 
 
-# 模块加载时自动注册
+# Automatically register when module is loaded
 _register_new_analysts()
 

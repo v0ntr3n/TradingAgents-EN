@@ -1,4 +1,4 @@
-"""经济周期定位、货币环境分析与行业轮动信号工具。"""
+"""Economic cycle positioning, monetary environment analysis and industry rotation signal tools."""
 
 import datetime
 import json
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_db():
-    """获取同步 MongoDB 连接。"""
+    """Get a synchronous MongoDB connection."""
     from app.core.database import get_mongo_db_sync
 
     return get_mongo_db_sync()
@@ -46,7 +46,7 @@ def _safe_float(value: Any) -> Optional[float]:
 
 
 def _fetch_zh_us_rate() -> dict:
-    """通过 AKShare 获取中美收益率对比最新数据。"""
+    """Get the latest data comparing U.S. and Chinese yields with AKShare."""
     try:
         import akshare as ak
 
@@ -84,7 +84,7 @@ def _fetch_zh_us_rate() -> dict:
         if spread is not None and spread == spread:
             result["spread_cn"]["10Y-2Y"] = round(float(spread), 4)
 
-        # 取近 3 个月的历史记录用于趋势计算
+        # Take the past 3 months of historical records for trend calculations
         three_months_ago = latest["日期"] - pd.DateOffset(months=3)
         hist = df[df["日期"] >= three_months_ago].sort_values("日期")
         hist_records = []
@@ -103,19 +103,19 @@ def _fetch_zh_us_rate() -> dict:
 
         return result
     except Exception as e:
-        logger.warning("AKShare 中美收益率获取失败: %s", e)
+        logger.warning("AKShare Failed to obtain Sino-US yield: %s", e)
         return {"status": "error", "message": str(e)}
 
 
 def _fetch_csi300_daily(days: int = 90) -> dict:
-    """通过 AKShare 获取沪深 300 日线数据。"""
+    """Get CSI 300-day data through AKShare."""
     try:
         import akshare as ak
 
         df = ak.stock_zh_index_daily("sh000300")
         df["date"] = pd.to_datetime(df["date"])
         df = df.sort_values("date")
-        # 取最近 N 天
+        # Get the last N days
         cutoff = df["date"].max() - pd.Timedelta(days=days)
         df = df[df["date"] >= cutoff].copy()
         if df.empty:
@@ -133,7 +133,7 @@ def _fetch_csi300_daily(days: int = 90) -> dict:
             "records": records,
         }
     except Exception as e:
-        logger.warning("AKShare 沪深300获取失败: %s", e)
+        logger.warning("AKShare Failed to obtain CSI 300: %s", e)
         return {"status": "error", "message": str(e)}
 
 
@@ -141,14 +141,14 @@ def _compute_merrill_lynch_clock(
     market_return_3m: float,
     yield_change_3m: float,
 ) -> dict:
-    """根据市场回报率和收益率变化映射美林时钟四象限。
+    """Mapping the four quadrants of the Merrill Lynch Clock based on market returns and yield changes.
 
     Args:
-        market_return_3m: 沪深300近3个月收益率（%）
-        yield_change_3m: 中国10Y收益率近3个月变化（百分点）
+        market_return_3m: CSI 300 return rate in the past 3 months (%)
+        yield_change_3m: Changes in China s 10Y yield in the past three months (percentage points)
 
     Returns:
-        包含象限、推荐资产、信号描述的字典
+        Dictionary containing quadrants, recommended assets, signal descriptions
     """
     growth_direction = (
         "high"
@@ -161,28 +161,28 @@ def _compute_merrill_lynch_clock(
         else ("falling" if yield_change_3m < -0.2 else "stable")
     )
 
-    # 美林时钟映射
+    # Merrill Lynch Clock Map
     if growth_direction == "high" and inflation_direction == "rising":
         quadrant = "过热"
         recommended_asset = "商品"
-        signal_desc = "经济增长强劲，通胀上行，适合配置大宗商品和周期性资产"
+        signal_desc = "Economic growth is strong and inflation is rising, making it suitable for allocating commodities and cyclical assets."
     elif growth_direction == "low" and inflation_direction == "rising":
         quadrant = "滞涨"
         recommended_asset = "现金"
-        signal_desc = "经济增长放缓但通胀高企，现金为王，防御为主"
+        signal_desc = "Economic growth is slowing but inflation is high. Cash is king and defense is the priority."
     elif growth_direction == "low" and inflation_direction == "falling":
         quadrant = "衰退"
         recommended_asset = "债券"
-        signal_desc = "经济收缩，通胀回落，利率下行期债券表现最佳"
+        signal_desc = "The economy contracts, inflation falls, and bonds perform best during periods of falling interest rates."
     elif growth_direction == "high" and inflation_direction == "falling":
         quadrant = "复苏"
         recommended_asset = "股票"
-        signal_desc = "经济恢复增长，通胀温和，权益资产受益于企业盈利改善"
+        signal_desc = "The economy resumes growth, inflation is moderate, and equity assets benefit from improved corporate profits."
     else:
-        # 中性区域
+        # neutral zone
         quadrant = "过渡/模糊"
         recommended_asset = "均衡配置"
-        signal_desc = "信号不明确，建议股债均衡配置"
+        signal_desc = "The signal is unclear. It is recommended to have a balanced allocation of stocks and bonds."
 
     return {
         "quadrant": quadrant,
@@ -196,10 +196,10 @@ def _compute_merrill_lynch_clock(
     tool_id="get_economic_cycle_position",
     name="经济周期定位",
     description=(
-        "基于美林时钟框架，通过沪深300近3个月收益率（作为增长代理指标）和"
-        "中国10年期国债收益率近3个月变化（作为通胀代理指标），"
-        "自动定位当前经济周期所处的象限（复苏/过热/滞涨/衰退），"
-        "并给出对应的推荐资产配置方向。"
+        "Based on the Merrill Lynch clock framework, through the Shanghai and Shenzhen 300 return rate in the past three months (as a growth proxy indicator) and"
+        "Changes in China s 10-year government bond yield in the past three months (as a proxy indicator of inflation),"
+        "Automatically locate the quadrant of the current economic cycle (recovery/overheating/stagflation/recession),"
+        "And give the corresponding recommended asset allocation direction."
     ),
     category="fundamentals",
     is_online=True,
@@ -210,64 +210,64 @@ def _compute_merrill_lynch_clock(
     output_shape="structured_json",
     preferred_for=["经济周期位置判断", "美林时钟分析", "宏观资产配置参考"],
     when_to_use=(
-        "当用户询问当前经济处于什么周期阶段、美林时钟指向哪个象限、"
-        "应该配置股票/债券/商品/现金时使用。需要实时宏观数据支持。"
+        "When users ask what cycle stage the current economy is in and which quadrant the Merrill Lynch clock points to,"
+        "Should be used when allocating stocks/bonds/commodities/cash. Real-time macro data support is required."
     ),
     when_not_to_use=(
-        "不适合查询具体行业或个股的投资建议；"
-        "不适合替代详细的宏观研究报告；"
-        "当仅需要国债收益率数据时请使用 get_yield_curve_analysis。"
+        "Not suitable for inquiries about investment advice on specific industries or individual stocks;"
+        "Not suitable as a substitute for detailed macro research reports;"
+        "Use get_yield_curve_analysis when you only need Treasury yield data."
     ),
     returns=(
-        "返回 JSON 字符串，包含 cycle_position（周期阶段定位）、"
-        "gdp_proxy（沪深300近3个月收益率）、inflation_proxy（国债收益率变化）、"
-        "quadrant（美林时钟象限）、recommended_asset_class（推荐资产类别）、"
-        "data_quality（数据质量说明）等字段。"
+        "Returns a JSON string, including cycle_position (cycle phase positioning),"
+        "gdp_proxy (Shanghai and Shenzhen 300 yields in the past three months), inflation_proxy (changes in government bond yields),"
+        "quadrant (Merrill Lynch Clock Quadrant), recommended_asset_class (recommended asset class),"
+        "data_quality (Data quality description) and other fields."
     ),
     example="get_economic_cycle_position()",
     related_tools=["get_yield_curve_analysis", "get_monetary_environment", "get_macro_dashboard"],
 )
 def get_economic_cycle_position() -> str:
-    """获取经济周期定位（美林时钟）分析。
+    """Get Business Cycle Positioning (Merrill Lynch Clock) analysis.
 
-    通过 AKShare 实时获取沪深300指数收益率和国债收益率数据，
-    运用简化美林时钟框架判断当前周期所处位置及推荐资产配置。
+    Obtain real-time CSI 300 Index yield and treasury bond yield data through AKShare,
+    Use the simplified Merrill Lynch Clock Framework to determine the current cycle position and recommended asset allocation.
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            analysis_date: 分析日期（YYYY-MM-DD）
-            data_source: 数据来源说明
-            cycle_position: dict 周期定位——
-                — quadrant: 美林时钟象限
-                — recommended_asset_class: 推荐资产类别
-                — signal_description: 信号描述
-            gdp_proxy: dict 增长代理指标（沪深300近3个月收益率）——
-                — label: 指标标签
-                — value_pct: 收益率（%）
-                — direction: 方向: "高增长" | "低增长" | "中性"
-                — threshold_note: 阈值说明
-            inflation_proxy: dict 通胀代理指标（10Y国债收益率近3个月变化）——
-                — label: 指标标签
-                — value_change: 收益率变化
-                — direction: 方向: "上升" | "下降" | "平稳"
-                — threshold_note: 阈值说明
-            current_data: dict 当前数据——
-                — csi300_latest_close: 沪深300最新收盘价
-                — csi300_latest_date: 沪深300最新日期
-                — china_10y_yield: 中国10年期收益率
-                — china_10y_3m_ago: 3个月前的中国10年期收益率
-                — us_10y_yield: 美国10年期收益率
-                — cn_us_spread_10y: 中美10年期利差
-            data_quality: dict 数据质量——
-                — has_csi300_data: 是否有沪深300数据
-                — has_yield_history: 是否有收益率历史
-                — yield_history_days: 历史数据天数
-                — note: 说明文本
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            analysis_date: Analysis date (YYYY-MM-DD)
+            data_source: Data source description
+            cycle_position: dict Cycle positioning——
+                — quadrant: Merrill Lynch Clock Quadrant
+                — recommended_asset_class: Recommended asset classes
+                — signal_description: Signal description
+            gdp_proxy: dict Growth proxy indicator (CSI 300 return rate in the past 3 months)——
+                — label: Indicator label
+                — value_pct: Yield (%)
+                — direction: direction: "high growth" | "low growth" | "Neutral"
+                — threshold_note: Threshold description
+            inflation_proxy: dict Inflation proxy indicator (10Y Treasury bond yield changes in the past three months)——
+                — label: Indicator label
+                — value_change: Yield changes
+                — direction: direction: "rise" | "fall" | "Smooth"
+                — threshold_note: Threshold description
+            current_data: dict current data——
+                — csi300_latest_close: CSI 300 latest closing price
+                — csi300_latest_date: CSI 300 latest date
+                — china_10y_yield: China 10-year yield
+                — china_10y_3m_ago: 3 China s 10-year yield months ago
+                — us_10y_yield: US 10-year yield
+                — cn_us_spread_10y: China-U.S. 10-year interest rate spread
+            data_quality: dict Data quality——
+                — has_csi300_data: Is there CSI 300 data?
+                — has_yield_history: Is there a rate of return history?
+                — yield_history_days: Historical data days
+                — note: Description text
+            message: Error message (only status="error" exist)
     """
     try:
-        # 1. 获取中美收益率数据（含近3个月历史）
+        # 1. Obtain Sino-US yield data (including recent 3-month history)
         rate_data = _fetch_zh_us_rate()
         if "status" in rate_data and rate_data["status"] == "error":
             return json.dumps({
@@ -275,24 +275,24 @@ def get_economic_cycle_position() -> str:
                 "message": f"收益率数据获取失败: {rate_data.get('message')}",
             }, ensure_ascii=False, indent=2, default=str)
 
-        # 2. 获取沪深300日线数据
-        csi300 = _fetch_csi300_daily(days=120)  # 多取一些确保有3个月数据
+        # 2. Get Shanghai and Shenzhen 300-day line data
+        csi300 = _fetch_csi300_daily(days=120)  # Take more and make sure you have 3 months of data
         if csi300.get("status") != "ok":
             return json.dumps({
                 "status": "error",
                 "message": f"沪深300数据获取失败: {csi300.get('message')}",
             }, ensure_ascii=False, indent=2, default=str)
 
-        # 3. 计算沪深300近3个月收益率
+        # 3. Calculate the CSI 300 return rate in the past 3 months
         records = csi300.get("records", [])
         if len(records) < 2:
             return json.dumps({
                 "status": "error",
-                "message": "沪深300数据不足，无法计算收益率",
+                "message": "Insufficient data on the CSI 300 makes it impossible to calculate the rate of return",
             }, ensure_ascii=False, indent=2, default=str)
 
         latest_close = records[-1]["close"]
-        # 找到大约90天前的收盘价
+        # Find the closing price approximately 90 days ago
         target_date = datetime.datetime.strptime(records[-1]["date"], "%Y-%m-%d") - datetime.timedelta(days=90)
         three_month_ago = None
         for rec in records:
@@ -305,16 +305,16 @@ def get_economic_cycle_position() -> str:
 
         market_return_3m = round((latest_close - three_month_ago) / three_month_ago * 100, 2)
 
-        # 4. 计算中国10Y收益率近3个月变化
+        # 4. Calculate the changes in China's 10Y yield in the past three months
         history = rate_data.get("history", [])
         china_10y_now = rate_data.get("china", {}).get("10年")
         if china_10y_now is None:
             return json.dumps({
                 "status": "error",
-                "message": "缺少中国10年期国债收益率数据",
+                "message": "Missing data on China s 10-year government bond yield",
             }, ensure_ascii=False, indent=2, default=str)
 
-        # 找大约90天前的10Y收益率
+        # Find the 10Y return rate approximately 90 days ago
         china_10y_3m_ago = None
         if history:
             target_dt = datetime.datetime.strptime(rate_data["date"], "%Y-%m-%d") - datetime.timedelta(days=90)
@@ -331,17 +331,17 @@ def get_economic_cycle_position() -> str:
         else:
             yield_change_3m = 0.0
 
-        # 5. 美林时钟定位
+        # 5. Merrill Lynch Clock Positioning
         clock = _compute_merrill_lynch_clock(market_return_3m, yield_change_3m)
 
-        # 6. 构建结果
+        # 6. Build results
         today = datetime.date.today()
         payload = {
             "status": "ok",
             "analysis_date": today.isoformat(),
             "data_source": (
-                "沪深300收益率来自 akshare.stock_zh_index_daily('sh000300')，"
-                "国债收益率来自 akshare.bond_zh_us_rate()"
+                "The CSI 300 yield rate comes from akshare.stock_zh_index_daily('sh000300'), "
+                "Treasury bond yields come from akshare.bond_zh_us_rate()"
             ),
             "cycle_position": {
                 "quadrant": clock["quadrant"],
@@ -349,16 +349,16 @@ def get_economic_cycle_position() -> str:
                 "signal_description": clock["signal_description"],
             },
             "gdp_proxy": {
-                "label": "增长代理指标 - 沪深300近3个月收益率",
+                "label": "Growth proxy indicator - CSI 300 return rate in the past three months",
                 "value_pct": market_return_3m,
                 "direction": "高增长" if market_return_3m > 5 else ("低增长" if market_return_3m < -5 else "中性"),
-                "threshold_note": ">5%为高增长，<-5%为低增长",
+                "threshold_note": ">5%For high growth,<-5%for low growth",
             },
             "inflation_proxy": {
-                "label": "通胀代理指标 - 中国10Y国债收益率近3个月变化",
+                "label": "Inflation proxy indicator - China s 10Y government bond yield changes in the past three months",
                 "value_change": yield_change_3m,
                 "direction": "上升" if yield_change_3m > 0.2 else ("下降" if yield_change_3m < -0.2 else "平稳"),
-                "threshold_note": ">0.2%为通胀上升，<-0.2%为通胀下降",
+                "threshold_note": ">0.2%As inflation rises,<-0.2%for inflation to fall",
             },
             "current_data": {
                 "csi300_latest_close": csi300["latest_close"],
@@ -377,8 +377,8 @@ def get_economic_cycle_position() -> str:
                 "has_yield_history": len(history) > 1,
                 "yield_history_days": len(history),
                 "note": (
-                    "本工具采用简化美林时钟模型，以沪深300收益率代理经济增长方向、"
-                    "10Y国债收益率变化代理通胀方向。实际周期判断需结合CPI、GDP、PMI等正式宏观指标。"
+                    "This tool uses a simplified Merrill Lynch clock model, using the CSI 300 yield rate as a proxy for the direction of economic growth,"
+                    "10Y Changes in Treasury yields proxy for the direction of inflation. The actual cycle judgment needs to be combined with formal macro indicators such as CPI, GDP, and PMI."
                 ),
             },
         }
@@ -395,9 +395,9 @@ def get_economic_cycle_position() -> str:
     tool_id="get_monetary_environment",
     name="货币环境分析",
     description=(
-        "实时分析当前货币/利率环境，基于中国和美国10年期国债收益率数据，"
-        "包括收益率水平评估（低/中/高）、近1个月和3个月趋势方向、"
-        "中美利差对比、以及货币政策立场判断（宽松/中性/紧缩）。"
+        "Real-time analysis of the current currency/interest rate environment, based on China and US 10-year Treasury bond yield data,"
+        "Including assessment of yield levels (low/medium/high), trend direction in the past 1 month and 3 months,"
+        "Comparison of interest rate differentials between China and the United States, and judgment of monetary policy stance (easing/neutral/tightening)."
     ),
     category="fundamentals",
     is_online=True,
@@ -408,63 +408,63 @@ def get_economic_cycle_position() -> str:
     output_shape="structured_json",
     preferred_for=["货币环境评估", "利率走势分析", "中美利差查询"],
     when_to_use=(
-        "当用户询问当前货币政策是松是紧、利率处于什么水平、"
-        "中美利差走势、国债收益率趋势时使用。"
+        "When a user asks whether the current monetary policy is loose or tight, what level the interest rate is,"
+        "Used when looking at trends in Sino-US interest rate spreads and Treasury bond yields."
     ),
     when_not_to_use=(
-        "不适合查询具体LPR/MLF操作利率（需要央行官方数据）；"
-        "不适合查询存款准备金率等货币政策工具；"
-        "不适合查询历史长时间序列的收益率数据。"
+        "Not suitable for querying specific LPR/MLF operating interest rates (official data from the central bank is required);"
+        "Not suitable for querying monetary policy tools such as deposit reserve ratio;"
+        "It is not suitable for querying historical long-term series of return data."
     ),
     returns=(
-        "返回 JSON 字符串，包含 interest_rate_environment（利率水平/趋势评估）、"
-        "china_10y_yield（中国10Y收益率及变化）、us_10y_yield（美国10Y收益率及变化）、"
-        "spread_trend（中美利差趋势）、monetary_stance（货币政策立场判断）、"
-        "available_data_sources（数据来源说明）等字段。"
+        "Returns a JSON string containing interest_rate_environment (interest rate level/trend assessment),"
+        "china_10y_yield (China 10Y yield and changes), us_10y_yield (US 10Y yield and changes),"
+        "spread_trend (Sino-US interest rate spread trend), monetary_stance (monetary policy stance judgment),"
+        "available_data_sources (Data source description) and other fields."
     ),
     example="get_monetary_environment()",
     related_tools=["get_yield_curve_analysis", "get_economic_cycle_position", "get_macro_dashboard"],
 )
 def get_monetary_environment() -> str:
-    """获取货币环境分析。
+    """Get an analysis of the currency environment.
 
-    通过 AKShare 获取中美国债收益率数据，分析利率水平、趋势、
-    利差和政策立场。
+    Obtain Sino-US bond yield data through AKShare and analyze interest rate levels, trends,
+    Spreads and policy stances.
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            analysis_date: 分析日期（YYYY-MM-DD）
-            data_source: 数据来源说明
-            interest_rate_environment: dict 利率环境——
-                — china_10y_level: 利率水平: "低位" | "中性" | "高位" | "未知"
-                — china_10y_level_detail: 水平详细说明
-                — trend_1m: dict 近1个月趋势——
-                    — change_bps: 变化（基点）
-                    — direction: 方向: "上升" | "下降" | "平稳" | "未知"
-                — trend_3m: dict 近3个月趋势（结构同 trend_1m）
-            china_10y_yield: dict 中国10年期收益率——
-                — current: 当前值
-                — 1m_ago: 1个月前
-                — 3m_ago: 3个月前
-            us_10y_yield: dict 美国10年期收益率——
-                — current: 当前值
-            spread_trend: dict 中美利差趋势——
-                — cn_us_10y_spread: 中美10年期利差
-                — note: 说明文本
-            monetary_stance: dict 货币政策立场——
-                — stance: 立场: "宽松" | "中性" | "紧缩" | "未知"
-                — description: 立场描述
-                — basis: 判断依据
-            available_data_sources: dict 可用数据源——
-                — current_data: 当前数据源
-                — not_included: list[str] 未包含的数据源列表
-            data_quality: dict 数据质量——
-                — has_full_history: 是否有完整历史
-                — has_china_10y: 是否有中国10Y数据
-                — has_us_10y: 是否有美国10Y数据
-                — history_points: 历史数据点数
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            analysis_date: Analysis date (YYYY-MM-DD)
+            data_source: Data source description
+            interest_rate_environment: dict interest rate environment——
+                — china_10y_level: interest rate level: "low position" | "Neutral" | "high position" | "unknown"
+                — china_10y_level_detail: Level details
+                — trend_1m: dict Trends in the past month——
+                    — change_bps: Change (basis points)
+                    — direction: direction: "rise" | "fall" | "Smooth" | "unknown"
+                — trend_3m: dict Trend in the past three months (the structure is the same as trend_1m)
+            china_10y_yield: dict China 10-year yield——
+                — current: current value
+                — 1m_ago: 1 months ago
+                — 3m_ago: 3 months ago
+            us_10y_yield: dict US 10-year yield——
+                — current: current value
+            spread_trend: dict Interest rate spread trend between China and the United States——
+                — cn_us_10y_spread: China-U.S. 10-year interest rate spread
+                — note: Description text
+            monetary_stance: dict monetary policy stance——
+                — stance: stance: "Loose" | "Neutral" | "austerity" | "unknown"
+                — description: Position description
+                — basis: Judgment basis
+            available_data_sources: dict Available data sources——
+                — current_data: Current data source
+                — not_included: list[str] List of data sources not included
+            data_quality: dict Data quality——
+                — has_full_history: Is there a complete history?
+                — has_china_10y: Is there any China 10Y data?
+                — has_us_10y: Is there US 10Y data?
+                — history_points: historical data points
+            message: Error message (only status="error" exist)
     """
     try:
         rate_data = _fetch_zh_us_rate()
@@ -479,22 +479,22 @@ def get_monetary_environment() -> str:
         us_10y = rate_data.get("us", {}).get("10年")
         history = rate_data.get("history", [])
 
-        # 利率水平判断（中国10Y历史参考：<2.5%较低，2.5%-3.5%中性，>3.5%较高）
+        # Judgment of interest rate levels (China 10Y historical reference:<2.5%Lower, 2.5%-3.5% neutral,>3.5%higher)
         if china_10y is not None:
             if china_10y < 2.5:
                 rate_level = "低位"
-                rate_level_note = "中国10Y国债收益率低于2.5%，处于历史低位区间"
+                rate_level_note = "China s 10Y government bond yield is below 2.5%, at a historically low range"
             elif china_10y > 3.5:
                 rate_level = "高位"
-                rate_level_note = "中国10Y国债收益率高于3.5%，处于历史高位区间"
+                rate_level_note = "The yield on China s 10Y government bonds is higher than 3.5%, which is at a historically high range"
             else:
                 rate_level = "中性"
-                rate_level_note = "中国10Y国债收益率在2.5%-3.5%之间，处于中性区间"
+                rate_level_note = "China s 10Y government bond yield is between 2.5% and 3.5%, which is in the neutral range"
         else:
             rate_level = "未知"
-            rate_level_note = "缺少中国10Y国债收益率数据"
+            rate_level_note = "Missing data on China s 10Y government bond yield"
 
-        # 趋势计算（近1个月和近3个月）
+        # Trend calculation (last month and last 3 months)
         trend_1m = None
         trend_3m = None
         china_10y_1m_ago = None
@@ -531,22 +531,22 @@ def get_monetary_environment() -> str:
                 return "下降"
             return "平稳"
 
-        # 中美利差
+        # Interest rate spread between China and the United States
         cn_us_spread = None
         if china_10y is not None and us_10y is not None:
             cn_us_spread = round(china_10y - us_10y, 4)
 
-        # 货币政策立场综合判断
+        # Comprehensive judgment on monetary policy stance
         if china_10y is not None:
             if china_10y < 2.0 or (trend_3m is not None and trend_3m < -0.3):
                 monetary_stance = "宽松"
-                stance_desc = "利率处于低位且持续下行，货币政策偏宽松"
+                stance_desc = "Interest rates are at low levels and continue to decline, and monetary policy is loose"
             elif china_10y > 3.5 or (trend_3m is not None and trend_3m > 0.3):
                 monetary_stance = "紧缩"
-                stance_desc = "利率处于高位且持续上行，货币政策偏紧缩"
+                stance_desc = "Interest rates are at a high level and continue to rise, and monetary policy is tightening"
             else:
                 monetary_stance = "中性"
-                stance_desc = "利率处于中等水平，波动幅度不大，货币政策中性"
+                stance_desc = "Interest rates are at a medium level, with little fluctuation, and monetary policy is neutral."
         else:
             monetary_stance = "未知"
             stance_desc = "数据不足无法判断"
@@ -578,7 +578,7 @@ def get_monetary_environment() -> str:
             "spread_trend": {
                 "cn_us_10y_spread": cn_us_spread,
                 "note": (
-                    "正值表示中国收益率高于美国，负值表示中国收益率低于美国"
+                    "A positive value indicates that China s yield is higher than that of the United States, and a negative value indicates that China s yield is lower than that of the United States."
                     if cn_us_spread is not None else "数据不足"
                 ),
             },
@@ -586,17 +586,17 @@ def get_monetary_environment() -> str:
                 "stance": monetary_stance,
                 "description": stance_desc,
                 "basis": (
-                    "基于10Y国债收益率的绝对水平和近3个月趋势进行判断，"
-                    "实际货币政策立场需结合央行公开市场操作、LPR、MLF利率等综合评估"
+                    "Judgment based on the absolute level of 10Y Treasury bond yields and the trend in the past three months,"
+                    "The actual monetary policy stance needs to be comprehensively evaluated based on the central bank s open market operations, LPR, MLF interest rates, etc."
                 ),
             },
             "available_data_sources": {
                 "current_data": "akshare.bond_zh_us_rate()",
                 "not_included": [
-                    "LPR（贷款市场报价利率）- 需从央行官网或东方财富获取",
-                    "MLF（中期借贷便利）利率 - 需从央行官网获取",
-                    "存款准备金率 - 需从央行官网获取",
-                    "SHIBOR - 可通过 akshare 获取",
+                    "LPR (Loan market quoted interest rate) - need to be obtained from the central bank s official website or Oriental Wealth",
+                    "MLF (Medium-term lending facility) interest rate - need to be obtained from the central bank s official website",
+                    "Deposit reserve ratio - need to be obtained from the central bank s official website",
+                    "SHIBOR - Available via akshare",
                 ],
             },
             "data_quality": {
@@ -615,7 +615,7 @@ def get_monetary_environment() -> str:
 
 
 def _get_industry_sector_snapshot() -> dict:
-    """从 stock_basic_info 获取各行业的估值快照。"""
+    """Get a snapshot of valuations by industry from stock_basic_info."""
     db = _get_db()
     col = db["stock_basic_info"]
 
@@ -630,7 +630,7 @@ def _get_industry_sector_snapshot() -> dict:
         "total_mv": 1,
     }))
 
-    # 按行业分组
+    # Group by industry
     industry_groups: Dict[str, Dict[str, Any]] = {}
     all_pe: List[float] = []
     all_pb: List[float] = []
@@ -659,20 +659,20 @@ def _get_industry_sector_snapshot() -> dict:
         if mv is not None:
             industry_groups[industry]["total_mv"] += mv
 
-    # 全市场中位数
+    # Market-wide median
     market_pe_median = round(median(all_pe), 2) if all_pe else None
     market_pb_median = round(median(all_pb), 2) if all_pb else None
 
-    # 计算每个行业的相对强度
+    # Calculate the relative strength of each industry
     sector_results = []
     for industry, data in industry_groups.items():
         pe_med = round(median(data["pe_list"]), 2) if data["pe_list"] else None
         pb_med = round(median(data["pb_list"]), 2) if data["pb_list"] else None
 
-        # 相对强度：PE比市场中位数越低越"价值"，越高越"成长"
+        # Relative strength: The lower the PE is than the market median, the better"value", The higher the"grow"
         relative_strength = 0.0
         if pe_med is not None and market_pe_median is not None and market_pe_median > 0:
-            # 负值表示相对低估（价值型），正值表示相对高估（成长型）
+            # Negative values indicate relative undervaluation (value type), positive values indicate relative overvaluation (growth type).
             relative_strength = round((market_pe_median - pe_med) / market_pe_median, 4)
 
         sector_results.append({
@@ -688,7 +688,7 @@ def _get_industry_sector_snapshot() -> dict:
             ),
         })
 
-    # 按相对强度排序（价值型在前）
+    # Sort by relative strength (value first)
     sector_results.sort(key=lambda x: x["relative_strength"], reverse=True)
 
     return {
@@ -705,10 +705,10 @@ def _get_industry_sector_snapshot() -> dict:
     tool_id="get_sector_rotation_signals",
     name="行业轮动信号",
     description=(
-        "基于本地数据库 stock_basic_info 的行业估值数据和实时宏观周期信号，"
-        "分析各行业的相对估值强度（PE/PB vs 市场中位数），"
-        "识别当前行业轮动阶段（价值领涨/成长领涨/防御轮动/均衡），"
-        "并给出防御型、周期型和成长型板块的排名建议。"
+        "Industry valuation data and real-time macro cycle signals based on the local database stock_basic_info,"
+        "Analyze the relative valuation strength of each industry (PE/PB vs market median),"
+        "Identify the current industry rotation stage (value-led/growth-led/defensive rotation/balanced),"
+        "And gives ranking suggestions for defensive, cyclical and growth sectors."
     ),
     category="fundamentals",
     is_online=True,
@@ -719,73 +719,73 @@ def _get_industry_sector_snapshot() -> dict:
     output_shape="structured_json",
     preferred_for=["行业轮动分析", "板块排名查询", "行业配置建议"],
     when_to_use=(
-        "当用户询问当前哪些行业板块表现好、行业轮动处于哪个阶段、"
-        "应该配置周期型还是防御型板块、行业估值排名时使用。"
+        "When users ask which industry sectors are currently performing well and what stage of industry rotation they are in,"
+        "Use it when configuring cyclical or defensive sectors and industry valuation rankings."
     ),
     when_not_to_use=(
-        "不适合查询具体个股的估值或行情（请使用 get_value_factor_bundle_tool 或 get_stock_fundamentals_unified）。"
-        "不适合查询板块指数的实时涨跌幅（请使用 get_sector_daily）；"
-        "不适合查询板块成分股列表（请使用 get_sector_constituents）。"
+        "Not suitable for querying the valuation or market conditions of specific stocks (please use get_value_factor_bundle_tool or get_stock_fundamentals_unified)."
+        "Not suitable for querying the real-time rise and fall of sector indexes (please use get_sector_daily);"
+        "Not suitable for querying the list of sector constituents (please use get_sector_constituents)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 current_cycle_position_data（当前周期数据）、"
-        "sector_ranking（按相对强度排序的行业列表）、rotation_phase（轮动阶段判断）、"
-        "top_defensive（推荐防御型板块）、top_cyclical（推荐周期型板块）、"
-        "data_quality（数据质量说明）等字段。"
+        "Returns a JSON string, including current_cycle_position_data (current cycle data),"
+        "sector_ranking (Industry list sorted by relative strength), rotation_phase (rotation phase judgment),"
+        "top_defensive (Defensive sectors are recommended), top_cyclical (cyclical sectors are recommended),"
+        "data_quality (Data quality description) and other fields."
     ),
     example="get_sector_rotation_signals()",
     related_tools=["get_economic_cycle_position", "get_monetary_environment", "get_macro_dashboard"],
 )
 def get_sector_rotation_signals() -> str:
-    """获取行业轮动信号分析。
+    """Get industry rotation signal analysis.
 
-    结合本地行业估值数据和实时宏观周期信号，判断行业轮动阶段
-    并给出各行业的相对强度排名。
+    Combine local industry valuation data and real-time macro cycle signals to determine the industry rotation stage
+    And give the relative strength ranking of each industry.
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            analysis_date: 分析日期（YYYY-MM-DD）
-            data_source: 数据来源说明
-            current_cycle_position_data: dict 当前周期数据（实时数据不可用时包含 cycle_phase="未知（实时数据不可用）"）——
-                — market_return_3m: 沪深300近3个月收益率
-                — china_10y_yield: 中国10年期收益率
-                — cycle_phase: 周期阶段: "复苏" | "过热" | "滞涨" | "衰退" | "过渡" | "未知" | "未知（实时数据不可用）"
-            rotation_phase: dict 轮动阶段——
-                — phase: 阶段: "成长领涨" | "周期领涨" | "防御轮动" | "价值领涨" | "均衡轮动"
-                — description: 阶段描述
-                — methodology: 方法论说明
-            sector_ranking: list[dict] 行业排名（前30），元素结构——
-                — industry: 行业名
-                — stock_count: 股票数量
-                — pe_median: PE中位数
-                — pb_median: PB中位数
-                — total_mv_billion: 总市值（亿元）
-                — relative_strength: 相对强度
-                — relative_valuation: 相对估值: "价值" | "成长" | "中性"
-            market_valuation_context: dict 市场估值上下文——
-                — market_pe_median: 市场PE中位数
-                — market_pb_median: 市场PB中位数
-                — total_industries: 行业总数
-                — total_stocks_tracked: 跟踪的股票总数
-            top_defensive: list[dict] 推荐防御型板块（结构同 sector_ranking 元素）
-            top_cyclical: list[dict] 推荐周期型板块（结构同 sector_ranking 元素）
-            data_quality: dict 数据质量——
-                — industry_count: 行业数
-                — defensive_found: 找到的防御型板块数
-                — cyclical_found: 找到的周期型板块数
-                — cycle_data_available: 是否有实时周期数据
-                — note: 说明文本
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            analysis_date: Analysis date (YYYY-MM-DD)
+            data_source: Data source description
+            current_cycle_position_data: dict Current period data (included when real-time data is not available cycle_phase="Unknown (live data is not available)") ——
+                — market_return_3m: CSI 300 return rate in the past 3 months
+                — china_10y_yield: China 10-year yield
+                — cycle_phase: cycle phase: "recovery" | "overheating" | "stagflation" | "recession" | "Transition" | "unknown" | "Unknown (live data is not available)"
+            rotation_phase: dict rotation phase——
+                — phase: stage: "Growth leads the way" | "Cycle leads the rise" | "defensive rotation" | "Value leads the gains" | "balanced rotation"
+                — description: Stage description
+                — methodology: Methodological statement
+            sector_ranking: list[dict] Industry ranking (top 30), element structure——
+                — industry: Industry name
+                — stock_count: Number of shares
+                — pe_median: PE median
+                — pb_median: PB median
+                — total_mv_billion: Total market value (100 million yuan)
+                — relative_strength: relative strength
+                — relative_valuation: relative valuation: "value" | "grow" | "Neutral"
+            market_valuation_context: dict market valuation context——
+                — market_pe_median: Market PE median
+                — market_pb_median: Market PB Median
+                — total_industries: Total number of industries
+                — total_stocks_tracked: Total number of stocks tracked
+            top_defensive: list[dict] Recommend defensive sectors (the structure is the same as sector_ranking element)
+            top_cyclical: list[dict] Recommended cyclical sectors (the structure is the same as sector_ranking element)
+            data_quality: dict Data quality——
+                — industry_count: Number of industries
+                — defensive_found: Number of defensive tiles found
+                — cyclical_found: Number of cyclical sectors found
+                — cycle_data_available: Is there real-time cycle data?
+                — note: Description text
+            message: Error message (only status="error" exist)
     """
     try:
         today = datetime.date.today()
 
-        # 1. 获取行业估值快照
+        # 1. Get a snapshot of industry valuations
         snapshot = _get_industry_sector_snapshot()
         sectors = snapshot.get("sectors", [])
 
-        # 2. 尝试获取实时周期信号（非阻塞，失败不影响行业数据）
+        # 2. Try to obtain real-time periodic signals (non-blocking, failure will not affect industry data)
         cycle_info = None
         try:
             import akshare as ak
@@ -795,7 +795,7 @@ def get_sector_rotation_signals() -> str:
             latest_rate = rate_df.sort_values("日期").iloc[-1]
             china_10y = _safe_float(latest_rate.get("中国国债收益率10年"))
 
-            # 沪深300近3个月收益率
+            # CSI 300 return rate in the past 3 months
             idx_df = ak.stock_zh_index_daily("sh000300")
             idx_df["date"] = pd.to_datetime(idx_df["date"])
             idx_df = idx_df.sort_values("date")
@@ -806,7 +806,7 @@ def get_sector_rotation_signals() -> str:
             else:
                 mkt_return = None
 
-            # 简单周期判断
+            # Simple cycle judgment
             if mkt_return is not None and china_10y is not None:
                 if mkt_return > 5:
                     if china_10y > 3.0:
@@ -829,56 +829,56 @@ def get_sector_rotation_signals() -> str:
                 "cycle_phase": cycle_phase,
             }
         except Exception as e:
-            logger.debug("周期数据获取失败，仅使用行业估值数据: %s", e)
+            logger.debug("Failed to obtain cycle data, only industry valuation data is used: %s", e)
             cycle_info = {"cycle_phase": "未知（实时数据不可用）"}
 
-        # 3. 判断轮动阶段
-        # 基于行业估值分布特征识别轮动阶段
+        # 3. Determine the rotation stage
+        # Identifying rotation stages based on industry valuation distribution characteristics
         top_value = [s for s in sectors[:10] if s.get("relative_valuation") == "价值"]
         top_growth = [s for s in sectors[-10:] if s.get("relative_valuation") == "成长"]
         defensive_industries = {"银行", "公用事业", "食品饮料", "医药生物", "交通运输", "保险"}
         cyclical_industries = {"有色金属", "钢铁", "煤炭", "基础化工", "建筑材料", "房地产", "机械设备"}
 
-        value_score = len(top_value)  # 价值型板块数量
-        growth_score = len(top_growth)  # 成长型板块数量
+        value_score = len(top_value)  # Number of value sectors
+        growth_score = len(top_growth)  # Number of growth sectors
 
         if cycle_info and isinstance(cycle_info, dict):
             cycle_phase = cycle_info.get("cycle_phase", "")
             if cycle_phase == "复苏":
                 rotation_phase = "成长领涨"
-                rotation_desc = "经济复苏期，成长型和高贝塔板块通常表现领先"
+                rotation_desc = "During economic recovery, growth and high-beta sectors usually outperform"
             elif cycle_phase == "过热":
                 rotation_phase = "周期领涨"
-                rotation_desc = "经济过热期，周期性板块（资源、原材料）通常表现领先"
+                rotation_desc = "During periods of economic overheating, cyclical sectors (resources, raw materials) usually lead the way."
             elif cycle_phase == "滞涨":
                 rotation_phase = "防御轮动"
-                rotation_desc = "滞涨期，防御型板块（公用事业、医药、必需消费）通常表现领先"
+                rotation_desc = "During stagflation, defensive sectors (utilities, pharmaceuticals, consumer staples) usually outperform"
             elif cycle_phase == "衰退":
                 rotation_phase = "防御轮动"
-                rotation_desc = "衰退期，防御型板块和债券相关资产通常表现领先"
+                rotation_desc = "During recessions, defensive sectors and bond-related assets often outperform"
             else:
-                # 基于估值数据推断
+                # Inference based on valuation data
                 if value_score > growth_score + 3:
                     rotation_phase = "价值领涨"
-                    rotation_desc = "价值型板块相对强度突出，市场偏向低估值防御"
+                    rotation_desc = "The relative strength of the value sector is outstanding, and the market favors low valuation defense"
                 elif growth_score > value_score + 3:
                     rotation_phase = "成长领涨"
-                    rotation_desc = "成长型板块相对强度突出，市场偏好高增长"
+                    rotation_desc = "The relative strength of growth sectors is outstanding, and the market prefers high growth"
                 else:
                     rotation_phase = "均衡轮动"
-                    rotation_desc = "价值与成长板块相对强度接近，市场无明显偏好"
+                    rotation_desc = "The relative strengths of value and growth sectors are close, and the market has no obvious preference."
         else:
             if value_score > growth_score + 3:
                 rotation_phase = "价值领涨"
-                rotation_desc = "价值型板块相对强度突出，市场偏向低估值防御"
+                rotation_desc = "The relative strength of the value sector is outstanding, and the market favors low valuation defense"
             elif growth_score > value_score + 3:
                 rotation_phase = "成长领涨"
-                rotation_desc = "成长型板块相对强度突出，市场偏好高增长"
+                rotation_desc = "The relative strength of growth sectors is outstanding, and the market prefers high growth"
             else:
                 rotation_phase = "均衡轮动"
-                rotation_desc = "价值与成长板块相对强度接近，市场无明显偏好"
+                rotation_desc = "The relative strengths of value and growth sectors are close, and the market has no obvious preference."
 
-        # 4. 识别防御型和周期型板块推荐
+        # 4. Identify defensive and cyclical sector recommendations
         def _filter_by_industry_list(sectors_list: List[dict], industry_set: set) -> List[dict]:
             return [
                 s for s in sectors_list
@@ -897,25 +897,25 @@ def get_sector_rotation_signals() -> str:
             reverse=True,
         )[:5]
 
-        # 5. 构建返回结果（只返回前30个行业以控制输出大小）
+        # 5. Build return results (only the first 30 industries are returned to control output size)
         payload = {
             "status": "ok",
             "analysis_date": today.isoformat(),
             "data_source": (
-                "行业估值数据来自本地数据库 stock_basic_info 集合，"
-                "周期信号来自 akshare.bond_zh_us_rate() / stock_zh_index_daily()"
+                "Industry valuation data comes from the local database stock_basic_info collection,"
+                "The periodic signal comes from akshare.bond_zh_us_rate() / stock_zh_index_daily()"
             ),
             "current_cycle_position_data": cycle_info,
             "rotation_phase": {
                 "phase": rotation_phase,
                 "description": rotation_desc,
                 "methodology": (
-                    "基于宏观周期阶段（如有）和行业相对估值分布综合判断。"
-                    "防御型板块参考：银行、公用事业、食品饮料、医药生物、交通运输、保险；"
-                    "周期型板块参考：有色金属、钢铁、煤炭、基础化工、建筑材料、房地产、机械设备。"
+                    "Comprehensive judgment based on macro cycle stage (if any) and industry relative valuation distribution."
+                    "Defensive sector reference: banking, public utilities, food and beverages, pharmaceuticals and biology, transportation, and insurance;"
+                    "Cyclical sector reference: non-ferrous metals, steel, coal, basic chemicals, building materials, real estate, machinery and equipment."
                 ),
             },
-            "sector_ranking": sectors[:30],  # 前30个行业
+            "sector_ranking": sectors[:30],  # Top 30 industries
             "market_valuation_context": {
                 "market_pe_median": snapshot.get("market_pe_median"),
                 "market_pb_median": snapshot.get("market_pb_median"),
@@ -930,9 +930,9 @@ def get_sector_rotation_signals() -> str:
                 "cyclical_found": len(top_cyclical),
                 "cycle_data_available": isinstance(cycle_info, dict) and cycle_info.get("cycle_phase") != "未知（实时数据不可用）",
                 "note": (
-                    "行业排名基于 PE/PB 相对市场中位数的偏离程度，"
-                    "仅反映估值层面的相对强度信号，不构成投资建议。"
-                    "实际轮动还需结合资金流向、政策催化、景气度等综合判断。"
+                    "Industry rankings are based on the deviation of PE/PB from the market median,"
+                    "It only reflects the relative strength signal at the valuation level and does not constitute investment advice."
+                    "The actual rotation also needs to be combined with comprehensive judgments such as capital flow, policy catalysis, and prosperity."
                 ),
             },
         }
@@ -940,7 +940,7 @@ def get_sector_rotation_signals() -> str:
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("行业轮动信号分析失败: %s", exc, exc_info=True)
+        logger.error("Industry rotation signal analysis failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 

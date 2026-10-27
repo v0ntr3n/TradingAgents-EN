@@ -1,101 +1,101 @@
 <template>
   <div class="bottom-grid" id="bottom-section">
-    <!-- 基本面数据 -->
+    <!-- fundamental data -->
     <div class="card">
       <div class="card-header">
         <div class="section-title">
           <span>📚</span>
-          <span>{{ isEtf ? 'ETF基础数据' : '基本面数据' }}</span>
+          <span>{{ isEtf ? 'ETF Basic data' : 'fundamental data' }}</span>
         </div>
-        <el-tag v-if="basics.peIsRealtime" type="success" size="small">实时</el-tag>
+        <el-tag v-if="basics.peIsRealtime" type="success" size="small">real time</el-tag>
       </div>
       <div class="card-body">
-        <!-- ETF 基础 -->
+        <!-- ETF Basics -->
         <div v-if="isEtf" class="snapshot-grid">
-          <div class="snapshot-item"><span class="snapshot-label">基金类型</span><span class="snapshot-value">{{ etfBasics.fundType || '-' }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">跟踪指数</span><span class="snapshot-value">{{ etfBasics.trackIndex || '-' }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">基金规模</span><span class="snapshot-value">{{ fmtText(etfBasics.fundScale) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">基金份额</span><span class="snapshot-value">{{ fmtText(etfBasics.fundShare) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">单位净值</span><span class="snapshot-value">{{ fmtPrice(etfBasics.unitNav) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">累计净值</span><span class="snapshot-value">{{ fmtPrice(etfBasics.accumNav) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">折溢价率</span><span class="snapshot-value">{{ fmtLoosePercent(etfBasics.premiumDiscountRate) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">净值增长率</span><span class="snapshot-value">{{ fmtLoosePercent(etfBasics.navGrowthRate) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">管理人</span><span class="snapshot-value">{{ etfBasics.management || '-' }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">托管人</span><span class="snapshot-value">{{ etfBasics.custodian || '-' }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Fund type</span><span class="snapshot-value">{{ etfBasics.fundType || '-' }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">tracking index</span><span class="snapshot-value">{{ etfBasics.trackIndex || '-' }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Fund size</span><span class="snapshot-value">{{ fmtText(etfBasics.fundScale) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Fund shares</span><span class="snapshot-value">{{ fmtText(etfBasics.fundShare) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">net unit value</span><span class="snapshot-value">{{ fmtPrice(etfBasics.unitNav) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Cumulative net worth</span><span class="snapshot-value">{{ fmtPrice(etfBasics.accumNav) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Discount/premium rate</span><span class="snapshot-value">{{ fmtLoosePercent(etfBasics.premiumDiscountRate) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Net worth growth rate</span><span class="snapshot-value">{{ fmtLoosePercent(etfBasics.navGrowthRate) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">manager</span><span class="snapshot-value">{{ etfBasics.management || '-' }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">custodian</span><span class="snapshot-value">{{ etfBasics.custodian || '-' }}</span></div>
         </div>
-        <!-- 股票基本面 -->
+        <!-- stock fundamentals -->
         <div v-else class="snapshot-grid">
-          <div class="snapshot-item"><span class="snapshot-label">行业</span><span class="snapshot-value">{{ basics.industry }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">板块</span><span class="snapshot-value">{{ basics.sector }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">总市值</span><span class="snapshot-value">{{ fmtAmount(basics.marketCap) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Industry</span><span class="snapshot-value">{{ basics.industry }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">plate</span><span class="snapshot-value">{{ basics.sector }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Total market capitalization</span><span class="snapshot-value">{{ fmtAmount(basics.marketCap) }}</span></div>
           <div class="snapshot-item"><span class="snapshot-label">PE(TTM)</span><span class="snapshot-value">{{ fmtNum(basics.pe) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">PB(市净率)</span><span class="snapshot-value">{{ fmtNum(basics.pb) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">PB(price to book ratio)</span><span class="snapshot-value">{{ fmtNum(basics.pb) }}</span></div>
           <div class="snapshot-item"><span class="snapshot-label">PS(TTM)</span><span class="snapshot-value">{{ fmtNum(basics.ps) }}</span></div>
           <div class="snapshot-item"><span class="snapshot-label">ROE</span><span class="snapshot-value">{{ fmtPercent(basics.roe) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">负债率</span><span class="snapshot-value">{{ fmtPercent(basics.debtRatio) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">股息率</span><span class="snapshot-value">{{ fmtPercent(basics.dividendYield) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">流动比率</span><span class="snapshot-value">{{ fmtRatio(basics.currentRatio) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Debt ratio</span><span class="snapshot-value">{{ fmtPercent(basics.debtRatio) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">dividend yield</span><span class="snapshot-value">{{ fmtPercent(basics.dividendYield) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">current ratio</span><span class="snapshot-value">{{ fmtRatio(basics.currentRatio) }}</span></div>
         </div>
       </div>
     </div>
 
-    <!-- 财务明细 -->
+    <!-- financial details -->
     <div v-if="!isEtf" class="card">
       <div class="card-header">
         <div class="section-title">
           <span>💰</span>
-          <span>财务明细快照</span>
+          <span>Snapshot of financial details</span>
         </div>
         <el-tag v-if="financialSnapshot.annDate" size="small" type="info" effect="plain">{{ financialSnapshot.annDate }}</el-tag>
       </div>
       <div class="card-body">
         <div class="snapshot-grid">
-          <div class="snapshot-item"><span class="snapshot-label">毛利率</span><span class="snapshot-value">{{ fmtPercent(financialSnapshot.grossMargin) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">净利率</span><span class="snapshot-value">{{ fmtPercent(financialSnapshot.netprofitMargin) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">营收</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.revenue) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">净利润</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.netProfit) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">经营现金流</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.nCashflowAct) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">总资产</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.totalAssets) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">总负债</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.totalLiab) }}</span></div>
-          <div class="snapshot-item"><span class="snapshot-label">数据源</span><span class="snapshot-value">{{ financialSnapshot.dataSource || '-' }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Gross profit margin</span><span class="snapshot-value">{{ fmtPercent(financialSnapshot.grossMargin) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">net profit margin</span><span class="snapshot-value">{{ fmtPercent(financialSnapshot.netprofitMargin) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">Revenue</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.revenue) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">net profit</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.netProfit) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">operating cash flow</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.nCashflowAct) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">total assets</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.totalAssets) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">total liabilities</span><span class="snapshot-value">{{ fmtAmount(financialSnapshot.totalLiab) }}</span></div>
+          <div class="snapshot-item"><span class="snapshot-label">data source</span><span class="snapshot-value">{{ financialSnapshot.dataSource || '-' }}</span></div>
         </div>
         <div v-if="financialRawSections.length" class="raw-section-summary">
-          <div class="raw-title">raw_data 分组</div>
+          <div class="raw-title">raw_data Group</div>
           <div class="raw-tags">
             <el-tag v-for="section in financialRawSections" :key="section.key" size="small" type="info" effect="plain">
-              {{ section.label }} {{ section.count }} 条
+              {{ section.label }} {{ section.count }} Article
             </el-tag>
           </div>
-          <div class="raw-hint">这些原始分组已经通过主股票接口暴露，后续页面或智能工具可以直接下钻调用。</div>
+          <div class="raw-hint">These original groupings have been exposed through the main stock interface, and subsequent pages or smart tools can directly drill down and call them.</div>
         </div>
       </div>
     </div>
 
-    <!-- 近期新闻与公告 -->
+    <!-- Recent News and Announcements -->
     <div class="card news-card">
       <div class="card-header">
         <div class="section-title">
           <span>📰</span>
-          <span>{{ isEtf ? 'ETF新闻与公告' : '近期新闻与公告' }}</span>
+          <span>{{ isEtf ? 'ETF News & Announcements' : 'Recent News and Announcements' }}</span>
         </div>
         <el-select :model-value="newsFilter" size="small" style="width: 120px" @change="(v: string) => $emit('newsFilterChange', v)">
-          <el-option label="全部" value="all" />
-          <el-option label="新闻" value="news" />
-          <el-option label="公告" value="announcement" />
+          <el-option label="All" value="all" />
+          <el-option label="News" value="news" />
+          <el-option label="Announcement" value="announcement" />
         </el-select>
       </div>
       <div class="card-body">
         <div v-if="newsLoading" v-loading="true" style="min-height: 120px"></div>
-        <el-empty v-else-if="!filteredNews.length" description="暂无新闻" :image-size="60" />
+        <el-empty v-else-if="!filteredNews.length" description="No news yet" :image-size="60" />
         <div v-else class="news-list">
           <div v-for="(n, i) in filteredNews" :key="i" class="news-item">
             <div class="news-header">
               <div class="news-title">
                 <span class="news-tag" :class="n.type === 'announcement' ? 'tag-announcement' : 'tag-news'">
-                  {{ n.type === 'announcement' ? '公告' : '新闻' }}
+                  {{ n.type === 'announcement' ? 'Announcement' : 'News' }}
                 </span>
-                <a v-if="n.url && n.url !== '#'" :href="n.url" target="_blank" rel="noopener" class="news-link">{{ n.title || '查看详情' }}</a>
-                <span v-else>{{ n.title || '（无标题）' }}</span>
+                <a v-if="n.url && n.url !== '#'" :href="n.url" target="_blank" rel="noopener" class="news-link">{{ n.title || 'View details' }}</a>
+                <span v-else>{{ n.title || ' (Untitled)' }}</span>
               </div>
               <div class="news-time">{{ formatNewsTime(n.time) }}</div>
             </div>
@@ -191,8 +191,8 @@ function fmtRatio(v: any) {
 function fmtAmount(v: any) {
   const n = Number(v)
   if (!Number.isFinite(n)) return '-'
-  if (n >= 1e8) return (n / 1e8).toFixed(2) + '亿'
-  if (n >= 1e4) return (n / 1e4).toFixed(2) + '万'
+  if (n >= 1e8) return (n / 1e8).toFixed(2) + 'billion'
+  if (n >= 1e4) return (n / 1e4).toFixed(2) + 'million'
   return n.toFixed(2)
 }
 
@@ -220,9 +220,9 @@ function formatNewsTime(dateStr: string | null | undefined): string {
     if (isNaN(d.getTime())) return String(dateStr)
     const now = new Date()
     const diff = (now.getTime() - d.getTime()) / 1000
-    if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`
-    if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`
-    if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}天前`
+    if (diff < 3600) return `${Math.floor(diff / 60)}minutes ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}hours ago`
+    if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}days ago`
     return `${d.getMonth() + 1}-${d.getDate()}`
   } catch {
     return String(dateStr)

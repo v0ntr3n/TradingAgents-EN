@@ -1,10 +1,10 @@
 """
-测试交易复盘任务中心集成
+Test transaction review task center integration
 
-测试目标：
-1. 验证 UnifiedAnalysisService 的交易复盘方法
-2. 验证任务创建和执行流程
-3. 验证任务状态更新
+Test objectives:
+1. Verify the transaction review method of UnifiedAnalysisService
+2. Verify task creation and execution process
+3. Verify task status updates
 """
 
 import pytest
@@ -26,7 +26,7 @@ def test_build_trade_info_uses_first_buy_date_instead_of_first_trade() -> None:
             {
                 "_id": "6943d2817b4e4f65202796a3",
                 "code": "300750",
-                "name": "宁德时代",
+                "name": "Ningde era",
                 "market": "CN",
                 "side": "sell",
                 "quantity": 100,
@@ -39,7 +39,7 @@ def test_build_trade_info_uses_first_buy_date_instead_of_first_trade() -> None:
             {
                 "_id": "6976f33e3feea732c3dc83c6",
                 "code": "300750",
-                "name": "宁德时代",
+                "name": "Ningde era",
                 "market": "CN",
                 "side": "buy",
                 "quantity": 100,
@@ -52,7 +52,7 @@ def test_build_trade_info_uses_first_buy_date_instead_of_first_trade() -> None:
             {
                 "_id": "698941a0bc971494ddf7bcc6",
                 "code": "300750",
-                "name": "宁德时代",
+                "name": "Ningde era",
                 "market": "CN",
                 "side": "buy",
                 "quantity": 100,
@@ -65,7 +65,7 @@ def test_build_trade_info_uses_first_buy_date_instead_of_first_trade() -> None:
             {
                 "_id": "698941bfbc971494ddf7bcc8",
                 "code": "300750",
-                "name": "宁德时代",
+                "name": "Ningde era",
                 "market": "CN",
                 "side": "buy",
                 "quantity": 100,
@@ -78,7 +78,7 @@ def test_build_trade_info_uses_first_buy_date_instead_of_first_trade() -> None:
             {
                 "_id": "698941e8bc971494ddf7bcca",
                 "code": "300750",
-                "name": "宁德时代",
+                "name": "Ningde era",
                 "market": "CN",
                 "side": "sell",
                 "quantity": 100,
@@ -98,9 +98,9 @@ def test_build_trade_info_uses_first_buy_date_instead_of_first_trade() -> None:
 
 @pytest.mark.asyncio
 async def test_create_trade_review_task():
-    """测试创建交易复盘任务"""
+    """Test the creation of transaction review tasks"""
     
-    # 准备测试数据
+    # Prepare test data
     user_id = "test_user_123"
     request = CreateTradeReviewRequest(
         trade_ids=["trade_1", "trade_2"],
@@ -110,47 +110,47 @@ async def test_create_trade_review_task():
         use_workflow=True
     )
     
-    # 获取服务实例
+    # Get service instance
     service = get_unified_analysis_service()
     
-    # Mock 数据库操作
+    # Mock Database operations
     with patch('app.core.database.get_mongo_db') as mock_db:
         mock_collection = AsyncMock()
         mock_db.return_value.unified_analysis_tasks = mock_collection
         
-        # Mock 内存状态管理器
+        # Mock memory state manager
         with patch('app.services.unified_analysis_service.get_memory_state_manager') as mock_memory:
             mock_memory_instance = AsyncMock()
             mock_memory.return_value = mock_memory_instance
             
-            # 执行测试
+            # Execute tests
             result = await service.create_trade_review_task(
                 user_id=user_id,
                 request=request
             )
             
-            # 验证结果
+            # Verification results
             assert "task_id" in result
             assert result["status"] == AnalysisStatus.PENDING.value
             assert "created_at" in result
             assert "message" in result
             
-            # 验证数据库调用
+            # Verify database calls
             assert mock_collection.insert_one.called
             
-            # 验证内存状态管理器调用
+            # Verify memory state manager calls
             assert mock_memory_instance.create_task.called
             
-            print(f"✅ 测试通过：创建交易复盘任务成功")
+            print(f"✅ Test passed: Create transaction review task successfully")
             print(f"   - task_id: {result['task_id']}")
             print(f"   - status: {result['status']}")
 
 
 @pytest.mark.asyncio
 async def test_execute_trade_review():
-    """测试执行交易复盘任务"""
+    """Test execution of transaction review tasks"""
     
-    # 准备测试数据
+    # Prepare test data
     task_id = "test_task_123"
     user_id = "test_user_123"
     request = CreateTradeReviewRequest(
@@ -161,18 +161,18 @@ async def test_execute_trade_review():
         use_workflow=True
     )
     
-    # 获取服务实例
+    # Get service instance
     service = get_unified_analysis_service()
     
     # Mock TradeReviewService
     with patch('app.services.unified_analysis_service.get_trade_review_service') as mock_service:
-        # Mock 复盘结果
+        # Mock Review results
         mock_report = Mock()
         mock_report.review_id = "review_123"
         mock_report.trade_info = Mock()
         mock_report.trade_info.code = "688111"
-        mock_report.trade_info.name = "思瑞浦"
-        mock_report.trade_info.model_dump = Mock(return_value={"code": "688111", "name": "思瑞浦"})
+        mock_report.trade_info.name = "Serip"
+        mock_report.trade_info.model_dump = Mock(return_value={"code": "688111", "name": "Serip"})
         mock_report.ai_review = Mock()
         mock_report.ai_review.model_dump = Mock(return_value={"score": 85})
         mock_report.market_snapshot = None
@@ -184,45 +184,45 @@ async def test_execute_trade_review():
         mock_service_instance.create_trade_review = AsyncMock(return_value=mock_report)
         mock_service.return_value = mock_service_instance
         
-        # Mock 数据库操作
+        # Mock Database operations
         with patch('app.core.database.get_mongo_db') as mock_db:
             mock_collection = AsyncMock()
             mock_db.return_value.unified_analysis_tasks = mock_collection
             
-            # Mock 内存状态管理器
+            # Mock memory state manager
             with patch('app.services.unified_analysis_service.get_memory_state_manager') as mock_memory:
                 mock_memory_instance = AsyncMock()
                 mock_memory.return_value = mock_memory_instance
                 
-                # 执行测试
+                # Execute tests
                 result = await service.execute_trade_review(
                     task_id=task_id,
                     user_id=user_id,
                     request=request
                 )
                 
-                # 验证结果
+                # Verification results
                 assert result["success"] is True
                 assert result["task_id"] == task_id
                 assert result["review_id"] == "review_123"
                 assert result["code"] == "688111"
-                assert result["name"] == "思瑞浦"
+                assert result["name"] == "Serip"
                 
-                # 验证 TradeReviewService 被调用
+                # Verify that TradeReviewService is called
                 assert mock_service_instance.create_trade_review.called
                 
-                # 验证任务状态更新
+                # Verify task status updates
                 assert mock_collection.update_one.called
                 
-                print(f"✅ 测试通过：执行交易复盘任务成功")
+                print(f"✅ Test passed: The transaction review task was successfully executed")
                 print(f"   - task_id: {result['task_id']}")
                 print(f"   - review_id: {result['review_id']}")
                 print(f"   - code: {result['code']}")
 
 
 if __name__ == "__main__":
-    print("🧪 开始测试交易复盘任务中心集成...")
+    print("🧪 Start testing the transaction review task center integration...")
     asyncio.run(test_create_trade_review_task())
     asyncio.run(test_execute_trade_review())
-    print("✅ 所有测试通过！")
+    print("✅ All tests passed!")
 

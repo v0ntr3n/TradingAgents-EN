@@ -1,12 +1,12 @@
 """
-Google Generative AI 适配器
+Google Generative AI adapter
 
-处理 Google 特有的 API 格式和工具调用方式
+Handle Google-specific API formats and tool calling methods
 """
 
 from typing import Any, AsyncIterator, Dict, List, Optional
 
-# 可选依赖：google.generativeai
+# Optional dependencies:google.generativeai
 try:
     import google.generativeai as genai
     from google.generativeai.types import content_types
@@ -28,7 +28,7 @@ from .base import BaseAdapter
 
 
 class GoogleAdapter(BaseAdapter):
-    """Google Generative AI 适配器"""
+    """Google Generative AI adapter"""
 
     SUPPORTED_PROVIDERS = [LLMProvider.GOOGLE]
 
@@ -36,17 +36,17 @@ class GoogleAdapter(BaseAdapter):
         super().__init__(config)
         if not GOOGLE_AVAILABLE:
             raise ImportError(
-                "google-generativeai 未安装。请运行: pip install google-generativeai"
+                "google-generativeai Not installed. Please run: pip install google-generativeai"
             )
         self._model = None
 
     def initialize(self) -> None:
-        """初始化 Google AI 客户端"""
+        """Initialize the Google AI client"""
         genai.configure(api_key=self.config.api_key)
         self._model = genai.GenerativeModel(self.config.model)
     
     def _convert_messages(self, messages: List[Message]) -> List[Dict[str, Any]]:
-        """转换消息格式为 Google 格式"""
+        """Convert message format to Google format"""
         result = []
         system_instruction = None
         
@@ -61,7 +61,7 @@ class GoogleAdapter(BaseAdapter):
             if msg.content:
                 parts.append({"text": msg.content})
             
-            # 处理工具调用结果
+            # Process tool call results
             if msg.role == MessageRole.TOOL and msg.tool_call_id:
                 parts.append({
                     "function_response": {
@@ -70,7 +70,7 @@ class GoogleAdapter(BaseAdapter):
                     }
                 })
             
-            # 处理工具调用
+            # Handling tool calls
             if msg.tool_calls:
                 for tc in msg.tool_calls:
                     parts.append({
@@ -89,7 +89,7 @@ class GoogleAdapter(BaseAdapter):
         self, 
         tools: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """转换工具格式为 Google 格式"""
+        """Convert tool format to Google format"""
         google_tools = []
         
         for tool in tools:
@@ -109,7 +109,7 @@ class GoogleAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> LLMResponse:
-        """同步聊天"""
+        """synchronous chat"""
         if not self._model:
             self.initialize()
         
@@ -118,12 +118,12 @@ class GoogleAdapter(BaseAdapter):
         generation_config = {
             "temperature": kwargs.get("temperature", self.config.temperature),
         }
-        # max_tokens: kwargs 优先，其次 config
+        # max_tokens: kwargs first, second config
         max_tokens = kwargs.get("max_tokens") or self.config.max_tokens
         if max_tokens:
             generation_config["max_output_tokens"] = max_tokens
 
-        # 创建带系统指令的模型实例
+        # Create a model instance with system directives
         model = self._model
         if system_instruction:
             model = genai.GenerativeModel(
@@ -131,7 +131,7 @@ class GoogleAdapter(BaseAdapter):
                 system_instruction=system_instruction
             )
         
-        # 准备工具
+        # Preparation tools
         google_tools = None
         if tools:
             google_tools = self.convert_tools_to_provider_format(tools)
@@ -150,7 +150,7 @@ class GoogleAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> LLMResponse:
-        """异步聊天"""
+        """Asynchronous chat"""
         if not self._model:
             self.initialize()
         
@@ -159,7 +159,7 @@ class GoogleAdapter(BaseAdapter):
         generation_config = {
             "temperature": kwargs.get("temperature", self.config.temperature),
         }
-        # max_tokens: kwargs 优先，其次 config
+        # max_tokens: kwargs first, second config
         max_tokens = kwargs.get("max_tokens") or self.config.max_tokens
         if max_tokens:
             generation_config["max_output_tokens"] = max_tokens
@@ -189,15 +189,15 @@ class GoogleAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> AsyncIterator[str]:
-        """异步流式输出"""
-        # Google API 的流式实现
-        # 注意: 需要根据实际 API 调整
+        """Asynchronous streaming output"""
+        # Google API Streaming implementation
+        # Note: Need to be adjusted according to actual API
         response = await self.achat(messages, tools, **kwargs)
         if response.content:
             yield response.content
     
     def _parse_response(self, response) -> LLMResponse:
-        """解析 Google 响应"""
+        """Parse Google response"""
         content = None
         tool_calls = []
         

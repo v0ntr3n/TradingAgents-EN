@@ -10,14 +10,14 @@ def test_get_stock_basic_info_for_single_sync_uses_stable_sources_before_detail_
 
     provider.connected = True
     provider._get_single_stock_profile_info = AsyncMock(return_value={
-        "name": "平安银行",
-        "industry": "货币金融服务",
+        "name": "Ping An Bank",
+        "industry": "money financial services",
         "list_date": "1991-04-03",
-        "market": "主板",
-        "sse": "深圳证券交易所",
+        "market": "motherboard",
+        "sse": "Shenzhen Stock Exchange",
     })
     provider._get_single_stock_listing_info = AsyncMock(return_value={
-        "market": "主板",
+        "market": "motherboard",
     })
     provider._get_single_stock_spot_info = AsyncMock(return_value={
         "total_mv": 2235.56,
@@ -36,8 +36,8 @@ def test_get_stock_basic_info_for_single_sync_uses_stable_sources_before_detail_
 
     assert result is not None
     assert result["sync_status"] == "success"
-    assert result["name"] == "平安银行"
-    assert result["industry"] == "货币金融服务"
+    assert result["name"] == "Ping An Bank"
+    assert result["industry"] == "money financial services"
     assert result["list_date"] == "1991-04-03"
     assert result["total_mv"] == 2235.56
     assert result["pb"] == 0.48
@@ -55,7 +55,7 @@ def test_get_stock_basic_info_for_single_sync_returns_degraded_when_all_sources_
     provider._get_stock_info_detail = AsyncMock(return_value={
         "code": "000001",
         "_detail_fetch_failed": True,
-        "_detail_fetch_error": "AKShare 个股详情接口网络异常",
+        "_detail_fetch_error": "AKShare Network abnormality in individual stock details interface",
         "_detail_symbol": "sz000001",
     })
 
@@ -63,6 +63,6 @@ def test_get_stock_basic_info_for_single_sync_returns_degraded_when_all_sources_
 
     assert result is not None
     assert result["sync_status"] == "degraded"
-    assert result["detail_fetch_error"] == "AKShare 个股详情接口网络异常"
+    assert result["detail_fetch_error"] == "AKShare Network abnormality in individual stock details interface"
     assert result["detail_fetch_symbol"] == "sz000001"
     provider._get_stock_info_detail.assert_awaited_once()

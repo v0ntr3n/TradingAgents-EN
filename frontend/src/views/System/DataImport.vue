@@ -3,106 +3,106 @@
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><Upload /></el-icon>
-        数据导入管理
+        Data import management
       </h1>
       <p class="page-description">
-        通过 API 接口批量导入股票数据、社媒消息等数据到系统中
+        Import stock data, social media news and other data into the system in batches through API interface
       </p>
     </div>
 
     <el-row :gutter="20">
-      <!-- 股票数据批量导入 -->
+      <!-- Stock data batch import -->
       <el-col :span="12">
         <el-card class="import-card" shadow="hover">
           <template #header>
             <div class="card-header">
               <span>
                 <el-icon><TrendCharts /></el-icon>
-                股票数据批量导入
+                Stock data batch import
               </span>
-              <el-tag v-if="!isPro" type="warning" size="small">高级学员</el-tag>
+              <el-tag v-if="!isPro" type="warning" size="small">Senior student</el-tag>
             </div>
           </template>
 
           <div class="card-content">
             <p class="description">
-              通过 API 接口批量导入股票基本信息、实时行情、财务数据、新闻数据和历史K线数据
+              Import basic stock information, real-time quotes, financial data, news data and historical K-line data in batches through the API interface
             </p>
 
             <div class="features">
               <div class="feature-item">
                 <el-icon color="#409EFF"><Check /></el-icon>
-                <span>股票基本信息批量导入</span>
+                <span>Batch import of basic stock information</span>
               </div>
               <div class="feature-item">
                 <el-icon color="#409EFF"><Check /></el-icon>
-                <span>实时行情数据批量导入</span>
+                <span>Batch import of real-time market data</span>
               </div>
               <div class="feature-item">
                 <el-icon color="#409EFF"><Check /></el-icon>
-                <span>财务数据批量导入</span>
+                <span>Batch import of financial data</span>
               </div>
               <div class="feature-item">
                 <el-icon color="#409EFF"><Check /></el-icon>
-                <span>新闻数据批量导入</span>
+                <span>Batch import of news data</span>
               </div>
               <div class="feature-item">
                 <el-icon color="#409EFF"><Check /></el-icon>
-                <span>历史K线数据批量导入</span>
+                <span>Batch import of historical K-line data</span>
               </div>
             </div>
 
             <div class="actions">
               <el-button type="primary" @click="goToStockDataApiGuide">
                 <el-icon><Document /></el-icon>
-                查看 API 文档
+                View API documentation
               </el-button>
             </div>
           </div>
         </el-card>
       </el-col>
 
-      <!-- 社媒消息批量导入 -->
+      <!-- Batch import of social media messages -->
       <el-col :span="12">
         <el-card class="import-card" shadow="hover">
           <template #header>
             <div class="card-header">
               <span>
                 <el-icon><ChatDotRound /></el-icon>
-                社媒消息批量导入
+                Batch import of social media messages
               </span>
-              <el-tag v-if="!isPro" type="warning" size="small">高级</el-tag>
+              <el-tag v-if="!isPro" type="warning" size="small">Advanced</el-tag>
             </div>
           </template>
 
           <div class="card-content">
             <p class="description">
-              通过 API 接口批量导入社交媒体消息数据，支持多平台数据源
+              Import social media message data in batches through API interface, supporting multi-platform data sources
             </p>
 
             <div class="features">
               <div class="feature-item">
                 <el-icon color="#409EFF"><Check /></el-icon>
-                <span>支持多平台消息导入</span>
+                <span>Supports multi-platform message import</span>
               </div>
               <div class="feature-item">
                 <el-icon color="#409EFF"><Check /></el-icon>
-                <span>自动情绪分析</span>
+                <span>Automatic sentiment analysis</span>
               </div>
               <div class="feature-item">
                 <el-icon color="#409EFF"><Check /></el-icon>
-                <span>关键词提取</span>
+                <span>Keyword extraction</span>
               </div>
               <div class="feature-item">
                 <el-icon color="#409EFF"><Check /></el-icon>
-                <span>重要性评估</span>
+                <span>importance assessment</span>
               </div>
             </div>
 
             <div class="actions">
               <el-button type="primary" @click="goToSocialMediaApiGuide">
                 <el-icon><Document /></el-icon>
-                查看 API 文档
+                View API documentation
               </el-button>
             </div>
           </div>
@@ -110,7 +110,7 @@
       </el-col>
     </el-row>
 
-    <!-- 高级学员权限提示 -->
+    <!-- Advanced student permission tips -->
     <el-alert
       v-if="!isPro"
       type="warning"
@@ -119,11 +119,11 @@
       style="margin-top: 20px;"
     >
       <template #title>
-        <strong>批量导入功能为高级学员专属</strong>
+        <strong>The batch import function is exclusive for advanced students</strong>
       </template>
       <p>
-        您当前是初级学员，无法使用批量导入功能。
-        <router-link to="/settings/license">前往授权管理</router-link> 完成高级学员认证。
+        You are currently a junior student and cannot use the batch import function.
+        <router-link to="/settings/license">Go to authorization management</router-link> Complete Advanced Student Certification.
       </p>
     </el-alert>
   </div>
@@ -138,15 +138,15 @@ import { useLicenseStore } from '@/stores/license'
 const router = useRouter()
 const licenseStore = useLicenseStore()
 
-// 检查是否为 PRO 用户
+// Check if you are a PRO user
 const isPro = computed(() => licenseStore.isPro)
 
-// 跳转到股票数据 API 指南
+// Jump to Stock Data API Guide
 const goToStockDataApiGuide = () => {
   router.push('/settings/stock-data/api-guide')
 }
 
-// 跳转到社媒消息 API 指南
+// Jump to Social Media Messaging API Guide
 const goToSocialMediaApiGuide = () => {
   router.push('/settings/social-media/api-guide')
 }

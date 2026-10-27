@@ -1,6 +1,6 @@
 """
-缓存管理路由
-提供缓存统计、清理等功能
+Cache management routing
+Provides cache statistics, cleaning and other functions
 """
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Optional
@@ -18,137 +18,137 @@ router = APIRouter(prefix="/api/cache", tags=["cache"])
 @router.get("/stats")
 async def get_cache_stats(current_user: dict = Depends(get_current_user)):
     """
-    获取缓存统计信息
+    Get cache statistics
     
     Returns:
-        dict: 缓存统计数据
+        dict: cache statistics
     """
     try:
         from tradingagents.dataflows.cache import get_cache
         
         cache = get_cache()
         
-        # 获取缓存统计
+        # Get cache statistics
         stats = cache.get_cache_stats()
         
-        logger.info(f"用户 {current_user['username']} 获取缓存统计")
+        logger.info(f"User {current_user['username']} Get cache statistics")
         
         return ok(
             data={
                 "totalFiles": stats.get('total_files', 0),
-                "totalSize": stats.get('total_size', 0),  # 字节
+                "totalSize": stats.get('total_size', 0),  # Bytes
                 "maxSize": 1024 * 1024 * 1024,  # 1GB
                 "stockDataCount": stats.get('stock_data_count', 0),
                 "newsDataCount": stats.get('news_count', 0),
                 "analysisDataCount": stats.get('fundamentals_count', 0)
             },
-            message="获取缓存统计成功"
+            message="Obtain cache statistics successfully"
         )
         
     except Exception as e:
-        logger.error(f"获取缓存统计失败: {e}")
+        logger.error(f"Failed to obtain cache statistics: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"获取缓存统计失败: {str(e)}"
+            detail=f"Failed to obtain cache statistics: {str(e)}"
         )
 
 
 @router.delete("/cleanup")
 async def cleanup_old_cache(
-    days: int = Query(7, ge=1, le=30, description="清理多少天前的缓存"),
+    days: int = Query(7, ge=1, le=30, description="How many days old cache should be cleared?"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    清理过期缓存
+    Clear expired cache
     
     Args:
-        days: 清理多少天前的缓存
+        days: How many days old cache should be cleared?
         
     Returns:
-        dict: 清理结果
+        dict: Clean results
     """
     try:
         from tradingagents.dataflows.cache import get_cache
         
         cache = get_cache()
         
-        # 清理过期缓存
+        # Clear expired cache
         cache.clear_old_cache(days)
         
-        logger.info(f"用户 {current_user['username']} 清理了 {days} 天前的缓存")
+        logger.info(f"User {current_user['username']} Cleaned up {days} Cache days ago")
         
         return ok(
             data={"days": days},
-            message=f"已清理 {days} 天前的缓存"
+            message=f"Cleaned {days} Cache days ago"
         )
         
     except Exception as e:
-        logger.error(f"清理缓存失败: {e}")
+        logger.error(f"Failed to clear cache: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"清理缓存失败: {str(e)}"
+            detail=f"Failed to clear cache: {str(e)}"
         )
 
 
 @router.delete("/clear")
 async def clear_all_cache(current_user: dict = Depends(get_current_user)):
     """
-    清空所有缓存
+    Clear all cache
 
     Returns:
-        dict: 清理结果
+        dict: Clean results
     """
     try:
         from tradingagents.dataflows.cache import get_cache
 
         cache = get_cache()
 
-        # 清空所有缓存（清理所有过期和未过期的缓存）
-        # 使用 clear_old_cache(0) 来清理所有缓存
+        # Clear all caches (clear all expired and unexpired caches)
+        # Use clear_old_cache(0) to clear all caches
         cache.clear_old_cache(0)
 
-        logger.warning(f"用户 {current_user['username']} 清空了所有缓存")
+        logger.warning(f"User {current_user['username']} Cleared all cache")
 
         return ok(
             data={},
-            message="所有缓存已清空"
+            message="All caches have been cleared"
         )
 
     except Exception as e:
-        logger.error(f"清空缓存失败: {e}")
+        logger.error(f"Failed to clear cache: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"清空缓存失败: {str(e)}"
+            detail=f"Failed to clear cache: {str(e)}"
         )
 
 
 @router.get("/details")
 async def get_cache_details(
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Quantity per page"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取缓存详情列表
+    Get cache details list
     
     Args:
-        page: 页码
-        page_size: 每页数量
+        page: Page number
+        page_size: Quantity per page
         
     Returns:
-        dict: 缓存详情列表
+        dict: Cache details list
     """
     try:
         from tradingagents.dataflows.cache import get_cache
         
         cache = get_cache()
         
-        # 获取缓存详情
-        # 注意：这个方法可能需要在缓存类中实现
+        # Get cache details
+        # Note: This method may need to be implemented in the cache class
         try:
             details = cache.get_cache_details(page=page, page_size=page_size)
         except AttributeError:
-            # 如果缓存类没有实现这个方法，返回空列表
+            # If the cache class does not implement this method, an empty list is returned.
             details = {
                 "items": [],
                 "total": 0,
@@ -156,56 +156,56 @@ async def get_cache_details(
                 "page_size": page_size
             }
         
-        logger.info(f"用户 {current_user['username']} 获取缓存详情 (页码: {page})")
+        logger.info(f"User {current_user['username']} Get cache details (Page number: {page})")
         
         return ok(
             data=details,
-            message="获取缓存详情成功"
+            message="Obtain cache details successfully"
         )
         
     except Exception as e:
-        logger.error(f"获取缓存详情失败: {e}")
+        logger.error(f"Failed to get cache details: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"获取缓存详情失败: {str(e)}"
+            detail=f"Failed to get cache details: {str(e)}"
         )
 
 
 @router.get("/backend-info")
 async def get_cache_backend_info(current_user: dict = Depends(get_current_user)):
     """
-    获取缓存后端信息
+    Get cache backend information
     
     Returns:
-        dict: 缓存后端配置信息
+        dict: Cache backend configuration information
     """
     try:
         from tradingagents.dataflows.cache import get_cache
         
         cache = get_cache()
         
-        # 获取后端信息
+        # Get backend information
         try:
             backend_info = cache.get_cache_backend_info()
         except AttributeError:
-            # 如果缓存类没有实现这个方法，返回基本信息
+            # If the cache class does not implement this method, basic information is returned.
             backend_info = {
                 "system": "file",
                 "primary_backend": "file",
                 "fallback_enabled": False
             }
         
-        logger.info(f"用户 {current_user['username']} 获取缓存后端信息")
+        logger.info(f"User {current_user['username']} Get cache backend information")
         
         return ok(
             data=backend_info,
-            message="获取缓存后端信息成功"
+            message="Obtain cache backend information successfully"
         )
         
     except Exception as e:
-        logger.error(f"获取缓存后端信息失败: {e}")
+        logger.error(f"Failed to obtain cache backend information: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"获取缓存后端信息失败: {str(e)}"
+            detail=f"Failed to obtain cache backend information: {str(e)}"
         )
 

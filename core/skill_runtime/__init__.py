@@ -1,4 +1,4 @@
-"""Skill 运行时标准库。"""
+"""Skill Runtime standard library."""
 
 from .catalog import (
     list_configured_external_sources,

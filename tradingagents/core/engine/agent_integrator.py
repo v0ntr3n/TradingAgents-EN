@@ -1,13 +1,13 @@
 # tradingagents/core/engine/agent_integrator.py
 """
-Agent 集成器
+Agent integrator
 
-桥接 StockAnalysisEngine 与现有的 Agent 实现：
-- 创建 Agent 实例（使用现有的 create_xxx 工厂函数）
-- 转换 AnalysisContext 与 AgentState
-- 调用 Agent 并提取结果
+Bridging StockAnalysisEngine with existing Agent implementation:
+- Create an Agent instance (using the existing create_xxx factory function)
+- Convert AnalysisContext with AgentState
+- Call the Agent and extract the results
 
-所有 Agent 配置统一从 core/agents/config.py 的 BUILTIN_AGENTS 读取
+All Agent configurations are uniformly read from BUILTIN_AGENTS in core/agents/config.py
 """
 
 from typing import Any, Dict, Optional, Callable, Tuple
@@ -21,23 +21,23 @@ logger = get_logger("default")
 
 
 # ========================================
-# Agent 工厂函数映射 (从模块名到工厂函数名)
-# 这是唯一需要维护的映射，配置信息从 BUILTIN_AGENTS 读取
+# Agent Factory function mapping (From module name to factory function name)
+# This is the only mapping that needs to be maintained, configuration information is read from BUILTIN_AGENTS
 # ========================================
 AGENT_FACTORY_REGISTRY = {
-    # 分析师 - 需要 (llm, toolkit)
+    # Analyst - required (llm, toolkit)
     "market_analyst": ("tradingagents.agents", "create_market_analyst", "analyst"),
     "news_analyst": ("tradingagents.agents", "create_news_analyst", "analyst"),
     "sentiment_analyst": ("tradingagents.agents", "create_social_media_analyst", "analyst"),
-    "social_analyst": ("tradingagents.agents", "create_social_media_analyst", "analyst"),  # 别名
+    "social_analyst": ("tradingagents.agents", "create_social_media_analyst", "analyst"),  # Alias
     "fundamentals_analyst": ("tradingagents.agents", "create_fundamentals_analyst", "analyst"),
-    # 研究员 - 需要 (llm, memory)
+    # Researcher - required (llm, memory)
     "bull_researcher": ("tradingagents.agents.researchers.bull_researcher", "create_bull_researcher", "researcher"),
     "bear_researcher": ("tradingagents.agents.researchers.bear_researcher", "create_bear_researcher", "researcher"),
     "research_manager": ("tradingagents.agents.managers.research_manager", "create_research_manager", "manager"),
-    # 交易员 - 需要 (llm, memory)
+    # Trader - required (llm, memory)
     "trader": ("tradingagents.agents.trader.trader", "create_trader", "trader"),
-    # 风控 - 需要 (llm) 或 (llm, memory)
+    # Risk Control - Required (llm) or (llm, memory)
     "risky_analyst": ("tradingagents.agents.risk_mgmt.aggresive_debator", "create_risky_debator", "risk"),
     "safe_analyst": ("tradingagents.agents.risk_mgmt.conservative_debator", "create_safe_debator", "risk"),
     "neutral_analyst": ("tradingagents.agents.risk_mgmt.neutral_debator", "create_neutral_debator", "risk"),
@@ -47,26 +47,26 @@ AGENT_FACTORY_REGISTRY = {
 
 class AgentIntegrator:
     """
-    Agent 集成器
+    Agent integrator
 
-    负责：
-    1. 创建和管理 Agent 实例
-    2. 转换 AnalysisContext <-> AgentState
-    3. 执行 Agent 并提取结果
+    Responsible for:
+    1. Create and manage Agent instances
+    2. Convert AnalysisContext <-> AgentState
+    3. Execute Agent and extract results
 
-    配置来源：
-    - Agent 元数据（output_field 等）从 core/agents/config.py 的 BUILTIN_AGENTS 读取
-    - 工厂函数映射从 AGENT_FACTORY_REGISTRY 读取
+    Configuration source:
+    - Agent Metadata (output_field, etc.) is read from BUILTIN_AGENTS in core/agents/config.py
+    - Factory function mapping is read from AGENT_FACTORY_REGISTRY
     """
 
     def __init__(self, llm: Any, toolkit: Any, memory_config: Dict[str, Any] = None):
         """
-        初始化 Agent 集成器
+        Initialize Agent Integrator
 
         Args:
-            llm: LLM 实例
-            toolkit: 工具集实例
-            memory_config: 可选的 memory 配置字典，包含各类 memory 对象
+            llm: LLM Example
+            toolkit: Toolset examples
+            memory_config: Optional memory configuration dictionary, including various memory objects
         """
         self.llm = llm
         self.toolkit = toolkit
@@ -76,13 +76,13 @@ class AgentIntegrator:
 
     def _get_agent_metadata(self, agent_id: str) -> Optional[Any]:
         """
-        从 BUILTIN_AGENTS 配置获取 Agent 元数据
+        Get Agent metadata from BUILTIN_AGENTS configuration
 
         Args:
             agent_id: Agent ID
 
         Returns:
-            AgentMetadata 对象或 None
+            AgentMetadata object or None
         """
         if agent_id in self._metadata_cache:
             return self._metadata_cache[agent_id]
@@ -94,41 +94,41 @@ class AgentIntegrator:
                 self._metadata_cache[agent_id] = metadata
             return metadata
         except ImportError:
-            logger.warning(f"⚠️ [AgentIntegrator] 无法导入 BUILTIN_AGENTS 配置")
+            logger.warning(f"⚠️ [AgentIntegrator] Unable to import BUILTIN_AGENTS configuration")
             return None
 
     def get_output_field(self, agent_id: str) -> Optional[str]:
         """
-        获取 Agent 的输出字段名
+        Get the output field name of Agent
 
         Args:
             agent_id: Agent ID
 
         Returns:
-            输出字段名，如 "market_report"
+            Output field names, such as "market_report"
         """
         metadata = self._get_agent_metadata(agent_id)
         if metadata and hasattr(metadata, 'output_field') and metadata.output_field:
             return metadata.output_field
-        # 回退：从 outputs 列表获取
+        # Fallback: get from outputs list
         if metadata and hasattr(metadata, 'outputs') and metadata.outputs:
             return metadata.outputs[0].name
         return None
         
     def get_agent(self, agent_id: str) -> Optional[Callable]:
         """
-        获取 Agent 节点函数
+        Get Agent node function
 
         Args:
-            agent_id: Agent ID (如 market_analyst, bull_researcher, trader 等)
+            agent_id: Agent ID (Such as market_analyst, bull_researcher, trader Wait)
 
         Returns:
-            Agent 节点函数或 None
+            Agent node function or None
         """
         if agent_id in self._agent_cache:
             return self._agent_cache[agent_id]
 
-        # 创建 Agent
+        # Create Agent
         agent = self._create_agent(agent_id)
         if agent:
             self._agent_cache[agent_id] = agent
@@ -136,34 +136,34 @@ class AgentIntegrator:
 
     def _create_agent(self, agent_id: str) -> Optional[Callable]:
         """
-        创建 Agent 实例
+        Create Agent instance
 
-        根据 AGENT_FACTORY_REGISTRY 中的配置动态创建 Agent
+        Dynamically created based on configuration in AGENT_FACTORY_REGISTRY Agent
         """
         factory_info = AGENT_FACTORY_REGISTRY.get(agent_id)
         if not factory_info:
-            # 尝试从扩展注册表创建
+            # Try creating from extension registry
             return self._create_extension_agent(agent_id)
 
         module_path, factory_name, agent_type = factory_info
 
         try:
-            # 动态导入模块
+            # Dynamically import modules
             import importlib
             module = importlib.import_module(module_path)
             factory = getattr(module, factory_name, None)
 
             if factory:
-                # 根据 Agent 类型传递不同的参数
+                # Pass different parameters based on Agent type
                 if agent_type == "analyst":
-                    # 分析师需要 (llm, toolkit)
+                    # analysts need (llm, toolkit)
                     agent = factory(self.llm, self.toolkit)
                 elif agent_type in ("researcher", "manager", "trader"):
-                    # 研究员、管理者、交易员需要 (llm, memory)
+                    # Researchers, managers, traders need (llm, memory)
                     memory = self.memory_config.get(agent_id) or self.memory_config.get("default")
                     agent = factory(self.llm, memory)
                 elif agent_type == "risk":
-                    # 风控可能只需要 (llm) 或 (llm, memory)
+                    # Risk control may only require (llm) or (llm, memory)
                     memory = self.memory_config.get(agent_id)
                     if memory:
                         agent = factory(self.llm, memory)
@@ -172,14 +172,14 @@ class AgentIntegrator:
                 else:
                     agent = factory(self.llm, self.toolkit)
 
-                logger.debug(f"🔧 [AgentIntegrator] 创建 Agent: {agent_id} (类型: {agent_type})")
+                logger.debug(f"🔧 [AgentIntegrator] Create Agent: {agent_id} (Type: {agent_type})")
                 return agent
         except Exception as e:
-            logger.error(f"❌ [AgentIntegrator] 创建 Agent 失败 {agent_id}: {e}")
+            logger.error(f"❌ [AgentIntegrator] Agent creation failed {agent_id}: {e}")
         return None
 
     def _create_extension_agent(self, agent_id: str) -> Optional[Callable]:
-        """创建扩展 Agent（从 AgentRegistry 或 AnalystRegistry）"""
+        """Create an extended Agent (from AgentRegistry or AnalystRegistry)"""
         try:
             from core.agents.analyst_registry import AnalystRegistry
             registry = AnalystRegistry()
@@ -190,38 +190,38 @@ class AgentIntegrator:
                     agent = agent_class()
                     if hasattr(agent, 'set_dependencies'):
                         agent.set_dependencies(self.llm, self.toolkit)
-                    logger.debug(f"🔧 [AgentIntegrator] 创建扩展 Agent: {agent_id}")
+                    logger.debug(f"🔧 [AgentIntegrator] Create extension Agent: {agent_id}")
                     return lambda state, a=agent: a.execute(state)
         except Exception as e:
-            logger.debug(f"⚠️ [AgentIntegrator] 扩展 Agent 不可用 {agent_id}: {e}")
+            logger.debug(f"⚠️ [AgentIntegrator] Extended Agent is not available {agent_id}: {e}")
         return None
 
     def context_to_state(self, context: AnalysisContext) -> Dict[str, Any]:
         """
-        将 AnalysisContext 转换为 AgentState 格式
+        Convert AnalysisContext to AgentState format
 
         Args:
-            context: 分析上下文
+            context: Analyze context
 
         Returns:
-            AgentState 兼容的字典
+            AgentState Compatible dictionary
         """
         ticker = context.get(DataLayer.CONTEXT, "ticker") or ""
         trade_date = context.get(DataLayer.CONTEXT, "trade_date") or ""
 
-        # 构建基础状态
+        # Build base state
         state = {
             "company_of_interest": ticker,
             "trade_date": trade_date,
             "messages": [],
-            # 初始化工具调用计数器
+            # Initialize tool call counter
             "market_tool_call_count": 0,
             "news_tool_call_count": 0,
             "sentiment_tool_call_count": 0,
             "fundamentals_tool_call_count": 0,
         }
 
-        # 从配置动态获取所有可能的报告字段
+        # Dynamically get all possible report fields from configuration
         try:
             from core.agents.config import BUILTIN_AGENTS
             for agent_id, metadata in BUILTIN_AGENTS.items():
@@ -242,21 +242,21 @@ class AgentIntegrator:
         max_iterations: int = 3
     ) -> Dict[str, Any]:
         """
-        运行 Agent 并处理工具调用循环
+        Run the Agent and handle the tool invocation loop
 
-        现有的 Agent 设计为多轮迭代：
-        1. 第一轮：LLM 返回工具调用请求
-        2. 工具执行：执行工具，将结果添加到 messages
-        3. 第二轮：LLM 看到工具结果后生成报告
+        The existing Agent is designed for multiple rounds of iteration:
+        1. Round 1: LLM returns tool call request
+        2. Tool Execution: Execute the tool and add the results to messages
+        3. Round 2: LLM generates report after seeing tool results
 
         Args:
-            agent: Agent 节点函数
-            state: 初始状态
+            agent: Agent node function
+            state: initial state
             agent_id: Agent ID
-            max_iterations: 最大迭代次数
+            max_iterations: Maximum number of iterations
 
         Returns:
-            最终的 Agent 执行结果
+            Final Agent execution result
         """
         from langchain_core.messages import ToolMessage
 
@@ -264,42 +264,42 @@ class AgentIntegrator:
         report_field = self.get_output_field(agent_id)
 
         for iteration in range(max_iterations):
-            # 执行 Agent
+            # execute Agent
             result = agent(current_state)
 
-            # 检查是否已生成报告
+            # Check if the report has been generated
             if report_field and report_field in result and result[report_field]:
-                logger.info(f"✅ [AgentIntegrator] {agent_id} 第 {iteration + 1} 轮生成报告")
+                logger.info(f"✅ [AgentIntegrator] {agent_id} No. {iteration + 1} wheel generation report")
                 return result
 
-            # 检查是否有工具调用请求
+            # Check if there is a tool call request
             messages = result.get("messages", [])
             if not messages:
-                logger.warning(f"⚠️ [AgentIntegrator] {agent_id} 未返回 messages")
+                logger.warning(f"⚠️ [AgentIntegrator] {agent_id} Not returned messages")
                 return result
 
             last_message = messages[-1] if messages else None
             if not last_message or not hasattr(last_message, 'tool_calls') or not last_message.tool_calls:
-                # 没有工具调用，直接返回
-                logger.info(f"📝 [AgentIntegrator] {agent_id} 第 {iteration + 1} 轮无工具调用")
+                # No tool call, return directly
+                logger.info(f"📝 [AgentIntegrator] {agent_id} No. {iteration + 1} Round No Tool Call")
                 return result
 
-            # 执行工具调用
-            logger.info(f"🔧 [AgentIntegrator] {agent_id} 第 {iteration + 1} 轮执行工具调用")
+            # Execute tool call
+            logger.info(f"🔧 [AgentIntegrator] {agent_id} No. {iteration + 1} round execution tool call")
             tool_results = self._execute_tool_calls(last_message.tool_calls)
 
-            # 更新状态：添加 AI 消息和工具结果到历史
+            # Update status: Added AI messages and tool results to history
             current_state["messages"] = current_state.get("messages", []) + [last_message] + tool_results
 
-            # 更新工具调用计数器
+            # Update tool call counter
             counter_key = f"{agent_id.replace('_analyst', '')}_tool_call_count"
             current_state[counter_key] = current_state.get(counter_key, 0) + 1
 
-        logger.warning(f"⚠️ [AgentIntegrator] {agent_id} 达到最大迭代次数 {max_iterations}")
+        logger.warning(f"⚠️ [AgentIntegrator] {agent_id} Maximum number of iterations reached {max_iterations}")
         return result
 
     def _execute_tool_calls(self, tool_calls: list) -> list:
-        """执行工具调用并返回 ToolMessage 列表"""
+        """Performs a tool call and returns a list of ToolMessages"""
         from langchain_core.messages import ToolMessage
 
         tool_messages = []
@@ -308,11 +308,11 @@ class AgentIntegrator:
             tool_args = tc.get('args', {})
             tool_id = tc.get('id', '')
 
-            logger.info(f"🔧 [AgentIntegrator] 执行工具: {tool_name}")
-            logger.debug(f"  参数: {tool_args}")
+            logger.info(f"🔧 [AgentIntegrator] Execution tool: {tool_name}")
+            logger.debug(f"  parameters: {tool_args}")
 
             try:
-                # 从 toolkit 获取工具函数
+                # Get tool functions from toolkit
                 tool_func = self._get_tool_function(tool_name)
                 if tool_func:
                     result = tool_func.invoke(tool_args)
@@ -321,9 +321,9 @@ class AgentIntegrator:
                         tool_call_id=tool_id,
                         name=tool_name
                     ))
-                    logger.info(f"✅ [AgentIntegrator] 工具 {tool_name} 执行成功，结果长度: {len(str(result))}")
+                    logger.info(f"✅ [AgentIntegrator] Tools {tool_name} Successful execution, result length: {len(str(result))}")
                 else:
-                    error_msg = f"工具 {tool_name} 不存在"
+                    error_msg = f"Tools {tool_name} does not exist"
                     logger.warning(f"⚠️ [AgentIntegrator] {error_msg}")
                     tool_messages.append(ToolMessage(
                         content=error_msg,
@@ -331,7 +331,7 @@ class AgentIntegrator:
                         name=tool_name
                     ))
             except Exception as e:
-                error_msg = f"工具执行失败: {str(e)}"
+                error_msg = f"Tool execution failed: {str(e)}"
                 logger.error(f"❌ [AgentIntegrator] {error_msg}")
                 tool_messages.append(ToolMessage(
                     content=error_msg,
@@ -342,8 +342,8 @@ class AgentIntegrator:
         return tool_messages
 
     def _get_tool_function(self, tool_name: str):
-        """从 toolkit 获取工具函数"""
-        # 尝试从不同的工具集获取
+        """Get tool functions from toolkit"""
+        # Try getting it from a different toolset
         tool_sets = [
             self.toolkit.get_general_tools,
             self.toolkit.get_market_analysis_tools,
@@ -369,18 +369,18 @@ class AgentIntegrator:
         result: Dict[str, Any]
     ) -> Tuple[Optional[str], Optional[str]]:
         """
-        从 Agent 执行结果中提取报告
+        Extract reports from Agent execution results
 
         Args:
             agent_id: Agent ID
-            result: Agent 执行结果
+            result: Agent Execution result
 
         Returns:
-            (report_field, report_content) 元组
+            (report_field, report_content) tuple
         """
         report_field = self.get_output_field(agent_id)
         
-        # v2.0 agent输出字段到标准报告字段的映射
+        # v2.0 agent Mapping of output fields to standard report fields
         v2_field_mapping = {
             # research_manager_v2: investment_advice -> investment_plan
             'investment_advice': 'investment_plan',
@@ -388,7 +388,7 @@ class AgentIntegrator:
             'trade_plan': 'trader_investment_plan',
             # risk_manager_v2: risk_assessment -> risk_management_decision
             'risk_assessment': 'risk_management_decision',
-            # 其他v2字段映射
+            # Other v2 field mappings
             'bull_report': 'bull_researcher',
             'bear_report': 'bear_researcher',
             'risky_opinion': 'risky_analyst',
@@ -397,7 +397,7 @@ class AgentIntegrator:
         }
         
         if report_field and report_field in result:
-            # 如果是v2字段，映射到标准字段
+            # If it is a v2 field, it is mapped to a standard field
             mapped_field = v2_field_mapping.get(report_field, report_field)
             return mapped_field, result[report_field]
         

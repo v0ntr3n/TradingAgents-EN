@@ -18,12 +18,12 @@ export interface RebuildResult {
   vector_backend: string
 }
 
-/** 获取能力索引当前状态 */
+/** Get the current status of the capability index */
 export function getCapabilityIndexState() {
   return request.get('/api/capability-index/state')
 }
 
-/** 强制重建能力索引 */
+/** Force index rebuild capability */
 export function rebuildCapabilityIndex() {
   return request.post('/api/capability-index/rebuild')
 }

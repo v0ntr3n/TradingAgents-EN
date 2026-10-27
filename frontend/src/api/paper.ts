@@ -5,10 +5,10 @@ export interface CurrencyAmount {
 }
 
 export interface PaperAccountSummary {
-  cash: CurrencyAmount | number  // 支持新旧格式
-  realized_pnl: CurrencyAmount | number  // 支持新旧格式
+  cash: CurrencyAmount | number  // Support new and old formats
+  realized_pnl: CurrencyAmount | number  // Support new and old formats
   positions_value: CurrencyAmount
-  equity: CurrencyAmount | number  // 支持新旧格式
+  equity: CurrencyAmount | number  // Support new and old formats
   updated_at?: string
 }
 
@@ -43,7 +43,7 @@ export interface PlaceOrderPayload {
   side: 'buy' | 'sell'
   quantity: number
   market?: string
-  price?: number  // 可选：指定价格
+  price?: number  // Optional: specify price
   analysis_id?: string
 }
 
@@ -77,19 +77,19 @@ export const paperApi = {
     return ApiClient.get<{ items: PaperOrderItem[] }>(`/api/paper/orders`, { limit })
   },
   /**
-   * 初始化账户（设置初始金额）
-   * 如果账户已存在，会清空持仓和订单，重置为指定金额
-   * 如果账户不存在，会创建新账户
+   * Initialize account (set initial amount)
+   * If the account already exists, positions and orders will be cleared and reset to the specified amount.
+   * If the account does not exist, a new account will be created
    */
   async initializeAccount(data: InitializeAccountRequest) {
     return ApiClient.post<{ message: string; cash: CurrencyAmount; account: any }>('/api/paper/initialize', data, { showLoading: true })
   },
   /**
-   * 重置账户（支持自定义初始金额）
-   * 如果不提供 initial_cash，则使用默认金额
+   * Reset account (supports custom initial amount)
+   * If initial_cash is not provided, the default amount is used
    */
   async resetAccount(data?: ResetAccountRequest) {
-    // 后端要求 confirm=true
+    // Backend requirements confirm=true
     const params = new URLSearchParams()
     params.append('confirm', 'true')
     return ApiClient.post<{ message: string; cash: CurrencyAmount }>(

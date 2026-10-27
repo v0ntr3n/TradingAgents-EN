@@ -1,5 +1,5 @@
 """
-工作流数据模型定义
+Workflow data model definition
 """
 
 from enum import Enum
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class NodeType(str, Enum):
-    """节点类型"""
+    """Node type"""
     START = "start"
     END = "end"
     ANALYST = "analyst"
@@ -17,41 +17,41 @@ class NodeType(str, Enum):
     RISK = "risk"
     MANAGER = "manager"
     CONDITION = "condition"
-    PARALLEL = "parallel"       # 并行开始
-    MERGE = "merge"             # 并行合并
-    DEBATE = "debate"           # 辩论节点（多轮对抗）
-    POST_PROCESSOR = "post_processor"  # 后处理器（报告生成等）
+    PARALLEL = "parallel"       # Start in parallel
+    MERGE = "merge"             # Parallel merge
+    DEBATE = "debate"           # Debate nodes (multiple rounds of confrontation)
+    POST_PROCESSOR = "post_processor"  # Post-processor (report generation, etc.)
 
 
 class EdgeType(str, Enum):
-    """边类型"""
+    """edge type"""
     NORMAL = "normal"
     CONDITIONAL = "conditional"
 
 
 class Position(BaseModel):
-    """节点位置"""
+    """Node position"""
     x: float = 0
     y: float = 0
 
 
 class NodeDefinition(BaseModel):
     """
-    工作流节点定义
+    Workflow node definition
     """
-    id: str                          # 节点唯一 ID
-    type: NodeType                   # 节点类型
-    agent_id: Optional[str] = None   # 关联的智能体 ID
-    label: str = ""                  # 显示标签
+    id: str                          # Node is unique ID
+    type: NodeType                   # Node type
+    agent_id: Optional[str] = None   # associated agents ID
+    label: str = ""                  # show label
     
-    # 位置 (用于前端渲染)
+    # location (for front-end rendering)
     position: Position = Field(default_factory=Position)
     
-    # 节点配置
+    # Node configuration
     config: Dict[str, Any] = Field(default_factory=dict)
     
-    # 条件节点专用
-    condition: Optional[str] = None  # 条件表达式
+    # Special for conditional nodes
+    condition: Optional[str] = None  # conditional expression
     
     class Config:
         use_enum_values = True
@@ -59,17 +59,17 @@ class NodeDefinition(BaseModel):
 
 class EdgeDefinition(BaseModel):
     """
-    工作流边定义
+    Workflow edge definition
     """
-    id: str                          # 边唯一 ID
-    source: str                      # 源节点 ID
-    target: str                      # 目标节点 ID
+    id: str                          # Bian Weiwei ID
+    source: str                      # source node ID
+    target: str                      # target node ID
     type: EdgeType = EdgeType.NORMAL
     
-    # 条件边专用
-    condition: Optional[str] = None  # 条件标签 (如 "true", "false")
+    # Special for conditional edges
+    condition: Optional[str] = None  # conditional tag (Such as "true", "false")
     
-    # 样式
+    # style
     label: Optional[str] = None
     animated: bool = False
     
@@ -78,7 +78,7 @@ class EdgeDefinition(BaseModel):
 
 
 class OutputStrategy(str, Enum):
-    """产出物组装策略"""
+    """Output assembly strategy"""
     AUTO = "auto"
     COLLECT_ALL = "collect_all"
     SPECIFIED = "specified"
@@ -86,7 +86,7 @@ class OutputStrategy(str, Enum):
 
 
 class OutputFieldConfig(BaseModel):
-    """单个输出字段的配置"""
+    """Configuration of individual output fields"""
     field_name: str
     display_name: str = ""
     category: str = ""
@@ -96,7 +96,7 @@ class OutputFieldConfig(BaseModel):
 
 
 class WorkflowOutputConfig(BaseModel):
-    """工作流产出物配置"""
+    """Workflow output configuration"""
     strategy: OutputStrategy = OutputStrategy.AUTO
     fields: List[OutputFieldConfig] = Field(default_factory=list)
     primary_field: str = ""
@@ -105,41 +105,41 @@ class WorkflowOutputConfig(BaseModel):
         use_enum_values = True
 
 
-# ==================== 输入参数定义 ====================
+# ==================== Input parameter definition ====================
 
 class InputFieldType(str, Enum):
-    """输入参数控件类型"""
-    STRING = "string"          # 单行文本
-    TEXTAREA = "textarea"      # 多行文本
-    NUMBER = "number"          # 数字
-    BOOLEAN = "boolean"        # 开关
-    DATE = "date"              # 日期选择
-    SELECT = "select"          # 下拉选择
-    MULTISELECT = "multiselect"  # 多选
+    """Input parameter control type"""
+    STRING = "string"          # single line of text
+    TEXTAREA = "textarea"      # multiline text
+    NUMBER = "number"          # numbers
+    BOOLEAN = "boolean"        # switch
+    DATE = "date"              # date selection
+    SELECT = "select"          # drop down selection
+    MULTISELECT = "multiselect"  # Multiple choice
 
 
 class InputFieldConfig(BaseModel):
-    """单个输入参数定义"""
-    name: str                                # 参数名（传给后端的 key）
-    label: str = ""                          # 表单显示标签
+    """Single input parameter definition"""
+    name: str                                # Parameter name (key passed to the backend)
+    label: str = ""                          # form display label
     type: InputFieldType = InputFieldType.STRING
     required: bool = False
-    default: Optional[Any] = None            # 默认值
-    description: str = ""                    # 参数描述/提示
-    placeholder: str = ""                    # 输入框占位提示
-    options: Optional[List[Any]] = None      # 选项列表（select/multiselect 时使用）
-    option_labels: Optional[List[str]] = None  # 选项显示名（与 options 一一对应）
-    min: Optional[float] = None              # 数值最小值
-    max: Optional[float] = None              # 数值最大值
-    group: str = ""                          # 分组标签（如"基本参数"/"高级参数"）
-    order: int = 0                           # 排序
+    default: Optional[Any] = None            # Default value
+    description: str = ""                    # Parameter description/tips
+    placeholder: str = ""                    # Input box placeholder prompt
+    options: Optional[List[Any]] = None      # Option list (used when selecting/multiselect)
+    option_labels: Optional[List[str]] = None  # Option display name (one-to-one correspondence with options)
+    min: Optional[float] = None              # numerical minimum
+    max: Optional[float] = None              # numerical maximum
+    group: str = ""                          # grouping labels (e.g."Basic parameters"/"Advanced parameters") 
+    order: int = 0                           # sort
 
     class Config:
         use_enum_values = True
 
 
 class WorkflowInputConfig(BaseModel):
-    """工作流输入参数配置"""
+    """Workflow input parameter configuration"""
     fields: List[InputFieldConfig] = Field(default_factory=list)
 
     class Config:
@@ -148,89 +148,89 @@ class WorkflowInputConfig(BaseModel):
 
 class WorkflowDefinition(BaseModel):
     """
-    工作流定义
+    Workflow definition
     
-    描述一个完整的分析工作流，可以序列化为 JSON 存储
+    Describes a complete analysis workflow that can be serialized to JSON storage
     """
-    id: str                          # 工作流唯一 ID
-    name: str                        # 工作流名称
-    description: str = ""            # 描述
+    id: str                          # workflow unique ID
+    name: str                        # Workflow name
+    description: str = ""            # Description
     version: str = "1.0.0"
     
-    # 节点和边
+    # nodes and edges
     nodes: List[NodeDefinition] = Field(default_factory=list)
     edges: List[EdgeDefinition] = Field(default_factory=list)
     
-    # 元数据
+    # metadata
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
     created_by: Optional[str] = None
     
-    # 配置
+    # Configuration
     config: Dict[str, Any] = Field(default_factory=dict)
     
-    # 产出物配置
+    # Output configuration
     output_config: WorkflowOutputConfig = Field(
         default_factory=WorkflowOutputConfig
     )
 
-    # 🆕 输入参数配置（定义工作流需要哪些输入参数，用于动态生成执行表单）
+    # 🆕 Input parameter configuration (define what input parameters are required for the workflow and used to dynamically generate execution forms)
     input_config: WorkflowInputConfig = Field(
         default_factory=WorkflowInputConfig
     )
     
-    # 标签
+    # label
     tags: List[str] = Field(default_factory=list)
-    is_template: bool = False        # 是否为模板
-    workflow_type: Optional[str] = None  # 流程类型（stock_analysis/etf_analysis/position_analysis/trade_review/portfolio_health/general）
+    is_template: bool = False        # Whether it is a template
+    workflow_type: Optional[str] = None  # Process type (stock_analysis/etf_analysis/position_analysis/trade_review/portfolio_health/general)
     
     def get_node(self, node_id: str) -> Optional[NodeDefinition]:
-        """获取节点"""
+        """Get node"""
         for node in self.nodes:
             if node.id == node_id:
                 return node
         return None
     
     def get_edges_from(self, node_id: str) -> List[EdgeDefinition]:
-        """获取从指定节点出发的边"""
+        """Get the edges starting from the specified node"""
         return [e for e in self.edges if e.source == node_id]
     
     def get_edges_to(self, node_id: str) -> List[EdgeDefinition]:
-        """获取指向指定节点的边"""
+        """Get the edge pointing to the specified node"""
         return [e for e in self.edges if e.target == node_id]
     
     def get_start_node(self) -> Optional[NodeDefinition]:
-        """获取开始节点"""
+        """Get the starting node"""
         for node in self.nodes:
             if node.type == NodeType.START:
                 return node
         return None
     
     def get_end_nodes(self) -> List[NodeDefinition]:
-        """获取结束节点"""
+        """Get the end node"""
         return [n for n in self.nodes if n.type == NodeType.END]
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
+        """Convert to dictionary"""
         return self.model_dump()
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "WorkflowDefinition":
-        """从字典创建"""
+        """Create from dictionary"""
         return cls.model_validate(data)
     
     def to_json(self) -> str:
-        """转换为 JSON 字符串"""
+        """Convert to JSON string"""
         return self.model_dump_json(indent=2)
     
     @classmethod
     def from_json(cls, json_str: str) -> "WorkflowDefinition":
-        """从 JSON 字符串创建"""
+        """Create from JSON string"""
         return cls.model_validate_json(json_str)
 
 
 class WorkflowExecutionState(str, Enum):
-    """工作流执行状态"""
+    """Workflow execution status"""
     PENDING = "pending"
     RUNNING = "running"
     PAUSED = "paused"
@@ -241,25 +241,25 @@ class WorkflowExecutionState(str, Enum):
 
 class WorkflowExecution(BaseModel):
     """
-    工作流执行记录
+    Workflow execution record
     """
-    id: str                          # 执行 ID
-    workflow_id: str                 # 工作流 ID
+    id: str                          # execute ID
+    workflow_id: str                 # Workflow ID
     state: WorkflowExecutionState = WorkflowExecutionState.PENDING
     
-    # 输入输出
+    # Input and output
     inputs: Dict[str, Any] = Field(default_factory=dict)
     outputs: Dict[str, Any] = Field(default_factory=dict)
     
-    # 节点执行状态
+    # Node execution status
     node_states: Dict[str, str] = Field(default_factory=dict)
     current_node: Optional[str] = None
     
-    # 时间戳
+    # Timestamp
     started_at: Optional[str] = None
     completed_at: Optional[str] = None
     
-    # 错误信息
+    # error message
     error: Optional[str] = None
     
     class Config:

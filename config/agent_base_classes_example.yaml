@@ -1,43 +1,43 @@
-# Agent基类配置示例
-# v2.0 新增：5种Agent基类的配置示例
+# Agent Base class configuration example
+# v2.0 New: Configuration examples of 5 Agent base classes
 
 # ============================================
-# 模式A: 分析师Agent (AnalystAgent)
+# mode A: analyst Agent (AnalystAgent)
 # ============================================
 
-# 市场分析师
+# market analyst
 market_analyst:
   base_class: AnalystAgent
   analyst_type: market
   output_field: market_report
   
-  # 工具配置
+  # Tool configuration
   tools:
     - get_stock_price
     - get_technical_indicators
     - get_volume_data
   
-  # 提示词配置
+  # Prompt word configuration
   prompts:
     system: |
-      你是一位专业的市场分析师，擅长技术分析。
-      你需要分析股票的价格走势、技术指标和成交量。
+      You are a professional market analyst who is good at technical analysis.
+      You ll need to analyze a stock s price action, technical indicators, and volume.
       
     user_template: |
-      请分析 {ticker} 在 {analysis_date} 的市场表现：
+      Please analyze {ticker} in {analysis_date} market performance:
       
-      价格数据：
+      Price data:
       {price_data}
       
-      技术指标：
+      Technical indicators:
       {technical_indicators}
       
-      成交量：
+      Volume:
       {volume_data}
       
-      请给出详细的技术分析报告。
+      Please give a detailed technical analysis report.
 
-# 新闻分析师
+# news analyst
 news_analyst:
   base_class: AnalystAgent
   analyst_type: news
@@ -49,21 +49,21 @@ news_analyst:
   
   prompts:
     system: |
-      你是一位专业的新闻分析师，擅长情绪分析。
-      你需要分析新闻对股票的影响。
+      You are a professional news analyst who specializes in sentiment analysis.
+      You need to analyze the impact of news on stocks.
       
     user_template: |
-      请分析 {ticker} 在 {analysis_date} 的新闻：
+      Please analyze {ticker} in {analysis_date} news:
       
-      新闻列表：
+      News list:
       {news_data}
       
-      情绪分析：
+      Sentiment analysis:
       {sentiment_data}
       
-      请给出详细的新闻分析报告。
+      Please provide a detailed news analysis report.
 
-# 基本面分析师
+# fundamental analyst
 fundamentals_analyst:
   base_class: AnalystAgent
   analyst_type: fundamentals
@@ -76,61 +76,61 @@ fundamentals_analyst:
   
   prompts:
     system: |
-      你是一位专业的基本面分析师，擅长财务分析。
-      你需要分析公司的财务状况和估值。
+      You are a professional fundamental analyst who is good at financial analysis.
+      You need to analyze the company s financial health and valuation.
       
     user_template: |
-      请分析 {ticker} 的基本面：
+      Please analyze {ticker} Fundamentals of:
       
-      财务报表：
+      Financial statements:
       {financial_statements}
       
-      财务比率：
+      Financial Ratios:
       {financial_ratios}
       
-      盈利数据：
+      Profit data:
       {earnings_data}
       
-      请给出详细的基本面分析报告。
+      Please provide a detailed fundamental analysis report.
 
 # ============================================
-# 模式B: 研究员Agent (ResearcherAgent)
+# mode B: researcher Agent (ResearcherAgent)
 # ============================================
 
-# 看涨研究员
+# bullish researcher
 bull_researcher:
   base_class: ResearcherAgent
   researcher_type: bull
   output_field: bull_report
   stance: bull
   
-  # 需要的报告
+  # Reports required
   required_reports:
     - market_report
     - news_report
     - fundamentals_report
   
-  # 提示词配置
+  # Prompt word configuration
   prompts:
     system: |
-      你是一位看涨研究员，需要从看涨的角度综合分析。
-      你需要找出所有支持买入的理由。
+      You are a bullish researcher and need a comprehensive analysis from a bullish perspective.
+      You need to find all the reasons to buy.
       
     user_template: |
-      请从看涨角度分析 {ticker}：
+      Please analyze from a bullish perspective {ticker}: 
       
-      市场分析：
+      Market analysis:
       {market_report}
       
-      新闻分析：
+      News analysis:
       {news_report}
       
-      基本面分析：
+      Fundamental analysis:
       {fundamentals_report}
       
-      请给出看涨观点和理由。
+      Please give your bullish view and reasons.
 
-# 看跌研究员
+# bearish researcher
 bear_researcher:
   base_class: ResearcherAgent
   researcher_type: bear
@@ -144,28 +144,28 @@ bear_researcher:
   
   prompts:
     system: |
-      你是一位看跌研究员，需要从看跌的角度综合分析。
-      你需要找出所有支持卖出的理由。
+      You are a bearish researcher and need a comprehensive analysis from a bearish perspective.
+      You need to find all the reasons to sell.
       
     user_template: |
-      请从看跌角度分析 {ticker}：
+      Please analyze it from a bearish perspective {ticker}: 
       
-      市场分析：
+      Market analysis:
       {market_report}
       
-      新闻分析：
+      News analysis:
       {news_report}
       
-      基本面分析：
+      Fundamental analysis:
       {fundamentals_report}
       
-      请给出看跌观点和理由。
+      Please give your bearish view and reasons.
 
 # ============================================
-# 模式C: 管理者Agent (ManagerAgent)
+# mode C: manager Agent (ManagerAgent)
 # ============================================
 
-# 研究经理
+# research manager
 research_manager:
   base_class: ManagerAgent
   manager_type: research
@@ -173,32 +173,32 @@ research_manager:
   enable_debate: true
   debate_rounds: 2
   
-  # 需要的输入
+  # required input
   required_inputs:
     - bull_report
     - bear_report
   
-  # 提示词配置
+  # Prompt word configuration
   prompts:
     system: |
-      你是一位研究经理，需要综合看涨和看跌观点做出决策。
-      你需要权衡双方的理由，给出最终的投资建议。
+      You are a research manager who needs to combine bullish and bearish views to make decisions.
+      You need to weigh the reasons from both sides and make a final investment recommendation.
       
     user_template: |
-      请综合分析 {ticker} 的投资机会：
+      Please analyze comprehensively {ticker} investment opportunities:
       
-      看涨观点：
+      Bullish view:
       {bull_report}
       
-      看跌观点：
+      Bearish view:
       {bear_report}
       
-      辩论总结：
+      Debate summary:
       {debate_summary}
       
-      请给出最终的投资计划（买入/持有/卖出）。
+      Please give your final investment plan (buy/hold/sell).
 
-# 风险经理
+# risk manager
 risk_manager:
   base_class: ManagerAgent
   manager_type: risk
@@ -212,63 +212,63 @@ risk_manager:
 
   prompts:
     system: |
-      你是一位风险经理，需要评估投资风险。
-      你需要识别潜在风险并给出风险控制建议。
+      You are a risk manager who needs to assess investment risks.
+      You need to identify potential risks and provide risk control recommendations.
 
     user_template: |
-      请评估 {ticker} 的投资风险：
+      Please evaluate {ticker} Investment risks:
 
-      投资计划：
+      Investment plan:
       {investment_plan}
 
-      市场分析：
+      Market analysis:
       {market_report}
 
-      基本面分析：
+      Fundamental analysis:
       {fundamentals_report}
 
-      请给出风险评估和控制建议。
+      Please provide risk assessment and control suggestions.
 
 # ============================================
-# 模式D: 交易员Agent (TraderAgent)
+# mode D: trader Agent (TraderAgent)
 # ============================================
 
-# 交易员
+# trader
 trader:
   base_class: TraderAgent
   output_field: trading_plan
 
-  # 提示词配置
+  # Prompt word configuration
   prompts:
     system: |
-      你是一位专业交易员，需要根据投资计划生成具体的交易指令。
-      你需要考虑买入价格、数量、止损位、止盈位等。
+      You are a professional trader who needs to generate specific trading instructions based on your investment plan.
+      You need to consider the buying price, quantity, stop loss level, take profit level, etc.
 
     user_template: |
-      请为 {ticker} 生成交易计划：
+      please for {ticker} Generate a trading plan:
 
-      投资计划：
+      Investment plan:
       {investment_plan}
 
-      风险评估：
+      Risk assessment:
       {risk_assessment}
 
-      市场分析：
+      Market analysis:
       {market_report}
 
-      所有报告：
+      All reports:
       {all_reports}
 
-      历史交易：
+      Historical transactions:
       {historical_trades}
 
-      请给出具体的交易指令（买入价、数量、止损、止盈）。
+      Please give specific trading instructions (buy price, quantity, stop loss, take profit).
 
 # ============================================
-# 模式E: 后处理Agent (PostProcessorAgent)
+# mode E: Post-processing Agent (PostProcessorAgent)
 # ============================================
 
-# 报告保存器
+# report saver
 report_saver:
   base_class: PostProcessorAgent
   processor_type: save_report
@@ -298,7 +298,7 @@ report_saver:
       operator: equals
       value: true
 
-# 邮件通知器
+# Email Notifier
 email_notifier:
   base_class: PostProcessorAgent
   processor_type: send_email
@@ -306,7 +306,7 @@ email_notifier:
   operations:
     - type: send_email
       to: "{user.email}"
-      subject: "{ticker} 分析完成 - {recommendation}"
+      subject: "{ticker} Analysis completed - {recommendation}"
       template: analysis_complete
       use_llm_summary: true
       attachments:
@@ -316,12 +316,12 @@ email_notifier:
   conditions:
     - field: investment_plan.recommendation
       operator: in
-      value: ["买入", "卖出"]
+      value: ["buy", "sell"]
     - field: investment_plan.confidence_score
       operator: greater_than
       value: 0.7
 
-# 系统通知器
+# System Notifier
 system_notifier:
   base_class: PostProcessorAgent
   processor_type: send_notification
@@ -329,7 +329,7 @@ system_notifier:
   operations:
     - type: send_notification
       notification_type: analysis
-      title: "{ticker} 分析完成"
+      title: "{ticker} Analysis completed"
       content: "{summary}"
       link: "/analysis/{analysis_id}"
       severity: info

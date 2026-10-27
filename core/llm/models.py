@@ -1,5 +1,5 @@
 """
-LLM 相关数据模型定义
+LLM Related data model definitions
 """
 
 from enum import Enum
@@ -8,12 +8,12 @@ from pydantic import BaseModel, Field
 
 
 class LLMProvider(str, Enum):
-    """LLM 提供商枚举"""
+    """LLM Provider enumeration"""
     OPENAI = "openai"
     DEEPSEEK = "deepseek"
-    DASHSCOPE = "dashscope"  # 通义千问
-    ZHIPU = "zhipu"          # 智谱AI
-    SILICONFLOW = "siliconflow"  # 硅基流动
+    DASHSCOPE = "dashscope"  # Tongyi Qianwen
+    ZHIPU = "zhipu"          # Wisdom spectrum AI
+    SILICONFLOW = "siliconflow"  # silicon based flow
     GOOGLE = "google"
     ANTHROPIC = "anthropic"
     OLLAMA = "ollama"
@@ -21,7 +21,7 @@ class LLMProvider(str, Enum):
 
 
 class MessageRole(str, Enum):
-    """消息角色"""
+    """message role"""
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
@@ -29,7 +29,7 @@ class MessageRole(str, Enum):
 
 
 class Message(BaseModel):
-    """统一消息格式"""
+    """unified message format"""
     role: MessageRole
     content: Optional[str] = None
     reasoning_content: Optional[str] = None
@@ -42,14 +42,14 @@ class Message(BaseModel):
 
 
 class ToolCall(BaseModel):
-    """工具调用定义"""
+    """Tool call definition"""
     id: str
     name: str
     arguments: Dict[str, Any] = Field(default_factory=dict)
     
     @classmethod
     def from_openai_format(cls, tool_call: dict) -> "ToolCall":
-        """从 OpenAI 格式转换"""
+        """Convert from OpenAI format"""
         import json
         return cls(
             id=tool_call.get("id", ""),
@@ -59,7 +59,7 @@ class ToolCall(BaseModel):
     
     @classmethod
     def from_google_format(cls, tool_call: dict) -> "ToolCall":
-        """从 Google 格式转换"""
+        """Convert from Google format"""
         return cls(
             id=tool_call.get("id", f"call_{hash(str(tool_call))}"),
             name=tool_call.get("name", ""),
@@ -68,7 +68,7 @@ class ToolCall(BaseModel):
 
 
 class ToolResult(BaseModel):
-    """工具执行结果"""
+    """Tool execution results"""
     tool_call_id: str
     name: str
     content: str
@@ -76,22 +76,22 @@ class ToolResult(BaseModel):
 
 
 class LLMConfig(BaseModel):
-    """LLM 配置"""
+    """LLM Configuration"""
     provider: LLMProvider
     model: str
     api_key: Optional[str] = None
     base_url: Optional[str] = None
-    temperature: float = 0.2  # 股票分析推荐值：0.2-0.3（快速分析），0.1-0.2（深度分析）
+    temperature: float = 0.2  # Recommended values for stock analysis: 0.2-0.3 (quick analysis), 0.1-0.2 (in-depth analysis)
     max_tokens: Optional[int] = None
     timeout: int = 180
     retry_times: int = 3
     
-    # 高级配置
+    # Advanced configuration
     top_p: Optional[float] = None
     frequency_penalty: Optional[float] = None
     presence_penalty: Optional[float] = None
     
-    # 工具调用配置
+    # Tool call configuration
     tool_choice: Optional[str] = None  # "auto", "none", "required"
     parallel_tool_calls: bool = True
     
@@ -100,7 +100,7 @@ class LLMConfig(BaseModel):
     
     @classmethod
     def from_env(cls, provider: LLMProvider) -> "LLMConfig":
-        """从环境变量创建配置"""
+        """Create configuration from environment variables"""
         import os
         import logging
         
@@ -138,12 +138,12 @@ class LLMConfig(BaseModel):
         }
         
         if provider not in config_map:
-            raise ValueError(f"不支持的提供商: {provider}")
+            raise ValueError(f"Unsupported provider: {provider}")
         
         config_data = config_map[provider]
         api_key = config_data.get("api_key")
         
-        # 🔥 检查 API key 是否存在，如果不存在则记录警告
+        # 🔥 Check if the API key exists and log a warning if it does not exist
         if not api_key:
             env_key_map = {
                 LLMProvider.OPENAI: "OPENAI_API_KEY",
@@ -155,35 +155,35 @@ class LLMConfig(BaseModel):
             }
             expected_env_key = env_key_map.get(provider, "API_KEY")
             logger.warning(
-                f"⚠️ 环境变量 {expected_env_key} 未设置，LLM 客户端可能无法正常工作。"
+                f"⚠️ environment variables {expected_env_key} If not set, the LLM client may not function properly."
                 f"Provider: {provider.value}, Model: {config_data.get('model', 'unknown')}"
             )
             logger.warning(
-                f"💡 请确保已调用 bridge_config_to_env() 或手动设置环境变量 {expected_env_key}"
+                f"💡 Please make sure you have called bridge_config_to_env() Or manually set environment variables {expected_env_key}"
             )
         
         return cls(provider=provider, **config_data)
 
 
 class LLMResponse(BaseModel):
-    """LLM 响应"""
+    """LLM response"""
     content: Optional[str] = None
     reasoning_content: Optional[str] = None
     tool_calls: List[ToolCall] = Field(default_factory=list)
     finish_reason: Optional[str] = None
     
-    # 元数据
+    # metadata
     model: Optional[str] = None
     provider: Optional[LLMProvider] = None
     usage: Optional[Dict[str, int]] = None
     
     @property
     def has_tool_calls(self) -> bool:
-        """是否有工具调用"""
+        """Is there a tool call"""
         return len(self.tool_calls) > 0
     
     def to_message(self) -> Message:
-        """转换为消息格式"""
+        """Convert to message format"""
         return Message(
             role=MessageRole.ASSISTANT,
             content=self.content,
@@ -192,6 +192,6 @@ class LLMResponse(BaseModel):
         )
 
 
-# 更新前向引用
+# Update forward reference
 Message.model_rebuild()
 

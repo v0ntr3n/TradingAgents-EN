@@ -8,10 +8,10 @@ def test_determine_phase_resets_to_confirmation_for_new_request_after_result():
 
     service = IntelligentScreeningService(db=object())
     history = [
-        {"role": "assistant", "phase": "result", "content": "上一轮已给出筛选结果"},
+        {"role": "assistant", "phase": "result", "content": "The screening results have been given in the previous round"},
     ]
 
-    phase = service._determine_phase(history, "帮我选几只高分红的股票")
+    phase = service._determine_phase(history, "Help me choose some stocks with high dividends")
 
     assert phase == "confirmation"
 
@@ -21,13 +21,13 @@ def test_select_phase_history_drops_stale_history_for_fresh_confirmation():
 
     service = IntelligentScreeningService(db=object())
     history = [
-        {"role": "user", "content": "执行筛选方案"},
-        {"role": "assistant", "phase": "result", "content": "上一轮结果 JSON"},
-        {"role": "user", "content": "为什么财报期还是 20250930"},
-        {"role": "assistant", "phase": "result", "content": "这是数据口径解释"},
+        {"role": "user", "content": "Execute screening plan"},
+        {"role": "assistant", "phase": "result", "content": "Last round results JSON"},
+        {"role": "user", "content": "Why is the financial reporting period still 20250930"},
+        {"role": "assistant", "phase": "result", "content": "This is the data caliber explanation"},
     ]
 
-    selected = service._select_phase_history(history, "confirmation", "帮我选几只高分红的股票")
+    selected = service._select_phase_history(history, "confirmation", "Help me choose some stocks with high dividends")
 
     assert selected == []
 
@@ -37,17 +37,17 @@ def test_select_phase_history_keeps_latest_planning_only_for_result_execution():
 
     service = IntelligentScreeningService(db=object())
     history = [
-        {"role": "user", "content": "帮我选几只高分红的股票"},
-        {"role": "assistant", "phase": "confirmation", "content": "需求分析"},
-        {"role": "user", "content": "采纳建议后筛选"},
-        {"role": "assistant", "phase": "planning", "content": "严格执行 dividend_yield>=5, pe_ttm<=15"},
-        {"role": "user", "content": "执行筛选方案"},
-        {"role": "assistant", "phase": "result", "content": "旧结果和超时说明"},
-        {"role": "user", "content": "为什么财报期还是 20250930"},
-        {"role": "assistant", "phase": "result", "content": "旧的财报期解释"},
+        {"role": "user", "content": "Help me choose some stocks with high dividends"},
+        {"role": "assistant", "phase": "confirmation", "content": "needs analysis"},
+        {"role": "user", "content": "Filter after taking suggestions"},
+        {"role": "assistant", "phase": "planning", "content": "Strictly enforce dividend_yield>=5, pe_ttm<=15"},
+        {"role": "user", "content": "Execute screening plan"},
+        {"role": "assistant", "phase": "result", "content": "Old results and timeout description"},
+        {"role": "user", "content": "Why is the financial reporting period still 20250930"},
+        {"role": "assistant", "phase": "result", "content": "Old financial reporting periods explained"},
     ]
 
-    selected = service._select_phase_history(history, "result", "执行筛选方案")
+    selected = service._select_phase_history(history, "result", "Execute screening plan")
 
     assert selected == [history[3]]
 
@@ -57,11 +57,11 @@ def test_select_phase_history_keeps_latest_result_when_user_references_current_s
 
     service = IntelligentScreeningService(db=object())
     history = [
-        {"role": "assistant", "phase": "planning", "content": "筛选计划"},
-        {"role": "assistant", "phase": "result", "content": "当前推荐的 5 只股票"},
+        {"role": "assistant", "phase": "planning", "content": "screening plan"},
+        {"role": "assistant", "phase": "result", "content": "5 stocks currently recommended"},
     ]
 
-    selected = service._select_phase_history(history, "result", "把这5只加入股票关注列表")
+    selected = service._select_phase_history(history, "result", "Add these 5 stocks to your watch list")
 
     assert selected == history
 
@@ -75,13 +75,13 @@ def test_extract_locked_execution_plan_keeps_planning_parameters():
             "role": "assistant",
             "phase": "planning",
             "content": (
-                "### 工具调用\n"
-                "**步骤 1**：调用 `screen_stocks_by_criteria`\n"
+                "### Tool call\n"
+                "**steps 1**: call `screen_stocks_by_criteria`\n"
                 "- `conditions`: `[{\"field\": \"dividend_yield\", \"operator\": \">=\", \"value\": 5}, {\"field\": \"pe_ttm\", \"operator\": \"<=\", \"value\": 15}]`\n"
                 "- `limit`: 50\n"
                 '- `order_by_field`: "dividend_yield"\n'
                 '- `order_direction`: "desc"\n\n'
-                "**步骤 2**：调用 `batch_check_profit_consistency`\n"
+                "**steps 2**: call `batch_check_profit_consistency`\n"
                 "- `years`: 3\n"
                 "- `threshold_cv`: 0.3\n"
             ),
@@ -114,8 +114,8 @@ def test_run_locked_result_execution_uses_locked_plan_arguments(monkeypatch):
         return [
             {
                 "code": "600566",
-                "name": "济川药业",
-                "industry": "医药",
+                "name": "Jichuan Pharmaceutical",
+                "industry": "Medicine",
                 "dividend_yield": 5.41,
                 "pe": 16.28,
                 "pe_ttm": 11.88,
@@ -128,8 +128,8 @@ def test_run_locked_result_execution_uses_locked_plan_arguments(monkeypatch):
             },
             {
                 "code": "601921",
-                "name": "浙版传媒",
-                "industry": "传媒",
+                "name": "Zhejiang version media",
+                "industry": "media",
                 "dividend_yield": 5.92,
                 "pe": 13.40,
                 "pe_ttm": 9.56,
@@ -147,9 +147,9 @@ def test_run_locked_result_execution_uses_locked_plan_arguments(monkeypatch):
     async def fake_batch(**kwargs):
         calls.append(("batch", kwargs))
         return (
-            "📊 汇总：稳定 1 只 | 不稳定 0 只 | 无数据 1 只\n"
-            "✅ 稳定股票代码：601921\n"
-            "⚪ 无数据股票代码：600566"
+            "📊 Summary: stable 1 | Unstable 0 | No data 1\n"
+            "✅ Stable stock code:601921\n"
+            "⚪ No data stock code:600566"
         )
 
     service._tool_functions = {
@@ -157,7 +157,7 @@ def test_run_locked_result_execution_uses_locked_plan_arguments(monkeypatch):
     }
 
     locked_plan = {
-        "planning_content": "已批准计划",
+        "planning_content": "Plan approved",
         "screen": {
             "conditions_json": json.dumps([
                 {"field": "dividend_yield", "operator": ">=", "value": 5},
@@ -171,7 +171,7 @@ def test_run_locked_result_execution_uses_locked_plan_arguments(monkeypatch):
     }
 
     content, tools_used, stocks = asyncio.run(
-        service._run_locked_result_execution("执行筛选方案", locked_plan)
+        service._run_locked_result_execution("Execute screening plan", locked_plan)
     )
 
     assert "601921" in content
@@ -205,20 +205,20 @@ def test_locked_result_summary_is_compacted_for_llm():
         "batch": {"years": 3, "threshold_cv": 0.3},
     }
     screening_output = (
-        "共找到 37 只符合条件的股票\n"
-        "1. 601919 中远海控\n"
-        "2. 603565 中谷物流\n"
-        "3. 000915 华特达因\n"
-        "4. 002818 富森美\n"
-        "5. 300770 新媒股份\n"
-        "6. 002867 周大生\n"
-        "候选代码列表（按当前排序，共 37 只）: 601919, 603565, 000915, 002818, 300770, 002867"
+        "A total of 37 stocks that met the criteria were found.\n"
+        "1. 601919 COSCO Shipping Holdings\n"
+        "2. 603565 medium grain flow\n"
+        "3. 000915 Walter Dyne\n"
+        "4. 002818 Fusenmei\n"
+        "5. 300770 New Media Shares\n"
+        "6. 002867 Zhou Dasheng\n"
+        "Candidate code list (currently sorted, 37 in total): 601919, 603565, 000915, 002818, 300770, 002867"
     )
     batch_output = (
-        "共验证 37 只股票近 3 年盈利稳定性\n"
-        "📊 汇总：稳定 9 只 | 不稳定 0 只 | 无数据 28 只\n"
-        "✅ 稳定股票代码：601919, 600803, 600096, 600211, 601857, 600066, 603558, 603444, 600377\n"
-        "⚪ 无数据股票代码：603565, 000915, 002818, 300770, 002867, 600729, 601928"
+        "A total of 37 stocks have been verified for their earnings stability in the past three years.\n"
+        "📊 Summary: 9 stable | Unstable 0 | No data 28 only\n"
+        "✅ Stable stock code:601919, 600803, 600096, 600211, 601857, 600066, 603558, 603444, 600377\n"
+        "⚪ No data stock code:603565, 000915, 002818, 300770, 002867, 600729, 601928"
     )
 
     compact_plan = service._build_locked_plan_summary(locked_plan)
@@ -226,7 +226,7 @@ def test_locked_result_summary_is_compacted_for_llm():
     compact_batch = service._compact_batch_output_for_llm(batch_output)
 
     assert "planning_content" not in compact_plan
-    assert "候选代码列表" not in compact_screen
-    assert "其余 1 只候选已省略" in compact_screen
-    assert "⚪ 无数据股票代码" not in compact_batch
-    assert "无数据股票数量: 28" in compact_batch
+    assert "Candidate code list" not in compact_screen
+    assert "The remaining 1 candidate has been omitted" in compact_screen
+    assert "⚪ No data stock code" not in compact_batch
+    assert "No data stock number: 28" in compact_batch

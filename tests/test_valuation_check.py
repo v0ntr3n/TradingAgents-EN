@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-测试估值指标计算结果
+Test valuation indicator calculation results
 """
 
 import sys
@@ -13,15 +13,15 @@ from tradingagents.agents.utils.agent_utils import Toolkit
 from tradingagents.default_config import DEFAULT_CONFIG
 
 def test_valuation_indicators():
-    """测试估值指标计算"""
-    print("测试300750估值指标计算...")
+    """Test valuation indicator calculation"""
+    print("Test 300750 valuation indicator calculation...")
     
-    # 创建工具包
+    # Create toolkit
     config = DEFAULT_CONFIG.copy()
     config["online_tools"] = True
     toolkit = Toolkit(config)
     
-    # 获取基本面数据
+    # Get fundamental data
     result = toolkit.get_stock_fundamentals_unified.invoke({
         'ticker': '300750',
         'start_date': '2025-06-01',
@@ -29,28 +29,28 @@ def test_valuation_indicators():
         'curr_date': '2025-07-15'
     })
     
-    # 查找估值指标部分
+    # Find the Valuation Metrics section
     lines = result.split('\n')
     
-    print("\n=== 估值指标部分 ===")
+    print("\n=== Valuation indicator part ===")
     in_valuation_section = False
     
     for line in lines:
-        if "估值指标" in line:
+        if "Valuation indicators" in line:
             in_valuation_section = True
             print(line)
         elif in_valuation_section:
-            if "市盈率" in line or "市净率" in line or "市销率" in line or "股息收益率" in line:
+            if "P/E ratio" in line or "price to book ratio" in line or "price to sales ratio" in line or "dividend yield" in line:
                 print(line)
             elif line.strip() == "" or line.startswith("##"):
                 if line.startswith("##"):
                     break
     
-    print("\n=== 完整结果预览 ===")
-    # 只显示前2000个字符
+    print("\n=== Full results preview ===")
+    # Only show first 2000 characters
     print(result[:2000])
     if len(result) > 2000:
-        print("...(结果已截断)")
+        print("...(Result truncated)")
 
 if __name__ == "__main__":
     test_valuation_indicators()

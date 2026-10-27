@@ -27,14 +27,14 @@ class _FakeProjectMemoryService:
 
 
 def test_extract_memory_metadata_filters_reads_symbol_from_topic_title() -> None:
-    assert _extract_memory_metadata_filters("贵州茅台(600519) 分析报告") == {"symbol": "600519"}
-    assert _extract_memory_metadata_filters("腾讯控股(HK.00700) 分析报告") == {"symbol": "HK.00700"}
-    assert _extract_memory_metadata_filters("宏观策略讨论") is None
+    assert _extract_memory_metadata_filters("Kweichow Moutai(600519) analysis report") == {"symbol": "600519"}
+    assert _extract_memory_metadata_filters("Tencent Holdings(HK.00700) analysis report") == {"symbol": "HK.00700"}
+    assert _extract_memory_metadata_filters("Macro strategy discussion") is None
 
 
 def test_extract_memory_metadata_filters_falls_back_to_report_refs() -> None:
     assert _extract_memory_metadata_filters(
-        "宏观策略讨论",
+        "Macro strategy discussion",
         report_refs=[{"symbol": "sz.000001"}, {"symbol": "600519"}],
     ) == {"symbol": "SZ.000001"}
 
@@ -48,8 +48,8 @@ async def test_recall_memory_block_passes_symbol_metadata_filters(monkeypatch):
     result = await _recall_memory_block(
         db=object(),
         user_id="user-1",
-        user_message="帮我回顾一下这个标的之前的分析结论",
-        current_topic_title="贵州茅台(600519) 分析报告",
+        user_message="Help me review the previous analysis conclusions of this target.",
+        current_topic_title="Kweichow Moutai(600519) analysis report",
     )
 
     assert result == "memory block"
@@ -68,8 +68,8 @@ async def test_recall_memory_block_skips_metadata_filters_without_symbol(monkeyp
     await _recall_memory_block(
         db=object(),
         user_id="user-1",
-        user_message="总结一下我最近的偏好",
-        current_topic_title="宏观策略讨论",
+        user_message="To summarize my recent preferences",
+        current_topic_title="Macro strategy discussion",
     )
 
     assert len(fake_memory_service.calls) == 1
@@ -85,9 +85,9 @@ async def test_recall_memory_block_uses_report_ref_symbol_when_title_has_no_symb
     await _recall_memory_block(
         db=object(),
         user_id="user-1",
-        user_message="回顾这个主题的历史分析",
-        current_topic_title="宏观策略讨论",
-        report_refs=[{"symbol": "hk.00700", "title": "腾讯控股(HK.00700) 分析报告"}],
+        user_message="Review historical analysis of this topic",
+        current_topic_title="Macro strategy discussion",
+        report_refs=[{"symbol": "hk.00700", "title": "Tencent Holdings(HK.00700) analysis report"}],
     )
 
     assert len(fake_memory_service.calls) == 1
@@ -96,8 +96,8 @@ async def test_recall_memory_block_uses_report_ref_symbol_when_title_has_no_symb
 
 @pytest.mark.asyncio
 async def test_recall_memory_block_combines_project_memory_with_mem0(monkeypatch):
-    fake_memory_service = _FakeMemoryService("【历史偏好】\n- 偏好先看结论")
-    fake_project_memory_service = _FakeProjectMemoryService("【项目长期记忆】\n- 输出约束\n  - 回答结构：先给结论")
+    fake_memory_service = _FakeMemoryService(" [Historical preferences]\n- Prefer to read the conclusion first")
+    fake_project_memory_service = _FakeProjectMemoryService(" [Project long-term memory]\n- Output constraints\n  - Answer structure: give conclusion first")
 
     monkeypatch.setattr("core.memory.service.get_memory_service", lambda db: fake_memory_service)
     monkeypatch.setattr(
@@ -108,11 +108,11 @@ async def test_recall_memory_block_combines_project_memory_with_mem0(monkeypatch
     result = await _recall_memory_block(
         db=object(),
         user_id="user-1",
-        user_message="继续这个主题",
-        current_topic_title="宏观策略讨论",
+        user_message="continue this theme",
+        current_topic_title="Macro strategy discussion",
     )
 
-    assert "【项目长期记忆】" in result
-    assert "【历史偏好】" in result
+    assert " [Project long-term memory]" in result
+    assert " [Historical preferences]" in result
     assert len(fake_project_memory_service.calls) == 1
     assert fake_project_memory_service.calls[0]["max_items"] == 4

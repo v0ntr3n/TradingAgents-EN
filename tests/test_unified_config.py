@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试配置统一
+Unified test configuration
 """
 
 import os
@@ -8,187 +8,187 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def test_config_unification():
-    """测试配置统一是否正常工作"""
-    print("🔬 测试配置统一")
+    """Test whether the unified configuration is working properly"""
+    print("🔬 Unified test configuration")
     print("=" * 60)
     
     try:
         from tradingagents.config.config_manager import config_manager
         
-        print("🔧 测试全局配置管理器...")
+        print("🔧 Test the global configuration manager...")
         
-        # 检查配置目录
-        print(f"📁 配置目录: {config_manager.config_dir}")
-        print(f"📁 配置目录绝对路径: {config_manager.config_dir.absolute()}")
-        print(f"📄 定价文件: {config_manager.pricing_file}")
-        print(f"📄 定价文件存在: {config_manager.pricing_file.exists()}")
+        # Check configuration directory
+        print(f"📁 Configuration directory: {config_manager.config_dir}")
+        print(f"📁 Configuration directory absolute path: {config_manager.config_dir.absolute()}")
+        print(f"📄 pricing document: {config_manager.pricing_file}")
+        print(f"📄 Pricing file exists: {config_manager.pricing_file.exists()}")
         
-        # 加载定价配置
+        # Load pricing configuration
         pricing_configs = config_manager.load_pricing()
-        print(f"📊 加载的定价配置数量: {len(pricing_configs)}")
+        print(f"📊 Number of pricing configurations loaded: {len(pricing_configs)}")
         
-        # 查找DeepSeek配置
+        # Find DeepSeek configuration
         deepseek_configs = [p for p in pricing_configs if p.provider == "deepseek"]
-        print(f"📊 DeepSeek配置数量: {len(deepseek_configs)}")
+        print(f"📊 DeepSeek Configuration quantity: {len(deepseek_configs)}")
         
         if deepseek_configs:
-            print("✅ 找到DeepSeek配置:")
+            print("✅ Find DeepSeek configuration:")
             for config in deepseek_configs:
-                print(f"   - {config.model_name}: 输入¥{config.input_price_per_1k}/1K, 输出¥{config.output_price_per_1k}/1K")
+                print(f"   - {config.model_name}: input¥{config.input_price_per_1k}/1K, output¥{config.output_price_per_1k}/1K")
         else:
-            print("❌ 未找到DeepSeek配置")
+            print("❌ DeepSeek configuration not found")
         
-        # 测试成本计算
-        print(f"\n💰 测试成本计算:")
+        # Test cost calculation
+        print(f"\n💰 Test cost calculation:")
         deepseek_cost = config_manager.calculate_cost(
             provider="deepseek",
             model_name="deepseek-chat",
             input_tokens=1000,
             output_tokens=500
         )
-        print(f"   DeepSeek成本: ¥{deepseek_cost:.6f}")
+        print(f"   DeepSeek cost: ¥{deepseek_cost:.6f}")
         
         if deepseek_cost > 0:
-            print("✅ DeepSeek成本计算正常")
+            print("✅ DeepSeek Cost calculation is normal")
             return True
         else:
-            print("❌ DeepSeek成本计算仍为0")
+            print("❌ DeepSeek The cost calculation is still 0")
             return False
         
     except Exception as e:
-        print(f"❌ 配置统一测试失败: {e}")
+        print(f"❌ Configuration unified test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_web_config_access():
-    """测试Web界面配置访问"""
-    print("\n🌐 测试Web界面配置访问")
+    """Test web interface configuration access"""
+    print("\n🌐 Test web interface configuration access")
     print("=" * 60)
     
     try:
-        # 模拟Web界面的导入方式
+        # Simulate the import method of the web interface
         sys.path.insert(0, str(project_root / "web"))
         
-        # 导入Web配置管理页面
+        # Import the web configuration management page
         from pages.config_management import config_manager as web_config_manager
         
-        print("🔧 测试Web配置管理器...")
+        print("🔧 Testing the Web Configuration Manager...")
         
-        # 检查配置目录
-        print(f"📁 Web配置目录: {web_config_manager.config_dir}")
-        print(f"📁 Web配置目录绝对路径: {web_config_manager.config_dir.absolute()}")
+        # Check configuration directory
+        print(f"📁 Web Configuration directory: {web_config_manager.config_dir}")
+        print(f"📁 Web Configuration directory absolute path: {web_config_manager.config_dir.absolute()}")
         
-        # 加载定价配置
+        # Load pricing configuration
         web_pricing_configs = web_config_manager.load_pricing()
-        print(f"📊 Web加载的定价配置数量: {len(web_pricing_configs)}")
+        print(f"📊 Web Number of pricing configurations loaded: {len(web_pricing_configs)}")
         
-        # 查找DeepSeek配置
+        # Find DeepSeek configuration
         web_deepseek_configs = [p for p in web_pricing_configs if p.provider == "deepseek"]
-        print(f"📊 Web DeepSeek配置数量: {len(web_deepseek_configs)}")
+        print(f"📊 Web DeepSeek Configuration quantity: {len(web_deepseek_configs)}")
         
         if web_deepseek_configs:
-            print("✅ Web界面找到DeepSeek配置")
+            print("✅ Web Find the DeepSeek configuration on the interface")
             return True
         else:
-            print("❌ Web界面未找到DeepSeek配置")
+            print("❌ Web DeepSeek configuration not found in the interface")
             return False
         
     except Exception as e:
-        print(f"❌ Web配置访问测试失败: {e}")
+        print(f"❌ Web Configuration access test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_config_consistency():
-    """测试配置一致性"""
-    print("\n🔄 测试配置一致性")
+    """Test configuration consistency"""
+    print("\n🔄 Test configuration consistency")
     print("=" * 60)
     
     try:
         from tradingagents.config.config_manager import config_manager
         
-        # 从不同路径导入，应该使用相同的配置
+        # Importing from different paths should use the same configuration
         sys.path.insert(0, str(project_root / "web"))
         from pages.config_management import config_manager as web_config_manager
         
-        # 比较配置目录
+        # Compare configuration directories
         main_config_dir = config_manager.config_dir.absolute()
         web_config_dir = web_config_manager.config_dir.absolute()
         
-        print(f"📁 主配置目录: {main_config_dir}")
-        print(f"📁 Web配置目录: {web_config_dir}")
+        print(f"📁 Main configuration directory: {main_config_dir}")
+        print(f"📁 Web Configuration directory: {web_config_dir}")
         
         if main_config_dir == web_config_dir:
-            print("✅ 配置目录一致")
+            print("✅ The configuration directory is consistent")
             
-            # 比较配置数量
+            # Compare configuration quantities
             main_configs = config_manager.load_pricing()
             web_configs = web_config_manager.load_pricing()
             
-            print(f"📊 主配置数量: {len(main_configs)}")
-            print(f"📊 Web配置数量: {len(web_configs)}")
+            print(f"📊 Number of main configurations: {len(main_configs)}")
+            print(f"📊 Web Configuration quantity: {len(web_configs)}")
             
             if len(main_configs) == len(web_configs):
-                print("✅ 配置数量一致")
+                print("✅ The configuration quantity is the same")
                 return True
             else:
-                print("❌ 配置数量不一致")
+                print("❌ The number of configurations is inconsistent")
                 return False
         else:
-            print("❌ 配置目录不一致")
+            print("❌ Configuration directory is inconsistent")
             return False
         
     except Exception as e:
-        print(f"❌ 配置一致性测试失败: {e}")
+        print(f"❌ Configuration consistency test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主函数"""
-    print("🔬 配置统一测试")
+    """main function"""
+    print("🔬 Configure unified testing")
     print("=" * 80)
-    print("📝 这个测试将验证配置统一是否成功")
-    print("📝 检查所有组件是否使用相同的配置文件")
+    print("📝 This test will verify whether the configuration unification is successful")
+    print("📝 Check that all components use the same configuration file")
     print("=" * 80)
     
-    # 测试配置统一
+    # Unified test configuration
     unification_success = test_config_unification()
     
-    # 测试Web配置访问
+    # Test web configuration access
     web_access_success = test_web_config_access()
     
-    # 测试配置一致性
+    # Test configuration consistency
     consistency_success = test_config_consistency()
     
-    # 总结
-    print("\n📋 测试总结")
+    # Summary
+    print("\n📋 Test summary")
     print("=" * 60)
     
-    print(f"配置统一: {'✅ 成功' if unification_success else '❌ 失败'}")
-    print(f"Web配置访问: {'✅ 成功' if web_access_success else '❌ 失败'}")
-    print(f"配置一致性: {'✅ 成功' if consistency_success else '❌ 失败'}")
+    print(f"Unified configuration: {'✅ success' if unification_success else '❌ failed'}")
+    print(f"Web Configure access: {'✅ success' if web_access_success else '❌ failed'}")
+    print(f"Configuration consistency: {'✅ success' if consistency_success else '❌ failed'}")
     
     overall_success = unification_success and web_access_success and consistency_success
     
     if overall_success:
-        print("\n🎉 配置统一成功！")
-        print("   现在所有组件都使用项目根目录的统一配置")
-        print("   不再需要维护多套配置文件")
+        print("\n🎉 Configuration unified successfully!")
+        print("   All components now use the unified configuration of the project root directory")
+        print("   No more need to maintain multiple sets of configuration files")
     else:
-        print("\n❌ 配置统一失败")
-        print("   需要进一步调试")
+        print("\n❌ Configuration unification failed")
+        print("   Need further debugging")
     
-    print("\n🎯 测试完成！")
+    print("\n🎯 Test completed!")
     return overall_success
 
 if __name__ == "__main__":

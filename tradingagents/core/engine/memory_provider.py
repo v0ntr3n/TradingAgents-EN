@@ -1,17 +1,17 @@
 # tradingagents/core/engine/memory_provider.py
 """
-Memory 提供者
+Memory provider
 
-管理各类 Agent 所需的 Memory 实例：
-- bull_memory: 多头研究员记忆
-- bear_memory: 空头研究员记忆
-- trader_memory: 交易员记忆
-- invest_judge_memory: 研究经理记忆
-- risk_manager_memory: 风控经理记忆
+Memory instances required to manage various Agents:
+- bull_memory: multi-researcher memory
+- bear_memory: short researcher memory
+- trader_memory: trader memory
+- invest_judge_memory: Research manager memory
+- risk_manager_memory: Risk control manager memory
 
-配置来源:
-- memory_enabled: 是否启用记忆功能
-- llm_provider: 使用的 LLM 提供商（影响嵌入模型选择）
+Configuration source:
+- memory_enabled: Whether to enable memory function
+- llm_provider: LLM provider used (affects embedding model selection)
 """
 
 import asyncio
@@ -25,15 +25,15 @@ from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
 
-# Memory 名称到 Agent ID 的映射
-# 同时支持 memory_name 和 agent_id 作为 key
+# Memory Name to Agent ID mapping
+# Supports both memory_name and agent_id as key
 MEMORY_AGENT_MAPPING = {
     "bull_memory": ["bull_researcher_v2", "bull_researcher"],
     "bear_memory": ["bear_researcher_v2", "bear_researcher"],
     "trader_memory": ["trader_v2", "trader"],
     "invest_judge_memory": ["research_manager_v2", "research_manager"],
     "risk_manager_memory": ["risk_manager_v2", "risk_manager"],
-    "risk_memory": ["risk_manager_v2", "risk_manager"],  # 别名
+    "risk_memory": ["risk_manager_v2", "risk_manager"],  # Alias
 }
 
 
@@ -56,7 +56,7 @@ def _run_async_sync(coro):
     def _runner() -> None:
         try:
             result["value"] = asyncio.run(coro)
-        except BaseException as exc:  # pragma: no cover - 仅用于跨线程异常传递
+        except BaseException as exc:  # pragma: no cover - Only used for cross-thread exception propagation
             error["value"] = exc
         finally:
             done.set()
@@ -70,7 +70,7 @@ def _run_async_sync(coro):
 
 
 class Mem0CompatMemory:
-    """兼容旧版 FinancialSituationMemory 接口，统一通过 mem0 读写。"""
+    """Compatible with the old version of FinancialSituationMemory interface, unified reading and writing through mem0."""
 
     _DEFAULT_USER_ID = "legacy_tradingagents"
 
@@ -142,10 +142,10 @@ class Mem0CompatMemory:
                 )
                 if not result.success:
                     raise RuntimeError(result.error or "mem0 store failed")
-            logger.info("✅ [MemoryProvider] mem0 compat 写入成功 memory=%s agent_id=%s", self.memory_name, self.agent_id)
+            logger.info("✅ [MemoryProvider] mem0 compat Write successfully memory=%s agent_id=%s", self.memory_name, self.agent_id)
             return
         except Exception as exc:
-            logger.warning("⚠️ [MemoryProvider] mem0 compat 写入失败 memory=%s: %s", self.memory_name, exc)
+            logger.warning("⚠️ [MemoryProvider] mem0 compat Write failed memory=%s: %s", self.memory_name, exc)
             return
 
     def get_memories(self, current_situation, n_matches=1):
@@ -182,7 +182,7 @@ class Mem0CompatMemory:
 
             if memories:
                 logger.info(
-                    "✅ [MemoryProvider] mem0 compat 命中 memory=%s recalled=%d agent_ids=%s",
+                    "✅ [MemoryProvider] mem0 compat hit memory=%s recalled=%d agent_ids=%s",
                     self.memory_name,
                     len(memories),
                     self.agent_ids,
@@ -197,20 +197,20 @@ class Mem0CompatMemory:
                     for item in memories
                 ]
             logger.info(
-                "📭 [MemoryProvider] mem0 compat 未命中 memory=%s agent_ids=%s",
+                "📭 [MemoryProvider] mem0 compat miss memory=%s agent_ids=%s",
                 self.memory_name,
                 self.agent_ids,
             )
         except Exception as exc:
-            logger.warning("⚠️ [MemoryProvider] mem0 compat 召回失败 memory=%s: %s", self.memory_name, exc)
+            logger.warning("⚠️ [MemoryProvider] mem0 compat Recall failed memory=%s: %s", self.memory_name, exc)
         return []
 
 
 class MemoryProvider:
     """
-    Memory 提供者
+    Memory provider
     
-    管理和创建各类 Memory 实例，支持懒加载。
+    Manage and create various types of Memory instances, supporting lazy loading.
     """
     
     def __init__(
@@ -219,11 +219,11 @@ class MemoryProvider:
         memory_enabled: bool = True
     ):
         """
-        初始化 Memory 提供者
+        Initialize the Memory provider
         
         Args:
-            config: 配置字典，包含 llm_provider, backend_url 等
-            memory_enabled: 是否启用记忆功能
+            config: Configuration dictionary, including llm_provider, backend_url Wait
+            memory_enabled: Whether to enable memory function
         """
         self.config = config or self._get_default_config()
         self.memory_enabled = memory_enabled
@@ -231,14 +231,14 @@ class MemoryProvider:
         self._use_mem0_compat = self.config.get("memory_use_mem0_compat", True)
         
         if memory_enabled:
-            logger.info("🧠 [MemoryProvider] Memory 功能已启用")
+            logger.info("🧠 [MemoryProvider] Memory Feature is enabled")
         else:
-            logger.info("⚠️ [MemoryProvider] Memory 功能已禁用")
+            logger.info("⚠️ [MemoryProvider] Memory Feature disabled")
         if memory_enabled and not self._use_mem0_compat:
-            logger.warning("⚠️ [MemoryProvider] 当前显式使用 legacy-only memory 路径，建议迁回 mem0 主路径")
+            logger.warning("⚠️ [MemoryProvider] The legacy-only memory path is currently explicitly used, and it is recommended to move back to the mem0 main path.")
     
     def _get_default_config(self) -> Dict[str, Any]:
-        """获取默认配置"""
+        """Get default configuration"""
         try:
             from tradingagents.default_config import DEFAULT_CONFIG
             return DEFAULT_CONFIG.copy()
@@ -251,13 +251,13 @@ class MemoryProvider:
     
     def get_memory(self, memory_name: str) -> Optional[Any]:
         """
-        获取指定的 Memory 实例
+        Get the specified Memory instance
         
         Args:
-            memory_name: Memory 名称，如 "bull_memory"
+            memory_name: Memory name, such as "bull_memory"
             
         Returns:
-            记忆实例或 None
+            memory instance or None
         """
         if not self.memory_enabled:
             return None
@@ -268,7 +268,7 @@ class MemoryProvider:
         return self._memories[memory_name]
     
     def _create_memory(self, memory_name: str) -> Optional[Any]:
-        """创建 Memory 实例"""
+        """Create a Memory instance"""
         if not self.memory_enabled:
             return None
             
@@ -279,52 +279,52 @@ class MemoryProvider:
                 from tradingagents.agents.utils.memory import FinancialSituationMemory
                 legacy_memory = FinancialSituationMemory(memory_name, self.config)
                 memory = legacy_memory
-            logger.debug(f"🧠 [MemoryProvider] 创建 Memory: {memory_name}")
+            logger.debug(f"🧠 [MemoryProvider] Create Memory: {memory_name}")
             return memory
         except Exception as e:
-            logger.warning(f"⚠️ [MemoryProvider] 创建 Memory 失败 {memory_name}: {e}")
+            logger.warning(f"⚠️ [MemoryProvider] Failed to create Memory {memory_name}: {e}")
             return None
     
     def get_memory_config(self) -> Dict[str, Any]:
         """
-        获取所有 Agent 的 Memory 配置
+        Get the Memory configuration of all Agents
 
         Returns:
-            字典，key 为 agent_id 和 memory_name，value 为对应的 Memory 实例
+            Dictionary, the keys are agent_id and memory_name, the value is the corresponding Memory instance
         """
         memory_config = {}
 
         for memory_name, agent_ids in MEMORY_AGENT_MAPPING.items():
             memory = self.get_memory(memory_name)
-            # 同时用 memory_name 和 agent_id 作为 key
+            # Use both memory_name and agent_id as key
             memory_config[memory_name] = memory
             for agent_id in agent_ids:
                 memory_config[agent_id] = memory
 
-        # 设置默认 memory
+        # Set default memory
         memory_config["default"] = self.get_memory("invest_judge_memory")
 
         return memory_config
     
     def get_memory_by_agent(self, agent_id: str) -> Optional[Any]:
         """
-        根据 Agent ID 获取对应的 Memory
+        Get the corresponding one based on Agent ID Memory
         
         Args:
-            agent_id: Agent ID，如 "bull_researcher"
+            agent_id: Agent ID, Such as "bull_researcher"
             
         Returns:
-            对应的 Memory 实例或 None
+            the corresponding Memory instance or None
         """
         for memory_name, agent_ids in MEMORY_AGENT_MAPPING.items():
             if agent_id in agent_ids:
                 return self.get_memory(memory_name)
         
-        # 默认返回 invest_judge_memory
+        # Return by default invest_judge_memory
         return self.get_memory("invest_judge_memory")
     
     def clear_memories(self):
-        """清除所有 Memory 缓存"""
+        """Clear all Memory cache"""
         self._memories.clear()
-        logger.debug("🧹 [MemoryProvider] Memory 缓存已清除")
+        logger.debug("🧹 [MemoryProvider] Memory cache cleared")
 

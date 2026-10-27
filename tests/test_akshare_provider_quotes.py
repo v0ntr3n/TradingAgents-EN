@@ -13,17 +13,17 @@ def test_get_stock_quotes_handles_dash_placeholder_values():
     provider.connected = True
     provider.ak = Mock()
     provider.ak.stock_bid_ask_em = Mock(return_value=pd.DataFrame([
-        {"item": "最新", "value": 432.93},
-        {"item": "涨幅", "value": 1.23},
-        {"item": "涨跌", "value": 5.26},
-        {"item": "总手", "value": "-"},
-        {"item": "金额", "value": "-"},
-        {"item": "换手", "value": 0.0},
-        {"item": "量比", "value": "-"},
-        {"item": "最高", "value": "-"},
-        {"item": "最低", "value": "-"},
-        {"item": "今开", "value": "-"},
-        {"item": "昨收", "value": 427.67},
+        {"item": "Latest", "value": 432.93},
+        {"item": "Increase", "value": 1.23},
+        {"item": "ups and downs", "value": 5.26},
+        {"item": "Chief", "value": "-"},
+        {"item": "Amount", "value": "-"},
+        {"item": "Change hands", "value": 0.0},
+        {"item": "Quantity ratio", "value": "-"},
+        {"item": "highest", "value": "-"},
+        {"item": "lowest", "value": "-"},
+        {"item": "Open today", "value": "-"},
+        {"item": "Collected yesterday", "value": 427.67},
     ]))
 
     quotes = asyncio.run(provider.get_stock_quotes("300750"))

@@ -9,8 +9,8 @@ from bson import ObjectId
 
 from app.core.database import get_mongo_db
 from app.models.user import FavoriteStock
-# 已移除在线行情补齐功能，只从数据库读取数据
-# 用户可以通过"同步实时行情"按钮来更新数据
+# The online market completion function has been removed and only data is read from the database.
+# Users can pass"Synchronize real-time quotes"button to update data
 # from app.services.quotes_service import get_quotes_service
 
 logger = logging.getLogger("webapi")
@@ -29,7 +29,7 @@ class FavoritesService:
         return self.db
 
     async def _ensure_tags_exist(self, user_id: str, tags: Optional[List[str]]) -> List[str]:
-        """确保股票关注列表中使用到的标签已同步到 user_tags 集合。"""
+        """Make sure that the tags used in the stock watchlist have been synchronized to the user_tags collection."""
         normalized_tags: List[str] = []
         seen = set()
         for item in tags or []:
@@ -57,24 +57,24 @@ class FavoritesService:
                     await tags_service.create_tag(user_id=user_id, name=tag_name)
                     existing_tags.add(tag_name)
                 except Exception:
-                    logger.debug("[FavoritesService] 创建缺失标签失败: %s", tag_name, exc_info=True)
+                    logger.debug("[FavoritesService] Failed to create missing tag: %s", tag_name, exc_info=True)
         except Exception:
-            logger.warning("[FavoritesService] 自动补建标签失败，继续保存股票关注列表", exc_info=True)
+            logger.warning("[FavoritesService] Automatically adding tags failed, continue to save the stock watch list", exc_info=True)
 
         return normalized_tags
 
     def _is_valid_object_id(self, user_id: str) -> bool:
         """
-        检查是否是有效的ObjectId格式
-        注意：这里只检查格式，不代表数据库中实际存储的是ObjectId类型
-        为了兼容性，我们统一使用 user_favorites 集合存储股票关注列表
+        Check if it is a valid ObjectId format
+        Note: Only the format is checked here, it does not mean that the ObjectId type is actually stored in the database.
+        For compatibility, we uniformly use the user_favorites collection to store stock watch lists.
         """
-        # 强制返回 False，统一使用 user_favorites 集合
+        # Forced to return False, uniformly use the user_favorites collection
         return False
 
     def _format_favorite(self, favorite: Dict[str, Any]) -> Dict[str, Any]:
-        """格式化收藏条目（仅基础信息，不包含实时行情）。
-        行情将在 get_user_favorites 中批量富集。
+        """Format collection items (basic information only, not including real-time quotes).
+        Quotes will be batch enriched in get_user_favorites.
         """
         added_at = favorite.get("added_at")
         if isinstance(added_at, datetime):
@@ -89,7 +89,7 @@ class FavoritesService:
             "alert_price_high": favorite.get("alert_price_high"),
             "alert_price_low": favorite.get("alert_price_low"),
             "alert_gain_price": favorite.get("alert_gain_price"),
-            # 行情占位，稍后填充
+            # Market occupancy, will be filled in later
             "current_price": None,
             "change_percent": None,
             "volume": None,
@@ -115,67 +115,67 @@ class FavoritesService:
 
     async def get_user_favorites(self, user_id: str) -> List[Dict[str, Any]]:
         """
-        获取用户股票关注列表列表，并从数据库读取实时行情进行富集（兼容字符串ID与ObjectId）。
+        Obtain the user s stock watch list, and read real-time quotes from the database for enrichment (compatible with string ID and ObjectId).
         
-        注意：
-        - 只从数据库（market_quotes、market_quotes_hk、market_quotes_us）读取数据
-        - 不会调用在线 API 拉取最新价格，避免接口超时
-        - 用户可以通过"同步实时行情"按钮来更新数据
-        - 后台定时任务会定期更新数据库中的实时行情数据
+        Note:
+        - Only read data from database (market_quotes, market_quotes_hk, market_quotes_us)
+        - The online API will not be called to pull the latest prices to avoid interface timeout.
+        - Users can pass"Synchronize real-time quotes"button to update data
+        - Background scheduled tasks will regularly update the real-time market data in the database
         """
         import time
         start_time = time.time()
         db = await self._get_db()
 
-        logger.info(f"🔍 [get_user_favorites] 开始查询用户股票关注列表: user_id={user_id}")
+        logger.info(f"🔍 [get_user_favorites] Start querying user s stock watch list: user_id={user_id}")
 
         favorites: List[Dict[str, Any]] = []
         if self._is_valid_object_id(user_id):
-            # 先尝试使用 ObjectId 查询
+            # Try using ObjectId query first
             user = await db.users.find_one({"_id": ObjectId(user_id)})
-            # 如果 ObjectId 查询失败，尝试使用字符串查询
+            # If ObjectId query fails, try using string query
             if user is None:
                 user = await db.users.find_one({"_id": user_id})
             favorites = (user or {}).get("favorite_stocks", [])
             logger.info(f"✅ [get_user_favorites] 从 users 集合获取到 {len(favorites)} 只股票关注列表")
         else:
-            # 🔥 严格过滤：只查询当前用户的股票关注列表
-            # 使用精确匹配，确保只获取当前用户的数据
+            # 🔥 Strict filtering: only query the current user's stock watch list
+            # Use exact matching to ensure only fetching data for the current user
             doc = await db.user_favorites.find_one({"user_id": {"$eq": user_id}})
             if doc:
-                # 🔥 双重验证：确保文档的 user_id 确实匹配
+                # 🔥 Two-step verification: Make sure the document's user_id actually matches
                 doc_user_id = doc.get("user_id")
                 if doc_user_id != user_id:
                     logger.error(f"❌ [get_user_favorites] 用户ID不匹配！查询: {user_id}, 文档: {doc_user_id}")
                     favorites = []
                 else:
                     favorites = doc.get("favorites", [])
-                    logger.info(f"✅ [get_user_favorites] 从 user_favorites 集合获取到 {len(favorites)} 只股票关注列表 (user_id={doc_user_id})")
+                    logger.info(f"✅ [get_user_favorites] Obtained from user_favorites collection {len(favorites)} Only stock watch list (user_id={doc_user_id})")
             else:
-                logger.warning(f"⚠️ [get_user_favorites] 未找到用户股票关注列表数据: user_id={user_id}")
-                # 🔥 调试：检查是否有其他用户的文档（仅用于调试）
+                logger.warning(f"⚠️ [get_user_favorites] User stock watchlist data not found: user_id={user_id}")
+                # 🔥 Debugging: Check if there are other users' documentation (for debugging only)
                 all_docs_count = await db.user_favorites.count_documents({})
                 logger.info(f"🔍 [get_user_favorites] 数据库中共有 {all_docs_count} 个文档")
                 if all_docs_count > 0:
-                    # 只查询前5个文档用于调试
+                    # Only query the first 5 documents for debugging
                     all_docs = await db.user_favorites.find({}, {"user_id": 1, "favorites": 1}).limit(5).to_list(length=5)
                     for idx, d in enumerate(all_docs):
                         logger.info(f"  文档 {idx+1}: user_id={d.get('user_id')}, favorites数量={len(d.get('favorites', []))}")
                 favorites = []
 
-        # 先格式化基础字段
+        # Format the basic fields first
         items = [self._format_favorite(fav) for fav in favorites]
 
-        # 批量获取股票基础信息（板块等）
+        # Obtain basic stock information in batches (sectors, etc.)
         codes = [it.get("stock_code") for it in items if it.get("stock_code")]
         if codes:
             try:
-                # 🔥 获取数据源优先级配置
+                # 🔥 Get data source priority configuration
                 from app.core.unified_config import UnifiedConfigManager
                 config = UnifiedConfigManager()
                 data_source_configs = await config.get_data_source_configs_async()
 
-                # 提取启用的数据源，按优先级排序
+                # Extract enabled data sources, sorted by priority
                 enabled_sources = [
                     ds.type.lower() for ds in data_source_configs
                     if ds.enabled and ds.type.lower() in ['tushare', 'akshare', 'baostock']
@@ -186,16 +186,16 @@ class FavoritesService:
 
                 preferred_source = enabled_sources[0] if enabled_sources else 'tushare'
 
-                # 从 stock_basic_info 获取板块信息（只查询优先级最高的数据源）
+                # Get sector information from stock_basic_info (only query the data source with the highest priority)
                 basic_info_coll = db["stock_basic_info"]
                 cursor = basic_info_coll.find(
-                    {"code": {"$in": codes}, "source": preferred_source},  # 🔥 添加数据源筛选
+                    {"code": {"$in": codes}, "source": preferred_source},  # 🔥 Add data source filter
                     {"code": 1, "sse": 1, "market": 1, "_id": 0}
                 )
                 basic_docs = await cursor.to_list(length=None)
                 basic_map = {str(d.get("code")).zfill(6): d for d in (basic_docs or [])}
 
-                # 收集 stock_basic_info 中未命中的代码，稍后查 etf_basic_info
+                # Collect the missed codes in stock_basic_info and check later etf_basic_info
                 missing_codes = []
                 for it in items:
                     code = it.get("stock_code")
@@ -206,7 +206,7 @@ class FavoritesService:
                     else:
                         missing_codes.append(code)
 
-                # 从 etf_basic_info 补充 ETF 的板块/交易所信息
+                # Supplement ETF sector/exchange information from etf_basic_info
                 if missing_codes:
                     etf_coll = db["etf_basic_info"]
                     etf_cursor = etf_coll.find(
@@ -238,18 +238,18 @@ class FavoritesService:
                             it["board"] = "-"
                             it["exchange"] = "-"
             except Exception as e:
-                # 查询失败时设置默认值
+                # Set default value when query fails
                 for it in items:
                     it["board"] = "-"
                     it["exchange"] = "-"
 
-        # 批量获取行情（按市场类型分别处理，避免不必要的接口调用）
+        # Obtain market information in batches (processed separately according to market type to avoid unnecessary interface calls)
         if codes:
             try:
-                # 🔥 按市场类型分组
-                a_share_items = []  # A股
-                hk_items = []       # 港股
-                us_items = []       # 美股
+                # 🔥 Group by market type
+                a_share_items = []  # A shares
+                hk_items = []       # Hong Kong stocks
+                us_items = []       # US stocks
                 
                 for it in items:
                     market = it.get("market", "A股")
@@ -260,7 +260,7 @@ class FavoritesService:
                     else:
                         a_share_items.append(it)
                 
-                # 1. 处理A股：优先使用入库的 market_quotes，30秒更新
+                # 1. Processing of A shares: Priority is given to using the market_quotes stored in the database, updated in 30 seconds
                 if a_share_items:
                     a_share_codes = [it.get("stock_code") for it in a_share_items if it.get("stock_code")]
                     if a_share_codes:
@@ -275,12 +275,12 @@ class FavoritesService:
                                 if q:
                                     it["current_price"] = q.get("close")
                                     it["change_percent"] = q.get("pct_chg")
-                                # 如果数据库中没有数据，保持 None（不调用在线 API）
-                                # 用户可以通过点击"同步实时行情"按钮来更新数据
+                                # If there is no data in the database, keep None (do not call the online API)
+                                # Users can click"Synchronize real-time quotes"button to update data
                         except Exception as e:
                             logger.warning(f"⚠️ 查询A股行情失败: {e}")
                 
-                # 2. 处理港股：从 market_quotes_hk 查询
+                # 2. Process Hong Kong stocks: query from market_quotes_hk
                 if hk_items:
                     hk_codes = [it.get("stock_code") for it in hk_items if it.get("stock_code")]
                     if hk_codes:
@@ -298,7 +298,7 @@ class FavoritesService:
                         except Exception as e:
                             logger.warning(f"⚠️ 查询港股行情失败: {e}")
                 
-                # 3. 处理美股：从 market_quotes_us 查询
+                # 3. Processing US stocks: query from market_quotes_us
                 if us_items:
                     us_codes = [it.get("stock_code") for it in us_items if it.get("stock_code")]
                     if us_codes:
@@ -318,14 +318,14 @@ class FavoritesService:
                             
             except Exception as e:
                 logger.warning(f"⚠️ 批量获取行情失败: {e}")
-                # 查询失败时保持占位 None，避免影响基础功能
+                # Keep the placeholder None when the query fails to avoid affecting basic functions.
                 pass
 
-        # 记录性能日志
+        # Record performance logs
         elapsed_time = time.time() - start_time
         logger.info(f"✅ [get_user_favorites] 查询完成: user_id={user_id}, 返回 {len(items)} 只股票关注列表, 耗时 {elapsed_time:.2f}秒")
         if elapsed_time > 5:
-            logger.warning(f"⚠️ [get_user_favorites] 接口耗时较长: {elapsed_time:.2f}秒，可能存在性能问题")
+            logger.warning(f"⚠️ [get_user_favorites] The interface takes a long time: {elapsed_time:.2f}seconds, there may be a performance issue")
 
         return items
 
@@ -340,15 +340,15 @@ class FavoritesService:
         alert_price_high: Optional[float] = None,
         alert_price_low: Optional[float] = None
     ) -> bool:
-        """添加股票到股票关注列表（兼容字符串ID与ObjectId）"""
+        """Add stocks to stock watchlist (compatible with String ID and ObjectId)"""
         import logging
         logger = logging.getLogger("webapi")
 
         try:
-            logger.info(f"🔧 [add_favorite] 开始添加到研究列表: user_id={user_id}, stock_code={stock_code}")
+            logger.info(f"🔧 [add_favorite] Start adding to research list: user_id={user_id}, stock_code={stock_code}")
 
             db = await self._get_db()
-            logger.info(f"🔧 [add_favorite] 数据库连接获取成功")
+            logger.info(f"🔧 [add_favorite] Database connection obtained successfully")
 
             normalized_tags = await self._ensure_tags_exist(user_id, tags)
 
@@ -363,15 +363,15 @@ class FavoritesService:
                 "alert_price_low": alert_price_low
             }
 
-            logger.info(f"🔧 [add_favorite] 股票关注列表数据构建完成: {favorite_stock}")
+            logger.info(f"🔧 [add_favorite] Stock watch list data construction completed: {favorite_stock}")
 
             is_oid = self._is_valid_object_id(user_id)
-            logger.info(f"🔧 [add_favorite] 用户ID类型检查: is_valid_object_id={is_oid}")
+            logger.info(f"🔧 [add_favorite] User ID type check: is_valid_object_id={is_oid}")
 
             if is_oid:
-                logger.info(f"🔧 [add_favorite] 使用 ObjectId 方式添加到 users 集合")
+                logger.info(f"🔧 [add_favorite] Add to users collection using ObjectId method")
 
-                # 先尝试使用 ObjectId 查询
+                # Try using ObjectId query first
                 result = await db.users.update_one(
                     {"_id": ObjectId(user_id)},
                     {
@@ -379,24 +379,24 @@ class FavoritesService:
                         "$setOnInsert": {"favorite_stocks": []}
                     }
                 )
-                logger.info(f"🔧 [add_favorite] ObjectId查询结果: matched_count={result.matched_count}, modified_count={result.modified_count}")
+                logger.info(f"🔧 [add_favorite] ObjectId Query results: matched_count={result.matched_count}, modified_count={result.modified_count}")
 
-                # 如果 ObjectId 查询失败，尝试使用字符串查询
+                # If ObjectId query fails, try using string query
                 if result.matched_count == 0:
-                    logger.info(f"🔧 [add_favorite] ObjectId查询失败，尝试使用字符串ID查询")
+                    logger.info(f"🔧 [add_favorite] ObjectId Query failed, trying to query using string ID")
                     result = await db.users.update_one(
                         {"_id": user_id},
                         {
                             "$push": {"favorite_stocks": favorite_stock}
                         }
                     )
-                    logger.info(f"🔧 [add_favorite] 字符串ID查询结果: matched_count={result.matched_count}, modified_count={result.modified_count}")
+                    logger.info(f"🔧 [add_favorite] String ID query results: matched_count={result.matched_count}, modified_count={result.modified_count}")
 
                 success = result.matched_count > 0
-                logger.info(f"🔧 [add_favorite] 返回结果: {success}")
+                logger.info(f"🔧 [add_favorite] Return results: {success}")
                 return success
             else:
-                logger.info(f"🔧 [add_favorite] 使用字符串ID方式添加到 user_favorites 集合")
+                logger.info(f"🔧 [add_favorite] Add to user_favorites collection using string ID")
                 result = await db.user_favorites.update_one(
                     {"user_id": user_id},
                     {
@@ -406,24 +406,24 @@ class FavoritesService:
                     },
                     upsert=True
                 )
-                logger.info(f"🔧 [add_favorite] 更新结果: matched_count={result.matched_count}, modified_count={result.modified_count}, upserted_id={result.upserted_id}")
-                logger.info(f"🔧 [add_favorite] 返回结果: True")
+                logger.info(f"🔧 [add_favorite] Update results: matched_count={result.matched_count}, modified_count={result.modified_count}, upserted_id={result.upserted_id}")
+                logger.info(f"🔧 [add_favorite] Return results: True")
                 return True
         except Exception as e:
-            logger.error(f"❌ [add_favorite] 添加到研究列表异常: {type(e).__name__}: {str(e)}", exc_info=True)
+            logger.error(f"❌ [add_favorite] Add to study list exception: {type(e).__name__}: {str(e)}", exc_info=True)
             raise
 
     async def remove_favorite(self, user_id: str, stock_code: str) -> bool:
-        """从股票关注列表中移除股票（兼容字符串ID与ObjectId）"""
+        """Remove a stock from the stock watchlist (compatible with String ID and ObjectId)"""
         db = await self._get_db()
 
         if self._is_valid_object_id(user_id):
-            # 先尝试使用 ObjectId 查询
+            # Try using ObjectId query first
             result = await db.users.update_one(
                 {"_id": ObjectId(user_id)},
                 {"$pull": {"favorite_stocks": {"stock_code": stock_code}}}
             )
-            # 如果 ObjectId 查询失败，尝试使用字符串查询
+            # If ObjectId query fails, try using string query
             if result.matched_count == 0:
                 result = await db.users.update_one(
                     {"_id": user_id},
@@ -450,10 +450,10 @@ class FavoritesService:
         alert_price_low: Optional[float] = None,
         clear_alert_price_low: bool = False,
     ) -> bool:
-        """更新股票关注列表信息（兼容字符串ID与ObjectId）"""
+        """Update stock watch list information (compatible with string ID and ObjectId)"""
         db = await self._get_db()
 
-        # 统一构建更新字段（根据不同集合的字段路径设置前缀）
+        # Unify the construction of update fields (set prefixes according to the field paths of different collections)
         is_oid = self._is_valid_object_id(user_id)
         prefix = "favorite_stocks.$." if is_oid else "favorites.$."
         update_fields: Dict[str, Any] = {}
@@ -497,20 +497,20 @@ class FavoritesService:
             return result.modified_count > 0
 
     async def is_favorite(self, user_id: str, stock_code: str) -> bool:
-        """检查股票是否在股票关注列表中（兼容字符串ID与ObjectId）"""
+        """Check whether the stock is in the stock watch list (compatible with String ID and ObjectId)"""
         import logging
         logger = logging.getLogger("webapi")
 
         try:
-            logger.info(f"🔧 [is_favorite] 检查股票关注列表: user_id={user_id}, stock_code={stock_code}")
+            logger.info(f"🔧 [is_favorite] Check stock watchlist: user_id={user_id}, stock_code={stock_code}")
 
             db = await self._get_db()
 
             is_oid = self._is_valid_object_id(user_id)
-            logger.info(f"🔧 [is_favorite] 用户ID类型: is_valid_object_id={is_oid}")
+            logger.info(f"🔧 [is_favorite] User ID type: is_valid_object_id={is_oid}")
 
             if is_oid:
-                # 先尝试使用 ObjectId 查询
+                # Try using ObjectId query first
                 user = await db.users.find_one(
                     {
                         "_id": ObjectId(user_id),
@@ -518,9 +518,9 @@ class FavoritesService:
                     }
                 )
 
-                # 如果 ObjectId 查询失败，尝试使用字符串查询
+                # If ObjectId query fails, try using string query
                 if user is None:
-                    logger.info(f"🔧 [is_favorite] ObjectId查询未找到，尝试使用字符串ID查询")
+                    logger.info(f"🔧 [is_favorite] ObjectId Query not found, try querying using string ID")
                     user = await db.users.find_one(
                         {
                             "_id": user_id,
@@ -529,7 +529,7 @@ class FavoritesService:
                     )
 
                 result = user is not None
-                logger.info(f"🔧 [is_favorite] 查询结果: {result}")
+                logger.info(f"🔧 [is_favorite] Query results: {result}")
                 return result
             else:
                 doc = await db.user_favorites.find_one(
@@ -539,14 +539,14 @@ class FavoritesService:
                     }
                 )
                 result = doc is not None
-                logger.info(f"🔧 [is_favorite] 字符串ID查询结果: {result}")
+                logger.info(f"🔧 [is_favorite] String ID query results: {result}")
                 return result
         except Exception as e:
-            logger.error(f"❌ [is_favorite] 检查股票关注列表异常: {type(e).__name__}: {str(e)}", exc_info=True)
+            logger.error(f"❌ [is_favorite] Check for stock watchlist exceptions: {type(e).__name__}: {str(e)}", exc_info=True)
             raise
 
     async def get_user_tags(self, user_id: str) -> List[str]:
-        """获取用户使用的所有标签（兼容字符串ID与ObjectId）"""
+        """Get all tags used by the user (compatible with string ID and ObjectId)"""
         db = await self._get_db()
 
         if self._is_valid_object_id(user_id):
@@ -572,21 +572,21 @@ class FavoritesService:
 
     def _get_mock_price(self, stock_code: str) -> float:
         """获取模拟股价"""
-        # 基于股票代码生成模拟价格
+        # Generate simulated prices based on stock symbols
         base_price = hash(stock_code) % 100 + 10
         return round(base_price + (hash(stock_code) % 1000) / 100, 2)
     
     def _get_mock_change(self, stock_code: str) -> float:
         """获取模拟涨跌幅"""
-        # 基于股票代码生成模拟涨跌幅
+        # Generate simulated price increases and decreases based on stock codes
         change = (hash(stock_code) % 2000 - 1000) / 100
         return round(change, 2)
     
     def _get_mock_volume(self, stock_code: str) -> int:
         """获取模拟成交量"""
-        # 基于股票代码生成模拟成交量
+        # Generate simulated trading volume based on stock symbol
         return (hash(stock_code) % 10000 + 1000) * 100
 
 
-# 创建全局实例
+# Create a global instance
 favorites_service = FavoritesService()

@@ -1,5 +1,5 @@
-# 止盈提醒服务
-# 周期扫描用户设置的止盈线（alert_gain_price），命中后推送通知
+# Take profit reminder service
+# Periodically scan the take-profit line (alert_gain_price) set by the user, and push notifications when hit
 
 import asyncio
 import logging
@@ -22,14 +22,14 @@ class StopGainAlertService:
         self._loop = None
 
     def set_event_loop(self, loop: asyncio.AbstractEventLoop):
-        """由 main 在 lifespan 中调用，用于在调度器线程中安全执行异步逻辑。"""
+        """Called by main in lifespan to safely execute asynchronous logic in the scheduler thread."""
         self._loop = loop
 
     def start(self):
         if not self._job:
             self._job = self.scheduler.add_job(self.run_once, "interval", minutes=self.scan_interval_minutes)
             self.scheduler.start()
-            logger.info("止盈提醒服务启动，间隔%s分钟", self.scan_interval_minutes)
+            logger.info("The take-profit reminder service is started with an interval of %s minutes.", self.scan_interval_minutes)
 
     def stop(self):
         if self._job is not None:
@@ -45,7 +45,7 @@ class StopGainAlertService:
     def run_once(self):
         watch_items = self._load_watch_items()
         if not watch_items:
-            logger.info("[止盈提醒] 无已配置止盈提醒")
+            logger.info("[Take profit reminder] No configured take profit reminder")
             return
 
         notified = 0
@@ -55,24 +55,24 @@ class StopGainAlertService:
                 notified += 1
 
         if notified:
-            logger.info("[止盈提醒] 本轮发送 %s 条提醒", notified)
+            logger.info("[Take profit reminder] Send %s reminders this round", notified)
         else:
-            logger.info("[止盈提醒] 本轮无触发提醒")
+            logger.info("[Take profit reminder] No trigger reminder this round")
 
     def _load_watch_items(self) -> List[Dict[str, Any]]:
         if not self._loop or self._loop.is_closed():
-            logger.warning("[止盈提醒] 未设置可用事件循环，跳过本轮扫描")
+            logger.warning("[Take profit reminder] No available event loop is set, skip this round of scanning")
             return []
 
         try:
             future = asyncio.run_coroutine_threadsafe(self._load_watch_items_async(), self._loop)
             return future.result(timeout=20)
         except Exception as e:
-            logger.warning("[止盈提醒] 加载监控项失败: %s", e)
+            logger.warning("[Take profit reminder] Failed to load monitoring items: %s", e)
             return []
 
     async def _load_watch_items_async(self) -> List[Dict[str, Any]]:
-        """加载止盈监控项并批量补齐当前价。"""
+        """Load the profit-taking monitoring items and fill in the current price in batches."""
         items: List[Dict[str, Any]] = []
         db = self._get_db()
 
@@ -220,10 +220,10 @@ class StopGainAlertService:
                 asyncio.run_coroutine_threadsafe(_publish(), self._loop)
                 return True
             except Exception as e:
-                logger.warning("止盈提醒推送失败(忽略): %s", e)
+                logger.warning("Take profit reminder failed to push(ignore): %s", e)
                 return False
 
-        logger.debug("止盈提醒跳过推送：未设置或已关闭的 event_loop")
+        logger.debug("Take profit reminder skip push: not set or turned off event_loop")
         return False
 
 

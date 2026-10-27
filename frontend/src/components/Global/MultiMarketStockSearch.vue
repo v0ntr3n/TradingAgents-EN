@@ -22,7 +22,7 @@
 
     <div v-if="loading" class="search-loading">
       <el-icon class="is-loading"><Loading /></el-icon>
-      <span>搜索中...</span>
+      <span>Searching...</span>
     </div>
 
     <div v-else-if="searchResults.length > 0" class="search-results">
@@ -48,7 +48,7 @@
     </div>
 
     <div v-else-if="searchQuery && !loading" class="no-results">
-      <el-empty description="未找到相关股票" :image-size="80" />
+      <el-empty description="No relevant stocks found" :image-size="80" />
     </div>
   </div>
 </template>
@@ -74,11 +74,11 @@ const loading = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 const getPlaceholder = () => {
-  return '输入股票代码或名称（如：000001 或 平安银行）'
+  return 'Enter the stock code or name (eg: 000001 or Ping An Bank)'
 }
 
 const getMarketLabel = (_market: string) => {
-  return 'A股'
+  return 'A shares'
 }
 
 const formatStockCode = (stock: StockInfo) => {
@@ -86,7 +86,7 @@ const formatStockCode = (stock: StockInfo) => {
 }
 
 const handleMarketChange = () => {
-  // 切换市场时清空搜索结果
+  // Clear search results when switching markets
   searchResults.value = []
   searchQuery.value = ''
 }
@@ -101,7 +101,7 @@ const handleSearch = () => {
     return
   }
 
-  // 防抖：500ms后执行搜索
+  // Anti-shake: perform search after 500ms
   searchTimer = setTimeout(async () => {
     await performSearch()
   }, 500)
@@ -117,8 +117,8 @@ const performSearch = async () => {
     const response = await searchStocks(selectedMarket.value, searchQuery.value.trim(), 20)
     searchResults.value = response.data?.stocks || []
   } catch (error: any) {
-    console.error('搜索失败:', error)
-    ElMessage.error(error.message || '搜索失败')
+    console.error('Search failed:', error)
+    ElMessage.error(error.message || 'Search failed')
     searchResults.value = []
   } finally {
     loading.value = false
@@ -131,7 +131,7 @@ const handleClear = () => {
 
 const handleSelectStock = (stock: StockInfo) => {
   emit('select', stock)
-  // 清空搜索
+  // Clear search
   searchQuery.value = ''
   searchResults.value = []
 }

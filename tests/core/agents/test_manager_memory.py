@@ -23,7 +23,7 @@ class _Mem0StyleMemory:
         self.search_calls.append(
             {"query": query, "n_results": n_results, "filter_metadata": filter_metadata}
         )
-        return [{"content": "历史管理判断 A", "metadata": {"ticker": "300750"}, "similarity": 0.92}]
+        return [{"content": "historical management judgment A", "metadata": {"ticker": "300750"}, "similarity": 0.92}]
 
     def add_memory(self, content, metadata=None, memory_id=None):
         self.add_calls.append({"content": content, "metadata": metadata, "memory_id": memory_id})
@@ -75,11 +75,11 @@ def test_manager_agent_reads_history_from_mem0_style_memory():
 
     history = agent._get_memory_context("300750", {"bull_report": "bull", "bear_report": "bear"})
 
-    assert "历史管理经验" in history
-    assert "历史管理判断 A" in history
+    assert "Historical management experience" in history
+    assert "historical management judgment A" in history
     assert memory.search_calls == [
         {
-            "query": "股票代码: 300750\n管理者类型: research\n历史管理决策\nbull_report: bull\nbear_report: bear",
+            "query": "Stock code: 300750\n manager type: research\n historical management decisions\nbull_report: bull\nbear_report: bear",
             "n_results": 3,
             "filter_metadata": {"ticker": "300750"},
         }
@@ -94,8 +94,8 @@ def test_manager_agent_execute_reads_and_writes_memory():
         {
             "ticker": "300750",
             "analysis_date": "2026-04-08",
-            "bull_report": "积极证据",
-            "bear_report": "谨慎证据",
+            "bull_report": "positive evidence",
+            "bear_report": "cautious evidence",
         }
     )
 
@@ -126,4 +126,4 @@ def test_risk_manager_system_prompt_falls_back_when_template_missing():
 
     prompt = agent._build_system_prompt({"ticker": "300750", "analysis_date": "2026-04-08"})
 
-    assert "你是一位风险评估师" in prompt
+    assert "You are a risk assessor" in prompt

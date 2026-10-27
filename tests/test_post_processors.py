@@ -1,7 +1,7 @@
 """
-后处理Agent测试
+Post-processing Agent Test
 
-测试ReportSaver、EmailNotifier、SystemNotifier等后处理Agent
+Test post-processing of ReportSaver, EmailNotifier, SystemNotifier, etc.Agent
 """
 
 import pytest
@@ -17,11 +17,11 @@ from core.agents.post_processors import (
 
 
 class TestReportSaverAgent:
-    """测试报告保存Agent"""
+    """Save test report Agent"""
     
     def test_save_to_file(self, tmp_path):
-        """测试保存到文件"""
-        # 创建Agent
+        """Save test to file"""
+        # Create Agent
         agent = ReportSaverAgent(
             operations=[
                 {
@@ -32,38 +32,38 @@ class TestReportSaverAgent:
             ]
         )
         
-        # 准备测试数据
+        # Prepare test data
         state = {
             "ticker": "AAPL",
             "analysis_date": "20231215",
-            "market_report": "市场分析报告...",
-            "news_report": "新闻分析报告...",
+            "market_report": "Market analysis report...",
+            "news_report": "News analysis report...",
             "investment_plan": {
-                "recommendation": "买入",
+                "recommendation": "buy",
                 "confidence_score": 0.85
             }
         }
         
-        # 执行保存
+        # Execute save
         result = agent.execute(state)
         
-        # 验证结果
+        # Verification results
         assert result["report_saver_status"]["success"] is True
         assert len(result["report_saver_status"]["results"]) == 1
         
-        # 验证文件已创建
+        # Verification file created
         saved_file = tmp_path / "AAPL_20231215.json"
         assert saved_file.exists()
         
-        # 验证文件内容
+        # Verify file contents
         with open(saved_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
             assert data["ticker"] == "AAPL"
             assert data["analysis_date"] == "20231215"
     
     def test_condition_check(self):
-        """测试条件检查"""
-        # 创建带条件的Agent
+        """Test condition check"""
+        # Create a conditional Agent
         agent = ReportSaverAgent(
             operations=[
                 {
@@ -81,28 +81,28 @@ class TestReportSaverAgent:
             ]
         )
         
-        # 测试条件满足
+        # Test conditions are met
         state_success = {"success": True, "ticker": "AAPL"}
         result = agent.execute(state_success)
         assert result["report_saver_status"]["success"] is True
         
-        # 测试条件不满足
+        # Test conditions are not met
         state_fail = {"success": False, "ticker": "AAPL"}
         result = agent.execute(state_fail)
         assert result["report_saver_status"]["skipped"] is True
 
 
 class TestEmailNotifierAgent:
-    """测试邮件通知Agent"""
+    """Test email notification Agent"""
     
     def test_template_rendering(self):
-        """测试模板渲染"""
+        """Test template rendering"""
         agent = EmailNotifierAgent(
             operations=[
                 {
                     "type": "send_email",
                     "to": "user@example.com",
-                    "subject": "{ticker} 分析完成 - {recommendation}",
+                    "subject": "{ticker} Analysis completed - {recommendation}",
                     "template": "analysis_complete"
                 }
             ]
@@ -111,23 +111,23 @@ class TestEmailNotifierAgent:
         state = {
             "ticker": "AAPL",
             "investment_plan": {
-                "recommendation": "买入"
+                "recommendation": "buy"
             }
         }
         
-        # 测试模板渲染
-        rendered = agent._render_template("{ticker} 分析完成 - {recommendation}", state)
+        # Test template rendering
+        rendered = agent._render_template("{ticker} Analysis completed - {recommendation}", state)
         assert "AAPL" in rendered
-        assert "买入" in rendered
+        assert "buy" in rendered
     
     def test_conditional_email(self):
-        """测试条件邮件发送"""
+        """Test condition email sending"""
         agent = EmailNotifierAgent(
             operations=[
                 {
                     "type": "send_email",
                     "to": "user@example.com",
-                    "subject": "重要信号",
+                    "subject": "important signal",
                     "template": "important_signal"
                 }
             ],
@@ -135,7 +135,7 @@ class TestEmailNotifierAgent:
                 {
                     "field": "investment_plan.recommendation",
                     "operator": "in",
-                    "value": ["买入", "卖出"]
+                    "value": ["buy", "sell"]
                 },
                 {
                     "field": "investment_plan.confidence_score",
@@ -145,20 +145,20 @@ class TestEmailNotifierAgent:
             ]
         )
         
-        # 测试条件满足
+        # Test conditions are met
         state_match = {
             "investment_plan": {
-                "recommendation": "买入",
+                "recommendation": "buy",
                 "confidence_score": 0.85
             }
         }
         result = agent.execute(state_match)
         assert result["email_notifier_status"]["success"] is True
         
-        # 测试条件不满足（置信度低）
+        # The test conditions are not met (low confidence)
         state_no_match = {
             "investment_plan": {
-                "recommendation": "买入",
+                "recommendation": "buy",
                 "confidence_score": 0.5
             }
         }
@@ -167,16 +167,16 @@ class TestEmailNotifierAgent:
 
 
 class TestSystemNotifierAgent:
-    """测试系统通知Agent"""
+    """Test system notification Agent"""
     
     def test_notification_creation(self):
-        """测试通知创建"""
+        """Test notification creation"""
         agent = SystemNotifierAgent(
             operations=[
                 {
                     "type": "send_notification",
                     "notification_type": "analysis",
-                    "title": "{ticker} 分析完成",
+                    "title": "{ticker} Analysis completed",
                     "content": "{summary}",
                     "severity": "info"
                 }
@@ -187,7 +187,7 @@ class TestSystemNotifierAgent:
             "user_id": "user123",
             "ticker": "AAPL",
             "investment_plan": {
-                "recommendation": "买入",
+                "recommendation": "buy",
                 "confidence_score": 0.85
             }
         }
@@ -198,27 +198,27 @@ class TestSystemNotifierAgent:
 
 
 class TestConditionEvaluation:
-    """测试条件评估"""
+    """Test condition evaluation"""
     
     def test_operators(self):
-        """测试各种操作符"""
+        """Test various operators"""
         agent = ReportSaverAgent()
         
         state = {
             "score": 0.85,
-            "recommendation": "买入",
+            "recommendation": "buy",
             "tags": ["tech", "growth"]
         }
         
         # equals
         assert agent._evaluate_condition(
-            {"field": "recommendation", "operator": "equals", "value": "买入"},
+            {"field": "recommendation", "operator": "equals", "value": "buy"},
             state
         ) is True
         
         # in
         assert agent._evaluate_condition(
-            {"field": "recommendation", "operator": "in", "value": ["买入", "卖出"]},
+            {"field": "recommendation", "operator": "in", "value": ["buy", "sell"]},
             state
         ) is True
         

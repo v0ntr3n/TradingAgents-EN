@@ -21,21 +21,21 @@ from app.models.screening import (
 router = APIRouter(tags=["screening"])
 logger = logging.getLogger("webapi")
 
-# 筛选字段配置响应模型
+# Filter field configuration response model
 class FieldConfigResponse(BaseModel):
-    """筛选字段配置响应"""
+    """Filter field configuration response"""
     fields: Dict[str, FieldInfo]
     categories: Dict[str, List[str]]
 
-# 传统的请求/响应模型（保持向后兼容）
+# Traditional request/response model (maintaining backward compatibility)
 class OrderByItem(BaseModel):
     field: str
     direction: str = Field("desc", pattern=r"^(?i)(asc|desc)$")
 
 class ScreeningRequest(BaseModel):
-    market: str = Field("CN", description="市场：CN")
-    date: Optional[str] = Field(None, description="交易日YYYY-MM-DD，缺省为最新")
-    adj: str = Field("qfq", description="复权口径：qfq/hfq/none（P0占位）")
+    market: str = Field("CN", description="Market:CN")
+    date: Optional[str] = Field(None, description="Trading date YYYY-MM-DD, the default is the latest")
+    adj: str = Field("qfq", description="Restoration caliber: qfq/hfq/none (P0 occupancy)")
     conditions: Dict[str, Any] = Field(default_factory=dict)
     order_by: Optional[List[OrderByItem]] = None
     limit: int = Field(50, ge=1, le=500)
@@ -53,7 +53,7 @@ class ScreeningPresetPayload(BaseModel):
     basic_filters: Dict[str, Any] = Field(default_factory=dict, alias="basicFilters")
     field_filters: Dict[str, Any] = Field(default_factory=dict, alias="fieldFilters")
 
-# 服务实例
+# Service instance
 svc = ScreeningService()
 enhanced_svc = get_enhanced_screening_service()
 factor_registry_svc = get_factor_registry_service()
@@ -73,23 +73,23 @@ def _serialize_screening_preset(doc: Dict[str, Any]) -> Dict[str, Any]:
 @router.get("/fields", response_model=FieldConfigResponse)
 async def get_screening_fields(user: dict = Depends(get_current_user)):
     """
-    获取筛选字段配置
-    返回所有可用的筛选字段及其配置信息
+    Get filter field configuration
+    Returns all available filter fields and their configuration information
     """
     try:
         config = factor_registry_svc.get_legacy_screening_field_config()
         return FieldConfigResponse(**config)
 
     except Exception as e:
-        logger.error(f"[get_screening_fields] 获取字段配置失败: {e}", exc_info=True)
+        logger.error(f"[get_screening_fields] Failed to get field configuration: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 def _convert_legacy_conditions_to_new_format(legacy_conditions: Dict[str, Any]) -> List[ScreeningCondition]:
     """
-    将传统格式的筛选条件转换为新格式
+    Convert traditional format filters to new format
 
-    传统格式示例:
+    Traditional format example:
     {
         "logic": "AND",
         "children": [
@@ -97,24 +97,24 @@ def _convert_legacy_conditions_to_new_format(legacy_conditions: Dict[str, Any]) 
         ]
     }
 
-    新格式:
+    new format:
     [
         ScreeningCondition(field="total_mv", operator="between", value=[50, 90071992547])
     ]
     """
     conditions = []
 
-    # 字段名映射（前端可能使用的旧字段名 -> 统一的后端字段名）
+    # Field name mapping (old field names that may be used by the front end -> Unified backend field names)
     field_mapping = {
-        "market_cap": "total_mv",      # 市值（兼容旧字段名）
-        "pe_ratio": "pe",              # 市盈率（兼容旧字段名）
-        "pb_ratio": "pb",              # 市净率（兼容旧字段名）
-        "turnover": "turnover_rate",   # 换手率（兼容旧字段名）
-        "change_percent": "pct_chg",   # 涨跌幅（兼容旧字段名）
-        "price": "close",              # 价格（兼容旧字段名）
+        "market_cap": "total_mv",      # Market capitalization (compatible with old field names)
+        "pe_ratio": "pe",              # P/E ratio (compatible with old field names)
+        "pb_ratio": "pb",              # Price to Book Ratio (compatible with old field names)
+        "turnover": "turnover_rate",   # Turnover rate (compatible with old field names)
+        "change_percent": "pct_chg",   # Increase or decrease (compatible with old field names)
+        "price": "close",              # Price (compatible with old field names)
     }
 
-    # 操作符映射
+    # operator mapping
     operator_mapping = {
         "between": "between",
         "gt": ">",
@@ -137,23 +137,23 @@ def _convert_legacy_conditions_to_new_format(legacy_conditions: Dict[str, Any]) 
                 value = child.get("value")
 
                 if field and op and value is not None:
-                    # 映射字段名
+                    # Mapping field name
                     mapped_field = field_mapping.get(field, field)
 
-                    # 映射操作符
+                    # mapping operator
                     mapped_op = operator_mapping.get(op, op)
 
-                    # 处理市值单位转换（前端传入的是万元，数据库存储的是亿元）
+                    # Process market value unit conversion (the front-end input is 10,000 yuan, and the database stores 100 million yuan)
                     if mapped_field == "total_mv" and isinstance(value, list):
-                        # 将万元转换为亿元
+                        # Convert 10,000 yuan to 100 million yuan
                         converted_value = [v / 10000 for v in value if isinstance(v, (int, float))]
-                        logger.info(f"[screening] 市值单位转换: {value} 万元 -> {converted_value} 亿元")
+                        logger.info(f"[screening] Market capitalization unit conversion: {value} Ten thousand yuan -> {converted_value} billion")
                         value = converted_value
                     elif mapped_field == "total_mv" and isinstance(value, (int, float)):
                         value = value / 10000
-                        logger.info(f"[screening] 市值单位转换: {child.get('value')} 万元 -> {value} 亿元")
+                        logger.info(f"[screening] Market capitalization unit conversion: {child.get('value')} Ten thousand yuan -> {value} billion")
 
-                    # 创建筛选条件
+                    # Create filters
                     condition = ScreeningCondition(
                         field=mapped_field,
                         operator=mapped_op,
@@ -161,23 +161,23 @@ def _convert_legacy_conditions_to_new_format(legacy_conditions: Dict[str, Any]) 
                     )
                     conditions.append(condition)
 
-                    logger.info(f"[screening] 转换条件: {field}({op}) -> {mapped_field}({mapped_op}), 值: {value}")
+                    logger.info(f"[screening] Conversion conditions: {field}({op}) -> {mapped_field}({mapped_op}), value: {value}")
 
     return conditions
 
 
-# 传统筛选接口（保持向后兼容，但使用增强服务）
+# Legacy filtering interface (remains backwards compatible, but uses enhanced services)
 @router.post("/run", response_model=ScreeningResponse)
 async def run_screening(req: ScreeningRequest, user: dict = Depends(get_current_user)):
     try:
-        logger.info(f"[screening] 请求条件: {req.conditions}")
-        logger.info(f"[screening] 排序与分页: order_by={req.order_by}, limit={req.limit}, offset={req.offset}")
+        logger.info(f"[screening] Request conditions: {req.conditions}")
+        logger.info(f"[screening] Sorting and paging: order_by={req.order_by}, limit={req.limit}, offset={req.offset}")
 
-        # 转换传统格式的条件为新格式
+        # Convert conditions from legacy format to new format
         conditions = _convert_legacy_conditions_to_new_format(req.conditions)
-        logger.info(f"[screening] 转换后的条件: {conditions}")
+        logger.info(f"[screening] converted conditions: {conditions}")
 
-        # 使用增强筛选服务
+        # Use enhanced filtering services
         result = await enhanced_svc.screen_stocks(
             conditions=conditions,
             market=req.market,
@@ -189,34 +189,34 @@ async def run_screening(req: ScreeningRequest, user: dict = Depends(get_current_
             use_database_optimization=True
         )
 
-        logger.info(f"[screening] 筛选完成: total={result.get('total')}, "
+        logger.info(f"[screening] Screening completed: total={result.get('total')}, "
                    f"took={result.get('took_ms')}ms, optimization={result.get('optimization_used')}")
 
         if result.get('items'):
             sample = result['items'][:3]
-            logger.info(f"[screening] 返回样例(前3条): {sample}")
+            logger.info(f"[screening] Return sample(Top 3 items): {sample}")
 
         return ScreeningResponse(total=result["total"], items=result["items"])
 
     except Exception as e:
-        logger.error(f"[screening] 处理失败: {e}", exc_info=True)
+        logger.error(f"[screening] Processing failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 新的优化筛选接口
+# New optimized filtering interface
 @router.post("/enhanced", response_model=NewScreeningResponse)
 async def enhanced_screening(req: NewScreeningRequest, user: dict = Depends(get_current_user)):
     """
-    增强的股票筛选接口
-    - 支持更丰富的筛选条件格式
-    - 自动选择最优的筛选策略（数据库优化 vs 传统方法）
-    - 提供详细的性能统计信息
+    Enhanced stock screening interface
+    - Support richer filter condition formats
+    - Automatically select the optimal screening strategy (database optimization vs traditional methods)
+    - Provides detailed performance statistics
     """
     try:
-        logger.info(f"[enhanced_screening] 筛选条件: {len(req.conditions)}个")
-        logger.info(f"[enhanced_screening] 排序与分页: order_by={req.order_by}, limit={req.limit}, offset={req.offset}")
+        logger.info(f"[enhanced_screening] Filter criteria: {len(req.conditions)}a")
+        logger.info(f"[enhanced_screening] Sorting and paging: order_by={req.order_by}, limit={req.limit}, offset={req.offset}")
 
-        # 执行增强筛选
+        # Perform enhanced filtering
         result = await enhanced_svc.screen_stocks(
             conditions=req.conditions,
             market=req.market,
@@ -228,7 +228,7 @@ async def enhanced_screening(req: NewScreeningRequest, user: dict = Depends(get_
             use_database_optimization=req.use_database_optimization
         )
 
-        logger.info(f"[enhanced_screening] 筛选完成: total={result.get('total')}, "
+        logger.info(f"[enhanced_screening] Screening completed: total={result.get('total')}, "
                    f"took={result.get('took_ms')}ms, optimization={result.get('optimization_used')}")
 
         return NewScreeningResponse(
@@ -240,36 +240,36 @@ async def enhanced_screening(req: NewScreeningRequest, user: dict = Depends(get_
         )
 
     except Exception as e:
-        logger.error(f"[enhanced_screening] 筛选失败: {e}")
-        raise HTTPException(status_code=500, detail=f"增强筛选失败: {str(e)}")
+        logger.error(f"[enhanced_screening] Filtering failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Enhanced filtering failed: {str(e)}")
 
 
-# 获取支持的字段信息
+# Get supported field information
 @router.get("/supported-fields", response_model=List[Dict[str, Any]])
 async def get_supported_fields(user: dict = Depends(get_current_user)):
-    """获取所有支持的筛选字段信息。"""
+    """Get all supported filter field information."""
     try:
         fields = await enhanced_svc.get_all_supported_fields()
         return fields
     except Exception as e:
-        logger.error(f"[screening] 获取字段信息失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取字段信息失败: {str(e)}")
+        logger.error(f"[screening] Failed to obtain field information: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to obtain field information: {str(e)}")
 
 
-# 获取单个字段的详细信息
+# Get details of a single field
 @router.get("/fields/{field_name}", response_model=Dict[str, Any])
 async def get_field_info(field_name: str, user: dict = Depends(get_current_user)):
-    """获取指定字段的详细信息"""
+    """Get details of a specified field"""
     try:
         field_info = await enhanced_svc.get_field_info(field_name)
         if not field_info:
-            raise HTTPException(status_code=404, detail=f"字段 '{field_name}' 不存在")
+            raise HTTPException(status_code=404, detail=f"Field '{field_name}' does not exist")
         return field_info
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[screening] 获取字段信息失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取字段信息失败: {str(e)}")
+        logger.error(f"[screening] Failed to obtain field information: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to obtain field information: {str(e)}")
 
 
 @router.get("/factor-registry", response_model=Dict[str, Any])
@@ -279,10 +279,10 @@ async def get_factor_registry(
     screening_only: bool = False,
     user: dict = Depends(get_current_user),
 ):
-    """获取受治理因子注册表，供前端、自然语言选股和 Skill 复用。"""
+    """Get a registry of governed factors for reuse by front-ends, natural language stock picking, and skills."""
     try:
         if governance_scope not in {"all", "p0", "technical"}:
-            raise HTTPException(status_code=400, detail="governance_scope 只支持 all/p0/technical")
+            raise HTTPException(status_code=400, detail="governance_scope Only supports all/p0/technical")
         return factor_registry_svc.list_registry(
             category=category,
             governance_scope=governance_scope,
@@ -291,28 +291,28 @@ async def get_factor_registry(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[screening] 获取因子注册表失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"获取因子注册表失败: {str(e)}")
+        logger.error(f"[screening] Failed to obtain factor registry: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to obtain factor registry: {str(e)}")
 
 
 @router.get("/factor-registry/{factor_id}", response_model=Dict[str, Any])
 async def get_factor_registry_item(factor_id: str, user: dict = Depends(get_current_user)):
-    """获取单个因子的 schema/catalog/runtime semantic contract 聚合信息。"""
+    """Get the schema/catalog/runtime semantic contract aggregation information of a single factor."""
     try:
         item = factor_registry_svc.get_registry_item(factor_id)
         if item is None:
-            raise HTTPException(status_code=404, detail=f"因子 '{factor_id}' 不存在")
+            raise HTTPException(status_code=404, detail=f"factor '{factor_id}' does not exist")
         return item
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[screening] 获取因子注册表详情失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"获取因子注册表详情失败: {str(e)}")
+        logger.error(f"[screening] Failed to get factor registry details: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to get factor registry details: {str(e)}")
 
 
 @router.get("/presets", response_model=Dict[str, Any])
 async def list_screening_presets(user: dict = Depends(get_current_user)):
-    """获取当前用户保存的筛选方案。"""
+    """Get the filtering scheme saved by the current user."""
     db = get_mongo_db()
     user_id = str(user["id"])
 
@@ -323,8 +323,8 @@ async def list_screening_presets(user: dict = Depends(get_current_user)):
             items.append(_serialize_screening_preset(doc))
         return ok({"items": items})
     except Exception as e:
-        logger.error(f"[screening] 获取筛选方案失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"获取筛选方案失败: {str(e)}")
+        logger.error(f"[screening] Failed to obtain filtering scheme: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to obtain filtering scheme: {str(e)}")
 
 
 @router.post("/presets", response_model=Dict[str, Any])
@@ -332,17 +332,17 @@ async def create_screening_preset(
     payload: ScreeningPresetPayload,
     user: dict = Depends(get_current_user),
 ):
-    """创建新的筛选方案。"""
+    """Create a new filter scheme."""
     db = get_mongo_db()
     user_id = str(user["id"])
 
     name = payload.name.strip()
     if not name:
-        return fail("筛选方案名称不能为空", code=400)
+        return fail("Filter scheme name cannot be empty", code=400)
 
     existing = await db.screening_presets.find_one({"user_id": user_id, "name": name})
     if existing:
-        return fail("筛选方案名称已存在", code=400)
+        return fail("Filter scheme name already exists", code=400)
 
     now = now_tz()
     preset_doc = {
@@ -357,10 +357,10 @@ async def create_screening_preset(
     try:
         result = await db.screening_presets.insert_one(preset_doc)
         preset_doc["_id"] = result.inserted_id
-        return ok({"preset": _serialize_screening_preset(preset_doc)}, message="筛选方案保存成功")
+        return ok({"preset": _serialize_screening_preset(preset_doc)}, message="Screening plan saved successfully")
     except Exception as e:
-        logger.error(f"[screening] 创建筛选方案失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"创建筛选方案失败: {str(e)}")
+        logger.error(f"[screening] Failed to create filter scheme: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to create filter scheme: {str(e)}")
 
 
 @router.put("/presets/{preset_id}", response_model=Dict[str, Any])
@@ -369,22 +369,22 @@ async def update_screening_preset(
     payload: ScreeningPresetPayload,
     user: dict = Depends(get_current_user),
 ):
-    """更新已有筛选方案。"""
+    """Update existing filtering scheme."""
     db = get_mongo_db()
     user_id = str(user["id"])
 
     try:
         oid = ObjectId(preset_id)
     except Exception:
-        return fail("无效的筛选方案ID", code=400)
+        return fail("Invalid filter scheme ID", code=400)
 
     existing = await db.screening_presets.find_one({"_id": oid, "user_id": user_id})
     if not existing:
-        return fail("筛选方案不存在", code=404)
+        return fail("Filter scheme does not exist", code=404)
 
     name = payload.name.strip()
     if not name:
-        return fail("筛选方案名称不能为空", code=400)
+        return fail("Filter scheme name cannot be empty", code=400)
 
     conflict = await db.screening_presets.find_one({
         "_id": {"$ne": oid},
@@ -392,7 +392,7 @@ async def update_screening_preset(
         "name": name,
     })
     if conflict:
-        return fail("筛选方案名称已存在", code=400)
+        return fail("Filter scheme name already exists", code=400)
 
     update_data = {
         "name": name,
@@ -407,53 +407,53 @@ async def update_screening_preset(
             {"$set": update_data},
         )
         updated = {**existing, **update_data, "_id": oid}
-        return ok({"preset": _serialize_screening_preset(updated)}, message="筛选方案更新成功")
+        return ok({"preset": _serialize_screening_preset(updated)}, message="Screening plan updated successfully")
     except Exception as e:
-        logger.error(f"[screening] 更新筛选方案失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"更新筛选方案失败: {str(e)}")
+        logger.error(f"[screening] Failed to update filter scheme: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to update filter scheme: {str(e)}")
 
 
 @router.delete("/presets/{preset_id}", response_model=Dict[str, Any])
 async def delete_screening_preset(preset_id: str, user: dict = Depends(get_current_user)):
-    """删除筛选方案。"""
+    """Delete filter scheme."""
     db = get_mongo_db()
     user_id = str(user["id"])
 
     try:
         oid = ObjectId(preset_id)
     except Exception:
-        return fail("无效的筛选方案ID", code=400)
+        return fail("Invalid filter scheme ID", code=400)
 
     try:
         result = await db.screening_presets.delete_one({"_id": oid, "user_id": user_id})
         if result.deleted_count == 0:
-            return fail("筛选方案不存在", code=404)
-        return ok({"id": preset_id}, message="筛选方案删除成功")
+            return fail("Filter scheme does not exist", code=404)
+        return ok({"id": preset_id}, message="Filtering plan deleted successfully")
     except Exception as e:
-        logger.error(f"[screening] 删除筛选方案失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"删除筛选方案失败: {str(e)}")
+        logger.error(f"[screening] Failed to delete filter scheme: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to delete filter scheme: {str(e)}")
 
 
-# 验证筛选条件
+# Validate filters
 @router.post("/validate", response_model=Dict[str, Any])
 async def validate_conditions(conditions: List[ScreeningCondition], user: dict = Depends(get_current_user)):
-    """验证筛选条件的有效性"""
+    """Verify filter validity"""
     try:
         validation_result = await enhanced_svc.validate_conditions(conditions)
         return validation_result
     except Exception as e:
-        logger.error(f"[screening] 验证条件失败: {e}")
-        raise HTTPException(status_code=500, detail=f"验证条件失败: {str(e)}")
+        logger.error(f"[screening] Validation condition failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Validation condition failed: {str(e)}")
 
-# 重复定义的旧端点移除（保留带日志的版本）
+# Removal of old endpoints with duplicate definitions (keep the logged version)
 
 
 @router.get("/industries")
 async def get_industries(user: dict = Depends(get_current_user)):
     """
-    获取数据库中所有可用的行业列表
-    根据系统配置的数据源优先级，从优先级最高的数据源获取行业分类数据
-    返回按股票数量排序的行业列表
+    Get a list of all industries available in the database
+    According to the data source priority configured in the system, industry classification data is obtained from the data source with the highest priority.
+    Returns a list of industries sorted by number of stocks
     """
     try:
         from app.core.database import get_mongo_db
@@ -462,15 +462,15 @@ async def get_industries(user: dict = Depends(get_current_user)):
         db = get_mongo_db()
         collection = db["stock_basic_info"]
 
-        # 🔥 使用统一的数据源优先级管理函数
+        # 🔥 Use unified data source priority management functions
         preferred_source = await get_preferred_data_source_async(market_category="a_shares")
 
-        # 聚合查询：按行业分组并统计股票数量（只查询指定数据源）
+        # Aggregation query: group by industry and count the number of stocks (only query the specified data source)
         pipeline = [
             {
                 "$match": {
-                    "source": preferred_source,  # 🔥 只查询优先级最高的数据源
-                    "industry": {"$nin": [None, "", "未知"]}  # 过滤空行业和未知行业
+                    "source": preferred_source,  # 🔥 Only query the highest priority data source
+                    "industry": {"$nin": [None, "", "unknown"]}  # Filter empty industries and unknown industries
                 }
             },
             {
@@ -479,7 +479,7 @@ async def get_industries(user: dict = Depends(get_current_user)):
                     "count": {"$sum": 1}
                 }
             },
-            {"$sort": {"count": -1}},  # 按股票数量降序排序
+            {"$sort": {"count": -1}},  # Sort by stock number in descending order
             {
                 "$project": {
                     "industry": "$_id",
@@ -491,7 +491,7 @@ async def get_industries(user: dict = Depends(get_current_user)):
 
         industries = []
         async for doc in collection.aggregate(pipeline):
-            # 清洗字段，避免 NaN/Inf 导致 JSON 序列化失败
+            # Clean fields to avoid NaN/Inf causing JSON serialization failure
             raw_industry = doc.get("industry")
             safe_industry = ""
             try:
@@ -526,14 +526,14 @@ async def get_industries(user: dict = Depends(get_current_user)):
                 "count": safe_count,
             })
 
-        logger.info(f"[get_industries] 从数据源 {preferred_source} 返回 {len(industries)} 个行业")
+        logger.info(f"[get_industries] from data source {preferred_source} Return {len(industries)} industries")
 
         return {
             "industries": industries,
             "total": len(industries),
-            "source": preferred_source  # 🔥 返回数据来源
+            "source": preferred_source  # 🔥 Return data source
         }
 
     except Exception as e:
-        logger.error(f"[get_industries] 获取行业列表失败: {e}", exc_info=True)
+        logger.error(f"[get_industries] Failed to obtain industry list: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

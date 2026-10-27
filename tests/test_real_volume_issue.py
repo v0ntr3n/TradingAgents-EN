@@ -1,290 +1,290 @@
 #!/usr/bin/env python3
 """
-测试真实的volume映射问题
-验证现有代码是否真的存在KeyError: 'volume'问题
+Test real volume mapping issues
+Verify that existing code actually exists KeyError: 'volume'question
 """
 
 import os
 import sys
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-# 加载.env文件
+# Load .env file
 try:
     from dotenv import load_dotenv
     load_dotenv(os.path.join(project_root, '.env'))
-    print(f"✅ 已加载.env文件")
+    print(f"✅ .env file loaded")
 except ImportError:
-    print(f"⚠️ python-dotenv未安装，尝试手动加载环境变量")
+    print(f"⚠️ python-dotenv Not installed, try manually loading environment variables")
 except Exception as e:
-    print(f"⚠️ 加载.env文件失败: {e}")
+    print(f"⚠️ Loading .env file failed: {e}")
 
 def test_real_tushare_volume_access():
-    """测试真实的Tushare数据volume访问"""
-    print("🧪 测试真实Tushare数据volume访问")
+    """Test real Tushare data volume access"""
+    print("🧪 Test real Tushare data volume access")
     print("=" * 60)
     
     try:
         from tradingagents.dataflows.data_source_manager import DataSourceManager, ChinaDataSource
         
-        # 检查Tushare是否可用
+        # Check if Tushare is available
         tushare_token = os.getenv('TUSHARE_TOKEN')
         if not tushare_token:
-            print("⚠️ TUSHARE_TOKEN未设置，无法测试真实数据")
+            print("⚠️ TUSHARE_TOKEN Not set, cannot test real data")
             return True
         
-        print(f"✅ TUSHARE_TOKEN已设置")
+        print(f"✅ TUSHARE_TOKEN Already set")
         
-        # 创建数据源管理器
+        # Create data source manager
         manager = DataSourceManager()
         
-        # 确保使用Tushare数据源
+        # Make sure to use the Tushare data source
         if ChinaDataSource.TUSHARE in manager.available_sources:
             manager.set_current_source(ChinaDataSource.TUSHARE)
-            print(f"📊 当前数据源: {manager.current_source.value}")
+            print(f"📊 Current data source: {manager.current_source.value}")
             
-            # 测试获取真实数据
-            print(f"🔍 获取000001真实数据...")
+            # Test to get real data
+            print(f"🔍 Get 000001 real data...")
             
             try:
                 result = manager._get_tushare_data('000001', '2025-07-20', '2025-07-26')
                 
                 if result and "❌" not in result:
-                    print(f"✅ 成功获取数据，长度: {len(result)}")
-                    print(f"📊 结果预览: {result[:200]}...")
+                    print(f"✅ Successfully obtained data, length: {len(result)}")
+                    print(f"📊 Results preview: {result[:200]}...")
                     
-                    # 检查结果中是否包含成交量信息
-                    if "成交量" in result:
-                        print(f"✅ 结果包含成交量信息")
+                    # Check if the results include volume information
+                    if "Volume" in result:
+                        print(f"✅ Results include volume information")
                         return True
                     else:
-                        print(f"⚠️ 结果不包含成交量信息")
+                        print(f"⚠️ Results do not include volume information")
                         return False
                 else:
-                    print(f"❌ 获取数据失败: {result}")
+                    print(f"❌ Failed to get data: {result}")
                     return False
                     
             except KeyError as e:
                 if "'volume'" in str(e):
-                    print(f"🎯 确认存在KeyError: 'volume'问题！")
-                    print(f"❌ 错误详情: {e}")
+                    print(f"🎯 confirm existence KeyError: 'volume'Question!")
+                    print(f"❌ Error details: {e}")
                     return False
                 else:
-                    print(f"❌ 其他KeyError: {e}")
+                    print(f"❌ Others KeyError: {e}")
                     return False
             except Exception as e:
-                print(f"❌ 其他错误: {e}")
+                print(f"❌ Other errors: {e}")
                 if "volume" in str(e).lower():
-                    print(f"🎯 可能与volume相关的错误")
+                    print(f"🎯 Possible volume-related errors")
                 import traceback
                 traceback.print_exc()
                 return False
         else:
-            print("❌ Tushare数据源不可用")
+            print("❌ Tushare Data source is not available")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_tushare_adapter_direct():
-    """直接测试Tushare适配器"""
-    print(f"\n🧪 直接测试Tushare适配器")
+    """Test the Tushare adapter directly"""
+    print(f"\n🧪 Test the Tushare adapter directly")
     print("=" * 60)
     
     try:
         from tradingagents.dataflows.tushare_adapter import get_tushare_adapter
         
-        # 检查Tushare是否可用
+        # Check if Tushare is available
         tushare_token = os.getenv('TUSHARE_TOKEN')
         if not tushare_token:
-            print("⚠️ TUSHARE_TOKEN未设置，无法测试真实数据")
+            print("⚠️ TUSHARE_TOKEN Not set, cannot test real data")
             return True
         
         adapter = get_tushare_adapter()
-        print(f"✅ Tushare适配器创建成功")
+        print(f"✅ Tushare Adapter created successfully")
         
-        # 测试获取股票数据
-        print(f"🔍 获取000001股票数据...")
+        # Test to obtain stock data
+        print(f"🔍 Get 000001 stock data...")
         
         try:
             data = adapter.get_stock_data('000001', '2025-07-20', '2025-07-26')
             
             if data is not None and not data.empty:
-                print(f"✅ 成功获取数据，形状: {data.shape}")
-                print(f"📊 列名: {list(data.columns)}")
+                print(f"✅ Successfully obtained data, shape: {data.shape}")
+                print(f"📊 List: {list(data.columns)}")
                 
-                # 检查volume列
+                # Check the volume column
                 if 'volume' in data.columns:
-                    print(f"✅ volume列存在")
+                    print(f"✅ volume Column exists")
                     volume_sum = data['volume'].sum()
-                    print(f"📊 总成交量: {volume_sum:,.0f}")
+                    print(f"📊 total trading volume: {volume_sum:,.0f}")
                     
-                    # 测试访问volume列（这是关键测试）
+                    # Test access to volume column (this is the key test)
                     try:
                         volume_values = data['volume'].tolist()
-                        print(f"✅ 成功访问volume列: {volume_values[:3]}...")
+                        print(f"✅ Successfully accessed volume column: {volume_values[:3]}...")
                         return True
                     except KeyError as e:
-                        print(f"❌ KeyError访问volume列: {e}")
+                        print(f"❌ KeyError Access volume column: {e}")
                         return False
                 else:
-                    print(f"❌ volume列不存在")
-                    print(f"📊 可用列: {list(data.columns)}")
+                    print(f"❌ volume Column does not exist")
+                    print(f"📊 Available columns: {list(data.columns)}")
                     return False
             else:
-                print(f"❌ 未获取到数据")
+                print(f"❌ No data obtained")
                 return False
                 
         except KeyError as e:
             if "'volume'" in str(e):
-                print(f"🎯 确认存在KeyError: 'volume'问题！")
-                print(f"❌ 错误详情: {e}")
+                print(f"🎯 confirm existence KeyError: 'volume'Question!")
+                print(f"❌ Error details: {e}")
                 return False
             else:
-                print(f"❌ 其他KeyError: {e}")
+                print(f"❌ Others KeyError: {e}")
                 return False
         except Exception as e:
-            print(f"❌ 其他错误: {e}")
+            print(f"❌ Other errors: {e}")
             import traceback
             traceback.print_exc()
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_column_mapping_in_real_data():
-    """测试真实数据中的列映射"""
-    print(f"\n🧪 测试真实数据中的列映射")
+    """Test column mapping on real data"""
+    print(f"\n🧪 Test column mapping on real data")
     print("=" * 60)
     
     try:
         import tushare as ts
         
-        # 检查Tushare是否可用
+        # Check if Tushare is available
         tushare_token = os.getenv('TUSHARE_TOKEN')
         if not tushare_token:
-            print("⚠️ TUSHARE_TOKEN未设置，无法测试真实数据")
+            print("⚠️ TUSHARE_TOKEN Not set, cannot test real data")
             return True
         
-        # 直接调用Tushare API获取原始数据
-        print(f"🔍 直接调用Tushare API...")
+        # Directly call Tushare API to obtain original data
+        print(f"🔍 call directly Tushare API...")
         ts.set_token(tushare_token)
         pro = ts.pro_api()
         
-        # 获取原始数据
+        # Get raw data
         raw_data = pro.daily(ts_code='000001.SZ', start_date='20250720', end_date='20250726')
         
         if raw_data is not None and not raw_data.empty:
-            print(f"✅ 获取原始数据成功，形状: {raw_data.shape}")
-            print(f"📊 原始列名: {list(raw_data.columns)}")
+            print(f"✅ Obtaining original data successfully, shape: {raw_data.shape}")
+            print(f"📊 original column name: {list(raw_data.columns)}")
             
-            # 检查原始数据中的列名
+            # Check column names in raw data
             if 'vol' in raw_data.columns:
-                print(f"✅ 原始数据包含'vol'列")
+                print(f"✅ The original data contains'vol'Column")
                 vol_values = raw_data['vol'].tolist()
-                print(f"📊 vol列值: {vol_values}")
+                print(f"📊 vol column value: {vol_values}")
             else:
-                print(f"❌ 原始数据不包含'vol'列")
+                print(f"❌ The original data does not contain'vol'Column")
                 return False
             
-            # 测试我们的标准化函数
+            # Test our normalized function
             from tradingagents.dataflows.tushare_adapter import get_tushare_adapter
             adapter = get_tushare_adapter()
             
-            print(f"\n🔧 测试标准化函数...")
+            print(f"\n🔧 Test normalized functions...")
             standardized_data = adapter._standardize_data(raw_data)
             
-            print(f"📊 标准化后列名: {list(standardized_data.columns)}")
+            print(f"📊 Listed after standardization: {list(standardized_data.columns)}")
             
             if 'volume' in standardized_data.columns:
-                print(f"✅ 标准化后包含'volume'列")
+                print(f"✅ Included after normalization'volume'Column")
                 volume_values = standardized_data['volume'].tolist()
-                print(f"📊 volume列值: {volume_values}")
+                print(f"📊 volume column value: {volume_values}")
                 
-                # 验证映射是否正确
+                # Verify mapping is correct
                 if raw_data['vol'].sum() == standardized_data['volume'].sum():
-                    print(f"✅ vol -> volume 映射正确")
+                    print(f"✅ vol -> volume Mapping correct")
                     return True
                 else:
-                    print(f"❌ vol -> volume 映射错误")
+                    print(f"❌ vol -> volume Mapping error")
                     return False
             else:
-                print(f"❌ 标准化后不包含'volume'列")
+                print(f"❌ Not included after standardization'volume'Column")
                 return False
         else:
-            print(f"❌ 未获取到原始数据")
+            print(f"❌ Original data not obtained")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主测试函数"""
-    print("🔍 验证真实环境中的volume映射问题")
+    """Main test function"""
+    print("🔍 Verify volume mapping issues in real environments")
     print("=" * 80)
-    print("📋 目标: 在真实环境中验证是否存在 KeyError: 'volume' 问题")
+    print("📋 target: Verify existence in real environment KeyError: 'volume' question")
     print("=" * 80)
     
     tests = [
-        ("真实数据列映射测试", test_column_mapping_in_real_data),
-        ("Tushare适配器直接测试", test_tushare_adapter_direct),
-        ("数据源管理器真实数据测试", test_real_tushare_volume_access),
+        ("Real data column mapping test", test_column_mapping_in_real_data),
+        ("Tushare Adapter direct test", test_tushare_adapter_direct),
+        ("Data Source Manager Real Data Test", test_real_tushare_volume_access),
     ]
     
     results = []
     for test_name, test_func in tests:
-        print(f"\n🔍 执行测试: {test_name}")
+        print(f"\n🔍 Execute tests: {test_name}")
         try:
             result = test_func()
             results.append((test_name, result))
         except Exception as e:
-            print(f"❌ 测试{test_name}异常: {e}")
+            print(f"❌ test{test_name}Abnormal: {e}")
             results.append((test_name, False))
     
-    # 总结结果
+    # Summary results
     print("\n" + "=" * 80)
-    print("📊 真实环境测试结果总结:")
+    print("📊 Summary of real environment test results:")
     
     passed = 0
     total = len(results)
     
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"  {test_name}: {status}")
         if result:
             passed += 1
     
-    print(f"\n🎯 总体结果: {passed}/{total} 测试通过")
+    print(f"\n🎯 Overall results: {passed}/{total} Test passed")
     
-    # 分析结果和建议
-    print("\n📋 分析结论:")
+    # Analysis results and recommendations
+    print("\n📋 Analysis conclusion:")
     if passed == total:
-        print("🎉 所有真实环境测试通过！")
-        print("✅ 现有代码的volume映射功能完全正常")
-        print("\n💡 对PR #173的建议:")
-        print("  1. 🤔 询问PR作者具体的错误复现步骤")
-        print("  2. 📅 确认PR作者使用的代码版本和分支")
-        print("  3. 🔍 检查是否是特定环境、数据或配置的问题")
-        print("  4. 📝 要求提供完整的错误堆栈信息")
-        print("  5. ⚠️ 可能是已经修复的旧问题")
+        print("🎉 All real environment tests passed!")
+        print("✅ The volume mapping function of the existing code is completely normal")
+        print("\n💡 Yes PR #173 suggestions:")
+        print("  1. 🤔 Ask the PR author for specific steps to reproduce the error")
+        print("  2. 📅 Confirm the code version and branch used by the PR author")
+        print("  3. 🔍 Check if the issue is with your specific environment, data, or configuration")
+        print("  4. 📝 Ask for complete error stack information")
+        print("  5. ⚠️ Might be an old issue that has been fixed")
     else:
-        print("❌ 部分真实环境测试失败")
-        print("🎯 确实存在volume相关问题，PR #173的修复是必要的")
-        print("\n💡 建议:")
-        print("  1. ✅ 接受PR #173的修复")
-        print("  2. 🔧 但需要优化实现方式")
-        print("  3. 🧪 增加更多测试用例")
+        print("❌ Some real environment tests failed")
+        print("🎯 There are indeed volume related issues,PR #173 A repair is necessary")
+        print("\n💡 Suggestions:")
+        print("  1. ✅ accept PR #173 repair")
+        print("  2. 🔧 But the implementation needs to be optimized")
+        print("  3. 🧪 Add more test cases")
     
     return passed == total
 

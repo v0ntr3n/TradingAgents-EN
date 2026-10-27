@@ -11,8 +11,8 @@ def test_build_user_prompt_keeps_state_company_name_when_market_lookup_empty(mon
         @staticmethod
         def get_market_info(ticker):
             return {
-                "market_name": "中国A股",
-                "currency_name": "人民币",
+                "market_name": "China A shares",
+                "currency_name": "RMB",
                 "currency_symbol": "¥",
                 "company_name": "",
             }
@@ -27,11 +27,11 @@ def test_build_user_prompt_keeps_state_company_name_when_market_lookup_empty(mon
     prompt = agent._build_user_prompt(
         ticker="000001",
         trade_date="2026-04-10",
-        state={"company_name": "平安银行"},
+        state={"company_name": "Ping An Bank"},
     )
 
     assert prompt == "PROMPT"
-    assert captured["variables"]["company_name"] == "平安银行"
+    assert captured["variables"]["company_name"] == "Ping An Bank"
 
 
 def test_execute_prefetches_required_china_tools_and_uses_analysis_prompt(monkeypatch):
@@ -54,7 +54,7 @@ def test_execute_prefetches_required_china_tools_and_uses_analysis_prompt(monkey
     class FakeStockUtils:
         @staticmethod
         def get_market_info(ticker):
-            return {"is_china": True, "market_name": "中国A股"}
+            return {"is_china": True, "market_name": "China A shares"}
 
     monkeypatch.setattr(module, "StockUtils", FakeStockUtils)
 
@@ -82,7 +82,7 @@ def test_execute_prefetches_required_china_tools_and_uses_analysis_prompt(monkey
     result = agent.execute({
         "ticker": "000001",
         "trade_date": "2026-04-10",
-        "company_name": "平安银行",
+        "company_name": "Ping An Bank",
     })
 
     assert result["fundamentals_report"] == "REPORT"
@@ -94,7 +94,7 @@ def test_execute_prefetches_required_china_tools_and_uses_analysis_prompt(monkey
         "get_cash_flow_statement",
     ]
 
-    prefetch_messages = [msg for msg in captured["messages"] if isinstance(msg, HumanMessage) and "已预先获取" in msg.content]
+    prefetch_messages = [msg for msg in captured["messages"] if isinstance(msg, HumanMessage) and "prefetched" in msg.content]
     assert len(prefetch_messages) == 1
     assert "UNIFIED" in prefetch_messages[0].content
     assert "FINANCIALS" in prefetch_messages[0].content

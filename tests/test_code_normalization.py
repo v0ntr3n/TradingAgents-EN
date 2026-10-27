@@ -1,71 +1,71 @@
 """
-测试股票代码标准化逻辑（模拟 AKShare 两个接口可能返回的各种格式）
+Test the stock symbol standardization logic (simulating the various formats that AKShare s two interfaces may return)
 """
 import sys
 from pathlib import Path
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 
 def normalize_code_akshare_style(code_raw):
     """
-    模拟 AKShareAdapter.get_realtime_quotes() 中的代码标准化逻辑
+    Simulation AKShareAdapter.get_realtime_quotes() Code standardization logic in
     """
     if not code_raw:
         return None
     
-    # 标准化股票代码：处理交易所前缀（如 sz000001, sh600036）
+    # Standardized ticker: handles exchange prefixes (e.g. sz000001, sh600036) 
     code_str = str(code_raw).strip()
     
-    # 如果代码长度超过6位，去掉前面的交易所前缀（如 sz, sh）
+    # If the code length exceeds 6 characters, remove the previous exchange prefix (such as sz, sh) 
     if len(code_str) > 6:
-        # 去掉前面的非数字字符（通常是2个字符的交易所代码）
+        # Remove leading non-numeric characters (usually the 2-character exchange code)
         code_str = ''.join(filter(str.isdigit, code_str))
     
-    # 如果是纯数字，移除前导0后补齐到6位
+    # If it is a pure number, remove the leading 0 and pad it to 6 digits.
     if code_str.isdigit():
-        code_clean = code_str.lstrip('0') or '0'  # 移除前导0，如果全是0则保留一个0
-        code = code_clean.zfill(6)  # 补齐到6位
+        code_clean = code_str.lstrip('0') or '0'  # Remove leading 0s, if all 0s, keep one 0
+        code = code_clean.zfill(6)  # Complete to 6 digits
     else:
-        # 如果不是纯数字，尝试提取数字部分
+        # If it's not purely numeric, try to extract the numeric part
         code_digits = ''.join(filter(str.isdigit, code_str))
         if code_digits:
             code = code_digits.zfill(6)
         else:
-            # 无法提取有效代码，跳过
+            # Unable to extract valid code, skip
             return None
     
     return code
 
 
 def test_code_normalization():
-    """测试各种可能的股票代码格式"""
+    """Test various possible ticker formats"""
     print("\n" + "="*70)
-    print("🧪 测试股票代码标准化逻辑")
+    print("🧪 Test ticker standardization logic")
     print("="*70)
     
     test_cases = [
-        # (输入, 期望输出, 描述, 来源)
-        ("sz000001", "000001", "深圳平安银行（带sz前缀）", "新浪接口"),
-        ("sh600036", "600036", "上海招商银行（带sh前缀）", "新浪接口"),
-        ("bj920000", "920000", "北交所股票（带bj前缀）", "新浪接口"),
-        ("000001", "000001", "标准6位代码", "东方财富接口"),
-        ("600036", "600036", "标准6位代码", "东方财富接口"),
-        ("920000", "920000", "北交所标准代码", "东方财富接口"),
-        ("1", "000001", "单个数字", "边界情况"),
-        ("00001", "000001", "5位代码", "边界情况"),
-        ("0000001", "000001", "7位代码（前导0）", "边界情况"),
-        ("sz002594", "002594", "深圳比亚迪", "新浪接口"),
-        ("sh688001", "688001", "上海科创板", "新浪接口"),
-        ("sz300001", "300001", "深圳创业板", "新浪接口"),
-        ("", None, "空字符串", "边界情况"),
-        ("abc", None, "纯字母（无效）", "边界情况"),
-        ("sz", None, "只有前缀（无效）", "边界情况"),
+        # (input, expected output, Description, Source)
+        ("sz000001", "000001", "Shenzhen Ping An Bank (with sz prefix)", "Sina interface"),
+        ("sh600036", "600036", "Shanghai China Merchants Bank (with sh prefix)", "Sina interface"),
+        ("bj920000", "920000", "North Exchange stocks (with bj prefix)", "Sina interface"),
+        ("000001", "000001", "Standard 6-digit code", "Oriental Wealth Interface"),
+        ("600036", "600036", "Standard 6-digit code", "Oriental Wealth Interface"),
+        ("920000", "920000", "North Exchange Standard Code", "Oriental Wealth Interface"),
+        ("1", "000001", "single number", "boundary case"),
+        ("00001", "000001", "5 bit code", "boundary case"),
+        ("0000001", "000001", "7 Bit code (leading 0)", "boundary case"),
+        ("sz002594", "002594", "Shenzhen BYD", "Sina interface"),
+        ("sh688001", "688001", "Shanghai Science and Technology Innovation Board", "Sina interface"),
+        ("sz300001", "300001", "Shenzhen GEM", "Sina interface"),
+        ("", None, "empty string", "boundary case"),
+        ("abc", None, "plain letters (invalid)", "boundary case"),
+        ("sz", None, "Prefix only (invalid)", "boundary case"),
     ]
     
-    print(f"\n{'状态':4s} | {'输入':12s} | {'期望':8s} | {'实际':8s} | {'描述':20s} | {'来源':12s}")
+    print(f"\n{'Status':4s} | {'input':12s} | {'Expectation':8s} | {'actual':8s} | {'Description':20s} | {'Source':12s}")
     print("-" * 70)
     
     passed = 0
@@ -81,52 +81,52 @@ def test_code_normalization():
             status = "❌"
             failed += 1
         
-        input_display = f"'{input_code}'" if input_code else "(空)"
+        input_display = f"'{input_code}'" if input_code else "(empty)"
         expected_display = expected if expected else "(None)"
         result_display = result if result else "(None)"
         
         print(f"{status:4s} | {input_display:12s} | {expected_display:8s} | {result_display:8s} | {description:20s} | {source:12s}")
     
     print("-" * 70)
-    print(f"\n📊 测试结果: 总计 {len(test_cases)} 个用例, 通过 {passed}, 失败 {failed}")
+    print(f"\n📊 Test results: total {len(test_cases)} use cases, Pass {passed}, failed {failed}")
     
     if failed == 0:
-        print("\n🎉 所有测试通过！代码标准化逻辑正确处理了各种格式")
+        print("\n🎉 All tests passed! Code standardization logic correctly handles various formats")
     else:
-        print(f"\n⚠️  有 {failed} 个测试失败，请检查代码标准化逻辑")
+        print(f"\n⚠️  Yes {failed} Tests failed, please check the code standardization logic")
     
     return failed == 0
 
 
 def test_interface_compatibility():
-    """测试两个接口的兼容性"""
+    """Test the compatibility of two interfaces"""
     print("\n" + "="*70)
-    print("🔄 测试接口兼容性")
+    print("🔄 Test interface compatibility")
     print("="*70)
     
-    print("\n📋 新浪接口 (stock_zh_a_spot) 可能返回的格式:")
+    print("\n📋 Sina interface (stock_zh_a_spot) Possible return formats:")
     sina_formats = [
-        "sz000001",  # 深圳股票
-        "sh600036",  # 上海股票
-        "bj920000",  # 北交所股票
+        "sz000001",  # Shenzhen stocks
+        "sh600036",  # Shanghai stocks
+        "bj920000",  # North Exchange stocks
     ]
     
     for code in sina_formats:
         normalized = normalize_code_akshare_style(code)
         print(f"   {code:12s} → {normalized}")
     
-    print("\n📋 东方财富接口 (stock_zh_a_spot_em) 可能返回的格式:")
+    print("\n📋 Oriental Wealth Interface (stock_zh_a_spot_em) Possible return formats:")
     em_formats = [
-        "000001",  # 深圳股票（纯数字）
-        "600036",  # 上海股票（纯数字）
-        "920000",  # 北交所股票（纯数字）
+        "000001",  # Shenzhen stocks (pure numbers)
+        "600036",  # Shanghai stocks (pure numbers)
+        "920000",  # North Exchange stocks (pure numbers)
     ]
     
     for code in em_formats:
         normalized = normalize_code_akshare_style(code)
         print(f"   {code:12s} → {normalized}")
     
-    print("\n✅ 结论: 无论哪个接口，标准化后的代码都是统一的6位数字格式")
+    print("\n✅ Conclusion: No matter which interface, the standardized code is a unified 6-digit digital format")
 
 
 if __name__ == "__main__":
@@ -135,15 +135,15 @@ if __name__ == "__main__":
     
     if success1:
         print("\n" + "="*70)
-        print("✅ 所有测试通过！")
+        print("✅ All tests passed!")
         print("="*70)
-        print("\n💡 总结:")
-        print("   1. AKShareAdapter 的代码标准化逻辑正确")
-        print("   2. 新浪接口和东方财富接口都使用相同的标准化逻辑")
-        print("   3. 所有代码最终都会被标准化为6位数字格式")
-        print("   4. 可以正确处理带交易所前缀的代码（sz, sh, bj）")
+        print("\n💡 Summary:")
+        print("   1. AKShareAdapter The code standardization logic is correct")
+        print("   2. Both Sina interface and Oriental Fortune interface use the same standardized logic")
+        print("   3. All codes will eventually be standardized to a 6-digit format")
+        print("   4. Codes with exchange prefixes can be handled correctly (sz, sh, bj) ")
     else:
         print("\n" + "="*70)
-        print("❌ 部分测试失败，请检查代码")
+        print("❌ Some tests failed, please check the code")
         print("="*70)
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-详细数据显示测试脚本
-完整显示基本面分析获取的所有数据内容
+Detailed data display test script
+Completely displays all data content obtained by fundamental analysis
 """
 
 import sys
@@ -10,37 +10,37 @@ import os
 import json
 from datetime import datetime, timedelta
 
-# 添加项目根目录到路径
+# Add project root directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from tradingagents.agents.utils.agent_utils import Toolkit
 
 def test_detailed_data_display():
-    """测试并完整显示基本面分析获取的数据"""
+    """Test and fully display the data obtained by fundamental analysis"""
     
     print("=" * 80)
-    print("📊 基本面分析数据详细显示测试")
+    print("📊 Fundamental analysis data detailed display test")
     print("=" * 80)
     
-    # 测试参数
-    ticker = "000001"  # 平安银行
+    # Test parameters
+    ticker = "000001"  # Ping An Bank
     curr_date = datetime.now()
-    start_date = curr_date - timedelta(days=2)  # 优化后只获取2天数据
+    start_date = curr_date - timedelta(days=2)  # After optimization, only 2 days of data are obtained
     end_date = curr_date
     
-    print(f"🎯 测试股票: {ticker}")
-    print(f"📅 数据范围: {start_date.strftime('%Y-%m-%d')} 到 {end_date.strftime('%Y-%m-%d')}")
-    print(f"⏰ 当前时间: {curr_date.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🎯 test stocks: {ticker}")
+    print(f"📅 data range: {start_date.strftime('%Y-%m-%d')} Arrive {end_date.strftime('%Y-%m-%d')}")
+    print(f"⏰ current time: {curr_date.strftime('%Y-%m-%d %H:%M:%S')}")
     print()
     
     try:
-        # 创建工具实例
+        # Create tool instance
         toolkit = Toolkit()
         
-        print("🔄 正在获取基本面分析数据...")
+        print("🔄 Getting fundamental analysis data...")
         print("-" * 60)
         
-        # 调用优化后的基本面数据获取函数
+        # Call the optimized fundamental data acquisition function
         result = toolkit.get_stock_fundamentals_unified.invoke({
             'ticker': ticker,
             'start_date': start_date.strftime('%Y-%m-%d'),
@@ -48,24 +48,24 @@ def test_detailed_data_display():
             'curr_date': curr_date.strftime('%Y-%m-%d')
         })
         
-        print("✅ 数据获取成功！")
+        print("✅ Data acquisition successful!")
         print()
         
-        # 显示原始结果的基本信息
-        print("📋 原始结果基本信息:")
-        print(f"   - 数据类型: {type(result)}")
-        print(f"   - 数据长度: {len(str(result))} 字符")
+        # Show basic information about original results
+        print("📋 Basic information of original results:")
+        print(f"   - data type: {type(result)}")
+        print(f"   - Data length: {len(str(result))} character")
         print()
         
-        # 完整显示结果内容
-        print("📄 完整数据内容:")
+        # Show results in full
+        print("📄 Complete data content:")
         print("=" * 80)
         
         if isinstance(result, str):
-            print("🔤 字符串格式数据:")
+            print("🔤 string format data:")
             print(result)
         elif isinstance(result, dict):
-            print("📚 字典格式数据:")
+            print("📚 Dictionary format data:")
             for key, value in result.items():
                 print(f"🔑 {key}:")
                 if isinstance(value, (dict, list)):
@@ -74,39 +74,39 @@ def test_detailed_data_display():
                     print(f"   {value}")
                 print("-" * 40)
         elif isinstance(result, list):
-            print("📝 列表格式数据:")
+            print("📝 List format data:")
             for i, item in enumerate(result):
-                print(f"📌 项目 {i+1}:")
+                print(f"📌 Project {i+1}:")
                 if isinstance(item, (dict, list)):
                     print(json.dumps(item, ensure_ascii=False, indent=2))
                 else:
                     print(f"   {item}")
                 print("-" * 40)
         else:
-            print("🔍 其他格式数据:")
+            print("🔍 Data in other formats:")
             print(repr(result))
         
         print("=" * 80)
         
-        # 数据统计信息
-        print("\n📊 数据统计:")
-        print(f"   - 总字符数: {len(str(result))}")
-        print(f"   - 总行数: {str(result).count(chr(10)) + 1}")
+        # Data statistics
+        print("\n📊 Statistics:")
+        print(f"   - Total characters: {len(str(result))}")
+        print(f"   - Total number of rows: {str(result).count(chr(10)) + 1}")
         
-        # 如果是字符串，显示前后部分内容
+        # If it is a string, display the before and after parts of the content
         if isinstance(result, str):
             lines = result.split('\n')
-            print(f"   - 总行数: {len(lines)}")
-            print(f"   - 首行: {lines[0][:100]}..." if len(lines[0]) > 100 else f"   - 首行: {lines[0]}")
+            print(f"   - Total number of rows: {len(lines)}")
+            print(f"   - First line: {lines[0][:100]}..." if len(lines[0]) > 100 else f"   - First line: {lines[0]}")
             if len(lines) > 1:
-                print(f"   - 末行: {lines[-1][:100]}..." if len(lines[-1]) > 100 else f"   - 末行: {lines[-1]}")
+                print(f"   - last line: {lines[-1][:100]}..." if len(lines[-1]) > 100 else f"   - last line: {lines[-1]}")
         
-        print("\n🎉 数据显示完成！")
+        print("\n🎉 Data display completed!")
         
     except Exception as e:
-        print(f"❌ 测试失败: {str(e)}")
+        print(f"❌ test failed: {str(e)}")
         import traceback
-        print("🔍 详细错误信息:")
+        print("🔍 Detailed error message:")
         traceback.print_exc()
 
 if __name__ == "__main__":

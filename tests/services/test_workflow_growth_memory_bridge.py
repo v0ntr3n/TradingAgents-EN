@@ -84,9 +84,9 @@ async def test_approve_memory_item_bridges_approved_growth_memory_to_mem0(monkey
         "workflow_id": "wf-001",
         "object_type": "stock",
         "object_key": "600519",
-        "title": "贵州茅台 研究摘要候选",
-        "summary": "高端白酒需求和渠道稳定性仍然较强。",
-        "content": "贵州茅台在高端白酒需求和渠道稳定性方面维持优势。",
+        "title": "Kweichow Moutai Research Abstract Candidate",
+        "summary": "The demand for high-end liquor and channel stability are still strong.",
+        "content": "Kweichow Moutai maintains its advantages in high-end liquor demand and channel stability.",
         "structured_payload": {"agent_name": "research_manager"},
         "confidence": 0.82,
         "evidence_refs": [{"type": "unified_analysis_task", "id": "task-001"}],
@@ -108,7 +108,7 @@ async def test_approve_memory_item_bridges_approved_growth_memory_to_mem0(monkey
     assert call["metadata"]["symbol"] == "600519"
     assert call["metadata"]["growth_memory_id"] == "mem-growth-001"
     assert call["metadata"]["growth_scope"] == GrowthMemoryScope.RESEARCH_ASSET.value
-    assert "贵州茅台 研究摘要候选" in call["messages"][0]["content"]
+    assert "Kweichow Moutai Research Abstract Candidate" in call["messages"][0]["content"]
 
 
 @pytest.mark.asyncio
@@ -125,9 +125,9 @@ async def test_approve_memory_item_keeps_success_when_mem0_bridge_fails(monkeypa
         "workflow_id": "wf-002",
         "object_type": "trade_review",
         "object_key": "review-002",
-        "title": "本次交易 复盘偏差模式",
-        "summary": "存在追涨和纪律执行不一致问题。",
-        "content": "复盘显示存在追涨和纪律执行不一致问题，应补充风控约束。",
+        "title": "This transaction review deviation mode",
+        "summary": "There are problems with chasing prices and inconsistent discipline enforcement.",
+        "content": "The review shows that there are inconsistencies in chasing prices and discipline enforcement, and risk control constraints should be added.",
         "structured_payload": {},
         "confidence": 0.8,
         "evidence_refs": [],
@@ -158,9 +158,9 @@ async def test_build_recall_context_uses_pattern_scope_and_workflow_id():
         "scope": GrowthMemoryScope.PATTERN.value,
         "status": GrowthMemoryStatus.APPROVED.value,
         "workflow_id": "wf-pattern-1",
-        "title": "研究流程复盘模式",
-        "summary": "先收敛证据再下结论的流程更稳定。",
-        "content": "复盘显示先收敛证据再输出结论，可以减少分析跳步和结论漂移。",
+        "title": "Research process review model",
+        "summary": "The process of converging evidence first and then drawing conclusions is more stable.",
+        "content": "The review shows that the evidence is converged first and then the conclusion is output, which can reduce analysis skips and conclusion drift.",
         "updated_at": 3,
     }
     research_doc = {
@@ -169,15 +169,15 @@ async def test_build_recall_context_uses_pattern_scope_and_workflow_id():
         "user_id": "user-3",
         "scope": GrowthMemoryScope.RESEARCH_ASSET.value,
         "status": GrowthMemoryStatus.APPROVED.value,
-        "title": "贵州茅台 研究摘要候选",
-        "summary": "高端白酒需求和渠道稳定性维持优势。",
-        "content": "贵州茅台在高端白酒需求和渠道稳定性方面维持优势。",
+        "title": "Kweichow Moutai Research Abstract Candidate",
+        "summary": "High-end liquor demand and channel stability maintain advantages.",
+        "content": "Kweichow Moutai maintains its advantages in high-end liquor demand and channel stability.",
         "updated_at": 2,
     }
     service = _build_service([pattern_doc, research_doc])
 
     context = await service.build_recall_context(user_id="user-3", ticker="600519", workflow_id="wf-pattern-1")
 
-    assert "研究流程复盘模式" in context
-    assert "贵州茅台 研究摘要候选" in context
-    assert context.index("研究流程复盘模式") < context.index("贵州茅台 研究摘要候选")
+    assert "Research process review model" in context
+    assert "Kweichow Moutai Research Abstract Candidate" in context
+    assert context.index("Research process review model") < context.index("Kweichow Moutai Research Abstract Candidate")

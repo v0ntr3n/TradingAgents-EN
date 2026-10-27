@@ -1,5 +1,5 @@
-﻿<template>
-  <el-dialog v-model="visible" title="报告详情" width="70%">
+<template>
+  <el-dialog v-model="visible" title="Report details" width="70%">
     <template v-if="sections && sections.length > 0">
       <el-tabs v-model="active">
         <el-tab-pane v-for="(sec, idx) in sections" :key="sec.key || idx" :label="sec.title" :name="String(idx)">
@@ -9,10 +9,10 @@
       </el-tabs>
     </template>
     <template v-else>
-      <el-empty description="暂无内容" />
+      <el-empty description="No content yet" />
     </template>
     <template #footer>
-      <el-button @click="emit('close')">关闭</el-button>
+      <el-button @click="emit('close')">close</el-button>
     </template>
   </el-dialog>
 </template>
@@ -23,7 +23,7 @@ const props = defineProps<{ modelValue: boolean; sections: Array<{ key?: string;
 const emit = defineEmits(['update:modelValue','close'])
 const visible = computed({ get: () => props.modelValue, set: (v: boolean) => emit('update:modelValue', v) })
 const active = ref('0')
-// marked 配置已由 @/utils/markdown 统一管理
+// marked The configuration has been @/utils/markdown Unified management
 const renderMarkdown = (s: string) => { try { return safeMarkdown(s||'') } catch { return s } }
 </script>
 

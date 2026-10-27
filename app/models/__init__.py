@@ -1,8 +1,8 @@
 """
-数据模型模块
+Data model module
 """
 
-# 导入股票数据模型
+# Import stock data model
 from .stock_models import (
     StockBasicInfoExtended,
     MarketQuotesExtended,

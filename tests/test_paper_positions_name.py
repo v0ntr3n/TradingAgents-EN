@@ -1,4 +1,4 @@
-"""测试 paper_positions 中的 name 字段"""
+"""Test the name field in paper_positions"""
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -10,44 +10,44 @@ from dotenv import load_dotenv
 load_dotenv()
 
 async def test_paper_positions_name():
-    """测试 paper_positions 中的 name 字段"""
+    """Test the name field in paper_positions"""
     mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017')
     client = AsyncIOMotorClient(mongo_uri)
     db = client['tradingagents']
     
-    print('=== 测试 paper_positions 中的 name 字段 ===\n')
+    print('=== Test the name field in paper_positions ===\n')
     
-    # 查询几条 paper_positions 记录
+    # Query several paper_positions records
     positions = await db['paper_positions'].find({}).limit(10).to_list(None)
     
-    print(f'找到 {len(positions)} 条 paper_positions 记录\n')
+    print(f'found {len(positions)} paper_positions records\n')
     
     if positions:
-        print('=== 持仓示例 ===')
+        print('=== Position example ===')
         for pos in positions:
             code = pos.get('code')
-            name = pos.get('name', '(无名称)')
+            name = pos.get('name', '(no name)')
             market = pos.get('market', 'CN')
             qty = pos.get('quantity', 0)
-            print(f'代码: {code:6} | 名称: {name:20} | 市场: {market} | 数量: {qty}')
+            print(f'code: {code:6} | Name: {name:20} | market: {market} | Quantity: {qty}')
     else:
-        print('没有持仓数据')
+        print('No position data')
     
-    # 统计有名称和没名称的记录
+    # Statistics of named and unnamed records
     total = await db['paper_positions'].count_documents({})
     with_name = await db['paper_positions'].count_documents({
         'name': {'$exists': True, '$ne': None, '$ne': ''}
     })
     without_name = total - with_name
     
-    print(f'\n=== 统计信息 ===')
-    print(f'总记录数: {total}')
-    print(f'有名称: {with_name}')
-    print(f'无名称: {without_name}')
+    print(f'\n=== Statistics ===')
+    print(f'Total number of records: {total}')
+    print(f'has a name: {with_name}')
+    print(f'no name: {without_name}')
     
     if total > 0:
         percentage = (with_name / total) * 100
-        print(f'名称完整率: {percentage:.1f}%')
+        print(f'name completeness: {percentage:.1f}%')
     
     client.close()
 

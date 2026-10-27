@@ -1,13 +1,13 @@
 """
-Skill 系统模块
+Skill system module
 
-基于 Agent Skills 开放标准 + 扩展字段的混合 Skill 系统。
+Based on Agent Skills open standards + Hybrid Skill system for extended fields.
 
-支持：
-1. 标准 Agent Skills 格式（SKILL.md）的导入
-2. 扩展字段支持 Function Calling（parameters, returns, implementation）
-3. 多种执行协议（python, http, mcp）
-4. 第三方开发者标准接口
+Support:
+1. Import of standard Agent Skills format (SKILL.md)
+2. Extension fields support Function Calling (parameters, returns, implementation) 
+3. Various execution protocols (python, http, mcp) 
+4. Standard interface for third-party developers
 """
 
 from .models import (

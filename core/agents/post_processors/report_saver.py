@@ -1,7 +1,7 @@
 """
-报告保存Agent
+report save Agent
 
-将分析报告保存到多个目标（MongoDB、文件系统、S3等）
+Save analysis reports to multiple targets (MongoDB, file system, S3, etc.)
 """
 
 import json
@@ -20,22 +20,22 @@ logger = logging.getLogger(__name__)
 @register_agent
 class ReportSaverAgent(PostProcessorAgent):
     """
-    报告保存Agent
+    report save Agent
     
-    支持保存到：
+    Supports saving to:
     - MongoDB
-    - 文件系统（JSON、YAML等）
-    - S3/OSS（未来支持）
+    - File system (JSON, YAML, etc.)
+    - S3/OSS (future support)
     """
     
     metadata = AgentMetadata(
         id="report_saver",
-        name="报告保存器",
-        description="将分析报告保存到多个目标（MongoDB、文件系统等）",
+        name="report saver",
+        description="Save analysis reports to multiple targets (MongoDB, file system, etc.)",
         category=AgentCategory.POST_PROCESSOR,
         version="1.0.0",
         license_tier=LicenseTier.FREE,
-        default_tools=[],  # 后处理Agent不需要工具
+        default_tools=[],  # Post-processing Agent requires no tools
     )
     
     processor_type = PostProcessorType.SAVE_REPORT
@@ -48,11 +48,11 @@ class ReportSaverAgent(PostProcessorAgent):
         **kwargs
     ):
         """
-        初始化报告保存Agent
+        Initialize report save Agent
         
         Args:
-            config: Agent配置
-            operations: 操作配置列表，格式：
+            config: Agent Configuration
+            operations: Operation configuration list, format:
                 [
                     {
                         "type": "save_to_mongodb",
@@ -65,24 +65,24 @@ class ReportSaverAgent(PostProcessorAgent):
                         "format": "json"
                     }
                 ]
-            conditions: 执行条件列表
-            **kwargs: 其他参数
+            conditions: Execution condition list
+            **kwargs: Other parameters
         """
         super().__init__(config=config, operations=operations, conditions=conditions, **kwargs)
         
-        # 初始化MongoDB连接（延迟加载）
+        # Initialize MongoDB connection (lazy loading)
         self._mongodb_client = None
     
     def _execute_operation(self, operation: OperationConfig, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行保存操作
+        Perform save operation
         
         Args:
-            operation: 操作配置
-            state: 工作流状态
+            operation: Operational configuration
+            state: Workflow status
             
         Returns:
-            操作执行结果
+            Operation execution result
         """
         operation_type = operation.get("type")
         
@@ -93,7 +93,7 @@ class ReportSaverAgent(PostProcessorAgent):
         elif operation_type == "save_to_s3":
             return self._save_to_s3(operation, state)
         else:
-            logger.warning(f"未知的操作类型: {operation_type}")
+            logger.warning(f"Unknown operation type: {operation_type}")
             return {
                 "success": False,
                 "operation_type": operation_type,
@@ -102,14 +102,14 @@ class ReportSaverAgent(PostProcessorAgent):
     
     def _save_to_mongodb(self, operation: OperationConfig, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        保存到MongoDB
+        save to MongoDB
         
         Args:
-            operation: 操作配置
-            state: 工作流状态
+            operation: Operational configuration
+            state: Workflow status
             
         Returns:
-            操作结果
+            Operation result
         """
         try:
             from tradingagents.config.mongodb_storage import MongoDBStorage
@@ -117,22 +117,22 @@ class ReportSaverAgent(PostProcessorAgent):
             collection_name = operation.get("collection", "analysis_reports")
             fields = operation.get("fields", [])
             
-            # 构建要保存的文档
+            # Build the document to be saved
             document = {}
             for field in fields:
                 value = self._get_nested_value(state, field)
                 if value is not None:
                     document[field] = value
             
-            # 添加时间戳
+            # Add timestamp
             document["created_at"] = datetime.now()
             document["updated_at"] = datetime.now()
             
-            # 保存到MongoDB
+            # save to MongoDB
             storage = MongoDBStorage()
             result = storage.save_document(collection_name, document)
             
-            logger.info(f"报告已保存到MongoDB: {collection_name}")
+            logger.info(f"Report saved to MongoDB: {collection_name}")
             
             return {
                 "success": True,
@@ -142,7 +142,7 @@ class ReportSaverAgent(PostProcessorAgent):
             }
             
         except Exception as e:
-            logger.error(f"保存到MongoDB失败: {e}", exc_info=True)
+            logger.error(f"Saving to MongoDB failed: {e}", exc_info=True)
             return {
                 "success": False,
                 "operation_type": "save_to_mongodb",
@@ -151,19 +151,19 @@ class ReportSaverAgent(PostProcessorAgent):
     
     def _save_to_file(self, operation: OperationConfig, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        保存到文件系统
+        Save to file system
 
         Args:
-            operation: 操作配置，格式：
+            operation: Operation configuration, format:
                 {
                     "type": "save_to_file",
                     "path": "data/reports/{ticker}_{date}.json",
                     "format": "json"
                 }
-            state: 工作流状态
+            state: Workflow status
 
         Returns:
-            操作结果
+            Operation result
         """
         try:
             path_template = operation.get("path")
@@ -172,16 +172,16 @@ class ReportSaverAgent(PostProcessorAgent):
             if not path_template:
                 raise ValueError("Missing 'path' in operation config")
 
-            # 替换路径中的变量
+            # Replace variables in path
             file_path = self._render_path(path_template, state)
 
-            # 确保目录存在
+            # Make sure the directory exists
             Path(file_path).parent.mkdir(parents=True, exist_ok=True)
 
-            # 准备要保存的数据
+            # Prepare data to save
             data = self._prepare_save_data(state)
 
-            # 根据格式保存
+            # Save according to format
             if file_format == "json":
                 with open(file_path, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False, indent=2, default=str)
@@ -192,7 +192,7 @@ class ReportSaverAgent(PostProcessorAgent):
             else:
                 raise ValueError(f"Unsupported format: {file_format}")
 
-            logger.info(f"报告已保存到文件: {file_path}")
+            logger.info(f"Report saved to file: {file_path}")
 
             return {
                 "success": True,
@@ -202,7 +202,7 @@ class ReportSaverAgent(PostProcessorAgent):
             }
 
         except Exception as e:
-            logger.error(f"保存到文件失败: {e}", exc_info=True)
+            logger.error(f"Saving to file failed: {e}", exc_info=True)
             return {
                 "success": False,
                 "operation_type": "save_to_file",
@@ -211,40 +211,40 @@ class ReportSaverAgent(PostProcessorAgent):
 
     def _render_path(self, path_template: str, state: Dict[str, Any]) -> str:
         """
-        渲染路径模板
+        Render path template
 
         Args:
-            path_template: 路径模板，如 "data/reports/{ticker}_{date}.json"
-            state: 工作流状态
+            path_template: Path template, such as "data/reports/{ticker}_{date}.json"
+            state: Workflow status
 
         Returns:
-            渲染后的路径
+            Rendered path
         """
-        # 提取常用变量
+        # Extract commonly used variables
         variables = {
             "ticker": state.get("ticker", "unknown"),
             "date": state.get("analysis_date", datetime.now().strftime("%Y%m%d")),
             "timestamp": datetime.now().strftime("%Y%m%d_%H%M%S"),
         }
 
-        # 渲染路径
+        # rendering path
         try:
             return path_template.format(**variables)
         except KeyError as e:
-            logger.warning(f"路径模板变量缺失: {e}")
+            logger.warning(f"Path template variable missing: {e}")
             return path_template
 
     def _prepare_save_data(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        准备要保存的数据
+        Prepare data to save
 
         Args:
-            state: 工作流状态
+            state: Workflow status
 
         Returns:
-            要保存的数据字典
+            data dictionary to save
         """
-        # 默认保存整个state，子类可以覆盖此方法
+        # The entire state is saved by default. Subclasses can override this method.
         return {
             "ticker": state.get("ticker"),
             "analysis_date": state.get("analysis_date"),
@@ -265,14 +265,14 @@ class ReportSaverAgent(PostProcessorAgent):
     
     def _save_to_s3(self, operation: OperationConfig, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        保存到S3/OSS
+        save to S3/OSS
         
         Args:
-            operation: 操作配置
-            state: 工作流状态
+            operation: Operational configuration
+            state: Workflow status
             
         Returns:
-            操作结果
+            Operation result
         """
-        pass  # 未来实现
+        pass  # future realization
 

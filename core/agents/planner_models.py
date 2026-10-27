@@ -1,11 +1,11 @@
 """
-规划分析数据模型
+Planning and analyzing data models
 
-定义 Plan-then-Execute 模式中使用的所有 Pydantic 模型：
-- PlanStep: 计划中的单个步骤
-- AnalysisPlan: 完整的分析计划
-- StepResult: 步骤执行结果
-- SupplementRequest: 补充调用请求
+Define all Pydantic models used in the Plan-then-Execute pattern:
+- PlanStep: individual steps in the plan
+- AnalysisPlan: Complete analysis plan
+- StepResult: Step execution result
+- SupplementRequest: Supplementary call request
 """
 
 from enum import Enum
@@ -14,33 +14,33 @@ from pydantic import BaseModel, Field
 
 
 class PlanSource(str, Enum):
-    """计划来源"""
-    SEED_FLOW = "seed_flow"       # 第一级：种子流程匹配
-    LLM_PLAN = "llm_plan"         # 第二级：LLM 自主规划
-    REACT_FALLBACK = "react"      # 第三级：ReAct 回退
+    """Plan source"""
+    SEED_FLOW = "seed_flow"       # Level 1: Seed Process Matching
+    LLM_PLAN = "llm_plan"         # Level 2: LLM independent planning
+    REACT_FALLBACK = "react"      # Level 3: ReAct rollback
 
 
 class PlanStep(BaseModel):
-    """计划中的单个步骤"""
-    id: int = Field(..., description="步骤编号，从 1 开始")
-    tool: str = Field(..., description="工具 ID（必须在 ToolRegistry 中存在）")
-    args: Dict[str, Any] = Field(default_factory=dict, description="工具调用参数")
-    intent: str = Field("", description="该步骤的意图说明，帮助综合阶段理解语义")
-    depends_on: List[int] = Field(default_factory=list, description="依赖的步骤 ID 列表，空列表表示无依赖可并行")
+    """individual steps in the plan"""
+    id: int = Field(..., description="Step number, starting from 1")
+    tool: str = Field(..., description="Tool ID (must exist in ToolRegistry)")
+    args: Dict[str, Any] = Field(default_factory=dict, description="Tool call parameters")
+    intent: str = Field("", description="The intention description of this step helps the synthesis stage understand the semantics")
+    depends_on: List[int] = Field(default_factory=list, description="A list of dependent step IDs. An empty list indicates that there are no dependencies and can be parallelized.")
 
 
 class AnalysisPlan(BaseModel):
-    """完整的分析计划"""
-    question: str = Field(..., description="用户原始问题")
-    template_id: Optional[str] = Field(None, description="种子流程 ID（第一级匹配时非空，第二级为 null）")
-    source: PlanSource = Field(PlanSource.LLM_PLAN, description="计划来源")
-    steps: List[PlanStep] = Field(default_factory=list, description="计划步骤列表")
+    """Complete analysis plan"""
+    question: str = Field(..., description="Original user question")
+    template_id: Optional[str] = Field(None, description="Seed process ID (not empty when matching at the first level, null at the second level)")
+    source: PlanSource = Field(PlanSource.LLM_PLAN, description="Plan source")
+    steps: List[PlanStep] = Field(default_factory=list, description="List of planning steps")
 
     @property
     def parallel_groups(self) -> List[List[PlanStep]]:
         """
-        按依赖关系分组，同组内可并行执行。
-        返回有序的步骤组列表（拓扑排序）。
+        Grouped by dependencies, the same group can be executed in parallel.
+        Returns an ordered list of step groups (topological sort).
         """
         if not self.steps:
             return []
@@ -50,10 +50,10 @@ class AnalysisPlan(BaseModel):
         remaining = list(self.steps)
 
         while remaining:
-            # 找到所有依赖已完成的步骤
+            # Find all dependent steps completed
             ready = [s for s in remaining if all(d in completed for d in s.depends_on)]
             if not ready:
-                # 存在循环依赖，把剩余步骤全部放入一组串行执行
+                # There are circular dependencies, put all remaining steps into a set of serial executions
                 groups.append(remaining)
                 break
             groups.append(ready)
@@ -65,29 +65,29 @@ class AnalysisPlan(BaseModel):
 
 
 class StepResult(BaseModel):
-    """步骤执行结果"""
-    step_id: int = Field(..., description="对应的步骤 ID")
-    tool: str = Field(..., description="执行的工具 ID")
-    intent: str = Field("", description="步骤意图")
-    success: bool = Field(True, description="是否执行成功")
-    result: Any = Field(None, description="工具返回结果")
-    error: Optional[str] = Field(None, description="错误信息（失败时）")
-    duration_ms: int = Field(0, description="执行耗时（毫秒）")
+    """Step execution result"""
+    step_id: int = Field(..., description="Corresponding steps ID")
+    tool: str = Field(..., description="Tools for execution ID")
+    intent: str = Field("", description="step intention")
+    success: bool = Field(True, description="Whether the execution was successful")
+    result: Any = Field(None, description="Tool returns results")
+    error: Optional[str] = Field(None, description="Error message (on failure)")
+    duration_ms: int = Field(0, description="Execution time (milliseconds)")
 
 
 class SupplementRequest(BaseModel):
-    """补充调用请求（综合阶段 LLM 判定数据不足时生成）"""
-    reason: str = Field(..., description="需要补充的原因")
-    steps: List[PlanStep] = Field(default_factory=list, description="补充步骤（最多 2 个）")
+    """Supplementary call request (generated when LLM determines that there is insufficient data in the synthesis phase)"""
+    reason: str = Field(..., description="Reasons for supplementation")
+    steps: List[PlanStep] = Field(default_factory=list, description="Additional steps (max 2)")
 
 
 class PlannedAnalysisResult(BaseModel):
-    """规划分析最终结果"""
-    reply: str = Field(..., description="最终回答")
-    plan: Optional[AnalysisPlan] = Field(None, description="执行的分析计划")
-    tools_used: List[str] = Field(default_factory=list, description="使用的工具列表")
-    step_results: List[StepResult] = Field(default_factory=list, description="各步骤执行结果")
-    source: PlanSource = Field(PlanSource.LLM_PLAN, description="实际使用的分析来源")
-    supplemented: bool = Field(False, description="是否进行了补充调用")
-    data_refs: Optional[List] = Field(None, description="引用的数据，预留")
+    """Plan and analyze final results"""
+    reply: str = Field(..., description="final answer")
+    plan: Optional[AnalysisPlan] = Field(None, description="Executed analysis plan")
+    tools_used: List[str] = Field(default_factory=list, description="List of tools used")
+    step_results: List[StepResult] = Field(default_factory=list, description="Execution results of each step")
+    source: PlanSource = Field(PlanSource.LLM_PLAN, description="Analytical sources actually used")
+    supplemented: bool = Field(False, description="Whether a supplemental call was made")
+    data_refs: Optional[List] = Field(None, description="Referenced data, reserved")
 

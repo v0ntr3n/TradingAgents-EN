@@ -1,5 +1,5 @@
 """
-使用统计 API 路由
+Using Statistics API routing
 """
 
 import logging
@@ -14,60 +14,60 @@ from app.services.usage_statistics_service import usage_statistics_service
 
 logger = logging.getLogger("app.routers.usage_statistics")
 
-router = APIRouter(prefix="/api/usage", tags=["使用统计"], redirect_slashes=False)
+router = APIRouter(prefix="/api/usage", tags=["usage statistics"], redirect_slashes=False)
 
 
 # ============================================================================
-# /api/usage/stats - KPI 友好的简洁统计端点（v3.0 京东云仪表板用）
-# 返回 {used_tokens, quota_tokens, percentage, period_days, reset_at}
-# quota_tokens 来源:
-#   1. 京东云模式: 环境变量 JDYUN_TOKEN_QUOTA（可选，默认 0 表示不限额）
-#   2. 标准版: License 高级功能配额（如未配置则为 0）
-# 当 quota_tokens = 0 时不显示配额百分比，仅展示累计用量
+# /api/usage/stats - KPI Friendly and concise statistical endpoint (v3.0 for JD Cloud dashboard)
+# Return {used_tokens, quota_tokens, percentage, period_days, reset_at}
+# quota_tokens Source:
+#   1. Jingdong cloud model: Environment variable JDYUN_TOKEN_QUOTA (optional, default 0 means no quota)
+#   2. Standard Edition: License Premium feature quota (0 if not configured)
+# When quota_tokens = 0 The quota percentage is not displayed, only the cumulative usage is displayed.
 # ============================================================================
 
 def _resolve_token_quota() -> int:
-    """解析当前用户的 Token 配额上限（0 表示不限额）"""
-    # 京东云模式：从环境变量读取
+    """Analyze the current user s Token quota limit (0 means no limit)"""
+    # JD Cloud mode: reading from environment variables
     if os.getenv("JDYUN_MODE", "").strip().lower() in ("true", "1", "yes"):
         return int(os.getenv("JDYUN_TOKEN_QUOTA", "0"))
-    # 标准版：默认不限额，可由 License 模块扩展
+    # Standard Edition: Unlimited by default, can be expanded by License module
     return 0
 
 
-@router.get("/stats", summary="获取 KPI 用量统计")
+@router.get("/stats", summary="Get KPI usage statistics")
 async def get_usage_stats(
-    days: int = Query(7, ge=1, le=365, description="统计天数（默认近 7 天）"),
+    days: int = Query(7, ge=1, le=365, description="Number of statistical days (default last 7 days)"),
     current_user: dict = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """
-    获取 KPI 友好的简洁用量统计
+    Get concise, KPI-friendly usage statistics
 
-    用于仪表板"API 用量"卡片，返回已用 Token / 配额 / 百分比。
-    与 /api/usage/statistics 区别：
-    - statistics 返回多维详细统计（by_provider/by_model/by_date）
-    - stats 返回单值 KPI（used_tokens/quota_tokens/percentage）
+    for dashboard"API Dosage"Card, returns used Token/Quota/Percentage.
+    Difference from /api/usage/statistics:
+    - statistics Return multi-dimensional detailed statistics (by_provider/by_model/by_date)
+    - stats Return single value KPI (used_tokens/quota_tokens/percentage)
 
-    quota_tokens 来源：
-    - 京东云模式：环境变量 JDYUN_TOKEN_QUOTA（默认 0 表示不限额）
-    - 标准版：默认不限额，可由 License 模块扩展
+    quota_tokens Source:
+    - JD Cloud mode: environment variable JDYUN_TOKEN_QUOTA (default 0 means no quota)
+    - Standard Edition: Unlimited by default, can be expanded by License module
 
-    当 quota_tokens = 0 时，percentage = 0，前端仅展示累计用量不显示进度条。
+    When quota_tokens = 0 when,percentage = 0, The front end only displays the accumulated usage and does not display the progress bar.
     """
     try:
-        # 复用现有 service 拿详细统计
+        # Reuse existing services to get detailed statistics
         stats = await usage_statistics_service.get_usage_statistics(days=days)
 
         used_tokens = stats.total_input_tokens + stats.total_output_tokens
         quota_tokens = _resolve_token_quota()
         percentage = round((used_tokens / quota_tokens) * 100, 2) if quota_tokens > 0 else 0.0
 
-        # 配额重置时间：当前周期结束时间（days 天后）
+        # Quota reset time: end time of the current cycle (days later)
         reset_at = (datetime.utcnow() + timedelta(days=days)).isoformat() + "Z"
 
         return {
             "success": True,
-            "message": "获取用量统计成功",
+            "message": "Obtaining usage statistics successfully",
             "data": {
                 "used_tokens": used_tokens,
                 "quota_tokens": quota_tokens,
@@ -81,26 +81,26 @@ async def get_usage_stats(
             }
         }
     except Exception as e:
-        logger.error(f"获取 KPI 用量统计失败: {e}")
+        logger.error(f"Failed to obtain KPI usage statistics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/records", summary="获取使用记录")
+@router.get("/records", summary="Get usage records")
 async def get_usage_records(
-    provider: Optional[str] = Query(None, description="供应商"),
-    model_name: Optional[str] = Query(None, description="模型名称"),
-    start_date: Optional[str] = Query(None, description="开始日期(ISO格式)"),
-    end_date: Optional[str] = Query(None, description="结束日期(ISO格式)"),
-    limit: int = Query(100, ge=1, le=1000, description="返回记录数"),
+    provider: Optional[str] = Query(None, description="supplier"),
+    model_name: Optional[str] = Query(None, description="Model name"),
+    start_date: Optional[str] = Query(None, description="start date(ISO Format)"),
+    end_date: Optional[str] = Query(None, description="end date(ISO Format)"),
+    limit: int = Query(100, ge=1, le=1000, description="Return the number of records"),
     current_user: dict = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """获取使用记录"""
+    """Get usage records"""
     try:
-        # 解析日期
+        # parse date
         start_dt = datetime.fromisoformat(start_date) if start_date else None
         end_dt = datetime.fromisoformat(end_date) if end_date else None
 
-        # 获取记录
+        # Get records
         records = await usage_statistics_service.get_usage_records(
             provider=provider,
             model_name=model_name,
@@ -111,25 +111,25 @@ async def get_usage_records(
 
         return {
             "success": True,
-            "message": "获取使用记录成功",
+            "message": "Obtain usage record successfully",
             "data": {
                 "records": [record.model_dump() for record in records],
                 "total": len(records)
             }
         }
     except Exception as e:
-        logger.error(f"获取使用记录失败: {e}")
+        logger.error(f"Failed to obtain usage records: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/statistics", summary="获取使用统计")
+@router.get("/statistics", summary="Get usage statistics")
 async def get_usage_statistics(
-    days: int = Query(7, ge=1, le=365, description="统计天数"),
-    provider: Optional[str] = Query(None, description="供应商"),
-    model_name: Optional[str] = Query(None, description="模型名称"),
+    days: int = Query(7, ge=1, le=365, description="Statistical days"),
+    provider: Optional[str] = Query(None, description="supplier"),
+    model_name: Optional[str] = Query(None, description="Model name"),
     current_user: dict = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """获取使用统计"""
+    """Get usage statistics"""
     try:
         stats = await usage_statistics_service.get_usage_statistics(
             days=days,
@@ -139,86 +139,86 @@ async def get_usage_statistics(
 
         return {
             "success": True,
-            "message": "获取使用统计成功",
+            "message": "Obtain usage statistics successfully",
             "data": stats.model_dump()
         }
     except Exception as e:
-        logger.error(f"获取使用统计失败: {e}")
+        logger.error(f"Failed to obtain usage statistics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/cost/by-provider", summary="按供应商统计成本")
+@router.get("/cost/by-provider", summary="Cost statistics by supplier")
 async def get_cost_by_provider(
-    days: int = Query(7, ge=1, le=365, description="统计天数"),
+    days: int = Query(7, ge=1, le=365, description="Statistical days"),
     current_user: dict = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """按供应商统计成本"""
+    """Cost statistics by supplier"""
     try:
         cost_data = await usage_statistics_service.get_cost_by_provider(days=days)
 
         return {
             "success": True,
-            "message": "获取成本统计成功",
+            "message": "Obtain cost statistics successfully",
             "data": cost_data
         }
     except Exception as e:
-        logger.error(f"获取成本统计失败: {e}")
+        logger.error(f"Failed to obtain cost statistics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/cost/by-model", summary="按模型统计成本")
+@router.get("/cost/by-model", summary="Cost statistics by model")
 async def get_cost_by_model(
-    days: int = Query(7, ge=1, le=365, description="统计天数"),
+    days: int = Query(7, ge=1, le=365, description="Statistical days"),
     current_user: dict = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """按模型统计成本"""
+    """Cost statistics by model"""
     try:
         cost_data = await usage_statistics_service.get_cost_by_model(days=days)
 
         return {
             "success": True,
-            "message": "获取成本统计成功",
+            "message": "Obtain cost statistics successfully",
             "data": cost_data
         }
     except Exception as e:
-        logger.error(f"获取成本统计失败: {e}")
+        logger.error(f"Failed to obtain cost statistics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/cost/daily", summary="每日成本统计")
+@router.get("/cost/daily", summary="Daily cost statistics")
 async def get_daily_cost(
-    days: int = Query(7, ge=1, le=365, description="统计天数"),
+    days: int = Query(7, ge=1, le=365, description="Statistical days"),
     current_user: dict = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """每日成本统计"""
+    """Daily cost statistics"""
     try:
         cost_data = await usage_statistics_service.get_daily_cost(days=days)
 
         return {
             "success": True,
-            "message": "获取每日成本成功",
+            "message": "Get daily cost successfully",
             "data": cost_data
         }
     except Exception as e:
-        logger.error(f"获取每日成本失败: {e}")
+        logger.error(f"Failed to get daily cost: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/records/old", summary="删除旧记录")
+@router.delete("/records/old", summary="Delete old records")
 async def delete_old_records(
-    days: int = Query(90, ge=30, le=365, description="保留天数"),
+    days: int = Query(90, ge=30, le=365, description="retention days"),
     current_user: dict = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    """删除旧记录"""
+    """Delete old records"""
     try:
         deleted_count = await usage_statistics_service.delete_old_records(days=days)
 
         return {
             "success": True,
-            "message": f"删除旧记录成功",
+            "message": f"Delete old records successfully",
             "data": {"deleted_count": deleted_count}
         }
     except Exception as e:
-        logger.error(f"删除旧记录失败: {e}")
+        logger.error(f"Failed to delete old records: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 

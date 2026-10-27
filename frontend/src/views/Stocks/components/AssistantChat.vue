@@ -4,22 +4,22 @@
       <div class="header-top-row">
         <div class="assistant-chat-title">
           <span>🤖</span>
-          <span>智能研究助手 · 全景解读</span>
+          <span>Intelligent research assistant · Panoramic interpretation</span>
         </div>
         <span class="header-meta">{{ loadedSummary }}</span>
       </div>
       <div class="header-topic-bar">
         <span class="topic-pin">📌</span>
-        <span class="topic-text">当前主题限定于：<strong>{{ code }} {{ stockName || '-' }}</strong></span>
-        <span class="topic-hint">超出此股票的问题将引导你前往主页面</span>
+        <span class="topic-text">Current topics are limited to:<strong>{{ code }} {{ stockName || '-' }}</strong></span>
+        <span class="topic-hint">Questions beyond this stock will direct you to the main page</span>
       </div>
     </div>
     <div class="chat-messages" ref="messagesRef">
       <div v-if="!messages.length" class="chat-empty">
         <div class="chat-empty-icon">🤖</div>
         <div class="chat-empty-text">
-          你好！我已经读取了 <strong>{{ code }} {{ stockName || '-' }}</strong> 的研究数据。<br />
-          你可以问我任何关于这只股票的问题，我会结合分析结果、持仓、复盘、基本面为你全景解读。
+          Hello! I have read <strong>{{ code }} {{ stockName || '-' }}</strong> research data.<br />
+          You can ask me any questions about this stock, and I will give you a comprehensive interpretation based on analysis results, positions, review, and fundamentals.
         </div>
       </div>
       <div
@@ -51,11 +51,11 @@
         @keydown.ctrl.enter="send"
       ></textarea>
       <button class="chat-send-btn" @click="send" :disabled="!inputText.trim() || loading">
-        {{ loading ? '思考中...' : '发送' }}
+        {{ loading ? 'Thinking...' : 'send' }}
       </button>
     </div>
     <div class="chat-disclaimer">
-      助手回答基于已加载的研究数据生成，仅供研究参考，不构成投资建议。
+      The assistant s answers are generated based on loaded research data and are for research reference only and do not constitute investment advice.
     </div>
   </div>
 </template>
@@ -89,14 +89,14 @@ const inputRef = ref<HTMLTextAreaElement | null>(null)
 const chatSectionRef = ref<HTMLElement | null>(null)
 
 const loadedSummary = computed(() => {
-  if (!props.loadedModules.length) return '正在加载数据'
-  return `已加载：${props.loadedModules.join(' · ')}`
+  if (!props.loadedModules.length) return 'Loading data'
+  return `Loaded:${props.loadedModules.join(' · ')}`
 })
 
 function send() {
   const text = inputText.value.trim()
   if (!text || props.loading) return
-  // 本地追加用户消息
+  // Local append user message
   messages.value.push({ role: 'user', content: text })
   inputText.value = ''
   emit('ask', text)
@@ -109,7 +109,7 @@ function scrollToBottom() {
   }
 }
 
-// 接收外部预填问题（来自 AssistantHero 的快捷按钮）
+// Receive external prefilled questions (shortcut button from AssistantHero)
 function fillPrompt(prompt: string) {
   inputText.value = prompt
   if (chatSectionRef.value) {
@@ -120,7 +120,7 @@ function fillPrompt(prompt: string) {
   })
 }
 
-// 监听 initialPrompt 变化（用于 AssistantHero 点击后填入）
+// Monitor initialPrompt changes (used to fill in AssistantHero after clicking)
 watch(() => props.initialPrompt, (val) => {
   if (val) fillPrompt(val)
 })

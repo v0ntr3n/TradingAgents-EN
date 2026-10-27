@@ -27,7 +27,7 @@ class _FakeSkillGenerationService:
         })
         return {
             "session_id": "skill-session-1",
-            "ai_message": "请确认输入输出边界",
+            "ai_message": "Please confirm the input and output boundaries",
             "clarity_level": "high",
             "expected_rounds": 2,
         }
@@ -36,24 +36,24 @@ class _FakeSkillGenerationService:
         self.responded.append({"session_id": session_id, "user_message": user_message})
         return {
             "session_id": session_id,
-            "ai_message": "边界已清晰，可预览 spec",
+            "ai_message": "The boundaries are clear and can be previewed spec",
             "current_round": 2,
             "expected_rounds": 2,
             "is_final_round": True,
         }
 
-    async def preview_spec(self, session_id: str, user_message: str = "确认"):
+    async def preview_spec(self, session_id: str, user_message: str = "Confirm"):
         self.previewed.append({"session_id": session_id, "user_message": user_message})
         return {
             "spec": {
                 "tool_id": "dupont_analysis_skill",
-                "description": "A股杜邦分析",
+                "description": "A DuPont Stock Analysis",
             },
             "recommendations": {"category_hint": "fundamentals"},
             "fact_report": {"confidence": 0.8},
         }
 
-    async def confirm_spec(self, session_id: str, user_message: str = "确认"):
+    async def confirm_spec(self, session_id: str, user_message: str = "Confirm"):
         self.confirmed.append({"session_id": session_id, "user_message": user_message})
         return {
             "status": "generating",
@@ -67,7 +67,7 @@ class _FakeSkillGenerationService:
             "session_id": session_id,
             "status": "generating",
             "pipeline_stage": "code_generation",
-            "pipeline_message": "准备开始生成...",
+            "pipeline_message": "Ready to start generating...",
             "pipeline_progress": 0.2,
             "spec_confirmed": True,
             "spec": {"tool_id": "dupont_analysis_skill"},
@@ -88,8 +88,8 @@ async def test_start_external_skill_generation_session_uses_service_and_handoff(
     )
 
     raw = await start_external_skill_generation_session.ainvoke({
-        "description": "创建一个可复用的杜邦分析 skill，输入 symbol，输出结构化三因素分解",
-        "handoff_context_json": json.dumps({"original_goal": "杜邦分析可复用化"}, ensure_ascii=False),
+        "description": "Create a reusable DuPont analysis skill, input symbol, and output structured three-factor decomposition",
+        "handoff_context_json": json.dumps({"original_goal": "DuPont analysis is reusable"}, ensure_ascii=False),
     })
     data = json.loads(raw)
 
@@ -97,7 +97,7 @@ async def test_start_external_skill_generation_session_uses_service_and_handoff(
     assert data["session_id"] == "skill-session-1"
     assert data["recommended_next_step"] == "preview_external_skill_spec"
     assert fake_service.started[0]["user_id"] == "user-123"
-    assert fake_service.started[0]["handoff_context"] == {"original_goal": "杜邦分析可复用化"}
+    assert fake_service.started[0]["handoff_context"] == {"original_goal": "DuPont analysis is reusable"}
 
 
 @pytest.mark.asyncio
@@ -109,7 +109,7 @@ async def test_generate_confirmed_external_skill_requires_confirmation():
     data = json.loads(raw)
 
     assert data["status"] == "error"
-    assert "明确确认" in data["message"]
+    assert "clear confirmation" in data["message"]
 
 
 @pytest.mark.asyncio
@@ -127,7 +127,7 @@ async def test_skill_builder_tool_chain_calls_service(monkeypatch):
 
     respond_raw = await respond_to_external_skill_generation_session.ainvoke({
         "session_id": "skill-session-1",
-        "user_message": "输入只要 symbol，不输出交易建议",
+        "user_message": "Input only symbol and no trading suggestions are output.",
     })
     respond_data = json.loads(respond_raw)
     assert respond_data["status"] == "ok"

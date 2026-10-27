@@ -1,7 +1,7 @@
 """
-基本面分析师智能体
+Fundamental Analyst Agent
 
-分析财务数据、估值水平、行业地位，评估基本面价值
+Analyze financial data, valuation levels, industry status, and evaluate fundamental value
 """
 
 import logging
@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 @register_agent
 class FundamentalAnalystAgent(BaseAgent):
     """
-    基本面分析师智能体
+    Fundamental Analyst Agent
     
-    分析持仓股票的基本面，包括:
-    - 财务数据分析
-    - 估值水平评估
-    - 行业地位分析
-    - 成长性判断
+    Analyze the fundamentals of stock holdings, including:
+    - financial data analysis
+    - Valuation level assessment
+    - Industry status analysis
+    - growth judgment
     """
     
     metadata = BUILTIN_AGENTS["pa_fundamental"]
@@ -33,75 +33,75 @@ class FundamentalAnalystAgent(BaseAgent):
         self._llm = None
     
     def set_dependencies(self, llm: Any, toolkit: Any = None) -> "FundamentalAnalystAgent":
-        """设置依赖项"""
+        """Set dependencies"""
         self._llm = llm
         return self
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """执行基本面分析"""
-        logger.info(f"📊 [基本面分析师] 开始分析...")
+        """Perform fundamental analysis"""
+        logger.info(f"📊 [fundamental analyst] Start analysis...")
 
         position_info = state.get("position_info", {})
         stock_report = state.get("stock_analysis_report", {})
 
-        logger.info(f"   📋 股票: {position_info.get('code', 'N/A')}")
+        logger.info(f"   📋 stocks: {position_info.get('code', 'N/A')}")
 
         user_id = state.get("user_id")
         preference_id = state.get("preference_id", "neutral")
         prompt = self._build_prompt(position_info, stock_report, user_id, preference_id)
-        logger.info(f"   📝 提示词长度: {len(prompt)} 字符")
+        logger.info(f"   📝 Prompt word length: {len(prompt)} character")
 
         if self._llm:
             try:
-                logger.info(f"   🤖 调用 LLM 分析...")
+                logger.info(f"   🤖 Call LLM analysis...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
-                logger.info(f"   ✅ LLM 返回成功，响应长度: {len(analysis)} 字符")
+                logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
             except Exception as e:
-                logger.error(f"   ❌ LLM调用失败: {e}")
-                analysis = f"基本面分析失败: {str(e)}"
+                logger.error(f"   ❌ LLM call failed: {e}")
+                analysis = f"Fundamental analysis failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM未配置")
-            analysis = "LLM未配置，无法进行基本面分析"
+            logger.warning(f"   ⚠️ LLM Not configured")
+            analysis = "LLM Not configured, fundamental analysis is not possible"
 
-        logger.info(f"📊 [基本面分析师] ✅ 分析完成")
+        logger.info(f"📊 [fundamental analyst] ✅ Analysis completed")
         return {"fundamental_analysis": analysis}
     
     def _build_prompt(self, position_info: Dict, stock_report: Dict,
                       user_id: str = None, preference_id: str = "neutral") -> str:
-        """构建基本面分析提示词"""
+        """Construct fundamental analysis prompt words"""
         reports = stock_report.get("reports", {})
-        fundamentals_report = reports.get("fundamentals_report", "暂无基本面报告")[:2000]
+        fundamentals_report = reports.get("fundamentals_report", "No fundamental report yet")[:2000]
         
         template_variables = {
             "code": position_info.get("code", "N/A"),
             "name": position_info.get("name", "N/A"),
             "current_price": position_info.get("current_price", 0),
             "cost_price": position_info.get("cost_price", 0),
-            "industry": position_info.get("industry", "未知"),
+            "industry": position_info.get("industry", "unknown"),
             "fundamentals_report": fundamentals_report,
         }
 
-        fallback_prompt = f"""你是一位专业的基本面分析师。请分析以下持仓股票的基本面:
+        fallback_prompt = f"""You are a professional fundamental analyst. Please analyze the fundamentals of the following stocks::
 
-## 持仓信息
-- 股票代码: {position_info.get('code', 'N/A')}
-- 股票名称: {position_info.get('name', 'N/A')}
-- 所属行业: {position_info.get('industry', '未知')}
-- 成本价: {position_info.get('cost_price', 0):.2f}
-- 现价: {position_info.get('current_price', 0):.2f}
+## Position information
+- Stock code: {position_info.get('code', 'N/A')}
+- Stock name: {position_info.get('name', 'N/A')}
+- Industry: {position_info.get('industry', 'unknown')}
+- cost price: {position_info.get('cost_price', 0):.2f}
+- Current price: {position_info.get('current_price', 0):.2f}
 
-## 基本面报告
+## fundamental report
 {fundamentals_report}
 
-## 分析要求
-1. **财务状况**: 营收、利润、现金流分析
-2. **估值水平**: PE/PB/PEG等估值指标
-3. **行业地位**: 竞争优势和市场份额
-4. **成长性**: 未来增长潜力
-5. **基本面评分**: 1-10分的基本面评分
+## Analysis requirements
+1. **financial condition**: Revenue, profit, cash flow analysis
+2. **Valuation level**: PE/PB/PEG Valuation indicators such as
+3. **Industry status**: Competitive advantage and market share
+4. **Growth**: future growth potential
+5. **fundamental score**: 1-10 fundamental score
 
-请用简洁专业的语言回答。"""
+Please answer in concise and professional language."""
 
         prompt = self._get_prompt_from_template(
             agent_type="position_analysis",
@@ -111,8 +111,8 @@ class FundamentalAnalystAgent(BaseAgent):
             fallback_prompt=fallback_prompt
         )
         if prompt:
-            logger.info(f"✅ [基本面分析师] 成功从模板系统获取提示词")
+            logger.info(f"✅ [fundamental analyst] Successfully obtained the prompt word from the template system")
             return prompt
-        logger.warning(f"⚠️ [基本面分析师] 模板系统未返回提示词，使用降级提示词")
+        logger.warning(f"⚠️ [fundamental analyst] The template system did not return the prompt word, use the downgrade prompt word")
         return fallback_prompt
 

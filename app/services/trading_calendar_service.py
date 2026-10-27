@@ -1,19 +1,19 @@
 """
-交易日历服务
+Trading Calendar Service
 
-在系统启动时从 Tushare/AkShare 查询 A 股最近实际交易日，
-并将结果缓存到 Redis，供 JIT 数据同步等模块精确判断数据新鲜度。
+Query the latest actual trading day of A shares from Tushare/AkShare when the system starts.
+The results are cached in Redis for modules such as JIT data synchronization to accurately determine the freshness of the data.
 
 Redis Key: trading_calendar:last_trade_date
-缓存格式:
+cache format:
   {
     "last_trade_date": "2026-02-27",   # YYYY-MM-DD
     "is_today_trade_day": true,
-    "fetched_at": "2026-02-27",        # 本次查询当天
+    "fetched_at": "2026-02-27",        # On the day of this inquiry
     "source": "tushare"
   }
 
-TTL: 25 小时（每天系统启动时刷新，不会无限期存在）
+TTL: 25 hours (refreshed every day when the system starts, will not exist indefinitely)
 """
 
 from __future__ import annotations
@@ -27,14 +27,14 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 REDIS_KEY = "trading_calendar:last_trade_date"
-CACHE_TTL_SECONDS = 25 * 3600  # 25 小时，保证每天启动时刷新
+CACHE_TTL_SECONDS = 25 * 3600  # 25 hours, guaranteed to be refreshed at startup every day
 
 
 class TradingCalendarService:
-    """A 股交易日历服务（单例）"""
+    """A Stock trading calendar service (single case)"""
 
     # ------------------------------------------------------------------ #
-    # 内部工具                                                             #
+    # internal tools                                                             #
     # ------------------------------------------------------------------ #
 
     @staticmethod
@@ -43,7 +43,7 @@ class TradingCalendarService:
 
     @staticmethod
     def _fmt(raw: str) -> str:
-        """统一格式化为 YYYY-MM-DD（兼容 YYYYMMDD 和 YYYY-MM-DD 两种输入）"""
+        """Uniformly formatted as YYYY-MM-DD (compatible with YYYYMMDD and YYYY-MM-DD input)"""
         raw = raw.strip()
         if len(raw) == 8 and "-" not in raw:
             return f"{raw[:4]}-{raw[4:6]}-{raw[6:8]}"
@@ -64,11 +64,11 @@ class TradingCalendarService:
         }
 
     # ------------------------------------------------------------------ #
-    # 从外部 API 获取最后交易日                                            #
+    # Get last trading day from external API                                            #
     # ------------------------------------------------------------------ #
 
     async def _fetch_from_tushare(self) -> Optional[str]:
-        """调用 tushare daily_basic 逐日回溯，找到最近的交易日（YYYY-MM-DD）"""
+        """Call tushare daily_basic to go back day by day and find the most recent trading day (YYYY-MM-DD)"""
         try:
             from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
             import asyncio
@@ -88,16 +88,16 @@ class TradingCalendarService:
                         limit=1,
                     )
                     if df is not None and not df.empty:
-                        logger.info(f"📅 [TradingCalendar] Tushare 确认最新交易日: {d}")
+                        logger.info(f"📅 [TradingCalendar] Tushare Confirm the latest trading day: {d}")
                         return self._fmt(d)
                 except Exception:
                     continue
         except Exception as e:
-            logger.warning(f"⚠️ [TradingCalendar] Tushare 查询失败: {e}")
+            logger.warning(f"⚠️ [TradingCalendar] Tushare Query failed: {e}")
         return None
 
     async def _fetch_from_akshare(self) -> Optional[str]:
-        """调用 akshare tool_trade_date_hist_sina 获取近期交易日历，取最近 ≤ 今天的交易日"""
+        """Call akshare tool_trade_date_hist_sina to get the recent trading calendar, whichever is more recent ≤ Today s trading day"""
         try:
             import akshare as ak
             import asyncio
@@ -107,22 +107,22 @@ class TradingCalendarService:
             if df is None or df.empty:
                 return None
 
-            # 列名可能是 trade_date 或第0列
+            # Column name may be trade_date or column 0
             col = df.columns[0]
             dates = pd.to_datetime(df[col]).dt.date
             today_d = date.today()
             valid = sorted([d for d in dates if d <= today_d], reverse=True)
             if valid:
                 result = valid[0].strftime("%Y-%m-%d")
-                logger.info(f"📅 [TradingCalendar] AkShare 确认最新交易日: {result}")
+                logger.info(f"📅 [TradingCalendar] AkShare Confirm the latest trading day: {result}")
                 return result
         except Exception as e:
-            logger.warning(f"⚠️ [TradingCalendar] AkShare 查询失败: {e}")
+            logger.warning(f"⚠️ [TradingCalendar] AkShare Query failed: {e}")
         return None
 
     async def _fetch_last_trade_date(self) -> tuple[str, str]:
         """
-        按优先级（tushare → akshare → 简单回溯）获取最近交易日。
+        By priority (tushare → akshare → Simple lookback) to get the most recent trading day.
         Returns: (last_trade_date: YYYY-MM-DD, source: str)
         """
         result = await self._fetch_from_tushare()
@@ -133,24 +133,24 @@ class TradingCalendarService:
         if result:
             return result, "akshare"
 
-        # 最后兜底：从今天往前找第一个周一~周五（不保证节假日准确）
+        # The final tip: look forward to the first Monday from today~Friday (holidays are not guaranteed to be accurate)
         today = datetime.now()
         for delta in range(0, 5):
             d = today - timedelta(days=delta)
             if d.weekday() < 5:
                 fallback = d.strftime("%Y-%m-%d")
-                logger.warning(f"⚠️ [TradingCalendar] 所有 API 均失败，回退为最近工作日: {fallback}")
+                logger.warning(f"⚠️ [TradingCalendar] All APIs fail, falling back to the most recent working day: {fallback}")
                 return fallback, "fallback"
 
         return today.strftime("%Y-%m-%d"), "fallback"
 
     # ------------------------------------------------------------------ #
-    # Redis 读写                                                          #
+    # Redis Read and write                                                          #
     # ------------------------------------------------------------------ #
 
     async def _redis(self):
-        # 优先使用 app.core.database 中由 init_database() 初始化的异步 Redis 客户端，
-        # 因为 lifespan 只调用 init_db()→init_database()，而不调用 redis_client.init_redis()
+        # Prefer using app.core.database by init_database() Initialized asynchronous Redis client,
+        # Because lifespan only calls init_db()→init_database(), without calling redis_client.init_redis()
         from app.core.database import get_redis_client
         return get_redis_client()
 
@@ -162,9 +162,9 @@ class TradingCalendarService:
                 return json.loads(raw)
         except Exception as e:
             if self._is_loop_mismatch_error(e):
-                logger.debug("[TradingCalendar] 异步 Redis 客户端跨事件循环，回退到同步 Redis 读取")
+                logger.debug("[TradingCalendar] Asynchronous Redis client across event loop, fallback to synchronous Redis read")
                 return await asyncio.to_thread(self._read_cache_sync)
-            logger.debug(f"[TradingCalendar] 读取 Redis 缓存失败: {e}")
+            logger.debug(f"[TradingCalendar] Failed to read Redis cache: {e}")
         return None
 
     @staticmethod
@@ -177,7 +177,7 @@ class TradingCalendarService:
             if raw:
                 return json.loads(raw)
         except Exception as e:
-            logger.debug(f"[TradingCalendar] 同步 Redis 读取缓存失败: {e}")
+            logger.debug(f"[TradingCalendar] Synchronizing Redis read cache failed: {e}")
         return None
 
     async def _write_cache(self, last_trade_date: str, is_today: bool, source: str):
@@ -185,16 +185,16 @@ class TradingCalendarService:
         try:
             r = await self._redis()
             await r.setex(REDIS_KEY, CACHE_TTL_SECONDS, json.dumps(payload, ensure_ascii=False))
-            logger.info(f"✅ [TradingCalendar] 已缓存到 Redis: {payload}")
+            logger.info(f"✅ [TradingCalendar] Cached to Redis: {payload}")
         except Exception as e:
             if self._is_loop_mismatch_error(e):
                 try:
                     await asyncio.to_thread(self._write_cache_sync, payload)
-                    logger.info(f"✅ [TradingCalendar] 已通过同步 Redis 回退缓存: {payload}")
+                    logger.info(f"✅ [TradingCalendar] Redis fallback cache synchronized: {payload}")
                     return
                 except Exception as sync_error:
-                    logger.warning(f"⚠️ [TradingCalendar] 同步 Redis 回退写入失败: {sync_error}")
-            logger.warning(f"⚠️ [TradingCalendar] 写入 Redis 缓存失败: {e}")
+                    logger.warning(f"⚠️ [TradingCalendar] Synchronous Redis fallback write failed: {sync_error}")
+            logger.warning(f"⚠️ [TradingCalendar] Writing to Redis cache failed: {e}")
 
     @staticmethod
     def _write_cache_sync(payload: dict) -> None:
@@ -204,33 +204,33 @@ class TradingCalendarService:
         redis_sync.setex(REDIS_KEY, CACHE_TTL_SECONDS, json.dumps(payload, ensure_ascii=False))
 
     # ------------------------------------------------------------------ #
-    # 公开接口                                                            #
+    # public interface                                                            #
     # ------------------------------------------------------------------ #
 
     async def warm_up(self):
-        """系统启动时调用，刷新交易日历缓存（总是重新查询 API，忽略旧缓存）"""
-        logger.info("🚀 [TradingCalendar] 开始初始化交易日历缓存...")
+        """Called when the system starts, refresh the transaction calendar cache (always re-query the API, ignore the old cache)"""
+        logger.info("🚀 [TradingCalendar] Start initializing the trading calendar cache...")
         try:
             last_trade_date, source = await self._fetch_last_trade_date()
             is_today = last_trade_date == self._today_str()
             await self._write_cache(last_trade_date, is_today, source)
             logger.info(
                 f"✅ [TradingCalendar] 初始化完成: 最近交易日={last_trade_date}, "
-                f"今天是否交易日={is_today}, 数据源={source}"
+                f"Is today a trading day?={is_today}, data source={source}"
             )
         except Exception as e:
-            logger.error(f"❌ [TradingCalendar] 初始化失败: {e}", exc_info=True)
+            logger.error(f"❌ [TradingCalendar] Initialization failed: {e}", exc_info=True)
 
     async def get_last_trade_date(self) -> Optional[str]:
         """
-        获取最近一个交易日（YYYY-MM-DD）。
-        优先读 Redis 缓存；缓存不存在或不是今天写入的则重新查询 API。
+        Get the latest trading day (YYYY-MM-DD).
+        Read the Redis cache first; if the cache does not exist or is not written today, the API will be re-queried.
         """
         cache = await self._read_cache()
         if cache and cache.get("fetched_at") == self._today_str():
             return cache.get("last_trade_date")
 
-        # 缓存过期，重新获取
+        # Cache expired, retrieve again
         last_trade_date, source = await self._fetch_last_trade_date()
         is_today = last_trade_date == self._today_str()
         await self._write_cache(last_trade_date, is_today, source)
@@ -247,7 +247,7 @@ class TradingCalendarService:
 
 
 # ------------------------------------------------------------------ #
-# 单例                                                               #
+# Singleton                                                               #
 # ------------------------------------------------------------------ #
 _instance: Optional[TradingCalendarService] = None
 

@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>清除认证信息</title>
+    <title>Clear authentication information</title>
     <meta charset="utf-8">
 </head>
 <body>
-    <h1>清除认证信息</h1>
-    <p>点击下面的按钮清除所有认证信息：</p>
-    <button onclick="clearAuth()">清除认证信息</button>
+    <h1>Clear authentication information</h1>
+    <p>Click the button below to clear all authentication information:</p>
+    <button onclick="clearAuth()">Clear authentication information</button>
     <div id="result"></div>
 
     <script>
         function clearAuth() {
             try {
-                // 清除所有认证相关的localStorage项
+                // Clear all authentication-related localStorage items
                 localStorage.removeItem('auth-token');
                 localStorage.removeItem('refresh-token');
                 localStorage.removeItem('user-info');
                 
-                // 清除所有可能的认证相关项
+                // Clear all possible certification dependencies
                 const keys = Object.keys(localStorage);
                 keys.forEach(key => {
                     if (key.includes('auth') || key.includes('token') || key.includes('user')) {
@@ -26,28 +26,28 @@
                     }
                 });
                 
-                document.getElementById('result').innerHTML = '<p style="color: green;">✅ 认证信息已清除！请刷新页面重新登录。</p>';
+                document.getElementById('result').innerHTML = '<p style="color: green;">✅ Certification information has been cleared! Please refresh the page and log in again.</p>';
                 
-                // 3秒后自动跳转到登录页
+                // 3 Automatically jump to the login page after seconds
                 setTimeout(() => {
                     window.location.href = '/login';
                 }, 3000);
                 
             } catch (error) {
-                document.getElementById('result').innerHTML = '<p style="color: red;">❌ 清除失败: ' + error.message + '</p>';
+                document.getElementById('result').innerHTML = '<p style="color: red;">❌ Clear failed: ' + error.message + '</p>';
             }
         }
         
-        // 页面加载时显示当前的认证信息
+        // Display current authentication information when the page loads
         window.onload = function() {
             const authToken = localStorage.getItem('auth-token');
             const refreshToken = localStorage.getItem('refresh-token');
             const userInfo = localStorage.getItem('user-info');
             
-            let info = '<h2>当前认证信息:</h2>';
-            info += '<p>Auth Token: ' + (authToken ? '存在 (' + authToken.length + ' 字符)' : '不存在') + '</p>';
-            info += '<p>Refresh Token: ' + (refreshToken ? '存在 (' + refreshToken.length + ' 字符)' : '不存在') + '</p>';
-            info += '<p>User Info: ' + (userInfo ? '存在' : '不存在') + '</p>';
+            let info = '<h2>Current certification information:</h2>';
+            info += '<p>Auth Token: ' + (authToken ? 'exist (' + authToken.length + ' character)' : 'does not exist') + '</p>';
+            info += '<p>Refresh Token: ' + (refreshToken ? 'exist (' + refreshToken.length + ' character)' : 'does not exist') + '</p>';
+            info += '<p>User Info: ' + (userInfo ? 'exist' : 'does not exist') + '</p>';
             
             document.getElementById('result').innerHTML = info;
         };

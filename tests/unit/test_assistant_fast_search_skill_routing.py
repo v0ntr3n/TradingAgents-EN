@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""近期搜索快路径 vs 用户生成外部 Skill 的路由让路测试。
+"""Recent search fast path vs user generated external skill routing give way test.
 
-背景（真实缺陷）：用户问「问界各车型最近半年销量变化」，被股票时代的
-关键词快路径（"最近"+"变化"）在 LLM 工具选择之前劫持去网页搜索，
-已安装的懂车帝销量 Skill 完全没有出场机会。
+Background (Real Flaw): A user asked Ask about the sales changes of various models in the industry in the past six months , and was answered by the stock era
+Keywords fast path ("Recently"+"change") Hijack go to web search before LLM tool selection,
+The installed sales skill of Knowing Car Emperor has no chance to appear at all.
 
-修复：快路径命中关键词后，先用注册表里 source=generated 的 Skill 元数据
-做数据驱动的领域词匹配，能被专用 Skill 承接就让路。
+Repair: After the fast path hits the keyword, first use the registry source=generated Skill metadata
+Make way for data-driven domain word matching if it can be taken over by a dedicated Skill.
 """
 
 from types import SimpleNamespace
@@ -31,25 +31,25 @@ def _skill(tool_id, name, description, when_to_use="", fc_enabled=True):
 
 _DCD_SKILL = _skill(
     "dongchedi_car_monthly_sales_rank",
-    "懂车帝全国月度销量榜查询",
-    "调用懂车帝全国月度销量榜接口，按月份、榜单类型等参数获取车型销量数据，"
-    "并支持按品牌（如问界）筛选各车型月销量。",
+    "Inquiry on the national monthly sales list of Undercardi",
+    "Call the National Chedi National Monthly Sales List interface to obtain vehicle model sales data by month, list type and other parameters."
+    "It also supports filtering monthly sales of each vehicle model by brand (such as Wenjie).",
 )
 
 
 class TestDomainTerms:
     def test_extracts_chinese_bigrams_and_english_tokens(self):
-        terms = _domain_terms("问界M9车型销量")
-        assert "问界" in terms
-        assert "车型" in terms
-        assert "销量" in terms
+        terms = _domain_terms("Wenjie M9 model sales")
+        assert "Ask the world" in terms
+        assert "car model" in terms
+        assert "Sales volume" in terms
         assert "m9" in terms
 
     def test_stopgrams_removed(self):
-        terms = _domain_terms("销量数据接口")
-        assert "销量" in terms
-        assert "数据" not in terms
-        assert "接口" not in terms
+        terms = _domain_terms("Sales data interface")
+        assert "Sales volume" in terms
+        assert "data" not in terms
+        assert "interface" not in terms
 
 
 class TestGeneratedSkillRouting:
@@ -58,9 +58,9 @@ class TestGeneratedSkillRouting:
         return patch("core.tools.get_tool_registry", lambda: reg)
 
     def test_dongchedi_sales_question_bypasses_fast_search(self):
-        """真实事故句：必须命中懂车帝 Skill，快路径让路"""
-        # 先确认这句话本身会命中旧快路径关键词（否则测试无意义）
-        msg = "帮我查一下问界各车型最近半年的销量变化情况"
+        """Real Accident Sentence: You must hit the car-savvy Skill and give way to the fast path"""
+        # First confirm that the sentence itself will hit the old fast path keyword (otherwise the test is meaningless)
+        msg = "Please help me check the sales changes of various models in the industry in the past six months."
         assert _should_use_recent_search(msg)
 
         with self._registry([_DCD_SKILL]):
@@ -69,31 +69,31 @@ class TestGeneratedSkillRouting:
         assert hit[0] == "dongchedi_car_monthly_sales_rank"
 
     def test_stock_holding_question_still_uses_fast_search(self):
-        """股票原场景：与外部 Skill 无领域重合，不应让路"""
-        msg = "伯克希尔哈撒韦最新持股变化"
+        """Original stock scenario: There is no domain overlap with the external Skill and should not give way."""
+        msg = "Berkshire Hathaway s latest shareholding changes"
         assert _should_use_recent_search(msg)
         with self._registry([_DCD_SKILL]):
             assert _matches_generated_skill(msg) is None
 
     def test_single_overlap_not_enough(self):
-        """只有一个领域词共现不算命中（防止偶然共现误判）"""
-        # 仅含「销量」一个领域交集词
-        skill = _skill("x", "某榜", "统计某商品销量")
+        """The co-occurrence of only one domain word is not counted as a hit (to prevent misjudgment of accidental co-occurrence)"""
+        # Contains only one field intersection word "sales"
+        skill = _skill("x", "A certain list", "Count sales of a product")
         with self._registry([skill]):
-            # 「最近销量」——与该 skill 只有"销量"一个交集
-            assert _matches_generated_skill("最近销量如何变化") is None
+            # ""Recent Sales"——Only with this skill"Sales volume"an intersection
+            assert _matches_generated_skill("How sales have changed recently") is None
 
     def test_disabled_skill_ignored(self):
-        disabled = _skill("x", "懂车帝销量", "问界车型销量", fc_enabled=False)
+        disabled = _skill("x", "Understand car sales", "Ask the world s car sales", fc_enabled=False)
         with self._registry([disabled]):
-            assert _matches_generated_skill("问界车型最近销量变化") is None
+            assert _matches_generated_skill("Recent sales changes of Wenjie models") is None
 
     def test_no_external_skills_returns_none(self):
         with self._registry([]):
-            assert _matches_generated_skill("问界车型最近销量变化") is None
+            assert _matches_generated_skill("Recent sales changes of Wenjie models") is None
 
     def test_generic_non_sales_question_not_routed_to_dcd(self):
-        """纯新闻/公告类问题即便提到最近，也不该被领域匹配误抓"""
-        msg = "最近有没有什么新公告"
+        """Even if a purely news/announcement question mentions the recent past, it should not be mistakenly caught by domain matching."""
+        msg = "Are there any new announcements recently?"
         with self._registry([_DCD_SKILL]):
             assert _matches_generated_skill(msg) is None

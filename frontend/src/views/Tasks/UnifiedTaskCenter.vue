@@ -3,18 +3,18 @@
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><List /></el-icon>
-        统一任务中心
+        unified mission center
       </h1>
-      <p class="page-description">查看并管理所有类型的分析任务（股票分析、持仓研究、交易复盘等）</p>
+      <p class="page-description">View and manage all types of analysis tasks (stock analysis, position research, trade reviews, etc.)</p>
     </div>
 
-    <!-- 统计卡片 -->
+    <!-- Statistics cards -->
     <el-row :gutter="16" style="margin-bottom: 16px">
       <el-col :span="4">
         <el-card shadow="never">
           <div class="stat">
             <div class="value">{{ stats.total }}</div>
-            <div class="label">总任务</div>
+            <div class="label">general task</div>
           </div>
         </el-card>
       </el-col>
@@ -22,7 +22,7 @@
         <el-card shadow="never">
           <div class="stat">
             <div class="value">{{ stats.pending }}</div>
-            <div class="label">等待中</div>
+            <div class="label">Waiting</div>
           </div>
         </el-card>
       </el-col>
@@ -30,7 +30,7 @@
         <el-card shadow="never">
           <div class="stat">
             <div class="value">{{ stats.processing }}</div>
-            <div class="label">进行中</div>
+            <div class="label">In progress</div>
           </div>
         </el-card>
       </el-col>
@@ -38,7 +38,7 @@
         <el-card shadow="never">
           <div class="stat">
             <div class="value">{{ stats.completed }}</div>
-            <div class="label">已完成</div>
+            <div class="label">Completed</div>
           </div>
         </el-card>
       </el-col>
@@ -46,7 +46,7 @@
         <el-card shadow="never">
           <div class="stat">
             <div class="value">{{ stats.failed }}</div>
-            <div class="label">失败</div>
+            <div class="label">failed</div>
           </div>
         </el-card>
       </el-col>
@@ -54,65 +54,65 @@
         <el-card shadow="never">
           <div class="stat">
             <div class="value">{{ stats.cancelled }}</div>
-            <div class="label">已取消</div>
+            <div class="label">Canceled</div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 筛选表单 -->
+    <!-- filter form -->
     <el-card class="filter-card" shadow="never">
       <el-form :inline="true" @submit.prevent>
-        <el-form-item label="任务类型">
-          <el-select v-model="filters.taskType" clearable placeholder="全部" style="width: 140px">
-            <el-option label="全部" value="" />
+        <el-form-item label="Task type">
+          <el-select v-model="filters.taskType" clearable placeholder="All" style="width: 140px">
+            <el-option label="All" value="" />
             <el-option v-for="(name, type) in TaskTypeNames" :key="type" :label="name" :value="type" />
           </el-select>
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="filters.status" clearable placeholder="全部" style="width: 120px">
-            <el-option label="全部" value="" />
+        <el-form-item label="Status">
+          <el-select v-model="filters.status" clearable placeholder="All" style="width: 120px">
+            <el-option label="All" value="" />
             <el-option v-for="(name, status) in TaskStatusNames" :key="status" :label="name" :value="status" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="applyFilters" :loading="loading">查询</el-button>
-          <el-button @click="resetFilters">重置</el-button>
+          <el-button type="primary" @click="applyFilters" :loading="loading">Query</el-button>
+          <el-button @click="resetFilters">reset</el-button>
           <el-button @click="refreshList" :loading="loading">
             <el-icon><Refresh /></el-icon>
-            刷新
+            Refresh
           </el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
-    <!-- 任务列表 -->
+    <!-- task list -->
     <el-card class="list-card" shadow="never">
       <el-table :data="taskList" v-loading="loading" style="width: 100%">
-        <el-table-column prop="task_id" label="任务ID" width="200" show-overflow-tooltip />
-        <el-table-column label="任务类型" width="120">
+        <el-table-column prop="task_id" label="Task ID" width="200" show-overflow-tooltip />
+        <el-table-column label="Task type" width="120">
           <template #default="{ row }">
             {{ getTaskTypeName(row.task_type) }}
           </template>
         </el-table-column>
-        <el-table-column label="股票/代码" width="120">
+        <el-table-column label="Stock/ticker" width="120">
           <template #default="{ row }">
             {{ row.symbol || row.code || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="市场" width="80">
+        <el-table-column label="market" width="80">
           <template #default="{ row }">
             {{ row.market || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100">
+        <el-table-column label="Status" width="100">
           <template #default="{ row }">
             <el-tag :type="getTaskStatusColor(row.status)">
               {{ getTaskStatusName(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="进度" width="150">
+        <el-table-column label="Progress" width="150">
           <template #default="{ row }">
             <el-progress 
               :percentage="row.progress" 
@@ -120,27 +120,27 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" width="160">
+        <el-table-column label="creation time" width="160">
           <template #default="{ row }">
             {{ formatTime(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="执行时间" width="100">
+        <el-table-column label="Execution time" width="100">
           <template #default="{ row }">
             {{ row.execution_time > 0 ? row.execution_time.toFixed(2) + 's' : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="350" fixed="right">
+        <el-table-column label="Operation" width="350" fixed="right">
           <template #default="{ row }">
-            <el-button type="text" size="small" @click="viewDetail(row)">详情</el-button>
-            <el-button type="text" size="small" @click="viewTraces(row)">执行轨迹</el-button>
+            <el-button type="text" size="small" @click="viewDetail(row)">Details</el-button>
+            <el-button type="text" size="small" @click="viewTraces(row)">Execution trace</el-button>
             <el-button
               v-if="row.status === 'pending' || row.status === 'processing'"
               type="text"
               size="small"
               @click="cancelTask(row)"
             >
-              取消
+              Cancel
             </el-button>
             <el-button
               v-if="row.status === 'suspended'"
@@ -149,7 +149,7 @@
               @click="resumeTask(row)"
               style="color: #67c23a;"
             >
-              恢复
+              restore
             </el-button>
             <el-button
               v-if="row.status === 'suspended'"
@@ -158,7 +158,7 @@
               @click="cancelTask(row)"
               style="color: #f56c6c;"
             >
-              取消
+              Cancel
             </el-button>
             <el-button
               v-if="row.status === 'failed'"
@@ -166,7 +166,7 @@
               size="small"
               @click="showError(row)"
             >
-              查看错误
+              View errors
             </el-button>
             <el-button
               v-if="row.status === 'failed'"
@@ -175,13 +175,13 @@
               @click="retryTask(row)"
               style="color: #409EFF;"
             >
-              重新分析
+              Reanalyze
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
+      <!-- Pagination -->
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
@@ -194,14 +194,14 @@
       />
     </el-card>
 
-    <!-- 任务详情对话框 -->
+    <!-- Task details dialog -->
     <TaskDetailDialog
       v-model="detailDialogVisible"
       :task-id="selectedTaskId"
       :task-detail="selectedTaskDetail"
     />
 
-    <!-- 执行轨迹对话框 -->
+    <!-- Execution trace dialog box -->
     <ExecutionTraceDialog
       v-model="traceDialogVisible"
       :task-id="traceTaskId"
@@ -230,7 +230,7 @@ import { analysisApi } from '@/api/analysis'
 import TaskDetailDialog from './components/TaskDetailDialog.vue'
 import ExecutionTraceDialog from './components/ExecutionTraceDialog.vue'
 
-// ==================== 状态管理 ====================
+// ==================== Status management ====================
 
 const loading = ref(false)
 const taskList = ref<TaskListItem[]>([])
@@ -243,12 +243,12 @@ const stats = ref<TaskStatistics>({
   cancelled: 0
 })
 
-// 分页
+// Pagination
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 
-// 筛选
+// Filter
 const filters = ref({
   taskType: '',
   status: ''
@@ -275,12 +275,12 @@ const getTaskStatusColor = (status: unknown) => {
   return TaskStatusColors[status as keyof typeof TaskStatusColors] || 'info'
 }
 
-// 任务详情对话框
+// Task details dialog
 const detailDialogVisible = ref(false)
 const selectedTaskId = ref<string>()
 const selectedTaskDetail = ref<TaskDetail | null>(null)
 
-// 执行轨迹对话框
+// Execution trace dialog box
 const traceDialogVisible = ref(false)
 const traceTaskId = ref<string>('')
 
@@ -289,18 +289,18 @@ const viewTraces = (row: TaskListItem) => {
   traceDialogVisible.value = true
 }
 
-// 定时刷新
+// Regular refresh
 let refreshTimer: any = null
 
-// ==================== 方法 ====================
+// ==================== method ====================
 
 /**
- * 加载任务列表
+ * Load task list
  */
 const loadList = async () => {
   loading.value = true
   try {
-    // 不传 limit 参数，让后端返回所有记录，由前端处理分页
+    // Do not pass the limit parameter, let the backend return all records, and the frontend handles paging
     const params: any = {
       skip: (currentPage.value - 1) * pageSize.value
     }
@@ -315,7 +315,7 @@ const loadList = async () => {
     const res = await getTaskList(params)
     const data = (res as any)?.data?.data || (res as any)?.data || {}
 
-    // 获取所有任务，然后在前端进行分页
+    // Get all tasks and then paginate them on the frontend
     const allTasks = data.tasks || []
     const startIdx = (currentPage.value - 1) * pageSize.value
     const endIdx = startIdx + pageSize.value
@@ -323,14 +323,14 @@ const loadList = async () => {
     taskList.value = allTasks.slice(startIdx, endIdx)
     total.value = allTasks.length
   } catch (e: any) {
-    ElMessage.error(e?.message || '加载任务列表失败')
+    ElMessage.error(e?.message || 'Failed to load task list')
   } finally {
     loading.value = false
   }
 }
 
 /**
- * 加载统计信息
+ * Load statistics
  */
 const loadStats = async () => {
   try {
@@ -338,12 +338,12 @@ const loadStats = async () => {
     const data = (res as any)?.data?.data || (res as any)?.data || {}
     stats.value = data
   } catch (e: any) {
-    console.error('加载统计信息失败:', e)
+    console.error('Failed to load statistics:', e)
   }
 }
 
 /**
- * 应用筛选
+ * Apply filters
  */
 const applyFilters = () => {
   currentPage.value = 1
@@ -351,7 +351,7 @@ const applyFilters = () => {
 }
 
 /**
- * 重置筛选
+ * Reset filter
  */
 const resetFilters = () => {
   filters.value = {
@@ -363,7 +363,7 @@ const resetFilters = () => {
 }
 
 /**
- * 刷新列表
+ * Refresh list
  */
 const refreshList = () => {
   loadList()
@@ -371,46 +371,46 @@ const refreshList = () => {
 }
 
 /**
- * 查看任务详情
+ * View task details
  */
 const viewDetail = async (row: TaskListItem) => {
   try {
     selectedTaskId.value = row.task_id
     selectedTaskDetail.value = null
     
-    // 加载任务详情
+    // Load task details
     const res = await getTaskDetail(row.task_id)
     const data = (res as any)?.data?.data || (res as any)?.data || {}
     
     selectedTaskDetail.value = data as TaskDetail
     detailDialogVisible.value = true
   } catch (e: any) {
-    ElMessage.error(e?.message || '获取任务详情失败')
+    ElMessage.error(e?.message || 'Failed to get task details')
   }
 }
 
 /**
- * 取消任务
+ * Cancel task
  */
 const cancelTask = async (row: TaskListItem) => {
   try {
     await ElMessageBox.confirm(
-      `确定要取消任务 "${row.task_id}" 吗？`,
-      '确认操作',
+      `Confirm to cancel the task "${row.task_id}" ?`,
+      'Confirm action',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
 
     loading.value = true
     await cancelTaskApi(row.task_id)
-    ElMessage.success('任务已取消')
+    ElMessage.success('Task canceled')
     await refreshList()
   } catch (e: any) {
     if (e !== 'cancel') {
-      ElMessage.error(e?.message || '取消任务失败')
+      ElMessage.error(e?.message || 'Failed to cancel task')
     }
   } finally {
     loading.value = false
@@ -418,27 +418,27 @@ const cancelTask = async (row: TaskListItem) => {
 }
 
 /**
- * 恢复挂起的任务
+ * Resume a suspended task
  */
 const resumeTask = async (row: TaskListItem) => {
   try {
     await ElMessageBox.confirm(
-      `确定要恢复任务 "${row.task_id}" 吗？任务将重新进入队列等待执行。`,
-      '确认操作',
+      `Confirm to resume task "${row.task_id}" ? The task will be re-queued for execution.`,
+      'Confirm action',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'info'
       }
     )
 
     loading.value = true
     await resumeTaskApi(row.task_id)
-    ElMessage.success('任务已恢复，正在重新排队...')
+    ElMessage.success('Task has been resumed and is being requeued...')
     await refreshList()
   } catch (e: any) {
     if (e !== 'cancel') {
-      ElMessage.error(e?.message || '恢复任务失败')
+      ElMessage.error(e?.message || 'Recovery task failed')
     }
   } finally {
     loading.value = false
@@ -446,16 +446,16 @@ const resumeTask = async (row: TaskListItem) => {
 }
 
 /**
- * 显示错误信息
+ * Show error message
  */
 const showError = async (row: TaskListItem) => {
-  const errorMessage = row.error_message || '未知错误'
+  const errorMessage = row.error_message || 'unknown error'
 
   await ElMessageBox.alert(
     errorMessage.replace(/\n/g, '<br>'),
-    '错误详情',
+    'Error details',
     {
-      confirmButtonText: '确定',
+      confirmButtonText: 'OK',
       type: 'error',
       dangerouslyUseHTMLString: true,
       customStyle: {
@@ -466,13 +466,13 @@ const showError = async (row: TaskListItem) => {
 }
 
 /**
- * 重新创建失败的任务
+ * Recreate failed tasks
  */
 const retryTask = async (row: TaskListItem) => {
   try {
     const taskId = row.task_id
     if (!taskId) {
-      ElMessage.error('任务ID不存在')
+      ElMessage.error('Task ID does not exist')
       return
     }
 
@@ -482,21 +482,21 @@ const retryTask = async (row: TaskListItem) => {
     const body = (res as any)?.data || res
     
     if (body.success) {
-      ElMessage.success(`任务已重新创建，新任务ID: ${body.task_id}`)
-      // 刷新列表
+      ElMessage.success(`Task has been recreated, new task ID: ${body.task_id}`)
+      // Refresh list
       await refreshList()
     } else {
-      ElMessage.error(body.message || '重新创建任务失败')
+      ElMessage.error(body.message || 'Failed to recreate task')
     }
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail || e?.message || '重新创建任务失败')
+    ElMessage.error(e?.response?.data?.detail || e?.message || 'Failed to recreate task')
   } finally {
     loading.value = false
   }
 }
 
 /**
- * 格式化时间
+ * Format time
  */
 const formatTime = (time: string) => {
   if (!time) return '-'
@@ -512,17 +512,17 @@ const formatTime = (time: string) => {
 }
 
 /**
- * 设置定时刷新
+ * Set scheduled refresh
  */
 const setupAutoRefresh = () => {
-  // 每 10 秒刷新一次
+  // Refresh every 10 seconds
   refreshTimer = setInterval(() => {
     loadList()
     loadStats()
   }, 10000)
 }
 
-// ==================== 生命周期 ====================
+// ==================== life cycle ====================
 
 onMounted(() => {
   loadList()

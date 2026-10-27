@@ -1,15 +1,15 @@
 <template>
   <div class="advanced-courses-page">
     <div class="page-header">
-      <h1>🎓 从散户到系统交易者：AI赋能的可进化投资法</h1>
-      <p class="subtitle">30节系统课程，按炒股全生命周期组织：发现 → 跟踪 → 持仓 → 复盘 → 扩展</p>
+      <h1>🎓 From retail investors to systematic traders: an evolvable investment approach empowered by AI</h1>
+      <p class="subtitle">30 Systematic courses organized according to the full life cycle of stock trading: Discovery → Track → Position → Review → Expand</p>
       <div class="header-badges">
-        <el-tag type="success" size="default">{{ freeCount }}节免费预览</el-tag>
+        <el-tag type="success" size="default">{{ freeCount }}Festival free preview</el-tag>
         <PaidCourseBadge />
       </div>
     </div>
 
-    <!-- 分类筛选提示 -->
+    <!-- Category filtering tips -->
     <div v-if="selectedCategoryId" class="category-filter-banner">
       <el-alert
         :closable="true"
@@ -18,20 +18,20 @@
         show-icon
       >
         <template #title>
-          当前显示：{{ displayedCategories[0]?.name }}
+          Currently showing:{{ displayedCategories[0]?.name }}
           <el-button 
             type="text" 
             size="small" 
             @click="clearCategoryFilter"
             style="margin-left: 8px"
           >
-            查看全部课程
+            View all courses
           </el-button>
         </template>
       </el-alert>
     </div>
 
-    <!-- 课程分类列表 -->
+    <!-- Course classification list -->
     <div class="course-categories">
       <el-card 
         v-for="category in displayedCategories" 
@@ -45,7 +45,7 @@
               <span class="category-icon">{{ category.icon }}</span>
               <h3>{{ category.name }}</h3>
             </div>
-            <el-tag type="success" size="small">{{ category.lessonCount }}课</el-tag>
+            <el-tag type="success" size="small">{{ category.lessonCount }}class</el-tag>
           </div>
         </template>
 
@@ -66,7 +66,7 @@
               <span class="lesson-title">{{ lesson.title }}</span>
             </div>
             <div class="lesson-badges">
-              <el-tag v-if="isFreeLesson(lesson.order)" type="success" size="small" effect="plain">免费</el-tag>
+              <el-tag v-if="isFreeLesson(lesson.order)" type="success" size="small" effect="plain">free</el-tag>
               <el-icon class="lesson-arrow"><ArrowRight /></el-icon>
             </div>
           </div>
@@ -74,7 +74,7 @@
       </el-card>
     </div>
 
-    <!-- 完整版入口卡片（社区版为空壳，不渲染） -->
+    <!-- Full version entrance card (the community version is an empty shell and does not render) -->
     <KnowledgePlanetPromotion />
   </div>
 </template>
@@ -103,10 +103,10 @@ const freeCount = computed(() => {
   return count
 })
 
-// 获取URL中的分类参数
+// Get the category parameters in the URL
 const selectedCategoryId = computed(() => route.query.category as string | undefined)
 
-// 过滤显示的课程分类
+// Filter displayed course categories
 const displayedCategories = computed(() => {
   if (selectedCategoryId.value) {
     const category = advancedCourseCategories.find(cat => cat.id === selectedCategoryId.value)
@@ -272,7 +272,7 @@ const clearCategoryFilter = () => {
   }
 }
 
-// 暗黑模式适配
+// Dark mode adaptation
 :global(html.dark) {
   .advanced-courses-page {
     background: #000000 !important;

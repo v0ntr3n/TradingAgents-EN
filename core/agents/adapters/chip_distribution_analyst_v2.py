@@ -1,9 +1,9 @@
 """
-筹码分布分析师Agent v2.0
+Chip distribution analyst Agent v2.0
 
-基于AnalystAgent基类实现的筹码分布分析师。
-分析股票筹码分布，评估获利比例、平均成本和筹码集中度。
-提示词配置在数据库模板中，用户可以修改。
+A chip distribution analyst implemented based on the AnalystAgent base class.
+Analyze the distribution of stock chips and evaluate the profit ratio, average cost and chip concentration.
+The prompt words are configured in the database template and can be modified by the user.
 """
 
 import logging
@@ -16,66 +16,66 @@ from ..registry import register_agent
 
 logger = logging.getLogger(__name__)
 
-# 尝试导入工具函数
+# Try importing utility functions
 try:
     from tradingagents.utils.stock_utils import StockUtils
 except ImportError:
-    logger.warning("无法导入StockUtils，部分功能可能不可用")
+    logger.warning("Unable to import StockUtils, some functions may not be available")
     StockUtils = None
 
 
 @register_agent
 class ChipDistributionAnalystV2(AnalystAgent):
     """
-    筹码分布分析师 v2.0
+    Chip distribution analyst v2.0
 
-    功能：
-    - 获取股票筹码分布数据
-    - 分析获利比例（浮盈/浮亏情况）
-    - 分析平均持仓成本
-    - 评估筹码集中度（90%/70%区间）
-    - 生成筹码分布分析报告
+    Function:
+    - Get stock chip distribution data
+    - Analyze profit ratio (floating profit/floating loss situation)
+    - Analyze average holding costs
+    - Assess chip concentration (90%/70% range)
+    - Generate chip distribution analysis report
 
-    工作流程：
-    1. 调用筹码分布工具获取数据（AkShare优先，Tushare备用）
-    2. 使用LLM深度分析筹码分布含义
-    3. 生成筹码分布分析报告
+    Workflow:
+    1. Call the chip distribution tool to obtain data (AkShare is preferred, Tushare is used as backup)
+    2. Use LLM to deeply analyze the meaning of chip distribution
+    3. Generate chip distribution analysis report
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="chip_distribution_analyst_v2",
-        name="筹码分布分析师 v2.0",
-        description="分析股票筹码分布，评估获利比例、平均成本和筹码集中度，生成筹码分布分析报告",
+        name="Chip distribution analyst v2.0",
+        description="Analyze stock chip distribution, evaluate profit ratio, average cost and chip concentration, and generate chip distribution analysis report",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         icon="🧮",
         color="#e74c3c",
-        tags=["筹码分布", "持仓成本", "获利比例", "v2.0"],
+        tags=["Chip distribution", "Holding cost", "Profit ratio", "v2.0"],
         default_tools=["get_chip_distribution"],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="chip_report", type="string", description="筹码分布分析报告"),
+            AgentOutput(name="chip_report", type="string", description="Chip distribution analysis report"),
         ],
         requires_tools=True,
         output_field="chip_report",
-        report_label="【筹码分布分析 v2】",
+        report_label=" [Chip distribution analysis v2]",
         workflow_stage="analyst",
         execution_order=15,
     )
 
-    # 分析师类型
+    # Analyst type
     analyst_type = "chip_distribution"
 
-    # 输出字段名
+    # Output field name
     output_field = "chip_report"
 
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """执行筹码分布分析"""
+        """Perform chip distribution analysis"""
         try:
             ticker, analysis_date = self._extract_common_params(state)
             context = state.get("context")
@@ -87,7 +87,7 @@ class ChipDistributionAnalystV2(AnalystAgent):
             if not ticker:
                 raise ValueError("Missing required parameters: ticker")
 
-            # 构建系统提示词
+            # Build system prompt words
             system_prompt = system_override
             if not system_prompt:
                 template_variables = {
@@ -96,19 +96,19 @@ class ChipDistributionAnalystV2(AnalystAgent):
                     "current_date": analysis_date,
                     "tool_names": ", ".join([t.name for t in self._langchain_tools]) if self._langchain_tools else "",
                 }
-                # 注入公司名称
+                # Inject company name
                 company_name = state.get("company_name", "")
                 if not company_name and StockUtils and ticker:
                     try:
                         market_info = StockUtils.get_market_info(ticker)
                         template_variables["company_name"] = market_info.get("company_name", ticker)
-                        template_variables["market_name"] = market_info.get("market_name", "中国A股")
+                        template_variables["market_name"] = market_info.get("market_name", "China A shares")
                     except Exception:
                         template_variables["company_name"] = ticker
-                        template_variables["market_name"] = "中国A股"
+                        template_variables["market_name"] = "China A shares"
                 else:
                     template_variables["company_name"] = company_name or ticker
-                    template_variables["market_name"] = state.get("market_name", "中国A股")
+                    template_variables["market_name"] = state.get("market_name", "China A shares")
 
                 system_prompt = self._get_prompt_from_template(
                     agent_type="analysts_v2",
@@ -123,7 +123,7 @@ class ChipDistributionAnalystV2(AnalystAgent):
             if not system_prompt:
                 system_prompt = self._build_system_prompt(state=state)
 
-            # 构建用户提示词
+            # Build user prompt words
             user_prompt = user_override
             if not user_prompt:
                 user_prompt = self._build_user_prompt(ticker, analysis_date, state)
@@ -146,7 +146,7 @@ class ChipDistributionAnalystV2(AnalystAgent):
                     report = response.content if hasattr(response, "content") else str(response)
                     tool_summary = ""
             else:
-                raise ValueError("LLM未初始化")
+                raise ValueError("LLM not initialized")
 
             result = {self.output_field: report}
             if tool_summary:
@@ -154,8 +154,8 @@ class ChipDistributionAnalystV2(AnalystAgent):
             return result
 
         except Exception as e:
-            logger.error(f"[{self.agent_id}] 执行失败: {e}", exc_info=True)
-            return {self.output_field: f"筹码分布分析失败: {str(e)}"}
+            logger.error(f"[{self.agent_id}] Execution failed: {e}", exc_info=True)
+            return {self.output_field: f"Chip distribution analysis failed: {str(e)}"}
 
     def _chip_tool_unavailable(self) -> bool:
         summaries = getattr(self, "_tool_call_summaries_collected", []) or []
@@ -165,40 +165,40 @@ class ChipDistributionAnalystV2(AnalystAgent):
 
         last_call = chip_calls[-1]
         result = str(last_call.get("result_preview") or "")
-        error_markers = ("❌", "工具执行失败", "无法获取", "未能获取")
+        error_markers = ("❌", "Tool execution failed", "Unable to obtain", "Failed to obtain")
         return (not last_call.get("success")) or any(marker in result for marker in error_markers)
 
     def _build_unavailable_report(self, ticker: str, analysis_date: str) -> str:
         summaries = getattr(self, "_tool_call_summaries_collected", []) or []
         chip_calls = [s for s in summaries if s.get("tool_name") == "get_chip_distribution"]
-        reason = "筹码分布工具未返回有效数据"
+        reason = "The chip distribution tool did not return valid data"
         if chip_calls:
             last_call = chip_calls[-1]
             reason = last_call.get("error") or last_call.get("result_preview") or reason
 
-        return f"""⚠️ **筹码分布数据暂不可用**
+        return f"""⚠️ **Chip distribution data is temporarily unavailable**
 
-股票代码：{ticker}  
-分析日期：{analysis_date}
+Stock code:{ticker}  
+Analysis date:{analysis_date}
 
-本次未能生成有效筹码分布分析报告，原因是筹码分布工具没有返回可分析的数据。
+A valid chip distribution analysis report could not be generated this time because the chip distribution tool did not return analyzable data.
 
-**工具返回信息**：{reason}
+**Tool return information**: {reason}
 
-为避免产生误导性结论，本节点不基于模型猜测或补写筹码结构、获利比例、平均成本、支撑压力位等指标。请稍后重试，或检查 AkShare/Tushare 数据源、网络连接与本机 socket 资源状态。"""
+In order to avoid misleading conclusions, this node does not guess or fill in the chip structure, profit ratio, average cost, support pressure level and other indicators based on the model. Please try again later, or check the AkShare/Tushare data source, network connection, and native socket resource status."""
 
     def _build_analysis_prompt(self, ticker: str, analysis_date: str) -> str:
-        return f"""基于筹码分布工具返回的真实数据，生成 {ticker} 在 {analysis_date} 的筹码分布分析报告。
+        return f"""Based on the real data returned by the chip distribution tool, generate {ticker} in {analysis_date} Chip distribution analysis report.
 
-要求：
-1. 只能使用 ToolMessage 中实际返回的数据，不得使用模型知识判断当前年份或日期是否存在。
-2. 如果工具返回以“❌”开头，或内容包含“工具执行失败”“无法获取”“未能获取”，请直接说明“筹码分布数据暂不可用”，并引用工具失败原因。
-3. 工具失败时禁止编造获利比例、平均成本、筹码区间、支撑压力位，也不要生成未来日期不可分析之类的推断。
-4. 工具成功时，围绕获利比例、平均成本、90%/70%筹码区间、集中度、支撑压力关系进行分析。
-5. 使用中文 Markdown 输出。"""
+Requirements:
+1. Only the data actually returned in the ToolMessage can be used, and model knowledge must not be used to determine whether the current year or date exists.
+2. If the tool returns with ❌ begins, or contains Tool execution failed  Unable to obtain  Failed to obtain , Please explain directly Chip distribution data is temporarily unavailable , And cite the reason why the tool failed.
+3. When a tool fails, it is prohibited to make up profit ratios, average costs, chip ranges, and support pressure levels, and do not make inferences that future dates cannot be analyzed.
+4. When the tool is successful, analysis will be conducted around the profit ratio, average cost, 90%/70% chip range, concentration, and support and pressure relationships.
+5. Use Chinese Markdown output."""
 
     def _build_system_prompt(self, state: Dict[str, Any] = None) -> str:
-        """构建默认系统提示词（数据库模板优先）"""
+        """Build default system prompt words (database template takes priority)"""
         if state is None:
             state = {}
 
@@ -224,38 +224,38 @@ class ChipDistributionAnalystV2(AnalystAgent):
         if prompt:
             return prompt
 
-        return """你是一位专业的A股筹码分布分析师，擅长通过筹码分布数据洞察市场博弈格局。
+        return """You are a professional A-share chip distribution analyst who is good at gaining insight into the market game pattern through chip distribution data.
 
-你的职责：
-1. 解读筹码获利比例（当前价格下浮盈筹码占比）
-2. 分析平均持仓成本与当前价格的关系
-3. 评估90%/70%筹码集中区间及集中度
-4. 判断上方压力和下方支撑
-5. 综合研判主力持仓意图和趋势
+Your responsibilities:
+1. Interpret the profit ratio of chips (the proportion of chips with floating profit under the current price)
+2. Analyze the relationship between average holding costs and current prices
+3. Evaluate the 90%/70% chip concentration range and concentration ratio
+4. Determine the upper pressure and lower support
+5. Comprehensive study and judgment of main position intentions and trends
 
-分析要求：
-- 客观解读筹码数据，避免主观臆断
-- 结合获利比例判断抛压轻重
-- 结合集中度判断趋势稳定性
-- 给出明确的支撑/压力位判断
-- 使用中文输出
+Analysis requirements:
+- Objectively interpret chip data to avoid subjective assumptions
+- Determine the severity of selling pressure based on profit ratio
+- Judging trend stability based on concentration
+- Provide clear support/pressure level judgments
+- Use Chinese output
 
-输出格式：
-请以结构化方式输出筹码分布分析报告，包括：
-- 筹码获利状况
-- 成本结构分析
-- 筹码集中度评估
-- 支撑压力位分析
-- 综合研判
+Output format:
+Please output the chip distribution analysis report in a structured manner, including:
+- Chip profit status
+- cost structure analysis
+- Chip concentration assessment
+- Support pressure level analysis
+- Comprehensive research and judgment
 """
 
     def _build_user_prompt(self, ticker: str, analysis_date: str, state: Dict[str, Any]) -> str:
-        """构建用户提示词（数据库模板优先）"""
+        """Construct user prompt words (database template is preferred)"""
         if state is None:
             state = {}
 
         company_name = state.get("company_name", ticker)
-        market_name = state.get("market_name", "中国A股")
+        market_name = state.get("market_name", "China A shares")
 
         template_variables = {
             "ticker": ticker,
@@ -278,13 +278,13 @@ class ChipDistributionAnalystV2(AnalystAgent):
         if prompt:
             return prompt
 
-        return f"""请分析 {company_name}（{ticker}）在 {analysis_date} 的筹码分布情况：
+        return f"""Please analyze {company_name} ({ticker}) in {analysis_date} Distribution of chips:
 
-股票代码：{ticker}
-公司名称：{company_name}
-分析日期：{analysis_date}
-市场：{market_name}
+Stock code:{ticker}
+Company name:{company_name}
+Analysis date:{analysis_date}
+Market:{market_name}
 
-请调用筹码分布工具获取数据，然后生成详细的筹码分布分析报告。
-重点分析：获利比例、平均成本、筹码集中度、支撑压力位。"""
+Please call the chip distribution tool to obtain data, and then generate a detailed chip distribution analysis report.
+Key analysis: profit ratio, average cost, chip concentration, support and pressure level."""
 

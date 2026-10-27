@@ -1,14 +1,14 @@
-"""Agent 执行轨迹采集器
+"""Agent Execution trajectory collector
 
-设计原则：
-1. 非阻塞：所有异常内部捕获，不影响 agent 执行
-2. 渐进式采集：record_prompts / record_llm_response / record_parsed_output 分步调用
-3. 子类回填：base 写入后，子类通过 update_validation_sync 回填校验结果
-4. 配置开关：settings.AGENT_EXECUTION_TRACE_ENABLED 控制是否启用
+Design principles:
+1. Non-blocking: All exceptions are caught internally and do not affect agent execution
+2. Progressive collection: record_prompts / record_llm_response / record_parsed_output step-by-step call
+3. Subclass backfill: After the base is written, the subclass backfills the verification results through update_validation_sync
+4. Configuration switch: settings.AGENT_EXECUTION_TRACE_ENABLED controls whether to enable
 """
 
-# 注解惰性化：社区版剔除 execution_trace 模型后，类型注解（如 trace -> AgentExecutionTrace）
-# 在 def 执行时不求值，避免 NameError；必须位于其他 import 之前
+# Annotation inertia: After the community version eliminates the execution_trace model, type annotations (such as trace -> AgentExecutionTrace) 
+# Not evaluated when def is executed to avoid NameError; must be placed before other imports
 from __future__ import annotations
 
 import hashlib
@@ -20,11 +20,11 @@ from typing import Any, Dict, Optional
 from app.core.config import settings
 from app.utils.timezone import now_tz
 
-# 后端依赖可选导入：社区版（Apache 2.0 开源版）已将 app/models/execution_trace 与
-# app/services/execution_trace_service 随 Pro 开源分离剔除。import 失败时本模块
-# 降级为 no-op（is_trace_enabled 恒 False → 调用方 recorder 恒 None → 全部采集段跳过），
-# 8 个调用方（analyst/researcher/manager/universal/base/trader_v2/fundamentals_analyst_v2/
-# workflow builder）零改动，社区版分析主链路不受影响。
+# Optional import of backend dependencies: Community Edition (Apache 2.0 Open Source Edition) has added app/models/execution_trace with
+# app/services/execution_trace_service Separate culling comes with Pro open source. When import fails, this module
+# Downgrade to no-op (is_trace_enabled constant False → caller recorder constant None → All collection segments are skipped),
+# 8 callers (analyst/researcher/manager/universal/base/trader_v2/fundamentals_analyst_v2/
+# workflow builder) There are zero changes, and the main link of the community version analysis is not affected.
 try:
     from app.pro.models.execution_trace import (
         AgentExecutionTrace,
@@ -38,48 +38,48 @@ try:
     )
     from app.pro.services.execution_trace_service import execution_trace_service
     _TRACE_BACKEND_AVAILABLE = True
-except ImportError:  # 社区版路径：执行轨迹后端不可用
+except ImportError:  # Community Edition Path: Execution trace backend is not available
     _TRACE_BACKEND_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
-# 线程本地变量：支持单次分析任务临时开启轨迹采集
-# 当全局开关关闭时，可通过 enable_trace_for_current_thread() 在当前线程临时开启
+# Thread local variables: supports temporarily opening trajectory collection for a single analysis task
+# When the global switch is turned off, you can use enable_trace_for_current_thread() Temporarily open in the current thread
 _trace_thread_local = threading.local()
 
 
 def enable_trace_for_current_thread() -> None:
-    """为当前线程临时开启轨迹采集（单次分析任务级别）"""
+    """Temporarily enable trajectory collection for the current thread (single analysis task level)"""
     _trace_thread_local.enabled = True
 
 
 def disable_trace_for_current_thread() -> None:
-    """关闭当前线程的临时轨迹采集"""
+    """Close the temporary trajectory collection of the current thread"""
     _trace_thread_local.enabled = False
 
 
 def is_trace_enabled() -> bool:
-    """检查是否启用轨迹采集
+    """Check whether trajectory collection is enabled
 
-    优先级：后端可用性 > 线程本地临时标记 > 全局配置
-    - 后端不可用（社区版）恒 False
-    - 全局配置 AGENT_EXECUTION_TRACE_ENABLED 默认关闭
-    - 分析任务可通过 enable_trace=true 参数临时开启（仅对本次执行生效）
+    Priority: Backend availability > Thread local temporary mark > Global configuration
+    - Backend is unavailable (community version) constant False
+    - Global configuration AGENT_EXECUTION_TRACE_ENABLED is turned off by default
+    - Analysis tasks can be done through enable_trace=true Parameters are temporarily enabled (only effective for this execution)
     """
-    # 后端不可用（社区版已剔除 execution_trace 体系）→ 恒关闭
+    # The backend is not available (the execution_trace system has been removed from the community version)→ Always closed
     if not _TRACE_BACKEND_AVAILABLE:
         return False
-    # 线程本地标记优先
+    # Thread local tags take precedence
     if getattr(_trace_thread_local, "enabled", False):
         return True
-    # 全局配置
+    # Global configuration
     return getattr(settings, "AGENT_EXECUTION_TRACE_ENABLED", False)
 
 
 class ExecutionTraceRecorder:
-    """执行轨迹采集器
+    """Execution trajectory collector
 
-    用法（在 ManagerAgent.execute 中）：
+    Usage (in ManagerAgent.execute):
         recorder = start_execution_trace(self, state)
         try:
             recorder.record_inputs(inputs)
@@ -93,11 +93,11 @@ class ExecutionTraceRecorder:
             recorder.record_error(e)
             raise
         finally:
-            recorder.finish()  # 写入 MongoDB（非阻塞）
+            recorder.finish()  # Writing to MongoDB (non-blocking)
 
-    子类回填（在 RiskManagerV2.execute 中）：
+    Subclass backfill (in RiskManagerV2.execute):
         result = super().execute(state)
-        # ... 校验 ...
+        # ... Verification ...
         self._record_trace_validation("passed"/"failed", error, details)
     """
 
@@ -120,15 +120,15 @@ class ExecutionTraceRecorder:
         self._finished = False
         self._llm_duration_ms: Optional[int] = None
 
-        # 从 state 提取工作流上下文
+        # Extract workflow context from state
         self._extract_workflow_context(state)
 
-        # 提取分析目标
+        # Extract analysis targets
         self._trace.ticker = state.get("ticker") or state.get("company_of_interest")
         self._trace.analysis_date = state.get("analysis_date") or state.get("trade_date") or state.get("end_date")
 
     def _extract_workflow_context(self, state: Dict[str, Any]) -> None:
-        """从 state["_workflow_runtime"] 提取工作流上下文"""
+        """from state["_workflow_runtime"] Extract workflow context"""
         runtime = state.get("_workflow_runtime") or {}
         if isinstance(runtime, dict):
             self._trace.workflow_id = runtime.get("workflow_id")
@@ -138,7 +138,7 @@ class ExecutionTraceRecorder:
             self._trace.thread_id = runtime.get("thread_id")
 
     def record_llm_config(self, llm: Any) -> None:
-        """记录 LLM 配置"""
+        """Document LLM configuration"""
         try:
             self._trace.llm_config = LLMConfigSnapshot(
                 model_name=getattr(llm, "model_name", None) or getattr(llm, "model", None),
@@ -146,10 +146,10 @@ class ExecutionTraceRecorder:
                 max_tokens=getattr(llm, "max_tokens", None),
             )
         except Exception as e:
-            logger.debug(f"记录 LLM 配置失败: {e}")
+            logger.debug(f"Logging LLM configuration failure: {e}")
 
     def record_inputs(self, inputs: Dict[str, Any]) -> None:
-        """记录输入快照"""
+        """Record input snapshot"""
         try:
             input_lengths = {}
             for k, v in inputs.items():
@@ -162,13 +162,13 @@ class ExecutionTraceRecorder:
                 input_lengths=input_lengths,
             )
         except Exception as e:
-            logger.debug(f"记录输入快照失败: {e}")
+            logger.debug(f"Logging input snapshot failed: {e}")
 
     def record_prompts(self, system_prompt: str, user_prompt: str) -> None:
-        """记录提示词快照（哈希 + 长度 + 全文）
+        """Record prompt word snapshot (hash + length + Full text)
 
-        全文存储用于：前端查看、Prompt 优化对比、回归测试重放。
-        哈希/长度保留用于 P2 反思扫描的 hash 聚类（体积小，扫描快）。
+        Full-text storage is used for: front-end viewing, prompt optimization comparison, and regression test replay.
+        Hash/length preserving hash clustering for P2 reflective scans (small size, fast scans).
         """
         try:
             self._trace.prompts = PromptSnapshot(
@@ -180,26 +180,26 @@ class ExecutionTraceRecorder:
                 user_prompt_full=user_prompt if user_prompt else None,
             )
         except Exception as e:
-            logger.debug(f"记录提示词快照失败: {e}")
+            logger.debug(f"Failed to record prompt word snapshot: {e}")
 
     def record_llm_response(self, response: Any, llm_duration_ms: Optional[int] = None) -> None:
-        """记录 LLM 响应
+        """Logging LLM response
 
-        支持多次调用累加：
-        - 工具调用模式下，LLM 会被调用多次（每次循环 + 最终报告）
-        - 每次调用的 Token 用量累加到总用量
-        - 输出快照只保留最后一次（最终报告），但 LLM 调用次数 +1
+        Supports accumulation of multiple calls:
+        - In tool call mode, LLM will be called multiple times (each cycle + final report)
+        - The Token usage for each call is accumulated to the total usage.
+        - The output snapshot only retains the last (final report) but the number of LLM calls +1
         """
         try:
-            # 🔑 累加 LLM 调用次数
+            # 🔑 Cumulative number of LLM calls
             self._trace.llm_call_count += 1
 
-            # 累加 LLM 耗时
+            # Cumulative LLM time consumption
             if llm_duration_ms is not None:
                 prev = self._llm_duration_ms or 0
                 self._llm_duration_ms = prev + llm_duration_ms
 
-            # 输出快照（覆盖式，保留最终报告）
+            # Output snapshot (overlay, retain final report)
             content = getattr(response, "content", "") or ""
             if content:
                 self._trace.output = OutputSnapshot(
@@ -208,7 +208,7 @@ class ExecutionTraceRecorder:
                     output_raw_full=content if content else None,
                 )
 
-            # Token 用量累加（兼容 LangChain AIMessage）
+            # Token Usage accumulation (compatible with LangChain AIMessage)
             usage_meta = getattr(response, "usage_metadata", None)
             if isinstance(usage_meta, dict):
                 prev_input = self._trace.token_usage.input_tokens or 0
@@ -220,14 +220,14 @@ class ExecutionTraceRecorder:
                     total_tokens=prev_total + (usage_meta.get("total_tokens") or 0),
                 )
 
-            # 从 response_metadata 补全 model_name
+            # Completion from response_metadata model_name
             resp_meta = getattr(response, "response_metadata", None)
             if isinstance(resp_meta, dict):
                 model_from_resp = resp_meta.get("model_name") or resp_meta.get("model")
                 if model_from_resp and not self._trace.llm_config.model_name:
                     self._trace.llm_config.model_name = model_from_resp
         except Exception as e:
-            logger.debug(f"记录 LLM 响应失败: {e}")
+            logger.debug(f"Logging LLM response failure: {e}")
 
     def record_tool_call(
         self,
@@ -239,7 +239,7 @@ class ExecutionTraceRecorder:
         result_preview: Optional[str] = None,
         duration_ms: Optional[int] = None,
     ) -> None:
-        """记录一次工具调用"""
+        """Record a tool call"""
         try:
             self._trace.tool_calls.append(ToolCallRecord(
                 tool_name=tool_name,
@@ -251,10 +251,10 @@ class ExecutionTraceRecorder:
                 duration_ms=duration_ms,
             ))
         except Exception as e:
-            logger.debug(f"记录工具调用失败: {e}")
+            logger.debug(f"Recording tool call failed: {e}")
 
     def record_parsed_output(self, parsed: Any) -> None:
-        """记录解析后的输出"""
+        """Record parsed output"""
         try:
             if isinstance(parsed, dict):
                 self._trace.output.output_parsed_keys = list(parsed.keys())
@@ -264,10 +264,10 @@ class ExecutionTraceRecorder:
                 self._trace.output.output_parsed_type = type(parsed).__name__
                 self._trace.output.output_parsed_success = True
         except Exception as e:
-            logger.debug(f"记录解析输出失败: {e}")
+            logger.debug(f"Log parsing output failed: {e}")
 
     def record_error(self, exc: Exception) -> None:
-        """记录异常"""
+        """Log exception"""
         self._trace.success = False
         self._trace.error_message = str(exc)
         self._trace.error_type = type(exc).__name__
@@ -278,11 +278,11 @@ class ExecutionTraceRecorder:
 
     @property
     def trace(self) -> AgentExecutionTrace:
-        """暴露 trace 对象（供 TraderV2 等需要直接操作的场景）"""
+        """Expose trace objects (for scenarios such as TraderV2 that require direct operation)"""
         return self._trace
 
     def finish(self) -> None:
-        """完成采集并写入 MongoDB（非阻塞）"""
+        """Complete collection and write to MongoDB (non-blocking)"""
         if self._finished:
             return
         self._finished = True
@@ -295,7 +295,7 @@ class ExecutionTraceRecorder:
             self._trace.llm_duration_ms = self._llm_duration_ms
             execution_trace_service.save_trace_sync(self._trace)
         except Exception as e:
-            logger.warning(f"⚠️ 执行轨迹 finish 失败（不影响 agent）: {e}")
+            logger.warning(f"⚠️ Execution trace finish failed (does not affect agent): {e}")
 
     def set_validation(
         self,
@@ -303,15 +303,15 @@ class ExecutionTraceRecorder:
         validation_error: Optional[str] = None,
         validation_details: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """回填校验结果到内存 trace 对象（供 finish 时一并写入）。
+        """Backfill the verification results into the memory trace object (to be written together when finish).
 
-        解决 trader_v2 时序问题：trader_v2 的 record_trace_validation（DB update）
-        在 finish（insert）之前执行，此时文档不存在导致 update no-op，
-        随后 finish 的 insert 用内存中 validation=None 覆盖。
+        Solve the trader_v2 timing problem: record_trace_validation (DB update) of trader_v2
+        Executed before finish (insert), the document does not exist at this time, causing update no-op.
+        Then the insert of finish uses the memory validation=None cover.
 
-        本方法更新内存对象的 validation 字段，使 finish 的 insert 携带正确值。
-        若已 finish（文档已 insert），则降级为 DB update（兼容 ManagerAgent
-        在 super().execute finally 中先 finish、子类后回填的场景）。
+        This method updates the validation field of the memory object so that the insert of finish carries the correct value.
+        If it has been finished (the document has been inserted), it will be downgraded to DB update (compatible with ManagerAgent
+        in super().execute finally Scenarios where finish first and backfill after subclassing).
         """
         try:
             if self._trace.validation is None:
@@ -322,8 +322,8 @@ class ExecutionTraceRecorder:
             if validation_details is not None:
                 self._trace.validation.validation_details = validation_details
         except Exception as e:
-            logger.debug(f"记录校验结果到内存失败: {e}")
-        # 若文档已 insert（finish 已执行），同步更新 DB
+            logger.debug(f"Failed to record verification results into memory: {e}")
+        # If the document has been inserted (finish has been executed), it will be updated synchronously. DB
         if self._finished:
             record_trace_validation(
                 trace_id=self._trace.trace_id,
@@ -337,16 +337,16 @@ def start_execution_trace(
     agent: Any,
     state: Dict[str, Any],
 ) -> ExecutionTraceRecorder:
-    """启动执行轨迹采集
+    """Start execution trace collection
 
     Args:
-        agent: Agent 实例（需有 agent_id、get_metadata 属性）
-        state: 工作流状态
+        agent: Agent Instance (requires agent_id, get_metadata attributes)
+        state: Workflow status
 
     Returns:
-        ExecutionTraceRecorder 实例
+        ExecutionTraceRecorder Example
     """
-    # 🔑 防重复：如果 agent 已经有活跃的 recorder，直接返回（避免 builder 层与适配器层重复创建）
+    # 🔑 Anti-duplication: If the agent already has an active recorder, return directly (to avoid repeated creation of the builder layer and adapter layer)
     existing = getattr(agent, "_execution_recorder", None)
     if existing is not None and not existing._finished:
         return existing
@@ -355,7 +355,7 @@ def start_execution_trace(
     agent_version = getattr(metadata, "version", "unknown") if metadata else "unknown"
     manager_type = getattr(agent, "manager_type", None)
 
-    # 判断 agent_type（按基类类型标识属性区分）
+    # Determine agent_type (distinguished by base class type identification attribute)
     if manager_type is not None:
         agent_type = "manager"
     elif getattr(agent, "analyst_type", None) is not None:
@@ -365,7 +365,7 @@ def start_execution_trace(
     elif hasattr(agent, "output_field"):
         agent_type = "trader"
     else:
-        agent_type = "manager"  # 默认兜底
+        agent_type = "manager"  # Default to cover up
 
     recorder = ExecutionTraceRecorder(
         agent_id=agent.agent_id,
@@ -375,12 +375,12 @@ def start_execution_trace(
         state=state,
     )
 
-    # 记录 LLM 配置
+    # Document LLM configuration
     if hasattr(agent, "_llm") and agent._llm is not None:
         recorder.record_llm_config(agent._llm)
 
-    # 🔑 自动绑定 recorder 到 agent，使 invoke_with_tools 能自动记录 LLM 响应
-    # 这样所有继承 BaseAgent 的适配器（如 fundamentals_analyst_v2 等）都会自动记录 Token 用量
+    # 🔑 Automatically bind the recorder to the agent so that invoke_with_tools can automatically record the LLM response
+    # In this way, all adapters that inherit BaseAgent (such as fundamentals_analyst_v2, etc.) will automatically record Token usage
     try:
         agent._execution_recorder = recorder
     except Exception:
@@ -395,7 +395,7 @@ def record_trace_validation(
     validation_error: Optional[str] = None,
     validation_details: Optional[Dict[str, Any]] = None,
 ) -> None:
-    """回填校验结果（供子类调用，非阻塞）"""
+    """Backfill verification results (for subclass calls, non-blocking)"""
     if not trace_id or not is_trace_enabled():
         return
     try:
@@ -406,4 +406,4 @@ def record_trace_validation(
             validation_details=validation_details,
         )
     except Exception as e:
-        logger.warning(f"⚠️ 回填校验结果失败（不影响 agent）: {e}")
+        logger.warning(f"⚠️ Backfill verification result fails (does not affect agent): {e}")

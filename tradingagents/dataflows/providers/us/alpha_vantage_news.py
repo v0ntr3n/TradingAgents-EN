@@ -1,9 +1,9 @@
 """
-Alpha Vantage 新闻数据提供者
+Alpha Vantage news data provider
 
-提供高质量的市场新闻和情感分析数据
+Provide high-quality market news and sentiment analysis data
 
-参考原版 TradingAgents 实现
+Refer to the original TradingAgents implementation
 """
 
 from typing import Annotated, Dict, Any
@@ -12,7 +12,7 @@ from datetime import datetime
 
 from .alpha_vantage_common import _make_api_request, format_datetime_for_api, format_response_as_string
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 
@@ -23,18 +23,18 @@ def get_news(
     end_date: Annotated[str, "End date for news search, YYYY-MM-DD"]
 ) -> str:
     """
-    获取股票相关的新闻和情感分析数据
+    Get stock-related news and sentiment analysis data
     
-    返回来自全球主要新闻媒体的实时和历史市场新闻及情感数据。
-    涵盖股票、加密货币、外汇以及财政政策、并购、IPO等主题。
+    Returns real-time and historical market news and sentiment data from major global news outlets.
+    Covers topics such as stocks, cryptocurrencies, foreign exchange, and fiscal policy, M&A, IPOs, and more.
     
     Args:
-        ticker: 股票代码
-        start_date: 开始日期，格式 YYYY-MM-DD
-        end_date: 结束日期，格式 YYYY-MM-DD
+        ticker: Stock code
+        start_date: start date, format YYYY-MM-DD
+        end_date: end date, format YYYY-MM-DD
         
     Returns:
-        格式化的新闻数据字符串（JSON格式）
+        Formatted news data string (JSON format)
         
     Example:
         >>> news = get_news("AAPL", "2024-01-01", "2024-01-31")
@@ -42,33 +42,33 @@ def get_news(
     try:
         logger.info(f"📰 [Alpha Vantage] 获取新闻: {ticker}, {start_date} 至 {end_date}")
         
-        # 构建请求参数
+        # Build request parameters
         params = {
             "tickers": ticker.upper(),
             "time_from": format_datetime_for_api(start_date),
             "time_to": format_datetime_for_api(end_date),
             "sort": "LATEST",
-            "limit": "50",  # 最多返回50条新闻
+            "limit": "50",  # Returns up to 50 news items
         }
         
-        # 发起 API 请求
+        # Make an API request
         data = _make_api_request("NEWS_SENTIMENT", params)
         
-        # 格式化响应
+        # Formatted response
         if isinstance(data, dict):
-            # 提取关键信息
+            # Extract key information
             feed = data.get("feed", [])
             
             if not feed:
                 return f"# No news found for {ticker} between {start_date} and {end_date}\n"
             
-            # 构建格式化输出
+            # Build formatted output
             result = f"# News and Sentiment for {ticker.upper()}\n"
             result += f"# Period: {start_date} to {end_date}\n"
             result += f"# Total articles: {len(feed)}\n"
             result += f"# Retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
             
-            # 添加每条新闻
+            # add every news
             for idx, article in enumerate(feed, 1):
                 result += f"## Article {idx}\n"
                 result += f"**Title**: {article.get('title', 'N/A')}\n"
@@ -76,18 +76,18 @@ def get_news(
                 result += f"**Published**: {article.get('time_published', 'N/A')}\n"
                 result += f"**URL**: {article.get('url', 'N/A')}\n"
                 
-                # 情感分析
+                # sentiment analysis
                 sentiment = article.get('overall_sentiment_label', 'N/A')
                 sentiment_score = article.get('overall_sentiment_score', 'N/A')
                 result += f"**Sentiment**: {sentiment} (Score: {sentiment_score})\n"
                 
-                # 摘要
+                # Summary
                 summary = article.get('summary', 'N/A')
                 if len(summary) > 200:
                     summary = summary[:200] + "..."
                 result += f"**Summary**: {summary}\n"
                 
-                # 相关股票的情感
+                # Related stock sentiment
                 ticker_sentiment = article.get('ticker_sentiment', [])
                 for ts in ticker_sentiment:
                     if ts.get('ticker', '').upper() == ticker.upper():
@@ -104,7 +104,7 @@ def get_news(
             return format_response_as_string(data, f"News for {ticker}")
             
     except Exception as e:
-        logger.error(f"❌ [Alpha Vantage] 获取新闻失败 {ticker}: {e}")
+        logger.error(f"❌ [Alpha Vantage] Failed to get news {ticker}: {e}")
         return f"Error retrieving news for {ticker}: {str(e)}"
 
 
@@ -112,44 +112,44 @@ def get_insider_transactions(
     symbol: Annotated[str, "Ticker symbol, e.g., IBM"]
 ) -> str:
     """
-    获取内部人交易数据
+    Get insider trading data
     
-    返回关键利益相关者（创始人、高管、董事会成员等）的最新和历史内部人交易数据。
+    Returns latest and historical insider transaction data for key stakeholders (founders, executives, board members, etc.).
     
     Args:
-        symbol: 股票代码
+        symbol: Stock code
         
     Returns:
-        格式化的内部人交易数据字符串（JSON格式）
+        Formatted insider trading data string (JSON format)
         
     Example:
         >>> transactions = get_insider_transactions("AAPL")
     """
     try:
-        logger.info(f"👔 [Alpha Vantage] 获取内部人交易: {symbol}")
+        logger.info(f"👔 [Alpha Vantage] Get Insider Transactions: {symbol}")
         
-        # 构建请求参数
+        # Build request parameters
         params = {
             "symbol": symbol.upper(),
         }
         
-        # 发起 API 请求
+        # Make an API request
         data = _make_api_request("INSIDER_TRANSACTIONS", params)
         
-        # 格式化响应
+        # Formatted response
         if isinstance(data, dict):
             transactions = data.get("data", [])
             
             if not transactions:
                 return f"# No insider transactions found for {symbol}\n"
             
-            # 构建格式化输出
+            # Build formatted output
             result = f"# Insider Transactions for {symbol.upper()}\n"
             result += f"# Total transactions: {len(transactions)}\n"
             result += f"# Retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
             
-            # 添加每笔交易
-            for idx, txn in enumerate(transactions[:20], 1):  # 限制显示前20笔
+            # Add every transaction
+            for idx, txn in enumerate(transactions[:20], 1):  # Limit display to the first 20 transactions
                 result += f"## Transaction {idx}\n"
                 result += f"**Insider**: {txn.get('insider_name', 'N/A')}\n"
                 result += f"**Title**: {txn.get('insider_title', 'N/A')}\n"
@@ -167,7 +167,7 @@ def get_insider_transactions(
             return format_response_as_string(data, f"Insider Transactions for {symbol}")
             
     except Exception as e:
-        logger.error(f"❌ [Alpha Vantage] 获取内部人交易失败 {symbol}: {e}")
+        logger.error(f"❌ [Alpha Vantage] Failed to get insider transactions {symbol}: {e}")
         return f"Error retrieving insider transactions for {symbol}: {str(e)}"
 
 
@@ -178,24 +178,24 @@ def get_market_news(
     limit: Annotated[int, "Number of articles to return"] = 50
 ) -> str:
     """
-    获取市场整体新闻（不限定特定股票）
+    Get overall market news (not limited to specific stocks)
     
     Args:
-        topics: 新闻主题，多个主题用逗号分隔（可选）
-        start_date: 开始日期（可选）
-        end_date: 结束日期（可选）
-        limit: 返回文章数量，默认50
+        topics: News topics, multiple topics separated by commas (optional)
+        start_date: Start date (optional)
+        end_date: end date (optional)
+        limit: Returns the number of articles, default 50
         
     Returns:
-        格式化的新闻数据字符串
+        Formatted news data string
         
     Example:
         >>> news = get_market_news(topics="technology,earnings", limit=20)
     """
     try:
-        logger.info(f"📰 [Alpha Vantage] 获取市场新闻: topics={topics}")
+        logger.info(f"📰 [Alpha Vantage] Get market news: topics={topics}")
         
-        # 构建请求参数
+        # Build request parameters
         params = {
             "sort": "LATEST",
             "limit": str(limit),
@@ -210,10 +210,10 @@ def get_market_news(
         if end_date:
             params["time_to"] = format_datetime_for_api(end_date)
         
-        # 发起 API 请求
+        # Make an API request
         data = _make_api_request("NEWS_SENTIMENT", params)
         
-        # 格式化响应（类似 get_news）
+        # Formatted response (similar to get_news)
         if isinstance(data, dict):
             feed = data.get("feed", [])
             
@@ -248,6 +248,6 @@ def get_market_news(
             return format_response_as_string(data, "Market News")
             
     except Exception as e:
-        logger.error(f"❌ [Alpha Vantage] 获取市场新闻失败: {e}")
+        logger.error(f"❌ [Alpha Vantage] Failed to get market news: {e}")
         return f"Error retrieving market news: {str(e)}"
 

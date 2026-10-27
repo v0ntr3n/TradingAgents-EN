@@ -1,14 +1,14 @@
 /**
- * SSE 流式请求工具
+ * SSE Streaming request tool
  *
- * 统一封装 fetch + ReadableStream 的 SSE 流式请求,处理:
- * - 认证头自动注入(JWT / App Token / 京东云模式)
- * - 401 统一处理
- * - 空闲超时
- * - SSE 事件解析(event: / data: 格式)
- * - AbortController 管理
+ * Unified packaging fetch + ReadableStream SSE streaming requests,Process:
+ * - Authentication header automatic injection(JWT / App Token / Jingdong cloud model)
+ * - 401 Unified processing
+ * - idle timeout
+ * - SSE Event analysis(event: / data: Format)
+ * - AbortController management
  *
- * 用法:
+ * Usage:
  *   const controller = fetchSSE('/api/xxx/stream', {
  *     method: 'POST',
  *     body: { ... },
@@ -16,7 +16,7 @@
  *     onDone: (data) => { ... },
  *     onError: (msg) => { ... },
  *   })
- *   // 取消: controller.abort()
+ *   // Cancel: controller.abort()
  */
 
 import { isJdyunMode } from '@/utils/config'
@@ -24,25 +24,25 @@ import { isJdyunMode } from '@/utils/config'
 export interface SSEOptions {
   method?: 'GET' | 'POST'
   body?: any
-  /** 空闲超时(毫秒),默认 90 秒 */
+  /** idle timeout(milliseconds),Default 90 seconds */
   idleTimeout?: number
-  /** 收到 SSE 事件时回调 */
+  /** Callback when SSE event is received */
   onEvent?: (eventType: string, data: any) => void
-  /** 收到 done 事件或流正常结束时回调 */
+  /** Callback when the done event is received or the stream ends normally */
   onDone?: (data?: any) => void
-  /** 出错时回调(HTTP错误/超时/网络错误) */
+  /** callback on error(HTTP Error/Timeout/Network Error) */
   onError?: (message: string) => void
-  /** 用户主动取消时回调 */
+  /** Callback when the user actively cancels */
   onAbort?: () => void
-  /** 自定义请求头 */
+  /** Custom request header */
   headers?: Record<string, string>
-  /** 是否跳过认证头(公开接口) */
+  /** Whether to skip the authentication header(public interface) */
   skipAuth?: boolean
 }
 
 /**
- * 发起 SSE 流式请求
- * @returns AbortController, 调用 .abort() 可取消请求
+ * Make an SSE streaming request
+ * @returns AbortController, call .abort() Cancellable request
  */
 export function fetchSSE(path: string, options: SSEOptions = {}): AbortController {
   const controller = new AbortController()
@@ -59,7 +59,7 @@ export function fetchSSE(path: string, options: SSEOptions = {}): AbortControlle
     skipAuth = false,
   } = options
 
-  // 组装请求头
+  // Assemble request headers
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...customHeaders,
@@ -68,7 +68,7 @@ export function fetchSSE(path: string, options: SSEOptions = {}): AbortControlle
   if (!skipAuth) {
     const token = localStorage.getItem('auth-token') || ''
     const appToken = localStorage.getItem('app-token') || ''
-    // 京东云模式: 不手动加 Authorization,由网关注入 Basic Auth
+    // Jingdong cloud model: No manual addition Authorization,Injected by gateway Basic Auth
     if (token && !isJdyunMode()) {
       headers['Authorization'] = `Bearer ${token}`
     }
@@ -83,7 +83,7 @@ export function fetchSSE(path: string, options: SSEOptions = {}): AbortControlle
   const resetIdle = () => {
     if (idleTimer) clearTimeout(idleTimer)
     idleTimer = setTimeout(() => {
-      onError?.('连接超时：服务器长时间未响应，请重试')
+      onError?.('Connection timeout: The server has not responded for a long time, please try again.')
       controller.abort()
     }, idleTimeout)
   }
@@ -95,7 +95,7 @@ export function fetchSSE(path: string, options: SSEOptions = {}): AbortControlle
     }
   }
 
-  // 解析单个 SSE 事件块
+  // Parse a single SSE event block
   const parseEventBlock = (part: string): { eventType: string; data: any } | null => {
     if (!part.trim() || part.startsWith(': ')) return null
 
@@ -131,7 +131,7 @@ export function fetchSSE(path: string, options: SSEOptions = {}): AbortControlle
     .then(async (response) => {
       if (!response.ok) {
         if (response.status === 401) {
-          onError?.('登录已过期，请重新登录')
+          onError?.('Login has expired, please log in again')
         } else {
           onError?.(`HTTP ${response.status}: ${response.statusText}`)
         }
@@ -171,14 +171,14 @@ export function fetchSSE(path: string, options: SSEOptions = {}): AbortControlle
             } else if (eventType === 'error') {
               receivedTerminalEvent = true
               clearIdle()
-              onError?.(data.message || '未知错误')
+              onError?.(data.message || 'unknown error')
             } else {
               onEvent?.(eventType, data)
             }
           }
         }
 
-        // 处理 buffer 中剩余的内容
+        // Process the remaining contents of buffer
         if (buffer.trim()) {
           const parsed = parseEventBlock(buffer)
           if (parsed) {
@@ -188,14 +188,14 @@ export function fetchSSE(path: string, options: SSEOptions = {}): AbortControlle
               onDone?.(data)
             } else if (eventType === 'error') {
               receivedTerminalEvent = true
-              onError?.(data.message || '未知错误')
+              onError?.(data.message || 'unknown error')
             } else {
               onEvent?.(eventType, data)
             }
           }
         }
 
-        // 流正常结束但没收到 done 事件
+        // The stream ended normally but did not receive the done event
         if (!receivedTerminalEvent && !controller.signal.aborted) {
           onDone?.()
         }
@@ -209,7 +209,7 @@ export function fetchSSE(path: string, options: SSEOptions = {}): AbortControlle
       if (err.name === 'AbortError') {
         onAbort?.()
       } else {
-        onError?.(err.message || '网络请求失败，请检查网络连接后重试')
+        onError?.(err.message || 'The network request failed, please check the network connection and try again.')
       }
     })
 

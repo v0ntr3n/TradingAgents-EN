@@ -1,11 +1,11 @@
 /**
- * 模型能力管理 API
+ * Model capability management API
  */
 
 import { request } from './request'
 
 /**
- * 模型能力信息
+ * Model capability information
  */
 export interface ModelCapabilityInfo {
   model_name: string
@@ -22,7 +22,7 @@ export interface ModelCapabilityInfo {
 }
 
 /**
- * 模型推荐响应
+ * Model recommended response
  */
 export interface ModelRecommendationResponse {
   quick_model: string
@@ -33,7 +33,7 @@ export interface ModelRecommendationResponse {
 }
 
 /**
- * 模型验证响应
+ * Model validation response
  */
 export interface ModelValidationResponse {
   valid: boolean
@@ -42,7 +42,7 @@ export interface ModelValidationResponse {
 }
 
 /**
- * 徽章样式
+ * badge style
  */
 export interface BadgeStyle {
   text: string
@@ -51,7 +51,7 @@ export interface BadgeStyle {
 }
 
 /**
- * 所有徽章样式
+ * All badge styles
  */
 export interface AllBadges {
   capability_levels: Record<string, BadgeStyle>
@@ -60,7 +60,7 @@ export interface AllBadges {
 }
 
 /**
- * 分析深度要求
+ * Analysis depth requirements
  */
 export interface DepthRequirement {
   min_capability: number
@@ -71,7 +71,7 @@ export interface DepthRequirement {
 }
 
 /**
- * 获取所有默认模型能力配置
+ * Get all default model capability configurations
  */
 export function getDefaultModelConfigs() {
   return request({
@@ -81,7 +81,7 @@ export function getDefaultModelConfigs() {
 }
 
 /**
- * 获取分析深度要求
+ * Get analysis depth requirements
  */
 export function getDepthRequirements() {
   return request({
@@ -91,7 +91,7 @@ export function getDepthRequirements() {
 }
 
 /**
- * 获取能力等级描述
+ * Get ability level description
  */
 export function getCapabilityDescriptions() {
   return request({
@@ -101,7 +101,7 @@ export function getCapabilityDescriptions() {
 }
 
 /**
- * 获取所有徽章样式
+ * Get all badge styles
  */
 export function getAllBadges() {
   return request({
@@ -111,8 +111,8 @@ export function getAllBadges() {
 }
 
 /**
- * 推荐模型
- * @param researchDepth 研究深度：快速/基础/标准/深度/全面
+ * Recommended model
+ * @param researchDepth Research depth: Quick/Basic/Standard/In-depth/Comprehensive
  */
 export function recommendModels(researchDepth: string) {
   return request({
@@ -125,10 +125,10 @@ export function recommendModels(researchDepth: string) {
 }
 
 /**
- * 验证模型对
- * @param quickModel 快速模型
- * @param deepModel 深度模型
- * @param researchDepth 研究深度
+ * Verify model pair
+ * @param quickModel quick model
+ * @param deepModel deep model
+ * @param researchDepth Research depth
  */
 export function validateModels(quickModel: string, deepModel: string, researchDepth: string) {
   return request({
@@ -143,8 +143,8 @@ export function validateModels(quickModel: string, deepModel: string, researchDe
 }
 
 /**
- * 批量初始化模型能力
- * @param overwrite 是否覆盖已有配置
+ * Batch initialization model capability
+ * @param overwrite Whether to overwrite existing configuration
  */
 export function batchInitCapabilities(overwrite: boolean = false) {
   return request({
@@ -157,8 +157,8 @@ export function batchInitCapabilities(overwrite: boolean = false) {
 }
 
 /**
- * 获取指定模型的能力信息
- * @param modelName 模型名称
+ * Get capability information of a specified model
+ * @param modelName Model name
  */
 export function getModelCapability(modelName: string) {
   return request({

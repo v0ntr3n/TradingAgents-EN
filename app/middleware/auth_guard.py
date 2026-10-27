@@ -1,6 +1,6 @@
 """
-全局认证守卫中间件
-保护所有 /api 路由，仅放行白名单路径。
+Global authentication guard middleware
+Protect all /api routes and allow only whitelisted paths.
 """
 
 import logging
@@ -32,10 +32,10 @@ PUBLIC_EXACT_PATHS = frozenset({
 
 class AuthGuardMiddleware(BaseHTTPMiddleware):
     """
-    全局认证守卫 — 拦截所有未认证的 /api 请求。
+    Global authentication guard — Intercept all unauthenticated /api requests.
 
-    已受保护的端点（使用 Depends(get_current_user)）不受影响，
-    此中间件为那些遗漏了 Depends 的路由提供兜底保护。
+    Endpoints that have been protected (using Depends(get_current_user)) not affected,
+    This middleware provides cover for routes that are missing Depends.
     """
 
     async def dispatch(self, request: Request, call_next):
@@ -66,7 +66,7 @@ class AuthGuardMiddleware(BaseHTTPMiddleware):
                 token_data = AuthService.verify_token(token)
             except Exception:
                 logger.warning(
-                    "AuthGuard JWT 校验异常: method=%s path=%s",
+                    "AuthGuard JWT Verification exception: method=%s path=%s",
                     request.method,
                     path,
                     exc_info=True,
@@ -75,14 +75,14 @@ class AuthGuardMiddleware(BaseHTTPMiddleware):
                 if token_data:
                     return await call_next(request)
                 logger.info(
-                    "AuthGuard JWT 校验失败: method=%s path=%s token_prefix=%s",
+                    "AuthGuard JWT Verification failed: method=%s path=%s token_prefix=%s",
                     request.method,
                     path,
                     token[:12],
                 )
         elif auth_header:
             logger.info(
-                "AuthGuard 收到非 Bearer Authorization: method=%s path=%s prefix=%s",
+                "AuthGuard Received non Bearer Authorization: method=%s path=%s prefix=%s",
                 request.method,
                 path,
                 auth_header[:24],
@@ -95,14 +95,14 @@ class AuthGuardMiddleware(BaseHTTPMiddleware):
                 return await call_next(request)
         except Exception:
             logger.warning(
-                "AuthGuard 读取 Session Cookie 异常: method=%s path=%s",
+                "AuthGuard Exception reading session cookie: method=%s path=%s",
                 request.method,
                 path,
                 exc_info=True,
             )
 
         logger.warning(
-            "AuthGuard 拦截未认证请求: method=%s path=%s has_authorization=%s has_session=%s",
+            "AuthGuard Intercept unauthenticated requests: method=%s path=%s has_authorization=%s has_session=%s",
             request.method,
             path,
             bool(auth_header),

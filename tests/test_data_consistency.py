@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试数据一致性检查功能
+Test data consistency check function
 """
 import sys
 import os
@@ -10,75 +10,75 @@ import logging
 import pandas as pd
 from datetime import datetime, timedelta
 
-# 设置日志
+# Setup log
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)-8s | %(message)s'
 )
 
 def test_data_consistency_checker():
-    """测试数据一致性检查器"""
+    """Test data consistency checker"""
     print("=" * 60)
-    print("🧪 测试数据一致性检查功能")
+    print("🧪 Test data consistency check function")
     print("=" * 60)
     
     try:
         from app.services.data_source_adapters import DataSourceManager
         from app.services.data_consistency_checker import DataConsistencyChecker
         
-        # 1. 测试数据源管理器初始化
-        print("\n1. 初始化数据源管理器...")
+        # 1. Test data source manager initialization
+        print("\n1. Initialize the data source manager...")
         manager = DataSourceManager()
         available_adapters = manager.get_available_adapters()
         
-        print(f"✅ 可用数据源: {[adapter.name for adapter in available_adapters]}")
-        print(f"✅ 一致性检查器: {'可用' if manager.consistency_checker else '不可用'}")
+        print(f"✅ Available data sources: {[adapter.name for adapter in available_adapters]}")
+        print(f"✅ consistency checker: {'Available' if manager.consistency_checker else 'Not available'}")
         
         if len(available_adapters) < 2:
-            print("⚠️ 需要至少2个数据源才能进行一致性检查")
+            print("⚠️ At least 2 data sources are required for consistency checking")
             return
         
-        # 2. 测试获取数据
+        # 2. Test to get data
         trade_date = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
-        print(f"\n2. 获取{trade_date}的数据进行一致性检查...")
+        print(f"\n2. get{trade_date}Data consistency check...")
         
-        # 使用一致性检查获取数据
+        # Get data using consistency checks
         data, source, consistency_report = manager.get_daily_basic_with_consistency_check(trade_date)
         
         if data is not None and not data.empty:
-            print(f"✅ 成功获取数据: {len(data)}条记录，来源: {source}")
+            print(f"✅ Data obtained successfully: {len(data)}record, source: {source}")
             
             if consistency_report:
-                print(f"\n📊 一致性检查报告:")
-                print(f"   数据一致性: {'✅ 一致' if consistency_report['is_consistent'] else '❌ 不一致'}")
-                print(f"   置信度分数: {consistency_report['confidence_score']:.2f}")
-                print(f"   推荐行动: {consistency_report['recommended_action']}")
-                print(f"   解决策略: {consistency_report['resolution_strategy']}")
-                print(f"   主数据源: {consistency_report['primary_source']}")
-                print(f"   次数据源: {consistency_report['secondary_source']}")
+                print(f"\n📊 Consistency check report:")
+                print(f"   data consistency: {'✅ consistent' if consistency_report['is_consistent'] else '❌ inconsistent'}")
+                print(f"   confidence score: {consistency_report['confidence_score']:.2f}")
+                print(f"   Recommended action: {consistency_report['recommended_action']}")
+                print(f"   solution strategy: {consistency_report['resolution_strategy']}")
+                print(f"   master data source: {consistency_report['primary_source']}")
+                print(f"   secondary data source: {consistency_report['secondary_source']}")
                 
-                # 显示具体差异
+                # Show specific differences
                 if consistency_report['differences']:
-                    print(f"\n📈 指标差异详情:")
+                    print(f"\n📈 Metric difference details:")
                     for metric, diff_info in consistency_report['differences'].items():
                         if isinstance(diff_info, dict) and 'difference_pct' in diff_info:
                             print(f"   {metric}:")
-                            print(f"     主数据源值: {diff_info.get('primary_value', 'N/A')}")
-                            print(f"     次数据源值: {diff_info.get('secondary_value', 'N/A')}")
+                            print(f"     Primary data source value: {diff_info.get('primary_value', 'N/A')}")
+                            print(f"     Secondary data source value: {diff_info.get('secondary_value', 'N/A')}")
                             if diff_info.get('difference_pct') is not None:
-                                print(f"     差异百分比: {diff_info['difference_pct']:.2%}")
-                            print(f"     是否显著: {'是' if diff_info.get('is_significant') else '否'}")
-                            print(f"     容忍度: {diff_info.get('tolerance', 0):.2%}")
+                                print(f"     Difference percentage: {diff_info['difference_pct']:.2%}")
+                            print(f"     Is it significant?: {'Yes' if diff_info.get('is_significant') else 'No'}")
+                            print(f"     Tolerance: {diff_info.get('tolerance', 0):.2%}")
             else:
-                print("ℹ️ 未进行一致性检查（可能只有一个数据源可用）")
+                print("ℹ️ No consistency check is done (maybe only one data source is available)")
         else:
-            print("❌ 未能获取数据")
+            print("❌ Failed to get data")
         
-        # 3. 测试单独的一致性检查器
-        print(f"\n3. 测试独立的一致性检查器...")
+        # 3. Test a separate consistency checker
+        print(f"\n3. Test standalone consistency checker...")
         
         if manager.consistency_checker and len(available_adapters) >= 2:
-            # 分别获取两个数据源的数据
+            # Get data from two data sources separately
             primary_adapter = available_adapters[0]
             secondary_adapter = available_adapters[1]
             
@@ -91,31 +91,31 @@ def test_data_consistency_checker():
                     primary_adapter.name, secondary_adapter.name
                 )
                 
-                print(f"✅ 独立一致性检查完成:")
-                print(f"   一致性: {consistency_result.is_consistent}")
-                print(f"   置信度: {consistency_result.confidence_score:.2f}")
-                print(f"   推荐行动: {consistency_result.recommended_action}")
+                print(f"✅ Independent consistency check completed:")
+                print(f"   Consistency: {consistency_result.is_consistent}")
+                print(f"   Confidence: {consistency_result.confidence_score:.2f}")
+                print(f"   Recommended action: {consistency_result.recommended_action}")
                 
-                # 测试冲突解决
+                # Test conflict resolution
                 final_data, strategy = manager.consistency_checker.resolve_data_conflicts(
                     primary_data, secondary_data, consistency_result
                 )
-                print(f"   解决策略: {strategy}")
-                print(f"   最终数据条数: {len(final_data) if final_data is not None else 0}")
+                print(f"   solution strategy: {strategy}")
+                print(f"   The final number of data items: {len(final_data) if final_data is not None else 0}")
             else:
-                print("⚠️ 无法获取足够的数据进行独立检查")
+                print("⚠️ Unable to obtain sufficient data for independent inspection")
         
-        print(f"\n✅ 数据一致性检查测试完成")
+        print(f"\n✅ Data consistency check test completed")
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
 
 def test_mock_data_consistency():
-    """使用模拟数据测试一致性检查逻辑"""
+    """Test consistency checking logic using mock data"""
     print("\n" + "=" * 60)
-    print("🧪 使用模拟数据测试一致性检查逻辑")
+    print("🧪 Test consistency checking logic using mock data")
     print("=" * 60)
     
     try:
@@ -123,8 +123,8 @@ def test_mock_data_consistency():
         
         checker = DataConsistencyChecker()
         
-        # 创建模拟数据
-        # 主数据源数据
+        # Create simulated data
+        # Master data source data
         primary_data = pd.DataFrame({
             'ts_code': ['000001.SZ', '000002.SZ', '600000.SH'],
             'pe': [10.5, 15.2, 8.9],
@@ -133,52 +133,52 @@ def test_mock_data_consistency():
             'trade_date': ['20241201', '20241201', '20241201']
         })
         
-        # 次数据源数据（略有差异）
+        # Secondary data source data (slight differences)
         secondary_data = pd.DataFrame({
             'ts_code': ['000001.SZ', '000002.SZ', '600000.SH'],
-            'pe': [10.8, 15.0, 9.1],  # 轻微差异
-            'pb': [1.25, 2.0, 0.95],  # 轻微差异
-            'total_mv': [101000, 49500, 81000],  # 轻微差异
+            'pe': [10.8, 15.0, 9.1],  # slight difference
+            'pb': [1.25, 2.0, 0.95],  # slight difference
+            'total_mv': [101000, 49500, 81000],  # slight difference
             'trade_date': ['20241201', '20241201', '20241201']
         })
         
-        print("📊 模拟数据创建完成:")
-        print(f"   主数据源: {len(primary_data)}条记录")
-        print(f"   次数据源: {len(secondary_data)}条记录")
+        print("📊 Simulation data creation completed:")
+        print(f"   master data source: {len(primary_data)}records")
+        print(f"   secondary data source: {len(secondary_data)}records")
         
-        # 进行一致性检查
+        # Perform consistency check
         result = checker.check_daily_basic_consistency(
             primary_data, secondary_data, "Tushare", "AKShare"
         )
         
-        print(f"\n📈 一致性检查结果:")
-        print(f"   数据一致性: {result.is_consistent}")
-        print(f"   置信度分数: {result.confidence_score:.3f}")
-        print(f"   推荐行动: {result.recommended_action}")
+        print(f"\n📈 Consistency check results:")
+        print(f"   data consistency: {result.is_consistent}")
+        print(f"   confidence score: {result.confidence_score:.3f}")
+        print(f"   Recommended action: {result.recommended_action}")
         
-        print(f"\n📊 详细差异:")
+        print(f"\n📊 Detailed differences:")
         for metric, diff in result.differences.items():
             if isinstance(diff, dict):
                 print(f"   {metric}:")
-                print(f"     主数据源平均值: {diff.get('primary_value', 'N/A')}")
-                print(f"     次数据源平均值: {diff.get('secondary_value', 'N/A')}")
+                print(f"     Primary data source average: {diff.get('primary_value', 'N/A')}")
+                print(f"     average of secondary data sources: {diff.get('secondary_value', 'N/A')}")
                 if diff.get('difference_pct') is not None:
-                    print(f"     差异百分比: {diff['difference_pct']:.2%}")
-                print(f"     是否显著: {diff.get('is_significant', False)}")
+                    print(f"     Difference percentage: {diff['difference_pct']:.2%}")
+                print(f"     Is it significant?: {diff.get('is_significant', False)}")
         
-        # 测试冲突解决
+        # Test conflict resolution
         final_data, strategy = checker.resolve_data_conflicts(
             primary_data, secondary_data, result
         )
         
-        print(f"\n🔧 冲突解决:")
-        print(f"   策略: {strategy}")
-        print(f"   最终数据条数: {len(final_data)}")
+        print(f"\n🔧 conflict resolution:")
+        print(f"   Strategy: {strategy}")
+        print(f"   The final number of data items: {len(final_data)}")
         
-        print(f"\n✅ 模拟数据测试完成")
+        print(f"\n✅ Simulated data test completed")
         
     except Exception as e:
-        print(f"❌ 模拟数据测试失败: {e}")
+        print(f"❌ Simulated data test failed: {e}")
         import traceback
         traceback.print_exc()
 

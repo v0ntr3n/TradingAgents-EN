@@ -1,113 +1,113 @@
 import { test, expect } from '@playwright/test'
 import { login, waitForLoadingDone } from './utils'
 
-test.describe('智能助手', () => {
+test.describe('Smart Assistant', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('智能助手页面加载', async ({ page }) => {
+  test('Smart assistant page loading', async ({ page }) => {
     await page.goto('/assistant')
     await waitForLoadingDone(page)
 
     await expect(page).toHaveURL(/\/assistant/)
 
-    // 页面标题
-    const pageTitle = page.locator('h1:has-text("智能助手")')
+    // Page title
+    const pageTitle = page.locator('h1:has-text("Smart Assistant")')
     await expect(pageTitle).toBeVisible({ timeout: 10000 })
 
-    // 顶部操作按钮
-    const newThreadBtn = page.locator('button:has-text("新主题")')
+    // top action button
+    const newThreadBtn = page.locator('button:has-text("new theme")')
     await expect(newThreadBtn).toBeVisible({ timeout: 5000 })
 
-    // 输入区域
+    // input area
     const inputArea = page.locator('.input-area')
     await expect(inputArea).toBeVisible({ timeout: 5000 })
   })
 
-  test('智能助手 - 快速对话', async ({ page }) => {
-    test.setTimeout(120000) // 2分钟超时
+  test('Smart Assistant - Quick Conversation', async ({ page }) => {
+    test.setTimeout(120000) // 2 minutes timeout
     await page.goto('/assistant')
     await waitForLoadingDone(page)
 
-    // 1. 创建新主题
-    const newThreadBtn = page.locator('button:has-text("新主题")').first()
+    // 1. Create new topic
+    const newThreadBtn = page.locator('button:has-text("new theme")').first()
     await newThreadBtn.click()
     await page.waitForTimeout(1000)
 
-    // 如果有对话框，填写主题名称
+    // If there is a dialog box, fill in the topic name
     const dialogInput = page.locator('.el-message-box__input input, .el-message-box input').first()
     if (await dialogInput.isVisible({ timeout: 3000 })) {
-      await dialogInput.fill('E2E测试对话')
-      // 确认创建（按钮文字是"创建"）
-      const confirmBtn = page.locator('.el-message-box button:has-text("创建")').first()
+      await dialogInput.fill('E2E test conversation')
+      // Confirm creation (button text is"Create") 
+      const confirmBtn = page.locator('.el-message-box button:has-text("Create")').first()
       await confirmBtn.click()
       await page.waitForTimeout(2000)
     }
 
-    // 2. 确保有选中主题，发送按钮启用
-    // 尝试选择左侧树中的第一个主题
+    // 2. Make sure the topic is selected and the send button is enabled
+    // Try selecting the first topic in the tree on the left
     const firstTreeNode = page.locator('.thread-tree .el-tree-node').first()
     await firstTreeNode.click()
     await page.waitForTimeout(1000)
 
-    // 3. 输入问题
+    // 3. Enter question
     const textarea = page.locator('.input-area textarea').first()
     await expect(textarea).toBeVisible({ timeout: 10000 })
-    await textarea.fill('你好，请简单介绍一下你自己')
+    await textarea.fill('Hello, please briefly introduce yourself')
     await page.waitForTimeout(500)
 
-    // 4. 点击发送
+    // 4. Click to send
     const sendBtn = page.locator('.send-btn').first()
     await expect(sendBtn).toBeEnabled({ timeout: 5000 })
     await sendBtn.click()
 
-    // 5. 等待助手回复（流式输出）
-    // 用户消息出现
+    // 5. Wait for assistant reply (streaming output)
+    // User message appears
     const userMsg = page.locator('.message-user').first()
     await expect(userMsg).toBeVisible({ timeout: 30000 })
 
-    // 等待助手回复
+    // Wait for assistant to reply
     const assistantMsg = page.locator('.message-assistant').first()
     await expect(assistantMsg).toBeVisible({ timeout: 60000 })
 
-    // 6. 验证回复有内容
+    // 6. Verify that the reply has content
     const assistantContent = assistantMsg.locator('.message-text, .markdown-content').first()
     await expect(assistantContent).toBeVisible({ timeout: 10000 })
     const contentText = await assistantContent.textContent()
     expect(contentText?.length).toBeGreaterThan(10)
   })
 
-  test('智能助手 - 主题列表', async ({ page }) => {
+  test('Smart Assistant - Topic List', async ({ page }) => {
     await page.goto('/assistant')
     await waitForLoadingDone(page)
 
-    // 显示主题栏
-    const showThreadBtn = page.locator('button:has-text("显示主题栏")').first()
+    // Show subject bar
+    const showThreadBtn = page.locator('button:has-text("Show subject bar")').first()
     if (await showThreadBtn.isVisible({ timeout: 3000 })) {
       await showThreadBtn.click()
       await page.waitForTimeout(1000)
     }
 
-    // 主题树或空状态
+    // Topic tree or empty state
     const threadTree = page.locator('.thread-tree, .el-empty').first()
     await expect(threadTree).toBeVisible({ timeout: 5000 })
   })
 
-  test('智能助手 - 助手设置弹窗', async ({ page }) => {
+  test('Smart Assistant - Assistant Settings Pop-up Window', async ({ page }) => {
     await page.goto('/assistant')
     await waitForLoadingDone(page)
 
-    // 点击助手设置
-    const settingsBtn = page.locator('button:has-text("助手设置")').first()
+    // Click Assistant Settings
+    const settingsBtn = page.locator('button:has-text("Assistant settings")').first()
     await settingsBtn.click()
     await page.waitForTimeout(1000)
 
-    // 设置对话框出现（标题为"助手设置"的弹窗）
-    const dialog = page.locator('.el-dialog:has-text("助手设置"), .el-drawer:has-text("助手设置")').first()
+    // The settings dialog box appears (titled"Assistant settings"pop-up window)
+    const dialog = page.locator('.el-dialog:has-text("Assistant settings"), .el-drawer:has-text("Assistant settings")').first()
     await expect(dialog).toBeVisible({ timeout: 5000 })
 
-    // 关闭对话框
+    // Close dialog
     const closeBtn = page.locator('.el-dialog__close, .el-drawer__close-btn').first()
     if (await closeBtn.isVisible({ timeout: 3000 })) {
       await closeBtn.click()

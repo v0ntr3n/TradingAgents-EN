@@ -1,386 +1,386 @@
-# 多智能体系统详解
+# Detailed explanation of multi-agent systems
 
-**分类**: AI分析股票原理  
-**难度**: 进阶  
-**阅读时间**: 15分钟  
-**更新日期**: 2025-11-14
-
----
-
-## 📋 引言
-
-TradingAgents-CN采用多智能体协作机制进行股票分析。什么是多智能体系统？为什么要使用多个AI而不是一个？本文将深入解析多智能体系统的原理和优势。
+**Classification**: AI Analyze stock principles  
+**difficulty**: Advanced  
+**reading time**: 15 minutes  
+**Update date**: 2025-11-14
 
 ---
 
-## 🤖 什么是多智能体系统？
+## 📋 Introduction
 
-### 定义
+TradingAgents-CN A multi-agent collaboration mechanism is used for stock analysis. What is a multi-agent system? Why use multiple AIs instead of one? This article will provide an in-depth analysis of the principles and advantages of multi-agent systems.
 
-**多智能体系统（Multi-Agent System, MAS）**是由多个智能体（Agent）组成的系统，每个智能体负责特定的任务，通过协作完成复杂的目标。
+---
 
-### 类比理解
+## 🤖 What is a multi-agent system?
 
-想象一个研究团队：
+### definition
+
+**Multi-agent system (Multi-Agent System, MAS) **It is a system composed of multiple agents (Agents). Each agent is responsible for a specific task and completes complex goals through collaboration.
+
+### Analogy understanding
+
+Imagine a research team:
 
 ```
-传统方式（单智能体）：
-一个人负责所有工作
-├── 收集数据
-├── 技术分析
-├── 基本面分析
-├── 风险评估
-└── 做出决策
+Traditional way (single agent):
+One person does all the work
+├── Collect data
+├── technical analysis
+├── fundamental analysis
+├── risk assessment
+└── make decisions
 
-多智能体方式：
-多个专家协作
-├── 研究员：收集和整理信息
-├── 技术分析师：分析价格走势
-├── 基本面分析师：分析财务数据
-├── 风险评估师：评估风险
-└── 研究整合员：综合研究结论
+Multi-agent approach:
+Collaboration between multiple experts
+├── Researcher: Collect and organize information
+├── Technical Analyst: Analyzing Price Movements
+├── Fundamental Analyst: Analyze financial data
+├── Risk Assessor: Assessing Risk
+└── Research Integrator: Synthesize Research Conclusions
 ```
 
 ---
 
-## 🏗️ TradingAgents-CN的智能体架构
+## 🏗️ TradingAgents-CN The agent architecture of
 
-### 智能体角色
+### agent role
 
-#### 1. 研究员（Researcher）
+#### 1. Researcher
 
-**职责**：
-- 收集股票基本信息
-- 整理财务数据
-- 搜集行业资讯
-- 汇总市场新闻
+**Responsibilities**: 
+- Collect basic stock information
+- Organize financial data
+- Collect industry information
+- Aggregate market news
 
-**输出示例**：
+**Output example**: 
 ```markdown
-## 股票基本信息
-- 代码：000001
-- 名称：平安银行
-- 行业：银行业
-- 上市时间：1991年
+## Basic stock information
+- Code:000001
+- Name: Ping An Bank
+- Industry: Banking
+- Time on the market: 1991
 
-## 财务数据
-- 市盈率：5.2
-- 市净率：0.6
+## financial data
+- P/E ratio:5.2
+- Price to Book Ratio:0.6
 - ROE：10.5%
-- 资产负债率：92.5%
+- Asset-liability ratio:92.5%
 
-## 最新动态
-- 2024Q3财报：营收增长8.5%
-- 近期新闻：推出数字化转型战略
+## Latest news
+- 2024Q3 Earnings Report: Revenue Growth 8.5%
+- Recent News: Launch of Digital Transformation Strategy
 ```
 
-#### 2. 技术分析师（Technical Analyst）
+#### 2. Technical Analyst
 
-**职责**：
-- 分析价格走势
-- 计算技术指标
-- 识别支撑压力位
-- 判断技术形态信号
+**Responsibilities**: 
+- Analyze price trends
+- Calculate technical indicators
+- Identify support pressure levels
+- Determine technical form signals
 
-**输出示例**：
+**Output example**: 
 ```markdown
-## 趋势分析
-- 短期趋势：震荡
-- 中期趋势：上升
-- 长期趋势：上升
+## trend analysis
+- Short-term trend: shock
+- Medium-term trend: Up
+- Long-term trend: Up
 
-## 技术指标
-- MACD：金叉信号
-- RSI：55（中性）
-- 均线：站上60日均线
+## Technical indicators
+- MACD: golden cross signal
+- RSI: 55 (neutral)
+- Moving average: stand above the 60-day moving average
 
-## 关键价位
-- 支撑位：11.80元
-- 压力位：13.20元
+## key price
+- Support level: 11.80 yuan
+- Pressure level: 13.20 yuan
 
-> 技术指标和价位仅用于研究观察，不构成交易建议。
+> Technical indicators and price levels are for research and observation only and do not constitute trading advice.
 ```
 
-#### 3. 基本面分析师（Fundamental Analyst）
+#### 3. Fundamental Analyst
 
-**职责**：
-- 分析财务指标
-- 评估盈利能力
-- 研究行业地位
-- 判断估值水平
+**Responsibilities**: 
+- Analyze financial metrics
+- Assess profitability
+- Research industry status
+- Determine valuation level
 
-**输出示例**：
+**Output example**: 
 ```markdown
-## 估值分析
-- PE 5.2 vs 行业平均 6.5：低估
-- PB 0.6：破净，估值吸引力强
+## Valuation analysis
+- PE 5.2 vs Industry average 6.5: Undervalued
+- PB 0.6: Net break, attractive valuation
 
-## 盈利能力
-- ROE 10.5%：中等水平
-- 净利润增长率：8.5%：稳健增长
+## Profitability
+- ROE 10.5%: medium level
+- Net profit growth rate: 8.5%: Steady growth
 
-## 行业地位
-- 市场份额：前10
-- 竞争优势：零售银行业务强
+## Industry status
+- Market Share: Ex 10
+- Competitive advantage: strong retail banking business
 ```
 
-#### 4. 风险评估师（Risk Assessor）
+#### 4. Risk Assessor
 
-**职责**：
-- 识别风险因素
-- 评估风险等级
-- 提出风险提示
-- 建议风险控制措施
+**Responsibilities**: 
+- Identify risk factors
+- Assess risk level
+- Provide risk warning
+- Recommend risk control measures
 
-**输出示例**：
+**Output example**: 
 ```markdown
-## 主要风险
-1. 信用风险：不良贷款率1.2%
-2. 政策风险：金融监管趋严
-3. 市场风险：利率波动影响
+## Main risks
+1. Credit risk: non-performing loan ratio 1.2%
+2. Policy risk: Financial regulation becomes more stringent
+3. Market risk: impact of interest rate fluctuations
 
-## 风险等级
-- 整体风险：中等
-- 风险敞口提示：建议结合自身风险偏好评估（用户自行判断）
-- 风险关注价位：10.50元（用户自行跟踪，仅作研究参考）
+## risk level
+- Overall risk: Moderate
+- Risk exposure tip: It is recommended to evaluate your own risk preference (users make their own judgment)
+- Risk attention price: 10.50 yuan (users can track it by themselves, for research reference only)
 ```
 
-#### 5. 研究整合员（Research Integrator）
+#### 5. Research Integrator
 
-**职责**：
-- 综合各方意见
-- 权衡利弊
-- 汇总研究结论
-- 形成研究简报
+**Responsibilities**: 
+- Comprehensive opinions from all parties
+- Weigh the pros and cons
+- Summary of research conclusions
+- Form a research brief
 
-**输出示例**：
+**Output example**: 
 ```markdown
-## 综合评价
-基于以上分析，平安银行：
-- 估值：★★★★☆（低估）
-- 成长性：★★★☆☆（稳健）
-- 风险：★★★☆☆（中等）
+## Comprehensive evaluation
+Based on the above analysis, Ping An Bank:
+- Valuation:★★★★☆ (underestimated)
+- Growth:★★★☆☆ (Robust)
+- Risks:★★★☆☆ (medium)
 
-## 研究观察
-- 研究结论倾向：审慎
-- 关键验证区间：14.00-15.00元（观察区，非目标价）
-- 跟踪周期：6-12个月
-- 后续观察：季度财报、不良贷款率变化
+## research observation
+- Research conclusion tendency: cautious
+- Key verification interval: 14.00-15.00 yuan (observation area, non-target price)
+- Tracking period: 6-12 months
+- Follow-up observations: quarterly financial reports, changes in non-performing loan ratios
 ```
 
 ---
 
-## 🔄 协作流程
+## 🔄 Collaboration process
 
-### 标准分析流程
+### Standard analysis procedure
 
 ```mermaid
 graph TD
-    A[用户输入股票代码] --> B[研究员收集信息]
-    B --> C[技术分析师分析]
-    B --> D[基本面分析师分析]
-    C --> E[风险评估师审阅]
+    A[User enters stock code] --> B[Researchers collect information]
+    B --> C[technical analyst analysis]
+    B --> D[Fundamental analyst analysis]
+    C --> E[Risk Assessor Review]
     D --> E
-    E --> F[研究整合员汇总]
-    F --> G[生成研究简报]
+    E --> F[Summary of research integrators]
+    F --> G[Generate research briefs]
 
-> 注：本系统为研究辅助工具，所有分析结论仅供研究参考，不构成投资建议。
-```
-
-### 详细步骤
-
-**第1步：信息收集**
-```
-研究员：
-"我已收集到平安银行的基本信息和财务数据，
-现在交给技术分析师和基本面分析师进行分析。"
+> Note: This system is a research aid, and all analysis conclusions are for research reference only and do not constitute investment advice.
 ```
 
-**第2步：并行分析**
-```
-技术分析师：
-"从技术面看，股价处于上升通道，MACD金叉..."
+### Detailed steps
 
-基本面分析师：
-"从基本面看，PE 5.2低于行业平均，估值有吸引力..."
+**Step 1: Information Collection**
 ```
-
-**第3步：风险审阅**
-```
-风险评估师：
-"综合技术面和基本面，主要风险包括：
-1. 不良贷款率偏高
-2. 利率波动风险
-后续需跟踪：季度财报中不良率变化。"
+Researcher:
+"I have collected the basic information and financial data of Ping An Bank.
+Now leave it to technical analysts and fundamental analysts to analyze."
 ```
 
-**第4步：研究汇总**
+**Step 2: Parallel Analysis**
 ```
-研究整合员：
-"综合各位专家的意见：
-- 技术面：正向动能信号
-- 基本面：估值偏低
-- 风险：需要重视
-研究观察：当前倾向审慎，需持续跟踪季度财报与不良率变化。
-以上结论仅供研究参考，不构成投资建议。"
+Technical Analyst:
+"From a technical perspective, the stock price is in an upward channel, MACD is golden cross..."
+
+Fundamental Analyst:
+"From a fundamental perspective, PE 5.2 is lower than the industry average and the valuation is attractive..."
+```
+
+**Step 3: Risk Review**
+```
+Risk Assessor:
+"Comprehensive technical and fundamental aspects, the main risks include:
+1. Non-performing loan ratio is high
+2. Interest rate fluctuation risk
+Follow-up needs to be followed: changes in non-performing ratio in quarterly financial reports."
+```
+
+**Step 4: Research Summary**
+```
+Research Integrator:
+"Based on the opinions of experts:
+- Technical: Positive Momentum Signals
+- Fundamentals: Undervalued
+- Risk: need attention
+Research observation: The current trend is to be cautious, and it is necessary to continue to track quarterly financial reports and changes in non-performing ratios.
+The above conclusions are for research reference only and do not constitute investment advice."
 ```
 
 ---
 
-## 🎯 多智能体的优势
+## 🎯 Advantages of multi-agent
 
-### 1. 专业分工
+### 1. Professional division of labor
 
-**单智能体**：
+**single agent**: 
 ```
-一个AI处理所有任务
-→ 可能在某些方面不够专业
-→ 难以深入分析
-```
-
-**多智能体**：
-```
-每个AI专注于特定领域
-→ 更专业的分析
-→ 更深入的洞察
+One AI handles all tasks
+→ May not be professional enough in some aspects
+→ Difficult to analyze in depth
 ```
 
-### 2. 多角度分析
-
-**单智能体**：
+**multi-agent**: 
 ```
-可能存在单一视角的局限
-```
-
-**多智能体**：
-```
-技术面 + 基本面 + 风险评估
-→ 更全面的分析
-→ 减少盲点
+Each AI focuses on a specific area
+→ More professional analysis
+→ deeper insights
 ```
 
-### 3. 互相制衡
+### 2. Multi-angle analysis
 
-**示例**：
+**single agent**: 
 ```
-技术分析师："技术面呈现正向动能信号"
+There may be limitations to a single perspective
+```
+
+**multi-agent**: 
+```
+technical aspect + Fundamentals + risk assessment
+→ A more comprehensive analysis
+→ Reduce blind spots
+```
+
+### 3. checks and balances
+
+**Example**: 
+```
+Technical Analyst:"Technical picture shows positive momentum signal"
 ↓
-风险评估师："但风险较高，需关注失效条件"
+Risk Assessor:"But the risk is higher, so you need to pay attention to the failure conditions."
 ↓
-研究整合员："综合各方证据，当前倾向审慎，需持续跟踪"
+Research Integrator:"Based on the evidence from all parties, the current trend is to be cautious and requires continued follow-up."
 ```
 
-### 4. 提高准确性
+### 4. Improve accuracy
 
-**研究表明**：
-- 单智能体准确率：~70%
-- 多智能体协作准确率：~85%
-- 多智能体辩论准确率：~90%
+**Research shows**: 
+- Single agent accuracy:~70%
+- Multi-agent collaboration accuracy:~85%
+- Multi-agent debate accuracy:~90%
 
 ---
 
-## 🗣️ 辩论机制
+## 🗣️ debate mechanism
 
-### 什么是辩论机制？
+### What is a debate mechanism?
 
-让不同观点的智能体进行辩论，通过思想碰撞得出更可靠的结论。
+Let agents with different viewpoints debate and draw more reliable conclusions through the collision of ideas.
 
-### 辩论流程
+### debate process
 
-**场景：分析平安银行的研究价值**
+**Scenario: Analyze the research value of Ping An Bank**
 
-**第1轮：初始观点**
+**Round 1: Initial Perspectives**
 ```
-乐观派（基本面分析师）：
-"PE 5.2 处于历史低位，估值具备研究吸引力"
+Optimists (fundamental analysts):
+"PE 5.2 At historically low levels, valuations are attractive for research"
 
-审慎派（风险评估师）：
-"不良贷款率1.2%偏高，需持续观察"
-```
-
-**第2轮：反驳与论证**
-```
-乐观派：
-"虽然不良贷款率1.2%，但在行业内属于中等水平，
-且公司拨备覆盖率200%，风险可控。
-更重要的是，PE 5.2远低于历史平均7.5，
-存在估值修复的研究空间。"
-
-审慎派：
-"估值低有其原因，银行业整体面临净息差收窄压力，
-盈利增长放缓。即使PE低，也不代表研究结论必然乐观。
-建议等待更明确的催化剂。"
+Prudential (Risk Assessor):
+"The non-performing loan ratio of 1.2% is on the high side and requires continued observation."
 ```
 
-**第3轮：研究汇总**
+**Round 2: Refutation and Argument**
 ```
-研究整合员（综合）：
-"双方观点都有道理。综合考虑：
-1. 估值确实有研究吸引力（乐观派正确）
-2. 风险需要重视（审慎派正确）
+Optimist:
+"Although the non-performing loan ratio is 1.2%, it is at a medium level in the industry.
+Moreover, the company's provision coverage ratio is 200%, and risks are controllable.
+More importantly, the PE 5.2 is well below the historical average of 7.5,
+There is room for research on valuation repair."
 
-研究观察：
-- 当前倾向审慎，需持续跟踪
-- 关键验证位：10.50元（观察区，非目标价）
-- 关注季度财报，动态调整研究判断
-- 以上结论仅供研究参考，不构成投资建议"
+Prudential:
+"There are reasons for the low valuation. The banking industry as a whole is facing the pressure of narrowing net interest margins.
+Earnings growth slowed. Even if the PE is low, it does not mean that the research conclusion is necessarily optimistic.
+It is recommended to wait for a clearer catalyst."
+```
+
+**Round 3: Research Summary**
+```
+Research Integrator (Integrated):
+"There are valid points on both sides. All things considered:
+1. Valuations do have research appeal (the optimists are right)
+2. Risks need to be taken seriously (the prudent faction is correct)
+
+Research observations:
+- The current trend is to be cautious and needs to be followed up
+- Key verification level: 10.50 yuan (observation area, non-target price)
+- Pay attention to quarterly financial reports and dynamically adjust research and judgment
+- The above conclusions are for research reference only and do not constitute investment advice."
 ```
 
 ---
 
-## 💡 实现原理
+## 💡 Implementation principle
 
-### 提示词设计
+### Prompt word design
 
-**研究员提示词**：
+**researcher prompts**: 
 ```
-你是一位专业的股票研究员，负责收集和整理股票信息。
+You are a professional stock researcher responsible for collecting and organizing stock information.
 
-任务：收集{股票代码}的基本信息
-包括：
-1. 公司基本情况
-2. 财务数据
-3. 行业信息
-4. 最新动态
+Mission: Collect{Stock code}basic information
+Includes:
+1. Basic information of the company
+2. financial data
+3. Industry information
+4. Latest news
 
-要求：
-- 数据准确
-- 信息全面
-- 格式清晰
-```
-
-**技术分析师提示词**：
-```
-你是一位技术分析专家，专注于价格走势和技术指标。
-
-基于以下数据分析{股票代码}：
-{价格数据}
-{技术指标}
-
-请分析：
-1. 趋势判断
-2. 技术指标信号
-3. 支撑压力位
-4. 技术形态信号（不输出买卖建议）
+Requirements:
+- Data is accurate
+- Comprehensive information
+- clear format
 ```
 
-### 信息传递
+**Technical Analyst Tips**: 
+```
+You are an expert in technical analysis, focusing on price movements and technical indicators.
+
+Based on the following data analysis{Stock code}: 
+{price data}
+{Technical indicators}
+
+Please analyze:
+1. Trend judgment
+2. technical indicator signals
+3. Support pressure level
+4. Technical form signals (no buying and selling recommendations are output)
+```
+
+### information transfer
 
 ```python
-# 伪代码示例
+# Pseudocode example
 class MultiAgentSystem:
     def analyze(self, stock_code):
-        # 第1步：研究员收集信息
+        # Step 1: Researcher Gathers Information
         info = researcher.collect(stock_code)
         
-        # 第2步：并行分析
+        # Step 2: Parallel Analysis
         technical = technical_analyst.analyze(info)
         fundamental = fundamental_analyst.analyze(info)
         
-        # 第3步：风险评估
+        # Step 3: Risk Assessment
         risk = risk_assessor.assess(technical, fundamental)
         
-        # 第4步：综合汇总
+        # Step 4: Comprehensive summary
         research_conclusion = research_integrator.integrate(
             technical, fundamental, risk
         )
@@ -390,51 +390,51 @@ class MultiAgentSystem:
 
 ---
 
-## 📊 效果对比
+## 📊 Effect comparison
 
-### 测试案例：分析平安银行
+### Test case: Analysis of Ping An Bank
 
-**单智能体分析**：
+**Single agent analysis**: 
 ```
-分析深度：★★★☆☆
-分析角度：★★☆☆☆
-风险提示：★★☆☆☆
-综合评分：6.5/10
+Analysis depth:★★★☆☆
+Analysis angle:★★☆☆☆
+Risk warning:★★☆☆☆
+Overall rating:6.5/10
 ```
 
-**多智能体分析**：
+**Multi-agent analysis**: 
 ```
-分析深度：★★★★★
-分析角度：★★★★★
-风险提示：★★★★☆
-综合评分：9.0/10
+Analysis depth:★★★★★
+Analysis angle:★★★★★
+Risk warning:★★★★☆
+Overall rating:9.0/10
 ```
 
 ---
 
-## 📚 总结
+## 📚 Summary
 
-### 核心要点
+### core points
 
-1. **多智能体系统**由多个专业AI协作完成任务
-2. **TradingAgents-CN**包含5个核心智能体角色
-3. **协作流程**：收集→分析→评估→汇总
-4. **主要优势**：专业分工、多角度、互相制衡
-5. **辩论机制**提高分析的准确性和可靠性
+1. **multi-agent system**Multiple professional AIs collaborate to complete tasks
+2. **TradingAgents-CN**Contains 5 core agent roles
+3. **Collaboration process**: collect→analysis→Assessment→Summary
+4. **Main advantages**: Professional division of labor, multiple perspectives, mutual checks and balances
+5. **debate mechanism**Improve the accuracy and reliability of your analysis
 
-### 实践建议
+### Practical suggestions
 
-1. **理解每个智能体的职责**
-2. **关注智能体之间的互动**
-3. **重视不同观点的碰撞**
-4. **综合考虑各方意见**
+1. **Understand the responsibilities of each agent**
+2. **Focus on interactions between agents**
+3. **Pay attention to the collision of different viewpoints**
+4. **Taking into account the opinions of all parties**
 
 ---
 
-## 🔗 相关资源
+## 🔗 Related resources
 
-- 📖 [辩论机制详解](./debate-mechanism.md)
-- 📖 [分析流程详解](./analysis-workflow.md)
-- 📖 [TradingAgents项目介绍](../06-resources/tradingagents-intro.md)
-- 📖 [实战教程](../07-tutorials/single-analysis.md)
+- 📖 [Detailed explanation of debate mechanism](./debate-mechanism.md)
+- 📖 [Detailed explanation of analysis process](./analysis-workflow.md)
+- 📖 [TradingAgents Project introduction](../06-resources/tradingagents-intro.md)
+- 📖 [Practical tutorial](../07-tutorials/single-analysis.md)
 

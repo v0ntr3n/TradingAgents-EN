@@ -1,7 +1,7 @@
 """
-旧代码适配器
+legacy code adapter
 
-将旧的 Toolkit 类中的工具适配到新的 ToolRegistry
+Adapt tools from the old Toolkit class to the new ToolRegistry
 """
 
 import logging
@@ -13,97 +13,97 @@ logger = logging.getLogger(__name__)
 
 class LegacyToolkitAdapter:
     """
-    将旧 Toolkit 适配到新 ToolRegistry
+    Adapt old Toolkit to new ToolRegistry
     
-    用途：
-    1. 在迁移过程中保持向后兼容
-    2. 自动将 Toolkit 中的工具注册到新的 Registry
+    Purpose:
+    1. Maintain backward compatibility during migration
+    2. Automatically register tools from Toolkit to new Registry
     """
     
-    # 工具映射表：旧方法名 -> 新工具配置
+    # Tool map: old method names -> New tool configuration
     TOOL_MAPPING = {
         "get_reddit_news": {
             "id": "get_reddit_news",
-            "name": "Reddit全球新闻",
+            "name": "Reddit global news",
             "category": "news",
-            "description": "获取Reddit全球新闻",
+            "description": "Get Reddit global news",
         },
         "get_finnhub_news": {
             "id": "get_finnhub_news",
-            "name": "Finnhub新闻",
+            "name": "Finnhub News",
             "category": "news",
-            "description": "获取Finnhub股票新闻",
+            "description": "Get Finnhub stock news",
         },
         "get_reddit_stock_info": {
             "id": "get_reddit_stock_sentiment",
-            "name": "Reddit股票情绪",
+            "name": "Reddit stock sentiment",
             "category": "social",
-            "description": "获取Reddit股票讨论情绪",
+            "description": "Get Reddit stock discussion sentiment",
         },
         "get_chinese_social_sentiment": {
             "id": "get_chinese_social_sentiment",
-            "name": "中国社交媒体情绪",
+            "name": "Chinese social media sentiment",
             "category": "social",
-            "description": "获取中国社交媒体股票情绪",
+            "description": "Get China Social Media Stock Sentiment",
         },
         "get_stock_market_data_unified": {
             "id": "get_stock_market_data_unified",
-            "name": "统一股票市场数据",
+            "name": "Unified stock market data",
             "category": "market",
-            "description": "获取A股股票完整行情数据：股价、涨跌幅、成交量、市值、PE/PB、换手率、振幅等核心市场指标",
-            "capability_tags": ["行情", "股价", "市值", "涨跌幅", "成交量", "PE", "PB", "换手率", "技术指标", "A股"],
-            "when_to_use": "需要获取A股股票的股价、市值、涨跌幅、PE/PB估值、成交量行情等市场数据时使用",
+            "description": "Obtain complete market data of A-share stocks: core market indicators such as stock price, increase or decrease, trading volume, market capitalization, PE/PB, turnover rate, amplitude, etc.",
+            "capability_tags": ["Quotes", "stock price", "Market value", "Increase or decrease", "Volume", "PE", "PB", "turnover rate", "Technical indicators", "A shares"],
+            "when_to_use": "Use it when you need to obtain market data such as stock price, market value, rise and fall, PE/PB valuation, trading volume, etc. of A-share stocks.",
             "tool_role_hint": "primary",
             "output_shape": "structured_metrics",
         },
         "get_stock_fundamentals_unified": {
             "id": "get_stock_fundamentals_unified",
-            "name": "统一基本面数据",
+            "name": "Unify fundamental data",
             "category": "fundamentals",
-            "description": "获取统一格式的股票基本面数据",
+            "description": "Obtain stock fundamental data in a unified format",
         },
         "get_YFin_data_online": {
             "id": "get_yfinance_data",
-            "name": "Yahoo Finance数据",
+            "name": "Yahoo Finance data",
             "category": "market",
-            "description": "从Yahoo Finance获取股票数据",
+            "description": "Get stock data from Yahoo Finance",
         },
         "get_SEC_filings_analysis": {
             "id": "get_sec_filings",
-            "name": "SEC文件分析",
+            "name": "SEC File analysis",
             "category": "fundamentals",
-            "description": "获取并分析SEC财务文件",
+            "description": "Obtain and analyze SEC financial documents",
         },
         "get_simfin_balance_sheet": {
             "id": "get_balance_sheet",
-            "name": "资产负债表",
+            "name": "balance sheet",
             "category": "fundamentals",
-            "description": "获取资产负债表数据",
+            "description": "Get balance sheet data",
         },
         "get_simfin_cashflow": {
             "id": "get_cashflow",
-            "name": "现金流量表",
+            "name": "cash flow statement",
             "category": "fundamentals",
-            "description": "获取现金流量表数据",
+            "description": "Get cash flow statement data",
         },
         "get_simfin_income_stmt": {
             "id": "get_income_statement",
-            "name": "利润表",
+            "name": "income statement",
             "category": "fundamentals",
-            "description": "获取利润表数据",
+            "description": "Get income statement data",
         },
     }
     
     @classmethod
     def register_all(cls, tool_registry=None) -> int:
         """
-        将 Toolkit 中的工具注册到新 Registry
+        Register tools from Toolkit to new Registry
         
         Args:
-            tool_registry: ToolRegistry 实例，如果为 None 则使用默认实例
+            tool_registry: ToolRegistry instance, if None the default instance is used
             
         Returns:
-            注册成功的工具数量
+            Number of successfully registered tools
         """
         if tool_registry is None:
             from core.tools.registry import ToolRegistry
@@ -117,14 +117,14 @@ class LegacyToolkitAdapter:
             
             for method_name, config in cls.TOOL_MAPPING.items():
                 try:
-                    # 获取原方法
+                    # Get the original method
                     if not hasattr(toolkit, method_name):
-                        logger.warning(f"Toolkit 中找不到方法: {method_name}")
+                        logger.warning(f"Toolkit No method found in: {method_name}")
                         continue
                     
                     method = getattr(toolkit, method_name)
                     
-                    # 注册到新 Registry，透传 capability_tags, when_to_use 等增强字段
+                    # Register to the new Registry and pass through capability_tags, when_to_use Enhanced fields
                     extra_kwargs = {}
                     for key in ("capability_tags", "when_to_use", "when_not_to_use",
                                 "returns", "tool_role_hint", "output_shape",
@@ -143,28 +143,28 @@ class LegacyToolkitAdapter:
                     )
                     
                     registered += 1
-                    logger.debug(f"注册旧工具: {method_name} -> {config['id']}")
+                    logger.debug(f"Register old tools: {method_name} -> {config['id']}")
                     
                 except Exception as e:
-                    logger.error(f"注册工具 {method_name} 失败: {e}")
+                    logger.error(f"Registration tool {method_name} failed: {e}")
             
-            logger.info(f"✅ 从 Toolkit 注册了 {registered} 个工具")
+            logger.info(f"✅ Registered from Toolkit {registered} tools")
             
         except ImportError as e:
-            logger.warning(f"无法导入 Toolkit: {e}")
+            logger.warning(f"Unable to import Toolkit: {e}")
         except Exception as e:
-            logger.error(f"注册旧工具失败: {e}")
+            logger.error(f"Failed to register old tool: {e}")
         
         return registered
     
     @classmethod
     def get_tool_mapping(cls) -> Dict[str, Dict[str, Any]]:
-        """获取工具映射表"""
+        """Get tool mapping table"""
         return cls.TOOL_MAPPING.copy()
     
     @classmethod
     def get_new_tool_id(cls, old_method_name: str) -> str:
-        """根据旧方法名获取新工具ID"""
+        """Get new tool based on old method name ID"""
         if old_method_name in cls.TOOL_MAPPING:
             return cls.TOOL_MAPPING[old_method_name]["id"]
         return old_method_name

@@ -10,49 +10,49 @@ import type {
 } from '@/types/auth'
 
 export const authApi = {
-  // 登录
+  // Login
   login: (data: LoginForm) =>
     ApiClient.post<LoginResponse>('/api/auth/login', data, {
-      skipAuth: true,  // 登录请求不需要认证
-      skipAuthError: true  // 跳过 401 错误的自动处理
+      skipAuth: true,  // Login requests do not require authentication
+      skipAuthError: true  // Skip automatic handling of 401 errors
     }),
 
-  // 注册
+  // Register
   register: (data: RegisterForm) =>
     ApiClient.post('/api/auth/register', data, {
-      skipAuth: true,  // 注册请求不需要认证
-      skipAuthError: true  // 跳过 401 错误的自动处理
+      skipAuth: true,  // Registration requests do not require authentication
+      skipAuthError: true  // Skip automatic handling of 401 errors
     }),
 
-  // 登出
+  // Log out
   logout: () =>
     ApiClient.post('/api/auth/logout'),
 
-  // 刷新Token
+  // Refresh Token
   refreshToken: (refreshToken: string) =>
     ApiClient.post<RefreshTokenResponse>('/api/auth/refresh', { refresh_token: refreshToken }),
 
-  // 获取用户信息
+  // Get user information
   getUserInfo: () =>
     ApiClient.get<User>('/api/auth/me'),
 
-  // 获取用户权限（开源版不需要，admin拥有所有权限）
+  // Obtain user permissions (not required for the open source version, admin has all permissions)
   // getUserPermissions: () =>
   //   ApiClient.get<UserPermissions>('/api/auth/permissions'),
 
-  // 更新用户信息
+  // Update user information
   updateUserInfo: (data: UserUpdatePayload) =>
     ApiClient.put<User>('/api/auth/me', data),
 
-  // 修改密码
+  // Change password
   changePassword: (data: ChangePasswordForm) =>
     ApiClient.post('/api/auth/change-password', data),
 
-  // 重置密码
+  // reset password
   resetPassword: (email: string) =>
     ApiClient.post('/api/auth/reset-password', { email }),
 
-  // 验证邮箱
+  // Verify email
   verifyEmail: (token: string) =>
     ApiClient.post('/api/auth/verify-email', { token }),
 

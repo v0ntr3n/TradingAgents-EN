@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-测试实时行情同步状态功能
+Test the real-time market synchronization status function
 
-验证内容：
-1. 交易时间判断逻辑（包含收盘后30分钟缓冲期）
-2. 状态记录功能
-3. 状态获取功能
+Verify content:
+1. Trading time judgment logic (including 30-minute buffer period after closing)
+2. Status recording function
+3. Status acquisition function
 """
 
 import sys
@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime, time as dtime
 from zoneinfo import ZoneInfo
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.services.quotes_ingestion_service import QuotesIngestionService
@@ -22,112 +22,112 @@ from app.core.config import settings
 
 
 def test_trading_time_logic():
-    """测试交易时间判断逻辑"""
+    """Test transaction time judgment logic"""
     print("\n" + "=" * 80)
-    print("测试1: 交易时间判断逻辑（包含收盘后30分钟缓冲期）")
+    print("test 1: Trading time judgment logic (including 30-minute buffer period after closing)")
     print("=" * 80)
     
     service = QuotesIngestionService()
     tz = ZoneInfo(settings.TIMEZONE)
     
-    # 测试用例
+    # test case
     test_cases = [
-        ("09:00", False, "开盘前"),
-        ("09:30", True, "上午开盘"),
-        ("10:00", True, "上午交易中"),
-        ("11:30", True, "上午收盘"),
-        ("12:00", False, "午休时间"),
-        ("13:00", True, "下午开盘"),
-        ("14:00", True, "下午交易中"),
-        ("15:00", True, "收盘时刻（缓冲期开始）"),
-        ("15:06", True, "收盘后6分钟（缓冲期内）"),
-        ("15:12", True, "收盘后12分钟（缓冲期内）"),
-        ("15:18", True, "收盘后18分钟（缓冲期内）"),
-        ("15:30", True, "收盘后30分钟（缓冲期结束）"),
-        ("15:31", False, "收盘后31分钟（缓冲期外）"),
-        ("16:00", False, "收盘后1小时"),
+        ("09:00", False, "before opening"),
+        ("09:30", True, "Open in the morning"),
+        ("10:00", True, "Trading in the morning"),
+        ("11:30", True, "Morning close"),
+        ("12:00", False, "lunch break"),
+        ("13:00", True, "Open in the afternoon"),
+        ("14:00", True, "Trading in the afternoon"),
+        ("15:00", True, "Closing time (beginning of buffer period)"),
+        ("15:06", True, "6 minutes after the market closes (within the buffer period)"),
+        ("15:12", True, "12 minutes after the market closes (within the buffer period)"),
+        ("15:18", True, "18 minutes after the market closes (within the buffer period)"),
+        ("15:30", True, "30 minutes after the market closes (end of buffer period)"),
+        ("15:31", False, "31 minutes after the market closes (outside the buffer period)"),
+        ("16:00", False, "1 hour after market close"),
     ]
     
-    print("\n测试结果：")
+    print("\n Test results:")
     print("-" * 80)
     
     all_passed = True
     for time_str, expected, description in test_cases:
-        # 创建测试时间（使用今天的日期 + 指定时间）
+        # Create test time (using today's date + specified time)
         now = datetime.now(tz)
         hour, minute = map(int, time_str.split(":"))
         test_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
         
-        # 确保是工作日（周一到周五）
+        # Make sure it is a working day (Monday to Friday)
         if test_time.weekday() >= 5:
-            # 如果是周末，调整到周一
+            # If it is a weekend, adjust to Monday
             days_to_monday = 7 - test_time.weekday()
             test_time = test_time.replace(day=test_time.day + days_to_monday)
         
         result = service._is_trading_time(test_time)
-        status = "✅ 通过" if result == expected else "❌ 失败"
+        status = "✅ Pass" if result == expected else "❌ failed"
         
         if result != expected:
             all_passed = False
         
-        print(f"{time_str:6s} | 预期: {str(expected):5s} | 实际: {str(result):5s} | {status} | {description}")
+        print(f"{time_str:6s} | expected: {str(expected):5s} | actual: {str(result):5s} | {status} | {description}")
     
     print("-" * 80)
     if all_passed:
-        print("✅ 所有测试用例通过")
+        print("✅ All test cases passed")
     else:
-        print("❌ 部分测试用例失败")
+        print("❌ Some test cases failed")
     
     return all_passed
 
 
 async def test_status_record_and_get():
-    """测试状态记录和获取功能"""
+    """Test status logging and retrieval functionality"""
     print("\n" + "=" * 80)
-    print("测试2: 状态记录和获取功能")
+    print("test 2: Status recording and retrieval functions")
     print("=" * 80)
     
     service = QuotesIngestionService()
     
-    # 测试记录状态
-    print("\n📝 测试记录同步状态...")
+    # Test record status
+    print("\n📝 Test record synchronization status...")
     await service._record_sync_status(
         success=True,
         source="tushare",
         records_count=5440,
         error_msg=None
     )
-    print("✅ 状态记录成功")
+    print("✅ Status recorded successfully")
     
-    # 测试获取状态
-    print("\n📊 测试获取同步状态...")
+    # test get status
+    print("\n📊 Test to get synchronization status...")
     status = await service.get_sync_status()
     
-    print("\n获取到的状态信息：")
+    print("\n Status information obtained:")
     print("-" * 80)
     for key, value in status.items():
         print(f"{key:20s}: {value}")
     print("-" * 80)
     
-    # 验证状态
+    # Verification status
     checks = [
-        ("last_sync_time", lambda v: v is not None, "最后同步时间应该存在"),
-        ("interval_seconds", lambda v: v == settings.QUOTES_INGEST_INTERVAL_SECONDS, "同步间隔应该正确"),
-        ("interval_minutes", lambda v: v == settings.QUOTES_INGEST_INTERVAL_SECONDS / 60, "同步间隔（分钟）应该正确"),
-        ("data_source", lambda v: v == "tushare", "数据源应该是 tushare"),
-        ("success", lambda v: v is True, "成功状态应该是 True"),
-        ("records_count", lambda v: v == 5440, "记录数应该是 5440"),
-        ("error_message", lambda v: v is None, "错误信息应该是 None"),
+        ("last_sync_time", lambda v: v is not None, "The last sync time should exist"),
+        ("interval_seconds", lambda v: v == settings.QUOTES_INGEST_INTERVAL_SECONDS, "Sync interval should be correct"),
+        ("interval_minutes", lambda v: v == settings.QUOTES_INGEST_INTERVAL_SECONDS / 60, "Sync interval (minutes) should be correct"),
+        ("data_source", lambda v: v == "tushare", "The data source should be tushare"),
+        ("success", lambda v: v is True, "The success status should be True"),
+        ("records_count", lambda v: v == 5440, "The number of records should be 5440"),
+        ("error_message", lambda v: v is None, "The error message should be None"),
     ]
     
-    print("\n验证结果：")
+    print("\n Verification results:")
     print("-" * 80)
     
     all_passed = True
     for key, check_func, description in checks:
         value = status.get(key)
         passed = check_func(value)
-        status_str = "✅ 通过" if passed else "❌ 失败"
+        status_str = "✅ Pass" if passed else "❌ failed"
         
         if not passed:
             all_passed = False
@@ -136,56 +136,56 @@ async def test_status_record_and_get():
     
     print("-" * 80)
     if all_passed:
-        print("✅ 所有验证通过")
+        print("✅ All verification passed")
     else:
-        print("❌ 部分验证失败")
+        print("❌ Partial verification failed")
     
     return all_passed
 
 
 async def test_error_status():
-    """测试错误状态记录"""
+    """Test error status logging"""
     print("\n" + "=" * 80)
-    print("测试3: 错误状态记录")
+    print("test 3: Error status record")
     print("=" * 80)
     
     service = QuotesIngestionService()
     
-    # 记录错误状态
-    print("\n📝 测试记录错误状态...")
+    # Log error status
+    print("\n📝 Test logging error status...")
     await service._record_sync_status(
         success=False,
         source="akshare_eastmoney",
         records_count=0,
-        error_msg="API 限流"
+        error_msg="API Current limiting"
     )
-    print("✅ 错误状态记录成功")
+    print("✅ Error status recorded successfully")
     
-    # 获取状态
-    print("\n📊 测试获取错误状态...")
+    # Get status
+    print("\n📊 Test to get error status...")
     status = await service.get_sync_status()
     
-    print("\n获取到的错误状态信息：")
+    print("\n Error status information obtained:")
     print("-" * 80)
     for key, value in status.items():
         print(f"{key:20s}: {value}")
     print("-" * 80)
     
-    # 验证错误状态
+    # Verify error status
     checks = [
-        ("success", lambda v: v is False, "成功状态应该是 False"),
-        ("records_count", lambda v: v == 0, "记录数应该是 0"),
-        ("error_message", lambda v: v == "API 限流", "错误信息应该正确"),
+        ("success", lambda v: v is False, "The success status should be False"),
+        ("records_count", lambda v: v == 0, "The number of records should be 0"),
+        ("error_message", lambda v: v == "API Current limiting", "The error message should be correct"),
     ]
     
-    print("\n验证结果：")
+    print("\n Verification results:")
     print("-" * 80)
     
     all_passed = True
     for key, check_func, description in checks:
         value = status.get(key)
         passed = check_func(value)
-        status_str = "✅ 通过" if passed else "❌ 失败"
+        status_str = "✅ Pass" if passed else "❌ failed"
         
         if not passed:
             all_passed = False
@@ -194,49 +194,49 @@ async def test_error_status():
     
     print("-" * 80)
     if all_passed:
-        print("✅ 所有验证通过")
+        print("✅ All verification passed")
     else:
-        print("❌ 部分验证失败")
+        print("❌ Partial verification failed")
     
     return all_passed
 
 
 async def main():
-    """运行所有测试"""
+    """Run all tests"""
     print("\n" + "=" * 80)
-    print("实时行情同步状态功能测试")
+    print("Real-time market synchronization status function test")
     print("=" * 80)
     
     results = []
     
-    # 测试1：交易时间判断逻辑
-    results.append(("交易时间判断逻辑", test_trading_time_logic()))
+    # Test 1: Trading time judgment logic
+    results.append(("Trading time judgment logic", test_trading_time_logic()))
     
-    # 测试2：状态记录和获取
-    results.append(("状态记录和获取", await test_status_record_and_get()))
+    # Test 2: Status recording and acquisition
+    results.append(("Status recording and retrieval", await test_status_record_and_get()))
     
-    # 测试3：错误状态记录
-    results.append(("错误状态记录", await test_error_status()))
+    # Test 3: Error status logging
+    results.append(("Error status record", await test_error_status()))
     
-    # 总结
+    # Summary
     print("\n" + "=" * 80)
-    print("测试总结")
+    print("Test summary")
     print("=" * 80)
     
     passed = sum(1 for _, result in results if result)
     total = len(results)
     
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{test_name:30s} - {status}")
     
-    print(f"\n总体: {passed}/{total} 测试通过")
+    print(f"\n Overall: {passed}/{total} Test passed")
     
     if passed == total:
-        print("\n✅ 所有测试通过！实时行情同步状态功能正常")
+        print("\n✅ All tests passed! Real-time market synchronization status function is normal")
         return 0
     else:
-        print(f"\n❌ 有 {total - passed} 个测试失败")
+        print(f"\n❌ Yes {total - passed} tests failed")
         return 1
 
 

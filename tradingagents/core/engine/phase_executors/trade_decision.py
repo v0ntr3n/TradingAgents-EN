@@ -1,9 +1,9 @@
 # tradingagents/core/engine/phase_executors/trade_decision.py
 """
-交易决策阶段执行器
+Trade decision stage executor
 
-根据研究结论生成交易信号：
-- Trader (交易员) - 生成具体的交易信号
+Generate trading signals based on research conclusions:
+- Trader (trader) - Generate specific trading signals
 """
 
 from typing import Any, Dict, Optional
@@ -20,9 +20,9 @@ logger = get_logger("default")
 
 class TradeDecisionPhase(PhaseExecutor):
     """
-    交易决策阶段执行器
+    Trade decision stage executor
 
-    根据投资建议生成具体的交易信号
+    Generate specific trading signals based on investment recommendations
     """
 
     phase_name = "TradeDecisionPhase"
@@ -34,12 +34,12 @@ class TradeDecisionPhase(PhaseExecutor):
         memory_config: Optional[Dict[str, Any]] = None
     ):
         """
-        初始化交易决策阶段
+        Initialize transaction decision phase
 
         Args:
-            llm_provider: LLM 提供者
-            config: 阶段配置
-            memory_config: Memory 配置
+            llm_provider: LLM provider
+            config: stage configuration
+            memory_config: Memory Configuration
         """
         super().__init__(llm_provider, config)
         self.memory_config = memory_config or {}
@@ -51,12 +51,12 @@ class TradeDecisionPhase(PhaseExecutor):
         data_manager: DataAccessManager
     ) -> Dict[str, Any]:
         """
-        执行交易决策阶段
+        Execution transaction decision stage
         """
         self.log_start()
 
         ticker = context.get(DataLayer.CONTEXT, "ticker")
-        logger.info(f"💹 [{self.phase_name}] 生成交易信号: {ticker}")
+        logger.info(f"💹 [{self.phase_name}] Generate trading signals: {ticker}")
 
         outputs = {
             "ticker": ticker,
@@ -64,33 +64,33 @@ class TradeDecisionPhase(PhaseExecutor):
             "trader_investment_plan": None
         }
 
-        # 获取投资建议
+        # Get investment advice
         investment_plan = context.get(DataLayer.DECISIONS, "investment_plan")
 
         if investment_plan is None:
-            logger.warning(f"⚠️ [{self.phase_name}] 未找到投资建议，跳过交易决策")
+            logger.warning(f"⚠️ [{self.phase_name}] No investment advice found, trading decision skipped")
             self.log_end(outputs)
             return outputs
 
-        # 使用实际的 Trader Agent
+        # use actual Trader Agent
         trader_result = self._run_trader(context, investment_plan)
 
         if trader_result:
             trader_plan = trader_result.get("trader_investment_plan", "")
 
-            # 保存交易员的投资计划
+            # Save a trader's investment plan
             context.set(DataLayer.DECISIONS, "trader_investment_plan", trader_plan, source="trader")
             outputs["trader_investment_plan"] = "generated" if trader_plan else None
 
-            # 从交易员结果中解析交易信号
+            # Parse trading signals from trader results
             trade_signal = self._parse_trade_signal(context, trader_plan, investment_plan)
             context.set(DataLayer.DECISIONS, "trade_signal", trade_signal, source="trader")
             outputs["trade_signal"] = trade_signal.get("action")
 
-            logger.info(f"📝 [{self.phase_name}] 交易信号: {trade_signal.get('action')}, "
-                       f"置信度: {trade_signal.get('confidence', 0):.2f}")
+            logger.info(f"📝 [{self.phase_name}] trading signals: {trade_signal.get('action')}, "
+                       f"Confidence: {trade_signal.get('confidence', 0):.2f}")
         else:
-            # 回退到简单解析
+            # Fallback to simple parsing
             trade_signal = self._generate_trade_signal(context, investment_plan)
             context.set(DataLayer.DECISIONS, "trade_signal", trade_signal, source="trader")
             outputs["trade_signal"] = trade_signal.get("action")
@@ -99,27 +99,27 @@ class TradeDecisionPhase(PhaseExecutor):
         return outputs
 
     def _get_trader(self):
-        """获取或创建 Trader Agent"""
+        """Get or create Trader Agent"""
         if self._trader is None:
             try:
                 from tradingagents.agents.trader.trader import create_trader
-                # 支持两种 key 格式: "trader" 或 "trader_memory"
+                # Supports two key formats: "trader" or "trader_memory"
                 memory = self.memory_config.get("trader") or self.memory_config.get("trader_memory")
                 self._trader = create_trader(self.llm_provider, memory)
-                logger.debug("💰 [TradeDecision] 创建 Trader Agent")
+                logger.debug("💰 [TradeDecision] Create Trader Agent")
             except Exception as e:
-                logger.error(f"❌ [TradeDecision] 创建 Trader 失败: {e}")
+                logger.error(f"❌ [TradeDecision] Failed to create Trader: {e}")
         return self._trader
 
     def _run_trader(self, context: AnalysisContext, investment_plan: Any) -> Optional[Dict[str, Any]]:
-        """运行 Trader Agent"""
+        """run Trader Agent"""
         trader = self._get_trader()
         if not trader:
-            logger.warning("⚠️ [TradeDecision] Trader 不可用，使用简单解析")
+            logger.warning("⚠️ [TradeDecision] Trader Not available, use simple parsing")
             return None
 
         try:
-            # 构建兼容现有 Agent 的状态
+            # Build state that is compatible with existing agents
             ticker = context.get(DataLayer.CONTEXT, "ticker") or ""
             trade_date = context.get(DataLayer.CONTEXT, "trade_date") or ""
 
@@ -127,7 +127,7 @@ class TradeDecisionPhase(PhaseExecutor):
                 "company_of_interest": ticker,
                 "trade_date": trade_date,
                 "investment_plan": investment_plan if isinstance(investment_plan, str) else str(investment_plan),
-                # 收集所有分析报告
+                # Collect all analysis reports
                 "market_report": context.get(DataLayer.REPORTS, "market_report") or "",
                 "sentiment_report": context.get(DataLayer.REPORTS, "sentiment_report") or "",
                 "news_report": context.get(DataLayer.REPORTS, "news_report") or "",
@@ -137,11 +137,11 @@ class TradeDecisionPhase(PhaseExecutor):
             }
 
             result = trader(state)
-            logger.info("💰 [Trader] 交易决策生成完成")
+            logger.info("💰 [Trader] Transaction decision generation completed")
             return result
 
         except Exception as e:
-            logger.error(f"❌ [Trader] 执行失败: {e}")
+            logger.error(f"❌ [Trader] Execution failed: {e}")
             return None
 
     def _parse_trade_signal(
@@ -150,10 +150,10 @@ class TradeDecisionPhase(PhaseExecutor):
         trader_plan: str,
         investment_plan: Any
     ) -> Dict[str, Any]:
-        """从交易员计划中解析交易信号"""
+        """Parsing trading signals from trader plans"""
         ticker = context.get(DataLayer.CONTEXT, "ticker")
 
-        # 合并文本进行分析
+        # Merge text for analysis
         combined_text = trader_plan
         if isinstance(investment_plan, str):
             combined_text = f"{investment_plan}\n{trader_plan}"
@@ -190,26 +190,26 @@ class TradeDecisionPhase(PhaseExecutor):
         investment_plan: Any
     ) -> Dict[str, Any]:
         """
-        生成交易信号
+        Generate trading signals
 
-        TODO: 集成实际的 Trader Agent
+        TODO: Integrate actual Trader Agent
 
         Args:
-            context: 分析上下文
-            investment_plan: 投资建议（可能是字典或字符串）
+            context: Analyze context
+            investment_plan: investment advice (may be a dictionary or string)
 
         Returns:
-            交易信号
+            trading signals
         """
         ticker = context.get(DataLayer.CONTEXT, "ticker")
 
-        # 处理不同类型的投资建议
+        # Handle different types of investment advice
         if isinstance(investment_plan, dict):
             recommendation = investment_plan.get("recommendation", "hold")
             confidence = investment_plan.get("confidence", 0.5)
             rationale = investment_plan.get("rationale", "")
         elif isinstance(investment_plan, str):
-            # 从文本中提取建议
+            # Extract suggestions from text
             recommendation, confidence = self._parse_recommendation_from_text(investment_plan)
             rationale = investment_plan[:500] if len(investment_plan) > 500 else investment_plan
         else:
@@ -217,7 +217,7 @@ class TradeDecisionPhase(PhaseExecutor):
             confidence = 0.5
             rationale = ""
 
-        # 根据投资建议生成交易信号
+        # Generate trading signals based on investment recommendations
         action_map = {
             "buy": "BUY",
             "sell": "SELL",
@@ -226,11 +226,11 @@ class TradeDecisionPhase(PhaseExecutor):
 
         action = action_map.get(recommendation.lower(), "HOLD")
 
-        # 根据置信度计算仓位
+        # Calculate positions based on confidence
         if action == "HOLD":
             position_size = 0.0
         else:
-            position_size = min(confidence, 1.0)  # 最大 100%
+            position_size = min(confidence, 1.0)  # maximum 100%
 
         return {
             "ticker": ticker,
@@ -238,7 +238,7 @@ class TradeDecisionPhase(PhaseExecutor):
             "position_size": position_size,
             "confidence": confidence,
             "rationale": rationale,
-            "entry_price": None,  # 需要实时行情
+            "entry_price": None,  # Need real-time quotes
             "stop_loss": None,
             "take_profit": None,
             "timestamp": None
@@ -246,26 +246,26 @@ class TradeDecisionPhase(PhaseExecutor):
 
     def _parse_recommendation_from_text(self, text: str) -> tuple:
         """
-        从文本中解析投资建议
+        Parse investment advice from text
 
         Args:
-            text: 投资建议文本
+            text: investment advice text
 
         Returns:
-            (recommendation, confidence) 元组
+            (recommendation, confidence) tuple
         """
         text_lower = text.lower()
 
-        # 简单的关键词匹配
-        buy_keywords = ["买入", "增持", "看多", "建议买入", "buy", "bullish", "看涨"]
-        sell_keywords = ["卖出", "减持", "看空", "建议卖出", "sell", "bearish", "看跌"]
-        hold_keywords = ["持有", "观望", "hold", "neutral", "中性"]
+        # Simple keyword matching
+        buy_keywords = ["buy", "Overweight", "long", "Recommended to buy", "buy", "bullish", "bullish"]
+        sell_keywords = ["sell", "Reduce holdings", "bearish", "Recommended to sell", "sell", "bearish", "Bearish"]
+        hold_keywords = ["hold", "wait and see", "hold", "neutral", "Neutral"]
 
         buy_score = sum(1 for kw in buy_keywords if kw in text_lower)
         sell_score = sum(1 for kw in sell_keywords if kw in text_lower)
         hold_score = sum(1 for kw in hold_keywords if kw in text_lower)
 
-        # 确定建议
+        # Confirm recommendations
         if buy_score > sell_score and buy_score > hold_score:
             recommendation = "buy"
             confidence = min(0.5 + buy_score * 0.1, 0.9)

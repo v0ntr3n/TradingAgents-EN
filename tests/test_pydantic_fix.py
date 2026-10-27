@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-测试Pydantic v2修复
+Testing Pydantic v2 fixes
 """
 
 try:
     from webapi.models.user import PyObjectId, User
     from bson import ObjectId
     
-    print("✅ 导入成功")
+    print("✅ Import successful")
     
-    # 测试PyObjectId
+    # test PyObjectId
     test_id = ObjectId()
-    print(f"✅ ObjectId创建成功: {test_id}")
+    print(f"✅ ObjectId Created successfully: {test_id}")
     
-    # 测试User模型
+    # Test the User model
     user_data = {
         "username": "test_user",
         "email": "test@example.com",
@@ -23,11 +23,11 @@ try:
     }
     
     user = User(**user_data)
-    print(f"✅ User模型创建成功: {user.username}")
+    print(f"✅ User Model created successfully: {user.username}")
     
-    print("🎉 Pydantic v2修复验证成功！")
+    print("🎉 Pydantic v2 Repair verification successful!")
     
 except Exception as e:
-    print(f"❌ 错误: {e}")
+    print(f"❌ Error: {e}")
     import traceback
     traceback.print_exc()

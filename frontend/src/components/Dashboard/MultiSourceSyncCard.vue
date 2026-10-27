@@ -5,7 +5,7 @@
         <div class="card-header">
           <div class="header-left">
             <el-icon class="header-icon"><Connection /></el-icon>
-            <span class="header-title">多数据源同步</span>
+            <span class="header-title">Synchronization of multiple data sources</span>
           </div>
           <div class="header-right">
             <el-button 
@@ -14,7 +14,7 @@
               link
               @click="goToSyncPage"
             >
-              管理
+              management
               <el-icon><ArrowRight /></el-icon>
             </el-button>
           </div>
@@ -22,7 +22,7 @@
       </template>
 
       <div v-loading="loading" class="card-content">
-        <!-- 同步状态 -->
+        <!-- Sync status -->
         <div class="sync-status-section">
           <div class="status-display">
             <el-tag 
@@ -41,16 +41,16 @@
                 :show-text="false"
               />
               <div class="progress-text">
-                {{ syncStatus.total > 0 ? `${syncStatus.updated + syncStatus.inserted}/${syncStatus.total}` : '同步中...' }}
+                {{ syncStatus.total > 0 ? `${syncStatus.updated + syncStatus.inserted}/${syncStatus.total}` : 'Synchronizing...' }}
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 数据源状态 -->
+        <!-- Data source status -->
         <div class="sources-status-section">
           <div class="sources-header">
-            <span class="sources-title">数据源状态</span>
+            <span class="sources-title">Data source status</span>
             <el-button 
               size="small" 
               type="primary" 
@@ -77,12 +77,12 @@
                   <component :is="source.available ? 'SuccessFilled' : 'CircleCloseFilled'" />
                 </el-icon>
               </div>
-              <div class="source-priority">优先级: {{ source.priority }}</div>
+              <div class="source-priority">priority: {{ source.priority }}</div>
             </div>
           </div>
         </div>
 
-        <!-- 快速操作 -->
+        <!-- Quick operation -->
         <div class="quick-actions-section">
           <el-button
             type="primary"
@@ -93,17 +93,17 @@
             style="width: 100%"
           >
             <el-icon><Refresh /></el-icon>
-            {{ isSyncInProgress(syncStatus?.status) ? '同步中...' : '快速同步' }}
+            {{ isSyncInProgress(syncStatus?.status) ? 'Synchronizing...' : 'Quick sync' }}
           </el-button>
         </div>
 
-        <!-- 最近同步信息 -->
+        <!-- Recently synced information -->
         <div v-if="syncStatus && syncStatus.status !== 'never_run'" class="last-sync-section">
           <div class="last-sync-info">
             <div class="sync-stats">
-              <span class="stat-item">总数: {{ syncStatus.total }}</span>
-              <span class="stat-item success">更新: {{ syncStatus.updated }}</span>
-              <span class="stat-item danger">错误: {{ syncStatus.errors }}</span>
+              <span class="stat-item">total: {{ syncStatus.total }}</span>
+              <span class="stat-item success">update: {{ syncStatus.updated }}</span>
+              <span class="stat-item danger">Error: {{ syncStatus.errors }}</span>
             </div>
             <div v-if="syncStatus.finished_at" class="sync-time">
               {{ formatLastSyncTime(syncStatus.finished_at) }}
@@ -132,10 +132,10 @@ import {
   type DataSourceStatus 
 } from '@/api/sync'
 
-// 路由
+// routing
 const router = useRouter()
 
-// 响应式数据
+// Responsive data
 const loading = ref(false)
 const refreshing = ref(false)
 const syncing = ref(false)
@@ -145,7 +145,7 @@ const refreshTimer = ref<NodeJS.Timeout | null>(null)
 
 const isSyncInProgress = (status?: string) => ['queued', 'running'].includes(status || '')
 
-// 获取同步状态
+// Get sync status
 const fetchSyncStatus = async () => {
   try {
     const response = await getSyncStatus()
@@ -153,25 +153,25 @@ const fetchSyncStatus = async () => {
       syncStatus.value = response.data
     }
   } catch (err: any) {
-    console.error('获取同步状态失败:', err)
+    console.error('Failed to get sync status:', err)
   }
 }
 
-// 获取数据源状态
+// Get data source status
 const fetchDataSources = async () => {
   try {
     const response = await getDataSourcesStatus()
     if (response.success) {
       dataSources.value = response.data
-        .sort((a, b) => b.priority - a.priority) // 倒序：优先级高的在前
-        .slice(0, 3) // 只显示前3个数据源
+        .sort((a, b) => b.priority - a.priority) // Reverse order: highest priority first
+        .slice(0, 3) // Only show the first 3 data sources
     }
   } catch (err: any) {
-    console.error('获取数据源状态失败:', err)
+    console.error('Failed to get data source status:', err)
   }
 }
 
-// 刷新状态
+// refresh status
 const refreshStatus = async () => {
   refreshing.value = true
   await Promise.all([
@@ -181,7 +181,7 @@ const refreshStatus = async () => {
   refreshing.value = false
 }
 
-// 快速同步
+// Quick sync
 const quickSync = async () => {
   try {
     syncing.value = true
@@ -190,28 +190,28 @@ const quickSync = async () => {
     if (response.success) {
       syncStatus.value = response.data
       if (response.data.status === 'queued') {
-        ElMessage.success(response.data.message || '同步任务已提交，后台正在启动，请稍候')
+        ElMessage.success(response.data.message || 'The synchronization task has been submitted and the background is starting, please wait.')
       } else {
-        ElMessage.success('同步任务已启动')
+        ElMessage.success('Synchronization task started')
       }
       startStatusPolling()
     } else {
-      ElMessage.error(`同步启动失败: ${response.message}`)
+      ElMessage.error(`Sync start failed: ${response.message}`)
     }
   } catch (err: any) {
-    console.error('启动同步失败:', err)
-    ElMessage.error(`同步启动失败: ${err.message}`)
+    console.error('Failed to start sync:', err)
+    ElMessage.error(`Sync start failed: ${err.message}`)
   } finally {
     syncing.value = false
   }
 }
 
-// 跳转到同步管理页面
+// Jump to the synchronization management page
 const goToSyncPage = () => {
   router.push('/settings/sync')
 }
 
-// 开始状态轮询
+// Start status polling
 const startStatusPolling = () => {
   if (refreshTimer.value) {
     clearInterval(refreshTimer.value)
@@ -220,14 +220,14 @@ const startStatusPolling = () => {
   refreshTimer.value = setInterval(async () => {
     await fetchSyncStatus()
     
-    // 如果同步完成，停止轮询
+    // If synchronization is complete, stop polling
     if (syncStatus.value?.status && !isSyncInProgress(syncStatus.value.status)) {
       stopStatusPolling()
     }
   }, 3000)
 }
 
-// 停止状态轮询
+// Stop status polling
 const stopStatusPolling = () => {
   if (refreshTimer.value) {
     clearInterval(refreshTimer.value)
@@ -235,7 +235,7 @@ const stopStatusPolling = () => {
   }
 }
 
-// 获取状态类型
+// Get status type
 const getStatusType = (status?: SyncStatus['status'] | string): 'success' | 'info' | 'warning' | 'danger' => {
   const typeMap: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
     idle: 'info',
@@ -249,44 +249,44 @@ const getStatusType = (status?: SyncStatus['status'] | string): 'success' | 'inf
   return typeMap[status ?? 'never_run'] ?? 'info'
 }
 
-// 获取状态文本
+// Get status text
 const getStatusText = (status?: SyncStatus['status'] | string) => {
   const textMap: Record<string, string> = {
-    idle: '空闲',
-    queued: '后台启动中',
-    running: '运行中',
-    success: '成功',
-    success_with_errors: '部分成功',
-    failed: '失败',
-    never_run: '未运行'
+    idle: 'free',
+    queued: 'Starting in the background',
+    running: 'Running',
+    success: 'success',
+    success_with_errors: 'Partially successful',
+    failed: 'failed',
+    never_run: 'Not running'
   }
-  return textMap[status ?? 'never_run'] ?? '未知'
+  return textMap[status ?? 'never_run'] ?? 'unknown'
 }
 
-// 获取进度百分比
+// Get progress percentage
 const getProgress = () => {
   if (!syncStatus.value || syncStatus.value.total === 0) return 0
   return Math.round(((syncStatus.value.inserted + syncStatus.value.updated) / syncStatus.value.total) * 100)
 }
 
-// 格式化最后同步时间
+// Format last sync time
 const formatLastSyncTime = (timeStr: string) => {
   const date = new Date(timeStr)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
   
   if (diff < 60000) {
-    return '刚刚完成'
+    return 'just finished'
   } else if (diff < 3600000) {
-    return `${Math.floor(diff / 60000)}分钟前`
+    return `${Math.floor(diff / 60000)}minutes ago`
   } else if (diff < 86400000) {
-    return `${Math.floor(diff / 3600000)}小时前`
+    return `${Math.floor(diff / 3600000)}hours ago`
   } else {
     return date.toLocaleDateString('zh-CN')
   }
 }
 
-// 组件挂载
+// Component mounting
 onMounted(async () => {
   loading.value = true
   await Promise.all([
@@ -295,13 +295,13 @@ onMounted(async () => {
   ])
   loading.value = false
   
-  // 如果正在同步，开始轮询
+  // If synchronizing, start polling
   if (isSyncInProgress(syncStatus.value?.status)) {
     startStatusPolling()
   }
 })
 
-// 组件卸载
+// Component uninstallation
 onUnmounted(() => {
   stopStatusPolling()
 })

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-阿里百炼工具调用优化测试
-解决LLM不主动调用工具的问题
+Alibaba Bailian Tool Call Optimization Test
+Solve the problem of LLM not actively calling tools
 """
 
 import os
 import sys
 from datetime import datetime, timedelta
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 
 def test_basic_tool_calling():
-    """测试基本工具调用"""
-    print("🔧 测试基本工具调用")
+    """Test basic tool calls"""
+    print("🔧 Test basic tool calls")
     print("=" * 50)
     
     try:
@@ -23,69 +23,69 @@ def test_basic_tool_calling():
         from langchain_core.tools import tool
         from langchain_core.messages import HumanMessage
         
-        # 定义简单工具
+        # Define simple tools
         @tool
         def get_stock_price(symbol: str) -> str:
-            """获取股票价格信息"""
-            return f"股票{symbol}的当前价格是100元"
+            """Get stock price information"""
+            return f"stocks{symbol}The current price is 100 yuan"
         
-        # 创建LLM
+        # Create LLM
         llm = ChatDashScopeOpenAI(
             model="qwen-plus-latest",
             temperature=0.1,
             max_tokens=500
         )
         
-        # 绑定工具
+        # binding tool
         llm_with_tools = llm.bind_tools([get_stock_price])
         
-        # 测试不同的prompt策略
+        # Test different prompt strategies
         prompts = [
-            # 策略1: 直接指令
-            "请调用get_stock_price工具查询AAPL的股票价格",
+            # Strategy 1: direct instruction
+            "Please call the get_stock_price tool to query the stock price of AAPL",
             
-            # 策略2: 明确要求
-            "我需要查询AAPL股票的价格信息。请使用可用的工具来获取这个信息。",
+            # Strategy 2: clear requirements
+            "I need to check the price information of AAPL stock. Please use available tools to obtain this information.",
             
-            # 策略3: 强制性指令
-            "必须使用get_stock_price工具查询AAPL股票价格。不要直接回答，必须调用工具。",
+            # Strategy 3: Mandatory instructions
+            "You must use the get_stock_price tool to query the AAPL stock price. Don t answer directly, you must call the tool.",
             
-            # 策略4: 中文明确指令
-            "请务必调用get_stock_price工具，参数symbol设为'AAPL'，获取股票价格信息。"
+            # Strategy 4: clear instructions in chinese
+            "Please be sure to call the get_stock_price tool and set the parameter symbol to'AAPL', Get stock price information."
         ]
         
         for i, prompt in enumerate(prompts, 1):
-            print(f"\n🔄 测试策略{i}: {prompt[:30]}...")
+            print(f"\n🔄 testing strategy{i}: {prompt[:30]}...")
             
             try:
                 response = llm_with_tools.invoke([HumanMessage(content=prompt)])
                 
                 tool_calls = getattr(response, 'tool_calls', [])
-                print(f"   工具调用数量: {len(tool_calls)}")
-                print(f"   响应长度: {len(response.content)}字符")
+                print(f"   Number of tool calls: {len(tool_calls)}")
+                print(f"   response length: {len(response.content)}character")
                 
                 if len(tool_calls) > 0:
-                    print(f"   ✅ 策略{i}成功: 触发了工具调用")
+                    print(f"   ✅ Strategy{i}success: Tool call triggered")
                     for j, tool_call in enumerate(tool_calls):
-                        print(f"      工具{j+1}: {tool_call.get('name', 'unknown')}")
+                        print(f"      Tools{j+1}: {tool_call.get('name', 'unknown')}")
                     return True
                 else:
-                    print(f"   ❌ 策略{i}失败: 未触发工具调用")
-                    print(f"   直接响应: {response.content[:100]}...")
+                    print(f"   ❌ Strategy{i}failed: Tool call not triggered")
+                    print(f"   direct response: {response.content[:100]}...")
                     
             except Exception as e:
-                print(f"   ❌ 策略{i}异常: {e}")
+                print(f"   ❌ Strategy{i}Abnormal: {e}")
         
         return False
         
     except Exception as e:
-        print(f"❌ 基本工具调用测试失败: {e}")
+        print(f"❌ Basic tool call test failed: {e}")
         return False
 
 
 def test_stock_analysis_tool_calling():
-    """测试股票分析工具调用"""
-    print("\n🔧 测试股票分析工具调用")
+    """Test stock analysis tool calls"""
+    print("\n🔧 Test stock analysis tool calls")
     print("=" * 50)
     
     try:
@@ -93,79 +93,79 @@ def test_stock_analysis_tool_calling():
         from tradingagents.agents.utils.agent_utils import Toolkit
         from langchain_core.messages import HumanMessage
         
-        # 创建LLM
+        # Create LLM
         llm = ChatDashScopeOpenAI(
             model="qwen-plus-latest",
-            temperature=0.0,  # 降低温度提高确定性
+            temperature=0.0,  # Lowering the temperature increases certainty
             max_tokens=1000
         )
         
-        # 获取股票分析工具
+        # Get stock analysis tools
         toolkit = Toolkit()
         tools = [
             toolkit.get_china_stock_data,
             toolkit.get_china_fundamentals
         ]
         
-        # 绑定工具
+        # binding tool
         llm_with_tools = llm.bind_tools(tools)
         
-        # 测试专门的股票分析prompt
+        # Test specialized stock analysis prompt
         stock_prompts = [
-            # 策略1: 明确的工具调用指令
-            """请分析股票688656。
+            # Strategy 1: Explicit tool calling instructions
+            """Please analyze stock 688656.
 
-步骤：
-1. 首先调用get_china_stock_data工具获取股票数据，参数：stock_code='688656', start_date='2025-06-01', end_date='2025-07-11'
-2. 然后调用get_china_fundamentals工具获取基本面数据，参数：ticker='688656', curr_date='2025-07-11'
+Steps:
+1. First call the get_china_stock_data tool to obtain stock data, parameters:stock_code='688656', start_date='2025-06-01', end_date='2025-07-11'
+2. Then call the get_china_fundamentals tool to obtain fundamental data, parameters:ticker='688656', curr_date='2025-07-11'
 
-请严格按照上述步骤执行，必须调用工具。""",
+Please strictly follow the above steps and the tool must be called.""",
 
-            # 策略2: 问题导向
-            """我想了解688656这只股票的详细情况，包括：
-- 最近的价格走势和交易数据
-- 基本面分析和财务状况
+            # Strategy 2: problem oriented
+            """I would like to know the details of the stock 688656, including:
+- Recent price action and trading data
+- Fundamental Analysis and Financial Conditions
 
-请使用可用的工具来获取这些信息。""",
+Please use the tools available to obtain this information.""",
 
-            # 策略3: 强制工具调用
-            """分析688656股票。注意：你必须使用工具来获取数据，不能凭空回答。请调用相关工具获取股票数据和基本面信息。"""
+            # Strategy 3: Force tool call
+            """688656 stocks analyzed. Note: You must use tools to obtain data, you cannot answer in a vacuum. Please call relevant tools to obtain stock data and fundamental information."""
         ]
         
         for i, prompt in enumerate(stock_prompts, 1):
-            print(f"\n🔄 测试股票分析策略{i}...")
+            print(f"\n🔄 Test stock analysis strategies{i}...")
             
             try:
                 response = llm_with_tools.invoke([HumanMessage(content=prompt)])
                 
                 tool_calls = getattr(response, 'tool_calls', [])
-                print(f"   工具调用数量: {len(tool_calls)}")
-                print(f"   响应长度: {len(response.content)}字符")
+                print(f"   Number of tool calls: {len(tool_calls)}")
+                print(f"   response length: {len(response.content)}character")
                 
                 if len(tool_calls) > 0:
-                    print(f"   ✅ 股票分析策略{i}成功")
+                    print(f"   ✅ Stock Analysis Strategies{i}success")
                     for j, tool_call in enumerate(tool_calls):
                         tool_name = tool_call.get('name', 'unknown')
                         tool_args = tool_call.get('args', {})
-                        print(f"      工具{j+1}: {tool_name}({tool_args})")
+                        print(f"      Tools{j+1}: {tool_name}({tool_args})")
                     return True
                 else:
-                    print(f"   ❌ 股票分析策略{i}失败")
-                    print(f"   直接响应: {response.content[:150]}...")
+                    print(f"   ❌ Stock Analysis Strategies{i}failed")
+                    print(f"   direct response: {response.content[:150]}...")
                     
             except Exception as e:
-                print(f"   ❌ 股票分析策略{i}异常: {e}")
+                print(f"   ❌ Stock Analysis Strategies{i}Abnormal: {e}")
         
         return False
         
     except Exception as e:
-        print(f"❌ 股票分析工具调用测试失败: {e}")
+        print(f"❌ Stock analysis tool call test failed: {e}")
         return False
 
 
 def test_parameter_optimization():
-    """测试参数优化"""
-    print("\n🔧 测试参数优化")
+    """Test parameter optimization"""
+    print("\n🔧 Test parameter optimization")
     print("=" * 50)
     
     try:
@@ -173,23 +173,23 @@ def test_parameter_optimization():
         from langchain_core.tools import tool
         from langchain_core.messages import HumanMessage
         
-        # 定义测试工具
+        # Define testing tools
         @tool
         def analyze_stock(symbol: str, period: str) -> str:
-            """分析股票"""
-            return f"分析{symbol}股票，时间周期{period}"
+            """Analyze stocks"""
+            return f"analysis{symbol}stocks, time period{period}"
         
-        # 测试不同参数配置
+        # Test different parameter configurations
         configs = [
-            {"temperature": 0.0, "max_tokens": 500, "description": "低温度"},
-            {"temperature": 0.1, "max_tokens": 500, "description": "默认温度"},
-            {"temperature": 0.3, "max_tokens": 500, "description": "中等温度"},
+            {"temperature": 0.0, "max_tokens": 500, "description": "low temperature"},
+            {"temperature": 0.1, "max_tokens": 500, "description": "Default temperature"},
+            {"temperature": 0.3, "max_tokens": 500, "description": "medium temperature"},
         ]
         
-        prompt = "请调用analyze_stock工具分析AAPL股票，时间周期设为'1month'"
+        prompt = "Please call the analyze_stock tool to analyze AAPL stock, and the time period is set to'1month'"
         
         for config in configs:
-            print(f"\n🔄 测试{config['description']}配置...")
+            print(f"\n🔄 test{config['description']}Configuration...")
             
             try:
                 llm = ChatDashScopeOpenAI(
@@ -202,27 +202,27 @@ def test_parameter_optimization():
                 response = llm_with_tools.invoke([HumanMessage(content=prompt)])
                 
                 tool_calls = getattr(response, 'tool_calls', [])
-                print(f"   工具调用数量: {len(tool_calls)}")
+                print(f"   Number of tool calls: {len(tool_calls)}")
                 
                 if len(tool_calls) > 0:
-                    print(f"   ✅ {config['description']}配置成功")
+                    print(f"   ✅ {config['description']}Configuration successful")
                     return config
                 else:
-                    print(f"   ❌ {config['description']}配置失败")
+                    print(f"   ❌ {config['description']}Configuration failed")
                     
             except Exception as e:
-                print(f"   ❌ {config['description']}配置异常: {e}")
+                print(f"   ❌ {config['description']}Configuration exception: {e}")
         
         return None
         
     except Exception as e:
-        print(f"❌ 参数优化测试失败: {e}")
+        print(f"❌ Parameter optimization test failed: {e}")
         return None
 
 
 def test_model_comparison():
-    """测试不同模型的工具调用能力"""
-    print("\n🔧 测试不同模型的工具调用能力")
+    """Test the tool calling capabilities of different models"""
+    print("\n🔧 Test the tool calling capabilities of different models")
     print("=" * 50)
     
     try:
@@ -230,13 +230,13 @@ def test_model_comparison():
         from langchain_core.tools import tool
         from langchain_core.messages import HumanMessage
         
-        # 定义测试工具
+        # Define testing tools
         @tool
         def get_info(query: str) -> str:
-            """获取信息"""
-            return f"查询结果: {query}"
+            """Get information"""
+            return f"Query results: {query}"
         
-        # 测试不同模型
+        # Test different models
         models = [
             "qwen-turbo",
             "qwen-plus",
@@ -244,10 +244,10 @@ def test_model_comparison():
             "qwen-max-latest"
         ]
         
-        prompt = "请调用get_info工具查询'股票市场今日表现'"
+        prompt = "Please call the get_info tool to query'Stock market performance today'"
         
         for model in models:
-            print(f"\n🔄 测试模型: {model}...")
+            print(f"\n🔄 test model: {model}...")
             
             try:
                 llm = ChatDashScopeOpenAI(
@@ -260,42 +260,42 @@ def test_model_comparison():
                 response = llm_with_tools.invoke([HumanMessage(content=prompt)])
                 
                 tool_calls = getattr(response, 'tool_calls', [])
-                print(f"   工具调用数量: {len(tool_calls)}")
+                print(f"   Number of tool calls: {len(tool_calls)}")
                 
                 if len(tool_calls) > 0:
-                    print(f"   ✅ {model}: 支持工具调用")
+                    print(f"   ✅ {model}: Support tool calling")
                 else:
-                    print(f"   ❌ {model}: 不支持工具调用")
-                    print(f"   响应: {response.content[:100]}...")
+                    print(f"   ❌ {model}: Tool calling is not supported")
+                    print(f"   response: {response.content[:100]}...")
                     
             except Exception as e:
-                print(f"   ❌ {model}: 测试异常 - {e}")
+                print(f"   ❌ {model}: Test exception - {e}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 模型比较测试失败: {e}")
+        print(f"❌ Model comparison test failed: {e}")
         return False
 
 
 def main():
-    """主测试函数"""
-    print("🔬 阿里百炼工具调用优化测试")
+    """Main test function"""
+    print("🔬 Alibaba Bailian Tool Call Optimization Test")
     print("=" * 70)
-    print("💡 目标: 解决LLM不主动调用工具的问题")
+    print("💡 target: Solve the problem of LLM not actively calling tools")
     print("=" * 70)
     
-    # 检查API密钥
+    # Check API key
     if not os.getenv("DASHSCOPE_API_KEY"):
-        print("❌ 未找到DASHSCOPE_API_KEY环境变量")
+        print("❌ DASHSCOPE_API_KEY environment variable not found")
         return
     
-    # 运行测试
+    # Run tests
     tests = [
-        ("基本工具调用", test_basic_tool_calling),
-        ("股票分析工具调用", test_stock_analysis_tool_calling),
-        ("参数优化", test_parameter_optimization),
-        ("模型比较", test_model_comparison)
+        ("Basic tool calls", test_basic_tool_calling),
+        ("Stock analysis tool call", test_stock_analysis_tool_calling),
+        ("Parameter optimization", test_parameter_optimization),
+        ("Model comparison", test_model_comparison)
     ]
     
     results = []
@@ -304,34 +304,34 @@ def main():
             result = test_func()
             results.append((test_name, result))
         except Exception as e:
-            print(f"❌ {test_name}测试异常: {e}")
+            print(f"❌ {test_name}Test exception: {e}")
             results.append((test_name, False))
     
-    # 总结
-    print("\n📋 工具调用优化测试总结")
+    # Summary
+    print("\n📋 Tool call optimization test summary")
     print("=" * 60)
     
     passed = 0
     for test_name, result in results:
         if result:
-            status = "✅ 通过"
+            status = "✅ Pass"
             passed += 1
         else:
-            status = "❌ 失败"
+            status = "❌ failed"
         print(f"{test_name}: {status}")
     
     total = len(results)
-    print(f"\n📊 测试结果: {passed}/{total} 通过")
+    print(f"\n📊 Test results: {passed}/{total} Pass")
     
     if passed > 0:
-        print("\n💡 建议:")
-        print("   1. 使用更明确的工具调用指令")
-        print("   2. 调整temperature参数")
-        print("   3. 尝试不同的模型版本")
-        print("   4. 考虑使用强制工具调用模式")
+        print("\n💡 Suggestions:")
+        print("   1. Use more explicit tool calling instructions")
+        print("   2. Adjust temperature parameters")
+        print("   3. Try different model versions")
+        print("   4. Consider using the force tool call pattern")
     else:
-        print("\n⚠️ 阿里百炼可能需要特殊的工具调用处理")
-        print("   建议使用手动工具调用作为备用方案")
+        print("\n⚠️ Alibaba Bailian may require special tool call processing")
+        print("   It is recommended to use manual tool calls as a fallback")
 
 
 if __name__ == "__main__":

@@ -1,11 +1,11 @@
 """
-智能体系统模块
+Intelligent system module
 
-提供统一的智能体基类、注册表和工厂
+Provide unified agent base class, registry and factory
 
-v2.0 新特性:
-- 支持动态工具绑定
-- 支持 LangChain LLM 集成
+v2.0 new features:
+- Support dynamic tool binding
+- Supports LangChain LLM integration
 """
 
 from .base import BaseAgent
@@ -14,14 +14,14 @@ from .factory import AgentFactory, create_agent, create_agent_with_dynamic_tools
 from .config import AgentMetadata, AgentConfig, AgentCategory, AgentMaintenanceStatus, LicenseTier, BUILTIN_AGENTS
 from .universal import UniversalAgent
 
-# v2.0 新增：Agent基类
+# v2.0 New: Agent base class
 from .analyst import AnalystAgent
 from .researcher import ResearcherAgent
 from .manager import ManagerAgent
 from .trader import TraderAgent
 from .post_processor import PostProcessorAgent
 
-# 导入后处理Agent实现（触发注册）
+# Import post-processing Agent implementation (trigger registration)
 from .post_processors import (
     ReportSaverAgent,
     EmailNotifierAgent,
@@ -30,61 +30,61 @@ from .post_processors import (
     DataPreparerV2,
 )
 
-# 导入v2.0 Agent实现（触发注册）
+# Import v2.0 Agent implementation (trigger registration)
 from .adapters import (
-    # 分析师
+    # analyst
     FundamentalsAnalystAgentV2,
     NewsAnalystV2,
     SocialMediaAnalystV2,
     SectorAnalystV2,
     IndexAnalystV2,
-    # 研究员
+    # researcher
     BullResearcherV2,
     BearResearcherV2,
-    # 管理者
+    # manager
     ResearchManagerV2,
     RiskManagerV2,
-    # 研究整合员
+    # research integrator
     TraderV2,
-    # 风险分析师
+    # risk analyst
     RiskyAnalystV2,
     SafeAnalystV2,
     NeutralAnalystV2,
-    # 筹码分布分析师
+    # Chip distribution analyst
     ChipDistributionAnalystV2,
 )
 
 __all__ = [
-    # 基类
+    # base class
     "BaseAgent",
-    # v2.0 Agent基类
+    # v2.0 Agent base class
     "AnalystAgent",
     "ResearcherAgent",
     "ManagerAgent",
     "TraderAgent",
     "PostProcessorAgent",
-    # 后处理Agent
+    # Post-processing Agent
     "ReportSaverAgent",
     "EmailNotifierAgent",
     "SystemNotifierAgent",
     "ReportGeneratorV2",
     "DataPreparerV2",
-    # 注册表
+    # Registry
     "AgentRegistry",
     "get_registry",
     "register_agent",
-    # 工厂
+    # factory
     "AgentFactory",
     "create_agent",
     "create_agent_with_dynamic_tools",  # v2.0
-    # 配置
+    # Configuration
     "AgentMetadata",
     "AgentConfig",
     "AgentCategory",
     "AgentMaintenanceStatus",
     "LicenseTier",
     "BUILTIN_AGENTS",
-    # 筹码分布分析师
+    # Chip distribution analyst
     "ChipDistributionAnalystV2",
 ]
 

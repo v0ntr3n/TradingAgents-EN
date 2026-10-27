@@ -1,9 +1,9 @@
 {
   "collection": "stock_basic_info",
   "version": 1,
-  "summary": "股票基础信息与静态估值主表。估值类任务优先从这里获取名称、行业、PE/PB/PS 及市值信息。",
+  "summary": "Main table of basic stock information and static valuation. For valuation tasks, priority is given to obtaining name, industry, PE/PB/PS and market capitalization information from here.",
   "structure": {
-    "top_level_shape": "通常按一股一条或按 source 保留少量多版本记录。无需假设存在嵌套多期数组。",
+    "top_level_shape": "Usually a small number of multi-version records are kept per strand or per source. There is no need to assume that there are nested multi-period arrays.",
     "query_keys": ["symbol", "code", "source"],
     "stable_top_level_fields": [
       "symbol",
@@ -27,21 +27,21 @@
       "task": "valuation_common",
       "primary_paths": [
         "pe_ttm",
-        "pb 或 pb_mrq",
-        "ps_ttm 或 ps",
+        "pb or pb_mrq",
+        "ps_ttm or ps",
         "industry",
         "name"
       ],
       "fallback_paths": [
-        "如果 current_price 缺失，价格优先从 market_quotes 或 get_latest_stock_price 获取，不要把 stock_basic_info 当作唯一实时价格来源。"
+        "If current_price is missing, prices are first obtained from market_quotes or get_latest_stock_price. Do not use stock_basic_info as the only source of real-time prices."
       ],
       "notes": [
-        "估值类任务优先用 get_stock_valuation_context 统一获取当前价格和基础估值指标。"
+        "For valuation tasks, it is preferred to use get_stock_valuation_context to uniformly obtain the current price and basic valuation indicators."
       ]
     }
   ],
   "pitfalls": [
-    "current_price 可能不存在或不是最新值，实时价格不应只依赖本集合。",
-    "同一股票可能按 source 保留多条记录，直接查集合时需要考虑优先级。"
+    "current_price Values may not exist or be up-to-date, and this collection should not be relied upon solely for real-time prices.",
+    "The same stock may retain multiple records by source, and priority needs to be considered when directly querying the collection."
   ]
 }

@@ -1,22 +1,22 @@
 <template>
   <div class="cache-management">
-    <!-- 页面标题 -->
+    <!-- Page title -->
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><Coin /></el-icon>
-        缓存管理
+        Cache management
       </h1>
       <p class="page-description">
-        管理股票数据缓存，优化系统性能
+        Manage stock data cache and optimize system performance
       </p>
     </div>
 
     <el-row :gutter="24">
-      <!-- 左侧：缓存统计 -->
+      <!-- Left: cache statistics -->
       <el-col :span="12">
         <el-card class="stats-card" shadow="never">
           <template #header>
-            <h3>📊 缓存统计</h3>
+            <h3>📊 cache statistics</h3>
           </template>
           
           <div v-loading="statsLoading" class="stats-content">
@@ -24,13 +24,13 @@
               <el-col :span="12">
                 <div class="stat-item">
                   <div class="stat-value">{{ cacheStats.totalFiles }}</div>
-                  <div class="stat-label">总文件数</div>
+                  <div class="stat-label">Total number of files</div>
                 </div>
               </el-col>
               <el-col :span="12">
                 <div class="stat-item">
                   <div class="stat-value">{{ formatSize(cacheStats.totalSize) }}</div>
-                  <div class="stat-label">总大小</div>
+                  <div class="stat-label">total size</div>
                 </div>
               </el-col>
             </el-row>
@@ -39,13 +39,13 @@
               <el-col :span="12">
                 <div class="stat-item">
                   <div class="stat-value">{{ cacheStats.stockDataCount }}</div>
-                  <div class="stat-label">股票数据</div>
+                  <div class="stat-label">stock data</div>
                 </div>
               </el-col>
               <el-col :span="12">
                 <div class="stat-item">
                   <div class="stat-value">{{ cacheStats.newsDataCount }}</div>
-                  <div class="stat-label">新闻数据</div>
+                  <div class="stat-label">news data</div>
                 </div>
               </el-col>
             </el-row>
@@ -53,45 +53,45 @@
             <el-divider />
             
             <div class="cache-usage">
-              <h4>缓存使用情况</h4>
+              <h4>Cache usage</h4>
               <el-progress
                 :percentage="cacheUsagePercentage"
                 :color="getProgressColor(cacheUsagePercentage)"
                 :stroke-width="12"
               />
               <p class="usage-text">
-                已使用 {{ formatSize(cacheStats.totalSize) }} / {{ formatSize(cacheStats.maxSize) }}
+                Already used {{ formatSize(cacheStats.totalSize) }} / {{ formatSize(cacheStats.maxSize) }}
               </p>
             </div>
           </div>
         </el-card>
       </el-col>
 
-      <!-- 右侧：缓存操作 -->
+      <!-- Right: cache operations -->
       <el-col :span="12">
         <el-card class="operations-card" shadow="never">
           <template #header>
-            <h3>🛠️ 缓存操作</h3>
+            <h3>🛠️ Caching operations</h3>
           </template>
           
           <div class="operations-content">
-            <!-- 刷新统计 -->
+            <!-- Refresh statistics -->
             <div class="operation-item">
-              <h4>🔄 刷新统计</h4>
-              <p>重新获取最新的缓存统计信息</p>
+              <h4>🔄 Refresh statistics</h4>
+              <p>Retrieve the latest cache statistics</p>
               <el-button type="primary" @click="refreshStats" :loading="statsLoading">
-                刷新统计
+                Refresh statistics
               </el-button>
             </div>
             
             <el-divider />
             
-            <!-- 清理过期缓存 -->
+            <!-- Clear expired cache -->
             <div class="operation-item">
-              <h4>🧹 清理过期缓存</h4>
-              <p>删除指定天数之前的缓存文件</p>
+              <h4>🧹 Clear expired cache</h4>
+              <p>Delete cached files older than a specified number of days</p>
               
-              <el-form-item label="清理天数">
+              <el-form-item label="Cleanup days">
                 <el-slider
                   v-model="cleanupDays"
                   :min="1"
@@ -100,7 +100,7 @@
                   show-stops
                 />
                 <span class="cleanup-description">
-                  将清理 {{ cleanupDays }} 天前的缓存文件
+                  will clean up {{ cleanupDays }} Cache files days ago
                 </span>
               </el-form-item>
               
@@ -110,16 +110,16 @@
                 :loading="cleanupLoading"
               >
                 <el-icon><Delete /></el-icon>
-                清理过期缓存
+                Clear expired cache
               </el-button>
             </div>
             
             <el-divider />
             
-            <!-- 清空所有缓存 -->
+            <!-- Clear all cache -->
             <div class="operation-item">
-              <h4>🗑️ 清空所有缓存</h4>
-              <p class="warning-text">⚠️ 此操作将删除所有缓存文件，无法恢复</p>
+              <h4>🗑️ Clear all cache</h4>
+              <p class="warning-text">⚠️ This operation will delete all cache files and cannot be restored</p>
               
               <el-button 
                 type="danger" 
@@ -127,7 +127,7 @@
                 :loading="clearAllLoading"
               >
                 <el-icon><Delete /></el-icon>
-                清空所有缓存
+                Clear all cache
               </el-button>
             </div>
           </div>
@@ -135,56 +135,56 @@
       </el-col>
     </el-row>
 
-    <!-- 缓存详情 -->
+    <!-- Cache details -->
     <el-card class="details-card" shadow="never" style="margin-top: 24px">
       <template #header>
         <div class="card-header">
-          <h3>📋 缓存详情</h3>
+          <h3>📋 Cache details</h3>
           <el-button size="small" @click="loadCacheDetails">
             <el-icon><Refresh /></el-icon>
-            刷新
+            Refresh
           </el-button>
         </div>
       </template>
       
       <div v-loading="detailsLoading">
         <el-table :data="cacheDetails" style="width: 100%">
-          <el-table-column prop="type" label="类型" width="120">
+          <el-table-column prop="type" label="Type" width="120">
             <template #default="{ row }">
               <el-tag :type="getCacheTypeTag(row.type)">{{ row.type }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="symbol" label="股票代码" width="120" />
-          <el-table-column prop="size" label="大小" width="100">
+          <el-table-column prop="symbol" label="Stock code" width="120" />
+          <el-table-column prop="size" label="size" width="100">
             <template #default="{ row }">
               {{ formatSize(row.size) }}
             </template>
           </el-table-column>
-          <el-table-column prop="created_at" label="创建时间" width="180">
+          <el-table-column prop="created_at" label="creation time" width="180">
             <template #default="{ row }">
               {{ formatDate(row.created_at) }}
             </template>
           </el-table-column>
-          <el-table-column prop="last_accessed" label="最后访问" width="180">
+          <el-table-column prop="last_accessed" label="last visited" width="180">
             <template #default="{ row }">
               {{ formatDate(row.last_accessed) }}
             </template>
           </el-table-column>
-          <el-table-column prop="hit_count" label="命中次数" width="100" />
-          <el-table-column label="操作" width="120">
+          <el-table-column prop="hit_count" label="Number of hits" width="100" />
+          <el-table-column label="Operation" width="120">
             <template #default="{ row }">
               <el-button 
                 size="small" 
                 type="danger" 
                 @click="deleteCacheItem(row)"
               >
-                删除
+                Delete
               </el-button>
             </template>
           </el-table-column>
         </el-table>
         
-        <!-- 分页 -->
+        <!-- Pagination -->
         <el-pagination
           v-if="cacheDetails.length > 0"
           v-model:current-page="currentPage"
@@ -211,7 +211,7 @@ import {
 } from '@element-plus/icons-vue'
 import * as cacheApi from '@/api/cache'
 
-// 响应式数据
+// Responsive data
 const statsLoading = ref(false)
 const cleanupLoading = ref(false)
 const clearAllLoading = ref(false)
@@ -222,7 +222,7 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const totalItems = ref(0)
 
-// 缓存统计数据
+// cache statistics
 const cacheStats = ref({
   totalFiles: 0,
   totalSize: 0,
@@ -232,24 +232,24 @@ const cacheStats = ref({
   analysisDataCount: 0
 })
 
-// 缓存详情数据
+// Cache details data
 const cacheDetails = ref<any[]>([])
 
-// 清理天数标记
+// Cleanup days mark
 const cleanupMarks = {
-  1: '1天',
-  7: '1周',
-  14: '2周',
-  30: '1月'
+  1: '1 day',
+  7: '1 week',
+  14: '2 week',
+  30: '1 month'
 }
 
-// 计算属性
+// Computed properties
 const cacheUsagePercentage = computed(() => {
   if (cacheStats.value.maxSize === 0) return 0
   return Math.round((cacheStats.value.totalSize / cacheStats.value.maxSize) * 100)
 })
 
-// 方法
+// method
 const formatSize = (bytes: number): string => {
   if (bytes === 0) return '0 B'
   const k = 1024
@@ -283,12 +283,12 @@ const refreshStats = async () => {
   statsLoading.value = true
   try {
     const response = await cacheApi.getCacheStats()
-    // 从 ApiResponse 中提取 data 字段
+    // Extract data field from ApiResponse
     cacheStats.value = response.data || response
-    ElMessage.success('缓存统计已刷新')
+    ElMessage.success('Cache statistics refreshed')
   } catch (error: any) {
-    console.error('刷新缓存统计失败:', error)
-    ElMessage.error(error.message || '刷新缓存统计失败')
+    console.error('Failed to refresh cache statistics:', error)
+    ElMessage.error(error.message || 'Failed to refresh cache statistics')
   } finally {
     statsLoading.value = false
   }
@@ -297,8 +297,8 @@ const refreshStats = async () => {
 const cleanupOldCache = async () => {
   try {
     await ElMessageBox.confirm(
-      `确定要清理 ${cleanupDays.value} 天前的缓存文件吗？`,
-      '确认清理',
+      `sure to clean ${cleanupDays.value} Cache files days ago?`,
+      'Confirm cleanup',
       { type: 'warning' }
     )
 
@@ -306,14 +306,14 @@ const cleanupOldCache = async () => {
 
     await cacheApi.cleanupOldCache(cleanupDays.value)
 
-    ElMessage.success(`已清理 ${cleanupDays.value} 天前的缓存文件`)
+    ElMessage.success(`Cleaned ${cleanupDays.value} Cache files days ago`)
     await refreshStats()
     await loadCacheDetails()
 
   } catch (error: any) {
     if (error !== 'cancel') {
-      console.error('清理缓存失败:', error)
-      ElMessage.error(error.message || '清理缓存失败')
+      console.error('Failed to clear cache:', error)
+      ElMessage.error(error.message || 'Failed to clear cache')
     }
   } finally {
     cleanupLoading.value = false
@@ -323,12 +323,12 @@ const cleanupOldCache = async () => {
 const clearAllCache = async () => {
   try {
     await ElMessageBox.confirm(
-      '确定要清空所有缓存文件吗？此操作无法恢复！',
-      '确认清空',
+      'Are you sure you want to clear all cache files? This operation cannot be undone!',
+      'Confirm clearing',
       {
         type: 'error',
-        confirmButtonText: '确定清空',
-        cancelButtonText: '取消'
+        confirmButtonText: 'OK to clear',
+        cancelButtonText: 'Cancel'
       }
     )
 
@@ -336,14 +336,14 @@ const clearAllCache = async () => {
 
     await cacheApi.clearAllCache()
 
-    ElMessage.success('所有缓存已清空')
+    ElMessage.success('All caches have been cleared')
     await refreshStats()
     await loadCacheDetails()
 
   } catch (error: any) {
     if (error !== 'cancel') {
-      console.error('清空缓存失败:', error)
-      ElMessage.error(error.message || '清空缓存失败')
+      console.error('Failed to clear cache:', error)
+      ElMessage.error(error.message || 'Failed to clear cache')
     }
   } finally {
     clearAllLoading.value = false
@@ -354,13 +354,13 @@ const loadCacheDetails = async () => {
   detailsLoading.value = true
   try {
     const response = await cacheApi.getCacheDetails(currentPage.value, pageSize.value)
-    // 从 ApiResponse 中提取 data 字段
+    // Extract data field from ApiResponse
     const data = response.data || response
     cacheDetails.value = data.items || []
     totalItems.value = data.total || 0
   } catch (error: any) {
-    console.error('加载缓存详情失败:', error)
-    ElMessage.error(error.message || '加载缓存详情失败')
+    console.error('Failed to load cache details:', error)
+    ElMessage.error(error.message || 'Failed to load cache details')
   } finally {
     detailsLoading.value = false
   }
@@ -369,26 +369,26 @@ const loadCacheDetails = async () => {
 const deleteCacheItem = async (item: any) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除 ${item.symbol} 的${item.type}缓存吗？`,
-      '确认删除',
+      `Confirm to delete ${item.symbol} of${item.type}Cache?`,
+      'Confirm deletion',
       { type: 'warning' }
     )
     
-    // 模拟API调用
+    // Simulate API calls
     await new Promise(resolve => setTimeout(resolve, 500))
     
-    ElMessage.success('缓存项已删除')
+    ElMessage.success('Cache item deleted')
     await loadCacheDetails()
     await refreshStats()
     
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除缓存项失败')
+      ElMessage.error('Failed to delete cache item')
     }
   }
 }
 
-// 生命周期
+// life cycle
 onMounted(() => {
   refreshStats()
   loadCacheDetails()

@@ -26,7 +26,7 @@ CAPABILITY_INDEX_TOP_K = 24
 
 
 class CapabilityIndexService:
-    """统一能力索引服务。"""
+    """Unified capability index service."""
 
     def __init__(self, db: AsyncIOMotorDatabase):
         self._db = db
@@ -45,8 +45,8 @@ class CapabilityIndexService:
         if not force and current_fingerprint == fingerprint and collection_count > 0:
             self._cached_documents = {doc.capability_id: doc for doc in documents}
             logger.info(
-                "[CapabilityIndex] 📦 索引已存在，指纹匹配，跳过构建"
-                "（%d 个工具 / %d 个已索引 / 后端: %s）",
+                "[CapabilityIndex] 📦 Index already exists, fingerprint matches, build skipped"
+                " (%d tools / %d indexed / backends: %s) ",
                 len(documents), collection_count, self._vector_store_manager.backend,
             )
             return CapabilityIndexSyncResult(
@@ -59,12 +59,12 @@ class CapabilityIndexService:
                 sync_mode="no_change",
             )
 
-        # 检查 embedding 模型是否可用
+        # Check if embedding model is available
         config = self._embedding_manager.get_config()
         if not config.get("has_provider"):
             logger.warning(
-                "[CapabilityIndex] ⚠️ 未配置 embedding 模型，跳过索引构建"
-                "（%d 个工具将使用关键词匹配回退）",
+                "[CapabilityIndex] ⚠️ The embedding model is not configured and index construction is skipped."
+                " (%d tool will use keyword matching fallback)",
                 len(documents),
             )
             self._cached_documents = {doc.capability_id: doc for doc in documents}
@@ -79,13 +79,13 @@ class CapabilityIndexService:
             )
 
         if force or not previous_hashes:
-            # 预检查：先测试第一个 embedding 调用是否成功
-            # 如果 API Key 无效或网络不通，快速跳过避免长时间超时
+            # Pre-check: first test whether the first embedding call is successful
+            # If the API Key is invalid or the network is unavailable, skip quickly to avoid long timeouts.
             test_embedding, _ = self._embedding_manager.get_embedding("test")
             if test_embedding is None:
                 logger.warning(
-                    "[CapabilityIndex] ⚠️ Embedding API 不可用，跳过索引构建"
-                    "（%d 个工具将使用关键词匹配回退）",
+                    "[CapabilityIndex] ⚠️ Embedding API Not available, skip index building"
+                    " (%d tool will use keyword matching fallback)",
                     len(documents),
                 )
                 self._cached_documents = {doc.capability_id: doc for doc in documents}
@@ -99,13 +99,13 @@ class CapabilityIndexService:
                     sync_mode="skipped_embedding_unavailable",
                 )
             logger.info(
-                "[CapabilityIndex] 🔄 开始构建索引（%d 个工具，向量维度: %d）...",
+                "[CapabilityIndex] 🔄 Starting index building (%d tools, vector dimensions: %d) ...",
                 len(documents), self._embedding_manager.get_embedding_dimension(),
             )
             result = await asyncio.to_thread(self._rebuild_index, documents, fingerprint)
         else:
             logger.info(
-                "[CapabilityIndex] 🔄 增量同步索引（%d 个工具，%d 个已有索引）...",
+                "[CapabilityIndex] 🔄 Incremental synchronization of indexes (%d tools, %d existing indexes)...",
                 len(documents), collection_count,
             )
             result = await asyncio.to_thread(
@@ -120,7 +120,7 @@ class CapabilityIndexService:
         await self._save_state(result, document_hashes)
         self._cached_documents = {doc.capability_id: doc for doc in documents}
         logger.info(
-            "[CapabilityIndex] ✅ 索引就绪: %d/%d 已索引，%d 跳过，模式: %s",
+            "[CapabilityIndex] ✅ index ready: %d/%d Indexed, %d skipped, pattern: %s",
             result.indexed_documents, result.total_documents,
             result.skipped_documents, result.sync_mode,
         )
@@ -193,20 +193,20 @@ class CapabilityIndexService:
 
     @staticmethod
     async def refresh_after_change(db) -> None:
-        """工具变更（删除/新增/修改）后触发索引同步，清理幽灵工具。
+        """Trigger index synchronization after tool changes (delete/add/modify) to clean up ghost tools.
 
-        增量同步会自动检测并删除已不存在的工具向量。
-        不抛异常，失败只记录日志——搜索时的 allowed_ids 过滤会兜底。
+        Incremental synchronization automatically detects and deletes tool vectors that no longer exist.
+        No exceptions are thrown, only logs are logged on failure——The allowed_ids filtering when searching will give you a clue.
         """
         try:
             service = CapabilityIndexService(db)
             result = await service.ensure_index()
             logger.info(
-                "[CapabilityIndex] 工具变更后同步完成: mode=%s, total=%d, indexed=%d",
+                "[CapabilityIndex] Synchronization completed after tool change: mode=%s, total=%d, indexed=%d",
                 result.sync_mode, result.total_documents, result.indexed_documents,
             )
         except Exception as e:
-            logger.warning(f"[CapabilityIndex] 工具变更后同步失败: {e}")
+            logger.warning(f"[CapabilityIndex] Synchronization failed after tool change: {e}")
 
     async def get_index_state(self) -> Dict[str, Any]:
         state = await self._load_state()
@@ -216,7 +216,7 @@ class CapabilityIndexService:
         registry_docs = self._build_registry_documents()
         await self._merge_skills_documents(registry_docs)
         await self._merge_external_skills_documents(registry_docs)
-        await self._merge_agents_documents(registry_docs)  # 🔥 v3.0: Agent 纳入统一能力索引（含DB自定义）
+        await self._merge_agents_documents(registry_docs)  # 🔥 v3.0: Agent Incorporate into unified capability index (including DB customization)
 
         documents = sorted(registry_docs.values(), key=lambda item: (item.source_type, item.capability_id))
         payload = [
@@ -424,19 +424,19 @@ class CapabilityIndexService:
 
     async def _merge_agents_documents(self, documents: Dict[str, CapabilityDocument]) -> None:
         """
-        将 BUILTIN_AGENTS + MongoDB 自定义 Agent 合并到能力索引
+        will BUILTIN_AGENTS + MongoDB Custom Agent merged into capability index
 
-        每个 Agent 作为一个独立的能力项，source_type="agent"。
-        内置只收录 MAINTAINED 状态的，DB 只收录 enabled=True 的。
+        Each Agent serves as an independent capability item,source_type="agent". 
+        The built-in only collects the MAINTAINED status, and the DB only collects enabled=True of.
         """
         before_count = len(documents)
-        # ── 1. 内置 Agent ──
+        # ── 1. Built-in Agent ──
         builtin_added = 0
         for agent_id, meta in BUILTIN_AGENTS.items():
             status = meta.maintenance_status
             if status not in (AgentMaintenanceStatus.MAINTAINED,):
                 logger.debug(
-                    "[CapabilityIndex] 跳过 Agent: %s (status=%s)",
+                    "[CapabilityIndex] skip Agent: %s (status=%s)",
                     agent_id, status.value if hasattr(status, 'value') else status,
                 )
                 continue
@@ -454,11 +454,11 @@ class CapabilityIndexService:
             builtin_added += 1
 
         logger.info(
-            "[CapabilityIndex] 📥 Agent 文档: 内置 %d 个, 合并前总文档 %d, 合并后 %d",
+            "[CapabilityIndex] 📥 Agent Documentation: %d built-in, Total documents before merge %d, After merger %d",
             builtin_added, before_count, len(documents),
         )
 
-        # ── 2. MongoDB 自定义 Agent ──
+        # ── 2. MongoDB Customize Agent ──
         if self._db is not None:
             try:
                 builtin_ids = {agent_id for agent_id, _ in BUILTIN_AGENTS.items()}
@@ -479,10 +479,10 @@ class CapabilityIndexService:
                         source="database",
                     )
                     logger.info(
-                        f"📥 [CapabilityIndex] 已索引自定义 Agent: {aid} ({doc.get('name', '')})"
+                        f"📥 [CapabilityIndex] Indexed custom Agent: {aid} ({doc.get('name', '')})"
                     )
             except Exception as e:
-                logger.warning(f"从 MongoDB 加载自定义 Agent 到索引失败: {e}")
+                logger.warning(f"Loading custom Agent from MongoDB to index fails: {e}")
 
     def _add_agent_document(
         self, documents: Dict[str, CapabilityDocument],
@@ -490,7 +490,7 @@ class CapabilityIndexService:
         default_tools: list, inputs: list, outputs: list,
         output_field: str, source: str,
     ) -> None:
-        """为单个 Agent 构建 CapabilityDocument 并加入索引"""
+        """Build and index a CapabilityDocument for a single Agent"""
         safe_inputs = self._safe_list_to_str(inputs)
         safe_outputs = self._safe_list_to_str(outputs)
         safe_tools = self._safe_list_to_str(default_tools)
@@ -539,7 +539,7 @@ class CapabilityIndexService:
 
     @staticmethod
     def _safe_list_to_str(items: list) -> List[str]:
-        """将列表安全转为字符串列表，处理 dict 元素和非 list 输入"""
+        """Safely convert a list to a list of strings, handling dict elements and non-list input"""
         if not items:
             return []
         if not isinstance(items, list):
@@ -549,7 +549,7 @@ class CapabilityIndexService:
             if isinstance(item, str):
                 result.append(item)
             elif isinstance(item, dict):
-                # 尝试取常用字段名，取不到则 str()
+                # Try to get common field names, if not, then str()
                 for key in ("field", "name", "desc", "key", "label"):
                     if key in item:
                         result.append(str(item[key]))
@@ -686,56 +686,56 @@ class CapabilityIndexService:
 
         searchable = str(text or "").lower()
         patterns = [
-            # ── 估值类 ──
+            # ── Valuation class ──
             (r"(?<![a-z0-9])(valuation|valuations)(?![a-z0-9])", "valuation"),
             (r"(?<![a-z0-9])dcf(?![a-z0-9])", "dcf"),
-            (r"(?<![a-z0-9])pe(?![a-z0-9])|市盈率|pe_ttm|p/e", "pe"),
-            (r"(?<![a-z0-9])pb(?![a-z0-9])|市净率|pb_mrq", "pb"),
+            (r"(?<![a-z0-9])pe(?![a-z0-9])|P/E ratio|pe_ttm|p/e", "pe"),
+            (r"(?<![a-z0-9])pb(?![a-z0-9])|price to book ratio|pb_mrq", "pb"),
             (r"(?<![a-z0-9])peg(?![a-z0-9])", "peg"),
             (r"(?<![a-z0-9])ps(?![a-z0-9])", "ps"),
             (r"ev/?ebitda", "ev_ebitda"),
-            (r"可比公司|同业对比|peer comparison|peer", "peer_comparison"),
-            (r"估值|估价|定价|目标价|价格区间|估值区间|相对估值", "valuation_cn"),
-            (r"增长|growth|营收同比|净利润同比|cagr", "growth"),
-            (r"现金流|cashflow|fcf|ocf|经营现金流|自由现金流", "cashflow"),
-            (r"roe|roa|roic|毛利率|净利率|利润率|盈利稳定性|资本效率|piotroski|altman|beneish", "quality"),
-            (r"历史|多年|年报序列|时间序列|trend|series", "historical_series"),
-            (r"分位|percentile|估值分位", "percentile"),
-            (r"ma20|rsi14|rsi|kdj|macd|技术指标|technical", "technical"),
-            # ── 资产质量 / 基本面风险 ──
-            (r"应收账款|receivables|(?<![a-z0-9])dso(?![a-z0-9])|账龄|坏账|bad_debt|回款|收款", "asset_quality_receivables"),
-            (r"存货|inventory|(?<![a-z0-9])dio(?![a-z0-9])|存货周转|跌价", "asset_quality_inventory"),
-            (r"资产质量|asset_quality|资产减值", "asset_quality"),
-            (r"偿债|solvency|debt_to_equity|资产负债率|利息覆盖|利息保障|debt_structure|有息负债", "solvency"),
-            (r"流动性|liquidity|current_ratio|quick_ratio|流动比率|速动比率|短期偿债", "liquidity"),
-            (r"商誉|goodwill|减值测试|impairment", "goodwill"),
-            (r"破产|bankruptcy|ohlson|z_score|zscore|altman|beneish|mscore|oscore|欺诈|fraud|财务造假|财务舞弊|风险|risk_adjusted|risk_profile|risk_event|risk_flag", "risk"),
-            # ── 资本成本 / 风险度量 / 投资组合 / 归因分析 / 统计分析 ──
-            (r"wacc|capm|cost_of_equity|cost_of_debt|折现率|资本成本|加权平均资本成本", "cost_of_capital"),
-            (r"(?<![a-z0-9])beta(?![a-z0-9])|(?<![a-z0-9])alpha(?![a-z0-9])|sharpe|sortino|treynor|calmar|jensen|information_ratio|(?<![a-z0-9])var(?![a-z0-9])|cvar|volatility|波动率|最大回撤|max_drawdown|downside|风险调整", "risk_metrics"),
-            (r"portfolio|组合|efficient_frontier|monte_carlo|蒙特卡洛|马科维茨|markowitz|optimal_weight|最优权重|scenario_analysis|情景分析", "portfolio"),
-            (r"attribution|归因|brinson|factor_attribution|sector_attribution", "attribution"),
-            (r"correlation|cointegration|协整|regression|回归|normality|正态|stationarity|平稳|(?<![a-z0-9])adf(?![a-z0-9])|garch|ewma|统计|statistical", "statistics"),
-            # ── 筛选 / 宏观 / 股息 / 筹码 / 量价 ──
-            (r"screen|筛选|filter|过滤|选股", "screening"),
-            (r"macro|宏观|economic_cycle|经济周期|monetary|货币环境|美林时钟|yield_curve|收益率曲线|景气|recession|衰退|recovery|复苏|overheating|过热|stagflation|滞胀", "macro"),
-            (r"dividend|股息|分红|送股|红利|股利|送转|每股分红", "dividend"),
-            (r"chip|筹码|获利比例|平均成本|集中度", "chip_distribution"),
-            (r"vwap|obv|turnover|换手率|成交量|量价|volume_profile|成交额|主力净流入|资金流|capital_flow|fund_flow", "volume_analysis"),
-            # ── 技术分析扩展 ──
-            (r"pivot|支撑|阻力|压力位|fibonacci|斐波那契|枢轴点|颈线|趋势线", "support_resistance"),
-            (r"candlestick|k线|k 线|chart_pattern|形态|头肩|双顶|双底|三角形|旗形|楔形|缺口|十字星|锤头", "chart_pattern"),
-            # ── 债券 / 期权 / 事件研究 ──
-            (r"bond|债券|久期|duration|凸性|convexity|credit_spread|信用利差|国债|企业债|可转债", "bond"),
-            (r"option|期权|black_scholes|greeks|希腊字母|delta|gamma|theta|vega|rho|implied_volatility|隐含波动率|行权价|strike", "option"),
-            (r"event_study|事件研究|事件日|事件驱动|event_driven|公告事件|监管事件|event_timeline", "event_study"),
-            # ── 财务报表 / ETF / 内部人 / 市场宽度 / 证券主数据 ──
-            (r"income_analysis|利润表|营收|主营业务|main_business|收入结构|费用分析", "income_statement"),
-            (r"financial_statement|财务报表|balance_sheet|资产负债表|financial_statements|fundamentals_unified|财务数据", "financial_statements"),
-            (r"(?<![a-z0-9])etf(?![a-z0-9])|基金基本面", "etf_fundamentals"),
-            (r"insider|内部人|内部人士|insider_sentiment|insider_transaction", "insider"),
-            (r"market_breadth|市场宽度|market_overview|市场概览|market_environment|市场环境|market_cycle|市场周期|涨跌家数|breadth|index_data|指数数据|sector_data|板块数据|sector_analysis|板块分析", "market_breadth"),
-            (r"security_master|证券主数据|上市状态|stock_master|证券信息|交易所|市值", "security_master"),
+            (r"Comparable companies|Comparison with peers|peer comparison|peer", "peer_comparison"),
+            (r"Valuation|Valuation|Pricing|target price|price range|Valuation range|relative valuation", "valuation_cn"),
+            (r"growth|growth|Year-on-year revenue|Net profit year-on-year|cagr", "growth"),
+            (r"cash flow|cashflow|fcf|ocf|operating cash flow|free cash flow", "cashflow"),
+            (r"roe|roa|roic|Gross profit margin|net profit margin|profit margin|Profitability stability|capital efficiency|piotroski|altman|beneish", "quality"),
+            (r"history|many years|annual report sequence|time series|trend|series", "historical_series"),
+            (r"Quantile|percentile|Valuation quantile", "percentile"),
+            (r"ma20|rsi14|rsi|kdj|macd|Technical indicators|technical", "technical"),
+            # ── Asset Quality/Fundamental Risk ──
+            (r"Accounts receivable|receivables|(?<![a-z0-9])dso(?![a-z0-9])|Aging|bad debts|bad_debt|Refund|Collection", "asset_quality_receivables"),
+            (r"Inventory|inventory|(?<![a-z0-9])dio(?![a-z0-9])|inventory turnover|Falling price", "asset_quality_inventory"),
+            (r"Asset quality|asset_quality|Asset impairment", "asset_quality"),
+            (r"debt repayment|solvency|debt_to_equity|Asset-liability ratio|interest coverage|Interest protection|debt_structure|Interest-bearing liabilities", "solvency"),
+            (r"Liquidity|liquidity|current_ratio|quick_ratio|current ratio|quick ratio|short term debt service", "liquidity"),
+            (r"goodwill|goodwill|Impairment test|impairment", "goodwill"),
+            (r"Bankruptcy|bankruptcy|ohlson|z_score|zscore|altman|beneish|mscore|oscore|Fraud|fraud|financial fraud|financial fraud|risk|risk_adjusted|risk_profile|risk_event|risk_flag", "risk"),
+            # ── Cost of Capital / Risk Measurement / Portfolio / Attribution Analysis / Statistical Analysis ──
+            (r"wacc|capm|cost_of_equity|cost_of_debt|discount rate|capital cost|weighted average cost of capital", "cost_of_capital"),
+            (r"(?<![a-z0-9])beta(?![a-z0-9])|(?<![a-z0-9])alpha(?![a-z0-9])|sharpe|sortino|treynor|calmar|jensen|information_ratio|(?<![a-z0-9])var(?![a-z0-9])|cvar|volatility|Volatility|maximum drawdown|max_drawdown|downside|risk adjustment", "risk_metrics"),
+            (r"portfolio|combination|efficient_frontier|monte_carlo|Monte Carlo|Markowitz|markowitz|optimal_weight|optimal weight|scenario_analysis|Scenario analysis", "portfolio"),
+            (r"attribution|attribution|brinson|factor_attribution|sector_attribution", "attribution"),
+            (r"correlation|cointegration|cointegration|regression|Return|normality|normal|stationarity|Smooth|(?<![a-z0-9])adf(?![a-z0-9])|garch|ewma|statistics|statistical", "statistics"),
+            # ── Screening/Macro/Dividend/Chips/Volume and Price ──
+            (r"screen|Filter|filter|filter|stock picking", "screening"),
+            (r"macro|Macro|economic_cycle|business cycle|monetary|monetary environment|Merrill Lynch Clock|yield_curve|yield curve|prosperity|recession|recession|recovery|recovery|overheating|overheating|stagflation|stagflation", "macro"),
+            (r"dividend|dividends|dividend|Bonus shares|bonus|dividend|Send for transfer|Dividend per share", "dividend"),
+            (r"chip|chips|Profit ratio|average cost|Concentration", "chip_distribution"),
+            (r"vwap|obv|turnover|turnover rate|Volume|Volume and price|volume_profile|Turnover|Main net inflow|capital flow|capital_flow|fund_flow", "volume_analysis"),
+            # ── Technical Analysis Extension ──
+            (r"pivot|support|resistance|pressure level|fibonacci|Fibonacci|pivot point|Neckline|trend line", "support_resistance"),
+            (r"candlestick|k line|k line|chart_pattern|form|Head and shoulders|double top|double bottom|triangle|flag shape|Wedge|notch|Doji|hammer head", "chart_pattern"),
+            # ── Bonds/Options/Event Research ──
+            (r"bond|bonds|Duration|duration|Convexity|convexity|credit_spread|credit spread|national debt|corporate bonds|Convertible bonds", "bond"),
+            (r"option|options|black_scholes|greeks|greek letters|delta|gamma|theta|vega|rho|implied_volatility|Implied volatility|exercise price|strike", "option"),
+            (r"event_study|event study|event day|event driven|event_driven|Announcement event|regulatory events|event_timeline", "event_study"),
+            # ── Financial Statements / ETFs / Insiders / Market Breadth / Securities Master Data ──
+            (r"income_analysis|income statement|Revenue|Main business|main_business|income structure|cost analysis", "income_statement"),
+            (r"financial_statement|financial statements|balance_sheet|balance sheet|financial_statements|fundamentals_unified|financial data", "financial_statements"),
+            (r"(?<![a-z0-9])etf(?![a-z0-9])|Fund fundamentals", "etf_fundamentals"),
+            (r"insider|insider|insiders|insider_sentiment|insider_transaction", "insider"),
+            (r"market_breadth|market breadth|market_overview|Market overview|market_environment|market environment|market_cycle|market cycle|Number of stocks rising and falling|breadth|index_data|index data|sector_data|Sector data|sector_analysis|Sector analysis", "market_breadth"),
+            (r"security_master|Securities master data|Listing status|stock_master|Securities information|exchange|Market value", "security_master"),
         ]
         matched: List[str] = []
         for pattern, normalized in patterns:
@@ -761,25 +761,25 @@ class CapabilityIndexService:
         indexed = 0
         skipped = 0
         total = len(documents)
-        batch_size = max(1, total // 10)  # 每 10% 输出一次进度
-        consecutive_failures = 0  # 🔥 连续失败计数器，超过阈值则跳过剩余文档
+        batch_size = max(1, total // 10)  # Output progress every 10%
+        consecutive_failures = 0  # 🔥 Continuous failure counter, if the threshold is exceeded, the remaining documents will be skipped
         max_consecutive_failures = 5
         for idx, document in enumerate(documents):
             embedding, provider = self._embedding_manager.get_embedding(document.retrieval_text)
             if embedding is None:
                 skipped += 1
                 consecutive_failures += 1
-                # 🔥 连续失败超过阈值，跳过剩余文档避免长时间阻塞
+                # 🔥 If consecutive failures exceed the threshold, the remaining documents will be skipped to avoid long-term blocking.
                 if consecutive_failures >= max_consecutive_failures:
                     remaining = total - idx - 1
                     logger.warning(
-                        "[CapabilityIndex] ⚠️ 连续 %d 次失败，跳过剩余 %d 个文档（Embedding API 不可用）",
+                        "[CapabilityIndex] ⚠️ %d consecutive failures, skipping remaining %d documents (Embedding API unavailable)",
                         consecutive_failures, remaining,
                     )
                     skipped += remaining
                     break
                 continue
-            consecutive_failures = 0  # 成功则重置
+            consecutive_failures = 0  # Reset if successful
             metadata = document.model_dump(mode="json")
             metadata["embedding_provider"] = provider
             self._collection.add(
@@ -791,7 +791,7 @@ class CapabilityIndexService:
             indexed += 1
             if indexed % batch_size == 0 or idx == total - 1:
                 logger.info(
-                    "[CapabilityIndex] 构建中... %d/%d (%d 跳过)",
+                    "[CapabilityIndex] Under construction... %d/%d (%d skip)",
                     indexed, total, skipped,
                 )
 
@@ -821,7 +821,7 @@ class CapabilityIndexService:
         current_count = self._collection.count()
         if expected_count > 0 and current_count == 0 and documents:
             logger.warning(
-                "[CapabilityIndex] 检测到状态存在但向量集合为空，回退为全量重建: expected=%s actual=%s",
+                "[CapabilityIndex] It is detected that the state exists but the vector set is empty, and the fallback is to full reconstruction.: expected=%s actual=%s",
                 expected_count,
                 current_count,
             )
@@ -839,13 +839,13 @@ class CapabilityIndexService:
         if deleted_ids:
             point_ids = [self._build_point_id(capability_id) for capability_id in deleted_ids]
             if not self._collection.delete_ids(point_ids):
-                logger.warning("[CapabilityIndex] 增量删除失败，回退为全量重建")
+                logger.warning("[CapabilityIndex] Incremental deletion failed and fell back to full reconstruction.")
                 return self._rebuild_index(documents, fingerprint)
             deleted_count = len(deleted_ids)
 
         upserted = 0
         skipped = 0
-        consecutive_failures = 0  # 🔥 连续失败计数器
+        consecutive_failures = 0  # 🔥 Continuous failure counter
         max_consecutive_failures = 5
         if changed_ids:
             upsert_documents: List[str] = []
@@ -859,17 +859,17 @@ class CapabilityIndexService:
                 if embedding is None:
                     skipped += 1
                     consecutive_failures += 1
-                    # 🔥 连续失败超过阈值，跳过剩余变更文档
+                    # 🔥 If the continuous failure exceeds the threshold, the remaining change documents will be skipped.
                     if consecutive_failures >= max_consecutive_failures:
                         remaining = len(changed_ids) - len(upsert_ids) - skipped
                         logger.warning(
-                            "[CapabilityIndex] ⚠️ 增量同步连续 %d 次失败，跳过剩余 %d 个文档",
+                            "[CapabilityIndex] ⚠️ Incremental sync failed %d times in a row, skipping remaining %d documents",
                             consecutive_failures, remaining,
                         )
                         skipped += remaining
                         break
                     continue
-                consecutive_failures = 0  # 成功则重置
+                consecutive_failures = 0  # Reset if successful
                 metadata = document.model_dump(mode="json")
                 metadata["embedding_provider"] = provider
                 upsert_documents.append(document.retrieval_text)
@@ -883,7 +883,7 @@ class CapabilityIndexService:
                 metadatas=upsert_metadatas,
                 ids=upsert_ids,
             ):
-                logger.warning("[CapabilityIndex] 增量 upsert 失败，回退为全量重建")
+                logger.warning("[CapabilityIndex] Incremental upsert fails and falls back to full rebuild")
                 return self._rebuild_index(documents, fingerprint)
             upserted = len(upsert_ids)
 
@@ -923,7 +923,7 @@ class CapabilityIndexService:
                 hits.append(CapabilitySearchHit(capability=capability, score=round(1.0 - float(distance), 4)))
             return hits
         except Exception as exc:
-            logger.warning("[CapabilityIndex] 向量检索失败，回退词法检索: %s", exc)
+            logger.warning("[CapabilityIndex] Vector retrieval failed, fallback to lexical retrieval: %s", exc)
             return []
 
     def _lexical_search(

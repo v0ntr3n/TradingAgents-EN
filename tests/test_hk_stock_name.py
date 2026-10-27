@@ -1,51 +1,51 @@
 """
-测试港股实时价格是否包含股票名称
+Test whether the real-time price of Hong Kong stocks contains the stock name
 """
 import asyncio
 from tradingagents.dataflows.providers.hk.hk_stock import get_hk_stock_provider
 
 
 async def test_hk_stock_name():
-    """测试港股实时价格是否包含股票名称"""
-    print("=== 测试港股实时价格 name 字段 ===\n")
+    """Test whether the real-time price of Hong Kong stocks contains the stock name"""
+    print("=== Test the real-time price of Hong Kong stocks name field ===\n")
     
     provider = get_hk_stock_provider()
     
-    # 测试股票列表
+    # Test stock list
     test_stocks = [
-        ("00700", "腾讯控股"),
-        ("09988", "阿里巴巴"),
-        ("01810", "小米集团"),
+        ("00700", "Tencent Holdings"),
+        ("09988", "Alibaba"),
+        ("01810", "Xiaomi Group"),
     ]
     
     for code, expected_name in test_stocks:
-        print(f"📊 测试股票: {code} (预期名称: {expected_name})")
+        print(f"📊 test stocks: {code} (expected name: {expected_name})")
         
         try:
-            # 获取实时价格
+            # Get real-time prices
             quote = provider.get_real_time_price(code)
             
             if quote:
-                print(f"✅ 获取成功:")
-                print(f"   代码: {quote.get('symbol')}")
-                print(f"   名称: {quote.get('name', '(无名称)')}")
-                print(f"   价格: {quote.get('price')}")
-                print(f"   货币: {quote.get('currency')}")
+                print(f"✅ get success:")
+                print(f"   code: {quote.get('symbol')}")
+                print(f"   Name: {quote.get('name', '(no name)')}")
+                print(f"   price: {quote.get('price')}")
+                print(f"   Currency: {quote.get('currency')}")
                 
-                # 检查是否包含 name 字段
+                # Check if name field is included
                 if 'name' in quote:
                     name = quote.get('name')
-                    if name and not name.startswith('港股'):
-                        print(f"   ✅ name 字段正确: {name}")
+                    if name and not name.startswith('Hong Kong stocks'):
+                        print(f"   ✅ name Fields are correct: {name}")
                     else:
-                        print(f"   ⚠️ name 字段为默认值: {name}")
+                        print(f"   ⚠️ name Field is default value: {name}")
                 else:
-                    print(f"   ❌ 缺少 name 字段")
+                    print(f"   ❌ Missing name field")
             else:
-                print(f"❌ 获取失败: 返回 None")
+                print(f"❌ Failed to obtain: Return None")
                 
         except Exception as e:
-            print(f"❌ 异常: {e}")
+            print(f"❌ Abnormal: {e}")
         
         print()
 

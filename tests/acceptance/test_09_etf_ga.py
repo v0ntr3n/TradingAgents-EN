@@ -1,96 +1,96 @@
 """
-ETF GA 验收测试
+ETF GA Acceptance testing
 
-覆盖:
-- ETF 行情查询 (GET /api/stocks/{etf_code}/quote)
-- ETF 基本面查询 (GET /api/stocks/{etf_code}/fundamentals)
-- ETF K线查询 (GET /api/stocks/{etf_code}/kline)
-- ETF 数据同步 (POST /api/sync/etf/run)
-- ETF 模拟交易行情 (GET /api/paper/quote/{etf_code})
+Cover:
+- ETF Market inquiry (GET /api/stocks/{etf_code}/quote)
+- ETF Fundamentals query (GET /api/stocks/{etf_code}/fundamentals)
+- ETF K Line query (GET /api/stocks/{etf_code}/kline)
+- ETF Data synchronization (POST /api/sync/etf/run)
+- ETF Simulated trading quotes (GET /api/paper/quote/{etf_code})
 
-ETF 代码规则:
-- 上交所: 50/51/52/56/58 开头 (如 510050 上证50ETF)
-- 深交所: 15/16/18 开头 (如 159919 沪深300ETF)
-- 北交所: 89 开头
+ETF code rules:
+- Shanghai Stock Exchange: 50/51/52/56/58 Beginning (Such as 510050 Shanghai Stock Exchange 50ETF)
+- Shenzhen Stock Exchange: 15/16/18 Beginning (Such as 159919 Shanghai and Shenzhen 300ETF)
+- Beijing Exchange: 89 Beginning
 """
 import pytest
 
 
-# 测试用的 ETF 代码
-ETF_SH_CODE = "510050"   # 上证50ETF
-ETF_SZ_CODE = "159919"   # 沪深300ETF
+# ETF ticker for testing
+ETF_SH_CODE = "510050"   # Shanghai Stock Exchange 50ETF
+ETF_SZ_CODE = "159919"   # Shanghai and Shenzhen 300ETF
 
 
 class TestETFQuote:
-    """ETF 行情查询测试。"""
+    """ETF Market query test."""
 
     def test_get_sh_etf_quote(self, api_client):
-        """获取上交所 ETF 行情。"""
+        """Get SSE ETF quotes."""
         resp = api_client.get(f"/api/stocks/{ETF_SH_CODE}/quote")
-        assert resp.status_code == 200, f"获取ETF行情失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain ETF quotes: {resp.text}"
         data = resp.json()
-        # 验证返回了数据
+        # Verification returned data
         data_field = data.get("data", data) if isinstance(data, dict) else data
-        assert data_field is not None, f"ETF行情数据为空: {data}"
+        assert data_field is not None, f"ETF Market data is empty: {data}"
 
     def test_get_sz_etf_quote(self, api_client):
-        """获取深交所 ETF 行情。"""
+        """Get SZSE ETF quotes."""
         resp = api_client.get(f"/api/stocks/{ETF_SZ_CODE}/quote")
-        assert resp.status_code == 200, f"获取深交所ETF行情失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain Shenzhen Stock Exchange ETF quotations: {resp.text}"
 
 
 class TestETFFundamentals:
-    """ETF 基本面查询测试。"""
+    """ETF Fundamental query testing."""
 
     def test_get_etf_fundamentals(self, api_client_session):
-        """获取 ETF 基本面数据。"""
+        """Get ETF fundamental data."""
         resp = api_client_session.get(f"/api/stocks/{ETF_SH_CODE}/fundamentals", timeout=120)
-        assert resp.status_code == 200, f"获取ETF基本面失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to get ETF fundamentals: {resp.text}"
         data = resp.json()
         data_field = data.get("data", data) if isinstance(data, dict) else data
-        # ETF 基本面应包含净值等信息
+        # ETF Fundamentals should include information such as net worth
         if isinstance(data_field, dict):
-            # 至少应该有名称
+            # There should at least be a name
             assert data_field.get("name") or data_field.get("short_name") or data_field.get("ts_code"), \
-                f"ETF基本面缺少名称信息: {data_field}"
+                f"ETF Fundamentals are missing name information: {data_field}"
 
 
 class TestETFKline:
-    """ETF K线查询测试。"""
+    """ETF K Online query test."""
 
     def test_get_etf_kline(self, api_client_session):
-        """获取 ETF K线数据。"""
+        """Get ETF K-line data."""
         resp = api_client_session.get(f"/api/stocks/{ETF_SH_CODE}/kline", params={
             "period": "daily",
             "limit": 30,
         }, timeout=120)
-        assert resp.status_code == 200, f"获取ETF K线失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain ETF K-line: {resp.text}"
         data = resp.json()
         data_field = data.get("data", data) if isinstance(data, dict) else data
-        # K线数据应该是列表
+        # K Line data should be a list
         if isinstance(data_field, dict):
             kline = data_field.get("kline") or data_field.get("data") or data_field.get("items")
-            # 有数据即可，不强制非空（可能数据源不可用）
-            assert kline is not None or data_field is not None, f"ETF K线数据异常: {data_field}"
+            # As long as there is data, it is not mandatory to be non-empty (the data source may not be available)
+            assert kline is not None or data_field is not None, f"ETF K Line data abnormality: {data_field}"
 
 
 class TestETFSync:
-    """ETF 数据同步测试。"""
+    """ETF Data synchronization test."""
 
     def test_trigger_etf_sync(self, api_client_session):
-        """触发 ETF 数据同步。"""
+        """Trigger ETF data sync."""
         resp = api_client_session.post("/api/sync/etf/run", json={
             "force": False,
             "days": 7,
         }, timeout=120)
-        # 同步可能返回 200（成功触发）或 409（已有同步在运行）
-        assert resp.status_code in (200, 201, 409, 422), f"ETF同步触发异常: {resp.status_code} {resp.text}"
+        # The sync may return 200 (triggered successfully) or 409 (sync already running)
+        assert resp.status_code in (200, 201, 409, 422), f"ETF Synchronous trigger exception: {resp.status_code} {resp.text}"
 
 
 class TestETFPaperTrading:
-    """ETF 模拟交易测试。"""
+    """ETF Simulated trading test."""
 
     def test_get_etf_paper_quote(self, api_client):
-        """获取 ETF 模拟交易行情。"""
+        """Get simulated ETF trading quotes."""
         resp = api_client.get(f"/api/paper/quote/{ETF_SH_CODE}")
-        assert resp.status_code in (200, 404), f"ETF模拟交易行情异常: {resp.status_code} {resp.text}"
+        assert resp.status_code in (200, 404), f"ETF Abnormal simulated trading market conditions: {resp.status_code} {resp.text}"

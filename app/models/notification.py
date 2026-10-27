@@ -1,5 +1,5 @@
 """
-通知数据模型（MongoDB + Pydantic）
+Notification Data Model (MongoDB + Pydantic) 
 """
 from datetime import datetime
 from typing import Optional, Literal, List, Dict, Any
@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, field_serializer
 from bson import ObjectId
 from app.utils.timezone import now_tz
 
-# 简单工具：ObjectId -> str
+# Simple tools:ObjectId -> str
 
 def to_str_id(v: Any) -> str:
     try:
@@ -59,7 +59,7 @@ class NotificationOut(BaseModel):
 
     @field_serializer('created_at')
     def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
-        """序列化 datetime 为 ISO 8601 格式，保留时区信息"""
+        """Serialize datetime to ISO 8601 format, preserving time zone information"""
         if dt:
             return dt.isoformat()
         return None

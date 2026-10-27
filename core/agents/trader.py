@@ -1,8 +1,8 @@
 """
-研究整合员Agent基类
+Research IntegratorAgent base class
 
-用于实现研究整合员Agent（输出研究观察汇总，不构成投资建议）
-v2.0 新增：基于配置的研究整合员Agent架构
+Used to implement the research integrator Agent (outputs a summary of research observations and does not constitute investment advice)
+v2.0 New: configuration-based research integrator Agent architecture
 """
 
 import logging
@@ -31,28 +31,28 @@ def _stringify_trading_plan(value: Any) -> str:
 
 class TraderAgent(BaseAgent):
     """
-    研究整合员Agent基类
+    Research IntegratorAgent base class
     
-    工作模式：读取决策 → 生成研究观察汇总
+    Working mode: Read decisions → Generate summary of research observations
     
-    特点：
-    - 不调用工具
-    - 依赖所有前序Agent的输出
-    - 需要记忆系统（历史研究记录）
-    - 输出格式：研究观察汇总
+    Features:
+    - Do not call tools
+    - Depends on the output of all pre-order Agents
+    - Requires memory system (historical research records)
+    - Output format: Summary of research observations
     
-    工作流程：
-    1. 从state读取研究计划和所有分析报告
-    2. 使用LLM生成研究观察汇总
-    3. 输出研究观察汇总
-    4. 输出到state["trading_plan"]
+    Workflow:
+    1. Read research plans and all analysis reports from state
+    2. Generate study observation summaries using LLM
+    3. Output research observation summary
+    4. Output to state["trading_plan"]
     
-    子类需要实现：
-    - _build_system_prompt(): 构建系统提示词
-    - _build_user_prompt(): 构建用户提示词
+    Subclasses need to implement:
+    - _build_system_prompt(): Build system prompt words
+    - _build_user_prompt(): Build user prompt words
     """
     
-    # 输出字段名（子类定义）
+    # Output field name (subclass definition)
     output_field: str = "trading_plan"
     
     def __init__(
@@ -63,40 +63,40 @@ class TraderAgent(BaseAgent):
         **kwargs
     ):
         """
-        初始化研究整合员Agent
+        Initialize research integrator Agent
         
         Args:
-            config: Agent配置
-            llm: LLM实例
-            memory: 记忆系统实例（用于历史研究记录）
-            **kwargs: 其他参数
+            config: Agent Configuration
+            llm: LLM Example
+            memory: Examples of memory systems (for historical research records)
+            **kwargs: Other parameters
         """
         super().__init__(config=config, llm=llm, **kwargs)
         
         self.memory = memory
         
-        logger.debug(f"TraderAgent '{self.agent_id}' 初始化完成")
+        logger.debug(f"TraderAgent '{self.agent_id}' Initialization completed")
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行研究整合分析
+        Perform research integration analysis
         
         Args:
-            state: 工作流状态字典，包含：
-                - ticker: 股票代码
-                - analysis_date: 分析日期
-                - investment_plan: 综合研究结论
-                - market_report: 市场分析报告（可选）
-                - news_report: 新闻分析报告（可选）
-                - 其他报告...
+            state: Workflow status dictionary, including:
+                - ticker: Stock code
+                - analysis_date: Analysis date
+                - investment_plan: Comprehensive research conclusion
+                - market_report: Market analysis report (optional)
+                - news_report: News analysis report (optional)
+                - Other reports...
                 
         Returns:
-            更新后的状态字典，包含研究观察汇总
+            Updated status dictionary with summary of research observations
         """
-        logger.info(f"开始执行研究整合员Agent: {self.agent_id}")
+        logger.info(f"Start an Executive Research Integrator Agent: {self.agent_id}")
         
         try:
-            # 1. 提取输入参数（统一使用基类方法，兼容多种字段名与场景兜底）
+            # 1. Extract input parameters (unified use of base class methods, compatible with various field names and scenarios)
             ticker, analysis_date = self._extract_common_params(state)
 
             investment_plan = state.get("investment_plan")
@@ -107,13 +107,13 @@ class TraderAgent(BaseAgent):
             if not investment_plan:
                 raise ValueError("Missing investment_plan")
             
-            # 2. 收集所有相关报告
+            # 2. Collect all relevant reports
             all_reports = self._collect_all_reports(state)
             
-            # 3. 从记忆系统获取历史交易记录（如果有）
+            # 3. Get historical transaction records from the memory system (if any)
             historical_trades = self._get_historical_trades(ticker) if self.memory else None
             
-            # 4. 构建提示词
+            # 4. Build prompt words
             system_prompt = self._build_system_prompt(state=state)
             user_prompt = self._build_user_prompt(
                 ticker, 
@@ -124,52 +124,52 @@ class TraderAgent(BaseAgent):
                 state
             )
             
-            # 5. 调用LLM生成交易分析计划
+            # 5. Call LLM to generate a transaction analysis plan
             system_prompt = self._apply_global_trading_advice_guard(system_prompt)
             messages = [
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=user_prompt)
             ]
 
-            logger.info(f"系统提示词: {system_prompt}")
-            logger.info(f"用户提示词: {user_prompt}")
-            # 🔍 调试日志：打印提示词长度
-            logger.info(f"🔍 [TraderAgent] 系统提示词长度: {len(system_prompt)}")
-            logger.info(f"🔍 [TraderAgent] 用户提示词长度: {len(user_prompt)}")
-            logger.info(f"🔍 [TraderAgent] 用户提示词前500字符:\n{user_prompt[:500]}")
+            logger.info(f"System prompt word: {system_prompt}")
+            logger.info(f"User prompt words: {user_prompt}")
+            # 🔍 Debug log: print prompt word length
+            logger.info(f"🔍 [TraderAgent] System prompt word length: {len(system_prompt)}")
+            logger.info(f"🔍 [TraderAgent] User prompt word length: {len(user_prompt)}")
+            logger.info(f"🔍 [TraderAgent] The first 500 characters of the user prompt word:\n{user_prompt[:500]}")
 
             if self._llm:
                 response = self._invoke_llm_with_trace(messages)
-                self._last_llm_response = response  # P1: stash 供子类采集 token_usage
+                self._last_llm_response = response  # P1: stash For subcategory collection token_usage
 
-                # 🔍 调试日志：打印 LLM 响应
-                logger.info(f"🔍 [TraderAgent] LLM 响应长度: {len(response.content)}")
-                logger.info(f"🔍 [TraderAgent] LLM 响应内容:\n{response.content}")
+                # 🔍 Debug log: print LLM response
+                logger.info(f"🔍 [TraderAgent] LLM response length: {len(response.content)}")
+                logger.info(f"🔍 [TraderAgent] LLM Response content:\n{response.content}")
 
                 trading_plan = self._parse_response(response.content)
 
-                # 🔍 调试日志：打印解析后的交易分析计划
-                logger.info(f"🔍 [TraderAgent] 解析后的交易分析计划类型: {type(trading_plan)}")
+                # 🔍 Debug log: print the parsed transaction analysis plan
+                logger.info(f"🔍 [TraderAgent] Parsed Transaction Analysis Plan Type: {type(trading_plan)}")
                 if isinstance(trading_plan, dict):
-                    logger.info(f"🔍 [TraderAgent] 交易分析计划字段: {list(trading_plan.keys())}")
+                    logger.info(f"🔍 [TraderAgent] Transaction Analysis Plan Fields: {list(trading_plan.keys())}")
                     if 'content' in trading_plan:
-                        logger.info(f"🔍 [TraderAgent] 交易分析计划内容长度: {len(str(trading_plan['content']))}")
+                        logger.info(f"🔍 [TraderAgent] Transaction Analysis Plan Content Length: {len(str(trading_plan['content']))}")
             else:
                 raise ValueError("LLM not initialized")
 
-            # 6. 保存到记忆系统（如果有）
+            # 6. Save to memory system (if available)
             if self.memory:
                 self._save_to_memory(ticker, trading_plan)
 
-            # 7. 输出到state（只返回新增的字段，避免并发冲突）
-            logger.info(f"✅ [TraderAgent] {self.agent_id} 执行成功，输出字段: {self.output_field}")
+            # 7. Output to state (only newly added fields are returned to avoid concurrency conflicts)
+            logger.info(f"✅ [TraderAgent] {self.agent_id} Successful execution, output field: {self.output_field}")
             return {
                 self.output_field: trading_plan
             }
 
         except Exception as e:
-            logger.error(f"研究整合员Agent {self.agent_id} 执行失败: {e}", exc_info=True)
-            # 返回错误状态（只返回新增的字段）
+            logger.error(f"research integrator Agent {self.agent_id} Execution failed: {e}", exc_info=True)
+            # Return error status (only newly added fields are returned)
             return {
                 self.output_field: {
                     "error": str(e),
@@ -179,13 +179,13 @@ class TraderAgent(BaseAgent):
     
     def _collect_all_reports(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        收集所有相关报告
+        Collect all relevant reports
         
         Args:
-            state: 工作流状态
+            state: Workflow status
             
         Returns:
-            报告字典
+            report dictionary
         """
         report_keys = [
             "market_report",
@@ -211,22 +211,22 @@ class TraderAgent(BaseAgent):
 
     def _get_historical_trades(self, ticker: str) -> Optional[List[Dict[str, Any]]]:
         """
-        从记忆系统获取历史交易记录
+        Obtain historical transaction records from the memory system
 
         Args:
-            ticker: 股票代码
+            ticker: Stock code
 
         Returns:
-            历史交易记录列表
+            Historical transaction list
         """
         if not self.memory:
             return None
 
         try:
-            query = f"股票代码: {ticker}\n交易分析计划\n历史交易经验"
+            query = f"Stock code: {ticker}\n Transaction Analysis Plan\n Historical trading experience"
 
             if not hasattr(self.memory, 'search_memories'):
-                logger.warning("记忆实例不支持 search_memories，已跳过历史交易召回: %s", type(self.memory).__name__)
+                logger.warning("Memory instances do not support search_memories and historical transaction recall has been skipped: %s", type(self.memory).__name__)
                 return None
 
             memories = self.memory.search_memories(
@@ -245,16 +245,16 @@ class TraderAgent(BaseAgent):
 
             return None
         except Exception as e:
-            logger.warning(f"获取历史交易记录失败: {e}")
+            logger.warning(f"Failed to obtain historical transaction records: {e}")
             return None
 
     def _save_to_memory(self, ticker: str, trading_plan: Dict[str, Any]) -> None:
         """
-        保存到记忆系统
+        Save to memory system
 
         Args:
-            ticker: 股票代码
-            trading_plan: 交易分析计划
+            ticker: Stock code
+            trading_plan: Transaction Analysis Plan
         """
         if not self.memory:
             return
@@ -263,7 +263,7 @@ class TraderAgent(BaseAgent):
             content = _stringify_trading_plan(trading_plan)
 
             if not hasattr(self.memory, 'add_memory'):
-                logger.warning("记忆实例不支持 add_memory，已跳过交易计划保存: %s", type(self.memory).__name__)
+                logger.warning("Memory instances do not support add_memory and transaction plan saving has been skipped: %s", type(self.memory).__name__)
                 return
 
             metadata = {
@@ -275,18 +275,18 @@ class TraderAgent(BaseAgent):
             }
             self.memory.add_memory(content=content, metadata=metadata)
         except Exception as e:
-            logger.warning(f"保存到记忆系统失败: {e}")
+            logger.warning(f"Failed to save to memory system: {e}")
 
     @abstractmethod
     def _build_system_prompt(self, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词（子类实现）
+        Build system prompt words (subclass implementation)
 
         Args:
-            state: 工作流状态（可选，用于提取变量如 company_name, ticker 等）
+            state: Workflow status (optional, used to extract variables such as company_name, ticker etc.)
 
         Returns:
-            系统提示词
+            System prompt word
         """
         pass
 
@@ -301,49 +301,49 @@ class TraderAgent(BaseAgent):
         state: Dict[str, Any]
     ) -> str:
         """
-        构建用户提示词（子类实现）
+        Construct user prompt words (subclass implementation)
 
         Args:
-            ticker: 股票代码
-            analysis_date: 分析日期
-            investment_plan: 投资计划
-            all_reports: 所有报告字典
-            historical_trades: 历史交易记录
-            state: 工作流状态
+            ticker: Stock code
+            analysis_date: Analysis date
+            investment_plan: investment plan
+            all_reports: All report dictionaries
+            historical_trades: Historical transaction records
+            state: Workflow status
 
         Returns:
-            用户提示词
+            User prompt words
         """
         pass
 
-    # 注意：_get_prompt_from_template() 方法已移至 BaseAgent 基类，所有 Agent 共享
+    # Note:_get_prompt_from_template() Method has been moved to BaseAgent base class, shared by all Agents
 
     def _parse_response(self, response: str) -> Dict[str, Any]:
         """
-        解析LLM响应（子类可覆盖）
+        Parse LLM response (can be overridden by subclasses)
 
         Args:
-            response: LLM响应文本
+            response: LLM response text
 
         Returns:
-            解析后的交易分析计划字典
+            Parsed Transaction Analysis Plan Dictionary
         """
-        # 🔍 调试日志
-        logger.info(f"🔍 [TraderAgent._parse_response] 开始解析响应")
-        logger.info(f"🔍 [TraderAgent._parse_response] 响应长度: {len(response)}")
+        # 🔍 debug log
+        logger.info(f"🔍 [TraderAgent._parse_response] Start parsing the response")
+        logger.info(f"🔍 [TraderAgent._parse_response] response length: {len(response)}")
 
-        # 默认实现：直接返回文本
+        # Default implementation: return text directly
         result = {
             "content": response,
             "success": True
         }
 
-        logger.info(f"🔍 [TraderAgent._parse_response] 解析完成，返回字典")
+        logger.info(f"🔍 [TraderAgent._parse_response] The parsing is completed and the dictionary is returned.")
         return result
 
     @property
     def agent_id(self) -> str:
-        """获取Agent ID"""
+        """get Agent ID"""
         if self.metadata:
             return self.metadata.id
         return self.__class__.__name__.lower()

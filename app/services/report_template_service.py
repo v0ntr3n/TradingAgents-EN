@@ -1,7 +1,7 @@
 """
-报告模板服务
+Report template service
 
-提供报告模板的 CRUD 操作和工作流报告生成功能。
+Provides CRUD operations for report templates and workflow report generation capabilities.
 """
 import logging
 from datetime import datetime
@@ -23,10 +23,10 @@ class ReportTemplateService:
     
     def __init__(self, db):
         """
-        初始化服务
+        Initialize service
         
         Args:
-            db: MongoDB 数据库连接
+            db: MongoDB Database connection
         """
         self.db = db
         self.collection = db.report_templates
@@ -37,12 +37,12 @@ class ReportTemplateService:
         user_id: Optional[str] = None
     ) -> ReportTemplateResponse:
         """创建报告模板"""
-        # 检查 template_id 是否已存在
+        # Check if template_id already exists
         existing = await self.collection.find_one({"template_id": data.template_id})
         if existing:
             raise ValueError(f"模板ID '{data.template_id}' 已存在")
         
-        # 检查 workflow_id 是否已有模板
+        # Check if workflow_id already has a template
         existing_workflow = await self.collection.find_one({
             "workflow_id": data.workflow_id,
             "status": "active"
@@ -50,15 +50,15 @@ class ReportTemplateService:
         if existing_workflow:
             logger.warning(
                 f"⚠️ 工作流 {data.workflow_id} 已有活动模板 {existing_workflow.get('template_id')}，"
-                f"将被新模板 {data.template_id} 替代"
+                f"will be new template {data.template_id} substitute"
             )
-            # 将旧模板设为 inactive
+            # Set old template to inactive
             await self.collection.update_one(
                 {"_id": existing_workflow["_id"]},
                 {"$set": {"status": "inactive", "updated_at": datetime.utcnow()}}
             )
         
-        # 创建文档
+        # Create document
         doc = {
             "template_id": data.template_id,
             "name": data.name,
@@ -90,7 +90,7 @@ class ReportTemplateService:
         self, 
         workflow_id: str
     ) -> Optional[ReportTemplateResponse]:
-        """根据工作流ID获取报告模板"""
+        """Get report template based on workflow ID"""
         doc = await self.collection.find_one({
             "workflow_id": workflow_id,
             "status": "active"

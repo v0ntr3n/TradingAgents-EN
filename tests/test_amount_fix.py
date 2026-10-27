@@ -1,6 +1,6 @@
 """
-测试成交额单位修复
-验证 Tushare 数据的成交额单位转换是否正确
+Test turnover unit fix
+Verify that the turnover unit conversion of Tushare data is correct
 """
 import sys
 import os
@@ -11,29 +11,29 @@ from app.database import get_mongo_db
 from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
 
 async def test_amount_fix():
-    """测试成交额单位修复"""
+    """Test turnover unit fix"""
     print("=" * 80)
-    print("测试成交额单位修复")
+    print("Test turnover unit fix")
     print("=" * 80)
     
-    # 测试股票：300750 宁德时代
+    # Test stock: 300750 CATL
     test_code = "300750"
     
-    print(f"\n1️⃣ 测试 Tushare Provider 标准化")
-    print(f"   股票代码: {test_code}")
+    print(f"\n1️⃣ Test Tushare Provider Standardization")
+    print(f"   Stock code: {test_code}")
     
     provider = get_tushare_provider()
     if not provider.is_available():
-        print("   ❌ Tushare 不可用，请检查 TUSHARE_TOKEN 配置")
+        print("   ❌ Tushare Not available, please check TUSHARE_TOKEN configuration")
         return
     
-    # 获取历史数据（最近1天）
+    # Get historical data (last day)
     from datetime import datetime, timedelta
     end_date = datetime.now()
     start_date = end_date - timedelta(days=5)
     
-    print(f"\n2️⃣ 获取历史数据")
-    print(f"   日期范围: {start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}")
+    print(f"\n2️⃣ Get historical data")
+    print(f"   date range: {start_date.strftime('%Y-%m-%d')} ~ {end_date.strftime('%Y-%m-%d')}")
     
     df = await provider.get_historical_data(
         symbol=test_code,
@@ -43,23 +43,23 @@ async def test_amount_fix():
     )
     
     if df is None or df.empty:
-        print("   ❌ 未获取到数据")
+        print("   ❌ No data obtained")
         return
     
-    print(f"   ✅ 获取到 {len(df)} 条记录")
+    print(f"   ✅ Get {len(df)} records")
     
-    # 显示最新一条数据
+    # Show the latest data
     latest = df.iloc[-1]
-    print(f"\n3️⃣ 最新数据（已标准化）")
-    print(f"   日期: {latest.name}")
-    print(f"   收盘价: {latest.get('close')}")
-    print(f"   成交量: {latest.get('volume')}")
-    print(f"   成交额(元): {latest.get('amount'):,.0f}")
-    print(f"   成交额(亿元): {latest.get('amount') / 1e8:.2f}")
-    print(f"   成交额(万元): {latest.get('amount') / 1e4:.2f}")
+    print(f"\n3️⃣ Latest data (normalized)")
+    print(f"   Date: {latest.name}")
+    print(f"   closing price: {latest.get('close')}")
+    print(f"   Volume: {latest.get('volume')}")
+    print(f"   Turnover(Yuan): {latest.get('amount'):,.0f}")
+    print(f"   Turnover(billion): {latest.get('amount') / 1e8:.2f}")
+    print(f"   Turnover(Ten thousand yuan): {latest.get('amount') / 1e4:.2f}")
     
-    # 检查数据库中的数据
-    print(f"\n4️⃣ 检查数据库 stock_daily_quotes 集合")
+    # Check the data in the database
+    print(f"\n4️⃣ Check the database stock_daily_quotes collection")
     db = get_mongo_db()
     coll = db["stock_daily_quotes"]
     
@@ -69,37 +69,37 @@ async def test_amount_fix():
     )
     
     if doc:
-        print(f"   ✅ 找到数据库记录")
-        print(f"   交易日期: {doc.get('trade_date')}")
-        print(f"   收盘价: {doc.get('close')}")
-        print(f"   成交额(元): {doc.get('amount'):,.0f}")
-        print(f"   成交额(亿元): {doc.get('amount') / 1e8:.2f}")
-        print(f"   成交额(万元): {doc.get('amount') / 1e4:.2f}")
+        print(f"   ✅ Find database record")
+        print(f"   transaction date: {doc.get('trade_date')}")
+        print(f"   closing price: {doc.get('close')}")
+        print(f"   Turnover(Yuan): {doc.get('amount'):,.0f}")
+        print(f"   Turnover(billion): {doc.get('amount') / 1e8:.2f}")
+        print(f"   Turnover(Ten thousand yuan): {doc.get('amount') / 1e4:.2f}")
     else:
-        print(f"   ⚠️ 数据库中未找到记录")
+        print(f"   ⚠️ No record found in database")
     
-    # 检查 market_quotes 集合
-    print(f"\n5️⃣ 检查数据库 market_quotes 集合")
+    # Check the market_quotes collection
+    print(f"\n5️⃣ Check the database market_quotes collection")
     quotes_coll = db["market_quotes"]
     
     quote_doc = quotes_coll.find_one({"code": test_code})
     
     if quote_doc:
-        print(f"   ✅ 找到行情记录")
-        print(f"   交易日期: {quote_doc.get('trade_date')}")
-        print(f"   收盘价: {quote_doc.get('close')}")
-        print(f"   成交额(元): {quote_doc.get('amount'):,.0f}")
-        print(f"   成交额(亿元): {quote_doc.get('amount') / 1e8:.2f}")
-        print(f"   成交额(万元): {quote_doc.get('amount') / 1e4:.2f}")
+        print(f"   ✅ Find the market record")
+        print(f"   transaction date: {quote_doc.get('trade_date')}")
+        print(f"   closing price: {quote_doc.get('close')}")
+        print(f"   Turnover(Yuan): {quote_doc.get('amount'):,.0f}")
+        print(f"   Turnover(billion): {quote_doc.get('amount') / 1e8:.2f}")
+        print(f"   Turnover(Ten thousand yuan): {quote_doc.get('amount') / 1e4:.2f}")
     else:
-        print(f"   ⚠️ market_quotes 中未找到记录")
+        print(f"   ⚠️ market_quotes No record found in")
     
     print("\n" + "=" * 80)
-    print("✅ 测试完成")
+    print("✅ Test completed")
     print("=" * 80)
-    print("\n💡 验证标准:")
-    print("   - 如果成交额显示为 90.92亿 左右，说明修复成功 ✅")
-    print("   - 如果成交额显示为 909.18万 或 0.0091亿，说明仍有问题 ❌")
+    print("\n💡 Verification standards:")
+    print("   - If the transaction volume is shown to be around 9.092 billion, it means the repair is successful. ✅")
+    print("   - If the transaction volume is displayed as 9.0918 million or 000.91 million, it means there is still a problem ❌")
     print("=" * 80)
 
 if __name__ == "__main__":

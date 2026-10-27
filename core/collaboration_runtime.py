@@ -1,8 +1,8 @@
 """
-协作运行时模型
+Collaborative runtime model
 
-统一描述 Assistant、Workflow、Agent 之间的内部调用请求与结果，
-为后续跨模块协作提供最小一致的运行时契约。
+Unified description of internal call requests and results among Assistant, Workflow, and Agent.
+Provide a minimally consistent runtime contract for subsequent cross-module collaboration.
 """
 
 from datetime import datetime, timezone
@@ -13,12 +13,12 @@ from pydantic import BaseModel, Field
 
 
 def utc_now() -> datetime:
-    """返回 UTC 时间，统一内部运行时时间基准。"""
+    """Returns UTC time, the unified internal runtime time base."""
     return datetime.now(timezone.utc)
 
 
 class CollaborationRuntimeModel(BaseModel):
-    """兼容 Pydantic v1/v2 的基础序列化能力。"""
+    """Compatible with the basic serialization capabilities of Pydantic v1/v2."""
 
     def to_python_dict(self) -> Dict[str, Any]:
         if hasattr(self, "model_dump"):
@@ -27,7 +27,7 @@ class CollaborationRuntimeModel(BaseModel):
 
 
 class InvocationSourceType(str, Enum):
-    """内部调用来源类型。"""
+    """Internal call source type."""
 
     EXTERNAL_USER = "external_user"
     ASSISTANT = "assistant"
@@ -37,7 +37,7 @@ class InvocationSourceType(str, Enum):
 
 
 class InvocationTargetType(str, Enum):
-    """内部调用目标类型。"""
+    """Internal call target type."""
 
     AGENT = "agent"
     WORKFLOW = "workflow"
@@ -45,14 +45,14 @@ class InvocationTargetType(str, Enum):
 
 
 class InvocationStatus(str, Enum):
-    """内部调用执行状态。"""
+    """Internal call execution status."""
 
     SUCCEEDED = "succeeded"
     FAILED = "failed"
 
 
 class InvocationProvenance(CollaborationRuntimeModel):
-    """调用来源上下文。"""
+    """Call source context."""
 
     source_type: InvocationSourceType
     source_id: Optional[str] = None
@@ -66,7 +66,7 @@ class InvocationProvenance(CollaborationRuntimeModel):
 
 
 class InvocationPolicy(CollaborationRuntimeModel):
-    """执行策略。"""
+    """Execute strategy."""
 
     idempotency_key: str
     timeout_seconds: int = 180
@@ -76,7 +76,7 @@ class InvocationPolicy(CollaborationRuntimeModel):
 
 
 class InvocationRequest(CollaborationRuntimeModel):
-    """统一的内部调用请求。"""
+    """Unified internal call requests."""
 
     invocation_id: str
     target_type: InvocationTargetType
@@ -90,7 +90,7 @@ class InvocationRequest(CollaborationRuntimeModel):
 
 
 class InvocationArtifactRef(CollaborationRuntimeModel):
-    """调用产物引用。"""
+    """Call product reference."""
 
     ref_type: str
     artifact_key: str
@@ -116,7 +116,7 @@ class InvocationArtifactRef(CollaborationRuntimeModel):
 
 
 class InvocationResult(CollaborationRuntimeModel):
-    """统一的内部调用结果。"""
+    """Unified internal call results."""
 
     invocation_id: str
     target_type: InvocationTargetType

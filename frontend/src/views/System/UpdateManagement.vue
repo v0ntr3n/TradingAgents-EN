@@ -1,135 +1,135 @@
 <template>
   <div class="update-management">
-    <!-- 页面标题 -->
+    <!-- Page title -->
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><Upload /></el-icon>
-        系统更新
+        System update
       </h1>
       <p class="page-description">
-        检查并安装系统更新，保持系统为最新版本
+        Check for and install system updates to keep your system up to date
       </p>
     </div>
 
-    <!-- 当前版本信息 -->
+    <!-- Current version information -->
     <el-card shadow="never" class="section-card">
       <template #header>
         <div class="card-header">
-          <span>📋 当前版本信息</span>
+          <span>📋 Current version information</span>
           <el-button text type="primary" :icon="Refresh" @click="loadVersionInfo" :loading="loadingVersion">
-            刷新
+            Refresh
           </el-button>
         </div>
       </template>
       <el-descriptions :column="2" border v-if="versionInfo">
-        <el-descriptions-item label="当前版本">
+        <el-descriptions-item label="Current version">
           <el-tag type="primary" size="large">v{{ versionInfo.current_version }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="构建类型">
-          {{ versionInfo.build_info?.build_type || '未知' }}
+        <el-descriptions-item label="Build type">
+          {{ versionInfo.build_info?.build_type || 'unknown' }}
         </el-descriptions-item>
-        <el-descriptions-item label="更新通道">
+        <el-descriptions-item label="update channel">
           <el-tag :type="getChannelTagType(versionInfo.update_channel)">
             {{ formatUpdateChannel(versionInfo.update_channel) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="构建时间 (UTC)">
+        <el-descriptions-item label="Build time (UTC)">
           {{ formatBuildDateUtc(versionInfo.build_info?.build_date) }}
         </el-descriptions-item>
-        <el-descriptions-item label="Git 提交">
-          <code>{{ versionInfo.build_info?.git_commit || '未知' }}</code>
+        <el-descriptions-item label="Git Submit">
+          <code>{{ versionInfo.build_info?.git_commit || 'unknown' }}</code>
         </el-descriptions-item>
-        <el-descriptions-item label="完整版本号" :span="2">
-          {{ versionInfo.build_info?.full_version || '未知' }}
+        <el-descriptions-item label="full version number" :span="2">
+          {{ versionInfo.build_info?.full_version || 'unknown' }}
         </el-descriptions-item>
       </el-descriptions>
-      <el-empty v-else description="加载中..." />
+      <el-empty v-else description="Loading..." />
     </el-card>
 
-    <!-- 检查更新 -->
+    <!-- Check for updates -->
     <el-card shadow="never" class="section-card">
       <template #header>
         <div class="card-header">
-          <span>🔍 检查更新</span>
+          <span>🔍 Check for updates</span>
         </div>
       </template>
 
-      <!-- Docker 部署：引导使用 docker pull 更新 -->
+      <!-- Docker Deployment: Guided updates using docker pull -->
       <div v-if="versionInfo?.is_docker" class="docker-update-guide">
         <el-button type="primary" @click="doCheckUpdate" :loading="checking" :icon="Search" size="large" style="margin-bottom: 16px">
-          检查更新
+          Check for updates
         </el-button>
         <el-alert v-if="checkDone && updateInfo?.has_update" type="warning" :closable="false" show-icon style="margin-bottom: 16px">
-          <template #title>发现新版本 v{{ updateInfo?.latest_version }}</template>
+          <template #title>new version found v{{ updateInfo?.latest_version }}</template>
           <template #default>
-            <p>请使用以下方式更新 Docker 部署：</p>
+            <p>Please update your Docker deployment using:</p>
             <ul style="margin: 8px 0; padding-left: 20px;">
-              <li><strong>拉取最新镜像：</strong><code>docker pull &lt;镜像名&gt;:latest</code></li>
-              <li><strong>使用 docker-compose：</strong><code>docker-compose pull &amp;&amp; docker-compose up -d</code></li>
+              <li><strong>Pull the latest image:</strong><code>docker pull &lt;Image name&gt;:latest</code></li>
+              <li><strong>Using docker-compose:</strong><code>docker-compose pull &amp;&amp; docker-compose up -d</code></li>
             </ul>
           </template>
         </el-alert>
         <el-alert v-else-if="checkDone && updateInfo?.check_failed" type="error" :closable="false" show-icon style="margin-bottom: 16px">
-          <template #title>检查更新失败</template>
-          <template #default>{{ updateInfo?.error_message || '无法连接更新服务器，请检查网络或稍后重试' }}</template>
+          <template #title>Check for updates failed</template>
+          <template #default>{{ updateInfo?.error_message || 'Unable to connect to update server, please check the network or try again later' }}</template>
         </el-alert>
-        <el-alert v-else-if="checkDone && !updateInfo?.has_update" title="当前已是最新版本" type="success" :closable="false" show-icon style="margin-bottom: 16px" />
+        <el-alert v-else-if="checkDone && !updateInfo?.has_update" title="Currently the latest version" type="success" :closable="false" show-icon style="margin-bottom: 16px" />
         <el-alert type="info" :closable="false" show-icon>
-          <template #title>Docker 更新说明</template>
+          <template #title>Docker Update instructions</template>
           <template #default>
-            <p>Docker 版本不支持应用内下载更新包，请使用以下方式获取最新版本：</p>
+            <p>Docker This version does not support in-app downloading of update packages. Please use the following methods to obtain the latest version:</p>
             <ul style="margin: 8px 0; padding-left: 20px;">
-              <li><strong>拉取最新镜像：</strong><code>docker pull &lt;镜像名&gt;:latest</code></li>
-              <li><strong>使用 docker-compose：</strong><code>docker-compose pull &amp;&amp; docker-compose up -d</code></li>
-              <li>或访问官网下载最新安装包</li>
+              <li><strong>Pull the latest image:</strong><code>docker pull &lt;Image name&gt;:latest</code></li>
+              <li><strong>Using docker-compose:</strong><code>docker-compose pull &amp;&amp; docker-compose up -d</code></li>
+              <li>Or visit the official website to download the latest installation package</li>
             </ul>
           </template>
         </el-alert>
       </div>
 
-      <!-- Windows 便携版/安装版：应用内检查、下载、安装 -->
+      <!-- Windows Portable version/installation version: In-app inspection, download, and installation -->
       <div v-else-if="versionInfo?.supports_in_app_update !== false" class="check-update-section">
         <el-button type="primary" @click="doCheckUpdate" :loading="checking" :icon="Search" size="large">
-          检查更新
+          Check for updates
         </el-button>
 
-        <!-- 检查失败（服务器连接不上等） -->
+        <!-- The check failed (the server cannot be connected, etc.) -->
         <el-alert v-if="checkDone && updateInfo?.check_failed"
           type="error" :closable="false" show-icon style="margin-top: 16px">
-          <template #title>检查更新失败</template>
-          <template #default>{{ updateInfo?.error_message || '无法连接更新服务器，请检查网络或稍后重试' }}</template>
+          <template #title>Check for updates failed</template>
+          <template #default>{{ updateInfo?.error_message || 'Unable to connect to update server, please check the network or try again later' }}</template>
         </el-alert>
-        <!-- 无更新 -->
+        <!-- No updates -->
         <el-alert v-else-if="checkDone && !updateInfo?.has_update"
-          title="当前已是最新版本" type="success" :closable="false" show-icon
+          title="Currently the latest version" type="success" :closable="false" show-icon
           style="margin-top: 16px" />
 
-        <!-- 有更新 -->
+        <!-- There is an update -->
         <div v-if="updateInfo?.has_update" class="update-available">
           <el-alert type="warning" :closable="false" show-icon style="margin-top: 16px">
             <template #title>
-              发现新版本：<strong>v{{ updateInfo.latest_version }}</strong>
-              <el-tag v-if="updateInfo.is_mandatory" type="danger" size="small" style="margin-left: 8px">强制更新</el-tag>
+              New version found:<strong>v{{ updateInfo.latest_version }}</strong>
+              <el-tag v-if="updateInfo.is_mandatory" type="danger" size="small" style="margin-left: 8px">Force update</el-tag>
             </template>
           </el-alert>
 
           <el-descriptions :column="2" border style="margin-top: 16px">
-            <el-descriptions-item label="最新版本">v{{ updateInfo.latest_version }}</el-descriptions-item>
-            <el-descriptions-item label="包类型">
+            <el-descriptions-item label="latest version">v{{ updateInfo.latest_version }}</el-descriptions-item>
+            <el-descriptions-item label="package type">
               {{ formatPackageType(updateInfo.package_type) }}
             </el-descriptions-item>
-            <el-descriptions-item label="发布日期">{{ updateInfo.release_date || '未知' }}</el-descriptions-item>
-            <el-descriptions-item label="文件大小">{{ formatFileSize(updateInfo.file_size) }}</el-descriptions-item>
-            <el-descriptions-item label="最低要求版本">v{{ updateInfo.min_version || '无' }}</el-descriptions-item>
+            <el-descriptions-item label="Release date">{{ updateInfo.release_date || 'unknown' }}</el-descriptions-item>
+            <el-descriptions-item label="file size">{{ formatFileSize(updateInfo.file_size) }}</el-descriptions-item>
+            <el-descriptions-item label="Minimum required version">v{{ updateInfo.min_version || 'None' }}</el-descriptions-item>
           </el-descriptions>
 
-          <!-- 更新说明 -->
+          <!-- Update instructions -->
           <div v-if="updateInfo.release_notes" class="release-notes">
-            <h4>📝 更新说明</h4>
+            <h4>📝 Update instructions</h4>
             <div class="release-notes-content" v-html="renderMarkdown(updateInfo.release_notes)"></div>
           </div>
 
-          <!-- 下载和安装 -->
+          <!-- Download and install -->
           <div class="update-actions">
             <el-button type="primary" @click="doDownload" :loading="downloading"
               :disabled="isUpdatePackage && progress.status === 'completed'" size="large">
@@ -137,60 +137,60 @@
             </el-button>
             <el-button type="success" @click="doApply"
               :disabled="!isUpdatePackage || progress.status !== 'completed'" size="large">
-              应用更新并重启
+              Apply updates and restart
             </el-button>
           </div>
 
           <el-alert v-if="!isUpdatePackage" type="info" :closable="false" show-icon style="margin-top: 16px">
-            <template #title>当前返回的是安装包</template>
+            <template #title>What is currently returned is the installation package</template>
             <template #default>
-              客户端不会对安装包执行应用内替换。请下载后手动运行安装程序完成升级。
+              The client does not perform in-app replacement of installation packages. Please download and run the installer manually to complete the upgrade.
             </template>
           </el-alert>
 
-          <!-- 下载进度 -->
+          <!-- Download progress -->
           <div v-if="progress.status !== 'idle'" class="download-progress">
             <el-progress :percentage="progress.percent || 0" :status="progressBarStatus" :stroke-width="20" />
             <p class="progress-text">
               <template v-if="progress.status === 'downloading'">
-                正在下载... {{ formatFileSize(progress.downloaded || 0) }} / {{ formatFileSize(progress.total || 0) }}
+                Downloading... {{ formatFileSize(progress.downloaded || 0) }} / {{ formatFileSize(progress.total || 0) }}
               </template>
               <template v-else-if="progress.status === 'completed'">
                 <el-icon style="color: var(--el-color-success)"><SuccessFilled /></el-icon>
-                下载完成，可以应用更新
+                Download complete, updates can be applied
               </template>
               <template v-else-if="progress.status === 'failed'">
                 <el-icon style="color: var(--el-color-danger)"><CircleCloseFilled /></el-icon>
-                下载失败，请重试
+                Download failed, please try again
               </template>
               <template v-else-if="progress.status === 'verify_failed'">
                 <el-icon style="color: var(--el-color-danger)"><CircleCloseFilled /></el-icon>
-                文件校验失败，请重新下载
+                File verification failed, please download again
               </template>
             </p>
           </div>
 
-          <!-- 更新警告 -->
+          <!-- Update warning -->
           <el-alert v-if="progress.status === 'completed'" type="warning" :closable="false" show-icon
             style="margin-top: 16px">
-            <template #title>应用更新须知</template>
+            <template #title>Application update instructions</template>
             <template #default>
               <ul style="margin: 8px 0; padding-left: 20px;">
-                <li>更新过程中所有服务将<strong>自动停止并重启</strong></li>
-                <li>系统会自动备份当前版本到 <code>backup/</code> 目录</li>
-                <li>您的数据（数据库、配置文件）<strong>不会丢失</strong></li>
-                <li>更新完成后请<strong>刷新浏览器页面</strong></li>
+                <li>During the update process all services will<strong>Automatically stop and restart</strong></li>
+                <li>The system will automatically back up the current version to <code>backup/</code> Directory</li>
+                <li>Your data (database, configuration files)<strong>will not be lost</strong></li>
+                <li>After the update is complete, please<strong>Refresh browser page</strong></li>
               </ul>
             </template>
           </el-alert>
         </div>
       </div>
 
-      <!-- 未知构建类型 -->
+      <!-- Unknown build type -->
       <el-alert v-else type="warning" :closable="false" show-icon>
-        <template #title>当前部署方式暂不支持应用内更新</template>
+        <template #title>The current deployment method does not currently support in-app updates.</template>
         <template #default>
-          请访问官网或联系管理员获取更新方式。
+          Please visit the official website or contact the administrator for updates.
         </template>
       </el-alert>
     </el-card>
@@ -213,7 +213,7 @@ import {
 } from '@/api/update'
 import DOMPurify from 'dompurify'
 
-// ── 状态 ──────────────────────────────────────────────
+// ── Status ──────────────────────────────────────────────
 const loadingVersion = ref(false)
 const checking = ref(false)
 const downloading = ref(false)
@@ -225,7 +225,7 @@ const progress = ref<DownloadProgress>({ status: 'idle' })
 
 let progressTimer: ReturnType<typeof setInterval> | null = null
 
-// ── 计算属性 ──────────────────────────────────────────
+// ── Computed properties ──────────────────────────────────────────
 const progressBarStatus = computed(() => {
   if (progress.value.status === 'completed') return 'success'
   if (progress.value.status === 'failed' || progress.value.status === 'verify_failed') return 'exception'
@@ -235,13 +235,13 @@ const progressBarStatus = computed(() => {
 const isUpdatePackage = computed(() => updateInfo.value?.package_type === 'update')
 
 const downloadButtonText = computed(() => {
-  if (downloading.value) return '下载中...'
-  return isUpdatePackage.value ? '下载更新包' : '下载安装包'
+  if (downloading.value) return 'Downloading...'
+  return isUpdatePackage.value ? 'Download update package' : 'Download the installation package'
 })
 
-// ── 方法 ──────────────────────────────────────────────
+// ── method ──────────────────────────────────────────────
 const formatBuildDateUtc = (dateStr: string | undefined) => {
-  if (!dateStr) return '未知'
+  if (!dateStr) return 'unknown'
   try {
     const date = new Date(dateStr)
     const y = date.getUTCFullYear()
@@ -257,8 +257,8 @@ const formatBuildDateUtc = (dateStr: string | undefined) => {
 }
 
 const formatUpdateChannel = (channel: string | undefined) => {
-  if (channel === 'test') return '测试'
-  return '正式'
+  if (channel === 'test') return 'test'
+  return 'formal'
 }
 
 const getChannelTagType = (channel: string | undefined) => {
@@ -267,8 +267,8 @@ const getChannelTagType = (channel: string | undefined) => {
 }
 
 const formatPackageType = (packageType: string | undefined) => {
-  if (packageType === 'update') return '更新包'
-  return '安装包'
+  if (packageType === 'update') return 'Update package'
+  return 'Installation package'
 }
 
 const loadVersionInfo = async () => {
@@ -279,7 +279,7 @@ const loadVersionInfo = async () => {
       versionInfo.value = res.data
     }
   } catch (e: any) {
-    ElMessage.error('获取版本信息失败: ' + (e.message || '未知错误'))
+    ElMessage.error('Failed to obtain version information: ' + (e.message || 'unknown error'))
   } finally {
     loadingVersion.value = false
   }
@@ -295,7 +295,7 @@ const doCheckUpdate = async () => {
     }
     checkDone.value = true
   } catch (e: any) {
-    ElMessage.error('检查更新失败: ' + (e.message || '网络错误'))
+    ElMessage.error('Check for updates failed: ' + (e.message || 'network error'))
   } finally {
     checking.value = false
   }
@@ -306,7 +306,7 @@ const doDownload = async () => {
     if (!updateInfo.value) return
     if (!isUpdatePackage.value) {
       window.open(updateInfo.value.download_url, '_blank', 'noopener,noreferrer')
-      ElMessage.success('已打开安装包下载链接')
+      ElMessage.success('The installation package download link has been opened')
       return
     }
 
@@ -315,7 +315,7 @@ const doDownload = async () => {
     await downloadUpdate()
     startPollingProgress()
   } catch (e: any) {
-    ElMessage.error('启动下载失败: ' + (e.message || '未知错误'))
+    ElMessage.error('Failed to start download: ' + (e.message || 'unknown error'))
     downloading.value = false
   }
 }
@@ -331,14 +331,14 @@ const startPollingProgress = () => {
           stopPollingProgress()
           downloading.value = false
           if (res.data.status === 'completed') {
-            ElMessage.success('更新包下载完成')
+            ElMessage.success('Update package download completed')
           } else {
-            ElMessage.error('下载失败，请重试')
+            ElMessage.error('Download failed, please try again')
           }
         }
       }
     } catch {
-      // 静默处理轮询错误
+      // Silently handle polling errors
     }
   }, 2000)
 }
@@ -353,47 +353,47 @@ const stopPollingProgress = () => {
 const doApply = async () => {
   try {
     await ElMessageBox.confirm(
-      '确定要应用更新吗？所有服务将自动停止并重启，更新过程中系统将暂时不可用。',
-      '确认更新',
-      { confirmButtonText: '确定更新', cancelButtonText: '取消', type: 'warning' }
+      'Are you sure you want to apply the update? All services will be stopped and restarted automatically, and the system will be temporarily unavailable during the update process.',
+      'Confirm update',
+      { confirmButtonText: 'Confirm update', cancelButtonText: 'Cancel', type: 'warning' }
     )
   } catch {
-    return // 用户取消
+    return // User cancels
   }
 
   try {
     const res = await applyUpdate()
     if (res.data?.success) {
-      ElMessage.success('更新已启动，服务即将重启...')
-      // 显示倒计时提示
+      ElMessage.success('The update has been started and the service will be restarted soon...')
+      // Show countdown prompt
       setTimeout(() => {
         ElMessageBox.alert(
-          '更新正在进行中，服务将在 1-2 分钟后重新启动。请稍后刷新页面。',
-          '更新进行中',
-          { confirmButtonText: '知道了', type: 'info' }
+          'The update is in progress and the service will restart in 1-2 minutes. Please refresh the page later.',
+          'Update in progress',
+          { confirmButtonText: 'Got it', type: 'info' }
         )
       }, 1000)
     } else {
-      ElMessage.error('应用更新失败: ' + (res.data?.error || '未知错误'))
+      ElMessage.error('Application update failed: ' + (res.data?.error || 'unknown error'))
     }
   } catch (e: any) {
-    // 如果后端已经退出，连接会断开，这是正常的
+    // If the backend has exited, the connection will be disconnected, this is normal
     if (e.message?.includes('Network Error') || e.code === 'ERR_NETWORK') {
-      ElMessage.success('更新已启动，服务正在重启...')
+      ElMessage.success('The update has started and the service is restarting...')
       ElMessageBox.alert(
-        '更新正在进行中，服务将在 1-2 分钟后重新启动。请稍后刷新页面。',
-        '更新进行中',
-        { confirmButtonText: '知道了', type: 'info' }
+        'The update is in progress and the service will restart in 1-2 minutes. Please refresh the page later.',
+        'Update in progress',
+        { confirmButtonText: 'Got it', type: 'info' }
       )
     } else {
-      ElMessage.error('应用更新失败: ' + (e.message || '未知错误'))
+      ElMessage.error('Application update failed: ' + (e.message || 'unknown error'))
     }
   }
 }
 
-// ── 工具函数 ──────────────────────────────────────────
+// ── Utility function ──────────────────────────────────────────
 const formatFileSize = (bytes: number): string => {
-  if (!bytes || bytes === 0) return '未知'
+  if (!bytes || bytes === 0) return 'unknown'
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
@@ -401,7 +401,7 @@ const formatFileSize = (bytes: number): string => {
 
 const renderMarkdown = (text: string): string => {
   if (!text) return ''
-  // 简单 Markdown 渲染：标题、列表、加粗、代码
+  // Simple Markdown rendering: title, list, bold, code
   const rawHtml = text
     .replace(/^### (.+)$/gm, '<h5>$1</h5>')
     .replace(/^## (.+)$/gm, '<h4>$1</h4>')
@@ -410,11 +410,11 @@ const renderMarkdown = (text: string): string => {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
     .replace(/\n/g, '<br>')
-  // 🔐 安全：使用 DOMPurify 净化 HTML，防止 XSS
+  // 🔐 Security: Use DOMPurify to sanitize HTML to prevent XSS
   return DOMPurify.sanitize(rawHtml) as string
 }
 
-// ── 生命周期 ──────────────────────────────────────────
+// ── life cycle ──────────────────────────────────────────
 onMounted(() => {
   loadVersionInfo()
 })

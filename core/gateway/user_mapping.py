@@ -1,33 +1,33 @@
 """
-Gateway 用户身份映射
+Gateway User identity mapping
 
-IM 平台用户（open_id / QQ 号 / 钉钉 userId）→ 系统 user_id 映射。
+IM Platform user (open_id / QQ number / DingTalk userId)→ System user_id mapping.
 
-绑定流程：
-1. 用户在 IM 中发送 /bind
-2. 系统生成一次性验证码，存入 pending_bindings
-3. 用户在 Web UI 输入验证码，完成绑定
-4. 绑定记录写入 user_identity_mappings 集合
+Binding process:
+1. User sends in IM /bind
+2. The system generates a one-time verification code and deposits it pending_bindings
+3. The user enters the verification code in the Web UI to complete the binding.
+4. Binding records are written to the user_identity_mappings collection
 
-集合结构 (user_identity_mappings):
+Set structure (user_identity_mappings):
 {
     "user_id": "60f1a2b3c4d5e6f7a8b9c0d1",
     "platform": "feishu",
     "platform_identity": "ou_xxxxxxxxx",
-    "display_name": "张三",
+    "display_name": "Zhang San",
     "bound_at": ISODate("2026-03-04T08:00:00Z"),
     "is_active": true
 }
 
-集合结构 (gateway_pending_bindings):
+Set structure (gateway_pending_bindings):
 {
     "code": "A3X9K2",
     "platform": "feishu",
     "platform_identity": "ou_xxxxxxxxx",
     "channel_id": "oc_xxx",
-    "display_name": "张三",
+    "display_name": "Zhang San",
     "created_at": ISODate("2026-03-04T08:00:00Z"),
-    "expires_at": ISODate("2026-03-04T08:10:00Z")   // TTL 10 分钟
+    "expires_at": ISODate("2026-03-04T08:10:00Z")   // TTL 10 minutes
 }
 """
 
@@ -46,7 +46,7 @@ BIND_CODE_TTL_MINUTES = 10
 
 
 class UserMappingManager:
-    """用户身份映射管理器"""
+    """User Identity Mapping Manager"""
 
     def __init__(self, db):
         self.db = db
@@ -54,29 +54,29 @@ class UserMappingManager:
         self.pending = db[PENDING_COLLECTION]
 
     async def ensure_indexes(self) -> None:
-        """创建索引（应用启动时调用一次）"""
-        # 复合唯一索引：一个平台用户只能绑定一个系统用户
+        """Create index (called once when the application starts)"""
+        # Composite unique index: a platform user can only be bound to one system user
         await self.mappings.create_index(
             [("platform", 1), ("platform_identity", 1)],
             unique=True,
         )
         await self.mappings.create_index("user_id")
 
-        # pending 的 TTL 索引
+        # pending TTL index of
         await self.pending.create_index(
             "expires_at", expireAfterSeconds=0
         )
         await self.pending.create_index("code", unique=True)
-        logger.info("[UserMapping] 索引创建完成")
+        logger.info("[UserMapping] Index creation completed")
 
     # ------------------------------------------------------------------ #
-    # 查询
+    # Query
     # ------------------------------------------------------------------ #
 
     async def get_system_user_id(
         self, platform: str, platform_identity: str
     ) -> Optional[str]:
-        """查询 IM 用户对应的系统 user_id"""
+        """Query the system corresponding to the IM user user_id"""
         doc = await self.mappings.find_one({
             "platform": platform,
             "platform_identity": platform_identity,
@@ -85,7 +85,7 @@ class UserMappingManager:
         return doc["user_id"] if doc else None
 
     async def get_platform_identities(self, user_id: str) -> list:
-        """查询系统用户绑定的所有平台身份"""
+        """Query all platform identities bound to system users"""
         cursor = self.mappings.find(
             {"user_id": user_id, "is_active": True},
             {"platform": 1, "platform_identity": 1, "display_name": 1},
@@ -93,7 +93,7 @@ class UserMappingManager:
         return await cursor.to_list(length=50)
 
     # ------------------------------------------------------------------ #
-    # 绑定流程
+    # Binding process
     # ------------------------------------------------------------------ #
 
     async def create_bind_code(
@@ -103,12 +103,12 @@ class UserMappingManager:
         channel_id: str,
         display_name: Optional[str] = None,
     ) -> str:
-        """生成一次性绑定验证码"""
+        """Generate one-time binding verification code"""
         code = self._generate_code()
         now = datetime.now(timezone.utc)
         expires = now + timedelta(minutes=BIND_CODE_TTL_MINUTES)
 
-        # 如果已有 pending，替换
+        # If there is already pending, replace
         await self.pending.delete_many({
             "platform": platform,
             "platform_identity": platform_identity,
@@ -124,17 +124,17 @@ class UserMappingManager:
             "expires_at": expires,
         })
         logger.info(
-            "[UserMapping] 生成绑定码: platform=%s, identity=%s, code=%s",
+            "[UserMapping] Generate binding code: platform=%s, identity=%s, code=%s",
             platform, platform_identity, code,
         )
         return code
 
     async def confirm_bind(self, code: str, user_id: str) -> Optional[dict]:
         """
-        Web 端确认绑定：用 code 找到 pending 记录，创建正式映射。
+        Web End-to-end confirmation binding: Use code to find the pending record and create a formal mapping.
 
         Returns:
-            绑定信息 dict，或 None（code 不存在/已过期）
+            Binding information dict, or None (code does not exist/has expired)
         """
         pending = await self.pending.find_one_and_delete({"code": code})
         if not pending:
@@ -150,7 +150,7 @@ class UserMappingManager:
             "is_active": True,
         }
 
-        # upsert：同一平台+identity 只保留一条
+        # upsert: same platform+identity Keep only one
         await self.mappings.update_one(
             {
                 "platform": pending["platform"],
@@ -160,7 +160,7 @@ class UserMappingManager:
             upsert=True,
         )
         logger.info(
-            "[UserMapping] 绑定成功: user_id=%s, platform=%s, identity=%s",
+            "[UserMapping] Binding successful: user_id=%s, platform=%s, identity=%s",
             user_id, pending["platform"], pending["platform_identity"],
         )
         return mapping
@@ -169,7 +169,7 @@ class UserMappingManager:
     async def unbind(
         self, user_id: str, platform: str, platform_identity: str
     ) -> bool:
-        """解绑平台身份"""
+        """Unbind platform identity"""
         result = await self.mappings.update_one(
             {
                 "user_id": user_id,
@@ -181,11 +181,11 @@ class UserMappingManager:
         return result.modified_count > 0
 
     # ------------------------------------------------------------------ #
-    # 工具方法
+    # Tool method
     # ------------------------------------------------------------------ #
 
     @staticmethod
     def _generate_code() -> str:
-        """生成 6 位大写字母+数字验证码"""
+        """Generate 6 uppercase letters+Numeric verification code"""
         alphabet = string.ascii_uppercase + string.digits
         return "".join(secrets.choice(alphabet) for _ in range(BIND_CODE_LENGTH))

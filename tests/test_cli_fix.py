@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试CLI修复 - KeyError: 'stock_symbol' 问题
+Test CLI fix - KeyError: 'stock_symbol' question
 Test CLI Fix - KeyError: 'stock_symbol' Issue
 
-这个测试验证了CLI中selections字典键名不匹配问题的修复
+This test verifies the fix for the key name mismatch in the selections dictionary in the CLI
 This test verifies the fix for the selections dictionary key mismatch issue in CLI
 """
 
@@ -13,21 +13,21 @@ import os
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 def test_selections_dictionary_keys():
     """
-    测试selections字典中的键名是否正确
+    Test whether the key names in the selections dictionary are correct
     Test if the keys in selections dictionary are correct
     """
-    print("🔍 测试selections字典键名...")
+    print("🔍 Test selections dictionary key name...")
     
     try:
         from cli.main import get_user_selections
         
-        # 模拟用户输入
+        # Simulate user input
         with patch('typer.prompt') as mock_prompt, \
              patch('cli.main.select_market') as mock_market, \
              patch('cli.main.select_analysts') as mock_analysts, \
@@ -37,9 +37,9 @@ def test_selections_dictionary_keys():
              patch('cli.main.select_deep_thinking_agent') as mock_deep, \
              patch('cli.main.console.print'):
             
-            # 设置模拟返回值
+            # Set simulation return value
             mock_market.return_value = {
-                'name': 'A股',
+                'name': 'A shares',
                 'name_en': 'China A-Share',
                 'default': '600036',
                 'pattern': r'^\d{6}$',
@@ -52,12 +52,12 @@ def test_selections_dictionary_keys():
             mock_shallow.return_value = 'qwen-turbo'
             mock_deep.return_value = 'qwen-max'
             
-            # 调用函数
+            # call function
             selections = get_user_selections()
             
-            # 验证必要的键存在
+            # Verify necessary keys exist
             required_keys = [
-                'ticker',  # 这是正确的键名
+                'ticker',  # This is the correct key name
                 'market',
                 'analysis_date',
                 'analysts',
@@ -69,80 +69,80 @@ def test_selections_dictionary_keys():
             ]
             
             for key in required_keys:
-                assert key in selections, f"缺少必要的键: {key}"
-                print(f"✅ 键 '{key}' 存在")
+                assert key in selections, f"Missing necessary key: {key}"
+                print(f"✅ key '{key}' exist")
             
-            # 确保不存在错误的键名
-            assert 'stock_symbol' not in selections, "不应该存在 'stock_symbol' 键"
-            print("✅ 确认不存在错误的 'stock_symbol' 键")
+            # Make sure there are no wrong key names
+            assert 'stock_symbol' not in selections, "should not exist 'stock_symbol' key"
+            print("✅ Confirm that there are no errors 'stock_symbol' key")
             
-            print("✅ selections字典键名测试通过")
+            print("✅ selections Dictionary key name test passed")
             return True
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def test_process_signal_call():
     """
-    测试process_signal调用是否使用正确的键名
+    Test that the process_signal call uses the correct key name
     Test if process_signal call uses correct key name
     """
-    print("\n🔍 测试process_signal调用...")
+    print("\n🔍 Test process_signal call...")
     
     try:
-        # 读取main.py文件内容
+        # Read the contents of the main.py file
         main_file = project_root / 'cli' / 'main.py'
         with open(main_file, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # 检查是否使用了正确的键名
+        # Check that the correct key name is used
         if "selections['ticker']" in content:
-            print("✅ 找到正确的键名 selections['ticker']")
+            print("✅ Find the correct key name selections['ticker']")
         else:
-            print("❌ 未找到 selections['ticker']")
+            print("❌ not found selections['ticker']")
             return False
         
-        # 确保不再使用错误的键名
+        # Make sure you never use the wrong key name again
         if "selections['stock_symbol']" in content:
-            print("❌ 仍然存在错误的键名 selections['stock_symbol']")
+            print("❌ Still having wrong key name selections['stock_symbol']")
             return False
         else:
-            print("✅ 确认不存在错误的键名 selections['stock_symbol']")
+            print("✅ Confirm that there are no incorrect key names selections['stock_symbol']")
         
-        print("✅ process_signal调用测试通过")
+        print("✅ process_signal Call test passed")
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def test_code_consistency():
     """
-    测试代码一致性 - 确保所有地方都使用相同的键名
+    Test code consistency - make sure the same key names are used everywhere
     Test code consistency - ensure all places use the same key names
     """
-    print("\n🔍 测试代码一致性...")
+    print("\n🔍 Test code consistency...")
     
     try:
         main_file = project_root / 'cli' / 'main.py'
         with open(main_file, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # 统计ticker键的使用次数
+        # Count the number of times the ticker key is used
         ticker_count = content.count("selections['ticker']")
         ticker_double_quote_count = content.count('selections["ticker"]')
         
         total_ticker_usage = ticker_count + ticker_double_quote_count
         
-        print(f"📊 'ticker'键使用次数: {total_ticker_usage}")
+        print(f"📊 'ticker'Number of key uses: {total_ticker_usage}")
         
-        if total_ticker_usage >= 2:  # 至少应该有2处使用（初始化和process_signal）
-            print("✅ ticker键使用次数合理")
+        if total_ticker_usage >= 2:  # There should be at least 2 uses (initialization and process_signal)
+            print("✅ ticker Reasonable number of key uses")
         else:
-            print("⚠️  ticker键使用次数可能不足")
+            print("⚠️  ticker Key usage may not be enough")
         
-        # 检查是否还有其他可能的键名不一致问题
+        # Check for other possible key name inconsistencies
         potential_issues = [
             "selections['symbol']",
             "selections['stock']",
@@ -151,23 +151,23 @@ def test_code_consistency():
         
         for issue in potential_issues:
             if issue in content:
-                print(f"⚠️  发现潜在问题: {issue}")
+                print(f"⚠️  Discover potential problems: {issue}")
             else:
-                print(f"✅ 未发现问题: {issue}")
+                print(f"✅ No problem found: {issue}")
         
-        print("✅ 代码一致性测试通过")
+        print("✅ Code consistency test passed")
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def main():
     """
-    运行所有测试
+    Run all tests
     Run all tests
     """
-    print("🚀 开始CLI修复验证测试...")
+    print("🚀 Start CLI repair verification test...")
     print("=" * 50)
     
     tests = [
@@ -184,13 +184,13 @@ def main():
             passed += 1
     
     print("\n" + "=" * 50)
-    print(f"📊 测试结果: {passed}/{total} 通过")
+    print(f"📊 Test results: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 所有测试通过！KeyError: 'stock_symbol' 问题已修复")
+        print("🎉 All tests passed!KeyError: 'stock_symbol' Problem fixed")
         return True
     else:
-        print("❌ 部分测试失败，需要进一步检查")
+        print("❌ Some tests failed and require further inspection")
         return False
 
 if __name__ == "__main__":

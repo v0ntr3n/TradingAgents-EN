@@ -18,7 +18,7 @@ import logging
 logger = logging.getLogger("migrations.v2_0_1")
 
 VERSION = "2.0.1"
-DESCRIPTION = "示例迁移 - 添加 migration_history 索引和系统版本记录"
+DESCRIPTION = "Example migration - adding migration_history index and system version records"
 
 
 async def upgrade(db):
@@ -51,23 +51,23 @@ async def upgrade(db):
         result.modified_count,
     )
 
-    # --- 示例 3: 插入新配置数据（仅当不存在时） ---
+    # --- Example 3: Insert new configuration data (only if it does not exist) ---
     # existing = await db.system_configs.find_one({"key": "new_feature_flag"})
     # if not existing:
     #     await db.system_configs.insert_one({
     #         "key": "new_feature_flag",
     #         "value": False,
-    #         "description": "新功能开关",
+    #         "description": "New function switch",
     #         "created_at": datetime.now(timezone.utc),
     #     })
 
-    # --- 示例 4: 修改已有文档的字段名 ---
+    # --- Example 4: Modify field names of existing documents ---
     # await db.some_collection.update_many(
     #     {"old_field_name": {"$exists": True}},
     #     {"$rename": {"old_field_name": "new_field_name"}}
     # )
 
-    # --- 示例 5: 删除不再需要的字段 ---
+    # --- Example 5: Delete fields no longer needed ---
     # await db.some_collection.update_many(
     #     {"deprecated_field": {"$exists": True}},
     #     {"$unset": {"deprecated_field": ""}}
@@ -75,8 +75,8 @@ async def upgrade(db):
 
 
 async def downgrade(db):
-    """回滚操作（可选）"""
-    # 回滚示例 2:
+    """Rollback operation (optional)"""
+    # Rollback example 2:
     # await db.agent_configs.update_many({}, {"$unset": {"timeout": ""}})
     pass
 

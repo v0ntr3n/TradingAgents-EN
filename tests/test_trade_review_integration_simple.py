@@ -1,52 +1,52 @@
 """
-简单的交易复盘任务中心集成测试
+Simple transaction review task center integration test
 
-测试目标：
-1. 验证代码结构正确性
-2. 验证方法签名正确性
-3. 验证导入正确性
+Test objectives:
+1. Verify the correctness of the code structure
+2. Verify method signature correctness
+3. Verify import correctness
 """
 
 import sys
 import os
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
 def test_imports():
-    """测试导入是否正确"""
-    print("🧪 测试 1: 验证导入...")
+    """Test whether the import is correct"""
+    print("🧪 test 1: Verify import...")
     
     try:
-        # 测试模型导入
+        # Test model import
         from app.models.analysis import AnalysisTaskType, AnalysisStatus
-        print("   ✅ AnalysisTaskType 导入成功")
-        print(f"   ✅ TRADE_REVIEW 任务类型存在: {hasattr(AnalysisTaskType, 'TRADE_REVIEW')}")
+        print("   ✅ AnalysisTaskType Import successful")
+        print(f"   ✅ TRADE_REVIEW Task type exists: {hasattr(AnalysisTaskType, 'TRADE_REVIEW')}")
         
-        # 测试请求模型导入
+        # Test request model import
         from app.models.review import CreateTradeReviewRequest, ReviewType
-        print("   ✅ CreateTradeReviewRequest 导入成功")
+        print("   ✅ CreateTradeReviewRequest Import successful")
         
         return True
     except Exception as e:
-        print(f"   ❌ 导入失败: {e}")
+        print(f"   ❌ Import failed: {e}")
         return False
 
 
 def test_service_methods():
-    """测试服务方法是否存在"""
-    print("\n🧪 测试 2: 验证服务方法...")
+    """Test whether the service method exists"""
+    print("\n🧪 test 2: Authentication service method...")
     
     try:
-        # 检查 UnifiedAnalysisService 是否有新方法
+        # Check UnifiedAnalysisService for new methods
         import inspect
         from app.services import unified_analysis_service
         
-        # 获取 UnifiedAnalysisService 类
+        # Get the UnifiedAnalysisService class
         service_class = unified_analysis_service.UnifiedAnalysisService
         
-        # 检查方法是否存在
+        # Check if the method exists
         methods = [
             'create_trade_review_task',
             'execute_trade_review',
@@ -57,57 +57,57 @@ def test_service_methods():
             if hasattr(service_class, method_name):
                 method = getattr(service_class, method_name)
                 sig = inspect.signature(method)
-                print(f"   ✅ {method_name} 方法存在")
-                print(f"      参数: {list(sig.parameters.keys())}")
+                print(f"   ✅ {method_name} method exists")
+                print(f"      parameters: {list(sig.parameters.keys())}")
             else:
-                print(f"   ❌ {method_name} 方法不存在")
+                print(f"   ❌ {method_name} method does not exist")
                 return False
         
         return True
     except Exception as e:
-        print(f"   ❌ 检查失败: {e}")
+        print(f"   ❌ Check failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_router_modification():
-    """测试路由是否正确修改"""
-    print("\n🧪 测试 3: 验证路由修改...")
+    """Test whether the route is modified correctly"""
+    print("\n🧪 test 3: Verify route modifications...")
     
     try:
-        # 读取路由文件内容
+        # Read the contents of the routing file
         router_file = os.path.join(os.path.dirname(__file__), '..', 'app', 'routers', 'review.py')
         
         with open(router_file, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # 检查关键代码是否存在
+        # Check if the key code exists
         checks = [
-            ('use_task_center', '判断是否使用任务中心'),
-            ('UnifiedAnalysisService', '导入 UnifiedAnalysisService'),
-            ('create_trade_review_task', '调用 create_trade_review_task'),
-            ('execute_trade_review', '调用 execute_trade_review'),
-            ('asyncio.create_task', '后台任务执行'),
+            ('use_task_center', 'Determine whether to use task center'),
+            ('UnifiedAnalysisService', 'import UnifiedAnalysisService'),
+            ('create_trade_review_task', 'call create_trade_review_task'),
+            ('execute_trade_review', 'call execute_trade_review'),
+            ('asyncio.create_task', 'Background task execution'),
         ]
         
         all_passed = True
         for keyword, description in checks:
             if keyword in content:
-                print(f"   ✅ {description}: 找到 '{keyword}'")
+                print(f"   ✅ {description}: found '{keyword}'")
             else:
-                print(f"   ❌ {description}: 未找到 '{keyword}'")
+                print(f"   ❌ {description}: not found '{keyword}'")
                 all_passed = False
         
         return all_passed
     except Exception as e:
-        print(f"   ❌ 检查失败: {e}")
+        print(f"   ❌ Check failed: {e}")
         return False
 
 
 def test_documentation():
-    """测试文档是否存在"""
-    print("\n🧪 测试 4: 验证文档...")
+    """Test whether the document exists"""
+    print("\n🧪 test 4: Verify document...")
     
     try:
         doc_file = os.path.join(
@@ -120,56 +120,56 @@ def test_documentation():
         )
         
         if os.path.exists(doc_file):
-            print(f"   ✅ 设计文档存在: {doc_file}")
+            print(f"   ✅ Design document exists: {doc_file}")
             
-            # 检查文档内容
+            # Check document content
             with open(doc_file, 'r', encoding='utf-8') as f:
                 content = f.read()
             
             if 'UnifiedAnalysisService' in content:
-                print("   ✅ 文档包含 UnifiedAnalysisService 说明")
+                print("   ✅ Documentation contains UnifiedAnalysisService description")
             if 'create_trade_review_task' in content:
-                print("   ✅ 文档包含 create_trade_review_task 说明")
+                print("   ✅ Documentation contains create_trade_review_task instructions")
             if 'execute_trade_review' in content:
-                print("   ✅ 文档包含 execute_trade_review 说明")
+                print("   ✅ Documentation contains instructions for execute_trade_review")
             
             return True
         else:
-            print(f"   ❌ 设计文档不存在: {doc_file}")
+            print(f"   ❌ Design document does not exist: {doc_file}")
             return False
     except Exception as e:
-        print(f"   ❌ 检查失败: {e}")
+        print(f"   ❌ Check failed: {e}")
         return False
 
 
 def main():
-    """运行所有测试"""
+    """Run all tests"""
     print("=" * 60)
-    print("🚀 交易复盘任务中心集成 - 简单测试")
+    print("🚀 Transaction Review Task Center Integration - Simple Test")
     print("=" * 60)
     
     results = []
     
-    results.append(("导入测试", test_imports()))
-    results.append(("服务方法测试", test_service_methods()))
-    results.append(("路由修改测试", test_router_modification()))
-    results.append(("文档测试", test_documentation()))
+    results.append(("Import test", test_imports()))
+    results.append(("Service method testing", test_service_methods()))
+    results.append(("Route modification test", test_router_modification()))
+    results.append(("Document testing", test_documentation()))
     
     print("\n" + "=" * 60)
-    print("📊 测试结果汇总")
+    print("📊 Summary of test results")
     print("=" * 60)
     
     for name, passed in results:
-        status = "✅ 通过" if passed else "❌ 失败"
+        status = "✅ Pass" if passed else "❌ failed"
         print(f"{status} - {name}")
     
     all_passed = all(passed for _, passed in results)
     
     print("\n" + "=" * 60)
     if all_passed:
-        print("🎉 所有测试通过！")
+        print("🎉 All tests passed!")
     else:
-        print("⚠️  部分测试失败，请检查上述输出")
+        print("⚠️  Some tests failed, please check the above output")
     print("=" * 60)
     
     return all_passed

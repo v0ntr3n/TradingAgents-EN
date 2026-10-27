@@ -1,5 +1,5 @@
 """
-测试统一的TushareProvider
+test unified TushareProvider
 """
 import pytest
 import asyncio
@@ -11,33 +11,33 @@ from tradingagents.dataflows.providers.tushare_provider import TushareProvider
 
 
 class TestTushareProvider:
-    """测试TushareProvider类"""
+    """Test TushareProvider class"""
     
     @pytest.fixture
     def provider(self):
-        """创建TushareProvider实例"""
+        """Create TushareProvider instance"""
         return TushareProvider()
     
     @pytest.fixture
     def mock_tushare_api(self):
-        """模拟Tushare API"""
+        """Simulation Tushare API"""
         mock_api = Mock()
         
-        # 模拟stock_basic返回数据
+        # Simulate stock_basic return data
         mock_basic_data = pd.DataFrame({
             'ts_code': ['000001.SZ', '000002.SZ'],
             'symbol': ['000001', '000002'],
-            'name': ['平安银行', '万科A'],
-            'area': ['深圳', '深圳'],
-            'industry': ['银行', '全国地产'],
-            'market': ['主板', '主板'],
+            'name': ['Ping An Bank', 'Vanke A'],
+            'area': ['Shenzhen', 'Shenzhen'],
+            'industry': ['bank', 'Nationwide Real Estate'],
+            'market': ['motherboard', 'motherboard'],
             'exchange': ['SZSE', 'SZSE'],
             'list_date': ['19910403', '19910129'],
             'is_hs': ['S', 'S']
         })
         mock_api.stock_basic.return_value = mock_basic_data
         
-        # 模拟daily返回数据
+        # Simulate daily return data
         mock_daily_data = pd.DataFrame({
             'ts_code': ['000001.SZ'],
             'trade_date': ['20241201'],
@@ -53,7 +53,7 @@ class TestTushareProvider:
         })
         mock_api.daily.return_value = mock_daily_data
         
-        # 模拟daily_basic返回数据
+        # Simulate daily_basic return data
         mock_basic_daily = pd.DataFrame({
             'ts_code': ['000001.SZ'],
             'total_mv': [250000],
@@ -68,7 +68,7 @@ class TestTushareProvider:
     
     @pytest.mark.asyncio
     async def test_connect_success(self, provider, mock_tushare_api):
-        """测试连接成功"""
+        """Test connection successful"""
         with patch('tradingagents.dataflows.providers.tushare_provider.TUSHARE_AVAILABLE', True), \
              patch('tradingagents.dataflows.providers.tushare_provider.ts') as mock_ts, \
              patch.object(provider, 'config', {'token': 'test_token'}):
@@ -84,7 +84,7 @@ class TestTushareProvider:
     
     @pytest.mark.asyncio
     async def test_connect_no_token(self, provider):
-        """测试无token连接失败"""
+        """Testing connection without token failed"""
         with patch('tradingagents.dataflows.providers.tushare_provider.TUSHARE_AVAILABLE', True), \
              patch.object(provider, 'config', {'token': ''}):
             
@@ -95,7 +95,7 @@ class TestTushareProvider:
     
     @pytest.mark.asyncio
     async def test_get_stock_list(self, provider, mock_tushare_api):
-        """测试获取股票列表"""
+        """Test to get the stock list"""
         provider.connected = True
         provider.api = mock_tushare_api
         
@@ -107,18 +107,18 @@ class TestTushareProvider:
             assert result is not None
             assert len(result) == 2
             assert result[0]['code'] == '000001'
-            assert result[0]['name'] == '平安银行'
+            assert result[0]['name'] == 'Ping An Bank'
             assert result[0]['market_info']['market'] == 'CN'
             assert result[0]['market_info']['exchange'] == 'SZSE'
     
     @pytest.mark.asyncio
     async def test_get_stock_basic_info_single(self, provider, mock_tushare_api):
-        """测试获取单个股票基础信息"""
+        """Test to obtain basic information of a single stock"""
         provider.connected = True
         provider.api = mock_tushare_api
         
         with patch('asyncio.to_thread', new_callable=AsyncMock) as mock_to_thread:
-            # 返回单行数据
+            # Return a single row of data
             single_stock_data = mock_tushare_api.stock_basic.return_value.iloc[:1]
             mock_to_thread.return_value = single_stock_data
             
@@ -126,22 +126,22 @@ class TestTushareProvider:
             
             assert result is not None
             assert result['code'] == '000001'
-            assert result['name'] == '平安银行'
-            assert result['industry'] == '银行'
+            assert result['name'] == 'Ping An Bank'
+            assert result['industry'] == 'bank'
             assert result['data_source'] == 'tushare'
     
     @pytest.mark.asyncio
     async def test_get_stock_quotes(self, provider, mock_tushare_api):
-        """测试获取实时行情"""
+        """Test to get real-time quotes"""
         provider.connected = True
         provider.api = mock_tushare_api
         
         with patch('asyncio.to_thread', new_callable=AsyncMock) as mock_to_thread:
-            # 模拟realtime_quote失败，回退到daily
+            # Simulating realtime_quote fails and falls back to daily
             mock_to_thread.side_effect = [
-                Exception("权限不足"),  # realtime_quote失败
-                mock_tushare_api.daily.return_value,  # daily成功
-                mock_tushare_api.daily_basic.return_value  # daily_basic成功
+                Exception("Insufficient permissions"),  # realtime_quote failed
+                mock_tushare_api.daily.return_value,  # daily success
+                mock_tushare_api.daily_basic.return_value  # daily_basic success
             ]
             
             result = await provider.get_stock_quotes('000001')
@@ -156,7 +156,7 @@ class TestTushareProvider:
     
     @pytest.mark.asyncio
     async def test_get_historical_data(self, provider, mock_tushare_api):
-        """测试获取历史数据"""
+        """Test to obtain historical data"""
         provider.connected = True
         provider.api = mock_tushare_api
         
@@ -168,50 +168,50 @@ class TestTushareProvider:
             assert result is not None
             assert isinstance(result, pd.DataFrame)
             assert len(result) == 1
-            assert 'volume' in result.columns  # 检查列重命名
+            assert 'volume' in result.columns  # Check column renaming
     
     def test_normalize_ts_code(self, provider):
-        """测试ts_code标准化"""
-        # 测试已有后缀的代码
+        """Test ts_code normalization"""
+        # Test code that already has a suffix
         assert provider._normalize_ts_code('000001.SZ') == '000001.SZ'
         
-        # 测试上交所代码
+        # Test the SSE code
         assert provider._normalize_ts_code('600000') == '600000.SH'
         assert provider._normalize_ts_code('688001') == '688001.SH'
         
-        # 测试深交所代码
+        # Test the Shenzhen Stock Exchange code
         assert provider._normalize_ts_code('000001') == '000001.SZ'
         assert provider._normalize_ts_code('300001') == '300001.SZ'
     
     def test_determine_market_info_from_ts_code(self, provider):
-        """测试市场信息确定"""
-        # 测试上交所
+        """Test market information to determine"""
+        # Test the Shanghai Stock Exchange
         market_info = provider._determine_market_info_from_ts_code('600000.SH')
         assert market_info['market'] == 'CN'
         assert market_info['exchange'] == 'SSE'
-        assert market_info['exchange_name'] == '上海证券交易所'
+        assert market_info['exchange_name'] == 'Shanghai Stock Exchange'
         
-        # 测试深交所
+        # Test Shenzhen Stock Exchange
         market_info = provider._determine_market_info_from_ts_code('000001.SZ')
         assert market_info['market'] == 'CN'
         assert market_info['exchange'] == 'SZSE'
-        assert market_info['exchange_name'] == '深圳证券交易所'
+        assert market_info['exchange_name'] == 'Shenzhen Stock Exchange'
         
-        # 测试北交所
+        # Test the North Exchange
         market_info = provider._determine_market_info_from_ts_code('830001.BJ')
         assert market_info['market'] == 'CN'
         assert market_info['exchange'] == 'BSE'
-        assert market_info['exchange_name'] == '北京证券交易所'
+        assert market_info['exchange_name'] == 'Beijing Stock Exchange'
     
     def test_standardize_basic_info(self, provider):
-        """测试基础信息标准化"""
+        """Test basic information standardization"""
         raw_data = {
             'ts_code': '000001.SZ',
             'symbol': '000001',
-            'name': '平安银行',
-            'area': '深圳',
-            'industry': '银行',
-            'market': '主板',
+            'name': 'Ping An Bank',
+            'area': 'Shenzhen',
+            'industry': 'bank',
+            'market': 'motherboard',
             'list_date': '19910403',
             'is_hs': 'S'
         }
@@ -219,7 +219,7 @@ class TestTushareProvider:
         result = provider.standardize_basic_info(raw_data)
         
         assert result['code'] == '000001'
-        assert result['name'] == '平安银行'
+        assert result['name'] == 'Ping An Bank'
         assert result['full_symbol'] == '000001.SZ'
         assert result['list_date'] == '1991-04-03'
         assert result['market_info']['exchange'] == 'SZSE'
@@ -227,7 +227,7 @@ class TestTushareProvider:
         assert isinstance(result['updated_at'], datetime)
     
     def test_standardize_quotes(self, provider):
-        """测试行情数据标准化"""
+        """Test market data standardization"""
         raw_data = {
             'ts_code': '000001.SZ',
             'trade_date': '20241201',
@@ -253,21 +253,21 @@ class TestTushareProvider:
         assert result['data_source'] == 'tushare'
     
     def test_format_date_output(self, provider):
-        """测试日期格式化"""
-        # 测试YYYYMMDD格式
+        """Test date formatting"""
+        # Test YYYYMMDD format
         assert provider._format_date_output('19910403') == '1991-04-03'
         assert provider._format_date_output('20241201') == '2024-12-01'
         
-        # 测试date对象
+        # test date object
         test_date = date(2024, 12, 1)
         assert provider._format_date_output(test_date) == '2024-12-01'
         
-        # 测试None
+        # test None
         assert provider._format_date_output(None) is None
         assert provider._format_date_output('') is None
     
     def test_convert_to_float(self, provider):
-        """测试数值转换"""
+        """Test numeric conversion"""
         assert provider._convert_to_float(12.5) == 12.5
         assert provider._convert_to_float('12.5') == 12.5
         assert provider._convert_to_float('12') == 12.0

@@ -1,16 +1,16 @@
 """
-种子流程定义
+Seed process definition
 
-预定义的分析模板，作为确定性保底机制。
-每个种子流程包含：
-- id: 唯一标识
-- name: 显示名称
-- description: 语义描述（用于 LLM 匹配）
-- steps: 预定义的工具调用步骤（含占位符）
-- extensible: 是否允许 LLM 追加步骤
+Predefined analysis templates as a deterministic floor mechanism.
+Each seed process contains:
+- id: unique identifier
+- name: display name
+- description: Semantic description (for LLM matching)
+- steps: Predefined tool calling steps (with placeholders)
+- extensible: Whether to allow LLM append steps
 
-一期：代码内嵌，类似 BUILTIN_TOOLS
-二期：迁移至 MongoDB analysis_flow_templates 集合
+Issue 1: Code embedded, similar BUILTIN_TOOLS
+Phase 2: Migrate to MongoDB analysis_flow_templates collection
 """
 
 from typing import Any, Dict, List, Optional
@@ -18,43 +18,43 @@ from pydantic import BaseModel, Field
 
 
 class SeedFlowStep(BaseModel):
-    """种子流程步骤模板"""
-    tool: str = Field(..., description="工具 ID")
-    args_template: Dict[str, str] = Field(default_factory=dict, description="参数模板，支持 {ticker} {curr_date} {trade_date} 占位符")
-    intent: str = Field("", description="步骤意图说明")
-    depends_on: List[int] = Field(default_factory=list, description="依赖的步骤索引（0-based）")
+    """Seed Process Steps Template"""
+    tool: str = Field(..., description="Tools ID")
+    args_template: Dict[str, str] = Field(default_factory=dict, description="Parameter template, support {ticker} {curr_date} {trade_date} placeholder")
+    intent: str = Field("", description="Step intention description")
+    depends_on: List[int] = Field(default_factory=list, description="Dependent step index (0-based)")
 
 
 class SeedFlow(BaseModel):
-    """种子流程定义"""
-    id: str = Field(..., description="唯一标识")
-    name: str = Field(..., description="显示名称")
-    description: str = Field(..., description="语义描述，用于 LLM 匹配")
+    """Seed process definition"""
+    id: str = Field(..., description="unique identifier")
+    name: str = Field(..., description="display name")
+    description: str = Field(..., description="Semantic description for LLM matching")
     steps: List[SeedFlowStep] = Field(default_factory=list)
-    extensible: bool = Field(True, description="是否允许 LLM 追加步骤")
+    extensible: bool = Field(True, description="Whether to allow LLM append steps")
 
 
 # ============================================================
-# 内置种子流程
+# Built-in seed process
 # ============================================================
 
 BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
     "earnings_disclosure_date": SeedFlow(
         id="earnings_disclosure_date",
-        name="财报披露时间查询",
-        description="查询某公司历年财报披露时间，推断当年年报大致披露窗口",
+        name="Financial report disclosure time inquiry",
+        description="Query the disclosure time of a company s financial reports over the years and infer the approximate disclosure window of the current year s annual report",
         steps=[
             SeedFlowStep(
                 tool="get_stock_fundamentals_unified",
                 args_template={"ticker": "{ticker}", "curr_date": "{curr_date}"},
-                intent="获取财务数据，查看报告期与披露信息",
+                intent="Get financial data, view reporting periods and disclosures",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_stock_news_unified",
                 args_template={"ticker": "{ticker}", "curr_date": "{curr_date}"},
-                intent="查询财报预约披露公告",
+                intent="Query financial report scheduled disclosure announcement",
                 depends_on=[],
             ),
         ],
@@ -63,31 +63,31 @@ BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
     "stock_overview": SeedFlow(
         id="stock_overview",
-        name="个股综合速览",
-        description="个股综合速览，获取基本面、行情、新闻等综合信息，快速了解一只股票的整体状况",
+        name="Comprehensive overview of individual stocks",
+        description="Comprehensive quick overview of individual stocks, obtain comprehensive information such as fundamentals, market trends, news, etc., and quickly understand the overall situation of a stock",
         steps=[
             SeedFlowStep(
                 tool="get_stock_fundamentals_unified",
                 args_template={"ticker": "{ticker}", "curr_date": "{curr_date}"},
-                intent="获取基本面数据（PE/PB/ROE/营收等）",
+                intent="Obtain fundamental data (PE/PB/ROE/revenue, etc.)",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_stock_market_data_unified",
                 args_template={"ticker": "{ticker}", "start_date": "{curr_date}", "end_date": "{curr_date}"},
-                intent="获取近期行情走势和成交量",
+                intent="Get recent market trends and trading volumes",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_stock_news_unified",
                 args_template={"ticker": "{ticker}", "curr_date": "{curr_date}"},
-                intent="获取最新新闻动态",
+                intent="Get the latest news",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_technical_indicators",
                 args_template={"ticker": "{ticker}", "indicators": "macd,rsi_14,boll,kdj", "end_date": "{curr_date}"},
-                intent="获取技术指标（MACD/RSI/KDJ）判断短期走势",
+                intent="Obtain technical indicators (MACD/RSI/KDJ) to determine short-term trends",
                 depends_on=[],
             ),
         ],
@@ -96,13 +96,13 @@ BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
     "sector_screening": SeedFlow(
         id="sector_screening",
-        name="板块分析",
-        description="板块分析和板块内选股，查看某个板块的行情走势、成分股龙头、资金流向，分析板块投资机会",
+        name="Sector analysis",
+        description="Sector analysis and stock selection within the sector, check the market trends, leading constituent stocks, capital flows of a certain sector, and analyze investment opportunities in the sector",
         steps=[
             SeedFlowStep(
                 tool="analyze_sector_by_name",
                 args_template={"sector_name": "{sector_name}", "trade_date": "{trade_date}"},
-                intent="综合分析板块行情、成分股龙头和资金流向",
+                intent="Comprehensive analysis of sector trends, leading component stocks and capital flows",
                 depends_on=[],
             ),
         ],
@@ -111,25 +111,25 @@ BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
     "event_impact": SeedFlow(
         id="event_impact",
-        name="事件影响分析",
-        description="特定事件对相关股票或板块的影响分析，如政策变化、降准降息、行业事件等",
+        name="Event Impact Analysis",
+        description="Analysis of the impact of specific events on relevant stocks or sectors, such as policy changes, RRR cuts and interest rate cuts, industry events, etc.",
         steps=[
             SeedFlowStep(
                 tool="get_stock_news_unified",
                 args_template={"ticker": "{ticker}", "curr_date": "{curr_date}"},
-                intent="获取事件相关新闻和公告",
+                intent="Get news and announcements about events",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_sector_data",
                 args_template={"ticker": "{ticker}", "trade_date": "{trade_date}"},
-                intent="获取受影响板块的表现数据",
+                intent="Obtain performance data for affected sectors",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_stock_market_data_unified",
                 args_template={"ticker": "{ticker}", "start_date": "{curr_date}", "end_date": "{curr_date}"},
-                intent="获取受影响个股的行情变化",
+                intent="Obtain market changes of affected stocks",
                 depends_on=[],
             ),
         ],
@@ -138,19 +138,19 @@ BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
     "peer_comparison": SeedFlow(
         id="peer_comparison",
-        name="同业对比",
-        description="同行业公司对比分析，比较两家或多家公司的基本面、估值、走势",
+        name="Comparison with peers",
+        description="Comparative analysis of companies in the same industry, comparing the fundamentals, valuations, and trends of two or more companies",
         steps=[
             SeedFlowStep(
                 tool="get_peer_comparison",
                 args_template={"ticker": "{ticker}", "trade_date": "{trade_date}"},
-                intent="获取同业股票列表及对比数据",
+                intent="Get peer stock list and comparison data",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_stock_fundamentals_unified",
                 args_template={"ticker": "{ticker}", "curr_date": "{curr_date}"},
-                intent="获取主要公司基本面详情",
+                intent="Get fundamental details of major companies",
                 depends_on=[],
             ),
         ],
@@ -159,19 +159,19 @@ BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
     "concept_stock_analysis": SeedFlow(
         id="concept_stock_analysis",
-        name="概念股分析",
-        description="查询概念板块成分股、龙头股，分析概念股投资机会，如XX概念股有哪些、XX概念股龙头",
+        name="Concept stock analysis",
+        description="Query the constituent stocks and leading stocks of the concept sector, and analyze the investment opportunities of concept stocks, such as what are the XX concept stocks and the leading XX concept stocks",
         steps=[
             SeedFlowStep(
                 tool="get_sector_constituents",
                 args_template={"sector_name": "{sector_name}", "trade_date": "{trade_date}", "top_n": "20"},
-                intent="获取概念板块成分股列表及市值排名，找出龙头股",
+                intent="Get the list of concept sector constituent stocks and market capitalization rankings to find the leading stocks",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_sector_daily",
                 args_template={"sector_name": "{sector_name}", "trade_date": "{trade_date}"},
-                intent="获取概念板块指数近期走势和涨跌情况",
+                intent="Get the recent trends, rises and falls of the concept sector index",
                 depends_on=[],
             ),
         ],
@@ -180,19 +180,19 @@ BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
     "stock_technical_analysis": SeedFlow(
         id="stock_technical_analysis",
-        name="个股技术面分析",
-        description="个股技术面分析，查看MACD、RSI、KDJ、BOLL等技术指标和K线走势，判断买卖信号和趋势",
+        name="Technical analysis of individual stocks",
+        description="Technical analysis of individual stocks, check MACD, RSI, KDJ, BOLL and other technical indicators and K-line trends to determine buying and selling signals and trends",
         steps=[
             SeedFlowStep(
                 tool="get_technical_indicators",
                 args_template={"ticker": "{ticker}", "indicators": "macd,rsi_14,boll,kdj", "end_date": "{curr_date}"},
-                intent="获取 MACD/RSI/KDJ/BOLL 等技术指标，判断趋势和超买超卖",
+                intent="Get technical indicators such as MACD/RSI/KDJ/BOLL to determine trends and overbought and oversold conditions",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_stock_market_data_unified",
                 args_template={"ticker": "{ticker}", "start_date": "{curr_date}", "end_date": "{curr_date}"},
-                intent="获取近期K线走势和成交量数据",
+                intent="Get recent K-line trend and trading volume data",
                 depends_on=[],
             ),
         ],
@@ -201,25 +201,25 @@ BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
     "market_overview": SeedFlow(
         id="market_overview",
-        name="大盘市场分析",
-        description="大盘走势分析、市场整体环境评估、今天大盘怎么样、市场情绪判断、涨跌停统计",
+        name="Market analysis",
+        description="Market trend analysis, overall market environment assessment, how the market is doing today, market sentiment judgment, price limit statistics",
         steps=[
             SeedFlowStep(
                 tool="get_china_market_overview",
                 args_template={"curr_date": "{curr_date}"},
-                intent="获取主要指数行情概览（上证、深证、创业板、科创50）",
+                intent="Get an overview of major index prices (Shanghai Stock Exchange, Shenzhen Stock Exchange, GEM, Science and Technology 50)",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_limit_stats",
                 args_template={"trade_date": "{trade_date}"},
-                intent="获取涨跌停家数和涨跌家数，评估市场赚钱效应",
+                intent="Obtain the number of rising and falling companies and the number of rising and falling companies, and evaluate the market s money-making effect.",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_fund_flow_data",
                 args_template={"trade_date": "{trade_date}"},
-                intent="获取板块资金流向排名，了解热点板块",
+                intent="Obtain the ranking of sector capital flows and understand the hot sectors",
                 depends_on=[],
             ),
         ],
@@ -228,19 +228,19 @@ BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
     "north_flow_analysis": SeedFlow(
         id="north_flow_analysis",
-        name="北向资金分析",
-        description="北向资金流向分析、外资动向、沪深港通资金流入流出、外资在买什么",
+        name="Northbound Fund Analysis",
+        description="Analysis of northbound capital flows, foreign capital trends, Shanghai-Shenzhen-Hong Kong Stock Connect capital inflows and outflows, and what foreign capital is buying",
         steps=[
             SeedFlowStep(
                 tool="get_north_flow",
                 args_template={"trade_date": "{trade_date}"},
-                intent="获取北向资金净流入/流出数据和趋势",
+                intent="Get northbound net inflow/outflow data and trends",
                 depends_on=[],
             ),
             SeedFlowStep(
                 tool="get_china_market_overview",
                 args_template={"curr_date": "{curr_date}"},
-                intent="获取大盘指数行情，配合分析外资对市场影响",
+                intent="Obtain market index trends and analyze the impact of foreign capital on the market",
                 depends_on=[],
             ),
         ],
@@ -250,11 +250,11 @@ BUILTIN_SEED_FLOWS: Dict[str, SeedFlow] = {
 
 
 def get_seed_flow(flow_id: str) -> Optional[SeedFlow]:
-    """根据 ID 获取种子流程"""
+    """Get seed process based on ID"""
     return BUILTIN_SEED_FLOWS.get(flow_id)
 
 
 def list_seed_flows() -> List[SeedFlow]:
-    """获取所有种子流程"""
+    """Get all seed processes"""
     return list(BUILTIN_SEED_FLOWS.values())
 

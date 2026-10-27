@@ -3,14 +3,14 @@
     <div class="list-header">
       <h4>{{ categoryDisplayName }}</h4>
       <div class="header-actions">
-        <el-tag type="info" size="small">{{ dataSources.length }} 个数据源</el-tag>
+        <el-tag type="info" size="small">{{ dataSources.length }} data sources</el-tag>
         <el-button
           size="small"
           type="primary"
           icon="Sort"
           @click="$emit('manage-category', categoryId)"
         >
-          管理分类
+          Management classification
         </el-button>
       </div>
     </div>
@@ -38,10 +38,10 @@
                 :type="item.enabled ? 'success' : 'danger'"
                 size="small"
               >
-                {{ item.enabled ? '启用' : '禁用' }}
+                {{ item.enabled ? 'enable' : 'Disable' }}
               </el-tag>
               <el-tag type="info" size="small">
-                优先级: {{ item.priority }}
+                priority: {{ item.priority }}
               </el-tag>
             </div>
           </div>
@@ -49,7 +49,7 @@
           <div class="datasource-details">
             <span class="datasource-type">{{ item.type }}</span>
             <span class="datasource-provider">{{ item.provider || '-' }}</span>
-            <span class="datasource-desc">{{ item.description || '暂无描述' }}</span>
+            <span class="datasource-desc">{{ item.description || 'No description yet' }}</span>
           </div>
         </div>
 
@@ -67,7 +67,7 @@
             size="small"
             @click="$emit('edit-datasource', item)"
           >
-            编辑
+            Edit
           </el-button>
           <el-button
             size="small"
@@ -75,39 +75,39 @@
             :loading="testingDataSources[item.name]"
             @click="testDataSource(item)"
           >
-            测试
+            test
           </el-button>
           <el-button
             size="small"
             @click="$emit('manage-grouping', item.name)"
           >
-            分组
+            Group
           </el-button>
           <el-button
             size="small"
             :type="item.enabled ? 'warning' : 'success'"
             @click="toggleDataSource(item)"
           >
-            {{ item.enabled ? '禁用' : '启用' }}
+            {{ item.enabled ? 'Disable' : 'enable' }}
           </el-button>
           <el-button
             size="small"
             type="danger"
             @click="$emit('delete-datasource', item)"
           >
-            删除
+            Delete
           </el-button>
         </div>
       </div>
 
       <div v-if="dataSources.length === 0" class="empty-state">
-        <el-empty description="该分类下暂无数据源" :image-size="60">
+        <el-empty description="There is currently no data source under this category" :image-size="60">
           <el-button
             type="primary"
             size="small"
             @click="$emit('add-datasource', categoryId)"
           >
-            添加数据源
+            Add data source
           </el-button>
         </el-empty>
       </div>
@@ -147,7 +147,7 @@ const isDragging = ref(false)
 const testingDataSources = ref<Record<string, boolean>>({})
 let sortableInstance: Sortable | null = null
 
-// 初始化拖拽排序
+// Initialize drag sort
 const initSortable = () => {
   if (!sortableContainer.value) return
 
@@ -166,30 +166,30 @@ const initSortable = () => {
       isDragging.value = false
 
       if (evt.oldIndex !== evt.newIndex && evt.oldIndex !== undefined && evt.newIndex !== undefined) {
-        // 🔥 重要：根据拖动后的DOM顺序重新构建数据数组
+        // 🔥 Important: Rebuild the data array based on the DOM order after dragging
         const container = sortableContainer.value
         if (!container) return
 
-        // 获取拖动后的DOM元素顺序
+        // Get the order of DOM elements after dragging
         const items = Array.from(container.querySelectorAll('.datasource-item'))
         const orderedNames = items.map(item => (item as HTMLElement).dataset.id).filter(Boolean) as string[]
 
-        // 根据新顺序构建优先级映射
+        // Build a priority map based on the new order
         const orderedItems = orderedNames.map((name, index) => ({
           name,
-          priority: orderedNames.length - index // 倒序，第一个优先级最高
+          priority: orderedNames.length - index // In reverse order, the first one has the highest priority
         }))
 
-        console.log('拖动排序完成:', orderedItems)
+        console.log('Drag sorting completed:', orderedItems)
 
-        // 发送更新事件
+        // Send update event
         emit('update-order', props.categoryId, orderedItems)
       }
     }
   })
 }
 
-// 销毁拖拽排序
+// Destroy drag sort
 const destroySortable = () => {
   if (sortableInstance) {
     sortableInstance.destroy()
@@ -197,7 +197,7 @@ const destroySortable = () => {
   }
 }
 
-// 更新优先级
+// Update priority
 const updatePriority = async (item: DataSourceConfig & { priority: number; enabled: boolean }) => {
   try {
     await configApi.updateDataSourceGrouping(
@@ -206,14 +206,14 @@ const updatePriority = async (item: DataSourceConfig & { priority: number; enabl
       { priority: item.priority }
     )
     
-    ElMessage.success('优先级更新成功')
+    ElMessage.success('Priority update successful')
   } catch (error) {
-    console.error('更新优先级失败:', error)
-    ElMessage.error('更新优先级失败')
+    console.error('Update priority failed:', error)
+    ElMessage.error('Update priority failed')
   }
 }
 
-// 切换数据源状态
+// Switch data source status
 const toggleDataSource = async (item: DataSourceConfig & { priority: number; enabled: boolean }) => {
   try {
     const newEnabled = !item.enabled
@@ -224,19 +224,19 @@ const toggleDataSource = async (item: DataSourceConfig & { priority: number; ena
     )
 
     item.enabled = newEnabled
-    ElMessage.success(`数据源已${newEnabled ? '启用' : '禁用'}`)
+    ElMessage.success(`The data source has${newEnabled ? 'enable' : 'Disable'}`)
   } catch (error) {
-    console.error('切换数据源状态失败:', error)
-    ElMessage.error('切换数据源状态失败')
+    console.error('Failed to switch data source status:', error)
+    ElMessage.error('Failed to switch data source status')
   }
 }
 
-// 测试数据源连接
+// Test data source connection
 const testDataSource = async (item: DataSourceConfig) => {
   try {
     testingDataSources.value[item.name] = true
 
-    console.log('🧪 测试数据源:', item.name)
+    console.log('🧪 Test data source:', item.name)
 
     const result = await configApi.testConfig({
       config_type: 'datasource',
@@ -255,9 +255,9 @@ const testDataSource = async (item: DataSourceConfig) => {
       })
     }
   } catch (error: any) {
-    console.error('测试数据源失败:', error)
+    console.error('Test data source failed:', error)
     ElMessage.error({
-      message: `❌ 测试失败: ${error.message || '未知错误'}`,
+      message: `❌ test failed: ${error.message || 'unknown error'}`,
       duration: 5000
     })
   } finally {
@@ -265,7 +265,7 @@ const testDataSource = async (item: DataSourceConfig) => {
   }
 }
 
-// 生命周期
+// life cycle
 onMounted(async () => {
   await nextTick()
   initSortable()
@@ -384,7 +384,7 @@ onUnmounted(() => {
   }
 }
 
-// 拖拽样式
+// drag style
 :global(.sortable-ghost) {
   opacity: 0.5;
   background: #e3f2fd;

@@ -1,75 +1,75 @@
-# 阶段 1:发现——从 6000 只股票里找到值得研究的
+# stage 1:discover——Find the ones worth researching from 6,000 stocks
 
-> **5 课** | **总课时**: 约 2 小时 | **难度**: ⭐ 入门
+> **5 class** | **Total class hours**: about 2 hours | **difficulty**: ⭐ Getting Started
 
-## 🎯 阶段目标
+## 🎯 Stage goal
 
-完成本阶段后,你能从 6000 只 A 股里,**系统化**地筛出 10 只值得深度研究的股票。
+After completing this stage,What can you do from 6,000 A shares?,**Systematize**We screen out 10 stocks worthy of in-depth research.
 
-## 📍 阶段路线图
+## 📍 Stage roadmap
 
 ```
-6000 只 A 股
+6000 Only A shares
    │
-   │  第 1 课: 自然语言筛选 / 条件筛选
+   │  Lesson 1: Natural language filtering / conditional filtering
    ↓
-500-1000 只
+500-1000 only
    │
-   │  第 2 课: 批量分析(单次 ≤ 10 只,分批跑)
+   │  Lesson 2: Batch analysis(Single ≤ 10 only,Run in batches)
    ↓
-50-100 只
+50-100 only
    │
-   │  第 3 课: 单股研究(3 级标准深度)
+   │  Lesson 3: single stock research(3 standard depth)
    ↓
-10-20 只
+10-20 only
    │
-   │  第 4 课: 多情景辩论(所有深度都跑)
+   │  Lesson 4: multi-scenario debate(Run all depths)
    ↓
-2-3 只核心标的
+2-3 Only core targets
    │
-   │  第 5 课: 避雷清单(经验沉淀)
+   │  Lesson 5: Lightning protection list(Experience accumulation)
    ↓
-[阶段 2:跟踪] 或 [阶段 3:建仓]
+[stage 2:Track] or [stage 3:Open a position]
 ```
 
-## 📚 课程列表
+## 📚 Course List
 
-| 课 | 主题 | 时长 | 关键产出 |
+| class | Topic | duration | key output |
 |----|------|------|---------|
-| [第 1 课](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-01-stock-screening.md) | 股票筛选(自然语言 + 条件) | 20 分钟 | 500-1000 只股票池 |
-| [第 2 课](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-02-batch-analysis.md) | 批量分析(单次 ≤ 10 只) | 25 分钟 | 50 只窄选 |
-| [第 3 课](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-03-single-analysis-basic.md) | 单股研究入门(5 级深度) | 30 分钟 | 10-20 只深度研究 |
-| [第 4 课](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-04-single-analysis-multi-scenario.md) | 多情景辩论(2 角色 + 1 整合员) | 30 分钟 | 2-3 只核心标的 |
-| [第 5 课](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-05-discover-pitfalls.md) | 发现阶段常见错误 | 25 分钟 | 个人避雷清单 |
+| [Lesson 1](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-01-stock-screening.md) | stock screen(natural language + Conditions) | 20 minutes | 500-1000 only stock pool |
+| [Lesson 2](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-02-batch-analysis.md) | Batch analysis(Single ≤ 10 only) | 25 minutes | 50 Only narrow selection |
+| [Lesson 3](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-03-single-analysis-basic.md) | An Introduction to Single Stock Research(5 level depth) | 30 minutes | 10-20 Only in-depth research |
+| [Lesson 4](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-04-single-analysis-multi-scenario.md) | multi-scenario debate(2 role + 1 integrator) | 30 minutes | 2-3 Only core targets |
+| [Lesson 5](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-05-discover-pitfalls.md) | Common mistakes in the discovery phase | 25 minutes | Personal Lightning Protection Checklist |
 
-## 🔑 阶段关键概念(基于真实功能)
+## 🔑 Stage key concepts(Based on real functionality)
 
-- **自然语言筛选**: 「股票筛选」菜单默认 Tab,基于 LLM 意图理解,支持多轮对话
-- **条件筛选**: 「股票筛选」菜单里的"高级模式" Tab,精确字段构建
-- **批量分析**: 侧边栏「批量分析」菜单,单次最多 10 只,5 级深度
-- **单股研究**: 侧边栏「单股研究」菜单,5 级深度,12 个子报告
-- **2 角色辩论 + 1 整合员**: bull_researcher / bear_researcher / research_team_decision(所有深度,区别在轮数)
-- **3 风险视角**: risky_analyst / safe_analyst / neutral_analyst(所有深度)
-- **合规术语**: 决策 action ∈ {乐观, 审慎, 中性}(不是 买入/卖出/持有)
+- **Natural language filtering**: "Stock Screening menu default Tab,LLM intent understanding,Support multiple rounds of dialogue
+- **Conditional filtering**: "in the Stock Screening menu"Advanced mode" Tab,Precise field construction
+- **Batch analysis**: Sidebar "Batch Analysis" menu,Maximum 10 at a time,5 level depth
+- **single stock research**: Sidebar "Single Stock Research" menu,5 level depth,12 subreport
+- **2 role debate + 1 integrator**: bull_researcher / bear_researcher / research_team_decision(all depths,The difference lies in the number of rounds)
+- **3 risk perspective**: risky_analyst / safe_analyst / neutral_analyst(all depths)
+- **Compliance terminology**: decision making action ∈ {optimistic, Prudence, Neutral}(Not Buy/Sell/Hold)
 
-## ⚠️ 阶段限制(基于实际代码)
+## ⚠️ Stage restrictions(Based on actual code)
 
-- ⚠️ **平台仅支持 A 股和 ETF 基金**(港美股前端入口已下线)
-- ⚠️ **批量分析单次 ≤ 10 只**(后端硬限制)
-- ⚠️ **京东云版单并发**,批量任务串行执行
-- ⚠️ 所有深度都跑辩论角色(1-3 级 1 轮、4 级 2 轮、5 级 3 轮)
+- ⚠️ **The platform only supports A-shares and ETF funds**(The front-end entrance to Hong Kong and US stocks has been offline)
+- ⚠️ **Batch analysis single ≤ 10 only**(Backend hard limit)
+- ⚠️ **JD Cloud version order concurrency**,Batch task serial execution
+- ⚠️ All depths run debate roles(1-3 1 round for level 4, 2 rounds for level 4, 3 rounds for level 5)
 
-## 🎓 学完后能做什么
+## 🎓 What can you do after studying?
 
-完成本阶段后,你可以:
-- 用一句话告诉 AI"我要什么股票"
-- 一次性分析 10 只股票
-- 读懂 12 个子报告的含义
-- 识别 AI 报告的合规术语
-- 避开新手最常见的 7 个错误
+After completing this stage,you can:
+- tell in one sentence AI"What stocks do I want?"
+- Analyze 10 stocks at once
+- Understand the meaning of 12 sub-reports
+- Identify compliance terms for AI reporting
+- Avoid the 7 most common mistakes newbies make
 
-## ⏭️ 下一步
+## ⏭️ Next step
 
-完成本阶段后,进入 [**阶段 2:跟踪**](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-02-track/README.md)——研究完后,怎么持续跟踪?
+After completing this stage,enter [**stage 2:Track**](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-02-track/README.md)——After researching,How to keep tracking?
 
-也可以根据实际情况**提前进入阶段 3**(持仓)或**阶段 4**(复盘)。
+It can also be based on the actual situation**Early entry stage 3**(Position)or**stage 4**(Review). 

@@ -1,13 +1,13 @@
 """
-LLM 提供商适配器模块
+LLM provider adapter module
 
-每个适配器负责将统一接口转换为特定提供商的 API 格式
+Each adapter is responsible for converting the unified interface into a provider-specific API format
 """
 
 from .base import BaseAdapter
 from .openai_compat import OpenAICompatAdapter
 
-# Google 适配器是可选的（需要 google-generativeai 包）
+# Google Adapter is optional (requires google-generativeai package)
 try:
     from .google import GoogleAdapter
     GOOGLE_AVAILABLE = True

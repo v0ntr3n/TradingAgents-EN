@@ -1,40 +1,40 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="阶段性复盘详情"
+    title="Phased review details"
     width="800px"
     :close-on-click-modal="false"
   >
     <div v-loading="loading" class="periodic-detail">
       <template v-if="detail">
-        <!-- 基本信息 -->
+        <!-- Basic information -->
         <el-descriptions :column="3" border class="info-section">
-          <el-descriptions-item label="复盘周期">
+          <el-descriptions-item label="Review cycle">
             {{ getPeriodTypeLabel(detail.period_type) }}
           </el-descriptions-item>
-          <el-descriptions-item label="开始日期">
+          <el-descriptions-item label="start date">
             {{ formatDate(detail.period_start) }}
           </el-descriptions-item>
-          <el-descriptions-item label="结束日期">
+          <el-descriptions-item label="end date">
             {{ formatDate(detail.period_end) }}
           </el-descriptions-item>
         </el-descriptions>
 
-        <!-- 统计数据 -->
+        <!-- Statistics -->
         <el-card shadow="never" class="stats-section">
           <template #header>
-            <span>交易统计</span>
+            <span>Transaction statistics</span>
           </template>
           <el-row :gutter="16">
             <el-col :span="4">
               <div class="stat-item">
-                <div class="label">总交易数</div>
+                <div class="label">total number of transactions</div>
                 <div class="value">{{ detail.statistics?.total_trades || 0 }}</div>
               </div>
             </el-col>
             <el-col :span="4">
               <div class="stat-item">
-                <div class="label">胜率</div>
+                <div class="label">winning rate</div>
                 <div class="value" :class="(detail.statistics?.win_rate || 0) >= 50 ? 'positive' : 'negative'">
                   {{ detail.statistics?.win_rate?.toFixed(1) || 0 }}%
                 </div>
@@ -42,13 +42,13 @@
             </el-col>
             <el-col :span="4">
               <div class="stat-item">
-                <div class="label">盈亏比</div>
+                <div class="label">profit-loss ratio</div>
                 <div class="value">{{ detail.statistics?.profit_loss_ratio?.toFixed(2) || '-' }}</div>
               </div>
             </el-col>
             <el-col :span="4">
               <div class="stat-item">
-                <div class="label">总盈亏</div>
+                <div class="label">Total profit and loss</div>
                 <div class="value" :class="(detail.statistics?.total_pnl || 0) >= 0 ? 'positive' : 'negative'">
                   {{ formatPnl(detail.statistics?.total_pnl) }}
                 </div>
@@ -56,24 +56,24 @@
             </el-col>
             <el-col :span="4">
               <div class="stat-item">
-                <div class="label">平均盈利</div>
+                <div class="label">average profit</div>
                 <div class="value positive">{{ formatPnl(detail.statistics?.avg_profit) }}</div>
               </div>
             </el-col>
             <el-col :span="4">
               <div class="stat-item">
-                <div class="label">平均亏损</div>
+                <div class="label">average loss</div>
                 <div class="value negative">{{ formatPnl(detail.statistics?.avg_loss) }}</div>
               </div>
             </el-col>
           </el-row>
         </el-card>
 
-        <!-- AI分析 -->
+        <!-- AI analysis -->
         <el-card shadow="never" class="ai-section">
           <template #header>
             <div class="ai-header">
-              <span>AI复盘报告</span>
+              <span>AI Review report</span>
             </div>
           </template>
           
@@ -83,26 +83,26 @@
             <el-divider />
             
             <div class="analysis-item" v-if="detail.ai_review?.trading_style">
-              <div class="item-title">交易风格</div>
+              <div class="item-title">trading style</div>
               <div class="item-content">{{ detail.ai_review.trading_style }}</div>
             </div>
             
             <div class="analysis-item" v-if="detail.ai_review?.common_mistakes?.length">
-              <div class="item-title">常见错误</div>
+              <div class="item-title">Common mistakes</div>
               <ul>
                 <li v-for="(item, idx) in detail.ai_review.common_mistakes" :key="idx">{{ item }}</li>
               </ul>
             </div>
             
             <div class="analysis-item" v-if="detail.ai_review?.improvement_areas?.length">
-              <div class="item-title">复盘改进方向</div>
+              <div class="item-title">Review and improvement directions</div>
               <ul>
                 <li v-for="(item, idx) in detail.ai_review.improvement_areas" :key="idx">{{ item }}</li>
               </ul>
             </div>
             
             <div class="analysis-item" v-if="detail.ai_review?.action_plan?.length">
-              <div class="item-title">后续观察项</div>
+              <div class="item-title">follow-up observations</div>
               <ul>
                 <li v-for="(item, idx) in detail.ai_review.action_plan" :key="idx">{{ item }}</li>
               </ul>
@@ -111,13 +111,13 @@
             <el-row :gutter="16" v-if="detail.ai_review?.best_trade || detail.ai_review?.worst_trade">
               <el-col :span="12" v-if="detail.ai_review?.best_trade">
                 <div class="trade-analysis best">
-                  <div class="trade-title">最佳交易</div>
+                  <div class="trade-title">best deal</div>
                   <div class="trade-content">{{ detail.ai_review.best_trade }}</div>
                 </div>
               </el-col>
               <el-col :span="12" v-if="detail.ai_review?.worst_trade">
                 <div class="trade-analysis worst">
-                  <div class="trade-title">最差交易</div>
+                  <div class="trade-title">Worst deal</div>
                   <div class="trade-content">{{ detail.ai_review.worst_trade }}</div>
                 </div>
               </el-col>
@@ -128,7 +128,7 @@
     </div>
     
     <template #footer>
-      <el-button @click="visible = false">关闭</el-button>
+      <el-button @click="visible = false">close</el-button>
     </template>
   </el-dialog>
 </template>
@@ -156,10 +156,10 @@ const detail = ref<PeriodicReviewReport | null>(null)
 
 const getPeriodTypeLabel = (type: PeriodType) => {
   const map: Record<string, string> = {
-    week: '周度',
-    month: '月度',
-    quarter: '季度',
-    year: '年度'
+    week: 'Weekly',
+    month: 'monthly',
+    quarter: 'quarter',
+    year: 'annual'
   }
   return map[type] || type
 }
@@ -185,7 +185,7 @@ const loadDetail = async () => {
       detail.value = res.data
     }
   } catch (e) {
-    console.error('加载阶段性复盘详情失败:', e)
+    console.error('Failed to load staged review details:', e)
   } finally {
     loading.value = false
   }
@@ -228,8 +228,8 @@ watch(visible, (val) => {
         font-size: 18px;
         font-weight: 600;
 
-        &.positive { color: #f56c6c; }  // 中国习惯：红色表示盈利（正数）
-        &.negative { color: #67c23a; }  // 中国习惯：绿色表示亏损（负数）
+        &.positive { color: #f56c6c; }  // Chinese custom: red indicates profit (positive number)
+        &.negative { color: #67c23a; }  // Chinese custom: green indicates loss (negative number)
       }
     }
   }

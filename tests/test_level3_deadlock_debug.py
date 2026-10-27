@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-测试分析级别3死循环问题的调试脚本
+Debugging script for testing analysis level 3 infinite loop issues
 """
 
 import sys
 from pathlib import Path
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
@@ -20,20 +20,20 @@ from langchain_core.messages import AIMessage
 from app.services.simple_analysis_service import create_analysis_config
 
 def test_level3_deadlock():
-    """测试分析级别3的死循环问题"""
+    """Test analysis level 3 infinite loop problem"""
     
     print("=" * 80)
-    print("🔍 分析级别3死循环问题调试")
+    print("🔍 Analysis level 3 infinite loop problem debugging")
     print("=" * 80)
     
-    # 1. 对比不同级别的配置
-    print("\n📊 1. 配置对比分析")
+    # 1. Compare different levels of configurations
+    print("\n📊 1. Configuration comparison analysis")
     print("-" * 50)
     
     levels = [
-        ("快速", 1, "1级"),
-        ("基础", 2, "2级"), 
-        ("标准", 3, "3级")
+        ("fast", 1, "1 level"),
+        ("Basics", 2, "2 level"), 
+        ("Standard", 3, "3 level")
     ]
     
     configs = {}
@@ -44,7 +44,7 @@ def test_level3_deadlock():
             quick_model="qwen-plus",
             deep_model="qwen-max",
             llm_provider="dashscope",
-            market_type="A股"
+            market_type="A shares"
         )
         configs[level] = config
         
@@ -54,34 +54,34 @@ def test_level3_deadlock():
         print(f"  - memory_enabled: {config['memory_enabled']}")
         print(f"  - online_tools: {config['online_tools']}")
     
-    # 2. 分析关键差异
-    print("\n🔍 2. 关键差异分析")
+    # 2. Analyze key differences
+    print("\n🔍 2. Key difference analysis")
     print("-" * 50)
     
-    # 级别3的特殊配置
+    # Special configuration for level 3
     level3_config = configs[3]
     level2_config = configs[2]
     level1_config = configs[1]
     
-    print("级别3相比级别1、2的差异:")
-    print(f"  - 风险讨论轮次: 级别1={level1_config['max_risk_discuss_rounds']}, 级别2={level2_config['max_risk_discuss_rounds']}, 级别3={level3_config['max_risk_discuss_rounds']}")
-    print(f"  - 记忆功能: 级别1={level1_config['memory_enabled']}, 级别2={level2_config['memory_enabled']}, 级别3={level3_config['memory_enabled']}")
-    print(f"  - 在线工具: 级别1={level1_config['online_tools']}, 级别2={level2_config['online_tools']}, 级别3={level3_config['online_tools']}")
+    print("The difference between level 3 and levels 1 and 2:")
+    print(f"  - risk discussion round: level 1={level1_config['max_risk_discuss_rounds']}, level 2={level2_config['max_risk_discuss_rounds']}, level 3={level3_config['max_risk_discuss_rounds']}")
+    print(f"  - memory function: level 1={level1_config['memory_enabled']}, level 2={level2_config['memory_enabled']}, level 3={level3_config['memory_enabled']}")
+    print(f"  - Online tools: level 1={level1_config['online_tools']}, level 2={level2_config['online_tools']}, level 3={level3_config['online_tools']}")
     
-    # 3. 模拟基本面分析师的条件判断
-    print("\n🤖 3. 基本面分析师条件判断模拟")
+    # 3. Simulate the conditional judgment of fundamental analysts
+    print("\n🤖 3. Fundamental analyst conditional judgment simulation")
     print("-" * 50)
     
-    # 创建条件逻辑实例
+    # Create conditional logic instance
     conditional_logic = ConditionalLogic(
         max_debate_rounds=level3_config['max_debate_rounds'],
         max_risk_discuss_rounds=level3_config['max_risk_discuss_rounds']
     )
     
-    # 模拟不同的状态场景
+    # Simulate different status scenarios
     from langchain_core.messages.tool import ToolCall
     
-    # 创建正确格式的tool_call
+    # Create correctly formatted tool_call
     tool_call = ToolCall(
         name="get_stock_fundamentals_unified",
         args={"ticker": "000001", "start_date": "2025-01-01", "end_date": "2025-01-15", "curr_date": "2025-01-15"},
@@ -90,38 +90,38 @@ def test_level3_deadlock():
     
     scenarios = [
         {
-            "name": "场景1: 空报告 + 有tool_calls",
+            "name": "scene 1: Empty report + Yes tool_calls",
             "state": {
-                "messages": [AIMessage(content="分析中...", tool_calls=[tool_call])],
+                "messages": [AIMessage(content="Analyzing...", tool_calls=[tool_call])],
                 "fundamentals_report": ""
             }
         },
         {
-            "name": "场景2: 空报告 + 无tool_calls", 
+            "name": "scene 2: Empty report + None tool_calls", 
             "state": {
-                "messages": [AIMessage(content="分析完成")],
+                "messages": [AIMessage(content="Analysis completed")],
                 "fundamentals_report": ""
             }
         },
         {
-            "name": "场景3: 短报告 + 有tool_calls",
+            "name": "scene 3: short report + Yes tool_calls",
             "state": {
-                "messages": [AIMessage(content="分析中...", tool_calls=[tool_call])],
-                "fundamentals_report": "短报告"
+                "messages": [AIMessage(content="Analyzing...", tool_calls=[tool_call])],
+                "fundamentals_report": "short report"
             }
         },
         {
-            "name": "场景4: 完整报告 + 有tool_calls",
+            "name": "scene 4: full report + Yes tool_calls",
             "state": {
-                "messages": [AIMessage(content="分析完成", tool_calls=[tool_call])],
-                "fundamentals_report": "这是一个完整的基本面分析报告，包含了详细的财务数据分析、估值模型计算、行业对比分析等内容，总长度超过100个字符，应该被认为是完成的报告。"
+                "messages": [AIMessage(content="Analysis completed", tool_calls=[tool_call])],
+                "fundamentals_report": "This is a complete fundamental analysis report, including detailed financial data analysis, valuation model calculation, industry comparative analysis, etc. The total length exceeds 100 characters and should be considered a completed report."
             }
         },
         {
-            "name": "场景5: 完整报告 + 无tool_calls",
+            "name": "scene 5: full report + None tool_calls",
             "state": {
-                "messages": [AIMessage(content="分析完成")],
-                "fundamentals_report": "这是一个完整的基本面分析报告，包含了详细的财务数据分析、估值模型计算、行业对比分析等内容，总长度超过100个字符，应该被认为是完成的报告。"
+                "messages": [AIMessage(content="Analysis completed")],
+                "fundamentals_report": "This is a complete fundamental analysis report, including detailed financial data analysis, valuation model calculation, industry comparative analysis, etc. The total length exceeds 100 characters and should be considered a completed report."
             }
         }
     ]
@@ -134,41 +134,41 @@ def test_level3_deadlock():
         report_len = len(scenario['state']['fundamentals_report'])
         has_tool_calls = len(scenario['state']['messages']) > 0 and hasattr(scenario['state']['messages'][-1], 'tool_calls') and scenario['state']['messages'][-1].tool_calls
         
-        print(f"  - 报告长度: {report_len}")
-        print(f"  - 有tool_calls: {has_tool_calls}")
-        print(f"  - 条件判断结果: {result}")
+        print(f"  - Report length: {report_len}")
+        print(f"  - Yes tool_calls: {has_tool_calls}")
+        print(f"  - Conditional judgment result: {result}")
         
-        # 分析是否可能导致死循环
+        # Analyze whether it may cause an infinite loop
         if result == "tools_fundamentals" and report_len == 0:
-            print(f"  ⚠️  可能的死循环风险: 报告为空但继续调用工具")
+            print(f"  ⚠️  Possible risk of endless loop: Report is empty but continue to call the tool")
         elif result == "tools_fundamentals" and report_len > 100:
-            print(f"  🚨 潜在死循环: 报告已完成但仍要调用工具!")
+            print(f"  🚨 Potential endless loop: Report completed but tool still needs to be called!")
         else:
-            print(f"  ✅ 正常流程")
+            print(f"  ✅ normal process")
     
-    # 4. 检查可能的死循环原因
-    print("\n🔍 4. 死循环原因分析")
+    # 4. Check possible causes of infinite loops
+    print("\n🔍 4. Analysis of causes of infinite loop")
     print("-" * 50)
     
-    print("可能的死循环原因:")
-    print("1. 级别3的max_risk_discuss_rounds=2，可能影响工作流图的边缘连接")
-    print("2. memory_enabled=True可能导致状态管理问题")
-    print("3. 基本面分析师在级别3时可能使用不同的工具调用策略")
-    print("4. 条件判断逻辑可能在特定配置下出现问题")
+    print("Possible causes of infinite loop:")
+    print("1. Level 3 max_risk_discuss_rounds=2, Edge connections that may affect workflow diagrams")
+    print("2. memory_enabled=True May cause state management issues")
+    print("3. Fundamental analysts may use different tools to call strategies at level 3")
+    print("4. Conditional judgment logic may have problems under certain configurations")
     
-    # 5. 建议的修复方向
-    print("\n💡 5. 建议的修复方向")
+    # 5. Suggested fixes
+    print("\n💡 5. Suggested fixes")
     print("-" * 50)
     
-    print("基于分析，建议检查以下方面:")
-    print("1. 检查基本面分析师在级别3时是否正确设置fundamentals_report")
-    print("2. 验证条件判断逻辑是否正确处理tool_calls和报告状态")
-    print("3. 检查工作流图在max_risk_discuss_rounds=2时的边缘配置")
-    print("4. 验证Google工具调用处理器在级别3时的行为")
-    print("5. 添加循环检测和超时保护机制")
+    print("Based on the analysis, it is recommended to check the following aspects:")
+    print("1. Check if the fundamental analyst is set up correctly at level 3 fundamentals_report")
+    print("2. Verify whether the conditional judgment logic correctly handles tool_calls and report status")
+    print("3. Check the workflow diagram at max_risk_discuss_rounds=2 edge configuration")
+    print("4. Verify Google tool call handler behavior at level 3")
+    print("5. Add loop detection and timeout protection mechanism")
     
     print("\n" + "=" * 80)
-    print("调试分析完成")
+    print("Debugging analysis completed")
     print("=" * 80)
 
 if __name__ == "__main__":

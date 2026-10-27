@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-最终测试港股基本面分析修复
+Final test of fundamental analysis and repair of Hong Kong stocks
 """
 
 import os
 import sys
 
 def test_hk_fundamentals_complete():
-    """完整测试港股基本面分析"""
-    print("🔧 完整测试港股基本面分析...")
+    """Complete test of fundamental analysis of Hong Kong stocks"""
+    print("🔧 Complete test of fundamental analysis of Hong Kong stocks...")
     
     try:
         from tradingagents.agents.analysts.fundamentals_analyst import create_fundamentals_analyst
@@ -16,80 +16,80 @@ def test_hk_fundamentals_complete():
         from tradingagents.default_config import DEFAULT_CONFIG
         from tradingagents.utils.stock_utils import StockUtils
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         
-        # 创建工具包
+        # Create toolkit
         toolkit = Toolkit(config)
         
-        # 创建模拟LLM
+        # Create simulation LLM
         class MockLLM:
             def __init__(self):
-                self.__class__.__name__ = "ChatDashScopeOpenAI"  # 模拟阿里百炼
+                self.__class__.__name__ = "ChatDashScopeOpenAI"  # Simulate Ali Bailian
             
             def bind_tools(self, tools):
-                print(f"🔧 [MockLLM] 绑定工具: {[tool.name for tool in tools]}")
+                print(f"🔧 [MockLLM] binding tool: {[tool.name for tool in tools]}")
                 return self
             
             def invoke(self, messages):
-                print(f"🔧 [MockLLM] 收到调用请求")
+                print(f"🔧 [MockLLM] Call request received")
                 class MockResult:
                     def __init__(self):
-                        self.tool_calls = []  # 模拟没有工具调用，触发强制调用
-                        self.content = "模拟分析结果"
+                        self.tool_calls = []  # Simulation without tool call triggers forced call
+                        self.content = "Simulation analysis results"
                 return MockResult()
         
         llm = MockLLM()
         
-        # 创建基本面分析师
+        # Create a fundamental analyst
         analyst = create_fundamentals_analyst(llm, toolkit)
         
-        # 模拟状态
+        # simulation state
         state = {
             "trade_date": "2025-07-14",
             "company_of_interest": "0700.HK",
             "messages": []
         }
         
-        print(f"\n📊 测试港股基本面分析: {state['company_of_interest']}")
+        print(f"\n📊 Test fundamental analysis of Hong Kong stocks: {state['company_of_interest']}")
         
-        # 验证股票类型识别
+        # Verify stock type identification
         market_info = StockUtils.get_market_info(state['company_of_interest'])
-        print(f"  市场类型: {market_info['market_name']}")
-        print(f"  货币: {market_info['currency_name']} ({market_info['currency_symbol']})")
-        print(f"  是否港股: {market_info['is_hk']}")
+        print(f"  market type: {market_info['market_name']}")
+        print(f"  Currency: {market_info['currency_name']} ({market_info['currency_symbol']})")
+        print(f"  Is it Hong Kong stocks?: {market_info['is_hk']}")
         
         if not market_info['is_hk']:
-            print(f"❌ 股票类型识别错误")
+            print(f"❌ Stock type recognition error")
             return False
         
-        print(f"\n🔄 调用基本面分析师...")
+        print(f"\n🔄 Call a fundamental analyst...")
         
-        # 调用分析师
+        # call analyst
         result = analyst(state)
         
-        print(f"✅ 基本面分析师调用完成")
-        print(f"  结果类型: {type(result)}")
-        print(f"  包含的键: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
+        print(f"✅ Fundamental analyst call completed")
+        print(f"  result type: {type(result)}")
+        print(f"  Contains keys: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
         
         if 'fundamentals_report' in result:
             report = result['fundamentals_report']
-            print(f"  报告长度: {len(report)}")
-            print(f"  报告前200字符: {report[:200]}...")
+            print(f"  Report length: {len(report)}")
+            print(f"  Report first 200 characters: {report[:200]}...")
         
         return True
         
     except Exception as e:
-        print(f"❌ 港股基本面分析测试失败: {e}")
+        print(f"❌ Hong Kong stock fundamental analysis test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_tool_selection_verification():
-    """验证工具选择逻辑"""
-    print("\n🔧 验证工具选择逻辑...")
+    """Validation tool selection logic"""
+    print("\n🔧 Validation tool selection logic...")
     
     try:
         from tradingagents.utils.stock_utils import StockUtils
@@ -101,9 +101,9 @@ def test_tool_selection_verification():
         toolkit = Toolkit(config)
         
         test_cases = [
-            ("0700.HK", "港股", ["get_hk_stock_data_unified"]),
-            ("000001", "中国A股", ["get_china_stock_data", "get_china_fundamentals"]),
-            ("AAPL", "美股", ["get_fundamentals_openai"]),
+            ("0700.HK", "Hong Kong stocks", ["get_hk_stock_data_unified"]),
+            ("000001", "China A shares", ["get_china_stock_data", "get_china_fundamentals"]),
+            ("AAPL", "US stocks", ["get_fundamentals_openai"]),
         ]
         
         for ticker, expected_market, expected_tools in test_cases:
@@ -113,9 +113,9 @@ def test_tool_selection_verification():
             is_us = market_info['is_us']
             
             print(f"\n📊 {ticker} ({expected_market}):")
-            print(f"  识别结果: {market_info['market_name']}")
+            print(f"  Recognition results: {market_info['market_name']}")
             
-            # 模拟工具选择逻辑
+            # Simulation tool selection logic
             if toolkit.config["online_tools"]:
                 if is_china:
                     selected_tools = ["get_china_stock_data", "get_china_fundamentals"]
@@ -124,26 +124,26 @@ def test_tool_selection_verification():
                 else:
                     selected_tools = ["get_fundamentals_openai"]
             
-            print(f"  选择的工具: {selected_tools}")
-            print(f"  期望的工具: {expected_tools}")
+            print(f"  Tools of choice: {selected_tools}")
+            print(f"  Desired Tools: {expected_tools}")
             
             if selected_tools == expected_tools:
-                print(f"  ✅ 工具选择正确")
+                print(f"  ✅ Correct choice of tools")
             else:
-                print(f"  ❌ 工具选择错误")
+                print(f"  ❌ Wrong tool selection")
                 return False
         
-        print("✅ 工具选择逻辑验证通过")
+        print("✅ Tool selection logic verification passed")
         return True
         
     except Exception as e:
-        print(f"❌ 工具选择验证失败: {e}")
+        print(f"❌ Tool selection validation failed: {e}")
         return False
 
 
 def main():
-    """主测试函数"""
-    print("🔧 港股基本面分析最终测试")
+    """Main test function"""
+    print("🔧 The final test of fundamental analysis of Hong Kong stocks")
     print("=" * 60)
     
     tests = [
@@ -159,23 +159,23 @@ def main():
             if test():
                 passed += 1
             else:
-                print(f"❌ 测试失败: {test.__name__}")
+                print(f"❌ test failed: {test.__name__}")
         except Exception as e:
-            print(f"❌ 测试异常: {test.__name__} - {e}")
+            print(f"❌ Test exception: {test.__name__} - {e}")
     
     print("\n" + "=" * 60)
-    print(f"📊 测试结果: {passed}/{total} 通过")
+    print(f"📊 Test results: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 所有测试通过！港股基本面分析修复完成")
-        print("\n📋 修复总结:")
-        print("✅ 港股股票类型识别正确")
-        print("✅ 港股工具选择逻辑正确")
-        print("✅ 港股强制工具调用机制完善")
-        print("✅ 港股货币识别和显示正确")
+        print("🎉 All tests passed! Hong Kong stock fundamental analysis repair completed")
+        print("\n📋 Repair summary:")
+        print("✅ Correct identification of Hong Kong stock types")
+        print("✅ The selection logic of Hong Kong stock instruments is correct")
+        print("✅ The Hong Kong stock market mandatory tool calling mechanism is improved")
+        print("✅ Hong Kong stock currency recognition and display correct")
         return True
     else:
-        print("⚠️ 部分测试失败，需要进一步检查")
+        print("⚠️ Some tests failed and require further inspection")
         return False
 
 

@@ -1,12 +1,12 @@
 # tradingagents/core/engine/phase_executors/risk_assessment.py
 """
-风险评估阶段执行器
+Risk assessment stage executor
 
-执行多维度风险评估：
-1. RiskyRisk (激进风控) - 风险承受度高
-2. SafeRisk (稳健风控) - 风险承受度低
-3. NeutralRisk (中性风控) - 平衡风险和收益
-4. RiskManager (风控经理) - 综合评估，形成最终决策
+Perform a multi-dimensional risk assessment:
+1. RiskyRisk (Radical risk control) - High risk tolerance
+2. SafeRisk (Robust risk control) - Low risk tolerance
+3. NeutralRisk (Neutral risk control) - Balance risk and reward
+4. RiskManager (Risk Control Manager) - Comprehensive evaluation to form final decision
 """
 
 from typing import Any, Dict, List, Optional
@@ -23,9 +23,9 @@ logger = get_logger("default")
 
 class RiskAssessmentPhase(PhaseExecutor):
     """
-    风险评估阶段执行器
+    Risk assessment stage executor
 
-    执行多维度风险评估，形成最终分析结果
+    Perform multi-dimensional risk assessments to form final analysis results
     """
 
     phase_name = "RiskAssessmentPhase"
@@ -39,21 +39,21 @@ class RiskAssessmentPhase(PhaseExecutor):
         memory_config: Optional[Dict[str, Any]] = None
     ):
         """
-        初始化风险评估阶段
+        Initial risk assessment phase
 
         Args:
-            llm_provider: LLM 提供者
-            config: 阶段配置
-            risk_profiles: 风控类型列表，默认全部
-            debate_rounds: 辩论轮数
-            memory_config: Memory 配置
+            llm_provider: LLM provider
+            config: stage configuration
+            risk_profiles: Risk control type list, default all
+            debate_rounds: Debate rounds
+            memory_config: Memory Configuration
         """
         super().__init__(llm_provider, config)
         self.risk_profiles = risk_profiles or ["risky", "safe", "neutral"]
         self.debate_rounds = debate_rounds
         self.memory_config = memory_config or {}
 
-        # Agent 缓存
+        # Agent cache
         self._risky_analyst = None
         self._safe_analyst = None
         self._neutral_analyst = None
@@ -65,12 +65,12 @@ class RiskAssessmentPhase(PhaseExecutor):
         data_manager: DataAccessManager
     ) -> Dict[str, Any]:
         """
-        执行风险评估阶段
+        Perform risk assessment phase
         """
         self.log_start()
 
         ticker = context.get(DataLayer.CONTEXT, "ticker")
-        logger.info(f"⚖️ [{self.phase_name}] 风险评估: {ticker}")
+        logger.info(f"⚖️ [{self.phase_name}] risk assessment: {ticker}")
 
         outputs = {
             "ticker": ticker,
@@ -78,63 +78,63 @@ class RiskAssessmentPhase(PhaseExecutor):
             "final_decision": None
         }
 
-        # 获取交易信号和交易员计划
+        # Get trading signals and trader plans
         trade_signal = context.get(DataLayer.DECISIONS, "trade_signal")
         trader_plan = context.get(DataLayer.DECISIONS, "trader_investment_plan")
         investment_plan = context.get(DataLayer.DECISIONS, "investment_plan")
 
         if trade_signal is None and trader_plan is None:
-            logger.warning(f"⚠️ [{self.phase_name}] 未找到交易信号，跳过风险评估")
+            logger.warning(f"⚠️ [{self.phase_name}] No trading signal found, risk assessment skipped")
             self.log_end(outputs)
             return outputs
 
-        # 构建初始状态
+        # Build initial state
         state = self._build_initial_state(context, trader_plan or str(investment_plan))
 
-        # 执行多轮风控辩论
+        # Conduct multiple rounds of risk control debates
         for round_num in range(self.debate_rounds):
-            logger.info(f"💬 [{self.phase_name}] 风控辩论第 {round_num + 1}/{self.debate_rounds} 轮")
+            logger.info(f"💬 [{self.phase_name}] Risk Control Debate No. {round_num + 1}/{self.debate_rounds} wheel")
 
-            # 激进风控发言
+            # Radical risk control speech
             if "risky" in self.risk_profiles:
                 state = self._run_risky_analyst(state)
                 outputs["risk_reports"].append("risky")
 
-            # 稳健风控发言
+            # Speech on Steady Risk Control
             if "safe" in self.risk_profiles:
                 state = self._run_safe_analyst(state)
                 outputs["risk_reports"].append("safe")
 
-            # 中性风控发言
+            # Neutral risk control speech
             if "neutral" in self.risk_profiles:
                 state = self._run_neutral_analyst(state)
                 outputs["risk_reports"].append("neutral")
 
-        # 风控经理总结
+        # Risk control manager summary
         state = self._run_risk_manager(state)
 
-        # 保存结果
+        # Save results
         risk_debate_state = state.get("risk_debate_state", {})
 
-        # 🔥 修改：生成 final_trade_decision（综合投资建议、交易计划、风险评估）
+        # 🔥 Modification: Generate final_trade_decision (comprehensive investment advice, trading plan, risk assessment)
         final_trade_decision = self._generate_final_trade_decision(context)
         state["final_trade_decision"] = final_trade_decision
 
         context.set(DataLayer.DECISIONS, "risk_debate_state", risk_debate_state, source="risk_assessment")
         context.set(DataLayer.DECISIONS, "final_trade_decision", final_trade_decision, source="risk_assessment")
 
-        # 生成最终决策
+        # Generate final decision
         final_decision = self._form_final_decision_from_text(context, trade_signal, final_trade_decision)
         context.set(DataLayer.DECISIONS, "final_decision", final_decision, source="risk_manager")
         outputs["final_decision"] = final_decision.get("action")
 
-        logger.info(f"📝 [{self.phase_name}] 最终决策: {final_decision.get('action')}")
+        logger.info(f"📝 [{self.phase_name}] final decision: {final_decision.get('action')}")
 
         self.log_end(outputs)
         return outputs
 
     def _build_initial_state(self, context: AnalysisContext, trader_plan: str) -> Dict[str, Any]:
-        """构建初始状态"""
+        """Build initial state"""
         ticker = context.get(DataLayer.CONTEXT, "ticker") or ""
         trade_date = context.get(DataLayer.CONTEXT, "trade_date") or ""
 
@@ -161,91 +161,91 @@ class RiskAssessmentPhase(PhaseExecutor):
         }
 
     def _get_risky_analyst(self):
-        """获取或创建激进风控"""
+        """Obtain or create aggressive risk controls"""
         if self._risky_analyst is None:
             try:
                 from tradingagents.agents.risk_mgmt.aggresive_debator import create_risky_debator
                 self._risky_analyst = create_risky_debator(self.llm_provider)
-                logger.debug("🔥 [RiskAssessment] 创建 RiskyAnalyst")
+                logger.debug("🔥 [RiskAssessment] Create RiskyAnalyst")
             except Exception as e:
-                logger.error(f"❌ [RiskAssessment] 创建 RiskyAnalyst 失败: {e}")
+                logger.error(f"❌ [RiskAssessment] Creating RiskyAnalyst failed: {e}")
         return self._risky_analyst
 
     def _get_safe_analyst(self):
-        """获取或创建稳健风控"""
+        """Obtain or create robust risk controls"""
         if self._safe_analyst is None:
             try:
                 from tradingagents.agents.risk_mgmt.conservative_debator import create_safe_debator
                 self._safe_analyst = create_safe_debator(self.llm_provider)
-                logger.debug("🛡️ [RiskAssessment] 创建 SafeAnalyst")
+                logger.debug("🛡️ [RiskAssessment] Create SafeAnalyst")
             except Exception as e:
-                logger.error(f"❌ [RiskAssessment] 创建 SafeAnalyst 失败: {e}")
+                logger.error(f"❌ [RiskAssessment] Creating SafeAnalyst failed: {e}")
         return self._safe_analyst
 
     def _get_neutral_analyst(self):
-        """获取或创建中性风控"""
+        """Obtain or create neutral risk controls"""
         if self._neutral_analyst is None:
             try:
                 from tradingagents.agents.risk_mgmt.neutral_debator import create_neutral_debator
                 self._neutral_analyst = create_neutral_debator(self.llm_provider)
-                logger.debug("⚖️ [RiskAssessment] 创建 NeutralAnalyst")
+                logger.debug("⚖️ [RiskAssessment] Create NeutralAnalyst")
             except Exception as e:
-                logger.error(f"❌ [RiskAssessment] 创建 NeutralAnalyst 失败: {e}")
+                logger.error(f"❌ [RiskAssessment] Failed to create NeutralAnalyst: {e}")
         return self._neutral_analyst
 
     def _get_risk_manager(self):
-        """获取或创建风控经理"""
+        """Get or create a risk control manager"""
         if self._risk_manager is None:
             try:
                 from tradingagents.agents.managers.risk_manager import create_risk_manager
                 memory = self.memory_config.get("risk_memory")
                 self._risk_manager = create_risk_manager(self.llm_provider, memory)
-                logger.debug("👔 [RiskAssessment] 创建 RiskManager")
+                logger.debug("👔 [RiskAssessment] Create RiskManager")
             except Exception as e:
-                logger.error(f"❌ [RiskAssessment] 创建 RiskManager 失败: {e}")
+                logger.error(f"❌ [RiskAssessment] Creating RiskManager failed: {e}")
         return self._risk_manager
 
     def _run_risky_analyst(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """执行激进风控"""
+        """Implement aggressive risk control"""
         agent = self._get_risky_analyst()
         if agent:
             try:
                 result = agent(state)
                 if "risk_debate_state" in result:
                     state["risk_debate_state"] = result["risk_debate_state"]
-                logger.info("🔥 [激进风控] 发言完成")
+                logger.info("🔥 [Radical risk control] Speech completed")
             except Exception as e:
-                logger.error(f"❌ [激进风控] 执行失败: {e}")
+                logger.error(f"❌ [Radical risk control] Execution failed: {e}")
         return state
 
     def _run_safe_analyst(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """执行稳健风控"""
+        """Implement robust risk control"""
         agent = self._get_safe_analyst()
         if agent:
             try:
                 result = agent(state)
                 if "risk_debate_state" in result:
                     state["risk_debate_state"] = result["risk_debate_state"]
-                logger.info("🛡️ [稳健风控] 发言完成")
+                logger.info("🛡️ [Robust risk control] Speech completed")
             except Exception as e:
-                logger.error(f"❌ [稳健风控] 执行失败: {e}")
+                logger.error(f"❌ [Robust risk control] Execution failed: {e}")
         return state
 
     def _run_neutral_analyst(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """执行中性风控"""
+        """Implement neutral risk control"""
         agent = self._get_neutral_analyst()
         if agent:
             try:
                 result = agent(state)
                 if "risk_debate_state" in result:
                     state["risk_debate_state"] = result["risk_debate_state"]
-                logger.info("⚖️ [中性风控] 发言完成")
+                logger.info("⚖️ [Neutral risk control] Speech completed")
             except Exception as e:
-                logger.error(f"❌ [中性风控] 执行失败: {e}")
+                logger.error(f"❌ [Neutral risk control] Execution failed: {e}")
         return state
 
     def _run_risk_manager(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """执行风控经理总结"""
+        """Executive risk control manager summary"""
         agent = self._get_risk_manager()
         if agent:
             try:
@@ -254,10 +254,10 @@ class RiskAssessmentPhase(PhaseExecutor):
                     state["risk_debate_state"] = result["risk_debate_state"]
                 if "final_trade_decision" in result:
                     state["final_trade_decision"] = result["final_trade_decision"]
-                logger.info("👔 [风控经理] 最终决策生成完成")
+                logger.info("👔 [Risk Control Manager] The final decision is generated")
             except Exception as e:
-                logger.error(f"❌ [风控经理] 执行失败: {e}")
-                state["final_trade_decision"] = "[错误] 风控决策生成失败"
+                logger.error(f"❌ [Risk Control Manager] Execution failed: {e}")
+                state["final_trade_decision"] = "[Error] Risk control decision generation failed"
         return state
 
     def _form_final_decision_from_text(
@@ -266,29 +266,29 @@ class RiskAssessmentPhase(PhaseExecutor):
         trade_signal: Optional[Dict[str, Any]],
         final_text: str
     ) -> Dict[str, Any]:
-        """从风控文本生成最终决策（使用 SignalProcessor 以保持与旧版一致）"""
+        """Generate final decision from risk text (using SignalProcessor to maintain consistency with legacy)"""
         ticker = context.get(DataLayer.CONTEXT, "ticker")
 
-        # 🔥 使用 SignalProcessor 处理 final_trade_decision 文本
-        # 这样可以提取 target_price 和 reasoning，与旧版保持一致
+        # 🔥 Use SignalProcessor to process final_trade_decision text
+        # This can extract target_price and reasoning, consistent with the old version
         try:
             from tradingagents.graph.signal_processing import SignalProcessor
             signal_processor = SignalProcessor()
             decision = signal_processor.process_signal(final_text, ticker)
-            logger.info(f"✅ [RiskAssessment] 使用 SignalProcessor 处理决策: {decision}")
+            logger.info(f"✅ [RiskAssessment] Use SignalProcessor to handle decisions: {decision}")
 
-            # 将 reasoning 映射到 rationale 以保持兼容性
+            # Map reasoning to rationale to maintain compatibility
             if "reasoning" in decision and "rationale" not in decision:
                 decision["rationale"] = decision["reasoning"]
 
-            # 添加 risk_level 字段
+            # Add risk_level field
             if "risk_level" not in decision:
                 decision["risk_level"] = self._determine_risk_level_from_text(final_text)
 
-            # 添加 ticker 字段
+            # Add ticker field
             decision["ticker"] = ticker
 
-            # 如果有原始交易信号，添加 original_rationale
+            # If there is a raw trading signal, add original_rationale
             if trade_signal and isinstance(trade_signal, dict):
                 original_rationale = trade_signal.get("rationale", "")
                 decision["original_rationale"] = original_rationale[:200] if original_rationale else ""
@@ -296,12 +296,12 @@ class RiskAssessmentPhase(PhaseExecutor):
             return decision
 
         except Exception as e:
-            logger.warning(f"⚠️ [RiskAssessment] SignalProcessor 处理失败，使用简单解析: {e}")
+            logger.warning(f"⚠️ [RiskAssessment] SignalProcessor Handling failed, use simple parsing: {e}")
 
-            # 降级到简单解析
+            # Downgrade to simple parsing
             action, confidence = self._parse_action_from_text(final_text)
 
-            # 如果有原始交易信号，合并信息
+            # If there are original trading signals, merge the information
             if trade_signal and isinstance(trade_signal, dict):
                 original_position = trade_signal.get("position_size", 0.0)
                 original_rationale = trade_signal.get("rationale", "")
@@ -309,7 +309,7 @@ class RiskAssessmentPhase(PhaseExecutor):
                 original_position = 0.5
                 original_rationale = ""
 
-            # 根据风控建议调整仓位
+            # Adjust positions according to risk control recommendations
             if action == "HOLD":
                 position_size = 0.0
             else:
@@ -322,19 +322,19 @@ class RiskAssessmentPhase(PhaseExecutor):
                 "confidence": confidence,
                 "risk_level": self._determine_risk_level_from_text(final_text),
                 "rationale": final_text[:500] if len(final_text) > 500 else final_text,
-                "reasoning": final_text[:500] if len(final_text) > 500 else final_text,  # 添加 reasoning 字段
+                "reasoning": final_text[:500] if len(final_text) > 500 else final_text,  # Add reasoning field
                 "original_rationale": original_rationale[:200] if original_rationale else "",
-                "target_price": None,  # 添加 target_price 字段
-                "risk_score": 0.5,  # 添加 risk_score 字段
+                "target_price": None,  # Add target_price field
+                "risk_score": 0.5,  # Add risk_score field
             }
 
     def _parse_action_from_text(self, text: str) -> tuple:
-        """从文本解析交易动作"""
+        """Parse transaction actions from text"""
         text_lower = text.lower()
 
-        buy_keywords = ["买入", "增持", "看多", "建议买入", "buy", "bullish"]
-        sell_keywords = ["卖出", "减持", "看空", "建议卖出", "sell", "bearish"]
-        hold_keywords = ["持有", "观望", "hold", "neutral", "中性"]
+        buy_keywords = ["buy", "Overweight", "long", "Recommended to buy", "buy", "bullish"]
+        sell_keywords = ["sell", "Reduce holdings", "bearish", "Recommended to sell", "sell", "bearish"]
+        hold_keywords = ["hold", "wait and see", "hold", "neutral", "Neutral"]
 
         buy_score = sum(1 for kw in buy_keywords if kw in text_lower)
         sell_score = sum(1 for kw in sell_keywords if kw in text_lower)
@@ -348,11 +348,11 @@ class RiskAssessmentPhase(PhaseExecutor):
             return "HOLD", 0.5
 
     def _determine_risk_level_from_text(self, text: str) -> str:
-        """从文本判断风险级别"""
+        """Determine risk level from text"""
         text_lower = text.lower()
 
-        high_risk_keywords = ["高风险", "风险较大", "谨慎", "危险", "high risk"]
-        low_risk_keywords = ["低风险", "安全", "稳健", "low risk"]
+        high_risk_keywords = ["high risk", "Riskier", "cautious", "danger", "high risk"]
+        low_risk_keywords = ["low risk", "safe", "Robust", "low risk"]
 
         high_score = sum(1 for kw in high_risk_keywords if kw in text_lower)
         low_score = sum(1 for kw in low_risk_keywords if kw in text_lower)
@@ -366,46 +366,46 @@ class RiskAssessmentPhase(PhaseExecutor):
 
     def _generate_final_trade_decision(self, context: "AnalysisContext") -> str:
         """
-        生成最终分析结果
+        Generate final analysis results
 
-        综合以下内容：
-        1. investment_plan (研究经理的投资建议)
-        2. trader_investment_plan (交易员的交易计划)
-        3. risk_debate_state.judge_decision (风险经理的风险评估)
+        Taking into account the following:
+        1. investment_plan (Research Manager s Investment Advice)
+        2. trader_investment_plan (Trader s Trading Plan)
+        3. risk_debate_state.judge_decision (Risk assessment for risk managers)
 
         Args:
-            context: 分析上下文
+            context: Analyze context
 
         Returns:
-            最终分析结果文本（Markdown 格式）
+            Final analysis result text (Markdown format)
         """
         from tradingagents.core.engine.data_layer import DataLayer
 
-        # 提取各个报告
+        # Extract individual reports
         investment_plan = context.get(DataLayer.DECISIONS, "investment_plan") or ""
         trader_plan = context.get(DataLayer.DECISIONS, "trader_investment_plan") or ""
         risk_debate_state = context.get(DataLayer.DECISIONS, "risk_debate_state") or {}
         risk_assessment = risk_debate_state.get("judge_decision", "") if isinstance(risk_debate_state, dict) else ""
 
-        # 如果三个都为空，返回空字符串
+        # If all three are empty, return an empty string
         if not any([investment_plan, trader_plan, risk_assessment]):
-            logger.warning("⚠️ [RiskAssessment] 无法生成 final_trade_decision：所有输入报告均为空")
+            logger.warning("⚠️ [RiskAssessment] Unable to generate final_trade_decision: all input reports are empty")
             return ""
 
-        # 构建最终决策（Markdown 格式）
+        # Build the final decision (Markdown format)
         sections = []
 
         if investment_plan:
-            sections.append(f"## 📋 投资建议\n\n{investment_plan}")
+            sections.append(f"## 📋 investment advice\n\n{investment_plan}")
 
         if trader_plan:
-            sections.append(f"## 💼 交易计划\n\n{trader_plan}")
+            sections.append(f"## 💼 trading plan\n\n{trader_plan}")
 
         if risk_assessment:
-            sections.append(f"## ⚠️ 风险评估\n\n{risk_assessment}")
+            sections.append(f"## ⚠️ risk assessment\n\n{risk_assessment}")
 
         final_decision = "\n\n".join(sections)
-        logger.info(f"✅ [RiskAssessment] 生成 final_trade_decision，包含 {len(sections)} 个部分")
+        logger.info(f"✅ [RiskAssessment] Generate final_trade_decision, containing {len(sections)} parts")
 
         return final_decision
 

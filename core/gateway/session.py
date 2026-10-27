@@ -1,12 +1,12 @@
 """
-Gateway 多通道 Session 管理
+Gateway Multi-channel session management
 
-Session Key 格式: {user_id}:{channel_type}:{channel_id}
+Session Key Format: {user_id}:{channel_type}:{channel_id}
 
-- 同一用户从 Web 和飞书的会话完全独立
-- Session 存储在 MongoDB `gateway_sessions` 集合
-- 对话历史自动裁剪（保留最近 N 轮）
-- TTL 索引自动清理过期 Session
+- The same user s sessions on the Web and Feishu are completely independent
+- Session stored in MongoDB `gateway_sessions` collection
+- Automatically crop conversation history (retain the most recent N rounds)
+- TTL Index automatic cleaning expired Session
 """
 
 import logging
@@ -15,30 +15,30 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# 默认保留最近 20 轮对话
+# By default, the last 20 rounds of conversations are retained
 DEFAULT_MAX_HISTORY = 20
-# Session 过期时间（秒）— 7 天
+# Session Expiration time (seconds)— 7 day
 SESSION_TTL_SECONDS = 7 * 24 * 3600
 
 COLLECTION_NAME = "gateway_sessions"
 
 
 def build_session_key(user_id: str, channel_type: str, channel_id: str) -> str:
-    """构造 Gateway Session Key。"""
+    """Construct Gateway Session Key."""
     return f"{user_id}:{channel_type}:{channel_id}"
 
 
 class SessionManager:
     """
-    Gateway Session 管理器
+    Gateway Session Manager
 
-    每个 Session 包含:
+    Each Session contains:
     - session_key: "{user_id}:{channel_type}:{channel_id}"
-    - user_id: 系统用户 ID
-    - channel_type: 平台类型
-    - channel_id: 平台会话 ID
-    - messages: 对话历史列表
-    - context: 上下文状态（如上一个 task_id 等）
+    - user_id: system user ID
+    - channel_type: platform type
+    - channel_id: platform session ID
+    - messages: Conversation history list
+    - context: Context state (such as previous task_id, etc.)
     - created_at / updated_at
     """
 
@@ -48,14 +48,14 @@ class SessionManager:
         self.max_history = max_history
 
     async def ensure_indexes(self) -> None:
-        """创建索引（应用启动时调用一次）"""
-        # 唯一索引：按 session_key 快速查找
+        """Create index (called once when the application starts)"""
+        # Unique index: quick search by session_key
         await self.collection.create_index("session_key", unique=True)
-        # TTL 索引：自动清理过期 Session
+        # TTL Index: Automatic cleanup expired Session
         await self.collection.create_index(
             "updated_at", expireAfterSeconds=SESSION_TTL_SECONDS
         )
-        logger.info("[SessionManager] 索引创建完成")
+        logger.info("[SessionManager] Index creation completed")
 
     async def get_or_create(
         self,
@@ -63,20 +63,20 @@ class SessionManager:
         channel_type: str,
         channel_id: str,
     ) -> Dict[str, Any]:
-        """获取或创建 Session"""
+        """Get or create Session"""
         session_key = build_session_key(user_id, channel_type, channel_id)
         now = datetime.now(timezone.utc)
 
         session = await self.collection.find_one({"session_key": session_key})
         if session:
-            # 更新最后活跃时间
+            # Update last active time
             await self.collection.update_one(
                 {"session_key": session_key},
                 {"$set": {"updated_at": now}},
             )
             return session
 
-        # 创建新 Session
+        # create new Session
         new_session = {
             "session_key": session_key,
             "user_id": user_id,
@@ -88,11 +88,11 @@ class SessionManager:
             "updated_at": now,
         }
         await self.collection.insert_one(new_session)
-        logger.info("[SessionManager] 新建 Session: %s", session_key)
+        logger.info("[SessionManager] New Session: %s", session_key)
         return new_session
 
     async def get_current_topic_id(self, session_key: str) -> Optional[str]:
-        """获取当前 Session 绑定的研究主题 ID。"""
+        """Get the research topic ID bound to the current Session."""
         session = await self.collection.find_one(
             {"session_key": session_key},
             {"context.current_topic_id": 1},
@@ -104,7 +104,7 @@ class SessionManager:
         return current_topic_id or None
 
     async def set_current_topic_id(self, session_key: str, topic_id: Optional[str]) -> None:
-        """设置当前 Session 绑定的研究主题 ID。"""
+        """Set the research topic ID bound to the current Session."""
         await self.update_context(session_key, {"current_topic_id": topic_id or None})
 
     async def append_message(
@@ -114,7 +114,7 @@ class SessionManager:
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """追加一条消息到 Session 对话历史"""
+        """Append a message to the Session conversation history"""
         now = datetime.now(timezone.utc)
         msg = {
             "role": role,
@@ -130,7 +130,7 @@ class SessionManager:
                 "$push": {
                     "messages": {
                         "$each": [msg],
-                        "$slice": -self.max_history,  # 保留最近 N 条
+                        "$slice": -self.max_history,  # Keep the most recent N items
                     }
                 },
                 "$set": {"updated_at": now},
@@ -140,7 +140,7 @@ class SessionManager:
     async def get_history(
         self, session_key: str
     ) -> List[Dict[str, Any]]:
-        """获取 Session 的对话历史"""
+        """Get Session s conversation history"""
         session = await self.collection.find_one(
             {"session_key": session_key},
             {"messages": 1},
@@ -150,7 +150,7 @@ class SessionManager:
     async def update_context(
         self, session_key: str, context_updates: Dict[str, Any]
     ) -> None:
-        """更新 Session 上下文（如最近的 task_id）"""
+        """Update Session context (such as the most recent task_id)"""
         now = datetime.now(timezone.utc)
         set_fields = {f"context.{k}": v for k, v in context_updates.items()}
         set_fields["updated_at"] = now
@@ -160,7 +160,7 @@ class SessionManager:
         )
 
     async def clear_session(self, session_key: str) -> bool:
-        """清空 Session 对话历史和上下文"""
+        """Clear Session conversation history and context"""
         result = await self.collection.update_one(
             {"session_key": session_key},
             {"$set": {
@@ -172,7 +172,7 @@ class SessionManager:
         return result.modified_count > 0
 
     async def delete_session(self, session_key: str) -> bool:
-        """删除 Session"""
+        """Delete Session"""
         result = await self.collection.delete_one({"session_key": session_key})
         return result.deleted_count > 0
 

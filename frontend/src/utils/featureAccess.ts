@@ -28,17 +28,17 @@ export async function ensureFeatureAccess(
 
   try {
     await ElMessageBox.confirm(
-      options.message || '此功能为高级学员专属，请前往授权管理完成认证。',
-      options.title || '功能受限',
+      options.message || 'This function is exclusive for advanced students, please go to authorization management to complete the certification.',
+      options.title || 'Limited functionality',
       {
-        confirmButtonText: options.confirmButtonText || '前往授权管理',
-        cancelButtonText: options.cancelButtonText || '稍后再说',
+        confirmButtonText: options.confirmButtonText || 'Go to authorization management',
+        cancelButtonText: options.cancelButtonText || 'Talk to you later',
         type: 'warning'
       }
     )
     await router.push(options.redirectTo || '/settings/license')
   } catch {
-    // 用户取消时不做额外处理
+    // No additional processing will be done when the user cancels
   }
 
   return false
@@ -46,6 +46,6 @@ export async function ensureFeatureAccess(
 
 export function ensureReportExportAccess(router: Router) {
   return ensureFeatureAccess('export_reports', router, {
-    message: '报告下载与导出为高级学员专属，请前往授权管理完成认证。'
+    message: 'Report downloading and exporting are exclusive to advanced students. Please go to Authorization Management to complete the certification.'
   })
 }

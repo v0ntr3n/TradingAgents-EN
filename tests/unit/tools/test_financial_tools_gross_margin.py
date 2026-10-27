@@ -1,4 +1,4 @@
-"""专项财务工具毛利率字段优先级测试。"""
+"""Priority test of gross profit margin field of special financial instruments."""
 
 from core.tools.implementations.fundamentals import financial_tools
 
@@ -37,5 +37,5 @@ def test_income_analysis_prefers_reasonable_grossprofit_margin(monkeypatch) -> N
 
     result = financial_tools.get_income_analysis.invoke({"ticker": "000001", "periods": 4})
 
-    assert "- **毛利率**: 26.80%" in result
+    assert "- **Gross profit margin**: 26.80%" in result
     assert "139609610.88%" not in result

@@ -7,25 +7,25 @@ import { isJdyunMode } from '@/utils/config'
 import { ElMessage } from 'element-plus'
 
 export interface AuthState {
-  // 认证状态
+  // Certification status
   isAuthenticated: boolean
   token: string | null
   refreshToken: string | null
   
-  // 用户信息
+  // User information
   user: User | null
   
-  // 权限信息
+  // Permission information
   permissions: string[]
   roles: string[]
   
-  // 登录状态
+  // Login status
   loginLoading: boolean
 
-  // 重定向路径
+  // redirect path
   redirectPath: string
 
-  // 认证初始化状态
+  // Authentication initialization status
   authInitialized: boolean
   authInitPromise: Promise<void> | null
 }
@@ -35,24 +35,24 @@ export const useAuthStore = defineStore('auth', {
     const token = useStorage('auth-token', null).value || null
     const refreshToken = useStorage('refresh-token', null).value || null
 
-    // 验证token格式
+    // Verify token format
     const isValidToken = (token: string | null): boolean => {
       if (!token || typeof token !== 'string') return false
-      // 检查是否是mock token（开发时可能设置的测试token）
+      // Check whether it is a mock token (a test token that may be set during development)
       if (token === 'mock-token' || token.startsWith('mock-')) {
-        console.warn('⚠️ 检测到mock token，将被清除:', token)
+        console.warn('⚠️ Mock token detected and will be cleared:', token)
         return false
       }
-      // JWT token应该有3个部分，用.分隔
+      // JWT token There should be 3 parts, separated by .
       return token.split('.').length === 3
     }
 
     const validToken = isValidToken(token) ? token : null
     const validRefreshToken = isValidToken(refreshToken) ? refreshToken : null
 
-    // 如果token无效，清除相关数据
+    // If the token is invalid, clear related data
     if (!validToken || !validRefreshToken) {
-      console.log('🧹 清除无效的认证信息')
+      console.log('🧹 Clear invalid authentication information')
       localStorage.removeItem('auth-token')
       localStorage.removeItem('refresh-token')
       localStorage.removeItem('user-info')
@@ -77,36 +77,36 @@ export const useAuthStore = defineStore('auth', {
   },
 
   getters: {
-    // 用户头像：优先使用用户设置的头像，否则返回 undefined 使用默认图标
+    // User avatar: Give priority to the avatar set by the user, otherwise return undefined and use the default icon.
     userAvatar(): string | undefined {
       return this.user?.avatar || undefined
     },
     
-    // 用户显示名称
+    // User display name
     userDisplayName(): string {
-      return this.user?.username || this.user?.email || '未知用户'
+      return this.user?.username || this.user?.email || 'unknown user'
     },
     
-    // 是否为管理员
+    // Is it an administrator?
     isAdmin(): boolean {
       return this.roles.includes('admin')
     },
     
-    // 检查权限
+    // Check permissions
     hasPermission(): (permission: string) => boolean {
       return (permission: string) => {
         return this.permissions.includes(permission) || this.isAdmin
       }
     },
     
-    // 检查角色
+    // Check roles
     hasRole(): (role: string) => boolean {
       return (role: string) => {
         return this.roles.includes(role)
       }
     },
     
-    // 用户统计信息
+    // User statistics
     userStats(): Record<string, number> {
       return {
         totalAnalyses: this.user?.total_analyses || 0,
@@ -131,7 +131,7 @@ export const useAuthStore = defineStore('auth', {
       return `${token.substring(0, 8)}...${token.substring(token.length - 8)}`
     },
 
-    // 设置认证信息
+    // Set authentication information
     setAuthInfo(token: string, refreshToken?: string, user?: User) {
       this.token = token
       this.isAuthenticated = true
@@ -144,7 +144,7 @@ export const useAuthStore = defineStore('auth', {
         this.user = user
       }
 
-      // 手动保存到localStorage（确保持久化）
+      // Manually save to localStorage (ensure persistence)
       localStorage.setItem('auth-token', token)
       if (refreshToken) {
         localStorage.setItem('refresh-token', refreshToken)
@@ -153,13 +153,13 @@ export const useAuthStore = defineStore('auth', {
         localStorage.setItem('user-info', JSON.stringify(user))
       }
 
-      // 设置API请求头
+      // Set API request headers
       this.setAuthHeader(token)
 
-      console.log('✅ 认证信息已保存')
+      console.log('✅ Certification information has been saved')
     },
     
-    // 清除认证信息
+    // Clear authentication information
     clearAuthInfo() {
       this.token = null
       this.refreshToken = null
@@ -168,39 +168,39 @@ export const useAuthStore = defineStore('auth', {
       this.permissions = []
       this.roles = []
 
-      // 清除API请求头
+      // Clear API request headers
       this.setAuthHeader(null)
 
-      // 清除本地存储
+      // Clear local storage
       localStorage.removeItem('auth-token')
       localStorage.removeItem('refresh-token')
       localStorage.removeItem('user-info')
     },
 
-    // 跳转到登录页
+    // Jump to login page
     redirectToLogin() {
-      // 避免在非浏览器环境中使用router
+      // Avoid use in non-browser environments router
       if (typeof window !== 'undefined') {
-        // 使用window.location进行跳转，避免router依赖问题
+        // Use window.location to jump to avoid router dependency issues
         const currentPath = window.location.pathname
         if (currentPath !== '/login') {
-          console.log('🔄 跳转到登录页...')
+          console.log('🔄 Jump to login page...')
           window.location.href = '/login'
         }
       }
     },
     
-    // 设置API请求头
+    // Set API request headers
     setAuthHeader(_token: string | null) {
-      // 这里会在API模块中设置Authorization头
-      // 具体实现在api/request.ts中
+      // Here the Authorization header will be set in the API module
+      // The specific implementation is in api/request.ts
     },
     
-    // 登录
+    // Login
     async login(loginForm: LoginForm) {
-      // 防止重复登录请求
+      // Prevent duplicate login requests
       if (this.loginLoading) {
-        console.log('⏭️ 登录请求进行中，跳过重复调用')
+        console.log('⏭️ Login request in progress, skip repeated calls')
         return false
       }
 
@@ -212,109 +212,109 @@ export const useAuthStore = defineStore('auth', {
         if (response.success) {
           const { access_token, refresh_token, user } = response.data
 
-          // 设置认证信息
+          // Set authentication information
           this.setAuthInfo(access_token, refresh_token, user)
 
-          // 开源版admin用户拥有所有权限
+          // The open source version admin user has all permissions
           this.permissions = ['*']
           this.roles = ['admin']
 
-          // 同步用户偏好设置到 appStore
+          // Sync user preferences to appStore
           this.syncUserPreferencesToAppStore()
 
-          // 启动 token 自动刷新定时器
+          // Start token automatic refresh timer
           const { setupTokenRefreshTimer } = await import('@/utils/auth')
           setupTokenRefreshTimer()
 
-          // 不在这里显示成功消息，由调用方显示
+          // The success message is not displayed here, it is displayed by the caller
           return true
         } else {
-          // 不在这里显示错误消息，由调用方显示
+          // Error messages are not displayed here, displayed by the caller
           return false
         }
       } catch (error: any) {
-        console.error('登录失败:', error)
-        // 不在这里显示错误消息，由调用方显示
+        console.error('Login failed:', error)
+        // Error messages are not displayed here, displayed by the caller
         return false
       } finally {
         this.loginLoading = false
       }
     },
     
-    // 注册
+    // Register
     async register(registerForm: RegisterForm) {
       try {
         const response = await authApi.register(registerForm)
         
         if (response.success) {
-          ElMessage.success('注册成功，请登录')
+          ElMessage.success('Registration successful, please log in')
           return true
         } else {
-          ElMessage.error(response.message || '注册失败')
+          ElMessage.error(response.message || 'Registration failed')
           return false
         }
       } catch (error: any) {
-        console.error('注册失败:', error)
-        ElMessage.error(error.message || '注册失败，请重试')
+        console.error('Registration failed:', error)
+        ElMessage.error(error.message || 'Registration failed, please try again')
         return false
       }
     },
     
-    // 登出
+    // Log out
     async logout() {
       try {
-        // 调用登出API
+        // call logout API
         await authApi.logout()
       } catch (error) {
-        console.error('登出API调用失败:', error)
+        console.error('Logout API call failed:', error)
       } finally {
-        // 无论API调用是否成功，都清除本地认证信息
+        // Regardless of whether the API call is successful or not, local authentication information is cleared
         this.clearAuthInfo()
-        console.log('✅ 用户已登出，认证信息已清除')
+        console.log('✅ The user has logged out and the authentication information has been cleared')
 
-        // 跳转到登录页
+        // Jump to login page
         this.redirectToLogin()
       }
     },
     
-    // 刷新Token
+    // Refresh Token
     async refreshAccessToken() {
       try {
-        console.log('🔄 开始刷新Token...')
+        console.log('🔄 Start refreshing Token...')
 
         if (!this.refreshToken) {
-          console.warn('❌ 没有refresh token，无法刷新')
-          throw new Error('没有刷新令牌')
+          console.warn('❌ Unable to refresh without refresh token')
+          throw new Error('No refresh token')
         }
 
-        // 验证refresh token格式
+        // Verify refresh token format
         if (this.refreshToken.split('.').length !== 3) {
-          console.error('❌ Refresh token格式无效')
-          throw new Error('Refresh token格式无效')
+          console.error('❌ Refresh token Invalid format')
+          throw new Error('Refresh token Invalid format')
         }
 
         const response = await authApi.refreshToken(this.refreshToken)
 
         if (response.success) {
           const { access_token, refresh_token } = response.data
-          console.log('✅ Token刷新成功')
+          console.log('✅ Token Refresh successful')
           this.setAuthInfo(access_token, refresh_token)
           return true
         } else {
-          console.error('❌ Token刷新失败:', response.message)
-          throw new Error(response.message || 'Token刷新失败')
+          console.error('❌ Token Refresh failed:', response.message)
+          throw new Error(response.message || 'Token Refresh failed')
         }
       } catch (error: any) {
-        console.error('❌ Token刷新异常:', error.message)
+        console.error('❌ Token Refresh exception:', error.message)
 
-        // 如果是网络错误或服务器错误，不要立即清除认证信息
+        // If it is a network error or server error, do not clear the authentication information immediately
         if (error.code === 'NETWORK_ERROR' || error.response?.status >= 500) {
-          console.warn('⚠️ 网络或服务器错误，保留认证信息')
+          console.warn('⚠️ Network or server error, authentication information retained')
           return false
         }
 
-        // 其他错误（如401），清除认证信息
-        console.log('🧹 清除认证信息并跳转登录')
+        // For other errors (such as 401), clear authentication information
+        console.log('🧹 Clear authentication information and jump to login')
         this.clearAuthInfo()
         this.redirectToLogin()
 
@@ -322,39 +322,39 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     
-    // 获取用户信息
+    // Get user information
     async fetchUserInfo() {
       try {
-        console.log('📡 正在获取用户信息...')
+        console.log('📡 Obtaining user information...')
         const response = await authApi.getUserInfo()
 
         if (response.success) {
           this.user = response.data
-          console.log('✅ 用户信息获取成功:', this.user?.username)
+          console.log('✅ User information obtained successfully:', this.user?.username)
 
-          // 同步用户偏好设置到 appStore
+          // Sync user preferences to appStore
           this.syncUserPreferencesToAppStore()
 
           return true
         } else {
-          console.warn('⚠️ 获取用户信息失败:', response.message)
-          throw new Error(response.message || '获取用户信息失败')
+          console.warn('⚠️ Failed to obtain user information:', response.message)
+          throw new Error(response.message || 'Failed to obtain user information')
         }
       } catch (error) {
-        console.error('❌ 获取用户信息失败:', error)
-        // 重新抛出错误，让上层处理
+        console.error('❌ Failed to obtain user information:', error)
+        // Rethrow the error and let the upper layer handle it
         throw error
       }
     },
     
-    // 开源版不需要权限检查，admin拥有所有权限
+    // The open source version does not require permission checking, admin has all permissions
     async fetchUserPermissions() {
       this.permissions = ['*']
       this.roles = ['admin']
       return true
     },
     
-    // 更新用户信息
+    // Update user information
     async updateUserInfo(userInfo: UserUpdatePayload) {
       try {
         const response = await authApi.updateUserInfo(userInfo)
@@ -362,45 +362,45 @@ export const useAuthStore = defineStore('auth', {
         if (response.success) {
           this.user = { ...this.user!, ...response.data }
 
-          // 同步用户偏好设置到 appStore
+          // Sync user preferences to appStore
           this.syncUserPreferencesToAppStore()
 
-          ElMessage.success('用户信息更新成功')
+          ElMessage.success('User information updated successfully')
           return true
         } else {
-          ElMessage.error(response.message || '更新失败')
+          ElMessage.error(response.message || 'Update failed')
           return false
         }
       } catch (error: any) {
-        console.error('更新用户信息失败:', error)
-        ElMessage.error(error.message || '更新失败，请重试')
+        console.error('Failed to update user information:', error)
+        ElMessage.error(error.message || 'Update failed, please try again')
         return false
       }
     },
     
-    // 同步用户偏好设置到 appStore
+    // Sync user preferences to appStore
     syncUserPreferencesToAppStore() {
       if (!this.user?.preferences) return
 
       const appStore = useAppStore()
       const prefs = this.user!.preferences
 
-      // 同步主题设置
+      // Sync theme settings
       if (prefs.ui_theme) {
         appStore.setTheme(prefs.ui_theme as 'light' | 'dark' | 'auto')
       }
 
-      // 同步侧边栏宽度
+      // Sync sidebar width
       if (prefs.sidebar_width) {
         appStore.setSidebarWidth(prefs.sidebar_width)
       }
 
-      // 同步语言设置
+      // Sync language settings
       if (prefs.language) {
         appStore.setLanguage(prefs.language as 'zh-CN' | 'en-US')
       }
 
-      // 同步分析偏好
+      // Synchronize analysis preferences
       if (prefs.default_market || prefs.default_depth || prefs.auto_refresh !== undefined || prefs.refresh_interval) {
         appStore.updatePreferences({
           defaultMarket: prefs.default_market as any,
@@ -410,10 +410,10 @@ export const useAuthStore = defineStore('auth', {
         })
       }
 
-      console.log('✅ 用户偏好设置已同步到 appStore')
+      console.log('✅ User preferences synced to appStore')
     },
 
-    // 修改密码
+    // Change password
     async changePassword(oldPassword: string, newPassword: string) {
       try {
         const response = await authApi.changePassword({
@@ -423,44 +423,44 @@ export const useAuthStore = defineStore('auth', {
         })
 
         if (response.success) {
-          ElMessage.success('密码修改成功')
+          ElMessage.success('Password changed successfully')
           return true
         } else {
-          ElMessage.error(response.message || '密码修改失败')
+          ElMessage.error(response.message || 'Password change failed')
           return false
         }
       } catch (error: any) {
-        console.error('修改密码失败:', error)
-        ElMessage.error(error.message || '修改密码失败，请重试')
+        console.error('Failed to change password:', error)
+        ElMessage.error(error.message || 'Failed to change password, please try again')
         return false
       }
     },
     
-    // 设置重定向路径
+    // Set redirect path
     setRedirectPath(path: string) {
       this.redirectPath = path
     },
     
-    // 获取并清除重定向路径
+    // Get and clear redirect paths
     getAndClearRedirectPath(): string {
       const path = this.redirectPath || '/dashboard'
       this.redirectPath = '/dashboard'
       return path
     },
     
-    // 检查认证状态（带单例 Promise，防止并发初始化）
+    // Check authentication status (with singleton Promise to prevent concurrent initialization)
     async checkAuthStatus() {
-      // 如果已经初始化完成，直接返回
+      // If initialization has been completed, return directly
       if (this.authInitialized) {
         return
       }
 
-      // 如果正在初始化中，复用同一个 Promise
+      // If initializing, reuse the same Promise
       if (this.authInitPromise) {
         return this.authInitPromise
       }
 
-      // 启动初始化并缓存 Promise
+      // Start initialization and cache Promise
       this.authInitPromise = this._doCheckAuthStatus().finally(() => {
         this.authInitialized = true
       })
@@ -468,48 +468,48 @@ export const useAuthStore = defineStore('auth', {
       return this.authInitPromise
     },
 
-    // 实际的认证状态检查逻辑
+    // Actual authentication status checking logic
     async _doCheckAuthStatus() {
       if (this.token) {
         try {
-          console.log('🔍 检查token有效性...')
-          // 验证token是否有效
+          console.log('🔍 Check token validity...')
+          // Verify whether the token is valid
           const valid = await this.fetchUserInfo()
           if (valid) {
             this.isAuthenticated = true
             await this.fetchUserPermissions()
-            console.log('✅ 认证状态验证成功')
+            console.log('✅ Authentication status verified successfully')
           } else {
-            // Token无效，尝试刷新
-            console.log('🔄 Token无效，尝试刷新...')
+            // Token Invalid, try refreshing
+            console.log('🔄 Token Invalid, try refreshing...')
             await this.refreshAccessToken()
           }
         } catch (error: unknown) {
-          console.error('❌ 检查认证状态失败:', error)
-          // 如果是网络错误或超时，不清除认证信息，只是标记为未认证
+          console.error('❌ Checking authentication status failed:', error)
+          // If it is a network error or timeout, the authentication information will not be cleared, but will be marked as unauthenticated.
           if ((error as any)?.code === 'ECONNABORTED' || (error as any)?.message?.includes('timeout')) {
-            console.warn('⚠️ 网络超时，保留认证信息但标记为未认证状态')
+            console.warn('⚠️ The network times out, and the authentication information is retained but marked as unauthenticated.')
             this.isAuthenticated = false
           } else {
-            // 其他错误则清除认证信息
+            // If there are other errors, the authentication information will be cleared.
             this.clearAuthInfo()
             this.redirectToLogin()
           }
         }
       } else {
-        console.log('📝 没有token，跳过JWT认证检查')
-        // 京东云模式下，尝试通过 Basic Auth（cookie 携带）调用 /api/auth/me 完成自动免密登录
+        console.log('📝 Without token, skip JWT authentication check')
+        // In JD Cloud mode, try to call /api/auth/me through Basic Auth (carrying cookies) to complete automatic password-free login.
         if (isJdyunMode()) {
           try {
-            console.log('☁️  京东云模式：尝试 Basic Auth 免密认证')
+            console.log('☁️  JD Cloud Mode: Try Basic Auth password-free authentication')
             const ok = await this.fetchUserInfo()
             if (ok) {
               this.isAuthenticated = true
               await this.fetchUserPermissions()
-              console.log('✅ 京东云 Basic Auth 免密认证成功:', this.user?.username)
+              console.log('✅ JD Cloud Basic Auth password-free authentication successful:', this.user?.username)
             }
           } catch (e: any) {
-            console.log('⚠️  京东云 Basic Auth 未登录（正常）:', e?.message || e)
+            console.log('⚠️  JD Cloud Basic Auth not logged in (normal):', e?.message || e)
           }
         }
       }

@@ -1,13 +1,13 @@
 """
-QMT (迅投 QMT 交易终端) 数据源适配器
+QMT (Xuntou QMT trading terminal) data source adapter
 
-通过 xtquant.xtdata 连接本地 QMT 交易终端获取行情数据，并通过 xtquant.xttrader
-提供只读的持仓/资产查询能力。
-前置条件：
-    1. QMT 交易终端需已启动（仅 Windows 支持）
-    2. 获取行情数据不需要登录券商账户
-    3. 持仓/资产查询需要券商账户已在 QMT 交易终端中登录（本适配器不提供下单能力）
-新闻不支持，统一使用 AKShare 数据源。
+Connect to the local QMT trading terminal through xtquant.xtdata to obtain market data, and pass xtquant.xttrader
+Provides read-only position/asset query capabilities.
+Prerequisites:
+    1. QMT The trading terminal needs to be started (only supported by Windows)
+    2. Obtaining market data does not require logging into a brokerage account
+    3. Position/asset query requires that the brokerage account has been logged in to the QMT trading terminal (this adapter does not provide the ability to place orders)
+News is not supported and the AKShare data source is used uniformly.
 """
 from typing import Optional, Dict, List, Any, Tuple
 import logging
@@ -22,14 +22,14 @@ from .base import DataSourceAdapter
 
 logger = logging.getLogger(__name__)
 
-# xtquant 可选依赖，未安装时适配器不可用
+# xtquant Optional dependency, the adapter is unavailable when not installed
 _xtdata = None
 _xtdatacenter = None
 _xttrader = None
 
 
 def _iter_qmt_root_candidates() -> List[Path]:
-    """收集 QMT 安装根路径候选，用于自动发现 xtquant 包。"""
+    """Collect QMT installation root path candidates for automatic discovery of xtquant packages."""
     raw_candidates: List[Path] = []
     configured = os.getenv("QMT_DATA_DIR", "")
     if configured:
@@ -61,7 +61,7 @@ def _iter_qmt_root_candidates() -> List[Path]:
 
 
 def _ensure_qmt_python_path() -> Optional[str]:
-    """将 QMT 自带的 xtquant/site-packages 加入 sys.path。"""
+    """Add QMT s own xtquant/site-packages to sys.path."""
     for root in _iter_qmt_root_candidates():
         for site_packages in (
             root / "Lib" / "site-packages",
@@ -74,13 +74,13 @@ def _ensure_qmt_python_path() -> Optional[str]:
             site_packages_str = str(site_packages)
             if site_packages_str not in sys.path:
                 sys.path.insert(0, site_packages_str)
-                logger.info("QMT: 已添加 xtquant 路径 %s", site_packages_str)
+                logger.info("QMT: xtquant path added %s", site_packages_str)
             return site_packages_str
     return None
 
 
 def _get_xtdata():
-    """延迟导入 xtquant.xtdata"""
+    """Delayed import xtquant.xtdata"""
     global _xtdata
     if _xtdata is None:
         try:
@@ -88,13 +88,13 @@ def _get_xtdata():
             import xtquant.xtdata as xt  # type: ignore
             _xtdata = xt
         except ImportError:
-            logger.debug("xtquant 未安装，QMT 适配器不可用")
+            logger.debug("xtquant Not installed, QMT adapter is not available")
             return None
     return _xtdata
 
 
 def _get_xtdatacenter():
-    """延迟导入 xtquant.xtdatacenter"""
+    """Delayed import xtquant.xtdatacenter"""
     global _xtdatacenter
     if _xtdatacenter is None:
         try:
@@ -102,13 +102,13 @@ def _get_xtdatacenter():
             from xtquant import xtdatacenter as xtdc  # type: ignore
             _xtdatacenter = xtdc
         except ImportError:
-            logger.debug("xtquant.xtdatacenter 未安装，跳过 QMT 主动初始化")
+            logger.debug("xtquant.xtdatacenter Not installed, skip QMT active initialization")
             return None
     return _xtdatacenter
 
 
 def _get_xttrader():
-    """延迟导入 xtquant.xttrader"""
+    """Delayed import xtquant.xttrader"""
     global _xttrader
     if _xttrader is None:
         try:
@@ -116,13 +116,13 @@ def _get_xttrader():
             from xtquant import xttrader as xtt  # type: ignore
             _xttrader = xtt
         except ImportError:
-            logger.debug("xtquant.xttrader 未安装，跳过 QMT 持仓查询")
+            logger.debug("xtquant.xttrader Not installed, skip QMT position query")
             return None
     return _xttrader
 
 
 def _normalize_code(code: str) -> str:
-    """将 6 位代码转为 xtdata 格式：000001.SZ / 600000.SH"""
+    """Convert 6-digit code to xtdata format:000001.SZ / 600000.SH"""
     raw_code = str(code).strip().upper()
     if raw_code.endswith((".SH", ".SZ", ".BJ")):
         suffix = raw_code[-3:]
@@ -146,13 +146,13 @@ def _normalize_code(code: str) -> str:
 
 
 def _code_to_6digit(xt_code: str) -> str:
-    """xtdata 代码转 6 位纯数字"""
+    """xtdata Convert code to 6-digit pure number"""
     s = str(xt_code).split(".")[0]
     return "".join(filter(str.isdigit, s)).zfill(6)
 
 
 class QMTAdapter(DataSourceAdapter):
-    """QMT 数据源适配器（需 QMT 交易终端运行，新闻用 AKShare）"""
+    """QMT Data source adapter (requires QMT trading terminal to run, AKShare for news)"""
 
     _UNAVAILABLE_CACHE_UNTIL = 0.0
     _AVAILABLE_CACHE_UNTIL = 0.0
@@ -166,7 +166,7 @@ class QMTAdapter(DataSourceAdapter):
         self._available: Optional[bool] = None
         self._bootstrapped = False
         self._sector_data_prepared = False
-        # 数据质量统计
+        # Data quality statistics
         self._quality_stats: Dict[str, Any] = {
             "total_calls": 0,
             "success_calls": 0,
@@ -181,7 +181,7 @@ class QMTAdapter(DataSourceAdapter):
         return "qmt"
 
     def _get_default_priority(self) -> int:
-        return 2  # 与 AKShare 同级，数字越大优先级越高
+        return 2  # Same level as AKShare, the larger the number, the higher the priority.
 
     def _safe_float(self, value) -> Optional[float]:
         try:
@@ -200,7 +200,7 @@ class QMTAdapter(DataSourceAdapter):
             return None
 
     def _resolve_qmt_userdata_dir(self) -> Optional[str]:
-        """解析 QMT userdata 目录，用于 xttrader 只读查询。"""
+        """Parse QMT userdata directory for xttrader read-only queries."""
         raw_candidates: List[Path] = []
         configured = self._get_runtime_setting("QMT_DATA_DIR", "")
         if configured:
@@ -295,26 +295,26 @@ class QMTAdapter(DataSourceAdapter):
             return None
 
     def query_account_snapshot(self, account_id: str, account_type: str = "STOCK") -> Optional[Dict[str, Any]]:
-        """只读查询 QMT 账户快照，返回持仓 DataFrame 和账户资产摘要。"""
+        """Read-only query QMT account snapshot, return position DataFrame and account asset summary."""
         account_id = str(account_id or "").strip()
         if not account_id:
-            logger.warning("QMT: 账户号为空，无法查询账户快照")
+            logger.warning("QMT: The account number is empty and the account snapshot cannot be queried.")
             return None
 
         xttrader = _get_xttrader()
         if xttrader is None:
-            logger.warning("QMT: xttrader 不可用，无法查询账户快照")
+            logger.warning("QMT: xttrader Unavailable, unable to query account snapshot")
             return None
 
         userdata_dir = self._resolve_qmt_userdata_dir()
         if not userdata_dir:
-            logger.warning("QMT: 未找到 userdata 目录，无法查询账户快照")
+            logger.warning("QMT: The userdata directory was not found and the account snapshot could not be queried.")
             return None
 
         try:
             from xtquant.xttype import StockAccount  # type: ignore
         except ImportError:
-            logger.warning("QMT: xttype 不可用，无法构建账户对象")
+            logger.warning("QMT: xttype Unavailable, cannot build account object")
             return None
 
         trader = None
@@ -324,7 +324,7 @@ class QMTAdapter(DataSourceAdapter):
             trader.start()
             connect_result = trader.connect()
             if connect_result != 0:
-                logger.warning("QMT: 交易客户端连接失败，返回码=%s", connect_result)
+                logger.warning("QMT: Trading client connection failed, return code=%s", connect_result)
                 return None
 
             account = StockAccount(account_id, account_type)
@@ -355,7 +355,7 @@ class QMTAdapter(DataSourceAdapter):
                     except Exception:
                         name = code6
 
-                notes = f"QMT 持仓导入 | 账户 {account_id}"
+                notes = f"QMT Position import | Account {account_id}"
                 if can_use_volume is not None and can_use_volume != volume:
                     notes += f" | 可用 {can_use_volume}"
                 if frozen_volume is not None and frozen_volume > 0:
@@ -412,14 +412,14 @@ class QMTAdapter(DataSourceAdapter):
 
             if asset is not None:
                 logger.info(
-                    "QMT: 持仓查询完成，账户=%s，持仓=%s 只，现金=%s，总资产=%s",
+                    "QMT: Position inquiry completed, account=%s, Position=%s Cash only=%s, total assets=%s",
                     account_id,
                     len(df),
                     getattr(asset, "cash", None),
                     getattr(asset, "total_asset", None),
                 )
             else:
-                logger.info("QMT: 持仓查询完成，账户=%s，持仓=%s 只", account_id, len(df))
+                logger.info("QMT: Position inquiry completed, account=%s, Position=%s only", account_id, len(df))
 
             return {
                 "account_id": account_id,
@@ -428,7 +428,7 @@ class QMTAdapter(DataSourceAdapter):
                 "asset": asset_summary,
             }
         except Exception as e:
-            logger.error(f"QMT: 查询账户快照失败: {e}")
+            logger.error(f"QMT: Failed to query account snapshot: {e}")
             return None
         finally:
             if trader is not None:
@@ -438,14 +438,14 @@ class QMTAdapter(DataSourceAdapter):
                     pass
 
     def query_account_positions(self, account_id: str, account_type: str = "STOCK") -> Optional[pd.DataFrame]:
-        """只读查询 QMT 账户持仓，返回可导入持仓的 DataFrame。"""
+        """Read-only query QMT account positions and return a DataFrame that can be imported into the positions."""
         snapshot = self.query_account_snapshot(account_id, account_type)
         if snapshot is None:
             return None
         return snapshot.get("positions_df")
 
     def _has_existing_connection(self, xt: Any) -> bool:
-        """优先复用已启动的 QMT 连接，避免默认配置误触发独立初始化。"""
+        """Prioritize reusing started QMT connections to avoid default configuration accidentally triggering independent initialization."""
         if xt is None:
             return False
         try:
@@ -453,7 +453,7 @@ class QMTAdapter(DataSourceAdapter):
             if ticks is not None:
                 self._available = True
                 return True
-            # get_full_tick([]) 可能返回空 dict，也视为可用
+            # get_full_tick([]) May return an empty dict, also considered available
             self._available = True
             return True
         except Exception:
@@ -468,7 +468,7 @@ class QMTAdapter(DataSourceAdapter):
         start_local_service: bool,
         listen_port: Any,
     ) -> bool:
-        """仅在显式独立连接场景下执行 xtdatacenter 主动初始化。"""
+        """Perform xtdatacenter active initialization only in explicit independent connection scenarios."""
         try:
             parsed_port = int(listen_port or 0)
         except (TypeError, ValueError):
@@ -507,7 +507,7 @@ class QMTAdapter(DataSourceAdapter):
         listen_port_range = self._parse_port_range(self._get_runtime_setting("QMT_LISTEN_PORT_RANGE", "58620-58650"))
 
         if self._has_existing_connection(xt):
-            logger.info("QMT: 检测到现有 QMT 连接，跳过主动初始化")
+            logger.info("QMT: Existing QMT connection detected, active initialization skipped")
             return
 
         should_initialize = self._should_initialize_connection(
@@ -520,8 +520,8 @@ class QMTAdapter(DataSourceAdapter):
         )
         if not should_initialize:
             logger.info(
-                "QMT: 未检测到现有 QMT 连接，且当前为默认 QMT 模式，"
-                "跳过 xtdatacenter 主动初始化，请先启动并保持 QMT 交易终端运行"
+                "QMT: No existing QMT connection detected and default QMT mode is currently in place,"
+                "Skip xtdatacenter active initialization, please start and keep the QMT trading terminal running first"
             )
             return
 
@@ -560,15 +560,15 @@ class QMTAdapter(DataSourceAdapter):
                 connect_port = int(listen_result)
 
             xt.connect(port=connect_port)
-            logger.info(f"QMT: 已根据配置初始化连接，端口 {connect_port}")
+            logger.info(f"QMT: The connection has been initialized according to the configuration, port {connect_port}")
         except Exception as e:
-            logger.warning(f"QMT: 主动初始化连接失败，将回退到现有 QMT 连接: {e}")
+            logger.warning(f"QMT: If the active initialization of the connection fails, it will fall back to the existing QMT connection.: {e}")
 
     def _prepare_sector_data(self) -> None:
         if self._sector_data_prepared:
             return
 
-        # 默认不自动下载板块数据，避免 xt.download_sector_data / download_history_data2 卡死
+        # By default, sector data is not automatically downloaded to avoid xt.download_sector_data / download_history_data2 from getting stuck.
         if self._parse_bool(self._get_runtime_setting("QMT_AUTO_DOWNLOAD_SECTOR", False)):
             xt = _get_xtdata()
             if xt is None:
@@ -576,10 +576,10 @@ class QMTAdapter(DataSourceAdapter):
                 return
 
             try:
-                logger.info("QMT: 正在下载板块数据（默认关闭）")
+                logger.info("QMT: Downloading section data (closed by default)")
                 xt.download_sector_data()
             except Exception as e:
-                logger.debug(f"QMT: 下载板块数据失败，将继续尝试读取本地缓存: {e}")
+                logger.debug(f"QMT: Failed to download section data, will continue to try to read the local cache: {e}")
             finally:
                 self._sector_data_prepared = True
         else:
@@ -600,9 +600,9 @@ class QMTAdapter(DataSourceAdapter):
             try:
                 xt.download_history_data(xt_code, period=xt_period, start_time=start_time)
             except Exception as e:
-                logger.debug(f"QMT: 自动下载历史数据失败 {xt_code}: {e}")
+                logger.debug(f"QMT: Automatic download of historical data failed {xt_code}: {e}")
         except Exception as e:
-            logger.debug(f"QMT: 自动下载历史数据失败 {xt_code}: {e}")
+            logger.debug(f"QMT: Automatic download of historical data failed {xt_code}: {e}")
 
     def _download_financial_if_needed(self, code: str, table_list: Optional[List[str]], start_time: str, end_time: str) -> None:
         if not self._parse_bool(self._get_runtime_setting("QMT_AUTO_DOWNLOAD_FINANCIAL", False)):
@@ -624,17 +624,17 @@ class QMTAdapter(DataSourceAdapter):
         self._available = False
 
     def is_available(self) -> bool:
-        """检查 xtquant 是否可用且 QMT 已连接"""
+        """Check if xtquant is available and QMT is connected"""
         now = time.monotonic()
         if now < type(self)._UNAVAILABLE_CACHE_UNTIL:
             return False
         if now < type(self)._AVAILABLE_CACHE_UNTIL:
             return True
         if now < type(self)._AVAILABILITY_PROBE_UNTIL:
-            logger.debug("QMT 可用性探测正在进行，当前请求快速跳过")
+            logger.debug("QMT Availability probe is in progress, current request is skipped quickly")
             return False
 
-        # 快速短路：如果 QMT 在配置中未启用，直接返回 False（跳过连接探测）
+        # Fast short circuit: If QMT is not enabled in the configuration, return False directly (skip connection detection)
         try:
             from app.core.config import settings as app_settings
             if not app_settings.QMT_UNIFIED_ENABLED:
@@ -655,16 +655,16 @@ class QMTAdapter(DataSourceAdapter):
                 self._mark_qmt_available()
                 return True
 
-            logger.debug("QMT 不可用: 未检测到可复用的 QMT 连接")
+            logger.debug("QMT Not available: No reusable QMT connection detected")
             self._mark_qmt_unavailable()
             return False
         finally:
             type(self)._AVAILABILITY_PROBE_UNTIL = 0.0
 
-    # ==================== 数据质量监控 ====================
+    # ==================== Data quality monitoring ====================
 
     def _record_quality(self, method: str, success: bool, error: Optional[str] = None, duration_ms: float = 0) -> None:
-        """记录数据获取质量指标。"""
+        """Record data to obtain quality indicators."""
         self._quality_stats["total_calls"] += 1
         if success:
             self._quality_stats["success_calls"] += 1
@@ -687,7 +687,7 @@ class QMTAdapter(DataSourceAdapter):
             m["avg_duration_ms"] = (m["avg_duration_ms"] * (m["total"] - 1) + duration_ms) / m["total"]
 
     def get_quality_stats(self) -> Dict[str, Any]:
-        """获取数据质量统计。"""
+        """Get data quality statistics."""
         stats = dict(self._quality_stats)
         stats["success_rate"] = (
             stats["success_calls"] / stats["total_calls"] * 100
@@ -696,7 +696,7 @@ class QMTAdapter(DataSourceAdapter):
         return stats
 
     def get_stock_list(self) -> Optional[pd.DataFrame]:
-        """获取股票列表（通过沪深成分股组合）"""
+        """Get the stock list (via Shanghai and Shenzhen constituent stocks portfolio)"""
         if not self.is_available():
             return None
         xt = _get_xtdata()
@@ -705,7 +705,7 @@ class QMTAdapter(DataSourceAdapter):
         try:
             start_time = time.perf_counter()
 
-            # 沪深 A 股：通过板块获取（不等待板块数据下载）
+            # Shanghai and Shenzhen A-shares: obtained through the sector (no waiting for sector data to be downloaded)
             sector_query_start = time.perf_counter()
             sh_stocks = xt.get_stock_list_in_sector("沪深A股", 0) or []
             if not sh_stocks:
@@ -717,7 +717,7 @@ class QMTAdapter(DataSourceAdapter):
             sector_query_elapsed = time.perf_counter() - sector_query_start
 
             if not stocks:
-                logger.warning("QMT: 未获取到股票列表")
+                logger.warning("QMT: No stock list obtained")
                 return None
 
             max_count_raw = self._get_runtime_setting("QMT_STOCK_LIST_MAX_COUNT", 10000)
@@ -777,7 +777,7 @@ class QMTAdapter(DataSourceAdapter):
                 df = pd.DataFrame(rows)
                 total_elapsed = time.perf_counter() - start_time
                 logger.info(
-                    "QMT: 获取到 %s 只股票，板块查询 %.2fs，详情补充 %s/%s，详情预算 %.2fs，耗时 %.2fs%s",
+                    "QMT: Obtained %s stocks, sector query %.2fs, details supplement %s/%s, details budget %.2fs, time-consuming %.2fs%s",
                     len(df),
                     sector_query_elapsed,
                     detail_lookup_count,
@@ -789,11 +789,11 @@ class QMTAdapter(DataSourceAdapter):
                 return df
             return None
         except Exception as e:
-            logger.error(f"QMT: 获取股票列表失败: {e}")
+            logger.error(f"QMT: Failed to get stock list: {e}")
             return None
 
     def get_etf_list(self) -> Optional[pd.DataFrame]:
-        """获取 ETF 列表（通过 QMT 板块列表和代码前缀过滤）"""
+        """Get list of ETFs (filtered by QMT sector list and ticker prefix)"""
         if not self.is_available():
             return None
         xt = _get_xtdata()
@@ -832,7 +832,7 @@ class QMTAdapter(DataSourceAdapter):
                 unique_codes.append(xt_code)
 
             if not unique_codes:
-                logger.warning("QMT: 未获取到 ETF 列表")
+                logger.warning("QMT: No ETF list obtained")
                 return None
 
             rows = []
@@ -857,11 +857,11 @@ class QMTAdapter(DataSourceAdapter):
 
             return pd.DataFrame(rows) if rows else None
         except Exception as e:
-            logger.error(f"QMT: 获取 ETF 列表失败: {e}")
+            logger.error(f"QMT: Failed to get ETF list: {e}")
             return None
 
     def get_daily_basic(self, trade_date: str) -> Optional[pd.DataFrame]:
-        """获取每日基础数据（通过 get_market_data_ex 日线）"""
+        """Get daily basic data (via get_market_data_ex daily line)"""
         if not self.is_available():
             return None
         xt = _get_xtdata()
@@ -872,7 +872,7 @@ class QMTAdapter(DataSourceAdapter):
             if stock_list is None or stock_list.empty:
                 return None
             codes = stock_list["ts_code"].head(500).tolist()
-            # get_market_data_ex 的 start_time/end_time 需要 YYYYMMDD 格式
+            # get_market_data_ex The start_time/end_time requires YYYYMMDD format
             trade_date_compact = trade_date.replace("-", "")
 
             data = xt.get_market_data_ex(
@@ -918,11 +918,11 @@ class QMTAdapter(DataSourceAdapter):
                 return pd.DataFrame(rows)
             return None
         except Exception as e:
-            logger.error(f"QMT: 获取 daily_basic 失败: {e}")
+            logger.error(f"QMT: Failed to get daily_basic: {e}")
             return None
 
     def find_latest_trade_date(self) -> Optional[str]:
-        """查找最新交易日期（用上证指数最近一根日线判断，轻量高效）"""
+        """Find the latest trading date (use the latest daily line of the Shanghai Composite Index to judge, lightweight and efficient)"""
         if not self.is_available():
             return None
         xt = _get_xtdata()
@@ -939,19 +939,19 @@ class QMTAdapter(DataSourceAdapter):
                 for xt_code, df in data.items():
                     if df is not None and not df.empty:
                         latest = df.index[-1]
-                        # index 可能是字符串或 Timestamp
+                        # index May be a string or Timestamp
                         return str(latest)[:10].replace("-", "")
-            # 兜底
+            # Keep everything in mind
             return (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
         except Exception as e:
-            logger.error(f"QMT: find_latest_trade_date 失败: {e}")
+            logger.error(f"QMT: find_latest_trade_date failed: {e}")
             return (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
 
     def get_realtime_quotes(self, symbols: Optional[List[str]] = None) -> Optional[Dict[str, Dict[str, Optional[float]]]]:
-        """获取实时快照
+        """Get real-time snapshot
 
         Args:
-            symbols: 可选，指定股票代码列表（6位纯数字），为空则获取全市场
+            symbols: Optional, specify the stock code list (6 pure numbers), if empty, get the whole market
         """
         if not self.is_available():
             return None
@@ -959,8 +959,8 @@ class QMTAdapter(DataSourceAdapter):
         if xt is None:
             return None
         try:
-            # 将6位代码转为 xtdata 格式（如 300750 -> 300750.SZ）
-            # 不传 symbols 时用市场代码 ['SH', 'SZ'] 获取沪深全市场行情
+            # Convert 6-digit code to xtdata format (such as 300750 -> 300750.SZ) 
+            # If symbols are not passed, market codes are used. ['SH', 'SZ'] Get all market information in Shanghai and Shenzhen
             xt_codes = []
             if symbols:
                 for s in symbols:
@@ -973,9 +973,9 @@ class QMTAdapter(DataSourceAdapter):
             ticks = xt.get_full_tick(xt_codes)
             if not ticks or not isinstance(ticks, dict):
                 return None
-            # A股+ETF有效前缀：00/30/20(深市A股) 60/68(沪市A股) 8/4/9(北交所)
-            # 50/51/52/56/58(沪市ETF) 15/16/18(深市ETF)
-            # 排除债券等：10/11/12/13/18/19/7x 等
+            # A shares+ETF Valid prefixes:00/30/20(Shenzhen A shares) 60/68(Shanghai A shares) 8/4/9(Beijing Exchange)
+            # 50/51/52/56/58(Shanghai Stock Exchange ETF) 15/16/18(Shenzhen City ETF)
+            # Excluding bonds, etc.: 10/11/12/13/18/19/7x etc.
             _STOCK_ETF_PREFIXES = ("00", "30", "20", "60", "68", "50", "51", "52", "56", "58", "15", "16", "18", "8", "4", "9")
 
             result: Dict[str, Dict[str, Optional[float]]] = {}
@@ -1000,16 +1000,16 @@ class QMTAdapter(DataSourceAdapter):
                 return result
             return None
         except Exception as e:
-            logger.error(f"QMT: 获取实时行情失败: {e}")
+            logger.error(f"QMT: Failed to obtain real-time quotes: {e}")
             return None
 
     def get_kline(self, code: str, period: str = "day", limit: int = 120, adj: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
-        """获取 K 线数据
+        """Get K-line data
 
-        根据迅投官方文档：
-        1. 使用前需确保 QMT 已有所需数据
-        2. 如果本地没有数据，先调用 download_history_data 下载
-        3. 推荐使用 get_market_data_ex 接口
+        According to Xuntou official documentation:
+        1. Before use, make sure QMT has the required data
+        2. If there is no data locally, first call download_history_data to download
+        3. It is recommended to use the get_market_data_ex interface
         """
         if not self.is_available():
             return None
@@ -1035,38 +1035,38 @@ class QMTAdapter(DataSourceAdapter):
 
             self._download_history_if_needed(xt_code, xt_period)
 
-            # 根据官方文档，使用 get_market_data_ex 接口
-            # 传入空的 field_list 表示获取所有字段
+            # According to the official documentation, use the get_market_data_ex interface
+            # Passing in an empty field_list means getting all fields
             data = xt.get_market_data_ex(
-                field_list=[],  # 空列表表示获取所有字段
+                field_list=[],  # An empty list means getting all fields
                 stock_list=[xt_code],
                 period=xt_period,
-                count=limit  # 获取最近 N 条数据
+                count=limit  # Get the latest N pieces of data
             )
             if not data or xt_code not in data:
                 return None
             df = data[xt_code]
             if df is None or (hasattr(df, "empty") and df.empty):
                 return None
-            # xtdata 返回 {stock_code: pd.DataFrame}
+            # xtdata Return {stock_code: pd.DataFrame}
             if isinstance(df, pd.DataFrame):
                 df = df.tail(limit)
                 items = []
                 for idx, row in df.iterrows():
-                    # get_market_data_ex 使用 DataFrame 的索引作为时间
-                    # 索引通常是 pandas Timestamp 或时间戳
+                    # get_market_data_ex Use the index of the DataFrame as the time
+                    # The index is usually pandas Timestamp or timestamp
                     if hasattr(idx, 'strftime'):
-                        # pandas Timestamp 对象
+                        # pandas Timestamp object
                         date_str = idx.strftime("%Y-%m-%d")
                     elif isinstance(idx, (int, float)):
-                        # 时间戳（毫秒）
+                        # Timestamp (milliseconds)
                         from datetime import datetime
                         date_str = datetime.fromtimestamp(idx / 1000).strftime("%Y-%m-%d")
                     elif isinstance(idx, str) and len(idx) == 8 and idx.isdigit():
-                        # YYYYMMDD 格式，转换为 YYYY-MM-DD
+                        # YYYYMMDD format, converted to YYYY-MM-DD
                         date_str = f"{idx[:4]}-{idx[4:6]}-{idx[6:8]}"
                     else:
-                        # 其他格式，直接转字符串
+                        # Other formats, directly convert to string
                         date_str = str(idx)
 
                     items.append({
@@ -1083,16 +1083,16 @@ class QMTAdapter(DataSourceAdapter):
             self._record_quality("get_kline", False, "no_data_format")
             return None
         except Exception as e:
-            logger.error(f"QMT: get_kline 失败: {e}", exc_info=True)
+            logger.error(f"QMT: get_kline failed: {e}", exc_info=True)
             self._record_quality("get_kline", False, str(e)[:200], (time.perf_counter() - _start) * 1000)
             return None
 
     def get_news(self, code: str, days: int = 2, limit: int = 50, include_announcements: bool = True) -> Optional[List[Dict]]:
-        """QMT 不支持新闻，返回 None，由 DataSourceManager 回退到 AKShare"""
-        logger.debug("QMT: 不支持新闻，请使用 AKShare")
+        """QMT News is not supported, returns None, falls back to by DataSourceManager AKShare"""
+        logger.debug("QMT: News is not supported, please use AKShare")
         return None
 
-    # ==================== 财务数据接口（扩展功能） ====================
+    # ==================== Financial data interface (extended functions) ====================
 
     def download_financial_data(
         self,
@@ -1103,29 +1103,29 @@ class QMTAdapter(DataSourceAdapter):
         callback=None
     ) -> bool:
         """
-        下载财务数据到本地
+        Download financial data to local
 
         Args:
-            stock_list: 股票代码列表（6位代码，会自动转换为 QMT 格式）
-            table_list: 财务报表类型列表，支持：
-                - 'Balance': 资产负债表
-                - 'Income': 利润表
-                - 'CashFlow': 现金流量表
-                - 'Pershareindex': 每股指标（主要指标）
-                - 'Capital': 股本表
-                - 'Top10holder': 十大股东
-                - 'Top10flowholder': 十大流通股东
-                - 'Holdernum': 股东数
-            start_time: 起始时间（YYYYMMDD），按披露日期筛选
-            end_time: 结束时间（YYYYMMDD），按披露日期筛选
-            callback: 进度回调函数，参数为 dict:
-                - total: 总任务数
-                - finished: 已完成数
-                - stockcode: 当前股票代码
-                - message: 消息
+            stock_list: Stock code list (6-digit code, automatically converted to QMT format)
+            table_list: List of financial report types, supporting:
+                - 'Balance': balance sheet
+                - 'Income': income statement
+                - 'CashFlow': cash flow statement
+                - 'Pershareindex': Per Share Indicators (Main Indicators)
+                - 'Capital': share capital table
+                - 'Top10holder': Top ten shareholders
+                - 'Top10flowholder': Top ten tradable shareholders
+                - 'Holdernum': Number of shareholders
+            start_time: Start time (YYYYMMDD), filter by disclosure date
+            end_time: End time (YYYYMMDD), filter by disclosure date
+            callback: Progress callback function, the parameters are dict:
+                - total: Total number of tasks
+                - finished: Completed
+                - stockcode: Current ticker
+                - message: news
 
         Returns:
-            bool: 下载是否成功
+            bool: Is the download successful?
         """
         if not self.is_available():
             return False
@@ -1134,7 +1134,7 @@ class QMTAdapter(DataSourceAdapter):
             return False
 
         try:
-            # 转换股票代码为 QMT 格式
+            # Convert ticker to QMT format
             xt_codes = []
             for code in stock_list:
                 xt_code = _normalize_code(code)
@@ -1142,22 +1142,22 @@ class QMTAdapter(DataSourceAdapter):
                     xt_codes.append(xt_code)
 
             if not xt_codes:
-                logger.warning("QMT: 没有有效的股票代码")
+                logger.warning("QMT: No valid ticker symbol")
                 return False
 
-            # 默认下载所有报表
+            # Download all reports by default
             if table_list is None:
                 table_list = [
-                    'Balance',          # 资产负债表
-                    'Income',           # 利润表
-                    'CashFlow',         # 现金流量表
-                    'Pershareindex',    # 每股指标
-                    'Capital',          # 股本表
+                    'Balance',          # balance sheet
+                    'Income',           # income statement
+                    'CashFlow',         # cash flow statement
+                    'Pershareindex',    # per share indicator
+                    'Capital',          # share capital table
                 ]
 
             logger.info(f"QMT: 开始下载财务数据 - {len(xt_codes)} 只股票, {len(table_list)} 种报表")
 
-            # 使用 download_financial_data2（带回调）
+            # Using download_financial_data2 (with callback)
             xt.download_financial_data2(
                 stock_list=xt_codes,
                 table_list=table_list,
@@ -1166,11 +1166,11 @@ class QMTAdapter(DataSourceAdapter):
                 callback=callback
             )
 
-            logger.info(f"QMT: 财务数据下载完成")
+            logger.info(f"QMT: Financial data download completed")
             return True
 
         except Exception as e:
-            logger.error(f"QMT: 下载财务数据失败: {e}", exc_info=True)
+            logger.error(f"QMT: Failed to download financial data: {e}", exc_info=True)
             return False
 
     def get_financial_data(
@@ -1182,20 +1182,20 @@ class QMTAdapter(DataSourceAdapter):
         report_type: str = 'report_time'
     ) -> Optional[Dict[str, pd.DataFrame]]:
         """
-        获取财务数据（从本地缓存）
+        Get financial data (from local cache)
 
         Args:
-            code: 股票代码（6位代码）
-            table_list: 财务报表类型列表，默认获取主要报表
-            start_time: 起始时间（YYYYMMDD）
-            end_time: 结束时间（YYYYMMDD）
-            report_type: 报表筛选方式
-                - 'report_time': 按截止日期筛选
-                - 'announce_time': 按披露日期筛选
+            code: Stock code (6-digit code)
+            table_list: List of financial report types, main reports are obtained by default
+            start_time: Starting time (YYYYMMDD)
+            end_time: End time (YYYYMMDD)
+            report_type: Report filtering method
+                - 'report_time': Filter by deadline
+                - 'announce_time': Filter by disclosure date
 
         Returns:
-            dict: {table_name: DataFrame} 或 None
-                例如: {'Income': DataFrame, 'Balance': DataFrame}
+            dict: {table_name: DataFrame} or None
+                For example: {'Income': DataFrame, 'Balance': DataFrame}
         """
         if not self.is_available():
             return None
@@ -1208,17 +1208,17 @@ class QMTAdapter(DataSourceAdapter):
             if not xt_code:
                 return None
 
-            # 默认获取主要报表
+            # Get the main report by default
             if table_list is None:
                 table_list = [
-                    'Pershareindex',    # 每股指标
-                    'Income',           # 利润表
-                    'Balance',          # 资产负债表
+                    'Pershareindex',    # per share indicator
+                    'Income',           # income statement
+                    'Balance',          # balance sheet
                 ]
 
             self._download_financial_if_needed(code, table_list, start_time, end_time)
 
-            # 获取财务数据
+            # Get financial data
             data = xt.get_financial_data(
                 stock_list=[xt_code],
                 table_list=table_list,
@@ -1232,7 +1232,7 @@ class QMTAdapter(DataSourceAdapter):
 
             stock_data = data[xt_code]
 
-            # 过滤掉空的 DataFrame
+            # filter out empty DataFrame
             result = {}
             for table_name, df in stock_data.items():
                 if df is not None and not df.empty:
@@ -1241,37 +1241,37 @@ class QMTAdapter(DataSourceAdapter):
             return result if result else None
 
         except Exception as e:
-            logger.error(f"QMT: 获取财务数据失败 {code}: {e}", exc_info=True)
+            logger.error(f"QMT: Failed to get financial data {code}: {e}", exc_info=True)
             return None
 
-    # ==================== 大盘/行业分析辅助接口 ====================
+    # ==================== Market/industry analysis auxiliary interface ====================
 
     @staticmethod
     def _is_market_session() -> bool:
-        """判断当前是否在A股交易时段（含收盘后30分钟缓冲期）。"""
+        """Determine whether it is currently in the A-share trading session (including the 30-minute buffer period after the market close)."""
         try:
             from app.utils.trading_time import is_trading_time
             return is_trading_time()
         except Exception:
-            # 无法判断时，保守返回 True，让实时快照先尝试
+            # When it cannot be judged, conservatively return True and let the real-time snapshot try first.
             return True
 
     def get_limit_stats(self, trade_date: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """获取涨跌停统计（优先实时快照，盘后自动切换历史日线）
+        """Obtain price limit statistics (prioritize real-time snapshots, automatically switch to historical daily lines after the market opens)
 
         Args:
-            trade_date: 交易日期（格式 YYYY-MM-DD 或 YYYYMMDD），为空则取最近交易日
+            trade_date: Transaction date (format YYYY-MM-DD or YYYYMMDD), if empty, the latest transaction date will be taken
 
         Returns:
             dict: {
-                "up_limit": 涨停数,
-                "down_limit": 跌停数,
-                "rising": 上涨数,
-                "falling": 下跌数,
-                "flat": 平盘数,
-                "total": 总数,
-                "up_limit_stocks": [(code, name, pct), ...],  # 涨停股前20
-                "down_limit_stocks": [(code, name, pct), ...],  # 跌停股前20
+                "up_limit": Daily limit number,
+                "down_limit": Lower limit number,
+                "rising": Increase,
+                "falling": Number of declines,
+                "flat": Number of flat games,
+                "total": total,
+                "up_limit_stocks": [(code, name, pct), ...],  # Before daily limit stocks 20
+                "down_limit_stocks": [(code, name, pct), ...],  # Before stocks fall to their limit 20
                 "source": "realtime" | "history",
             }
         """
@@ -1281,29 +1281,29 @@ class QMTAdapter(DataSourceAdapter):
         if xt is None:
             return None
 
-        # 盘后/休市直接走历史日线，避免无效的实时快照请求
+        # After-hours/closed market, directly follow the historical daily line to avoid invalid real-time snapshot requests.
         if not self._is_market_session():
-            logger.info("QMT: 当前非交易时段，直接使用历史日线回算涨跌停")
+            logger.info("QMT: During the current non-trading period, directly use the historical daily line to calculate the price limit")
             result = self._get_limit_stats_history(xt, trade_date)
             if result:
                 result["source"] = "history"
             return result
 
-        # 盘中先尝试实时快照
+        # Try real-time snapshots first during the session
         result = self._get_limit_stats_realtime(xt)
         if result and result.get("total", 0) > 0:
             result["source"] = "realtime"
             return result
 
-        # 实时快照无数据，切换到历史日线
-        logger.info("QMT: 实时快照无涨跌停数据，切换到历史日线回算")
+        # There is no data in the real-time snapshot, switch to the historical daily line
+        logger.info("QMT: There is no price limit data in the real-time snapshot, switch to historical daily line back calculation")
         result = self._get_limit_stats_history(xt, trade_date)
         if result:
             result["source"] = "history"
         return result
 
     def _get_limit_stats_realtime(self, xt) -> Optional[Dict[str, Any]]:
-        """基于实时快照的涨跌停统计。"""
+        """Price limit statistics based on real-time snapshots."""
         try:
             ticks = xt.get_full_tick(["SH", "SZ", "BJ"])
             if not ticks or not isinstance(ticks, dict):
@@ -1370,22 +1370,22 @@ class QMTAdapter(DataSourceAdapter):
                 "down_limit_stocks": sorted(down_limit_stocks, key=lambda x: x[2])[:20],
             }
         except Exception as e:
-            logger.error(f"QMT: 实时快照涨跌停统计失败: {e}")
+            logger.error(f"QMT: Real-time snapshot price limit statistics failed: {e}")
             return None
 
     def _get_limit_stats_history(self, xt, trade_date: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        """基于历史日线的涨跌停统计（盘后降级）。"""
+        """Price limit statistics based on historical daily lines (after-hours downgrade)."""
         try:
-            # 获取沪深A股列表
+            # Get the list of Shanghai and Shenzhen A shares
             stock_list = xt.get_stock_list_in_sector("沪深A股")
             if not stock_list:
                 return None
 
-            # 直接用 get_market_data_ex + count=1 获取最近一条日线
-            # 不需要 download_history_data2，QMT 本地缓存已有数据
+            # Use directly get_market_data_ex + count=1 Get the latest daily line
+            # There is no need to download_history_data2, QMT already caches the data locally.
             stock_codes = list(stock_list)
 
-            # 分批获取（每批1000只，避免内存问题）
+            # Obtain in batches (1000 per batch to avoid memory problems)
             batch_size = 1000
             all_rows = []  # [(code6, name, close, preClose, pct)]
 
@@ -1436,7 +1436,7 @@ class QMTAdapter(DataSourceAdapter):
             flat = 0
 
             for code6, name, close, pre_close, pct in all_rows:
-                # 用 close / pre_close 判断是否触及涨跌停价
+                # Use close / pre_close to determine whether the price limit has been reached
                 up_stop = round(pre_close * 1.1, 2) if code6.startswith(("60", "00")) else \
                           round(pre_close * 1.2, 2) if code6.startswith(("30", "68")) else \
                           round(pre_close * 1.3, 2) if code6.startswith(("8", "4")) else None
@@ -1486,12 +1486,12 @@ class QMTAdapter(DataSourceAdapter):
                 "down_limit_stocks": sorted(down_limit_stocks, key=lambda x: x[2])[:20],
             }
         except Exception as e:
-            logger.error(f"QMT: 历史日线涨跌停统计失败: {e}")
+            logger.error(f"QMT: Historical daily price limit statistics failed: {e}")
             return None
 
     @staticmethod
     def _check_up_limit(code6: str, pct: float, last_price: float, up_stop: Optional[float]) -> bool:
-        """判断是否涨停。"""
+        """Determine whether the limit is reached."""
         if up_stop and up_stop > 0 and last_price >= up_stop * 0.998:
             return True
         if pct >= 9.9 and code6.startswith(("60", "00")):
@@ -1504,7 +1504,7 @@ class QMTAdapter(DataSourceAdapter):
 
     @staticmethod
     def _check_down_limit(code6: str, pct: float, last_price: float, down_stop: Optional[float]) -> bool:
-        """判断是否跌停。"""
+        """Determine whether it falls to the limit."""
         if down_stop and down_stop > 0 and last_price <= down_stop * 1.002:
             return True
         if pct <= -9.9 and code6.startswith(("60", "00")):
@@ -1517,7 +1517,7 @@ class QMTAdapter(DataSourceAdapter):
 
     @staticmethod
     def _get_instrument_name(xt, xt_code: str, code6: str) -> str:
-        """获取股票名称。"""
+        """Get the stock name."""
         try:
             detail = xt.get_instrument_detail(xt_code)
             if detail and isinstance(detail, dict):
@@ -1527,11 +1527,11 @@ class QMTAdapter(DataSourceAdapter):
         return code6
 
     def get_amount_ranking(self, top_n: int = 20, trade_date: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
-        """获取成交额排名（优先实时快照，盘后自动切换历史日线）
+        """Obtain transaction volume ranking (prioritize real-time snapshots, automatically switch to historical daily lines after the market opens)
 
         Args:
-            top_n: 返回前N只
-            trade_date: 交易日期（格式 YYYY-MM-DD 或 YYYYMMDD），为空则取最近交易日
+            top_n: Return the first N items
+            trade_date: Transaction date (format YYYY-MM-DD or YYYYMMDD), if empty, the latest transaction date will be taken
 
         Returns:
             list: [{"code": str, "name": str, "amount": float, "pct_chg": float}, ...]
@@ -1542,28 +1542,28 @@ class QMTAdapter(DataSourceAdapter):
         if xt is None:
             return None
 
-        # 盘后/休市直接走历史日线
+        # After the market opens/the market is closed, go directly to the historical daily line
         if not self._is_market_session():
-            logger.info("QMT: 当前非交易时段，直接使用历史日线获取成交额排名")
+            logger.info("QMT: During the current non-trading period, directly use the historical daily line to obtain the transaction volume ranking.")
             return self._get_amount_ranking_history(xt, top_n, trade_date)
 
-        # 盘中先尝试实时快照
+        # Try real-time snapshots first during the session
         result = self._get_amount_ranking_realtime(xt, top_n)
-        # 如果实时快照返回了数据但涨跌幅缺失过多（盘后快照残留），走历史降级
+        # If the real-time snapshot returns data but too much increase or decrease is missing (remaining from the after-hours snapshot), the historical downgrade will be performed.
         if result:
             missing_pct = sum(1 for r in result if r.get("pct_chg") is None)
             if missing_pct > len(result) * 0.5:
-                logger.info("QMT: 实时快照涨跌幅缺失过多，切换到历史日线")
+                logger.info("QMT: There is too much missing in the real-time snapshot, so switch to the historical daily line.")
                 result = self._get_amount_ranking_history(xt, top_n, trade_date)
         if result:
             return result
 
-        # 盘后降级：历史日线
-        logger.info("QMT: 实时快照无成交额数据，切换到历史日线")
+        # After-Hour Downgrade: Historical Daily Line
+        logger.info("QMT: There is no transaction volume data in the real-time snapshot, switch to the historical daily line")
         return self._get_amount_ranking_history(xt, top_n, trade_date)
 
     def _get_amount_ranking_realtime(self, xt, top_n: int) -> Optional[List[Dict[str, Any]]]:
-        """基于实时快照的成交额排名。"""
+        """Turnover ranking based on real-time snapshots."""
         try:
             ticks = xt.get_full_tick(["SH", "SZ", "BJ"])
             if not ticks or not isinstance(ticks, dict):
@@ -1593,7 +1593,7 @@ class QMTAdapter(DataSourceAdapter):
                 except (ValueError, TypeError):
                     continue
 
-                # 过滤掉成交额为0的（盘后快照残留）
+                # Filter out those with a trading volume of 0 (remaining after-hours snapshots)
                 if amt <= 0:
                     continue
 
@@ -1605,11 +1605,11 @@ class QMTAdapter(DataSourceAdapter):
             rows.sort(key=lambda x: x["amount"], reverse=True)
             return rows[:top_n]
         except Exception as e:
-            logger.error(f"QMT: 实时快照成交额排名失败: {e}")
+            logger.error(f"QMT: Real-time snapshot turnover ranking failed: {e}")
             return None
 
     def _get_amount_ranking_history(self, xt, top_n: int, trade_date: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
-        """基于历史日线的成交额排名（盘后降级）。"""
+        """Ranking based on historical daily trading volume (downgraded after hours)."""
         try:
             stock_list = xt.get_stock_list_in_sector("沪深A股")
             if not stock_list:
@@ -1666,6 +1666,6 @@ class QMTAdapter(DataSourceAdapter):
             rows.sort(key=lambda x: x["amount"], reverse=True)
             return rows[:top_n]
         except Exception as e:
-            logger.error(f"QMT: 历史日线成交额排名失败: {e}")
+            logger.error(f"QMT: Historical daily turnover ranking failed: {e}")
             return None
 

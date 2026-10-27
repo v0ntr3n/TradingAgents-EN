@@ -100,7 +100,7 @@ def test_workflow_builder_passes_agent_llm_overrides(monkeypatch) -> None:
         id="risk-node",
         type="risk",
         agent_id="risky_analyst_v2",
-        label="风险分析",
+        label="risk analysis",
         config={},
     )
 

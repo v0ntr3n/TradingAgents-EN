@@ -1,298 +1,298 @@
-# Dataflows 模块架构说明
+# Dataflows Module architecture description
 
-## 📁 目录结构
+## 📁 Directory structure
 
 ```
 tradingagents/dataflows/
-├── cache/                           # 缓存模块
-│   ├── file_cache.py               # 文件缓存
-│   ├── db_cache.py                 # 数据库缓存（MongoDB + Redis）
-│   ├── adaptive.py                 # 自适应缓存
-│   ├── integrated.py               # 集成缓存
-│   ├── app_adapter.py              # App缓存适配器
-│   └── mongodb_cache_adapter.py    # MongoDB缓存适配器
+├── cache/                           # Cache module
+│   ├── file_cache.py               # File cache
+│   ├── db_cache.py                 # database cache (MongoDB + Redis) 
+│   ├── adaptive.py                 # Adaptive caching
+│   ├── integrated.py               # Integrated cache
+│   ├── app_adapter.py              # App cache adapter
+│   └── mongodb_cache_adapter.py    # MongoDB cache adapter
 │
-├── providers/                       # 数据提供器
-│   ├── base_provider.py            # 基础提供器类
-│   ├── china/                      # 中国市场
-│   │   ├── tushare.py             # Tushare提供器
-│   │   ├── akshare.py             # AKShare提供器
-│   │   ├── baostock.py            # Baostock提供器
-│   │   ├── tdx.py                 # 通达信提供器
-│   │   └── fundamentals_snapshot.py # 基本面快照
-│   ├── hk/                         # 香港市场
-│   │   ├── hk_stock.py            # 港股提供器
-│   │   └── improved_hk.py         # 改进的港股提供器
-│   ├── us/                         # 美国市场
+├── providers/                       # data provider
+│   ├── base_provider.py            # Basic provider class
+│   ├── china/                      # Chinese market
+│   │   ├── tushare.py             # Tushare provider
+│   │   ├── akshare.py             # AKShare provider
+│   │   ├── baostock.py            # Baostock provider
+│   │   ├── tdx.py                 # Tongdaxin provider
+│   │   └── fundamentals_snapshot.py # fundamental snapshot
+│   ├── hk/                         # Hong Kong market
+│   │   ├── hk_stock.py            # Hong Kong Stocks Provider
+│   │   └── improved_hk.py         # Improved Hong Kong stock provider
+│   ├── us/                         # US market
 │   │   ├── yfinance.py            # Yahoo Finance
 │   │   ├── finnhub.py             # Finnhub
-│   │   └── optimized.py           # 优化的美股提供器
-│   └── examples/                   # 示例
-│       └── example_sdk.py         # 示例SDK提供器
+│   │   └── optimized.py           # Optimized US stock provider
+│   └── examples/                   # Example
+│       └── example_sdk.py         # Sample SDK provider
 │
-├── news/                            # 新闻模块
-│   ├── google_news.py              # Google新闻
-│   ├── realtime_news.py            # 实时新闻
-│   ├── reddit.py                   # Reddit新闻
-│   └── chinese_finance.py          # 中国财经情绪分析
+├── news/                            # News module
+│   ├── google_news.py              # Google News
+│   ├── realtime_news.py            # real time news
+│   ├── reddit.py                   # Reddit News
+│   └── chinese_finance.py          # China financial sentiment analysis
 │
-├── technical/                       # 技术分析模块
-│   └── stockstats.py               # 技术指标计算
+├── technical/                       # Technical analysis module
+│   └── stockstats.py               # Technical indicator calculation
 │
-├── data_source_manager.py           # ⭐ 核心：数据源管理器（包含 DataFrame 接口）
-├── interface.py                     # ⭐ 核心：公共接口
-└── optimized_china_data.py          # ⭐ 核心：优化的A股数据提供器
+├── data_source_manager.py           # ⭐ Core: Data source manager (including DataFrame interface)
+├── interface.py                     # ⭐ Core: public interface
+└── optimized_china_data.py          # ⭐ Core: Optimized A-share data provider
 
-**注**: 配置管理已统一到 `tradingagents/config/` 目录
+**Note**: Configuration management has been unified to `tradingagents/config/` Directory
 ```
 
 ---
 
-## 🎯 核心文件说明
+## 🎯 Core file description
 
 ### 1. interface.py (60.25 KB) ⭐⭐⭐
-**职责**: 公共接口层，提供所有数据获取的统一入口
+**Responsibilities**: The public interface layer provides a unified entrance for all data acquisition.
 
-**主要功能**:
-- 中国市场接口（6个函数）
-  - `get_china_stock_data_unified()` - 统一的A股数据获取
-  - `get_china_stock_info_unified()` - 统一的A股信息获取
-  - `get_china_stock_data_tushare()` - Tushare数据获取
-  - `get_china_stock_fundamentals_tushare()` - Tushare基本面数据
-  - `switch_china_data_source()` - 切换数据源
-  - `get_current_china_data_source()` - 获取当前数据源
+**Main functions**:
+- China market interface (6 functions)
+  - `get_china_stock_data_unified()` - Unified A-share data acquisition
+  - `get_china_stock_info_unified()` - Unified A-share information acquisition
+  - `get_china_stock_data_tushare()` - Tushare data acquisition
+  - `get_china_stock_fundamentals_tushare()` - Tushare fundamental data
+  - `switch_china_data_source()` - Switch data source
+  - `get_current_china_data_source()` - Get the current data source
 
-- 香港市场接口（2个函数）
-  - `get_hk_stock_data_unified()` - 统一的港股数据获取
-  - `get_hk_stock_info_unified()` - 统一的港股信息获取
+- Hong Kong market interface (2 functions)
+  - `get_hk_stock_data_unified()` - Unified Hong Kong stock data acquisition
+  - `get_hk_stock_info_unified()` - Unified acquisition of Hong Kong stock information
 
-- 美国市场接口（7个函数）
-  - `get_finnhub_news()` - Finnhub新闻
-  - `get_YFin_data()` - Yahoo Finance数据
-  - `get_fundamentals_finnhub()` - Finnhub基本面数据
-  - 等
+- US market interface (7 functions)
+  - `get_finnhub_news()` - Finnhub News
+  - `get_YFin_data()` - Yahoo Finance data
+  - `get_fundamentals_finnhub()` - Finnhub fundamental data
+  - Wait
 
-- 新闻接口（5个函数）
-  - `get_google_news()` - Google新闻
-  - `get_reddit_global_news()` - Reddit全球新闻
-  - `get_stock_news_openai()` - OpenAI新闻分析
-  - 等
+- News interface (5 functions)
+  - `get_google_news()` - Google News
+  - `get_reddit_global_news()` - Reddit global news
+  - `get_stock_news_openai()` - OpenAI news analysis
+  - Wait
 
-- 技术分析接口（2个函数）
-  - `get_stockstats_indicator()` - 技术指标计算
+- Technical analysis interface (2 functions)
+  - `get_stockstats_indicator()` - Technical indicator calculation
 
-**使用场景**: Agent工具函数、API路由、业务逻辑
+**Usage scenarios**: Agent Tool functions, API routing, business logic
 
-**依赖**: data_source_manager, providers, news, technical
+**Depend on**: data_source_manager, providers, news, technical
 
 ---
 
 ### 2. data_source_manager.py (67.81 KB) ⭐⭐⭐
-**职责**: 数据源管理器，负责多数据源的统一管理和自动降级
+**Responsibilities**: Data source manager, responsible for unified management and automatic degradation of multiple data sources
 
-**主要功能**:
-- 数据源管理
-  - 支持多数据源：MongoDB, Tushare, AKShare, Baostock, TDX
-  - 自动降级机制
-  - 数据源切换
+**Main functions**:
+- Data source management
+  - Support multiple data sources:MongoDB, Tushare, AKShare, Baostock, TDX
+  - Automatic downgrade mechanism
+  - Data source switching
 
-- 缓存管理
-  - 统一缓存接口
-  - 自动缓存数据
-  - 缓存失效处理
+- Cache management
+  - Unified cache interface
+  - Automatically cache data
+  - Cache invalidation
 
-- 数据获取
-  - `get_china_stock_data_unified()` - 统一的A股数据获取
-  - `get_china_stock_info_unified()` - 统一的A股信息获取
-  - `get_fundamentals_data()` - 基本面数据获取
+- data acquisition
+  - `get_china_stock_data_unified()` - Unified A-share data acquisition
+  - `get_china_stock_info_unified()` - Unified A-share information acquisition
+  - `get_fundamentals_data()` - Fundamental data acquisition
 
-**使用场景**: interface.py 的底层实现
+**Usage scenarios**: interface.py The underlying implementation of
 
-**依赖**: providers, cache
+**Depend on**: providers, cache
 
 ---
 
 ### 3. optimized_china_data.py (67.68 KB) ⭐⭐⭐
-**职责**: 优化的A股数据提供器，提供缓存和基本面分析功能
+**Responsibilities**: Optimized A-share data provider, providing caching and fundamental analysis functions
 
-**主要功能**:
-- 优化的数据获取
-  - `get_china_stock_data_cached()` - 缓存的股票数据获取
-  - `get_china_fundamentals_cached()` - 缓存的基本面数据获取
+**Main functions**:
+- Optimized data acquisition
+  - `get_china_stock_data_cached()` - Cached stock data retrieval
+  - `get_china_fundamentals_cached()` - Cached fundamental data retrieval
 
-- 基本面分析
-  - `_generate_fundamentals_report()` - 生成基本面分析报告
-  - 财务指标计算
-  - 估值分析
+- fundamental analysis
+  - `_generate_fundamentals_report()` - Generate fundamental analysis report
+  - Calculation of financial indicators
+  - Valuation analysis
 
-**使用场景**: 
-- Agent工具函数（agent_utils.py）
-- 市场分析师（market_analyst.py）
-- Web缓存管理（cache_management.py）
+**Usage scenarios**: 
+- Agent Tool function (agent_utils.py)
+- Market Analyst (market_analyst.py)
+- Web Cache management (cache_management.py)
 
-**依赖**: cache, providers
+**Depend on**: cache, providers
 
 ---
 
-## 📊 辅助文件说明
+## 📊 Auxiliary file description
 
 ### 4. stock_data_service.py (12.14 KB)
-**职责**: 股票数据服务，实现 MongoDB → TDX 的降级机制
+**Responsibilities**: Stock data service, implementation MongoDB → TDX downgrade mechanism
 
-**主要功能**:
-- `StockDataService` 类
-- `get_stock_basic_info()` - 获取股票基本信息
-- MongoDB → TDX 降级
+**Main functions**:
+- `StockDataService` class
+- `get_stock_basic_info()` - Get basic stock information
+- MongoDB → TDX Downgrade
 
-**使用场景**:
+**Usage scenarios**:
 - `tradingagents/api/stock_api.py`
 - `tradingagents/dataflows/stock_api.py`
 - `app/routers/stock_data.py`
-- `app/worker/` 服务
+- `app/worker/` service
 
-**与 data_source_manager 的区别**:
-- `stock_data_service`: 专注于 MongoDB → TDX 降级
-- `data_source_manager`: 支持更多数据源（Tushare/AKShare/Baostock）
+**Differences from data_source_manager**:
+- `stock_data_service`: focus on MongoDB → TDX Downgrade
+- `data_source_manager`: Support more data sources (Tushare/AKShare/Baostock)
 
 ---
 
 ### 5. stock_api.py (3.91 KB)
-**职责**: 简化的股票API接口
+**Responsibilities**: Simplified stock API interface
 
-**主要功能**:
-- `get_stock_info()` - 获取单个股票信息
-- `get_all_stocks()` - 获取所有股票列表
+**Main functions**:
+- `get_stock_info()` - Get individual stock information
+- `get_all_stocks()` - Get a list of all stocks
 
-**使用场景**: `app/services/simple_analysis_service.py`
+**Usage scenarios**: `app/services/simple_analysis_service.py`
 
-**与 interface.py 的区别**:
-- `stock_api`: 简化接口，适合简单场景
-- `interface.py`: 完整接口，支持所有功能
+**Differences from interface.py**:
+- `stock_api`: Simplified interface, suitable for simple scenarios
+- `interface.py`: Complete interface, supports all functions
 
 ---
 
 ### 6. unified_dataframe.py (5.77 KB)
-**职责**: 统一DataFrame格式，支持多数据源降级
+**Responsibilities**: Unify the DataFrame format and support multiple data source degradation
 
-**主要功能**:
-- `get_china_daily_df_unified()` - 统一的A股日线数据获取
-- 多数据源降级：Tushare → AKShare → Baostock
-- DataFrame格式标准化
+**Main functions**:
+- `get_china_daily_df_unified()` - Unified A-share daily data acquisition
+- Multiple data source downgrade:Tushare → AKShare → Baostock
+- DataFrame Format standardization
 
-**使用场景**: `app/services/screening_service.py`
+**Usage scenarios**: `app/services/screening_service.py`
 
-**与 data_source_manager 的区别**:
-- `unified_dataframe`: 返回 DataFrame，适合数据分析
-- `data_source_manager`: 返回格式化字符串，适合Agent使用
+**Differences from data_source_manager**:
+- `unified_dataframe`: Returns a DataFrame, suitable for data analysis
+- `data_source_manager`: Returns a formatted string suitable for Agent use
 
 ---
 
 ### 7. providers_config.py (9.29 KB)
-**职责**: 数据源提供器配置管理
+**Responsibilities**: Data source provider configuration management
 
-**主要功能**:
-- `DataSourceConfig` 类
-- 管理所有数据源的配置（Tushare/AKShare/Baostock/TDX/Finnhub等）
-- 环境变量读取
-- 配置验证
+**Main functions**:
+- `DataSourceConfig` class
+- Manage the configuration of all data sources (Tushare/AKShare/Baostock/TDX/Finnhub, etc.)
+- Environment variable reading
+- Configuration verification
 
-**使用场景**: 
+**Usage scenarios**: 
 - `app/core/unified_config.py`
 - `app/models/config.py`
 - `app/routers/config.py`
 - `app/services/config_service.py`
 
-**与 config.py 的区别**:
-- `providers_config`: 数据源提供器配置
-- `config.py`: Dataflows模块通用配置
+**Differences from config.py**:
+- `providers_config`: Data source provider configuration
+- `config.py`: Dataflows Module general configuration
 
 ---
 
 ### 8. config.py (2.32 KB)
-**职责**: Dataflows模块的通用配置管理
+**Responsibilities**: Dataflows Common configuration management of modules
 
-**主要功能**:
-- `initialize_config()` - 初始化配置
-- `set_config()` - 设置配置
-- `get_config()` - 获取配置
-- `DATA_DIR` - 数据目录
+**Main functions**:
+- `initialize_config()` - Initial configuration
+- `set_config()` - Set configuration
+- `get_config()` - Get configuration
+- `DATA_DIR` - data directory
 
-**使用场景**: `optimized_china_data.py`
+**Usage scenarios**: `optimized_china_data.py`
 
 ---
 
 ### 9. utils.py (1.17 KB)
-**职责**: 通用工具函数
+**Responsibilities**: General utility functions
 
-**主要功能**:
-- `save_output()` - 保存DataFrame到CSV
-- `get_current_date()` - 获取当前日期
-- `decorate_all_methods()` - 装饰器
-- `get_next_weekday()` - 获取下一个工作日
+**Main functions**:
+- `save_output()` - Save DataFrame to CSV
+- `get_current_date()` - Get current date
+- `decorate_all_methods()` - Decorator
+- `get_next_weekday()` - Get next working day
 
-**使用场景**: `tradingagents/utils/news_filter_integration.py`
-
----
-
-## 🔄 使用建议
-
-### 对于新功能开发
-
-1. **获取股票数据**:
-   - 推荐使用: `interface.get_china_stock_data_unified()`
-   - 备选: `data_source_manager.get_china_stock_data_unified()`
-
-2. **获取基本面数据**:
-   - 推荐使用: `optimized_china_data.get_china_fundamentals_cached()`
-   - 备选: `interface.get_china_stock_fundamentals_tushare()`
-
-3. **数据分析场景**:
-   - 推荐使用: `unified_dataframe.get_china_daily_df_unified()`
-   - 返回 DataFrame，适合 pandas 操作
-
-4. **简单查询场景**:
-   - 推荐使用: `stock_api.get_stock_info()`
-   - 简化接口，快速获取基本信息
-
-### 对于维护和重构
-
-1. **大文件问题**:
-   - `interface.py`, `data_source_manager.py`, `optimized_china_data.py` 都是核心文件
-   - 建议保持现状，避免大规模重构带来的风险
-   - 如需优化，采用渐进式重构
-
-2. **功能重叠**:
-   - 不同文件服务不同场景，重叠是合理的
-   - `data_source_manager`: Agent场景（返回字符串）
-   - `unified_dataframe`: 数据分析场景（返回DataFrame）
-   - `stock_data_service`: MongoDB → TDX 降级场景
-
-3. **配置管理**:
-   - `providers_config.py`: 数据源配置（被广泛使用，保留）
-   - `config.py`: Dataflows通用配置（保留）
+**Usage scenarios**: `tradingagents/utils/news_filter_integration.py`
 
 ---
 
-## 📚 相关文档
+## 🔄 Usage suggestions
 
-- `docs/CACHE_CONFIGURATION.md` - 缓存配置指南
-- `docs/CACHE_REFACTORING_SUMMARY.md` - 缓存系统重构总结
-- `docs/UTILS_CLEANUP_SUMMARY.md` - Utils文件清理总结
-- `docs/TUSHARE_ADAPTER_REFACTORING.md` - Tushare Adapter重构总结
-- `docs/ADAPTER_PROVIDER_REORGANIZATION.md` - Adapter和Provider文件重组总结
-- `docs/DATAFLOWS_ARCHITECTURE_ANALYSIS.md` - Dataflows架构分析
-- `docs/DATAFLOWS_CONSERVATIVE_REFACTORING.md` - Dataflows保守优化总结
+### For new feature development
+
+1. **Get stock data**:
+   - Recommended: `interface.get_china_stock_data_unified()`
+   - alternative: `data_source_manager.get_china_stock_data_unified()`
+
+2. **Get fundamental data**:
+   - Recommended: `optimized_china_data.get_china_fundamentals_cached()`
+   - alternative: `interface.get_china_stock_fundamentals_tushare()`
+
+3. **Data analysis scenario**:
+   - Recommended: `unified_dataframe.get_china_daily_df_unified()`
+   - Returns a DataFrame, suitable for pandas operations
+
+4. **Simple query scenario**:
+   - Recommended: `stock_api.get_stock_info()`
+   - Simplify the interface and quickly obtain basic information
+
+### For maintenance and refactoring
+
+1. **Large file problem**:
+   - `interface.py`, `data_source_manager.py`, `optimized_china_data.py` All are core files
+   - It is recommended to maintain the status quo and avoid the risks caused by large-scale refactoring
+   - If optimization is needed, use progressive refactoring
+
+2. **Functional overlap**:
+   - Different files serve different scenarios, and overlap is reasonable.
+   - `data_source_manager`: Agent Scenario (return string)
+   - `unified_dataframe`: Data analysis scenario (return DataFrame)
+   - `stock_data_service`: MongoDB → TDX Downgrade scenario
+
+3. **Configuration management**:
+   - `providers_config.py`: Data source configuration (widely used, reserved)
+   - `config.py`: Dataflows Common configuration (reserved)
 
 ---
 
-## 🎯 设计原则
+## 📚 Related documents
 
-1. **向后兼容**: 保持现有接口不变
-2. **渐进式重构**: 避免大规模改动
-3. **职责分离**: 不同场景使用不同文件
-4. **文档优先**: 通过文档说明架构，而不是强制重构
+- `docs/CACHE_CONFIGURATION.md` - Cache configuration guide
+- `docs/CACHE_REFACTORING_SUMMARY.md` - Summary of caching system reconstruction
+- `docs/UTILS_CLEANUP_SUMMARY.md` - Utils File cleaning summary
+- `docs/TUSHARE_ADAPTER_REFACTORING.md` - Tushare Adapter Refactoring summary
+- `docs/ADAPTER_PROVIDER_REORGANIZATION.md` - Adapter and Provider file reorganization summary
+- `docs/DATAFLOWS_ARCHITECTURE_ANALYSIS.md` - Dataflows Architecture analysis
+- `docs/DATAFLOWS_CONSERVATIVE_REFACTORING.md` - Dataflows Conservative optimization summary
 
 ---
 
-**最后更新**: 2025-10-01
+## 🎯 design principles
+
+1. **backwards compatible**: Keep existing interfaces unchanged
+2. **progressive refactoring**: Avoid large-scale changes
+3. **Segregation of duties**: Use different files for different scenarios
+4. **Documentation first**: Document the architecture rather than forcing refactoring
+
+---
+
+**last updated**: 2025-10-01
 

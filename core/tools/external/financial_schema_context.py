@@ -1,4 +1,4 @@
-"""金融 schema bundle 在 Skill 生成链路中的公共解析能力。"""
+"""Public parsing capabilities of financial schema bundles in Skill generation links."""
 
 from __future__ import annotations
 
@@ -221,7 +221,7 @@ def get_contract_required_fields(schema_context: Optional[Dict[str, Any]]) -> Li
         result = [field_name for field_name in required_fields if str(field_name).strip()]
         logger = logging.getLogger(__name__)
         logger.info(
-            "🔬 [get_contract_required_fields] 来源=verifier_rule(%s) required_fields=%s",
+            "🔬 [get_contract_required_fields] Source=verifier_rule(%s) required_fields=%s",
             verifier_rule_id,
             result,
         )
@@ -234,7 +234,7 @@ def get_contract_required_fields(schema_context: Optional[Dict[str, Any]]) -> Li
             fields.append(field_name)
     logger = logging.getLogger(__name__)
     logger.info(
-        "🔬 [get_contract_required_fields] 来源=contract(%s) required_fields=%s (verifier_rule %s 无 required_fields)",
+        "🔬 [get_contract_required_fields] Source=contract(%s) required_fields=%s (verifier_rule %s None required_fields)",
         contract_id,
         fields,
         verifier_rule_id,
@@ -260,31 +260,31 @@ def build_schema_constraint_hints(schema_context: Optional[Dict[str, Any]]) -> L
 
     required_fields = list(method.get("required_fields") or [])
     if required_fields:
-        constraints.append(f"方法前置数据至少要覆盖：{', '.join(required_fields[:6])}")
+        constraints.append(f"The method prefix data must at least cover:{', '.join(required_fields[:6])}")
 
     assumptions = [str(item).strip() for item in method.get("assumptions") or [] if str(item).strip()]
     if assumptions:
-        constraints.append(f"方法成立前提：{'；'.join(assumptions[:3])}")
+        constraints.append(f"Prerequisites for the method to be established:{'; '.join(assumptions[:3])}")
 
     limitations = [str(item).strip() for item in method.get("limitations") or [] if str(item).strip()]
     if limitations:
-        constraints.append(f"方法局限：{'；'.join(limitations[:3])}")
+        constraints.append(f"Method limitations:{'; '.join(limitations[:3])}")
 
     narrative_requirements = [str(item).strip() for item in contract.get("narrative_requirements") or [] if str(item).strip()]
     if narrative_requirements:
-        constraints.append(f"输出叙述必须满足：{'；'.join(narrative_requirements[:4])}")
+        constraints.append(f"The output narrative must satisfy:{'; '.join(narrative_requirements[:4])}")
 
     prohibited_patterns = [str(item).strip() for item in contract.get("prohibited_patterns") or [] if str(item).strip()]
     if prohibited_patterns:
-        constraints.extend(f"禁止：{item}" for item in prohibited_patterns[:4])
+        constraints.extend(f"Prohibited:{item}" for item in prohibited_patterns[:4])
 
     failure_message = str(verifier_rule.get("failure_message") or "").strip()
     if failure_message:
-        constraints.append(f"验收失败条件：{failure_message}")
+        constraints.append(f"Acceptance failure conditions:{failure_message}")
 
     remediation_hint = str(verifier_rule.get("remediation_hint") or "").strip()
     if remediation_hint:
-        constraints.append(f"生成时应主动满足：{remediation_hint}")
+        constraints.append(f"When generating, it should actively satisfy:{remediation_hint}")
 
     for rule_collection in (applicability_rules, preferred_rules):
         for rule_id, rule in rule_collection.items():
@@ -293,10 +293,10 @@ def build_schema_constraint_hints(schema_context: Optional[Dict[str, Any]]) -> L
             severity = str((rule or {}).get("severity") or "").strip()
             line = human_description
             if rationale:
-                line += f"；原因：{rationale}"
+                line += f"; Reason:{rationale}"
             if severity:
                 line += f"（{severity}）"
-            constraints.append(f"适用性规则：{line}")
+            constraints.append(f"Applicability rules:{line}")
 
     deduped: List[str] = []
     seen = set()

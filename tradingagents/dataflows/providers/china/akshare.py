@@ -1,6 +1,6 @@
 """
-AKShare统一数据提供器
-基于AKShare SDK的统一数据同步方案，提供标准化的数据接口
+AKShare unified data provider
+A unified data synchronization solution based on AKShare SDK, providing a standardized data interface
 """
 import asyncio
 import logging
@@ -14,28 +14,28 @@ logger = logging.getLogger(__name__)
 
 
 class AKShareNetworkError(RuntimeError):
-    """AKShare 网络层瞬时失败。"""
+    """AKShare Transient failure at the network layer."""
 
 
 class AKShareProvider(BaseStockDataProvider):
     """
-    AKShare统一数据提供器
+    AKShare unified data provider
     
-    提供标准化的股票数据接口，支持：
-    - 股票基础信息获取
-    - 历史行情数据
-    - 实时行情数据
-    - 财务数据
-    - 港股数据支持
+    Provides a standardized stock data interface, supporting:
+    - Obtain basic stock information
+    - Historical market data
+    - Real-time market data
+    - financial data
+    - Hong Kong stock data support
     """
     
     def __init__(self):
         super().__init__("AKShare")
         self.ak = None
         self.connected = False
-        self._stock_list_cache = None  # 缓存股票列表，避免重复获取
-        self._cache_time = None  # 缓存时间
-        self._event_loop_closed = False  # 🔥 事件循环关闭标志（用于检测 Ctrl+C 退出）
+        self._stock_list_cache = None  # Cache the stock list to avoid repeated retrieval
+        self._cache_time = None  # Cache time
+        self._event_loop_closed = False  # 🔥 Event loop shutdown flag (used to detect Ctrl+C exit)
         self._initialize_akshare()
     
     def _initialize_akshare(self):
@@ -45,68 +45,68 @@ class AKShareProvider(BaseStockDataProvider):
             import requests
             import time
 
-            # 尝试导入 curl_cffi，如果可用则使用它来绕过反爬虫
+            # Try importing curl_cffi and use it if available to bypass anti-crawler
             try:
                 from curl_cffi import requests as curl_requests
                 use_curl_cffi = True
-                logger.info("🔧 检测到 curl_cffi，将使用它来模拟真实浏览器 TLS 指纹")
+                logger.info("🔧 curl_cffi detected, will be used to emulate real browser TLS fingerprint")
             except ImportError:
                 use_curl_cffi = False
-                logger.warning("⚠️ curl_cffi 未安装，将使用标准 requests（可能被反爬虫拦截）")
-                logger.warning("   建议安装: pip install curl-cffi")
+                logger.warning("⚠️ curl_cffi If not installed, standard requests will be used (may be intercepted by anti-crawlers)")
+                logger.warning("   Recommended installation: pip install curl-cffi")
 
-            # 修复AKShare的bug：设置requests的默认headers，并添加请求延迟
-            # AKShare的stock_news_em()函数没有设置必要的headers，导致API返回空响应
+            # Fix AKShare bug: set default headers for requests and add request delay
+            # AKShare of stock_news_em()The function does not set the necessary headers, causing the API to return an empty response.
             if not hasattr(requests, '_akshare_headers_patched'):
                 original_get = requests.get
-                last_request_time = {'time': 0}  # 使用字典以便在闭包中修改
+                last_request_time = {'time': 0}  # Use a dictionary for modification in closures
 
                 def patched_get(url, **kwargs):
                     """
-                    包装requests.get方法，自动添加必要的headers和请求延迟
-                    修复AKShare stock_news_em()函数缺少headers的问题
-                    如果可用，使用 curl_cffi 模拟真实浏览器 TLS 指纹
+                    Wrap the requests.get method to automatically add necessary headers and request delays
+                    Repair AKShare stock_news_em()The problem of function missing headers
+                    If available, use curl_cffi to simulate real browser TLS fingerprinting
                     """
-                    # 添加请求延迟，避免被反爬虫封禁
-                    # 只对东方财富网的请求添加延迟
+                    # Add request delay to avoid being banned by anti-crawlers
+                    # Add delay only to requests from Oriental Fortune Network
                     if 'eastmoney.com' in url:
                         current_time = time.time()
                         time_since_last_request = current_time - last_request_time['time']
-                        if time_since_last_request < 0.5:  # 至少间隔0.5秒
+                        if time_since_last_request < 0.5:  # At least 0.5 seconds apart
                             time.sleep(0.5 - time_since_last_request)
                         last_request_time['time'] = time.time()
 
-                    # 如果是东方财富网的请求，且 curl_cffi 可用，使用它来绕过反爬虫
+                    # If it is a request from Oriental Fortune Network and curl_cffi is available, use it to bypass the anti-crawler
                     if use_curl_cffi and 'eastmoney.com' in url:
                         try:
-                            # 使用 curl_cffi 模拟 Chrome 120 的 TLS 指纹
-                            # 注意：使用 impersonate 时，不要传递自定义 headers，让 curl_cffi 自动设置
+                            # Using curl_cffi to emulate Chrome 120's TLS fingerprint
+                            # Note: When using impersonate, do not pass custom headers and let curl_cffi set them automatically
                             curl_kwargs = {
                                 'timeout': kwargs.get('timeout', 10),
-                                'impersonate': "chrome120"  # 模拟 Chrome 120
+                                'impersonate': "chrome120"  # Simulation Chrome 120
                             }
 
-                            # 只传递非 headers 的参数
+                            # Only pass non-headers parameters
                             if 'params' in kwargs:
                                 curl_kwargs['params'] = kwargs['params']
-                            # 不传递 headers，让 impersonate 自动设置
+                            # Do not pass headers and let impersonate set them automatically
                             if 'data' in kwargs:
                                 curl_kwargs['data'] = kwargs['data']
                             if 'json' in kwargs:
                                 curl_kwargs['json'] = kwargs['json']
 
                             response = curl_requests.get(url, **curl_kwargs)
-                            # curl_cffi 的响应对象已经兼容 requests.Response
+                            # curl_cffi The response object is already compatible with requests.Response
                             return response
                         except Exception as e:
-                            # curl_cffi 失败，回退到标准 requests
+                            # curl_cffi Failure, fallback to standard requests
                             error_msg = str(e)
-                            # 忽略 TLS 库错误和 400 错误的详细日志（这是 Docker 环境的已知问题）
+                            # Ignore verbose logs for TLS library errors and 400 errors (this is a known issue with Docker environments)
                             if 'invalid library' not in error_msg and '400' not in error_msg:
-                                logger.warning(f"⚠️ curl_cffi 请求失败，回退到标准 requests: {e}")
+                                logger.warning(f"⚠️ curl_cffi Request failed, fallback to standard requests: {e}")
 
-                    # 标准 requests 请求（非东方财富网，或 curl_cffi 不可用/失败）
-                    # 设置浏览器请求头
+                    # Standard requests request (non-Eastern Fortune Network, or curl_cffi is unavailable/failed)
+                    # Set browser request headers
                     if 'headers' not in kwargs or kwargs['headers'] is None:
                         kwargs['headers'] = {
                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -117,7 +117,7 @@ class AKShareProvider(BaseStockDataProvider):
                             'Connection': 'keep-alive',
                         }
                     elif isinstance(kwargs['headers'], dict):
-                        # 如果已有headers，确保包含必要的字段
+                        # If headers already exist, make sure to include the necessary fields
                         if 'User-Agent' not in kwargs['headers']:
                             kwargs['headers']['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                         if 'Referer' not in kwargs['headers']:
@@ -127,60 +127,60 @@ class AKShareProvider(BaseStockDataProvider):
                         if 'Accept-Language' not in kwargs['headers']:
                             kwargs['headers']['Accept-Language'] = 'zh-CN,zh;q=0.9,en;q=0.8'
 
-                    # 添加重试机制（最多3次）
+                    # Add retry mechanism (up to 3 times)
                     max_retries = 3
                     for attempt in range(max_retries):
                         try:
                             return original_get(url, **kwargs)
                         except Exception as e:
-                            # 检查是否是SSL错误
+                            # Check if it is an SSL error
                             error_str = str(e)
                             is_ssl_error = ('SSL' in error_str or 'ssl' in error_str or
                                           'UNEXPECTED_EOF_WHILE_READING' in error_str)
 
                             if is_ssl_error and attempt < max_retries - 1:
-                                # SSL错误，等待后重试
-                                wait_time = 0.5 * (attempt + 1)  # 递增等待时间
+                                # SSL Error, wait and try again
+                                wait_time = 0.5 * (attempt + 1)  # Increment wait time
                                 time.sleep(wait_time)
                                 continue
                             else:
-                                # 非SSL错误或已达到最大重试次数，直接抛出
+                                # Non-SSL error or the maximum number of retries has been reached, throw directly
                                 raise
 
-                # 应用patch
+                # Application patch
                 requests.get = patched_get
                 requests._akshare_headers_patched = True
 
                 if use_curl_cffi:
-                    logger.info("🔧 已修复AKShare的headers问题，使用 curl_cffi 模拟真实浏览器（Chrome 120）")
+                    logger.info("🔧 The headers problem of AKShare has been fixed, using curl_cffi to simulate a real browser (Chrome 120)")
                 else:
-                    logger.info("🔧 已修复AKShare的headers问题，并添加请求延迟（0.5秒）")
+                    logger.info("🔧 Fixed AKShare headers issue and added request delay (0.5 seconds)")
 
             self.ak = ak
             self.connected = True
 
-            # 配置超时和重试
+            # Configure timeouts and retries
             self._configure_timeout()
 
-            logger.info("✅ AKShare连接成功")
+            logger.info("✅ AKShare Connection successful")
         except ImportError as e:
-            logger.error(f"❌ AKShare未安装: {e}")
+            logger.error(f"❌ AKShare Not installed: {e}")
             self.connected = False
         except Exception as e:
-            logger.error(f"❌ AKShare初始化失败: {e}")
+            logger.error(f"❌ AKShare Initialization failed: {e}")
             self.connected = False
 
     def _get_stock_news_direct(self, symbol: str, limit: int = 10) -> Optional[pd.DataFrame]:
         """
-        直接调用东方财富网新闻 API（绕过 AKShare）
-        使用 curl_cffi 模拟真实浏览器，适用于 Docker 环境
+        Directly call Oriental Fortune News API (bypassing AKShare)
+        Use curl_cffi to simulate a real browser, suitable for Docker environment
 
         Args:
-            symbol: 股票代码
-            limit: 返回数量限制
+            symbol: Stock code
+            limit: Return quantity limit
 
         Returns:
-            新闻 DataFrame 或 None
+            News DataFrame or None
         """
         try:
             from curl_cffi import requests as curl_requests
@@ -188,10 +188,10 @@ class AKShareProvider(BaseStockDataProvider):
             import time
             import os
 
-            # 标准化股票代码
+            # Standardized stock code
             symbol_6 = symbol.zfill(6)
 
-            # 构建请求参数
+            # Build request parameters
             url = "https://search-api-web.eastmoney.com/search/jsonp"
             param = {
                 "uid": "",
@@ -218,7 +218,7 @@ class AKShareProvider(BaseStockDataProvider):
                 "_": str(int(time.time() * 1000))
             }
 
-            # 使用 curl_cffi 发送请求
+            # Use curl_cffi to send requests
             response = curl_requests.get(
                 url,
                 params=params,
@@ -227,19 +227,19 @@ class AKShareProvider(BaseStockDataProvider):
             )
 
             if response.status_code != 200:
-                self.logger.error(f"❌ {symbol} 东方财富网 API 返回错误: {response.status_code}")
+                self.logger.error(f"❌ {symbol} Oriental Fortune Network API returns error: {response.status_code}")
                 return None
 
-            # 解析 JSONP 响应
+            # Parse JSONP response
             text = response.text
             if text.startswith("jQuery"):
                 text = text[text.find("(")+1:text.rfind(")")]
 
             data = json.loads(text)
 
-            # 检查返回数据
+            # Check return data
             if "result" not in data or "cmsArticleWebOld" not in data["result"]:
-                self.logger.error(f"❌ {symbol} 东方财富网 API 返回数据结构异常")
+                self.logger.error(f"❌ {symbol} Oriental Fortune Network API returns data structure exception")
                 return None
 
             articles = data["result"]["cmsArticleWebOld"]
@@ -248,7 +248,7 @@ class AKShareProvider(BaseStockDataProvider):
                 self.logger.warning(f"⚠️ {symbol} 未获取到新闻")
                 return None
 
-            # 转换为 DataFrame（与 AKShare 格式兼容）
+            # Convert to DataFrame (compatible with AKShare format)
             news_data = []
             for article in articles:
                 news_data.append({
@@ -270,16 +270,16 @@ class AKShareProvider(BaseStockDataProvider):
             return None
 
     def _configure_timeout(self):
-        """配置AKShare的超时设置"""
+        """Configure AKShare s timeout settings"""
         try:
             import socket
-            socket.setdefaulttimeout(60)  # 60秒超时
-            logger.info("🔧 AKShare超时配置完成: 60秒")
+            socket.setdefaulttimeout(60)  # 60 seconds timeout
+            logger.info("🔧 AKShare Timeout configuration completed: 60 seconds")
         except Exception as e:
-            logger.warning(f"⚠️ AKShare超时配置失败: {e}")
+            logger.warning(f"⚠️ AKShare Timeout configuration failed: {e}")
     
     async def connect(self) -> bool:
-        """连接到AKShare数据源"""
+        """Connect to AKShare data source"""
         return await self.test_connection()
 
     async def test_connection(self) -> bool:
@@ -287,10 +287,10 @@ class AKShareProvider(BaseStockDataProvider):
         if not self.connected:
             return False
 
-        # AKShare 是基于网络爬虫的库，不需要传统的"连接"测试
-        # 只要库已经导入成功，就认为可用
-        # 实际的网络请求会在具体调用时进行，并有各自的错误处理
-        logger.info("✅ AKShare连接测试成功（库已加载）")
+        # AKShare It is a library based on web crawlers and does not require traditional"connect"test
+        # As long as the library has been successfully imported, it is considered available.
+        # The actual network request will be made when the specific call is made, and has its own error handling
+        logger.info("✅ AKShare Connection test successful (library loaded)")
         return True
     
     def get_stock_list_sync(self) -> Optional[pd.DataFrame]:
@@ -299,44 +299,44 @@ class AKShareProvider(BaseStockDataProvider):
             return None
 
         try:
-            logger.info("📋 获取AKShare股票列表（同步）...")
+            logger.info("📋 Get AKShare stock list (synchronized)...")
             stock_df = self.ak.stock_info_a_code_name()
 
             if stock_df is None or stock_df.empty:
-                logger.warning("⚠️ AKShare股票列表为空")
+                logger.warning("⚠️ AKShare Stock list is empty")
                 return None
 
             logger.info(f"✅ AKShare股票列表获取成功: {len(stock_df)}只股票")
             return stock_df
 
         except Exception as e:
-            logger.error(f"❌ AKShare获取股票列表失败: {e}")
+            logger.error(f"❌ AKShare Failed to get stock list: {e}")
             return None
 
     async def get_stock_list(self) -> List[Dict[str, Any]]:
         """
-        获取股票列表
+        Get a list of stocks
 
         Returns:
-            股票列表，包含代码和名称
+            List of stocks with ticker and name
         """
         if not self.connected:
             return []
 
         try:
-            logger.info("📋 获取AKShare股票列表...")
+            logger.info("📋 Get AKShare stock list...")
 
-            # 使用线程池异步获取股票列表，添加超时保护
+            # Use the thread pool to asynchronously obtain the stock list and add timeout protection
             def fetch_stock_list():
                 return self.ak.stock_info_a_code_name()
 
             stock_df = await asyncio.to_thread(fetch_stock_list)
 
             if stock_df is None or stock_df.empty:
-                logger.warning("⚠️ AKShare股票列表为空")
+                logger.warning("⚠️ AKShare Stock list is empty")
                 return []
 
-            # 转换为标准格式
+            # Convert to standard format
             stock_list = []
             for _, row in stock_df.iterrows():
                 stock_list.append({
@@ -349,15 +349,15 @@ class AKShareProvider(BaseStockDataProvider):
             return stock_list
 
         except Exception as e:
-            logger.error(f"❌ AKShare获取股票列表失败: {e}")
+            logger.error(f"❌ AKShare Failed to get stock list: {e}")
             return []
 
     async def get_stock_basic_info_for_single_sync(self, code: str) -> Optional[Dict[str, Any]]:
         """
-        获取单股同步所需的基础信息。
+        Get the basic information needed for single stock synchronization.
 
-        单股同步允许低频组合多个 AKShare 接口，以换取更稳定的字段覆盖；
-        批量同步仍保持既有逻辑，避免逐股高频请求触发源站限流。
+        Single-strand sync allows low-frequency combination of multiple AKShare interfaces in exchange for more stable field coverage;
+        Batch synchronization still maintains the existing logic to avoid high-frequency stock-by-stock requests triggering source site current limiting.
         """
         if not self.connected:
             return None
@@ -410,34 +410,34 @@ class AKShareProvider(BaseStockDataProvider):
                 self._merge_single_stock_basic_info(basic_info, detail_info)
                 source_hits.append("eastmoney_detail")
             else:
-                detail_failure = (detail_info or {}).get("_detail_fetch_error") or "AKShare 个股详情接口未返回有效数据"
+                detail_failure = (detail_info or {}).get("_detail_fetch_error") or "AKShare The individual stock details interface did not return valid data"
                 detail_symbol = (detail_info or {}).get("_detail_symbol", detail_symbol)
                 errors.append(detail_failure)
 
         if self._has_single_sync_basic_info(basic_info):
             basic_info["sync_status"] = "success"
             logger.info(
-                f"✅ {code} 单股基础信息获取成功: 来源={','.join(source_hits) if source_hits else 'unknown'}"
+                f"✅ {code} Single stock basic information obtained successfully: Source={','.join(source_hits) if source_hits else 'unknown'}"
             )
             return basic_info
 
         basic_info["sync_status"] = "degraded"
-        basic_info["detail_fetch_error"] = detail_failure or "; ".join(errors) or "AKShare 单股基础信息接口未返回有效数据"
+        basic_info["detail_fetch_error"] = detail_failure or "; ".join(errors) or "AKShare The single stock basic information interface did not return valid data."
         basic_info["detail_fetch_symbol"] = detail_symbol
         logger.warning(
-            f"⚠️ {code} 单股基础信息获取失败，已返回降级结果: {basic_info['detail_fetch_error']}"
+            f"⚠️ {code} Failed to obtain basic information of single stock, downgrade result has been returned: {basic_info['detail_fetch_error']}"
         )
         return basic_info
     
     async def get_stock_basic_info(self, code: str) -> Optional[Dict[str, Any]]:
         """
-        获取股票基础信息
+        Get basic stock information
         
         Args:
-            code: 股票代码
+            code: Stock code
             
         Returns:
-            标准化的股票基础信息
+            Standardized basic stock information
         """
         if not self.connected:
             return None
@@ -445,7 +445,7 @@ class AKShareProvider(BaseStockDataProvider):
         try:
             logger.debug(f"📊 获取{code}基础信息...")
             
-            # 获取股票基本信息
+            # Get basic stock information
             stock_info = await self._get_stock_info_detail(code)
             
             if not stock_info:
@@ -454,7 +454,7 @@ class AKShareProvider(BaseStockDataProvider):
             
             detail_fetch_failed = bool(stock_info.get("_detail_fetch_failed"))
 
-            # 转换为标准化字典
+            # Convert to standardized dictionary
             basic_info = {
                 "code": code,
                 "name": stock_info.get("name", f"股票{code}"),
@@ -462,7 +462,7 @@ class AKShareProvider(BaseStockDataProvider):
                 "industry": stock_info.get("industry", "未知"),
                 "market": self._determine_market(code),
                 "list_date": stock_info.get("list_date", ""),
-                # 扩展字段
+                # extension fields
                 "full_symbol": self._get_full_symbol(code),
                 "market_info": self._get_market_info(code),
                 "data_source": "akshare",
@@ -473,7 +473,7 @@ class AKShareProvider(BaseStockDataProvider):
             if detail_fetch_failed:
                 basic_info["detail_fetch_error"] = stock_info.get("_detail_fetch_error")
                 basic_info["detail_fetch_symbol"] = stock_info.get("_detail_symbol")
-                logger.warning(f"⚠️ {code} 基础信息仅完成降级同步，详细信息接口不可用")
+                logger.warning(f"⚠️ {code} Only the downgrade synchronization of basic information is completed, and the detailed information interface is not available.")
             
             logger.debug(f"✅ {code}基础信息获取成功")
             return basic_info
@@ -483,7 +483,7 @@ class AKShareProvider(BaseStockDataProvider):
             return None
 
     async def _get_single_stock_listing_info(self, code: str) -> Dict[str, Any]:
-        """从交易所股票列表接口提取单股基础字段。"""
+        """Extract single stock basic fields from the exchange stock list interface."""
 
         def fetch_listing_data() -> Optional[pd.DataFrame]:
             if code.startswith("68"):
@@ -544,7 +544,7 @@ class AKShareProvider(BaseStockDataProvider):
         return listing_info
 
     async def _get_single_stock_profile_info(self, code: str) -> Dict[str, Any]:
-        """从 CNInfo 公司概况接口提取单股基础字段。"""
+        """Extracts the underlying single stock fields from the CNInfo Company Profile interface."""
 
         def fetch_profile_data() -> pd.DataFrame:
             return self.ak.stock_profile_cninfo(symbol=code)
@@ -600,7 +600,7 @@ class AKShareProvider(BaseStockDataProvider):
         return profile_info
 
     async def _get_single_stock_spot_info(self, code: str) -> Dict[str, Any]:
-        """从雪球实时行情接口提取单股估值字段。"""
+        """Extract the single stock valuation field from the Snowball real-time market interface."""
 
         def fetch_spot_data() -> pd.DataFrame:
             return self.ak.stock_individual_spot_xq(symbol=self._get_xueqiu_symbol(code))
@@ -671,7 +671,7 @@ class AKShareProvider(BaseStockDataProvider):
         return spot_info
 
     def _merge_single_stock_basic_info(self, target: Dict[str, Any], incoming: Dict[str, Any]) -> None:
-        """将来源字段合并到单股基础信息结果中。"""
+        """Merge source fields into single stock underlying information results."""
         code = target.get("code", "")
         default_name = f"股票{code}"
 
@@ -710,7 +710,7 @@ class AKShareProvider(BaseStockDataProvider):
                 target[key] = value
 
     def _has_single_sync_basic_info(self, basic_info: Dict[str, Any]) -> bool:
-        """判断单股同步是否已经拿到足够的基础字段。"""
+        """Determine whether single stock synchronization has obtained enough basic fields."""
         code = basic_info.get("code", "")
         name = basic_info.get("name")
         industry = basic_info.get("industry")
@@ -726,7 +726,7 @@ class AKShareProvider(BaseStockDataProvider):
         return name_ok and (industry_ok or list_date_ok or valuation_ok)
 
     def _needs_single_sync_detail_fallback(self, basic_info: Dict[str, Any]) -> bool:
-        """判断单股同步是否还需要调用东财个股详情兜底。"""
+        """To determine whether a single stock is synchronized, it is necessary to call Dongcai individual stock details for details."""
         code = basic_info.get("code", "")
         return (
             basic_info.get("name") in (None, "", f"股票{code}")
@@ -735,38 +735,38 @@ class AKShareProvider(BaseStockDataProvider):
         )
     
     async def _get_stock_list_cached(self):
-        """获取缓存的股票列表（避免重复获取）"""
+        """Get cached stock list (avoid duplicate retrieval)"""
         from datetime import datetime, timedelta
 
-        # 如果缓存存在且未过期（1小时），直接返回
+        # If the cache exists and has not expired (1 hour), return directly
         if self._stock_list_cache is not None and self._cache_time is not None:
             if datetime.now() - self._cache_time < timedelta(hours=1):
                 return self._stock_list_cache
 
-        # 否则重新获取
+        # Otherwise get it again
         def fetch_stock_list():
             try:
-                # 🔥 尝试使用 stock_info_a_code_name() 获取股票列表
+                # 🔥 Try using stock_info_a_code_name() Get a list of stocks
                 result = self.ak.stock_info_a_code_name()
                 return result
             except Exception as e:
                 error_msg = str(e)
-                # 🔥 如果是 Excel 格式错误，尝试指定引擎
+                # 🔥 If it is an Excel format error, try specifying the engine
                 if "Excel file format cannot be determined" in error_msg or "engine manually" in error_msg:
-                    logger.warning(f"⚠️ Excel 格式识别失败，尝试指定引擎: {e}")
+                    logger.warning(f"⚠️ Excel Format recognition failed, trying to specify the engine: {e}")
                     try:
-                        # 尝试使用 openpyxl 引擎
+                        # Try using the openpyxl engine
                         import pandas as pd
-                        # 重新调用，但这次我们需要拦截 pandas 的 read_excel 调用
-                        # 由于 AKShare 内部调用，我们无法直接指定引擎
-                        # 所以这里先记录警告，不影响主流程
-                        logger.warning(f"⚠️ 无法自动修复 Excel 格式问题，股票列表获取失败，但不影响其他功能")
+                        # Call again, but this time we need to intercept the pandas read_excel call
+                        # Due to the internal call of AKShare, we cannot directly specify the engine
+                        # So the warning is recorded here first, without affecting the main process.
+                        logger.warning(f"⚠️ Excel format problems cannot be automatically repaired and stock list acquisition fails, but other functions are not affected.")
                         return None
                     except Exception as e2:
-                        logger.error(f"❌ 尝试修复 Excel 格式失败: {e2}")
+                        logger.error(f"❌ Attempt to repair Excel format failed: {e2}")
                         return None
                 else:
-                    # 其他错误直接抛出
+                    # Other errors are thrown directly
                     raise
 
         try:
@@ -777,25 +777,25 @@ class AKShareProvider(BaseStockDataProvider):
                 logger.info(f"✅ 股票列表缓存更新: {len(stock_list)} 只股票")
                 return stock_list
             else:
-                logger.warning(f"⚠️ 股票列表为空，可能是接口返回格式问题")
+                logger.warning(f"⚠️ The stock list is empty, it may be a problem with the interface return format.")
         except Exception as e:
             logger.error(f"❌ 获取股票列表失败: {e}")
-            # 🔥 即使获取股票列表失败，也不影响其他功能，只是返回 None
-            # 调用方应该能够处理 None 的情况（会使用默认的股票名称）
+            # 🔥 Even if the acquisition of the stock list fails, other functions will not be affected, and it will just return None
+            # The caller should be able to handle the None case (the default stock name will be used)
 
         return None
 
     async def _get_stock_info_detail(self, code: str) -> Dict[str, Any]:
         """
-        获取股票详细信息
+        Get stock details
         
-        🔥 优化：直接调用个股信息接口，不需要获取整个股票列表
-        个股的代码和名称应该已经在数据库中了
+        🔥 Optimization: Directly call the individual stock information interface without obtaining the entire stock list.
+        The stock code and name should already be in the database
         """
         try:
             akshare_symbol = self._get_akshare_cn_symbol(code)
 
-            # 🔥 直接获取个股详细信息（包含行业、地区等详细信息）
+            # 🔥 Directly obtain detailed information on individual stocks (including detailed information on industries, regions, etc.)
             def fetch_individual_info():
                 return self.ak.stock_individual_info_em(symbol=akshare_symbol)
 
@@ -803,25 +803,25 @@ class AKShareProvider(BaseStockDataProvider):
                 stock_info = await asyncio.to_thread(fetch_individual_info)
 
                 if stock_info is not None and not stock_info.empty:
-                    # 解析信息
+                    # parse information
                     info = {"code": code, "_detail_symbol": akshare_symbol}
 
-                    # 提取股票名称
+                    # Extract stock name
                     name_row = stock_info[stock_info['item'] == '股票简称']
                     if not name_row.empty:
                         info['name'] = str(name_row['value'].iloc[0])
 
-                    # 提取行业信息
+                    # Extract industry information
                     industry_row = stock_info[stock_info['item'] == '所属行业']
                     if not industry_row.empty:
                         info['industry'] = str(industry_row['value'].iloc[0])
 
-                    # 提取地区信息
+                    # Extract region information
                     area_row = stock_info[stock_info['item'] == '所属地区']
                     if not area_row.empty:
                         info['area'] = str(area_row['value'].iloc[0])
 
-                    # 提取上市日期
+                    # Extract listing date
                     list_date_row = stock_info[stock_info['item'] == '上市时间']
                     if not list_date_row.empty:
                         info['list_date'] = str(list_date_row['value'].iloc[0])
@@ -831,8 +831,8 @@ class AKShareProvider(BaseStockDataProvider):
             except Exception as e:
                 logger.warning(f"⚠️ 获取{code}个股详细信息失败: {e}")
 
-            # 🔥 如果获取失败，返回基本信息（使用默认名称）
-            # 注意：在实际使用中，股票名称应该从数据库中获取，这里只是作为最后的回退
+            # 🔥 If the acquisition fails, return basic information (using the default name)
+            # Note: In actual use, the stock name should be obtained from the database, this is only used as a final fallback
             logger.debug(f"⚠️ 无法获取{code}的详细信息，使用默认信息")
             return {
                 "code": code,
@@ -840,7 +840,7 @@ class AKShareProvider(BaseStockDataProvider):
                 "industry": "未知",
                 "area": "未知",
                 "_detail_fetch_failed": True,
-                "_detail_fetch_error": "AKShare 个股详情接口网络异常，已使用兜底基础信息",
+                "_detail_fetch_error": "AKShare The network of the individual stock details interface is abnormal, and the basic information has been used",
                 "_detail_symbol": akshare_symbol,
             }
 
@@ -869,30 +869,30 @@ class AKShareProvider(BaseStockDataProvider):
     
     def _get_full_symbol(self, code: str) -> str:
         """
-        获取完整股票代码
+        Get the full ticker
 
         Args:
-            code: 6位股票代码
+            code: 6 stock code
 
         Returns:
-            完整标准化代码，如果无法识别则返回原始代码（确保不为空）
+            Full normalized code, or original code if unrecognized (make sure not empty)
         """
-        # 确保 code 不为空
+        # Make sure code is not empty
         if not code:
             return ""
 
-        # 标准化为字符串
+        # normalize to string
         code = str(code).strip()
 
-        # 根据代码前缀判断交易所
-        if code.startswith(('60', '68', '90')):  # 上海证券交易所（增加90开头的B股）
+        # Determine the exchange based on the code prefix
+        if code.startswith(('60', '68', '90')):  # Shanghai Stock Exchange (added B shares starting with 90)
             return f"{code}.SS"
-        elif code.startswith(('00', '30', '20')):  # 深圳证券交易所（增加20开头的B股）
+        elif code.startswith(('00', '30', '20')):  # Shenzhen Stock Exchange (added B shares starting with 20)
             return f"{code}.SZ"
-        elif code.startswith(('8', '4', '92')):  # 北京证券交易所（8/4 旧号段，920 为 2025-10 起统一号段）
+        elif code.startswith(('8', '4', '92')):  # Beijing Stock Exchange (8/4 old number segment, 920 is the unified number segment from 2025-10)
             return f"{code}.BJ"
         else:
-            # 无法识别的代码，返回原始代码（确保不为空）
+            # Unrecognized code, return original code (make sure it is not empty)
             return code if code else ""
     
     def _get_market_info(self, code: str) -> Dict[str, Any]:
@@ -932,79 +932,79 @@ class AKShareProvider(BaseStockDataProvider):
     
     async def _get_all_market_spot_data(self) -> Optional[pd.DataFrame]:
         """
-        获取全市场快照数据（内部方法）
+        Get market-wide snapshot data (internal method)
         
         Returns:
-            全市场快照 DataFrame，失败返回 None
+            Market-wide snapshot DataFrame, returned on failure None
         """
         if not self.connected:
             return None
         
-        # 重试逻辑
+        # Retry logic
         max_retries = 2
-        retry_delay = 1  # 秒
+        retry_delay = 1  # seconds
         
         for attempt in range(max_retries):
             try:
-                # 优先使用新浪财经接口（更稳定，不容易被封）
+                # Give priority to using the Sina Finance interface (more stable and less likely to be blocked)
                 def fetch_spot_data_sina():
                     import time
-                    time.sleep(0.3)  # 添加延迟避免频率限制
+                    time.sleep(0.3)  # Add delay to avoid frequency throttling
                     return self.ak.stock_zh_a_spot()
 
                 try:
                     spot_df = await asyncio.to_thread(fetch_spot_data_sina)
-                    logger.debug("✅ 使用新浪财经接口获取全市场数据")
+                    logger.debug("✅ Use Sina Finance interface to obtain full market data")
                     return spot_df
                 except Exception as e:
                     logger.warning(f"⚠️ 新浪财经接口失败: {e}，尝试东方财富接口...")
-                    # 回退到东方财富接口
+                    # Return to Oriental Wealth Interface
                     def fetch_spot_data_em():
                         import time
                         time.sleep(0.5)
                         return self.ak.stock_zh_a_spot_em()
                     spot_df = await asyncio.to_thread(fetch_spot_data_em)
-                    logger.debug("✅ 使用东方财富接口获取全市场数据")
+                    logger.debug("✅ Use the Oriental Wealth Interface to obtain full market data")
                     return spot_df
 
             except Exception as e:
-                logger.warning(f"⚠️ 获取全市场快照失败 (尝试 {attempt + 1}/{max_retries}): {e}")
+                logger.warning(f"⚠️ Failed to obtain market-wide snapshot (try {attempt + 1}/{max_retries}): {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(retry_delay)
                 else:
-                    logger.error(f"❌ 获取全市场快照失败，已达最大重试次数: {e}")
+                    logger.error(f"❌ Failed to obtain a market-wide snapshot. The maximum number of retries has been reached.: {e}")
                     return None
         
         return None
     
     async def get_batch_stock_quotes(self, codes: List[str], return_all: bool = False) -> Dict[str, Dict[str, Any]]:
         """
-        批量获取股票实时行情（优化版：一次获取全市场快照）
+        Get real-time stock quotes in batches (optimized version: get a snapshot of the entire market at once)
 
-        优先使用新浪财经接口（更稳定），失败时回退到东方财富接口
+        Prioritize using the Sina Finance interface (more stable), and fall back to the Oriental Wealth interface in case of failure
 
         Args:
-            codes: 股票代码列表
-            return_all: 如果为 True，返回全市场数据（忽略 codes 参数）
+            codes: Stock code list
+            return_all: If True, returns full market data (ignoring the codes parameter)
 
         Returns:
-            股票代码到行情数据的映射字典
+            Mapping dictionary from stock code to market data
         """
         if not self.connected:
             return {}
 
-        # 重试逻辑
+        # Retry logic
         max_retries = 2
-        retry_delay = 1  # 秒
+        retry_delay = 1  # seconds
 
         for attempt in range(max_retries):
             try:
                 if return_all:
-                    logger.debug(f"📊 获取全市场实时行情... (尝试 {attempt + 1}/{max_retries})")
+                    logger.debug(f"📊 Get real-time market information... (try {attempt + 1}/{max_retries})")
                 else:
                     logger.debug(f"📊 批量获取 {len(codes)} 只股票的实时行情... (尝试 {attempt + 1}/{max_retries})")
 
-                # 使用内部方法获取全市场快照
+                # Get a market-wide snapshot using internal methods
                 spot_df = await self._get_all_market_spot_data()
                 
                 if spot_df is None or spot_df.empty:
@@ -1014,7 +1014,7 @@ class AKShareProvider(BaseStockDataProvider):
                         continue
                     return {}
 
-                # 🔥 提前准备时间相关变量（避免作用域问题）
+                # 🔥 Prepare time-related variables in advance (to avoid scope problems)
                 if return_all:
                     cn_tz = timezone(timedelta(hours=8))
                     now_cn = datetime.now(cn_tz)
@@ -1022,31 +1022,31 @@ class AKShareProvider(BaseStockDataProvider):
                     updated_at_str = now_cn.isoformat()
                     last_sync_utc = datetime.now(timezone.utc)
                 
-                # 构建代码到行情的映射
+                # Build a code-to-quote mapping
                 quotes_map = {}
                 
                 if return_all:
-                    # 🔥 返回全市场数据
-                    codes_set = set()  # 空集合，匹配所有股票
-                    code_mapping = {}  # 空映射，匹配所有股票
+                    # 🔥 Return to full market data
+                    codes_set = set()  # Empty set, matches all stocks
+                    code_mapping = {}  # Empty map, matches all stocks
                 else:
                     codes_set = set(codes)
-                    # 构建代码映射表（支持带前缀的代码匹配）
-                    # 例如：sh600000 -> 600000, sz000001 -> 000001
+                    # Build code mapping table (supports prefixed code matching)
+                    # For example:sh600000 -> 600000, sz000001 -> 000001
                     code_mapping = {}
                     for code in codes:
-                        code_mapping[code] = code  # 原始代码
-                        # 添加可能的前缀变体
+                        code_mapping[code] = code  # original code
+                        # Add possible prefix variations
                         for prefix in ['sh', 'sz', 'bj']:
                             code_mapping[f"{prefix}{code}"] = code
 
                 for _, row in spot_df.iterrows():
                     raw_code = str(row.get("代码", ""))
 
-                    # 尝试匹配代码（支持带前缀和不带前缀）
+                    # Try matching code (supports prefix and without prefix)
                     matched_code = None
                     if return_all:
-                        # 返回全市场数据，清理代码后直接使用
+                        # Return the whole market data and use it directly after cleaning the code.
                         matched_code = raw_code.replace("sh", "").replace("sz", "").replace("bj", "")
                     elif raw_code in code_mapping:
                         matched_code = code_mapping[raw_code]
@@ -1065,16 +1065,16 @@ class AKShareProvider(BaseStockDataProvider):
                             "high": self._safe_float(row.get("最高", 0)),
                             "low": self._safe_float(row.get("最低", 0)),
                             "pre_close": self._safe_float(row.get("昨收", 0)),
-                            # 🔥 新增：财务指标字段
-                            "turnover_rate": self._safe_float(row.get("换手率", None)),  # 换手率（%）
-                            "volume_ratio": self._safe_float(row.get("量比", None)),  # 量比
-                            "pe": self._safe_float(row.get("市盈率-动态", None)),  # 动态市盈率
-                            "pb": self._safe_float(row.get("市净率", None)),  # 市净率
-                            "total_mv": self._safe_float(row.get("总市值", None)),  # 总市值（元）
-                            "circ_mv": self._safe_float(row.get("流通市值", None)),  # 流通市值（元）
+                            # 🔥 New: Financial indicator fields
+                            "turnover_rate": self._safe_float(row.get("换手率", None)),  # Turnover rate (%)
+                            "volume_ratio": self._safe_float(row.get("量比", None)),  # Quantity ratio
+                            "pe": self._safe_float(row.get("市盈率-动态", None)),  # Dynamic P/E Ratio
+                            "pb": self._safe_float(row.get("市净率", None)),  # price to book ratio
+                            "total_mv": self._safe_float(row.get("总市值", None)),  # Total market value (yuan)
+                            "circ_mv": self._safe_float(row.get("流通市值", None)),  # Circulation market value (yuan)
                         }
 
-                        # 转换为标准化字典（使用匹配后的代码）
+                        # Convert to standardized dictionary (using matched codes)
                         quote_dict = {
                             "code": matched_code,
                             "symbol": matched_code,
@@ -1085,15 +1085,15 @@ class AKShareProvider(BaseStockDataProvider):
                             "volume": int(quotes_data.get("volume", 0)),
                             "amount": float(quotes_data.get("amount", 0)),
                             "pre_close": float(quotes_data.get("pre_close", 0)),
-                            # 🔥 新增：财务指标字段
-                            "turnover_rate": quotes_data.get("turnover_rate"),  # 换手率（%）
-                            "volume_ratio": quotes_data.get("volume_ratio"),  # 量比
-                            "pe": quotes_data.get("pe"),  # 动态市盈率
-                            "pe_ttm": quotes_data.get("pe"),  # TTM市盈率（与动态市盈率相同）
-                            "pb": quotes_data.get("pb"),  # 市净率
-                            "total_mv": quotes_data.get("total_mv") / 1e8 if quotes_data.get("total_mv") else None,  # 总市值（转换为亿元）
-                            "circ_mv": quotes_data.get("circ_mv") / 1e8 if quotes_data.get("circ_mv") else None,  # 流通市值（转换为亿元）
-                            # 扩展字段
+                            # 🔥 New: Financial indicator fields
+                            "turnover_rate": quotes_data.get("turnover_rate"),  # Turnover rate (%)
+                            "volume_ratio": quotes_data.get("volume_ratio"),  # Quantity ratio
+                            "pe": quotes_data.get("pe"),  # Dynamic P/E Ratio
+                            "pe_ttm": quotes_data.get("pe"),  # TTM P/E ratio (same as dynamic P/E ratio)
+                            "pb": quotes_data.get("pb"),  # price to book ratio
+                            "total_mv": quotes_data.get("total_mv") / 1e8 if quotes_data.get("total_mv") else None,  # Total market capitalization (converted to 100 million yuan)
+                            "circ_mv": quotes_data.get("circ_mv") / 1e8 if quotes_data.get("circ_mv") else None,  # Circulation market capitalization (converted into 100 million yuan)
+                            # extension fields
                             "full_symbol": self._get_full_symbol(matched_code),
                             "market_info": self._get_market_info(matched_code),
                             "data_source": "akshare",
@@ -1101,19 +1101,19 @@ class AKShareProvider(BaseStockDataProvider):
                             "sync_status": "success"
                         }
                         
-                        # 🔥 字段名处理：根据 return_all 参数决定使用哪种字段名
+                        # 🔥 Field name processing: decide which field name to use based on the return_all parameter
                         if return_all:
-                            # 返回全市场数据时，使用 open/high/low（与单个股票接口一致）
+                            # When returning full market data, use open/high/low (consistent with the single stock interface)
                             quote_dict["open"] = float(quotes_data.get("open", 0))
                             quote_dict["high"] = float(quotes_data.get("high", 0))
                             quote_dict["low"] = float(quotes_data.get("low", 0))
-                            quote_dict["close"] = quote_dict["price"]  # close 字段
-                            quote_dict["current_price"] = quote_dict["price"]  # current_price 字段
-                            quote_dict["pct_chg"] = quote_dict["change_percent"]  # pct_chg 字段
+                            quote_dict["close"] = quote_dict["price"]  # close Field
+                            quote_dict["current_price"] = quote_dict["price"]  # current_price Field
+                            quote_dict["pct_chg"] = quote_dict["change_percent"]  # pct_chg Field
                             quote_dict["trade_date"] = trade_date_str
                             quote_dict["updated_at"] = updated_at_str
                         else:
-                            # 批量获取时，使用 open_price/high_price/low_price（保持兼容性）
+                            # When obtaining in batches, use open_price/high_price/low_price (to maintain compatibility)
                             quote_dict["open_price"] = float(quotes_data.get("open", 0))
                             quote_dict["high_price"] = float(quotes_data.get("high", 0))
                             quote_dict["low_price"] = float(quotes_data.get("low", 0))
@@ -1128,7 +1128,7 @@ class AKShareProvider(BaseStockDataProvider):
                     missing_count = len(codes) - found_count
                     logger.debug(f"✅ 批量获取完成: 找到 {found_count} 只, 未找到 {missing_count} 只")
 
-                    # 记录未找到的股票
+                    # Record stocks not found
                     if missing_count > 0:
                         missing_codes = codes_set - set(quotes_map.keys())
                         if missing_count <= 10:
@@ -1139,100 +1139,100 @@ class AKShareProvider(BaseStockDataProvider):
                 return quotes_map
 
             except Exception as e:
-                logger.warning(f"⚠️ 批量获取实时行情失败 (尝试 {attempt + 1}/{max_retries}): {e}")
+                logger.warning(f"⚠️ Failed to obtain real-time quotes in batches (try {attempt + 1}/{max_retries}): {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(retry_delay)
                 else:
-                    logger.error(f"❌ 批量获取实时行情失败，已达最大重试次数: {e}")
+                    logger.error(f"❌ Failed to obtain real-time market information in batches. The maximum number of retries has been reached.: {e}")
                     return {}
 
     async def get_stock_quotes(self, code: str) -> Optional[Dict[str, Any]]:
         """
-        获取单个股票实时行情
+        Get real-time quotes for individual stocks
 
-        🔥 策略：使用 stock_bid_ask_em 接口获取单个股票的实时行情报价
-        - 优点：只获取单个股票数据，速度快，不浪费资源
-        - 适用场景：手动同步单个股票
+        🔥 Strategy: Use the stock_bid_ask_em interface to obtain real-time quotes for a single stock
+        - Advantages: Only obtain single stock data, fast, no waste of resources
+        - Applicable scenario: Manual synchronization of a single stock
 
         Args:
-            code: 股票代码
+            code: Stock code
 
         Returns:
-            标准化的行情数据
+            Standardized market data
         """
         if not self.connected:
             return None
 
-        # 🔥 添加重试机制，处理网络连接错误
+        # 🔥 Add a retry mechanism to handle network connection errors
         max_retries = 3
-        retry_delay = 1.0  # 初始延迟1秒
+        retry_delay = 1.0  # Initial delay 1 second
         
         for attempt in range(max_retries):
             try:
                 logger.info(f"📈 使用 stock_bid_ask_em 接口获取 {code} 实时行情... (尝试 {attempt + 1}/{max_retries})")
 
-                # 🔥 使用 stock_bid_ask_em 接口获取单个股票实时行情
+                # 🔥 Use the stock_bid_ask_em interface to obtain real-time quotes of a single stock
                 def fetch_bid_ask():
                     return self.ak.stock_bid_ask_em(symbol=code)
 
                 bid_ask_df = await asyncio.to_thread(fetch_bid_ask)
 
-                # 🔥 打印原始返回数据
-                logger.info(f"📊 stock_bid_ask_em 返回数据类型: {type(bid_ask_df)}")
+                # 🔥 Print raw return data
+                logger.info(f"📊 stock_bid_ask_em Return data type: {type(bid_ask_df)}")
                 if bid_ask_df is not None:
                     logger.info(f"📊 DataFrame shape: {bid_ask_df.shape}")
                     logger.info(f"📊 DataFrame columns: {list(bid_ask_df.columns)}")
-                    logger.info(f"📊 DataFrame 完整数据:\n{bid_ask_df.to_string()}")
+                    logger.info(f"📊 DataFrame complete data:\n{bid_ask_df.to_string()}")
 
                 if bid_ask_df is None or bid_ask_df.empty:
                     logger.warning(f"⚠️ 未找到{code}的行情数据")
                     return None
 
-                # 将 DataFrame 转换为字典
+                # Convert DataFrame to Dictionary
                 data_dict = dict(zip(bid_ask_df['item'], bid_ask_df['value']))
                 logger.info(f"📊 转换后的字典: {data_dict}")
 
-                # 转换为标准化字典
-                # 🔥 注意：字段名必须与 app/routers/stocks.py 中的查询字段一致
-                # 前端查询使用的是 high/low/open，不是 high_price/low_price/open_price
+                # Convert to standardized dictionary
+                # 🔥 Note: The field name must be consistent with the query field in app/routers/stocks.py
+                # The front-end query uses high/low/open, not high_price/low_price/open_price
 
-                # 🔥 获取当前日期（UTC+8）
+                # 🔥 Get the current date (UTC+8) 
                 cn_tz = timezone(timedelta(hours=8))
                 now_cn = datetime.now(cn_tz)
-                trade_date = now_cn.strftime("%Y-%m-%d")  # 格式：2025-11-05
+                trade_date = now_cn.strftime("%Y-%m-%d")  # Format:2025-11-05
 
-                # 🔥 成交量单位转换：手 → 股（1手 = 100股）
-                volume_in_lots = self._safe_int(data_dict.get("总手", 0))  # 单位：手
-                volume_in_shares = volume_in_lots * 100  # 单位：股
+                # 🔥 Volume unit conversion: lots → shares (1 lot = 100 shares)
+                volume_in_lots = self._safe_int(data_dict.get("总手", 0))  # Unit: hand
+                volume_in_shares = volume_in_lots * 100  # Unit: Share
 
                 quotes = {
                     "code": code,
                     "symbol": code,
-                    "name": f"股票{code}",  # stock_bid_ask_em 不返回股票名称
+                    "name": f"股票{code}",  # stock_bid_ask_em Does not return stock name
                     "price": self._safe_float(data_dict.get("最新", 0)),
-                    "close": self._safe_float(data_dict.get("最新", 0)),  # 🔥 close 字段（与 price 相同）
-                    "current_price": self._safe_float(data_dict.get("最新", 0)),  # 🔥 current_price 字段（兼容旧数据）
+                    "close": self._safe_float(data_dict.get("最新", 0)),  # 🔥 close field (same as price)
+                    "current_price": self._safe_float(data_dict.get("最新", 0)),  # 🔥 current_price Fields (compatible with old data)
                     "change": self._safe_float(data_dict.get("涨跌", 0)),
                     "change_percent": self._safe_float(data_dict.get("涨幅", 0)),
-                    "pct_chg": self._safe_float(data_dict.get("涨幅", 0)),  # 🔥 pct_chg 字段（兼容旧数据）
-                    "volume": volume_in_shares,  # 🔥 单位：股（已转换）
-                    "amount": self._safe_float(data_dict.get("金额", 0)),  # 单位：元
-                    "open": self._safe_float(data_dict.get("今开", 0)),  # 🔥 使用 open 而不是 open_price
-                    "high": self._safe_float(data_dict.get("最高", 0)),  # 🔥 使用 high 而不是 high_price
-                    "low": self._safe_float(data_dict.get("最低", 0)),  # 🔥 使用 low 而不是 low_price
+                    "pct_chg": self._safe_float(data_dict.get("涨幅", 0)),  # 🔥 pct_chg Fields (compatible with old data)
+                    "volume": volume_in_shares,  # 🔥 Unit: Share (converted)
+                    "amount": self._safe_float(data_dict.get("金额", 0)),  # Unit: Yuan
+                    "open": self._safe_float(data_dict.get("今开", 0)),  # 🔥 Use open instead open_price
+                    "high": self._safe_float(data_dict.get("最高", 0)),  # 🔥 Use high instead high_price
+                    "low": self._safe_float(data_dict.get("最低", 0)),  # 🔥 Use low instead low_price
                     "pre_close": self._safe_float(data_dict.get("昨收", 0)),
-                    # 🔥 新增：财务指标字段
-                    "turnover_rate": self._safe_float(data_dict.get("换手", 0)),  # 换手率（%）
-                    "volume_ratio": self._safe_float(data_dict.get("量比", 0)),  # 量比
-                    "pe": None,  # stock_bid_ask_em 不返回市盈率
+                    # 🔥 New: Financial indicator fields
+                    "turnover_rate": self._safe_float(data_dict.get("换手", 0)),  # Turnover rate (%)
+                    "volume_ratio": self._safe_float(data_dict.get("量比", 0)),  # Quantity ratio
+                    "pe": None,  # stock_bid_ask_em Does not return P/E ratio
                     "pe_ttm": None,
-                    "pb": None,  # stock_bid_ask_em 不返回市净率
-                    "total_mv": None,  # stock_bid_ask_em 不返回总市值
-                    "circ_mv": None,  # stock_bid_ask_em 不返回流通市值
-                    # 🔥 新增：交易日期和更新时间
-                    "trade_date": trade_date,  # 交易日期（格式：2025-11-05）
-                    "updated_at": now_cn.isoformat(),  # 更新时间（ISO格式，带时区）
-                    # 扩展字段
+                    "pb": None,  # stock_bid_ask_em Does not return price-to-book ratio
+                    "total_mv": None,  # stock_bid_ask_em Does not return total market capitalization
+                    "circ_mv": None,  # stock_bid_ask_em Does not return circulating market value
+                    # 🔥 New: transaction date and update time
+                    "trade_date": trade_date,  # Transaction date (format: 2025-11-05)
+                    "updated_at": now_cn.isoformat(),  # Update time (ISO format, with time zone)
+                    # extension fields
                     "full_symbol": self._get_full_symbol(code),
                     "market_info": self._get_market_info(code),
                     "data_source": "akshare",
@@ -1247,7 +1247,7 @@ class AKShareProvider(BaseStockDataProvider):
                 error_str = str(e)
                 error_type = type(e).__name__
                 
-                # 🔥 检查是否是网络连接错误（可重试的错误）
+                # 🔥 Check if it is a network connection error (retryable error)
                 is_connection_error = (
                     'Connection' in error_type or
                     'RemoteDisconnected' in error_type or
@@ -1258,27 +1258,27 @@ class AKShareProvider(BaseStockDataProvider):
                 )
                 
                 if is_connection_error and attempt < max_retries - 1:
-                    # 网络连接错误，等待后重试
-                    wait_time = retry_delay * (attempt + 1)  # 递增等待时间：1s, 2s, 3s
+                    # Network connection error, please wait and try again.
+                    wait_time = retry_delay * (attempt + 1)  # Incremental wait time:1s, 2s, 3s
                     logger.warning(f"⚠️ 获取{code}实时行情连接失败 (尝试 {attempt + 1}/{max_retries}): {error_str}")
                     logger.info(f"⏳ 等待 {wait_time:.1f} 秒后重试...")
                     await asyncio.sleep(wait_time)
                     continue
                 else:
-                    # 非连接错误或已达到最大重试次数
+                    # Non-connection error or maximum retries reached
                     if attempt >= max_retries - 1:
                         logger.error(f"❌ 获取{code}实时行情失败，已达最大重试次数 ({max_retries}): {e}")
-                        # 🔥 回退到批量接口获取全市场数据（避免浪费接口调用）
-                        logger.info(f"🔄 尝试使用批量接口获取全市场实时行情（包含 {code}）...")
+                        # 🔥 Fall back to the batch interface to obtain full market data (to avoid wasting interface calls)
+                        logger.info(f"🔄 Try using the batch interface to obtain real-time market information (including {code}) ...")
                         try:
-                            # 🔥 使用 get_batch_stock_quotes 方法，设置 return_all=True 获取全市场数据
+                            # 🔥 Use the get_batch_stock_quotes method to set return_all=True Get full market data
                             all_quotes_map = await self.get_batch_stock_quotes([code], return_all=True)
                             
                             if not all_quotes_map:
                                 logger.warning("⚠️ 批量接口返回空数据")
                                 return None
                             
-                            # 查找目标股票
+                            # Find target stocks
                             target_quotes = None
                             for clean_code, quotes_data in all_quotes_map.items():
                                 if clean_code == code:
@@ -1286,7 +1286,7 @@ class AKShareProvider(BaseStockDataProvider):
                                     break
                             
                             if target_quotes:
-                                # 🔥 统一字段名：批量接口返回的是 open_price/high_price/low_price，需要转换为 open/high/low
+                                # 🔥 Unified field names: The batch interface returns open_price/high_price/low_price, which needs to be converted to open/high/low
                                 if 'open_price' in target_quotes:
                                     target_quotes['open'] = target_quotes.pop('open_price')
                                 if 'high_price' in target_quotes:
@@ -1294,17 +1294,17 @@ class AKShareProvider(BaseStockDataProvider):
                                 if 'low_price' in target_quotes:
                                     target_quotes['low'] = target_quotes.pop('low_price')
                                 
-                                # 🔥 确保 close 字段存在（与 price 相同）
+                                # 🔥 Make sure the close field exists (same as price)
                                 if 'close' not in target_quotes and 'price' in target_quotes:
                                     target_quotes['close'] = target_quotes['price']
-                                # 🔥 确保 current_price 字段存在（兼容旧数据）
+                                # 🔥 Make sure current_price field exists (compatible with old data)
                                 if 'current_price' not in target_quotes and 'price' in target_quotes:
                                     target_quotes['current_price'] = target_quotes['price']
-                                # 🔥 确保 pct_chg 字段存在（兼容旧数据）
+                                # 🔥 Ensure pct_chg field exists (compatible with old data)
                                 if 'pct_chg' not in target_quotes and 'change_percent' in target_quotes:
                                     target_quotes['pct_chg'] = target_quotes['change_percent']
                                 
-                                # 🔥 为全市场数据也统一字段名
+                                # 🔥 Unify field names for all market data
                                 for clean_code, quotes_data in all_quotes_map.items():
                                     if 'open_price' in quotes_data:
                                         quotes_data['open'] = quotes_data.pop('open_price')
@@ -1319,16 +1319,16 @@ class AKShareProvider(BaseStockDataProvider):
                                     if 'pct_chg' not in quotes_data and 'change_percent' in quotes_data:
                                         quotes_data['pct_chg'] = quotes_data['change_percent']
                                     
-                                    # 添加交易日期和更新时间（如果还没有）
+                                    # Add transaction date and update time if not already available
                                     if 'trade_date' not in quotes_data:
                                         cn_tz = timezone(timedelta(hours=8))
                                         now_cn = datetime.now(cn_tz)
                                         quotes_data['trade_date'] = now_cn.strftime("%Y-%m-%d")
                                         quotes_data['updated_at'] = now_cn.isoformat()
                                 
-                                # 🔥 添加特殊标记，表示这是通过批量接口获取的，包含全市场数据
-                                target_quotes['_batch_data'] = all_quotes_map  # 包含全市场数据
-                                target_quotes['_from_batch'] = True  # 标记来源
+                                # 🔥 Add a special tag to indicate that this is obtained through the batch interface and contains full market data
+                                target_quotes['_batch_data'] = all_quotes_map  # Contains full market data
+                                target_quotes['_from_batch'] = True  # Mark source
                                 
                                 logger.info(f"✅ 通过批量接口成功获取 {code} 实时行情: 最新价={target_quotes.get('price')}, 涨跌幅={target_quotes.get('change_percent')}%")
                                 logger.info(f"📊 批量接口同时获取到 {len(all_quotes_map)} 只股票的行情数据，将批量更新到数据库")
@@ -1348,7 +1348,7 @@ class AKShareProvider(BaseStockDataProvider):
     async def _get_realtime_quotes_data(self, code: str) -> Dict[str, Any]:
         """获取实时行情数据"""
         try:
-            # 方法1: 获取A股实时行情
+            # method 1: Get real-time A-share quotes
             def fetch_spot_data():
                 return self.ak.stock_zh_a_spot_em()
 
@@ -1356,13 +1356,13 @@ class AKShareProvider(BaseStockDataProvider):
                 spot_df = await asyncio.to_thread(fetch_spot_data)
 
                 if spot_df is not None and not spot_df.empty:
-                    # 查找对应股票
+                    # Find corresponding stocks
                     stock_data = spot_df[spot_df['代码'] == code]
 
                     if not stock_data.empty:
                         row = stock_data.iloc[0]
 
-                        # 解析行情数据
+                        # Analyze market data
                         return {
                             "name": str(row.get("名称", f"股票{code}")),
                             "price": self._safe_float(row.get("最新价", 0)),
@@ -1374,30 +1374,30 @@ class AKShareProvider(BaseStockDataProvider):
                             "high": self._safe_float(row.get("最高", 0)),
                             "low": self._safe_float(row.get("最低", 0)),
                             "pre_close": self._safe_float(row.get("昨收", 0)),
-                            # 🔥 新增：财务指标字段
-                            "turnover_rate": self._safe_float(row.get("换手率", None)),  # 换手率（%）
-                            "volume_ratio": self._safe_float(row.get("量比", None)),  # 量比
-                            "pe": self._safe_float(row.get("市盈率-动态", None)),  # 动态市盈率
-                            "pb": self._safe_float(row.get("市净率", None)),  # 市净率
-                            "total_mv": self._safe_float(row.get("总市值", None)),  # 总市值（元）
-                            "circ_mv": self._safe_float(row.get("流通市值", None)),  # 流通市值（元）
+                            # 🔥 New: Financial indicator fields
+                            "turnover_rate": self._safe_float(row.get("换手率", None)),  # Turnover rate (%)
+                            "volume_ratio": self._safe_float(row.get("量比", None)),  # Quantity ratio
+                            "pe": self._safe_float(row.get("市盈率-动态", None)),  # Dynamic P/E Ratio
+                            "pb": self._safe_float(row.get("市净率", None)),  # price to book ratio
+                            "total_mv": self._safe_float(row.get("总市值", None)),  # Total market value (yuan)
+                            "circ_mv": self._safe_float(row.get("流通市值", None)),  # Circulation market value (yuan)
                         }
             except Exception as e:
                 logger.debug(f"获取{code}A股实时行情失败: {e}")
 
-            # 方法2: 尝试获取单只股票实时数据
+            # method 2: Try to get real-time data of a single stock
             def fetch_individual_spot():
                 return self.ak.stock_zh_a_hist(symbol=code, period="daily", adjust="")
 
             try:
                 hist_df = await asyncio.to_thread(fetch_individual_spot)
                 if hist_df is not None and not hist_df.empty:
-                    # 取最新一天的数据作为当前行情
+                    # Take the latest day's data as the current market price
                     latest_row = hist_df.iloc[-1]
                     return {
                         "name": f"股票{code}",
                         "price": self._safe_float(latest_row.get("收盘", 0)),
-                        "change": 0,  # 历史数据无法计算涨跌额
+                        "change": 0,  # Historical data cannot calculate the increase or decrease.
                         "change_percent": self._safe_float(latest_row.get("涨跌幅", 0)),
                         "volume": self._safe_int(latest_row.get("成交量", 0)),
                         "amount": self._safe_float(latest_row.get("成交额", 0)),
@@ -1443,7 +1443,7 @@ class AKShareProvider(BaseStockDataProvider):
             return ""
 
     def _safe_optional_float(self, value: Any) -> Optional[float]:
-        """安全转换为可空浮点数。"""
+        """Safe conversion to nullable floating point number."""
         try:
             if value is None or pd.isna(value):
                 return None
@@ -1457,14 +1457,14 @@ class AKShareProvider(BaseStockDataProvider):
             return None
 
     def _convert_market_cap_to_yi(self, value: Any) -> Optional[float]:
-        """将元单位市值转换为亿元。"""
+        """Convert market capitalization in yuan units to 100 million yuan."""
         numeric_value = self._safe_optional_float(value)
         if numeric_value is None:
             return None
         return numeric_value / 100000000
 
     def _normalize_security_code(self, value: Any) -> str:
-        """将不同来源的证券代码归一为 6 位字符串。"""
+        """Normalize security symbols from different sources into a 6-digit string."""
         text = self._safe_str(value).strip()
         if not text:
             return ""
@@ -1476,7 +1476,7 @@ class AKShareProvider(BaseStockDataProvider):
         return text
 
     def _normalize_basic_date(self, value: Any) -> str:
-        """将不同来源的日期值统一格式化为 YYYY-MM-DD。"""
+        """Format date values from different sources into YYYY-MM-DD."""
         if value is None or pd.isna(value):
             return ""
 
@@ -1507,7 +1507,7 @@ class AKShareProvider(BaseStockDataProvider):
         return normalized.strftime("%Y-%m-%d")
 
     def _normalize_exchange_name(self, value: Any) -> str:
-        """将不同来源的交易所标识统一为中文交易所名称。"""
+        """Unify exchange identifiers from different sources into Chinese exchange names."""
         text = self._safe_str(value).strip().upper()
         if not text:
             return ""
@@ -1520,7 +1520,7 @@ class AKShareProvider(BaseStockDataProvider):
         return self._safe_str(value).strip()
 
     def _extract_board_from_market_label(self, value: Any) -> str:
-        """从市场描述里提取板块标签。"""
+        """Extract sector labels from market descriptions."""
         text = self._safe_str(value).strip()
         if not text:
             return ""
@@ -1537,7 +1537,7 @@ class AKShareProvider(BaseStockDataProvider):
         return ""
 
     def _determine_board(self, code: str) -> str:
-        """根据股票代码推断板块。"""
+        """Infer sectors based on stock symbols."""
         code = str(code).strip()
         if code.startswith("68"):
             return "科创板"
@@ -1552,7 +1552,7 @@ class AKShareProvider(BaseStockDataProvider):
         return "未知"
 
     def _get_xueqiu_symbol(self, code: str) -> str:
-        """生成雪球接口使用的股票代码。"""
+        """Generate stock symbols used by the Snowball interface."""
         code = str(code).strip()
         if code.startswith(("60", "68", "90")):
             return f"SH{code}"
@@ -1563,7 +1563,7 @@ class AKShareProvider(BaseStockDataProvider):
         return code
 
     def _get_akshare_cn_symbol(self, code: str) -> str:
-        """为 AKShare 的部分 A 股接口生成 sh/sz/bj 前缀代码。"""
+        """Generate sh/sz/bj prefix codes for some A-share interfaces of AKShare."""
         code = str(code).strip()
         if code.startswith(('60', '68', '90')):
             return f"sh{code}"
@@ -1580,7 +1580,7 @@ class AKShareProvider(BaseStockDataProvider):
         end_date: str,
         period: str = "daily"
     ) -> Optional[pd.DataFrame]:
-        """使用腾讯历史接口作为 AK 日线历史数据兜底。"""
+        """Use Tencent s historical interface as a backup of AK s daily historical data."""
         if period != "daily":
             return None
 
@@ -1621,7 +1621,7 @@ class AKShareProvider(BaseStockDataProvider):
         end_date: str,
         period: str = "daily"
     ) -> Optional[pd.DataFrame]:
-        """使用新浪历史接口作为 AK 日线历史数据兜底。"""
+        """Use the Sina historical interface as a backup of AK daily historical data."""
         if period != "daily":
             return None
 
@@ -1663,16 +1663,16 @@ class AKShareProvider(BaseStockDataProvider):
         period: str = "daily"
     ) -> Optional[pd.DataFrame]:
         """
-        获取历史行情数据
+        Get historical market data
 
         Args:
-            code: 股票代码
-            start_date: 开始日期 (YYYY-MM-DD)
-            end_date: 结束日期 (YYYY-MM-DD)
-            period: 周期 (daily, weekly, monthly)
+            code: Stock code
+            start_date: start date (YYYY-MM-DD)
+            end_date: end date (YYYY-MM-DD)
+            period: cycle (daily, weekly, monthly)
 
         Returns:
-            历史行情数据DataFrame
+            Historical market data DataFrame
         """
         if not self.connected:
             return None
@@ -1680,7 +1680,7 @@ class AKShareProvider(BaseStockDataProvider):
         try:
             logger.debug(f"📊 获取{code}历史数据: {start_date} 到 {end_date}")
 
-            # 转换周期格式
+            # Convert periodic format
             period_map = {
                 "daily": "daily",
                 "weekly": "weekly",
@@ -1688,17 +1688,17 @@ class AKShareProvider(BaseStockDataProvider):
             }
             ak_period = period_map.get(period, "daily")
 
-            # 格式化日期
+            # Format date
             start_date_formatted = start_date.replace('-', '')
             end_date_formatted = end_date.replace('-', '')
 
-            # 检查时间跨度，如果超过2年，分批获取
+            # Check the time span, if it is more than 2 years, get it in batches
             from datetime import datetime, timedelta
             start_dt = datetime.strptime(start_date, '%Y-%m-%d')
             end_dt = datetime.strptime(end_date, '%Y-%m-%d')
             days_diff = (end_dt - start_dt).days
 
-            # 如果时间跨度超过2年（730天），分批获取
+            # If the time span exceeds 2 years (730 days), obtain it in batches
             if days_diff > 730:
                 logger.info(f"⚠️ {code} 时间跨度过大({days_diff}天)，分批获取数据...")
                 return await self._get_historical_data_in_batches(
@@ -1707,7 +1707,7 @@ class AKShareProvider(BaseStockDataProvider):
 
             primary_error = None
 
-            # 获取历史数据（带重试）
+            # Get historical data (with retry)
             max_retries = 3
             for attempt in range(max_retries):
                 try:
@@ -1717,7 +1717,7 @@ class AKShareProvider(BaseStockDataProvider):
                             period=ak_period,
                             start_date=start_date_formatted,
                             end_date=end_date_formatted,
-                            adjust="qfq"  # 前复权
+                            adjust="qfq"  # Former restoration of rights
                         )
 
                     hist_df = await asyncio.to_thread(fetch_historical_data)
@@ -1726,19 +1726,19 @@ class AKShareProvider(BaseStockDataProvider):
                         logger.warning(f"⚠️ {code}历史数据为空")
                         return None
 
-                    # 标准化列名
+                    # Standardized column names
                     hist_df = self._standardize_historical_columns(hist_df, code)
 
                     logger.debug(f"✅ {code}历史数据获取成功: {len(hist_df)}条记录")
                     return hist_df
 
                 except RuntimeError as runtime_error:
-                    # 🔥 检测事件循环关闭错误（Ctrl+C 退出时）
+                    # 🔥 Detect event loop closing error (Ctrl+C when exiting)
                     if "shutdown" in str(runtime_error).lower() or "closed" in str(runtime_error).lower():
-                        logger.warning(f"⚠️ [AKShare API调用] 事件循环已关闭，停止获取数据: {code}")
+                        logger.warning(f"⚠️ [AKShare API call] The event loop has been closed and stopped getting data: {code}")
                         self._event_loop_closed = True
                         return None
-                    # 其他 RuntimeError，继续重试
+                    # Other RuntimeError, keep trying again
                     primary_error = runtime_error
                     if attempt < max_retries - 1:
                         wait_time = (attempt + 1) * 2
@@ -1749,7 +1749,7 @@ class AKShareProvider(BaseStockDataProvider):
                 except Exception as retry_error:
                     primary_error = retry_error
                     if attempt < max_retries - 1:
-                        wait_time = (attempt + 1) * 2  # 2秒、4秒、6秒
+                        wait_time = (attempt + 1) * 2  # 2 seconds, 4 seconds, 6 seconds
                         logger.warning(f"⚠️ {code} 第{attempt + 1}次尝试失败，{wait_time}秒后重试: {retry_error}")
                         await asyncio.sleep(wait_time)
                     else:
@@ -1757,13 +1757,13 @@ class AKShareProvider(BaseStockDataProvider):
 
         except Exception as e:
             error_msg = str(e)
-            # 🔥 检测事件循环关闭错误
+            # 🔥 Detecting event loop shutdown errors
             if "shutdown" in error_msg.lower() or "event loop is closed" in error_msg.lower():
                 logger.warning(f"⚠️ [AKShare] 事件循环已关闭，停止获取 {code} 的历史数据")
                 self._event_loop_closed = True
                 return None
             elif "Connection aborted" in error_msg or "RemoteDisconnected" in error_msg:
-                logger.warning(f"⚠️ {code} 东财历史接口网络异常，尝试回退到新浪/腾讯历史接口")
+                logger.warning(f"⚠️ {code} Dongcai history interface network abnormality, try to fall back to Sina/Tencent history interface")
                 fallback_strategies = [
                     ("新浪", self._get_historical_data_sina_fallback),
                     ("腾讯", self._get_historical_data_tx_fallback),
@@ -1778,7 +1778,7 @@ class AKShareProvider(BaseStockDataProvider):
                     except Exception as fallback_error:
                         logger.warning(f"⚠️ {code} {fallback_name}历史接口回退失败: {fallback_error}")
 
-                message = f"{code} 网络连接中断，建议稍后重试或减小时间范围"
+                message = f"{code} The network connection is interrupted. It is recommended to try again later or reduce the time range."
                 logger.error(f"❌ {message}")
                 raise AKShareNetworkError(message) from (primary_error or e)
             else:
@@ -1793,16 +1793,16 @@ class AKShareProvider(BaseStockDataProvider):
         period: str = "daily"
     ) -> Optional[pd.DataFrame]:
         """
-        分批获取历史数据（用于时间跨度过大的情况）
+        Obtain historical data in batches (for situations where the time span is too large)
 
         Args:
-            code: 股票代码
-            start_date: 开始日期 (YYYY-MM-DD)
-            end_date: 结束日期 (YYYY-MM-DD)
-            period: 周期
+            code: Stock code
+            start_date: start date (YYYY-MM-DD)
+            end_date: end date (YYYY-MM-DD)
+            period: cycle
 
         Returns:
-            合并后的历史数据DataFrame
+            Combined historical data DataFrame
         """
         from datetime import datetime, timedelta
         import pandas as pd
@@ -1811,7 +1811,7 @@ class AKShareProvider(BaseStockDataProvider):
             start_dt = datetime.strptime(start_date, '%Y-%m-%d')
             end_dt = datetime.strptime(end_date, '%Y-%m-%d')
 
-            # 每批获取1年的数据
+            # Get 1 year of data for each batch
             batch_size_days = 365
             all_data = []
 
@@ -1824,7 +1824,7 @@ class AKShareProvider(BaseStockDataProvider):
 
                 logger.debug(f"📊 {code} 分批获取: {batch_start_str} 到 {batch_end_str}")
 
-                # 递归调用（不会再次触发分批，因为时间跨度<730天）
+                # Recursive call (batching will not be triggered again because of the time span<730 days)
                 batch_df = await self.get_historical_data(
                     code, batch_start_str, batch_end_str, period
                 )
@@ -1832,15 +1832,15 @@ class AKShareProvider(BaseStockDataProvider):
                 if batch_df is not None and not batch_df.empty:
                     all_data.append(batch_df)
 
-                # 批次间休眠，避免请求过快
+                # Sleep between batches to avoid requesting too quickly
                 await asyncio.sleep(1.0)
 
                 current_start = current_end + timedelta(days=1)
 
-            # 合并所有批次数据
+            # Merge all batch data
             if all_data:
                 merged_df = pd.concat(all_data, ignore_index=True)
-                # 去重并排序
+                # Remove duplicates and sort
                 merged_df = merged_df.drop_duplicates(subset=['date']).sort_values('date')
                 logger.info(f"✅ {code} 分批获取完成: 共{len(merged_df)}条记录")
                 return merged_df
@@ -1857,7 +1857,7 @@ class AKShareProvider(BaseStockDataProvider):
     def _standardize_historical_columns(self, df: pd.DataFrame, code: str) -> pd.DataFrame:
         """标准化历史数据列名"""
         try:
-            # 标准化列名映射
+            # Standardized column name mapping
             column_mapping = {
                 '日期': 'date',
                 '开盘': 'open',
@@ -1872,18 +1872,18 @@ class AKShareProvider(BaseStockDataProvider):
                 '换手率': 'turnover'
             }
 
-            # 重命名列
+            # Rename columns
             df = df.rename(columns=column_mapping)
 
-            # 添加标准字段
+            # Add standard fields
             df['code'] = code
             df['full_symbol'] = self._get_full_symbol(code)
 
-            # 确保日期格式
+            # Ensure date format
             if 'date' in df.columns:
                 df['date'] = pd.to_datetime(df['date'])
 
-            # 数据类型转换
+            # Data type conversion
             numeric_columns = ['open', 'close', 'high', 'low', 'volume', 'amount']
             for col in numeric_columns:
                 if col in df.columns:
@@ -1897,13 +1897,13 @@ class AKShareProvider(BaseStockDataProvider):
 
     async def get_financial_data(self, code: str) -> Dict[str, Any]:
         """
-        获取财务数据
+        Get financial data
 
         Args:
-            code: 股票代码
+            code: Stock code
 
         Returns:
-            财务数据字典
+            Financial Data Dictionary
         """
         if not self.connected:
             return {}
@@ -1913,7 +1913,7 @@ class AKShareProvider(BaseStockDataProvider):
 
             financial_data = {}
 
-            # 1. 获取主要财务指标
+            # 1. Get key financial indicators
             try:
                 def fetch_financial_abstract():
                     return self.ak.stock_financial_abstract(symbol=code)
@@ -1925,7 +1925,7 @@ class AKShareProvider(BaseStockDataProvider):
             except Exception as e:
                 logger.debug(f"获取{code}主要财务指标失败: {e}")
 
-            # 2. 获取资产负债表
+            # 2. Get balance sheet
             try:
                 def fetch_balance_sheet():
                     return self.ak.stock_balance_sheet_by_report_em(symbol=code)
@@ -1937,7 +1937,7 @@ class AKShareProvider(BaseStockDataProvider):
             except Exception as e:
                 logger.debug(f"获取{code}资产负债表失败: {e}")
 
-            # 3. 获取利润表
+            # 3. Get income statement
             try:
                 def fetch_income_statement():
                     return self.ak.stock_profit_sheet_by_report_em(symbol=code)
@@ -1949,7 +1949,7 @@ class AKShareProvider(BaseStockDataProvider):
             except Exception as e:
                 logger.debug(f"获取{code}利润表失败: {e}")
 
-            # 4. 获取现金流量表
+            # 4. Get cash flow statement
             try:
                 def fetch_cash_flow():
                     return self.ak.stock_cash_flow_sheet_by_report_em(symbol=code)
@@ -1974,19 +1974,19 @@ class AKShareProvider(BaseStockDataProvider):
 
     async def get_market_status(self) -> Dict[str, Any]:
         """
-        获取市场状态信息
+        Get market status information
 
         Returns:
-            市场状态信息
+            market status information
         """
         try:
-            # AKShare没有直接的市场状态API，返回基本信息
+            # AKShare No direct market status API, returns basic information
             now = datetime.now()
 
-            # 简单的交易时间判断
+            # Simple trading time judgment
             is_trading_time = (
-                now.weekday() < 5 and  # 工作日
-                ((9 <= now.hour < 12) or (13 <= now.hour < 15))  # 交易时间
+                now.weekday() < 5 and  # working day
+                ((9 <= now.hour < 12) or (13 <= now.hour < 15))  # trading hours
             )
 
             return {
@@ -2007,14 +2007,14 @@ class AKShareProvider(BaseStockDataProvider):
 
     def get_stock_news_sync(self, symbol: str = None, limit: int = 10) -> Optional[pd.DataFrame]:
         """
-        获取股票新闻（同步版本，返回原始 DataFrame）
+        Get stock news (synchronized version, return original DataFrame)
 
         Args:
-            symbol: 股票代码，为None时获取市场新闻
-            limit: 返回数量限制
+            symbol: Stock code, get market news when None
+            limit: Return quantity limit
 
         Returns:
-            新闻 DataFrame 或 None
+            News DataFrame or None
         """
         if not self.is_available():
             return None
@@ -2025,28 +2025,28 @@ class AKShareProvider(BaseStockDataProvider):
             import time
 
             if symbol:
-                # 获取个股新闻
-                self.logger.debug(f"📰 获取AKShare个股新闻: {symbol}")
+                # Get individual stock news
+                self.logger.debug(f"📰 Get AKShare stock news: {symbol}")
 
-                # 标准化股票代码
+                # Standardized stock code
                 symbol_6 = symbol.zfill(6)
 
-                # 获取东方财富个股新闻，添加重试机制
+                # Get Oriental Fortune stock news and add a retry mechanism
                 max_retries = 3
-                retry_delay = 1  # 秒
+                retry_delay = 1  # seconds
                 news_df = None
 
                 for attempt in range(max_retries):
                     try:
                         news_df = ak.stock_news_em(symbol=symbol_6)
-                        break  # 成功则跳出重试循环
+                        break  # If successful, jump out of the retry loop
                     except json.JSONDecodeError as e:
                         if attempt < max_retries - 1:
                             self.logger.warning(f"⚠️ {symbol} 第{attempt+1}次获取新闻失败(JSON解析错误)，{retry_delay}秒后重试...")
                             time.sleep(retry_delay)
-                            retry_delay *= 2  # 指数退避
+                            retry_delay *= 2  # exponential backoff
                         else:
-                            self.logger.error(f"❌ {symbol} 获取新闻失败(JSON解析错误): {e}")
+                            self.logger.error(f"❌ {symbol} Failed to get news(JSON Parse error): {e}")
                             return None
                     except Exception as e:
                         if attempt < max_retries - 1:
@@ -2060,34 +2060,34 @@ class AKShareProvider(BaseStockDataProvider):
                     self.logger.info(f"✅ {symbol} AKShare新闻获取成功: {len(news_df)} 条")
                     return news_df.head(limit) if limit else news_df
                 else:
-                    self.logger.warning(f"⚠️ {symbol} 未获取到AKShare新闻数据")
+                    self.logger.warning(f"⚠️ {symbol} AKShare news data not obtained")
                     return None
             else:
-                # 获取市场新闻
-                self.logger.debug("📰 获取AKShare市场新闻")
+                # Get market news
+                self.logger.debug("📰 Get AKShare market news")
                 news_df = ak.news_cctv()
 
                 if news_df is not None and not news_df.empty:
                     self.logger.info(f"✅ AKShare市场新闻获取成功: {len(news_df)} 条")
                     return news_df.head(limit) if limit else news_df
                 else:
-                    self.logger.warning("⚠️ 未获取到AKShare市场新闻数据")
+                    self.logger.warning("⚠️ AKShare market news data not obtained")
                     return None
 
         except Exception as e:
-            self.logger.error(f"❌ AKShare新闻获取失败: {e}")
+            self.logger.error(f"❌ AKShare Failed to get news: {e}")
             return None
 
     async def get_stock_news(self, symbol: str = None, limit: int = 10) -> Optional[List[Dict[str, Any]]]:
         """
-        获取股票新闻（异步版本，返回结构化列表）
+        Get stock news (asynchronous version, returns a structured list)
 
         Args:
-            symbol: 股票代码，为None时获取市场新闻
-            limit: 返回数量限制
+            symbol: Stock code, get market news when None
+            limit: Return quantity limit
 
         Returns:
-            新闻列表
+            News list
         """
         if not self.is_available():
             return None
@@ -2098,43 +2098,43 @@ class AKShareProvider(BaseStockDataProvider):
             import os
 
             if symbol:
-                # 获取个股新闻
-                self.logger.debug(f"📰 获取AKShare个股新闻: {symbol}")
+                # Get individual stock news
+                self.logger.debug(f"📰 Get AKShare stock news: {symbol}")
 
-                # 标准化股票代码
+                # Standardized stock code
                 symbol_6 = symbol.zfill(6)
 
-                # 检测是否在 Docker 环境中
+                # Detect whether you are in a Docker environment
                 is_docker = os.path.exists('/.dockerenv') or os.environ.get('DOCKER_CONTAINER') == 'true'
 
-                # 获取东方财富个股新闻，添加重试机制
+                # Get Oriental Fortune stock news and add a retry mechanism
                 max_retries = 3
-                retry_delay = 1  # 秒
+                retry_delay = 1  # seconds
                 news_df = None
 
-                # 如果在 Docker 环境中，尝试使用 curl_cffi 直接调用 API
+                # If in a Docker environment, try using curl_cffi to call directly API
                 if is_docker:
                     try:
                         from curl_cffi import requests as curl_requests
-                        self.logger.debug(f"🐳 检测到 Docker 环境，使用 curl_cffi 直接调用 API")
+                        self.logger.debug(f"🐳 Detect Docker environment, use curl_cffi to call directly API")
                         news_df = await asyncio.to_thread(
                             self._get_stock_news_direct,
                             symbol=symbol_6,
                             limit=limit
                         )
                         if news_df is not None and not news_df.empty:
-                            self.logger.info(f"✅ {symbol} Docker 环境直接调用 API 成功")
+                            self.logger.info(f"✅ {symbol} Docker The environment directly calls the API successfully")
                         else:
-                            self.logger.warning(f"⚠️ {symbol} Docker 环境直接调用 API 失败，回退到 AKShare")
-                            news_df = None  # 回退到 AKShare
+                            self.logger.warning(f"⚠️ {symbol} Docker The environment fails to directly call the API and falls back to AKShare")
+                            news_df = None  # Fallback to AKShare
                     except ImportError:
-                        self.logger.warning(f"⚠️ curl_cffi 未安装，回退到 AKShare")
+                        self.logger.warning(f"⚠️ curl_cffi Not installed, fallback to AKShare")
                         news_df = None
                     except Exception as e:
-                        self.logger.warning(f"⚠️ {symbol} Docker 环境直接调用 API 异常: {e}，回退到 AKShare")
+                        self.logger.warning(f"⚠️ {symbol} Docker The environment directly calls the API exception.: {e}, Fallback to AKShare")
                         news_df = None
 
-                # 如果直接调用失败或不在 Docker 环境，使用 AKShare
+                # If the direct call fails or is not in the Docker environment, use AKShare
                 if news_df is None:
                     for attempt in range(max_retries):
                         try:
@@ -2142,22 +2142,22 @@ class AKShareProvider(BaseStockDataProvider):
                                 ak.stock_news_em,
                                 symbol=symbol_6
                             )
-                            break  # 成功则跳出重试循环
+                            break  # If successful, jump out of the retry loop
                         except json.JSONDecodeError as e:
                             if attempt < max_retries - 1:
                                 self.logger.warning(f"⚠️ {symbol} 第{attempt+1}次获取新闻失败(JSON解析错误)，{retry_delay}秒后重试...")
                                 await asyncio.sleep(retry_delay)
-                                retry_delay *= 2  # 指数退避
+                                retry_delay *= 2  # exponential backoff
                             else:
-                                self.logger.error(f"❌ {symbol} 获取新闻失败(JSON解析错误): {e}")
+                                self.logger.error(f"❌ {symbol} Failed to get news(JSON Parse error): {e}")
                                 return []
                         except KeyError as e:
-                            # 东方财富网接口变更或反爬虫拦截，返回的字段结构改变
+                            # Oriental Fortune Network interface changes or anti-crawler interception, the returned field structure changes
                             if str(e) == "'cmsArticleWebOld'":
-                                self.logger.error(f"❌ {symbol} AKShare新闻接口返回数据结构异常: 缺少 'cmsArticleWebOld' 字段")
-                                self.logger.error(f"   这通常是因为：1) 反爬虫拦截 2) 接口变更 3) 网络问题")
-                                self.logger.error(f"   建议：检查 AKShare 版本是否为最新 (当前要求 >=1.17.86)")
-                                # 返回空列表，避免程序崩溃
+                                self.logger.error(f"❌ {symbol} AKShare News interface returns data structure exception: missing 'cmsArticleWebOld' Field")
+                                self.logger.error(f"   This is usually because:1) Anti-crawler interception 2) Interface changes 3) network problems")
+                                self.logger.error(f"   Suggestion: Check if the AKShare version is up to date (Current requirements >=1.17.86)")
+                                # Return an empty list to avoid program crashes
                                 return []
                             else:
                                 if attempt < max_retries - 1:
@@ -2165,7 +2165,7 @@ class AKShareProvider(BaseStockDataProvider):
                                     await asyncio.sleep(retry_delay)
                                     retry_delay *= 2
                                 else:
-                                    self.logger.error(f"❌ {symbol} 获取新闻失败(字段错误): {e}")
+                                    self.logger.error(f"❌ {symbol} Failed to get news(Field error): {e}")
                                     return []
                         except Exception as e:
                             if attempt < max_retries - 1:
@@ -2200,21 +2200,21 @@ class AKShareProvider(BaseStockDataProvider):
                             "data_source": "akshare"
                         }
 
-                        # 过滤空标题的新闻
+                        # Filter news with empty titles
                         if news_item["title"]:
                             news_list.append(news_item)
 
                     self.logger.info(f"✅ {symbol} AKShare新闻获取成功: {len(news_list)} 条")
                     return news_list
                 else:
-                    self.logger.warning(f"⚠️ {symbol} 未获取到AKShare新闻数据")
+                    self.logger.warning(f"⚠️ {symbol} AKShare news data not obtained")
                     return []
             else:
-                # 获取市场新闻
-                self.logger.debug("📰 获取AKShare市场新闻")
+                # Get market news
+                self.logger.debug("📰 Get AKShare market news")
 
                 try:
-                    # 获取财经新闻
+                    # Get financial news
                     news_df = await asyncio.to_thread(
                         ak.news_cctv,
                         limit=limit
@@ -2256,7 +2256,7 @@ class AKShareProvider(BaseStockDataProvider):
                 return []
 
         except Exception as e:
-            self.logger.error(f"❌ 获取AKShare新闻失败 symbol={symbol}: {e}")
+            self.logger.error(f"❌ Failed to get AKShare news symbol={symbol}: {e}")
             return None
 
     def _parse_news_time(self, time_str: str) -> Optional[datetime]:
@@ -2265,7 +2265,7 @@ class AKShareProvider(BaseStockDataProvider):
             return datetime.utcnow()
 
         try:
-            # 尝试多种时间格式
+            # Try multiple time formats
             formats = [
                 "%Y-%m-%d %H:%M:%S",
                 "%Y-%m-%d %H:%M",
@@ -2281,7 +2281,7 @@ class AKShareProvider(BaseStockDataProvider):
                 try:
                     parsed_time = datetime.strptime(str(time_str), fmt)
 
-                    # 如果只有月日，补充年份
+                    # If there is only month and day, add the year
                     if fmt in ["%m-%d %H:%M", "%m/%d %H:%M"]:
                         current_year = datetime.now().year
                         parsed_time = parsed_time.replace(year=current_year)
@@ -2290,7 +2290,7 @@ class AKShareProvider(BaseStockDataProvider):
                 except ValueError:
                     continue
 
-            # 如果都失败了，返回当前时间
+            # If all else fails, return the current time
             self.logger.debug(f"⚠️ 无法解析新闻时间: {time_str}")
             return datetime.utcnow()
 
@@ -2300,18 +2300,18 @@ class AKShareProvider(BaseStockDataProvider):
 
     def _analyze_news_sentiment(self, content: str, title: str) -> str:
         """
-        分析新闻情绪
+        Analyze news sentiment
 
         Args:
-            content: 新闻内容
-            title: 新闻标题
+            content: News content
+            title: News headline
 
         Returns:
-            情绪类型: positive/negative/neutral
+            emotion type: positive/negative/neutral
         """
         text = f"{title} {content}".lower()
 
-        # 积极关键词
+        # Positive keywords
         positive_keywords = [
             '利好', '上涨', '增长', '盈利', '突破', '创新高', '买入', '推荐',
             '看好', '乐观', '强势', '大涨', '飙升', '暴涨', '涨停', '涨幅',
@@ -2319,7 +2319,7 @@ class AKShareProvider(BaseStockDataProvider):
             '获批', '中标', '签约', '合作', '并购', '重组', '分红', '回购'
         ]
 
-        # 消极关键词
+        # negative keywords
         negative_keywords = [
             '利空', '下跌', '亏损', '风险', '暴跌', '卖出', '警告', '下调',
             '看空', '悲观', '弱势', '大跌', '跳水', '暴跌', '跌停', '跌幅',
@@ -2339,25 +2339,25 @@ class AKShareProvider(BaseStockDataProvider):
 
     def _calculate_sentiment_score(self, content: str, title: str) -> float:
         """
-        计算情绪分数
+        Calculate sentiment score
 
         Args:
-            content: 新闻内容
-            title: 新闻标题
+            content: News content
+            title: News headline
 
         Returns:
-            情绪分数: -1.0 到 1.0
+            sentiment score: -1.0 Arrive 1.0
         """
         text = f"{title} {content}".lower()
 
-        # 积极关键词权重
+        # Positive keyword weight
         positive_keywords = {
             '涨停': 1.0, '暴涨': 0.9, '大涨': 0.8, '飙升': 0.8,
             '创新高': 0.7, '突破': 0.6, '上涨': 0.5, '增长': 0.4,
             '利好': 0.6, '看好': 0.5, '推荐': 0.5, '买入': 0.6
         }
 
-        # 消极关键词权重
+        # Negative keyword weight
         negative_keywords = {
             '跌停': -1.0, '暴跌': -0.9, '大跌': -0.8, '跳水': -0.8,
             '创新低': -0.7, '破位': -0.6, '下跌': -0.5, '下滑': -0.4,
@@ -2366,33 +2366,33 @@ class AKShareProvider(BaseStockDataProvider):
 
         score = 0.0
 
-        # 计算积极分数
+        # Calculate positivity score
         for keyword, weight in positive_keywords.items():
             if keyword in text:
                 score += weight
 
-        # 计算消极分数
+        # Calculate negativity score
         for keyword, weight in negative_keywords.items():
             if keyword in text:
                 score += weight
 
-        # 归一化到 [-1.0, 1.0]
+        # normalized to [-1.0, 1.0]
         return max(-1.0, min(1.0, score / 3.0))
 
     def _extract_keywords(self, content: str, title: str) -> List[str]:
         """
-        提取关键词
+        Extract keywords
 
         Args:
-            content: 新闻内容
-            title: 新闻标题
+            content: News content
+            title: News headline
 
         Returns:
-            关键词列表
+            keyword list
         """
         text = f"{title} {content}"
 
-        # 常见财经关键词
+        # Common financial keywords
         common_keywords = [
             '股票', '公司', '市场', '投资', '业绩', '财报', '政策', '行业',
             '分析', '预测', '涨停', '跌停', '上涨', '下跌', '盈利', '亏损',
@@ -2406,40 +2406,40 @@ class AKShareProvider(BaseStockDataProvider):
             if keyword in text:
                 keywords.append(keyword)
 
-        return keywords[:10]  # 最多返回10个关键词
+        return keywords[:10]  # Returns up to 10 keywords
 
     def _assess_news_importance(self, content: str, title: str) -> str:
         """
-        评估新闻重要性
+        Assess news importance
 
         Args:
-            content: 新闻内容
-            title: 新闻标题
+            content: News content
+            title: News headline
 
         Returns:
-            重要性级别: high/medium/low
+            importance level: high/medium/low
         """
         text = f"{title} {content}".lower()
 
-        # 高重要性关键词
+        # High importance keywords
         high_importance_keywords = [
             '业绩', '财报', '年报', '季报', '重大', '公告', '监管', '政策',
             '并购', '重组', '退市', '停牌', '涨停', '跌停', '暴涨', '暴跌',
             '央行', '证监会', '交易所', '违规', '处罚', '立案', '调查'
         ]
 
-        # 中等重要性关键词
+        # Medium importance keywords
         medium_importance_keywords = [
             '分析', '预测', '观点', '建议', '行业', '市场', '趋势', '机会',
             '研报', '评级', '目标价', '增持', '减持', '买入', '卖出',
             '合作', '签约', '中标', '获批', '分红', '回购'
         ]
 
-        # 检查高重要性
+        # Check high importance
         if any(keyword in text for keyword in high_importance_keywords):
             return 'high'
 
-        # 检查中等重要性
+        # Check for medium importance
         if any(keyword in text for keyword in medium_importance_keywords):
             return 'medium'
 
@@ -2447,34 +2447,34 @@ class AKShareProvider(BaseStockDataProvider):
 
     def _classify_news(self, content: str, title: str) -> str:
         """
-        分类新闻
+        Classified News
 
         Args:
-            content: 新闻内容
-            title: 新闻标题
+            content: News content
+            title: News headline
 
         Returns:
-            新闻类别
+            News category
         """
         text = f"{title} {content}".lower()
 
-        # 公司公告
+        # company announcement
         if any(keyword in text for keyword in ['公告', '业绩', '财报', '年报', '季报']):
             return 'company_announcement'
 
-        # 政策新闻
+        # policy news
         if any(keyword in text for keyword in ['政策', '监管', '央行', '证监会', '国务院']):
             return 'policy_news'
 
-        # 行业新闻
+        # Industry news
         if any(keyword in text for keyword in ['行业', '板块', '产业', '领域']):
             return 'industry_news'
 
-        # 市场新闻
+        # market news
         if any(keyword in text for keyword in ['市场', '指数', '大盘', '沪指', '深成指']):
             return 'market_news'
 
-        # 研究报告
+        # research report
         if any(keyword in text for keyword in ['研报', '分析', '评级', '目标价', '机构']):
             return 'research_report'
 
@@ -2482,10 +2482,10 @@ class AKShareProvider(BaseStockDataProvider):
 
     def is_event_loop_closed(self) -> bool:
         """
-        检查事件循环是否已关闭
+        Check if the event loop has been closed
 
         Returns:
-            bool: 如果事件循环已关闭返回 True，否则返回 False
+            bool: Returns True if the event loop has been closed, otherwise False
         """
         return self._event_loop_closed
 
@@ -2495,14 +2495,14 @@ class AKShareProvider(BaseStockDataProvider):
         date: str = None,
     ) -> Optional[pd.DataFrame]:
         """
-        获取股权质押明细数据
+        Obtain detailed data on equity pledge
 
         Args:
-            symbol: 股票代码（6位数字，如 600519）
-            date: 查询日期 (YYYYMMDD)，用于质押比例统计
+            symbol: Stock code (6 digits, such as 600519)
+            date: Query date (YYYYMMDD), Used for pledge ratio statistics
 
         Returns:
-            DataFrame 包含质押明细数据
+            DataFrame Contains pledge details
         """
         if not self.is_available():
             return None
@@ -2549,16 +2549,16 @@ class AKShareProvider(BaseStockDataProvider):
                 return None
 
         except Exception as e:
-            self.logger.error(f"❌ 获取股权质押明细失败: {e}")
+            self.logger.error(f"❌ Failed to obtain equity pledge details: {e}")
             return None
 
 
-# 全局提供器实例
+# Global provider instance
 _akshare_provider = None
 
 
 def get_akshare_provider() -> AKShareProvider:
-    """获取全局AKShare提供器实例"""
+    """Get the global AKShare provider instance"""
     global _akshare_provider
     if _akshare_provider is None:
         _akshare_provider = AKShareProvider()

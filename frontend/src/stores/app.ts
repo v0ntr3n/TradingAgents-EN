@@ -4,34 +4,34 @@ import { useStorage } from '@vueuse/core'
 import { APP_CONFIG } from '@/config/app'
 
 export interface AppState {
-  // 应用基础状态
+  // Application base status
   loading: boolean
   loadingProgress: number
   theme: 'light' | 'dark' | 'auto'
   language: 'zh-CN' | 'en-US'
 
-  // 网络状态
+  // network status
   isOnline: boolean
   apiConnected: boolean
   lastApiCheck: number
 
-  // 布局状态
+  // layout status
   sidebarCollapsed: boolean
   sidebarWidth: number
 
-  // 当前路由信息
+  // Current routing information
   currentRoute: RouteLocationNormalized | null
 
-  // 用户偏好
+  // User preferences
   preferences: {
-    defaultMarket: 'A股'
-    defaultDepth: '1' | '2' | '3' | '4' | '5'  // 1-5级分析深度
+    defaultMarket: 'A shares'
+    defaultDepth: '1' | '2' | '3' | '4' | '5'  // 1-5 level analysis depth
     autoRefresh: boolean
     refreshInterval: number
     showWelcome: boolean
   }
 
-  // 系统信息
+  // System information
   version: string
   fullVersion: string
   buildTime: string
@@ -39,7 +39,7 @@ export interface AppState {
 }
 
 const defaultPreferences: AppState['preferences'] = {
-  defaultMarket: 'A股',
+  defaultMarket: 'A shares',
   defaultDepth: '3',
   autoRefresh: true,
   refreshInterval: 30,
@@ -71,7 +71,7 @@ export const useAppStore = defineStore('app', {
   }),
 
   getters: {
-    // 是否为暗色主题
+    // Whether it is a dark theme
     isDarkTheme(): boolean {
       if (this.theme === 'auto') {
         return window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -79,17 +79,17 @@ export const useAppStore = defineStore('app', {
       return this.theme === 'dark'
     },
     
-    // 侧边栏实际宽度
+    // Sidebar actual width
     actualSidebarWidth(): number {
       return this.sidebarCollapsed ? 64 : this.sidebarWidth
     },
     
-    // 当前页面标题
+    // Current page title
     currentPageTitle(): string {
       return this.currentRoute?.meta?.title as string || 'TradingAgents-CN'
     },
     
-    // 应用信息
+    // Application information
     appInfo(): Record<string, any> {
       return {
         version: this.version,
@@ -103,18 +103,18 @@ export const useAppStore = defineStore('app', {
   },
 
   actions: {
-    // 设置加载状态
+    // Set loading status
     setLoading(loading: boolean, progress = 0) {
       this.loading = loading
       this.loadingProgress = progress
     },
     
-    // 设置加载进度
+    // Set loading progress
     setLoadingProgress(progress: number) {
       this.loadingProgress = Math.max(0, Math.min(100, progress))
     },
     
-    // 切换主题
+    // switch theme
     toggleTheme() {
       const themes: Array<'light' | 'dark' | 'auto'> = ['light', 'dark', 'auto']
       const currentIndex = themes.indexOf(this.theme)
@@ -122,69 +122,69 @@ export const useAppStore = defineStore('app', {
       this.applyTheme()
     },
     
-    // 设置主题
+    // Set theme
     setTheme(theme: 'light' | 'dark' | 'auto') {
       this.theme = theme
       this.applyTheme()
-      // 同步到 localStorage
+      // Sync to localStorage
       localStorage.setItem('app-theme', theme)
     },
     
-    // 应用主题
+    // Apply theme
     applyTheme() {
       const isDark = this.isDarkTheme
       document.documentElement.classList.toggle('dark', isDark)
       
-      // 更新meta标签
+      // Update meta tag
       const themeColorMeta = document.querySelector('meta[name="theme-color"]')
       if (themeColorMeta) {
         themeColorMeta.setAttribute('content', isDark ? '#1f2937' : '#409EFF')
       }
     },
     
-    // 切换语言
+    // switch language
     setLanguage(language: 'zh-CN' | 'en-US') {
       this.language = language
       document.documentElement.lang = language
-      // 同步到 localStorage
+      // Sync to localStorage
       localStorage.setItem('app-language', language)
     },
     
-    // 切换侧边栏
+    // Toggle sidebar
     toggleSidebar() {
       this.sidebarCollapsed = !this.sidebarCollapsed
     },
     
-    // 设置侧边栏状态
+    // Set sidebar status
     setSidebarCollapsed(collapsed: boolean) {
       this.sidebarCollapsed = collapsed
-      // 同步到 localStorage
+      // Sync to localStorage
       localStorage.setItem('sidebar-collapsed', String(collapsed))
     },
 
-    // 设置侧边栏宽度
+    // Set sidebar width
     setSidebarWidth(width: number) {
       this.sidebarWidth = Math.max(200, Math.min(400, width))
-      // 同步到 localStorage
+      // Sync to localStorage
       localStorage.setItem('sidebar-width', String(this.sidebarWidth))
     },
     
-    // 设置当前路由
+    // Set current route
     setCurrentRoute(route: RouteLocationNormalized) {
       this.currentRoute = route
     },
     
-    // 更新用户偏好
+    // Update user preferences
     updatePreferences(preferences: Partial<AppState['preferences']>) {
       this.preferences = { ...this.preferences, ...preferences }
-      // 同步到 localStorage
+      // Sync to localStorage
       localStorage.setItem('user-preferences', JSON.stringify(this.preferences))
     },
     
-    // 重置偏好设置
+    // Reset preferences
     resetPreferences() {
       this.preferences = {
-        defaultMarket: 'A股',
+        defaultMarket: 'A shares',
         defaultDepth: '3',
         autoRefresh: true,
         refreshInterval: 30,
@@ -192,23 +192,23 @@ export const useAppStore = defineStore('app', {
       }
     },
     
-    // 设置网络状态
+    // Set network status
     setOnlineStatus(isOnline: boolean) {
       this.isOnline = isOnline
     },
 
-    // 设置API连接状态
+    // Set API connection status
     setApiConnected(connected: boolean) {
       this.apiConnected = connected
       this.lastApiCheck = Date.now()
     },
 
-    // 检查API连接状态
+    // Check API connection status
     async checkApiConnection() {
       try {
-        // 使用 AbortController 实现超时
+        // Use AbortController to implement timeouts
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3秒超时
+        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 seconds timeout
 
         const response = await fetch('/api/health', {
           method: 'GET',
@@ -221,21 +221,21 @@ export const useAppStore = defineStore('app', {
         return connected
       } catch (error: unknown) {
         if ((error as any)?.name === 'AbortError') {
-          console.warn('API连接检查超时')
+          console.warn('API Connection check timeout')
         } else {
-          console.warn('API连接检查失败:', error)
+          console.warn('API Connection check failed:', error)
         }
         this.setApiConnected(false)
         return false
       }
     },
 
-    // 获取API版本信息
+    // Get API version information
     async fetchApiVersion() {
       try {
-        // 使用 AbortController 实现超时
+        // Use AbortController to implement timeouts
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3秒超时
+        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 seconds timeout
 
         const response = await fetch('/api/health', {
           signal: controller.signal
@@ -252,16 +252,16 @@ export const useAppStore = defineStore('app', {
         }
       } catch (error: unknown) {
         if ((error as any)?.name === 'AbortError') {
-          console.warn('获取API版本超时')
+          console.warn('Timeout getting API version')
         } else {
-          console.warn('获取API版本失败:', error)
+          console.warn('Failed to get API version:', error)
         }
         this.apiVersion = 'unknown'
         this.setApiConnected(false)
       }
     },
 
-    // 重置应用状态
+    // Reset app state
     resetAppState() {
       this.loading = false
       this.loadingProgress = 0

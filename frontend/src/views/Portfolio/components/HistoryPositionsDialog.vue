@@ -1,51 +1,51 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="📜 历史交易汇总"
+    title="📜 Historical transaction summary"
     width="950px"
     :close-on-click-modal="false"
     @close="handleClose"
   >
     <el-alert type="info" :closable="false" show-icon style="margin-bottom: 16px">
-      按股票汇总所有交易记录，显示累计买卖数量及已实现盈亏
+      Summarizes all transaction records by stock, showing the cumulative number of purchases and sales and realized profits and losses
     </el-alert>
 
-    <!-- 历史持仓表格 -->
+    <!-- Historical position table -->
     <el-table :data="positions" v-loading="loading" stripe size="small" max-height="450">
-      <el-table-column prop="code" label="代码" width="90">
+      <el-table-column prop="code" label="code" width="90">
         <template #default="{ row }">
           <span class="code-link" @click="goToStock(row)">{{ row.code }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="name" label="名称" width="100" />
-      <el-table-column prop="market" label="市场" width="70">
+      <el-table-column prop="name" label="Name" width="100" />
+      <el-table-column prop="market" label="market" width="70">
         <template #default="{ row }">
           <el-tag :type="getMarketTagType(row.market, row.code)" size="small">{{ getMarketName(row.market, row.code) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="买入" width="140">
+      <el-table-column label="buy" width="140">
         <template #default="{ row }">
-          <div>{{ row.total_buy_qty }}股</div>
+          <div>{{ row.total_buy_qty }}shares</div>
           <div class="sub-text">@ {{ getCurrencySymbol(row.currency) }}{{ row.avg_buy_price.toFixed(2) }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="卖出" width="140">
+      <el-table-column label="sell" width="140">
         <template #default="{ row }">
-          <div>{{ row.total_sell_qty }}股</div>
+          <div>{{ row.total_sell_qty }}shares</div>
           <div class="sub-text">@ {{ getCurrencySymbol(row.currency) }}{{ row.avg_sell_price.toFixed(2) }}</div>
         </template>
       </el-table-column>
-      <el-table-column prop="first_buy_date" label="首次买入" width="100">
+      <el-table-column prop="first_buy_date" label="First time purchase" width="100">
         <template #default="{ row }">
           {{ formatDate(row.first_buy_date) }}
         </template>
       </el-table-column>
-      <el-table-column prop="last_trade_date" label="最后交易" width="100">
+      <el-table-column prop="last_trade_date" label="last transaction" width="100">
         <template #default="{ row }">
           {{ formatDate(row.last_trade_date) }}
         </template>
       </el-table-column>
-      <el-table-column prop="realized_pnl" label="已实现盈亏" width="130">
+      <el-table-column prop="realized_pnl" label="Realized profit and loss" width="130">
         <template #default="{ row }">
           <span :class="row.realized_pnl >= 0 ? 'text-profit' : 'text-loss'">
             {{ row.realized_pnl >= 0 ? '+' : '' }}{{ getCurrencySymbol(row.currency) }}{{ row.realized_pnl?.toFixed(2) || '0.00' }}
@@ -54,7 +54,7 @@
       </el-table-column>
     </el-table>
 
-    <!-- 分页 -->
+    <!-- Pagination -->
     <div class="pagination-bar">
       <el-pagination
         v-model:current-page="currentPage"
@@ -67,11 +67,11 @@
       />
     </div>
 
-    <!-- 汇总信息 -->
+    <!-- Aggregated information -->
     <div class="summary-bar" v-if="positions.length > 0">
-      <span>共 {{ total }} 条记录</span>
+      <span>total {{ total }} records</span>
       <span class="summary-item">
-        总盈亏：
+        Total profit and loss:
         <span :class="totalPnl >= 0 ? 'text-profit' : 'text-loss'">
           {{ totalPnl >= 0 ? '+' : '' }}¥{{ totalPnl.toFixed(2) }}
         </span>
@@ -119,7 +119,7 @@ const loadData = async () => {
     positions.value = res.data?.items || []
     total.value = res.data?.total || 0
   } catch (e: any) {
-    ElMessage.error(e.message || '加载失败')
+    ElMessage.error(e.message || 'Loading failed')
   } finally {
     loading.value = false
   }
@@ -138,7 +138,7 @@ const formatDate = (dt?: string) => {
 
 const getMarketName = (m: string, code?: string) => {
   if (m === 'CN' && code && getMarketByStockCode(code) === 'ETF') return 'ETF'
-  return ({ CN: 'A股' }[m] || m)
+  return ({ CN: 'A shares' }[m] || m)
 }
 const getMarketTagType = (m: string, code?: string) => {
   if (m === 'CN' && code && getMarketByStockCode(code) === 'ETF') return 'success'

@@ -1,22 +1,22 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="保存到案例库"
+    title="Save to case library"
     width="500px"
     @close="handleClose"
   >
     <el-form :model="form" label-width="80px">
-      <el-form-item label="股票代码">
+      <el-form-item label="Stock code">
         <el-input v-model="stockCode" disabled />
       </el-form-item>
       
-      <el-form-item label="标签">
+      <el-form-item label="label">
         <el-select
           v-model="form.tags"
           multiple
           filterable
           allow-create
-          placeholder="选择或创建标签（可选）"
+          placeholder="Select or create a label (optional)"
           style="width: 100%"
         >
           <el-option
@@ -27,15 +27,15 @@
           />
         </el-select>
         <div style="margin-top: 8px; font-size: 12px; color: #909399;">
-          提示：可以输入新标签并按回车创建
+          Tip: You can enter a new label and press Enter to create it
         </div>
       </el-form-item>
     </el-form>
 
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">Cancel</el-button>
       <el-button type="primary" :loading="submitting" @click="submit">
-        保存
+        save
       </el-button>
     </template>
   </el-dialog>
@@ -50,7 +50,7 @@ const props = defineProps<{
   modelValue: boolean
   reviewId: string
   stockCode?: string
-  source?: 'paper' | 'position' | 'real'  // 数据源: paper(模拟交易) 或 position(持仓操作)
+  source?: 'paper' | 'position' | 'real'  // data source: paper(simulated trading) or position(Position operation)
 }>()
 
 const emit = defineEmits<{
@@ -69,18 +69,18 @@ const form = ref({
 
 const submitting = ref(false)
 
-// 常用标签（可以从后端获取）
+// Common tags (can be obtained from the backend)
 const availableTags = ref([
-  '成功案例',
-  '失败案例',
-  '止损及时',
-  '止盈过早',
-  '追涨杀跌',
-  '逆势操作',
-  '仓位管理',
-  '情绪化交易',
-  '纪律性强',
-  '需要改进'
+  'Success Stories',
+  'Failure case',
+  'Stop loss in time',
+  'Taking profit too early',
+  'Chasing the rise and killing the fall',
+  'Going against the trend',
+  'Position management',
+  'Emotional trading',
+  'Strong discipline',
+  'Needs improvement'
 ])
 
 const stockCode = computed(() => props.stockCode || '')
@@ -95,22 +95,22 @@ const submit = async () => {
     const res = await reviewApi.saveAsCase({
       review_id: props.reviewId,
       tags: form.value.tags,
-      source: props.source  // 传递数据源参数
+      source: props.source  // Pass data source parameters
     })
     
     if (res.success) {
-      ElMessage.success('已保存到案例库')
+      ElMessage.success('Saved to case library')
       emit('success')
       visible.value = false
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '保存失败')
+    ElMessage.error(e.message || 'Save failed')
   } finally {
     submitting.value = false
   }
 }
 
-// 监听对话框打开，重置表单
+// The listening dialog box opens and the form is reset.
 watch(visible, (val) => {
   if (val) {
     form.value.tags = []
@@ -119,6 +119,6 @@ watch(visible, (val) => {
 </script>
 
 <style scoped lang="scss">
-// 样式可以根据需要添加
+// Styles can be added as needed
 </style>
 

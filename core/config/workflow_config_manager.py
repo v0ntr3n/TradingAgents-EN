@@ -1,7 +1,7 @@
 """
-工作流配置管理器
+Workflow configuration manager
 
-管理工作流的定义、配置和状态
+Manage workflow definition, configuration, and status
 """
 
 import logging
@@ -13,15 +13,15 @@ logger = logging.getLogger(__name__)
 
 class WorkflowConfigManager:
     """
-    工作流配置管理器（v2.0 新版）
+    Workflow Configuration Manager (v2.0 new version)
     
-    管理：
-    1. 工作流的启用/禁用状态
-    2. 工作流的执行模式（sequential/parallel/conditional）
-    3. 工作流的节点和边定义
-    4. 工作流的并行组配置
+    Management:
+    1. Workflow enabled/disabled status
+    2. Workflow execution mode (sequential/parallel/conditional)
+    3. Workflow node and edge definitions
+    4. Parallel group configuration for workflows
     
-    优先级：数据库配置 > 代码默认配置
+    Priority: Database Configuration > Code default configuration
     """
     
     _instance = None
@@ -38,22 +38,22 @@ class WorkflowConfigManager:
         
         self._db = None
         self._cache = {}  # workflow_id -> definition
-        self._cache_ttl = 300  # 5分钟缓存
+        self._cache_ttl = 300  # 5 minutes cache
         self._cache_time = {}
         self._initialized = True
     
     def set_database(self, db):
-        """设置数据库连接"""
+        """Set up database connection"""
         self._db = db
         self._clear_cache()
     
     def _clear_cache(self):
-        """清空缓存"""
+        """Clear cache"""
         self._cache = {}
         self._cache_time = {}
     
     def _is_cache_valid(self, workflow_id: str) -> bool:
-        """检查缓存是否有效"""
+        """Check if cache is valid"""
         if workflow_id not in self._cache_time:
             return False
         elapsed = (datetime.utcnow() - self._cache_time[workflow_id]).total_seconds()
@@ -61,45 +61,45 @@ class WorkflowConfigManager:
     
     def get_workflow_definition(self, workflow_id: str) -> Optional[Dict[str, Any]]:
         """
-        获取工作流定义
+        Get workflow definition
         
         Args:
-            workflow_id: 工作流ID
+            workflow_id: Workflow ID
             
         Returns:
-            工作流定义字典，包含：
-            - workflow_id: 工作流ID
-            - name: 显示名称
-            - description: 描述
-            - enabled: 是否启用
-            - execution_mode: 执行模式
-            - nodes: 节点列表
-            - edges: 边列表
-            - parallel_groups: 并行组
-            - config: 其他配置
+            Workflow definition dictionary, including:
+            - workflow_id: Workflow ID
+            - name: display name
+            - description: Description
+            - enabled: Whether to enable
+            - execution_mode: execution mode
+            - nodes: node list
+            - edges: edge list
+            - parallel_groups: parallel group
+            - config: Other configurations
         """
-        # 检查缓存
+        # Check cache
         if workflow_id in self._cache and self._is_cache_valid(workflow_id):
             return self._cache[workflow_id]
         
         definition = None
         
-        # 从数据库加载
+        # Load from database
         if self._db is not None:
             try:
                 definition = self._db.workflow_definitions.find_one({"workflow_id": workflow_id})
                 if definition:
-                    # 移除 MongoDB 的 _id 字段
+                    # Remove MongoDB's _id field
                     definition.pop("_id", None)
-                    # 🔥 转换 datetime 对象为字符串（Pydantic 验证需要字符串类型）
+                    # 🔥 Convert datetime object to string (Pydantic validation requires string type)
                     if "created_at" in definition and isinstance(definition["created_at"], datetime):
                         definition["created_at"] = definition["created_at"].isoformat()
                     if "updated_at" in definition and isinstance(definition["updated_at"], datetime):
                         definition["updated_at"] = definition["updated_at"].isoformat()
             except Exception as e:
-                logger.warning(f"从数据库加载工作流定义失败: {e}")
+                logger.warning(f"Failed to load workflow definition from database: {e}")
         
-        # 更新缓存
+        # Update cache
         if definition:
             self._cache[workflow_id] = definition
             self._cache_time[workflow_id] = datetime.utcnow()
@@ -108,21 +108,21 @@ class WorkflowConfigManager:
     
     def save_workflow_definition(self, definition: Dict[str, Any]) -> bool:
         """
-        保存工作流定义到数据库
+        Save workflow definition to database
         
         Args:
-            definition: 工作流定义字典
+            definition: Workflow definition dictionary
             
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
         
         workflow_id = definition.get("workflow_id")
         if not workflow_id:
-            logger.error("定义缺少 workflow_id")
+            logger.error("definition missing workflow_id")
             return False
         
         try:
@@ -136,35 +136,35 @@ class WorkflowConfigManager:
                 upsert=True
             )
             
-            # 清除缓存
+            # clear cache
             if workflow_id in self._cache:
                 del self._cache[workflow_id]
             if workflow_id in self._cache_time:
                 del self._cache_time[workflow_id]
             
-            logger.info(f"✅ 工作流定义已保存: {workflow_id}")
+            logger.info(f"✅ Workflow definition saved: {workflow_id}")
             return True
         except Exception as e:
-            logger.error(f"保存工作流定义失败: {e}")
+            logger.error(f"Failed to save workflow definition: {e}")
             return False
     
     def is_workflow_enabled(self, workflow_id: str) -> bool:
-        """检查工作流是否启用"""
+        """Check if workflow is enabled"""
         definition = self.get_workflow_definition(workflow_id)
         return definition.get("enabled", False) if definition else False
 
     def enable_workflow(self, workflow_id: str) -> bool:
-        """启用工作流"""
+        """Enable workflow"""
         return self._set_workflow_enabled(workflow_id, True)
 
     def disable_workflow(self, workflow_id: str) -> bool:
-        """禁用工作流"""
+        """Disable workflow"""
         return self._set_workflow_enabled(workflow_id, False)
 
     def _set_workflow_enabled(self, workflow_id: str, enabled: bool) -> bool:
-        """设置工作流启用状态"""
+        """Set workflow enablement status"""
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         try:
@@ -179,26 +179,26 @@ class WorkflowConfigManager:
                 upsert=True
             )
 
-            # 清除缓存
+            # clear cache
             if workflow_id in self._cache:
                 del self._cache[workflow_id]
 
-            logger.info(f"✅ 工作流 {workflow_id} 已{'启用' if enabled else '禁用'}")
+            logger.info(f"✅ Workflow {workflow_id} Already{'enable' if enabled else 'Disable'}")
             return True
         except Exception as e:
-            logger.error(f"设置工作流状态失败: {e}")
+            logger.error(f"Setting workflow status failed: {e}")
             return False
 
     def get_all_workflow_definitions(self, category: Optional[str] = None, enabled_only: bool = False) -> List[Dict[str, Any]]:
         """
-        获取所有工作流定义
+        Get all workflow definitions
 
         Args:
-            category: 可选，按分类筛选
-            enabled_only: 是否只返回启用的工作流
+            category: Optional, filter by category
+            enabled_only: Whether to return only enabled workflows
 
         Returns:
-            工作流定义列表
+            Workflow definition list
         """
         result = []
 
@@ -211,31 +211,31 @@ class WorkflowConfigManager:
                     query["enabled"] = True
 
                 result = list(self._db.workflow_definitions.find(query))
-                # 移除 _id 字段
+                # Remove _id field
                 for definition in result:
                     definition.pop("_id", None)
             except Exception as e:
-                logger.warning(f"获取工作流定义列表失败: {e}")
+                logger.warning(f"Failed to get list of workflow definitions: {e}")
 
         return result
 
     def update_workflow_execution_mode(self, workflow_id: str, execution_mode: str) -> bool:
         """
-        更新工作流的执行模式
+        Update the execution mode of a workflow
 
         Args:
-            workflow_id: 工作流ID
-            execution_mode: 执行模式（sequential/parallel/conditional）
+            workflow_id: Workflow ID
+            execution_mode: Execution mode (sequential/parallel/conditional)
 
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         if execution_mode not in ["sequential", "parallel", "conditional"]:
-            logger.error(f"无效的执行模式: {execution_mode}")
+            logger.error(f"Invalid execution mode: {execution_mode}")
             return False
 
         try:
@@ -250,29 +250,29 @@ class WorkflowConfigManager:
                 upsert=True
             )
 
-            # 清除缓存
+            # clear cache
             if workflow_id in self._cache:
                 del self._cache[workflow_id]
 
-            logger.info(f"✅ 工作流执行模式已更新: {workflow_id} -> {execution_mode}")
+            logger.info(f"✅ Workflow execution mode updated: {workflow_id} -> {execution_mode}")
             return True
         except Exception as e:
-            logger.error(f"更新工作流执行模式失败: {e}")
+            logger.error(f"Failed to update workflow execution mode: {e}")
             return False
 
     def update_workflow_nodes(self, workflow_id: str, nodes: List[Dict[str, Any]]) -> bool:
         """
-        更新工作流的节点定义
+        Update a workflow s node definition
 
         Args:
-            workflow_id: 工作流ID
-            nodes: 节点列表
+            workflow_id: Workflow ID
+            nodes: node list
 
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         try:
@@ -287,29 +287,29 @@ class WorkflowConfigManager:
                 upsert=True
             )
 
-            # 清除缓存
+            # clear cache
             if workflow_id in self._cache:
                 del self._cache[workflow_id]
 
-            logger.info(f"✅ 工作流节点已更新: {workflow_id}")
+            logger.info(f"✅ Workflow node updated: {workflow_id}")
             return True
         except Exception as e:
-            logger.error(f"更新工作流节点失败: {e}")
+            logger.error(f"Failed to update workflow node: {e}")
             return False
 
     def update_workflow_edges(self, workflow_id: str, edges: List[Dict[str, Any]]) -> bool:
         """
-        更新工作流的边定义
+        Update workflow edge definitions
 
         Args:
-            workflow_id: 工作流ID
-            edges: 边列表
+            workflow_id: Workflow ID
+            edges: edge list
 
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         try:
@@ -324,46 +324,46 @@ class WorkflowConfigManager:
                 upsert=True
             )
 
-            # 清除缓存
+            # clear cache
             if workflow_id in self._cache:
                 del self._cache[workflow_id]
 
-            logger.info(f"✅ 工作流边已更新: {workflow_id}")
+            logger.info(f"✅ Workflow edge updated: {workflow_id}")
             return True
         except Exception as e:
-            logger.error(f"更新工作流边失败: {e}")
+            logger.error(f"Update workflow failed: {e}")
             return False
 
     def delete_workflow_definition(self, workflow_id: str) -> bool:
         """
-        删除工作流定义
+        Delete workflow definition
 
         Args:
-            workflow_id: 工作流ID
+            workflow_id: Workflow ID
 
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         try:
             result = self._db.workflow_definitions.delete_one({"workflow_id": workflow_id})
 
-            # 清除缓存
+            # clear cache
             if workflow_id in self._cache:
                 del self._cache[workflow_id]
             if workflow_id in self._cache_time:
                 del self._cache_time[workflow_id]
 
             if result.deleted_count > 0:
-                logger.info(f"✅ 工作流定义已删除: {workflow_id}")
+                logger.info(f"✅ Workflow definition deleted: {workflow_id}")
                 return True
             else:
-                logger.warning(f"⚠️ 工作流定义不存在: {workflow_id}")
+                logger.warning(f"⚠️ Workflow definition does not exist: {workflow_id}")
                 return False
         except Exception as e:
-            logger.error(f"删除工作流定义失败: {e}")
+            logger.error(f"Deletion of workflow definition failed: {e}")
             return False
 

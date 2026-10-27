@@ -1,7 +1,7 @@
 """
-获取市场快照工具
+Get Market Snapshot Tool
 
-获取交易期间的市场数据快照，用于复盘分析
+Obtain market data snapshots during the trading period for review analysis
 """
 
 import logging
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 @register_tool(
     tool_id="get_market_snapshot_for_review",
     name="获取市场快照",
-    description="获取交易期间K线数据和市场快照用于复盘分析，返回K线序列、成交量、技术指标和期间市场环境标签等结构化数据",
+    description="Obtain K-line data and market snapshots during the trading period for review analysis, and return structured data such as K-line sequence, trading volume, technical indicators, and market environment labels during the period.",
     category="trade_review",
     is_online=True,
     data_source_handling="self_contained",
@@ -25,21 +25,21 @@ logger = logging.getLogger(__name__)
 )
 def get_market_snapshot_for_review(
     code: Annotated[str, "股票代码"],
-    market: Annotated[str, "市场: 'CN'(A股) 或 'US'(美股)"],
-    start_date: Annotated[Optional[str], "开始日期 YYYY-MM-DD"] = None,
-    end_date: Annotated[Optional[str], "结束日期 YYYY-MM-DD"] = None
+    market: Annotated[str, "market: 'CN'(A shares) or 'US'(US stocks)"],
+    start_date: Annotated[Optional[str], "start date YYYY-MM-DD"] = None,
+    end_date: Annotated[Optional[str], "end date YYYY-MM-DD"] = None
 ) -> Dict[str, Any]:
     """
-    获取市场快照
+    Get a market snapshot
 
     Args:
-        code: 股票代码
-        market: 市场类型
-        start_date: 开始日期
-        end_date: 结束日期
+        code: Stock code
+        market: market type
+        start_date: start date
+        end_date: end date
 
     Returns:
-        包含K线数据的字典
+        Dictionary containing K-line data
     """
     try:
         from tradingagents.dataflows.interface import get_stock_data_unified
@@ -47,16 +47,16 @@ def get_market_snapshot_for_review(
         import asyncio
 
         if not start_date or not end_date:
-            # 默认获取最近3个月的数据
+            # By default, data of the last 3 months is obtained
             end_date = datetime.now().strftime("%Y-%m-%d")
             start_date = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
 
-        # 扩展日期范围（前后各10天）
+        # Extended date range (10 days before and after)
         query_start = (datetime.strptime(start_date, "%Y-%m-%d") - timedelta(days=10)).strftime("%Y-%m-%d")
         query_end = (datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=10)).strftime("%Y-%m-%d")
 
         async def _fetch_kline():
-            # 获取K线数据
+            # Get K-line data
             return await get_stock_data_unified(
                 ticker=code,
                 start_date=query_start,
@@ -64,7 +64,7 @@ def get_market_snapshot_for_review(
                 market_type=market.lower()
             )
 
-        # 在同步上下文中运行异步代码
+        # Run asynchronous code in a synchronous context
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:

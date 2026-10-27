@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-财务数据同步任务（调度器入口）
+Financial data synchronization task (scheduler entrance)
 
-使用统一的财务数据同步服务，支持线程池并行处理
+Use a unified financial data synchronization service to support thread pool parallel processing
 """
 import logging
 from typing import Dict, Any
@@ -15,43 +15,43 @@ logger = logging.getLogger(__name__)
 
 async def run_financial_data_sync(**kwargs):
     """
-    APScheduler任务：统一财务数据同步（使用线程池）
+    APScheduler Task: Unified financial data synchronization (using thread pool)
     
-    支持多数据源并行同步，使用线程池实现真正的并行处理
+    Supports parallel synchronization of multiple data sources and uses thread pools to achieve true parallel processing
     """
     job_id = kwargs.get("job_id", "financial_data_sync")
     
-    logger.info(f"🚀 [财务数据同步] 开始执行任务 (job_id={job_id})")
+    logger.info(f"🚀 [Financial data synchronization] Start task (job_id={job_id})")
     
-    # 🔥 普通手动触发也要检查是否已有未完成任务，只有强制执行才跳过
+    # 🔥 Ordinary manual triggering also needs to check whether there are any unfinished tasks, and it will only be skipped if it is forced to execute.
     manual_trigger = kwargs.get("_manual_trigger", False)
     force_execute = kwargs.get("_force_execute", False)
     
     if not force_execute:
-        # 🔥 检查是否已有实例在运行（普通手动触发也检查）
+        # 🔥 Check whether there is already an instance running (normal manual triggering also checks)
         from app.worker.tushare_sync_service import _check_task_running
         is_running, instance_id = await _check_task_running(job_id)
         if is_running:
-            logger.warning(f"⚠️ 任务 {job_id} 已有实例在运行（_id={instance_id}），跳过本次执行")
+            logger.warning(f"⚠️ Task {job_id} There is already an instance running (_id={instance_id}) , Skip this execution")
             return {
                 "skipped": True,
-                "reason": "已有实例在运行",
+                "reason": "There is already an instance running",
                 "running_instance_id": instance_id
             }
     else:
         if force_execute:
-            logger.info(f"🔧 [APScheduler] 强制执行，跳过并发检查")
+            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
-        # 获取统一的财务数据同步服务
+        # Get a unified financial data synchronization service
         service = await get_financial_sync_service()
         
-        # 从kwargs获取参数
+        # Get parameters from kwargs
         data_sources = kwargs.get("data_sources", ["tushare", "akshare", "baostock"])
         report_types = kwargs.get("report_types", ["quarterly", "annual"])
-        symbols = kwargs.get("symbols", None)  # None表示同步所有股票
+        symbols = kwargs.get("symbols", None)  # None Indicates synchronization of all stocks
         
-        # 执行同步（使用线程池）
+        # Perform synchronization (using thread pool)
         results = await service.sync_financial_data(
             symbols=symbols,
             data_sources=data_sources,
@@ -59,12 +59,12 @@ async def run_financial_data_sync(**kwargs):
             job_id=job_id
         )
         
-        # 统计总体结果
+        # Statistics overall results
         total_success = sum(stats.success_count for stats in results.values())
         total_symbols = sum(stats.total_symbols for stats in results.values())
         total_errors = sum(stats.error_count for stats in results.values())
         
-        # 标记任务完成
+        # Mark task complete
         try:
             stats_dict = {
                 "total_processed": total_symbols,
@@ -73,20 +73,20 @@ async def run_financial_data_sync(**kwargs):
                 "errors": []
             }
             
-            # 收集所有错误
+            # Collect all errors
             for source, stats in results.items():
                 if stats.errors:
                     stats_dict["errors"].extend([
                         {"data_source": source, **error} 
-                        for error in stats.errors[:5]  # 每个数据源最多5个错误
+                        for error in stats.errors[:5]  # Maximum 5 errors per data source
                     ])
             
             await mark_job_completed(job_id, stats_dict)
         except Exception as e:
-            logger.warning(f"⚠️ 更新任务完成状态失败: {e}")
+            logger.warning(f"⚠️ Failed to update task completion status: {e}")
         
-        logger.info(f"✅ [财务数据同步] 任务完成: job_id={job_id}, "
-                   f"成功={total_success}/{total_symbols}, 失败={total_errors}")
+        logger.info(f"✅ [Financial data synchronization] Mission accomplished: job_id={job_id}, "
+                   f"success={total_success}/{total_symbols}, failed={total_errors}")
         
         return {
             "success": True,
@@ -98,18 +98,18 @@ async def run_financial_data_sync(**kwargs):
         }
         
     except TaskCancelledException:
-        logger.info(f"ℹ️ [财务数据同步] 任务已被用户取消: job_id={job_id}")
-        return {"cancelled": True, "message": "任务已被用户取消"}
+        logger.info(f"ℹ️ [Financial data synchronization] The task has been canceled by the user: job_id={job_id}")
+        return {"cancelled": True, "message": "The task has been canceled by the user"}
     except Exception as e:
-        logger.error(f"❌ [财务数据同步] 任务失败: job_id={job_id}, error={e}", exc_info=True)
+        logger.error(f"❌ [Financial data synchronization] Task failed: job_id={job_id}, error={e}", exc_info=True)
         
-        # 标记任务为失败
+        # Mark task as failed
         try:
             await mark_job_completed(
                 job_id=job_id,
-                error_message=f"财务数据同步失败: {str(e)}"
+                error_message=f"Financial data synchronization failed: {str(e)}"
             )
         except Exception as mark_error:
-            logger.warning(f"⚠️ 标记任务失败状态失败: {mark_error}")
+            logger.warning(f"⚠️ Mark task failed status failed: {mark_error}")
         
         raise

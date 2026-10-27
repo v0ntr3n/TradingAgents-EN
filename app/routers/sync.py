@@ -37,10 +37,10 @@ async def get_stock_basics_status():
 
 @router.post("/etf/run")
 async def trigger_etf_sync(
-    force: bool = Query(False, description="是否强制覆盖已有数据"),
-    days: int = Query(30, ge=1, le=365, description="强制同步回溯天数（force=false 时忽略，自动走首次全量/后续增量）"),
+    force: bool = Query(False, description="Whether to force overwriting of existing data"),
+    days: int = Query(30, ge=1, le=365, description="Number of days to force synchronization back (force=false Ignored, the first full amount/subsequent increments will be automatically executed)"),
 ):
-    """触发 ETF 数据同步（etf_basic_info + etf_daily_quotes）"""
+    """Trigger ETF data synchronization (etf_basic_info + etf_daily_quotes) """
     try:
         from app.worker.etf_sync_service import run_etf_sync
         result = await run_etf_sync(force_update=force, days=days)

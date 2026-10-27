@@ -1,47 +1,47 @@
 """
-测试港股数据源修复
+Test Hong Kong stock data source repair
 """
 
 import sys
 import os
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_toolkit_hk_method():
-    """测试工具包港股方法"""
-    print("🧪 测试工具包港股方法...")
+    """Test Toolkit Hong Kong Stock Method"""
+    print("🧪 Test Toolkit Hong Kong Stock Method...")
     
     try:
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建工具包
+        # Create toolkit
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         toolkit = Toolkit(config)
         
-        # 检查是否有港股方法
+        # Check if there is a Hong Kong stock method
         has_hk_method = hasattr(toolkit, 'get_hk_stock_data_unified')
-        print(f"  工具包是否有港股方法: {has_hk_method}")
+        print(f"  Does the toolkit have Hong Kong stock methods?: {has_hk_method}")
         
         if has_hk_method:
-            print("  ✅ 工具包港股方法存在")
+            print("  ✅ Toolkit Hong Kong stock method exists")
             return True
         else:
-            print("  ❌ 工具包港股方法不存在")
+            print("  ❌ The toolkit Hong Kong stock method does not exist")
             return False
         
     except Exception as e:
-        print(f"❌ 工具包港股方法测试失败: {e}")
+        print(f"❌ Toolkit Hong Kong stock method test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_market_analyst_tools():
-    """测试市场分析师工具配置"""
-    print("\n🧪 测试市场分析师工具配置...")
+    """Test Market Analyst Tool Configuration"""
+    print("\n🧪 Test Market Analyst Tool Configuration...")
     
     try:
         from tradingagents.agents.analysts.market_analyst import create_market_analyst
@@ -49,136 +49,136 @@ def test_market_analyst_tools():
         from tradingagents.default_config import DEFAULT_CONFIG
         from tradingagents.utils.stock_utils import StockUtils
         
-        # 创建工具包
+        # Create toolkit
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         toolkit = Toolkit(config)
         
-        # 测试港股识别
+        # Test Hong Kong stock identification
         hk_ticker = "0700.HK"
         market_info = StockUtils.get_market_info(hk_ticker)
         
-        print(f"  港股识别测试: {hk_ticker}")
-        print(f"    市场类型: {market_info['market_name']}")
-        print(f"    是否港股: {market_info['is_hk']}")
-        print(f"    货币: {market_info['currency_name']}")
+        print(f"  Hong Kong Stock Identification Test: {hk_ticker}")
+        print(f"    market type: {market_info['market_name']}")
+        print(f"    Is it Hong Kong stocks?: {market_info['is_hk']}")
+        print(f"    Currency: {market_info['currency_name']}")
         
         if market_info['is_hk']:
-            print("  ✅ 港股识别正确")
+            print("  ✅ Hong Kong stocks are correctly identified")
         else:
-            print("  ❌ 港股识别失败")
+            print("  ❌ Hong Kong stock identification failed")
             return False
         
-        # 检查工具包方法
-        print(f"  工具包港股方法: {hasattr(toolkit, 'get_hk_stock_data_unified')}")
+        # Check toolkit methods
+        print(f"  Toolkit Hong Kong Stock Method: {hasattr(toolkit, 'get_hk_stock_data_unified')}")
         
-        print("  ✅ 市场分析师工具配置测试通过")
+        print("  ✅ Market analyst tool configuration test passed")
         return True
         
     except Exception as e:
-        print(f"❌ 市场分析师工具配置测试失败: {e}")
+        print(f"❌ Market Analyst Tool Configuration Test Failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_akshare_hk_availability():
-    """测试AKShare港股可用性"""
-    print("\n🧪 测试AKShare港股可用性...")
+    """Test the availability of AKShare Hong Kong stocks"""
+    print("\n🧪 Test the availability of AKShare Hong Kong stocks...")
     
     try:
         from tradingagents.dataflows.interface import AKSHARE_HK_AVAILABLE, HK_STOCK_AVAILABLE
         
-        print(f"  AKShare港股可用: {AKSHARE_HK_AVAILABLE}")
-        print(f"  Yahoo Finance港股可用: {HK_STOCK_AVAILABLE}")
+        print(f"  AKShare Hong Kong stocks available: {AKSHARE_HK_AVAILABLE}")
+        print(f"  Yahoo Finance Hong Kong stocks available: {HK_STOCK_AVAILABLE}")
         
         if AKSHARE_HK_AVAILABLE:
-            print("  ✅ AKShare港股数据源可用")
+            print("  ✅ AKShare Hong Kong stock data source available")
             
-            # 测试AKShare港股函数
+            # Test AKShare Hong Kong stock function
             from tradingagents.dataflows.akshare_utils import get_hk_stock_data_akshare
-            print("  ✅ AKShare港股函数导入成功")
+            print("  ✅ AKShare Hong Kong stock function imported successfully")
             
         else:
-            print("  ⚠️ AKShare港股数据源不可用")
+            print("  ⚠️ AKShare Hong Kong stock data source is not available")
         
         if HK_STOCK_AVAILABLE:
-            print("  ✅ Yahoo Finance港股数据源可用")
+            print("  ✅ Yahoo Finance Hong Kong stock data source available")
         else:
-            print("  ⚠️ Yahoo Finance港股数据源不可用")
+            print("  ⚠️ Yahoo Finance Hong Kong stock data source is not available")
         
-        # 测试统一接口
+        # Test unified interface
         from tradingagents.dataflows.interface import get_hk_stock_data_unified
-        print("  ✅ 港股统一接口导入成功")
+        print("  ✅ The unified interface for Hong Kong stocks was successfully imported")
         
         return True
         
     except Exception as e:
-        print(f"❌ AKShare港股可用性测试失败: {e}")
+        print(f"❌ AKShare Hong Kong stock usability test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_data_source_priority():
-    """测试数据源优先级"""
-    print("\n🧪 测试数据源优先级...")
+    """Test data source priority"""
+    print("\n🧪 Test data source priority...")
     
     try:
         from tradingagents.dataflows.interface import get_hk_stock_data_unified
         from datetime import datetime, timedelta
         
-        # 设置测试日期
+        # Set test date
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
         
         symbol = "0700.HK"
-        print(f"  测试获取 {symbol} 数据...")
-        print(f"  日期范围: {start_date} 到 {end_date}")
+        print(f"  Test acquisition {symbol} data...")
+        print(f"  date range: {start_date} Arrive {end_date}")
         
-        # 调用统一接口（不实际获取数据，只测试调用）
-        print("  ✅ 统一接口调用测试准备完成")
+        # Call the unified interface (do not actually obtain data, only test the call)
+        print("  ✅ Unified interface call test preparation completed")
         
-        # 这里不实际调用，避免网络请求
+        # There is no actual call here to avoid network requests.
         # result = get_hk_stock_data_unified(symbol, start_date, end_date)
         
-        print("  ✅ 数据源优先级测试通过")
+        print("  ✅ Data source priority test passed")
         return True
         
     except Exception as e:
-        print(f"❌ 数据源优先级测试失败: {e}")
+        print(f"❌ Data source priority test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_market_analyst_modification():
-    """测试市场分析师修改"""
-    print("\n🧪 测试市场分析师修改...")
+    """Test Market Analyst Modifications"""
+    print("\n🧪 Test Market Analyst Modifications...")
     
     try:
-        # 读取市场分析师文件内容
+        # Read market analyst file content
         with open('tradingagents/agents/analysts/market_analyst.py', 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # 检查是否包含港股配置
+        # Check whether Hong Kong stock allocation is included
         has_hk_config = 'elif is_hk:' in content
         has_unified_tool = 'get_hk_stock_data_unified' in content
         
-        print(f"  包含港股配置: {has_hk_config}")
-        print(f"  包含统一工具: {has_unified_tool}")
+        print(f"  Includes Hong Kong stock allocation: {has_hk_config}")
+        print(f"  Contains unified tools: {has_unified_tool}")
         
         if has_hk_config and has_unified_tool:
-            print("  ✅ 市场分析师修改正确")
+            print("  ✅ Market analyst revised correctly")
             return True
         else:
-            print("  ❌ 市场分析师修改不完整")
+            print("  ❌ Market analyst s modification is incomplete")
             return False
         
     except Exception as e:
-        print(f"❌ 市场分析师修改测试失败: {e}")
+        print(f"❌ Market Analyst Modification Test Fails: {e}")
         return False
 
 def main():
-    """运行所有测试"""
-    print("🔧 港股数据源修复测试")
+    """Run all tests"""
+    print("🔧 Hong Kong stock data source repair test")
     print("=" * 50)
     
     tests = [
@@ -197,17 +197,17 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"❌ 测试 {test_func.__name__} 异常: {e}")
+            print(f"❌ test {test_func.__name__} Abnormal: {e}")
     
     print("\n" + "=" * 50)
-    print(f"🔧 港股数据源修复测试完成: {passed}/{total} 通过")
+    print(f"🔧 Hong Kong stock data source repair test completed: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 港股数据源修复成功！")
-        print("\n现在港股分析应该优先使用AKShare数据源")
-        print("而不是Yahoo Finance，避免了Rate Limit问题")
+        print("🎉 The Hong Kong stock data source was repaired successfully!")
+        print("\n Hong Kong stock analysis should now give priority to using the AKShare data source")
+        print("Instead of Yahoo Finance, avoid the Rate Limit problem")
     else:
-        print("⚠️ 部分测试失败，请检查失败的测试")
+        print("⚠️ Some tests failed, please check the failed tests")
 
 if __name__ == "__main__":
     main()

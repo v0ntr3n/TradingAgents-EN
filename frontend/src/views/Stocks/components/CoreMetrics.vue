@@ -3,18 +3,18 @@
     <div class="card-header">
       <div class="section-title">
         <span>📊</span>
-        <span>核心指标</span>
+        <span>core indicators</span>
       </div>
-      <el-tooltip v-if="basics.reportPeriod" :content="`最新财报期：${basics.reportPeriod}`" placement="top">
+      <el-tooltip v-if="basics.reportPeriod" :content="`Latest financial reporting period:${basics.reportPeriod}`" placement="top">
         <el-tag size="small" type="info" effect="plain">{{ basics.reportPeriod }}</el-tag>
       </el-tooltip>
     </div>
     <div class="card-body">
       <div class="metrics-grid">
-        <!-- 估值 -->
+        <!-- Valuation -->
         <div class="metric-card">
           <div class="metric-card-header">
-            <span class="metric-name">估值</span>
+            <span class="metric-name">Valuation</span>
             <span class="metric-status" :class="valuationStatus.cls">{{ valuationStatus.text }}</span>
           </div>
           <div class="metric-values">
@@ -23,7 +23,7 @@
               <el-tooltip :content="fmtNum(basics.pe)" placement="top" :show-after="300">
                 <div class="metric-value-number">
                   {{ fmtNum(basics.pe) }}
-                  <el-tag v-if="basics.peIsRealtime" type="success" size="small" style="margin-left:4px">实时</el-tag>
+                  <el-tag v-if="basics.peIsRealtime" type="success" size="small" style="margin-left:4px">real time</el-tag>
                 </div>
               </el-tooltip>
             </div>
@@ -45,10 +45,10 @@
           </div>
         </div>
 
-        <!-- 盈利能力 -->
+        <!-- Profitability -->
         <div class="metric-card">
           <div class="metric-card-header">
-            <span class="metric-name">盈利能力</span>
+            <span class="metric-name">Profitability</span>
             <span class="metric-status" :class="profitStatus.cls">{{ profitStatus.text }}</span>
           </div>
           <div class="metric-values">
@@ -59,13 +59,13 @@
               </el-tooltip>
             </div>
             <div class="metric-value-item">
-              <div class="metric-value-label">毛利率</div>
+              <div class="metric-value-label">Gross profit margin</div>
               <el-tooltip :content="fmtPercent(financialSnapshot.grossMargin)" placement="top" :show-after="300">
                 <div class="metric-value-number">{{ fmtPercent(financialSnapshot.grossMargin) }}</div>
               </el-tooltip>
             </div>
             <div class="metric-value-item">
-              <div class="metric-value-label">净利率</div>
+              <div class="metric-value-label">net profit margin</div>
               <el-tooltip :content="fmtPercent(financialSnapshot.netprofitMargin)" placement="top" :show-after="300">
                 <div class="metric-value-number">{{ fmtPercent(financialSnapshot.netprofitMargin) }}</div>
               </el-tooltip>
@@ -76,27 +76,27 @@
           </div>
         </div>
 
-        <!-- 财务健康 -->
+        <!-- financial health -->
         <div class="metric-card">
           <div class="metric-card-header">
-            <span class="metric-name">财务健康</span>
+            <span class="metric-name">financial health</span>
             <span class="metric-status" :class="healthStatus.cls">{{ healthStatus.text }}</span>
           </div>
           <div class="metric-values">
             <div class="metric-value-item">
-              <div class="metric-value-label">负债率</div>
+              <div class="metric-value-label">Debt ratio</div>
               <el-tooltip :content="fmtPercent(basics.debtRatio)" placement="top" :show-after="300">
                 <div class="metric-value-number">{{ fmtPercent(basics.debtRatio) }}</div>
               </el-tooltip>
             </div>
             <div class="metric-value-item">
-              <div class="metric-value-label">流动比率</div>
+              <div class="metric-value-label">current ratio</div>
               <el-tooltip :content="fmtRatio(basics.currentRatio)" placement="top" :show-after="300">
                 <div class="metric-value-number">{{ fmtRatio(basics.currentRatio) }}</div>
               </el-tooltip>
             </div>
             <div class="metric-value-item">
-              <div class="metric-value-label">股息率</div>
+              <div class="metric-value-label">dividend yield</div>
               <el-tooltip :content="fmtPercent(basics.dividendYield)" placement="top" :show-after="300">
                 <div class="metric-value-number">{{ fmtPercent(basics.dividendYield) }}</div>
               </el-tooltip>
@@ -107,26 +107,26 @@
           </div>
         </div>
 
-        <!-- 经营规模 -->
+        <!-- Business scale -->
         <div class="metric-card">
           <div class="metric-card-header">
-            <span class="metric-name">经营规模</span>
+            <span class="metric-name">Business scale</span>
           </div>
           <div class="metric-values">
             <div class="metric-value-item">
-              <div class="metric-value-label">总市值</div>
+              <div class="metric-value-label">Total market capitalization</div>
               <el-tooltip :content="fmtAmount(basics.marketCap)" placement="top" :show-after="300">
                 <div class="metric-value-number">{{ fmtAmount(basics.marketCap) }}</div>
               </el-tooltip>
             </div>
             <div class="metric-value-item">
-              <div class="metric-value-label">营收</div>
+              <div class="metric-value-label">Revenue</div>
               <el-tooltip :content="fmtAmount(financialSnapshot.revenue)" placement="top" :show-after="300">
                 <div class="metric-value-number">{{ fmtAmount(financialSnapshot.revenue) }}</div>
               </el-tooltip>
             </div>
             <div class="metric-value-item">
-              <div class="metric-value-label">净利润</div>
+              <div class="metric-value-label">net profit</div>
               <el-tooltip :content="fmtAmount(financialSnapshot.netProfit)" placement="top" :show-after="300">
                 <div class="metric-value-number">{{ fmtAmount(financialSnapshot.netProfit) }}</div>
               </el-tooltip>
@@ -136,14 +136,14 @@
             <div class="metric-bar-fill" :style="{ width: '70%', background: '#3b82f6' }"></div>
           </div>
           <div v-if="financialSnapshot.annDate" class="metric-footer">
-            财报公告：{{ financialSnapshot.annDate }}
+            Financial Report Announcement:{{ financialSnapshot.annDate }}
           </div>
         </div>
       </div>
 
-      <!-- 因子提示信息 -->
+      <!-- Factor prompt information -->
       <div v-if="factorWarningEntries.length || factorDiagnosticEntries.length" class="factor-hints">
-        <div class="factor-hints-title">提示信息</div>
+        <div class="factor-hints-title">Prompt message</div>
         <div class="factor-hints-list">
           <el-popover
             v-for="warning in factorWarningEntries"
@@ -172,9 +172,9 @@
             </template>
             <div class="factor-hint-popover">
               <div class="factor-hint-popover-title">{{ diagnostic.label }}</div>
-              <div class="factor-hint-line">状态：{{ diagnostic.state }}</div>
-              <div v-if="diagnostic.reason" class="factor-hint-line">原因：{{ diagnostic.reason }}</div>
-              <div v-if="diagnostic.missingInputs.length" class="factor-hint-line">缺失输入：{{ diagnostic.missingInputs.join('、') }}</div>
+              <div class="factor-hint-line">Status:{{ diagnostic.state }}</div>
+              <div v-if="diagnostic.reason" class="factor-hint-line">Reason:{{ diagnostic.reason }}</div>
+              <div v-if="diagnostic.missingInputs.length" class="factor-hint-line">Missing input:{{ diagnostic.missingInputs.join(', ') }}</div>
             </div>
           </el-popover>
         </div>
@@ -239,19 +239,19 @@ function fmtRatio(v: any) {
 function fmtAmount(v: any) {
   const n = Number(v)
   if (!Number.isFinite(n)) return '-'
-  if (n >= 1e8) return (n / 1e8).toFixed(2) + '亿'
-  if (n >= 1e4) return (n / 1e4).toFixed(2) + '万'
+  if (n >= 1e8) return (n / 1e8).toFixed(2) + 'billion'
+  if (n >= 1e4) return (n / 1e4).toFixed(2) + 'million'
   return n.toFixed(2)
 }
 
-// 估值状态：PE 越低越便宜（简化判断）
+// Valuation status: The lower the PE, the cheaper it is (simplified judgment)
 const valuationStatus = computed(() => {
   const pe = props.basics.pe
-  if (!Number.isFinite(pe)) return { text: '无数据', cls: 'status-mid' }
-  if (pe < 0) return { text: '亏损', cls: 'status-bad' }
-  if (pe < 15) return { text: '低估', cls: 'status-good' }
-  if (pe < 30) return { text: '中性', cls: 'status-mid' }
-  return { text: '偏高', cls: 'status-bad' }
+  if (!Number.isFinite(pe)) return { text: 'No data', cls: 'status-mid' }
+  if (pe < 0) return { text: 'Loss', cls: 'status-bad' }
+  if (pe < 15) return { text: 'underestimate', cls: 'status-good' }
+  if (pe < 30) return { text: 'Neutral', cls: 'status-mid' }
+  return { text: 'On the high side', cls: 'status-bad' }
 })
 
 const valuationBar = computed(() => {
@@ -268,14 +268,14 @@ const valuationBarColor = computed(() => {
   return '#f59e0b'
 })
 
-// 盈利能力状态
+// profitability status
 const profitStatus = computed(() => {
   const roe = props.basics.roe
-  if (!Number.isFinite(roe)) return { text: '无数据', cls: 'status-mid' }
-  if (roe >= 15) return { text: '优秀', cls: 'status-good' }
-  if (roe >= 8) return { text: '良好', cls: 'status-mid' }
-  if (roe > 0) return { text: '偏弱', cls: 'status-bad' }
-  return { text: '亏损', cls: 'status-bad' }
+  if (!Number.isFinite(roe)) return { text: 'No data', cls: 'status-mid' }
+  if (roe >= 15) return { text: 'Excellent', cls: 'status-good' }
+  if (roe >= 8) return { text: 'good', cls: 'status-mid' }
+  if (roe > 0) return { text: 'Weak', cls: 'status-bad' }
+  return { text: 'Loss', cls: 'status-bad' }
 })
 
 const profitBar = computed(() => {
@@ -291,13 +291,13 @@ const profitBarColor = computed(() => {
   return '#f59e0b'
 })
 
-// 财务健康状态
+// financial health
 const healthStatus = computed(() => {
   const debt = props.basics.debtRatio
-  if (!Number.isFinite(debt)) return { text: '无数据', cls: 'status-mid' }
-  if (debt < 40) return { text: '健康', cls: 'status-good' }
-  if (debt < 60) return { text: '中性', cls: 'status-mid' }
-  return { text: '偏高', cls: 'status-bad' }
+  if (!Number.isFinite(debt)) return { text: 'No data', cls: 'status-mid' }
+  if (debt < 40) return { text: 'health', cls: 'status-good' }
+  if (debt < 60) return { text: 'Neutral', cls: 'status-mid' }
+  return { text: 'On the high side', cls: 'status-bad' }
 })
 
 const healthBar = computed(() => {

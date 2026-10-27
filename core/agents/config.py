@@ -1,5 +1,5 @@
 """
-智能体配置和元数据定义
+Agent configuration and metadata definition
 """
 
 from enum import Enum
@@ -8,25 +8,25 @@ from pydantic import BaseModel, Field
 
 
 class AgentCategory(str, Enum):
-    """智能体类别"""
-    ANALYST = "analyst"       # 分析师
-    RESEARCHER = "researcher"  # 研究员
-    TRADER = "trader"         # 研究整合员
-    RISK = "risk"             # 风险评估
-    MANAGER = "manager"       # 管理者
-    POST_PROCESSOR = "post_processor"  # 后处理器
+    """Agent category"""
+    ANALYST = "analyst"       # analyst
+    RESEARCHER = "researcher"  # researcher
+    TRADER = "trader"         # research integrator
+    RISK = "risk"             # risk assessment
+    MANAGER = "manager"       # manager
+    POST_PROCESSOR = "post_processor"  # post processor
 
 
 class LicenseTier(str, Enum):
-    """许可证级别"""
-    FREE = "free"           # 免费版
-    BASIC = "basic"         # 基础版
-    PRO = "pro"             # 专业版
-    ENTERPRISE = "enterprise"  # 企业版
+    """License level"""
+    FREE = "free"           # Free version
+    BASIC = "basic"         # Basic version
+    PRO = "pro"             # Professional version
+    ENTERPRISE = "enterprise"  # Enterprise Edition
 
 
 class GrowthRole(str, Enum):
-    """成长角色声明"""
+    """Growth Role Statement"""
     NONE = "none"
     EXTRACTOR = "extractor"
     REVIEWER = "reviewer"
@@ -34,7 +34,7 @@ class GrowthRole(str, Enum):
 
 
 class GrowthMemoryScope(str, Enum):
-    """成长产物的记忆范围提示"""
+    """Memory range reminder for growth products"""
     NONE = "none"
     OBJECT_TRACKING = "object_tracking"
     PATTERN = "pattern"
@@ -42,13 +42,13 @@ class GrowthMemoryScope(str, Enum):
 
 
 class GrowthReviewLevel(str, Enum):
-    """成长产物的审核等级"""
+    """Review level of development products"""
     AUTO_PENDING = "auto_pending"
     MANUAL_REQUIRED = "manual_required"
 
 
 class GrowthSourceType(str, Enum):
-    """成长产物来源类型"""
+    """Growth product source type"""
     NONE = "none"
     ANALYSIS_REPORT = "analysis_report"
     REVIEW_REPORT = "review_report"
@@ -56,42 +56,42 @@ class GrowthSourceType(str, Enum):
 
 
 class AgentMaturityLevel(str, Enum):
-    """Agent 平台成熟度等级"""
+    """Agent Platform maturity level"""
     EXPERIMENTAL = "experimental"
     INTERNAL = "internal"
     STABLE = "stable"
 
 
 class AgentInputMode(str, Enum):
-    """Agent 输入模式声明"""
+    """Agent Input mode declaration"""
     STANDALONE = "standalone"
     UPSTREAM_DEPENDENT = "upstream-dependent"
     MIXED = "mixed"
 
 
 class AgentDebugReplayMode(str, Enum):
-    """Agent 调试重放模式"""
+    """Agent Debug replay mode"""
     DIRECT = "direct"
     REQUIRES_EXTRA_STATE = "requires_extra_state"
     REQUIRES_CHAIN_PREFILL = "requires_chain_prefill"
 
 
 class AgentMaintenanceStatus(str, Enum):
-    """Agent 维护状态声明"""
+    """Agent maintenance status statement"""
     MAINTAINED = "maintained"
     UNMAINTAINED = "unmaintained"
-    DEPRECATED = "deprecated"  # 🔥 新增：已废弃，不应被新代码引用
+    DEPRECATED = "deprecated"  # 🔥 New: Deprecated and should not be referenced by new code
 
 
 class AgentInputSource(str, Enum):
-    """Agent 输入来源声明"""
+    """Agent Enter source statement"""
     REQUEST = "request"
     STATE = "state"
     CONTEXT = "context"
 
 
 class AgentInput(BaseModel):
-    """智能体输入定义"""
+    """Agent input definition"""
     name: str
     type: str  # string, number, boolean, object, array
     description: str
@@ -104,96 +104,96 @@ class AgentInput(BaseModel):
 
 
 class AgentOutput(BaseModel):
-    """智能体输出定义"""
+    """Agent output definition"""
     name: str
     type: str
     description: str
 
 
 class ToolMetadata(BaseModel):
-    """工具元数据定义"""
-    id: str                           # 工具唯一标识
-    name: str                         # 显示名称
-    description: str                  # 描述
-    category: str                     # 工具类别: market, news, social, fundamentals, etc.
+    """Tool metadata definition"""
+    id: str                           # Tool unique identifier
+    name: str                         # display name
+    description: str                  # Description
+    category: str                     # Tool category: market, news, social, fundamentals, etc.
 
-    # 参数定义
+    # Parameter definition
     parameters: List[Dict[str, Any]] = Field(default_factory=list)
 
-    # 数据源信息
-    data_source: str = ""             # 数据来源: yfinance, finnhub, reddit, etc.
-    is_online: bool = True            # 是否需要在线访问
+    # Data source information
+    data_source: str = ""             # Data source: yfinance, finnhub, reddit, etc.
+    is_online: bool = True            # Do you need online access?
 
-    # 配置
-    timeout: int = 30                 # 超时时间（秒）
-    rate_limit: Optional[int] = None  # 频率限制（每分钟调用次数）
+    # Configuration
+    timeout: int = 30                 # Timeout (seconds)
+    rate_limit: Optional[int] = None  # Frequency limit (calls per minute)
 
-    # 许可证
+    # license
     license_tier: LicenseTier = LicenseTier.FREE
 
-    # 显示
+    # show
     icon: str = "🔧"
     color: str = "#95a5a6"
 
 
 class AgentToolConfig(BaseModel):
-    """Agent 工具配置"""
-    tool_id: str                      # 工具 ID
-    enabled: bool = True              # 是否启用
-    priority: int = 0                 # 优先级（越高越优先）
-    config: Dict[str, Any] = Field(default_factory=dict)  # 工具特定配置
+    """Agent Tool configuration"""
+    tool_id: str                      # Tools ID
+    enabled: bool = True              # Whether to enable
+    priority: int = 0                 # Priority (the higher the priority)
+    config: Dict[str, Any] = Field(default_factory=dict)  # Tool specific configuration
 
 
 class AgentMetadata(BaseModel):
     """
-    智能体元数据 - 用于注册和发现
+    Agent metadata - used for registration and discovery
     """
-    id: str                          # 唯一标识: market_analyst
-    name: str                        # 显示名称: 市场分析师
-    description: str                 # 描述
-    category: AgentCategory          # 分类
+    id: str                          # unique identifier: market_analyst
+    name: str                        # display name: market analyst
+    description: str                 # Description
+    category: AgentCategory          # Classification
     version: str = "1.0.0"
 
-    # 输入输出定义
+    # Input and output definition
     inputs: List[AgentInput] = Field(default_factory=list)
     outputs: List[AgentOutput] = Field(default_factory=list)
 
-    # 工具配置
-    tools: List[str] = Field(default_factory=list)  # 可用工具 ID 列表
-    default_tools: List[str] = Field(default_factory=list)  # 默认启用的工具
-    max_tool_calls: int = 3          # 最大工具调用次数
+    # Tool configuration
+    tools: List[str] = Field(default_factory=list)  # List of available tool IDs
+    default_tools: List[str] = Field(default_factory=list)  # Tools enabled by default
+    max_tool_calls: int = 3          # Maximum number of tool calls
 
-    # 许可证
+    # license
     license_tier: LicenseTier = LicenseTier.FREE
 
-    # 标签和图标
+    # Labels and icons
     tags: List[str] = Field(default_factory=list)
     icon: str = "🤖"
     color: str = "#3498db"
 
-    # 依赖
-    depends_on: List[str] = Field(default_factory=list)  # 依赖的其他智能体
+    # Depend on
+    depends_on: List[str] = Field(default_factory=list)  # Other agents that depend on
 
-    # 🆕 状态层 IO 定义
-    reads_from: List[str] = Field(default_factory=list)  # 读取其他 Agent 的输出字段
+    # 🆕 State layer IO definition
+    reads_from: List[str] = Field(default_factory=list)  # Read the output fields of other Agents
 
-    # 🆕 工作流集成配置
-    requires_tools: bool = True       # 是否需要工具调用（False 则直接执行）
-    output_field: str = ""            # 输出到 state 的字段名，如 "market_report"
-    report_label: str = ""            # 报告标签，如 "【市场分析】"
-    show_in_reports: bool = True      # 是否在分析结果报告列表中展示此 agent 的输出
-    node_name: str = ""               # 工作流节点名称，如 "Market Analyst"
-    execution_order: int = 100        # 执行顺序（越小越先执行）
-    workflow_stage: str = ""          # 工作流阶段：analyst/research/risk/manager/trader
+    # 🆕 Workflow integration configuration
+    requires_tools: bool = True       # Whether tool calling is required (False means direct execution)
+    output_field: str = ""            # The field name output to state, such as "market_report"
+    report_label: str = ""            # Report labels such as " [Market analysis]"
+    show_in_reports: bool = True      # Whether to display the output of this agent in the analysis results report list
+    node_name: str = ""               # Workflow node name, such as "Market Analyst"
+    execution_order: int = 100        # Execution order (the smaller the value, the earlier it is executed)
+    workflow_stage: str = ""          # Workflow stages:analyst/research/risk/manager/trader
 
-    # 🆕 成长能力声明
+    # 🆕 Growth Capability Statement
     growth_role: GrowthRole = GrowthRole.NONE
     growth_outputs: List[str] = Field(default_factory=list)
     memory_scope_hint: GrowthMemoryScope = GrowthMemoryScope.NONE
     review_level: GrowthReviewLevel = GrowthReviewLevel.MANUAL_REQUIRED
     growth_source_type: GrowthSourceType = GrowthSourceType.NONE
 
-    # 🆕 平台治理声明
+    # 🆕 Platform Governance Statement
     maturity_level: AgentMaturityLevel = AgentMaturityLevel.STABLE
     input_mode: AgentInputMode = AgentInputMode.STANDALONE
     debug_replay_mode: AgentDebugReplayMode = AgentDebugReplayMode.DIRECT
@@ -206,297 +206,297 @@ class AgentMetadata(BaseModel):
 
 class AgentConfig(BaseModel):
     """
-    智能体运行时配置
+    Agent runtime configuration
     
-    注意：llm_provider 和 llm_model 字段已废弃，不应使用。
-    LLM 的 provider 和 model 应该由分析流程指定，而不是 Agent 配置。
-    这些字段保留是为了向后兼容，但会在创建 Agent 时被排除。
+    NOTE: The llm_provider and llm_model fields are deprecated and should not be used.
+    LLM The provider and model should be specified by the analysis process, not the Agent configuration.
+    These fields are retained for backward compatibility, but are excluded when creating the Agent.
     """
-    # LLM 配置（已废弃，不应使用）
-    llm_provider: Optional[str] = None  # 🔥 改为 Optional，默认 None，避免误导
+    # LLM Configuration (deprecated and should not be used)
+    llm_provider: Optional[str] = None  # 🔥 Change to Optional, default None, to avoid misleading
     llm_model: Optional[str] = None
-    temperature: float = 0.2  # 股票分析推荐值：0.2-0.3（快速分析），0.1-0.2（深度分析）
+    temperature: float = 0.2  # Recommended values for stock analysis: 0.2-0.3 (quick analysis), 0.1-0.2 (in-depth analysis)
     
-    # 工具配置
+    # Tool configuration
     online_tools: bool = True
     available_tools: List[str] = Field(default_factory=list)
     
-    # 提示词配置
-    prompt_template: Optional[str] = None  # 使用的提示词模板 ID
+    # Prompt word configuration
+    prompt_template: Optional[str] = None  # Prompt word template to use ID
     prompt_variables: Dict[str, Any] = Field(default_factory=dict)
     
-    # 记忆配置
+    # memory configuration
     memory_enabled: bool = True
     memory_type: str = "chromadb"  # chromadb, postgresql, none
     
-    # 超时配置
+    # Timeout configuration
     timeout: int = 60
     max_retries: int = 3
     
-    # 调试配置
+    # Debug configuration
     debug: bool = False
     log_level: str = "INFO"
 
 
-# 预定义的智能体元数据
+# Predefined agent metadata
 BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
     "market_analyst": AgentMetadata(
         id="market_analyst",
-        name="市场分析师",
-        description="分析市场数据、价格走势和技术指标",
+        name="market analyst",
+        description="Analyze market data, price movements and technical indicators",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="📈",
         color="#2ecc71",
-        tags=["技术分析", "市场数据"],
+        tags=["technical analysis", "market data"],
         tools=["get_stock_market_data_unified", "get_YFin_data_online", "get_stockstats_indicators_report_online", "get_YFin_data", "get_stockstats_indicators_report"],
         default_tools=["get_stock_market_data_unified"],
         max_tool_calls=3,
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="trade_date", type="string", description="交易日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="trade_date", type="string", description="transaction date"),
         ],
         outputs=[
-            AgentOutput(name="market_report", type="string", description="市场分析报告"),
+            AgentOutput(name="market_report", type="string", description="Market analysis report"),
         ],
-        # 🆕 工作流配置
+        # 🆕 Workflow configuration
         requires_tools=True,
         output_field="market_report",
-        report_label="【技术分析】",
-        node_name="市场分析师",
+        report_label=" [Technical analysis]",
+        node_name="market analyst",
         execution_order=10,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段
+        workflow_stage="analyst",  # 🔥 New: Analyst Stage
     ),
     "fundamentals_analyst": AgentMetadata(
         id="fundamentals_analyst",
-        name="基本面分析师",
-        description="分析公司财务数据和基本面指标",
+        name="fundamental analyst",
+        description="Analyze company financial data and fundamental indicators",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="📊",
         color="#3498db",
-        tags=["基本面", "财务分析"],
+        tags=["Fundamentals", "financial analysis"],
         tools=["get_stock_fundamentals_unified", "get_finnhub_company_insider_sentiment", "get_finnhub_company_insider_transactions", "get_simfin_balance_sheet", "get_simfin_cashflow", "get_simfin_income_stmt", "get_china_stock_data", "get_china_fundamentals"],
         default_tools=["get_stock_fundamentals_unified"],
         max_tool_calls=3,
-        # 🆕 工作流配置
+        # 🆕 Workflow configuration
         requires_tools=True,
         output_field="fundamentals_report",
-        report_label="【基本面分析】",
-        node_name="基本面分析师",
+        report_label=" [Fundamental Analysis]",
+        node_name="fundamental analyst",
         execution_order=40,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段
+        workflow_stage="analyst",  # 🔥 New: Analyst Stage
     ),
     "news_analyst": AgentMetadata(
         id="news_analyst",
-        name="新闻分析师",
-        description="分析财经新闻和事件影响",
+        name="news analyst",
+        description="Analyze the impact of financial news and events",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="📰",
         color="#9b59b6",
-        tags=["新闻", "事件驱动"],
+        tags=["News", "event driven"],
         tools=["get_stock_news_unified", "get_global_news_openai", "get_google_news", "get_finnhub_news", "get_reddit_news"],
         default_tools=["get_stock_news_unified"],
         max_tool_calls=3,
-        # 🆕 工作流配置
+        # 🆕 Workflow configuration
         requires_tools=True,
         output_field="news_report",
-        report_label="【新闻分析】",
-        node_name="新闻分析师",
+        report_label=" [News Analysis]",
+        node_name="news analyst",
         execution_order=30,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段
+        workflow_stage="analyst",  # 🔥 New: Analyst Stage
     ),
     "social_analyst": AgentMetadata(
         id="social_analyst",
-        name="社交媒体分析师",
-        description="分析社交媒体情绪和舆论",
+        name="social media analyst",
+        description="Analyze social media sentiment and public opinion",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="💬",
         color="#e74c3c",
-        tags=["情绪分析", "舆情"],
+        tags=["sentiment analysis", "public opinion"],
         tools=["get_stock_sentiment_unified", "get_stock_news_openai", "get_reddit_stock_info"],
         default_tools=["get_stock_sentiment_unified"],
         max_tool_calls=3,
-        # 🆕 工作流配置
+        # 🆕 Workflow configuration
         requires_tools=True,
         output_field="sentiment_report",
-        report_label="【舆情分析】",
-        node_name="社交媒体分析师",
+        report_label=" [Public opinion analysis]",
+        node_name="social media analyst",
         execution_order=20,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段
+        workflow_stage="analyst",  # 🔥 New: Analyst Stage
     ),
     "sector_analyst": AgentMetadata(
         id="sector_analyst",
-        name="行业/板块分析师",
-        description="分析行业趋势、板块轮动和行业对比",
+        name="Industry/sector analyst",
+        description="Analyze industry trends, sector rotations and industry comparisons",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         license_tier=LicenseTier.PRO,
         icon="🏭",
         color="#f39c12",
-        tags=["行业分析", "板块轮动"],
+        tags=["Industry analysis", "sector rotation"],
         tools=["get_sector_performance", "get_industry_comparison"],
         default_tools=["get_sector_performance"],
         max_tool_calls=3,
-        # 🆕 工作流配置（无工具调用）
+        # 🆕 Workflow configuration (no tool invocation)
         requires_tools=False,
         output_field="sector_report",
-        report_label="【行业板块分析】",
-        node_name="板块分析师",
-        execution_order=5,  # 在技术分析之前
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段
+        report_label=" [Industry sector analysis]",
+        node_name="Sector Analyst",
+        execution_order=5,  # Before technical analysis
+        workflow_stage="analyst",  # 🔥 New: Analyst Stage
     ),
     "index_analyst": AgentMetadata(
         id="index_analyst",
-        name="大盘/指数分析师",
-        description="分析大盘指数、市场环境和系统性风险",
+        name="Market/Index Analyst",
+        description="Analyze broad market indices, market conditions and systemic risks",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         license_tier=LicenseTier.PRO,
         icon="🌐",
         color="#1abc9c",
-        tags=["大盘", "指数", "宏观"],
+        tags=["Market", "Index", "Macro"],
         tools=["get_index_data", "get_market_overview"],
         default_tools=["get_index_data"],
         max_tool_calls=3,
-        # 🆕 工作流配置（无工具调用）
+        # 🆕 Workflow configuration (no tool invocation)
         requires_tools=False,
         output_field="index_report",
-        report_label="【宏观大盘分析】",
-        node_name="大盘分析师",
-        execution_order=1,  # 最先执行
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段
+        report_label=" [Macro market analysis]",
+        node_name="Market Analyst",
+        execution_order=1,  # executed first
+        workflow_stage="analyst",  # 🔥 New: Analyst Stage
     ),
     "bull_researcher": AgentMetadata(
         id="bull_researcher",
-        name="积极证据研究员",
-        description="从积极角度整理支持乐观解读的研究证据（输出研究观察，不构成投资建议）",
+        name="Positive Evidence Researcher",
+        description="Collate research evidence supporting optimistic interpretations from a positive perspective (output research observations and do not constitute investment advice)",
         category=AgentCategory.RESEARCHER,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="🐂",
         color="#27ae60",
-        tags=["积极", "证据"],
-        tools=[],  # 研究员不直接调用工具，基于分析师报告
+        tags=["Positive", "evidence"],
+        tools=[],  # The researcher does not call the tool directly, it is based on analyst reports
         max_tool_calls=0,
-        workflow_stage="research",  # 🔥 新增：研究阶段
+        workflow_stage="research",  # 🔥 New: Research Phase
     ),
     "bear_researcher": AgentMetadata(
         id="bear_researcher",
-        name="谨慎证据研究员",
-        description="从谨慎角度整理支持审慎解读的研究证据（输出研究观察，不构成投资建议）",
+        name="cautious evidence researcher",
+        description="Collate research evidence supporting prudent interpretation from a cautious perspective (output research observations and do not constitute investment advice)",
         category=AgentCategory.RESEARCHER,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="🐻",
         color="#c0392b",
-        tags=["谨慎", "证据"],
+        tags=["cautious", "evidence"],
         tools=[],
         max_tool_calls=0,
-        workflow_stage="research",  # 🔥 新增：研究阶段
+        workflow_stage="research",  # 🔥 New: Research Phase
     ),
     "trader": AgentMetadata(
         id="trader",
-        name="研究整合员",
-        description="综合各维度研究证据，整理形成研究观察汇总（不构成投资建议）",
+        name="research integrator",
+        description="Comprehensive research evidence from various dimensions and compiled into a summary of research observations (does not constitute investment advice)",
         category=AgentCategory.TRADER,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="💰",
         color="#f1c40f",
-        tags=["整合", "观察"],
+        tags=["Integrate", "observe"],
         tools=[],
         max_tool_calls=0,
-        workflow_stage="trader",  # 🔥 新增：研究整合阶段
+        workflow_stage="trader",  # 🔥 New: Research Integration Phase
     ),
     "position_advisor": AgentMetadata(
         id="position_advisor",
-        name="持仓研究师",
-        description="基于单股分析报告和持仓信息，整理持仓研究观察事项（不构成投资建议）",
+        name="Position Researcher",
+        description="Based on single stock analysis reports and position information, sort out position research and observation items (does not constitute investment advice)",
         category=AgentCategory.TRADER,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="💼",
         color="#2980b9",
-        tags=["持仓", "研究观察", "风险评估"],
+        tags=["Position", "research observation", "risk assessment"],
         tools=[],
         max_tool_calls=0,
         requires_tools=False,
-        workflow_stage="trader",  # 🔥 新增：研究整合阶段
+        workflow_stage="trader",  # 🔥 New: Research Integration Phase
     ),
     "risky_analyst": AgentMetadata(
         id="risky_analyst",
-        name="高弹性情景分析师",
-        description="整理高弹性情景下的研究证据，关注潜在收益空间（输出研究观察，不构成投资建议）",
+        name="Highly Resilient Scenario Analyst",
+        description="Collate research evidence under high elasticity scenarios and focus on potential profit space (outputting research observations does not constitute investment advice)",
         category=AgentCategory.RISK,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="🔥",
         color="#e74c3c",
-        tags=["情景", "高弹性", "研究"],
+        tags=["Scenario", "High elasticity", "Research"],
         tools=[],
         max_tool_calls=0,
-        workflow_stage="risk",  # 🔥 新增：风险研究阶段
+        workflow_stage="risk",  # 🔥 New: Risk Study Phase
     ),
     "safe_analyst": AgentMetadata(
         id="safe_analyst",
-        name="防御情景分析师",
-        description="整理防御情景下的研究证据，关注资本保护因素（输出研究观察，不构成投资建议）",
+        name="Defense Scenario Analyst",
+        description="Collate research evidence under defensive scenarios and focus on capital protection factors (output research observations and do not constitute investment advice)",
         category=AgentCategory.RISK,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="🛡️",
         color="#27ae60",
-        tags=["情景", "防御", "研究"],
+        tags=["Scenario", "defense", "Research"],
         tools=[],
         max_tool_calls=0,
-        workflow_stage="risk",  # 🔥 新增：风险研究阶段
+        workflow_stage="risk",  # 🔥 New: Risk Study Phase
     ),
     "neutral_analyst": AgentMetadata(
         id="neutral_analyst",
-        name="基准情景分析师",
-        description="整理基准情景下的研究证据，平衡多种视角（输出研究观察，不构成投资建议）",
+        name="Baseline Scenario Analyst",
+        description="Collate research evidence under baseline scenarios and balance multiple perspectives (outputting research observations does not constitute investment advice)",
         category=AgentCategory.RISK,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="⚖️",
         color="#3498db",
-        tags=["情景", "基准", "平衡"],
+        tags=["Scenario", "benchmark", "balance"],
         tools=[],
         max_tool_calls=0,
-        workflow_stage="risk",  # 🔥 新增：风险研究阶段
+        workflow_stage="risk",  # 🔥 New: Risk Study Phase
     ),
     "risk_manager": AgentMetadata(
         id="risk_manager",
-        name="风险评估师",
-        description="综合各情景研究证据，整理风险研究观察汇总（不构成投资建议）",
+        name="risk assessor",
+        description="Comprehensive research evidence from each scenario and a summary of risk research observations (does not constitute investment advice)",
         category=AgentCategory.MANAGER,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="👨‍⚖️",
         color="#9b59b6",
-        tags=["风险", "研究", "评估"],
+        tags=["risk", "Research", "Assessment"],
         tools=[],
         max_tool_calls=0,
-        workflow_stage="manager",  # 🔥 新增：评估阶段
+        workflow_stage="manager",  # 🔥 New: Evaluation Phase
     ),
     "research_manager": AgentMetadata(
         id="research_manager",
-        name="研究整合员",
-        description="综合多视角研究证据，整理形成研究观察汇总（不构成投资建议）",
+        name="research integrator",
+        description="Comprehensive research evidence from multiple perspectives and compiled into a summary of research observations (does not constitute investment advice)",
         category=AgentCategory.MANAGER,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="👔",
         color="#9b59b6",
-        tags=["整合", "研究", "观察"],
+        tags=["Integrate", "Research", "observe"],
         tools=[],
         max_tool_calls=0,
-        workflow_stage="manager",  # 🔥 新增：评估阶段
+        workflow_stage="manager",  # 🔥 New: Evaluation Phase
     ),
-    # ==================== 交易复盘 Agent ====================
+    # ==================== Transaction review Agent ====================
     "timing_analyst": AgentMetadata(
         id="timing_analyst",
-        name="时机研究师",
-        description="分析入场与退出时机，评估交易时机选择的研究观察（不构成投资建议）",
+        name="Timing Researcher",
+        description="Research observations to analyze entry and exit timings and evaluate trading timings (does not constitute investment advice)",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="⏰",
         color="#e67e22",
-        tags=["复盘", "时机", "研究"],
+        tags=["Review", "timing", "Research"],
         tools=[
             "get_stock_market_data_unified",
             "get_stockstats_indicators_report",
@@ -511,20 +511,20 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
         max_tool_calls=5,
         requires_tools=False,
         output_field="timing_analysis",
-        report_label="【时机分析】",
-        node_name="时机分析师",
+        report_label=" [Timing analysis]",
+        node_name="timing analyst",
         execution_order=10,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段（复盘流程）
+        workflow_stage="analyst",  # 🔥 Newly added: analyst stage (review process)
     ),
     "position_analyst": AgentMetadata(
         id="position_analyst",
-        name="仓位分析师",
-        description="分析仓位管理的研究观察，不输出加减仓等执行建议",
+        name="Position Analyst",
+        description="Analyze research and observations on position management, and do not output execution suggestions such as adding or subtracting positions.",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="📊",
         color="#3498db",
-        tags=["复盘", "仓位", "资金管理"],
+        tags=["Review", "position", "Money management"],
         tools=[
             "get_stock_market_data_unified",
             "get_trade_records",
@@ -539,20 +539,20 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
         max_tool_calls=5,
         requires_tools=False,
         output_field="position_analysis",
-        report_label="【仓位分析】",
-        node_name="仓位分析师",
+        report_label=" [Position analysis]",
+        node_name="Position Analyst",
         execution_order=20,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段（复盘流程）
+        workflow_stage="analyst",  # 🔥 Newly added: analyst stage (review process)
     ),
     "emotion_analyst": AgentMetadata(
         id="emotion_analyst",
-        name="情绪分析师",
-        description="分析交易中的情绪化操作和纪律执行情况",
+        name="sentiment analyst",
+        description="Analyze emotional operations and discipline execution in trading",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="🧠",
         color="#9b59b6",
-        tags=["复盘", "情绪", "纪律"],
+        tags=["Review", "emotions", "discipline"],
         tools=[
             "get_stock_news_unified",
             "get_stock_sentiment_unified",
@@ -567,20 +567,20 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
         max_tool_calls=5,
         requires_tools=True,
         output_field="emotion_analysis",
-        report_label="【情绪分析】",
-        node_name="情绪分析师",
+        report_label=" [Sentiment Analysis]",
+        node_name="sentiment analyst",
         execution_order=30,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段（复盘流程）
+        workflow_stage="analyst",  # 🔥 Newly added: analyst stage (review process)
     ),
     "attribution_analyst": AgentMetadata(
         id="attribution_analyst",
-        name="归因分析师",
-        description="分析收益来源，区分大盘/行业/个股Alpha贡献",
+        name="attribution analyst",
+        description="Analyze the sources of income and distinguish the Alpha contribution of the market/industry/individual stocks",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="🎯",
         color="#1abc9c",
-        tags=["复盘", "归因", "Alpha"],
+        tags=["Review", "attribution", "Alpha"],
         tools=[
             "get_stock_market_data_unified",
             "get_china_market_overview",
@@ -595,20 +595,20 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
         max_tool_calls=5,
         requires_tools=False,
         output_field="attribution_analysis",
-        report_label="【归因分析】",
-        node_name="归因分析师",
+        report_label=" [Attribution analysis]",
+        node_name="attribution analyst",
         execution_order=40,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段（复盘流程）
+        workflow_stage="analyst",  # 🔥 Newly added: analyst stage (review process)
     ),
     "review_manager": AgentMetadata(
         id="review_manager",
-        name="复盘总结师",
-        description="综合所有分析维度，生成完整复盘报告和改进建议",
+        name="Review summary expert",
+        description="Comprehensive all analysis dimensions to generate a complete review report and improvement suggestions",
         category=AgentCategory.MANAGER,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="📝",
         color="#2c3e50",
-        tags=["复盘", "总结", "建议"],
+        tags=["Review", "Summary", "Suggestions"],
         tools=[
             "get_trade_records",
             "build_trade_info",
@@ -622,110 +622,110 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
         max_tool_calls=5,
         requires_tools=True,
         output_field="review_summary",
-        report_label="【复盘总结】",
-        node_name="复盘总结师",
+        report_label=" [Review summary]",
+        node_name="Review summary expert",
         execution_order=100,
-        workflow_stage="manager",  # 🔥 新增：经理阶段（复盘流程）
+        workflow_stage="manager",  # 🔥 Newly added: Manager stage (review process)
     ),
-    # ==================== 持仓分析 Agent ====================
+    # ==================== Position analysis Agent ====================
     "pa_technical": AgentMetadata(
         id="pa_technical",
-        name="持仓技术面分析师",
-        description="分析K线走势、技术指标、支撑阻力位，评估技术面状态",
+        name="Position Technical Analyst",
+        description="Analyze K-line trends, technical indicators, support and resistance levels, and evaluate technical status",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="📈",
         color="#2ecc71",
-        tags=["持仓分析", "技术面", "趋势"],
+        tags=["Position analysis", "technical aspect", "Trend"],
         tools=["get_stock_market_data_unified", "get_technical_indicators"],
         max_tool_calls=3,
         requires_tools=False,
         output_field="technical_analysis",
-        report_label="【技术面分析】",
-        node_name="技术面分析师",
+        report_label=" [Technical analysis]",
+        node_name="technical analyst",
         execution_order=10,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段（持仓分析流程）
+        workflow_stage="analyst",  # 🔥 New: Analyst stage (position analysis process)
     ),
     "pa_fundamental": AgentMetadata(
         id="pa_fundamental",
-        name="持仓基本面分析师",
-        description="分析财务数据、估值水平、行业地位，评估基本面价值",
+        name="Fundamental Analyst",
+        description="Analyze financial data, valuation levels, industry status, and evaluate fundamental value",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="📊",
         color="#3498db",
-        tags=["持仓分析", "基本面", "估值"],
+        tags=["Position analysis", "Fundamentals", "Valuation"],
         tools=["get_stock_fundamentals_unified", "get_stock_news_unified"],
         max_tool_calls=3,
         requires_tools=False,
         output_field="fundamental_analysis",
-        report_label="【基本面分析】",
-        node_name="基本面分析师",
+        report_label=" [Fundamental Analysis]",
+        node_name="fundamental analyst",
         execution_order=20,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段（持仓分析流程）
+        workflow_stage="analyst",  # 🔥 New: Analyst stage (position analysis process)
     ),
     "pa_risk": AgentMetadata(
         id="pa_risk",
-        name="持仓风险评估师",
-        description="评估持仓风险、分析仓位合理性、提供风险关注与收益关注参考",
+        name="Position risk assessor",
+        description="Assess position risks, analyze position rationality, and provide reference for risk and return concerns",
         category=AgentCategory.ANALYST,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="⚠️",
         color="#e74c3c",
-        tags=["持仓分析", "风险", "止损"],
+        tags=["Position analysis", "risk", "stop loss"],
         tools=["get_stock_market_data_unified", "get_china_market_overview", "get_stock_sentiment_unified"],
         max_tool_calls=3,
         requires_tools=False,
         output_field="risk_analysis",
-        report_label="【风险评估】",
-        node_name="风险评估师",
+        report_label=" [Risk Assessment]",
+        node_name="risk assessor",
         execution_order=30,
-        workflow_stage="analyst",  # 🔥 新增：分析师阶段（持仓分析流程）
+        workflow_stage="analyst",  # 🔥 New: Analyst stage (position analysis process)
     ),
     "pa_advisor": AgentMetadata(
         id="pa_advisor",
-        name="持仓研究整合师",
-        description="综合技术面、基本面、风险评估，整理持仓研究观察汇总（不构成投资建议）",
+        name="Position research integrator",
+        description="Comprehensive technical aspects, fundamentals, and risk assessments, and a summary of position research and observations (does not constitute investment advice)",
         category=AgentCategory.MANAGER,
-        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 已废弃，请使用 v2 版本
+        maintenance_status=AgentMaintenanceStatus.DEPRECATED,  # 🔥 v1 Deprecated, please use v2 version
         icon="💡",
         color="#9b59b6",
-        tags=["持仓分析", "研究", "观察"],
+        tags=["Position analysis", "Research", "observe"],
         tools=[],
         max_tool_calls=0,
         requires_tools=False,
         output_field="action_advice",
-        report_label="【持仓研究观察】",
-        node_name="持仓研究整合师",
+        report_label=" [Position research and observation]",
+        node_name="Position research integrator",
         execution_order=100,
-        # 🆕 读取其他 Agent 的输出
+        # 🆕 Read the output of other agents
         reads_from=["technical_analysis", "fundamental_analysis", "risk_analysis"],
-        workflow_stage="manager",  # 🔥 新增：研究阶段（持仓分析流程）
+        workflow_stage="manager",  # 🔥 Newly added: Research stage (position analysis process)
     ),
-    # 🆕 v2.0 架构的 Agent
+    # 🆕 v2.0 architectural Agent
     "market_analyst_v2": AgentMetadata(
         id="market_analyst_v2",
-        name="市场分析师 v2",
-        description="分析股票价格走势、技术指标和市场数据，生成技术分析报告",
+        name="market analyst v2",
+        description="Analyze stock price trends, technical indicators and market data, and generate technical analysis reports",
         category=AgentCategory.ANALYST,
         icon="📈",
         color="#2ecc71",
-        tags=["技术分析", "市场数据", "v2.0"],
+        tags=["technical analysis", "market data", "v2.0"],
         tools=["get_stock_market_data_unified"],
         default_tools=["get_stock_market_data_unified"],
         max_tool_calls=3,
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="start_date", type="string", description="开始日期"),
-            AgentInput(name="end_date", type="string", description="结束日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="start_date", type="string", description="start date"),
+            AgentInput(name="end_date", type="string", description="end date"),
         ],
         outputs=[
-            AgentOutput(name="market_analysis", type="string", description="市场分析报告"),
+            AgentOutput(name="market_analysis", type="string", description="Market analysis report"),
         ],
         requires_tools=True,
         output_field="market_analysis",
-        report_label="【市场分析 v2】",
-        node_name="市场分析师 v2",
+        report_label=" [Market Analysis v2]",
+        node_name="market analyst v2",
         execution_order=10,
         growth_role="extractor",
         growth_outputs=["market_analysis"],
@@ -735,26 +735,26 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
     ),
     "fundamentals_analyst_v2": AgentMetadata(
         id="fundamentals_analyst_v2",
-        name="基本面分析师 v2",
-        description="分析公司财务数据、盈利能力、成长性和基本面指标，涵盖护城河/竞争优势评估和管理层质量分析",
+        name="fundamental analyst v2",
+        description="Analyze company financial data, profitability, growth and fundamental indicators, covering moat/competitive advantage assessment and management quality analysis",
         category=AgentCategory.ANALYST,
         icon="📊",
         color="#3498db",
-        tags=["基本面", "财务分析", "v2.0"],
+        tags=["Fundamentals", "financial analysis", "v2.0"],
         tools=["get_stock_fundamentals_unified"],
         default_tools=["get_stock_fundamentals_unified"],
         max_tool_calls=3,
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="fundamentals_report", type="string", description="基本面分析报告"),
+            AgentOutput(name="fundamentals_report", type="string", description="Fundamental Analysis Report"),
         ],
         requires_tools=True,
         output_field="fundamentals_report",
-        report_label="【基本面分析 v2】",
-        node_name="基本面分析师 v2",
+        report_label=" [Fundamental Analysis v2] ",
+        node_name="fundamental analyst v2",
         execution_order=40,
         growth_role="extractor",
         growth_outputs=["fundamentals_report"],
@@ -764,26 +764,26 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
     ),
     "etf_analyst_v2": AgentMetadata(
         id="etf_analyst_v2",
-        name="ETF 分析师 v2",
-        description="分析 ETF 净值、规模、费率、跟踪误差等。ETF 无 PE/PB/ROE，使用净值、规模、跟踪指数等指标。",
+        name="ETF analyst v2",
+        description="Analyze ETF net worth, size, expense ratio, tracking error, and more. ETFs have no PE/PB/ROE and use indicators such as net worth, size, and tracking indexes.",
         category=AgentCategory.ANALYST,
         icon="📈",
         color="#27ae60",
-        tags=["ETF", "基金", "净值", "v2.0"],
+        tags=["ETF", "fund", "net worth", "v2.0"],
         tools=["get_etf_fundamentals"],
         default_tools=["get_etf_fundamentals"],
         max_tool_calls=3,
         inputs=[
-            AgentInput(name="ticker", type="string", description="ETF 代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="ETF code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="fundamentals_report", type="string", description="ETF 分析报告（复用 fundamentals_report 字段）"),
+            AgentOutput(name="fundamentals_report", type="string", description="ETF Analysis report (reuse fundamentals_report field)"),
         ],
         requires_tools=True,
         output_field="fundamentals_report",
-        report_label="【ETF 分析 v2】",
-        node_name="ETF 分析师 v2",
+        report_label=" [ETF Analysis v2]",
+        node_name="ETF analyst v2",
         execution_order=40,
         growth_role="extractor",
         growth_outputs=["fundamentals_report"],
@@ -793,26 +793,26 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
     ),
     "news_analyst_v2": AgentMetadata(
         id="news_analyst_v2",
-        name="新闻分析师 v2",
-        description="分析财经新闻、公告和事件对股票的影响，评估消息面驱动因素和市场情绪变化",
+        name="news analyst v2",
+        description="Analyze the impact of financial news, announcements and events on stocks, and assess news drivers and changes in market sentiment",
         category=AgentCategory.ANALYST,
         icon="📰",
         color="#9b59b6",
-        tags=["新闻", "事件驱动", "v2.0"],
+        tags=["News", "event driven", "v2.0"],
         tools=["get_stock_news_unified"],
         default_tools=["get_stock_news_unified"],
         max_tool_calls=3,
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="news_report", type="string", description="新闻分析报告"),
+            AgentOutput(name="news_report", type="string", description="News analysis report"),
         ],
         requires_tools=True,
         output_field="news_report",
-        report_label="【新闻分析 v2】",
-        node_name="新闻分析师 v2",
+        report_label=" [News Analysis v2]",
+        node_name="news analyst v2",
         execution_order=30,
         growth_role="extractor",
         growth_outputs=["news_report"],
@@ -822,26 +822,26 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
     ),
     "social_analyst_v2": AgentMetadata(
         id="social_analyst_v2",
-        name="社交媒体分析师 v2",
-        description="分析社交媒体情绪、舆论趋势和投资者关注度，评估非理性因素对股价的潜在影响",
+        name="social media analyst v2",
+        description="Analyze social media sentiment, public opinion trends and investor attention, and assess the potential impact of irrational factors on stock prices",
         category=AgentCategory.ANALYST,
         icon="💬",
         color="#e74c3c",
-        tags=["情绪分析", "舆情", "v2.0"],
+        tags=["sentiment analysis", "public opinion", "v2.0"],
         tools=["get_stock_sentiment_unified"],
         default_tools=["get_stock_sentiment_unified"],
         max_tool_calls=3,
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="sentiment_report", type="string", description="社交媒体情绪分析报告"),
+            AgentOutput(name="sentiment_report", type="string", description="Social media sentiment analysis report"),
         ],
         requires_tools=True,
         output_field="sentiment_report",
-        report_label="【舆情分析 v2】",
-        node_name="社交媒体分析师 v2",
+        report_label=" [Public opinion analysis v2] ",
+        node_name="social media analyst v2",
         execution_order=20,
         growth_role="extractor",
         growth_outputs=["sentiment_report"],
@@ -851,33 +851,33 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
     ),
     "index_analyst_v2": AgentMetadata(
         id="index_analyst_v2",
-        name="大盘分析师 v2.0",
-        description="分析大盘指数走势，评估市场整体环境、资金流向和技术面",
+        name="Market Analyst v2.0",
+        description="Analyze market index trends and evaluate the overall market environment, capital flow and technical aspects",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[
-            "get_index_data",           # 指数走势和均线
-            "get_market_breadth",       # 市场宽度（成交量、市值）
-            "get_market_environment",   # 市场环境（估值、波动率）
-            "identify_market_cycle",    # 市场周期识别
-            "get_north_flow",           # 北向资金流向
-            "get_margin_trading",       # 两融余额
-            "get_limit_stats",          # 涨跌停统计
-            "get_index_technical",      # 技术指标（MACD/RSI/KDJ）
+            "get_index_data",           # Index trends and moving averages
+            "get_market_breadth",       # Market breadth (volume, market capitalization)
+            "get_market_environment",   # Market environment (valuation, volatility)
+            "identify_market_cycle",    # Market cycle identification
+            "get_north_flow",           # Northbound capital flow
+            "get_margin_trading",       # Balance of financing and financing
+            "get_limit_stats",          # Price limit statistics
+            "get_index_technical",      # Technical indicators (MACD/RSI/KDJ)
         ],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="index_report", type="string", description="大盘分析报告"),
+            AgentOutput(name="index_report", type="string", description="Market analysis report"),
         ],
         requires_tools=True,
         output_field="index_report",
-        report_label="【大盘分析 v2】",
-        node_name="大盘分析师 v2",
-        execution_order=1,  # 最先执行
+        report_label=" [Market analysis v2]",
+        node_name="Market Analyst v2",
+        execution_order=1,  # executed first
         growth_role="extractor",
         growth_outputs=["index_report"],
         memory_scope_hint="object_tracking",
@@ -885,63 +885,63 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
         growth_source_type="analysis_report",
     ),
 
-    # 🆕 筹码分布分析师 Agent
+    # 🆕 Chip distribution analyst Agent
     "chip_distribution_analyst_v2": AgentMetadata(
         id="chip_distribution_analyst_v2",
-        name="筹码分布分析师 v2.0",
-        description="分析股票筹码分布，评估获利比例、平均成本和筹码集中度，生成筹码分布分析报告",
+        name="Chip distribution analyst v2.0",
+        description="Analyze stock chip distribution, evaluate profit ratio, average cost and chip concentration, and generate chip distribution analysis report",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         icon="🧮",
         color="#e74c3c",
-        tags=["筹码分布", "持仓成本", "获利比例", "v2.0"],
+        tags=["Chip distribution", "Holding cost", "Profit ratio", "v2.0"],
         tools=["get_chip_distribution"],
         default_tools=["get_chip_distribution"],
         max_tool_calls=3,
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="chip_report", type="string", description="筹码分布分析报告"),
+            AgentOutput(name="chip_report", type="string", description="Chip distribution analysis report"),
         ],
         requires_tools=True,
         output_field="chip_report",
-        report_label="【筹码分布分析 v2】",
-        node_name="筹码分布分析师 v2",
+        report_label=" [Chip distribution analysis v2]",
+        node_name="Chip distribution analyst v2",
         execution_order=15,
     ),
 
-    # 🆕 估值分析师 Agent
+    # 🆕 Valuation Analyst Agent
     "valuation_analyst_v2": AgentMetadata(
         id="valuation_analyst_v2",
-        name="估值分析师 v2.0",
-        description="分析股票估值水平，包括PE/PB/PS/PEG等指标、历史估值区间、同行业估值对比，评估当前估值合理性并给出合理估值区间",
+        name="Valuation Analyst v2.0",
+        description="Analyze stock valuation levels, including PE/PB/PS/PEG and other indicators, historical valuation ranges, and comparison of valuations in the same industry, evaluate the rationality of the current valuation and give a reasonable valuation range",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         icon="💎",
         color="#9b59b6",
-        tags=["估值分析", "PE/PB", "DCF", "相对估值", "v2.0"],
+        tags=["Valuation analysis", "PE/PB", "DCF", "relative valuation", "v2.0"],
         tools=["get_stock_fundamentals_unified", "get_industry_valuation_comparison", "get_historical_valuation_range"],
         default_tools=["get_stock_fundamentals_unified"],
         max_tool_calls=5,
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="valuation_method", type="string", description="估值方法（PE/PB/DCF/综合）", required=False, default="综合"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="valuation_method", type="string", description="Valuation method (PE/PB/DCF/comprehensive)", required=False, default="Comprehensive"),
         ],
         outputs=[
-            AgentOutput(name="valuation_report", type="string", description="估值分析报告"),
-            AgentOutput(name="fair_value_range", type="object", description="合理估值区间（低/中/高）"),
-            AgentOutput(name="valuation_rating", type="string", description="估值评级（低估/合理/高估）"),
+            AgentOutput(name="valuation_report", type="string", description="Valuation analysis report"),
+            AgentOutput(name="fair_value_range", type="object", description="Reasonable valuation range (low/medium/high)"),
+            AgentOutput(name="valuation_rating", type="string", description="Valuation rating (undervalued/reasonable/overvalued)"),
         ],
         requires_tools=True,
         output_field="valuation_report",
-        report_label="【估值分析 v2】",
-        node_name="估值分析师 v2",
-        execution_order=45,  # 在基本面分析之后
+        report_label=" [Valuation analysis v2]",
+        node_name="Valuation Analyst v2",
+        execution_order=45,  # After fundamental analysis
         growth_role="extractor",
         growth_outputs=["valuation_report"],
         memory_scope_hint="object_tracking",
@@ -949,517 +949,517 @@ BUILTIN_AGENTS: Dict[str, AgentMetadata] = {
         growth_source_type="analysis_report",
     ),
 
-    # ── v2.0 单股分析扩展：板块/辩论/决策 ──────────────────────────────
+    # ── v2.0 Single Stock Analysis Extensions: Sectors/Debates/Decisions ──────────────────────────────
 
     "sector_analyst_v2": AgentMetadata(
         id="sector_analyst_v2",
-        name="板块分析师 v2.0",
-        description="分析行业趋势、板块轮动和同业对比，提炼结构变化与风险来源",
+        name="Sector Analyst v2.0",
+        description="Analyze industry trends, sector rotation and peer comparison, and refine structural changes and risk sources",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=["get_sector_analysis"],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="sector_report", type="string", description="板块分析报告"),
+            AgentOutput(name="sector_report", type="string", description="Sector analysis report"),
         ],
         requires_tools=True,
         output_field="sector_report",
-        report_label="【板块分析 v2】",
-        node_name="板块分析师 v2",
+        report_label=" [Sector analysis v2]",
+        node_name="Sector Analyst v2",
         execution_order=5,
     ),
 
     "bull_researcher_v2": AgentMetadata(
         id="bull_researcher_v2",
-        name="乐观情景研究员 v2.0",
-        description="基于现有材料构建偏乐观但克制的研究论证，提炼成立前提、证据链与观察信号",
+        name="Optimistic Scenario Researcher v2.0",
+        description="Construct an optimistic but restrained research argument based on existing materials, and refine the premise, evidence chain and observation signals",
         category=AgentCategory.RESEARCHER,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="market_report", type="string", description="市场分析报告", required=False),
-            AgentInput(name="news_report", type="string", description="新闻分析报告", required=False),
-            AgentInput(name="fundamentals_report", type="string", description="基本面分析报告", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="market_report", type="string", description="Market analysis report", required=False),
+            AgentInput(name="news_report", type="string", description="News analysis report", required=False),
+            AgentInput(name="fundamentals_report", type="string", description="Fundamental Analysis Report", required=False),
         ],
         outputs=[
-            AgentOutput(name="bull_report", type="string", description="乐观情景研究报告"),
+            AgentOutput(name="bull_report", type="string", description="Optimistic Scenario Research Report"),
         ],
         requires_tools=False,
         output_field="bull_report",
-        report_label="【乐观情景研究 v2】",
-        node_name="乐观情景研究员 v2",
+        report_label=" [Optimistic Scenario Study v2]",
+        node_name="Optimistic Scenario Researcher v2",
         execution_order=80,
     ),
 
     "bear_researcher_v2": AgentMetadata(
         id="bear_researcher_v2",
-        name="审慎情景研究员 v2.0",
-        description="基于现有材料构建偏审慎的研究论证，提炼风险、脆弱点与判断边界",
+        name="Prudential Scenario Researcher v2.0",
+        description="Construct a prudent research argument based on existing materials and refine risks, vulnerabilities and boundaries of judgment.",
         category=AgentCategory.RESEARCHER,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="market_report", type="string", description="市场分析报告", required=False),
-            AgentInput(name="news_report", type="string", description="新闻分析报告", required=False),
-            AgentInput(name="fundamentals_report", type="string", description="基本面分析报告", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="market_report", type="string", description="Market analysis report", required=False),
+            AgentInput(name="news_report", type="string", description="News analysis report", required=False),
+            AgentInput(name="fundamentals_report", type="string", description="Fundamental Analysis Report", required=False),
         ],
         outputs=[
-            AgentOutput(name="bear_report", type="string", description="审慎情景研究报告"),
+            AgentOutput(name="bear_report", type="string", description="Prudential Scenario Research Report"),
         ],
         requires_tools=False,
         output_field="bear_report",
-        report_label="【审慎情景研究 v2】",
-        node_name="审慎情景研究员 v2",
+        report_label=" [Prudential Scenario Study v2]",
+        node_name="Prudential Scenario Researcher v2",
         execution_order=85,
     ),
 
     "research_manager_v2": AgentMetadata(
         id="research_manager_v2",
-        name="研究整合员 v2.0",
-        description="综合乐观与审慎情景研究，整理形成平衡的研究观察汇总（不构成投资建议）",
+        name="research integrator v2.0",
+        description="Comprehensive research on optimistic and cautious scenarios to form a balanced summary of research observations (does not constitute investment advice)",
         category=AgentCategory.MANAGER,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="bull_report", type="string", description="乐观情景研究报告"),
-            AgentInput(name="bear_report", type="string", description="审慎情景研究报告"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="bull_report", type="string", description="Optimistic Scenario Research Report"),
+            AgentInput(name="bear_report", type="string", description="Prudential Scenario Research Report"),
         ],
         outputs=[
-            AgentOutput(name="investment_advice", type="string", description="平衡研究观察汇总"),
+            AgentOutput(name="investment_advice", type="string", description="Summary of Balance Study Observations"),
         ],
         requires_tools=False,
         output_field="investment_advice",
-        report_label="【平衡研究观察 v2】",
-        node_name="研究整合员 v2",
+        report_label=" [Balance Research Observation v2] ",
+        node_name="research integrator v2",
         execution_order=90,
     ),
 
     "trader_v2": AgentMetadata(
         id="trader_v2",
-        name="研究整合员 v2.0",
-        description="根据风险审阅后的综合研究证据，整理形成用户版研究简报（不构成投资建议）",
+        name="research integrator v2.0",
+        description="Based on the comprehensive research evidence after risk review, a user version of the research briefing is compiled (does not constitute investment advice)",
         category=AgentCategory.TRADER,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="investment_plan", type="string", description="综合研究观察汇总"),
-            AgentInput(name="market_report", type="string", description="市场分析报告", required=False),
-            AgentInput(name="fundamentals_report", type="string", description="基本面分析报告", required=False),
-            AgentInput(name="news_report", type="string", description="新闻分析报告", required=False),
-            AgentInput(name="sentiment_report", type="string", description="情绪分析报告", required=False),
-            AgentInput(name="index_report", type="string", description="大盘分析报告", required=False),
-            AgentInput(name="sector_report", type="string", description="板块分析报告", required=False),
-            AgentInput(name="bull_report", type="string", description="乐观情景研究报告", required=False),
-            AgentInput(name="bear_report", type="string", description="审慎情景研究报告", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="investment_plan", type="string", description="Summary of comprehensive research observations"),
+            AgentInput(name="market_report", type="string", description="Market analysis report", required=False),
+            AgentInput(name="fundamentals_report", type="string", description="Fundamental Analysis Report", required=False),
+            AgentInput(name="news_report", type="string", description="News analysis report", required=False),
+            AgentInput(name="sentiment_report", type="string", description="Sentiment Analysis Report", required=False),
+            AgentInput(name="index_report", type="string", description="Market analysis report", required=False),
+            AgentInput(name="sector_report", type="string", description="Sector analysis report", required=False),
+            AgentInput(name="bull_report", type="string", description="Optimistic Scenario Research Report", required=False),
+            AgentInput(name="bear_report", type="string", description="Prudential Scenario Research Report", required=False),
         ],
         outputs=[
-            AgentOutput(name="trader_investment_plan", type="string", description="用户版研究简报（研究观察汇总，不构成投资建议）"),
+            AgentOutput(name="trader_investment_plan", type="string", description="User version of research briefing (summary of research observations, does not constitute investment advice)"),
         ],
         requires_tools=False,
         output_field="trader_investment_plan",
-        report_label="【研究简报 v2】",
-        node_name="研究整合员 v2",
+        report_label=" [Research Brief v2]",
+        node_name="research integrator v2",
         execution_order=200,
     ),
 
-    # ── v2.0 风险研判扩展 ──────────────────────────────────────────────
+    # ── v2.0 Risk research and judgment expansion ──────────────────────────────────────────────
 
     "risky_analyst_v2": AgentMetadata(
         id="risky_analyst_v2",
-        name="高弹性情景分析师 v2.0",
-        description="从研究结论能否上修的角度审阅，识别强化催化、高要求前提与额外验证信号",
+        name="Highly Resilient Scenario Analyst v2.0",
+        description="Review the research conclusions from the perspective of whether they can be revised upward, and identify strengthened catalysts, high-requirement prerequisites and additional verification signals",
         category=AgentCategory.RISK,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="investment_plan", type="string", description="综合研究结论"),
-            AgentInput(name="bull_opinion", type="string", description="乐观情景观点", required=False),
-            AgentInput(name="bear_opinion", type="string", description="审慎情景观点", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="investment_plan", type="string", description="Comprehensive research conclusion"),
+            AgentInput(name="bull_opinion", type="string", description="optimistic scenario view", required=False),
+            AgentInput(name="bear_opinion", type="string", description="prudent situational view", required=False),
         ],
         outputs=[
-            AgentOutput(name="risky_opinion", type="string", description="高弹性情景观点"),
+            AgentOutput(name="risky_opinion", type="string", description="Highly resilient scenario perspective"),
         ],
         requires_tools=False,
         output_field="risky_opinion",
-        report_label="【高弹性风险评估 v2】",
-        node_name="高弹性情景分析师 v2",
+        report_label=" [Highly elastic risk assessment v2]",
+        node_name="Highly Resilient Scenario Analyst v2",
         execution_order=100,
     ),
 
     "safe_analyst_v2": AgentMetadata(
         id="safe_analyst_v2",
-        name="防御情景分析师 v2.0",
-        description="从研究结论最易失效的角度审阅，识别脆弱前提、风险来源与下修触发条件",
+        name="Defense Scenario Analyst v2.0",
+        description="Review the research conclusions from the perspective that are most likely to fail, and identify fragile premises, risk sources and downward revision triggering conditions",
         category=AgentCategory.RISK,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="investment_plan", type="string", description="综合研究结论"),
-            AgentInput(name="bull_opinion", type="string", description="乐观情景观点", required=False),
-            AgentInput(name="bear_opinion", type="string", description="审慎情景观点", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="investment_plan", type="string", description="Comprehensive research conclusion"),
+            AgentInput(name="bull_opinion", type="string", description="optimistic scenario view", required=False),
+            AgentInput(name="bear_opinion", type="string", description="prudent situational view", required=False),
         ],
         outputs=[
-            AgentOutput(name="safe_opinion", type="string", description="防御情景观点"),
+            AgentOutput(name="safe_opinion", type="string", description="defensive situational view"),
         ],
         requires_tools=False,
         output_field="safe_opinion",
-        report_label="【防御风险评估 v2】",
-        node_name="防御情景分析师 v2",
+        report_label=" [Defense risk assessment v2]",
+        node_name="Defense Scenario Analyst v2",
         execution_order=105,
     ),
 
     "neutral_analyst_v2": AgentMetadata(
         id="neutral_analyst_v2",
-        name="基准情景分析师 v2.0",
-        description="平衡乐观与审慎材料，判断当前最稳妥的基准情景，识别共识、冲突点与信息缺口",
+        name="Baseline Scenario Analyst v2.0",
+        description="Balance optimistic and cautious materials, determine the most stable baseline scenario at present, and identify consensus, conflict points and information gaps",
         category=AgentCategory.RISK,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="investment_plan", type="string", description="综合研究结论"),
-            AgentInput(name="risky_opinion", type="string", description="高弹性情景观点", required=False),
-            AgentInput(name="safe_opinion", type="string", description="防御情景观点", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="investment_plan", type="string", description="Comprehensive research conclusion"),
+            AgentInput(name="risky_opinion", type="string", description="Highly resilient scenario perspective", required=False),
+            AgentInput(name="safe_opinion", type="string", description="defensive situational view", required=False),
         ],
         outputs=[
-            AgentOutput(name="neutral_opinion", type="string", description="基准情景观点"),
+            AgentOutput(name="neutral_opinion", type="string", description="base case view"),
         ],
         requires_tools=False,
         output_field="neutral_opinion",
-        report_label="【基准风险评估 v2】",
-        node_name="基准情景分析师 v2",
+        report_label=" [Baseline Risk Assessment v2]",
+        node_name="Baseline Scenario Analyst v2",
         execution_order=110,
     ),
 
     "risk_manager_v2": AgentMetadata(
         id="risk_manager_v2",
-        name="风险评估师 v2.0",
-        description="主持稳健性审阅，综合多方观点，形成风险审阅后的综合研究结论（输出研究观察，不构成投资建议）",
+        name="risk assessor v2.0",
+        description="Host the robustness review, integrate multiple perspectives, and formulate comprehensive research conclusions after the risk review (outputting research observations does not constitute investment advice)",
         category=AgentCategory.MANAGER,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="investment_plan", type="string", description="综合研究结论"),
-            AgentInput(name="risky_opinion", type="string", description="高弹性情景观点", required=False),
-            AgentInput(name="safe_opinion", type="string", description="防御情景观点", required=False),
-            AgentInput(name="neutral_opinion", type="string", description="基准情景观点", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="investment_plan", type="string", description="Comprehensive research conclusion"),
+            AgentInput(name="risky_opinion", type="string", description="Highly resilient scenario perspective", required=False),
+            AgentInput(name="safe_opinion", type="string", description="defensive situational view", required=False),
+            AgentInput(name="neutral_opinion", type="string", description="base case view", required=False),
         ],
         outputs=[
-            AgentOutput(name="risk_assessment", type="string", description="稳健性审阅与风险研究观察"),
+            AgentOutput(name="risk_assessment", type="string", description="Robustness review and risk research observation"),
         ],
         requires_tools=False,
         output_field="risk_assessment",
-        report_label="【风险研究结论 v2】",
-        node_name="风险评估师 v2",
+        report_label=" [Risk study conclusion v2] ",
+        node_name="risk assessor v2",
         execution_order=120,
     ),
 
-    # ── v2.0 持仓分析 ──────────────────────────────────────────────────
+    # ── v2.0 Position analysis ──────────────────────────────────────────────────
 
     "pa_technical_v2": AgentMetadata(
         id="pa_technical_v2",
-        name="技术面分析师 v2.0",
-        description="分析持仓股票的技术面，包括K线形态、技术指标、支撑阻力位",
+        name="technical analyst v2.0",
+        description="Analyze the technical aspects of held stocks, including K-line patterns, technical indicators, support and resistance levels",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=["get_stock_market_data_unified"],
         inputs=[
-            AgentInput(name="portfolio_data", type="string", description="持仓数据"),
+            AgentInput(name="portfolio_data", type="string", description="Position data"),
         ],
         outputs=[
-            AgentOutput(name="technical_analysis", type="string", description="技术面分析结果"),
+            AgentOutput(name="technical_analysis", type="string", description="Technical analysis results"),
         ],
         requires_tools=True,
         output_field="technical_analysis",
-        node_name="技术面分析师 v2",
+        node_name="technical analyst v2",
         execution_order=10,
         workflow_stage="analyst",
     ),
 
     "pa_fundamental_v2": AgentMetadata(
         id="pa_fundamental_v2",
-        name="基本面分析师 v2.0",
-        description="分析持仓股票的基本面，包括财务数据、估值水平、行业地位",
+        name="fundamental analyst v2.0",
+        description="Analyze the fundamentals of held stocks, including financial data, valuation levels, and industry status",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="portfolio_data", type="string", description="持仓数据"),
+            AgentInput(name="portfolio_data", type="string", description="Position data"),
         ],
         outputs=[
-            AgentOutput(name="fundamental_analysis", type="string", description="基本面分析结果"),
+            AgentOutput(name="fundamental_analysis", type="string", description="Fundamental analysis results"),
         ],
         requires_tools=False,
         output_field="fundamental_analysis",
-        node_name="基本面分析师 v2",
+        node_name="fundamental analyst v2",
         execution_order=20,
         workflow_stage="analyst",
     ),
 
     "pa_risk_v2": AgentMetadata(
         id="pa_risk_v2",
-        name="风险评估师 v2.0",
-        description="评估持仓风险，包括风险敞口、风险情景与波动性分析",
+        name="risk assessor v2.0",
+        description="Assess position risk, including risk exposure, risk scenarios and volatility analysis",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="portfolio_data", type="string", description="持仓数据"),
+            AgentInput(name="portfolio_data", type="string", description="Position data"),
         ],
         outputs=[
-            AgentOutput(name="risk_analysis", type="string", description="风险评估结果"),
+            AgentOutput(name="risk_analysis", type="string", description="Risk assessment results"),
         ],
         requires_tools=False,
         output_field="risk_analysis",
-        node_name="风险评估师 v2",
+        node_name="risk assessor v2",
         execution_order=30,
         workflow_stage="analyst",
     ),
 
     "pa_advisor_v2": AgentMetadata(
         id="pa_advisor_v2",
-        name="持仓研究整合师 v2.0",
-        description="综合各维度分析，整理形成持仓研究观察与关注事项（不构成投资建议）",
+        name="Position research integrator v2.0",
+        description="Comprehensive analysis of various dimensions, sorting out position research observations and matters of concern (does not constitute investment advice)",
         category=AgentCategory.MANAGER,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="portfolio_data", type="string", description="持仓数据"),
-            AgentInput(name="technical_analysis", type="string", description="技术面分析结果", required=False),
-            AgentInput(name="fundamental_analysis", type="string", description="基本面分析结果", required=False),
-            AgentInput(name="risk_analysis", type="string", description="风险评估结果", required=False),
+            AgentInput(name="portfolio_data", type="string", description="Position data"),
+            AgentInput(name="technical_analysis", type="string", description="Technical analysis results", required=False),
+            AgentInput(name="fundamental_analysis", type="string", description="Fundamental analysis results", required=False),
+            AgentInput(name="risk_analysis", type="string", description="Risk assessment results", required=False),
         ],
         outputs=[
-            AgentOutput(name="action_advice", type="string", description="持仓研究观察汇总"),
+            AgentOutput(name="action_advice", type="string", description="Summary of position research observations"),
         ],
         requires_tools=False,
         output_field="action_advice",
-        node_name="持仓研究整合师 v2",
+        node_name="Position research integrator v2",
         execution_order=100,
         workflow_stage="manager",
     ),
 
-    # ── v2.0 复盘分析 ──────────────────────────────────────────────────
+    # ── v2.0 Review analysis ──────────────────────────────────────────────────
 
     "timing_analyst_v2": AgentMetadata(
         id="timing_analyst_v2",
-        name="时机分析师 v2.0",
-        description="复盘入场与退出依据，评估交易时机选择的合理性",
+        name="timing analyst v2.0",
+        description="Review the basis for entry and exit, and evaluate the rationality of trading timing.",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="trade_records", type="string", description="交易记录"),
-            AgentInput(name="trade_info", type="dict", description="交易信息详情", required=False),
-            AgentInput(name="market_data", type="dict", description="市场行情数据", required=False),
-            AgentInput(name="benchmark_data", type="dict", description="基准数据", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="trade_records", type="string", description="transaction history"),
+            AgentInput(name="trade_info", type="dict", description="Transaction information details", required=False),
+            AgentInput(name="market_data", type="dict", description="market data", required=False),
+            AgentInput(name="benchmark_data", type="dict", description="Benchmark data", required=False),
         ],
         outputs=[
-            AgentOutput(name="timing_analysis", type="string", description="时机分析结果"),
+            AgentOutput(name="timing_analysis", type="string", description="Timing analysis results"),
         ],
         requires_tools=False,
         output_field="timing_analysis",
-        node_name="时机分析师 v2",
+        node_name="timing analyst v2",
         execution_order=10,
         workflow_stage="analyst",
     ),
 
     "position_analyst_v2": AgentMetadata(
         id="position_analyst_v2",
-        name="仓位分析师 v2.0",
-        description="复盘仓位控制与仓位变化依据的合理性",
+        name="Position Analyst v2.0",
+        description="The rationality of review position control and position change basis",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="trade_records", type="string", description="交易记录"),
-            AgentInput(name="trade_info", type="dict", description="交易信息详情", required=False),
-            AgentInput(name="market_data", type="dict", description="市场行情数据", required=False),
-            AgentInput(name="benchmark_data", type="dict", description="基准数据", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="trade_records", type="string", description="transaction history"),
+            AgentInput(name="trade_info", type="dict", description="Transaction information details", required=False),
+            AgentInput(name="market_data", type="dict", description="market data", required=False),
+            AgentInput(name="benchmark_data", type="dict", description="Benchmark data", required=False),
         ],
         outputs=[
-            AgentOutput(name="position_analysis", type="string", description="仓位分析结果"),
+            AgentOutput(name="position_analysis", type="string", description="Position analysis results"),
         ],
         requires_tools=False,
         output_field="position_analysis",
-        node_name="仓位分析师 v2",
+        node_name="Position Analyst v2",
         execution_order=20,
         workflow_stage="analyst",
     ),
 
     "emotion_analyst_v2": AgentMetadata(
         id="emotion_analyst_v2",
-        name="情绪分析师 v2.0",
-        description="分析交易中的情绪化操作和纪律执行情况",
+        name="sentiment analyst v2.0",
+        description="Analyze emotional operations and discipline execution in trading",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="trade_records", type="string", description="交易记录"),
-            AgentInput(name="trade_info", type="dict", description="交易信息详情", required=False),
-            AgentInput(name="market_data", type="dict", description="市场行情数据", required=False),
-            AgentInput(name="benchmark_data", type="dict", description="基准数据", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="trade_records", type="string", description="transaction history"),
+            AgentInput(name="trade_info", type="dict", description="Transaction information details", required=False),
+            AgentInput(name="market_data", type="dict", description="market data", required=False),
+            AgentInput(name="benchmark_data", type="dict", description="Benchmark data", required=False),
         ],
         outputs=[
-            AgentOutput(name="emotion_analysis", type="string", description="情绪分析结果"),
+            AgentOutput(name="emotion_analysis", type="string", description="Sentiment analysis results"),
         ],
         requires_tools=False,
         output_field="emotion_analysis",
-        node_name="情绪分析师 v2",
+        node_name="sentiment analyst v2",
         execution_order=30,
         workflow_stage="analyst",
     ),
 
     "attribution_analyst_v2": AgentMetadata(
         id="attribution_analyst_v2",
-        name="归因分析师 v2.0",
-        description="分析收益来源，区分大盘/行业/个股Alpha贡献与可复制性",
+        name="attribution analyst v2.0",
+        description="Analyze the sources of income and distinguish the Alpha contribution and replicability of the market/industry/individual stocks",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="trade_records", type="string", description="交易记录"),
-            AgentInput(name="trade_info", type="dict", description="交易信息详情", required=False),
-            AgentInput(name="market_data", type="dict", description="市场行情数据", required=False),
-            AgentInput(name="benchmark_data", type="dict", description="基准数据", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="trade_records", type="string", description="transaction history"),
+            AgentInput(name="trade_info", type="dict", description="Transaction information details", required=False),
+            AgentInput(name="market_data", type="dict", description="market data", required=False),
+            AgentInput(name="benchmark_data", type="dict", description="Benchmark data", required=False),
         ],
         outputs=[
-            AgentOutput(name="attribution_analysis", type="string", description="归因分析结果"),
+            AgentOutput(name="attribution_analysis", type="string", description="Attribution analysis results"),
         ],
         requires_tools=False,
         output_field="attribution_analysis",
-        node_name="归因分析师 v2",
+        node_name="attribution analyst v2",
         execution_order=40,
         workflow_stage="analyst",
     ),
 
     "review_manager_v2": AgentMetadata(
         id="review_manager_v2",
-        name="复盘总结师 v2.0",
-        description="综合所有分析维度，生成完整复盘报告和改进方向",
+        name="Review summary expert v2.0",
+        description="Comprehensive all analysis dimensions to generate a complete review report and improvement directions",
         category=AgentCategory.MANAGER,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=[],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="trade_records", type="string", description="交易记录"),
-            AgentInput(name="trade_info", type="dict", description="交易信息详情", required=False),
-            AgentInput(name="market_data", type="dict", description="市场行情数据", required=False),
-            AgentInput(name="benchmark_data", type="dict", description="基准数据", required=False),
-            AgentInput(name="timing_analysis", type="string", description="时机分析结果", required=False),
-            AgentInput(name="position_analysis", type="string", description="仓位分析结果", required=False),
-            AgentInput(name="emotion_analysis", type="string", description="情绪分析结果", required=False),
-            AgentInput(name="attribution_analysis", type="string", description="归因分析结果", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="trade_records", type="string", description="transaction history"),
+            AgentInput(name="trade_info", type="dict", description="Transaction information details", required=False),
+            AgentInput(name="market_data", type="dict", description="market data", required=False),
+            AgentInput(name="benchmark_data", type="dict", description="Benchmark data", required=False),
+            AgentInput(name="timing_analysis", type="string", description="Timing analysis results", required=False),
+            AgentInput(name="position_analysis", type="string", description="Position analysis results", required=False),
+            AgentInput(name="emotion_analysis", type="string", description="Sentiment analysis results", required=False),
+            AgentInput(name="attribution_analysis", type="string", description="Attribution analysis results", required=False),
         ],
         outputs=[
-            AgentOutput(name="review_summary", type="string", description="复盘总结报告"),
+            AgentOutput(name="review_summary", type="string", description="Review summary report"),
         ],
         requires_tools=False,
         output_field="review_summary",
-        node_name="复盘总结师 v2",
+        node_name="Review summary expert v2",
         execution_order=100,
         workflow_stage="manager",
     ),
 
-    # 🆕 报告生成器 Agent (智能报告生成)
+    # 🆕 report generator Agent (Intelligent report generation)
     "report_generator_v2": AgentMetadata(
         id="report_generator_v2",
-        name="报告生成器 v2",
-        description="智能报告生成 Agent，通过 LLM 理解分析结果并生成格式化的综合报告",
-        category=AgentCategory.ANALYST,  # 改为 ANALYST（因为调用 LLM）
+        name="report generator v2",
+        description="Intelligent report generation Agent understands the analysis results and generates a formatted comprehensive report through LLM",
+        category=AgentCategory.ANALYST,  # Changed to ANALYST (because of calling LLM)
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         icon="📝",
         color="#9b59b6",
-        tags=["报告", "生成", "汇总", "智能", "v2.0"],
-        tools=[],  # 不需要工具，只处理已有数据
+        tags=["report", "generate", "Summary", "Smart", "v2.0"],
+        tools=[],  # No tools required, just process existing data
         default_tools=[],
         max_tool_calls=0,
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码", required=False),
-            AgentInput(name="analysis_date", type="string", description="分析日期", required=False),
-            AgentInput(name="report_style", type="string", description="报告样式（简洁/详细/投资者）", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code", required=False),
+            AgentInput(name="analysis_date", type="string", description="Analysis date", required=False),
+            AgentInput(name="report_style", type="string", description="Report style (concise/detailed/investor)", required=False),
         ],
         outputs=[
-            AgentOutput(name="reports", type="dict", description="生成的报告字典"),
-            AgentOutput(name="report_summary", type="string", description="报告摘要"),
+            AgentOutput(name="reports", type="dict", description="generated report dictionary"),
+            AgentOutput(name="report_summary", type="string", description="Report Summary"),
         ],
         requires_tools=False,
         output_field="reports",
-        report_label="【综合报告】",
-        node_name="报告生成器 v2",
-        execution_order=999,  # 最后执行
+        report_label=" [Comprehensive Report]",
+        node_name="report generator v2",
+        execution_order=999,  # Last executed
     ),
 
-    # 🆕 数据准备器 Agent (智能数据准备)
+    # 🆕 data preparer Agent (Smart data preparation)
     "data_preparer_v2": AgentMetadata(
         id="data_preparer_v2",
-        name="数据准备器 v2",
-        description="智能数据准备 Agent，通过 LLM 理解需求并调用工具获取数据，存储在 context 中供后续使用",
-        category=AgentCategory.ANALYST,  # 改为 ANALYST，因为需要调用 LLM
+        name="data preparer v2",
+        description="Intelligent data preparation Agent understands requirements through LLM and calls tools to obtain data, which is stored in context for subsequent use.",
+        category=AgentCategory.ANALYST,  # Changed to ANALYST since it needs to be called LLM
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         icon="🔧",
         color="#3498db",
-        tags=["数据", "准备", "智能", "v2.0"],
-        tools=["market", "fundamentals", "news", "social"],  # 绑定所有数据工具
+        tags=["data", "Prepare", "Smart", "v2.0"],
+        tools=["market", "fundamentals", "news", "social"],  # Bind all data tools
         default_tools=["market", "fundamentals", "news", "social"],
-        max_tool_calls=10,  # 允许多次工具调用
+        max_tool_calls=10,  # Allow multiple tool calls
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码", required=True),
-            AgentInput(name="analysis_date", type="string", description="分析日期", required=False),
-            AgentInput(name="data_requirements", type="string", description="数据需求描述", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code", required=True),
+            AgentInput(name="analysis_date", type="string", description="Analysis date", required=False),
+            AgentInput(name="data_requirements", type="string", description="Data requirement description", required=False),
         ],
         outputs=[
-            AgentOutput(name="context", type="string", description="准备好的数据上下文"),
-            AgentOutput(name="data_summary", type="string", description="数据摘要"),
-            AgentOutput(name="tools_used", type="array", description="使用的工具列表"),
+            AgentOutput(name="context", type="string", description="Prepared data context"),
+            AgentOutput(name="data_summary", type="string", description="Data summary"),
+            AgentOutput(name="tools_used", type="array", description="List of tools used"),
         ],
-        requires_tools=True,  # 需要工具
+        requires_tools=True,  # need tools
         output_field="context",
-        report_label="【数据准备】",
-        node_name="数据准备器 v2",
-        execution_order=0,  # 最先执行
+        report_label=" [Data preparation]",
+        node_name="data preparer v2",
+        execution_order=0,  # executed first
     ),
 }
 

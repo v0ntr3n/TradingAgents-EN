@@ -1,11 +1,11 @@
 """
-社区版权限门控 stub 单元测试（v3.6.0 社区版开源分离 · M1 §7.3）
+Community edition permission gated stub unit test (v3.6.0 community edition open source separation · M1 §7.3) 
 
-验证 core/licensing/community_stub.py 的行为契约：
-- require_pro / require_feature（FastAPI 依赖）：放行透传
-- has_feature：免费语义（FREE_ACCESS_FEATURES 放行，其余拦截）
-- is_pro：恒 False
-- 配额：Free 档（分析师 4、研究员 2、单并发、API 100/日）
+Verify the behavioral contract of core/licensing/community_stub.py:
+- require_pro / require_feature (FastAPI Dependence): allow transparent transmission
+- has_feature: Free semantics (FREE_ACCESS_FEATURES is released, the rest is intercepted)
+- is_pro: constant False
+- Quota: Free file (analyst 4, researcher 2, single concurrency, API 100/day)
 """
 
 import asyncio
@@ -56,7 +56,7 @@ class TestServiceSemantics:
             assert service.has_feature(free_info, feature) is True
 
     def test_has_feature_pro_features_blocked(self, service, free_info):
-        # Pro 功能在社区版拦截（如 review.py 的 trading_plan_check）
+        # Pro Functions are blocked in the community version (such as trading_plan_check in review.py)
         for feature in ("trading_plan_check", "advanced_courses", "export_reports", "workflow"):
             assert service.has_feature(free_info, feature) is False
 
@@ -90,7 +90,7 @@ class TestFastAPIDependencies:
         assert result is free_info
 
     def test_pro_features_empty(self):
-        # 社区版无 Pro 专属功能（靠物理剔除，不靠运行时门控）
+        # The Community Edition does not have Pro exclusive features (relying on physical culling, not runtime gating)
         assert PRO_FEATURES == []
 
 
@@ -121,11 +121,11 @@ class TestCommunityLicenseManager:
         assert CommunityLicenseManager() is CommunityLicenseManager()
 
     def test_check_limit_within(self, manager):
-        # 分析师 4 名额：已有 3 个，可再加
+        # Analyst 4 quota: 3 already available, more can be added
         assert manager.check_limit("max_analysts", 3) is True
 
     def test_check_limit_exceeded(self, manager):
-        # 分析师 4 名额：已有 4 个，不可再加
+        # Analyst 4 quota: There are already 4, no more can be added
         assert manager.check_limit("max_analysts", 4) is False
 
     def test_get_remaining(self, manager):
@@ -135,9 +135,9 @@ class TestCommunityLicenseManager:
     def test_activate_not_supported(self, manager):
         ok, err = manager.activate("any-key")
         assert ok is False
-        assert "不支持" in err
+        assert "Not supported" in err
 
     def test_can_use_feature_respects_quota_flags(self, manager):
-        # 布尔型功能按 Free 档：行业分析师关闭
+        # Boolean function is in Free mode: industry analysts are closed
         assert manager.can_use_feature("sector_analyst") is False
         assert manager.can_use_feature("parallel_execution") is False

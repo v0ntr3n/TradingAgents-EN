@@ -1,13 +1,13 @@
 """
-报告模板模型
+report template model
 
-支持为不同工作流配置不同的报告格式和输出结构。
-每个工作流可以关联一个报告模板，定义该工作流产出的报告格式。
+Supports configuring different report formats and output structures for different workflows.
+Each workflow can be associated with a report template, which defines the report format produced by the workflow.
 
-使用场景：
-- 初选流程：简洁的通过/不通过判断报告
-- 深度分析：详细的投资分析报告
-- 持仓检查：持仓风险评估报告
+Usage scenarios:
+- Preliminary process: concise pass/fail judgment report
+- In-Depth Analysis: Detailed Investment Analysis Report
+- Position Check: Position Risk Assessment Report
 """
 from datetime import datetime
 from typing import Optional, Dict, Any, List
@@ -32,69 +32,69 @@ class PyObjectId(ObjectId):
 
 
 class OutputField(BaseModel):
-    """报告输出字段定义"""
-    name: str = Field(..., description="字段名称")
-    type: str = Field(..., description="字段类型: string, number, boolean, array, object")
-    description: str = Field("", description="字段说明")
-    required: bool = Field(True, description="是否必填")
-    default: Optional[Any] = Field(None, description="默认值")
-    # 对于 string 类型，可以定义枚举值
-    enum: Optional[List[str]] = Field(None, description="枚举值（仅 string 类型）")
-    # 对于 number 类型，可以定义范围
-    min_value: Optional[float] = Field(None, description="最小值（仅 number 类型）")
-    max_value: Optional[float] = Field(None, description="最大值（仅 number 类型）")
+    """Report output field definitions"""
+    name: str = Field(..., description="Field name")
+    type: str = Field(..., description="Field type: string, number, boolean, array, object")
+    description: str = Field("", description="Field description")
+    required: bool = Field(True, description="Is it required?")
+    default: Optional[Any] = Field(None, description="Default value")
+    # For string types, you can define enumeration values
+    enum: Optional[List[str]] = Field(None, description="Enumeration values (string type only)")
+    # For number types, a range can be defined
+    min_value: Optional[float] = Field(None, description="Minimum value (number type only)")
+    max_value: Optional[float] = Field(None, description="Maximum value (number type only)")
 
 
 class ReportTemplate(BaseModel):
     """
-    报告模板模型
+    report template model
     
-    定义工作流的报告输出格式，包括：
-    - 输出字段定义（output_schema）
-    - 报告生成提示词（generator_prompt）
-    - 摘要和展示配置
+    Define the report output format of the workflow, including:
+    - Output field definition (output_schema)
+    - Report generation prompt word (generator_prompt)
+    - Summary and presentation configuration
     """
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     
-    # 基本信息
-    template_id: str = Field(..., description="模板唯一标识符")
-    name: str = Field(..., description="模板名称")
-    description: str = Field("", description="模板描述")
+    # Basic information
+    template_id: str = Field(..., description="template unique identifier")
+    name: str = Field(..., description="Template name")
+    description: str = Field("", description="Template description")
     
-    # 关联的工作流
-    workflow_id: str = Field(..., description="关联的工作流ID")
+    # Associated workflows
+    workflow_id: str = Field(..., description="Associated workflows ID")
     
-    # 输出结构定义
+    # Output structure definition
     output_schema: List[OutputField] = Field(
         default_factory=list, 
-        description="报告输出字段定义"
+        description="Report output field definitions"
     )
     
-    # 报告生成器提示词
+    # Report Generator Prompt Words
     generator_prompt: str = Field(
         "", 
-        description="用于 LLM 生成报告的提示词模板，可使用 {agent_outputs} 等变量"
+        description="Prompt word template for LLM generated reports, available using {agent_outputs} equal variables"
     )
     
-    # 摘要配置
+    # summary configuration
     summary_fields: List[str] = Field(
         default_factory=list,
-        description="用于生成摘要的字段列表"
+        description="List of fields used to generate the summary"
     )
     
-    # 展示配置
+    # Display configuration
     display_config: Dict[str, Any] = Field(
         default_factory=dict,
-        description="前端展示配置（字段顺序、样式等）"
+        description="Front-end display configuration (field order, style, etc.)"
     )
     
-    # 状态
-    status: str = Field("active", description="状态: active, inactive")
+    # Status
+    status: str = Field("active", description="Status: active, inactive")
     
-    # 元数据
+    # metadata
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: Optional[str] = Field(None, description="创建者用户ID")
+    created_by: Optional[str] = Field(None, description="Creator user ID")
     
     class Config:
         populate_by_name = True
@@ -103,7 +103,7 @@ class ReportTemplate(BaseModel):
 
 
 class ReportTemplateCreate(BaseModel):
-    """创建报告模板请求"""
+    """Create report template request"""
     template_id: str
     name: str
     description: str = ""
@@ -115,7 +115,7 @@ class ReportTemplateCreate(BaseModel):
 
 
 class ReportTemplateUpdate(BaseModel):
-    """更新报告模板请求"""
+    """Update report template request"""
     name: Optional[str] = None
     description: Optional[str] = None
     output_schema: Optional[List[OutputField]] = None
@@ -126,7 +126,7 @@ class ReportTemplateUpdate(BaseModel):
 
 
 class ReportTemplateResponse(BaseModel):
-    """报告模板响应"""
+    """report template response"""
     id: str
     template_id: str
     name: str

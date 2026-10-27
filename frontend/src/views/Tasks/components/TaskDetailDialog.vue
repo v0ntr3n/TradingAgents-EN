@@ -1,84 +1,84 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="任务详情"
+    title="Mission details"
     width="1200px"
     :close-on-click-modal="false"
     destroy-on-close
   >
     <div v-loading="loading" class="task-detail">
       <template v-if="taskDetail">
-        <!-- 基本信息 -->
+        <!-- Basic information -->
         <el-card shadow="never" class="section-card">
           <template #header>
             <div class="card-header">
               <el-icon><InfoFilled /></el-icon>
-              <span>基本信息</span>
+              <span>Basic information</span>
             </div>
           </template>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="任务ID" :span="2">
+            <el-descriptions-item label="Task ID" :span="2">
               <el-text copyable>{{ taskDetail.task_id }}</el-text>
             </el-descriptions-item>
-            <el-descriptions-item label="任务类型">
+            <el-descriptions-item label="Task type">
               <el-tag>{{ TaskTypeNames[taskDetail.task_type] || taskDetail.task_type }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="状态">
+            <el-descriptions-item label="Status">
               <el-tag :type="TaskStatusColors[taskDetail.status]">
                 {{ TaskStatusNames[taskDetail.status] || taskDetail.status }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="进度">
+            <el-descriptions-item label="Progress">
               <el-progress 
                 :percentage="taskDetail.progress" 
                 :status="taskDetail.status === 'failed' ? 'exception' : (taskDetail.status === 'completed' ? 'success' : undefined)"
               />
             </el-descriptions-item>
-            <el-descriptions-item label="当前步骤">
+            <el-descriptions-item label="current step">
               {{ taskDetail.current_step || '-' }}
             </el-descriptions-item>
-            <el-descriptions-item label="引擎类型">
+            <el-descriptions-item label="Engine type">
               {{ taskDetail.engine_type }}
             </el-descriptions-item>
-            <el-descriptions-item label="偏好类型">
+            <el-descriptions-item label="Preference type">
               {{ taskDetail.preference_type }}
             </el-descriptions-item>
-            <el-descriptions-item label="工作流ID">
+            <el-descriptions-item label="Workflow ID">
               {{ taskDetail.workflow_id || '-' }}
             </el-descriptions-item>
           </el-descriptions>
         </el-card>
 
-        <!-- 时间信息 -->
+        <!-- time information -->
         <el-card shadow="never" class="section-card">
           <template #header>
             <div class="card-header">
               <el-icon><Clock /></el-icon>
-              <span>时间信息</span>
+              <span>time information</span>
             </div>
           </template>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="创建时间">
+            <el-descriptions-item label="creation time">
               {{ formatTime(taskDetail.created_at) }}
             </el-descriptions-item>
-            <el-descriptions-item label="开始时间">
+            <el-descriptions-item label="start time">
               {{ taskDetail.started_at ? formatTime(taskDetail.started_at) : '-' }}
             </el-descriptions-item>
-            <el-descriptions-item label="完成时间">
+            <el-descriptions-item label="completion time">
               {{ taskDetail.completed_at ? formatTime(taskDetail.completed_at) : '-' }}
             </el-descriptions-item>
-            <el-descriptions-item label="执行时间">
+            <el-descriptions-item label="Execution time">
               {{ taskDetail.execution_time > 0 ? taskDetail.execution_time.toFixed(2) + 's' : '-' }}
             </el-descriptions-item>
           </el-descriptions>
         </el-card>
 
-        <!-- 任务参数 -->
+        <!-- Task parameters -->
         <el-card shadow="never" class="section-card">
           <template #header>
             <div class="card-header">
               <el-icon><Setting /></el-icon>
-              <span>任务参数</span>
+              <span>Task parameters</span>
             </div>
           </template>
           <el-descriptions :column="2" border>
@@ -95,7 +95,7 @@
                 </template>
                 <template v-else-if="isObject(value)">
                   <el-collapse>
-                    <el-collapse-item :title="`查看 ${formatLabel(key)} 详情`" :name="key">
+                    <el-collapse-item :title="`View ${formatLabel(key)} Details`" :name="key">
                       <pre class="json-content">{{ JSON.stringify(value, null, 2) }}</pre>
                     </el-collapse-item>
                   </el-collapse>
@@ -108,31 +108,31 @@
           </el-descriptions>
         </el-card>
 
-        <!-- 执行统计 -->
+        <!-- Execution statistics -->
         <el-card shadow="never" class="section-card">
           <template #header>
             <div class="card-header">
               <el-icon><DataAnalysis /></el-icon>
-              <span>执行统计</span>
+              <span>Execution statistics</span>
             </div>
           </template>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="重试次数">
+            <el-descriptions-item label="Number of retries">
               {{ taskDetail.retry_count }} / {{ taskDetail.max_retries }}
             </el-descriptions-item>
-            <el-descriptions-item label="Token使用量">
+            <el-descriptions-item label="Token Usage">
               {{ taskDetail.tokens_used || 0 }}
             </el-descriptions-item>
-            <el-descriptions-item label="成本">
+            <el-descriptions-item label="cost">
               {{ taskDetail.cost ? '¥' + taskDetail.cost.toFixed(4) : '-' }}
             </el-descriptions-item>
-            <el-descriptions-item label="用户ID">
+            <el-descriptions-item label="User ID">
               <el-text copyable>{{ taskDetail.user_id }}</el-text>
             </el-descriptions-item>
-            <el-descriptions-item label="候选记忆数">
+            <el-descriptions-item label="Number of candidate memories">
               {{ growthSummary.memory_items_count }}
             </el-descriptions-item>
-            <el-descriptions-item label="成长建议数">
+            <el-descriptions-item label="Number of growth suggestions">
               {{ growthSummary.suggestions_count }}
             </el-descriptions-item>
           </el-descriptions>
@@ -147,12 +147,12 @@
           @updated="handleGrowthUpdated"
         />
 
-        <!-- 错误信息 -->
+        <!-- error message -->
         <el-card v-if="taskDetail.error_message" shadow="never" class="section-card error-card">
           <template #header>
             <div class="card-header">
               <el-icon><Warning /></el-icon>
-              <span>错误信息</span>
+              <span>error message</span>
             </div>
           </template>
           <el-alert
@@ -163,12 +163,12 @@
           />
         </el-card>
 
-        <!-- 单股研究任务 - 查看报告按钮（即使没有结果数据也显示） -->
+        <!-- Single Stock Research Task - View Report Button (shown even if no results data is available) -->
         <el-card v-if="isStockAnalysisTask && !hasResult" shadow="never" class="section-card">
           <template #header>
             <div class="card-header">
               <el-icon><Document /></el-icon>
-              <span>研究报告</span>
+              <span>research report</span>
             </div>
           </template>
           <div style="padding: 16px;">
@@ -177,18 +177,18 @@
               @click="goToReport"
             >
               <el-icon><Document /></el-icon>
-              查看研究报告
+              View research report
             </el-button>
           </div>
         </el-card>
 
-        <!-- 结果数据（如果有） -->
+        <!-- Result data (if any) -->
         <el-card v-if="hasResult" shadow="never" class="section-card">
           <template #header>
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <el-icon><Document /></el-icon>
-                <span>结果数据</span>
+                <span>Result data</span>
               </div>
               <el-button
                 v-if="isStockAnalysisTask"
@@ -197,23 +197,23 @@
                 @click="goToReport"
               >
                 <el-icon><Document /></el-icon>
-                查看报告
+                View report
               </el-button>
             </div>
           </template>
           <el-collapse>
-            <el-collapse-item title="查看结果详情" name="result">
+            <el-collapse-item title="View result details" name="result">
               <pre class="json-content">{{ JSON.stringify(taskDetail.result, null, 2) }}</pre>
             </el-collapse-item>
           </el-collapse>
         </el-card>
       </template>
 
-      <el-empty v-else-if="!loading" description="暂无数据" />
+      <el-empty v-else-if="!loading" description="No data yet" />
     </div>
 
     <template #footer>
-      <el-button @click="visible = false">关闭</el-button>
+      <el-button @click="visible = false">close</el-button>
     </template>
   </el-dialog>
 </template>
@@ -257,19 +257,19 @@ const growthSummary = computed(() => {
   }
 })
 
-// 判断是否有结果数据
+// Determine whether there is result data
 const hasResult = computed(() => {
   return props.taskDetail?.result && Object.keys(props.taskDetail.result).length > 0
 })
 
-// 判断是否是单股研究任务
+// Determine whether it is a single stock research task
 const isStockAnalysisTask = computed(() => {
   const taskType = props.taskDetail?.task_type
   const isStockAnalysis = taskType === TaskType.STOCK_ANALYSIS || taskType === TaskType.ETF_ANALYSIS
   
-  // 调试日志
+  // debug log
   if (process.env.NODE_ENV === 'development') {
-    console.log('[TaskDetailDialog] 任务类型判断:', {
+    console.log('[TaskDetailDialog] Task type judgment:', {
       taskType,
       TaskType_STOCK_ANALYSIS: TaskType.STOCK_ANALYSIS,
       isStockAnalysis
@@ -283,19 +283,19 @@ const handleGrowthUpdated = (context: TaskGrowthContextPayload | null) => {
   growthContext.value = context
 }
 
-// 获取报告ID（从任务结果中提取）
+// Get report ID (extracted from task results)
 const reportId = computed(() => {
-  // 对于单股研究任务，优先使用 task_id（因为报告 API 支持通过 task_id 查询）
+  // For single-stock research tasks, task_id is preferred (because the reporting API supports querying by task_id)
   if (isStockAnalysisTask.value && props.taskDetail?.task_id) {
-    // 如果有result，优先使用result中的analysis_id
+    // If there is a result, use the one in the result first.analysis_id
     if (props.taskDetail?.result) {
       const result = props.taskDetail.result
-      // 优先使用 analysis_id，其次使用 task_id
+      // Use analysis_id first, then use task_id
       const id = result.analysis_id || props.taskDetail.task_id
       
-      // 调试日志（开发环境）
+      // Debug log (development environment)
       if (process.env.NODE_ENV === 'development') {
-        console.log('[TaskDetailDialog] 报告ID提取:', {
+        console.log('[TaskDetailDialog] Report ID extraction:', {
           taskType: props.taskDetail?.task_type,
           task_id: props.taskDetail.task_id,
           result_analysis_id: result.analysis_id,
@@ -307,31 +307,31 @@ const reportId = computed(() => {
       return id
     }
     
-    // 如果没有result，直接使用task_id
+    // If there is no result, use it directly task_id
     return props.taskDetail.task_id
   }
   
   return null
 })
 
-// 跳转到报告详情页
+// Jump to report details page
 const goToReport = () => {
-  // 优先使用 reportId，如果没有则使用 task_id
+  // Use reportId first, if not, use task_id
   const id = reportId.value || props.taskDetail?.task_id
   
   if (!id) {
-    console.error('[TaskDetailDialog] 无法跳转：缺少报告ID', {
+    console.error('[TaskDetailDialog] Unable to jump: Missing report ID', {
       reportId: reportId.value,
       task_id: props.taskDetail?.task_id,
       taskDetail: props.taskDetail
     })
-    ElMessage.error('无法获取报告ID，请稍后重试')
+    ElMessage.error('Unable to get report ID, please try again later')
     return
   }
   
-  // 调试日志
+  // debug log
   if (process.env.NODE_ENV === 'development') {
-    console.log('[TaskDetailDialog] 跳转到报告详情页:', {
+    console.log('[TaskDetailDialog] Jump to report details page:', {
       reportId: id,
       task_id: props.taskDetail?.task_id,
       task_type: props.taskDetail?.task_type
@@ -340,58 +340,58 @@ const goToReport = () => {
   
   try {
     router.push(`/reports/view/${id}`)
-    visible.value = false // 关闭对话框
+    visible.value = false // Close dialog
   } catch (error) {
-    console.error('[TaskDetailDialog] 跳转失败:', error)
-    ElMessage.error('跳转失败，请稍后重试')
+    console.error('[TaskDetailDialog] Jump failed:', error)
+    ElMessage.error('Jump failed, please try again later')
   }
 }
 
-// 格式化标签
+// formatting tags
 const formatLabel = (key: string): string => {
   const labelMap: Record<string, string> = {
-    symbol: '股票代码',
-    stock_code: '股票代码',
-    code: '代码',
-    market_type: '市场类型',
-    market: '市场',
-    analysis_date: '分析日期',
-    research_depth: '研究深度',
-    selected_analysts: '选择的分析师',
-    custom_prompt: '自定义提示词',
-    include_sentiment: '包含情绪分析',
-    include_risk: '包含风险评估',
-    language: '语言',
-    quick_analysis_model: '快速分析模型',
-    deep_analysis_model: '深度分析模型',
-    workflow_id: '工作流ID',
-    preference_type: '偏好类型',
-    position_type: '持仓类型',
-    risk_tolerance: '风险承受度',
-    ticker: '股票代码',
-    company_name: '公司名称',
-    market_name: '市场名称',
-    currency_name: '货币名称',
-    currency_symbol: '货币符号',
-    lookback_days: '回看天数',
-    max_debate_rounds: '最大辩论轮数'
+    symbol: 'Stock code',
+    stock_code: 'Stock code',
+    code: 'code',
+    market_type: 'market type',
+    market: 'market',
+    analysis_date: 'Analysis date',
+    research_depth: 'Research depth',
+    selected_analysts: 'Selected Analyst',
+    custom_prompt: 'Custom prompt words',
+    include_sentiment: 'Contains sentiment analysis',
+    include_risk: 'Include risk assessment',
+    language: 'language',
+    quick_analysis_model: 'Quickly analyze models',
+    deep_analysis_model: 'Deep analysis model',
+    workflow_id: 'Workflow ID',
+    preference_type: 'Preference type',
+    position_type: 'Position type',
+    risk_tolerance: 'risk tolerance',
+    ticker: 'Stock code',
+    company_name: 'Company name',
+    market_name: 'Market name',
+    currency_name: 'currency name',
+    currency_symbol: 'currency symbol',
+    lookback_days: 'Number of days to look back',
+    max_debate_rounds: 'Maximum number of debate rounds'
   }
   return labelMap[key] || key
 }
 
-// 格式化值
+// Format value
 const formatValue = (value: any): string => {
   if (value === null || value === undefined) return '-'
-  if (typeof value === 'boolean') return value ? '是' : '否'
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
   if (typeof value === 'string' && value.length > 100) {
     return value.substring(0, 100) + '...'
   }
   return String(value)
 }
 
-// 格式化数组项（特殊处理分析师名称）
+// Format array items (special handling of analyst names)
 const formatArrayItem = (key: string, item: any): string => {
-  // 如果是选择的分析师字段，将英文ID转换为中文名称
+  // If it is the selected analyst field, convert the English ID to a Chinese name
   if (key === 'selected_analysts' && typeof item === 'string') {
     const chineseNames = convertAnalystIdsToNames([item])
     return chineseNames[0] || item
@@ -399,17 +399,17 @@ const formatArrayItem = (key: string, item: any): string => {
   return String(item)
 }
 
-// 判断是否为数组
+// Determine whether it is an array
 const isArray = (value: any): boolean => {
   return Array.isArray(value)
 }
 
-// 判断是否为对象
+// Determine whether it is an object
 const isObject = (value: any): boolean => {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-// 格式化时间
+// Format time
 const formatTime = (time: string) => {
   if (!time) return '-'
   const date = new Date(time)

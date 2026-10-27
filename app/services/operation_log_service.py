@@ -39,9 +39,9 @@ class OperationLogService:
         try:
             db = get_mongo_db()
 
-            # 构建日志文档
-            # 🔥 使用 naive datetime（不带时区信息），MongoDB 会按原样存储，不会转换为 UTC
-            current_time = now_tz().replace(tzinfo=None)  # 移除时区信息，保留本地时间值
+            # Build log document
+            # 🔥 Using naive datetime (without time zone information), MongoDB stores it as is and does not convert to UTC
+            current_time = now_tz().replace(tzinfo=None)  # Remove time zone information and retain local time value
             log_doc = {
                 "user_id": user_id,
                 "username": username,
@@ -54,11 +54,11 @@ class OperationLogService:
                 "ip_address": ip_address or log_data.ip_address,
                 "user_agent": user_agent or log_data.user_agent,
                 "session_id": log_data.session_id,
-                "timestamp": current_time,  # naive datetime，MongoDB 按原样存储
-                "created_at": current_time  # naive datetime，MongoDB 按原样存储
+                "timestamp": current_time,  # naive datetime, MongoDB Store as is
+                "created_at": current_time  # naive datetime, MongoDB Store as is
             }
             
-            # 插入数据库
+            # Insert into database
             result = await db[self.collection_name].insert_one(log_doc)
             
             logger.info(f"📝 操作日志已记录: {username} - {log_data.action}")
@@ -73,35 +73,35 @@ class OperationLogService:
         try:
             db = get_mongo_db()
             
-            # 构建查询条件
+            # Build query conditions
             filter_query = {}
             
-            # 时间范围筛选
+            # Time range filter
             if query.start_date or query.end_date:
                 time_filter = {}
                 if query.start_date:
-                    # 处理时区，移除Z后缀并直接解析
+                    # Handle time zones, remove Z suffix and parse directly
                     start_str = query.start_date.replace('Z', '')
                     time_filter["$gte"] = datetime.fromisoformat(start_str)
                 if query.end_date:
-                    # 处理时区，移除Z后缀并直接解析
+                    # Handle time zones, remove Z suffix and parse directly
                     end_str = query.end_date.replace('Z', '')
                     time_filter["$lte"] = datetime.fromisoformat(end_str)
                 filter_query["timestamp"] = time_filter
             
-            # 操作类型筛选
+            # Operation type filter
             if query.action_type:
                 filter_query["action_type"] = query.action_type
             
-            # 成功状态筛选
+            # Success status filter
             if query.success is not None:
                 filter_query["success"] = query.success
             
-            # 用户筛选
+            # User filtering
             if query.user_id:
                 filter_query["user_id"] = query.user_id
             
-            # 关键词搜索
+            # keyword search
             if query.keyword:
                 filter_query["$or"] = [
                     {"action": {"$regex": query.keyword, "$options": "i"}},
@@ -109,10 +109,10 @@ class OperationLogService:
                     {"details.stock_symbol": {"$regex": query.keyword, "$options": "i"}}
                 ]
             
-            # 获取总数
+            # Get total
             total = await db[self.collection_name].count_documents(filter_query)
             
-            # 分页查询
+            # Page query
             skip = (query.page - 1) * query.page_size
             cursor = db[self.collection_name].find(filter_query).sort("timestamp", -1).skip(skip).limit(query.page_size)
             
@@ -133,17 +133,17 @@ class OperationLogService:
         try:
             db = get_mongo_db()
             
-            # 时间范围（使用中国时区）
+            # Time range (using China time zone)
             start_date = now_tz() - timedelta(days=days)
             time_filter = {"timestamp": {"$gte": start_date}}
             
-            # 基础统计
+            # basic statistics
             total_logs = await db[self.collection_name].count_documents(time_filter)
             success_logs = await db[self.collection_name].count_documents({**time_filter, "success": True})
             failed_logs = total_logs - success_logs
             success_rate = (success_logs / total_logs * 100) if total_logs > 0 else 0
             
-            # 操作类型分布
+            # Operation type distribution
             action_type_pipeline = [
                 {"$match": time_filter},
                 {"$group": {"_id": "$action_type", "count": {"$sum": 1}}},
@@ -154,7 +154,7 @@ class OperationLogService:
             async for doc in action_type_cursor:
                 action_type_distribution[doc["_id"]] = doc["count"]
             
-            # 小时分布统计
+            # Hourly distribution statistics
             hourly_pipeline = [
                 {"$match": time_filter},
                 {
@@ -167,7 +167,7 @@ class OperationLogService:
             ]
             hourly_cursor = db[self.collection_name].aggregate(hourly_pipeline)
             hourly_distribution = []
-            hourly_data = {i: 0 for i in range(24)}  # 初始化24小时
+            hourly_data = {i: 0 for i in range(24)}  # Initialization 24 hours
             
             async for doc in hourly_cursor:
                 hourly_data[doc["_id"]] = doc["count"]
@@ -199,19 +199,19 @@ class OperationLogService:
         try:
             db = get_mongo_db()
             
-            # 构建删除条件
+            # Build deletion conditions
             delete_filter = {}
             
             if days is not None:
-                # 只删除N天前的日志
+                # Only delete logs from N days ago
                 cutoff_date = datetime.now() - timedelta(days=days)
                 delete_filter["timestamp"] = {"$lt": cutoff_date}
             
             if action_type:
-                # 只删除指定类型的日志
+                # Only delete logs of specified types
                 delete_filter["action_type"] = action_type
             
-            # 执行删除
+            # perform deletion
             result = await db[self.collection_name].delete_many(delete_filter)
             
             logger.info(f"🗑️ 清空操作日志: 删除了 {result.deleted_count} 条记录")
@@ -242,7 +242,7 @@ class OperationLogService:
             return None
 
 
-# 全局服务实例
+# Global service instance
 _operation_log_service: Optional[OperationLogService] = None
 
 
@@ -254,7 +254,7 @@ def get_operation_log_service() -> OperationLogService:
     return _operation_log_service
 
 
-# 便捷函数
+# Convenience function
 async def log_operation(
     user_id: str,
     username: str,

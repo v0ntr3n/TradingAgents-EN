@@ -1,351 +1,351 @@
-# 提示词基础
+# Prompt word basics
 
-**分类**: 提示词工程  
-**难度**: 入门  
-**阅读时间**: 10分钟  
-**更新日期**: 2025-11-14
-
----
-
-## 📋 引言
-
-提示词（Prompt）是与大语言模型交互的关键。一个好的提示词可以让AI更准确地理解你的需求，生成高质量的回答。本文将介绍提示词的基础知识，帮助你掌握与AI对话的技巧。
-
-### 学习目标
-
-- 理解什么是提示词
-- 掌握提示词的基本结构
-- 学习编写清晰有效的提示词
-- 了解常见的提示词错误
+**Classification**: prompt word project  
+**difficulty**: Getting Started  
+**reading time**: 10 minutes  
+**Update date**: 2025-11-14
 
 ---
 
-## 🎯 什么是提示词？
+## 📋 Introduction
 
-### 定义
+Prompts are the key to interacting with large language models. A good prompt word can allow AI to understand your needs more accurately and generate high-quality answers. This article will introduce the basic knowledge of prompt words and help you master the skills of talking to AI.
 
-**提示词（Prompt）**是你发送给大语言模型的输入文本，用于指导模型生成特定的输出。
+### learning objectives
 
-简单来说，提示词就是你对AI说的话，告诉它你想要什么。
-
-### 提示词的作用
-
-```
-你的提示词 → 大语言模型 → AI的回答
-```
-
-**示例**：
-
-❌ **模糊的提示词**：
-```
-分析这只股票
-```
-
-✅ **清晰的提示词**：
-```
-请分析股票代码000001（平安银行）的投资价值，包括：
-1. 基本面分析（财务指标、盈利能力）
-2. 技术面分析（价格走势、技术指标）
-3. 行业地位和竞争优势
-4. 研究观察和风险提示
-```
+- Understand what cue words are
+- Master the basic structure of prompt words
+- Learn to write clear and effective prompt words
+- Learn about common prompt word mistakes
 
 ---
 
-## 🏗️ 提示词的基本结构
+## 🎯 What is a cue word?
 
-一个好的提示词通常包含以下几个部分：
+### definition
 
-### 1. 角色设定（Role）
+**Prompt**is the input text you send to a large language model to instruct the model to produce a specific output.
 
-告诉AI它应该扮演什么角色。
+Simply put, a prompt word is what you say to the AI, telling it what you want.
 
-**示例**：
+### The role of prompt words
+
 ```
-你是一位资深的股票分析师，拥有10年以上的A股市场分析经验。
-```
-
-**为什么重要**：
-- 帮助AI理解应该从什么角度回答
-- 提高回答的专业性和针对性
-
-### 2. 任务描述（Task）
-
-清楚地说明你想要AI做什么。
-
-**示例**：
-```
-请分析平安银行（000001）的投资价值。
+your prompt word → large language model → AI answer
 ```
 
-**要点**：
-- 使用明确的动词：分析、总结、比较、评估
-- 指定具体对象：股票代码、公司名称
-- 说明分析范围：时间段、维度
+**Example**: 
 
-### 3. 上下文信息（Context）
-
-提供必要的背景信息和数据。
-
-**示例**：
+❌ **vague prompt word**: 
 ```
-当前股价：12.50元
-市盈率：5.2
-市净率：0.6
-最近一年涨跌幅：-8.5%
-行业：银行业
+Analyze this stock
 ```
 
-**为什么重要**：
-- 让AI基于实际数据分析
-- 避免AI编造信息（幻觉）
-
-### 4. 输出格式（Format）
-
-指定你希望的回答格式。
-
-**示例**：
+✅ **clear cue word**: 
 ```
-请按以下格式输出：
-
-## 基本面分析
-- 财务指标评价
-- 盈利能力分析
-
-## 技术面分析
-- 价格走势
-- 技术指标
-
-## 研究观察
-- 研究结论倾向：乐观/审慎/中性
-- 理由：...
-```
-
-**常用格式**：
-- Markdown格式
-- JSON格式
-- 表格格式
-- 列表格式
-
-### 5. 约束条件（Constraints）
-
-设定回答的限制和要求。
-
-**示例**：
-```
-要求：
-- 回答长度不超过500字
-- 使用简洁的语言，避免专业术语
-- 必须包含风险提示
-- 不要给出具体的买卖建议
+Please analyze the investment value of stock code 000001 (Ping An Bank), including:
+1. Fundamental analysis (financial indicators, profitability)
+2. Technical analysis (price trends, technical indicators)
+3. Industry status and competitive advantages
+4. Research Observations and Risk Tips
 ```
 
 ---
 
-## ✍️ 编写有效提示词的技巧
+## 🏗️ Basic structure of prompt words
 
-### 技巧1：具体明确
+A good prompt usually contains the following parts:
 
-❌ **模糊**：
-```
-这只股票怎么样？
-```
+### 1. Role setting (Role)
 
-✅ **具体**：
-```
-请从基本面、技术面、行业地位三个维度分析平安银行（000001）的投资价值。
-```
+Tell the AI what role it should play.
 
-### 技巧2：提供充足信息
-
-❌ **信息不足**：
+**Example**: 
 ```
-分析一下银行股
+You are a senior stock analyst with more than 10 years of experience in analyzing the A-share market.
 ```
 
-✅ **信息充足**：
+**Why is it important**: 
+- Help AI understand from what angle it should answer
+- Improve the professionalism and pertinence of answers
+
+### 2. Task description (Task)
+
+Clearly state what you want the AI to do.
+
+**Example**: 
 ```
-请分析平安银行（000001）：
-- 当前股价：12.50元
-- 市盈率：5.2（行业平均：6.5）
+Please analyze the investment value of Ping An Bank (000001).
+```
+
+**Main points**: 
+- Use clear verbs: analyze, summarize, compare, evaluate
+- Specify specific objects: stock code, company name
+- Describe the scope of analysis: time period, dimensions
+
+### 3. Context information (Context)
+
+Provide necessary background information and data.
+
+**Example**: 
+```
+Current stock price: 12.50 yuan
+P/E ratio:5.2
+Price to Book Ratio:0.6
+Increase and decrease in the past year:-8.5%
+Industry: Banking
+```
+
+**Why is it important**: 
+- Let AI analyze based on actual data
+- Avoid AI fabricating information (illusion)
+
+### 4. Output format (Format)
+
+Specify the format you want your answer to be in.
+
+**Example**: 
+```
+Please output in the following format:
+
+## fundamental analysis
+- Financial indicator evaluation
+- Profitability analysis
+
+## Technical analysis
+- price trend
+- Technical indicators
+
+## research observation
+- Research conclusion tendency: optimistic/cautious/neutral
+- Reason:...
+```
+
+**Common formats**: 
+- Markdown Format
+- JSON Format
+- table format
+- list format
+
+### 5. Constraints
+
+Set limits and requirements for answers.
+
+**Example**: 
+```
+Requirements:
+- Answer length should not exceed 500 words
+- Use concise language and avoid jargon
+- Risk warning must be included
+- Don't give specific buying and selling recommendations
+```
+
+---
+
+## ✍️ Tips for Writing Effective Prompt Words
+
+### Tip 1: Be specific
+
+❌ **blurry**: 
+```
+How is this stock?
+```
+
+✅ **specific**: 
+```
+Please analyze the investment value of Ping An Bank (000001) from three dimensions: fundamentals, technical aspects, and industry status.
+```
+
+### Tip 2: Provide sufficient information
+
+❌ **Insufficient information**: 
+```
+Analyze bank stocks
+```
+
+✅ **enough information**: 
+```
+Please analyze Ping An Bank (000001):
+- Current stock price: 12.50 yuan
+- P/E ratio: 5.2 (industry average: 6.5)
 - ROE：10.5%
-- 不良贷款率：1.2%
+- Non-performing loan ratio:1.2%
 ```
 
-### 技巧3：分步骤引导
+### Tip 3: Step-by-step guidance
 
-❌ **一次性要求太多**：
+❌ **Asking for too much at once**: 
 ```
-分析这只股票的所有方面并给出详细的研究观察和风险评估以及未来预测
-```
-
-✅ **分步骤**：
-```
-第一步：请先分析平安银行的基本面
-第二步：基于基本面分析，评估其投资价值
-第三步：列出主要风险因素
+Analyzes all aspects of this stock and gives detailed research observations and risk assessments as well as future forecasts
 ```
 
-### 技巧4：使用示例
-
-通过示例告诉AI你想要什么样的输出。
-
-**示例**：
+✅ **step by step**: 
 ```
-请按以下示例格式分析股票：
-
-示例：
-股票：贵州茅台（600519）
-评级：★★★★★
-理由：行业龙头，品牌价值高，盈利能力强
-风险：估值偏高，政策风险
-
-现在请分析：平安银行（000001）
+Step 1: Please analyze the fundamentals of Ping An Bank first
+Step 2: Evaluate its investment value based on fundamental analysis
+Step Three: List Key Risk Factors
 ```
 
-### 技巧5：设定角色和语气
+### Tip 4: Use examples
 
-**示例**：
+Tell the AI what output you want through examples.
+
+**Example**: 
 ```
-你是一位谨慎的价值投资者，请用客观、理性的语气分析平安银行。
-避免使用夸张的表述，重点关注长期投资价值。
+Please analyze stocks in the following sample format:
+
+Example:
+Stock: Kweichow Moutai (600519)
+Rating:★★★★★
+Reason: Industry leader, high brand value, strong profitability
+Risks: high valuation, policy risks
+
+Now please analyze: Ping An Bank (000001)
+```
+
+### Tip 5: Set character and tone
+
+**Example**: 
+```
+You are a prudent value investor. Please analyze Ping An Bank in an objective and rational tone.
+Avoid exaggerated statements and focus on long-term investment value.
 ```
 
 ---
 
-## 🚫 常见错误
+## 🚫 Common mistakes
 
-### 错误1：提示词过于简短
+### Mistake 1: Prompt word is too short
 
-❌ **太简短**：
+❌ **too brief**: 
 ```
 000001
 ```
 
-**问题**：AI不知道你想要什么
+**question**: AI don't know what you want
 
-### 错误2：一次问太多问题
+### Mistake 2: Asking too many questions at once
 
-❌ **问题太多**：
+❌ **Too many questions**: 
 ```
-分析000001的基本面技术面行业地位竞争优势财务状况未来前景研究观察风险因素...
-```
-
-**问题**：回答可能不够深入
-
-### 错误3：使用模糊的词语
-
-❌ **模糊**：
-```
-这只股票好不好？
+Analysis of 000001's fundamentals, technical aspects, industry status, competitive advantages, financial status, future prospects, research and observation, risk factors...
 ```
 
-**问题**："好"的标准不明确
+**question**: The answer may not be in depth enough
 
-✅ **明确**：
-```
-从长期投资价值的角度，分析这只股票的基本面趋势和主要风险
-```
+### Mistake 3: Using vague words
 
-### 错误4：没有提供必要信息
-
-❌ **缺少信息**：
+❌ **blurry**: 
 ```
-分析一下这只股票
+Is this stock a good stock?
 ```
 
-**问题**：AI不知道是哪只股票
+**question**: "good"The standards are not clear
 
-### 错误5：期望AI预测未来
-
-❌ **不合理期望**：
+✅ **clear**: 
 ```
-告诉我这只股票明天会涨还是跌
+From the perspective of long-term investment value, analyze the fundamental trends and main risks of this stock
 ```
 
-**问题**：AI无法预测股市，这样的提示词会导致不可靠的回答
+### Mistake 4: Not providing necessary information
+
+❌ **Missing information**: 
+```
+Analyze this stock
+```
+
+**question**: AI I don't know which stock it is
+
+### Mistake 5: Expecting AI to predict the future
+
+❌ **unreasonable expectations**: 
+```
+Tell me whether this stock will go up or down tomorrow
+```
+
+**question**: AI It is impossible to predict the stock market, and such prompt words will lead to unreliable answers.
 
 ---
 
-## 💡 实战示例
+## 💡 Practical examples
 
-### 示例1：单股分析
+### Example 1: Single Stock Analysis
 
-**优秀的提示词**：
+**Excellent prompt words**: 
 ```
-你是一位资深股票分析师。请分析平安银行（000001）的投资价值。
+You are a senior stock analyst. Please analyze the investment value of Ping An Bank (000001).
 
-当前数据：
-- 股价：12.50元
-- 市盈率：5.2
-- 市净率：0.6
+Current data:
+- Stock price: 12.50 yuan
+- P/E ratio:5.2
+- Price to Book Ratio:0.6
 - ROE：10.5%
-- 行业：银行业
+- Industry: Banking
 
-请从以下角度分析：
-1. 估值水平（与行业对比）
-2. 盈利能力
-3. 成长性
-4. 风险因素
+Please analyze from the following perspectives:
+1. Valuation level (compared to industry)
+2. Profitability
+3. Growth
+4. risk factors
 
-输出格式：
-- 使用Markdown格式
-- 每个部分不超过150字
-- 最后给出综合评价（1-5星）
+Output format:
+- Use Markdown format
+- Each part should not exceed 150 words
+- Finally, give a comprehensive evaluation (1-5 stars)
 ```
 
-### 示例2：股票对比
+### Example 2: Stock comparison
 
-**优秀的提示词**：
+**Excellent prompt words**: 
 ```
-请对比分析以下两只银行股：
+Please compare and analyze the following two bank stocks:
 
-股票A：平安银行（000001）
-- 市盈率：5.2
+Stock A: Ping An Bank (000001)
+- P/E ratio:5.2
 - ROE：10.5%
-- 不良贷款率：1.2%
+- Non-performing loan ratio:1.2%
 
-股票B：招商银行（600036）
-- 市盈率：6.8
+Stock B: China Merchants Bank (600036)
+- P/E ratio:6.8
 - ROE：15.2%
-- 不良贷款率：0.9%
+- Non-performing loan ratio:0.9%
 
-请从估值、盈利能力、资产质量三个维度对比，
-并说明哪只股票更适合价值投资者。
+Please compare from the three dimensions of valuation, profitability and asset quality.
+And explain which stock is better for value investors.
 ```
 
 ---
 
-## 📚 总结
+## 📚 Summary
 
-### 关键要点
+### Key takeaways
 
-1. **提示词是与AI对话的关键**
-2. **好的提示词包含**：角色、任务、上下文、格式、约束
-3. **编写技巧**：具体明确、信息充足、分步引导
-4. **避免错误**：过于简短、问题太多、期望不合理
+1. **Prompt words are the key to talking to AI**
+2. **Good prompt words include**: Role, task, context, format, constraints
+3. **Writing skills**: Specific, clear, sufficient information, and step-by-step guidance
+4. **avoid mistakes**: Too brief, too many questions, unreasonable expectations
 
-### 下一步学习
+### Next step to learn
 
-- 📖 [提示词工程最佳实践](./best-practices.md)
+- 📖 [Prompt Word Engineering Best Practices](./best-practices.md)
 
 
 ---
 
-## ❓ 练习题
+## ❓ Practice questions
 
-尝试改进以下提示词：
+Try improving the following prompt words:
 
-**练习1**：
+**practice 1**: 
 ```
-❌ 原提示词：分析一下茅台
-✅ 改进后：_______________
+❌ Original prompt: Analyze Moutai
+✅ After improvement:_______________
 ```
 
-**练习2**：
+**practice 2**: 
 ```
-❌ 原提示词：这只股票能涨吗
-✅ 改进后：_______________
+❌ Original prompt: Can this stock rise?
+✅ After improvement:_______________
 ```
 
 ---

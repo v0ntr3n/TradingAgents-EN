@@ -1,5 +1,5 @@
 /**
- * 分析师配置常量
+ * Analyst Configuration Constants
  */
 
 export interface Analyst {
@@ -9,93 +9,103 @@ export interface Analyst {
   icon?: string
 }
 
-// 系统支持的分析师列表
+// List of analysts supported by the system
 export const ANALYSTS: Analyst[] = [
-  // 个股分析师
+  // Individual stock analysts
   {
     id: 'market',
-    name: '市场分析师',
-    description: '分析个股价格走势与技术指标（均线/MACD/RSI/布林带），生成技术分析报告',
+    name: 'Market Analyst',
+    description: 'Analyze stock price trends and technical indicators (MA/MACD/RSI/Bollinger Bands) to generate technical analysis reports',
     icon: 'TrendCharts'
   },
   {
     id: 'fundamentals',
-    name: '基本面分析师',
-    description: '分析公司财务状况、业务模式和竞争优势',
+    name: 'Fundamentals Analyst',
+    description: 'Analyze company financial condition, business model, and competitive advantages',
     icon: 'DataAnalysis'
   },
   {
     id: 'news',
-    name: '新闻分析师',
-    description: '分析相关新闻、公告和市场事件的影响',
+    name: 'News Analyst',
+    description: 'Analyze the impact of relevant news, announcements, and market events',
     icon: 'Document'
   },
   {
     id: 'social',
-    name: '社媒分析师',
-    description: '分析社交媒体情绪、投资者心理和舆论导向',
+    name: 'Social Media Analyst',
+    description: 'Analyze social media sentiment, investor psychology, and public opinion trends',
     icon: 'ChatDotRound'
   },
-  // 🆕 宏观分析师
+  // 🆕 Macro analysts
   {
     id: 'index_analyst',
-    name: '大盘分析师',
-    description: '分析大盘指数走势、市场环境和系统性风险',
+    name: 'Market Index Analyst',
+    description: 'Analyze broad market index trends, market environment, and systemic risks',
     icon: 'PieChart'
   },
   {
     id: 'sector_analyst',
-    name: '板块分析师',
-    description: '分析行业趋势、板块轮动和同业对比',
+    name: 'Sector Analyst',
+    description: 'Analyze industry trends, sector rotation, and peer comparisons',
     icon: 'Grid'
   },
-  // ETF 分析师（仅 ETF 市场）
+  // ETF Analyst (ETF market only)
   {
     id: 'etf',
-    name: 'ETF分析师',
-    description: '分析 ETF 净值、跟踪误差和持仓结构',
+    name: 'ETF Analyst',
+    description: 'Analyze ETF net asset value (NAV), tracking error, and holdings structure',
     icon: 'DataAnalysis'
   }
 ]
 
-// 分析师名称列表（用于表单选项）
+// Analyst name list (used for form options)
 export const ANALYST_NAMES = ANALYSTS.map(analyst => analyst.name)
 
-// 默认选中的分析师
-export const DEFAULT_ANALYSTS = ['市场分析师', '基本面分析师']
+// Default selected analysts
+export const DEFAULT_ANALYSTS = ['Market Analyst', 'Fundamentals Analyst']
 
-// 根据名称获取分析师信息
+// Get analyst info by name
 export const getAnalystByName = (name: string): Analyst | undefined => {
   return ANALYSTS.find(analyst => analyst.name === name)
 }
 
-// 根据ID获取分析师信息
+// Get analyst info by ID
 export const getAnalystById = (id: string): Analyst | undefined => {
   return ANALYSTS.find(analyst => analyst.id === id)
 }
 
-// 验证分析师名称是否有效
+// Validate whether an analyst name is valid
 export const isValidAnalyst = (name: string): boolean => {
-  return ANALYST_NAMES.includes(name)
+  return ANALYST_NAMES.includes(name) || Object.prototype.hasOwnProperty.call(ANALYST_NAME_TO_ID_MAP, name)
 }
 
-// 中文名称到英文ID的映射
+// Mapping from analyst display name (both English and legacy Chinese) to ID
 export const ANALYST_NAME_TO_ID_MAP: Record<string, string> = {
+  // Legacy Chinese names (preserved for backward compatibility)
   '大盘分析师': 'index_analyst',
   '板块分析师': 'sector_analyst',
   '市场分析师': 'market',
   '基本面分析师': 'fundamentals',
   '新闻分析师': 'news',
   '社媒分析师': 'social',
-  'ETF分析师': 'etf'
+  '社交媒体分析师': 'social',
+  'ETF分析师': 'etf',
+  // English names
+  'Market Index Analyst': 'index_analyst',
+  'Sector Analyst': 'sector_analyst',
+  'Market Analyst': 'market',
+  'Fundamentals Analyst': 'fundamentals',
+  'News Analyst': 'news',
+  'Social Media Analyst': 'social',
+  'ETF Analyst': 'etf'
 }
 
-// 将中文分析师名称转换为英文ID
+// Convert analyst names to IDs
 export const convertAnalystNamesToIds = (names: string[]): string[] => {
   return names.map(name => ANALYST_NAME_TO_ID_MAP[name] || name)
 }
 
-// 将英文ID转换为中文分析师名称
+// Convert analyst IDs to display names
 export const convertAnalystIdsToNames = (ids: string[]): string[] => {
   const idToNameMap = Object.fromEntries(
     Object.entries(ANALYST_NAME_TO_ID_MAP).map(([name, id]) => [id, name])
@@ -103,9 +113,9 @@ export const convertAnalystIdsToNames = (ids: string[]): string[] => {
   return ids.map(id => idToNameMap[id] || id)
 }
 
-// 模型名称到供应商的映射
+// Mapping from model name to provider
 export const MODEL_TO_PROVIDER_MAP: Record<string, string> = {
-  // 阿里百炼 (DashScope)
+  // Alibaba Cloud Bailian (DashScope)
   'qwen-turbo': 'dashscope',
   'qwen-plus': 'dashscope',
   'qwen-max': 'dashscope',
@@ -128,14 +138,13 @@ export const MODEL_TO_PROVIDER_MAP: Record<string, string> = {
   'deepseek-chat': 'deepseek',
   'deepseek-coder': 'deepseek',
 
-  // 智谱AI
+  // Zhipu AI
   'glm-4': 'zhipu',
   'glm-3-turbo': 'zhipu',
   'chatglm3-6b': 'zhipu'
 }
 
-// 根据模型名称获取供应商
+// Get provider by model name
 export const getProviderByModel = (modelName: string): string => {
-  return MODEL_TO_PROVIDER_MAP[modelName] || 'dashscope' // 默认使用阿里百炼
+  return MODEL_TO_PROVIDER_MAP[modelName] || 'dashscope' // Default to Alibaba Cloud Bailian (DashScope)
 }
-

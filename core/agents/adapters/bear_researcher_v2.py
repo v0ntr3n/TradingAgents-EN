@@ -1,7 +1,7 @@
 """
-审慎情景研究员 v2.0
+Prudential Scenario Researcher v2.0
 
-基于ResearcherAgent基类实现的审慎情景研究员
+Prudent scenario researcher implemented based on ResearcherAgent base class
 """
 
 import logging
@@ -13,38 +13,38 @@ from core.agents.registry import register_agent
 
 logger = logging.getLogger(__name__)
 
-# 尝试导入模板系统
+# Try importing the template system
 try:
     from tradingagents.utils.template_client import get_agent_prompt, get_user_prompt
 except (ImportError, KeyError) as e:
-    logger.warning(f"无法导入模板系统: {e}")
+    logger.warning(f"Unable to import template system: {e}")
     get_agent_prompt = None
     get_user_prompt = None
 
-# 尝试导入股票工具
+# Try importing stock tools
 try:
     from tradingagents.utils.stock_utils import StockUtils
 except ImportError:
-    logger.warning("无法导入StockUtils，部分功能可能不可用")
+    logger.warning("Unable to import StockUtils, some functions may not be available")
     StockUtils = None
 
 
 @register_agent
 class BearResearcherV2(ResearcherAgent):
     """
-    审慎情景研究员 v2.0
+    Prudential Scenario Researcher v2.0
     
-    功能：
-    - 从审慎情景角度综合分析多个报告
-    - 提炼风险因素、脆弱点与判断边界
-    - 生成审慎情景研究报告
+    Function:
+    - Comprehensive analysis of multiple reports from a prudential scenario perspective
+    - Refining risk factors, vulnerabilities and judgment boundaries
+    - Generate prudent scenario research reports
     
-    工作流程：
-    1. 读取市场报告、新闻报告、基本面报告等
-    2. 从审慎情景角度综合分析
-    3. 生成审慎情景研究报告
+    Workflow:
+    1. Read market reports, news reports, fundamental reports, etc.
+    2. Comprehensive analysis from a prudent scenario perspective
+    3. Generate prudent scenario research reports
     
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent
 
@@ -60,28 +60,28 @@ class BearResearcherV2(ResearcherAgent):
         })
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="bear_researcher_v2",
-        name="审慎情景研究员 v2.0",
-        description="基于现有材料构建偏审慎的研究论证，提炼风险、脆弱点与判断边界",
+        name="Prudential Scenario Researcher v2.0",
+        description="Construct a prudent research argument based on existing materials and refine risks, vulnerabilities and boundaries of judgment.",
         category=AgentCategory.RESEARCHER,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
-        default_tools=[],  # 研究员不需要工具
+        default_tools=[],  # Researchers don't need tools
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="market_report", type="string", description="市场分析报告", required=False, source="state", state_field="market_report", producer_hint="market_analyst_v2"),
-            AgentInput(name="news_report", type="string", description="新闻分析报告", required=False, source="state", state_field="news_report", producer_hint="news_analyst_v2"),
-            AgentInput(name="fundamentals_report", type="string", description="基本面分析报告", required=False, source="state", state_field="fundamentals_report", producer_hint="fundamentals_analyst_v2"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="market_report", type="string", description="Market analysis report", required=False, source="state", state_field="market_report", producer_hint="market_analyst_v2"),
+            AgentInput(name="news_report", type="string", description="News analysis report", required=False, source="state", state_field="news_report", producer_hint="news_analyst_v2"),
+            AgentInput(name="fundamentals_report", type="string", description="Fundamental Analysis Report", required=False, source="state", state_field="fundamentals_report", producer_hint="fundamentals_analyst_v2"),
         ],
         outputs=[
-            AgentOutput(name="bear_report", type="string", description="审慎情景研究报告"),
+            AgentOutput(name="bear_report", type="string", description="Prudential Scenario Research Report"),
         ],
         requires_tools=False,
         output_field="bear_report",
-        report_label="【审慎情景研究 v2】",
+        report_label=" [Prudential Scenario Study v2]",
         workflow_stage="research",
         growth_role="reviewer",
         growth_outputs=["bear_report"],
@@ -94,47 +94,47 @@ class BearResearcherV2(ResearcherAgent):
         callable_surfaces=["assistant", "workflow", "agent"],
     )
 
-    # 研究员类型
+    # Researcher type
     researcher_type = "bear"
 
-    # 立场
+    # stance
     stance = "bear"
 
-    # 输出字段名
+    # Output field name
     output_field = "bear_report"
 
-    # 辩论配置
+    # debate configuration
     debate_state_field = "investment_debate_state"
     history_field = "bear_history"
     opponent_history_field = "bull_history"
 
     def _build_system_prompt(self, stance: str, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词
+        Build system prompt words
         
         Args:
-            stance: 立场（bull/bear）
-            state: 工作流状态（可选，用于提取变量如 company_name, ticker 等）
+            stance: Standpoint (bull/bear)
+            state: Workflow status (optional, used to extract variables such as company_name, ticker etc.)
             
         Returns:
-            系统提示词
+            System prompt word
         """
-        # 使用基类的通用方法从模板系统获取提示词（参考 research_manager_v2）
-        logger.info("🔍 [BearResearcherV2] 开始构建系统提示词")
+        # Use the base class's general method to obtain prompt words from the template system (refer to research_manager_v2)
+        logger.info("🔍 [BearResearcherV2] Start building system prompt words")
         
-        # 从 state 中提取必要的变量（如果系统提示词模板需要）
+        # Extract the necessary variables from state (if required by the system prompt word template)
         template_variables = {}
         if state:
-            # 提取 ticker 和 company_name
+            # Extract ticker and company_name
             if "ticker" in state:
                 template_variables["ticker"] = state["ticker"]
             if "company_name" in state:
                 template_variables["company_name"] = state["company_name"]
-            # 提取日期
+            # Extraction date
             if "analysis_date" in state or "trade_date" in state:
                 analysis_date = state.get("analysis_date") or state.get("trade_date")
                 if analysis_date:
-                    # 确保日期格式正确
+                    # Make sure the date is in the correct format
                     if isinstance(analysis_date, str) and len(analysis_date) > 10:
                         analysis_date = analysis_date.split()[0]
                     template_variables["current_date"] = analysis_date
@@ -143,42 +143,42 @@ class BearResearcherV2(ResearcherAgent):
         prompt = self._get_prompt_from_template(
             agent_type="researchers_v2",
             agent_name="bear_researcher_v2",
-            variables=template_variables,  # 传递必要的变量
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量（current_price, industry 等）
-            context=state.get("context") if state else None,  # 从 state 中获取 context
+            variables=template_variables,  # Pass necessary variables
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables (current_price, industry etc.)
+            context=state.get("context") if state else None,  # Get from state context
             fallback_prompt=None,
-            prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+            prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
         )
         if prompt:
-            logger.info(f"✅ 从模板系统获取审慎情景研究员提示词 (长度: {len(prompt)})")
+            logger.info(f"✅ Get Prudent Scenario Researcher Prompt Words from Template System (length: {len(prompt)})")
             return prompt
         
-        # 降级：使用与当前模板语义一致的默认提示词
-        company_name = (state or {}).get("company_name") or (state or {}).get("ticker") or "目标公司"
+        # Downgrade: Use the default prompt word that is semantically consistent with the current template
+        company_name = (state or {}).get("company_name") or (state or {}).get("ticker") or "target company"
         ticker = (state or {}).get("ticker") or ""
-        market_name = (state or {}).get("market_name") or "当前市场"
-        currency_name = (state or {}).get("currency_name") or "报告原始货币"
+        market_name = (state or {}).get("market_name") or "current market"
+        currency_name = (state or {}).get("currency_name") or "Report original currency"
         currency_symbol = (state or {}).get("currency_symbol") or ""
-        company_reference = f"{company_name}（股票代码：{ticker}）" if ticker else company_name
+        company_reference = f"{company_name} (Stock code:{ticker}) " if ticker else company_name
         currency_display = f"{currency_name}（{currency_symbol}）" if currency_symbol else currency_name
 
-        return f"""你是一位审慎情景研究员，负责基于现有材料为 {company_reference} 构建偏审慎的研究论证。
+        return f"""You are a deliberative scenario researcher responsible for creating {company_reference} Construct cautious research arguments.
 
-    ⚠️ 当前分析市场：{market_name}。若材料中包含价格、估值或财务数值，请统一使用 {currency_display} 作为单位。
-    ⚠️ 行文时请优先使用公司名称“{company_name}”，不要只用股票代码“{ticker}”指代公司。
+    ⚠️ Current Analytical Markets:{market_name}. If the material contains prices, valuations or financial values, please use them uniformly {currency_display} as a unit.
+    ⚠️ Please use the company name first when writing. {company_name} , Don t just use ticker symbols {ticker} Refers to the company.
 
-    你的任务是：
-    1. 说明哪些证据削弱当前判断或支持更谨慎的结论。
-    2. 突出风险和挑战、竞争劣势与负面指标，但前提是材料中确有依据。
-    3. 回应偏乐观观点中最关键的论据，指出其证据短板、前提漏洞或尚未验证之处。
-    4. 结合辩论历史与过往反思，说明哪些判断容易失真，以及当前应如何收窄结论边界。
-    5. 用普通用户看得懂的语言输出，不故作玄虚。
+    Your task is:
+    1. Describe what evidence weakens the current judgment or supports a more cautious conclusion.
+    2. Highlight risks and challenges, competitive disadvantages and negative indicators, but only if they are supported by the material.
+    3. Respond to the most critical arguments in the optimistic view, pointing out the shortcomings in the evidence, loopholes in the premise, or unverified aspects.
+    4. Combining the history of debates and past reflections, it explains which judgments are prone to distortion and how the boundaries of conclusions should be narrowed currently.
+    5. Use language that ordinary users can understand and don t be pretentious.
 
-    严格禁止：
-    - 不得输出买卖、加减仓、配置价值、目标价、价格区间、关键价位。
-    - 不得输出下跌空间、最大回撤、概率数值、风险收益比。
-    - 不得把审慎情景写成执行方案。
-    - 不得使用模型内部知识、训练数据或材料外信息补足未提供内容。
+    Strictly prohibited:
+    - Buying and selling, adding or subtracting positions, allocation values, target prices, price ranges, and key prices are not allowed.
+    - The downside space, maximum retracement, probability value, and risk-benefit ratio are not allowed to be output.
+    - Prudent scenarios must not be written as execution plans.
+    - Do not use internal model knowledge, training data, or information outside the material to supplement unprovided content.
     """
 
     def _build_user_prompt(
@@ -190,36 +190,36 @@ class BearResearcherV2(ResearcherAgent):
         state: Dict[str, Any]
     ) -> str:
         """
-        构建用户提示词（从模板系统获取）
+        Construct user prompt words (obtained from template system)
 
         Args:
-            ticker: 股票代码
-            analysis_date: 分析日期
-            reports: 各类分析报告
-            historical_context: 历史上下文
-            state: 当前状态
+            ticker: Stock code
+            analysis_date: Analysis date
+            reports: Various analysis reports
+            historical_context: historical context
+            state: Current status
 
         Returns:
-            用户提示词
+            User prompt words
         """
         company_name = self._get_company_name(ticker, state)
 
-        # 准备模板变量
+        # Prepare template variables
         template_variables = {
             "ticker": ticker,
             "company_name": company_name,
             "analysis_date": analysis_date,
         }
 
-        # 添加所有报告到模板变量
+        # Add all reports to template variables
         for key, value in reports.items():
             template_variables[key] = str(value) if value else ""
 
-        # 添加历史上下文
+        # Add historical context
         if historical_context:
             template_variables["historical_context"] = historical_context
 
-        # 🔑 从 state 中提取系统变量并合并到 template_variables
+        # 🔑 Extract system variables from state and merge into template_variables
         if state:
             system_vars = [
                 "current_price", "industry", "market_name",
@@ -228,33 +228,33 @@ class BearResearcherV2(ResearcherAgent):
             for var in system_vars:
                 if var in state and var not in template_variables:
                     template_variables[var] = state[var]
-                    logger.debug(f"📊 [系统变量] 合并到模板变量 {var}: {state[var]}")
+                    logger.debug(f"📊 [system variables] merge into template variable {var}: {state[var]}")
             
-            # 也添加其他可能有用的 state 字段（如果不存在于 template_variables 中）
-            # 但排除一些内部字段
+            # Also adds other state fields that may be useful if not present in template_variables
+            # but exclude some internal fields
             exclude_fields = {"context", "messages", "prompt_overrides", "skip_cache"}
             for key, value in state.items():
                 if key not in template_variables and key not in exclude_fields:
-                    # 只添加简单类型（字符串、数字、布尔值），避免复杂对象
+                    # Add only simple types (strings, numbers, booleans), avoid complex objects
                     if isinstance(value, (str, int, float, bool)) or value is None:
                         template_variables[key] = value
 
-        # 使用基类的通用方法从模板系统获取用户提示词（统一使用 _get_prompt_from_template）
+        # Use the general method of the base class to obtain user prompt words from the template system (uniformly use _get_prompt_from_template)
         prompt = self._get_prompt_from_template(
             agent_type="researchers_v2",
             agent_name="bear_researcher_v2",
             variables=template_variables,
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量（作为备用）
-            context=state.get("context") if state else None,  # 从 state 中获取 context
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables (as a backup)
+            context=state.get("context") if state else None,  # Get from state context
             fallback_prompt=None,
-            prompt_type="user"  # 🔑 明确指定获取用户提示词
+            prompt_type="user"  # 🔑 Explicitly specify the user prompt word to obtain
         )
         
         if prompt:
-            logger.info(f"✅ 从模板系统获取审慎情景研究员用户提示词 (长度: {len(prompt)})")
+            logger.info(f"✅ Obtain Prudential Scenario Researcher user prompt words from the template system (length: {len(prompt)})")
             return prompt
         
-        # 降级：如果模板系统不可用，使用旧方式
+        # Downgrade: use the old way if the template system is not available
         if get_user_prompt:
             try:
                 preference_id = state.get("preference_id", "neutral") if state else "neutral"
@@ -269,56 +269,56 @@ class BearResearcherV2(ResearcherAgent):
                 )
 
                 if prompt:
-                    logger.info(f"✅ 从模板系统获取审慎情景研究员用户提示词 (长度: {len(prompt)})")
+                    logger.info(f"✅ Obtain Prudential Scenario Researcher user prompt words from the template system (length: {len(prompt)})")
                     return prompt
             except Exception as e:
-                logger.warning(f"⚠️ 从模板系统获取用户提示词失败: {e}，使用降级提示词")
+                logger.warning(f"⚠️ Failed to obtain user prompt words from template system: {e}, Use demotion prompts")
 
-        # 降级：使用与当前模板语义一致的硬编码提示词
-        market_name = state.get("market_name", "当前市场") if state else "当前市场"
-        currency_name = state.get("currency_name", "报告原始货币") if state else "报告原始货币"
+        # Downgrade: Use hard-coded prompt words that are semantically consistent with the current template
+        market_name = state.get("market_name", "current market") if state else "current market"
+        currency_name = state.get("currency_name", "Report original currency") if state else "Report original currency"
         currency_symbol = state.get("currency_symbol", "") if state else ""
         currency_display = f"{currency_name}（{currency_symbol}）" if currency_symbol else currency_name
 
-        prompt = """请基于提供的分析报告，为 {company_name}（股票代码：{ticker}）构建偏审慎的研究论证。
+        prompt = """Based on the analysis report provided, please provide {company_name} (Stock code:{ticker}) Construct cautious research arguments.
 
-    当前分析市场：{market_name}
-    如材料中包含价格、估值或财务数值，请统一使用 {currency_display} 作为单位。
-    行文时请优先使用公司名称“{company_name}”，不要只用股票代码“{ticker}”指代公司。
+    Current Analytical Markets:{market_name}
+    If the material contains prices, valuations or financial values, please use them uniformly. {currency_display} as a unit.
+    Please use the company name first when writing. {company_name} , Don t just use ticker symbols {ticker} Refers to the company.
 
-    可用资源：
-    - 所有分析师报告（含市场/基本面/新闻/情绪/大盘/板块等）：
+    Available resources:
+    - All analyst reports (including market/fundamentals/news/sentiment/market/sector, etc.):
     {analyst_reports}
-    - 辩论对话历史：{historical_context}
-    - 最新偏乐观论点：{current_response}
-    - 类似情况的反思和经验教训：{past_memory_str}
+    - Debate dialogue history:{historical_context}
+    - The latest optimistic argument:{current_response}
+    - Reflections and lessons learned from similar situations:{past_memory_str}
 
-    请使用 Markdown 输出，并优先包含以下标题：
-    ## 核心主张
-    ## 主要担忧
-    ## 对乐观观点的回应
-    ## 判断转弱前提
+    Please use Markdown for output, and preferably include the following headers:
+    ## core proposition
+    ## main concerns
+    ## response to optimistic views
+    ## Judgment of weakening condition
 
-    要求：
-    - 如本轮存在新增且可验证的公开信号，再补充“## 后续观察信号”；如果本轮没有新的观察信号，可以省略该标题，或直接说明“本轮暂无新增观察信号”。
-    - 每个关键论据必须在句末用【】标注来源。
-    - 如果报告中缺少某项数据，必须明确写“报告中未提供此数据”或“基于现有报告，无法判断...”。
-    - 直接回应偏乐观论点，不要只重复己方观点。
-    - 若历史反思与当前案例相关，要吸收其中的经验教训；不相关则不要硬套。
-    - 多轮多情景研究时，优先输出本轮新增或最值得回应的 1-2 个点；若新增证据有限，可明确写“核心判断延续，暂无新增高质量风险证据或前提修正”，不要为凑结构重复扩写。
-    - 只能使用分析日期 {analysis_date} 之前且材料中明确提供的信息，不要引用“去年”“上季度”或模型记忆中的时间信息。
-    - 严格禁止输出目标价、价格区间、关键价位、下跌空间、概率数值和任何交易建议。
-    - 严格禁止使用模型内部知识、训练数据或材料外信息补足未提供内容。
+    Requirements:
+    - If there are new and verifiable public signals in this round, please add ## Follow-up observation signals ; If there are no new observation signals in this round, you can omit the title, or state it directly There are no new observation signals in this round. . 
+    - Each key argument must be marked with a source [ ] at the end of the sentence.
+    - If a piece of data is missing from the report, it must be written clearly This data is not provided in the report or Unable to determine based on existing reports... . 
+    - Respond directly to optimistic arguments, don t just repeat your own point of view.
+    - If the historical reflection is relevant to the current case, absorb the lessons learned; if it is not relevant, do not apply it rigidly.
+    - When conducting multiple rounds of multi-scenario research, give priority to outputting the 1-2 points that are new in this round or are most worthy of response; if the new evidence is limited, you can clearly write The core judgment continues, and there is no new high-quality risk evidence or premise revision. , Don t repeat extensions to make up the structure.
+    - Only analysis dates can be used {analysis_date} Do not cite information that was previously provided and is explicitly provided in the material. last year  last quarter or temporal information in model memory.
+    - It is strictly prohibited to output target prices, price ranges, key price points, downside space, probability values and any trading suggestions.
+    - It is strictly prohibited to use internal model knowledge, training data or information outside the material to supplement unprovided content.
     """
 
-        # 聚合所有分析师报告
+        # Aggregate all analyst reports
         try:
             from core.workflow.stage_aggregator import aggregate_stage_reports
             analyst_reports_text = aggregate_stage_reports(state or {}, "analyst")
         except Exception:
             analyst_reports_text = ""
 
-        # 替换变量（使用聚合报告 + 保留个别字段兼容）
+        # Substitute variables (using aggregate reporting + Keep individual fields compatible)
         prompt = prompt.format(
             company_name=company_name,
             ticker=ticker,
@@ -326,10 +326,10 @@ class BearResearcherV2(ResearcherAgent):
             currency_display=currency_display,
             analysis_date=analysis_date,
             analyst_reports=analyst_reports_text or "\n".join([
-                f"- 市场研究报告：{reports.get('market_report', '')}",
-                f"- 社交媒体情绪报告：{reports.get('sentiment_report', '')}",
-                f"- 最新世界事务新闻：{reports.get('news_report', '')}",
-                f"- 公司基本面报告：{reports.get('fundamentals_report', '')}",
+                f"- Market research report:{reports.get('market_report', '')}",
+                f"- Social Media Sentiment Report:{reports.get('sentiment_report', '')}",
+                f"- Latest world affairs news:{reports.get('news_report', '')}",
+                f"- Company fundamentals report:{reports.get('fundamentals_report', '')}",
             ]),
             historical_context=historical_context or (state.get("history", "") if state else ""),
             current_response=state.get("current_response", "") if state else "",
@@ -340,37 +340,37 @@ class BearResearcherV2(ResearcherAgent):
 
     def _get_required_reports(self) -> List[str]:
         """
-        获取需要的报告列表
+        Get a list of required reports
         
         Returns:
-            报告字段名列表
+            Report field name list
         """
         return [
-            "market_report",        # 市场分析报告
-            "news_report",          # 新闻分析报告
-            "fundamentals_report",  # 基本面分析报告
-            "sentiment_report",     # 社媒分析报告（市场情绪）
-            "sector_report",        # 板块分析报告（行业分析）
-            "index_report",         # 大盘分析报告
+            "market_report",        # Market analysis report
+            "news_report",          # News analysis report
+            "fundamentals_report",  # Fundamental Analysis Report
+            "sentiment_report",     # Social media analysis report (market sentiment)
+            "sector_report",        # Sector Analysis Report (Industry Analysis)
+            "index_report",         # Market analysis report
         ]
 
     def _get_company_name(self, ticker: str, state: Dict[str, Any]) -> str:
-        """获取公司名称"""
-        # 优先从state获取
+        """Get company name"""
+        # Get it from state first
         if "company_name" in state:
             return state["company_name"]
         
-        # 使用StockUtils获取
+        # Get using StockUtils
         if StockUtils:
             try:
                 market_info = StockUtils.get_market_info(ticker)
                 if market_info.get('is_china'):
                     from tradingagents.dataflows.interface import get_china_stock_info_unified
                     stock_info = get_china_stock_info_unified(ticker)
-                    if "股票名称:" in stock_info:
-                        return stock_info.split("股票名称:")[1].split("\n")[0].strip()
+                    if "Stock name:" in stock_info:
+                        return stock_info.split("Stock name:")[1].split("\n")[0].strip()
             except Exception as e:
-                logger.debug(f"获取公司名称失败: {e}")
+                logger.debug(f"Failed to get company name: {e}")
         
-        return f"股票{ticker}"
+        return f"stocks{ticker}"
 

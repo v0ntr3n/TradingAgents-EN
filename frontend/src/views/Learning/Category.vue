@@ -46,178 +46,178 @@ const router = useRouter()
 
 const category = computed(() => route.params.category as string)
 
-// 分类信息映射
+// Classification information mapping
 const categoryMap: Record<string, any> = {
   'ai-basics': {
-    title: 'AI基础知识',
+    title: 'AI basic knowledge',
     icon: '🤖',
-    description: '从零开始了解人工智能和大语言模型的基本概念'
+    description: 'Understand the basic concepts of artificial intelligence and large language models from scratch'
   },
   'prompt-engineering': {
-    title: '提示词工程',
+    title: 'prompt word project',
     icon: '✍️',
-    description: '学习如何编写高质量的提示词，让AI更好地理解你的需求'
+    description: 'Learn how to write high-quality prompt words to let AI better understand your needs'
   },
   'model-selection': {
-    title: '模型选择指南',
+    title: 'Model Selection Guide',
     icon: '🎯',
-    description: '了解不同大模型的特点，选择最适合你的模型'
+    description: 'Understand the characteristics of different large models and choose the model that best suits you'
   },
   'analysis-principles': {
-    title: 'AI分析股票原理',
+    title: 'AI Analyze stock principles',
     icon: '📊',
-    description: '深入了解多智能体如何协作分析股票'
+    description: 'Learn more about how multiple agents collaborate to analyze stocks'
   },
   'risks-limitations': {
-    title: '风险与局限性',
+    title: 'Risks and Limitations',
     icon: '⚠️',
-    description: '了解AI的潜在问题和正确使用方式'
+    description: 'Understand potential problems with AI and proper ways to use it'
   },
   'resources': {
-    title: '源项目与论文',
+    title: 'Source projects and papers',
     icon: '📖',
-    description: 'TradingAgents项目介绍和学术论文资源'
+    description: 'TradingAgents Project introduction and academic paper resources'
   },
   'tutorials': {
-    title: '实战教程',
+    title: 'Practical tutorial',
     icon: '🎓',
-    description: '通过实际案例学习如何使用本工具'
+    description: 'Learn how to use this tool through practical cases'
   },
   'faq': {
-    title: '常见问题',
+    title: 'FAQ',
     icon: '❓',
-    description: '快速找到常见问题的答案'
+    description: 'Quickly find answers to frequently asked questions'
   }
 }
 
 const categoryInfo = computed(() => {
   return categoryMap[category.value] || {
-    title: '未知分类',
+    title: 'Unknown classification',
     icon: '📚',
     description: ''
   }
 })
 
-// 文章数据库
+// Article database
 const articlesDatabase: Record<string, any[]> = {
   'ai-basics': [
     {
       id: 'what-is-llm',
-      title: '什么是大语言模型（LLM）？',
-      description: '深入了解大语言模型的定义、工作原理和在股票分析中的应用',
-      readTime: '10分钟',
+      title: 'What is a large language model (LLM)?',
+      description: 'In-depth understanding of the definition, working principle and application of large language models in stock analysis',
+      readTime: '10 minutes',
       views: 2345,
       difficulty: 'success',
-      difficultyText: '入门'
+      difficultyText: 'Getting Started'
     }
   ],
   'prompt-engineering': [
     {
       id: 'prompt-basics',
-      title: '提示词基础',
-      description: '学习提示词的基本概念、结构和编写技巧',
-      readTime: '10分钟',
+      title: 'Prompt word basics',
+      description: 'Learn the basic concepts, structures and writing skills of prompt words',
+      readTime: '10 minutes',
       views: 1876,
       difficulty: 'success',
-      difficultyText: '入门'
+      difficultyText: 'Getting Started'
     },
     {
       id: 'best-practices',
-      title: '提示词工程最佳实践',
-      description: '掌握提示词编写的核心原则和实用技巧',
-      readTime: '12分钟',
+      title: 'Prompt Word Engineering Best Practices',
+      description: 'Master the core principles and practical skills of writing prompt words',
+      readTime: '12 minutes',
       views: 1543,
       difficulty: 'warning',
-      difficultyText: '进阶'
+      difficultyText: 'Advanced'
     }
   ],
   'model-selection': [
     {
       id: 'model-comparison',
-      title: '大语言模型对比与选择',
-      description: '对比主流大语言模型的特点，学会选择最适合的模型',
-      readTime: '15分钟',
+      title: 'Comparison and selection of large language models',
+      description: 'Compare the characteristics of mainstream large language models and learn to choose the most suitable model',
+      readTime: '15 minutes',
       views: 1987,
       difficulty: 'warning',
-      difficultyText: '进阶'
+      difficultyText: 'Advanced'
     }
   ],
   'analysis-principles': [
     {
       id: 'multi-agent-system',
-      title: '多智能体系统详解',
-      description: '深入理解TradingAgents-CN的多智能体协作机制',
-      readTime: '15分钟',
+      title: 'Detailed explanation of multi-agent systems',
+      description: 'Deeply understand the multi-agent collaboration mechanism of TradingAgents-CN',
+      readTime: '15 minutes',
       views: 1654,
       difficulty: 'warning',
-      difficultyText: '进阶'
+      difficultyText: 'Advanced'
     }
   ],
   'risks-limitations': [
     {
       id: 'risk-warnings',
-      title: 'AI股票分析的风险与局限性',
-      description: '了解AI的主要局限性、使用风险和正确的使用方式',
-      readTime: '12分钟',
+      title: 'AI Risks and Limitations of Stock Analysis',
+      description: 'Understand the main limitations, risks of use and correct use of AI',
+      readTime: '12 minutes',
       views: 2134,
       difficulty: 'success',
-      difficultyText: '入门'
+      difficultyText: 'Getting Started'
     }
   ],
   'resources': [
     {
       id: 'tradingagents-intro',
-      title: 'TradingAgents项目介绍',
-      description: '了解TradingAgents-CN的源项目TradingAgents的架构和特性',
-      readTime: '15分钟',
+      title: 'TradingAgents Project introduction',
+      description: 'Understand the architecture and features of TradingAgents, the source project of TradingAgents-CN',
+      readTime: '15 minutes',
       views: 1432,
       difficulty: 'warning',
-      difficultyText: '进阶'
+      difficultyText: 'Advanced'
     },
     {
       id: 'paper-guide',
-      title: 'TradingAgents论文解读',
-      description: '深度解读TradingAgents学术论文的核心内容和创新点',
-      readTime: '20分钟',
+      title: 'TradingAgents Paper interpretation',
+      description: 'In-depth interpretation of the core content and innovation points of TradingAgents academic papers',
+      readTime: '20 minutes',
       views: 987,
       difficulty: 'danger',
-      difficultyText: '高级'
+      difficultyText: 'Advanced'
     }
   ],
   'tutorials': [
     {
       id: 'getting-started',
-      title: '快速入门教程',
-      description: '从零开始学习如何使用TradingAgents-CN进行股票分析',
-      readTime: '10分钟',
+      title: 'Quick Start Tutorial',
+      description: 'Learn how to use TradingAgents-CN for stock analysis from scratch',
+      readTime: '10 minutes',
       views: 3456,
       difficulty: 'success',
-      difficultyText: '入门'
+      difficultyText: 'Getting Started'
     },
     {
       id: 'usage-guide-preview',
-      title: '使用指南（试用版）',
-      description: 'TradingAgents-CN v1.0.0-preview 使用指南与试用说明',
-      readTime: '15分钟',
+      title: 'User Guide (Trial Version)',
+      description: 'TradingAgents-CN v1.0.0-preview User Guide and Trial Instructions',
+      readTime: '15 minutes',
       views: 1288,
       difficulty: 'success',
-      difficultyText: '入门'
+      difficultyText: 'Getting Started'
     }
   ],
   'faq': [
     {
       id: 'general-questions',
-      title: '常见问题解答',
-      description: '快速找到关于功能、模型选择、使用技巧等常见问题的答案',
-      readTime: '15分钟',
+      title: 'FAQ',
+      description: 'Quickly find answers to common questions about features, model selection, usage tips, and more',
+      readTime: '15 minutes',
       views: 2876,
       difficulty: 'success',
-      difficultyText: '入门'
+      difficultyText: 'Getting Started'
     }
   ]
 }
 
-// 根据当前分类获取文章列表
+// Get a list of articles based on the current category
 const articles = computed(() => {
   return articlesDatabase[category.value] || []
 })
@@ -227,7 +227,7 @@ const goBack = () => {
 }
 
 const openArticle = (articleId: string) => {
-  // 外链文章在列表点击时直接新标签页打开，不进入详情页
+  // When the external link article is clicked on the list, it will be opened directly in a new tab without entering the details page.
   const externalMap: Record<string, string> = {
     'getting-started': 'https://mp.weixin.qq.com/s/uAk4RevdJHMuMvlqpdGUEw',
     'usage-guide-preview': 'https://mp.weixin.qq.com/s/ppsYiBncynxlsfKFG8uEbw'
@@ -286,7 +286,7 @@ const openArticle = (articleId: string) => {
         box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
       }
 
-      // 让卡片内容垂直排布并撑满高度，避免底部信息被裁剪
+      // Let the card content be arranged vertically and fill the height to avoid the bottom information being cropped
       :deep(.el-card__body) {
         display: flex;
         flex-direction: column;
@@ -340,7 +340,7 @@ const openArticle = (articleId: string) => {
   }
 }
 
-// 暗黑模式覆盖
+// Dark mode overlay
 :global(html.dark) {
   .learning-category {
     background: #000000 !important;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试风险评估功能
+Test risk assessment functionality
 """
 
 import os
@@ -8,90 +8,90 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv(project_root / ".env", override=True)
 
 def test_risk_assessment_extraction():
-    """测试风险评估数据提取功能"""
-    print("🧪 测试风险评估数据提取")
+    """Test risk assessment data extraction functionality"""
+    print("🧪 Test risk assessment data extraction")
     print("=" * 50)
     
     try:
         from web.utils.analysis_runner import extract_risk_assessment
         
-        # 模拟分析状态数据
+        # Simulate and analyze status data
         mock_state = {
             'risk_debate_state': {
                 'risky_history': """
-作为激进风险分析师，我认为AAPL当前具有以下风险特征：
+As an activist risk analyst, I believe AAPL currently has the following risk characteristics:
 
-1. **市场机会**: 当前市场情绪积极，技术创新持续推进
-2. **增长潜力**: 新产品线和服务业务增长强劲
-3. **风险可控**: 虽然存在市场波动，但公司基本面稳健
+1. **market opportunity**: The current market sentiment is positive and technological innovation continues to advance
+2. **growth potential**: Strong growth in new product lines and services
+3. **Risk controllable**: Despite market volatility, the company s fundamentals are solid
 
-建议: 适度增加仓位，把握成长机会
+Suggestions: Increase positions appropriately and seize growth opportunities
                 """.strip(),
                 
                 'safe_history': """
-作为保守风险分析师，我对AAPL持谨慎态度：
+As a conservative risk analyst, I am cautious about AAPL:
 
-1. **市场风险**: 当前估值偏高，存在回调风险
-2. **行业竞争**: 智能手机市场竞争激烈，增长放缓
-3. **宏观环境**: 利率上升和经济不确定性增加风险
+1. **market risk**: The current valuation is on the high side and there is a risk of a correction
+2. **Industry competition**: Smartphone market is highly competitive and growth is slowing
+3. **macro environment**: Rising interest rates and economic uncertainty increase risks
 
-建议: 保持谨慎，控制仓位规模
+Suggestions: Stay cautious and control position size
                 """.strip(),
                 
                 'neutral_history': """
-作为中性风险分析师，我的综合评估如下：
+As a neutral risk analyst, my overall assessment is as follows:
 
-1. **平衡视角**: AAPL既有增长机会也面临挑战
-2. **风险收益**: 当前风险收益比处于合理区间
-3. **时机选择**: 建议分批建仓，降低时机风险
+1. **balanced perspective**: AAPL There are both growth opportunities and challenges
+2. **risk return**: The current risk-benefit ratio is within a reasonable range
+3. **Timing**: It is recommended to open positions in batches to reduce timing risks
 
-建议: 采用均衡策略，适度配置
+Suggestions: Adopt a balanced strategy and moderate allocation
                 """.strip(),
                 
                 'judge_decision': """
-经过风险委员会充分讨论，对AAPL的风险评估结论如下：
+After full discussion by the Risk Committee, the conclusion of AAPL s risk assessment is as follows:
 
-**综合风险等级**: 中等风险
-**主要风险因素**: 
-- 估值风险: 当前P/E比率偏高
-- 市场风险: 科技股波动性较大
-- 竞争风险: 行业竞争加剧
+**Comprehensive risk level**: medium risk
+**Main risk factors**: 
+- Valuation risk: The current P/E ratio is on the high side
+- market risk: Technology stocks are more volatile
+- Competing risks: Industry competition intensifies
 
-**风险控制建议**:
-1. 建议仓位控制在5-10%
-2. 设置止损位在当前价格-15%
-3. 分批建仓，降低时机风险
-4. 密切关注季度财报和产品发布
+**Risk control suggestions**:
+1. It is recommended that the position be controlled at 5-10%
+2. Set stop loss at current price-15%
+3. Open positions in batches to reduce timing risks
+4. Keep an eye on quarterly earnings and product releases
 
-**最终建议**: 谨慎乐观，适度配置
+**Final recommendations**: Cautiously optimistic, moderate allocation
                 """.strip()
             }
         }
         
-        # 测试提取功能
+        # Test the extraction function
         risk_assessment = extract_risk_assessment(mock_state)
         
         if risk_assessment:
-            print("✅ 风险评估数据提取成功")
-            print("\n📋 提取的风险评估报告:")
+            print("✅ Risk assessment data extraction successful")
+            print("\n📋 Extracted risk assessment report:")
             print("-" * 50)
             print(risk_assessment[:500] + "..." if len(risk_assessment) > 500 else risk_assessment)
             print("-" * 50)
             
-            # 验证报告内容
+            # Verify report content
             required_sections = [
-                "激进风险分析师观点",
-                "中性风险分析师观点", 
-                "保守风险分析师观点",
-                "风险管理委员会最终决议"
+                "Radical Risk Analyst Perspective",
+                "Neutral risk analyst view", 
+                "Conservative risk analyst view",
+                "Final decision of the Risk Management Committee"
             ]
             
             missing_sections = []
@@ -100,74 +100,74 @@ def test_risk_assessment_extraction():
                     missing_sections.append(section)
             
             if missing_sections:
-                print(f"⚠️ 缺少以下部分: {', '.join(missing_sections)}")
+                print(f"⚠️ The following parts are missing: {', '.join(missing_sections)}")
                 return False
             else:
-                print("✅ 风险评估报告包含所有必需部分")
+                print("✅ The risk assessment report contains all required sections")
                 return True
         else:
-            print("❌ 风险评估数据提取失败")
+            print("❌ Risk assessment data extraction failed")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def test_web_interface_risk_display():
-    """测试Web界面风险评估显示"""
-    print("\n🧪 测试Web界面风险评估显示")
+    """Test web interface risk assessment display"""
+    print("\n🧪 Test web interface risk assessment display")
     print("=" * 50)
     
     try:
         from web.utils.analysis_runner import run_stock_analysis
         
-        print("📋 检查Web界面分析运行器...")
+        print("📋 Check the web interface analysis runner...")
         
-        # 检查函数是否包含风险评估提取逻辑
+        # Checks whether the function contains risk assessment extraction logic
         import inspect
         source = inspect.getsource(run_stock_analysis)
         
         if 'extract_risk_assessment' in source:
-            print("✅ Web界面已集成风险评估提取功能")
+            print("✅ Web The interface has integrated risk assessment extraction function")
         else:
-            print("❌ Web界面缺少风险评估提取功能")
+            print("❌ Web Interface lacks risk assessment extraction functionality")
             return False
         
         if 'risk_assessment' in source:
-            print("✅ Web界面支持风险评估数据传递")
+            print("✅ Web Interface supports risk assessment data transfer")
         else:
-            print("❌ Web界面缺少风险评估数据传递")
+            print("❌ Web Interface lacks risk assessment data transfer")
             return False
         
-        print("✅ Web界面风险评估功能检查通过")
+        print("✅ Web Interface risk assessment function check passed")
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def test_risk_assessment_integration():
-    """测试风险评估完整集成"""
-    print("\n🧪 测试风险评估完整集成")
+    """Test risk assessment fully integrated"""
+    print("\n🧪 Test risk assessment fully integrated")
     print("=" * 50)
     
     try:
-        # 检查API密钥
+        # Check API key
         dashscope_key = os.getenv('DASHSCOPE_API_KEY')
         google_key = os.getenv('GOOGLE_API_KEY')
         
         if not dashscope_key and not google_key:
-            print("⚠️ 未配置API密钥，跳过实际分析测试")
+            print("⚠️ API key not configured, skipping actual analysis test")
             return True
         
-        print("🚀 执行实际风险评估测试...")
+        print("🚀 Perform actual risk assessment testing...")
         
         from tradingagents.graph.trading_graph import TradingAgentsGraph
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         if dashscope_key:
             config["llm_provider"] = "dashscope"
@@ -178,96 +178,96 @@ def test_risk_assessment_integration():
             config["deep_think_llm"] = "gemini-2.5-flash-lite-preview-06-17"
             config["quick_think_llm"] = "gemini-2.5-flash-lite-preview-06-17"
         
-        config["online_tools"] = False  # 避免API限制
+        config["online_tools"] = False  # Avoid API restrictions
         config["memory_enabled"] = True
-        config["max_risk_discuss_rounds"] = 1  # 减少测试时间
+        config["max_risk_discuss_rounds"] = 1  # Reduce testing time
         
-        # 修复路径
+        # repair path
         config["data_dir"] = str(project_root / "data")
         config["results_dir"] = str(project_root / "results")
         config["data_cache_dir"] = str(project_root / "tradingagents" / "dataflows" / "data_cache")
         
-        # 创建目录
+        # Create directory
         os.makedirs(config["data_dir"], exist_ok=True)
         os.makedirs(config["results_dir"], exist_ok=True)
         os.makedirs(config["data_cache_dir"], exist_ok=True)
         
-        print("✅ 配置创建成功")
+        print("✅ Configuration created successfully")
         
-        # 创建TradingAgentsGraph实例
-        print("🚀 初始化TradingAgents图...")
+        # Create TradingAgentsGraph instance
+        print("🚀 Initialize TradingAgents graph...")
         graph = TradingAgentsGraph(["market", "fundamentals"], config=config, debug=False)
         
-        print("✅ TradingAgents图初始化成功")
+        print("✅ TradingAgents Graph initialization successful")
         
-        # 执行分析
-        print("📊 开始风险评估测试...")
+        # Perform analysis
+        print("📊 Start risk assessment testing...")
         state, decision = graph.propagate("AAPL", "2025-06-27")
         
-        # 检查风险评估数据
+        # Check risk assessment data
         if 'risk_debate_state' in state:
-            print("✅ 发现风险评估数据")
+            print("✅ Discover risk assessment data")
             
             risk_debate = state['risk_debate_state']
             components = ['risky_history', 'safe_history', 'neutral_history', 'judge_decision']
             
             for component in components:
                 if component in risk_debate and risk_debate[component]:
-                    print(f"   ✅ {component}: 有数据")
+                    print(f"   ✅ {component}: There is data")
                 else:
-                    print(f"   ❌ {component}: 无数据")
+                    print(f"   ❌ {component}: No data")
             
-            # 测试提取功能
+            # Test the extraction function
             from web.utils.analysis_runner import extract_risk_assessment
             risk_assessment = extract_risk_assessment(state)
             
             if risk_assessment:
-                print("✅ 风险评估报告生成成功")
-                print(f"   报告长度: {len(risk_assessment)} 字符")
+                print("✅ Risk assessment report generated successfully")
+                print(f"   Report length: {len(risk_assessment)} character")
                 return True
             else:
-                print("❌ 风险评估报告生成失败")
+                print("❌ Risk assessment report generation failed")
                 return False
         else:
-            print("❌ 未发现风险评估数据")
+            print("❌ No risk assessment data found")
             return False
             
     except Exception as e:
-        print(f"❌ 集成测试失败: {e}")
+        print(f"❌ Integration test failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def main():
-    """主测试函数"""
-    print("🧪 风险评估功能测试")
+    """Main test function"""
+    print("🧪 Risk assessment functional testing")
     print("=" * 70)
     
-    # 运行测试
+    # Run tests
     results = {}
     
-    results['数据提取'] = test_risk_assessment_extraction()
-    results['Web界面集成'] = test_web_interface_risk_display()
-    results['完整集成'] = test_risk_assessment_integration()
+    results['Data extraction'] = test_risk_assessment_extraction()
+    results['Web Interface integration'] = test_web_interface_risk_display()
+    results['Full integration'] = test_risk_assessment_integration()
     
-    # 总结结果
-    print(f"\n📊 测试结果总结:")
+    # Summary results
+    print(f"\n📊 Summary of test results:")
     print("=" * 50)
     
     for test_name, success in results.items():
-        status = "✅ 通过" if success else "❌ 失败"
+        status = "✅ Pass" if success else "❌ failed"
         print(f"  {test_name}: {status}")
     
     successful_tests = sum(results.values())
     total_tests = len(results)
     
-    print(f"\n🎯 总体结果: {successful_tests}/{total_tests} 测试通过")
+    print(f"\n🎯 Overall results: {successful_tests}/{total_tests} Test passed")
     
     if successful_tests == total_tests:
-        print("🎉 风险评估功能完全正常！")
-        print("\n💡 现在Web界面应该能正确显示风险评估数据")
+        print("🎉 The risk assessment function is completely normal!")
+        print("\n💡 The web interface should now display risk assessment data correctly")
     else:
-        print("⚠️ 部分功能需要进一步检查")
+        print("⚠️ Some functions require further inspection")
 
 if __name__ == "__main__":
     main()

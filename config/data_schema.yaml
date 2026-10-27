@@ -1,132 +1,132 @@
 # config/data_schema.yaml
-# 数据字典扩展字段配置
+# Data dictionary extended field configuration
 # 
-# 定义不依赖 Agent 注册的扩展数据字段
-# 注意：核心字段（context.ticker, context.trade_date 等）在代码中硬编码，不能在此覆盖
+# Define extended data fields that do not rely on Agent registration
+# NOTE: Core fields (context.ticker, context.trade_date etc.) are hardcoded in the code and cannot be overridden here
 
 layers:
-  # 原始数据层扩展字段
+  # Original data layer extension fields
   raw_data:
-    description: "原始数据层 - 来自数据采集器"
+    description: "Raw data layer - from data collector"
     fields:
-      # 价格数据
+      # price data
       price_data:
         type: object
         source: data_collector
-        description: "OHLCV 价格数据"
+        description: "OHLCV price data"
       
-      # 新闻数据
+      # news data
       news_data:
         type: array
         source: data_collector
-        description: "新闻列表数据"
+        description: "News list data"
       
-      # 财务数据
+      # financial data
       financial_data:
         type: object
         source: data_collector
-        description: "财务报表数据"
+        description: "financial statement data"
       
-      # 社交媒体数据
+      # social media data
       social_data:
         type: object
         source: data_collector
-        description: "社交媒体舆情数据"
+        description: "Social media public opinion data"
       
-      # 板块数据
+      # Sector data
       sector_data:
         type: object
         source: data_collector
-        description: "所属板块信息"
+        description: "Section information"
       
-      # 指数数据
+      # index data
       index_data:
         type: object
         source: data_collector
-        description: "相关指数数据"
+        description: "Related index data"
       
-      # 资金流向数据
+      # Fund flow data
       fund_flow_data:
         type: object
         source: data_collector
-        description: "主力资金流向数据"
+        description: "Main capital flow data"
       
-      # 龙虎榜数据
+      # Dragon and Tiger List Data
       dragon_tiger_data:
         type: object
         source: data_collector
-        description: "龙虎榜交易数据"
+        description: "Dragon and Tiger List Transaction Data"
       
-      # 融资融券数据
+      # Margin and securities lending data
       margin_data:
         type: object
         source: data_collector
-        description: "融资融券数据"
+        description: "Margin and securities lending data"
 
-  # 分析数据层扩展字段
+  # Analyze data layer extension fields
   analysis_data:
-    description: "分析数据层 - 结构化分析结果"
+    description: "Analytical data layer - structured analysis results"
     fields:
-      # 技术指标
+      # Technical indicators
       technical:
         type: object
-        description: "技术分析指标（MA, RSI, MACD 等）"
+        description: "Technical Analysis Indicators (MA, RSI, MACD etc.)"
       
-      # 情绪指标
+      # sentiment indicator
       sentiment:
         type: object
-        description: "情绪分析指标"
+        description: "Sentiment Analysis Indicators"
       
-      # 估值指标
+      # Valuation indicators
       valuation:
         type: object
-        description: "估值分析指标（PE, PB, ROE 等）"
+        description: "Valuation analysis indicators (PE, PB, ROE etc.)"
       
-      # 市场广度
+      # market breadth
       market_breadth:
         type: object
-        description: "市场广度指标"
+        description: "market breadth indicator"
       
-      # 板块排名
+      # Sector ranking
       sector_ranking:
         type: object
-        description: "板块排名数据"
+        description: "Section ranking data"
       
-      # 资金流向指标
+      # money flow indicator
       fund_flow_metrics:
         type: object
-        description: "资金流向分析指标"
+        description: "Fund flow analysis indicators"
       
-      # 筹码分布
+      # Chip distribution
       chip_distribution:
         type: object
-        description: "筹码分布分析"
+        description: "Chip distribution analysis"
 
-  # 报告层扩展字段
+  # Reporting layer extension fields
   reports:
-    description: "报告层 - 分析师生成的文本报告"
+    description: "Reporting layer - Analyst-generated text reports"
     fields:
-      # 各分析师报告字段通常由 Agent 自动注册
-      # 这里可以预定义一些通用报告字段
+      # Each analyst report field is usually automatically registered by the Agent
+      # Some common report fields can be predefined here
       summary_report:
         type: string
-        description: "综合分析摘要报告"
+        description: "Comprehensive analysis summary report"
 
-  # 决策层扩展字段
+  # Decision-making layer extension fields
   decisions:
-    description: "决策层 - 决策相关数据"
+    description: "Decision-making layer - decision-related data"
     fields:
-      # 核心决策字段（investment_debate, trade_signal 等）已在代码中定义
-      # 这里可以添加扩展决策字段
+      # Core decision fields (investment_debate, trade_signal etc.) are defined in the code
+      # Extended decision fields can be added here
       position_suggestion:
         type: object
-        description: "仓位建议"
+        description: "Position recommendations"
       
       stop_loss:
         type: object
-        description: "止损建议"
+        description: "Stop loss advice"
       
       take_profit:
         type: object
-        description: "止盈建议"
+        description: "Take profit advice"
 

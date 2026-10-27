@@ -4,34 +4,34 @@ from pydantic import BaseModel, Field
 
 
 class CapabilityDocument(BaseModel):
-    capability_id: str = Field(..., description="能力唯一标识")
-    registry_tool_id: Optional[str] = Field(default=None, description="若可绑定，对应注册表 tool_id")
+    capability_id: str = Field(..., description="Ability unique identifier")
+    registry_tool_id: Optional[str] = Field(default=None, description="If it can be bound, the corresponding registry tool_id")
     source_type: str = Field(..., description="builtin_tool / mcp_tool / skill / external_skill")
     status: str = Field(default="active", description="active / draft / disabled")
-    bindable: bool = Field(default=False, description="是否可直接绑定")
-    fc_enabled: bool = Field(default=True, description="是否允许 function calling")
-    category: str = Field(default="", description="能力分类")
-    name: str = Field(default="", description="显示名称")
-    label: str = Field(default="", description="用于 UI / prompt 展示的标签")
-    description: str = Field(default="", description="能力描述")
-    when_to_use: str = Field(default="", description="适用场景")
-    when_not_to_use: str = Field(default="", description="不适用场景")
-    returns: str = Field(default="", description="返回结构描述")
-    related_tools: List[str] = Field(default_factory=list, description="相关能力")
-    coverage_terms: List[str] = Field(default_factory=list, description="领域覆盖关键词")
-    retrieval_text: str = Field(default="", description="写入向量库的检索文本")
-    data_source: str = Field(default="", description="底层数据源")
-    capability_tags: List[str] = Field(default_factory=list, description="结构化能力标签")
-    tool_role_hint: str = Field(default="", description="工具角色提示：primary/specialized/supporting/generic/fallback")
-    output_shape: str = Field(default="", description="输出形态：structured_metrics/report/text 等")
-    preferred_for: List[str] = Field(default_factory=list, description="优先适用的能力原语")
-    not_replacement_for: List[str] = Field(default_factory=list, description="不能替代的能力原语")
-    metadata: Dict[str, Any] = Field(default_factory=dict, description="附加元数据")
+    bindable: bool = Field(default=False, description="Can it be directly bound?")
+    fc_enabled: bool = Field(default=True, description="Is it allowed? function calling")
+    category: str = Field(default="", description="Ability classification")
+    name: str = Field(default="", description="display name")
+    label: str = Field(default="", description="Tags for UI/prompt display")
+    description: str = Field(default="", description="Capability description")
+    when_to_use: str = Field(default="", description="Applicable scenarios")
+    when_not_to_use: str = Field(default="", description="Not applicable scenarios")
+    returns: str = Field(default="", description="Return structure description")
+    related_tools: List[str] = Field(default_factory=list, description="Relevant abilities")
+    coverage_terms: List[str] = Field(default_factory=list, description="Domain coverage keywords")
+    retrieval_text: str = Field(default="", description="Write the search text to the vector library")
+    data_source: str = Field(default="", description="underlying data source")
+    capability_tags: List[str] = Field(default_factory=list, description="Structured capability tags")
+    tool_role_hint: str = Field(default="", description="Tool role tips:primary/specialized/supporting/generic/fallback")
+    output_shape: str = Field(default="", description="Output form: structured_metrics/report/text, etc.")
+    preferred_for: List[str] = Field(default_factory=list, description="Preferred capability primitives")
+    not_replacement_for: List[str] = Field(default_factory=list, description="Irreplaceable capability primitives")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 
 
 class CapabilitySearchHit(BaseModel):
     capability: CapabilityDocument
-    score: float = Field(default=0.0, description="相似度分数，越大越相关")
+    score: float = Field(default=0.0, description="Similarity score, the larger the score, the more relevant it is")
 
 
 class CapabilityIndexSyncResult(BaseModel):

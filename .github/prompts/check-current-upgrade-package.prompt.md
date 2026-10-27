@@ -1,18 +1,18 @@
 ---
-description: "检查当前版本升级包是否可以安全发布，自动识别版本并重点审查打包清单、更新器替换清单、upgrade_config 和 migration。"
-name: "检查当前升级包是否可发"
-argument-hint: "可选填写版本范围或补充说明，例如：重点检查升级包一致性和回滚风险。"
+description: "Check whether the upgrade package for the current version is safe to release, automatically identifying the version and focusing on packaging manifests, updater replacement lists, upgrade_config, and migrations."
+name: "Check Current Upgrade Package Readiness"
+argument-hint: "Optionally specify a version range or additional instructions, e.g.: focus on checking upgrade package consistency and rollback risks."
 agent: "autoreleases"
 ---
 
-检查当前仓库当前版本的升级包是否可以安全发布。
+Check whether the upgrade package for the current version in this repository can be safely released.
 
-要求：
-1. 如果我没有明确给出版本范围，自动识别目标版本和上一个版本。
-2. 扫描这个版本范围内的 git log 和变更文件。
-3. 重点检查 build_update_package.ps1、apply_update.ps1、start_all.ps1、apply_upgrade_config.py、manifest、upgrade_config、migration 和发布流程文档。
-4. 如果仓库已采用 D:/release/<version>/revNNN/ 归档规则，检查升级包归档是否存在、字节数与 sha256 是否已写入 RELEASE_UPLOAD_INFO.md。
-5. 重点输出升级包一致性、更新器替换一致性、发布归档与上传物料、upgrade_config 覆盖情况、migration 风险、回滚风险和最终结论。
-6. 先输出阻塞项，再输出需要修改的文件和验证清单。
-7. 默认采用只读分析模式，除非我明确要求开始实施，否则不要直接修改文件。
-8. 在最终结果中补充一份“目标版本相对上一版本的改进说明摘要”；如果已执行完整发版并生成最终物料，则应输出对应 Markdown 文档路径。
+Requirements:
+1. If I have not explicitly provided a version range, automatically identify the target version and the previous version.
+2. Scan the git log and changed files within this version range.
+3. Focus on checking `build_update_package.ps1`, `apply_update.ps1`, `start_all.ps1`, `apply_upgrade_config.py`, `manifest`, `upgrade_config`, migrations, and release process documentation.
+4. If the repository adopts the `D:/release/<version>/revNNN/` archiving convention, check whether the upgrade package archive exists and whether its byte size and sha256 checksum have been recorded in `RELEASE_UPLOAD_INFO.md`.
+5. Focus on outputting upgrade package consistency, updater replacement consistency, release archives and upload artifacts, `upgrade_config` coverage, migration risks, rollback risks, and the final conclusion.
+6. Output release blockers first, followed by files requiring modification and the verification checklist.
+7. Default to read-only analysis mode; do not modify files directly unless I explicitly ask you to start implementation.
+8. Include a "Summary of Improvements (Target Version vs. Previous Version)" in the final output; if a full release has been executed and final artifacts generated, output the path to the corresponding Markdown document.

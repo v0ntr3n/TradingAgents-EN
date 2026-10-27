@@ -1,467 +1,467 @@
-# TradingAgents-CN v3.0 真实功能清单
+# TradingAgents-CN v3.0 Real feature list
 
-> **核实时间**: 2026-07-31
-> **核实方法**: 直接读代码 + 查 MongoDB 样本 + 查前端路由 + 查侧边栏菜单
-> **目的**: 为 [v3.0 课程](../README.md) 改写提供"对照表",确保每个功能描述都有据可查
+> **Verify time**: 2026-07-31
+> **Verification method**: Read the code directly + Check MongoDB samples + Check front-end routing + Check the sidebar menu
+> **purpose**: for [v3.0 courses](../README.md) Adapted to provide"comparison table",Make sure every feature description is well documented
 
-## ⚠️ 重要声明
+## ⚠️ Important statement
 
-本文档与项目记忆可能存在差异。**以代码为准**。
+There may be differences between this document and project memory.**Subject to code**. 
 
-例如:项目记忆曾提到"v3.0 已暂停港美股",前端入口已实际移除(§9),但后端代码暂未清理(系历史包袱,学员不可见)。课程改写应**明确告诉用户平台仅支持 A 股和 ETF**。
+For example:Project memory mentioned"v3.0 Hong Kong and US stocks have been suspended",The front-end entry has actually been removed(§9),But the backend code has not been cleaned up yet(Historical baggage,Students are not visible). Curriculum rewriting should**Clearly tell users that the platform only supports A shares and ETF**. 
 
 ---
 
-## §1 前端 25 个顶层路由
+## §1 Front-end 25 top-level routes
 
-来源: [frontend/src/router/index.ts](../../../frontend/src/router/index.ts)
+Source: [frontend/src/router/index.ts](../../../frontend/src/router/index.ts)
 
-| # | 路径 | 名称 | 说明 |
+| # | path | Name | Description |
 |---|------|------|------|
-| 1 | `/dashboard` | Dashboard | 仪表板(系统首页) |
-| 2 | `/guide` | Guide | 平台引导(新手入门) |
-| 3 | `/learning` | Learning | 学习中心(显示 3 个子页) |
-| 4 | `/analysis/single` | SingleAnalysis | 单股研究 |
-| 5 | `/analysis/batch` | BatchAnalysis | 批量研究 |
-| 6 | `/analysis/general` | GeneralAnalysis | 通用研究(无明确股票) |
-| 7 | `/screening` | StockScreening | 股票筛选 |
-| 8 | `/favorites` | Favorites | 关注列表 |
-| 9 | `/assistant` | Assistant | AI 智能助手(对话式) |
-| 10 | `/memory` | Memory | AI 记忆管理(多主题会话) |
-| 11 | `/reports` | Reports | 报告中心(报告查看、详情、Token 统计) |
-| 12 | `/workflow` | Workflow | 工作流(5 个子菜单,见 §2) |
-| 13 | `/tasks/unified` | UnifiedTaskCenter | 任务中心(统一版) |
-| 14 | `/paper` | Paper | 模拟交易 |
-| 15 | `/portfolio` | Portfolio | **持仓**(注意:不叫 position) |
-| 16 | `/review` | Review | 复盘(实际叫 trade_review) |
-| 17 | `/trading-system` | TradingSystem | 交易系统(策略) |
-| 18 | `/stocks/:code` | StockDetail | 股票详情页 |
-| 19 | `/backtest` | Backtest | 回测(前端入口已下线) |
-| 20 | `/settings` | Settings | 设置(6 个子菜单,见 §3) |
-| 21 | `/debug/embedded-nanobot` | EmbeddedNanobotDebug | 调试页面(开发者向) |
-| 22 | `/about` | About | 关于 |
-| 23 | `/login` | Login | 登录 |
-| 24 | `/paper/:name.md` | PaperMdRedirect | 论文跳转 |
-| 25 | `/:pathMatch(.*)*` | - | 404 兜底 |
+| 1 | `/dashboard` | Dashboard | Dashboard(System home page) |
+| 2 | `/guide` | Guide | Platform guidance(Getting Started) |
+| 3 | `/learning` | Learning | Learning Center(Show 3 subpages) |
+| 4 | `/analysis/single` | SingleAnalysis | single stock research |
+| 5 | `/analysis/batch` | BatchAnalysis | Batch research |
+| 6 | `/analysis/general` | GeneralAnalysis | general studies(No clear stocks) |
+| 7 | `/screening` | StockScreening | stock screen |
+| 8 | `/favorites` | Favorites | watchlist |
+| 9 | `/assistant` | Assistant | AI Smart Assistant(Conversational) |
+| 10 | `/memory` | Memory | AI memory management(Multi-topic conversation) |
+| 11 | `/reports` | Reports | reporting center(Report viewing, details, Token statistics) |
+| 12 | `/workflow` | Workflow | Workflow(5 submenu,see §2) |
+| 13 | `/tasks/unified` | UnifiedTaskCenter | mission center(Unified version) |
+| 14 | `/paper` | Paper | simulated trading |
+| 15 | `/portfolio` | Portfolio | **Position**(Note:Don't bark position) |
+| 16 | `/review` | Review | Review(actual call trade_review) |
+| 17 | `/trading-system` | TradingSystem | trading system(Strategy) |
+| 18 | `/stocks/:code` | StockDetail | Stock details page |
+| 19 | `/backtest` | Backtest | backtest(The front-end entrance is offline) |
+| 20 | `/settings` | Settings | settings(6 submenu,see §3) |
+| 21 | `/debug/embedded-nanobot` | EmbeddedNanobotDebug | Debug page(Developers) |
+| 22 | `/about` | About | About |
+| 23 | `/login` | Login | Login |
+| 24 | `/paper/:name.md` | PaperMdRedirect | Paper jump |
+| 25 | `/:pathMatch(.*)*` | - | 404 Keep everything in mind |
 
-## §2 工作流子菜单(5 个)
+## §2 Workflow submenu(5 a)
 
-来源: [SidebarMenu.vue](../../../frontend/src/components/Layout/SidebarMenu.vue)
+Source: [SidebarMenu.vue](../../../frontend/src/components/Layout/SidebarMenu.vue)
 
-| 路径 | 名称 | 说明 |
+| path | Name | Description |
 |------|------|------|
-| `/workflow` | 工作流首页 | 可视化编排工作流 |
-| `/workflow/tools` | 工具管理 | 工具增删改 |
-| `/workflow/agent-workshop` | Agent 工坊 | 创建自定义 Agent |
-| `/workflow/skills` | Skill 中心 | 创建/管理 Skill |
-| `/workflow/mcp-servers` | MCP 服务器 | 外部工具服务器 |
+| `/workflow` | Workflow Home Page | Visual orchestration workflow |
+| `/workflow/tools` | Tool management | Tool addition, deletion and modification |
+| `/workflow/agent-workshop` | Agent workshop | Create custom Agent |
+| `/workflow/skills` | Skill Center | Create/Manage Skill |
+| `/workflow/mcp-servers` | MCP server | external tool server |
 
-## §3 设置子菜单(11 个)
+## §3 Settings submenu(11 a)
 
-| 路径 | 名称 | 说明 |
+| path | Name | Description |
 |------|------|------|
-| `/settings` | 通用设置 | 基础配置 |
-| `/settings?tab=appearance` | 外观设置 | 主题/布局 |
-| `/settings?tab=analysis` | 分析偏好 | 个人分析默认参数 |
-| `/settings?tab=notifications` | 通知设置 | 通知方式 |
-| `/settings?tab=security` | 安全设置 | 密码/2FA |
-| `/settings?tab=assistant` | 助理设置 | AI 助手配置 |
-| `/settings/email` | 邮箱配置 | SMTP 设置 |
-| `/settings/channel-configs` | 渠道推送 | 飞书/钉钉/邮件/Webhook |
-| `/settings/watchlist-groups` | 关注分组 | 关注列表分组管理 |
-| `/settings/scheduled-analysis` | 定时分析 | 定时任务配置 |
-| `/settings/license` | 授权(标准版) | License 激活(京东云版隐藏) |
-| `/settings/jdyun-config` | 京东云配置 | 京东云版专用 |
-| `/settings/config` | 配置管理(标准版) | LLM/数据源/系统设置 |
-| `/settings/cache` | 缓存管理 | 缓存清理 |
-| `/settings/templates` | 报告模板 | 模板管理 |
-| `/settings/prompt-policies` | 提示词策略 | 防注入 |
-| `/settings/prompt-design` | 提示词设计 | 自定义提示词 |
-| `/settings/analysis-profiles` | 分析画像 | 行业/股票画像 |
-| `/settings/database` | 数据库管理 | MongoDB 管理 |
-| `/settings/logs` | 操作日志 | 用户操作日志 |
-| `/settings/system-logs` | 系统日志 | 系统级日志 |
-| `/settings/sync` | 多数据源同步 | Tushare/AKShare/BaoStock 同步 |
-| `/settings/capability-index` | 工具能力索引 | 工具元数据 |
-| `/settings/scheduler` | 定时任务 | 系统级定时任务 |
-| `/settings/social-media` | 社媒消息管理 | 飞书/钉钉消息模板 |
-| `/settings/data-import` | 数据导入 | 历史数据导入 |
-| `/settings/usage` | 使用统计 | Token 用量 |
-| `/settings/update` | 系统更新 | 系统升级 |
+| `/settings` | General settings | Basic configuration |
+| `/settings?tab=appearance` | Appearance settings | Theme/Layout |
+| `/settings?tab=analysis` | Analyze preferences | Personal analysis default parameters |
+| `/settings?tab=notifications` | Notification settings | Notification method |
+| `/settings?tab=security` | Security settings | Password/2FA |
+| `/settings?tab=assistant` | Assistant settings | AI Assistant configuration |
+| `/settings/email` | Email configuration | SMTP settings |
+| `/settings/channel-configs` | Channel push | Feishu/DingTalk/Email/Webhook |
+| `/settings/watchlist-groups` | Follow group | Watch list group management |
+| `/settings/scheduled-analysis` | timing analysis | Scheduled task configuration |
+| `/settings/license` | Authorize(Standard Edition) | License activate(Jingdong cloud version hidden) |
+| `/settings/jdyun-config` | JD Cloud configuration | Exclusively for JD Cloud Edition |
+| `/settings/config` | Configuration management(Standard Edition) | LLM/Data source/system settings |
+| `/settings/cache` | Cache management | Cache cleaning |
+| `/settings/templates` | report template | Template management |
+| `/settings/prompt-policies` | cue word strategy | Anti-injection |
+| `/settings/prompt-design` | Prompt word design | Custom prompt words |
+| `/settings/analysis-profiles` | Analyze portrait | Industry/stock portrait |
+| `/settings/database` | Database management | MongoDB management |
+| `/settings/logs` | Operation log | User operation log |
+| `/settings/system-logs` | System log | System level logs |
+| `/settings/sync` | Synchronization of multiple data sources | Tushare/AKShare/BaoStock sync |
+| `/settings/capability-index` | Tool capability index | Tool metadata |
+| `/settings/scheduler` | scheduled tasks | System-level scheduled tasks |
+| `/settings/social-media` | Social media message management | Feishu/DingTalk message template |
+| `/settings/data-import` | Data import | Historical data import |
+| `/settings/usage` | usage statistics | Token Dosage |
+| `/settings/update` | System update | System upgrade |
 
-## §4 后端 78 个 APIRouter 路由模块
+## §4 Backend 78 APIRouter routing modules
 
-来源: [app/routers/](../../../app/routers/)
+Source: [app/routers/](../../../app/routers/)
 
-按功能分类(不完整列举):
+Classified by function(Incomplete enumeration):
 
-| 前缀 | 模块 | 关键端点 |
+| prefix | module | key endpoint |
 |------|------|---------|
 | `/api/agent-workshop` | agent_workshop.py | sessions/start, sessions/respond, build-version, versions/publish, prompt |
 | `/api/akshare-init` | akshare_init.py | status, start-full, start-basic-sync |
 | `/api/analysis-profiles` | analysis_profiles.py | industries, stocks |
-| (无 prefix) | analysis.py | single, batch, general, tasks, history, queue-status, cancel, retry |
+| (None prefix) | analysis.py | single, batch, general, tasks, history, queue-status, cancel, retry |
 | `/api/backtest` | backtest.py | analyze, generate, run, results, sessions, optimize, evaluate |
 | `/api/baostock-init` | baostock_init.py | status, start-full, start-basic |
 | `/api/cache` | cache.py | stats, cleanup, clear |
-| `/api/channel-configs` | channel_configs.py | 增删改查 + test + event-types |
+| `/api/channel-configs` | channel_configs.py | Add, delete, modify and check + test + event-types |
 | `/config` | config.py | jdyun/status, gateway, llm/providers, datasource, system, settings |
-| `/database` | database.py | MongoDB 管理 |
-| `/api/embedded-nanobot` | embedded_nanobot.py | 嵌入式纳米机器人 |
-| `/favorites` | favorites.py | 关注列表增删改查 |
-| `/api/financial-data` | financial_data.py | 财务数据查询 |
-| `/api/gateway` | gateway.py | 网关配置 |
-| `/api/historical-data` | historical_data.py | 历史行情查询 |
-| `/api/assistant` | intelligent_assistant.py | 智能助手对话 |
-| `/api/screening/intelligent` | intelligent_screening.py | **自然语言筛选对话** |
-| `/api/internal-messages` | internal_messages.py | 内部消息 |
-| `/api/knowledge` | knowledge.py | 知识库 |
-| `/api/license` | license.py | 授权管理 |
-| `/system-logs` | logs.py | 系统日志 |
-| `/api/mcp` | mcp.py | MCP 服务器 |
-| `/api/memory` | memory.py | AI 记忆 |
-| `/api/model-capabilities` | model_capabilities.py | 模型能力管理 |
-| `/markets` | multi_market_stocks.py | 多市场股票(后端保留,前端不可见) |
-| `/api/multi-period-sync` | multi_period_sync.py | 多周期数据同步 |
-| `/api/sync/multi-source` | multi_source_sync.py | 多数据源同步 |
-| `/api/news-data` | news_data.py | 新闻数据 |
-| `/logs` | operation_logs.py | 操作日志 |
-| `/paper` | paper.py | 模拟交易(A 股账户;后端代码支持三市场,前端已下线) |
-| `/api/v1/prompt-design` | prompt_design.py | 提示词设计 |
-| `/api/v1/prompt-policies` | prompt_injection_policies.py | 提示词防注入 |
-| `/api/v1/prompt-preview` | prompt_preview.py | 提示词预览 |
-| `/api/quality-metrics` | quality_metrics.py | 质量指标 |
-| `/report-templates` | report_templates.py | 报告模板 |
-| `/api/reports` | reports.py | 报告管理 |
-| `/api/scheduler` | scheduler.py | 系统级定时 |
-| (无 prefix) | scheduled_analysis.py | 用户级定时分析 |
-| `/api/screening` | screening.py | 条件式筛选(老版) |
-| `/api/skill-center` | skill_center.py | Skill 管理中心 |
-| `/api/skill-gaps` | skill_gaps.py | Skill 缺口分析 |
-| `/api/skill-generation` | skill_generation.py | Skill 自动生成 |
+| `/database` | database.py | MongoDB management |
+| `/api/embedded-nanobot` | embedded_nanobot.py | Embedded nanorobots |
+| `/favorites` | favorites.py | Add, delete, modify and check the watch list |
+| `/api/financial-data` | financial_data.py | Financial data query |
+| `/api/gateway` | gateway.py | Gateway configuration |
+| `/api/historical-data` | historical_data.py | Historical market inquiry |
+| `/api/assistant` | intelligent_assistant.py | Smart assistant conversation |
+| `/api/screening/intelligent` | intelligent_screening.py | **Natural language filtering conversations** |
+| `/api/internal-messages` | internal_messages.py | inside information |
+| `/api/knowledge` | knowledge.py | knowledge base |
+| `/api/license` | license.py | Authorization management |
+| `/system-logs` | logs.py | System log |
+| `/api/mcp` | mcp.py | MCP server |
+| `/api/memory` | memory.py | AI memory |
+| `/api/model-capabilities` | model_capabilities.py | Model capability management |
+| `/markets` | multi_market_stocks.py | multi-market stocks(backend reserved,The front end is not visible) |
+| `/api/multi-period-sync` | multi_period_sync.py | Multi-cycle data synchronization |
+| `/api/sync/multi-source` | multi_source_sync.py | Synchronization of multiple data sources |
+| `/api/news-data` | news_data.py | news data |
+| `/logs` | operation_logs.py | Operation log |
+| `/paper` | paper.py | simulated trading(A stock account;The backend code supports three markets,The front end is offline) |
+| `/api/v1/prompt-design` | prompt_design.py | Prompt word design |
+| `/api/v1/prompt-policies` | prompt_injection_policies.py | Prompt word anti-injection |
+| `/api/v1/prompt-preview` | prompt_preview.py | Prompt word preview |
+| `/api/quality-metrics` | quality_metrics.py | quality index |
+| `/report-templates` | report_templates.py | report template |
+| `/api/reports` | reports.py | Report management |
+| `/api/scheduler` | scheduler.py | System level timing |
+| (None prefix) | scheduled_analysis.py | User-level timing analysis |
+| `/api/screening` | screening.py | Conditional filtering(Old version) |
+| `/api/skill-center` | skill_center.py | Skill Management Center |
+| `/api/skill-gaps` | skill_gaps.py | Skill gap analysis |
+| `/api/skill-generation` | skill_generation.py | Skill Automatically generated |
 | `/api/skills` | skills.py | Skills CRUD |
-| `/api/social-media` | social_media.py | 社媒推送 |
-| `/api/stock-data` | stock_data.py | 股票数据 |
-| `/api/stock-sync` | stock_sync.py | 股票数据同步 |
-| `/stocks` | stocks.py | 股票基础信息(后端代码支持三市场,前端已下线) |
-| `/api/sync` | sync.py | 同步任务 |
-| (无 prefix) | system_config.py | 系统配置 |
-| `/tags` | tags.py | 标签管理 |
-| `/api/tushare-init` | tushare_init.py | Tushare 初始化 |
-| `/api/v2/tasks` | unified_tasks.py | 统一任务中心 |
-| `/api/system/update` | update.py | 系统更新 |
-| `/api/usage` | usage_statistics.py | Token 使用统计 |
-| (无 prefix) | user_template_configs.py | 用户模板配置 |
-| (无 prefix) | watchlist_groups.py | 关注分组 |
-| `/api/v1/workflow` | workflow_api.py | 工作流 API |
-| `/api/workflow-generation` | workflow_generation.py | 工作流生成 |
-| `/api/workflow-growth` | workflow_growth.py | 工作流迭代 |
+| `/api/social-media` | social_media.py | social media push |
+| `/api/stock-data` | stock_data.py | stock data |
+| `/api/stock-sync` | stock_sync.py | Stock data synchronization |
+| `/stocks` | stocks.py | Basic stock information(The backend code supports three markets,The front end is offline) |
+| `/api/sync` | sync.py | Sync tasks |
+| (None prefix) | system_config.py | System configuration |
+| `/tags` | tags.py | tag management |
+| `/api/tushare-init` | tushare_init.py | Tushare initialization |
+| `/api/v2/tasks` | unified_tasks.py | unified mission center |
+| `/api/system/update` | update.py | System update |
+| `/api/usage` | usage_statistics.py | Token usage statistics |
+| (None prefix) | user_template_configs.py | User template configuration |
+| (None prefix) | watchlist_groups.py | Follow group |
+| `/api/v1/workflow` | workflow_api.py | Workflow API |
+| `/api/workflow-generation` | workflow_generation.py | Workflow generation |
+| `/api/workflow-growth` | workflow_growth.py | Workflow iteration |
 
-## §5 单股研究报告实际结构
+## §5 Actual Structure of Single Stock Research Reports
 
-来源: MongoDB `analysis_reports` 集合(样本:宁德时代 300750 / 工商银行 601398)
+Source: MongoDB `analysis_reports` collection(sample:CATL 300750 / Industrial and Commercial Bank of China 601398)
 
-### 顶层字段(28 个)
+### Top level fields(28 a)
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |------|------|------|
-| `_id` | ObjectId | 主键 |
-| `analysis_id` | str | 业务 ID(格式 `<code>_<date>_<time>`) |
-| `stock_symbol` | str | 股票代码(如 300750) |
-| `stock_code` | str | 股票代码(同 stock_symbol) |
-| `stock_name` | str | 股票名称(如 宁德时代) |
-| `market_type` | str | 市场类型(A股/ETF;数据表保留港美股字段,前端已不可用) |
-| `model_info` | str | 使用的模型(如 `qwen-flash/qwen-plus`) |
-| `analysis_date` | date | 分析日期 |
-| `timestamp` | datetime | 创建时间 |
-| `status` | str | 状态(`completed`/`failed`/`running`) |
-| `source` | str | 来源(`api`/`manual` 等) |
-| `engine` | str | 引擎版本(`v2`) |
-| `research_depth` | str | 研究深度(**字符串**,如 `标准`/`深度`/`快速`) |
-| `summary` | str(长文本) | 投资摘要(最终交易决策) |
-| `analysts` | list[str] | 使用的 7 个分析师 ID(见 §6) |
-| `reports` | dict | 12 个子报告(见 §7) |
-| `decision` | dict | 决策结构(见 §8) |
-| `recommendation` | str(长文本) | 投资建议(详细版) |
-| `confidence_score` | float | 信心度(0-1,如 0.76) |
-| `risk_level` | str | 风险等级(`低`/`中`/`高`/`中等`) |
-| `risk_score` | float | 风险评分(0-1,如 0.5) |
-| `key_points` | list[str] | 关键要点(数组) |
-| `execution_time` | float | 执行耗时(秒,如 525.32) |
-| `tokens_used` | int | Token 用量 |
-| `performance_metrics` | dict | 性能指标 |
-| `user_id` | str | 用户 ID |
-| `created_at` | datetime | 创建时间 |
-| `updated_at` | datetime | 更新时间 |
-| `task_id` | str | 关联任务 ID |
+| `_id` | ObjectId | primary key |
+| `analysis_id` | str | business ID(Format `<code>_<date>_<time>`) |
+| `stock_symbol` | str | Stock code(Such as 300750) |
+| `stock_code` | str | Stock code(Same stock_symbol) |
+| `stock_name` | str | Stock name(Such as Ningde era) |
+| `market_type` | str | market type(A shares/ETF;The data table retains the Hong Kong and US stock fields,The frontend is no longer available) |
+| `model_info` | str | Model used(Such as `qwen-flash/qwen-plus`) |
+| `analysis_date` | date | Analysis date |
+| `timestamp` | datetime | creation time |
+| `status` | str | Status(`completed`/`failed`/`running`) |
+| `source` | str | Source(`api`/`manual` Wait) |
+| `engine` | str | Engine version(`v2`) |
+| `research_depth` | str | Research depth(**string**,Such as `Standard`/`Depth`/`fast`) |
+| `summary` | str(long text) | Investment summary(final trading decision) |
+| `analysts` | list[str] | 7 analysts used ID(see §6) |
+| `reports` | dict | 12 subreport(see §7) |
+| `decision` | dict | decision-making structure(see §8) |
+| `recommendation` | str(long text) | investment advice(Detailed version) |
+| `confidence_score` | float | Confidence(0-1,Such as 0.76) |
+| `risk_level` | str | risk level(`low`/`in`/`high`/`medium`) |
+| `risk_score` | float | risk score(0-1,Such as 0.5) |
+| `key_points` | list[str] | Key takeaways(array) |
+| `execution_time` | float | Execution time(seconds,Such as 525.32) |
+| `tokens_used` | int | Token Dosage |
+| `performance_metrics` | dict | Performance indicators |
+| `user_id` | str | User ID |
+| `created_at` | datetime | creation time |
+| `updated_at` | datetime | Update time |
+| `task_id` | str | Associated tasks ID |
 
-## §6 7 个内置分析师角色
+## §6 7 built-in analyst role
 
-来源: MongoDB `agent_configs` 集合(过滤 `is_builtin=True`)
+Source: MongoDB `agent_configs` collection(filter `is_builtin=True`)
 
-实际报告 `analysts` 字段包含 7 个 ID:
+actual report `analysts` The field contains 7 ID:
 
-| # | ID | 角色 | 类型 |
+| # | ID | role | Type |
 |---|----|------|------|
-| 1 | `market_analyst` | 市场分析师 | analyst |
-| 2 | `fundamentals_analyst` | 基本面分析师 | analyst |
-| 3 | `bull_researcher` | 看涨研究员 | researcher |
-| 4 | `bear_researcher` | 看跌研究员 | researcher |
-| 5 | `risky_analyst` | 激进风险分析师 | risk |
-| 6 | `safe_analyst` | 保守风险分析师 | risk |
-| 7 | `neutral_analyst` | 中性风险分析师 | risk |
+| 1 | `market_analyst` | market analyst | analyst |
+| 2 | `fundamentals_analyst` | fundamental analyst | analyst |
+| 3 | `bull_researcher` | bullish researcher | researcher |
+| 4 | `bear_researcher` | bearish researcher | researcher |
+| 5 | `risky_analyst` | activist risk analyst | risk |
+| 6 | `safe_analyst` | conservative risk analyst | risk |
+| 7 | `neutral_analyst` | Neutral Risk Analyst | risk |
 
-## §7 reports 字典 12 个子报告
+## §7 reports Dictionary 12 subreports
 
-| Key | 说明 |
+| Key | Description |
 |-----|------|
-| `market_report` | 市场/技术面分析(MA/MACD/RSI/BOLL) |
-| `fundamentals_report` | 基本面分析(估值/财务/行业) |
-| `investment_plan` | 投资计划 |
-| `trader_investment_plan` | 交易员的实操框架 |
-| `final_trade_decision` | 最终交易决策 |
-| `bull_researcher` | 看涨研究员报告 |
-| `bear_researcher` | 看跌研究员报告 |
-| `research_team_decision` | 研究团队决策 |
-| `risky_analyst` | 激进风险分析 |
-| `safe_analyst` | 保守风险分析 |
-| `neutral_analyst` | 中性风险分析 |
-| `risk_management_decision` | 风险管理决策 |
+| `market_report` | Market/technical analysis(MA/MACD/RSI/BOLL) |
+| `fundamentals_report` | fundamental analysis(Valuation/Finance/Industry) |
+| `investment_plan` | investment plan |
+| `trader_investment_plan` | Trader's practical framework |
+| `final_trade_decision` | final trading decision |
+| `bull_researcher` | Bullish Researcher Report |
+| `bear_researcher` | Bearish Researcher Report |
+| `research_team_decision` | Research team decisions |
+| `risky_analyst` | Aggressive Risk Analysis |
+| `safe_analyst` | conservative risk analysis |
+| `neutral_analyst` | neutral risk analysis |
+| `risk_management_decision` | risk management decisions |
 
-## §8 decision 字段(决策结构,已合规化)
+## §8 decision Field(decision-making structure,Already compliant)
 
-> ⚠️ 本表为合规化后的结构(2026-08 更新)。旧的 `target_price` / `stop_loss` / "买入/卖出/持有" 等字段已移除。
-> 来源: [core/agents/adapters/risk_manager_v2.py](file:///c:/TradingAgentsCN/core/agents/adapters/risk_manager_v2.py) 的 `FinalTradeDecision` / `RiskAssessmentOutput` schema。
+> ⚠️ This table shows the structure after compliance(2026-08 update). old `target_price` / `stop_loss` / "Buy/Sell/Hold" etc fields have been removed.
+> Source: [core/agents/adapters/risk_manager_v2.py](file:///c:/TradingAgentsCN/core/agents/adapters/risk_manager_v2.py) of `FinalTradeDecision` / `RiskAssessmentOutput` schema. 
 
-| Key | 类型 | 说明 |
+| Key | Type | Description |
 |-----|------|------|
-| `action` | str | 决策标签,**只能是 `乐观` / `审慎` / `中性`**(非交易指令) |
-| `confidence` | float | 信心度(0-1) |
-| `price_analysis_range` | str(可选) | 价格分析区间(替代旧 `target_price`,**非目标价**) |
-| `risk_reference_price` | str(可选) | 风险控制参考价位(替代旧 `stop_loss`,**非止损价**) |
-| `risk_exposure_ratio` | str(可选) | 风险敞口分析 |
-| `reasoning` | str | 推理过程 |
-| `summary` | str | 分析摘要 |
-| `risk_warning` | str | 风险提示 |
+| `action` | str | Decision label,**can only be `optimistic` / `Prudence` / `Neutral`**(non-trading orders) |
+| `confidence` | float | Confidence(0-1) |
+| `price_analysis_range` | str(Optional) | price analysis range(replace old `target_price`,**non-target price**) |
+| `risk_reference_price` | str(Optional) | Risk control reference price(replace old `stop_loss`,**non-stop price**) |
+| `risk_exposure_ratio` | str(Optional) | Risk exposure analysis |
+| `reasoning` | str | reasoning process |
+| `summary` | str | Analysis summary |
+| `risk_warning` | str | Risk warning |
 
-风险审阅(`risk_assessment`)另有:`risk_level`(低/中/高)、`risk_score`(0-1)、`key_risks`(数组)、`risk_control`、`investment_adjustment`(乐观/审慎/中性)。
+risk review(`risk_assessment`)Also:`risk_level`(low/medium/high), `risk_score`(0-1), `key_risks`(array), `risk_control`, `investment_adjustment`(Optimistic/cautious/neutral). 
 
-## §9 ⚠️ 港美股功能状态:前端已下线,后端保留
+## §9 ⚠️ Function status of Hong Kong and US stocks:The front end is offline,backend reserved
 
-**业务决策**(2026-07-31 用户确认):
-- **港美股前端入口已全部移除**,用户从 UI 看不到、也无法使用
-- **后端代码暂时保留**(`foreign_stock_service.py` 2402 行等),未来可能复用
-- **课程应按"港美股不可用"处理**,不向学员介绍
+**business decisions**(2026-07-31 User confirmation):
+- **All front-end entrances to Hong Kong and US stocks have been removed**,Users cannot see or use it from the UI
+- **The backend code is temporarily reserved**(`foreign_stock_service.py` 2402 OK and so on),Possible reuse in the future
+- **Courses should be"Hong Kong and US stocks are not available"Process**,Not introduced to students
 
-### 前端入口核实现状(2026-07-31)
+### Front-end portal to verify status(2026-07-31)
 
-| 入口 | 港美股选项? | 说明 |
+| entrance | Hong Kong and US stock options? | Description |
 |------|---------|------|
-| `/analysis/single` 单股研究 | ❌ 无 | `MarketType = 'A股' \| 'ETF'`,前端不含港美股选项 |
-| `/analysis/batch` 批量研究 | ❌ 无 | 同上,`market: 'A股' as 'A股' \| 'ETF'` |
-| `/screening` 筛选 | ❌ 无 | `<el-select v-model="basicFilters.market" disabled>`,只显示 A 股 |
-| `/favorites` 关注列表 | ❌ 已清理 | 仅 A 股自选 |
-| `/paper` 模拟交易 | ❌ 已清理 | 仅 A 股账户 |
-| 侧边栏菜单 | ❌ 无相关入口 | 见 §1 路由表 |
-| Dashboard 卡片 | ❌ 无相关入口 | 仅 A 股入口 |
+| `/analysis/single` single stock research | ❌ None | `MarketType = 'A shares' \| 'ETF'`,The front end does not include Hong Kong and US stock options |
+| `/analysis/batch` Batch research | ❌ None | Same as above,`market: 'A shares' as 'A shares' \| 'ETF'` |
+| `/screening` Filter | ❌ None | `<el-select v-model="basicFilters.market" disabled>`,Show only A shares |
+| `/favorites` watchlist | ❌ Cleaned | Only A shares optional |
+| `/paper` simulated trading | ❌ Cleaned | A-share account only |
+| Sidebar menu | ❌ No relevant entrance | see §1 routing table |
+| Dashboard card | ❌ No relevant entrance | Only A-share entrance |
 
-### 后端代码保留(课程无需涉及)
+### Backend code retained(The course does not need to cover)
 
-- ⚠️ `multi_market_stocks.py` API 端点仍在(CN/HK/US 三市场搜索)
-- ⚠️ `foreign_stock_service.py` 2402 行
-- ⚠️ `paper.py` 模拟交易路由支持三市场账户
-- ⚠️ `hk_sync_service.py` 港股数据同步
-- ⚠️ `market_categories` 集合 `us_stocks` / `hk_stocks` 仍 `enabled=True`
+- ⚠️ `multi_market_stocks.py` API The endpoint is still(CN/HK/US Three market searches)
+- ⚠️ `foreign_stock_service.py` 2402 OK
+- ⚠️ `paper.py` Simulated trading routing supports three market accounts
+- ⚠️ `hk_sync_service.py` Hong Kong stock data synchronization
+- ⚠️ `market_categories` collection `us_stocks` / `hk_stocks` Still `enabled=True`
 
-**这些后端代码对学员不可见,课程不应涉及**。将来如需清理后端代码,那是另一项工程任务。
+**These backend codes are not visible to students,Courses should not cover**. If you need to clean up the backend code in the future,That's another engineering task.
 
-### 课程改写影响
+### Impact of curriculum rewriting
 
-- ❌ **lesson-10 模拟交易**:不写港美股账户(原课程中我误判要保留港美股)
-- ❌ **lesson-04 多情景**:删除"5 种情景",改为讲解"2 角色辩论(乐观/审慎)+ 1 整合员"
-- ❌ **lesson-03 单股研究**:示例股票用 A 股代码(如 600519/601919)
-- ✅ **课程应明确告诉用户**:"平台仅支持 A 股和 ETF 基金分析"
+- ❌ **lesson-10 simulated trading**:Do not write Hong Kong and US stock accounts(In the original course, I misjudged that I should keep Hong Kong and US stocks.)
+- ❌ **lesson-04 Multiple scenarios**:Delete"5 kind of situation",explain instead"2 role debate(Optimistic/cautious)+ 1 integrator"
+- ❌ **lesson-03 single stock research**:Example stock uses A share code(Such as 600519/601919)
+- ✅ **Courses should clearly tell users**:"The platform only supports A-share and ETF fund analysis"
 
-## §10 内置 Agent 完整列表(20+)
+## §10 Complete list of built-in Agents(20+)
 
-来源: MongoDB `agent_configs` 集合
+Source: MongoDB `agent_configs` collection
 
-### analyst 类别(15 个)
-- 市场分析师 / 市场分析师 v2
-- 基本面分析师
-- 新闻分析师
-- 社交媒体分析师
-- 行业/板块分析师
-- 大盘/指数分析师
-- 时机分析师
-- 仓位分析师
-- 情绪分析师
-- 归因分析师
-- 复盘总结师
-- 持仓技术面分析师
-- 持仓基本面分析师
-- 持仓风险评估师
-- 技术面分析师 v2.0
-- 风险评估师 v2.0
+### analyst Category(15 a)
+- Market Analyst/Market Analyst v2
+- fundamental analyst
+- news analyst
+- social media analyst
+- Industry/sector analyst
+- Market/Index Analyst
+- timing analyst
+- Position Analyst
+- sentiment analyst
+- attribution analyst
+- Review summary expert
+- Position Technical Analyst
+- Fundamental Analyst
+- Position risk assessor
+- technical analyst v2.0
+- risk assessor v2.0
 
-### researcher 类别(4 个)
-- 看涨研究员 / 看涨研究员 v2.0
-- 看跌研究员 / 看跌研究员 v2.0
+### researcher Category(4 a)
+- bullish researcher / bullish researcher v2.0
+- bearish researcher / bearish researcher v2.0
 
-### trader 类别(3 个)
-- 交易员 / 交易员 v2.0
-- 持仓分析师
+### trader Category(3 a)
+- trader / trader v2.0
+- Position Analyst
 
-### risk 类别(6 个)
-- 激进风险分析师 / 激进风险分析师 v2.0
-- 保守风险分析师 / 保守风险分析师 v2.0
-- 中性风险分析师 / 中性风险分析师 v2.0
+### risk Category(6 a)
+- Activist Risk Analyst / Activist Risk Analyst v2.0
+- Conservative Risk Analyst / Conservative Risk Analyst v2.0
+- Neutral Risk Analyst / Neutral Risk Analyst v2.0
 
-### manager 类别(5 个)
-- 风险经理
-- 研究经理
-- 持仓操作建议师
-- 操作建议师 v2.0
+### manager Category(5 a)
+- risk manager
+- research manager
+- Position operation advisor
+- Operational advisor v2.0
 
-### post_processor 类别(3 个)
-- 报告保存器
-- 邮件通知器
-- 系统通知器
+### post_processor Category(3 a)
+- report saver
+- Email Notifier
+- System Notifier
 
-## §11 数据集合清单(48 个)
+## §11 Data collection list(48 a)
 
-来源: MongoDB `db.list_collection_names()`
+Source: MongoDB `db.list_collection_names()`
 
-| 集合 | 文档数 | 说明 |
+| collection | Number of documents | Description |
 |------|--------|------|
-| `users` | 1 | 用户表 |
-| `user_sessions` | 0 | 会话表 |
-| `user_favorites` | 3 | 用户关注列表 |
-| `user_tags` | 2 | 用户标签 |
-| `user_template_configs` | 48 | 用户模板配置 |
-| `watchlist_groups` | 1 | 关注分组 |
-| `analysis_reports` | 2 | 分析报告 |
-| `analysis_tasks` | 1 | 分析任务(老版) |
-| `unified_analysis_tasks` | 1 | 统一任务(新版) |
-| `scheduled_analysis_configs` | 1 | 定时分析配置 |
-| `paper_accounts` | 5 | 模拟账户 |
-| `paper_market_rules` | 3 | 模拟市场规则 |
-| `real_accounts` | 1 | 真实账户 |
-| `trading_systems` | 2 | 交易系统策略 |
-| `workflows` | 1 | 工作流定义 |
-| `workflow_history` | 0 | 工作流执行历史 |
-| `agent_configs` | 47 | Agent 配置 |
-| `tool_agent_bindings` | 38 | 工具-Agent 绑定 |
-| `tool_configs` | 1 | 工具配置 |
-| `model_catalog` | 12 | 模型目录 |
-| `llm_providers` | 11 | LLM 供应商 |
-| `platform_configs` | 4 | 平台配置 |
-| `system_configs` | 38 | 系统配置(复数) |
-| `system_config` | 1 | 系统配置(单数) |
-| `prompt_templates` | 146 | 提示词模板 |
-| `stock_basic_info` | 16578 | 股票基础信息 |
-| `stock_screening_view` | 16578 | 股票筛选视图 |
-| `stock_daily_quotes` | 484 | 日线行情 |
-| `stock_news` | 60 | 股票新闻 |
-| `stock_financial_data` | 2 | 财务数据 |
-| `market_quotes` | 5548 | 实时行情(A股) |
-| `market_categories` | 3 | 市场分类(A/HK/US) |
-| `sync_status` | 1 | 同步状态 |
-| `quotes_ingestion_status` | 1 | 行情入库状态 |
-| `token_usage` | 15 | Token 用量记录 |
-| `notifications` | 1 | 通知 |
-| `operation_logs` | 102 | 操作日志 |
-| `capital_transactions` | 1 | 资金流水 |
-| `datasource_groupings` | 11 | 数据源分组 |
-| `smtp_config` | 1 | SMTP 邮箱配置 |
-| `license_cache` | 1 | License 缓存 |
-| `scheduler_metadata` | 1 | 调度元数据 |
-| `system.views` | 1 | MongoDB 视图元数据 |
+| `users` | 1 | User table |
+| `user_sessions` | 0 | session table |
+| `user_favorites` | 3 | User watchlist |
+| `user_tags` | 2 | User tag |
+| `user_template_configs` | 48 | User template configuration |
+| `watchlist_groups` | 1 | Follow group |
+| `analysis_reports` | 2 | analysis report |
+| `analysis_tasks` | 1 | Analysis tasks(Old version) |
+| `unified_analysis_tasks` | 1 | unified mission(new version) |
+| `scheduled_analysis_configs` | 1 | Timing analysis configuration |
+| `paper_accounts` | 5 | Demo account |
+| `paper_market_rules` | 3 | Simulate market rules |
+| `real_accounts` | 1 | real account |
+| `trading_systems` | 2 | trading system strategy |
+| `workflows` | 1 | Workflow definition |
+| `workflow_history` | 0 | Workflow execution history |
+| `agent_configs` | 47 | Agent Configuration |
+| `tool_agent_bindings` | 38 | Tool-Agent Binding |
+| `tool_configs` | 1 | Tool configuration |
+| `model_catalog` | 12 | Model catalog |
+| `llm_providers` | 11 | LLM supplier |
+| `platform_configs` | 4 | Platform configuration |
+| `system_configs` | 38 | System configuration(plural) |
+| `system_config` | 1 | System configuration(singular) |
+| `prompt_templates` | 146 | prompt word template |
+| `stock_basic_info` | 16578 | Basic stock information |
+| `stock_screening_view` | 16578 | Stock Screener View |
+| `stock_daily_quotes` | 484 | Daily market price |
+| `stock_news` | 60 | stock news |
+| `stock_financial_data` | 2 | financial data |
+| `market_quotes` | 5548 | Real-time quotes(A shares) |
+| `market_categories` | 3 | Market classification(A/HK/US) |
+| `sync_status` | 1 | Sync status |
+| `quotes_ingestion_status` | 1 | Market storage status |
+| `token_usage` | 15 | Token Usage record |
+| `notifications` | 1 | Notification |
+| `operation_logs` | 102 | Operation log |
+| `capital_transactions` | 1 | Capital flow |
+| `datasource_groupings` | 11 | Data source grouping |
+| `smtp_config` | 1 | SMTP Email configuration |
+| `license_cache` | 1 | License cache |
+| `scheduler_metadata` | 1 | Scheduling metadata |
+| `system.views` | 1 | MongoDB View metadata |
 
-## §12 交易系统集合结构
+## §12 Trading system collection structure
 
-来源: MongoDB `trading_systems` 集合(样本:短线趋势追踪系统 / 中线价值成长系统)
+Source: MongoDB `trading_systems` collection(sample:Short-term trend tracking system / mid-term value growth system)
 
-| 字段 | 类型 | 说明 |
+| Field | Type | Description |
 |------|------|------|
-| `name` | str | 系统名称 |
-| `description` | str | 描述 |
-| `style` | str | **风格**(`short_term` / `medium_term` / `long_term`) |
-| `risk_profile` | str | 风险画像(`aggressive` / `balanced` / `conservative`) |
-| `stock_selection` | dict(2) | 选股方法 |
-| `timing` | dict(1) | 时机判断 |
-| `position` | dict(3) | 仓位管理 |
-| `holding` | dict(3) | 持仓管理 |
-| `risk_management` | dict(2) | 风险管理 |
-| `review` | dict(2) | 复盘 |
-| `discipline` | dict(2) | 纪律 |
-| `version` | str | 版本号 |
-| `is_active` | bool | 是否激活 |
+| `name` | str | System name |
+| `description` | str | Description |
+| `style` | str | **style**(`short_term` / `medium_term` / `long_term`) |
+| `risk_profile` | str | risk profiling(`aggressive` / `balanced` / `conservative`) |
+| `stock_selection` | dict(2) | Stock picking method |
+| `timing` | dict(1) | timing judgment |
+| `position` | dict(3) | Position management |
+| `holding` | dict(3) | Position management |
+| `risk_management` | dict(2) | risk management |
+| `review` | dict(2) | Review |
+| `discipline` | dict(2) | discipline |
+| `version` | str | version number |
+| `is_active` | bool | Whether to activate |
 
-**对课程的影响**:
-- ✅ 课程中"短线/中长线"区分有真实数据支持(`style` 字段)
-- 实际有 3 种风格: `short_term` / `medium_term` / `long_term`(不是只有 2 种)
+**Impact on the curriculum**:
+- ✅ in course"Short/medium and long term"The distinction is supported by real data(`style` Field)
+- There are actually 3 styles: `short_term` / `medium_term` / `long_term`(Not just 2 types)
 
-## §13 重点:用户能找到的所有 v3.0 新功能
+## §13 focus:All new v3.0 features that users can find
 
-通过前端路由 + 后端 API + MongoDB 集合,系统能识别出的 v3.0 新功能(对比 v2.x):
+Route via frontend + backend API + MongoDB collection,New v3.0 features recognized by the system(Contrast v2.x):
 
-| # | 功能 | 路径/模块 | v3.0 新增? |
+| # | Function | path/module | v3.0 New? |
 |---|------|----------|------------|
-| 1 | **自然语言选股** | `/api/screening/intelligent/chat` | ✅ |
-| 2 | **AI 智能助手(对话式)** | `/assistant` | ✅ |
-| 3 | **AI 记忆(多主题会话)** | `/memory` | ✅ |
-| 4 | **通用研究(无明确股票)** | `/analysis/general` | ✅ |
-| 5 | **MCP 服务器** | `/api/mcp` | ✅ |
-| 6 | **Agent 工坊** | `/workflow/agent-workshop` | ✅ |
-| 7 | **Skill 中心** | `/api/skill-center` | ✅ |
-| 8 | **Skill 自动生成** | `/api/skill-generation` | ✅ |
-| 9 | **AI 工作流架构师** | `/api/workflow-generation` | ✅ |
-| 10 | **多数据源同步** | `/api/sync/multi-source` | ✅ |
-| 11 | **多周期同步** | `/api/multi-period-sync` | ✅ |
-| 12 | **分析画像** | `/api/analysis-profiles` | ✅ |
-| 13 | **报告模板** | `/report-templates` | ✅ |
-| 14 | **提示词设计** | `/api/v1/prompt-design` | ✅ |
-| 15 | **提示词防注入策略** | `/api/v1/prompt-policies` | ✅ |
-| 16 | **统一任务中心** | `/tasks/unified` | ✅ |
-| 17 | **统一报告中心** | `/reports` | ✅ |
-| 18 | **Token 统计** | `/reports/token` | ✅ |
-| 19 | **渠道推送(飞书/钉钉/邮件/Webhook)** | `/api/channel-configs` | ✅ |
-| 20 | **止盈告警** | `/api/stop-gain-alerts`(待确认) | ✅ |
-| 21 | **回测** | `/backtest` | ❌ 前端入口已下线 |
-| 22 | **嵌入式纳米机器人** | `/api/embedded-nanobot` | ✅ |
-| 23 | **工具能力索引** | `/api/capability-index` | ✅ |
-| 24 | **系统更新** | `/api/system/update` | ✅ |
-| 25 | **使用问答助手** | (右下角浮窗) | ✅ |
+| 1 | **Natural language stock picking** | `/api/screening/intelligent/chat` | ✅ |
+| 2 | **AI Smart Assistant(Conversational)** | `/assistant` | ✅ |
+| 3 | **AI memory(Multi-topic conversation)** | `/memory` | ✅ |
+| 4 | **general studies(No clear stocks)** | `/analysis/general` | ✅ |
+| 5 | **MCP server** | `/api/mcp` | ✅ |
+| 6 | **Agent workshop** | `/workflow/agent-workshop` | ✅ |
+| 7 | **Skill Center** | `/api/skill-center` | ✅ |
+| 8 | **Skill Automatically generated** | `/api/skill-generation` | ✅ |
+| 9 | **AI workflow architect** | `/api/workflow-generation` | ✅ |
+| 10 | **Synchronization of multiple data sources** | `/api/sync/multi-source` | ✅ |
+| 11 | **Multi-cycle synchronization** | `/api/multi-period-sync` | ✅ |
+| 12 | **Analyze portrait** | `/api/analysis-profiles` | ✅ |
+| 13 | **report template** | `/report-templates` | ✅ |
+| 14 | **Prompt word design** | `/api/v1/prompt-design` | ✅ |
+| 15 | **Prompt word anti-injection strategy** | `/api/v1/prompt-policies` | ✅ |
+| 16 | **unified mission center** | `/tasks/unified` | ✅ |
+| 17 | **unified reporting center** | `/reports` | ✅ |
+| 18 | **Token statistics** | `/reports/token` | ✅ |
+| 19 | **Channel push(Feishu/DingTalk/Email/Webhook)** | `/api/channel-configs` | ✅ |
+| 20 | **Take Profit Alert** | `/api/stop-gain-alerts`(To be confirmed) | ✅ |
+| 21 | **backtest** | `/backtest` | ❌ The front-end entrance is offline |
+| 22 | **Embedded nanorobots** | `/api/embedded-nanobot` | ✅ |
+| 23 | **Tool capability index** | `/api/capability-index` | ✅ |
+| 24 | **System update** | `/api/system/update` | ✅ |
+| 25 | **Use the Q&A Assistant** | (Floating window in lower right corner) | ✅ |
 
-## §14 课程改写时需要核对的"易错点"
+## §14 Things that need to be checked when rewriting the course"Easy to make mistakes"
 
-1. **多情景分析**: ❌ 没有"乐观/基准/审慎/高弹性/防御"5 情景。实际是 **2 角色辩论(乐观/审慎)+ 1 整合员** + **3 风险视角(高弹性/防御/基准)**,最终由风险评估师综合输出 decision(`action` ∈ {乐观/审慎/中性})
-2. **置信度**: ✅ 正确存在 `confidence_score` 字段(0-1)
-3. **AI 评分**: ❌ 没有"AI 综合评分 0-100"。实际是 `confidence_score` (0-1) 和 `risk_score` (0-1)
-4. **风险等级**: ✅ 有 `risk_level` 字段(字符串:"低"/"中"/"高"/"中等")
-5. **目标价/止损**: ❌ 已合规化移除。decision 不再有 `target_price`/`stop_loss`,改为可选的 `price_analysis_range`(价格分析区间) 和 `risk_reference_price`(风险参考价),且明确"禁止给出具体目标价或止损价"
-6. **持仓分析**: ✅ 有专门的 4 个 Agent(持仓技术面/基本面/风险评估/操作建议)
-7. **复盘**: ✅ 有 `/review` 路由,后端 `trade_review_service.py` 3618 行
-8. **回测**: ⚠️ 后端有 `/backtest` 路由和 `/api/backtest` API 残留,但前端入口已下线,产品不提供
-9. **关注列表分组**: ✅ 有 `watchlist_groups` 集合,可在 `/settings/watchlist-groups` 管理
-10. **定时分析**: ✅ 有 `scheduled_analysis_configs` 集合
-11. **自然语言筛选**: ✅ 有 `/api/screening/intelligent/chat` API,在 Dashboard 有入口
+1. **Multiple scenario analysis**: ❌ No"Optimistic/Baseline/Crudent/Highly Resilient/Defensive"5 scene. Actually **2 role debate(Optimistic/cautious)+ 1 integrator** + **3 risk perspective(High resiliency/defense/baseline)**,Finally, the risk assessor comprehensively outputs decision(`action` ∈ {Optimistic/cautious/neutral})
+2. **Confidence**: ✅ exist correctly `confidence_score` Field(0-1)
+3. **AI Rating**: ❌ No"AI Overall rating 0-100". Actually `confidence_score` (0-1) and `risk_score` (0-1)
+4. **risk level**: ✅ Yes `risk_level` Field(string:"low"/"in"/"high"/"medium")
+5. **Target Price/Stop Loss**: ❌ Removed for compliance. decision no more `target_price`/`stop_loss`,Change to optional `price_analysis_range`(price analysis range) and `risk_reference_price`(Risk reference price),and clear"It is prohibited to give a specific target price or stop loss price"
+6. **Position analysis**: ✅ There are 4 dedicated Agent(Position technical aspects/fundamentals/risk assessment/operation suggestions)
+7. **Review**: ✅ Yes `/review` routing,backend `trade_review_service.py` 3618 OK
+8. **backtest**: ⚠️ The backend has `/backtest` routing and `/api/backtest` API Residue,But the front-end entrance is offline,Product not provided
+9. **Watchlist grouping**: ✅ Yes `watchlist_groups` collection,Available at `/settings/watchlist-groups` management
+10. **timing analysis**: ✅ Yes `scheduled_analysis_configs` collection
+11. **Natural language filtering**: ✅ Yes `/api/screening/intelligent/chat` API,There is an entry in Dashboard
 
-## §15 课程阶段与真实功能的映射
+## §15 Mapping of course stages and real functions
 
-| 课程阶段 | 应使用的真实功能 |
+| course stage | The real function that should be used |
 |---------|-----------------|
-| **阶段 1:发现** | 自然语言筛选(`/api/screening/intelligent/chat`) + 条件式筛选(`/screening`) + 批量分析(`/analysis/batch`) + 单股研究(`/analysis/single`) |
-| **阶段 2:跟踪** | 通用研究(`/analysis/general`) + 定时分析(`/settings/scheduled-analysis`) + 关注列表(`/favorites`) + 关注分组(`/settings/watchlist-groups`) + 渠道推送(`/settings/channel-configs`) |
-| **阶段 3:持仓** | 模拟交易(`/paper`) + 持仓(`/portfolio`) + 4 个持仓 Agent(技术面/基本面/风险/操作建议) |
-| **阶段 4:复盘** | 复盘(`/review`) + 案例库(`trade_review_service.py`) + 归因分析师 |
-| **阶段 5:短线** | 交易系统 `/trading-system` 的 `short_term` 风格 |
-| **阶段 6:中长线** | 交易系统 `/trading-system` 的 `medium_term` / `long_term` 风格 |
-| **阶段 7:平台扩展** | AI 工作流架构师(`/api/workflow-generation`) + Agent 工坊(`/workflow/agent-workshop`) + Skill 中心(`/workflow/skills`) + Skill 自动生成(`/api/skill-generation`) |
-| **阶段 8:个人计划** | 交易系统(`/trading-system`) + AI 助手(`/assistant`) + AI 记忆(`/memory`) |
+| **stage 1:discover** | Natural language filtering(`/api/screening/intelligent/chat`) + Conditional filtering(`/screening`) + Batch analysis(`/analysis/batch`) + single stock research(`/analysis/single`) |
+| **stage 2:Track** | general studies(`/analysis/general`) + timing analysis(`/settings/scheduled-analysis`) + watchlist(`/favorites`) + Follow group(`/settings/watchlist-groups`) + Channel push(`/settings/channel-configs`) |
+| **stage 3:Position** | simulated trading(`/paper`) + Position(`/portfolio`) + 4 positions Agent(Technical/Fundamentals/Risk/Operation Suggestions) |
+| **stage 4:Review** | Review(`/review`) + Case library(`trade_review_service.py`) + attribution analyst |
+| **stage 5:short term** | trading system `/trading-system` of `short_term` style |
+| **stage 6:Medium and long term** | trading system `/trading-system` of `medium_term` / `long_term` style |
+| **stage 7:Platform extension** | AI workflow architect(`/api/workflow-generation`) + Agent workshop(`/workflow/agent-workshop`) + Skill Center(`/workflow/skills`) + Skill Automatically generated(`/api/skill-generation`) |
+| **stage 8:personal plan** | trading system(`/trading-system`) + AI Assistant(`/assistant`) + AI memory(`/memory`) |
 
 ---
 
-> **最后更新**: 2026-07-31
-> **配套文档**: [v3.0 课程 README](../README.md) | [课程偏差清单](../../06-knowledge/course-v3-deviation-list-2026-07-31.md)
+> **last updated**: 2026-07-31
+> **Supporting documents**: [v3.0 courses README](../README.md) | [Course Deviation Checklist](../../06-knowledge/course-v3-deviation-list-2026-07-31.md)

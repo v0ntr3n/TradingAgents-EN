@@ -1,9 +1,9 @@
 <template>
   <div id="app" class="app-container">
-    <!-- 网络状态指示器 -->
+    <!-- Network status indicator -->
     <NetworkStatus />
 
-    <!-- 主要内容区域 -->
+    <!-- main content area -->
     <router-view v-slot="{ Component, route }">
       <transition
         :name="(route?.meta?.transition as string) || 'fade'"
@@ -16,13 +16,13 @@
       </transition>
     </router-view>
 
-    <!-- 配置向导 -->
+    <!-- Configuration Wizard -->
     <ConfigWizard
       v-model="showConfigWizard"
       @complete="handleWizardComplete"
     />
 
-    <!-- 使用问答机器人浮窗 -->
+    <!-- Use the Q&A bot pop-up window -->
     <FloatingChat />
   </div>
 </template>
@@ -35,62 +35,62 @@ import FloatingChat from '@/components/UsageHelper/FloatingChat.vue'
 import { ApiClient } from '@/api/request'
 import { configApi } from '@/api/config'
 
-// 需要缓存的组件
+// Components that need to be cached
 const keepAliveComponents = computed(() => [
   'Dashboard',
   'StockScreening',
   'AnalysisHistory'
 ])
 
-// 配置向导
+// Configuration Wizard
 const showConfigWizard = ref(false)
 
-// 检查是否需要显示配置向导
+// Check if you need to show the configuration wizard
 const checkFirstTimeSetup = async () => {
   try {
-    // 检查是否已经完成过配置向导
+    // Check whether you have completed the configuration wizard
     const wizardCompleted = localStorage.getItem('config_wizard_completed')
     if (wizardCompleted === 'true') {
       return
     }
 
-    // 验证配置完整性
+    // Verify configuration integrity
     const response: any = await ApiClient.get('/api/system/config/validate')
     if (response.success) {
       const result = response.data
 
-      // 如果有缺少的必需配置，显示配置向导
+      // If any required configuration is missing, display the configuration wizard
       if (!result.success && result.missing_required?.length > 0) {
-        // 延迟显示，等待页面加载完成
+        // Delay display, waiting for page loading to complete
         setTimeout(() => {
           showConfigWizard.value = true
         }, 1000)
       }
     }
   } catch (error) {
-    console.error('检查配置失败:', error)
+    console.error('Check configuration failed:', error)
   }
 }
 
-// 配置向导完成处理
+// Configuration wizard completes processing
 const handleWizardComplete = async (data: any) => {
   try {
-    console.log('配置向导数据:', data)
+    console.log('Configuration wizard data:', data)
 
-    // 1. 保存大模型配置
+    // 1. Save large model configuration
     if (data.llm?.provider && data.llm?.apiKey) {
       try {
-        // 先添加厂家（如果不存在）
+        // Add the manufacturer first (if it does not exist)
         const providerMap: Record<string, { name: string; base_url?: string }> = {
           deepseek: { name: 'DeepSeek', base_url: 'https://api.deepseek.com' },
-          dashscope: { name: '通义千问', base_url: 'https://dashscope.aliyuncs.com/api/v1' },
+          dashscope: { name: 'Tongyi Qianwen', base_url: 'https://dashscope.aliyuncs.com/api/v1' },
           openai: { name: 'OpenAI', base_url: 'https://api.openai.com/v1' },
           google: { name: 'Google Gemini', base_url: 'https://generativelanguage.googleapis.com/v1' }
         }
 
         const providerInfo = providerMap[data.llm.provider]
         if (providerInfo) {
-          // 尝试添加厂家（如果已存在会失败，但不影响后续流程）
+          // Try to add the manufacturer (it will fail if it already exists, but it will not affect the subsequent process)
           try {
             await configApi.addLLMProvider({
               id: data.llm.provider,
@@ -98,14 +98,14 @@ const handleWizardComplete = async (data: any) => {
               display_name: providerInfo.name,
               default_base_url: providerInfo.base_url,
               is_active: true,
-              supported_features: ['chat', 'completion'] // 添加默认支持的功能
+              supported_features: ['chat', 'completion'] // Add default supported features
             })
           } catch (e) {
-            // 厂家可能已存在，忽略错误
-            console.log('厂家可能已存在:', e)
+            // The manufacturer may already exist, ignore the error
+            console.log('The manufacturer may already exist:', e)
           }
 
-          // 添加大模型配置
+          // Add large model configuration
           if (data.llm.modelName) {
             await configApi.updateLLMConfig({
               provider: data.llm.provider,
@@ -113,17 +113,17 @@ const handleWizardComplete = async (data: any) => {
               enabled: true
             })
 
-            // 设置为默认大模型
+            // Set as default large model
             await configApi.setDefaultLLM(data.llm.modelName)
           }
         }
       } catch (error) {
-        console.error('保存大模型配置失败:', error)
-        ElMessage.warning('大模型配置保存失败，请稍后在配置管理中手动配置')
+        console.error('Failed to save large model configuration:', error)
+        ElMessage.warning('The large model configuration failed to save, please configure it manually in configuration management later.')
       }
     }
 
-    // 2. 保存数据源配置
+    // 2. Save data source configuration
     if (data.datasource?.type) {
       try {
         const dsConfig: any = {
@@ -132,44 +132,44 @@ const handleWizardComplete = async (data: any) => {
           enabled: true
         }
 
-        // 根据数据源类型添加认证信息
+        // Add authentication information based on data source type
         if (data.datasource.type === 'tushare' && data.datasource.token) {
           dsConfig.api_key = data.datasource.token
         }
 
         await configApi.addDataSourceConfig(dsConfig)
       } catch (error) {
-        console.error('保存数据源配置失败:', error)
-        ElMessage.warning('数据源配置保存失败，请稍后在配置管理中手动配置')
+        console.error('Failed to save data source configuration:', error)
+        ElMessage.warning('The data source configuration failed to save, please configure it manually in configuration management later.')
       }
     }
 
-    // 3. 数据库配置（MongoDB 和 Redis）
-    // 注意：数据库配置通常在 .env 文件中，这里只是记录用户的选择
-    // 实际的数据库连接需要在后端 .env 文件中配置
+    // 3. Database configuration (MongoDB and Redis)
+    // Note: The database configuration is usually in the .env file, here it just records the user s selection
+    // The actual database connection needs to be configured in the backend .env file
     if (data.mongodb || data.redis) {
-      console.log('数据库配置（需要在 .env 文件中设置）:', {
+      console.log('Database configuration (needs to be set in .env file):', {
         mongodb: data.mongodb,
         redis: data.redis
       })
     }
 
-    // 标记配置向导已完成
+    // Tag Configuration Wizard Completed
     localStorage.setItem('config_wizard_completed', 'true')
 
     ElMessage.success({
-      message: '配置完成！欢迎使用 TradingAgents-CN',
+      message: 'Configuration completed! Welcome TradingAgents-CN',
       duration: 3000
     })
   } catch (error) {
-    console.error('保存配置失败:', error)
-    ElMessage.error('保存配置失败，请稍后重试')
+    console.error('Failed to save configuration:', error)
+    ElMessage.error('Failed to save configuration, please try again later')
   }
 }
 
-// 生命周期
+// life cycle
 onMounted(() => {
-  // 检查是否需要显示配置向导
+  // Check if you need to show the configuration wizard
   checkFirstTimeSetup()
 })
 </script>
@@ -191,7 +191,7 @@ onMounted(() => {
   height: 2px;
 }
 
-// 路由过渡动画
+// Route transition animation
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
@@ -232,7 +232,7 @@ onMounted(() => {
   opacity: 0;
 }
 
-// 响应式设计
+// Responsive design
 @media (max-width: 768px) {
   .app-container {
     padding: 0;

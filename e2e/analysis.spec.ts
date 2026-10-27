@@ -2,84 +2,84 @@ import { test, expect } from '@playwright/test'
 import { login, waitForLoadingDone, getElMessage } from './utils'
 
 /**
- * 单股分析流程 E2E 测试
+ * Single Strand Analysis Process E2E Test
  *
- * 覆盖:
- * - 分析页面加载
- * - 输入股票代码触发分析
- * - 分析任务提交后的状态反馈
+ * Cover:
+ * - Analyze page loading
+ * - Enter a stock symbol to trigger analysis
+ * - Analyze status feedback after task submission
  */
-test.describe('单股分析流程', () => {
+test.describe('Single stock analysis process', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('分析页面正确加载并有输入框', async ({ page }) => {
+  test('The analysis page loads correctly and has input boxes.', async ({ page }) => {
     await page.goto('/analysis/single')
     await waitForLoadingDone(page)
 
-    // 验证页面有输入区域（股票代码输入框或选择器）
-    const inputArea = page.locator('input[placeholder*="股票"], input[placeholder*="代码"], .el-input, .el-select').first()
+    // The verification page has an input area (stock code input box or selector)
+    const inputArea = page.locator('input[placeholder*="stocks"], input[placeholder*="code"], .el-input, .el-select').first()
     await expect(inputArea).toBeVisible({ timeout: 10000 })
   })
 
-  test('输入股票代码可以触发分析', async ({ page }) => {
+  test('Entering a stock symbol can trigger analysis', async ({ page }) => {
     await page.goto('/analysis/single')
     await waitForLoadingDone(page)
 
-    // 查找股票代码输入框
-    const stockInput = page.locator('input[placeholder*="股票"], input[placeholder*="代码"]').first()
+    // Find the stock code input box
+    const stockInput = page.locator('input[placeholder*="stocks"], input[placeholder*="code"]').first()
     if (await stockInput.isVisible({ timeout: 5000 }).catch(() => false)) {
       await stockInput.fill('000001')
 
-      // 查找分析按钮
-      const analyzeButton = page.locator('button:has-text("分析"), button:has-text("开始"), button:has-text("提交")').first()
+      // Find analysis button
+      const analyzeButton = page.locator('button:has-text("analysis"), button:has-text("start"), button:has-text("Submit")').first()
       if (await analyzeButton.isVisible({ timeout: 3000 }).catch(() => false)) {
         await analyzeButton.click()
 
-        // 等待响应（可能是成功消息或进度显示）
+        // Wait for a response (maybe a success message or progress display)
         await page.waitForTimeout(3000)
 
-        // 验证有某种反馈（消息提示或进度条或跳转）
+        // Verify that there is some kind of feedback (message prompt or progress bar or jump)
         const hasFeedback =
           (await page.locator('.el-message').isVisible().catch(() => false)) ||
           (await page.locator('.el-progress').isVisible().catch(() => false)) ||
           (await page.locator('.el-card').isVisible().catch(() => false)) ||
           !page.url().includes('/analysis/single')
 
-        expect(hasFeedback || true).toBeTruthy() // 宽松验证，至少不崩溃
+        expect(hasFeedback || true).toBeTruthy() // Loose validation, at least not crashing
       }
     }
   })
 })
 
 /**
- * 任务中心流程 E2E 测试
+ * Task Center Process E2E Testing
  */
-test.describe('任务中心流程', () => {
+test.describe('task center process', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('任务中心页面加载并显示任务列表', async ({ page }) => {
+  test('The task center page loads and displays the task list', async ({ page }) => {
     await page.goto('/tasks/unified')
     await waitForLoadingDone(page)
 
-    // 验证页面加载
+    // Verify page loading
     await expect(page).toHaveURL(/\/tasks\/unified/)
 
-    // 验证有表格或列表组件
+    // Verify that there is a table or list component
     const tableOrList = page.locator('.el-table, .el-card, .el-list, .task-list, .task-item').first()
     await expect(tableOrList).toBeVisible({ timeout: 10000 })
   })
 
-  test('任务中心统计信息显示', async ({ page }) => {
+  test('Task center statistics display', async ({ page }) => {
     await page.goto('/tasks/unified')
     await waitForLoadingDone(page)
 
-    // 验证有统计卡片或数字显示
+    // Verify that there are statistics cards or numbers displayed
     const statsArea = page.locator('.el-statistic, .el-card, .stats, .statistics').first()
-    // 宽松验证 - 页面加载即可
+    // Relaxed validation - page loads
     await expect(page.locator('body')).toBeVisible()
   })
 })

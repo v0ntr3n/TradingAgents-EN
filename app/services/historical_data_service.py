@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-统一历史数据管理服务
-为三数据源提供统一的历史数据存储和查询接口
+Unified historical data management service
+Provide a unified historical data storage and query interface for three data sources
 """
 import asyncio
 import logging
@@ -26,34 +26,34 @@ class HistoricalDataService:
     async def initialize(self):
         """初始化数据库连接"""
         try:
-            # 🔥 如果 db 已经存在（可能被外部设置），就不重新创建
-            # 🔥 这样可以避免在 UnifiedThreadPoolSyncService 中替换连接后，又被重新创建
+            # 🔥 If db already exists (possibly set externally), it will not be re-created
+            # 🔥 This can avoid being re-created after replacing the connection in UnifiedThreadPoolSyncService
             if self.db is None:
                 self.db = get_database()
             
-            # 🔥 如果 collection 还没有设置，才设置它
+            # 🔥 Set collection if it is not already set
             if self.collection is None:
                 self.collection = self.db.stock_daily_quotes
 
-            # 🔥 确保索引存在（提升查询和 upsert 性能）
+            # 🔥 Make sure the index exists (improves query and upsert performance)
             await self._ensure_indexes()
 
-            logger.info("✅ 历史数据服务初始化成功")
+            logger.info("✅ Historical data service initialization successful")
         except Exception as e:
-            logger.error(f"❌ 历史数据服务初始化失败: {e}")
+            logger.error(f"❌ Historical data service initialization failed: {e}")
             raise
 
     async def _ensure_indexes(self):
         """确保必要的索引存在"""
         try:
-            # 🔥 关键修复：从 self.db 重新获取 collection，确保使用正确的连接
+            # 🔥 Key fix: Re-fetch collection from self.db, make sure to use correct connection
             if self.db is None:
                 await self.initialize()
             collection = self.db.stock_daily_quotes
             
-            logger.info("📊 检查并创建历史数据索引...")
+            logger.info("📊 Check and create historical data index...")
 
-            # 1. 复合唯一索引：股票代码+交易日期+数据源+周期（用于 upsert）
+            # 1. Composite unique index: ticker symbol+transaction date+data source+period (for upsert)
             await collection.create_index([
                 ("symbol", 1),
                 ("trade_date", 1),
@@ -61,13 +61,13 @@ class HistoricalDataService:
                 ("period", 1)
             ], unique=True, name="symbol_date_source_period_unique", background=True)
 
-            # 2. 股票代码索引（查询单只股票的历史数据）
+            # 2. Stock code index (query historical data of a single stock)
             await collection.create_index([("symbol", 1)], name="symbol_index", background=True)
 
-            # 3. 交易日期索引（按日期范围查询）
+            # 3. Transaction date index (query by date range)
             await collection.create_index([("trade_date", -1)], name="trade_date_index", background=True)
 
-            # 4. 复合索引：股票代码+交易日期（常用查询）
+            # 4. Composite Index: Stock Symbol+Transaction date (common inquiries)
             await collection.create_index([
                 ("symbol", 1),
                 ("trade_date", -1)
@@ -75,8 +75,8 @@ class HistoricalDataService:
 
             logger.info("✅ 历史数据索引检查完成")
         except Exception as e:
-            # 索引创建失败不应该阻止服务启动
-            logger.warning(f"⚠️ 创建索引时出现警告（可能已存在）: {e}")
+            # Index creation failure should not prevent the service from starting
+            logger.warning(f"⚠️ Warning when creating index (may already exist): {e}")
     
     async def save_historical_data(
         self,
@@ -88,31 +88,31 @@ class HistoricalDataService:
         overwrite: bool = True
     ) -> int:
         """
-        保存历史数据到数据库
+        Save historical data to database
 
         Args:
-            symbol: 股票代码
-            data: 历史数据DataFrame
-            data_source: 数据源 (tushare/akshare/baostock/local)
-            market: 市场类型 (CN/HK/US)
-            period: 数据周期 (daily/weekly/monthly)
-            overwrite: 是否覆盖已存在的数据（默认True，保持向后兼容）
+            symbol: Stock code
+            data: historical data DataFrame
+            data_source: data source (tushare/akshare/baostock/local)
+            market: market type (CN/HK/US)
+            period: data period (daily/weekly/monthly)
+            overwrite: Whether to overwrite existing data (default True, maintain backward compatibility)
 
         Returns:
-            保存的记录数量
+            Number of records saved
         """
-        # 🔥 关键修复：每次使用时都重新获取数据库连接，确保使用正确的事件循环
-        # 🔥 这样可以避免在 asyncio.gather 并行执行时的事件循环冲突
+        # 🔥 Critical fix: reacquire database connection on every use, ensure correct event loop is used
+        # 🔥 This avoids event loop conflicts when asyncio.gather is executed in parallel
         from app.core.database import get_mongo_db
         self.db = get_mongo_db()
         
-        # 🔥 关键修复：每次使用时都从 self.db 重新获取 collection
-        # 🔥 这样可以确保使用最新的 db 连接（绑定到正确的事件循环）
+        # 🔥 Critical fix: re-fetch from self.db on every use collection
+        # 🔥 This ensures that the latest db connection is used (bound to the correct event loop)
         collection = self.db.stock_daily_quotes
         
         try:
             if data is None or data.empty:
-                logger.warning(f"⚠️ {symbol} 历史数据为空，跳过保存")
+                logger.warning(f"⚠️ {symbol} Historical data is empty, skip saving")
                 return 0
 
             from datetime import datetime
@@ -120,47 +120,47 @@ class HistoricalDataService:
 
             logger.info(f"💾 开始保存 {symbol} 历史数据: {len(data)}条记录 (数据源: {data_source})")
 
-            # ⏱️ 性能监控：单位转换
+            # ⏱️ Performance Monitoring: Unit Conversion
             convert_start = datetime.now()
-            # 🔥 在 DataFrame 层面做单位转换（向量化操作，比逐行快得多）
+            # 🔥 Do unit conversion at the DataFrame level (vectorization operation, much faster than row-by-row)
             if data_source == "tushare":
-                # 成交额：千元 -> 元
+                # Turnover: thousand yuan -> Yuan
                 if 'amount' in data.columns:
                     data['amount'] = data['amount'] * 1000
                 elif 'turnover' in data.columns:
                     data['turnover'] = data['turnover'] * 1000
 
-                # 成交量：手 -> 股
+                # Volume: Lots -> shares
                 if 'volume' in data.columns:
                     data['volume'] = data['volume'] * 100
                 elif 'vol' in data.columns:
                     data['vol'] = data['vol'] * 100
 
-            # 🔥 港股/美股数据：添加 pre_close 字段（从前一天的 close 获取）
+            # 🔥 Hong Kong stock/US stock data: Add pre_close field (obtained from the previous day's close)
             if market in ["HK", "US"] and 'pre_close' not in data.columns and 'close' in data.columns:
-                # 使用 shift(1) 将 close 列向下移动一行，得到前一天的收盘价
+                # Use shift(1) Move the close column down one row to get the previous day's closing price
                 data['pre_close'] = data['close'].shift(1)
-                logger.debug(f"✅ {symbol} 添加 pre_close 字段（从前一天的 close 获取）")
+                logger.debug(f"✅ {symbol} Add pre_close field (taken from previous day s close)")
 
             convert_duration = (datetime.now() - convert_start).total_seconds()
 
-            # ⏱️ 性能监控：构建操作列表
+            # ⏱️ Performance Monitoring: Building Action Lists
             prepare_start = datetime.now()
-            # 准备批量操作
+            # Prepare for batch operations
             operations = []
             saved_count = 0
-            batch_size = 200  # 进一步减小批量大小，避免超时（从500改为200）
+            batch_size = 200  # Further reduce batch size to avoid timeouts (from 500 to 200)
 
-            # 🔥 减少日志输出：只在处理大量数据时打印进度
+            # 🔥 Reduce log output: only print progress when processing large amounts of data
             processed_count = 0
 
             for date_index, row in data.iterrows():
                 processed_count += 1
                 try:
-                    # 标准化数据（传递日期索引）
+                    # Normalize data (pass date index)
                     doc = self._standardize_record(symbol, row, data_source, market, period, date_index)
 
-                    # 根据 overwrite 参数决定操作类型
+                    # Determine the operation type based on the overwrite parameter
                     filter_doc = {
                         "symbol": doc["symbol"],
                         "trade_date": doc["trade_date"],
@@ -170,33 +170,33 @@ class HistoricalDataService:
 
                     from pymongo import ReplaceOne, UpdateOne
                     if overwrite:
-                        # 覆盖模式：使用 ReplaceOne with upsert
+                        # Override mode: use ReplaceOne with upsert
                         operations.append(ReplaceOne(
                             filter=filter_doc,
                             replacement=doc,
                             upsert=True
                         ))
                     else:
-                        # 不覆盖模式：使用 UpdateOne with setOnInsert（只在不存在时插入）
+                        # No overwrite mode: use UpdateOne with setOnInsert (only insert if not present)
                         operations.append(UpdateOne(
                             filter=filter_doc,
                             update={"$setOnInsert": doc},
                             upsert=True
                         ))
 
-                    # 批量执行（每200条）
+                    # Batch execution (every 200 items)
                     if len(operations) >= batch_size:
                         batch_saved = await self._execute_bulk_write_with_retry(symbol, operations)
                         saved_count += batch_saved
                         operations = []
 
                 except Exception as e:
-                    # 获取日期信息用于错误日志
+                    # Get date information for error logs
                     date_str = str(date_index) if hasattr(date_index, '__str__') else 'unknown'
                     logger.error(f"❌ 处理记录失败 {symbol} {date_str}: {e}")
                     continue
 
-            # 执行剩余操作
+            # Perform remaining operations
             if operations:
                 final_batch_saved = await self._execute_bulk_write_with_retry(
                     symbol, operations
@@ -215,52 +215,52 @@ class HistoricalDataService:
         self,
         symbol: str,
         operations: List,
-        max_retries: int = 5  # 增加重试次数：从3次改为5次
+        max_retries: int = 5  # Increase the number of retries: from 3 to 5
     ) -> int:
         """
-        执行批量写入，带重试机制
+        Perform batch writes with retry mechanism
 
         Args:
-            symbol: 股票代码
-            operations: 批量操作列表
-            max_retries: 最大重试次数
+            symbol: Stock code
+            operations: Bulk operation list
+            max_retries: Maximum number of retries
 
         Returns:
-            成功保存的记录数
+            Number of records successfully saved
         """
         saved_count = 0
         retry_count = 0
 
         while retry_count < max_retries:
             try:
-                # 🔥 检测是否在线程池中运行（通过检查当前 event loop）
+                # 🔥 Detect whether running in the thread pool (by checking the current event loop)
                 import threading
                 current_thread = threading.current_thread()
                 is_in_thread_pool = not isinstance(current_thread, threading._MainThread)
 
                 if is_in_thread_pool:
-                    # 🔥 在线程池中：使用同步 MongoDB 客户端
+                    # 🔥 In a thread pool: Using a synchronous MongoDB client
                     from app.core.database import get_mongo_db_sync
                     sync_db = get_mongo_db_sync()
                     sync_collection = sync_db.stock_daily_quotes
                     result = sync_collection.bulk_write(operations, ordered=False)
                 else:
-                    # 🔥 在主线程中：使用异步 MongoDB 客户端
-                    # 🔥 关键修复：每次使用时都从 self.db 重新获取 collection，确保使用正确的连接
+                    # 🔥 In the main thread: Using an asynchronous MongoDB client
+                    # 🔥 Key fix: Re-fetch collection from self.db on every use, make sure to use correct connection
                     if self.db is None:
                         await self.initialize()
                     collection = self.db.stock_daily_quotes
                     result = await collection.bulk_write(operations, ordered=False)
                 saved_count = result.upserted_count + result.modified_count
-                # 🔥 减少日志：只在有错误或重试时才打印详细信息
+                # 🔥 Reduce logging: only print details if there are errors or retries
                 return saved_count
 
             except asyncio.TimeoutError as e:
                 retry_count += 1
                 if retry_count < max_retries:
-                    wait_time = 3 ** retry_count  # 更长的指数退避：3秒、9秒、27秒、81秒
+                    wait_time = 3 ** retry_count  # Longer exponential backoff: 3 seconds, 9 seconds, 27 seconds, 81 seconds
                     logger.warning(f"⚠️ {symbol} 批量写入超时 (第{retry_count}/{max_retries}次重试)，等待{wait_time}秒后重试...")
-                    # 🔥 根据运行环境选择 sleep 方式
+                    # 🔥 Choose the sleep mode according to the operating environment
                     if is_in_thread_pool:
                         import time
                         time.sleep(wait_time)
@@ -271,14 +271,14 @@ class HistoricalDataService:
                     return 0
 
             except Exception as e:
-                # 检查是否是超时相关的错误
+                # Check if it is a timeout related error
                 error_msg = str(e).lower()
                 if 'timeout' in error_msg or 'timed out' in error_msg:
                     retry_count += 1
                     if retry_count < max_retries:
                         wait_time = 3 ** retry_count
                         logger.warning(f"⚠️ {symbol} 批量写入超时 (第{retry_count}/{max_retries}次重试)，等待{wait_time}秒后重试... 错误: {e}")
-                        # 🔥 根据运行环境选择 sleep 方式
+                        # 🔥 Choose the sleep mode according to the operating environment
                         if is_in_thread_pool:
                             import time
                             time.sleep(wait_time)
@@ -305,27 +305,27 @@ class HistoricalDataService:
         """标准化单条记录"""
         now = datetime.utcnow()
 
-        # 获取日期 - 优先从列中获取，如果索引是日期类型才使用索引
+        # Get the date - first get it from the column, only use the index if the index is of date type
         trade_date = None
 
-        # 先尝试从列中获取日期
+        # First try to get the date from the column
         date_from_column = row.get('date') or row.get('trade_date')
 
-        # 如果列中有日期，优先使用列中的日期
+        # If there is a date in the column, the date in the column is used first
         if date_from_column is not None:
             trade_date = self._format_date(date_from_column)
-        # 如果列中没有日期，且索引是日期/时间/日期字符串，才使用索引
-        # 注意：batch-import 传入的 DataFrame 索引是形如 "20240101" 的字符串，这里需要显式支持 str
+        # Only use the index if there is no date in the column and the index is a date/time/date string
+        # Note: The DataFrame index passed in by batch-import is in the form "20240101" string, explicit support is required here str
         elif date_index is not None and isinstance(date_index, (date, datetime, pd.Timestamp, str)):
             trade_date = self._format_date(date_index)
-        # 否则使用当前日期
+        # Otherwise use the current date
         else:
             trade_date = self._format_date(None)
 
-        # 基础字段映射
+        # Basic field mapping
         doc = {
             "symbol": symbol,
-            "code": symbol,  # 添加 code 字段，与 symbol 保持一致（向后兼容）
+            "code": symbol,  # Add code field to be consistent with symbol (backwards compatible)
             "full_symbol": self._get_full_symbol(symbol, market),
             "market": market,
             "trade_date": trade_date,
@@ -336,7 +336,7 @@ class HistoricalDataService:
             "version": 1
         }
         
-        # OHLCV数据（单位转换已在 DataFrame 层面完成）
+        # OHLCV Data (unit conversion is done at the DataFrame level)
         amount_value = self._safe_float(row.get('amount') or row.get('turnover'))
         volume_value = self._safe_float(row.get('volume') or row.get('vol'))
 
@@ -350,7 +350,7 @@ class HistoricalDataService:
             "amount": amount_value
         })
         
-        # 计算涨跌数据
+        # Calculate rise and fall data
         if doc["close"] and doc["pre_close"]:
             doc["change"] = round(doc["close"] - doc["pre_close"], 4)
             doc["pct_chg"] = round((doc["change"] / doc["pre_close"]) * 100, 4)
@@ -358,7 +358,7 @@ class HistoricalDataService:
             doc["change"] = self._safe_float(row.get('change'))
             doc["pct_chg"] = self._safe_float(row.get('pct_chg') or row.get('change_percent'))
         
-        # 可选字段
+        # optional fields
         optional_fields = {
             "turnover_rate": row.get('turnover_rate') or row.get('turn'),
             "volume_ratio": row.get('volume_ratio'),
@@ -384,7 +384,7 @@ class HistoricalDataService:
             elif symbol.startswith(('0', '3')):
                 return f"{symbol}.SZ"
             else:
-                return f"{symbol}.SZ"  # 默认深圳
+                return f"{symbol}.SZ"  # Default Shenzhen
         elif market == "HK":
             return f"{symbol}.HK"
         elif market == "US":
@@ -398,17 +398,17 @@ class HistoricalDataService:
             return datetime.now().strftime('%Y-%m-%d')
 
         if isinstance(date_value, str):
-            # 🔥 处理 "20160704 00:00:00" 格式（batch-import 传入的索引格式）
+            # 🔥 Process "20160704 00:00:00" Format (index format passed in by batch-import)
             if ' ' in date_value:
-                date_value = date_value.split(' ')[0]  # 只取日期部分
+                date_value = date_value.split(' ')[0]  # Get only the date part
 
-            # 处理不同的日期格式
+            # Handle different date formats
             if len(date_value) == 8:  # YYYYMMDD
                 return f"{date_value[:4]}-{date_value[4:6]}-{date_value[6:8]}"
             elif len(date_value) == 10:  # YYYY-MM-DD
                 return date_value
             else:
-                # 尝试解析其他格式
+                # Try parsing other formats
                 try:
                     parsed_date = pd.to_datetime(date_value)
                     return parsed_date.strftime('%Y-%m-%d')
@@ -440,28 +440,28 @@ class HistoricalDataService:
         limit: int = None
     ) -> List[Dict[str, Any]]:
         """
-        查询历史数据
+        Query historical data
 
         Args:
-            symbol: 股票代码
-            start_date: 开始日期 (YYYY-MM-DD)
-            end_date: 结束日期 (YYYY-MM-DD)
-            data_source: 数据源筛选
-            period: 数据周期筛选 (daily/weekly/monthly)
-            limit: 限制返回数量
+            symbol: Stock code
+            start_date: start date (YYYY-MM-DD)
+            end_date: end date (YYYY-MM-DD)
+            data_source: Data source filtering
+            period: Data cycle filtering (daily/weekly/monthly)
+            limit: Limit the number of returns
 
         Returns:
-            历史数据列表
+            Historical data list
         """
-        # 🔥 关键修复：检查 self.db 而不是 self.collection
+        # 🔥 Key fix: check self.db instead self.collection
         if self.db is None:
             await self.initialize()
         
-        # 🔥 从 self.db 重新获取 collection，确保使用正确的连接
+        # 🔥 Re-fetch the collection from self.db, making sure to use the correct connection
         collection = self.db.stock_daily_quotes
         
         try:
-            # 构建查询条件
+            # Build query conditions
             query = {"symbol": symbol}
             
             if start_date or end_date:
@@ -478,7 +478,7 @@ class HistoricalDataService:
             if period:
                 query["period"] = period
             
-            # 执行查询
+            # Execute query
             cursor = collection.find(query).sort("trade_date", -1)
             
             if limit:
@@ -495,11 +495,11 @@ class HistoricalDataService:
     
     async def get_latest_date(self, symbol: str, data_source: str) -> Optional[str]:
         """获取最新数据日期"""
-        # 🔥 关键修复：检查 self.db 而不是 self.collection
+        # 🔥 Key fix: check self.db instead self.collection
         if self.db is None:
             await self.initialize()
         
-        # 🔥 从 self.db 重新获取 collection，确保使用正确的连接
+        # 🔥 Re-fetch the collection from self.db, making sure to use the correct connection
         collection = self.db.stock_daily_quotes
         
         try:
@@ -518,18 +518,18 @@ class HistoricalDataService:
     
     async def get_data_statistics(self) -> Dict[str, Any]:
         """获取数据统计信息"""
-        # 🔥 关键修复：检查 self.db 而不是 self.collection
+        # 🔥 Key fix: check self.db instead self.collection
         if self.db is None:
             await self.initialize()
         
-        # 🔥 从 self.db 重新获取 collection，确保使用正确的连接
+        # 🔥 Re-fetch the collection from self.db, making sure to use the correct connection
         collection = self.db.stock_daily_quotes
         
         try:
-            # 总记录数
+            # Total number of records
             total_count = await collection.count_documents({})
             
-            # 按数据源统计
+            # Statistics by data source
             source_stats = await collection.aggregate([
                 {"$group": {
                     "_id": "$data_source",
@@ -538,7 +538,7 @@ class HistoricalDataService:
                 }}
             ]).to_list(length=None)
             
-            # 按市场统计
+            # Statistics by market
             market_stats = await collection.aggregate([
                 {"$group": {
                     "_id": "$market",
@@ -546,7 +546,7 @@ class HistoricalDataService:
                 }}
             ]).to_list(length=None)
             
-            # 股票数量统计
+            # Stock quantity statistics
             symbol_count = len(await collection.distinct("symbol"))
             
             return {
@@ -565,7 +565,7 @@ class HistoricalDataService:
             return {}
 
 
-# 全局服务实例
+# Global service instance
 _historical_data_service = None
 
 

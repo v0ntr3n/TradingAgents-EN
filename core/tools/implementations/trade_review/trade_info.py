@@ -1,7 +1,7 @@
 """
-构建交易信息工具
+Build trading information tools
 
-从交易记录构建完整的交易信息对象
+Build a complete transaction information object from transaction records
 """
 
 import logging
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 @register_tool(
     tool_id="build_trade_info",
     name="构建交易信息",
-    description="从交易记录构建完整交易信息对象，返回买卖数量金额、平均买卖价、已实现盈亏及百分比、持仓天数、首末交易日期和交易明细等统计",
+    description="Construct a complete transaction information object from transaction records, and return statistics such as purchase and sale quantity, average purchase and sale price, realized profit and loss and percentage, number of days held, first and last transaction dates, and transaction details.",
     category="trade_review",
     is_online=False,
     timeout_tier="light",
@@ -30,14 +30,14 @@ def build_trade_info(
     code: Annotated[Optional[str], "股票代码（可选）"] = None
 ) -> Dict[str, Any]:
     """
-    构建交易信息
+    Build transaction information
     
     Args:
-        trade_records: 交易记录列表
-        code: 股票代码
+        trade_records: Transaction list
+        code: Stock code
     
     Returns:
-        包含交易信息的字典
+        Dictionary containing transaction information
     """
     try:
         if not trade_records:
@@ -47,22 +47,22 @@ def build_trade_info(
                 "data": None
             }
 
-        # 打印输入的交易记录（调试用）
+        # Print entered transaction records (for debugging)
         logger.info(f"📊 [build_trade_info] 收到 {len(trade_records)} 笔交易记录")
         for i, record in enumerate(trade_records):
             logger.info(f"  记录 {i+1}: side={record.get('side')}, qty={record.get('quantity')}, "
                        f"price={record.get('price')}, pnl={record.get('pnl')}, "
                        f"timestamp={record.get('timestamp')}")
 
-        # 提取基本信息
+        # Extract basic information
         first_trade = trade_records[0]
         stock_code = code or first_trade.get("code", "")
-        stock_name = first_trade.get("name") or first_trade.get("stock_name")  # 尝试获取股票名称
+        stock_name = first_trade.get("name") or first_trade.get("stock_name")  # Try to get the stock name
         market = first_trade.get("market", "CN")
 
-        logger.info(f"📊 [build_trade_info] 股票信息: code={stock_code}, name={stock_name}, market={market}")
+        logger.info(f"📊 [build_trade_info] stock information: code={stock_code}, name={stock_name}, market={market}")
 
-        # 统计数据
+        # Statistics
         total_buy_qty = 0
         total_buy_amount = 0.0
         total_sell_qty = 0
@@ -100,18 +100,18 @@ def build_trade_info(
                 total_pnl += pnl
                 logger.info(f"  累加卖出 pnl: {pnl}, 累计 total_pnl: {total_pnl}")
 
-        # 计算统计数据
+        # Calculate statistics
         avg_buy_price = total_buy_amount / total_buy_qty if total_buy_qty > 0 else 0.0
         avg_sell_price = total_sell_amount / total_sell_qty if total_sell_qty > 0 else 0.0
         pnl_pct = (total_pnl / total_buy_amount * 100) if total_buy_amount > 0 else 0.0
 
-        logger.info(f"📊 [build_trade_info] 统计结果:")
+        logger.info(f"📊 [build_trade_info] Statistical results:")
         logger.info(f"  - total_buy_amount: {total_buy_amount}")
         logger.info(f"  - total_sell_amount: {total_sell_amount}")
         logger.info(f"  - total_pnl: {total_pnl}")
         logger.info(f"  - pnl_pct: {pnl_pct}%")
         
-        # 计算持仓天数
+        # Calculate position holding days
         timestamps.sort()
         first_buy_date = timestamps[0] if timestamps else None
         last_sell_date = timestamps[-1] if timestamps else None
@@ -127,7 +127,7 @@ def build_trade_info(
         
         trade_info = {
             "code": stock_code,
-            "name": stock_name,  # 添加股票名称
+            "name": stock_name,  # Add stock name
             "market": market,
             "trades": trades,
             "total_buy_quantity": total_buy_qty,

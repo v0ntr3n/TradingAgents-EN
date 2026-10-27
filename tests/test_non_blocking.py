@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-测试后端非阻塞功能
-验证分析任务提交后，API服务器仍然可以响应其他请求
+Test backend non-blocking functionality
+After the verification analysis task is submitted, the API server can still respond to other requests
 """
 
 import asyncio
@@ -10,103 +10,103 @@ import time
 import json
 
 async def test_non_blocking_analysis():
-    """测试非阻塞分析功能"""
+    """Test non-blocking analysis capabilities"""
     
     base_url = "http://localhost:8000"
     
-    # 首先登录获取token
+    # First log in to get token
     login_data = {
         "username": "admin",
         "password": "admin123"
     }
     
     async with aiohttp.ClientSession() as session:
-        print("🔐 正在登录...")
+        print("🔐 logging in...")
         async with session.post(f"{base_url}/api/auth/login", json=login_data) as resp:
             if resp.status != 200:
-                print(f"❌ 登录失败: {resp.status}")
+                print(f"❌ Login failed: {resp.status}")
                 return
             
             login_result = await resp.json()
             token = login_result["data"]["access_token"]
-            print("✅ 登录成功")
+            print("✅ Login successful")
         
-        # 设置认证头
+        # Set authentication header
         headers = {"Authorization": f"Bearer {token}"}
         
-        # 提交分析任务
+        # Submit analysis task
         analysis_data = {
             "stock_code": "000001",
             "parameters": {
-                "market_type": "A股",
-                "research_depth": "标准",
+                "market_type": "A shares",
+                "research_depth": "Standard",
                 "selected_analysts": ["market", "fundamentals"],
                 "quick_analysis_model": "qwen-turbo",
                 "deep_analysis_model": "qwen-plus"
             }
         }
         
-        print("📊 提交分析任务...")
+        print("📊 Submit analysis task...")
         start_time = time.time()
         
         async with session.post(f"{base_url}/api/analysis/single", 
                                json=analysis_data, 
                                headers=headers) as resp:
             submit_time = time.time() - start_time
-            print(f"⏱️ 任务提交耗时: {submit_time:.2f}秒")
+            print(f"⏱️ Task submission time: {submit_time:.2f}seconds")
             
             if resp.status != 200:
-                print(f"❌ 任务提交失败: {resp.status}")
+                print(f"❌ Task submission failed: {resp.status}")
                 text = await resp.text()
-                print(f"错误信息: {text}")
+                print(f"error message: {text}")
                 return
             
             result = await resp.json()
             task_id = result["data"]["task_id"]
-            print(f"✅ 任务提交成功，任务ID: {task_id}")
+            print(f"✅ The task submission was successful, the task ID: {task_id}")
         
-        # 立即测试其他API是否仍然响应
-        print("\n🔍 测试其他API响应性...")
+        # Now test if other APIs are still responsive
+        print("\n🔍 Test other API responsiveness...")
         
-        # 测试健康检查
+        # Test health check
         test_start = time.time()
         async with session.get(f"{base_url}/api/health") as resp:
             health_time = time.time() - test_start
-            print(f"🏥 健康检查响应时间: {health_time:.2f}秒 - 状态: {resp.status}")
+            print(f"🏥 Health check response time: {health_time:.2f}seconds - status: {resp.status}")
         
-        # 测试用户信息
+        # Test user information
         test_start = time.time()
         async with session.get(f"{base_url}/api/auth/me", headers=headers) as resp:
             me_time = time.time() - test_start
-            print(f"👤 用户信息响应时间: {me_time:.2f}秒 - 状态: {resp.status}")
+            print(f"👤 User information response time: {me_time:.2f}seconds - status: {resp.status}")
         
-        # 测试任务状态查询
+        # Test task status query
         test_start = time.time()
         async with session.get(f"{base_url}/api/analysis/tasks/{task_id}/status", 
                               headers=headers) as resp:
             status_time = time.time() - test_start
-            print(f"📋 任务状态响应时间: {status_time:.2f}秒 - 状态: {resp.status}")
+            print(f"📋 Task status response time: {status_time:.2f}seconds - status: {resp.status}")
             
             if resp.status == 200:
                 status_result = await resp.json()
-                print(f"📊 任务状态: {status_result['data']['status']}")
+                print(f"📊 Task status: {status_result['data']['status']}")
         
-        # 等待几秒后再次检查任务状态
-        print("\n⏳ 等待5秒后再次检查任务状态...")
+        # Wait a few seconds and check the task status again
+        print("\n⏳ Wait 5 seconds and check the task status again...")
         await asyncio.sleep(5)
         
         async with session.get(f"{base_url}/api/analysis/tasks/{task_id}/status", 
                               headers=headers) as resp:
             if resp.status == 200:
                 status_result = await resp.json()
-                print(f"📊 5秒后任务状态: {status_result['data']['status']}")
-                print(f"📈 任务进度: {status_result['data'].get('progress', 0)}%")
+                print(f"📊 5 Task status after seconds: {status_result['data']['status']}")
+                print(f"📈 Task progress: {status_result['data'].get('progress', 0)}%")
             else:
-                print(f"❌ 状态查询失败: {resp.status}")
+                print(f"❌ Status query failed: {resp.status}")
 
 async def test_concurrent_requests():
-    """测试并发请求"""
-    print("\n🔄 测试并发请求...")
+    """Test concurrent requests"""
+    print("\n🔄 Test concurrent requests...")
     
     base_url = "http://localhost:8000"
     
@@ -117,22 +117,22 @@ async def test_concurrent_requests():
                 duration = time.time() - start_time
                 return resp.status, duration
     
-    # 并发发送10个健康检查请求
+    # Send 10 health check requests concurrently
     tasks = [make_health_check() for _ in range(10)]
     results = await asyncio.gather(*tasks)
     
-    print("🏥 并发健康检查结果:")
+    print("🏥 Concurrent health check results:")
     for i, (status, duration) in enumerate(results):
-        print(f"  请求 {i+1}: 状态 {status}, 耗时 {duration:.3f}秒")
+        print(f"  Request {i+1}: Status {status}, Time consuming {duration:.3f}seconds")
     
     avg_time = sum(duration for _, duration in results) / len(results)
-    print(f"📊 平均响应时间: {avg_time:.3f}秒")
+    print(f"📊 average response time: {avg_time:.3f}seconds")
 
 if __name__ == "__main__":
-    print("🧪 开始测试后端非阻塞功能")
+    print("🧪 Start testing backend non-blocking functionality")
     print("=" * 50)
     
     asyncio.run(test_non_blocking_analysis())
     asyncio.run(test_concurrent_requests())
     
-    print("\n✅ 测试完成")
+    print("\n✅ Test completed")

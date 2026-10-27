@@ -1,14 +1,14 @@
 # tradingagents/core/engine/stock_analysis_engine.py
 """
-股票分析引擎
+Stock analysis engine
 
-主引擎类，协调整个分析流程：
-1. 数据收集 → 2. 分析师分析 → 3. 研究辩论 → 4. 交易决策 → 5. 风险评估
+The main engine class coordinates the entire analysis process:
+1. data collection → 2. Analyst analysis → 3. research debate → 4. trading decisions → 5. risk assessment
 
-设计原则：
-- 基于数据契约的 Agent 协作
-- 分层数据管理（Context → RawData → AnalysisData → Reports → Decisions）
-- 完整的数据血缘追踪
+Design principles:
+- Agent collaboration based on data contract
+- Hierarchical data management (Context → RawData → AnalysisData → Reports → Decisions) 
+- Complete data lineage tracing
 """
 
 from dataclasses import dataclass, field
@@ -27,7 +27,7 @@ logger = get_logger("default")
 
 
 class AnalysisPhase(str, Enum):
-    """分析阶段枚举"""
+    """Analysis phase enumeration"""
     DATA_COLLECTION = "data_collection"
     ANALYSTS = "analysts"
     RESEARCH_DEBATE = "research_debate"
@@ -37,7 +37,7 @@ class AnalysisPhase(str, Enum):
 
 @dataclass
 class PhaseResult:
-    """阶段执行结果"""
+    """Stage execution results"""
     phase: AnalysisPhase
     success: bool
     duration_seconds: float
@@ -47,7 +47,7 @@ class PhaseResult:
 
 @dataclass
 class AnalysisResult:
-    """分析结果"""
+    """Analyze results"""
     ticker: str
     trade_date: str
     success: bool
@@ -60,19 +60,19 @@ class AnalysisResult:
 
 class StockAnalysisEngine:
     """
-    股票分析引擎
+    Stock analysis engine
     
-    协调多个 Agent 完成股票分析流程：
-    1. 初始化分析上下文
-    2. 按顺序执行各分析阶段
-    3. 收集和返回分析结果
+    Coordinate multiple Agents to complete the stock analysis process:
+    1. Initialize analysis context
+    2. Execute analysis stages in sequence
+    3. Collect and return analysis results
     
-    用法:
+    Usage:
         engine = StockAnalysisEngine(llm_provider=llm)
         result = engine.analyze(
             ticker="000858.SZ",
             trade_date="2024-01-15",
-            company_name="五粮液"
+            company_name="Wuliangye"
         )
     """
     
@@ -89,18 +89,18 @@ class StockAnalysisEngine:
         config: Optional[Dict[str, Any]] = None
     ):
         """
-        初始化分析引擎
+        Initialize the analysis engine
 
         Args:
-            llm_provider: LLM 提供者实例
-            selected_analysts: 选择的分析师列表，None 表示使用全部
-            enable_data_lineage: 是否启用数据血缘追踪
-            debug_mode: 调试模式
-            llm: 已创建的 LLM 实例（用于 Agent 调用）
-            toolkit: 工具集实例（用于 Agent 调用）
-            use_stub: 是否使用桩实现（用于测试）
-            memory_enabled: 是否启用 Memory 功能
-            config: 配置字典（用于创建 Memory 等）
+            llm_provider: LLM provider instance
+            selected_analysts: Selected analyst list, None means use all
+            enable_data_lineage: Whether to enable data lineage tracking
+            debug_mode: debug mode
+            llm: LLM instance created (for Agent invocation)
+            toolkit: Toolset instance (for Agent invocation)
+            use_stub: Whether to use stub implementation (for testing)
+            memory_enabled: Whether to enable the Memory function
+            config: Configuration dictionary (used to create Memory, etc.)
         """
         self.llm_provider = llm_provider
         self.selected_analysts = selected_analysts
@@ -112,20 +112,20 @@ class StockAnalysisEngine:
         self.memory_enabled = memory_enabled
         self.config = config
 
-        # 阶段执行器（延迟初始化）
+        # Stage executor (lazy initialization)
         self._phase_executors: Dict[AnalysisPhase, Any] = {}
 
-        # Memory 提供者（延迟初始化）
+        # Memory Provider (lazy initialization)
         self._memory_provider = None
 
-        logger.info("📊 [StockAnalysisEngine] 引擎初始化完成")
+        logger.info("📊 [StockAnalysisEngine] Engine initialization completed")
         if memory_enabled:
-            logger.info("🧠 [StockAnalysisEngine] Memory 功能已启用")
+            logger.info("🧠 [StockAnalysisEngine] Memory Feature is enabled")
             if self.config and not self.config.get("memory_use_mem0_compat", True):
-                logger.warning("⚠️ [StockAnalysisEngine] 当前显式使用 legacy-only memory 路径")
+                logger.warning("⚠️ [StockAnalysisEngine] Currently explicitly using legacy-only memory paths")
 
     def _get_memory_provider(self):
-        """获取或创建 Memory 提供者"""
+        """Get or create a Memory provider"""
         if self._memory_provider is None:
             from .memory_provider import MemoryProvider
             self._memory_provider = MemoryProvider(
@@ -135,7 +135,7 @@ class StockAnalysisEngine:
         return self._memory_provider
 
     def _get_memory_config(self) -> Dict[str, Any]:
-        """获取 Memory 配置"""
+        """Get Memory configuration"""
         return self._get_memory_provider().get_memory_config()
     
     def analyze(
@@ -147,23 +147,23 @@ class StockAnalysisEngine:
         **kwargs
     ) -> AnalysisResult:
         """
-        执行股票分析
+        Perform stock analysis
         
         Args:
-            ticker: 股票代码，如 "000858.SZ"
-            trade_date: 交易日期，如 "2024-01-15"
-            company_name: 公司名称（可选）
-            market_type: 市场类型，"cn" 或 "us"
-            **kwargs: 其他上下文参数
+            ticker: Stock code, such as "000858.SZ"
+            trade_date: Transaction date, such as "2024-01-15"
+            company_name: Company name (optional)
+            market_type: market type,"cn" or "us"
+            **kwargs: Other context parameters
             
         Returns:
-            AnalysisResult: 分析结果
+            AnalysisResult: Analyze results
         """
         start_time = datetime.now()
         
-        logger.info(f"🚀 [StockAnalysisEngine] 开始分析: {ticker} ({trade_date})")
+        logger.info(f"🚀 [StockAnalysisEngine] Start analysis: {ticker} ({trade_date})")
         
-        # 1. 创建分析上下文
+        # 1. Create analysis context
         context = self._create_context(
             ticker=ticker,
             trade_date=trade_date,
@@ -172,10 +172,10 @@ class StockAnalysisEngine:
             **kwargs
         )
         
-        # 2. 创建数据访问管理器
+        # 2. Create a data access manager
         data_manager = DataAccessManager(context)
         
-        # 3. 准备结果
+        # 3. Prepare results
         result = AnalysisResult(
             ticker=ticker,
             trade_date=trade_date,
@@ -183,7 +183,7 @@ class StockAnalysisEngine:
             context=context
         )
         
-        # 4. 按顺序执行各阶段
+        # 4. Execute stages in order
         phases = [
             AnalysisPhase.DATA_COLLECTION,
             AnalysisPhase.ANALYSTS,
@@ -198,22 +198,22 @@ class StockAnalysisEngine:
             
             if not phase_result.success:
                 result.success = False
-                result.error = f"阶段 {phase.value} 执行失败: {phase_result.error}"
+                result.error = f"stage {phase.value} Execution failed: {phase_result.error}"
                 logger.error(f"❌ [StockAnalysisEngine] {result.error}")
                 break
         
-        # 5. 提取最终决策
+        # 5. Extract final decision
         if result.success:
             result.final_decision = context.get(DataLayer.DECISIONS, "final_decision")
 
-        # 6. 计算总耗时
+        # 6. Calculate total time
         end_time = datetime.now()
         result.total_duration_seconds = (end_time - start_time).total_seconds()
 
         status = "✅" if result.success else "❌"
         logger.info(
-            f"{status} [StockAnalysisEngine] 分析完成: {ticker} "
-            f"耗时 {result.total_duration_seconds:.2f}s"
+            f"{status} [StockAnalysisEngine] Analysis completed: {ticker} "
+            f"Time consuming {result.total_duration_seconds:.2f}s"
         )
 
         return result
@@ -226,10 +226,10 @@ class StockAnalysisEngine:
         market_type: str = "cn",
         **kwargs
     ) -> AnalysisContext:
-        """创建分析上下文"""
+        """Create analysis context"""
         context = AnalysisContext()
 
-        # 设置基础上下文
+        # Set base context
         context.set(DataLayer.CONTEXT, "ticker", ticker, source="init")
         context.set(DataLayer.CONTEXT, "trade_date", trade_date, source="init")
         context.set(DataLayer.CONTEXT, "market_type", market_type, source="init")
@@ -237,11 +237,11 @@ class StockAnalysisEngine:
         if company_name:
             context.set(DataLayer.CONTEXT, "company_name", company_name, source="init")
 
-        # 设置额外参数
+        # Set additional parameters
         for key, value in kwargs.items():
             context.set(DataLayer.CONTEXT, key, value, source="init")
 
-        logger.debug(f"📋 [StockAnalysisEngine] 上下文创建完成: {context.context}")
+        logger.debug(f"📋 [StockAnalysisEngine] Context creation completed: {context.context}")
         return context
 
     def _execute_phase(
@@ -250,18 +250,18 @@ class StockAnalysisEngine:
         context: AnalysisContext,
         data_manager: DataAccessManager
     ) -> PhaseResult:
-        """执行单个阶段"""
+        """Execute a single stage"""
         start_time = datetime.now()
 
-        logger.info(f"⏳ [StockAnalysisEngine] 执行阶段: {phase.value}")
+        logger.info(f"⏳ [StockAnalysisEngine] Execution phase: {phase.value}")
 
         try:
-            # 获取阶段执行器
+            # Get stage executor
             executor = self._get_phase_executor(phase)
 
             if executor is None:
-                # 阶段执行器未实现，跳过
-                logger.warning(f"⚠️ [StockAnalysisEngine] 阶段执行器未实现: {phase.value}")
+                # Stage executor not implemented, skipped
+                logger.warning(f"⚠️ [StockAnalysisEngine] Stage executor is not implemented: {phase.value}")
                 return PhaseResult(
                     phase=phase,
                     success=True,
@@ -269,13 +269,13 @@ class StockAnalysisEngine:
                     outputs={"skipped": True}
                 )
 
-            # 执行阶段
+            # Execution phase
             outputs = executor.execute(context, data_manager)
 
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
 
-            logger.info(f"✅ [StockAnalysisEngine] 阶段完成: {phase.value} ({duration:.2f}s)")
+            logger.info(f"✅ [StockAnalysisEngine] stage completed: {phase.value} ({duration:.2f}s)")
 
             return PhaseResult(
                 phase=phase,
@@ -288,7 +288,7 @@ class StockAnalysisEngine:
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
 
-            logger.error(f"❌ [StockAnalysisEngine] 阶段失败: {phase.value} - {str(e)}")
+            logger.error(f"❌ [StockAnalysisEngine] stage failed: {phase.value} - {str(e)}")
 
             return PhaseResult(
                 phase=phase,
@@ -298,14 +298,14 @@ class StockAnalysisEngine:
             )
 
     def _get_phase_executor(self, phase: AnalysisPhase) -> Optional[Any]:
-        """获取阶段执行器"""
+        """Get stage executor"""
         if phase not in self._phase_executors:
-            # 延迟导入和创建执行器
+            # Delayed import and creation of executors
             self._phase_executors[phase] = self._create_phase_executor(phase)
         return self._phase_executors.get(phase)
 
     def _create_phase_executor(self, phase: AnalysisPhase) -> Optional[Any]:
-        """创建阶段执行器"""
+        """Create stage executor"""
         from .phase_executors import (
             DataCollectionPhase,
             AnalystsPhase,
@@ -314,7 +314,7 @@ class StockAnalysisEngine:
             RiskAssessmentPhase,
         )
 
-        # 获取 Memory 配置
+        # Get Memory configuration
         memory_config = self._get_memory_config()
 
         if phase == AnalysisPhase.DATA_COLLECTION:
@@ -356,26 +356,26 @@ class StockAnalysisEngine:
 
     def register_phase_executor(self, phase: AnalysisPhase, executor: Any) -> None:
         """
-        注册阶段执行器
+        Register stage executor
 
-        允许外部注册自定义的阶段执行器
+        Allow external registration of custom stage executors
 
         Args:
-            phase: 分析阶段
-            executor: 执行器实例（需要有 execute(context, data_manager) 方法）
+            phase: analysis stage
+            executor: Executor instance (requires execute(context, data_manager) method)
         """
         self._phase_executors[phase] = executor
-        logger.debug(f"📋 [StockAnalysisEngine] 注册阶段执行器: {phase.value}")
+        logger.debug(f"📋 [StockAnalysisEngine] Register stage executor: {phase.value}")
 
     def get_context_summary(self, result: AnalysisResult) -> Dict[str, Any]:
         """
-        获取分析上下文摘要
+        Get analysis context summary
 
         Args:
-            result: 分析结果
+            result: Analyze results
 
         Returns:
-            上下文摘要字典
+            context summary dictionary
         """
         if result.context is None:
             return {}

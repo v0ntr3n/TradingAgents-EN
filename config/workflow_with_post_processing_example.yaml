@@ -1,17 +1,17 @@
-# 完整工作流配置示例（包含后处理）
-# 展示如何在工作流中集成后处理Agent
+# Complete workflow configuration example (including post-processing)
+# Show how to integrate post-processing into your workflow Agent
 
 workflow:
   id: full_analysis_with_post_processing
-  name: 完整分析工作流（含后处理）
-  description: 从数据获取到结果处理的完整闭环
+  name: Complete analysis workflow (including post-processing)
+  description: Complete closed loop from data acquisition to result processing
   version: "2.0"
   
-  # 工作流节点
+  # Workflow node
   nodes:
-    # ========== 分析阶段 ==========
+    # ========== analysis stage ==========
     
-    # 1. 市场分析师
+    # 1. market analyst
     - id: market_analyst
       type: agent
       agent_id: market_analyst_v2
@@ -20,7 +20,7 @@ workflow:
           - get_stock_price
           - get_technical_indicators
     
-    # 2. 新闻分析师
+    # 2. news analyst
     - id: news_analyst
       type: agent
       agent_id: news_analyst_v2
@@ -29,7 +29,7 @@ workflow:
           - get_news
           - get_sentiment
     
-    # 3. 基本面分析师
+    # 3. fundamental analyst
     - id: fundamentals_analyst
       type: agent
       agent_id: fundamentals_analyst_v2
@@ -38,29 +38,29 @@ workflow:
           - get_financial_statements
           - get_company_info
     
-    # 4. 看涨研究员
+    # 4. bullish researcher
     - id: bull_researcher
       type: agent
       agent_id: bull_researcher_v2
     
-    # 5. 看跌研究员
+    # 5. bearish researcher
     - id: bear_researcher
       type: agent
       agent_id: bear_researcher_v2
     
-    # 6. 研究经理
+    # 6. research manager
     - id: research_manager
       type: agent
       agent_id: research_manager_v2
     
-    # 7. 交易员
+    # 7. trader
     - id: trader
       type: agent
       agent_id: trader_v2
     
-    # ========== 后处理阶段 ==========
+    # ========== Post-processing stage ==========
     
-    # 8. 报告保存（并行执行）
+    # 8. Report saving (parallel execution)
     - id: save_report
       type: post_processor
       agent_id: report_saver
@@ -87,7 +87,7 @@ workflow:
             operator: equals
             value: true
     
-    # 9. 邮件通知（并行执行）
+    # 9. Email notification (parallel execution)
     - id: send_email
       type: post_processor
       agent_id: email_notifier
@@ -95,7 +95,7 @@ workflow:
         operations:
           - type: send_email
             to: "{user.email}"
-            subject: "{ticker} 分析完成 - {recommendation}"
+            subject: "{ticker} Analysis completed - {recommendation}"
             template: analysis_complete
             use_llm_summary: true
         
@@ -105,9 +105,9 @@ workflow:
             value: true
           - field: investment_plan.recommendation
             operator: in
-            value: ["买入", "卖出"]
+            value: ["buy", "sell"]
     
-    # 10. 系统通知（并行执行）
+    # 10. System notification (parallel execution)
     - id: send_notification
       type: post_processor
       agent_id: system_notifier
@@ -115,7 +115,7 @@ workflow:
         operations:
           - type: send_notification
             notification_type: analysis
-            title: "{ticker} 分析完成"
+            title: "{ticker} Analysis completed"
             content: "{summary}"
             link: "/analysis/{analysis_id}"
             severity: info
@@ -125,9 +125,9 @@ workflow:
             operator: equals
             value: true
   
-  # 工作流边（定义执行顺序）
+  # Workflow edges (define the order of execution)
   edges:
-    # 分析阶段的串行执行
+    # Serial execution of analysis phases
     - source: market_analyst
       target: bull_researcher
     
@@ -155,7 +155,7 @@ workflow:
     - source: research_manager
       target: trader
     
-    # 后处理阶段的并行执行
+    # Parallel execution of post-processing stages
     - source: trader
       target: save_report
     
@@ -165,14 +165,14 @@ workflow:
     - source: trader
       target: send_notification
   
-  # 工作流配置
+  # Workflow configuration
   config:
-    # 并行执行后处理节点
+    # Parallel execution of post-processing nodes
     parallel_post_processing: true
     
-    # 后处理失败不影响主流程
+    # Post-processing failure does not affect the main process
     post_processing_optional: true
     
-    # 超时配置
-    timeout: 300  # 5分钟
+    # Timeout configuration
+    timeout: 300  # 5 minutes
 

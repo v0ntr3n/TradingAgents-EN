@@ -1,15 +1,15 @@
 """
-MCP Server 模块
+MCP Server module
 
-将 TradingAgents-CN 的多智能体分析能力暴露为 MCP 工具，
-供 Claude Desktop、Cursor、OpenClaw 等 MCP Client 调用。
+Expose TradingAgents-CN s multi-agent analysis capabilities as MCP tools,
+Called by MCP Clients such as Claude Desktop, Cursor, OpenClaw, etc.
 
-暴露的是"分析能力（成品）"，而非原始数据工具（零件）。
+What is exposed is"Analytical capabilities (finished product)", rather than raw data tools (parts).
 
-目录说明:
-- server.py   — FastMCP 实例 + MCP 工具定义
-- auth.py     — API Key 认证与用户映射
-- __main__.py — 独立进程启动入口
+Catalog description:
+- server.py   — FastMCP Example + MCP Tool definition
+- auth.py     — API Key Authentication and user mapping
+- __main__.py — Independent process startup entrance
 """
 
 from core.mcp.auth import MCPApiKeyVerifier, mcp_auth

@@ -1,10 +1,10 @@
 """
-智能筛选服务 V2 - 基于意图理解的选股对话系统
+Intelligent Screening Service V2 - Stock selection dialogue system based on intent understanding
 
-架构设计：
-- 意图优先：所有决策基于LLM意图理解，无硬编码关键词
-- 状态机驱动：清晰的对话状态管理
-- 端到端LLM协调：LLM协调整个流程
+Architecture design:
+- Intent first: all decisions are based on LLM intent understanding, no hard-coded keywords
+- State machine driver: clear dialogue state management
+- End-to-end LLM coordination: LLM coordinates the entire process
 """
 
 import asyncio
@@ -34,7 +34,7 @@ from core.llm.models import Message, MessageRole
 
 logger = logging.getLogger(__name__)
 
-# 选股场景独立预算
+# Independent budget for stock selection scenarios
 SCREENING_MAX_TOOL_ROUNDS = 3
 SCREENING_RESULT_TIMEOUT_SECONDS = 300
 MAX_CONTEXT_MESSAGES = 20
@@ -42,9 +42,9 @@ SCREENING_CONVERSATION_LIMIT = 50
 
 
 async def _recall_user_plans_memory(db, user_id: str, query: str) -> str:
-    """召回该用户的交易计划纪律 / 偏好（user_preference）记忆，注入到选股 prompt。
+    """Recall the user s trading plan discipline/preference (user_preference) memory and inject it into the stock selection prompt.
 
-    参考：docs/05-design/v3.0/unified-memory-layer-mem0.md §15.5 P0-2
+    Reference:docs/05-design/v3.0/unified-memory-layer-mem0.md §15.5 P0-2
     """
     if not user_id:
         return ""
@@ -59,22 +59,22 @@ async def _recall_user_plans_memory(db, user_id: str, query: str) -> str:
             max_chars=900,
         )
     except Exception as e:
-        logger.debug(f"[智能筛选V2][mem0] 记忆召回失败（已忽略）: {e}")
+        logger.debug(f"[Smart filtering V2][mem0] Memory recall failed (ignored): {e}")
         return ""
 
 
 def _build_plan_directive(memory_block: str) -> str:
-    """构造『多交易计划处理规则』指引片段；memory_block 为空时返回空串。"""
+    """Construct the Multiple Transaction Plan Processing Rules guidance fragment; return an empty string when memory_block is empty."""
     if not memory_block:
         return ""
     return (
         f"\n{memory_block}\n"
-        "【多交易计划处理规则】如果【历史记忆】中出现多个『用户当前交易计划：xxx（v数字）』条目"
-        "（例如『中长期价值』『短期波段』『机动备用』），说明用户同时维护多套并存策略。本次选股请按以下规则：\n"
-        "1) 优先看用户本轮消息是否明确指定（如『按中长期计划选股』『短线机会』），如有则用对应计划纪律。\n"
-        "2) 如未明确指定，但需求强相关（『长期持有』倾向中长期；『短线追涨』倾向短期），按相关性选择并在回复中说明『按您的xxx计划』。\n"
-        "3) 风格不明显时，先反问用户『您想按哪个计划来选股？(中长期/短期/机动)』，再继续；不要默认按第一个或混用多个计划纪律。\n"
-        "4) 严禁把不同计划的止损/仓位/选股口径混在一起。\n"
+        " [Multiple trading plan processing rules] If there are multiple User s current trading plan: xxx (v number) entries in [Historical Memory]"
+        " (For example, medium and long-term value , short-term band and flexible reserve ), indicating that users maintain multiple sets of coexisting strategies at the same time. Please follow the following rules for stock selection this time:\n"
+        "1) Priority is given to whether the user s current round of news is clearly specified (such as stock selection based on medium and long-term plans and short-term opportunities ). If so, the corresponding planning discipline will be used.\n"
+        "2) If it is not explicitly specified, but the demand is strongly correlated ( long-term holding tends to be mid- to long-term; short-term chasing tends to be short-term), select based on correlation and explain according to your xxx plan in the reply.\n"
+        "3) When the style is not obvious, first ask the user Which plan do you want to choose stocks according to? (Medium and long term/short term/flexible)] , before continuing; don t default to the first one or mix multiple schedule disciplines.\n"
+        "4) It is strictly prohibited to mix the stop loss/position/stock selection criteria of different plans.\n"
     )
 
 
@@ -134,20 +134,20 @@ class IntentClassifier:
 
     async def classify(self, message: str, history: List[dict]) -> IntentResult:
         """
-        分类用户意图并填充槽位
+        Classify user intent and fill slots
 
         Args:
-            message: 用户最新消息
-            history: 对话历史
+            message: Latest user news
+            history: Conversation history
 
         Returns:
-            IntentResult: 意图分类结果
+            IntentResult: Intent classification results
         """
         history_summary = self._build_history_summary(history)
 
-        system_prompt = """你是一个专业的对话意图分类器。请分析用户最新消息，并结合对话历史，判断用户意图。
+        system_prompt = """You are a professional conversational intent classifier. Please analyze the user s latest news and combine it with the conversation history to determine the user s intention.
 
-返回严格的JSON格式，不要包含其他文字：
+Return strict JSON format with no additional text:
 {
     "intent": "new_request" | "adjust" | "approve" | "follow_up" | "single_stock",
     "slots": {
@@ -155,7 +155,7 @@ class IntentClassifier:
         "adjust_direction": "loosen" | "tighten" | null,
         "target_value": "10%" | "20" | "30%" | null,
         "stock_code": "002582" | "600519" | null,
-        "stock_name": "好想你" | "贵州茅台" | null,
+        "stock_name": "miss you so much" | "Kweichow Moutai" | null,
         "action": "add_favorite" | "analyze" | null
     },
     "confidence": 0.95,
@@ -163,39 +163,39 @@ class IntentClassifier:
     "clarification_question": null
 }
 
-意图定义：
-- new_request: 用户提出了全新的选股需求
-- adjust: 用户希望调整之前的筛选条件（放宽、收紧、修改等）
-- approve: 用户明确批准某个方案（"执行"、"按此方案"、"好的"、"可以"、"确认"、"是的"、"没问题"等）
-- follow_up: 用户基于当前结果追问（"这几只怎么样"、"加入自选"、"分析一下"等）
-- single_stock: 用户询问单只股票的情况
+Intent definition:
+- new_request: Users put forward new stock selection needs
+- adjust: The user wants to adjust the previous filtering conditions (relax, tighten, modify, etc.)
+- approve: The user explicitly approves a plan ("execute", "According to this plan", "OK", "OK", "Confirm", "yes", "No problem"etc.)
+- follow_up: The user asks based on the current results ("How about these ones?", "Add to your choice", "Analyze it"etc.)
+- single_stock: User asks about a single stock
 
-槽位填充说明：
-- target_metric: 当intent=adjust时，指出用户想调整哪个指标
-- adjust_direction: 当intent=adjust时，指出是放宽(loosen)还是收紧(tighten)
-- target_value: 用户明确提到的具体参数值
-- stock_code/stock_name: 当intent=single_stock或follow_up涉及单只股票时提取
-- action: 用户想执行的操作
+Slot filling instructions:
+- target_metric: When intent=adjust, indicate which indicator the user wants to adjust
+- adjust_direction: When intent=adjust when it is pointed out that it is relaxing(loosen)Still tighten(tighten)
+- target_value: Specific parameter values explicitly mentioned by the user
+- stock_code/stock_name: When intent=single_stock Or extract when follow_up involves a single stock
+- action: What the user wants to do
 
-澄清机制：
-- 仅当意图非常模糊、完全无法判断用户想做什么时，才设置clarification_needed=true
-- **用户回复"确认""是的""好的""可以"等批准性词语时，intent=approve，clarification_needed=false**
-- 不要因为"缺少关键参数"而触发澄清，参数缺失可在后续阶段补充
+Clarification mechanism:
+- Only set when the intent is very vague and it is completely impossible to tell what the user wants to do.clarification_needed=true
+- **User reply"Confirm""yes""OK""OK"While waiting for the words of approval,intent=approve, clarification_needed=false**
+- Don t because"Missing key parameters"While triggering clarification, missing parameters can be added in subsequent stages.
 
-示例：
-- 用户说"帮我选低估值银行股" → intent=new_request
-- 用户说"先放宽ROE吧" → intent=adjust, target_metric=roe, adjust_direction=loosen
-- 用户说"把PE改成<20" → intent=adjust, target_metric=pe, adjust_direction=loosen, target_value="20"
-- 用户说"执行筛选方案" → intent=approve
-- 用户说"把这几只加入自选" → intent=follow_up, action=add_favorite
-- 用户说"贵州茅台怎么样" → intent=single_stock, stock_name="贵州茅台"
+Example:
+- Users say"Help me choose low-valuation bank stocks" → intent=new_request
+- Users say"Let s relax ROE first" → intent=adjust, target_metric=roe, adjust_direction=loosen
+- Users say"Change PE to<20" → intent=adjust, target_metric=pe, adjust_direction=loosen, target_value="20"
+- Users say"Execute screening plan" → intent=approve
+- Users say"Add these to your choice" → intent=follow_up, action=add_favorite
+- Users say"How about Kweichow Moutai?" → intent=single_stock, stock_name="Kweichow Moutai"
 """
 
         messages = [
             Message(role=MessageRole.SYSTEM, content=system_prompt),
             Message(
                 role=MessageRole.USER,
-                content=f"对话历史：\n{history_summary}\n\n用户最新消息：{message}"
+                content=f"Conversation history:\n{history_summary}\n\n Latest user news:{message}"
             )
         ]
 
@@ -210,8 +210,8 @@ class IntentClassifier:
             result = self._parse_intent_result(content)
             return result
         except Exception as e:
-            logger.warning(f"[意图分类] LLM调用失败: {e}")
-            # 失败时返回默认意图
+            logger.warning(f"[Intent classification] LLM call failed: {e}")
+            # Return default intent on failure
             return IntentResult(
                 intent=IntentType.FOLLOW_UP,
                 slots={},
@@ -224,7 +224,7 @@ class IntentClassifier:
         if not history:
             return "无对话历史"
 
-        recent = history[-6:]  # 最近6条足够理解上下文
+        recent = history[-6:]  # The last 6 items are enough to understand the context
         summary = []
         for h in recent:
             role = "用户" if h["role"] == "user" else "助手"
@@ -237,7 +237,7 @@ class IntentClassifier:
 
     def _parse_intent_result(self, content: str) -> IntentResult:
         """解析LLM返回的意图结果"""
-        # 提取JSON
+        # Extract JSON
         json_match = re.search(r'\{[\s\S]*\}', content)
         if not json_match:
             return IntentResult(
@@ -260,7 +260,7 @@ class IntentClassifier:
                 clarification_question=data.get("clarification_question")
             )
         except Exception as e:
-            logger.warning(f"[意图分类] JSON解析失败: {e}")
+            logger.warning(f"[Intent classification] JSON Parsing failed: {e}")
             return IntentResult(
                 intent=IntentType.FOLLOW_UP,
                 slots={},
@@ -277,14 +277,14 @@ class StateMachine:
 
     def determine_state(self, history: List[dict], intent: IntentResult) -> DialogState:
         """
-        根据历史和意图确定当前状态
+        Determine current state based on history and intent
 
         Args:
-            history: 对话历史
-            intent: 意图分类结果
+            history: Conversation history
+            intent: Intent classification results
 
         Returns:
-            DialogState: 当前应该进入的状态
+            DialogState: The current state that should be entered
         """
         if not history:
             return DialogState.CONFIRMING
@@ -295,7 +295,7 @@ class StateMachine:
 
         last_phase = last_assistant.get("phase", "")
 
-        # 根据最后阶段和意图来决定
+        # Decide based on final stage and intent
         if last_phase == "confirmation":
             return DialogState.PLANNING
 
@@ -304,15 +304,15 @@ class StateMachine:
                 return DialogState.CONFIRMING
             return DialogState.EXECUTING
 
-        # last_phase == "result" (即 DONE)
+        # last_phase == "result" (That is DONE)
         if intent.intent == IntentType.NEW_REQUEST:
             return DialogState.CONFIRMING
 
-        # 其他情况都在 EXECUTING/DONE 状态处理
+        # Other situations are handled in the EXECUTING/DONE state
         return DialogState.EXECUTING
 
     def _find_last_assistant(self, history: List[dict]) -> Optional[dict]:
-        """找到最后一条assistant消息"""
+        """Find the last assistant message"""
         for msg in reversed(history):
             if msg.get("role") == "assistant":
                 return msg
@@ -321,7 +321,7 @@ class StateMachine:
 
 class IntelligentScreeningServiceV2:
     """
-    智能筛选服务 V2 - 基于意图理解的选股对话系统
+    Intelligent Screening Service V2 - Stock selection dialogue system based on intent understanding
     """
 
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -334,7 +334,7 @@ class IntelligentScreeningServiceV2:
         self._state_machine = StateMachine()
 
     async def _ensure_client(self) -> bool:
-        """懒加载 LLM 客户端和工具"""
+        """Lazy loading of LLM clients and tools"""
         if self._llm_client is not None:
             return True
 
@@ -346,10 +346,10 @@ class IntelligentScreeningServiceV2:
             self._llm_client = UnifiedLLMClient.from_config(llm_config)
             self._intent_classifier = IntentClassifier(self._llm_client)
         except Exception as e:
-            logger.error(f"[智能筛选V2] 创建 LLM 客户端失败: {e}", exc_info=True)
+            logger.error(f"[Smart filtering V2] Creating LLM client failed: {e}", exc_info=True)
             return False
 
-        # 加载选股相关工具
+        # Load stock picking related tools
         registry = get_tool_registry()
         all_metadata = registry.list_all()
         screening_metadata = [
@@ -367,7 +367,7 @@ class IntelligentScreeningServiceV2:
             if func:
                 self._tool_functions[tool.id] = func
 
-        # 结果执行阶段仅保留批量筛选相关工具
+        # Only tools related to batch screening are retained in the results execution phase.
         self._result_openai_tools = self._filter_result_tools(self._openai_tools)
         if not self._result_openai_tools:
             self._result_openai_tools = self._openai_tools
@@ -377,7 +377,7 @@ class IntelligentScreeningServiceV2:
         return True
 
     def _filter_result_tools(self, openai_tools: Optional[list]) -> list:
-        """过滤result阶段可用工具"""
+        """Available tools for filtering result stage"""
         if not openai_tools:
             return []
 
@@ -401,26 +401,26 @@ class IntelligentScreeningServiceV2:
         """
         核心对话入口
         """
-        # 1. 获取历史对话
+        # 1. Get historical conversations
         resolved_conversation_id, history = await self._get_context_messages(user_id, conversation_id)
         if not resolved_conversation_id:
             resolved_conversation_id = conversation_id or uuid.uuid4().hex
 
-        # 2. 确保LLM客户端就绪
+        # 2. Make sure the LLM client is ready
         if not await self._ensure_client():
-            return self._error_response("智能筛选暂时不可用，请检查 LLM 配置", resolved_conversation_id)
+            return self._error_response("Smart filtering is temporarily unavailable, please check LLM configuration", resolved_conversation_id)
 
         set_current_user_id(user_id)
 
-        # 3. 意图分类
+        # 3. Intent classification
         intent = await self._intent_classifier.classify(message, history)
         logger.info(f"[智能筛选V2] 用户={user_id} 意图={intent.intent.value} 置信度={intent.confidence:.2f}")
 
-        # 4. 状态机判断（先判断状态，再决定是否需要澄清）
+        # 4. State machine judgment (first judge the status, and then decide whether clarification is needed)
         state = self._state_machine.determine_state(history, intent)
-        logger.info(f"[智能筛选V2] 当前状态={state.value}")
+        logger.info(f"[Smart filtering V2] Current status={state.value}")
 
-        # 5. 仅在确认阶段才允许澄清；用户正在回复确认问题时，不应再追问
+        # 5. Clarification is only allowed during the confirmation phase; users should not follow up while they are responding to a confirmation question
         if state == DialogState.CONFIRMING and intent.clarification_needed and intent.clarification_question:
             response = {
                 "reply": intent.clarification_question,
@@ -433,7 +433,7 @@ class IntelligentScreeningServiceV2:
             await self._save_message(user_id, resolved_conversation_id, message, response["reply"], [], [], "confirming")
             return response
 
-        # 6. 路由到对应处理器
+        # 6. Route to corresponding processor
         response: Optional[Dict[str, Any]] = None
 
         if state == DialogState.CONFIRMING:
@@ -444,7 +444,7 @@ class IntelligentScreeningServiceV2:
             response = await self._handle_executing(user_id, message, history, intent, resolved_conversation_id, progress_callback)
 
         if response is None:
-            response = self._error_response("处理失败，请稍后重试", resolved_conversation_id)
+            response = self._error_response("Processing failed, please try again later", resolved_conversation_id)
 
         return response
 
@@ -460,7 +460,7 @@ class IntelligentScreeningServiceV2:
         """处理确认阶段"""
         await self._emit_progress(progress_callback, "phase_determined", phase="confirmation", message="正在分析您的筛选需求")
 
-        # 召回用户交易计划/偏好记忆，注入到 prompt（多计划场景）
+        # Recall the user's trading plan/preference memory and inject it into prompt (multi-plan scenario)
         memory_block = await _recall_user_plans_memory(self._db, user_id, message)
         plan_directive = _build_plan_directive(memory_block)
 
@@ -476,7 +476,7 @@ class IntelligentScreeningServiceV2:
                 self._llm_client.achat(messages, tools=None, log_payloads=True, payload_log_label="screening_confirmation"),
                 timeout=ASSISTANT_TIMEOUT_SECONDS
             )
-            reply = resp.content if resp else "抱歉，处理失败"
+            reply = resp.content if resp else "Sorry, processing failed"
 
             await self._save_message(user_id, conversation_id, message, reply, [], [], "confirmation")
 
@@ -489,7 +489,7 @@ class IntelligentScreeningServiceV2:
                 "is_fallback": False
             }
         except asyncio.TimeoutError:
-            return self._error_response("处理超时，请稍后重试", conversation_id)
+            return self._error_response("Processing timeout, please try again later", conversation_id)
         except Exception as e:
             logger.exception("[确认阶段] 处理失败")
             return self._error_response(f"处理失败: {str(e)}", conversation_id)
@@ -507,7 +507,7 @@ class IntelligentScreeningServiceV2:
         await self._emit_progress(progress_callback, "phase_determined", phase="planning", message="正在生成筛选执行计划")
 
         tool_summary = self._build_tool_summary(self._result_openai_tools)
-        # 召回交易计划/偏好记忆
+        # Recall trading plan/preference memory
         memory_block = await _recall_user_plans_memory(self._db, user_id, message)
         plan_directive = _build_plan_directive(memory_block)
         system_prompt = self._get_planning_prompt(tool_summary) + plan_directive
@@ -523,7 +523,7 @@ class IntelligentScreeningServiceV2:
                 self._llm_client.achat(messages, tools=None, log_payloads=True, payload_log_label="screening_planning"),
                 timeout=ASSISTANT_TIMEOUT_SECONDS
             )
-            reply = resp.content if resp else "抱歉，处理失败"
+            reply = resp.content if resp else "Sorry, processing failed"
 
             await self._save_message(user_id, conversation_id, message, reply, [], [], "planning")
 
@@ -536,7 +536,7 @@ class IntelligentScreeningServiceV2:
                 "is_fallback": False
             }
         except asyncio.TimeoutError:
-            return self._error_response("处理超时，请稍后重试", conversation_id)
+            return self._error_response("Processing timeout, please try again later", conversation_id)
         except Exception as e:
             logger.exception("[规划阶段] 处理失败")
             return self._error_response(f"处理失败: {str(e)}", conversation_id)
@@ -553,10 +553,10 @@ class IntelligentScreeningServiceV2:
         """处理执行阶段"""
         await self._emit_progress(progress_callback, "phase_determined", phase="result", message="正在执行批量筛选与验证")
 
-        # 先检查是否有已批准的计划可以直接执行
+        # First check if there is an approved plan that can be executed directly
         locked_plan = self._extract_locked_execution_plan(history) if intent.intent == IntentType.APPROVE else None
 
-        # 召回交易计划/偏好记忆
+        # Recall trading plan/preference memory
         memory_block = await _recall_user_plans_memory(self._db, user_id, message)
         plan_directive = _build_plan_directive(memory_block)
         system_prompt = self._get_execution_prompt(intent, history) + plan_directive
@@ -573,7 +573,7 @@ class IntelligentScreeningServiceV2:
             nonlocal tools_used, structured_stocks
 
             if locked_plan:
-                logger.info("[智能筛选V2] 使用已批准计划直接执行")
+                logger.info("[Smart filtering V2] Execute directly using approved plan")
                 reply, locked_tools, locked_stocks = await self._run_locked_result_execution(
                     message, locked_plan, progress_callback
                 )
@@ -581,7 +581,7 @@ class IntelligentScreeningServiceV2:
                 structured_stocks = locked_stocks
                 return reply
 
-            # 普通执行流程
+            # Ordinary execution process
             resp = await self._llm_client.achat(
                 messages,
                 tools=self._result_openai_tools,
@@ -603,16 +603,16 @@ class IntelligentScreeningServiceV2:
             await self._emit_progress(progress_callback, "status", phase="result",
                                      message=f"阶段处理完成，用时 {elapsed:.2f} 秒", tools_used=tools_used)
 
-            # 提取股票
+            # Withdraw shares
             if not structured_stocks:
                 structured_stocks = self._extract_stocks(reply)
 
-            # 清理reply中的JSON代码块（股票数据已通过stocks字段返回）
+            # Clean up JSON code block in reply (stock data has been returned via stocks field)
             reply = re.sub(r'```json\s*\{[\s\S]*?\}\s*```', '', reply)
             reply = re.sub(r'```\s*\{[\s\S]*?\}\s*```', '', reply)
             reply = reply.strip()
 
-            # 如果没有找到股票且用了筛选工具，返回明确的无结果提示
+            # If no stock is found and the filter tool is used, a clear no-result message is returned.
             if not structured_stocks and "screen_stocks_by_criteria" in tools_used:
                 reply = self._build_no_match_reply(message)
                 structured_stocks = []
@@ -654,62 +654,62 @@ class IntelligentScreeningServiceV2:
     def _get_confirmation_prompt(self) -> str:
         """获取确认阶段提示词"""
         curr_date = _get_latest_trade_date()
-        return f"""你是一位专业的 A 股选股专家。用户提出了选股或行业研究需求。
+        return f"""You are a professional A-share stock picking expert. Users have put forward stock selection or industry research needs.
 
-## 你的任务：需求分析与确认
+## Your task: Requirements analysis and confirmation
 
-**不要调用任何工具，不要推荐股票。** 请按以下步骤回复：
+**Do not call any instruments and do not recommend stocks.** Please follow these steps to reply:
 
-1. **分析理解**：提炼用户需求的核心条件（行业、估值、风格、时间维度等）
-2. **展示理解**：用清晰的列表形式告诉用户"我理解您的需求是..."
-3. **改进建议**：基于专业判断，提出 2-3 条可选的改进建议
-4. **等待确认**：明确询问用户是"按原需求筛选"还是"采纳建议后再筛选"
+1. **Analyze and understand**: Refining the core conditions of user needs (industry, valuation, style, time dimension, etc.)
+2. **show understanding**: Tell users in a clear list"I understand your need is..."
+3. **Improvement suggestions**: Based on professional judgment, make 2-3 optional suggestions for improvement.
+4. **Waiting for confirmation**: Explicitly ask the user whether"Filter by original requirements"Still"Filter after taking suggestions into consideration"
 
-## 重要规则
+## Important rules
 
-- **行业/板块类问题**：如"养猪行业龙头有哪些"，应理解为"筛选该行业内按市值/营收排序的头部公司"，转化为筛选条件（行业=xxx + 按市值降序 + 取前N只），**不要追问具体股票名称**
-- **用户回复"确认""好的""是的""可以"等**：表示批准当前方案，不要再追问
-- 如果用户使用"低估值"这类模糊描述，但没有明确口径，请指出歧义并建议默认值
-- PE 相关口径区分 PE / PE(TTM)
-- PB 相关口径区分 PB / PB(MRQ)
+- **Industry/sector issues**: Such as"What are the leaders in the pig industry?", should be understood as"Screen the leading companies in the industry sorted by market capitalization/revenue", Convert to filter criteria (industry=xxx + Descending order by market capitalization + Take the first N items),**Don t ask for specific stock names**
+- **User reply"Confirm""OK""yes""OK"Wait**: Indicate approval of the current plan and do not ask further questions.
+- If the user uses"low valuation"This type of vague description, but no clear caliber, please point out the ambiguity and suggest a default value
+- PE Relevant caliber distinction PE / PE(TTM)
+- PB Relevant caliber distinction PB / PB(MRQ)
 
-当前日期：{curr_date}
-只分析需求，不推荐股票，不调用工具。
+Current date:{curr_date}
+It only analyzes needs, does not recommend stocks, and does not use tools.
 """
 
     def _get_planning_prompt(self, tool_summary: str) -> str:
         """获取规划阶段提示词"""
         curr_date = _get_latest_trade_date()
         screening_fields = build_screening_fields_markdown(public_only=True)
-        return f"""你是一位专业的 A 股选股专家。用户已确认选股需求，请制定详细的执行计划。
+        return f"""You are a professional A-share stock picking expert. The user has confirmed the stock selection needs, please formulate a detailed execution plan.
 
-## 可用工具清单
+## List of available tools
 
 {tool_summary}
 
-## `screen_stocks_by_criteria` 支持的筛选字段
+## `screen_stocks_by_criteria` Supported filter fields
 
 {screening_fields}
 
-支持的操作符：> < >= <= == != between in not_in contains
+Supported operators:> < >= <= == != between in not_in contains
 
-## 你的任务：执行计划说明
+## Your Task: Execution Plan Description
 
-**不要调用任何工具，不要推荐股票。** 请详细说明你打算如何执行此次筛选：
+**Do not call any instruments and do not recommend stocks.** Please describe in detail how you plan to perform this screening:
 
-1. **筛选策略**：总结最终采用的筛选条件
-2. **工具调用计划**：列出工具名和具体参数（JSON格式的conditions）
-3. **数据处理**：说明如何从工具返回结果中选出最终 5 只股票
-4. **请求批准**：询问用户是否同意该方案
+1. **Screening strategy**: Summarize the final filtering criteria used
+2. **Tool call plan**: List the tool name and specific parameters (conditions in JSON format)
+3. **Data processing**: Explain how to select the final 5 stocks from the results returned by the tool
+4. **request approval**: Ask the user if they agree to the proposal
 
-回复格式中请明确包含：
-- `conditions`: [...] （筛选条件的JSON数组）
-- `limit`: 50 （候选数量）
-- `order_by_field`: "total_mv" （排序字段）
-- `order_direction`: "desc" （排序方向）
+Please clearly include in your response format:
+- `conditions`: [...]  (JSON array of filter conditions)
+- `limit`: 50  (number of candidates)
+- `order_by_field`: "total_mv"  (sort field)
+- `order_direction`: "desc"  (Sorting direction)
 
-当前日期：{curr_date}
-只说明计划，不调用工具，不推荐股票。
+Current date:{curr_date}
+It only explains the plan, does not use tools, and does not recommend stocks.
 """
 
     def _get_execution_prompt(self, intent: IntentResult, history: List[dict]) -> str:
@@ -722,41 +722,41 @@ class IntelligentScreeningServiceV2:
             direction = intent.slots.get("adjust_direction", "")
             params = intent.slots.get("target_value", "")
             intent_hint = f"""
-## 当前用户意图分析（重要）
+## Current user intent analysis (important)
 
-用户希望**调整筛选条件**：
-- 调整目标：{target}
-- 调整方向：{'放宽条件' if direction == 'loosen' else '收紧条件' if direction == 'tighten' else ''}
-- 明确参数：{params or '用户未明确给出具体数值，请根据对话历史中的建议推断'}
+User wishes**Adjust filters**: 
+- Adjust goals:{target}
+- Adjust direction:{'relax conditions' if direction == 'loosen' else 'tighten conditions' if direction == 'tighten' else ''}
+- Explicit parameters:{params or 'The user did not explicitly give a specific value, please infer based on the suggestions in the conversation history.'}
 
-请仔细阅读对话历史，找到之前的筛选条件，然后按用户意图调整后重新筛选。
-特别注意：如果历史中助手给出了具体的调整建议表格（如"放宽 ROE > 15% → ROE > 10%"），请优先采用那个建议值。
+Please read the conversation history carefully to find the previous filtering conditions, then adjust them according to the user s intent and filter again.
+Special note: If the assistant gives a specific adjustment suggestion form in the history (such as"relax ROE > 15% → ROE > 10%") , Please use that recommended value first.
 """
         elif intent.intent == IntentType.APPROVE:
             intent_hint = """
-## 当前用户意图分析（重要）
+## Current user intent analysis (important)
 
-用户已**批准执行计划**，请按之前规划的参数立即执行筛选。
+The user has**Approve execution plan**, Please perform filtering immediately according to the previously planned parameters.
 """
         elif intent.intent == IntentType.FOLLOW_UP:
             action = intent.slots.get("action", "")
             if action == "add_favorite":
                 intent_hint = """
-## 当前用户意图分析（重要）
+## Current user intent analysis (important)
 
-用户希望**将筛选结果加入关注列表**。请：
-1. 调用 `add_stocks_to_favorites` 工具，将之前筛选出的股票批量添加到用户的关注列表
-2. 参数 `stocks_json` 是一个 JSON 数组，格式如 `[{"code":"002714","name":"牧原股份","market":"A股"}]`
-3. 可通过 `tags` 参数给这批股票打标签（如用户指定了分组名，可作为标签）
-4. 告诉用户操作结果
+User wishes**Add filter results to watchlist**. Please:
+1. call `add_stocks_to_favorites` Tool to add previously screened stocks to the user s watch list in batches
+2. parameters `stocks_json` is a JSON array with the format of `[{"code":"002714","name":"Muyuan shares","market":"A shares"}]`
+3. Passable `tags` Parameters label this batch of stocks (if the user specifies a group name, it can be used as a label)
+4. Tell the user the results of the operation
 
-**不要说"无法获取分组信息"或让用户手动操作，必须调用工具完成。**
+**don t say"Unable to obtain group information"Or let the user operate manually, which must be completed by calling a tool.**
 """
             else:
                 intent_hint = """
-## 当前用户意图分析（重要）
+## Current user intent analysis (important)
 
-用户在**追问当前结果**。请根据用户的问题，调用合适的工具回答。
+User is in**Ask for current results**. Please use the appropriate tool to answer the user s question.
 """
 
         return f"""你是一位专业的 A 股选股专家。
@@ -819,7 +819,7 @@ class IntelligentScreeningServiceV2:
         return "\n".join(lines)
 
     def _extract_locked_execution_plan(self, history: List[dict]) -> Optional[dict]:
-        """从历史中提取已批准的执行计划"""
+        """Extract approved execution plans from history"""
         latest_planning = None
         for item in reversed(history):
             if item.get("role") == "assistant" and item.get("phase") == "planning":
@@ -869,7 +869,7 @@ class IntelligentScreeningServiceV2:
         raw_conditions = json.loads(screen_args.get("conditions_json", "[]"))
 
         await self._emit_progress(
-            progress_callback, "status", phase="result", message="按已批准的执行计划直接运行批量筛选"
+            progress_callback, "status", phase="result", message="Run batch filters directly against approved execution plans"
         )
 
         screen_items, total_candidates = await _execute_screening_query(
@@ -929,12 +929,12 @@ class IntelligentScreeningServiceV2:
 
     def _build_locked_result_reply(self, total_candidates: int, stocks: List[dict], batch_output: str) -> str:
         """构建结果回复"""
-        lines = ["已按批准的筛选方案执行完成。"]
+        lines = ["The approved screening plan has been implemented."]
         if total_candidates:
             lines.append(f"共筛出 {total_candidates} 只候选。")
 
         if not stocks:
-            lines.append("当前未找到符合条件的股票。")
+            lines.append("No matching stocks found.")
         else:
             lines.append(f"以下是最符合条件的 {len(stocks)} 只候选：")
             for i, stock in enumerate(stocks, 1):
@@ -948,7 +948,7 @@ class IntelligentScreeningServiceV2:
                 if stock.get("roe"):
                     metrics.append(f"ROE={stock['roe']:.2f}%")
 
-                lines.append(f"{i}. {stock.get('code')} {stock.get('name')} ({stock.get('industry', '未知')})")
+                lines.append(f"{i}. {stock.get('code')} {stock.get('name')} ({stock.get('industry', 'unknown')})")
                 if metrics:
                     lines.append(f"   - {'; '.join(metrics)}")
 
@@ -968,11 +968,11 @@ class IntelligentScreeningServiceV2:
 
     def _build_no_match_reply(self, message: str) -> str:
         """构建无匹配结果的回复"""
-        return f"未找到符合当前筛选条件的股票。\n\n当前没有适合该筛选要求的标的。如果您仍想继续筛选，请考虑调整条件。"
+        return f"No stocks matching the current filter criteria were found.\n\n There are currently no targets suitable for this screening requirement. If you still want to continue filtering, consider adjusting your criteria."
 
     def _build_timeout_reply(self, timeout_seconds: int) -> str:
         """构建超时回复"""
-        return f"抱歉，处理您的选股请求已超时（超过 {timeout_seconds} 秒）。\n\n请您缩小筛选范围、补充更明确的条件，或稍后重试。"
+        return f"Sorry, processing your stock selection request has timed out (more than {timeout_seconds} seconds).\n\n Please narrow the filter scope, add more specific conditions, or try again later."
 
     def _error_response(self, message: str, conversation_id: str) -> Dict[str, Any]:
         """构建错误响应"""
@@ -1003,7 +1003,7 @@ class IntelligentScreeningServiceV2:
         try:
             await progress_callback(payload)
         except Exception as e:
-            logger.debug("[智能筛选V2] 进度推送失败: %s", e)
+            logger.debug("[Smart filtering V2] Progress push failed: %s", e)
 
     async def _save_message(
         self,

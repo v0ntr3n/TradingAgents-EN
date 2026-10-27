@@ -1,10 +1,10 @@
 /**
- * 数据库管理API
+ * Database management API
  */
 
 import { ApiClient } from './request'
 
-// 数据库状态接口
+// Database status interface
 export interface DatabaseStatus {
   mongodb: {
     connected: boolean
@@ -33,7 +33,7 @@ export interface DatabaseStatus {
   }
 }
 
-// 数据库统计接口
+// Database statistics interface
 export interface DatabaseStats {
   total_collections: number
   total_documents: number
@@ -48,7 +48,7 @@ export interface DatabaseStats {
   }>
 }
 
-// 备份信息接口
+// Backup information interface
 export interface BackupInfo {
   id: string
   name: string
@@ -59,7 +59,7 @@ export interface BackupInfo {
   created_by?: string
 }
 
-// 连接测试结果接口
+// Connect test result interface
 export interface ConnectionTestResult {
   mongodb: {
     success: boolean
@@ -76,26 +76,26 @@ export interface ConnectionTestResult {
   overall: boolean
 }
 
-// 数据库管理API
+// Database management API
 export const databaseApi = {
-  // 获取数据库状态
+  // Get database status
   async getStatus(): Promise<DatabaseStatus> {
     const response = await ApiClient.get<DatabaseStatus>('/api/system/database/status')
     return response.data
   },
 
-  // 获取数据库统计
+  // Get database statistics
   async getStats(): Promise<DatabaseStats> {
     const response = await ApiClient.get<DatabaseStats>('/api/system/database/stats')
     return response.data
   },
 
-  // 测试数据库连接
+  // Test database connection
   testConnections(): Promise<{ success: boolean; message: string; data: ConnectionTestResult }> {
     return ApiClient.post('/api/system/database/test')
   },
 
-  // 创建备份
+  // Create backup
   createBackup(data: {
     name: string
     collections?: string[]
@@ -103,17 +103,17 @@ export const databaseApi = {
     return ApiClient.post('/api/system/database/backup', data)
   },
 
-  // 获取备份列表
+  // Get backup list
   getBackups(): Promise<{ success: boolean; data: BackupInfo[] }> {
     return ApiClient.get('/api/system/database/backups')
   },
 
-  // 删除备份
+  // Delete backup
   deleteBackup(backupId: string): Promise<{ success: boolean; message: string }> {
     return ApiClient.delete(`/api/system/database/backups/${backupId}`)
   },
 
-  // 导入数据
+  // Import data
   importData(
     file: File,
     options: {
@@ -125,15 +125,15 @@ export const databaseApi = {
     const formData = new FormData()
     formData.append('file', file)
 
-    // 🔥 使用 URL 参数传递 collection, format, overwrite
-    // FastAPI 的 File 参数和其他参数混用时，其他参数需要通过 Query 传递
+    // 🔥 Passing using URL parameters collection, format, overwrite
+    // FastAPI When the File parameter is mixed with other parameters, other parameters need to be passed through Query.
     const params = new URLSearchParams({
       collection: options.collection,
       format: options.format || 'json',
       overwrite: String(options.overwrite || false)
     })
 
-    console.log('📤 导入数据请求:', {
+    console.log('📤 Import data request:', {
       filename: file.name,
       size: file.size,
       collection: options.collection,
@@ -148,18 +148,18 @@ export const databaseApi = {
     })
   },
 
-  // 导出数据
+  // Export data
   exportData(options: {
     collections?: string[]
     format?: string
-    sanitize?: boolean  // 是否脱敏（清空敏感字段，用于演示系统）
+    sanitize?: boolean  // Whether to desensitize (clear sensitive fields, used for demonstration system)
   }): Promise<Blob> {
     return ApiClient.post('/api/system/database/export', options, {
       responseType: 'blob'
     }) as any
   },
 
-  // 清理旧数据
+  // Clean old data
   cleanupOldData(days: number = 30): Promise<{
     success: boolean
     message: string
@@ -172,7 +172,7 @@ export const databaseApi = {
     return ApiClient.post(`/api/system/database/cleanup?days=${days}`)
   },
 
-  // 清理过期分析结果
+  // Clean up expired analysis results
   cleanupAnalysisResults(days: number = 30): Promise<{
     success: boolean
     message: string
@@ -185,7 +185,7 @@ export const databaseApi = {
     return ApiClient.post(`/api/system/database/cleanup/analysis?days=${days}`)
   },
 
-  // 清理操作日志
+  // Clean operation log
   cleanupOperationLogs(days: number = 90): Promise<{
     success: boolean
     message: string
@@ -198,7 +198,7 @@ export const databaseApi = {
     return ApiClient.post(`/api/system/database/cleanup/logs?days=${days}`)
   },
 
-  // 获取MongoDB连接信息（用于生成备份/还原命令）
+  // Get MongoDB connection information (used to generate backup/restore commands)
   async getConnectionInfo(): Promise<{
     success: boolean
     message: string
@@ -217,7 +217,7 @@ export const databaseApi = {
   }
 }
 
-// 工具函数
+// Utility function
 export const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B'
   const k = 1024
@@ -236,10 +236,10 @@ export const formatUptime = (seconds: number): string => {
   const minutes = Math.floor((seconds % 3600) / 60)
   
   if (days > 0) {
-    return `${days}天 ${hours}小时 ${minutes}分钟`
+    return `${days}day ${hours}hours ${minutes}minutes`
   } else if (hours > 0) {
-    return `${hours}小时 ${minutes}分钟`
+    return `${hours}hours ${minutes}minutes`
   } else {
-    return `${minutes}分钟`
+    return `${minutes}minutes`
   }
 }

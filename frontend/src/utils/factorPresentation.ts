@@ -20,56 +20,56 @@ interface FactorDiagnosticEntry {
 }
 
 const warningCategoryMeta: Record<WarningCategory, { label: string; tagType: FactorTagType }> = {
-  fallback_used: { label: '回退计算', tagType: 'warning' },
-  proxy_used: { label: '代理估算', tagType: 'danger' },
-  low_sample_size: { label: '样本偏少', tagType: 'info' },
-  precision_degraded: { label: '精度受限', tagType: 'warning' },
+  fallback_used: { label: 'Fallback calculation', tagType: 'warning' },
+  proxy_used: { label: 'Proxy estimate', tagType: 'danger' },
+  low_sample_size: { label: 'Too few samples', tagType: 'info' },
+  precision_degraded: { label: 'Limited accuracy', tagType: 'warning' },
 }
 
 const diagnosticLabelMap: Record<string, string> = {
-  piotroski_f_score: '财务质量评分缺口',
-  altman_z_score: '财务安全评分缺口',
-  beneish_m_score: '盈余操纵风险缺口',
+  piotroski_f_score: 'Financial quality score gap',
+  altman_z_score: 'Financial Security Score Gap',
+  beneish_m_score: 'Earnings manipulation risk gap',
 }
 
 const warningFieldLabelMap: Record<string, string> = {
-  pe_ttm: '滚动市盈率回退',
-  pb: '市净率回退',
-  pb_mrq: '最新市净率估算',
-  ps_ttm: '滚动市销率回退',
-  dividend_yield: '股息率回退',
-  industry_pe_median: '行业估值样本偏少',
-  industry_pb_median: '行业估值样本偏少',
-  net_profit_ttm: '滚动净利润回退',
-  roic: '投入资本回报率精度受限',
-  interest_coverage: '利息保障倍数回退',
-  inventory_turnover: '存货周转率估算',
-  net_cash_position: '净现金头寸估算',
-  fcf: '自由现金流估算',
+  pe_ttm: 'Rolling P/E Retracement',
+  pb: 'P/B retracement',
+  pb_mrq: 'Latest price-to-book ratio estimates',
+  ps_ttm: 'Rolling price-to-sales ratio retreat',
+  dividend_yield: 'Dividend rate fallback',
+  industry_pe_median: 'Industry valuation samples are too few',
+  industry_pb_median: 'Industry valuation samples are too few',
+  net_profit_ttm: 'Rolling net profit fallback',
+  roic: 'Return on invested capital accuracy is limited',
+  interest_coverage: 'Interest Coverage Ratio Rollback',
+  inventory_turnover: 'Inventory turnover estimate',
+  net_cash_position: 'Net Cash Position Estimate',
+  fcf: 'Free Cash Flow Estimate',
 }
 
 const warningConditionDescriptionMap: Record<string, string> = {
-  'pe_ttm fallback_to pe': '滚动市盈率缺少直接值，已回退使用市盈率口径。',
-  'pb fallback_to pb_mrq': '市净率缺少直接值，已回退使用最新市净率口径。',
-  'pb_mrq estimated_from market_cap_and_total_equity': '最新市净率由总市值和净资产估算得出。',
-  'ps_ttm fallback_to ps': '滚动市销率缺少直接值，已回退使用市销率口径。',
-  'dividend_yield fallback_to financial_field': '股息率缺少行情侧字段，已回退使用财务字段。',
-  'industry_peer_sample_count < 5': '行业可比样本数偏少，横向参考稳定性有限。',
-  'net_profit_ttm fallback_to net_profit_or_net_income': '滚动净利润缺少直接值，已回退使用净利润口径。',
-  'roic money_cap_missing_assumed_zero': '货币资金字段缺失，投入资本回报率采用保守假设估算。',
-  'interest_coverage fallback_to raw_interest_expense': '利息费用字段不完整，利息保障倍数已回退使用原始利息费用。',
-  'inventory_turnover cost_proxy_used': '营业成本字段缺失，存货周转率改用成本代理估算。',
-  'net_cash_position proxy_total_ncl_used': '长期负债字段不完整，净现金头寸采用代理口径估算。',
-  'fcf conservative_proxy_used': '自由现金流采用保守代理口径估算。',
+  'pe_ttm fallback_to pe': 'The rolling price-to-earnings ratio lacks a direct value and has fallen back to using the price-to-earnings ratio caliber.',
+  'pb fallback_to pb_mrq': 'The price-to-book ratio lacks a direct value and has fallen back to using the latest price-to-book ratio caliber.',
+  'pb_mrq estimated_from market_cap_and_total_equity': 'The latest price-to-book ratio is estimated from total market capitalization and net assets.',
+  'ps_ttm fallback_to ps': 'The rolling price-to-sales ratio lacks a direct value and has fallen back to using the price-to-sales ratio.',
+  'dividend_yield fallback_to financial_field': 'The dividend rate lacks the market side field and has fallen back to using the financial field.',
+  'industry_peer_sample_count < 5': 'The number of comparable samples in the industry is relatively small, and the stability of the horizontal reference is limited.',
+  'net_profit_ttm fallback_to net_profit_or_net_income': 'The rolling net profit lacks a direct value and has fallen back to using the net profit caliber.',
+  'roic money_cap_missing_assumed_zero': 'The monetary capital field is missing, and the return on invested capital is estimated using conservative assumptions.',
+  'interest_coverage fallback_to raw_interest_expense': 'The interest expense field is incomplete and the interest coverage ratio has been rolled back to use the original interest expense.',
+  'inventory_turnover cost_proxy_used': 'The operating cost field is missing, and the inventory turnover rate is estimated using a cost proxy instead.',
+  'net_cash_position proxy_total_ncl_used': 'The long-term liability field is incomplete, and the net cash position is estimated using the agency approach.',
+  'fcf conservative_proxy_used': 'Free cash flow is estimated using a conservative agency approach.',
 }
 
 const diagnosticStateLabelMap: Record<string, string> = {
-  available: '可用',
-  missing_comparison_period: '缺少对比期',
-  missing_required_inputs: '缺少关键输入',
-  invalid_denominator: '关键分母无效',
-  calculation_blocked: '计算被保护性阻断',
-  unknown: '状态未知',
+  available: 'Available',
+  missing_comparison_period: 'Missing comparison period',
+  missing_required_inputs: 'Missing key input',
+  invalid_denominator: 'Key denominator is invalid',
+  calculation_blocked: 'Computing is protectively blocked',
+  unknown: 'Status unknown',
 }
 
 export const getFactorWarningEntries = (row: StockInfo): FactorWarningEntry[] => {
@@ -93,7 +93,7 @@ export const getFactorDiagnosticEntries = (row: StockInfo): FactorDiagnosticEntr
   return Object.entries(diagnostics).map(([key, payload]: [string, any]) => ({
     key,
     label: diagnosticLabelMap[key] || key,
-    state: diagnosticStateLabelMap[payload?.state] || payload?.state || '状态未知',
+    state: diagnosticStateLabelMap[payload?.state] || payload?.state || 'Status unknown',
     reason: payload?.reason || '',
     missingInputs: payload?.missing_inputs || [],
     tagType: 'danger',

@@ -1,5 +1,5 @@
 /**
- * 智能助手 API
+ * Smart Assistant API
  */
 
 import { ApiClient, request } from './request'
@@ -40,7 +40,7 @@ export interface UserContext {
   is_jdyun_mode?: boolean
   guide_completed?: boolean
   recent_console_errors?: string[]
-  /** 股票详情页上下文（仅 general 角色从详情页进入时使用，用于主题限定与报告聚合解读） */
+  /** Stock details page context (only used when the general role enters from the details page, used for topic limitation and report aggregation interpretation) */
   stock_scope?: StockScope
 }
 
@@ -49,9 +49,9 @@ export interface ChatRequest {
   conversation_id?: string
   model?: string
   model_config_id?: string
-  /** 助手角色：general=通用分析助理（默认）/ usage_helper=使用问答机器人 */
+  /** Assistant role:general=Universal Analysis Assistant (default)/ usage_helper=Use a Q&A bot */
   assistant_role?: 'general' | 'usage_helper'
-  /** 前端上下文（usage_helper 模式传页面状态，general 模式从详情页进入时传 stock_scope） */
+  /** Front-end context (page status is passed in usage_helper mode, stock_scope is passed when entering from the details page in general mode) */
   user_context?: UserContext
 }
 
@@ -246,13 +246,13 @@ function createAssistantStream(
 }
 
 export const assistantApi = {
-  /** 获取主题列表 */
+  /** Get list of topics */
   async getThreads(): Promise<AssistantThreadListResponse> {
     const res = await request.get<AssistantThreadListResponse>('/api/assistant/threads')
     return res as unknown as AssistantThreadListResponse
   },
 
-  /** 创建新主题 */
+  /** Create new topic */
   async createThread(title?: string, parentThreadId?: string): Promise<AssistantThreadItem> {
     const res = await request.post<AssistantThreadItem>('/api/assistant/threads', {
       title,
@@ -261,19 +261,19 @@ export const assistantApi = {
     return res as unknown as AssistantThreadItem
   },
 
-  /** 删除主题及其子主题 */
+  /** Delete a topic and its subtopics */
   async deleteThread(threadId: string): Promise<ThreadDeleteResponse> {
     const res = await request.delete<ThreadDeleteResponse>(`/api/assistant/threads/${threadId}`)
     return res as unknown as ThreadDeleteResponse
   },
 
-  /** 获取指定主题消息 */
+  /** Get the specified topic message */
   async getThreadMessages(threadId: string): Promise<AssistantThreadMessagesResponse> {
     const res = await request.get<AssistantThreadMessagesResponse>(`/api/assistant/threads/${threadId}/messages`)
     return res as unknown as AssistantThreadMessagesResponse
   },
 
-  /** 获取主题关联报告详情 */
+  /** Get topic correlation report details */
   async getThreadReportDetail(threadId: string, refType: string, reportKey: string): Promise<AssistantThreadReportDetailResponse> {
     const encodedRefType = encodeURIComponent(refType)
     const encodedReportKey = encodeURIComponent(reportKey)
@@ -283,7 +283,7 @@ export const assistantApi = {
     return res as unknown as AssistantThreadReportDetailResponse
   },
 
-  /** 搜索可关联旧报告 */
+  /** Search can relate old reports */
   async getThreadReportCandidates(threadId: string, refType: string, keyword?: string, limit = 8): Promise<AssistantThreadReportSearchResponse> {
     const res = await request.get<AssistantThreadReportSearchResponse>(`/api/assistant/threads/${threadId}/report-candidates`, {
       params: {
@@ -295,7 +295,7 @@ export const assistantApi = {
     return res as unknown as AssistantThreadReportSearchResponse
   },
 
-  /** 手动关联旧报告 */
+  /** Manually link old reports */
   async attachThreadReport(threadId: string, refType: string, reportKey: string): Promise<AssistantThreadAttachReportResponse> {
     const res = await request.post<AssistantThreadAttachReportResponse>(`/api/assistant/threads/${threadId}/report-links`, {
       ref_type: refType,
@@ -304,29 +304,29 @@ export const assistantApi = {
     return res as unknown as AssistantThreadAttachReportResponse
   },
 
-  /** 清空指定主题 */
+  /** Clear the specified topic */
   async clearThreadMessages(threadId: string): Promise<void> {
     await request.delete(`/api/assistant/threads/${threadId}/messages`)
   },
 
-  /** 手动总结指定主题 */
+  /** Manually summarize specified topics */
   async summarizeThread(threadId: string): Promise<ThreadSummarizeResponse> {
     const res = await request.post<ThreadSummarizeResponse>(`/api/assistant/threads/${threadId}/summarize`)
     return res as unknown as ThreadSummarizeResponse
   },
 
-  /** 获取会话历史 */
+  /** Get session history */
   async getConversation(): Promise<ConversationResponse> {
     const res = await request.get<ConversationResponse>('/api/assistant/conversation')
     return res as unknown as ConversationResponse
   },
 
-  /** 清空会话 */
+  /** clear session */
   async clearConversation(): Promise<void> {
     await request.delete('/api/assistant/conversation')
   },
 
-  /** 发送对话消息 */
+  /** Send conversation message */
   async chat(message: string, conversationId?: string, model?: string, modelConfigId?: string): Promise<ChatResponse> {
     const res = await request.post<ChatResponse>('/api/assistant/chat', {
       message,
@@ -337,7 +337,7 @@ export const assistantApi = {
     return res as unknown as ChatResponse
   },
 
-  /** 规划分析（Plan-then-Execute 模式） */
+  /** Planning analysis (Plan-then-Execute mode) */
   async plannedAnalysis(message: string, conversationId?: string, model?: string, modelConfigId?: string): Promise<PlannedAnalysisResponse> {
     const res = await request.post<PlannedAnalysisResponse>('/api/assistant/planned-analysis', {
       message,
@@ -348,8 +348,8 @@ export const assistantApi = {
     return res as unknown as PlannedAnalysisResponse
   },
 
-  /** 流式对话（SSE）— 快速对话模式使用
-   * extraPayload: 可选的额外请求字段，用于 usage_helper 模式传 assistant_role 和 user_context
+  /** Streaming Conversations (SSE)— Use quick conversation mode
+   * extraPayload: Optional additional request fields for usage_helper mode passing assistant_role and user_context
    */
   chatStream(
     message: string,
@@ -391,7 +391,7 @@ export const assistantApi = {
     )
   },
 
-  // ---- mem0 统一记忆层 ----
+  // ---- mem0 unified memory layer ----
 
   async getMemoryHealth() {
     try {
@@ -403,8 +403,8 @@ export const assistantApi = {
     } catch (error: any) {
       return error?.response?.data ?? {
         success: false,
-        data: { ok: false, error: error?.message || '记忆层不可用' },
-        message: error?.message || '记忆层不可用',
+        data: { ok: false, error: error?.message || 'Memory layer is not available' },
+        message: error?.message || 'Memory layer is not available',
       }
     }
   },
@@ -419,7 +419,7 @@ export const assistantApi = {
     }>('/api/memory/stats')
   },
 
-  /** 重新初始化并重建用户手册向量索引（使用问答助手语义检索不可用时手动补救） */
+  /** Reinitialize and rebuild user manual vector index (manual remedy when semantic retrieval is not available using Q&A Assistant) */
   async rebuildUserManualIndex(): Promise<{
     success: boolean
     rebuilt?: boolean

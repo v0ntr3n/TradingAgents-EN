@@ -1,7 +1,7 @@
 """
-Core API 模块
+Core API module
 
-提供工作流、智能体、授权等 API 端点
+Provide API endpoints such as workflow, agents, authorization, etc.
 """
 
 from .workflow_api import WorkflowAPI

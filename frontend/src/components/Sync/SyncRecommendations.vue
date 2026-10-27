@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <el-icon class="header-icon"><Clock /></el-icon>
-          <span class="header-title">定时任务管理</span>
+          <span class="header-title">Scheduled task management</span>
           <el-button 
             type="primary" 
             size="small" 
@@ -12,7 +12,7 @@
             @click="loadTasks"
           >
             <el-icon><Refresh /></el-icon>
-            刷新
+            Refresh
           </el-button>
         </div>
       </template>
@@ -28,11 +28,11 @@
         </div>
 
         <div v-else-if="taskGroups.length > 0" class="task-groups">
-          <!-- 历史数据同步任务 -->
+          <!-- Historical data synchronization task -->
           <div class="task-group">
             <h4 class="group-title">
               <el-icon class="title-icon"><DataLine /></el-icon>
-              历史数据同步
+              Historical data synchronization
             </h4>
             <div class="task-list">
               <div 
@@ -50,47 +50,47 @@
                         class="source-tag"
                       >
                         {{ formatDataSourceName(extractDataSource(task.id, task.name)) }}
-                        <span class="priority-badge">优先级: {{ getDataSourcePriority(extractDataSource(task.id, task.name)) }}</span>
+                        <span class="priority-badge">priority: {{ getDataSourcePriority(extractDataSource(task.id, task.name)) }}</span>
                       </el-tag>
                     </div>
                     <div class="task-meta">
                       <el-tag :type="!task.paused ? 'success' : 'info'" size="small">
-                        {{ !task.paused ? '已启用' : '已暂停' }}
+                        {{ !task.paused ? 'Enabled' : 'Suspended' }}
                       </el-tag>
                       <el-tag v-if="isTaskRunning(task.id)" type="danger" size="small" style="margin-left: 8px;">
-                        执行中
+                        Executing
                       </el-tag>
                       <el-tag v-if="task.has_suspended_execution" type="warning" size="small" style="margin-left: 8px;">
-                        ⏸️ 有挂起的任务
+                        ⏸️ There are pending tasks
                       </el-tag>
                       <span v-if="getTaskActiveProgress(task.id) !== null" class="task-running-meta">
-                        当前进度: {{ getTaskActiveProgress(task.id) }}%
+                        Current progress: {{ getTaskActiveProgress(task.id) }}%
                       </span>
                       <span v-if="getTaskActiveStartedAt(task.id)" class="task-running-meta">
-                        开始于 {{ formatTime(getTaskActiveStartedAt(task.id)!) }}
+                        Started with {{ formatTime(getTaskActiveStartedAt(task.id)!) }}
                       </span>
                       <span v-if="formatScheduleDescription(task.trigger)" class="task-schedule">
                         <el-icon><Timer /></el-icon>
                         {{ formatScheduleDescription(task.trigger) }}
                       </span>
                       <span v-if="task.next_run_time && !task.paused" class="task-next-time">
-                        下次执行: {{ formatTime(task.next_run_time) }}
+                        Execute next time: {{ formatTime(task.next_run_time) }}
                       </span>
                     </div>
                   </div>
                   <div class="task-actions">
                     <div class="action-group">
                       <div class="action-label">
-                        <span v-if="task.paused" class="status-hint">任务已暂停，点击开关启用定时执行</span>
-                        <span v-else class="status-hint">任务已启用，点击开关可暂停定时执行</span>
+                        <span v-if="task.paused" class="status-hint">The task has been paused. Click the switch to enable scheduled execution.</span>
+                        <span v-else class="status-hint">The task is enabled. Click the switch to pause scheduled execution.</span>
                       </div>
                       <div class="action-controls">
                         <el-switch
                           :model-value="!task.paused"
                           @change="(value) => handleToggleTask(task.id, Boolean(value))"
                           :loading="taskToggling[task.id]"
-                          active-text="启用"
-                          inactive-text="暂停"
+                          active-text="enable"
+                          inactive-text="pause"
                         />
                         <el-dropdown
                           v-if="isHistoricalTask(task.id)"
@@ -104,7 +104,7 @@
                             :disabled="taskTriggering[task.id] || isTaskRunning(task.id)"
                             style="margin-left: 8px"
                           >
-                            立即执行
+                            Execute immediately
                             <el-icon class="el-icon--right"><ArrowDown /></el-icon>
                           </el-button>
                           <template #dropdown>
@@ -113,13 +113,13 @@
                                 command="incremental"
                                 :disabled="taskTriggering[task.id] || isTaskRunning(task.id)"
                               >
-                                增量同步（仅同步新数据）
+                                Incremental synchronization (only new data is synchronized)
                               </el-dropdown-item>
                               <el-dropdown-item 
                                 command="full"
                                 :disabled="taskTriggering[task.id] || isTaskRunning(task.id)"
                               >
-                                全量同步（同步所有历史数据）
+                                Full synchronization (synchronization of all historical data)
                               </el-dropdown-item>
                             </el-dropdown-menu>
                           </template>
@@ -133,13 +133,13 @@
                           @click="handleTriggerTask(task.id)"
                           style="margin-left: 8px"
                         >
-                          立即执行
+                          Execute immediately
                         </el-button>
                       </div>
                     </div>
                   </div>
                 </div>
-                <!-- 挂起的任务显示 -->
+                <!-- Display of pending tasks -->
                 <div v-if="task.has_suspended_execution && task.suspended_execution" class="suspended-execution">
                   <el-alert
                     type="warning"
@@ -147,16 +147,16 @@
                     show-icon
                   >
                     <template #title>
-                      <span>任务已挂起（服务重启导致中断）</span>
+                      <span>The task has been suspended (interruption caused by service restart)</span>
                     </template>
                     <template #default>
                       <div class="suspended-info">
-                        <div>进度: {{ task.suspended_execution.progress }}%</div>
+                        <div>Progress: {{ task.suspended_execution.progress }}%</div>
                         <div v-if="task.suspended_execution.processed_items !== undefined && task.suspended_execution.total_items !== undefined">
-                          已处理: {{ task.suspended_execution.processed_items }}/{{ task.suspended_execution.total_items }}
+                          Processed: {{ task.suspended_execution.processed_items }}/{{ task.suspended_execution.total_items }}
                         </div>
                         <div v-if="task.suspended_execution.started_at">
-                          开始时间: {{ formatTime(task.suspended_execution.started_at) }}
+                          start time: {{ formatTime(task.suspended_execution.started_at) }}
                         </div>
                         <el-button
                           size="small"
@@ -164,13 +164,13 @@
                           @click="handleResumeSuspendedTask(task.id, task.suspended_execution.execution_id)"
                           style="margin-top: 8px;"
                         >
-                          继续执行
+                          Continue execution
                         </el-button>
                       </div>
                     </template>
                   </el-alert>
                 </div>
-                <!-- 任务进度显示 -->
+                <!-- Task progress display -->
                 <div v-if="displayTaskProgress[task.id]" class="task-progress">
                   <el-progress
                     :percentage="displayTaskProgress[task.id].progress || 0"
@@ -188,16 +188,16 @@
                     </div>
                     <div v-if="shouldShowProgressDetails(task.id)" class="progress-details">
                       <span v-if="displayTaskProgress[task.id].started_at" class="progress-time">
-                        开始时间: {{ formatTime(displayTaskProgress[task.id].started_at) }}
+                        start time: {{ formatTime(displayTaskProgress[task.id].started_at) }}
                       </span>
                       <span class="progress-percentage">
-                        完成度: {{ displayTaskProgress[task.id].progress || 0 }}%
+                        Completeness: {{ displayTaskProgress[task.id].progress || 0 }}%
                       </span>
                       <span v-if="displayTaskProgress[task.id].started_at" class="progress-elapsed">
-                        已用时间: {{ calculateElapsedTime(displayTaskProgress[task.id].started_at!) }}
+                        elapsed time: {{ calculateElapsedTime(displayTaskProgress[task.id].started_at!) }}
                       </span>
                       <span v-if="displayTaskProgress[task.id].started_at && (displayTaskProgress[task.id].progress || 0) > 0" class="progress-remaining">
-                        剩余时间: {{ calculateRemainingTime(displayTaskProgress[task.id].started_at!, displayTaskProgress[task.id].progress || 0) }}
+                        remaining time: {{ calculateRemainingTime(displayTaskProgress[task.id].started_at!, displayTaskProgress[task.id].progress || 0) }}
                       </span>
                       <el-button
                         v-if="displayTaskProgress[task.id].execution_id"
@@ -207,7 +207,7 @@
                         @click="handleTerminateTask(task.id, displayTaskProgress[task.id].execution_id!)"
                         style="margin-left: 8px;"
                       >
-                        终止
+                        terminate
                       </el-button>
                     </div>
                   </div>
@@ -216,11 +216,11 @@
             </div>
           </div>
 
-          <!-- 财务数据同步任务 -->
+          <!-- Financial data synchronization tasks -->
           <div class="task-group">
             <h4 class="group-title">
               <el-icon class="title-icon"><Money /></el-icon>
-              财务数据同步
+              Financial data synchronization
             </h4>
             <div class="task-list">
               <div 
@@ -238,47 +238,47 @@
                         class="source-tag"
                       >
                         {{ formatDataSourceName(extractDataSource(task.id, task.name)) }}
-                        <span class="priority-badge">优先级: {{ getDataSourcePriority(extractDataSource(task.id, task.name)) }}</span>
+                        <span class="priority-badge">priority: {{ getDataSourcePriority(extractDataSource(task.id, task.name)) }}</span>
                       </el-tag>
                     </div>
                     <div class="task-meta">
                       <el-tag :type="!task.paused ? 'success' : 'info'" size="small">
-                        {{ !task.paused ? '已启用' : '已暂停' }}
+                        {{ !task.paused ? 'Enabled' : 'Suspended' }}
                       </el-tag>
                       <el-tag v-if="isTaskRunning(task.id)" type="danger" size="small" style="margin-left: 8px;">
-                        执行中
+                        Executing
                       </el-tag>
                       <el-tag v-if="task.has_suspended_execution" type="warning" size="small" style="margin-left: 8px;">
-                        ⏸️ 有挂起的任务
+                        ⏸️ There are pending tasks
                       </el-tag>
                       <span v-if="getTaskActiveProgress(task.id) !== null" class="task-running-meta">
-                        当前进度: {{ getTaskActiveProgress(task.id) }}%
+                        Current progress: {{ getTaskActiveProgress(task.id) }}%
                       </span>
                       <span v-if="getTaskActiveStartedAt(task.id)" class="task-running-meta">
-                        开始于 {{ formatTime(getTaskActiveStartedAt(task.id)!) }}
+                        Started with {{ formatTime(getTaskActiveStartedAt(task.id)!) }}
                       </span>
                       <span v-if="formatScheduleDescription(task.trigger)" class="task-schedule">
                         <el-icon><Timer /></el-icon>
                         {{ formatScheduleDescription(task.trigger) }}
                       </span>
                       <span v-if="task.next_run_time && !task.paused" class="task-next-time">
-                        下次执行: {{ formatTime(task.next_run_time) }}
+                        Execute next time: {{ formatTime(task.next_run_time) }}
                       </span>
                     </div>
                   </div>
                   <div class="task-actions">
                     <div class="action-group">
                       <div class="action-label">
-                        <span v-if="task.paused" class="status-hint">任务已暂停，点击开关启用定时执行</span>
-                        <span v-else class="status-hint">任务已启用，点击开关可暂停定时执行</span>
+                        <span v-if="task.paused" class="status-hint">The task has been paused. Click the switch to enable scheduled execution.</span>
+                        <span v-else class="status-hint">The task is enabled. Click the switch to pause scheduled execution.</span>
                       </div>
                       <div class="action-controls">
                         <el-switch
                           :model-value="!task.paused"
                           @change="(value) => handleToggleTask(task.id, Boolean(value))"
                           :loading="taskToggling[task.id]"
-                          active-text="启用"
-                          inactive-text="暂停"
+                          active-text="enable"
+                          inactive-text="pause"
                         />
                         <el-dropdown
                           v-if="isHistoricalTask(task.id)"
@@ -292,7 +292,7 @@
                             :disabled="taskTriggering[task.id] || isTaskRunning(task.id)"
                             style="margin-left: 8px"
                           >
-                            立即执行
+                            Execute immediately
                             <el-icon class="el-icon--right"><ArrowDown /></el-icon>
                           </el-button>
                           <template #dropdown>
@@ -301,13 +301,13 @@
                                 command="incremental"
                                 :disabled="taskTriggering[task.id] || isTaskRunning(task.id)"
                               >
-                                增量同步（仅同步新数据）
+                                Incremental synchronization (only new data is synchronized)
                               </el-dropdown-item>
                               <el-dropdown-item 
                                 command="full"
                                 :disabled="taskTriggering[task.id] || isTaskRunning(task.id)"
                               >
-                                全量同步（同步所有历史数据）
+                                Full synchronization (synchronization of all historical data)
                               </el-dropdown-item>
                             </el-dropdown-menu>
                           </template>
@@ -321,13 +321,13 @@
                           @click="handleTriggerTask(task.id)"
                           style="margin-left: 8px"
                         >
-                          立即执行
+                          Execute immediately
                         </el-button>
                       </div>
                     </div>
                   </div>
                 </div>
-                <!-- 挂起的任务显示 -->
+                <!-- Display of pending tasks -->
                 <div v-if="task.has_suspended_execution && task.suspended_execution" class="suspended-execution">
                   <el-alert
                     type="warning"
@@ -335,16 +335,16 @@
                     show-icon
                   >
                     <template #title>
-                      <span>任务已挂起（服务重启导致中断）</span>
+                      <span>The task has been suspended (interruption caused by service restart)</span>
                     </template>
                     <template #default>
                       <div class="suspended-info">
-                        <div>进度: {{ task.suspended_execution.progress }}%</div>
+                        <div>Progress: {{ task.suspended_execution.progress }}%</div>
                         <div v-if="task.suspended_execution.processed_items !== undefined && task.suspended_execution.total_items !== undefined">
-                          已处理: {{ task.suspended_execution.processed_items }}/{{ task.suspended_execution.total_items }}
+                          Processed: {{ task.suspended_execution.processed_items }}/{{ task.suspended_execution.total_items }}
                         </div>
                         <div v-if="task.suspended_execution.started_at">
-                          开始时间: {{ formatTime(task.suspended_execution.started_at) }}
+                          start time: {{ formatTime(task.suspended_execution.started_at) }}
                         </div>
                         <el-button
                           size="small"
@@ -352,13 +352,13 @@
                           @click="handleResumeSuspendedTask(task.id, task.suspended_execution.execution_id)"
                           style="margin-top: 8px;"
                         >
-                          继续执行
+                          Continue execution
                         </el-button>
                       </div>
                     </template>
                   </el-alert>
                 </div>
-                <!-- 任务进度显示 -->
+                <!-- Task progress display -->
                 <div v-if="displayTaskProgress[task.id]" class="task-progress">
                   <el-progress
                     :percentage="displayTaskProgress[task.id].progress || 0"
@@ -376,16 +376,16 @@
                     </div>
                     <div v-if="shouldShowProgressDetails(task.id)" class="progress-details">
                       <span v-if="displayTaskProgress[task.id].started_at" class="progress-time">
-                        开始时间: {{ formatTime(displayTaskProgress[task.id].started_at) }}
+                        start time: {{ formatTime(displayTaskProgress[task.id].started_at) }}
                       </span>
                       <span class="progress-percentage">
-                        完成度: {{ displayTaskProgress[task.id].progress || 0 }}%
+                        Completeness: {{ displayTaskProgress[task.id].progress || 0 }}%
                       </span>
                       <span v-if="displayTaskProgress[task.id].started_at" class="progress-elapsed">
-                        已用时间: {{ calculateElapsedTime(displayTaskProgress[task.id].started_at!) }}
+                        elapsed time: {{ calculateElapsedTime(displayTaskProgress[task.id].started_at!) }}
                       </span>
                       <span v-if="displayTaskProgress[task.id].started_at && (displayTaskProgress[task.id].progress || 0) > 0" class="progress-remaining">
-                        剩余时间: {{ calculateRemainingTime(displayTaskProgress[task.id].started_at!, displayTaskProgress[task.id].progress || 0) }}
+                        remaining time: {{ calculateRemainingTime(displayTaskProgress[task.id].started_at!, displayTaskProgress[task.id].progress || 0) }}
                       </span>
                       <el-button
                         v-if="displayTaskProgress[task.id].execution_id"
@@ -395,7 +395,7 @@
                         @click="handleTerminateTask(task.id, displayTaskProgress[task.id].execution_id!)"
                         style="margin-left: 8px;"
                       >
-                        终止
+                        terminate
                       </el-button>
                     </div>
                   </div>
@@ -404,11 +404,11 @@
             </div>
           </div>
 
-          <!-- 新闻数据同步任务 -->
+          <!-- News data synchronization task -->
           <div class="task-group">
             <h4 class="group-title">
               <el-icon class="title-icon"><Document /></el-icon>
-              新闻数据同步
+              News data synchronization
             </h4>
             <div class="task-list">
               <div 
@@ -426,47 +426,47 @@
                         class="source-tag"
                       >
                         {{ formatDataSourceName(extractDataSource(task.id, task.name)) }}
-                        <span class="priority-badge">优先级: {{ getDataSourcePriority(extractDataSource(task.id, task.name)) }}</span>
+                        <span class="priority-badge">priority: {{ getDataSourcePriority(extractDataSource(task.id, task.name)) }}</span>
                       </el-tag>
                     </div>
                     <div class="task-meta">
                       <el-tag :type="!task.paused ? 'success' : 'info'" size="small">
-                        {{ !task.paused ? '已启用' : '已暂停' }}
+                        {{ !task.paused ? 'Enabled' : 'Suspended' }}
                       </el-tag>
                       <el-tag v-if="isTaskRunning(task.id)" type="danger" size="small" style="margin-left: 8px;">
-                        执行中
+                        Executing
                       </el-tag>
                       <el-tag v-if="task.has_suspended_execution" type="warning" size="small" style="margin-left: 8px;">
-                        ⏸️ 有挂起的任务
+                        ⏸️ There are pending tasks
                       </el-tag>
                       <span v-if="getTaskActiveProgress(task.id) !== null" class="task-running-meta">
-                        当前进度: {{ getTaskActiveProgress(task.id) }}%
+                        Current progress: {{ getTaskActiveProgress(task.id) }}%
                       </span>
                       <span v-if="getTaskActiveStartedAt(task.id)" class="task-running-meta">
-                        开始于 {{ formatTime(getTaskActiveStartedAt(task.id)!) }}
+                        Started with {{ formatTime(getTaskActiveStartedAt(task.id)!) }}
                       </span>
                       <span v-if="formatScheduleDescription(task.trigger)" class="task-schedule">
                         <el-icon><Timer /></el-icon>
                         {{ formatScheduleDescription(task.trigger) }}
                       </span>
                       <span v-if="task.next_run_time && !task.paused" class="task-next-time">
-                        下次执行: {{ formatTime(task.next_run_time) }}
+                        Execute next time: {{ formatTime(task.next_run_time) }}
                       </span>
                     </div>
                   </div>
                   <div class="task-actions">
                     <div class="action-group">
                       <div class="action-label">
-                        <span v-if="task.paused" class="status-hint">任务已暂停，点击开关启用定时执行</span>
-                        <span v-else class="status-hint">任务已启用，点击开关可暂停定时执行</span>
+                        <span v-if="task.paused" class="status-hint">The task has been paused. Click the switch to enable scheduled execution.</span>
+                        <span v-else class="status-hint">The task is enabled. Click the switch to pause scheduled execution.</span>
                       </div>
                       <div class="action-controls">
                         <el-switch
                           :model-value="!task.paused"
                           @change="(value) => handleToggleTask(task.id, Boolean(value))"
                           :loading="taskToggling[task.id]"
-                          active-text="启用"
-                          inactive-text="暂停"
+                          active-text="enable"
+                          inactive-text="pause"
                         />
                         <el-dropdown
                           v-if="isHistoricalTask(task.id)"
@@ -480,7 +480,7 @@
                             :disabled="taskTriggering[task.id] || isTaskRunning(task.id)"
                             style="margin-left: 8px"
                           >
-                            立即执行
+                            Execute immediately
                             <el-icon class="el-icon--right"><ArrowDown /></el-icon>
                           </el-button>
                           <template #dropdown>
@@ -489,13 +489,13 @@
                                 command="incremental"
                                 :disabled="taskTriggering[task.id] || isTaskRunning(task.id)"
                               >
-                                增量同步（仅同步新数据）
+                                Incremental synchronization (only new data is synchronized)
                               </el-dropdown-item>
                               <el-dropdown-item 
                                 command="full"
                                 :disabled="taskTriggering[task.id] || isTaskRunning(task.id)"
                               >
-                                全量同步（同步所有历史数据）
+                                Full synchronization (synchronization of all historical data)
                               </el-dropdown-item>
                             </el-dropdown-menu>
                           </template>
@@ -509,13 +509,13 @@
                           @click="handleTriggerTask(task.id)"
                           style="margin-left: 8px"
                         >
-                          立即执行
+                          Execute immediately
                         </el-button>
                       </div>
                     </div>
                   </div>
                 </div>
-                <!-- 挂起的任务显示 -->
+                <!-- Display of pending tasks -->
                 <div v-if="task.has_suspended_execution && task.suspended_execution" class="suspended-execution">
                   <el-alert
                     type="warning"
@@ -523,16 +523,16 @@
                     show-icon
                   >
                     <template #title>
-                      <span>任务已挂起（服务重启导致中断）</span>
+                      <span>The task has been suspended (interruption caused by service restart)</span>
                     </template>
                     <template #default>
                       <div class="suspended-info">
-                        <div>进度: {{ task.suspended_execution.progress }}%</div>
+                        <div>Progress: {{ task.suspended_execution.progress }}%</div>
                         <div v-if="task.suspended_execution.processed_items !== undefined && task.suspended_execution.total_items !== undefined">
-                          已处理: {{ task.suspended_execution.processed_items }}/{{ task.suspended_execution.total_items }}
+                          Processed: {{ task.suspended_execution.processed_items }}/{{ task.suspended_execution.total_items }}
                         </div>
                         <div v-if="task.suspended_execution.started_at">
-                          开始时间: {{ formatTime(task.suspended_execution.started_at) }}
+                          start time: {{ formatTime(task.suspended_execution.started_at) }}
                         </div>
                         <el-button
                           size="small"
@@ -540,13 +540,13 @@
                           @click="handleResumeSuspendedTask(task.id, task.suspended_execution.execution_id)"
                           style="margin-top: 8px;"
                         >
-                          继续执行
+                          Continue execution
                         </el-button>
                       </div>
                     </template>
                   </el-alert>
                 </div>
-                <!-- 任务进度显示 -->
+                <!-- Task progress display -->
                 <div v-if="displayTaskProgress[task.id]" class="task-progress">
                   <el-progress
                     :percentage="displayTaskProgress[task.id].progress || 0"
@@ -564,16 +564,16 @@
                     </div>
                     <div v-if="shouldShowProgressDetails(task.id)" class="progress-details">
                       <span v-if="displayTaskProgress[task.id].started_at" class="progress-time">
-                        开始时间: {{ formatTime(displayTaskProgress[task.id].started_at) }}
+                        start time: {{ formatTime(displayTaskProgress[task.id].started_at) }}
                       </span>
                       <span class="progress-percentage">
-                        完成度: {{ displayTaskProgress[task.id].progress || 0 }}%
+                        Completeness: {{ displayTaskProgress[task.id].progress || 0 }}%
                       </span>
                       <span v-if="displayTaskProgress[task.id].started_at" class="progress-elapsed">
-                        已用时间: {{ calculateElapsedTime(displayTaskProgress[task.id].started_at!) }}
+                        elapsed time: {{ calculateElapsedTime(displayTaskProgress[task.id].started_at!) }}
                       </span>
                       <span v-if="displayTaskProgress[task.id].started_at && (displayTaskProgress[task.id].progress || 0) > 0" class="progress-remaining">
-                        剩余时间: {{ calculateRemainingTime(displayTaskProgress[task.id].started_at!, displayTaskProgress[task.id].progress || 0) }}
+                        remaining time: {{ calculateRemainingTime(displayTaskProgress[task.id].started_at!, displayTaskProgress[task.id].progress || 0) }}
                       </span>
                       <el-button
                         v-if="displayTaskProgress[task.id].execution_id"
@@ -583,7 +583,7 @@
                         @click="handleTerminateTask(task.id, displayTaskProgress[task.id].execution_id!)"
                         style="margin-left: 8px;"
                       >
-                        终止
+                        terminate
                       </el-button>
                     </div>
                   </div>
@@ -594,7 +594,7 @@
         </div>
 
         <div v-else class="empty-state">
-          <el-empty description="暂无定时任务" />
+          <el-empty description="No scheduled tasks yet" />
         </div>
       </div>
     </el-card>
@@ -605,7 +605,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-// 🔥 定义事件，通知父组件刷新
+// 🔥 Define events to notify the parent component to refresh
 const emit = defineEmits<{
   (e: 'task-triggered'): void
   (e: 'task-resumed'): void
@@ -636,7 +636,7 @@ import {
 } from '@/api/sync'
 import { isJdyunMode } from '@/utils/config'
 
-// 响应式数据
+// Responsive data
 const loading = ref(false)
 const error = ref('')
 const allTasks = ref<JobStatus[]>([])
@@ -649,26 +649,26 @@ const progressPollingTimer = ref<NodeJS.Timeout | null>(null)
 const ACTIVE_PROGRESS_STATUSES = new Set<JobProgress['status']>(['running', 'cancelling', 'suspended'])
 const TERMINAL_PROGRESS_STATUSES = new Set<JobProgress['status']>(['success', 'failed', 'cancelled', 'unknown'])
 
-// 京东云版只显示 Tushare / AKShare 数据源任务
+// JD Cloud version only displays Tushare / AKShare data source tasks
 const JDYUN_ALLOWED_SOURCES = new Set(['tushare', 'akshare', 'multi_source'])
 const isJdyunAllowedSource = (sourceName: string) =>
   JDYUN_ALLOWED_SOURCES.has((sourceName || '').toLowerCase())
 
-// 任务类型关键词映射
+// Task type keyword mapping
 const taskTypeKeywords: Record<string, string[]> = {
-  historical: ['历史数据', 'historical'],
-  financial: ['财务数据', 'financial'],
-  news: ['新闻数据', 'news']
+  historical: ['historical data', 'historical'],
+  financial: ['financial data', 'financial'],
+  news: ['news data', 'news']
 }
 
-// 从任务ID或名称中提取数据源名称
+// Extract data source name from task ID or name
 const extractDataSource = (jobId: string | undefined, jobName: string | undefined): string => {
   const id = (jobId || '').toLowerCase()
   const name = (jobName || '').toLowerCase()
   
-  // 🔥 特殊处理：股票关注列表数据同步任务使用多数据源（按优先级）
-  if (id === 'favorites_data_sync' || name.includes('股票关注列表') || name.includes('favorites')) {
-    return 'multi_source'  // 多数据源
+  // 🔥 Special handling: Stock watchlist data synchronization task using multiple data sources (by priority)
+  if (id === 'favorites_data_sync' || name.includes('Stock Watchlist') || name.includes('favorites')) {
+    return 'multi_source'  // Multiple data sources
   }
   
   if (id.includes('akshare') || name.includes('akshare')) return 'akshare'
@@ -678,7 +678,7 @@ const extractDataSource = (jobId: string | undefined, jobName: string | undefine
   return 'unknown'
 }
 
-// 从任务ID或名称中提取任务类型
+// Extract task type from task ID or name
 const extractTaskType = (jobId: string | undefined, jobName: string | undefined): string | null => {
   const id = (jobId || '').toLowerCase()
   const name = (jobName || '').toLowerCase()
@@ -692,14 +692,14 @@ const extractTaskType = (jobId: string | undefined, jobName: string | undefined)
   return null
 }
 
-// 判断任务是否是我们关心的类型
+// Determine whether the task is of the type we care about
 const isRelevantTask = (task: JobStatus): boolean => {
   if (!task || !task.id) return false
   const taskType = extractTaskType(task.id, task.name)
   if (taskType === null || !['historical', 'financial', 'news'].includes(taskType)) {
     return false
   }
-  // 京东云版只展示 Tushare / AKShare / 多数据源 任务，过滤掉 BaoStock 等
+  // JD Cloud version only displays Tushare / AKShare / multi-data source tasks, filtering out BaoStock, etc.
   if (isJdyunMode()) {
     const source = extractDataSource(task.id, task.name)
     if (!isJdyunAllowedSource(source)) {
@@ -709,18 +709,18 @@ const isRelevantTask = (task: JobStatus): boolean => {
   return true
 }
 
-// 获取数据源优先级
+// Get data source priority
 const getDataSourcePriority = (sourceName: string): number => {
-  // 🔥 特殊处理：多数据源任务使用最高优先级（因为它会按优先级自动选择数据源）
+  // 🔥 Special handling: Multi-data source tasks use the highest priority (because it automatically selects data sources by priority)
   if (sourceName === 'multi_source') {
-    return 999  // 多数据源任务优先级最高
+    return 999  // Multiple data source tasks have the highest priority
   }
   
   const source = dataSources.value.find(s => s.name.toLowerCase() === sourceName.toLowerCase())
-  return source?.priority || 999 // 未找到的优先级最低
+  return source?.priority || 999 // Not found has the lowest priority
 }
 
-// 按数据源优先级和任务类型分组任务
+// Group tasks by data source priority and task type
 const groupedTasks = computed(() => {
   const groups: Record<string, Record<string, JobStatus[]>> = {
     historical: {},
@@ -728,10 +728,10 @@ const groupedTasks = computed(() => {
     news: {}
   }
   
-  // 过滤相关任务
+  // Filter related tasks
   const relevantTasks = allTasks.value.filter(isRelevantTask)
   
-  // 按类型和数据源分组
+  // Group by type and data source
   relevantTasks.forEach(task => {
     const taskType = extractTaskType(task.id, task.name)
     const dataSource = extractDataSource(task.id, task.name)
@@ -744,10 +744,10 @@ const groupedTasks = computed(() => {
     }
   })
   
-  // 按数据源优先级排序
+  // Sort by data source priority
   Object.keys(groups).forEach(type => {
     const sortedSources = Object.keys(groups[type]).sort((a, b) => {
-      return getDataSourcePriority(b) - getDataSourcePriority(a) // 优先级高的在前
+      return getDataSourcePriority(b) - getDataSourcePriority(a) // Highest priority first
     })
     
         const sortedGroup: Record<string, JobStatus[]> = {}
@@ -760,7 +760,7 @@ const groupedTasks = computed(() => {
   return groups
 })
 
-// 计算属性：任务分组
+// Computed properties: task grouping
 const taskGroups = computed(() => {
   const groups = []
   if (Object.keys(groupedTasks.value.historical).length > 0) groups.push('historical')
@@ -769,12 +769,12 @@ const taskGroups = computed(() => {
   return groups
 })
 
-// 根据类型获取任务（按数据源优先级排序）
+// Get tasks by type (sorted by data source priority)
 const getTasksByType = (type: string): JobStatus[] => {
   const tasks: JobStatus[] = []
   const group = groupedTasks.value[type] || {}
   
-  // 按数据源优先级顺序添加任务
+  // Add tasks in data source priority order
   Object.keys(group).sort((a, b) => {
     return getDataSourcePriority(b) - getDataSourcePriority(a)
   }).forEach(source => {
@@ -784,12 +784,12 @@ const getTasksByType = (type: string): JobStatus[] => {
   return tasks
 }
 
-// 加载数据源状态
+// Load data source status
 const loadDataSources = async () => {
   try {
     const response = await getDataSourcesStatus()
     if (response.success) {
-      // 京东云版只保留 Tushare / AKShare
+      // JD Cloud version only retains Tushare / AKShare
       if (isJdyunMode()) {
         dataSources.value = response.data.filter(s => isJdyunAllowedSource(s.name))
       } else {
@@ -797,29 +797,29 @@ const loadDataSources = async () => {
       }
     }
   } catch (err: any) {
-    console.error('加载数据源状态失败:', err)
+    console.error('Failed to load data source status:', err)
   }
 }
 
-// 加载任务列表
+// Load task list
 const loadTasks = async () => {
   try {
     loading.value = true
     error.value = ''
     
-    // 先加载数据源信息
+    // Load data source information first
     await loadDataSources()
     
-    // 加载所有任务
+    // Load all tasks
     const response = await getJobs()
     if (response.success) {
-      // 保存所有任务
+      // Save all tasks
       allTasks.value = response.data
       
-      // 🔍 调试：打印所有任务信息
-      console.log('📋 获取到的所有任务:', allTasks.value.length, '个')
+      // 🔍 Debugging: Print all task information
+      console.log('📋 All tasks obtained:', allTasks.value.length, 'a')
       allTasks.value.forEach((task, index) => {
-        console.log(`任务 ${index + 1}:`, {
+        console.log(`Task ${index + 1}:`, {
           id: task.id,
           name: task.name,
           paused: task.paused,
@@ -829,30 +829,30 @@ const loadTasks = async () => {
         })
       })
       
-      // 只加载已启用任务的进度（未启用的任务不需要进度）
+      // Only progress for enabled tasks is loaded (unenabled tasks do not require progress)
       const relevantTasks = allTasks.value.filter(isRelevantTask)
-      console.log('✅ 过滤后的相关任务:', relevantTasks.length, '个')
+      console.log('✅ Filtered related tasks:', relevantTasks.length, 'a')
       
       for (const task of relevantTasks) {
-        if (!task.paused) {  // paused=false 表示已启用
+        if (!task.paused) {  // paused=false means enabled
           await loadTaskProgress(task.id)
         }
       }
       
-      // 开始轮询进度（只轮询已启用的任务）
+      // Start polling for progress (only polling enabled tasks)
       startProgressPolling()
     } else {
-      error.value = response.message || '获取任务列表失败'
+      error.value = response.message || 'Failed to get task list'
     }
   } catch (err: any) {
-    console.error('加载定时任务失败:', err)
-    error.value = err.message || '网络请求失败'
+    console.error('Failed to load scheduled task:', err)
+    error.value = err.message || 'Network request failed'
   } finally {
     loading.value = false
   }
 }
 
-// 加载任务进度
+// Loading task progress
 const loadTaskProgress = async (jobId: string) => {
   try {
     const response = await getJobProgress(jobId)
@@ -860,7 +860,7 @@ const loadTaskProgress = async (jobId: string) => {
       taskProgress.value[jobId] = response.data
     }
   } catch (err: any) {
-    console.error(`加载任务 ${jobId} 进度失败:`, err)
+    console.error(`Load task ${jobId} Progress failed:`, err)
   }
 }
 
@@ -879,8 +879,8 @@ const buildRunningExecutionProgress = (jobId: string, task: JobStatus, storedPro
       ? storedProgress.status
       : 'running',
     message: isSameExecution
-      ? (storedProgress?.message || '任务执行中...')
-      : '任务执行中...',
+      ? (storedProgress?.message || 'Task in progress...')
+      : 'Task in progress...',
     current_item: isSameExecution
       ? (storedProgress?.current_item || runningExecution.current_item)
       : runningExecution.current_item,
@@ -922,7 +922,7 @@ const resolveTaskDisplayProgress = (jobId: string): JobProgress | null => {
       status: storedProgress.status && ACTIVE_PROGRESS_STATUSES.has(storedProgress.status)
         ? storedProgress.status
         : 'running',
-      message: storedProgress.message || '任务执行中...',
+      message: storedProgress.message || 'Task in progress...',
     }
   }
 
@@ -950,45 +950,45 @@ const getTaskDisplayProgress = (jobId: string): JobProgress | null => {
   return displayTaskProgress.value[jobId] || null
 }
 
-// 切换任务启用状态
+// Switch task enabled status
 const handleToggleTask = async (jobId: string, enabled: boolean) => {
   try {
     taskToggling.value[jobId] = true
     
     if (enabled) {
       await resumeJob(jobId)
-      ElMessage.success('任务已启用')
-      // 启用后加载进度
+      ElMessage.success('Task is enabled')
+      // Loading progress after enabling
       await loadTaskProgress(jobId)
       startProgressPolling()
     } else {
       await pauseJob(jobId)
-      ElMessage.success('任务已暂停')
-      // 暂停后清除进度
+      ElMessage.success('Task is paused')
+      // Clear progress after pause
       delete taskProgress.value[jobId]
     }
     
-    // 更新任务状态
+    // Update task status
     const task = allTasks.value.find(t => t.id === jobId)
     if (task) {
-      task.paused = !enabled  // paused=false 表示已启用
+      task.paused = !enabled  // paused=false means enabled
     }
     
-    // 重新加载任务列表以获取最新状态
+    // Reload the task list to get the latest status
     await loadTasks()
   } catch (err: any) {
-    ElMessage.error(`操作失败: ${err.message}`)
-    // 恢复状态
+    ElMessage.error(`Operation failed: ${err.message}`)
+    // restore state
     const task = allTasks.value.find(t => t.id === jobId)
     if (task) {
-      task.paused = enabled  // 恢复原状态
+      task.paused = enabled  // Restore original state
     }
   } finally {
     taskToggling.value[jobId] = false
   }
 }
 
-// 判断是否是历史数据同步任务
+// Determine whether it is a historical data synchronization task
 const isHistoricalTask = (jobId: string): boolean => {
   return jobId.includes('historical_sync')
 }
@@ -1024,15 +1024,15 @@ const getTaskRunningHint = (jobId: string): string => {
   const runningExecution = task?.running_execution
 
   if (runningExecution?.progress !== undefined) {
-    return `${taskName}正在执行中，当前进度 ${runningExecution.progress}%，请稍后再试`
+    return `${taskName}Executing, current progress ${runningExecution.progress}%, Please try again later`
   }
 
   const progress = getTaskDisplayProgress(jobId)
   if (progress?.progress !== undefined) {
-    return `${taskName}正在执行中，当前进度 ${progress.progress}%，请稍后再试`
+    return `${taskName}Executing, current progress ${progress.progress}%, Please try again later`
   }
 
-  return `${taskName}正在执行中，请稍后再试`
+  return `${taskName}Executing, please try again later`
 }
 
 const getTaskActiveProgress = (jobId: string): number | null => {
@@ -1053,12 +1053,12 @@ const getTaskActiveStartedAt = (jobId: string): string | null => {
   return progress.started_at || null
 }
 
-// 计算已用时间
+// Calculate elapsed time
 const calculateElapsedTime = (startedAt: string): string => {
   if (!startedAt) return '--'
   
   try {
-    // 处理时区问题：如果字符串没有时区信息，添加 +08:00（后端存储为 UTC+8）
+    // Handling time zone issues: If the string has no time zone information, add +08:00 (The backend is stored as UTC+8) 
     let startedAtStr = String(startedAt).trim()
     if (startedAtStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/) && 
         !startedAtStr.endsWith('Z') && 
@@ -1070,23 +1070,23 @@ const calculateElapsedTime = (startedAt: string): string => {
     const start = new Date(startedAtStr)
     const now = new Date()
     
-    // 检查日期是否有效
+    // Check if the date is valid
     if (isNaN(start.getTime())) {
-      console.warn('无效的开始时间:', startedAt)
+      console.warn('Invalid start time:', startedAt)
       return '--'
     }
     
     const diffMs = now.getTime() - start.getTime()
     
-    // 如果时间差为负数或过大（超过7天），可能是数据异常
+    // If the time difference is negative or too large (more than 7 days), it may be a data anomaly.
     if (diffMs < 0) {
-      console.warn('开始时间晚于当前时间:', startedAt, '当前时间:', now.toISOString())
+      console.warn('Start time is later than current time:', startedAt, 'current time:', now.toISOString())
       return '--'
     }
     
-    // 如果时间差超过7天（604800000毫秒），可能是数据异常，显示警告
+    // If the time difference exceeds 7 days (604800000 milliseconds), the data may be abnormal and a warning will be displayed.
     if (diffMs > 7 * 24 * 60 * 60 * 1000) {
-      console.warn('已用时间异常大（超过7天）:', startedAt, '已用时间:', diffMs / 1000 / 60, '分钟')
+      console.warn('The elapsed time is unusually large (more than 7 days):', startedAt, 'elapsed time:', diffMs / 1000 / 60, 'minutes')
     }
     
     const seconds = Math.floor(diffMs / 1000)
@@ -1094,24 +1094,24 @@ const calculateElapsedTime = (startedAt: string): string => {
     const hours = Math.floor(minutes / 60)
     
     if (hours > 0) {
-      return `${hours}小时${minutes % 60}分钟`
+      return `${hours}hours${minutes % 60}minutes`
     } else if (minutes > 0) {
-      return `${minutes}分钟${seconds % 60}秒`
+      return `${minutes}minutes${seconds % 60}seconds`
     } else {
-      return `${seconds}秒`
+      return `${seconds}seconds`
     }
   } catch (e) {
-    console.error('计算已用时间失败:', e, 'startedAt:', startedAt)
+    console.error('Calculating elapsed time failed:', e, 'startedAt:', startedAt)
     return '--'
   }
 }
 
-// 计算剩余时间
+// Calculate remaining time
 const calculateRemainingTime = (startedAt: string, progress: number): string => {
   if (!startedAt || progress <= 0 || progress >= 100) return '--'
   
   try {
-    // 处理时区问题：如果字符串没有时区信息，添加 +08:00（后端存储为 UTC+8）
+    // Handling time zone issues: If the string has no time zone information, add +08:00 (The backend is stored as UTC+8) 
     let startedAtStr = String(startedAt).trim()
     if (startedAtStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/) && 
         !startedAtStr.endsWith('Z') && 
@@ -1123,26 +1123,26 @@ const calculateRemainingTime = (startedAt: string, progress: number): string => 
     const start = new Date(startedAtStr)
     const now = new Date()
     
-    // 检查日期是否有效
+    // Check if the date is valid
     if (isNaN(start.getTime())) {
-      console.warn('无效的开始时间:', startedAt)
+      console.warn('Invalid start time:', startedAt)
       return '--'
     }
     
     const elapsedMs = now.getTime() - start.getTime()
     
-    // 如果时间差为负数或过大，可能是数据异常
+    // If the time difference is negative or too large, it may be a data anomaly.
     if (elapsedMs < 0) {
-      console.warn('开始时间晚于当前时间:', startedAt)
+      console.warn('Start time is later than current time:', startedAt)
       return '--'
     }
     
-    // 如果进度为0或100%，无法计算剩余时间
+    // If the progress is 0 or 100%, the remaining time cannot be calculated
     if (progress <= 0 || progress >= 100) {
       return '--'
     }
     
-    // 已花时间 / 进度百分比 = 预计总时间
+    // Time spent / progress percentage = Estimated total time
     const progressDecimal = progress / 100
     if (progressDecimal <= 0 || progressDecimal >= 1) {
       return '--'
@@ -1151,7 +1151,7 @@ const calculateRemainingTime = (startedAt: string, progress: number): string => 
     const totalMs = elapsedMs / progressDecimal
     const remainingMs = totalMs - elapsedMs
     
-    // 如果剩余时间为负数或异常大，返回 '--'
+    // If the remaining time is negative or unusually large, return '--'
     if (remainingMs < 0 || remainingMs > 7 * 24 * 60 * 60 * 1000) {
       return '--'
     }
@@ -1161,69 +1161,69 @@ const calculateRemainingTime = (startedAt: string, progress: number): string => 
     const hours = Math.floor(minutes / 60)
     
     if (hours > 0) {
-      return `${hours}小时${minutes % 60}分钟`
+      return `${hours}hours${minutes % 60}minutes`
     } else if (minutes > 0) {
-      return `${minutes}分钟${seconds % 60}秒`
+      return `${minutes}minutes${seconds % 60}seconds`
     } else {
-      return `${seconds}秒`
+      return `${seconds}seconds`
     }
   } catch (e) {
-    console.error('计算剩余时间失败:', e, 'startedAt:', startedAt, 'progress:', progress)
+    console.error('Calculating remaining time failed:', e, 'startedAt:', startedAt, 'progress:', progress)
     return '--'
   }
 }
 
-// 恢复挂起的任务
+// Resume a suspended task
 const handleResumeSuspendedTask = async (jobId: string, executionId: string) => {
   try {
     const { resumeSuspendedExecution } = await import('@/api/scheduler')
     const response = await resumeSuspendedExecution(executionId)
     
     if (response.success) {
-      ElMessage.success('任务已恢复执行，将从上次进度位置继续')
+      ElMessage.success('The task has resumed execution and will continue from the last progress position')
       
-      // 🔥 立即清除挂起任务显示（不需要等待后端查询）
-      // 找到对应的任务并清除挂起状态
+      // 🔥 Clear pending task display immediately (no need to wait for backend query)
+      // Find the corresponding task and clear the pending status
       const taskIndex = allTasks.value.findIndex(t => t.id === jobId)
       if (taskIndex !== -1) {
         allTasks.value[taskIndex].has_suspended_execution = false
         allTasks.value[taskIndex].suspended_execution = undefined
       }
       
-      // 重新加载任务列表（确保数据同步）
+      // Reload task list (make sure data is in sync)
       await loadTasks()
       
-      // 🔥 2秒后再次刷新任务列表，确保状态已更新
+      // 🔥 2 Refresh the task list again after seconds to ensure the status has been updated
       setTimeout(async () => {
         await loadTasks()
-        // 🔥 通知父组件刷新（用于多数据源同步页面）
+        // 🔥 Notify the parent component to refresh (for multi-data source synchronization page)
         emit('task-resumed')
       }, 2000)
       
-      // 🔥 立即通知父组件刷新
+      // 🔥 Immediately notify the parent component to refresh
       emit('task-resumed')
       
-      // 加载进度并开始轮询
+      // Load progress and start polling
       await loadTaskProgress(jobId)
       startProgressPolling()
     } else {
-      ElMessage.error(`恢复任务失败: ${response.message || '未知错误'}`)
+      ElMessage.error(`Recovery task failed: ${response.message || 'unknown error'}`)
     }
   } catch (err: any) {
-    ElMessage.error(`恢复任务失败: ${err.message}`)
-    console.error('恢复挂起任务失败:', err)
+    ElMessage.error(`Recovery task failed: ${err.message}`)
+    console.error('Failed to resume suspended task:', err)
   }
 }
 
-// 🔥 终止运行中的任务
+// 🔥 Terminate a running task
 const handleTerminateTask = async (jobId: string, executionId: string) => {
   try {
     await ElMessageBox.confirm(
-      '确定要终止当前正在执行的任务吗？',
-      '确认终止',
+      'Are you sure you want to terminate the currently executing task?',
+      'Confirm termination',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning',
         center: true
       }
@@ -1232,32 +1232,32 @@ const handleTerminateTask = async (jobId: string, executionId: string) => {
     const response = await cancelExecution(executionId)
     
     if (response.success) {
-      ElMessage.success('已发送终止请求，任务将在下次检查时停止')
+      ElMessage.success('Termination request sent, task will be stopped on next check')
       
-      // 🔥 立即刷新进度，更新状态
+      // 🔥 Refresh progress and update status immediately
       await loadTaskProgress(jobId)
       
-      // 🔥 2秒后再次刷新，确保状态已更新为终止
+      // 🔥 2 Refresh again after seconds to ensure the status has been updated to terminated
       setTimeout(async () => {
         await loadTaskProgress(jobId)
-        // 重新加载任务列表，确保状态同步
+        // Reload the task list to ensure the status is synchronized
         await loadTasks()
       }, 2000)
       
-      // 继续轮询以获取最新状态
+      // Keep polling for the latest status
       startProgressPolling()
     } else {
-      ElMessage.error(`终止任务失败: ${response.message || '未知错误'}`)
+      ElMessage.error(`Failed to terminate task: ${response.message || 'unknown error'}`)
     }
   } catch (err: any) {
     if (err !== 'cancel') {
-      ElMessage.error(`终止任务失败: ${err.message}`)
-      console.error('终止任务失败:', err)
+      ElMessage.error(`Failed to terminate task: ${err.message}`)
+      console.error('Failed to terminate task:', err)
     }
   }
 }
 
-// 触发任务执行
+// Trigger task execution
 const handleTriggerTask = async (jobId: string, fullSync: boolean = false) => {
   try {
     if (isTaskRunning(jobId)) {
@@ -1265,10 +1265,10 @@ const handleTriggerTask = async (jobId: string, fullSync: boolean = false) => {
       return
     }
 
-    // 🔥 检查是否有挂起任务
+    // 🔥 Check if there are any pending tasks
     const task = allTasks.value.find(t => t.id === jobId)
     if (task?.has_suspended_execution && task.suspended_execution) {
-      // 有挂起任务，提示用户选择
+      // There are pending tasks, prompting the user to choose
       const suspendedExec = task.suspended_execution
       const progress = suspendedExec.progress || 0
       const processed = suspendedExec.processed_items || 0
@@ -1276,145 +1276,145 @@ const handleTriggerTask = async (jobId: string, fullSync: boolean = false) => {
       
       try {
         await ElMessageBox.confirm(
-          `检测到有挂起任务（进度: ${progress}%，已处理: ${processed}/${total}）\n\n请选择：`,
-          '检测到挂起任务',
+          `Pending tasks detected (progress: ${progress}%, Processed: ${processed}/${total}) \n\n Please select:`,
+          'Pending task detected',
           {
-            confirmButtonText: '从挂起任务继续执行',
-            cancelButtonText: '重新开始',
+            confirmButtonText: 'Resume execution from a suspended task',
+            cancelButtonText: 'Start over',
             distinguishCancelAndClose: true,
             type: 'warning',
             center: true
           }
         )
         
-        // 用户选择"从挂起任务继续执行"
+        // User selection"Resume execution from a suspended task"
         if (suspendedExec.execution_id) {
           await handleResumeSuspendedTask(jobId, suspendedExec.execution_id)
           return
         }
       } catch (action: any) {
-        // 用户选择"重新开始"或取消
+        // User selection"Start over"or cancel
         if (action === 'cancel') {
-          // 用户选择重新开始，先清除挂起任务
+          // The user chooses to start over, clearing pending tasks first
           if (suspendedExec.execution_id) {
             try {
               const { cancelExecution } = await import('@/api/scheduler')
               await cancelExecution(suspendedExec.execution_id)
-              ElMessage.success('已清除挂起任务，将重新开始执行')
+              ElMessage.success('Pending tasks have been cleared and execution will resume')
               
-              // 🔥 立即清除挂起任务显示（不需要等待重新加载）
+              // 🔥 Clear pending task display immediately (no need to wait for reload)
               const taskIndex = allTasks.value.findIndex(t => t.id === jobId)
               if (taskIndex !== -1) {
                 allTasks.value[taskIndex].has_suspended_execution = false
                 allTasks.value[taskIndex].suspended_execution = undefined
               }
               
-              // 重新加载任务列表，确保数据同步
+              // Reload the task list to ensure data synchronization
               await loadTasks()
             } catch (err: any) {
-              console.warn(`清除挂起任务失败: ${err.message}`)
-              // 即使清除失败，也继续执行新任务
+              console.warn(`Failed to clear pending tasks: ${err.message}`)
+              // Continue with new tasks even if cleanup fails
             }
           }
-          // 继续执行下面的代码（重新开始）
+          // Continue executing the code below (start over)
         } else {
-          // 用户关闭对话框，不执行任何操作
+          // User closes dialog box without performing any action
           return
         }
       }
     }
     
-    // 执行新任务（重新开始）
+    // Perform a new task (start over)
     taskTriggering.value[jobId] = true
     delete taskProgress.value[jobId]
     
     const options: { incremental?: boolean; force?: boolean } = {}
     if (isHistoricalTask(jobId)) {
-      options.incremental = !fullSync  // fullSync=true 时，incremental=false（全量同步）
+      options.incremental = !fullSync  // fullSync=true when,incremental=false (Full synchronization)
     }
     
     try {
       await triggerJob(jobId, options)
-      const syncMode = isHistoricalTask(jobId) ? (fullSync ? '全量同步' : '增量同步') : ''
-      ElMessage.success(`任务已触发执行${syncMode ? `（${syncMode}）` : ''}`)
+      const syncMode = isHistoricalTask(jobId) ? (fullSync ? 'Full synchronization' : 'Incremental synchronization') : ''
+      ElMessage.success(`Task execution has been triggered${syncMode ? ` (${syncMode}) ` : ''}`)
       
-      // 重新加载任务列表（确保数据同步）
+      // Reload task list (make sure data is in sync)
       await loadTasks()
       
-      // 🔥 2秒后再次刷新任务列表，确保状态已更新
+      // 🔥 2 Refresh the task list again after seconds to ensure the status has been updated
       setTimeout(async () => {
         await loadTasks()
       }, 2000)
       
-      // 开始轮询进度
+      // Start polling progress
       await loadTaskProgress(jobId)
       startProgressPolling()
     } catch (err: any) {
-      // 🔥 处理 409 错误（任务正在运行，需要用户确认是否强制执行）
+      // 🔥 Handling 409 errors (the task is running and requires user confirmation whether to force execution)
       if (err.response?.status === 409) {
         const errorDetail = err.response?.data?.detail || {}
-        const message = errorDetail.message || '任务已有实例正在运行中'
-        const suggestion = errorDetail.suggestion || '是否强制执行？强制执行将跳过并发检查，可能导致重复执行。'
+        const message = errorDetail.message || 'An instance of the task is already running'
+        const suggestion = errorDetail.suggestion || 'Is it enforceable? Forcing execution will skip concurrency checks, potentially causing duplicate executions.'
         const runningProgress = errorDetail.running_progress || 0
         const runningStartTime = errorDetail.running_start_time
         
         try {
           await ElMessageBox.confirm(
-            `${message}\n\n${runningProgress > 0 ? `当前进度: ${runningProgress}%\n` : ''}${runningStartTime ? `开始时间: ${new Date(runningStartTime).toLocaleString()}\n\n` : ''}${suggestion}`,
-            '任务正在运行',
+            `${message}\n\n${runningProgress > 0 ? `Current progress: ${runningProgress}%\n` : ''}${runningStartTime ? `start time: ${new Date(runningStartTime).toLocaleString()}\n\n` : ''}${suggestion}`,
+            'Task is running',
             {
-              confirmButtonText: '强制执行',
-              cancelButtonText: '取消',
+              confirmButtonText: 'enforce',
+              cancelButtonText: 'Cancel',
               type: 'warning',
               distinguishCancelAndClose: true
             }
           )
           
-          // 用户确认强制执行，传递 force=true
+          // User confirmation enforces, passing force=true
           options.force = true
           delete taskProgress.value[jobId]
           await triggerJob(jobId, options)
-          const syncMode = isHistoricalTask(jobId) ? (fullSync ? '全量同步' : '增量同步') : ''
-          ElMessage.success(`任务已强制执行${syncMode ? `（${syncMode}）` : ''}`)
+          const syncMode = isHistoricalTask(jobId) ? (fullSync ? 'Full synchronization' : 'Incremental synchronization') : ''
+          ElMessage.success(`Task has been enforced${syncMode ? ` (${syncMode}) ` : ''}`)
           
-          // 重新加载任务列表（确保数据同步）
+          // Reload task list (make sure data is in sync)
           await loadTasks()
           
-          // 🔥 2秒后再次刷新任务列表，确保状态已更新
+          // 🔥 2 Refresh the task list again after seconds to ensure the status has been updated
           setTimeout(async () => {
             await loadTasks()
-            // 🔥 通知父组件刷新（用于多数据源同步页面）
+            // 🔥 Notify the parent component to refresh (for multi-data source synchronization page)
             emit('task-triggered')
           }, 2000)
           
-          // 🔥 立即通知父组件刷新
+          // 🔥 Immediately notify the parent component to refresh
           emit('task-triggered')
           
-          // 开始轮询进度
+          // Start polling progress
           await loadTaskProgress(jobId)
           startProgressPolling()
         } catch (confirmError: any) {
-          // 用户取消或关闭对话框，不执行任何操作
+          // User cancels or closes the dialog box without performing any action
           if (confirmError !== 'cancel' && confirmError !== 'close') {
-            ElMessage.error('强制执行失败: ' + (confirmError.message || '未知错误'))
+            ElMessage.error('Force execution failed: ' + (confirmError.message || 'unknown error'))
           }
         }
       } else {
-        // 其他错误
+        // Other errors
         throw err
       }
     }
   } catch (err: any) {
-    // 忽略用户取消对话框的错误
+    // Ignore errors when user cancels dialog box
     if (err !== 'cancel' && err !== 'close') {
-      ElMessage.error(`触发任务失败: ${err.message}`)
+      ElMessage.error(`Failed to trigger task: ${err.message}`)
     }
   } finally {
     taskTriggering.value[jobId] = false
   }
 }
 
-// 开始进度轮询
+// Start progress polling
 const startProgressPolling = () => {
   if (progressPollingTimer.value) {
     clearInterval(progressPollingTimer.value)
@@ -1423,28 +1423,28 @@ const startProgressPolling = () => {
   progressPollingTimer.value = setInterval(async () => {
     let hasRunningTask = false
     
-    // 只轮询已启用的相关任务
+    // Only poll related tasks that are enabled
     const relevantTasks = allTasks.value.filter(isRelevantTask).filter(t => !t.paused)
     
     for (const task of relevantTasks) {
       await loadTaskProgress(task.id)
       
-      // 检查是否有运行中的任务（包括 suspended 状态）
+      // Check if there are any running tasks (including suspended state)
       const progress = getTaskDisplayProgress(task.id)
       if (progress && ACTIVE_PROGRESS_STATUSES.has(progress.status)) {
         hasRunningTask = true
       }
     }
     
-    // 如果没有运行中的任务，停止轮询
+    // If there are no running tasks, stop polling
     if (!hasRunningTask) {
       await loadTasks()
       stopProgressPolling()
     }
-  }, 3000) // 每3秒轮询一次
+  }, 3000) // Poll every 3 seconds
 }
 
-// 停止进度轮询
+// Stop progress polling
 const stopProgressPolling = () => {
   if (progressPollingTimer.value) {
     clearInterval(progressPollingTimer.value)
@@ -1452,28 +1452,28 @@ const stopProgressPolling = () => {
   }
 }
 
-// 获取进度状态
+// Get progress status
 const getProgressStatus = (status?: string): 'success' | 'exception' | 'warning' => {
   if (status === 'success') return 'success'
   if (status === 'failed') return 'exception'
   return 'warning'
 }
 
-// 格式化数据源名称显示
+// Format data source name display
 const formatDataSourceName = (sourceName: string): string => {
   const nameMap: Record<string, string> = {
     'akshare': 'AKSHARE',
     'tushare': 'TUSHARE',
     'baostock': 'BAOSTOCK',
-    'multi_source': '多数据源',
+    'multi_source': 'Multiple data sources',
     'unknown': 'UNKNOWN'
   }
   return nameMap[sourceName.toLowerCase()] || sourceName.toUpperCase()
 }
 
-// 获取数据源标签类型
+// Get data source label type
 const getDataSourceTagType = (sourceName: string): 'success' | 'warning' | 'info' | 'danger' => {
-  // 🔥 特殊处理：多数据源任务显示为 success 类型
+  // 🔥 Special handling: multi-data source tasks are displayed as success type
   if (sourceName === 'multi_source') {
     return 'success'
   }
@@ -1485,7 +1485,7 @@ const getDataSourceTagType = (sourceName: string): 'success' | 'warning' | 'info
   return 'danger'
 }
 
-// 格式化时间
+// Format time
 const formatTime = (isoString?: string) => {
   if (!isoString) return '-'
   try {
@@ -1503,11 +1503,11 @@ const formatTime = (isoString?: string) => {
   }
 }
 
-// 从trigger字符串中提取CRON表达式
+// Extract CRON expression from trigger string
 const extractCronFromTrigger = (trigger?: string): string => {
   if (!trigger) return ''
   
-  // 尝试匹配 cron[minute='X', hour='Y', ...] 格式
+  // try to match cron[minute='X', hour='Y', ...] Format
   const cronMatch = trigger.match(/cron\[(.*?)\]/)
   if (cronMatch) {
     const params = cronMatch[1]
@@ -1526,7 +1526,7 @@ const extractCronFromTrigger = (trigger?: string): string => {
     return `${minute} ${hour} ${day} ${month} ${dayOfWeek}`
   }
   
-  // 如果已经是CRON格式（5个空格分隔的数字/符号）
+  // If already in CRON format (5 space separated numbers/symbols)
   const parts = trigger.trim().split(/\s+/)
   if (parts.length === 5) {
     return trigger.trim()
@@ -1535,23 +1535,23 @@ const extractCronFromTrigger = (trigger?: string): string => {
   return ''
 }
 
-// 格式化调度描述（将CRON表达式转换为人类可读的描述）
+// Format schedule description (convert CRON expression into human-readable description)
 const formatScheduleDescription = (trigger?: string): string => {
   if (!trigger) return ''
   
   const cron = extractCronFromTrigger(trigger)
   if (!cron) {
-    // 如果不是CRON格式，尝试显示原始trigger
+    // If it is not in CRON format, try to display the original trigger
     if (trigger.includes('interval')) {
       const intervalMatch = trigger.match(/interval\[seconds=(\d+)\]/)
       if (intervalMatch) {
         const seconds = parseInt(intervalMatch[1])
         if (seconds < 60) {
-          return `每${seconds}秒执行一次`
+          return `every${seconds}Execute once per second`
         } else if (seconds < 3600) {
-          return `每${Math.floor(seconds / 60)}分钟执行一次`
+          return `every${Math.floor(seconds / 60)}Execute once every minute`
         } else {
-          return `每${Math.floor(seconds / 3600)}小时执行一次`
+          return `every${Math.floor(seconds / 3600)}Execute once every hour`
         }
       }
     }
@@ -1563,53 +1563,53 @@ const formatScheduleDescription = (trigger?: string): string => {
   
   const [minute, hour, , , dayOfWeek] = parts
   
-  // 解析时间
+  // parsing time
   const hourNum = parseInt(hour)
   const minuteNum = parseInt(minute)
   const timeStr = hourNum >= 0 && hourNum < 24 && minuteNum >= 0 && minuteNum < 60
     ? `${hourNum.toString().padStart(2, '0')}:${minuteNum.toString().padStart(2, '0')}`
     : ''
   
-  // 解析频率
+  // Analyze frequency
   let freqDesc = ''
   if (dayOfWeek === '*') {
-    freqDesc = '每天'
+    freqDesc = 'every day'
   } else if (dayOfWeek === '1-5') {
-    freqDesc = '工作日（周一至周五）'
+    freqDesc = 'Working days (Monday to Friday)'
   } else if (dayOfWeek === '0,6' || dayOfWeek === '6,0') {
-    freqDesc = '周末（周六、周日）'
+    freqDesc = 'Weekends (Saturday, Sunday)'
   } else if (dayOfWeek === '1') {
-    freqDesc = '每周一'
+    freqDesc = 'Every Monday'
   } else if (dayOfWeek === '2') {
-    freqDesc = '每周二'
+    freqDesc = 'Every Tuesday'
   } else if (dayOfWeek === '3') {
-    freqDesc = '每周三'
+    freqDesc = 'every Wednesday'
   } else if (dayOfWeek === '4') {
-    freqDesc = '每周四'
+    freqDesc = 'every Thursday'
   } else if (dayOfWeek === '5') {
-    freqDesc = '每周五'
+    freqDesc = 'every friday'
   } else if (dayOfWeek === '6') {
-    freqDesc = '每周六'
+    freqDesc = 'every Saturday'
   } else if (dayOfWeek === '0') {
-    freqDesc = '每周日'
+    freqDesc = 'every sunday'
   } else if (dayOfWeek.includes(',')) {
-    freqDesc = `每周${dayOfWeek.split(',').map(d => {
-      const dayNames = ['日', '一', '二', '三', '四', '五', '六']
+    freqDesc = `weekly${dayOfWeek.split(',').map(d => {
+      const dayNames = ['day', 'one', 'two', 'three', 'Four', 'five', 'six']
       return dayNames[parseInt(d)] || d
     }).join('、')}`
   } else {
     freqDesc = `CRON: ${cron}`
   }
   
-  return timeStr ? `${freqDesc} ${timeStr} 执行` : freqDesc
+  return timeStr ? `${freqDesc} ${timeStr} execute` : freqDesc
 }
 
-// 组件挂载时加载数据
+// Load data when component is mounted
 onMounted(() => {
   loadTasks()
 })
 
-// 组件卸载时停止轮询
+// Stop polling when component is uninstalled
 onUnmounted(() => {
   stopProgressPolling()
 })

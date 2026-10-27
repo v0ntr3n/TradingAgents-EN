@@ -1,10 +1,10 @@
 """
-统一数据源提供器包
-按市场分类组织数据提供器
+Unified data source provider package
+Organize data providers by market classification
 """
 from .base_provider import BaseStockDataProvider
 
-# 导入中国市场提供器（新路径）
+# Import China market provider (new path)
 try:
     from .china import (
         AKShareProvider,
@@ -15,7 +15,7 @@ try:
         BAOSTOCK_AVAILABLE
     )
 except ImportError:
-    # 向后兼容：尝试从旧路径导入
+    # Backward compatibility: try importing from old path
     try:
         from .tushare_provider import TushareProvider
     except ImportError:
@@ -35,7 +35,7 @@ except ImportError:
     TUSHARE_AVAILABLE = TushareProvider is not None
     BAOSTOCK_AVAILABLE = BaoStockProvider is not None
 
-# 导入港股提供器
+# Import Hong Kong stock provider
 try:
     from .hk import (
         ImprovedHKStockProvider,
@@ -47,7 +47,7 @@ except ImportError:
     get_improved_hk_provider = None
     HK_PROVIDER_AVAILABLE = False
 
-# 导入美股提供器
+# Import US stock provider
 try:
     from .us import (
         YFinanceUtils,
@@ -58,7 +58,7 @@ try:
         FINNHUB_AVAILABLE
     )
 except ImportError:
-    # 向后兼容：尝试从旧路径导入
+    # Backward compatibility: try importing from old path
     try:
         from ..yfin_utils import YFinanceUtils
     except ImportError:
@@ -78,7 +78,7 @@ except ImportError:
     OPTIMIZED_US_AVAILABLE = OptimizedUSDataProvider is not None
     FINNHUB_AVAILABLE = get_data_in_range is not None
 
-# 其他提供器（预留）
+# Other providers (reserved)
 try:
     from .yahoo_provider import YahooProvider
 except ImportError:
@@ -89,17 +89,17 @@ try:
 except ImportError:
     FinnhubProvider = None
 
-# TDXProvider 已移除
+# TDXProvider Removed
 # try:
 #     from .tdx_provider import TDXProvider
 # except ImportError:
 #     TDXProvider = None
 
 __all__ = [
-    # 基类
+    # base class
     'BaseStockDataProvider',
 
-    # 中国市场
+    # Chinese market
     'TushareProvider',
     'AKShareProvider',
     'BaoStockProvider',
@@ -107,12 +107,12 @@ __all__ = [
     'TUSHARE_AVAILABLE',
     'BAOSTOCK_AVAILABLE',
 
-    # 港股
+    # Hong Kong stocks
     'ImprovedHKStockProvider',
     'get_improved_hk_provider',
     'HK_PROVIDER_AVAILABLE',
 
-    # 美股
+    # US stocks
     'YFinanceUtils',
     'OptimizedUSDataProvider',
     'get_data_in_range',
@@ -120,8 +120,8 @@ __all__ = [
     'OPTIMIZED_US_AVAILABLE',
     'FINNHUB_AVAILABLE',
 
-    # 其他（预留）
+    # Others (reserved)
     'YahooProvider',
     'FinnhubProvider',
-    # 'TDXProvider'  # 已移除
+    # 'TDXProvider'  # Removed
 ]

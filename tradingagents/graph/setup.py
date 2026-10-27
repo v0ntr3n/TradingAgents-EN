@@ -11,7 +11,7 @@ from tradingagents.agents.utils.agent_utils import Toolkit
 
 from .conditional_logic import ConditionalLogic
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
@@ -48,11 +48,11 @@ class GraphSetup:
         self.config = config or {}
         self.react_llm = react_llm
 
-        # 缓存扩展分析师注册表
+        # Cache extension analyst registry
         self._extension_registry = None
         self._no_tool_analysts = set()
 
-        # 分析师名称映射
+        # Analyst name mapping
         self._analyst_name_mapping = {
             "market": "Market",
             "social": "Social",
@@ -63,17 +63,17 @@ class GraphSetup:
         }
 
     def _get_analyst_display_name(self, analyst_type: str) -> str:
-        """获取分析师的显示名称"""
+        """Get the analyst s display name"""
         return self._analyst_name_mapping.get(analyst_type, analyst_type.capitalize())
 
     def _get_extension_registry(self):
-        """获取扩展分析师注册表（延迟加载）"""
+        """Get extended analyst registry (lazy loading)"""
         if self._extension_registry is None:
             try:
                 from core.agents.analyst_registry import get_analyst_registry
                 self._extension_registry = get_analyst_registry()
             except ImportError:
-                logger.debug("📋 [DEBUG] core.agents.analyst_registry 不可用，跳过扩展分析师")
+                logger.debug("📋 [DEBUG] core.agents.analyst_registry Not available, skip extension analyst")
                 self._extension_registry = False
         return self._extension_registry if self._extension_registry else None
 
@@ -84,34 +84,34 @@ class GraphSetup:
         delete_nodes: dict
     ):
         """
-        从 AnalystRegistry 动态加载扩展分析师
+        Dynamically load extension analysts from AnalystRegistry
 
-        扩展分析师是指不需要工具调用循环的分析师，
-        如 SectorAnalyst、IndexAnalyst 等
+        An extended analyst is an analyst who does not require a tool call loop,
+        Such as SectorAnalyst, IndexAnalyst, etc.
         """
         registry = self._get_extension_registry()
         if not registry:
             return
 
         for analyst_id in selected_analysts:
-            # 跳过已处理的内置分析师
+            # Skip processed built-in analysts
             if analyst_id in analyst_nodes:
                 continue
 
-            # 检查是否在注册表中
+            # Check if it is in the registry
             if not registry.is_registered(analyst_id):
                 continue
 
-            # 获取元数据
+            # Get metadata
             metadata = registry.get_analyst_metadata(analyst_id)
             if not metadata:
                 continue
 
-            # 只处理不需要工具调用的分析师
+            # Only handle analysts who do not require tool calls
             if metadata.requires_tools:
                 continue
 
-            # 创建分析师实例
+            # Create an analyst instance
             agent_class = registry.get_analyst_class(analyst_id)
             if agent_class:
                 agent = agent_class()
@@ -120,7 +120,7 @@ class GraphSetup:
                 analyst_nodes[analyst_id] = lambda state, a=agent: a.execute(state)
                 delete_nodes[analyst_id] = create_msg_delete()
                 self._no_tool_analysts.add(analyst_id)
-                logger.info(f"📋 [扩展] 已加载分析师: {metadata.name}")
+                logger.info(f"📋 [Expand] Analyst loaded: {metadata.name}")
 
     def setup_graph(
         self, selected_analysts=["market", "social", "news", "fundamentals"]
@@ -133,8 +133,8 @@ class GraphSetup:
                 - "social": Social media analyst
                 - "news": News analyst
                 - "fundamentals": Fundamentals analyst
-                - "sector": Sector/Industry analyst (板块分析师)
-                - "index": Index/Market analyst (大盘分析师)
+                - "sector": Sector/Industry analyst (Sector Analyst)
+                - "index": Index/Market analyst (Market Analyst)
         """
         if len(selected_analysts) == 0:
             raise ValueError("Trading Agents Graph Setup Error: no analysts selected!")
@@ -145,10 +145,10 @@ class GraphSetup:
         tool_nodes = {}
 
         if "market" in selected_analysts:
-            # 现在所有LLM都使用标准市场分析师（包括阿里百炼的OpenAI兼容适配器）
+            # All LLMs now use standard market analysts (including Alibaba Bailian's OpenAI compatible adapter)
             llm_provider = self.config.get("llm_provider", "").lower()
 
-            # 检查是否使用OpenAI兼容的阿里百炼适配器
+            # Check whether the OpenAI compatible Alibaba Lian adapter is used
             using_dashscope_openai = (
                 "dashscope" in llm_provider and
                 hasattr(self.quick_thinking_llm, '__class__') and
@@ -156,15 +156,15 @@ class GraphSetup:
             )
 
             if using_dashscope_openai:
-                logger.debug(f"📈 [DEBUG] 使用标准市场分析师（阿里百炼OpenAI兼容模式）")
-            elif "dashscope" in llm_provider or "阿里百炼" in self.config.get("llm_provider", ""):
-                logger.debug(f"📈 [DEBUG] 使用标准市场分析师（阿里百炼原生模式）")
+                logger.debug(f"📈 [DEBUG] Use standard market analysts (Alibaba Bailian OpenAI compatible mode)")
+            elif "dashscope" in llm_provider or "Ali Bailian" in self.config.get("llm_provider", ""):
+                logger.debug(f"📈 [DEBUG] Use standard market analysts (Alibaba Bailian native mode)")
             elif "deepseek" in llm_provider:
-                logger.debug(f"📈 [DEBUG] 使用标准市场分析师（DeepSeek）")
+                logger.debug(f"📈 [DEBUG] Use Standard Market Analyst (DeepSeek)")
             else:
-                logger.debug(f"📈 [DEBUG] 使用标准市场分析师")
+                logger.debug(f"📈 [DEBUG] Use standard market analysts")
 
-            # 所有LLM都使用标准分析师
+            # All LLMs use standard analysts
             analyst_nodes["market"] = create_market_analyst(
                 self.quick_thinking_llm, self.toolkit
             )
@@ -186,10 +186,10 @@ class GraphSetup:
             tool_nodes["news"] = self.tool_nodes["news"]
 
         if "fundamentals" in selected_analysts:
-            # 现在所有LLM都使用标准基本面分析师（包括阿里百炼的OpenAI兼容适配器）
+            # All LLMs now use standard fundamental analysts (including Alibaba Bailian's OpenAI compatible adapter)
             llm_provider = self.config.get("llm_provider", "").lower()
 
-            # 检查是否使用OpenAI兼容的阿里百炼适配器
+            # Check whether the OpenAI compatible Alibaba Lian adapter is used
             using_dashscope_openai = (
                 "dashscope" in llm_provider and
                 hasattr(self.quick_thinking_llm, '__class__') and
@@ -197,41 +197,41 @@ class GraphSetup:
             )
 
             if using_dashscope_openai:
-                logger.debug(f"📊 [DEBUG] 使用标准基本面分析师（阿里百炼OpenAI兼容模式）")
-            elif "dashscope" in llm_provider or "阿里百炼" in self.config.get("llm_provider", ""):
-                logger.debug(f"📊 [DEBUG] 使用标准基本面分析师（阿里百炼原生模式）")
+                logger.debug(f"📊 [DEBUG] Use standard fundamental analysts (Alibaba Bailian OpenAI compatible mode)")
+            elif "dashscope" in llm_provider or "Ali Bailian" in self.config.get("llm_provider", ""):
+                logger.debug(f"📊 [DEBUG] Use standard fundamental analysts (Alibaba Bailian native mode)")
             elif "deepseek" in llm_provider:
-                logger.debug(f"📊 [DEBUG] 使用标准基本面分析师（DeepSeek）")
+                logger.debug(f"📊 [DEBUG] Using standard fundamental analysts (DeepSeek)")
             else:
-                logger.debug(f"📊 [DEBUG] 使用标准基本面分析师")
+                logger.debug(f"📊 [DEBUG] Use standard fundamental analysts")
 
-            # 所有LLM都使用标准分析师（包含强制工具调用机制）
+            # All LLMs use standard analysts (including forced tool invocation mechanism)
             analyst_nodes["fundamentals"] = create_fundamentals_analyst(
                 self.quick_thinking_llm, self.toolkit
             )
             delete_nodes["fundamentals"] = create_msg_delete()
             tool_nodes["fundamentals"] = self.tool_nodes["fundamentals"]
 
-        # 🆕 大盘分析师和板块分析师使用自包含模式，不需要工具调用
+        # 🆕 Market analysts and sector analysts use self-contained mode and do not require tool calls
         if "index_analyst" in selected_analysts:
             analyst_nodes["index_analyst"] = create_index_analyst(
                 self.quick_thinking_llm, self.toolkit
             )
             delete_nodes["index_analyst"] = create_msg_delete()
-            # 🔧 标记为无工具调用分析师
+            # 🔧 Mark as Toolless Call Analyst
             self._no_tool_analysts.add("index_analyst")
-            logger.info("📋 添加大盘分析师 (无工具调用模式)")
+            logger.info("📋 Add market analyst (No tool invocation mode)")
 
         if "sector_analyst" in selected_analysts:
             analyst_nodes["sector_analyst"] = create_sector_analyst(
                 self.quick_thinking_llm, self.toolkit
             )
             delete_nodes["sector_analyst"] = create_msg_delete()
-            # 🔧 标记为无工具调用分析师
+            # 🔧 Mark as Toolless Call Analyst
             self._no_tool_analysts.add("sector_analyst")
-            logger.info("📋 添加板块分析师 (无工具调用模式)")
+            logger.info("📋 Add sector analyst (No tool invocation mode)")
 
-        # 🆕 从 AnalystRegistry 动态加载扩展分析师（无工具调用类型）
+        # 🆕 Dynamically load extension analysts from AnalystRegistry (no tool call type)
         self._load_extension_analysts(
             selected_analysts, analyst_nodes, delete_nodes
         )
@@ -266,7 +266,7 @@ class GraphSetup:
             workflow.add_node(
                 f"Msg Clear {display_name}", delete_nodes[analyst_type]
             )
-            # 只为需要工具的分析师添加工具节点（扩展分析师在 _no_tool_analysts 中）
+            # Add tool nodes only for analysts who need tools (extended analysts are in _no_tool_analysts)
             if analyst_type not in self._no_tool_analysts:
                 workflow.add_node(f"tools_{analyst_type}", tool_nodes[analyst_type])
 
@@ -293,12 +293,12 @@ class GraphSetup:
             current_tools = f"tools_{analyst_type}"
             current_clear = f"Msg Clear {display_name}"
 
-            # 无工具调用的分析师直接连接到下一步（扩展分析师在 _no_tool_analysts 中）
+            # Analysts without tool calls are connected directly to the next step (extended analysts are in _no_tool_analysts)
             if analyst_type in self._no_tool_analysts:
-                # 直接从分析师连接到消息清理节点
+                # Connect directly from analysts to message cleaning nodes
                 workflow.add_edge(current_analyst, current_clear)
             else:
-                # 有工具调用的分析师使用条件边
+                # Analysts with tool calls use conditional edges
                 workflow.add_conditional_edges(
                     current_analyst,
                     getattr(self.conditional_logic, f"should_continue_{analyst_type}"),

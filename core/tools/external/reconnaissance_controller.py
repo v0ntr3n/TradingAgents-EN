@@ -1,11 +1,11 @@
-"""Skill 生成前置侦察层 — LLM 驱动 + 工具调用模式。
+"""Skill Generate front-end reconnaissance layer — LLM drive + Tool calling mode.
 
-侦察层在代码生成前运行，通过 LLM function-calling 自主探索：
-- 数据库集合的字段和覆盖率
-- skill_runtime 公开 helper 的签名和用途
-- 指定股票的样本数据
+The reconnaissance layer runs before code generation and explores autonomously through LLM function-calling:
+- Fields and coverage of database collections
+- skill_runtime Expose the helper s signature and purpose
+- Sample data for specified stocks
 
-产出结构化 ImplementationFactReport，供 CodeGenerator 消费。
+Outputs a structured ImplementationFactReport for consumption by CodeGenerator.
 """
 
 from __future__ import annotations
@@ -34,28 +34,28 @@ from .skill_spec import (
 
 logger = logging.getLogger(__name__)
 
-# LLM 侦察最大工具调用轮数
-# 由 10 调整为 6：rule_report 已通过向量搜索提供 helpers，LLM 只需补充验证，
-# 不需要从头探索所有集合/模块。过多轮数会拖慢生成流程且收益递减。
+# LLM Reconnaissance maximum tool call rounds
+# Adjusted from 10 to 6: rule_report already provides helpers through vector search, LLM only needs to add verification,
+# No need to explore all collections/modules from scratch. Too many rounds will slow down the generation process and provide diminishing returns.
 MAX_RECON_TOOL_ROUNDS = 6
 
 
 class ReconnaissanceController:
-    """前置侦察层接口。"""
+    """Front reconnaissance layer interface."""
 
     def analyze(self, spec: SkillSpec) -> ImplementationFactReport:
         raise NotImplementedError
 
 
 class DefaultReconnaissanceController(ReconnaissanceController):
-    """LLM 驱动的侦察层实现。
+    """LLM Driver s reconnaissance layer implementation.
 
-    Phase 1（规则基线）：利用 RequirementAnalyzer 做静态推断，生成初始事实。
-    Phase 2（LLM 探索）：通过 UnifiedLLMClient + 工具调用，让 LLM 自主决定
-    查看哪些集合 schema、调用哪些 helper 描述、检查哪些字段覆盖率。
-    最终将 LLM 输出解析为 ImplementationFactReport。
+    Phase 1 (Rule baseline): Use RequirementAnalyzer to do static inference and generate initial facts.
+    Phase 2 (LLM Explore): Pass UnifiedLLMClient + Tool call, let LLM decide independently
+    See which collection schemas, which helper descriptions are called, which field coverage is checked.
+    The LLM output is finally parsed into an ImplementationFactReport.
 
-    如果 LLM 客户端不可用或调用失败，自动降级为纯规则模式。
+    If the LLM client is unavailable or the call fails, it automatically degrades to rule-only mode.
     """
 
     def __init__(
@@ -71,7 +71,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         self._analyzer = analyzer or RequirementAnalyzer()
 
     def _get_client(self):
-        """获取或延迟创建 LLM 客户端。"""
+        """Get or delay creation of LLM client."""
         if self._llm_client is None:
             try:
                 from core.llm import UnifiedLLMClient
@@ -80,52 +80,52 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     kwargs["model"] = self._model
                 self._llm_client = UnifiedLLMClient.from_provider(self._provider, **kwargs)
             except Exception as exc:
-                logger.warning("⚠️ 侦察层无法创建 LLM 客户端，将降级为规则模式: %s", exc)
+                logger.warning("⚠️ Recon layer cannot create LLM client and will be downgraded to rules mode: %s", exc)
                 return None
         return self._llm_client
 
     def analyze(self, spec: SkillSpec, capability_hits: list = None) -> ImplementationFactReport:
-        # Phase 1: 规则基线（快速、零成本）
+        # Phase 1: Rule baseline (fast, zero cost)
         rule_report = self._rule_based_analyze(spec, capability_hits)
 
-        # 【分层策略】根据 helper 数量决定是否启用 Phase 2
-        # - 1-2 个 helper（如质押）：直接验证签名，跳过 LLM 探索
-        # - 3+ 个 helper（如估值、现金流）：进入 Phase 2，但只做筛选，不允许探索新工具
+        #  [Layered strategy] Determine whether to enable or not based on the number of helpers Phase 2
+        # - 1-2 A helper (such as staking): directly verify the signature, skipping LLM exploration
+        # - 3+ Helpers (such as valuation, cash flow): Enter Phase 2, but only screening is done, and exploration of new tools is not allowed
         helper_count = len(rule_report.available_helpers)
         if helper_count <= 2:
             helper_names = [h.name for h in rule_report.available_helpers]
             logger.info(
                 f"\n{'='*80}\n"
-                f"✅ [侦察层优化] Phase 1 已找到 {helper_count} 个 helper，直接跳过 Phase 2\n"
-                f"   已发现的 helper: {', '.join(helper_names)}\n"
-                f"   置信度: {rule_report.confidence:.2f}\n"
-                f"   理由: 少量 helper 场景无需 LLM 筛选\n"
+                f"✅ [Reconnaissance layer optimization] Phase 1 Found {helper_count} helper, skip directly Phase 2\n"
+                f"   discovered helper: {', '.join(helper_names)}\n"
+                f"   Confidence: {rule_report.confidence:.2f}\n"
+                f"   Reason: A small number of helper scenarios do not require LLM filtering\n"
                 f"{'='*80}"
             )
             return rule_report
 
-        # Phase 2: LLM 驱动筛选（仅当 helper >= 3 时启用）
+        # Phase 2: LLM driver filter (only if helper >= 3 enabled)
         client = self._get_client()
         if client is None:
-            logger.info("🧭 侦察层降级为纯规则模式（无 LLM 客户端）")
+            logger.info("🧭 Recon layer downgraded to rules-only mode (no LLM client)")
             return rule_report
 
         logger.info(
             f"\n{'='*80}\n"
-            f"🔄 [侦察层] Phase 1 已找到 {helper_count} 个候选 helper，启动 Phase 2 LLM 筛选\n"
-            f"   候选列表: {', '.join([h.name for h in rule_report.available_helpers])}\n"
-            f"   任务: 从已知候选中筛选最相关的 3-4 个，不探索新工具\n"
+            f"🔄 [Reconnaissance level] Phase 1 Found {helper_count} candidate helpers, start Phase 2 LLM screening\n"
+            f"   candidate list: {', '.join([h.name for h in rule_report.available_helpers])}\n"
+            f"   Task: Filter the most relevant 3-4 from known candidates without exploring new tools\n"
             f"{'='*80}"
         )
 
         try:
             llm_report = self._llm_driven_analyze(
                 client, spec, rule_report,
-                has_many_helpers=True  # 多 helper 场景：只做筛选
+                has_many_helpers=True  # Multiple helper scenarios: only filtering
             )
             return llm_report
         except Exception as exc:
-            logger.warning("⚠️ LLM 侦察失败，降级为规则模式: %s", exc)
+            logger.warning("⚠️ LLM Reconnaissance failed, downgraded to rules mode: %s", exc)
             return rule_report
 
     @staticmethod
@@ -159,23 +159,23 @@ class DefaultReconnaissanceController(ReconnaissanceController):
     def _build_strategy(spec: SkillSpec, recommendations: dict) -> str:
         local_collections = recommendations.get("stock_collections") or []
         external_sources = recommendations.get("external_sources") or []
-        strategy = ["优先使用 skill_runtime 公开接口和本地已同步数据"]
+        strategy = ["Prioritize using the skill_runtime public interface and local synchronized data"]
         if local_collections:
             strategy.append(f"优先关注本地集合: {', '.join(local_collections[:3])}")
         if external_sources:
-            strategy.append(f"外部来源仅作为补充侦察依据: {', '.join(external_sources[:3])}")
+            strategy.append(f"External sources are used only as supplementary reconnaissance evidence: {', '.join(external_sources[:3])}")
         if "估值" in spec.description or any(k in spec.description.lower() for k in ("valuation", "peg", "pb", "pe", "dcf")):
-            strategy.append("先确认价格、财务口径和增长率路径，再固化估值公式")
+            strategy.append("First confirm the price, financial caliber and growth path, and then solidify the valuation formula")
         return "；".join(strategy)
 
-    # ==================== 需求类型分流（改进点 1） ====================
+    # ==================== Requirement type diversion (improvement point 1) ====================
 
     @staticmethod
     def _classify_requirement_mode(spec: SkillSpec) -> str:
-        """识别需求类型：external_api（外部 API 集成） / local_data（本地数据复用，默认）。
+        """Identify the requirement type: external_api (external API integration) / local_data (local data reuse, default).
 
-        判定逻辑统一实现在 requirement_analyzer.classify_requirement_mode，
-        此处保留方法壳供侦察层内部与既有测试调用。
+        The decision logic is unified and implemented in requirement_analyzer.classify_requirement_mode.
+        The method shell is reserved here for calling within the reconnaissance layer and existing tests.
         """
         from .requirement_analyzer import classify_requirement_mode
 
@@ -183,17 +183,17 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
     @staticmethod
     def _build_external_api_strategy(spec: SkillSpec, unknown_data_source: str = "") -> str:
-        """external_api 模式的实现策略话术。"""
+        """external_api Implementation strategies for patterns."""
         source_name = unknown_data_source or (getattr(spec, "data_source", "") or "用户指定来源")
         return (
-            f"本需求为外部 HTTP API 集成（数据源: {source_name}，不属于系统本地股票数据体系）。"
-            "实现以直接调用该外部接口为主：requests/httpx + 合法请求头（UA/Referer）+ 超时与失败降级；"
-            "不使用本地股票集合、不复用股票类 helper 作为数据来源。"
-            "接口规格（URL、请求方式、参数、认证、返回字段）必须以用户确认的信息为准，"
-            "未确认前不得臆造接口细节与字段名。"
+            f"This requirement is for external HTTP API integration (data source: {source_name}, Does not belong to the system s local stock data system)."
+            "The implementation is mainly to directly call the external interface:requests/httpx + Legal request header (UA/Referer)+ Timeout and failure downgrade;"
+            "Do not use local stock collections or reuse stock helpers as data sources."
+            "Interface specifications (URL, request method, parameters, authentication, return fields) must be subject to the information confirmed by the user."
+            "Do not make up interface details and field names without confirmation."
         )
 
-    # ==================== 验收字段一致性校验（改进点 3） ====================
+    # ==================== Acceptance field consistency check (improvement point 3) ====================
 
     @staticmethod
     def _normalize_field_token(name: str) -> str:
@@ -205,12 +205,12 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         report: ImplementationFactReport,
         requirement_mode: str,
     ) -> None:
-        """校验 expected_output.fields 与命中资产的能力一致性。
+        """Verify that expected_output.fields is consistent with the capabilities of the hit asset.
 
-        - local_data 模式：字段应能由 helper 返回字段 / 本地集合样本字段产出，
-          覆盖率过低时降置信度并提示澄清（防止规格臆造字段）。
-        - external_api 模式：字段来自外部接口实际响应，不做本地覆盖校验，
-          只提示"字段须以接口实际响应为准、不得声明接口不存在的层级"。
+        - local_data Mode: Fields should be able to be produced by helper return fields/local collection sample fields,
+          When the coverage is too low, the confidence level is lowered and clarification is prompted (to prevent speculative fields from being created).
+        - external_api Mode: The field comes from the actual response of the external interface, and no local coverage verification is performed.
+          Prompt only"Fields must be based on the actual response of the interface. Levels where the interface does not exist must not be declared.". 
         """
         expected_output = getattr(spec, "expected_output", None)
         expected = [str(f).strip() for f in (getattr(expected_output, "fields", None) or []) if str(f or "").strip()]
@@ -219,13 +219,13 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
         if requirement_mode == "external_api":
             report.notes.append(
-                "⚠️ 验收字段须以外部接口实际响应为准：expected_output.fields 不得包含接口未提供的字段"
-                "（例如接口按车系 series 级返回时，不应声明 model_id/model_name/manufacturer_id 等"
-                "接口不存在的层级字段）；字段清单需在规格确认时与用户核对。"
+                "⚠️ The acceptance fields must be based on the actual response of the external interface: expected_output.fields must not contain fields not provided by the interface"
+                " (For example, when the interface returns by car series level, model_id/model_name/manufacturer_id, etc. should not be declared."
+                "Hierarchical fields that do not exist in the interface); the field list needs to be checked with the user when the specifications are confirmed."
             )
             return
 
-        # local_data 模式：收集命中资产可产出的字段池
+        # local_data Mode: Collect the field pool that can be produced by hit assets
         pool: set = set()
         for fields in (report.sample_fields or {}).values():
             pool.update(self._normalize_field_token(f) for f in fields or [])
@@ -236,15 +236,15 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             if fact.field:
                 pool.add(self._normalize_field_token(fact.field))
         if not pool:
-            return  # 无任何资产字段信息时不强判
+            return  # If there is no asset field information, no forced judgment will be made.
 
         missing = [f for f in expected if self._normalize_field_token(f) not in pool]
         coverage = 1 - len(missing) / len(expected)
         if missing and coverage < 0.5:
             report.notes.append(
                 f"⚠️ 验收字段覆盖不足（{len(expected) - len(missing)}/{len(expected)}）："
-                f"{', '.join(missing[:8])} 无法由当前命中的 helper/本地集合产出。"
-                "这些字段需由外部数据源或自行计算提供，规格确认前建议向用户澄清字段来源。"
+                f"{', '.join(missing[:8])} Cannot be produced by the currently hit helper/local collection."
+                "These fields need to be provided by external data sources or self-calculation. It is recommended to clarify the source of the fields to the user before confirming the specifications."
             )
             report.confidence = min(report.confidence, 0.45)
 
@@ -258,8 +258,8 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     module="core.skill_runtime.data_access",
                     name="get_stock_valuation_context",
                     signature="symbol: str, *, lookback_days: int = 90",
-                    description="估值类 Skill 的标准输入入口，可一次获得现价、估值指标和财务数据",
-                    reason="估值类 Skill 的标准输入入口，可一次获得现价、估值指标和财务数据",
+                    description="The standard input entrance for valuation skills, which can obtain current prices, valuation indicators and financial data at one time",
+                    reason="The standard input entrance for valuation skills, which can obtain current prices, valuation indicators and financial data at one time",
                     data_source_handling="local_only",
                 )
             )
@@ -269,20 +269,20 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     module="core.skill_runtime.data_access",
                     name="summarize_industry_valuation",
                     signature="industry: str, *, top_n: int = 10",
-                    description="相对估值和行业统计优先复用现有行业估值汇总 helper",
-                    reason="相对估值和行业统计优先复用现有行业估值汇总 helper",
+                    description="Relative valuations and industry statistics prioritize reusing existing industry valuation summaries. helper",
+                    reason="Relative valuations and industry statistics prioritize reusing existing industry valuation summaries. helper",
                     data_source_handling="local_only",
                 )
             )
-        # 护城河/盈利稳定性/长期趋势类 Skill 优先复用 standard_financial_apis
+        # Moat/profit stability/long-term trend skills are prioritized for reuse standard_financial_apis
         if any(k in normalized for k in ("moat", "护城河", "稳定性", "stability", "质量", "quality", "长期", "annual_series", "年报序列")):
             helpers.append(
                 ImplementationHelper(
                     module="core.skill_runtime.standard_financial_apis",
                     name="get_historical_financial_annual_series",
                     signature="symbol: str, years: int = 10, source: str = None",
-                    description="一键返回最近 N 年年报序列（revenue/net_profit/roe/gross_margin/operating_cashflow 等）",
-                    reason="长期财务台账、5-10 年趋势分析的优先入口，避免手动遍历多期数据",
+                    description="Return the last N years of annual report series with one click (revenue/net_profit/roe/gross_margin/operating_cashflow, etc.)",
+                    reason="The preferred entry point for long-term financial ledgers and 5-10 year trend analysis to avoid manually traversing multiple periods of data.",
                     data_source_handling="local_only",
                 )
             )
@@ -291,8 +291,8 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     module="core.skill_runtime.standard_financial_apis",
                     name="get_profitability_stability_metrics",
                     signature="symbol: str, years: int = 10, source: str = None",
-                    description="基于年报序列计算营收/净利/ROE/毛利率的均值、波动率、变异系数",
-                    reason="盈利稳定性、护城河财务证据分析的优先函数，避免重复计算统计指标",
+                    description="Calculate the mean, volatility, and coefficient of variation of revenue/net profit/ROE/gross profit margin based on the annual report sequence",
+                    reason="Priority functions for earnings stability and moat financial evidence analysis to avoid double counting of statistical indicators",
                     data_source_handling="local_only",
                 )
             )
@@ -302,8 +302,8 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     module="core.skill_runtime.standard_financial_apis",
                     name="get_cashflow_quality_trend",
                     signature="symbol: str, years: int = 10, source: str = None",
-                    description="返回 OCF/净利、FCF/净利、OCF margin、FCF margin 的年度趋势和统计摘要",
-                    reason="现金流质量、利润含金量分析的优先函数",
+                    description="Returns annual trend and statistical summary of OCF/Net Profit, FCF/Net Profit, OCF Margin, FCF Margin",
+                    reason="Priority functions for cash flow quality and profit content analysis",
                     data_source_handling="local_only",
                 )
             )
@@ -313,20 +313,20 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     module="core.skill_runtime.standard_financial_apis",
                     name="get_historical_valuation_percentile",
                     signature="symbol: str, metrics: list = None, lookback_years: int = 5, as_of_date: str = None",
-                    description="结构化返回 pe_ttm/pb/ps_ttm/pcf_ttm 的历史分位、当前值、中位数",
-                    reason="历史估值分位分析的优先函数，替代文本分位输出",
+                    description="Structured returns the historical quantile, current value, and median of pe_ttm/pb/ps_ttm/pcf_ttm",
+                    reason="Priority function for historical valuation quantile analysis, replacing text quantile output",
                     data_source_handling="self_contained",
                 )
             )
-        # 股权质押/大股东质押/质押风险
+        # Equity pledge/Major shareholder pledge/Pledge risk
         if any(k in normalized for k in ("质押", "pledge", "股权质押", "大股东质押", "爆仓", "平仓线")):
             helpers.append(
                 ImplementationHelper(
                     module="core.skill_runtime.standard_financial_apis",
                     name="get_pledge_risk_profile",
                     signature="symbol: str, source: str = None",
-                    description="返回股权质押风险画像：总质押比例、未解押规模、前几大质押股东、最近质押事件、风险等级(low/medium/medium_high/high/none)",
-                    reason="股权质押风险快照分析的优先函数，自动从 Tushare/akshare 获取数据，无需手动调用外部接口",
+                    description="Return to equity pledge risk portrait: total pledge ratio, unreleased pledge size, top pledge shareholders, recent pledge events, risk level(low/medium/medium_high/high/none)",
+                    reason="The priority function for equity pledge risk snapshot analysis, automatically obtains data from Tushare/akshare without manually calling external interfaces",
                     data_source_handling="self_contained",
                 )
             )
@@ -336,8 +336,8 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                         module="core.skill_runtime.standard_financial_apis",
                         name="get_pledge_historical_series",
                         signature="symbol: str, start_date: str = None, end_date: str = None, years: int = None, period: str = 'year', source: str = None",
-                        description="返回指定时间段内股权质押趋势，支持按年/季/月统计，包含每周期末质押比例、未解押股数、活跃质押笔数，以及自动评估的趋势方向（improving/worsening/stable）",
-                        reason="质押趋势分析的优先函数，支持自定义起止日期和统计粒度，直接判断风险好转/恶化",
+                        description="Returns the equity pledge trend within the specified time period, supporting year/quarter/month statistics, including the pledge ratio at the end of each cycle, the number of outstanding shares, the number of active pledges, and the trend direction of automatic evaluation (improving/worsening/stable)",
+                        reason="The priority function for pledge trend analysis supports customized start and end dates and statistical granularity to directly determine the improvement/deterioration of risks.",
                         data_source_handling="self_contained",
                     )
                 )
@@ -345,11 +345,11 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
     @staticmethod
     def _convert_capability_hits_to_helpers(capability_hits: list) -> list:
-        """把 CapabilityIndexService.search_capabilities 的命中结果转换为 ImplementationHelper。
+        """Convert CapabilityIndexService.search_capabilities hits to ImplementationHelper.
 
-        capability_hits 中的每项是 CapabilitySearchHit（含 capability + score）。
-        通过 registry_tool_id 查 ToolRegistry 获取 module_path 和 function_name。
-        只保留 bindable=True 且 source_type in (builtin_tool, mcp_tool) 的工具。
+        capability_hits Each item in is CapabilitySearchHit (including capability + score) . 
+        Check ToolRegistry through registry_tool_id to obtain module_path and function_name.
+        only keep bindable=True and source_type in (builtin_tool, mcp_tool) tools.
         """
         if not capability_hits:
             return []
@@ -358,7 +358,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             from core.tools.registry import get_tool_registry
             registry = get_tool_registry()
         except Exception as exc:
-            logger.warning("⚠️ 向量搜索结果转换失败（ToolRegistry 不可用）: %s", exc)
+            logger.warning("⚠️ Vector search result conversion failed (ToolRegistry is not available): %s", exc)
             return []
 
         helpers = []
@@ -370,7 +370,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             except Exception:
                 continue
 
-            # 只收录可绑定的工具类能力（跳过 skill/external_skill，那些是独立 skill 不是函数）
+            # Only bindable tool abilities are included (skip skill/external_skill, those are independent skills not functions)
             source_type = getattr(cap, "source_type", "") or (cap.get("source_type", "") if isinstance(cap, dict) else "")
             if source_type not in ("builtin_tool", "mcp_tool"):
                 continue
@@ -382,7 +382,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             if not tool_id or tool_id in seen_tool_ids:
                 continue
 
-            # 查 ToolRegistry 获取函数的 module_path 和 function_name
+            # Check ToolRegistry to get the function's module_path and function_name
             try:
                 func = registry.get_function(tool_id)
             except Exception:
@@ -392,7 +392,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
             module_path = getattr(func, "__module__", "") or ""
             function_name = getattr(func, "__name__", tool_id)
-            # 只收录 ALLOWED_CORE_PREFIXES 下的模块（与静态验证器白名单一致）
+            # Only include modules under ALLOWED_CORE_PREFIXES (consistent with the static validator whitelist)
             from core.tools.external.static_validator import ALLOWED_CORE_PREFIXES
             allowed = any(module_path == p or module_path.startswith(p + ".") for p in ALLOWED_CORE_PREFIXES)
             if not allowed:
@@ -402,8 +402,8 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             description = getattr(cap, "description", "") or (cap.get("description", "") if isinstance(cap, dict) else "")
             when_to_use = getattr(cap, "when_to_use", "") or (cap.get("when_to_use", "") if isinstance(cap, dict) else "")
 
-            # 从 ToolMetadata 读取 data_source_handling，传递到 ImplementationHelper
-            # 让 LLM 在 skill 工坊设计 skill 时能判断是否需要补充数据源
+            # Read data_source_handling from ToolMetadata, passed to ImplementationHelper
+            # Allow LLM to determine whether supplementary data sources are needed when designing skills in the skill workshop
             try:
                 metadata = registry.get(tool_id)
                 data_source_handling = getattr(metadata, "data_source_handling", "self_contained") if metadata else "self_contained"
@@ -414,15 +414,15 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                 ImplementationHelper(
                     module=module_path,
                     name=function_name,
-                    signature=f"{function_name}(symbol, **kwargs)",  # 签名由 code_generator 通过 describe_runtime_helper 获取
+                    signature=f"{function_name}(symbol, **kwargs)",  # The signature is obtained by code_generator via describe_runtime_helper
                     description=description or when_to_use or name,
-                    reason=f"向量搜索召回（score={score:.2f}），语义匹配 skill 需求",
+                    reason=f"vector search recall(score={score:.2f}) , Semantic matching skill requirements",
                     data_source_handling=data_source_handling,
                 )
             )
             seen_tool_ids.add(tool_id)
 
-        logger.info("🧭 向量搜索召回转换: %d 个 hit → %d 个 ImplementationHelper", len(capability_hits), len(helpers))
+        logger.info("🧭 vector search recall transformation: %d a hit → %d a ImplementationHelper", len(capability_hits), len(helpers))
         return helpers
 
     @staticmethod
@@ -431,7 +431,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         issues = [
             ImplementationIssue(
                 path="direct provider import",
-                reason="生成的 Skill 不应直接导入 tradingagents.dataflows.provider/interface，应通过 skill_runtime 公开接口访问",
+                reason="The generated Skill should not be imported directly into tradingagents.dataflows.provider/interface, but should be accessed through the skill_runtime public interface",
                 severity="error",
             )
         ]
@@ -439,7 +439,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             issues.append(
                 ImplementationIssue(
                     path="default zero valuation outputs",
-                    reason="估值类 Skill 缺少关键输入时不得输出 fair_value=0、peg_value=0 等伪完成结果",
+                    reason="Valuation Skills must not be output when key inputs are missing fair_value=0, peg_value=0 Wait for pseudo completion result",
                     severity="error",
                 )
             )
@@ -453,7 +453,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         checks: list[ValidationCheck] = [
             ValidationCheck(
                 name="status_success",
-                description="输出状态必须为 success/ok，不能以 error 或伪成功结束",
+                description="The output status must be success/ok and cannot end with error or false success.",
                 check_type="status_success",
                 rule_level="output",
                 blocking=True,
@@ -479,7 +479,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             checks.append(
                 ValidationCheck(
                     name="required_non_empty_payload",
-                    description="成功输出时必须返回非空 data 负载",
+                    description="A non-empty data payload must be returned on successful output.",
                     check_type="required_non_empty_payload",
                     rule_level="data",
                     blocking=True,
@@ -493,7 +493,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
     def _infer_notes(spec: SkillSpec, recommendations: dict) -> list[str]:
         notes: list[str] = []
         if recommendations.get("external_sources"):
-            notes.append("外部数据源在侦察阶段可用于确认实现路径，但不代表最终 Skill 可以直接依赖其内部 provider。")
+            notes.append("External data sources can be used to confirm the implementation path during the reconnaissance phase, but it does not mean that the final Skill can directly rely on its internal provider.")
         if spec.expected_output.fields:
             notes.append(f"期望输出字段: {', '.join(spec.expected_output.fields)}")
         return notes
@@ -524,7 +524,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     )
                 )
             report.recommended_strategy = (
-                f"{report.recommended_strategy}；按 {method_name} 组织输入校验、指标计算和输出结论"
+                f"{report.recommended_strategy}; press {method_name} Organize input verification, indicator calculation and output conclusion"
                 if report.recommended_strategy
                 else f"按 {method_name} 组织输入校验、指标计算和输出结论"
             )
@@ -566,7 +566,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
         narrative_requirements = [str(item).strip() for item in contract.get("narrative_requirements") or [] if str(item).strip()]
         if narrative_requirements:
-            report.notes.append(f"schema 输出叙述要求: {'; '.join(narrative_requirements[:4])}")
+            report.notes.append(f"schema Output narrative requirements: {'; '.join(narrative_requirements[:4])}")
 
         prohibited_patterns = [str(item).strip() for item in contract.get("prohibited_patterns") or [] if str(item).strip()]
         if prohibited_patterns:
@@ -582,10 +582,10 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         verifier_id = str(schema_context.get("verifier_rule_id") or verifier_rule.get("id") or "")
         failure_message = str(verifier_rule.get("failure_message") or "").strip()
         if failure_message:
-            report.notes.append(f"schema verifier 失败语义: {failure_message}")
+            report.notes.append(f"schema verifier failure semantics: {failure_message}")
         remediation_hint = str(verifier_rule.get("remediation_hint") or "").strip()
         if remediation_hint:
-            report.notes.append(f"schema verifier 修复提示: {remediation_hint}")
+            report.notes.append(f"schema verifier Repair tips: {remediation_hint}")
 
         for rule_id, rule_object in applicability_rules.items():
             human_description = str(rule_object.get("human_description") or rule_id).strip()
@@ -612,11 +612,11 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             report.notes.append(f"schema profile: {schema_context.get('profile')} / {verifier_id}")
 
     # ================================================================
-    # Phase 1: 规则基线（零 LLM 成本）
+    # Phase 1: Rule baseline (zero LLM cost)
     # ================================================================
 
     def _rule_based_analyze(self, spec: SkillSpec, capability_hits: list = None) -> ImplementationFactReport:
-        """纯规则驱动的侦察，作为 LLM 侦察的基线和降级方案。"""
+        """Pure rules-driven reconnaissance as a baseline and de-escalation scenario for LLM reconnaissance."""
         from core.skill_runtime.project_access import (
             inspect_field_coverage,
             inspect_stock_collection_schema,
@@ -625,7 +625,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
         recommendations = self._analyzer.build_recommendations(spec=spec)
 
-        # ── 需求类型分流（改进点 1）：外部 API 集成 vs 本地数据复用 ──
+        # ── Requirement Type Diversion (Improvement Point 1): External API Integration vs. Local Data Reuse ──
         requirement_mode = self._classify_requirement_mode(spec)
         unknown_data_source = ""
         if requirement_mode == "external_api":
@@ -634,7 +634,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                 from .external_data_source_catalog import is_known_external_source
                 if not is_known_external_source(data_source_raw):
                     unknown_data_source = data_source_raw
-            # 外部 API 集成模式：本地股票集合与目录外部源均与需求无关，清空避免凑数误导
+            # External API integration mode: local stock collections and catalog external sources are irrelevant to requirements, clear them to avoid misdirection
             recommendations["stock_collections"] = []
             recommendations["external_sources"] = []
 
@@ -648,15 +648,15 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             confidence=0.45,
         )
 
-        # ── 目录外数据源显式标注（改进点 2）：不再静默 fallback，登记运行时缺口 ──
+        # ── Explicit annotation of data sources outside the directory (improvement point 2): no more silent fallback, registration of runtime gaps ──
         if unknown_data_source:
             from .external_data_source_catalog import EXTERNAL_DATA_SOURCE_CATALOG
             known_names = "、".join(item["display_name"] for item in EXTERNAL_DATA_SOURCE_CATALOG)
             gap_reason = (
                 f"数据源 '{unknown_data_source}' 不在系统已知外部数据源目录（{known_names}）。"
-                "本 Skill 属目录外数据源集成：需要用户提供或确认接口规格"
-                "（URL、请求方式、参数、认证方式、返回字段），"
-                "生成代码时不得臆造接口细节与字段；规格不完整时应先向用户澄清。"
+                "This skill belongs to out-of-directory data source integration: the user needs to provide or confirm the interface specifications."
+                " (URL, Request method, parameters, authentication method, return fields),"
+                "Interface details and fields must not be fabricated when generating code; if specifications are incomplete, clarification should be made to the user first."
             )
             report.runtime_gaps.append(
                 ImplementationIssue(
@@ -671,43 +671,43 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         rule_based_helpers = self._infer_helpers(spec)
         logger.info(
             "\n" + "=" * 80 + "\n"
-            "🔍 [侦察层 Phase 1] 规则基线分析\n"
+            "🔍 [Reconnaissance level Phase 1] Rule Baseline Analysis\n"
             f"   tool_id: {spec.tool_id}\n"
-            f"   需求描述: {spec.description[:80]}{'...' if len(spec.description) > 80 else ''}\n"
-            f"   规则推荐 helpers: {[h.module + '.' + h.name for h in rule_based_helpers]}\n"
-            f"   推荐本地集合: {recommendations.get('stock_collections', [])}\n"
-            f"   推荐外部数据源: {recommendations.get('external_sources', [])}\n"
-            f"   提取的测试股票代码: {symbol}\n"
+            f"   Requirement description: {spec.description[:80]}{'...' if len(spec.description) > 80 else ''}\n"
+            f"   Rule recommendations helpers: {[h.module + '.' + h.name for h in rule_based_helpers]}\n"
+            f"   Recommended local collection: {recommendations.get('stock_collections', [])}\n"
+            f"   Recommended external data sources: {recommendations.get('external_sources', [])}\n"
+            f"   Extracted test ticker: {symbol}\n"
             + "=" * 80
         )
 
-        # 检查是否已有足够的 helper，避免分析不相关集合
+        # Check if there are already enough helpers to avoid analyzing irrelevant collections
         has_direct_helpers = len(rule_based_helpers) > 0
         if has_direct_helpers:
             helper_names = [h.name for h in rule_based_helpers]
-            # 根据 helper 的 data_source_handling 分类
+            # Classified according to helper's data_source_handling
             self_contained_helpers = [h for h in rule_based_helpers if h.data_source_handling == "self_contained"]
             local_only_helpers = [h for h in rule_based_helpers if h.data_source_handling == "local_only"]
             partial_helpers = [h for h in rule_based_helpers if h.data_source_handling == "partial"]
 
             logger.info(
-                f"✅ [侦察层 Phase 1] 已发现 {len(rule_based_helpers)} 个直接可用的 helper "
-                f"({', '.join(helper_names)})，将根据数据源处理能力调整数据层推荐"
+                f"✅ [Reconnaissance level Phase 1] Found {len(rule_based_helpers)} directly available helper "
+                f"({', '.join(helper_names)}), Data layer recommendations will be adjusted based on data source processing capabilities"
             )
             logger.info(
-                f"   📊 数据源处理能力: self_contained={len(self_contained_helpers)}, "
+                f"   📊 Data source processing capabilities: self_contained={len(self_contained_helpers)}, "
                 f"local_only={len(local_only_helpers)}, partial={len(partial_helpers)}"
             )
 
-            # 智能决定数据层推荐策略：
-            # - 全部 self_contained：helper 完全自包含，清空外部数据源推荐（LLM 不需要自己调数据源）
-            # - 有 local_only：helper 只查本地 MongoDB，保留外部数据源作为补充（LLM 可能需要自己调外部 API）
-            # - 有 partial：保留相关数据源推荐
+            # Intelligent decision-making data layer recommendation strategy:
+            # - All self_contained: The helper is completely self-contained, and it is recommended to clear external data sources (LLM does not need to adjust the data source by itself)
+            # - There is local_only: the helper only checks the local MongoDB and retains external data sources as a supplement (LLM may need to adjust the external API by itself)
+            # - Yes partial: retain relevant data source recommendations
             all_self_contained = len(self_contained_helpers) == len(rule_based_helpers)
             has_local_only = len(local_only_helpers) > 0
 
             if all_self_contained:
-                # 全部自包含：清空外部数据源，只保留 stock_basic_info
+                # All self-contained: clear external data sources and keep only stock_basic_info
                 filtered_collections = []
                 for col in recommendations.get("stock_collections") or []:
                     if col == "stock_basic_info":
@@ -719,46 +719,46 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
                 report.notes.append(
                     f"✅ 已推荐 {len(rule_based_helpers)} 个 helper 函数（{', '.join(helper_names)}），"
-                    "全部为 **self_contained** 类型（已封装数据源调用，自动调 Tushare/AKShare 或查本地 MongoDB）。"
-                    "LLM 生成代码时**直接调用 helper 即可，不要自己实现数据源调用逻辑**"
-                    "（如 import tushare/akshare、直接调 provider 等）。"
+                    "All for **self_contained** Type (encapsulated data source call, automatically call Tushare/AKShare or check local MongoDB)."
+                    "LLM When generating code**Just call the helper directly. Do not implement the data source calling logic yourself.**"
+                    " (Such as import tushare/akshare, directly call provider, etc.)."
                 )
 
-                # strategy 明确说明"直接调用 helper"
+                # strategy clearly stated"call directly helper"
                 helper_list_text = ", ".join(helper_names)
                 report.recommended_strategy = (
-                    f"直接调用推荐的 helper 函数（{helper_list_text}）获取数据并组织输出。"
-                    "这些 helper 已封装数据源调用逻辑，无需自行 import tushare/akshare 或查 MongoDB。"
+                    f"Call the recommended helper function directly ({helper_list_text}) Get data and organize output."
+                    "These helpers have encapsulated the data source calling logic, so there is no need to import tushare/akshare or check MongoDB yourself."
                 )
             elif has_local_only:
-                # 有 local_only helper：保留外部数据源作为补充
+                # There is local_only helper: keep external data sources as a supplement
                 report.notes.append(
                     f"✅ 已推荐 {len(rule_based_helpers)} 个 helper 函数。"
-                    f"其中 self_contained 类型 {len(self_contained_helpers)} 个（已封装数据源，直接调用即可），"
-                    f"local_only 类型 {len(local_only_helpers)} 个（只查本地 MongoDB）。"
+                    f"where self_contained type {len(self_contained_helpers)} (the data source has been encapsulated and can be called directly),"
+                    f"local_only Type {len(local_only_helpers)} (only check local MongoDB)."
                 )
                 report.notes.append(
-                    "⚠️ local_only helper 只查本地 MongoDB，若本地无数据，LLM 可能需要：\n"
-                    "  1. 调用 self_contained helper 补充数据（如 get_external_historical_data）\n"
-                    "  2. 或自行调用外部数据源（Tushare/AKShare）补充\n"
-                    "  3. 在代码中处理本地无数据的情况（返回 no_data 或降级到外部 API）"
+                    "⚠️ local_only helper Only check the local MongoDB. If there is no data locally, LLM may need:\n"
+                    "  1. Call self_contained helper to supplement data (such as get_external_historical_data)\n"
+                    "  2. Or call external data sources (Tushare/AKShare) to supplement\n"
+                    "  3. Handle no data locally in code (return no_data or downgrade to external API)"
                 )
-                # strategy 保持原样（包含本地集合和外部来源推荐作为补充）
+                # strategy Leave it as is (with local collections and external source recommendations as supplements)
             else:
-                # partial 或混合情况：保留数据层推荐
+                # partial or mixed case: keep data layer recommended
                 report.notes.append(
                     f"✅ 已推荐 {len(rule_based_helpers)} 个 helper 函数，部分为 partial 类型。"
-                    "LLM 调用 helper 后，可能需要补充其它数据源或计算。"
+                    "LLM After calling the helper, other data sources or calculations may need to be supplemented."
                 )
 
             if "估值" in spec.description or any(
                 k in spec.description.lower() for k in ("valuation", "peg", "pb", "pe", "dcf")
             ):
                 if "先确认价格" not in report.recommended_strategy:
-                    report.recommended_strategy += "；先确认价格、财务口径和增长率路径，再固化估值公式"
+                    report.recommended_strategy += "; First confirm the price, financial caliber and growth path, and then solidify the valuation formula"
 
         for collection in recommendations.get("stock_collections") or []:
-            logger.info(f"📦 [侦察层 Phase 1] 开始分析本地集合: {collection}")
+            logger.info(f"📦 [Reconnaissance level Phase 1] Start analyzing a local collection: {collection}")
             report.schema_facts.append(
                 ImplementationFact(
                     source=collection,
@@ -776,27 +776,27 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             )
 
         for source in recommendations.get("external_sources") or []:
-            logger.info(f"🌐 [侦察层 Phase 1] 记录外部数据源推荐: {source}")
+            logger.info(f"🌐 [Reconnaissance level Phase 1] Record external data source recommendations: {source}")
             report.schema_facts.append(
                 ImplementationFact(
                     source=source,
-                    fact=f"若本地数据不足，可优先考虑文档化的数据源 {source}",
+                    fact=f"If local data is insufficient, documented data sources can be given priority. {source}",
                     evidence="RequirementAnalyzer.build_recommendations",
                 )
             )
 
         report.available_helpers.extend(rule_based_helpers)
 
-        # 【关键优化】直接验证 Phase 1 发现的 helper 签名，不需要 LLM 去探索
-        # 这样 Phase 2 就可以直接跳过，避免 LLM 去探索不相关的工具
+        #  [Key optimization] Directly verify the helper signature discovered in Phase 1, without the need for LLM to explore
+        # In this way, Phase 2 can be skipped directly to avoid LLM exploring irrelevant tools.
         if rule_based_helpers:
             logger.info(
-                f"🔍 [侦察层 Phase 1] 开始验证 {len(rule_based_helpers)} 个 helper 的签名..."
+                f"🔍 [Reconnaissance level Phase 1] Start verification {len(rule_based_helpers)} signature of a helper..."
             )
-            # 注意：describe_runtime_helper 是从 recon_tools 导入的，它返回 JSON 字符串
+            # NOTE: describe_runtime_helper is imported from recon_tools and returns a JSON string
             from .recon_tools import describe_runtime_helper, probe_interface
 
-            # 提取测试股票（用于真实调用 helper）
+            # Fetch test stocks (for real helper calls)
             test_symbol = (
                 getattr(spec, "test_input", {}).get("symbol")
                 or getattr(spec, "test_input", {}).get("code")
@@ -805,14 +805,14 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
             for helper in rule_based_helpers:
                 try:
-                    # helper.module 是完整路径，比如 "core.skill_runtime.standard_financial_apis"
-                    # 需要提取模块短名，比如 "standard_financial_apis"
+                    # helper.module is the complete path, such as "core.skill_runtime.standard_financial_apis"
+                    # It is necessary to extract the module short name, such as "standard_financial_apis"
                     module_short = helper.module.split(".")[-1]
                     result_json = describe_runtime_helper(module_short, helper.name)
                     result = json.loads(result_json)
                     if "error" not in result:
                         helper.signature = result.get("signature", helper.signature)
-                        # 把完整 docstring 填入 description，代码生成器会用到
+                        # Fill in the description with the complete docstring, which will be used by the code generator
                         helper.description = result.get("docstring") or result.get("description") or ""
                         logger.info(
                             f"   ✅ {helper.name}: 签名验证成功"
@@ -826,20 +826,20 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                         f"   ⚠️  {helper.name}: 签名验证异常 - {exc}"
                     )
 
-            # 【新增】真实调用 helper 验证可用性 + 财经专家判断 no_data 合理性
-            # 避免 LLM 生成代码后才发现 helper 返回 no_data（如测试股票本身无质押）
+            #  [New] Added actual call to helper to verify availability + Financial experts judge the rationality of no_data
+            # Avoid discovering after LLM generates code that the helper returns no_data (for example, the test stock itself has no pledge)
             if test_symbol:
                 self._probe_helpers_and_judge(
                     rule_based_helpers, spec, test_symbol, report
                 )
 
-        # 向量搜索召回的分析工具推荐（语义匹配，比关键词规则更精准）
+        # Recommended analysis tools for vector search recall (semantic matching, more accurate than keyword rules)
         if capability_hits:
             if requirement_mode == "external_api":
-                # 改进点 1：外部 API 集成模式下，向量召回的本地工具与指定外部数据源无关，
-                # 不纳入 available_helpers（避免"数据源已覆盖"的误导性结论）
+                # Improvement point 1: In external API integration mode, the local tool for vector recall has nothing to do with the specified external data source.
+                # Do not include available_helpers (avoid"Data source has been covered"misleading conclusions)
                 logger.info(
-                    "🧭 [侦察层] 外部API集成模式：跳过 %d 个向量召回工具（与指定外部数据源无关）",
+                    "🧭 [Reconnaissance level] External API integration mode: %d vector recall tools skipped (regardless of the specified external data source)",
                     len(capability_hits),
                 )
                 report.schema_facts.append(
@@ -847,7 +847,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                         source="capability_index",
                         fact=(
                             f"向量搜索召回 {len(capability_hits)} 个本地工具，"
-                            "因需求为外部 API 集成模式未采纳（本地工具与指定外部数据源无关）"
+                            "The requirement is that the external API integration mode is not adopted (local tools have nothing to do with the specified external data source)"
                         ),
                         evidence="RequirementMode=external_api",
                     )
@@ -871,7 +871,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             self._enrich_schema_bundle_guidance(report, schema_context)
         if report.sample_fields:
             report.confidence = max(report.confidence, 0.65)
-        # ── 验收字段一致性校验（改进点 3）：覆盖率过低时降置信度并提示澄清 ──
+        # ── Acceptance field consistency check (improvement point 3): lower the confidence level and prompt for clarification when the coverage is too low ──
         self._validate_expected_field_coverage(spec, report, requirement_mode)
         return report
 
@@ -882,25 +882,25 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         test_symbol: str,
         report: ImplementationFactReport,
     ) -> None:
-        """真实调用 helper 验证可用性，并在返回 no_data 时调用财经专家判断合理性。
+        """Really call the helper to verify the availability, and call the financial expert to judge the rationality when no_data is returned.
 
-        - 如果 helper 返回 success：把返回值结构样例写入 fact_report.notes，
-          帮助 LLM 知道字段名（避免瞎猜 current_pledge_ratio 等不存在的字段）
-        - 如果 helper 返回 no_data：调用财经专家判断是否业务合理，
-          不合理则推荐更合适的测试股票写入 notes
-        - 如果 helper 调用异常：记录具体错误，提示 LLM 该 helper 不可用
+        - If the helper returns success: write a sample return value structure to fact_report.notes,
+          Help LLM know the field names (avoid guessing non-existent fields such as current_pledge_ratio)
+        - If the helper returns no_data: Call financial experts to judge whether the business is reasonable.
+          If it is unreasonable, recommend a more appropriate test stock write-in notes
+        - If the helper is called abnormally: record the specific error and prompt LLM that the helper is not available
         """
         from .recon_tools import probe_interface
         from .financial_expert_advisor import get_financial_expert_advisor
 
-        # 准备财经专家顾问（延迟初始化，仅在 no_data 时调用）
+        # Prepare financial expert advisor (lazy initialization, only called when no_data)
         advisor = None
 
-        for helper in helpers[:3]:  # 最多验证前 3 个 helper
+        for helper in helpers[:3]:  # Verify up to first 3 helper
             try:
-                # 构建 sample_args
+                # build sample_args
                 sample_args = {"symbol": test_symbol}
-                # 根据 helper 名推断额外参数
+                # Infer extra parameters based on helper name
                 if "historical" in helper.name.lower() or "series" in helper.name.lower():
                     sample_args["years"] = 3
 
@@ -910,7 +910,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                 probe_result = json.loads(probe_result_json)
 
                 if not probe_result.get("success"):
-                    # 调用本身失败
+                    # The call itself failed
                     error_msg = probe_result.get("error", "未知错误")
                     report.notes.append(
                         f"⚠️ helper {helper.name} 真实调用失败: {error_msg}（建议 LLM 谨慎使用或换数据源）"
@@ -920,7 +920,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     )
                     continue
 
-                # 提取 helper 返回的 status
+                # Extract what the helper returns status
                 preview = probe_result.get("preview", "")
                 preview_dict = json.loads(preview) if isinstance(preview, str) else preview
                 if not isinstance(preview_dict, dict):
@@ -930,39 +930,39 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                 helper_warnings = preview_dict.get("warnings", [])
 
                 if helper_status == "success":
-                    # ✅ helper 正常返回数据：把返回值结构样例写入 notes + helper.description
-                    # 即使 docstring 不完整，代码生成器也能看到实际返回字段（保底机制）
+                    # ✅ helper Normal return data: write the return value structure sample notes + helper.description
+                    # Even if the docstring is incomplete, the code generator can see the actual return fields (guaranteed mechanism)
                     field_keys = list(preview_dict.keys())
                     metrics_keys = (
                         list(preview_dict.get("metrics", {}).keys())
                         if isinstance(preview_dict.get("metrics"), dict)
                         else []
                     )
-                    # 构建返回结构文本（保底）
+                    # Build return structure text (guaranteed)
                     return_struct = f"📋 实际返回字段: {field_keys}"
                     if metrics_keys:
-                        return_struct += f"，metrics 子字段: {metrics_keys}"
-                    # 追加到 helper.description（保留原有 docstring）
+                        return_struct += f", metrics subfield: {metrics_keys}"
+                    # Append to helper.description (keep original docstring)
                     if helper.description:
                         helper.description = f"{helper.description}\n{return_struct}"
                     else:
                         helper.description = return_struct
 
                     report.notes.append(
-                        f"✅ helper {helper.name} 真实调用成功（status=success）。"
-                        f"返回字段: {field_keys}。"
-                        f"metrics 子字段: {metrics_keys}。"
-                        f"LLM 生成代码时应直接读取这些字段名。"
+                        f"✅ helper {helper.name} The real call is successful (status=success) . "
+                        f"Return field: {field_keys}. "
+                        f"metrics subfield: {metrics_keys}. "
+                        f"LLM These field names should be read directly when generating code."
                     )
                     logger.info(
-                        f"✅ [侦察层] helper {helper.name} 真实调用成功，返回字段: {field_keys}"
+                        f"✅ [Reconnaissance level] helper {helper.name} The actual call is successful and the field is returned: {field_keys}"
                     )
 
                 elif helper_status in ("no_data", "no_news", "no_pledge"):
-                    # ⚠️ helper 返回 no_data：调用财经专家判断是否业务合理
-                    # 注意：不在此提取返回字段名，因为空数据会导致代码生成器误判结构（无法看到
-                    # 列表元素内部的字段如 holder_name/shares_wan/ratio_pct）
-                    # 返回结构应依赖 docstring 的 Returns 文档或后续沙箱反馈
+                    # ⚠️ helper Return no_data: call financial experts to judge whether the business is reasonable
+                    # Note: Do not extract the return field name here, because empty data will cause the code generator to misjudge the structure (cannot see
+                    # Fields inside list elements such as holder_name/shares_wan/ratio_pct)
+                    # The return structure should rely on the docstring of the Returns documentation or subsequent sandbox feedback
                     logger.info(
                         f"🔍 [侦察层] helper {helper.name} 返回 {helper_status}，调用财经专家判断合理性..."
                     )
@@ -974,7 +974,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                             model=self._model,
                         )
 
-                    # 获取股票基础信息（行业等）
+                    # Get basic stock information (industry, etc.)
                     stock_name = ""
                     industry = ""
                     try:
@@ -986,7 +986,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     except Exception:
                         pass
 
-                    # 推断数据类型描述
+                    # Infer data type description
                     data_type = self._infer_data_type(helper.name, spec)
 
                     judgment = advisor.judge_no_data_rationality(
@@ -1002,19 +1002,19 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     )
 
                     if judgment.is_rational:
-                        # no_data 业务合理（如银行股无质押）：告诉 LLM 这是正常情况
+                        # no_data The business is reasonable (e.g. bank shares are not pledged): tell LLM this is normal
                         report.notes.append(
                             f"ℹ️ helper {helper.name} 返回 {helper_status}（业务合理）。"
-                            f"专家判断: {judgment.reasoning}。"
-                            f"建议: Skill 代码应返回 status=success 并标注'该股票无此类数据'，"
-                            f"而不是返回 error。{judgment.advice}"
+                            f"expert judgment: {judgment.reasoning}. "
+                            f"Suggestions: Skill The code should return status=success and mark'There is no such data for this stock', "
+                            f"Instead of returning error.{judgment.advice}"
                         )
                     else:
-                        # no_data 业务不合理：推荐换股
+                        # no_data The business is unreasonable: share exchange recommended
                         report.notes.append(
                             f"⚠️ helper {helper.name} 返回 {helper_status}（业务不合理）。"
-                            f"专家判断: {judgment.reasoning}。"
-                            f"建议换股重试。"
+                            f"expert judgment: {judgment.reasoning}. "
+                            f"It is recommended to exchange shares and try again."
                         )
                         if judgment.recommended_stocks:
                             for stock in judgment.recommended_stocks[:3]:
@@ -1024,7 +1024,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                         if judgment.advice:
                             report.notes.append(f"  专家建议: {judgment.advice}")
 
-                        # 把推荐股票写入 schema_facts，方便后续管道读取
+                        # Write recommended stocks into schema_facts to facilitate subsequent pipeline reading
                         if judgment.recommended_stocks:
                             recommended_codes = ", ".join(
                                 f"{s.get('code')}({s.get('name')})"
@@ -1039,15 +1039,15 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                             )
 
                     logger.info(
-                        f"🧠 [侦察层] 财经专家判断: is_rational={judgment.is_rational}, "
+                        f"🧠 [Reconnaissance level] Financial expert judgment: is_rational={judgment.is_rational}, "
                         f"confidence={judgment.confidence:.2f}"
                     )
 
                 else:
-                    # 其他状态（error 等）
+                    # Other status (error, etc.)
                     report.notes.append(
-                        f"⚠️ helper {helper.name} 真实调用返回 status={helper_status}，"
-                        f"warnings={helper_warnings}。LLM 应处理此情况。"
+                        f"⚠️ helper {helper.name} real call return status={helper_status}, "
+                        f"warnings={helper_warnings}. LLM This situation should be handled."
                     )
 
             except Exception as exc:
@@ -1059,7 +1059,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                 )
 
     def _get_client_safe(self):
-        """安全获取 LLM 客户端，失败返回 None"""
+        """Obtain the LLM client safely and return if failed None"""
         try:
             return self._get_client()
         except Exception:
@@ -1067,7 +1067,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
     @staticmethod
     def _infer_data_type(helper_name: str, spec) -> str:
-        """根据 helper 名和 spec 推断数据类型描述"""
+        """Infer data type description based on helper name and spec"""
         name_lower = helper_name.lower()
         if "pledge" in name_lower:
             return "质押数据"
@@ -1092,14 +1092,14 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         inspect_coverage_fn=None,
         inspect_symbol_fn=None,
     ) -> None:
-        """利用 project_access 函数丰富集合事实。"""
+        """Enrich collection facts with the project_access function."""
         if inspect_schema_fn is None:
             return
         try:
             schema_summary = inspect_schema_fn(collection, sample_size=12)
         except Exception as exc:
             report.runtime_gaps.append(
-                ImplementationIssue(path=collection, reason=f"无法读取集合 schema 摘要: {exc}", severity="warning")
+                ImplementationIssue(path=collection, reason=f"Unable to read collection schema summary: {exc}", severity="warning")
             )
             return
 
@@ -1107,7 +1107,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         top_fields = list(schema_summary.get("top_level_fields") or [])
         if sample_count <= 0:
             report.runtime_gaps.append(
-                ImplementationIssue(path=collection, reason="集合暂无可用样本，无法做字段侦察", severity="warning")
+                ImplementationIssue(path=collection, reason="There are currently no available samples in the collection, and field reconnaissance cannot be performed.", severity="warning")
             )
             return
 
@@ -1160,16 +1160,16 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             report.notes.append(f"{collection} 中未找到 {symbol} 的直接样本记录")
 
     # ================================================================
-    # Phase 2: LLM 驱动侦察
+    # Phase 2: LLM drive reconnaissance
     # ================================================================
 
     def _llm_driven_analyze(
         self, client, spec: SkillSpec, rule_report: ImplementationFactReport,
         has_many_helpers: bool = False
     ) -> ImplementationFactReport:
-        """通过 LLM function-calling 自主探索，产出增强版事实报告。
+        """Autonomous exploration through LLM function-calling produces enhanced fact reports.
         Args:
-            has_many_helpers: True 表示 helper >= 3，只做筛选，限制 2 轮
+            has_many_helpers: True express helper >= 3, Only screening, limited to 2 rounds
         """
         from core.llm import Message
 
@@ -1177,13 +1177,13 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         tool_traces: List[ReconToolTrace] = []
         phase1_helper_names = {h.name for h in rule_report.available_helpers}
 
-        # 注册侦察工具
+        # Register for Scouting Tools
         tool_defs = []
         for func in self._build_traced_tools(tool_traces):
             td = client.register_tool(func)
             tool_defs.append(td)
 
-        # 构建侦察 prompt：根据场景选择不同的系统提示
+        # Build reconnaissance prompt: choose different system prompts according to the scenario
         system_prompt = self._build_recon_system_prompt(has_many_helpers=has_many_helpers)
         user_prompt = self._build_recon_user_prompt(spec, rule_report)
         max_rounds = 2 if has_many_helpers else MAX_RECON_TOOL_ROUNDS
@@ -1195,18 +1195,18 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
         logger.info(
             f"\n{'─'*50}\n"
-            f"🧭 [侦察层] LLM {'筛选模式' if has_many_helpers else '探索模式'} | tool_id={spec.tool_id} | max_rounds={max_rounds}\n"
+            f"🧭 [Reconnaissance level] LLM {'filter mode' if has_many_helpers else 'exploration mode'} | tool_id={spec.tool_id} | max_rounds={max_rounds}\n"
             f"{'─'*50}\n"
-            f"📋 System Prompt ({len(system_prompt)} 字符):\n{system_prompt[:3000]}\n"
-            f"{'...(截断)' if len(system_prompt) > 3000 else ''}\n"
+            f"📋 System Prompt ({len(system_prompt)} character):\n{system_prompt[:3000]}\n"
+            f"{'...(Truncate)' if len(system_prompt) > 3000 else ''}\n"
             f"{'─'*50}\n"
-            f"📝 User Prompt ({len(user_prompt)} 字符):\n{user_prompt[:2000]}\n"
-            f"{'...(截断)' if len(user_prompt) > 2000 else ''}\n"
-            f"🔧 可用工具: {[td['function']['name'] for td in tool_defs]}\n"
+            f"📝 User Prompt ({len(user_prompt)} character):\n{user_prompt[:2000]}\n"
+            f"{'...(Truncate)' if len(user_prompt) > 2000 else ''}\n"
+            f"🔧 Available tools: {[td['function']['name'] for td in tool_defs]}\n"
             f"{'─'*50}"
         )
 
-        # 执行工具调用循环
+        # Execute tool call loop
         try:
             response = client.chat(
                 messages,
@@ -1223,14 +1223,14 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
         logger.info(
             f"\n{'─'*50}\n"
-            f"📥 [侦察层] LLM 输出 ({len(raw_output)} 字符, {elapsed:.1f}s)\n"
+            f"📥 [Reconnaissance level] LLM output ({len(raw_output)} character, {elapsed:.1f}s)\n"
             f"{'─'*50}\n"
             f"{raw_output[:3000]}\n"
-            f"{'...(截断)' if len(raw_output) > 3000 else ''}\n"
+            f"{'...(Truncate)' if len(raw_output) > 3000 else ''}\n"
             f"{'─'*50}"
         )
 
-        # 解析 LLM 输出为 ImplementationFactReport
+        # Parsing the LLM output is ImplementationFactReport
         report = self._parse_llm_report(raw_output, spec, rule_report)
         report.tool_traces = tool_traces
         report.confidence = max(report.confidence, 0.75)
@@ -1238,7 +1238,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         report.notes.append(f"侦察耗时: {elapsed:.1f}s（LLM 驱动）")
         self._log_tool_trace_summary(spec.tool_id, tool_traces, failed=False)
 
-        # Phase 2 分析完成后的总结日志
+        # Phase 2 Summary log after analysis is completed
         if tool_traces:
             phase1_helper_names = {h.name for h in rule_report.available_helpers}
             phase2_helpers = set()
@@ -1259,10 +1259,10 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                 col_list = ", ".join(redundant_collections)
                 logger.warning(
                     f"\n{'='*80}\n"
-                    f"⚠️ [侦察层 Phase 2] 检测到可能冗余的集合探测\n"
-                    f"   Phase 1 已发现 helpers: {', '.join(phase1_helper_names) or '无'}\n"
-                    f"   Phase 2 探测的集合: {col_list}\n"
-                    f"   建议: 如果任务可通过已有 helper 完成，可简化系统提示避免探索无关集合\n"
+                    f"⚠️ [Reconnaissance level Phase 2] Possibly redundant collection probe detected\n"
+                    f"   Phase 1 Found helpers: {', '.join(phase1_helper_names) or 'None'}\n"
+                    f"   Phase 2 collection of probes: {col_list}\n"
+                    f"   Suggestions: If the task can be completed through an existing helper, the system prompts can be simplified to avoid exploring irrelevant collections\n"
                     f"{'='*80}"
                 )
         return report
@@ -1285,18 +1285,18 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         failed: bool,
     ) -> None:
         if not tool_traces:
-            logger.info("🧭 [侦察层] 无工具调用轨迹 | tool_id=%s | failed=%s", tool_id, failed)
+            logger.info("🧭 [Reconnaissance level] No tool call trace | tool_id=%s | failed=%s", tool_id, failed)
             return
 
         logger.info(
-            "🧭 [侦察层] 工具调用轨迹汇总 | tool_id=%s | count=%s | failed=%s",
+            "🧭 [Reconnaissance level] Tool call trajectory summary | tool_id=%s | count=%s | failed=%s",
             tool_id,
             len(tool_traces),
             failed,
         )
         for index, trace in enumerate(tool_traces, start=1):
             logger.info(
-                "🧭 [侦察层] 工具轨迹[%s] | tool=%s | success=%s | duration_ms=%s | result_chars=%s | args=%s\n%s",
+                "🧭 [Reconnaissance level] Tool trajectory[%s] | tool=%s | success=%s | duration_ms=%s | result_chars=%s | args=%s\n%s",
                 index,
                 trace.tool_name,
                 trace.success,
@@ -1323,14 +1323,14 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
                 try:
                     logger.info(
-                        "🧭 [侦察层] 调用工具 | tool=%s | args=%s",
+                        "🧭 [Reconnaissance level] Call tool | tool=%s | args=%s",
                         __func.__name__,
                         json.dumps(arguments, ensure_ascii=False, default=str),
                     )
                     result = __func(*args, **kwargs)
                     preview = str(result)
                     logger.info(
-                        "🧭 [侦察层] 工具返回 | tool=%s | chars=%s\n%s",
+                        "🧭 [Reconnaissance level] tool returns | tool=%s | chars=%s\n%s",
                         __func.__name__,
                         len(preview),
                         DefaultReconnaissanceController._truncate_log_text(preview),
@@ -1348,7 +1348,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     return result
                 except Exception as exc:
                     logger.warning(
-                        "🧭 [侦察层] 工具异常 | tool=%s | args=%s | error=%s",
+                        "🧭 [Reconnaissance level] Tool exception | tool=%s | args=%s | error=%s",
                         __func.__name__,
                         json.dumps(arguments, ensure_ascii=False, default=str),
                         exc,
@@ -1370,38 +1370,38 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         return traced_tools
 
     # ================================================================
-    # Prompt 构建 & 输出解析
+    # Prompt build & Output parsing
     # ================================================================
 
     @staticmethod
     def _build_recon_system_prompt(has_many_helpers: bool = False) -> str:
         if has_many_helpers:
-            # helper 较多的场景：只做筛选，禁止探索
+            # helper More scenarios: only screening, no exploration
             return (
-                "你是一个 Skill 代码生成前置侦察 Agent。\n"
-                "## 【重要约束】当前场景：Phase 1 已找到 3+ 个候选 helper\n"
-                "你的任务非常单一：只需要从【规则基线推荐 Helper】列表中，筛选出最相关的 3-4 个即可。\n"
-                "你不需要探索任何新工具、新集合、新函数！不需要调用 list_* 系列工具！\n\n"
-                "## 允许做的唯一事情\n"
-                "1. 用 describe_runtime_helper 验证候选 helper 的签名（仅当你需要确认参数细节时）\n"
-                "2. 从候选列表中选择最相关的 3-4 个，填入 available_helpers\n\n"
-                "## 绝对禁止\n"
-                "❌ 禁止调用 list_available_collections\n"
-                "❌ 禁止调用 list_runtime_functions\n"
-                "❌ 禁止调用 list_analysis_tools\n"
-                "❌ 禁止调用 list_external_data_sources\n"
-                "❌ 禁止调用 inspect_collection_schema 去看不在推荐列表中的集合\n\n"
-                "## 输出格式\n"
-                "只输出一个纯 JSON 对象，包含 task_summary、recommended_strategy、available_helpers（筛选后的 3-4 个）、schema_facts、confidence。\n"
-                "工具调用轮数：最多 2 轮，不要做多余探索！"
+                "You are a Skill code generation pre-reconnaissance agent.\n"
+                "##  [Important constraints] Current scene: Phase 1 found 3+ candidates helper\n"
+                "Your task is very simple: you only need to filter out the most relevant 3-4 from the [Rule Baseline Recommendation Helper] list.\n"
+                "You don t need to explore any new tools, new collections, or new functions! No need to call list_* Series of tools!\n\n"
+                "## the only thing allowed\n"
+                "1. Use describe_runtime_helper to verify the signature of a candidate helper (only if you need to confirm parameter details)\n"
+                "2. Select the most relevant 3-4 from the candidate list and fill in available_helpers\n\n"
+                "## Absolutely prohibited\n"
+                "❌ Forbidden to call list_available_collections\n"
+                "❌ Forbidden to call list_runtime_functions\n"
+                "❌ Forbidden to call list_analysis_tools\n"
+                "❌ Forbidden to call list_external_data_sources\n"
+                "❌ Disable calling inspect_collection_schema to view collections that are not in the recommended list\n\n"
+                "## Output format\n"
+                "Only a pure JSON object is output, including task_summary, recommended_strategy, available_helpers (3-4 filtered ones), schema_facts, and confidence.\n"
+                "Number of tool call rounds: 2 rounds at most, don t do unnecessary exploration!"
             )
         
-        # helper 较少的场景：正常探索（备用分支，通常不会走到这里）
+        # helper Lesser scenarios: normal exploration (alternative branch, usually don't get this far)
         return (
-            "你是一个 Skill 代码生成前置侦察 Agent。\n"
-            "你的任务是通过调用工具，收集最少但足够的实现事实，帮助后续代码生成器写出正确、可运行的 Python 函数。\n\n"
-            "## 核心原则：按需探索，避免冗余\n"
-            "...（原有系统提示保持不变）..."
+            "You are a Skill code generation pre-reconnaissance agent.\n"
+            "Your task is to collect minimal but sufficient implementation facts by calling tools to help the subsequent code generator write correct and runnable Python functions.\n\n"
+            "## Core Principle: Explore on demand, avoid redundancy\n"
+            "... (The original system prompt remains unchanged)..."
         )
 
     @staticmethod
@@ -1415,9 +1415,9 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         parts = [
             f"## 待实现的 Skill\n"
             f"- tool_id: {spec.tool_id}\n"
-            f"- 名称: {spec.display_name}\n"
-            f"- 描述: {spec.description}\n"
-            f"- 分类: {spec.category}\n",
+            f"- Name: {spec.display_name}\n"
+            f"- Description: {spec.description}\n"
+            f"- Classification: {spec.category}\n",
         ]
         if spec.parameters:
             param_lines = [f"  - {p.name}: {p.type} (默认: {p.default})" for p in spec.parameters]
@@ -1427,22 +1427,22 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         if spec.test_input:
             parts.append(f"- 测试输入: {json.dumps(spec.test_input, ensure_ascii=False)}")
 
-        # 附加规则基线已知的事实
+        # Additional rule baseline known facts
         if rule_report.schema_facts:
             baseline_facts = [f"  - [{f.source}] {f.fact}" for f in rule_report.schema_facts[:5]]
-            parts.append(f"\n## 规则基线已知事实（来自向量搜索 + 静态分析，已可信）\n" + "\n".join(baseline_facts))
+            parts.append(f"\n## Rule baseline known facts (from vector search + Static analysis, already trusted)\n" + "\n".join(baseline_facts))
         if rule_report.available_helpers:
             helper_lines = []
             for h in rule_report.available_helpers[:5]:
                 ds = h.data_source_handling or "self_contained"
                 helper_lines.append(f"  - {h.module}.{h.name} [数据源:{ds}]: {h.reason}")
             parts.append(
-                "\n## 规则基线推荐 Helper（来自向量搜索，已高置信）\n"
-                + "数据源标签: self_contained=自包含(直接调用); local_only=仅本地MongoDB(可能需补充外部数据源); partial=部分覆盖\n"
+                "\n## Rule baseline recommendation Helper (from vector search, high confidence)\n"
+                + "Data source tag: self_contained=self contained(call directly); local_only=local only MongoDB(May need to supplement external data sources); partial=partial coverage\n"
                 + "\n".join(helper_lines)
-                + "\n\n⚠️ 这些 helper 已通过语义匹配筛选，**只需用 describe_runtime_helper 验证签名即可**，"
-                "不要用 list_runtime_functions 重新列举。如果签名匹配需求，直接加入 available_helpers 输出。\n"
-                "⚠️ 选用 helper 时注意数据源标签：local_only 的 helper 若本地无数据，需在 skill 中补充外部数据源调用；self_contained 的 helper 直接调用即可。"
+                + "\n\n⚠️ These helpers have been filtered by semantic matching,**Just verify the signature with describe_runtime_helper**, "
+                "Do not use list_runtime_functions to re-list. If the signature matches the requirements, add available_helpers output directly.\n"
+                "⚠️ When selecting a helper, pay attention to the data source tag: if there is no local data for the local_only helper, you need to add an external data source call in the skill; just call the self_contained helper directly."
             )
         if data_contract_doc:
             parts.append(f"\n## 任务相关数据契约\n{data_contract_doc}")
@@ -1450,26 +1450,26 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             parts.append(
                 "\n## 任务相关因子白名单\n"
                 f"{factor_catalog_doc}\n"
-                "请重点验证这些因子对应的 helper、字段路径和可复用 bundle 是否已经足够，不要把 catalog 里已有因子误判成新缺口。"
+                "Please focus on verifying whether the helpers, field paths and reusable bundles corresponding to these factors are sufficient, and do not misjudge existing factors in the catalog as new gaps."
             )
 
-        # 附加推荐集合（来自 rule_report 的 schema_facts 中提取）
+        # Additional recommendation collection (extracted from schema_facts of rule_report)
         recommended_collections = [
             f.source for f in (rule_report.schema_facts or [])
             if "推荐优先复用本地集合" in (f.fact or "")
         ]
         if recommended_collections:
             parts.append(
-                "\n## 规则基线推荐集合（已可信，直接验证字段即可）\n"
+                "\n## Rule baseline recommendation set (trusted, just verify the fields directly)\n"
                 + "\n".join(f"  - {c}" for c in recommended_collections[:4])
-                + "\n\n⚠️ 这些集合已通过需求分析筛选，**只需用 inspect_collection_schema 验证字段即可**，"
-                "不要用 list_available_collections 重新列举所有集合。"
+                + "\n\n⚠️ These collections have been filtered through requirements analysis,**Just verify the fields with inspect_collection_schema**, "
+                "Do not use list_available_collections to re-list all collections."
             )
 
         parts.append(
-            "\n## 请求\n"
-            "请先依据数据契约理解字段层级，再通过工具调用验证关键路径。输出时只保留会影响代码实现的最小事实集，不要写成长篇方案说明。\n"
-            "⚠️ 最多 6 轮工具调用。每轮必须有明确目的。如果基线已推荐 helper 和集合，理想情况下 2-3 轮即可完成验证。"
+            "\n## Request\n"
+            "Please first understand the field hierarchy according to the data contract, and then verify the critical path through tool calls. When outputting, keep only the minimum set of facts that will affect the code implementation, and do not write a long solution description.\n"
+            "⚠️ Up to 6 rounds of tool calls. Each round must have a clear purpose. If the baseline has recommended helpers and collections, validation can ideally be completed in 2-3 rounds."
         )
         return "\n".join(parts)
 
@@ -1479,16 +1479,16 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         spec: SkillSpec,
         rule_report: ImplementationFactReport,
     ) -> ImplementationFactReport:
-        """解析 LLM 输出文本，提取 JSON 并构建 ImplementationFactReport。
+        """Parse LLM output text, extract JSON and build ImplementationFactReport.
 
-        解析策略：
-        1. 尝试从 ```json ... ``` 代码块中提取。
-        2. 尝试直接 json.loads 整段文本。
-        3. 如果都失败，使用 rule_report 作为降级，并将 LLM 文本追加到 notes。
+        Parsing strategy:
+        1. try to start from ```json ... ``` code block.
+        2. Try json.loads the entire text directly.
+        3. If all else fails, use rule_report as a fallback and append the LLM text to notes.
         """
         parsed: Optional[Dict[str, Any]] = None
 
-        # 策略 1: 提取 ```json ... ``` 块
+        # Strategy 1: Extract ```json ... ``` block
         import re
         json_blocks = re.findall(r"```(?:json)?\s*\n?(.*?)```", raw_output, re.DOTALL)
         for block in json_blocks:
@@ -1498,20 +1498,20 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             except (json.JSONDecodeError, ValueError):
                 continue
 
-        # 策略 2: 直接尝试解析整段
+        # Strategy 2: Directly try to parse the entire paragraph
         if parsed is None:
             try:
                 parsed = json.loads(raw_output.strip())
             except (json.JSONDecodeError, ValueError):
                 pass
 
-        # 策略 3: 降级
+        # Strategy 3: Downgrade
         if not isinstance(parsed, dict):
-            logger.warning("⚠️ 侦察层无法从 LLM 输出中解析 JSON，降级为规则报告")
-            rule_report.notes.append(f"LLM 侦察输出未能解析为 JSON，已降级。原始输出前500字: {raw_output[:500]}")
+            logger.warning("⚠️ Recon layer cannot parse JSON from LLM output, downgraded to rule reporting")
+            rule_report.notes.append(f"LLM Recon output failed to parse to JSON and has been downgraded. First 500 words of raw output: {raw_output[:500]}")
             return rule_report
 
-        # 从 parsed dict 构建 report
+        # Build from parsed dict report
         report = ImplementationFactReport(
             task_summary=parsed.get("task_summary", spec.description),
             recommended_strategy=parsed.get("recommended_strategy", rule_report.recommended_strategy),
@@ -1523,7 +1523,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
         for h in parsed.get("available_helpers") or []:
             if isinstance(h, dict) and h.get("name"):
                 helper_name = h["name"]
-                # 优先使用 LLM 输出的 data_source_handling；否则查 ToolRegistry 获取
+                # Priority is given to using data_source_handling output by LLM; otherwise, check ToolRegistry to obtain
                 data_source_handling = str(h.get("data_source_handling", "") or "").strip()
                 if not data_source_handling:
                     try:
@@ -1592,7 +1592,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
 
                 if raw_type in ("business", "business_check", "custom"):
                     report.notes.append(
-                        f"忽略不可执行的业务描述规则: {vc.get('description') or vc.get('name') or raw_type}"
+                        f"Ignore unenforceable business description rules: {vc.get('description') or vc.get('name') or raw_type}"
                     )
                     continue
 
@@ -1603,7 +1603,7 @@ class DefaultReconnaissanceController(ReconnaissanceController):
                     normalized_type = "required_field" if field_name else "required_non_empty_payload"
 
                 if normalized_type == "required_field" and field_name and expected_fields and field_name not in expected_fields:
-                    report.notes.append(f"忽略未纳入规格输出的侦察字段规则: {field_name}")
+                    report.notes.append(f"Ignore scouting field rules that are not included in the spec output: {field_name}")
                     continue
 
                 report.validation_checks.append(
@@ -1625,14 +1625,14 @@ class DefaultReconnaissanceController(ReconnaissanceController):
             if isinstance(note, str):
                 report.notes.append(note)
 
-        # 补充 rule_report 中有但 LLM 报告缺失的关键信息
+        # Add key information that is present in rule_report but missing from the LLM report
         if not report.blocked_paths and rule_report.blocked_paths:
             report.blocked_paths.extend(rule_report.blocked_paths)
         if not report.validation_checks and rule_report.validation_checks:
             report.validation_checks.extend(rule_report.validation_checks)
 
-        # 补充 available_helpers：Phase 1 规则基线推荐的 helpers 在 Phase 2 中可能被 LLM 遗漏，
-        # 必须保留以确保代码生成阶段能看到关键 helper（如 get_pledge_risk_profile）
+        # Added available_helpers: Helpers recommended by the Phase 1 rule baseline may be missed by LLM in Phase 2,
+        # Must be retained to ensure key helpers (such as get_pledge_risk_profile) are visible to the code generation phase
         if rule_report.available_helpers:
             existing_helper_names = {h.name for h in report.available_helpers if h.name}
             for base_helper in rule_report.available_helpers:

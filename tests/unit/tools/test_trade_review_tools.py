@@ -1,7 +1,7 @@
 """
-交易复盘工具集测试
+Trading review toolset testing
 
-测试 v2.0 工具系统中的交易复盘工具
+Test the transaction review tool in the v2.0 tool system
 """
 
 import pytest
@@ -9,13 +9,13 @@ from core.tools.registry import ToolRegistry
 
 
 class TestTradeReviewTools:
-    """交易复盘工具测试"""
+    """Trading review tool testing"""
     
     def test_tools_registered(self):
-        """测试工具是否正确注册"""
+        """Test whether the tool is correctly registered"""
         registry = ToolRegistry()
         
-        # 检查工具是否存在
+        # Check if the tool exists
         tool_ids = [
             "get_trade_records",
             "build_trade_info",
@@ -24,29 +24,29 @@ class TestTradeReviewTools:
         ]
         
         for tool_id in tool_ids:
-            assert registry.get_function(tool_id) is not None, f"工具 {tool_id} 未注册"
+            assert registry.get_function(tool_id) is not None, f"Tools {tool_id} Not registered"
     
     def test_tool_metadata(self):
-        """测试工具元数据"""
+        """Test tool metadata"""
         registry = ToolRegistry()
         
-        # 检查 get_account_info 工具元数据
+        # Check get_account_info tool metadata
         tool_func = registry.get_function("get_account_info")
         assert tool_func is not None
         
-        # 检查工具是否有正确的元数据
+        # Check if the tool has correct metadata
         assert hasattr(tool_func, '__name__')
         assert tool_func.__name__ == 'get_account_info'
     
     def test_build_trade_info_tool(self):
-        """测试 build_trade_info 工具"""
+        """Test the build_trade_info tool"""
         from core.tools.implementations.trade_review import build_trade_info
         
-        # 测试空数据
+        # Test empty data
         result = build_trade_info([], None)
         assert result["success"] is False
         
-        # 测试有效数据
+        # Test valid data
         trade_records = [
             {
                 "_id": "123",
@@ -83,10 +83,10 @@ class TestTradeReviewTools:
         assert data["holding_days"] == 9
     
     def test_agent_tools_binding(self):
-        """测试 Agent 工具绑定"""
+        """Test Agent Tool Binding"""
         from core.agents.config import BUILTIN_AGENTS
 
-        # 检查 position_analyst 是否绑定了新工具
+        # Check if position_analyst is bound to a new tool
         position_analyst = BUILTIN_AGENTS.get("position_analyst")
         assert position_analyst is not None
 
@@ -99,20 +99,20 @@ class TestTradeReviewTools:
 
         for tool_id in expected_tools:
             assert tool_id in position_analyst.tools, \
-                f"工具 {tool_id} 未绑定到 position_analyst"
+                f"Tools {tool_id} not bound to position_analyst"
 
-        # 检查默认工具
+        # Check default tools
         assert "build_trade_info" in position_analyst.default_tools
         assert "get_account_info" in position_analyst.default_tools
 
     def test_emotion_analyst_tools_binding(self):
-        """测试 emotion_analyst 工具绑定"""
+        """Testing the emotion_analyst tool binding"""
         from core.agents.config import BUILTIN_AGENTS
 
         emotion_analyst = BUILTIN_AGENTS.get("emotion_analyst")
         assert emotion_analyst is not None
 
-        # 检查是否绑定了交易复盘工具
+        # Check whether the transaction review tool is bound
         expected_tools = [
             "get_trade_records",
             "build_trade_info",
@@ -121,23 +121,23 @@ class TestTradeReviewTools:
 
         for tool_id in expected_tools:
             assert tool_id in emotion_analyst.tools, \
-                f"工具 {tool_id} 未绑定到 emotion_analyst"
+                f"Tools {tool_id} not bound to emotion_analyst"
 
-        # 检查默认工具
+        # Check default tools
         assert "build_trade_info" in emotion_analyst.default_tools
         assert "get_account_info" in emotion_analyst.default_tools
 
-        # 检查 requires_tools 标志
+        # Check requires_tools flag
         assert emotion_analyst.requires_tools is True
 
     def test_review_manager_tools_binding(self):
-        """测试 review_manager 工具绑定"""
+        """Test review_manager tool binding"""
         from core.agents.config import BUILTIN_AGENTS
 
         review_manager = BUILTIN_AGENTS.get("review_manager")
         assert review_manager is not None
 
-        # 检查是否绑定了交易复盘工具
+        # Check whether the transaction review tool is bound
         expected_tools = [
             "get_trade_records",
             "build_trade_info",
@@ -147,13 +147,13 @@ class TestTradeReviewTools:
 
         for tool_id in expected_tools:
             assert tool_id in review_manager.tools, \
-                f"工具 {tool_id} 未绑定到 review_manager"
+                f"Tools {tool_id} not bound to review_manager"
 
-        # 检查默认工具
+        # Check default tools
         assert "build_trade_info" in review_manager.default_tools
         assert "get_account_info" in review_manager.default_tools
 
-        # 检查 requires_tools 标志
+        # Check requires_tools flag
         assert review_manager.requires_tools is True
 
 

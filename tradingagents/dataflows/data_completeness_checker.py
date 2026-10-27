@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-数据完整性检查器
-用于检查历史数据是否完整、是否包含最新交易日，并在需要时自动重新拉取
+Data integrity checker
+Used to check whether historical data is complete and includes the latest trading day, and automatically re-pulls it when needed.
 """
 
 import logging
@@ -27,20 +27,20 @@ class DataCompletenessChecker:
         market: str = "CN"
     ) -> Tuple[bool, str, dict]:
         """
-        检查数据完整性
+        Check data integrity
         
         Args:
-            symbol: 股票代码
-            data: 数据字符串
-            start_date: 开始日期 (YYYY-MM-DD)
-            end_date: 结束日期 (YYYY-MM-DD)
-            market: 市场类型 (CN/HK/US)
+            symbol: Stock code
+            data: data string
+            start_date: start date (YYYY-MM-DD)
+            end_date: end date (YYYY-MM-DD)
+            market: market type (CN/HK/US)
         
         Returns:
             (is_complete, message, details)
-            - is_complete: 数据是否完整
-            - message: 检查结果消息
-            - details: 详细信息字典
+            - is_complete: Is the data complete?
+            - message: Check result message
+            - details: Detail dictionary
         """
         details = {
             "symbol": symbol,
@@ -56,11 +56,11 @@ class DataCompletenessChecker:
             "completeness_ratio": 0.0
         }
         
-        # 1. 检查数据是否为空或错误
+        # 1. Check if the data is empty or wrong
         if not data or "❌" in data or "错误" in data or "获取失败" in data:
             return False, "数据为空或包含错误", details
         
-        # 2. 尝试解析数据
+        # 2. Try to parse the data
         try:
             df = self._parse_data_to_dataframe(data)
             if df is None or df.empty:
@@ -68,13 +68,13 @@ class DataCompletenessChecker:
             
             details["data_rows"] = len(df)
             
-            # 3. 获取数据中的日期范围
+            # 3. Get the date range in the data
             if 'date' in df.columns:
                 date_col = 'date'
             elif 'trade_date' in df.columns:
                 date_col = 'trade_date'
             else:
-                # 尝试查找日期列
+                # Try to find date column
                 date_col = None
                 for col in df.columns:
                     if 'date' in col.lower() or '日期' in col:
@@ -85,7 +85,7 @@ class DataCompletenessChecker:
                     self.logger.warning(f"⚠️ 无法找到日期列: {symbol}")
                     return False, "无法找到日期列", details
             
-            # 转换日期列为 datetime
+            # The conversion date is listed as datetime
             df[date_col] = pd.to_datetime(df[date_col])
             df = df.sort_values(date_col)
             
@@ -93,49 +93,49 @@ class DataCompletenessChecker:
             data_end_date = df[date_col].max()
             details["latest_date_in_data"] = data_end_date.strftime('%Y-%m-%d')
             
-            # 4. 获取最新交易日
+            # 4. Get the latest trading day
             latest_trade_date = self._get_latest_trade_date(market)
             details["latest_trade_date"] = latest_trade_date
             
-            # 5. 检查是否包含最新交易日
+            # 5. Check if the latest trading day is included
             if latest_trade_date:
                 latest_trade_dt = datetime.strptime(latest_trade_date, '%Y-%m-%d')
                 details["has_latest_trade_date"] = data_end_date.date() >= latest_trade_dt.date()
             
-            # 6. 计算预期交易日数量（粗略估算）
+            # 6. Calculate expected number of trading days (rough estimate)
             start_dt = datetime.strptime(start_date, '%Y-%m-%d')
             end_dt = datetime.strptime(end_date, '%Y-%m-%d')
             total_days = (end_dt - start_dt).days + 1
             
-            # 假设交易日约占总天数的 70%（考虑周末和节假日）
+            # Assume trading days account for approximately 70% of total days (taking into account weekends and holidays)
             expected_trade_days = int(total_days * 0.7)
             details["expected_rows"] = expected_trade_days
             
-            # 7. 计算完整性比率
+            # 7. Calculate completeness ratio
             if expected_trade_days > 0:
                 completeness_ratio = len(df) / expected_trade_days
                 details["completeness_ratio"] = completeness_ratio
             
-            # 8. 检查数据缺口
+            # 8. Check for data gaps
             missing_days = self._check_data_gaps(df, date_col)
             details["missing_days"] = len(missing_days)
             
-            # 9. 综合判断
+            # 9. Comprehensive judgment
             is_complete = True
             messages = []
             
-            # 检查1：数据量是否足够
-            if len(df) < expected_trade_days * 0.5:  # 少于预期的50%
+            # Check 1: Is the amount of data sufficient?
+            if len(df) < expected_trade_days * 0.5:  # less than expected 50%
                 is_complete = False
                 messages.append(f"数据量不足（{len(df)}条，预期约{expected_trade_days}条）")
             
-            # 检查2：是否包含最新交易日
+            # Check 2: Whether the latest trading day is included
             if not details["has_latest_trade_date"]:
                 is_complete = False
                 messages.append(f"缺少最新交易日数据（最新: {details['latest_date_in_data']}, 应为: {latest_trade_date}）")
             
-            # 检查3：是否有较多缺口
-            if len(missing_days) > expected_trade_days * 0.1:  # 缺口超过10%
+            # Check 3: Are there many gaps?
+            if len(missing_days) > expected_trade_days * 0.1:  # gap exceeds 10%
                 is_complete = False
                 messages.append(f"数据缺口较多（{len(missing_days)}个缺口）")
             
@@ -151,11 +151,11 @@ class DataCompletenessChecker:
             return False, f"检查失败: {str(e)}", details
     
     def _parse_data_to_dataframe(self, data: str) -> Optional[pd.DataFrame]:
-        """将数据字符串解析为 DataFrame"""
+        """Parse the data string into DataFrame"""
         try:
-            # 尝试多种解析方式
+            # Try multiple parsing methods
             
-            # 方式1：假设是 CSV 格式
+            # Method 1: Assuming it is CSV format
             from io import StringIO
             try:
                 df = pd.read_csv(StringIO(data))
@@ -164,7 +164,7 @@ class DataCompletenessChecker:
             except Exception:
                 pass
             
-            # 方式2：假设是 TSV 格式
+            # Method 2: Assuming it is TSV format
             try:
                 df = pd.read_csv(StringIO(data), sep='\t')
                 if not df.empty:
@@ -172,7 +172,7 @@ class DataCompletenessChecker:
             except Exception:
                 pass
             
-            # 方式3：假设是空格分隔
+            # Method 3: Assume it is separated by spaces
             try:
                 df = pd.read_csv(StringIO(data), sep=r'\s+')
                 if not df.empty:
@@ -190,7 +190,7 @@ class DataCompletenessChecker:
         """获取最新交易日"""
         try:
             if market == "CN":
-                # A股：使用 Tushare 查找最新交易日
+                # A Stocks: Use Tushare to find the latest trading day
                 from tradingagents.dataflows.providers.china.tushare import TushareProvider
                 import asyncio
                 
@@ -205,12 +205,12 @@ class DataCompletenessChecker:
                     if latest_date:
                         return latest_date
             
-            # 备用方案：假设最新交易日是今天或昨天（如果今天是周末则往前推）
+            # Alternative: Assume the latest trading day is today or yesterday (or push forward if today is a weekend)
             today = datetime.now()
-            for delta in range(0, 5):  # 最多回溯5天
+            for delta in range(0, 5):  # Look back up to 5 days
                 check_date = today - timedelta(days=delta)
-                # 跳过周末
-                if check_date.weekday() < 5:  # 0-4 是周一到周五
+                # skip weekend
+                if check_date.weekday() < 5:  # 0-4 It's Monday to Friday
                     return check_date.strftime('%Y-%m-%d')
             
             return None
@@ -230,10 +230,10 @@ class DataCompletenessChecker:
                 current_date = dates[i]
                 next_date = dates[i + 1]
                 
-                # 计算日期差
+                # Calculate date difference
                 delta = (next_date - current_date).days
                 
-                # 如果差距大于3天（考虑周末），可能有缺口
+                # If the gap is greater than 3 days (considering weekends), there may be a gap
                 if delta > 3:
                     missing_dates.append(f"{current_date.strftime('%Y-%m-%d')} 到 {next_date.strftime('%Y-%m-%d')}")
             
@@ -244,7 +244,7 @@ class DataCompletenessChecker:
             return []
 
 
-# 全局实例
+# global instance
 _checker = None
 
 def get_data_completeness_checker() -> DataCompletenessChecker:

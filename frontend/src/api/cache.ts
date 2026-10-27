@@ -1,10 +1,10 @@
 /**
- * 缓存管理 API
+ * Cache management API
  */
 import request from '@/api/request'
 
 /**
- * 缓存统计数据
+ * cache statistics
  */
 export interface CacheStats {
   totalFiles: number
@@ -16,7 +16,7 @@ export interface CacheStats {
 }
 
 /**
- * 缓存详情项
+ * Cache details item
  */
 export interface CacheDetailItem {
   type: string
@@ -28,7 +28,7 @@ export interface CacheDetailItem {
 }
 
 /**
- * 缓存详情响应
+ * Cache details response
  */
 export interface CacheDetailsResponse {
   items: CacheDetailItem[]
@@ -38,7 +38,7 @@ export interface CacheDetailsResponse {
 }
 
 /**
- * 缓存后端信息
+ * Caching backend information
  */
 export interface CacheBackendInfo {
   system: string
@@ -49,7 +49,7 @@ export interface CacheBackendInfo {
 }
 
 /**
- * 获取缓存统计
+ * Get cache statistics
  */
 export function getCacheStats() {
   return request<CacheStats>({
@@ -59,8 +59,8 @@ export function getCacheStats() {
 }
 
 /**
- * 清理过期缓存
- * @param days 清理多少天前的缓存
+ * Clear expired cache
+ * @param days How many days old cache should be cleared?
  */
 export function cleanupOldCache(days: number) {
   return request({
@@ -71,7 +71,7 @@ export function cleanupOldCache(days: number) {
 }
 
 /**
- * 清空所有缓存
+ * Clear all cache
  */
 export function clearAllCache() {
   return request({
@@ -81,9 +81,9 @@ export function clearAllCache() {
 }
 
 /**
- * 获取缓存详情列表
- * @param page 页码
- * @param pageSize 每页数量
+ * Get cache details list
+ * @param page Page number
+ * @param pageSize Quantity per page
  */
 export function getCacheDetails(page: number = 1, pageSize: number = 20) {
   return request<CacheDetailsResponse>({
@@ -94,7 +94,7 @@ export function getCacheDetails(page: number = 1, pageSize: number = 20) {
 }
 
 /**
- * 获取缓存后端信息
+ * Get cache backend information
  */
 export function getCacheBackendInfo() {
   return request<CacheBackendInfo>({

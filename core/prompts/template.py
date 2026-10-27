@@ -1,5 +1,5 @@
 """
-提示词模板
+prompt word template
 """
 
 import re
@@ -8,25 +8,25 @@ from typing import Any, Dict, List, Optional, Set
 
 class PromptTemplate:
     """
-    提示词模板
+    prompt word template
     
-    支持变量替换和条件渲染
+    Support variable substitution and conditional rendering
     
-    用法:
+    Usage:
         template = PromptTemplate('''
-        你是一个{role}。
+        you are a{role}. 
         
-        分析以下股票: {ticker}
-        日期: {date}
+        Analyze the following stocks: {ticker}
+        Date: {date}
         
         {#if include_history}
-        历史数据:
+        historical data:
         {history}
         {/if}
         ''')
         
         result = template.render(
-            role="市场分析师",
+            role="market analyst",
             ticker="AAPL",
             date="2024-01-15",
             include_history=True,
@@ -34,10 +34,10 @@ class PromptTemplate:
         )
     """
     
-    # 变量模式: {variable_name}
+    # variable mode: {variable_name}
     VAR_PATTERN = re.compile(r'\{([a-zA-Z_][a-zA-Z0-9_]*)\}')
     
-    # 条件模式: {#if condition}...{/if}
+    # conditional pattern: {#if condition}...{/if}
     IF_PATTERN = re.compile(
         r'\{#if\s+([a-zA-Z_][a-zA-Z0-9_]*)\}(.*?)\{/if\}',
         re.DOTALL
@@ -58,41 +58,41 @@ class PromptTemplate:
     
     @property
     def variables(self) -> Set[str]:
-        """获取模板中的所有变量"""
+        """Get all variables in template"""
         if self._variables is None:
             self._variables = set(self.VAR_PATTERN.findall(self.template))
-            # 添加条件变量
+            # Add condition variable
             for match in self.IF_PATTERN.finditer(self.template):
                 self._variables.add(match.group(1))
         return self._variables
     
     def render(self, **kwargs) -> str:
         """
-        渲染模板
+        render template
         
         Args:
-            **kwargs: 模板变量
+            **kwargs: Template variables
             
         Returns:
-            渲染后的字符串
+            Rendered string
         """
         result = self.template
         
-        # 处理条件块
+        # Handle conditional blocks
         result = self._process_conditions(result, kwargs)
         
-        # 替换变量
+        # Substitute variables
         result = self._replace_variables(result, kwargs)
         
         return result.strip()
     
     def _process_conditions(self, text: str, variables: Dict[str, Any]) -> str:
-        """处理条件块"""
+        """Handle conditional blocks"""
         def replace_condition(match):
             condition_var = match.group(1)
             content = match.group(2)
             
-            # 检查条件
+            # Check conditions
             if variables.get(condition_var):
                 return content
             return ""
@@ -100,7 +100,7 @@ class PromptTemplate:
         return self.IF_PATTERN.sub(replace_condition, text)
     
     def _replace_variables(self, text: str, variables: Dict[str, Any]) -> str:
-        """替换变量"""
+        """Substitute variables"""
         def replace_var(match):
             var_name = match.group(1)
             value = variables.get(var_name, "")
@@ -110,10 +110,10 @@ class PromptTemplate:
     
     def validate(self, **kwargs) -> List[str]:
         """
-        验证变量是否完整
+        Verify that the variable is complete
         
         Returns:
-            缺失的变量列表
+            Missing variable list
         """
         missing = []
         for var in self.variables:
@@ -129,16 +129,16 @@ class PromptTemplate:
 
 
 class SystemPrompt(PromptTemplate):
-    """系统提示词模板"""
+    """System prompt word template"""
     pass
 
 
 class UserPrompt(PromptTemplate):
-    """用户提示词模板"""
+    """User prompt word template"""
     pass
 
 
 class AssistantPrompt(PromptTemplate):
-    """助手提示词模板"""
+    """Assistant prompt word template"""
     pass
 

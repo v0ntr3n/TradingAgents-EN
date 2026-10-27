@@ -1,27 +1,27 @@
 """
-社区版权限门控 stub（v3.6.0 社区版开源分离 · M1 §7.3）
+Community edition permission gating stub (v3.6.0 community edition open source separation · M1 §7.3) 
 
-社区版发布时的门控替换实现：无授权服务器、无 token 验证、无网络请求。
-发布脚本（scripts/publish_community.py，方案 §8.1 步骤 c）按以下方式指向本模块：
+Gating replacement implementation when the community version is released: no authorization server, no token verification, no network request.
+Publish script (scripts/publish_community.py, scheme §8.1 Step c) Point to this module as follows:
 
-1. app/core/permissions.py → 整文件替换为薄壳：从本模块 re-export
+1. app/core/permissions.py → Replace the entire file with a thin shell: from this module re-export
    get_app_token / get_license_info / require_pro / require_feature / PRO_FEATURES
-2. app/services/license_service.py → 整文件替换为薄壳：从本模块 re-export
+2. app/services/license_service.py → Replace the entire file with a thin shell: from this module re-export
    LicenseInfo / LicenseService(=CommunityLicenseService) / get_license_service / FREE_ACCESS_FEATURES
-3. core/licensing/：删除 validator.py / manager.py / features.py，保留 models.py 与本文件，
-   __init__.py 改为从本模块 re-export（core/api/agent_api.py 的 LicenseManager 引用自动切换）
+3. core/licensing/: Delete validator.py / manager.py / features.py, keep models.py and this file,
+   __init__.py Change to re-export from this module (the LicenseManager reference of core/api/agent_api.py switches automatically)
 
-语义约定：
-- require_pro / require_feature（FastAPI 依赖）：放行透传。社区版 Pro 功能靠发布管道
-  物理剔除（PRO_ROUTERS / views/pro），保留文件中的残留门控（如 advanced_courses.py
-  路由级依赖）不应阻断社区版主链路。
-- has_feature：保持免费语义——FREE_ACCESS_FEATURES 放行，其余 False。
-  社区版保留代码中的 Pro 子功能门控（如 review.py 的 trading_plan_check）继续拦截。
-- is_pro：恒 False（社区版无付费体系，plan 恒为 "free"）。
-- 配额：内置 Free 档（分析师 4、研究员 2、单并发、API 100/日），
-  数值与 core/licensing/models.py 的 TIER_FEATURES[FREE] 保持一致。
+Semantic convention:
+- require_pro / require_feature (FastAPI Dependence): Allow transparent transmission. Community Edition Pro features rely on release pipeline
+  Physical culling (PRO_ROUTERS/views/pro), retaining residual gates in files (e.g. advanced_courses.py
+  Routing level dependencies) should not block the community moderator link.
+- has_feature: keep free semantics——FREE_ACCESS_FEATURES Pass, rest False.
+  Pro sub-function gates (such as trading_plan_check in review.py) in the Community Edition reserved code continue to block.
+- is_pro: Heng False (the community version has no payment system, plan Hengwei "free") . 
+- Quota: Built-in Free file (analyst 4, researcher 2, single concurrency, API 100/day),
+  Numerical and core/licensing/models.py TIER_FEATURES[FREE] Be consistent.
 
-见 docs/05-design/v3.0/v3.6.0-community-edition-separation-plan.md §7.3
+see docs/05-design/v3.0/v3.6.0-community-edition-separation-plan.md §7.3
 """
 
 import logging
@@ -37,89 +37,89 @@ logger = logging.getLogger("core.licensing.community_stub")
 
 
 # =============================================================================
-# 社区版配额（Free 档）
+# Community edition quota (Free file)
 # =============================================================================
 
 COMMUNITY_TIER_FEATURES = LicenseFeatures(
-    max_analysts=4,               # 最大分析师数量
-    max_researchers=2,            # 最大研究员数量
-    allow_custom_agents=False,    # 不允许自定义智能体
-    max_workflows=3,              # 最大保存工作流数
-    max_nodes_per_workflow=10,    # 每个工作流最大节点数
-    allow_workflow_export=False,  # 不允许导出工作流
-    allow_sector_analyst=False,   # 行业分析师
-    allow_index_analyst=False,    # 大盘分析师
-    allow_parallel_execution=False,   # 并行执行
-    allow_memory_persistence=False,   # 记忆持久化
-    daily_api_calls=100,          # 每日 API 调用限制
-    max_concurrent_executions=1,  # 最大并发执行数（单并发）
+    max_analysts=4,               # Maximum number of analysts
+    max_researchers=2,            # Maximum number of researchers
+    allow_custom_agents=False,    # Custom agents are not allowed
+    max_workflows=3,              # Maximum number of saved workflows
+    max_nodes_per_workflow=10,    # Maximum number of nodes per workflow
+    allow_workflow_export=False,  # Export workflow not allowed
+    allow_sector_analyst=False,   # Industry Analyst
+    allow_index_analyst=False,    # Market Analyst
+    allow_parallel_execution=False,   # Parallel execution
+    allow_memory_persistence=False,   # memory persistence
+    daily_api_calls=100,          # Daily API call limit
+    max_concurrent_executions=1,  # Maximum number of concurrent executions (single concurrent)
 )
 
-# 社区版免费放行的功能（与 app/services/license_service.py 的 FREE_ACCESS_FEATURES 对齐）
+# Community version free release function (aligned with FREE_ACCESS_FEATURES in app/services/license_service.py)
 FREE_ACCESS_FEATURES = {"portfolio_analysis", "trade_review"}
 
-# 社区版无 Pro 专属功能（Pro 功能靠发布管道物理剔除，不靠运行时门控）
+# The Community Edition does not have Pro exclusive functions (Pro functions are physically removed from the release pipeline and do not rely on runtime gating)
 PRO_FEATURES: list[str] = []
 
 
 # =============================================================================
-# LicenseInfo 模型（同 app/services/license_service.py 字段定义）
+# LicenseInfo Model (same as app/services/license_service.py field definition)
 # =============================================================================
 
 class LicenseInfo(BaseModel):
-    """授权信息（社区版：恒为 free 档有效授权）"""
+    """Authorization information (community version: Hengwei free file is validly authorized)"""
     email: str
-    plan: str  # 社区版恒为 "free"
+    plan: str  # Community version Hengwei "free"
     features: list[str] = Field(default_factory=list)
     device_registered: bool = False
     is_valid: bool = True
     error_message: Optional[str] = None
     verified_at: Optional[Any] = None
-    # 到期时间
-    trial_end_at: Optional[str] = None  # 试用到期时间
-    pro_expire_at: Optional[str] = None  # PRO到期时间
-    # 缓存相关
+    # Expiration time
+    trial_end_at: Optional[str] = None  # Trial expiration date
+    pro_expire_at: Optional[str] = None  # PRO Expiration time
+    # Cache related
     cached: bool = False
     cache_expires_at: Optional[Any] = None
-    # 离线模式
+    # Offline mode
     offline_mode: bool = False
 
 
 def _community_license_info(email: str = "") -> LicenseInfo:
-    """构造社区版授权信息（free 档、有效、无网络验证）"""
+    """Construct community version authorization information (free file, valid, no network verification)"""
     return LicenseInfo(email=email, plan="free", is_valid=True, error_message=None)
 
 
 # =============================================================================
-# 授权服务 stub（同 app/services/license_service.py 入口签名）
+# Authorization service stub (same as app/services/license_service.py entry signature)
 # =============================================================================
 
 class CommunityLicenseService:
-    """社区版授权服务：无外部验证，仅提供免费语义判断"""
+    """Community Edition Authorization Service: No external verification, only free semantic judgment provided"""
 
     def get_available_servers(self) -> list[dict[str, str]]:
-        """社区版无授权服务器"""
+        """Community Edition without authorized server"""
         return []
 
     def resolve_auth_server(self, auth_server: Optional[str] = None) -> str:
-        """社区版无授权服务器"""
+        """Community Edition without authorized server"""
         return ""
 
     def get_base_url(self, auth_server: Optional[str] = None) -> str:
-        """社区版无授权服务器"""
+        """Community Edition without authorized server"""
         return ""
 
     async def verify_app_token(self, token: str, auth_server: Optional[str] = None) -> LicenseInfo:
-        """社区版不验证 token（license 路由已剔除，此方法仅为兼容残留调用，防御性返回 free 档）"""
-        logger.debug("社区版跳过 App Token 验证")
+        """The community version does not verify the token (the license route has been eliminated, this method is only a compatible residual call, and defensively returns to the free file)"""
+        logger.debug("Community Edition skips App Token verification")
         return _community_license_info()
 
     def is_pro(self, license_info: LicenseInfo) -> bool:
-        """社区版无付费体系，恒为非 PRO"""
+        """There is no payment system for the community version. PRO"""
         return False
 
     def has_feature(self, license_info: LicenseInfo, feature: str) -> bool:
-        """免费语义：FREE_ACCESS_FEATURES 放行，其余拦截（社区版 plan 恒为 free）"""
+        """Free semantics: FREE_ACCESS_FEATURES is released, and the rest are intercepted (the community version plan is always free)"""
         if not license_info.is_valid:
             return False
         if feature in FREE_ACCESS_FEATURES:
@@ -129,16 +129,16 @@ class CommunityLicenseService:
         return False
 
     def clear_cache(self, token: Optional[str] = None, auth_server: Optional[str] = None) -> None:
-        """社区版无缓存"""
+        """Community Edition without caching"""
         pass
 
 
-# 单例服务（同 get_license_service 形态）
+# Single instance service (same form as get_license_service)
 _license_service: Optional[CommunityLicenseService] = None
 
 
 def get_license_service() -> CommunityLicenseService:
-    """获取社区版授权服务实例（单例）"""
+    """Get community version authorization service instance (single case)"""
     global _license_service
     if _license_service is None:
         _license_service = CommunityLicenseService()
@@ -146,13 +146,13 @@ def get_license_service() -> CommunityLicenseService:
 
 
 # =============================================================================
-# FastAPI 路由依赖（同 app/core/permissions.py 入口签名）
+# FastAPI Routing dependencies (same as app/core/permissions.py entry signature)
 # =============================================================================
 
 async def get_app_token(
     x_app_token: Optional[str] = Header(None, alias="X-App-Token")
 ) -> Optional[str]:
-    """从请求头获取 App Token（社区版不使用，保留签名兼容）"""
+    """Obtain the App Token from the request header (not used by the community version, retain signature compatibility)"""
     return x_app_token
 
 
@@ -161,10 +161,10 @@ async def get_license_info(
     user: dict = Depends(get_current_user)
 ) -> LicenseInfo:
     """
-    获取用户的授权信息（社区版：恒为 free 档有效授权，无网络验证）
+    Obtain the user s authorization information (community version: Hengwei free file is validly authorized, no network verification)
 
-    与 app/core/permissions.py 同签名；社区版发布时
-    app/routers/auth_db.py 为保留路由，依赖链可正常解析。
+    Same signature as app/core/permissions.py; when the community version is released
+    app/routers/auth_db.py To preserve routing, dependency chains can be resolved normally.
     """
     email = user.get("email", "") if isinstance(user, dict) else ""
     return _community_license_info(email)
@@ -174,19 +174,19 @@ async def require_pro(
     license_info: LicenseInfo = Depends(get_license_info)
 ) -> LicenseInfo:
     """
-    要求 PRO 权限的依赖（社区版：放行透传）
+    Dependencies that require PRO permissions (Community Edition: allow transparent transmission)
 
-    社区版 Pro 路由已被发布管道物理剔除，本依赖仅在保留文件的残留调用中
-    出现时放行，保证社区版主链路不被阻断。
+    The Community Edition Pro route has been physically removed from the release pipeline, and this dependency is only in the residual calls of the retained files.
+    Release when it occurs to ensure that the community moderator link is not blocked.
     """
     return license_info
 
 
 def require_feature(feature: str) -> Callable:
     """
-    要求特定功能的依赖工厂（社区版：放行透传）
+    Dependency factory that requires specific functions (community version: release transparent transmission)
 
-    使用方式（与 app/core/permissions.py 完全一致）:
+    Usage (exactly the same as app/core/permissions.py):
         @router.get("/feature", dependencies=[Depends(require_feature("xxx"))])
         async def endpoint(...): ...
     """
@@ -199,15 +199,15 @@ def require_feature(feature: str) -> Callable:
 
 
 # =============================================================================
-# 引擎侧许可证管理器 stub（同 core/licensing/manager.py 的 LicenseManager 签名）
+# Engine-side license manager stub (same as the LicenseManager signature of core/licensing/manager.py)
 # =============================================================================
 
 class CommunityLicenseManager:
     """
-    社区版许可证管理器（单例）：恒为 Free 档 + 内置社区版配额
+    Community version license manager (single case): Hengwei Free file + Built-in community edition quota
 
-    供 core/api/agent_api.py 等引擎侧代码使用：
-    tier 恒为 FREE → 仅 free 档智能体可见（与社区版功能边界一致）。
+    For use by engine-side codes such as core/api/agent_api.py:
+    tier Hengwei FREE → Only free agents are visible (consistent with community edition functional boundaries).
     """
 
     _instance = None
@@ -219,28 +219,28 @@ class CommunityLicenseManager:
 
     @property
     def tier(self) -> LicenseTier:
-        """当前级别：恒为 FREE"""
+        """Current level: Hengwei FREE"""
         return LicenseTier.FREE
 
     @property
     def is_valid(self) -> bool:
-        """社区版始终有效"""
+        """Community edition is always available"""
         return True
 
     @property
     def features(self) -> LicenseFeatures:
-        """社区版配额（Free 档）"""
+        """Community edition quota (Free file)"""
         return COMMUNITY_TIER_FEATURES
 
     def can_use_feature(self, feature_name: str) -> bool:
-        """检查是否可以使用某功能（按 Free 档配额）"""
+        """Check whether a certain function can be used (according to Free file quota)"""
         features = self.features
         if hasattr(features, f"allow_{feature_name}"):
             return getattr(features, f"allow_{feature_name}")
         return True
 
     def check_limit(self, limit_name: str, current_value: int) -> bool:
-        """检查是否超过限制（按 Free 档配额）"""
+        """Check whether the limit is exceeded (according to Free file quota)"""
         features = self.features
         if hasattr(features, limit_name):
             max_value = getattr(features, limit_name)
@@ -248,7 +248,7 @@ class CommunityLicenseManager:
         return True
 
     def get_remaining(self, limit_name: str, current_value: int) -> int:
-        """获取剩余配额（按 Free 档配额）"""
+        """Get the remaining quota (according to the Free quota)"""
         features = self.features
         if hasattr(features, limit_name):
             max_value = getattr(features, limit_name)
@@ -256,14 +256,14 @@ class CommunityLicenseManager:
         return 999999
 
     def activate(self, license_key: str, prefer_online: bool = True) -> tuple[bool, Optional[str]]:
-        """社区版不支持许可证激活"""
-        return False, "社区版不支持许可证激活"
+        """Community edition does not support license activation"""
+        return False, "Community edition does not support license activation"
 
     def deactivate(self) -> None:
-        """社区版无许可证概念"""
+        """Community edition without license concept"""
         pass
 
 
-# LicenseManager 别名：薄壳层与 __init__.py re-export 用，
-# 使 `from ..licensing import LicenseManager` 的调用方（core/api/agent_api.py）无感切换
+# LicenseManager Alias: Thin shell is used with __init__.py re-export,
+# make `from ..licensing import LicenseManager` The caller (core/api/agent_api.py) switches silently
 LicenseManager = CommunityLicenseManager

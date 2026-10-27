@@ -1,7 +1,7 @@
-"""侦察层可调用工具集。
+"""The recon layer callable toolset.
 
-将 skill_runtime 中的只读探测函数包装为 LLM function-calling 可用的独立工具。
-每个函数都有详细的 docstring 和类型注解，供 ToolCallNormalizer.normalize_tool_definition 自动转换。
+Wrap read-only probe functions in skill_runtime into standalone tools available for LLM function-calling.
+Each function has detailed docstring and type annotations for automatic conversion by ToolCallNormalizer.normalize_tool_definition.
 """
 
 from __future__ import annotations
@@ -20,27 +20,27 @@ _PROBE_INTERFACE_LAST_CALLED_AT: Dict[str, float] = {}
 _PROBE_INTERFACE_MIN_INTERVAL_SECONDS = 0.1
 
 # ---------------------------------------------------------------------------
-# 工具 1: 列出可用集合
+# Tools 1: List available collections
 # ---------------------------------------------------------------------------
 
 def list_available_collections() -> str:
-    """列出 Skill 运行时允许访问的所有本地 MongoDB 集合及其用途。
-    返回 JSON 数组，每项包含 collection(集合名)、purpose(用途说明)、preferred_access(推荐访问函数)、query_keys(常用查询键)。"""
+    """Lists all local MongoDB collections that the Skill runtime is allowed to access and their uses.
+    Returns a JSON array, each item containing collection(Collection name), purpose(Instructions for use), preferred_access(Recommended access functions), query_keys(Common query keys). """
     from core.skill_runtime.catalog import list_supported_stock_collections
     items = list_supported_stock_collections()
     return json.dumps(items, ensure_ascii=False)
 
 
 # ---------------------------------------------------------------------------
-# 工具 2: 查看集合 schema
+# Tools 2: View collection schema
 # ---------------------------------------------------------------------------
 
 def inspect_collection_schema(collection: str, sample_size: int = 20) -> str:
-    """查看指定集合的顶层字段和覆盖率摘要。
-    参数 collection: 集合名称（如 stock_basic_info, market_quotes, stock_financial_data 等）。
-    参数 sample_size: 采样文档数（默认 20，最大 100）。
-    返回 JSON 对象，包含 matching_document_count、sample_count、top_level_fields、field_coverage、sample_document_summaries 等。
-    只返回结构摘要，不返回完整样本文档。"""
+    """View a summary of the top fields and coverage for a specified collection.
+    parameters collection: Collection name (such as stock_basic_info, market_quotes, stock_financial_data etc.).
+    parameters sample_size: Number of sampled documents (default 20, maximum 100).
+    Returns a JSON object containing matching_document_count, sample_count, top_level_fields, field_coverage, sample_document_summaries, etc.
+    Only a summary of the structure is returned, not the full sample document."""
     from core.skill_runtime.project_access import inspect_stock_collection_schema
     sample_size = int(sample_size) if not isinstance(sample_size, int) else sample_size
     result = inspect_stock_collection_schema(collection, sample_size=sample_size)
@@ -48,35 +48,35 @@ def inspect_collection_schema(collection: str, sample_size: int = 20) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 工具 3: 查看字段覆盖率
+# Tools 3: View field coverage
 # ---------------------------------------------------------------------------
 
 def check_field_coverage(collection: str, fields: str, sample_size: int = 50) -> str:
-    """检查指定集合中若干字段的非空覆盖率。
-    参数 collection: 集合名称。
-    参数 fields: 逗号分隔的字段列表，例如 'pe,pb,total_mv,roe'。
-    参数 sample_size: 采样文档数（默认 50）。
-    返回 JSON 对象，包含每个字段的 non_null_coverage 比率。"""
+    """Checks the non-null coverage of several fields in the specified collection.
+    parameters collection: Collection name.
+    parameters fields: Comma separated list of fields, e.g. 'pe,pb,total_mv,roe'. 
+    parameters sample_size: Number of documents to sample (default 50).
+    Returns a JSON object containing the non_null_coverage ratio for each field."""
     from core.skill_runtime.project_access import inspect_field_coverage as _inspect
     sample_size = int(sample_size) if not isinstance(sample_size, int) else sample_size
     field_list = [f.strip() for f in fields.split(",") if f.strip()]
     if not field_list:
-        return json.dumps({"error": "fields 参数不能为空"}, ensure_ascii=False)
+        return json.dumps({"error": "fields Parameter cannot be empty"}, ensure_ascii=False)
     result = _inspect(collection, field_list, sample_size=sample_size)
     return json.dumps(result, ensure_ascii=False, default=str)
 
 
 # ---------------------------------------------------------------------------
-# 工具 4: 查看指定股票的样本文档
+# Tools 4: View sample documents for specified stocks
 # ---------------------------------------------------------------------------
 
 def inspect_symbol_sample(collection: str, symbol: str, limit: int = 2) -> str:
-    """查看指定股票在某个集合中的样本文档摘要。
-    参数 collection: 集合名称。
-    参数 symbol: 6 位股票代码，例如 '600519'。
-    参数 limit: 返回文档数（默认 2，最大 5）。
-    返回 JSON 对象，包含 matching_document_count、returned_summary_count、documents。
-    documents 仅包含字段概览、非空字段数、标识字段预览和嵌套结构摘要，不返回完整原文。"""
+    """View a sample document summary for a specified stock in a collection.
+    parameters collection: Collection name.
+    parameters symbol: 6 bit stock code, e.g. '600519'. 
+    parameters limit: Returns the number of documents (default 2, maximum 5).
+    Returns a JSON object, including matching_document_count, returned_summary_count, documents.
+    documents Only includes field overview, number of non-empty fields, identification field preview and nested structure summary, and does not return the complete original text."""
     from core.skill_runtime.project_access import inspect_symbol_documents
     limit = int(limit) if not isinstance(limit, int) else limit
     docs = inspect_symbol_documents(collection, symbol, limit=min(limit, 5))
@@ -84,14 +84,14 @@ def inspect_symbol_sample(collection: str, symbol: str, limit: int = 2) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 工具 5: 描述 runtime helper 函数签名和文档
+# Tools 5: Describe runtime helper function signatures and documentation
 # ---------------------------------------------------------------------------
 
 def describe_runtime_helper(module: str, function_name: str) -> str:
-    """查看 skill_runtime 公开模块中某个函数的签名和文档字符串。
-    参数 module: 模块短名，支持 'data_access'、'project_access'、'external_sources'、'standard_financial_apis'。
-    参数 function_name: 函数名，例如 'get_stock_valuation_context'。
-    返回 JSON 对象，包含 signature(函数签名)和 docstring(文档)。"""
+    """View the signature and docstring for a function in the skill_runtime public module.
+    parameters module: Module short name, support 'data_access', 'project_access', 'external_sources', 'standard_financial_apis'. 
+    parameters function_name: Function name, for example 'get_stock_valuation_context'. 
+    Returns a JSON object containing signature(function signature)and docstring(Documentation). """
     MODULE_MAP = {
         "data_access": "core.skill_runtime.data_access",
         "project_access": "core.skill_runtime.project_access",
@@ -106,7 +106,7 @@ def describe_runtime_helper(module: str, function_name: str) -> str:
         mod = importlib.import_module(full_module)
         func = getattr(mod, function_name, None)
         if func is None or not callable(func):
-            # 列出可用函数
+            # List available functions
             available = [name for name, obj in inspect.getmembers(mod, inspect.isfunction) if not name.startswith("_")]
             return json.dumps({"error": f"函数 {function_name} 不存在", "available_functions": available}, ensure_ascii=False)
         sig = str(inspect.signature(func))
@@ -117,13 +117,13 @@ def describe_runtime_helper(module: str, function_name: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 工具 6: 列出模块中所有公开函数
+# Tools 6: List all public functions in the module
 # ---------------------------------------------------------------------------
 
 def list_runtime_functions(module: str) -> str:
-    """列出 skill_runtime 某个模块中所有公开函数的名称和签名。
-    参数 module: 模块短名，支持 'data_access'、'project_access'、'external_sources'、'standard_financial_apis'。
-    返回 JSON 数组，每项包含 name(函数名)和 signature(签名)。"""
+    """List the names and signatures of all public functions in a skill_runtime module.
+    parameters module: Module short name, support 'data_access', 'project_access', 'external_sources', 'standard_financial_apis'. 
+    Returns a JSON array, each item containing name(function name)and signature(signature). """
     MODULE_MAP = {
         "data_access": "core.skill_runtime.data_access",
         "project_access": "core.skill_runtime.project_access",
@@ -149,14 +149,14 @@ def list_runtime_functions(module: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 工具 7: 列出已配置的外部数据源
+# Tools 7: List configured external data sources
 # ---------------------------------------------------------------------------
 
 def list_external_data_sources(market_category: str = "a_shares") -> str:
-    """列出当前系统已配置并启用的外部数据源（如 akshare、tushare、baostock）。
-    参数 market_category: 市场类别，默认 'a_shares'，可选 'hk_stocks'、'us_stocks'。
-    返回 JSON 对象，包含 supported(该市场支持的全部数据源)和 configured(当前已启用的数据源)。
-    外部数据源的函数可通过 list_runtime_functions('external_sources') 查看。"""
+    """Lists the external data sources configured and enabled on the current system (such as akshare, tushare, baostock).
+    parameters market_category: Market category, default 'a_shares', Optional 'hk_stocks', 'us_stocks'. 
+    Returns a JSON object containing supported(All data sources supported by this market)and configured(Currently enabled data sources). 
+    Functions from external data sources can be accessed via list_runtime_functions('external_sources') View."""
     from core.skill_runtime.catalog import (
         list_supported_external_sources,
         list_configured_external_sources,
@@ -167,26 +167,26 @@ def list_external_data_sources(market_category: str = "a_shares") -> str:
         "market_category": market_category,
         "supported_sources": supported,
         "configured_sources": configured,
-        "hint": "使用 list_runtime_functions('external_sources') 查看可调用的外部数据获取函数",
+        "hint": "Use list_runtime_functions('external_sources') View callable external data acquisition functions",
     }, ensure_ascii=False)
 
 
 # ---------------------------------------------------------------------------
-# 工具 7b: 列出所有可复用的分析类工具（core.tools.implementations）
+# Tools 7b: List all reusable analysis tools (core.tools.implementations)
 # ---------------------------------------------------------------------------
 
-# 分析类子目录白名单（与 static_validator.ALLOWED_CORE_PREFIXES 保持一致）
+# Analysis class subdirectory whitelist (consistent with static_validator.ALLOWED_CORE_PREFIXES)
 _ANALYSIS_SUBDIRS = [
     "fundamentals", "market", "technical", "portfolio",
     "risk", "news", "social", "trade_review", "legacy_bridge",
 ]
 
 def list_analysis_tools(category: str = "") -> str:
-    """列出所有可复用的分析类工具及其完整导入路径。
-    参数 category: 可选分类过滤，支持 'fundamentals'、'market'、'technical'、'portfolio'、'risk'、'news'、'social'、'trade_review'、'legacy_bridge'。留空返回全部。
-    返回 JSON 数组，每项包含 tool_id、name、category、module_path（完整导入路径）、function_name（函数名）、summary（一句话说明）。
-    生成的 Skill 代码可通过 from <module_path> import <function_name> 调用这些工具。
-    注意：此工具返回全量列表，适合分类浏览。若需按需求语义匹配最相关的工具，侦察阶段会通过 CapabilityIndexService 向量搜索自动推荐。"""
+    """Lists all reusable analysis tools and their complete import paths.
+    parameters category: Optional category filtering, support 'fundamentals', 'market', 'technical', 'portfolio', 'risk', 'news', 'social', 'trade_review', 'legacy_bridge'. Leave blank to return all.
+    Returns a JSON array, each item contains tool_id, name, category, module_path (complete import path), function_name (function name), summary (one sentence description).
+    The generated Skill code can be accessed via from <module_path> import <function_name> Call these tools.
+    Note: This tool returns the full list, suitable for categorized browsing. If the most relevant tools need to be semantically matched according to the requirements, the reconnaissance phase will automatically recommend them through the CapabilityIndexService vector search."""
     import inspect as _inspect
 
     target_cats = {category} if category else set(_ANALYSIS_SUBDIRS)
@@ -198,20 +198,20 @@ def list_analysis_tools(category: str = "") -> str:
         registry = get_tool_registry()
         all_tools = registry.list_all()
     except Exception as exc:
-        return json.dumps({"error": f"ToolRegistry 加载失败: {exc}"}, ensure_ascii=False)
+        return json.dumps({"error": f"ToolRegistry Loading failed: {exc}"}, ensure_ascii=False)
 
     results = []
     for t in all_tools:
         if t.category not in target_cats:
             continue
-        # 获取工具的可调用函数，以确定模块路径
+        # Get the tool's callable function to determine the module path
         func = None
         try:
             func = registry.get_function(t.id)
         except Exception:
             pass
         module_path = ""
-        function_name = t.id  # 默认用 tool_id 作为函数名
+        function_name = t.id  # By default, tool_id is used as the function name
         summary = ""
         if func is not None:
             module_path = getattr(func, "__module__", "") or ""
@@ -231,14 +231,14 @@ def list_analysis_tools(category: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-# 工具 8: 列出已注册的 MCP 工具
+# Tools 8: List registered MCP tools
 # ---------------------------------------------------------------------------
 
 def list_mcp_tools() -> str:
-    """列出当前通过 MCP (Model Context Protocol) 服务器注册到系统的所有工具。
-    MCP 工具是外部服务动态注册的能力，可能提供额外的数据获取或计算功能。
-    返回 JSON 数组，每项包含 tool_id、name、description。
-    若无 MCP 工具则返回空数组。"""
+    """List current passes MCP (Model Context Protocol) The server registers all tools into the system.
+    MCP Tools are dynamically registered capabilities for external services, possibly providing additional data retrieval or computational functionality.
+    Returns a JSON array, each item contains tool_id, name, description.
+    If there is no MCP tool, an empty array is returned."""
     try:
         from core.tools.registry import get_tool_registry
         registry = get_tool_registry()
@@ -250,7 +250,7 @@ def list_mcp_tools() -> str:
                 "name": t.name,
                 "description": t.description or "",
             }
-            # 如果有参数定义，也附带
+            # If there is a parameter definition, it also comes with
             if t.parameters:
                 item["parameters"] = [
                     {"name": p.name, "type": p.type, "description": getattr(p, "description", "")}
@@ -260,16 +260,16 @@ def list_mcp_tools() -> str:
             items.append(item)
         return json.dumps(items, ensure_ascii=False, default=str)
     except Exception as exc:
-        logger.warning(f"[recon] 列出 MCP 工具失败: {exc}")
+        logger.warning(f"[recon] Failed to list MCP tools: {exc}")
         return json.dumps([], ensure_ascii=False)
 
 
 # ---------------------------------------------------------------------------
-# 工具 9: 读取真实样本文档
+# Tools 9: Read real sample documents
 # ---------------------------------------------------------------------------
 
 def _contains_mongo_operator(value: Any) -> bool:
-    """保守拒绝 MongoDB 操作符，确保只读查询工具只支持简单等值过滤。"""
+    """Conservatively reject MongoDB operators and ensure that read-only query tools only support simple equality filtering."""
     if isinstance(value, dict):
         for key, nested in value.items():
             if str(key).startswith("$"):
@@ -282,7 +282,7 @@ def _contains_mongo_operator(value: Any) -> bool:
 
 
 def _json_safe_preview(value: Any, max_chars: int = 6000) -> Any:
-    """转换为 JSON 安全对象，并限制返回体积。"""
+    """Convert to a JSON safe object and limit the return volume."""
     text = json.dumps(value, ensure_ascii=False, default=str)
     if len(text) <= max_chars:
         return json.loads(text)
@@ -299,12 +299,12 @@ def run_readonly_query(
     projection: dict = None,
     limit: int = 20,
 ) -> str:
-    """在白名单 MongoDB 集合上执行只读查询，返回真实样本文档。
-    参数 collection: 集合名，仅允许 skill_runtime.catalog.SUPPORTED_COLLECTIONS 中登记的集合。
-    参数 filter: 简单等值过滤条件，不允许 $where/$regex/$expr 等 Mongo 操作符。
-    参数 projection: 字段投影，默认排除 _id。
-    参数 limit: 返回条数，最大 20。
-    返回 JSON 对象，包含 collection、filter、returned_count、documents、metrics。"""
+    """Execute a read-only query on a whitelisted MongoDB collection, returning real sample documents.
+    parameters collection: Collection name, only collections registered in skill_runtime.catalog.SUPPORTED_COLLECTIONS are allowed.
+    parameters filter: Simple equality filter, not allowed $where/$regex/$expr Wait for Mongo operators.
+    parameters projection: Field projection, _id is excluded by default.
+    parameters limit: Return the number of items, up to 20.
+    Returns a JSON object, including collection, filter, returned_count, documents, and metrics."""
     global _READONLY_QUERY_CALL_COUNT
     _READONLY_QUERY_CALL_COUNT += 1
     started = time.perf_counter()
@@ -368,7 +368,7 @@ def run_readonly_query(
 
 
 # ---------------------------------------------------------------------------
-# 工具 10: 真实调用运行时 helper / 外部接口探针
+# Tools 10: Actual call to runtime helper/external interface probe
 # ---------------------------------------------------------------------------
 
 def _summarize_probe_shape(value: Any) -> Dict[str, Any]:
@@ -435,26 +435,26 @@ def _resolve_runtime_helper(source_or_helper: str):
 
 
 def probe_interface(source_or_helper: str, sample_args: dict = None) -> str:
-    """真实调用一次已登记的 skill_runtime helper，返回可用性、返回形状和预览。
-    参数 source_or_helper: helper 名称，支持 get_external_valuation_data、external_sources.get_external_valuation_data、core.skill_runtime.external_sources.get_external_valuation_data 等。
-    参数 sample_args: 样例参数对象，例如 {"symbol":"600519", "start_date":"2024-01-01", "end_date":"2024-12-31"}。
-    返回 JSON 对象，包含 success、module、function、elapsed_ms、shape、preview、metrics 或 error。"""
+    """Really call the registered skill_runtime helper once, return availability, return shape and preview.
+    parameters source_or_helper: helper Name, supports get_external_valuation_data, external_sources.get_external_valuation_data, core.skill_runtime.external_sources.get_external_valuation_data, etc.
+    parameters sample_args: Sample parameter object, e.g. {"symbol":"600519", "start_date":"2024-01-01", "end_date":"2024-12-31"}. 
+    Returns a JSON object containing success, module, function, elapsed_ms, shape, preview, metrics, or error."""
     global _PROBE_INTERFACE_CALL_COUNT
     _PROBE_INTERFACE_CALL_COUNT += 1
 
-    # 处理 LLM 可能传入 JSON 字符串的情况
+    # Handle cases where LLM may be passed in a JSON string
     args = sample_args
     if args is None:
         args = {}
     if isinstance(args, str):
         try:
             args = json.loads(args)
-            logger.debug(f"[probe_interface] sample_args 已从 JSON 字符串解析: {type(args)}")
+            logger.debug(f"[probe_interface] sample_args Parsed from JSON string: {type(args)}")
         except Exception:
             pass
     if not isinstance(args, dict):
-        logger.warning(f"[probe_interface] sample_args 类型错误: {type(args)}，值: {args}")
-        return json.dumps({"success": False, "error": f"sample_args must be an object（当前类型: {type(args).__name__}）", "metrics": {"call_count": _PROBE_INTERFACE_CALL_COUNT}}, ensure_ascii=False)
+        logger.warning(f"[probe_interface] sample_args type error: {type(args)}, value: {args}")
+        return json.dumps({"success": False, "error": f"sample_args must be an object (current type: {type(args).__name__}) ", "metrics": {"call_count": _PROBE_INTERFACE_CALL_COUNT}}, ensure_ascii=False)
     if _contains_mongo_operator(args):
         return json.dumps({"success": False, "error": "Mongo-style operators are not allowed in sample_args", "metrics": {"call_count": _PROBE_INTERFACE_CALL_COUNT}}, ensure_ascii=False)
 
@@ -501,7 +501,7 @@ def probe_interface(source_or_helper: str, sample_args: dict = None) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 工具注册表（供 ReconnaissanceController / Agentic Loop 使用）
+# Tool Registry (for use by ReconnaissanceController / Agentic Loop)
 # ---------------------------------------------------------------------------
 
 RECON_TOOLS: List[callable] = [
@@ -517,6 +517,6 @@ RECON_TOOLS: List[callable] = [
     run_readonly_query,
     probe_interface,
 ]
-"""侦察阶段与 Agentic Skill 生成循环可用的全部工具函数列表。"""
+"""List of all tool functions available during the Reconnaissance phase and the Agentic Skill generation loop."""
 
 

@@ -1,7 +1,7 @@
 """
-报告模板 API 路由
+Report Template API Route
 
-提供报告模板的 CRUD 接口和工作流报告生成接口。
+Provides CRUD interface for report templates and workflow report generation interface.
 """
 import logging
 from typing import Optional, List, Dict, Any
@@ -17,11 +17,11 @@ from app.models.report_template import (
 from app.services.report_template_service import ReportTemplateService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/report-templates", tags=["报告模板"])
+router = APIRouter(prefix="/report-templates", tags=["report template"])
 
 
 def get_service():
-    """获取报告模板服务实例"""
+    """Get report template service instance"""
     db = get_mongo_db()
     return ReportTemplateService(db)
 
@@ -32,27 +32,27 @@ async def create_template(
     user: dict = Depends(get_current_user),
     service: ReportTemplateService = Depends(get_service)
 ):
-    """创建报告模板"""
+    """Create report template"""
     try:
         user_id = str(user.get("_id")) if user else None
         return await service.create_template(data, user_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ 创建报告模板失败: {e}")
-        raise HTTPException(status_code=500, detail=f"创建失败: {str(e)}")
+        logger.error(f"❌ Failed to create report template: {e}")
+        raise HTTPException(status_code=500, detail=f"Creation failed: {str(e)}")
 
 
 @router.get("", response_model=List[ReportTemplateResponse])
 async def list_templates(
-    workflow_id: Optional[str] = Query(None, description="工作流ID筛选"),
-    status: Optional[str] = Query(None, description="状态筛选: active, inactive"),
+    workflow_id: Optional[str] = Query(None, description="Workflow ID filtering"),
+    status: Optional[str] = Query(None, description="status filter: active, inactive"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     user: dict = Depends(get_current_user),
     service: ReportTemplateService = Depends(get_service)
 ):
-    """列出报告模板"""
+    """List report templates"""
     return await service.list_templates(
         workflow_id=workflow_id,
         status=status,
@@ -67,10 +67,10 @@ async def get_template(
     user: dict = Depends(get_current_user),
     service: ReportTemplateService = Depends(get_service)
 ):
-    """获取报告模板详情"""
+    """Get report template details"""
     template = await service.get_template(template_id)
     if not template:
-        raise HTTPException(status_code=404, detail="模板不存在")
+        raise HTTPException(status_code=404, detail="Template does not exist")
     return template
 
 
@@ -80,10 +80,10 @@ async def get_template_by_workflow(
     user: dict = Depends(get_current_user),
     service: ReportTemplateService = Depends(get_service)
 ):
-    """根据工作流ID获取报告模板"""
+    """Get report template based on workflow ID"""
     template = await service.get_template_by_workflow(workflow_id)
     if not template:
-        raise HTTPException(status_code=404, detail=f"工作流 {workflow_id} 没有关联的报告模板")
+        raise HTTPException(status_code=404, detail=f"Workflow {workflow_id} No associated report template")
     return template
 
 
@@ -94,10 +94,10 @@ async def update_template(
     user: dict = Depends(get_current_user),
     service: ReportTemplateService = Depends(get_service)
 ):
-    """更新报告模板"""
+    """Update report template"""
     result = await service.update_template(template_id, data)
     if not result:
-        raise HTTPException(status_code=404, detail="模板不存在")
+        raise HTTPException(status_code=404, detail="Template does not exist")
     return result
 
 
@@ -107,24 +107,24 @@ async def delete_template(
     user: dict = Depends(get_current_user),
     service: ReportTemplateService = Depends(get_service)
 ):
-    """删除报告模板"""
+    """Delete report template"""
     success = await service.delete_template(template_id)
     if not success:
-        raise HTTPException(status_code=404, detail="模板不存在")
-    return {"message": "删除成功", "template_id": template_id}
+        raise HTTPException(status_code=404, detail="Template does not exist")
+    return {"message": "Delete successfully", "template_id": template_id}
 
 
 @router.post("/generate")
 async def generate_report(
-    workflow_id: str = Query(..., description="工作流ID"),
+    workflow_id: str = Query(..., description="Workflow ID"),
     agent_outputs: Dict[str, Any] = None,
-    use_llm: bool = Query(True, description="是否使用 LLM 生成报告"),
+    use_llm: bool = Query(True, description="Whether to use LLM to generate reports"),
     user: dict = Depends(get_current_user)
 ):
     """
-    根据工作流和 Agent 输出生成报告
+    Generate reports based on workflow and Agent output
     
-    通常由工作流执行完成后自动调用，也可手动调用测试。
+    It is usually called automatically after the workflow execution is completed, and the test can also be called manually.
     """
     from core.workflow.report_generator import ReportGenerator
     
@@ -142,6 +142,6 @@ async def generate_report(
             "report": report
         }
     except Exception as e:
-        logger.error(f"❌ 报告生成失败: {e}")
-        raise HTTPException(status_code=500, detail=f"报告生成失败: {str(e)}")
+        logger.error(f"❌ Report generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Report generation failed: {str(e)}")
 

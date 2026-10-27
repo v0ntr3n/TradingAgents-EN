@@ -1,17 +1,17 @@
 ---
-description: "为当前仓库准备当前版本发布，自动识别上一个版本并输出发布阻塞项、所需文件修改和验证清单。"
-name: "准备当前版本发布"
-argument-hint: "可选填写版本范围或补充说明，例如：从 2.0.0 到 2.0.1，重点检查升级包和 migration。"
+description: "Prepare the current version release for the repository, automatically identify the previous version, and output release blockers, required file modifications, and a verification checklist."
+name: "Prepare Current Version Release"
+argument-hint: "Optionally specify a version range or additional instructions, e.g.: from 2.0.0 to 2.0.1, focusing on checking the upgrade package and migrations."
 agent: "autoreleases"
 ---
 
-为当前仓库准备当前版本发布。
+Prepare the current version release for the repository.
 
-要求：
-1. 如果我没有明确给出版本范围，自动识别目标版本和上一个版本。
-2. 扫描这个版本范围内的 git log 和变更文件。
-3. 检查 VERSION、BUILD_INFO、releases/<目标版本>/manifest.json、releases/<目标版本>/upgrade_config.json、migrations、打包脚本、更新器脚本、启动脚本以及发布流程文档。
-4. 如果仓库已采用 D:/release/<version>/revNNN/ 归档规则，检查归档目录是否完整、子版本号是否递增，以及 RELEASE_UPLOAD_INFO.md 是否记录了安装包和升级包字节数。
-5. 先输出阻塞项，再输出需要修改的文件，然后输出升级包一致性、发布归档与上传物料、upgrade_config 覆盖情况、migration 审查、验证清单和最终结论。
-6. 默认采用只读分析模式，除非我明确要求开始实施，否则不要直接修改文件。
-7. 额外生成一份“目标版本相对上一版本的改进说明文档”草稿；如果我明确要求执行完整发版或写入最终物料，则把它作为单独 Markdown 文档输出，并在结果中说明路径。
+Requirements:
+1. If I have not explicitly provided a version range, automatically identify the target version and the previous version.
+2. Scan the git log and changed files within this version range.
+3. Check `VERSION`, `BUILD_INFO`, `releases/<target_version>/manifest.json`, `releases/<target_version>/upgrade_config.json`, migrations, packaging scripts, updater scripts, startup scripts, and release process documentation.
+4. If the repository adopts the `D:/release/<version>/revNNN/` archiving convention, check whether the archive directory is complete, whether the revision number is incremented, and whether `RELEASE_UPLOAD_INFO.md` records the byte sizes of the installer and upgrade packages.
+5. Output release blockers first, followed by files requiring modification, upgrade package consistency, release archives and upload artifacts, `upgrade_config` coverage, migration review, verification checklist, and final conclusion.
+6. Default to read-only analysis mode; do not modify files directly unless I explicitly ask you to start implementation.
+7. Additionally, generate a draft "Release Improvements Document (Target Version vs. Previous Version)"; if I explicitly request executing a full release or writing final artifacts, output it as a standalone Markdown document and state its path in the results.

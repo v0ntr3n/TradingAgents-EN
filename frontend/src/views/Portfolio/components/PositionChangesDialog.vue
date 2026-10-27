@@ -1,28 +1,28 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="📋 持仓变动记录"
+    title="📋 Position change record"
     width="900px"
     :close-on-click-modal="false"
     @close="handleClose"
   >
-    <!-- 筛选条件 -->
+    <!-- Filter criteria -->
     <div class="filter-bar">
-      <el-select v-model="filters.market" placeholder="市场" clearable size="small" style="width: 100px">
-        <el-option label="全部" value="" />
-        <el-option label="A股" value="CN" />
+      <el-select v-model="filters.market" placeholder="market" clearable size="small" style="width: 100px">
+        <el-option label="All" value="" />
+        <el-option label="A shares" value="CN" />
       </el-select>
-      <el-select v-model="filters.change_type" placeholder="变动类型" clearable size="small" style="width: 120px">
-        <el-option label="全部" value="" />
-        <el-option label="买入" value="buy" />
-        <el-option label="加仓" value="add" />
-        <el-option label="减仓" value="reduce" />
-        <el-option label="卖出" value="sell" />
-        <el-option label="调整" value="adjust" />
+      <el-select v-model="filters.change_type" placeholder="Change type" clearable size="small" style="width: 120px">
+        <el-option label="All" value="" />
+        <el-option label="buy" value="buy" />
+        <el-option label="Add to position" value="add" />
+        <el-option label="Reduce positions" value="reduce" />
+        <el-option label="sell" value="sell" />
+        <el-option label="adjust" value="adjust" />
       </el-select>
-      <el-input v-model="filters.code" placeholder="股票代码" clearable size="small" style="width: 120px" />
-      <el-button type="primary" size="small" @click="loadData">查询</el-button>
-      <el-button size="small" @click="resetFilters">重置筛选</el-button>
+      <el-input v-model="filters.code" placeholder="Stock code" clearable size="small" style="width: 120px" />
+      <el-button type="primary" size="small" @click="loadData">Query</el-button>
+      <el-button size="small" @click="resetFilters">Reset filter</el-button>
       <el-button
         v-if="filters.code"
         type="danger"
@@ -30,30 +30,30 @@
         plain
         @click="confirmResetPosition"
       >
-        重置 {{ filters.code }} 持仓
+        reset {{ filters.code }} Position
       </el-button>
     </div>
 
-    <!-- 变动记录表格 -->
+    <!-- Change record form -->
     <el-table :data="changes" v-loading="loading" stripe size="small" max-height="500">
-      <el-table-column prop="created_at" label="时间" width="160">
+      <el-table-column prop="created_at" label="time" width="160">
         <template #default="{ row }">
           {{ formatDateTime(row.created_at) }}
         </template>
       </el-table-column>
-      <el-table-column prop="code" label="代码" width="90" />
-      <el-table-column prop="name" label="名称" width="100" />
-      <el-table-column prop="market" label="市场" width="70">
+      <el-table-column prop="code" label="code" width="90" />
+      <el-table-column prop="name" label="Name" width="100" />
+      <el-table-column prop="market" label="market" width="70">
         <template #default="{ row }">
           <el-tag :type="getMarketTagType(row.market, row.code)" size="small">{{ getMarketName(row.market, row.code) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="change_type" label="类型" width="80">
+      <el-table-column prop="change_type" label="Type" width="80">
         <template #default="{ row }">
           <el-tag :type="getChangeTypeTag(row.change_type)" size="small">{{ getChangeTypeName(row.change_type) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="数量变化" width="120">
+      <el-table-column label="Quantity change" width="120">
         <template #default="{ row }">
           <span :class="row.quantity_change >= 0 ? 'text-success' : 'text-danger'">
             {{ row.quantity_change >= 0 ? '+' : '' }}{{ row.quantity_change }}
@@ -61,7 +61,7 @@
           <div class="sub-text">{{ row.quantity_before }} → {{ row.quantity_after }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="成本价" width="120">
+      <el-table-column label="cost price" width="120">
         <template #default="{ row }">
           {{ getCurrencySymbol(row.currency) }}{{ row.cost_price_after.toFixed(2) }}
           <div class="sub-text" v-if="row.cost_price_before !== row.cost_price_after">
@@ -69,15 +69,15 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="资金变化" width="120">
+      <el-table-column label="Funding changes" width="120">
         <template #default="{ row }">
           <span :class="row.cash_change >= 0 ? 'text-success' : 'text-danger'">
             {{ row.cash_change >= 0 ? '+' : '' }}{{ getCurrencySymbol(row.currency) }}{{ Math.abs(row.cash_change).toFixed(2) }}
           </span>
         </template>
       </el-table-column>
-      <el-table-column prop="description" label="说明" min-width="120" show-overflow-tooltip />
-      <el-table-column label="操作" width="120" fixed="right">
+      <el-table-column prop="description" label="Description" min-width="120" show-overflow-tooltip />
+      <el-table-column label="Operation" width="120" fixed="right">
         <template #default="{ row }">
           <el-button
             v-if="['buy','add','reduce','sell'].includes(row.change_type)"
@@ -86,7 +86,7 @@
             size="small"
             @click="openEdit(row as PositionChange)"
           >
-            编辑
+            Edit
           </el-button>
           <el-button
             v-if="['buy','add','reduce','sell','adjust'].includes(row.change_type)"
@@ -95,31 +95,31 @@
             size="small"
             @click="confirmDelete(row as PositionChange)"
           >
-            删除
+            Delete
           </el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- 单笔记录编辑对话框 -->
+    <!-- Single record editing dialog box -->
     <el-dialog
       v-model="editVisible"
-      :title="`编辑${getChangeTypeName(editForm.change_type)}记录`"
+      :title="`Edit${getChangeTypeName(editForm.change_type)}record`"
       width="420px"
       append-to-body
       @close="resetEditForm"
     >
-      <p class="edit-tip">用于修正录入错误（数量、单价）。修改后会自动重算后续记录和持仓。</p>
+      <p class="edit-tip">Used to correct entry errors (quantity, unit price). After modification, subsequent records and positions will be automatically recalculated.</p>
       <el-form label-width="100px">
-        <el-form-item label="股票">
+        <el-form-item label="stocks">
           {{ editForm.code }} {{ editForm.name }}
         </el-form-item>
-        <el-form-item label="类型">
+        <el-form-item label="Type">
           <el-tag :type="getChangeTypeTag(editForm.change_type)" size="small">
             {{ getChangeTypeName(editForm.change_type) }}
           </el-tag>
         </el-form-item>
-        <el-form-item :label="editForm.change_type === 'buy' || editForm.change_type === 'add' ? '买入数量' : '卖出数量'" required>
+        <el-form-item :label="editForm.change_type === 'buy' || editForm.change_type === 'add' ? 'Buy quantity' : 'Sell quantity'" required>
           <el-input-number
             v-model="editForm.quantity"
             :min="1"
@@ -128,7 +128,7 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item :label="editForm.change_type === 'buy' || editForm.change_type === 'add' ? '买入单价' : '卖出单价'" required>
+        <el-form-item :label="editForm.change_type === 'buy' || editForm.change_type === 'add' ? 'Buying price' : 'Selling price'" required>
           <el-input-number
             v-model="editForm.price"
             :min="0.01"
@@ -137,27 +137,27 @@
             controls-position="right"
             style="width: 100%"
           />
-          <span class="unit-hint">{{ getCurrencySymbol(editForm.currency) }}/股</span>
+          <span class="unit-hint">{{ getCurrencySymbol(editForm.currency) }}/shares</span>
         </el-form-item>
-        <el-form-item label="交易时间">
+        <el-form-item label="trading hours">
           <el-date-picker
             v-model="editForm.trade_time"
             type="date"
             value-format="YYYY-MM-DD"
-            placeholder="可选"
+            placeholder="Optional"
             style="width: 100%"
           />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
+        <el-button @click="editVisible = false">Cancel</el-button>
         <el-button type="primary" :loading="editSubmitting" @click="submitEdit">
-          确定
+          OK
         </el-button>
       </template>
     </el-dialog>
 
-    <!-- 分页 -->
+    <!-- Pagination -->
     <div class="pagination-bar">
       <el-pagination
         v-model:current-page="currentPage"
@@ -235,7 +235,7 @@ const loadData = async () => {
     changes.value = res.data?.items || []
     total.value = res.data?.total || 0
   } catch (e: any) {
-    ElMessage.error(e.message || '加载失败')
+    ElMessage.error(e.message || 'Loading failed')
   } finally {
     loading.value = false
   }
@@ -284,16 +284,16 @@ const resetEditForm = () => {
 const confirmDelete = async (row: PositionChange) => {
   try {
     await ElMessageBox.confirm(
-      `确定删除该条${getChangeTypeName(row.change_type)}记录？删除后将自动重算后续记录。`,
-      '确认删除',
+      `Confirm to delete this article${getChangeTypeName(row.change_type)}Record? Subsequent records will be automatically recalculated after deletion.`,
+      'Confirm deletion',
       { type: 'warning' }
     )
     await portfolioApi.deletePositionChange(row.id)
-    ElMessage.success('删除成功')
+    ElMessage.success('Delete successfully')
     loadData()
     emit('refresh')
   } catch (e: any) {
-    if (e !== 'cancel') ElMessage.error(e.message || '删除失败')
+    if (e !== 'cancel') ElMessage.error(e.message || 'Delete failed')
   }
 }
 
@@ -303,39 +303,39 @@ const confirmResetPosition = async () => {
   const market = filters.value.market || 'CN'
   try {
     await ElMessageBox.confirm(
-      `确定重置 ${code} 的整个持仓？将删除该股票的所有变动记录和持仓，此操作不可恢复。`,
-      '确认重置',
+      `Confirm reset ${code} of the entire position? All change records and positions of the stock will be deleted, and this operation cannot be restored.`,
+      'Confirm reset',
       { type: 'warning' }
     )
     const res = await portfolioApi.resetPosition(code, market)
-    ElMessage.success(`重置成功，已删除 ${res.data?.deleted_changes ?? 0} 条记录`)
+    ElMessage.success(`Reset successful, deleted ${res.data?.deleted_changes ?? 0} records`)
     filters.value.code = ''
     loadData()
     emit('refresh')
   } catch (e: any) {
-    if (e !== 'cancel') ElMessage.error(e.message || '重置失败')
+    if (e !== 'cancel') ElMessage.error(e.message || 'Reset failed')
   }
 }
 
 const submitEdit = async () => {
   const { id, quantity, price, trade_time } = editForm.value
   if (!quantity || quantity <= 0) {
-    ElMessage.warning('请输入有效的数量')
+    ElMessage.warning('Please enter a valid quantity')
     return
   }
   if (!price || price <= 0) {
-    ElMessage.warning('请输入有效的单价')
+    ElMessage.warning('Please enter a valid unit price')
     return
   }
   editSubmitting.value = true
   try {
     await portfolioApi.updatePositionChange(id, { quantity, price, trade_time })
-    ElMessage.success('记录修正成功')
+    ElMessage.success('Record correction successful')
     editVisible.value = false
     loadData()
     emit('refresh')
   } catch (e: any) {
-    ElMessage.error(e.message || '修正失败')
+    ElMessage.error(e.message || 'Correction failed')
   } finally {
     editSubmitting.value = false
   }
@@ -351,22 +351,22 @@ const formatDateTime = (dt: string) => {
 
 const getMarketName = (m: string, code?: string) => {
   if (m === 'CN' && code && getMarketByStockCode(code) === 'ETF') return 'ETF'
-  return ({ CN: 'A股' }[m] || m)
+  return ({ CN: 'A shares' }[m] || m)
 }
 const getMarketTagType = (m: string, code?: string) => {
   if (m === 'CN' && code && getMarketByStockCode(code) === 'ETF') return 'success'
   return ({ CN: 'danger' }[m] || 'info') as any
 }
 const getCurrencySymbol = (c: string) => ({ CNY: '¥' }[c] || c)
-const getChangeTypeName = (t: string) => ({ buy: '买入', add: '加仓', reduce: '减仓', sell: '卖出', adjust: '调整' }[t] || t)
+const getChangeTypeName = (t: string) => ({ buy: 'buy', add: 'Add to position', reduce: 'Reduce positions', sell: 'sell', adjust: 'adjust' }[t] || t)
 const getChangeTypeTag = (t: string) => ({ buy: 'success', add: 'primary', reduce: 'warning', sell: 'danger', adjust: 'info' }[t] || 'info') as any
 </script>
 
 <style scoped>
 .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .pagination-bar { margin-top: 16px; display: flex; justify-content: flex-end; }
-.text-success { color: #f56c6c; } /* 红色表示成功/盈利（中国股市规范） */
-.text-danger { color: #67c23a; } /* 绿色表示危险/亏损（中国股市规范） */
+.text-success { color: #f56c6c; } /* Red indicates success/profit (Chinese stock market norm) */
+.text-danger { color: #67c23a; } /* Green indicates danger/loss (Chinese stock market norm) */
 .sub-text { font-size: 11px; color: #909399; }
 .edit-tip { font-size: 12px; color: #909399; margin-bottom: 16px; }
 .unit-hint { margin-left: 8px; font-size: 12px; color: #909399; }

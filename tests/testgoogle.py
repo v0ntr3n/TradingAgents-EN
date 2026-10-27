@@ -1,33 +1,33 @@
 import requests
 import json
 
-# 配置
-API_KEY = "AIzaSyC3JdZVjblI0rfT_SNXXL5a4kvZ13_12CE"  # 请替换为您的真实API密钥
-MODEL_NAME = "gemini-2.0-flash"  # 指定使用的模型
+# Configuration
+API_KEY = "AIzaSyC3JdZVjblI0rfT_SNXXL5a4kvZ13_12CE"  # Please replace with your real API key
+MODEL_NAME = "gemini-2.0-flash"  # Specify the model to use
 url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}:generateContent"
 
-# 请求头
+# Request header
 headers = {
     "Content-Type": "application/json",
     "x-goog-api-key": API_KEY
 }
 
-# 请求数据
+# Request data
 data = {
     "contents": [{
         "parts": [{
-            "text": "请用一句话解释人工智能。"
+            "text": "Please explain artificial intelligence in one sentence."
         }]
     }]
 }
 
-# 发送请求
+# Send request
 response = requests.post(url, headers=headers, data=json.dumps(data))
 
-# 处理响应
+# Handle response
 if response.status_code == 200:
     result = response.json()
     print(result['candidates'][0]['content']['parts'][0]['text'])
 else:
-    print(f"请求失败，状态码: {response.status_code}")
+    print(f"Request failed, status code: {response.status_code}")
     print(response.text)

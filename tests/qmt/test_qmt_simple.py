@@ -1,51 +1,51 @@
-"""简单的 QMT 测试脚本"""
+"""Simple QMT test script"""
 import sys
-print("Python 版本:", sys.version)
-print("Python 路径:", sys.executable)
+print("Python version:", sys.version)
+print("Python path:", sys.executable)
 
-print("\n检查 xtquant 库...")
+print("\n Check xtquant library...")
 try:
     import xtquant
-    print("✅ xtquant 已安装")
-    print("   版本:", getattr(xtquant, '__version__', '未知'))
+    print("✅ xtquant Installed")
+    print("   version:", getattr(xtquant, '__version__', 'unknown'))
 except ImportError as e:
-    print("❌ xtquant 未安装")
-    print("   错误:", e)
-    print("\n安装方法：")
+    print("❌ xtquant Not installed")
+    print("   Error:", e)
+    print("\n Installation method:")
     print("   pip install xtquant")
     sys.exit(1)
 
-print("\n检查 QMT 适配器...")
+print("\n Check QMT adapter...")
 try:
     from app.services.data_sources.qmt_adapter import QMTAdapter
-    print("✅ QMT 适配器模块加载成功")
+    print("✅ QMT Adapter module loaded successfully")
     
     adapter = QMTAdapter()
-    print("\n检查 MiniQMT 连接...")
+    print("\n Check MiniQMT connection...")
     is_available = adapter.is_available()
     
     if is_available:
-        print("✅ QMT 可用")
-        print("   - xtquant 库已安装")
-        print("   - MiniQMT 客户端已连接")
+        print("✅ QMT Available")
+        print("   - xtquant Library installed")
+        print("   - MiniQMT Client is connected")
         
-        print("\n测试获取股票列表...")
+        print("\n Test to get the stock list...")
         df = adapter.get_stock_list()
         if df is not None and not df.empty:
-            print(f"✅ 成功获取 {len(df)} 只股票")
-            print("\n前 3 只股票：")
+            print(f"✅ successfully obtained {len(df)} only stocks")
+            print("\n Top 3 stocks:")
             print(df.head(3))
         else:
-            print("❌ 未获取到股票列表")
+            print("❌ No stock list obtained")
     else:
-        print("❌ QMT 不可用")
-        print("\n请检查：")
-        print("1. MiniQMT 客户端是否已启动")
-        print("2. MiniQMT 是否已登录券商账户")
-        print("3. 是否在 Windows 系统上运行")
+        print("❌ QMT Not available")
+        print("\n Please check:")
+        print("1. MiniQMT Is the client started?")
+        print("2. MiniQMT Have you logged in to your brokerage account?")
+        print("3. Whether to run on Windows system")
         
 except Exception as e:
-    print(f"❌ 错误: {e}")
+    print(f"❌ Error: {e}")
     import traceback
     traceback.print_exc()
 

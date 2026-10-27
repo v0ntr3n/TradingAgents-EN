@@ -1,16 +1,16 @@
 <template>
   <div class="advanced-lesson-wrapper">
-    <!-- 页面头部 -->
+    <!-- Page header -->
     <el-page-header @back="goBack" :content="lessonTitle" />
 
-    <!-- 主容器：课程内容 + 侧边栏 -->
+    <!-- Main container: course content + sidebar -->
     <div v-if="canAccess" class="advanced-lesson">
       <div class="lesson-container">
         <div class="lesson-meta">
-          <el-tag v-if="isFreeLesson(lessonOrder)" type="success" size="small">免费预览</el-tag>
-          <el-tag v-else type="warning" size="small">高级课程</el-tag>
+          <el-tag v-if="isFreeLesson(lessonOrder)" type="success" size="small">Free preview</el-tag>
+          <el-tag v-else type="warning" size="small">Advanced courses</el-tag>
           <span class="category-name">{{ categoryName }}</span>
-          <span class="lesson-order">第{{ lessonOrder }}课</span>
+          <span class="lesson-order">No.{{ lessonOrder }}class</span>
         </div>
 
         <div v-loading="loading" class="lesson-content" v-html="lessonContent"></div>
@@ -20,20 +20,20 @@
           <div class="navigation">
             <el-button v-if="prevLesson && canAccessLesson(prevLesson.lesson.order)" @click="navigateToLesson(prevLesson.category.id, prevLesson.lesson.id)">
               <el-icon><ArrowLeft /></el-icon>
-              上一课：{{ prevLesson.lesson.title }}
+              Previous lesson:{{ prevLesson.lesson.title }}
             </el-button>
             <div v-else></div>
             <el-button v-if="nextLesson && canAccessLesson(nextLesson.lesson.order)" @click="navigateToLesson(nextLesson.category.id, nextLesson.lesson.id)">
-              下一课：{{ nextLesson.lesson.title }}
+              Next lesson:{{ nextLesson.lesson.title }}
               <el-icon><ArrowRight /></el-icon>
             </el-button>
           </div>
         </div>
       </div>
 
-      <!-- 侧边栏目录 -->
+      <!-- Sidebar table of contents -->
       <div class="lesson-toc">
-        <div class="toc-title">目录</div>
+        <div class="toc-title">Directory</div>
         <ul class="toc-list">
           <li v-for="heading in tableOfContents" :key="heading.id"
               :class="['toc-item', `toc-level-${heading.level}`]"
@@ -44,7 +44,7 @@
       </div>
     </div>
 
-    <!-- 未解锁：完整版入口（社区版为空壳，不渲染） -->
+    <!-- Unlocked: Full version entrance (the community version is an empty shell and does not render) -->
     <KnowledgePlanetPromotion v-else />
   </div>
 </template>
@@ -71,7 +71,7 @@ const licenseStore = useLicenseStore()
 const categoryId = computed(() => route.params.category as string)
 const lessonId = computed(() => route.params.lesson as string)
 
-// 获取课程信息
+// Get course information
 const lesson = computed(() => {
   return getLesson(categoryId.value, lessonId.value)
 })
@@ -84,21 +84,21 @@ const categoryName = computed(() => category.value?.name || '')
 const lessonTitle = computed(() => lesson.value?.title || '')
 const lessonOrder = computed(() => lesson.value?.order || 0)
 
-// 有完整访问权限？（老会员）
+// Have full access? (old member)
 const hasFullAccess = computed(() => licenseStore.hasLegacyCourseAccess)
 
-// 能否访问当前课程（免费课 or 老会员）
+// Can you access current courses (free courses or old members)
 const canAccess = computed(() => {
   if (!lesson.value) return false
   return isFreeLesson(lesson.value.order) || hasFullAccess.value
 })
 
-// 能否访问某节课（用于上下课导航）
+// Can you access a certain class (used to navigate to and from get out of class)
 const canAccessLesson = (order: number) => {
   return isFreeLesson(order) || hasFullAccess.value
 }
 
-// 获取相邻课程
+// Get adjacent courses
 const adjacentLessons = computed(() => {
   if (!categoryId.value || !lessonId.value) {
     return { prev: null, next: null }
@@ -109,17 +109,17 @@ const adjacentLessons = computed(() => {
 const prevLesson = computed(() => adjacentLessons.value.prev)
 const nextLesson = computed(() => adjacentLessons.value.next)
 
-// 课程内容
+// Course content
 const lessonContent = ref('')
 const loading = ref(false)
 
-// 目录
+// Directory
 const tableOfContents = ref<Array<{ id: string; text: string; level: number }>>([])
 
-// 加载课程内容
+// Load course content
 const loadLesson = async () => {
   if (!lesson.value) {
-    ElMessage.error('课程不存在')
+    ElMessage.error('Course does not exist')
     router.push('/learning/advanced')
     return
   }
@@ -134,7 +134,7 @@ const loadLesson = async () => {
     const markdown = await getCourseContent(lesson.value.file)
     
     if (!markdown) {
-      throw new Error(`课程文件未找到: ${lesson.value.file}`)
+      throw new Error(`Course file not found: ${lesson.value.file}`)
     }
 
     const html = renderMarkdown(markdown)
@@ -143,14 +143,14 @@ const loadLesson = async () => {
     await nextTick()
     extractTableOfContents()
   } catch (error: any) {
-    console.error('加载课程失败:', error)
-    ElMessage.error('加载课程失败：' + (error.message || '未知错误'))
+    console.error('Failed to load course:', error)
+    ElMessage.error('Failed to load course:' + (error.message || 'unknown error'))
   } finally {
     loading.value = false
   }
 }
 
-// 提取目录
+// Extract directory
 const extractTableOfContents = () => {
   const contentDiv = document.querySelector('.lesson-content')
   if (!contentDiv) return
@@ -173,7 +173,7 @@ const extractTableOfContents = () => {
   })
 }
 
-// 滚动到指定标题
+// Scroll to specified title
 const scrollToHeading = (id: string) => {
   const element = document.getElementById(id)
   if (element) {
@@ -181,17 +181,17 @@ const scrollToHeading = (id: string) => {
   }
 }
 
-// 导航到课程
+// Navigate to course
 const navigateToLesson = (catId: string, lesId: string) => {
   router.push(`/learning/advanced/${catId}/${lesId}`)
 }
 
-// 返回
+// Return
 const goBack = () => {
   router.push('/learning/advanced')
 }
 
-// 监听路由变化
+// Monitor routing changes
 watch([categoryId, lessonId], () => {
   loadLesson()
 }, { immediate: true })
@@ -397,7 +397,7 @@ onMounted(() => {
   }
 }
 
-// 暗黑模式适配
+// Dark mode adaptation
 :global(html.dark) {
   .advanced-lesson-wrapper {
     background: #000000 !important;

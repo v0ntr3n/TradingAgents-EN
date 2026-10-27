@@ -1,10 +1,10 @@
 """
-配置系统兼容层
+Configure system compatibility layer
 
-为旧的 tradingagents 库提供配置兼容接口，
-使其能够使用新的配置系统而无需修改代码。
+Provides a configuration-compatible interface to the old tradingagents library,
+Enables it to use the new configuration system without modifying the code.
 
-⚠️ 此模块仅用于向后兼容，新代码应直接使用 ConfigService
+⚠️ This module is for backwards compatibility only, new code should use it directly ConfigService
 """
 
 import os
@@ -18,18 +18,18 @@ from app.core.config import settings
 
 class ConfigManagerCompat:
     """
-    ConfigManager 兼容类
+    ConfigManager Compatibility class
     
-    提供与旧 ConfigManager 相同的接口，但使用新的配置系统。
+    Provides the same interface as the old ConfigManager, but uses the new configuration system.
     """
     
     def __init__(self):
-        """初始化兼容层"""
+        """Initialize the compatibility layer"""
         self._warned = False
         self._emit_deprecation_warning()
     
     def _emit_deprecation_warning(self):
-        """发出废弃警告（仅一次）"""
+        """Issue deprecation warning (only once)"""
         if not self._warned:
             warnings.warn(
                 "ConfigManagerCompat is a compatibility layer for legacy code. "
@@ -42,34 +42,34 @@ class ConfigManagerCompat:
     
     def get_data_dir(self) -> str:
         """
-        获取数据目录
+        Get data directory
         
         Returns:
-            str: 数据目录路径
+            str: Data directory path
         """
-        # 优先从环境变量读取
+        # Read from environment variables first
         data_dir = os.getenv("DATA_DIR")
         if data_dir:
             return data_dir
         
-        # 默认值
+        # Default value
         return "./data"
     
     def load_settings(self) -> Dict[str, Any]:
         """
-        加载系统设置
+        Load system settings
         
         Returns:
-            Dict[str, Any]: 系统设置字典
+            Dict[str, Any]: System settings dictionary
         """
         try:
-            # 尝试从新配置系统加载
+            # Try loading from a new configuration system
             from app.services.config_service import config_service
             
-            # 在同步上下文中运行异步代码
+            # Run asynchronous code in a synchronous context
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                # 如果事件循环正在运行，返回默认值
+                # If the event loop is running, return the default value
                 return self._get_default_settings()
             else:
                 config = loop.run_until_complete(config_service.get_system_config())
@@ -78,25 +78,25 @@ class ConfigManagerCompat:
         except Exception:
             pass
         
-        # 返回默认设置
+        # Return to default settings
         return self._get_default_settings()
     
     def save_settings(self, settings_dict: Dict[str, Any]) -> bool:
         """
-        保存系统设置
+        Save system settings
         
         Args:
-            settings_dict: 系统设置字典
+            settings_dict: System settings dictionary
         
         Returns:
-            bool: 是否保存成功
+            bool: Is the save successful?
         """
         try:
             from app.services.config_service import config_service
             
             loop = asyncio.get_event_loop()
             if loop.is_running():
-                # 如果事件循环正在运行，无法保存
+                # Cannot save if event loop is running
                 warnings.warn("Cannot save settings in running event loop", RuntimeWarning)
                 return False
             else:
@@ -110,10 +110,10 @@ class ConfigManagerCompat:
     
     def get_models(self) -> List[Dict[str, Any]]:
         """
-        获取模型配置列表（只返回有有效 API Key 的模型）
+        Get the model configuration list (only models with valid API Keys are returned)
 
         Returns:
-            List[Dict[str, Any]]: 模型配置列表
+            List[Dict[str, Any]]: Model configuration list
         """
         try:
             from app.services.config_service import config_service
@@ -125,11 +125,11 @@ class ConfigManagerCompat:
             else:
                 config = loop.run_until_complete(config_service.get_system_config())
                 if config and config.llm_configs:
-                    # 获取厂家配置
+                    # Get factory configuration
                     providers = loop.run_until_complete(config_service.get_llm_providers())
                     providers_dict = {p.name: p for p in providers}
 
-                    # 🔥 过滤：只返回有有效 API Key 的模型
+                    # 🔥 Filter: Only return models with valid API Keys
                     return [
                         {
                             "provider": llm.provider,
@@ -150,14 +150,14 @@ class ConfigManagerCompat:
     
     def get_model_config(self, provider: str, model_name: str) -> Optional[Dict[str, Any]]:
         """
-        获取指定模型的配置
+        Get the configuration of the specified model
         
         Args:
-            provider: 提供商名称
-            model_name: 模型名称
+            provider: Provider name
+            model_name: Model name
         
         Returns:
-            Optional[Dict[str, Any]]: 模型配置，如果不存在则返回 None
+            Optional[Dict[str, Any]]: Model configuration, returned if it does not exist None
         """
         models = self.get_models()
         for model in models:
@@ -167,10 +167,10 @@ class ConfigManagerCompat:
     
     def _get_default_settings(self) -> Dict[str, Any]:
         """
-        获取默认系统设置
+        Get default system settings
         
         Returns:
-            Dict[str, Any]: 默认设置
+            Dict[str, Any]: Default setting
         """
         return {
             "max_debate_rounds": 1,
@@ -185,13 +185,13 @@ class ConfigManagerCompat:
 
 class TokenTrackerCompat:
     """
-    TokenTracker 兼容类
+    TokenTracker Compatibility class
     
-    提供与旧 TokenTracker 相同的接口。
+    Provides the same interface as the old TokenTracker.
     """
     
     def __init__(self):
-        """初始化兼容层"""
+        """Initialize the compatibility layer"""
         self._usage_data = {}
     
     def track_usage(
@@ -203,14 +203,14 @@ class TokenTrackerCompat:
         cost: float = 0.0
     ):
         """
-        记录 Token 使用量
+        Record Token usage
         
         Args:
-            provider: 提供商名称
-            model_name: 模型名称
-            input_tokens: 输入 Token 数
-            output_tokens: 输出 Token 数
-            cost: 成本
+            provider: Provider name
+            model_name: Model name
+            input_tokens: Enter the number of Tokens
+            output_tokens: Output the number of Tokens
+            cost: cost
         """
         key = f"{provider}:{model_name}"
         
@@ -229,45 +229,45 @@ class TokenTrackerCompat:
         self._usage_data[key]["total_cost"] += cost
         self._usage_data[key]["call_count"] += 1
 
-        # 注意：此兼容层仅提供内存缓存，不持久化到数据库
-        # 如需持久化，请使用 app.services.llm_service 中的相关功能
+        # NOTE: This compatibility layer only provides in-memory caching and does not persist to the database
+        # For persistence, use the relevant functions in app.services.llm_service
     
     def get_usage_summary(self) -> Dict[str, Any]:
         """
-        获取使用统计摘要
+        Get usage statistics summary
         
         Returns:
-            Dict[str, Any]: 使用统计摘要
+            Dict[str, Any]: Use summary statistics
         """
         return self._usage_data.copy()
     
     def reset_usage(self):
-        """重置使用统计"""
+        """Reset usage statistics"""
         self._usage_data.clear()
 
 
-# 创建全局实例（用于向后兼容）
+# Create a global instance (for backward compatibility)
 config_manager_compat = ConfigManagerCompat()
 token_tracker_compat = TokenTrackerCompat()
 
 
-# 便捷函数
+# Convenience function
 def get_config_manager() -> ConfigManagerCompat:
     """
-    获取配置管理器兼容实例
+    Get a configuration manager compatible instance
     
     Returns:
-        ConfigManagerCompat: 配置管理器兼容实例
+        ConfigManagerCompat: Configuration Manager Compatible Instance
     """
     return config_manager_compat
 
 
 def get_token_tracker() -> TokenTrackerCompat:
     """
-    获取 Token 跟踪器兼容实例
+    Get a Token tracker compatible instance
     
     Returns:
-        TokenTrackerCompat: Token 跟踪器兼容实例
+        TokenTrackerCompat: Token Tracker Compatibility Example
     """
     return token_tracker_compat
 

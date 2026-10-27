@@ -1,12 +1,12 @@
 """
-统一分析服务
+Unified Analytics Services
 
-将所有分析入口统一到 WorkflowEngine + WorkflowBuilder
-支持：
-1. 单股分析 API
-2. 批量分析 API
-3. 前端工作流调试
-4. 定时分析任务
+Unify all analysis portals into WorkflowEngine + WorkflowBuilder
+Support:
+1. single stock analysis API
+2. Batch analysis API
+3. Front-end workflow debugging
+4. Scheduled analysis tasks
 """
 
 import asyncio
@@ -50,21 +50,21 @@ def _is_cn_etf_symbol(code: Optional[str]) -> bool:
 
 class UnifiedAnalysisService:
     """
-    统一分析服务
+    Unified Analytics Services
 
-    所有分析入口都通过此服务执行，使用 WorkflowEngine 作为执行引擎。
+    All analysis portals are executed through this service, using WorkflowEngine as the execution engine.
 
-    用法:
+    Usage:
         service = UnifiedAnalysisService()
 
-        # 单股分析
+        # single stock analysis
         result = await service.analyze(
             stock_code="000858",
             analysis_date="2024-01-15",
             progress_callback=lambda p, m, **kw: print(f"{p}% - {m}")
         )
 
-        # 使用指定工作流
+        # Use specified workflow
         result = await service.analyze(
             stock_code="AAPL",
             workflow_id="my_custom_workflow",
@@ -92,17 +92,17 @@ class UnifiedAnalysisService:
         parameters: Optional[AnalysisParameters] = None,
     ) -> Dict[str, Any]:
         """
-        构建遗留配置（用于 WorkflowBuilder 创建 Agent）
+        Build legacy configuration (used by WorkflowBuilder to create Agent)
 
-        从数据库读取 LLM 配置，合并用户参数
+        Read LLM configuration from database and merge user parameters
         """
         config = {}
 
-        # 从数据库获取 LLM 配置
+        # Get LLM configuration from database
         db = self._get_db()
         if db is not None:
             try:
-                # 获取活动的系统配置
+                # Get active system configuration
                 system_config = db.system_configs.find_one(
                     {"is_active": True},
                     sort=[("version", -1)]
@@ -114,12 +114,12 @@ class UnifiedAnalysisService:
             except Exception as e:
                 logger.warning(f"从数据库获取配置失败: {e}")
 
-        # 合并用户参数
+        # Merge user parameters
         if parameters:
             if parameters.research_depth:
-                # 保持research_depth为字符串值，用于workflow inputs
+                # Keep research_depth as a string value for workflow inputs
                 config["research_depth"] = parameters.research_depth
-                # 🧠 A1b: 深度档位 → 思考预算（传给 builder，与 DB 显式配置合并，仅火山方舟推理模型注入）
+                # 🧠 A1b: Depth gear → Thinking budget (passed to builder, merged with DB explicit configuration, only injected into Volcano Ark inference model)
                 config["depth_reasoning_effort"] = RESEARCH_DEPTH_REASONING_EFFORT.get(
                     str(parameters.research_depth).strip(), "medium"
                 )
@@ -138,16 +138,16 @@ class UnifiedAnalysisService:
         analysis_date: str
     ) -> Dict[str, Any]:
         """
-        准备系统变量（在工作流开始时统一获取）
+        Prepare system variables (obtained uniformly at the beginning of the workflow)
 
-        优先从数据库获取，速度快且不受 API 限流影响
+        Get it from the database first, fast and not affected by API current limit
 
         Args:
-            stock_code: 股票代码
-            analysis_date: 分析日期
+            stock_code: Stock code
+            analysis_date: Analysis date
 
         Returns:
-            系统变量字典
+            System variable dictionary
         """
         system_vars = {}
 
@@ -157,7 +157,7 @@ class UnifiedAnalysisService:
             market_info = StockUtils.get_market_info(stock_code)
             is_china = market_info.get('is_china', False)
 
-            # 1. 从数据库获取股票基础信息（公司名称、行业）
+            # 1. Obtain basic stock information (company name, industry) from the database
             company_name = stock_code
             industry = "未知"
 
@@ -167,7 +167,7 @@ class UnifiedAnalysisService:
                     from tradingagents.utils.stock_utils import StockUtils as _SU
                     _is_fund = _SU.is_fund(stock_code)
 
-                    # 优先从 stock_basic_info 获取；ETF 降级到 etf_basic_info
+                    # Preferably obtained from stock_basic_info; ETF downgraded to etf_basic_info
                     stock_info = db.stock_basic_info.find_one(
                         {"$or": [{"code": stock_code}, {"symbol": stock_code}]},
                         {"_id": 0, "name": 1, "industry": 1}
@@ -179,7 +179,7 @@ class UnifiedAnalysisService:
                             {"_id": 0, "name": 1, "industry": 1, "fund_type": 1}
                         )
                         if stock_info:
-                            logger.info(f"📊 [系统变量-数据库] 从 etf_basic_info 获取基金信息: {stock_code}")
+                            logger.info(f"📊 [System variables - database] Get fund information from etf_basic_info: {stock_code}")
 
                     if stock_info:
                         company_name = stock_info.get("name", stock_code)
@@ -188,12 +188,12 @@ class UnifiedAnalysisService:
                     else:
                         logger.warning(f"⚠️ 数据库中未找到股票 {stock_code} 的基础信息")
                 except Exception as e:
-                    logger.warning(f"⚠️ 从数据库获取股票基础信息失败: {e}")
+                    logger.warning(f"⚠️ Failed to obtain basic stock information from database: {e}")
 
             system_vars["company_name"] = company_name
             system_vars["industry"] = industry
 
-            # 2. 从数据库获取当前价格
+            # 2. Get current price from database
             current_price = "未知"
 
             if is_china:
@@ -201,59 +201,59 @@ class UnifiedAnalysisService:
                     db = self._get_db()
                     logger.info(f"🔍 [价格查询] 开始查询股票 {stock_code} 的价格...")
 
-                    # 优先从 market_quotes 获取最新价格
-                    logger.info(f"🔍 [价格查询] 步骤1: 从 market_quotes 查询...")
+                    # Get the latest prices from market_quotes first
+                    logger.info(f"🔍 [Price inquiry] steps 1: Query from market_quotes...")
                     quote = db.market_quotes.find_one(
                         {"$or": [{"code": stock_code}, {"symbol": stock_code}]},
                         {"_id": 0, "close": 1, "trade_date": 1},
-                        sort=[("trade_date", -1)]  # 按日期降序，获取最新数据
+                        sort=[("trade_date", -1)]  # Sort by date in descending order to get the latest data
                     )
-                    logger.info(f"🔍 [价格查询] market_quotes 查询结果: {quote}")
+                    logger.info(f"🔍 [Price inquiry] market_quotes Query results: {quote}")
 
                     if quote and quote.get("close"):
                         current_price = str(quote["close"])
                         logger.info(f"✅ [系统变量-数据库] 当前价格: ¥{current_price} (日期: {quote.get('trade_date', 'N/A')})")
                     else:
-                        logger.info(f"🔍 [价格查询] market_quotes 未找到数据，尝试步骤2...")
-                        # 对 ETF，优先尝试 etf_daily_quotes
+                        logger.info(f"🔍 [Price inquiry] market_quotes No data found, try steps 2...")
+                        # For ETFs, try first etf_daily_quotes
                         from tradingagents.utils.stock_utils import StockUtils as _SU2
                         if _SU2.is_fund(stock_code):
-                            logger.info(f"🔍 [价格查询] 步骤2a: ETF，从 etf_daily_quotes 查询...")
+                            logger.info(f"🔍 [Price inquiry] steps 2a: ETF, Query from etf_daily_quotes...")
                             etf_quote = db.etf_daily_quotes.find_one(
                                 {"$or": [{"code": stock_code}, {"symbol": stock_code}, {"ts_code": {"$regex": f"^{stock_code}"}}]},
                                 {"_id": 0, "close": 1, "trade_date": 1},
                                 sort=[("trade_date", -1)]
                             )
-                            logger.info(f"🔍 [价格查询] etf_daily_quotes 查询结果: {etf_quote}")
+                            logger.info(f"🔍 [Price inquiry] etf_daily_quotes Query results: {etf_quote}")
                             if etf_quote and etf_quote.get("close"):
                                 current_price = str(etf_quote["close"])
-                                logger.info(f"✅ [系统变量-数据库] ETF当前价格: ¥{current_price}")
+                                logger.info(f"✅ [System variables - database] ETF current price: ¥{current_price}")
                         if current_price == "未知":
-                            # 回退到 stock_basic_info 的 current_price 字段
-                            logger.info(f"🔍 [价格查询] 步骤2b: 从 stock_basic_info 查询...")
+                            # Fallback to the current_price field of stock_basic_info
+                            logger.info(f"🔍 [Price inquiry] steps 2b: Query from stock_basic_info...")
                             stock_info = db.stock_basic_info.find_one(
                                 {"$or": [{"code": stock_code}, {"symbol": stock_code}]},
                                 {"_id": 0, "current_price": 1}
                             )
-                            logger.info(f"🔍 [价格查询] stock_basic_info 查询结果: {stock_info}")
+                            logger.info(f"🔍 [Price inquiry] stock_basic_info Query results: {stock_info}")
 
                             if stock_info and stock_info.get("current_price"):
                                 current_price = str(stock_info["current_price"])
-                                logger.info(f"✅ [系统变量-数据库] 当前价格(备用): ¥{current_price}")
+                                logger.info(f"✅ [System variables - database] current price(Spare): ¥{current_price}")
                             else:
                                 logger.warning(f"⚠️ 数据库中未找到股票 {stock_code} 的价格信息")
                 except Exception as e:
-                    logger.warning(f"⚠️ 从数据库获取当前价格失败: {e}")
+                    logger.warning(f"⚠️ Failed to get current price from database: {e}")
                     import traceback
                     traceback.print_exc()
 
             system_vars["current_price"] = current_price
 
-            # 3. 市场信息
+            # 3. market information
             market_name = "A股" if is_china else "港股" if market_info.get('is_hk') else "美股"
             system_vars["market_name"] = market_name
 
-            # 4. 货币信息
+            # 4. currency information
             if is_china:
                 system_vars["currency_name"] = "人民币"
                 system_vars["currency_symbol"] = "¥"
@@ -264,36 +264,36 @@ class UnifiedAnalysisService:
                 system_vars["currency_name"] = "美元"
                 system_vars["currency_symbol"] = "$"
 
-            # 5. 日期信息
+            # 5. date information
             from datetime import datetime, timedelta
             system_vars["current_date"] = analysis_date
             start_date = (datetime.strptime(analysis_date, '%Y-%m-%d') - timedelta(days=365)).strftime('%Y-%m-%d')
             system_vars["start_date"] = start_date
 
-            # 6. 🆕 行业/个股分析维度注入
+            # 6. 🆕 Industry/stock analysis dimension injection
             try:
                 from app.services.analysis_profile_service import AnalysisProfileService
 
-                # 查询行业分析维度
+                # Query industry analysis dimensions
                 if industry and industry != "未知":
                     industry_dims = AnalysisProfileService.get_industry_dimensions_sync(industry)
                     system_vars.update(industry_dims)
 
-                # 查询个股分析维度（覆盖行业维度）
+                # Query individual stock analysis dimensions (covering industry dimensions)
                 stock_dims = AnalysisProfileService.get_stock_dimensions_sync(stock_code)
                 system_vars.update(stock_dims)
             except Exception as e:
-                logger.warning(f"⚠️ 获取分析维度失败（不影响主流程）: {e}")
+                logger.warning(f"⚠️ Failed to obtain analysis dimensions (does not affect the main process): {e}")
 
-            logger.info(f"✅ [系统变量] 准备完成: {list(system_vars.keys())}")
+            logger.info(f"✅ [system variables] Ready to complete: {list(system_vars.keys())}")
             logger.info(f"   - company_name: {company_name}")
             logger.info(f"   - industry: {industry}")
             logger.info(f"   - current_price: {current_price}")
             logger.info(f"   - market_name: {market_name}")
             if system_vars.get("industry_dimensions"):
-                logger.info(f"   - 🏭 已注入行业分析维度")
+                logger.info(f"   - 🏭 Infused with industry analysis dimensions")
             if system_vars.get("stock_dimensions"):
-                logger.info(f"   - 📊 已注入个股分析维度")
+                logger.info(f"   - 📊 Injected into individual stock analysis dimension")
 
         except Exception as e:
             logger.error(f"❌ 准备系统变量失败: {e}")
@@ -315,7 +315,7 @@ class UnifiedAnalysisService:
             research_depth = parameters.research_depth
 
         depth_mapping = {
-            "快速": {"debate": 1, "risk": 1, "memory_enabled": False},  # 🔧 快速分析禁用记忆
+            "快速": {"debate": 1, "risk": 1, "memory_enabled": False},  # 🔧 Quick analysis of disabled memories
             "基础": {"debate": 1, "risk": 1, "memory_enabled": True},
             "标准": {"debate": 1, "risk": 2, "memory_enabled": True},
             "深度": {"debate": 2, "risk": 2, "memory_enabled": True},
@@ -323,7 +323,7 @@ class UnifiedAnalysisService:
         }
         depth_config = depth_mapping.get(research_depth, depth_mapping["标准"])
 
-        # 🆕 准备系统变量
+        # 🆕 Prepare system variables
         system_vars = self._prepare_system_variables(stock_code, analysis_date)
 
         inputs: Dict[str, Any] = {
@@ -334,30 +334,30 @@ class UnifiedAnalysisService:
             "research_depth": research_depth,
             "_max_debate_rounds": depth_config["debate"],
             "_max_risk_rounds": depth_config["risk"],
-            "memory_enabled": depth_config["memory_enabled"],  # 🔧 根据分析深度设置记忆开关
+            "memory_enabled": depth_config["memory_enabled"],  # 🔧 Set memory switch according to analysis depth
             "messages": [],
-            # 🆕 流程专属提示词：workflow_id 用于按流程+agent 获取对应提示词模板
+            # 🆕 Process-specific prompt words: workflow_id is used by process+agent Get the corresponding prompt word template
             "workflow_id": workflow.id,
-            # 🆕 添加系统变量
+            # 🆕 Add system variables
             **system_vars,
         }
 
-        # 🔥 创建 AgentContext（支持用户偏好、调试模式和流程专属提示词）
+        # 🔥 Create AgentContext (supports user preferences, debugging mode and process-specific prompt words)
         from tradingagents.agents.utils.agent_context import AgentContext
 
-        # 获取用户偏好
+        # Get user preferences
         preference_id = "neutral"
         if parameters and getattr(parameters, "preference_type", None):
             preference_id = parameters.preference_type
 
-        # 检查是否为调试模式（如果 parameters 中有 template_id）
+        # Check if it is debug mode (if there is template_id in parameters)
         is_debug_mode = False
         debug_template_id = None
         if parameters and getattr(parameters, "template_id", None):
             is_debug_mode = True
             debug_template_id = parameters.template_id
 
-        # 创建 context（包含 workflow_id，用于流程+agent 级提示词加载）
+        # Create context (contains workflow_id for process+agent level prompt word loading)
         context = AgentContext(
             user_id=user_id,
             preference_id=preference_id,
@@ -369,7 +369,7 @@ class UnifiedAnalysisService:
         inputs["context"] = context
 
         logger.info(
-            f"🔍 [工作流输入] 创建 AgentContext: "
+            f"🔍 [Workflow input] Create AgentContext: "
             f"user_id={user_id}, preference={preference_id}, "
             f"workflow_id={workflow.id}, debug_mode={is_debug_mode}, template_id={debug_template_id}"
         )
@@ -390,47 +390,47 @@ class UnifiedAnalysisService:
         user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        执行股票分析
+        Perform stock analysis
 
         Args:
-            stock_code: 股票代码
-            analysis_date: 分析日期，默认今天
-            workflow_id: 工作流 ID，None 则使用活动工作流
-            parameters: 分析参数
-            progress_callback: 进度回调函数
-            task_id: 任务 ID，用于进度跟踪
-            user_id: 用户 ID（用于创建 AgentContext）
+            stock_code: Stock code
+            analysis_date: Analysis date, default is today
+            workflow_id: Workflow ID, None to use the active workflow
+            parameters: Analysis parameters
+            progress_callback: Progress callback function
+            task_id: Task ID, used for progress tracking
+            user_id: User ID (used to create AgentContext)
 
         Returns:
-            分析结果字典
+            Analysis result dictionary
         """
-        # 生成任务 ID
+        # Generate tasks ID
         task_id = task_id or str(uuid.uuid4())
 
-        # 设置默认日期
+        # Set default date
         if not analysis_date:
             analysis_date = datetime.now().strftime("%Y-%m-%d")
 
         logger.info(f"开始分析: {stock_code} @ {analysis_date}, workflow={workflow_id}")
 
         try:
-            # 1. 加载工作流
+            # 1. Load workflow
             workflow = self._workflow_provider.load_workflow(workflow_id)
             logger.info(f"已加载工作流: {workflow.id} - {workflow.name}")
 
-            # 2. 构建配置
+            # 2. Build configuration
             legacy_config = self._build_legacy_config(parameters)
 
-            # 3. 创建引擎
+            # 3. Create engine
             engine = WorkflowEngine(
                 legacy_config=legacy_config,
                 task_id=task_id,
             )
 
-            # 4. 加载并编译工作流
+            # 4. Load and compile the workflow
             engine.load(workflow)
 
-            # 5. 准备输入
+            # 5. ready to enter
             inputs = self._build_workflow_inputs(
                 stock_code=stock_code,
                 analysis_date=analysis_date,
@@ -439,7 +439,7 @@ class UnifiedAnalysisService:
                 user_id=user_id,
             )
 
-            # 5.5 注入已批准的成长记忆（Memory Recall）
+            # 5.5 Inject approved growth memory (Memory Recall)
             if user_id and inputs.get("memory_enabled", False):
                 try:
                     from app.services.workflow_growth_service import get_workflow_growth_service
@@ -453,9 +453,9 @@ class UnifiedAnalysisService:
                         inputs["growth_memory_recall"] = recall_text
                         logger.info(f"📝 注入成长记忆召回: {len(recall_text)} 字符")
                 except Exception as e:
-                    logger.warning(f"⚠️ 成长记忆召回失败（不影响分析）: {e}")
+                    logger.warning(f"⚠️ Growth memory recall failed (does not affect analysis): {e}")
 
-            # 5.6 mem0: 召回该用户对该股票的历史分析记忆
+            # 5.6 mem0: Recall the user's historical analysis memory of the stock
             if user_id:
                 try:
                     mem0_block = await _recall_analysis_memory(
@@ -468,9 +468,9 @@ class UnifiedAnalysisService:
                         )
                         logger.info(f"📝 注入 mem0 分析记忆: {len(mem0_block)} 字符")
                 except Exception as e:
-                    logger.debug(f"[mem0] 分析记忆召回失败（已忽略）: {e}")
+                    logger.debug(f"[mem0] Analysis memory recall failed (ignored): {e}")
 
-            # 6. 执行工作流
+            # 6. Execute workflow
             result = await engine.execute_async(
                 inputs=inputs,
                 progress_callback=progress_callback,
@@ -478,7 +478,7 @@ class UnifiedAnalysisService:
 
             logger.info(f"分析完成: {stock_code}, task_id={task_id}")
 
-            # 7. 格式化结果
+            # 7. Format results
             return self._format_result(result, stock_code, analysis_date, task_id, parameters)
 
         except Exception as e:
@@ -501,9 +501,9 @@ class UnifiedAnalysisService:
         user_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        同步执行股票分析
+        Synchronous execution of stock analysis
 
-        用于在线程池中执行，避免阻塞事件循环
+        Used to execute in the thread pool to avoid blocking the event loop
         """
         task_id = task_id or str(uuid.uuid4())
 
@@ -513,22 +513,22 @@ class UnifiedAnalysisService:
         logger.info(f"[同步] 开始分析: {stock_code} @ {analysis_date}")
 
         try:
-            # 1. 加载工作流
+            # 1. Load workflow
             workflow = self._workflow_provider.load_workflow(workflow_id)
 
-            # 2. 构建配置
+            # 2. Build configuration
             legacy_config = self._build_legacy_config(parameters)
 
-            # 3. 创建引擎
+            # 3. Create engine
             engine = WorkflowEngine(
                 legacy_config=legacy_config,
                 task_id=task_id,
             )
 
-            # 4. 加载并编译工作流
+            # 4. Load and compile the workflow
             engine.load(workflow)
 
-            # 5. 准备输入
+            # 5. ready to enter
             inputs = self._build_workflow_inputs(
                 stock_code=stock_code,
                 analysis_date=analysis_date,
@@ -537,7 +537,7 @@ class UnifiedAnalysisService:
                 user_id=user_id,
             )
 
-            # 5.5 注入已批准的成长记忆（同步路径）
+            # 5.5 Inject approved growth memory (synchronized path)
             if user_id and inputs.get("memory_enabled", False):
                 try:
                     from app.services.workflow_growth_service import build_recall_context_sync
@@ -550,9 +550,9 @@ class UnifiedAnalysisService:
                         inputs["growth_memory_recall"] = recall_text
                         logger.info(f"📝 [同步] 注入成长记忆召回: {len(recall_text)} 字符")
                 except Exception as e:
-                    logger.warning(f"⚠️ [同步] 成长记忆召回失败（不影响分析）: {e}")
+                    logger.warning(f"⚠️ [sync] Growth memory recall failed (does not affect analysis): {e}")
 
-            # 6. 同步执行
+            # 6. Synchronous execution
             result = engine.execute(
                 inputs=inputs,
                 progress_callback=progress_callback,
@@ -579,17 +579,17 @@ class UnifiedAnalysisService:
         parameters: Optional[AnalysisParameters] = None,
     ) -> Dict[str, Any]:
         """
-        格式化分析结果 - 使用公共工具与 SimpleAnalysisService 保持一致
+        Formatting analysis results - using public tools consistent with SimpleAnalysisService
 
-        包含所有报告类型：
-        - 基础报告：market_report, sentiment_report, news_report, fundamentals_report
-        - 交易计划：investment_plan, trader_investment_plan, final_trade_decision
-        - 研究团队：bull_researcher, bear_researcher, research_team_decision
-        - 风险团队：risky_analyst, safe_analyst, neutral_analyst, risk_management_decision
+        Includes all report types:
+        - Basic report:market_report, sentiment_report, news_report, fundamentals_report
+        - Trading plan:investment_plan, trader_investment_plan, final_trade_decision
+        - Research team:bull_researcher, bear_researcher, research_team_decision
+        - Risk Team:risky_analyst, safe_analyst, neutral_analyst, risk_management_decision
         """
         from app.utils.report_formatter import format_analysis_result
 
-        # 从 parameters 中提取模型信息和分析师信息
+        # Extract model information and analyst information from parameters
         if parameters:
             analysts = parameters.selected_analysts or ["market", "fundamentals"]
             research_depth = parameters.research_depth or "标准"
@@ -601,7 +601,7 @@ class UnifiedAnalysisService:
             quick_model = "Unknown"
             deep_model = "Unknown"
 
-        # 从 raw_result 中提取 report_manifest（由 WorkflowEngine 动态生成）
+        # Extract report_manifest from raw_result (dynamically generated by WorkflowEngine)
         report_manifest = raw_result.get("report_manifest")
 
         result = format_analysis_result(
@@ -630,31 +630,31 @@ class UnifiedAnalysisService:
         max_concurrent: int = 3,
     ) -> List[Dict[str, Any]]:
         """
-        批量分析股票
+        Analyze stocks in batches
 
         Args:
-            stock_codes: 股票代码列表
-            analysis_date: 分析日期
-            workflow_id: 工作流 ID
-            parameters: 分析参数
-            progress_callback: 进度回调
-            max_concurrent: 最大并发数
+            stock_codes: Stock code list
+            analysis_date: Analysis date
+            workflow_id: Workflow ID
+            parameters: Analysis parameters
+            progress_callback: Progress callback
+            max_concurrent: Maximum number of concurrencies
 
         Returns:
-            分析结果列表
+            Analysis result list
         """
         results = []
         total = len(stock_codes)
         completed = 0
 
-        # 🔧 京东云模式：降低并发数，避免 LLM 限速（429）
+        # 🔧 JD Cloud Mode: Reduce the number of concurrencies and avoid LLM speed limit (429)
         if is_jdyun_mode():
             jdyun_max = get_jdyun_batch_max_concurrent()
             if max_concurrent > jdyun_max:
                 logger.info(f"🔧 [京东云模式] 批量分析并发数 {max_concurrent} → {jdyun_max}（避免 LLM 限速）")
                 max_concurrent = jdyun_max
 
-        # 使用信号量控制并发
+        # Using semaphores to control concurrency
         semaphore = asyncio.Semaphore(max_concurrent)
 
         async def analyze_one(code: str, index: int) -> Dict[str, Any]:
@@ -662,10 +662,10 @@ class UnifiedAnalysisService:
             async with semaphore:
                 task_id = f"batch_{uuid.uuid4().hex[:8]}_{index}"
 
-                # 单股进度回调
+                # Single stock progress callback
                 def single_progress(progress, message, **kwargs):
                     if progress_callback:
-                        # 计算总体进度
+                        # Calculate overall progress
                         overall = (completed * 100 + progress) / total
                         progress_callback(
                             overall,
@@ -686,14 +686,14 @@ class UnifiedAnalysisService:
                 completed += 1
                 return result
 
-        # 并发执行
+        # Concurrent execution
         tasks = [
             analyze_one(code, i)
             for i, code in enumerate(stock_codes)
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # 处理异常
+        # Handle exceptions
         final_results = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
@@ -716,19 +716,19 @@ class UnifiedAnalysisService:
         progress_tracker=None,
     ) -> Dict[str, Any]:
         """
-        为 AB 测试提供的分析执行入口
+        Analysis execution portal provided for AB testing
 
-        与 SimpleAnalysisService.execute_analysis_background() 接口兼容
-        使用 WorkflowEngine 替代 TradingAgentsGraph
+        with SimpleAnalysisService.execute_analysis_background() Interface compatible
+        Use WorkflowEngine instead TradingAgentsGraph
 
         Args:
-            task_id: 任务 ID
-            user_id: 用户 ID
-            request: 分析请求
-            progress_tracker: RedisProgressTracker 实例（可选，如不提供会自动创建）
+            task_id: Task ID
+            user_id: User ID
+            request: Analysis request
+            progress_tracker: RedisProgressTracker Instance (optional, will be created automatically if not provided)
 
         Returns:
-            分析结果
+            Analyze results
         """
         import asyncio
         from app.services.progress.tracker import RedisProgressTracker
@@ -738,18 +738,18 @@ class UnifiedAnalysisService:
         memory_manager = get_memory_state_manager()
 
         try:
-            logger.info(f"🔄 [AB测试-统一引擎] 开始分析: {stock_code}, task_id={task_id}")
+            logger.info(f"🔄 [AB Test-Unified Engine] Start analysis: {stock_code}, task_id={task_id}")
 
-            # 🔥 更新内存管理器状态为 RUNNING
+            # 🔥 Update memory manager status to RUNNING
             await memory_manager.update_task_status(
                 task_id=task_id,
                 status=TaskStatus.RUNNING,
                 progress=5,
-                message="🚀 [统一引擎] 正在启动分析...",
+                message="🚀 [unified engine] Starting analysis...",
                 current_step="启动"
             )
 
-            # 如果没有传入 progress_tracker，则自己创建
+            # If progress_tracker is not passed in, create it yourself
             if progress_tracker is None:
                 def create_progress_tracker():
                     return RedisProgressTracker(
@@ -760,43 +760,43 @@ class UnifiedAnalysisService:
                     )
                 progress_tracker = await asyncio.to_thread(create_progress_tracker)
 
-            # 创建进度回调适配器
+            # Create a progress callback adapter
             def progress_callback(progress: float, message: str, **kwargs):
-                """将统一引擎的进度回调转换为 RedisProgressTracker 格式"""
+                """Convert the progress callback of the unified engine to RedisProgressTracker format"""
                 if progress_tracker:
                     try:
-                        # 🔑 关键：从 kwargs 中提取 step_name（简短名称）
+                        # 🔑 Key: extract step_name (short name) from kwargs
                         step_name = kwargs.get("step_name", "")
 
                         progress_tracker.update_progress({
                             "progress_percentage": progress,
                             "last_message": message,
-                            "current_step_name": step_name,  # ✅ 简短的步骤名称
-                            "current_step_description": message,  # ✅ 详细的描述
+                            "current_step_name": step_name,  # ✅ short step name
+                            "current_step_description": message,  # ✅ detailed description
                             **kwargs
                         })
-                        # 🔥 同时更新内存管理器（使用 asyncio.create_task 避免事件循环冲突）
+                        # 🔥 Also update the memory manager (use asyncio.create_task to avoid event loop conflicts)
                         import asyncio
                         try:
-                            # 获取当前运行的事件循环
+                            # Get the currently running event loop
                             loop = asyncio.get_running_loop()
-                            # 创建后台任务，不等待完成
+                            # Create background tasks without waiting for completion
                             loop.create_task(
                                 memory_manager.update_task_status(
                                     task_id=task_id,
                                     status=TaskStatus.RUNNING,
                                     progress=int(progress),
                                     message=message,
-                                    current_step=step_name or message  # ✅ 使用 step_name 而不是 message
+                                    current_step=step_name or message  # ✅ Use step_name instead message
                                 )
                             )
                         except RuntimeError:
-                            # 如果没有运行的事件循环，跳过内存管理器更新
-                            logger.debug("没有运行的事件循环，跳过内存管理器更新")
+                            # Skip memory manager updates if no event loop is running
+                            logger.debug("No event loop running, memory manager updates skipped")
                     except Exception as e:
                         logger.warning(f"进度更新失败: {e}")
 
-            # 获取分析日期
+            # Get analysis date
             analysis_date = None
             if parameters and parameters.analysis_date:
                 if isinstance(parameters.analysis_date, datetime):
@@ -804,27 +804,27 @@ class UnifiedAnalysisService:
                 else:
                     analysis_date = str(parameters.analysis_date)[:10]
 
-            # 获取工作流 ID
+            # Get workflow ID
             workflow_id = None
             if parameters and hasattr(parameters, "workflow_id"):
                 workflow_id = parameters.workflow_id
 
-            # 初始化进度
+            # Initialization progress
             await asyncio.to_thread(
                 progress_tracker.update_progress,
-                {"progress_percentage": 10, "last_message": "🚀 [统一引擎] 开始股票分析"}
+                {"progress_percentage": 10, "last_message": "🚀 [unified engine] Start stock analysis"}
             )
 
-            # 🔥 更新内存管理器状态
+            # 🔥 Update memory manager status
             await memory_manager.update_task_status(
                 task_id=task_id,
                 status=TaskStatus.RUNNING,
                 progress=10,
-                message="🚀 [统一引擎] 开始股票分析",
+                message="🚀 [unified engine] Start stock analysis",
                 current_step="开始分析"
             )
 
-            # 调用统一分析服务（已在 _format_result 中填充所有字段）
+            # Call the Unified Analysis Service (all fields in _format_result are populated)
             result = await self.analyze(
                 stock_code=stock_code,
                 analysis_date=analysis_date,
@@ -832,17 +832,17 @@ class UnifiedAnalysisService:
                 parameters=parameters,
                 progress_callback=progress_callback,
                 task_id=task_id,
-                user_id=user_id,  # ✅ 传递 user_id 以创建 AgentContext
+                user_id=user_id,  # ✅ Pass user_id to create AgentContext
             )
 
-            # 分析完成，标记进度
-            # 注意：mark_completed() 不接受参数
+            # Analysis completed, mark progress
+            # Note:mark_completed() does not accept parameters
             await asyncio.to_thread(progress_tracker.mark_completed)
 
-            # 保存分析结果到数据库
+            # Save analysis results to database
             await self._save_analysis_result(task_id, user_id, stock_code, result, parameters)
 
-            # mem0: 异步存储分析洞察
+            # mem0: Asynchronous storage analysis insights
             asyncio.create_task(
                 _store_analysis_insight(
                     self._get_db(), user_id, stock_code,
@@ -853,7 +853,7 @@ class UnifiedAnalysisService:
                 )
             )
 
-            # 🔥 更新内存管理器状态为 COMPLETED
+            # 🔥 Update memory manager status to COMPLETED
             await memory_manager.update_task_status(
                 task_id=task_id,
                 status=TaskStatus.COMPLETED,
@@ -863,20 +863,20 @@ class UnifiedAnalysisService:
                 result_data=result
             )
 
-            logger.info(f"✅ [AB测试-统一引擎] 分析完成: {stock_code}")
+            logger.info(f"✅ [AB Test-Unified Engine] Analysis completed: {stock_code}")
             return result
 
         except Exception as e:
-            logger.error(f"❌ [AB测试-统一引擎] 分析失败: {stock_code}, error={e}")
+            logger.error(f"❌ [AB Test-Unified Engine] Analysis failed: {stock_code}, error={e}")
 
-            # 标记进度跟踪器失败
+            # Marking progress tracker failed
             if progress_tracker:
                 try:
                     await asyncio.to_thread(progress_tracker.mark_failed, str(e))
                 except Exception:
                     pass
 
-            # 🔥 更新内存管理器状态为 FAILED
+            # 🔥 Update memory manager status to FAILED
             await memory_manager.update_task_status(
                 task_id=task_id,
                 status=TaskStatus.FAILED,
@@ -884,7 +884,7 @@ class UnifiedAnalysisService:
                 error_message=str(e)
             )
 
-            # 更新数据库状态为失败
+            # Update database status failed
             await self._update_task_failed(task_id, str(e))
             raise
 
@@ -907,7 +907,7 @@ class UnifiedAnalysisService:
                 task_id=task_id,
                 status=TaskStatus.RUNNING,
                 progress=5,
-                message="🚀 [v2.0引擎] 正在启动分析...",
+                message="🚀 [v2.0 engine] Starting analysis...",
                 current_step="启动"
             )
 
@@ -931,9 +931,9 @@ class UnifiedAnalysisService:
                         })
                         import asyncio
                         try:
-                            # 获取当前运行的事件循环
+                            # Get the currently running event loop
                             loop = asyncio.get_running_loop()
-                            # 创建后台任务，不等待完成
+                            # Create background tasks without waiting for completion
                             loop.create_task(
                                 memory_manager.update_task_status(
                                     task_id=task_id,
@@ -944,8 +944,8 @@ class UnifiedAnalysisService:
                                 )
                             )
                         except RuntimeError:
-                            # 如果没有运行的事件循环，跳过内存管理器更新
-                            logger.debug("没有运行的事件循环，跳过内存管理器更新")
+                            # Skip memory manager updates if no event loop is running
+                            logger.debug("No event loop running, memory manager updates skipped")
                     except Exception as e:
                         logger.warning(f"进度更新失败: {e}")
 
@@ -981,14 +981,14 @@ class UnifiedAnalysisService:
 
             await asyncio.to_thread(
                 progress_tracker.update_progress,
-                {"progress_percentage": 10, "last_message": "🚀 [v2.0引擎] 开始股票分析"}
+                {"progress_percentage": 10, "last_message": "🚀 [v2.0 engine] Start stock analysis"}
             )
 
             await memory_manager.update_task_status(
                 task_id=task_id,
                 status=TaskStatus.RUNNING,
                 progress=10,
-                message="🚀 [v2.0引擎] 开始股票分析",
+                message="🚀 [v2.0 engine] Start stock analysis",
                 current_step="开始分析"
             )
 
@@ -1005,7 +1005,7 @@ class UnifiedAnalysisService:
             await asyncio.to_thread(progress_tracker.mark_completed)
             await self._save_analysis_result(task_id, user_id, stock_code, result, parameters)
 
-            # mem0: 异步存储分析洞察
+            # mem0: Asynchronous storage analysis insights
             asyncio.create_task(
                 _store_analysis_insight(
                     self._get_db(), user_id, stock_code,
@@ -1027,7 +1027,7 @@ class UnifiedAnalysisService:
 
             return result
         except Exception as e:
-            logger.error(f"❌ [v2.0引擎] 分析失败: {stock_code}, error={e}")
+            logger.error(f"❌ [v2.0 engine] Analysis failed: {stock_code}, error={e}")
             if progress_tracker:
                 try:
                     await asyncio.to_thread(progress_tracker.mark_failed, str(e))
@@ -1051,31 +1051,31 @@ class UnifiedAnalysisService:
         parameters=None
     ):
         """
-        保存分析结果到 MongoDB - 与 SimpleAnalysisService 保持一致的格式
+        Save analysis results to MongoDB - consistent format with SimpleAnalysisService
         """
         db = self._get_db()
         if db is None:
-            logger.warning("无法保存分析结果：数据库未连接")
+            logger.warning("Unable to save analysis results: Database not connected")
             return
 
         try:
-            timestamp = now_tz()  # ✅ 使用 now_tz() 确保带时区信息
+            timestamp = now_tz()  # ✅ Use now_tz() Make sure to include time zone information
             analysis_id = result.get("analysis_id", str(uuid.uuid4()))
 
-            # 获取股票名称
+            # Get stock name
             stock_name = self._resolve_stock_name(stock_code)
             market_type = "A股" if stock_code.isdigit() and len(stock_code) == 6 else "美股"
 
-            # 🔥 清理 reports 中的重复数据（如果存在）
+            # 🔥 Clean duplicate data in reports (if present)
             reports_raw = result.get("reports", {})
             cleaned_reports = {}
             if isinstance(reports_raw, dict):
                 for key, value in reports_raw.items():
-                    # 跳过 structured_reports（如果存在，避免重复）
+                    # Skip structured_reports (if present to avoid duplication)
                     if key != "structured_reports":
                         cleaned_reports[key] = value
 
-            # 更新 analysis_tasks 状态
+            # Update analysis_tasks status
             db.analysis_tasks.update_one(
                 {"task_id": task_id},
                 {
@@ -1084,7 +1084,7 @@ class UnifiedAnalysisService:
                         "progress": 100,
                         "completed_at": timestamp,
                         "updated_at": timestamp,
-                        # 🔥 保存完整的 result 到 analysis_tasks（与 SimpleAnalysisService 一致）
+                        # 🔥 Save complete result to analysis_tasks (consistent with SimpleAnalysisService)
                         "result": {
                             "analysis_id": analysis_id,
                             "stock_symbol": stock_code,
@@ -1095,61 +1095,61 @@ class UnifiedAnalysisService:
                             "confidence_score": result.get("confidence_score", 0.0),
                             "risk_level": result.get("risk_level", "中等"),
                             "key_points": result.get("key_points", []),
-                            # 🔥 注意：这里保存到数据库的 detailed_analysis 和 state 用于调试/审计
-                            # 但 API 返回时会根据查询参数决定是否包含
+                            # 🔥 Note: detailed_analysis and state saved to the database here are used for debugging/auditing
+                            # However, when the API returns, it will be decided based on the query parameters whether to include
                             "detailed_analysis": result.get("detailed_analysis", {}),
                             "state": result.get("state", {}),
                             "execution_time": result.get("execution_time", 0),
                             "tokens_used": result.get("tokens_used", 0),
-                            "reports": cleaned_reports,  # 🔥 使用清理后的 reports
+                            "reports": cleaned_reports,  # 🔥 Use the cleaned reports
                             "decision": result.get("decision", {}),
                         }
                     }
                 }
             )
 
-            # 🔥 清理 reports 中的重复数据（如果存在）
+            # 🔥 Clean duplicate data in reports (if present)
             reports_raw = result.get("reports", {})
             cleaned_reports = {}
             if isinstance(reports_raw, dict):
                 for key, value in reports_raw.items():
-                    # 跳过 structured_reports（如果存在，避免重复）
+                    # Skip structured_reports (if present to avoid duplication)
                     if key != "structured_reports":
                         cleaned_reports[key] = value
 
-            # 🔥 保存到 analysis_reports（与 SimpleAnalysisService 格式一致）
+            # 🔥 Save to analysis_reports (same format as SimpleAnalysisService)
             document = {
                 "analysis_id": analysis_id,
                 "stock_symbol": stock_code,
-                "stock_name": result.get("stock_name", stock_name),  # 优先使用 result 中的名称
+                "stock_name": result.get("stock_name", stock_name),  # Give priority to names in result
                 "market_type": market_type,
                 "model_info": result.get("model_info", "Unknown"),
-                "quick_model": result.get("quick_model", "Unknown"),  # 🔥 添加快速模型字段
-                "deep_model": result.get("deep_model", "Unknown"),    # 🔥 添加深度模型字段
+                "quick_model": result.get("quick_model", "Unknown"),  # 🔥 Add quick model fields
+                "deep_model": result.get("deep_model", "Unknown"),    # 🔥 Add depth model field
                 "analysis_date": timestamp.strftime('%Y-%m-%d'),
                 "timestamp": timestamp,
                 "status": "completed",
                 "source": "api",
                 "engine": (getattr(parameters, "engine", None) or "unified"),
 
-                # 分析结果摘要
+                # Summary of analysis results
                 "summary": result.get("summary", ""),
                 "analysts": result.get("analysts", []),
                 "research_depth": result.get("research_depth", "标准"),
 
-                # 报告内容（使用清理后的 reports，避免重复数据）
+                # Report content (use cleaned reports to avoid duplicate data)
                 "reports": cleaned_reports,
 
-                # 🔥 关键：decision 字段
+                # 🔥 Key: decision field
                 "decision": result.get("decision", {}),
 
-                # 元数据
+                # metadata
                 "task_id": task_id,
                 "user_id": user_id,
                 "created_at": timestamp,
                 "updated_at": timestamp,
 
-                # 其他字段
+                # Other fields
                 "recommendation": result.get("recommendation", ""),
                 "confidence_score": result.get("confidence_score", 0.0),
                 "risk_level": result.get("risk_level", "中等"),
@@ -1163,13 +1163,13 @@ class UnifiedAnalysisService:
                 {"$set": document},
                 upsert=True
             )
-            logger.info(f"✅ 分析结果已保存到数据库: {task_id}")
-            logger.debug(f"📊 保存的 decision: {result.get('decision', {})}")
+            logger.info(f"✅ Analysis results have been saved to the database: {task_id}")
+            logger.debug(f"📊 saved decision: {result.get('decision', {})}")
         except Exception as e:
             logger.error(f"❌ 保存分析结果失败: {e}")
 
     def _resolve_stock_name(self, stock_code: str) -> str:
-        """解析股票名称 - 与 SimpleAnalysisService 一致的逻辑"""
+        """Parse stock names - logic consistent with SimpleAnalysisService"""
         if not stock_code:
             return ""
 
@@ -1197,7 +1197,7 @@ class UnifiedAnalysisService:
                     if stock_name:
                         return stock_name
 
-            # 优先尝试从 data_source_manager 获取结构化数据
+            # Prioritize trying to get structured data from data_source_manager
             try:
                 from tradingagents.dataflows.data_source_manager import get_china_stock_info_unified as get_info_dict
                 info_dict = get_info_dict(stock_code)
@@ -1206,7 +1206,7 @@ class UnifiedAnalysisService:
             except Exception:
                 pass
 
-            # 备用方案：从 interface 获取字符串并解析
+            # Alternative: Get string from interface and parse
             from tradingagents.dataflows.interface import get_china_stock_info_unified
             info_str = get_china_stock_info_unified(stock_code)
 
@@ -1220,9 +1220,9 @@ class UnifiedAnalysisService:
         except Exception as e:
             logger.warning(f"⚠️ 解析股票名称失败: {stock_code} - {e}")
 
-        return f"{'ETF' if _is_cn_etf_symbol(stock_code) else '股票'}{stock_code}"
+        return f"{'ETF' if _is_cn_etf_symbol(stock_code) else 'stocks'}{stock_code}"
 
-    # ==================== 持仓分析相关方法 ====================
+    # ==================== Position analysis related methods ====================
 
     async def create_position_analysis_task(
         self,
@@ -1231,32 +1231,32 @@ class UnifiedAnalysisService:
         market: str = "CN",
         task_params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """创建持仓分析任务
+        """Create a position analysis task
 
         Args:
-            user_id: 用户ID
-            code: 股票代码
-            market: 市场类型 (CN/HK/US)
-            task_params: 任务参数
+            user_id: User ID
+            code: Stock code
+            market: market type (CN/HK/US)
+            task_params: Task parameters
 
         Returns:
-            任务信息字典
+            Task information dictionary
         """
-        logger.info(f"🔧 [持仓分析服务] create_position_analysis_task 被调用: user_id={user_id}, code={code}, market={market}")
+        logger.info(f"🔧 [Position analysis service] create_position_analysis_task called: user_id={user_id}, code={code}, market={market}")
         from bson import ObjectId
         from app.core.database import get_mongo_db
 
         task_id = str(uuid.uuid4())
-        logger.info(f"📝 [持仓分析服务] 生成任务ID: {task_id}")
+        logger.info(f"📝 [Position analysis service] Generate tasks ID: {task_id}")
         task_params = task_params or {}
 
-        # 🔥 从用户偏好读取风险偏好设置
+        # 🔥 Read risk preference settings from user preferences
         from app.routers.analysis import get_user_risk_preference
         preference_type = await get_user_risk_preference(user_id)
-        logger.info(f"📊 [持仓分析服务] 使用用户风险偏好: {preference_type}")
+        logger.info(f"📊 [Position analysis service] Use user risk preferences: {preference_type}")
 
-        # 创建统一分析任务
-        logger.info(f"🔄 [持仓分析服务] 创建 UnifiedAnalysisTask 对象...")
+        # Create unified analysis tasks
+        logger.info(f"🔄 [Position analysis service] Create a UnifiedAnalysisTask object...")
         task = UnifiedAnalysisTask(
             task_id=task_id,
             user_id=ObjectId(user_id),
@@ -1266,34 +1266,34 @@ class UnifiedAnalysisService:
                 "market": market,
                 **task_params
             },
-            engine_type="v2",  # 使用 v2.0 引擎
-            preference_type=preference_type,  # 🔥 使用用户偏好设置
+            engine_type="v2",  # Using v2.0 engine
+            preference_type=preference_type,  # 🔥 Use user preferences
             status=AnalysisStatus.PENDING,
-            created_at=now_tz(),  # ✅ 使用 now_tz() 确保带时区信息
+            created_at=now_tz(),  # ✅ Use now_tz() Make sure to include time zone information
         )
 
-        # 保存到数据库
-        logger.info(f"💾 [持仓分析服务] 准备保存到数据库...")
+        # Save to database
+        logger.info(f"💾 [Position analysis service] Prepare to save to database...")
         try:
             db = get_mongo_db()
             task_dict = task.model_dump(by_alias=True, exclude={"id"})
 
-            # ✅ 确保 user_id 是 ObjectId 类型，不是字符串
+            # ✅ Make sure user_id is of type ObjectId, not a string
             if 'user_id' in task_dict and isinstance(task_dict['user_id'], str):
                 task_dict['user_id'] = ObjectId(task_dict['user_id'])
-                logger.info(f"🔄 [持仓分析服务] 转换 user_id 从字符串到 ObjectId: {task_dict['user_id']}")
+                logger.info(f"🔄 [Position analysis service] Convert user_id from string to ObjectId: {task_dict['user_id']}")
 
             logger.info(f"💾 [持仓分析服务] 保存文档: user_id={task_dict.get('user_id')} (类型: {type(task_dict.get('user_id'))})")
 
             await db.unified_analysis_tasks.insert_one(task_dict)
-            logger.info(f"✅ [持仓分析服务] 已保存到数据库，任务ID: {task_id}")
-            logger.info(f"✅ [持仓分析服务] 任务已创建: {task_id} - {code}")
+            logger.info(f"✅ [Position analysis service] Saved to database, task ID: {task_id}")
+            logger.info(f"✅ [Position analysis service] Task has been created: {task_id} - {code}")
         except Exception as e:
-            logger.error(f"❌ [持仓分析] 保存任务失败: {e}")
+            logger.error(f"❌ [Position analysis] Failed to save task: {e}")
             raise
 
-        # 保存到内存状态管理器
-        logger.info(f"💾 [持仓分析服务] 准备保存到内存状态管理器...")
+        # Save to memory state manager
+        logger.info(f"💾 [Position analysis service] Prepare to save to memory state manager...")
         memory_manager = get_memory_state_manager()
         await memory_manager.create_task(
             task_id=task_id,
@@ -1302,15 +1302,15 @@ class UnifiedAnalysisService:
             stock_name=f"{code} 持仓分析",
             parameters=task_params,
         )
-        logger.info(f"✅ [持仓分析服务] 已保存到内存状态管理器")
+        logger.info(f"✅ [Position analysis service] Saved to memory state manager")
 
-        logger.info(f"🎉 [持仓分析服务] 任务创建完成，准备返回结果")
+        logger.info(f"🎉 [Position analysis service] The task is created and results are ready to be returned.")
         return {
             "task_id": task_id,
             "code": code,
             "market": market,
             "status": "pending",
-            "message": "持仓分析任务已创建，预计需要2-5分钟",
+            "message": "The position analysis task has been created and is expected to take 2-5 minutes.",
             "created_at": task.created_at.isoformat()
         }
 
@@ -1323,37 +1323,37 @@ class UnifiedAnalysisService:
         task_params: Optional[Dict[str, Any]] = None,
         progress_callback: Optional[Callable] = None,
     ) -> Dict[str, Any]:
-        """执行持仓分析
+        """Perform position analysis
 
         Args:
-            task_id: 任务ID
-            user_id: 用户ID
-            code: 股票代码
-            market: 市场类型
-            task_params: 任务参数
-            progress_callback: 进度回调函数
+            task_id: Task ID
+            user_id: User ID
+            code: Stock code
+            market: market type
+            task_params: Task parameters
+            progress_callback: Progress callback function
 
         Returns:
-            分析结果字典
+            Analysis result dictionary
         """
-        logger.info(f"🚀 [持仓分析服务] execute_position_analysis 被调用: task_id={task_id}, code={code}")
-        logger.info(f"📋 [持仓分析服务] 任务参数: {task_params}")
+        logger.info(f"🚀 [Position analysis service] execute_position_analysis called: task_id={task_id}, code={code}")
+        logger.info(f"📋 [Position analysis service] Task parameters: {task_params}")
 
         try:
-            # 更新任务状态为处理中
+            # Update task status to Processing
             await self._update_position_task_status(
                 task_id=task_id,
                 status=AnalysisStatus.PROCESSING,
                 message="正在分析持仓..."
             )
 
-            # 调用持仓分析服务
+            # Call the position analysis service
             from app.services.portfolio_service import get_portfolio_service
             from app.models.portfolio import PositionAnalysisByCodeRequest
 
             portfolio_service = get_portfolio_service()
 
-            # 构建分析请求
+            # Build an analysis request
             task_params = task_params or {}
             analysis_request = PositionAnalysisByCodeRequest(
                 code=code,
@@ -1370,7 +1370,7 @@ class UnifiedAnalysisService:
                 position_type=task_params.get("position_type", "real"),
             )
 
-            # 执行分析
+            # Perform analysis
             report = await portfolio_service.analyze_position_by_code(
                 user_id=user_id,
                 code=code,
@@ -1378,7 +1378,7 @@ class UnifiedAnalysisService:
                 params=analysis_request
             )
 
-            # 格式化结果
+            # Format results
             result = {
                 "success": True,
                 "task_id": task_id,
@@ -1392,7 +1392,7 @@ class UnifiedAnalysisService:
                 "error_message": report.error_message,
             }
 
-            # 更新任务状态为完成
+            # Update task status to complete
             await self._update_position_task_status(
                 task_id=task_id,
                 status=AnalysisStatus.COMPLETED if report.status.value == "completed" else AnalysisStatus.FAILED,
@@ -1408,8 +1408,8 @@ class UnifiedAnalysisService:
                     report_summary = ((report.ai_analysis.action_reason if report.ai_analysis else "") or "")[:400]
                     writeback_message = (
                         f"【持仓分析已归档】{code}({market})\n"
-                        f"任务ID: {task_id}\n"
-                        f"摘要: {(report_summary or '持仓分析已完成，可在关联报告中查看。')[:300]}"
+                        f"Task ID: {task_id}\n"
+                        f"Summary: {(report_summary or 'The position analysis is completed and can be viewed in the associated report.')[:300]}"
                     )
                     await write_report_back_to_assistant_thread(
                         db=get_mongo_db(),
@@ -1430,15 +1430,15 @@ class UnifiedAnalysisService:
                         summary_message=writeback_message,
                     )
                 except Exception as writeback_err:
-                    logger.warning(f"⚠️ [持仓分析] 回写研究主题失败（已忽略）: {writeback_err}")
+                    logger.warning(f"⚠️ [Position analysis] Failed to write back research topic (ignored): {writeback_err}")
 
-            logger.info(f"✅ [持仓分析] 执行完成: {task_id} - {code}")
+            logger.info(f"✅ [Position analysis] Execution completed: {task_id} - {code}")
             return result
 
         except Exception as e:
-            logger.error(f"❌ [持仓分析] 执行失败: {task_id} - {e}", exc_info=True)
+            logger.error(f"❌ [Position analysis] Execution failed: {task_id} - {e}", exc_info=True)
 
-            # 更新任务状态为失败
+            # Update task status is failed
             await self._update_position_task_status(
                 task_id=task_id,
                 status=AnalysisStatus.FAILED,
@@ -1466,15 +1466,15 @@ class UnifiedAnalysisService:
             db = get_mongo_db()
 
             update_data = {
-                "status": status.value if hasattr(status, "value") else status,  # 确保存储为字符串值
+                "status": status.value if hasattr(status, "value") else status,  # Make sure to store as string value
                 "message": message,
-                "updated_at": now_tz(),  # ✅ 使用 now_tz() 确保带时区信息
+                "updated_at": now_tz(),  # ✅ Use now_tz() Make sure to include time zone information
             }
 
             if status == AnalysisStatus.PROCESSING:
-                update_data["started_at"] = now_tz()  # ✅ 使用 now_tz() 确保带时区信息
+                update_data["started_at"] = now_tz()  # ✅ Use now_tz() Make sure to include time zone information
             elif status in [AnalysisStatus.COMPLETED, AnalysisStatus.FAILED]:
-                update_data["completed_at"] = now_tz()  # ✅ 使用 now_tz() 确保带时区信息
+                update_data["completed_at"] = now_tz()  # ✅ Use now_tz() Make sure to include time zone information
 
             if result is not None:
                 update_data["result"] = result
@@ -1484,7 +1484,7 @@ class UnifiedAnalysisService:
                 {"$set": update_data}
             )
 
-            # 更新内存状态
+            # Update memory status
             memory_manager = get_memory_state_manager()
             memory_status = TaskStatus.RUNNING if status == AnalysisStatus.PROCESSING else (
                 TaskStatus.COMPLETED if status == AnalysisStatus.COMPLETED else TaskStatus.FAILED
@@ -1496,27 +1496,27 @@ class UnifiedAnalysisService:
             )
 
         except Exception as e:
-            logger.error(f"❌ [持仓分析] 更新任务状态失败: {e}")
+            logger.error(f"❌ [Position analysis] Failed to update task status: {e}")
 
-    # ==================== 交易复盘相关方法 ====================
+    # ==================== Methods related to transaction review ====================
 
     async def create_trade_review_task(
         self,
         user_id: str,
         request: "CreateTradeReviewRequest",
     ) -> Dict[str, Any]:
-        """创建交易复盘任务
+        """Create a transaction review task
 
-        参考：create_position_analysis_task() 的实现
+        Reference:create_position_analysis_task() realization
 
         Args:
-            user_id: 用户ID
-            request: 复盘请求
+            user_id: User ID
+            request: Review request
 
         Returns:
-            任务信息字典 {"task_id": "...", "status": "pending"}
+            Task information dictionary {"task_id": "...", "status": "pending"}
         """
-        logger.info(f"🔧 [交易复盘服务] create_trade_review_task 被调用")
+        logger.info(f"🔧 [Transaction review service] create_trade_review_task called")
         logger.info(f"   📋 user_id: {user_id}")
         logger.info(f"   📋 code: {request.code}")
         logger.info(f"   📋 trade_ids: {request.trade_ids}")
@@ -1528,50 +1528,50 @@ class UnifiedAnalysisService:
         from app.core.database import get_mongo_db
 
         task_id = str(uuid.uuid4())
-        logger.info(f"📝 [交易复盘服务] 生成任务ID: {task_id}")
+        logger.info(f"📝 [Transaction review service] Generate tasks ID: {task_id}")
 
-        # 获取股票名称
+        # Get stock name
         stock_code = request.code or "未知"
         stock_name = self._resolve_stock_name(stock_code) if stock_code != "未知" else "未知股票"
-        logger.info(f"📊 [交易复盘服务] 股票信息: code={stock_code}, name={stock_name}")
+        logger.info(f"📊 [Transaction review service] stock information: code={stock_code}, name={stock_name}")
 
-        # 🔑 从交易信息中提取market字段（快速推断，不等待数据库查询）
+        # 🔑 Extract market field from transaction information (quick inference, no waiting for database query)
         market = None
-        # 优先从code推断（中国股票代码通常是6位数字），避免数据库查询延迟
+        # Prioritize inference from code (Chinese stock codes are usually 6 digits) to avoid database query delays
         if stock_code:
             if len(stock_code) == 6 and stock_code.isdigit():
-                # 中国股票代码：6开头是科创板，0/3开头是创业板/深市，6开头是沪市
+                # China's stock code: starting with 6 is the Science and Technology Innovation Board, starting with 0/3 is the GEM/Shenzhen Stock Exchange, and starting with 6 is the Shanghai Stock Exchange
                 market = "CN"
-                logger.info(f"📊 [交易复盘服务] 从股票代码推断market: {market}")
+                logger.info(f"📊 [Transaction review service] Inferred from stock ticker market: {market}")
             elif stock_code.startswith("HK"):
                 market = "HK"
             elif stock_code.startswith("US") or "." in stock_code:
                 market = "US"
         
-        # 如果没有推断到market，使用默认值（CN）
+        # If no market is inferred, use the default value (CN)
         if not market:
             market = "CN"
-            logger.info(f"📊 [交易复盘服务] 使用默认market: {market}")
+            logger.info(f"📊 [Transaction review service] Use default market: {market}")
         
-        # 注意：market信息的精确提取将在后台任务中完成，这里只做快速推断以确保立即返回
+        # Note: The precise extraction of market information will be completed in the background task. Only quick inference is done here to ensure immediate return.
         
-        # 准备任务参数
+        # Prepare task parameters
         task_params = {
             "trade_ids": request.trade_ids,
-            "stock_code": stock_code,  # 使用 stock_code 而不是 code
-            "code": request.code,  # 保留原字段以兼容
-            "stock_name": stock_name,  # 添加股票名称
-            "market": market,  # 🔑 添加market字段
-            "market_type": market,  # 🔑 兼容字段
+            "stock_code": stock_code,  # Use stock_code instead code
+            "code": request.code,  # Keep original fields for compatibility
+            "stock_name": stock_name,  # Add stock name
+            "market": market,  # 🔑 Add market field
+            "market_type": market,  # 🔑 Compatible fields
             "review_type": request.review_type,
             "source": request.source or "paper",
             "trading_system_id": request.trading_system_id,
             "use_workflow": request.use_workflow
         }
-        logger.info(f"📦 [交易复盘服务] 任务参数: {task_params}")
+        logger.info(f"📦 [Transaction review service] Task parameters: {task_params}")
 
-        # 创建统一分析任务
-        logger.info(f"🔄 [交易复盘服务] 创建 UnifiedAnalysisTask 对象...")
+        # Create unified analysis tasks
+        logger.info(f"🔄 [Transaction review service] Create a UnifiedAnalysisTask object...")
         task = UnifiedAnalysisTask(
             task_id=task_id,
             user_id=ObjectId(user_id),
@@ -1581,56 +1581,56 @@ class UnifiedAnalysisService:
             status=AnalysisStatus.PENDING,
             created_at=now_tz(),
         )
-        logger.info(f"✅ [交易复盘服务] UnifiedAnalysisTask 对象创建成功")
+        logger.info(f"✅ [Transaction review service] UnifiedAnalysisTask Object created successfully")
         logger.info(f"   📋 task_type: {task.task_type}")
         logger.info(f"   📋 engine_type: {task.engine_type}")
         logger.info(f"   📋 status: {task.status}")
 
-        # 保存到数据库
-        logger.info(f"💾 [交易复盘服务] 准备保存到数据库...")
+        # Save to database
+        logger.info(f"💾 [Transaction review service] Prepare to save to database...")
         try:
             db = get_mongo_db()
-            logger.info(f"✅ [交易复盘服务] 获取数据库连接成功")
+            logger.info(f"✅ [Transaction review service] Obtain database connection successfully")
 
             task_dict = task.model_dump(by_alias=True, exclude={"id"})
-            logger.info(f"📦 [交易复盘服务] 任务字典: {list(task_dict.keys())}")
+            logger.info(f"📦 [Transaction review service] task dictionary: {list(task_dict.keys())}")
 
-            # 确保 user_id 是 ObjectId 类型
+            # Make sure user_id is of type ObjectId
             if 'user_id' in task_dict and isinstance(task_dict['user_id'], str):
-                logger.info(f"🔄 [交易复盘服务] 转换 user_id 为 ObjectId")
+                logger.info(f"🔄 [Transaction review service] Convert user_id to ObjectId")
                 task_dict['user_id'] = ObjectId(task_dict['user_id'])
 
             await db.unified_analysis_tasks.insert_one(task_dict)
-            logger.info(f"✅ [交易复盘服务] 任务已保存到数据库: {task_id}")
+            logger.info(f"✅ [Transaction review service] Task saved to database: {task_id}")
         except Exception as e:
-            logger.error(f"❌ [交易复盘服务] 保存任务到数据库失败: {e}", exc_info=True)
+            logger.error(f"❌ [Transaction review service] Failed to save task to database: {e}", exc_info=True)
             raise
 
-        # 保存到内存状态管理器
-        logger.info(f"💾 [交易复盘服务] 准备保存到内存状态管理器...")
+        # Save to memory state manager
+        logger.info(f"💾 [Transaction review service] Prepare to save to memory state manager...")
         try:
             memory_manager = get_memory_state_manager()
-            logger.info(f"✅ [交易复盘服务] 获取内存状态管理器成功")
+            logger.info(f"✅ [Transaction review service] Obtain memory status manager successfully")
 
             await memory_manager.create_task(
                 task_id=task_id,
                 user_id=user_id,
-                stock_code=stock_code,  # 使用前面已经获取的 stock_code
-                stock_name=stock_name,  # 使用前面已经获取的 stock_name
+                stock_code=stock_code,  # Use what you have obtained previously stock_code
+                stock_name=stock_name,  # Use what you have obtained previously stock_name
                 parameters=task_params
             )
-            logger.info(f"✅ [交易复盘服务] 任务已保存到内存: {task_id}")
+            logger.info(f"✅ [Transaction review service] Task saved to memory: {task_id}")
         except Exception as e:
-            logger.error(f"❌ [交易复盘服务] 保存任务到内存失败: {e}", exc_info=True)
-            # 内存状态失败不影响主流程，继续执行
+            logger.error(f"❌ [Transaction review service] Failed to save task to memory: {e}", exc_info=True)
+            # Memory status failure does not affect the main process and continues execution.
 
         result = {
             "task_id": task_id,
             "status": AnalysisStatus.PENDING.value,
-            "message": "交易复盘任务已创建，预计需要1-3分钟",
+            "message": "The transaction review task has been created and is expected to take 1-3 minutes.",
             "created_at": task.created_at.isoformat()
         }
-        logger.info(f"🎉 [交易复盘服务] create_trade_review_task 完成")
+        logger.info(f"🎉 [Transaction review service] create_trade_review_task Complete")
         logger.info(f"   📋 返回结果: {result}")
 
         return result
@@ -1642,20 +1642,20 @@ class UnifiedAnalysisService:
         request: "CreateTradeReviewRequest",
         progress_callback: Optional[Callable] = None,
     ) -> Dict[str, Any]:
-        """执行交易复盘任务
+        """Perform transaction review tasks
 
-        参考：execute_position_analysis() 的实现
+        Reference:execute_position_analysis() realization
 
         Args:
-            task_id: 任务ID
-            user_id: 用户ID
-            request: 复盘请求
-            progress_callback: 进度回调函数
+            task_id: Task ID
+            user_id: User ID
+            request: Review request
+            progress_callback: Progress callback function
 
         Returns:
-            分析结果字典
+            Analysis result dictionary
         """
-        logger.info(f"🚀 [交易复盘服务] execute_trade_review 被调用")
+        logger.info(f"🚀 [Transaction review service] execute_trade_review called")
         logger.info(f"   📋 task_id: {task_id}")
         logger.info(f"   📋 user_id: {user_id}")
         logger.info(f"   📋 trade_ids: {request.trade_ids}")
@@ -1665,24 +1665,24 @@ class UnifiedAnalysisService:
         logger.info(f"   📋 use_workflow: {request.use_workflow}")
 
         try:
-            # 更新任务状态为处理中
-            logger.info(f"🔄 [交易复盘服务] 更新任务状态为 PROCESSING...")
+            # Update task status to Processing
+            logger.info(f"🔄 [Transaction review service] Update task status to PROCESSING...")
             await self._update_trade_review_task_status(
                 task_id=task_id,
                 status=AnalysisStatus.PROCESSING,
                 message="正在进行交易复盘..."
             )
-            logger.info(f"✅ [交易复盘服务] 任务状态已更新为 PROCESSING")
+            logger.info(f"✅ [Transaction review service] The task status has been updated to PROCESSING")
 
-            # 🔥 创建包装的进度回调：保存进度到数据库和内存
+            # 🔥 Create a wrapped progress callback: save progress to database and memory
             from app.services.memory_state_manager import get_memory_state_manager, TaskStatus
             memory_manager = get_memory_state_manager()
 
             async def wrapped_progress_callback(progress: int, message: str, **kwargs):
-                """包装的进度回调：更新任务进度并保存到数据库和内存"""
+                """Wrapped progress callback: update task progress and save to database and memory"""
                 step_name = kwargs.get("step_name", "")
 
-                # 更新内存状态管理器
+                # Update memory state manager
                 await memory_manager.update_task_status(
                     task_id=task_id,
                     status=TaskStatus.RUNNING,
@@ -1693,7 +1693,7 @@ class UnifiedAnalysisService:
                     current_step_description=message
                 )
 
-                # 更新数据库中的任务进度
+                # Update task progress in database
                 from app.core.database import get_mongo_db
                 db = get_mongo_db()
                 await db.unified_analysis_tasks.update_one(
@@ -1705,40 +1705,40 @@ class UnifiedAnalysisService:
                     }}
                 )
 
-                logger.info(f"📊 [交易复盘] 进度已保存: {progress}% - {step_name} - {message}")
+                logger.info(f"📊 [Transaction review] Progress saved: {progress}% - {step_name} - {message}")
 
-                # 调用原始回调（如果有）
+                # Call the original callback (if any)
                 if progress_callback:
                     if asyncio.iscoroutinefunction(progress_callback):
                         await progress_callback(progress, message, **kwargs)
                     else:
                         progress_callback(progress, message, **kwargs)
 
-            # 调用现有的复盘服务
-            logger.info(f"🔄 [交易复盘服务] 获取 TradeReviewService 实例...")
+            # Call existing review service
+            logger.info(f"🔄 [Transaction review service] Get TradeReviewService instance...")
             from app.services.trade_review_service import get_trade_review_service
 
             trade_review_service = get_trade_review_service()
-            logger.info(f"✅ [交易复盘服务] TradeReviewService 实例获取成功")
+            logger.info(f"✅ [Transaction review service] TradeReviewService Instance obtained successfully")
 
-            # 执行复盘（使用现有逻辑）
-            logger.info(f"🔄 [交易复盘服务] 调用 TradeReviewService.create_trade_review()...")
-            logger.info(f"   📋 这将使用现有的复盘逻辑（包括工作流引擎）")
+            # Perform review (using existing logic)
+            logger.info(f"🔄 [Transaction review service] call TradeReviewService.create_trade_review()...")
+            logger.info(f"   📋 This will use existing review logic (including the workflow engine)")
 
             report = await trade_review_service.create_trade_review(
                 user_id=user_id,
                 request=request,
-                progress_callback=wrapped_progress_callback  # 🔥 传递进度回调
+                progress_callback=wrapped_progress_callback  # 🔥 Pass progress callback
             )
-            logger.info(f"✅ [交易复盘服务] TradeReviewService.create_trade_review() 执行成功")
+            logger.info(f"✅ [Transaction review service] TradeReviewService.create_trade_review() Executed successfully")
             logger.info(f"   📋 review_id: {report.review_id}")
             logger.info(f"   📋 status: {report.status}")
             logger.info(f"   📋 code: {report.trade_info.code}")
             logger.info(f"   📋 name: {report.trade_info.name}")
             logger.info(f"   📋 execution_time: {report.execution_time}s")
 
-            # 格式化结果
-            logger.info(f"🔄 [交易复盘服务] 格式化结果...")
+            # Format results
+            logger.info(f"🔄 [Transaction review service] Format results...")
             result = {
                 "success": True,
                 "task_id": task_id,
@@ -1751,48 +1751,48 @@ class UnifiedAnalysisService:
                 "status": report.status.value,
                 "execution_time": report.execution_time
             }
-            logger.info(f"✅ [交易复盘服务] 结果格式化完成")
+            logger.info(f"✅ [Transaction review service] Result formatting completed")
 
-            # 更新任务状态为完成
-            logger.info(f"🔄 [交易复盘服务] 更新任务状态为 COMPLETED...")
-            # 🔑 传递execution_time，避免重新计算
+            # Update task status to complete
+            logger.info(f"🔄 [Transaction review service] Update task status to COMPLETED...")
+            # 🔑 Pass execution_time to avoid recalculation
             await self._update_trade_review_task_status(
                 task_id=task_id,
                 status=AnalysisStatus.COMPLETED,
                 result=result,
                 message="复盘完成",
-                execution_time=report.execution_time  # 🔑 使用report中的execution_time
+                execution_time=report.execution_time  # 🔑 Use report in execution_time
             )
-            logger.info(f"✅ [交易复盘服务] 任务状态已更新为 COMPLETED")
+            logger.info(f"✅ [Transaction review service] The task status has been updated to COMPLETED")
 
-            logger.info(f"🎉 [交易复盘服务] 任务执行成功: {task_id}")
+            logger.info(f"🎉 [Transaction review service] Task execution successful: {task_id}")
             logger.info(f"   📋 总耗时: {report.execution_time}s")
 
             return result
 
         except Exception as e:
-            logger.error(f"❌ [交易复盘服务] 任务执行失败: {task_id}")
+            logger.error(f"❌ [Transaction review service] Task execution failed: {task_id}")
             logger.error(f"   📋 错误类型: {type(e).__name__}")
             logger.error(f"   📋 错误信息: {str(e)}")
             logger.error(f"   📋 详细堆栈:", exc_info=True)
 
-            # 更新任务状态为失败
-            logger.info(f"🔄 [交易复盘服务] 更新任务状态为 FAILED...")
+            # Update task status is failed
+            logger.info(f"🔄 [Transaction review service] Update task status to FAILED...")
             await self._update_trade_review_task_status(
                 task_id=task_id,
                 status=AnalysisStatus.FAILED,
                 error_message=str(e),
                 message=f"复盘失败: {str(e)}"
             )
-            logger.info(f"✅ [交易复盘服务] 任务状态已更新为 FAILED")
+            logger.info(f"✅ [Transaction review service] The task status has been updated to FAILED")
 
-            # 返回错误结果
+            # Return wrong result
             error_result = {
                 "success": False,
                 "task_id": task_id,
                 "error": str(e),
             }
-            logger.info(f"📋 [交易复盘服务] 返回错误结果: {error_result}")
+            logger.info(f"📋 [Transaction review service] Return wrong result: {error_result}")
 
             return error_result
 
@@ -1803,13 +1803,13 @@ class UnifiedAnalysisService:
         message: Optional[str] = None,
         result: Optional[Dict[str, Any]] = None,
         error_message: Optional[str] = None,
-        execution_time: Optional[float] = None,  # 🔑 新增参数：执行时间
+        execution_time: Optional[float] = None,  # 🔑 New parameter: execution time
     ):
-        """更新交易复盘任务状态
+        """Update transaction review task status
 
-        参考：_update_position_task_status() 的实现
+        Reference:_update_position_task_status() realization
         """
-        logger.info(f"🔄 [交易复盘服务] _update_trade_review_task_status 被调用")
+        logger.info(f"🔄 [Transaction review service] _update_trade_review_task_status called")
         logger.info(f"   📋 task_id: {task_id}")
         logger.info(f"   📋 status: {status}")
         logger.info(f"   📋 message: {message}")
@@ -1819,10 +1819,10 @@ class UnifiedAnalysisService:
         from app.core.database import get_mongo_db
 
         try:
-            # 更新数据库
-            logger.info(f"💾 [交易复盘服务] 准备更新数据库...")
+            # Update database
+            logger.info(f"💾 [Transaction review service] Prepare to update the database...")
             db = get_mongo_db()
-            logger.info(f"✅ [交易复盘服务] 获取数据库连接成功")
+            logger.info(f"✅ [Transaction review service] Obtain database connection successfully")
 
             update_data = {
                 "status": status.value if hasattr(status, "value") else status,
@@ -1832,19 +1832,19 @@ class UnifiedAnalysisService:
 
             if status == AnalysisStatus.PROCESSING:
                 update_data["started_at"] = now_tz()
-                logger.info(f"   📋 设置 started_at: {update_data['started_at']}")
+                logger.info(f"   📋 settings started_at: {update_data['started_at']}")
             elif status in [AnalysisStatus.COMPLETED, AnalysisStatus.FAILED]:
                 completed_at = now_tz()
                 update_data["completed_at"] = completed_at
-                logger.info(f"   📋 设置 completed_at: {completed_at}")
+                logger.info(f"   📋 settings completed_at: {completed_at}")
                 
-                # 🔑 设置execution_time
+                # 🔑 settings execution_time
                 if execution_time is not None:
-                    # 如果传入了execution_time，直接使用
+                    # If execution_time is passed in, use it directly
                     update_data["execution_time"] = execution_time
-                    logger.info(f"   📋 使用传入的execution_time: {execution_time:.2f}s")
+                    logger.info(f"   📋 Use the incoming execution_time: {execution_time:.2f}s")
                 else:
-                    # 否则计算execution_time
+                    # Otherwise calculate execution_time
                     task_doc = await db.unified_analysis_tasks.find_one({"task_id": task_id})
                     if task_doc and task_doc.get("started_at"):
                         started_at = task_doc["started_at"]
@@ -1852,22 +1852,22 @@ class UnifiedAnalysisService:
                             from datetime import datetime
                             started_at = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
                         
-                        # 🔥 确保时区一致：使用 ensure_timezone 统一时区
-                        # completed_at 是 offset-aware（来自 now_tz()），started_at 也需要是 offset-aware
+                        # 🔥 Ensure consistent time zones: use ensure_timezone to unify time zones
+                        # completed_at is offset-aware (from now_tz()) , started_at It also needs to be offset-aware
                         from app.utils.timezone import ensure_timezone
                         started_at = ensure_timezone(started_at)
                         completed_at = ensure_timezone(completed_at)
                         
                         calculated_time = (completed_at - started_at).total_seconds()
                         update_data["execution_time"] = calculated_time
-                        logger.info(f"   📋 计算execution_time: {calculated_time:.2f}s (started_at: {started_at}, completed_at: {completed_at})")
+                        logger.info(f"   📋 Calculate execution_time: {calculated_time:.2f}s (started_at: {started_at}, completed_at: {completed_at})")
                     else:
-                        logger.warning(f"   ⚠️ 无法计算execution_time: started_at不存在")
+                        logger.warning(f"   ⚠️ Unable to calculate execution_time: started_at does not exist")
                 
-                # 🔑 确保progress为100（如果已完成）
+                # 🔑 Make sure progress is 100 (if completed)
                 if status == AnalysisStatus.COMPLETED:
                     update_data["progress"] = 100
-                    logger.info(f"   📋 设置progress: 100")
+                    logger.info(f"   📋 settings progress: 100")
 
             if result is not None:
                 update_data["result"] = result
@@ -1875,19 +1875,19 @@ class UnifiedAnalysisService:
 
             if error_message is not None:
                 update_data["error_message"] = error_message
-                logger.info(f"   📋 设置 error_message: {error_message}")
+                logger.info(f"   📋 settings error_message: {error_message}")
 
-            logger.info(f"🔄 [交易复盘服务] 执行数据库更新...")
+            logger.info(f"🔄 [Transaction review service] Perform database updates...")
             await db.unified_analysis_tasks.update_one(
                 {"task_id": task_id},
                 {"$set": update_data}
             )
-            logger.info(f"✅ [交易复盘服务] 数据库更新成功")
+            logger.info(f"✅ [Transaction review service] Database update successful")
 
-            # 更新内存状态
-            logger.info(f"💾 [交易复盘服务] 准备更新内存状态...")
+            # Update memory status
+            logger.info(f"💾 [Transaction review service] Prepare to update memory status...")
             memory_manager = get_memory_state_manager()
-            logger.info(f"✅ [交易复盘服务] 获取内存状态管理器成功")
+            logger.info(f"✅ [Transaction review service] Obtain memory status manager successfully")
 
             memory_status = TaskStatus.RUNNING if status == AnalysisStatus.PROCESSING else (
                 TaskStatus.COMPLETED if status == AnalysisStatus.COMPLETED else TaskStatus.FAILED
@@ -1895,15 +1895,15 @@ class UnifiedAnalysisService:
             logger.info(f"   📋 内存状态: {memory_status}")
 
             if status == AnalysisStatus.PROCESSING:
-                logger.info(f"🔄 [交易复盘服务] 更新内存状态为 RUNNING...")
+                logger.info(f"🔄 [Transaction review service] Update the memory status to RUNNING...")
                 await memory_manager.update_task_status(
                     task_id=task_id,
                     status=memory_status,
                     message=message or "处理中...",
                 )
-                logger.info(f"✅ [交易复盘服务] 内存状态已更新为 RUNNING")
+                logger.info(f"✅ [Transaction review service] The memory status has been updated to RUNNING")
             elif status == AnalysisStatus.COMPLETED:
-                logger.info(f"🔄 [交易复盘服务] 完成任务...")
+                logger.info(f"🔄 [Transaction review service] Complete the task...")
                 await memory_manager.update_task_status(
                     task_id=task_id,
                     status=memory_status,
@@ -1911,9 +1911,9 @@ class UnifiedAnalysisService:
                     message=message or "分析完成",
                     result_data=result
                 )
-                logger.info(f"✅ [交易复盘服务] 任务已标记为完成")
+                logger.info(f"✅ [Transaction review service] Task marked as complete")
             elif status == AnalysisStatus.FAILED:
-                logger.info(f"🔄 [交易复盘服务] 标记任务失败...")
+                logger.info(f"🔄 [Transaction review service] Mark task failed...")
                 await memory_manager.update_task_status(
                     task_id=task_id,
                     status=memory_status,
@@ -1921,12 +1921,12 @@ class UnifiedAnalysisService:
                     message=message or "分析失败",
                     error_message=error_message or "未知错误"
                 )
-                logger.info(f"✅ [交易复盘服务] 任务已标记为失败")
+                logger.info(f"✅ [Transaction review service] Task marked as failed")
 
-            logger.info(f"🎉 [交易复盘服务] _update_trade_review_task_status 完成")
+            logger.info(f"🎉 [Transaction review service] _update_trade_review_task_status Complete")
 
         except Exception as e:
-            logger.error(f"❌ [交易复盘服务] 更新任务状态失败")
+            logger.error(f"❌ [Transaction review service] Failed to update task status")
             logger.error(f"   📋 task_id: {task_id}")
             logger.error(f"   📋 错误类型: {type(e).__name__}")
             logger.error(f"   📋 错误信息: {str(e)}")
@@ -1945,8 +1945,8 @@ class UnifiedAnalysisService:
                     "$set": {
                         "status": "failed",
                         "error_message": error_message,
-                        "completed_at": now_tz(),  # ✅ 使用 now_tz() 确保带时区信息
-                        "updated_at": now_tz(),  # ✅ 使用 now_tz() 确保带时区信息
+                        "completed_at": now_tz(),  # ✅ Use now_tz() Make sure to include time zone information
+                        "updated_at": now_tz(),  # ✅ Use now_tz() Make sure to include time zone information
                     }
                 }
             )
@@ -1954,7 +1954,7 @@ class UnifiedAnalysisService:
             logger.error(f"❌ 更新任务状态失败: {e}")
 
 
-# 单例实例
+# Singleton instance
 _unified_service: Optional[UnifiedAnalysisService] = None
 
 
@@ -1967,7 +1967,7 @@ def get_unified_analysis_service() -> UnifiedAnalysisService:
 
 
 # ------------------------------------------------------------------
-#  mem0 统一记忆层 — 工作流分析集成
+#  mem0 unified memory layer — Workflow analytics integration
 # ------------------------------------------------------------------
 
 def _get_memory_market_type(stock_code: str) -> str:
@@ -1986,7 +1986,7 @@ def _get_memory_market_type(stock_code: str) -> str:
         return "cn"
 
 async def _recall_analysis_memory(db, user_id: str, stock_code: str) -> str:
-    """从 mem0 召回该用户对该股票的历史分析记忆"""
+    """Recall the user s historical analysis memory of this stock from mem0"""
     try:
         from core.memory.service import get_memory_service
         svc = get_memory_service(db)
@@ -2015,7 +2015,7 @@ async def _recall_analysis_memory(db, user_id: str, stock_code: str) -> str:
         )
         return f"{analysis_memory}{preference_memory}"
     except Exception as e:
-        logger.debug("[mem0] 分析记忆召回失败: %s", e)
+        logger.debug("[mem0] Analyze memory recall failure: %s", e)
         return ""
 
 
@@ -2023,7 +2023,7 @@ async def _store_analysis_insight(
     db, user_id: str, stock_code: str,
     analysis_date: str, summary: str, recommendation: str, task_id: str,
 ) -> None:
-    """将分析结论写入对象化股票长期记忆（异步，不阻塞主流程）"""
+    """Write the analysis conclusion into the objectized stock long-term memory (asynchronously, without blocking the main process)"""
     if not summary and not recommendation:
         return
     try:
@@ -2045,7 +2045,7 @@ async def _store_analysis_insight(
             next_checks=[structured_recommendation] if structured_recommendation else None,
         )
         logger.info(
-            "[mem0] 对象化股票记忆写入结果 — user=%s symbol=%s task=%s facts=%d success=%s error=%s",
+            "[mem0] Objectized stock memory writing results — user=%s symbol=%s task=%s facts=%d success=%s error=%s",
             user_id,
             normalized_symbol,
             task_id,
@@ -2054,4 +2054,4 @@ async def _store_analysis_insight(
             result.error or "",
         )
     except Exception as e:
-        logger.debug("[mem0] 分析洞察存储失败（已忽略）: %s", e)
+        logger.debug("[mem0] Analytics insights storage failed (ignored): %s", e)

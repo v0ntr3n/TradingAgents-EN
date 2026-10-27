@@ -1,35 +1,35 @@
 #!/usr/bin/env python3
 """
-测试统一基本面分析工具
-验证新的统一工具方案是否有效
+Testing the Unified Fundamental Analysis Tool
+Verify that the new unified tool solution is effective
 """
 
 import os
 import sys
 
 def test_unified_tool_directly():
-    """直接测试统一基本面分析工具"""
-    print("🔧 直接测试统一基本面分析工具...")
+    """Direct testing of unified fundamental analysis tools"""
+    print("🔧 Direct testing of unified fundamental analysis tools...")
     
     try:
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建工具包
+        # Create toolkit
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         toolkit = Toolkit(config)
         
-        # 测试不同类型的股票
+        # Test different types of stocks
         test_cases = [
-            ("0700.HK", "港股"),
-            ("9988.HK", "港股"),
-            ("000001", "中国A股"),
-            ("AAPL", "美股"),
+            ("0700.HK", "Hong Kong stocks"),
+            ("9988.HK", "Hong Kong stocks"),
+            ("000001", "China A shares"),
+            ("AAPL", "US stocks"),
         ]
         
         for ticker, expected_type in test_cases:
-            print(f"\n📊 测试 {ticker} ({expected_type}):")
+            print(f"\n📊 test {ticker} ({expected_type}):")
             
             try:
                 result = toolkit.get_stock_fundamentals_unified.invoke({
@@ -39,39 +39,39 @@ def test_unified_tool_directly():
                     'curr_date': '2025-07-14'
                 })
                 
-                print(f"  ✅ 工具调用成功")
-                print(f"  结果长度: {len(result)}")
-                print(f"  结果前200字符: {result[:200]}...")
+                print(f"  ✅ Tool call successful")
+                print(f"  Result length: {len(result)}")
+                print(f"  The first 200 characters of the result: {result[:200]}...")
                 
-                # 检查结果是否包含预期内容
+                # Check if the results contain expected content
                 if expected_type in result:
-                    print(f"  ✅ 结果包含正确的股票类型")
+                    print(f"  ✅ Results contain the correct stock type")
                 else:
-                    print(f"  ⚠️ 结果未包含预期的股票类型")
+                    print(f"  ⚠️ Results did not contain the expected stock type")
                 
-                # 检查是否包含货币信息
+                # Check if currency information is included
                 if any(currency in result for currency in ['¥', 'HK$', '$']):
-                    print(f"  ✅ 结果包含货币信息")
+                    print(f"  ✅ Results contain currency information")
                 else:
-                    print(f"  ⚠️ 结果未包含货币信息")
+                    print(f"  ⚠️ Results do not contain currency information")
                     
             except Exception as e:
-                print(f"  ❌ 工具调用失败: {e}")
+                print(f"  ❌ Tool call failed: {e}")
                 return False
         
-        print("✅ 统一工具直接测试通过")
+        print("✅ The unified tool directly passes the test")
         return True
         
     except Exception as e:
-        print(f"❌ 统一工具直接测试失败: {e}")
+        print(f"❌ Unified tool direct test fails: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_fundamentals_analyst_with_unified_tool():
-    """测试基本面分析师使用统一工具"""
-    print("\n🔧 测试基本面分析师使用统一工具...")
+    """Test fundamental analysts using unified tools"""
+    print("\n🔧 Test fundamental analysts using unified tools...")
     
     try:
         from tradingagents.agents.analysts.fundamentals_analyst import create_fundamentals_analyst
@@ -79,116 +79,116 @@ def test_fundamentals_analyst_with_unified_tool():
         from tradingagents.default_config import DEFAULT_CONFIG
         from tradingagents.llm_adapters import ChatDashScopeOpenAI
         
-        # 检查API密钥
+        # Check API key
         api_key = os.getenv("DASHSCOPE_API_KEY")
         if not api_key:
-            print("⚠️ 未找到DASHSCOPE_API_KEY，跳过LLM测试")
+            print("⚠️ DASHSCOPE_API_KEY not found, skipping LLM test")
             return True
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         
-        # 创建工具包
+        # Create toolkit
         toolkit = Toolkit(config)
         
-        # 创建LLM
+        # Create LLM
         llm = ChatDashScopeOpenAI(
             model="qwen-turbo",
             temperature=0.1,
             max_tokens=1000
         )
         
-        # 创建基本面分析师
+        # Create a fundamental analyst
         analyst = create_fundamentals_analyst(llm, toolkit)
         
-        # 测试港股
+        # Test Hong Kong stocks
         state = {
             "trade_date": "2025-07-14",
             "company_of_interest": "0700.HK",
             "messages": []
         }
         
-        print(f"  测试港股基本面分析: {state['company_of_interest']}")
+        print(f"  Test fundamental analysis of Hong Kong stocks: {state['company_of_interest']}")
         
-        # 调用分析师
+        # call analyst
         result = analyst(state)
         
-        print(f"  ✅ 基本面分析师调用完成")
-        print(f"  结果类型: {type(result)}")
+        print(f"  ✅ Fundamental analyst call completed")
+        print(f"  result type: {type(result)}")
         
         if isinstance(result, dict) and 'fundamentals_report' in result:
             report = result['fundamentals_report']
-            print(f"  报告长度: {len(report)}")
-            print(f"  报告前200字符: {report[:200]}...")
+            print(f"  Report length: {len(report)}")
+            print(f"  Report first 200 characters: {report[:200]}...")
             
-            # 检查报告质量
+            # Check report quality
             if len(report) > 200:
-                print(f"  ✅ 报告长度合格（>200字符）")
+                print(f"  ✅ The report length is acceptable (>200 characters)")
             else:
-                print(f"  ⚠️ 报告长度偏短（{len(report)}字符）")
+                print(f"  ⚠️ The report length is too short ({len(report)}characters)")
             
-            # 检查是否包含港币相关内容
-            if 'HK$' in report or '港币' in report or '港元' in report:
-                print(f"  ✅ 报告包含港币计价")
+            # Check whether it contains Hong Kong dollar related content
+            if 'HK$' in report or 'Hong Kong dollar' in report or 'Hong Kong dollar' in report:
+                print(f"  ✅ Report includes Hong Kong dollar denominated prices")
             else:
-                print(f"  ⚠️ 报告未包含港币计价")
+                print(f"  ⚠️ Report does not include Hong Kong dollar pricing")
         else:
-            print(f"  ❌ 未找到基本面报告")
+            print(f"  ❌ Fundamentals report not found")
             return False
         
-        print("✅ 基本面分析师统一工具测试通过")
+        print("✅ Fundamental Analyst Unified Tool Test Passed")
         return True
         
     except Exception as e:
-        print(f"❌ 基本面分析师统一工具测试失败: {e}")
+        print(f"❌ Fundamental Analyst Unified Tool Test Fails: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_stock_type_detection():
-    """测试股票类型检测"""
-    print("\n🔧 测试股票类型检测...")
+    """Test stock type detection"""
+    print("\n🔧 Test stock type detection...")
     
     try:
         from tradingagents.utils.stock_utils import StockUtils
         
         test_cases = [
-            ("0700.HK", "港股", "港币", "HK$"),
-            ("9988.HK", "港股", "港币", "HK$"),
-            ("000001", "中国A股", "人民币", "¥"),
-            ("600036", "中国A股", "人民币", "¥"),
-            ("AAPL", "美股", "美元", "$"),
+            ("0700.HK", "Hong Kong stocks", "Hong Kong dollar", "HK$"),
+            ("9988.HK", "Hong Kong stocks", "Hong Kong dollar", "HK$"),
+            ("000001", "China A shares", "RMB", "¥"),
+            ("600036", "China A shares", "RMB", "¥"),
+            ("AAPL", "US stocks", "US dollars", "$"),
         ]
         
         for ticker, expected_market, expected_currency, expected_symbol in test_cases:
             market_info = StockUtils.get_market_info(ticker)
             
             print(f"  {ticker}:")
-            print(f"    市场: {market_info['market_name']}")
-            print(f"    货币: {market_info['currency_name']} ({market_info['currency_symbol']})")
+            print(f"    market: {market_info['market_name']}")
+            print(f"    Currency: {market_info['currency_name']} ({market_info['currency_symbol']})")
             
-            # 验证结果
+            # Verification results
             if (expected_market in market_info['market_name'] and 
                 market_info['currency_name'] == expected_currency and
                 market_info['currency_symbol'] == expected_symbol):
-                print(f"    ✅ 识别正确")
+                print(f"    ✅ Recognize correctly")
             else:
-                print(f"    ❌ 识别错误")
+                print(f"    ❌ Recognition error")
                 return False
         
-        print("✅ 股票类型检测测试通过")
+        print("✅ Stock type detection test passed")
         return True
         
     except Exception as e:
-        print(f"❌ 股票类型检测测试失败: {e}")
+        print(f"❌ Stock type detection test failed: {e}")
         return False
 
 
 def main():
-    """主测试函数"""
-    print("🔧 统一基本面分析工具测试")
+    """Main test function"""
+    print("🔧 Unified fundamental analysis tool testing")
     print("=" * 60)
     
     tests = [
@@ -205,24 +205,24 @@ def main():
             if test():
                 passed += 1
             else:
-                print(f"❌ 测试失败: {test.__name__}")
+                print(f"❌ test failed: {test.__name__}")
         except Exception as e:
-            print(f"❌ 测试异常: {test.__name__} - {e}")
+            print(f"❌ Test exception: {test.__name__} - {e}")
     
     print("\n" + "=" * 60)
-    print(f"📊 测试结果: {passed}/{total} 通过")
+    print(f"📊 Test results: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 所有测试通过！统一基本面分析工具方案成功")
-        print("\n📋 方案优势:")
-        print("✅ 简化了工具选择逻辑")
-        print("✅ 工具内部自动识别股票类型")
-        print("✅ 避免了LLM工具调用混乱")
-        print("✅ 统一的系统提示和处理流程")
-        print("✅ 更容易维护和扩展")
+        print("🎉 All tests passed! The unified fundamental analysis tool solution was successful")
+        print("\n📋 Solution advantages:")
+        print("✅ Simplified tool selection logic")
+        print("✅ Automatically identify stock types within the tool")
+        print("✅ Avoids LLM tool calling confusion")
+        print("✅ Unified system prompts and processing procedures")
+        print("✅ Easier to maintain and extend")
         return True
     else:
-        print("⚠️ 部分测试失败，需要进一步检查")
+        print("⚠️ Some tests failed and require further inspection")
         return False
 
 

@@ -1,8 +1,8 @@
 """
-任务分析服务
+Task Analysis Services
 
-基于 UnifiedAnalysisTask 模型的分析任务管理服务
-提供统一的任务创建、执行、查询接口
+Analysis task management service based on UnifiedAnalysisTask model
+Provide a unified task creation, execution, and query interface
 """
 
 from typing import Dict, Any, Optional, List, Callable, Union
@@ -63,24 +63,24 @@ class TaskCancelledException(Exception):
 
 
 class TaskAnalysisService:
-    """任务分析服务
+    """Task Analysis Services
     
-    基于 UnifiedAnalysisTask 模型的分析任务管理
+    Analysis task management based on UnifiedAnalysisTask model
     
-    使用示例:
+    Usage example:
         service = TaskAnalysisService()
         
-        # 创建并执行任务
+        # Create and execute tasks
         task = await service.create_and_execute_task(
             user_id=user_id,
             task_type=AnalysisTaskType.STOCK_ANALYSIS,
             task_params={"symbol": "000858", "market_type": "cn"}
         )
         
-        # 查询任务
+        # Query tasks
         task = await service.get_task(task_id)
         
-        # 查询用户的所有任务
+        # Query all tasks of the user
         tasks = await service.list_user_tasks(user_id)
     """
     
@@ -100,28 +100,28 @@ class TaskAnalysisService:
         preference_type: str = "neutral",
         workflow_id: Optional[str] = None,
         batch_id: Optional[str] = None,
-        task_id: Optional[str] = None  # 🔥 支持传入 task_id
+        task_id: Optional[str] = None  # 🔥 Support incoming task_id
     ) -> UnifiedAnalysisTask:
-        """创建分析任务
+        """Create analysis tasks
 
         Args:
-            user_id: 用户ID
-            task_type: 任务类型
-            task_params: 任务参数
-            engine_type: 引擎类型 (auto/workflow/legacy/llm)
-            preference_type: 分析偏好 (aggressive/neutral/conservative)
-            workflow_id: 工作流ID（可选）
-            batch_id: 批次ID（可选）
-            task_id: 任务ID（可选，如果不提供则自动生成）
+            user_id: User ID
+            task_type: Task type
+            task_params: Task parameters
+            engine_type: Engine type (auto/workflow/legacy/llm)
+            preference_type: Analyze preferences (aggressive/neutral/conservative)
+            workflow_id: Workflow ID (optional)
+            batch_id: Batch ID (optional)
+            task_id: Task ID (optional, automatically generated if not provided)
 
         Returns:
-            创建的任务对象
+            Created task object
         """
-        # 生成任务ID（如果没有提供）
+        # Generate task ID if not provided
         if task_id is None:
             task_id = str(uuid.uuid4())
         
-        # 创建任务对象
+        # Create task object
         task = UnifiedAnalysisTask(
             task_id=task_id,
             user_id=user_id,
@@ -135,7 +135,7 @@ class TaskAnalysisService:
             created_at=now_tz()
         )
         
-        # 保存到数据库
+        # Save to database
         await self._save_task(task)
         
         self.logger.info(f"✅ 创建任务: {task_id} (类型: {task_type})")
@@ -147,16 +147,16 @@ class TaskAnalysisService:
         task_or_id: Union[UnifiedAnalysisTask, str],
         progress_callback: Optional[Callable[[int, str], None]] = None
     ) -> UnifiedAnalysisTask:
-        """执行分析任务
+        """Perform analysis tasks
 
         Args:
-            task_or_id: 任务对象或任务ID
-            progress_callback: 进度回调函数
+            task_or_id: task object or task ID
+            progress_callback: Progress callback function
 
         Returns:
-            更新后的任务对象
+            Updated task object
         """
-        # 如果传入的是 task_id，先获取任务对象
+        # If the task_id is passed in, get the task object first
         if isinstance(task_or_id, str):
             task = await self.get_task(task_or_id)
             if not task:
@@ -180,26 +180,26 @@ class TaskAnalysisService:
                 stock_name=None,
             )
 
-        # 创建一个包装的进度回调，用于更新数据库和内存
+        # Create a wrapped progress callback that updates the database and memory
         async def wrapped_progress_callback(progress: int, message: str, **kwargs):
-            """包装的进度回调：更新任务进度并保存到数据库和内存"""
-            # � 新增：检查任务是否被取消
+            """Wrapped progress callback: update task progress and save to database and memory"""
+            # � New: Check if task was canceled
             if await self._is_task_cancelled(task.task_id):
                 self.logger.warning(f"⚠️ 任务已被取消: {task.task_id}")
                 raise TaskCancelledException(f"任务 {task.task_id} 已被用户取消")
 
-            # �🔑 关键：从 kwargs 中提取 step_name（简短名称）
+            # �🔑 Key: extract step_name (short name) from kwargs
             step_name = kwargs.get("step_name", "")
 
-            # 更新任务对象
+            # Update task object
             task.progress = progress
-            task.current_step = step_name or message  # ✅ 使用 step_name 而不是 message
-            task.message = message  # ✅ 保存详细描述到 message 字段
+            task.current_step = step_name or message  # ✅ Use step_name instead message
+            task.message = message  # ✅ Save detailed description to message field
 
-            # 保存到数据库
+            # Save to database
             await self._update_task(task)
 
-            # 🔑 关键：同时更新内存状态
+            # 🔑 Key: Update memory status at the same time
             from app.services.memory_state_manager import TaskStatus
             await memory_manager.update_task_status(
                 task_id=task.task_id,
@@ -207,11 +207,11 @@ class TaskAnalysisService:
                 progress=progress,
                 message=message,
                 current_step=step_name or message,
-                current_step_name=step_name,  # 🔑 传递步骤名称
-                current_step_description=message  # 🔑 传递步骤描述
+                current_step_name=step_name,  # 🔑 Pass step name
+                current_step_description=message  # 🔑 Transfer step description
             )
 
-            # 调用原始回调（如果有）
+            # Call the original callback (if any)
             if progress_callback:
                 if asyncio.iscoroutinefunction(progress_callback):
                     await progress_callback(progress, message, **kwargs)
@@ -219,19 +219,19 @@ class TaskAnalysisService:
                     progress_callback(progress, message, **kwargs)
 
         try:
-            # 🔥🔥🔥 数据校验已禁用（功能未完善）
-            # 原因：历史数据同步功能未完成，校验会阻止正常分析
-            # 如需恢复，取消以下注释：
+            # 🔥🔥🔥 Data verification is disabled (the function is not perfect)
+            # Reason: The historical data synchronization function is not completed, and the verification will prevent normal analysis.
+            # To restore, uncomment the following:
             # if task.task_type == AnalysisTaskType.STOCK_ANALYSIS:
             #     validation_result = await self._validate_task_data(task)
             #     if not validation_result.is_valid:
-            #         # 数据校验失败，更新任务状态并返回
+            #         # Data verification failed, update task status and return
             #         task.status = AnalysisStatus.FAILED
             #         task.error_message = validation_result.message
             #         task.completed_at = now_tz()
             #         await self._update_task(task)
             #
-            #         # 更新内存状态
+            #         # Update memory status
             #         from app.services.memory_state_manager import get_memory_state_manager, TaskStatus
             #         memory_manager = get_memory_state_manager()
             #         await memory_manager.update_task_status(
@@ -240,20 +240,20 @@ class TaskAnalysisService:
             #             progress=0,
             #             message=validation_result.message,
             #             current_step="data_validation",
-            #             current_step_name="数据校验",
+            #             current_step_name="Data verification",
             #             current_step_description=validation_result.message
             #         )
             #
-            #         self.logger.warning(f"⚠️ 任务 {task.task_id} 数据校验失败: {validation_result.message}")
+            #         self.logger.warning(f"⚠️ Task {task.task_id} Data verification failed: {validation_result.message}")
             #         raise ValueError(validation_result.message)
 
-            # 更新任务状态为处理中
+            # Update task status to Processing
             task.status = AnalysisStatus.PROCESSING
             task.started_at = now_tz()
             task.progress = 0
             await self._update_task(task)
 
-            # 🔑 关键：同时更新内存状态
+            # 🔑 Key: Update memory status at the same time
             from app.services.memory_state_manager import get_memory_state_manager, TaskStatus
             memory_manager = get_memory_state_manager()
             await memory_manager.update_task_status(
@@ -262,37 +262,37 @@ class TaskAnalysisService:
                 progress=0,
                 message="开始分析...",
                 current_step="initialization",
-                current_step_name="初始化",  # 🔑 传递步骤名称
-                current_step_description="开始分析..."  # 🔑 传递步骤描述
+                current_step_name="初始化",  # 🔑 Pass step name
+                current_step_description="开始分析..."  # 🔑 Transfer step description
             )
 
-            # 执行任务（引擎会更新 task 对象的状态）
+            # Execute the task (the engine will update the status of the task object)
             result = await self.engine.execute_task(task, wrapped_progress_callback)
 
-            # 🔑 关键：格式化结果数据，确保包含前端需要的所有字段
+            # 🔑 Key: Format the result data to ensure it contains all fields required by the front end
             formatted_result = self._format_analysis_result(result, task)
             task.result = formatted_result
 
-            # 🔑 关键：设置任务完成时间和执行时间
+            # 🔑 Key: Set task completion time and execution time
             task.completed_at = now_tz()
-            task.progress = 100  # 确保进度为100
+            task.progress = 100  # Make sure the progress is 100
             if task.started_at:
                 task.execution_time = (task.completed_at - task.started_at).total_seconds()
                 self.logger.info(f"📊 任务执行时间: {task.execution_time:.2f}s")
             else:
-                self.logger.warning(f"⚠️ 任务没有started_at，无法计算execution_time")
+                self.logger.warning(f"⚠️ The task does not have started_at and cannot be calculated execution_time")
 
-            # 🔥 保存到 analysis_reports 集合（兼容旧版 API）
-            # 注意：必须在更新任务之前保存，以便获取正确的 analysis_id
+            # 🔥 Save to analysis_reports collection (compatible with legacy API)
+            # Note: You must save before updating the task in order to get the correct analysis_id
             saved_analysis_id = None
             if task.task_type in (AnalysisTaskType.STOCK_ANALYSIS, AnalysisTaskType.ETF_ANALYSIS):
                 saved_analysis_id = await self._save_to_analysis_reports(task, formatted_result)
-                # 🔑 关键：更新 result 中的 analysis_id 为保存后的真实 ID
+                # 🔑 Key: Update analysis_id in result to the saved true value ID
                 if saved_analysis_id and task.result:
                     task.result["analysis_id"] = saved_analysis_id
-                    self.logger.info(f"✅ 已更新任务结果中的 analysis_id: {saved_analysis_id}")
+                    self.logger.info(f"✅ Updated in task results analysis_id: {saved_analysis_id}")
 
-            # 🧠 对象化股票记忆：只在真实股票分析完成后写入，避免自由文本污染。
+            # 🧠 Objectized stock memory: only writes after real stock analysis is completed to avoid free text pollution.
             if task.task_type == AnalysisTaskType.STOCK_ANALYSIS:
                 try:
                     await asyncio.wait_for(
@@ -300,17 +300,17 @@ class TaskAnalysisService:
                         timeout=20,
                     )
                 except asyncio.TimeoutError:
-                    self.logger.warning(f"⚠️ 对象化股票记忆写入超时(忽略): {task.task_id}")
+                    self.logger.warning(f"⚠️ Objectized stock memory write timeout(ignore): {task.task_id}")
                 except Exception as memory_err:
-                    self.logger.warning(f"⚠️ 对象化股票记忆写入失败(忽略): {memory_err}")
+                    self.logger.warning(f"⚠️ Objectized stock memory write failed(ignore): {memory_err}")
 
-            # 🔑🔑🔑 关键修复：先持久化结果和更新内存状态为 COMPLETED，
-            # 再执行慢操作（通知、邮件、用户画像、回写研究主题）。
-            # 避免前端检测到 progress=100 后立即请求 /result 时数据尚未就绪的竞态条件。
+            # 🔑🔑🔑 Key fix: Persist the results first and update the memory status to COMPLETED,
+            # Then perform slow operations (notifications, emails, user portraits, writing back research topics).
+            # Avoid front-end detection progress=100 Race condition where data is not yet ready when /result is requested immediately after.
             task.status = AnalysisStatus.COMPLETED
             await self._update_task(task)
 
-            # 🔑 关键：更新内存状态为完成（前端轮询依赖此状态）
+            # 🔑 Key: Update the memory status to complete (front-end polling relies on this status)
             from app.services.memory_state_manager import get_memory_state_manager, TaskStatus
             memory_manager = get_memory_state_manager()
             await memory_manager.update_task_status(
@@ -324,25 +324,25 @@ class TaskAnalysisService:
                 result_data=task.result
             )
 
-            self.logger.info(f"✅ 任务结果已持久化并标记完成: {task.task_id}")
+            self.logger.info(f"✅ Task results are persisted and marked complete: {task.task_id}")
 
-            # ---- 以下为非关键的后处理操作，即使失败也不影响前端获取结果 ----
+            # ---- The following are non-critical post-processing operations. Even if they fail, they will not affect the results obtained by the front end. ----
             if task.task_type in (AnalysisTaskType.STOCK_ANALYSIS, AnalysisTaskType.ETF_ANALYSIS):
                 _symbol = (task.task_params or {}).get("symbol", "")
                 _stock_name = formatted_result.get("stock_name") or formatted_result.get("stock_symbol") or _symbol
-                # 结果中的 stock_name 常常只是代码本身，回查数据库补全中文名（如 贵州茅台）
+                # The stock_name in the results is often just the code itself, and the database is checked back to complete the Chinese name (such as Kweichow Moutai)
                 if _symbol and _stock_name == _symbol:
                     try:
                         from app.services.simple_analysis_service import _get_cached_security_name
                         _stock_name = _get_cached_security_name(_symbol) or _stock_name
                     except Exception as name_err:
-                        self.logger.debug(f"补全股票名称失败(忽略): {name_err}")
+                        self.logger.debug(f"Failed to complete stock name(ignore): {name_err}")
                 _name_label = f"{_stock_name}({_symbol})" if _stock_name and _stock_name != _symbol else _symbol
                 _summary = formatted_result.get("summary") or formatted_result.get("executive_summary") or ""
                 if _summary and len(_summary) > 80:
                     _summary = _summary[:80] + "…"
 
-                # 📢 统一通知：站内铃铛 + IM 回调（QQ 等）+ 用户配置渠道（飞书/钉钉等）
+                # 📢 Unified notification: bell on the site + IM Callback (QQ, etc.)+ User configuration channels (Feishu/DingTalk, etc.)
                 try:
                     from app.services.notifications_service import get_notifications_service
                     from app.models.notification import NotificationCreate
@@ -354,22 +354,22 @@ class TaskAnalysisService:
                         user_id=str(task.user_id),
                         type="analysis",
                         title=f"✅ {_name_label} 分析完成",
-                        content=_summary or "分析已完成，点击查看完整报告。",
+                        content=_summary or "The analysis is complete, click to view the full report.",
                         link="/tasks/unified",
                         source="task_analysis",
                         severity="success",
                         metadata=_notif_meta,
                     ))
                 except Exception as notif_err:
-                    self.logger.warning(f"⚠️ 发送统一通知失败(忽略): {notif_err}")
+                    self.logger.warning(f"⚠️ Failed to send unified notification(ignore): {notif_err}")
 
-                # 📧 发送邮件通知（含 PDF 附件，保留独立路径）
+                # 📧 Send email notification (including PDF attachment, keep independent path)
                 try:
                     await self._send_analysis_email_notification(task, formatted_result)
                 except Exception as email_err:
-                    self.logger.warning(f"⚠️ 发送邮件通知失败(忽略): {email_err}")
+                    self.logger.warning(f"⚠️ Failed to send email notification(ignore): {email_err}")
 
-                # 🧠 更新用户画像（recently_analyzed）
+                # 🧠 Update user portrait (recently_analyzed)
                 try:
                     from app.services.intelligent_assistant_service import update_user_profile_with_analysis
                     _conclusion = (
@@ -390,9 +390,9 @@ class TaskAnalysisService:
                         task_id=str(task.task_id),
                     )
                 except Exception as profile_err:
-                    self.logger.warning(f"⚠️ 更新用户画像失败(忽略): {profile_err}")
+                    self.logger.warning(f"⚠️ Failed to update user portrait(ignore): {profile_err}")
 
-                # 🔗 将已完成报告自动挂回当前研究主题；若无主题则进入“报告收纳”
+                # 🔗 Automatically hang the completed report back to the current research topic; if there is no topic, enter"Report storage"
                 try:
                     from app.services.intelligent_assistant_service import write_report_back_to_assistant_thread
 
@@ -405,8 +405,8 @@ class TaskAnalysisService:
                     )
                     writeback_message = (
                         f"【分析报告已归档】{_stock_name}({_symbol})\n"
-                        f"任务ID: {task.task_id}\n"
-                        f"摘要: {(report_summary or '分析已完成，可在关联报告中查看。')[:300]}"
+                        f"Task ID: {task.task_id}\n"
+                        f"Summary: {(report_summary or 'The analysis is complete and can be viewed in the associated report.')[:300]}"
                     )
                     await write_report_back_to_assistant_thread(
                         db=self.db,
@@ -427,9 +427,9 @@ class TaskAnalysisService:
                         summary_message=writeback_message,
                     )
                 except Exception as writeback_err:
-                    self.logger.warning(f"⚠️ 回写研究主题失败(忽略): {writeback_err}")
+                    self.logger.warning(f"⚠️ Failed to write back research topic(ignore): {writeback_err}")
 
-            # 成长提取改为后台执行，避免阻塞主任务完成时间。
+            # Growth extraction is executed in the background to avoid blocking the completion time of the main task.
             self._schedule_growth_extraction(
                 task_id=task.task_id,
                 raw_result=result,
@@ -440,7 +440,7 @@ class TaskAnalysisService:
             self.logger.info(f"✅ 任务完成: {task.task_id}")
 
         except TaskCancelledException as e:
-            # 🔥 处理任务取消
+            # 🔥 Processing task cancellation
             self.logger.warning(f"⚠️ 任务被取消: {task.task_id} - {e}")
             task.status = AnalysisStatus.CANCELLED
             task.completed_at = now_tz()
@@ -449,7 +449,7 @@ class TaskAnalysisService:
                 task.execution_time = (task.completed_at - task.started_at).total_seconds()
             await self._update_task(task)
 
-            # 🔑 关键：同时更新内存状态
+            # 🔑 Key: Update memory status at the same time
             from app.services.memory_state_manager import get_memory_state_manager, TaskStatus
             memory_manager = get_memory_state_manager()
             await memory_manager.update_task_status(
@@ -463,22 +463,22 @@ class TaskAnalysisService:
             self.logger.info(f"🚫 任务已取消: {task.task_id}")
 
         except Exception as e:
-            # 🔥 优雅处理：区分取消和失败
+            # 🔥 Handling gracefully: distinguishing between cancellation and failure
             if isinstance(e, TaskCancelledException):
-                # 任务取消已经在上面的 except TaskCancelledException 块中处理了
-                # 这里不应该到达，但为了安全起见还是处理一下
-                self.logger.warning(f"⚠️ 捕获到未处理的取消异常: {task.task_id}")
+                # Task cancellation has been handled in the except TaskCancelledException block above
+                # This shouldn't be reached, but it's better to be on the safe side.
+                self.logger.warning(f"⚠️ Unhandled cancellation exception caught: {task.task_id}")
                 raise
 
-            # 其他异常才是真正的失败
+            # Other exceptions are real failures
             task.status = AnalysisStatus.FAILED
             task.error_message = str(e)
             task.completed_at = now_tz()
 
-            # 保存到数据库
+            # Save to database
             await self._update_task(task)
 
-            # 🔑 关键：更新内存状态为失败
+            # 🔑 Key: Update memory status to failed
             from app.services.memory_state_manager import get_memory_state_manager, TaskStatus
             memory_manager = get_memory_state_manager()
             await memory_manager.update_task_status(
@@ -486,8 +486,8 @@ class TaskAnalysisService:
                 status=TaskStatus.FAILED,
                 progress=task.progress,
                 message=f"分析失败: {str(e)}",
-                current_step_name="失败",  # 🔑 传递步骤名称
-                current_step_description=f"分析失败: {str(e)}",  # 🔑 传递步骤描述
+                current_step_name="失败",  # 🔑 Pass step name
+                current_step_description=f"分析失败: {str(e)}",  # 🔑 Transfer step description
                 error_message=str(e)
             )
 
@@ -504,25 +504,25 @@ class TaskAnalysisService:
         engine_type: str = "auto",
         preference_type: str = "neutral",
         workflow_id: Optional[str] = None,
-        task_id: Optional[str] = None,  # 🔥 支持传入 task_id
+        task_id: Optional[str] = None,  # 🔥 Support incoming task_id
         progress_callback: Optional[Callable] = None
     ) -> UnifiedAnalysisTask:
-        """创建并执行任务（一步到位）
+        """Create and execute tasks (one step at a time)
 
         Args:
-            user_id: 用户ID
-            task_type: 任务类型
-            task_params: 任务参数
-            engine_type: 引擎类型
-            preference_type: 分析偏好
-            workflow_id: 工作流ID
-            task_id: 任务ID（可选，如果不提供则自动生成）
-            progress_callback: 进度回调
+            user_id: User ID
+            task_type: Task type
+            task_params: Task parameters
+            engine_type: Engine type
+            preference_type: Analyze preferences
+            workflow_id: Workflow ID
+            task_id: Task ID (optional, automatically generated if not provided)
+            progress_callback: Progress callback
 
         Returns:
-            完成的任务对象
+            Completed task object
         """
-        # 创建任务
+        # Create task
         task = await self.create_task(
             user_id=user_id,
             task_type=task_type,
@@ -530,22 +530,22 @@ class TaskAnalysisService:
             engine_type=engine_type,
             preference_type=preference_type,
             workflow_id=workflow_id,
-            task_id=task_id  # 🔥 传递 task_id
+            task_id=task_id  # 🔥 pass on task_id
         )
         
-        # 执行任务
+        # perform tasks
         task = await self.execute_task(task, progress_callback)
 
         return task
 
     async def get_task(self, task_id: str) -> Optional[UnifiedAnalysisTask]:
-        """获取任务
+        """Get tasks
 
         Args:
-            task_id: 任务ID
+            task_id: Task ID
 
         Returns:
-            任务对象，如果不存在则返回 None
+            Task object, returned if it does not exist None
         """
         doc = await self.collection.find_one({"task_id": task_id})
         if not doc:
@@ -562,21 +562,21 @@ class TaskAnalysisService:
         limit: int = 999999,
         skip: int = 0
     ) -> List[UnifiedAnalysisTask]:
-        """列出用户的任务
+        """List user s tasks
 
         Args:
-            user_id: 用户ID
-            task_type: 任务类型过滤（可选）
-            status: 状态过滤（可选）
-            symbol: 股票代码过滤（可选，匹配 task_params 中的 symbol/code/stock_code）
-            limit: 返回数量限制（默认返回所有）
-            skip: 跳过数量
+            user_id: User ID
+            task_type: Task type filtering (optional)
+            status: Status filtering (optional)
+            symbol: Stock code filtering (optional, matches symbol/code/stock_code in task_params)
+            limit: Return quantity limit (default returns all)
+            skip: skip quantity
 
         Returns:
-            任务列表
+            task list
         """
         self.logger.info(f"📋 查询用户任务列表 - user_id: {user_id} (类型: {type(user_id)})")
-        self.logger.info(f"📋 查询条件 - task_type: {task_type}, status: {status}, symbol: {symbol}, limit: {limit}, skip: {skip}")
+        self.logger.info(f"📋 Query conditions - task_type: {task_type}, status: {status}, symbol: {symbol}, limit: {limit}, skip: {skip}")
 
         query: Dict[str, Any] = {"user_id": user_id}
 
@@ -587,7 +587,7 @@ class TaskAnalysisService:
             query["status"] = status
 
         if symbol:
-            # 匹配 task_params 中的 symbol / code / stock_code
+            # Matches in task_params symbol / code / stock_code
             symbol_upper = symbol.upper()
             symbol_lower = symbol.lower()
             query["$or"] = [
@@ -604,37 +604,37 @@ class TaskAnalysisService:
 
         self.logger.info(f"📋 MongoDB查询: {query}")
 
-        # 先检查总数
+        # Check the total first
         total = await self.collection.count_documents(query)
         self.logger.info(f"📋 匹配的任务总数: {total}")
 
-        # 调试：检查数据库中所有任务
+        # Debugging: Check all tasks in the database
         all_tasks_count = await self.collection.count_documents({})
-        self.logger.debug(f"📊 数据库中所有任务总数: {all_tasks_count}")
+        self.logger.debug(f"📊 Total number of all tasks in the database: {all_tasks_count}")
 
-        # 调试：按 task_type 统计
+        # Debugging: Statistics by task_type
         task_type_stats = await self.collection.aggregate([
             {"$group": {"_id": "$task_type", "count": {"$sum": 1}}}
         ]).to_list(None)
-        self.logger.debug(f"📊 按 task_type 统计: {task_type_stats}")
+        self.logger.debug(f"📊 Statistics by task_type: {task_type_stats}")
 
-        # 调试：查找所有 position_analysis 任务
+        # Debugging: Find all position_analysis tasks
         position_tasks = await self.collection.find({"task_type": "position_analysis"}).to_list(None)
-        self.logger.debug(f"📊 position_analysis 任务总数: {len(position_tasks)}")
+        self.logger.debug(f"📊 position_analysis total number of tasks: {len(position_tasks)}")
         if position_tasks:
             for task in position_tasks[:3]:
                 self.logger.debug(f"  - task_id: {task.get('task_id')}, user_id: {task.get('user_id')} (类型: {type(task.get('user_id'))}), created_at: {task.get('created_at')}")
 
-        # 调试：查看所有任务按 created_at 倒序排列的情况
+        # Debugging: View all tasks sorted by created_at in reverse order
         all_sorted = await self.collection.find({}).sort("created_at", -1).limit(20).to_list(20)
-        self.logger.debug(f"📊 按 created_at 倒序排列的前20个任务:")
+        self.logger.debug(f"📊 Top 20 tasks in reverse order by created_at:")
         for i, task in enumerate(all_sorted):
             self.logger.debug(f"  {i+1}. task_id: {task.get('task_id')}, task_type: {task.get('task_type')}, user_id: {task.get('user_id')} (类型: {type(task.get('user_id'))}), created_at: {task.get('created_at')}")
 
-        # 调试：列出所有任务的 user_id 和 task_type
+        # Debugging: List user_id and task_type
         if all_tasks_count > 0:
             all_docs = await self.collection.find({}).limit(10).to_list(10)
-            self.logger.debug(f"📊 数据库中前10个任务:")
+            self.logger.debug(f"📊 Top 10 tasks in database:")
             for doc in all_docs:
                 self.logger.debug(f"  - task_id: {doc.get('task_id')}, user_id: {doc.get('user_id')} (类型: {type(doc.get('user_id'))}), task_type: {doc.get('task_type')}, status: {doc.get('status')}")
 
@@ -648,13 +648,13 @@ class TaskAnalysisService:
         return tasks
 
     async def cancel_task(self, task_id: str) -> bool:
-        """取消任务
+        """Cancel task
 
         Args:
-            task_id: 任务ID
+            task_id: Task ID
 
         Returns:
-            是否成功取消
+            Is the cancellation successful?
         """
         result = await self.collection.update_one(
             {"task_id": task_id, "status": {"$in": [AnalysisStatus.PENDING, AnalysisStatus.PROCESSING, AnalysisStatus.SUSPENDED]}},
@@ -664,22 +664,22 @@ class TaskAnalysisService:
         if result.modified_count > 0:
             self.logger.info(f"✅ 任务已取消: {task_id}")
         else:
-            self.logger.warning(f"⚠️ 任务无法取消（可能已完成或不存在）: {task_id}")
+            self.logger.warning(f"⚠️ Task cannot be canceled (may be completed or does not exist): {task_id}")
 
         return result.modified_count > 0
 
     async def resume_task(self, task_id: str) -> bool:
-        """恢复挂起的任务
+        """Resume a suspended task
 
         Args:
-            task_id: 任务ID
+            task_id: Task ID
 
         Returns:
-            是否成功恢复
+            Is the recovery successful?
         """
         from app.services.queue_service import get_queue_service
 
-        # 获取任务
+        # Get tasks
         task = await self.get_task(task_id)
         if not task:
             self.logger.warning(f"⚠️ 任务不存在: {task_id}")
@@ -689,7 +689,7 @@ class TaskAnalysisService:
             self.logger.warning(f"⚠️ 任务状态不是挂起，无法恢复: {task_id} (当前状态: {task.status})")
             return False
 
-        # 更新任务状态为 pending
+        # Update task status to pending
         result = await self.collection.update_one(
             {"task_id": task_id},
             {
@@ -705,7 +705,7 @@ class TaskAnalysisService:
         )
 
         if result.modified_count > 0:
-            # 重新加入队列
+            # rejoin queue
             try:
                 queue_service = get_queue_service()
                 await queue_service.enqueue_task(
@@ -714,28 +714,28 @@ class TaskAnalysisService:
                     params=task.task_params,
                     task_id=task_id
                 )
-                self.logger.info(f"✅ 任务已恢复并重新入队: {task_id}")
+                self.logger.info(f"✅ Task has been resumed and requeued: {task_id}")
                 return True
             except Exception as e:
-                self.logger.error(f"❌ 任务恢复失败（入队失败）: {task_id} - {e}")
-                # 回滚状态
+                self.logger.error(f"❌ Task recovery failed (failed to join the queue): {task_id} - {e}")
+                # rollback status
                 await self.collection.update_one(
                     {"task_id": task_id},
                     {"$set": {"status": AnalysisStatus.SUSPENDED}}
                 )
                 return False
         else:
-            self.logger.warning(f"⚠️ 任务恢复失败（数据库更新失败）: {task_id}")
+            self.logger.warning(f"⚠️ Task recovery failed (database update failed): {task_id}")
             return False
 
     async def _is_task_cancelled(self, task_id: str) -> bool:
-        """检查任务是否被取消
+        """Check if the task has been canceled
 
         Args:
-            task_id: 任务ID
+            task_id: Task ID
 
         Returns:
-            是否已被取消
+            Has it been cancelled?
         """
         task_doc = await self.collection.find_one(
             {"task_id": task_id},
@@ -748,18 +748,18 @@ class TaskAnalysisService:
         return task_doc.get("status") == AnalysisStatus.CANCELLED
 
     async def _save_task(self, task: UnifiedAnalysisTask) -> None:
-        """保存任务到数据库
+        """Save task to database
 
         Args:
-            task: 任务对象
+            task: Task object
         """
         doc = task.model_dump(by_alias=True, mode='python')
 
-        # 确保 user_id 是 ObjectId 类型，不是字符串
+        # Make sure user_id is of type ObjectId, not a string
         if 'user_id' in doc and isinstance(doc['user_id'], str):
             from bson import ObjectId
             doc['user_id'] = ObjectId(doc['user_id'])
-            self.logger.debug(f"🔄 转换 user_id 从字符串到 ObjectId: {doc['user_id']}")
+            self.logger.debug(f"🔄 Convert user_id from string to ObjectId: {doc['user_id']}")
 
         self.logger.debug(f"💾 保存任务文档: user_id={doc.get('user_id')} (类型: {type(doc.get('user_id'))})")
 
@@ -767,46 +767,46 @@ class TaskAnalysisService:
         self.logger.debug(f"💾 任务已保存: {task.task_id}")
 
     def _format_analysis_result(self, raw_result: Dict[str, Any], task: UnifiedAnalysisTask) -> Dict[str, Any]:
-        """格式化分析结果，确保包含前端需要的所有字段
+        """Format analysis results to ensure all fields required by the front end are included
 
         Args:
-            raw_result: 工作流引擎返回的原始结果
-            task: 任务对象
+            raw_result: Raw results returned by the workflow engine
+            task: Task object
 
         Returns:
-            格式化后的结果
+            Formatted result
         """
         import uuid
         from datetime import datetime
         import json
         import re
 
-        # 🔑 关键：优先从 action_advice 中提取结构化决策（v2.0 引擎）
-        # action_advice 是 ActionAdvisorV2 的输出，包含研究观察和 reasoning
-        # final_trade_decision 是 RiskManagerV2 的输出，包含完整的风险评估报告（不应该用于 reasoning）
+        # 🔑 Key: Extract structured decisions from action_advice first (v2.0 engine)
+        # action_advice is the output of ActionAdvisorV2 and contains research observations and reasoning
+        # final_trade_decision is the output of RiskManagerV2 and contains the complete risk assessment report (should not be used for reasoning)
         action_advice = raw_result.get("action_advice", "")
         final_trade_decision = raw_result.get("final_trade_decision", "")
         final_decision = raw_result.get("final_decision", {})
         
-        self.logger.info(f"🔍 [TaskAnalysisService] ========== 提取决策信息 ==========")
+        self.logger.info(f"🔍 [TaskAnalysisService] ========== Extract decision information ==========")
         self.logger.info(f"🔍 [TaskAnalysisService] action_advice 类型: {type(action_advice)}, 长度: {len(str(action_advice)) if action_advice else 0}")
         self.logger.info(f"🔍 [TaskAnalysisService] final_trade_decision 类型: {type(final_trade_decision)}, 长度: {len(str(final_trade_decision)) if final_trade_decision else 0}")
         self.logger.info(f"🔍 [TaskAnalysisService] final_decision 类型: {type(final_decision)}, 字段: {list(final_decision.keys()) if isinstance(final_decision, dict) else 'N/A'}")
 
         decision_dict = None
         
-        # 1. 优先从 final_decision 中提取（如果存在）
+        # 1. Prefer extracting from final_decision if present
         if isinstance(final_decision, dict) and final_decision:
             decision_dict = self._format_decision_dict(final_decision)
-            self.logger.info(f"✅ [TaskAnalysisService] 从 final_decision 提取决策: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}")
+            self.logger.info(f"✅ [TaskAnalysisService] Extract decision from final_decision: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}")
         
-        # 2. 如果 final_decision 不存在，尝试从 action_advice 中提取
+        # 2. If final_decision does not exist, try to extract it from action_advice
         if not decision_dict and action_advice:
             if isinstance(action_advice, dict):
                 decision_dict = self._format_decision_dict(action_advice)
-                self.logger.info(f"✅ [TaskAnalysisService] 从 action_advice (字典) 提取决策: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}")
+                self.logger.info(f"✅ [TaskAnalysisService] from action_advice (dictionary) Extract decisions: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}")
             elif isinstance(action_advice, str) and action_advice.strip():
-                # 尝试解析 JSON 格式的 action_advice
+                # Try to parse JSON format action_advice
                 import json
                 try:
                     if "{" in action_advice or "```json" in action_advice:
@@ -819,26 +819,26 @@ class TaskAnalysisService:
                         if json_str.strip().startswith("{"):
                             action_advice_json = json.loads(json_str)
                             decision_dict = self._format_decision_dict(action_advice_json)
-                            self.logger.info(f"✅ [TaskAnalysisService] 从 action_advice (JSON) 提取决策: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}")
+                            self.logger.info(f"✅ [TaskAnalysisService] from action_advice (JSON) Extract decisions: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}")
                 except Exception as e:
-                    self.logger.warning(f"⚠️ [TaskAnalysisService] 解析 action_advice JSON 失败: {e}")
-                    # 降级：从文本中提取
+                    self.logger.warning(f"⚠️ [TaskAnalysisService] Parsing action_advice JSON failed: {e}")
+                    # Downgrade: extract from text
                     decision_dict = self._extract_decision_from_text(action_advice)
-                    self.logger.info(f"✅ [TaskAnalysisService] 从 action_advice (文本) 提取决策: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}")
+                    self.logger.info(f"✅ [TaskAnalysisService] from action_advice (text) Extract decisions: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}")
         
-        # 🔥 如果 decision_dict 中没有 risk_score，尝试从 investment_plan 中提取
+        # 🔥 If risk_score is not present in decision_dict, try to extract it from investment_plan
         if decision_dict and decision_dict.get('risk_score') is None:
             investment_plan = raw_result.get("investment_plan", {})
             if isinstance(investment_plan, dict):
                 plan_risk_score = investment_plan.get("risk_score")
                 if plan_risk_score is not None:
-                    # 如果是 0-100 的整数，转换为 0-1 的小数
+                    # If it is an integer from 0 to 100, convert it to a decimal from 0 to 1
                     if isinstance(plan_risk_score, (int, float)) and plan_risk_score > 1:
                         plan_risk_score = plan_risk_score / 100.0
                     decision_dict['risk_score'] = plan_risk_score
-                    self.logger.info(f"✅ [TaskAnalysisService] 从 investment_plan 提取 risk_score: {plan_risk_score}")
+                    self.logger.info(f"✅ [TaskAnalysisService] Extracted from investment_plan risk_score: {plan_risk_score}")
             elif isinstance(investment_plan, str):
-                # 如果是字符串，尝试解析 JSON
+                # If it is a string, try to parse JSON
                 try:
                     import json
                     import re
@@ -848,38 +848,38 @@ class TaskAnalysisService:
                             plan_json = json.loads(json_match.group(1))
                             plan_risk_score = plan_json.get("risk_score")
                             if plan_risk_score is not None:
-                                # 如果是 0-100 的整数，转换为 0-1 的小数
+                                # If it is an integer from 0 to 100, convert it to a decimal from 0 to 1
                                 if isinstance(plan_risk_score, (int, float)) and plan_risk_score > 1:
                                     plan_risk_score = plan_risk_score / 100.0
                                 decision_dict['risk_score'] = plan_risk_score
-                                self.logger.info(f"✅ [TaskAnalysisService] 从 investment_plan (JSON文本) 提取 risk_score: {plan_risk_score}")
+                                self.logger.info(f"✅ [TaskAnalysisService] from investment_plan (JSON text) Extract risk_score: {plan_risk_score}")
                 except Exception:
                     pass
         
-        # 🔥 优先从 final_trade_decision（风险评估师的最终评估结果）中提取 risk_score
-        # 这是风险评估师（RiskManagerV2）的最终评估，应该是最权威的风险评分来源
-        # 🔥🔥🔥 注意：risk_score 现在已经在 final_trade_decision 字典中了（由 risk_manager_v2.py 添加）
+        # 🔥 Prioritize extraction from final_trade_decision (final assessment result of risk assessor) risk_score
+        # This is the final assessment from Risk Assessor (RiskManagerV2) and should be the most authoritative source of risk scores
+        # 🔥🔥🔥 Note: risk_score is now in the final_trade_decision dictionary (added by risk_manager_v2.py)
         risk_score = None
         
-        # 优先从 final_trade_decision 中提取（如果它是字典）
+        # Prefer extracting from final_trade_decision (if it is a dictionary)
         if isinstance(final_trade_decision, dict):
             risk_score = final_trade_decision.get("risk_score")
             if risk_score is not None:
-                # 确保 risk_score 是 0-1 范围的浮点数
+                # Make sure risk_score is a float in the range 0-1
                 if isinstance(risk_score, (int, float)):
                     if risk_score > 1:
                         risk_score = risk_score / 100.0
                     risk_score = float(risk_score)
-                    self.logger.info(f"✅✅✅ [TaskAnalysisService] 从 final_trade_decision (风险评估师评估) 提取 risk_score: {risk_score}")
+                    self.logger.info(f"✅✅✅ [TaskAnalysisService] from final_trade_decision (risk assessor assessment) Extract risk_score: {risk_score}")
         
-        # 如果 final_trade_decision 中没有，尝试从 risk_debate_state.judge_decision 中提取（备选方案）
+        # If not in final_trade_decision, try to extract from risk_debate_state.judge_decision (alternative)
         if risk_score is None:
             risk_debate_state = raw_result.get("risk_debate_state", {})
             if isinstance(risk_debate_state, dict):
                 judge_decision_str = risk_debate_state.get("judge_decision", "")
                 if judge_decision_str and isinstance(judge_decision_str, str):
                     try:
-                        # 尝试从 JSON 代码块中提取
+                        # Try to extract from JSON code block
                         json_match = re.search(r'```json\s*(.*?)\s*```', judge_decision_str, re.DOTALL)
                         if json_match:
                             judge_json = json.loads(json_match.group(1))
@@ -889,9 +889,9 @@ class TaskAnalysisService:
                                     if risk_score > 1:
                                         risk_score = risk_score / 100.0
                                     risk_score = float(risk_score)
-                                self.logger.info(f"✅✅✅ [TaskAnalysisService] 从 risk_debate_state.judge_decision (JSON) 提取 risk_score: {risk_score}")
+                                self.logger.info(f"✅✅✅ [TaskAnalysisService] from risk_debate_state.judge_decision (JSON) Extract risk_score: {risk_score}")
                         elif judge_decision_str.strip().startswith("{"):
-                            # 尝试直接解析 JSON
+                            # Try to parse directly JSON
                             judge_json = json.loads(judge_decision_str)
                             risk_score = judge_json.get("risk_score")
                             if risk_score is not None:
@@ -899,19 +899,19 @@ class TaskAnalysisService:
                                     if risk_score > 1:
                                         risk_score = risk_score / 100.0
                                     risk_score = float(risk_score)
-                                self.logger.info(f"✅✅✅ [TaskAnalysisService] 从 risk_debate_state.judge_decision (直接JSON) 提取 risk_score: {risk_score}")
+                                self.logger.info(f"✅✅✅ [TaskAnalysisService] from risk_debate_state.judge_decision (direct JSON) Extract risk_score: {risk_score}")
                     except (json.JSONDecodeError, Exception) as e:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] 解析 risk_debate_state.judge_decision JSON 失败: {e}")
+                        self.logger.warning(f"⚠️ [TaskAnalysisService] Parsing risk_debate_state.judge_decision JSON failed: {e}")
         
-        # 如果还是没有，从 risk_assessment 中提取
+        # If still not available, extract from risk_assessment
         if risk_score is None:
             risk_assessment = raw_result.get("risk_assessment", {})
             if isinstance(risk_assessment, dict):
                 risk_score = risk_assessment.get("risk_score")
                 if risk_score is not None:
-                    self.logger.info(f"✅ [TaskAnalysisService] 从 risk_assessment (风险评估师评估) 提取 risk_score: {risk_score}")
+                    self.logger.info(f"✅ [TaskAnalysisService] from risk_assessment (risk assessor assessment) Extract risk_score: {risk_score}")
             elif isinstance(risk_assessment, str):
-                # 如果是字符串，尝试解析 JSON
+                # If it is a string, try to parse JSON
                 try:
                     if "```json" in risk_assessment:
                         json_match = re.search(r'```json\s*(.*?)\s*```', risk_assessment, re.DOTALL)
@@ -919,63 +919,63 @@ class TaskAnalysisService:
                             risk_json = json.loads(json_match.group(1))
                             risk_score = risk_json.get("risk_score")
                             if risk_score is not None:
-                                self.logger.info(f"✅ [TaskAnalysisService] 从 risk_assessment (JSON文本) 提取 risk_score: {risk_score}")
+                                self.logger.info(f"✅ [TaskAnalysisService] from risk_assessment (JSON text) Extract risk_score: {risk_score}")
                 except Exception as e:
-                    self.logger.warning(f"⚠️ [TaskAnalysisService] 从 risk_assessment 解析 JSON 失败: {e}")
+                    self.logger.warning(f"⚠️ [TaskAnalysisService] Parsing JSON from risk_assessment failed: {e}")
         
-        # 3. 如果 action_advice 也没有，才从 final_trade_decision 中提取
-        # 🔥 重要更新：现在 final_trade_decision 是由 RiskManagerV2 生成的结构化字典，包含完整的 reasoning
+        # 3. If action_advice is not available, it will be extracted from final_trade_decision
+        # 🔥 Important update: final_trade_decision is now a structured dictionary generated by RiskManagerV2, containing the complete reasoning
         if not decision_dict:
             if isinstance(final_trade_decision, dict):
-                # 🔥 新逻辑：final_trade_decision 是 RiskManagerV2 生成的综合决策，包含 reasoning
+                # 🔥 New logic: final_trade_decision is a comprehensive decision generated by RiskManagerV2, containing reasoning
                 ftd_reasoning = final_trade_decision.get("reasoning", "")
                 ftd_summary = final_trade_decision.get("summary", "")
 
-                # 如果有 reasoning，使用它；如果没有，使用 summary
+                # If reasoning is available, use it; if not, use summary
                 reasoning_to_use = ftd_reasoning if ftd_reasoning else ftd_summary
                 if not reasoning_to_use:
                     reasoning_to_use = "暂无分析推理"
 
-                # 🔥 提取 price_analysis_range（价格区间）
+                # 🔥 Extract price_analysis_range (price range)
                 price_analysis_range = final_trade_decision.get("price_analysis_range")
-                # 🔥 调试日志：记录 price_analysis_range 的原始值和类型
+                # 🔥 Debug log: record the original value and type of price_analysis_range
                 if price_analysis_range is not None:
                     self.logger.info(f"✅ [TaskAnalysisService] 从 final_trade_decision 提取 price_analysis_range: {price_analysis_range} (类型: {type(price_analysis_range)})")
-                    # 确保 price_analysis_range 是数组格式
+                    # Make sure price_analysis_range is in array format
                     if isinstance(price_analysis_range, (list, tuple)):
                         if len(price_analysis_range) == 2:
-                            self.logger.info(f"✅ [TaskAnalysisService] price_analysis_range 是有效的区间格式: [{price_analysis_range[0]}, {price_analysis_range[1]}]")
+                            self.logger.info(f"✅ [TaskAnalysisService] price_analysis_range is a valid interval format: [{price_analysis_range[0]}, {price_analysis_range[1]}]")
                         else:
-                            self.logger.warning(f"⚠️ [TaskAnalysisService] price_analysis_range 数组长度不是2: {price_analysis_range}")
+                            self.logger.warning(f"⚠️ [TaskAnalysisService] price_analysis_range The array length is not 2: {price_analysis_range}")
                     elif isinstance(price_analysis_range, (int, float)):
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] price_analysis_range 是单值 {price_analysis_range}，应该是数组格式！")
+                        self.logger.warning(f"⚠️ [TaskAnalysisService] price_analysis_range is a single value {price_analysis_range}, It should be in array format!")
                     else:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] price_analysis_range 格式不正确: {type(price_analysis_range)} = {price_analysis_range}")
+                        self.logger.warning(f"⚠️ [TaskAnalysisService] price_analysis_range Incorrect format: {type(price_analysis_range)} = {price_analysis_range}")
                 
-                # 🔥🔥🔥 关键：从 final_trade_decision 中提取 risk_score（现在 risk_score 已经被添加到 final_trade_decision 字典中了）
+                # 🔥🔥🔥 Key: Extract risk_score from final_trade_decision (now risk_score has been added to the final_trade_decision dictionary)
                 if risk_score is None:
                     risk_score = final_trade_decision.get("risk_score")
                     if risk_score is not None:
-                        # 确保 risk_score 是 0-1 范围的浮点数
+                        # Make sure risk_score is a float in the range 0-1
                         if isinstance(risk_score, (int, float)):
                             if risk_score > 1:
                                 risk_score = risk_score / 100.0
                             risk_score = float(risk_score)
-                        self.logger.info(f"✅✅✅ [TaskAnalysisService] 从 final_trade_decision 提取 risk_score: {risk_score}")
+                        self.logger.info(f"✅✅✅ [TaskAnalysisService] Extracted from final_trade_decision risk_score: {risk_score}")
                 
-                # 🔥 如果还是没有，尝试从 investment_plan 中获取（作为兜底，但这不是风险评估师的评估）
+                # 🔥 If still not there, try to get it from investment_plan (as a safety net, but this is not a risk assessor's assessment)
                 if risk_score is None:
                     investment_plan = raw_result.get("investment_plan", {})
                     if isinstance(investment_plan, dict):
                         plan_risk_score = investment_plan.get("risk_score")
                         if plan_risk_score is not None:
-                            # 如果是 0-100 的整数，转换为 0-1 的小数
+                            # If it is an integer from 0 to 100, convert it to a decimal from 0 to 1
                             if isinstance(plan_risk_score, (int, float)) and plan_risk_score > 1:
                                 plan_risk_score = plan_risk_score / 100.0
                             risk_score = plan_risk_score
-                            self.logger.warning(f"⚠️ [TaskAnalysisService] 从 investment_plan (研究整合员评估，非风险评估师) 提取 risk_score: {risk_score}")
+                            self.logger.warning(f"⚠️ [TaskAnalysisService] from investment_plan (Assessment by research integrator, not risk assessor) Extract risk_score: {risk_score}")
                     elif isinstance(investment_plan, str):
-                        # 如果是字符串，尝试解析 JSON
+                        # If it is a string, try to parse JSON
                         try:
                             import json
                             import re
@@ -985,75 +985,75 @@ class TaskAnalysisService:
                                     plan_json = json.loads(json_match.group(1))
                                     plan_risk_score = plan_json.get("risk_score")
                                     if plan_risk_score is not None:
-                                        # 如果是 0-100 的整数，转换为 0-1 的小数
+                                        # If it is an integer from 0 to 100, convert it to a decimal from 0 to 1
                                         if isinstance(plan_risk_score, (int, float)) and plan_risk_score > 1:
                                             plan_risk_score = plan_risk_score / 100.0
                                         risk_score = plan_risk_score
-                                        self.logger.warning(f"⚠️ [TaskAnalysisService] 从 investment_plan (JSON文本，研究整合员评估，非风险评估师) 提取 risk_score: {risk_score}")
+                                        self.logger.warning(f"⚠️ [TaskAnalysisService] from investment_plan (JSON Text, Research Integrator Assessment, Non-Risk Assessor) Extract risk_score: {risk_score}")
                         except Exception as e:
-                            self.logger.warning(f"⚠️ [TaskAnalysisService] 从 investment_plan 提取 risk_score 失败: {e}")
+                            self.logger.warning(f"⚠️ [TaskAnalysisService] Failed to extract risk_score from investment_plan: {e}")
                 
-                # 如果还是没有，使用默认值
+                # If still not available, use default value
                 if risk_score is None:
                     risk_score = 0.5
-                    self.logger.warning(f"⚠️ [TaskAnalysisService] 未找到 risk_score，使用默认值 0.5")
+                    self.logger.warning(f"⚠️ [TaskAnalysisService] risk_score not found, using default value 0.5")
                 
                 decision_dict = {
                     "action": final_trade_decision.get("action") or final_trade_decision.get("analysis_view", "中性"),
                     "target_price": final_trade_decision.get("target_price"),
-                    "price_analysis_range": price_analysis_range,  # 🔥 新增：价格区间
+                    "price_analysis_range": price_analysis_range,  # 🔥 New: price range
                     "stop_loss": final_trade_decision.get("stop_loss") or final_trade_decision.get("risk_control_reference"),
                     "position_ratio": final_trade_decision.get("position_ratio") or final_trade_decision.get("risk_exposure_ratio", "5%"),
                     "confidence": final_trade_decision.get("confidence", 50),
-                    "risk_score": risk_score,  # 🔥 修复：使用提取的 risk_score，而不是默认值
-                    "reasoning": reasoning_to_use,  # 🔥 使用 RiskManagerV2 生成的综合 reasoning
+                    "risk_score": risk_score,  # 🔥 Fix: use extracted risk_score instead of default
+                    "reasoning": reasoning_to_use,  # 🔥 Synthesis generated using RiskManagerV2 reasoning
                     "summary": ftd_summary,
                     "risk_warning": final_trade_decision.get("risk_warning", "")
                 }
-                self.logger.info(f"✅ [TaskAnalysisService] 从 final_trade_decision (字典) 提取决策: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}, reasoning长度={len(reasoning_to_use)}")
+                self.logger.info(f"✅ [TaskAnalysisService] from final_trade_decision (dictionary) Extract decisions: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}, reasoning length={len(reasoning_to_use)}")
             elif isinstance(final_trade_decision, str) and final_trade_decision.strip():
-                # 如果是字符串，提取所有字段（包括 reasoning）
+                # If it is a string, extract all fields (including reasoning)
                 temp_dict = self._extract_decision_from_text(final_trade_decision)
                 decision_dict = {
                     "action": temp_dict.get("action", "中性"),
                     "target_price": temp_dict.get("target_price"),
-                    "price_analysis_range": temp_dict.get("price_analysis_range"),  # 🔥 新增：价格区间
+                    "price_analysis_range": temp_dict.get("price_analysis_range"),  # 🔥 New: price range
                     "confidence": temp_dict.get("confidence", 0.5),
                     "risk_score": temp_dict.get("risk_score", 0.5),
                     "reasoning": temp_dict.get("reasoning", "暂无分析推理")
                 }
-                self.logger.info(f"✅ [TaskAnalysisService] 从 final_trade_decision (文本) 提取决策: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}, reasoning长度={len(decision_dict.get('reasoning', ''))}")
+                self.logger.info(f"✅ [TaskAnalysisService] from final_trade_decision (text) Extract decisions: action={decision_dict.get('action')}, target_price={decision_dict.get('target_price')}, risk_score={decision_dict.get('risk_score')}, reasoning length={len(decision_dict.get('reasoning', ''))}")
         
-        # 🔥 如果 decision_dict 中没有 risk_score，优先从 final_trade_decision 或 risk_assessment（风险评估师评估）中提取
+        # 🔥 If there is no risk_score in decision_dict, it will be extracted from final_trade_decision or risk_assessment (risk assessor assessment) first.
         if decision_dict and decision_dict.get('risk_score') is None:
-            # 🔥🔥🔥 最高优先级：从 final_trade_decision 中提取（如果它是字典且包含 risk_score）
+            # 🔥🔥🔥 Highest priority: extracted from final_trade_decision (if it is a dictionary and contains risk_score)
             if isinstance(final_trade_decision, dict):
                 ftd_risk_score = final_trade_decision.get("risk_score")
                 if ftd_risk_score is not None:
-                    # 确保 risk_score 是 0-1 范围的浮点数
+                    # Make sure risk_score is a float in the range 0-1
                     if isinstance(ftd_risk_score, (int, float)):
                         if ftd_risk_score > 1:
                             ftd_risk_score = ftd_risk_score / 100.0
                         decision_dict['risk_score'] = float(ftd_risk_score)
-                        self.logger.info(f"✅✅✅ [TaskAnalysisService] 将 final_trade_decision 中的 risk_score 赋值给 decision_dict: {decision_dict['risk_score']}")
-            # 其次：使用之前提取的 risk_score（从 risk_assessment）
+                        self.logger.info(f"✅✅✅ [TaskAnalysisService] Assign risk_score in final_trade_decision to decision_dict: {decision_dict['risk_score']}")
+            # Second: use the risk_score extracted earlier (from risk_assessment)
             if decision_dict.get('risk_score') is None and risk_score is not None:
                 decision_dict['risk_score'] = risk_score
-                self.logger.info(f"✅ [TaskAnalysisService] 将 risk_assessment 中的 risk_score 赋值给 decision_dict: {risk_score}")
-            # 最后：从 investment_plan 中提取（作为兜底）
+                self.logger.info(f"✅ [TaskAnalysisService] Assign risk_score in risk_assessment to decision_dict: {risk_score}")
+            # Finally: Extract from investment_plan (as a safety net)
             if decision_dict.get('risk_score') is None:
-                # 如果还没有，尝试从 investment_plan 中提取（作为兜底，但这不是风险评估师的评估）
+                # If you haven't already, try extracting it from investment_plan (as a fallback, but this is not a risk assessor's assessment)
                 investment_plan = raw_result.get("investment_plan", {})
                 if isinstance(investment_plan, dict):
                     plan_risk_score = investment_plan.get("risk_score")
                     if plan_risk_score is not None:
-                        # 如果是 0-100 的整数，转换为 0-1 的小数
+                        # If it is an integer from 0 to 100, convert it to a decimal from 0 to 1
                         if isinstance(plan_risk_score, (int, float)) and plan_risk_score > 1:
                             plan_risk_score = plan_risk_score / 100.0
                         decision_dict['risk_score'] = plan_risk_score
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] 从 investment_plan (研究整合员评估，非风险评估师) 提取 risk_score: {plan_risk_score}")
+                        self.logger.warning(f"⚠️ [TaskAnalysisService] from investment_plan (Assessment by research integrator, not risk assessor) Extract risk_score: {plan_risk_score}")
                 elif isinstance(investment_plan, str):
-                    # 如果是字符串，尝试解析 JSON
+                    # If it is a string, try to parse JSON
                     try:
                         import json
                         import re
@@ -1063,192 +1063,192 @@ class TaskAnalysisService:
                                 plan_json = json.loads(json_match.group(1))
                                 plan_risk_score = plan_json.get("risk_score")
                                 if plan_risk_score is not None:
-                                    # 如果是 0-100 的整数，转换为 0-1 的小数
+                                    # If it is an integer from 0 to 100, convert it to a decimal from 0 to 1
                                     if isinstance(plan_risk_score, (int, float)) and plan_risk_score > 1:
                                         plan_risk_score = plan_risk_score / 100.0
                                     decision_dict['risk_score'] = plan_risk_score
-                                    self.logger.warning(f"⚠️ [TaskAnalysisService] 从 investment_plan (JSON文本，研究整合员评估，非风险评估师) 提取 risk_score: {plan_risk_score}")
+                                    self.logger.warning(f"⚠️ [TaskAnalysisService] from investment_plan (JSON Text, Research Integrator Assessment, Non-Risk Assessor) Extract risk_score: {plan_risk_score}")
                     except Exception as e:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] 从 investment_plan 提取 risk_score 失败: {e}")
+                        self.logger.warning(f"⚠️ [TaskAnalysisService] Failed to extract risk_score from investment_plan: {e}")
         
-        # 4. 如果都没有，使用默认值
+        # 4. If neither, use default value
         if not decision_dict:
             decision_dict = {
                 "action": "中性",
                 "target_price": None,
-                "price_analysis_range": None,  # 🔥 新增：价格区间
+                "price_analysis_range": None,  # 🔥 New: price range
                 "confidence": 0.5,
                 "risk_score": 0.5,
                 "reasoning": "暂无分析推理"
             }
-            self.logger.warning(f"⚠️ [TaskAnalysisService] 未找到决策信息，使用默认决策")
+            self.logger.warning(f"⚠️ [TaskAnalysisService] Decision information not found, use default decision")
         
         self.logger.info(f"🔍 [TaskAnalysisService] 最终 decision_dict.reasoning 长度: {len(decision_dict.get('reasoning', ''))}, 内容: {decision_dict.get('reasoning', '')[:200]}")
 
-        # 🔥 导入 JSON 转换函数（在函数内部导入，避免循环依赖）
+        # 🔥 Import JSON conversion function (import inside the function to avoid circular dependencies)
         from app.utils.report_formatter import _convert_json_to_markdown
         import json
         import re
 
-        # 🔥 关键修复：如果 decision_dict.reasoning 是 "暂无分析推理"，尝试从 risk_assessment 或 investment_plan 中提取
-        # ⚠️ 注意：必须在提取报告之前进行，因为提取报告时会将 JSON 转换为 Markdown
+        # 🔥 Critical fix: if decision_dict.reasoning is "No analytical reasoning yet", Try to extract from risk_assessment or investment_plan
+        # ⚠️ NOTE: This must be done before fetching the report as fetching the report converts the JSON to Markdown
         if decision_dict and decision_dict.get('reasoning') == "暂无分析推理":
-            self.logger.info(f"🔍 [TaskAnalysisService] reasoning 为空，尝试从 risk_assessment 或 investment_plan 中提取")
+            self.logger.info(f"🔍 [TaskAnalysisService] reasoning Empty, try to extract from risk_assessment or investment_plan")
 
-            # 1. 优先从 risk_assessment 中提取（综合性的风险评估推理）
+            # 1. Prioritize extraction from risk_assessment (comprehensive risk assessment reasoning)
             risk_assessment_raw = raw_result.get("risk_assessment", "")
             self.logger.info(f"🔍 [TaskAnalysisService] risk_assessment_raw 类型: {type(risk_assessment_raw)}, 长度: {len(str(risk_assessment_raw)) if risk_assessment_raw else 0}")
             if risk_assessment_raw:
                 try:
-                    # 🔥 修复：如果是字典，先提取 content 字段
+                    # 🔥 Fix: If it is a dictionary, extract the content field first
                     if isinstance(risk_assessment_raw, dict):
                         risk_assessment_str = risk_assessment_raw.get("content", "")
-                        self.logger.info(f"🔍 [TaskAnalysisService] risk_assessment 是字典，提取 content 字段，长度: {len(risk_assessment_str) if risk_assessment_str else 0}")
+                        self.logger.info(f"🔍 [TaskAnalysisService] risk_assessment Is a dictionary, extract the content field, length: {len(risk_assessment_str) if risk_assessment_str else 0}")
                     else:
                         risk_assessment_str = str(risk_assessment_raw)
 
                     json_obj = None
 
-                    # 1. 尝试提取 JSON 代码块
+                    # 1. Try to extract JSON code block
                     if "```json" in risk_assessment_str:
                         json_match = re.search(r'```json\s*(.*?)\s*```', risk_assessment_str, re.DOTALL)
                         if json_match:
                             json_str = json_match.group(1).strip()
                             json_obj = json.loads(json_str)
-                    # 2. 尝试直接解析 JSON
+                    # 2. Try to parse directly JSON
                     elif risk_assessment_str.strip().startswith("{"):
                         json_obj = json.loads(risk_assessment_str)
 
-                    # 如果解析成功，提取 reasoning
+                    # If parsing is successful, extract reasoning
                     if json_obj and isinstance(json_obj, dict):
                         reasoning = json_obj.get("reasoning", "")
-                        self.logger.info(f"🔍 [TaskAnalysisService] risk_assessment JSON 解析成功，reasoning 长度: {len(reasoning) if reasoning else 0}")
+                        self.logger.info(f"🔍 [TaskAnalysisService] risk_assessment JSON Parsed successfully, reasoning length: {len(reasoning) if reasoning else 0}")
                         if reasoning and len(reasoning.strip()) > 10:
                             decision_dict['reasoning'] = reasoning.strip()
                             self.logger.info(f"✅ [TaskAnalysisService] 从 risk_assessment 提取 reasoning: {len(reasoning.strip())}字符")
                         else:
-                            self.logger.warning(f"⚠️ [TaskAnalysisService] risk_assessment 中的 reasoning 为空或太短")
+                            self.logger.warning(f"⚠️ [TaskAnalysisService] risk_assessment reasoning in is empty or too short")
                     else:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] risk_assessment 解析后不是字典或为空")
+                        self.logger.warning(f"⚠️ [TaskAnalysisService] risk_assessment It is not a dictionary or empty after parsing")
                 except Exception as e:
-                    self.logger.warning(f"⚠️ [TaskAnalysisService] 从 risk_assessment 提取 reasoning 失败: {e}")
+                    self.logger.warning(f"⚠️ [TaskAnalysisService] Failed to extract reasoning from risk_assessment: {e}")
             else:
-                self.logger.warning(f"⚠️ [TaskAnalysisService] risk_assessment_raw 为空")
+                self.logger.warning(f"⚠️ [TaskAnalysisService] risk_assessment_raw is empty")
 
-            # 2. 如果 risk_assessment 没有 reasoning，才从 investment_plan 中提取
+            # 2. If risk_assessment does not have reasoning, it is extracted from investment_plan
             if decision_dict.get('reasoning') == "暂无分析推理":
-                self.logger.info(f"🔍 [TaskAnalysisService] risk_assessment 没有 reasoning，尝试从 investment_plan 中提取")
+                self.logger.info(f"🔍 [TaskAnalysisService] risk_assessment Without reasoning, try to extract from investment_plan")
                 investment_plan_raw = raw_result.get("investment_plan", "")
             self.logger.info(f"🔍 [TaskAnalysisService] investment_plan_raw 类型: {type(investment_plan_raw)}, 长度: {len(str(investment_plan_raw)) if investment_plan_raw else 0}")
             if investment_plan_raw:
                 try:
-                    # 🔥 修复：如果是字典，先提取 content 字段
+                    # 🔥 Fix: If it is a dictionary, extract the content field first
                     if isinstance(investment_plan_raw, dict):
                         investment_plan_str = investment_plan_raw.get("content", "")
-                        self.logger.info(f"🔍 [TaskAnalysisService] investment_plan 是字典，提取 content 字段，长度: {len(investment_plan_str) if investment_plan_str else 0}")
+                        self.logger.info(f"🔍 [TaskAnalysisService] investment_plan Is a dictionary, extract the content field, length: {len(investment_plan_str) if investment_plan_str else 0}")
                     else:
                         investment_plan_str = str(investment_plan_raw)
 
                     json_obj = None
 
-                    # 1. 尝试提取 JSON 代码块
+                    # 1. Try to extract JSON code block
                     if "```json" in investment_plan_str:
                         json_match = re.search(r'```json\s*(.*?)\s*```', investment_plan_str, re.DOTALL)
                         if json_match:
                             json_str = json_match.group(1).strip()
                             json_obj = json.loads(json_str)
-                    # 2. 尝试直接解析 JSON
+                    # 2. Try to parse directly JSON
                     elif investment_plan_str.strip().startswith("{"):
                         json_obj = json.loads(investment_plan_str)
                     
-                    # 如果解析成功，提取 reasoning
+                    # If parsing is successful, extract reasoning
                     if json_obj and isinstance(json_obj, dict):
                         reasoning = json_obj.get("reasoning", "")
-                        self.logger.info(f"🔍 [TaskAnalysisService] investment_plan JSON 解析成功，reasoning 长度: {len(reasoning) if reasoning else 0}")
+                        self.logger.info(f"🔍 [TaskAnalysisService] investment_plan JSON Parsed successfully, reasoning length: {len(reasoning) if reasoning else 0}")
                         if reasoning and len(reasoning.strip()) > 10:
                             decision_dict['reasoning'] = reasoning.strip()
                             self.logger.info(f"✅ [TaskAnalysisService] 从 investment_plan 提取 reasoning: {len(reasoning.strip())}字符")
                         else:
-                            self.logger.warning(f"⚠️ [TaskAnalysisService] investment_plan 中的 reasoning 为空或太短")
+                            self.logger.warning(f"⚠️ [TaskAnalysisService] investment_plan reasoning in is empty or too short")
                     else:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] investment_plan 解析后不是字典或为空")
+                        self.logger.warning(f"⚠️ [TaskAnalysisService] investment_plan It is not a dictionary or empty after parsing")
                 except Exception as e:
-                    self.logger.warning(f"⚠️ [TaskAnalysisService] 从 investment_plan 提取 reasoning 失败: {e}")
+                    self.logger.warning(f"⚠️ [TaskAnalysisService] Failed to extract reasoning from investment_plan: {e}")
             else:
-                self.logger.warning(f"⚠️ [TaskAnalysisService] investment_plan_raw 为空")
+                self.logger.warning(f"⚠️ [TaskAnalysisService] investment_plan_raw is empty")
             
-            # 🔥 如果 investment_plan 没有 reasoning，尝试从 final_trade_decision 中提取（作为备选）
+            # 🔥 If investment_plan has no reasoning, try to extract from final_trade_decision (as an alternative)
             if decision_dict.get('reasoning') == "暂无分析推理" and final_trade_decision:
-                self.logger.info(f"🔍 [TaskAnalysisService] investment_plan 没有 reasoning，尝试从 final_trade_decision 中提取")
+                self.logger.info(f"🔍 [TaskAnalysisService] investment_plan Without reasoning, try to extract from final_trade_decision")
                 try:
                     final_trade_str = str(final_trade_decision)
                     json_obj = None
                     
-                    # 1. 尝试提取 JSON 代码块
+                    # 1. Try to extract JSON code block
                     if "```json" in final_trade_str:
                         json_match = re.search(r'```json\s*(.*?)\s*```', final_trade_str, re.DOTALL)
                         if json_match:
                             json_str = json_match.group(1).strip()
                             json_obj = json.loads(json_str)
-                    # 2. 尝试直接解析 JSON
+                    # 2. Try to parse directly JSON
                     elif final_trade_str.strip().startswith("{"):
                         json_obj = json.loads(final_trade_str)
                     
-                    # 如果解析成功，提取 reasoning（虽然 final_trade_decision 是风险评估，但它的 reasoning 可以作为分析依据）
+                    # If the parsing is successful, extract reasoning (although final_trade_decision is a risk assessment, its reasoning can be used as the basis for analysis)
                     if json_obj and isinstance(json_obj, dict):
                         reasoning = json_obj.get("reasoning", "")
-                        self.logger.info(f"🔍 [TaskAnalysisService] final_trade_decision JSON 解析成功，reasoning 长度: {len(reasoning) if reasoning else 0}")
+                        self.logger.info(f"🔍 [TaskAnalysisService] final_trade_decision JSON Parsed successfully, reasoning length: {len(reasoning) if reasoning else 0}")
                         if reasoning and len(reasoning.strip()) > 10:
                             decision_dict['reasoning'] = reasoning.strip()
                             self.logger.info(f"✅ [TaskAnalysisService] 从 final_trade_decision 提取 reasoning (备选): {len(reasoning.strip())}字符")
                         else:
-                            self.logger.warning(f"⚠️ [TaskAnalysisService] final_trade_decision 中的 reasoning 为空或太短")
+                            self.logger.warning(f"⚠️ [TaskAnalysisService] final_trade_decision reasoning in is empty or too short")
                     else:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService] final_trade_decision 解析后不是字典或为空")
+                        self.logger.warning(f"⚠️ [TaskAnalysisService] final_trade_decision It is not a dictionary or empty after parsing")
                 except Exception as e:
-                    self.logger.warning(f"⚠️ [TaskAnalysisService] 从 final_trade_decision 提取 reasoning 失败: {e}")
+                    self.logger.warning(f"⚠️ [TaskAnalysisService] Failed to extract reasoning from final_trade_decision: {e}")
             else:
                 if not final_trade_decision:
-                    self.logger.warning(f"⚠️ [TaskAnalysisService] final_trade_decision 为空，无法提取 reasoning")
+                    self.logger.warning(f"⚠️ [TaskAnalysisService] final_trade_decision Empty and cannot be extracted reasoning")
         
-        # 🔥 再次记录最终的 reasoning（提取后）
+        # 🔥 Record the final reasoning again (after extraction)
         self.logger.info(f"🔍 [TaskAnalysisService] 提取后 decision_dict.reasoning 长度: {len(decision_dict.get('reasoning', ''))}, 内容: {decision_dict.get('reasoning', '')[:200]}")
 
-        # 提取投资计划
+        # Withdraw investment plan
         investment_plan = raw_result.get("trader_investment_plan") or raw_result.get("investment_plan", "")
         if isinstance(investment_plan, dict):
             investment_plan_text = investment_plan.get("content", str(investment_plan))
         else:
             investment_plan_text = str(investment_plan) if investment_plan else ""
 
-        # 🔑 关键：构建 reports 字典（完全按照旧版的方式）
+        # 🔑 Key: Build the reports dictionary (exactly the old way)
         reports = {}
         
-        # 🔑 提取文本的辅助函数（与旧流程保持一致）
+        # 🔑 Helper function for extracting text (consistent with old process)
         def _extract_text(v, field_name: str = ""):
             """从各种格式中提取文本内容"""
             if isinstance(v, str):
                 return v
             if isinstance(v, dict):
-                # 🔥 特殊处理：final_trade_decision 如果是字典且有 content 字段，直接返回 content（格式化的 Markdown）
+                # 🔥 Special processing: final_trade_decision If it is a dictionary and has a content field, content (formatted Markdown) is returned directly
                 if field_name == "final_trade_decision" and v.get("content"):
                     content = v.get("content")
                     if isinstance(content, str) and content.strip():
                         return content
-                # 🔥 如果 final_trade_decision 没有 content 字段，但有 action 字段，转换为 JSON 字符串
-                # 这样后续的 _convert_json_to_markdown 可以正确处理
+                # 🔥 If final_trade_decision does not have a content field but has an action field, convert it to a JSON string
+                # In this way, subsequent _convert_json_to_markdown can be processed correctly
                 if field_name == "final_trade_decision" and v.get("action"):
                     import json
                     return json.dumps(v, ensure_ascii=False, indent=2)
-                # 尝试从字典中提取文本字段
+                # Try to extract text field from dictionary
                 for k in ("content", "markdown", "text", "message", "report"):
                     x = v.get(k)
                     if isinstance(x, str) and x.strip():
                         return x
             return ""
 
-        # 🔑 第一步：从引擎产出的 structured_reports 动态提取报告字段
-        # engine 已按 show_in_reports 过滤，这里直接复用，不维护硬编码列表
+        # 🔑 Step 1: Dynamically extract report fields from structured_reports generated by the engine
+        # engine Filtered by show_in_reports, reused directly here, no hard-coded list is maintained.
         structured_reports = raw_result.get("structured_reports", {})
         if structured_reports and isinstance(structured_reports, dict):
             for field, entry in structured_reports.items():
@@ -1258,7 +1258,7 @@ class TaskAnalysisService:
                         reports[field] = content.strip()
                         self.logger.info(f"📊 [REPORTS] 从 structured_reports 提取: {field} - 长度: {len(content.strip())}")
         else:
-            # 回退：从 raw_result 顶层提取 report_manifest 中的字段
+            # Fallback: Extract fields in report_manifest from raw_result top level
             manifest = raw_result.get("report_manifest", [])
             if manifest:
                 for m in manifest:
@@ -1269,44 +1269,44 @@ class TaskAnalysisService:
                             reports[field] = content.strip()
                             self.logger.info(f"📊 [REPORTS] 从 manifest 提取: {field} - 长度: {len(content.strip())}")
 
-        # 🔑 第二步：处理研究团队辩论状态（字典类型）- 拆分为独立子报告（与旧流程保持一致）
-        # 🔥 注意：如果顶层已经有 bull_report/bear_report，优先使用顶层的；否则从 investment_debate_state 提取
+        # 🔑 Step 2: Handle research team debate status (dictionary type) - split into independent sub-reports (consistent with old process)
+        # 🔥 Note: If the top level already has bull_report/bear_report, the top level one will be used first; otherwise, it will be extracted from investment_debate_state
         investment_debate = raw_result.get("investment_debate_state", {})
         if investment_debate and isinstance(investment_debate, dict):
-            # 1. 多头研究员报告（如果顶层没有，才从 investment_debate_state 提取）
+            # 1. Long researcher report (extracted from investment_debate_state if not available at the top level)
             if "bull_researcher" not in reports:
                 bull_history = _extract_text(investment_debate.get("bull_history", ""))
                 if bull_history and len(bull_history.strip()) > 5:
                     reports["bull_researcher"] = bull_history.strip()
-                    self.logger.info(f"📊 [REPORTS] 提取报告: bull_researcher (来自 investment_debate_state.bull_history) - 长度: {len(bull_history.strip())}")
+                    self.logger.info(f"📊 [REPORTS] Extract report: bull_researcher (from investment_debate_state.bull_history) - length: {len(bull_history.strip())}")
 
-            # 2. 空头研究员报告（如果顶层没有，才从 investment_debate_state 提取）
+            # 2. Short researcher report (only extracted from investment_debate_state if the top level is not available)
             if "bear_researcher" not in reports:
                 bear_history = _extract_text(investment_debate.get("bear_history", ""))
                 if bear_history and len(bear_history.strip()) > 5:
                     reports["bear_researcher"] = bear_history.strip()
-                    self.logger.info(f"📊 [REPORTS] 提取报告: bear_researcher (来自 investment_debate_state.bear_history) - 长度: {len(bear_history.strip())}")
+                    self.logger.info(f"📊 [REPORTS] Extract report: bear_researcher (from investment_debate_state.bear_history) - length: {len(bear_history.strip())}")
 
-            # 3. 研究整合员分析报告
+            # 3. Research Integrator Analysis Report
             judge_decision = _extract_text(investment_debate.get("judge_decision", ""))
             if judge_decision and len(judge_decision.strip()) > 5:
-                # 🔥 新增：如果是 JSON 格式，转换为 Markdown
+                # 🔥 New: If in JSON format, convert to Markdown
                 markdown_content = _convert_json_to_markdown(judge_decision.strip(), "investment")
                 reports["research_team_decision"] = markdown_content
-                self.logger.info(f"📊 [REPORTS] 提取报告: research_team_decision - 长度: {len(markdown_content)} (已转换JSON->Markdown)")
+                self.logger.info(f"📊 [REPORTS] Extract report: research_team_decision - length: {len(markdown_content)} (Converted JSON->Markdown)")
 
-        # 🔑 第三步：处理风险管理团队辩论状态（字典类型）- 拆分为独立子报告（与旧流程保持一致）
-        # 🔥 同时检查顶层是否有 risky_opinion, safe_opinion, neutral_opinion 等字段
+        # 🔑 Step 3: Handle risk management team debate status (dictionary type) - split into independent sub-reports (consistent with old process)
+        # 🔥 Also check if the top level has risky_opinion, safe_opinion, neutral_opinion etc fields
         risk_debate = raw_result.get("risk_debate_state", {})
         
-        # 🔥 备选字段映射（v2.0工作流可能将报告存储在顶层）
+        # 🔥 Alternative field mapping (v2.0 workflow may store reports at the top level)
         risk_alternative_fields = {
             "risky_analyst": ["risky_opinion", "risky_history"],
             "safe_analyst": ["safe_opinion", "safe_history"],
             "neutral_analyst": ["neutral_opinion", "neutral_history"],
         }
         
-        # 先从顶层提取
+        # Extract from the top level first
         for report_key, alt_fields in risk_alternative_fields.items():
             if report_key not in reports:
                 for alt_field in alt_fields:
@@ -1317,80 +1317,80 @@ class TaskAnalysisService:
                         self.logger.info(f"📊 [REPORTS] 提取报告: {report_key} (来自顶层 {alt_field}) - 长度: {len(content.strip())}")
                         break
         
-        # 然后从 risk_debate_state 提取（如果顶层没有）
+        # Then extract from risk_debate_state (if the top level doesn't have one)
         if risk_debate and isinstance(risk_debate, dict):
-            # 1. 高弹性情景分析师报告
+            # 1. High Resilience Scenario Analyst Report
             if "risky_analyst" not in reports:
                 risky_history = _extract_text(risk_debate.get("risky_history", ""))
                 if risky_history and len(risky_history.strip()) > 5:
                     reports["risky_analyst"] = risky_history.strip()
-                    self.logger.info(f"📊 [REPORTS] 提取报告: risky_analyst (来自 risk_debate_state.risky_history) - 长度: {len(risky_history.strip())}")
+                    self.logger.info(f"📊 [REPORTS] Extract report: risky_analyst (from risk_debate_state.risky_history) - length: {len(risky_history.strip())}")
 
-            # 2. 防御情景分析师报告
+            # 2. Defense Scenario Analyst Report
             if "safe_analyst" not in reports:
                 safe_history = _extract_text(risk_debate.get("safe_history", ""))
                 if safe_history and len(safe_history.strip()) > 5:
                     reports["safe_analyst"] = safe_history.strip()
-                    self.logger.info(f"📊 [REPORTS] 提取报告: safe_analyst (来自 risk_debate_state.safe_history) - 长度: {len(safe_history.strip())}")
+                    self.logger.info(f"📊 [REPORTS] Extract report: safe_analyst (from risk_debate_state.safe_history) - length: {len(safe_history.strip())}")
 
-            # 3. 中性分析师报告
+            # 3. Neutral analyst report
             if "neutral_analyst" not in reports:
                 neutral_history = _extract_text(risk_debate.get("neutral_history", ""))
                 if neutral_history and len(neutral_history.strip()) > 5:
                     reports["neutral_analyst"] = neutral_history.strip()
-                    self.logger.info(f"📊 [REPORTS] 提取报告: neutral_analyst (来自 risk_debate_state.neutral_history) - 长度: {len(neutral_history.strip())}")
+                    self.logger.info(f"📊 [REPORTS] Extract report: neutral_analyst (from risk_debate_state.neutral_history) - length: {len(neutral_history.strip())}")
 
-            # 4. 风险评估师决策报告
+            # 4. Risk Assessor Decision Report
             judge_decision = _extract_text(risk_debate.get("judge_decision", ""))
             if judge_decision and len(judge_decision.strip()) > 5:
-                # 🔥 新增：如果是 JSON 格式，转换为 Markdown
+                # 🔥 New: If in JSON format, convert to Markdown
                 markdown_content = _convert_json_to_markdown(judge_decision.strip(), "risk")
                 reports["risk_management_decision"] = markdown_content
-                self.logger.info(f"📊 [REPORTS] 提取报告: risk_management_decision - 长度: {len(markdown_content)} (已转换JSON->Markdown)")
+                self.logger.info(f"📊 [REPORTS] Extract report: risk_management_decision - length: {len(markdown_content)} (Converted JSON->Markdown)")
 
-        # 🔥 生成摘要和建议（与旧引擎保持一致）
-        # summary（分析概览）：优先从 LLM 返回的 investment_plan 或 final_trade_decision 中提取完整的 summary，不截取
-        # recommendation（分析观点）：基于 action、price_range 和简短的推理摘要生成
-        # decision.reasoning（分析依据）：从 decision_dict.reasoning 中提取（不应该从 final_trade_decision 提取）
+        # 🔥 Generate summaries and recommendations (consistent with old engine)
+        # summary (Analysis overview): Prioritize extracting the complete summary from the investment_plan or final_trade_decision returned by LLM, without intercepting
+        # recommendation (Analytical view): generated based on action, price_range and short inference summary
+        # decision.reasoning (Analysis basis): extracted from decision_dict.reasoning (should not be extracted from final_trade_decision)
         
-        self.logger.info(f"🔍 [TaskAnalysisService] ========== 生成 summary 和 recommendation ==========")
+        self.logger.info(f"🔍 [TaskAnalysisService] ========== Generate summary and recommendation ==========")
         
-        # 1. 生成 summary（分析概览）- 🔥🔥🔥 最高优先级：从 LLM 返回的 investment_plan 中提取完整的 summary
+        # 1. Generate summary (analysis overview)- 🔥🔥🔥 Highest priority: Extract the complete investment_plan from the LLM return summary
         summary = ""
         
-        # 1.1 优先从 investment_plan（research_manager_v2 的输出）中提取完整的 summary
+        # 1.1 Preferentially extract the complete summary
         investment_plan_raw = raw_result.get("investment_plan", "")
         if investment_plan_raw:
             try:
-                # 如果是字典，直接获取 summary
+                # If it is a dictionary, get it directly summary
                 if isinstance(investment_plan_raw, dict):
                     plan_summary = investment_plan_raw.get("summary", "")
                     if plan_summary and isinstance(plan_summary, str) and len(plan_summary.strip()) > 10:
                         summary = plan_summary.strip()
                         self.logger.info(f"✅✅✅ [TaskAnalysisService] 从 investment_plan (字典) 提取完整 summary: {len(summary)}字符")
-                # 如果是字符串，尝试解析 JSON
+                # If it is a string, try to parse JSON
                 elif isinstance(investment_plan_raw, str):
                     investment_plan_str = investment_plan_raw.strip()
                     json_obj = None
-                    # 尝试提取 JSON 代码块
+                    # Try to extract JSON code block
                     if "```json" in investment_plan_str:
                         json_match = re.search(r'```json\s*(.*?)\s*```', investment_plan_str, re.DOTALL)
                         if json_match:
                             json_obj = json.loads(json_match.group(1))
-                    # 尝试直接解析 JSON
+                    # Try to parse directly JSON
                     elif investment_plan_str.startswith("{"):
                         json_obj = json.loads(investment_plan_str)
                     
-                    # 如果解析成功，提取 summary
+                    # If parsing is successful, extract summary
                     if json_obj and isinstance(json_obj, dict):
                         plan_summary = json_obj.get("summary", "")
                         if plan_summary and isinstance(plan_summary, str) and len(plan_summary.strip()) > 10:
                             summary = plan_summary.strip()
                             self.logger.info(f"✅✅✅ [TaskAnalysisService] 从 investment_plan (JSON字符串) 提取完整 summary: {len(summary)}字符")
             except (json.JSONDecodeError, Exception) as e:
-                self.logger.warning(f"⚠️ [TaskAnalysisService] 从 investment_plan 提取 summary 失败: {e}")
+                self.logger.warning(f"⚠️ [TaskAnalysisService] Failed to extract summary from investment_plan: {e}")
         
-        # 1.2 如果 investment_plan 中没有，从 final_trade_decision（risk_manager_v2 的输出）中提取完整的 summary
+        # 1.2 If not present in investment_plan, extract the complete summary
         if not summary:
             if isinstance(final_trade_decision, dict):
                 ftd_summary = final_trade_decision.get("summary", "")
@@ -1398,64 +1398,64 @@ class TaskAnalysisService:
                     summary = ftd_summary.strip()
                     self.logger.info(f"✅✅✅ [TaskAnalysisService] 从 final_trade_decision (字典) 提取完整 summary: {len(summary)}字符")
         
-        # 1.3 如果还是没有，从 reports 中的 final_trade_decision 提取（不截取，使用完整内容）
+        # 1.3 If it still doesn't exist, extract it from final_trade_decision in reports (do not intercept, use the complete content)
         if not summary:
             if reports.get("final_trade_decision"):
                 final_trade_content = reports["final_trade_decision"]
                 if isinstance(final_trade_content, str) and len(final_trade_content.strip()) > 50:
-                    # 🔥 不截取，使用完整内容（移除 Markdown 标记）
+                    # 🔥 No truncation, use full content (remove Markdown tags)
                     summary = final_trade_content.replace('#', '').replace('*', '').strip()
                     self.logger.info(f"✅ [TaskAnalysisService] 从 reports.final_trade_decision 提取完整 summary: {len(summary)}字符")
         
-        # 1.4 如果还是没有，从其他报告中提取（不截取）
+        # 1.4 If still not available, extract from other reports (without interception)
         if not summary:
             for report_name in ['trader_investment_plan', 'research_team_decision', 'market_report']:
                 if report_name in reports:
                     content = reports[report_name]
                     if isinstance(content, str) and len(content.strip()) > 100:
-                        # 🔥 不截取，使用完整内容（移除 Markdown 标记）
+                        # 🔥 No truncation, use full content (remove Markdown tags)
                         summary = content.replace('#', '').replace('*', '').strip()
                         self.logger.info(f"✅ [TaskAnalysisService] 从 {report_name} 提取完整 summary: {len(summary)}字符")
                         break
         
-        # 1.5 最后的备用方案
+        # 1.5 Last resort
         if not summary:
             summary = f"对{task.task_params.get('symbol', '股票')}的分析已完成，请查看详细报告。"
-            self.logger.warning(f"⚠️ [TaskAnalysisService] 使用备用 summary")
+            self.logger.warning(f"⚠️ [TaskAnalysisService] Use backup summary")
         
-        # 4. 生成 recommendation（分析观点）- 基于 action、price_range 和简短的推理摘要生成
-        # 🔥 合规修改：使用新术语，先格式化 decision_dict 以确保 action 是合规术语
+        # 4. Generate recommendations (analysis opinions) - based on action, price_range and short reasoning summary
+        # 🔥 Compliance modification: use new terms, format decision_dict first to ensure action is a compliant term
         temp_formatted_decision = self._format_decision_dict(decision_dict)
         action = temp_formatted_decision.get('action', '中性')
         target_price = temp_formatted_decision.get('target_price')
         reasoning = temp_formatted_decision.get('reasoning', '')
 
-        # 构建 recommendation（不包含具体价格和研究观察）
+        # Build recommendations (excluding specific prices and research observations)
         recommendation_parts = []
 
-        # 只包含分析观点，不包含具体价格
+        # Contains only analytical opinions and does not include specific prices
         if action and action != '中性':
-            recommendation_parts.append(f"分析观点：{action}")
+            recommendation_parts.append(f"Analysis point of view:{action}")
 
-        # 🔥 如果 reasoning 很短（<100字符），才添加到 recommendation 中，避免重复
+        # 🔥 If reasoning is short (<100 characters) before adding it to the recommendation to avoid duplication
         if reasoning and len(reasoning) < 100 and reasoning != "暂无分析推理":
-            recommendation_parts.append(f"分析依据：{reasoning}")
+            recommendation_parts.append(f"Analysis basis:{reasoning}")
         elif reasoning and reasoning != "暂无分析推理":
-            # 如果 reasoning 较长，只提取前50字符
+            # If reasoning is longer, only the first 50 characters are extracted
             short_reasoning = reasoning[:50] + "..." if len(reasoning) > 50 else reasoning
-            recommendation_parts.append(f"分析依据：{short_reasoning}")
+            recommendation_parts.append(f"Analysis basis:{short_reasoning}")
 
-        recommendation = "；".join(recommendation_parts) if recommendation_parts else "请参考详细分析报告。"
+        recommendation = "；".join(recommendation_parts) if recommendation_parts else "Please refer to the detailed analysis report."
 
-        if not recommendation or recommendation == "分析观点：中性":
-            recommendation = "请参考详细分析报告。"
-            self.logger.warning(f"⚠️ [TaskAnalysisService] 使用备用 recommendation")
+        if not recommendation or recommendation == "Analytical opinion: Neutral":
+            recommendation = "Please refer to the detailed analysis report."
+            self.logger.warning(f"⚠️ [TaskAnalysisService] Use backup recommendation")
         
         self.logger.info(f"🔍 [TaskAnalysisService] summary 长度: {len(summary)}, 内容: {summary[:200]}")
         self.logger.info(f"🔍 [TaskAnalysisService] recommendation 长度: {len(recommendation)}, 内容: {recommendation[:200]}")
         self.logger.info(f"🔍 [TaskAnalysisService] decision.reasoning 长度: {len(reasoning)}, 内容: {reasoning[:200]}")
 
-        # 计算风险等级（基于 risk_score）
+        # Calculate risk level (based on risk_score)
         risk_score = decision_dict.get("risk_score", 0.5)
         if risk_score < 0.3:
             risk_level = "低"
@@ -1464,24 +1464,24 @@ class TaskAnalysisService:
         else:
             risk_level = "高"
 
-        # 🔑 获取模型信息
+        # 🔑 Get model information
         quick_model = task.task_params.get("quick_analysis_model", "Unknown")
         deep_model = task.task_params.get("deep_analysis_model", "Unknown")
         model_info = f"{quick_model}/{deep_model}"
 
-        # 🔥 提取关键要点（从 reasoning 或 summary 中提取）
+        # 🔥 Extract key points (from reasoning or summary)
         key_points = []
         if reasoning and reasoning != "暂无分析推理":
-            # 尝试从 reasoning 中提取关键点（按行分割）
+            # Try to extract key points from reasoning (split by rows)
             lines = [line.strip() for line in reasoning.split('\n') if line.strip()]
-            # 过滤掉太短的行（<10字符）和标题行（以#开头）
+            # Filter out lines that are too short (<10 characters) and the title line (ending with#beginning)
             key_points = [
                 line for line in lines
                 if len(line) >= 10 and not line.startswith('#') and not line.startswith('*')
-            ][:5]  # 最多取5个关键点
+            ][:5]  # Take up to 5 key points
             self.logger.info(f"✅ [TaskAnalysisService] 从 reasoning 提取 {len(key_points)} 个关键要点")
 
-        # 如果 reasoning 没有关键点，尝试从 summary 中提取
+        # If reasoning has no key points, try to extract them from summary
         if not key_points and summary:
             lines = [line.strip() for line in summary.split('\n') if line.strip()]
             key_points = [
@@ -1490,39 +1490,39 @@ class TaskAnalysisService:
             ][:5]
             self.logger.info(f"✅ [TaskAnalysisService] 从 summary 提取 {len(key_points)} 个关键要点")
 
-        # 🔥 过滤掉包含 JSON 字段名或敏感术语的关键点
+        # 🔥 Filter out key points containing JSON field names or sensitive terms
         filtered_key_points = []
         for kp in key_points:
-            # 跳过包含 JSON 字段名的行
+            # Skip lines containing JSON field names
             if any(field in kp for field in ['"analysis_view"', '"action"', '"confidence"', '"target_price"', '```json', '```']):
                 continue
-            # 跳过包含敏感术语的行
+            # Skip lines containing sensitive terms
             if any(term in kp for term in ['买入', '卖出', '目标价', '止损', '止盈', '仓位']):
                 continue
             filtered_key_points.append(kp)
 
-        key_points = filtered_key_points[:5]  # 最多保留5个
+        key_points = filtered_key_points[:5]  # Keep up to 5
         self.logger.info(f"✅ [TaskAnalysisService] 过滤后保留 {len(key_points)} 个关键要点")
 
-        # 🔥🔥🔥 最终检查：确保 decision_dict 中包含从 final_trade_decision 提取的 risk_score（最高优先级）
+        # 🔥🔥🔥 Final check: Make sure decision_dict contains risk_score extracted from final_trade_decision (highest priority)
         if decision_dict and decision_dict.get('risk_score') is None:
-            # 再次尝试从 final_trade_decision 中提取
+            # Try extracting from final_trade_decision again
             if isinstance(final_trade_decision, dict):
                 ftd_risk_score = final_trade_decision.get("risk_score")
                 if ftd_risk_score is not None:
-                    # 确保 risk_score 是 0-1 范围的浮点数
+                    # Make sure risk_score is a float in the range 0-1
                     if isinstance(ftd_risk_score, (int, float)):
                         if ftd_risk_score > 1:
                             ftd_risk_score = ftd_risk_score / 100.0
                         decision_dict['risk_score'] = float(ftd_risk_score)
-                        self.logger.info(f"✅✅✅ [TaskAnalysisService] 最终检查：将 final_trade_decision 中的 risk_score 赋值给 decision_dict: {decision_dict['risk_score']}")
+                        self.logger.info(f"✅✅✅ [TaskAnalysisService] Final check: assign risk_score in final_trade_decision to decision_dict: {decision_dict['risk_score']}")
 
-        # 🔥 格式化 decision_dict（将旧术语映射为合规术语）
+        # 🔥 Format decision_dict (map old terms to compliant terms)
         formatted_decision = self._format_decision_dict(decision_dict)
-        self.logger.info(f"🔍 [TaskAnalysisService] decision 格式化: {decision_dict.get('action')} -> {formatted_decision.get('action')}")
+        self.logger.info(f"🔍 [TaskAnalysisService] decision Format: {decision_dict.get('action')} -> {formatted_decision.get('action')}")
         self.logger.info(f"🔍 [TaskAnalysisService] decision.risk_score = {formatted_decision.get('risk_score')}")
 
-        # 构建格式化结果（基础字段，不包含 state 和 detailed_analysis）
+        # Build formatted results (basic fields, excluding state and detailed_analysis)
         formatted_result = {
             "analysis_id": str(uuid.uuid4()),
             "stock_symbol": task.task_params.get("symbol") or task.task_params.get("stock_code"),
@@ -1532,7 +1532,7 @@ class TaskAnalysisService:
             "recommendation": recommendation or "请查看详细报告",
             "confidence_score": formatted_decision.get("confidence", 0.5),
             "risk_level": risk_level,
-            "key_points": key_points,  # 🔥 关键要点（从 reasoning 或 summary 中提取）
+            "key_points": key_points,  # 🔥 Key takeaways (extracted from reasoning or summary)
             "execution_time": task.execution_time or 0,
             "tokens_used": raw_result.get("tokens_used", 0),
             "analysts": task.task_params.get("selected_analysts", []),
@@ -1544,32 +1544,32 @@ class TaskAnalysisService:
             "deep_model": deep_model,
         }
 
-        # 透传工作流引擎生成的 report_manifest（自定义工作流产出物描述）
+        # Transparently transmit the report_manifest (customized workflow output description) generated by the workflow engine
         if raw_result.get("report_manifest"):
             formatted_result["report_manifest"] = raw_result["report_manifest"]
 
-        # 🔥 调试日志：打印 decision 对象的完整内容
+        # 🔥 Debug log: print the complete contents of the decision object
         self.logger.info(f"✅ 格式化结果完成: {len(reports)} 个报告")
-        self.logger.info(f"🔍 [TaskAnalysisService] decision 对象完整内容: {formatted_decision}")
+        self.logger.info(f"🔍 [TaskAnalysisService] decision Object complete content: {formatted_decision}")
         self.logger.info(f"🔍 [TaskAnalysisService] decision.price_analysis_range = {formatted_decision.get('price_analysis_range')}")
         self.logger.info(f"🔍 [TaskAnalysisService] decision.risk_score = {formatted_decision.get('risk_score')}")
         return formatted_result
 
     def _format_decision_dict(self, decision: Dict[str, Any]) -> Dict[str, Any]:
-        """格式化决策字典
+        """Format decision dictionary
 
         Args:
-            decision: 原始决策字典
+            decision: original decision dictionary
 
         Returns:
-            格式化后的决策字典
+            Formatted decision dictionary
         """
-        # 处理验证价位（历史字段 target_price 仅作兼容）
+        # Handle validation price (history field target_price is for compatibility only)
         target_price = decision.get('target_price')
         if target_price is not None and target_price != 'N/A':
             try:
                 if isinstance(target_price, str):
-                    # 移除货币符号和空格
+                    # Remove currency symbols and spaces
                     clean_price = target_price.replace('$', '').replace('¥', '').replace('￥', '').strip()
                     target_price = float(clean_price) if clean_price and clean_price != 'None' else None
                 elif isinstance(target_price, (int, float)):
@@ -1581,7 +1581,7 @@ class TaskAnalysisService:
         else:
             target_price = None
 
-        # 🔥 合规修改：将英文/旧操作建议转换为中文合规术语（研究结论倾向）
+        # 🔥 Compliance modification: Convert English/old operational recommendations to Chinese compliance terminology (research conclusion tendency)
         action_translation = {
             'BUY': '乐观',
             'SELL': '审慎',
@@ -1589,114 +1589,114 @@ class TaskAnalysisService:
             'buy': '乐观',
             'sell': '审慎',
             'hold': '中性',
-            '买入': '乐观',  # 兼容旧数据
+            '买入': '乐观',  # Compatible with old data
             '卖出': '审慎',
             '持有': '中性',
-            '看涨': '乐观',  # 兼容旧数据
+            '看涨': '乐观',  # Compatible with old data
             '看跌': '审慎',
         }
         action = decision.get('action', '中性')
         chinese_action = action_translation.get(action, action)
 
-        # 🔥 重要：reasoning 应该从 decision 中提取，如果 decision 没有 reasoning，使用默认值
-        # 不应该从 final_trade_decision 中提取，因为 final_trade_decision 会被用于生成 summary
+        # 🔥 Important: reasoning should be extracted from decision. If decision does not have reasoning, use the default value.
+        # should not be extracted from final_trade_decision as final_trade_decision will be used to generate summary
         reasoning = decision.get('reasoning', '') or decision.get('rationale', '')
         if not reasoning:
             reasoning = '暂无分析推理'
         
-        self.logger.info(f"🔍 [TaskAnalysisService._format_decision_dict] decision 字段: {list(decision.keys())}")
+        self.logger.info(f"🔍 [TaskAnalysisService._format_decision_dict] decision Field: {list(decision.keys())}")
         self.logger.info(f"🔍 [TaskAnalysisService._format_decision_dict] reasoning 长度: {len(reasoning)}, 内容: {reasoning[:200]}")
 
-        # 🔥 确保 confidence 是 0-1 的小数（前端期望）
+        # 🔥 Make sure confidence is a decimal between 0-1 (expected by the front end)
         confidence = float(decision.get('confidence', 0.5))
         if confidence > 1:
-            # 如果 LLM 返回的是 0-100 的整数，转换为 0-1 的小数
+            # If LLM returns an integer from 0 to 100, convert it to a decimal from 0 to 1
             confidence = confidence / 100.0
 
-        # 🔥 确保 risk_score 是 0-1 的小数（前端期望）
+        # 🔥 Make sure risk_score is a decimal between 0-1 (expected by the front end)
         risk_score = decision.get('risk_score')
         if risk_score is not None:
             risk_score = float(risk_score)
             if risk_score > 1:
                 risk_score = risk_score / 100.0
         else:
-            risk_score = 0.5  # 默认值
-            self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] decision 中没有 risk_score，使用默认值 0.5")
+            risk_score = 0.5  # Default value
+            self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] decision There is no risk_score in , the default value is used 0.5")
 
-        # 🔥 合规修改：返回 price_analysis_range（价格区间），而不是 target_price（具体价格）
-        # 提取 price_analysis_range（如果存在）
+        # 🔥 Compliance modification: return price_analysis_range (price range) instead of target_price (specific price)
+        # Extract price_analysis_range if present
         price_analysis_range = decision.get('price_analysis_range')
         
-        # 🔥 确保 price_analysis_range 保持为数组格式，不要转换为单值
+        # 🔥 Make sure price_analysis_range remains in array format and does not convert to a single value
         if price_analysis_range is not None:
-            # 如果是列表/数组，保持原样
+            # If it's a list/array, leave it as is
             if isinstance(price_analysis_range, (list, tuple)):
-                # 确保是有效的区间格式 [min, max]
+                # Make sure it is a valid range format [min, max]
                 if len(price_analysis_range) == 2:
                     price_analysis_range = [float(price_analysis_range[0]), float(price_analysis_range[1])]
-                    self.logger.info(f"✅ [TaskAnalysisService._format_decision_dict] price_analysis_range 是数组: {price_analysis_range}")
+                    self.logger.info(f"✅ [TaskAnalysisService._format_decision_dict] price_analysis_range is an array: {price_analysis_range}")
                 else:
-                    self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] price_analysis_range 数组长度不是2: {price_analysis_range}")
+                    self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] price_analysis_range The array length is not 2: {price_analysis_range}")
                     price_analysis_range = None
-            # 如果是单个数字，转换为数组格式（基于该值生成合理区间）
+            # If it is a single number, convert it to array format (generate a reasonable interval based on the value)
             elif isinstance(price_analysis_range, (int, float)):
                 single_value = float(price_analysis_range)
-                # 🔥 改进：基于单值生成一个合理的价格区间（±5%）
-                # 这样可以避免前端显示 '-'，而是显示一个合理的价格区间
-                price_range_pct = 0.05  # 5% 的波动范围
+                # 🔥 Improvement: Generate a reasonable price range based on a single value (±5%) 
+                # This avoids front-end display '-', Instead, it shows a reasonable price range
+                price_range_pct = 0.05  # 5% The fluctuation range of
                 min_price = single_value * (1 - price_range_pct)
                 max_price = single_value * (1 + price_range_pct)
                 price_analysis_range = [round(min_price, 2), round(max_price, 2)]
-                self.logger.info(f"✅ [TaskAnalysisService._format_decision_dict] price_analysis_range 是单值 {single_value}，已转换为区间: {price_analysis_range}")
+                self.logger.info(f"✅ [TaskAnalysisService._format_decision_dict] price_analysis_range is a single value {single_value}, converted to interval: {price_analysis_range}")
             else:
-                self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] price_analysis_range 格式不正确: {type(price_analysis_range)} = {price_analysis_range}")
+                self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] price_analysis_range Incorrect format: {type(price_analysis_range)} = {price_analysis_range}")
                 price_analysis_range = None
         
         if not price_analysis_range:
-            self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] decision 中没有有效的 price_analysis_range，前端将显示 '-'")
+            self.logger.warning(f"⚠️ [TaskAnalysisService._format_decision_dict] decision There is no valid price_analysis_range in the frontend will display '-'")
         
-        # 🔥 调试日志：记录返回的字段
+        # 🔥 Debug log: record returned fields
         self.logger.info(f"🔍 [TaskAnalysisService._format_decision_dict] 返回字段: action={chinese_action}, price_analysis_range={price_analysis_range} (类型: {type(price_analysis_range)}), risk_score={risk_score}, confidence={confidence}")
         
         return {
             'action': chinese_action,
-            'analysis_view': chinese_action,  # 🔥 兼容字段
+            'analysis_view': chinese_action,  # 🔥 Compatible fields
             'confidence': confidence,
             'risk_score': risk_score,
-            'target_price': None,  # 🔥 不提供具体价格（合规要求）
-            'price_analysis_range': price_analysis_range,  # 🔥 价格区间（合规）
+            'target_price': None,  # 🔥 No specific price provided (compliance requirement)
+            'price_analysis_range': price_analysis_range,  # 🔥 Price range (compliance)
             'reasoning': reasoning
         }
 
     def _extract_decision_from_text(self, text: str) -> Dict[str, Any]:
-        """从文本中提取决策信息
+        """Extract decision information from text
 
         Args:
-            text: 决策文本
+            text: decision text
 
         Returns:
-            决策字典
+            decision dictionary
         """
         import re
 
-        # 提取动作（统一使用合规研究结论倾向术语）
-        action = '中性'  # 默认
-        if re.search(r'(强烈)?买入|建议买入|看多|BUY|STRONG_BUY|看涨|乐观', text, re.IGNORECASE):
+        # Extract actions (unified use of compliance research conclusion tendency terms)
+        action = '中性'  # Default
+        if re.search(r'(strong)?buy|Recommended to buy|long|BUY|STRONG_BUY|bullish|optimistic', text, re.IGNORECASE):
             action = '乐观'
-        elif re.search(r'(强烈)?卖出|建议卖出|看空|减持|SELL|STRONG_SELL|看跌|审慎', text, re.IGNORECASE):
+        elif re.search(r'(strong)?sell|Recommended to sell|bearish|Reduce holdings|SELL|STRONG_SELL|Bearish|Prudence', text, re.IGNORECASE):
             action = '审慎'
-        elif re.search(r'持有|观望|等待|HOLD|中性', text, re.IGNORECASE):
+        elif re.search(r'hold|wait and see|wait|HOLD|Neutral', text, re.IGNORECASE):
             action = '中性'
 
-        # 提取目标价格
+        # Extract target price
         target_price = None
         price_patterns = [
-            r'目标价[位格]?[：:]?\s*[¥\$]?(\d+(?:\.\d+)?)',  # 目标价位: 45.50
-            r'\*\*目标价[位格]?\*\*[：:]?\s*[¥\$]?(\d+(?:\.\d+)?)',  # **目标价位**: 45.50
-            r'目标[：:]?\s*[¥\$]?(\d+(?:\.\d+)?)',         # 目标: 45.50
-            r'价格[：:]?\s*[¥\$]?(\d+(?:\.\d+)?)',         # 价格: 45.50
-            r'[¥\$](\d+(?:\.\d+)?)',                      # ¥45.50 或 $190
-            r'(\d+(?:\.\d+)?)元',                         # 45.50元
+            r'target price[person]?[: :]?\s*[¥\$]?(\d+(?:\.\d+)?)',  # target price: 45.50
+            r'\*\*target price[person]?\*\*[: :]?\s*[¥\$]?(\d+(?:\.\d+)?)',  # **target price**: 45.50
+            r'target[: :]?\s*[¥\$]?(\d+(?:\.\d+)?)',         # target: 45.50
+            r'price[: :]?\s*[¥\$]?(\d+(?:\.\d+)?)',         # price: 45.50
+            r'[¥\$](\d+(?:\.\d+)?)',                      # ¥45.50 or $190
+            r'(\d+(?:\.\d+)?)Yuan',                         # 45.50 Yuan
         ]
 
         for pattern in price_patterns:
@@ -1708,55 +1708,55 @@ class TaskAnalysisService:
                 except ValueError:
                     continue
 
-        # 提取置信度
-        confidence = 0.7  # 默认
-        confidence_match = re.search(r'置信度[：:]?\s*(\d+(?:\.\d+)?)', text)
+        # Extract confidence
+        confidence = 0.7  # Default
+        confidence_match = re.search(r'Confidence[: :]?\s*(\d+(?:\.\d+)?)', text)
         if confidence_match:
             try:
                 confidence = float(confidence_match.group(1))
-                if confidence > 1:  # 如果是百分比形式
+                if confidence > 1:  # If it is in percentage form
                     confidence = confidence / 100
             except ValueError:
                 pass
 
-        # 提取风险评分
-        risk_score = 0.5  # 默认
-        risk_match = re.search(r'风险[评分得分][：:]?\s*(\d+(?:\.\d+)?)', text)
+        # Extract risk score
+        risk_score = 0.5  # Default
+        risk_match = re.search(r'risk[Rating score][: :]?\s*(\d+(?:\.\d+)?)', text)
         if risk_match:
             try:
                 risk_score = float(risk_match.group(1))
-                if risk_score > 1:  # 如果是百分比形式
+                if risk_score > 1:  # If it is in percentage form
                     risk_score = risk_score / 100
             except ValueError:
                 pass
 
-        # 🔥 提取研究依据（优先从 JSON 中提取，否则取文本摘要）
-        # 注意：如果 text 是 final_trade_decision（风险评估报告），不应该作为 reasoning
-        # 这里只提取简短的推理摘要
+        # 🔥 Extract research basis (preferably extract from JSON, otherwise extract text summary)
+        # Note: If text is final_trade_decision (risk assessment report), it should not be used as reasoning
+        # Only a brief summary of reasoning is extracted here
         
-        # 🔍 调试：先打印原始文本内容，看看里面有什么（完整内容，不截断）
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] ========== 原始文本内容（完整） ==========")
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 文本长度: {len(text)}")
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 完整文本内容:\n{text}")
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 是否包含 ```json: {'```json' in text}")
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 是否包含 ```: {'```' in text}")
+        # 🔍 Debugging: First print the original text content to see what is inside (complete content, not truncated)
+        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] ========== Original text content (complete) ==========")
+        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Text length: {len(text)}")
+        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] full text content:\n{text}")
+        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Does it contain ```json: {'```json' in text}")
+        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Does it contain ```: {'```' in text}")
         
         reasoning = ""
         
-        # 1. 优先尝试从 JSON 代码块中提取 reasoning
+        # 1. First try to extract from JSON code block reasoning
         import json
         json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
         if not json_match:
-            # 尝试不带 json 标记的代码块
+            # Try the code block without json tag
             json_match = re.search(r'```\s*(\{.*?\})\s*```', text, re.DOTALL)
         
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON 代码块匹配结果: {json_match is not None}")
+        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON Code block matching results: {json_match is not None}")
         if json_match:
             json_content = json_match.group(1)
-            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON 代码块长度: {len(json_content)}")
-            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON 代码块完整内容:\n{json_content}")
+            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON code block length: {len(json_content)}")
+            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON Complete content of code block:\n{json_content}")
         
-        # 🔥 从 JSON 中提取的字段
+        # 🔥 Fields extracted from JSON
         price_analysis_range_from_json = None
         risk_score_from_json = None
         confidence_from_json = None
@@ -1764,114 +1764,114 @@ class TaskAnalysisService:
         if json_match:
             try:
                 json_str = json_match.group(1)
-                self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 尝试解析 JSON，长度: {len(json_str)}")
+                self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Trying to parse JSON, length: {len(json_str)}")
                 json_obj = json.loads(json_str)
                 self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON 解析成功，类型: {type(json_obj)}, 字段: {list(json_obj.keys()) if isinstance(json_obj, dict) else 'N/A'}")
-                # 从 JSON 中提取 reasoning 字段
+                # Extract reasoning fields from JSON
                 if isinstance(json_obj, dict):
-                    # 🔥 提取 price_analysis_range（价格区间）
+                    # 🔥 Extract price_analysis_range (price range)
                     price_analysis_range_from_json = json_obj.get('price_analysis_range')
                     if price_analysis_range_from_json:
-                        self.logger.info(f"✅ [TaskAnalysisService._extract_decision_from_text] 从 JSON 提取 price_analysis_range: {price_analysis_range_from_json}")
+                        self.logger.info(f"✅ [TaskAnalysisService._extract_decision_from_text] Extract from JSON price_analysis_range: {price_analysis_range_from_json}")
                     
-                    # 🔥 提取 risk_score（风险评分）
+                    # 🔥 Extract risk_score (risk score)
                     risk_score_from_json = json_obj.get('risk_score')
                     if risk_score_from_json is not None:
-                        # 如果是 0-100 的整数，转换为 0-1 的小数
+                        # If it is an integer from 0 to 100, convert it to a decimal from 0 to 1
                         if isinstance(risk_score_from_json, (int, float)) and risk_score_from_json > 1:
                             risk_score_from_json = risk_score_from_json / 100.0
-                        self.logger.info(f"✅ [TaskAnalysisService._extract_decision_from_text] 从 JSON 提取 risk_score: {risk_score_from_json}")
+                        self.logger.info(f"✅ [TaskAnalysisService._extract_decision_from_text] Extract from JSON risk_score: {risk_score_from_json}")
                     
-                    # 🔥 提取 confidence（置信度）
+                    # 🔥 Extract confidence
                     confidence_from_json = json_obj.get('confidence')
                     if confidence_from_json is not None:
-                        # 如果是 0-100 的整数，转换为 0-1 的小数
+                        # If it is an integer from 0 to 100, convert it to a decimal from 0 to 1
                         if isinstance(confidence_from_json, (int, float)) and confidence_from_json > 1:
                             confidence_from_json = confidence_from_json / 100.0
-                        self.logger.info(f"✅ [TaskAnalysisService._extract_decision_from_text] 从 JSON 提取 confidence: {confidence_from_json}")
+                        self.logger.info(f"✅ [TaskAnalysisService._extract_decision_from_text] Extract from JSON confidence: {confidence_from_json}")
                     
-                    # 🔥 提取 final_trade_decision 嵌套对象（如果存在）
+                    # 🔥 Extract the final_trade_decision nested object if it exists
                     final_trade_decision = json_obj.get('final_trade_decision', {})
                     if isinstance(final_trade_decision, dict):
-                        # 如果外层没有 price_analysis_range，尝试从 final_trade_decision 中获取
+                        # If there is no price_analysis_range in the outer layer, try to get it from final_trade_decision
                         if not price_analysis_range_from_json:
                             price_analysis_range_from_json = final_trade_decision.get('price_analysis_range')
-                        # 如果外层没有 risk_score，尝试从 final_trade_decision 中获取
+                        # If the outer layer does not have risk_score, try to get it from final_trade_decision
                         if risk_score_from_json is None:
                             risk_score_from_json = final_trade_decision.get('risk_score')
-                        # 如果外层没有 confidence，尝试从 final_trade_decision 中获取
+                        # If there is no confidence in the outer layer, try to get it from final_trade_decision
                         if confidence_from_json is None:
                             confidence_from_json = final_trade_decision.get('confidence')
                     
                     json_reasoning = json_obj.get('reasoning', '')
-                    self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON 中的 reasoning 长度: {len(json_reasoning) if json_reasoning else 0}")
-                    self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON 中的 reasoning 完整内容:\n{json_reasoning if json_reasoning else 'N/A'}")
+                    self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON length of reasoning in: {len(json_reasoning) if json_reasoning else 0}")
+                    self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON full content of reasoning in:\n{json_reasoning if json_reasoning else 'N/A'}")
                     if json_reasoning and isinstance(json_reasoning, str) and len(json_reasoning.strip()) > 0:
-                        # 如果 reasoning 很长，只取前100字符作为摘要
+                        # If reasoning is long, just take the first 100 characters as summary
                         if len(json_reasoning) > 100:
                             reasoning = json_reasoning[:100].strip() + "..."
                         else:
                             reasoning = json_reasoning.strip()
                         self.logger.info(f"✅ [TaskAnalysisService._extract_decision_from_text] 从 JSON 提取 reasoning: {len(reasoning)}字符")
                     else:
-                        self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] JSON 中的 reasoning 为空或不是字符串")
+                        self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] JSON reasoning in is empty or not a string")
             except (json.JSONDecodeError, Exception) as e:
-                self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] JSON 解析失败: {e}")
+                self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] JSON Parsing failed: {e}")
                 import traceback
-                self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] JSON 解析失败详情:\n{traceback.format_exc()}")
+                self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] JSON Parse failure details:\n{traceback.format_exc()}")
         
-        # 2. 如果没有从 JSON 中提取到，尝试从文本中提取简短的摘要
+        # 2. If not extracted from JSON, try to extract a short summary from the text
         if not reasoning:
-            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON 提取失败，尝试从文本提取")
-            # 移除 Markdown 标记和代码块标记
+            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] JSON Extraction failed, trying to extract from text")
+            # Remove Markdown tags and code block tags
             clean_text = re.sub(r'```json.*?```', '', text, flags=re.DOTALL)
-            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 移除 ```json 代码块后长度: {len(clean_text)}")
+            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Remove ```json length after code block: {len(clean_text)}")
             clean_text = re.sub(r'```.*?```', '', clean_text, flags=re.DOTALL)
-            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 移除所有代码块后长度: {len(clean_text)}")
+            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Length after removing all code blocks: {len(clean_text)}")
             clean_text = clean_text.replace('#', '').replace('*', '').replace('`', '').strip()
-            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 移除 Markdown 标记后长度: {len(clean_text)}")
-            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 清理后的文本完整内容:\n{clean_text}")
+            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Length after removing Markdown tags: {len(clean_text)}")
+            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] Cleaned text complete content:\n{clean_text}")
             
-            # 提取前100字符作为摘要（比之前的150字符更短，避免包含过多内容）
+            # Extract the first 100 characters as a summary (shorter than the previous 150 characters to avoid including too much content)
             if len(clean_text) > 100:
                 reasoning = clean_text[:100].strip() + "..."
             else:
                 reasoning = clean_text.strip()
             
             self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 从文本提取 reasoning: {len(reasoning)}字符")
-            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 从文本提取的 reasoning 完整内容:\n{reasoning}")
+            self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] reasoning full content extracted from text:\n{reasoning}")
         
-        # 3. 如果还是没有，使用默认值
+        # 3. If still not available, use default value
         if not reasoning or len(reasoning.strip()) < 10:
-            reasoning = "请参考详细分析报告。"
-            self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] reasoning 为空或太短，使用默认值")
+            reasoning = "Please refer to the detailed analysis report."
+            self.logger.warning(f"⚠️ [TaskAnalysisService._extract_decision_from_text] reasoning Empty or too short, use default value")
         
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] ========== 最终 reasoning ==========")
+        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] ========== eventually reasoning ==========")
         self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 最终 reasoning 长度: {len(reasoning)}字符")
-        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] 最终 reasoning 完整内容:\n{reasoning}")
+        self.logger.info(f"🔍 [TaskAnalysisService._extract_decision_from_text] final reasoning full content:\n{reasoning}")
 
-        # 🔥 使用从 JSON 中提取的值（如果存在）
+        # 🔥 Use the value extracted from JSON if present
         final_confidence = confidence_from_json if confidence_from_json is not None else confidence
         final_risk_score = risk_score_from_json if risk_score_from_json is not None else risk_score
         
         return {
             'action': action,
             'target_price': target_price,
-            'price_analysis_range': price_analysis_range_from_json,  # 🔥 新增：价格区间
-            'confidence': final_confidence,  # 🔥 使用从 JSON 提取的值
-            'risk_score': final_risk_score,  # 🔥 使用从 JSON 提取的值
+            'price_analysis_range': price_analysis_range_from_json,  # 🔥 New: price range
+            'confidence': final_confidence,  # 🔥 Use values extracted from JSON
+            'risk_score': final_risk_score,  # 🔥 Use values extracted from JSON
             'reasoning': reasoning
         }
 
     async def _update_task(self, task: UnifiedAnalysisTask) -> None:
-        """更新任务到数据库
+        """Update tasks to database
 
         Args:
-            task: 任务对象
+            task: Task object
         """
         doc = task.model_dump(by_alias=True, exclude={"_id"}, mode='python')
 
-        # 确保 user_id 是 ObjectId 类型，不是字符串
+        # Make sure user_id is of type ObjectId, not a string
         if 'user_id' in doc and isinstance(doc['user_id'], str):
             from bson import ObjectId
             doc['user_id'] = ObjectId(doc['user_id'])
@@ -1889,7 +1889,7 @@ class TaskAnalysisService:
         formatted_result: Dict[str, Any],
         analysis_id: Optional[str],
     ) -> None:
-        """异步调度成长提取，避免阻塞任务主链路。"""
+        """Asynchronous scheduling of growth extraction to avoid blocking the main link of the task."""
         try:
             asyncio.create_task(
                 self._extract_growth_in_background(
@@ -1900,7 +1900,7 @@ class TaskAnalysisService:
                 )
             )
         except Exception as exc:
-            self.logger.warning(f"⚠️ 调度成长提取任务失败(忽略): {exc}")
+            self.logger.warning(f"⚠️ Scheduling growth extraction task failed(ignore): {exc}")
 
     async def _extract_growth_in_background(
         self,
@@ -1909,11 +1909,11 @@ class TaskAnalysisService:
         formatted_result: Dict[str, Any],
         analysis_id: Optional[str],
     ) -> None:
-        """后台提取成长产物并回写任务，不影响主任务完成时间。"""
+        """The background extracts the growth products and writes back the task, which does not affect the completion time of the main task."""
         try:
             task = await self.get_task(task_id)
             if not task:
-                self.logger.warning(f"⚠️ 后台成长提取跳过：任务不存在 {task_id}")
+                self.logger.warning(f"⚠️ Background growth extraction skipped: task does not exist {task_id}")
                 return
 
             from app.services.workflow_growth_service import get_workflow_growth_service
@@ -1938,16 +1938,16 @@ class TaskAnalysisService:
             )
             self.logger.info(f"✅ 后台成长提取完成: {task_id}")
         except Exception as exc:
-            self.logger.warning(f"⚠️ 后台成长提取失败(忽略): {task_id} - {exc}")
+            self.logger.warning(f"⚠️ Background growth extraction failed(ignore): {task_id} - {exc}")
 
     async def _save_to_analysis_reports(self, task: UnifiedAnalysisTask, result: Dict[str, Any]) -> Optional[str]:
-        """保存分析结果到 analysis_reports 集合（兼容旧版 API）
+        """Save analysis results to the analysis_reports collection (compatible with legacy API)
 
-        使用统一的报告保存工具函数
+        Use unified report saving tool functions
 
         Args:
-            task: 任务对象
-            result: 格式化后的分析结果
+            task: Task object
+            result: Formatted analysis results
         """
         try:
             from app.utils.report_saver import save_analysis_report
@@ -1955,19 +1955,19 @@ class TaskAnalysisService:
             stock_code = task.task_params.get("symbol") or task.task_params.get("stock_code", "")
             market_type = task.task_params.get("market_type", "A股")
 
-            # 解析股票名称（如果没有在result中）
+            # Parse stock name if not in result
             stock_name = result.get("stock_name", "")
             if not stock_name:
                 stock_name = await self._resolve_stock_name(stock_code)
 
-            # 🔑 获取模型信息
+            # 🔑 Get model information
             quick_model = task.task_params.get("quick_analysis_model") or result.get("quick_model", "Unknown")
             deep_model = task.task_params.get("deep_analysis_model") or result.get("deep_model", "Unknown")
             model_info = result.get("model_info") or f"{quick_model}/{deep_model}"
 
-            # 🔑 从报告中提取分析师列表
+            # 🔑 Extract analyst list from report
             def _get_analysts_from_reports(reports_dict: Dict[str, Any]) -> List[str]:
-                """根据实际保存的报告动态生成分析师列表"""
+                """Dynamically generate analyst list based on actual saved reports"""
                 analysts = []
                 fundamentals_analyst_id = (
                     "etf_analyst" if task.task_type == AnalysisTaskType.ETF_ANALYSIS else "fundamentals_analyst"
@@ -1993,15 +1993,15 @@ class TaskAnalysisService:
             reports_dict = result.get("reports", {})
             analysts_list = _get_analysts_from_reports(reports_dict) or result.get("analysts", [])
 
-            # 🔑 从最终研究结论中提取 recommendation 和 confidence_score
+            # 🔑 Extract recommendations and confidence_score
             decision = result.get("decision", {})
             recommendation = result.get("recommendation", "")
             if not recommendation and decision.get("action"):
-                # 🔥 合规修改：使用"分析观点"替代"投资建议"，不包含具体价格
-                recommendation = f"分析观点：{decision.get('action')}；"
+                # 🔥 Compliance Modification: Use"analysis point of view"substitute"investment advice", No specific price included
+                recommendation = f"Analysis point of view:{decision.get('action')}; "
                 if decision.get("reasoning"):
                     reasoning = decision.get("reasoning", "")[:200]
-                    recommendation += f"分析依据：{reasoning}"
+                    recommendation += f"Analysis basis:{reasoning}"
 
             confidence_score = result.get("confidence_score", 0.0)
             if confidence_score == 0.0 and decision.get("confidence"):
@@ -2017,7 +2017,7 @@ class TaskAnalysisService:
                 else:
                     risk_level = "高"
 
-            # 🔥 使用统一的报告保存函数
+            # 🔥 Use unified report saving function
             analysis_id = await save_analysis_report(
                 db=self.db,
                 stock_symbol=stock_code,
@@ -2044,15 +2044,15 @@ class TaskAnalysisService:
                 task_type=str(task.task_type),
             )
 
-            self.logger.info(f"✅ 分析结果已保存到 analysis_reports: analysis_id={analysis_id}, task_id={task.task_id}")
-            return analysis_id  # 🔑 返回保存后的 analysis_id
+            self.logger.info(f"✅ Analysis results have been saved to analysis_reports: analysis_id={analysis_id}, task_id={task.task_id}")
+            return analysis_id  # 🔑 Return to the saved analysis_id
 
         except Exception as e:
-            self.logger.error(f"❌ 保存到 analysis_reports 失败: {e}", exc_info=True)
-            return None  # 🔑 保存失败时返回 None
+            self.logger.error(f"❌ Saving to analysis_reports failed: {e}", exc_info=True)
+            return None  # 🔑 Return when saving fails None
 
     async def _store_stock_object_memory(self, task: UnifiedAnalysisTask, result: Dict[str, Any]) -> None:
-        """将后台任务的股票分析结果写入对象化长期记忆。"""
+        """Write stock analysis results from background tasks to objectized long-term memory."""
         symbol = str((task.task_params or {}).get("symbol") or (task.task_params or {}).get("stock_code") or "").strip().upper()
         if not symbol or _is_cn_etf_symbol(symbol):
             return
@@ -2089,7 +2089,7 @@ class TaskAnalysisService:
             next_checks=[recommendation] if recommendation else None,
         )
         self.logger.info(
-            "[mem0] 对象化股票记忆写入结果 — user=%s symbol=%s task=%s facts=%d success=%s error=%s",
+            "[mem0] Objectized stock memory writing results — user=%s symbol=%s task=%s facts=%d success=%s error=%s",
             str(task.user_id or ""),
             symbol,
             str(task.task_id),
@@ -2099,20 +2099,20 @@ class TaskAnalysisService:
         )
     
     async def _find_one_compatible(self, collection, query: Dict[str, Any], projection: Optional[Dict[str, Any]] = None):
-        """兼容同步/异步 Mongo collection 的 find_one 调用。"""
+        """Compatible with find_one calls of synchronous/asynchronous Mongo collections."""
         result = collection.find_one(query, projection)
         if inspect.isawaitable(result):
             return await result
         return result
 
     async def _resolve_stock_name(self, stock_code: str) -> str:
-        """解析股票名称
+        """Parse stock names
         
         Args:
-            stock_code: 股票代码
+            stock_code: Stock code
             
         Returns:
-            股票名称，如果解析失败则返回默认值
+            Stock name, returns default value if parsing fails
         """
         if not stock_code:
             return ""
@@ -2142,7 +2142,7 @@ class TaskAnalysisService:
                     if stock_name:
                         return stock_name
 
-            # 优先尝试从 data_source_manager 获取结构化数据
+            # Prioritize trying to get structured data from data_source_manager
             try:
                 from tradingagents.dataflows.data_source_manager import get_china_stock_info_unified as get_info_dict
                 info_dict = get_info_dict(stock_code)
@@ -2151,7 +2151,7 @@ class TaskAnalysisService:
             except Exception:
                 pass
             
-            # 降级：尝试使用 get_stock_basic_info
+            # Downgrade: try using get_stock_basic_info
             try:
                 from tradingagents.dataflows.data_source_manager import get_stock_basic_info
                 info_str = get_stock_basic_info(stock_code)
@@ -2168,27 +2168,27 @@ class TaskAnalysisService:
         except Exception as e:
             self.logger.warning(f"⚠️ 解析股票名称失败: {stock_code} - {e}")
         
-        return f"{'ETF' if _is_cn_etf_symbol(stock_code) else '股票'}{stock_code}"
+        return f"{'ETF' if _is_cn_etf_symbol(stock_code) else 'stocks'}{stock_code}"
     
     async def _validate_task_data(self, task: UnifiedAnalysisTask) -> 'DataValidationResult':
         """
-        校验任务所需的数据完整性
+        Verify data integrity required for tasks
         
         Args:
-            task: 分析任务对象
+            task: Analyze task objects
             
         Returns:
-            DataValidationResult: 校验结果
+            DataValidationResult: Verification result
         """
         from app.services.data_validation_service import get_data_validation_service
         
-        # 从任务参数中提取必要信息
+        # Extract necessary information from task parameters
         task_params = task.task_params or {}
         symbol = task_params.get("symbol") or task_params.get("stock_code", "")
         analysis_date = task_params.get("analysis_date")
         market_type = task_params.get("market_type", "cn")
         
-        # 如果 market_type 是 "A股" 等中文，转换为英文
+        # If market_type is "A shares" Wait for Chinese, convert to English
         market_type_map = {
             "A股": "cn",
             "港股": "hk",
@@ -2199,7 +2199,7 @@ class TaskAnalysisService:
         }
         market_type = market_type_map.get(market_type, "cn")
         
-        # 如果没有指定分析日期，使用当前日期
+        # If no analysis date is specified, the current date is used
         if not analysis_date:
             from datetime import datetime
             analysis_date = datetime.now().strftime('%Y-%m-%d')
@@ -2208,12 +2208,12 @@ class TaskAnalysisService:
             from app.services.data_validation_service import DataValidationResult
             return DataValidationResult(
                 is_valid=False,
-                message="任务参数中缺少股票代码（symbol 或 stock_code）",
+                message="Stock symbol (symbol or stock_code) missing from task parameters",
                 missing_data=["symbol"],
                 details={"error": "股票代码缺失"}
             )
         
-        # 调用数据校验服务
+        # Call the data verification service
         validation_service = get_data_validation_service()
         result = await validation_service.validate_stock_data(
             symbol=symbol,
@@ -2221,32 +2221,32 @@ class TaskAnalysisService:
             market_type=market_type,
             check_basic_info=True,
             check_historical_data=True,
-            check_financial_data=False,  # 财务数据可选
-            check_realtime_quotes=False,  # 实时行情可选
-            historical_days=365  # 默认检查近1年的历史数据
+            check_financial_data=False,  # Financial data optional
+            check_realtime_quotes=False,  # Real-time quotes optional
+            historical_days=365  # By default, historical data of the past 1 year is checked.
         )
         
         return result
 
     async def get_task_statistics(self, user_id: PyObjectId) -> Dict[str, Any]:
-        """获取用户的任务统计
+        """Get user task statistics
 
         Args:
-            user_id: 用户ID
+            user_id: User ID
 
         Returns:
-            统计信息字典
+            Statistics Dictionary
         """
         self.logger.info(f"📊 获取任务统计 - user_id: {user_id} (类型: {type(user_id)})")
 
-        # 先检查总任务数
+        # Check the total number of tasks first
         total_count = await self.collection.count_documents({"user_id": user_id})
         self.logger.info(f"📊 用户任务总数: {total_count}")
 
-        # 如果没有任务，直接返回空统计
+        # If there is no task, empty statistics will be returned directly.
         if total_count == 0:
             self.logger.warning(f"⚠️ 用户 {user_id} 没有任务")
-            # 打印一些调试信息
+            # Print some debugging information
             all_tasks = await self.collection.find().limit(5).to_list(5)
             self.logger.info(f"📋 数据库中的任务示例:")
             for task in all_tasks:
@@ -2286,11 +2286,11 @@ class TaskAnalysisService:
         task: UnifiedAnalysisTask,
         formatted_result: Dict[str, Any]
     ) -> None:
-        """发送分析完成邮件通知
+        """Send analysis completion email notification
         
         Args:
-            task: 任务对象
-            formatted_result: 格式化后的分析结果
+            task: Task object
+            formatted_result: Formatted analysis results
         """
         from app.services.email_service import get_email_service
         from app.models.email import EmailType
@@ -2298,29 +2298,29 @@ class TaskAnalysisService:
         try:
             email_service = get_email_service()
             
-            # 从任务参数中提取股票信息
+            # Extract stock information from task parameters
             stock_code = task.task_params.get("symbol") or task.task_params.get("stock_code", "")
             stock_name = formatted_result.get("stock_name") or formatted_result.get("stock_symbol") or stock_code
             analysis_date = formatted_result.get("analysis_date", "")
             
-            # 从格式化结果中提取分析信息
+            # Extract analysis information from formatted results
             summary = formatted_result.get("summary", "")
             recommendation = formatted_result.get("recommendation", "")
             confidence_score = formatted_result.get("confidence_score", 0)
             risk_level = formatted_result.get("risk_level", "中等")
             
-            # 提取关键点（从 reasoning 或其他字段）
+            # Extract key points (from reasoning or other fields)
             key_points = formatted_result.get("key_points", [])
             if not key_points:
-                # 尝试从 decision.reasoning 中提取关键点
+                # Try to extract key points from decision.reasoning
                 decision = formatted_result.get("decision", {})
                 reasoning = decision.get("reasoning", "")
                 if reasoning and reasoning != "暂无分析推理":
-                    # 简单提取：按句号分割，取前3条
+                    # Simple extraction: split by periods, take the first 3 items
                     sentences = [s.strip() for s in reasoning.split("。") if s.strip()]
                     key_points = sentences[:3]
             
-            # 生成 PDF 附件（可选）
+            # Generate PDF attachment (optional)
             attachments = None
             try:
                 from app.utils.report_exporter import ReportExporter
@@ -2334,7 +2334,7 @@ class TaskAnalysisService:
                         reports = extract_reports_from_state(state)
                     
                     if reports:
-                        # 构建报告文档
+                        # Build report document
                         report_doc = {
                             "stock_symbol": stock_code,
                             "stock_name": stock_name,
@@ -2350,11 +2350,11 @@ class TaskAnalysisService:
                         if pdf_content:
                             filename = f"{stock_code}_{analysis_date}_分析报告.pdf"
                             attachments = [(filename, pdf_content, "application/pdf")]
-                            self.logger.info(f"📄 已生成 PDF 报告: {filename} ({len(pdf_content)} bytes)")
+                            self.logger.info(f"📄 PDF report generated: {filename} ({len(pdf_content)} bytes)")
             except Exception as pdf_err:
-                self.logger.warning(f"⚠️ PDF 生成失败(将发送无附件邮件): {pdf_err}")
+                self.logger.warning(f"⚠️ PDF Build failed(Email will be sent without attachments): {pdf_err}")
             
-            # 发送邮件
+            # Send email
             await email_service.send_analysis_email(
                 user_id=str(task.user_id),
                 email_type=EmailType.SINGLE_ANALYSIS,
@@ -2371,16 +2371,16 @@ class TaskAnalysisService:
                     "detail_url": f"{stock_code}"
                 },
                 reference_id=task.task_id,
-                attachments=attachments  # 附带 PDF 报告
+                attachments=attachments  # Comes with PDF report
             )
-            self.logger.info(f"📧 已尝试发送分析完成邮件: {task.task_id}")
+            self.logger.info(f"📧 Attempted to send analysis completion email: {task.task_id}")
         except Exception as e:
-            # 邮件发送失败不应该影响任务完成，只记录警告
-            self.logger.warning(f"⚠️ 发送邮件通知失败(忽略): {e}", exc_info=True)
-            raise  # 重新抛出异常，让调用者知道失败（但不会影响任务状态）
+            # Failure to send the email should not affect task completion, only a warning will be logged
+            self.logger.warning(f"⚠️ Failed to send email notification(ignore): {e}", exc_info=True)
+            raise  # Rethrow the exception to let the caller know the failure (but does not affect the task status)
 
 
-# 单例实例
+# Singleton instance
 _task_service: Optional[TaskAnalysisService] = None
 
 

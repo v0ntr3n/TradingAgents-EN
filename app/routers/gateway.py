@@ -1,10 +1,10 @@
 """
-Gateway Webhook 路由
+Gateway Webhook routing
 
-接收 IM 平台（飞书/QQ/钉钉）的 Webhook 回调，
-委托 GatewayRouter 进行签名验证、消息解析、助理调用、回复发送。
+Receive the Webhook callback of the IM platform (Feishu/QQ/DingTalk),
+Entrust GatewayRouter to perform signature verification, message parsing, assistant calling, and reply sending.
 
-端点: POST /api/gateway/{platform}
+endpoint: POST /api/gateway/{platform}
 """
 
 import logging
@@ -23,11 +23,11 @@ router = APIRouter(prefix="/api/gateway", tags=["gateway"])
 @router.post("/{platform}")
 async def gateway_webhook(platform: str, request: Request):
     """
-    IM 平台 Webhook 回调统一入口
+    IM Platform Webhook callback unified entrance
 
-    - 飞书: POST /api/gateway/feishu
+    - Feishu: POST /api/gateway/feishu
     - QQ:   POST /api/gateway/qq
-    - 钉钉: POST /api/gateway/dingtalk
+    - DingTalk: POST /api/gateway/dingtalk
     """
     body = await request.body()
     headers = dict(request.headers)
@@ -46,7 +46,7 @@ async def gateway_webhook(platform: str, request: Request):
 
 @router.get("/platforms")
 async def list_supported_platforms():
-    """列出当前已注册的 IM 平台适配器"""
+    """List currently registered IM platform adapters"""
     return {
         "platforms": gateway_router.supported_platforms,
     }

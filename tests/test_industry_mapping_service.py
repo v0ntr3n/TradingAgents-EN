@@ -15,8 +15,8 @@ async def test_upsert_industry_mapping_from_records_writes_system_collection():
     mock_db = {"stock_industry_mappings": mock_collection}
 
     records = [
-        {"code": "000001", "industry": "银行"},
-        {"symbol": "000002", "industry": "全国地产"},
+        {"code": "000001", "industry": "bank"},
+        {"symbol": "000002", "industry": "Nationwide Real Estate"},
         {"code": "000003", "industry": ""},
     ]
 
@@ -36,7 +36,7 @@ async def test_sync_industry_to_stock_basic_info_updates_all_sources_for_same_co
 
     with patch('app.services.official_industry_service.get_mongo_db', return_value=mock_db), patch(
         'app.services.official_industry_service.fetch_industry_mapping',
-        new=AsyncMock(return_value={"000001": "银行"})
+        new=AsyncMock(return_value={"000001": "bank"})
     ):
         result = await sync_industry_to_stock_basic_info()
 
@@ -48,4 +48,4 @@ async def test_sync_industry_to_stock_basic_info_updates_all_sources_for_same_co
     assert len(operations) == 1
     assert isinstance(operations[0], UpdateMany)
     assert operations[0]._filter == {"code": "000001"}
-    assert operations[0]._doc["$set"]["industry"] == "银行"
+    assert operations[0]._doc["$set"]["industry"] == "bank"

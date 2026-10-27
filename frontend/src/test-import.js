@@ -1,4 +1,4 @@
-// 测试导入
+// Test import
 console.log('Testing imports...')
 
 try {

@@ -1,7 +1,7 @@
 """
-配置管理模块
+Configuration management module
 
-提供工具、Agent、工作流的配置和绑定关系管理
+Provide configuration and binding relationship management of tools, agents, and workflows
 """
 
 from .binding_manager import BindingManager

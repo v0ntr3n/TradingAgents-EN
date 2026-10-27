@@ -1,7 +1,7 @@
 """
-工具执行日志记录器
+Tool Execution Logger
 
-记录 Agent 工具调用的入参、出参、耗时等信息，便于事后审查和调试。
+Record the input parameters, output parameters, time-consuming and other information of the Agent tool call to facilitate subsequent review and debugging.
 """
 
 import asyncio
@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class ToolExecutionLogger:
-    """工具执行日志记录器（单例）
+    """Tool execution logger (singleton)
 
-    支持同步/异步两种数据库（pymongo / motor）。
-    在异步上下文中通过 create_task 提交，在同步上下文中使用 get_mongo_db_sync 回退。
+    Supports both synchronous/asynchronous databases (pymongo/motor).
+    Submit via create_task in an asynchronous context and fall back using get_mongo_db_sync in a synchronous context.
     """
 
     _instance = None
@@ -29,7 +29,7 @@ class ToolExecutionLogger:
         return cls._instance
 
     def set_db(self, db):
-        """设置数据库连接（可以是 AsyncIOMotorDatabase 或 pymongo Database）"""
+        """Set up a database connection (can be AsyncIOMotorDatabase or pymongo Database)"""
         self._db = db
 
     def log(
@@ -43,9 +43,9 @@ class ToolExecutionLogger:
         analysis_id: Optional[str] = None,
         error: Optional[str] = None,
     ):
-        """记录一次工具执行（自动适配同步/异步数据库）"""
+        """Record a tool execution (automatically adapt to synchronous/asynchronous database)"""
         try:
-            # 结果序列化（截断过长的结果）
+            # Result serialization (truncate overly long results)
             result_str = str(result) if result is not None else None
             if result_str and len(result_str) > 5000:
                 result_str = result_str[:5000] + "...[truncated]"
@@ -62,17 +62,17 @@ class ToolExecutionLogger:
                 "created_at": datetime.utcnow().isoformat(),
             }
 
-            # 优先：在异步上下文中使用注入的 motor db
+            # Preferred: Use injected in an async context motor db
             if self._db is not None and self._is_async_db(self._db):
                 try:
                     loop = asyncio.get_running_loop()
                     loop.create_task(self._async_insert(doc))
                     return
                 except RuntimeError:
-                    # 不在事件循环中，回退到同步写入
+                    # Not in the event loop, fallback to synchronous writing
                     pass
 
-            # 同步写入（pymongo 或回退路径）
+            # Synchronous writing (pymongo or fallback path)
             self._sync_insert(doc)
         except Exception as e:
             logger.warning(f"记录工具执行日志失败: {e}")
@@ -86,7 +86,7 @@ class ToolExecutionLogger:
         try:
             await self._db[self._collection_name].insert_one(doc)
         except Exception as e:
-            logger.warning(f"异步写入工具执行日志失败: {e}")
+            logger.warning(f"Asynchronous writing tool execution log failed: {e}")
 
     def _sync_insert(self, doc: Dict[str, Any]) -> None:
         try:
@@ -95,15 +95,15 @@ class ToolExecutionLogger:
             if sync_db is not None:
                 sync_db[self._collection_name].insert_one(doc)
         except Exception as e:
-            logger.warning(f"同步写入工具执行日志失败: {e}")
+            logger.warning(f"Synchronous writing tool execution log failed: {e}")
 
 
-# 全局实例
+# global instance
 _global_logger: Optional[ToolExecutionLogger] = None
 
 
 def get_tool_execution_logger() -> ToolExecutionLogger:
-    """获取全局工具执行日志记录器"""
+    """Get the global tool execution logger"""
     global _global_logger
     if _global_logger is None:
         _global_logger = ToolExecutionLogger()

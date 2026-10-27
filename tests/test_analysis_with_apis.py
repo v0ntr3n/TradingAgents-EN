@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试在完整分析中使用Google和Reddit API
+Test in full analysis using Google and Reddit API
 """
 
 import os
@@ -8,17 +8,17 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv(project_root / ".env", override=True)
 
 def test_news_analyst_with_google():
-    """测试新闻分析师使用Google工具"""
+    """Testing news analysts using Google tools"""
     try:
-        print("🧪 测试新闻分析师使用Google工具")
+        print("🧪 Testing news analysts using Google tools")
         print("=" * 60)
         
         from tradingagents.agents.analysts.news_analyst import create_news_analyst
@@ -26,61 +26,61 @@ def test_news_analyst_with_google():
         from tradingagents.llm_adapters import ChatDashScope
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         config["llm_provider"] = "dashscope"
         
-        # 创建LLM和工具包
+        # Create LLM and toolkit
         llm = ChatDashScope(model="qwen-plus", temperature=0.1)
         toolkit = Toolkit(config=config)
         
-        print("✅ 组件创建成功")
+        print("✅ Component created successfully")
         
-        # 创建新闻分析师
+        # Create a news analyst
         news_analyst = create_news_analyst(llm, toolkit)
         
-        print("✅ 新闻分析师创建成功")
+        print("✅ News analyst created successfully")
         
-        # 创建测试状态
+        # Create test state
         from tradingagents.agents.utils.agent_states import AgentState
         from langchain_core.messages import HumanMessage
         
         test_state = {
-            "messages": [HumanMessage(content="分析AAPL的新闻情况")],
+            "messages": [HumanMessage(content="Analyze AAPL news")],
             "company_of_interest": "AAPL",
             "trade_date": "2025-06-27"
         }
         
-        print("📰 开始新闻分析...")
+        print("📰 Start news analysis...")
         
-        # 执行分析（这可能需要一些时间）
+        # Perform analysis (this may take some time)
         result = news_analyst(test_state)
         
         if result and "news_report" in result:
             news_report = result["news_report"]
             if news_report and len(news_report) > 100:
-                print("✅ 新闻分析成功完成")
-                print(f"   报告长度: {len(news_report)} 字符")
-                print(f"   报告预览: {news_report[:200]}...")
+                print("✅ News analysis completed successfully")
+                print(f"   Report length: {len(news_report)} character")
+                print(f"   Report preview: {news_report[:200]}...")
                 return True
             else:
-                print("⚠️ 新闻分析完成但报告内容较少")
+                print("⚠️ News analysis completed but report content is small")
                 return True
         else:
-            print("⚠️ 新闻分析完成但没有生成报告")
+            print("⚠️ News analysis completed but no report generated")
             return False
             
     except Exception as e:
-        print(f"❌ 新闻分析师测试失败: {e}")
+        print(f"❌ News analyst test failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def test_social_analyst_with_reddit():
-    """测试社交媒体分析师使用Reddit工具"""
+    """Test social media analysts using Reddit tools"""
     try:
-        print("\n🧪 测试社交媒体分析师使用Reddit工具")
+        print("\n🧪 Test social media analysts using Reddit tools")
         print("=" * 60)
         
         from tradingagents.agents.analysts.social_media_analyst import create_social_media_analyst
@@ -88,105 +88,105 @@ def test_social_analyst_with_reddit():
         from tradingagents.llm_adapters import ChatDashScope
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         config["llm_provider"] = "dashscope"
         
-        # 创建LLM和工具包
+        # Create LLM and toolkit
         llm = ChatDashScope(model="qwen-plus", temperature=0.1)
         toolkit = Toolkit(config=config)
         
-        print("✅ 组件创建成功")
+        print("✅ Component created successfully")
         
-        # 创建社交媒体分析师
+        # Create a social media analyst
         social_analyst = create_social_media_analyst(llm, toolkit)
         
-        print("✅ 社交媒体分析师创建成功")
+        print("✅ Social media analyst created successfully")
         
-        # 创建测试状态
+        # Create test state
         from langchain_core.messages import HumanMessage
         
         test_state = {
-            "messages": [HumanMessage(content="分析AAPL的社交媒体情绪")],
+            "messages": [HumanMessage(content="Analyzing social media sentiment for AAPL")],
             "company_of_interest": "AAPL", 
             "trade_date": "2025-06-27"
         }
         
-        print("💭 开始社交媒体分析...")
+        print("💭 Start social media analysis...")
         
-        # 执行分析
+        # Perform analysis
         result = social_analyst(test_state)
         
         if result and "sentiment_report" in result:
             sentiment_report = result["sentiment_report"]
             if sentiment_report and len(sentiment_report) > 100:
-                print("✅ 社交媒体分析成功完成")
-                print(f"   报告长度: {len(sentiment_report)} 字符")
-                print(f"   报告预览: {sentiment_report[:200]}...")
+                print("✅ Social media analysis completed successfully")
+                print(f"   Report length: {len(sentiment_report)} character")
+                print(f"   Report preview: {sentiment_report[:200]}...")
                 return True
             else:
-                print("⚠️ 社交媒体分析完成但报告内容较少")
+                print("⚠️ Social media analysis completed but reports are sparse")
                 return True
         else:
-            print("⚠️ 社交媒体分析完成但没有生成报告")
+            print("⚠️ Social media analysis completed but no reports generated")
             return False
             
     except Exception as e:
-        print(f"❌ 社交媒体分析师测试失败: {e}")
+        print(f"❌ Social media analyst test failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def main():
-    """主测试函数"""
-    print("🧪 完整分析中的API工具测试")
+    """Main test function"""
+    print("🧪 API Tool Testing in Complete Analysis")
     print("=" * 70)
     
-    # 检查环境变量
+    # Check environment variables
     dashscope_key = os.getenv("DASHSCOPE_API_KEY")
     google_key = os.getenv("GOOGLE_API_KEY")
     reddit_id = os.getenv("REDDIT_CLIENT_ID")
     
     if not dashscope_key:
-        print("❌ DASHSCOPE_API_KEY 未配置，无法进行测试")
+        print("❌ DASHSCOPE_API_KEY Not configured and cannot be tested")
         return
     
-    print("🔑 API密钥状态:")
-    print(f"   阿里百炼: ✅ 已配置")
-    print(f"   Google: {'✅ 已配置' if google_key else '❌ 未配置'}")
-    print(f"   Reddit: {'✅ 已配置' if reddit_id else '❌ 未配置'}")
+    print("🔑 API Key status:")
+    print(f"   Ali Bailian: ✅ configured")
+    print(f"   Google: {'✅ configured' if google_key else '❌ Not configured'}")
+    print(f"   Reddit: {'✅ configured' if reddit_id else '❌ Not configured'}")
     
-    # 运行测试
+    # Run tests
     results = {}
     
     print("\n" + "="*70)
-    results['新闻分析师+Google'] = test_news_analyst_with_google()
+    results['news analyst+Google'] = test_news_analyst_with_google()
     
     print("\n" + "="*70)
-    results['社交媒体分析师+Reddit'] = test_social_analyst_with_reddit()
+    results['social media analyst+Reddit'] = test_social_analyst_with_reddit()
     
-    # 总结结果
-    print(f"\n📊 测试结果总结:")
+    # Summary results
+    print(f"\n📊 Summary of test results:")
     print("=" * 50)
     
     for test_name, success in results.items():
-        status = "✅ 通过" if success else "❌ 失败"
+        status = "✅ Pass" if success else "❌ failed"
         print(f"  {test_name}: {status}")
     
     successful_tests = sum(results.values())
     total_tests = len(results)
     
-    print(f"\n🎯 总体结果: {successful_tests}/{total_tests} 测试通过")
+    print(f"\n🎯 Overall results: {successful_tests}/{total_tests} Test passed")
     
     if successful_tests == total_tests:
-        print("🎉 所有API工具在分析中正常工作！")
-        print("\n💡 使用建议:")
-        print("   1. 在Web界面中选择'新闻分析师'来使用Google新闻")
-        print("   2. 在Web界面中选择'社交媒体分析师'来使用Reddit数据")
-        print("   3. 同时选择多个分析师可以获得更全面的分析")
+        print("🎉 All API tools work properly in analysis!")
+        print("\n💡 Usage suggestions:")
+        print("   1. Select in the web interface'news analyst'to use Google News")
+        print("   2. Select in the web interface'social media analyst'to use Reddit data")
+        print("   3. Select multiple analysts at the same time for a more comprehensive analysis")
     else:
-        print("⚠️ 部分API工具需要进一步配置")
+        print("⚠️ Some API tools require further configuration")
 
 if __name__ == "__main__":
     main()

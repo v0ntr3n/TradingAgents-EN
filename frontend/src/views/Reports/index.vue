@@ -1,23 +1,23 @@
 <template>
   <div class="reports">
-    <!-- 页面标题 -->
+    <!-- Page title -->
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><Document /></el-icon>
-        分析报告
+        analysis report
       </h1>
       <p class="page-description">
-        查看和管理股票分析报告，支持多种格式导出（批量导出最多 10 个）
+        View and manage stock analysis reports, support export in multiple formats (batch export up to 10)
       </p>
     </div>
 
-    <!-- 筛选和操作栏 -->
+    <!-- Filter and action bar -->
     <el-card class="filter-card" shadow="never">
       <el-row :gutter="16" align="middle">
         <el-col :span="6">
           <el-input
             v-model="searchKeyword"
-            placeholder="搜索股票代码或名称"
+            placeholder="Search for a stock symbol or name"
             clearable
             @input="handleSearch"
           >
@@ -28,8 +28,8 @@
         </el-col>
         
         <el-col :span="4">
-          <el-select v-model="marketFilter" placeholder="市场筛选" clearable @change="handleMarketChange">
-            <el-option label="A股" value="A股" />
+          <el-select v-model="marketFilter" placeholder="Market screening" clearable @change="handleMarketChange">
+            <el-option label="A shares" value="A shares" />
           </el-select>
         </el-col>
         
@@ -37,9 +37,9 @@
           <el-date-picker
             v-model="dateRange"
             type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
+            range-separator="to"
+            start-placeholder="start date"
+            end-placeholder="end date"
             format="YYYY-MM-DD"
             value-format="YYYY-MM-DD"
             @change="handleDateChange"
@@ -51,28 +51,28 @@
             <el-dropdown @command="(format: string) => exportSelected(format)">
               <el-button :disabled="selectedReports.length === 0" :loading="batchExporting">
                 <el-icon><Download /></el-icon>
-                批量导出
+                Batch export
                 <span v-if="selectedReports.length > 0">({{ selectedReports.length }}/10)</span>
                 <el-icon class="el-icon--right"><arrow-down /></el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="markdown">Markdown</el-dropdown-item>
-                  <el-dropdown-item command="docx">Word 文档</el-dropdown-item>
+                  <el-dropdown-item command="docx">Word Documentation</el-dropdown-item>
                   <el-dropdown-item command="pdf">PDF</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
             <el-button @click="refreshReports">
               <el-icon><Refresh /></el-icon>
-              刷新
+              Refresh
             </el-button>
           </div>
         </el-col>
       </el-row>
     </el-card>
 
-    <!-- 报告列表 -->
+    <!-- Report list -->
     <el-card class="reports-list-card" shadow="never">
       <el-table
         ref="tableRef"
@@ -83,7 +83,7 @@
       >
         <el-table-column type="selection" width="55" :selectable="isRowSelectable" />
         
-        <el-table-column prop="title" label="报告标题" min-width="200">
+        <el-table-column prop="title" label="Report title" min-width="200">
           <template #default="{ row }">
             <div class="report-title">
               <el-link type="primary" @click="viewReport(row)">
@@ -93,7 +93,7 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="type" label="报告类型" width="120">
+        <el-table-column prop="type" label="report type" width="120">
           <template #default="{ row }">
             <el-tag :type="getTypeColor(row.type)">
               {{ getTypeText(row.type) }}
@@ -101,7 +101,7 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="format" label="格式" width="100">
+        <el-table-column prop="format" label="Format" width="100">
           <template #default="{ row }">
             <el-tag size="small" effect="plain">
               {{ row.format.toUpperCase() }}
@@ -109,7 +109,7 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="Status" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
               {{ getStatusText(row.status) }}
@@ -117,7 +117,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="model_info" label="分析模型" width="180">
+        <el-table-column prop="model_info" label="Analytical model" width="180">
           <template #default="{ row }">
             <el-tag v-if="row.model_info && row.model_info !== 'Unknown'" type="info" size="small">
               {{ row.model_info }}
@@ -126,27 +126,27 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="research_depth" label="分析深度" width="100" align="center">
+        <el-table-column prop="research_depth" label="Analysis depth" width="100" align="center">
           <template #default="{ row }">
             <el-tooltip v-if="row.research_depth" :content="getResearchDepthDescription(row.research_depth)" placement="top">
               <el-tag type="warning" size="small" style="cursor: help;">
-                深度 {{ row.research_depth }}
+                Depth {{ row.research_depth }}
               </el-tag>
             </el-tooltip>
             <span v-else class="text-gray">-</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="created_at" label="创建时间" width="180">
+        <el-table-column prop="created_at" label="creation time" width="180">
           <template #default="{ row }">
             {{ formatTime(row.created_at) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="250" fixed="right">
+        <el-table-column label="Operation" width="250" fixed="right">
           <template #default="{ row }">
             <el-button type="text" size="small" @click="viewReport(row)">
-              查看
+              View
             </el-button>
             <el-dropdown
               v-if="row.status === 'completed'"
@@ -154,7 +154,7 @@
               @command="(format) => downloadReport(row, format)"
             >
               <el-button type="text" size="small">
-                下载 <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                Download <el-icon class="el-icon--right"><arrow-down /></el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -162,13 +162,13 @@
                     <el-icon><document /></el-icon> Markdown
                   </el-dropdown-item>
                   <el-dropdown-item command="docx">
-                    <el-icon><document /></el-icon> Word 文档
+                    <el-icon><document /></el-icon> Word Documentation
                   </el-dropdown-item>
                   <el-dropdown-item command="pdf">
                     <el-icon><document /></el-icon> PDF
                   </el-dropdown-item>
                   <el-dropdown-item command="json" divided>
-                    <el-icon><document /></el-icon> JSON (原始数据)
+                    <el-icon><document /></el-icon> JSON (raw data)
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -179,21 +179,21 @@
               @click="deleteReport(row)"
               style="color: var(--el-color-danger)"
             >
-              删除
+              Delete
             </el-button>
           </template>
         </el-table-column>
 
         <template #empty>
-          <el-empty v-if="!loading" description="暂无分析报告" :image-size="120">
+          <el-empty v-if="!loading" description="No analysis report yet" :image-size="120">
             <template #description>
-              <p>暂无分析报告，执行一次股票分析即可生成报告</p>
+              <p>There is no analysis report yet. Perform a stock analysis to generate a report.</p>
             </template>
           </el-empty>
         </template>
       </el-table>
 
-      <!-- 分页 -->
+      <!-- Pagination -->
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="currentPage"
@@ -238,10 +238,10 @@ interface ReportListItem {
   created_at: string
 }
 
-// 使用路由
+// Use routing
 const router = useRouter()
 
-// 响应式数据
+// Responsive data
 const loading = ref(false)
 const searchKeyword = ref('')
 const marketFilter = ref('')
@@ -253,13 +253,13 @@ const totalReports = ref(0)
 
 const reports = ref<ReportListItem[]>([])
 
-// 计算属性
+// Computed properties
 const filteredReports = computed<ReportListItem[]>(() => {
-  // 现在数据直接从API获取，不需要前端筛选
+  // Data is now fetched directly from the API, no front-end filtering required
   return reports.value
 })
 
-// API调用函数
+// API call function
 const fetchReports = async () => {
   loading.value = true
   try {
@@ -285,17 +285,17 @@ const fetchReports = async () => {
       reports.value = Array.isArray(result.data?.reports) ? result.data.reports as ReportListItem[] : []
       totalReports.value = result.data.total
     } else {
-      throw new Error(result.message || '获取报告列表失败')
+      throw new Error(result.message || 'Failed to get report list')
     }
   } catch (error) {
-    console.error('获取报告列表失败:', error)
-    ElMessage.error('获取报告列表失败')
+    console.error('Failed to get report list:', error)
+    ElMessage.error('Failed to get report list')
   } finally {
     loading.value = false
   }
 }
 
-// 方法
+// method
 const handleSearch = () => {
   currentPage.value = 1
   fetchReports()
@@ -320,7 +320,7 @@ const handleSelectionChange = (selection: ReportListItem[]) => {
     isCorrectingSelection = true
     const toKeep = selection.slice(0, MAX_BATCH_EXPORT)
     selectedReports.value = toKeep
-    ElMessage.warning(`最多选择 ${MAX_BATCH_EXPORT} 个报告`)
+    ElMessage.warning(`Most choices ${MAX_BATCH_EXPORT} reports`)
     nextTick(() => {
       tableRef.value?.clearSelection()
       toKeep.forEach((row) => tableRef.value?.toggleRowSelection(row, true))
@@ -342,15 +342,15 @@ const tableRef = ref<{
 } | null>(null)
 
 const viewReport = (report: ReportListItem) => {
-  // 跳转到报告详情页面
+  // Jump to report details page
   router.push(`/reports/view/${report.id}`)
 }
 
 const downloadReport = async (report: ReportListItem, format: string = 'markdown') => {
   try {
-    // 显示加载提示
+    // Show loading prompt
     const loadingMsg = ElMessage({
-      message: `正在生成${getFormatName(format)}格式报告...`,
+      message: `Generating${getFormatName(format)}Format report...`,
       type: 'info',
       duration: 0
     })
@@ -359,23 +359,23 @@ const downloadReport = async (report: ReportListItem, format: string = 'markdown
 
     loadingMsg.close()
 
-    // 兼容：响应拦截器直接返回 Blob；兼容返回 { data: Blob } 的旧实现
+    // Compatible: the response interceptor returns Blob directly; compatible returns { data: Blob } old implementation of
     const blob = res instanceof Blob ? res : (res?.data instanceof Blob ? res.data : new Blob([res]))
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
 
-    // 根据格式设置文件扩展名
+    // Set file extension based on format
     const ext = getFileExtension(format)
-    // 清理股票名称中的特殊字符（用于文件名）
+    // Clean special characters in stock names (used in file names)
     const cleanStockName = (report.stock_name || '')
-      .replace(/[/\\:*?"<>|]/g, '') // 移除文件名不允许的字符
-      .replace(/\s+/g, '_') // 空格替换为下划线
+      .replace(/[/\\:*?"<>|]/g, '') // Remove characters not allowed in file names
+      .replace(/\s+/g, '_') // Replace spaces with underscores
       .trim()
-    // 构建文件名：股票代码_股票名称_分析报告_日期
+    // Build file name: stock code_stock name_analysis report_date
     const fileName = cleanStockName
-      ? `${report.stock_code}_${cleanStockName}_分析报告_${report.analysis_date}.${ext}`
-      : `${report.stock_code}_分析报告_${report.analysis_date}.${ext}`
+      ? `${report.stock_code}_${cleanStockName}_analysis report_${report.analysis_date}.${ext}`
+      : `${report.stock_code}_analysis report_${report.analysis_date}.${ext}`
     a.download = fileName
 
     document.body.appendChild(a)
@@ -383,28 +383,28 @@ const downloadReport = async (report: ReportListItem, format: string = 'markdown
     window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
 
-    ElMessage.success(`${getFormatName(format)}报告下载成功`)
+    ElMessage.success(`${getFormatName(format)}Report download successful`)
   } catch (error: any) {
-    console.error('下载报告失败:', error)
+    console.error('Download report failed:', error)
 
-    // 显示详细错误信息
+    // Show detailed error information
     if (error.message && error.message.includes('pandoc')) {
       ElMessage.error({
-        message: 'Word 导出需要安装 pandoc 工具（PDF 导出不需要 pandoc）',
+        message: 'Word Exporting requires the pandoc tool to be installed (PDF export does not require pandoc)',
         duration: 5000
       })
     } else if (error.message && (error.message.includes('weasyprint') || error.message.includes('pdfkit'))) {
       ElMessage.error({
-        message: 'PDF 导出需要安装 PDF 引擎：pip install weasyprint（推荐）',
+        message: 'PDF Exporting requires installing the PDF engine: pip install weasyprint (recommended)',
         duration: 5000
       })
     } else {
-      ElMessage.error(`下载报告失败: ${error.message || '未知错误'}`)
+      ElMessage.error(`Download report failed: ${error.message || 'unknown error'}`)
     }
   }
 }
 
-// 辅助函数：获取格式名称
+// Helper function: get format name
 const getFormatName = (format: string): string => {
   const names: Record<string, string> = {
     'markdown': 'Markdown',
@@ -415,7 +415,7 @@ const getFormatName = (format: string): string => {
   return names[format] || format
 }
 
-// 辅助函数：获取文件扩展名
+// Helper function: get file extension
 const getFileExtension = (format: string): string => {
   const extensions: Record<string, string> = {
     'markdown': 'md',
@@ -429,28 +429,28 @@ const getFileExtension = (format: string): string => {
 const deleteReport = async (report: ReportListItem) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除报告 "${report.title}" 吗？`,
-      '确认删除',
+      `Are you sure you want to delete the report "${report.title}" ?`,
+      'Confirm deletion',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
 
-    // 调用删除API
+    // call delete API
     const result = await ApiClient.delete(`/api/reports/${report.id}`)
 
     if (result.success) {
-      ElMessage.success('报告已删除')
+      ElMessage.success('Report deleted')
       refreshReports()
     } else {
-      throw new Error(result.message || '删除失败')
+      throw new Error(result.message || 'Delete failed')
     }
   } catch (error: unknown) {
     if (!(error instanceof Error && error.message === 'cancel')) {
-      console.error('删除报告失败:', error)
-      ElMessage.error('删除报告失败')
+      console.error('Delete report failed:', error)
+      ElMessage.error('Delete report failed')
     }
   }
 }
@@ -462,7 +462,7 @@ const exportSelected = async (format: string = 'markdown') => {
     .filter((r) => r.status === 'completed')
     .slice(0, MAX_BATCH_EXPORT)
   if (toExport.length === 0) {
-    ElMessage.warning('请选择已完成的报告进行导出')
+    ElMessage.warning('Please select a completed report to export')
     return
   }
   batchExporting.value = true
@@ -472,7 +472,7 @@ const exportSelected = async (format: string = 'markdown') => {
       const report = toExport[i]
       try {
         const res: any = await ApiClient.get(`/api/reports/${report.id}/download`, { format }, { responseType: 'blob', showLoading: false })
-        // 兼容：响应拦截器直接返回 Blob；兼容返回 { data: Blob } 的旧实现
+        // Compatible: the response interceptor returns Blob directly; compatible returns { data: Blob } old implementation of
         const blob = res instanceof Blob ? res : (res?.data instanceof Blob ? res.data : new Blob([res]))
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -480,8 +480,8 @@ const exportSelected = async (format: string = 'markdown') => {
         const ext = getFileExtension(format)
         const cleanStockName = (report.stock_name || '').replace(/[/\\:*?"<>|]/g, '').replace(/\s+/g, '_').trim()
         const fileName = cleanStockName
-          ? `${report.stock_code}_${cleanStockName}_分析报告_${report.analysis_date}.${ext}`
-          : `${report.stock_code}_分析报告_${report.analysis_date}.${ext}`
+          ? `${report.stock_code}_${cleanStockName}_analysis report_${report.analysis_date}.${ext}`
+          : `${report.stock_code}_analysis report_${report.analysis_date}.${ext}`
         a.download = fileName
         document.body.appendChild(a)
         a.click()
@@ -490,11 +490,11 @@ const exportSelected = async (format: string = 'markdown') => {
         successCount++
         if (i < toExport.length - 1) { await new Promise(r => setTimeout(r, 300)) }
       } catch (e) {
-        console.error(`导出 ${report.stock_code} 失败:`, e)
-        ElMessage.error(`导出 ${report.stock_code} 失败`)
+        console.error(`Export ${report.stock_code} failed:`, e)
+        ElMessage.error(`Export ${report.stock_code} failed`)
       }
     }
-    ElMessage.success(`批量导出完成，成功 ${successCount}/${toExport.length} 个`)
+    ElMessage.success(`Batch export completed, successful ${successCount}/${toExport.length} a`)
   } finally {
     batchExporting.value = false
   }
@@ -515,9 +515,9 @@ const getTypeColor = (type: string): ElTagType => {
 
 const getTypeText = (type: string) => {
   const textMap: Record<string, string> = {
-    single: '单股分析',
-    batch: '批量分析',
-    portfolio: '投资组合'
+    single: 'single stock analysis',
+    batch: 'Batch analysis',
+    portfolio: 'Portfolio'
   }
   return textMap[type] || type
 }
@@ -533,9 +533,9 @@ const getStatusType = (status: string): ElTagType => {
 
 const getStatusText = (status: string) => {
   const statusMap: Record<string, string> = {
-    completed: '已完成',
-    processing: '生成中',
-    failed: '失败'
+    completed: 'Completed',
+    processing: 'Generating',
+    failed: 'failed'
   }
   return statusMap[status] || status
 }
@@ -557,19 +557,19 @@ const handleCurrentChange = (page: number) => {
   fetchReports()
 }
 
-// 获取分析深度描述
+// Get an in-depth description of the analysis
 const getResearchDepthDescription = (depth: number) => {
   const descMap: Record<number, string> = {
-    1: '快速分析 - 基础技术面和基本面分析',
-    2: '标准分析 - 包含技术面、基本面和市场情绪分析',
-    3: '深度分析 - 全面的多维度分析，包含详细的行业和竞争分析',
-    4: '专家级分析 - 最全面的分析，包含所有维度和深度研究',
-    5: '顶级分析 - 最高级别的分析深度，包含所有可能的分析维度'
+    1: 'Quick Analysis - Basic Technical and Fundamental Analysis',
+    2: 'Standard analysis - including technical, fundamental and sentiment analysis',
+    3: 'In-Depth Analysis - Comprehensive multi-dimensional analysis, including detailed industry and competitive analysis',
+    4: 'Expert-Level Analysis - The most comprehensive analysis, including all dimensions and in-depth research',
+    5: 'Top level analysis - the highest level of analysis depth, encompassing all possible dimensions of analysis'
   }
-  return descMap[depth] || `分析深度: ${depth}`
+  return descMap[depth] || `Analysis depth: ${depth}`
 }
 
-// 生命周期
+// life cycle
 onMounted(() => {
   fetchReports()
 })

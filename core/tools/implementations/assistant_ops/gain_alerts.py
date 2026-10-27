@@ -1,7 +1,7 @@
 """
-收益关注提醒类工具
+Revenue attention reminder tools
 
-提供收益关注价格（价格上限）提醒的设置、查看、清除能力，便于用户自行跟踪研究观察价位。
+Provides the ability to set, view, and clear revenue attention price (price upper limit) reminders to facilitate users to track, study, and observe prices by themselves.
 """
 
 import logging
@@ -30,7 +30,7 @@ def _normalize_market(market: str) -> str:
 @register_tool(
     tool_id="set_stop_gain_alert",
     name="设置收益关注提醒",
-    description="为股票设置收益关注价格上限（价格上限），价格接近时通过系统通知推送，便于用户自行跟踪研究观察价位。返回股票名称、代码、市场和已设置的收益关注价格。",
+    description="Set a price limit (price limit) for stocks to pay attention to, and push notifications through the system when the price is close, making it easier for users to track, research and observe the price. Returns the stock name, symbol, market, and set earnings focus price.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -40,15 +40,15 @@ def _normalize_market(market: str) -> str:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["收益关注提醒设置", "收益关注价格配置", "价格上限提醒设置", "价格上限提醒"],
-    when_to_use="当用户想为某只股票设置收益关注价格（价格上限）、希望在价格上涨到该价位时收到通知以自行关注研究观察价位时使用。",
-    returns="返回文本消息，包含股票名称、代码、市场和已设置的收益关注价格（价格上限）。",
+    when_to_use="This is used when the user wants to set a profit follow-up price (price ceiling) for a certain stock, and wants to receive a notification when the price rises to that price, so that he can follow the research and observation price by himself.",
+    returns="Returns a text message containing the stock name, symbol, market, and set earnings focus price (price cap).",
 )
 async def set_stop_gain_alert(
-    symbol: Annotated[str, "股票代码，如 300033、00700、AAPL"],
-    gain_price: Annotated[float, "收益关注价格上限（达到或接近该价格时提醒）"],
-    market: Annotated[str, "市场：CN/HK/US，默认 CN"] = "CN",
+    symbol: Annotated[str, "Stock code, such as 300033, 00700,AAPL"],
+    gain_price: Annotated[float, "Pay attention to the price limit (remind you when it reaches or approaches this price)"],
+    market: Annotated[str, "Market: CN/HK/US, default CN"] = "CN",
 ) -> str:
-    """设置股票收益关注价格（价格上限）提醒。"""
+    """Set stock earnings watch price (price cap) alerts."""
     try:
         from app.core.database import get_mongo_db
         from app.services.favorites_service import favorites_service
@@ -77,13 +77,13 @@ async def set_stop_gain_alert(
 
         return (
             f"✅ 已设置收益关注提醒（价格上限）\n"
-            f"- 股票: {name}({symbol})\n"
-            f"- 市场: {market_label}\n"
-            f"- 收益关注价格: {gain_price:.2f}\n"
-            f"当价格接近或达到该收益关注价格时，将收到系统通知，便于您自行关注研究观察价位。"
+            f"- stocks: {name}({symbol})\n"
+            f"- market: {market_label}\n"
+            f"- Earnings focus on price: {gain_price:.2f}\n"
+            f"When the price approaches or reaches the profit attention price, you will receive a system notification so that you can pay attention to, research and observe the price yourself."
         )
     except Exception as e:
-        logger.exception("[set_stop_gain_alert] 设置收益关注提醒失败: %s", e)
+        logger.exception("[set_stop_gain_alert] Failed to set revenue attention reminder: %s", e)
         return f"设置收益关注提醒失败: {e}"
 
 
@@ -91,7 +91,7 @@ async def set_stop_gain_alert(
 @register_tool(
     tool_id="list_stop_gain_alerts",
     name="查看收益关注提醒",
-    description="查看当前已设置的所有收益关注提醒（价格上限）。返回提醒数量及每条提醒的股票名称、代码、市场和收益关注价格。",
+    description="View all currently set revenue focus alerts (price caps). Returns the number of alerts and the stock name, symbol, market, and earnings focus price for each alert.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -101,11 +101,11 @@ async def set_stop_gain_alert(
     tool_role_hint="supporting",
     output_shape="text",
     preferred_for=["收益关注提醒查看", "收益关注列表查询", "已配置提醒浏览", "价格上限确认"],
-    when_to_use="当用户想查看当前已设置的所有收益关注提醒（价格上限）、确认哪些股票配置了收益关注价格时使用。",
-    returns="返回文本消息，包含收益关注提醒数量及每条提醒的股票、市场、收益关注价格（价格上限）。",
+    when_to_use="This is used when the user wants to view all currently set earnings focus reminders (price caps) and confirm which stocks have configured earnings focus prices.",
+    returns="Returns a text message, including the number of earnings attention reminders and the stock, market, and earnings attention price (price limit) of each reminder.",
 )
 async def list_stop_gain_alerts() -> str:
-    """查看已配置的收益关注提醒（价格上限）列表。"""
+    """View a list of configured revenue focus alerts (price caps)."""
     try:
         from app.services.favorites_service import favorites_service
 
@@ -114,7 +114,7 @@ async def list_stop_gain_alerts() -> str:
         alerts = [item for item in items if item.get("alert_gain_price") is not None]
 
         if not alerts:
-            return "当前没有设置任何收益关注提醒（价格上限）。"
+            return "There are currently no revenue focus alerts (price caps) set."
 
         lines = [f"共 {len(alerts)} 条收益关注提醒（价格上限）：\n"]
         for item in alerts:
@@ -125,7 +125,7 @@ async def list_stop_gain_alerts() -> str:
             lines.append(f"- {name}({code}) | {market} | 收益关注价格: {float(gain):.2f}")
         return "\n".join(lines)
     except Exception as e:
-        logger.exception("[list_stop_gain_alerts] 查看收益关注提醒失败: %s", e)
+        logger.exception("[list_stop_gain_alerts] Failed to view revenue attention reminder: %s", e)
         return f"查看收益关注提醒失败: {e}"
 
 
@@ -133,7 +133,7 @@ async def list_stop_gain_alerts() -> str:
 @register_tool(
     tool_id="clear_stop_gain_alert",
     name="清除收益关注提醒",
-    description="清除指定股票的收益关注提醒价格（价格上限，仅清提醒，不移除股票关注列表）。返回操作结果或未找到配置的提示。",
+    description="Clear the earnings attention reminder price of the specified stock (price limit, only clear the reminder, do not remove the stock attention list). Returns the operation result or a prompt that the configuration is not found.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -143,13 +143,13 @@ async def list_stop_gain_alerts() -> str:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["收益关注提醒清除", "收益关注价格移除", "提醒配置删除", "价格上限取消"],
-    when_to_use="当用户想清除某只股票的收益关注提醒（价格上限）、不再接收该股票的收益关注通知时使用（仅清除提醒，不移除股票关注列表）。",
-    returns="返回文本消息，确认收益关注提醒已清除或提示未找到相关配置。",
+    when_to_use="It is used when the user wants to clear the earnings attention reminder (price limit) of a certain stock and no longer receive earnings attention notifications for the stock (only clears the reminder, but does not remove the stock watch list).",
+    returns="Return a text message to confirm that the revenue attention reminder has been cleared or that the relevant configuration is not found.",
 )
 async def clear_stop_gain_alert(
-    symbol: Annotated[str, "股票代码，如 300033、00700、AAPL"],
+    symbol: Annotated[str, "Stock code, such as 300033, 00700,AAPL"],
 ) -> str:
-    """清除某只股票的收益关注提醒（价格上限）。"""
+    """Clear earnings attention alerts (price caps) for a stock."""
     try:
         from app.services.favorites_service import favorites_service
 
@@ -159,5 +159,5 @@ async def clear_stop_gain_alert(
             return f"✅ 已清除 {symbol} 的收益关注提醒（价格上限）。"
         return f"未找到 {symbol} 的提醒配置，或该股票不在股票关注列表中。"
     except Exception as e:
-        logger.exception("[clear_stop_gain_alert] 清除收益关注提醒失败: %s", e)
+        logger.exception("[clear_stop_gain_alert] Failed to clear earnings attention reminder: %s", e)
         return f"清除收益关注提醒失败: {e}"

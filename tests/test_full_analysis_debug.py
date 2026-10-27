@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-运行完整的股票分析，观察DeepSeek成本计算的详细日志
+Run a complete stock analysis and observe detailed logs of DeepSeek cost calculations
 """
 
 import os
@@ -8,110 +8,110 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def test_full_stock_analysis():
-    """运行完整的股票分析"""
-    print("🔬 完整股票分析 - DeepSeek成本计算调试")
+    """Run a complete stock analysis"""
+    print("🔬 Complete Stock Analysis - DeepSeek Cost Calculation Debugging")
     print("=" * 80)
     
-    # 检查API密钥
+    # Check API key
     if not os.getenv("DEEPSEEK_API_KEY"):
-        print("❌ 未找到DEEPSEEK_API_KEY，无法测试")
+        print("❌ DEEPSEEK_API_KEY not found, unable to test")
         return False
     
     try:
         from tradingagents.graph.setup import TradingAgentsGraph
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        print("🔧 初始化交易分析图...")
+        print("🔧 Initialize transaction analysis chart...")
         
-        # 配置DeepSeek
+        # Configuration DeepSeek
         config = DEFAULT_CONFIG.copy()
         config.update({
             "llm_provider": "deepseek",
             "deep_think_llm": "deepseek-chat",
             "quick_think_llm": "deepseek-chat",
-            "max_debate_rounds": 1,  # 减少轮次，节省时间
+            "max_debate_rounds": 1,  # Reduce rounds and save time
             "max_risk_discuss_rounds": 1,
             "online_tools": True,
             "memory_enabled": False
         })
         
-        print(f"📊 配置信息:")
-        print(f"   LLM提供商: {config['llm_provider']}")
-        print(f"   深度思考模型: {config['deep_think_llm']}")
-        print(f"   快速思考模型: {config['quick_think_llm']}")
+        print(f"📊 Configuration information:")
+        print(f"   LLM provider: {config['llm_provider']}")
+        print(f"   deep thinking model: {config['deep_think_llm']}")
+        print(f"   quick thinking model: {config['quick_think_llm']}")
         
-        # 创建图实例
+        # Create graph instance
         graph = TradingAgentsGraph(config)
         
-        # 设置分析师（只选择市场分析师，减少复杂度）
-        print(f"📈 设置分析师...")
+        # Set analysts (select only market analysts to reduce complexity)
+        print(f"📈 Set up analysts...")
         graph.setup_and_compile(selected_analysts=["market"])
         
-        print(f"✅ 图设置完成")
+        print(f"✅ Picture setting completed")
         
-        # 准备输入
+        # ready to enter
         input_data = {
-            "company_of_interest": "300059",  # 东方财富
+            "company_of_interest": "300059",  # Oriental Fortune
             "trade_date": "2025-07-08"
         }
         
-        print(f"\n📊 开始分析股票: {input_data['company_of_interest']}")
-        print(f"📅 交易日期: {input_data['trade_date']}")
+        print(f"\n📊 Start analyzing stocks: {input_data['company_of_interest']}")
+        print(f"📅 transaction date: {input_data['trade_date']}")
         print("\n" + "="*100)
-        print("开始完整分析流程，请观察DeepSeek成本计算的详细日志：")
+        print("To start the complete analysis process, please observe the detailed log of DeepSeek cost calculation:")
         print("="*100)
         
-        # 运行分析
+        # Run analysis
         result = graph.run(input_data)
         
         print("="*100)
-        print("分析完成！")
+        print("Analysis completed!")
         print("="*100)
         
-        # 输出结果摘要
+        # Summary of output results
         if result and "decision" in result:
             decision = result["decision"]
-            print(f"\n📋 分析结果摘要:")
-            print(f"   投资建议: {decision.get('action', 'N/A')}")
-            print(f"   置信度: {decision.get('confidence', 'N/A')}")
-            print(f"   目标价格: {decision.get('target_price', 'N/A')}")
+            print(f"\n📋 Summary of analysis results:")
+            print(f"   investment advice: {decision.get('action', 'N/A')}")
+            print(f"   Confidence: {decision.get('confidence', 'N/A')}")
+            print(f"   target price: {decision.get('target_price', 'N/A')}")
             
             if "market_report" in result:
                 market_report = result["market_report"]
-                print(f"   市场报告长度: {len(market_report)}")
+                print(f"   Market report length: {len(market_report)}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 完整分析测试失败: {e}")
+        print(f"❌ Full analysis test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主函数"""
-    print("🔬 完整股票分析 - DeepSeek成本计算调试测试")
+    """main function"""
+    print("🔬 Complete Stock Analysis - DeepSeek Cost Calculation Debug Test")
     print("=" * 80)
-    print("📝 这个测试将运行完整的股票分析流程")
-    print("📝 请仔细观察所有的成本计算日志")
-    print("📝 特别注意是否有成本为¥0.000000的情况")
+    print("📝 This test will run the complete stock analysis process")
+    print("📝 Please carefully observe all costing logs")
+    print("📝 Pay special attention to whether there are costs for¥0.000000 situation")
     print("=" * 80)
     
     success = test_full_stock_analysis()
     
     if success:
-        print("\n🎉 完整分析测试完成！")
-        print("请查看上面的详细日志，分析成本计算的完整流程。")
+        print("\n🎉 Complete analysis test completed!")
+        print("Please view the detailed log above to analyze the complete process of cost calculation.")
     else:
-        print("\n❌ 完整分析测试失败")
+        print("\n❌ Full analysis test failed")
     
     return success
 

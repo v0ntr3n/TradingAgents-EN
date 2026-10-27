@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-阿里百炼工具调用测试 - Agent友好版本
-专门为agent执行优化，避免闪退问题
+Alibaba Bailian Tool Call Test - Agent friendly version
+Specifically optimized for agent execution to avoid crash issues
 """
 
 import os
@@ -9,46 +9,46 @@ import sys
 import time
 import traceback
 
-# 强制刷新输出
+# Force refresh output
 def flush_print(msg):
-    """强制刷新输出"""
+    """Force refresh output"""
     print(msg)
     sys.stdout.flush()
-    time.sleep(0.1)  # 给agent时间捕获输出
+    time.sleep(0.1)  # Give the agent time to capture the output
 
 def main():
-    """主测试函数"""
-    flush_print("🔬 阿里百炼工具调用测试 - Agent友好版本")
+    """Main test function"""
+    flush_print("🔬 Alibaba Bailian Tool Call Test - Agent friendly version")
     flush_print("=" * 60)
     
     try:
-        # 添加项目根目录到Python路径
+        # Add project root directory to Python path
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
         
-        flush_print("✅ 项目路径配置完成")
+        flush_print("✅ Project path configuration completed")
         
-        # 检查API密钥
+        # Check API key
         api_key = os.getenv("DASHSCOPE_API_KEY")
         if not api_key:
-            flush_print("❌ 未找到DASHSCOPE_API_KEY环境变量")
+            flush_print("❌ DASHSCOPE_API_KEY environment variable not found")
             return False
         
-        flush_print(f"✅ API密钥已配置: {api_key[:10]}...")
+        flush_print(f"✅ API Key configured: {api_key[:10]}...")
         
-        # 测试1: 基本导入
-        flush_print("\n🔧 测试1: 基本导入")
+        # test 1: Basic import
+        flush_print("\n🔧 test 1: Basic import")
         flush_print("-" * 40)
         
         from tradingagents.llm_adapters import ChatDashScopeOpenAI
         from langchain_core.tools import tool
         from langchain_core.messages import HumanMessage
         
-        flush_print("✅ 所有模块导入成功")
+        flush_print("✅ All modules imported successfully")
         
-        # 测试2: LLM创建
-        flush_print("\n🔧 测试2: LLM创建")
+        # test 2: LLM Create
+        flush_print("\n🔧 test 2: LLM Create")
         flush_print("-" * 40)
         
         llm = ChatDashScopeOpenAI(
@@ -57,148 +57,148 @@ def main():
             max_tokens=200
         )
         
-        flush_print("✅ LLM实例创建成功")
+        flush_print("✅ LLM Instance created successfully")
         
-        # 测试3: 工具定义和绑定
-        flush_print("\n🔧 测试3: 工具定义和绑定")
+        # test 3: Tool definition and binding
+        flush_print("\n🔧 test 3: Tool definition and binding")
         flush_print("-" * 40)
         
         @tool
         def get_stock_info(symbol: str) -> str:
-            """获取股票信息"""
-            return f"股票{symbol}的信息: 价格100元，涨幅+2.5%"
+            """Get stock information"""
+            return f"stocks{symbol}information: Price 100 yuan, increase+2.5%"
         
         llm_with_tools = llm.bind_tools([get_stock_info])
-        flush_print("✅ 工具绑定成功")
+        flush_print("✅ Tool binding successful")
         
-        # 测试4: 简单调用（不要求工具调用）
-        flush_print("\n🔧 测试4: 简单调用")
+        # test 4: Simple call (no tool call required)
+        flush_print("\n🔧 test 4: simple call")
         flush_print("-" * 40)
         
         simple_response = llm.invoke([
-            HumanMessage(content="请简单回复：你好")
+            HumanMessage(content="Please simply reply: Hello")
         ])
         
-        flush_print(f"✅ 简单调用成功")
-        flush_print(f"   响应长度: {len(simple_response.content)}字符")
-        flush_print(f"   响应内容: {simple_response.content}")
+        flush_print(f"✅ Simple call successful")
+        flush_print(f"   response length: {len(simple_response.content)}character")
+        flush_print(f"   Response content: {simple_response.content}")
         
-        # 测试5: 工具调用测试
-        flush_print("\n🔧 测试5: 工具调用测试")
+        # test 5: Tool call test
+        flush_print("\n🔧 test 5: Tool call test")
         flush_print("-" * 40)
         
-        # 尝试多种prompt策略
+        # Try multiple prompt strategies
         prompts = [
-            "请调用get_stock_info工具查询AAPL股票信息",
-            "我需要AAPL的股票信息，请使用可用的工具",
-            "必须调用get_stock_info工具，参数symbol='AAPL'"
+            "Please call the get_stock_info tool to query AAPL stock information",
+            "I need stock information for AAPL, please use the available tools",
+            "The get_stock_info tool must be called with parameters symbol='AAPL'"
         ]
         
         tool_call_success = False
         
         for i, prompt in enumerate(prompts, 1):
-            flush_print(f"\n   策略{i}: {prompt[:30]}...")
+            flush_print(f"\n   Strategy{i}: {prompt[:30]}...")
             
             try:
                 response = llm_with_tools.invoke([HumanMessage(content=prompt)])
                 
                 tool_calls = getattr(response, 'tool_calls', [])
-                flush_print(f"   工具调用数量: {len(tool_calls)}")
-                flush_print(f"   响应长度: {len(response.content)}字符")
+                flush_print(f"   Number of tool calls: {len(tool_calls)}")
+                flush_print(f"   response length: {len(response.content)}character")
                 
                 if len(tool_calls) > 0:
-                    flush_print(f"   ✅ 策略{i}成功: 触发了工具调用")
+                    flush_print(f"   ✅ Strategy{i}success: Tool call triggered")
                     for j, tool_call in enumerate(tool_calls):
                         tool_name = tool_call.get('name', 'unknown')
                         tool_args = tool_call.get('args', {})
-                        flush_print(f"      工具{j+1}: {tool_name}({tool_args})")
+                        flush_print(f"      Tools{j+1}: {tool_name}({tool_args})")
                     tool_call_success = True
                     break
                 else:
-                    flush_print(f"   ❌ 策略{i}失败: 未触发工具调用")
-                    flush_print(f"   直接响应: {response.content[:100]}...")
+                    flush_print(f"   ❌ Strategy{i}failed: Tool call not triggered")
+                    flush_print(f"   direct response: {response.content[:100]}...")
                     
             except Exception as e:
-                flush_print(f"   ❌ 策略{i}异常: {e}")
+                flush_print(f"   ❌ Strategy{i}Abnormal: {e}")
         
-        # 测试6: 不同模型测试
-        flush_print("\n🔧 测试6: 不同模型测试")
+        # test 6: Different model testing
+        flush_print("\n🔧 test 6: Different model testing")
         flush_print("-" * 40)
         
         models = ["qwen-turbo", "qwen-plus-latest"]
         
         for model in models:
-            flush_print(f"\n   测试模型: {model}")
+            flush_print(f"\n   test model: {model}")
             
             try:
                 test_llm = ChatDashScopeOpenAI(
                     model=model,
-                    temperature=0.0,  # 降低温度
+                    temperature=0.0,  # lower temperature
                     max_tokens=100
                 )
                 
                 test_llm_with_tools = test_llm.bind_tools([get_stock_info])
                 
                 response = test_llm_with_tools.invoke([
-                    HumanMessage(content="请调用get_stock_info工具查询TSLA")
+                    HumanMessage(content="Please call the get_stock_info tool to query TSLA")
                 ])
                 
                 tool_calls = getattr(response, 'tool_calls', [])
-                flush_print(f"   {model}: 工具调用数量 = {len(tool_calls)}")
+                flush_print(f"   {model}: Number of tool calls = {len(tool_calls)}")
                 
                 if len(tool_calls) > 0:
-                    flush_print(f"   ✅ {model}: 支持工具调用")
+                    flush_print(f"   ✅ {model}: Support tool calling")
                 else:
-                    flush_print(f"   ❌ {model}: 不支持工具调用")
+                    flush_print(f"   ❌ {model}: Tool calling is not supported")
                     
             except Exception as e:
-                flush_print(f"   ❌ {model}: 测试异常 - {str(e)[:100]}")
+                flush_print(f"   ❌ {model}: Test exception - {str(e)[:100]}")
         
-        # 总结
-        flush_print("\n📋 测试总结")
+        # Summary
+        flush_print("\n📋 Test summary")
         flush_print("=" * 50)
         
         if tool_call_success:
-            flush_print("🎉 阿里百炼工具调用测试成功！")
-            flush_print("   ✅ 模型能够理解并执行工具调用")
-            flush_print("   ✅ OpenAI兼容适配器工作正常")
+            flush_print("🎉 Alibaba Bailian tool call test was successful!")
+            flush_print("   ✅ The model is able to understand and execute tool calls")
+            flush_print("   ✅ OpenAI Compatible adapters work fine")
         else:
-            flush_print("⚠️ 阿里百炼工具调用存在问题")
-            flush_print("   ❌ 模型不主动调用工具")
-            flush_print("   💡 建议: 使用手动工具调用作为备用方案")
+            flush_print("⚠️ There is a problem in calling Alibaba Bailian tool")
+            flush_print("   ❌ The model does not actively call tools")
+            flush_print("   💡 Suggestions: Use manual tool calls as a fallback")
         
-        flush_print("\n🔍 问题分析:")
-        flush_print("   1. 适配器创建: ✅ 正常")
-        flush_print("   2. 工具绑定: ✅ 正常")
-        flush_print("   3. API调用: ✅ 正常")
-        flush_print(f"   4. 工具调用: {'✅ 正常' if tool_call_success else '❌ 异常'}")
+        flush_print("\n🔍 Problem analysis:")
+        flush_print("   1. Adapter creation: ✅ normal")
+        flush_print("   2. Tool binding: ✅ normal")
+        flush_print("   3. API call: ✅ normal")
+        flush_print(f"   4. Tool call: {'✅ normal' if tool_call_success else '❌ Abnormal'}")
         
         if not tool_call_success:
-            flush_print("\n💡 解决方案:")
-            flush_print("   1. 使用更明确的工具调用指令")
-            flush_print("   2. 调整模型参数(temperature=0.0)")
-            flush_print("   3. 使用手动工具调用模式")
-            flush_print("   4. 考虑使用DeepSeek作为替代")
+            flush_print("\n💡 solution:")
+            flush_print("   1. Use more explicit tool calling instructions")
+            flush_print("   2. Adjust model parameters(temperature=0.0)")
+            flush_print("   3. Calling a pattern using hand tools")
+            flush_print("   4. Consider using DeepSeek as an alternative")
         
         return tool_call_success
         
     except Exception as e:
-        flush_print(f"\n💥 测试异常: {e}")
-        flush_print("异常详情:")
+        flush_print(f"\n💥 Test exception: {e}")
+        flush_print("Exception details:")
         traceback.print_exc()
         return False
     
     finally:
         flush_print("\n" + "="*60)
-        flush_print("测试完成！")
-        # 不使用input()避免挂起
+        flush_print("Test completed!")
+        # Not used input()avoid hangs
 
 if __name__ == "__main__":
     try:
         success = main()
         exit_code = 0 if success else 1
-        flush_print(f"退出码: {exit_code}")
+        flush_print(f"exit code: {exit_code}")
         sys.exit(exit_code)
     except Exception as e:
-        flush_print(f"主函数异常: {e}")
+        flush_print(f"Main function exception: {e}")
         sys.exit(1)

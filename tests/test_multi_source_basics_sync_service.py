@@ -16,9 +16,9 @@ class _FakeManager:
             {
                 "ts_code": "300750.SZ",
                 "symbol": "300750",
-                "name": "宁德时代",
+                "name": "Ningde era",
                 "industry": "",
-                "market": "创业板",
+                "market": "GEM",
             }
         ]), "akshare"
 
@@ -43,7 +43,7 @@ def test_run_full_sync_uses_system_industry_mapping_for_batch_docs():
 
     with patch("app.services.multi_source_basics_sync_service.get_mongo_db", return_value=fake_db), \
          patch("app.services.data_sources.manager.DataSourceManager", return_value=_FakeManager()), \
-         patch("app.services.official_industry_service.fetch_industry_mapping", new=AsyncMock(return_value={"300750": "电气设备"})):
+         patch("app.services.official_industry_service.fetch_industry_mapping", new=AsyncMock(return_value={"300750": "electrical equipment"})):
         result = asyncio.run(service.run_full_sync(preferred_sources=["akshare"]))
 
     assert result["status"] == "success"
@@ -54,5 +54,5 @@ def test_run_full_sync_uses_system_industry_mapping_for_batch_docs():
     update_payload = captured_operations[0]._doc["$set"]
 
     assert update_filter == {"code": "300750", "source": "akshare"}
-    assert update_payload["industry"] == "电气设备"
+    assert update_payload["industry"] == "electrical equipment"
     assert update_payload["industry_source"] == "system_industry_mapping"

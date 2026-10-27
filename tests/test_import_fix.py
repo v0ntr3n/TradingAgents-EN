@@ -1,28 +1,28 @@
 """
-测试导入修复
+Test import fix
 """
 
 import sys
 import os
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_fundamentals_analyst_import():
-    """测试基本面分析师导入"""
-    print("🧪 测试基本面分析师导入...")
+    """Test fundamental analyst import"""
+    print("🧪 Test fundamental analyst import...")
     
     try:
-        # 测试导入基本面分析师
+        # Test import fundamental analysts
         from tradingagents.agents.analysts.fundamentals_analyst import create_fundamentals_analyst
-        print("  ✅ 基本面分析师导入成功")
+        print("  ✅ Fundamental analysts were imported successfully")
         
-        # 测试is_china_stock函数导入
+        # Test is_china_stock function import
         from tradingagents.utils.stock_utils import is_china_stock
-        print("  ✅ is_china_stock函数导入成功")
+        print("  ✅ is_china_stock Function imported successfully")
         
-        # 测试函数调用
+        # Test function call
         result = is_china_stock("000001")
         print(f"  ✅ is_china_stock('000001') = {result}")
         
@@ -32,14 +32,14 @@ def test_fundamentals_analyst_import():
         return True
         
     except Exception as e:
-        print(f"❌ 基本面分析师导入失败: {e}")
+        print(f"❌ Fundamental analyst import failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_stock_utils_functions():
-    """测试股票工具函数"""
-    print("\n🧪 测试股票工具函数...")
+    """Testing stock instrument functions"""
+    print("\n🧪 Testing stock instrument functions...")
     
     try:
         from tradingagents.utils.stock_utils import (
@@ -49,14 +49,14 @@ def test_stock_utils_functions():
             StockUtils
         )
         
-        # 测试各种股票代码
+        # Test various stock symbols
         test_cases = [
-            ("000001", "A股", True, False, False),
-            ("600036", "A股", True, False, False),
-            ("0700.HK", "港股", False, True, False),
-            ("9988.HK", "港股", False, True, False),
-            ("AAPL", "美股", False, False, True),
-            ("TSLA", "美股", False, False, True),
+            ("000001", "A shares", True, False, False),
+            ("600036", "A shares", True, False, False),
+            ("0700.HK", "Hong Kong stocks", False, True, False),
+            ("9988.HK", "Hong Kong stocks", False, True, False),
+            ("AAPL", "US stocks", False, False, True),
+            ("TSLA", "US stocks", False, False, True),
         ]
         
         for ticker, market, expect_china, expect_hk, expect_us in test_cases:
@@ -65,85 +65,85 @@ def test_stock_utils_functions():
             us_result = is_us_stock(ticker)
             
             print(f"  {ticker} ({market}):")
-            print(f"    中国A股: {china_result} {'✅' if china_result == expect_china else '❌'}")
-            print(f"    港股: {hk_result} {'✅' if hk_result == expect_hk else '❌'}")
-            print(f"    美股: {us_result} {'✅' if us_result == expect_us else '❌'}")
+            print(f"    China A shares: {china_result} {'✅' if china_result == expect_china else '❌'}")
+            print(f"    Hong Kong stocks: {hk_result} {'✅' if hk_result == expect_hk else '❌'}")
+            print(f"    US stocks: {us_result} {'✅' if us_result == expect_us else '❌'}")
             
             if (china_result != expect_china or 
                 hk_result != expect_hk or 
                 us_result != expect_us):
-                print(f"❌ {ticker} 识别结果不正确")
+                print(f"❌ {ticker} The recognition result is incorrect")
                 return False
         
-        print("  ✅ 所有股票工具函数测试通过")
+        print("  ✅ All stock instrument function tests passed")
         return True
         
     except Exception as e:
-        print(f"❌ 股票工具函数测试失败: {e}")
+        print(f"❌ Stock instrument function test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_web_analysis_runner():
-    """测试Web分析运行器"""
-    print("\n🧪 测试Web分析运行器...")
+    """Test the web analytics runner"""
+    print("\n🧪 Test the web analytics runner...")
     
     try:
         from web.utils.analysis_runner import validate_analysis_params
         
-        # 测试港股验证
+        # Test Hong Kong stock verification
         is_valid, errors = validate_analysis_params(
             stock_symbol="0700.HK",
             analysis_date="2025-07-14",
             analysts=["market", "fundamentals"],
             research_depth=3,
-            market_type="港股"
+            market_type="Hong Kong stocks"
         )
         
-        print(f"  港股验证结果: {'通过' if is_valid else '失败'}")
+        print(f"  Hong Kong stock verification results: {'Pass' if is_valid else 'failed'}")
         if not is_valid:
-            print(f"  错误信息: {errors}")
+            print(f"  error message: {errors}")
             return False
         
-        print("  ✅ Web分析运行器测试通过")
+        print("  ✅ Web Analysis runner test passes")
         return True
         
     except Exception as e:
-        print(f"❌ Web分析运行器测试失败: {e}")
+        print(f"❌ Web Analysis runner test fails: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_complete_analysis_flow():
-    """测试完整分析流程（不实际运行）"""
-    print("\n🧪 测试完整分析流程导入...")
+    """Test the complete analysis process (without actually running it)"""
+    print("\n🧪 Test the complete analysis process import...")
     
     try:
-        # 测试所有必要的导入
+        # Test all necessary imports
         from tradingagents.graph.trading_graph import TradingAgentsGraph
         from tradingagents.default_config import DEFAULT_CONFIG
         from tradingagents.agents.analysts.fundamentals_analyst import create_fundamentals_analyst
         
-        print("  ✅ 交易图导入成功")
-        print("  ✅ 默认配置导入成功")
-        print("  ✅ 基本面分析师导入成功")
+        print("  ✅ Transaction graph imported successfully")
+        print("  ✅ Default configuration imported successfully")
+        print("  ✅ Fundamental analysts were imported successfully")
         
-        # 测试配置创建
+        # Test configuration creation
         config = DEFAULT_CONFIG.copy()
-        print("  ✅ 配置创建成功")
+        print("  ✅ Configuration created successfully")
         
-        print("  ✅ 完整分析流程导入测试通过")
+        print("  ✅ The complete analysis process import test passed")
         return True
         
     except Exception as e:
-        print(f"❌ 完整分析流程导入测试失败: {e}")
+        print(f"❌ Complete analysis process import test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """运行所有导入测试"""
-    print("🔧 导入修复测试")
+    """Run all import tests"""
+    print("🔧 Import repair test")
     print("=" * 40)
     
     tests = [
@@ -161,17 +161,17 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"❌ 测试 {test_func.__name__} 异常: {e}")
+            print(f"❌ test {test_func.__name__} Abnormal: {e}")
     
     print("\n" + "=" * 40)
-    print(f"🔧 导入修复测试完成: {passed}/{total} 通过")
+    print(f"🔧 Import repair test completed: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 所有导入测试通过！")
-        print("\n现在可以正常进行港股分析了")
-        print("建议重新启动Web应用并测试0700.HK分析")
+        print("🎉 All import tests passed!")
+        print("\n Now you can perform normal Hong Kong stock analysis")
+        print("It is recommended to restart the web application and test the 0700.HK analysis")
     else:
-        print("⚠️ 部分导入测试失败，请检查失败的测试")
+        print("⚠️ Some import tests failed, please check the failed tests")
 
 if __name__ == "__main__":
     main()

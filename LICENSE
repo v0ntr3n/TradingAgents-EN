@@ -1,27 +1,27 @@
 ================================================================================
-TradingAgents-CN 社区版（Community Edition）—— 分层授权声明
+TradingAgents-CN Community Edition—— Hierarchical authorization statement
 ================================================================================
 
-本项目采用混合授权（Hybrid Licensing），不同目录适用不同许可证：
+This project uses Hybrid Licensing, and different directories apply to different licenses:
 
-一、Apache License 2.0（开源组件）
+1. Apache License 2.0 (open source components)
 --------------------------------------------------------------------------------
-适用范围：tradingagents/、cli/、docs/、tests/、web/ 及根目录配置文件
-版权：Copyright 2024-2026 hsliuping & TradingAgents-CN Contributors
-权利：自由使用、修改、分发、创建衍生作品（须遵守 Apache-2.0 条款，
-      保留版权与许可声明）
+Scope of application: tradingagents/, cli/, docs/, tests/, web/ and root directory configuration files
+Copyright:Copyright 2024-2026 hsliuping & TradingAgents-CN Contributors
+Rights: Free to use, modify, distribute, create derivative works (subject to Apache-2.0 terms,
+      Copyright and license notice retained)
 
-二、专有组件（Source Available，源码可见但非开源）
+2. Proprietary components (Source Available, the source code is visible but not open source)
 --------------------------------------------------------------------------------
-适用范围：app/（后端应用）、frontend/（前端应用）、core/（核心功能层）
-版权：Copyright 2024-2026 hsliuping，保留所有权利
-允许：个人使用与评估、教育用途
-禁止：再分发、修改后分发、商业使用（需商业许可）
-商业许可咨询：hsliup@163.com
+Scope of application: app/ (back-end application), frontend/ (front-end application), core/ (core functional layer)
+Copyright: Copyright 2024-2026 hsliuping, all rights reserved
+Allowed: Personal use and evaluation, educational use
+Prohibited: Redistribution, modified distribution, commercial use (commercial license required)
+Business licensing consultation:hsliup@163.com
 
 ================================================================================
 
-以下为 Apache License 2.0 全文，适用于上述第一部分开源组件。
+The following is the full text of the Apache License 2.0, which applies to the first part of the above-mentioned open source components.
 
                                  Apache License
                            Version 2.0, January 2004

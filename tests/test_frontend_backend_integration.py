@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-测试前后端集成
-验证任务提交和状态查询的完整流程
+Test front-end and back-end integration
+Verify the complete process of task submission and status query
 """
 
 import requests
@@ -9,15 +9,15 @@ import time
 import json
 
 def test_frontend_backend_integration():
-    """测试前后端集成"""
+    """Test front-end and back-end integration"""
     
     base_url = "http://localhost:8000"
     
-    print("🧪 测试前后端集成")
+    print("🧪 Test front-end and back-end integration")
     print("=" * 40)
     
-    # 1. 登录
-    print("🔐 登录中...")
+    # 1. Login
+    print("🔐 Logging in...")
     try:
         login_response = requests.post(f"{base_url}/api/auth/login", json={
             "username": "admin",
@@ -25,29 +25,29 @@ def test_frontend_backend_integration():
         }, timeout=10)
         
         if login_response.status_code != 200:
-            print(f"❌ 登录失败: {login_response.status_code}")
-            print(f"响应内容: {login_response.text}")
+            print(f"❌ Login failed: {login_response.status_code}")
+            print(f"Response content: {login_response.text}")
             return False
         
         login_data = login_response.json()
         token = login_data["data"]["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
-        print("✅ 登录成功")
+        print("✅ Login successful")
         
     except Exception as e:
-        print(f"❌ 登录异常: {e}")
+        print(f"❌ Login exception: {e}")
         return False
     
-    # 2. 提交分析任务（模拟前端请求）
-    print("\n📊 提交分析任务...")
+    # 2. Submit analysis task (simulate front-end request)
+    print("\n📊 Submit analysis task...")
     
-    # 模拟前端发送的请求格式
+    # Simulate the request format sent by the front end
     analysis_request = {
         "stock_code": "000001",
         "parameters": {
-            "market_type": "A股",
+            "market_type": "A shares",
             "analysis_date": "2024-01-15",
-            "research_depth": "快速",
+            "research_depth": "fast",
             "selected_analysts": ["market"],
             "include_sentiment": True,
             "include_risk": True,
@@ -65,39 +65,39 @@ def test_frontend_backend_integration():
                                       timeout=10)
         
         submit_time = time.time() - submit_start
-        print(f"⏱️ 任务提交耗时: {submit_time:.2f}秒")
+        print(f"⏱️ Task submission time: {submit_time:.2f}seconds")
         
         if submit_response.status_code != 200:
-            print(f"❌ 任务提交失败: {submit_response.status_code}")
-            print(f"响应内容: {submit_response.text}")
+            print(f"❌ Task submission failed: {submit_response.status_code}")
+            print(f"Response content: {submit_response.text}")
             return False
         
         submit_data = submit_response.json()
-        print(f"✅ 任务提交成功")
-        print(f"📋 响应格式: {json.dumps(submit_data, indent=2, ensure_ascii=False)}")
+        print(f"✅ Task submitted successfully")
+        print(f"📋 response format: {json.dumps(submit_data, indent=2, ensure_ascii=False)}")
         
-        # 检查响应格式是否符合前端期望
+        # Check whether the response format meets the front-end expectations
         if not submit_data.get("success"):
-            print("❌ 响应中缺少 success 字段")
+            print("❌ Success field is missing from response")
             return False
         
         if not submit_data.get("data"):
-            print("❌ 响应中缺少 data 字段")
+            print("❌ Data field is missing from response")
             return False
         
         if not submit_data["data"].get("task_id"):
-            print("❌ 响应中缺少 task_id 字段")
+            print("❌ Task_id field is missing from response")
             return False
         
         task_id = submit_data["data"]["task_id"]
-        print(f"📝 获取到任务ID: {task_id}")
+        print(f"📝 Get the task ID: {task_id}")
         
     except Exception as e:
-        print(f"❌ 提交任务异常: {e}")
+        print(f"❌ Exception when submitting task: {e}")
         return False
     
-    # 3. 查询任务状态（模拟前端轮询）
-    print(f"\n🔍 查询任务状态...")
+    # 3. Query task status (simulate front-end polling)
+    print(f"\n🔍 Query task status...")
     
     try:
         status_response = requests.get(f"{base_url}/api/analysis/tasks/{task_id}/status", 
@@ -105,37 +105,37 @@ def test_frontend_backend_integration():
                                      timeout=10)
         
         if status_response.status_code != 200:
-            print(f"❌ 状态查询失败: {status_response.status_code}")
-            print(f"响应内容: {status_response.text}")
+            print(f"❌ Status query failed: {status_response.status_code}")
+            print(f"Response content: {status_response.text}")
             return False
         
         status_data = status_response.json()
-        print(f"✅ 状态查询成功")
-        print(f"📊 状态响应: {json.dumps(status_data, indent=2, ensure_ascii=False)}")
+        print(f"✅ Status query successful")
+        print(f"📊 status response: {json.dumps(status_data, indent=2, ensure_ascii=False)}")
         
-        # 检查状态响应格式
+        # Check status response format
         if not status_data.get("success"):
-            print("❌ 状态响应中缺少 success 字段")
+            print("❌ success field missing from status response")
             return False
         
         if not status_data.get("data"):
-            print("❌ 状态响应中缺少 data 字段")
+            print("❌ data field missing from status response")
             return False
         
         task_status = status_data["data"].get("status")
         progress = status_data["data"].get("progress", 0)
         message = status_data["data"].get("message", "")
         
-        print(f"📈 任务状态: {task_status}")
-        print(f"📊 进度: {progress}%")
-        print(f"💬 消息: {message}")
+        print(f"📈 Task status: {task_status}")
+        print(f"📊 Progress: {progress}%")
+        print(f"💬 news: {message}")
         
     except Exception as e:
-        print(f"❌ 状态查询异常: {e}")
+        print(f"❌ Status query exception: {e}")
         return False
     
-    # 4. 测试任务列表
-    print(f"\n📋 测试任务列表...")
+    # 4. Test task list
+    print(f"\n📋 Test task list...")
     
     try:
         tasks_response = requests.get(f"{base_url}/api/analysis/tasks", 
@@ -143,45 +143,45 @@ def test_frontend_backend_integration():
                                     timeout=10)
         
         if tasks_response.status_code != 200:
-            print(f"❌ 任务列表查询失败: {tasks_response.status_code}")
-            print(f"响应内容: {tasks_response.text}")
+            print(f"❌ Task list query failed: {tasks_response.status_code}")
+            print(f"Response content: {tasks_response.text}")
         else:
             tasks_data = tasks_response.json()
-            print(f"✅ 任务列表查询成功")
+            print(f"✅ Task list query successful")
             tasks = tasks_data.get("data", {}).get("tasks", [])
-            print(f"📝 任务数量: {len(tasks)}")
+            print(f"📝 Number of tasks: {len(tasks)}")
             
             if tasks:
                 latest_task = tasks[0]
-                print(f"📋 最新任务: {latest_task.get('task_id', 'N/A')[:8]}... - {latest_task.get('status', 'N/A')}")
+                print(f"📋 Latest tasks: {latest_task.get('task_id', 'N/A')[:8]}... - {latest_task.get('status', 'N/A')}")
         
     except Exception as e:
-        print(f"❌ 任务列表查询异常: {e}")
+        print(f"❌ Task list query exception: {e}")
     
-    # 5. 总结
-    print(f"\n📈 集成测试总结:")
-    print(f"  ✅ 登录成功")
-    print(f"  ✅ 任务提交成功 (耗时: {submit_time:.2f}秒)")
-    print(f"  ✅ 状态查询成功")
-    print(f"  ✅ 响应格式正确")
-    print(f"  📝 任务ID: {task_id}")
-    print(f"  📊 当前状态: {task_status} ({progress}%)")
+    # 5. Summary
+    print(f"\n📈 Integration test summary:")
+    print(f"  ✅ Login successful")
+    print(f"  ✅ Task submitted successfully (Time consuming: {submit_time:.2f}seconds)")
+    print(f"  ✅ Status query successful")
+    print(f"  ✅ Response format is correct")
+    print(f"  📝 Task ID: {task_id}")
+    print(f"  📊 Current status: {task_status} ({progress}%)")
     
     if submit_time < 3.0:
-        print("🎉 API响应迅速，异步实现成功！")
+        print("🎉 API The response is fast and the asynchronous implementation is successful!")
     else:
-        print("⚠️ API响应较慢，可能需要优化")
+        print("⚠️ API Slow response, may need optimization")
     
     return True
 
 if __name__ == "__main__":
-    print(f"🚀 开始集成测试: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🚀 Start integration testing: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     
     success = test_frontend_backend_integration()
     
-    print(f"\n✅ 测试完成: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"\n✅ Test completed: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     
     if success:
-        print("🎊 前后端集成测试成功！")
+        print("🎊 Front-end and back-end integration testing successful!")
     else:
-        print("🔧 需要进一步调试")
+        print("🔧 Need further debugging")

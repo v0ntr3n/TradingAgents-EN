@@ -1,13 +1,13 @@
 # tradingagents/core/engine/__init__.py
 """
-Engine module - 股票分析引擎
+Engine module - Stock analysis engine
 
-提供:
-- 数据契约定义 (DataLayer, DataAccess, AgentDataContract)
-- 分析上下文 (AnalysisContext)
-- 数据访问管理器 (DataAccessManager)
-- 动态数据字典 (DynamicDataSchema)
-- 契约验证器 (ContractValidator)
+provide:
+- Data contract definition (DataLayer, DataAccess, AgentDataContract)
+- Analyze context (AnalysisContext)
+- Data Access Manager (DataAccessManager)
+- dynamic data dictionary (DynamicDataSchema)
+- contract validator (ContractValidator)
 """
 
 from tradingagents.core.engine.data_contract import (
@@ -39,29 +39,29 @@ from tradingagents.core.engine.stock_analysis_engine import (
 from tradingagents.core.engine.agent_integrator import AgentIntegrator
 
 __all__ = [
-    # 数据契约
+    # data contract
     "DataLayer",
     "DataAccess",
     "AgentDataContract",
-    # 分析上下文
+    # Analyze context
     "AnalysisContext",
-    # 数据字典
+    # data dictionary
     "FieldDefinition",
     "DynamicDataSchema",
     "data_schema",
-    # 数据访问管理器
+    # Data Access Manager
     "DataAccessManager",
     "AccessLogEntry",
-    # 契约验证器
+    # contract validator
     "ContractValidator",
     "ValidationResult",
     "ValidationError",
-    # 分析引擎
+    # Analysis engine
     "AnalysisPhase",
     "PhaseResult",
     "AnalysisResult",
     "StockAnalysisEngine",
-    # Agent 集成
+    # Agent Integrate
     "AgentIntegrator",
 ]
 

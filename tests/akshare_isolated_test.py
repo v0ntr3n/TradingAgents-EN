@@ -1,226 +1,226 @@
 #!/usr/bin/env python3
 """
-独立的AKShare功能测试
-绕过yfinance依赖问题，直接测试AKShare集成
+Standalone AKShare functional testing
+Bypass yfinance dependency issues and directly test AKShare integration
 """
 
 import sys
 import os
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 def test_akshare_direct():
-    """直接测试AKShare功能"""
-    print("🔍 直接测试AKShare功能")
+    """Test AKShare functionality directly"""
+    print("🔍 Test AKShare functionality directly")
     print("=" * 40)
     
     try:
         import akshare as ak
-        print(f"✅ AKShare导入成功，版本: {ak.__version__}")
+        print(f"✅ AKShare Import successful, version: {ak.__version__}")
         
-        # 测试获取股票列表
-        print("📊 测试获取股票列表...")
+        # Test to get the stock list
+        print("📊 Test to get the stock list...")
         stock_list = ak.stock_info_a_code_name()
-        print(f"✅ 获取到{len(stock_list)}只股票")
+        print(f"✅ Get{len(stock_list)}only stocks")
         
-        # 测试获取股票数据
-        print("📈 测试获取招商银行(000001)数据...")
+        # Test to obtain stock data
+        print("📈 Test to obtain China Merchants Bank(000001)data...")
         data = ak.stock_zh_a_hist(symbol="000001", period="daily", start_date="20241201", end_date="20241210", adjust="")
-        print(f"✅ 获取到{len(data)}条数据")
-        print(f"   最新收盘价: {data.iloc[-1]['收盘']}")
+        print(f"✅ Get{len(data)}piece of data")
+        print(f"   latest closing price: {data.iloc[-1]['close']}")
         
-        # 测试获取实时行情
-        print("📊 测试获取实时行情...")
+        # Test to get real-time quotes
+        print("📊 Test to get real-time quotes...")
         realtime = ak.stock_zh_a_spot_em()
-        print(f"✅ 获取到{len(realtime)}只股票的实时行情")
+        print(f"✅ Get{len(realtime)}Real-time quotes of individual stocks")
         
         return True
         
     except Exception as e:
-        print(f"❌ AKShare测试失败: {e}")
+        print(f"❌ AKShare test failed: {e}")
         return False
 
 def test_akshare_utils_direct():
-    """直接测试akshare_utils模块"""
-    print("\n🔍 直接测试akshare_utils模块")
+    """Test the akshare_utils module directly"""
+    print("\n🔍 Test the akshare_utils module directly")
     print("=" * 40)
     
     try:
-        # 直接导入akshare_utils，避免通过__init__.py
+        # Import akshare_utils directly to avoid passing__init__.py
         akshare_utils_path = os.path.join(project_root, 'tradingagents', 'dataflows', 'akshare_utils.py')
         
         if os.path.exists(akshare_utils_path):
-            print(f"✅ 找到akshare_utils.py文件")
+            print(f"✅ Find the akshare_utils.py file")
             
-            # 使用exec直接执行文件内容
+            # Use exec to directly execute the file content
             with open(akshare_utils_path, 'r', encoding='utf-8') as f:
                 akshare_utils_code = f.read()
             
-            # 创建独立的命名空间
+            # Create a separate namespace
             namespace = {}
             exec(akshare_utils_code, namespace)
             
-            # 测试AKShareProvider
+            # test AKShareProvider
             if 'AKShareProvider' in namespace:
                 provider_class = namespace['AKShareProvider']
                 provider = provider_class()
                 
-                print(f"✅ AKShareProvider初始化成功，连接状态: {provider.connected}")
+                print(f"✅ AKShareProvider Initialization successful, connection status: {provider.connected}")
                 
                 if provider.connected:
-                    # 测试获取股票数据
+                    # Test to obtain stock data
                     stock_data = provider.get_stock_data("000001", "2024-12-01", "2024-12-10")
                     if stock_data is not None and not stock_data.empty:
-                        print(f"✅ 获取股票数据成功，{len(stock_data)}条记录")
+                        print(f"✅ Obtaining stock data successfully,{len(stock_data)}records")
                     else:
-                        print("❌ 获取股票数据失败")
+                        print("❌ Failed to get stock data")
                     
-                    # 测试获取股票信息
+                    # Test to obtain stock information
                     stock_info = provider.get_stock_info("000001")
-                    print(f"✅ 获取股票信息: {stock_info}")
+                    print(f"✅ Get stock information: {stock_info}")
                 
                 return True
             else:
-                print("❌ AKShareProvider类未找到")
+                print("❌ AKShareProvider Class not found")
                 return False
         else:
-            print(f"❌ akshare_utils.py文件不存在: {akshare_utils_path}")
+            print(f"❌ akshare_utils.py File does not exist: {akshare_utils_path}")
             return False
             
     except Exception as e:
-        print(f"❌ akshare_utils测试失败: {e}")
+        print(f"❌ akshare_utils test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def check_data_source_enum():
-    """检查数据源枚举定义"""
-    print("\n🔍 检查数据源枚举定义")
+    """Check the data source enumeration definition"""
+    print("\n🔍 Check the data source enumeration definition")
     print("=" * 40)
     
     try:
-        # 直接读取data_source_manager.py文件
+        # Read the data_source_manager.py file directly
         data_source_manager_path = os.path.join(project_root, 'tradingagents', 'dataflows', 'data_source_manager.py')
         
         if os.path.exists(data_source_manager_path):
             with open(data_source_manager_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            # 检查AKShare相关定义
+            # Check AKShare related definitions
             if 'AKSHARE' in content:
-                print("✅ 找到AKSHARE枚举定义")
+                print("✅ Find the AKSHARE enumeration definition")
             else:
-                print("❌ 未找到AKSHARE枚举定义")
+                print("❌ AKSHARE enumeration definition not found")
             
             if 'akshare' in content.lower():
-                print("✅ 找到akshare相关代码")
+                print("✅ Find akshare related code")
                 
-                # 统计akshare出现次数
+                # Count the number of occurrences of akshare
                 akshare_count = content.lower().count('akshare')
-                print(f"   akshare在代码中出现{akshare_count}次")
+                print(f"   akshare appear in code{akshare_count}times")
             else:
-                print("❌ 未找到akshare相关代码")
+                print("❌ No akshare related code found")
             
             return True
         else:
-            print(f"❌ data_source_manager.py文件不存在")
+            print(f"❌ data_source_manager.py File does not exist")
             return False
             
     except Exception as e:
-        print(f"❌ 数据源枚举检查失败: {e}")
+        print(f"❌ Data source enumeration check failed: {e}")
         return False
 
 def analyze_yfinance_issue():
-    """分析yfinance依赖问题"""
-    print("\n🔍 分析yfinance依赖问题")
+    """Analyze yfinance dependency issues"""
+    print("\n🔍 Analyze yfinance dependency issues")
     print("=" * 40)
     
     try:
-        # 检查yfinance是否可以独立导入
+        # Check if yfinance can be imported independently
         import yfinance as yf
-        print("✅ yfinance可以独立导入")
+        print("✅ yfinance Can be imported independently")
         return True
     except Exception as e:
-        print(f"❌ yfinance导入失败: {e}")
+        print(f"❌ yfinance Import failed: {e}")
         
-        # 检查curl_cffi
+        # Check curl_cffi
         try:
             import curl_cffi
-            print("✅ curl_cffi可以导入")
+            print("✅ curl_cffi Can be imported")
         except Exception as e2:
-            print(f"❌ curl_cffi导入失败: {e2}")
+            print(f"❌ curl_cffi Import failed: {e2}")
         
-        # 检查cffi
+        # Check cffi
         try:
             import cffi
-            print("✅ cffi可以导入")
+            print("✅ cffi Can be imported")
         except Exception as e3:
-            print(f"❌ cffi导入失败: {e3}")
+            print(f"❌ cffi Import failed: {e3}")
         
         return False
 
 def main():
-    """主测试函数"""
-    print("🔍 AKShare功能独立测试")
+    """Main test function"""
+    print("🔍 AKShare Functional independent testing")
     print("=" * 60)
     
     test_results = {}
     
-    # 1. 直接测试AKShare
+    # 1. direct test AKShare
     test_results['akshare_direct'] = test_akshare_direct()
     
-    # 2. 直接测试akshare_utils
+    # 2. direct test akshare_utils
     test_results['akshare_utils_direct'] = test_akshare_utils_direct()
     
-    # 3. 检查数据源枚举
+    # 3. Check datasource enumeration
     test_results['data_source_enum'] = check_data_source_enum()
     
-    # 4. 分析yfinance问题
+    # 4. Analyze yfinance issues
     test_results['yfinance_analysis'] = analyze_yfinance_issue()
     
-    # 总结结果
-    print(f"\n📊 独立测试总结")
+    # Summary results
+    print(f"\n📊 Independent testing summary")
     print("=" * 60)
     
     passed = sum(test_results.values())
     total = len(test_results)
     
     for test_name, result in test_results.items():
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{test_name:25} {status}")
     
-    print(f"\n🎯 总体结果: {passed}/{total} 项测试通过")
+    print(f"\n🎯 Overall results: {passed}/{total} tests passed")
     
-    # 分析结果
+    # Analyze results
     if test_results.get('akshare_direct', False) and test_results.get('akshare_utils_direct', False):
-        print("\n🎉 AKShare核心功能完全正常！")
-        print("💡 问题只是yfinance依赖导致的模块导入问题")
-        print("✅ 可以安全删除重复的AKShare分支")
+        print("\n🎉 AKShare The core functions are completely normal!")
+        print("💡 The problem is just a module import problem caused by yfinance dependency")
+        print("✅ Duplicate AKShare branches can be safely removed")
         
-        print(f"\n🎯 分支管理建议:")
-        print("✅ AKShare功能本身完全正常")
-        print("✅ feature/tushare-integration包含完整的AKShare集成")
-        print("✅ 可以安全删除以下分支:")
+        print(f"\n🎯 Branch management suggestions:")
+        print("✅ AKShare The functionality itself is completely fine")
+        print("✅ feature/tushare-integration Includes full AKShare integration")
+        print("✅ The following branches can be safely deleted:")
         print("   - feature/akshare-integration")
         print("   - feature/akshare-integration-clean")
         
         return True
     else:
-        print("\n⚠️ AKShare功能存在问题，需要进一步调查")
+        print("\n⚠️ AKShare There is a problem with the functionality and requires further investigation")
         return False
 
 if __name__ == "__main__":
     success = main()
     
     if success:
-        print(f"\n🚀 下一步建议:")
-        print("1. 修复yfinance依赖问题（可选）")
-        print("2. 删除重复的AKShare分支")
-        print("3. 发布v0.1.6版本")
+        print(f"\n🚀 Suggestions for next steps:")
+        print("1. Fix yfinance dependency issue (optional)")
+        print("2. Remove duplicate AKShare branches")
+        print("3. Release v0.1.6 version")
     else:
-        print(f"\n🔧 需要修复的问题:")
-        print("1. 检查AKShare集成代码")
-        print("2. 修复依赖问题")
-        print("3. 重新测试后再考虑分支清理")
+        print(f"\n🔧 Issues that need to be fixed:")
+        print("1. Check AKShare integration code")
+        print("2. Fix dependency issues")
+        print("3. Retest before considering branch cleanup")

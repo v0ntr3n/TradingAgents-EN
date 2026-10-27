@@ -1,8 +1,8 @@
 """
-MCP 审计日志服务
+MCP Audit log service
 
-所有 MCP 工具调用（数据源类和功能类）均记录到 mcp_audit_logs 集合。
-使用同步接口，适合在 executor 闭包（同步上下文）中调用。
+All MCP tool calls (data source classes and function classes) are logged to the mcp_audit_logs collection.
+Use synchronization interface, suitable for calling in executor closure (synchronization context).
 """
 
 import logging
@@ -15,14 +15,14 @@ COLLECTION = "mcp_audit_logs"
 
 
 def _write_audit_log(doc: Dict) -> None:
-    """同步写入审计日志到 MongoDB"""
+    """Synchronously write audit logs to MongoDB"""
     try:
         from app.core.database import get_mongo_db_sync
         db = get_mongo_db_sync()
         if db is not None:
             db[COLLECTION].insert_one(doc)
     except Exception as e:
-        logger.warning(f"⚠️ MCP 审计日志写入失败: {e}")
+        logger.warning(f"⚠️ MCP Audit log writing failed: {e}")
 
 
 def log_mcp_call_sync(
@@ -36,19 +36,19 @@ def log_mcp_call_sync(
     user_id: Optional[str] = None,
 ) -> None:
     """
-    异步（fire-and-forget）写入 MCP 调用审计日志。
+    Asynchronous (fire-and-forget) writing to the MCP call audit log.
 
-    在后台线程中写入，不阻塞 MCP 工具调用链路。
+    Write in a background thread without blocking the MCP tool call link.
 
     Args:
-        server_name:      MCP 服务器名称
-        tool_name:        工具名称
-        category:         数据源类型 datasource | function
-        request_params:   调用参数
-        response_summary: 响应摘要（如 "OK, 10 records"）
-        persisted_to:     数据源类写入的目标集合名（可为 None）
-        task_id:          关联分析任务 ID（可选）
-        user_id:          触发用户 ID（可选）
+        server_name:      MCP Server name
+        tool_name:        Tool name
+        category:         Data source type datasource | function
+        request_params:   Call parameters
+        response_summary: Response summary (e.g. "OK, 10 records") 
+        persisted_to:     The name of the target collection written by the data source class (can be None)
+        task_id:          Correlation analysis task ID (optional)
+        user_id:          Trigger user ID (optional)
     """
     from app.utils.timezone import now_tz
 
@@ -64,7 +64,7 @@ def log_mcp_call_sync(
         "created_at": now_tz(),
     }
 
-    # fire-and-forget：后台线程写入，不阻塞 executor
+    # fire-and-forget: Background thread writes without blocking executor
     t = threading.Thread(target=_write_audit_log, args=(doc,), daemon=True)
     t.start()
 

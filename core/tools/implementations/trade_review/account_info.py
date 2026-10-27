@@ -1,7 +1,7 @@
 """
-获取账户信息工具
+Get account information tool
 
-获取用户的资金账户信息，用于仓位分析
+Obtain the user s capital account information for position analysis
 """
 
 import asyncio
@@ -14,14 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 def _sum_currencies(d: Dict[str, float]) -> float:
-    """将多币种字典汇总为单一数值（简化展示）"""
+    """Aggregate multi-currency dictionaries into a single value (simplified presentation)"""
     return round(sum(v for v in d.values() if isinstance(v, (int, float))), 2)
 
 
 @register_tool(
     tool_id="get_account_info",
     name="获取账户信息",
-    description="获取用户资金账户信息，返回总资产、现金、持仓市值、盈亏及百分比、初始资金、累计出入金和多币种汇总等账户快照",
+    description="Obtain user fund account information and return account snapshots such as total assets, cash, position market value, profit and loss and percentage, initial funds, accumulated deposits and withdrawals, and multi-currency summary.",
     category="trade_review",
     is_online=False,
     timeout_tier="light",
@@ -35,13 +35,13 @@ def get_account_info(
     user_id: Annotated[str, "用户ID"]
 ) -> Dict[str, Any]:
     """
-    获取账户信息
+    Get account information
 
     Args:
-        user_id: 用户ID
+        user_id: User ID
 
     Returns:
-        包含账户信息的字典
+        Dictionary containing account information
     """
     try:
         from app.services.portfolio_service import get_portfolio_service
@@ -82,7 +82,7 @@ def get_account_info(
             "profit_sum": _sum_currencies(account_summary.profit),
         }
 
-        logger.info("✅ 获取账户信息成功: 总资产=%s", account_info["total_assets"])
+        logger.info("✅ Obtained account information successfully: total assets=%s", account_info["total_assets"])
 
         return {
             "success": True,

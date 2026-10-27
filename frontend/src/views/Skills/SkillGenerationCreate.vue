@@ -1,97 +1,97 @@
 <template>
   <div class="skill-create-page">
-    <!-- 页面头部 -->
+    <!-- Page header -->
     <div class="page-header">
       <div class="header-left">
         <el-button text @click="goBack">
           <el-icon><ArrowLeft /></el-icon>
-          返回列表
+          Return to list
         </el-button>
         <span class="header-divider">|</span>
-        <h1 v-if="isIterateMode">🔄 迭代优化 Skill</h1>
-        <h1 v-else>🛠️ 创建新 Skill</h1>
+        <h1 v-if="isIterateMode">🔄 iterative optimization Skill</h1>
+        <h1 v-else>🛠️ create new Skill</h1>
       </div>
       <div class="header-right">
         <el-button v-if="wizardStep < 3 && sessionId" text size="small" @click="goBack">
-          保存草稿
+          save draft
         </el-button>
       </div>
     </div>
 
-    <!-- 迭代优化提示 -->
+    <!-- Iterative optimization tips -->
     <div v-if="isIterateMode && iterateSkillInfo" class="iterate-notice">
       <el-alert
-        title="迭代优化模式"
+        title="iterative optimization mode"
         type="info"
         :closable="false"
         show-icon
       >
         <template #default>
-          <p>正在迭代优化 Skill：<strong>{{ iterateSkillInfo.displayName }}</strong></p>
-          <p>当前描述：{{ iterateSkillInfo.description }}</p>
-          <p v-if="iterateSkillInfo.toolId" class="tool-id">原始 Tool ID：{{ iterateSkillInfo.toolId }}</p>
+          <p>Skill is being iteratively optimized:<strong>{{ iterateSkillInfo.displayName }}</strong></p>
+          <p>Current description:{{ iterateSkillInfo.description }}</p>
+          <p v-if="iterateSkillInfo.toolId" class="tool-id">Original Tool ID:{{ iterateSkillInfo.toolId }}</p>
         </template>
       </el-alert>
     </div>
 
-    <!-- 步骤条 -->
+    <!-- step bar -->
     <div class="steps-bar">
       <el-steps :active="wizardStep" finish-status="success" align-center>
-        <el-step title="需求沟通" />
-        <el-step title="规格确认" />
-        <el-step title="代码生成" />
-        <el-step title="完成" />
+        <el-step title="Requirements communication" />
+        <el-step title="Specification confirmation" />
+        <el-step title="code generation" />
+        <el-step title="Complete" />
       </el-steps>
     </div>
 
-    <!-- 主内容区：充分利用屏幕 -->
+    <!-- Main content area: Make the most of the screen -->
     <div class="main-content">
-      <!-- 步骤 0: 需求沟通 -->
+      <!-- steps 0: Requirements communication -->
       <div v-if="wizardStep === 0" class="wizard-chat">
         <div v-if="handoffContext" class="handoff-card">
-          <div class="handoff-title">来自上游工坊的交接</div>
+          <div class="handoff-title">Handover from upstream workshop</div>
           <div class="handoff-text">
-            <span v-if="handoffContext.source === 'agent_workshop'">当前不是从零新建 Skill，而是在承接 Agent 工坊识别出的执行能力缺口。</span>
-            <span v-else>当前会话来自上游流程交接。</span>
+            <span v-if="handoffContext.source === 'agent_workshop'">Currently, we are not creating a new Skill from scratch, but taking over the gaps in execution capabilities identified by the Agent Workshop.</span>
+            <span v-else>The current session comes from the upstream process handover.</span>
           </div>
           <div class="handoff-meta">
-            <span v-if="handoffContext.source_name">上游对象：{{ handoffContext.source_name }}</span>
-            <span v-if="handoffContext.target_capability">目标能力：{{ handoffContext.target_capability }}</span>
+            <span v-if="handoffContext.source_name">Upstream objects:{{ handoffContext.source_name }}</span>
+            <span v-if="handoffContext.target_capability">Target abilities:{{ handoffContext.target_capability }}</span>
           </div>
           <div v-if="handoffContext.handoff_intent" class="handoff-note">{{ handoffContext.handoff_intent }}</div>
         </div>
         <div ref="chatContainer" class="chat-messages">
-          <!-- 首次进入时的引导语 -->
+          <!-- Introductory message when entering for the first time -->
           <div v-if="chatMessages.length === 0 && !chatLoading" class="requirement-guide">
             <div class="guide-header">
               <el-icon class="guide-icon"><MagicStick /></el-icon>
-              <h3 v-if="isIterateMode">🔄 开始迭代优化 Skill</h3>
-              <h3 v-else>用一句话告诉我你想要什么工具</h3>
-              <p v-if="isIterateMode" class="guide-desc">你正在对现有 Skill 进行迭代优化。告诉我你想要改进什么，比如：修复某个 Bug、添加新功能、优化性能、改进输出格式等。</p>
-              <p v-else class="guide-desc">不用想太细，说个大概就行。AI 会通过对话帮你完善需求，然后自动生成代码并验证。</p>
+              <h3 v-if="isIterateMode">🔄 Start iterative optimization Skill</h3>
+              <h3 v-else>Tell me in one sentence what tool you want</h3>
+              <p v-if="isIterateMode" class="guide-desc">You are iteratively optimizing an existing Skill. Tell me what you want to improve, such as: fix a bug, add new features, optimize performance, improve output format, etc.</p>
+              <p v-else class="guide-desc">Don t think too carefully, just give a general idea. AI will help you refine your requirements through dialogue, and then automatically generate and verify code.</p>
             </div>
 
             <div class="guide-quick-examples" v-if="!isIterateMode">
-              <div class="quick-label">比如可以这样说：</div>
+              <div class="quick-label">For example, you can say:</div>
               <ul class="example-list">
-                <li>分析某只股票的护城河强度</li>
-                <li>查看个股的现金流质量趋势</li>
-                <li>获取某股票的历史估值分位</li>
-                <li>计算股票的盈利能力稳定性指标</li>
+                <li>Analyze the moat strength of a stock</li>
+                <li>View cash flow quality trends for individual stocks</li>
+                <li>Get the historical valuation quantile of a stock</li>
+                <li>Calculate a stock s profitability stability indicator</li>
               </ul>
             </div>
 
             <div class="guide-quick-examples" v-else>
-              <div class="quick-label">迭代优化可以这样说：</div>
+              <div class="quick-label">Iterative optimization can be said like this:</div>
               <ul class="example-list">
-                <li>修复质押比例计算错误的 Bug</li>
-                <li>添加按季度统计的功能</li>
-                <li>优化输出格式，增加更多可视化信息</li>
-                <li>提高数据准确性，增加数据源容错处理</li>
+                <li>Fix the incorrect calculation of pledge ratio Bug</li>
+                <li>Add quarterly statistics function</li>
+                <li>Optimize the output format and add more visual information</li>
+                <li>Improve data accuracy and increase data source fault tolerance processing</li>
               </ul>
             </div>
 
-            <p class="guide-footer">在下方输入框描述你的需求，按 <kbd>Ctrl+Enter</kbd> 或点击发送即可开始</p>
+            <p class="guide-footer">Describe your needs in the input box below and press <kbd>Ctrl+Enter</kbd> Or click Send to get started</p>
           </div>
           <div v-for="(msg, idx) in chatMessages" :key="idx"
                :class="['chat-msg', msg.role === 'user' ? 'chat-user' : 'chat-ai']">
@@ -106,7 +106,7 @@
           <div v-if="chatLoading" class="chat-msg chat-ai">
             <div class="msg-avatar"><el-icon><MagicStick /></el-icon></div>
             <div class="msg-bubble thinking">
-              <span class="dot-animation">AI 正在分析<span>.</span><span>.</span><span>.</span></span>
+              <span class="dot-animation">AI Analyzing<span>.</span><span>.</span><span>.</span></span>
             </div>
           </div>
         </div>
@@ -114,13 +114,13 @@
         <div v-if="boundaryWarning" class="boundary-alert boundary-collapsible">
           <div class="boundary-header" @click="boundaryExpanded = !boundaryExpanded">
             <el-icon class="boundary-icon"><WarningFilled /></el-icon>
-            <span>复杂度提醒 ({{ boundaryCheck?.complexity_score }}/5)</span>
+            <span>Complexity reminder ({{ boundaryCheck?.complexity_score }}/5)</span>
             <el-icon class="boundary-chevron" :class="{ expanded: boundaryExpanded }"><ArrowDown /></el-icon>
           </div>
           <div v-show="boundaryExpanded" class="boundary-content">
             <div v-for="c in boundaryCheck?.concerns" :key="c">• {{ c }}</div>
             <div v-if="boundaryCheck?.decomposition_suggestions?.length" style="margin-top: 6px">
-              <strong>建议拆分为：</strong>
+              <strong>It is recommended to split it into:</strong>
               <div v-for="s in boundaryCheck?.decomposition_suggestions" :key="s">→ {{ s }}</div>
             </div>
           </div>
@@ -132,40 +132,40 @@
             type="textarea"
             :rows="3"
             :autosize="{ minRows: 3, maxRows: 8 }"
-            :placeholder="chatMessages.length === 0 ? '描述你需要的工具，例如：我需要获取东方财富个股新闻...' : (canConfirm ? '可输入方案选择（如：我选择方案C）或补充说明，确认时一并提交' : '回复 AI 的问题...')"
+            :placeholder="chatMessages.length === 0 ? 'Describe the tools you need, for example: I need to get Oriental Fortune stock news...' : (canConfirm ? 'You can enter the plan choice (for example: I choose plan C) or supplementary explanation, and submit it when confirming.' : 'Reply to AI s question...')"
             :disabled="chatLoading"
             @keydown.enter.ctrl="handleChatSend"
           />
           <div class="chat-actions">
-            <span class="tip">Ctrl+Enter 发送 · 第 {{ currentRound }}/{{ expectedRounds }} 轮</span>
+            <span class="tip">Ctrl+Enter send · No. {{ currentRound }}/{{ expectedRounds }} wheel</span>
             <div>
               <el-button type="primary" @click="handleChatSend" :loading="chatLoading" :disabled="!userInput.trim()">
-                发送
+                send
               </el-button>
               <el-button v-if="canConfirm" type="success" @click="handleViewSpec" :loading="chatLoading">
-                📄 下一步·查看规格
+                📄 Next step·View specifications
               </el-button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 步骤 1: 规格确认 -->
+      <!-- steps 1: Specification confirmation -->
       <div v-if="wizardStep === 1" class="wizard-spec-confirm">
         <div class="spec-confirm-card">
-          <h3>📄 工具规格确认</h3>
+          <h3>📄 Tool specification confirmation</h3>
           <div v-if="handoffContext" class="handoff-inline-note">
-            当前规格来自上游交接：先判断复用已有能力，再决定是否新增最小实现单元。
+            The current specifications come from the upstream handover: first determine the existing reuse capabilities, and then decide whether to add a minimum implementation unit.
           </div>
           <el-descriptions v-if="specPreview" :column="1" border size="small">
-            <el-descriptions-item label="工具 ID">{{ specPreview.tool_id }}</el-descriptions-item>
-            <el-descriptions-item label="名称">{{ specPreview.display_name }}</el-descriptions-item>
-            <el-descriptions-item label="分类">{{ specPreview.category }}</el-descriptions-item>
-            <el-descriptions-item label="数据源">{{ specPreview.data_source }}</el-descriptions-item>
-            <el-descriptions-item label="描述">{{ specPreview.description }}</el-descriptions-item>
+            <el-descriptions-item label="Tools ID">{{ specPreview.tool_id }}</el-descriptions-item>
+            <el-descriptions-item label="Name">{{ specPreview.display_name }}</el-descriptions-item>
+            <el-descriptions-item label="Classification">{{ specPreview.category }}</el-descriptions-item>
+            <el-descriptions-item label="data source">{{ specPreview.data_source }}</el-descriptions-item>
+            <el-descriptions-item label="Description">{{ specPreview.description }}</el-descriptions-item>
           </el-descriptions>
           <div v-if="upgradeChangePoints.length" class="upgrade-change-points">
-            <el-alert type="success" :closable="false" show-icon title="本次升级变更点（其余全部继承父版本已验证的规格）">
+            <el-alert type="success" :closable="false" show-icon title="Changes in this upgrade (all the rest inherit the verified specifications of the parent version)">
               <div v-for="(point, idx) in upgradeChangePoints" :key="`upgrade-point-${idx}`" class="catalog-note-item">
                 {{ idx + 1 }}. {{ point }}
               </div>
@@ -174,56 +174,56 @@
           <div v-if="previewFactReport" class="spec-catalog-card">
             <div class="spec-catalog-header">
               <div>
-                <h4>实现事实与侦察记录</h4>
-                <p>这一步已经完成了代码生成前的事实准备。确认规格后会直接进入代码生成，不会再重新跑一遍同样的侦察。</p>
+                <h4>Realize Facts and Reconnaissance Records</h4>
+                <p>This step has completed the factual preparation before code generation. After confirming the specifications, you will go directly to code generation without running the same reconnaissance again.</p>
               </div>
             </div>
             <el-descriptions :column="1" border size="small">
-              <el-descriptions-item label="推荐实现策略">{{ previewFactReport.recommended_strategy || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="侦察置信度">{{ Math.round((previewFactReport.confidence || 0) * 100) }}%</el-descriptions-item>
-              <el-descriptions-item v-if="previewFactReport.available_helpers?.length" label="推荐 helper">
+              <el-descriptions-item label="Recommended implementation strategies">{{ previewFactReport.recommended_strategy || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="recon confidence">{{ Math.round((previewFactReport.confidence || 0) * 100) }}%</el-descriptions-item>
+              <el-descriptions-item v-if="previewFactReport.available_helpers?.length" label="Recommended helper">
                 <div class="tag-wrap">
                   <el-tag v-for="entry in previewFactReport.available_helpers" :key="`${entry.module}.${entry.name}`" class="tag-item" type="success" effect="plain">
                     {{ entry.module }}.{{ entry.name }}
                   </el-tag>
                 </div>
               </el-descriptions-item>
-              <el-descriptions-item v-if="previewFactFieldSummaries.length" label="样本字段摘要">
+              <el-descriptions-item v-if="previewFactFieldSummaries.length" label="Sample field summary">
                 <div v-for="[collection, fields] in previewFactFieldSummaries" :key="collection" class="catalog-note-item">
                   {{ collection }}: {{ fields.slice(0, 8).join(', ') }}
                 </div>
               </el-descriptions-item>
-              <el-descriptions-item v-if="previewFactReport.validation_checks?.length" label="动态验收字段">
+              <el-descriptions-item v-if="previewFactReport.validation_checks?.length" label="Dynamic acceptance fields">
                 {{ previewFactReport.validation_checks.map(item => item.field || item.name).join('、') }}
               </el-descriptions-item>
             </el-descriptions>
             <div v-if="previewToolTraces.length" class="catalog-notes" style="margin-top: 12px;">
-              <div class="recommendation-label">侦察工具调用记录</div>
+              <div class="recommendation-label">Reconnaissance tool call record</div>
               <div v-for="(trace, idx) in previewToolTraces" :key="`${trace.tool_name}-${idx}`" class="tool-trace-card">
                 <div class="tool-trace-header">
                   <strong>{{ idx + 1 }}. {{ trace.tool_name }}</strong>
-                  <span>{{ trace.success ? '成功' : '失败' }} · {{ trace.duration_ms }}ms</span>
+                  <span>{{ trace.success ? 'success' : 'failed' }} · {{ trace.duration_ms }}ms</span>
                 </div>
-                <div class="tool-trace-body">参数: {{ JSON.stringify(trace.arguments || {}) }}</div>
-                <div v-if="trace.result_preview" class="tool-trace-body">结果摘要: {{ trace.result_preview }}</div>
-                <div v-if="trace.error" class="tool-trace-body tool-trace-error">错误: {{ trace.error }}</div>
+                <div class="tool-trace-body">parameters: {{ JSON.stringify(trace.arguments || {}) }}</div>
+                <div v-if="trace.result_preview" class="tool-trace-body">summary of results: {{ trace.result_preview }}</div>
+                <div v-if="trace.error" class="tool-trace-body tool-trace-error">Error: {{ trace.error }}</div>
               </div>
             </div>
           </div>
           <div v-if="specPreview?.parameters?.length" class="spec-params-section">
-            <h4>输入参数</h4>
+            <h4>input parameters</h4>
             <el-table :data="specPreview.parameters" size="small" border stripe>
-              <el-table-column prop="name" label="参数" width="120" />
-              <el-table-column prop="type" label="类型" width="90" />
-              <el-table-column prop="required" label="必填" width="70" align="center">
-                <template #default="{ row }">{{ row.required ? '是' : '否' }}</template>
+              <el-table-column prop="name" label="parameters" width="120" />
+              <el-table-column prop="type" label="Type" width="90" />
+              <el-table-column prop="required" label="Required" width="70" align="center">
+                <template #default="{ row }">{{ row.required ? 'Yes' : 'No' }}</template>
               </el-table-column>
-              <el-table-column prop="description" label="说明" />
+              <el-table-column prop="description" label="Description" />
             </el-table>
           </div>
           <div v-if="boundaryWarning" class="spec-boundary-warn">
             <el-alert type="warning" :closable="false" show-icon>
-              复杂度 {{ boundaryCheck?.complexity_score }}/5，在 Skill 范围内
+              complexity {{ boundaryCheck?.complexity_score }}/5, Within the Skill scope
             </el-alert>
           </div>
           <div
@@ -233,37 +233,37 @@
           >
             <div class="spec-catalog-header">
               <div>
-                <h4>系统建议</h4>
-                <p>这份建议由后端统一选择器生成，会和需求分析、规格确认、代码生成共用同一套命中逻辑。</p>
+                <h4>System recommendations</h4>
+                <p>This suggestion is generated by the back-end unified selector and will share the same set of hit logic with requirements analysis, specification confirmation, and code generation.</p>
               </div>
             </div>
             <div class="recommendation-grid">
               <div class="recommendation-block">
-                <div class="recommendation-label">推荐分类 / 主来源</div>
+                <div class="recommendation-label">Recommended categories/main sources</div>
                 <div class="recommendation-value">
                   {{ backendRecommendations.category_hint || '-' }}
                   <span v-if="backendRecommendations.data_source_hint"> · {{ backendRecommendations.data_source_hint }}</span>
                 </div>
               </div>
               <div class="recommendation-block">
-                <div class="recommendation-label">推荐复用本地集合</div>
+                <div class="recommendation-label">It is recommended to reuse local collections</div>
                 <div class="tag-wrap" v-if="backendRecommendations.stock_collections?.length">
                   <el-tag v-for="entry in backendRecommendations.stock_collections" :key="`rec-stock-${entry}`" class="tag-item" type="success" effect="plain">{{ entry }}</el-tag>
                 </div>
-                <div v-else class="recommendation-empty">当前没有明显命中的本地集合</div>
+                <div v-else class="recommendation-empty">There are currently no local collections with obvious hits</div>
               </div>
               <div class="recommendation-block">
-                <div class="recommendation-label">推荐外部来源</div>
+                <div class="recommendation-label">Recommend external sources</div>
                 <div class="tag-wrap" v-if="backendRecommendations.external_sources?.length">
                   <el-tag v-for="entry in backendRecommendations.external_sources" :key="`rec-source-${entry}`" class="tag-item" type="warning" effect="plain">{{ entry }}</el-tag>
                 </div>
-                <div v-else class="recommendation-empty">当前优先本地即可，外部来源不是必需</div>
+                <div v-else class="recommendation-empty">Currently, local priority is sufficient, external sources are not required.</div>
               </div>
               <div v-if="!isExternalApiMode && (matchedStockCollections.length || matchedExternalSources.length)" class="recommendation-block">
-                <div class="recommendation-label">快速定位</div>
+                <div class="recommendation-label">Quick positioning</div>
                 <div class="recommendation-actions">
-                  <el-button v-if="matchedStockCollections.length" size="small" type="success" plain @click="focusFirstMatchedStockCard">定位本地命中</el-button>
-                  <el-button v-if="matchedExternalSources.length" size="small" type="warning" plain @click="focusFirstMatchedExternalCard">定位外部命中</el-button>
+                  <el-button v-if="matchedStockCollections.length" size="small" type="success" plain @click="focusFirstMatchedStockCard">Locate local hits</el-button>
+                  <el-button v-if="matchedExternalSources.length" size="small" type="warning" plain @click="focusFirstMatchedExternalCard">locate external hits</el-button>
                 </div>
               </div>
             </div>
@@ -271,12 +271,12 @@
           <div v-if="isExternalApiMode" class="spec-catalog-card">
             <div class="spec-catalog-header">
               <div>
-                <h4>外部数据源集成模式</h4>
-                <p>本需求的数据源「{{ externalApiSourceName }}」不在系统目录内，已跳过本地股票资产与目录内外部来源的评估。请确保需求中包含接口规格：URL、请求方式、参数、认证方式、返回字段；缺失时生成器会要求澄清，不会臆造接口细节与字段名。</p>
+                <h4>External data source integration mode</h4>
+                <p>The data source for this requirement {{ externalApiSourceName }}] Not within the system catalog, evaluation of local stock assets and external sources within the catalog has been skipped. Please ensure that the requirements include interface specifications: URL, request method, parameters, authentication method, return fields; if missing, the generator will ask for clarification and will not invent interface details and field names.</p>
               </div>
             </div>
             <div v-if="interfaceSpecConstraints.length" class="interface-spec-list">
-              <div class="recommendation-label">已识别的接口规格（代码生成将逐字使用，严禁改写路径）</div>
+              <div class="recommendation-label">Identified interface specifications (code generation will be used verbatim, rewriting the path is strictly prohibited)</div>
               <div v-for="(entry, idx) in interfaceSpecConstraints" :key="`iface-spec-${idx}`" class="interface-spec-item">{{ entry }}</div>
             </div>
             <el-alert
@@ -284,8 +284,8 @@
               type="warning"
               :closable="false"
               show-icon
-              title="未在当前规格中识别到接口 URL"
-              description="接口地址是外部集成的唯一事实源。建议在需求中补充完整接口规格（URL、请求方式、参数、请求头）后重新确认，避免生成器要求澄清或臆造接口。"
+              title="Interface not recognized in current specification URL"
+              description="The interface address is the only source of truth for external integration. It is recommended to replenish the complete interface specifications (URL, request method, parameters, request headers) in the requirements and then reconfirm to avoid the generator asking for clarification or fabricated interfaces."
               style="margin-top: 10px;"
             />
             <div v-if="interfacePreflight" class="interface-preflight-block">
@@ -294,38 +294,38 @@
                 :closable="false"
                 show-icon
                 :title="interfacePreflight.status === 'verified'
-                  ? `接口连通性已验证（HTTP ${interfacePreflight.http_status || 200}，返回 ${interfacePreflight.data_items || 0} 条数据）`
-                  : (interfacePreflight.status === 'warning' ? '接口可达，但数据存疑' : '接口预检失败')"
+                  ? `Interface connectivity verified (HTTP ${interfacePreflight.http_status || 200}, Return ${interfacePreflight.data_items || 0} data)`
+                  : (interfacePreflight.status === 'warning' ? 'The interface is reachable, but the data is questionable' : 'Interface preflight failed')"
                 :description="interfacePreflight.message"
               />
               <div v-if="interfacePreflight.sample_fields?.length" class="catalog-notes" style="margin-top: 6px;">
-                <div class="catalog-note-item">返回样例字段：{{ interfacePreflight.sample_fields.join('、') }}</div>
+                <div class="catalog-note-item">Return sample fields:{{ interfacePreflight.sample_fields.join(', ') }}</div>
                 <div v-if="interfacePreflight.ignored_params?.length" class="catalog-note-item" style="color: #e6a23c;">
-                  实测被接口忽略的参数（生成代码将拉全量后本地过滤）：{{ interfacePreflight.ignored_params.join('、') }}
+                  Measured parameters ignored by the interface (the generated code will pull all the parameters and then filter them locally):{{ interfacePreflight.ignored_params.join(', ') }}
                 </div>
               </div>
             </div>
             <div v-if="otherSpecConstraints.length" class="catalog-notes" style="margin-top: 10px;">
-              <div class="recommendation-label">行为约束</div>
+              <div class="recommendation-label">behavioral constraints</div>
               <div v-for="(entry, idx) in otherSpecConstraints" :key="`spec-constraint-${idx}`" class="catalog-note-item">{{ entry }}</div>
             </div>
           </div>
           <div v-if="!isExternalApiMode" class="spec-catalog-card">
             <div class="spec-catalog-header">
               <div>
-                <h4>本地股票数据目录</h4>
-                <p>这里展示当前 Skill 生成器参考的股票核心集合和关键字段，确认规格时可以直接核对是否优先复用数据库现有数据。</p>
+                <h4>Local stock data directory</h4>
+                <p>Here the stock core collection and key fields referenced by the current Skill Generator are displayed. When confirming the specifications, you can directly check whether to prioritize reusing existing data in the database.</p>
               </div>
-              <el-button text @click="loadStockDataCatalog" :loading="stockCatalogLoading">刷新目录</el-button>
+              <el-button text @click="loadStockDataCatalog" :loading="stockCatalogLoading">refresh directory</el-button>
             </div>
             <div v-if="stockCatalogDoc" class="catalog-summary">
-              当前已整理 {{ stockCatalogCollections.length }} 个核心集合，建议优先复用封装函数，不要直接臆造字段名。
+              Currently sorted {{ stockCatalogCollections.length }} It is a core collection. It is recommended to reuse encapsulated functions first and do not directly make up field names.
             </div>
             <div v-if="matchedStockCollections.length" class="catalog-match-summary">
-              本次规格命中集合：{{ matchedStockCollections.map(item => item.collection).join('、') }}
+              This specification hit set:{{ matchedStockCollections.map(item => item.collection).join(', ') }}
             </div>
             <el-collapse v-model="stockCatalogExpanded">
-              <el-collapse-item name="stock-data-catalog" title="查看集合与字段目录">
+              <el-collapse-item name="stock-data-catalog" title="View the collection and field catalog">
                 <div v-if="stockCatalogCollections.length" class="catalog-collection-list">
                   <div
                     v-for="item in stockCatalogCollections"
@@ -336,15 +336,15 @@
                     <div class="catalog-collection-topbar">
                       <div>
                         <div class="catalog-collection-title">{{ item.collection }}</div>
-                        <div v-if="isStockCollectionMatched(item)" class="catalog-match-label">本次命中</div>
+                        <div v-if="isStockCollectionMatched(item)" class="catalog-match-label">This hit</div>
                       </div>
                       <div class="catalog-collection-actions">
-                        <el-button size="small" text @click="insertCatalogIntoRequirement(item)">插入到需求</el-button>
-                        <el-button size="small" text @click="copyCatalogCollectionName(item.collection)">复制集合名</el-button>
-                        <el-button size="small" text @click="copyCatalogQueryKeys(item)">复制查询键</el-button>
-                        <el-button size="small" text @click="copyCatalogPreferredAccess(item)">复制访问函数</el-button>
-                        <el-button size="small" text @click="copyCatalogFieldNames(item)">复制字段名</el-button>
-                        <el-button size="small" text @click="copyCatalogFieldDescriptions(item)">复制字段说明</el-button>
+                        <el-button size="small" text @click="insertCatalogIntoRequirement(item)">Insert into requirement</el-button>
+                        <el-button size="small" text @click="copyCatalogCollectionName(item.collection)">Copy collection name</el-button>
+                        <el-button size="small" text @click="copyCatalogQueryKeys(item)">Copy query key</el-button>
+                        <el-button size="small" text @click="copyCatalogPreferredAccess(item)">copy access function</el-button>
+                        <el-button size="small" text @click="copyCatalogFieldNames(item)">Copy field name</el-button>
+                        <el-button size="small" text @click="copyCatalogFieldDescriptions(item)">Copy field description</el-button>
                       </div>
                     </div>
                     <div class="catalog-collection-purpose">{{ item.purpose }}</div>
@@ -355,35 +355,35 @@
                       <el-tag v-for="entry in item.query_keys" :key="`${item.collection}-query-${entry}`" class="tag-item" type="info" effect="plain">{{ entry }}</el-tag>
                     </div>
                     <el-table :data="item.fields" size="small" border stripe class="catalog-field-table">
-                      <el-table-column prop="name" label="字段" width="180" />
-                      <el-table-column prop="type" label="类型" width="140" />
-                      <el-table-column prop="description" label="说明" min-width="320" />
+                      <el-table-column prop="name" label="Field" width="180" />
+                      <el-table-column prop="type" label="Type" width="140" />
+                      <el-table-column prop="description" label="Description" min-width="320" />
                     </el-table>
                     <div v-if="item.notes?.length" class="catalog-notes">
                       <div v-for="entry in item.notes" :key="`${item.collection}-note-${entry}`" class="catalog-note-item">{{ entry }}</div>
                     </div>
                   </div>
                 </div>
-                <el-empty v-else description="当前还没有加载到股票数据目录" />
+                <el-empty v-else description="It is not currently loaded into the stock data directory." />
               </el-collapse-item>
             </el-collapse>
           </div>
           <div v-if="!isExternalApiMode" class="spec-catalog-card">
             <div class="spec-catalog-header">
               <div>
-                <h4>外部接口与数据源目录</h4>
-                <p>这里只展示当前系统优先支持的外部来源。需要在线补数时，应先选最匹配的一两个来源，不要把所有 API 一起塞进需求。</p>
+                <h4>External interface and data source directory</h4>
+                <p>Only the external sources supported by the current system are shown here. When online complement is required, you should first select the most matching one or two sources, and do not stuff all APIs together into requirements.</p>
               </div>
-              <el-button text @click="loadExternalDataSourceCatalog" :loading="externalSourceCatalogLoading">刷新目录</el-button>
+              <el-button text @click="loadExternalDataSourceCatalog" :loading="externalSourceCatalogLoading">refresh directory</el-button>
             </div>
             <div v-if="externalSourceCatalogDoc" class="catalog-summary">
-              当前已整理 {{ externalSourceCatalogSources.length }} 个核心外部来源，建议按需求精确选用，并保留本地优先、外部降级的策略。
+              Currently sorted {{ externalSourceCatalogSources.length }} As a core external source, it is recommended to accurately select according to needs and retain the strategy of local priority and external degradation.
             </div>
             <div v-if="matchedExternalSources.length" class="catalog-match-summary">
-              本次规格命中来源：{{ matchedExternalSources.map(item => item.display_name).join('、') }}
+              The source of this specification hit:{{ matchedExternalSources.map(item => item.display_name).join(', ') }}
             </div>
             <el-collapse v-model="externalSourceCatalogExpanded">
-              <el-collapse-item name="external-data-source-catalog" title="查看外部来源目录">
+              <el-collapse-item name="external-data-source-catalog" title="View external source directory">
                 <div v-if="externalSourceCatalogSources.length" class="catalog-collection-list">
                   <div
                     v-for="item in externalSourceCatalogSources"
@@ -395,14 +395,14 @@
                       <div>
                         <div class="catalog-collection-title">{{ item.display_name }}</div>
                         <div class="catalog-collection-purpose">{{ item.source_id }} · {{ item.source_type }}</div>
-                        <div v-if="isExternalSourceMatched(item)" class="catalog-match-label">本次命中</div>
+                        <div v-if="isExternalSourceMatched(item)" class="catalog-match-label">This hit</div>
                       </div>
                       <div class="catalog-collection-actions">
-                        <el-button size="small" text @click="insertExternalSourceIntoRequirement(item)">插入到需求</el-button>
-                        <el-button size="small" text @click="copyExternalSourceName(item)">复制来源名</el-button>
-                        <el-button size="small" text @click="copyExternalSourceInterfaces(item)">复制接口</el-button>
-                        <el-button size="small" text @click="copyExternalSourcePreferredFor(item)">复制适用场景</el-button>
-                        <el-button size="small" text @click="copyExternalSourceConstraints(item)">复制约束</el-button>
+                        <el-button size="small" text @click="insertExternalSourceIntoRequirement(item)">Insert into requirement</el-button>
+                        <el-button size="small" text @click="copyExternalSourceName(item)">Copy source name</el-button>
+                        <el-button size="small" text @click="copyExternalSourceInterfaces(item)">Copy interface</el-button>
+                        <el-button size="small" text @click="copyExternalSourcePreferredFor(item)">Copy applicable scenarios</el-button>
+                        <el-button size="small" text @click="copyExternalSourceConstraints(item)">Copy constraints</el-button>
                       </div>
                     </div>
                     <div class="tag-wrap" v-if="item.markets?.length" style="margin-top: 10px;">
@@ -412,62 +412,62 @@
                       <el-tag v-for="entry in item.categories" :key="`${item.source_id}-category-${entry}`" class="tag-item" type="info" effect="plain">{{ entry }}</el-tag>
                     </div>
                     <div v-if="item.preferred_for?.length" class="catalog-notes">
-                      <div v-for="entry in item.preferred_for" :key="`${item.source_id}-preferred-${entry}`" class="catalog-note-item">推荐场景：{{ entry }}</div>
+                      <div v-for="entry in item.preferred_for" :key="`${item.source_id}-preferred-${entry}`" class="catalog-note-item">Recommended scenario:{{ entry }}</div>
                     </div>
                     <div v-if="item.interfaces?.length" class="catalog-notes">
-                      <div v-for="entry in item.interfaces" :key="`${item.source_id}-interface-${entry}`" class="catalog-note-item">推荐接口：{{ entry }}</div>
+                      <div v-for="entry in item.interfaces" :key="`${item.source_id}-interface-${entry}`" class="catalog-note-item">Recommended interface:{{ entry }}</div>
                     </div>
                     <div v-if="item.constraints?.length" class="catalog-notes">
-                      <div v-for="entry in item.constraints" :key="`${item.source_id}-constraint-${entry}`" class="catalog-note-item">约束：{{ entry }}</div>
+                      <div v-for="entry in item.constraints" :key="`${item.source_id}-constraint-${entry}`" class="catalog-note-item">Constraints:{{ entry }}</div>
                     </div>
                     <div v-if="item.notes?.length" class="catalog-notes">
-                      <div v-for="entry in item.notes" :key="`${item.source_id}-note-${entry}`" class="catalog-note-item">说明：{{ entry }}</div>
+                      <div v-for="entry in item.notes" :key="`${item.source_id}-note-${entry}`" class="catalog-note-item">Description:{{ entry }}</div>
                     </div>
                   </div>
                 </div>
-                <el-empty v-else description="当前还没有加载到外部接口与数据源目录" />
+                <el-empty v-else description="It has not been loaded into the external interface and data source directory yet." />
               </el-collapse-item>
             </el-collapse>
           </div>
           <div v-if="specPreview" class="spec-preflight-card">
             <div class="spec-catalog-header">
               <div>
-                <h4>生成前检查</h4>
-                <p>当前生成会优先按下面的复用策略执行。确认无误后再进入代码生成与验证流程。</p>
+                <h4>Check before building</h4>
+                <p>The current generation will be executed according to the following reuse strategy first. After confirmation, enter the code generation and verification process.</p>
               </div>
             </div>
             <div class="preflight-grid">
               <div v-if="preflightAvailableHelpers.length" class="recommendation-block">
-                <div class="recommendation-label">已命中 helper 函数（数据源已覆盖）</div>
+                <div class="recommendation-label">Helper function hit (datasource overridden)</div>
                 <div class="tag-wrap">
                   <el-tag v-for="entry in preflightAvailableHelpers" :key="`preflight-helper-${entry.module}.${entry.name}`" class="tag-item" :type="entry.data_source_handling === 'self_contained' || !entry.data_source_handling ? 'success' : 'warning'" effect="plain">
                     {{ entry.module.split('.').pop() }}.{{ entry.name }}
                   </el-tag>
                 </div>
                 <div class="catalog-note-item" style="margin-top: 6px; color: #67c23a;">
-                  共 {{ preflightAvailableHelpers.length }} 个，其中 {{ preflightSelfContainedHelpers.length }} 个自包含数据源（直接调用即可）
+                  total {{ preflightAvailableHelpers.length }} of which {{ preflightSelfContainedHelpers.length }} A self-contained data source (just call it directly)
                 </div>
               </div>
               <div class="recommendation-block">
-                <div class="recommendation-label">优先复用本地集合</div>
+                <div class="recommendation-label">Prioritize reuse of local collections</div>
                 <div v-if="preflightLocalCollections.length" class="tag-wrap">
                   <el-tag v-for="entry in preflightLocalCollections" :key="`preflight-local-${entry}`" class="tag-item" type="success" effect="plain">{{ entry }}</el-tag>
                 </div>
-                <div v-else-if="isExternalApiMode" class="recommendation-empty">外部数据源集成模式：不评估本地股票资产。</div>
-                <div v-else-if="preflightSelfContainedHelpers.length" class="recommendation-empty">数据源已由 helper 函数覆盖，无需额外命中本地集合。</div>
-                <div v-else class="recommendation-empty">当前没有明确命中的本地集合，生成时会更多依赖需求描述和目录上下文。</div>
+                <div v-else-if="isExternalApiMode" class="recommendation-empty">External data source integration mode: Local stock assets are not evaluated.</div>
+                <div v-else-if="preflightSelfContainedHelpers.length" class="recommendation-empty">The data source is already covered by the helper function, no additional hits to local collections are required.</div>
+                <div v-else class="recommendation-empty">There is currently no explicit local collection hit, and the generation will rely more on the requirement description and directory context.</div>
               </div>
               <div class="recommendation-block">
-                <div class="recommendation-label">候选外部来源</div>
+                <div class="recommendation-label">Candidate external sources</div>
                 <div v-if="preflightExternalSources.length" class="tag-wrap">
                   <el-tag v-for="entry in preflightExternalSources" :key="`preflight-source-${entry}`" class="tag-item" type="warning" effect="plain">{{ entry }}</el-tag>
                 </div>
-                <div v-else-if="isExternalApiMode" class="recommendation-empty">需求指定的外部数据源（{{ externalApiSourceName }}）不在系统目录，以用户提供的接口规格为准。</div>
-                <div v-else-if="preflightSelfContainedHelpers.length" class="recommendation-empty">数据源已由 helper 函数覆盖，外部来源不是必须项。</div>
-                <div v-else class="recommendation-empty">当前优先本地数据即可，外部来源不是必须项。</div>
+                <div v-else-if="isExternalApiMode" class="recommendation-empty">Requirements specify external data sources ({{ externalApiSourceName }}) If it is not in the system directory, the interface specifications provided by the user shall prevail.</div>
+                <div v-else-if="preflightSelfContainedHelpers.length" class="recommendation-empty">The data source is covered by the helper function, external sources are not required.</div>
+                <div v-else class="recommendation-empty">Currently, local data is given priority and external sources are not required.</div>
               </div>
               <div class="recommendation-block">
-                <div class="recommendation-label">生成提醒</div>
+                <div class="recommendation-label">Generate reminder</div>
                 <div class="preflight-notes">
                   <div v-for="entry in preflightNotes" :key="entry" class="catalog-note-item">{{ entry }}</div>
                 </div>
@@ -475,20 +475,20 @@
             </div>
           </div>
           <div ref="confirmActionsRef" :class="['spec-confirm-actions', { 'spec-confirm-actions-highlight': highlightConfirmActions } ]">
-            <el-button @click="wizardStep = 0">✏️ 返回修改</el-button>
+            <el-button @click="wizardStep = 0">✏️ Return to modification</el-button>
             <el-button type="primary" @click="handleConfirmAndGenerate" :loading="specConfirmLoading">
-              ✅ 确认并生成
+              ✅ Confirm and generate
             </el-button>
           </div>
         </div>
       </div>
 
-      <!-- 步骤 2: 生成进度 -->
+      <!-- steps 2: Build progress -->
       <div v-if="wizardStep === 2" class="wizard-generating">
         <div class="gen-status">
           <el-icon class="gen-spinner" :size="40"><Loading /></el-icon>
-          <h3>正在生成 Skill...</h3>
-          <p class="gen-desc">{{ pipelineMessage || 'AI 正在生成代码、验证语法、沙箱执行和质量评估' }}</p>
+          <h3>Generating Skill...</h3>
+          <p class="gen-desc">{{ pipelineMessage || 'AI Generating code, validating syntax, sandboxing execution and quality assessment' }}</p>
         </div>
         <el-progress :percentage="Math.round(genProgress * 100) / 100" :stroke-width="14" style="margin: 24px 0; max-width: 500px; margin-left: auto; margin-right: auto;" />
         <div class="gen-steps">
@@ -501,16 +501,16 @@
         </div>
         <div v-if="pipelineThinking" class="thinking-panel">
           <div class="thinking-header" @click="thinkingExpanded = !thinkingExpanded">
-            <span>AI 思考过程（实时）</span>
+            <span>AI Thought process (real time)</span>
             <el-icon :class="['thinking-arrow', { collapsed: !thinkingExpanded }]"><ArrowDown /></el-icon>
           </div>
           <pre v-show="thinkingExpanded" ref="thinkingBodyRef" class="thinking-body">{{ pipelineThinking }}</pre>
         </div>
         <div v-if="pipelineEvalResult" class="eval-result-panel">
           <div class="eval-result-header">
-            <span>质量评估结果</span>
+            <span>Quality assessment results</span>
             <span :class="['eval-total', pipelineEvalResult.passed ? 'pass' : 'fail']">
-              {{ pipelineEvalResult.total }}/10（{{ pipelineEvalResult.passed ? '达标' : '未达标' }}）
+              {{ pipelineEvalResult.total }}/10 ({{ pipelineEvalResult.passed ? 'Meet the standard' : 'Not up to standard' }}) 
             </span>
           </div>
           <div class="eval-dimensions">
@@ -530,40 +530,40 @@
             {{ pipelineEvalResult.expert_comment }}
           </div>
           <div v-if="pipelineEvalResult.business_passed === false" class="eval-business-fail">
-            业务验收未通过
+            Business acceptance failed
           </div>
         </div>
       </div>
 
-      <!-- 步骤 3: 完成 -->
+      <!-- steps 3: Complete -->
       <div v-if="wizardStep === 3" class="wizard-done">
         <el-result
           :icon="genResult?.success ? 'success' : 'error'"
-          :title="genResult?.success ? '🎉 Skill 创建成功！' : '❌ 生成失败'"
+          :title="genResult?.success ? '🎉 Skill Created successfully!' : '❌ Build failed'"
           :sub-title="genResult?.success
-            ? `工具 ID: ${genResult.skill_id} · 耗时 ${genResult.total_time}s · 评分 ${genResult.final_score ?? '-'}/10`
-            : genResult?.error || '请根据下面的失败信息补充修正意见，然后重新生成'"
+            ? `Tools ID: ${genResult.skill_id} · Time consuming ${genResult.total_time}s · Rating ${genResult.final_score ?? '-'}/10`
+            : genResult?.error || 'Please add correction suggestions based on the failure information below, and then regenerate'"
         >
           <template #extra>
             <el-button v-if="genResult?.success" type="primary" @click="goBack">
-              查看 Skill 列表
+              View Skill List
             </el-button>
-            <el-button v-else @click="wizardStep = 1">返回规格确认</el-button>
-            <el-button @click="goBack">返回列表</el-button>
+            <el-button v-else @click="wizardStep = 1">Return to specification confirmation</el-button>
+            <el-button @click="goBack">Return to list</el-button>
           </template>
         </el-result>
         <div v-if="!genResult?.success" class="repair-card">
           <div class="spec-catalog-header">
             <div>
-              <h4>先让 AI 说明修正计划，再决定是否重跑</h4>
-              <p>这里会自动带上静态验证、沙箱执行、评估阶段的失败信息。你先补充你认为不对的地方，AI 会先回复它理解到的问题和修正计划；确认没偏后，再按这份计划继续生成。</p>
+              <h4>Let the AI explain the correction plan first, and then decide whether to rerun</h4>
+              <p>Failure information for static verification, sandbox execution, and evaluation phases will be automatically included here. You first add what you think is wrong, and AI will first reply with the problems it understands and a correction plan; after confirming that there are no deviations, it will continue to generate according to this plan.</p>
             </div>
           </div>
           <div v-if="pipelineFailureSummary.length" class="repair-summary-list">
             <div v-for="entry in pipelineFailureSummary" :key="entry" class="catalog-note-item">{{ entry }}</div>
           </div>
           <div class="repair-timeout-row">
-            <span class="repair-timeout-label">代码生成超时（秒）</span>
+            <span class="repair-timeout-label">Code generation timeout (seconds)</span>
             <el-input-number
               v-model="codegenTimeout"
               :min="60"
@@ -572,37 +572,37 @@
               controls-position="right"
               style="width: 160px"
             />
-            <span class="repair-timeout-hint">单次代码生成调用允许的最长等待；若因超时失败，调大后重新生成</span>
+            <span class="repair-timeout-hint">The longest wait allowed for a single code generation call; if it fails due to timeout, increase it and regenerate it.</span>
           </div>
           <el-input
             v-model="repairFeedback"
             type="textarea"
             :rows="4"
             resize="vertical"
-            placeholder="例如：当前 price 被默默置为 0 还继续估值，这是错的；请优先用本地实时行情取价格，拿不到有效现价就直接返回 error。"
+            placeholder="For example: the current price is silently set to 0 and the valuation continues, which is wrong; please give priority to using local real-time market prices to get the price. If you cannot get the effective current price, you will directly return an error."
           />
           <div v-if="repairPlan" class="repair-plan-card">
             <div class="repair-plan-header">
-              <h5>AI 理解的问题与修正计划</h5>
-              <span v-if="repairPlanStale" class="repair-plan-stale">你已修改修正意见，请重新生成计划</span>
+              <h5>AI Understanding issues and correction plans</h5>
+              <span v-if="repairPlanStale" class="repair-plan-stale">You have modified your comments, please regenerate the plan</span>
             </div>
             <div class="markdown-body repair-plan-markdown" v-html="renderMarkdown(repairPlan)" />
           </div>
           <div class="repair-actions">
-            <el-button @click="wizardStep = 1">回到规格确认</el-button>
+            <el-button @click="wizardStep = 1">Return to specification confirmation</el-button>
             <el-button :loading="repairPlanning" :disabled="!repairFeedback.trim() || !sessionId" @click="handlePreviewRepairPlan">
-              {{ repairPlan ? '重新生成修正计划' : '让 AI 先给修正计划' }}
+              {{ repairPlan ? 'Regenerate correction plan' : 'Let AI make correction plans first' }}
             </el-button>
             <el-button type="primary" :loading="repairing" :disabled="!canConfirmRepair" @click="handleRepairAndRegenerate">
-              确认按这个计划重跑
+              Confirm to run again according to this plan
             </el-button>
           </div>
         </div>
         <div v-if="genResult?.success" class="test-run-card">
           <div class="spec-catalog-header">
             <div>
-              <h4>立即测试这个 Skill</h4>
-              <p>这里会直接调用测试接口运行刚生成的 Skill，用当前规格里的默认 test_input 验证是否能执行、是否真的拿到数据。</p>
+              <h4>Test this now Skill</h4>
+              <p>Here, the test interface will be called directly to run the newly generated Skill, and the default test_input in the current specifications will be used to verify whether it can be executed and whether the data is actually obtained.</p>
             </div>
           </div>
           <div v-if="generatedTestParams.length" class="test-run-form">
@@ -611,7 +611,7 @@
                 <el-input
                   v-if="p.type === 'string' || !p.type"
                   v-model="generatedTestArgs[p.name]"
-                  :placeholder="p.description || `请输入 ${p.name}`"
+                  :placeholder="p.description || `Please enter ${p.name}`"
                   clearable
                 />
                 <el-input-number
@@ -633,31 +633,31 @@
                 <el-input
                   v-else
                   v-model="generatedTestArgs[p.name]"
-                  :placeholder="p.description || `请输入 ${p.name}`"
+                  :placeholder="p.description || `Please enter ${p.name}`"
                   clearable
                 />
               </el-form-item>
             </el-form>
           </div>
-          <div v-else class="test-params-empty">当前规格没有显式参数，将直接使用默认测试输入执行。</div>
+          <div v-else class="test-params-empty">The current specification has no explicit parameters and will be executed directly using the default test input.</div>
           <div class="test-run-actions">
-            <el-button @click="resetGeneratedTestArgs">恢复默认参数</el-button>
+            <el-button @click="resetGeneratedTestArgs">Restore default parameters</el-button>
             <el-button type="primary" :loading="generatedTestLoading" :disabled="!generatedSkillId" @click="runGeneratedSkillTest">
-              运行测试
+              Run tests
             </el-button>
           </div>
           <div v-if="generatedTestResult" class="test-run-result">
             <div class="test-run-summary">
-              <el-tag :type="generatedTestResult.success ? 'success' : 'danger'">{{ generatedTestResult.success ? '执行成功' : '执行失败' }}</el-tag>
+              <el-tag :type="generatedTestResult.success ? 'success' : 'danger'">{{ generatedTestResult.success ? 'Executed successfully' : 'Execution failed' }}</el-tag>
               <el-tag :type="generatedTestDataState.type" effect="plain">{{ generatedTestDataState.label }}</el-tag>
             </div>
             <el-descriptions :column="1" border size="small">
-              <el-descriptions-item label="执行时长">{{ generatedTestResult.execution_time }}s</el-descriptions-item>
-              <el-descriptions-item label="结果说明">{{ generatedTestDataState.description }}</el-descriptions-item>
-              <el-descriptions-item v-if="generatedTestResult.error" label="错误">
+              <el-descriptions-item label="Execution time">{{ generatedTestResult.execution_time }}s</el-descriptions-item>
+              <el-descriptions-item label="Result explanation">{{ generatedTestDataState.description }}</el-descriptions-item>
+              <el-descriptions-item v-if="generatedTestResult.error" label="Error">
                 <span class="test-run-error">{{ generatedTestResult.error }}</span>
               </el-descriptions-item>
-              <el-descriptions-item label="输出">
+              <el-descriptions-item label="output">
                 <pre class="test-run-pre">{{ generatedTestResultText }}</pre>
               </el-descriptions-item>
               <el-descriptions-item v-if="generatedTestResult.stdout" label="stdout">
@@ -672,24 +672,24 @@
         <div v-if="genResult?.success && (preflightLocalCollections.length || preflightExternalSources.length)" class="done-context-card">
           <div class="spec-catalog-header">
             <div>
-              <h4>本次生成采用的复用策略</h4>
-              <p>以下内容来自生成前统一选择器，用于说明本次代码生成优先参考了哪些本地集合和外部来源。</p>
+              <h4>The reuse strategy used in this generation</h4>
+              <p>The following content comes from the pre-generation unified selector, which is used to explain which local collections and external sources are prioritized for this code generation.</p>
             </div>
           </div>
           <div class="preflight-grid">
             <div class="recommendation-block">
-              <div class="recommendation-label">本地集合</div>
+              <div class="recommendation-label">local collection</div>
               <div v-if="preflightLocalCollections.length" class="tag-wrap">
                 <el-tag v-for="entry in preflightLocalCollections" :key="`done-local-${entry}`" class="tag-item" type="success" effect="plain">{{ entry }}</el-tag>
               </div>
-              <div v-else class="recommendation-empty">本次没有明确锁定本地集合。</div>
+              <div v-else class="recommendation-empty">The local collection is not explicitly locked this time.</div>
             </div>
             <div class="recommendation-block">
-              <div class="recommendation-label">外部来源</div>
+              <div class="recommendation-label">external sources</div>
               <div v-if="preflightExternalSources.length" class="tag-wrap">
                 <el-tag v-for="entry in preflightExternalSources" :key="`done-source-${entry}`" class="tag-item" type="warning" effect="plain">{{ entry }}</el-tag>
               </div>
-              <div v-else class="recommendation-empty">本次策略偏向本地优先，外部来源非必需。</div>
+              <div v-else class="recommendation-empty">This strategy favors local priority and external sources are not required.</div>
             </div>
           </div>
         </div>
@@ -721,7 +721,7 @@ import type {
   TestResult,
 } from '@/api/skillGeneration'
 
-// marked 配置已由 @/utils/markdown 统一管理
+// marked The configuration has been @/utils/markdown Unified management
 const renderMarkdown = (content: string): string => {
   if (!content?.trim()) return ''
   try { return safeMarkdown(content) } catch { return content }
@@ -730,7 +730,7 @@ const renderMarkdown = (content: string): string => {
 const route = useRoute()
 const router = useRouter()
 
-// ==================== 状态 ====================
+// ==================== Status ====================
 
 const wizardStep = ref(0)
 
@@ -757,7 +757,7 @@ const canConfirm = computed(() => chatMessages.value.length >= 2)
 const specPreview = ref<Record<string, any> | null>(null)
 const previewFactReport = ref<ImplementationFactReportView | null>(null)
 const interfacePreflight = ref<InterfacePreflightResult | null>(null)
-// 升级补丁模式的变更点清单（迭代会话确认页 diff 式展示）
+// List of change points in upgrade patch mode (diff-style display on iteration session confirmation page)
 const upgradeChangePoints = ref<string[]>([])
 const specConfirmLoading = ref(false)
 const pipelineMessage = ref('')
@@ -767,16 +767,16 @@ const pipelineEvalResult = ref<PipelineEvalResult | null>(null)
 const thinkingExpanded = ref(true)
 const thinkingBodyRef = ref<HTMLElement | null>(null)
 
-/** 质量评估维度配置（顺序即展示顺序） */
+/** Quality assessment dimension configuration (the order is the display order) */
 const evalDimensions = [
-  { key: 'executability', label: '可执行性' },
-  { key: 'authenticity', label: '真实性' },
-  { key: 'completeness', label: '完整性' },
-  { key: 'relevance', label: '相关性' },
-  { key: 'format_quality', label: '格式质量' },
+  { key: 'executability', label: 'Enforceability' },
+  { key: 'authenticity', label: 'authenticity' },
+  { key: 'completeness', label: 'integrity' },
+  { key: 'relevance', label: 'Relevance' },
+  { key: 'format_quality', label: 'Format quality' },
 ] as const
 
-/** 维度分数配色：<7 红色提示不足，7-8 橙色，≥8 绿色 */
+/** Dimension score color matching:<7 Red prompts insufficient, 7-8 orange,≥8 green */
 const evalScoreColor = (score: number): string => {
   if (score < 7) return '#f56c6c'
   if (score < 8) return '#e6a23c'
@@ -801,7 +801,7 @@ const handoffContext = ref<SkillHandoffContext | null>(null)
 const highlightRecommendationCard = ref(false)
 const highlightConfirmActions = ref(false)
 
-// 迭代优化模式相关
+// Iterative optimization mode related
 const isIterateMode = ref(false)
 interface IterateSkillInfo {
   toolId: string
@@ -811,7 +811,7 @@ interface IterateSkillInfo {
 }
 const iterateSkillInfo = ref<IterateSkillInfo | null>(null)
 
-// 从路由参数初始化迭代优化模式
+// Initialize iterative optimization mode from routing parameters
 const initIterateMode = () => {
   const mode = route.query.mode
   if (mode === 'iterate') {
@@ -822,9 +822,9 @@ const initIterateMode = () => {
       description: String(route.query.description || ''),
       category: String(route.query.category || '')
     }
-    // 如果有描述，预填充到聊天中
+    // If there is a description, prepopulate it into the chat
     if (iterateSkillInfo.value.description) {
-      userInput.value = `我想对这个 Skill 进行迭代优化：${iterateSkillInfo.value.displayName}\n\n${iterateSkillInfo.value.description}\n\n请帮我重新生成一个更好的版本，或者告诉我可以从哪些方面进行改进。`
+      userInput.value = `I want to iteratively optimize this Skill:${iterateSkillInfo.value.displayName}\n\n${iterateSkillInfo.value.description}\n\n Please help me regenerate a better version or tell me where I can improve it.`
     }
   }
 }
@@ -843,70 +843,70 @@ const getRouteHandoffContext = (): SkillHandoffContext | null => {
     source_spec_id: sourceSpecId,
     source_name: sourceName,
     target_capability: targetCapability,
-    handoff_intent: handoffIntent || '当前是从 Agent 创建流程里补能力缺口，不是普通 Skill 脑暴。必须优先保留上游目标能力；若需要拆成 Skill，只能定义成该 Agent 能力里的最小确定性子能力。',
+    handoff_intent: handoffIntent || 'Currently, the ability gap is filled from the Agent creation process, not ordinary Skill brainstorming. Priority must be given to retaining the upstream target capabilities; if it needs to be split into Skills, it can only be defined as the minimum deterministic sub-capability within the Agent s capabilities.',
   }
 }
 
 const preflightLocalCollections = computed(() => backendRecommendations.value?.stock_collections || [])
 const preflightExternalSources = computed(() => backendRecommendations.value?.external_sources || [])
-// 已命中的 helper 函数（来自侦察层 fact_report.available_helpers）
+// Hit helper function (from recon layer fact_report.available_helpers)
 const preflightAvailableHelpers = computed(() => previewFactReport.value?.available_helpers || [])
-// 其中自包含数据源的 helper（self_contained 表示 helper 内部已封装数据源调用）
+// Among them, the helper of the self-contained data source (self_contained means that the data source call has been encapsulated inside the helper)
 const preflightSelfContainedHelpers = computed(() =>
   preflightAvailableHelpers.value.filter(h => !h.data_source_handling || h.data_source_handling === 'self_contained')
 )
-// 外部 API 集成模式：目录外数据源需求，不展示/不评估本地股票资产与目录内外部源
+// External API integration mode: data source requirements outside the directory, do not display/do not evaluate local stock assets and internal and external sources in the directory
 const isExternalApiMode = computed(() => backendRecommendations.value?.requirement_mode === 'external_api')
 const externalApiSourceName = computed(
   () => backendRecommendations.value?.unknown_data_source
     || String(specPreview.value?.data_source || '').trim()
-    || '目录外数据源'
+    || 'Out-of-directory data sources'
 )
-// 接口规格约束：含 URL 的 constraints（外部接口集成模式的契约核心，代码生成逐字使用）
+// Interface specification constraints: constraints with URL (the core contract of the external interface integration pattern, used verbatim for code generation)
 const interfaceSpecConstraints = computed(() =>
   (specPreview.value?.constraints || []).filter((entry: string) => /https?:\/\//.test(String(entry)))
 )
-// 其余行为约束（不含 URL）
+// Remaining behavioral constraints (excluding URL)
 const otherSpecConstraints = computed(() =>
   (specPreview.value?.constraints || []).filter((entry: string) => !/https?:\/\//.test(String(entry)))
 )
 const preflightNotes = computed(() => {
   const notes: string[] = []
-  // 外部接口集成模式：数据源在系统目录外，生成提醒不再输出本地优先话术
+  // External interface integration mode: The data source is outside the system directory, and the generated reminder will no longer output local priority words.
   if (isExternalApiMode.value) {
     notes.push(
-      `外部接口集成模式：数据源「${externalApiSourceName.value}」不在系统目录，将直接按用户提供的接口规格（URL、请求头、参数）实现。`
+      `External interface integration mode: data source ${externalApiSourceName.value}] If it is not in the system directory, it will be implemented directly according to the interface specifications (URL, request headers, parameters) provided by the user.`
     )
-    notes.push('不会复用本地股票集合或目录内外部来源；接口规格未提供时生成器会要求澄清，不会臆造接口细节。')
-    notes.push('本次仍会经过代码生成、静态校验、沙箱执行和质量评估，不会跳过验证。')
+    notes.push('Will not reuse local stock collections or external sources within the directory; the generator will ask for clarification when interface specifications are not provided and will not invent interface details.')
+    notes.push('This time it will still go through code generation, static verification, sandbox execution and quality assessment, and verification will not be skipped.')
     return notes
   }
-  // 优先展示命中的 helper 函数（这是数据源能力的核心信号，比本地集合更准确）
+  // Prioritize display of hit helper functions (this is the core signal of data source capabilities, more accurate than local collections)
   if (preflightSelfContainedHelpers.value.length) {
     const helperNames = preflightSelfContainedHelpers.value.map(h => `${h.module.split('.').pop()}.${h.name}`)
-    notes.push(`已命中 ${preflightSelfContainedHelpers.value.length} 个自包含数据源的 helper 函数：${helperNames.join('、')}（直接调用即可，无需额外数据源）`)
+    notes.push(`Hit ${preflightSelfContainedHelpers.value.length} Helper functions for self-contained data sources:${helperNames.join(', ')} (Just call it directly, no additional data sources are needed)`)
   } else if (preflightAvailableHelpers.value.length) {
-    notes.push(`已命中 ${preflightAvailableHelpers.value.length} 个 helper 函数（部分可能需要补充数据源）`)
+    notes.push(`Hit ${preflightAvailableHelpers.value.length} A helper function (some may require additional data sources)`)
   }
 
   if (preflightLocalCollections.value.length) {
-    notes.push(`优先复用本地集合：${preflightLocalCollections.value.join('、')}`)
+    notes.push(`Prioritize reuse of local collections:${preflightLocalCollections.value.join(', ')}`)
   } else if (preflightSelfContainedHelpers.value.length) {
-    // 已有自包含 helper，本地集合不再是必需项
-    notes.push('数据源已由 helper 函数覆盖，无需额外命中本地集合。')
+    // There is already a self-contained helper, local collections are no longer required
+    notes.push('The data source is already covered by the helper function, no additional hits to local collections are required.')
   } else {
-    notes.push('当前没有明确命中的本地集合，生成器会根据需求描述和目录信息决定是否直连外部来源。')
+    notes.push('There is currently no local collection that is explicitly hit. The generator will decide whether to directly connect to external sources based on the requirement description and directory information.')
   }
 
   if (preflightExternalSources.value.length) {
-    notes.push(`如本地数据不足，将优先考虑这些外部来源：${preflightExternalSources.value.join('、')}`)
+    notes.push(`If local data is insufficient, priority will be given to these external sources:${preflightExternalSources.value.join(', ')}`)
   } else if (preflightSelfContainedHelpers.value.length) {
-    notes.push('数据源已由 helper 函数覆盖，外部来源不是必须项。')
+    notes.push('The data source is covered by the helper function, external sources are not required.')
   } else {
-    notes.push('当前推荐策略偏向本地优先，外部来源更多作为可选补充。')
+    notes.push('The current recommendation strategy favors local priority, with more external sources as optional supplements.')
   }
 
-  notes.push('本次仍会经过代码生成、静态校验、沙箱执行和质量评估，不会跳过验证。')
+  notes.push('This time it will still go through code generation, static verification, sandbox execution and quality assessment, and verification will not be skipped.')
   return notes
 })
 
@@ -942,10 +942,10 @@ const isStockCollectionMatched = (item: StockDataCatalogCollection) => {
   const purpose = String(item.purpose || '').toLowerCase()
   if (category && purpose.includes(category)) return true
 
-  if (item.collection === 'stock_news' && (category === 'news' || text.includes('新闻') || text.includes('publish_time'))) return true
-  if (item.collection === 'stock_financial_data' && (category === 'fundamentals' || text.includes('财务') || text.includes('report_period'))) return true
-  if (item.collection === 'stock_daily_quotes' && (category === 'technical' || text.includes('日线') || text.includes('trade_date'))) return true
-  if (item.collection === 'market_quotes' && (category === 'market' || text.includes('实时') || text.includes('snapshot'))) return true
+  if (item.collection === 'stock_news' && (category === 'news' || text.includes('News') || text.includes('publish_time'))) return true
+  if (item.collection === 'stock_financial_data' && (category === 'fundamentals' || text.includes('Finance') || text.includes('report_period'))) return true
+  if (item.collection === 'stock_daily_quotes' && (category === 'technical' || text.includes('daily line') || text.includes('trade_date'))) return true
+  if (item.collection === 'market_quotes' && (category === 'market' || text.includes('real time') || text.includes('snapshot'))) return true
   if (item.collection === 'stock_basic_info' && ['fundamentals', 'market', 'technical', 'news'].includes(category)) return true
 
   return false
@@ -963,9 +963,9 @@ const isExternalSourceMatched = (item: ExternalDataSourceCatalogItem) => {
   if ((item.interfaces || []).some(entry => text.includes(entry.toLowerCase()))) return true
 
   const category = String(spec.category || '').toLowerCase()
-  if (item.source_id === 'tushare' && (category === 'fundamentals' || text.includes('分红') || text.includes('report_period'))) return true
-  if (item.source_id === 'akshare' && ((category === 'technical' || category === 'market') || text.includes('免费'))) return true
-  if (item.source_id === 'eastmoney_via_akshare' && (text.includes('东方财富') || text.includes('东财'))) return true
+  if (item.source_id === 'tushare' && (category === 'fundamentals' || text.includes('dividend') || text.includes('report_period'))) return true
+  if (item.source_id === 'akshare' && ((category === 'technical' || category === 'market') || text.includes('free'))) return true
+  if (item.source_id === 'eastmoney_via_akshare' && (text.includes('Oriental Fortune') || text.includes('Dongcai'))) return true
 
   return false
 }
@@ -975,10 +975,10 @@ const matchedExternalSources = computed(() => externalSourceCatalogSources.value
 
 const genProgress = ref(0)
 const genSteps = ref([
-  { label: '生成代码', status: 'pending' },
-  { label: '语法检查', status: 'pending' },
-  { label: '沙箱执行', status: 'pending' },
-  { label: '质量评估', status: 'pending' },
+  { label: 'Generate code', status: 'pending' },
+  { label: 'Grammar check', status: 'pending' },
+  { label: 'sandbox execution', status: 'pending' },
+  { label: 'quality assessment', status: 'pending' },
 ])
 const genResult = ref<ConfirmResult | null>(null)
 const repairing = ref(false)
@@ -986,7 +986,7 @@ const repairPlanning = ref(false)
 const repairFeedback = ref('')
 const repairPlan = ref('')
 const repairPlanFeedback = ref('')
-// 代码生成单次 LLM 调用超时（秒）：默认 480；超时失败后可调大重新提交
+// Code generation single LLM call timeout (seconds): default 480; after the timeout fails, it can be increased and resubmitted.
 const codegenTimeout = ref(480)
 const generatedTestLoading = ref(false)
 const generatedTestArgs = ref<Record<string, any>>({})
@@ -1027,17 +1027,17 @@ const generatedTestDataState = computed(() => {
   const result = generatedTestResult.value
   if (!result) {
     return {
-      label: '尚未测试',
+      label: 'Not tested yet',
       type: 'info' as const,
-      description: '运行一次测试后，这里会告诉你是否真正拿到了有效数据。',
+      description: 'After running a test, this will tell you whether you actually got valid data.',
     }
   }
 
   if (!result.success) {
     return {
-      label: '未拿到数据',
+      label: 'Data not obtained',
       type: 'danger' as const,
-      description: result.error || '测试执行失败，当前无法确认是否能正常拿到数据。',
+      description: result.error || 'The test execution failed and it is currently impossible to confirm whether the data can be obtained normally.',
     }
   }
 
@@ -1052,14 +1052,14 @@ const generatedTestDataState = computed(() => {
 
   return hasData
     ? {
-        label: '已拿到数据',
+        label: 'Data has been obtained',
         type: 'success' as const,
-        description: '测试已跑通，返回结果中包含有效输出。',
+        description: 'The test has passed and the returned results contain valid output.',
       }
     : {
-        label: '执行成功但无数据',
+        label: 'Execution successful but no data',
         type: 'warning' as const,
-        description: '代码已经执行成功，但当前输出为空，需要继续确认查询参数或数据来源是否正确。',
+        description: 'The code has been executed successfully, but the current output is empty. You need to continue to confirm whether the query parameters or data sources are correct.',
       }
 })
 
@@ -1069,22 +1069,22 @@ const pipelineFailureSummary = computed(() => {
 
   const lines: string[] = []
   if (result.error) {
-    lines.push(`最终错误：${result.error}`)
+    lines.push(`Final error:${result.error}`)
   }
 
   for (const iteration of result.iterations || []) {
-    const prefix = `第${iteration.round_number}轮`
+    const prefix = `No.${iteration.round_number}wheel`
     if (iteration.validation?.errors?.length) {
       for (const error of iteration.validation.errors.slice(0, 5)) {
-        lines.push(`${prefix} 静态验证：${error}`)
+        lines.push(`${prefix} Static verification:${error}`)
       }
     }
     if (iteration.sandbox && iteration.sandbox.success === false && iteration.sandbox.error) {
-      lines.push(`${prefix} 沙箱执行：${iteration.sandbox.error}`)
+      lines.push(`${prefix} Sandbox execution:${iteration.sandbox.error}`)
     }
     if (iteration.eval_score && typeof iteration.eval_score.total === 'number') {
       lines.push(
-        `${prefix} 评估分数不足：total=${iteration.eval_score.total}，` +
+        `${prefix} Insufficient assessment points:total=${iteration.eval_score.total}, ` +
         `executability=${iteration.eval_score.executability ?? '-'}，` +
         `authenticity=${iteration.eval_score.authenticity ?? '-'}，` +
         `completeness=${iteration.eval_score.completeness ?? '-'}，` +
@@ -1093,7 +1093,7 @@ const pipelineFailureSummary = computed(() => {
       )
     }
     if (iteration.feedback) {
-      lines.push(`${prefix} 系统反馈：${iteration.feedback}`)
+      lines.push(`${prefix} System feedback:${iteration.feedback}`)
     }
   }
 
@@ -1155,7 +1155,7 @@ const updateGenerationProgressUI = (stage?: string, message?: string, progress?:
   })
 }
 
-// ==================== 方法 ====================
+// ==================== method ====================
 
 const scrollChat = () => {
   nextTick(() => {
@@ -1187,50 +1187,50 @@ const copyText = async (text: string, successMessage: string) => {
     }
     ElMessage.success(successMessage)
   } catch (e: any) {
-    ElMessage.error(e?.message || '复制失败')
+    ElMessage.error(e?.message || 'Copy failed')
   }
 }
 
 const copyCatalogCollectionName = async (collectionName: string) => {
-  await copyText(collectionName, `已复制集合名：${collectionName}`)
+  await copyText(collectionName, `Collection name copied:${collectionName}`)
 }
 
 const copyCatalogFieldNames = async (item: StockDataCatalogCollection) => {
   const fieldNames = (item.fields || []).map(field => field.name).filter(Boolean)
-  await copyText(fieldNames.join(', '), `已复制 ${item.collection} 的字段名`)
+  await copyText(fieldNames.join(', '), `Copied ${item.collection} field name`)
 }
 
 const copyCatalogQueryKeys = async (item: StockDataCatalogCollection) => {
   const queryKeys = (item.query_keys || []).filter(Boolean)
-  await copyText(queryKeys.join(', '), `已复制 ${item.collection} 的查询键`)
+  await copyText(queryKeys.join(', '), `Copied ${item.collection} query key`)
 }
 
 const copyCatalogPreferredAccess = async (item: StockDataCatalogCollection) => {
   const preferredAccess = (item.preferred_access || []).filter(Boolean)
-  await copyText(preferredAccess.join(', '), `已复制 ${item.collection} 的推荐访问函数`)
+  await copyText(preferredAccess.join(', '), `Copied ${item.collection} Recommended access functions`)
 }
 
 const copyCatalogFieldDescriptions = async (item: StockDataCatalogCollection) => {
   const fieldDescriptions = (item.fields || [])
     .filter(field => field?.name)
     .map(field => `${field.name} (${field.type}): ${field.description}`)
-  await copyText(fieldDescriptions.join('\n'), `已复制 ${item.collection} 的字段说明`)
+  await copyText(fieldDescriptions.join('\n'), `Copied ${item.collection} field description`)
 }
 
 const copyExternalSourceName = async (item: ExternalDataSourceCatalogItem) => {
-  await copyText(item.display_name, `已复制来源名：${item.display_name}`)
+  await copyText(item.display_name, `Source name copied:${item.display_name}`)
 }
 
 const copyExternalSourceInterfaces = async (item: ExternalDataSourceCatalogItem) => {
-  await copyText((item.interfaces || []).join('\n'), `已复制 ${item.display_name} 的推荐接口`)
+  await copyText((item.interfaces || []).join('\n'), `Copied ${item.display_name} Recommended interface`)
 }
 
 const copyExternalSourcePreferredFor = async (item: ExternalDataSourceCatalogItem) => {
-  await copyText((item.preferred_for || []).join('\n'), `已复制 ${item.display_name} 的适用场景`)
+  await copyText((item.preferred_for || []).join('\n'), `Copied ${item.display_name} Applicable scenarios`)
 }
 
 const copyExternalSourceConstraints = async (item: ExternalDataSourceCatalogItem) => {
-  await copyText((item.constraints || []).join('\n'), `已复制 ${item.display_name} 的约束说明`)
+  await copyText((item.constraints || []).join('\n'), `Copied ${item.display_name} Constraint description`)
 }
 
 const buildCatalogRequirementSnippet = (item: StockDataCatalogCollection) => {
@@ -1241,10 +1241,10 @@ const buildCatalogRequirementSnippet = (item: StockDataCatalogCollection) => {
     .map(field => `- ${field.name} (${field.type}): ${field.description}`)
 
   return [
-    `请优先复用本地股票数据集合 ${item.collection}。`,
-    preferredAccess.length ? `推荐访问函数：${preferredAccess.join('、')}。` : '',
-    queryKeys.length ? `常用查询键：${queryKeys.join('、')}。` : '',
-    fieldDescriptions.length ? `关键字段：\n${fieldDescriptions.join('\n')}` : '',
+    `Please give priority to reusing local stock data collections ${item.collection}. `,
+    preferredAccess.length ? `Recommended access functions:${preferredAccess.join(', ')}. ` : '',
+    queryKeys.length ? `Common query keys:${queryKeys.join(', ')}. ` : '',
+    fieldDescriptions.length ? `Key fields:\n${fieldDescriptions.join('\n')}` : '',
   ].filter(Boolean).join('\n')
 }
 
@@ -1261,7 +1261,7 @@ const insertCatalogIntoRequirement = async (item: StockDataCatalogCollection) =>
     await nextTick()
   }
 
-  ElMessage.success(`已将 ${item.collection} 的目录信息插入到需求输入框`)
+  ElMessage.success(`Already ${item.collection} The directory information is inserted into the requirements input box.`)
 }
 
 const buildExternalSourceRequirementSnippet = (item: ExternalDataSourceCatalogItem) => {
@@ -1272,12 +1272,12 @@ const buildExternalSourceRequirementSnippet = (item: ExternalDataSourceCatalogIt
   const constraints = (item.constraints || []).filter(Boolean)
 
   return [
-    `若需要外部在线数据，请优先使用 ${item.display_name}（${item.source_id}）。`,
-    markets.length ? `覆盖市场：${markets.join('、')}。` : '',
-    categories.length ? `适用分类：${categories.join('、')}。` : '',
-    preferredFor.length ? `推荐场景：${preferredFor.join('；')}。` : '',
-    interfaces.length ? `优先接口：${interfaces.join('；')}。` : '',
-    constraints.length ? `使用约束：${constraints.join('；')}。` : '',
+    `If you need external online data, please use it first ${item.display_name} (${item.source_id}) . `,
+    markets.length ? `Market coverage:${markets.join(', ')}. ` : '',
+    categories.length ? `Applicable categories:${categories.join(', ')}. ` : '',
+    preferredFor.length ? `Recommended scenario:${preferredFor.join('; ')}. ` : '',
+    interfaces.length ? `Priority interface:${interfaces.join('; ')}. ` : '',
+    constraints.length ? `Use constraints:${constraints.join('; ')}. ` : '',
   ].filter(Boolean).join('\n')
 }
 
@@ -1294,7 +1294,7 @@ const insertExternalSourceIntoRequirement = async (item: ExternalDataSourceCatal
     await nextTick()
   }
 
-  ElMessage.success(`已将 ${item.display_name} 的目录信息插入到需求输入框`)
+  ElMessage.success(`Already ${item.display_name} The directory information is inserted into the requirements input box.`)
 }
 
 const loadStockDataCatalog = async () => {
@@ -1304,7 +1304,7 @@ const loadStockDataCatalog = async () => {
     stockCatalogCollections.value = res.collections || []
     stockCatalogDoc.value = res.doc || ''
   } catch (e: any) {
-    ElMessage.error(e?.message || '加载股票数据目录失败')
+    ElMessage.error(e?.message || 'Failed to load stock data directory')
   } finally {
     stockCatalogLoading.value = false
   }
@@ -1317,7 +1317,7 @@ const loadExternalDataSourceCatalog = async () => {
     externalSourceCatalogSources.value = res.sources || []
     externalSourceCatalogDoc.value = res.doc || ''
   } catch (e: any) {
-    ElMessage.error(e?.message || '加载外部接口与数据源目录失败')
+    ElMessage.error(e?.message || 'Failed to load external interface and data source directory')
   } finally {
     externalSourceCatalogLoading.value = false
   }
@@ -1440,7 +1440,7 @@ const buildGenResultFromSession = (session: SessionDetail): ConfirmResult | null
   }
 }
 
-/** 初始化：新建或恢复草稿 */
+/** Initialization: Create a new or restore draft */
 const initFromRoute = async () => {
   const sid = route.query.sessionId as string
   if (sid) {
@@ -1494,9 +1494,9 @@ const initFromRoute = async () => {
         wizardStep.value = 0
       }
       scrollChat()
-      ElMessage.success('已恢复草稿')
+      ElMessage.success('Draft restored')
     } catch (e: any) {
-      ElMessage.error('恢复草稿失败: ' + (e?.message || ''))
+      ElMessage.error('Restoring draft failed: ' + (e?.message || ''))
       wizardStep.value = 0
     }
   } else {
@@ -1541,19 +1541,19 @@ const handleChatSend = async () => {
     }
     scrollChat()
   } catch (e: any) {
-    const msg = e?.message || e?.response?.data?.message || '请求失败'
+    const msg = e?.message || e?.response?.data?.message || 'Request failed'
     ElMessage.error(msg)
-    chatMessages.value.push({ role: 'ai', content: `❌ 出错了：${msg}` })
+    chatMessages.value.push({ role: 'ai', content: `❌ Something went wrong:${msg}` })
     scrollChat()
   } finally {
     chatLoading.value = false
   }
 }
 
-/** 查看规格：生成规格和侦察报告后进入规格确认 */
+/** View specifications: After generating specifications and reconnaissance reports, enter specification confirmation */
 const handleViewSpec = async () => {
   if (!sessionId.value) return
-  const confirmMessage = userInput.value?.trim() || '确认'
+  const confirmMessage = userInput.value?.trim() || 'Confirm'
   if (userInput.value?.trim()) {
     chatMessages.value.push({ role: 'user', content: userInput.value.trim() })
     userInput.value = ''
@@ -1569,44 +1569,44 @@ const handleViewSpec = async () => {
     upgradeChangePoints.value = res.upgrade_change_points || []
     wizardStep.value = 1
   } catch (e: any) {
-    ElMessage.error(e?.message || '获取规格失败')
+    ElMessage.error(e?.message || 'Failed to get specifications')
     wizardStep.value = 0
   } finally {
     chatLoading.value = false
   }
 }
 
-/** 确认并生成：调用 confirmSpec，若返回 generating 则轮询 */
+/** Confirm and generate: call confirmSpec, if generating is returned, poll */
 const handleConfirmAndGenerate = async () => {
   if (!sessionId.value) return
-  // 根据命中的 helper 函数和本地集合情况，生成更准确的确认文案
+  // Generate more accurate confirmation text based on the hit helper function and local collection conditions
   const helperCount = preflightSelfContainedHelpers.value.length
   const helperHint = helperCount > 0
-    ? `已命中 ${helperCount} 个自包含数据源的 helper 函数，数据源已覆盖。`
+    ? `Hit ${helperCount} Helper function for a self-contained data source that has been overridden.`
     : (preflightAvailableHelpers.value.length > 0
-        ? `已命中 ${preflightAvailableHelpers.value.length} 个 helper 函数（部分可能需补充数据源）。`
+        ? `Hit ${preflightAvailableHelpers.value.length} A helper function (some may need to supplement the data source).`
         : '')
   const localHint = preflightLocalCollections.value.length
-    ? `优先复用本地集合：${preflightLocalCollections.value.join('、')}`
+    ? `Prioritize reuse of local collections:${preflightLocalCollections.value.join(', ')}`
     : (helperCount > 0
-        ? '数据源已由 helper 函数覆盖，无需额外命中本地集合。'
-        : '当前没有明确命中的本地集合。')
+        ? 'The data source is already covered by the helper function, no additional hits to local collections are required.'
+        : 'There is currently no local collection explicitly hit.')
   const externalHint = preflightExternalSources.value.length
-    ? `候选外部来源：${preflightExternalSources.value.join('、')}`
+    ? `Candidate external sources:${preflightExternalSources.value.join(', ')}`
     : (helperCount > 0
-        ? '外部来源不是必须项。'
-        : '当前优先本地数据，外部来源不是必须项。')
+        ? 'External sources are not required.'
+        : 'Local data is currently preferred, external sources are not required.')
   const confirmationText = [
     helperHint,
     localHint,
     externalHint,
-    '确认后将开始代码生成、静态校验、沙箱执行和质量评估。',
+    'After confirmation, code generation, static verification, sandbox execution and quality assessment will begin.',
   ].filter(Boolean).join('\n')
 
   try {
-    await ElMessageBox.confirm(confirmationText, '生成前确认', {
-      confirmButtonText: '继续生成',
-      cancelButtonText: '返回检查',
+    await ElMessageBox.confirm(confirmationText, 'Confirm before generating', {
+      confirmButtonText: 'Continue to generate',
+      cancelButtonText: 'Return to check',
       type: 'warning',
     })
   } catch {
@@ -1620,13 +1620,13 @@ const handleConfirmAndGenerate = async () => {
   sessionPipelineResult.value = null
   genSteps.value.forEach(s => s.status = 'pending')
   genProgress.value = 0
-  pipelineMessage.value = '正在确认规格并启动生成任务...'
+  pipelineMessage.value = 'Confirming specifications and starting build task...'
   pipelineDetails.value = []
   pipelineThinking.value = ''
   pipelineEvalResult.value = null
 
   try {
-    const res = await skillGenerationApi.confirmSpec(sessionId.value, '确认', codegenTimeout.value)
+    const res = await skillGenerationApi.confirmSpec(sessionId.value, 'Confirm', codegenTimeout.value)
     if (res.status === 'generating') {
       const pollInterval = 1500
       const poll = async () => {
@@ -1652,7 +1652,7 @@ const handleConfirmAndGenerate = async () => {
             genProgress.value = 100
             genSteps.value.forEach(s => s.status = 'done')
           } else {
-            pipelineMessage.value = pr?.error || msg || stage || '生成失败'
+            pipelineMessage.value = pr?.error || msg || stage || 'Build failed'
           }
           genResult.value = {
             status: session.status,
@@ -1673,10 +1673,10 @@ const handleConfirmAndGenerate = async () => {
       }
       setTimeout(poll, pollInterval)
     } else if (res.status === 'failed' && res.interface_preflight) {
-      // 外部接口预检拦截：留在确认页修正接口规格，不进入生成流程
+      // External interface preflight interception: Stay on the confirmation page to correct the interface specifications without entering the generation process
       interfacePreflight.value = res.interface_preflight
       wizardStep.value = 1
-      ElMessage.error(res.message || '外部接口预检未通过，已阻止代码生成')
+      ElMessage.error(res.message || 'External interface preflight failed, code generation has been blocked')
     } else {
       genProgress.value = 100
       genSteps.value.forEach(s => s.status = 'done')
@@ -1688,7 +1688,7 @@ const handleConfirmAndGenerate = async () => {
     genResult.value = {
       status: 'failed', session_id: sessionId.value, skill_id: null,
       spec: null, success: false, total_rounds: 0, total_time: 0,
-      final_score: null, error: e?.message || '生成失败'
+      final_score: null, error: e?.message || 'Build failed'
     }
     wizardStep.value = 3
   } finally {
@@ -1708,7 +1708,7 @@ const handleRepairAndRegenerate = async () => {
     )
     wizardStep.value = 2
     genProgress.value = 0
-    pipelineMessage.value = '已确认修正计划，正在重新生成...'
+    pipelineMessage.value = 'Correction plan confirmed and being regenerated...'
     genResult.value = null
     genSteps.value.forEach(s => s.status = 'pending')
     pipelineDetails.value = []
@@ -1739,7 +1739,7 @@ const handleRepairAndRegenerate = async () => {
           genProgress.value = 100
           genSteps.value.forEach(s => s.status = 'done')
         } else {
-          pipelineMessage.value = pr?.error || msg || stage || '生成失败'
+          pipelineMessage.value = pr?.error || msg || stage || 'Build failed'
         }
         genResult.value = {
           status: session.status,
@@ -1761,7 +1761,7 @@ const handleRepairAndRegenerate = async () => {
 
     setTimeout(poll, 1500)
   } catch (e: any) {
-    ElMessage.error(e?.message || '重新生成失败')
+    ElMessage.error(e?.message || 'Regeneration failed')
   } finally {
     repairing.value = false
   }
@@ -1792,7 +1792,7 @@ const runGeneratedSkillTest = async () => {
       stdout: '',
       stderr: '',
       execution_time: 0,
-      error: e?.message || '测试请求失败',
+      error: e?.message || 'Test request failed',
     }
   } finally {
     generatedTestLoading.value = false
@@ -1807,7 +1807,7 @@ const handlePreviewRepairPlan = async () => {
     repairPlan.value = res.ai_message || ''
     repairPlanFeedback.value = repairFeedback.value.trim()
   } catch (e: any) {
-    ElMessage.error(e?.message || '生成修正计划失败')
+    ElMessage.error(e?.message || 'Failed to generate remediation plan')
   } finally {
     repairPlanning.value = false
   }
@@ -1892,7 +1892,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-/* ========== 需求沟通（全屏利用） ========== */
+/* ========== Requirements communication (full screen use) ========== */
 .wizard-chat {
   display: flex;
   flex-direction: column;
@@ -1947,7 +1947,7 @@ onMounted(async () => {
   line-height: 1.6;
 }
 
-/* 需求提交引导语 */
+/* Instructions for submitting requirements */
 .requirement-guide {
   padding: 24px 20px;
   color: var(--el-text-color-regular);
@@ -2137,7 +2137,7 @@ onMounted(async () => {
   .tip { color: var(--el-text-color-placeholder); font-size: 12px; }
 }
 
-/* ========== 规格确认 ========== */
+/* ========== Specification confirmation ========== */
 .wizard-spec-confirm {
   flex: 1;
   min-height: 0;
@@ -2427,7 +2427,7 @@ onMounted(async () => {
   background: linear-gradient(180deg, var(--el-color-success-light-9), var(--el-bg-color));
 }
 
-/* ========== 生成进度 ========== */
+/* ========== Build progress ========== */
 .wizard-generating {
   display: flex;
   flex-direction: column;
@@ -2606,7 +2606,7 @@ onMounted(async () => {
   &.running { color: var(--el-color-primary); font-weight: 500; }
 }
 
-/* ========== 完成 ========== */
+/* ========== Complete ========== */
 .wizard-done {
   flex: 1;
   min-height: 0;

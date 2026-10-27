@@ -1,4 +1,4 @@
-"""近期信息搜索工具。"""
+"""Recent information search tool."""
 
 import logging
 import os
@@ -23,7 +23,7 @@ def _invoke_legacy_tool(tool_func, **kwargs):
             return tool_func.invoke(kwargs)
         return tool_func(**kwargs)
     except Exception as exc:
-        logger.error("调用近期搜索底层工具失败 %s: %s", tool_func, exc)
+        logger.error("Failed to call recent search underlying tool %s: %s", tool_func, exc)
         return f"近期信息搜索失败: {str(exc)}"
 
 
@@ -47,7 +47,7 @@ def _resolve_dashscope_runtime_config() -> tuple[Optional[str], str, str]:
         api_key = provider_doc.get("api_key") or api_key
         base_url = provider_doc.get("default_base_url") or base_url
     except Exception as exc:
-        logger.warning("读取 DashScope 配置失败，回退环境变量: %s", exc)
+        logger.warning("Failed to read DashScope configuration, fallback environment variables: %s", exc)
 
     return api_key, base_url, model
 
@@ -69,24 +69,24 @@ def _extract_response_text(response: Any) -> str:
 def _search_with_qwen(query: str, curr_date: str) -> str:
     api_key, base_url, model = _resolve_dashscope_runtime_config()
     if not api_key:
-        raise RuntimeError("未配置 DASHSCOPE_API_KEY，也未在 llm_providers 中找到 DashScope API Key")
+        raise RuntimeError("DASHSCOPE_API_KEY is not configured and not found in llm_providers DashScope API Key")
 
     client = OpenAI(api_key=api_key, base_url=base_url)
     prompt = (
-        f"请联网搜索并确认以下问题的近期公开信息：{query}。"
-        f"当前日期是 {curr_date}。"
-        "优先使用最近30天的信息；如果没有，再回退到最近90天。"
-        "请优先引用交易所公告、公司公告、权威财经媒体。"
-        "不要凭常识补充历史背景，不要自行推断未被近期来源直接支持的结论。"
-        "不要用‘很可能’‘大概率’这类模糊措辞来冒充确定结论。"
-        "如果证据不足以完全确认，不要只回答‘无法确认’就结束；应继续列出可参考的近期媒体报道或市场信息，并标明它们不是最终确证。"
-        "不要输出时间线表格，除非每个时间点都有近期可验证来源。"
-        "请严格按下面格式输出："
-        "【最新结论】先给当前能确认到的最稳妥结论。若不能完全确认，要明确写‘目前无法完全确认’，但仍要补充参考信息。"
-        "【确证依据】列出2-4条确证性来源，每条包含：日期 | 来源 | 标题 | 可直接确认的信息。没有就写‘无直接确证来源’。"
-        "【参考报道】列出2-5条参考性来源，例如财新、证券时报、路透、彭博、主流财经媒体报道；每条包含：日期 | 来源 | 标题 | 报道口径。并在本段开头明确说明‘以下为参考报道，未必等同于最终官方确证’。"
-        "【不确定点】明确写还缺什么证据，例如‘缺少港交所最新权益披露’。如果没有，写‘无’。"
-        "如果有媒体明确报道‘已清仓’‘已降至5%以下’‘已不再披露’，这些内容应该进入【参考报道】或【最新结论】中，但必须区分是媒体报道还是官方确证。"
+        f"Please search online and confirm recent public information on the following issues:{query}. "
+        f"The current date is {curr_date}. "
+        "Priority will be given to using the information of the last 30 days; if not, it will fall back to the last 90 days."
+        "Please give priority to citing exchange announcements, company announcements, and authoritative financial media."
+        "Do not rely on common sense to add historical context and do not infer conclusions that are not directly supported by recent sources."
+        "Don t use very likely  High probability This type of vague wording pretends to be a definite conclusion."
+        "If the evidence is insufficient to fully confirm, don t just answer Unable to confirm It ends; you should continue to list recent media reports or market information that you can refer to, and indicate that they are not final confirmation."
+        "Do not output a timeline table unless there is a recent, verifiable source for each time point."
+        "Please output strictly in the following format:"
+        " [The latest conclusion] First give the most reliable conclusion that can be confirmed at present. If you are not completely sure, please write clearly Unable to fully confirm at present , However, reference information still needs to be added."
+        " [Corroborating basis] List 2-4 corroborating sources, each containing: Date | Source | Title | Information that can be directly confirmed. If not, just write No direct source of confirmation . "
+        " [Reference reports] List 2-5 reference sources, such as Caixin, Securities Times, Reuters, Bloomberg, and mainstream financial media reports; each item includes: date | Source | Title | Reporting caliber. and clearly state at the beginning of this paragraph The following is a reference report and may not necessarily be equivalent to final official confirmation. . "
+        " [Uncertain points] Clearly write down what evidence is missing, for example Lacking the latest equity disclosure from the Hong Kong Stock Exchange . If not, write None . "
+        "If the media clearly reports Cleared  Has dropped below 5%  no longer disclosed , These contents should be entered into [Reference Reports] or [Latest Conclusions], but it must be distinguished whether they are media reports or official confirmations."
     )
 
     response = client.responses.create(
@@ -124,20 +124,20 @@ def _search_with_qwen(query: str, curr_date: str) -> str:
 
 
 def run_recent_information_search(query: str) -> str:
-    """搜索近期公开信息，优先用于事实确认类问题。
+    """Search recent public information, giving priority to fact-confirmation questions.
 
-    搜索源优先级：
-    1. SearXNG 本地实例（快，约1-2秒；SEARXNG_INSTANCES 配置时启用）
-    2. DashScope 联网搜索（qwen + web_search_preview，较慢，可能超时）
-    3. Google News（兜底）
+    Search source priority:
+    1. SearXNG Local instance (fast, about 1-2 seconds; enabled when SEARXNG_INSTANCES is configured)
+    2. DashScope Internet search (qwen + web_search_preview, Slower, may timeout)
+    3. Google News (full details)
     """
     query_clean = (query or "").strip()
     if not query_clean:
-        return "请提供要搜索的关键词，例如：比亚迪 伯克希尔 减持 持股比例。"
+        return "Please provide the keywords to be searched, for example: BYD, Berkshire, shareholding reduction, shareholding ratio."
 
     curr_date = datetime.now().strftime("%Y-%m-%d")
 
-    # 1) SearXNG 本地搜索（优先，秒级返回）
+    # 1) SearXNG Local search (priority, return within seconds)
     try:
         from core.tools.implementations.assistant_ops.web_search import run_web_search
 
@@ -145,14 +145,14 @@ def run_recent_information_search(query: str) -> str:
         if searx_result and not searx_result.startswith("Web 搜索失败"):
             return (
                 f"以下是“{query_clean}”的近期联网搜索结果（搜索引擎聚合，按相关性排序）。"
-                "请优先依据发布时间最新、来源更权威的条目回答，并注意核对发布日期。\n\n"
+                "Please give priority to answers based on entries with the latest release date and more authoritative sources, and be sure to check the release date.\n\n"
                 f"{searx_result}"
             )
-        logger.warning("SearXNG 搜索无结果，回退 DashScope: %s", query_clean)
+        logger.warning("SearXNG No results found in search, return DashScope: %s", query_clean)
     except Exception as exc:
-        logger.warning("SearXNG 搜索失败，回退 DashScope: %s", exc)
+        logger.warning("SearXNG Search failed, fallback DashScope: %s", exc)
 
-    # 2) DashScope 联网搜索（备选）
+    # 2) DashScope Internet search (optional)
     try:
         result = _search_with_qwen(query_clean, curr_date)
         return (
@@ -160,15 +160,15 @@ def run_recent_information_search(query: str) -> str:
             f"{result}"
         )
     except Exception as exc:
-        logger.warning("百炼近期搜索失败，回退 Google News: %s", exc)
+        logger.warning("Bailian s recent search failed and returned Google News: %s", exc)
 
-    # 3) Google News（兜底）
+    # 3) Google News (full details)
     result = _invoke_legacy_tool(Toolkit.get_google_news, query=query_clean, curr_date=curr_date)
     if not result or str(result).startswith("近期信息搜索失败"):
-        return f"近期信息搜索失败：{result}"
+        return f"Recent information search failed:{result}"
 
     return (
-        f"百炼搜索暂时不可用，以下回退为 Google News 近期搜索结果。请优先依据发布时间最新、来源更权威的条目回答。\n\n"
+        f"Bailian search is temporarily unavailable, and the following will fall back to recent Google News search results. Please give priority to answers based on items with the latest release date and more authoritative sources.\n\n"
         f"{result}"
     )
 
@@ -177,7 +177,7 @@ def run_recent_information_search(query: str) -> str:
 @register_tool(
     tool_id="search_recent_information",
     name="近期信息搜索",
-    description="搜索最近7天内的公开新闻与近期信息。适合回答‘截至目前’‘最新’‘近期是否有变化’‘需要确认最新持股比例/公告/消息’这类问题。输入应包含公司名、事件关键词或股票代码。",
+    description="Search public news and recent information within the last 7 days. suitable answer Up to now  Latest  Are there any recent changes?  Need to confirm the latest shareholding ratio/announcement/news These kind of questions. The input should contain a company name, event keyword, or stock symbol.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -186,12 +186,12 @@ def run_recent_information_search(query: str) -> str:
     tool_role_hint="specialized",
     output_shape="report",
     preferred_for=["搜索近期公开新闻", "确认最新事实信息", "查询近期公告或事件", "核实最新持股或市场动态"],
-    when_to_use="当用户问及‘截至目前’‘最新’‘近期是否有变化’或需要确认最新持股比例、公告、市场消息等时使用。",
-    when_not_to_use="不适用于查询个股股价走势、行情涨跌、是否反弹/回调/突破等价格趋势判断——这类问题必须调用行情数据工具（get_stock_market_data_unified / get_technical_indicators / 实时行情）获取真实K线数据，网页搜索结果无法提供股价走势；也不适用于查询历史价格数据。",
-    returns="返回文本格式的搜索结果，包含最新结论、确证依据、参考报道和不确定点。",
+    when_to_use="When users ask Up to now  Latest  Are there any recent changes? Or use it when you need to confirm the latest shareholding ratio, announcements, market news, etc.",
+    when_not_to_use="It is not suitable for checking the stock price trend of individual stocks, the rise and fall of the market, whether it rebounds/callbacks/breakthroughs and other price trend judgments.——For this type of problem, you must call market data tools (get_stock_market_data_unified / get_technical_indicators / real-time market conditions) to obtain real K-line data. Web search results cannot provide stock price trends; they are not suitable for querying historical price data.",
+    returns="Returns search results in text format, including the latest conclusions, corroborating evidence, reference reports and uncertainties.",
 )
 def search_recent_information(
-    query: Annotated[str, "搜索关键词，例如：比亚迪 伯克希尔 减持 持股比例，或 宁德时代 最新 公告"],
+    query: Annotated[str, "Search keywords, for example: BYD, Berkshire, shareholding reduction, or CATL s latest announcement"],
 ) -> str:
-    """搜索近期公开信息，用于最新事实确认类问题。"""
+    """Search recent public information for the latest fact-confirming questions."""
     return run_recent_information_search(query)

@@ -1,17 +1,17 @@
 """
-分析师报告质量门禁。
+Analyst reports are quality gated.
 
-在 invoke_with_tools() 返回后、AnalystAgent.execute() 返回前做轻量校验。
-失败时分层降级：第1次重试 → 第2次标记 low_quality → 第3次写告警集合。
+in invoke_with_tools() After returning,AnalystAgent.execute() Do light verification before returning.
+Tiered downgrade on failure: 1st retry → 2nd mark low_quality → Write the alarm set for the third time.
 
-设计原则：
-- 不阻塞工作流（标记而非中断）
-- 不在 invoke_with_tools() 内部检查（保持工具循环单一职责）
-- 首版只做长度 + 黑名单 + 结论关键词，不做数据引用检查（避免误杀）
+Design principles:
+- Not blocking workflow (marking rather than interrupting)
+- Not here invoke_with_tools() Internal inspection (keeps tools looping with single responsibility)
+- The first edition is only available in length + blacklist + Conclusion keyword, no data reference check (to avoid accidental killing)
 
-相关文件：
-- core/agents/analyst.py：调用方
-- core/agents/base.py:1022-1043：invoke_with_tools 的兜底文案（与黑名单同步）
+Related documents:
+- core/agents/analyst.py: caller
+- core/agents/base.py:1022-1043: invoke_with_tools The hidden copy (synchronized with the blacklist)
 """
 
 import logging
@@ -20,31 +20,31 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# 兜底文案黑名单（与 base.py 中的失败文案保持同步）
-# 命中其中任何一个，说明报告生成失败
+# Blacklist of cover-up copywriting (synchronized with failed copywriting in base.py)
+# If any one of them is hit, the report generation failed.
 FALLBACK_BLACKLIST = [
-    "工具执行或模型生成未完成，当前结论仍待验证",
-    "分析未能完成（达到最大迭代次数",
-    "分析报告生成失败：LLM 持续返回工具调用而不是报告内容",
-    "分析报告生成失败：LLM 持续返回工具调用",
+    "Tool execution or model generation has not been completed, and the current conclusion still needs to be verified.",
+    "Analysis failed to complete (maximum number of iterations reached",
+    "Analysis report generation failed: LLM keeps returning tool calls instead of report content",
+    "Analysis report generation failed: LLM keeps returning tool calls",
 ]
 
-# 结论性关键词（报告至少包含一个）
-# 缺少这些关键词说明 LLM 可能只罗列了数据，没有给出判断
+# Concluding keywords (the report contains at least one)
+# The lack of these keywords indicates that LLM may only list the data without making a judgment.
 CONCLUSION_KEYWORDS = [
-    "研究观察", "结论", "判断", "观点", "风险", "机会",
-    "乐观", "审慎", "中性", "证据", "依据",
-    "利好", "利空", "增长", "下滑", "震荡", "趋势",
-    "关注", "警惕", "展望",
+    "research observation", "Conclusion", "judge", "point of view", "risk", "opportunity",
+    "optimistic", "Prudence", "Neutral", "evidence", "Basis",
+    "good", "Bad", "growth", "decline", "shock", "Trend",
+    "Follow", "Be alert", "Outlook",
 ]
 
-# 最小报告长度（字符）
+# Minimum report length (characters)
 MIN_REPORT_LENGTH = 50
 
 
 @dataclass
 class QualityCheckResult:
-    """质量门禁校验结果。"""
+    """Quality gate check results."""
 
     is_valid: bool
     reason: str
@@ -52,7 +52,7 @@ class QualityCheckResult:
 
     @property
     def should_retry(self) -> bool:
-        """是否应该重试（critical 级别才重试，warning 只标记不重试）。"""
+        """Whether it should be retried (retry only at critical level, warning only marks not to retry)."""
         return self.severity == "critical" and not self.is_valid
 
 
@@ -61,26 +61,26 @@ def validate_analyst_report(
     agent_id: str = "",
     ticker: str = "",
 ) -> QualityCheckResult:
-    """分析师报告质量门禁。
+    """Analyst reports are quality gated.
 
-    检查维度（首版轻量）：
-    1. 报告长度 < 50 字符 → critical
-    2. 命中兜底文案黑名单 → critical
-    3. 缺少结论性关键词 → warning（不重试，只标记）
+    Check dimensions (first version lightweight):
+    1. Report length < 50 character → critical
+    2. Hit the blacklist of copywriters → critical
+    3. Missing concluding keywords → warning (No retries, just marking)
 
     Args:
-        content: 报告内容
-        agent_id: 用于日志定位
-        ticker: 用于日志定位
+        content: Report content
+        agent_id: Used for log positioning
+        ticker: Used for log positioning
 
     Returns:
-        QualityCheckResult：is_valid=False 时调用方应重试或标记 low_quality
+        QualityCheckResult: is_valid=False The caller should retry or mark low_quality
     """
-    # 维度1：空报告或过短
+    # Dimension 1: Empty report or too short
     if not content or not content.strip():
         return QualityCheckResult(
             is_valid=False,
-            reason="报告内容为空",
+            reason="Report content is empty",
             severity="critical",
         )
 
@@ -88,24 +88,24 @@ def validate_analyst_report(
     if stripped_len < MIN_REPORT_LENGTH:
         return QualityCheckResult(
             is_valid=False,
-            reason=f"报告内容过短（{stripped_len} 字符 < {MIN_REPORT_LENGTH}）",
+            reason=f"Report content is too short ({stripped_len} character < {MIN_REPORT_LENGTH}) ",
             severity="critical",
         )
 
-    # 维度2：命中兜底文案黑名单
+    # Dimension 2: Hit the blacklist of cover-up copywriters
     for pattern in FALLBACK_BLACKLIST:
         if pattern in content:
             return QualityCheckResult(
                 is_valid=False,
-                reason=f"命中兜底文案黑名单: {pattern[:50]}",
+                reason=f"Hit the blacklist of copywriters: {pattern[:50]}",
                 severity="critical",
             )
 
-    # 维度3：缺少结论性关键词（warning 级别，不重试只标记）
+    # Dimension 3: Lack of concluding keywords (warning level, only marking without retrying)
     if not any(kw in content for kw in CONCLUSION_KEYWORDS):
         return QualityCheckResult(
             is_valid=False,
-            reason="报告缺少结论性关键词（建议/结论/判断/风险等）",
+            reason="The report lacks conclusive keywords (suggestions/conclusions/judgments/risks, etc.)",
             severity="warning",
         )
 

@@ -1,4 +1,4 @@
-"""数据契约加载与任务级文档生成。"""
+"""Data contract loading and task-level document generation."""
 
 from __future__ import annotations
 
@@ -109,16 +109,16 @@ def build_data_contract_doc_for_skill(skill_spec: Any, max_items: int = 3) -> st
 
     header = [
         "【任务相关数据契约】",
-        "以下内容来自仓库内可维护的数据契约配置，是比自由推断更高优先级的结构事实。",
-        "如契约说明与样本数据冲突，先记录冲突并以样本验证结果为准，不要臆造中间结构。",
+        "The following comes from a maintainable data contract configuration within the warehouse and is a higher priority structural fact than free inference.",
+        "If the contract description conflicts with the sample data, record the conflict first and use the sample verification results as the standard. Do not invent intermediate structures.",
         "",
     ]
     body = ["\n\n".join(_render_contract(contract) for contract in contracts)]
     footer = [
         "",
         "【使用要求】",
-        "1. 先按契约理解字段层级，再决定是否需要样本探测。",
-        "2. 对 array 路径必须按数组元素遍历，不要把 array 当 dict。",
-        "3. 若任务依赖主路径失败，再按契约中的回退路径实现。",
+        "1. First understand the field hierarchy according to the contract, and then decide whether sample detection is needed.",
+        "2. Array paths must be traversed by array elements. Do not treat array as dict.",
+        "3. If the task fails depending on the main path, it will be implemented according to the fallback path in the contract.",
     ]
     return "\n".join(header + body + footer)

@@ -1,12 +1,12 @@
 """
-大盘/指数分析师 - 兼容函数接口
+Market/Index Analyst - Compatible Function Interface
 
-为了与现有的 LangGraph 工作流兼容，提供函数式接口
+To be compatible with existing LangGraph workflows, a functional interface is provided
 
-支持缓存机制：
-- 同一天的大盘分析结果会被缓存（不依赖具体股票）
-- 缓存有效期为 12 小时（当天数据不变）
-- 下次分析时先检查缓存，命中则直接返回
+Support caching mechanism:
+- The market analysis results of the same day will be cached (not dependent on specific stocks)
+- The cache validity period is 12 hours (the data of the day remains unchanged)
+- The cache will be checked first during the next analysis, and if there is a hit, it will be returned directly.
 """
 
 import logging
@@ -21,36 +21,36 @@ from tradingagents.agents.utils.compliance_prompting import apply_compliance_gua
 
 logger = get_logger("default")
 
-# 缓存配置
-INDEX_REPORT_CACHE_TTL_HOURS = 12  # 大盘分析报告缓存有效期（小时）
+# Cache configuration
+INDEX_REPORT_CACHE_TTL_HOURS = 12  # Market analysis report cache validity period (hours)
 
 
 def _get_cache_manager():
-    """获取缓存管理器（延迟加载避免循环导入）"""
+    """Get cache manager (lazy loading to avoid circular imports)"""
     try:
         from tradingagents.dataflows.cache import get_cache
         return get_cache()
     except Exception as e:
-        logger.warning(f"⚠️ 无法获取缓存管理器: {e}")
+        logger.warning(f"⚠️ Unable to get cache manager: {e}")
         return None
 
 
 def _get_cached_index_report(trade_date: str) -> Optional[str]:
     """
-    从缓存获取大盘分析报告
+    Get market analysis report from cache
 
     Args:
-        trade_date: 交易日期
+        trade_date: transaction date
 
     Returns:
-        缓存的报告内容，如果没有命中则返回 None
+        The cached report content, returned if there is no hit None
     """
     cache = _get_cache_manager()
     if not cache:
         return None
 
     try:
-        # 大盘分析不依赖具体股票，使用 "market" 作为 symbol
+        # Market analysis does not rely on specific stocks, using "market" as symbol
         cache_key = cache.find_cached_analysis_report(
             report_type="index_report",
             symbol="market",
@@ -60,24 +60,24 @@ def _get_cached_index_report(trade_date: str) -> Optional[str]:
         if cache_key:
             report = cache.load_analysis_report(cache_key)
             if report and len(report) > 100:
-                logger.info(f"📦 [大盘分析] 命中缓存: @ {trade_date}")
+                logger.info(f"📦 [Market analysis] hit cache: @ {trade_date}")
                 return report
     except Exception as e:
-        logger.warning(f"⚠️ 读取大盘分析缓存失败: {e}")
+        logger.warning(f"⚠️ Failed to read large disk analysis cache: {e}")
 
     return None
 
 
 def _save_index_report_to_cache(trade_date: str, report: str) -> bool:
     """
-    将大盘分析报告保存到缓存
+    Save market analysis report to cache
 
     Args:
-        trade_date: 交易日期
-        report: 报告内容
+        trade_date: transaction date
+        report: Report content
 
     Returns:
-        是否保存成功
+        Is the save successful?
     """
     cache = _get_cache_manager()
     if not cache:
@@ -90,64 +90,64 @@ def _save_index_report_to_cache(trade_date: str, report: str) -> bool:
             symbol="market",
             trade_date=trade_date
         )
-        logger.info(f"💾 [大盘分析] 已缓存: @ {trade_date}")
+        logger.info(f"💾 [Market analysis] Cached: @ {trade_date}")
         return True
     except Exception as e:
-        logger.warning(f"⚠️ 保存大盘分析缓存失败: {e}")
+        logger.warning(f"⚠️ Failed to save disk analysis cache: {e}")
         return False
 
 
 def create_index_analyst(llm, toolkit):
     """
-    创建大盘/指数分析师节点
+    Create market/index analyst node
 
     Args:
-        llm: 语言模型实例
-        toolkit: 工具包实例
+        llm: Language model example
+        toolkit: Toolkit Example
 
     Returns:
-        分析师节点函数
+        Analyst node function
     """
 
     @log_analyst_module("index")
     def index_analyst_node(state):
         """
-        大盘/指数分析师节点
+        Market/Index Analyst Node
 
-        分析主要指数走势、市场环境和系统性风险
+        Analyze major index trends, market environment and systemic risks
 
-        🔥 重要：此分析师采用"自包含"模式，不使用 LangGraph 的工具调用机制。
-        它在单次调用中完成所有工作：获取数据 + LLM 分析。
-        返回的 AIMessage 不包含 tool_calls，确保图立即结束。
+        🔥 Important: This analyst uses"self contained"mode, does not use LangGraph s tool calling mechanism.
+        It does all the work in a single call: Get the data + LLM Analysis.
+        The returned AIMessage does not contain tool_calls, ensuring that the graph ends immediately.
         """
         trade_date = state.get("trade_date", "")
 
-        # 🔥 防止死循环：检查是否已经生成过报告
+        # 🔥 Prevent infinite loops: check whether a report has been generated
         existing_report = state.get("index_report", "")
         if existing_report and len(existing_report) > 100:
-            logger.info(f"🌐 大盘分析师: 已存在报告 ({len(existing_report)} 字符)，跳过重复分析")
-            # 返回空更新，保持状态不变
+            logger.info(f"🌐 Market Analyst: Report already exists ({len(existing_report)} character), Skip duplicate analysis")
+            # Returns an empty update, leaving the state unchanged
             return {}
 
-        # 📦 检查缓存：如果有有效缓存，直接返回
+        # 📦 Check cache: If there is a valid cache, return directly
         cached_report = _get_cached_index_report(trade_date)
         if cached_report:
-            logger.info(f"🌐 大盘分析师: 使用缓存报告 ({len(cached_report)} 字符)")
+            logger.info(f"🌐 Market Analyst: Use cached reports ({len(cached_report)} character)")
             final_message = AIMessage(content=cached_report, name="index_analyst")
             return {
                 "index_report": cached_report,
                 "messages": [final_message],
             }
 
-        logger.info(f"🌐 大盘分析师开始分析 @ {trade_date}")
+        logger.info(f"🌐 Market analysts begin to analyze @ {trade_date}")
 
         try:
-            # 导入并调用大盘分析工具
+            # Import and call market analysis tools
             from core.tools.index_tools import analyze_index
             import asyncio
             import concurrent.futures
 
-            # 在线程池中运行异步函数以避免事件循环冲突
+            # Run asynchronous functions in thread pool to avoid event loop conflicts
             def run_async_in_thread():
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
@@ -160,9 +160,9 @@ def create_index_analyst(llm, toolkit):
                 future = executor.submit(run_async_in_thread)
                 index_data = future.result()
 
-            logger.info(f"✅ 大盘数据获取完成")
+            logger.info(f"✅ Obtaining market data is completed")
 
-            # 🆕 使用 LLM 对数据进行分析解读
+            # 🆕 Use LLM to analyze and interpret data
             index_report = _analyze_with_llm(
                 llm=llm,
                 trade_date=trade_date,
@@ -170,29 +170,29 @@ def create_index_analyst(llm, toolkit):
                 state=state
             )
 
-            logger.info(f"✅ 大盘分析报告生成完成")
+            logger.info(f"✅ The market analysis report is generated")
 
-            # 💾 保存到缓存
+            # 💾 Save to cache
             _save_index_report_to_cache(trade_date, index_report)
 
-            # 🔥 返回 AIMessage 而不是 HumanMessage
-            # AIMessage 没有 tool_calls 属性（或 tool_calls 为空列表），
-            # 这样 should_continue 函数会检测到没有工具调用，直接结束图
+            # 🔥 Return AIMessage instead HumanMessage
+            # AIMessage There is no tool_calls attribute (or tool_calls is an empty list),
+            # In this way, the should_continue function will detect that there is no tool call and end the graph directly.
             final_message = AIMessage(content=index_report, name="index_analyst")
 
-            # 只返回需要更新的字段（LangGraph 会自动合并）
+            # Only return fields that need to be updated (LangGraph will automatically merge)
             return {
                 "index_report": index_report,
                 "messages": [final_message],
             }
 
         except Exception as e:
-            logger.error(f"❌ 大盘分析失败: {e}")
+            logger.error(f"❌ Market analysis failed: {e}")
             import traceback
-            logger.error(f"❌ 详细错误: {traceback.format_exc()}")
-            error_msg = f"大盘分析遇到错误: {str(e)}"
+            logger.error(f"❌ detailed error: {traceback.format_exc()}")
+            error_msg = f"Market analysis encountered an error: {str(e)}"
 
-            # 返回错误消息
+            # Return error message
             error_message = AIMessage(content=error_msg, name="index_analyst")
 
             return {
@@ -205,27 +205,27 @@ def create_index_analyst(llm, toolkit):
 
 def _analyze_with_llm(llm, trade_date: str, index_data: str, state: dict) -> str:
     """
-    使用 LLM 对大盘数据进行分析解读
+    Use LLM to analyze and interpret market data
 
     Args:
-        llm: 语言模型实例
-        trade_date: 交易日期
-        index_data: 大盘数据报告
-        state: 状态字典
+        llm: Language model example
+        trade_date: transaction date
+        index_data: Market data report
+        state: status dictionary
 
     Returns:
-        LLM 生成的分析报告
+        LLM Generated analysis report
     """
     try:
-        # 获取 AgentContext
+        # get AgentContext
         ctx = state.get("agent_context") or {}
 
-        # 准备模板变量
+        # Prepare template variables
         template_variables = {
             "trade_date": trade_date,
         }
 
-        # 尝试从模板系统获取提示词
+        # Try to get the prompt word from the template system
         try:
             from tradingagents.utils.template_client import get_template_client
             tpl_info = get_template_client().get_effective_template(
@@ -236,7 +236,7 @@ def _analyze_with_llm(llm, trade_date: str, index_data: str, state: dict) -> str
                 context=None
             )
             if tpl_info:
-                logger.info(f"📚 [模板选择] source={tpl_info.get('source')} id={tpl_info.get('template_id')} agent=analysts/index_analyst")
+                logger.info(f"📚 [Template selection] source={tpl_info.get('source')} id={tpl_info.get('template_id')} agent=analysts/index_analyst")
 
             system_prompt = get_agent_prompt(
                 agent_type="analysts",
@@ -248,91 +248,91 @@ def _analyze_with_llm(llm, trade_date: str, index_data: str, state: dict) -> str
                 context=None
             )
             system_prompt = apply_compliance_guardrails(system_prompt, "index_analyst")
-            logger.info(f"✅ [大盘分析师] 成功从模板系统获取提示词 (长度: {len(system_prompt)})")
+            logger.info(f"✅ [Market Analyst] Successfully obtained the prompt word from the template system (length: {len(system_prompt)})")
 
         except Exception as e:
-            logger.warning(f"⚠️ [大盘分析师] 从模板系统获取提示词失败: {e}，使用默认提示词")
+            logger.warning(f"⚠️ [Market Analyst] Failed to obtain prompt word from template system: {e}, Use default prompt word")
             system_prompt = _get_default_system_prompt(trade_date)
 
-        # 构建完整的分析请求
+        # Build a complete analysis request
         analysis_request = f"""{system_prompt}
 
-## 📊 大盘数据
+## 📊 Market data
 
-以下是通过数据工具获取的大盘分析数据：
+The following is market analysis data obtained through data tools:
 
 {index_data}
 
-## 🎯 分析要求
+## 🎯 Analysis requirements
 
-请基于以上数据，生成一份专业的大盘分析报告。报告必须包含：
+Please generate a professional market analysis report based on the above data. The report must contain:
 
-1. **市场概况**
-   - 主要指数今日表现（上证、深证、创业板等）
-   - 涨跌家数和市场情绪
-   - 成交额变化分析
+1. **Market overview**
+   - Today s performance of major indexes (Shanghai Stock Exchange, Shenzhen Stock Exchange, GEM, etc.)
+   - Increases and declines and market sentiment
+   - Analysis of changes in turnover
 
-2. **技术面分析**
-   - 各指数技术形态判断
-   - 关键支撑位和压力位
-   - 均线系统分析
+2. **Technical analysis**
+   - Judgment of technical forms of each index
+   - Key support and pressure levels
+   - Moving average system analysis
 
-3. **市场宽度分析**
-   - 涨跌比和强弱指标
-   - 板块分化程度
-   - 市场参与度评估
+3. **Market Breadth Analysis**
+   - Gain/Loss Ratio and Strength Indicator
+   - Degree of sector differentiation
+   - Market participation assessment
 
-4. **风险评估与研究结论**
-   - 市场风险等级：🟢低风险 / 🟡中等风险 / 🔴高风险
-   - 市场趋势：📈上涨 / 📉下跌 / ➡️震荡
-    - 后续观察点：基于当前市场环境需要继续跟踪的信号
+4. **Risk assessment and research conclusions**
+   - Market risk level:🟢low risk / 🟡medium risk / 🔴high risk
+   - Market trends:📈rise / 📉fall / ➡️shock
+    - Follow-up observation points: Signals that need to be followed based on the current market environment
 
-请用中文输出，分析要有理有据，结论要明确，但不得形成投资建议或仓位指令。"""
+Please output in Chinese, the analysis must be well-founded, and the conclusion must be clear, but it must not form investment advice or position instructions."""
 
-        # 调用 LLM 生成分析报告
-        logger.info(f"📤 [大盘分析师] 调用 LLM 生成分析报告...")
+        # Call LLM to generate analysis reports
+        logger.info(f"📤 [Market Analyst] Call LLM to generate analysis reports...")
         response = llm.invoke(analysis_request)
 
-        # 提取响应内容
+        # Extract response content
         if hasattr(response, 'content'):
             report = response.content
         else:
             report = str(response)
 
-        logger.info(f"✅ [大盘分析师] LLM 分析报告生成完成 (长度: {len(report)})")
+        logger.info(f"✅ [Market Analyst] LLM Analysis report generation completed (length: {len(report)})")
         return report
 
     except Exception as e:
-        logger.error(f"❌ [大盘分析师] LLM 分析失败: {e}")
-        # 如果 LLM 分析失败，返回原始数据报告
+        logger.error(f"❌ [Market Analyst] LLM Analysis failed: {e}")
+        # If LLM analysis fails, return raw data report
         return index_data
 
 
 def _get_default_system_prompt(trade_date: str) -> str:
     """
-    获取默认的系统提示词
+    Get the default system prompt word
 
     Args:
-        trade_date: 交易日期
+        trade_date: transaction date
 
     Returns:
-        默认系统提示词
+        Default system prompt word
     """
-    prompt = f"""你是一位专业的大盘/指数分析师，专注于宏观市场分析和系统性风险评估。
+    prompt = f"""You are a professional market/index analyst focusing on macro market analysis and systemic risk assessment.
 
-📋 **分析日期：** {trade_date}
+📋 **Analysis date:** {trade_date}
 
-🎯 **你的职责：**
-1. 分析主要指数（上证、深证、创业板等）的走势
-2. 评估市场整体环境和情绪
-3. 识别系统性风险和机会
-4. 提供市场层面的研究结论与风险观察
+🎯 **Your responsibilities:**
+1. Analyze the trends of major indexes (Shanghai Stock Exchange, Shenzhen Stock Exchange, GEM, etc.)
+2. Assess the overall market environment and sentiment
+3. Identify systemic risks and opportunities
+4. Provide market-level research conclusions and risk observations
 
-📊 **分析维度：**
-- 指数表现：涨跌幅、成交额
-- 市场宽度：涨跌家数、强弱分布
-- 技术面：支撑压力、趋势判断
-- 风险评估：系统性风险水平
+📊 **Analysis dimensions:**
+- Index performance: increase or decrease, turnover
+- Market breadth: number of winners and losers, strength and weakness distribution
+- Technical aspect: support pressure, trend judgment
+- Risk Assessment: Systemic Risk Levels
 
-请基于提供的数据进行专业分析，给出明确的研究结论、风险提示和后续观察点。"""
+Please conduct professional analysis based on the data provided and give clear research conclusions, risk tips and follow-up observation points."""
     return apply_compliance_guardrails(prompt, "index_analyst")

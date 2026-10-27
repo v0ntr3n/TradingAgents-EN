@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <!-- 蓝色背景铺满整个画布，避免出现白边 -->
+  <!-- The blue background covers the entire canvas to avoid white edges. -->
   <rect x="0" y="0" width="1024" height="1024" fill="#409eff" />
 
-  <!-- 白色上涨折线（略偏左，留出圆点空间） -->
+  <!-- White rising polyline (slightly to the left, leaving room for dots) -->
   <path
     d="M220 640 L410 460 L580 640 L720 410"
     fill="none"
@@ -12,6 +12,6 @@
     stroke-linejoin="round"
   />
 
-  <!-- 右上方白色圆点，与折线不重叠 -->
+  <!-- The white dot in the upper right corner does not overlap with the polyline -->
   <circle cx="780" cy="300" r="60" fill="#ffffff" />
 </svg>

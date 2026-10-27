@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-测试000002股票的估值指标计算
+Test the calculation of valuation indicators for 000002 stocks
 """
 
 import sys
@@ -13,15 +13,15 @@ from tradingagents.agents.utils.agent_utils import Toolkit
 from tradingagents.default_config import DEFAULT_CONFIG
 
 def test_000002_valuation():
-    """测试000002股票的估值指标"""
-    print("测试000002股票估值指标计算...")
+    """Testing Valuation Metrics for 000002 Stocks"""
+    print("Test 000002 stock valuation indicator calculation...")
     
-    # 创建工具包
+    # Create toolkit
     config = DEFAULT_CONFIG.copy()
     config["online_tools"] = True
     toolkit = Toolkit(config)
     
-    # 获取基本面数据
+    # Get fundamental data
     result = toolkit.get_stock_fundamentals_unified.invoke({
         'ticker': '000002',
         'start_date': '2025-06-01',
@@ -29,21 +29,21 @@ def test_000002_valuation():
         'curr_date': '2025-07-15'
     })
     
-    # 查找估值指标部分
+    # Find the Valuation Metrics section
     lines = result.split('\n')
     
-    print("\n=== 000002股票基本信息 ===")
+    print("\n=== 000002 Basic stock information ===")
     for i, line in enumerate(lines):
-        if "股票名称" in line or "所属行业" in line or "市场板块" in line:
+        if "Stock name" in line or "Industry" in line or "market sector" in line:
             print(line)
     
-    print("\n=== 000002估值指标 ===")
+    print("\n=== 000002 Valuation indicators ===")
     found_valuation = False
     for i, line in enumerate(lines):
-        if "估值指标" in line:
+        if "Valuation indicators" in line:
             found_valuation = True
-            print(f"找到估值指标部分:")
-            # 打印估值指标及其后面的几行
+            print(f"Find the Valuation Metrics section:")
+            # Print the valuation indicator and the following lines
             for j in range(i, min(len(lines), i+8)):
                 if lines[j].strip() and not lines[j].startswith("###"):
                     print(f"  {lines[j]}")
@@ -52,16 +52,16 @@ def test_000002_valuation():
             break
     
     if not found_valuation:
-        print("未找到估值指标部分，搜索相关关键词...")
-        # 搜索包含PE、PB、PS的行
+        print("Valuation indicator part not found, search related keywords...")
+        # Search for lines containing PE, PB, PS
         for i, line in enumerate(lines):
-            if any(keyword in line for keyword in ["市盈率", "市净率", "市销率", "PE", "PB", "PS"]):
+            if any(keyword in line for keyword in ["P/E ratio", "price to book ratio", "price to sales ratio", "PE", "PB", "PS"]):
                 print(f"  {line}")
     
-    print("\n=== 财务健康度指标 ===")
+    print("\n=== financial health indicators ===")
     for i, line in enumerate(lines):
-        if "财务健康度" in line:
-            # 打印财务健康度及其后面的几行
+        if "financial health" in line:
+            # Print financial health and the following lines
             for j in range(i, min(len(lines), i+8)):
                 if lines[j].strip() and not lines[j].startswith("##"):
                     print(f"  {lines[j]}")

@@ -22,10 +22,10 @@ class AnalysisPreferenceService:
 
     def __init__(self, db: Optional[AsyncIOMotorDatabase] = None):
         """
-        初始化分析偏好服务
+        Initialize analysis preference service
 
         Args:
-            db: MongoDB数据库实例（可选，默认使用全局连接池）
+            db: MongoDB Database instance (optional, uses global connection pool by default)
         """
         self.db = db if db is not None else get_mongo_db()
         self.preferences_collection = self.db.analysis_preferences
@@ -47,7 +47,7 @@ class AnalysisPreferenceService:
     ) -> Optional[AnalysisPreference]:
         """创建偏好"""
         try:
-            # 如果设置为默认，取消其他默认
+            # If set to default, cancel other defaults
             if preference_data.is_default:
                 await self.preferences_collection.update_many(
                     {"user_id": ObjectId(user_id)},
@@ -140,7 +140,7 @@ class AnalysisPreferenceService:
                 update_doc["decision_speed"] = update_data.decision_speed
             if update_data.is_default is not None:
                 if update_data.is_default:
-                    # 取消其他默认
+                    # Cancel other defaults
                     await self.preferences_collection.update_many(
                         {"user_id": pref.user_id},
                         {"$set": {"is_default": False}}

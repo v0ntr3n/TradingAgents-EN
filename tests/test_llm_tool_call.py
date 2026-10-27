@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-测试LLM工具调用机制的详细调试脚本
-模拟实际的LLM工具调用过程
+Detailed debugging script to test the LLM tool calling mechanism
+Simulate the actual LLM tool calling process
 """
 
 import logging
@@ -10,99 +10,99 @@ import os
 from datetime import datetime
 from typing import Dict, Any
 
-# 添加项目根目录到路径
+# Add project root directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from tradingagents.dataflows.realtime_news_utils import get_realtime_stock_news
 from tradingagents.agents.utils.agent_utils import Toolkit
 
-# 设置日志
+# Setup log
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(name)s | %(levelname)s | %(message)s')
 logger = logging.getLogger(__name__)
 
 def test_function_exists():
-    """测试函数是否存在"""
-    logger.info("========== 测试1: 函数存在性检查 ==========")
+    """Test whether the function exists"""
+    logger.info("========== test 1: function existence check ==========")
     
-    # 检查直接导入的函数
-    logger.info(f"get_realtime_stock_news 函数: {get_realtime_stock_news}")
-    logger.info(f"函数类型: {type(get_realtime_stock_news)}")
+    # Check directly imported functions
+    logger.info(f"get_realtime_stock_news function: {get_realtime_stock_news}")
+    logger.info(f"function type: {type(get_realtime_stock_news)}")
     
-    # 检查Toolkit中的函数
+    # Check functions in Toolkit
     try:
         toolkit_func = getattr(Toolkit, 'get_realtime_stock_news', None)
         logger.info(f"Toolkit.get_realtime_stock_news: {toolkit_func}")
-        logger.info(f"Toolkit函数类型: {type(toolkit_func)}")
+        logger.info(f"Toolkit function type: {type(toolkit_func)}")
     except Exception as e:
-        logger.error(f"获取Toolkit函数失败: {e}")
+        logger.error(f"Failed to obtain Toolkit function: {e}")
 
 def test_direct_call():
-    """测试直接函数调用"""
-    logger.info("========== 测试2: 直接函数调用 ==========")
+    """Test direct function calls"""
+    logger.info("========== test 2: direct function call ==========")
     try:
         curr_date = datetime.now().strftime('%Y-%m-%d')
-        logger.info(f"调用参数: ticker='000858', date='{curr_date}'")
+        logger.info(f"Call parameters: ticker='000858', date='{curr_date}'")
         
         start_time = datetime.now()
         result = get_realtime_stock_news('000858', curr_date)
         end_time = datetime.now()
         
-        logger.info(f"调用成功，耗时: {(end_time - start_time).total_seconds():.2f}秒")
-        logger.info(f"返回结果类型: {type(result)}")
-        logger.info(f"返回结果长度: {len(result)} 字符")
-        logger.info(f"结果前100字符: {result[:100]}...")
+        logger.info(f"The call was successful and took time: {(end_time - start_time).total_seconds():.2f}seconds")
+        logger.info(f"Return result type: {type(result)}")
+        logger.info(f"Return result length: {len(result)} character")
+        logger.info(f"The first 100 characters of the result: {result[:100]}...")
         return True, result
     except Exception as e:
-        logger.error(f"直接调用失败: {e}")
+        logger.error(f"Direct call failed: {e}")
         import traceback
-        logger.error(f"错误详情: {traceback.format_exc()}")
+        logger.error(f"Error details: {traceback.format_exc()}")
         return False, None
 
 def test_toolkit_call():
-    """测试Toolkit调用"""
-    logger.info("========== 测试3: Toolkit调用 ==========")
+    """Test Toolkit calls"""
+    logger.info("========== test 3: Toolkit call ==========")
     try:
         curr_date = datetime.now().strftime('%Y-%m-%d')
-        logger.info(f"调用参数: ticker='000858', date='{curr_date}'")
+        logger.info(f"Call parameters: ticker='000858', date='{curr_date}'")
         
         start_time = datetime.now()
         result = Toolkit.get_realtime_stock_news('000858', curr_date)
         end_time = datetime.now()
         
-        logger.info(f"Toolkit调用成功，耗时: {(end_time - start_time).total_seconds():.2f}秒")
-        logger.info(f"返回结果类型: {type(result)}")
-        logger.info(f"返回结果长度: {len(result)} 字符")
-        logger.info(f"结果前100字符: {result[:100]}...")
+        logger.info(f"Toolkit The call was successful and took time: {(end_time - start_time).total_seconds():.2f}seconds")
+        logger.info(f"Return result type: {type(result)}")
+        logger.info(f"Return result length: {len(result)} character")
+        logger.info(f"The first 100 characters of the result: {result[:100]}...")
         return True, result
     except Exception as e:
-        logger.error(f"Toolkit调用失败: {e}")
+        logger.error(f"Toolkit call failed: {e}")
         import traceback
-        logger.error(f"错误详情: {traceback.format_exc()}")
+        logger.error(f"Error details: {traceback.format_exc()}")
         return False, None
 
 def test_toolkit_attributes():
-    """测试Toolkit的属性和方法"""
-    logger.info("========== 测试4: Toolkit属性检查 ==========")
+    """Test Toolkit properties and methods"""
+    logger.info("========== test 4: Toolkit Property check ==========")
     
-    # 列出Toolkit的所有属性
+    # List all properties of Toolkit
     toolkit_attrs = [attr for attr in dir(Toolkit) if not attr.startswith('_')]
-    logger.info(f"Toolkit可用属性: {toolkit_attrs}")
+    logger.info(f"Toolkit Available properties: {toolkit_attrs}")
     
-    # 检查是否有get_realtime_stock_news
+    # Check if there is get_realtime_stock_news
     if 'get_realtime_stock_news' in toolkit_attrs:
-        logger.info("✓ get_realtime_stock_news 在Toolkit中存在")
+        logger.info("✓ get_realtime_stock_news Exists in Toolkit")
     else:
-        logger.warning("✗ get_realtime_stock_news 不在Toolkit中")
+        logger.warning("✗ get_realtime_stock_news Not in Toolkit")
     
-    # 检查Toolkit类型
-    logger.info(f"Toolkit类型: {type(Toolkit)}")
-    logger.info(f"Toolkit模块: {Toolkit.__module__ if hasattr(Toolkit, '__module__') else 'N/A'}")
+    # Check toolkit type
+    logger.info(f"Toolkit Type: {type(Toolkit)}")
+    logger.info(f"Toolkit module: {Toolkit.__module__ if hasattr(Toolkit, '__module__') else 'N/A'}")
 
 def simulate_llm_tool_call():
-    """模拟LLM工具调用过程"""
-    logger.info("========== 测试5: 模拟LLM工具调用 ==========")
+    """Simulate the LLM tool calling process"""
+    logger.info("========== test 5: Simulate LLM tool calls ==========")
     
-    # 模拟LLM工具调用的参数格式
+    # Parameter format for simulating LLM tool calls
     tool_call_params = {
         "name": "get_realtime_stock_news",
         "arguments": {
@@ -111,79 +111,79 @@ def simulate_llm_tool_call():
         }
     }
     
-    logger.info(f"模拟工具调用参数: {tool_call_params}")
+    logger.info(f"Simulation tool call parameters: {tool_call_params}")
     
     try:
-        # 尝试通过反射调用
+        # Try calling via reflection
         func_name = tool_call_params["name"]
         args = tool_call_params["arguments"]
         
         if hasattr(Toolkit, func_name):
             func = getattr(Toolkit, func_name)
-            logger.info(f"找到函数: {func}")
+            logger.info(f"find function: {func}")
             
             start_time = datetime.now()
             result = func(**args)
             end_time = datetime.now()
             
-            logger.info(f"模拟LLM调用成功，耗时: {(end_time - start_time).total_seconds():.2f}秒")
-            logger.info(f"返回结果长度: {len(result)} 字符")
+            logger.info(f"The simulated LLM call is successful and time-consuming.: {(end_time - start_time).total_seconds():.2f}seconds")
+            logger.info(f"Return result length: {len(result)} character")
             return True, result
         else:
-            logger.error(f"函数 {func_name} 不存在于Toolkit中")
+            logger.error(f"function {func_name} Does not exist in Toolkit")
             return False, None
             
     except Exception as e:
-        logger.error(f"模拟LLM调用失败: {e}")
+        logger.error(f"Simulated LLM call failed: {e}")
         import traceback
-        logger.error(f"错误详情: {traceback.format_exc()}")
+        logger.error(f"Error details: {traceback.format_exc()}")
         return False, None
 
 def main():
-    """主测试函数"""
-    logger.info("开始LLM工具调用机制详细测试")
+    """Main test function"""
+    logger.info("Start detailed testing of LLM tool calling mechanism")
     logger.info("=" * 60)
     
-    # 测试1: 函数存在性
+    # test 1: function existence
     test_function_exists()
     
-    # 测试2: 直接调用
+    # test 2: call directly
     direct_success, direct_result = test_direct_call()
     
-    # 测试3: Toolkit调用
+    # test 3: Toolkit call
     toolkit_success, toolkit_result = test_toolkit_call()
     
-    # 测试4: Toolkit属性检查
+    # test 4: Toolkit Property check
     test_toolkit_attributes()
     
-    # 测试5: 模拟LLM调用
+    # test 5: Simulating LLM calls
     llm_success, llm_result = simulate_llm_tool_call()
     
-    # 结果汇总
+    # Summary of results
     logger.info("=" * 60)
-    logger.info("========== 测试结果汇总 ==========")
-    logger.info(f"直接函数调用: {'✓ 成功' if direct_success else '✗ 失败'}")
-    logger.info(f"Toolkit调用: {'✓ 成功' if toolkit_success else '✗ 失败'}")
-    logger.info(f"模拟LLM调用: {'✓ 成功' if llm_success else '✗ 失败'}")
+    logger.info("========== Summary of test results ==========")
+    logger.info(f"direct function call: {'✓ success' if direct_success else '✗ failed'}")
+    logger.info(f"Toolkit call: {'✓ success' if toolkit_success else '✗ failed'}")
+    logger.info(f"Simulating LLM calls: {'✓ success' if llm_success else '✗ failed'}")
     
-    # 分析问题
+    # Analyze the problem
     if direct_success and not toolkit_success:
-        logger.warning("🔍 问题分析: Toolkit工具绑定存在问题")
+        logger.warning("🔍 Problem analysis: Toolkit There is a problem with tool binding")
     elif direct_success and not llm_success:
-        logger.warning("🔍 问题分析: LLM工具调用机制存在问题")
+        logger.warning("🔍 Problem analysis: LLM There is a problem with the tool calling mechanism")
     elif not direct_success:
-        logger.warning("🔍 问题分析: 函数本身存在问题")
+        logger.warning("🔍 Problem analysis: There is a problem with the function itself")
     else:
-        logger.info("🔍 问题分析: 所有调用方式都成功")
+        logger.info("🔍 Problem analysis: All calls are successful")
     
-    # 比较结果
+    # Compare results
     if direct_success and toolkit_success:
         if direct_result == toolkit_result:
-            logger.info("✓ 直接调用和Toolkit调用结果一致")
+            logger.info("✓ The results of direct call and Toolkit call are the same.")
         else:
-            logger.warning("⚠ 直接调用和Toolkit调用结果不一致")
-            logger.info(f"直接调用结果长度: {len(direct_result)}")
-            logger.info(f"Toolkit调用结果长度: {len(toolkit_result)}")
+            logger.warning("⚠ The results of direct call and Toolkit call are inconsistent")
+            logger.info(f"Call the result length directly: {len(direct_result)}")
+            logger.info(f"Toolkit Call result length: {len(toolkit_result)}")
 
 if __name__ == "__main__":
     main()

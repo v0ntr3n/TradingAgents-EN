@@ -1,15 +1,15 @@
-"""使用问答机器人工具：查询数据同步状态。
+"""Use the Q&A bot tool: Query the data synchronization status.
 
-提供查询 tushare/akshare 的历史行情、财务数据、股票基础数据的同步状态能力，
-让使用问答助手能"看到"数据源同步是否正常、是否需要触发新的同步，
-而非凭 FAQ 猜答案。
+Provides the ability to query the synchronization status of tushare/akshare s historical market prices, financial data, and basic stock data.
+Allows using Q&A Assistant to"see"Whether data source synchronization is normal and whether new synchronization needs to be triggered?
+Instead of guessing the answer based on the FAQ.
 
-覆盖的查询维度：
-1. 股票基础数据（stock_basic_info / sync_status 集合）——多源同步任务的整体状态
-2. 历史行情数据（historical_data 集合）——覆盖股票数、最新数据日期、记录数
-3. 财务数据（stock_financial_data 集合）——覆盖股票数、最新更新时间、记录数
-4. 单股同步状态（传 symbol 时）——该股的历史/财务/基础数据同步情况
-5. 正在运行中的同步任务（stock_sync_tasks 集合）——是否有任务在跑
+Covered query dimensions:
+1. Stock basic data (stock_basic_info / sync_status collection)——Overall status of multi-source synchronization tasks
+2. Historical market data (historical_data collection)——Number of stocks covered, date of latest data, number of records
+3. Financial data (stock_financial_data collection)——Number of stocks covered, latest update time, number of records
+4. Single stock synchronization status (when passing symbol)——The stock s historical/financial/basic data synchronization
+5. Running synchronization tasks (stock_sync_tasks collection)——Are there any tasks running?
 """
 
 import logging
@@ -23,23 +23,23 @@ from core.tools.base import register_tool
 logger = logging.getLogger(__name__)
 
 
-# 同步状态集合与任务标识（与 app/services/multi_source_basics_sync_service.py 保持一致）
+# Synchronization status collection and task identification (consistent with app/services/multi_source_basics_sync_service.py)
 _SYNC_STATUS_COLLECTION = "sync_status"
 _STOCK_BASICS_JOB_KEY = "stock_basics_multi_source"
 _STOCK_SYNC_TASKS_COLLECTION = "stock_sync_tasks"
 
-# 数据集合
+# data collection
 _HISTORICAL_DATA_COLLECTION = "historical_data"
 _FINANCIAL_DATA_COLLECTION = "stock_financial_data"
 _STOCK_BASIC_INFO_COLLECTION = "stock_basic_info"
 
 
 def _format_time_ago(iso_str: Optional[str]) -> str:
-    """将 ISO 时间字符串格式化为人类可读的'X 小时前'格式。"""
+    """Format ISO time string to human readable'X hours ago'format."""
     if not iso_str:
         return "从未"
     try:
-        # 兼容带 Z 和带时区的时间字符串
+        # Compatible with time strings with Z and time zone
         normalized = iso_str.replace("Z", "+00:00")
         dt = datetime.fromisoformat(normalized)
         if dt.tzinfo is not None:
@@ -63,7 +63,7 @@ def _format_time_ago(iso_str: Optional[str]) -> str:
 
 
 def _summarize_status(status: str) -> tuple[str, str]:
-    """将内部 status 字段映射为 (emoji, 中文描述)。"""
+    """Map the internal status field to (emoji, Chinese description). """
     mapping = {
         "success": ("✅", "成功"),
         "success_with_errors": ("⚠️", "成功（含部分错误）"),
@@ -77,7 +77,7 @@ def _summarize_status(status: str) -> tuple[str, str]:
 
 
 async def _query_stock_basics_sync(db) -> Dict[str, Any]:
-    """查询股票基础数据（多源同步任务）的同步状态。"""
+    """Query the synchronization status of basic stock data (multi-source synchronization task)."""
     try:
         doc = await db[_SYNC_STATUS_COLLECTION].find_one({"job": _STOCK_BASICS_JOB_KEY})
         if not doc:
@@ -85,16 +85,16 @@ async def _query_stock_basics_sync(db) -> Dict[str, Any]:
         doc.pop("_id", None)
         return {"available": True, "doc": doc}
     except Exception as exc:
-        logger.warning("[get_data_sync_status] 查询股票基础数据同步状态失败: %s", exc)
+        logger.warning("[get_data_sync_status] Failed to query basic stock data synchronization status: %s", exc)
         return {"available": False, "error": str(exc)}
 
 
 async def _query_historical_overview(db) -> Dict[str, Any]:
-    """查询历史行情数据整体情况：覆盖股票数、最新数据日期、总记录数。"""
+    """Query the overall situation of historical market data: number of stocks covered, latest data date, and total number of records."""
     try:
         total_records = await db[_HISTORICAL_DATA_COLLECTION].count_documents({})
         distinct_symbols = await db[_HISTORICAL_DATA_COLLECTION].distinct("symbol")
-        # 最新数据日期（按 date 字段降序）
+        # Latest data date (descending order by date field)
         latest_doc = await db[_HISTORICAL_DATA_COLLECTION].find_one(
             {}, sort=[("date", -1)]
         )
@@ -111,12 +111,12 @@ async def _query_historical_overview(db) -> Dict[str, Any]:
             "latest_date": latest_date,
         }
     except Exception as exc:
-        logger.warning("[get_data_sync_status] 查询历史数据整体情况失败: %s", exc)
+        logger.warning("[get_data_sync_status] Querying the overall situation of historical data failed: %s", exc)
         return {"error": str(exc)}
 
 
 async def _query_financial_overview(db) -> Dict[str, Any]:
-    """查询财务数据整体情况：覆盖股票数、最新更新时间、总记录数。"""
+    """Query the overall situation of financial data: number of stocks covered, latest update time, and total number of records."""
     try:
         total_records = await db[_FINANCIAL_DATA_COLLECTION].count_documents({})
         distinct_symbols = await db[_FINANCIAL_DATA_COLLECTION].distinct("symbol")
@@ -136,12 +136,12 @@ async def _query_financial_overview(db) -> Dict[str, Any]:
             "latest_updated": latest_updated,
         }
     except Exception as exc:
-        logger.warning("[get_data_sync_status] 查询财务数据整体情况失败: %s", exc)
+        logger.warning("[get_data_sync_status] Failed to query the overall financial data: %s", exc)
         return {"error": str(exc)}
 
 
 async def _query_running_sync_tasks(db) -> List[Dict[str, Any]]:
-    """查询正在运行中的同步任务。"""
+    """Query the running synchronization tasks."""
     try:
         cursor = db[_STOCK_SYNC_TASKS_COLLECTION].find(
             {"status": {"$in": ["running", "pending", "queued"]}},
@@ -152,30 +152,30 @@ async def _query_running_sync_tasks(db) -> List[Dict[str, Any]]:
             d.pop("_id", None)
         return docs
     except Exception as exc:
-        logger.warning("[get_data_sync_status] 查询运行中同步任务失败: %s", exc)
+        logger.warning("[get_data_sync_status] Synchronization task failed during query running: %s", exc)
         return []
 
 
 async def _query_single_stock_status(db, symbol: str) -> Dict[str, Any]:
-    """查询单只股票的同步状态。复用 stock_sync 路由的逻辑。"""
+    """Query the synchronization status of a single stock. Reuse the logic of stock_sync routing."""
     try:
         normalized = str(symbol).strip().upper()
         if "." in normalized:
             normalized = normalized.split(".", 1)[0]
 
-        # 历史数据
+        # historical data
         hist_doc = await db[_HISTORICAL_DATA_COLLECTION].find_one(
             {"symbol": normalized}, sort=[("date", -1)]
         )
         hist_count = await db[_HISTORICAL_DATA_COLLECTION].count_documents({"symbol": normalized})
 
-        # 财务数据
+        # financial data
         fin_doc = await db[_FINANCIAL_DATA_COLLECTION].find_one(
             {"symbol": normalized}, sort=[("updated_at", -1)]
         )
         fin_count = await db[_FINANCIAL_DATA_COLLECTION].count_documents({"symbol": normalized})
 
-        # 基础数据
+        # Basic data
         basic_doc = await db[_STOCK_BASIC_INFO_COLLECTION].find_one({"symbol": normalized})
 
         return {
@@ -196,12 +196,12 @@ async def _query_single_stock_status(db, symbol: str) -> Dict[str, Any]:
             "basic": {"available": basic_doc is not None},
         }
     except Exception as exc:
-        logger.warning("[get_data_sync_status] 查询单股同步状态失败(%s): %s", symbol, exc)
+        logger.warning("[get_data_sync_status] Failed to query single stock synchronization status(%s): %s", symbol, exc)
         return {"symbol": symbol, "error": str(exc)}
 
 
 def _format_single_stock_status(result: Dict[str, Any]) -> List[str]:
-    """格式化单股同步状态为文本行。"""
+    """Format single sync status as a text line."""
     if result.get("error"):
         return [f"❌ 查询失败: {result['error']}"]
 
@@ -212,10 +212,10 @@ def _format_single_stock_status(result: Dict[str, Any]) -> List[str]:
     if hist_records > 0:
         lines.append(
             f"- 历史行情: ✅ 已同步 {hist_records} 条，"
-            f"最近日期 {hist.get('last_date', '?')}（更新时间: {_format_time_ago(hist.get('last_sync'))}）"
+            f"latest date {hist.get('last_date', '?')} (Update time: {_format_time_ago(hist.get('last_sync'))}) "
         )
     else:
-        lines.append("- 历史行情: ❌ 未同步（该股票在 historical_data 集合中无记录）")
+        lines.append("- Historical Quotes: ❌ Not synchronized (the stock has no record in the historical_data collection)")
 
     fin = result.get("financial", {})
     fin_records = fin.get("total_records", 0)
@@ -224,26 +224,26 @@ def _format_single_stock_status(result: Dict[str, Any]) -> List[str]:
             f"- 财务数据: ✅ 已同步 {fin_records} 条（更新时间: {_format_time_ago(fin.get('last_sync'))}）"
         )
     else:
-        lines.append("- 财务数据: ❌ 未同步（该股票在 stock_financial_data 集合中无记录）")
+        lines.append("- financial data: ❌ Not synchronized (the stock has no record in the stock_financial_data collection)")
 
     basic = result.get("basic", {})
     if basic.get("available"):
-        lines.append("- 基础数据: ✅ 已同步")
+        lines.append("- Basic data: ✅ Synced")
     else:
-        lines.append("- 基础数据: ❌ 未同步")
+        lines.append("- Basic data: ❌ Not synced")
 
-    # 综合判断
+    # Comprehensive judgment
     has_data = hist_records > 0 or fin_records > 0
     if not has_data:
         lines.append("")
-        lines.append("💡 该股票尚未同步数据，分析前建议先触发同步。")
-        lines.append("   可以说：「同步股票 600519 的数据」")
+        lines.append("💡 This stock has not yet synchronized data. It is recommended to trigger synchronization before analysis.")
+        lines.append("   It can be said: Synchronize the data of stock 600519 ")
     elif hist_records == 0:
         lines.append("")
-        lines.append("💡 缺历史行情数据，如需分析请先同步历史数据。")
+        lines.append("💡 There is a lack of historical market data. If analysis is required, please synchronize historical data first.")
     elif fin_records == 0:
         lines.append("")
-        lines.append("💡 缺财务数据，如需做财务分析请先同步财务数据。")
+        lines.append("💡 Financial data is missing. If you need to do financial analysis, please synchronize the financial data first.")
 
     return lines
 
@@ -252,7 +252,7 @@ def _format_single_stock_status(result: Dict[str, Any]) -> List[str]:
 @register_tool(
     tool_id="get_data_sync_status",
     name="查询数据同步状态",
-    description="查询 tushare/akshare 的数据同步状态：股票基础数据、历史行情、财务数据的最近同步时间、记录数、是否正在运行同步任务。支持传 symbol 查单股，不传查整体。当用户问'数据同步了吗''数据是否最新''要不要重新同步'时使用。",
+    description="Query the data synchronization status of tushare/akshare: basic stock data, historical quotes, the latest synchronization time of financial data, the number of records, and whether the synchronization task is running. Supports passing symbol to search single stocks, but not passing it to search the whole stock. When the user asks'Is the data synchronized?''Is the data up to date?''Do you want to resynchronize?'when used.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
@@ -271,26 +271,26 @@ def _format_single_stock_status(result: Dict[str, Any]) -> List[str]:
         "是否需要重新同步",
         "有同步任务在跑吗",
     ],
-    when_to_use="当用户问到数据同步状态、数据新鲜度、是否需要重新同步、是否有同步任务在运行时使用。支持传 symbol 参数查单股数据同步状态。",
-    returns="返回文本格式的数据同步状态摘要，包含基础数据/历史行情/财务数据的最近同步时间和记录数、正在运行的同步任务、是否需要触发新同步的判断。",
+    when_to_use="Used when users ask about data synchronization status, data freshness, whether resynchronization is needed, and whether there are synchronization tasks running. Supports passing symbol parameter to check single stock data synchronization status.",
+    returns="Returns a data synchronization status summary in text format, including the latest synchronization time and record number of basic data/historical market data/financial data, running synchronization tasks, and judgment on whether new synchronization needs to be triggered.",
 )
 async def get_data_sync_status(
     symbol: Annotated[
         Optional[str],
-        "股票代码（可选，6 位数字如 600519）。传入则查该股的同步状态；不传则查整体数据同步状态。"
+        "Stock code (optional, 6 digits such as 600519). If it is passed in, the synchronization status of the stock will be checked; if it is not passed, the overall data synchronization status will be checked."
     ] = None,
 ) -> str:
-    """查询数据同步状态。"""
+    """Query the data synchronization status."""
     from app.core.database import get_mongo_db
 
     db = get_mongo_db()
 
-    # ---- 单股查询分支 ----
+    # ---- Single stock query branch ----
     if symbol and str(symbol).strip():
         result = await _query_single_stock_status(db, str(symbol).strip())
         return "\n".join(_format_single_stock_status(result))
 
-    # ---- 整体查询分支 ----
+    # ---- Overall query branch ----
     basics_sync = await _query_stock_basics_sync(db)
     hist_overview = await _query_historical_overview(db)
     fin_overview = await _query_financial_overview(db)
@@ -298,13 +298,13 @@ async def get_data_sync_status(
 
     lines = ["📊 数据同步状态总览"]
 
-    # 1) 股票基础数据同步任务
+    # 1) Stock basic data synchronization task
     if basics_sync.get("available"):
         doc = basics_sync["doc"]
         status = doc.get("status", "未知")
         emoji, status_cn = _summarize_status(status)
         lines.append("")
-        lines.append("【1】股票基础数据（A 股列表+行业+财务指标）")
+        lines.append(" [1] Basic stock data (A-share list+Industry+financial indicators)")
         lines.append(f"- 状态: {emoji} {status_cn}")
         if doc.get("started_at"):
             lines.append(f"- 最近开始时间: {_format_time_ago(doc.get('started_at'))}")
@@ -325,11 +325,11 @@ async def get_data_sync_status(
             lines.append(f"- 备注: {doc.get('message')}")
     else:
         lines.append("")
-        lines.append("【1】股票基础数据: ⚪ 从未运行过同步任务")
+        lines.append(" [1] Basic stock data: ⚪ No synchronization task has ever been run")
 
-    # 2) 历史行情数据整体情况
+    # 2) The overall situation of historical market data
     lines.append("")
-    lines.append("【2】历史行情数据（historical_data）")
+    lines.append(" [2] Historical market data (historical_data)")
     if hist_overview.get("error"):
         lines.append(f"- ❌ 查询失败: {hist_overview['error']}")
     else:
@@ -340,11 +340,11 @@ async def get_data_sync_status(
         lines.append(f"- 总记录数: {total_records}")
         lines.append(f"- 最新数据日期: {latest_date or '无'}")
         if symbol_count == 0:
-            lines.append("- ⚠️ 数据为空，建议触发股票基础数据同步后再做单股同步")
+            lines.append("- ⚠️ The data is empty. It is recommended to trigger the synchronization of basic stock data before synchronizing single stocks.")
 
-    # 3) 财务数据整体情况
+    # 3) Overall financial data
     lines.append("")
-    lines.append("【3】财务数据（stock_financial_data）")
+    lines.append(" [3] Financial data (stock_financial_data)")
     if fin_overview.get("error"):
         lines.append(f"- ❌ 查询失败: {fin_overview['error']}")
     else:
@@ -355,11 +355,11 @@ async def get_data_sync_status(
         lines.append(f"- 总记录数: {total_records}")
         lines.append(f"- 最近更新时间: {_format_time_ago(latest_updated)}")
 
-    # 4) 正在运行中的同步任务
+    # 4) Running sync tasks
     lines.append("")
     lines.append("【4】运行中的同步任务")
     if not running_tasks:
-        lines.append("- 💤 当前无运行中的同步任务")
+        lines.append("- 💤 There are currently no sync tasks running")
     else:
         lines.append(f"- 🔄 共 {len(running_tasks)} 个任务在运行:")
         for t in running_tasks[:5]:
@@ -368,39 +368,39 @@ async def get_data_sync_status(
             st = t.get("status", "?")
             started = _format_time_ago(t.get("started_at")) if t.get("started_at") else "?"
             progress = t.get("progress")
-            progress_str = f"，进度 {progress}" if progress is not None else ""
+            progress_str = f", Progress {progress}" if progress is not None else ""
             lines.append(f"  • [{task_type}] {sym} | {st} | 开始于 {started}{progress_str}")
 
-    # 5) 综合建议
+    # 5) Comprehensive suggestions
     lines.append("")
     lines.append("💡 综合判断")
     suggestions = []
 
     basics_status = basics_sync.get("doc", {}).get("status") if basics_sync.get("available") else "never_run"
     if basics_status == "running":
-        suggestions.append("股票基础数据同步正在运行，请等待完成再查看详情")
+        suggestions.append("Basic stock data synchronization is running, please wait for completion before viewing details.")
     elif basics_status == "failed":
-        suggestions.append("⚠️ 股票基础数据同步上次失败，建议在「数据同步」页面查看错误原因或重新触发")
+        suggestions.append("⚠️ The basic stock data synchronization failed last time. It is recommended to check the cause of the error on the Data Synchronization page or trigger it again.")
     elif basics_status in ("never_run", "idle") or not basics_sync.get("available"):
-        suggestions.append("股票基础数据尚未同步过，建议先触发股票基础数据同步")
+        suggestions.append("The basic stock data has not been synchronized yet. It is recommended to trigger the synchronization of the basic stock data first.")
 
     hist_symbol_count = hist_overview.get("symbol_count", 0) if not hist_overview.get("error") else 0
     if hist_symbol_count == 0:
-        suggestions.append("历史行情数据为空，分析前需要先同步股票数据")
+        suggestions.append("The historical market data is empty. Stock data needs to be synchronized before analysis.")
     elif hist_symbol_count < 100:
         suggestions.append(f"历史行情仅覆盖 {hist_symbol_count} 只股票，建议补充同步")
 
     fin_symbol_count = fin_overview.get("symbol_count", 0) if not fin_overview.get("error") else 0
     if fin_symbol_count == 0:
-        suggestions.append("财务数据为空，做财务分析前需要先同步")
+        suggestions.append("The financial data is empty and needs to be synchronized before doing financial analysis.")
 
     if not suggestions:
-        lines.append("- ✅ 数据同步正常，可正常进行分析任务")
+        lines.append("- ✅ Data synchronization is normal and analysis tasks can be performed normally.")
     else:
         for s in suggestions:
             lines.append(f"- {s}")
 
     lines.append("")
-    lines.append("📌 说明：京东云版仅支持 Tushare + AKShare 两个数据源，强制单并发，同步会比较慢")
+    lines.append("📌 Note: JD Cloud version only supports Tushare + AKShare Two data sources, forcing single concurrency, synchronization will be slower")
 
     return "\n".join(lines)

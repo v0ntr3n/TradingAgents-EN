@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试数据服务器配置功能
+Test data server configuration functionality
 """
 
 import pytest
@@ -12,32 +12,32 @@ from enhanced_stock_list_fetcher import load_tdx_servers_config, get_mainmarket_
 import json
 
 def test_server_config():
-    """测试服务器配置加载功能"""
-    print("=== 测试数据服务器配置功能 ===")
+    """Test server configuration loading function"""
+    print("=== Test data server configuration functionality ===")
 
-    # 测试加载服务器配置
-    print("\n1. 测试加载服务器配置:")
+    # Test loading server configuration
+    print("\n1. Test loading server configuration:")
     servers = load_tdx_servers_config()
-    print(f"✅ 成功加载 {len(servers)} 个服务器配置")
+    print(f"✅ successfully loaded {len(servers)} server configuration")
 
-    # 显示前5个服务器
-    print("\n前5个服务器配置:")
+    # Show top 5 servers
+    print("\n Top 5 server configurations:")
     for i, server in enumerate(servers[:5]):
-        print(f"  {i+1}. {server.get('name', '未命名')} - {server['ip']}:{server['port']}")
+        print(f"  {i+1}. {server.get('name', 'Unnamed')} - {server['ip']}:{server['port']}")
 
-    # 测试获取主市场IP
-    print("\n2. 测试获取主市场IP:")
+    # Test to get the main market IP
+    print("\n2. Test to get the main market IP:")
     for i in range(3):
         ip, port = get_mainmarket_ip()
-        print(f"  第{i+1}次随机选择: {ip}:{port}")
+        print(f"  No.{i+1}randomly selected: {ip}:{port}")
 
-    # 测试指定IP和端口
-    print("\n3. 测试指定IP和端口:")
+    # Test specified IP and port
+    print("\n3. Test specified IP and port:")
     ip, port = get_mainmarket_ip('192.168.1.1', 8888)
-    print(f"  指定IP和端口: {ip}:{port}")
+    print(f"  Specify IP and port: {ip}:{port}")
 
-    # 显示完整的服务器配置信息
-    print("\n4. 完整服务器配置信息:")
+    # Display complete server configuration information
+    print("\n4. Complete server configuration information:")
     print(json.dumps(servers, indent=2, ensure_ascii=False))
 
 if __name__ == "__main__":

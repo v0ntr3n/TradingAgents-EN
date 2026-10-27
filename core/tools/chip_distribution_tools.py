@@ -1,10 +1,10 @@
 """
-筹码分布工具函数
+Chip distribution tool function
 
-提供筹码分布数据获取，支持 AkShare（优先）和 Tushare（备用）两个数据源。
+Provides chip distribution data acquisition, supporting two data sources: AkShare (priority) and Tushare (backup).
 
-数据源优先级：
-  AkShare（免费，东财爬虫） → Tushare（官方API，需要5000积分）
+Data source priority:
+  AkShare (Free, Dongcai Reptile) → Tushare (Official API, requires 5000 points)
 """
 
 import logging
@@ -15,19 +15,19 @@ from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
-# === Mock 开关：设为 True 时不调用真实 API，返回随机模拟数据 ===
+# === Mock Switch: When set to True, the real API is not called and random simulated data is returned. ===
 _MOCK_CHIP_DATA = False
 
 
 def _normalize_ticker(ticker: str) -> str:
-    """标准化股票代码（去除交易所后缀）"""
+    """Standardized stock symbol (removes exchange suffix)"""
     if "." in ticker:
         return ticker.split(".")[0]
     return ticker
 
 
 def _normalize_ts_code(ticker: str) -> str:
-    """转换为 Tushare ts_code 格式（如 000001.SZ）"""
+    """Convert to Tushare ts_code format (such as 000001.SZ)"""
     if "." in ticker:
         return ticker.upper()
     code = ticker.strip()
@@ -38,24 +38,24 @@ def _normalize_ts_code(ticker: str) -> str:
 
 def get_chip_distribution_akshare(ticker: str, trade_date: str) -> Optional[Dict[str, Any]]:
     """
-    通过 AkShare 获取筹码分布数据
+    Obtain chip distribution data through AkShare
     
-    使用 stock_cyq_em 接口获取东方财富筹码分布数据。
+    Use the stock_cyq_em interface to obtain Oriental Fortune chip distribution data.
     
     Args:
-        ticker: 股票代码（如 000001）
-        trade_date: 交易日期（格式：YYYY-MM-DD）
+        ticker: Stock code (e.g. 000001)
+        trade_date: Transaction date (format: YYYY-MM-DD)
     
     Returns:
-        筹码分布数据字典，或 None（失败时）
+        Dictionary of chip distribution data, or None on failure
     """
     try:
         import akshare as ak
 
         symbol = _normalize_ticker(ticker)
         t0 = time.time()
-        logger.info(f"[AkShare筹码] 开始调用 stock_cyq_em: symbol={symbol}, adjust=''")
-        # akshare stock_cyq_em 返回历史筹码分布
+        logger.info(f"[AkShare chips] Start calling stock_cyq_em: symbol={symbol}, adjust=''")
+        # akshare stock_cyq_em Return to historical chip distribution
         df = ak.stock_cyq_em(symbol=symbol, adjust="")
         elapsed = time.time() - t0
         logger.info(f"[AkShare筹码] stock_cyq_em 调用完成: 耗时={elapsed:.2f}s, 行数={len(df) if df is not None else 0}")
@@ -64,23 +64,23 @@ def get_chip_distribution_akshare(ticker: str, trade_date: str) -> Optional[Dict
             logger.warning(f"[AkShare筹码] {symbol} 返回空数据 (耗时={elapsed:.2f}s)")
             return None
 
-        # 将日期列规范化
+        # Normalize date column
         date_col = "日期" if "日期" in df.columns else df.columns[0]
         df[date_col] = df[date_col].astype(str)
 
-        # 尝试找最接近目标日期的数据
+        # Try to find the data closest to the target date
         target = trade_date.replace("-", "")
-        # 优先精确匹配
+        # Prioritize exact matches
         row = df[df[date_col].str.replace("-", "") == target]
         if row.empty:
-            # 取最近一条数据
+            # Get the latest data
             row = df.tail(1)
 
         if row.empty:
             return None
 
         r = row.iloc[0]
-        # 列名映射（东财接口）
+        # Column name mapping (Dongcai interface)
         col_map = {
             "获利比例": "profit_ratio",
             "平均成本": "avg_cost",
@@ -114,7 +114,7 @@ def get_chip_distribution_akshare(ticker: str, trade_date: str) -> Optional[Dict
                 except (ValueError, TypeError):
                     pass
 
-        # 集中度是常见的静默失效点（接口列名变动时会全部退化为 0），显式留痕
+        # Centralization is a common silent failure point (when the interface list changes, it will all degrade to 0), explicit traces are left
         if not result["concentration_90"] and not result["concentration_70"]:
             logger.warning(f"[AkShare筹码] {symbol} 未取到集中度，接口实际列名: {list(df.columns)}")
 
@@ -122,7 +122,7 @@ def get_chip_distribution_akshare(ticker: str, trade_date: str) -> Optional[Dict
         return result
 
     except ImportError:
-        logger.warning("[AkShare筹码] akshare 未安装")
+        logger.warning("[AkShare chips] akshare Not installed")
         return None
     except Exception as e:
         logger.warning(f"[AkShare筹码] {ticker} 获取失败: {e}")
@@ -131,14 +131,14 @@ def get_chip_distribution_akshare(ticker: str, trade_date: str) -> Optional[Dict
 
 def get_chip_distribution_tushare(ticker: str, trade_date: str) -> Optional[Dict[str, Any]]:
     """
-    通过 Tushare 获取筹码分布数据（cyq_perf 接口，需要5000积分）
+    Obtain chip distribution data through Tushare (cyq_perf interface, requires 5000 points)
 
     Args:
-        ticker: 股票代码（如 000001）
-        trade_date: 交易日期（格式：YYYY-MM-DD）
+        ticker: Stock code (e.g. 000001)
+        trade_date: Transaction date (format: YYYY-MM-DD)
 
     Returns:
-        筹码分布数据字典，或 None（失败时）
+        Dictionary of chip distribution data, or None on failure
     """
     try:
         t0 = time.time()
@@ -146,7 +146,7 @@ def get_chip_distribution_tushare(ticker: str, trade_date: str) -> Optional[Dict
 
         provider = get_tushare_provider()
         if not provider or not provider.is_available():
-            logger.debug("[Tushare筹码] Tushare 未初始化或不可用")
+            logger.debug("[Tushare chips] Tushare Not initialized or unavailable")
             return None
 
         ts_code = _normalize_ts_code(ticker)
@@ -163,8 +163,8 @@ def get_chip_distribution_tushare(ticker: str, trade_date: str) -> Optional[Dict
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
 
-        logger.info(f"[Tushare筹码] 开始调用 cyq_perf: ts_code={ts_code}, trade_date={trade_date_fmt}")
-        # Tushare cyq_perf API: 筹码分析
+        logger.info(f"[Tushare chips] Start calling cyq_perf: ts_code={ts_code}, trade_date={trade_date_fmt}")
+        # Tushare cyq_perf API: Chip analysis
         df = provider.api.cyq_perf(
             ts_code=ts_code,
             trade_date=trade_date_fmt,
@@ -173,9 +173,9 @@ def get_chip_distribution_tushare(ticker: str, trade_date: str) -> Optional[Dict
         )
 
         if df is None or df.empty:
-            # 尝试获取最近几天的数据
+            # Try to get the data for the last few days
             start = (datetime.strptime(trade_date, "%Y-%m-%d") - timedelta(days=10)).strftime("%Y%m%d")
-            logger.info(f"[Tushare筹码] 精确日期无数据，回退查询范围: {start}~{trade_date_fmt}")
+            logger.info(f"[Tushare chips] There is no data for the exact date, fall back to the query range: {start}~{trade_date_fmt}")
             df = provider.api.cyq_perf(
                 ts_code=ts_code,
                 start_date=start,
@@ -203,7 +203,7 @@ def get_chip_distribution_tushare(ticker: str, trade_date: str) -> Optional[Dict
             "cost_70_high": float(r.get("cost_85pct", 0)) if r.get("cost_85pct") else 0.0,
             "concentration_70": 0.0,
         }
-        # 计算集中度：标准口径 (高-低)/(高+低)，与东财/通达信/同花顺一致，数值越小越集中
+        # Calculate concentration: standard caliber (high-low)/(high+low), Consistent with Dongcai/Tongdaxin/Flush, the smaller the value, the more concentrated it is.
         if result["cost_90_high"] + result["cost_90_low"] > 0:
             rng90 = result["cost_90_high"] - result["cost_90_low"]
             result["concentration_90"] = round(rng90 / (result["cost_90_high"] + result["cost_90_low"]), 4)
@@ -220,7 +220,7 @@ def get_chip_distribution_tushare(ticker: str, trade_date: str) -> Optional[Dict
 
 
 def _mock_chip_report(symbol: str, trade_date: str) -> str:
-    """生成随机模拟筹码分布报告（用于隔离测试）"""
+    """Generate random simulated chip distribution report (for isolation testing)"""
     avg_cost = round(random.uniform(8.0, 15.0), 2)
     current_price = round(avg_cost * random.uniform(0.85, 1.15), 2)
     profit_ratio = round(random.uniform(25, 60), 1)
@@ -258,28 +258,28 @@ def _mock_chip_report(symbol: str, trade_date: str) -> str:
 
 def get_chip_distribution_unified(ticker: str, trade_date: str) -> str:
     """
-    统一筹码分布接口（AkShare 优先，Tushare 备用）
+    Unified chip distribution interface (AkShare is preferred, Tushare is backup)
 
     Args:
-        ticker: 股票代码（如 000001 或 000001.SZ）
-        trade_date: 交易日期（格式：YYYY-MM-DD）
+        ticker: Stock code (such as 000001 or 000001.SZ)
+        trade_date: Transaction date (format: YYYY-MM-DD)
 
     Returns:
-        str: 筹码分布分析报告文本
+        str: Chip distribution analysis report text
     """
     symbol = _normalize_ticker(ticker)
     t0 = time.time()
 
-    # Mock 模式：直接返回随机模拟数据，不调用真实 API
+    # Mock Mode: Return random simulation data directly without calling the real API
     if _MOCK_CHIP_DATA:
         return _mock_chip_report(symbol, trade_date)
 
-    # 优先 AkShare
+    # Priority AkShare
     logger.info(f"[筹码分布] 开始获取 {symbol} 筹码数据，优先使用 AkShare")
     data = get_chip_distribution_akshare(symbol, trade_date)
     if data is None:
         elapsed_ak = time.time() - t0
-        logger.info(f"[筹码分布] AkShare失败 (耗时={elapsed_ak:.2f}s)，切换到Tushare: {symbol}")
+        logger.info(f"[Chip distribution] AkShare failed (Time consuming={elapsed_ak:.2f}s), switch to Tushare: {symbol}")
         data = get_chip_distribution_tushare(symbol, trade_date)
 
     total_elapsed = time.time() - t0
@@ -287,12 +287,12 @@ def get_chip_distribution_unified(ticker: str, trade_date: str) -> str:
         logger.warning(f"[筹码分布] {symbol} 所有数据源均失败 (总耗时={total_elapsed:.2f}s)")
         return (
             f"❌ 无法获取 {ticker} 的筹码分布数据（{trade_date}）。\n"
-            "可能原因：数据源不可用、该日期非交易日或股票代码不正确。"
+            "Possible reasons: the data source is unavailable, the date is not a trading day, or the stock code is incorrect."
         )
 
     logger.info(f"[筹码分布] {symbol} 获取成功 (总耗时={total_elapsed:.2f}s, 来源={data['source']})")
 
-    # 格式化输出
+    # Formatted output
     profit_pct = data["profit_ratio"] * 100 if data["profit_ratio"] <= 1 else data["profit_ratio"]
     report = f"""## 📊 筹码分布分析 - {symbol} ({data['date']})
 
@@ -318,6 +318,6 @@ def get_chip_distribution_unified(ticker: str, trade_date: str) -> str:
 
 
 def get_chip_distribution_sync(ticker: str, trade_date: str) -> str:
-    """同步包装（别名，供工具层调用）"""
+    """Synchronous packaging (alias, called by the tool layer)"""
     return get_chip_distribution_unified(ticker, trade_date)
 

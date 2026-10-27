@@ -1,14 +1,14 @@
-"""智能助手质量架构（A11）。
+"""Intelligent Assistant Quality Architecture (A11).
 
-模块职责：
-- models:      证据集 / 回复候选 / 关卡结果数据契约
-- defense:     回复质量防线（数字溯源、编造检测），从 service 收编的纯函数
-- reply_gate:  契约型唯一质量出口（所有路径的回复都经过这里）
-- paths:       路径注册表（显式优先级）与请求上下文
-- lexicon:     词典事实源（股票名目录 / 品种闸门），阶段 4
-- metrics:     质量埋点落库（S9），阶段 4
+Module responsibilities:
+- models:      Evidence set/reply candidate/level result data contract
+- defense:     Reply to the quality defense line (digital traceability, fabrication detection), pure functions collected from service
+- reply_gate:  Contractual only quality exit (reply from all paths passes through here)
+- paths:       Path registry (explicit priority) and request context
+- lexicon:     Dictionary Fact Source (Stock List / Stock Gate), Stage 4
+- metrics:     Quality issues are dropped into inventory (S9), stage 4
 
-设计文档：docs/05-design/v3.0/assistant-quality-architecture-refactor.md
+Design documents:docs/05-design/v3.0/assistant-quality-architecture-refactor.md
 """
 
 from .models import (

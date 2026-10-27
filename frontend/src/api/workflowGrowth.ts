@@ -109,23 +109,23 @@ export function dismissGrowthSuggestion(suggestionId: string) {
 }
 
 export const GrowthMemoryStatusNames: Record<string, string> = {
-  pending: '待审核',
-  approved: '已批准',
-  rejected: '已拒绝',
-  expired: '已过期'
+  pending: 'Pending review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+  expired: 'Expired'
 }
 
 export const GrowthSuggestionStatusNames: Record<string, string> = {
-  pending: '待处理',
-  accepted: '已接受',
-  dismissed: '已忽略',
-  expired: '已过期'
+  pending: 'Pending',
+  accepted: 'Accepted',
+  dismissed: 'Ignored',
+  expired: 'Expired'
 }
 
 export const GrowthMemoryScopeNames: Record<string, string> = {
-  task_temp: '任务临时记忆',
-  object_tracking: '对象跟踪记忆',
-  user_preference: '用户偏好',
-  research_asset: '研究资产',
-  pattern: '经验模式'
+  task_temp: 'task temporary memory',
+  object_tracking: 'object tracking memory',
+  user_preference: 'User preferences',
+  research_asset: 'research assets',
+  pattern: 'experience model'
 }

@@ -1,7 +1,7 @@
 """
-Agent 配置管理器
+Agent configuration manager
 
-管理 Agent 的运行时配置和状态
+Manage the Agent s runtime configuration and status
 """
 
 import logging
@@ -13,15 +13,15 @@ logger = logging.getLogger(__name__)
 
 class AgentConfigManager:
     """
-    Agent 配置管理器
+    Agent configuration manager
     
-    管理：
-    1. Agent 的启用/禁用状态
-    2. Agent 的执行配置（max_iterations, timeout, temperature）
-    3. Agent 的提示词模板配置
-    4. Agent 的默认工具列表
+    Management:
+    1. Agent enabled/disabled status
+    2. Agent The execution configuration (max_iterations, timeout, temperature) 
+    3. Agent Prompt word template configuration
+    4. Agent Default tool list
     
-    优先级：数据库配置 > 代码默认配置
+    Priority: Database Configuration > Code default configuration
     """
     
     _instance = None
@@ -38,22 +38,22 @@ class AgentConfigManager:
         
         self._db = None
         self._cache = {}  # agent_id -> config
-        self._cache_ttl = 300  # 5分钟缓存
+        self._cache_ttl = 300  # 5 minutes cache
         self._cache_time = {}
         self._initialized = True
     
     def set_database(self, db):
-        """设置数据库连接"""
+        """Set up database connection"""
         self._db = db
         self._clear_cache()
     
     def _clear_cache(self):
-        """清空缓存"""
+        """Clear cache"""
         self._cache = {}
         self._cache_time = {}
     
     def _is_cache_valid(self, agent_id: str) -> bool:
-        """检查缓存是否有效"""
+        """Check if cache is valid"""
         if agent_id not in self._cache_time:
             return False
         elapsed = (datetime.utcnow() - self._cache_time[agent_id]).total_seconds()
@@ -61,41 +61,41 @@ class AgentConfigManager:
     
     def get_agent_config(self, agent_id: str) -> Optional[Dict[str, Any]]:
         """
-        获取 Agent 配置
+        Get Agent configuration
         
         Args:
             agent_id: Agent ID
             
         Returns:
-            Agent 配置字典，包含：
-            - enabled: 是否启用
-            - config: 执行配置（max_iterations, timeout, temperature）
-            - prompt_template_type: 提示词模板类型
-            - prompt_template_name: 提示词模板名称
-            - default_tools: 默认工具列表
-            - required_tools: 必需工具列表
+            Agent Configuration dictionary, including:
+            - enabled: Whether to enable
+            - config: execute configure(max_iterations, timeout, temperature) 
+            - prompt_template_type: Prompt word template type
+            - prompt_template_name: Prompt word template name
+            - default_tools: Default tool list
+            - required_tools: List of required tools
         """
-        # 检查缓存
+        # Check cache
         if agent_id in self._cache and self._is_cache_valid(agent_id):
             return self._cache[agent_id]
         
         config = None
         
-        # 从数据库加载
+        # Load from database
         if self._db is not None:
             try:
                 config = self._db.agent_configs.find_one({"agent_id": agent_id})
                 if config:
-                    # 移除 MongoDB 的 _id 字段
+                    # Remove MongoDB's _id field
                     config.pop("_id", None)
             except Exception as e:
-                logger.warning(f"从数据库加载 Agent 配置失败: {e}")
+                logger.warning(f"Failed to load Agent configuration from database: {e}")
         
-        # 如果数据库没有，使用默认配置
+        # If the database does not exist, use the default configuration
         if config is None:
             config = self._get_default_agent_config(agent_id)
         
-        # 更新缓存
+        # Update cache
         if config:
             self._cache[agent_id] = config
             self._cache_time[agent_id] = datetime.utcnow()
@@ -103,7 +103,7 @@ class AgentConfigManager:
         return config
     
     def _get_default_agent_config(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """获取 Agent 的默认配置"""
+        """Get the default configuration of the Agent"""
         from core.agents.registry import AgentRegistry
         
         registry = AgentRegistry()
@@ -112,13 +112,13 @@ class AgentConfigManager:
         if metadata is None:
             return None
         
-        # 🔥 根据 Agent 类型设置不同的默认温度
-        # 辩论 Agent：0.6（需要创造性和多样性）
-        # 数值计算和评估 Agent：0.1（需要高精度）
-        # 其他 Agent：0.2（平衡准确性和灵活性）
+        # 🔥 Set different default temperatures based on Agent type
+        # Debate Agent: 0.6 (needs creativity and variety)
+        # Numerical calculation and evaluation Agent: 0.1 (high accuracy required)
+        # Other Agents: 0.2 (balances accuracy and flexibility)
         default_temperature = self._get_default_temperature(agent_id)
         
-        # 从 metadata 构建默认配置
+        # Build default configuration from metadata
         return {
             "agent_id": agent_id,
             "name": metadata.name,
@@ -128,10 +128,10 @@ class AgentConfigManager:
             "enabled": True,
             "config": {
                 "max_iterations": 3,
-                # timeout 故意不设默认值：由模型级配置（界面“大模型设置”中的 timeout，
-                # 经 unified_analysis_engine → workflow deep_timeout/quick_timeout）决定；
-                # 仅当用户在“智能体管理”中为该 Agent 显式配置 timeout 时才覆盖模型级配置。
-                "temperature": default_temperature,  # 🔥 使用类型特定的默认温度
+                # timeout Intentionally no default value: configured by model level (interface"Large model setup"timeout in
+                # by unified_analysis_engine → workflow deep_timeout/quick_timeout) decide;
+                # Only if the user is"Agent management"The model-level configuration is only overridden when timeout is explicitly configured for the Agent.
+                "temperature": default_temperature,  # 🔥 Use type-specific default temperatures
             },
             "prompt_template_type": metadata.category.value if hasattr(metadata.category, 'value') else "general",
             "prompt_template_name": agent_id,
@@ -145,68 +145,68 @@ class AgentConfigManager:
     
     def _get_default_temperature(self, agent_id: str) -> float:
         """
-        根据 Agent 类型获取默认温度
+        Get the default temperature based on Agent type
 
         Args:
             agent_id: Agent ID
 
         Returns:
-            默认温度值
+            Default temperature value
         """
-        # 辩论 Agent（需要创造性和多样性）
+        # Debate Agent (needs creativity and variety)
         debate_agents = [
-            "bull_researcher", "bear_researcher",  # 投资辩论
-            "risky_analyst", "safe_analyst", "neutral_analyst",  # 风险辩论
-            "risky_analyst_v2", "safe_analyst_v2", "neutral_analyst_v2",  # v2.0 风险辩论
+            "bull_researcher", "bear_researcher",  # investment debate
+            "risky_analyst", "safe_analyst", "neutral_analyst",  # risk debate
+            "risky_analyst_v2", "safe_analyst_v2", "neutral_analyst_v2",  # v2.0 risk debate
         ]
         if agent_id in debate_agents:
-            logger.info(f"[Agent配置] 🌡️ {agent_id} 是辩论 Agent，设置默认温度: 0.6")
+            logger.info(f"[Agent Configuration] 🌡️ {agent_id} Is the Debate Agent, set the default temperature: 0.6")
             return 0.6
         
-        # 数值计算和评估 Agent（需要高精度）
+        # Numerical calculation and evaluation Agent (requires high accuracy)
         calculation_agents = [
-            "risk_assessor", "risk_assessor_v2",  # 风险评估
-            "position_analyst",  # 持仓分析（数值计算）
+            "risk_assessor", "risk_assessor_v2",  # risk assessment
+            "position_analyst",  # Position analysis (numerical calculation)
         ]
         if agent_id in calculation_agents:
-            logger.info(f"[Agent配置] 🌡️ {agent_id} 是数值计算 Agent，设置默认温度: 0.1")
+            logger.info(f"[Agent Configuration] 🌡️ {agent_id} It is a numerical calculation Agent and sets the default temperature.: 0.1")
             return 0.1
         
-        # 其他 Agent（平衡准确性和灵活性）
-        logger.info(f"[Agent配置] 🌡️ {agent_id} 是标准 Agent，设置默认温度: 0.2")
+        # Other Agents (balancing accuracy and flexibility)
+        logger.info(f"[Agent Configuration] 🌡️ {agent_id} It is a standard Agent and sets the default temperature.: 0.2")
         return 0.2
     
     def save_agent_config(self, config: Dict[str, Any]) -> bool:
         """
-        保存 Agent 配置到数据库
+        Save Agent configuration to database
         
         Args:
-            config: Agent 配置字典
+            config: Agent Configuration dictionary
             
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         agent_id = config.get("agent_id")
         if not agent_id:
-            logger.error("配置缺少 agent_id")
+            logger.error("Configuration is missing agent_id")
             return False
 
         try:
-            # 准备更新数据
+            # Prepare to update data
             update_data = config.copy()
             update_data["updated_at"] = datetime.utcnow().isoformat()
 
-            # 如果配置中有created_at，移除它（让$setOnInsert处理）
+            # If created_at is present in the configuration, remove it (let$setOnInsert processing)
             created_at = update_data.pop("created_at", None)
 
-            # 构建更新操作
+            # Build update operation
             update_op = {"$set": update_data}
 
-            # 只在插入时设置created_at
+            # Only set on insert created_at
             if created_at:
                 update_op["$setOnInsert"] = {"created_at": created_at}
             else:
@@ -218,35 +218,35 @@ class AgentConfigManager:
                 upsert=True
             )
 
-            # 清除缓存
+            # clear cache
             if agent_id in self._cache:
                 del self._cache[agent_id]
             if agent_id in self._cache_time:
                 del self._cache_time[agent_id]
 
-            logger.info(f"✅ Agent 配置已保存: {agent_id}")
+            logger.info(f"✅ Agent Configuration saved: {agent_id}")
             return True
         except Exception as e:
-            logger.error(f"保存 Agent 配置失败: {e}")
+            logger.error(f"Failed to save Agent configuration: {e}")
             return False
 
     def is_agent_enabled(self, agent_id: str) -> bool:
-        """检查 Agent 是否启用"""
+        """Check if Agent is enabled"""
         config = self.get_agent_config(agent_id)
         return config.get("enabled", False) if config else False
 
     def enable_agent(self, agent_id: str) -> bool:
-        """启用 Agent"""
+        """enable Agent"""
         return self._set_agent_enabled(agent_id, True)
 
     def disable_agent(self, agent_id: str) -> bool:
-        """禁用 Agent"""
+        """Disable Agent"""
         return self._set_agent_enabled(agent_id, False)
 
     def _set_agent_enabled(self, agent_id: str, enabled: bool) -> bool:
-        """设置 Agent 启用状态"""
+        """Set Agent enabled status"""
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         try:
@@ -261,26 +261,26 @@ class AgentConfigManager:
                 upsert=True
             )
 
-            # 清除缓存
+            # clear cache
             if agent_id in self._cache:
                 del self._cache[agent_id]
 
-            logger.info(f"✅ Agent {agent_id} 已{'启用' if enabled else '禁用'}")
+            logger.info(f"✅ Agent {agent_id} Already{'enable' if enabled else 'Disable'}")
             return True
         except Exception as e:
-            logger.error(f"设置 Agent 状态失败: {e}")
+            logger.error(f"Failed to set Agent status: {e}")
             return False
 
     def get_all_agent_configs(self, category: Optional[str] = None, enabled_only: bool = False) -> List[Dict[str, Any]]:
         """
-        获取所有 Agent 配置
+        Get all Agent configurations
 
         Args:
-            category: 可选，按分类筛选
-            enabled_only: 是否只返回启用的 Agent
+            category: Optional, filter by category
+            enabled_only: Whether to return only enabled Agent
 
         Returns:
-            Agent 配置列表
+            Agent Configuration list
         """
         result = []
 
@@ -293,13 +293,13 @@ class AgentConfigManager:
                     query["enabled"] = True
 
                 result = list(self._db.agent_configs.find(query))
-                # 移除 _id 字段
+                # Remove _id field
                 for config in result:
                     config.pop("_id", None)
             except Exception as e:
-                logger.warning(f"获取 Agent 配置列表失败: {e}")
+                logger.warning(f"Failed to obtain Agent configuration list: {e}")
 
-        # 如果数据库为空，从代码加载默认配置
+        # If database is empty, load default configuration from code
         if not result:
             from core.agents.registry import AgentRegistry
             registry = AgentRegistry()
@@ -318,17 +318,17 @@ class AgentConfigManager:
 
     def update_agent_execution_config(self, agent_id: str, execution_config: Dict[str, Any]) -> bool:
         """
-        更新 Agent 的执行配置
+        Update the Agent s execution configuration
 
         Args:
             agent_id: Agent ID
-            execution_config: 执行配置（max_iterations, timeout, temperature等）
+            execution_config: execute configure(max_iterations, timeout, temperature etc.)
 
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         try:
@@ -343,30 +343,30 @@ class AgentConfigManager:
                 upsert=True
             )
 
-            # 清除缓存
+            # clear cache
             if agent_id in self._cache:
                 del self._cache[agent_id]
 
-            logger.info(f"✅ Agent 执行配置已更新: {agent_id}")
+            logger.info(f"✅ Agent Execution configuration updated: {agent_id}")
             return True
         except Exception as e:
-            logger.error(f"更新 Agent 执行配置失败: {e}")
+            logger.error(f"Update Agent execution configuration failed: {e}")
             return False
 
     def update_agent_prompt_template(self, agent_id: str, template_type: str, template_name: str) -> bool:
         """
-        更新 Agent 的提示词模板配置
+        Update the Agent s prompt word template configuration
 
         Args:
             agent_id: Agent ID
-            template_type: 模板类型
-            template_name: 模板名称
+            template_type: template type
+            template_name: Template name
 
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         try:
@@ -382,14 +382,14 @@ class AgentConfigManager:
                 upsert=True
             )
 
-            # 清除缓存
+            # clear cache
             if agent_id in self._cache:
                 del self._cache[agent_id]
 
-            logger.info(f"✅ Agent 提示词模板已更新: {agent_id}")
+            logger.info(f"✅ Agent Prompt word template has been updated: {agent_id}")
             return True
         except Exception as e:
-            logger.error(f"更新 Agent 提示词模板失败: {e}")
+            logger.error(f"Failed to update Agent prompt word template: {e}")
             return False
 
 

@@ -3,58 +3,58 @@
     <div class="header">
       <div class="title">
         <el-icon style="margin-right:8px"><PieChart /></el-icon>
-        <span>持仓分析</span>
-        <el-tag type="success" size="small" style="margin-left: 8px;">高级</el-tag>
+        <span>Position analysis</span>
+        <el-tag type="success" size="small" style="margin-left: 8px;">Advanced</el-tag>
       </div>
       <div class="actions">
-        <el-button :icon="Refresh" text size="small" @click="refreshData">刷新</el-button>
-        <el-button v-if="activeTab === 'real' && !isJdyunMode()" type="success" plain :loading="qmtSyncing" @click="syncPositionsFromQmt">QMT同步</el-button>
-        <el-button v-if="activeTab === 'real'" type="primary" :icon="Plus" @click="showAddDialog = true">添加持仓</el-button>
-        <el-button v-if="activeTab === 'real'" type="info" :icon="List" @click="showChangesDialog = true">变动记录</el-button>
-        <el-button v-if="activeTab === 'real'" type="warning" :icon="Clock" @click="showHistoryDialog = true">历史持仓</el-button>
-        <el-button v-if="activeTab === 'real'" type="danger" plain size="small" @click="confirmResetAll">清零全部持仓</el-button>
-        <!-- 暂时隐藏，功能未完善 -->
+        <el-button :icon="Refresh" text size="small" @click="refreshData">Refresh</el-button>
+        <el-button v-if="activeTab === 'real' && !isJdyunMode()" type="success" plain :loading="qmtSyncing" @click="syncPositionsFromQmt">QMT sync</el-button>
+        <el-button v-if="activeTab === 'real'" type="primary" :icon="Plus" @click="showAddDialog = true">Add position</el-button>
+        <el-button v-if="activeTab === 'real'" type="info" :icon="List" @click="showChangesDialog = true">Change history</el-button>
+        <el-button v-if="activeTab === 'real'" type="warning" :icon="Clock" @click="showHistoryDialog = true">Historical positions</el-button>
+        <el-button v-if="activeTab === 'real'" type="danger" plain size="small" @click="confirmResetAll">Clear all positions</el-button>
+        <!-- Temporarily hidden, the function is not perfect -->
         <!-- <el-button type="success" :icon="DataAnalysis" @click="startAnalysis" :loading="analyzing">
-          AI分析
+          AI analysis
         </el-button>
-        <el-button type="info" :icon="Document" @click="showAnalysisHistoryDialog = true">分析历史</el-button> -->
+        <el-button type="info" :icon="Document" @click="showAnalysisHistoryDialog = true">Analyze history</el-button> -->
       </div>
     </div>
 
-    <!-- 合规免责声明 -->
+    <!-- Compliance Disclaimer -->
     <el-alert
-      title="本功能仅为个人持仓管理工具"
+      title="This function is only a personal position management tool"
       type="info"
-      description="持仓数据、盈亏统计和操作建议均由您自行录入或同步，系统仅做记录与展示，不构成任何投资建议。实际投资决策请结合多方信息独立判断。"
+      description="Position data, profit and loss statistics and operation suggestions are all entered or synchronized by you. The system only records and displays them and does not constitute any investment advice. Please make independent judgments based on information from multiple parties for actual investment decisions."
       show-icon
       :closable="false"
       style="margin-bottom: 16px;"
     />
 
-    <!-- 主 Tab 页：用户持仓 vs 模拟持仓 -->
+    <!-- Main Tab Page: User Positions vs Simulated Positions -->
     <el-tabs v-model="activeTab" type="card" class="main-tabs" @tab-change="handleTabChange">
-      <!-- ==================== 用户持仓 Tab ==================== -->
-      <el-tab-pane label="💰 用户持仓" name="real">
-        <!-- 资金账户卡片 -->
+      <!-- ==================== User positions Tab ==================== -->
+      <el-tab-pane label="💰 User positions" name="real">
+        <!-- Fund account card -->
         <AccountCard ref="accountCardRef" @updated="refreshData" />
 
-        <!-- 统计卡片 -->
+        <!-- Statistics cards -->
         <el-row :gutter="16" class="stats-row">
           <el-col :span="6">
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-label">持仓总市值</div>
+              <div class="stat-label">Total market value of positions</div>
               <div class="stat-value">¥{{ formatNumber(realStats.total_value) }}</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-label">持仓成本</div>
+              <div class="stat-label">Holding cost</div>
               <div class="stat-value">¥{{ formatNumber(realStats.total_cost) }}</div>
             </el-card>
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-label">浮动盈亏</div>
+              <div class="stat-label">floating profit and loss</div>
               <div class="stat-value" :class="pnlClass(realStats.unrealized_pnl)">
                 {{ formatPnl(realStats.unrealized_pnl) }}
                 <span class="pnl-pct">({{ formatPct(realStats.unrealized_pnl_pct) }})</span>
@@ -63,48 +63,48 @@
           </el-col>
           <el-col :span="6">
             <el-card shadow="hover" class="stat-card">
-              <div class="stat-label">持仓数量</div>
-              <div class="stat-value">{{ realStats.total_positions }} 只</div>
+              <div class="stat-label">Position quantity</div>
+              <div class="stat-value">{{ realStats.total_positions }} only</div>
             </el-card>
           </el-col>
         </el-row>
 
-        <!-- 持仓列表 -->
+        <!-- Position list -->
         <el-row :gutter="16" class="main-content">
           <el-col :span="16">
             <el-card shadow="hover">
               <template #header>
                 <div class="card-header">
-                  <span>用户持仓明细</span>
+                  <span>User position details</span>
                   <el-radio-group v-model="selectedMarket" size="small" @change="filterPositions">
-                    <el-radio-button value="all">全部</el-radio-button>
-                    <el-radio-button value="CN">A股</el-radio-button>
+                    <el-radio-button value="all">All</el-radio-button>
+                    <el-radio-button value="CN">A shares</el-radio-button>
                     <el-radio-button value="ETF">ETF</el-radio-button>
                   </el-radio-group>
                 </div>
               </template>
 
-              <!-- 按市场分组展示 -->
+              <!-- Display grouped by market -->
               <div v-if="paperSelectedMarket === 'all'" class="market-groups">
                 <template v-for="market in ['CN']" :key="market">
                   <div v-if="getPositionsByMarket(realPositions, market).length > 0" class="market-group">
                     <div class="market-group-header">
                       <el-tag :type="getMarketTagType(market)" size="small">{{ getMarketName(market) }}</el-tag>
                       <span class="market-summary">
-                        {{ getPositionsByMarket(realPositions, market).length }}只 |
+                        {{ getPositionsByMarket(realPositions, market).length }}only |
                         <template v-if="getEtfCountByMarket(realPositions, market) > 0">
-                          ETF {{ getEtfCountByMarket(realPositions, market) }}只 |
+                          ETF {{ getEtfCountByMarket(realPositions, market) }}only |
                         </template>
-                        市值: {{ getCurrencySymbol(market) }}{{ formatNumber(getMarketValue(realPositions, market)) }}
+                        Market value: {{ getCurrencySymbol(market) }}{{ formatNumber(getMarketValue(realPositions, market)) }}
                       </span>
                     </div>
                     <el-table :data="getPositionsByMarket(realPositions, market)" stripe size="small">
-                      <el-table-column label="代码" width="100">
+                      <el-table-column label="code" width="100">
                         <template #default="{ row }">
                           <el-button link type="primary" @click="goToStockDetail(row.code)">{{ row.code }}</el-button>
                         </template>
                       </el-table-column>
-                      <el-table-column label="名称" width="170">
+                      <el-table-column label="Name" width="170">
                         <template #default="{ row }">
                           <div class="name-cell">
                             <el-button link type="primary" @click="goToStockDetail(row.code)">{{ row.name }}</el-button>
@@ -112,55 +112,55 @@
                           </div>
                         </template>
                       </el-table-column>
-                      <el-table-column prop="quantity" label="数量" width="80" align="right" />
-                      <el-table-column label="原始成本" width="110" align="right">
+                      <el-table-column prop="quantity" label="Quantity" width="80" align="right" />
+                      <el-table-column label="original cost" width="110" align="right">
                         <template #default="{ row }">
                           <span v-if="(row as any).price_adjust_type === 'none' && (row as any).original_cost_price">
                             {{ (row as any).original_cost_price?.toFixed(2) }}
-                            <el-tag size="small" type="warning" effect="plain" style="margin-left:2px;font-size:10px">不复权</el-tag>
+                            <el-tag size="small" type="warning" effect="plain" style="margin-left:2px;font-size:10px">Loss of power</el-tag>
                           </span>
                           <span v-else>{{ ((row as any).original_avg_cost ?? row.cost_price)?.toFixed(2) }}</span>
                         </template>
                       </el-table-column>
-                      <el-table-column label="摊薄成本" width="100" align="right">
+                      <el-table-column label="diluted costs" width="100" align="right">
                         <template #default="{ row }">{{ row.cost_price?.toFixed(2) }}</template>
                       </el-table-column>
-                      <el-table-column label="现价" width="100" align="right">
+                      <el-table-column label="Current price" width="100" align="right">
                         <template #default="{ row }">{{ row.current_price?.toFixed(2) || '-' }}</template>
                       </el-table-column>
-                      <el-table-column label="市值" width="120" align="right">
+                      <el-table-column label="Market value" width="120" align="right">
                         <template #default="{ row }">{{ formatNumber(row.market_value) }}</template>
                       </el-table-column>
-                      <el-table-column label="盈亏" width="120" align="right">
+                      <el-table-column label="Profit and loss" width="120" align="right">
                         <template #default="{ row }">
                           <span :class="pnlClass(row.unrealized_pnl)">{{ formatPnl(row.unrealized_pnl) }}</span>
                         </template>
                       </el-table-column>
-                      <el-table-column label="盈亏%" width="80" align="right">
+                      <el-table-column label="Profit and loss%" width="80" align="right">
                         <template #default="{ row }">
                           <span :class="pnlClass(row.unrealized_pnl_pct)">{{ formatPct(row.unrealized_pnl_pct) }}</span>
                         </template>
                       </el-table-column>
-                      <el-table-column label="操作" width="280" fixed="right">
+                      <el-table-column label="Operation" width="280" fixed="right">
                         <template #default="{ row }">
-                          <el-button link type="warning" size="small" @click="quickAddPosition(row)">加仓</el-button>
-                          <el-button link type="danger" size="small" @click="quickSellPosition(row)">卖出</el-button>
-                          <el-button link type="success" size="small" @click="analyzePosition(row)">分析</el-button>
-                          <el-button v-if="row.position_count > 1" link type="info" size="small" @click="showPositionDetails(row)">明细</el-button>
+                          <el-button link type="warning" size="small" @click="quickAddPosition(row)">Add to position</el-button>
+                          <el-button link type="danger" size="small" @click="quickSellPosition(row)">sell</el-button>
+                          <el-button link type="success" size="small" @click="analyzePosition(row)">analysis</el-button>
+                          <el-button v-if="row.position_count > 1" link type="info" size="small" @click="showPositionDetails(row)">Details</el-button>
                           <el-dropdown trigger="click" @command="(cmd: string) => handleMoreAction(cmd, row)">
-                            <el-button link type="info" size="small">更多<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+                            <el-button link type="info" size="small">More<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
                             <template #dropdown>
                               <el-dropdown-menu>
-                                <el-dropdown-item command="history">操作历史</el-dropdown-item>
-                                <!-- 暂时隐藏，功能未完善 -->
-                                <!-- <el-dropdown-item command="analysisHistory">分析历史</el-dropdown-item> -->
-                                <el-dropdown-item command="edit" divided>编辑</el-dropdown-item>
-                                <el-dropdown-item command="dividend">分红</el-dropdown-item>
-                                <el-dropdown-item command="split">拆股</el-dropdown-item>
-                                <el-dropdown-item command="merge">合股</el-dropdown-item>
-                                <el-dropdown-item command="adjust">调整成本</el-dropdown-item>
-                                <el-dropdown-item command="reset" divided>重置持仓</el-dropdown-item>
-                                <el-dropdown-item command="delete">删除</el-dropdown-item>
+                                <el-dropdown-item command="history">Operation history</el-dropdown-item>
+                                <!-- Temporarily hidden, the function is not perfect -->
+                                <!-- <el-dropdown-item command="analysisHistory">Analyze history</el-dropdown-item> -->
+                                <el-dropdown-item command="edit" divided>Edit</el-dropdown-item>
+                                <el-dropdown-item command="dividend">dividend</el-dropdown-item>
+                                <el-dropdown-item command="split">stock split</el-dropdown-item>
+                                <el-dropdown-item command="merge">partnership</el-dropdown-item>
+                                <el-dropdown-item command="adjust">Adjustment costs</el-dropdown-item>
+                                <el-dropdown-item command="reset" divided>Reset positions</el-dropdown-item>
+                                <el-dropdown-item command="delete">Delete</el-dropdown-item>
                               </el-dropdown-menu>
                             </template>
                           </el-dropdown>
@@ -169,18 +169,18 @@
                     </el-table>
                   </div>
                 </template>
-                <el-empty v-if="realPositions.length === 0" description="暂无用户持仓" />
+                <el-empty v-if="realPositions.length === 0" description="There are currently no user positions" />
               </div>
 
-              <!-- 单市场展示 -->
+              <!-- Single market display -->
               <div v-else>
                 <el-table :data="filteredPositions" v-loading="loading" stripe>
-                  <el-table-column label="代码" width="100">
+                  <el-table-column label="code" width="100">
                     <template #default="{ row }">
                       <el-button link type="primary" @click="goToStockDetail(row.code)">{{ row.code }}</el-button>
                     </template>
                   </el-table-column>
-                  <el-table-column label="名称" width="170">
+                  <el-table-column label="Name" width="170">
                     <template #default="{ row }">
                       <div class="name-cell">
                         <el-button link type="primary" @click="goToStockDetail(row.code)">{{ row.name }}</el-button>
@@ -188,75 +188,75 @@
                       </div>
                     </template>
                   </el-table-column>
-                  <el-table-column label="市场" width="90">
+                  <el-table-column label="market" width="90">
                     <template #default="{ row }">
                       <el-tag :type="getDisplayMarketTagType(row.market, row.code)" size="small">{{ getDisplayMarketName(row.market, row.code) }}</el-tag>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="quantity" label="数量" width="80" align="right" />
-                  <el-table-column label="原始成本" width="110" align="right">
+                  <el-table-column prop="quantity" label="Quantity" width="80" align="right" />
+                  <el-table-column label="original cost" width="110" align="right">
                     <template #default="{ row }">
                       <span v-if="(row as any).price_adjust_type === 'none' && (row as any).original_cost_price">
                         {{ (row as any).original_cost_price?.toFixed(2) }}
-                        <el-tag size="small" type="warning" effect="plain" style="margin-left:2px;font-size:10px">不复权</el-tag>
+                        <el-tag size="small" type="warning" effect="plain" style="margin-left:2px;font-size:10px">Loss of power</el-tag>
                       </span>
                       <span v-else>{{ ((row as any).original_avg_cost ?? row.cost_price)?.toFixed(2) }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="摊薄成本" width="100" align="right">
+                  <el-table-column label="diluted costs" width="100" align="right">
                     <template #default="{ row }">{{ row.cost_price?.toFixed(2) }}</template>
                   </el-table-column>
-                  <el-table-column label="现价" width="100" align="right">
+                  <el-table-column label="Current price" width="100" align="right">
                     <template #default="{ row }">{{ row.current_price?.toFixed(2) || '-' }}</template>
                   </el-table-column>
-                  <el-table-column label="市值" width="120" align="right">
+                  <el-table-column label="Market value" width="120" align="right">
                     <template #default="{ row }">{{ formatNumber(row.market_value) }}</template>
                   </el-table-column>
-                  <el-table-column label="盈亏" width="120" align="right">
+                  <el-table-column label="Profit and loss" width="120" align="right">
                     <template #default="{ row }">
                       <span :class="pnlClass(row.unrealized_pnl)">{{ formatPnl(row.unrealized_pnl) }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="盈亏%" width="80" align="right">
+                  <el-table-column label="Profit and loss%" width="80" align="right">
                     <template #default="{ row }">
                       <span :class="pnlClass(row.unrealized_pnl_pct)">{{ formatPct(row.unrealized_pnl_pct) }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="280" fixed="right">
+                  <el-table-column label="Operation" width="280" fixed="right">
                     <template #default="{ row }">
-                      <el-button link type="warning" size="small" @click="quickAddPosition(row)">加仓</el-button>
-                      <el-button link type="danger" size="small" @click="quickSellPosition(row)">卖出</el-button>
-                      <el-button link type="success" size="small" @click="analyzePosition(row)">分析</el-button>
-                      <el-button v-if="row.position_count > 1" link type="info" size="small" @click="showPositionDetails(row)">明细</el-button>
+                      <el-button link type="warning" size="small" @click="quickAddPosition(row)">Add to position</el-button>
+                      <el-button link type="danger" size="small" @click="quickSellPosition(row)">sell</el-button>
+                      <el-button link type="success" size="small" @click="analyzePosition(row)">analysis</el-button>
+                      <el-button v-if="row.position_count > 1" link type="info" size="small" @click="showPositionDetails(row)">Details</el-button>
                       <el-dropdown trigger="click" @command="(cmd: string) => handleMoreAction(cmd, row)">
-                        <el-button link type="info" size="small">更多<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+                        <el-button link type="info" size="small">More<el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
                         <template #dropdown>
                           <el-dropdown-menu>
-                            <el-dropdown-item command="history">操作历史</el-dropdown-item>
-                            <!-- 暂时隐藏，功能未完善 -->
-                            <!-- <el-dropdown-item command="analysisHistory">分析历史</el-dropdown-item> -->
-                            <el-dropdown-item command="edit" divided>编辑</el-dropdown-item>
-                            <el-dropdown-item command="dividend">分红</el-dropdown-item>
-                            <el-dropdown-item command="split">拆股</el-dropdown-item>
-                            <el-dropdown-item command="merge">合股</el-dropdown-item>
-                            <el-dropdown-item command="adjust">调整成本</el-dropdown-item>
-                            <el-dropdown-item command="reset" divided>重置持仓</el-dropdown-item>
-                            <el-dropdown-item command="delete">删除</el-dropdown-item>
+                            <el-dropdown-item command="history">Operation history</el-dropdown-item>
+                            <!-- Temporarily hidden, the function is not perfect -->
+                            <!-- <el-dropdown-item command="analysisHistory">Analyze history</el-dropdown-item> -->
+                            <el-dropdown-item command="edit" divided>Edit</el-dropdown-item>
+                            <el-dropdown-item command="dividend">dividend</el-dropdown-item>
+                            <el-dropdown-item command="split">stock split</el-dropdown-item>
+                            <el-dropdown-item command="merge">partnership</el-dropdown-item>
+                            <el-dropdown-item command="adjust">Adjustment costs</el-dropdown-item>
+                            <el-dropdown-item command="reset" divided>Reset positions</el-dropdown-item>
+                            <el-dropdown-item command="delete">Delete</el-dropdown-item>
                           </el-dropdown-menu>
                         </template>
                       </el-dropdown>
                     </template>
                   </el-table-column>
                 </el-table>
-                <el-empty v-if="filteredPositions.length === 0" description="该市场暂无持仓" />
+                <el-empty v-if="filteredPositions.length === 0" description="There are currently no positions in this market" />
               </div>
             </el-card>
           </el-col>
 
-          <!-- 行业分布 -->
+          <!-- Industry distribution -->
           <el-col :span="8">
             <el-card shadow="hover" class="industry-card">
-              <template #header><span>行业分布</span></template>
+              <template #header><span>Industry distribution</span></template>
               <div v-if="realIndustryDistribution.length" class="industry-list">
                 <div v-for="item in realIndustryDistribution" :key="item.industry" class="industry-item">
                   <div class="industry-name">{{ item.industry }}</div>
@@ -266,38 +266,38 @@
                   <div class="industry-pct">{{ item.percentage.toFixed(1) }}%</div>
                 </div>
               </div>
-              <el-empty v-else description="暂无数据" />
+              <el-empty v-else description="No data yet" />
             </el-card>
           </el-col>
         </el-row>
       </el-tab-pane>
 
-      <!-- ==================== 模拟持仓 Tab ==================== -->
-      <el-tab-pane label="📊 模拟持仓" name="paper">
-        <!-- 模拟账户资金 -->
+      <!-- ==================== Simulated position Tab ==================== -->
+      <el-tab-pane label="📊 Simulated position" name="paper">
+        <!-- Demo account funds -->
         <el-card shadow="hover" class="paper-account-card">
           <template #header>
             <div class="card-header">
-              <span>模拟账户资金</span>
-              <el-tag type="info" size="small">仅供参考</el-tag>
+              <span>Demo account funds</span>
+              <el-tag type="info" size="small">For reference only</el-tag>
             </div>
           </template>
           <el-row :gutter="20">
             <el-col :span="6">
               <div class="account-item">
-                <div class="account-label">模拟总资产</div>
+                <div class="account-label">Simulated total assets</div>
                 <div class="account-value">¥{{ formatNumber(paperStats.total_assets) }}</div>
               </div>
             </el-col>
             <el-col :span="6">
               <div class="account-item">
-                <div class="account-label">持仓市值</div>
+                <div class="account-label">Position market value</div>
                 <div class="account-value">¥{{ formatNumber(paperStats.total_value) }}</div>
               </div>
             </el-col>
             <el-col :span="6">
               <div class="account-item">
-                <div class="account-label">浮动盈亏</div>
+                <div class="account-label">floating profit and loss</div>
                 <div class="account-value" :class="pnlClass(paperStats.unrealized_pnl)">
                   {{ formatPnl(paperStats.unrealized_pnl) }}
                 </div>
@@ -305,49 +305,49 @@
             </el-col>
             <el-col :span="6">
               <div class="account-item">
-                <div class="account-label">持仓数量</div>
-                <div class="account-value">{{ paperStats.total_positions }} 只</div>
+                <div class="account-label">Position quantity</div>
+                <div class="account-value">{{ paperStats.total_positions }} only</div>
               </div>
             </el-col>
           </el-row>
         </el-card>
 
-        <!-- 模拟持仓列表 -->
+        <!-- Simulated position list -->
         <el-row :gutter="16" class="main-content">
           <el-col :span="16">
             <el-card shadow="hover">
               <template #header>
                 <div class="card-header">
-                  <span>模拟持仓明细</span>
+                  <span>Simulated position details</span>
                   <el-radio-group v-model="paperSelectedMarket" size="small">
-                    <el-radio-button value="all">全部</el-radio-button>
-                    <el-radio-button value="CN">A股</el-radio-button>
+                    <el-radio-button value="all">All</el-radio-button>
+                    <el-radio-button value="CN">A shares</el-radio-button>
                     <el-radio-button value="ETF">ETF</el-radio-button>
                   </el-radio-group>
                 </div>
               </template>
 
-              <!-- 按市场分组展示 -->
+              <!-- Display grouped by market -->
               <div v-if="paperSelectedMarket === 'all'" class="market-groups">
                 <template v-for="market in ['CN']" :key="market">
                   <div v-if="getPositionsByMarket(paperPositions, market).length > 0" class="market-group">
                     <div class="market-group-header">
                       <el-tag :type="getMarketTagType(market)" size="small">{{ getMarketName(market) }}</el-tag>
                       <span class="market-summary">
-                        {{ getPositionsByMarket(paperPositions, market).length }}只 |
+                        {{ getPositionsByMarket(paperPositions, market).length }}only |
                         <template v-if="getEtfCountByMarket(paperPositions, market) > 0">
-                          ETF {{ getEtfCountByMarket(paperPositions, market) }}只 |
+                          ETF {{ getEtfCountByMarket(paperPositions, market) }}only |
                         </template>
-                        市值: {{ getCurrencySymbol(market) }}{{ formatNumber(getMarketValue(paperPositions, market)) }}
+                        Market value: {{ getCurrencySymbol(market) }}{{ formatNumber(getMarketValue(paperPositions, market)) }}
                       </span>
                     </div>
                     <el-table :data="getPositionsByMarket(paperPositions, market)" stripe size="small">
-                      <el-table-column label="代码" width="100">
+                      <el-table-column label="code" width="100">
                         <template #default="{ row }">
                           <el-button link type="primary" @click="goToStockDetail(row.code)">{{ row.code }}</el-button>
                         </template>
                       </el-table-column>
-                      <el-table-column label="名称" width="170">
+                      <el-table-column label="Name" width="170">
                         <template #default="{ row }">
                           <div class="name-cell">
                             <el-button link type="primary" @click="goToStockDetail(row.code)">{{ row.name }}</el-button>
@@ -355,47 +355,47 @@
                           </div>
                         </template>
                       </el-table-column>
-                      <el-table-column prop="quantity" label="数量" width="80" align="right" />
-                      <el-table-column label="成本价" width="100" align="right">
+                      <el-table-column prop="quantity" label="Quantity" width="80" align="right" />
+                      <el-table-column label="cost price" width="100" align="right">
                         <template #default="{ row }">{{ row.cost_price?.toFixed(2) }}</template>
                       </el-table-column>
-                      <el-table-column label="现价" width="100" align="right">
+                      <el-table-column label="Current price" width="100" align="right">
                         <template #default="{ row }">{{ row.current_price?.toFixed(2) || '-' }}</template>
                       </el-table-column>
-                      <el-table-column label="市值" width="120" align="right">
+                      <el-table-column label="Market value" width="120" align="right">
                         <template #default="{ row }">{{ formatNumber(row.market_value) }}</template>
                       </el-table-column>
-                      <el-table-column label="盈亏" width="120" align="right">
+                      <el-table-column label="Profit and loss" width="120" align="right">
                         <template #default="{ row }">
                           <span :class="pnlClass(row.unrealized_pnl)">{{ formatPnl(row.unrealized_pnl) }}</span>
                         </template>
                       </el-table-column>
-                      <el-table-column label="盈亏%" width="80" align="right">
+                      <el-table-column label="Profit and loss%" width="80" align="right">
                         <template #default="{ row }">
                           <span :class="pnlClass(row.unrealized_pnl_pct)">{{ formatPct(row.unrealized_pnl_pct) }}</span>
                         </template>
                       </el-table-column>
-                      <el-table-column label="操作" width="160" fixed="right">
+                      <el-table-column label="Operation" width="160" fixed="right">
                         <template #default="{ row }">
-                          <el-button link type="success" size="small" @click="analyzePosition(row)">分析</el-button>
-                          <el-button v-if="row.position_count > 1" link type="info" size="small" @click="showPositionDetails(row)">明细</el-button>
+                          <el-button link type="success" size="small" @click="analyzePosition(row)">analysis</el-button>
+                          <el-button v-if="row.position_count > 1" link type="info" size="small" @click="showPositionDetails(row)">Details</el-button>
                         </template>
                       </el-table-column>
                     </el-table>
                   </div>
                 </template>
-                <el-empty v-if="paperPositions.length === 0" description="暂无模拟持仓" />
+                <el-empty v-if="paperPositions.length === 0" description="No simulated positions yet" />
               </div>
 
-              <!-- 单市场展示 -->
+              <!-- Single market display -->
               <div v-else>
                 <el-table :data="filteredPaperPositions" v-loading="loading" stripe>
-                  <el-table-column label="代码" width="100">
+                  <el-table-column label="code" width="100">
                     <template #default="{ row }">
                       <el-button link type="primary" @click="goToStockDetail(row.code)">{{ row.code }}</el-button>
                     </template>
                   </el-table-column>
-                  <el-table-column label="名称" width="170">
+                  <el-table-column label="Name" width="170">
                     <template #default="{ row }">
                       <div class="name-cell">
                         <el-button link type="primary" @click="goToStockDetail(row.code)">{{ row.name }}</el-button>
@@ -403,47 +403,47 @@
                       </div>
                     </template>
                   </el-table-column>
-                  <el-table-column label="市场" width="90">
+                  <el-table-column label="market" width="90">
                     <template #default="{ row }">
                       <el-tag :type="getDisplayMarketTagType(row.market, row.code)" size="small">{{ getDisplayMarketName(row.market, row.code) }}</el-tag>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="quantity" label="数量" width="80" align="right" />
-                  <el-table-column label="成本价" width="100" align="right">
+                  <el-table-column prop="quantity" label="Quantity" width="80" align="right" />
+                  <el-table-column label="cost price" width="100" align="right">
                     <template #default="{ row }">{{ row.cost_price?.toFixed(2) }}</template>
                   </el-table-column>
-                  <el-table-column label="现价" width="100" align="right">
+                  <el-table-column label="Current price" width="100" align="right">
                     <template #default="{ row }">{{ row.current_price?.toFixed(2) || '-' }}</template>
                   </el-table-column>
-                  <el-table-column label="市值" width="120" align="right">
+                  <el-table-column label="Market value" width="120" align="right">
                     <template #default="{ row }">{{ formatNumber(row.market_value) }}</template>
                   </el-table-column>
-                  <el-table-column label="盈亏" width="120" align="right">
+                  <el-table-column label="Profit and loss" width="120" align="right">
                     <template #default="{ row }">
                       <span :class="pnlClass(row.unrealized_pnl)">{{ formatPnl(row.unrealized_pnl) }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="盈亏%" width="80" align="right">
+                  <el-table-column label="Profit and loss%" width="80" align="right">
                     <template #default="{ row }">
                       <span :class="pnlClass(row.unrealized_pnl_pct)">{{ formatPct(row.unrealized_pnl_pct) }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="160" fixed="right">
+                  <el-table-column label="Operation" width="160" fixed="right">
                     <template #default="{ row }">
-                      <el-button link type="success" size="small" @click="analyzePosition(row)">分析</el-button>
-                      <el-button v-if="row.position_count > 1" link type="info" size="small" @click="showPositionDetails(row)">明细</el-button>
+                      <el-button link type="success" size="small" @click="analyzePosition(row)">analysis</el-button>
+                      <el-button v-if="row.position_count > 1" link type="info" size="small" @click="showPositionDetails(row)">Details</el-button>
                     </template>
                   </el-table-column>
                 </el-table>
-                <el-empty v-if="filteredPaperPositions.length === 0" description="该市场暂无模拟持仓" />
+                <el-empty v-if="filteredPaperPositions.length === 0" description="There are currently no simulated positions in this market" />
               </div>
             </el-card>
           </el-col>
 
-          <!-- 模拟盘行业分布 -->
+          <!-- Simulation disk industry distribution -->
           <el-col :span="8">
             <el-card shadow="hover" class="industry-card">
-              <template #header><span>行业分布</span></template>
+              <template #header><span>Industry distribution</span></template>
               <div v-if="paperIndustryDistribution.length" class="industry-list">
                 <div v-for="item in paperIndustryDistribution" :key="item.industry" class="industry-item">
                   <div class="industry-name">{{ item.industry }}</div>
@@ -453,49 +453,49 @@
                   <div class="industry-pct">{{ item.percentage.toFixed(1) }}%</div>
                 </div>
               </div>
-              <el-empty v-else description="暂无数据" />
+              <el-empty v-else description="No data yet" />
             </el-card>
           </el-col>
         </el-row>
       </el-tab-pane>
     </el-tabs>
 
-    <!-- 添加持仓对话框 -->
+    <!-- Add position dialog -->
     <AddPositionDialog 
       v-model:visible="showAddDialog" 
       :edit-data="editingPosition"
       @success="onPositionSaved" 
     />
 
-    <!-- 分析结果对话框 -->
+    <!-- Analyze results dialog box -->
     <AnalysisResultDialog
       v-model:visible="showAnalysisDialog"
       :report="analysisReport"
     />
 
-    <!-- 单股持仓分析对话框 -->
+    <!-- Single stock position analysis dialog box -->
     <PositionAnalysisDialog
       v-model="showPositionAnalysisDialog"
       :position="selectedPosition"
       :workflow-id="selectedWorkflowId"
     />
 
-    <!-- 持仓变动记录对话框 -->
+    <!-- Position change record dialog box -->
     <PositionChangesDialog v-model="showChangesDialog" @refresh="refreshData" />
 
-    <!-- 历史持仓对话框 -->
+    <!-- Historical positions dialog box -->
     <HistoryPositionsDialog v-model="showHistoryDialog" />
 
-    <!-- 持仓分析历史对话框 -->
+    <!-- Position analysis history dialog box -->
     <AnalysisHistoryDialog v-model="showAnalysisHistoryDialog" />
 
-    <!-- 单股分析历史对话框 -->
+    <!-- Single stock analysis history dialog box -->
     <PositionAnalysisHistoryDialog
       v-model="showPositionAnalysisHistoryDialog"
       :position="selectedPositionForAnalysisHistory"
     />
 
-    <!-- 持仓明细对话框 -->
+    <!-- Position details dialog box -->
     <PositionDetailsDialog
       v-model="showPositionDetailsDialog"
       :position="selectedAggregatedPosition"
@@ -504,7 +504,7 @@
       @operation="handlePositionOperation"
     />
 
-    <!-- 持仓操作对话框 -->
+    <!-- Position operation dialog box -->
     <PositionOperationDialog
       v-model="showPositionOperationDialog"
       :position="selectedAggregatedPosition"
@@ -512,7 +512,7 @@
       @refresh="refreshData"
     />
 
-    <!-- 单股操作历史对话框 -->
+    <!-- Single stock operation history dialog box -->
     <StockOperationHistoryDialog
       v-model="showStockHistoryDialog"
       :stock="selectedStockForHistory"
@@ -545,7 +545,7 @@ import { getMarketByStockCode } from '@/utils/market'
 // Router
 const router = useRouter()
 
-// 状态
+// Status
 const loading = ref(false)
 const positions = ref<PositionItem[]>([])
 const stats = ref<PortfolioStats | null>(null)
@@ -575,13 +575,13 @@ const qmtSyncing = ref(false)
 
 const QMT_ACCOUNT_ID_STORAGE_KEY = 'portfolio:qmt-account-id'
 
-// 用户持仓和模拟持仓
+// User positions and simulated positions
 const realPositions = ref<PositionItem[]>([])
 const paperPositions = ref<PositionItem[]>([])
 const filteredPositions = ref<PositionItem[]>([])
 const filteredPaperPositions = ref<PositionItem[]>([])
 
-// 统计数据
+// Statistics
 interface StatsData {
   total_value: number
   total_cost: number
@@ -607,7 +607,7 @@ const paperStats = ref<StatsData>({
   total_assets: 0
 })
 
-// 行业分布
+// Industry distribution
 interface IndustryItem {
   industry: string
   percentage: number
@@ -615,9 +615,9 @@ interface IndustryItem {
 const realIndustryDistribution = ref<IndustryItem[]>([])
 const paperIndustryDistribution = ref<IndustryItem[]>([])
 
-// 格式化方法
+// formatting method
 const formatNumber = (val?: number) => {
-  // 🔥 修复：处理 NaN 和非数字值
+  // 🔥 Fix: Handle NaN and non-numeric values
   if (val === undefined || val === null || Number.isNaN(val) || typeof val !== 'number') return '-'
   return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
@@ -665,8 +665,8 @@ const getEtfCountByMarket = (positions: PositionItem[], market: string) => {
 }
 
 const getIndustryCategory = (position: PositionItem) => {
-  if (isEtfPosition(position)) return 'ETF/基金'
-  return position.industry || '未知'
+  if (isEtfPosition(position)) return 'ETF/fund'
+  return position.industry || 'unknown'
 }
 
 const matchesSelectedMarket = (position: PositionItem, selected: string) => {
@@ -676,10 +676,10 @@ const matchesSelectedMarket = (position: PositionItem, selected: string) => {
   return position.market === selected
 }
 
-// 市场相关方法
+// market related approach
 const getMarketName = (market: string) => {
   const map: Record<string, string> = {
-    CN: 'A股'
+    CN: 'A shares'
   }
   return map[market] || market
 }
@@ -691,7 +691,7 @@ const getMarketTagType = (market: string) => {
   return map[market] || 'info'
 }
 
-// 币种符号
+// currency symbol
 const getCurrencySymbol = (market: string) => {
   const map: Record<string, string> = {
     CN: '¥'
@@ -699,22 +699,22 @@ const getCurrencySymbol = (market: string) => {
   return map[market] || '¥'
 }
 
-// 获取持仓有效市值：有行情用 market_value，无行情用成本价*数量（避免显示 -100% 浮亏）
+// Obtain the effective market value of the position: use market_value if there is a market price, use cost price if there is no market price.*Quantity (to avoid showing -100% floating loss)
 const getPositionValue = (p: PositionItem): number => {
   if (p.market_value != null && p.market_value !== undefined) return p.market_value
   return (p.cost_price ?? 0) * (p.quantity ?? 0)
 }
 
-// 聚合相同代码的持仓（按股票代码合并）
+// Aggregate positions of the same symbol (merged by ticker)
 interface AggregatedPosition extends PositionItem {
-  position_count: number  // 该股票的持仓记录数
-  positions: PositionItem[]  // 该股票的所有持仓记录
+  position_count: number  // The number of position records for this stock
+  positions: PositionItem[]  // All position records for this stock
 }
 
 const aggregatePositionsByCode = (positions: PositionItem[]): AggregatedPosition[] => {
   const map = new Map<string, PositionItem[]>()
 
-  // 按代码分组
+  // Group by code
   for (const pos of positions) {
     const key = pos.code
     if (!map.has(key)) {
@@ -723,7 +723,7 @@ const aggregatePositionsByCode = (positions: PositionItem[]): AggregatedPosition
     map.get(key)!.push(pos)
   }
 
-  // 合并每组的数据
+  // Combine data from each group
   const aggregated: AggregatedPosition[] = []
   for (const [, positionList] of map.entries()) {
     const totalQuantity = positionList.reduce((sum, p) => sum + p.quantity, 0)
@@ -738,7 +738,7 @@ const aggregatePositionsByCode = (positions: PositionItem[]): AggregatedPosition
     const totalUnrealizedPnl = totalMarketValue - totalCostDiluted
     const totalUnrealizedPnlPct = totalCostDiluted > 0 ? (totalUnrealizedPnl / totalCostDiluted) * 100 : 0
 
-    // 使用第一条记录作为基础，更新聚合数据
+    // Use the first record as the basis to update the aggregated data
     const basePos = positionList[0]
     const aggregated_pos: AggregatedPosition = {
       ...basePos,
@@ -757,20 +757,20 @@ const aggregatePositionsByCode = (positions: PositionItem[]): AggregatedPosition
   return aggregated
 }
 
-// 按市场获取持仓（聚合版本）
+// Get positions by market (aggregated version)
 const getPositionsByMarket = (positions: PositionItem[], market: string) => {
   const filtered = positions.filter(p => p.market === market)
   return aggregatePositionsByCode(filtered)
 }
 
-// 获取市场总市值
+// Get the total market capitalization
 const getMarketValue = (positions: PositionItem[], market: string) => {
   return positions
     .filter(p => p.market === market)
     .reduce((sum, p) => sum + getPositionValue(p), 0)
 }
 
-// 计算统计数据
+// Calculate statistics
 const calculateStats = (positions: PositionItem[]): StatsData => {
   const total_value = positions.reduce((sum, p) => sum + getPositionValue(p), 0)
   const total_cost = positions.reduce((sum, p) => sum + (p.cost_price || 0) * (p.quantity || 0), 0)
@@ -786,7 +786,7 @@ const calculateStats = (positions: PositionItem[]): StatsData => {
   }
 }
 
-// 计算行业分布
+// Calculate industry distribution
 const calculateIndustryDistribution = (positions: PositionItem[]): IndustryItem[] => {
   const total = positions.reduce((sum, p) => sum + getPositionValue(p), 0)
   if (total === 0) return []
@@ -805,30 +805,30 @@ const calculateIndustryDistribution = (positions: PositionItem[]): IndustryItem[
     .sort((a, b) => b.percentage - a.percentage)
 }
 
-// 数据加载
+// Data loading
 const loadPositions = async () => {
   loading.value = true
   try {
     const res = await portfolioApi.getPositions('all')
     positions.value = res.data?.items || []
 
-    // 分离用户持仓和模拟持仓
+    // Separate user positions and simulated positions
     realPositions.value = positions.value.filter(p => p.source !== 'paper')
     paperPositions.value = positions.value.filter(p => p.source === 'paper')
 
-    // 计算统计数据
+    // Calculate statistics
     realStats.value = calculateStats(realPositions.value)
     paperStats.value = calculateStats(paperPositions.value)
 
-    // 计算行业分布
+    // Calculate industry distribution
     realIndustryDistribution.value = calculateIndustryDistribution(realPositions.value)
     paperIndustryDistribution.value = calculateIndustryDistribution(paperPositions.value)
 
-    // 应用市场筛选
+    // Apply Market Filter
     filterPositions()
     filterPaperPositions()
   } catch (e: any) {
-    ElMessage.error(e.message || '加载持仓失败')
+    ElMessage.error(e.message || 'Failed to load positions')
   } finally {
     loading.value = false
   }
@@ -839,11 +839,11 @@ const loadStats = async () => {
     const res = await portfolioApi.getStatistics()
     stats.value = res.data || null
   } catch (e: any) {
-    console.error('加载统计失败:', e)
+    console.error('Failed to load statistics:', e)
   }
 }
 
-// Tab 切换
+// Tab switch
 const handleTabChange = (_tabName: TabPaneName) => {
   selectedMarket.value = 'all'
   paperSelectedMarket.value = 'all'
@@ -851,7 +851,7 @@ const handleTabChange = (_tabName: TabPaneName) => {
   filterPaperPositions()
 }
 
-// 市场筛选 - 用户持仓
+// Market Screening - User Positions
 const filterPositions = () => {
   let filtered: PositionItem[]
   if (selectedMarket.value === 'all') {
@@ -859,11 +859,11 @@ const filterPositions = () => {
   } else {
     filtered = realPositions.value.filter(p => matchesSelectedMarket(p, selectedMarket.value))
   }
-  // 单市场显示时也需要聚合
+  // Aggregation is also required when displaying a single market
   filteredPositions.value = aggregatePositionsByCode(filtered) as any
 }
 
-// 市场筛选 - 模拟持仓
+// Market Screening - Simulated Positions
 const filterPaperPositions = () => {
   let filtered: PositionItem[]
   if (paperSelectedMarket.value === 'all') {
@@ -871,11 +871,11 @@ const filterPaperPositions = () => {
   } else {
     filtered = paperPositions.value.filter(p => matchesSelectedMarket(p, paperSelectedMarket.value))
   }
-  // 单市场显示时也需要聚合
+  // Aggregation is also required when displaying a single market
   filteredPaperPositions.value = aggregatePositionsByCode(filtered) as any
 }
 
-// 监听市场筛选变化
+// Monitor market screening changes
 watch(paperSelectedMarket, filterPaperPositions)
 watch(selectedMarket, filterPositions)
 
@@ -897,20 +897,20 @@ const setLastQmtAccountId = (accountId: string) => {
 
 const buildQmtPreviewMessage = (preview: QMTPositionSyncPreview) => {
   const lines = [
-    `QMT账号：${preview.account_id}`,
+    `QMT Account:${preview.account_id}`,
     '',
-    `本地将覆盖持仓：${preview.will_replace_position_count} 个`,
-    `本地将清空变动记录：${preview.will_clear_change_count} 条`,
-    `本地当前 CNY 现金：${formatSyncMoney(preview.local_cash)}`,
-    `本地当前 CNY 总资产：${formatSyncMoney(preview.local_total_assets)}`,
+    `Positions will be overwritten locally:${preview.will_replace_position_count} a`,
+    `The local change record will be cleared:${preview.will_clear_change_count} Article`,
+    `Local current CNY cash:${formatSyncMoney(preview.local_cash)}`,
+    `Local current CNY total assets:${formatSyncMoney(preview.local_total_assets)}`,
     '',
-    `QMT 返回持仓：${preview.qmt_position_count} 条`,
-    `可导入持仓：${preview.qmt_importable_count} 条`,
-    `QMT 可用现金：${formatSyncMoney(preview.qmt_cash)}`,
-    `QMT 持仓市值：${formatSyncMoney(preview.qmt_market_value)}`,
-    `QMT 总资产：${formatSyncMoney(preview.qmt_total_asset)}`,
+    `QMT Return to position:${preview.qmt_position_count} Article`,
+    `Positions that can be imported:${preview.qmt_importable_count} Article`,
+    `QMT Cash available:${formatSyncMoney(preview.qmt_cash)}`,
+    `QMT Position market value:${formatSyncMoney(preview.qmt_market_value)}`,
+    `QMT Total assets:${formatSyncMoney(preview.qmt_total_asset)}`,
     '',
-    `说明：${preview.sync_note}`
+    `Description:${preview.sync_note}`
   ]
   return `<div style="white-space: pre-line; line-height: 1.7;">${lines.join('\n')}</div>`
 }
@@ -918,20 +918,20 @@ const buildQmtPreviewMessage = (preview: QMTPositionSyncPreview) => {
 const syncPositionsFromQmt = async () => {
   try {
     const { value } = await ElMessageBox.prompt(
-      '请输入 QMT 资金账号。系统会先展示覆盖预览，确认后再执行同步。',
-      'QMT 持仓同步',
+      'Please enter the QMT fund account number. The system will display a preview of the coverage first, and then perform synchronization after confirmation.',
+      'QMT Position synchronization',
       {
-        confirmButtonText: '查看预览',
-        cancelButtonText: '取消',
+        confirmButtonText: 'View preview',
+        cancelButtonText: 'Cancel',
         inputValue: getLastQmtAccountId(),
         inputPattern: /^\d{4,}$/,
-        inputErrorMessage: '请输入数字资金账号'
+        inputErrorMessage: 'Please enter the digital fund account number'
       }
     )
 
     const accountId = String(value || '').trim()
     if (!accountId) {
-      ElMessage.warning('请输入 QMT 资金账号')
+      ElMessage.warning('Please enter QMT fund account number')
       return
     }
 
@@ -943,17 +943,17 @@ const syncPositionsFromQmt = async () => {
     })
     const preview = previewRes.data
     if (!preview) {
-      ElMessage.error('未获取到 QMT 同步预览')
+      ElMessage.error('QMT synchronization preview not obtained')
       return
     }
 
     await ElMessageBox.confirm(
       buildQmtPreviewMessage(preview),
-      '确认覆盖同步',
+      'Confirm coverage synchronization',
       {
         type: 'warning',
-        confirmButtonText: '开始同步',
-        cancelButtonText: '取消',
+        confirmButtonText: 'Start syncing',
+        cancelButtonText: 'Cancel',
         dangerouslyUseHTMLString: true
       }
     )
@@ -967,59 +967,59 @@ const syncPositionsFromQmt = async () => {
     setLastQmtAccountId(accountId)
 
     const cashHint = syncResult?.cash_synced
-      ? `，CNY 现金同步为 ${formatSyncMoney(syncResult.synced_cash)}`
+      ? `, CNY Cash sync is ${formatSyncMoney(syncResult.synced_cash)}`
       : ''
     ElMessage.success(
-      `QMT 同步完成：覆盖 ${syncResult?.deleted_positions ?? 0} 个旧持仓，导入 ${syncResult?.imported_count ?? 0} 条${cashHint}`
+      `QMT Synchronization completed: overwrite ${syncResult?.deleted_positions ?? 0} Gejiu position, import ${syncResult?.imported_count ?? 0} Article${cashHint}`
     )
     refreshData()
   } catch (e: any) {
     if (e !== 'cancel' && e !== 'close') {
-      ElMessage.error(e?.message || 'QMT 同步失败')
+      ElMessage.error(e?.message || 'QMT Sync failed')
     }
   } finally {
     qmtSyncing.value = false
   }
 }
 
-// 持仓操作
+// Position operation
 const editPosition = (row: AggregatedPosition) => {
-  // 如果有多条持仓记录，打开明细对话框让用户选择
+  // If there are multiple position records, open a detailed dialog box for the user to choose
   if (row.position_count > 1) {
     selectedAggregatedPosition.value = row
     showPositionDetailsDialog.value = true
-    ElMessage.info('请在明细中选择要编辑的持仓记录')
+    ElMessage.info('Please select the position record to be edited in the details')
     return
   }
-  // 只有一条记录，直接编辑
+  // There is only one record, edit it directly
   editingPosition.value = row.positions ? row.positions[0] : row
   showAddDialog.value = true
 }
 
 const deletePosition = async (row: AggregatedPosition) => {
   try {
-    // 如果有多条持仓记录，需要确认是否删除全部
+    // If there are multiple position records, you need to confirm whether to delete them all.
     if (row.position_count > 1) {
       await ElMessageBox.confirm(
-        `${row.code} ${row.name || ''} 有 ${row.position_count} 条建仓记录，确定全部删除吗？`,
-        '确认删除',
+        `${row.code} ${row.name || ''} Yes ${row.position_count} Records of opening positions, are you sure to delete them all?`,
+        'Confirm deletion',
         { type: 'warning' }
       )
-      // 删除所有持仓记录
+      // Delete all position records
       for (const pos of row.positions) {
         await portfolioApi.deletePosition(pos.id)
       }
-      ElMessage.success('删除成功')
+      ElMessage.success('Delete successfully')
     } else {
-      await ElMessageBox.confirm(`确定删除持仓 ${row.code} ${row.name || ''} ?`, '确认删除', { type: 'warning' })
+      await ElMessageBox.confirm(`Confirm to delete position ${row.code} ${row.name || ''} ?`, 'Confirm deletion', { type: 'warning' })
       const posId = row.positions ? row.positions[0].id : row.id
       await portfolioApi.deletePosition(posId)
-      ElMessage.success('删除成功')
+      ElMessage.success('Delete successfully')
     }
     refreshData()
   } catch (e: any) {
     if (e !== 'cancel') {
-      ElMessage.error(e.message || '删除失败')
+      ElMessage.error(e.message || 'Delete failed')
     }
   }
 }
@@ -1027,30 +1027,30 @@ const deletePosition = async (row: AggregatedPosition) => {
 const resetPosition = async (row: AggregatedPosition) => {
   try {
     await ElMessageBox.confirm(
-      `确定重置 ${row.code} ${row.name || ''} 的整个持仓？将删除该股票的所有变动记录和持仓，此操作不可恢复。`,
-      '确认重置',
+      `Confirm reset ${row.code} ${row.name || ''} of the entire position? All change records and positions of the stock will be deleted, and this operation cannot be restored.`,
+      'Confirm reset',
       { type: 'warning' }
     )
     const res = await portfolioApi.resetPosition(row.code, row.market)
-    ElMessage.success(`重置成功，已删除 ${res.data?.deleted_changes ?? 0} 条记录`)
+    ElMessage.success(`Reset successful, deleted ${res.data?.deleted_changes ?? 0} records`)
     refreshData()
   } catch (e: any) {
-    if (e !== 'cancel') ElMessage.error(e.message || '重置失败')
+    if (e !== 'cancel') ElMessage.error(e.message || 'Reset failed')
   }
 }
 
 const confirmResetAll = async () => {
   try {
     await ElMessageBox.confirm(
-      '确定清零全部持仓？将删除所有持仓和变动记录，并完全清零资金账户（总资产、可用资金、初始资金等全部归零），此操作不可恢复。清零后需重新设置初始资金才能继续使用。',
-      '确认清零',
+      'Are you sure you want to clear all positions? All positions and change records will be deleted, and the capital account will be completely cleared (total assets, available funds, initial funds, etc. will all be reset to zero), and this operation cannot be restored. After clearing, the initial funds need to be reset before you can continue to use them.',
+      'Confirm clearing',
       { type: 'warning' }
     )
     const res = await portfolioApi.resetAllPositions()
-    ElMessage.success(`清零成功，已删除 ${res.data?.deleted_positions ?? 0} 个持仓、${res.data?.deleted_changes ?? 0} 条记录`)
+    ElMessage.success(`Cleared successfully, deleted ${res.data?.deleted_positions ?? 0} positions,${res.data?.deleted_changes ?? 0} records`)
     refreshData()
   } catch (e: any) {
-    if (e !== 'cancel') ElMessage.error(e.message || '清零失败')
+    if (e !== 'cancel') ElMessage.error(e.message || 'Clearing failed')
   }
 }
 
@@ -1060,7 +1060,7 @@ const onPositionSaved = () => {
   refreshData()
 }
 
-// 跳转到股票详情页面
+// Jump to stock details page
 const goToStockDetail = (code: string) => {
   const market = getMarketByStockCode(code)
   router.push({
@@ -1070,25 +1070,25 @@ const goToStockDetail = (code: string) => {
   })
 }
 
-// 单股持仓分析
+// Single stock position analysis
 const analyzePosition = (row: PositionItem) => {
   selectedPosition.value = row
   showPositionAnalysisDialog.value = true
 }
 
-// 查看持仓明细
+// View position details
 const showPositionDetails = (row: AggregatedPosition) => {
   selectedAggregatedPosition.value = row
   showPositionDetailsDialog.value = true
 }
 
-// 从明细对话框编辑持仓
+// Edit a position from the details dialog
 const handleEditFromDetails = (position: PositionItem) => {
   editingPosition.value = position
   showAddDialog.value = true
 }
 
-// 处理持仓操作（增仓、减仓、分红等）
+// Processing position operations (increasing positions, reducing positions, dividends, etc.)
 const handlePositionOperation = (data: { type: string; position: AggregatedPosition }) => {
   operationType.value = data.type as 'add' | 'reduce' | 'other'
   selectedAggregatedPosition.value = data.position
@@ -1096,26 +1096,26 @@ const handlePositionOperation = (data: { type: string; position: AggregatedPosit
   showPositionOperationDialog.value = true
 }
 
-// 快捷加仓
+// Quickly add positions
 const quickAddPosition = (row: AggregatedPosition) => {
   operationType.value = 'add'
   selectedAggregatedPosition.value = row
   showPositionOperationDialog.value = true
 }
 
-// 快捷卖出
+// sell quickly
 const quickSellPosition = (row: AggregatedPosition) => {
   operationType.value = 'reduce'
   selectedAggregatedPosition.value = row
   showPositionOperationDialog.value = true
 }
 
-// 更多操作菜单
+// More operation menus
 const handleMoreAction = (command: string, row: AggregatedPosition) => {
   selectedAggregatedPosition.value = row
   switch (command) {
     case 'history':
-      // 显示该股票的操作历史
+      // Display the operation history of this stock
       selectedStockForHistory.value = {
         code: row.code,
         name: row.name,
@@ -1124,7 +1124,7 @@ const handleMoreAction = (command: string, row: AggregatedPosition) => {
       showStockHistoryDialog.value = true
       break
     case 'analysisHistory':
-      // 显示该股票的分析历史
+      // Show analysis history for this stock
       selectedPositionForAnalysisHistory.value = {
         code: row.code,
         name: row.name,
@@ -1218,11 +1218,11 @@ onMounted(() => {
 }
 
 .profit {
-  color: #F56C6C; /* 红色表示盈利（中国股市规范） */
+  color: #F56C6C; /* Red indicates profit (Chinese stock market norm) */
 }
 
 .loss {
-  color: #67C23A; /* 绿色表示亏损（中国股市规范） */
+  color: #67C23A; /* Green indicates loss (Chinese stock market norm) */
 }
 
 .main-content {
@@ -1274,7 +1274,7 @@ onMounted(() => {
   color: #909399;
 }
 
-/* 主 Tab 页样式 */
+/* Main Tab page style */
 .main-tabs {
   margin-top: 16px;
 }
@@ -1288,7 +1288,7 @@ onMounted(() => {
   font-weight: 500;
 }
 
-/* 模拟账户卡片 */
+/* Demo account card */
 .paper-account-card {
   margin-bottom: 16px;
 }
@@ -1310,7 +1310,7 @@ onMounted(() => {
   color: #303133;
 }
 
-/* 市场分组 */
+/* market grouping */
 .market-groups {
   display: flex;
   flex-direction: column;

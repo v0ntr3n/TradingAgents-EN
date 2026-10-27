@@ -52,7 +52,7 @@ const handleDismiss = () => {
     try {
       localStorage.setItem(props.storageKey, 'true')
     } catch (e) {
-      console.warn('localStorage 写入失败:', e)
+      console.warn('localStorage Write failed:', e)
     }
   }
   emit('dismiss')
@@ -66,7 +66,7 @@ onMounted(() => {
         visible.value = false
       }
     } catch (e) {
-      console.warn('localStorage 读取失败:', e)
+      console.warn('localStorage Read failed:', e)
     }
   }
 })

@@ -1,8 +1,8 @@
 """
-队列服务用到的 Redis 键名与配置常量（集中定义）
+Redis key names and configuration constants used by queue services (centrally defined)
 """
 
-# Redis键名常量
+# Redis Key name constant
 READY_LIST = "qa:ready"
 
 TASK_PREFIX = "qa:task:"
@@ -12,13 +12,13 @@ SET_COMPLETED = "qa:completed"
 SET_FAILED = "qa:failed"
 BATCH_TASKS_PREFIX = "qa:batch_tasks:"
 
-# 并发控制相关
+# Concurrency control related
 USER_PROCESSING_PREFIX = "qa:user_processing:"
 GLOBAL_CONCURRENT_KEY = "qa:global_concurrent"
 VISIBILITY_TIMEOUT_PREFIX = "qa:visibility:"
 
-# 配置常量 - 开源版限制
+# Configuration Constants - Open Source Edition Limitations
 DEFAULT_USER_CONCURRENT_LIMIT = 3
-GLOBAL_CONCURRENT_LIMIT = 3  # 开源版全局最大并发限制为3
-VISIBILITY_TIMEOUT_SECONDS = 300  # 5分钟
+GLOBAL_CONCURRENT_LIMIT = 3  # The global maximum concurrency limit of the open source version is 3
+VISIBILITY_TIMEOUT_SECONDS = 300  # 5 minutes
 

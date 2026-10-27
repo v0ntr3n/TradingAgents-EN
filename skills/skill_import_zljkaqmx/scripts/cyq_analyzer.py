@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-CYQ筹码分布模型 - 最终版
-基于原始算法，保留实用改进
+CYQ Chip Distribution Model - Final Version
+Based on original algorithm, retaining practical improvements
 
-核心算法：
-- 当日典型价格 = (Open + High + Low + Close) / 4
-- 历史筹码衰减 = (1 - 换手率) 线性衰减
-- 分布假设 = 三角分布
-- 价格步长 = 0.1 
-- 默认天数 = 180
+Core algorithm:
+- Typical price for the day = (Open + High + Low + Close) / 4
+- Historical chip decay = (1 - turnover rate) Linear attenuation
+- distributional assumptions = triangular distribution
+- price step = 0.1 
+- Default number of days = 180
 
-使用方法:
+How to use:
     python3 cyq_final.py 002213
 """
 
@@ -19,20 +19,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.font_manager as fm
-matplotlib.use('Agg')  # 非交互式后端
+matplotlib.use('Agg')  # Non-interactive backend
 import akshare as ak
 import os
 import pickle
 from datetime import datetime
 
-# 设置中文字体（兼容多平台）
+# Set Chinese font (compatible with multiple platforms)
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 try:
     if os.path.exists(font_path):
         fm.fontManager.addfont(font_path)
         plt.rcParams['font.sans-serif'] = ['Noto Sans CJK JP']
     else:
-        # Windows / macOS 回退：使用系统已安装的常见中文字体
+        # Windows / macOS Fallback: Use common Chinese fonts installed on the system
         plt.rcParams['font.sans-serif'] = [
             'Microsoft YaHei', 'SimHei', 'PingFang SC',
             'Hiragino Sans GB', 'WenQuanYi Micro Hei', 'DejaVu Sans'
@@ -48,7 +48,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 
 def load_cached_data(stock_code, max_age_days=1):
-    """加载缓存数据"""
+    """Load cached data"""
     cache_path = os.path.join(CACHE_DIR, f"{stock_code}.pkl")
     if os.path.exists(cache_path):
         with open(cache_path, 'rb') as f:
@@ -60,14 +60,14 @@ def load_cached_data(stock_code, max_age_days=1):
 
 
 def save_cached_data(stock_code, data):
-    """保存数据到缓存"""
+    """Save data to cache"""
     cache_path = os.path.join(CACHE_DIR, f"{stock_code}.pkl")
     with open(cache_path, 'wb') as f:
         pickle.dump({'timestamp': datetime.now(), 'data': data}, f)
 
 
 def _fetch_raw_data(stock_code, max_days=500):
-    """拉取原始数据（尽可能多的天数）"""
+    """Pull raw data (as many days as possible)"""
     from stock_cache_v3 import get_stock_data as get_stock_data_v3
     
     df = get_stock_data_v3(stock_code, adjust="qfq", force_update=False)
@@ -75,7 +75,7 @@ def _fetch_raw_data(stock_code, max_days=500):
     if df is None or len(df) == 0:
         return None
     
-    # 确保列名正确
+    # Make sure the column names are correct
     column_mapping = {
         'date': 'date',
         'open': 'open',
@@ -89,11 +89,11 @@ def _fetch_raw_data(stock_code, max_days=500):
         if old_col in df.columns and new_col not in df.columns:
             df = df.rename(columns={old_col: new_col})
     
-    # 确保有turnover列
+    # Make sure there is a turnover column
     if 'turnover' not in df.columns:
         df['turnover'] = 0.01
     
-    # 确保数据类型正确
+    # Make sure the data type is correct
     numeric_cols = ['open', 'high', 'low', 'close', 'turnover']
     for col in numeric_cols:
         if col in df.columns:
@@ -107,7 +107,7 @@ def _fetch_raw_data(stock_code, max_days=500):
     if 'date' in df.columns:
         df = df.sort_values('date').reset_index(drop=True)
     
-    # 只取最近max_days
+    # Only take the latest max_days
     if len(df) > max_days:
         df = df.tail(max_days).reset_index(drop=True)
     
@@ -115,22 +115,22 @@ def _fetch_raw_data(stock_code, max_days=500):
 
 
 def fetch_stock_data(stock_code, days=180):
-    """获取股票数据（兼容旧接口，使用新缓存模型）"""
+    """Get stock data (compatible with old interface, use new cache model)"""
     try:
         df = _fetch_raw_data(stock_code, max_days=500)
         if df is None:
             return None
-        # 返回指定天数的数据
+        # Returns data for a specified number of days
         if len(df) > days:
             df = df.tail(days).reset_index(drop=True)
         return df
     except Exception as e:
-        print(f"⚠️ fetch_stock_data 失败: {e}")
+        print(f"⚠️ fetch_stock_data failed: {e}")
         return None
 
 
 def parse_turnover(value):
-    """解析换手率，自动识别百分比或小数格式"""
+    """Analyze turnover rate and automatically identify percentage or decimal formats"""
     if pd.isna(value):
         return 0.0
     value = float(value)
@@ -139,12 +139,12 @@ def parse_turnover(value):
 
 def calculate_cyq(df, price_step=0.1, min_price_bins=100):
     """
-    计算筹码分布 (CYQ)
+    Calculate chip distribution (CYQ)
     
-    参数:
+    parameters:
         df: DataFrame with columns ['open', 'high', 'low', 'close', 'turnover']
-        price_step: 价格步长（默认0.1）
-        min_price_bins: 最小价格区间数
+        price_step: Price step size (default 0.1)
+        min_price_bins: Minimum number of price ranges
     """
     n_days = len(df)
     if n_days == 0:
@@ -164,10 +164,10 @@ def calculate_cyq(df, price_step=0.1, min_price_bins=100):
         open_p, high, low, close = day['open'], day['high'], day['low'], day['close']
         turnover = parse_turnover(day['turnover'])
         
-        # 当日典型价格 (OHLC)/4
+        # Typical price for the day (OHLC)/4
         typical_price = (open_p + high + low + close) / 4
         
-        # 三角分布
+        # triangular distribution
         a, b, c = low, high, typical_price
         
         for j in range(len(price_bins) - 1):
@@ -184,29 +184,29 @@ def calculate_cyq(df, price_step=0.1, min_price_bins=100):
             
             chip_distribution[j] += density * turnover
         
-        # 历史筹码衰减
+        # Historical chip decay
         if i < n_days - 1:
             chip_distribution *= (1 - turnover)
     
-    # 归一化
+    # normalization
     total = chip_distribution.sum()
     if total > 0:
         chip_distribution /= total
     
     current_price = df['close'].iloc[-1]
     
-    # 获利盘比例（当前价以下筹码）
+    # Profit ratio (chips below current price)
     profit_ratio = chip_distribution[price_bins[:-1] <= current_price].sum()
     
-    # 平均成本
+    # average cost
     avg_cost = np.sum(price_bins[:-1] * chip_distribution)
     
-    # 筹码峰值
+    # chip peak
     peak_idx = np.argmax(chip_distribution)
     peak_price = price_bins[peak_idx]
     
-    # 筹码集中度 - 标准公式（与通达信、同花顺一致）
-    # 90%筹码集中度
+    # Chip concentration ratio - standard formula (consistent with Tong Da Xin and Flush)
+    # 90%Chip concentration
     cumsum = np.cumsum(chip_distribution)
     idx_5 = np.searchsorted(cumsum, 0.05)
     idx_95 = np.searchsorted(cumsum, 0.95)
@@ -217,7 +217,7 @@ def calculate_cyq(df, price_step=0.1, min_price_bins=100):
     else:
         concentration = 0.0
     
-    # 主力成本区（最密集的20%筹码）
+    # Main cost area (the most intensive 20% of chips)
     sorted_idx = np.argsort(chip_distribution)[::-1]
     cumsum_sorted = np.cumsum(chip_distribution[sorted_idx])
     main_indices = sorted_idx[cumsum_sorted <= 0.20]
@@ -244,12 +244,12 @@ def calculate_cyq(df, price_step=0.1, min_price_bins=100):
 
 
 def plot_cyq(cyq_result, stock_code):
-    """绘制筹码分布图 - 中文标签"""
+    """Draw chip distribution chart - Chinese label"""
     if cyq_result is None:
         return None
     
     fig, axes = plt.subplots(2, 2, figsize=(14, 10), facecolor='#0d1117')
-    fig.suptitle(f'{stock_code} 筹码分析', fontsize=16, fontweight='bold', color='white')
+    fig.suptitle(f'{stock_code} Chip analysis', fontsize=16, fontweight='bold', color='white')
     
     price_bins = cyq_result['price_bins']
     chip_dist = cyq_result['chip_distribution']
@@ -257,45 +257,45 @@ def plot_cyq(cyq_result, stock_code):
     avg_cost = cyq_result['avg_cost']
     peak_price = cyq_result['peak_price']
     
-    # 1. 筹码分布图
+    # 1. Chip distribution chart
     ax1 = axes[0, 0]
     ax1.set_facecolor('#0d1117')
     ax1.barh(price_bins, chip_dist, height=price_bins[1]-price_bins[0], 
              color='#3b82f6', alpha=0.7, edgecolor='none')
     ax1.axhline(y=current_price, color='#ef4444', linestyle='--', linewidth=2, 
-                label=f'现价: {current_price:.2f}')
+                label=f'Current price: {current_price:.2f}')
     ax1.axhline(y=avg_cost, color='#f59e0b', linestyle='--', linewidth=2, 
-                label=f'均价: {avg_cost:.2f}')
+                label=f'average price: {avg_cost:.2f}')
     ax1.axhline(y=peak_price, color='#10b981', linestyle='--', linewidth=2, 
-                label=f'峰值: {peak_price:.2f}')
-    ax1.set_xlabel('筹码密度', color='white')
-    ax1.set_ylabel('价格', color='white')
-    ax1.set_title('筹码分布', color='white')
+                label=f'peak: {peak_price:.2f}')
+    ax1.set_xlabel('Chip density', color='white')
+    ax1.set_ylabel('price', color='white')
+    ax1.set_title('Chip distribution', color='white')
     ax1.legend(loc='upper right', facecolor='#21262d', edgecolor='#30363d', labelcolor='white')
     ax1.tick_params(colors='white')
     ax1.grid(True, alpha=0.2, color='#30363d')
     for spine in ax1.spines.values():
         spine.set_color('#30363d')
     
-    # 2. K线图
+    # 2. K line graph
     ax2 = axes[0, 1]
     ax2.set_facecolor('#0d1117')
     df = cyq_result['df']
     x = range(len(df))
-    ax2.plot(x, df['close'], color='#3b82f6', linewidth=1.5, label='收盘价')
+    ax2.plot(x, df['close'], color='#3b82f6', linewidth=1.5, label='closing price')
     ax2.fill_between(x, df['low'], df['high'], alpha=0.3, color='#3b82f6')
     ax2.axhline(y=current_price, color='#ef4444', linestyle='--', alpha=0.7)
     ax2.axhline(y=avg_cost, color='#f59e0b', linestyle='--', alpha=0.7)
-    ax2.set_xlabel('交易日', color='white')
-    ax2.set_ylabel('价格', color='white')
-    ax2.set_title('价格走势', color='white')
+    ax2.set_xlabel('trading day', color='white')
+    ax2.set_ylabel('price', color='white')
+    ax2.set_title('price trend', color='white')
     ax2.legend(loc='upper left', facecolor='#21262d', edgecolor='#30363d', labelcolor='white')
     ax2.tick_params(colors='white')
     ax2.grid(True, alpha=0.2, color='#30363d')
     for spine in ax2.spines.values():
         spine.set_color('#30363d')
     
-    # 3. 主力成本区
+    # 3. main cost area
     ax3 = axes[1, 0]
     ax3.set_facecolor('#0d1117')
     ax3.barh(price_bins, chip_dist, height=price_bins[1]-price_bins[0], 
@@ -304,29 +304,29 @@ def plot_cyq(cyq_result, stock_code):
     main_high = cyq_result['main_force_high']
     mask = (price_bins >= main_low) & (price_bins <= main_high)
     ax3.barh(price_bins[mask], chip_dist[mask], height=price_bins[1]-price_bins[0], 
-             color='#fbbf24', alpha=0.9, label=f'主力区: {main_low:.2f}-{main_high:.2f}')
+             color='#fbbf24', alpha=0.9, label=f'main area: {main_low:.2f}-{main_high:.2f}')
     ax3.axhline(y=current_price, color='#ef4444', linestyle='--', linewidth=2)
-    ax3.set_xlabel('筹码密度', color='white')
-    ax3.set_ylabel('价格', color='white')
-    ax3.set_title('主力成本区', color='white')
+    ax3.set_xlabel('Chip density', color='white')
+    ax3.set_ylabel('price', color='white')
+    ax3.set_title('main cost area', color='white')
     ax3.legend(loc='upper right', facecolor='#21262d', edgecolor='#30363d', labelcolor='white')
     ax3.tick_params(colors='white')
     ax3.grid(True, alpha=0.2, color='#30363d')
     for spine in ax3.spines.values():
         spine.set_color('#30363d')
     
-    # 4. 关键指标
+    # 4. key indicators
     ax4 = axes[1, 1]
     ax4.set_facecolor('#0d1117')
     ax4.axis('off')
     
     metrics = [
-        ('现价', f'{current_price:.2f}', '#ef4444'),
-        ('获利比例', f'{cyq_result["profit_ratio"]*100:.2f}%', '#10b981'),
-        ('均价', f'{avg_cost:.2f}', '#3b82f6'),
-        ('峰值', f'{peak_price:.2f}', '#8b5cf6'),
-        ('集中度', f'{cyq_result["concentration"]*100:.2f}%', '#ec4899'),
-        ('主力区间', f'{main_low:.2f}-{main_high:.2f}', '#fbbf24'),
+        ('Current price', f'{current_price:.2f}', '#ef4444'),
+        ('Profit ratio', f'{cyq_result["profit_ratio"]*100:.2f}%', '#10b981'),
+        ('average price', f'{avg_cost:.2f}', '#3b82f6'),
+        ('peak', f'{peak_price:.2f}', '#8b5cf6'),
+        ('Concentration', f'{cyq_result["concentration"]*100:.2f}%', '#ec4899'),
+        ('Main range', f'{main_low:.2f}-{main_high:.2f}', '#fbbf24'),
     ]
     
     y_pos = 0.9
@@ -345,7 +345,7 @@ def plot_cyq(cyq_result, stock_code):
 
 
 def analyze_and_plot(stock_code, days=180):
-    """分析并绘制筹码分布（固定天数）"""
+    """Analyze and draw chip distribution (fixed number of days)"""
     df = fetch_stock_data(stock_code, days)
     if df is None:
         return None, None
@@ -354,12 +354,12 @@ def analyze_and_plot(stock_code, days=180):
     if cyq is None:
         return None, None
 
-    # 画图是可选的（仅用于人类查看），失败不影响数据分析结果
+    # Plotting is optional (for human viewing only), failure does not affect data analysis results
     output_path = None
     try:
         output_path = plot_cyq(cyq, stock_code)
     except Exception as e:
-        print(f"⚠️ 绘图失败（不影响分析数据）: {e}")
+        print(f"⚠️ Plotting failed (does not affect analysis data): {e}")
 
     return cyq, output_path
 
@@ -371,10 +371,10 @@ if __name__ == "__main__":
     cyq, output_path = analyze_and_plot(stock_code)
 
     if cyq is None:
-        print(json.dumps({"success": False, "error": "无法计算筹码分布", "stock_code": stock_code}, ensure_ascii=False))
+        print(json.dumps({"success": False, "error": "Unable to calculate chip distribution", "stock_code": stock_code}, ensure_ascii=False))
         sys.exit(1)
 
-    # 输出关键指标为 JSON（numpy 数组太大不输出，只输出标量统计）
+    # Output key indicators as JSON (the numpy array will not be output if it is too large, only scalar statistics will be output)
     result = {
         "success": True,
         "stock_code": stock_code,
@@ -383,7 +383,7 @@ if __name__ == "__main__":
         "peak_price": float(cyq.get("peak_price", 0)),
         "chart_path": output_path,
     }
-    # 兼容更多键：profit_ratio, concentration_90, main_cost_zone 等
+    # Compatible with more keys:profit_ratio, concentration_90, main_cost_zone Wait
     for key in ("profit_ratio", "concentration_90", "concentration_70",
                 "main_cost_low", "main_cost_high", "price_range_low", "price_range_high",
                 "total_days", "avg_turnover"):

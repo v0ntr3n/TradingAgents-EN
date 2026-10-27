@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-统一日志管理器
-提供项目级别的日志配置和管理功能
+Unified log manager
+Provide project-level log configuration and management functions
 """
 
 import logging
@@ -15,9 +15,9 @@ from typing import Dict, Any, Optional, Union
 import json
 import toml
 
-# 🔥 在所有平台上使用 concurrent-log-handler 支持多进程安全写入
-# Windows: 解决文件锁定问题
-# Linux/Mac: 支持多进程（后端 + Worker）同时写入同一日志文件
+# 🔥 Support multi-process safe writing using concurrent-log-handler on all platforms
+# Windows: Fix file locking issues
+# Linux/Mac: Supports multi-process (backend + Worker) Write to the same log file simultaneously
 try:
     from concurrent_log_handler import ConcurrentRotatingFileHandler
     _USE_CONCURRENT_HANDLER = True
@@ -25,30 +25,30 @@ except ImportError:
     _USE_CONCURRENT_HANDLER = False
     _IS_WINDOWS = platform.system() == "Windows"
     if _IS_WINDOWS:
-        logging.warning("concurrent-log-handler 未安装，在 Windows 上可能遇到日志轮转问题")
+        logging.warning("concurrent-log-handler Not installed, may experience log rotation issues on Windows")
     else:
-        logging.warning("concurrent-log-handler 未安装，多进程写入日志文件可能不安全（后端和 Worker 同时写入）")
+        logging.warning("concurrent-log-handler Not installed, it may be unsafe for multiple processes to write to the log file (backend and Worker write at the same time)")
 
-# 注意：这里不能导入自己，会造成循环导入
-# 在日志系统初始化前，使用标准库自举日志器，避免未定义引用
+# Note: You cannot import yourself here, which will cause a circular import.
+# Before the logging system is initialized, use the standard library to bootstrap the logger to avoid undefined references.
 _bootstrap_logger = logging.getLogger("tradingagents.logging_manager")
 
 
 class ColoredFormatter(logging.Formatter):
-    """彩色日志格式化器"""
+    """Color log formatter"""
     
-    # ANSI颜色代码
+    # ANSI color code
     COLORS = {
-        'DEBUG': '\033[36m',    # 青色
-        'INFO': '\033[32m',     # 绿色
-        'WARNING': '\033[33m',  # 黄色
-        'ERROR': '\033[31m',    # 红色
-        'CRITICAL': '\033[35m', # 紫色
-        'RESET': '\033[0m'      # 重置
+        'DEBUG': '\033[36m',    # cyan
+        'INFO': '\033[32m',     # green
+        'WARNING': '\033[33m',  # yellow
+        'ERROR': '\033[31m',    # red
+        'CRITICAL': '\033[35m', # purple
+        'RESET': '\033[0m'      # reset
     }
     
     def format(self, record):
-        # 添加颜色
+        # add color
         if hasattr(record, 'levelname') and record.levelname in self.COLORS:
             record.levelname = f"{self.COLORS[record.levelname]}{record.levelname}{self.COLORS['RESET']}"
         
@@ -56,7 +56,7 @@ class ColoredFormatter(logging.Formatter):
 
 
 class StructuredFormatter(logging.Formatter):
-    """结构化日志格式化器（JSON格式）"""
+    """Structured log formatter (JSON format)"""
     
     def format(self, record):
         log_entry = {
@@ -69,7 +69,7 @@ class StructuredFormatter(logging.Formatter):
             'line': record.lineno
         }
         
-        # 添加额外字段
+        # Add extra fields
         if hasattr(record, 'session_id'):
             log_entry['session_id'] = record.session_id
         if hasattr(record, 'analysis_type'):
@@ -85,7 +85,7 @@ class StructuredFormatter(logging.Formatter):
 
 
 class TradingAgentsLogger:
-    """TradingAgents统一日志管理器"""
+    """TradingAgents Unified log manager"""
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or self._load_default_config()
@@ -93,13 +93,13 @@ class TradingAgentsLogger:
         self._setup_logging()
     
     def _load_default_config(self) -> Dict[str, Any]:
-        """加载默认日志配置"""
-        # 尝试从配置文件加载
+        """Load default log configuration"""
+        # Try loading from config file
         config = self._load_config_file()
         if config:
             return config
 
-        # 从环境变量获取配置
+        # Get configuration from environment variables
         log_level = os.getenv('TRADINGAGENTS_LOG_LEVEL', 'INFO').upper()
         log_dir = os.getenv('TRADINGAGENTS_LOG_DIR', './logs')
 
@@ -125,14 +125,14 @@ class TradingAgentsLogger:
                 },
                 'error': {
                     'enabled': True,
-                    'level': 'WARNING',  # 只记录WARNING及以上级别
+                    'level': 'WARNING',  # Only record levels of WARNING and above
                     'max_size': '10MB',
                     'backup_count': 5,
                     'directory': log_dir,
                     'filename': 'error.log'
                 },
                 'structured': {
-                    'enabled': False,  # 默认关闭，可通过环境变量启用
+                    'enabled': False,  # Off by default, can be enabled through environment variables
                     'level': 'INFO',
                     'directory': log_dir
                 }
@@ -140,20 +140,20 @@ class TradingAgentsLogger:
             'loggers': {
                 'tradingagents': {'level': log_level},
                 'web': {'level': log_level},
-                'streamlit': {'level': 'WARNING'},  # Streamlit日志较多，设为WARNING
-                'urllib3': {'level': 'WARNING'},    # HTTP请求日志较多
+                'streamlit': {'level': 'WARNING'},  # Streamlit If there are more logs, set to WARNING
+                'urllib3': {'level': 'WARNING'},    # HTTP There are many request logs
                 'requests': {'level': 'WARNING'},
                 'matplotlib': {'level': 'WARNING'}
             },
             'docker': {
                 'enabled': os.getenv('DOCKER_CONTAINER', 'false').lower() == 'true',
-                'stdout_only': True  # Docker环境只输出到stdout
+                'stdout_only': True  # Docker The environment only outputs to stdout
             }
         }
 
     def _load_config_file(self) -> Optional[Dict[str, Any]]:
-        """从配置文件加载日志配置"""
-        # 确定配置文件路径
+        """Load log configuration from configuration file"""
+        # Determine configuration file path
         config_paths = [
             'config/logging_docker.toml' if os.getenv('DOCKER_CONTAINER') == 'true' else None,
             'config/logging.toml',
@@ -166,19 +166,19 @@ class TradingAgentsLogger:
                     with open(config_path, 'r', encoding='utf-8') as f:
                         config_data = toml.load(f)
 
-                    # 转换配置格式
+                    # Convert configuration format
                     return self._convert_toml_config(config_data)
                 except Exception as e:
-                    _bootstrap_logger.warning(f"警告: 无法加载配置文件 {config_path}: {e}")
+                    _bootstrap_logger.warning(f"warning: Unable to load configuration file {config_path}: {e}")
                     continue
 
         return None
 
     def _convert_toml_config(self, toml_config: Dict[str, Any]) -> Dict[str, Any]:
-        """将TOML配置转换为内部配置格式"""
+        """Convert TOML configuration to internal configuration format"""
         logging_config = toml_config.get('logging', {})
 
-        # 检查Docker环境
+        # Check Docker environment
         is_docker = (
             os.getenv('DOCKER_CONTAINER') == 'true' or
             logging_config.get('docker', {}).get('enabled', False)
@@ -199,33 +199,33 @@ class TradingAgentsLogger:
         }
     
     def _setup_logging(self):
-        """设置日志系统"""
-        # 创建日志目录
+        """Set up logging system"""
+        # Create log directory
         if self.config['handlers']['file']['enabled']:
             log_dir = Path(self.config['handlers']['file']['directory'])
             log_dir.mkdir(parents=True, exist_ok=True)
         
-        # 设置根日志级别
+        # Set root log level
         root_logger = logging.getLogger()
         root_logger.setLevel(getattr(logging, self.config['level']))
         
-        # 清除现有处理器
+        # Clear existing processor
         root_logger.handlers.clear()
         
-        # 添加处理器
+        # Add processor
         self._add_console_handler(root_logger)
 
         if not self.config['docker']['enabled'] or not self.config['docker']['stdout_only']:
             self._add_file_handler(root_logger)
-            self._add_error_handler(root_logger)  # 🔧 添加错误日志处理器
+            self._add_error_handler(root_logger)  # 🔧 Add error log handler
             if self.config['handlers']['structured']['enabled']:
                 self._add_structured_handler(root_logger)
         
-        # 配置特定日志器
+        # Configure a specific logger
         self._configure_specific_loggers()
     
     def _add_console_handler(self, logger: logging.Logger):
-        """添加控制台处理器"""
+        """Add console handler"""
         if not self.config['handlers']['console']['enabled']:
             return
             
@@ -233,7 +233,7 @@ class TradingAgentsLogger:
         console_level = getattr(logging, self.config['handlers']['console']['level'])
         console_handler.setLevel(console_level)
         
-        # 选择格式化器
+        # Select formatter
         if self.config['handlers']['console']['colored'] and sys.stdout.isatty():
             formatter = ColoredFormatter(self.config['format']['console'])
         else:
@@ -243,18 +243,18 @@ class TradingAgentsLogger:
         logger.addHandler(console_handler)
     
     def _add_file_handler(self, logger: logging.Logger):
-        """添加文件处理器"""
+        """Add file handler"""
         if not self.config['handlers']['file']['enabled']:
             return
 
         log_dir = Path(self.config['handlers']['file']['directory'])
         log_file = log_dir / 'tradingagents.log'
 
-        # 使用RotatingFileHandler进行日志轮转
+        # Using RotatingFileHandler for log rotation
         max_size = self._parse_size(self.config['handlers']['file']['max_size'])
         backup_count = self.config['handlers']['file']['backup_count']
 
-        # 🔥 在 Windows 上使用 ConcurrentRotatingFileHandler 避免文件占用问题
+        # 🔥 Use ConcurrentRotatingFileHandler on Windows to avoid file occupancy issues
         if _USE_CONCURRENT_HANDLER:
             file_handler = ConcurrentRotatingFileHandler(
                 log_file,
@@ -278,8 +278,8 @@ class TradingAgentsLogger:
         logger.addHandler(file_handler)
 
     def _add_error_handler(self, logger: logging.Logger):
-        """添加错误日志处理器（只记录WARNING及以上级别）"""
-        # 检查错误处理器是否启用
+        """Add error log processor (only log WARNING and above levels)"""
+        # Check if error handler is enabled
         error_config = self.config['handlers'].get('error', {})
         if not error_config.get('enabled', True):
             return
@@ -287,11 +287,11 @@ class TradingAgentsLogger:
         log_dir = Path(error_config.get('directory', self.config['handlers']['file']['directory']))
         error_log_file = log_dir / error_config.get('filename', 'error.log')
 
-        # 使用RotatingFileHandler进行日志轮转
+        # Using RotatingFileHandler for log rotation
         max_size = self._parse_size(error_config.get('max_size', '10MB'))
         backup_count = error_config.get('backup_count', 5)
 
-        # 🔥 在 Windows 上使用 ConcurrentRotatingFileHandler 避免文件占用问题
+        # 🔥 Use ConcurrentRotatingFileHandler on Windows to avoid file occupancy issues
         if _USE_CONCURRENT_HANDLER:
             error_handler = ConcurrentRotatingFileHandler(
                 error_log_file,
@@ -307,7 +307,7 @@ class TradingAgentsLogger:
                 encoding='utf-8'
             )
 
-        # 🔧 只记录WARNING及以上级别（WARNING, ERROR, CRITICAL）
+        # 🔧 Only WARNING and above levels are recorded (WARNING, ERROR, CRITICAL) 
         error_level = getattr(logging, error_config.get('level', 'WARNING'))
         error_handler.setLevel(error_level)
 
@@ -316,7 +316,7 @@ class TradingAgentsLogger:
         logger.addHandler(error_handler)
     
     def _add_structured_handler(self, logger: logging.Logger):
-        """添加结构化日志处理器"""
+        """Add structured log processor"""
         log_dir = Path(self.config['handlers']['structured']['directory'])
         log_file = log_dir / 'tradingagents_structured.log'
         
@@ -335,14 +335,14 @@ class TradingAgentsLogger:
         logger.addHandler(structured_handler)
     
     def _configure_specific_loggers(self):
-        """配置特定的日志器"""
+        """Configure a specific logger"""
         for logger_name, logger_config in self.config['loggers'].items():
             logger = logging.getLogger(logger_name)
             level = getattr(logging, logger_config['level'])
             logger.setLevel(level)
     
     def _parse_size(self, size_str: str) -> int:
-        """解析大小字符串（如'10MB'）为字节数"""
+        """Parse size strings (like'10MB') is the number of bytes"""
         size_str = size_str.upper()
         if size_str.endswith('KB'):
             return int(size_str[:-2]) * 1024
@@ -354,15 +354,15 @@ class TradingAgentsLogger:
             return int(size_str)
     
     def get_logger(self, name: str) -> logging.Logger:
-        """获取指定名称的日志器"""
+        """Get the logger with the specified name"""
         if name not in self.loggers:
             self.loggers[name] = logging.getLogger(name)
         return self.loggers[name]
     
     def log_analysis_start(self, logger: logging.Logger, stock_symbol: str, analysis_type: str, session_id: str):
-        """记录分析开始"""
+        """Record analysis begins"""
         logger.info(
-            f"🚀 开始分析 - 股票: {stock_symbol}, 类型: {analysis_type}",
+            f"🚀 Start Analysis - Stocks: {stock_symbol}, Type: {analysis_type}",
             extra={
                 'stock_symbol': stock_symbol,
                 'analysis_type': analysis_type,
@@ -374,9 +374,9 @@ class TradingAgentsLogger:
 
     def log_analysis_complete(self, logger: logging.Logger, stock_symbol: str, analysis_type: str,
                             session_id: str, duration: float, cost: float = 0):
-        """记录分析完成"""
+        """Record analysis completed"""
         logger.info(
-            f"✅ 分析完成 - 股票: {stock_symbol}, 耗时: {duration:.2f}s, 成本: ¥{cost:.4f}",
+            f"✅ Analysis Complete - Stocks: {stock_symbol}, Time consuming: {duration:.2f}s, cost: ¥{cost:.4f}",
             extra={
                 'stock_symbol': stock_symbol,
                 'analysis_type': analysis_type,
@@ -390,9 +390,9 @@ class TradingAgentsLogger:
 
     def log_module_start(self, logger: logging.Logger, module_name: str, stock_symbol: str,
                         session_id: str, **extra_data):
-        """记录模块开始分析"""
+        """The recording module starts analysis"""
         logger.info(
-            f"📊 [模块开始] {module_name} - 股票: {stock_symbol}",
+            f"📊 [module start] {module_name} - stocks: {stock_symbol}",
             extra={
                 'module_name': module_name,
                 'stock_symbol': stock_symbol,
@@ -406,10 +406,10 @@ class TradingAgentsLogger:
     def log_module_complete(self, logger: logging.Logger, module_name: str, stock_symbol: str,
                            session_id: str, duration: float, success: bool = True,
                            result_length: int = 0, **extra_data):
-        """记录模块完成分析"""
-        status = "✅ 成功" if success else "❌ 失败"
+        """Recording module completes analysis"""
+        status = "✅ success" if success else "❌ failed"
         logger.info(
-            f"📊 [模块完成] {module_name} - {status} - 股票: {stock_symbol}, 耗时: {duration:.2f}s",
+            f"📊 [Module completed] {module_name} - {status} - stocks: {stock_symbol}, Time consuming: {duration:.2f}s",
             extra={
                 'module_name': module_name,
                 'stock_symbol': stock_symbol,
@@ -425,9 +425,9 @@ class TradingAgentsLogger:
 
     def log_module_error(self, logger: logging.Logger, module_name: str, stock_symbol: str,
                         session_id: str, duration: float, error: str, **extra_data):
-        """记录模块分析错误"""
+        """Logging module analysis errors"""
         logger.error(
-            f"❌ [模块错误] {module_name} - 股票: {stock_symbol}, 耗时: {duration:.2f}s, 错误: {error}",
+            f"❌ [Module error] {module_name} - stocks: {stock_symbol}, Time consuming: {duration:.2f}s, Error: {error}",
             extra={
                 'module_name': module_name,
                 'stock_symbol': stock_symbol,
@@ -443,9 +443,9 @@ class TradingAgentsLogger:
     
     def log_token_usage(self, logger: logging.Logger, provider: str, model: str, 
                        input_tokens: int, output_tokens: int, cost: float, session_id: str):
-        """记录Token使用"""
+        """Record Token usage"""
         logger.info(
-            f"📊 Token使用 - {provider}/{model}: 输入={input_tokens}, 输出={output_tokens}, 成本=¥{cost:.6f}",
+            f"📊 Token Use - {provider}/{model}: input={input_tokens}, output={output_tokens}, cost=¥{cost:.6f}",
             extra={
                 'provider': provider,
                 'model': model,
@@ -457,12 +457,12 @@ class TradingAgentsLogger:
         )
 
 
-# 全局日志管理器实例
+# Global log manager instance
 _logger_manager: Optional[TradingAgentsLogger] = None
 
 
 def get_logger_manager() -> TradingAgentsLogger:
-    """获取全局日志管理器实例"""
+    """Get global log manager instance"""
     global _logger_manager
     if _logger_manager is None:
         _logger_manager = TradingAgentsLogger()
@@ -470,12 +470,12 @@ def get_logger_manager() -> TradingAgentsLogger:
 
 
 def get_logger(name: str) -> logging.Logger:
-    """获取指定名称的日志器（便捷函数）"""
+    """Get the logger with the specified name (convenience function)"""
     return get_logger_manager().get_logger(name)
 
 
 def setup_logging(config: Optional[Dict[str, Any]] = None):
-    """设置项目日志系统（便捷函数）"""
+    """Set up the project log system (convenience function)"""
     global _logger_manager
     _logger_manager = TradingAgentsLogger(config)
     return _logger_manager

@@ -1,11 +1,11 @@
 """
-示例SDK数据同步服务 (app层)
-展示如何创建数据同步服务，将外部SDK数据写入标准化的MongoDB集合
+Sample SDK data synchronization service (app layer)
+Shows how to create a data synchronization service to write external SDK data to a standardized MongoDB collection
 
-架构说明:
-- tradingagents层: 纯数据获取和标准化，不涉及数据库操作
-- app层: 数据同步服务，负责数据库操作和业务逻辑
-- 数据流: 外部SDK → tradingagents适配器 → app同步服务 → MongoDB
+Architecture description:
+- tradingagents layer: Pure data acquisition and standardization, no database operations involved
+- app layer: Data synchronization service, responsible for database operations and business logic
+- data flow: external SDK → tradingagents adapter → app Synchronization service → MongoDB
 """
 import asyncio
 import logging
@@ -22,33 +22,33 @@ logger = logging.getLogger(__name__)
 
 class ExampleSDKSyncService:
     """
-    示例SDK数据同步服务 (app层)
+    Sample SDK data synchronization service (app layer)
 
-    职责:
-    - 调用tradingagents层的SDK适配器获取标准化数据
-    - 执行业务逻辑处理和数据验证
-    - 将数据写入MongoDB数据库
-    - 管理同步状态和错误处理
-    - 提供性能监控和统计
+    Responsibilities:
+    - Call the SDK adapter of the tradingagents layer to obtain standardized data
+    - Perform business logic processing and data validation
+    - Write data to MongoDB database
+    - Manage sync status and error handling
+    - Provide performance monitoring and statistics
 
-    架构分层:
-    - tradingagents/dataflows/: 纯数据获取适配器
-    - app/worker/: 数据同步服务 (本类)
-    - app/services/: 数据访问服务
+    Architecture layering:
+    - tradingagents/dataflows/: Pure data acquisition adapter
+    - app/worker/: Data synchronization service (This category)
+    - app/services/: Data access service
     """
 
     def __init__(self):
-        # 使用tradingagents层的适配器 (纯数据获取)
+        # Adapter using tradingagents layer (Pure data acquisition)
         self.provider = ExampleSDKProvider()
-        # 使用app层的数据服务 (数据库操作)
+        # Using app layer data services (Database operations)
         self.stock_service = get_stock_data_service()
         
-        # 同步配置
+        # Sync configuration
         self.batch_size = int(os.getenv("EXAMPLE_SDK_BATCH_SIZE", "100"))
         self.retry_times = int(os.getenv("EXAMPLE_SDK_RETRY_TIMES", "3"))
         self.retry_delay = int(os.getenv("EXAMPLE_SDK_RETRY_DELAY", "5"))
         
-        # 统计信息
+        # Statistics
         self.sync_stats = {
             "basic_info": {"total": 0, "success": 0, "failed": 0},
             "quotes": {"total": 0, "success": 0, "failed": 0},
@@ -56,36 +56,36 @@ class ExampleSDKSyncService:
         }
     
     async def sync_all_data(self):
-        """同步所有数据"""
-        logger.info("🚀 开始ExampleSDK全量数据同步...")
+        """Sync all data"""
+        logger.info("🚀 Start ExampleSDK full data synchronization...")
         
         start_time = datetime.now()
         
         try:
-            # 连接数据源
+            # Connect to data source
             if not await self.provider.connect():
-                logger.error("❌ ExampleSDK连接失败，同步中止")
+                logger.error("❌ ExampleSDK Connection failed, sync aborted")
                 return False
             
-            # 同步基础信息
+            # Synchronize basic information
             await self.sync_basic_info()
             
-            # 同步实时行情
+            # Synchronize real-time quotes
             await self.sync_realtime_quotes()
             
-            # 同步财务数据
+            # Sync financial data
             await self.sync_financial_data()
             
-            # 记录同步状态
+            # Record sync status
             await self._record_sync_status("success", start_time)
             
-            logger.info("✅ ExampleSDK全量数据同步完成")
+            logger.info("✅ ExampleSDK Full data synchronization completed")
             self._log_sync_stats()
             
             return True
             
         except Exception as e:
-            logger.error(f"❌ ExampleSDK数据同步失败: {e}")
+            logger.error(f"❌ ExampleSDK Data synchronization failed: {e}")
             await self._record_sync_status("failed", start_time, str(e))
             return False
             
@@ -93,163 +93,163 @@ class ExampleSDKSyncService:
             await self.provider.disconnect()
     
     async def sync_basic_info(self):
-        """同步股票基础信息"""
-        logger.info("📊 开始同步股票基础信息...")
+        """Synchronize basic stock information"""
+        logger.info("📊 Start synchronizing basic stock information...")
         
         try:
-            # 获取股票列表
+            # Get a list of stocks
             stock_list = await self.provider.get_stock_list()
             
             if not stock_list:
-                logger.warning("⚠️ 未获取到股票列表")
+                logger.warning("⚠️ No stock list obtained")
                 return
             
             self.sync_stats["basic_info"]["total"] = len(stock_list)
             
-            # 批量处理
+            # Batch processing
             for i in range(0, len(stock_list), self.batch_size):
                 batch = stock_list[i:i + self.batch_size]
                 await self._process_basic_info_batch(batch)
                 
-                # 进度日志
+                # progress log
                 processed = min(i + self.batch_size, len(stock_list))
-                logger.info(f"📈 基础信息同步进度: {processed}/{len(stock_list)}")
+                logger.info(f"📈 Basic information synchronization progress: {processed}/{len(stock_list)}")
                 
-                # 避免API限制
+                # Avoid API restrictions
                 await asyncio.sleep(0.1)
             
-            logger.info(f"✅ 股票基础信息同步完成: {self.sync_stats['basic_info']['success']}/{self.sync_stats['basic_info']['total']}")
+            logger.info(f"✅ Basic stock information synchronization completed: {self.sync_stats['basic_info']['success']}/{self.sync_stats['basic_info']['total']}")
             
         except Exception as e:
-            logger.error(f"❌ 股票基础信息同步失败: {e}")
+            logger.error(f"❌ Synchronization of basic stock information failed: {e}")
     
     async def sync_realtime_quotes(self):
-        """同步实时行情"""
-        logger.info("📈 开始同步实时行情...")
+        """Synchronize real-time quotes"""
+        logger.info("📈 Start synchronizing real-time quotes...")
         
         try:
-            # 获取需要同步的股票代码列表
+            # Get the list of stock codes that need to be synchronized
             db = get_mongo_db()
             cursor = db.stock_basic_info.find({}, {"code": 1})
             stock_codes = [doc["code"] async for doc in cursor]
             
             if not stock_codes:
-                logger.warning("⚠️ 未找到需要同步行情的股票")
+                logger.warning("⚠️ No stocks needing synchronized quotes found")
                 return
             
             self.sync_stats["quotes"]["total"] = len(stock_codes)
             
-            # 批量处理
+            # Batch processing
             for i in range(0, len(stock_codes), self.batch_size):
                 batch = stock_codes[i:i + self.batch_size]
                 await self._process_quotes_batch(batch)
                 
-                # 进度日志
+                # progress log
                 processed = min(i + self.batch_size, len(stock_codes))
-                logger.info(f"📈 实时行情同步进度: {processed}/{len(stock_codes)}")
+                logger.info(f"📈 Real-time market synchronization progress: {processed}/{len(stock_codes)}")
                 
-                # 避免API限制
+                # Avoid API restrictions
                 await asyncio.sleep(0.1)
             
-            logger.info(f"✅ 实时行情同步完成: {self.sync_stats['quotes']['success']}/{self.sync_stats['quotes']['total']}")
+            logger.info(f"✅ Real-time market synchronization completed: {self.sync_stats['quotes']['success']}/{self.sync_stats['quotes']['total']}")
             
         except Exception as e:
-            logger.error(f"❌ 实时行情同步失败: {e}")
+            logger.error(f"❌ Real-time market synchronization failed: {e}")
     
     async def sync_financial_data(self):
-        """同步财务数据"""
-        logger.info("💰 开始同步财务数据...")
+        """Sync financial data"""
+        logger.info("💰 Start syncing financial data...")
         
         try:
-            # 获取需要更新财务数据的股票
-            # 这里可以根据业务需求筛选，比如只同步主要股票或定期更新
+            # Get stocks whose financial data needs to be updated
+            # Here you can filter based on business needs, such as only synchronizing major stocks or updating regularly.
             db = get_mongo_db()
             cursor = db.stock_basic_info.find(
-                {"total_mv": {"$gte": 100}},  # 只同步市值大于100亿的股票
+                {"total_mv": {"$gte": 100}},  # Only synchronize stocks with market capitalization greater than 10 billion
                 {"code": 1}
-            ).limit(50)  # 限制数量，避免API调用过多
+            ).limit(50)  # Limit the number to avoid too many API calls
             
             stock_codes = [doc["code"] async for doc in cursor]
             
             if not stock_codes:
-                logger.warning("⚠️ 未找到需要同步财务数据的股票")
+                logger.warning("⚠️ No stocks found that require synchronized financial data")
                 return
             
             self.sync_stats["financial"]["total"] = len(stock_codes)
             
-            # 逐个处理（财务数据通常API限制更严格）
+            # Processed one by one (financial data is usually API more restrictive)
             for code in stock_codes:
                 await self._process_financial_data(code)
-                await asyncio.sleep(1)  # 更长的延迟
+                await asyncio.sleep(1)  # longer delay
             
-            logger.info(f"✅ 财务数据同步完成: {self.sync_stats['financial']['success']}/{self.sync_stats['financial']['total']}")
+            logger.info(f"✅ Financial data synchronization completed: {self.sync_stats['financial']['success']}/{self.sync_stats['financial']['total']}")
             
         except Exception as e:
-            logger.error(f"❌ 财务数据同步失败: {e}")
+            logger.error(f"❌ Financial data synchronization failed: {e}")
     
     async def _process_basic_info_batch(self, batch: List[Dict[str, Any]]):
-        """处理基础信息批次"""
+        """Process basic information batches"""
         for stock_info in batch:
             try:
                 code = stock_info.get("code")
                 if not code:
                     continue
                 
-                # 更新到数据库
+                # Update to database
                 success = await self.stock_service.update_stock_basic_info(code, stock_info)
                 
                 if success:
                     self.sync_stats["basic_info"]["success"] += 1
                 else:
                     self.sync_stats["basic_info"]["failed"] += 1
-                    logger.warning(f"⚠️ 更新{code}基础信息失败")
+                    logger.warning(f"⚠️ update{code}Basic information failed")
                     
             except Exception as e:
                 self.sync_stats["basic_info"]["failed"] += 1
-                logger.error(f"❌ 处理{stock_info.get('code', 'N/A')}基础信息失败: {e}")
+                logger.error(f"❌ Process{stock_info.get('code', 'N/A')}Basic information failed: {e}")
     
     async def _process_quotes_batch(self, batch: List[str]):
-        """处理行情批次"""
+        """Process quotation batches"""
         for code in batch:
             try:
-                # 获取实时行情
+                # Get real-time quotes
                 quotes = await self.provider.get_stock_quotes(code)
                 
                 if quotes:
-                    # 更新到数据库
+                    # Update to database
                     success = await self.stock_service.update_market_quotes(code, quotes)
                     
                     if success:
                         self.sync_stats["quotes"]["success"] += 1
                     else:
                         self.sync_stats["quotes"]["failed"] += 1
-                        logger.warning(f"⚠️ 更新{code}行情失败")
+                        logger.warning(f"⚠️ update{code}Quote failed")
                 else:
                     self.sync_stats["quotes"]["failed"] += 1
                     
             except Exception as e:
                 self.sync_stats["quotes"]["failed"] += 1
-                logger.error(f"❌ 处理{code}行情失败: {e}")
+                logger.error(f"❌ Process{code}Quote failed: {e}")
     
     async def _process_financial_data(self, code: str):
-        """处理财务数据"""
+        """Process financial data"""
         try:
-            # 获取财务数据
+            # Get financial data
             financial_data = await self.provider.get_financial_data(code)
             
             if financial_data:
-                # 这里需要实现财务数据的存储逻辑
-                # 可能需要创建新的集合 stock_financial_data
+                # Here you need to implement the storage logic of financial data
+                # New collections may need to be created stock_financial_data
                 db = get_mongo_db()
                 
-                # 构建更新数据
+                # Build update data
                 update_data = {
                     "code": code,
                     "financial_data": financial_data,
                     "updated_at": datetime.utcnow()
                 }
                 
-                # 更新或插入财务数据
+                # Update or insert financial data
                 await db.stock_financial_data.update_one(
                     {"code": code},
                     {"$set": update_data},
@@ -257,16 +257,16 @@ class ExampleSDKSyncService:
                 )
                 
                 self.sync_stats["financial"]["success"] += 1
-                logger.debug(f"✅ 更新{code}财务数据成功")
+                logger.debug(f"✅ update{code}financial data success")
             else:
                 self.sync_stats["financial"]["failed"] += 1
                 
         except Exception as e:
             self.sync_stats["financial"]["failed"] += 1
-            logger.error(f"❌ 处理{code}财务数据失败: {e}")
+            logger.error(f"❌ Process{code}Financial data failed: {e}")
     
     async def _record_sync_status(self, status: str, start_time: datetime, error_msg: str = None):
-        """记录同步状态"""
+        """Record sync status"""
         try:
             db = get_mongo_db()
             
@@ -288,65 +288,65 @@ class ExampleSDKSyncService:
             )
             
         except Exception as e:
-            logger.error(f"❌ 记录同步状态失败: {e}")
+            logger.error(f"❌ Logging sync status failed: {e}")
     
     def _log_sync_stats(self):
-        """记录同步统计信息"""
-        logger.info("📊 ExampleSDK同步统计:")
+        """Record sync statistics"""
+        logger.info("📊 ExampleSDK Synchronization statistics:")
         for data_type, stats in self.sync_stats.items():
             total = stats["total"]
             success = stats["success"]
             failed = stats["failed"]
             success_rate = (success / total * 100) if total > 0 else 0
             
-            logger.info(f"   {data_type}: {success}/{total} ({success_rate:.1f}%) 成功, {failed} 失败")
+            logger.info(f"   {data_type}: {success}/{total} ({success_rate:.1f}%) success, {failed} failed")
     
     async def sync_incremental(self):
-        """增量同步 - 只同步实时行情"""
-        logger.info("🔄 开始ExampleSDK增量同步...")
+        """Incremental synchronization - only synchronize real-time quotes"""
+        logger.info("🔄 Start ExampleSDK incremental synchronization...")
         
         try:
             if not await self.provider.connect():
-                logger.error("❌ ExampleSDK连接失败，增量同步中止")
+                logger.error("❌ ExampleSDK Connection failed, incremental sync aborted")
                 return False
             
-            # 只同步实时行情
+            # Only synchronize real-time quotes
             await self.sync_realtime_quotes()
             
-            logger.info("✅ ExampleSDK增量同步完成")
+            logger.info("✅ ExampleSDK Incremental synchronization completed")
             return True
             
         except Exception as e:
-            logger.error(f"❌ ExampleSDK增量同步失败: {e}")
+            logger.error(f"❌ ExampleSDK Incremental sync failed: {e}")
             return False
             
         finally:
             await self.provider.disconnect()
 
 
-# ==================== 定时任务函数 ====================
+# ==================== Scheduled task function ====================
 
 async def run_full_sync():
-    """运行全量同步 - 供定时任务调用"""
+    """Run full synchronization - called by scheduled tasks"""
     sync_service = ExampleSDKSyncService()
     return await sync_service.sync_all_data()
 
 
 async def run_incremental_sync():
-    """运行增量同步 - 供定时任务调用"""
+    """Run incremental synchronization - called by scheduled tasks"""
     sync_service = ExampleSDKSyncService()
     return await sync_service.sync_incremental()
 
 
-# ==================== 使用示例 ====================
+# ==================== Usage example ====================
 
 async def main():
-    """主函数 - 用于测试"""
+    """Main function - for testing"""
     logging.basicConfig(level=logging.INFO)
     
     sync_service = ExampleSDKSyncService()
     
-    # 测试全量同步
+    # Test full synchronization
     await sync_service.sync_all_data()
 
 

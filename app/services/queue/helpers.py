@@ -1,5 +1,5 @@
 """
-队列服务的辅助函数（与 Redis 操作相关），便于在主服务中做薄委托。
+Auxiliary function for the queue service (related to Redis operations) to facilitate thin delegation in the main service.
 """
 from __future__ import annotations
 import time
@@ -23,7 +23,7 @@ async def check_user_concurrent_limit(r: Redis, user_id: str, limit: int) -> boo
 
 
 async def check_global_concurrent_limit(r: Redis, limit: int) -> bool:
-    """检查全局并发限制（基于处理中集合大小）"""
+    """Check global concurrency limit (based on processing collection size)"""
     current_count = await r.scard(SET_PROCESSING)
     return current_count < limit
 

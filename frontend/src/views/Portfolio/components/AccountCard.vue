@@ -2,13 +2,13 @@
   <el-card class="account-card" v-loading="loading">
     <template #header>
       <div class="card-header">
-        <span>资金账户</span>
+        <span>Capital account</span>
         <div class="actions">
           <el-button type="primary" size="small" @click="openDepositDialog()">
-            <el-icon><Plus /></el-icon> 入金
+            <el-icon><Plus /></el-icon> Deposit
           </el-button>
           <el-button size="small" @click="openWithdrawDialog()">
-            <el-icon><Minus /></el-icon> 出金
+            <el-icon><Minus /></el-icon> Withdraw funds
           </el-button>
           <el-button size="small" @click="showSettingsDialog = true">
             <el-icon><Setting /></el-icon>
@@ -17,18 +17,18 @@
       </div>
     </template>
 
-    <!-- 未初始化状态 -->
+    <!-- uninitialized state -->
     <div v-if="!hasInitialized" class="init-prompt">
-      <el-empty description="还未设置初始资金">
-        <el-button type="primary" @click="showInitDialog = true">设置初始资金</el-button>
+      <el-empty description="Initial funds have not been set yet">
+        <el-button type="primary" @click="showInitDialog = true">Set up initial funding</el-button>
       </el-empty>
     </div>
 
-    <!-- 账户摘要 - 按币种分 Tab 展示 -->
+    <!-- Account Summary - Tab display by currency -->
     <div v-else class="summary-content">
       <el-tabs v-model="activeCurrency" type="border-card" class="currency-tabs">
-        <!-- A股 (CNY) -->
-        <el-tab-pane label="🇨🇳 A股 (CNY)" name="CNY">
+        <!-- A shares (CNY) -->
+        <el-tab-pane label="🇨🇳 A shares (CNY)" name="CNY">
           <CurrencyAccount
             :summary="summary"
             currency="CNY"
@@ -40,55 +40,55 @@
       </el-tabs>
     </div>
 
-    <!-- 初始化对话框 -->
-    <el-dialog v-model="showInitDialog" title="设置初始资金" width="500px">
+    <!-- Initialization dialog -->
+    <el-dialog v-model="showInitDialog" title="Set up initial funding" width="500px">
       <el-form :model="initForm" label-width="120px">
-        <el-form-item label="A股 (CNY)">
-          <el-input-number v-model="initForm.CNY" :min="0" :max="100000000" :step="10000" :precision="0" style="width: 100%" placeholder="可选" />
+        <el-form-item label="A shares (CNY)">
+          <el-input-number v-model="initForm.CNY" :min="0" :max="100000000" :step="10000" :precision="0" style="width: 100%" placeholder="Optional" />
         </el-form-item>
         <el-alert type="info" :closable="false" style="margin-bottom: 16px">
           <template #default>
-            可以同时设置多个币种的初始资金，至少需要设置一个币种
+            You can set the initial funds of multiple currencies at the same time. At least one currency needs to be set.
           </template>
         </el-alert>
       </el-form>
       <template #footer>
-        <el-button @click="showInitDialog = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleInitialize">确定</el-button>
+        <el-button @click="showInitDialog = false">Cancel</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleInitialize">OK</el-button>
       </template>
     </el-dialog>
 
-    <!-- 入金对话框 -->
-    <el-dialog v-model="showDepositDialog" :title="`入金 - ${getCurrencyLabel(transactionForm.currency)}`" width="400px">
+    <!-- Deposit dialog box -->
+    <el-dialog v-model="showDepositDialog" :title="`Deposit - ${getCurrencyLabel(transactionForm.currency)}`" width="400px">
       <el-form :model="transactionForm" label-width="80px">
-        <el-form-item label="市场">
+        <el-form-item label="market">
           <el-radio-group v-model="transactionForm.currency">
-            <el-radio-button value="CNY">🇨🇳 A股</el-radio-button>
+            <el-radio-button value="CNY">🇨🇳 A shares</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="金额">
+        <el-form-item label="Amount">
           <el-input-number v-model="transactionForm.amount" :min="100" :max="100000000" :step="1000" :precision="2" style="width: 100%" />
           <span class="currency-hint">{{ getCurrencySymbol(transactionForm.currency) }}</span>
         </el-form-item>
-        <el-form-item label="说明">
-          <el-input v-model="transactionForm.description" placeholder="可选" />
+        <el-form-item label="Description">
+          <el-input v-model="transactionForm.description" placeholder="Optional" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showDepositDialog = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleDeposit">确定</el-button>
+        <el-button @click="showDepositDialog = false">Cancel</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleDeposit">OK</el-button>
       </template>
     </el-dialog>
 
-    <!-- 出金对话框 -->
-    <el-dialog v-model="showWithdrawDialog" :title="`出金 - ${getCurrencyLabel(transactionForm.currency)}`" width="400px">
+    <!-- Withdrawal dialog box -->
+    <el-dialog v-model="showWithdrawDialog" :title="`Withdraw funds - ${getCurrencyLabel(transactionForm.currency)}`" width="400px">
       <el-form :model="transactionForm" label-width="80px">
-        <el-form-item label="市场">
+        <el-form-item label="market">
           <el-radio-group v-model="transactionForm.currency">
-            <el-radio-button value="CNY">🇨🇳 A股</el-radio-button>
+            <el-radio-button value="CNY">🇨🇳 A shares</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="金额">
+        <el-form-item label="Amount">
           <el-input-number
             v-model="transactionForm.amount"
             :min="100"
@@ -99,34 +99,34 @@
           />
           <span class="currency-hint">{{ getCurrencySymbol(transactionForm.currency) }}</span>
         </el-form-item>
-        <el-form-item label="可用">
+        <el-form-item label="Available">
           <span class="available-cash">{{ getCurrencySymbol(transactionForm.currency) }}{{ formatMoney(summary?.cash?.[transactionForm.currency] || 0) }}</span>
         </el-form-item>
-        <el-form-item label="说明">
-          <el-input v-model="transactionForm.description" placeholder="可选" />
+        <el-form-item label="Description">
+          <el-input v-model="transactionForm.description" placeholder="Optional" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showWithdrawDialog = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleWithdraw">确定</el-button>
+        <el-button @click="showWithdrawDialog = false">Cancel</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleWithdraw">OK</el-button>
       </template>
     </el-dialog>
 
-    <!-- 设置对话框 -->
-    <el-dialog v-model="showSettingsDialog" title="账户设置" width="450px">
+    <!-- settings dialog -->
+    <el-dialog v-model="showSettingsDialog" title="Account settings" width="450px">
       <el-form :model="settingsForm" label-width="140px">
-        <el-form-item label="单股最大仓位">
+        <el-form-item label="Maximum position of a single stock">
           <el-input-number v-model="settingsForm.max_position_pct" :min="5" :max="100" :step="5" />
           <span class="unit">%</span>
         </el-form-item>
-        <el-form-item label="最大亏损容忍">
+        <el-form-item label="maximum loss tolerance">
           <el-input-number v-model="settingsForm.max_loss_pct" :min="1" :max="50" :step="1" />
           <span class="unit">%</span>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showSettingsDialog = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleUpdateSettings">保存</el-button>
+        <el-button @click="showSettingsDialog = false">Cancel</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleUpdateSettings">save</el-button>
       </template>
     </el-dialog>
   </el-card>
@@ -148,36 +148,36 @@ const submitting = ref(false)
 const summary = ref<AccountSummary | null>(null)
 const activeCurrency = ref<'CNY'>('CNY')
 
-// 对话框状态
+// dialog state
 const showInitDialog = ref(false)
 const showDepositDialog = ref(false)
 const showWithdrawDialog = ref(false)
 const showSettingsDialog = ref(false)
 
-// 表单数据
+// form data
 const initForm = ref({ CNY: 0 })
 const transactionForm = ref({ amount: 10000, currency: 'CNY' as string, description: '' })
 const settingsForm = ref({ max_position_pct: 30, max_loss_pct: 10 })
 
-// 是否已初始化
+// Has it been initialized?
 const hasInitialized = computed(() => {
   const cny = (summary.value?.initial_capital?.CNY || 0) + (summary.value?.total_deposit?.CNY || 0)
   return cny > 0
 })
 
-// 格式化金额
+// Format amount
 const formatMoney = (val: number) => {
   return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-// 货币相关方法
+// Currency Related Methods
 const getCurrencySymbol = (currency: string) => {
   const map: Record<string, string> = { CNY: '¥' }
   return map[currency] || '¥'
 }
 
 const getCurrencyLabel = (currency: string) => {
-  const map: Record<string, string> = { CNY: 'A股 (CNY)' }
+  const map: Record<string, string> = { CNY: 'A shares (CNY)' }
   return map[currency] || currency
 }
 
@@ -185,43 +185,43 @@ const getMaxWithdraw = (currency: string) => {
   return summary.value?.cash?.[currency as keyof typeof summary.value.cash] || 0
 }
 
-// 打开入金对话框
+// Open the deposit dialog
 const openDepositDialog = (currency?: string) => {
   transactionForm.value = { amount: 10000, currency: currency || activeCurrency.value || 'CNY', description: '' }
   showDepositDialog.value = true
 }
 
-// 打开出金对话框
+// Open the withdrawal dialog box
 const openWithdrawDialog = (currency?: string) => {
   transactionForm.value = { amount: 10000, currency: currency || activeCurrency.value || 'CNY', description: '' }
   showWithdrawDialog.value = true
 }
 
-// 加载数据
+// Load data
 const loadData = async () => {
   loading.value = true
   try {
     const res = await portfolioApi.getAccountSummary()
     if (res.success && res.data) {
       summary.value = res.data
-      // 更新设置表单
+      // Update settings form
       settingsForm.value = {
         max_position_pct: res.data.settings?.max_position_pct || 30,
         max_loss_pct: res.data.settings?.max_loss_pct || 10
       }
     }
   } catch (e) {
-    console.error('加载账户摘要失败', e)
+    console.error('Failed to load account summary', e)
   } finally {
     loading.value = false
   }
 }
 
-// 初始化账户
+// Initialize account
 const handleInitialize = async () => {
   const amount = initForm.value.CNY
   if (amount <= 0) {
-    ElMessage.warning('请输入有效的初始资金')
+    ElMessage.warning('Please enter valid initial funds')
     return
   }
 
@@ -229,84 +229,84 @@ const handleInitialize = async () => {
   try {
     const res = await portfolioApi.initializeAccount(amount, 'CNY')
     if (!res.success) {
-      ElMessage.error(`CNY 初始资金设置失败: ${res.message}`)
+      ElMessage.error(`CNY Initial fund setup failed: ${res.message}`)
       return
     }
 
-    ElMessage.success('初始资金设置成功')
+    ElMessage.success('Initial funds set up successfully')
     showInitDialog.value = false
     initForm.value = { CNY: 0 }
     await loadData()
     emit('updated')
   } catch (e: any) {
-    ElMessage.error(e.message || '设置失败')
+    ElMessage.error(e.message || 'Setup failed')
   } finally {
     submitting.value = false
   }
 }
 
-// 入金
+// Deposit
 const handleDeposit = async () => {
   submitting.value = true
   try {
     const res = await portfolioApi.deposit(transactionForm.value.amount, transactionForm.value.currency, transactionForm.value.description)
     if (res.success) {
-      ElMessage.success(res.message || '入金成功')
+      ElMessage.success(res.message || 'Deposit successful')
       showDepositDialog.value = false
       transactionForm.value = { amount: 10000, currency: 'CNY', description: '' }
       await loadData()
       emit('updated')
     } else {
-      ElMessage.error(res.message || '入金失败')
+      ElMessage.error(res.message || 'Deposit failed')
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '入金失败')
+    ElMessage.error(e.message || 'Deposit failed')
   } finally {
     submitting.value = false
   }
 }
 
-// 出金
+// Withdraw funds
 const handleWithdraw = async () => {
   submitting.value = true
   try {
     const res = await portfolioApi.withdraw(transactionForm.value.amount, transactionForm.value.currency, transactionForm.value.description)
     if (res.success) {
-      ElMessage.success(res.message || '出金成功')
+      ElMessage.success(res.message || 'Withdraw successfully')
       showWithdrawDialog.value = false
       transactionForm.value = { amount: 10000, currency: 'CNY', description: '' }
       await loadData()
       emit('updated')
     } else {
-      ElMessage.error(res.message || '出金失败')
+      ElMessage.error(res.message || 'Withdrawal failed')
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '出金失败')
+    ElMessage.error(e.message || 'Withdrawal failed')
   } finally {
     submitting.value = false
   }
 }
 
-// 更新设置
+// Update settings
 const handleUpdateSettings = async () => {
   submitting.value = true
   try {
     const res = await portfolioApi.updateAccountSettings(settingsForm.value)
     if (res.success) {
-      ElMessage.success('设置已保存')
+      ElMessage.success('Settings saved')
       showSettingsDialog.value = false
       await loadData()
     } else {
-      ElMessage.error(res.message || '保存失败')
+      ElMessage.error(res.message || 'Save failed')
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '保存失败')
+    ElMessage.error(e.message || 'Save failed')
   } finally {
     submitting.value = false
   }
 }
 
-// 暴露方法给父组件
+// Expose methods to parent component
 defineExpose({ loadData })
 
 onMounted(() => {
@@ -355,11 +355,11 @@ onMounted(() => {
 }
 
 .stat-item .value.profit {
-  color: #f56c6c; /* 红色表示盈利（中国股市规范） */
+  color: #f56c6c; /* Red indicates profit (Chinese stock market norm) */
 }
 
 .stat-item .value.loss {
-  color: #67c23a; /* 绿色表示亏损（中国股市规范） */
+  color: #67c23a; /* Green indicates loss (Chinese stock market norm) */
 }
 
 .stat-item .pct {

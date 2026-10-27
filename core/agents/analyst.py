@@ -1,9 +1,9 @@
 from core.agents.base import BaseAgent, GENERIC_REPORT_FALLBACK
 """
-分析师Agent基类
+Analyst Agent base class
 
-用于实现各种分析师Agent（市场分析师、新闻分析师、基本面分析师等）
-v2.0 新增：基于配置的分析师Agent架构
+Used to implement various analyst agents (market analysts, news analysts, fundamental analysts, etc.)
+v2.0 New: configuration-based analyst agent architecture
 """
 
 import logging
@@ -20,33 +20,33 @@ logger = logging.getLogger(__name__)
 
 class AnalystAgent(BaseAgent):
     """
-    分析师Agent基类
+    Analyst Agent base class
     
-    工作模式：调用工具 → LLM分析 → 生成报告
+    Working mode: call tool → LLM analysis → Generate report
     
-    特点：
-    - 需要调用工具获取数据
-    - 使用LLM进行分析
-    - 输出格式：{type}_report
-    - 处理市场类型（A股/港股/美股）
+    Features:
+    - Need to call tools to obtain data
+    - Analysis using LLM
+    - Output format:{type}_report
+    - Processing market type (A shares/Hong Kong stocks/US stocks)
     
-    工作流程：
-    1. 从state读取输入（ticker, date等）
-    2. 调用工具获取数据
-    3. 使用LLM分析数据
-    4. 生成分析报告
-    5. 输出到state["{type}_report"]
+    Workflow:
+    1. Read input from state(ticker, date etc.)
+    2. Call tools to get data
+    3. Analyze data using LLM
+    4. Generate analysis report
+    5. Output to state["{type}_report"]
     
-    子类需要实现：
-    - _build_system_prompt(): 构建系统提示词
-    - _build_user_prompt(): 构建用户提示词
-    - _parse_response(): 解析LLM响应
+    Subclasses need to implement:
+    - _build_system_prompt(): Build system prompt words
+    - _build_user_prompt(): Build user prompt words
+    - _parse_response(): Parse LLM response
     """
     
-    # 分析师类型（子类定义）
+    # Analyst type (subclass definition)
     analyst_type: str = None
     
-    # 输出字段名（子类定义）
+    # Output field name (subclass definition)
     output_field: str = None
     
     def __init__(
@@ -57,55 +57,55 @@ class AnalystAgent(BaseAgent):
         **kwargs
     ):
         """
-        初始化分析师Agent
+        Initialization Analyst Agent
         
         Args:
-            config: Agent配置
-            llm: LLM实例
-            tool_ids: 工具ID列表
-            **kwargs: 其他参数
+            config: Agent Configuration
+            llm: LLM Example
+            tool_ids: Tool ID list
+            **kwargs: Other parameters
         """
         super().__init__(config=config, llm=llm, tool_ids=tool_ids, **kwargs)
         
-        logger.debug(f"AnalystAgent '{self.agent_id}' 初始化完成")
+        logger.debug(f"AnalystAgent '{self.agent_id}' Initialization completed")
 
     @staticmethod
     def _build_post_tool_analysis_prompt() -> str:
-        return """工具调用已完成，所有需要的数据都已获取。
+        return """The tool call has been completed and all required data has been obtained.
 
-现在请直接撰写详细的中文分析报告，不要再调用任何工具。
+Please write a detailed Chinese analysis report directly now without calling any tools.
 
-报告要求：
-1. **严格基于工具返回的真实数据进行分析**：所有结论必须来自工具返回的数据，禁止编造、假设或推测
-2. **数据缺失处理**：如果工具返回的数据中没有某个维度的数据，不要分析该维度，也不要单独列出“未获取的数据维度”“数据缺口说明”或缺失维度清单。只有当工具明确返回异常、缺失、口径冲突等提示时，才可在对应段落内用一句话简要说明其对结论的限制。
-3. **多口径数据处理**：如果工具返回“汇总口径/明细口径”“口径差异摘要”或其他多套统计口径，正文必须同时保留两套数值，并明确写出“存在口径差异”；禁止压缩成单一计数，也不要写成“其中 … 家”这类包含关系。
-4. 结构清晰，逻辑严谨
-5. 结论明确，有理有据
-6. 使用中文输出
-7. 直接输出报告内容，不要返回工具调用
+Reporting requirements:
+1. **Analysis is strictly based on real data returned by the tool**: All conclusions must come from the data returned by the tool, no fabrication, assumptions or speculation are allowed
+2. **Missing data handling**: If there is no data for a certain dimension in the data returned by the tool, do not analyze the dimension or list it separately. Unobtained data dimensions  Data gap description or missing dimension list. Only when the tool clearly returns exceptions, deletions, caliber conflicts, etc., can it briefly describe its limitations on the conclusion in one sentence in the corresponding paragraph.
+3. **Multi-caliber data processing**: If the tool returns Summary caliber/detailed caliber  Summary of caliber differences or other multiple sets of statistical calibers. The text must retain both sets of values and clearly write them out. There is a caliber difference ; Compression to a single count is prohibited, and do not write Among them … home This type of inclusion relationship.
+4. Clear structure and rigorous logic
+5. The conclusion is clear and well-founded
+6. Use Chinese output
+7. Directly output the report content, do not return the tool call
 
-**重要提醒**：仔细检查工具返回的数据，只分析数据中实际存在的维度。不要额外补写 KOL 观点、散户情绪、机构持仓、行业资金流向等未提供维度，也不要生成“本报告未获取以下维度数据，不作相关分析”之类章节。
+**Important reminder**: Carefully examine the data returned by the tool and analyze only the dimensions that actually exist in the data. Do not add additional dimensions that are not provided, such as KOL opinions, retail investor sentiment, institutional positions, industry capital flows, etc., and do not generate This report did not obtain the following dimension data and does not conduct relevant analysis. Chapters like this.
 
-请立即开始撰写报告："""
+Start writing your report now:"""
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行分析
+        Perform analysis
 
         Args:
-            state: 工作流状态字典，包含：
-                - ticker: 股票代码
-                - analysis_date: 分析日期
-                - market_type: 市场类型（可选）
-                - trade_info: 交易信息（交易复盘场景）
+            state: Workflow status dictionary, including:
+                - ticker: Stock code
+                - analysis_date: Analysis date
+                - market_type: Market type (optional)
+                - trade_info: Transaction information (transaction review scenario)
 
         Returns:
-            更新后的状态字典，包含分析报告
+            Updated status dictionary with analysis reports
         """
-        logger.info(f"开始执行分析师Agent: {self.agent_id}")
+        logger.info(f"Start an Executive Analyst Agent: {self.agent_id}")
         self._current_state = state
 
-        # P1: 启动执行轨迹采集
+        # P1: Start execution trace collection
         from core.agents.execution_trace_recorder import (
             start_execution_trace, is_trace_enabled
         )
@@ -115,24 +115,24 @@ class AnalystAgent(BaseAgent):
                 recorder = start_execution_trace(self, state)
                 self._last_trace_id = recorder.trace_id
             except Exception as e:
-                logger.warning(f"⚠️ [{self.agent_id}] 启动轨迹采集失败（不影响 agent）: {e}")
+                logger.warning(f"⚠️ [{self.agent_id}] Failed to start trajectory collection (does not affect agent): {e}")
                 self._last_trace_id = None
 
         try:
-            # 1. 提取输入参数（统一使用基类方法，兼容多种字段名与场景兜底）
+            # 1. Extract input parameters (unified use of base class methods, compatible with various field names and scenarios)
             ticker, analysis_date = self._extract_common_params(state)
 
-            market_type = state.get("market_type", "A股")
+            market_type = state.get("market_type", "A shares")
 
             if not ticker:
                 raise ValueError("Missing required parameters: ticker")
 
-            # 🔥 提取 AgentContext（用于调试模式）
+            # 🔥 Extract AgentContext (for debug mode)
             context = None
             if "context" in state:
                 context = state["context"]
             elif "agent_context" in state:
-                # 兼容旧格式：agent_context 是字典
+                # Compatible with old formats: agent_context is a dictionary
                 from tradingagents.agents.utils.agent_context import AgentContext
                 ctx_dict = state["agent_context"]
                 if isinstance(ctx_dict, dict):
@@ -140,125 +140,125 @@ class AnalystAgent(BaseAgent):
                 else:
                     context = ctx_dict
 
-            # 🔍 调试日志：检查是否为调试模式
+            # 🔍 Debug log: check if it is debug mode
             if context:
                 is_debug = getattr(context, 'is_debug_mode', False)
                 debug_template_id = getattr(context, 'debug_template_id', None)
                 if is_debug and debug_template_id:
                     logger.info(
-                        f"🔍 [{self.agent_id}] 调试模式已启用，模板ID: {debug_template_id}"
+                        f"🔍 [{self.agent_id}] Debug mode is enabled, template ID: {debug_template_id}"
                     )
                 else:
-                    logger.debug(f"[{self.agent_id}] 正常模式，context 存在但非调试模式")
+                    logger.debug(f"[{self.agent_id}] Normal mode, context exists but not debug mode")
             else:
-                logger.debug(f"[{self.agent_id}] 正常模式，无 context")
+                logger.debug(f"[{self.agent_id}] Normal mode, none context")
 
-            # 2. 构建提示词
-            # 🔑 传递 state 给 _build_system_prompt，以便从 state 中提取变量完善模板
+            # 2. Build prompt words
+            # 🔑 Pass state to _build_system_prompt to extract variables from state to complete the template
             system_prompt = self._build_system_prompt(market_type, context=context, state=state)
             user_prompt = self._build_user_prompt(ticker, analysis_date, {}, state)
 
-            # 3. 调用LLM分析（使用工具调用）
+            # 3. Call LLM analysis (using tool call)
             system_prompt = self._apply_global_trading_advice_guard(system_prompt)
             messages = [
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=user_prompt)
             ]
             
-            # 🔥 详细日志：打印系统提示词的完整内容和长度
-            logger.info(f"系统提示词 (长度: {len(system_prompt)}): {system_prompt}")
-            logger.info(f"用户提示词 (长度: {len(user_prompt)}): {user_prompt}")
+            # 🔥 Detailed log: print the complete content and length of the system prompt word
+            logger.info(f"System prompt word (length: {len(system_prompt)}): {system_prompt}")
+            logger.info(f"User prompt words (length: {len(user_prompt)}): {user_prompt}")
 
-            # P1: 记录 Prompt
+            # P1: record Prompt
             if recorder:
                 try:
                     recorder.record_inputs({"ticker": ticker, "analysis_date": analysis_date, "market_type": market_type})
                     recorder.record_prompts(system_prompt, user_prompt)
                 except Exception as e:
-                    logger.debug(f"[{self.agent_id}] 记录 Prompt 失败（不影响 agent）: {e}")
+                    logger.debug(f"[{self.agent_id}] Record Prompt failure (does not affect agent): {e}")
             
-            # 🔥 验证：检查发送给LLM的SystemMessage内容是否与system_prompt一致
+            # 🔥 Verification: Check whether the content of SystemMessage sent to LLM is consistent with system_prompt
             actual_system_content = messages[0].content if messages and hasattr(messages[0], 'content') else None
             if actual_system_content != system_prompt:
-                logger.error(f"❌ 警告：SystemMessage内容与system_prompt不一致！")
-                logger.error(f"   system_prompt长度: {len(system_prompt)}")
-                logger.error(f"   SystemMessage.content长度: {len(actual_system_content) if actual_system_content else 0}")
-                logger.error(f"   system_prompt前500字符: {system_prompt[:500]}")
-                logger.error(f"   SystemMessage.content前500字符: {actual_system_content[:500] if actual_system_content else '(None)'}")
+                logger.error(f"❌ Warning: SystemMessage content is inconsistent with system_prompt!")
+                logger.error(f"   system_prompt length: {len(system_prompt)}")
+                logger.error(f"   SystemMessage.content length: {len(actual_system_content) if actual_system_content else 0}")
+                logger.error(f"   system_prompt first 500 characters: {system_prompt[:500]}")
+                logger.error(f"   SystemMessage.content first 500 characters: {actual_system_content[:500] if actual_system_content else '(None)'}")
             else:
-                logger.info(f"✅ 验证通过：SystemMessage内容与system_prompt一致 (长度: {len(system_prompt)})")
+                logger.info(f"✅ Verification passed: SystemMessage content is consistent with system_prompt (length: {len(system_prompt)})")
 
             if self._llm:
-                # 使用 invoke_with_tools 支持工具调用
+                # Support tool invocation using invoke_with_tools
                 if self._langchain_tools:
-                    logger.info(f"[{self.agent_id}] 使用工具调用模式，工具数量: {len(self._langchain_tools)}")
-                    logger.info(f"[{self.agent_id}] 工具列表: {[tool.name for tool in self._langchain_tools]}")
+                    logger.info(f"[{self.agent_id}] Usage tool call mode, number of tools: {len(self._langchain_tools)}")
+                    logger.info(f"[{self.agent_id}] Tool list: {[tool.name for tool in self._langchain_tools]}")
 
-                    # 构建分析提示词，明确告诉 LLM 基于工具结果生成报告
+                    # Construct analysis prompts to explicitly tell LLM to generate reports based on tool results
                     analysis_prompt = self._build_post_tool_analysis_prompt()
 
                     report = self.invoke_with_tools(messages, analysis_prompt=analysis_prompt)
-                    # 🔑 LLM 响应已由 invoke_with_tools 内部的 _record_llm_response_to_trace 自动记录
+                    # 🔑 LLM The response has been automatically logged by _record_llm_response_to_trace inside invoke_with_tools
                 else:
-                    # 没有工具，直接调用LLM
-                    logger.warning(f"[{self.agent_id}] 没有配置工具，使用普通模式")
+                    # No tools, call directly LLM
+                    logger.warning(f"[{self.agent_id}] There is no configuration tool, use normal mode")
                     import time as _time_llm
                     _llm_start = _time_llm.time()
                     response = self._llm.invoke(messages)
                     _llm_duration_ms = int((_time_llm.time() - _llm_start) * 1000)
-                    # 直接返回字符串内容，与 invoke_with_tools 保持一致
+                    # Directly returns the string content, consistent with invoke_with_tools
                     report = response.content if hasattr(response, 'content') else str(response)
 
-                    # P1: 记录 LLM 响应
+                    # P1: Logging LLM response
                     if recorder:
                         try:
                             recorder.record_llm_response(response, llm_duration_ms=_llm_duration_ms)
                         except Exception as e:
-                            logger.debug(f"[{self.agent_id}] 记录 LLM 响应失败（不影响 agent）: {e}")
+                            logger.debug(f"[{self.agent_id}] Log LLM response failure (does not affect agent): {e}")
             else:
                 raise ValueError("LLM not initialized")
 
-            # P1: 记录解析后的输出
+            # P1: Record parsed output
             if recorder:
                 try:
                     recorder.record_parsed_output({"report": report[:500] if isinstance(report, str) else str(report)[:500]})
                 except Exception as e:
-                    logger.debug(f"[{self.agent_id}] 记录解析输出失败（不影响 agent）: {e}")
+                    logger.debug(f"[{self.agent_id}] Record parsing output failure (does not affect agent): {e}")
 
-            # 🆕 v3.5.0 质量门禁：检查报告完整性，失败时重试1次，仍失败标记 low_quality
+            # 🆕 v3.5.0 Quality access control: Check report integrity, retry once if failed, still marked as failed low_quality
             quality_flag = self._check_and_retry_quality(
                 report=report,
                 messages=messages,
                 analysis_prompt=analysis_prompt if self._langchain_tools else None,
                 ticker=ticker,
             )
-            # 重试成功时，用重试后的报告替换原报告
+            # When the retry is successful, the original report is replaced with the report after the retry.
             if quality_flag is None and hasattr(self, "_retry_report") and self._retry_report:
                 report = self._retry_report
-                self._retry_report = None  # 清理，避免影响下次调用
+                self._retry_report = None  # Clean up to avoid affecting the next call
 
-            # 5. 输出到state（只返回新增的字段，避免并发冲突）
+            # 5. Output to state (only newly added fields are returned to avoid concurrency conflicts)
             output_key = self.output_field or f"{self.analyst_type}_report"
 
-            logger.info(f"分析师Agent {self.agent_id} 执行成功")
+            logger.info(f"analyst Agent {self.agent_id} Executed successfully")
             result = {output_key: report}
 
-            # 质量门禁标记（写入 state.quality_flags，下游可知哪些报告质量差）
+            # Quality gate flag (write state.quality_flags, the downstream can know which reports are of poor quality)
             if quality_flag:
                 result["quality_flags"] = [quality_flag]
 
-            # 🆕 v3.6.0 项5 闭环：采集质量指标写入 MongoDB（供仪表盘查询）
-            # 不阻塞主流程，失败时静默降级
+            # 🆕 v3.6.0 Item 5 Closed loop: Collection quality indicators are written to MongoDB (for dashboard query)
+            # Does not block the main process and silently degrades on failure
             try:
                 from app.services.quality_metrics_service import QualityMetricsService
                 from app.core.database import get_mongo_db_sync
                 metrics_db = get_mongo_db_sync()
                 if metrics_db is not None:
                     user_id = state.get("user_id") or state.get("userId") or "default_user"
-                    # 检测是否命中兜底文案
+                    # Detect whether the hidden copy copy is hit
                     hit_fallback = bool(quality_flag and quality_flag.get("severity") == "critical")
                     fallback_pattern = quality_flag.get("reason", "") if quality_flag else ""
-                    # v3.6.0 fix：仅 critical 级别标记为低质量，warning 级别不标记
+                    # v3.6.0 fix: Only the critical level is marked as low quality, and the warning level is not marked.
                     is_low_quality = bool(quality_flag and quality_flag.get("severity") == "critical")
                     retry_count = 1 if (quality_flag and quality_flag.get("retried")) else 0
                     QualityMetricsService(db=metrics_db).record_analysis_metrics_sync(
@@ -277,25 +277,25 @@ class AnalystAgent(BaseAgent):
                         workflow_id=state.get("workflow_id", ""),
                     )
             except Exception as metrics_exc:
-                logger.debug(f"[Analyst] 质量指标采集失败（不阻塞）: {metrics_exc}")
+                logger.debug(f"[Analyst] Quality indicator collection failed (not blocking): {metrics_exc}")
 
-            # 🆕 附带工具调用摘要，供下游 Agent 引用
+            # 🆕 Comes with tool call summary for reference by downstream agents
             tool_summary = self._format_tool_call_summary()
             if tool_summary:
                 result["tool_call_summaries"] = {self.analyst_type: tool_summary}
-                logger.info(f"📊 [{self.agent_id}] 工具调用摘要已生成（{len(self._tool_call_summaries_collected)} 次调用）")
+                logger.info(f"📊 [{self.agent_id}] Tool call summary generated ({len(self._tool_call_summaries_collected)} calls)")
 
             return result
 
         except Exception as e:
-            logger.error(f"分析师Agent {self.agent_id} 执行失败: {e}", exc_info=True)
-            # P1: 记录异常
+            logger.error(f"analyst Agent {self.agent_id} Execution failed: {e}", exc_info=True)
+            # P1: Log exception
             if recorder:
                 try:
                     recorder.record_error(e)
                 except Exception:
                     pass
-            # 返回错误状态（只返回新增的字段）
+            # Return error status (only newly added fields are returned)
             output_key = self.output_field or f"{self.analyst_type}_report"
             return {
                 output_key: {
@@ -305,7 +305,7 @@ class AnalystAgent(BaseAgent):
             }
         finally:
             self._current_state = None
-            # P1: 完成轨迹采集并写入 MongoDB（非阻塞）
+            # P1: Complete trajectory collection and write to MongoDB (non-blocking)
             if recorder:
                 try:
                     recorder.finish()
@@ -319,21 +319,21 @@ class AnalystAgent(BaseAgent):
         analysis_prompt: Optional[str],
         ticker: str,
     ) -> Optional[Dict[str, Any]]:
-        """v3.5.0 质量门禁：检查报告完整性，失败时重试1次，仍失败返回 quality_flag。
+        """v3.5.0 Quality access control: Check report integrity, retry once if failed, and return quality_flag if still failed.
 
-        分层降级策略：
-        - critical 级别失败（空报告/兜底文案）→ 重试1次
-        - warning 级别失败（缺结论关键词）→ 不重试，只标记
-        - 重试后仍失败 → 返回 quality_flag 字典写入 state.quality_flags
+        Hierarchical downgrade strategy:
+        - critical Level failure (empty report/cover copy)→ Retry 1 time
+        - warning Level failed (missing conclusion keyword)→ Don t retry, just mark
+        - Still failed after retrying → Return quality_flag dictionary writing state.quality_flags
 
         Args:
-            report: 原始报告内容
-            messages: 原始消息列表（重试时复用）
-            analysis_prompt: 工具后分析提示词（重试时复用，无工具模式为 None）
-            ticker: 股票代码（用于日志和告警元数据）
+            report: Original report content
+            messages: Original message list (reused during retries)
+            analysis_prompt: Post-tool analysis prompt word (reused when retrying, None in tool-less mode)
+            ticker: Stock symbol (used for log and alert metadata)
 
         Returns:
-            None 表示质量通过；Dict 表示质量标记（应写入 state.quality_flags）
+            None Indicates quality passed; Dict indicates quality flag (should be written to state.quality_flags)
         """
         from core.agents.quality_gate import validate_analyst_report
 
@@ -345,13 +345,13 @@ class AnalystAgent(BaseAgent):
         )
 
         if qc_result.is_valid:
-            logger.info(f"[QualityGate] {self.agent_id} 报告质量通过")
+            logger.info(f"[QualityGate] {self.agent_id} Report quality passed")
             return None
 
-        # warning 级别：不重试，只标记
+        # warning Level: No retry, just mark
         if not qc_result.should_retry:
             logger.warning(
-                f"[QualityGate] {self.agent_id} 报告质量 warning：{qc_result.reason}"
+                f"[QualityGate] {self.agent_id} Report quality warning:{qc_result.reason}"
             )
             return {
                 "agent_id": self.agent_id,
@@ -362,16 +362,16 @@ class AnalystAgent(BaseAgent):
                 "retried": False,
             }
 
-        # critical 级别：重试1次
+        # critical Level: Retry 1 time
         logger.warning(
-            f"[QualityGate] {self.agent_id} 报告质量 critical：{qc_result.reason}，重试1次"
+            f"[QualityGate] {self.agent_id} Report quality critical:{qc_result.reason}, Retry 1 time"
         )
         try:
             retry_messages = list(messages) + [
                 HumanMessage(content=(
-                    f"注意：你刚才生成的报告存在问题（{qc_result.reason}）。"
-                    "请重新生成一份完整的分析报告，必须包含明确结论（如建议/判断/风险等）。"
-                    "直接输出报告内容，不要再调用任何工具。"
+                    f"Note: There is a problem with the report you just generated ({qc_result.reason}) . "
+                    "Please regenerate a complete analysis report, which must contain clear conclusions (such as recommendations/judgments/risks, etc.)."
+                    "Directly output the report content without calling any tools."
                 ))
             ]
             if self._langchain_tools and analysis_prompt:
@@ -380,9 +380,9 @@ class AnalystAgent(BaseAgent):
                 retry_response = self._llm.invoke(retry_messages)
                 retry_report = retry_response.content if hasattr(retry_response, 'content') else str(retry_response)
             else:
-                retry_report = report  # 无法重试，保持原报告
+                retry_report = report  # Unable to retry, keep original report
 
-            # 二次校验
+            # Second verification
             retry_str = retry_report if isinstance(retry_report, str) else str(retry_report)
             qc_result2 = validate_analyst_report(
                 content=retry_str,
@@ -391,15 +391,15 @@ class AnalystAgent(BaseAgent):
             )
 
             if qc_result2.is_valid:
-                logger.info(f"[QualityGate] {self.agent_id} 重试后质量通过")
-                # 用重试后的报告替换原报告（通过实例属性传递回 execute）
-                # 注意：这里直接修改不了 execute 的局部变量 report，
-                # 所以用 _retry_report 属性传递
+                logger.info(f"[QualityGate] {self.agent_id} Quality passed after retrying")
+                # Replace the original report with the retried report (passed back to execute via instance properties)
+                # Note: The local variable report of execute cannot be modified directly here.
+                # So pass it with _retry_report attribute
                 self._retry_report = retry_report
                 return None
             else:
                 logger.error(
-                    f"[QualityGate] {self.agent_id} 重试后仍不通过：{qc_result2.reason}，标记 low_quality"
+                    f"[QualityGate] {self.agent_id} Still failed after trying again:{qc_result2.reason}, mark low_quality"
                 )
                 return {
                     "agent_id": self.agent_id,
@@ -410,12 +410,12 @@ class AnalystAgent(BaseAgent):
                     "retried": True,
                 }
         except Exception as retry_err:
-            logger.error(f"[QualityGate] {self.agent_id} 重试异常：{retry_err}", exc_info=True)
+            logger.error(f"[QualityGate] {self.agent_id} Retry exception:{retry_err}", exc_info=True)
             return {
                 "agent_id": self.agent_id,
                 "analyst_type": self.analyst_type,
                 "ticker": ticker,
-                "reason": f"重试异常: {retry_err}",
+                "reason": f"Retry exception: {retry_err}",
                 "severity": "critical",
                 "retried": True,
             }
@@ -427,21 +427,21 @@ class AnalystAgent(BaseAgent):
         state: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        使用工具获取数据
+        Use tools to get data
         
         Args:
-            ticker: 股票代码
-            analysis_date: 分析日期
-            state: 工作流状态
+            ticker: Stock code
+            analysis_date: Analysis date
+            state: Workflow status
             
         Returns:
-            工具返回的数据字典
+            Data dictionary returned by the tool
         """
         tool_data = {}
         
-        # 如果有LangChain工具，使用invoke_with_tools
+        # If you have LangChain tool, use invoke_with_tools
         if self._langchain_tools and self._llm:
-            # 构建工具调用提示
+            # Build tool invocation tips
             tool_prompt = self._build_tool_prompt(ticker, analysis_date)
             result = self.invoke_with_tools(tool_prompt)
             tool_data = result
@@ -450,31 +450,31 @@ class AnalystAgent(BaseAgent):
     
     def _build_tool_prompt(self, ticker: str, analysis_date: str) -> str:
         """
-        构建工具调用提示词
+        Build tool call prompt word
         
         Args:
-            ticker: 股票代码
-            analysis_date: 分析日期
+            ticker: Stock code
+            analysis_date: Analysis date
             
         Returns:
-            提示词字符串
+            Prompt word string
         """
-        return f"请获取 {ticker} 在 {analysis_date} 的相关数据"
+        return f"please get {ticker} in {analysis_date} related data"
 
-    # 注意：_get_prompt_from_template() 方法已移至 BaseAgent 基类，所有 Agent 共享
+    # Note:_get_prompt_from_template() Method has been moved to BaseAgent base class, shared by all Agents
 
     @abstractmethod
     def _build_system_prompt(self, market_type: str, context=None, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词（子类实现）
+        Build system prompt words (subclass implementation)
 
         Args:
-            market_type: 市场类型
-            context: AgentContext 对象（用于调试模式）
-            state: 工作流状态（可选，用于提取变量如 company_name, ticker 等）
+            market_type: market type
+            context: AgentContext Object (for debug mode)
+            state: Workflow status (optional, used to extract variables such as company_name, ticker etc.)
 
         Returns:
-            系统提示词
+            System prompt word
         """
         pass
     
@@ -487,30 +487,30 @@ class AnalystAgent(BaseAgent):
         state: Dict[str, Any]
     ) -> str:
         """
-        构建用户提示词（子类实现）
+        Construct user prompt words (subclass implementation)
 
         Args:
-            ticker: 股票代码
-            analysis_date: 分析日期
-            tool_data: 工具返回的数据
-            state: 工作流状态
+            ticker: Stock code
+            analysis_date: Analysis date
+            tool_data: Data returned by the tool
+            state: Workflow status
 
         Returns:
-            用户提示词
+            User prompt words
         """
         pass
 
     def _parse_response(self, response: str) -> Dict[str, Any]:
         """
-        解析LLM响应（子类可覆盖）
+        Parse LLM response (can be overridden by subclasses)
 
         Args:
-            response: LLM响应文本
+            response: LLM response text
 
         Returns:
-            解析后的报告字典
+            Parsed report dictionary
         """
-        # 默认实现：直接返回文本
+        # Default implementation: return text directly
         return {
             "content": response,
             "success": True
@@ -518,7 +518,7 @@ class AnalystAgent(BaseAgent):
 
     @property
     def agent_id(self) -> str:
-        """获取Agent ID"""
+        """get Agent ID"""
         if self.metadata:
             return self.metadata.id
         return self.__class__.__name__.lower()

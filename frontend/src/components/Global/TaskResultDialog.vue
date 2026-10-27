@@ -1,14 +1,14 @@
-﻿<template>
-  <el-dialog v-model="visible" title="任务结果" width="60%">
+<template>
+  <el-dialog v-model="visible" title="Task results" width="60%">
     <div v-if="result">
-      <h4>建议</h4>
-      <div class="markdown-content" v-html="renderMarkdown(result.recommendation || '无')"></div>
-      <h4 style="margin-top: 16px;">摘要</h4>
-      <div class="markdown-content" v-html="renderMarkdown(result.summary || '无')"></div>
+      <h4>Suggestions</h4>
+      <div class="markdown-content" v-html="renderMarkdown(result.recommendation || 'None')"></div>
+      <h4 style="margin-top: 16px;">Summary</h4>
+      <div class="markdown-content" v-html="renderMarkdown(result.summary || 'None')"></div>
     </div>
     <template #footer>
-      <el-button @click="emit('close')">关闭</el-button>
-      <el-button type="primary" @click="emit('view-report')">查看报告详情</el-button>
+      <el-button @click="emit('close')">close</el-button>
+      <el-button type="primary" @click="emit('view-report')">View report details</el-button>
     </template>
   </el-dialog>
 </template>
@@ -25,7 +25,7 @@ const visible = computed({
   set: (v: boolean) => emit('update:modelValue', v)
 })
 
-// marked 配置已由 @/utils/markdown 统一管理
+// marked The configuration has been @/utils/markdown Unified management
 const renderMarkdown = (s: string) => { try { return safeMarkdown(s||'') } catch { return s } }
 </script>
 

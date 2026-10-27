@@ -1,8 +1,8 @@
 """
-Gateway 统一消息模型
+Gateway Unified Messaging Model
 
-定义 IM 平台与系统之间的标准消息格式，
-所有适配器将平台消息转换为 GatewayMessage，将系统回复转换为 GatewayResponse。
+Define standard message formats between IM platforms and systems,
+All adapters convert platform messages to GatewayMessage and system replies to GatewayResponse.
 """
 
 from datetime import datetime, timezone
@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 
 
 class ChannelType(str, Enum):
-    """支持的 IM 平台类型"""
+    """Supported IM platform types"""
     FEISHU = "feishu"
     QQ = "qq"
     DINGTALK = "dingtalk"
@@ -21,35 +21,35 @@ class ChannelType(str, Enum):
 
 
 class MessageType(str, Enum):
-    """消息内容类型"""
+    """Message content type"""
     TEXT = "text"
     IMAGE = "image"
     FILE = "file"
-    COMMAND = "command"       # 斜杠命令，如 /bind, /help
+    COMMAND = "command"       # Slash commands like /bind, /help
 
 
 class ResponseType(str, Enum):
-    """回复内容类型"""
+    """Reply content type"""
     TEXT = "text"
     MARKDOWN = "markdown"
-    CARD = "card"             # 飞书/钉钉交互卡片
+    CARD = "card"             # Feishu/DingTalk interactive cards
 
 
 class GatewayMessage(BaseModel):
     """
-    统一入站消息 — 适配器将平台原始 Webhook 解析为此格式
+    Unified inbound messaging — The adapter parses platform raw webhooks into this format
 
-    所有字段使用平台无关的通用命名。
+    All fields use platform-independent common naming.
     """
     channel_type: ChannelType
-    channel_id: str = Field(..., description="平台侧会话 ID（群聊 ID / 私聊 ID）")
-    user_identity: str = Field(..., description="平台侧用户标识（open_id / QQ 号）")
+    channel_id: str = Field(..., description="Platform-side session ID (group chat ID/private chat ID)")
+    user_identity: str = Field(..., description="Platform side user ID (open_id / QQ number)")
     message_type: MessageType = MessageType.TEXT
-    content: str = Field(..., description="消息正文（纯文本或已提取的文字）")
+    content: str = Field(..., description="Message text (plain text or extracted text)")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    # 平台特有的额外数据，适配器自行填充
+    # Platform-specific extra data, populated by the adapter itself
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    # 如果是群聊 @Bot 场景，记录是否 at 了机器人
+    # If it is a group chat @Bot Scene, record whether the robot is at
     is_mention_bot: bool = False
 
     class Config:
@@ -58,15 +58,15 @@ class GatewayMessage(BaseModel):
 
 class GatewayResponse(BaseModel):
     """
-    统一出站回复 — Gateway 路由将助理结果转换为此格式，适配器再转为平台 API 调用
+    Unified outbound reply — Gateway The route converts the assistant results into this format, and the adapter converts them into platform API calls
     """
     channel_type: str
     channel_id: str
     response_type: ResponseType = ResponseType.TEXT
-    content: str = Field(default="", description="文本/Markdown 内容")
+    content: str = Field(default="", description="Text/Markdown content")
     card_template: Optional[Dict[str, Any]] = None
     attachments: List[Dict[str, Any]] = Field(default_factory=list)
-    # 透传元数据（如 QQ 的 msg_id 用于被动回复）
+    # Transparently transmit metadata (such as QQ's msg_id for passive replies)
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     class Config:
@@ -74,10 +74,10 @@ class GatewayResponse(BaseModel):
 
 
 class UserMapping(BaseModel):
-    """IM 用户 ↔ 系统用户绑定记录"""
-    user_id: str = Field(..., description="系统 user_id（MongoDB ObjectId 字符串）")
-    platform: str = Field(..., description="平台标识，如 feishu / qq")
-    platform_identity: str = Field(..., description="平台侧唯一标识")
+    """IM User ↔ System user binding record"""
+    user_id: str = Field(..., description="System user_id (MongoDB ObjectId string)")
+    platform: str = Field(..., description="Platform identifier, such as feishu / qq")
+    platform_identity: str = Field(..., description="Unique identifier on the platform side")
     display_name: Optional[str] = None
     bound_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = True

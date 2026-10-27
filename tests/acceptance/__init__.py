@@ -1,3 +1,3 @@
 """
-验收测试包初始化
+Acceptance test package initialization
 """

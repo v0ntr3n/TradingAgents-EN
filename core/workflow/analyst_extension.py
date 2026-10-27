@@ -1,21 +1,21 @@
 """
-分析师工作流扩展
+Analyst Workflow Extensions
 
-提供动态添加分析师节点到工作流的能力，
-无需修改 tradingagents/graph/setup.py
+Provides the ability to dynamically add analyst nodes to the workflow,
+No modification required tradingagents/graph/setup.py
 
-用法:
+Usage:
     from core.workflow.analyst_extension import AnalystWorkflowExtension
     from core.agents.analyst_registry import get_analyst_registry
     
-    # 注册新分析师
+    # Register a new analyst
     registry = get_analyst_registry()
     registry.register("sector", SectorAnalystAgent)
     
-    # 创建扩展
+    # Create extension
     extension = AnalystWorkflowExtension(registry)
     
-    # 在工作流构建时应用扩展
+    # Apply extensions at workflow build time
     extension.extend_workflow(workflow, selected_analysts=["sector", "index"])
 """
 
@@ -25,16 +25,16 @@ from langgraph.graph import StateGraph, END
 from ..agents.analyst_registry import AnalystRegistry, get_analyst_registry
 from ..agents.config import AgentMetadata
 
-# 导入日志
+# Import logs
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
 
 class AnalystWorkflowExtension:
     """
-    分析师工作流扩展器
+    Analyst workflow extender
     
-    将注册表中的分析师动态添加到工作流中
+    Dynamically add analysts from the registry to the workflow
     """
     
     def __init__(
@@ -49,7 +49,7 @@ class AnalystWorkflowExtension:
         self._created_nodes: Dict[str, Callable] = {}
     
     def set_dependencies(self, llm, toolkit):
-        """设置 LLM 和 Toolkit 依赖"""
+        """Set up LLM and Toolkit dependencies"""
         self.llm = llm
         self.toolkit = toolkit
     
@@ -61,50 +61,50 @@ class AnalystWorkflowExtension:
         delete_node_factory: Callable,
     ) -> Dict[str, Dict[str, Any]]:
         """
-        扩展工作流，添加注册表中的分析师节点
+        Extend the workflow to add an analyst node in the registry
         
         Args:
-            workflow: LangGraph StateGraph 实例
-            selected_analysts: 选中的分析师列表（如 ["sector", "index"]）
-            existing_nodes: 已存在的节点集合（避免重复添加）
-            delete_node_factory: 创建消息删除节点的工厂函数
+            workflow: LangGraph StateGraph Example
+            selected_analysts: List of selected analysts (e.g. ["sector", "index"]) 
+            existing_nodes: Existing node collection (to avoid repeated addition)
+            delete_node_factory: Factory function to create message deletion node
             
         Returns:
-            添加的分析师信息 {analyst_id: {node_name, metadata, requires_tools}}
+            Added analyst information {analyst_id: {node_name, metadata, requires_tools}}
         """
         added_analysts = {}
         
         for analyst_id in selected_analysts:
-            # 检查是否已存在
+            # Check if it already exists
             if analyst_id in existing_nodes:
-                logger.debug(f"📋 [扩展] 分析师 {analyst_id} 已存在，跳过")
+                logger.debug(f"📋 [Expand] analyst {analyst_id} Already exists, skip")
                 continue
             
-            # 检查是否已在注册表中注册实现
+            # Check if the implementation is registered in the registry
             if not self.registry.is_registered(analyst_id):
-                logger.debug(f"📋 [扩展] 分析师 {analyst_id} 未注册实现，跳过")
+                logger.debug(f"📋 [Expand] analyst {analyst_id} Unregistered implementation, skip")
                 continue
             
-            # 获取元数据
+            # Get metadata
             metadata = self.registry.get_analyst_metadata(analyst_id)
             if not metadata:
-                logger.warning(f"⚠️ [扩展] 分析师 {analyst_id} 无元数据")
+                logger.warning(f"⚠️ [Expand] analyst {analyst_id} No metadata")
                 continue
             
-            # 创建节点
+            # Create node
             node_func = self._create_analyst_node(analyst_id, metadata)
             if node_func is None:
                 continue
             
-            # 添加到工作流
+            # Add to workflow
             node_name = metadata.node_name or f"{analyst_id.capitalize()} Analyst"
             workflow.add_node(node_name, node_func)
             
-            # 添加消息删除节点
+            # Add message to delete node
             clear_name = f"Msg Clear {analyst_id.capitalize()}"
             workflow.add_node(clear_name, delete_node_factory())
             
-            logger.info(f"✅ [扩展] 添加分析师节点: {node_name}")
+            logger.info(f"✅ [Expand] Add analyst node: {node_name}")
             
             added_analysts[analyst_id] = {
                 "node_name": node_name,
@@ -123,14 +123,14 @@ class AnalystWorkflowExtension:
         metadata: AgentMetadata
     ) -> Optional[Callable]:
         """
-        创建分析师节点函数
+        Create analyst node function
         """
-        # 尝试从注册表获取工厂函数
+        # Try to get the factory function from the registry
         factory = self.registry.get_analyst_factory(analyst_id)
         if factory:
             return factory(self.llm, self.toolkit)
         
-        # 尝试从注册表获取类
+        # Try to get the class from the registry
         agent_class = self.registry.get_analyst_class(analyst_id)
         if agent_class:
             agent = agent_class()
@@ -138,7 +138,7 @@ class AnalystWorkflowExtension:
                 agent.set_dependencies(self.llm, self.toolkit)
             return lambda state, a=agent: a.execute(state)
         
-        logger.warning(f"⚠️ [扩展] 无法创建分析师 {analyst_id} 的节点")
+        logger.warning(f"⚠️ [Expand] Unable to create analyst {analyst_id} node")
         return None
     
     def connect_analysts(
@@ -149,42 +149,42 @@ class AnalystWorkflowExtension:
         exit_point: str,
     ):
         """
-        连接分析师节点（按执行顺序串联）
+        Connect analyst nodes (concatenated in order of execution)
         
         Args:
-            workflow: LangGraph StateGraph 实例
-            added_analysts: extend_workflow 返回的分析师信息
-            entry_point: 入口节点（连接到第一个分析师）
-            exit_point: 出口节点（最后一个分析师连接到此）
+            workflow: LangGraph StateGraph Example
+            added_analysts: extend_workflow Returned analyst information
+            entry_point: Entry node (connect to first analyst)
+            exit_point: Exit node (the last analyst connected to this)
         """
         if not added_analysts:
             return
         
-        # 按执行顺序排序
+        # Sort by execution order
         sorted_analysts = sorted(
             added_analysts.items(),
             key=lambda x: x[1]["execution_order"]
         )
         
-        # 连接节点
+        # Connect nodes
         prev_clear = entry_point
         for i, (analyst_id, info) in enumerate(sorted_analysts):
             node_name = info["node_name"]
             clear_name = info["clear_name"]
             requires_tools = info["requires_tools"]
             
-            # 入口连接
+            # Entrance connection
             if prev_clear != entry_point:
                 workflow.add_edge(prev_clear, node_name)
             
-            # 无工具调用的分析师：直接连接到清理节点
+            # Analyst without tool invocation: connect directly to cleanup node
             if not requires_tools:
                 workflow.add_edge(node_name, clear_name)
-            # 有工具调用的分析师：需要工具循环（由原始 setup.py 处理）
+            # Analysts with tool calls: tool loop required (handled by original setup.py)
             
             prev_clear = clear_name
         
-        # 最后一个清理节点连接到出口
+        # The last cleanup node is connected to the outlet
         if sorted_analysts:
             last_clear = sorted_analysts[-1][1]["clear_name"]
             workflow.add_edge(last_clear, exit_point)

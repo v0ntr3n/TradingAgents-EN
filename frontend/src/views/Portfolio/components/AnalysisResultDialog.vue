@@ -2,12 +2,12 @@
   <el-dialog
     :model-value="visible"
     @update:model-value="$emit('update:visible', $event)"
-    title="持仓研究报告"
+    title="Position research report"
     width="800px"
     destroy-on-close
   >
     <div v-if="report" class="analysis-report">
-      <!-- 风险提示 -->
+      <!-- Risk warning -->
       <div class="risk-disclaimer">
         <el-alert
           type="warning"
@@ -16,100 +16,100 @@
         >
           <template #title>
             <span style="font-size: 14px;">
-              <strong>⚠️ 重要提示：</strong>本报告仅用于学习、研究和持仓风险识别，不提供交易指导。
+              <strong>⚠️ IMPORTANT NOTE:</strong>This report is only used for learning, research and position risk identification, and does not provide trading guidance.
             </span>
           </template>
         </el-alert>
       </div>
 
-      <!-- 健康度评分 -->
+      <!-- health score -->
       <div class="score-section">
         <div class="score-circle" :class="scoreClass">
           <div class="score-value">{{ report.health_score?.toFixed(0) || '-' }}</div>
-          <div class="score-label">健康度</div>
+          <div class="score-label">health</div>
         </div>
         <div class="risk-badge">
-          <el-tag :type="riskTagType" size="large">风险等级: {{ report.risk_level || '-' }}</el-tag>
+          <el-tag :type="riskTagType" size="large">risk level: {{ report.risk_level || '-' }}</el-tag>
         </div>
       </div>
 
-      <!-- 组合概况 -->
+      <!-- Portfolio overview -->
       <el-card shadow="never" class="section-card">
-        <template #header><span>📊 组合概况</span></template>
+        <template #header><span>📊 Portfolio overview</span></template>
         <el-descriptions :column="3" border>
-          <el-descriptions-item label="持仓数量">{{ report.portfolio_snapshot?.total_positions }} 只</el-descriptions-item>
-          <el-descriptions-item label="总市值">¥{{ formatNumber(report.portfolio_snapshot?.total_value) }}</el-descriptions-item>
-          <el-descriptions-item label="总成本">¥{{ formatNumber(report.portfolio_snapshot?.total_cost) }}</el-descriptions-item>
-          <el-descriptions-item label="浮动盈亏">
+          <el-descriptions-item label="Position quantity">{{ report.portfolio_snapshot?.total_positions }} only</el-descriptions-item>
+          <el-descriptions-item label="Total market capitalization">¥{{ formatNumber(report.portfolio_snapshot?.total_value) }}</el-descriptions-item>
+          <el-descriptions-item label="total cost">¥{{ formatNumber(report.portfolio_snapshot?.total_cost) }}</el-descriptions-item>
+          <el-descriptions-item label="floating profit and loss">
             <span :class="pnlClass(report.portfolio_snapshot?.unrealized_pnl)">
               {{ formatPnl(report.portfolio_snapshot?.unrealized_pnl) }}
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="盈亏比例">
+          <el-descriptions-item label="Profit and loss ratio">
             <span :class="pnlClass(report.portfolio_snapshot?.unrealized_pnl_pct)">
               {{ formatPct(report.portfolio_snapshot?.unrealized_pnl_pct) }}
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="分析耗时">{{ report.execution_time?.toFixed(1) }}s</el-descriptions-item>
+          <el-descriptions-item label="Analysis takes time">{{ report.execution_time?.toFixed(1) }}s</el-descriptions-item>
         </el-descriptions>
       </el-card>
 
-      <!-- 集中度分析 -->
+      <!-- concentration analysis -->
       <el-card shadow="never" class="section-card">
-        <template #header><span>📈 集中度分析</span></template>
+        <template #header><span>📈 concentration analysis</span></template>
         <el-descriptions :column="3" border>
-          <el-descriptions-item label="第一大持仓占比">{{ report.concentration_analysis?.top1_pct?.toFixed(1) }}%</el-descriptions-item>
-          <el-descriptions-item label="前三大持仓占比">{{ report.concentration_analysis?.top3_pct?.toFixed(1) }}%</el-descriptions-item>
-          <el-descriptions-item label="前五大持仓占比">{{ report.concentration_analysis?.top5_pct?.toFixed(1) }}%</el-descriptions-item>
-          <el-descriptions-item label="HHI指数">{{ report.concentration_analysis?.hhi_index?.toFixed(0) }}</el-descriptions-item>
-          <el-descriptions-item label="行业数量">{{ report.concentration_analysis?.industry_count }} 个</el-descriptions-item>
+          <el-descriptions-item label="The largest share of positions">{{ report.concentration_analysis?.top1_pct?.toFixed(1) }}%</el-descriptions-item>
+          <el-descriptions-item label="The proportion of the top three holdings">{{ report.concentration_analysis?.top3_pct?.toFixed(1) }}%</el-descriptions-item>
+          <el-descriptions-item label="The proportion of the top five holdings">{{ report.concentration_analysis?.top5_pct?.toFixed(1) }}%</el-descriptions-item>
+          <el-descriptions-item label="HHI Index">{{ report.concentration_analysis?.hhi_index?.toFixed(0) }}</el-descriptions-item>
+          <el-descriptions-item label="Number of industries">{{ report.concentration_analysis?.industry_count }} a</el-descriptions-item>
         </el-descriptions>
       </el-card>
 
-      <!-- AI研究结果 -->
+      <!-- AI Research results -->
       <el-card shadow="never" class="section-card">
-        <template #header><span>🤖 AI研究结论</span></template>
+        <template #header><span>🤖 AI Research conclusion</span></template>
 
         <div class="ai-section">
-          <div class="ai-title">📝 综合研究摘要</div>
-          <div class="ai-content">{{ report.ai_analysis?.summary || '暂无' }}</div>
+          <div class="ai-title">📝 Comprehensive Research Summary</div>
+          <div class="ai-content">{{ report.ai_analysis?.summary || 'None yet' }}</div>
         </div>
 
         <el-row :gutter="16">
           <el-col :span="12">
             <div class="ai-section">
-              <div class="ai-title success">✅ 组合优势</div>
+              <div class="ai-title success">✅ Combination advantages</div>
               <ul class="ai-list">
                 <li v-for="(item, idx) in report.ai_analysis?.strengths" :key="idx">{{ item }}</li>
               </ul>
-              <div v-if="!report.ai_analysis?.strengths?.length" class="ai-empty">暂无</div>
+              <div v-if="!report.ai_analysis?.strengths?.length" class="ai-empty">None yet</div>
             </div>
           </el-col>
           <el-col :span="12">
             <div class="ai-section">
-              <div class="ai-title warning">⚠️ 组合劣势</div>
+              <div class="ai-title warning">⚠️ Combination disadvantages</div>
               <ul class="ai-list">
                 <li v-for="(item, idx) in report.ai_analysis?.weaknesses" :key="idx">{{ item }}</li>
               </ul>
-              <div v-if="!report.ai_analysis?.weaknesses?.length" class="ai-empty">暂无</div>
+              <div v-if="!report.ai_analysis?.weaknesses?.length" class="ai-empty">None yet</div>
             </div>
           </el-col>
         </el-row>
 
         <div class="ai-section">
-          <div class="ai-title primary">💡 后续观察建议</div>
+          <div class="ai-title primary">💡 Suggestions for follow-up observations</div>
           <ul class="ai-list">
             <li v-for="(item, idx) in report.ai_analysis?.suggestions" :key="idx">{{ item }}</li>
           </ul>
-          <div v-if="!report.ai_analysis?.suggestions?.length" class="ai-empty">暂无</div>
+          <div v-if="!report.ai_analysis?.suggestions?.length" class="ai-empty">None yet</div>
         </div>
       </el-card>
     </div>
     
-    <el-empty v-else description="暂无分析数据" />
+    <el-empty v-else description="No analysis data yet" />
     
     <template #footer>
-      <el-button @click="$emit('update:visible', false)">关闭</el-button>
+      <el-button @click="$emit('update:visible', false)">close</el-button>
     </template>
   </el-dialog>
 </template>
@@ -137,8 +137,8 @@ const scoreClass = computed(() => {
 
 const riskTagType = computed(() => {
   const level = props.report?.risk_level
-  if (level === '低') return 'success'
-  if (level === '中') return 'warning'
+  if (level === 'low') return 'success'
+  if (level === 'in') return 'warning'
   return 'danger'
 })
 
@@ -218,8 +218,8 @@ const pnlClass = (val?: number) => {
   margin-bottom: 16px;
 }
 
-.profit { color: #F56C6C; } /* 红色表示盈利（中国股市规范） */
-.loss { color: #67C23A; } /* 绿色表示亏损（中国股市规范） */
+.profit { color: #F56C6C; } /* Red indicates profit (Chinese stock market norm) */
+.loss { color: #67C23A; } /* Green indicates loss (Chinese stock market norm) */
 
 .ai-section {
   margin-bottom: 16px;

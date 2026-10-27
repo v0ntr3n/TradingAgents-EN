@@ -1,5 +1,5 @@
 """
-分析偏好 API 路由
+Analyze Preference API Routes
 """
 
 import logging
@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/preferences", tags=["preferences"])
 
 
-# 依赖注入：获取服务实例
+# Dependency injection: getting service instance
 def get_preference_service() -> AnalysisPreferenceService:
-    """获取偏好服务实例"""
+    """Get preference service instance"""
     return AnalysisPreferenceService()
 
 
@@ -29,34 +29,34 @@ async def get_all_preferences(
     user_id: Optional[str] = Query(None),
     preference_service: AnalysisPreferenceService = Depends(get_preference_service)
 ):
-    """获取所有偏好"""
+    """Get all preferences"""
     try:
         preferences = await preference_service.get_user_preferences(user_id) if user_id else []
 
-        # 如果没有指定用户，返回系统默认偏好
+        # If no user is specified, return to system default preferences
         if not user_id:
-            # 返回三种默认偏好类型
+            # Returns three default preference types
             default_preferences = [
                 {
                     "preference_id": "aggressive",
-                    "name": "激进型",
-                    "description": "高风险高收益，快速决策",
+                    "name": "Radical",
+                    "description": "High risk, high return, quick decision-making",
                     "risk_level": 0.8,
                     "decision_speed": "fast",
                     "is_system": True
                 },
                 {
                     "preference_id": "neutral",
-                    "name": "平衡型",
-                    "description": "风险收益平衡，正常决策速度",
+                    "name": "Balanced",
+                    "description": "Risk-return balance, normal decision-making speed",
                     "risk_level": 0.5,
                     "decision_speed": "normal",
                     "is_system": True
                 },
                 {
                     "preference_id": "conservative",
-                    "name": "保守型",
-                    "description": "低风险低收益，谨慎决策",
+                    "name": "Conservative",
+                    "description": "Low risk, low return, prudent decision-making",
                     "risk_level": 0.3,
                     "decision_speed": "slow",
                     "is_system": True
@@ -80,7 +80,7 @@ async def get_all_preferences(
         return ok(result)
 
     except Exception as e:
-        logger.error(f"❌ 获取偏好列表异常: {e}")
+        logger.error(f"❌ Exception getting preference list: {e}")
         return fail(str(e), 500)
 
 
@@ -90,15 +90,15 @@ async def create_preference(
     preference_data: AnalysisPreferenceCreate = None,
     preference_service: AnalysisPreferenceService = Depends(get_preference_service)
 ):
-    """创建分析偏好"""
+    """Create analysis preferences"""
     try:
         if not preference_data:
-            return fail("偏好数据不能为空", 400)
+            return fail("Preference data cannot be empty", 400)
 
         preference = await preference_service.create_preference(user_id, preference_data)
 
         if not preference:
-            return fail("创建偏好失败", 400)
+            return fail("Failed to create preference", 400)
 
         return ok({
             "id": preference.id,
@@ -108,7 +108,7 @@ async def create_preference(
         })
 
     except Exception as e:
-        logger.error(f"❌ 创建偏好异常: {e}")
+        logger.error(f"❌ Create preference exception: {e}")
         return fail(str(e), 500)
 
 
@@ -117,12 +117,12 @@ async def get_preference(
     preference_id: str,
     preference_service: AnalysisPreferenceService = Depends(get_preference_service)
 ):
-    """获取偏好"""
+    """Get preferences"""
     try:
         preference = await preference_service.get_preference(preference_id)
 
         if not preference:
-            return fail("偏好不存在", 404)
+            return fail("Preference does not exist", 404)
 
         return ok({
             "id": preference.id,
@@ -138,7 +138,7 @@ async def get_preference(
         })
 
     except Exception as e:
-        logger.error(f"❌ 获取偏好异常: {e}")
+        logger.error(f"❌ Get preference exception: {e}")
         return fail(str(e), 500)
 
 
@@ -147,7 +147,7 @@ async def get_user_preferences(
     user_id: str,
     preference_service: AnalysisPreferenceService = Depends(get_preference_service)
 ):
-    """获取用户所有偏好"""
+    """Get all user preferences"""
     try:
         preferences = await preference_service.get_user_preferences(user_id)
 
@@ -164,7 +164,7 @@ async def get_user_preferences(
         })
 
     except Exception as e:
-        logger.error(f"❌ 获取用户偏好异常: {e}")
+        logger.error(f"❌ Get user preference exception: {e}")
         return fail(str(e), 500)
 
 
@@ -174,12 +174,12 @@ async def update_preference(
     update_data: AnalysisPreferenceUpdate,
     preference_service: AnalysisPreferenceService = Depends(get_preference_service)
 ):
-    """更新偏好"""
+    """Update preferences"""
     try:
         preference = await preference_service.update_preference(preference_id, update_data)
 
         if not preference:
-            return fail("更新偏好失败", 400)
+            return fail("Failed to update preferences", 400)
 
         return ok({
             "id": preference.id,
@@ -188,7 +188,7 @@ async def update_preference(
         })
 
     except Exception as e:
-        logger.error(f"❌ 更新偏好异常: {e}")
+        logger.error(f"❌ Update preference exception: {e}")
         return fail(str(e), 500)
 
 
@@ -197,12 +197,12 @@ async def delete_preference(
     preference_id: str,
     preference_service: AnalysisPreferenceService = Depends(get_preference_service)
 ):
-    """删除偏好"""
+    """Delete preference"""
     try:
-        # 实现删除逻辑
-        return ok({"message": "偏好已删除"})
+        # Implement deletion logic
+        return ok({"message": "Preference deleted"})
 
     except Exception as e:
-        logger.error(f"❌ 删除偏好异常: {e}")
+        logger.error(f"❌ Delete preference exception: {e}")
         return fail(str(e), 500)
 

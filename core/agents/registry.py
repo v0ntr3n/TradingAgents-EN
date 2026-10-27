@@ -1,7 +1,7 @@
 """
-智能体注册表
+Agent registry
 
-管理所有可用智能体的注册和发现
+Manage registration and discovery of all available agents
 """
 
 import threading
@@ -13,18 +13,18 @@ from .config import AgentCategory, AgentMetadata, LicenseTier, BUILTIN_AGENTS
 
 class AgentRegistry:
     """
-    智能体注册表 (单例模式)
+    Agent registry (Singleton pattern)
     
-    用法:
+    Usage:
         registry = AgentRegistry()
         
-        # 注册智能体
+        # Register agent
         registry.register(MyAgent)
         
-        # 获取智能体
+        # Get the agent
         agent_class = registry.get("market_analyst")
         
-        # 列出所有智能体
+        # List all agents
         all_agents = registry.list_all()
     """
     
@@ -47,7 +47,7 @@ class AgentRegistry:
             self._initialized = True
     
     def _load_builtin_metadata(self) -> None:
-        """加载内置智能体元数据"""
+        """Load built-in agent metadata"""
         for agent_id, metadata in BUILTIN_AGENTS.items():
             self._metadata[agent_id] = metadata
     
@@ -57,40 +57,40 @@ class AgentRegistry:
         override: bool = False
     ) -> None:
         """
-        注册智能体类
+        Register agent class
         
         Args:
-            agent_class: 智能体类
-            override: 是否覆盖已存在的注册
+            agent_class: Agent class
+            override: Whether to overwrite existing registrations
         """
         metadata = agent_class.get_metadata()
         agent_id = metadata.id
         
         if agent_id in self._agents and not override:
-            raise ValueError(f"智能体 '{agent_id}' 已注册，使用 override=True 覆盖")
+            raise ValueError(f"agent '{agent_id}' Registered, using override=True Cover")
         
         self._agents[agent_id] = agent_class
         self._metadata[agent_id] = metadata
     
     def unregister(self, agent_id: str) -> None:
-        """注销智能体"""
+        """Log out of the agent"""
         self._agents.pop(agent_id, None)
-        # 不移除元数据，保留内置智能体的元数据
+        # Does not remove metadata, retains metadata of built-in agents
     
     def get(self, agent_id: str) -> Optional[Type[BaseAgent]]:
-        """获取智能体类"""
+        """Get the agent class"""
         return self._agents.get(agent_id)
     
     def get_metadata(self, agent_id: str) -> Optional[AgentMetadata]:
-        """获取智能体元数据"""
+        """Get agent metadata"""
         return self._metadata.get(agent_id)
     
     def list_all(self) -> List[AgentMetadata]:
-        """列出所有智能体元数据"""
+        """List all agent metadata"""
         return list(self._metadata.values())
     
     def list_by_category(self, category: AgentCategory) -> List[AgentMetadata]:
-        """按类别列出智能体"""
+        """List agents by category"""
         cat_str = category.value if hasattr(category, 'value') else category
         return [
             m for m in self._metadata.values()
@@ -98,7 +98,7 @@ class AgentRegistry:
         ]
     
     def list_by_tier(self, tier: LicenseTier) -> List[AgentMetadata]:
-        """按许可证级别列出智能体"""
+        """List agents by license level"""
         tier_str = tier.value if hasattr(tier, 'value') else tier
         return [
             m for m in self._metadata.values()
@@ -107,13 +107,13 @@ class AgentRegistry:
     
     def list_available(self, current_tier: LicenseTier) -> List[AgentMetadata]:
         """
-        列出当前许可证级别可用的智能体
+        List the agents available for the current license level
         
         Args:
-            current_tier: 当前许可证级别
+            current_tier: Current license level
             
         Returns:
-            可用的智能体元数据列表
+            List of available agent metadata
         """
         tier_order = ["free", "basic", "pro", "enterprise"]
         current_tier_str = current_tier.value if hasattr(current_tier, 'value') else current_tier
@@ -130,30 +130,30 @@ class AgentRegistry:
         ]
     
     def is_registered(self, agent_id: str) -> bool:
-        """检查智能体是否已注册实现"""
+        """Check if the agent has registered implementation"""
         return agent_id in self._agents
     
     def has_metadata(self, agent_id: str) -> bool:
-        """检查智能体元数据是否存在"""
+        """Check if agent metadata exists"""
         return agent_id in self._metadata
     
     def get_categories(self) -> List[AgentCategory]:
-        """获取所有类别"""
+        """Get all categories"""
         return list(set(m.category for m in self._metadata.values()))
     
     def clear(self) -> None:
-        """清空注册表 (保留内置元数据)"""
+        """Clear registry (Preserve built-in metadata)"""
         self._agents.clear()
         self._metadata.clear()
         self._load_builtin_metadata()
 
 
-# 全局注册表实例
+# Global registry instance
 _global_registry: Optional[AgentRegistry] = None
 
 
 def get_registry() -> AgentRegistry:
-    """获取全局注册表实例"""
+    """Get global registry instance"""
     global _global_registry
     if _global_registry is None:
         _global_registry = AgentRegistry()
@@ -162,9 +162,9 @@ def get_registry() -> AgentRegistry:
 
 def register_agent(agent_class: Type[BaseAgent]) -> Type[BaseAgent]:
     """
-    装饰器: 注册智能体类
+    Decorator: Register agent class
     
-    用法:
+    Usage:
         @register_agent
         class MyAgent(BaseAgent):
             metadata = AgentMetadata(...)

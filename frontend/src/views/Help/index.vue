@@ -1,6 +1,6 @@
 <template>
   <div class="help-page">
-    <!-- 页面头部 -->
+    <!-- Page header -->
     <div class="help-header">
       <div class="help-header-content">
         <h1 class="help-title">
@@ -12,27 +12,27 @@
       <div class="help-header-actions">
         <el-button text type="primary" @click="scrollToTop">
           <el-icon><Top /></el-icon>
-          回到顶部
+          back to top
         </el-button>
         <el-button text type="primary" @click="downloadManual">
           <el-icon><Download /></el-icon>
-          下载手册
+          Download brochure
         </el-button>
       </div>
     </div>
 
-    <!-- 主体：内容 + 侧边栏目录 -->
-    <div class="help-body" v-loading="loading" element-loading-text="正在加载使用手册...">
-      <!-- 左侧：侧边栏目录 -->
+    <!-- Subject: content + Sidebar table of contents -->
+    <div class="help-body" v-loading="loading" element-loading-text="Loading manual...">
+      <!-- Left: sidebar directory -->
       <aside class="help-toc" :class="{ 'toc-collapsed': tocCollapsed }">
         <div class="toc-header">
-          <span class="toc-title">目录</span>
+          <span class="toc-title">Directory</span>
           <el-button
             text
             size="small"
             class="toc-toggle"
             @click="tocCollapsed = !tocCollapsed"
-            :title="tocCollapsed ? '展开目录' : '收起目录'"
+            :title="tocCollapsed ? 'Expand directory' : 'Collapse table of contents'"
           >
             <el-icon><Fold v-if="!tocCollapsed" /><Expand v-else /></el-icon>
           </el-button>
@@ -52,26 +52,26 @@
         </el-scrollbar>
       </aside>
 
-      <!-- 右侧：手册内容 -->
+      <!-- Right: Manual contents -->
       <main class="help-content" ref="contentRef">
         <div class="markdown-body" v-html="manualHtml"></div>
 
-        <!-- 底部回到顶部按钮 -->
+        <!-- bottom back to top button -->
         <div class="content-footer" v-if="!loading && manualHtml">
           <el-divider />
           <p class="footer-tip">
             <el-icon><InfoFilled /></el-icon>
-            本手册内容由 AI 辅助生成，仅供学习研究使用，不构成投资建议。
+            The content of this manual is generated with AI assistance and is for learning and research purposes only and does not constitute investment advice.
           </p>
           <el-button type="primary" plain @click="scrollToTop">
             <el-icon><Top /></el-icon>
-            回到顶部
+            back to top
           </el-button>
         </div>
       </main>
     </div>
 
-    <!-- 移动端浮动目录按钮 -->
+    <!-- Mobile floating directory button -->
     <el-button
       v-if="!loading && manualHtml"
       class="mobile-toc-fab"
@@ -82,10 +82,10 @@
       <el-icon><List /></el-icon>
     </el-button>
 
-    <!-- 移动端目录抽屉 -->
+    <!-- Mobile directory drawer -->
     <el-drawer
       v-model="mobileTocVisible"
-      title="目录"
+      title="Directory"
       direction="ltr"
       size="280px"
     >
@@ -145,27 +145,27 @@ const activeHeadingId = ref<string>('')
 
 let markdownRaw = ''
 
-// 加载手册内容
+// Load manual content
 const loadManual = async () => {
   loading.value = true
   try {
     markdownRaw = await getUserManualContent()
     manualHtml.value = renderMarkdown(markdownRaw)
 
-    // 等待 DOM 渲染完成后提取目录
+    // Wait for the DOM rendering to complete before extracting the directory
     await nextTick()
     await nextTick()
     extractTableOfContents()
   } catch (err: any) {
-    console.error('[Help] 加载使用手册失败:', err)
-    ElMessage.error('加载使用手册失败：' + (err.message || '未知错误'))
-    manualHtml.value = '<p style="color: var(--el-color-danger);">加载使用手册失败，请刷新页面重试。</p>'
+    console.error('[Help] Failed to load user manual:', err)
+    ElMessage.error('Failed to load user manual:' + (err.message || 'unknown error'))
+    manualHtml.value = '<p style="color: var(--el-color-danger);">Failed to load the user manual, please refresh the page and try again.</p>'
   } finally {
     loading.value = false
   }
 }
 
-// 提取目录（从渲染后的 HTML 中扫描 h1-h4）
+// Extract table of contents (scan h1-h4 from rendered HTML)
 const extractTableOfContents = () => {
   const contentDiv = contentRef.value
   if (!contentDiv) return
@@ -179,7 +179,7 @@ const extractTableOfContents = () => {
     const text = (heading.textContent || '').trim()
     if (!text) return
 
-    // 跳过重复的标题（手册开头的目录列表会被 marked 渲染成链接，避免重复）
+    // Skip duplicate titles (the directory list at the beginning of the manual will be marked and rendered as a link to avoid duplication)
     if (seenText.has(text)) return
     seenText.add(text)
 
@@ -189,13 +189,13 @@ const extractTableOfContents = () => {
     tableOfContents.value.push({ id, text, level })
   })
 
-  // 默认激活第一个标题
+  // The first title is activated by default
   if (tableOfContents.value.length > 0) {
     activeHeadingId.value = tableOfContents.value[0].id
   }
 }
 
-// 滚动到指定标题
+// Scroll to specified title
 const scrollToHeading = (id: string) => {
   const element = document.getElementById(id)
   if (element) {
@@ -204,15 +204,15 @@ const scrollToHeading = (id: string) => {
   }
 }
 
-// 滚动到顶部
+// scroll to top
 const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-// 下载手册
+// Download brochure
 const downloadManual = () => {
   if (!markdownRaw) {
-    ElMessage.warning('手册内容尚未加载完成')
+    ElMessage.warning('The manual content has not been loaded yet')
     return
   }
   try {
@@ -226,24 +226,24 @@ const downloadManual = () => {
     a.download = fileName
     a.click()
     URL.revokeObjectURL(url)
-    ElMessage.success('手册下载已开始')
+    ElMessage.success('Manual download has started')
   } catch (err: any) {
-    console.error('[Help] 下载手册失败:', err)
-    ElMessage.error('下载失败：' + (err.message || '未知错误'))
+    console.error('[Help] Download manual failed:', err)
+    ElMessage.error('Download failed:' + (err.message || 'unknown error'))
   }
 }
 
-// 滚动监听：自动高亮当前阅读章节
+// Scroll monitoring: automatically highlight the current reading chapter
 const handleScroll = () => {
   if (tableOfContents.value.length === 0) return
 
-  // 找到当前滚动位置最接近视口顶部的标题
+  // Find the title closest to the top of the viewport at the current scroll position
   let currentId = tableOfContents.value[0].id
   for (const item of tableOfContents.value) {
     const el = document.getElementById(item.id)
     if (!el) continue
     const rect = el.getBoundingClientRect()
-    // 标题顶部位于视口顶部上方 100px 以内（留出 header 高度）
+    // The top of the header is within 100px above the top of the viewport (allowing for header height)
     if (rect.top <= 120) {
       currentId = item.id
     } else {
@@ -444,7 +444,7 @@ onUnmounted(() => {
   }
 }
 
-// Markdown 内容样式（作用于 v-html 渲染的内容）
+// Markdown Content styles (applied to content rendered by v-html)
 :deep(.markdown-body) {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--el-text-color-primary);
@@ -584,13 +584,13 @@ onUnmounted(() => {
     font-weight: 600;
   }
 
-  // 锚点跳转时留出顶部空间
+  // Leave head space when anchor point jumps
   :target {
     scroll-margin-top: 80px;
   }
 }
 
-// 移动端浮动目录按钮
+// Mobile floating directory button
 .mobile-toc-fab {
   display: none;
   position: fixed;
@@ -600,7 +600,7 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-// 响应式设计
+// Responsive design
 @media (max-width: 1024px) {
   .help-page {
     .help-toc {

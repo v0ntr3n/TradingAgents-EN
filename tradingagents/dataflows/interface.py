@@ -3,7 +3,7 @@ import time
 import os
 from datetime import datetime
 
-# 导入新闻模块（支持新旧路径）
+# Import news module (supports old and new paths)
 try:
     from .news import fetch_top_from_category
 except ImportError:
@@ -14,20 +14,20 @@ from .news.google_news import *
 
 from .news.chinese_finance import get_chinese_social_sentiment
 
-# 导入 Finnhub 工具（支持新旧路径）
+# Import Finnhub tool (supports old and new paths)
 
 from .providers.us import get_data_in_range
 
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import setup_dataflow_logging
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 logger = setup_dataflow_logging()
 
-# 导入港股工具
+# Import Hong Kong stock tools
 try:
     from .providers.hk.hk_stock import get_hk_stock_data, get_hk_stock_info
     HK_STOCK_AVAILABLE = True
@@ -35,36 +35,36 @@ except ImportError as e:
     logger.warning(f"⚠️ 港股工具不可用: {e}")
     HK_STOCK_AVAILABLE = False
 
-# 导入AKShare港股工具
-# 注意：港股功能在 providers/hk/ 目录中
+# Import AKShare Hong Kong stock tool
+# Note: The Hong Kong stock function is in the providers/hk/ directory
 try:
     from .providers.hk.improved_hk import get_hk_stock_data_akshare, get_hk_stock_info_akshare
     AKSHARE_HK_AVAILABLE = True
 except (ImportError, AttributeError) as e:
-    logger.warning(f"⚠️ AKShare港股工具不可用: {e}")
+    logger.warning(f"⚠️ AKShare Hong Kong stock instruments are not available: {e}")
     AKSHARE_HK_AVAILABLE = False
-    # 定义占位函数
+    # Define placeholder function
     def get_hk_stock_data_akshare(*args, **kwargs):
         return None
     def get_hk_stock_info_akshare(*args, **kwargs):
         return None
 
 
-# ==================== 数据源配置读取 ====================
+# ==================== Data source configuration reading ====================
 
 def _get_enabled_hk_data_sources() -> list:
     """
-    从数据库读取用户启用的港股数据源配置
+    Read the user-enabled Hong Kong stock data source configuration from the database
 
     Returns:
-        list: 按优先级排序的数据源列表，如 ['akshare', 'yfinance']
+        list: A list of data sources sorted by priority, such as ['akshare', 'yfinance']
     """
     try:
-        # 尝试从数据库读取配置
+        # Try to read configuration from database
         from app.core.database import get_mongo_db_sync
         db = get_mongo_db_sync()
 
-        # 获取最新的激活配置
+        # Get the latest activation configuration
         config_data = db.system_configs.find_one(
             {"is_active": True},
             sort=[("version", -1)]
@@ -73,20 +73,20 @@ def _get_enabled_hk_data_sources() -> list:
         if config_data and config_data.get('data_source_configs'):
             data_source_configs = config_data.get('data_source_configs', [])
 
-            # 过滤出启用的港股数据源
+            # Filter out enabled Hong Kong stock data sources
             enabled_sources = []
             for ds in data_source_configs:
                 if not ds.get('enabled', True):
                     continue
 
-                # 检查是否支持港股市场（支持中英文标识）
+                # Check whether the Hong Kong stock market is supported (supports Chinese and English logos)
                 market_categories = ds.get('market_categories', [])
                 if market_categories:
-                    # 支持 '港股' 或 'hk_stocks'
+                    # support 'Hong Kong stocks' or 'hk_stocks'
                     if '港股' not in market_categories and 'hk_stocks' not in market_categories:
                         continue
 
-                # 映射数据源类型
+                # Mapping data source types
                 ds_type = ds.get('type', '').lower()
                 if ds_type in ['akshare', 'yfinance', 'finnhub']:
                     enabled_sources.append({
@@ -94,37 +94,37 @@ def _get_enabled_hk_data_sources() -> list:
                         'priority': ds.get('priority', 0)
                     })
 
-            # 按优先级排序（数字越大优先级越高）
+            # Sort by priority (larger numbers have higher priority)
             enabled_sources.sort(key=lambda x: x['priority'], reverse=True)
 
             result = [s['type'] for s in enabled_sources]
             if result:
-                logger.info(f"✅ [港股数据源] 从数据库读取: {result}")
+                logger.info(f"✅ [Hong Kong stock data source] Read from database: {result}")
                 return result
             else:
-                logger.warning(f"⚠️ [港股数据源] 数据库中没有启用的港股数据源，使用默认顺序")
+                logger.warning(f"⚠️ [Hong Kong stock data source] There is no enabled Hong Kong stock data source in the database, and the default order is used.")
         else:
-            logger.warning("⚠️ [港股数据源] 数据库中没有配置，使用默认顺序")
+            logger.warning("⚠️ [Hong Kong stock data source] There is no configuration in the database, the default order is used")
     except Exception as e:
-        logger.warning(f"⚠️ [港股数据源] 从数据库读取失败: {e}，使用默认顺序")
+        logger.warning(f"⚠️ [Hong Kong stock data source] Failed to read from database: {e}, Use default order")
 
-    # 回退到默认顺序
+    # fallback to default order
     return ['akshare', 'yfinance']
 
 
 def _get_enabled_us_data_sources() -> list:
     """
-    从数据库读取用户启用的美股数据源配置
+    Read the user-enabled US stock data source configuration from the database
 
     Returns:
-        list: 按优先级排序的数据源列表，如 ['yfinance', 'finnhub']
+        list: A list of data sources sorted by priority, such as ['yfinance', 'finnhub']
     """
     try:
-        # 尝试从数据库读取配置
+        # Try to read configuration from database
         from app.core.database import get_mongo_db_sync
         db = get_mongo_db_sync()
 
-        # 获取最新的激活配置
+        # Get the latest activation configuration
         config_data = db.system_configs.find_one(
             {"is_active": True},
             sort=[("version", -1)]
@@ -133,20 +133,20 @@ def _get_enabled_us_data_sources() -> list:
         if config_data and config_data.get('data_source_configs'):
             data_source_configs = config_data.get('data_source_configs', [])
 
-            # 过滤出启用的美股数据源
+            # Filter out enabled US stock data sources
             enabled_sources = []
             for ds in data_source_configs:
                 if not ds.get('enabled', True):
                     continue
 
-                # 检查是否支持美股市场（支持中英文标识）
+                # Check whether the US stock market is supported (supports Chinese and English logos)
                 market_categories = ds.get('market_categories', [])
                 if market_categories:
-                    # 支持 '美股' 或 'us_stocks'
+                    # support 'US stocks' or 'us_stocks'
                     if '美股' not in market_categories and 'us_stocks' not in market_categories:
                         continue
 
-                # 映射数据源类型
+                # Mapping data source types
                 ds_type = ds.get('type', '').lower()
                 if ds_type in ['yfinance', 'finnhub']:
                     enabled_sources.append({
@@ -154,36 +154,36 @@ def _get_enabled_us_data_sources() -> list:
                         'priority': ds.get('priority', 0)
                     })
 
-            # 按优先级排序（数字越大优先级越高）
+            # Sort by priority (larger numbers have higher priority)
             enabled_sources.sort(key=lambda x: x['priority'], reverse=True)
 
             result = [s['type'] for s in enabled_sources]
             if result:
-                logger.info(f"✅ [美股数据源] 从数据库读取: {result}")
+                logger.info(f"✅ [US stock data source] Read from database: {result}")
                 return result
             else:
-                logger.warning(f"⚠️ [美股数据源] 数据库中没有启用的美股数据源，使用默认顺序")
+                logger.warning(f"⚠️ [US stock data source] There is no US stock data source enabled in the database, and the default order is used.")
         else:
-            logger.warning("⚠️ [美股数据源] 数据库中没有配置，使用默认顺序")
+            logger.warning("⚠️ [US stock data source] There is no configuration in the database, the default order is used")
     except Exception as e:
-        logger.warning(f"⚠️ [美股数据源] 从数据库读取失败: {e}，使用默认顺序")
+        logger.warning(f"⚠️ [US stock data source] Failed to read from database: {e}, Use default order")
 
-    # 回退到默认顺序
+    # fallback to default order
     return ['yfinance', 'finnhub']
 
-# 尝试导入yfinance相关模块，如果失败则跳过
+# Try to import yfinance related modules, skip if failed
 try:
     from .providers.us.yfinance import *
     YFIN_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ yfinance工具不可用: {e}")
+    logger.warning(f"⚠️ yfinance Tool is not available: {e}")
     YFIN_AVAILABLE = False
 
 try:
     from .technical.stockstats import *
     STOCKSTATS_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ stockstats工具不可用: {e}")
+    logger.warning(f"⚠️ stockstats Tool is not available: {e}")
     STOCKSTATS_AVAILABLE = False
 from dateutil.relativedelta import relativedelta
 from concurrent.futures import ThreadPoolExecutor
@@ -194,17 +194,17 @@ import pandas as pd
 from tqdm import tqdm
 from openai import OpenAI
 
-# 尝试导入yfinance，如果失败则设置为None
+# Try importing yfinance and if that fails set to None
 try:
     import yfinance as yf
     YF_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ yfinance库不可用: {e}")
+    logger.warning(f"⚠️ yfinance Library is not available: {e}")
     yf = None
     YF_AVAILABLE = False
 from tradingagents.config.config_manager import config_manager
 
-# 获取数据目录
+# Get data directory
 DATA_DIR = config_manager.get_data_dir()
 
 def get_config():
@@ -236,7 +236,7 @@ def get_finnhub_news(
 
     """
 
-    # 处理可能包含时间的日期字符串（如 "2026-01-14 00:00:00"）
+    # Handles date strings that may contain time (e.g. "2026-01-14 00:00:00") 
     curr_date_clean = curr_date.split()[0] if ' ' in curr_date else curr_date
     start_date = datetime.strptime(curr_date_clean, "%Y-%m-%d")
     before = start_date - relativedelta(days=look_back_days)
@@ -246,11 +246,11 @@ def get_finnhub_news(
 
     if len(result) == 0:
         error_msg = f"⚠️ 无法获取{ticker}的新闻数据 ({before} 到 {curr_date})\n"
-        error_msg += f"可能的原因：\n"
-        error_msg += f"1. 数据文件不存在或路径配置错误\n"
-        error_msg += f"2. 指定日期范围内没有新闻数据\n"
-        error_msg += f"3. 需要先下载或更新Finnhub新闻数据\n"
-        error_msg += f"建议：检查数据目录配置或重新获取新闻数据"
+        error_msg += f"Possible reasons:\n"
+        error_msg += f"1. The data file does not exist or the path configuration is incorrect.\n"
+        error_msg += f"2. There is no news data in the specified date range\n"
+        error_msg += f"3. You need to download or update Finnhub news data first\n"
+        error_msg += f"Suggestion: Check the data directory configuration or re-fetch the news data"
         logger.debug(f"📰 [DEBUG] {error_msg}")
         return error_msg
 
@@ -284,7 +284,7 @@ def get_finnhub_company_insider_sentiment(
         str: a report of the sentiment in the past 15 days starting at curr_date
     """
 
-    # 处理可能包含时间的日期字符串（如 "2026-01-14 00:00:00"）
+    # Handles date strings that may contain time (e.g. "2026-01-14 00:00:00") 
     curr_date_clean = curr_date.split()[0] if ' ' in curr_date else curr_date
     date_obj = datetime.strptime(curr_date_clean, "%Y-%m-%d")
     before = date_obj - relativedelta(days=look_back_days)
@@ -327,7 +327,7 @@ def get_finnhub_company_insider_transactions(
         str: a report of the company's insider transaction/trading informtaion in the past 15 days
     """
 
-    # 处理可能包含时间的日期字符串（如 "2026-01-14 00:00:00"）
+    # Handles date strings that may contain time (e.g. "2026-01-14 00:00:00") 
     curr_date_clean = curr_date.split()[0] if ' ' in curr_date else curr_date
     date_obj = datetime.strptime(curr_date_clean, "%Y-%m-%d")
     before = date_obj - relativedelta(days=look_back_days)
@@ -500,30 +500,30 @@ def get_google_news(
     curr_date: Annotated[str, "Curr date in yyyy-mm-dd format"],
     look_back_days: Annotated[int, "how many days to look back"] = 7,
 ) -> str:
-    # 判断是否为A股查询
+    # Determine whether it is an A-share query
     is_china_stock = False
     if any(code in query for code in ['SH', 'SZ', 'XSHE', 'XSHG']) or query.isdigit() or (len(query) == 6 and query[:6].isdigit()):
         is_china_stock = True
     
-    # 尝试使用StockUtils判断
+    # Try using StockUtils to determine
     try:
         from tradingagents.utils.stock_utils import StockUtils
         market_info = StockUtils.get_market_info(query.split()[0])
         if market_info['is_china']:
             is_china_stock = True
     except Exception:
-        # 如果StockUtils判断失败，使用上面的简单判断
+        # If the StockUtils judgment fails, use the simple judgment above
         pass
     
-    # 对A股查询添加中文关键词
+    # Add Chinese keywords to A-share queries
     if is_china_stock:
-        logger.info(f"[Google新闻] 检测到A股查询: {query}，使用中文搜索")
+        logger.info(f"[Google News] A-share query detected: {query}, Use Chinese search")
         if '股票' not in query and '股价' not in query and '公司' not in query:
             query = f"{query} 股票 公司 财报 新闻"
     
     query = query.replace(" ", "+")
 
-    # 处理可能包含时间的日期字符串（如 "2026-01-14 00:00:00"）
+    # Handles date strings that may contain time (e.g. "2026-01-14 00:00:00") 
     curr_date_clean = curr_date.split()[0] if ' ' in curr_date else curr_date
     start_date = datetime.strptime(curr_date_clean, "%Y-%m-%d")
     before = start_date - relativedelta(days=look_back_days)
@@ -540,10 +540,10 @@ def get_google_news(
         )
 
     if len(news_results) == 0:
-        logger.warning(f"[Google新闻] 未找到相关新闻，查询: {query}")
+        logger.warning(f"[Google News] No relevant news found, query: {query}")
         return ""
 
-    logger.info(f"[Google新闻] 成功获取 {len(news_results)} 条新闻，查询: {query}")
+    logger.info(f"[Google News] successfully obtained {len(news_results)} news, inquiry: {query}")
     return f"## {query.replace('+', ' ')} Google News, from {before} to {curr_date}:\n\n{news_str}"
 
 
@@ -747,7 +747,7 @@ def get_stock_stats_indicators_window(
         )
 
     end_date = curr_date
-    # 处理可能包含时间的日期字符串（如 "2026-01-14 00:00:00"）
+    # Handles date strings that may contain time (e.g. "2026-01-14 00:00:00") 
     curr_date_clean = curr_date.split()[0] if ' ' in curr_date else curr_date
     curr_date = datetime.strptime(curr_date_clean, "%Y-%m-%d")
     before = curr_date - relativedelta(days=look_back_days)
@@ -831,7 +831,7 @@ def get_YFin_data_window(
     look_back_days: Annotated[int, "how many days to look back"],
 ) -> str:
     # calculate past days
-    # 处理可能包含时间的日期字符串（如 "2026-01-14 00:00:00"）
+    # Handles date strings that may contain time (e.g. "2026-01-14 00:00:00") 
     curr_date_clean = curr_date.split()[0] if ' ' in curr_date else curr_date
     date_obj = datetime.strptime(curr_date_clean, "%Y-%m-%d")
     before = date_obj - relativedelta(days=look_back_days)
@@ -873,9 +873,9 @@ def get_YFin_data_online(
     start_date: Annotated[str, "Start date in yyyy-mm-dd format"],
     end_date: Annotated[str, "End date in yyyy-mm-dd format"],
 ):
-    # 检查yfinance是否可用
+    # Check if yfinance is available
     if not YF_AVAILABLE or yf is None:
-        return "yfinance库不可用，无法获取美股数据"
+        return "yfinance The library is unavailable and cannot obtain US stock data."
 
     datetime.strptime(start_date, "%Y-%m-%d")
     datetime.strptime(end_date, "%Y-%m-%d")
@@ -1020,63 +1020,63 @@ def get_global_news_openai(curr_date):
 
 def get_fundamentals_finnhub(ticker, curr_date):
     """
-    使用Finnhub API获取股票基本面数据作为OpenAI的备选方案
+    Using Finnhub API to get stock fundamental data as an alternative to OpenAI
     Args:
-        ticker (str): 股票代码
-        curr_date (str): 当前日期，格式为yyyy-mm-dd
+        ticker (str): Stock code
+        curr_date (str): The current date in the format yyyy-mm-dd
     Returns:
-        str: 格式化的基本面数据报告
+        str: Formatted fundamental data reports
     """
     try:
         import finnhub
         import os
-        # 导入缓存管理器（统一入口）
+        # Import cache manager (unified portal)
         from .cache import get_cache
         cache = get_cache()
         cached_key = cache.find_cached_fundamentals_data(ticker, data_source="finnhub")
         if cached_key:
             cached_data = cache.load_fundamentals_data(cached_key)
             if cached_data:
-                logger.debug(f"💾 [DEBUG] 从缓存加载Finnhub基本面数据: {ticker}")
+                logger.debug(f"💾 [DEBUG] Load Finnhub fundamental data from cache: {ticker}")
                 return cached_data
         
-        # 获取Finnhub API密钥
+        # Get Finnhub API key
         api_key = os.getenv('FINNHUB_API_KEY')
         if not api_key:
-            return "错误：未配置FINNHUB_API_KEY环境变量"
+            return "Error: FINNHUB_API_KEY environment variable not configured"
         
-        # 初始化Finnhub客户端
+        # Initialize Finnhub client
         finnhub_client = finnhub.Client(api_key=api_key)
         
         logger.debug(f"📊 [DEBUG] 使用Finnhub API获取 {ticker} 的基本面数据...")
         
-        # 获取基本财务数据
+        # Get basic financial data
         try:
             basic_financials = finnhub_client.company_basic_financials(ticker, 'all')
         except Exception as e:
-            logger.error(f"❌ [DEBUG] Finnhub基本财务数据获取失败: {str(e)}")
+            logger.error(f"❌ [DEBUG] Finnhub Failed to obtain basic financial data: {str(e)}")
             basic_financials = None
         
-        # 获取公司概况
+        # Get company profile
         try:
             company_profile = finnhub_client.company_profile2(symbol=ticker)
         except Exception as e:
-            logger.error(f"❌ [DEBUG] Finnhub公司概况获取失败: {str(e)}")
+            logger.error(f"❌ [DEBUG] Finnhub Failed to obtain company profile: {str(e)}")
             company_profile = None
         
-        # 获取收益数据
+        # Get revenue data
         try:
             earnings = finnhub_client.company_earnings(ticker, limit=4)
         except Exception as e:
-            logger.error(f"❌ [DEBUG] Finnhub收益数据获取失败: {str(e)}")
+            logger.error(f"❌ [DEBUG] Finnhub Failed to obtain revenue data: {str(e)}")
             earnings = None
         
-        # 格式化报告
-        report = f"# {ticker} 基本面分析报告（Finnhub数据源）\n\n"
+        # Format reports
+        report = f"# {ticker} Fundamental analysis report (Finnhub data source)\n\n"
         report += f"**数据获取时间**: {curr_date}\n"
-        report += f"**数据来源**: Finnhub API\n\n"
+        report += f"**Data source**: Finnhub API\n\n"
         
-        # 公司概况部分
+        # Company Profile Section
         if company_profile:
             report += "## 公司概况\n"
             report += f"- **公司名称**: {company_profile.get('name', 'N/A')}\n"
@@ -1086,14 +1086,14 @@ def get_fundamentals_finnhub(ticker, curr_date):
             report += f"- **市值**: {company_profile.get('marketCapitalization', 'N/A')} 百万美元\n"
             report += f"- **流通股数**: {company_profile.get('shareOutstanding', 'N/A')} 百万股\n\n"
         
-        # 基本财务指标
+        # Basic financial indicators
         if basic_financials and 'metric' in basic_financials:
             metrics = basic_financials['metric']
             report += "## 关键财务指标\n"
             report += "| 指标 | 数值 |\n"
             report += "|------|------|\n"
             
-            # 估值指标
+            # Valuation indicators
             if 'peBasicExclExtraTTM' in metrics:
                 report += f"| 市盈率 (PE) | {metrics['peBasicExclExtraTTM']:.2f} |\n"
             if 'psAnnual' in metrics:
@@ -1101,15 +1101,15 @@ def get_fundamentals_finnhub(ticker, curr_date):
             if 'pbAnnual' in metrics:
                 report += f"| 市净率 (PB) | {metrics['pbAnnual']:.2f} |\n"
             
-            # 盈利能力指标
+            # profitability indicator
             if 'roeTTM' in metrics:
-                report += f"| 净资产收益率 (ROE) | {metrics['roeTTM']:.2f}% |\n"
+                report += f"| ROE (ROE) | {metrics['roeTTM']:.2f}% |\n"
             if 'roaTTM' in metrics:
-                report += f"| 总资产收益率 (ROA) | {metrics['roaTTM']:.2f}% |\n"
+                report += f"| return on total assets (ROA) | {metrics['roaTTM']:.2f}% |\n"
             if 'netProfitMarginTTM' in metrics:
                 report += f"| 净利润率 | {metrics['netProfitMarginTTM']:.2f}% |\n"
             
-            # 财务健康指标
+            # financial health indicators
             if 'currentRatioAnnual' in metrics:
                 report += f"| 流动比率 | {metrics['currentRatioAnnual']:.2f} |\n"
             if 'totalDebt/totalEquityAnnual' in metrics:
@@ -1117,12 +1117,12 @@ def get_fundamentals_finnhub(ticker, curr_date):
             
             report += "\n"
         
-        # 收益历史
+        # earnings history
         if earnings:
             report += "## 收益历史\n"
-            report += "| 季度 | 实际EPS | 预期EPS | 差异 |\n"
+            report += "| quarter | actual EPS | expected EPS | difference |\n"
             report += "|------|---------|---------|------|\n"
-            for earning in earnings[:4]:  # 显示最近4个季度
+            for earning in earnings[:4]:  # Show the last 4 quarters
                 actual = earning.get('actual', 'N/A')
                 estimate = earning.get('estimate', 'N/A')
                 period = earning.get('period', 'N/A')
@@ -1130,60 +1130,60 @@ def get_fundamentals_finnhub(ticker, curr_date):
                 report += f"| {period} | {actual} | {estimate} | {surprise} |\n"
             report += "\n"
         
-        # 数据可用性说明
+        # Data availability instructions
         report += "## 数据说明\n"
-        report += "- 本报告使用Finnhub API提供的官方财务数据\n"
-        report += "- 数据来源于公司财报和SEC文件\n"
-        report += "- TTM表示过去12个月数据\n"
-        report += "- Annual表示年度数据\n\n"
+        report += "- This report uses official financial data provided by Finnhub API\n"
+        report += "- Data comes from company financial reports and SEC filings\n"
+        report += "- TTM Represents data for the past 12 months\n"
+        report += "- Annual Represents annual data\n\n"
         
         if not basic_financials and not company_profile and not earnings:
-            report += "⚠️ **警告**: 无法获取该股票的基本面数据，可能原因：\n"
+            report += "⚠️ **warning**: Unable to obtain fundamental data for this stock. Possible reasons:\n"
             report += "- 股票代码不正确\n"
-            report += "- Finnhub API限制\n"
+            report += "- Finnhub API Limit\n"
             report += "- 该股票暂无基本面数据\n"
         
-        # 保存到缓存
-        if report and len(report) > 100:  # 只有当报告有实际内容时才缓存
+        # Save to cache
+        if report and len(report) > 100:  # Cache only if the report has actual content
             cache.save_fundamentals_data(ticker, report, data_source="finnhub")
         
-        logger.debug(f"📊 [DEBUG] Finnhub基本面数据获取完成，报告长度: {len(report)}")
+        logger.debug(f"📊 [DEBUG] Finnhub Fundamental data acquisition completed, report length: {len(report)}")
         return report
         
     except ImportError:
-        return "错误：未安装finnhub-python库，请运行: pip install finnhub-python"
+        return "Error: finnhub-python library is not installed, please run: pip install finnhub-python"
     except Exception as e:
-        logger.error(f"❌ [DEBUG] Finnhub基本面数据获取失败: {str(e)}")
-        return f"Finnhub基本面数据获取失败: {str(e)}"
+        logger.error(f"❌ [DEBUG] Finnhub Failed to obtain fundamental data: {str(e)}")
+        return f"Finnhub Failed to obtain fundamental data: {str(e)}"
 
 
 def get_fundamentals_openai(ticker, curr_date):
     """
-    获取美股基本面数据，使用数据源管理器自动选择和降级
+    Obtain U.S. stock fundamental data and use the data source manager to automatically select and downgrade
 
-    支持的数据源（按数据库配置的优先级）：
-    - Alpha Vantage: 基本面和新闻数据（准确度高）
-    - yfinance: 股票价格和基本信息（免费）
-    - Finnhub: 备用数据源
-    - OpenAI: 使用 AI 搜索基本面信息（需要配置）
+    Supported data sources (by database configuration priority):
+    - Alpha Vantage: Fundamental and news data (high accuracy)
+    - yfinance: Stock prices and basic information (free)
+    - Finnhub: Alternate data source
+    - OpenAI: Use AI to search for fundamental information (configuration required)
 
-    优先级从数据库 datasource_groupings 集合读取（market_category_id='us_stocks'）
+    Priorities are read from the database datasource_groupings collection (market_category_id='us_stocks') 
 
     Args:
-        ticker (str): 股票代码
-        curr_date (str): 当前日期，格式为yyyy-mm-dd
+        ticker (str): Stock code
+        curr_date (str): The current date in the format yyyy-mm-dd
     Returns:
-        str: 基本面数据报告
+        str: Fundamental Data Report
     """
     try:
-        # 导入缓存管理器和数据源管理器
+        # Import cache manager and data source manager
         from .cache import get_cache
         from .data_source_manager import get_us_data_source_manager, USDataSource
 
         cache = get_cache()
         us_manager = get_us_data_source_manager()
 
-        # 检查缓存 - 按数据源优先级检查
+        # Check Cache - Check by Data Source Priority
         data_source_cache_names = {
             USDataSource.ALPHA_VANTAGE: "alpha_vantage",
             USDataSource.YFINANCE: "yfinance",
@@ -1192,7 +1192,7 @@ def get_fundamentals_openai(ticker, curr_date):
 
         for source in us_manager.available_sources:
             if source == USDataSource.MONGODB:
-                continue  # MongoDB 缓存单独处理
+                continue  # MongoDB Caching is handled separately
 
             cache_name = data_source_cache_names.get(source)
             if cache_name:
@@ -1203,11 +1203,11 @@ def get_fundamentals_openai(ticker, curr_date):
                         logger.info(f"💾 [缓存] 从 {cache_name} 缓存加载基本面数据: {ticker}")
                         return cached_data
 
-        # 🔥 从数据库获取数据源优先级顺序
+        # 🔥 Get data source priority order from database
         priority_order = us_manager._get_data_source_priority_order(ticker)
-        logger.info(f"📊 [美股基本面] 数据源优先级: {[s.value for s in priority_order]}")
+        logger.info(f"📊 [US stock fundamentals] Data source priority: {[s.value for s in priority_order]}")
 
-        # 按优先级尝试每个数据源
+        # Try each data source by priority
         for source in priority_order:
             try:
                 if source == USDataSource.ALPHA_VANTAGE:
@@ -1230,38 +1230,38 @@ def get_fundamentals_openai(ticker, curr_date):
                 logger.warning(f"⚠️ [{source.value}] 获取失败: {e}，尝试下一个数据源")
                 continue
 
-        # 🔥 特殊处理：OpenAI（如果配置了）
+        # 🔥 Special handling: OpenAI (if configured)
         config = get_config()
         openai_api_key = os.getenv("OPENAI_API_KEY")
         if openai_api_key and config.get("backend_url") and config.get("quick_think_llm"):
             backend_url = config.get("backend_url", "")
             if "openai.com" in backend_url:
                 try:
-                    logger.info(f"📊 [OpenAI] 尝试使用 OpenAI 获取基本面数据...")
+                    logger.info(f"📊 [OpenAI] Try using OpenAI to get fundamental data...")
                     return _get_fundamentals_openai_impl(ticker, curr_date, config, cache)
                 except Exception as e:
-                    logger.warning(f"⚠️ [OpenAI] 获取失败: {e}")
+                    logger.warning(f"⚠️ [OpenAI] Failed to obtain: {e}")
 
-        # 所有数据源都失败
-        logger.error(f"❌ [美股基本面] 所有数据源都失败: {ticker}")
+        # All data sources fail
+        logger.error(f"❌ [US stock fundamentals] All data sources fail: {ticker}")
         return f"❌ 获取 {ticker} 基本面数据失败：所有数据源都不可用"
 
     except Exception as e:
-        logger.error(f"❌ [美股基本面] 获取失败: {str(e)}")
+        logger.error(f"❌ [US stock fundamentals] Failed to obtain: {str(e)}")
         return f"❌ 获取 {ticker} 基本面数据失败: {str(e)}"
 
 
 def _get_fundamentals_alpha_vantage(ticker, curr_date, cache):
     """
-    从 Alpha Vantage 获取基本面数据
+    Get fundamental data from Alpha Vantage
 
     Args:
-        ticker: 股票代码
-        curr_date: 当前日期
-        cache: 缓存对象
+        ticker: Stock code
+        curr_date: current date
+        cache: Cache object
 
     Returns:
-        str: 基本面数据报告，失败返回 None
+        str: Fundamental data report, returned on failure None
     """
     try:
         logger.info(f"📊 [Alpha Vantage] 获取 {ticker} 的基本面数据...")
@@ -1270,29 +1270,29 @@ def _get_fundamentals_alpha_vantage(ticker, curr_date, cache):
         result = get_av_fundamentals(ticker, curr_date)
 
         if result and "Error" not in result and len(result) > 100:
-            # 保存到缓存
+            # Save to cache
             cache.save_fundamentals_data(ticker, result, data_source="alpha_vantage")
-            logger.info(f"✅ [Alpha Vantage] 基本面数据获取成功: {ticker}")
+            logger.info(f"✅ [Alpha Vantage] Fundamental data obtained successfully: {ticker}")
             return result
         else:
-            logger.warning(f"⚠️ [Alpha Vantage] 数据质量不佳")
+            logger.warning(f"⚠️ [Alpha Vantage] Poor data quality")
             return None
     except Exception as e:
-        logger.warning(f"⚠️ [Alpha Vantage] 获取失败: {e}")
+        logger.warning(f"⚠️ [Alpha Vantage] Failed to obtain: {e}")
         return None
 
 
 def _get_fundamentals_yfinance(ticker, curr_date, cache):
     """
-    从 yfinance 获取基本面数据
+    Get fundamental data from yfinance
 
     Args:
-        ticker: 股票代码
-        curr_date: 当前日期
-        cache: 缓存对象
+        ticker: Stock code
+        curr_date: current date
+        cache: Cache object
 
     Returns:
-        str: 基本面数据报告，失败返回 None
+        str: Fundamental data report, returned on failure None
     """
     try:
         logger.info(f"📊 [yfinance] 获取 {ticker} 的基本面数据...")
@@ -1301,8 +1301,8 @@ def _get_fundamentals_yfinance(ticker, curr_date, cache):
         ticker_obj = yf.Ticker(ticker.upper())
         info = ticker_obj.info
 
-        if info and len(info) > 5:  # 确保有实际数据
-            # 格式化 yfinance 数据
+        if info and len(info) > 5:  # Make sure you have actual data
+            # Format yfinance data
             result = f"""# {ticker} 基本面数据 (来源: Yahoo Finance)
 
 ## 公司信息
@@ -1344,30 +1344,30 @@ def _get_fundamentals_yfinance(ticker, curr_date, cache):
 
 数据获取时间: {curr_date}
 """
-            # 保存到缓存
+            # Save to cache
             cache.save_fundamentals_data(ticker, result, data_source="yfinance")
-            logger.info(f"✅ [yfinance] 基本面数据获取成功: {ticker}")
+            logger.info(f"✅ [yfinance] Fundamental data obtained successfully: {ticker}")
             return result
         else:
-            logger.warning(f"⚠️ [yfinance] 数据不完整")
+            logger.warning(f"⚠️ [yfinance] Data is incomplete")
             return None
     except Exception as e:
-        logger.warning(f"⚠️ [yfinance] 获取失败: {e}")
+        logger.warning(f"⚠️ [yfinance] Failed to obtain: {e}")
         return None
 
 
 def _get_fundamentals_openai_impl(ticker, curr_date, config, cache):
     """
-    OpenAI 基本面数据获取实现（内部函数）
+    OpenAI Fundamental data acquisition implementation (internal function)
 
     Args:
-        ticker: 股票代码
-        curr_date: 当前日期
-        config: 配置对象
-        cache: 缓存对象
+        ticker: Stock code
+        curr_date: current date
+        config: Configuration object
+        cache: Cache object
 
     Returns:
-        str: 基本面数据报告
+        str: Fundamental Data Report
     """
     try:
         logger.debug(f"📊 [OpenAI] 尝试使用OpenAI获取 {ticker} 的基本面数据...")
@@ -1404,81 +1404,81 @@ def _get_fundamentals_openai_impl(ticker, curr_date, config, cache):
 
         result = response.output[1].content[0].text
 
-        # 保存到缓存
-        if result and len(result) > 100:  # 只有当结果有实际内容时才缓存
+        # Save to cache
+        if result and len(result) > 100:  # Cache only if the result has actual content
             cache.save_fundamentals_data(ticker, result, data_source="openai")
 
-        logger.info(f"✅ [OpenAI] 基本面数据获取成功: {ticker}")
+        logger.info(f"✅ [OpenAI] Fundamental data obtained successfully: {ticker}")
         return result
 
     except Exception as e:
-        logger.error(f"❌ [OpenAI] 基本面数据获取失败: {str(e)}")
-        raise  # 抛出异常，让外层函数继续尝试其他数据源
+        logger.error(f"❌ [OpenAI] Failed to obtain fundamental data: {str(e)}")
+        raise  # Throw an exception and let the outer function continue to try other data sources
 
 
-# ==================== Tushare数据接口 ====================
+# ==================== Tushare Data interface ====================
 
 def get_china_stock_data_tushare(
-    ticker: Annotated[str, "中国股票代码，如：000001、600036等"],
-    start_date: Annotated[str, "开始日期，格式：YYYY-MM-DD"],
-    end_date: Annotated[str, "结束日期，格式：YYYY-MM-DD"]
+    ticker: Annotated[str, "Chinese stock codes, such as: 000001, 600036, etc."],
+    start_date: Annotated[str, "Start date, format:YYYY-MM-DD"],
+    end_date: Annotated[str, "End date, format:YYYY-MM-DD"]
 ) -> str:
     """
-    使用Tushare获取中国A股历史数据
-    重定向到data_source_manager，避免循环调用
+    Use Tushare to obtain China A-share historical data
+    Redirect to data_source_manager to avoid circular calls
 
     Args:
-        ticker: 股票代码
-        start_date: 开始日期
-        end_date: 结束日期
+        ticker: Stock code
+        start_date: start date
+        end_date: end date
 
     Returns:
-        str: 格式化的股票数据报告
+        str: Formatted stock data reports
     """
     try:
         from .data_source_manager import get_data_source_manager
 
         logger.debug(f"📊 [Tushare] 获取{ticker}股票数据...")
 
-        # 添加详细的股票代码追踪日志
+        # Add detailed ticker tracking logs
         logger.info(f"🔍 [股票代码追踪] get_china_stock_data_tushare 接收到的股票代码: '{ticker}' (类型: {type(ticker)})")
-        logger.info(f"🔍 [股票代码追踪] 重定向到data_source_manager")
+        logger.info(f"🔍 [Stock symbol tracking] redirect to data_source_manager")
 
         manager = get_data_source_manager()
         return manager.get_china_stock_data_tushare(ticker, start_date, end_date)
 
     except Exception as e:
-        logger.error(f"❌ [Tushare] 获取股票数据失败: {e}")
+        logger.error(f"❌ [Tushare] Failed to get stock data: {e}")
         return f"❌ 获取{ticker}股票数据失败: {e}"
 
 
 def get_china_stock_info_tushare(
-    ticker: Annotated[str, "中国股票代码，如：000001、600036等"]
+    ticker: Annotated[str, "Chinese stock codes, such as: 000001, 600036, etc."]
 ) -> str:
     """
-    使用Tushare获取中国A股基本信息
-    直接调用 Tushare 适配器，避免循环调用
+    Use Tushare to obtain basic information about China A shares
+    Directly call the Tushare adapter to avoid circular calls
 
     Args:
-        ticker: 股票代码
+        ticker: Stock code
 
     Returns:
-        str: 格式化的股票基本信息
+        str: Formatted basic stock information
     """
     try:
         from .data_source_manager import get_data_source_manager
 
         logger.debug(f"📊 [Tushare] 获取{ticker}股票信息...")
         logger.info(f"🔍 [股票代码追踪] get_china_stock_info_tushare 接收到的股票代码: '{ticker}' (类型: {type(ticker)})")
-        logger.info(f"🔍 [股票代码追踪] 直接调用 Tushare 适配器")
+        logger.info(f"🔍 [Stock symbol tracking] Directly call the Tushare adapter")
 
         manager = get_data_source_manager()
 
-        # 🔥 直接调用 _get_tushare_stock_info()，避免循环调用
-        # 不要调用 get_stock_info()，因为它会再次调用 get_china_stock_info_tushare()
+        # 🔥 call directly _get_tushare_stock_info(), Avoid circular calls
+        # Don't call get_stock_info(), because it will call again get_china_stock_info_tushare()
         info = manager._get_tushare_stock_info(ticker)
 
-        # 格式化返回字符串
+        # Formatted return string
         if info and isinstance(info, dict):
             return f"""股票代码: {info.get('symbol', ticker)}
 股票名称: {info.get('name', '未知')}
@@ -1489,31 +1489,31 @@ def get_china_stock_info_tushare(
             return f"❌ 未找到{ticker}的股票信息"
 
     except Exception as e:
-        logger.error(f"❌ [Tushare] 获取股票信息失败: {e}")
+        logger.error(f"❌ [Tushare] Failed to obtain stock information: {e}")
         return f"❌ 获取{ticker}股票信息失败: {e}"
 
 
 def get_china_stock_fundamentals_tushare(
-    ticker: Annotated[str, "中国股票代码，如：000001、600036等"]
+    ticker: Annotated[str, "Chinese stock codes, such as: 000001, 600036, etc."]
 ) -> str:
     """
-    获取中国A股基本面数据（统一接口）
-    支持多数据源：MongoDB → Tushare → AKShare → 生成分析
+    Obtain fundamental data of China A shares (unified interface)
+    Support multiple data sources:MongoDB → Tushare → AKShare → Generate analysis
 
     Args:
-        ticker: 股票代码
+        ticker: Stock code
 
     Returns:
-        str: 基本面分析报告
+        str: Fundamental Analysis Report
     """
     try:
         from .data_source_manager import get_data_source_manager
 
         logger.debug(f"📊 获取{ticker}基本面数据...")
-        logger.info(f"🔍 [股票代码追踪] 重定向到data_source_manager.get_fundamentals_data")
+        logger.info(f"🔍 [Stock symbol tracking] redirect to data_source_manager.get_fundamentals_data")
 
         manager = get_data_source_manager()
-        # 使用新的统一接口，支持多数据源和自动降级
+        # Use new unified interface to support multiple data sources and automatic downgrade
         return manager.get_fundamentals_data(ticker)
 
     except Exception as e:
@@ -1521,57 +1521,57 @@ def get_china_stock_fundamentals_tushare(
         return f"❌ 获取{ticker}基本面数据失败: {e}"
 
 
-# ==================== 统一数据源接口 ====================
+# ==================== Unified data source interface ====================
 
 def get_china_stock_data_unified(
-    ticker: Annotated[str, "中国股票代码，如：000001、600036等"],
-    start_date: Annotated[str, "开始日期，格式：YYYY-MM-DD"],
-    end_date: Annotated[str, "结束日期，格式：YYYY-MM-DD"]
+    ticker: Annotated[str, "Chinese stock codes, such as: 000001, 600036, etc."],
+    start_date: Annotated[str, "Start date, format:YYYY-MM-DD"],
+    end_date: Annotated[str, "End date, format:YYYY-MM-DD"]
 ) -> str:
     """
-    统一的中国A股数据获取接口
-    自动使用配置的数据源（默认Tushare），支持备用数据源
+    Unified China A-share data acquisition interface
+    Automatically use the configured data source (default Tushare), support alternative data sources
 
     Args:
-        ticker: 股票代码
-        start_date: 开始日期
-        end_date: 结束日期
+        ticker: Stock code
+        start_date: start date
+        end_date: end date
 
     Returns:
-        str: 格式化的股票数据报告
+        str: Formatted stock data reports
     """
-    # 🔧 智能日期范围处理：自动扩展到配置的回溯天数，处理周末/节假日
+    # 🔧 Smart date range handling: automatically expands to configured lookback days, handles weekends/holidays
     from tradingagents.utils.dataflow_utils import get_trading_date_range
     from app.core.config import get_settings
 
     original_start_date = start_date
     original_end_date = end_date
 
-    # 从配置获取市场分析回溯天数（默认30天）
+    # Get market analysis lookback days from configuration (default 30 days)
     try:
         settings = get_settings()
         lookback_days = settings.MARKET_ANALYST_LOOKBACK_DAYS
-        logger.info(f"📅 [配置验证] ===== MARKET_ANALYST_LOOKBACK_DAYS 配置检查 =====")
+        logger.info(f"📅 [Configuration verification] ===== MARKET_ANALYST_LOOKBACK_DAYS Configuration check =====")
         logger.info(f"📅 [配置验证] 从配置文件读取: {lookback_days}天")
-        logger.info(f"📅 [配置验证] 配置来源: app.core.config.Settings")
-        logger.info(f"📅 [配置验证] 环境变量: MARKET_ANALYST_LOOKBACK_DAYS={lookback_days}")
+        logger.info(f"📅 [Configuration verification] Configuration source: app.core.config.Settings")
+        logger.info(f"📅 [Configuration verification] environment variables: MARKET_ANALYST_LOOKBACK_DAYS={lookback_days}")
     except Exception as e:
-        lookback_days = 30  # 默认30天
+        lookback_days = 30  # Default 30 days
         logger.warning(f"⚠️ [配置验证] 无法获取配置，使用默认值: {lookback_days}天")
-        logger.warning(f"⚠️ [配置验证] 错误详情: {e}")
+        logger.warning(f"⚠️ [Configuration verification] Error details: {e}")
 
-    # 使用 end_date 作为目标日期，向前回溯指定天数
+    # Use end_date as the target date to look back a specified number of days
     start_date, end_date = get_trading_date_range(end_date, lookback_days=lookback_days)
 
-    logger.info(f"📅 [智能日期] ===== 日期范围计算结果 =====")
+    logger.info(f"📅 [smart date] ===== Date range calculation result =====")
     logger.info(f"📅 [智能日期] 原始输入: {original_start_date} 至 {original_end_date}")
     logger.info(f"📅 [智能日期] 回溯天数: {lookback_days}天")
     logger.info(f"📅 [智能日期] 计算结果: {start_date} 至 {end_date}")
     logger.info(f"📅 [智能日期] 实际天数: {(datetime.strptime(end_date, '%Y-%m-%d') - datetime.strptime(start_date, '%Y-%m-%d')).days}天")
-    logger.info(f"💡 [智能日期] 说明: 自动扩展日期范围以处理周末、节假日和数据延迟")
+    logger.info(f"💡 [smart date] Description: Automatically expand date ranges to handle weekends, holidays and data delays")
 
-    # 记录详细的输入参数
-    logger.info(f"📊 [统一接口] 开始获取中国股票数据",
+    # Record detailed input parameters
+    logger.info(f"📊 [unified interface] Start getting China stock data",
                extra={
                    'function': 'get_china_stock_data_unified',
                    'ticker': ticker,
@@ -1580,10 +1580,10 @@ def get_china_stock_data_unified(
                    'event_type': 'unified_data_call_start'
                })
 
-    # 添加详细的股票代码追踪日志
+    # Add detailed ticker tracking logs
     logger.info(f"🔍 [股票代码追踪] get_china_stock_data_unified 接收到的原始股票代码: '{ticker}' (类型: {type(ticker)})")
-    logger.info(f"🔍 [股票代码追踪] 股票代码长度: {len(str(ticker))}")
-    logger.info(f"🔍 [股票代码追踪] 股票代码字符: {list(str(ticker))}")
+    logger.info(f"🔍 [Stock symbol tracking] Stock symbol length: {len(str(ticker))}")
+    logger.info(f"🔍 [Stock symbol tracking] ticker character: {list(str(ticker))}")
 
     start_time = time.time()
 
@@ -1592,13 +1592,13 @@ def get_china_stock_data_unified(
 
         result = get_china_stock_data_unified(ticker, start_date, end_date)
 
-        # 记录详细的输出结果
+        # Record detailed output results
         duration = time.time() - start_time
         result_length = len(result) if result else 0
         is_success = result and "❌" not in result and "错误" not in result
 
         if is_success:
-            logger.info(f"✅ [统一接口] 中国股票数据获取成功",
+            logger.info(f"✅ [unified interface] China stock data obtained successfully",
                        extra={
                            'function': 'get_china_stock_data_unified',
                            'ticker': ticker,
@@ -1610,7 +1610,7 @@ def get_china_stock_data_unified(
                            'event_type': 'unified_data_call_success'
                        })
         else:
-            logger.warning(f"⚠️ [统一接口] 中国股票数据质量异常",
+            logger.warning(f"⚠️ [unified interface] Abnormal quality of Chinese stock data",
                           extra={
                               'function': 'get_china_stock_data_unified',
                               'ticker': ticker,
@@ -1626,7 +1626,7 @@ def get_china_stock_data_unified(
 
     except Exception as e:
         duration = time.time() - start_time
-        logger.error(f"❌ [统一接口] 获取股票数据失败: {e}",
+        logger.error(f"❌ [unified interface] Failed to get stock data: {e}",
                     extra={
                         'function': 'get_china_stock_data_unified',
                         'ticker': ticker,
@@ -1640,17 +1640,17 @@ def get_china_stock_data_unified(
 
 
 def get_china_stock_info_unified(
-    ticker: Annotated[str, "中国股票代码，如：000001、600036等"]
+    ticker: Annotated[str, "Chinese stock codes, such as: 000001, 600036, etc."]
 ) -> str:
     """
-    统一的中国A股基本信息获取接口
-    自动使用配置的数据源（默认Tushare）
+    Unified China A-share basic information acquisition interface
+    Automatically use configured data source (default Tushare)
 
     Args:
-        ticker: 股票代码
+        ticker: Stock code
 
     Returns:
-        str: 股票基本信息
+        str: Basic stock information
     """
     try:
         from .data_source_manager import get_china_stock_info_unified
@@ -1666,7 +1666,7 @@ def get_china_stock_info_unified(
             result += f"所属行业: {info.get('industry', '未知')}\n"
             result += f"上市市场: {info.get('market', '未知')}\n"
             result += f"上市日期: {info.get('list_date', '未知')}\n"
-            # 附加快照行情（若存在）
+            # Additional snapshot quotes (if present)
             cp = info.get('current_price')
             pct = info.get('change_pct')
             vol = info.get('volume')
@@ -1687,31 +1687,31 @@ def get_china_stock_info_unified(
             return f"❌ 未能获取{ticker}的基本信息"
 
     except Exception as e:
-        logger.error(f"❌ [统一接口] 获取股票信息失败: {e}")
+        logger.error(f"❌ [unified interface] Failed to obtain stock information: {e}")
         return f"❌ 获取{ticker}股票信息失败: {e}"
 
 
 def switch_china_data_source(
-    source: Annotated[str, "数据源名称：tushare, akshare, baostock"]
+    source: Annotated[str, "Data source name:tushare, akshare, baostock"]
 ) -> str:
     """
-    切换中国股票数据源
+    Switch China stock data source
 
     Args:
-        source: 数据源名称
+        source: Data source name
 
     Returns:
-        str: 切换结果
+        str: Switch results
     """
     try:
         from .data_source_manager import get_data_source_manager, ChinaDataSource
 
-        # 映射字符串到枚举（TDX 已移除）
+        # Mapping strings to enums (TDX removed)
         source_mapping = {
             'tushare': ChinaDataSource.TUSHARE,
             'akshare': ChinaDataSource.AKSHARE,
             'baostock': ChinaDataSource.BAOSTOCK,
-            # 'tdx': ChinaDataSource.TDX  # 已移除
+            # 'tdx': ChinaDataSource.TDX  # Removed
         }
 
         if source.lower() not in source_mapping:
@@ -1732,10 +1732,10 @@ def switch_china_data_source(
 
 def get_current_china_data_source() -> str:
     """
-    获取当前中国股票数据源
+    Get current China stock data source
 
     Returns:
-        str: 当前数据源信息
+        str: Current data source information
     """
     try:
         from .data_source_manager import get_data_source_manager
@@ -1755,41 +1755,41 @@ def get_current_china_data_source() -> str:
         return f"❌ 获取数据源信息失败: {e}"
 
 
-# ==================== 港股数据接口 ====================
+# ==================== Hong Kong stock data interface ====================
 
 def get_hk_stock_data_unified(symbol: str, start_date: str = None, end_date: str = None) -> str:
     """
-    获取港股数据的统一接口（根据用户配置选择数据源）
+    A unified interface for obtaining Hong Kong stock data (data source selected according to user configuration)
 
     Args:
-        symbol: 港股代码 (如: 0700.HK)
-        start_date: 开始日期 (YYYY-MM-DD)
-        end_date: 结束日期 (YYYY-MM-DD)
+        symbol: Hong Kong stock code (Such as: 0700.HK)
+        start_date: start date (YYYY-MM-DD)
+        end_date: end date (YYYY-MM-DD)
 
     Returns:
-        str: 格式化的港股数据
+        str: Formatted Hong Kong stock data
     """
     try:
         logger.info(f"🇭🇰 获取港股数据: {symbol}")
 
-        # 🔧 智能日期范围处理：自动扩展到配置的回溯天数，处理周末/节假日
+        # 🔧 Smart date range handling: automatically expands to configured lookback days, handles weekends/holidays
         from tradingagents.utils.dataflow_utils import get_trading_date_range
         from app.core.config import get_settings
 
         original_start_date = start_date
         original_end_date = end_date
 
-        # 从配置获取市场分析回溯天数（默认60天）
+        # Get market analysis lookback days from configuration (default 60 days)
         try:
             settings = get_settings()
             lookback_days = settings.MARKET_ANALYST_LOOKBACK_DAYS
             logger.info(f"📅 [港股配置验证] MARKET_ANALYST_LOOKBACK_DAYS: {lookback_days}天")
         except Exception as e:
-            lookback_days = 60  # 默认60天
+            lookback_days = 60  # Default 60 days
             logger.warning(f"⚠️ [港股配置验证] 无法获取配置，使用默认值: {lookback_days}天")
-            logger.warning(f"⚠️ [港股配置验证] 错误详情: {e}")
+            logger.warning(f"⚠️ [Hong Kong stock allocation verification] Error details: {e}")
 
-        # 使用 end_date 作为目标日期，向前回溯指定天数
+        # Use end_date as the target date to look back a specified number of days
         start_date, end_date = get_trading_date_range(end_date, lookback_days=lookback_days)
 
         logger.info(f"📅 [港股智能日期] 原始输入: {original_start_date} 至 {original_end_date}")
@@ -1797,38 +1797,38 @@ def get_hk_stock_data_unified(symbol: str, start_date: str = None, end_date: str
         logger.info(f"📅 [港股智能日期] 计算结果: {start_date} 至 {end_date}")
         logger.info(f"📅 [港股智能日期] 实际天数: {(datetime.strptime(end_date, '%Y-%m-%d') - datetime.strptime(start_date, '%Y-%m-%d')).days}天")
 
-        # 🔥 从数据库读取用户启用的数据源配置
+        # 🔥 Read user-enabled data source configuration from database
         enabled_sources = _get_enabled_hk_data_sources()
 
-        # 按优先级尝试各个数据源
+        # Try each data source in order of priority
         for source in enabled_sources:
             if source == 'akshare' and AKSHARE_HK_AVAILABLE:
                 try:
-                    logger.info(f"🔄 使用AKShare获取港股数据: {symbol}")
+                    logger.info(f"🔄 Use AKShare to obtain Hong Kong stock data: {symbol}")
                     result = get_hk_stock_data_akshare(symbol, start_date, end_date)
                     if result and "❌" not in result:
-                        logger.info(f"✅ AKShare港股数据获取成功: {symbol}")
+                        logger.info(f"✅ AKShare Hong Kong stock data obtained successfully: {symbol}")
                         return result
                     else:
-                        logger.warning(f"⚠️ AKShare返回错误结果，尝试下一个数据源")
+                        logger.warning(f"⚠️ AKShare Returns an error result, try the next data source")
                 except Exception as e:
-                    logger.error(f"⚠️ AKShare港股数据获取失败: {e}，尝试下一个数据源")
+                    logger.error(f"⚠️ AKShare Failed to obtain Hong Kong stock data: {e}, Try next data source")
 
             elif source == 'yfinance' and HK_STOCK_AVAILABLE:
                 try:
-                    logger.info(f"🔄 使用Yahoo Finance获取港股数据: {symbol}")
+                    logger.info(f"🔄 Use Yahoo Finance to obtain Hong Kong stock data: {symbol}")
                     result = get_hk_stock_data(symbol, start_date, end_date)
                     if result and "❌" not in result:
-                        logger.info(f"✅ Yahoo Finance港股数据获取成功: {symbol}")
+                        logger.info(f"✅ Yahoo Finance Hong Kong stock data obtained successfully: {symbol}")
                         return result
                     else:
-                        logger.warning(f"⚠️ Yahoo Finance返回错误结果，尝试下一个数据源")
+                        logger.warning(f"⚠️ Yahoo Finance Returns an error result, try the next data source")
                 except Exception as e:
-                    logger.error(f"⚠️ Yahoo Finance港股数据获取失败: {e}，尝试下一个数据源")
+                    logger.error(f"⚠️ Yahoo Finance Failed to obtain Hong Kong stock data: {e}, Try next data source")
 
             elif source == 'finnhub':
                 try:
-                    # 导入美股数据提供器（支持新旧路径）
+                    # Import US stock data provider (supports old and new paths)
                     try:
                         from .providers.us import OptimizedUSDataProvider
                         provider = OptimizedUSDataProvider()
@@ -1836,17 +1836,17 @@ def get_hk_stock_data_unified(symbol: str, start_date: str = None, end_date: str
                     except ImportError:
                         from tradingagents.dataflows.providers.us.optimized import get_us_stock_data_cached
 
-                    logger.info(f"🔄 使用FINNHUB获取港股数据: {symbol}")
+                    logger.info(f"🔄 Use FINNHUB to obtain Hong Kong stock data: {symbol}")
                     result = get_us_stock_data_cached(symbol, start_date, end_date)
                     if result and "❌" not in result:
-                        logger.info(f"✅ FINNHUB港股数据获取成功: {symbol}")
+                        logger.info(f"✅ FINNHUB Hong Kong stock data obtained successfully: {symbol}")
                         return result
                     else:
-                        logger.warning(f"⚠️ FINNHUB返回错误结果，尝试下一个数据源")
+                        logger.warning(f"⚠️ FINNHUB Returns an error result, try the next data source")
                 except Exception as e:
-                    logger.error(f"⚠️ FINNHUB港股数据获取失败: {e}，尝试下一个数据源")
+                    logger.error(f"⚠️ FINNHUB Failed to obtain Hong Kong stock data: {e}, Try next data source")
 
-        # 所有数据源都失败
+        # All data sources fail
         error_msg = f"❌ 无法获取港股{symbol}数据 - 所有启用的数据源都不可用"
         logger.error(error_msg)
         return error_msg
@@ -1858,46 +1858,46 @@ def get_hk_stock_data_unified(symbol: str, start_date: str = None, end_date: str
 
 def get_hk_stock_info_unified(symbol: str) -> Dict:
     """
-    获取港股信息的统一接口（根据用户配置选择数据源）
+    A unified interface for obtaining Hong Kong stock information (data source selected according to user configuration)
 
     Args:
-        symbol: 港股代码
+        symbol: Hong Kong stock code
 
     Returns:
-        Dict: 港股信息
+        Dict: Hong Kong stock information
     """
     try:
-        # 🔥 从数据库读取用户启用的数据源配置
+        # 🔥 Read user-enabled data source configuration from database
         enabled_sources = _get_enabled_hk_data_sources()
 
-        # 按优先级尝试各个数据源
+        # Try each data source in order of priority
         for source in enabled_sources:
             if source == 'akshare' and AKSHARE_HK_AVAILABLE:
                 try:
-                    logger.info(f"🔄 使用AKShare获取港股信息: {symbol}")
+                    logger.info(f"🔄 Use AKShare to obtain Hong Kong stock information: {symbol}")
                     result = get_hk_stock_info_akshare(symbol)
                     if result and 'error' not in result and not result.get('name', '').startswith('港股'):
-                        logger.info(f"✅ AKShare成功获取港股信息: {symbol} -> {result.get('name', 'N/A')}")
+                        logger.info(f"✅ AKShare Successfully obtained Hong Kong stock information: {symbol} -> {result.get('name', 'N/A')}")
                         return result
                     else:
-                        logger.warning(f"⚠️ AKShare返回默认信息，尝试下一个数据源")
+                        logger.warning(f"⚠️ AKShare Return to default information and try next data source")
                 except Exception as e:
-                    logger.error(f"⚠️ AKShare港股信息获取失败: {e}，尝试下一个数据源")
+                    logger.error(f"⚠️ AKShare Failed to obtain Hong Kong stock information: {e}, Try next data source")
 
             elif source == 'yfinance' and HK_STOCK_AVAILABLE:
                 try:
-                    logger.info(f"🔄 使用Yahoo Finance获取港股信息: {symbol}")
+                    logger.info(f"🔄 Use Yahoo Finance to obtain Hong Kong stock information: {symbol}")
                     result = get_hk_stock_info(symbol)
                     if result and 'error' not in result and not result.get('name', '').startswith('港股'):
-                        logger.info(f"✅ Yahoo Finance成功获取港股信息: {symbol} -> {result.get('name', 'N/A')}")
+                        logger.info(f"✅ Yahoo Finance Successfully obtained Hong Kong stock information: {symbol} -> {result.get('name', 'N/A')}")
                         return result
                     else:
-                        logger.warning(f"⚠️ Yahoo Finance返回默认信息，尝试下一个数据源")
+                        logger.warning(f"⚠️ Yahoo Finance Return to default information and try next data source")
                 except Exception as e:
-                    logger.error(f"⚠️ Yahoo Finance港股信息获取失败: {e}，尝试下一个数据源")
+                    logger.error(f"⚠️ Yahoo Finance Failed to obtain Hong Kong stock information: {e}, Try next data source")
 
-        # 所有数据源都失败，返回基本信息
-        logger.warning(f"⚠️ 所有启用的数据源都失败，使用默认信息: {symbol}")
+        # All data sources fail, returning basic information
+        logger.warning(f"⚠️ All enabled data sources fail with default information: {symbol}")
         return {
             'symbol': symbol,
             'name': f'港股{symbol}',
@@ -1920,15 +1920,15 @@ def get_hk_stock_info_unified(symbol: str) -> Dict:
 
 def get_stock_data_by_market(symbol: str, start_date: str = None, end_date: str = None) -> str:
     """
-    根据股票市场类型自动选择数据源获取数据
+    Automatically select data sources to obtain data based on stock market type
 
     Args:
-        symbol: 股票代码
-        start_date: 开始日期
-        end_date: 结束日期
+        symbol: Stock code
+        start_date: start date
+        end_date: end date
 
     Returns:
-        str: 格式化的股票数据
+        str: Formatted stock data
     """
     try:
         from tradingagents.utils.stock_utils import StockUtils
@@ -1936,14 +1936,14 @@ def get_stock_data_by_market(symbol: str, start_date: str = None, end_date: str 
         market_info = StockUtils.get_market_info(symbol)
 
         if market_info['is_china']:
-            # 中国A股
+            # China A shares
             return get_china_stock_data_unified(symbol, start_date, end_date)
         elif market_info['is_hk']:
-            # 港股
+            # Hong Kong stocks
             return get_hk_stock_data_unified(symbol, start_date, end_date)
         else:
-            # 美股或其他
-            # 导入美股数据提供器（支持新旧路径）
+            # US stocks or other
+            # Import US stock data provider (supports old and new paths)
             try:
                 from .providers.us import OptimizedUSDataProvider
                 provider = OptimizedUSDataProvider()

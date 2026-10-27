@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-初始化大模型厂家数据脚本
+Initialize large model manufacturer data script
 """
 
 import asyncio
@@ -8,27 +8,27 @@ import sys
 import os
 from datetime import datetime
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from app.core.database import init_db, get_mongo_db
 from app.models.config import LLMProvider
 
 async def init_providers():
-    """初始化大模型厂家数据"""
-    print("🚀 开始初始化大模型厂家数据...")
+    """Initialize large model manufacturer data"""
+    print("🚀 Start initializing large model manufacturer data...")
     
-    # 初始化数据库连接
+    # Initialize database connection
     await init_db()
     db = get_mongo_db()
     providers_collection = db.llm_providers
     
-    # 预设厂家数据
+    # Default manufacturer data
     providers_data = [
         {
             "name": "openai",
             "display_name": "OpenAI",
-            "description": "OpenAI是人工智能领域的领先公司，提供GPT系列模型",
+            "description": "OpenAI Is a leading company in the field of artificial intelligence, providing GPT series models",
             "website": "https://openai.com",
             "api_doc_url": "https://platform.openai.com/docs",
             "default_base_url": "https://api.openai.com/v1",
@@ -38,7 +38,7 @@ async def init_providers():
         {
             "name": "anthropic",
             "display_name": "Anthropic",
-            "description": "Anthropic专注于AI安全研究，提供Claude系列模型",
+            "description": "Anthropic Focus on AI security research and provide Claude series models",
             "website": "https://anthropic.com",
             "api_doc_url": "https://docs.anthropic.com",
             "default_base_url": "https://api.anthropic.com",
@@ -48,7 +48,7 @@ async def init_providers():
         {
             "name": "google",
             "display_name": "Google AI",
-            "description": "Google的人工智能平台，提供Gemini系列模型",
+            "description": "Google Artificial intelligence platform, providing Gemini series models",
             "website": "https://ai.google.dev",
             "api_doc_url": "https://ai.google.dev/docs",
             "default_base_url": "https://generativelanguage.googleapis.com/v1beta",
@@ -57,8 +57,8 @@ async def init_providers():
         },
         {
             "name": "zhipu",
-            "display_name": "智谱AI",
-            "description": "智谱AI提供GLM系列中文大模型",
+            "display_name": "Wisdom spectrum AI",
+            "description": "Zhipu AI provides GLM series Chinese large models",
             "website": "https://zhipuai.cn",
             "api_doc_url": "https://open.bigmodel.cn/doc",
             "default_base_url": "https://open.bigmodel.cn/api/paas/v4",
@@ -68,7 +68,7 @@ async def init_providers():
         {
             "name": "deepseek",
             "display_name": "DeepSeek",
-            "description": "DeepSeek提供高性能的AI推理服务",
+            "description": "DeepSeek Provide high-performance AI inference services",
             "website": "https://www.deepseek.com",
             "api_doc_url": "https://platform.deepseek.com/api-docs",
             "default_base_url": "https://api.deepseek.com",
@@ -77,8 +77,8 @@ async def init_providers():
         },
         {
             "name": "dashscope",
-            "display_name": "阿里云百炼",
-            "description": "阿里云百炼大模型服务平台，提供通义千问等模型",
+            "display_name": "Alibaba Cloud Bailian",
+            "description": "Alibaba Cloud Bailian large model service platform provides Tongyi Qianwen and other models",
             "website": "https://bailian.console.aliyun.com",
             "api_doc_url": "https://help.aliyun.com/zh/dashscope/",
             "default_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -87,8 +87,8 @@ async def init_providers():
         },
         {
             "name": "siliconflow",
-            "display_name": "硅基流动",
-            "description": "硅基流动提供高性价比的AI推理服务，支持多种开源模型",
+            "display_name": "silicon based flow",
+            "description": "Silicon Flow provides cost-effective AI inference services and supports a variety of open source models",
             "website": "https://siliconflow.cn",
             "api_doc_url": "https://docs.siliconflow.cn",
             "default_base_url": "https://api.siliconflow.cn/v1",
@@ -98,7 +98,7 @@ async def init_providers():
         {
             "name": "302ai",
             "display_name": "302.AI",
-            "description": "302.AI是企业级AI聚合平台，提供多种主流大模型的统一接口",
+            "description": "302.AI It is an enterprise-level AI aggregation platform that provides unified interfaces for a variety of mainstream large models.",
             "website": "https://302.ai",
             "api_doc_url": "https://doc.302.ai",
             "default_base_url": "https://api.302.ai/v1",
@@ -108,7 +108,7 @@ async def init_providers():
         {
             "name": "aihubmix",
             "display_name": "AiHubMix",
-            "description": "AiHubMix 聚合平台，提供 OpenAI 兼容统一接口",
+            "description": "AiHubMix Aggregation platform, providing OpenAI compatible unified interface",
             "website": "https://aihubmix.com/?aff=2rIi",
             "api_doc_url": "https://docs.aihubmix.com/cn/quick-start",
             "default_base_url": "https://aihubmix.com/v1",
@@ -117,8 +117,8 @@ async def init_providers():
         },
         {
             "name": "volcengine",
-            "display_name": "火山方舟",
-            "description": "火山方舟 Ark API（Agent Plan）",
+            "display_name": "Volcano Ark",
+            "description": "Volcano Ark Ark API (Agent Plan)",
             "website": "https://www.volcengine.com/solutions/ark",
             "default_base_url": "https://ark.cn-beijing.volces.com/api/v3",
             "test_model": "doubao-seed-2-1-turbo-260628",
@@ -128,8 +128,8 @@ async def init_providers():
         },
         {
             "name": "volcengine_coding",
-            "display_name": "火山方舟编程",
-            "description": "火山方舟 Ark API（Coding Plan）",
+            "display_name": "Volcano Ark Programming",
+            "description": "Volcano Ark Ark API (Coding Plan)",
             "website": "https://www.volcengine.com/solutions/ark",
             "default_base_url": "https://ark.cn-beijing.volces.com/api/coding/v3",
             "test_model": "doubao-seed-2.0-code",
@@ -139,19 +139,19 @@ async def init_providers():
         }
     ]
     
-    # 清除现有数据
+    # Clear existing data
     await providers_collection.delete_many({})
-    print("🧹 清除现有厂家数据")
+    print("🧹 Clear existing manufacturer data")
     
-    # 插入新数据
+    # Insert new data
     for provider_data in providers_data:
         provider_data["created_at"] = datetime.utcnow()
         provider_data["updated_at"] = datetime.utcnow()
         
         result = await providers_collection.insert_one(provider_data)
-        print(f"✅ 添加厂家: {provider_data['display_name']} (ID: {result.inserted_id})")
+        print(f"✅ Add manufacturer: {provider_data['display_name']} (ID: {result.inserted_id})")
     
-    print(f"🎉 成功初始化 {len(providers_data)} 个厂家数据")
+    print(f"🎉 successful initialization {len(providers_data)} manufacturer data")
 
 if __name__ == "__main__":
     asyncio.run(init_providers())

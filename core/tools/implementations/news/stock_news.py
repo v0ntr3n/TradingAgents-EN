@@ -1,11 +1,11 @@
 """
-统一股票新闻工具
+Unified Stock News Tool
 
-自动识别股票类型（A股、港股、美股）并调用相应的新闻数据源
+Automatically identify stock types (A shares, Hong Kong stocks, US stocks) and call corresponding news data sources
 
-数据源优先级：
-1. MongoDB 数据库（包括 local、akshare、tushare 等数据源）
-2. 外部 API（AKShare、Google News、Finnhub）
+Data source priority:
+1. MongoDB Database (including local, akshare, tushare and other data sources)
+2. External APIs (AKShare, Google News, Finnhub)
 """
 
 import concurrent.futures
@@ -41,8 +41,8 @@ SOURCE_DISPLAY_NAMES = {
 }
 
 LIVE_SOURCE_DISPLAY_NAMES = {
-    "tushare": "Tushare多源新闻（付费增强）",
-    "akshare": "AKShare东方财富（免费回退）",
+    "tushare": "Tushare Multi-source news (paid enhancement)",
+    "akshare": "AKShare Oriental Fortune (free fallback)",
 }
 
 CATEGORY_DISPLAY_NAMES = {
@@ -181,12 +181,12 @@ LOW_SIGNAL_NEWS_SOURCE_KEYWORDS = [
 
 
 def _normalize_analysis_date(curr_date: str) -> str:
-    """标准化分析日期字符串。"""
+    """Normalize parsing date strings."""
     return curr_date.split()[0] if " " in curr_date else curr_date
 
 
 def _build_a_share_news_window(curr_date: str) -> Tuple[datetime, datetime, str, str]:
-    """构建 A 股新闻查询时间窗口，默认覆盖分析日往前 7 个自然日。"""
+    """Construct A-share news query time window, covering 7 natural days before the analysis date by default."""
     analysis_date_str = _normalize_analysis_date(curr_date)
     analysis_date = datetime.strptime(analysis_date_str, "%Y-%m-%d")
     start_date = datetime.combine(
@@ -198,7 +198,7 @@ def _build_a_share_news_window(curr_date: str) -> Tuple[datetime, datetime, str,
 
 
 def _normalize_a_share_symbol(ticker: str) -> str:
-    """标准化 A 股股票代码。"""
+    """Standardized A-share ticker."""
     return (
         ticker.upper()
         .replace(".SH", "")
@@ -210,14 +210,14 @@ def _normalize_a_share_symbol(ticker: str) -> str:
 
 
 def _collapse_whitespace(value: Any) -> str:
-    """折叠多余空白，便于 Markdown 输出。"""
+    """Fold excess whitespace to facilitate Markdown output."""
     if value is None:
         return ""
     return " ".join(str(value).split())
 
 
 def _parse_publish_time(value: Any) -> Optional[datetime]:
-    """解析新闻发布时间。"""
+    """Parse news release time."""
     if isinstance(value, datetime):
         return value
     if value in (None, ""):
@@ -250,12 +250,12 @@ def _parse_publish_time(value: Any) -> Optional[datetime]:
     try:
         return datetime.fromisoformat(text)
     except ValueError:
-        logger.debug(f"⚠️ [统一新闻工具] 无法解析新闻时间: {text}")
+        logger.debug(f"⚠️ [unified news tool] Unable to parse news time: {text}")
         return None
 
 
 def _format_publish_time(value: Any) -> str:
-    """格式化新闻发布时间。"""
+    """Format news release time."""
     parsed = _parse_publish_time(value)
     if parsed is not None:
         return parsed.strftime("%Y-%m-%d %H:%M")
@@ -263,7 +263,7 @@ def _format_publish_time(value: Any) -> str:
 
 
 def _coerce_keywords(value: Any) -> List[str]:
-    """统一关键词为字符串列表。"""
+    """The unified keyword is a list of strings."""
     if value is None:
         return []
     if isinstance(value, list):
@@ -283,33 +283,33 @@ def _coerce_keywords(value: Any) -> List[str]:
 
 
 def _get_source_display_name(source: str) -> str:
-    """获取数据源显示名称。"""
+    """Get the data source display name."""
     return SOURCE_DISPLAY_NAMES.get(source, source or "未知来源")
 
 
 def _get_live_source_display_name(source: str) -> str:
-    """获取 A 股实时数据源显示名称。"""
+    """Get the display name of A-share real-time data source."""
     return LIVE_SOURCE_DISPLAY_NAMES.get(source, _get_source_display_name(source))
 
 
 def _get_a_share_enabled_sources() -> List[str]:
-    """获取 A 股启用的数据源优先级。"""
+    """Get the priority of the data source enabled for A shares."""
     try:
         from app.core.data_source_priority import get_enabled_data_sources_sync
 
         return get_enabled_data_sources_sync(market_category="a_shares")
     except Exception as exc:
-        logger.warning(f"⚠️ [统一新闻工具] 获取 A 股数据源优先级失败，使用默认顺序: {exc}")
+        logger.warning(f"⚠️ [unified news tool] Failed to obtain A-share data source priority, use default order: {exc}")
         return ["local", "tushare", "akshare", "baostock"]
 
 
 def _build_a_share_live_source_plan(enabled_sources: List[str]) -> List[str]:
-    """生成 A 股实时新闻分析链路，仅使用 AKShare。"""
+    """Generate A-share real-time news analysis links, only using AKShare."""
     return ["akshare"] if "akshare" in enabled_sources else ["akshare"]
 
 
 def _build_a_share_analysis_priority(enabled_sources: List[str]) -> List[str]:
-    """生成 A 股新闻分析链路优先级说明。"""
+    """Generate A-share news analysis link priority description."""
     priority = ["local"] if "local" in enabled_sources else []
     for source in _build_a_share_live_source_plan(enabled_sources):
         if source not in priority:
@@ -319,13 +319,13 @@ def _build_a_share_analysis_priority(enabled_sources: List[str]) -> List[str]:
 
 
 def _is_placeholder_company_name(company_name: str, symbol: str) -> bool:
-    """判断公司名是否只是占位符。"""
+    """Determines whether the company name is just a placeholder."""
     cleaned_name = _collapse_whitespace(company_name)
     return not cleaned_name or cleaned_name in {symbol, f"股票{symbol}"}
 
 
 def _get_company_name(symbol: str) -> Optional[str]:
-    """获取股票代码对应的公司名称。"""
+    """Get the company name corresponding to the stock code."""
     try:
         from tradingagents.dataflows.data_source_manager import get_china_stock_info_unified
 
@@ -334,7 +334,7 @@ def _get_company_name(symbol: str) -> Optional[str]:
         if company_name and not _is_placeholder_company_name(company_name, symbol):
             return company_name
     except Exception as exc:
-        logger.debug(f"⚠️ [统一新闻工具] 通过 data_source_manager 获取公司名失败: {exc}")
+        logger.debug(f"⚠️ [unified news tool] Failed to obtain company name through data_source_manager: {exc}")
 
     try:
         from tradingagents.utils.news_filter import get_company_name
@@ -343,13 +343,13 @@ def _get_company_name(symbol: str) -> Optional[str]:
         if company_name and not _is_placeholder_company_name(company_name, symbol):
             return company_name
     except Exception as exc:
-        logger.debug(f"⚠️ [统一新闻工具] 通过新闻过滤器获取公司名失败: {exc}")
+        logger.debug(f"⚠️ [unified news tool] Failed to get company name through news filter: {exc}")
 
     return None
 
 
 def _get_company_aliases(company_name: Optional[str]) -> List[str]:
-    """生成公司名称别名，用于 Tushare 新闻相关性过滤。"""
+    """Generate company name aliases for use in Tushare news relevance filtering."""
     if not company_name:
         return []
 
@@ -398,7 +398,7 @@ def _get_company_aliases(company_name: Optional[str]) -> List[str]:
 
 
 def _normalize_nfkc_text(value: Any) -> str:
-    """对文本做空白折叠与 NFKC 归一化，兼容全角/半角股票简称。"""
+    """Whitespace folding and NFKC normalization of text, compatible with full-width/half-width stock abbreviations."""
     text = _collapse_whitespace(value)
     if not text:
         return ""
@@ -406,7 +406,7 @@ def _normalize_nfkc_text(value: Any) -> str:
 
 
 def _text_contains_company_name(text: Optional[str], company_name: Optional[str]) -> bool:
-    """判断文本是否包含公司名，兼容全角/半角差异。"""
+    """Determine whether the text contains the company name, compatible with full-width/half-width differences."""
     normalized_text = _collapse_whitespace(text)
     normalized_company_name = _collapse_whitespace(company_name)
     if not normalized_text or not normalized_company_name:
@@ -421,7 +421,7 @@ def _text_contains_company_name(text: Optional[str], company_name: Optional[str]
 
 
 def _find_matching_aliases(text: Optional[str], aliases: List[str]) -> List[str]:
-    """返回文本中命中的公司别名，兼容全角/半角差异。"""
+    """Returns the company alias hit in the text, compatible with full-width/half-width differences."""
     normalized_text = _collapse_whitespace(text)
     if not normalized_text or not aliases:
         return []
@@ -441,7 +441,7 @@ def _find_matching_aliases(text: Optional[str], aliases: List[str]) -> List[str]
 
 
 def _text_starts_with_any_alias(text: Optional[str], aliases: List[str]) -> bool:
-    """判断标题是否以任一公司别名起始，兼容全角/半角差异。"""
+    """Determine whether the title starts with any company alias, compatible with full-width/half-width differences."""
     normalized_text = _collapse_whitespace(text)
     if not normalized_text or not aliases:
         return False
@@ -462,7 +462,7 @@ def _text_starts_with_any_alias(text: Optional[str], aliases: List[str]) -> bool
 
 
 def _is_relevant_a_share_news(news_item: Dict[str, Any], symbol: str, company_name: Optional[str]) -> bool:
-    """判断新闻是否与目标 A 股公司相关。"""
+    """Determine whether the news is relevant to the target A-share company."""
     symbol_clean = symbol.zfill(6)
     text_parts = [
         _collapse_whitespace(news_item.get("title")),
@@ -486,7 +486,7 @@ def _filter_news_by_date_range(
     start_date: datetime,
     end_date: datetime,
 ) -> List[Dict[str, Any]]:
-    """严格按分析日期窗口过滤新闻。"""
+    """Filter news strictly by analysis date window."""
     filtered_news = []
 
     for news in news_list:
@@ -500,13 +500,13 @@ def _filter_news_by_date_range(
 
 
 def _contains_any_keyword(text: str, keywords: List[str]) -> bool:
-    """判断文本是否包含任一关键词。"""
+    """Determine whether the text contains any keyword."""
     text_lower = text.lower()
     return any(keyword in text_lower for keyword in keywords)
 
 
 def _strip_redundant_title_from_body_text(title: str, body_text: str) -> str:
-    """去除摘要/正文中重复拼接的标题，避免重复计分。"""
+    """Remove repetitively spliced titles from the abstract/text to avoid repeated scoring."""
     normalized_title = _collapse_whitespace(title)
     normalized_body = _collapse_whitespace(body_text)
     if not normalized_title or not normalized_body:
@@ -521,7 +521,7 @@ def _calculate_a_share_news_relevance(
     symbol: str,
     company_name: Optional[str],
 ) -> int:
-    """计算 A 股新闻的公司直指度与事件相关性评分。"""
+    """Calculate the company directness and event relevance scores of A-share news."""
     title = _collapse_whitespace(news_item.get("title"))
     summary = _collapse_whitespace(news_item.get("summary"))
     content = _collapse_whitespace(news_item.get("content"))
@@ -596,7 +596,7 @@ def _is_high_confidence_a_share_news_item(
     symbol: str,
     company_name: Optional[str],
 ) -> bool:
-    """判断是否属于可提前停止回退的高置信度公司直指新闻。"""
+    """Determine whether it is a high-confidence company that can stop the rollback early and point directly to the news."""
     relevance_score = int(
         news_item.get("relevance_score", 0)
         or _calculate_a_share_news_relevance(news_item, symbol, company_name)
@@ -634,7 +634,7 @@ def _rank_a_share_news_items(
     company_name: Optional[str],
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
-    """按公司直指度与事件相关性对 A 股新闻排序。"""
+    """A-share news is sorted by company directness and event relevance."""
     ranked_news = []
 
     for news in news_list:
@@ -657,7 +657,7 @@ def _rank_a_share_news_items(
 
 
 def _get_top_relevance_score(news_list: List[Dict[str, Any]]) -> int:
-    """获取新闻列表的最高相关性评分。"""
+    """Get the highest relevance score for your news listing."""
     if not news_list:
         return 0
     return int(news_list[0].get("relevance_score", 0) or 0)
@@ -667,7 +667,7 @@ def _select_best_live_news_source(
     source_news_map: Dict[str, List[Dict[str, Any]]],
     live_source_plan: List[str],
 ) -> Optional[str]:
-    """在实时新闻候选源之间选择最佳结果。"""
+    """Choose the best results among real-time news candidate sources."""
     best_source = None
     best_key = None
 
@@ -690,7 +690,7 @@ def _select_best_live_news_source(
 
 
 def _deduplicate_news_items(news_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """按标题去重新闻列表。"""
+    """Remove duplicate news list by title."""
     seen_titles = set()
     deduplicated_news = []
 
@@ -705,7 +705,7 @@ def _deduplicate_news_items(news_list: List[Dict[str, Any]]) -> List[Dict[str, A
 
 
 def _sort_news_by_time(news_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """按发布时间倒序排序新闻。"""
+    """Sort news in descending order of release date."""
     return sorted(
         news_list,
         key=lambda item: _parse_publish_time(item.get("publish_time")) or datetime.min,
@@ -714,7 +714,7 @@ def _sort_news_by_time(news_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 def _summarize_news_item(news_item: Dict[str, Any]) -> str:
-    """获取新闻摘要，优先使用结构化摘要，其次回退到正文截断。"""
+    """To obtain news summaries, use structured summaries first, then fall back to text truncation."""
     summary = _collapse_whitespace(news_item.get("summary"))
     if summary:
         return summary
@@ -729,7 +729,7 @@ def _summarize_news_item(news_item: Dict[str, Any]) -> str:
 
 
 def _format_news_item(news_item: Dict[str, Any]) -> str:
-    """格式化单条新闻为结构化 Markdown。"""
+    """Format a single news item into structured Markdown."""
     title = _collapse_whitespace(news_item.get("title")) or "无标题"
     url = _collapse_whitespace(news_item.get("url"))
     source = _collapse_whitespace(news_item.get("source")) or _get_source_display_name(
@@ -760,7 +760,7 @@ def _format_news_item(news_item: Dict[str, Any]) -> str:
 
 
 def _format_news_section(news_list: List[Dict[str, Any]], section_title: str, source_note: str = "") -> str:
-    """将新闻列表格式化为 Markdown 章节。"""
+    """Format news list into Markdown chapters."""
     if not news_list:
         return ""
 
@@ -779,16 +779,16 @@ def _query_news_from_database(
     limit: int = 20,
 ) -> Dict[str, Any]:
     """
-    从 MongoDB 数据库查询新闻，并按启用的数据源聚合结果。
+    Query news from a MongoDB database and aggregate results by enabled data sources.
 
     Args:
-        symbol: 股票代码（6位代码，如 000001）
-        start_date: 开始日期
-        end_date: 结束日期
-        limit: 返回数量限制
+        symbol: Stock code (6-digit code, such as 000001)
+        start_date: start date
+        end_date: end date
+        limit: Return quantity limit
 
     Returns:
-        包含新闻列表、启用数据源和命中数据源的字典
+        A dictionary containing news lists, enabled data sources, and hit data sources
     """
     enabled_sources = _get_a_share_enabled_sources()
 
@@ -798,7 +798,7 @@ def _query_news_from_database(
         db = get_mongo_db_sync()
         collection = db.stock_news
 
-        logger.info(f"📊 [新闻数据库查询] 数据源优先级: {enabled_sources}")
+        logger.info(f"📊 [News database query] Data source priority: {enabled_sources}")
 
         query = {
             "symbol": symbol,
@@ -838,7 +838,7 @@ def _query_news_from_database(
                 used_sources.append(data_source)
 
         logger.info(
-            f"✅ [新闻数据库查询] 聚合到 {len(unique_news)} 条新闻，命中数据源: {used_sources or '无'}"
+            f"✅ [News database query] Aggregate to {len(unique_news)} news, hit data source: {used_sources or 'None'}"
         )
         return {
             "news": unique_news,
@@ -847,7 +847,7 @@ def _query_news_from_database(
         }
 
     except Exception as exc:
-        logger.error(f"❌ [新闻数据库查询] 查询失败: {exc}")
+        logger.error(f"❌ [News database query] Query failed: {exc}")
         return {
             "news": [],
             "enabled_sources": enabled_sources,
@@ -856,7 +856,7 @@ def _query_news_from_database(
 
 
 def _run_async_in_thread(coroutine_factory: Callable[[], Any], timeout: float = 30.0) -> Any:
-    """在独立线程中执行异步协程，避免事件循环冲突。"""
+    """Execute asynchronous coroutines in independent threads to avoid event loop conflicts."""
 
     def _runner() -> Any:
         import asyncio
@@ -880,9 +880,9 @@ def _fetch_tushare_news_live(
     end_date: datetime,
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
-    """从 Tushare 直接拉取指定时间窗口的多源实时新闻。"""
+    """Directly pull multi-source real-time news in a specified time window from Tushare."""
     logger.info(
-        f"📰 [统一新闻工具] 尝试 Tushare 实时新闻: symbol={symbol}, "
+        f"📰 [unified news tool] Try Tushare Live News: symbol={symbol}, "
         f"company_name={company_name or '-'}, window={start_date.strftime('%Y-%m-%d')}~{end_date.strftime('%Y-%m-%d')}"
     )
 
@@ -891,11 +891,11 @@ def _fetch_tushare_news_live(
 
         provider = get_tushare_provider()
     except Exception as exc:
-        logger.warning(f"⚠️ [统一新闻工具] 初始化 Tushare provider 失败: {exc}")
+        logger.warning(f"⚠️ [unified news tool] Failed to initialize Tushare provider: {exc}")
         return []
 
     if not provider or not provider.is_available() or provider.api is None:
-        logger.info("⚠️ [统一新闻工具] Tushare provider 不可用，跳过付费增强链路")
+        logger.info("⚠️ [unified news tool] Tushare provider Not available, skip the paid enhancement link")
         return []
 
     start_date_str = start_date.strftime("%Y-%m-%d %H:%M:%S")
@@ -905,7 +905,7 @@ def _fetch_tushare_news_live(
 
     for source_code in TUSHARE_LIVE_SOURCES:
         try:
-            logger.debug(f"📰 [统一新闻工具] Tushare 尝试新闻源: {source_code}")
+            logger.debug(f"📰 [unified news tool] Tushare Try a news source: {source_code}")
             news_df = provider.api.news(
                 src=source_code,
                 start_date=start_date_str,
@@ -914,7 +914,7 @@ def _fetch_tushare_news_live(
         except Exception as exc:
             error_text = str(exc).lower()
             if any(keyword in error_text for keyword in ["权限", "permission", "unauthorized", "access denied", "积分", "point"]):
-                logger.warning(f"⚠️ [统一新闻工具] Tushare 新闻权限不可用，跳过付费增强链路: {exc}")
+                logger.warning(f"⚠️ [unified news tool] Tushare News permission is not available, skip the paid enhancement link: {exc}")
                 return []
             logger.debug(f"⚠️ [统一新闻工具] Tushare 新闻源 {source_code} 拉取失败: {exc}")
             continue
@@ -933,7 +933,7 @@ def _fetch_tushare_news_live(
         if raw_row_count > fetch_limit * 2:
             logger.info(
                 f"📰 [统一新闻工具] Tushare 新闻源 {source_code} 原始返回 {raw_row_count} 条，"
-                f"按全量扫描避免公司相关新闻落在截断范围之外"
+                f"Scan in full to prevent company-related news from falling outside the truncation range"
             )
 
         processed_news = provider._process_tushare_news(  # type: ignore[attr-defined]
@@ -955,14 +955,14 @@ def _fetch_tushare_news_live(
             )
         else:
             logger.info(
-                f"📰 [统一新闻工具] Tushare 新闻源 {source_code} 有原始数据，但未命中目标公司相关候选"
+                f"📰 [unified news tool] Tushare news source {source_code} There is original data, but no relevant candidates for the target company were hit."
             )
 
         if len(_deduplicate_news_items(collected_news)) >= limit * 2:
             break
 
     if not collected_news:
-        logger.info("📰 [统一新闻工具] Tushare 实时链路未获取到可用候选")
+        logger.info("📰 [unified news tool] Tushare No available candidates were obtained for the real-time link")
         return []
 
     filtered_news = _filter_news_by_date_range(_deduplicate_news_items(collected_news), start_date, end_date)
@@ -977,9 +977,9 @@ def _fetch_akshare_news_live(
     end_date: datetime,
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
-    """从 AKShare 拉取结构化新闻，并严格按分析日期窗口过滤。"""
+    """Pull structured news from AKShare and filter strictly by analysis date window."""
     logger.info(
-        f"📰 [统一新闻工具] 尝试 AKShare 实时新闻: symbol={symbol}, "
+        f"📰 [unified news tool] Try AKShare Live News: symbol={symbol}, "
         f"window={start_date.strftime('%Y-%m-%d')}~{end_date.strftime('%Y-%m-%d')}"
     )
 
@@ -988,11 +988,11 @@ def _fetch_akshare_news_live(
 
         provider = AKShareProvider()
     except Exception as exc:
-        logger.warning(f"⚠️ [统一新闻工具] 初始化 AKShare provider 失败: {exc}")
+        logger.warning(f"⚠️ [unified news tool] Failed to initialize AKShare provider: {exc}")
         return []
 
     if not provider.is_available():
-        logger.info("⚠️ [统一新闻工具] AKShare provider 不可用，跳过免费回退链路")
+        logger.info("⚠️ [unified news tool] AKShare provider Not available, skip free fallback link")
         return []
 
     fetch_limit = max(limit * 5, 50)
@@ -1003,14 +1003,14 @@ def _fetch_akshare_news_live(
     try:
         news_list = _run_async_in_thread(_get_news, timeout=30.0) or []
     except concurrent.futures.TimeoutError:
-        logger.warning("⚠️ [统一新闻工具] AKShare 新闻获取超时，跳过免费回退链路")
+        logger.warning("⚠️ [unified news tool] AKShare News retrieval timed out, skipping free fallback link")
         return []
     except Exception as exc:
-        logger.warning(f"⚠️ [统一新闻工具] AKShare 新闻获取失败: {exc}")
+        logger.warning(f"⚠️ [unified news tool] AKShare Failed to get news: {exc}")
         return []
 
     if not isinstance(news_list, list):
-        logger.info("📰 [统一新闻工具] AKShare 实时链路返回了非列表结果，视为无效")
+        logger.info("📰 [unified news tool] AKShare The live link returned a non-list result and is considered invalid.")
         return []
 
     filtered_news = _filter_news_by_date_range(news_list, start_date, end_date)
@@ -1025,17 +1025,17 @@ def _fetch_google_news_candidates(
     end_date_str: str,
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
-    """从 Google News 抓取结构化候选新闻。"""
+    """Fetch structured candidate news from Google News."""
     try:
         from tradingagents.dataflows.news.google_news import getNewsData
     except Exception as exc:
-        logger.warning(f"⚠️ [统一新闻工具] 初始化 Google 新闻抓取失败: {exc}")
+        logger.warning(f"⚠️ [unified news tool] Failed to initialize Google News crawl: {exc}")
         return []
 
     try:
         raw_results = getNewsData(query.replace(" ", "+"), start_date_str, end_date_str)
     except Exception as exc:
-        logger.warning(f"⚠️ [统一新闻工具] Google 新闻抓取失败: {exc}")
+        logger.warning(f"⚠️ [unified news tool] Google News crawl failed: {exc}")
         return []
 
     news_items = []
@@ -1065,12 +1065,12 @@ def _fetch_finnhub_news_candidates(
     end_date_str: str,
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
-    """从 Finnhub 本地缓存中构建结构化新闻候选。"""
+    """Building structured news candidates from Finnhub local cache."""
     try:
         from tradingagents.config.config_manager import config_manager
         from tradingagents.dataflows.providers.us import get_data_in_range
     except Exception as exc:
-        logger.warning(f"⚠️ [统一新闻工具] 初始化 Finnhub 新闻读取失败: {exc}")
+        logger.warning(f"⚠️ [unified news tool] Failed to initialize Finnhub news reading: {exc}")
         return []
 
     try:
@@ -1082,7 +1082,7 @@ def _fetch_finnhub_news_candidates(
             config_manager.get_data_dir(),
         )
     except Exception as exc:
-        logger.warning(f"⚠️ [统一新闻工具] Finnhub 新闻读取失败: {exc}")
+        logger.warning(f"⚠️ [unified news tool] Finnhub News reading failed: {exc}")
         return []
 
     if not raw_results:
@@ -1113,12 +1113,12 @@ def _fetch_finnhub_news_candidates(
 
 
 def _normalize_news_title_key(title: Any) -> str:
-    """标准化新闻标题键，用于标题级去重。"""
+    """Standardized news title keys for title-level duplication removal."""
     return _collapse_whitespace(title).lower()
 
 
 def _collect_unique_text_values(*values: Any) -> List[str]:
-    """合并多个文本或文本列表，保持去重后的原始顺序。"""
+    """Merge multiple texts or text lists, maintaining the original order after deduplication."""
     collected: List[str] = []
     seen = set()
 
@@ -1138,7 +1138,7 @@ def _collect_unique_text_values(*values: Any) -> List[str]:
 
 
 def _build_news_id(news_item: Dict[str, Any]) -> str:
-    """为标题聚合后的新闻生成稳定的 news_id。"""
+    """Generate stable news_id for headline-aggregated news."""
     title_key = _normalize_news_title_key(news_item.get("title"))
     if not title_key:
         title_key = _collapse_whitespace(news_item.get("url")) or "untitled-news"
@@ -1147,7 +1147,7 @@ def _build_news_id(news_item: Dict[str, Any]) -> str:
 
 
 def _get_news_priority_key(news_item: Dict[str, Any]) -> Tuple[int, int, int, datetime]:
-    """获取新闻聚合时的优先级键。"""
+    """Get the priority key when aggregating news."""
     return (
         int(news_item.get("relevance_score", 0) or 0),
         1 if _collapse_whitespace(news_item.get("content")) else 0,
@@ -1157,7 +1157,7 @@ def _get_news_priority_key(news_item: Dict[str, Any]) -> Tuple[int, int, int, da
 
 
 def _normalize_news_cluster_item(news_item: Dict[str, Any]) -> Dict[str, Any]:
-    """标准化聚合候选新闻项。"""
+    """Standardized aggregation of candidate news items."""
     normalized_item = dict(news_item)
     normalized_item["title"] = _collapse_whitespace(normalized_item.get("title"))
     normalized_item["summary"] = _collapse_whitespace(normalized_item.get("summary"))
@@ -1190,7 +1190,7 @@ def _merge_news_cluster_items(
     existing_item: Dict[str, Any],
     incoming_item: Dict[str, Any],
 ) -> Dict[str, Any]:
-    """合并同标题新闻，保留更优主记录并聚合来源信息。"""
+    """Merge news with the same title, keep better master records and aggregate source information."""
     normalized_existing = _normalize_news_cluster_item(existing_item)
     normalized_incoming = _normalize_news_cluster_item(incoming_item)
 
@@ -1236,7 +1236,7 @@ def _merge_news_items_by_title(
     news_list: List[Dict[str, Any]],
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
-    """按标题聚合新闻并保留来源聚合信息。"""
+    """Aggregate news by headline and keep source aggregation information."""
     clusters: Dict[str, Dict[str, Any]] = {}
 
     for news_item in news_list:
@@ -1257,22 +1257,22 @@ def _merge_news_items_by_title(
 
 
 def _get_news_source_signal(news_item: Dict[str, Any]) -> Tuple[str, str]:
-    """根据来源判断新闻信号强度。"""
+    """Determine news signal strength based on source."""
     source_text = " ".join(
         _collect_unique_text_values(news_item.get("source_variants"), news_item.get("source"))
     )
 
     if any(keyword in source_text for keyword in HIGH_SIGNAL_NEWS_SOURCE_KEYWORDS):
-        return "高", "来源包含公告或主流财经媒体"
+        return "高", "Sources include announcements or mainstream financial media"
 
     if any(keyword in source_text for keyword in LOW_SIGNAL_NEWS_SOURCE_KEYWORDS):
         return "低", "来源偏社区或弱信号渠道"
 
-    return "中", "来源可作为线索，但仍需结合标题与细节判断"
+    return "中", "The source can be used as a clue, but it still needs to be judged based on the title and details."
 
 
 def _get_detail_recommendation(news_item: Dict[str, Any]) -> Tuple[str, str]:
-    """给出是否建议继续查看新闻明细的判断。"""
+    """Give a judgment as to whether it is recommended to continue viewing the news details."""
     title = _collapse_whitespace(news_item.get("title"))
     category = _collapse_whitespace(news_item.get("category"))
     relevance_score = int(news_item.get("relevance_score", 0) or 0)
@@ -1280,7 +1280,7 @@ def _get_detail_recommendation(news_item: Dict[str, Any]) -> Tuple[str, str]:
 
     if _contains_any_keyword(title, A_SHARE_BROAD_CONTEXT_KEYWORDS):
         if _contains_any_keyword(title, A_SHARE_ENUMERATION_MARKERS):
-            return "可暂不展开", "更像宏观提醒或多公司枚举新闻"
+            return "可暂不展开", "More like macro alerts or multi-company enumeration news"
         return "按需查看", "更像宏观背景或日历提醒"
 
     if category == "company_announcement" or _contains_any_keyword(title, A_SHARE_DIRECT_EVENT_KEYWORDS):
@@ -1293,13 +1293,13 @@ def _get_detail_recommendation(news_item: Dict[str, Any]) -> Tuple[str, str]:
         return "建议查看", source_reason
 
     if relevance_score >= 45:
-        return "按需查看", "标题具备一定研究相关性，可在需要时展开细节"
+        return "按需查看", "The title has some research relevance and can be expanded into details if needed."
 
     return "可暂不展开", "更像背景提及或弱相关线索"
 
 
 def _annotate_headline_items(news_list: List[Dict[str, Any]], limit: int = 20) -> List[Dict[str, Any]]:
-    """为标题候选补充 news_id、来源信号和明细建议。"""
+    """Supplement news_id, source signals and detail suggestions for headline candidates."""
     annotated_items = []
     for news_item in news_list[:limit]:
         annotated_item = _normalize_news_cluster_item(news_item)
@@ -1315,13 +1315,13 @@ def _annotate_headline_items(news_list: List[Dict[str, Any]], limit: int = 20) -
 
 
 def _format_variant_values(values: List[str], fallback: str) -> str:
-    """格式化候选聚合值。"""
+    """Format candidate aggregate values."""
     cleaned_values = _collect_unique_text_values(values)
     return " / ".join(cleaned_values[:4]) if cleaned_values else fallback
 
 
 def _format_headline_item(news_item: Dict[str, Any]) -> str:
-    """格式化新闻标题候选。"""
+    """Format news headline candidates."""
     title = _collapse_whitespace(news_item.get("title")) or "无标题"
     source_text = _format_variant_values(
         news_item.get("source_variants") or [],
@@ -1347,7 +1347,7 @@ def _format_headline_item(news_item: Dict[str, Any]) -> str:
 
 
 def _format_headline_section(news_list: List[Dict[str, Any]], section_title: str, source_note: str = "") -> str:
-    """将标题候选格式化为 Markdown 章节。"""
+    """Format title candidates as Markdown chapters."""
     if not news_list:
         return ""
 
@@ -1360,7 +1360,7 @@ def _format_headline_section(news_list: List[Dict[str, Any]], section_title: str
 
 
 def _format_news_detail_item(news_item: Dict[str, Any]) -> str:
-    """格式化单条新闻明细。"""
+    """Format single news details."""
     source_text = _format_variant_values(
         news_item.get("source_variants") or [],
         _collapse_whitespace(news_item.get("source")) or "未知来源",
@@ -1374,7 +1374,7 @@ def _format_news_detail_item(news_item: Dict[str, Any]) -> str:
     keywords = _coerce_keywords(news_item.get("keywords"))
     url = _collapse_whitespace(news_item.get("url"))
 
-    lines = [f"## [news_id: {news_item.get('news_id')}] {_collapse_whitespace(news_item.get('title')) or '无标题'}"]
+    lines = [f"## [news_id: {news_item.get('news_id')}] {_collapse_whitespace(news_item.get('title')) or 'Untitled'}"]
     lines.append(
         f"- 时间: {_format_publish_time(news_item.get('publish_time'))} | 来源: {source_text} | 数据源: {data_source_text}"
     )
@@ -1388,7 +1388,7 @@ def _format_news_detail_item(news_item: Dict[str, Any]) -> str:
     if content and content != summary:
         lines.append(f"- 正文要点: {content}")
     else:
-        lines.append("- 正文要点: 工具结果未提供更长正文，当前只能基于标题与摘要展开分析。")
+        lines.append("- Main points of the text: The tool results do not provide longer text, and currently the analysis can only be carried out based on the title and abstract.")
 
     if keywords:
         lines.append(f"- 关键词: {', '.join(keywords[:8])}")
@@ -1405,7 +1405,7 @@ def _format_news_detail_item(news_item: Dict[str, Any]) -> str:
 
 
 def _parse_requested_news_ids(news_ids: str) -> List[str]:
-    """解析 detail 工具传入的 news_id 列表。"""
+    """Parse the news_id list passed in by the detail tool."""
     normalized_ids = news_ids or ""
     for separator in ["，", "；", ";", "|", "\n", "\t"]:
         normalized_ids = normalized_ids.replace(separator, ",")
@@ -1420,7 +1420,7 @@ def _parse_requested_news_ids(news_ids: str) -> List[str]:
 
 
 def _build_a_share_news_bundle(ticker: str, curr_date: str, limit: int = 20) -> Dict[str, Any]:
-    """构建 A 股新闻标题/明细候选集。"""
+    """Construct a candidate set of A-share news headlines/details."""
     start_date, end_date, start_date_str, end_date_str = _build_a_share_news_window(curr_date)
     clean_ticker = _normalize_a_share_symbol(ticker)
     company_name = _get_company_name(clean_ticker)
@@ -1447,10 +1447,10 @@ def _build_a_share_news_bundle(ticker: str, curr_date: str, limit: int = 20) -> 
         combined_candidates.append(candidate)
 
     live_source_plan = _build_a_share_live_source_plan(enabled_sources)
-    logger.info(f"📰 [统一新闻工具] A股新闻候选构建实时回退链: {live_source_plan}")
+    logger.info(f"📰 [unified news tool] A Stock news candidates build real-time fallback chains: {live_source_plan}")
     for live_source in live_source_plan:
         if live_source != "akshare":
-            logger.info(f"📰 [统一新闻工具] 跳过非实时分析源: {live_source}")
+            logger.info(f"📰 [unified news tool] Skip non-real-time analytics sources: {live_source}")
             continue
 
         live_news = _fetch_akshare_news_live(
@@ -1490,7 +1490,7 @@ def _build_a_share_news_bundle(ticker: str, curr_date: str, limit: int = 20) -> 
 
 
 def _build_hk_news_bundle(ticker: str, curr_date: str, limit: int = 20) -> Dict[str, Any]:
-    """构建港股新闻标题/明细候选集。"""
+    """Construct a candidate set of Hong Kong stock news headlines/details."""
     _, _, start_date_str, end_date_str = _build_a_share_news_window(curr_date)
     google_candidates = _fetch_google_news_candidates(
         query=f"{ticker} 港股",
@@ -1509,12 +1509,12 @@ def _build_hk_news_bundle(ticker: str, curr_date: str, limit: int = 20) -> Dict[
         "end_date": end_date_str,
         "company_name": ticker,
         "items": annotated_items,
-        "footer_note": "---\n*港股标题候选当前来自 Google News 检索；若工具未提供更长正文，明细仅包含摘要与链接。*",
+        "footer_note": "---\n*Hong Kong stock headline candidates are currently retrieved from Google News; if the tool does not provide longer text, the details only include abstracts and links.*",
     }
 
 
 def _build_us_news_bundle(ticker: str, curr_date: str, limit: int = 20) -> Dict[str, Any]:
-    """构建美股新闻标题/明细候选集。"""
+    """Construct a candidate set of US stock news headlines/details."""
     _, _, start_date_str, end_date_str = _build_a_share_news_window(curr_date)
     finnhub_candidates = _fetch_finnhub_news_candidates(
         ticker=ticker,
@@ -1548,12 +1548,12 @@ def _build_us_news_bundle(ticker: str, curr_date: str, limit: int = 20) -> Dict[
         "end_date": end_date_str,
         "company_name": ticker,
         "items": annotated_items,
-        "footer_note": "---\n*美股标题候选优先使用 Finnhub 缓存和 Google News 检索；若工具未提供更长正文，明细仅包含摘要与链接。*",
+        "footer_note": "---\n*U.S. stock headline candidates are prioritized using Finnhub cache and Google News retrieval; if the tool does not provide longer text, the details will only include abstracts and links.*",
     }
 
 
 def _build_stock_news_bundle(ticker: str, curr_date: str, limit: int = 20) -> Dict[str, Any]:
-    """按市场构建统一新闻候选集。"""
+    """Constructing a unified news candidate set by market."""
     from tradingagents.utils.stock_utils import StockUtils
 
     market_info = StockUtils.get_market_info(ticker)
@@ -1580,16 +1580,16 @@ def _build_stock_news_bundle(ticker: str, curr_date: str, limit: int = 20) -> Di
 
 
 def _build_a_share_footer(enabled_sources: List[str]) -> str:
-    """生成 A 股新闻工具的尾部说明。"""
+    """Generate tail notes for A-share news tools."""
     live_path = _build_a_share_live_source_plan(enabled_sources)
     live_path_text = " → ".join(_get_live_source_display_name(source) for source in live_path)
     priority_text = " > ".join(_build_a_share_analysis_priority(enabled_sources))
 
     footer_lines = [
         "---",
-        f"*A股优先路径: 数据库缓存{' → ' + live_path_text if live_path_text else ''}*",
+        f"*A share preference path: Database cache{' → ' + live_path_text if live_path_text else ''}*",
         f"*当前分析优先级: {priority_text}*",
-        "*Tushare 新闻源当前仅用于同步入库，不参与实时新闻分析调用。*",
+        "*Tushare The news source is currently only used for synchronous storage and does not participate in real-time news analysis calls.*",
     ]
     return "\n".join(footer_lines)
 
@@ -1598,7 +1598,7 @@ def _build_a_share_footer(enabled_sources: List[str]) -> str:
 @register_tool(
     tool_id="get_stock_news_headlines_unified",
     name="统一股票新闻标题",
-    description="获取股票新闻标题候选、来源判断和去重结果，供后续按需拉取明细",
+    description="Obtain stock news headline candidates, source judgment and deduplication results for subsequent pull details on demand",
     category="news",
     is_online=True,
     auto_register=True,
@@ -1608,27 +1608,27 @@ def _build_a_share_footer(enabled_sources: List[str]) -> str:
     preferred_for=["news_headline_screening", "news_deduplication", "company_event_discovery"],
 )
 def get_stock_news_headlines_unified(
-    ticker: Annotated[str, "股票代码（支持A股、港股、美股）"],
-    curr_date: Annotated[str, "当前日期，格式：YYYY-MM-DD"],
-    limit: Annotated[int, "返回的标题候选数量，默认12"] = 12,
+    ticker: Annotated[str, "Stock code (supports A shares, Hong Kong stocks, and US stocks)"],
+    curr_date: Annotated[str, "Current date, format:YYYY-MM-DD"],
+    limit: Annotated[int, "Number of title candidates returned, default 12"] = 12,
 ) -> str:
-    """获取去重后的股票新闻标题候选，支持 A 股、港股、美股，返回标题、来源判断和去重结果。
+    """Obtain deduplicated stock news headline candidates, support A shares, Hong Kong stocks, and US stocks, and return titles, source judgments, and deduplication results.
 
     Args:
-        ticker: 股票代码（支持 A 股、港股、美股）
-        curr_date: 当前日期，格式 YYYY-MM-DD
-        limit: 返回的标题候选数量，默认 12（实际限制在 1-30 之间）
+        ticker: Stock code (supports A shares, Hong Kong stocks, and US stocks)
+        curr_date: current date, format YYYY-MM-DD
+        limit: Number of title candidates returned, default 12 (actual limit is between 1-30)
 
     Returns:
-        str: Markdown 格式的新闻标题候选报告，内容包括 —
-            # {ticker} 新闻标题候选：报告主标题
-            **股票类型**: 市场类型名称
-            **分析日期**: 实际使用的分析日期
-            **新闻时间范围**: 起始日期 至 结束日期
-            ## 去重后的新闻标题：标题候选列表（每条含 news_id、标题、来源、时间、摘要等）
-            底部说明：来源路径与下一步操作提示
-        无新闻时返回包含 "当前未获取到可用新闻标题" 的 Markdown 字符串
-        异常时返回以 "统一新闻标题工具执行失败" 开头的错误说明字符串
+        str: Markdown Format news headline candidate report, including —
+            # {ticker} News title candidate: report main title
+            **Stock type**: Market type name
+            **Analysis date**: Actual analysis date used
+            **News time range**: start date to end date
+            ## News titles after deduplication: title candidate list (each article contains news_id, title, source, time, summary, etc.)
+            Bottom description: Source path and next step operation tips
+        Returns include when there is no news "No available news titles are currently available" Markdown string
+        In case of exception, return to "Unified news headline tool execution failed" Error description string at the beginning
     """
     try:
         bundle = _build_stock_news_bundle(ticker, curr_date, limit=max(1, min(limit, 30)))
@@ -1637,10 +1637,10 @@ def get_stock_news_headlines_unified(
         if not news_items:
             return (
                 f"# {ticker} 新闻标题候选\n\n"
-                f"**股票类型**: {bundle.get('market_name')}\n"
-                f"**分析日期**: {bundle.get('analysis_date')}\n"
-                f"**新闻时间范围**: {bundle.get('start_date')} 至 {bundle.get('end_date')}\n\n"
-                "## 新闻标题候选\n当前未获取到可用新闻标题。"
+                f"**Stock type**: {bundle.get('market_name')}\n"
+                f"**Analysis date**: {bundle.get('analysis_date')}\n"
+                f"**News time range**: {bundle.get('start_date')} to {bundle.get('end_date')}\n\n"
+                "## News headline candidates\n No available news titles are currently available."
             )
 
         result_parts = [
@@ -1653,10 +1653,10 @@ def get_stock_news_headlines_unified(
             _format_headline_section(
                 news_items,
                 "去重后的新闻标题",
-                "先根据 news_id、来源、相关性和明细建议筛选事件，再调用 get_stock_news_details_unified 拉取需要深挖的新闻明细。",
+                "First filter events based on news_id, source, relevance and detail suggestions, and then call get_stock_news_details_unified to pull the news details that need to be dug in depth.",
             ),
             "",
-            "*下一步：将选中的 news_id（可逗号分隔多个）传给 get_stock_news_details_unified，获取摘要与正文要点。*",
+            "*Next step: Pass the selected news_id (multiple ones can be separated by commas) to get_stock_news_details_unified to get the summary and main text points.*",
         ]
 
         footer_note = _collapse_whitespace(bundle.get("footer_note"))
@@ -1666,7 +1666,7 @@ def get_stock_news_headlines_unified(
         return "\n".join(part for part in result_parts if part is not None)
 
     except Exception as exc:
-        error_msg = f"统一新闻标题工具执行失败: {exc}"
+        error_msg = f"Unified news headline tool execution failed: {exc}"
         logger.error(f"❌ [统一新闻标题工具] {error_msg}")
         return error_msg
 
@@ -1675,7 +1675,7 @@ def get_stock_news_headlines_unified(
 @register_tool(
     tool_id="get_stock_news_details_unified",
     name="统一股票新闻明细",
-    description="根据标题工具返回的 news_id 获取股票新闻摘要、正文要点和来源明细",
+    description="Get stock news summaries, text highlights and source details based on the news_id returned by the headline tool",
     category="news",
     is_online=True,
     auto_register=True,
@@ -1685,32 +1685,32 @@ def get_stock_news_headlines_unified(
     preferred_for=["news_detail_review", "news_content_analysis", "event_investigation"],
 )
 def get_stock_news_details_unified(
-    ticker: Annotated[str, "股票代码（支持A股、港股、美股）"],
-    curr_date: Annotated[str, "当前日期，格式：YYYY-MM-DD"],
-    news_ids: Annotated[str, "要查看明细的 news_id，可使用逗号分隔多个 ID"],
+    ticker: Annotated[str, "Stock code (supports A shares, Hong Kong stocks, and US stocks)"],
+    curr_date: Annotated[str, "Current date, format:YYYY-MM-DD"],
+    news_ids: Annotated[str, "To view detailed news_id, use commas to separate multiple ID"],
 ) -> str:
-    """根据 news_id 获取股票新闻明细，返回新闻摘要、正文要点和来源明细。
+    """Obtain stock news details based on news_id and return news summary, text highlights and source details.
 
     Args:
-        ticker: 股票代码（支持 A 股、港股、美股）
-        curr_date: 当前日期，格式 YYYY-MM-DD
-        news_ids: 要查看明细的 news_id，可使用逗号分隔多个 ID
+        ticker: Stock code (supports A shares, Hong Kong stocks, and US stocks)
+        curr_date: current date, format YYYY-MM-DD
+        news_ids: To view detailed news_id, use commas to separate multiple ID
 
     Returns:
-        str: Markdown 格式的新闻明细报告，内容包括 —
-            # {ticker} 新闻明细：报告主标题
-            **股票类型**: 市场类型名称
-            **分析日期**: 实际使用的分析日期
-            **新闻时间范围**: 起始日期 至 结束日期
-            新闻明细正文：每条新闻的摘要、正文要点、来源链接等（按传入 news_ids 顺序）
-            底部说明：可选，未找到的 news_id 提示与来源说明
-        未提供有效 news_id 时返回以 "统一新闻明细工具执行失败" 开头的错误说明字符串
-        未找到请求的 news_id 时返回包含未找到 ID 列表的 Markdown 字符串
-        异常时返回以 "统一新闻明细工具执行失败" 开头的错误说明字符串
+        str: Markdown A detailed news report in the format of —
+            # {ticker} News details: main title of the report
+            **Stock type**: Market type name
+            **Analysis date**: Actual analysis date used
+            **News time range**: start date to end date
+            News details text: summary, main points, source links, etc. of each news (in the order of incoming news_ids)
+            Bottom description: optional, news_id not found prompt and source description
+        When no valid news_id is provided, returns "Unified news detail tool execution failed" Error description string at the beginning
+        Returns a Markdown string containing a list of not found IDs when the requested news_id is not found
+        In case of exception, return to "Unified news detail tool execution failed" Error description string at the beginning
     """
     requested_ids = _parse_requested_news_ids(news_ids)
     if not requested_ids:
-        return "统一新闻明细工具执行失败: 未提供有效的 news_id。"
+        return "Unified news detail tool execution failed: No valid news_id provided."
 
     try:
         bundle = _build_stock_news_bundle(
@@ -1725,9 +1725,9 @@ def get_stock_news_details_unified(
         if not selected_items:
             return (
                 f"# {ticker} 新闻明细\n\n"
-                f"**股票类型**: {bundle.get('market_name')}\n"
-                f"**分析日期**: {bundle.get('analysis_date')}\n\n"
-                f"未找到请求的 news_id: {', '.join(missing_ids)}。可能原因是实时新闻已刷新，请先重新调用 get_stock_news_headlines_unified。"
+                f"**Stock type**: {bundle.get('market_name')}\n"
+                f"**Analysis date**: {bundle.get('analysis_date')}\n\n"
+                f"Requested not found news_id: {', '.join(missing_ids)}. The possible reason is that the real-time news has been refreshed, please call get_stock_news_headlines_unified again first."
             )
 
         result_parts = [
@@ -1744,7 +1744,7 @@ def get_stock_news_details_unified(
             result_parts.extend(
                 [
                     "",
-                    f"*未找到以下 news_id：{', '.join(missing_ids)}。实时新闻可能已刷新，请先重新调用 get_stock_news_headlines_unified。*",
+                    f"*The following news_id was not found:{', '.join(missing_ids)}. Live news may have been refreshed, please call get_stock_news_headlines_unified again first.*",
                 ]
             )
 
@@ -1755,7 +1755,7 @@ def get_stock_news_details_unified(
         return "\n".join(part for part in result_parts if part is not None)
 
     except Exception as exc:
-        error_msg = f"统一新闻明细工具执行失败: {exc}"
+        error_msg = f"Unified news detail tool execution failed: {exc}"
         logger.error(f"❌ [统一新闻明细工具] {error_msg}")
         return error_msg
 
@@ -1764,7 +1764,7 @@ def get_stock_news_details_unified(
 @register_tool(
     tool_id="get_stock_news_unified",
     name="统一股票新闻",
-    description="获取股票相关新闻（支持A股、港股、美股），结构化返回新闻标题、摘要、来源链接、情感倾向、重要性等字段",
+    description="Obtain stock-related news (supports A-shares, Hong Kong stocks, and US stocks), and returns structured fields such as news titles, abstracts, source links, emotional tendencies, and importance.",
     category="news",
     is_online=True,
     auto_register=True,
@@ -1774,32 +1774,32 @@ def get_stock_news_details_unified(
     preferred_for=["news_analysis", "company_event_review", "market_sentiment_collection"],
 )
 def get_stock_news_unified(
-    ticker: Annotated[str, "股票代码（支持A股、港股、美股）"],
-    curr_date: Annotated[str, "当前日期，格式：YYYY-MM-DD"]
+    ticker: Annotated[str, "Stock code (supports A shares, Hong Kong stocks, and US stocks)"],
+    curr_date: Annotated[str, "Current date, format:YYYY-MM-DD"]
 ) -> str:
     """
-    统一的股票新闻工具
-    自动识别股票类型（A股、港股、美股）并调用相应的新闻数据源
+    Unified stock news tool
+    Automatically identify stock types (A shares, Hong Kong stocks, US stocks) and call corresponding news data sources
 
     Args:
-        ticker: 股票代码（如：000001、0700.HK、AAPL）
-        curr_date: 当前日期（格式：YYYY-MM-DD）
+        ticker: Stock code (such as: 000001, 0700.HK, AAPL)
+        curr_date: Current date (format: YYYY-MM-DD)
 
     Returns:
-        str: 新闻分析报告
+        str: News analysis report
     """
-    logger.info(f"📰 [统一新闻工具] 分析股票: {ticker}")
+    logger.info(f"📰 [unified news tool] Analyze stocks: {ticker}")
 
     try:
         from tradingagents.utils.stock_utils import StockUtils
 
-        # 自动识别股票类型
+        # Automatically identify stock types
         market_info = StockUtils.get_market_info(ticker)
         is_china = market_info["is_china"]
         is_hk = market_info["is_hk"]
         is_us = market_info["is_us"]
 
-        logger.info(f"📰 [统一新闻工具] 股票类型: {market_info['market_name']}")
+        logger.info(f"📰 [unified news tool] Stock type: {market_info['market_name']}")
 
         curr_date_clean = _normalize_analysis_date(curr_date)
         start_date, end_date, start_date_str, end_date_str = _build_a_share_news_window(curr_date_clean)
@@ -1808,7 +1808,7 @@ def get_stock_news_unified(
         footer_note = ""
 
         if is_china:
-            logger.info(f"🇨🇳 [统一新闻工具] 处理A股新闻...")
+            logger.info(f"🇨🇳 [unified news tool] Handle A-share news...")
 
             clean_ticker = _normalize_a_share_symbol(ticker)
             company_name = _get_company_name(clean_ticker)
@@ -1836,14 +1836,14 @@ def get_stock_news_unified(
                 logger.info(f"✅ [统一新闻工具] 从数据库缓存获取到 {len(db_news)} 条结构化新闻")
             else:
                 live_source_plan = _build_a_share_live_source_plan(enabled_sources)
-                logger.info(f"📰 [统一新闻工具] A股实时新闻回退链: {live_source_plan}")
+                logger.info(f"📰 [unified news tool] A Stock real-time news fallback chain: {live_source_plan}")
                 live_source_candidates: Dict[str, List[Dict[str, Any]]] = {}
                 selected_live_source = None
 
                 for live_source in live_source_plan:
-                    logger.info(f"📰 [统一新闻工具] 开始尝试实时新闻源: {live_source}")
+                    logger.info(f"📰 [unified news tool] Start trying real-time news feeds: {live_source}")
                     if live_source != "akshare":
-                        logger.info(f"📰 [统一新闻工具] 跳过非实时分析源: {live_source}")
+                        logger.info(f"📰 [unified news tool] Skip non-real-time analytics sources: {live_source}")
                         continue
 
                     live_news = _fetch_akshare_news_live(
@@ -1868,7 +1868,7 @@ def get_stock_news_unified(
                     live_source_candidates[live_source] = ranked_live_news
                     logger.info(
                         f"✅ [统一新闻工具] {live_source} 实时链路命中 {len(ranked_live_news)} 条新闻，"
-                        f"最高相关性评分: {_get_top_relevance_score(ranked_live_news)}"
+                        f"Highest relevance score: {_get_top_relevance_score(ranked_live_news)}"
                     )
 
                     if _is_high_confidence_a_share_news_item(
@@ -1885,21 +1885,21 @@ def get_stock_news_unified(
                 if selected_live_source is None:
                     selected_live_source = _select_best_live_news_source(live_source_candidates, live_source_plan)
                     logger.info(
-                        f"📰 [统一新闻工具] A股实时新闻最佳候选源: {selected_live_source or '无'}"
+                        f"📰 [unified news tool] A Best candidate source for real-time stock news: {selected_live_source or 'None'}"
                     )
 
                 if selected_live_source:
                     live_news = live_source_candidates[selected_live_source]
-                    live_section_title = "AKShare东方财富新闻（实时）"
-                    live_note = "已按分析日期窗口严格过滤，并按公司直指度与事件相关性择优排序展示"
+                    live_section_title = "AKShare Oriental Fortune News (real time)"
+                    live_note = "It has been strictly filtered by the analysis date window and sorted and displayed based on company directness and event relevance."
 
                     result_data.append(_format_news_section(live_news, live_section_title, live_note))
                 else:
-                    result_data.append("## A股新闻\n未获取到符合分析日期窗口的新闻数据。")
+                    result_data.append("## A stock news\n No news data matching the analysis date window was obtained.")
 
         elif is_hk:
-            # 港股：使用Google新闻
-            logger.info(f"🇭🇰 [统一新闻工具] 处理港股新闻...")
+            # Hong Kong stocks: Use Google News
+            logger.info(f"🇭🇰 [unified news tool] Handle Hong Kong stock news...")
 
             try:
                 search_query = f"{ticker} 港股"
@@ -1910,34 +1910,34 @@ def get_stock_news_unified(
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(get_google_news, search_query, curr_date_clean)
                     try:
-                        news_data = future.result(timeout=30.0)  # 最多等待30秒
+                        news_data = future.result(timeout=30.0)  # Wait up to 30 seconds
                         if news_data:
                             result_data.append(f"## Google新闻\n{news_data}")
-                            logger.info(f"✅ 成功获取Google新闻")
+                            logger.info(f"✅ Successfully obtained Google News")
                         else:
-                            logger.warning(f"⚠️ Google新闻返回空结果")
+                            logger.warning(f"⚠️ Google News returns empty results")
                     except FutureTimeoutError:
-                        logger.warning(f"⚠️ Google新闻获取超时（30秒），跳过Google新闻以避免阻塞流程")
+                        logger.warning(f"⚠️ Google News fetch timeout (30 seconds), skipping Google News to avoid blocking the process")
                     except Exception as e:
-                        logger.error(f"❌ Google新闻获取失败: {e}")
+                        logger.error(f"❌ Google Failed to get news: {e}")
             except Exception as google_e:
-                logger.error(f"❌ Google新闻获取异常: {google_e}")
+                logger.error(f"❌ Google News acquisition exception: {google_e}")
 
         elif is_us:
-            # 美股：使用Finnhub新闻和Google新闻
-            logger.info(f"🇺🇸 [统一新闻工具] 处理美股新闻...")
+            # US stocks: Use Finnhub News and Google News
+            logger.info(f"🇺🇸 [unified news tool] Handle US stock news...")
 
-            # 1. 获取Finnhub新闻
+            # 1. Get Finnhub News
             try:
                 from tradingagents.dataflows.interface import get_finnhub_news
                 news_data = get_finnhub_news(ticker, start_date_str, end_date_str)
                 if news_data:
                     result_data.append(f"## 美股新闻\n{news_data}")
             except Exception as e:
-                logger.error(f"❌ Finnhub新闻获取失败: {e}")
-                result_data.append(f"## 美股新闻\n获取失败: {e}")
+                logger.error(f"❌ Finnhub Failed to get news: {e}")
+                result_data.append(f"## US stock news\n Failed to obtain: {e}")
 
-            # 2. 获取Google新闻作为补充（带超时保护，避免阻塞整个流程）
+            # 2. Get Google News as a supplement (with timeout protection to avoid blocking the entire process)
             try:
                 search_query = f"{ticker} stock news"
 
@@ -1947,23 +1947,23 @@ def get_stock_news_unified(
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(get_google_news, search_query, curr_date_clean)
                     try:
-                        news_data = future.result(timeout=30.0)  # 最多等待30秒
+                        news_data = future.result(timeout=30.0)  # Wait up to 30 seconds
                         if news_data:
                             result_data.append(f"## Google新闻\n{news_data}")
-                            logger.info(f"✅ 成功获取Google新闻")
+                            logger.info(f"✅ Successfully obtained Google News")
                         else:
-                            logger.warning(f"⚠️ Google新闻返回空结果")
+                            logger.warning(f"⚠️ Google News returns empty results")
                     except FutureTimeoutError:
-                        logger.warning(f"⚠️ Google新闻获取超时（30秒），跳过Google新闻以避免阻塞流程")
+                        logger.warning(f"⚠️ Google News fetch timeout (30 seconds), skipping Google News to avoid blocking the process")
                     except Exception as e:
-                        logger.error(f"❌ Google新闻获取失败: {e}")
+                        logger.error(f"❌ Google Failed to get news: {e}")
             except Exception as google_e:
-                logger.error(f"❌ Google新闻获取异常: {google_e}")
+                logger.error(f"❌ Google News acquisition exception: {google_e}")
 
         if not result_data:
-            result_data.append("## 新闻结果\n当前未获取到可用新闻数据。")
+            result_data.append("## news results\n No news data is currently available.")
 
-        # 组合所有数据
+        # Combine all data
         combined_result = f"""# {ticker} 新闻分析
 
 **股票类型**: {market_info['market_name']}
@@ -1975,7 +1975,7 @@ def get_stock_news_unified(
 {footer_note}
 """
 
-        logger.info(f"📰 [统一新闻工具] 数据获取完成，总长度: {len(combined_result)}")
+        logger.info(f"📰 [unified news tool] Data acquisition completed, total length: {len(combined_result)}")
         return combined_result
 
     except Exception as e:

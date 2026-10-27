@@ -3,15 +3,15 @@ import 'vue-router'
 // Augment Vue Router's RouteMeta to include app-specific fields
 declare module 'vue-router' {
   interface RouteMeta {
-    // 页面标题
+    // Page title
     title?: string
-    // 是否需要认证
+    // Whether certification is required
     requiresAuth?: boolean
-    // 菜单图标名称（与 Element Plus 图标名称一致）
+    // Menu icon name (same as Element Plus icon name)
     icon?: string
-    // 是否在菜单中隐藏
+    // Whether to hide in the menu
     hideInMenu?: boolean
-    // 页面切换动画名称（用于 <transition name="...">）
+    // Page switching animation name (used for <transition name="...">) 
     transition?: string
   }
 }

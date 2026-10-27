@@ -1,4 +1,4 @@
-"""Skill 运行时项目访问公开门面。"""
+"""Skill Runtime project access public facade."""
 
 from __future__ import annotations
 
@@ -165,22 +165,22 @@ def query_stock_collection(
     sort: Optional[Sequence[Sequence[Any]]] = None,
     limit: int = 100,
 ) -> List[Dict[str, Any]]:
-    """同步查询已开放的股票集合。
+    """Synchronously query the open stock collection.
 
     Args:
-        collection: 集合名称，必须在 SUPPORTED_COLLECTIONS 中（如 "stock_basic_info" /
+        collection: Collection name, must be in SUPPORTED_COLLECTIONS (e.g. "stock_basic_info" /
             "market_quotes" / "stock_daily_quotes" / "stock_financial_data" /
             "stock_financial_periods" / "stock_news"）
-        filters: MongoDB 查询过滤条件，为 None 时等价于空 dict（查询全部），默认 None
-        projection: MongoDB 投影规则，为 None 时默认排除 _id 字段（{"_id": 0}），默认 None
-        sort: 排序规则，形如 [("trade_date", -1), ("symbol", 1)] 的二元组序列，为 None 时不排序，默认 None
-        limit: 返回文档数量上限，会被截断到 [1, 500] 区间，默认 100
+        filters: MongoDB Query filter conditions. When None, it is equivalent to an empty dict (query all). Default None
+        projection: MongoDB Projection rule, when None the _id field is excluded by default ({"_id": 0}) , Default None
+        sort: Sorting rules, in the form [("trade_date", -1), ("symbol", 1)] A sequence of tuples, not sorted when None, default None
+        limit: The upper limit of the number of documents returned will be truncated to [1, 500] interval, default 100
 
     Returns:
-        list[dict]: 命中文档列表，每个元素为集合中的一条原始文档（dict）——
-            - 默认已剔除 _id 字段（除非 projection 显式包含）
-            - 列表长度 <= limit（经过 [1, 500] 截断后的值）
-            - 文档字段结构依集合定义而异，常见字段如 symbol/code/name/trade_date 等
+        list[dict]: Hit document list, each element is an original document (dict) in the collection——
+            - The _id field is stripped out by default (unless projection explicitly includes it)
+            - List length <= limit (passed [1, 500] truncated value)
+            - The document field structure varies depending on the collection definition. Common fields such as symbol/code/name/trade_date, etc.
     """
     collection_name = str(collection or "").strip()
     if collection_name not in SUPPORTED_COLLECTIONS:
@@ -198,21 +198,21 @@ def aggregate_stock_collection(
     pipeline: Sequence[Dict[str, Any]],
     limit: int = 100,
 ) -> List[Dict[str, Any]]:
-    """同步执行已开放股票集合的聚合查询。
+    """Synchronously execute aggregation queries for open stock collections.
 
     Args:
-        collection: 集合名称，必须在 SUPPORTED_COLLECTIONS 中（如 "stock_basic_info" /
+        collection: Collection name, must be in SUPPORTED_COLLECTIONS (e.g. "stock_basic_info" /
             "market_quotes" / "stock_daily_quotes" / "stock_financial_data" /
             "stock_financial_periods" / "stock_news"）
-        pipeline: MongoDB 聚合管道阶段序列，形如 [{"$match": {...}}, {"$group": {...}}]，
-            为空时返回全部文档
-        limit: 返回结果数量上限，会被截断到 [1, 500] 区间，默认 100
+        pipeline: MongoDB Aggregation pipeline stage sequence, of the form [{"$match": {...}}, {"$group": {...}}], 
+            Returns all documents if empty
+        limit: The upper limit of the number of returned results will be truncated to [1, 500] interval, default 100
 
     Returns:
-        list[dict]: 聚合结果列表，每个元素为聚合管道输出的一条文档（dict）——
-            - 已自动剔除每条结果中的 _id 字段
-            - 列表长度 <= limit（经过 [1, 500] 截断后的值）
-            - 字段结构由 pipeline 的 $group / $project 等阶段决定
+        list[dict]: Aggregation result list, each element is a document (dict) output by the aggregation pipeline——
+            - The _id field has been automatically stripped out of each result
+            - List length <= limit (passed [1, 500] truncated value)
+            - The field structure is determined by pipeline s $group / $project Determine in stages
     """
     collection_name = str(collection or "").strip()
     if collection_name not in SUPPORTED_COLLECTIONS:
@@ -231,33 +231,33 @@ def inspect_stock_collection_schema(
     sample_size: int = 20,
     filters: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """返回集合样本中的顶层字段、覆盖率、条数和结构摘要。
+    """Returns the top-level fields, coverage, number of entries, and structure summary in the collection sample.
 
     Args:
-        collection: 集合名称，必须在 SUPPORTED_COLLECTIONS 中（如 "stock_basic_info" /
+        collection: Collection name, must be in SUPPORTED_COLLECTIONS (e.g. "stock_basic_info" /
             "market_quotes" / "stock_daily_quotes" / "stock_financial_data" /
             "stock_financial_periods" / "stock_news"）
-        sample_size: 采样文档数量，会被截断到 [1, 100] 区间，默认 20
-        filters: MongoDB 查询过滤条件，为 None 时采样全部文档，默认 None
+        sample_size: The number of sampled documents will be truncated to [1, 100] interval, default 20
+        filters: MongoDB Query filter conditions, sample all documents when None, default None
 
     Returns:
-        dict: 字段说明（代码中使用 .get() 或 [] 访问这些 key）——
-            collection: 实际查询的集合名称
-            matching_document_count: 命中文档总数（filters 为空时为估算值）
-            matching_count_is_estimated: 命中数是否为估算值（filters 为空时为 True，
-                否则为 False 表示精确计数）
-            sample_count: 实际采样到的文档数（<= sample_size 截断后的值）
-            query_keys: 集合元数据中标记的常用查询字段列表（来自 catalog）
-            preferred_access: 集合元数据中标记的推荐访问方式列表（来自 catalog）
-            top_level_fields: 样本中出现的顶层字段名列表，按出现频次降序、字段名升序排列
-            field_coverage: 字段覆盖率字典 {field_name: coverage_ratio}，coverage_ratio
-                为 0-1 之间保留 4 位小数的浮点数，表示该字段在样本中的出现比例
-            sample_document_summaries: 前 min(3, sample_count) 条文档的摘要列表，
-                每个元素结构 — field_count(顶层字段总数),
-                non_null_field_count(非空字段数), fields(顶层字段名列表，最多 20 个),
-                truncated_field_count(被截断的字段数，可选),
-                scalar_preview(标量字段预览字典，可选),
-                nested_fields(嵌套对象/数组字段摘要字典，可选)
+        dict: Field description (used in code .get() or [] access these keys)——
+            collection: The collection name of the actual query
+            matching_document_count: Total number of hit documents (estimated when filters is empty)
+            matching_count_is_estimated: Whether the number of hits is an estimate (True when filters is empty,
+                False otherwise for exact count)
+            sample_count: The actual number of documents sampled (<= sample_size truncated value)
+            query_keys: List of commonly used query fields tagged in collection metadata (from catalog)
+            preferred_access: List of recommended access methods tagged in the collection metadata (from catalog)
+            top_level_fields: List of top-level field names that appear in the sample, sorted by frequency of occurrence in descending order and field name in ascending order.
+            field_coverage: Field coverage dictionary {field_name: coverage_ratio}, coverage_ratio
+                A floating point number with 4 decimal places between 0 and 1, indicating the proportion of occurrence of this field in the sample
+            sample_document_summaries: before min(3, sample_count) summary list of documents,
+                Each element structure — field_count(Total number of top-level fields),
+                non_null_field_count(Number of non-null fields), fields(List of top-level field names, up to 20),
+                truncated_field_count(Number of fields to be truncated, optional),
+                scalar_preview(Scalar field preview dictionary, optional),
+                nested_fields(Nested object/array field summary dictionary, optional)
     """
     collection_name = str(collection or "").strip()
     if collection_name not in SUPPORTED_COLLECTIONS:
@@ -309,31 +309,31 @@ def inspect_symbol_documents(
     symbol: str,
     limit: int = 5,
 ) -> Dict[str, Any]:
-    """返回指定 symbol 在集合中的样本文档摘要，而不是完整文档。
+    """Returns a sample document summary of the specified symbol in the collection, rather than the full document.
 
     Args:
-        collection: 集合名称，必须在 SUPPORTED_COLLECTIONS 中（如 "stock_basic_info" /
+        collection: Collection name, must be in SUPPORTED_COLLECTIONS (e.g. "stock_basic_info" /
             "market_quotes" / "stock_daily_quotes" / "stock_financial_data" /
             "stock_financial_periods" / "stock_news"）
-        symbol: A 股股票代码（6 位数字或含交易所前后缀），内部会 zfill(6) 标准化，
-            同时匹配 symbol 或 code 字段
-        limit: 返回文档摘要数量上限，会被截断到 [1, 20] 区间，默认 5
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix), internal meeting zfill(6) standardization,
+            Matches both symbol or code fields
+        limit: The maximum number of document summaries returned will be truncated to [1, 20] interval, default 5
 
     Returns:
-        dict: 字段说明（代码中使用 .get() 或 [] 访问这些 key）——
-            collection: 实际查询的集合名称
-            symbol: 标准化后的 6 位股票代码
-            matching_document_count: 集合中匹配该 symbol/code 的文档总数（精确计数）
-            returned_summary_count: 实际返回的文档摘要数量（<= limit 截断后的值）
-            documents: 文档摘要列表，每个元素结构 — field_count(顶层字段总数),
-                non_null_field_count(非空字段数), fields(顶层字段名列表，最多 20 个),
-                truncated_field_count(被截断的字段数，可选),
-                scalar_preview(标量字段预览字典，可选),
-                nested_fields(嵌套对象/数组字段摘要字典，可选)
-            排序规则（按集合类型自动选择）：stock_daily_quotes 按 trade_date 倒序；
-                stock_financial_data 按 (report_period, report_date) 倒序；
-                stock_financial_periods 按 (report_period, ann_date) 倒序；
-                stock_news 按 publish_time 倒序；其它集合不排序
+        dict: Field description (used in code .get() or [] access these keys)——
+            collection: The collection name of the actual query
+            symbol: Standardized 6-digit stock code
+            matching_document_count: The total number of documents in the collection matching this symbol/code (exact count)
+            returned_summary_count: The actual number of document summaries returned (<= limit truncated value)
+            documents: Document summary list, per element structure — field_count(Total number of top-level fields),
+                non_null_field_count(Number of non-null fields), fields(List of top-level field names, up to 20),
+                truncated_field_count(Number of fields to be truncated, optional),
+                scalar_preview(Scalar field preview dictionary, optional),
+                nested_fields(Nested object/array field summary dictionary, optional)
+            Sorting rules (automatically selected by collection type): stock_daily_quotes in reverse order by trade_date;
+                stock_financial_data press (report_period, report_date) reverse order;
+                stock_financial_periods press (report_period, ann_date) reverse order;
+                stock_news Sorted in reverse order by publish_time; other collections are not sorted
     """
     collection_name = str(collection or "").strip()
     if collection_name not in SUPPORTED_COLLECTIONS:
@@ -372,26 +372,26 @@ def inspect_field_coverage(
     filters: Optional[Dict[str, Any]] = None,
     sample_size: int = 50,
 ) -> Dict[str, Any]:
-    """返回字段在样本文档中的出现率和非空覆盖率。
+    """Returns the occurrence rate and non-null coverage of the field in the sample document.
 
     Args:
-        collection: 集合名称，必须在 SUPPORTED_COLLECTIONS 中（如 "stock_basic_info" /
+        collection: Collection name, must be in SUPPORTED_COLLECTIONS (e.g. "stock_basic_info" /
             "market_quotes" / "stock_daily_quotes" / "stock_financial_data" /
             "stock_financial_periods" / "stock_news"）
-        fields: 待统计覆盖率的字段名序列，空字符串/空白字段会被自动过滤
-        filters: MongoDB 查询过滤条件，为 None 时采样全部文档，默认 None
-        sample_size: 采样文档数量上限，会被截断到 [1, 200] 区间，默认 50
+        fields: Sequence of field names to be counted. Empty strings/blank fields will be automatically filtered.
+        filters: MongoDB Query filter conditions, sample all documents when None, default None
+        sample_size: The upper limit of the number of sampled documents will be truncated to [1, 200] interval, default 50
 
     Returns:
-        dict: 字段说明（代码中使用 .get() 或 [] 访问这些 key）——
-            collection: 实际查询的集合名称
-            sample_count: 实际采样到的文档数（<= sample_size 截断后的值）
-            fields: 字段覆盖率行列表，每个元素结构 —
-                field(字段名), present_count(出现的文档数),
-                non_null_count(非空文档数，None/""/[]/{} 视为空),
-                present_coverage(出现率 0-1 保留 4 位小数),
-                non_null_coverage(非空覆盖率 0-1 保留 4 位小数；
-                    sample_count 为 0 时为 0.0)
+        dict: Field description (used in code .get() or [] access these keys)——
+            collection: The collection name of the actual query
+            sample_count: The actual number of documents sampled (<= sample_size truncated value)
+            fields: Field coverage row list, per element structure —
+                field(Field name), present_count(The number of documents that appear),
+                non_null_count(The number of non-empty documents,None/""/[]/{} Treat as empty),
+                present_coverage(Occurrence 0-1 to 4 decimal places),
+                non_null_coverage(Non-null coverage 0-1 with 4 decimal places;
+                    sample_count When it is 0, it is 0.0)
     """
     collection_name = str(collection or "").strip()
     if collection_name not in SUPPORTED_COLLECTIONS:
@@ -432,92 +432,92 @@ def inspect_field_coverage(
 
 
 PROJECT_DATA_ACCESS_DOC = """
-【项目数据访问接口】
+ [Project data access interface]
 
-生成的 Skill 运行在独立 Python 子进程中，执行入口是同步函数。
-因此：
-- 不要在 Skill 里定义 async def
-- 不要在 Skill 里使用 await
-- 若需要外部 provider 的异步方法，优先调用本模块提供的同步 wrapper
+The generated Skill runs in an independent Python sub-process, and the execution entry point is a synchronous function.
+Therefore:
+- Don t define it in Skill async def
+- Do not use in Skill await
+- If you need an asynchronous method from an external provider, give priority to calling the synchronization method provided by this module. wrapper
 
-说明：
-- 本模块是 Skill 运行时的公开门面
-- catalog.py / external_sources.py / sync_wrappers.py 属于内部实现细分层
-- 生成的 Skill 代码应只导入本模块或 data_access.py，不要直接导入这些内部模块
+Description:
+- This module is the public face of the Skill runtime
+- catalog.py / external_sources.py / sync_wrappers.py Belongs to the internal implementation subdivision layer
+- The generated Skill code should only import this module or data_access.py, do not directly import these internal modules
 
-允许导入：from core.skill_runtime.project_access import ...
+Allow import:from core.skill_runtime.project_access import ...
 
-可用同步接口：
+Available synchronization interfaces:
 
 1. list_supported_stock_collections() -> list[dict]
-   - 查看当前允许 Skill 直接访问的本地集合目录
+   - View local collection directories that are currently allowed direct access by Skills
 
 2. query_stock_collection(collection, filters=None, projection=None, sort=None, limit=100) -> list[dict]
-   - 通用本地集合查询入口
-    - 允许访问: stock_basic_info, market_quotes, stock_daily_quotes, stock_financial_data, stock_financial_periods, stock_news
-   - 适用于需要直接按字段读库的 Skill
+   - General local collection query entrance
+    - Allow access: stock_basic_info, market_quotes, stock_daily_quotes, stock_financial_data, stock_financial_periods, stock_news
+   - Suitable for those who need to read the library directly by field Skill
 
 3. aggregate_stock_collection(collection, pipeline, limit=100) -> list[dict]
-   - 通用本地聚合入口
-   - 只有 data_access 的 helper 无法满足时再使用
+   - Universal local aggregation portal
+   - Only use it when the helper of data_access cannot be satisfied.
 
-侦察/诊断专用接口（前置分析可用，最终 Skill 主逻辑通常不应依赖）：
+Reconnaissance/diagnosis dedicated interface (pre-analysis available, final Skill main logic should generally not be relied upon):
 
 4. inspect_stock_collection_schema(collection, sample_size=20, filters=None) -> dict
-    - 返回集合样本中的字段列表、字段覆盖率、估算/匹配条数和少量样本摘要
+    - Returns the field list, field coverage, estimated/matched number, and few sample summaries in the collection sample
 
 5. inspect_symbol_documents(collection, symbol, limit=5) -> dict
-    - 返回指定 symbol 在集合中的最新样本文档摘要、命中条数和字段结构
+    - Returns the latest sample document summary, hit number and field structure of the specified symbol in the collection
 
 6. inspect_field_coverage(collection, fields, filters=None, sample_size=50) -> dict
-    - 返回给定字段的出现率和非空覆盖率
+    - Returns the occurrence and non-null coverage of the given field
 
 7. list_configured_external_sources(market_category="a_shares") -> list[str]
-   - 返回当前系统启用的数据源优先级，已排除 local
+   - Returns the data source priority currently enabled in the system, excluded local
 
 8. get_external_stock_news(symbol, source=None, limit=10, market_category="a_shares") -> dict
-   - 同步获取外部新闻，返回 {source, data}
+   - Get external news synchronously and return {source, data}
 
 9. get_external_historical_data(symbol, start_date, end_date, period="daily", source=None, market_category="a_shares") -> dict
-   - 同步获取外部历史行情，内部已桥接异步 provider
+   - Synchronously obtain external historical quotes, and internally bridged asynchronous provider
 
 10. get_external_financial_data(symbol, source=None, market_category="a_shares", report_type="quarterly", period=None, limit=4) -> dict
-   - 同步获取外部财务数据，内部已桥接异步 provider
+   - Synchronously obtain external financial data, internally bridged asynchronous provider
 
 11. get_external_valuation_data(symbol, start_date, end_date, source=None, market_category="a_shares") -> dict
-   - 同步获取外部历史估值序列（PE_TTM、PB_MRQ、PS_TTM、PCF_TTM），内部使用 BaoStock
-   - 返回 {source: "baostock", data: [{date, close, pe_ttm, pb_mrq, ps_ttm, pcf_ttm}, ...]}
-   - 估值类 Skill（历史分位数、安全边际、PE/PB 通道等）优先用这个函数，不要用 get_external_historical_data（那个只含 OHLCV 价格）
+   - Synchronously obtain external historical valuation sequences (PE_TTM, PB_MRQ, PS_TTM, PCF_TTM) for internal use BaoStock
+   - Return {source: "baostock", data: [{date, close, pe_ttm, pb_mrq, ps_ttm, pcf_ttm}, ...]}
+   - Valuation skills (historical quantiles, safety margins, PE/PB channels, etc.) preferentially use this function instead of get_external_historical_data (the one only contains OHLCV prices)
 
 12. get_external_query_news(query, curr_date, look_back_days=7, source="google_news") -> dict
-   - 通过项目已有接口获取 Google News / Finnhub 新闻
+   - Obtain Google News / Finnhub news through the existing interface of the project
 
-使用示例1：直接读本地集合
+Usage example 1: Read local collection directly
     from core.skill_runtime.project_access import query_stock_collection
 
     peers = query_stock_collection(
         "stock_basic_info",
-        filters={"industry": {"$regex": "白酒", "$options": "i"}, "pb": {"$gt": 0}},
+        filters={"industry": {"$regex": "Liquor", "$options": "i"}, "pb": {"$gt": 0}},
         projection={"_id": 0, "symbol": 1, "name": 1, "pb": 1, "industry": 1},
         limit=50,
     )
 
-使用示例2：按当前配置自动选择外部历史数据源
+Usage example 2: Automatically select external historical data sources according to current configuration
     from core.skill_runtime.project_access import get_external_historical_data
 
     history = get_external_historical_data("600519", "2024-01-01", "2025-01-01")
     rows = history["data"]
 
-使用示例3：显式指定外部财务源
+Usage example 3: Explicitly specify external financial sources
     from core.skill_runtime.project_access import get_external_financial_data
 
     finance = get_external_financial_data("600519", source="tushare", report_type="quarterly", limit=4)
 
-硬规则：
-- 不要自行 import pymongo / MongoClient
-- 不要硬编码数据库名
-- 不要在 Skill 中直接 await provider.get_historical_data / get_financial_data
-- inspect_* 系列接口主要用于前置侦察、调试和字段核验，不建议在最终 Skill 业务逻辑中依赖
-- 优先复用 data_access.py 和本模块的同步接口，只有确有必要时再直接 import 第三方库
-- 不要直接导入 core.skill_runtime.external_sources / sync_wrappers / catalog
+Hard rules:
+- Don t do it yourself import pymongo / MongoClient
+- Do not hardcode database names
+- Do not directly await provider.get_historical_data / get_financial_data
+- inspect_* The series of interfaces are mainly used for pre-reconnaissance, debugging and field verification. It is not recommended to rely on them in the final Skill business logic.
+- Prioritize reusing data_access.py and the synchronization interface of this module, and only directly import third-party libraries when necessary.
+- Do not import directly core.skill_runtime.external_sources / sync_wrappers / catalog
 """

@@ -2,9 +2,9 @@ import { ApiClient } from './request'
 import type { FactorDiagnosticPayload, FactorWarningPayload } from './screening'
 
 export interface QuoteResponse {
-  symbol: string  // 主字段：6位股票代码
-  code?: string   // 兼容字段（已废弃）
-  full_symbol?: string  // 完整代码（如 000001.SZ）
+  symbol: string  // Main field: 6-digit stock code
+  code?: string   // Compatible fields (deprecated)
+  full_symbol?: string  // Complete code (such as 000001.SZ)
   name?: string
   market?: string
   price?: number
@@ -12,19 +12,19 @@ export interface QuoteResponse {
   amount?: number
   prev_close?: number
   turnover_rate?: number
-  amplitude?: number  // 振幅（替代量比）
+  amplitude?: number  // Amplitude (substitution ratio)
   trade_date?: string
   updated_at?: string
 }
 
 export interface FundamentalsResponse {
-  symbol: string  // 主字段：6位股票代码
-  code?: string   // 兼容字段（已废弃）
-  full_symbol?: string  // 完整代码（如 000001.SZ）
+  symbol: string  // Main field: 6-digit stock code
+  code?: string   // Compatible fields (deprecated)
+  full_symbol?: string  // Complete code (such as 000001.SZ)
   name?: string
   industry?: string
   market?: string
-  sector?: string  // 板块
+  sector?: string  // plate
   security_type?: string
   fund_type?: string
   track_index?: string
@@ -46,13 +46,13 @@ export interface FundamentalsResponse {
   redemption_status?: string
   pe?: number
   pb?: number
-  ps?: number      // 🔥 新增：市销率
+  ps?: number      // 🔥 New: price-to-sales ratio
   pe_ttm?: number
   pb_mrq?: number
-  ps_ttm?: number  // 🔥 新增：市销率（TTM）
+  ps_ttm?: number  // 🔥 New: Price to Sales Ratio (TTM)
   roe?: number
   roa?: number
-  debt_ratio?: number  // 🔥 新增：负债率
+  debt_ratio?: number  // 🔥 New: Debt ratio
   debt_to_assets?: number
   dividend_yield?: number
   dividend_yield_ttm?: number
@@ -81,9 +81,9 @@ export interface FundamentalsResponse {
   circ_mv?: number
   turnover_rate?: number
   volume_ratio?: number
-  pe_is_realtime?: boolean  // PE是否为实时数据
-  pe_source?: string        // PE数据来源
-  pe_updated_at?: string    // PE更新时间
+  pe_is_realtime?: boolean  // PE Is it real-time data?
+  pe_source?: string        // PE Data source
+  pe_updated_at?: string    // PE Update time
   factor_diagnostics?: Record<string, FactorDiagnosticPayload>
   factor_warnings?: Record<string, FactorWarningPayload>
   updated_at?: string
@@ -100,8 +100,8 @@ export interface KlineBar {
 }
 
 export interface KlineResponse {
-  symbol: string  // 主字段：6位股票代码
-  code?: string   // 兼容字段（已废弃）
+  symbol: string  // Main field: 6-digit stock code
+  code?: string   // Compatible fields (deprecated)
   period: 'day'|'week'|'month'|'5m'|'15m'|'30m'|'60m'
   limit: number
   adj: 'none'|'qfq'|'hfq'
@@ -118,8 +118,8 @@ export interface NewsItem {
 }
 
 export interface NewsResponse {
-  symbol: string  // 主字段：6位股票代码
-  code?: string   // 兼容字段（已废弃）
+  symbol: string  // Main field: 6-digit stock code
+  code?: string   // Compatible fields (deprecated)
   days: number
   limit: number
   include_announcements: boolean
@@ -192,19 +192,19 @@ export interface StockFinancialsResponse {
 
 export const stocksApi = {
   /**
-   * 获取股票行情
-   * @param symbol 6位股票代码
+   * Get stock quotes
+   * @param symbol 6 stock code
    */
   async getQuote(symbol: string) {
     return ApiClient.get<QuoteResponse>(`/api/stocks/${symbol}/quote`)
   },
 
   /**
-   * 数据校验
-   * @param symbol 股票代码
-   * @param analysisDate 分析日期（YYYY-MM-DD）
-   * @param marketType 市场类型（cn/hk/us）
-   * @param options 校验选项
+   * Data verification
+   * @param symbol Stock code
+   * @param analysisDate Analysis date (YYYY-MM-DD)
+   * @param marketType Market type (cn/hk/us)
+   * @param options Validation options
    */
   async validateData(
     symbol: string,
@@ -230,17 +230,17 @@ export const stocksApi = {
   },
 
   /**
-   * 获取股票基本面数据
-   * @param symbol 6位股票代码
+   * Get stock fundamental data
+   * @param symbol 6 stock code
    */
   async getFundamentals(symbol: string) {
     return ApiClient.get<FundamentalsResponse>(`/api/stocks/${symbol}/fundamentals`)
   },
 
   /**
-   * 获取股票最新财务明细
-   * @param symbol 6位股票代码
-   * @param options includeRaw: 是否返回 raw_data 分组明细
+   * Get the latest financial details of a stock
+   * @param symbol 6 stock code
+   * @param options includeRaw: Whether to return raw_data grouping details
    */
   async getFinancials(symbol: string, options?: { source?: string; includeRaw?: boolean }) {
     return ApiClient.get<StockFinancialsResponse>(
@@ -254,22 +254,22 @@ export const stocksApi = {
   },
 
   /**
-   * 获取K线数据
-   * @param symbol 6位股票代码
-   * @param period K线周期
-   * @param limit 数据条数
-   * @param adj 复权方式
+   * Get K-line data
+   * @param symbol 6 stock code
+   * @param period K line period
+   * @param limit Number of data items
+   * @param adj Restoration method
    */
   async getKline(symbol: string, period: KlineResponse['period'] = 'day', limit = 120, adj: KlineResponse['adj'] = 'none') {
     return ApiClient.get<KlineResponse>(`/api/stocks/${symbol}/kline`, { period, limit, adj })
   },
 
   /**
-   * 获取股票新闻
-   * @param symbol 6位股票代码
-   * @param days 天数
-   * @param limit 数量限制
-   * @param includeAnnouncements 是否包含公告
+   * Get stock news
+   * @param symbol 6 stock code
+   * @param days days
+   * @param limit Quantity limit
+   * @param includeAnnouncements Whether to include announcements
    */
   async getNews(symbol: string, days = 30, limit = 50, includeAnnouncements = true) {
     return ApiClient.get<NewsResponse>(`/api/stocks/${symbol}/news`, { days, limit, include_announcements: includeAnnouncements })

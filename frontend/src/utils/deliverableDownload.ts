@@ -1,30 +1,30 @@
 /**
- * 交付物文件下载拦截器（全局）
+ * Deliverable file download interceptor (global)
  *
- * 背景：智能助手回复中的下载链接（/api/assistant/deliverables/*.xlsx）是
- * <a> 标签，浏览器直接导航不带 Authorization 头（JWT 存 localStorage，仅
- * XHR/fetch 会携带），历史消息里的链接点击必然 401"未登录或登录已过期"。
+ * Background: Download link in smart assistant reply (/api/assistant/deliverables/*.xlsx) Yes
+ * <a> tag, the browser navigates directly without the Authorization header (JWT is stored in localStorage, only
+ * XHR/fetch will be carried), the link in the historical message will be clicked 401"Not logged in or your login has expired". 
  *
- * 方案：document 捕获阶段全局委托，拦截该类链接的点击，改用 fetch
- * （带 JWT 头）请求后以 blob 触发浏览器下载。
- *   - 历史消息中的旧链接（无签名）→ fetch 带 JWT → 可下载
- *   - 新签名链接（?exp=&sig=）→ 同样走此路径，行为一致
- *   - 未登录/过期 → 提示用户重新登录
+ * Solution: Document capture phase global delegation, intercept the click of this type of link, use fetch
+ *  (Trigger browser download as blob after request (with JWT header).
+ *   - Old links in historical messages (without signature)→ fetch bring JWT → Downloadable
+ *   - New signature link (?exp=&sig=) → Follow this path and behave the same way
+ *   - Not logged in/expired → Prompt user to log in again
  *
- * 全局一次性绑定，覆盖智能助手主页、悬浮助手、股票详情页等所有
- * 渲染 markdown 消息的位置，后续新增入口无需重复接线。
+ * Global one-time binding, covering smart assistant homepage, floating assistant, stock details page, etc.
+ * The position where markdown messages are rendered, and subsequent new entries do not need to be rewired.
  */
 
-// 匹配智能助手交付物下载链接（相对路径或绝对路径均可）
+// Match the intelligent assistant deliverable download link (either relative path or absolute path)
 const DELIVERABLE_HREF_PATTERN = /\/api\/assistant\/deliverables\//
 
-/** 从 Content-Disposition 提取文件名（支持 RFC 5987 filename* 与普通 filename） */
+/** Extract filename from Content-Disposition (supports RFC 5987 filename* with ordinary filename) */
 function extractFilename(
   contentDisposition: string | null,
   fallbackHref: string
 ): string {
   if (contentDisposition) {
-    // filename*=UTF-8''%E8%B5%9B... 优先（FastAPI 对中文文件名用此格式）
+    // filename*=UTF-8''%E8%B5%9B... Priority (FastAPI uses this format for Chinese file names)
     const starMatch = contentDisposition.match(/filename\*=(?:UTF-8''|utf-8'')([^;]+)/i)
     if (starMatch) {
       try {
@@ -42,7 +42,7 @@ function extractFilename(
       }
     }
   }
-  // fallback：URL path 末段
+  // fallback: URL path final section
   try {
     const path = fallbackHref.split('?')[0]
     return decodeURIComponent(path.substring(path.lastIndexOf('/') + 1)) || 'download.xlsx'
@@ -52,8 +52,8 @@ function extractFilename(
 }
 
 async function downloadDeliverable(href: string): Promise<void> {
-  // 动态引入避免 utils 层硬依赖 pinia（token 过期刷新由 request.ts 体系负责，
-  // 这里兜底 localStorage 直读，保持与 request.ts 相同的取值链）
+  // Dynamic introduction avoids the hard dependence of the utils layer on pinia (the request.ts system is responsible for token expiration refresh,
+  // Here, localStorage is read directly, keeping the same value chain as request.ts)
   const { useAuthStore } = await import('@/stores/auth')
   const authStore = useAuthStore()
   const token = authStore.token || localStorage.getItem('auth-token')
@@ -68,12 +68,12 @@ async function downloadDeliverable(href: string): Promise<void> {
 
     if (resp.status === 401) {
       const { ElMessage } = await import('element-plus')
-      ElMessage.error('登录已过期，请重新登录后再次点击下载')
+      ElMessage.error('Login has expired, please log in again and click download again')
       return
     }
     if (!resp.ok) {
       const { ElMessage } = await import('element-plus')
-      ElMessage.error(`下载失败（HTTP ${resp.status}），请重新导出后再试`)
+      ElMessage.error(`Download failed (HTTP ${resp.status}) , Please re-export and try again`)
       return
     }
 
@@ -88,15 +88,15 @@ async function downloadDeliverable(href: string): Promise<void> {
     a.remove()
     URL.revokeObjectURL(url)
   } catch (err) {
-    console.error('[deliverableDownload] 下载失败:', err)
+    console.error('[deliverableDownload] Download failed:', err)
     const { ElMessage } = await import('element-plus')
-    ElMessage.error('下载失败，请检查网络后重试')
+    ElMessage.error('Download failed, please check the network and try again')
   }
 }
 
 let installed = false
 
-/** 安装全局交付物下载拦截（幂等，在应用入口调用一次） */
+/** Install global deliverable download interception (idempotent, called once at the application entry) */
 export function setupDeliverableDownloadInterceptor(): void {
   if (installed) return
   installed = true
@@ -104,7 +104,7 @@ export function setupDeliverableDownloadInterceptor(): void {
   document.addEventListener(
     'click',
     (event) => {
-      // 捕获阶段拦截，抢在浏览器导航之前
+      // Interception during the capture phase, before browser navigation
       const target = event.target as HTMLElement | null
       const anchor = target?.closest?.('a[href]') as HTMLAnchorElement | null
       if (!anchor) return

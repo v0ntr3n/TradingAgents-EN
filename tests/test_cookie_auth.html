@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>测试 Cookie 认证</title>
+    <title>Test Cookie Authentication</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,35 +34,35 @@
     </style>
 </head>
 <body>
-    <h1>测试混合认证（Session Cookie + JWT Token）</h1>
+    <h1>Test Hybrid Certification (Session Cookie + JWT Token) </h1>
 
     <div class="test-section">
-        <h2>1. 登录测试</h2>
-        <button onclick="testLogin()">登录（获取 Cookie 和 Token）</button>
+        <h2>1. Login test</h2>
+        <button onclick="testLogin()">Login (get Cookie and Token)</button>
         <div id="login-result"></div>
     </div>
 
     <div class="test-section">
-        <h2>2. Cookie 认证测试</h2>
-        <button onclick="testCookieAuth()">使用 Cookie 认证（不带 Authorization）</button>
+        <h2>2. Cookie Certification testing</h2>
+        <button onclick="testCookieAuth()">Use Cookie Authentication (without Authorization)</button>
         <div id="cookie-result"></div>
     </div>
 
     <div class="test-section">
-        <h2>3. JWT Token 认证测试</h2>
-        <button onclick="testJWTAuth()">使用 JWT Token 认证</button>
+        <h2>3. JWT Token Certification testing</h2>
+        <button onclick="testJWTAuth()">Authentication using JWT Token</button>
         <div id="jwt-result"></div>
     </div>
 
     <div class="test-section">
-        <h2>4. 退出登录测试</h2>
-        <button onclick="testLogout()">退出登录（清除 Cookie 和 Session）</button>
+        <h2>4. Log out test</h2>
+        <button onclick="testLogout()">Log out (clear cookies and session)</button>
         <div id="logout-result"></div>
     </div>
 
     <div class="test-section">
-        <h2>5. 查看 Cookies</h2>
-        <button onclick="showCookies()">查看当前 Cookies</button>
+        <h2>5. View Cookies</h2>
+        <button onclick="showCookies()">View current Cookies</button>
         <div id="cookies-result"></div>
     </div>
 
@@ -70,10 +70,10 @@
         const API_BASE = 'http://localhost:8000';
         let accessToken = null;
 
-        // 登录测试
+        // Login test
         async function testLogin() {
             const resultDiv = document.getElementById('login-result');
-            resultDiv.innerHTML = '<p class="info">正在登录...</p>';
+            resultDiv.innerHTML = '<p class="info">logging in...</p>';
 
             try {
                 const response = await fetch(`${API_BASE}/api/auth/login`, {
@@ -81,7 +81,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    credentials: 'include',  // 重要：允许发送和接收 Cookie
+                    credentials: 'include',  // IMPORTANT: Allow sending and receiving Cookie
                     body: JSON.stringify({
                         username: 'admin',
                         password: 'admin123'
@@ -93,55 +93,55 @@
                 if (data.success) {
                     accessToken = data.data.access_token;
                     resultDiv.innerHTML = `
-                        <p class="success">✅ 登录成功！</p>
+                        <p class="success">✅ Login successful!</p>
                         <pre>${JSON.stringify(data, null, 2)}</pre>
                         <p class="info">JWT Token: ${accessToken.substring(0, 50)}...</p>
                     `;
                 } else {
-                    resultDiv.innerHTML = `<p class="error">❌ 登录失败：${data.message}</p>`;
+                    resultDiv.innerHTML = `<p class="error">❌ Login failed:${data.message}</p>`;
                 }
             } catch (error) {
-                resultDiv.innerHTML = `<p class="error">❌ 错误：${error.message}</p>`;
+                resultDiv.innerHTML = `<p class="error">❌ Error:${error.message}</p>`;
             }
         }
 
-        // Cookie 认证测试
+        // Cookie Certification testing
         async function testCookieAuth() {
             const resultDiv = document.getElementById('cookie-result');
-            resultDiv.innerHTML = '<p class="info">正在测试 Cookie 认证...</p>';
+            resultDiv.innerHTML = '<p class="info">Testing cookie authentication...</p>';
 
             try {
                 const response = await fetch(`${API_BASE}/api/auth/me`, {
                     method: 'GET',
-                    credentials: 'include'  // 重要：发送 Cookie
-                    // 注意：不设置 Authorization header
+                    credentials: 'include'  // IMPORTANT: SEND Cookie
+                    // Note: Do not set Authorization header
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
                     resultDiv.innerHTML = `
-                        <p class="success">✅ Cookie 认证成功！</p>
+                        <p class="success">✅ Cookie Certification successful!</p>
                         <pre>${JSON.stringify(data, null, 2)}</pre>
                     `;
                 } else {
-                    resultDiv.innerHTML = `<p class="error">❌ Cookie 认证失败：${data.message}</p>`;
+                    resultDiv.innerHTML = `<p class="error">❌ Cookie Authentication failed:${data.message}</p>`;
                 }
             } catch (error) {
-                resultDiv.innerHTML = `<p class="error">❌ 错误：${error.message}</p>`;
+                resultDiv.innerHTML = `<p class="error">❌ Error:${error.message}</p>`;
             }
         }
 
-        // JWT Token 认证测试
+        // JWT Token Certification testing
         async function testJWTAuth() {
             const resultDiv = document.getElementById('jwt-result');
 
             if (!accessToken) {
-                resultDiv.innerHTML = '<p class="error">❌ 请先登录获取 Token</p>';
+                resultDiv.innerHTML = '<p class="error">❌ Please log in first to obtain Token</p>';
                 return;
             }
 
-            resultDiv.innerHTML = '<p class="info">正在测试 JWT Token 认证...</p>';
+            resultDiv.innerHTML = '<p class="info">Testing JWT Token authentication...</p>';
 
             try {
                 const response = await fetch(`${API_BASE}/api/auth/me`, {
@@ -156,21 +156,21 @@
 
                 if (data.success) {
                     resultDiv.innerHTML = `
-                        <p class="success">✅ JWT Token 认证成功！</p>
+                        <p class="success">✅ JWT Token Certification successful!</p>
                         <pre>${JSON.stringify(data, null, 2)}</pre>
                     `;
                 } else {
-                    resultDiv.innerHTML = `<p class="error">❌ JWT Token 认证失败：${data.message}</p>`;
+                    resultDiv.innerHTML = `<p class="error">❌ JWT Token Authentication failed:${data.message}</p>`;
                 }
             } catch (error) {
-                resultDiv.innerHTML = `<p class="error">❌ 错误：${error.message}</p>`;
+                resultDiv.innerHTML = `<p class="error">❌ Error:${error.message}</p>`;
             }
         }
 
-        // 退出登录测试
+        // Log out test
         async function testLogout() {
             const resultDiv = document.getElementById('logout-result');
-            resultDiv.innerHTML = '<p class="info">正在退出登录...</p>';
+            resultDiv.innerHTML = '<p class="info">Logging out...</p>';
 
             try {
                 const response = await fetch(`${API_BASE}/api/auth/logout`, {
@@ -183,29 +183,29 @@
                 if (data.success) {
                     accessToken = null;
                     resultDiv.innerHTML = `
-                        <p class="success">✅ 退出登录成功！</p>
+                        <p class="success">✅ Log out successfully!</p>
                         <pre>${JSON.stringify(data, null, 2)}</pre>
                     `;
                 } else {
-                    resultDiv.innerHTML = `<p class="error">❌ 退出登录失败：${data.message}</p>`;
+                    resultDiv.innerHTML = `<p class="error">❌ Logout failed:${data.message}</p>`;
                 }
             } catch (error) {
-                resultDiv.innerHTML = `<p class="error">❌ 错误：${error.message}</p>`;
+                resultDiv.innerHTML = `<p class="error">❌ Error:${error.message}</p>`;
             }
         }
 
-        // 查看 Cookies
+        // View Cookies
         function showCookies() {
             const resultDiv = document.getElementById('cookies-result');
             const cookies = document.cookie;
 
             if (cookies) {
                 resultDiv.innerHTML = `
-                    <p class="success">当前 Cookies：</p>
+                    <p class="success">Current Cookies:</p>
                     <pre>${cookies}</pre>
                 `;
             } else {
-                resultDiv.innerHTML = '<p class="info">没有 Cookies</p>';
+                resultDiv.innerHTML = '<p class="info">No Cookies</p>';
             }
         }
     </script>

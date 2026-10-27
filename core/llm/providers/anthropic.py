@@ -1,7 +1,7 @@
 """
-Anthropic Claude 适配器
+Anthropic Claude adapter
 
-处理 Anthropic Claude 特有的 API 格式和工具调用方式
+Handle Anthropic Claude s unique API format and tool calling methods
 """
 
 import json
@@ -19,7 +19,7 @@ from .base import BaseAdapter
 
 
 class AnthropicAdapter(BaseAdapter):
-    """Anthropic Claude 适配器"""
+    """Anthropic Claude adapter"""
     
     SUPPORTED_PROVIDERS = [LLMProvider.ANTHROPIC]
     
@@ -29,12 +29,12 @@ class AnthropicAdapter(BaseAdapter):
         self._async_client = None
     
     def initialize(self) -> None:
-        """初始化 Anthropic 客户端"""
+        """Initialize the Anthropic client"""
         try:
             from anthropic import Anthropic, AsyncAnthropic
         except ImportError:
             raise ImportError(
-                "请安装 anthropic 包: pip install anthropic"
+                "Please install the anthropopic package: pip install anthropic"
             )
         
         self._sync_client = Anthropic(api_key=self.config.api_key)
@@ -42,21 +42,21 @@ class AnthropicAdapter(BaseAdapter):
     
     def _convert_messages(self, messages: List[Message]) -> tuple[List[Dict[str, Any]], Optional[str]]:
         """
-        转换消息格式为 Anthropic 格式
+        Convert message format to Anthropic format
         
         Returns:
-            (messages, system_prompt): Anthropic 格式的消息和系统提示词
+            (messages, system_prompt): Anthropic Formatted messages and system prompts
         """
         result = []
         system_prompt = None
         
         for msg in messages:
-            # 系统消息单独处理
+            # System messages are processed separately
             if msg.role == MessageRole.SYSTEM:
                 system_prompt = msg.content
                 continue
             
-            # 工具结果消息
+            # tool result messages
             if msg.role == MessageRole.TOOL:
                 result.append({
                     "role": "user",
@@ -68,10 +68,10 @@ class AnthropicAdapter(BaseAdapter):
                 })
                 continue
             
-            # 普通消息
+            # General news
             role = "user" if msg.role == MessageRole.USER else "assistant"
             
-            # 处理带工具调用的助手消息
+            # Handling helper messages with tool calls
             if msg.tool_calls:
                 content = []
                 if msg.content:
@@ -93,7 +93,7 @@ class AnthropicAdapter(BaseAdapter):
         self, 
         tools: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """转换工具格式为 Anthropic 格式"""
+        """Conversion tool format to Anthropic format"""
         anthropic_tools = []
         
         for tool in tools:
@@ -113,14 +113,14 @@ class AnthropicAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """构建请求参数
+        """Build request parameters
 
-        支持通过 kwargs 覆盖 temperature / max_tokens 等参数，
-        优先级：kwargs > self.config。
+        Supports overriding parameters such as temperature / max_tokens through kwargs,
+        Priority:kwargs > self.config. 
         """
         converted_messages, system_prompt = self._convert_messages(messages)
 
-        # max_tokens: kwargs 优先，其次 config，最后默认 4096
+        # max_tokens: kwargs First, then config, then default 4096
         max_tokens = kwargs.pop("max_tokens", None) or self.config.max_tokens or 4096
 
         request_kwargs = {
@@ -146,7 +146,7 @@ class AnthropicAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> LLMResponse:
-        """同步聊天"""
+        """synchronous chat"""
         if not self._sync_client:
             self.initialize()
 
@@ -161,7 +161,7 @@ class AnthropicAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> LLMResponse:
-        """异步聊天"""
+        """Asynchronous chat"""
         if not self._async_client:
             self.initialize()
 
@@ -176,7 +176,7 @@ class AnthropicAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> AsyncIterator[str]:
-        """异步流式输出"""
+        """Asynchronous streaming output"""
         if not self._async_client:
             self.initialize()
 
@@ -187,7 +187,7 @@ class AnthropicAdapter(BaseAdapter):
                 yield text
 
     def _parse_response(self, response) -> LLMResponse:
-        """解析 Anthropic 响应"""
+        """Parse Anthropic responses"""
         content = None
         tool_calls = []
 
@@ -201,7 +201,7 @@ class AnthropicAdapter(BaseAdapter):
                     arguments=block.input if isinstance(block.input, dict) else {}
                 ))
 
-        # 计算 token 使用量
+        # Calculate token usage
         usage = None
         if hasattr(response, 'usage') and response.usage:
             usage = {

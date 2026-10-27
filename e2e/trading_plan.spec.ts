@@ -2,23 +2,23 @@ import { test, expect } from '@playwright/test'
 import { login, waitForLoadingDone, waitForTableLoaded } from './utils'
 
 /**
- * 交易计划 E2E 测试
+ * Trading Plan E2E Testing
  *
- * 产品定位：基于历史数据分析结果制定的投资计划
+ * Product positioning: investment plan based on historical data analysis results
  *
- * 覆盖：
- * - 交易计划列表
- * - 创建/编辑/删除交易计划
- * - 激活/停用交易计划
- * - 止损止盈规则设置
- * - 计划与持仓联动
+ * Coverage:
+ * - Trading plan list
+ * - Create/edit/delete trading plan
+ * - Activate/deactivate trading plan
+ * - Stop loss and take profit rule settings
+ * - Linkage of plans and positions
  */
-test.describe('交易计划管理', () => {
+test.describe('Trading plan management', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('交易计划列表页面加载', async ({ page }) => {
+  test('Trading plan list page loads', async ({ page }) => {
     await page.goto('/trading-system')
     await waitForLoadingDone(page)
 
@@ -28,70 +28,70 @@ test.describe('交易计划管理', () => {
     await expect(content).toBeVisible({ timeout: 10000 })
   })
 
-  test('创建新交易计划', async ({ page }) => {
+  test('Create a new trading plan', async ({ page }) => {
     await page.goto('/trading-system')
     await waitForLoadingDone(page)
 
-    const createBtn = page.locator('button:has-text("创建"), button:has(.el-icon-plus)').first()
+    const createBtn = page.locator('button:has-text("Create"), button:has(.el-icon-plus)').first()
     if (await createBtn.isVisible({ timeout: 5000 })) {
       await createBtn.click()
       await page.waitForTimeout(3000)
 
-      const planNameInput = page.locator('input[placeholder*="计划名称"], input[name*="name"]').first()
+      const planNameInput = page.locator('input[placeholder*="Plan name"], input[name*="name"]').first()
       if (await planNameInput.isVisible({ timeout: 3000 })) {
-        await planNameInput.fill('测试交易计划')
+        await planNameInput.fill('Test trading plan')
       }
     }
   })
 
-  test('编辑交易计划', async ({ page }) => {
+  test('Edit trading plan', async ({ page }) => {
     await page.goto('/trading-system')
     await waitForLoadingDone(page)
 
-    const editBtn = page.locator('button:has-text("编辑"), .el-button--edit').first()
+    const editBtn = page.locator('button:has-text("Edit"), .el-button--edit').first()
     if (await editBtn.isVisible({ timeout: 3000 })) {
       await editBtn.click()
       await page.waitForTimeout(3000)
     }
   })
 
-  test('激活/停用交易计划', async ({ page }) => {
+  test('Activate/deactivate trading plan', async ({ page }) => {
     await page.goto('/trading-system')
     await waitForLoadingDone(page)
 
-    const toggleBtn = page.locator('button:has-text("激活"), button:has-text("停用")').first()
+    const toggleBtn = page.locator('button:has-text("activate"), button:has-text("deactivate")').first()
     if (await toggleBtn.isVisible({ timeout: 3000 })) {
       await toggleBtn.click()
       await page.waitForTimeout(2000)
     }
   })
 
-  test('设置止损止盈规则', async ({ page }) => {
+  test('Set stop loss and take profit rules', async ({ page }) => {
     await page.goto('/trading-system')
     await waitForLoadingDone(page)
 
-    const ruleBtn = page.locator('button:has-text("规则"), .rule-settings').first()
+    const ruleBtn = page.locator('button:has-text("rules"), .rule-settings').first()
     if (await ruleBtn.isVisible({ timeout: 3000 })) {
       await ruleBtn.click()
       await page.waitForTimeout(3000)
 
-      const stopLossInput = page.locator('input[placeholder*="止损"], .stop-loss input').first()
+      const stopLossInput = page.locator('input[placeholder*="stop loss"], .stop-loss input').first()
       if (await stopLossInput.isVisible({ timeout: 3000 })) {
         await stopLossInput.fill('10')
       }
 
-      const takeProfitInput = page.locator('input[placeholder*="止盈"], .take-profit input').first()
+      const takeProfitInput = page.locator('input[placeholder*="Take profit"], .take-profit input').first()
       if (await takeProfitInput.isVisible({ timeout: 3000 })) {
         await takeProfitInput.fill('20')
       }
     }
   })
 
-  test('查看交易计划详情', async ({ page }) => {
+  test('View trading plan details', async ({ page }) => {
     await page.goto('/trading-system')
     await waitForLoadingDone(page)
 
-    const viewBtn = page.locator('button:has-text("查看"), .view-detail').first()
+    const viewBtn = page.locator('button:has-text("View"), .view-detail').first()
     if (await viewBtn.isVisible({ timeout: 3000 })) {
       await viewBtn.click()
       await page.waitForTimeout(3000)

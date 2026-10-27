@@ -1,10 +1,10 @@
 """
-斐波那契回调/扩展工具
+Fibonacci Retracement/Extension Tool
 
-基于近期价格波动的最高点和最低点，自动计算斐波那契回调位和扩展位，
-并评估每个价格水平在当前市场中的触及情况和支撑/阻力作用。
+Automatically calculates Fibonacci retracement and extension levels based on recent highs and lows of price movements,
+and evaluate the reach and support/resistance role of each price level in the current market.
 
-所有计算基于纯数学规则，无需 LLM 参与。
+All calculations are based on purely mathematical rules and do not require the involvement of LLM.
 """
 
 import datetime
@@ -21,7 +21,7 @@ from core.tools.base import register_tool
 logger = logging.getLogger(__name__)
 
 # ============================================================
-#  辅助函数
+#  Helper function
 # ============================================================
 
 def _safe_float(value) -> Optional[float]:
@@ -37,7 +37,7 @@ def _safe_float(value) -> Optional[float]:
 
 
 def _detect_trend(close_series: pd.Series) -> str:
-    """根据最近 N/2 根 K 线的收盘价变化判断趋势方向。"""
+    """Determine the trend direction based on the closing price changes of the most recent N/2 K lines."""
     n = len(close_series)
     half = max(1, n // 2)
     if close_series.iloc[-1] > close_series.iloc[-half]:
@@ -50,17 +50,17 @@ def _check_touched(
     level_price: float, high: pd.Series, low: pd.Series, bars: int = 5, tolerance: float = 0.005
 ) -> bool:
     """
-    检查最近 bars 根 K 线内价格是否触及过某个水平。
+    Checks whether the price in the most recent bars has touched a certain level.
 
     Args:
-        level_price: 价格水平
-        high: 最高价序列
-        low: 最低价序列
-        bars: 检查的最近 K 线根数
-        tolerance: 容忍度（比例），默认 0.5%
+        level_price: price level
+        high: highest price sequence
+        low: lowest price sequence
+        bars: Number of recent K-lines checked
+        tolerance: Tolerance (ratio), default 0.5%
 
     Returns:
-        bool: 是否触及
+        bool: Whether touched
     """
     recent_high = high.iloc[-bars:]
     recent_low = low.iloc[-bars:]
@@ -73,10 +73,10 @@ def _detect_action(
     level_price: float, close: pd.Series, high: pd.Series, low: pd.Series, lookback: int = 10
 ) -> str:
     """
-    判断某个价格水平在最近 lookback 根 K 线内表现出的作用。
+    Determine the effect of a certain price level on the latest lookback candlestick.
 
-    如果价格从该水平反弹（接触后反转），视为支撑或阻力。
-    如果价格直接穿过该水平，视为突破。
+    If the price rebounds from this level (reverses after contact), it is considered support or resistance.
+    If the price moves directly through this level, it is considered a breakout.
 
     Returns:
         "support", "resistance", "breakout", or ""
@@ -89,7 +89,7 @@ def _detect_action(
     recent_low = low.iloc[-lookback:]
 
     for i in range(2, lookback):
-        # 检查是否触及
+        # Check if it touches
         prev_high = recent_high.iloc[i - 1]
         prev_low = recent_low.iloc[i - 1]
         curr_close = recent_close.iloc[i]
@@ -102,7 +102,7 @@ def _detect_action(
         if not touched_prev:
             continue
 
-        # 接触后反转判断
+        # Reverse judgment after contact
         if curr_close > prev_close * 1.01 and prev_close < level_price:
             return "support"
         elif curr_close < prev_close * 0.99 and prev_close > level_price:
@@ -116,7 +116,7 @@ def _detect_action(
 
 
 # ============================================================
-#  Tool: 斐波那契回调/扩展
+#  Tool: Fibonacci retracements/extensions
 # ============================================================
 
 FIB_LEVELS = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0]
@@ -127,7 +127,7 @@ FIB_EXTENSIONS = [1.272, 1.382, 1.618, 2.0, 2.618]
 @register_tool(
     tool_id="get_fibonacci_retracement",
     name="斐波那契回调",
-    description="基于近期价格波动的最高点和最低点，自动计算斐波那契回调位和扩展位，评估每个价格水平的支撑/阻力作用。",
+    description="Automatically calculate Fibonacci retracement and extension levels based on the highs and lows of recent price movements, assessing the support/resistance role of each price level.",
     category="technical",
     is_online=False,
     auto_register=True,
@@ -136,54 +136,54 @@ FIB_EXTENSIONS = [1.272, 1.382, 1.618, 2.0, 2.618]
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["fibonacci_retracement", "fibonacci_extension", "price_targets"],
-    when_to_use="当需要识别潜在的价格回调支撑/阻力位和趋势扩展目标位时使用。适用于趋势明确的行情。",
-    when_not_to_use="震荡市或无明显趋势时，斐波那契水平的参考价值有限；数据不足（少于 30 根 K 线）时不可靠。",
-    returns="返回 JSON，包含 symbol、current_price、trend、swing（高点/低点/范围）、retracement_levels（回调位列表）、extension_levels（扩展位列表）、closest_level（最近水平）、data_quality。",
+    when_to_use="Use when identifying potential price retracement support/resistance levels and trend extension targets. Suitable for market trends with clear trends.",
+    when_not_to_use="When the market is volatile or there is no obvious trend, the reference value of Fibonacci levels is limited; it is unreliable when there is insufficient data (less than 30 K lines).",
+    returns="Returns JSON, including symbol, current_price, trend, swing (high/low/range), retracement_levels (callback bit list), extension_levels (extension bit list), closest_level (most recent level), data_quality.",
     example="get_fibonacci_retracement(symbol='600519', lookback_days=120, trend_direction='auto', extension_levels=True)",
     related_tools=["get_support_resistance_levels", "get_chart_patterns", "get_fibonacci_extension"],
 )
 def get_fibonacci_retracement(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看天数用于计算波动范围，默认120"] = 120,
-    trend_direction: Annotated[str, "趋势方向：up（上升趋势回调）、down（下降趋势回调）、auto（自动识别）"] = "auto",
-    extension_levels: Annotated[bool, "是否计算扩展位（1.272、1.382、1.618、2.0、2.618）"] = False,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "The number of days to look back is used to calculate the fluctuation range, the default 120"] = 120,
+    trend_direction: Annotated[str, "Trend direction: up (uptrend callback), down (downtrend callback), auto (automatic identification)"] = "auto",
+    extension_levels: Annotated[bool, "Whether to calculate extension bits (1.272, 1.382, 1.618, 2.0, 2.618)"] = False,
 ) -> str:
-    """计算股票的斐波那契回调位和扩展位，评估每个价格水平的支撑/阻力作用。
+    """Calculate Fibonacci retracement and extension levels for a stock and evaluate the support/resistance role of each price level.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看天数用于计算波动范围，默认 120
-        trend_direction: 趋势方向，取值 "up"（上升趋势回调） | "down"（下降趋势回调） | "auto"（自动识别），默认 "auto"
-        extension_levels: 是否计算扩展位（1.272、1.382、1.618、2.0、2.618），默认 False
+        symbol: A stock code, such as 600519,000001
+        lookback_days: The number of days to look back is used to calculate the fluctuation range, the default 120
+        trend_direction: Trend direction, value "up" (uptrend pullback) | "down" (downtrend pullback) | "auto" (automatic recognition), default "auto"
+        extension_levels: Whether to calculate extension bits (1.272, 1.382, 1.618, 2.0, 2.618), default False
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 股票代码
-            current_price: 最新收盘价
-            date: 最新交易日
-            trend: 实际使用的趋势方向，取值 "up" | "down"
-            swing: 波动区间，子字段 —
-                high: 区间最高价
-                low: 区间最低价
-                range: 区间振幅
-            retracement_levels: 回调位列表，每个元素结构 —
-                level: 斐波那契比例（0.0、0.236、0.382、0.5、0.618、0.786、1.0）
-                price: 对应价格
-                distance_pct: 距离当前价的百分比
-                touched: 是否被触及
-                action: 可选，价格行为，取值 "bounce_above" | "breakout_above" | "breakout_below"（仅 touched 时存在）
-            closest_level: 最近的水平（结构同 retracement_levels 元素，并附加 role 字段） —
-                role: 价格角色，取值 "resistance" | "support" | "current"
-            extension_levels: 可选，扩展位列表（仅 extension_levels=True 时存在），元素结构 —
-                level: 扩展比例（1.272、1.382、1.618、2.0、2.618）
-                price: 对应价格
-                distance_pct: 距离当前价的百分比
-                touched: 是否被触及
-            data_quality: 数据质量，子字段 —
-                bars_analyzed: 分析的 K 线数量
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Stock code
+            current_price: latest closing price
+            date: Latest trading day
+            trend: The actual trend direction used, value "up" | "down"
+            swing: Fluctuation interval, subfield —
+                high: Highest price in range
+                low: Lowest price in the range
+                range: interval amplitude
+            retracement_levels: callback bit list, per element structure —
+                level: Fibonacci ratios (0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0)
+                price: Corresponding price
+                distance_pct: Percentage from current price
+                touched: whether touched
+                action: optional, price action, value "bounce_above" | "breakout_above" | "breakout_below" (Only exists when touched)
+            closest_level: The most recent level (same structure as retracement_levels element, with additional role field) —
+                role: Price role, value "resistance" | "support" | "current"
+            extension_levels: Optional, extension bit list (only extension_levels=True exist), element structure —
+                level: Expansion ratio (1.272, 1.382, 1.618, 2.0, 2.618)
+                price: Corresponding price
+                distance_pct: Percentage from current price
+                touched: whether touched
+            data_quality: Data quality, subfield —
+                bars_analyzed: Number of candlesticks analyzed
+        Field returned on exception —
             status: "error"
-            message: 错误信息
+            message: error message
     """
     try:
         from core.skill_runtime.data_access import get_stock_daily_quotes
@@ -208,7 +208,7 @@ def get_fibonacci_retracement(
 
         if len(df) < 20:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 有效 OHLC 数据不足20条。"},
+                {"status": "error", "message": f"{symbol} There are less than 20 valid OHLC data."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
@@ -220,27 +220,27 @@ def get_fibonacci_retracement(
         low = df["low"]
         close = df["close"]
 
-        # 确定趋势方向
+        # Determine trend direction
         trend = str(trend_direction).strip().lower()
         if trend == "auto":
             trend = _detect_trend(close)
         elif trend not in ("up", "down"):
             trend = _detect_trend(close)
 
-        # 计算波动区间
+        # Calculate fluctuation range
         swing_high = float(high.max())
         swing_low = float(low.min())
         swing_range = swing_high - swing_low
 
         if swing_range <= 0:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 价格区间异常（最高=最低），无法计算斐波那契水平。"},
+                {"status": "error", "message": f"{symbol} Abnormal price range (highest=lowest), Fibonacci levels cannot be calculated."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 计算回调位
+        # Calculate callback level
         if trend == "up":
-            # 上升趋势回调：从低点画到高点
+            # Uptrend Retracement: Draw from Low to High
             retracement_levels = []
             for level in FIB_LEVELS:
                 level_price = swing_high - level * swing_range
@@ -257,7 +257,7 @@ def get_fibonacci_retracement(
                     entry["action"] = action
                 retracement_levels.append(entry)
 
-            # 扩展位（基于同方向延伸）
+            # Extension bit (based on extending in the same direction)
             ext_levels = []
             if extension_levels:
                 for ext in FIB_EXTENSIONS:
@@ -273,7 +273,7 @@ def get_fibonacci_retracement(
                     ext_levels.append(entry)
 
         else:
-            # 下降趋势回调：从高点画到低点
+            # Downtrend Retracement: Draw from High to Low
             retracement_levels = []
             for level in FIB_LEVELS:
                 level_price = swing_low + level * swing_range
@@ -290,7 +290,7 @@ def get_fibonacci_retracement(
                     entry["action"] = action
                 retracement_levels.append(entry)
 
-            # 扩展位（基于同方向延伸）
+            # Extension bit (based on extending in the same direction)
             ext_levels = []
             if extension_levels:
                 for ext in FIB_EXTENSIONS:
@@ -305,13 +305,13 @@ def get_fibonacci_retracement(
                     }
                     ext_levels.append(entry)
 
-        # 最近的水平
+        # recent level
         closest_level = min(
             retracement_levels,
             key=lambda x: abs(x["distance_pct"]),
         )
 
-        # 判断最近的 level 的作用角色
+        # Determine the role of the nearest level
         if closest_level["price"] > current_price:
             closest_level["role"] = "resistance"
         elif closest_level["price"] < current_price:
@@ -342,7 +342,7 @@ def get_fibonacci_retracement(
         return json.dumps(result, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("斐波那契回调/扩展计算失败: %s", exc, exc_info=True)
+        logger.error("Fibonacci retracement/extension calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 

@@ -1,14 +1,14 @@
-"""用户手册向量索引管理器
+"""User Manual Vector Index Manager
 
-基于 VectorStoreManager + EmbeddingManager 实现用户手册的语义检索。
-解决使用问答机器人"用户问自然语言、手册标题匹配不到"的问题。
+Based on VectorStoreManager + EmbeddingManager Implement semantic retrieval of user manuals.
+Troubleshooting Using Q&A Bots"The user asked the question in natural language and the manual title could not be matched."problem.
 
-特性：
-- 复用现有 Qdrant 基础设施（与 FinancialKnowledgeManager 同构）
-- 按 Markdown 标题切片（一/二/三级标题 + 正文）
-- 启动时自动检测手册 mtime 变化，按需重建索引
-- 京东云模式下自动索引 jdyun-user-manual-v3.0.md
-- 优雅降级：向量库/embedding 不可用时返回空结果，不阻塞启动
+Features:
+- Reuse existing Qdrant infrastructure (isomorphic with FinancialKnowledgeManager)
+- Slice by Markdown title (first/second/third level title + text)
+- Automatically detect manual mtime changes at startup and rebuild indexes as needed
+- Automatic indexing in JD cloud mode jdyun-user-manual-v3.0.md
+- Graceful degradation: when the vector library/embedding is unavailable, empty results are returned and startup is not blocked.
 """
 
 import hashlib
@@ -22,18 +22,18 @@ from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# 用户手册专用向量集合名（与金融知识库隔离）
+# User manual specific vector collection name (isolated from financial knowledge base)
 USER_MANUAL_COLLECTION_NAME = "user_manual_v3"
 
-# 切片与检索参数
+# Slicing and retrieval parameters
 DEFAULT_TOP_K = 5
 DEFAULT_MAX_CHARS = 4000
-MAX_SECTION_CHARS = 2000  # 单个切片最大字符数，超出则截断
-MIN_SECTION_CHARS = 50  # 小于该长度的切片合并到上层标题
+MAX_SECTION_CHARS = 2000  # The maximum number of characters in a single slice, if exceeded, it will be truncated.
+MIN_SECTION_CHARS = 50  # Slices smaller than this length are merged into the upper header
 
 
 class ManualSection:
-    """手册切片数据结构"""
+    """Manual slice data structure"""
 
     def __init__(
         self,
@@ -66,7 +66,7 @@ class ManualSection:
 
 
 class ManualSearchResult:
-    """检索结果"""
+    """Search results"""
 
     def __init__(
         self,
@@ -96,42 +96,42 @@ class ManualSearchResult:
 
 
 def _is_jdyun_mode() -> bool:
-    """判断是否为京东云模式"""
+    """Determine whether it is JD Cloud mode"""
     return os.environ.get("JDYUN_MODE", "false").lower() == "true"
 
 
 def _resolve_manual_files() -> List[Tuple[str, str]]:
-    """返回 [(手册路径, 手册类型), ...]，按优先级排序。
+    """Return [(manual path, Manual type), ...], Sort by priority.
 
-    京东云模式：jdyun 优先；标准模式：standard 优先。
-    两种模式都同时索引两份手册（如果存在），让 LLM 能跨版本回答。
+    JD Cloud mode: jdyun takes priority; standard mode: standard takes priority.
+    Both modes index both manuals simultaneously (if present), allowing LLM to answer across versions.
 
-    搜索路径（按优先级）：
-    1. 项目根目录 docs/02-user-guide/（开发环境）
-    2. /app/docs/02-user-guide/（Docker 容器，挂载或 docker cp）
-    3. /app/runtime/docs/02-user-guide/（Docker 容器持久化 volume）
-    4. 当前工作目录 docs/02-user-guide/
+    Search paths (by priority):
+    1. Project root directory docs/02-user-guide/ (development environment)
+    2. /app/docs/02-user-guide/ (Docker container, mount or docker cp)
+    3. /app/runtime/docs/02-user-guide/ (Docker Container persistence volume)
+    4. current working directory docs/02-user-guide/
     """
-    # 候选搜索目录
+    # Candidate search directory
     candidate_dirs = []
 
-    # 1. 基于 __file__ 推导项目根目录（开发环境）
+    # 1. Deducing the project root directory (development environment) based on __file__
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
     candidate_dirs.append(os.path.join(project_root, "docs", "02-user-guide"))
 
-    # 2. Docker 容器内常见路径
+    # 2. Docker Common paths within containers
     candidate_dirs.append("/app/docs/02-user-guide")
     candidate_dirs.append("/app/runtime/docs/02-user-guide")
 
-    # 3. 当前工作目录相对路径
+    # 3. Relative path to current working directory
     candidate_dirs.append(os.path.join(os.getcwd(), "docs", "02-user-guide"))
 
-    # 🔥 兼容旧版平铺 docs 结构（历史便携包/安装包：user-manual-v3.0.md 直接位于 docs/ 根下）
+    # 🔥 Compatible with older tiled docs structures (historical portable/installer packages: user-manual-v3.0.md located directly under the docs/ root)
     candidate_dirs.append(os.path.join(project_root, "docs"))
     candidate_dirs.append("/app/docs")
 
-    # 找到第一个存在且包含手册文件的目录（避免选中空目录）
+    # Find the first directory that exists and contains a manual file (avoid selecting empty directories)
     user_guide_dir = None
     for d in candidate_dirs:
         if os.path.isdir(d) and (
@@ -143,7 +143,7 @@ def _resolve_manual_files() -> List[Tuple[str, str]]:
 
     if not user_guide_dir:
         logger.warning(
-            f"⚠️ [UserManualManager] 未找到用户手册目录，已尝试: {candidate_dirs}"
+            f"⚠️ [UserManualManager] User manual directory not found, tried: {candidate_dirs}"
         )
         return []
 
@@ -165,18 +165,18 @@ def _resolve_manual_files() -> List[Tuple[str, str]]:
 
 
 def _split_markdown_sections(content: str, manual_type: str, manual_file: str) -> List[ManualSection]:
-    """按 Markdown 标题切片。
+    """Slice by Markdown header.
 
-    切片策略：
-    - 按 1-4 级标题切分
-    - 每个切片的 body 包含标题下到「下一个同级或更高级标题」之间的所有内容
-      （即 H3 切片会包含其下所有 H4 子标题的内容，不会被切空）
-    - 过滤过短切片（< MIN_SECTION_CHARS），通常是占位或目录项
-    - 过长切片截断（> MAX_SECTION_CHARS），避免 embedding 超长
+    Slicing strategy:
+    - Split by headings 1-4
+    - The body of each slice contains everything from the title to the next sibling or higher title.
+       (That is, the H3 slice will contain the content of all H4 subtitles under it and will not be cut empty)
+    - filtered short slices (< MIN_SECTION_CHARS) , Usually a placeholder or directory entry
+    - Truncate slices that are too long (> MAX_SECTION_CHARS) , Avoid embeddings that are too long
     """
     sections: List[ManualSection] = []
 
-    # 1. 用 finditer 找到所有标题位置（而非 re.split，避免子标题被切走导致父标题 body 为空）
+    # 1. Use finditer to find all title positions (instead of re.split to avoid subtitles being cut away and causing the parent title body to be empty)
     heading_pattern = re.compile(r'^(#{1,4})\s+([^\n]+)$', re.MULTILINE)
     headings: List[Tuple[int, int, int, str]] = []  # [(start, end, level, title), ...]
     for m in heading_pattern.finditer(content):
@@ -187,13 +187,13 @@ def _split_markdown_sections(content: str, manual_type: str, manual_file: str) -
     title_chain: List[Tuple[int, str]] = []  # [(level, title), ...]
 
     for i, (start, end, level, title) in enumerate(headings):
-        # 维护标题链，找到父标题
+        # Maintain title chain and find parent title
         while title_chain and title_chain[-1][0] >= level:
             title_chain.pop()
         parent_title = title_chain[-1][1] if title_chain else ""
         title_chain.append((level, title))
 
-        # 找下一个同级或更高级标题的位置（body 边界）
+        # Find the position of the next sibling or higher heading (body boundary)
         body_end = len(content)
         for j in range(i + 1, len(headings)):
             next_start, _, next_level, _ = headings[j]
@@ -201,22 +201,22 @@ def _split_markdown_sections(content: str, manual_type: str, manual_file: str) -
                 body_end = next_start
                 break
 
-        # 提取 body（标题行之后到 body_end）
+        # Extract body (after the header row to body_end)
         body = content[end:body_end].strip()
 
-        # 过滤过短切片（通常是占位或目录项）
+        # Filter out short slices (usually placeholders or catalog items)
         if len(body) < MIN_SECTION_CHARS:
             continue
 
-        # 截断过长切片
+        # Truncate slices that are too long
         if len(body) > MAX_SECTION_CHARS:
-            body = body[:MAX_SECTION_CHARS] + "\n\n...(内容已截断)"
+            body = body[:MAX_SECTION_CHARS] + "\n\n...(Content has been truncated)"
 
-        # 生成确定性 ID（用于幂等 upsert）
+        # Generate deterministic ID (for idempotent upsert)
         section_id_str = f"{manual_type}:{title}:{parent_title}"
 
         sections.append(ManualSection(
-            section_id=section_id_str,  # 保留原始字符串作为 doc_id，便于去重
+            section_id=section_id_str,  # Keep the original string as doc_id to facilitate deduplication
             title=title,
             content=body,
             level=level,
@@ -229,7 +229,7 @@ def _split_markdown_sections(content: str, manual_type: str, manual_file: str) -
 
 
 class UserManualManager:
-    """用户手册向量索引管理器（单例）"""
+    """User Manual Vector Index Manager (Singleton)"""
 
     _instance = None
     _initialized = False
@@ -246,16 +246,16 @@ class UserManualManager:
         self._embedding_manager = None
         self._collection = None
         self._available = False
-        self._last_indexed_signature: Optional[str] = None  # 用于外部查询上次索引签名
+        self._last_indexed_signature: Optional[str] = None  # Used for external query last index signature
         self._init_backend()
         UserManualManager._initialized = True
 
     # ----------------------------------------------------------
-    # 初始化
+    # initialization
     # ----------------------------------------------------------
 
     def _init_backend(self):
-        """初始化向量数据库和 Embedding 后端"""
+        """Initialize the vector database and Embedding backend"""
         try:
             from core.llm.embedding_manager import EmbeddingManager
             from core.memory.memory_manager import VectorStoreManager
@@ -269,11 +269,11 @@ class UserManualManager:
             )
             self._available = True
             logger.info(
-                f"✅ [UserManualManager] 初始化成功 "
-                f"(集合: {USER_MANUAL_COLLECTION_NAME}, 维度: {vector_size})"
+                f"✅ [UserManualManager] Initialization successful "
+                f"(collection: {USER_MANUAL_COLLECTION_NAME}, Dimensions: {vector_size})"
             )
         except Exception as e:
-            logger.warning(f"⚠️ [UserManualManager] 初始化失败，用户手册向量检索将不可用: {e}")
+            logger.warning(f"⚠️ [UserManualManager] Initialization failed, user manual vector retrieval will not be available: {e}")
             self._available = False
 
     @property
@@ -281,37 +281,37 @@ class UserManualManager:
         return self._available
 
     def reinit(self) -> bool:
-        """重新初始化向量后端（embedding + 向量集合）。
+        """Reinitialize the vector backend (embedding + vector collection).
 
-        适用场景：启动时 Embedding API Key 未配置/错误导致初始化失败
-        （available=False），用户在管理界面配置好 Key 后调用此方法即可
-        恢复向量检索，无需重启后端。EmbeddingManager 每次重建都会重新
-        从数据库/环境变量读取最新配置。
+        Applicable scenario: Embedding API Key is not configured/error causes initialization failure at startup
+         (available=False) , The user can call this method after configuring the Key in the management interface.
+        Resume vector retrieval without restarting the backend. EmbeddingManager will be rebuilt every time it is rebuilt
+        Read latest configuration from database/environment variables.
         """
         try:
             self._embedding_manager = None
             self._collection = None
             self._init_backend()
             if self._available:
-                logger.info("✅ [UserManualManager] 重新初始化成功，向量检索已恢复")
+                logger.info("✅ [UserManualManager] Reinitialization successful, vector retrieval resumed")
                 return True
-            logger.warning("⚠️ [UserManualManager] 重新初始化后仍不可用")
+            logger.warning("⚠️ [UserManualManager] Still unavailable after reinitialization")
             return False
         except Exception as e:
-            logger.error(f"❌ [UserManualManager] 重新初始化失败: {e}", exc_info=True)
+            logger.error(f"❌ [UserManualManager] Reinitialization failed: {e}", exc_info=True)
             self._available = False
             return False
 
     # ----------------------------------------------------------
-    # 索引构建
+    # Index building
     # ----------------------------------------------------------
 
     def _compute_manuals_signature(self, manuals: List[Tuple[str, str]]) -> str:
-        """计算手册文件签名（基于文件内容 hash），用于变化检测。
+        """Compute manual file signatures (based on file content hashes) for change detection.
 
-        签名只取决于文件名 + 文件内容，不依赖路径和 mtime，
-        确保不同部署环境（开发/Docker/京东云）产生相同签名，
-        让预生成的种子索引数据能跨环境复用。
+        The signature only depends on the file name + File content, independent of path and mtime,
+        Ensure that different deployment environments (development/Docker/JD Cloud) generate the same signature,
+        Enable pre-generated seed index data to be reused across environments.
         """
         sig_parts = []
         for path, manual_type in manuals:
@@ -321,18 +321,18 @@ class UserManualManager:
                 sig_parts.append(f"{manual_type}:{os.path.basename(path)}:{content_hash}")
             except OSError:
                 sig_parts.append(f"{manual_type}:{os.path.basename(path)}:missing")
-        # sorted 确保不同手册顺序产生相同签名
+        # sorted Ensure that different manual sequences produce the same signature
         return hashlib.md5("|".join(sorted(sig_parts)).encode("utf-8")).hexdigest()
 
     def _get_indexed_signature_from_meta(self) -> Optional[str]:
-        """从 Qdrant collection 的元数据中读取上次索引签名。
+        """Read the last index signature from the Qdrant collection s metadata.
 
-        我们用一个固定 point_id 存储"索引元信息"，避免遍历整个集合。
+        We use a fixed point_id to store"Index meta information", Avoid traversing the entire collection.
         """
         if not self._available:
             return None
         try:
-            # 尝试读取签名 point
+            # Try to read the signature point
             sig_point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, "user_manual_index_signature"))
             results = self._collection.get(ids=[sig_point_id])
             if results and results.get("metadatas"):
@@ -340,24 +340,24 @@ class UserManualManager:
                 if meta:
                     return meta.get("manuals_signature")
         except Exception as e:
-            logger.debug(f"[UserManualManager] 读取索引签名失败: {e}")
+            logger.debug(f"[UserManualManager] Failed to read index signature: {e}")
         return None
 
     def _save_indexed_signature(self, signature: str) -> None:
-        """把当前索引签名写入 collection 元数据"""
+        """Write the current index signature into collection metadata"""
         if not self._available:
             return
         try:
             sig_point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, "user_manual_index_signature"))
-            # Qdrant 要求 embedding 非空，用全零向量占位（这个 point 不参与语义检索）
-            # 但 langchain 的 Qdrant wrapper 要求 embeddings，所以改用一个空字符串 embedding
-            # 这里改用 metadata-only 方式：先删除再添加
+            # Qdrant It is required that the embedding is non-empty and uses an all-zero vector to occupy the position (this point does not participate in semantic retrieval)
+            # But langchain's Qdrant wrapper requires embeddings, so use an empty string instead embedding
+            # Here we use the metadata-only method: delete first and then add
             try:
                 self._collection.delete(ids=[sig_point_id])
             except Exception:
                 pass
-            # 用一个确定性 embedding（向量维度内）让签名 point 能存进去
-            # 实际上我们用 retrieve 时按 ID 取，不会用这个 embedding 做相似度查询
+            # Use a deterministic embedding (within the vector dimension) to allow the signature point to be stored in
+            # In fact, when we use retrieve, we retrieve it by ID and will not use this embedding for similarity query.
             dim = self._embedding_manager.get_embedding_dimension()
             placeholder_embedding = [0.0] * dim
             self._collection.add(
@@ -373,10 +373,10 @@ class UserManualManager:
                 ids=[sig_point_id],
             )
         except Exception as e:
-            logger.warning(f"⚠️ [UserManualManager] 保存索引签名失败: {e}")
+            logger.warning(f"⚠️ [UserManualManager] Failed to save index signature: {e}")
 
     def _clear_all_sections(self) -> bool:
-        """清空所有手册切片（保留签名 point）"""
+        """Clear all manual slices (retain signature points)"""
         if not self._available:
             return False
         try:
@@ -389,18 +389,18 @@ class UserManualManager:
             self._collection = vs_manager.get_or_create_collection(
                 USER_MANUAL_COLLECTION_NAME, vector_size=vector_size
             )
-            logger.info("🗑️ [UserManualManager] 已清空手册索引集合")
+            logger.info("🗑️ [UserManualManager] Manual index collection cleared")
             return True
         except Exception as e:
-            logger.error(f"❌ [UserManualManager] 清空集合失败: {e}")
+            logger.error(f"❌ [UserManualManager] Failed to clear collection: {e}")
             return False
 
     def _index_section(self, section: ManualSection) -> bool:
-        """把单个手册切片写入向量库"""
+        """Write a single manual slice to a vector library"""
         if not self._available:
             return False
         try:
-            # 拼接 embedding 文本：标题 + 父标题 + 正文（提升检索时的语义信号）
+            # Splicing embedding text: title + parent title + Text (improves semantic signals during retrieval)
             embed_text = section.title
             if section.parent_title:
                 embed_text = f"{section.parent_title} > {section.title}\n\n{section.content}"
@@ -409,7 +409,7 @@ class UserManualManager:
 
             embedding, provider = self._embedding_manager.get_embedding(embed_text)
             if embedding is None:
-                logger.warning(f"⚠️ [UserManualManager] 无法获取 embedding: {section.title}")
+                logger.warning(f"⚠️ [UserManualManager] Unable to obtain embedding: {section.title}")
                 return False
 
             metadata = {
@@ -432,23 +432,23 @@ class UserManualManager:
             )
             return True
         except Exception as e:
-            logger.error(f"❌ [UserManualManager] 索引切片失败 ({section.title}): {e}")
+            logger.error(f"❌ [UserManualManager] Index slicing failed ({section.title}): {e}")
             return False
 
     def ensure_indexed(self, force: bool = False) -> Dict[str, Any]:
-        """确保手册已索引。若手册文件变化或集合为空则重建。
+        """Make sure the manual is indexed. Rebuild if the manual file changes or the collection is empty.
 
         Args:
-            force: 强制重建（忽略签名比对）
+            force: Force rebuild (ignore signature comparison)
 
         Returns:
             {
-                "rebuilt": bool,         # 是否重建了索引
-                "skipped": bool,          # 是否跳过（签名一致）
-                "manuals_count": int,     # 索引的手册数量
-                "sections_count": int,    # 索引的切片数量
-                "signature": str,         # 当前签名
-                "error": str,             # 错误信息（如果有）
+                "rebuilt": bool,         # Whether the index was rebuilt
+                "skipped": bool,          # Whether to skip (signature consistent)
+                "manuals_count": int,     # Number of indexed manuals
+                "sections_count": int,    # Number of slices for the index
+                "signature": str,         # current signature
+                "error": str,             # Error message (if any)
             }
         """
         result = {
@@ -461,39 +461,39 @@ class UserManualManager:
         }
 
         if not self._available:
-            result["error"] = "向量库/embedding 不可用"
+            result["error"] = "Vector library/embedding is not available"
             return result
 
         manuals = _resolve_manual_files()
         if not manuals:
-            result["error"] = "未找到用户手册文件"
+            result["error"] = "User manual file not found"
             return result
 
         current_signature = self._compute_manuals_signature(manuals)
         result["signature"] = current_signature
         result["manuals_count"] = len(manuals)
 
-        # 签名比对（非 force 模式下）
+        # Signature comparison (in non-force mode)
         if not force:
             indexed_signature = self._get_indexed_signature_from_meta()
             current_count = self.get_count()
             if indexed_signature == current_signature and current_count > 1:
                 logger.info(
-                    f"📋 [UserManualManager] 手册未变化，跳过重建 "
-                    f"(签名一致，已索引 {current_count} 个切片)"
+                    f"📋 [UserManualManager] Manual unchanged, rebuild skipped "
+                    f"(Signature consistent, indexed {current_count} slices)"
                 )
                 result["skipped"] = True
                 result["sections_count"] = current_count
                 self._last_indexed_signature = current_signature
                 return result
 
-        # 重建索引
-        logger.info(f"🔨 [UserManualManager] 开始重建手册索引 (force={force})")
+        # Rebuild index
+        logger.info(f"🔨 [UserManualManager] Start rebuilding manual index (force={force})")
         start_time = time.time()
 
-        # 清空旧索引
+        # Clear old index
         if not self._clear_all_sections():
-            result["error"] = "清空旧索引失败"
+            result["error"] = "Failed to clear old index"
             return result
 
         all_sections: List[ManualSection] = []
@@ -503,29 +503,29 @@ class UserManualManager:
                     content = f.read()
                 sections = _split_markdown_sections(content, manual_type, path)
                 all_sections.extend(sections)
-                logger.info(f"📖 [UserManualManager] {manual_type} 手册切片完成: {len(sections)} 个 ({os.path.basename(path)})")
+                logger.info(f"📖 [UserManualManager] {manual_type} Manual slicing completed: {len(sections)} a ({os.path.basename(path)})")
             except Exception as e:
-                logger.warning(f"⚠️ [UserManualManager] 读取手册失败 {path}: {e}")
+                logger.warning(f"⚠️ [UserManualManager] Failed to read manual {path}: {e}")
 
         if not all_sections:
-            result["error"] = "切片为空"
+            result["error"] = "slice is empty"
             return result
 
-        # 批量索引
+        # Batch index
         success_count = 0
         for section in all_sections:
             if self._index_section(section):
                 success_count += 1
 
-        # 保存签名
+        # Save signature
         self._save_indexed_signature(current_signature)
         self._last_indexed_signature = current_signature
 
         elapsed = time.time() - start_time
         logger.info(
-            f"✅ [UserManualManager] 索引重建完成: "
-            f"{success_count}/{len(all_sections)} 切片, "
-            f"耗时 {elapsed:.1f}s, 签名={current_signature[:8]}..."
+            f"✅ [UserManualManager] Index rebuild completed: "
+            f"{success_count}/{len(all_sections)} slice, "
+            f"Time consuming {elapsed:.1f}s, signature={current_signature[:8]}..."
         )
 
         result["rebuilt"] = True
@@ -533,7 +533,7 @@ class UserManualManager:
         return result
 
     # ----------------------------------------------------------
-    # 语义检索
+    # Semantic retrieval
     # ----------------------------------------------------------
 
     def search(
@@ -542,15 +542,15 @@ class UserManualManager:
         top_k: int = DEFAULT_TOP_K,
         manual_type: Optional[str] = None,
     ) -> List[ManualSearchResult]:
-        """语义检索用户手册
+        """Semantic Search User Manual
 
         Args:
-            query: 用户自然语言问题
-            top_k: 返回结果数量
-            manual_type: 可选筛选（"standard" | "jdyun"）
+            query: User natural language issues
+            top_k: Number of results returned
+            manual_type: optional filter("standard" | "jdyun") 
 
         Returns:
-            按相似度降序的检索结果列表
+            List of search results in descending order of similarity
         """
         if not self._available:
             return []
@@ -558,17 +558,17 @@ class UserManualManager:
         try:
             query_embedding, provider = self._embedding_manager.get_embedding(query)
             if query_embedding is None:
-                logger.warning("⚠️ [UserManualManager] 无法获取查询 embedding")
+                logger.warning("⚠️ [UserManualManager] Unable to get query embedding")
                 return []
 
             count = self._collection.count()
             if count == 0:
-                logger.debug("📭 [UserManualManager] 手册索引为空")
+                logger.debug("📭 [UserManualManager] Manual index is empty")
                 return []
 
             top_k = min(top_k, count)
 
-            # 构建过滤条件（排除签名 point）
+            # Build filter conditions (exclude signature points)
             where_clause = {"title": {"$ne": "__INDEX_SIGNATURE__"}}
             if manual_type:
                 where_clause = {
@@ -595,7 +595,7 @@ class UserManualManager:
                     dist = distances[i] if i < len(distances) else 1.0
                     similarity = 1.0 - dist
 
-                    # 过滤签名 point（双保险）
+                    # Filter signature point (double insurance)
                     if meta.get("title") == "__INDEX_SIGNATURE__":
                         continue
 
@@ -609,29 +609,29 @@ class UserManualManager:
                     ))
 
             logger.debug(
-                f"🔍 [UserManualManager] 检索完成: "
+                f"🔍 [UserManualManager] Search completed: "
                 f"query='{query[:30]}...', results={len(search_results)}, "
                 f"top_sim={search_results[0].similarity:.3f}" if search_results else
-                f"🔍 [UserManualManager] 检索完成: query='{query[:30]}...', results=0"
+                f"🔍 [UserManualManager] Search completed: query='{query[:30]}...', results=0"
             )
             return search_results
 
         except Exception as e:
-            logger.error(f"❌ [UserManualManager] 检索失败: {e}")
+            logger.error(f"❌ [UserManualManager] Retrieval failed: {e}")
             return []
 
     def get_count(self) -> int:
-        """获取已索引的切片数量"""
+        """Get the number of indexed slices"""
         if not self._available:
             return 0
         try:
             return self._collection.count()
         except Exception as e:
-            logger.error(f"❌ [UserManualManager] 获取数量失败: {e}")
+            logger.error(f"❌ [UserManualManager] Failed to get quantity: {e}")
             return 0
 
     def get_status(self) -> Dict[str, Any]:
-        """获取索引状态（供健康检查使用）"""
+        """Get index status (for use by health checks)"""
         return {
             "available": self._available,
             "collection": USER_MANUAL_COLLECTION_NAME,

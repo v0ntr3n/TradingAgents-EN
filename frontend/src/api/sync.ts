@@ -1,18 +1,18 @@
 /**
- * 多数据源同步相关API
+ * Multi-data source synchronization related API
  */
 import { ApiClient } from './request'
 
-// 数据源状态接口
+// Data source status interface
 export interface DataSourceStatus {
   name: string
   priority: number
   available: boolean
   description: string
-  token_source?: 'database' | 'env'  // Token 来源（仅 Tushare）
+  token_source?: 'database' | 'env'  // Token Source (Tushare only)
 }
 
-// 同步状态接口
+// Synchronization status interface
 export interface SyncStatus {
   job: string
   status: 'idle' | 'queued' | 'running' | 'success' | 'success_with_errors' | 'failed' | 'never_run'
@@ -28,20 +28,20 @@ export interface SyncStatus {
   message?: string
 }
 
-// 同步请求参数
+// Synchronous request parameters
 export interface SyncRequest {
   force?: boolean
   preferred_sources?: string[]
 }
 
-// API响应格式
+// API response format
 export interface ApiResponse<T = any> {
   success: boolean
   message: string
   data: T
 }
 
-// 基础测试结果接口
+// Basic test result interface
 export interface BaseTestResult {
   success: boolean
   message: string
@@ -49,16 +49,16 @@ export interface BaseTestResult {
   date?: string
 }
 
-// 测试结果接口（简化版）
+// Test results interface (simplified version)
 export interface DataSourceTestResult {
   name: string
   priority: number
   available: boolean
   message: string
-  token_source?: 'database' | 'env'  // Token 来源（仅 Tushare）
+  token_source?: 'database' | 'env'  // Token Source (Tushare only)
 }
 
-// 使用建议接口
+// Use the recommended interface
 export interface SyncRecommendations {
   primary_source?: {
     name: string
@@ -74,14 +74,14 @@ export interface SyncRecommendations {
 }
 
 /**
- * 获取数据源状态
+ * Get data source status
  */
 export const getDataSourcesStatus = (): Promise<ApiResponse<DataSourceStatus[]>> => {
   return ApiClient.get('/api/sync/multi-source/sources/status')
 }
 
 /**
- * 获取当前正在使用的数据源
+ * Get the data source currently in use
  */
 export const getCurrentDataSource = (): Promise<ApiResponse<{
   name: string
@@ -94,14 +94,14 @@ export const getCurrentDataSource = (): Promise<ApiResponse<{
 }
 
 /**
- * 获取同步状态
+ * Get sync status
  */
 export const getSyncStatus = (): Promise<ApiResponse<SyncStatus>> => {
   return ApiClient.get('/api/sync/multi-source/status')
 }
 
 /**
- * 运行股票基础信息同步
+ * Run basic stock information synchronization
  */
 export const runStockBasicsSync = (params?: {
   force?: boolean
@@ -117,30 +117,30 @@ export const runStockBasicsSync = (params?: {
 
   const url = `/api/sync/multi-source/stock_basics/run${queryParams.toString() ? '?' + queryParams.toString() : ''}`
   return ApiClient.post(url, undefined, {
-  timeout: 15000 // 后端已改为启动任务后立即返回，前端走状态轮询
+  timeout: 15000 // The backend has been changed to return immediately after starting the task, and the frontend uses status polling.
   })
 }
 
 /**
- * 测试数据源连接
- * @param sourceName - 可选，指定要测试的数据源名称。如果不指定，则测试所有数据源
+ * Test data source connection
+ * @param sourceName - Optionally, specify the name of the data source to test. If not specified, all data sources are tested
  */
 export const testDataSources = (sourceName?: string): Promise<ApiResponse<{ test_results: DataSourceTestResult[] }>> => {
   const params = sourceName ? { source_name: sourceName } : {}
   return ApiClient.post('/api/sync/multi-source/test-sources', params, {
-    timeout: 15000 // 单个数据源测试超时15秒，多个数据源最多30秒
+    timeout: 15000 // The test timeout is 15 seconds for a single data source and up to 30 seconds for multiple data sources.
   })
 }
 
 /**
- * 获取同步建议
+ * Get sync suggestions
  */
 export const getSyncRecommendations = (): Promise<ApiResponse<SyncRecommendations>> => {
   return ApiClient.get('/api/sync/multi-source/recommendations')
 }
 
 /**
- * 获取同步历史记录
+ * Get sync history
  */
 export const getSyncHistory = (params?: {
   page?: number
@@ -169,16 +169,16 @@ export const getSyncHistory = (params?: {
 }
 
 /**
- * 清空同步缓存
+ * Clear sync cache
  */
 export const clearSyncCache = (): Promise<ApiResponse<{ cleared: boolean }>> => {
   return ApiClient.delete('/api/sync/multi-source/cache')
 }
 
-// 传统单一数据源同步API（保持兼容性）
+// Traditional single data source synchronization API (maintaining compatibility)
 export const runSingleSourceSync = (): Promise<ApiResponse<any>> => {
   return ApiClient.post('/api/sync/stock_basics/run', undefined, {
-    timeout: 15000 // 后端已改为提交任务后立即返回
+    timeout: 15000 // The backend has been changed to return immediately after submitting the task
   })
 }
 

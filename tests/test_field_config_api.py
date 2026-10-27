@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试筛选字段配置API
+Test filter field configuration API
 """
 
 import asyncio
@@ -9,29 +9,29 @@ import os
 import json
 from dotenv import load_dotenv
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 async def test_field_config_api():
-    """测试筛选字段配置API"""
-    print("🧪 测试筛选字段配置API...")
+    """Test filter field configuration API"""
+    print("🧪 Test filter field configuration API...")
     
     try:
-        # 导入必要的模块
+        # Import necessary modules
         from app.core.database import init_db
         from app.models.screening import BASIC_FIELDS_INFO
         
-        # 初始化数据库
+        # Initialize database
         await init_db()
-        print("✅ 数据库连接成功")
+        print("✅ Database connection successful")
         
-        # 测试字段配置
-        print("\n📋 可用筛选字段:")
+        # Test field configuration
+        print("\n📋 Available filter fields:")
         
-        # 字段分类
+        # Field classification
         categories = {
             "basic": ["code", "name", "industry", "area", "market"],
             "market_value": ["total_mv", "circ_mv"],
@@ -47,12 +47,12 @@ async def test_field_config_api():
                 if field in BASIC_FIELDS_INFO:
                     field_info = BASIC_FIELDS_INFO[field]
                     print(f"  ✅ {field}: {field_info.display_name} ({field_info.data_type})")
-                    print(f"     描述: {field_info.description}")
-                    print(f"     支持操作: {field_info.supported_operators}")
+                    print(f"     Description: {field_info.description}")
+                    print(f"     Support operations: {field_info.supported_operators}")
                 else:
-                    print(f"  ❌ {field}: 字段信息缺失")
+                    print(f"  ❌ {field}: Field information is missing")
         
-        # 测试API响应格式
+        # Test API response format
         response_data = {
             "fields": {name: {
                 "name": info.name,
@@ -65,13 +65,13 @@ async def test_field_config_api():
             "categories": categories
         }
         
-        print(f"\n📄 API响应示例:")
+        print(f"\n📄 API Response example:")
         print(json.dumps(response_data, indent=2, ensure_ascii=False)[:500] + "...")
         
-        print("\n🎉 字段配置API测试完成！")
+        print("\n🎉 Field configuration API testing completed!")
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
 

@@ -1,35 +1,35 @@
 """
-测试港股验证修复
+Test Hong Kong stock verification repair
 """
 
 import sys
 import os
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_hk_validation():
-    """测试港股验证"""
-    print("🧪 测试港股验证修复...")
+    """Test Hong Kong stock verification"""
+    print("🧪 Test Hong Kong stock verification repair...")
     
     try:
         from web.utils.analysis_runner import validate_analysis_params
         
-        # 测试用例
+        # test case
         test_cases = [
-            # (股票代码, 市场类型, 应该通过验证)
-            ("0700.HK", "港股", True),
-            ("9988.HK", "港股", True),
-            ("3690.HK", "港股", True),
-            ("0700", "港股", True),
-            ("9988", "港股", True),
-            ("3690", "港股", True),
-            ("AAPL", "港股", False),  # 美股代码
-            ("000001", "港股", False),  # A股代码
-            ("00", "港股", False),  # 太短
-            ("12345", "港股", False),  # 太长
-            ("ABC.HK", "港股", False),  # 非数字
+            # (Stock code, market type, should pass verification)
+            ("0700.HK", "Hong Kong stocks", True),
+            ("9988.HK", "Hong Kong stocks", True),
+            ("3690.HK", "Hong Kong stocks", True),
+            ("0700", "Hong Kong stocks", True),
+            ("9988", "Hong Kong stocks", True),
+            ("3690", "Hong Kong stocks", True),
+            ("AAPL", "Hong Kong stocks", False),  # US stock code
+            ("000001", "Hong Kong stocks", False),  # A stock code
+            ("00", "Hong Kong stocks", False),  # too short
+            ("12345", "Hong Kong stocks", False),  # too long
+            ("ABC.HK", "Hong Kong stocks", False),  # Not a number
         ]
         
         passed = 0
@@ -47,67 +47,67 @@ def test_hk_validation():
             validation_passed = is_valid
             
             if validation_passed == should_pass:
-                print(f"  ✅ {symbol} ({market_type}): {'通过' if validation_passed else '失败'}")
+                print(f"  ✅ {symbol} ({market_type}): {'Pass' if validation_passed else 'failed'}")
                 passed += 1
             else:
-                print(f"  ❌ {symbol} ({market_type}): 期望{'通过' if should_pass else '失败'}, 实际{'通过' if validation_passed else '失败'}")
+                print(f"  ❌ {symbol} ({market_type}): Expectation{'Pass' if should_pass else 'failed'}, actual{'Pass' if validation_passed else 'failed'}")
                 if errors:
-                    print(f"      错误: {errors}")
+                    print(f"      Error: {errors}")
         
-        print(f"\n验证测试结果: {passed}/{total} 通过")
+        print(f"\n Verify test results: {passed}/{total} Pass")
         
         if passed == total:
-            print("🎉 所有验证测试通过！")
+            print("🎉 All validation tests passed!")
             return True
         else:
-            print("⚠️ 部分验证测试失败")
+            print("⚠️ Some validation tests failed")
             return False
         
     except Exception as e:
-        print(f"❌ 验证测试失败: {e}")
+        print(f"❌ Validation test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_specific_case():
-    """测试具体的0700.HK案例"""
-    print("\n🧪 测试具体的0700.HK案例...")
+    """Test the specific 0700.HK case"""
+    print("\n🧪 Test the specific 0700.HK case...")
     
     try:
         from web.utils.analysis_runner import validate_analysis_params
         
-        # 测试0700.HK
+        # test 0700.HK
         is_valid, errors = validate_analysis_params(
             stock_symbol="0700.HK",
             analysis_date="2025-07-14",
             analysts=["market", "fundamentals"],
             research_depth=3,
-            market_type="港股"
+            market_type="Hong Kong stocks"
         )
 
-        print(f"  股票代码: 0700.HK")
-        print(f"  市场类型: 港股")
-        print(f"  验证结果: {'通过' if is_valid else '失败'}")
+        print(f"  Stock code: 0700.HK")
+        print(f"  market type: Hong Kong stocks")
+        print(f"  Verification results: {'Pass' if is_valid else 'failed'}")
 
         if not is_valid:
-            print(f"  错误信息: {errors}")
+            print(f"  error message: {errors}")
             return False
         else:
-            print("  ✅ 0700.HK验证通过！")
+            print("  ✅ 0700.HK Verification passed!")
             return True
         
     except Exception as e:
-        print(f"❌ 具体案例测试失败: {e}")
+        print(f"❌ Specific case test failed: {e}")
         return False
 
 def test_regex_patterns():
-    """测试正则表达式模式"""
-    print("\n🧪 测试正则表达式模式...")
+    """Test regular expression pattern"""
+    print("\n🧪 Test regular expression pattern...")
     
     try:
         import re
         
-        # 测试港股正则模式（支持4-5位数字）
+        # Test Hong Kong stock regular mode (supports 4-5 digits)
         hk_pattern = r'^\d{4,5}\.HK$'
         digit_pattern = r'^\d{4}$'
         
@@ -130,17 +130,17 @@ def test_regex_patterns():
             
             matches = bool(hk_match or digit_match)
             
-            print(f"  {symbol}: HK格式={bool(hk_match)}, 数字格式={bool(digit_match)}, 总体匹配={matches}")
+            print(f"  {symbol}: HK Format={bool(hk_match)}, Number format={bool(digit_match)}, overall match={matches}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 正则表达式测试失败: {e}")
+        print(f"❌ Regular expression test failed: {e}")
         return False
 
 def main():
-    """运行所有测试"""
-    print("🔧 港股验证修复测试")
+    """Run all tests"""
+    print("🔧 Hong Kong stock verification and repair test")
     print("=" * 40)
     
     tests = [
@@ -157,16 +157,16 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"❌ 测试 {test_func.__name__} 异常: {e}")
+            print(f"❌ test {test_func.__name__} Abnormal: {e}")
     
     print("\n" + "=" * 40)
-    print(f"🔧 修复测试完成: {passed}/{total} 通过")
+    print(f"🔧 Repair test completed: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 港股验证修复成功！")
-        print("\n现在可以正常使用0700.HK进行分析了")
+        print("🎉 Hong Kong stock verification and repair successful!")
+        print("\n Now you can use 0700.HK for analysis normally.")
     else:
-        print("⚠️ 修复可能不完整，请检查失败的测试")
+        print("⚠️ Fix may be incomplete, please check for failing tests")
 
 if __name__ == "__main__":
     main()

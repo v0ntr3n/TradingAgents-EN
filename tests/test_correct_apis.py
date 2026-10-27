@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-正确测试Google和Reddit API工具
+Properly Test Google and Reddit API Tools
 """
 
 import os
@@ -8,25 +8,25 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv(project_root / ".env", override=True)
 
 def test_google_news_tool():
-    """测试Google新闻工具"""
+    """Test Google News Tools"""
     try:
-        print("🧪 测试Google新闻工具")
+        print("🧪 Test Google News Tools")
         print("=" * 50)
         
         from tradingagents.dataflows.interface import get_google_news
         
-        print("✅ get_google_news函数导入成功")
+        print("✅ get_google_news Function imported successfully")
         
-        # 测试获取苹果公司新闻
-        print("📰 获取苹果公司新闻...")
+        # Test to get Apple news
+        print("📰 Get Apple News...")
         try:
             news = get_google_news(
                 query="Apple AAPL stock",
@@ -35,49 +35,49 @@ def test_google_news_tool():
             )
             
             if news and len(news) > 0:
-                print("✅ Google新闻获取成功")
-                print(f"   新闻长度: {len(news)} 字符")
-                print(f"   新闻预览: {news[:200]}...")
+                print("✅ Google News obtained successfully")
+                print(f"   news length: {len(news)} character")
+                print(f"   News preview: {news[:200]}...")
                 return True
             else:
-                print("⚠️ Google新闻获取成功但内容为空")
-                return True  # 功能正常，只是没有内容
+                print("⚠️ Google News obtained successfully but the content is empty")
+                return True  # Functions fine, just no content
                 
         except Exception as e:
-            print(f"❌ Google新闻获取失败: {e}")
+            print(f"❌ Google Failed to get news: {e}")
             return False
             
     except ImportError as e:
-        print(f"❌ Google新闻工具导入失败: {e}")
+        print(f"❌ Google News tool import failed: {e}")
         return False
 
 def test_reddit_tools():
-    """测试Reddit工具"""
+    """Test Reddit Tools"""
     try:
-        print("\n🧪 测试Reddit工具")
+        print("\n🧪 Test Reddit Tools")
         print("=" * 50)
         
         from tradingagents.dataflows.interface import get_reddit_global_news, get_reddit_company_news
         
-        print("✅ Reddit工具函数导入成功")
+        print("✅ Reddit Tool function imported successfully")
         
-        # 检查Reddit数据目录
+        # Check Reddit data directory
         reddit_data_dir = Path("tradingagents/dataflows/data_cache/reddit_data")
-        print(f"📁 Reddit数据目录: {reddit_data_dir}")
+        print(f"📁 Reddit data directory: {reddit_data_dir}")
         
         if reddit_data_dir.exists():
-            print("✅ Reddit数据目录存在")
+            print("✅ Reddit data directory exists")
             
-            # 检查子目录
+            # Check subdirectories
             subdirs = [d for d in reddit_data_dir.iterdir() if d.is_dir()]
-            print(f"   子目录: {[d.name for d in subdirs]}")
+            print(f"   subdirectory: {[d.name for d in subdirs]}")
             
             if subdirs:
-                print("✅ Reddit数据可用，可以进行测试")
+                print("✅ Reddit Data is available and can be tested")
                 
-                # 测试全球新闻
+                # Test global news
                 try:
-                    print("📰 测试Reddit全球新闻...")
+                    print("📰 Testing Reddit Global News...")
                     global_news = get_reddit_global_news(
                         start_date="2025-06-27",
                         look_back_days=1,
@@ -85,17 +85,17 @@ def test_reddit_tools():
                     )
                     
                     if global_news and len(global_news) > 0:
-                        print("✅ Reddit全球新闻获取成功")
-                        print(f"   新闻长度: {len(global_news)} 字符")
+                        print("✅ Reddit Global news success")
+                        print(f"   news length: {len(global_news)} character")
                     else:
-                        print("⚠️ Reddit全球新闻获取成功但内容为空")
+                        print("⚠️ Reddit Global news was obtained successfully but the content is empty")
                         
                 except Exception as e:
-                    print(f"❌ Reddit全球新闻获取失败: {e}")
+                    print(f"❌ Reddit Failed to obtain global news: {e}")
                 
-                # 测试公司新闻
+                # Testing company news
                 try:
-                    print("📰 测试Reddit公司新闻...")
+                    print("📰 Testing Reddit Company News...")
                     company_news = get_reddit_company_news(
                         ticker="AAPL",
                         start_date="2025-06-27",
@@ -104,34 +104,34 @@ def test_reddit_tools():
                     )
                     
                     if company_news and len(company_news) > 0:
-                        print("✅ Reddit公司新闻获取成功")
-                        print(f"   新闻长度: {len(company_news)} 字符")
+                        print("✅ Reddit Company News Get Successful")
+                        print(f"   news length: {len(company_news)} character")
                     else:
-                        print("⚠️ Reddit公司新闻获取成功但内容为空")
+                        print("⚠️ Reddit Company news was obtained successfully but the content is empty")
                         
                 except Exception as e:
-                    print(f"❌ Reddit公司新闻获取失败: {e}")
+                    print(f"❌ Reddit Failed to obtain company news: {e}")
                     
                 return True
             else:
-                print("⚠️ Reddit数据目录为空，需要先下载数据")
+                print("⚠️ Reddit The data directory is empty, you need to download the data first")
                 return False
         else:
-            print("⚠️ Reddit数据目录不存在，需要先设置数据")
-            print("💡 提示: Reddit工具需要预先下载的数据文件")
+            print("⚠️ Reddit The data directory does not exist, you need to set the data first")
+            print("💡 Tips: Reddit Tool requires pre-downloaded data files")
             return False
             
     except ImportError as e:
-        print(f"❌ Reddit工具导入失败: {e}")
+        print(f"❌ Reddit Tool import failed: {e}")
         return False
 
 def test_toolkit_integration():
-    """测试工具包集成"""
+    """Test toolkit integration"""
     try:
-        print("\n🧪 测试工具包集成")
+        print("\n🧪 Test toolkit integration")
         print("=" * 50)
         
-        # 检查Toolkit类是否包含这些工具
+        # Check if the Toolkit class contains these tools
         from tradingagents.agents.utils.toolkit import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
@@ -140,75 +140,75 @@ def test_toolkit_integration():
         
         toolkit = Toolkit(config=config)
         
-        # 检查工具包中的方法
+        # Check out the methods in the toolkit
         methods = [method for method in dir(toolkit) if not method.startswith('_')]
         
         google_methods = [m for m in methods if 'google' in m.lower()]
         reddit_methods = [m for m in methods if 'reddit' in m.lower()]
         
-        print(f"📊 工具包方法总数: {len(methods)}")
-        print(f"   Google相关方法: {google_methods}")
-        print(f"   Reddit相关方法: {reddit_methods}")
+        print(f"📊 Total number of toolkit methods: {len(methods)}")
+        print(f"   Google Related methods: {google_methods}")
+        print(f"   Reddit Related methods: {reddit_methods}")
         
-        # 检查具体方法是否存在
+        # Check if a specific method exists
         if hasattr(toolkit, 'get_google_news'):
-            print("✅ toolkit.get_google_news 方法存在")
+            print("✅ toolkit.get_google_news method exists")
         else:
-            print("❌ toolkit.get_google_news 方法不存在")
+            print("❌ toolkit.get_google_news method does not exist")
             
         if hasattr(toolkit, 'get_reddit_global_news'):
-            print("✅ toolkit.get_reddit_global_news 方法存在")
+            print("✅ toolkit.get_reddit_global_news method exists")
         else:
-            print("❌ toolkit.get_reddit_global_news 方法不存在")
+            print("❌ toolkit.get_reddit_global_news method does not exist")
             
         if hasattr(toolkit, 'get_reddit_company_news'):
-            print("✅ toolkit.get_reddit_company_news 方法存在")
+            print("✅ toolkit.get_reddit_company_news method exists")
         else:
-            print("❌ toolkit.get_reddit_company_news 方法不存在")
+            print("❌ toolkit.get_reddit_company_news method does not exist")
         
         return True
         
     except Exception as e:
-        print(f"❌ 工具包集成测试失败: {e}")
+        print(f"❌ Toolkit integration test failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("🧪 正确的API工具测试")
+    """Main test function"""
+    print("🧪 Correct API Tool Testing")
     print("=" * 60)
     
-    # 检查API密钥
+    # Check API key
     google_key = os.getenv('GOOGLE_API_KEY')
     reddit_id = os.getenv('REDDIT_CLIENT_ID')
     
-    print(f"🔑 API密钥状态:")
-    print(f"   Google API: {'✅ 已配置' if google_key else '❌ 未配置'}")
-    print(f"   Reddit API: {'✅ 已配置' if reddit_id else '❌ 未配置'}")
+    print(f"🔑 API Key status:")
+    print(f"   Google API: {'✅ configured' if google_key else '❌ Not configured'}")
+    print(f"   Reddit API: {'✅ configured' if reddit_id else '❌ Not configured'}")
     
-    # 运行测试
+    # Run tests
     results = {}
     
-    results['Google新闻工具'] = test_google_news_tool()
-    results['Reddit工具'] = test_reddit_tools()
-    results['工具包集成'] = test_toolkit_integration()
+    results['Google News tools'] = test_google_news_tool()
+    results['Reddit Tools'] = test_reddit_tools()
+    results['Toolkit integration'] = test_toolkit_integration()
     
-    # 总结结果
-    print(f"\n📊 测试结果总结:")
+    # Summary results
+    print(f"\n📊 Summary of test results:")
     print("=" * 50)
     
     for test_name, success in results.items():
-        status = "✅ 通过" if success else "❌ 失败"
+        status = "✅ Pass" if success else "❌ failed"
         print(f"  {test_name}: {status}")
     
     successful_tests = sum(results.values())
     total_tests = len(results)
     
-    print(f"\n🎯 总体结果: {successful_tests}/{total_tests} 测试通过")
+    print(f"\n🎯 Overall results: {successful_tests}/{total_tests} Test passed")
     
     if successful_tests == total_tests:
-        print("🎉 所有测试通过！")
+        print("🎉 All tests passed!")
     else:
-        print("⚠️ 部分测试失败，请检查配置")
+        print("⚠️ Some tests failed, please check the configuration")
 
 if __name__ == "__main__":
     main()

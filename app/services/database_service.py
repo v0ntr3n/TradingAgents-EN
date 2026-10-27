@@ -33,20 +33,20 @@ class DatabaseService:
         self.backup_dir = os.path.join(settings.TRADINGAGENTS_DATA_DIR, "backups")
         self.export_dir = os.path.join(settings.TRADINGAGENTS_DATA_DIR, "exports")
 
-        # 确保目录存在
+        # Make sure the directory exists
         os.makedirs(self.backup_dir, exist_ok=True)
         os.makedirs(self.export_dir, exist_ok=True)
 
     async def get_database_status(self) -> Dict[str, Any]:
-        """获取数据库连接状态（委托子模块）"""
+        """Get database connection status (delegate submodule)"""
         return await _db_status.get_database_status()
 
     async def _get_mongodb_status(self) -> Dict[str, Any]:
-        """获取MongoDB状态（委托子模块）"""
+        """Get MongoDB status (delegate submodule)"""
         return await _db_status.get_mongodb_status()
 
     async def _get_redis_status(self) -> Dict[str, Any]:
-        """获取Redis状态（委托子模块）"""
+        """Get Redis status (delegate submodule)"""
         return await _db_status.get_redis_status()
 
     async def get_database_stats(self) -> Dict[str, Any]:
@@ -54,14 +54,14 @@ class DatabaseService:
         try:
             db = get_mongo_db()
 
-            # 🔑 关键：使用 list_collections() 而不是 list_collection_names()
-            # 这样可以区分集合（collection）和视图（view）
+            # 🔑 Key: use list_collections() instead of list_collection_names()
+            # This distinguishes between collections and views
             collections_info = []
             total_documents = 0
             total_size = 0
             views_count = 0
 
-            # 并行获取所有集合的统计信息
+            # Get statistics for all collections in parallel
             import asyncio
             from pymongo.errors import OperationFailure
 
@@ -70,7 +70,7 @@ class DatabaseService:
                 collection_name = collection_info['name']
                 collection_type = collection_info.get('type', 'collection')
                 
-                # 如果是视图，跳过统计（视图不支持 collStats）
+                # If it is a view, skip statistics (views do not support collStats)
                 if collection_type == 'view':
                     return {
                         "name": collection_name,
@@ -85,7 +85,7 @@ class DatabaseService:
                 
                 try:
                     stats = await db.command("collStats", collection_name)
-                    # 使用 collStats 中的 count 字段，避免额外的 count_documents 查询
+                    # Use the count field in collStats to avoid additional count_documents queries
                     doc_count = stats.get('count', 0)
 
                     return {
@@ -98,7 +98,7 @@ class DatabaseService:
                         "index_size": stats.get('totalIndexSize', 0)
                     }
                 except OperationFailure as e:
-                    # 检查是否是视图错误（错误码166）
+                    # Check whether it is a view error (error code 166)
                     if e.code == 166 or 'view' in str(e).lower() or 'CommandNotSupportedOnView' in str(e):
                         logger.debug(f"跳过视图 {collection_name} 的统计（视图不支持 collStats）")
                         return {
@@ -134,27 +134,27 @@ class DatabaseService:
                         "index_size": 0
                     }
 
-            # 获取所有集合和视图的信息
-            # 🔥 修复：在 Motor 中，list_collections() 返回 CommandCursor，需要正确调用
+            # Get information about all collections and views
+            # 🔥 Fix: In Motor,list_collections() Returns CommandCursor, which needs to be called correctly
             try:
                 collections_cursor = db.list_collections()
                 collections_list = await collections_cursor.to_list(length=None)
             except AttributeError as e:
-                # 如果 to_list 方法不存在，可能是同步客户端被误用
+                # If the to_list method does not exist, the synchronization client may be misused
                 logger.error(f"数据库客户端类型错误: {type(db)}, 错误: {e}")
-                # 尝试使用 list_collection_names 作为备选方案
+                # Try using list_collection_names as an alternative
                 collection_names = await db.list_collection_names()
                 collections_list = [{"name": name, "type": "collection"} for name in collection_names]
             
-            # 并行获取所有集合的统计
+            # Get statistics for all collections in parallel
             collections_info = await asyncio.gather(
                 *[get_collection_stats(info) for info in collections_list]
             )
             
-            # 统计视图数量
+            # Number of statistical views
             views_count = sum(1 for info in collections_info if info.get('type') == 'view')
 
-            # 计算总计（只统计集合，不包括视图）
+            # Calculate totals (only counts collections, not views)
             for collection_info in collections_info:
                 if collection_info.get('type') == 'collection':
                     total_documents += collection_info['documents']
@@ -171,27 +171,27 @@ class DatabaseService:
             raise Exception(f"获取数据库统计失败: {str(e)}")
 
     async def test_connections(self) -> Dict[str, Any]:
-        """测试数据库连接（委托子模块）"""
+        """Test database connection (delegation submodule)"""
         return await _db_status.test_connections()
 
     async def _test_mongodb_connection(self) -> Dict[str, Any]:
-        """测试MongoDB连接（委托子模块）"""
+        """Test MongoDB connection (delegation submodule)"""
         return await _db_status.test_mongodb_connection()
 
     async def _test_redis_connection(self) -> Dict[str, Any]:
-        """测试Redis连接（委托子模块）"""
+        """Test Redis connection (delegation submodule)"""
         return await _db_status.test_redis_connection()
 
     async def create_backup(self, name: str, collections: List[str] = None, user_id: str = None) -> Dict[str, Any]:
         """
-        创建数据库备份（自动选择最佳方法）
+        Create database backup (automatically selects the best method)
 
-        - 如果 mongodump 可用，使用原生备份（快速）
-        - 否则使用 Python 实现（兼容性好但较慢）
+        - If mongodump is available, use native backup (fast)
+        - Otherwise use Python implementation (good compatibility but slower)
         """
-        # 检查 mongodump 是否可用
+        # Check if mongodump is available
         if _db_backups._check_mongodump_available():
-            logger.info("✅ 使用 mongodump 原生备份（推荐）")
+            logger.info("✅ Use mongodump native backup (recommended)")
             return await _db_backups.create_backup_native(
                 name=name,
                 backup_dir=self.backup_dir,
@@ -199,8 +199,8 @@ class DatabaseService:
                 user_id=user_id
             )
         else:
-            logger.warning("⚠️ mongodump 不可用，使用 Python 备份（较慢）")
-            logger.warning("💡 建议安装 MongoDB Database Tools 以获得更快的备份速度")
+            logger.warning("⚠️ mongodump Not available, use Python backup (slower)")
+            logger.warning("💡 It is recommended to install MongoDB Database Tools for faster backup speed")
             return await _db_backups.create_backup(
                 name=name,
                 backup_dir=self.backup_dir,
@@ -209,7 +209,7 @@ class DatabaseService:
             )
 
     async def list_backups(self) -> List[Dict[str, Any]]:
-        """获取备份列表（委托子模块）"""
+        """Get backup list (delegated submodule)"""
         return await _db_backups.list_backups()
 
     async def delete_backup(self, backup_id: str) -> None:
@@ -221,11 +221,11 @@ class DatabaseService:
         return await _db_cleanup.cleanup_old_data(days)
 
     async def cleanup_analysis_results(self, days: int) -> Dict[str, Any]:
-        """清理过期分析结果（委托子模块）"""
+        """Clean up expired analysis results (delegation sub-module)"""
         return await _db_cleanup.cleanup_analysis_results(days)
 
     async def cleanup_operation_logs(self, days: int) -> Dict[str, Any]:
-        """清理操作日志（委托子模块）"""
+        """Clean operation log (delegation submodule)"""
         return await _db_cleanup.cleanup_operation_logs(days)
 
     async def import_data(self, content: bytes, collection: str, format: str = "json",
@@ -238,5 +238,5 @@ class DatabaseService:
         return await _db_backups.export_data(collections, export_dir=self.export_dir, format=format, sanitize=sanitize)
 
     def _serialize_document(self, doc: dict) -> dict:
-        """序列化文档，处理特殊类型（委托子模块）"""
+        """Serialize documents, handle special types (delegate submodule)"""
         return _serialize_doc(doc)

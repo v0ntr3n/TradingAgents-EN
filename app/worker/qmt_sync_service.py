@@ -1,12 +1,12 @@
 """
-QMT 数据同步服务
+QMT Data synchronization service
 
-将 QMT 数据同步到 MongoDB。
-前置条件：
-  1. xtquant 库已安装
-  2. QMT 客户端已启动（仅 Windows）
-  3. 获取行情数据不需要登录券商账户
-新闻不支持，统一使用 AKShare。
+Sync QMT data to MongoDB.
+Prerequisites:
+  1. xtquant Library installed
+  2. QMT Client started (Windows only)
+  3. Obtaining market data does not require logging into a brokerage account
+News is not supported, use AKShare uniformly.
 """
 import asyncio
 import logging
@@ -27,11 +27,11 @@ _qmt_sync_service = None
 
 class QMTSyncService:
     """
-    QMT 数据同步服务
+    QMT Data synchronization service
 
-    提供：
-    - 股票基础信息同步
-    - 实时行情同步（可选）
+    Provided by:
+    - Synchronization of basic stock information
+    - Real-time market synchronization (optional)
     """
 
     def __init__(self):
@@ -43,16 +43,16 @@ class QMTSyncService:
         self._current_job_id = None
 
     async def initialize(self):
-        """初始化同步服务"""
+        """Initialize synchronization service"""
         try:
             self.db = get_mongo_db()
             self.historical_service = await get_historical_data_service()
             self.financial_service = await get_financial_data_service()
             if not self.adapter.is_available():
-                raise RuntimeError("❌ QMT 不可用，请确保 QMT 客户端已启动")
-            logger.info("✅ QMT 同步服务初始化完成")
+                raise RuntimeError("❌ QMT Not available, please make sure the QMT client is started")
+            logger.info("✅ QMT Synchronization service initialization completed")
         except Exception as e:
-            logger.error(f"❌ QMT 同步服务初始化失败: {e}")
+            logger.error(f"❌ QMT Sync service initialization failed: {e}")
             raise
 
     async def _get_qmt_symbols(self, symbols: Optional[List[str]] = None) -> List[str]:
@@ -153,18 +153,18 @@ class QMTSyncService:
         symbols: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
-        同步股票基础信息到 MongoDB
+        Synchronize basic stock information to MongoDB
 
         Args:
-            force_update: 是否强制更新
-            job_id: 任务 ID（用于进度跟踪）
-            symbols: 可选，仅同步指定股票列表；为空则同步全市场
+            force_update: Whether to force update
+            job_id: Task ID (for progress tracking)
+            symbols: Optional, synchronizes only the specified stock list; if empty, synchronizes the entire market
 
         Returns:
-            同步结果统计
+            Synchronization result statistics
         """
         self._current_job_id = job_id or "qmt_basic_info_sync"
-        logger.info("🔄 开始 QMT 股票基础信息同步...")
+        logger.info("🔄 Start QMT stock basic information synchronization...")
 
         stats = {
             "total_processed": 0,
@@ -180,14 +180,14 @@ class QMTSyncService:
         try:
             df = self.adapter.get_stock_list()
             if df is None or df.empty:
-                logger.warning("⚠️ QMT 未获取到股票列表")
+                logger.warning("⚠️ QMT No stock list obtained")
                 return stats
 
             if symbols:
                 symbol_set = {str(s).zfill(6) for s in symbols}
                 df = df[df["symbol"].astype(str).str.zfill(6).isin(symbol_set)]
                 if df.empty:
-                    logger.warning(f"⚠️ QMT 未找到指定股票: {symbols}")
+                    logger.warning(f"⚠️ QMT Specified stock not found: {symbols}")
                     return stats
 
             stats["total_processed"] = len(df)
@@ -235,39 +235,39 @@ class QMTSyncService:
             stats["end_time"] = datetime.utcnow()
             stats["duration"] = (stats["end_time"] - stats["start_time"]).total_seconds()
 
-            logger.info(f"✅ QMT 股票基础信息同步完成: 成功 {stats['success_count']}, 跳过 {stats['skipped_count']}, 错误 {stats['error_count']}")
+            logger.info(f"✅ QMT Basic stock information synchronization completed: success {stats['success_count']}, skip {stats['skipped_count']}, Error {stats['error_count']}")
 
             return stats
         except Exception as e:
-            logger.error(f"❌ QMT 股票基础信息同步失败: {e}")
+            logger.error(f"❌ QMT Synchronization of basic stock information failed: {e}")
             stats["errors"].append({"error": str(e), "context": "sync_stock_basic_info"})
             return stats
 
     async def sync_realtime_quotes(self, symbols: Optional[List[str]] = None, force: bool = False) -> Dict[str, Any]:
         """
-        同步实时行情到 market_quotes（可选，需 QMT 运行）
+        Synchronize real-time quotes to market_quotes (optional, requires QMT to run)
 
         Args:
-            symbols: 指定股票列表，空则全市场
-            force: 是否强制执行
+            symbols: Specify a list of stocks, short will mean the entire market
+            force: Whether to enforce
 
         Returns:
-            同步结果
+            Synchronization results
         """
         if not self.adapter.is_available():
-            logger.warning("⚠️ QMT 不可用，跳过实时行情同步")
-            return {"success_count": 0, "message": "QMT 不可用"}
+            logger.warning("⚠️ QMT Not available, skip real-time market synchronization")
+            return {"success_count": 0, "message": "QMT Not available"}
 
         try:
             quotes = self.adapter.get_realtime_quotes()
             if not quotes:
-                return {"success_count": 0, "message": "未获取到行情"}
+                return {"success_count": 0, "message": "Not getting quotes"}
 
             if symbols:
                 quotes = {k: v for k, v in quotes.items() if k in symbols}
 
             if not quotes:
-                return {"success_count": 0, "message": "无匹配数据"}
+                return {"success_count": 0, "message": "No matching data"}
 
             count = 0
             now = datetime.utcnow()
@@ -289,11 +289,11 @@ class QMTSyncService:
                     )
                     count += 1
                 except Exception as e:
-                    logger.debug(f"QMT 行情更新失败 {code}: {e}")
+                    logger.debug(f"QMT Quotation update failed {code}: {e}")
 
-            return {"success_count": count, "total": len(quotes), "message": f"同步 {count} 只"}
+            return {"success_count": count, "total": len(quotes), "message": f"sync {count} only"}
         except Exception as e:
-            logger.error(f"QMT 实时行情同步失败: {e}")
+            logger.error(f"QMT Real-time market synchronization failed: {e}")
             return {"success_count": 0, "error": str(e)}
 
     async def sync_historical_data(
@@ -320,7 +320,7 @@ class QMTSyncService:
         try:
             symbol_list = await self._get_qmt_symbols(symbols)
             if not symbol_list:
-                logger.warning("⚠️ QMT 历史同步未获取到股票列表")
+                logger.warning("⚠️ QMT Historical synchronization did not obtain the stock list")
                 return stats
 
             stats["total_processed"] = len(symbol_list)
@@ -382,7 +382,7 @@ class QMTSyncService:
             stats["duration"] = (stats["end_time"] - stats["start_time"]).total_seconds()
             return stats
         except Exception as e:
-            logger.error(f"❌ QMT 历史数据同步失败: {e}")
+            logger.error(f"❌ QMT Historical data synchronization failed: {e}")
             stats["errors"].append({"error": str(e), "context": "sync_historical_data"})
             return stats
 
@@ -409,7 +409,7 @@ class QMTSyncService:
         try:
             symbol_list = await self._get_qmt_symbols(symbols)
             if not symbol_list:
-                logger.warning("⚠️ QMT 财务同步未获取到股票列表")
+                logger.warning("⚠️ QMT Financial synchronization did not obtain the stock list")
                 return stats
 
             stats["total_symbols"] = len(symbol_list)
@@ -458,7 +458,7 @@ class QMTSyncService:
             stats["duration"] = (stats["end_time"] - stats["start_time"]).total_seconds()
             return stats
         except Exception as e:
-            logger.error(f"❌ QMT 财务数据同步失败: {e}")
+            logger.error(f"❌ QMT Financial data synchronization failed: {e}")
             stats["errors"].append({"error": str(e), "context": "sync_financial_data"})
             return stats
 
@@ -489,12 +489,12 @@ async def _check_task_running(job_id: str) -> tuple[bool, Optional[str]]:
         sync_client.close()
         return False, None
     except Exception as e:
-        logger.warning(f"⚠️ 检查 QMT 任务运行状态失败 {job_id}: {e}")
+        logger.warning(f"⚠️ Checking QMT task running status failed {job_id}: {e}")
         return False, None
 
 
 async def get_qmt_sync_service() -> QMTSyncService:
-    """获取 QMT 同步服务单例"""
+    """Get the QMT synchronization service singleton"""
     global _qmt_sync_service
     if _qmt_sync_service is None:
         _qmt_sync_service = QMTSyncService()
@@ -503,13 +503,13 @@ async def get_qmt_sync_service() -> QMTSyncService:
 
 
 async def run_qmt_basic_info_sync(force_update: bool = False, job_id: str = None) -> Dict[str, Any]:
-    """运行 QMT 股票基础信息同步"""
+    """Run QMT stock basic information synchronization"""
     service = await get_qmt_sync_service()
     return await service.sync_stock_basic_info(force_update=force_update, job_id=job_id)
 
 
 async def run_qmt_quotes_sync(symbols: Optional[List[str]] = None, force: bool = False) -> Dict[str, Any]:
-    """运行 QMT 实时行情同步"""
+    """Run QMT real-time market synchronization"""
     service = await get_qmt_sync_service()
     return await service.sync_realtime_quotes(symbols=symbols, force=force)
 
@@ -521,8 +521,8 @@ async def run_qmt_historical_sync(incremental: bool = True, **kwargs) -> Dict[st
     if not manual_trigger and not force_execute:
         is_running, instance_id = await _check_task_running(job_id)
         if is_running:
-            logger.warning(f"⚠️ 任务 {job_id} 已有实例在运行（_id={instance_id}），跳过本次执行")
-            return {"skipped": True, "reason": "已有实例在运行", "running_instance_id": instance_id}
+            logger.warning(f"⚠️ Task {job_id} There is already an instance running (_id={instance_id}) , Skip this execution")
+            return {"skipped": True, "reason": "There is already an instance running", "running_instance_id": instance_id}
 
     service = await get_qmt_sync_service()
     service._current_job_id = job_id
@@ -542,8 +542,8 @@ async def run_qmt_financial_sync(**kwargs) -> Dict[str, Any]:
     if not manual_trigger and not force_execute:
         is_running, instance_id = await _check_task_running(job_id)
         if is_running:
-            logger.warning(f"⚠️ 任务 {job_id} 已有实例在运行（_id={instance_id}），跳过本次执行")
-            return {"skipped": True, "reason": "已有实例在运行", "running_instance_id": instance_id}
+            logger.warning(f"⚠️ Task {job_id} There is already an instance running (_id={instance_id}) , Skip this execution")
+            return {"skipped": True, "reason": "There is already an instance running", "running_instance_id": instance_id}
 
     service = await get_qmt_sync_service()
     service._current_job_id = job_id
@@ -556,7 +556,7 @@ async def run_qmt_financial_sync(**kwargs) -> Dict[str, Any]:
 
 
 async def run_qmt_status_check() -> Dict[str, Any]:
-    """检查 QMT 可用状态"""
+    """Check QMT availability status"""
     adapter = QMTAdapter()
     available = adapter.is_available()
     latest_trade_date = adapter.find_latest_trade_date() if available else None
@@ -566,5 +566,5 @@ async def run_qmt_status_check() -> Dict[str, Any]:
         "checked_at": datetime.utcnow().isoformat(),
         "source": "qmt",
     }
-    logger.info(f"QMT 状态检查结果: {result}")
+    logger.info(f"QMT Status check results: {result}")
     return result

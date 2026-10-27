@@ -1,5 +1,5 @@
 """
-LLM 适配器基类
+LLM Adapter base class
 """
 
 from abc import ABC, abstractmethod
@@ -10,9 +10,9 @@ from ..models import LLMConfig, LLMResponse, Message, ToolCall
 
 class BaseAdapter(ABC):
     """
-    LLM 适配器基类
+    LLM Adapter base class
     
-    所有提供商适配器都需要继承此类并实现相应方法
+    All provider adapters need to inherit this class and implement the corresponding methods
     """
     
     def __init__(self, config: LLMConfig):
@@ -21,7 +21,7 @@ class BaseAdapter(ABC):
     
     @abstractmethod
     def initialize(self) -> None:
-        """初始化客户端连接"""
+        """Initialize client connection"""
         pass
     
     @abstractmethod
@@ -32,15 +32,15 @@ class BaseAdapter(ABC):
         **kwargs
     ) -> LLMResponse:
         """
-        同步聊天接口
+        Synchronous chat interface
         
         Args:
-            messages: 消息列表
-            tools: 可用工具定义列表
-            **kwargs: 其他参数
+            messages: Message list
+            tools: List of available tool definitions
+            **kwargs: Other parameters
             
         Returns:
-            LLMResponse: 统一响应格式
+            LLMResponse: Unified response format
         """
         pass
     
@@ -52,15 +52,15 @@ class BaseAdapter(ABC):
         **kwargs
     ) -> LLMResponse:
         """
-        异步聊天接口
+        Asynchronous chat interface
         
         Args:
-            messages: 消息列表
-            tools: 可用工具定义列表
-            **kwargs: 其他参数
+            messages: Message list
+            tools: List of available tool definitions
+            **kwargs: Other parameters
             
         Returns:
-            LLMResponse: 统一响应格式
+            LLMResponse: Unified response format
         """
         pass
     
@@ -72,15 +72,15 @@ class BaseAdapter(ABC):
         **kwargs
     ) -> AsyncIterator[str]:
         """
-        异步流式输出接口
+        Asynchronous streaming output interface
         
         Args:
-            messages: 消息列表
-            tools: 可用工具定义列表
-            **kwargs: 其他参数
+            messages: Message list
+            tools: List of available tool definitions
+            **kwargs: Other parameters
             
         Yields:
-            str: 流式输出的文本片段
+            str: Text fragment for streaming output
         """
         pass
     
@@ -89,15 +89,15 @@ class BaseAdapter(ABC):
         tools: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        将统一工具格式转换为提供商特定格式
+        Convert unified tool format to provider specific format
         
-        默认实现返回 OpenAI 格式，子类可覆盖
+        The default implementation returns OpenAI format, subclasses can override
         
         Args:
-            tools: 统一工具定义列表
+            tools: Unified tool definition list
             
         Returns:
-            转换后的工具定义列表
+            Converted tool definition list
         """
         return tools
     
@@ -106,22 +106,22 @@ class BaseAdapter(ABC):
         raw_tool_calls: Any
     ) -> List[ToolCall]:
         """
-        从提供商响应中提取并转换工具调用
+        Extract and transform tool calls from provider responses
         
         Args:
-            raw_tool_calls: 原始工具调用数据
+            raw_tool_calls: Raw tool call data
             
         Returns:
-            标准化的工具调用列表
+            Standardized tool call list
         """
         return []
     
     def validate_config(self) -> bool:
         """
-        验证配置是否有效
+        Verify that the configuration is valid
         
         Returns:
-            bool: 配置是否有效
+            bool: Is the configuration valid?
         """
         if not self.config.api_key:
             return False
@@ -131,13 +131,13 @@ class BaseAdapter(ABC):
     
     @property
     def provider_name(self) -> str:
-        """提供商名称"""
-        # 兼容 use_enum_values=True：config.provider 可能是字符串也可能是枚举
+        """Provider name"""
+        # Compatible use_enum_values=True: config.provider May be a string or an enumeration
         provider = self.config.provider
         return provider.value if hasattr(provider, "value") else str(provider)
     
     @property
     def model_name(self) -> str:
-        """模型名称"""
+        """Model name"""
         return self.config.model
 

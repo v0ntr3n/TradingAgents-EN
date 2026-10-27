@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-多周期数据同步API
-提供日线、周线、月线数据的同步管理接口
+Multi-cycle data synchronization API
+Provides synchronization management interface for daily, weekly and monthly data
 """
 import logging
 from datetime import datetime
@@ -13,21 +13,21 @@ from app.worker.multi_period_sync_service import get_multi_period_sync_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/multi-period-sync", tags=["多周期同步"])
+router = APIRouter(prefix="/api/multi-period-sync", tags=["Multi-cycle synchronization"])
 
 
 class MultiPeriodSyncRequest(BaseModel):
-    """多周期同步请求"""
-    symbols: Optional[List[str]] = Field(None, description="股票代码列表，None表示所有股票")
-    periods: Optional[List[str]] = Field(["daily"], description="周期列表 (daily/weekly/monthly)")
-    data_sources: Optional[List[str]] = Field(["tushare", "akshare", "baostock"], description="数据源列表")
-    start_date: Optional[str] = Field(None, description="开始日期 (YYYY-MM-DD)")
-    end_date: Optional[str] = Field(None, description="结束日期 (YYYY-MM-DD)")
-    all_history: Optional[bool] = Field(False, description="是否同步所有历史数据（忽略时间范围）")
+    """Multi-cycle synchronization request"""
+    symbols: Optional[List[str]] = Field(None, description="List of stock codes, None means all stocks")
+    periods: Optional[List[str]] = Field(["daily"], description="period list (daily/weekly/monthly)")
+    data_sources: Optional[List[str]] = Field(["tushare", "akshare", "baostock"], description="Data source list")
+    start_date: Optional[str] = Field(None, description="start date (YYYY-MM-DD)")
+    end_date: Optional[str] = Field(None, description="end date (YYYY-MM-DD)")
+    all_history: Optional[bool] = Field(False, description="Whether to synchronize all historical data (ignore time range)")
 
 
 class MultiPeriodSyncResponse(BaseModel):
-    """多周期同步响应"""
+    """Multi-cycle synchronous response"""
     success: bool
     message: str
     data: Optional[Dict[str, Any]] = None
@@ -39,12 +39,12 @@ async def start_multi_period_sync(
     background_tasks: BackgroundTasks
 ):
     """
-    启动多周期数据同步
+    Start multi-cycle data synchronization
     """
     try:
         service = await get_multi_period_sync_service()
         
-        # 后台任务执行同步
+        # Background task execution synchronization
         background_tasks.add_task(
             service.sync_multi_period_data,
             symbols=request.symbols,
@@ -57,7 +57,7 @@ async def start_multi_period_sync(
         
         return MultiPeriodSyncResponse(
             success=True,
-            message="多周期数据同步已启动",
+            message="Multi-cycle data synchronization has started",
             data={
                 "request_params": request.dict(),
                 "start_time": datetime.utcnow().isoformat()
@@ -65,8 +65,8 @@ async def start_multi_period_sync(
         )
         
     except Exception as e:
-        logger.error(f"启动多周期同步失败: {e}")
-        raise HTTPException(status_code=500, detail=f"启动同步失败: {e}")
+        logger.error(f"Failed to start multi-cycle synchronization: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start sync: {e}")
 
 
 @router.post("/start-daily", response_model=MultiPeriodSyncResponse)
@@ -75,7 +75,7 @@ async def start_daily_sync(
     symbols: Optional[List[str]] = None,
     data_sources: Optional[List[str]] = None
 ):
-    """启动日线数据同步"""
+    """Start daily data synchronization"""
     try:
         service = await get_multi_period_sync_service()
         
@@ -88,7 +88,7 @@ async def start_daily_sync(
         
         return MultiPeriodSyncResponse(
             success=True,
-            message="日线数据同步已启动",
+            message="Daily data synchronization has started",
             data={
                 "period": "daily",
                 "start_time": datetime.utcnow().isoformat()
@@ -96,8 +96,8 @@ async def start_daily_sync(
         )
         
     except Exception as e:
-        logger.error(f"启动日线同步失败: {e}")
-        raise HTTPException(status_code=500, detail=f"启动日线同步失败: {e}")
+        logger.error(f"Failed to start daily synchronization: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start daily synchronization: {e}")
 
 
 @router.post("/start-weekly", response_model=MultiPeriodSyncResponse)
@@ -106,7 +106,7 @@ async def start_weekly_sync(
     symbols: Optional[List[str]] = None,
     data_sources: Optional[List[str]] = None
 ):
-    """启动周线数据同步"""
+    """Start weekly data synchronization"""
     try:
         service = await get_multi_period_sync_service()
         
@@ -119,7 +119,7 @@ async def start_weekly_sync(
         
         return MultiPeriodSyncResponse(
             success=True,
-            message="周线数据同步已启动",
+            message="Weekly data synchronization has started",
             data={
                 "period": "weekly",
                 "start_time": datetime.utcnow().isoformat()
@@ -127,8 +127,8 @@ async def start_weekly_sync(
         )
         
     except Exception as e:
-        logger.error(f"启动周线同步失败: {e}")
-        raise HTTPException(status_code=500, detail=f"启动周线同步失败: {e}")
+        logger.error(f"Failed to start weekly synchronization: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start weekly synchronization: {e}")
 
 
 @router.post("/start-monthly", response_model=MultiPeriodSyncResponse)
@@ -137,7 +137,7 @@ async def start_monthly_sync(
     symbols: Optional[List[str]] = None,
     data_sources: Optional[List[str]] = None
 ):
-    """启动月线数据同步"""
+    """Start monthly data synchronization"""
     try:
         service = await get_multi_period_sync_service()
 
@@ -150,7 +150,7 @@ async def start_monthly_sync(
 
         return MultiPeriodSyncResponse(
             success=True,
-            message="月线数据同步已启动",
+            message="Monthly data synchronization has started",
             data={
                 "period": "monthly",
                 "start_time": datetime.utcnow().isoformat()
@@ -158,8 +158,8 @@ async def start_monthly_sync(
         )
 
     except Exception as e:
-        logger.error(f"启动月线同步失败: {e}")
-        raise HTTPException(status_code=500, detail=f"启动月线同步失败: {e}")
+        logger.error(f"Failed to start monthly synchronization: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start monthly synchronization: {e}")
 
 
 @router.post("/start-all-history", response_model=MultiPeriodSyncResponse)
@@ -169,7 +169,7 @@ async def start_all_history_sync(
     periods: Optional[List[str]] = None,
     data_sources: Optional[List[str]] = None
 ):
-    """启动全历史数据同步（从1990年开始）"""
+    """Start full historical data synchronization (starting in 1990)"""
     try:
         service = await get_multi_period_sync_service()
 
@@ -183,20 +183,20 @@ async def start_all_history_sync(
 
         return MultiPeriodSyncResponse(
             success=True,
-            message="全历史数据同步已启动（从1990年开始）",
+            message="Full historical data synchronization started (from 1990)",
             data={
                 "sync_type": "all_history",
                 "periods": periods or ["daily", "weekly", "monthly"],
                 "data_sources": data_sources or ["tushare", "akshare", "baostock"],
-                "date_range": "1990-01-01 到 今天",
+                "date_range": "1990-01-01 to today",
                 "start_time": datetime.utcnow().isoformat(),
-                "warning": "全历史数据同步可能需要很长时间，请耐心等待"
+                "warning": "Full historical data synchronization may take a long time, please be patient."
             }
         )
 
     except Exception as e:
-        logger.error(f"启动全历史同步失败: {e}")
-        raise HTTPException(status_code=500, detail=f"启动全历史同步失败: {e}")
+        logger.error(f"Failed to start full history synchronization: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start full history synchronization: {e}")
 
 
 @router.post("/start-incremental", response_model=MultiPeriodSyncResponse)
@@ -207,13 +207,13 @@ async def start_incremental_sync(
     data_sources: Optional[List[str]] = None,
     days_back: Optional[int] = 30
 ):
-    """启动增量数据同步（最近N天）"""
+    """Start incremental data synchronization (last N days)"""
     try:
         from datetime import datetime, timedelta
 
         service = await get_multi_period_sync_service()
 
-        # 计算增量同步的日期范围
+        # Calculate date range for incremental synchronization
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
 
@@ -228,25 +228,25 @@ async def start_incremental_sync(
 
         return MultiPeriodSyncResponse(
             success=True,
-            message=f"增量数据同步已启动（最近{days_back}天）",
+            message=f"Incremental data synchronization started (recently{days_back}days)",
             data={
                 "sync_type": "incremental",
                 "periods": periods or ["daily"],
                 "data_sources": data_sources or ["tushare", "akshare", "baostock"],
-                "date_range": f"{start_date} 到 {end_date}",
+                "date_range": f"{start_date} Arrive {end_date}",
                 "days_back": days_back,
                 "start_time": datetime.utcnow().isoformat()
             }
         )
 
     except Exception as e:
-        logger.error(f"启动增量同步失败: {e}")
-        raise HTTPException(status_code=500, detail=f"启动增量同步失败: {e}")
+        logger.error(f"Failed to start incremental sync: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start incremental sync: {e}")
 
 
 @router.get("/statistics")
 async def get_sync_statistics():
-    """获取多周期同步统计信息"""
+    """Get multi-cycle synchronization statistics"""
     try:
         service = await get_multi_period_sync_service()
         stats = await service.get_sync_statistics()
@@ -254,12 +254,12 @@ async def get_sync_statistics():
         return {
             "success": True,
             "data": stats,
-            "message": "统计信息获取成功"
+            "message": "Statistics obtained successfully"
         }
         
     except Exception as e:
-        logger.error(f"获取同步统计失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取统计信息失败: {e}")
+        logger.error(f"Failed to obtain synchronization statistics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to obtain statistics: {e}")
 
 
 @router.get("/period-comparison/{symbol}")
@@ -269,7 +269,7 @@ async def compare_period_data(
     data_source: str = "tushare"
 ):
     """
-    对比同一股票不同周期的数据
+    Compare data from different periods for the same stock
     """
     try:
         from app.services.historical_data_service import get_historical_data_service
@@ -302,37 +302,37 @@ async def compare_period_data(
                 "comparison": comparison,
                 "available_periods": [k for k, v in comparison.items() if v is not None]
             },
-            "message": "周期数据对比完成"
+            "message": "Cycle data comparison completed"
         }
         
     except Exception as e:
-        logger.error(f"周期数据对比失败 {symbol}: {e}")
-        raise HTTPException(status_code=500, detail=f"周期数据对比失败: {e}")
+        logger.error(f"Period data comparison failed {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Period data comparison failed: {e}")
 
 
 @router.get("/supported-periods")
 async def get_supported_periods():
-    """获取支持的数据周期"""
+    """Get supported data periods"""
     return {
         "success": True,
         "data": {
             "periods": [
                 {
                     "code": "daily",
-                    "name": "日线",
-                    "description": "每日交易数据",
+                    "name": "daily line",
+                    "description": "Daily transaction data",
                     "supported_sources": ["tushare", "akshare", "baostock"]
                 },
                 {
                     "code": "weekly",
-                    "name": "周线",
-                    "description": "每周交易数据",
+                    "name": "perimeter",
+                    "description": "Weekly transaction data",
                     "supported_sources": ["tushare", "akshare", "baostock"]
                 },
                 {
                     "code": "monthly",
-                    "name": "月线",
-                    "description": "每月交易数据",
+                    "name": "monthly line",
+                    "description": "monthly transaction data",
                     "supported_sources": ["tushare", "akshare", "baostock"]
                 }
             ],
@@ -340,30 +340,30 @@ async def get_supported_periods():
                 {
                     "code": "tushare",
                     "name": "Tushare",
-                    "description": "专业金融数据服务",
+                    "description": "Professional financial data services",
                     "supported_periods": ["daily", "weekly", "monthly"]
                 },
                 {
                     "code": "akshare",
                     "name": "AKShare",
-                    "description": "免费开源金融数据",
+                    "description": "Free open source financial data",
                     "supported_periods": ["daily", "weekly", "monthly"]
                 },
                 {
                     "code": "baostock",
                     "name": "BaoStock",
-                    "description": "免费证券数据平台",
+                    "description": "Free securities data platform",
                     "supported_periods": ["daily", "weekly", "monthly"]
                 }
             ]
         },
-        "message": "支持的周期信息获取成功"
+        "message": "Supported cycle information is obtained successfully"
     }
 
 
 @router.get("/health")
 async def health_check():
-    """健康检查"""
+    """health check"""
     try:
         service = await get_multi_period_sync_service()
         stats = await service.get_sync_statistics()
@@ -371,23 +371,23 @@ async def health_check():
         return {
             "success": True,
             "data": {
-                "service": "多周期同步服务",
+                "service": "Multi-cycle synchronization service",
                 "status": "healthy",
                 "statistics": stats,
                 "last_check": datetime.utcnow().isoformat()
             },
-            "message": "服务正常"
+            "message": "Service is normal"
         }
         
     except Exception as e:
-        logger.error(f"健康检查失败: {e}")
+        logger.error(f"Health check failed: {e}")
         return {
             "success": False,
             "data": {
-                "service": "多周期同步服务",
+                "service": "Multi-cycle synchronization service",
                 "status": "unhealthy",
                 "error": str(e),
                 "last_check": datetime.utcnow().isoformat()
             },
-            "message": "服务异常"
+            "message": "Service exception"
         }

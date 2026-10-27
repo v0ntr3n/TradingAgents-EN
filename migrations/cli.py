@@ -1,11 +1,11 @@
 """
-迁移管理命令行工具
+Migration management command line tool
 
-用法:
-    python -m migrations.cli status              # 查看迁移状态
-    python -m migrations.cli run                  # 执行所有待迁移
-    python -m migrations.cli run --version 2.0.1  # 执行指定版本
-    python -m migrations.cli history              # 查看迁移历史
+Usage:
+    python -m migrations.cli status              # View migration status
+    python -m migrations.cli run                  # Execute all pending migrations
+    python -m migrations.cli run --version 2.0.1  # Execute specified version
+    python -m migrations.cli history              # View migration history
 """
 
 import asyncio
@@ -14,7 +14,7 @@ import sys
 import os
 import logging
 
-# 确保项目根目录在 sys.path 中
+# Make sure the project root is in sys.path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
@@ -28,14 +28,14 @@ logger = logging.getLogger("migrations.cli")
 
 
 async def get_db():
-    """获取数据库连接"""
+    """Get database connection"""
     from app.core.database import init_database, get_mongo_db
     await init_database()
     return get_mongo_db()
 
 
 async def cmd_status():
-    """显示迁移状态"""
+    """Show migration status"""
     from migrations.runner import MigrationRunner
 
     db = await get_db()
@@ -43,19 +43,19 @@ async def cmd_status():
     status = await runner.get_status()
 
     print("\n" + "=" * 50)
-    print("📊 数据库迁移状态")
+    print("📊 Database migration status")
     print("=" * 50)
-    print(f"  总迁移数:   {status['total_migrations']}")
-    print(f"  已执行:     {status['applied']}")
-    print(f"  待执行:     {status['pending']}")
+    print(f"  Total migrations:   {status['total_migrations']}")
+    print(f"  Executed:     {status['applied']}")
+    print(f"  To be executed:     {status['pending']}")
 
     if status["applied_versions"]:
-        print(f"\n  ✅ 已执行版本:")
+        print(f"\n  ✅ Executed version:")
         for v in status["applied_versions"]:
             print(f"     - {v}")
 
     if status["pending_versions"]:
-        print(f"\n  ⏳ 待执行版本:")
+        print(f"\n  ⏳ Version to be executed:")
         for v in status["pending_versions"]:
             print(f"     - {v}")
 
@@ -63,26 +63,26 @@ async def cmd_status():
 
 
 async def cmd_run(version: str = None):
-    """执行迁移"""
+    """Execute migration"""
     from migrations.runner import MigrationRunner
 
     db = await get_db()
     runner = MigrationRunner(db)
 
     if version:
-        print(f"\n🔄 执行指定迁移: {version}")
+        print(f"\n🔄 Execute specified migration: {version}")
         result = await runner.run_one(version)
         results = [result]
     else:
-        print("\n🔄 执行所有待处理迁移...")
+        print("\n🔄 Execute all pending migrations...")
         results = await runner.run_pending()
 
     if not results:
-        print("✅ 没有需要执行的迁移\n")
+        print("✅ There are no migrations to perform\n")
         return
 
     print("\n" + "=" * 50)
-    print("📋 迁移执行结果")
+    print("📋 Migration execution results")
     print("=" * 50)
     for r in results:
         icon = "✅" if r["status"] == "success" else "❌" if r["status"] == "failed" else "⏭️"
@@ -96,17 +96,17 @@ async def cmd_run(version: str = None):
 
 
 async def cmd_history():
-    """查看迁移历史"""
+    """View migration history"""
     db = await get_db()
     cursor = db.migration_history.find().sort("applied_at", -1)
     docs = await cursor.to_list(length=50)
 
     print("\n" + "=" * 60)
-    print("📜 迁移历史记录")
+    print("📜 Migration history")
     print("=" * 60)
 
     if not docs:
-        print("  (无记录)")
+        print("  (No record)")
     else:
         for doc in docs:
             icon = "✅" if doc.get("status") == "success" else "❌"
@@ -119,15 +119,15 @@ async def cmd_history():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="TradingAgents-CN 数据库迁移工具")
-    subparsers = parser.add_subparsers(dest="command", help="命令")
+    parser = argparse.ArgumentParser(description="TradingAgents-CN Database migration tool")
+    subparsers = parser.add_subparsers(dest="command", help="command")
 
-    subparsers.add_parser("status", help="查看迁移状态")
+    subparsers.add_parser("status", help="View migration status")
 
-    run_parser = subparsers.add_parser("run", help="执行迁移")
-    run_parser.add_argument("--version", "-v", help="指定执行某个版本")
+    run_parser = subparsers.add_parser("run", help="Execute migration")
+    run_parser.add_argument("--version", "-v", help="Specify a version to execute")
 
-    subparsers.add_parser("history", help="查看迁移历史")
+    subparsers.add_parser("history", help="View migration history")
 
     args = parser.parse_args()
 

@@ -10,7 +10,7 @@ class DataSourceAdapter(ABC):
     """数据源适配器基类"""
 
     def __init__(self):
-        self._priority: Optional[int] = None  # 动态优先级，从数据库加载
+        self._priority: Optional[int] = None  # Dynamic priority, loaded from database
 
     @property
     @abstractmethod
@@ -20,15 +20,15 @@ class DataSourceAdapter(ABC):
 
     @property
     def priority(self) -> int:
-        """数据源优先级（数字越小优先级越高）"""
-        # 如果有动态设置的优先级，使用动态优先级；否则使用默认优先级
+        """Data source priority (the smaller the number, the higher the priority)"""
+        # If there is a dynamically set priority, use the dynamic priority; otherwise use the default priority
         if self._priority is not None:
             return self._priority
         return self._get_default_priority()
 
     @abstractmethod
     def _get_default_priority(self) -> int:
-        """获取默认优先级（子类实现）"""
+        """Get the default priority (subclass implementation)"""
         raise NotImplementedError
 
     @abstractmethod
@@ -51,52 +51,52 @@ class DataSourceAdapter(ABC):
         """查找最新交易日期"""
         raise NotImplementedError
 
-    # 新增：全市场实时快照（近实时价格/涨跌幅/成交额），键为6位代码
+    # Newly added: Real-time snapshot of the entire market (near-real-time price/increase/decrease/transaction volume), the key is a 6-digit code
     @abstractmethod
     def get_realtime_quotes(self) -> Optional[Dict[str, Dict[str, Optional[float]]]]:
-        """返回 { '000001': {'close': 10.0, 'pct_chg': 1.2, 'amount': 1.2e8}, ... }"""
+        """Return { '000001': {'close': 10.0, 'pct_chg': 1.2, 'amount': 1.2e8}, ... }"""
         raise NotImplementedError
 
-    # 新增：K线与新闻抽象接口
+    # Newly added: K-line and news abstract interface
     @abstractmethod
     def get_kline(self, code: str, period: str = "day", limit: int = 120, adj: Optional[str] = None):
-        """获取K线，返回按时间正序的列表: [{time, open, high, low, close, volume, amount}]"""
+        """Get the K-line and return the list in chronological order: [{time, open, high, low, close, volume, amount}]"""
         raise NotImplementedError
 
     @abstractmethod
     def get_news(self, code: str, days: int = 2, limit: int = 50, include_announcements: bool = True):
-        """获取新闻/公告，返回 [{title, source, time, url, type}]，type in ['news','announcement']"""
+        """Get news/announcements, return [{title, source, time, url, type}], type in ['news','announcement']"""
         raise NotImplementedError
 
     def get_daily_ohlc(self, code: str, trade_date: str, adj: Optional[str] = None) -> Optional[Dict]:
         """
-        获取指定日期的日线 OHLC 数据（可选复权方式）。
+        Obtain daily OHLC data for the specified date (optional re-weighting method).
 
         Args:
-            code: 6位股票代码
-            trade_date: 交易日期，格式 YYYY-MM-DD 或 YYYYMMDD
-            adj: 复权方式，None=不复权，"qfq"=前复权，"hfq"=后复权
+            code: 6 stock code
+            trade_date: Transaction date, format YYYY-MM-DD or YYYYMMDD
+            adj: Restoration method,None=Not regaining power,"qfq"=Before regaining power,"hfq"=Restoration of rights later
 
         Returns:
-            {"date": str, "open": float, "high": float, "low": float, "close": float} 或 None
+            {"date": str, "open": float, "high": float, "low": float, "close": float} or None
         """
-        # 默认实现：通过 get_kline 获取数据，筛选目标日期
+        # Default implementation: get data through get_kline, filter target date
         try:
-            # 标准化目标日期格式为 YYYY-MM-DD
+            # The standardized target date format is YYYY-MM-DD
             target_date = trade_date.replace("-", "") if "-" in trade_date else trade_date
             if len(target_date) == 8:
                 target_date = f"{target_date[:4]}-{target_date[4:6]}-{target_date[6:8]}"
 
-            # 根据目标日期与今天的距离，动态计算需要的 limit
-            # 每年约 250 个交易日，预留 20% 余量
+            # Based on the distance between the target date and today, dynamically calculate the required limit
+            # Approximately 250 trading days per year, with a 20% margin reserved
             from datetime import datetime
             try:
                 target_dt = datetime.strptime(target_date, "%Y-%m-%d")
                 days_diff = (datetime.now() - target_dt).days
-                # 至少 30 个交易日，最多 1500 个交易日（约6年）
+                # Minimum 30 trading days, maximum 1500 trading days (approximately 6 years)
                 limit = max(30, min(1500, int(days_diff * 250 / 365 * 1.2) + 30))
             except (ValueError, TypeError):
-                limit = 120  # 默认
+                limit = 120  # Default
 
             items = self.get_kline(code=code, period="day", limit=limit, adj=adj)
             if not items:
@@ -104,11 +104,11 @@ class DataSourceAdapter(ABC):
 
             for item in items:
                 item_date = item.get("time", "")
-                # 标准化 item 日期格式
+                # Standardize item date format
                 if len(item_date) == 8:
                     item_date = f"{item_date[:4]}-{item_date[4:6]}-{item_date[6:8]}"
                 elif len(item_date) > 10:
-                    item_date = item_date[:10]  # 截取 YYYY-MM-DD
+                    item_date = item_date[:10]  # intercept YYYY-MM-DD
 
                 if item_date == target_date:
                     return {
@@ -119,6 +119,6 @@ class DataSourceAdapter(ABC):
                         "close": item.get("close"),
                     }
 
-            return None  # 目标日期不在返回数据中
+            return None  # Target date is not in the returned data
         except Exception:
             return None

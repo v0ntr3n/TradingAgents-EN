@@ -1,64 +1,64 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试新闻分析师与统一新闻工具的集成
+Testing News Analyst integration with Unified News Tools
 """
 
 import os
 import sys
 from datetime import datetime
 
-# 添加项目根目录到路径
+# Add project root directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def test_news_analyst_integration():
-    """测试新闻分析师与统一新闻工具的集成"""
+    """Testing News Analyst integration with Unified News Tools"""
     
-    print("🚀 开始测试新闻分析师集成...")
+    print("🚀 Start testing the News Analyst integration...")
     
     try:
-        # 导入必要的模块
+        # Import necessary modules
         from tradingagents.agents.analysts.news_analyst import create_news_analyst
         from tradingagents.tools.unified_news_tool import create_unified_news_tool
-        print("✅ 成功导入必要模块")
+        print("✅ Successfully imported necessary modules")
         
-        # 创建模拟工具包
+        # Create a simulation toolkit
         class MockToolkit:
             def __init__(self):
-                # 创建统一新闻工具
+                # Create a unified news tool
                 self.unified_news_tool = create_unified_news_tool(self)
                 
             def get_realtime_stock_news(self, params):
                 stock_code = params.get("stock_code", "unknown")
                 return f"""
-【发布时间】2025-07-28 18:00:00
-【新闻标题】{stock_code}公司发布重要公告，业绩超预期增长
-【文章来源】东方财富网
+ [Release time]2025-07-28 18:00:00
+ [News headline]{stock_code}The company issued an important announcement and its performance exceeded expectations.
+ [Source of article] Oriental Fortune Network
 
-【新闻内容】
-1. 公司Q2季度营收同比增长25%，净利润增长30%
-2. 新产品线获得重大突破，市场前景广阔
-3. 管理层对下半年业绩表示乐观
-4. 分析师上调目标价至50元
+ [News content]
+1. The company s Q2 quarter revenue increased by 25% year-on-year, and net profit increased 30%
+2. The new product line has achieved major breakthroughs and has broad market prospects.
+3. Management expresses optimism about second half results
+4. Analysts raise target price to 50 yuan
 
-【市场影响】
-- 短期利好：业绩超预期，市场情绪积极
-- 中期利好：新产品线带来增长动力
-- 长期利好：行业地位进一步巩固
+ [Market Impact]
+- Short-term positives: Performance exceeds expectations, market sentiment is positive
+- Medium-term upside: New product lines provide growth momentum
+- Long-term benefits: industry position further consolidated
 """
             
             def get_google_news(self, params):
                 query = params.get("query", "unknown")
-                return f"Google新闻搜索结果 - {query}: 相关财经新闻内容"
+                return f"Google News search results - {query}: Related financial news content"
             
             def get_global_news_openai(self, params):
                 query = params.get("query", "unknown")
-                return f"OpenAI全球新闻 - {query}: 国际财经新闻内容"
+                return f"OpenAI global news - {query}: International financial news content"
         
         toolkit = MockToolkit()
-        print("✅ 创建模拟工具包成功")
+        print("✅ Simulation toolkit created successfully")
         
-        # 创建模拟LLM
+        # Create simulation LLM
         class MockLLM:
             def __init__(self):
                 self.__class__.__name__ = "MockLLM"
@@ -67,37 +67,37 @@ def test_news_analyst_integration():
                 return self
             
             def invoke(self, messages):
-                # 模拟LLM响应，包含工具调用
+                # Simulate LLM response, including tool calls
                 class MockResult:
                     def __init__(self):
                         self.content = """
-# 股票新闻分析报告
+# Stock News Analysis Report
 
-## 📈 核心要点
-基于最新获取的新闻数据，该股票展现出强劲的业绩增长态势：
+## 📈 core points
+Based on the latest news data obtained, the stock shows strong performance growth:
 
-### 🎯 业绩亮点
-- Q2营收同比增长25%，超出市场预期
-- 净利润增长30%，盈利能力显著提升
-- 新产品线获得重大突破
+### 🎯 Performance Highlights
+- Q2 Revenue increased by 25% year-on-year, exceeding market expectations
+- Net profit increased by 30%, profitability significantly improved
+- New product line achieved major breakthrough
 
-### 📊 市场影响分析
-**短期影响（1-3个月）**：
-- 预期股价上涨5-10%
-- 市场情绪转向积极
+### 📊 Market Impact Analysis
+**Short-term impact (1-3 months)**: 
+- Expected share price to rise 5-10%
+- Market sentiment turns positive
 
-**中期影响（3-12个月）**：
-- 新产品线贡献增量收入
-- 估值有望修复至合理水平
+**Mid-term impact (3-12 months)**: 
+- New product lines contribute incremental revenue
+- Valuation is expected to recover to a reasonable level
 
-### 💰 投资建议
-- **评级**：买入
-- **目标价**：50元
-- **风险等级**：中等
+### 💰 investment advice
+- **Rating**: buy
+- **target price**: 50 Yuan
+- **risk level**: medium
 
-基于真实新闻数据的专业分析报告。
+Professional analysis reports based on real news data.
 """
-                        # 模拟工具调用
+                        # Simulation tool call
                         self.tool_calls = [{
                             "name": "get_stock_news_unified",
                             "args": {"stock_code": "000001", "max_news": 10}
@@ -106,26 +106,26 @@ def test_news_analyst_integration():
                 return MockResult()
         
         llm = MockLLM()
-        print("✅ 创建模拟LLM成功")
+        print("✅ Create simulated LLM successfully")
         
-        # 创建新闻分析师
+        # Create a news analyst
         news_analyst = create_news_analyst(llm, toolkit)
-        print("✅ 创建新闻分析师成功")
+        print("✅ Create news analyst successfully")
         
-        # 测试不同股票
+        # Test different stocks
         test_stocks = [
-            ("000001", "平安银行 - A股"),
-            ("00700", "腾讯控股 - 港股"),
-            ("AAPL", "苹果公司 - 美股")
+            ("000001", "Ping An Bank - A Shares"),
+            ("00700", "Tencent Holdings - Hong Kong Stocks"),
+            ("AAPL", "Apple - US Stocks")
         ]
         
         for stock_code, description in test_stocks:
             print(f"\n{'='*60}")
-            print(f"🔍 测试股票: {stock_code} ({description})")
+            print(f"🔍 test stocks: {stock_code} ({description})")
             print(f"{'='*60}")
             
             try:
-                # 调用新闻分析师
+                # Call a news analyst
                 start_time = datetime.now()
                 result = news_analyst({
                     "messages": [],
@@ -135,47 +135,47 @@ def test_news_analyst_integration():
                 })
                 end_time = datetime.now()
                 
-                print(f"⏱️ 分析耗时: {(end_time - start_time).total_seconds():.2f}秒")
+                print(f"⏱️ Analysis takes time: {(end_time - start_time).total_seconds():.2f}seconds")
                 
-                # 检查结果
+                # Check results
                 if result and "messages" in result and len(result["messages"]) > 0:
                     final_message = result["messages"][-1]
                     if hasattr(final_message, 'content'):
                         report = final_message.content
-                        print(f"✅ 成功获取新闻分析报告")
-                        print(f"📊 报告长度: {len(report)} 字符")
+                        print(f"✅ Successfully obtained news analysis report")
+                        print(f"📊 Report length: {len(report)} character")
                         
-                        # 显示报告摘要
+                        # Show report summary
                         if len(report) > 300:
-                            print(f"📝 报告摘要: {report[:300]}...")
+                            print(f"📝 Report Summary: {report[:300]}...")
                         else:
-                            print(f"📝 完整报告: {report}")
+                            print(f"📝 full report: {report}")
                         
-                        # 检查是否包含真实新闻特征
-                        news_indicators = ['发布时间', '新闻标题', '文章来源', '东方财富', '业绩', '营收']
+                        # Check if real news features are included
+                        news_indicators = ['Release time', 'News headline', 'Article source', 'Oriental Fortune', 'performance', 'Revenue']
                         has_real_news = any(indicator in report for indicator in news_indicators)
-                        print(f"🔍 包含真实新闻特征: {'是' if has_real_news else '否'}")
+                        print(f"🔍 Contains real news features: {'Yes' if has_real_news else 'No'}")
                         
                         if has_real_news:
-                            print("🎉 集成测试成功！")
+                            print("🎉 Integration test successful!")
                         else:
-                            print("⚠️ 可能需要进一步优化")
+                            print("⚠️ May need further optimization")
                     else:
-                        print("❌ 消息内容为空")
+                        print("❌ The message content is empty")
                 else:
-                    print("❌ 未获取到分析结果")
+                    print("❌ No analysis results were obtained")
                     
             except Exception as e:
-                print(f"❌ 测试股票 {stock_code} 时出错: {e}")
+                print(f"❌ test stocks {stock_code} error: {e}")
                 import traceback
                 traceback.print_exc()
         
         print(f"\n{'='*60}")
-        print("🎉 新闻分析师集成测试完成!")
+        print("🎉 News Analyst Integration Test Completed!")
         print(f"{'='*60}")
         
     except Exception as e:
-        print(f"❌ 测试过程中出现错误: {e}")
+        print(f"❌ An error occurred during testing: {e}")
         import traceback
         traceback.print_exc()
 

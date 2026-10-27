@@ -1,6 +1,6 @@
 """
-测试新闻过滤功能
-验证基于规则的过滤器和增强过滤器的效果
+Test the news filtering feature
+Verify the performance of rule-based filters and enhanced filters
 """
 
 import sys
@@ -12,204 +12,204 @@ import time
 from datetime import datetime
 
 def test_basic_news_filter():
-    """测试基础新闻过滤器"""
-    print("=== 测试基础新闻过滤器 ===")
+    """Test basic news filter"""
+    print("=== Test basic news filter ===")
     
     try:
         from tradingagents.utils.news_filter import create_news_filter
         
-        # 创建过滤器
+        # Create filter
         filter = create_news_filter('600036')
-        print(f"✅ 成功创建招商银行(600036)新闻过滤器")
+        print(f"✅ Successfully established China Merchants Bank(600036)news filter")
         
-        # 模拟新闻数据
+        # Simulated news data
         test_news = pd.DataFrame([
             {
-                '新闻标题': '招商银行发布2024年第三季度业绩报告',
-                '新闻内容': '招商银行今日发布第三季度财报，净利润同比增长8%，资产质量持续改善，不良贷款率进一步下降...'
+                'News headline': 'China Merchants Bank releases third quarter performance report for 2024',
+                'News content': 'China Merchants Bank released its third quarter financial report today. Net profit increased by 8% year-on-year, asset quality continued to improve, and the non-performing loan ratio further declined....'
             },
             {
-                '新闻标题': '上证180ETF指数基金（530280）自带杠铃策略',
-                '新闻内容': '数据显示，上证180指数前十大权重股分别为贵州茅台、招商银行600036、五粮液等，该ETF基金采用被动投资策略...'
+                'News headline': 'Shanghai Stock Exchange 180ETF Index Fund (530280) has its own barbell strategy',
+                'News content': 'Data shows that the top ten heavyweight stocks in the Shanghai Stock Exchange 180 Index are Kweichow Moutai, China Merchants Bank 600036, Wuliangye, etc. This ETF fund adopts a passive investment strategy...'
             },
             {
-                '新闻标题': '银行ETF指数(512730)多只成分股上涨',
-                '新闻内容': '银行板块今日表现强势，招商银行、工商银行、建设银行等多只成分股上涨，银行ETF基金受益明显...'
+                'News headline': 'Bank ETF Index(512730)Many constituent stocks rose',
+                'News content': 'The banking sector performed strongly today. Many constituent stocks such as China Merchants Bank, Industrial and Commercial Bank of China, and China Construction Bank rose. Bank ETF funds benefited significantly....'
             },
             {
-                '新闻标题': '招商银行与某科技公司签署战略合作协议',
-                '新闻内容': '招商银行宣布与知名科技公司达成战略合作，将在数字化转型、金融科技创新等方面深度合作，推动银行业务升级...'
+                'News headline': 'China Merchants Bank signed a strategic cooperation agreement with a technology company',
+                'News content': 'China Merchants Bank announced that it has reached a strategic cooperation with a well-known technology company, and will cooperate in depth in digital transformation, financial technology innovation and other aspects to promote the upgrading of banking business....'
             },
             {
-                '新闻标题': '无标题',
-                '新闻内容': '指数基金跟踪上证180指数，该指数包含180只大盘蓝筹股，权重股包括招商银行等金融股...'
+                'News headline': 'Untitled',
+                'News content': 'The index fund tracks the Shanghai 180 Index, which includes 180 large-cap blue-chip stocks. Heavyweight stocks include financial stocks such as China Merchants Bank....'
             }
         ])
         
-        print(f"📊 测试新闻数量: {len(test_news)}条")
+        print(f"📊 Test number of news: {len(test_news)}Article")
         
-        # 执行过滤
+        # Perform filtering
         start_time = time.time()
         filtered_news = filter.filter_news(test_news, min_score=30)
         filter_time = time.time() - start_time
         
-        print(f"⏱️ 过滤耗时: {filter_time:.3f}秒")
-        print(f"📈 过滤结果: {len(test_news)}条 -> {len(filtered_news)}条")
+        print(f"⏱️ Filtration takes time: {filter_time:.3f}seconds")
+        print(f"📈 Filter results: {len(test_news)}Article -> {len(filtered_news)}Article")
         
         if not filtered_news.empty:
-            print("\n🎯 过滤后的新闻:")
+            print("\n🎯 filtered news:")
             for idx, (_, row) in enumerate(filtered_news.iterrows(), 1):
-                print(f"{idx}. {row['新闻标题']} (评分: {row['relevance_score']:.1f})")
+                print(f"{idx}. {row['News headline']} (Rating: {row['relevance_score']:.1f})")
         
-        # 获取过滤统计
+        # Get filter statistics
         stats = filter.get_filter_statistics(test_news, filtered_news)
-        print(f"\n📊 过滤统计:")
-        print(f"  - 过滤率: {stats['filter_rate']:.1f}%")
-        print(f"  - 平均评分: {stats['avg_score']:.1f}")
-        print(f"  - 最高评分: {stats['max_score']:.1f}")
+        print(f"\n📊 Filter statistics:")
+        print(f"  - Filtration rate: {stats['filter_rate']:.1f}%")
+        print(f"  - average rating: {stats['avg_score']:.1f}")
+        print(f"  - highest rating: {stats['max_score']:.1f}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 基础过滤器测试失败: {e}")
+        print(f"❌ Basic filter test failed: {e}")
         return False
 
 
 def test_enhanced_news_filter():
-    """测试增强新闻过滤器"""
-    print("\n=== 测试增强新闻过滤器 ===")
+    """Test the enhanced news filter"""
+    print("\n=== Test the enhanced news filter ===")
     
     try:
         from tradingagents.utils.enhanced_news_filter import create_enhanced_news_filter
         
-        # 创建增强过滤器（不使用外部模型依赖）
+        # Create enhanced filters (without using external model dependencies)
         enhanced_filter = create_enhanced_news_filter(
             '600036', 
-            use_semantic=False,  # 暂时不使用语义模型
-            use_local_model=False  # 暂时不使用本地模型
+            use_semantic=False,  # Semantic model is not used for the time being
+            use_local_model=False  # Do not use local models yet
         )
-        print(f"✅ 成功创建增强新闻过滤器")
+        print(f"✅ Successfully created enhanced news filter")
         
-        # 使用相同的测试数据
+        # Use the same test data
         test_news = pd.DataFrame([
             {
-                '新闻标题': '招商银行发布2024年第三季度业绩报告',
-                '新闻内容': '招商银行今日发布第三季度财报，净利润同比增长8%，资产质量持续改善，不良贷款率进一步下降...'
+                'News headline': 'China Merchants Bank releases third quarter performance report for 2024',
+                'News content': 'China Merchants Bank released its third quarter financial report today. Net profit increased by 8% year-on-year, asset quality continued to improve, and the non-performing loan ratio further declined....'
             },
             {
-                '新闻标题': '上证180ETF指数基金（530280）自带杠铃策略',
-                '新闻内容': '数据显示，上证180指数前十大权重股分别为贵州茅台、招商银行600036、五粮液等，该ETF基金采用被动投资策略...'
+                'News headline': 'Shanghai Stock Exchange 180ETF Index Fund (530280) has its own barbell strategy',
+                'News content': 'Data shows that the top ten heavyweight stocks in the Shanghai Stock Exchange 180 Index are Kweichow Moutai, China Merchants Bank 600036, Wuliangye, etc. This ETF fund adopts a passive investment strategy...'
             },
             {
-                '新闻标题': '招商银行股东大会通过分红方案',
-                '新闻内容': '招商银行股东大会审议通过2024年度利润分配方案，每10股派发现金红利12元，分红率达到30%...'
+                'News headline': 'China Merchants Bank shareholders meeting approved dividend plan',
+                'News content': 'China Merchants Bank s shareholders meeting reviewed and approved the 2024 profit distribution plan, distributing a cash dividend of 12 yuan for every 10 shares, with a dividend rate of 30%...'
             },
             {
-                '新闻标题': '招商银行信用卡业务创新发展',
-                '新闻内容': '招商银行信用卡中心推出多项创新产品，包括数字化信用卡、消费分期等，用户体验显著提升...'
+                'News headline': 'Innovative development of China Merchants Bank s credit card business',
+                'News content': 'China Merchants Bank Credit Card Center has launched a number of innovative products, including digital credit cards, consumer installments, etc., significantly improving user experience...'
             }
         ])
         
-        print(f"📊 测试新闻数量: {len(test_news)}条")
+        print(f"📊 Test number of news: {len(test_news)}Article")
         
-        # 执行增强过滤
+        # Perform enhanced filtering
         start_time = time.time()
         enhanced_filtered = enhanced_filter.filter_news_enhanced(test_news, min_score=40)
         filter_time = time.time() - start_time
         
-        print(f"⏱️ 增强过滤耗时: {filter_time:.3f}秒")
-        print(f"📈 增强过滤结果: {len(test_news)}条 -> {len(enhanced_filtered)}条")
+        print(f"⏱️ Enhanced filtering time: {filter_time:.3f}seconds")
+        print(f"📈 Enhance filter results: {len(test_news)}Article -> {len(enhanced_filtered)}Article")
         
         if not enhanced_filtered.empty:
-            print("\n🎯 增强过滤后的新闻:")
+            print("\n🎯 Enhanced filtered news:")
             for idx, (_, row) in enumerate(enhanced_filtered.iterrows(), 1):
-                print(f"{idx}. {row['新闻标题']}")
-                print(f"   综合评分: {row['final_score']:.1f} (规则:{row['rule_score']:.1f}, 语义:{row['semantic_score']:.1f}, 分类:{row['classification_score']:.1f})")
+                print(f"{idx}. {row['News headline']}")
+                print(f"   Overall rating: {row['final_score']:.1f} (rules:{row['rule_score']:.1f}, Semantics:{row['semantic_score']:.1f}, Classification:{row['classification_score']:.1f})")
         
         return True
         
     except Exception as e:
-        print(f"❌ 增强过滤器测试失败: {e}")
+        print(f"❌ Enhanced filter test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_real_news_filtering():
-    """测试真实新闻数据过滤"""
-    print("\n=== 测试真实新闻数据过滤 ===")
+    """Test filtering on real news data"""
+    print("\n=== Test filtering on real news data ===")
     
     try:
         from tradingagents.dataflows.akshare_utils import get_stock_news_em
         from tradingagents.utils.news_filter import create_news_filter
         
-        print("📡 正在获取招商银行真实新闻数据...")
+        print("📡 Obtaining real news data of China Merchants Bank...")
         
-        # 获取真实新闻数据
+        # Get real news data
         start_time = time.time()
         real_news = get_stock_news_em('600036')
         fetch_time = time.time() - start_time
         
         if real_news.empty:
-            print("❌ 未获取到真实新闻数据")
+            print("❌ No real news data was obtained")
             return False
         
-        print(f"✅ 成功获取真实新闻: {len(real_news)}条，耗时: {fetch_time:.2f}秒")
+        print(f"✅ Get real news successfully: {len(real_news)}strips, time consuming: {fetch_time:.2f}seconds")
         
-        # 显示前3条新闻标题
-        print("\n📰 原始新闻标题示例:")
+        # Show the first 3 news headlines
+        print("\n📰 Original news headline example:")
         for idx, (_, row) in enumerate(real_news.head(3).iterrows(), 1):
-            title = row.get('新闻标题', '无标题')
+            title = row.get('News headline', 'Untitled')
             print(f"{idx}. {title}")
         
-        # 创建过滤器并过滤
+        # Create filters and filter
         filter = create_news_filter('600036')
         
         start_time = time.time()
         filtered_real_news = filter.filter_news(real_news, min_score=30)
         filter_time = time.time() - start_time
         
-        print(f"\n🔍 过滤结果:")
-        print(f"  - 原始新闻: {len(real_news)}条")
-        print(f"  - 过滤后新闻: {len(filtered_real_news)}条")
-        print(f"  - 过滤率: {(len(real_news) - len(filtered_real_news)) / len(real_news) * 100:.1f}%")
-        print(f"  - 过滤耗时: {filter_time:.3f}秒")
+        print(f"\n🔍 Filter results:")
+        print(f"  - original news: {len(real_news)}Article")
+        print(f"  - filtered news: {len(filtered_real_news)}Article")
+        print(f"  - Filtration rate: {(len(real_news) - len(filtered_real_news)) / len(real_news) * 100:.1f}%")
+        print(f"  - Filtration takes time: {filter_time:.3f}seconds")
         
         if not filtered_real_news.empty:
             avg_score = filtered_real_news['relevance_score'].mean()
             max_score = filtered_real_news['relevance_score'].max()
-            print(f"  - 平均评分: {avg_score:.1f}")
-            print(f"  - 最高评分: {max_score:.1f}")
+            print(f"  - average rating: {avg_score:.1f}")
+            print(f"  - highest rating: {max_score:.1f}")
             
-            print("\n🎯 过滤后高质量新闻标题:")
+            print("\n🎯 Filtered high-quality news headlines:")
             for idx, (_, row) in enumerate(filtered_real_news.head(5).iterrows(), 1):
-                title = row.get('新闻标题', '无标题')
+                title = row.get('News headline', 'Untitled')
                 score = row.get('relevance_score', 0)
-                print(f"{idx}. {title} (评分: {score:.1f})")
+                print(f"{idx}. {title} (Rating: {score:.1f})")
         
         return True
         
     except Exception as e:
-        print(f"❌ 真实新闻过滤测试失败: {e}")
+        print(f"❌ Real news filter test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_news_filter_integration():
-    """测试新闻过滤集成功能"""
-    print("\n=== 测试新闻过滤集成功能 ===")
+    """Test the news filtering integration"""
+    print("\n=== Test the news filtering integration ===")
     
     try:
         from tradingagents.utils.news_filter_integration import apply_news_filtering_patches
         
-        print("🔧 正在应用新闻过滤补丁...")
+        print("🔧 Applying news filter patch...")
         enhanced_function = apply_news_filtering_patches()
         
-        print("✅ 新闻过滤补丁应用成功")
+        print("✅ News filtering patch applied successfully")
         
-        # 测试增强版函数
-        print("🧪 测试增强版实时新闻函数...")
+        # Test enhanced functions
+        print("🧪 Test the enhanced live news function...")
         
         test_result = enhanced_function(
             ticker="600036",
@@ -218,58 +218,58 @@ def test_news_filter_integration():
             min_score=30
         )
         
-        print(f"📊 增强版函数返回结果长度: {len(test_result)} 字符")
+        print(f"📊 Enhanced version function returns result length: {len(test_result)} character")
         
-        if "过滤新闻报告" in test_result:
-            print("✅ 检测到过滤功能已生效")
+        if "Filter news reports" in test_result:
+            print("✅ It is detected that the filtering function has taken effect")
         else:
-            print("ℹ️ 使用了原始新闻报告")
+            print("ℹ️ Original news report used")
         
         return True
         
     except Exception as e:
-        print(f"❌ 新闻过滤集成测试失败: {e}")
+        print(f"❌ News filtering integration test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def main():
-    """主测试函数"""
-    print("🚀 开始新闻过滤功能测试")
+    """Main test function"""
+    print("🚀 Start testing the news filtering function")
     print("=" * 50)
     
     test_results = []
     
-    # 1. 测试基础过滤器
-    test_results.append(("基础新闻过滤器", test_basic_news_filter()))
+    # 1. Test basic filters
+    test_results.append(("Basic news filter", test_basic_news_filter()))
     
-    # 2. 测试增强过滤器
-    test_results.append(("增强新闻过滤器", test_enhanced_news_filter()))
+    # 2. Test enhanced filters
+    test_results.append(("Enhanced news filter", test_enhanced_news_filter()))
     
-    # 3. 测试真实新闻过滤
-    test_results.append(("真实新闻数据过滤", test_real_news_filtering()))
+    # 3. Test real news filtering
+    test_results.append(("Real news data filtering", test_real_news_filtering()))
     
-    # 4. 测试集成功能
-    test_results.append(("新闻过滤集成功能", test_news_filter_integration()))
+    # 4. Test integration functionality
+    test_results.append(("News filtering integration", test_news_filter_integration()))
     
-    # 输出测试总结
+    # Output test summary
     print("\n" + "=" * 50)
-    print("📋 测试结果总结:")
+    print("📋 Summary of test results:")
     
     passed = 0
     for test_name, result in test_results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"  - {test_name}: {status}")
         if result:
             passed += 1
     
-    print(f"\n🎯 总体结果: {passed}/{len(test_results)} 项测试通过")
+    print(f"\n🎯 Overall results: {passed}/{len(test_results)} tests passed")
     
     if passed == len(test_results):
-        print("🎉 所有测试通过！新闻过滤功能工作正常")
+        print("🎉 All tests passed! News filtering works fine")
     else:
-        print("⚠️ 部分测试失败，请检查相关功能")
+        print("⚠️ Some tests failed, please check related functions")
 
 
 if __name__ == "__main__":

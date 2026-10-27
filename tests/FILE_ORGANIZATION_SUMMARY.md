@@ -1,12 +1,12 @@
-# 测试文件整理总结
+# Test File Organization Summary
 
-## 📋 整理概述
+## 📋 Overview
 
-将根目录下的所有测试相关文件移动到 `tests/` 目录下，以保持项目根目录的整洁。
+Moved all test-related files from the root directory into the `tests/` directory to keep the project root clean.
 
-## 🔄 移动的文件
+## 🔄 Moved Files
 
-### 测试文件 (test_*.py)
+### Test Files (test_*.py)
 - `test_akshare_hk.py`
 - `test_all_analysts_hk_fix.py`
 - `test_cli_hk.py`
@@ -31,56 +31,56 @@
 - `test_validation_fix.py`
 - `test_web_hk.py`
 
-### 调试文件
+### Debugging Files
 - `debug_tool_binding_issue.py` → `tests/debug_tool_binding_issue.py`
 - `debug_web_issue.py` → `tests/debug_web_issue.py`
 
-### 其他测试相关文件
-- `quick_test.py` → `tests/quick_test_hk.py` (重命名以避免冲突)
+### Other Test-Related Files
+- `quick_test.py` → `tests/quick_test_hk.py` (renamed to avoid conflict)
 - `fundamentals_analyst_clean.py` → `tests/fundamentals_analyst_clean.py`
 
-## ✅ 保留在根目录的文件
+## ✅ Files Retained in Root Directory
 
-以下文件保留在根目录，因为它们不是测试文件：
-- `TESTING_GUIDE.md` - 测试指南文档
-- `main.py` - 主程序入口
-- `setup.py` - 安装配置
-- 其他配置和文档文件
+The following files remain in the root directory because they are not test files:
+- `TESTING_GUIDE.md` - Testing guide documentation
+- `main.py` - Main program entry point
+- `setup.py` - Installation configuration
+- Other configuration and documentation files
 
-## 🔧 修复的问题
+## 🔧 Issues Resolved
 
-### Python路径问题
-移动到 `tests/` 目录后，需要调整Python导入路径。已在相关测试文件中添加：
+### Python Path Issues
+After moving files into the `tests/` directory, Python import paths needed adjustment. The following snippet was added to the relevant test files:
 
 ```python
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 ```
 
-### 文件冲突处理
-- `quick_test.py` 在根目录和 `tests/` 目录都存在
-- 根目录的版本重命名为 `quick_test_hk.py` 以避免冲突
+### File Conflict Resolution
+- `quick_test.py` existed in both the root directory and the `tests/` directory
+- The root directory version was renamed to `quick_test_hk.py` to avoid conflicts
 
-## 📊 验证结果
+## 📊 Verification Results
 
-运行 `tests/test_final_unified_architecture.py` 验证移动后的文件功能正常：
+Ran `tests/test_final_unified_architecture.py` to verify that moved files function properly:
 
 ```
-📊 最终测试结果: 2/3 通过
-✅ LLM工具调用模拟测试通过
-✅ 统一工具功能测试通过
-⚠️ 完整统一工具架构测试失败 (配置问题，非移动导致)
+📊 Final test results: 2/3 passed
+✅ LLM tool-calling simulation test passed
+✅ Unified tool functionality test passed
+⚠️ Full unified tool architecture test failed (configuration issue, not caused by file move)
 ```
 
-## 🎯 整理效果
+## 🎯 Organization Outcome
 
-### 根目录清理效果
-- ✅ 移除了 25+ 个测试文件
-- ✅ 根目录更加整洁，只保留核心文件
-- ✅ 符合项目结构最佳实践
+### Root Directory Cleanup
+- ✅ Removed 25+ test files from the root directory
+- ✅ Cleaner root directory retaining only core files
+- ✅ Aligned with project structure best practices
 
-### tests目录结构
+### `tests` Directory Structure
 ```
 tests/
 ├── README.md
@@ -88,38 +88,38 @@ tests/
 ├── integration/
 │   └── test_dashscope_integration.py
 ├── validation/
-├── [所有测试文件...]
+├── [All test files...]
 └── FILE_ORGANIZATION_SUMMARY.md
 ```
 
-## 🚀 后续建议
+## 🚀 Follow-up Recommendations
 
-1. **统一测试运行方式**
-   - 从项目根目录运行：`python -m pytest tests/`
-   - 或进入tests目录：`cd tests && python test_xxx.py`
+1. **Standardize Test Execution**
+   - Run from the project root directory: `python -m pytest tests/`
+   - Or enter the `tests` directory: `cd tests && python test_xxx.py`
 
-2. **测试文件命名规范**
-   - 保持 `test_` 前缀
-   - 使用描述性名称
-   - 避免重复命名
+2. **Test File Naming Conventions**
+   - Keep the `test_` prefix
+   - Use descriptive names
+   - Avoid duplicate names
 
-3. **导入路径标准化**
-   - 所有测试文件都应包含项目根目录路径设置
-   - 使用相对导入时要注意路径变化
+3. **Import Path Standardization**
+   - All test files should include the project root directory path setup
+   - Be mindful of path changes when using relative imports
 
-## 📝 注意事项
+## 📝 Notes
 
-- 所有测试文件已成功移动到 `tests/` 目录
-- 文件功能验证通过，导入路径已修复
-- 根目录现在更加整洁，符合项目组织最佳实践
-- 如需运行特定测试，请从项目根目录或正确设置Python路径
+- All test files have been successfully moved to the `tests/` directory
+- File functionality has been verified and import paths have been fixed
+- The root directory is now cleaner and follows project organization best practices
+- To run specific tests, execute them from the project root directory or configure `PYTHONPATH` appropriately
 
-## 🎉 总结
+## 🎉 Summary
 
-此次文件整理成功实现了：
-- ✅ 根目录清理
-- ✅ 测试文件集中管理
-- ✅ 保持功能完整性
-- ✅ 符合项目结构规范
+This file organization effort successfully achieved:
+- ✅ Root directory cleanup
+- ✅ Centralized management of test files
+- ✅ Preservation of functional integrity
+- ✅ Alignment with project structure standards
 
-项目现在具有更好的组织结构，便于维护和开发。
+The project now has a cleaner organization structure that is easier to maintain and develop.

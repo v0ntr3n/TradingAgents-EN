@@ -18,5 +18,5 @@
   <circle cx="340" cy="240" r="7" fill="#909399" opacity="0.3"/>
   
   <!-- Page Not Found Text -->
-  <text x="200" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#909399">页面未找到</text>
+  <text x="200" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#909399">Page not found</text>
 </svg>

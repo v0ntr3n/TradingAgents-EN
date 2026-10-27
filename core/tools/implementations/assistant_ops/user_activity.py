@@ -1,7 +1,7 @@
-"""使用问答机器人工具：查询用户最近任务和错误日志。
+"""Use the Q&A robot tool: query the user s recent tasks and error logs.
 
-提供查询用户最近 N 条任务、失败任务错误信息等能力，
-让使用问答助手能"看到"用户最近操作的真实状态，便于排查"为什么报错""任务去哪了"等问题。
+Provides the ability to query the user s recent N tasks, failed task error information, etc.
+Allows using Q&A Assistant to"see"The true status of the user s recent operations for easy troubleshooting"Why is the error reported?""Where did the mission go?"etc. questions.
 """
 
 import logging
@@ -28,7 +28,7 @@ def _is_valid_object_id(user_id: str) -> bool:
 
 
 async def _query_recent_tasks(db, user_id: str, limit: int) -> List[Dict[str, Any]]:
-    """查询用户最近任务（兼容 ObjectId 和字符串 user_id）"""
+    """Query the user s recent tasks (compatible with ObjectId and string user_id)"""
     queries = [{"user_id": user_id}]
     if _is_valid_object_id(user_id):
         from bson import ObjectId
@@ -48,7 +48,7 @@ async def _query_recent_tasks(db, user_id: str, limit: int) -> List[Dict[str, An
             if docs:
                 return docs
         except Exception as exc:
-            logger.warning("[get_user_recent_activity] 查询失败 query=%s: %s", query, exc)
+            logger.warning("[get_user_recent_activity] Query failed query=%s: %s", query, exc)
     return []
 
 
@@ -60,24 +60,24 @@ def _format_task_line(t: Dict[str, Any]) -> str:
     task_type = t.get("task_type", "?")
     task_id = t.get("task_id", "?")
 
-    # 时间字段
+    # time field
     created = t.get("created_at")
     started = t.get("started_at")
     completed = t.get("completed_at")
     created_str = created.isoformat()[:19] if isinstance(created, datetime) else (str(created)[:19] if created else "?")
     completed_str = completed.isoformat()[:19] if isinstance(completed, datetime) else (str(completed)[:19] if completed else "")
 
-    # 执行时长
+    # Execution time
     exec_time = t.get("execution_time") or 0
     exec_hint = f" | 耗时 {exec_time:.1f}s" if isinstance(exec_time, (int, float)) and exec_time > 0 else ""
 
-    # 错误信息
+    # error message
     error_hint = ""
     if status == "failed":
         err_msg = (t.get("error_message") or "无错误信息")[:200]
         error_hint = f"\n      ❌ 错误: {err_msg}"
 
-    # 进度
+    # Progress
     progress_hint = ""
     if status == "running" and t.get("current_step"):
         progress_hint = f" | 当前步骤: {t['current_step']}"
@@ -90,7 +90,7 @@ def _format_task_line(t: Dict[str, Any]) -> str:
 @register_tool(
     tool_id="get_user_recent_activity",
     name="获取用户最近活动",
-    description="查询当前用户最近 N 条任务（默认 10 条）的执行情况，包括状态、耗时、错误信息。当用户问'我的任务去哪了''为什么任务失败''最近执行了什么'等问题时使用。",
+    description="Query the execution status of the most recent N tasks (default 10) of the current user, including status, time consumption, and error information. When the user asks'Where did my mission go?''Why the task failed''What was executed recently'Use it when you have questions.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
@@ -100,13 +100,13 @@ def _format_task_line(t: Dict[str, Any]) -> str:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["最近任务执行情况", "为什么任务失败", "任务去哪了", "排查报错"],
-    when_to_use="当用户问到自己最近的任务执行情况、报错原因或任务历史时使用。",
-    returns="返回文本格式的最近任务列表，包含任务类型、目标、状态、耗时和错误信息。",
+    when_to_use="Used when users ask about their recent task execution status, error reasons, or task history.",
+    returns="Returns a list of recent tasks in text format, including task type, goal, status, time taken, and error information.",
 )
 async def get_user_recent_activity(
-    limit: Annotated[int, "返回最近 N 条任务，默认 10，最大 30"] = 10,
+    limit: Annotated[int, "Return the most recent N tasks, default 10, maximum 30"] = 10,
 ) -> str:
-    """获取当前用户最近的任务执行记录。"""
+    """Get the current user s recent task execution records."""
     from app.core.database import get_mongo_db
 
     if limit < 1:
@@ -120,7 +120,7 @@ async def get_user_recent_activity(
     tasks = await _query_recent_tasks(db, user_id, limit)
 
     if not tasks:
-        return f"📭 最近没有任务记录（已查询 {limit} 条上限，user_id={user_id}）。可能原因：\n  - 你还没有发起过任何分析任务\n  - 数据库连接异常\n  - user_id 字段不匹配（试试 Ctrl+F5 刷新页面）"
+        return f"📭 There are no recent task records (queried {limit} Article upper limit,user_id={user_id}) . Possible reasons:\n  - You have not initiated any analysis tasks yet\n  - Database connection exception\n  - user_id Fields do not match (try Ctrl+F5 Refresh the page)"
 
     failed_count = sum(1 for t in tasks if t.get("status") == "failed")
     success_count = sum(1 for t in tasks if t.get("status") == "completed")
@@ -137,8 +137,8 @@ async def get_user_recent_activity(
     if failed_count > 0:
         lines.append("")
         lines.append(f"💡 失败任务 {failed_count} 条，请查看上方每条任务的错误信息。常见原因：")
-        lines.append("  - 数据源 Token 未配置或失效")
-        lines.append("  - LLM 调用超时或额度不足")
-        lines.append("  - 股票代码错误或数据不存在")
+        lines.append("  - Data source token is not configured or invalid")
+        lines.append("  - LLM Call timeout or insufficient quota")
+        lines.append("  - Stock code error or data does not exist")
 
     return "\n".join(lines)

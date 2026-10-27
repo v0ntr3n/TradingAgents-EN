@@ -1,15 +1,15 @@
 """
-成交量分析工具
+Volume Analysis Tool
 
-提供以下成交量分析功能：
-1. VWAP (成交量加权均价)
-2. OBV (能量潮指标)
-3. 换手率分析
-4. 枢轴点计算
-5. 成交量分布
-6. 斐波那契扩展
+The following trading volume analysis functions are provided:
+1. VWAP (Volume weighted average price)
+2. OBV (Energy Tide Indicator)
+3. Turnover rate analysis
+4. Pivot point calculation
+5. Volume distribution
+6. Fibonacci Extension
 
-所有计算基于纯数学规则，无需 LLM 参与。
+All calculations are based on purely mathematical rules and do not require the involvement of LLM.
 """
 
 import datetime
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-#  辅助函数
+#  Helper function
 # ============================================================
 
 def _safe_float(value) -> Optional[float]:
@@ -47,14 +47,14 @@ def _ema(series: pd.Series, n: int) -> pd.Series:
 
 
 # ============================================================
-#  Tool 5: VWAP (成交量加权均价)
+#  Tool 5: VWAP (Volume weighted average price)
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_vwap",
     name="VWAP 成交量加权均价",
-    description="计算 VWAP（成交量加权平均价格）及多周期 VWAP 趋势，评估当前价格相对于 VWAP 的偏离程度。",
+    description="Calculate VWAP (Volume Weighted Average Price) and the multi-period VWAP trend to evaluate how far the current price deviates from VWAP.",
     category="technical",
     is_online=False,
     auto_register=True,
@@ -63,39 +63,39 @@ def _ema(series: pd.Series, n: int) -> pd.Series:
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["vwap_analysis", "volume_weighted_price"],
-    when_to_use="当需要评估当前价格相对于平均成交价格的偏离程度、识别买卖压力时使用。",
-    when_not_to_use="数据不足（少于 20 根 K 线）时结果不可靠；不适用于分钟级别短线交易。",
-    returns="返回 JSON，包含 latest_vwap、current_close、deviation_pct、vwap_trend（5d/20d）。",
+    when_to_use="Use it when you need to evaluate the deviation of the current price from the average transaction price and identify buying and selling pressure.",
+    when_not_to_use="The results are unreliable when there is insufficient data (less than 20 K lines); it is not suitable for minute-level short-term trading.",
+    returns="Return JSON, including latest_vwap, current_close, deviation_pct, vwap_trend (5d/20d).",
     example="get_vwap(symbol='600519', lookback_days=60)",
     related_tools=["get_obv_analysis", "get_turnover_analysis", "get_volume_profile"],
 )
 def get_vwap(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看天数用于 VWAP 计算，默认 60"] = 60,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "Number of days to look back for VWAP calculation, default 60"] = 60,
 ) -> str:
-    """计算 VWAP（成交量加权平均价格）及多周期 VWAP 趋势，评估当前价格相对于 VWAP 的偏离程度。
+    """Calculate VWAP (Volume Weighted Average Price) and the multi-period VWAP trend to evaluate how far the current price deviates from VWAP.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看天数用于 VWAP 计算，默认 60
+        symbol: A stock code, such as 600519,000001
+        lookback_days: Number of days to look back for VWAP calculation, default 60
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 股票代码
-            current_close: 最新收盘价
-            date: 最新交易日
-            latest_vwap: 最新 VWAP 值
-            deviation_pct: 当前价相对 VWAP 的偏离百分比
-            position: 价格相对 VWAP 的位置，取值 "above_vwap" | "below_vwap" | "at_vwap"
-            vwap_trend: 多周期 VWAP 趋势，子字段 —
-                vwap_5d: 5 日 VWAP
-                vwap_20d: 20 日 VWAP
-            interpretation: 解读文本
-            data_quality: 数据质量，子字段 —
-                bars_analyzed: 分析的 K 线数量
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Stock code
+            current_close: latest closing price
+            date: Latest trading day
+            latest_vwap: Latest VWAP value
+            deviation_pct: Percent deviation of current price from VWAP
+            position: Price position relative to VWAP, value "above_vwap" | "below_vwap" | "at_vwap"
+            vwap_trend: Multi-Period VWAP Trend, Subfield —
+                vwap_5d: 5 day VWAP
+                vwap_20d: 20 day VWAP
+            interpretation: interpret text
+            data_quality: Data quality, subfield —
+                bars_analyzed: Number of candlesticks analyzed
+        Field returned on exception —
             status: "error"
-            message: 错误信息
+            message: error message
     """
     try:
         from core.skill_runtime.data_access import get_stock_daily_quotes
@@ -120,7 +120,7 @@ def get_vwap(
 
         if len(df) < 20:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 有效数据不足20条。"},
+                {"status": "error", "message": f"{symbol} There are less than 20 valid data items."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
@@ -129,13 +129,13 @@ def get_vwap(
         low = df["low"]
         volume = df["volume"]
 
-        # 典型价格 = (高 + 低 + 收) / 3
+        # typical price = (high + low + receive) / 3
         typical_price = (high + low + close) / 3.0
 
-        # 日 VWAP
+        # day VWAP
         vwap = (typical_price * volume).cumsum() / volume.cumsum().replace(0, np.nan)
 
-        # 滚动 VWAP：5 日和 20 日
+        # Rolling VWAP: 5th and 20th
         def _rolling_vwap(tp: pd.Series, vol: pd.Series, n: int) -> pd.Series:
             cum_pv = (tp * vol).rolling(window=n, min_periods=n).sum()
             cum_v = vol.rolling(window=n, min_periods=n).sum()
@@ -166,8 +166,8 @@ def get_vwap(
             "interpretation": (
                 f"当前价格 {latest_close:.2f}，"
                 f"VWAP {latest_vwap:.2f}，"
-                f"偏离 {deviation_pct:+.2f}%。"
-                f" {'价格高于 VWAP，买方力量占优。' if latest_close > latest_vwap else '价格低于 VWAP，卖方力量占优。'}"
+                f"deviate {deviation_pct:+.2f}%. "
+                f" {'The price is higher than VWAP, and buyer power prevails.' if latest_close > latest_vwap else 'The price is lower than VWAP and seller power prevails.'}"
             ),
             "data_quality": {
                 "bars_analyzed": len(df),
@@ -177,19 +177,19 @@ def get_vwap(
         return json.dumps(result, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("VWAP 计算失败: %s", exc, exc_info=True)
+        logger.error("VWAP Calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ============================================================
-#  Tool 6: OBV (能量潮指标)
+#  Tool 6: OBV (Energy Tide Indicator)
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_obv_analysis",
     name="OBV 能量潮分析",
-    description="计算 OBV（能量潮指标）并检测 OBV 趋势以及与价格的背离信号。",
+    description="Calculate OBV (Power Wave indicator) and detect OBV trends and divergence signals from price.",
     category="technical",
     is_online=False,
     auto_register=True,
@@ -198,44 +198,44 @@ def get_vwap(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["obv_analysis", "volume_divergence"],
-    when_to_use="当需要通过成交量验证价格趋势的可靠性、检测量价背离时使用。",
-    when_not_to_use="数据不足（少于 30 根 K 线）时结果不可靠；不适用于交易不活跃的股票。",
-    returns="返回 JSON，包含 latest_obv、obv_trend、divergence_signal、obv_data（最近 5 期）。",
+    when_to_use="It is used when it is necessary to verify the reliability of the price trend through trading volume and detect the deviation between volume and price.",
+    when_not_to_use="Results are unreliable when there is insufficient data (less than 30 candlesticks); not suitable for stocks that are not actively traded.",
+    returns="Returns JSON, including latest_obv, obv_trend, divergence_signal, obv_data (the latest 5 issues).",
     example="get_obv_analysis(symbol='600519', lookback_days=120)",
     related_tools=["get_vwap", "get_volume_price_divergence", "get_turnover_analysis"],
 )
 def get_obv_analysis(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看天数用于 OBV 计算，默认 120"] = 120,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "Number of days to look back for OBV calculation, default 120"] = 120,
 ) -> str:
-    """计算 OBV（On-Balance Volume，能量潮指标）并检测 OBV 趋势以及与价格的背离信号。
+    """Calculate OBV (On-Balance Volume, energy tide indicator) and detect OBV trends and divergence signals from price.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看天数用于 OBV 计算，默认 120
+        symbol: A stock code, such as 600519,000001
+        lookback_days: Number of days to look back for OBV calculation, default 120
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 股票代码
-            current_price: 最新收盘价
-            date: 最新交易日
-            latest_obv: 最新 OBV 值
-            obv_trend: OBV 趋势，取值 "up" | "down" | "neutral"
-            divergence_signal: 背离信号，取值 "bearish" | "bullish" | "none"
-            obv_data: 最近 5 期 OBV 数据列表，每个元素结构 —
-                date: 交易日期
-                close: 收盘价
-                obv: OBV 值
-            interpretation: 解读信息，子字段 —
-                obv_up: OBV 上升说明
-                obv_down: OBV 下降说明
-                bearish_divergence: 下行背离说明
-                bullish_divergence: 上行背离说明
-            data_quality: 数据质量，子字段 —
-                bars_analyzed: 分析的 K 线数量
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Stock code
+            current_price: latest closing price
+            date: Latest trading day
+            latest_obv: Latest OBV value
+            obv_trend: OBV trend, value "up" | "down" | "neutral"
+            divergence_signal: Divergence signal, value "bearish" | "bullish" | "none"
+            obv_data: OBV data list of the last 5 periods, each element structure —
+                date: transaction date
+                close: closing price
+                obv: OBV value
+            interpretation: Interpret information, subfields —
+                obv_up: OBV rising explanation
+                obv_down: OBV Descent instructions
+                bearish_divergence: Downside divergence explanation
+                bullish_divergence: Upward divergence explanation
+            data_quality: Data quality, subfield —
+                bars_analyzed: Number of candlesticks analyzed
+        Field returned on exception —
             status: "error"
-            message: 错误信息
+            message: error message
     """
     try:
         from core.skill_runtime.data_access import get_stock_daily_quotes
@@ -260,14 +260,14 @@ def get_obv_analysis(
 
         if len(df) < 30:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 有效数据不足30条。"},
+                {"status": "error", "message": f"{symbol} There are less than 30 valid data."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
         close = df["close"]
         volume = df["volume"]
 
-        # 计算 OBV
+        # Calculate OBV
         obv = pd.Series(0.0, index=df.index)
         obv_vals = [0.0]
         for i in range(1, len(df)):
@@ -279,11 +279,11 @@ def get_obv_analysis(
                 obv_vals.append(obv_vals[-1])
         obv = pd.Series(obv_vals, index=df.index)
 
-        # OBV 移动平均线
+        # OBV moving average
         obv_ma20 = obv.rolling(window=20, min_periods=10).mean()
         obv_ma50 = obv.rolling(window=50, min_periods=20).mean()
 
-        # OBV 趋势判断
+        # OBV Trend judgment
         latest_idx = len(df) - 1
         ma20_val = float(obv_ma20.iloc[latest_idx]) if not pd.isna(obv_ma20.iloc[latest_idx]) else 0.0
         ma50_val = float(obv_ma50.iloc[latest_idx]) if not pd.isna(obv_ma50.iloc[latest_idx]) else 0.0
@@ -295,10 +295,10 @@ def get_obv_analysis(
         else:
             obv_trend = "neutral"
 
-        # OBV 与价格背离检测
+        # OBV Detection of divergence from price
         divergence_signal = "none"
 
-        # 检查最近 20 根 K 线的趋势
+        # Check the trend of the last 20 candlesticks
         recent_close = close.iloc[-20:]
         recent_obv = obv.iloc[-20:]
 
@@ -318,10 +318,10 @@ def get_obv_analysis(
             elif price_down and (not obv_down or obv_up):
                 divergence_signal = "bullish"
 
-        # 最新的 OBV 值
+        # Latest OBV value
         latest_obv = float(obv.iloc[latest_idx])
 
-        # 最近 5 期 OBV
+        # Last 5 issues OBV
         obv_data = []
         for i in range(max(0, latest_idx - 4), latest_idx + 1):
             obv_data.append({
@@ -339,10 +339,10 @@ def get_obv_analysis(
             "divergence_signal": divergence_signal,
             "obv_data": obv_data,
             "interpretation": {
-                "obv_up": "OBV 上升，成交量支持上涨趋势",
-                "obv_down": "OBV 下降，成交量支持下跌趋势",
-                "bearish_divergence": "价格上升但 OBV 下降/停滞，上涨缺乏成交量支持（负向背离信号）",
-                "bullish_divergence": "价格下降但 OBV 上升/企稳，下跌缺乏成交量支持（正向背离信号）",
+                "obv_up": "OBV Up, volume supports uptrend",
+                "obv_down": "OBV Down, volume supports downtrend",
+                "bearish_divergence": "Price rises but OBV falls/stalls, rise lacks volume support (negative divergence signal)",
+                "bullish_divergence": "Price falls but OBV rises/stabilizes, decline lacks volume support (positive divergence signal)",
             },
             "data_quality": {
                 "bars_analyzed": len(df),
@@ -357,14 +357,14 @@ def get_obv_analysis(
 
 
 # ============================================================
-#  Tool 7: 换手率分析
+#  Tool 7: Turnover rate analysis
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_turnover_analysis",
     name="换手率分析",
-    description="计算股票历史平均换手率，检测异常放量/缩量信号，评估交易活跃度变化趋势。",
+    description="Calculate the historical average turnover rate of stocks, detect abnormal volume increase/shrinkage signals, and evaluate the changing trend of trading activity.",
     category="technical",
     is_online=False,
     auto_register=True,
@@ -373,41 +373,41 @@ def get_obv_analysis(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["换手率分析", "异常放量/缩量"],
-    when_to_use="当需要评估股票交易活跃度、检测异常放量/缩量、分析筹码交换情况时使用。",
-    when_not_to_use="新股上市不足 30 天数据不足；停牌期间无数据。",
-    returns="返回 JSON，包含 avg_turnover、current_turnover、abnormal_days_count、turnover_trend。",
+    when_to_use="Use it when you need to evaluate stock trading activity, detect abnormal volume increase/shrinkage, and analyze chip exchange situations.",
+    when_not_to_use="There is insufficient data for new stocks listed less than 30 days ago; there is no data for periods of trading suspension.",
+    returns="Returns JSON containing avg_turnover, current_turnover, abnormal_days_count, turnover_trend.",
     example="get_turnover_analysis(symbol='600519', lookback_days=120)",
     related_tools=["get_obv_analysis", "get_volume_price_divergence"],
 )
 def get_turnover_analysis(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看天数用于换手率分析，默认 120"] = 120,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "The number of days to look back is used for turnover rate analysis, default 120"] = 120,
 ) -> str:
-    """分析股票换手率，计算历史平均换手率，检测异常放量/缩量信号，评估交易活跃度变化趋势。
+    """Analyze the stock turnover rate, calculate the historical average turnover rate, detect abnormal volume increase/shrinkage signals, and evaluate the changing trend of trading activity.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看天数用于换手率分析，默认 120
+        symbol: A stock code, such as 600519,000001
+        lookback_days: The number of days to look back is used for turnover rate analysis, default 120
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 股票代码
-            current_price: 最新收盘价
-            date: 最新交易日
-            has_shares_info: 是否获取到总股本信息（False 时换手率字段为 None，使用成交额近似估算）
-            avg_turnover: 平均换手率（百分比），无总股本时为 None
-            current_turnover: 当前换手率（百分比），无总股本时为 None
-            abnormal_days_count: 异常放量天数
-            abnormal_days: 异常放量日列表（最近 5 条），每个元素结构 —
-                date: 交易日期
-                volume: 成交量
-                volume_ratio: 量比
-            turnover_trend: 换手率趋势，取值 "increasing" | "decreasing" | "stable"
-            data_quality: 数据质量，子字段 —
-                bars_analyzed: 分析的 K 线数量
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Stock code
+            current_price: latest closing price
+            date: Latest trading day
+            has_shares_info: Whether to obtain the total equity information (if False, the turnover rate field is None, and the transaction volume is used for approximate estimation)
+            avg_turnover: Average turnover rate (percentage), when there is no total share capital None
+            current_turnover: Current turnover rate (percentage), when there is no total share capital None
+            abnormal_days_count: Abnormal volume days
+            abnormal_days: Abnormal volume day list (last 5 items), each element structure —
+                date: transaction date
+                volume: Volume
+                volume_ratio: Quantity ratio
+            turnover_trend: Turnover rate trend, value "increasing" | "decreasing" | "stable"
+            data_quality: Data quality, subfield —
+                bars_analyzed: Number of candlesticks analyzed
+        Field returned on exception —
             status: "error"
-            message: 错误信息
+            message: error message
     """
     try:
         from core.skill_runtime.data_access import get_stock_daily_quotes, get_stock_basic_info
@@ -432,14 +432,14 @@ def get_turnover_analysis(
 
         if len(df) < 20:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 有效数据不足20条。"},
+                {"status": "error", "message": f"{symbol} There are less than 20 valid data items."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
         close = df["close"]
         volume = df["volume"]
 
-        # 获取总股本
+        # Get total share capital
         basic_info = get_stock_basic_info(str(symbol))
         total_shares = None
         if basic_info:
@@ -450,7 +450,7 @@ def get_turnover_analysis(
             )
 
         if total_shares is None or total_shares <= 0:
-            # 如果没有总股本信息，使用成交额近似估算换手率
+            # If total equity information is not available, use turnover to approximate turnover rate
             turnover_series = pd.Series([0.0] * len(df), index=df.index)
             for i in range(1, len(df)):
                 vol_value = float(volume.iloc[i]) if not pd.isna(volume.iloc[i]) else 0
@@ -458,14 +458,14 @@ def get_turnover_analysis(
             has_shares_info = False
         else:
             has_shares_info = True
-            # 换手率 = 成交量 / 总股本
+            # turnover rate = Trading volume/total equity
             turnover_series = volume / total_shares * 100.0
 
-        # 计算平均换手率
+        # Calculate average turnover rate
         avg_turnover = float(turnover_series.iloc[1:].mean()) if len(df) > 1 else 0.0
         current_turnover = float(turnover_series.iloc[-1]) if not pd.isna(turnover_series.iloc[-1]) else 0.0
 
-        # 检测异常放量（>2x 均值）
+        # Detect abnormal volume (>2x mean)
         mean_vol = float(volume.iloc[1:].mean()) if len(df) > 1 else 0.0
         abnormal_days = []
         for i in range(1, len(df)):
@@ -477,7 +477,7 @@ def get_turnover_analysis(
                     "volume_ratio": round(v / mean_vol, 2),
                 })
 
-        # 换手率趋势（用 MA5 和 MA20 判断）
+        # Turnover trend (judged by MA5 and MA20)
         turnover_ma5 = turnover_series.rolling(window=5, min_periods=3).mean()
         turnover_ma20 = turnover_series.rolling(window=20, min_periods=10).mean()
 
@@ -514,14 +514,14 @@ def get_turnover_analysis(
 
 
 # ============================================================
-#  Tool 8: 枢轴点 (Pivot Points)
+#  Tool 8: pivot point (Pivot Points)
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_pivot_points",
     name="枢轴点计算",
-    description="基于经典枢轴点公式和斐波那契枢轴点公式计算关键支撑/阻力位，为日内研究提供参考。",
+    description="Calculate key support/resistance levels based on the classic pivot point formula and Fibonacci pivot point formula to provide a reference for intraday research.",
     category="technical",
     is_online=False,
     auto_register=True,
@@ -530,45 +530,45 @@ def get_turnover_analysis(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["pivot_points_calculation", "intraday_levels"],
-    when_to_use="当需要计算日内关键支撑阻力位、设置风险关注与收益关注参考时使用。",
-    when_not_to_use="数据不足（少于 2 根 K 线）时无法计算；不适用于非日线级别的长周期分析。",
-    returns="返回 JSON，包含 classic 和 fibonacci 两组枢轴点（PP/R1-3/S1-3）及当前价格。",
+    when_to_use="Use it when you need to calculate key support and resistance levels within the day, and set reference for risk attention and return attention.",
+    when_not_to_use="It cannot be calculated when there is insufficient data (less than 2 K lines); it is not suitable for long-term analysis at the non-daily level.",
+    returns="Returns JSON, including classic and fibonacci two sets of pivot points (PP/R1-3/S1-3) and current prices.",
     example="get_pivot_points(symbol='600519', lookback_days=30)",
     related_tools=["get_support_resistance_levels", "get_fibonacci_extension"],
 )
 def get_pivot_points(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看天数用于枢轴点计算，默认 30"] = 30,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "Number of days to look back for pivot point calculation, default 30"] = 30,
 ) -> str:
-    """计算经典枢轴点和斐波那契枢轴点，为日内研究提供支撑/阻力位参考。
+    """Calculate classic pivot points and Fibonacci pivot points to provide support/resistance reference for intraday research.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看天数用于枢轴点计算，默认 30
+        symbol: A stock code, such as 600519,000001
+        lookback_days: Number of days to look back for pivot point calculation, default 30
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 股票代码
-            current_price: 最新收盘价
-            date: 最新交易日
-            reference_bar: 参考K线（前一根），子字段 —
-                date: 参考K线日期
-                high: 最高价
-                low: 最低价
-                close: 收盘价
-            classic: 经典枢轴点，每个水平的值为 {price, distance_pct}，key 包括 —
-                pp: 枢轴点
-                r1, r2, r3: 阻力位 1/2/3
-                s1, s2, s3: 支撑位 1/2/3
-            fibonacci: 斐波那契枢轴点，子字段 —
-                pp: 枢轴点
-                resistances: 阻力位字典，key 为 "r_{level}"（level 取值 0.0、0.236、0.382、0.5、0.618、0.786、1.0），值为 {price, distance_pct}
-                supports: 支撑位字典，key 为 "s_{level}"（level 同上），值为 {price, distance_pct}
-            data_quality: 数据质量，子字段 —
-                bars_analyzed: 分析的 K 线数量
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Stock code
+            current_price: latest closing price
+            date: Latest trading day
+            reference_bar: Reference K line (previous one), subfield —
+                date: Reference K line date
+                high: highest price
+                low: lowest price
+                close: closing price
+            classic: Classic pivot points, the value of each level is {price, distance_pct}, key include —
+                pp: pivot point
+                r1, r2, r3: resistance level 1/2/3
+                s1, s2, s3: support level 1/2/3
+            fibonacci: Fibonacci pivot points, subfields —
+                pp: pivot point
+                resistances: Resistance level dictionary, key is "r_{level}" (level Values 0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0), the value is {price, distance_pct}
+                supports: Support bit dictionary, key is "s_{level}" (level Same as above), the value is {price, distance_pct}
+            data_quality: Data quality, subfield —
+                bars_analyzed: Number of candlesticks analyzed
+        Field returned on exception —
             status: "error"
-            message: 错误信息
+            message: error message
     """
     try:
         from core.skill_runtime.data_access import get_stock_daily_quotes
@@ -593,16 +593,16 @@ def get_pivot_points(
 
         if len(df) < 2:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 有效数据不足2条。"},
+                {"status": "error", "message": f"{symbol} There are less than 2 valid data."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
         latest = df.iloc[-1]
         current_price = float(latest["close"])
 
-        # 最近一根完整 K 线
+        # The most recent complete K-line
         if len(df) >= 2:
-            ref_bar = df.iloc[-2]  # 用前一根计算
+            ref_bar = df.iloc[-2]  # Use the previous one to calculate
         else:
             ref_bar = df.iloc[-1]
 
@@ -611,7 +611,7 @@ def get_pivot_points(
         close = float(ref_bar["close"])
         ref_date = str(ref_bar["trade_date"])[:10]
 
-        # --- 经典枢轴点 ---
+        # --- classic pivot point ---
         pp = (high + low + close) / 3.0
 
         classic = {
@@ -629,7 +629,7 @@ def get_pivot_points(
             dist = round((v - current_price) / current_price * 100, 2) if current_price > 0 else 0.0
             classic_with_dist[k] = {"price": v, "distance_pct": dist}
 
-        # --- 斐波那契枢轴点 ---
+        # --- Fibonacci Pivot Points ---
         fib_levels = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0]
         fib_pivot = pp
         fib_range = high - low
@@ -638,12 +638,12 @@ def get_pivot_points(
         fib_supports = {}
 
         for level in fib_levels:
-            # 阻力 = PP + level * range
+            # resistance = PP + level * range
             r_price = fib_pivot + level * fib_range
             r_dist = round((r_price - current_price) / current_price * 100, 2) if current_price > 0 else 0.0
             fib_resistances[f"r_{level}"] = {"price": round(r_price, 2), "distance_pct": r_dist}
 
-            # 支撑 = PP - level * range
+            # support = PP - level * range
             s_price = fib_pivot - level * fib_range
             s_dist = round((s_price - current_price) / current_price * 100, 2) if current_price > 0 else 0.0
             fib_supports[f"s_{level}"] = {"price": round(s_price, 2), "distance_pct": s_dist}
@@ -679,14 +679,14 @@ def get_pivot_points(
 
 
 # ============================================================
-#  Tool 9: 成交量分布 (Volume Profile)
+#  Tool 9: Volume distribution (Volume Profile)
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_volume_profile",
     name="成交量分布分析",
-    description="计算成交量分布，识别 POC（控制点）、价值区域（Value Area），评估当前价格在价值区域中的位置。",
+    description="Calculate volume distribution, identify POC (point of control) and value area, and evaluate the position of the current price in the value area.",
     category="technical",
     is_online=False,
     auto_register=True,
@@ -695,50 +695,50 @@ def get_pivot_points(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["成交量分布分析", "POC 控制点识别"],
-    when_to_use="当需要识别成交最密集的价格区间、判断公允价值区域时使用。适用于大周期趋势判断。",
-    when_not_to_use="数据不足（少于 20 根 K 线）时分布不可靠；不适用于短线高频交易。",
-    returns="返回 JSON，包含 poc_price、value_area_high、value_area_low、current_position_relative_to_va、distribution_profile。",
+    when_to_use="Use it when you need to identify the price range with the most intensive transactions and determine the fair value area. Suitable for large cycle trend judgment.",
+    when_not_to_use="The distribution is unreliable when there is insufficient data (less than 20 K lines); it is not suitable for short-term high-frequency trading.",
+    returns="Returns JSON containing poc_price, value_area_high, value_area_low, current_position_relative_to_va, distribution_profile.",
     example="get_volume_profile(symbol='600519', lookback_days=60, price_bins=20)",
     related_tools=["get_support_resistance_levels", "get_vwap"],
 )
 def get_volume_profile(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看天数用于成交量分布计算，默认 60"] = 60,
-    price_bins: Annotated[int, "价格区间分箱数量，默认 20"] = 20,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "The number of days to look back is used for volume distribution calculation, default 60"] = 60,
+    price_bins: Annotated[int, "Price range bin quantity, default 20"] = 20,
 ) -> str:
-    """计算成交量分布（Volume Profile），识别 POC（控制点）、价值区域，评估当前价格在价值区域中的位置。
+    """Calculate the volume profile (Volume Profile), identify POC (point of control) and value area, and evaluate the position of the current price in the value area.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看天数用于成交量分布计算，默认 60
-        price_bins: 价格区间分箱数量，默认 20
+        symbol: A stock code, such as 600519,000001
+        lookback_days: The number of days to look back is used for volume distribution calculation, default 60
+        price_bins: Price range bin quantity, default 20
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 股票代码
-            current_price: 最新收盘价
-            date: 最新交易日
-            poc_price: POC（控制点）价格
-            poc_volume: POC 成交量
-            poc_volume_pct: POC 成交量占比（百分比）
-            value_area_high: 价值区域上沿
-            value_area_low: 价值区域下沿
-            value_area_width: 价值区域宽度
-            current_position_relative_to_va: 当前价相对价值区域的位置，取值 "above_va" | "below_va" | "within_va"
-            distribution_profile: 分布概况列表（最多 20 个分箱），每个元素结构 —
-                price_level: 价格水平（分箱中心）
-                price_low: 分箱下沿
-                price_high: 分箱上沿
-                volume: 成交量
-                volume_pct: 成交量占比（百分比）
-                is_poc: 是否为 POC
-                in_value_area: 是否在价值区域内
-            data_quality: 数据质量，子字段 —
-                bars_analyzed: 分析的 K 线数量
-                price_bins: 实际分箱数
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Stock code
+            current_price: latest closing price
+            date: Latest trading day
+            poc_price: POC (control point) price
+            poc_volume: POC Volume
+            poc_volume_pct: POC Transaction volume ratio (percentage)
+            value_area_high: upper edge of value area
+            value_area_low: Lower edge of value area
+            value_area_width: value area width
+            current_position_relative_to_va: The position of the current price relative to the value area, the value "above_va" | "below_va" | "within_va"
+            distribution_profile: List of distribution profiles (up to 20 bins), per element structure —
+                price_level: Price level (bundling center)
+                price_low: Lower edge of bin
+                price_high: Top edge of dividing box
+                volume: Volume
+                volume_pct: Transaction volume ratio (percentage)
+                is_poc: Is it POC
+                in_value_area: Is it within the value area?
+            data_quality: Data quality, subfield —
+                bars_analyzed: Number of candlesticks analyzed
+                price_bins: Actual number of bins
+        Field returned on exception —
             status: "error"
-            message: 错误信息
+            message: error message
     """
     try:
         from core.skill_runtime.data_access import get_stock_daily_quotes
@@ -763,7 +763,7 @@ def get_volume_profile(
 
         if len(df) < 20:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 有效数据不足20条。"},
+                {"status": "error", "message": f"{symbol} There are less than 20 valid data items."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
@@ -772,26 +772,26 @@ def get_volume_profile(
         low = df["low"]
         volume = df["volume"]
 
-        # 确定价格范围
+        # Determine price range
         price_min = float(low.min())
         price_max = float(high.max())
         price_range = price_max - price_min
 
         if price_range <= 0:
             return json.dumps(
-                {"status": "error", "message": "价格区间异常，无法计算成交量分布。"},
+                {"status": "error", "message": "The price range is abnormal and the volume distribution cannot be calculated."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
         n_bins = max(5, min(50, int(price_bins)))
         bin_width = price_range / n_bins
 
-        # 建立价格分箱
+        # Create price bins
         bin_edges = [price_min + i * bin_width for i in range(n_bins + 1)]
         bin_centers = [(bin_edges[i] + bin_edges[i + 1]) / 2.0 for i in range(n_bins)]
         bin_volume = [0.0] * n_bins
 
-        # 分配成交量到各个价格分箱
+        # Assign volume to individual price bins
         for i in range(len(df)):
             bar_high = float(high.iloc[i])
             bar_low = float(low.iloc[i])
@@ -804,7 +804,7 @@ def get_volume_profile(
                 bin_top = bin_edges[j + 1]
                 bin_bottom = bin_edges[j]
 
-                # 计算重叠区间
+                # Calculate overlapping intervals
                 overlap_low = max(bar_low, bin_bottom)
                 overlap_high = min(bar_high, bin_top)
 
@@ -812,20 +812,20 @@ def get_volume_profile(
                     overlap_pct = (overlap_high - overlap_low) / (bar_high - bar_low)
                     bin_volume[j] += bar_volume * overlap_pct
 
-        # 找到 POC（成交量最大的价格水平）
+        # Find the POC (the price level with the highest volume)
         poc_idx = int(np.argmax(bin_volume))
         poc_price = round(bin_centers[poc_idx], 2)
         poc_volume = round(bin_volume[poc_idx], 2)
 
-        # 价值区域：找出包含 70% 成交量的价格区间
+        # Value Zone: Find the price range that contains 70% of the volume
         total_volume = sum(bin_volume)
         if total_volume <= 0:
             return json.dumps(
-                {"status": "error", "message": "成交量数据异常。"},
+                {"status": "error", "message": "The trading volume data is abnormal."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 从 POC 向两侧扩展
+        # Expand from POC to both sides
         sorted_indices = sorted(
             range(n_bins),
             key=lambda x: bin_volume[x],
@@ -859,7 +859,7 @@ def get_volume_profile(
         else:
             current_position = "within_va"
 
-        # 分布概况
+        # Distribution overview
         distribution_profile = []
         for j in range(n_bins):
             vol_pct = (bin_volume[j] / total_volume * 100) if total_volume > 0 else 0
@@ -894,19 +894,19 @@ def get_volume_profile(
         return json.dumps(result, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("成交量分布计算失败: %s", exc, exc_info=True)
+        logger.error("Volume distribution calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ============================================================
-#  Tool 10: 斐波那契扩展
+#  Tool 10: Fibonacci Extension
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_fibonacci_extension",
     name="斐波那契扩展",
-    description="基于最近的价格波动（高点到低点或低点到高点）计算斐波那契扩展目标位，提供潜在价格目标参考。",
+    description="Fibonacci extension targets are calculated based on recent price movements (high to low or low to high) to provide a reference for potential price targets.",
     category="technical",
     is_online=False,
     auto_register=True,
@@ -915,49 +915,49 @@ def get_volume_profile(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["斐波那契扩展", "价格目标位"],
-    when_to_use="当需要在趋势行情中寻找潜在的扩展价格位、设置收益关注参考时使用。",
-    when_not_to_use="震荡市中扩展位参考价值有限；数据不足（少于 30 根 K 线）时结果不可靠。",
-    returns="返回 JSON，包含 swing_analysis、extension_prices（各水平）、current_proximity。",
+    when_to_use="Use it when you need to find potential expansion price levels in trending markets and set a profit focus reference.",
+    when_not_to_use="The reference value of the expansion position in the volatile market is limited; when the data is insufficient (less than 30 K lines), the results are unreliable.",
+    returns="Returns JSON, including swing_analysis, extension_prices (each level), current_proximity.",
     example="get_fibonacci_extension(symbol='600519', lookback_days=120, extension_levels='1.272,1.382,1.618,2.0,2.618')",
     related_tools=["get_fibonacci_retracement", "get_pivot_points"],
 )
 def get_fibonacci_extension(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看天数用于波动区间识别，默认 120"] = 120,
-    extension_levels: Annotated[str, "扩展水平，逗号分隔，默认 1.272,1.382,1.618,2.0,2.618"] = "1.272,1.382,1.618,2.0,2.618",
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "The number of days to look back is used to identify fluctuation ranges, the default 120"] = 120,
+    extension_levels: Annotated[str, "Expansion levels, comma separated, default 1.272,1.382,1.618,2.0,2.618"] = "1.272,1.382,1.618,2.0,2.618",
 ) -> str:
-    """计算斐波那契扩展目标位，基于最近的价格波动（高点到低点或低点到高点）计算潜在价格目标。
+    """Calculate Fibonacci extension targets to calculate potential price targets based on recent price movements (high to low or low to high).
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看天数用于波动区间识别，默认 120
-        extension_levels: 扩展水平，逗号分隔，默认 "1.272,1.382,1.618,2.0,2.618"
+        symbol: A stock code, such as 600519,000001
+        lookback_days: The number of days to look back is used to identify fluctuation ranges, the default 120
+        extension_levels: Expansion levels, comma separated, default "1.272,1.382,1.618,2.0,2.618"
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 股票代码
-            current_price: 最新收盘价
-            date: 最新交易日
-            trend: 当前趋势方向，取值 "up" | "down"
-            swing_analysis: 波动分析，子字段 —
-                swing_type: 波动类型，取值 "上升波动" | "下降波动"
-                start_price: 波动起点价
-                end_price: 波动终点价
-                swing_range: 波动幅度
-            extension_prices: 扩展位列表，每个元素结构 —
-                level: 扩展比例（如 1.272、1.382、1.618、2.0、2.618）
-                price: 扩展位价格
-                distance_pct: 距离当前价的百分比
-            current_proximity: 最近的扩展位信息，子字段 —
-                closest_level: 最近扩展比例
-                closest_price: 最近扩展位价格
-                distance_pct: 距离当前价的百分比
-                role: 价格角色，取值 "resistance" | "support"
-            data_quality: 数据质量，子字段 —
-                bars_analyzed: 分析的 K 线数量
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Stock code
+            current_price: latest closing price
+            date: Latest trading day
+            trend: Current trend direction, value "up" | "down"
+            swing_analysis: Fluctuation Analysis, Subfield —
+                swing_type: Fluctuation type, value "rising fluctuations" | "downtrend"
+                start_price: Fluctuation starting price
+                end_price: Fluctuation end price
+                swing_range: Fluctuation range
+            extension_prices: Extended bitlist, per-element structure —
+                level: Expansion ratio (such as 1.272, 1.382, 1.618, 2.0, 2.618)
+                price: Extension bit price
+                distance_pct: Percentage from current price
+            current_proximity: Recent extension bit information, subfield —
+                closest_level: Recent expansion ratio
+                closest_price: Recent expansion price
+                distance_pct: Percentage from current price
+                role: Price role, value "resistance" | "support"
+            data_quality: Data quality, subfield —
+                bars_analyzed: Number of candlesticks analyzed
+        Field returned on exception —
             status: "error"
-            message: 错误信息
+            message: error message
     """
     try:
         from core.skill_runtime.data_access import get_stock_daily_quotes
@@ -982,7 +982,7 @@ def get_fibonacci_extension(
 
         if len(df) < 30:
             return json.dumps(
-                {"status": "error", "message": f"{symbol} 有效数据不足30条。"},
+                {"status": "error", "message": f"{symbol} There are less than 30 valid data."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
@@ -990,7 +990,7 @@ def get_fibonacci_extension(
         high = df["high"]
         low = df["low"]
 
-        # 解析扩展水平
+        # parse extension level
         levels = []
         for s in extension_levels.split(","):
             s = s.strip()
@@ -1006,7 +1006,7 @@ def get_fibonacci_extension(
 
         current_price = float(close.iloc[-1])
 
-        # 找最近的显著波动（用最近一半的数据找高低点）
+        # Find recent significant fluctuations (use the most recent half of the data to find high and low points)
         half_len = max(20, len(df) // 2)
         recent = df.iloc[-half_len:]
 
@@ -1015,20 +1015,20 @@ def get_fibonacci_extension(
         swing_high_idx = recent["high"].idxmax()
         swing_low_idx = recent["low"].idxmin()
 
-        # 判断当前趋势方向：最近 N 根 K 线的价格变化
+        # Determine the current trend direction: price changes of the recent N K lines
         recent_close_vals = close.iloc[-min(20, len(close)):]
         trend = "up" if float(recent_close_vals.iloc[-1]) > float(recent_close_vals.iloc[0]) else "down"
 
-        # 确定波动方向
+        # Determine the direction of the wave
         if swing_low_idx < swing_high_idx:
-            # 低点在前，高点在后 → 上升波动
+            # Low points first, high points last → rising fluctuations
             swing_type = "low_to_high"
             swing_start_price = swing_low
             swing_end_price = swing_high
             swing_range = swing_high - swing_low
             direction = "up"
         else:
-            # 高点在前，低点在后 → 下降波动
+            # High points first, low points last → downtrend
             swing_type = "high_to_low"
             swing_start_price = swing_high
             swing_end_price = swing_low
@@ -1037,21 +1037,21 @@ def get_fibonacci_extension(
 
         if swing_range <= 0:
             return json.dumps(
-                {"status": "error", "message": "价格波动区间异常，无法计算扩展位。"},
+                {"status": "error", "message": "The price fluctuation range is abnormal and the extension level cannot be calculated."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 计算扩展价格
+        # Calculate extension price
         extension_prices = []
         for level in levels:
             if direction == "up":
-                # 上升扩展：从起点往终点方向再延伸
+                # Rising expansion: extending from the starting point to the end point
                 ext_price = swing_start_price + level * swing_range
             else:
-                # 下降扩展：从起点往终点方向再延伸
+                # Descending expansion: extending from the starting point to the end point
                 ext_price = swing_start_price - level * swing_range
 
-            # 当前价格到扩展位的距离百分比
+            # The distance percentage from the current price to the extension level
             if direction == "up":
                 distance_pct = (ext_price - current_price) / current_price * 100 if current_price > 0 else 0.0
             else:
@@ -1063,7 +1063,7 @@ def get_fibonacci_extension(
                 "distance_pct": round(distance_pct, 2),
             })
 
-        # 找到最近的扩展位
+        # Find the nearest extension bit
         if extension_prices:
             closest = min(extension_prices, key=lambda x: abs(x["distance_pct"]))
             current_proximity = {
@@ -1096,7 +1096,7 @@ def get_fibonacci_extension(
         return json.dumps(result, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("斐波那契扩展计算失败: %s", exc, exc_info=True)
+        logger.error("Fibonacci extension calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 

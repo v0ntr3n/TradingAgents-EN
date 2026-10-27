@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试前端显示问题的脚本
+Script to test front-end display issues
 """
 
 import requests
@@ -8,16 +8,16 @@ import time
 import json
 
 def test_frontend_display():
-    """测试前端显示问题"""
-    print("🔍 测试前端显示问题")
+    """Test front-end display issues"""
+    print("🔍 Test front-end display issues")
     print("=" * 60)
     
-    # API基础URL
+    # API Basics URL
     base_url = "http://localhost:8000"
     
     try:
-        # 1. 登录获取token
-        print("1. 登录获取token...")
+        # 1. Log in to get token
+        print("1. Log in to get token...")
         login_data = {
             "username": "admin",
             "password": "admin123"
@@ -31,19 +31,19 @@ def test_frontend_display():
         if login_response.status_code == 200:
             login_result = login_response.json()
             access_token = login_result["data"]["access_token"]
-            print("✅ 登录成功，获取到token")
+            print("✅ Log in successfully and get token")
         else:
-            print(f"❌ 登录失败: {login_response.status_code}")
+            print(f"❌ Login failed: {login_response.status_code}")
             return False
         
-        # 2. 提交分析请求
-        print("\n2. 提交分析请求...")
+        # 2. Submit an analysis request
+        print("\n2. Submit an analysis request...")
         analysis_request = {
-            "stock_code": "000004",  # 使用新的股票代码
+            "stock_code": "000004",  # Use new ticker
             "parameters": {
-                "market_type": "A股",
+                "market_type": "A shares",
                 "analysis_date": "2025-08-20",
-                "research_depth": "快速",
+                "research_depth": "fast",
                 "selected_analysts": ["market"],
                 "include_sentiment": False,
                 "include_risk": False,
@@ -67,14 +67,14 @@ def test_frontend_display():
         if response.status_code == 200:
             result = response.json()
             task_id = result["data"]["task_id"]
-            print(f"✅ 分析任务已提交: {task_id}")
+            print(f"✅ Analysis task has been submitted: {task_id}")
         else:
-            print(f"❌ 提交分析请求失败: {response.status_code}")
+            print(f"❌ Failed to submit analysis request: {response.status_code}")
             return False
         
-        # 3. 等待任务完成
-        print(f"\n3. 等待任务完成...")
-        for i in range(60):  # 最多等待5分钟
+        # 3. Wait for task to complete
+        print(f"\n3. Wait for task to complete...")
+        for i in range(60):  # Wait up to 5 minutes
             status_response = requests.get(
                 f"{base_url}/api/analysis/tasks/{task_id}/status",
                 headers=headers
@@ -85,19 +85,19 @@ def test_frontend_display():
                 status = status_data["data"]["status"]
                 
                 if status == "completed":
-                    print("✅ 分析任务完成!")
+                    print("✅ Analysis task completed!")
                     break
                 elif status == "failed":
-                    print(f"❌ 分析任务失败")
+                    print(f"❌ Analysis task failed")
                     return False
             
             time.sleep(5)
         else:
-            print(f"⏰ 任务执行超时")
+            print(f"⏰ Task execution timeout")
             return False
         
-        # 4. 测试新的result端点
-        print(f"\n4. 测试新的result端点...")
+        # 4. Test the new result endpoint
+        print(f"\n4. Test the new result endpoint...")
         result_response = requests.get(
             f"{base_url}/api/analysis/tasks/{task_id}/result",
             headers=headers
@@ -105,52 +105,52 @@ def test_frontend_display():
         
         if result_response.status_code == 200:
             result_data = result_response.json()
-            print(f"✅ 成功获取分析结果")
+            print(f"✅ Successfully obtained analysis results")
             
-            # 检查数据结构
+            # Check data structure
             data = result_data["data"]
-            print(f"\n📊 结果数据结构检查:")
+            print(f"\n📊 Result data structure check:")
             print(f"   stock_code: {data.get('stock_code', 'NOT_FOUND')}")
             print(f"   stock_symbol: {data.get('stock_symbol', 'NOT_FOUND')}")
             print(f"   analysis_date: {data.get('analysis_date', 'NOT_FOUND')}")
             
-            # 检查reports字段
+            # Check reports field
             reports = data.get('reports', {})
             if reports:
-                print(f"✅ 找到reports字段，包含 {len(reports)} 个报告:")
+                print(f"✅ Find the reports field, containing {len(reports)} reports:")
                 for report_type, content in reports.items():
                     if isinstance(content, str):
-                        print(f"   - {report_type}: {len(content)} 字符")
+                        print(f"   - {report_type}: {len(content)} character")
                     else:
                         print(f"   - {report_type}: {type(content)}")
             else:
-                print(f"❌ 未找到reports字段或为空")
+                print(f"❌ reports field not found or empty")
                 
-                # 检查detailed_analysis字段
+                # Check the detailed_analysis field
                 detailed_analysis = data.get('detailed_analysis')
                 if detailed_analysis:
-                    print(f"⚠️ 但找到detailed_analysis字段: {type(detailed_analysis)}")
+                    print(f"⚠️ But find the detailed_analysis field: {type(detailed_analysis)}")
                     if isinstance(detailed_analysis, dict):
-                        print(f"   detailed_analysis键: {list(detailed_analysis.keys())}")
+                        print(f"   detailed_analysis key: {list(detailed_analysis.keys())}")
                         for key, value in detailed_analysis.items():
                             if isinstance(value, str) and len(value) > 50:
-                                print(f"   - {key}: {len(value)} 字符 (可作为报告)")
+                                print(f"   - {key}: {len(value)} character (available as report)")
                 else:
-                    print(f"❌ 也未找到detailed_analysis字段")
+                    print(f"❌ The detailed_analysis field was not found either.")
             
             return True
         else:
-            print(f"❌ 获取分析结果失败: {result_response.status_code}")
-            print(f"   响应: {result_response.text}")
+            print(f"❌ Failed to obtain analysis results: {result_response.status_code}")
+            print(f"   response: {result_response.text}")
             return False
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 if __name__ == "__main__":
     success = test_frontend_display()
     if success:
-        print("\n🎉 前端显示测试成功!")
+        print("\n🎉 The front end shows that the test is successful!")
     else:
-        print("\n💥 前端显示测试失败!")
+        print("\n💥 The front end shows that the test failed!")

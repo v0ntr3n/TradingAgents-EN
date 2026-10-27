@@ -3,57 +3,57 @@
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><Clock /></el-icon>
-        分析历史
+        Analyze history
       </h1>
       <p class="page-description">
-        查看历史分析记录和结果
+        View historical analysis records and results
       </p>
     </div>
 
-    <!-- 筛选条件 -->
+    <!-- Filter criteria -->
     <el-card class="filter-card" shadow="never">
       <el-form :model="filterForm" :inline="true" @submit.prevent="loadAnalysisHistory">
-        <el-form-item label="时间范围">
+        <el-form-item label="time range">
           <el-date-picker
             v-model="filterForm.dateRange"
             type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
+            range-separator="to"
+            start-placeholder="start date"
+            end-placeholder="end date"
             format="YYYY-MM-DD"
             value-format="YYYY-MM-DD"
             style="width: 240px"
           />
         </el-form-item>
 
-        <el-form-item label="市场类型">
-          <el-select v-model="filterForm.marketType" clearable placeholder="全部市场" style="width: 120px">
-            <el-option label="全部市场" value="" />
-            <el-option label="A股" value="A股" />
+        <el-form-item label="market type">
+          <el-select v-model="filterForm.marketType" clearable placeholder="All markets" style="width: 120px">
+            <el-option label="All markets" value="" />
+            <el-option label="A shares" value="A shares" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="分析类型">
-          <el-select v-model="filterForm.analysisType" clearable placeholder="全部类型" style="width: 120px">
-            <el-option label="全部类型" value="" />
-            <el-option label="基础分析" value="basic" />
-            <el-option label="深度分析" value="deep" />
-            <el-option label="技术分析" value="technical" />
-            <el-option label="综合分析" value="comprehensive" />
+        <el-form-item label="Analysis type">
+          <el-select v-model="filterForm.analysisType" clearable placeholder="All types" style="width: 120px">
+            <el-option label="All types" value="" />
+            <el-option label="Fundamental analysis" value="basic" />
+            <el-option label="In-depth analysis" value="deep" />
+            <el-option label="technical analysis" value="technical" />
+            <el-option label="comprehensive analysis" value="comprehensive" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="股票代码">
+        <el-form-item label="Stock code">
           <el-input
             v-model="filterForm.stockSymbol"
-            placeholder="输入股票代码"
+            placeholder="Enter stock code"
             style="width: 150px"
             @keyup.enter="loadAnalysisHistory"
           />
         </el-form-item>
 
-        <el-form-item label="标签">
-          <el-select v-model="filterForm.tags" multiple clearable placeholder="选择标签" style="width: 200px">
+        <el-form-item label="label">
+          <el-select v-model="filterForm.tags" multiple clearable placeholder="Select label" style="width: 200px">
             <el-option
               v-for="tag in availableTags"
               :key="tag"
@@ -66,23 +66,23 @@
         <el-form-item>
           <el-button type="primary" @click="loadAnalysisHistory" :loading="loading">
             <el-icon><Search /></el-icon>
-            查询
+            Query
           </el-button>
           <el-button @click="resetFilter">
             <el-icon><Refresh /></el-icon>
-            重置
+            reset
           </el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
-    <!-- 统计概览 -->
+    <!-- Statistical overview -->
     <el-row :gutter="24" style="margin-top: 24px">
       <el-col :span="6">
         <el-card class="stat-card" shadow="never">
           <div class="stat-content">
             <div class="stat-value">{{ stats.totalAnalyses }}</div>
-            <div class="stat-label">总分析数</div>
+            <div class="stat-label">Total number of analyzes</div>
           </div>
         </el-card>
       </el-col>
@@ -90,7 +90,7 @@
         <el-card class="stat-card" shadow="never">
           <div class="stat-content">
             <div class="stat-value">{{ stats.favoriteCount }}</div>
-            <div class="stat-label">收藏数量</div>
+            <div class="stat-label">Collection quantity</div>
           </div>
         </el-card>
       </el-col>
@@ -98,7 +98,7 @@
         <el-card class="stat-card" shadow="never">
           <div class="stat-content">
             <div class="stat-value">{{ stats.uniqueStocks }}</div>
-            <div class="stat-label">分析股票数</div>
+            <div class="stat-label">Analyze number of stocks</div>
           </div>
         </el-card>
       </el-col>
@@ -106,18 +106,18 @@
         <el-card class="stat-card" shadow="never">
           <div class="stat-content">
             <div class="stat-value">{{ stats.avgScore }}</div>
-            <div class="stat-label">平均评分</div>
+            <div class="stat-label">average rating</div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 操作工具栏 -->
+    <!-- Action toolbar -->
     <el-card class="toolbar" shadow="never" style="margin-top: 24px">
       <div class="toolbar-content">
         <div class="toolbar-left">
-          <el-checkbox v-model="selectAll" @change="handleSelectAll">全选</el-checkbox>
-          <span class="selected-count">已选择 {{ selectedAnalyses.length }} 项</span>
+          <el-checkbox v-model="selectAll" @change="handleSelectAll">Select all</el-checkbox>
+          <span class="selected-count">Selected {{ selectedAnalyses.length }} item</span>
         </div>
         <div class="toolbar-right">
           <el-button
@@ -125,21 +125,21 @@
             @click="batchAddToFavorites"
           >
             <el-icon><Star /></el-icon>
-            批量收藏
+            Batch collection
           </el-button>
           <el-button
             :disabled="selectedAnalyses.length === 0"
             @click="batchAddTags"
           >
             <el-icon><PriceTag /></el-icon>
-            批量标签
+            Bulk label
           </el-button>
           <el-button
             :disabled="selectedAnalyses.length === 0"
             @click="batchExport"
           >
             <el-icon><Download /></el-icon>
-            批量导出
+            Batch export
           </el-button>
           <el-button
             :disabled="selectedAnalyses.length < 2"
@@ -147,21 +147,21 @@
             type="primary"
           >
             <el-icon><Operation /></el-icon>
-            对比分析
+            Comparative analysis
           </el-button>
         </div>
       </div>
     </el-card>
 
-    <!-- 分析结果列表 -->
+    <!-- Analysis result list -->
     <el-card class="results-list" shadow="never" style="margin-top: 24px">
       <template #header>
         <div class="list-header">
-          <h3>📊 分析结果列表</h3>
+          <h3>📊 Analysis result list</h3>
           <div class="view-controls">
             <el-radio-group v-model="viewMode" size="small">
-              <el-radio-button label="list">列表</el-radio-button>
-              <el-radio-button label="card">卡片</el-radio-button>
+              <el-radio-button label="list">list</el-radio-button>
+              <el-radio-button label="card">card</el-radio-button>
             </el-radio-group>
           </div>
         </div>
@@ -170,16 +170,16 @@
       <div class="action-buttons">
         <el-button @click="refreshHistory">
           <el-icon><Refresh /></el-icon>
-          刷新
+          Refresh
         </el-button>
         <el-button @click="exportHistory">
           <el-icon><Download /></el-icon>
-          导出
+          Export
         </el-button>
       </div>
     </el-card>
 
-    <!-- 历史记录列表 -->
+    <!-- History list -->
     <el-card class="history-list-card" shadow="never">
       <el-table 
         :data="historyList" 
@@ -189,7 +189,7 @@
       >
         <el-table-column type="selection" width="55" />
         
-        <el-table-column prop="task_id" label="任务ID" width="180">
+        <el-table-column prop="task_id" label="Task ID" width="180">
           <template #default="{ row }">
             <el-link type="primary" @click="viewTaskDetail(row)">
               {{ row.task_id || '-' }}
@@ -197,10 +197,10 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="stock_code" label="股票代码" width="120" />
-        <el-table-column prop="stock_name" label="股票名称" width="150" />
+        <el-table-column prop="stock_code" label="Stock code" width="120" />
+        <el-table-column prop="stock_name" label="Stock name" width="150" />
 
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="Status" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
               {{ getStatusText(row.status) }}
@@ -208,19 +208,19 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="created_at" label="创建时间" width="180">
+        <el-table-column prop="created_at" label="creation time" width="180">
           <template #default="{ row }">
             {{ formatTime(row.created_at) }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="execution_time" label="执行时长" width="120">
+        <el-table-column prop="execution_time" label="Execution time" width="120">
           <template #default="{ row }">
             {{ row.execution_time ? `${row.execution_time}s` : '-' }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="Operation" width="200" fixed="right">
           <template #default="{ row }">
             <el-button
               v-if="row.status === 'completed'"
@@ -228,7 +228,7 @@
               size="small"
               @click="viewResult(row)"
             >
-              查看结果
+              View results
             </el-button>
             <el-button
               v-if="row.status === 'completed'"
@@ -236,7 +236,7 @@
               size="small"
               @click="downloadReport(row)"
             >
-              下载报告
+              Download report
             </el-button>
             <el-button
               v-if="row.status === 'failed'"
@@ -244,16 +244,16 @@
               size="small"
               @click="retryAnalysis(row)"
             >
-              重新分析
+              Reanalyze
             </el-button>
             <el-button type="text" size="small" @click="deleteRecord(row)">
-              删除
+              Delete
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
+      <!-- Pagination -->
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="currentPage"
@@ -285,7 +285,7 @@ import { analysisApi } from '@/api/analysis'
 import { useRouter } from 'vue-router'
 import { formatDateTime } from '@/utils/datetime'
 
-// 列表与分页状态
+// List and pagination status
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -293,7 +293,7 @@ const totalRecords = ref(0)
 const historyList = ref<any[]>([])
 const statusFilter = ref('')
 
-// 筛选表单
+// filter form
 const filterForm = ref({
   dateRange: [],
   marketType: '',
@@ -302,10 +302,10 @@ const filterForm = ref({
   tags: [] as string[]
 })
 
-// 标签可选项（后续可从后端获取）
+// Label options (can be obtained from the backend later)
 const availableTags = ref<string[]>([])
 
-// 选择相关
+// Select relevant
 const selectAll = ref(false)
 const selectedAnalyses = ref<any[]>([])
 
@@ -320,7 +320,7 @@ const handleSelectionChange = (selection: any[]) => {
   selectAll.value = selection.length === historyList.value.length && historyList.value.length > 0
 }
 
-// 加载历史
+// Load history
 const loadAnalysisHistory = async () => {
   loading.value = true
   try {
@@ -336,8 +336,8 @@ const loadAnalysisHistory = async () => {
       params.end_date = filterForm.value.dateRange[1]
     }
 
-    // 使用任务列表接口作为历史数据源（已打通MongoDB兜底）
-    // 不传 limit 参数，让后端返回所有记录，由前端处理分页
+    // Use the task list interface as a historical data source (MongoDB has been opened)
+    // Do not pass the limit parameter, let the backend return all records, and the frontend handles paging
     const res = await analysisApi.getTaskList({
       status: statusFilter.value || undefined,
       offset: (currentPage.value - 1) * pageSize.value
@@ -346,14 +346,14 @@ const loadAnalysisHistory = async () => {
 
     const allTasks = body.tasks || []
 
-    // 在前端进行分页
+    // Pagination on the frontend
     const startIdx = (currentPage.value - 1) * pageSize.value
     const endIdx = startIdx + pageSize.value
     const list = allTasks.slice(startIdx, endIdx)
 
     historyList.value = list.map((x: any) => ({
       task_id: x.task_id || x.analysis_id || x.id || '-',
-      stock_code: x.symbol || x.stock_code || x.stock_symbol || '-',  // 兼容新旧字段
+      stock_code: x.symbol || x.stock_code || x.stock_symbol || '-',  // Compatible with old and new fields
       stock_name: x.stock_name || x.name || '',
       status: x.status || 'pending',
       created_at: x.start_time || x.created_at || new Date().toISOString(),
@@ -362,7 +362,7 @@ const loadAnalysisHistory = async () => {
 
     totalRecords.value = allTasks.length
   } catch (e) {
-    ElMessage.error('加载历史失败')
+    ElMessage.error('Failed to load history')
   } finally {
     loading.value = false
   }
@@ -393,16 +393,16 @@ const refreshHistory = () => {
   loading.value = true
   setTimeout(() => {
     loading.value = false
-    ElMessage.success('历史记录已刷新')
+    ElMessage.success('History has been refreshed')
   }, 1000)
 }
 
 const exportHistory = () => {
-  ElMessage.info('导出功能开发中...')
+  ElMessage.info('Export function is under development...')
 }
 
 const viewTaskDetail = (_task: any) => {
-  ElMessage.info('任务详情功能开发中...')
+  ElMessage.info('Task details function is under development...')
 }
 
 const viewResult = (task: any) => {
@@ -411,28 +411,28 @@ const viewResult = (task: any) => {
 }
 
 const downloadReport = (task: any) => {
-  ElMessage.success(`正在下载 ${task.stock_name} 的研究报告`)
+  ElMessage.success(`Downloading ${task.stock_name} research report`)
 }
 
 const retryAnalysis = (task: any) => {
-  ElMessage.success(`${task.stock_name} 重新分析任务已提交`)
+  ElMessage.success(`${task.stock_name} Reanalysis task submitted`)
 }
 
 const deleteRecord = async (task: any) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除 ${task.stock_name} 的分析记录吗？`,
-      '确认删除',
+      `Confirm to delete ${task.stock_name} Analysis records?`,
+      'Confirm deletion',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
 
-    ElMessage.success('记录已删除')
+    ElMessage.success('Record deleted')
   } catch {
-    // 用户取消
+    // User cancels
   }
 }
 
@@ -449,11 +449,11 @@ const getStatusType = (status: string): 'primary' | 'success' | 'warning' | 'inf
 
 const getStatusText = (status: string) => {
   const statusMap: Record<string, string> = {
-    pending: '等待中',
-    processing: '处理中',
-    completed: '已完成',
-    failed: '失败',
-    cancelled: '已取消'
+    pending: 'Waiting',
+    processing: 'Processing',
+    completed: 'Completed',
+    failed: 'failed',
+    cancelled: 'Canceled'
   }
   return statusMap[status] || status
 }
@@ -462,7 +462,7 @@ const formatTime = (time: string) => {
   return formatDateTime(time)
 }
 
-// 统计数据
+// Statistics
 const stats = ref({
   totalAnalyses: 0,
   favoriteCount: 0,
@@ -470,23 +470,23 @@ const stats = ref({
   avgScore: 0
 })
 
-// 视图模式
+// view mode
 const viewMode = ref('list')
 
 const batchAddToFavorites = () => {
-  ElMessage.info('批量收藏功能开发中...')
+  ElMessage.info('The batch collection function is under development...')
 }
 
 const batchAddTags = () => {
-  ElMessage.info('批量标签功能开发中...')
+  ElMessage.info('The batch label function is under development...')
 }
 
 const batchExport = () => {
-  ElMessage.info('批量导出功能开发中...')
+  ElMessage.info('Batch export function is under development...')
 }
 
 const compareAnalyses = () => {
-  ElMessage.info('对比分析功能开发中...')
+  ElMessage.info('The comparative analysis function is under development...')
 }
 </script>
 

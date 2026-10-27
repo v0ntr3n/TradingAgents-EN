@@ -2,141 +2,141 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 import time
 import json
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
-# 导入Google工具调用处理器
+# Import Google tool call processor
 from tradingagents.agents.utils.google_tool_handler import GoogleToolCallHandler
 from tradingagents.agents.utils.compliance_prompting import apply_compliance_guardrails
 
 
 def _get_company_name_for_china_market(ticker: str, market_info: dict) -> str:
     """
-    为中国市场分析师获取公司名称
+    Get Company Names for China Market Analysts
 
     Args:
-        ticker: 股票代码
-        market_info: 市场信息字典
+        ticker: Stock code
+        market_info: Market Information Dictionary
 
     Returns:
-        str: 公司名称
+        str: Company name
     """
     try:
         if market_info['is_china']:
-            # 中国A股：使用统一接口获取股票信息
+            # China A-shares: Obtain stock information using a unified interface
             from tradingagents.dataflows.interface import get_china_stock_info_unified
             stock_info = get_china_stock_info_unified(ticker)
 
-            logger.debug(f"📊 [中国市场分析师] 获取股票信息返回: {stock_info[:200] if stock_info else 'None'}...")
+            logger.debug(f"📊 [China market analyst] Get stock information return: {stock_info[:200] if stock_info else 'None'}...")
 
-            # 解析股票名称
-            if stock_info and "股票名称:" in stock_info:
-                company_name = stock_info.split("股票名称:")[1].split("\n")[0].strip()
-                logger.info(f"✅ [中国市场分析师] 成功获取中国股票名称: {ticker} -> {company_name}")
+            # Parse stock names
+            if stock_info and "Stock name:" in stock_info:
+                company_name = stock_info.split("Stock name:")[1].split("\n")[0].strip()
+                logger.info(f"✅ [China market analyst] Successfully obtained Chinese stock names: {ticker} -> {company_name}")
                 return company_name
             else:
-                # 降级方案：尝试直接从数据源管理器获取
-                logger.warning(f"⚠️ [中国市场分析师] 无法从统一接口解析股票名称: {ticker}，尝试降级方案")
+                # Downgrade scenario: Try getting it directly from the data source manager
+                logger.warning(f"⚠️ [China market analyst] Unable to parse stock name from unified interface: {ticker}, Try a downgrade solution")
                 try:
                     from tradingagents.dataflows.data_source_manager import get_china_stock_info_unified as get_info_dict
                     info_dict = get_info_dict(ticker)
                     if info_dict and info_dict.get('name'):
                         company_name = info_dict['name']
-                        logger.info(f"✅ [中国市场分析师] 降级方案成功获取股票名称: {ticker} -> {company_name}")
+                        logger.info(f"✅ [China market analyst] The downgrade plan successfully obtained the stock name: {ticker} -> {company_name}")
                         return company_name
                 except Exception as e:
-                    logger.error(f"❌ [中国市场分析师] 降级方案也失败: {e}")
+                    logger.error(f"❌ [China market analyst] Downgrade plan also failed: {e}")
 
-                logger.error(f"❌ [中国市场分析师] 所有方案都无法获取股票名称: {ticker}")
-                return f"股票代码{ticker}"
+                logger.error(f"❌ [China market analyst] All schemes are unable to obtain the stock name: {ticker}")
+                return f"Stock code{ticker}"
 
         elif market_info['is_hk']:
-            # 港股：使用改进的港股工具
+            # Hong Kong stocks: Use improved Hong Kong stocks tools
             try:
                 from tradingagents.dataflows.providers.hk.improved_hk import get_hk_company_name_improved
                 company_name = get_hk_company_name_improved(ticker)
-                logger.debug(f"📊 [中国市场分析师] 使用改进港股工具获取名称: {ticker} -> {company_name}")
+                logger.debug(f"📊 [China market analyst] Use the improved Hong Kong stock tool to obtain names: {ticker} -> {company_name}")
                 return company_name
             except Exception as e:
-                logger.debug(f"📊 [中国市场分析师] 改进港股工具获取名称失败: {e}")
-                # 降级方案：生成友好的默认名称
+                logger.debug(f"📊 [China market analyst] Improved Hong Kong stock tool failed to obtain name: {e}")
+                # Downgrade scenario: generate friendly default names
                 clean_ticker = ticker.replace('.HK', '').replace('.hk', '')
-                return f"港股{clean_ticker}"
+                return f"Hong Kong stocks{clean_ticker}"
 
         elif market_info['is_us']:
-            # 美股：使用简单映射或返回代码
+            # US stocks: use simple mapping or return codes
             us_stock_names = {
-                'AAPL': '苹果公司',
-                'TSLA': '特斯拉',
-                'NVDA': '英伟达',
-                'MSFT': '微软',
-                'GOOGL': '谷歌',
-                'AMZN': '亚马逊',
+                'AAPL': 'apple inc.',
+                'TSLA': 'Tesla',
+                'NVDA': 'NVIDIA',
+                'MSFT': 'Microsoft',
+                'GOOGL': 'Google',
+                'AMZN': 'Amazon',
                 'META': 'Meta',
-                'NFLX': '奈飞'
+                'NFLX': 'Netflix'
             }
 
-            company_name = us_stock_names.get(ticker.upper(), f"美股{ticker}")
-            logger.debug(f"📊 [中国市场分析师] 美股名称映射: {ticker} -> {company_name}")
+            company_name = us_stock_names.get(ticker.upper(), f"US stocks{ticker}")
+            logger.debug(f"📊 [China market analyst] US stock name mapping: {ticker} -> {company_name}")
             return company_name
 
         else:
-            return f"股票{ticker}"
+            return f"stocks{ticker}"
 
     except Exception as e:
-        logger.error(f"❌ [中国市场分析师] 获取公司名称失败: {e}")
-        return f"股票{ticker}"
+        logger.error(f"❌ [China market analyst] Failed to get company name: {e}")
+        return f"stocks{ticker}"
 
 
 def create_china_market_analyst(llm, toolkit):
-    """创建中国市场分析师"""
+    """Create China Market Analyst"""
     
     def china_market_analyst_node(state):
         current_date = state["trade_date"]
         ticker = state["company_of_interest"]
         
-        # 获取股票市场信息
+        # Get stock market information
         from tradingagents.utils.stock_utils import StockUtils
         market_info = StockUtils.get_market_info(ticker)
         
-        # 获取公司名称
+        # Get company name
         company_name = _get_company_name_for_china_market(ticker, market_info)
-        logger.info(f"[中国市场分析师] 公司名称: {company_name}")
+        logger.info(f"[China market analyst] Company name: {company_name}")
         
-        # 中国股票分析工具
+        # China stock analysis tools
         tools = [
             toolkit.get_china_stock_data,
             toolkit.get_china_market_overview,
-            toolkit.get_YFin_data,  # 备用数据源
+            toolkit.get_YFin_data,  # Alternate data source
         ]
         
         system_message = (
-            """您是一位专业的中国股市分析师，专门分析A股、港股等中国资本市场。您具备深厚的中国股市知识和丰富的本土投资经验。
+            """You are a professional Chinese stock market analyst, specializing in analyzing A-shares, Hong Kong stocks and other Chinese capital markets. You have in-depth knowledge of the Chinese stock market and rich local investment experience.
 
-您的专业领域包括：
-1. **A股市场分析**: 深度理解A股的独特性，包括涨跌停制度、T+1交易、融资融券等
-2. **中国经济政策**: 熟悉货币政策、财政政策对股市的影响机制
-3. **行业板块轮动**: 掌握中国特色的板块轮动规律和热点切换
-4. **监管环境**: 了解证监会政策、退市制度、注册制等监管变化
-5. **市场情绪**: 理解中国投资者的行为特征和情绪波动
+Your areas of expertise include:
+1. **A stock market analysis**: Deeply understand the uniqueness of A-shares, including the price limit system,T+1 Trading, margin trading, etc.
+2. **China economic policy**: Be familiar with the impact mechanism of monetary policy and fiscal policy on the stock market
+3. **Industry sector rotation**: Master the plate rotation rules and hotspot switching with Chinese characteristics
+4. **regulatory environment**: Understand regulatory changes such as CSRC policies, delisting system, registration system, etc.
+5. **market sentiment**: Understand the behavioral characteristics and emotional fluctuations of Chinese investors
 
-分析重点：
-- **技术面分析**: 使用通达信数据进行精确的技术指标分析
-- **基本面分析**: 结合中国会计准则和财报特点进行分析
-- **政策面分析**: 评估政策变化对个股和板块的影响
-- **资金面分析**: 分析北向资金、融资融券、大宗交易等资金流向
-- **市场风格**: 判断当前是成长风格还是价值风格占优
+Analysis focus:
+- **Technical analysis**: Use Tongdaxin data for precise technical indicator analysis
+- **fundamental analysis**: Analysis based on Chinese accounting standards and financial reporting characteristics
+- **Policy analysis**: Assess the impact of policy changes on individual stocks and sectors
+- **Financial analysis**: Analyze capital flows such as northbound funds, margin financing and securities lending, and large transactions
+- **market style**: Determine whether growth style or value style is dominant at present
 
-中国股市特色考虑：
-- 涨跌停板限制对市场行为和流动性的影响
-- ST股票的特殊风险和机会
-- 科创板、创业板的差异化分析
-- 国企改革、混改等主题对行业格局的影响
-- 中美关系、地缘政治对中概股的影响
+Consider the characteristics of China s stock market:
+- The impact of price limit restrictions on market behavior and liquidity
+- ST Special Risks and Opportunities of Stocks
+- Differentiation Analysis of Science and Technology Innovation Board and GEM
+- The impact of state-owned enterprise reform, mixed-ownership reform and other themes on the industry structure
+- The impact of Sino-US relations and geopolitics on Chinese concept stocks
 
-请基于Tushare数据接口提供的实时数据和技术指标，结合中国股市的特殊性，撰写专业的中文分析报告。
-确保在报告末尾附上Markdown表格总结关键发现、风险提示和后续观察点。"""
+Please write a professional Chinese analysis report based on the real-time data and technical indicators provided by the Tushare data interface and combined with the particularity of the Chinese stock market.
+Make sure to attach a Markdown table at the end of the report summarizing key findings, risk tips, and follow-up observations."""
         )
     system_message = apply_compliance_guardrails(system_message, "china_market_analyst")
 
@@ -144,19 +144,19 @@ def create_china_market_analyst(llm, toolkit):
         [
             (
                 "system",
-                "您是一位专业的AI助手，与其他分析师协作进行股票分析。"
-                " 使用提供的工具获取和分析数据。"
-                " 如果您无法完全回答，没关系；其他分析师会补充您的分析。"
-                " 专注于您的专业领域，提供高质量的分析见解。"
-                " 您可以访问以下工具：{tool_names}。\n{system_message}"
-                "当前分析日期：{current_date}，分析标的：{ticker}。请用中文撰写所有分析内容。",
+                "You are a professional AI assistant who collaborates with other analysts on stock analysis."
+                " Obtain and analyze data using the tools provided."
+                " If you can t answer it completely, that s okay; other analysts will complement your analysis."
+                " Focus on your area of expertise and deliver high-quality analytical insights."
+                " You can access the following tools:{tool_names}. \n{system_message}"
+                "Current analysis date:{current_date}, Analysis target:{ticker}. Please write all analysis content in Chinese.",
             ),
             MessagesPlaceholder(variable_name="messages"),
         ]
     )
 
     prompt = prompt.partial(system_message=system_message)
-    # 安全地获取工具名称，处理函数和工具对象
+    # Safely obtain tool names, handler functions and tool objects
     tool_names = []
     for tool in tools:
         if hasattr(tool, 'name'):
@@ -173,30 +173,30 @@ def create_china_market_analyst(llm, toolkit):
     chain = prompt | llm.bind_tools(tools)
     result = chain.invoke(state["messages"])
 
-    # 使用统一的Google工具调用处理器
+    # Call handlers using unified Google tools
     if GoogleToolCallHandler.is_google_model(llm):
-        logger.info(f"📊 [中国市场分析师] 检测到Google模型，使用统一工具调用处理器")
+        logger.info(f"📊 [China market analyst] Google model detected, processor invoked using unified tools")
 
-        # 创建分析提示词
+        # Create analysis prompt words
         analysis_prompt_template = GoogleToolCallHandler.create_analysis_prompt(
             ticker=ticker,
             company_name=company_name,
-            analyst_type="中国市场分析",
-            specific_requirements="重点关注中国A股市场特点、政策影响、行业发展趋势等。"
+            analyst_type="China market analysis",
+            specific_requirements="Focus on the characteristics of China s A-share market, policy impact, industry development trends, etc."
         )
 
-        # 处理Google模型工具调用
+        # Handling Google model tool calls
         report, messages = GoogleToolCallHandler.handle_google_tool_calls(
             result=result,
             llm=llm,
             tools=tools,
             state=state,
             analysis_prompt_template=analysis_prompt_template,
-            analyst_name="中国市场分析师"
+            analyst_name="China market analyst"
         )
     else:
-        # 非Google模型的处理逻辑
-        logger.debug(f"📊 [DEBUG] 非Google模型 ({llm.__class__.__name__})，使用标准处理逻辑")
+        # Processing logic for non-Google models
+        logger.debug(f"📊 [DEBUG] Non-Google model ({llm.__class__.__name__}), Use standard processing logic")
 
         report = ""
         if len(result.tool_calls) == 0:
@@ -212,7 +212,7 @@ def create_china_market_analyst(llm, toolkit):
 
 
 def create_china_stock_screener(llm, toolkit):
-    """创建中国股票筛选器"""
+    """Create a China stock screener"""
     
     def china_stock_screener_node(state):
         current_date = state["trade_date"]
@@ -222,53 +222,53 @@ def create_china_stock_screener(llm, toolkit):
         ]
         
         system_message = (
-            """您是一位专业的中国股票筛选专家，负责从A股市场中筛选出具有投资价值的股票。
+            """You are a professional Chinese stock screening expert, responsible for screening stocks with investment value from the A-share market.
 
-筛选维度包括：
-1. **基本面筛选**: 
-   - 财务指标：ROE、ROA、净利润增长率、营收增长率
-   - 估值指标：PE、PB、PEG、PS比率
-   - 财务健康：资产负债率、流动比率、速动比率
+Filter dimensions include:
+1. **Fundamental screening**: 
+   - Financial indicators: ROE, ROA, net profit growth rate, revenue growth rate
+   - Valuation indicators: PE, PB, PEG, PS ratio
+   - Financial health: gearing ratio, current ratio, quick ratio
 
-2. **技术面筛选**:
-   - 趋势指标：均线系统、MACD、KDJ
-   - 动量指标：RSI、威廉指标、CCI
-   - 成交量指标：量价关系、换手率
+2. **Technical screening**:
+   - Trend indicators: moving average system, MACD,KDJ
+   - Momentum indicators: RSI, William indicator,CCI
+   - Trading volume indicators: volume-price relationship, turnover rate
 
-3. **市场面筛选**:
-   - 资金流向：主力资金净流入、北向资金偏好
-   - 机构持仓：基金重仓、社保持仓、QFII持仓
-   - 市场热度：概念板块活跃度、题材炒作程度
+3. **Market screening**:
+   - Fund flow direction: net inflow of main funds, preference for northbound funds
+   - Institutional positions: heavy fund positions, social holdings, QFII positions
+   - Market popularity: activity of concept sectors, degree of subject matter hype
 
-4. **政策面筛选**:
-   - 政策受益：国家政策扶持行业
-   - 改革红利：国企改革、混改标的
-   - 监管影响：监管政策变化的影响
+4. **Policy screening**:
+   - Policy Benefits: National Policy Support Industries
+   - Reform dividends: State-owned enterprise reform, mixed ownership reform target
+   - Regulatory Impact: Impact of regulatory policy changes
 
-筛选策略：
-- **价值投资**: 低估值、高分红、稳定增长
-- **成长投资**: 高增长、新兴行业、技术创新
-- **主题投资**: 政策驱动、事件催化、概念炒作
-- **周期投资**: 经济周期、行业周期、季节性
+Screening strategy:
+- **value investing**: Low valuation, high dividends, stable growth
+- **growth investment**: High growth, emerging industries, technological innovation
+- **Thematic investment**: Policy driven, event catalyzed, concept hype
+- **cycle investment**: Economic cycle, industry cycle, seasonality
 
-请基于当前市场环境和政策背景，提供专业的股票筛选建议。"""
+Please provide professional stock screening suggestions based on the current market environment and policy background."""
         )
         
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system", 
-                    "您是一位专业的股票筛选专家。"
-                    " 使用提供的工具分析市场概况。"
-                    " 您可以访问以下工具：{tool_names}。\n{system_message}"
-                    "当前日期：{current_date}。请用中文撰写分析内容。",
+                    "You are a professional stock screener."
+                    " Analyze the market overview using the provided tools."
+                    " You can access the following tools:{tool_names}. \n{system_message}"
+                    "Current date:{current_date}. Please write the analysis content in Chinese.",
                 ),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )
         
         prompt = prompt.partial(system_message=system_message)
-        # 安全地获取工具名称，处理函数和工具对象
+        # Safely obtain tool names, handler functions and tool objects
         tool_names = []
         for tool in tools:
             if hasattr(tool, 'name'):

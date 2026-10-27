@@ -1,12 +1,12 @@
 """
-MCP Server 独立进程启动入口
+MCP Server Independent process startup entrance
 
-用法:
-    python -m core.mcp                  # 默认 SSE 传输，端口 8001
-    python -m core.mcp --transport http  # HTTP 传输
-    python -m core.mcp --port 9001       # 自定义端口
+Usage:
+    python -m core.mcp                  # Default SSE transport, port 8001
+    python -m core.mcp --transport http  # HTTP transmission
+    python -m core.mcp --port 9001       # Custom port
 
-Claude Desktop 配置示例 (claude_desktop_config.json):
+Claude Desktop Configuration example (claude_desktop_config.json):
 {
   "mcpServers": {
     "tradingagents-cn": {
@@ -21,12 +21,12 @@ import logging
 import sys
 from pathlib import Path
 
-# 确保项目根目录在 sys.path 中
+# Make sure the project root is in sys.path
 project_root = str(Path(__file__).resolve().parent.parent.parent)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-# 配置日志
+# Configuration log
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(name)-24s | %(levelname)-5s | %(message)s",
@@ -41,22 +41,22 @@ def main():
         "--transport",
         choices=["sse", "http", "stdio"],
         default="sse",
-        help="传输协议 (默认: sse)",
+        help="transport protocol (Default: sse)",
     )
     parser.add_argument(
         "--port",
         type=int,
         default=8001,
-        help="监听端口 (默认: 8001)",
+        help="listening port (Default: 8001)",
     )
     parser.add_argument(
         "--host",
         default="0.0.0.0",
-        help="监听地址 (默认: 0.0.0.0)",
+        help="listening address (Default: 0.0.0.0)",
     )
     args = parser.parse_args()
 
-    # 加载 .env 环境变量
+    # Load .env environment variables
     try:
         from dotenv import load_dotenv
         load_dotenv()
@@ -64,10 +64,10 @@ def main():
         pass
 
     logger.info("=" * 60)
-    logger.info("🚀 TradingAgents-CN MCP Server 启动中...")
-    logger.info(f"   传输协议: {args.transport}")
+    logger.info("🚀 TradingAgents-CN MCP Server Starting...")
+    logger.info(f"   transport protocol: {args.transport}")
     if args.transport != "stdio":
-        logger.info(f"   监听地址: {args.host}:{args.port}")
+        logger.info(f"   listening address: {args.host}:{args.port}")
     logger.info("=" * 60)
 
     from core.mcp.server import mcp

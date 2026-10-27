@@ -1,52 +1,52 @@
 """
-测试 AKShare 两个实时行情接口返回的股票代码格式
+Test the stock code format returned by AKShare s two real-time market interfaces
 """
 import sys
 from pathlib import Path
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 
 def test_akshare_interfaces():
-    """测试 AKShare 的两个实时行情接口"""
+    """Test two real-time market interfaces of AKShare"""
     print("\n" + "="*60)
-    print("🧪 测试 AKShare 实时行情接口的股票代码格式")
+    print("🧪 Test the stock code format of AKShare real-time market interface")
     print("="*60)
     
     try:
         import akshare as ak
         import pandas as pd
     except ImportError:
-        print("❌ AKShare 未安装，跳过测试")
+        print("❌ AKShare Not installed, skip testing")
         return
     
-    # 测试 1: 新浪财经接口
+    # test 1: Sina Finance Interface
     print("\n" + "-"*60)
-    print("测试 1: stock_zh_a_spot() - 新浪财经接口")
+    print("test 1: stock_zh_a_spot() - Sina Finance Interface")
     print("-"*60)
     
     try:
-        print("📡 正在获取数据...")
+        print("📡 Getting data...")
         df_sina = ak.stock_zh_a_spot()
         
         if df_sina is None or df_sina.empty:
-            print("⚠️ 新浪接口返回空数据")
+            print("⚠️ Sina interface returns empty data")
         else:
-            print(f"✅ 获取到 {len(df_sina)} 条数据")
-            print(f"\n📋 列名: {list(df_sina.columns)}")
+            print(f"✅ Get {len(df_sina)} piece of data")
+            print(f"\n📋 List: {list(df_sina.columns)}")
             
-            # 查找代码列
+            # Find code column
             code_col = None
-            for col in ["代码", "code", "symbol", "股票代码"]:
+            for col in ["code", "code", "symbol", "Stock code"]:
                 if col in df_sina.columns:
                     code_col = col
                     break
             
             if code_col:
-                print(f"\n🔍 代码列名: '{code_col}'")
-                print(f"\n📊 前10个股票代码样本:")
+                print(f"\n🔍 code column name: '{code_col}'")
+                print(f"\n📊 Top 10 stock symbol samples:")
                 
                 for i, code in enumerate(df_sina[code_col].head(10), 1):
                     code_str = str(code)
@@ -54,9 +54,9 @@ def test_akshare_interfaces():
                     has_prefix = not code_str.isdigit()
                     
                     status = "⚠️" if has_prefix or code_len != 6 else "✅"
-                    print(f"   {status} {i:2d}. {code_str:12s} | 长度: {code_len} | 纯数字: {not has_prefix}")
+                    print(f"   {status} {i:2d}. {code_str:12s} | length: {code_len} | pure numbers: {not has_prefix}")
                 
-                # 统计异常代码
+                # Statistical exception code
                 abnormal_codes = []
                 for code in df_sina[code_col]:
                     code_str = str(code)
@@ -64,44 +64,44 @@ def test_akshare_interfaces():
                         abnormal_codes.append(code_str)
                 
                 if abnormal_codes:
-                    print(f"\n   ⚠️ 发现 {len(abnormal_codes)} 个异常代码（前5个）:")
+                    print(f"\n   ⚠️ discover {len(abnormal_codes)} exception codes (top 5):")
                     for code in abnormal_codes[:5]:
                         print(f"      - {code}")
                 else:
-                    print(f"\n   ✅ 所有代码都是标准的6位数字格式")
+                    print(f"\n   ✅ All codes are in standard 6-digit format")
             else:
-                print("❌ 未找到代码列")
+                print("❌ Code column not found")
                 
     except Exception as e:
-        print(f"❌ 新浪接口测试失败: {e}")
+        print(f"❌ Sina interface test failed: {e}")
         import traceback
         traceback.print_exc()
     
-    # 测试 2: 东方财富接口
+    # test 2: Oriental Wealth Interface
     print("\n" + "-"*60)
-    print("测试 2: stock_zh_a_spot_em() - 东方财富接口")
+    print("test 2: stock_zh_a_spot_em() - Oriental Wealth Interface")
     print("-"*60)
     
     try:
-        print("📡 正在获取数据...")
+        print("📡 Getting data...")
         df_em = ak.stock_zh_a_spot_em()
         
         if df_em is None or df_em.empty:
-            print("⚠️ 东方财富接口返回空数据")
+            print("⚠️ Oriental Fortune interface returns empty data")
         else:
-            print(f"✅ 获取到 {len(df_em)} 条数据")
-            print(f"\n📋 列名: {list(df_em.columns)}")
+            print(f"✅ Get {len(df_em)} piece of data")
+            print(f"\n📋 List: {list(df_em.columns)}")
             
-            # 查找代码列
+            # Find code column
             code_col = None
-            for col in ["代码", "code", "symbol", "股票代码"]:
+            for col in ["code", "code", "symbol", "Stock code"]:
                 if col in df_em.columns:
                     code_col = col
                     break
             
             if code_col:
-                print(f"\n🔍 代码列名: '{code_col}'")
-                print(f"\n📊 前10个股票代码样本:")
+                print(f"\n🔍 code column name: '{code_col}'")
+                print(f"\n📊 Top 10 stock symbol samples:")
                 
                 for i, code in enumerate(df_em[code_col].head(10), 1):
                     code_str = str(code)
@@ -109,9 +109,9 @@ def test_akshare_interfaces():
                     has_prefix = not code_str.isdigit()
                     
                     status = "⚠️" if has_prefix or code_len != 6 else "✅"
-                    print(f"   {status} {i:2d}. {code_str:12s} | 长度: {code_len} | 纯数字: {not has_prefix}")
+                    print(f"   {status} {i:2d}. {code_str:12s} | length: {code_len} | pure numbers: {not has_prefix}")
                 
-                # 统计异常代码
+                # Statistical exception code
                 abnormal_codes = []
                 for code in df_em[code_col]:
                     code_str = str(code)
@@ -119,26 +119,26 @@ def test_akshare_interfaces():
                         abnormal_codes.append(code_str)
                 
                 if abnormal_codes:
-                    print(f"\n   ⚠️ 发现 {len(abnormal_codes)} 个异常代码（前5个）:")
+                    print(f"\n   ⚠️ discover {len(abnormal_codes)} exception codes (top 5):")
                     for code in abnormal_codes[:5]:
                         print(f"      - {code}")
                 else:
-                    print(f"\n   ✅ 所有代码都是标准的6位数字格式")
+                    print(f"\n   ✅ All codes are in standard 6-digit format")
             else:
-                print("❌ 未找到代码列")
+                print("❌ Code column not found")
                 
     except Exception as e:
-        print(f"❌ 东方财富接口测试失败: {e}")
+        print(f"❌ Oriental Fortune interface test failed: {e}")
         import traceback
         traceback.print_exc()
     
-    # 对比总结
+    # Comparison summary
     print("\n" + "="*60)
-    print("📊 测试总结")
+    print("📊 Test summary")
     print("="*60)
-    print("✅ 新浪接口 (stock_zh_a_spot): 代码可能带有交易所前缀（如 sz000001）")
-    print("✅ 东方财富接口 (stock_zh_a_spot_em): 需要验证代码格式")
-    print("\n💡 建议: 两个接口都应该使用统一的代码标准化逻辑")
+    print("✅ Sina interface (stock_zh_a_spot): The ticker may have an exchange prefix (e.g. sz000001)")
+    print("✅ Oriental Wealth Interface (stock_zh_a_spot_em): Need to verify code format")
+    print("\n💡 Suggestions: Both interfaces should use unified code standardization logic")
 
 
 if __name__ == "__main__":

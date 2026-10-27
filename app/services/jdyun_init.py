@@ -1,9 +1,9 @@
 """
-京东云合作版 - 数据库自动初始化
+JD Cloud Cooperation Edition - Automatic database initialization
 
-首次启动时从环境变量读取配置，写入数据库：
-- llm_providers: 京东云 Provider
-- system_configs: 4个模型配置 + 默认模型 + Tushare 数据源 + Embedding 配置
+When starting for the first time, read the configuration from the environment variables and write it to the database:
+- llm_providers: JD Cloud Provider
+- system_configs: 4 model configuration + Default model + Tushare data source + Embedding Configuration
 """
 
 import os
@@ -13,22 +13,22 @@ from typing import Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
-# 京东云初始化标记 collection（用于避免重复初始化）
+# JD Cloud initialization tag collection (used to avoid repeated initialization)
 _JDYUN_INIT_MARKER = "jdyun_init_marker"
 
 
 def _get_sync_db():
-    """获取同步 MongoDB 连接"""
+    """Get a synchronous MongoDB connection"""
     try:
         from app.core.database import get_mongo_db_sync
         return get_mongo_db_sync()
     except Exception as e:
-        logger.error(f"❌ [京东云初始化] 获取同步数据库连接失败: {e}")
+        logger.error(f"❌ [JD Cloud initialization] Failed to obtain sync database connection: {e}")
         return None
 
 
 def _is_jdyun_initialized(db) -> bool:
-    """检查京东云配置是否已初始化"""
+    """Check whether JD Cloud configuration has been initialized"""
     try:
         marker = db[_JDYUN_INIT_MARKER].find_one({"_id": "jdyun"})
         return marker is not None
@@ -46,18 +46,18 @@ def _mark_jdyun_initialized(db):
 
 
 def _init_jdyun_provider(db, api_base: str, api_key: str, embedding_model: str):
-    """初始化京东云 Provider 到 llm_providers 集合"""
+    """Initialize JD Cloud Provider to llm_providers collection"""
     providers_collection = db.llm_providers
 
-    # 检查是否已存在
+    # Check if it already exists
     existing = providers_collection.find_one({"name": "jdyun"})
     if existing:
-        # 更新已有记录
+        # Update existing records
         providers_collection.update_one(
             {"name": "jdyun"},
             {"$set": {
                 "display_name": "京东云",
-                "description": "京东云模型服务（OpenAI 兼容接口）",
+                "description": "JD Cloud Model Service (OpenAI compatible interface)",
                 "website": "https://www.jdcloud.com",
                 "api_doc_url": "https://docs.jdcloud.com",
                 "default_base_url": api_base,
@@ -68,13 +68,13 @@ def _init_jdyun_provider(db, api_base: str, api_key: str, embedding_model: str):
                 "updated_at": datetime.utcnow(),
             }},
         )
-        logger.info("  ✓ 更新京东云 Provider 配置")
+        logger.info("  ✓ Update JD Cloud Provider configuration")
     else:
-        # 插入新记录
+        # Insert new record
         providers_collection.insert_one({
             "name": "jdyun",
             "display_name": "京东云",
-            "description": "京东云模型服务（OpenAI 兼容接口）",
+            "description": "JD Cloud Model Service (OpenAI compatible interface)",
             "website": "https://www.jdcloud.com",
             "api_doc_url": "https://docs.jdcloud.com",
             "default_base_url": api_base,
@@ -85,11 +85,11 @@ def _init_jdyun_provider(db, api_base: str, api_key: str, embedding_model: str):
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
         })
-        logger.info("  ✓ 创建京东云 Provider 配置")
+        logger.info("  ✓ Create JD Cloud Provider configuration")
 
 
 def _build_jdyun_llm_configs(chat_models: List[str]) -> List[Dict[str, Any]]:
-    """构建 4 个京东云模型的 LLM 配置"""
+    """Build LLM configurations for 4 JD Cloud models"""
     configs = []
     for i, model_name in enumerate(chat_models):
         configs.append({
@@ -97,8 +97,8 @@ def _build_jdyun_llm_configs(chat_models: List[str]) -> List[Dict[str, Any]]:
             "provider": "jdyun",
             "model_name": model_name,
             "model_display_name": model_name,
-            "api_key": None,  # 使用厂家配置中的 API Key
-            "api_base": None,  # 使用厂家配置中的 default_base_url
+            "api_key": None,  # Use the factory configured API Key
+            "api_base": None,  # Use the factory configured default_base_url
             "max_tokens": 8000,
             "temperature": 0.2,
             "timeout": 180,
@@ -117,15 +117,15 @@ def _build_jdyun_llm_configs(chat_models: List[str]) -> List[Dict[str, Any]]:
 
 
 def _init_system_config(db, chat_models: List[str], default_model: str, embedding_model: str, tushare_token: str):
-    """初始化系统配置到 system_configs 集合"""
+    """Initialize system configuration to system_configs collection"""
     from app.core.jdyun import JDYUN_EMBEDDING_DIMS
 
     configs_collection = db.system_configs
 
-    # 构建 LLM 配置列表
+    # Build LLM configuration list
     llm_configs = _build_jdyun_llm_configs(chat_models)
 
-    # 构建系统设置
+    # Build system settings
     system_settings = {
         "quick_analysis_model": default_model,
         "deep_analysis_model": default_model,
@@ -133,7 +133,7 @@ def _init_system_config(db, chat_models: List[str], default_model: str, embeddin
         "default_embedding_dims": JDYUN_EMBEDDING_DIMS,
     }
 
-    # 构建 Tushare 数据源配置
+    # Build Tushare data source configuration
     data_source_configs = [{
         "name": "tushare",
         "type": "tushare",
@@ -142,7 +142,7 @@ def _init_system_config(db, chat_models: List[str], default_model: str, embeddin
         "priority": 100,
         "timeout": 30,
         "rate_limit": 100,
-        "description": "Tushare A股数据源（京东云统一提供）",
+        "description": "Tushare A Stock data source (unified by JD Cloud)",
         "config_params": {},
         "market_categories": ["china"],
         "display_name": "Tushare",
@@ -151,11 +151,11 @@ def _init_system_config(db, chat_models: List[str], default_model: str, embeddin
         "updated_at": datetime.utcnow(),
     }]
 
-    # 检查是否已有活跃配置
+    # Check if there is already an active configuration
     existing_config = configs_collection.find_one({"is_active": True}, sort=[("version", -1)])
 
     if existing_config:
-        # 更新已有配置
+        # Update existing configuration
         configs_collection.update_one(
             {"_id": existing_config["_id"]},
             {"$set": {
@@ -167,7 +167,7 @@ def _init_system_config(db, chat_models: List[str], default_model: str, embeddin
         )
         logger.info(f"  ✓ 更新系统配置: {len(llm_configs)} 个模型, 默认模型={default_model}")
     else:
-        # 创建新配置
+        # Create new configuration
         configs_collection.insert_one({
             "config_name": "jdyun_default",
             "config_type": "system",
@@ -186,12 +186,12 @@ def _init_system_config(db, chat_models: List[str], default_model: str, embeddin
 
 def init_jdyun_config():
     """
-    京东云版启动时从环境变量同步数据库配置
+    Synchronize database configuration from environment variables when JD Cloud Edition starts
 
-    每次启动都会执行同步（幂等操作）：
-    - 更新 llm_providers 中的 jdyun Provider（base_url / api_key / embedding_model）
-    - 更新 system_configs 中的模型列表（从 OPENAI_MODEL 逗号分隔解析）和默认模型
-    - 这样换模型时只需修改 OPENAI_MODEL 环境变量，重启即可生效，无需手动改数据库
+    Synchronization is performed on every startup (idempotent operation):
+    - Update jdyun Provider in llm_providers (base_url/api_key/embedding_model)
+    - Update model list in system_configs (parsed from OPENAI_MODEL comma separated) and default model
+    - In this way, when changing the model, you only need to modify the OPENAI_MODEL environment variable, and it will take effect after restarting. There is no need to manually change the database.
     """
     from app.core.jdyun import (
         is_jdyun_mode, get_jdyun_api_base, get_jdyun_api_key,
@@ -202,14 +202,14 @@ def init_jdyun_config():
     if not is_jdyun_mode():
         return False
 
-    logger.info("🔧 [京东云初始化] 开始从环境变量同步数据库配置...")
+    logger.info("🔧 [JD Cloud initialization] Start synchronizing database configuration from environment variables...")
 
     db = _get_sync_db()
     if db is None:
-        logger.error("❌ [京东云初始化] 无法获取数据库连接，跳过初始化")
+        logger.error("❌ [JD Cloud initialization] Unable to obtain database connection, skipping initialization")
         return False
 
-    # 读取环境变量
+    # Read environment variables
     api_base = get_jdyun_api_base()
     api_key = get_jdyun_api_key()
     default_model = get_jdyun_default_model()
@@ -218,30 +218,30 @@ def init_jdyun_config():
     chat_models = get_jdyun_chat_models()
 
     if not api_base or not api_key:
-        logger.error("❌ [京东云初始化] OPENAI_API_BASE 或 OPENAI_API_KEY 未设置，跳过初始化")
+        logger.error("❌ [JD Cloud initialization] OPENAI_API_BASE or OPENAI_API_KEY not set, skip initialization")
         return False
 
     if not tushare_token:
-        logger.warning("⚠️ [京东云初始化] TUSHARE_TOKEN 未设置，数据源功能可能不可用")
+        logger.warning("⚠️ [JD Cloud initialization] TUSHARE_TOKEN If not set, data source functionality may not be available")
 
     try:
-        # 1. 同步 Provider（幂等更新）
+        # 1. Synchronization Provider (idempotent updates)
         _init_jdyun_provider(db, api_base, api_key, embedding_model)
 
-        # 2. 同步系统配置（模型列表 + 默认模型 + 数据源）
+        # 2. Synchronize system configuration (model list + Default model + data source)
         _init_system_config(db, chat_models, default_model, embedding_model, tushare_token)
 
-        # 3. 标记已初始化
+        # 3. Tag is initialized
         _mark_jdyun_initialized(db)
 
-        logger.info("✅ [京东云初始化] 数据库配置同步完成")
+        logger.info("✅ [JD Cloud initialization] Database configuration synchronization completed")
         logger.info(f"  - Provider: jdyun ({api_base})")
         logger.info(f"  - 模型: {', '.join(chat_models)}")
         logger.info(f"  - 默认模型: {default_model}")
         logger.info(f"  - Embedding: {embedding_model}")
-        logger.info(f"  - Tushare: {'已配置' if tushare_token else '未配置'}")
+        logger.info(f"  - Tushare: {'configured' if tushare_token else 'Not configured'}")
         return True
 
     except Exception as e:
-        logger.error(f"❌ [京东云初始化] 同步失败: {e}", exc_info=True)
+        logger.error(f"❌ [JD Cloud initialization] Sync failed: {e}", exc_info=True)
         return False

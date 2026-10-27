@@ -1,4 +1,4 @@
-"""Nanobot 友好的 Agent 设计与资源侦察工具。"""
+"""Nanobot Friendly agent design and resource reconnaissance tool."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ try:
     from app.pro.models.agent_workshop import AgentSpec, AgentSpecIOField, AgentSpecStatus
     from app.pro.models.prompt_template import TemplateContent
     from app.pro.services.agent_workshop_service import AgentWorkshopService
-except ImportError:  # 社区版无 Agent 工坊模块（manifest 剔除），本工具链在社区版停用
+except ImportError:  # The community version does not have the Agent Workshop module (manifest removed), and this tool chain is disabled in the community version.
     AgentSpec = AgentSpecIOField = AgentSpecStatus = None  # type: ignore[assignment,misc]
     TemplateContent = None  # type: ignore[assignment,misc]
     AgentWorkshopService = None  # type: ignore[assignment,misc]
@@ -35,23 +35,23 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_CALLABLE_SURFACES = ["assistant", "workflow", "agent"]
 _GLOBAL_NO_TRADING_ADVICE_POLICY = (
-    "全局铁律：所有 Agent 一律禁止输出任何交易建议、买卖/持有判断、仓位建议、"
-    "目标价、止损止盈、建仓区间、择时结论和其他操作性指令；只能提供研究结论、"
-    "关键依据、风险因素与情景分析。"
+    "Global iron law: All Agents are prohibited from outputting any trading recommendations, buying and selling/holding judgments, position recommendations,"
+    "Target price, stop-loss and take-profit, position range, timing conclusion and other operational instructions; only research conclusions,"
+    "Key rationales, risk factors and scenario analysis."
 )
 _GLOBAL_NUMERICAL_TOOL_POLICY = (
-    "全局铁律：所有关键数值计算必须通过项目提供的工具或 Skill 完成，"
-    "禁止 LLM 自行计算。包括但不限于 DCF 估值、相对估值指标、财务比率、"
-    "评分、排序、权重、公允价格、目标价区间等任何精确数值。"
-    "若缺少对应工具或 Skill，必须标记为 blocking gap 并补齐，"
-    "不得以「LLM 自己算也可以」作为降级方案。"
+    "Global iron law: All key numerical calculations must be completed through the tools or skills provided by the project."
+    "LLM is prohibited from calculating itself. Including but not limited to DCF valuations, relative valuation metrics, financial ratios,"
+    "Rating, ranking, weight, fair price, target price range, any precise value."
+    "If the corresponding tool or skill is missing, it must be marked as a blocking gap and filled in."
+    "Do not use LLM can do it yourself as a downgrade plan."
 )
 _GLOBAL_DATA_SOURCE_POLICY = (
-    "全局铁律：优先使用本系统提供的数据源（tushare、akshare、QMT 等）。"
-    "Skill 中若使用非系统数据源（如直接爬取网页、第三方 API、自有数据接口等），"
-    "必须在 data_source 字段和 Skill 描述中明确标注来源，"
-    "方便用户判断数据可靠性和可追溯性。"
-    "禁止在使用外部数据源时隐瞒或模糊数据来源。"
+    "Global iron law: Prioritize the use of data sources provided by this system (tushare, akshare, QMT, etc.)."
+    "Skill If non-system data sources are used (such as directly crawling web pages, third-party APIs, own data interfaces, etc.),"
+    "The source must be clearly marked in the data_source field and Skill description,"
+    "It is convenient for users to judge the reliability and traceability of data."
+    "Concealing or obscuring the source of data when using external data sources is prohibited."
 )
 _OUTPUT_PREVIEW_KEYWORDS = (
     "样式",
@@ -95,7 +95,7 @@ def _auto_update_intent(
     linked_skill: dict[str, str] | None = None,
     conversation_summary: str = "",
 ) -> None:
-    """自动更新当前线程的意图上下文（contextvar）。"""
+    """Automatically updates the current thread s intent context (contextvar)."""
     try:
         from core.embedded_nanobot.intent_context import (
             update_intent_context_in_thread,
@@ -181,7 +181,7 @@ def _collect_gap_job_known_context(
     max_failures: int = 5,
     max_facts: int = 12,
 ) -> dict[str, list[str]]:
-    """聚合同一个 GapJob 内已知失败摘要和已验证事实，供后续 gap 避坑。"""
+    """Aggregate known failure summaries and verified facts within the same GapJob to avoid pitfalls in subsequent gaps."""
     failures: list[str] = []
     facts: list[str] = []
     for gap in gaps or []:
@@ -204,7 +204,7 @@ def _collect_gap_job_known_context(
 
 
 def _extract_agentic_context_from_session_doc(session_doc: dict[str, Any]) -> dict[str, Any]:
-    """从 skill_creation_sessions 中抽取 Agentic 失败经验。"""
+    """Extract Agentic failed experience from skill_creation_sessions."""
     result = session_doc.get("pipeline_result") or {}
     metadata = result.get("final_metadata") if isinstance(result, dict) else {}
     if not isinstance(metadata, dict):
@@ -236,13 +236,13 @@ def _utc_now_iso() -> str:
 def _parse_json_tool_result(raw: str) -> dict[str, Any]:
     try:
         data = json.loads(raw)
-        return data if isinstance(data, dict) else {"status": "error", "message": "工具返回不是 JSON 对象"}
+        return data if isinstance(data, dict) else {"status": "error", "message": "Tool returns not a JSON object"}
     except Exception as exc:
-        return {"status": "error", "message": f"工具返回无法解析为 JSON: {exc}", "raw": raw}
+        return {"status": "error", "message": f"The tool return cannot be parsed as JSON: {exc}", "raw": raw}
 
 
 async def _create_skill_generation_service_with_system_llm(db: Any) -> Any:
-    """创建 SkillGenerationService，按系统设置读取推理模型和编程模型配置。"""
+    """Create SkillGenerationService and read inference model and programming model configuration according to system settings."""
     from app.services.skill_generation_service import SkillGenerationService
     from app.services.intelligent_assistant_service import get_coding_llm_config, get_reasoning_llm_config
     from core.llm import UnifiedLLMClient
@@ -252,11 +252,11 @@ async def _create_skill_generation_service_with_system_llm(db: Any) -> Any:
     try:
         reasoning_config = await get_reasoning_llm_config(db)
     except Exception as exc:
-        logger.debug("[SkillGeneration][LLMConfig] 读取推理模型配置失败，使用默认配置: %s", exc)
+        logger.debug("[SkillGeneration][LLMConfig] Failed to read inference model configuration, use default configuration: %s", exc)
     try:
         coding_config = await get_coding_llm_config(db)
     except Exception as exc:
-        logger.debug("[SkillGeneration][LLMConfig] 读取编程模型配置失败，使用默认配置: %s", exc)
+        logger.debug("[SkillGeneration][LLMConfig] Failed to read programming model configuration, using default configuration: %s", exc)
     reasoning_client = UnifiedLLMClient.from_config(reasoning_config) if reasoning_config else None
     coding_client = UnifiedLLMClient.from_config(coding_config) if coding_config else None
     if coding_config:
@@ -283,14 +283,14 @@ def _parse_optional_json_object(raw: str, field_name: str) -> dict[str, Any]:
     try:
         data = json.loads(text)
     except Exception as exc:
-        raise ValueError(f"{field_name} 不是合法 JSON 对象: {exc}") from exc
+        raise ValueError(f"{field_name} Not a valid JSON object: {exc}") from exc
     if not isinstance(data, dict):
         raise ValueError(f"{field_name} 必须是 JSON 对象")
     return data
 
 
 def _json_compact_dump(obj: Any) -> str:
-    """紧凑 JSON 序列化，仅用于日志调试。"""
+    """Compact JSON serialization, only for logging debugging."""
     try:
         return json.dumps(obj, ensure_ascii=False, default=str, separators=(",", ":"))
     except Exception:
@@ -362,7 +362,7 @@ async def _find_active_gap_skill_session(
     gap_id: str = "",
     gap_description: str = "",
 ) -> dict[str, Any] | None:
-    """查找同一 Agent/同一能力缺口已有的活跃 Skill 生成会话，避免重复生成。"""
+    """Find existing active Skill generation sessions for the same Agent/same capability gap to avoid repeated generation."""
     try:
         from app.services.skill_generation_service import SESSION_COLLECTION
 
@@ -398,7 +398,7 @@ async def _find_active_gap_skill_session(
                 return dict(doc or {})
         return None
     except Exception as exc:
-        logger.debug("查找活跃 gap Skill 会话失败，忽略: %s", exc)
+        logger.debug("Finding active gap skill sessions failed, ignored: %s", exc)
         return None
 
 
@@ -419,7 +419,7 @@ async def _resolve_single_gap_capability(
     known_context: dict[str, list[str]] | None = None,
     handoff_intent: str = "auto_resolve_blocking_gap",
 ) -> dict[str, Any]:
-    """统一处理单个 gap 的 builtin evidence、去重复用和 Skill 生成会话启动。"""
+    """Unified processing of builtin evidence, deduplication and skill generation session startup for a single gap."""
     clean_gap = str(gap_description or "").strip()
     result: dict[str, Any] = {
         "gap_index": gap_index,
@@ -438,7 +438,7 @@ async def _resolve_single_gap_capability(
     }
 
     if not clean_gap:
-        result.update({"status": "failed", "error": "gap_description 不能为空"})
+        result.update({"status": "failed", "error": "gap_description cannot be empty"})
         return result
 
     try:
@@ -450,7 +450,7 @@ async def _resolve_single_gap_capability(
                 "skill_tool_id": str(builtin_evidence.get("skill_tool_id") or ""),
                 "skill_display_name": str(builtin_evidence.get("skill_display_name") or builtin_evidence.get("skill_tool_id") or ""),
                 "pipeline_stage": "builtin_evidence",
-                "pipeline_message": str(builtin_evidence.get("reason") or "命中已注册内置能力，直接复用"),
+                "pipeline_message": str(builtin_evidence.get("reason") or "Hit the registered built-in capability and reuse it directly"),
                 "dedup": {
                     "source": "builtin_evidence",
                     "reason": builtin_evidence.get("reason"),
@@ -500,7 +500,7 @@ async def _resolve_single_gap_capability(
             result.update({
                 "status": "reused_existing",
                 "pipeline_stage": "dedup_reuse",
-                "pipeline_message": "命中高相似度已有可绑定能力，直接复用",
+                "pipeline_message": "Hits with high similarity already have binding capabilities and can be reused directly.",
                 "skill_tool_id": str(high_match.get("registry_tool_id") or ""),
                 "skill_display_name": str(high_match.get("name") or high_match.get("display_name") or ""),
             })
@@ -526,7 +526,7 @@ async def _resolve_single_gap_capability(
             result.update({
                 "status": "needs_dedup_confirmation",
                 "pipeline_stage": "dedup_confirmation",
-                "pipeline_message": "命中中等相似度候选 Skill，需用户确认是复用还是新建",
+                "pipeline_message": "Hits the candidate Skill with medium similarity and requires the user to confirm whether to reuse or create a new one",
                 "error": "needs_dedup_confirmation",
                 "dedup_candidate": {
                     "name": str(medium_match.get("name") or medium_match.get("display_name") or ""),
@@ -550,7 +550,7 @@ async def _resolve_single_gap_capability(
             result.update({
                 "status": "generating",
                 "pipeline_stage": str(existing_skill_session.get("pipeline_stage") or "generating"),
-                "pipeline_message": "复用同一 Agent/同一能力缺口已有的 Skill 生成会话，避免重复生成",
+                "pipeline_message": "Reuse existing Skill generation sessions for the same Agent/same capability gap to avoid repeated generation",
                 "session_id": skill_session_id,
                 "skill_session_id": skill_session_id,
             })
@@ -582,7 +582,7 @@ async def _resolve_single_gap_capability(
                 "agent_goal": agent_goal,
                 "gap_context": f"{agent_name or 'Agent'} 为达成目标“{agent_goal or '未提供'}”缺少能力：{clean_gap}",
                 "related_gaps": [str(item or "") for item in (related_gaps or []) if str(item or "").strip() and str(item or "").strip() != clean_gap][:8],
-                "searched_capabilities": [f"CapabilityIndex 已搜索：{clean_gap}", *candidates_for_context],
+                "searched_capabilities": [f"CapabilityIndex Searched for:{clean_gap}", *candidates_for_context],
                 "confirmed_data_sources": [],
                 "user_clarifications": [],
                 "known_failure_summaries": context.get("known_failure_summaries") or [],
@@ -591,25 +591,25 @@ async def _resolve_single_gap_capability(
         )
         skill_session_id = str((start_result or {}).get("session_id") or "").strip()
         if not skill_session_id:
-            result.update({"status": "failed", "error": "启动 Skill 生成会话失败"})
+            result.update({"status": "failed", "error": "Failed to start Skill generation session"})
             return result
 
-        await skill_service.respond_to_session(skill_session_id, "确认按可复用能力来设计，这是一个可参数化、可绑定到 Agent 的工具。")
+        await skill_service.respond_to_session(skill_session_id, "Confirm that it is designed for reusability. This is a tool that can be parameterized and bound to an Agent.")
         preview = await skill_service.preview_spec(skill_session_id, "确认")
         if not preview:
-            result.update({"status": "failed", "session_id": skill_session_id, "error": "预览 Skill 规格失败"})
+            result.update({"status": "failed", "session_id": skill_session_id, "error": "Failed to preview Skill specifications"})
             return result
         await skill_service.confirm_spec(skill_session_id, "确认生成")
         result.update({
             "status": "generating",
             "pipeline_stage": "generating",
-            "pipeline_message": "Skill 生成已提交，等待完成",
+            "pipeline_message": "Skill Build submitted, waiting to be completed",
             "session_id": skill_session_id,
             "skill_session_id": skill_session_id,
         })
         return result
     except Exception as exc:
-        logger.error("[GapResolver] 处理 gap 异常: %s", exc, exc_info=True)
+        logger.error("[GapResolver] Handle gap exception: %s", exc, exc_info=True)
         result.update({"status": "failed", "error": str(exc)})
         return result
 
@@ -763,7 +763,7 @@ def _apply_gap_retry_or_dead_letter(
     target_gap["status"] = terminal
     target_gap["pipeline_stage"] = "dead_letter"
     target_gap["pipeline_message"] = (
-        f"{reason_message}；已达自动重试上限（{max_attempts}），转入 dead-letter"
+        f"{reason_message}; The automatic retry limit has been reached ({max_attempts}) , transfer in dead-letter"
     )
     target_gap["error"] = str(reason_code or "dead_lettered").strip() or "dead_lettered"
     target_gap["last_error"] = target_gap["error"]
@@ -907,7 +907,7 @@ async def _process_single_gap_resolution_job(db: Any, job_doc: dict[str, Any]) -
         try:
             workshop_session = await ws_service._load_session(workshop_session_id)
         except Exception as exc:
-            logger.debug("worker 读取 workshop session 失败，降级继续: session_id=%s err=%s", workshop_session_id, exc)
+            logger.debug("worker Failed to read workshop session, downgrade continues: session_id=%s err=%s", workshop_session_id, exc)
     agent_spec_id = str((job_doc or {}).get("spec_id") or "").strip()
     if not agent_spec_id and workshop_session is not None:
         agent_spec_id = str(getattr(workshop_session, "spec_id", "") or "").strip()
@@ -1009,10 +1009,10 @@ async def _process_single_gap_resolution_job(db: Any, job_doc: dict[str, Any]) -
         }
 
     if gap_status == "pending":
-        # 先切到 running，避免并发 worker 重复抢占
+        # Switch to running first to avoid repeated preemption by concurrent workers
         target_gap["status"] = "running"
         target_gap["pipeline_stage"] = "planning"
-        target_gap["pipeline_message"] = "worker 已接单，开始处理"
+        target_gap["pipeline_message"] = "worker Order received and processing started"
         target_gap.setdefault("retry_count", 0)
         target_gap.setdefault("auto_retry_count", 0)
         target_gap["next_retry_at"] = ""
@@ -1083,7 +1083,7 @@ async def _process_single_gap_resolution_job(db: Any, job_doc: dict[str, Any]) -
         target_gap = _apply_gap_retry_or_dead_letter(
             target_gap,
             reason_code=str(resolution.get("error") or "skill_resolution_failed"),
-            reason_message=str(resolution.get("error") or "启动 Skill 生成会话失败"),
+            reason_message=str(resolution.get("error") or "Failed to start Skill generation session"),
             terminal_status="failed",
             now_utc=now_utc,
             now_iso=now_iso,
@@ -1093,13 +1093,13 @@ async def _process_single_gap_resolution_job(db: Any, job_doc: dict[str, Any]) -
         return await _persist_gap(target_gap)
 
 
-    # running 状态：轮询 Skill 生成会话
+    # running Status: Polling Skill to generate session
     skill_session_id = str(target_gap.get("skill_session_id") or "").strip()
     if not skill_session_id:
         target_gap = _apply_gap_retry_or_dead_letter(
             target_gap,
             reason_code="missing_skill_session_id",
-            reason_message="running gap 缺少 skill_session_id",
+            reason_message="running gap missing skill_session_id",
             terminal_status="failed",
             now_utc=now_utc,
             now_iso=now_iso,
@@ -1113,7 +1113,7 @@ async def _process_single_gap_resolution_job(db: Any, job_doc: dict[str, Any]) -
         target_gap = _apply_gap_retry_or_dead_letter(
             target_gap,
             reason_code="skill_session_not_found",
-            reason_message="Skill 生成会话不存在",
+            reason_message="Skill Generate session does not exist",
             terminal_status="failed",
             now_utc=now_utc,
             now_iso=now_iso,
@@ -1194,7 +1194,7 @@ async def _process_single_gap_resolution_job(db: Any, job_doc: dict[str, Any]) -
         )
         return await _persist_gap(target_gap)
 
-    # 尚未完成，保持 running
+    # not finished yet, keep running
     return await _persist_gap(target_gap)
 
 
@@ -1203,7 +1203,7 @@ async def process_agent_workshop_gap_resolution_jobs_once(
     worker_id: str = "",
     claim_lease_seconds: int = _GAP_JOB_CLAIM_LEASE_SECONDS,
 ) -> dict[str, Any]:
-    """由后台 worker 调用：单次消费并推进 gap resolution jobs 状态机。"""
+    """Called by a background worker: a single consumption and advancement of the gap resolution jobs state machine."""
     try:
         db = get_mongo_db()
         collection = _get_collection(db, _GAP_RESOLUTION_JOB_COLLECTION)
@@ -1316,8 +1316,8 @@ async def process_agent_workshop_gap_resolution_jobs_once(
             "results": handled,
         }
     except Exception as exc:
-        logger.error("worker 消费 gap resolution jobs 失败: %s", exc, exc_info=True)
-        return {"status": "error", "message": f"worker 消费 gap jobs 失败: {exc}", "processed": 0}
+        logger.error("worker Consuming gap resolution jobs failed: %s", exc, exc_info=True)
+        return {"status": "error", "message": f"worker Failed to consume gap jobs: {exc}", "processed": 0}
 
 
 def _extract_blocking_gaps_from_report(gap_report: Any) -> list[str]:
@@ -1334,7 +1334,7 @@ def _parse_optional_json_list(raw: str, field_name: str) -> list[Any]:
     try:
         data = json.loads(text)
     except Exception as exc:
-        raise ValueError(f"{field_name} 不是合法 JSON 数组: {exc}") from exc
+        raise ValueError(f"{field_name} Not a valid JSON array: {exc}") from exc
     if not isinstance(data, list):
         raise ValueError(f"{field_name} 必须是 JSON 数组")
     return data
@@ -1511,7 +1511,7 @@ async def _resolve_workshop_session_phase_context(db: Any, session_id: str) -> d
 
 
 async def _get_existing_version_summary(db: Any, version_id: str) -> dict[str, Any]:
-    """获取已有版本的摘要信息，用于"覆盖或继续"决策展示。"""
+    """Get summary information of existing versions for"overwrite or continue"Decision display."""
     if not version_id:
         return {"version_id": "", "found": False}
     versions = _get_collection(db, _WORKSHOP_VERSION_COLLECTION)
@@ -1523,7 +1523,7 @@ async def _get_existing_version_summary(db: Any, version_id: str) -> dict[str, A
 
     required_tools = version_doc.get("required_tools") or []
     required_capabilities = version_doc.get("required_capabilities") or []
-    # required_tools 可能是 ["tool_id|tool_name", ...] 格式，提取 tool_id
+    # required_tools may be ["tool_id|tool_name", ...] format, extract tool_id
     tool_ids = []
     for item in required_tools[:20]:
         if isinstance(item, str):
@@ -1547,7 +1547,7 @@ async def _get_existing_version_summary(db: Any, version_id: str) -> dict[str, A
 
 
 def _get_current_thread_context_spec_id() -> str:
-    """从 contextvar 读取当前线程的 spec_id。"""
+    """Read the current thread s spec_id from contextvar."""
     try:
         from core.tools.context import get_current_assistant_thread_context
         ctx = get_current_assistant_thread_context() or {}
@@ -1557,7 +1557,7 @@ def _get_current_thread_context_spec_id() -> str:
 
 
 def _agent_id_equivalent(left: str, right: str) -> bool:
-    """判断候选 Agent ID 是否只是历史前缀差异。"""
+    """Determine whether the candidate Agent ID is just a historical prefix difference."""
     clean_left = str(left or "").strip()
     clean_right = str(right or "").strip()
     if not clean_left or not clean_right:
@@ -1575,7 +1575,7 @@ def _agent_id_equivalent(left: str, right: str) -> bool:
 
 
 async def _resolve_spec_name(db: Any, spec_id: str) -> str:
-    """从数据库解析 spec_id 对应的 name。"""
+    """Parse the name corresponding to spec_id from the database."""
     try:
         specs = _get_collection(db, _WORKSHOP_SPEC_COLLECTION)
         if specs is None:
@@ -1630,7 +1630,7 @@ async def _resolve_workshop_version_phase_context(db: Any, version_id: str) -> d
 
 
 async def _auto_sync_gap_tools_to_workshop_version(db: Any, version_id: str) -> dict[str, Any]:
-    """将已补齐/可复用的 gap 工具同步到当前 testing 版本，避免 rebuild/iterate 阶段死锁。"""
+    """Synchronize the completed/reusable gap tools to the current testing version to avoid deadlock in the rebuild/iterate phase."""
     clean_version_id = str(version_id or "").strip()
     versions = _get_collection(db, _WORKSHOP_VERSION_COLLECTION)
     if not clean_version_id or versions is None:
@@ -1844,7 +1844,7 @@ async def _resolve_workshop_test_llm_payload(
 
     config = await get_reasoning_llm_config(db)
     if not config:
-        raise ValueError("系统中未找到可用的默认推理模型配置，请先在系统设置中配置大模型。")
+        raise ValueError("No available default inference model configuration was found in the system. Please configure the large model in the system settings first.")
 
     clean_provider = str(getattr(config, "provider", "") or "").strip()
     clean_model = str(
@@ -1869,9 +1869,9 @@ async def _resolve_workshop_test_llm_payload(
         pass
 
     if not clean_provider:
-        raise ValueError("系统默认推理模型缺少 provider 配置")
+        raise ValueError("The system default inference model lacks provider configuration")
     if not clean_model:
-        raise ValueError("系统默认推理模型缺少 model 配置")
+        raise ValueError("The system default inference model lacks model configuration")
 
     return {
         "provider": clean_provider,
@@ -1955,7 +1955,7 @@ async def _sync_linked_workshop_versions(
 
     if synced_version_ids:
         logger.info(
-            "已同步候选 Agent %s 的工具绑定到 Agent Workshop 版本: %s",
+            "Synchronized tool candidate Agent %s is bound to the Agent Workshop version: %s",
             agent_id,
             ", ".join(synced_version_ids),
         )
@@ -1976,7 +1976,7 @@ async def _auto_build_workshop_version_result(session_id: str) -> dict[str, Any]
 
 
 def _extract_governance_version_id(version_result: dict[str, Any] | None) -> str | None:
-    """从 build_workshop_version 结果中安全提取 version_id，兼容 version 字段为 dict 或 str 的情况。"""
+    """Safely extract version_id from build_workshop_version results, compatible with version field being dict or str."""
     if not isinstance(version_result, dict):
         return None
     version = version_result.get("version")
@@ -2009,10 +2009,10 @@ def _looks_unspecified(value: str) -> bool:
 
 
 def _generate_short_agent_name_llm(user_request: str, target_responsibility: str = "") -> dict:
-    """用 LLM 同步生成简短 Agent 中文名和英文 slug（在同步工具函数中调用）。
+    """Use LLM to synchronously generate a short Agent Chinese name and English slug (called in the synchronization tool function).
 
-    LLM 失败时用简单拼音/哈希兜底（不再用关键词映射表）。
-    返回 {"name": "中文名", "slug": "english_slug"}
+    LLM When failed, use simple pinyin/hash to find out (no longer use keyword mapping table).
+    Return {"name": "Chinese name", "slug": "english_slug"}
     """
     text = f"{target_responsibility or ''} {user_request or ''}".strip()
     if not text:
@@ -2023,24 +2023,24 @@ def _generate_short_agent_name_llm(user_request: str, target_responsibility: str
         from core.llm import UnifiedLLMClient
         from core.llm.models import Message
 
-        # 同步读取 LLM 配置
+        # Read LLM configuration synchronously
         sync_db = get_mongo_db_sync()
         config_doc = sync_db.system_configs.find_one(
             {"is_active": True},
             sort=[("version", -1)],
         )
         if not config_doc or "llm_configs" not in config_doc:
-            logger.warning("[AgentName][LLM] 无活跃 LLM 配置，使用拼音兜底")
+            logger.warning("[AgentName][LLM] No active LLM configuration, use Pinyin to cover")
             return _generate_simple_slug_fallback(user_request, target_responsibility)
 
-        # 复用 intelligent_assistant_service 的模型选择逻辑（同步部分）
+        # Reuse the model selection logic of intelligent_assistant_service (synchronization part)
         from app.services.intelligent_assistant_service import _resolve_models, _selection_model_name, _selection_config_id, resolve_llm_config_from_config_doc
         _, deep_selection, reasoning_selection, _ = _resolve_models(config_doc)
         target_selection = reasoning_selection or deep_selection
         target_model = _selection_model_name(target_selection)
         target_config_id = _selection_config_id(target_selection)
         if not target_model:
-            logger.warning("[AgentName][LLM] 无法解析模型名称，使用拼音兜底 (reasoning=%s deep=%s)", reasoning_selection, deep_selection)
+            logger.warning("[AgentName][LLM] Unable to parse the model name, use pinyin to find out. (reasoning=%s deep=%s)", reasoning_selection, deep_selection)
             return _generate_simple_slug_fallback(user_request, target_responsibility)
 
         config = resolve_llm_config_from_config_doc(
@@ -2050,63 +2050,63 @@ def _generate_short_agent_name_llm(user_request: str, target_responsibility: str
             purpose="agent_naming",
         )
         if not config:
-            logger.warning("[AgentName][LLM] 无法构建 LLM 配置 (model=%s config_id=%s)，使用拼音兜底", target_model, target_config_id)
+            logger.warning("[AgentName][LLM] Unable to build LLM configuration (model=%s config_id=%s), Use pinyin to tell the truth", target_model, target_config_id)
             return _generate_simple_slug_fallback(user_request, target_responsibility)
 
         client = UnifiedLLMClient.from_config(config)
 
-        system_prompt = """你是一个 Agent 命名专家。根据用户需求和职责描述，生成一个简短、专业、好记的 Agent 中文名和对应的英文标识（slug）。
+        system_prompt = """You are an expert in agent naming. Based on user needs and responsibility descriptions, generate a short, professional, and easy-to-remember Agent Chinese name and corresponding English logo (slug).
 
-命名规则：
-【中文名】
-1. 名字必须简短：不超过 12 个汉字（可含英文缩写如 DCF/PE/PB）
-2. 名字必须体现 Agent 的核心业务能力，不要包含"对A股""上市公司""执行""输出"等冗余词
-3. 名字以"助手"或"专家"结尾（默认"助手"）
-4. 不要使用"Agent"这个英文词
+Naming rules:
+ [Chinese name]
+1. The name must be short: no more than 12 Chinese characters (can include English abbreviation such as DCF/PE/PB)
+2. The name must reflect the Agent s core business capabilities and should not contain"For A shares""listed company""execute""output"redundant words
+3. Name starts with"Assistant"or"expert"end (default"Assistant") 
+4. Do not use"Agent"this English word
 
-【英文 slug】
-1. 全部小写，用下划线分隔，只能包含字母、数字、下划线
-2. 长度控制在 3-40 个字符之间
-3. 准确反映 Agent 的核心业务能力，优先用专业术语
-4. 以 "_analyst" 或 "_assistant" 结尾（默认用更具体的）
-5. 不要使用 "agent"、"nanobot"、"candidate" 等无意义词
+ [English slug]
+1. All lowercase, separated by underscores, can only contain letters, numbers, and underscores
+2. Length is controlled between 3-40 characters
+3. Accurately reflect the Agent s core business capabilities, giving priority to professional terminology
+4. to "_analyst" or "_assistant" ending (more specific by default)
+5. Do not use "agent", "nanobot", "candidate" meaningless words
 
-输出格式（严格 JSON，不要加解释）：
-{"name": "中文名", "slug": "english_slug"}
+Output format (strictly JSON, no explanation):
+{"name": "Chinese name", "slug": "english_slug"}
 
-示例：
-- 需求"对A股上市公司执行多维度估值分析" → {"name": "多维度估值分析助手", "slug": "multidimensional_valuation_analyst"}
-- 需求"帮我创建一个财报排雷助手" → {"name": "财报排雷助手", "slug": "financial_risk_screener"}
-- 需求"分析股息率和分红情况" → {"name": "股息率分析助手", "slug": "dividend_yield_analyst"}
-- 需求"做一个DCF估值工具" → {"name": "DCF估值助手", "slug": "dcf_valuation_assistant"}
-- 需求"创建一个技术分析Agent" → {"name": "技术分析助手", "slug": "technical_analysis_assistant"}
-- 需求"对上市公司进行风险排雷" → {"name": "风险排雷助手", "slug": "risk_screening_assistant"}
-- 需求"生成研报" → {"name": "研报生成助手", "slug": "research_report_generator"}"""
+Example:
+- demand"Perform multi-dimensional valuation analysis on A-share listed companies" → {"name": "Multi-dimensional valuation analysis assistant", "slug": "multidimensional_valuation_analyst"}
+- demand"Help me create a financial report demining assistant" → {"name": "Financial report demining assistant", "slug": "financial_risk_screener"}
+- demand"Analyze dividend rates and dividends" → {"name": "Dividend Yield Analysis Assistant", "slug": "dividend_yield_analyst"}
+- demand"Make a DCF valuation tool" → {"name": "DCF Valuation Assistant", "slug": "dcf_valuation_assistant"}
+- demand"Create a technical analysis Agent" → {"name": "Technical analysis assistant", "slug": "technical_analysis_assistant"}
+- demand"Conduct risk demining on listed companies" → {"name": "Risk demining assistant", "slug": "risk_screening_assistant"}
+- demand"Generate research reports" → {"name": "Research report generation assistant", "slug": "research_report_generator"}"""
 
-        user_prompt = f"用户需求：{user_request or '(未提供)'}\n职责描述：{target_responsibility or '(未提供)'}\n\n请生成 Agent 的中文名和英文 slug（严格输出 JSON）："
+        user_prompt = f"User needs:{user_request or '(Not provided)'}\n Responsibilities Description:{target_responsibility or '(Not provided)'}\n\n Please generate the Chinese name and English slug of Agent (strictly output JSON):"
 
         messages = [
             Message(role="system", content=system_prompt),
             Message(role="user", content=user_prompt),
         ]
-        # DeepSeek 推理模型会先输出思考过程再输出 JSON，需要足够的 token 配额
+        # DeepSeek The inference model will output the thinking process first and then JSON, which requires sufficient token quota.
         response = client.chat(messages, temperature=0.3, max_tokens=1000)
         raw_content = str(response.content or "").strip()
 
-        logger.info("[AgentName][LLM] 原始响应: %s", raw_content[:400])
+        logger.info("[AgentName][LLM] original response: %s", raw_content[:400])
 
-        # 尝试解析 JSON（支持推理模型在 JSON 前后输出思考文本）
+        # Try to parse JSON (support inference model output thinking text before and after JSON)
         import json as _json
         try:
             cleaned = raw_content.strip()
-            # 去掉 markdown 代码块标记
+            # Remove markdown code block tags
             if cleaned.startswith("```"):
                 cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
                 cleaned = re.sub(r"\s*```$", "", cleaned)
-            # 优先尝试从文本中提取 JSON 对象
+            # First try to extract JSON objects from text
             json_match = re.search(r'\{[^{}]*"name"[^{}]*"slug"[^{}]*\}', cleaned, re.DOTALL)
             if not json_match:
-                # 宽松匹配：找最后一个 { 到最后一个 } 之间的内容
+                # Relaxed matching: find the last one { to the last one } content between
                 last_brace = cleaned.rfind("{")
                 last_close = cleaned.rfind("}")
                 if last_brace >= 0 and last_close > last_brace:
@@ -2120,54 +2120,54 @@ def _generate_short_agent_name_llm(user_request: str, target_responsibility: str
             result = _json.loads(cleaned)
             name = str(result.get("name", "")).strip()
             slug = str(result.get("slug", "")).strip().lower()
-            logger.info("[AgentName][LLM] 解析成功: name=%s slug=%s", name, slug)
+            logger.info("[AgentName][LLM] Parsed successfully: name=%s slug=%s", name, slug)
         except Exception as parse_exc:
-            # JSON 解析失败，尝试从文本中智能提取名字
-            logger.warning("[AgentName][LLM] JSON 解析失败: %s, raw=%s", parse_exc, raw_content[:200])
-            # 尝试从思考文本中提取 "中文名：xxx" 或 "名字：xxx" 模式
+            # JSON Parsing failed, trying to intelligently extract names from text
+            logger.warning("[AgentName][LLM] JSON Parsing failed: %s, raw=%s", parse_exc, raw_content[:200])
+            # Try to extract from think text "Chinese name:xxx" or "Name:xxx" mode
             name = ""
             slug = ""
-            name_match = re.search(r'(?:中文名|名字)[：:]\s*([^\n。]{2,12})', raw_content)
+            name_match = re.search(r'(?:Chinese name|name)[: :]\s*([^\n. ]{2,12})', raw_content)
             if name_match:
                 name = name_match.group(1).strip()
             if not name:
-                # 尝试找 slug 模式: "英文slug：xxx"
-                slug_match = re.search(r'(?:英文\s*slug|slug)[：:]\s*([a-z][a-z0-9_]{2,39})', raw_content)
+                # Try to find slug pattern: "English slug:xxx"
+                slug_match = re.search(r'(?:English\s*slug|slug)[: :]\s*([a-z][a-z0-9_]{2,39})', raw_content)
                 if slug_match:
                     slug = slug_match.group(1).strip().lower()
-                # 最后兜底：取第一行
+                # The final tip: take the first line
                 name = raw_content.strip().strip("\"'""''「」【】 ").split("\n")[0].strip()
                 name = name.rstrip("。.；;")
 
-        # 清理中文名
+        # Clean up Chinese names
         name = name.rstrip("。.；;")
 
-        # 验证 slug 格式
+        # Verify slug format
         import re as _re
         if not slug or not _re.match(r"^[a-z][a-z0-9_]{2,39}$", slug):
-            # slug 不合规，用简单拼音兜底
-            logger.warning("[AgentName][LLM] slug 不合规: slug=%r，使用拼音兜底", slug)
+            # slug Non-compliance, use simple pinyin to explain
+            logger.warning("[AgentName][LLM] slug Non-compliance: slug=%r, Use pinyin to tell the truth", slug)
             slug = _generate_simple_slug_fallback(name or user_request, target_responsibility)["slug"]
 
         if name and len(name) <= 20:
-            logger.info("[AgentName][LLM] 最终结果: request=%s -> name=%s slug=%s", user_request[:40], name, slug)
+            logger.info("[AgentName][LLM] final result: request=%s -> name=%s slug=%s", user_request[:40], name, slug)
             return {"name": name, "slug": slug}
 
-        logger.warning("[AgentName][LLM] 名字不合规: name=%r (len=%d)，使用拼音兜底", name, len(name or ""))
+        logger.warning("[AgentName][LLM] The name is illegal: name=%r (len=%d), Use pinyin to tell the truth", name, len(name or ""))
         return _generate_simple_slug_fallback(user_request, target_responsibility)
     except Exception as exc:
-        logger.error("[AgentName][LLM] LLM 命名异常: %s", exc, exc_info=True)
+        logger.error("[AgentName][LLM] LLM Naming anomaly: %s", exc, exc_info=True)
         return _generate_simple_slug_fallback(user_request, target_responsibility)
 
 
 def _fallback_slug_from_name(name: str, user_request: str = "", target_responsibility: str = "") -> str:
-    """简单兜底：从文本生成哈希 slug（命名由 LLM 负责，此处仅为最终兜底）。"""
+    """Simple back-up: Generate hash slug from text (the naming is handled by LLM, this is just the final back-up)."""
     text = f"{name or ''} {target_responsibility or ''} {user_request or ''}".strip()
     if not text:
         return "analysis_assistant"
     import hashlib
     digest = hashlib.md5(text.encode("utf-8")).hexdigest()[:6]
-    # 尝试从英文名提取前缀（如果有英文的话）
+    # Try to extract prefix from English name (if English is available)
     import re as _re
     english_parts = _re.findall(r'[a-zA-Z]{2,}', text)
     if english_parts:
@@ -2177,21 +2177,21 @@ def _fallback_slug_from_name(name: str, user_request: str = "", target_responsib
 
 
 def _generate_simple_slug_fallback(user_request: str, target_responsibility: str = "") -> dict:
-    """LLM 命名失败时的简单兜底（不再用关键词映射）。
+    """LLM Simple explanation when naming fails (no longer using keyword mapping).
 
-    返回 {"name": "中文名", "slug": "english_slug"}
+    Return {"name": "Chinese name", "slug": "english_slug"}
     """
     text = f"{target_responsibility or ''} {user_request or ''}".strip()
     if not text:
         return {"name": "智能分析助手", "slug": "intelligent_analysis_assistant"}
 
-    # 从需求中提取前 10 字作为简短名称
-    short_name = text[:10].rstrip("，。、的了是") + "助手"
+    # Extract first 10 words from requirement as short name
+    short_name = text[:10].rstrip(", . , Yes") + "助手"
     slug = _fallback_slug_from_name(short_name, user_request, target_responsibility)
     return {"name": short_name, "slug": slug}
 
 
-# 保留旧名作为别名，兼容 agent_builder_nodes.py 的引用
+# Keep the old name as an alias, compatible with references to agent_builder_nodes.py
 _generate_short_agent_name_fallback = _generate_simple_slug_fallback
 
 
@@ -2268,11 +2268,11 @@ def _build_temp_agent_spec_for_confirmation(
             "capability_type": "orchestration" if idx == 1 else "output",
             "description": clean_text,
             "delivery_requirement": "tool-or-prompt",
-            "acceptance_criteria": ["按确认稿边界交付，不超出单一职责"],
+            "acceptance_criteria": ["Deliver within the boundaries of the confirmed draft and do not exceed a single responsibility"],
         })
     preferred_methods = [item for item in [valuation_method_scope] if str(item or "").strip()]
     if tool_ids:
-        preferred_methods.append("候选工具：" + "、".join(tool_ids))
+        preferred_methods.append("Candidate tools:" + "、".join(tool_ids))
     return AgentSpec(
         spec_id=agent_id,
         name=agent_name,
@@ -2360,9 +2360,9 @@ def _build_candidate_plans(gap_report: dict[str, Any], resolved_tools: list[str]
         })
 
     if blocking_count == 0:
-        add_plan("direct", "推荐完整交付", "现有能力已覆盖需求，可直接生成完整版 Agent，并按原定核心风险/分析维度进入真数据测试。", True, "低：主要风险来自真实数据质量和后续验收结果。")
-        add_plan("strict", "保守可追溯版", "仍使用现有能力，但收紧输出边界：只输出工具和数据明确支撑的结论，未覆盖或数据不足的部分标注为信息缺口。", False, "低：覆盖更稳健，但报告表达会更保守。")
-        add_plan("enhanced", "扩展增强版", "在核心需求已满足的基础上，把非阻塞增强项作为可选扩展，例如更细的预警分级、更多风险信号或更丰富的情景说明。", False, "中：不是当前交付的必要条件，扩展过多会增加测试和解释复杂度。")
+        add_plan("direct", "推荐完整交付", "The existing capabilities have covered the requirements and can directly generate a complete version of Agent and enter real data testing according to the original core risk/analysis dimensions.", True, "Low: The main risk comes from real data quality and subsequent acceptance results.")
+        add_plan("strict", "保守可追溯版", "Existing capabilities are still used, but output boundaries are tightened: only conclusions clearly supported by tools and data are output, and parts that are not covered or have insufficient data are marked as information gaps.", False, "Low: Coverage is more robust, but reporting expressions will be more conservative.")
+        add_plan("enhanced", "扩展增强版", "On the basis that the core requirements have been met, non-blocking enhancements can be used as optional extensions, such as more detailed warning classification, more risk signals or richer scenario descriptions.", False, "Medium: Not required for current delivery, too much extension will increase testing and interpretation complexity.")
         return plans, "direct"
 
     suggested_skills = []
@@ -2371,11 +2371,11 @@ def _build_candidate_plans(gap_report: dict[str, Any], resolved_tools: list[str]
             tool_id = str(item.get("tool_id") or item.get("capability_id") or "").strip()
             if tool_id:
                 suggested_skills.append(tool_id)
-    add_plan("complete", "完整方案", "先承认并补齐 blocking gaps，再生成完整 Agent，保留原需求目标和输出深度。", True, "需要补能力或生成 Skill，耗时更高但目标完整。", _dedupe_string_list(suggested_skills))
+    add_plan("complete", "完整方案", "First recognize and fill blocking gaps, and then generate a complete Agent, retaining the original demand target and output depth.", True, "It requires replenishing abilities or generating Skills, which is more time-consuming but has a complete goal.", _dedupe_string_list(suggested_skills))
     if _quick_plan_feasible(gap_report, resolved_tools):
-        add_plan("quick", "快速方案", "不补新能力，先用现有工具生成简化版；缺失字段标注信息缺口，不输出综合四色评级。", False, "覆盖范围受限，适合先试跑验证。")
+        add_plan("quick", "快速方案", "Instead of adding new capabilities, use existing tools to generate a simplified version first; missing fields mark information gaps and do not output a comprehensive four-color rating.", False, "The coverage is limited and is suitable for trial run verification first.")
     if blocking_count >= 3:
-        add_plan("narrow", "缩小需求范围", "先回到需求重定义，缩小目标或输出范围后重新盘点能力。", False, "需要用户重新确认范围，不直接生成。")
+        add_plan("narrow", "缩小需求范围", "First go back to requirements redefinition, narrow the target or output scope, and then re-inventory capabilities.", False, "The user is required to reconfirm the scope and is not generated directly.")
     return plans, "complete"
 
 
@@ -2396,10 +2396,10 @@ def _plan_options_for_intent(candidate_plans: list[dict[str, Any]]) -> list[dict
 
 def _quick_plan_constraint_text(acknowledged_gaps: list[str] | None = None) -> str:
     gap_text = "；".join([str(item).strip() for item in acknowledged_gaps or [] if str(item).strip()])
-    suffix = f" 已知缺口：{gap_text}" if gap_text else ""
+    suffix = f" Known gaps:{gap_text}" if gap_text else ""
     return (
-        "quick 方案约束：只允许使用现有已绑定工具直接返回可追溯指标；缺失字段必须标注为信息缺口；"
-        "禁止要求 LLM 自行计算关键审计/财务/估值指标；禁止自行打综合四色评级或用缺失数据拼凑评分。"
+        "quick Solution constraints: Only existing bound tools are allowed to be used to directly return traceable indicators; missing fields must be marked as information gaps;"
+        "It is prohibited to require the LLM to calculate key audit/financial/valuation indicators by itself; it is prohibited to create a comprehensive four-color rating by itself or use missing data to piece together the rating."
         + suffix
     )
 
@@ -2446,26 +2446,26 @@ def _build_confirmation_template(
     report_contract: dict[str, Any] | None,
     overwrite_risk: dict[str, Any],
 ) -> str:
-    """以财经产品专家的口吻构建用户确认稿，避免技术清单式输出。
+    """Construct the user confirmation draft in the tone of a financial product expert to avoid technical list-style output.
 
-    系统收到本模板后，应以财经产品顾问的角度与用户沟通——
-    讲分析框架和业务价值，不要逐行念工具ID和技术参数。
-    后端所需的技术绑定信息已在 JSON 的其他字段中传递。
+    After the system receives this template, it should communicate with the user from the perspective of a financial product consultant——
+    Talk about the analysis framework and business value, rather than reading tool IDs and technical parameters line by line.
+    The technical binding information required by the backend is passed in other fields of the JSON.
     """
-    # ── 业务叙事版确认稿（不是技术清单） ──
+    # ── Business narrative version confirmation draft (not technical checklist) ──
     lines = [
         "【方案概览】",
-        f"名称：{agent_name}",
-        f"定位：{responsibility}",
-        f"输出：{desired_output_shape}",
+        f"Name:{agent_name}",
+        f"Positioning:{responsibility}",
+        f"Output:{desired_output_shape}",
     ]
 
     scope_parts = []
     if valuation_method_scope:
-        scope_parts.append(f"估值方法：{valuation_method_scope}")
+        scope_parts.append(f"Valuation method:{valuation_method_scope}")
     if resolved_default_tools := bound_tools:
-        # 不列 tool_id，只说覆盖了哪些维度
-        pass  # 维度覆盖由 capability_inventory 的 business 描述提供
+        # Do not list tool_id, just say which dimensions are covered
+        pass  # Dimension coverage is provided by the business description of capability_inventory
     lines.append("")
 
     if non_goals:
@@ -2477,21 +2477,21 @@ def _build_confirmation_template(
     if report_contract is not None:
         forbidden_items = report_contract.get("forbidden_expansions") or []
         lines.append("【报告内容边界】")
-        lines.append(f"章节范围：{report_contract.get('content_scope') or '与职责相匹配的估值分析章节'}")
-        lines.append(f"预览方式：{_humanize_preview_mode(str(report_contract.get('style_preview_mode') or ''))}")
+        lines.append(f"Chapter scope:{report_contract.get('content_scope') or 'Valuation analysis chapters that match the responsibilities'}")
+        lines.append(f"Preview method:{_humanize_preview_mode(str(report_contract.get('style_preview_mode') or ''))}")
         if forbidden_items:
-            lines.append(f"明确排除：{_join_display_items(forbidden_items, default='无')}")
+            lines.append(f"Explicitly excluded:{_join_display_items(forbidden_items, default='None')}")
         lines.append("")
 
-    # 覆盖风险
-    overwrite_text = "会覆盖现有配置，需用户明确同意" if overwrite_risk.get("requires_explicit_overwrite") else "不影响现有配置"
+    # Covering risks
+    overwrite_text = "Existing configurations will be overwritten and explicit consent from the user is required." if overwrite_risk.get("requires_explicit_overwrite") else "不影响现有配置"
     lines.append(f"【覆盖影响】{overwrite_text}")
     lines.append("")
 
-    # 确认引导
-    lines.append("如果以上内容确认无误，请回复：确认")
+    # Confirm boot
+    lines.append("If the above content is confirmed to be correct, please reply: Confirm")
     if overwrite_risk.get("requires_explicit_overwrite"):
-        lines.append("（注意：后续生成该 Agent 时会覆盖现有配置）")
+        lines.append(" (Note: The existing configuration will be overwritten when the Agent is subsequently generated)")
 
     return "\n".join(lines)
 
@@ -2627,7 +2627,7 @@ async def _is_orphaned_workshop_runtime_agent(doc: dict[str, Any], db: Any) -> b
             if spec_doc:
                 return False
     except Exception as exc:
-        logger.warning("检查工坊运行时 Agent 是否失联失败: %s", exc)
+        logger.warning("Failed to check whether the Agent lost contact when the workshop was running: %s", exc)
         return False
 
     return True
@@ -2668,7 +2668,7 @@ async def _merge_latest_evaluations_into_versions(
     version_results: list[dict[str, Any]],
     db,
 ) -> None:
-    """批量查询最新评估记录，合并评分/结论到 version_results 中。"""
+    """Query the latest evaluation records in batches and merge scores/conclusions into version_results."""
     if not version_results:
         return
     version_ids = [str(v.get("version_id") or "").strip() for v in version_results if v.get("version_id")]
@@ -2680,7 +2680,7 @@ async def _merge_latest_evaluations_into_versions(
         if evaluations_collection is None:
             return
 
-        # 批量查询所有相关评估，按 created_at 降序
+        # Batch query for all related evaluations, in descending order by created_at
         eval_cursor = evaluations_collection.find(
             {"version_id": {"$in": version_ids}},
             {"_id": 0, "evaluation_id": 1, "version_id": 1, "decision": 1, "scores": 1, "issues": 1, "created_at": 1},
@@ -2690,7 +2690,7 @@ async def _merge_latest_evaluations_into_versions(
 
         eval_docs = await eval_cursor.to_list(length=len(version_ids) * 3)
 
-        # 按 version_id 分组，取每个版本最新的评估
+        # Group by version_id and get the latest evaluation of each version
         latest_eval_by_version: dict[str, dict[str, Any]] = {}
         for doc in eval_docs:
             vid = str(doc.get("version_id") or "").strip()
@@ -2774,7 +2774,7 @@ async def _resolve_effective_prompt_template_payload(
     clean_agent_type = str(agent_type or "").strip()
     clean_agent_name = str(agent_name or "").strip()
     if not clean_agent_type or not clean_agent_name:
-        return {"status": "error", "message": "agent_type 和 agent_name 不能为空"}
+        return {"status": "error", "message": "agent_type and agent_name cannot be empty"}
 
     resolved_user_id = str(user_id or "").strip()
     if not resolved_user_id:
@@ -2852,11 +2852,11 @@ async def _resolve_current_thread_effective_template_input(
     clean_user_id = str(user_id or "").strip()
     clean_thread_id = str(thread_id or "").strip()
     if not clean_user_id or not clean_thread_id:
-        return {"status": "error", "message": "user_id 和 thread_id 不能为空"}
+        return {"status": "error", "message": "user_id and thread_id cannot be empty"}
 
     threads = _get_collection(db, "embedded_nanobot_threads")
     if threads is None:
-        return {"status": "error", "message": "当前数据库中不可用 embedded_nanobot_threads 集合"}
+        return {"status": "error", "message": "The embedded_nanobot_threads collection is not available in the current database"}
 
     thread_doc = await threads.find_one({"user_id": clean_user_id, "thread_id": clean_thread_id})
     if thread_doc is None:
@@ -2895,7 +2895,7 @@ async def _resolve_current_thread_effective_template_input(
     if not resolved_agent_type or not resolved_agent_name:
         return {
             "status": "error",
-            "message": "当前线程缺少足够上下文，无法自动推断 agent_type/agent_name；请先让线程进入带版本上下文的状态，或显式传入 agent_type 和 agent_name",
+            "message": "The current thread lacks enough context to automatically infer agent_type/agent_name; please first let the thread enter a state with version context, or explicitly pass in agent_type and agent_name",
             "thread_context": thread_context,
         }
 
@@ -2977,44 +2977,44 @@ async def _inspect_agent_overwrite_risk(db: Any, agent_id: str, status: str = "a
 @tool
 @register_tool(
     tool_id="prepare_agent_requirement_intake",
-    name="生成 Agent 需求采集提纲",
-    description="根据用户的初始创建请求，生成下一轮应该追问的需求采集提纲，避免在需求仍模糊时直接生成 Agent。",
+    name="Generate Agent requirements collection outline",
+    description="Based on the user s initial creation request, generate a requirement collection outline that should be followed up in the next round to avoid directly generating Agents when the requirements are still vague.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当用户刚提出创建 Agent 的想法，但职责边界、输出形状、非目标或工具依赖还不清楚时使用。",
-    when_not_to_use="当需求已经清晰并且可以直接进入确认稿或生成阶段时，不需要再调用。",
-    returns="返回 JSON 字符串，包含已知信息、缺失决策、推荐追问问题，以及是否可以直接进入确认阶段。",
-    example="prepare_agent_requirement_intake(user_request='帮我做一个估值分析 agent')",
+    when_to_use="Use when the user has just come up with the idea of creating an Agent, but the boundaries of responsibilities, output shape, non-goals, or tool dependencies are not yet clear.",
+    when_not_to_use="When the requirements are clear and can go directly to the confirmation draft or generation stage, there is no need to call it again.",
+    returns="Returns a JSON string containing known information, missing decisions, recommended follow-up questions, and whether it is possible to proceed directly to the confirmation phase.",
+    example="prepare_agent_requirement_intake(user_request='Help me do a valuation analysis agent')",
     related_tools=["prepare_agent_generation_confirmation", "generate_confirmed_candidate_agent"],
     data_source_handling="local_only",
 )
 def prepare_agent_requirement_intake(
-    user_request: Annotated[str, "用户原始请求，例如 帮我做一个估值分析 agent"],
-    target_responsibility: Annotated[str, "当前已知的单一职责，可留空"] = "",
-    desired_output_shape: Annotated[str, "当前已知的输出形状，可留空，如 结构化估值报告"] = "",
-    non_goals: Annotated[str, "明确不做什么，可留空，逗号分隔"] = "",
-    preferred_tools: Annotated[str, "用户已指定或当前已知的偏好工具，逗号分隔"] = "",
-    existing_agent_id: Annotated[str, "如果用户提到要覆盖或延续某个现有 agent，可填现有 agent_id"] = "",
-    recommendation_policy: Annotated[str, "是否允许输出交易建议/仓位/价格区间；例如 只做研究不给建议"] = "",
-    valuation_method_scope: Annotated[str, "估值方法边界，如 仅PE/PB/PEG，不含DCF 或 综合估值"] = "",
-    test_strategy: Annotated[str, "生成后是否允许自动测试；例如 只做配置校验，不跑真实股票样例"] = "",
-    preview_mode: Annotated[str, "如果用户在问报告样式，是只看结构骨架，还是允许带占位符示例"] = "",
-    report_section_scope: Annotated[str, "报告章节边界，如 仅估值相关章节，不含技术面/交易执行方案/多情景研究"] = "",
+    user_request: Annotated[str, "User original request, for example, help me do a valuation analysis agent"],
+    target_responsibility: Annotated[str, "Currently known single responsibility, can be left blank"] = "",
+    desired_output_shape: Annotated[str, "The currently known output shape, which can be left blank, such as Structured Valuation Report"] = "",
+    non_goals: Annotated[str, "Specify what not to do. You can leave it blank and separate it with commas."] = "",
+    preferred_tools: Annotated[str, "User s specified or currently known preference tools, comma separated"] = "",
+    existing_agent_id: Annotated[str, "If the user mentions that they want to overwrite or continue an existing agent, fill in the existing agent_id"] = "",
+    recommendation_policy: Annotated[str, "Whether to allow the output of trading suggestions/positions/price ranges; for example, only do research but not give suggestions"] = "",
+    valuation_method_scope: Annotated[str, "Valuation method boundaries, such as PE/PB/PEG only, excluding DCF or comprehensive valuation"] = "",
+    test_strategy: Annotated[str, "Whether to allow automatic testing after generation; for example, only configuration verification is performed, and real stock samples are not run."] = "",
+    preview_mode: Annotated[str, "If the user is asking about the report style, should we only see the structural skeleton, or should we allow placeholder examples?"] = "",
+    report_section_scope: Annotated[str, "Report chapter boundaries, such as only valuation-related chapters, excluding technical aspects/transaction execution plans/multi-scenario research"] = "",
 ) -> str:
-    """生成 Agent 创建前的需求采集提纲 —— 自动补全智能默认值，只将最关键决策提升给用户。"""
+    """Generate requirements gathering outline before Agent creation —— Automatically complete smart default values to promote only the most critical decisions to users."""
     try:
         clean_request = str(user_request or "").strip()
         if not clean_request:
-            return _json_response({"status": "error", "message": "user_request 不能为空"})
+            return _json_response({"status": "error", "message": "user_request cannot be empty"})
 
         resolved_non_goals = _parse_string_list(non_goals)
         resolved_tools = _parse_string_list(preferred_tools)
         stock_analysis_request = _is_stock_analysis_request(clean_request, target_responsibility, desired_output_shape)
         output_preview_request = _is_output_preview_request(clean_request, desired_output_shape)
 
-        # ── 🔍 入口日志：需求采集 ──
+        # ── 🔍 Entrance log: demand collection ──
         logger.info(
             "[Intake][Entry] request_len=%d responsibility_len=%d output_shape_len=%d "
             "non_goals_len=%d preferred_tools=%s stock=%s output_preview=%s existing=%s",
@@ -3029,20 +3029,20 @@ def prepare_agent_requirement_intake(
         )
         effective_recommendation_policy = _normalize_recommendation_policy(recommendation_policy)
 
-        # === 智能默认值：用户没说的情况下，自动补全 ===
+        # === Intelligent default value: automatic completion when the user does not say anything ===
         smart_defaults = {
-            "output_shape": "结构化的自然语言报告，包含评分/评级和关键数据依据",
-            "non_goals": "不做交易建议/仓位建议/目标价区间/止损止盈/技术择时",
-            "preferred_tools": resolved_tools,  # 如果为空，让缺口分析阶段自动推荐
-            "creation_mode": "new",  # 默认新建
-            "recommendation_policy": "只做研究分析，不输出任何买卖建议、仓位建议、目标价、止损止盈等操作性指令",
-            "valuation_method_scope": "综合估值（行业对比PE/PB + 历史估值分位 + DCF），如用户指定则优先用户",
-            "test_strategy": "auto_test",  # 默认允许自动跑样例验证
-            "preview_mode": "structure_only",  # 报告样式预览只看结构骨架
-            "report_section_scope": "仅保留估值/分析相关章节，不扩展到技术面、交易执行方案、多情景研究",
+            "output_shape": "Structured natural language reporting with ratings/ratings and key data support",
+            "non_goals": "No trading advice/position advice/target price range/stop loss and take profit/technical timing",
+            "preferred_tools": resolved_tools,  # If empty, let the gap analysis stage automatically recommend
+            "creation_mode": "new",  # New by default
+            "recommendation_policy": "It only conducts research and analysis, and does not output any buying and selling recommendations, position recommendations, target prices, stop-loss, take-profit and other operational instructions.",
+            "valuation_method_scope": "Comprehensive valuation (industry comparison PE/PB + historical valuation quantiles + DCF) , If specified by the user, the user will be given priority.",
+            "test_strategy": "auto_test",  # By default, automatic sample verification is allowed.
+            "preview_mode": "structure_only",  # Report style preview only looks at the structural skeleton
+            "report_section_scope": "Only chapters related to valuation/analysis are retained, and do not extend to technical aspects, transaction execution plans, and multi-scenario research.",
         }
 
-        # 确定实际值（用户提供 > 智能默认）
+        # Determine the actual value (user provided > smart default)
         effective_output_shape = desired_output_shape if not _looks_unspecified(desired_output_shape) else smart_defaults["output_shape"]
         effective_non_goals = resolved_non_goals if resolved_non_goals else _parse_string_list(smart_defaults["non_goals"])
         effective_tools = resolved_tools if resolved_tools else []
@@ -3052,31 +3052,31 @@ def prepare_agent_requirement_intake(
         effective_preview_mode = preview_mode if not _looks_unspecified(preview_mode) else smart_defaults["preview_mode"]
         effective_report_scope = report_section_scope if not _looks_unspecified(report_section_scope) else smart_defaults["report_section_scope"]
 
-        # === 只将真正关键的决策提升给用户（最多2个） ===
+        # === Elevate only truly critical decisions to users (max 2) ===
         critical_questions: list[dict] = []
         has_critical_single_responsibility_gap = _looks_unspecified(target_responsibility)
 
         if has_critical_single_responsibility_gap:
             critical_questions.append({
                 "id": "single_responsibility",
-                "question": "这个 Agent 要做什么？请用一句话描述它的核心任务。",
-                "why_critical": "没有明确的职责边界，后续的工具选择、输出结构都无法精准匹配。",
+                "question": "What is this Agent going to do? Please describe its core mission in one sentence.",
+                "why_critical": "Without clear boundaries of responsibilities, subsequent tool selection and output structure cannot be accurately matched.",
             })
 
         if not effective_tools and not has_critical_single_responsibility_gap:
-            # 工具偏好缺失但在职责明确时可以自动推荐
+            # Tool preferences are missing but can be automatically recommended when responsibilities are clear
             critical_questions.append({
                 "id": "tool_preferences",
-                "question": "你是否已经知道它必须依赖哪些工具或数据来源？如果没有偏好，我会在缺口分析阶段自动推荐最适合的工具。",
-                "why_critical": "工具范围影响能力边界，但你也可以完全交给我推荐。",
+                "question": "Do you already know what tools or data sources it must rely on? If there is no preference, I will automatically recommend the most suitable tool during the gap analysis phase.",
+                "why_critical": "The scope of tools affects the boundaries of capabilities, but you can also leave it entirely to my recommendation.",
             })
 
-        # === 生成简短 Agent 名（中文名 + 英文 slug）===
+        # === Generate a short Agent name (Chinese name + English slug)===
         naming_result = _generate_short_agent_name_llm(clean_request, target_responsibility)
         proposed_agent_name = naming_result.get("name", "智能分析助手")
         proposed_agent_slug = naming_result.get("slug", "analysis_assistant")
 
-        # === 构建提案 ===
+        # === Build proposal ===
         proposed_plan = {
             "single_responsibility": target_responsibility if not has_critical_single_responsibility_gap else "（待确认）",
             "proposed_agent_name": proposed_agent_name,
@@ -3095,7 +3095,7 @@ def prepare_agent_requirement_intake(
 
         can_proceed_to_confirmation = len(critical_questions) == 0
 
-        # ── 🔍 出口日志：需求采集结果 ──
+        # ── 🔍 Export log: demand collection results ──
         logger.info(
             "[Intake][Exit] responsibility=%s output=%s can_proceed=%s critical_q=%d next=%s",
             str(target_responsibility or "")[:80],
@@ -3105,14 +3105,14 @@ def prepare_agent_requirement_intake(
             "prepare_agent_generation_confirmation" if can_proceed_to_confirmation else "present_proposed_plan_and_ask_critical_questions",
         )
 
-        # ── 更新 thread_context：让 FlowController 追踪进度 ──
+        # ── Update thread_context: Let FlowController track progress ──
         try:
             from core.embedded_nanobot.intent_context import update_intent_context_in_thread
             stage = "exploring" if not can_proceed_to_confirmation else "draft_preparing"
             pending_q = ""
             pending_opts = []
             if not can_proceed_to_confirmation and critical_questions:
-                # 将关键问题写入 pending 状态，确保跨轮对话不丢失上下文
+                # Write key questions into the pending state to ensure that cross-turn conversations do not lose context
                 pending_q = critical_questions[0]["question"]
                 pending_opts = [
                     {"index": i + 1, "id": q["id"], "name": q["question"][:60], "description": q.get("why_critical", "")}
@@ -3142,88 +3142,88 @@ def prepare_agent_requirement_intake(
                 else "present_proposed_plan_and_ask_critical_questions"
             ),
             "nanobot_guidance": (
-                "✅ 方案已自动补全。你现在是财经产品专家，不是问卷调查员。\n\n"
-                "核心原则：抛砖引玉 —— 先给出你的专业草稿，用户自然会纠正。\n\n"
-                "沟通规则：\n"
-                "1. 先呈现 proposed_plan，用业务语言说明每个选择的理由。\n"
-                "2. 如果 critical_questions 非空，最多问 1 个最关键的问题，其余全部用默认值。\n"
-                "3. 每个问题必须给出背景、不同选择的区别、你的推荐方案和理由。\n"
-                "   例如不要说「你希望用哪些估值方法？」，而要说「估值有两大类：相对估值（PE/PB/PEG等，看同行业对比）和绝对估值（DCF等，看内在价值）。两者互补，我建议都纳入。你觉得呢？」\n"
-                "4. 禁止列出一长串问题让用户逐个回答。这是最低效的沟通方式。\n"
-                "5. 禁止问用户「你用什么数据源/数据终端」——平台内置 Tushare/AKShare/BaoStock 等数据源，Agent 通过工具自动获取数据，不需要用户选择。\n"
-                "6. 用户说「可以」「好的」「没意见」即视为认可，直接推进到确认阶段。\n"
-                "7. 用户没有提到的维度，直接用专业默认值补全，不要追问。\n"
-                "   例如用户没说要不要风险提示，默认加上；用户没说 A 股还是港股，默认 A 股。\n"
-                "   用户在草稿中看到默认值后如果不同意，自然会告诉你。\n"
-                "8. 【重要】禁止在回复中提及任何工具名（如 get_dcf_valuation、get_comparable_company_valuation 等）。\n"
-                "   用户不关心底层用了哪个工具，只关心 Agent 能解决什么业务问题。\n"
-                "   工具绑定是平台内部的事，会在后续能力盘点阶段自动处理，不需要也不应该暴露给用户。\n"
-                "   正确说法：「我们会自动获取同行业估值数据做横向对比」「系统会拉取历史估值区间计算分位」\n"
-                "   错误说法：「平台有 get_comparable_company_valuation 工具」「需要确认 get_historical_valuation_percentile_tool 是否就绪」"
+                "✅ The solution has been automatically completed. You are now a financial product expert, not a questionnaire surveyor.\n\n"
+                "Core Principle: Initiate new ideas —— Give your professional draft first and users will naturally correct it.\n\n"
+                "Communication rules:\n"
+                "1. Present the proposed_plan first, using business language to explain the reasons for each choice.\n"
+                "2. If critical_questions is non-empty, at most 1 most critical question will be asked, and the rest will use default values.\n"
+                "3. Each question must give context, the differences between the options, your recommendations and your rationale.\n"
+                "   For example, instead of saying Which valuation methods do you want to use? , say There are two major categories of valuation: relative valuation (PE/PB/PEG, etc., look at comparison with the same industry) and absolute valuation (DCF, etc., look at intrinsic value). The two are complementary, and I recommend including them both. What do you think? \n"
+                "4. Don t list a long list of questions for users to answer one by one. This is the most efficient way to communicate.\n"
+                "5. It is forbidden to ask users What data source/data terminal do you use? ——The platform has built-in data sources such as Tushare/AKShare/BaoStock, and the Agent automatically obtains data through tools without user selection.\n"
+                "6. If the user says yes , ok and no objection , it will be deemed as approval and will be directly advanced to the confirmation stage.\n"
+                "7. For dimensions not mentioned by the user, simply use professional default values to complete them without asking.\n"
+                "   For example, if the user does not say whether he wants a risk warning, it will be added by default; if the user does not say whether it is A shares or Hong Kong stocks, it will be added by default.\n"
+                "   Users will naturally tell you if they disagree with the default value after seeing it in the draft.\n"
+                "8.  [Important] It is prohibited to mention any tool names (such as get_dcf_valuation, get_comparable_company_valuation, etc.) in the reply.\n"
+                "   Users don t care which tool is used at the bottom layer, they only care about what business problems the Agent can solve.\n"
+                "   Tool binding is an internal matter of the platform and will be automatically processed in the subsequent capability inventory stage. It does not need to and should not be exposed to users.\n"
+                "   Correct statement: We will automatically obtain the valuation data of the same industry for horizontal comparison The system will pull the historical valuation range to calculate the quantile \n"
+                "   Error: The platform has the get_comparable_company_valuation tool You need to confirm whether the get_historical_valuation_percentile_tool is ready "
             ) if can_proceed_to_confirmation else (
-                "✅ 方案已自动补全大部分维度。你现在是财经产品专家，不是问卷调查员。\n\n"
-                "核心原则：抛砖引玉 —— 先给出你的专业草稿，用户自然会纠正。\n\n"
-                "沟通规则：\n"
-                "1. 先简要呈现 proposed_plan，说明每个默认选择的理由。\n"
-                "2. 针对 critical_questions，最多展开 1 个最关键的问题，其余全部用默认值。\n"
-                "3. 每个问题必须给出背景、不同选择、你的推荐方案和理由，不要只扔问题。\n"
-                "4. 禁止列出一长串问题让用户逐个回答。\n"
-                "5. 用户没有提到的维度，直接用专业默认值补全，不要追问。\n"
-                "6. 禁止问用户「你用什么数据源/数据终端」——平台内置 Tushare/AKShare/BaoStock 等数据源，Agent 通过工具自动获取数据，不需要用户选择。\n"
-                "7. 用户说「可以」「好的」「没意见」即视为认可，直接推进。\n"
-                "8. 【重要】禁止在回复中提及任何工具名（如 get_dcf_valuation、get_comparable_company_valuation 等）。\n"
-                "   用户不关心底层用了哪个工具，只关心 Agent 能解决什么业务问题。\n"
-                "   工具绑定是平台内部的事，会在后续能力盘点阶段自动处理，不需要也不应该暴露给用户。\n"
-                "   正确说法：「我们会自动获取同行业估值数据做横向对比」「系统会拉取历史估值区间计算分位」\n"
-                "   错误说法：「平台有 get_comparable_company_valuation 工具」「需要确认 get_historical_valuation_percentile_tool 是否就绪」"
+                "✅ The scheme has automatically completed most dimensions. You are now a financial product expert, not a questionnaire surveyor.\n\n"
+                "Core Principle: Initiate new ideas —— Give your professional draft first and users will naturally correct it.\n\n"
+                "Communication rules:\n"
+                "1. The proposed_plan is briefly presented first, explaining the rationale for each default choice.\n"
+                "2. For critical_questions, expand up to 1 most critical question, and use default values for the rest.\n"
+                "3. Each question must give context, options, your recommendations and reasons. Don t just throw questions.\n"
+                "4. Don t list a long list of questions for users to answer one by one.\n"
+                "5. For dimensions not mentioned by the user, simply use professional default values to complete them without asking.\n"
+                "6. It is forbidden to ask users What data source/data terminal do you use? ——The platform has built-in data sources such as Tushare/AKShare/BaoStock, and the Agent automatically obtains data through tools without user selection.\n"
+                "7. If the user says yes , ok and no objection , it will be deemed as approval and will be promoted directly.\n"
+                "8.  [Important] It is prohibited to mention any tool names (such as get_dcf_valuation, get_comparable_company_valuation, etc.) in the reply.\n"
+                "   Users don t care which tool is used at the bottom layer, they only care about what business problems the Agent can solve.\n"
+                "   Tool binding is an internal matter of the platform and will be automatically processed in the subsequent capability inventory stage. It does not need to and should not be exposed to users.\n"
+                "   Correct statement: We will automatically obtain the valuation data of the same industry for horizontal comparison The system will pull the historical valuation range to calculate the quantile \n"
+                "   Error: The platform has the get_comparable_company_valuation tool You need to confirm whether the get_historical_valuation_percentile_tool is ready "
             ),
         })
     except Exception as exc:
-        logger.error("生成 Agent 需求采集提纲失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"生成 Agent 需求采集提纲失败: {exc}"})
+        logger.error("Failed to generate Agent requirements collection outline: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to generate Agent requirements collection outline: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="prepare_agent_generation_confirmation",
-    name="生成 Agent 创建确认稿",
-    description="在真正写入数据库前，生成一份精简确认稿，明确职责边界、输出形状、工具绑定和覆盖风险，供用户确认。",
+    name="Generate Agent creation confirmation draft",
+    description="Before actually writing to the database, a streamlined confirmation draft is generated to clarify the boundaries of responsibilities, output shapes, tool bindings and coverage risks for user confirmation.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当已经形成候选 Agent 方案，但还没有拿到用户对职责边界、输出形状和覆盖风险的明确确认时使用。",
-    when_not_to_use="不适合直接落库创建 Agent。它只负责生成确认稿。",
-    returns="返回 JSON 字符串，包含确认稿、覆盖风险和建议用户确认项。",
-    example="prepare_agent_generation_confirmation(agent_id='valuation_candidate_v1', agent_name='估值候选Agent', target_responsibility='输出A股估值结论', tool_ids='get_value_factor_bundle_tool')",
+    when_to_use="Use it when a candidate Agent solution has been formed but has not yet received clear confirmation from the user on the responsibility boundaries, output shape, and coverage risks.",
+    when_not_to_use="It is not suitable to directly drop the library to create Agent. It is only responsible for generating confirmation drafts.",
+    returns="Returns a JSON string containing the confirmation, coverage risk, and recommended user confirmation.",
+    example="prepare_agent_generation_confirmation(agent_id='valuation_candidate_v1', agent_name='Valuation candidates Agent', target_responsibility='Output A-share valuation conclusion', tool_ids='get_value_factor_bundle_tool')",
     related_tools=["generate_confirmed_candidate_agent", "create_or_update_runtime_agent_config"],
     data_source_handling="local_only",
 )
 async def prepare_agent_generation_confirmation(
     agent_id: Annotated[str, "候选 Agent ID"],
-    agent_name: Annotated[str, "候选 Agent 显示名称"],
+    agent_name: Annotated[str, "Candidate Agent display name"],
     target_responsibility: Annotated[str, "单一职责的一句话描述"],
-    tool_ids: Annotated[str, "拟绑定工具 ID，逗号分隔"],
-    output_field: Annotated[str, "输出字段名，默认 analysis_report"] = "analysis_report",
-    default_tools: Annotated[str, "默认工具 ID，逗号分隔；为空则默认取 tool_ids 前两项"] = "",
-    desired_output_shape: Annotated[str, "期望输出形状描述，如 结构化估值报告"] = "结构化估值报告",
-    non_goals: Annotated[str, "明确不做什么，逗号分隔"] = "",
-    recommendation_policy: Annotated[str, "是否允许输出交易建议/仓位/价格区间；例如 只做研究不给建议"] = "",
-    valuation_method_scope: Annotated[str, "估值方法边界，如 仅PE/PB/PEG，不含DCF 或 综合估值"] = "",
-    test_strategy: Annotated[str, "生成后是否允许自动测试；例如 只做配置校验，不跑真实股票样例"] = "",
-    preview_mode: Annotated[str, "如果用户在问报告样式，是只看结构骨架，还是允许带占位符示例"] = "",
-    report_section_scope: Annotated[str, "报告章节边界，如 仅估值相关章节，不含技术面/交易执行方案/多情景研究"] = "",
-    status: Annotated[str, "目标模板状态，默认 active"] = "active",
+    tool_ids: Annotated[str, "Tool IDs to be bound, separated by commas"],
+    output_field: Annotated[str, "Output field name, default analysis_report"] = "analysis_report",
+    default_tools: Annotated[str, "Default tool ID, separated by commas; if empty, the first two items of tool_ids will be taken by default."] = "",
+    desired_output_shape: Annotated[str, "Expected output shape description, such as structured valuation report"] = "结构化估值报告",
+    non_goals: Annotated[str, "Specify what not to do, separated by commas"] = "",
+    recommendation_policy: Annotated[str, "Whether to allow the output of trading suggestions/positions/price ranges; for example, only do research but not give suggestions"] = "",
+    valuation_method_scope: Annotated[str, "Valuation method boundaries, such as PE/PB/PEG only, excluding DCF or comprehensive valuation"] = "",
+    test_strategy: Annotated[str, "Whether to allow automatic testing after generation; for example, only configuration verification is performed, and real stock samples are not run."] = "",
+    preview_mode: Annotated[str, "If the user is asking about the report style, should we only see the structural skeleton, or should we allow placeholder examples?"] = "",
+    report_section_scope: Annotated[str, "Report chapter boundaries, such as only valuation-related chapters, excluding technical aspects/transaction execution plans/multi-scenario research"] = "",
+    status: Annotated[str, "Target template status, default active"] = "active",
 ) -> str:
-    """生成 Agent 创建确认稿。"""
+    """Generate Agent creation confirmation draft."""
     try:
         clean_agent_id = str(agent_id or "").strip()
         clean_agent_name = str(agent_name or "").strip()
         clean_responsibility = str(target_responsibility or "").strip()
         if not clean_agent_id or not clean_agent_name or not clean_responsibility:
-            return _json_response({"status": "error", "message": "agent_id、agent_name、target_responsibility 不能为空"})
+            return _json_response({"status": "error", "message": "agent_id, agent_name, target_responsibility cannot be empty"})
 
-        # ── 🔍 入口日志：生成确认稿 ──
+        # ── 🔍 Entrance log: Generate confirmation draft ──
         logger.info(
             "[Prepare][Entry] agent_id=%s name=%s responsibility_len=%d tool_count=%d",
             clean_agent_id,
@@ -3238,22 +3238,22 @@ async def prepare_agent_generation_confirmation(
         effective_recommendation_policy = _normalize_recommendation_policy(recommendation_policy)
         output_preview_request = _is_output_preview_request(clean_responsibility, desired_output_shape)
         report_like_request = _is_report_like_request(output_field, desired_output_shape, clean_responsibility)
-        # 需求确认阶段允许 tool_ids 为空：此时确认稿只包含职责/输出/非目标，
-        # 工具候选留待能力盘点（CAPABILITY_CHECK）阶段补全。
-        # 与 _build_confirmation_template 的空 bound_tools 处理一致。
+        # The requirement confirmation phase allows tool_ids to be empty: at this time the confirmation draft only contains responsibilities/outputs/non-goals,
+        # Tool candidates are left to be completed during the capability inventory (CAPABILITY_CHECK) stage.
+        # Consistent with _build_confirmation_template's handling of empty bound_tools.
 
         stock_analysis_request = _is_stock_analysis_request(clean_agent_name, clean_responsibility, desired_output_shape)
-        # 自动补全默认值，与 prepare_agent_requirement_intake 保持一致
+        # Auto-complete default value, consistent with prepare_agent_requirement_intake
         if stock_analysis_request and not resolved_non_goals:
-            resolved_non_goals = _parse_string_list("不做交易建议/仓位建议/目标价区间/止损止盈/技术择时")
+            resolved_non_goals = _parse_string_list("No trading advice/position advice/target price range/stop loss and take profit/technical timing")
         if stock_analysis_request and _looks_unspecified(valuation_method_scope):
-            valuation_method_scope = "综合估值（行业对比PE/PB + 历史估值分位 + DCF）"
+            valuation_method_scope = "Comprehensive valuation (industry comparison PE/PB + historical valuation quantiles + DCF) "
         if stock_analysis_request and _looks_unspecified(test_strategy):
             test_strategy = "auto_test"
         if output_preview_request and _looks_unspecified(preview_mode):
             preview_mode = "structure_only"
         if stock_analysis_request and output_preview_request and _looks_unspecified(report_section_scope):
-            report_section_scope = "仅保留估值/分析相关章节，不扩展到技术面、交易执行方案、多情景研究"
+            report_section_scope = "Only chapters related to valuation/analysis are retained, and do not extend to technical aspects, transaction execution plans, and multi-scenario research."
 
         registry = get_tool_registry()
         missing_tools = [tool_id for tool_id in resolved_tools if registry.get(tool_id) is None]
@@ -3262,7 +3262,7 @@ async def prepare_agent_generation_confirmation(
 
         db = get_mongo_db()
 
-        # ── 幂等性保护：同一 agent_id 已有活跃确认稿时禁止覆盖 ──
+        # ── Idempotence protection: overwriting is prohibited when the same agent_id already has an active confirmation draft ──
         try:
             existing_doc = await db["agent_workshop_sessions"].find_one(
                 {"agent_id": clean_agent_id, "builder_contracts.stage": "confirmation_pending"},
@@ -3272,22 +3272,22 @@ async def prepare_agent_generation_confirmation(
             existing_doc = None
         if existing_doc:
             logger.warning(
-                "[Prepare][Idempotent] ⚠️ agent_id=%s 已有活跃确认稿，拒绝覆盖 session_id=%s",
+                "[Prepare][Idempotent] ⚠️ agent_id=%s There is already an active confirmation draft and overwriting is refused. session_id=%s",
                 clean_agent_id,
                 existing_doc.get("session_id", ""),
             )
             return _json_response({
                 "status": "already_pending",
                 "message": (
-                    f"Agent `{clean_agent_id}` 已有待确认的生成方案。"
-                    f"请直接引导用户选择方案或回复质疑，不要重复生成确认稿。"
-                    f"如果用户已明确选择方案，调用 generate_confirmed_candidate_agent。"
+                    f"Agent `{clean_agent_id}` There is a build plan to be confirmed."
+                    f"Please directly guide users to choose plans or respond to questions, and do not repeatedly generate confirmation drafts."
+                    f"If the user has explicitly selected an option, call generate_confirmed_candidate_agent."
                 ),
             })
 
-        # ── V2 流程：需求确认阶段只确认职责/输出/边界，不展示工具候选，不做缺口分析 ──
-        # 缺口分析放在用户确认需求后的 CAPABILITY_CHECK 阶段统一进行。
-        # 此阶段不把 capability_inventory / gap_report 暴露给用户。
+        # ── V2 Process: The requirements confirmation phase only confirms responsibilities/outputs/boundaries, does not display tool candidates, and does not perform gap analysis. ──
+        # Gap analysis is performed uniformly in the CAPABILITY_CHECK stage after the user confirms their requirements.
+        # Capability_inventory / gap_report is not exposed to users at this stage.
         logger.info(
             "[Prepare][RequirementOnly] agent_id=%s name=%s (no capability inventory, no gap analysis)",
             clean_agent_id,
@@ -3298,8 +3298,8 @@ async def prepare_agent_generation_confirmation(
         if report_like_request:
             report_contract = {
                 "style_preview_mode": preview_mode or "structure_skeleton",
-                "content_scope": report_section_scope or "仅限当前已确认职责相关章节，不得自动扩展到未确认模块",
-                "preview_instruction": "确认阶段默认只展示章节骨架/字段模板，不填充真实内容；只有用户明确要求时才允许占位符 mock。",
+                "content_scope": report_section_scope or "Only chapters related to currently confirmed responsibilities and shall not be automatically extended to unconfirmed modules",
+                "preview_instruction": "In the confirmation phase, only the chapter skeleton/field template is displayed by default without filling in the real content; placeholder mocks are only allowed when explicitly requested by the user.",
                 "forbidden_expansions": [
                     "技术分析",
                     "交易执行方案",
@@ -3324,25 +3324,25 @@ async def prepare_agent_generation_confirmation(
         )
 
         pending_question = (
-            "以上是我对这个 Agent 需求的理解。请确认职责边界和输出形态是否符合你的预期。"
-            "如果无误，请回复「确认」；如需调整，请直接告诉我修改点。"
+            "The above is my understanding of the requirements of this Agent. Please confirm whether the responsibility boundaries and output shape meet your expectations."
+            "If it is correct, please reply Confirm ; if you need to make adjustments, please tell me the modification points directly."
         )
 
-        # 更新意图上下文：等待用户确认需求
+        # Update intent context: wait for user confirmation of requirement
         _auto_update_intent(
             action="create_agent",
             stage="requirement_confirmation_pending",
             spec_id=clean_agent_id,
             spec_name=clean_agent_name,
-            intent_summary=f"创建 Agent：{clean_responsibility}",
+            intent_summary=f"Create Agent:{clean_responsibility}",
             pending_options=[],
             proposed_items=[],
             pending_question=pending_question,
             active_subtask="等待用户确认需求",
-            next_action="用户确认需求后进入 CAPABILITY_CHECK，调用 search_project_capabilities + analyze_agent_workshop_gaps",
+            next_action="After the user confirms the requirement, enter CAPABILITY_CHECK and call search_project_capabilities + analyze_agent_workshop_gaps",
         )
 
-        # ── 🔍 追踪日志：确认 prepare 阶段输出 ──
+        # ── 🔍 Trace log: Confirm prepare phase output ──
         logger.info(
             "[Prepare][Output] agent_id=%s confirmation_type=requirement_confirmation "
             "responsibility_len=%d output_shape_len=%d pending_question_len=%d",
@@ -3358,20 +3358,20 @@ async def prepare_agent_generation_confirmation(
             "ready_to_execute": False,
             "confirmation_type": "requirement_confirmation",
             "nanobot_guidance": (
-                "你现在是财经产品专家的身份与用户沟通，不是技术架构师。\n\n"
-                "核心原则：抛砖引玉 —— 先给出你的专业确认稿，用户自然会纠正。\n\n"
-                "沟通规则：\n"
-                "1. 只讲业务价值：这个 Agent 做什么、输出什么、不做什么。"
-                "不要讲「绑定了几个工具」或列出 tool_id。\n"
-                "2. 不要展示能力盘点：用户不需要知道系统有哪些工具，"
-                "只需要知道 Agent 能解决什么问题。\n"
-                "3. 不要提前给方案：此阶段只确认需求，方案会在需求确认后、"
-                "做完能力盘点再给出。\n"
-                "4. 不要问一连串问题：需求已通过 proposed_plan 自动补全了默认值，"
-                "直接呈现确认稿，让用户看到草稿后自然纠正。\n"
-                "5. 禁止问用户「你用什么数据源/数据终端」——平台内置 Tushare/AKShare/BaoStock 等数据源，Agent 通过工具自动获取数据，不需要用户选择。\n"
-                "6. 用户回复「确认」「好的」「可以」等任意认可表述，"
-                "就视为需求已确认，进入下一阶段做能力盘点。"
+                "You are now communicating with users as a financial product expert, not a technical architect.\n\n"
+                "Core Principle: Initiate new ideas —— Give your professional confirmation draft first, and users will naturally correct it.\n\n"
+                "Communication rules:\n"
+                "1. Only talk about business value: what this Agent does, what it outputs, and what it doesn t do."
+                "Don t say several tools are bound or list tool_id.\n"
+                "2. Don t show a capability inventory: users don t need to know what tools the system has;"
+                "Just need to know what problem the Agent can solve.\n"
+                "3. Do not give plans in advance: only the needs are confirmed at this stage, and the plans will be released after the needs are confirmed."
+                "Give it after completing the ability inventory.\n"
+                "4. Don t ask a series of questions: the requirements are automatically completed with default values via proposed_plan,"
+                "Present the confirmation draft directly, allowing users to make corrections naturally after seeing the draft.\n"
+                "5. It is forbidden to ask users What data source/data terminal do you use? ——The platform has built-in data sources such as Tushare/AKShare/BaoStock, and the Agent automatically obtains data through tools without user selection.\n"
+                "6. The user replies with any approval expression such as confirm , ok , ok , etc."
+                "It is considered that the demand has been confirmed and the next stage is to do a capability inventory."
             ),
             "pending_question": pending_question,
             "confirmation_brief": {
@@ -3405,48 +3405,48 @@ async def prepare_agent_generation_confirmation(
                 "overwrite_risk": overwrite_risk,
                 "user_confirmation_template": user_confirmation_template,
                 "required_user_confirmations": [
-                    "职责边界：这个 Agent 该做什么、不做什么，是否符合你的预期？",
-                    "输出内容：报告/分析的结构是否覆盖了你关心的维度？",
-                    "分析方法：估值逻辑和覆盖范围是否准确？",
+                    "Boundary of responsibilities: Does this Agent meet your expectations about what it should do and what it should not do?",
+                    "Output content: Does the structure of the report/analysis cover the dimensions you care about?",
+                    "Analysis approach: Are the valuation logic and coverage accurate?",
                 ],
-                "suggested_user_reply": f"确认；allow_overwrite={'yes' if overwrite_risk['requires_explicit_overwrite'] else 'no'}",
+                "suggested_user_reply": f"Confirm;allow_overwrite={'yes' if overwrite_risk['requires_explicit_overwrite'] else 'no'}",
             },
         })
     except Exception as exc:
-        logger.error("生成 Agent 创建确认稿失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"生成 Agent 创建确认稿失败: {exc}"})
+        logger.error("Failed to generate Agent creation confirmation draft: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to generate Agent creation confirmation draft: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="propose_agent_build_plans",
     name="基于缺口分析生成候选方案",
-    description="在需求确认后、根据 gap_report 生成 2-4 个 Agent 构建方案（推荐完整版/严格交付版/扩展增强版/降级版），供用户选择。",
+    description="After the requirements are confirmed, 2-4 Agent construction plans (recommended full version/strict delivery version/extended enhanced version/downgraded version) are generated based on gap_report for users to choose from.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
     when_to_use=(
-        "当已经确认用户需求，并已完成能力盘点和 gap 分析后，"
-        "需要把技术缺口翻译成用户可理解的多个可行方案时使用。"
+        "After user needs have been confirmed and capability inventory and gap analysis have been completed,"
+        "Use it when you need to translate technical gaps into multiple feasible solutions that users can understand."
     ),
     when_not_to_use=(
-        "不要在需求未确认前调用；也不要在没有任何 gap_report 时调用。"
-        "此工具只负责生成方案，不执行 Agent 创建。"
+        "Don t call it before the requirement is confirmed; don t call it when there is no gap_report."
+        "This tool is only responsible for generating solutions and does not perform Agent creation."
     ),
     returns=(
-        "返回 JSON 字符串，包含 candidate_plans（固定字段）、recommended_plan_id、pending_question。"
+        "Returns a JSON string containing candidate_plans (fixed fields), recommended_plan_id, pending_question."
     ),
     example="propose_agent_build_plans(gap_report_json='{\"blocking_gaps\":[],\"non_blocking_gaps\":[]}')",
     related_tools=["search_project_capabilities", "analyze_agent_workshop_gaps", "generate_confirmed_candidate_agent"],
     data_source_handling="local_only",
 )
 async def propose_agent_build_plans(
-    gap_report_json: Annotated[str, "JSON 字符串，包含 blocking_gaps、non_blocking_gaps、suggested_tools 等"],
-    agent_responsibility: Annotated[str, "Agent 职责描述，用于生成更贴合的方案"] = "",
+    gap_report_json: Annotated[str, "JSON String, including blocking_gaps, non_blocking_gaps, suggested_tools, etc."],
+    agent_responsibility: Annotated[str, "Agent Responsibility descriptions to generate more relevant solutions"] = "",
     agent_output_shape: Annotated[str, "Agent 输出形状描述"] = "",
 ) -> str:
-    """基于 gap 分析报告生成候选构建方案。"""
+    """Generate candidate build solutions based on gap analysis reports."""
     try:
         gap_report = _parse_optional_json_object(gap_report_json, "gap_report_json")
         blocking_gaps = gap_report.get("blocking_gaps") or []
@@ -3459,40 +3459,40 @@ async def propose_agent_build_plans(
         if not isinstance(inferable_gaps, list):
             inferable_gaps = []
 
-        # 构造 LLM 提示词
+        # Construct LLM prompt words
         system_prompt = (
-            "你是一位资深的财经产品专家。你的任务是根据系统的能力缺口分析结果，"
-            "为用户生成 2-4 个清晰、可执行、可比较的 Agent 构建方案。即使没有 blocking gap，也必须给出不同交付取向的候选方案，而不是只给一套。\n\n"
-            "规则：\n"
-            "1. 输出必须是合法 JSON，不要包含 markdown 代码块标记。\n"
-            "2. 方案用业务语言描述，不要暴露内部工具 ID 或技术细节。\n"
-            "3. 方案数量：\n"
-            "   - 0 个 blocking gap：至少提供 direct（推荐完整交付）、strict（保守可追溯版）和 enhanced（扩展增强版）三套；enhanced 只能作为可选扩展，不能伪造必需缺口。\n"
-            "   - 1-2 个 blocking gap：提供 complete（补齐）、quick（降级先跑）和 strict（缩小到可追溯范围）。\n"
-            "   - 3 个及以上 blocking gap：提供 complete、quick、narrow 三套。\n"
-            "4. complete 方案必须列出 required_new_skills（需要生成/复用的能力）。\n"
-            "5. quick/strict 方案必须说明哪些输出会被降级、收窄或要求更严格的数据依据。\n"
-            "6. narrow 方案必须给出建议缩小后的职责范围。\n"
-            "7. 必须设置 recommended_plan_id：0 个 blocking gap 时推荐 direct；有 blocking gap 时默认推荐 complete。\n"
-            "8. 每个方案必须包含 gap_summary 字段，说明该方案下的数据覆盖情况：哪些数据有直接工具支撑、哪些通过推断获取、哪些缺失。\n"
-            "9. 每个方案必须包含 feasibility 字段，说明实现可行性：能否实现、有哪些困难、需要哪些额外开发或数据接入。\n"
-            "10. 对于有 blocking_gaps 的方案，必须在 feasibility 中明确说明这些缺口能否补齐、补齐方式（新建 Skill/接入外部数据/降级处理）以及补齐失败的影响。\n"
+            "You are a senior financial product expert. Your task is to analyze the results based on the system s capability gaps,"
+            "Generate 2-4 clear, executable, and comparable Agent construction plans for users. Even if there is no blocking gap, candidates for different delivery orientations must be given, not just one set.\n\n"
+            "Rules:\n"
+            "1. The output must be valid JSON and do not contain markdown code block tags.\n"
+            "2. Describe the solution in business language and do not expose internal tool IDs or technical details.\n"
+            "3. Number of plans:\n"
+            "   - 0 A blocking gap: at least three sets of direct (recommended for complete delivery), strict (conservative traceable version) and enhanced (enhanced version) are provided; enhanced can only be used as an optional extension, and required gaps cannot be forged.\n"
+            "   - 1-2 A blocking gap: provide complete (complete), quick (downgrade first) and strict (narrow to traceable range).\n"
+            "   - 3 and above blocking gaps: three sets of complete, quick, and narrow are provided.\n"
+            "4. complete The scheme must list required_new_skills (skills that need to be generated/reused).\n"
+            "5. quick/strict The plan must describe which outputs will be downgraded, narrowed or require a more stringent data basis.\n"
+            "6. narrow The plan must propose a narrowed scope of responsibilities.\n"
+            "7. Recommended_plan_id must be set: direct is recommended when there are 0 blocking gaps; complete is recommended by default when there are blocking gaps.\n"
+            "8. Each solution must contain a gap_summary field that describes the data coverage under the solution: which data are supported by direct tools, which are obtained through inference, and which are missing.\n"
+            "9. Each solution must include a feasibility field that describes the feasibility of implementation: whether it can be implemented, what difficulties there are, and what additional development or data access is required.\n"
+            "10. For solutions with blocking_gaps, it must be clearly stated in the feasibility whether these gaps can be filled, the method of filling (new Skill/access to external data/downgrade processing) and the impact of failure to fill.\n"
         )
 
         user_prompt = (
-            f"Agent 职责：{agent_responsibility or '（未提供）'}\n"
-            f"Agent 输出：{agent_output_shape or '（未提供）'}\n\n"
-            "能力缺口分析结果：\n"
-            f"blocking_gaps（阻塞性缺口，无法实现的分析维度）数量：{len(blocking_gaps)}\n"
-            f"blocking_gaps 详情：{_json_compact_dump(blocking_gaps)}\n"
-            f"inferable_gaps（可推断缺口，有相关数据可定性推断但不阻塞）数量：{len(inferable_gaps)}\n"
-            f"inferable_gaps 详情：{_json_compact_dump(inferable_gaps)}\n"
-            f"non_blocking_gaps（其他非阻塞性缺口）数量：{len(non_blocking_gaps)}\n"
-            f"non_blocking_gaps 详情：{_json_compact_dump(non_blocking_gaps)}\n\n"
-            "请按以下固定 JSON 格式输出：\n"
+            f"Agent Responsibilities:{agent_responsibility or ' (not provided)'}\n"
+            f"Agent Output:{agent_output_shape or ' (not provided)'}\n\n"
+            "Capability gap analysis results:\n"
+            f"blocking_gaps (Blocking gaps, unachievable dimensions of analysis) Number:{len(blocking_gaps)}\n"
+            f"blocking_gaps Details:{_json_compact_dump(blocking_gaps)}\n"
+            f"inferable_gaps (The gap can be inferred, and there is relevant data that can be qualitatively inferred but not blocked) Quantity:{len(inferable_gaps)}\n"
+            f"inferable_gaps Details:{_json_compact_dump(inferable_gaps)}\n"
+            f"non_blocking_gaps (Other non-blocking gaps) quantity:{len(non_blocking_gaps)}\n"
+            f"non_blocking_gaps Details:{_json_compact_dump(non_blocking_gaps)}\n\n"
+            "Please output in the following fixed JSON format:\n"
             "{\n"
             '  "candidate_plans": [\n'
-            '    {"plan_id": "direct|strict|enhanced|complete|quick|narrow", "plan_name": "...", "description": "...", "required_new_skills": [...], "estimated_effort": "高|中|低", "risk": "...", "gap_summary": "该方案的数据覆盖情况说明", "feasibility": "实现可行性说明，包括能否实现、困难和补齐方式", "recommended": true|false}\n'
+            '    {"plan_id": "direct|strict|enhanced|complete|quick|narrow", "plan_name": "...", "description": "...", "required_new_skills": [...], "estimated_effort": "high|in|low", "risk": "...", "gap_summary": "Description of the data coverage of this plan", "feasibility": "Implementation feasibility description, including whether it can be achieved, difficulties and supplementary methods", "recommended": true|false}\n'
             '  ],\n'
             '  "recommended_plan_id": "...",\n'
             '  "pending_question": "..."\n'
@@ -3508,7 +3508,7 @@ async def propose_agent_build_plans(
 
             config = await get_reasoning_llm_config(db)
             if not config:
-                raise ValueError("系统中未找到可用的默认推理模型配置")
+                raise ValueError("No available default inference model configuration was found in the system")
             client = UnifiedLLMClient.from_config(config)
 
             messages = [
@@ -3518,7 +3518,7 @@ async def propose_agent_build_plans(
             response = await client.achat(messages, temperature=0.3, max_tokens=4000)
             raw_content = str(response.content or "").strip()
 
-            # 尝试从 markdown 代码块中提取 JSON
+            # Try to extract from markdown code block JSON
             plan_payload = _extract_json_from_markdown(raw_content) or raw_content
             try:
                 plan_data = json.loads(plan_payload)
@@ -3537,7 +3537,7 @@ async def propose_agent_build_plans(
         if not recommended_plan_id:
             recommended_plan_id = candidate_plans[0].get("plan_id") if candidate_plans else "direct"
 
-        # 规范每个 plan 的字段
+        # Standardize the fields of each plan
         normalized_plans = []
         for p in candidate_plans:
             plan_id = str(p.get("plan_id") or "").strip()
@@ -3555,7 +3555,7 @@ async def propose_agent_build_plans(
                 "recommended": bool(p.get("recommended", False)),
             })
 
-        # 安全网：LLM 仍然只返回一套时，按规则补齐到可比较方案，避免方案选择阶段退化成单选。
+        # Safety net: When LLM still only returns one set, it will be supplemented to comparable solutions according to the rules to avoid the solution selection stage from degenerating into a single choice.
         min_expected = 3 if len(blocking_gaps) == 0 else 2
         if len(normalized_plans) < min_expected:
             fallback_plans = _fallback_build_plans(blocking_gaps, non_blocking_gaps).get("candidate_plans", [])
@@ -3583,13 +3583,13 @@ async def propose_agent_build_plans(
             fallback_recommended = str(_fallback_build_plans(blocking_gaps, non_blocking_gaps).get("recommended_plan_id") or "").strip()
             recommended_plan_id = fallback_recommended or (normalized_plans[0].get("plan_id") if normalized_plans else "direct")
 
-        # 确保 recommended 标志与 recommended_plan_id 一致
+        # Make sure the recommended flag matches recommended_plan_id
         for p in normalized_plans:
             p["recommended"] = (p["plan_id"] == recommended_plan_id)
 
-        pending_question = str(plan_data.get("pending_question") or "你希望采用哪个方案？").strip()
+        pending_question = str(plan_data.get("pending_question") or "Which option do you want to adopt?").strip()
 
-        # 更新意图上下文：等待用户选择方案
+        # Update intent context: wait for user to select plan
         pending_options = [
             {
                 "index": i + 1,
@@ -3606,12 +3606,12 @@ async def propose_agent_build_plans(
         _auto_update_intent(
             action="create_agent",
             stage="plan_selection_pending",
-            intent_summary="等待用户选择 Agent 构建方案",
+            intent_summary="Wait for the user to select the Agent build plan",
             pending_options=pending_options,
             proposed_items=[{"index": i + 1, "id": p["plan_id"], "name": p["plan_name"]} for i, p in enumerate(normalized_plans)],
             pending_question=pending_question,
             active_subtask="等待用户选择方案",
-            next_action="用户选择方案后调用 generate_confirmed_candidate_agent，传入 selected_plan_id 与 acknowledged_gaps",
+            next_action="After the user selects the plan, call generate_confirmed_candidate_agent and pass in selected_plan_id and acknowledged_gaps",
         )
 
         logger.info(
@@ -3630,12 +3630,12 @@ async def propose_agent_build_plans(
             "pending_question": pending_question,
             "pending_options": pending_options,
             "nanobot_guidance": (
-                "你现在是财经产品专家。向用户展示方案时：\n"
-                "1. 用业务语言解释每个方案的区别。\n"
-                "2. 不要暴露 direct/strict/enhanced/complete/quick/narrow 等内部代号。\n"
-                "3. 明确说明各方案在交付范围、保守程度、是否补能力、是否扩展增强上的区别。\n"
-                "4. 用户回复「选 A」「按推荐的来」「确认」等任意认可表述，"
-                "就视为已选择 recommended_plan_id，直接调用 generate_confirmed_candidate_agent。"
+                "You are now a financial product expert. When presenting solutions to users:\n"
+                "1. Explain the differences between each option in business terms.\n"
+                "2. Do not expose internal codenames such as direct/strict/enhanced/complete/quick/narrow.\n"
+                "3. Clearly explain the differences between each plan in terms of delivery scope, degree of conservatism, whether to supplement capabilities, and whether to expand and enhance.\n"
+                "4. The user replies with any approval expressions such as Choose A , Follow the recommendations , Confirm , etc."
+                "It is considered that recommended_plan_id has been selected and generate_confirmed_candidate_agent is called directly."
             ),
         })
     except Exception as exc:
@@ -3647,34 +3647,34 @@ async def propose_agent_build_plans(
 @register_tool(
     tool_id="search_project_capabilities",
     name="搜索项目能力",
-    description="轻量搜索当前项目里可复用的工具、skills、外部技能和 MCP 能力，用于 Agent 设计前的资源侦察。", 
+    description="Lightly search for reusable tools, skills, external skills and MCP capabilities in the current project for resource reconnaissance before Agent design.", 
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
     when_to_use=(
-        "当需要先确认仓库里已有哪类能力，再决定如何设计或创建新 Agent 时使用。"
-        "适合按需求关键词搜索，而不是直接猜工具名。"
+        "Use it when you need to confirm what types of capabilities are already in the warehouse before deciding how to design or create a new Agent."
+        "It is suitable to search based on required keywords instead of directly guessing the tool name."
     ),
     when_not_to_use=(
-        "不适合直接执行股票分析，也不适合直接生成最终 Agent 实现。"
-        "它只负责资源侦察与能力确认。"
+        "It is not suitable for directly performing stock analysis, nor is it suitable for directly generating the final Agent implementation."
+        "It is only responsible for resource reconnaissance and capability confirmation."
     ),
     returns=(
-        "返回 JSON 字符串，包含 capability_id、source_type、category、description、when_to_use、"
-        "related_tools、bindable、metadata.parameters 等能力摘要。"
+        "Returns a JSON string, including capability_id, source_type, category, description, when_to_use,"
+        "related_tools, bindable, metadata.parameters Summary of other abilities."
     ),
-    example="search_project_capabilities(query='A股估值 行业对比 因子', top_k=8)",
+    example="search_project_capabilities(query='A Stock Valuation Industry Comparison Factors', top_k=8)",
     related_tools=["inspect_agent_blueprints", "get_agent_blueprint_details"],
     data_source_handling="local_only",
 )
 async def search_project_capabilities(
-    query: Annotated[str, "能力检索需求，如 A股估值、行业对比、组合复盘、报告生成"],
-    top_k: Annotated[int, "返回结果条数，默认 8，最大 20"] = 8,
-    bindable_only: Annotated[bool, "是否只返回可直接绑定到 Agent 的能力，默认 true"] = True,
-    source_types: Annotated[str, "按能力来源过滤，逗号分隔，如 builtin_tool,skill,mcp_tool"] = "builtin_tool,skill,external_skill,mcp_tool",
+    query: Annotated[str, "Capability retrieval requirements, such as A-share valuation, industry comparison, portfolio review, and report generation"],
+    top_k: Annotated[int, "Number of results returned, default 8, maximum 20"] = 8,
+    bindable_only: Annotated[bool, "Whether to only return capabilities that can be directly bound to the Agent, default true"] = True,
+    source_types: Annotated[str, "Filter by capability source, separated by commas, such as builtin_tool,skill,mcp_tool"] = "builtin_tool,skill,external_skill,mcp_tool",
 ) -> str:
-    """搜索项目已有能力，供 Nanobot 在创建 Agent 前做资源侦察。"""
+    """Search items now have the ability for Nanobot to do resource reconnaissance before creating an Agent."""
     try:
         db = get_mongo_db()
         service = CapabilityIndexService(db)
@@ -3699,36 +3699,36 @@ async def search_project_capabilities(
 @tool
 @register_tool(
     tool_id="inspect_runtime_agent_configs",
-    name="查看运行时 Agent 配置",
-    description="查看数据库中的配置式 Agent 运行时定义，包括 agent_configs 和 tool_agent_bindings，用于判断是否可以直接复用 UniversalAgent 基座。",
+    name="View runtime Agent configuration",
+    description="Check the configured Agent runtime definitions in the database, including agent_configs and tool_agent_bindings, to determine whether the UniversalAgent base can be directly reused.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
     when_to_use=(
-        "当需要确认项目里是否已经存在数据库驱动的专用 Agent，"
-        "或判断某个能力是否可以通过 UniversalAgent + agent_configs 直接承载时使用。"
+        "When you need to confirm whether a database-driven dedicated Agent already exists in the project,"
+        "Or determine whether a certain ability can be passed UniversalAgent + agent_configs Used for direct loading."
     ),
-    when_not_to_use="不适合执行 Agent，也不适合搜索通用工具能力；它只看数据库里的运行时 Agent 定义。",
+    when_not_to_use="Not suitable for executing Agents, nor for searching for common tool capabilities; it only looks at runtime Agent definitions in the database.",
     returns=(
-        "返回 JSON 字符串，包含 runtime_mode、effective_tools、output_field、metadata、"
-        "以及该配置是否覆盖了内置蓝图。"
+        "Returns a JSON string, including runtime_mode, effective_tools, output_field, metadata,"
+        "And whether the configuration overrides the built-in blueprint."
     ),
-    example="inspect_runtime_agent_configs(keyword='估值', limit=5)",
+    example="inspect_runtime_agent_configs(keyword='Valuation', limit=5)",
     related_tools=["inspect_agent_workshop_assets", "inspect_agent_blueprints", "search_project_capabilities"],
     data_source_handling="local_only",
 )
 async def inspect_runtime_agent_configs(
-    keyword: Annotated[str, "按 agent_id、名称、描述、metadata 模糊筛选，可留空"] = "",
-    limit: Annotated[int, "返回条数，默认 10，最大 20"] = 10,
-    include_builtin_overrides: Annotated[bool, "是否包含对内置 Agent 的数据库覆盖配置，默认 true"] = True,
+    keyword: Annotated[str, "Fuzzy filter by agent_id, name, description, metadata, can be left blank"] = "",
+    limit: Annotated[int, "Number of items returned, default 10, maximum 20"] = 10,
+    include_builtin_overrides: Annotated[bool, "Whether to include the database override configuration of the built-in Agent, default true"] = True,
 ) -> str:
-    """查看数据库中的运行时 Agent 配置。"""
+    """View the runtime Agent configuration in the database."""
     try:
         db = get_mongo_db()
         agent_configs = _get_collection(db, "agent_configs")
         if agent_configs is None:
-            return _json_response({"status": "error", "message": "当前数据库中不可用 agent_configs 集合"})
+            return _json_response({"status": "error", "message": "The agent_configs collection is not available in the current database"})
 
         registry = get_registry()
         capped_limit = max(1, min(int(limit), 20))
@@ -3787,39 +3787,39 @@ async def inspect_runtime_agent_configs(
             ],
         })
     except Exception as exc:
-        logger.error("查看运行时 Agent 配置失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"查看运行时 Agent 配置失败: {exc}"})
+        logger.error("Failed to view runtime Agent configuration: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to view runtime Agent configuration: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="inspect_agent_blueprints",
     name="查看 Agent 蓝图",
-    description="查看当前仓库里已注册 Agent 的元数据蓝图，用于为新 Agent 选择最接近的起点。",
+    description="View the metadata blueprint of the registered Agent in the current warehouse, which is used to select the closest starting point for the new Agent.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
     when_to_use=(
-        "当需要判断应该复用哪个现有 Agent 模式时使用。"
-        "适合先按关键词、分类或维护状态筛选，再决定读哪一个实现。"
+        "Used when you need to determine which existing Agent mode should be reused."
+        "It is suitable to filter by keywords, categories or maintenance status first, and then decide which implementation to read."
     ),
-    when_not_to_use="不适合直接输出最终实现代码。它提供的是现有 Agent 的结构化蓝图摘要。",
+    when_not_to_use="It is not suitable to directly output the final implementation code. What it provides is a structured blueprint summary of existing Agents.",
     returns=(
-        "返回 JSON 字符串，包含 agent_id、description、tools、default_tools、inputs、outputs、"
-        "callable_surfaces、maintenance_status 等元数据。"
+        "Returns a JSON string, including agent_id, description, tools, default_tools, inputs, outputs,"
+        "callable_surfaces, maintenance_status metadata."
     ),
-    example="inspect_agent_blueprints(keyword='估值', category='analyst', limit=5)",
+    example="inspect_agent_blueprints(keyword='Valuation', category='analyst', limit=5)",
     related_tools=["get_agent_blueprint_details", "search_project_capabilities"],
     data_source_handling="local_only",
 )
 def inspect_agent_blueprints(
-    keyword: Annotated[str, "按名称、描述、标签、工具名模糊过滤，可留空"] = "",
-    category: Annotated[str, "按 Agent 分类过滤，如 analyst，可留空"] = "",
-    limit: Annotated[int, "返回条数，默认 10，最大 20"] = 10,
-    maintained_only: Annotated[bool, "是否默认排除已标记 unmaintained 的蓝图"] = True,
+    keyword: Annotated[str, "Fuzzy filter by name, description, label, tool name, can be left blank"] = "",
+    category: Annotated[str, "Filter by Agent category, such as analyst, can be left blank"] = "",
+    limit: Annotated[int, "Number of items returned, default 10, maximum 20"] = 10,
+    maintained_only: Annotated[bool, "Whether to exclude blueprints marked unmaintained by default"] = True,
 ) -> str:
-    """查看当前项目里可复用的 Agent 蓝图。"""
+    """View reusable Agent blueprints in the current project."""
     try:
         registry = get_registry()
         items = registry.list_all()
@@ -3853,38 +3853,38 @@ def inspect_agent_blueprints(
             "results": results,
         })
     except Exception as exc:
-        logger.error("查看 Agent 蓝图失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"查看 Agent 蓝图失败: {exc}"})
+        logger.error("Failed to view Agent blueprint: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to view Agent blueprint: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="get_agent_blueprint_details",
-    name="查看 Agent 蓝图详情",
-    description="查看单个已注册 Agent 的完整元数据蓝图，用于确认是否适合作为新 Agent 的模板或参考对象。",
+    name="View Agent Blueprint Details",
+    description="View the complete metadata blueprint of a single registered Agent to confirm its suitability as a template or reference object for a new Agent.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
     when_to_use=(
-        "当已经通过 inspect_agent_blueprints 找到候选 Agent，"
-        "需要进一步确认输入输出、默认工具、依赖关系和调用面时使用。"
+        "When the candidate Agent has been found through inspect_agent_blueprints,"
+        "Use it when further confirmation of input and output, default tools, dependencies, and call surfaces is required."
     ),
-    when_not_to_use="不适合用来搜索能力集合；先筛选候选，再看详情。",
-    returns="返回 JSON 字符串，包含单个 Agent 的完整元数据详情。",
+    when_not_to_use="Not suitable for searching capability sets; filter candidates first and then look at details.",
+    returns="Returns a JSON string containing complete metadata details for a single Agent.",
     example="get_agent_blueprint_details(agent_id='valuation_analyst_v2')",
     related_tools=["inspect_agent_blueprints", "search_project_capabilities"],
     data_source_handling="local_only",
 )
 def get_agent_blueprint_details(
-    agent_id: Annotated[str, "已注册 Agent ID，如 valuation_analyst_v2"]
+    agent_id: Annotated[str, "Registered Agent ID, such as valuation_analyst_v2"]
 ) -> str:
-    """查看单个 Agent 蓝图详情。"""
+    """View individual Agent blueprint details."""
     try:
         registry = get_registry()
         metadata = registry.get_metadata(agent_id)
         if metadata is None:
-            return _json_response({"status": "not_found", "message": f"未找到 Agent 蓝图: {agent_id}"})
+            return _json_response({"status": "not_found", "message": f"Agent blueprint not found: {agent_id}"})
         return _json_response({
             "status": "ok",
             "agent": _format_agent_metadata(metadata),
@@ -3894,52 +3894,52 @@ def get_agent_blueprint_details(
             ],
         })
     except Exception as exc:
-        logger.error("查看 Agent 蓝图详情失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"查看 Agent 蓝图详情失败: {exc}"})
+        logger.error("Failed to view Agent blueprint details: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to view Agent blueprint details: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="inspect_agent_workshop_assets",
-    name="查看 Agent 工坊资产",
-    description="查看数据库中的 agent_specs 和 agent_versions 摘要，支持按关键词、workshop_session_id 或 spec_id/version_id/agent_id 精确核验，用于确认是否已有可复用的配置式 Agent 规格、版本或提示词资产。",
+    name="View Agent Workshop Assets",
+    description="View the summary of agent_specs and agent_versions in the database, and support precise verification by keyword, workshop_session_id or spec_id/version_id/agent_id, which is used to confirm whether there are reusable configured Agent specifications, versions or prompt word assets.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
     when_to_use=(
-        "当需要确认是否已有接近需求的 Agent 规格、已构建版本或提示词资产时使用。"
-        "适合在决定新建前先看已有配置式资产，或在当前线程已知 workshop_session_id/spec_id/version_id 时先做精确核验。"
-        "**重要**：在 agent_workshop 渠道下，若当前线程有选中的 Agent（thread_context 含 spec_id/version_id），"
-        "且调用时未指定任何过滤参数，本工具将自动仅返回当前选中 Agent 的资产，而非全量搜索。"
-        "若确实需要查看全部资产，请显式传入 keyword='' 或其他过滤参数。"
+        "Use it when you need to confirm whether there are Agent specifications, built versions, or prompt words assets that are close to the requirements."
+        "It is suitable to look at the existing configuration assets before deciding to create a new one, or to do precise verification when the current thread knows the workshop_session_id/spec_id/version_id."
+        "**important**: Under the agent_workshop channel, if the current thread has a selected Agent (thread_context contains spec_id/version_id),"
+        "If no filter parameters are specified when calling, this tool will automatically return only the assets of the currently selected Agent instead of searching in full."
+        "If you really need to view all assets, please explicitly pass in keyword='' or other filter parameters."
     ),
-    when_not_to_use="不适合做通用工具搜索，也不适合直接发布 Agent；它只汇总工坊资产摘要。",
+    when_not_to_use="It is not suitable for general tool search, nor is it suitable for directly publishing Agents; it only summarizes workshop asset summaries.",
     returns=(
-        "返回 JSON 字符串，包含 spec 摘要、version 摘要、required_tools、required_capabilities、"
-        "prompt_template_ref 等信息，以及本次使用或解析后的精确过滤条件。"
+        "Returns a JSON string, including spec summary, version summary, required_tools, required_capabilities,"
+        "prompt_template_ref and other information, as well as the precise filtering conditions after this use or analysis."
     ),
     example="inspect_agent_workshop_assets(workshop_session_id='session_001')",
     related_tools=["inspect_runtime_agent_configs", "inspect_agent_blueprints", "search_project_capabilities"],
     data_source_handling="local_only",
 )
 async def inspect_agent_workshop_assets(
-    keyword: Annotated[str, "按 spec 名称、目标、version agent_metadata 模糊筛选，可留空"] = "",
-    workshop_session_id: Annotated[str, "按 Agent 工坊 session_id 精确定位当前 spec/version，可留空"] = "",
-    spec_id: Annotated[str, "按 spec_id 精确筛选，可留空；适合当前线程已知 spec_id 的场景"] = "",
-    version_id: Annotated[str, "按 version_id 精确筛选，可留空；适合当前线程已知 version_id 的场景"] = "",
-    agent_id: Annotated[str, "按运行时 agent_id 精确筛选，可留空"] = "",
-    limit: Annotated[int, "每类结果返回条数，默认 10，最大 20"] = 10,
-    include_archived: Annotated[bool, "是否包含 archived 状态的 spec/version，默认 false"] = False,
+    keyword: Annotated[str, "Fuzzy filter by spec name, target, version agent_metadata, can be left blank"] = "",
+    workshop_session_id: Annotated[str, "Accurately locate the current spec/version according to the Agent workshop session_id, which can be left blank."] = "",
+    spec_id: Annotated[str, "Filter precisely by spec_id, which can be left blank; suitable for scenarios where the spec_id is known to the current thread"] = "",
+    version_id: Annotated[str, "Filter accurately by version_id, which can be left blank; suitable for scenarios where the version_id of the current thread is known"] = "",
+    agent_id: Annotated[str, "Exact filter by runtime agent_id, can be left blank"] = "",
+    limit: Annotated[int, "Number of results returned for each category, default 10, maximum 20"] = 10,
+    include_archived: Annotated[bool, "Whether to include the spec/version of archived status, default false"] = False,
 ) -> str:
-    """查看 Agent 工坊资产摘要。"""
+    """View the Agent Workshop Asset Summary."""
     try:
         db = get_mongo_db()
         sessions_collection = _get_collection(db, _WORKSHOP_SESSION_COLLECTION)
         specs_collection = _get_collection(db, "agent_specs")
         versions_collection = _get_collection(db, "agent_versions")
         if specs_collection is None or versions_collection is None:
-            return _json_response({"status": "error", "message": "当前数据库中不可用 agent_specs 或 agent_versions 集合"})
+            return _json_response({"status": "error", "message": "The agent_specs or agent_versions collections are not available in the current database"})
 
         capped_limit = max(1, min(int(limit), 20))
         clean_keyword = str(keyword or "").strip()
@@ -3948,7 +3948,7 @@ async def inspect_agent_workshop_assets(
         clean_version_id = str(version_id or "").strip()
         clean_agent_id = str(agent_id or "").strip()
 
-        # 🔥 自动使用线程上下文：当没有显式过滤参数时，使用当前线程的 spec_id/version_id
+        # 🔥 Automatically use thread context: When there is no explicit filter parameter, use the current thread's spec_id/version_id
         has_explicit_filters = bool(
             clean_keyword
             or clean_workshop_session_id
@@ -3957,12 +3957,12 @@ async def inspect_agent_workshop_assets(
             or clean_agent_id
         )
         if not has_explicit_filters:
-            # 优先使用 EmbededNanobotService.chat() 传入并写入 contextvar 的 thread_context
+            # priority use EmbededNanobotService.chat() Passed in and written to contextvar thread_context
             thread_context = get_current_assistant_thread_context()
             context_spec_id = str(thread_context.get("spec_id") or "").strip()
             context_version_id = str(thread_context.get("version_id") or "").strip()
             if not context_spec_id and not context_version_id:
-                # contextvar 没有 → 回退到 DB 查 embedded_nanobot_threads
+                # contextvar No → Return to DB to check embedded_nanobot_threads
                 current_thread_id = get_current_assistant_thread_id()
                 if current_thread_id:
                     try:
@@ -3976,20 +3976,20 @@ async def inspect_agent_workshop_assets(
                                 context_spec_id = str(thread_context2.get("spec_id") or "").strip()
                                 context_version_id = str(thread_context2.get("version_id") or "").strip()
                     except Exception as ctx_exc:
-                        logger.debug("自动读取线程上下文失败，继续使用无过滤模式: %s", ctx_exc)
+                        logger.debug("Automatic reading of thread context failed, continue to use unfiltered mode: %s", ctx_exc)
             if context_spec_id:
                 clean_spec_id = context_spec_id
                 logger.info(
                     "[AgentWorkshop][ThreadContextFilter] auto spec_id=%s (from thread_context contextvar or DB)",
                     context_spec_id,
                 )
-                # 🔥 自动设置意图上下文
+                # 🔥 Automatically set intent context
                 _auto_update_intent(
                     action="check_status",
                     stage="",
                     spec_id=context_spec_id,
                     spec_name=str(thread_context.get("spec_name") or "").strip() or context_spec_id,
-                    intent_summary="查看当前 Agent 的进度和状态",
+                    intent_summary="View the progress and status of the current Agent",
                 )
             if context_version_id:
                 clean_version_id = context_version_id
@@ -4008,7 +4008,7 @@ async def inspect_agent_workshop_assets(
             if sessions_collection is None:
                 return _json_response({
                     "status": "error",
-                    "message": "当前数据库中不可用 agent_workshop_sessions 集合，无法按 workshop_session_id 核验",
+                    "message": "The agent_workshop_sessions collection is not available in the current database and cannot be verified by workshop_session_id",
                 })
             session_doc = await sessions_collection.find_one({"session_id": clean_workshop_session_id})
             if session_doc is None:
@@ -4024,7 +4024,7 @@ async def inspect_agent_workshop_assets(
                     "version_count": 0,
                     "specs": [],
                     "versions": [],
-                    "message": f"未找到 session_id={clean_workshop_session_id} 对应的 Agent 工坊会话",
+                    "message": f"not found session_id={clean_workshop_session_id} Corresponding Agent Workshop session",
                     "design_references": [
                         "docs/05-design/v3.0/agent-workshop-interface-sequence.md",
                         "docs/05-design/v3.0/implementation-status-report.md",
@@ -4123,7 +4123,7 @@ async def inspect_agent_workshop_assets(
                 if len(spec_results) >= capped_limit:
                     break
 
-        # 🔥 批量获取每个版本的最新评估数据，避免 Nanobot 依赖 stale 对话记忆
+        # 🔥 Get the latest evaluation data of each version in batches to avoid Nanobot relying on stale dialogue memory
         await _merge_latest_evaluations_into_versions(version_results, db)
 
         return _json_response({
@@ -4143,40 +4143,40 @@ async def inspect_agent_workshop_assets(
             ],
         })
     except Exception as exc:
-        logger.error("查看 Agent 工坊资产失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"查看 Agent 工坊资产失败: {exc}"})
+        logger.error("Failed to view Agent workshop assets: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to view Agent workshop assets: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="inspect_prompt_templates",
     name="查看提示词模板库",
-    description="查询数据库中 prompt_templates 集合的模板摘要，支持按 agent_type、agent_name、status 和关键词筛选。",
+    description="Query the template summary of the prompt_templates collection in the database, supporting filtering by agent_type, agent_name, status and keywords.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当需要确认数据库中有哪些提示词模板、某个 Agent 当前绑定了哪些模板，或要查模板资产时使用。",
-    when_not_to_use="不适合直接修改模板正文；只做读取和筛选。",
-    returns="返回 JSON 字符串，包含模板摘要列表。",
-    example="inspect_prompt_templates(agent_type='universal', keyword='估值', status='active', limit=10)",
+    when_to_use="Use it when you need to confirm which prompt word templates are in the database, which templates are currently bound to an Agent, or when you want to check template assets.",
+    when_not_to_use="It is not suitable to directly modify the template text; only reading and filtering are done.",
+    returns="Returns a JSON string containing a list of template summaries.",
+    example="inspect_prompt_templates(agent_type='universal', keyword='Valuation', status='active', limit=10)",
     related_tools=["get_prompt_template_detail", "inspect_agent_workshop_assets", "create_or_update_universal_agent_prompt_template"],
     data_source_handling="local_only",
 )
 async def inspect_prompt_templates(
-    agent_type: Annotated[str, "按 agent_type 精确筛选，可留空"] = "",
-    agent_name: Annotated[str, "按 agent_name 精确筛选，可留空"] = "",
-    status: Annotated[str, "按状态筛选，如 active/draft，可留空"] = "",
-    keyword: Annotated[str, "按 template_name、agent_name、remark 模糊筛选，可留空"] = "",
-    is_system_only: Annotated[bool, "是否仅查看系统模板，默认 false"] = False,
-    limit: Annotated[int, "返回条数，默认 10，最大 50"] = 10,
+    agent_type: Annotated[str, "Filter accurately by agent_type, can be left blank"] = "",
+    agent_name: Annotated[str, "Filter accurately by agent_name, can be left blank"] = "",
+    status: Annotated[str, "Filter by status, such as active/draft, which can be left blank"] = "",
+    keyword: Annotated[str, "Fuzzy filter by template_name, agent_name, remark, can be left blank"] = "",
+    is_system_only: Annotated[bool, "Whether to view only system templates, default false"] = False,
+    limit: Annotated[int, "Number of items returned, default 10, maximum 50"] = 10,
 ) -> str:
-    """查看数据库中的提示词模板摘要。"""
+    """View a summary of prompt word templates in the database."""
     try:
         db = get_mongo_db()
         templates = _get_collection(db, "prompt_templates")
         if templates is None:
-            return _json_response({"status": "error", "message": "当前数据库中不可用 prompt_templates 集合"})
+            return _json_response({"status": "error", "message": "The prompt_templates collection is not available in the current database"})
 
         capped_limit = max(1, min(int(limit), 50))
         cursor = templates.find({}, {"_id": 1, "agent_type": 1, "agent_name": 1, "template_name": 1, "workflow_id": 1, "node_id": 1, "status": 1, "is_system": 1, "remark": 1, "updated_at": 1, "version": 1})
@@ -4217,7 +4217,7 @@ async def inspect_prompt_templates(
             "templates": results,
         })
     except Exception as exc:
-        logger.error("查看提示词模板库失败: %s", exc, exc_info=True)
+        logger.error("Failed to view prompt word template library: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"查看提示词模板库失败: {exc}"})
 
 
@@ -4225,31 +4225,31 @@ async def inspect_prompt_templates(
 @register_tool(
     tool_id="get_prompt_template_detail",
     name="查看提示词模板详情",
-    description="按 template_id 读取数据库中 prompt_templates 的完整模板内容。",
+    description="Read the complete template content of prompt_templates in the database by template_id.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当已经知道 template_id，需要查看完整 system_prompt、tool_guidance、output_format 等正文时使用。",
-    when_not_to_use="不适合模糊搜索模板列表；那种场景应先使用 inspect_prompt_templates。",
-    returns="返回 JSON 字符串，包含模板详情和完整 content 字段。",
+    when_to_use="Use it when you already know the template_id and need to view the complete text of system_prompt, tool_guidance, output_format, etc.",
+    when_not_to_use="Not suitable for fuzzy searching of template lists; inspect_prompt_templates should be used first in that scenario.",
+    returns="Returns a JSON string containing template details and full content field.",
     example="get_prompt_template_detail(template_id='69cfdf8db1828a17f6b00cfb')",
     related_tools=["inspect_prompt_templates", "create_or_update_universal_agent_prompt_template"],
     data_source_handling="local_only",
 )
 async def get_prompt_template_detail(
-    template_id: Annotated[str, "prompt_templates 集合中的 _id 字符串"],
+    template_id: Annotated[str, "prompt_templates _id string in collection"],
 ) -> str:
-    """查看数据库中单个提示词模板的完整内容。"""
+    """View the complete contents of a single prompt word template in the database."""
     try:
         clean_template_id = str(template_id or "").strip()
         if not clean_template_id:
-            return _json_response({"status": "error", "message": "template_id 不能为空"})
+            return _json_response({"status": "error", "message": "template_id cannot be empty"})
 
         db = get_mongo_db()
         templates = _get_collection(db, "prompt_templates")
         if templates is None:
-            return _json_response({"status": "error", "message": "当前数据库中不可用 prompt_templates 集合"})
+            return _json_response({"status": "error", "message": "The prompt_templates collection is not available in the current database"})
 
         cursor = templates.find({})
         docs = await cursor.to_list(length=500)
@@ -4262,7 +4262,7 @@ async def get_prompt_template_detail(
             "template": _format_prompt_template_detail(matched),
         })
     except Exception as exc:
-        logger.error("查看提示词模板详情失败: %s", exc, exc_info=True)
+        logger.error("Failed to view prompt word template details: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"查看提示词模板详情失败: {exc}"})
 
 
@@ -4270,29 +4270,29 @@ async def get_prompt_template_detail(
 @register_tool(
     tool_id="get_effective_prompt_template",
     name="获取当前生效提示词模板",
-    description="按系统真实优先级解析当前生效模板，支持调试模板、节点专属模板、流程专属模板、用户激活模板和系统默认模板。",
+    description="The current effective template is parsed according to the system s real priority, and supports debugging templates, node-specific templates, process-specific templates, user activation templates and system default templates.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当需要知道当前 Agent 在调试或正式运行时实际会使用哪份模板，而不是只看模板库列表时使用。",
-    when_not_to_use="不适合做模板库模糊搜索；那种场景应先使用 inspect_prompt_templates。",
-    returns="返回 JSON 字符串，包含当前生效模板内容、来源、template_id、version 以及解析参数。",
+    when_to_use="Use it when you need to know which template the current Agent will actually use when debugging or running officially, instead of just looking at the template library list.",
+    when_not_to_use="It is not suitable for fuzzy search of template libraries; in that scenario, inspect_prompt_templates should be used first.",
+    returns="Returns a JSON string, including the currently effective template content, source, template_id, version and parsing parameters.",
     example="get_effective_prompt_template(agent_type='universal', agent_name='valuation_candidate_v1', workflow_id='wf_001', node_id='node_002', is_debug_mode=true, debug_template_id='69cfdf8db1828a17f6b00cfb')",
     related_tools=["inspect_prompt_templates", "get_prompt_template_detail", "create_or_update_universal_agent_prompt_template"],
     data_source_handling="local_only",
 )
 async def get_effective_prompt_template(
-    agent_type: Annotated[str, "Agent 类型，如 universal、analysts、researchers"],
-    agent_name: Annotated[str, "Agent 名称或运行时 agent_id"],
-    preference_id: Annotated[str, "偏好 ID，默认 neutral"] = "neutral",
-    workflow_id: Annotated[str, "工作流 ID，可留空"] = "",
-    node_id: Annotated[str, "节点 ID，可留空"] = "",
-    is_debug_mode: Annotated[bool, "是否按调试模式解析，默认 false"] = False,
-    debug_template_id: Annotated[str, "调试模板 ID；调试时可留空或显式指定"] = "",
-    user_id: Annotated[str, "用户 ID；不传则默认取当前对话上下文用户"] = "",
+    agent_type: Annotated[str, "Agent Types such as universal, analysts,researchers"],
+    agent_name: Annotated[str, "Agent name or runtime agent_id"],
+    preference_id: Annotated[str, "Preference ID, default neutral"] = "neutral",
+    workflow_id: Annotated[str, "Workflow ID, can be left blank"] = "",
+    node_id: Annotated[str, "Node ID, can be left blank"] = "",
+    is_debug_mode: Annotated[bool, "Whether to parse in debug mode, default false"] = False,
+    debug_template_id: Annotated[str, "Debug template ID; can be left blank or specified explicitly when debugging"] = "",
+    user_id: Annotated[str, "User ID; if not passed, the current conversation context user will be used by default."] = "",
 ) -> str:
-    """获取当前会命中的生效提示词模板。"""
+    """Get the effective prompt word template that will currently be hit."""
     try:
         return _json_response(await _resolve_effective_prompt_template_payload(
             agent_type=agent_type,
@@ -4305,38 +4305,38 @@ async def get_effective_prompt_template(
             user_id=user_id,
         ))
     except Exception as exc:
-        logger.error("获取当前生效提示词模板失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"获取当前生效提示词模板失败: {exc}"})
+        logger.error("Failed to obtain the current effective prompt word template: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to obtain the current effective prompt word template: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="get_current_thread_effective_prompt_template",
-    name="获取当前线程生效提示词模板",
-    description="基于当前线程上下文自动推断当前正在调试或讨论的 Agent 版本，再解析该上下文下实际生效的提示词模板。",
+    name="Get the effective prompt word template of the current thread",
+    description="Automatically infer the Agent version currently being debugged or discussed based on the current thread context, and then parse the prompt word template that is actually effective in this context.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当用户问当前线程里现在实际命中了哪份模板，且上下文已经在当前会话中时优先使用。",
-    when_not_to_use="不适合做模板库浏览；那种场景应先使用 inspect_prompt_templates。",
-    returns="返回 JSON 字符串，包含线程上下文、自动推断得到的 resolution_input 和实际生效模板内容。",
+    when_to_use="When the user asks which template is actually hit in the current thread, and the context is already in the current session, it will be used first.",
+    when_not_to_use="Not suitable for template library browsing; inspect_prompt_templates should be used first in that scenario.",
+    returns="Returns a JSON string, including the thread context, the automatically inferred resolution_input and the actual effective template content.",
     example="get_current_thread_effective_prompt_template()",
     related_tools=["get_effective_prompt_template", "inspect_prompt_templates", "get_prompt_template_detail"],
     data_source_handling="local_only",
 )
 async def get_current_thread_effective_prompt_template(
-    preference_id: Annotated[str, "偏好 ID，默认 neutral"] = "neutral",
-    workflow_id: Annotated[str, "可显式覆盖自动推断的工作流 ID，可留空"] = "",
-    node_id: Annotated[str, "可显式覆盖自动推断的节点 ID，可留空"] = "",
-    debug_template_id: Annotated[str, "可显式覆盖自动推断的调试模板 ID，可留空"] = "",
-    debug_mode: Annotated[str, "调试模式，支持 auto/true/false，默认 auto"] = "auto",
-    user_id: Annotated[str, "用户 ID；不传则默认取当前对话上下文用户"] = "",
-    thread_id: Annotated[str, "线程 ID；不传则默认取当前对话上下文线程"] = "",
-    agent_type: Annotated[str, "若自动推断失败，可显式指定 agent_type"] = "",
-    agent_name: Annotated[str, "若自动推断失败，可显式指定 agent_name"] = "",
+    preference_id: Annotated[str, "Preference ID, default neutral"] = "neutral",
+    workflow_id: Annotated[str, "Automatically inferred workflow ID can be overridden explicitly and can be left blank"] = "",
+    node_id: Annotated[str, "Automatically inferred node IDs can be overridden explicitly and can be left blank"] = "",
+    debug_template_id: Annotated[str, "Automatically inferred debug template ID can be overridden explicitly and can be left blank"] = "",
+    debug_mode: Annotated[str, "Debug mode, supports auto/true/false, default auto"] = "auto",
+    user_id: Annotated[str, "User ID; if not passed, the current conversation context user will be used by default."] = "",
+    thread_id: Annotated[str, "Thread ID; if not passed, the current conversation context thread will be used by default."] = "",
+    agent_type: Annotated[str, "If automatic inference fails, you can explicitly specify agent_type"] = "",
+    agent_name: Annotated[str, "If automatic inference fails, you can explicitly specify agent_name"] = "",
 ) -> str:
-    """基于当前 Nanobot 线程自动解析当前生效模板。"""
+    """Automatically parse the current effective template based on the current Nanobot thread."""
     try:
         resolved_user_id = str(user_id or "").strip()
         if not resolved_user_id:
@@ -4352,7 +4352,7 @@ async def get_current_thread_effective_prompt_template(
         if not resolved_user_id or not resolved_thread_id:
             return _json_response({
                 "status": "error",
-                "message": "当前上下文缺少 user_id 或 thread_id，无法自动解析当前线程生效模板；请显式传入 thread_id/user_id 或退回使用 get_effective_prompt_template",
+                "message": "The current context lacks user_id or thread_id, and the current thread effective template cannot be automatically parsed; please explicitly pass in thread_id/user_id or return to use get_effective_prompt_template",
             })
 
         db = get_mongo_db()
@@ -4391,52 +4391,52 @@ async def get_current_thread_effective_prompt_template(
             "resolution_source": inferred.get("resolution_source") or {},
         })
     except Exception as exc:
-        logger.error("获取当前线程生效提示词模板失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"获取当前线程生效提示词模板失败: {exc}"})
+        logger.error("Failed to obtain current thread effective prompt word template: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to obtain current thread effective prompt word template: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="create_or_update_runtime_agent_config",
-    name="创建或更新运行时 Agent 配置",
-    description="创建一个可运行的 UniversalAgent 候选配置，写入 agent_configs，作为最小生成链的第一步。",
+    name="Create or update runtime Agent configuration",
+    description="Create a runnable UniversalAgent candidate configuration, written in agent_configs, as the first step in the minimal build chain.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当已经确认要生成一个新的配置式 Agent 候选，并准备把最小运行时定义写入数据库时使用。",
-    when_not_to_use="不适合做资源侦察，也不适合直接绑定工具或写提示词模板。",
-    returns="返回 JSON 字符串，包含写入后的 agent_configs 摘要。",
-    example="create_or_update_runtime_agent_config(agent_id='valuation_candidate_v1', agent_name='估值候选Agent', description='输出估值结论')",
+    when_to_use="Used when you have confirmed that you want to generate a new profiled Agent candidate and are ready to write the minimum runtime definition to the database.",
+    when_not_to_use="It is not suitable for resource reconnaissance, nor is it suitable for directly binding tools or writing prompt word templates.",
+    returns="Returns a JSON string containing a summary of agent_configs as written.",
+    example="create_or_update_runtime_agent_config(agent_id='valuation_candidate_v1', agent_name='Valuation candidates Agent', description='Output valuation conclusion')",
     related_tools=["create_or_update_universal_agent_prompt_template", "bind_agent_tools_and_validate_candidate"],
     data_source_handling="local_only",
 )
 async def create_or_update_runtime_agent_config(
-    agent_id: Annotated[str, "运行时 Agent ID，例如 valuation_candidate_v1"],
+    agent_id: Annotated[str, "Runtime Agent ID, e.g. valuation_candidate_v1"],
     agent_name: Annotated[str, "Agent 显示名称"],
-    description: Annotated[str, "Agent 的单一职责描述"],
-    output_field: Annotated[str, "输出字段名，默认 analysis_report"] = "analysis_report",
-    workflow_stage: Annotated[str, "工作流阶段，默认 analyst"] = "analyst",
-    report_label: Annotated[str, "报告展示标签，可为空"] = "",
-    show_in_reports: Annotated[bool, "是否进入工作流报告列表，默认 true"] = True,
-    execution_order: Annotated[int, "工作流展示/执行顺序，默认 50"] = 50,
-    category: Annotated[str, "Agent 分类，默认 analyst"] = "analyst",
-    callable_surfaces: Annotated[str, "允许调用入口，逗号分隔，默认 assistant,workflow,agent"] = "assistant,workflow,agent",
-    input_mode: Annotated[str, "输入模式，默认 standalone"] = "standalone",
-    enabled: Annotated[bool, "是否启用，默认 true"] = True,
+    description: Annotated[str, "Agent single responsibility description"],
+    output_field: Annotated[str, "Output field name, default analysis_report"] = "analysis_report",
+    workflow_stage: Annotated[str, "Workflow stage, default analyst"] = "analyst",
+    report_label: Annotated[str, "Report display label, can be empty"] = "",
+    show_in_reports: Annotated[bool, "Whether to enter the workflow report list, default true"] = True,
+    execution_order: Annotated[int, "Workflow display/execution order, default 50"] = 50,
+    category: Annotated[str, "Agent Category, default analyst"] = "analyst",
+    callable_surfaces: Annotated[str, "Allow call entries, comma separated, default assistant,workflow,agent"] = "assistant,workflow,agent",
+    input_mode: Annotated[str, "Input mode, default standalone"] = "standalone",
+    enabled: Annotated[bool, "Whether to enable, default true"] = True,
 ) -> str:
-    """创建或更新一个配置式运行时 Agent 候选。"""
+    """Create or update a profiled runtime Agent candidate."""
     try:
         clean_agent_id = str(agent_id or "").strip()
         clean_name = str(agent_name or "").strip()
         clean_description = str(description or "").strip()
         if not clean_agent_id or not clean_name or not clean_description:
-            return _json_response({"status": "error", "message": "agent_id、agent_name、description 不能为空"})
+            return _json_response({"status": "error", "message": "agent_id, agent_name, description cannot be empty"})
 
         db = get_mongo_db()
         collection = _get_collection(db, "agent_configs")
         if collection is None:
-            return _json_response({"status": "error", "message": "当前数据库中不可用 agent_configs 集合"})
+            return _json_response({"status": "error", "message": "The agent_configs collection is not available in the current database"})
 
         surfaces = _parse_string_list(callable_surfaces) or list(_DEFAULT_CALLABLE_SURFACES)
         existing = await collection.find_one({"agent_id": clean_agent_id}) or {}
@@ -4495,47 +4495,47 @@ async def create_or_update_runtime_agent_config(
             "runtime_contract": runtime_contract,
         })
     except Exception as exc:
-        logger.error("创建或更新运行时 Agent 配置失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"创建或更新运行时 Agent 配置失败: {exc}"})
+        logger.error("Creating or updating runtime Agent configuration failed: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Creating or updating runtime Agent configuration failed: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="create_or_update_agent_workshop_draft",
-    name="创建或更新 Agent 工坊 Draft",
-    description="把已确认的候选 Agent 同步到 Agent 工坊 Draft 资产层，使其在工坊列表中可见并可继续做版本治理。",
+    name="Create or update an Agent Workshop Draft",
+    description="Synchronize the confirmed candidate Agent to the Agent Workshop Draft asset layer so that it is visible in the workshop list and can continue version management.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当已经确认了候选 Agent 的职责、输出和工具范围，希望把它沉淀为 Agent 工坊 Draft 而不是只停留在运行时候选时使用。",
-    when_not_to_use="不适合直接做版本发布，也不适合在需求尚未确认时调用。",
-    returns="返回 JSON 字符串，包含写入后的 spec_id、session_id 和概览信息。",
-    example="create_or_update_agent_workshop_draft(agent_id='valuation_candidate_v1', agent_name='估值候选Agent', target_responsibility='输出A股估值结论')",
+    when_to_use="When the candidate Agent s responsibilities, output, and tool scope have been confirmed, we hope to precipitate it into an Agent Workshop Draft instead of just using it at runtime.",
+    when_not_to_use="It is not suitable for direct version release, nor is it suitable for calling when the requirements have not been confirmed.",
+    returns="Returns a JSON string containing the written spec_id, session_id, and overview information.",
+    example="create_or_update_agent_workshop_draft(agent_id='valuation_candidate_v1', agent_name='Valuation candidates Agent', target_responsibility='Output A-share valuation conclusion')",
     related_tools=["generate_confirmed_candidate_agent", "inspect_agent_workshop_assets", "create_or_update_runtime_agent_config"],
     data_source_handling="local_only",
 )
 async def create_or_update_agent_workshop_draft(
-    agent_id: Annotated[str, "候选 Agent ID，例如 valuation_candidate_v1"],
+    agent_id: Annotated[str, "Candidate Agent ID, e.g. valuation_candidate_v1"],
     agent_name: Annotated[str, "Agent 显示名称"],
     target_responsibility: Annotated[str, "单一职责描述"],
-    output_field: Annotated[str, "输出字段名；若留空或给出通用名，系统会自动生成带 agent 语义的专属字段名"] = "analysis_report",
-    workflow_stage: Annotated[str, "工作流阶段，默认 analyst"] = "analyst",
-    report_label: Annotated[str, "报告展示标签，可为空"] = "",
-    show_in_reports: Annotated[bool, "是否进入工作流报告列表，默认 true"] = True,
-    execution_order: Annotated[int, "工作流展示/执行顺序，默认 50"] = 50,
-    tool_ids: Annotated[str, "候选工具 ID，逗号分隔"] = "",
-    non_goals: Annotated[str, "非目标列表，逗号分隔"] = "",
-    preferred_methods: Annotated[str, "方法范围或偏好，逗号分隔"] = "",
-    constraints: Annotated[str, "额外约束，逗号分隔"] = "",
+    output_field: Annotated[str, "Output field name; if left blank or given a common name, the system will automatically generate an exclusive field name with agent semantics"] = "analysis_report",
+    workflow_stage: Annotated[str, "Workflow stage, default analyst"] = "analyst",
+    report_label: Annotated[str, "Report display label, can be empty"] = "",
+    show_in_reports: Annotated[bool, "Whether to enter the workflow report list, default true"] = True,
+    execution_order: Annotated[int, "Workflow display/execution order, default 50"] = 50,
+    tool_ids: Annotated[str, "Candidate tool IDs, comma separated"] = "",
+    non_goals: Annotated[str, "List of non-targets, comma separated"] = "",
+    preferred_methods: Annotated[str, "Method scopes or preferences, comma separated"] = "",
+    constraints: Annotated[str, "Additional constraints, comma separated"] = "",
 ) -> str:
-    """将 Nanobot 候选同步为 Agent 工坊 Draft。"""
+    """Synchronize Nanobot candidate to Agent workshop Draft."""
     try:
         clean_agent_id = str(agent_id or "").strip()
         clean_agent_name = str(agent_name or "").strip()
         clean_responsibility = str(target_responsibility or "").strip()
         if not clean_agent_id or not clean_agent_name or not clean_responsibility:
-            return _json_response({"status": "error", "message": "agent_id、agent_name、target_responsibility 不能为空"})
+            return _json_response({"status": "error", "message": "agent_id, agent_name, target_responsibility cannot be empty"})
 
         try:
             user_id = require_current_user_id()
@@ -4544,9 +4544,9 @@ async def create_or_update_agent_workshop_draft(
         current_thread_id = (get_current_assistant_thread_id() or "").strip()
         db = get_mongo_db()
 
-        # 🔥 防止 LLM 意图漂移：对比 agent_id 与当前线程上下文的 spec_id
+        # 🔥 Prevent LLM intent drift: compare agent_id with the current thread context spec_id
         thread_context_spec_id = _get_current_thread_context_spec_id()
-        # 🔑 关键追踪日志：IntentGuard 检查
+        # 🔑 Key Trace Log: IntentGuard Check
         logger.info(
             "[WorkshopDraft][IntentGuard] thread_context.spec_id=%r tool_arg.agent_id=%r equivalent=%s",
             thread_context_spec_id, clean_agent_id,
@@ -4555,14 +4555,14 @@ async def create_or_update_agent_workshop_draft(
         if thread_context_spec_id and thread_context_spec_id != clean_agent_id:
             if _agent_id_equivalent(thread_context_spec_id, clean_agent_id):
                 logger.info(
-                    "[AgentWorkshop][IntentGuard] 允许历史候选 ID 前缀差异: thread_context.spec_id='%s' tool_arg.agent_id='%s'",
+                    "[AgentWorkshop][IntentGuard] Allow historical candidate ID prefix differences: thread_context.spec_id='%s' tool_arg.agent_id='%s'",
                     thread_context_spec_id, clean_agent_id,
                 )
                 clean_agent_id = thread_context_spec_id
             else:
                 existing_name = await _resolve_spec_name(db, thread_context_spec_id) or thread_context_spec_id
                 logger.warning(
-                    "[AgentWorkshop][IntentGuard] ⚠️ LLM 意图漂移！"
+                    "[AgentWorkshop][IntentGuard] ⚠️ LLM Intentions drift!"
                     " thread_context.spec_id='%s' name='%s' ≠ tool_arg.agent_id='%s' agent_name='%s'",
                     thread_context_spec_id, existing_name, clean_agent_id, clean_agent_name,
                 )
@@ -4570,10 +4570,10 @@ async def create_or_update_agent_workshop_draft(
                     "status": "error",
                     "code": "intent_drift_detected",
                     "message": (
-                        f"意图漂移检测：当前正在操作的 Agent 是 "
+                        f"Intent drift detection: The currently operating Agent is "
                         f"「{existing_name}」（{thread_context_spec_id}），"
-                        f"但你传入的 agent_id 是「{clean_agent_id}」（{clean_agent_name}）。"
-                        f"请使用正确的 agent_id={thread_context_spec_id} agent_name={existing_name} 重试。"
+                        f"But the agent_id you passed in is {clean_agent_id}]  ({clean_agent_name}) . "
+                        f"Please use the correct agent_id={thread_context_spec_id} agent_name={existing_name} Try again."
                     ),
                 })
 
@@ -4592,14 +4592,14 @@ async def create_or_update_agent_workshop_draft(
                     tool_name="create_or_update_agent_workshop_draft",
                     blocked_code="active_version_requires_iteration",
                     message=(
-                        "当前目标指向已发布版本；create_or_update_agent_workshop_draft 只适用于新的候选 Draft，"
-                        "不能直接拿现有 spec_id 或 version_id 覆盖已发布资产。"
+                        "The current target points to the published version; create_or_update_agent_workshop_draft only works for new candidate Drafts,"
+                        "You cannot directly overwrite published assets with existing spec_id or version_id."
                     ),
                     next_action=(
-                        f"请先调用 iterate_agent_workshop_version(version_id='{resolved_version_id}') 创建下一轮，"
-                        "再在新会话里继续修改。"
+                        f"Please call first iterate_agent_workshop_version(version_id='{resolved_version_id}') Create the next round,"
+                        "Continue making changes in a new session."
                         if resolved_version_id
-                        else "请先 inspect 当前版本并发起 iterate，再在下一轮会话中继续修改。"
+                        else "Please inspect the current version first and initiate iterate before continuing to modify it in the next session."
                     ),
                     phase_context=draft_target_context,
                     target_fields={
@@ -4608,9 +4608,9 @@ async def create_or_update_agent_workshop_draft(
                         "version_id": resolved_version_id or None,
                     },
                 )
-        # 🔑 关键追踪日志：create_nanobot_draft 写库前
+        # 🔑 Key tracking log: create_nanobot_draft before writing the library
         logger.info(
-            "[WorkshopDraft][WriteDB] 即将调用 create_nanobot_draft agent_id=%r agent_name=%r",
+            "[WorkshopDraft][WriteDB] About to be called create_nanobot_draft agent_id=%r agent_name=%r",
             clean_agent_id, clean_agent_name,
         )
         result = await AgentWorkshopService(db=db).create_nanobot_draft(
@@ -4641,30 +4641,30 @@ async def create_or_update_agent_workshop_draft(
             owner_user_id=user_id,
             source_thread_id=current_thread_id,
         )
-        # 🔑 关键追踪日志：create_nanobot_draft 写库后
+        # 🔑 Key tracking log: create_nanobot_draft after writing the library
         result_status = result.get("status", "") if isinstance(result, dict) else "non_dict"
         result_spec_id = result.get("spec_id", "") if isinstance(result, dict) else ""
         result_session_id = result.get("session_id", "") if isinstance(result, dict) else ""
         logger.info(
-            "[WorkshopDraft][WriteDB] create_nanobot_draft 结果 status=%s spec_id=%r session_id=%r",
+            "[WorkshopDraft][WriteDB] create_nanobot_draft result status=%s spec_id=%r session_id=%r",
             result_status, result_spec_id, result_session_id,
         )
         if result_status != "ok":
             logger.warning(
-                "[WorkshopDraft][WriteDB] ❌ create_nanobot_draft 失败！full_result=%s",
+                "[WorkshopDraft][WriteDB] ❌ create_nanobot_draft Failure!full_result=%s",
                 json.dumps(result, ensure_ascii=False, default=str)[:500] if isinstance(result, dict) else str(result)[:500],
             )
-        # 🔥 自动更新意图上下文
-        # V2 流程：需求确认后才创建 session，此时可能处于 capability_check 阶段，
-        # 不应把 stage 改回 draft_preparing。
+        # 🔥 Automatically update intent context
+        # V2 Process: The session is created after the requirements are confirmed. It may be in the capability_check stage at this time.
+        # The stage should not be changed back to draft_preparing.
         current_stage = _get_current_intent_stage()
         if current_stage in {"capability_check", "plan_selection_pending", "requirement_confirmation_pending"}:
             next_stage = "capability_check"
-            next_action = "继续执行能力盘点：search_project_capabilities + analyze_agent_workshop_gaps"
+            next_action = "Continue to perform a capability inventory:search_project_capabilities + analyze_agent_workshop_gaps"
             task_status = "capability_check"
         else:
             next_stage = "draft_preparing"
-            next_action = "继续执行缺口分析，若存在 blocking gap 则为当前 Agent 创建/绑定 Skill，之后回到版本构建和真数据测试"
+            next_action = "Continue to perform gap analysis. If there is a blocking gap, create/bind Skill for the current Agent, and then return to version building and real data testing."
             task_status = "draft_preparing"
         _auto_update_intent(
             action="create_agent",
@@ -4682,34 +4682,34 @@ async def create_or_update_agent_workshop_draft(
         )
         return _json_response({**result, "status": "ok"})
     except Exception as exc:
-        logger.error("创建或更新 Agent 工坊 Draft 失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"创建或更新 Agent 工坊 Draft 失败: {exc}"})
+        logger.error("Failed to create or update Agent Workshop Draft: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to create or update Agent Workshop Draft: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="analyze_agent_workshop_gaps",
-    name="执行 Agent 工坊缺口分析",
-    description="直接触发 Agent 工坊会话的缺口分析阶段，并返回结构化缺口摘要。如果没有现成 session_id，可传入 agent_id 等基本信息自动创建临时 session。",
+    name="Perform Agent Workshop Gap Analysis",
+    description="Directly triggers the gap analysis phase of the Agent Workshop session and returns a structured gap summary. If there is no existing session_id, basic information such as agent_id can be passed in to automatically create a temporary session.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当用户需求已确认，需要运行真实 gap 分析时使用。如果已有 session_id 则直接分析；如果没有，可传入 agent_id/agent_name/target_responsibility/tool_ids 自动创建 session 后再分析。",
-    when_not_to_use="不适合在需求尚未确认时调用。也不适合在版本已通过 auto-build（如 generate_confirmed_candidate_agent）自动构建后调用，因为自动构建内部已执行缺口分析。如果当前处于 BUILDING 阶段，应跳过此工具，直接进入测试。",
-    returns="返回 JSON 字符串，包含 session_id、spec_id 与 gap_report 摘要。",
-    example="analyze_agent_workshop_gaps(session_id='session_123') 或 analyze_agent_workshop_gaps(agent_id='risk_signal_agent', agent_name='财报风险信号助手', target_responsibility='识别财报风险信号', tool_ids='tool_a,tool_b')",
+    when_to_use="Used when user requirements have been confirmed and real gap analysis needs to be run. If there is already a session_id, analyze it directly; if not, you can pass in agent_id/agent_name/target_responsibility/tool_ids to automatically create a session and then analyze it.",
+    when_not_to_use="Not suitable for calling when the requirements have not been confirmed. It is also not suitable to be called after the version has been automatically built by auto-build (such as generate_confirmed_candidate_agent), because auto-build already performs gap analysis internally. If you are currently in the BUILDING phase, you should skip this tool and go directly to testing.",
+    returns="Returns a JSON string containing session_id, spec_id and gap_report summary.",
+    example="analyze_agent_workshop_gaps(session_id='session_123') or analyze_agent_workshop_gaps(agent_id='risk_signal_agent', agent_name='Financial Report Risk Signal Assistant', target_responsibility='Identify financial reporting risk signals', tool_ids='tool_a,tool_b')",
     related_tools=["create_or_update_agent_workshop_draft", "search_project_capabilities", "generate_agent_workshop_tooling_plan", "build_agent_workshop_version"],
     data_source_handling="local_only",
 )
 async def analyze_agent_workshop_gaps(
-    session_id: Annotated[str, "Agent 工坊会话 ID；如果为空，则需要提供 agent_id 等参数自动创建"] = "",
-    agent_id: Annotated[str, "候选 Agent ID，session_id 为空时必填"] = "",
-    agent_name: Annotated[str, "Agent 显示名称，session_id 为空时必填"] = "",
-    target_responsibility: Annotated[str, "单一职责描述，session_id 为空时必填"] = "",
-    tool_ids: Annotated[str, "候选工具 ID，逗号分隔，session_id 为空时使用"] = "",
+    session_id: Annotated[str, "Agent Workshop session ID; if it is empty, you need to provide parameters such as agent_id to automatically create"] = "",
+    agent_id: Annotated[str, "Candidate Agent ID, required when session_id is empty"] = "",
+    agent_name: Annotated[str, "Agent Display name, required when session_id is empty"] = "",
+    target_responsibility: Annotated[str, "Single responsibility description, required when session_id is empty"] = "",
+    tool_ids: Annotated[str, "Candidate tool IDs, separated by commas, used when session_id is empty"] = "",
 ) -> str:
-    """执行 Agent 工坊缺口分析并返回结构化结果。"""
+    """Performs Agent Workshop gap analysis and returns structured results."""
     try:
         clean_session_id = str(session_id or "").strip()
         clean_agent_id = str(agent_id or "").strip()
@@ -4718,15 +4718,15 @@ async def analyze_agent_workshop_gaps(
 
         db = get_mongo_db()
 
-        # 如果没有 session_id，尝试根据 agent_id 查找或创建 session
+        # If there is no session_id, try to find or create based on agent_id session
         if not clean_session_id:
             if not clean_agent_id or not clean_agent_name or not clean_responsibility:
                 return _json_response({
                     "status": "error",
-                    "message": "session_id 为空时，agent_id、agent_name、target_responsibility 不能为空",
+                    "message": "session_id When empty, agent_id, agent_name, and target_responsibility cannot be empty.",
                 })
 
-            # 优先查找同一线程同 agent_id 的现有 session
+            # Prioritize the search for existing threads with the same agent_id session
             current_thread_id = (get_current_assistant_thread_id() or "").strip()
             existing_session = None
             try:
@@ -4742,9 +4742,9 @@ async def analyze_agent_workshop_gaps(
 
             if existing_session and existing_session.get("session_id"):
                 clean_session_id = str(existing_session["session_id"]).strip()
-                logger.info("[AnalyzeGaps] 复用已有 session_id=%s agent_id=%s", clean_session_id, clean_agent_id)
+                logger.info("[AnalyzeGaps] Reuse existing session_id=%s agent_id=%s", clean_session_id, clean_agent_id)
             else:
-                # 自动创建 draft session
+                # automatically created draft session
                 draft_result = await AgentWorkshopService(db=db).create_nanobot_draft(
                     agent_id=clean_agent_id,
                     agent_name=clean_agent_name,
@@ -4760,38 +4760,38 @@ async def analyze_agent_workshop_gaps(
                 if not clean_session_id:
                     return _json_response({
                         "status": "error",
-                        "message": "自动创建 Agent 工坊 session 失败，无法执行缺口分析",
+                        "message": "Automatic creation of Agent Workshop session failed and gap analysis could not be performed.",
                     })
-                logger.info("[AnalyzeGaps] 自动创建 session_id=%s agent_id=%s", clean_session_id, clean_agent_id)
+                logger.info("[AnalyzeGaps] automatically created session_id=%s agent_id=%s", clean_session_id, clean_agent_id)
 
         result = await AgentWorkshopService(db=db).analyze_gaps(clean_session_id)
         gap_report = result.get("gap_report") if isinstance(result, dict) else None
-        # AgentWorkshopService.analyze_gaps 返回的 gap_report 是 AgentWorkshopGapAnalysis
-        # Pydantic 模型对象。若直接传给 _json_response，json.dumps 的 default=str 会
-        # 把它转成字符串，导致下游 node_gap_analysis 提取不到 blocking_gaps 等字段
-        # （state["gap_report"] 永远为空 {}，进而 acknowledged_gaps=0，build 失败）。
-        # 这里统一转成 dict，保证 JSON 序列化后仍是结构化对象。
+        # AgentWorkshopService.analyze_gaps The gap_report returned is AgentWorkshopGapAnalysis
+        # Pydantic model object. If passed directly to _json_response, json.dumps default=str Will
+        # Convert it into a string, causing the downstream node_gap_analysis to not be able to extract fields such as blocking_gaps
+        #  (state["gap_report"] always empty {}, further acknowledged_gaps=0, build failed).
+        # This is uniformly converted into dict to ensure that JSON is still a structured object after serialization.
         if gap_report is not None and not isinstance(gap_report, dict):
             if hasattr(gap_report, "model_dump"):
                 gap_report = gap_report.model_dump(by_alias=True, exclude_none=False)
             elif hasattr(gap_report, "dict"):
                 gap_report = gap_report.dict(by_alias=True)
             else:
-                # 兜底：用 __dict__ 或 str
+                # Get the scoop: use __dict__ or str
                 gap_report = (
                     dict(getattr(gap_report, "__dict__", {}))
                     if getattr(gap_report, "__dict__", None)
                     else None
                 )
 
-        # 更新意图上下文：gap 分析完成后进入方案选择阶段
+        # Update intent context: After gap analysis is completed, enter the solution selection phase
         _auto_update_intent(
             action="create_agent",
             stage="plan_selection_pending",
             spec_id=clean_agent_id,
             spec_name=clean_agent_name,
             intent_summary=f"为 Agent「{clean_agent_name}」完成能力缺口分析，等待生成候选方案",
-            next_action="调用 propose_agent_build_plans 生成候选方案",
+            next_action="Call propose_agent_build_plans to generate candidate plans",
         )
 
         return _json_response({
@@ -4806,34 +4806,34 @@ async def analyze_agent_workshop_gaps(
             },
         })
     except Exception as exc:
-        logger.error("执行 Agent 工坊缺口分析失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"执行 Agent 工坊缺口分析失败: {exc}"})
+        logger.error("Failed to perform Agent Workshop gap analysis: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to perform Agent Workshop gap analysis: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="generate_agent_workshop_tooling_plan",
-    name="生成 Agent 工坊工具需求草案",
-    description="直接触发 Agent 工坊工具需求草案生成，并返回结构化工具计划。",
+    name="Generate draft requirements for Agent workshop tools",
+    description="Directly trigger the generation of the Agent workshop tool requirements draft and return the structured tool plan.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="仅在需要人工诊断或单独查看工具需求草案时使用。普通 Agent 生成主流程不需要直接调用，因为 build_agent_workshop_version 和 resolve_agent_workshop_blocking_gaps 内部会自动生成/使用 tooling_plan。",
-    when_not_to_use="不适合在 session_id 无效时调用；不适合在普通自动构建流程中作为必经步骤调用；不适合在 BUILDING/TESTING/PUBLISHING 阶段重复调用。",
-    returns="返回 JSON 字符串，包含 session_id、spec_id 与 tooling_plan。",
+    when_to_use="Use only when manual diagnosis is required or to review draft tool requirements in isolation. Ordinary Agent generation main process does not need to be called directly, because build_agent_workshop_version and resolve_agent_workshop_blocking_gaps will automatically generate/use tooling_plan internally.",
+    when_not_to_use="It is not suitable to be called when session_id is invalid; it is not suitable to be called as a necessary step in the ordinary automatic build process; it is not suitable to be called repeatedly in the BUILDING/TESTING/PUBLISHING stage.",
+    returns="Returns a JSON string containing session_id, spec_id and tooling_plan.",
     example="generate_agent_workshop_tooling_plan(session_id='session_123')",
     related_tools=["analyze_agent_workshop_gaps", "build_agent_workshop_version"],
     data_source_handling="local_only",
 )
 async def generate_agent_workshop_tooling_plan(
-    session_id: Annotated[str, "Agent 工坊会话 ID"],
+    session_id: Annotated[str, "Agent workshop session ID"],
 ) -> str:
-    """生成 Agent 工坊工具需求草案并返回结构化结果。"""
+    """Generate draft requirements for Agent workshop tools and return structured results."""
     try:
         clean_session_id = str(session_id or "").strip()
         if not clean_session_id:
-            return _json_response({"status": "error", "message": "session_id 不能为空"})
+            return _json_response({"status": "error", "message": "session_id cannot be empty"})
 
         db = get_mongo_db()
         result = await AgentWorkshopService(db=db).generate_tooling_plan(clean_session_id)
@@ -4854,35 +4854,35 @@ async def generate_agent_workshop_tooling_plan(
             },
         })
     except Exception as exc:
-        logger.error("生成 Agent 工坊工具需求草案失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"生成 Agent 工坊工具需求草案失败: {exc}"})
+        logger.error("Failed to generate draft requirements for Agent workshop tools: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to generate draft requirements for Agent workshop tools: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="build_agent_workshop_version",
-    name="生成 Agent 工坊版本草案",
-    description="直接触发 Agent 工坊版本草案生成，并返回生成后的版本信息。如果已有版本处于测试中，会返回 needs_user_decision 状态让用户选择是覆盖还是继续推进。",
+    name="Generate Agent Workshop version draft",
+    description="Directly trigger the generation of the Agent workshop version draft and return the generated version information. If an existing version is in testing, the needs_user_decision status will be returned to allow the user to choose whether to overwrite or continue to advance.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当 Agent Draft 已生成但尚未产生测试版本（READY_TO_BUILD 阶段）时使用。该工具会在内部完成真实 gap 分析、工具计划和版本草案生成。如果返回 status=needs_user_decision，必须向用户展示旧版本信息（existing_version 中的工具列表）并询问用户选择：覆盖旧版本（用户确认后用 overwrite_existing=True 再次调用）还是继续推进旧版本（引导用户使用 iterate_agent_workshop_version 或继续测试）。",
-    when_not_to_use="不适合在 session_id 缺失或规格尚未准备好时调用。用户未明确确认要覆盖时，不要传 overwrite_existing=True。",
-    returns="返回 JSON 字符串。正常时包含 session_id、spec_id 和 version；已有版本时返回 status=needs_user_decision 及旧版本信息和选项。",
+    when_to_use="Used when Agent Draft has been generated but a test version has not yet been generated (READY_TO_BUILD stage). The tool does real gap analysis, tool planning and version draft generation in-house. if return status=needs_user_decision, The user must be shown the old version information (the tool list in existing_version) and ask the user to choose: overwrite the old version (use the overwrite_existing=True call it again) or continue pushing the old version (direct users to iterate_agent_workshop_version or continue testing).",
+    when_not_to_use="Not suitable for calling when session_id is missing or the specification is not yet ready. If the user does not explicitly confirm that they want to overwrite, do not send overwrite_existing=True. ",
+    returns="Returns a JSON string. Contains session_id, spec_id and version when normal; returns when there is a version status=needs_user_decision and older version information and options.",
     example="build_agent_workshop_version(session_id='session_123')",
     related_tools=["analyze_agent_workshop_gaps", "generate_agent_workshop_tooling_plan", "iterate_agent_workshop_version"],
     data_source_handling="local_only",
 )
 async def build_agent_workshop_version(
-    session_id: Annotated[str, "Agent 工坊会话 ID"],
-    overwrite_existing: Annotated[bool, "是否覆盖已有版本（删除旧版本后重建）。仅在用户明确确认要覆盖时传 True。"] = False,
+    session_id: Annotated[str, "Agent workshop session ID"],
+    overwrite_existing: Annotated[bool, "Whether to overwrite the existing version (delete the old version and then rebuild). Only pass True if the user explicitly confirms the override."] = False,
 ) -> str:
-    """生成 Agent 工坊版本草案并返回结构化结果。"""
+    """Generate a draft Agent Workshop version and return structured results."""
     try:
         clean_session_id = str(session_id or "").strip()
         if not clean_session_id:
-            return _json_response({"status": "error", "message": "session_id 不能为空"})
+            return _json_response({"status": "error", "message": "session_id cannot be empty"})
 
         db = get_mongo_db()
         phase_context = await _resolve_workshop_session_phase_context(db, clean_session_id)
@@ -4898,9 +4898,9 @@ async def build_agent_workshop_version(
                 blocked_code="phase_not_ready",
                 message=(
                     f"当前阶段为{phase_context.get('phase_label')}，不能直接补建测试版本；"
-                    "请先完成需求澄清并让会话进入可执行状态。"
+                    "Please complete the requirements clarification first and put the session into executable state."
                 ),
-                next_action="先补齐待确认点、目标边界、输出格式和验收方式。",
+                next_action="First complete the points to be confirmed, target boundaries, output format and acceptance method.",
                 phase_context=phase_context,
                 target_fields={
                     "session_id": clean_session_id,
@@ -4910,7 +4910,7 @@ async def build_agent_workshop_version(
         if phase_context.get("guard_available") and version_status and version_status != "draft":
             current_version_id = str(phase_context.get("current_version_id") or "").strip()
 
-            # 用户确认要覆盖旧版本：先删除旧版本再继续构建
+            # User confirms that they want to overwrite the old version: delete the old version before continuing the build
             if overwrite_existing and current_version_id:
                 svc = AgentWorkshopService(db=db)
                 delete_result = await svc.delete_version(current_version_id, force=True)
@@ -4920,9 +4920,9 @@ async def build_agent_workshop_version(
                         "message": f"删除旧版本 {current_version_id} 失败：{delete_result.get('message', '未知原因')}",
                         "current_version_id": current_version_id,
                     })
-                # 删除成功后继续执行 build_version
+                # Continue execution after successful deletion build_version
             else:
-                # 返回"需要用户决策"的响应，让 LLM 询问用户是覆盖还是继续推进
+                # Return"Requires user decision-making"response, letting LLM ask the user whether to overwrite or move forward
                 existing_version_summary = await _get_existing_version_summary(db, current_version_id)
                 phase_label = phase_context.get("phase_label") or version_status
                 response_payload = {
@@ -4930,19 +4930,19 @@ async def build_agent_workshop_version(
                     "decision_type": "overwrite_or_continue",
                     "message": (
                         f"当前会话已有一个处于「{phase_label}」阶段的版本 {current_version_id}。"
-                        f"请向用户展示旧版本信息，并询问用户是要覆盖旧版本（删除后重建）还是继续推进旧版本。"
+                        f"Please show the old version information to the user and ask the user whether they want to overwrite the old version (delete and rebuild) or continue to push the old version."
                     ),
                     "existing_version": existing_version_summary,
                     "options": [
                         {
                             "label": "覆盖旧版本",
-                            "description": "删除当前版本并基于最新需求重新构建（适用于工具选择或 gap 分析有误需要重建的情况）",
-                            "action": "调用 build_agent_workshop_version(session_id, overwrite_existing=True)",
+                            "description": "Delete the current version and rebuild based on the latest requirements (applicable to situations where tool selection or gap analysis is wrong and requires rebuilding)",
+                            "action": "call build_agent_workshop_version(session_id, overwrite_existing=True)",
                         },
                         {
                             "label": "继续推进旧版本",
-                            "description": "保留当前版本，按流程继续推进：先运行真数据测试，评估通过后可发布或迭代创建 v2",
-                            "action": "先调用 run_agent_workshop_real_data_test 执行真数据测试；评估通过后可调用 publish_agent_workshop_version 发布，或调用 iterate_agent_workshop_version 创建 v2 版本（注意：iterate 要求版本已进入 evaluation/publish-ready/published 阶段，testing 阶段不能直接 iterate）",
+                            "description": "Keep the current version and continue to advance according to the process: first run the real data test, and after passing the evaluation, you can publish or iteratively create v2",
+                            "action": "First call run_agent_workshop_real_data_test to perform real data testing; after passing the evaluation, you can call publish_agent_workshop_version to publish, or call iterate_agent_workshop_version to create a v2 version (note: iterate requires that the version has entered the evaluation/publish-ready/published stage, and the testing stage cannot iterate directly)",
                         },
                     ],
                     "current_phase": phase_context.get("phase"),
@@ -4969,12 +4969,12 @@ async def build_agent_workshop_version(
 
         result = await AgentWorkshopService(db=db).build_version(clean_session_id)
         version = result.get("version") if isinstance(result, dict) else None
-        # AgentWorkshopService.build_version 返回的 version 是 AgentVersion Pydantic 模型对象。
-        # 若直接传给 _json_response，json.dumps 的 default=str 会把它转成 str repr
-        # （形如 "id=ObjectId('...') version_id='...' spec_id='...' ..."），
-        # 导致下游 node_generate_candidate_agent / node_build_or_ready 提取到的
-        # version_id 是整个对象 repr 而非 version_id 字符串，进而 real_data_test /
-        # publish 全部失败。这里统一转成 dict，保证 JSON 序列化后仍是结构化对象。
+        # AgentWorkshopService.build_version The version returned is the AgentVersion Pydantic model object.
+        # If passed directly to _json_response, json.dumps default=str will convert it to str repr
+        #  (shaped like "id=ObjectId('...') version_id='...' spec_id='...' ...") , 
+        # Causes the downstream node_generate_candidate_agent / node_build_or_ready to extract
+        # version_id is the entire object repr rather than the version_id string, and thus real_data_test /
+        # publish All failed. This is uniformly converted into dict to ensure that JSON is still a structured object after serialization.
         if version is not None and not isinstance(version, dict):
             if hasattr(version, "model_dump"):
                 version = version.model_dump(by_alias=True, exclude_none=False)
@@ -4984,7 +4984,7 @@ async def build_agent_workshop_version(
                 version = dict(getattr(version, "__dict__"))
             else:
                 version = {"_repr": str(version)}
-        # 顶层 version_id：方便下游直接取用，避免重复嵌套解析
+        # Top-level version_id: convenient for downstream direct access to avoid repeated nested parsing
         top_version_id = ""
         if isinstance(version, dict):
             top_version_id = str(version.get("version_id") or "").strip()
@@ -5001,33 +5001,33 @@ async def build_agent_workshop_version(
             },
         })
     except Exception as exc:
-        logger.error("生成 Agent 工坊版本草案失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"生成 Agent 工坊版本草案失败: {exc}"})
+        logger.error("Failed to generate Agent Workshop version draft: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to generate Agent Workshop version draft: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="debug_agent_workshop_version",
-    name="调试 Agent 工坊版本",
-    description="对指定 Agent 工坊版本执行一次真实股票样例运行，并返回调试结果；该工具不会自动写入正式评估记录。",
+    name="Debugging the Agent Workshop version",
+    description="Execute a real stock sample run on the specified Agent Workshop version and return the debugging results; the tool will not automatically write formal evaluation records.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当用户明确要做调试排障、查看最近一次样例输出、诊断 Prompt 或运行时问题时使用。",
-    when_not_to_use="不适合替代正式真数据测试、验收、评估落库、发布前确认，或回答为什么版本仍处于 testing。",
-    returns="返回 JSON 字符串，包含 version_id、spec_id、report、raw_result 和运行元数据，但不会自动生成 evaluation 记录。",
+    when_to_use="Use it when the user clearly wants to debug troubleshooting, view the latest sample output, or diagnose prompt or runtime problems.",
+    when_not_to_use="Not suitable as a substitute for formal real-data testing, acceptance, evaluation and rollout, pre-release validation, or answering why a version is still in testing.",
+    returns="Returns a JSON string containing version_id, spec_id, report, raw_result, and run metadata, but does not automatically generate evaluation records.",
     example="debug_agent_workshop_version(version_id='spec_x_v1', stock_symbol='600519')",
     related_tools=["run_agent_workshop_real_data_test", "publish_agent_workshop_version"],
     data_source_handling="local_only",
 )
 async def debug_agent_workshop_version(
-    version_id: Annotated[str, "Agent 工坊版本 ID"],
-    stock_symbol: Annotated[str, "真实股票代码，如 600519"],
-    market_type: Annotated[str, "市场类型，默认 A股"] = "A股",
-    analysis_date: Annotated[str, "分析日期，格式 YYYY-MM-DD，可为空"] = "",
-    user_goal: Annotated[str, "本次测试目标，可为空"] = "",
-    prompt_overrides_json: Annotated[str, "Prompt 覆盖 JSON 对象，可为空"] = "",
+    version_id: Annotated[str, "Agent Workshop version ID"],
+    stock_symbol: Annotated[str, "Real stock code, such as 600519"],
+    market_type: Annotated[str, "Market type, default A shares"] = "A股",
+    analysis_date: Annotated[str, "Analysis date, format YYYY-MM-DD, can be empty"] = "",
+    user_goal: Annotated[str, "The target of this test can be empty"] = "",
+    prompt_overrides_json: Annotated[str, "Prompt Override JSON object, can be null"] = "",
 ) -> str:
     """Run a single real-stock debug execution for one workshop version."""
     stage_events: list[dict[str, str]] = []
@@ -5035,9 +5035,9 @@ async def debug_agent_workshop_version(
         clean_version_id = str(version_id or "").strip()
         clean_symbol = str(stock_symbol or "").strip()
         if not clean_version_id:
-            return _json_response({"status": "error", "message": "version_id 不能为空"})
+            return _json_response({"status": "error", "message": "version_id cannot be empty"})
         if not clean_symbol:
-            return _json_response({"status": "error", "message": "stock_symbol 不能为空"})
+            return _json_response({"status": "error", "message": "stock_symbol cannot be empty"})
 
         prompt_overrides = _parse_optional_json_object(prompt_overrides_json, "prompt_overrides_json")
 
@@ -5050,20 +5050,20 @@ async def debug_agent_workshop_version(
             current_phase = str(phase_context.get("phase") or "").strip().lower()
             allowed_phases = {"testing", "evaluation", "publish-ready"}
             if current_phase not in allowed_phases:
-                next_action = "请先让版本进入 testing，再执行调试。"
+                next_action = "Please let the version enter testing first, and then perform debugging."
                 blocked_code = "version_not_testing"
                 if version_status == "active":
                     blocked_code = "active_version_requires_iteration"
-                    next_action = "当前版本已经发布；如需继续优化，请开始下一轮。"
+                    next_action = "The current version has been released; if you need to continue optimizing, please start the next round."
                 elif version_status == "archived":
                     blocked_code = "archived_version_blocked"
-                    next_action = "已归档版本不能继续调试，请切换到当前 testing 版本。"
+                    next_action = "The archived version cannot be debugged anymore, please switch to the current testing version."
                 return _build_phase_guard_blocked_response(
                     tool_name="debug_agent_workshop_version",
                     blocked_code=blocked_code,
                     message=(
                         f"当前阶段为{phase_context.get('phase_label')}，不能直接执行调试；"
-                        "只有 testing / evaluation / publish-ready 阶段的版本才允许进入调试链路。"
+                        "Only versions in the testing / evaluation / publish-ready stage are allowed to enter the debug link."
                     ),
                     next_action=next_action,
                     phase_context=phase_context,
@@ -5101,7 +5101,7 @@ async def debug_agent_workshop_version(
                 _build_tool_stage_event(
                     "debug_agent_workshop_version.debug_version",
                     "ok",
-                    f"调试完成: symbol={result.get('symbol') or clean_symbol}, report_length={result.get('report_length')}",
+                    f"Debugging completed: symbol={result.get('symbol') or clean_symbol}, report_length={result.get('report_length')}",
                 ),
                 _build_tool_stage_event(
                     "debug_agent_workshop_version",
@@ -5117,10 +5117,10 @@ async def debug_agent_workshop_version(
             },
         })
     except Exception as exc:
-        logger.error("调试 Agent 工坊版本失败: %s", exc, exc_info=True)
+        logger.error("Debugging Agent Workshop version failed: %s", exc, exc_info=True)
         return _json_response({
             "status": "error",
-            "message": f"调试 Agent 工坊版本失败: {exc}",
+            "message": f"Debugging Agent Workshop version failed: {exc}",
             "failed_stage": "debug_agent_workshop_version",
             "_tool_events": [
                 *stage_events,
@@ -5136,28 +5136,28 @@ async def debug_agent_workshop_version(
 @tool
 @register_tool(
     tool_id="run_agent_workshop_real_data_test",
-    name="执行 Agent 工坊真数据测试",
-    description="对指定 Agent 工坊版本执行一次真实股票样例测试，并自动记录评估结果到 Agent Workshop。",
+    name="Execute Agent Workshop real data test",
+    description="Execute a real stock sample test on the specified Agent Workshop version and automatically record the evaluation results to Agent Workshop.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当用户要执行真数据测试、正式验收、验证是否通过、查看评估结果、确认发布前 readiness，或排查为什么版本仍停留在 testing 时使用。",
-    when_not_to_use="不适合只做样式预览、只讨论方案、只想单步调试 Prompt，或还没有 version_id 时调用。",
-    returns="返回 JSON 字符串，包含 debug_result、evaluation、latest_decision 和是否已完成正式落库。",
+    when_to_use="Use it when users want to perform real data testing, formal acceptance, verify whether it passes, view evaluation results, confirm readiness before release, or troubleshoot why the version is still stuck in testing.",
+    when_not_to_use="It is not suitable for only style preview, discussion of solutions, single-step debugging Prompt, or when there is no version_id.",
+    returns="Returns a JSON string, including debug_result, evaluation, latest_decision and whether formal deployment has been completed.",
     example="run_agent_workshop_real_data_test(version_id='spec_x_v1', stock_symbol='600519')",
     related_tools=["debug_agent_workshop_version", "publish_agent_workshop_version"],
     data_source_handling="local_only",
 )
 async def run_agent_workshop_real_data_test(
-    version_id: Annotated[str, "Agent 工坊版本 ID"],
-    stock_symbol: Annotated[str, "真实股票代码，如 600519"],
-    market_type: Annotated[str, "市场类型，默认 A股"] = "A股",
-    analysis_date: Annotated[str, "分析日期，格式 YYYY-MM-DD，可为空"] = "",
-    user_goal: Annotated[str, "本次测试目标，可为空"] = "",
-    user_feedback: Annotated[str, "本次测试补充反馈，可为空"] = "",
-    prompt_overrides_json: Annotated[str, "Prompt 覆盖 JSON 对象，可为空"] = "",
-    skip_evaluation: Annotated[bool, "仅运行测试不评估，评估由后续单独执行"] = False,
+    version_id: Annotated[str, "Agent Workshop version ID"],
+    stock_symbol: Annotated[str, "Real stock code, such as 600519"],
+    market_type: Annotated[str, "Market type, default A shares"] = "A股",
+    analysis_date: Annotated[str, "Analysis date, format YYYY-MM-DD, can be empty"] = "",
+    user_goal: Annotated[str, "The target of this test can be empty"] = "",
+    user_feedback: Annotated[str, "Supplementary feedback for this test, can be empty"] = "",
+    prompt_overrides_json: Annotated[str, "Prompt Override JSON object, can be null"] = "",
+    skip_evaluation: Annotated[bool, "Only runs the test without evaluation, the evaluation is performed separately by subsequent"] = False,
 ) -> str:
     """Execute the official real-data test loop and persist its evaluation."""
     stage_events: list[dict[str, str]] = []
@@ -5165,9 +5165,9 @@ async def run_agent_workshop_real_data_test(
         clean_version_id = str(version_id or "").strip()
         clean_symbol = str(stock_symbol or "").strip()
         if not clean_version_id:
-            return _json_response({"status": "error", "message": "version_id 不能为空"})
+            return _json_response({"status": "error", "message": "version_id cannot be empty"})
         if not clean_symbol:
-            return _json_response({"status": "error", "message": "stock_symbol 不能为空"})
+            return _json_response({"status": "error", "message": "stock_symbol cannot be empty"})
 
         prompt_overrides = _parse_optional_json_object(prompt_overrides_json, "prompt_overrides_json")
         db = get_mongo_db()
@@ -5175,11 +5175,11 @@ async def run_agent_workshop_real_data_test(
         if phase_context.get("guard_available") and not phase_context.get("exists"):
             return _json_response({"status": "error", "message": f"版本 {clean_version_id} 不存在"})
         if phase_context.get("guard_available") and str(phase_context.get("version_status") or "").strip().lower() != "testing":
-            next_action = "请先补建测试版本。"
+            next_action = "Please build the test version first."
             if phase_context.get("version_status") == "active":
-                next_action = "当前版本已发布；如需继续优化，请先开始下一轮。"
+                next_action = "The current version has been released; if you need to continue optimizing, please start the next round first."
             elif phase_context.get("version_status") == "archived":
-                next_action = "请切换到当前 testing 版本，或重新开始新一轮生成。"
+                next_action = "Please switch to the current testing version, or start a new build."
             return _build_phase_guard_blocked_response(
                 tool_name="run_agent_workshop_real_data_test",
                 blocked_code=(
@@ -5191,7 +5191,7 @@ async def run_agent_workshop_real_data_test(
                 ),
                 message=(
                     f"当前阶段为{phase_context.get('phase_label')}，不能直接执行真数据测试；"
-                    "只有 testing 版本才能进入正式测试链路。"
+                    "Only the testing version can enter the official test link."
                 ),
                 next_action=next_action,
                 phase_context=phase_context,
@@ -5207,7 +5207,7 @@ async def run_agent_workshop_real_data_test(
             stage_events.append(_build_tool_stage_event(
                 "run_agent_workshop_real_data_test.auto_sync_gap_tools",
                 "ok",
-                f"已同步 gap 工具到当前版本: {gap_tool_sync.get('status')}；tools={len(gap_tool_sync.get('required_tools') or [])}",
+                f"The gap tool has been synchronized to the current version: {gap_tool_sync.get('status')}; tools={len(gap_tool_sync.get('required_tools') or [])}",
             ))
         llm_payload = await _resolve_workshop_test_llm_payload(
             db=db,
@@ -5231,7 +5231,7 @@ async def run_agent_workshop_real_data_test(
         stage_events.append(_build_tool_stage_event(
             "run_agent_workshop_real_data_test.debug_version",
             "ok",
-            f"样例运行完成: symbol={debug_result.get('symbol') or clean_symbol}, report_length={debug_result.get('report_length')}",
+            f"Sample run completed: symbol={debug_result.get('symbol') or clean_symbol}, report_length={debug_result.get('report_length')}",
         ))
 
         debug_prompt = debug_result.get("debug_prompt") if isinstance(debug_result.get("debug_prompt"), dict) else {}
@@ -5250,12 +5250,12 @@ async def run_agent_workshop_real_data_test(
             "tool_trace": debug_prompt.get("tool_trace") or raw_result.get("tool_trace") or [],
         })
 
-        # 🔑 skip_evaluation=True：仅运行测试，不做评估，评估由 node_real_data_test 后续单独执行
+        # 🔑 skip_evaluation=True: Only tests are run, no evaluation is performed, and evaluation is performed separately by node_real_data_test subsequently.
         if skip_evaluation:
             stage_events.append(_build_tool_stage_event(
                 "run_agent_workshop_real_data_test.skip_evaluation",
                 "ok",
-                "测试完成，跳过评估阶段（由后续单独执行）",
+                "The test is completed and the evaluation phase is skipped (executed separately later)",
             ))
             return _json_response({
                 "status": "ok",
@@ -5270,7 +5270,7 @@ async def run_agent_workshop_real_data_test(
                     _build_tool_stage_event(
                         "run_agent_workshop_real_data_test",
                         "ok",
-                        "真数据测试完成（跳过评估）",
+                        "Real data testing completed (evaluation skipped)",
                     ),
                 ],
                 "summary": {
@@ -5278,7 +5278,7 @@ async def run_agent_workshop_real_data_test(
                     "analysis_date": debug_result.get("analysis_date"),
                     "report_length": debug_result.get("report_length"),
                 },
-                "message": "真数据测试已完成，测试报告已生成。评估将在下一步单独执行。",
+                "message": "The real data test has been completed and the test report has been generated. The evaluation will be performed separately in the next step.",
             })
 
         evaluation_result = await service.evaluate_version(
@@ -5291,7 +5291,7 @@ async def run_agent_workshop_real_data_test(
         evaluation_decision = _read_mapping_or_attr(evaluation, "decision", None)
         acceptance_passed = evaluation_decision == "pass"
 
-        # 🔥 把评估证据写回意图上下文，供 ITERATING 阶段做细粒度路由
+        # 🔥 Write the evaluation evidence back to the intent context for fine-grained routing in the ITERATING phase
         publish_readiness = (_read_mapping_or_attr(evaluation, "publish_readiness", {}) or {}) if isinstance(evaluation, dict) else {}
         if isinstance(publish_readiness, dict):
             eval_blockers = [str(b).strip() for b in (publish_readiness.get("blockers") or []) if str(b).strip()]
@@ -5305,7 +5305,7 @@ async def run_agent_workshop_real_data_test(
                         if cat:
                             eval_categories.append(cat)
             if not eval_categories:
-                # fallback：从 blockers 文本推断 category
+                # fallback: Inferred from blockers text category
                 blocker_text = " ".join(eval_blockers).lower()
                 if "工具" in blocker_text or "tool" in blocker_text:
                     eval_categories.append("tool_usage")
@@ -5322,7 +5322,7 @@ async def run_agent_workshop_real_data_test(
         stage_events.append(_build_tool_stage_event(
             "run_agent_workshop_real_data_test.evaluate_version",
             "ok",
-            f"评估已记录: decision={evaluation_decision or 'unknown'}, overall={_read_mapping_or_attr(_read_mapping_or_attr(evaluation, 'scores', {}), 'overall', None)}",
+            f"Assessment recorded: decision={evaluation_decision or 'unknown'}, overall={_read_mapping_or_attr(_read_mapping_or_attr(evaluation, 'scores', {}), 'overall', None)}",
         ))
         return _json_response({
             "status": "ok",
@@ -5338,7 +5338,7 @@ async def run_agent_workshop_real_data_test(
                 _build_tool_stage_event(
                     "run_agent_workshop_real_data_test",
                     "ok",
-                    "真数据测试与评估落库已完成",
+                    "Real data testing and evaluation have been completed",
                 ),
             ],
             "summary": {
@@ -5351,17 +5351,17 @@ async def run_agent_workshop_real_data_test(
                 "official_acceptance_passed": acceptance_passed,
             },
             "message": (
-                "真数据测试链路已执行并完成评估落库；最新官方验收结论为 pass，版本现已进入待确认发布状态，必须由用户手动确认后才能正式发布。"
+                "The real data test link has been executed and completed the evaluation and storage; the latest official acceptance conclusion is pass, and the version has now entered the pending release status and must be manually confirmed by the user before it can be officially released."
                 if acceptance_passed
-                else f"真数据测试链路已执行并完成评估落库；但最新官方验收结论为 {evaluation_decision or 'unknown'}，当前不能视为通过。"
+                else f"The real data test link has been executed and evaluated and dropped into the library; however, the latest official acceptance conclusion is {evaluation_decision or 'unknown'}, Currently cannot be considered passed."
             ),
         })
     except Exception as exc:
-        logger.error("执行 Agent 工坊真数据测试失败: %s", exc, exc_info=True)
+        logger.error("Failed to execute Agent Workshop real data test: %s", exc, exc_info=True)
         failed_stage = "run_agent_workshop_real_data_test.evaluate_version" if any(event.get("name") == "run_agent_workshop_real_data_test.debug_version" for event in stage_events) else "run_agent_workshop_real_data_test.debug_version"
         return _json_response({
             "status": "error",
-            "message": f"执行 Agent 工坊真数据测试失败: {exc}",
+            "message": f"Failed to execute Agent Workshop real data test: {exc}",
             "failed_stage": failed_stage,
             "_tool_events": [
                 *stage_events,
@@ -5373,7 +5373,7 @@ async def run_agent_workshop_real_data_test(
                 _build_tool_stage_event(
                     "run_agent_workshop_real_data_test",
                     "error",
-                    f"真数据测试失败，失败阶段={failed_stage}",
+                    f"Real data test failed, failure stage={failed_stage}",
                 ),
             ],
         })
@@ -5382,38 +5382,38 @@ async def run_agent_workshop_real_data_test(
 @tool
 @register_tool(
     tool_id="publish_agent_workshop_version",
-    name="发布 Agent 工坊版本",
-    description="在用户已经手动确认发布后，将已通过最新真数据测试评估的 Agent 工坊版本发布为 active。",
+    name="Release Agent Workshop version",
+    description="After the user has manually confirmed the release, the Agent Workshop version that has passed the latest real data test evaluation will be released as active.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="仅当版本已经在 testing 且最新评估结论为 pass，并且用户在当前回合明确确认要发布时使用。",
-    when_not_to_use="不适合在尚未完成真数据测试评估、评估未通过，或只是测试刚通过但用户尚未明确确认发布时调用。",
-    returns="返回 JSON 字符串，包含发布后的版本状态与 spec_id。",
+    when_to_use="Only used when the version is already in testing and the latest evaluation conclusion is pass, and the user explicitly confirms the release in the current round.",
+    when_not_to_use="Not suitable for calling when the real data test evaluation has not been completed, the evaluation has failed, or the test has just passed but the user has not explicitly confirmed the release.",
+    returns="Returns a JSON string containing the version status and spec_id after release.",
     example="publish_agent_workshop_version(version_id='spec_x_v1')",
     related_tools=["run_agent_workshop_real_data_test", "debug_agent_workshop_version"],
     data_source_handling="local_only",
 )
 async def publish_agent_workshop_version(
-    version_id: Annotated[str, "Agent 工坊版本 ID"],
+    version_id: Annotated[str, "Agent Workshop version ID"],
 ) -> str:
     """Publish a workshop version after its latest evaluation has passed."""
     try:
         clean_version_id = str(version_id or "").strip()
         if not clean_version_id:
-            return _json_response({"status": "error", "message": "version_id 不能为空"})
+            return _json_response({"status": "error", "message": "version_id cannot be empty"})
 
         db = get_mongo_db()
         phase_context = await _resolve_workshop_version_phase_context(db, clean_version_id)
         if phase_context.get("guard_available") and not phase_context.get("exists"):
             return _json_response({"status": "error", "message": f"版本 {clean_version_id} 不存在"})
         if phase_context.get("guard_available") and str(phase_context.get("version_status") or "").strip().lower() != "testing":
-            next_action = "请先让版本进入 testing，再执行真数据测试。"
+            next_action = "Please let the version enter testing first, and then perform real data testing."
             if phase_context.get("version_status") == "active":
-                next_action = "当前版本已经发布；如需继续优化，请开始下一轮。"
+                next_action = "The current version has been released; if you need to continue optimizing, please start the next round."
             elif phase_context.get("version_status") == "archived":
-                next_action = "已归档版本不能直接发布，请切换到当前 testing 版本。"
+                next_action = "The archived version cannot be published directly, please switch to the current testing version."
             return _build_phase_guard_blocked_response(
                 tool_name="publish_agent_workshop_version",
                 blocked_code=(
@@ -5425,7 +5425,7 @@ async def publish_agent_workshop_version(
                 ),
                 message=(
                     f"当前阶段为{phase_context.get('phase_label')}，不能直接发布正式版本；"
-                    "只有 testing 版本才允许发布。"
+                    "Only testing versions are allowed to be released."
                 ),
                 next_action=next_action,
                 phase_context=phase_context,
@@ -5440,9 +5440,9 @@ async def publish_agent_workshop_version(
                 blocked_code="latest_evaluation_not_pass",
                 message=(
                     f"当前阶段为{phase_context.get('phase_label')}，不能直接发布正式版本；"
-                    "只有最新一次真数据测试评估为 pass 的 testing 版本才能发布。"
+                    "Only the testing version whose latest real data test evaluation is pass can be released."
                 ),
-                next_action="先完成最新一次真数据测试，确认官方验收结论为 pass。",
+                next_action="First complete the latest real data test and confirm that the official acceptance conclusion is pass.",
                 phase_context=phase_context,
                 target_fields={
                     "version_id": clean_version_id,
@@ -5459,39 +5459,39 @@ async def publish_agent_workshop_version(
             "version_status": version_status,
         })
     except Exception as exc:
-        logger.error("发布 Agent 工坊版本失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"发布 Agent 工坊版本失败: {exc}"})
+        logger.error("Failed to publish Agent workshop version: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to publish Agent workshop version: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="evaluate_agent_workshop_version",
-    name="评估 Agent 工坊版本",
-    description="对指定 Agent 工坊版本执行一次显式评估落库，并返回最新评估结果。",
+    name="Evaluate the Agent Workshop version",
+    description="Perform an explicit evaluation and drop-in for the specified Agent workshop version, and return the latest evaluation results.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当版本已经处于 testing/evaluation 阶段，需要重新记录一次正式评估结论时使用。",
-    when_not_to_use="不适合在 version_id 不存在、仍未进入 testing，或只是想看最近一次评估结果时调用。",
-    returns="返回 JSON 字符串，包含 version_id、evaluation 和最新 decision 摘要。",
+    when_to_use="Use it when the version is already in the testing/evaluation stage and needs to re-record the formal evaluation conclusion.",
+    when_not_to_use="Not suitable for calling when version_id does not exist, has not yet entered testing, or just wants to see the latest evaluation results.",
+    returns="Returns a JSON string containing version_id, evaluation, and summary of the latest decision.",
     example="evaluate_agent_workshop_version(version_id='spec_x_v1', evaluation_type='production-review', runtime_result_json='{\"output_text\":\"...\"}')",
     related_tools=["debug_agent_workshop_version", "run_agent_workshop_real_data_test", "iterate_agent_workshop_version"],
     data_source_handling="local_only",
 )
 async def evaluate_agent_workshop_version(
-    version_id: Annotated[str, "Agent 工坊版本 ID"],
-    evaluation_type: Annotated[str, "评估类型，默认 production-review"] = "production-review",
-    sample_set_id: Annotated[str, "样本集 ID，可为空"] = "",
-    user_feedback: Annotated[str, "评估补充反馈，可为空"] = "",
-    benchmark_outputs_json: Annotated[str, "benchmark 输出数组 JSON，可为空"] = "",
-    runtime_result_json: Annotated[str, "真实运行结果 JSON 对象，可为空"] = "",
+    version_id: Annotated[str, "Agent Workshop version ID"],
+    evaluation_type: Annotated[str, "Evaluation type, default production-review"] = "production-review",
+    sample_set_id: Annotated[str, "Sample set ID, can be empty"] = "",
+    user_feedback: Annotated[str, "Evaluation supplementary feedback, can be empty"] = "",
+    benchmark_outputs_json: Annotated[str, "benchmark Output array JSON, can be empty"] = "",
+    runtime_result_json: Annotated[str, "Actual running result JSON object, can be empty"] = "",
 ) -> str:
     """Persist one explicit evaluation result for a workshop version."""
     try:
         clean_version_id = str(version_id or "").strip()
         if not clean_version_id:
-            return _json_response({"status": "error", "message": "version_id 不能为空"})
+            return _json_response({"status": "error", "message": "version_id cannot be empty"})
 
         benchmark_outputs = _parse_optional_json_list(benchmark_outputs_json, "benchmark_outputs_json")
         runtime_result = _parse_optional_json_object(runtime_result_json, "runtime_result_json")
@@ -5505,20 +5505,20 @@ async def evaluate_agent_workshop_version(
             current_phase = str(phase_context.get("phase") or "").strip().lower()
             allowed_phases = {"testing", "evaluation", "publish-ready"}
             if current_phase not in allowed_phases:
-                next_action = "请先让版本进入 testing，再执行正式评估。"
+                next_action = "Please put the release into testing before performing formal evaluation."
                 blocked_code = "version_not_testing"
                 if version_status == "active":
                     blocked_code = "active_version_requires_iteration"
-                    next_action = "当前版本已经发布；如需继续优化，请开始下一轮。"
+                    next_action = "The current version has been released; if you need to continue optimizing, please start the next round."
                 elif version_status == "archived":
                     blocked_code = "archived_version_blocked"
-                    next_action = "已归档版本不能继续评估，请切换到当前 testing 版本。"
+                    next_action = "Archived versions cannot be evaluated further, please switch to the current testing version."
                 return _build_phase_guard_blocked_response(
                     tool_name="evaluate_agent_workshop_version",
                     blocked_code=blocked_code,
                     message=(
                         f"当前阶段为{phase_context.get('phase_label')}，不能直接执行正式评估；"
-                        "只有 testing / evaluation / publish-ready 阶段的版本才允许进入评估链路。"
+                        "Only versions in the testing / evaluation / publish-ready stage are allowed to enter the evaluation link."
                     ),
                     next_action=next_action,
                     phase_context=phase_context,
@@ -5536,8 +5536,8 @@ async def evaluate_agent_workshop_version(
                 return _json_response({
                     "status": "error",
                     "message": (
-                        "production-review 提供了 runtime_result_json，但其中缺少可用证据；"
-                        "至少需要 output_text、report、output_payload、raw_result、debug_prompt 或 tool_trace 之一"
+                        "production-review runtime_result_json is provided but lacks available evidence;"
+                        "Requires at least one of output_text, report, output_payload, raw_result, debug_prompt or tool_trace"
                     ),
                 })
             normalized_runtime_result = _with_nanobot_review_worker_flags(normalized_runtime_result)
@@ -5552,8 +5552,8 @@ async def evaluate_agent_workshop_version(
         )
         evaluation = result.get("evaluation") if isinstance(result, dict) else None
         decision = _read_mapping_or_attr(evaluation, "decision", None)
-        # 把 Pydantic 模型转为 dict，避免 _json_response 的 default=str 把它序列化成字符串
-        # 导致前端解析时 evaluation 不是 dict，decision/scores 取不到值
+        # Convert Pydantic model to dict to avoid _json_response default=str Serialize it into a string
+        # As a result, evaluation is not dict during front-end parsing, and decisions/scores cannot obtain values.
         if result and "evaluation" in result:
             eval_obj = result["evaluation"]
             if hasattr(eval_obj, "model_dump"):
@@ -5568,13 +5568,13 @@ async def evaluate_agent_workshop_version(
                     _build_tool_stage_event(
                         "evaluate_agent_workshop_version.auto_sync_gap_tools",
                         "ok",
-                        f"已同步 gap 工具到当前版本: {gap_tool_sync.get('status')}；tools={len(gap_tool_sync.get('required_tools') or [])}",
+                        f"The gap tool has been synchronized to the current version: {gap_tool_sync.get('status')}; tools={len(gap_tool_sync.get('required_tools') or [])}",
                     )
                 ] if gap_tool_sync.get("status") in {"synced", "unchanged"} else []),
                 _build_tool_stage_event(
                     "evaluate_agent_workshop_version.evaluate_version",
                     "ok",
-                    f"评估已落库: decision={decision or 'unknown'}",
+                    f"The assessment has been dropped: decision={decision or 'unknown'}",
                 ),
                 _build_tool_stage_event(
                     "evaluate_agent_workshop_version",
@@ -5591,38 +5591,38 @@ async def evaluate_agent_workshop_version(
                 "overall_score": _read_mapping_or_attr(_read_mapping_or_attr(evaluation, "scores", {}), "overall", None),
                 "recorded_in_workshop": bool(_read_mapping_or_attr(evaluation, "evaluation_id", None)),
             },
-            "message": f"已完成版本评估落库；最新结论为 {decision or 'unknown'}。",
+            "message": f"The version evaluation has been completed and the latest conclusion is {decision or 'unknown'}. ",
         })
     except Exception as exc:
-        logger.error("评估 Agent 工坊版本失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"评估 Agent 工坊版本失败: {exc}"})
+        logger.error("Failed to evaluate Agent Workshop version: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to evaluate Agent Workshop version: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="iterate_agent_workshop_version",
-    name="发起 Agent 工坊下一轮迭代",
-    description="基于指定 Agent 工坊版本发起下一轮迭代，并创建新的 Session。",
+    name="Launch the next iteration of Agent Workshop",
+    description="Initiate the next iteration based on the specified Agent workshop version and create a new Session.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当版本已经进入 evaluation / publish-ready / published，需要基于已有结论开始下一轮时使用。",
-    when_not_to_use="不适合在还没完成测试评估或仍处于 generation/testing 初期时调用。",
-    returns="返回 JSON 字符串，包含 source_version_id、session_id、spec_id 和 ai_message。",
-    example="iterate_agent_workshop_version(version_id='spec_x_v1', feedback='补充解释评分波动来源')",
+    when_to_use="Use it when the version has entered evaluation/publish-ready/published and needs to start the next round based on the existing conclusions.",
+    when_not_to_use="Not suitable for calling when test evaluation has not been completed or is still in the early stages of generation/testing.",
+    returns="Returns a JSON string containing source_version_id, session_id, spec_id, and ai_message.",
+    example="iterate_agent_workshop_version(version_id='spec_x_v1', feedback='Supplementary explanation of sources of score fluctuations')",
     related_tools=["evaluate_agent_workshop_version", "build_agent_workshop_version", "publish_agent_workshop_version"],
     data_source_handling="local_only",
 )
 async def iterate_agent_workshop_version(
-    version_id: Annotated[str, "Agent 工坊版本 ID"],
-    feedback: Annotated[str, "迭代反馈，可为空"] = "",
+    version_id: Annotated[str, "Agent Workshop version ID"],
+    feedback: Annotated[str, "Iteration feedback, can be empty"] = "",
 ) -> str:
     """Start the next workshop iteration from an evaluated or published version."""
     try:
         clean_version_id = str(version_id or "").strip()
         if not clean_version_id:
-            return _json_response({"status": "error", "message": "version_id 不能为空"})
+            return _json_response({"status": "error", "message": "version_id cannot be empty"})
 
         db = get_mongo_db()
         phase_context = await _resolve_workshop_version_phase_context(db, clean_version_id)
@@ -5634,16 +5634,16 @@ async def iterate_agent_workshop_version(
             allowed_phases = {"evaluation", "publish-ready", "published"}
             if current_phase not in allowed_phases:
                 blocked_code = "phase_not_ready"
-                next_action = "请先完成至少一轮正式评估，再决定是否开始下一轮。"
+                next_action = "Please complete at least one formal assessment round before deciding whether to start another round."
                 if version_status == "archived":
                     blocked_code = "archived_version_blocked"
-                    next_action = "已归档版本不能作为当前迭代起点，请切换到最新版本。"
+                    next_action = "The archived version cannot be used as the starting point for the current iteration. Please switch to the latest version."
                 return _build_phase_guard_blocked_response(
                     tool_name="iterate_agent_workshop_version",
                     blocked_code=blocked_code,
                     message=(
                         f"当前阶段为{phase_context.get('phase_label')}，不能直接开始下一轮；"
-                        "只有 evaluation / publish-ready / published 阶段的版本才允许发起 iterate。"
+                        "Only versions in the evaluation / publish-ready / published stages are allowed to initiate iterate."
                     ),
                     next_action=next_action,
                     phase_context=phase_context,
@@ -5664,7 +5664,7 @@ async def iterate_agent_workshop_version(
                 _build_tool_stage_event(
                     "iterate_agent_workshop_version.iterate_version",
                     "ok",
-                    f"已创建下一轮 Session: {result.get('session_id') or ''}；Draft 版本: {result.get('version_id') or ''}",
+                    f"Next round created Session: {result.get('session_id') or ''}; Draft version: {result.get('version_id') or ''}",
                 ),
                 _build_tool_stage_event(
                     "iterate_agent_workshop_version",
@@ -5682,49 +5682,49 @@ async def iterate_agent_workshop_version(
             },
         })
     except Exception as exc:
-        logger.error("发起 Agent 工坊下一轮迭代失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"发起 Agent 工坊下一轮迭代失败: {exc}"})
+        logger.error("Failed to initiate the next iteration of Agent Workshop: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to initiate the next iteration of Agent Workshop: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="create_or_update_universal_agent_prompt_template",
-    name="创建或更新 UniversalAgent 提示词模板",
-    description="为配置式 UniversalAgent 候选创建或更新默认提示词模板，使运行时能够直接按 agent_id 读取模板。",
+    name="Create or update a UniversalAgent prompt word template",
+    description="Create or update the default prompt word template for configured UniversalAgent candidates so that the runtime can read the template directly by agent_id.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当已决定创建配置式 Agent 候选，并需要让该 Agent 在运行时读取到可用提示词时使用。",
-    when_not_to_use="不适合做工具绑定或能力侦察。",
-    returns="返回 JSON 字符串，包含写入后的 prompt_templates 摘要。",
-    example="create_or_update_universal_agent_prompt_template(agent_id='valuation_candidate_v1', template_name='估值候选模板', system_prompt='你是一名估值分析师')",
+    when_to_use="Used when you have decided to create a profiled Agent candidate and need the Agent to read available prompt words at runtime.",
+    when_not_to_use="Not suitable for tool binding or ability scouting.",
+    returns="Returns a JSON string containing a summary of prompt_templates as written.",
+    example="create_or_update_universal_agent_prompt_template(agent_id='valuation_candidate_v1', template_name='Valuation candidate template', system_prompt='You are a valuation analyst')",
     related_tools=["create_or_update_runtime_agent_config", "bind_agent_tools_and_validate_candidate"],
     data_source_handling="local_only",
 )
 async def create_or_update_universal_agent_prompt_template(
-    agent_id: Annotated[str, "对应 UniversalAgent 的 agent_id"],
+    agent_id: Annotated[str, "Corresponding to UniversalAgent agent_id"],
     template_name: Annotated[str, "模板名称"],
     system_prompt: Annotated[str, "系统提示词"],
-    user_prompt: Annotated[str, "用户提示词，可为空"] = "",
-    tool_guidance: Annotated[str, "工具使用指导"] = "优先使用已绑定工具获取真实数据，不编造，不跳过关键验证。",
-    analysis_requirements: Annotated[str, "分析要求"] = "围绕单一职责完成任务，结论清晰，说明关键依据和适用边界。",
-    output_format: Annotated[str, "输出格式"] = "请输出结构化结论，并明确核心判断、关键依据、风险提示。",
-    constraints: Annotated[str, "约束条件"] = "不要超出该 Agent 的单一职责范围。",
-    status: Annotated[str, "模板状态，默认 active"] = "active",
+    user_prompt: Annotated[str, "User prompt word, can be empty"] = "",
+    tool_guidance: Annotated[str, "工具使用指导"] = "Prioritize using bound tools to obtain real data, do not make it up, and do not skip key verifications.",
+    analysis_requirements: Annotated[str, "分析要求"] = "Complete tasks around a single responsibility, with clear conclusions and explanation of key basis and applicable boundaries.",
+    output_format: Annotated[str, "输出格式"] = "Please output a structured conclusion and clarify core judgments, key basis, and risk warnings.",
+    constraints: Annotated[str, "约束条件"] = "Do not exceed the Agent s single scope of responsibility.",
+    status: Annotated[str, "Template status, default active"] = "active",
 ) -> str:
-    """创建或更新 UniversalAgent 默认提示词模板。"""
+    """Create or update the UniversalAgent default prompt word template."""
     try:
         clean_agent_id = str(agent_id or "").strip()
         clean_template_name = str(template_name or "").strip()
         clean_system_prompt = _append_trading_guard(system_prompt)
         if not clean_agent_id or not clean_template_name or not clean_system_prompt:
-            return _json_response({"status": "error", "message": "agent_id、template_name、system_prompt 不能为空"})
+            return _json_response({"status": "error", "message": "agent_id, template_name, system_prompt cannot be empty"})
 
         db = get_mongo_db()
         templates = _get_collection(db, "prompt_templates")
         if templates is None:
-            return _json_response({"status": "error", "message": "当前数据库中不可用 prompt_templates 集合"})
+            return _json_response({"status": "error", "message": "The prompt_templates collection is not available in the current database"})
 
         query = {
             "agent_type": "universal",
@@ -5783,7 +5783,7 @@ async def create_or_update_universal_agent_prompt_template(
             action = "created"
 
         if persisted is None:
-            return _json_response({"status": "error", "message": "提示词模板写入后未能重新读取"})
+            return _json_response({"status": "error", "message": "The prompt word template failed to be read again after being written."})
 
         agent_configs = _get_collection(db, "agent_configs")
         if agent_configs is not None:
@@ -5813,38 +5813,38 @@ async def create_or_update_universal_agent_prompt_template(
             },
         })
     except Exception as exc:
-        logger.error("创建或更新 UniversalAgent 提示词模板失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"创建或更新 UniversalAgent 提示词模板失败: {exc}"})
+        logger.error("Failed to create or update UniversalAgent prompt word template: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to create or update UniversalAgent prompt word template: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="bind_agent_tools_and_validate_candidate",
-    name="绑定 Agent 工具并校验候选",
-    description="为候选 Agent 写入 tool_agent_bindings，并按真实运行时逻辑做一次干运行校验，确认配置式 Agent 已具备最小可运行条件；该校验不等于 Agent Workshop 正式测试验收。",
+    name="Bind Agent tools and verify candidates",
+    description="Write tool_agent_bindings for the candidate Agent, and do a dry run verification based on the real runtime logic to confirm that the configured Agent has the minimum operable conditions; this verification is not equal to the official test acceptance of the Agent Workshop.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当已写入 agent_configs 和提示词模板，准备绑定工具并确认候选 Agent 是否能被运行时正常创建时使用。",
-    when_not_to_use="不适合用来搜索资源或生成提示词。",
-    returns="返回 JSON 字符串，包含绑定后的工具列表、提示词模板存在性和干运行校验结果；结果仅代表运行时候选可实例化，不代表 Workshop 版本已生成或已通过正式验收。",
+    when_to_use="Used when agent_configs and prompt word templates have been written, ready to bind tools and confirm whether candidate Agents can be created normally by the runtime.",
+    when_not_to_use="Not suitable for searching resources or generating prompt words.",
+    returns="Returns a JSON string, including the bound tool list, prompt word template existence, and dry run verification results; the results only represent the options for instantiation at runtime, and do not represent that the Workshop version has been generated or has passed formal acceptance.",
     example="bind_agent_tools_and_validate_candidate(agent_id='valuation_candidate_v1', tool_ids='get_value_factor_bundle_tool,get_peer_comparison')",
     related_tools=["create_or_update_runtime_agent_config", "create_or_update_universal_agent_prompt_template"],
     data_source_handling="local_only",
 )
 async def bind_agent_tools_and_validate_candidate(
     agent_id: Annotated[str, "候选 Agent ID"],
-    tool_ids: Annotated[str, "要绑定的工具 ID，逗号分隔"],
-    default_tools: Annotated[str, "默认工具 ID，逗号分隔；为空则复用 tool_ids"] = "",
-    max_tool_calls: Annotated[int, "最大工具调用次数，默认 5"] = 5,
-    validate_runtime: Annotated[bool, "是否做干运行校验，默认 true"] = True,
+    tool_ids: Annotated[str, "Tool IDs to bind, comma separated"],
+    default_tools: Annotated[str, "Default tool IDs, comma separated; empty to reuse tool_ids"] = "",
+    max_tool_calls: Annotated[int, "Maximum number of tool calls, default 5"] = 5,
+    validate_runtime: Annotated[bool, "Whether to do dry run verification, default true"] = True,
 ) -> str:
-    """绑定候选 Agent 工具并执行最小运行时校验。"""
+    """Bind candidate agent tools and perform minimal runtime verification."""
     try:
         clean_agent_id = str(agent_id or "").strip()
         if not clean_agent_id:
-            return _json_response({"status": "error", "message": "agent_id 不能为空"})
+            return _json_response({"status": "error", "message": "agent_id cannot be empty"})
 
         resolved_tools = _parse_string_list(tool_ids)
         resolved_default_tools = _parse_string_list(default_tools) or list(resolved_tools)
@@ -5861,7 +5861,7 @@ async def bind_agent_tools_and_validate_candidate(
         agent_configs = _get_collection(db, "agent_configs")
         prompt_templates = _get_collection(db, "prompt_templates")
         if bindings is None or agent_configs is None:
-            return _json_response({"status": "error", "message": "当前数据库中不可用 tool_agent_bindings 或 agent_configs 集合"})
+            return _json_response({"status": "error", "message": "The tool_agent_bindings or agent_configs collections are not available in the current database"})
 
         await bindings.delete_many({"agent_id": clean_agent_id})
         await bindings.insert_many([
@@ -5940,65 +5940,65 @@ async def bind_agent_tools_and_validate_candidate(
             "validation": validation,
         })
     except Exception as exc:
-        logger.error("绑定 Agent 工具并校验候选失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"绑定 Agent 工具并校验候选失败: {exc}"})
+        logger.error("Bind Agent tool and verify candidate failure: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Bind Agent tool and verify candidate failure: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="generate_confirmed_candidate_agent",
-    name="确认方案后生成候选 Agent",
-    description="在用户明确选择方案后，一次性完成配置写入、提示词模板写入、工具绑定和干运行校验；若已同步到 Agent Workshop Draft，则默认自动生成一个测试版本。V2 流程中必须传入 selected_plan_id、acknowledged_gaps 和 gap_report_json，避免执行阶段重复做缺口分析。",
+    name="Generate candidates after confirming the plan Agent",
+    description="After the user clearly selects a plan, the configuration writing, prompt word template writing, tool binding and dry run verification are completed in one go; if it has been synchronized to Agent Workshop Draft, a test version will be automatically generated by default. Selected_plan_id, acknowledged_gaps and gap_report_json must be passed in the V2 process to avoid repeated gap analysis during the execution phase.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当已完成需求确认、能力盘点、方案选择，并拿到用户明确的方案选择后，用一次调用生成候选 Agent。",
-    when_not_to_use="未选择方案前不要调用；也不适合做资源侦察或缺口分析。",
-    returns="返回 JSON 字符串，包含三步写入结果、最终干运行校验结果、可选的自动 version 生成结果，以及与 Agent Workshop 正式验收边界相关的治理提示。",
-    example="generate_confirmed_candidate_agent(agent_id='valuation_candidate_v1', agent_name='估值候选Agent', target_responsibility='输出A股估值结论', tool_ids='get_value_factor_bundle_tool', system_prompt='你是一名估值分析师', selected_plan_id='complete', acknowledged_gaps='[\"financial_ratio_calculator\"]', gap_report_json='{...}')",
+    when_to_use="After the requirements confirmation, capability inventory, and solution selection have been completed, and the user s clear solution selection is obtained, candidate Agents are generated with one call.",
+    when_not_to_use="Do not call it before selecting a plan; it is not suitable for resource reconnaissance or gap analysis.",
+    returns="Returns a JSON string containing the results of the three steps of writing, the final dry run verification results, optional automatic version generation results, and governance prompts related to Agent Workshop s formal acceptance boundaries.",
+    example="generate_confirmed_candidate_agent(agent_id='valuation_candidate_v1', agent_name='Valuation candidates Agent', target_responsibility='Output A-share valuation conclusion', tool_ids='get_value_factor_bundle_tool', system_prompt='You are a valuation analyst', selected_plan_id='complete', acknowledged_gaps='[\"financial_ratio_calculator\"]', gap_report_json='{...}')",
     related_tools=["propose_agent_build_plans", "bind_agent_tools_and_validate_candidate", "resolve_agent_workshop_blocking_gaps"],
     data_source_handling="local_only",
 )
 async def generate_confirmed_candidate_agent(
     agent_id: Annotated[str, "候选 Agent ID"],
-    agent_name: Annotated[str, "候选 Agent 显示名称"],
+    agent_name: Annotated[str, "Candidate Agent display name"],
     target_responsibility: Annotated[str, "单一职责的一句话描述"],
-    tool_ids: Annotated[str, "拟绑定工具 ID，逗号分隔"],
+    tool_ids: Annotated[str, "Tool IDs to be bound, separated by commas"],
     system_prompt: Annotated[str, "系统提示词"],
-    user_prompt: Annotated[str, "用户提示词，可为空"] = "",
-    tool_guidance: Annotated[str, "工具使用指导"] = "优先使用已绑定工具获取真实数据，不编造，不跳过关键验证。",
-    analysis_requirements: Annotated[str, "分析要求"] = "围绕单一职责完成任务，结论清晰，说明关键依据和适用边界。",
-    output_format: Annotated[str, "输出格式"] = "请输出结构化结论，并明确核心判断、关键依据、风险提示。",
-    constraints: Annotated[str, "约束条件"] = "不要超出该 Agent 的单一职责范围。",
-    output_field: Annotated[str, "输出字段名，默认 analysis_report"] = "analysis_report",
-    workflow_stage: Annotated[str, "工作流阶段，默认 analyst"] = "analyst",
-    report_label: Annotated[str, "报告展示标签，可为空"] = "",
-    show_in_reports: Annotated[bool, "是否进入工作流报告列表，默认 true"] = True,
-    execution_order: Annotated[int, "工作流展示/执行顺序，默认 50"] = 50,
-    template_name: Annotated[str, "模板名称；为空时自动生成"] = "",
-    default_tools: Annotated[str, "默认工具 ID，逗号分隔；为空则默认取 tool_ids 前两项"] = "",
-    max_tool_calls: Annotated[int, "最大工具调用次数，默认 5"] = 5,
-    category: Annotated[str, "Agent 分类，默认 analyst"] = "analyst",
-    callable_surfaces: Annotated[str, "允许调用入口，逗号分隔，默认 assistant,workflow,agent"] = "assistant,workflow,agent",
-    input_mode: Annotated[str, "输入模式，默认 standalone"] = "standalone",
-    enabled: Annotated[bool, "是否启用，默认 true"] = True,
-    status: Annotated[str, "模板状态，默认 active"] = "active",
-    sync_to_workshop_draft: Annotated[bool, "是否同步创建 Agent 工坊 Draft，默认 true"] = True,
-    auto_build_workshop_version: Annotated[bool, "若已同步到 Agent 工坊 Draft，是否自动生成一个可测试版本，默认 true"] = True,
+    user_prompt: Annotated[str, "User prompt word, can be empty"] = "",
+    tool_guidance: Annotated[str, "工具使用指导"] = "Prioritize using bound tools to obtain real data, do not make it up, and do not skip key verifications.",
+    analysis_requirements: Annotated[str, "分析要求"] = "Complete tasks around a single responsibility, with clear conclusions and explanation of key basis and applicable boundaries.",
+    output_format: Annotated[str, "输出格式"] = "Please output a structured conclusion and clarify core judgments, key basis, and risk warnings.",
+    constraints: Annotated[str, "约束条件"] = "Do not exceed the Agent s single scope of responsibility.",
+    output_field: Annotated[str, "Output field name, default analysis_report"] = "analysis_report",
+    workflow_stage: Annotated[str, "Workflow stage, default analyst"] = "analyst",
+    report_label: Annotated[str, "Report display label, can be empty"] = "",
+    show_in_reports: Annotated[bool, "Whether to enter the workflow report list, default true"] = True,
+    execution_order: Annotated[int, "Workflow display/execution order, default 50"] = 50,
+    template_name: Annotated[str, "Template name; automatically generated when empty"] = "",
+    default_tools: Annotated[str, "Default tool ID, separated by commas; if empty, the first two items of tool_ids will be taken by default."] = "",
+    max_tool_calls: Annotated[int, "Maximum number of tool calls, default 5"] = 5,
+    category: Annotated[str, "Agent Category, default analyst"] = "analyst",
+    callable_surfaces: Annotated[str, "Allow call entries, comma separated, default assistant,workflow,agent"] = "assistant,workflow,agent",
+    input_mode: Annotated[str, "Input mode, default standalone"] = "standalone",
+    enabled: Annotated[bool, "Whether to enable, default true"] = True,
+    status: Annotated[str, "Template status, default active"] = "active",
+    sync_to_workshop_draft: Annotated[bool, "Whether to create Agent Workshop Draft simultaneously, default true"] = True,
+    auto_build_workshop_version: Annotated[bool, "If it has been synchronized to Agent Workshop Draft, whether to automatically generate a testable version, default true"] = True,
     confirmed: Annotated[bool, "是否已拿到用户明确确认"] = False,
-    allow_overwrite: Annotated[bool, "若存在覆盖风险，是否允许覆盖现有配置"] = False,
-    selected_plan_id: Annotated[str, "用户选择的方案 ID：direct/strict/enhanced/complete/quick/narrow；为空时兼容旧确认流程"] = "",
-    acknowledged_gaps: Annotated[str, "用户已知晓并接受的 blocking gaps，JSON 数组或逗号分隔；旧流程可为空"] = "",
-    capability_inventory_json: Annotated[str, "prepare 阶段能力盘点 JSON，可为空"] = "",
-    gap_report_json: Annotated[str, "prepare 阶段 analyze_spec_gaps 返回的 gap_report JSON。complete/quick 方案时必须传递；direct 方案可为空"] = "",
+    allow_overwrite: Annotated[bool, "If there is a risk of overwriting, is it allowed to overwrite existing configurations?"] = False,
+    selected_plan_id: Annotated[str, "User-selected plan ID: direct/strict/enhanced/complete/quick/narrow; when empty, it is compatible with the old confirmation process"] = "",
+    acknowledged_gaps: Annotated[str, "blocking gaps known and accepted by the user, JSON array or comma separated; old process can be empty"] = "",
+    capability_inventory_json: Annotated[str, "prepare Stage capability inventory JSON, can be empty"] = "",
+    gap_report_json: Annotated[str, "prepare gap_report JSON returned by stage analyze_spec_gaps. Complete/quick scheme must be passed; direct scheme can be empty"] = "",
 ) -> str:
-    """确认后一次性生成候选 Agent。"""
+    """After confirmation, candidate Agents are generated once."""
     try:
         if not confirmed:
             return _json_response({
                 "status": "error",
-                "message": "未拿到用户明确确认，拒绝执行写入。请先生成确认稿并等待用户确认。",
+                "message": "Without explicit confirmation from the user, writing is refused. Please generate a confirmation draft first and wait for user confirmation.",
             })
 
         clean_agent_id = str(agent_id or "").strip()
@@ -6009,7 +6009,7 @@ async def generate_confirmed_candidate_agent(
         parsed_acknowledged_gaps = _parse_acknowledged_gaps(acknowledged_gaps)
         capability_inventory = _parse_optional_json_object(capability_inventory_json, "capability_inventory_json")
         gap_report = _parse_optional_json_object(gap_report_json, "gap_report_json")
-        # ── 🔍 关键追踪日志：记录 LLM 传入的所有参数 ──
+        # ── 🔍 Key tracking log: records all parameters passed in by LLM ──
         logger.info(
             "[GenAgent][Params] agent_id=%s plan=%s acknowledged_gaps=%d gap_report_keys=%s gap_report_json_size=%d "
             "capability_inventory_size=%d selected_plan_id_raw=%r",
@@ -6028,7 +6028,7 @@ async def generate_confirmed_candidate_agent(
             logger.info("[GenAgent][Params]   gap_report.blocking_gaps[%d] = %s", i, _desc[:200])
         if clean_selected_plan_id in {"complete", "quick"} and not gap_report:
             logger.warning(
-                "[GenAgent][Params] ⚠️ %s 方案但 gap_report_json 为空！build_version 将尝试从 builder_contracts 恢复",
+                "[GenAgent][Params] ⚠️ %s Scheme but gap_report_json is empty! build_version will try to restore from builder_contracts",
                 clean_selected_plan_id,
             )
         if clean_selected_plan_id == "narrow":
@@ -6038,7 +6038,7 @@ async def generate_confirmed_candidate_agent(
                 spec_id=clean_agent_id,
                 spec_name=clean_agent_name,
                 intent_summary=f"Agent「{clean_agent_name}」选择缩小需求范围",
-                next_action="回到需求重定义，先缩小目标/输出范围后重新做能力盘点与方案确认",
+                next_action="Back to demand redefinition, first narrow down the target/output scope and then redo capability inventory and plan confirmation.",
                 task={"type": "agent", "id": clean_agent_id, "name": clean_agent_name, "status": "exploring"},
                 clear_pending_options=True,
             )
@@ -6047,25 +6047,25 @@ async def generate_confirmed_candidate_agent(
                 "agent_id": clean_agent_id,
                 "selected_plan_id": "narrow",
                 "next_stage": "exploring",
-                "message": "已按 narrow 方案回到需求重定义。本方案不会直接生成 Agent，请先缩小范围后重新能力盘点。",
+                "message": "Returned to requirements redefinition in narrow scheme. This solution will not directly generate Agents. Please narrow down the scope first and then take inventory of capabilities again.",
             })
         if clean_selected_plan_id not in {"", "direct", "strict", "enhanced", "complete", "quick"}:
-            return _json_response({"status": "error", "message": "selected_plan_id 只支持 direct/strict/enhanced/complete/quick/narrow"})
+            return _json_response({"status": "error", "message": "selected_plan_id Only supports direct/strict/enhanced/complete/quick/narrow"})
         if clean_selected_plan_id == "quick":
             quick_constraint = _quick_plan_constraint_text(parsed_acknowledged_gaps)
             constraints = _append_trading_guard_constraint(f"{constraints}\n{quick_constraint}")
             tool_guidance = f"{tool_guidance}\n{quick_constraint}"
             analysis_requirements = f"{analysis_requirements}\n{quick_constraint}"
-            output_format = f"{output_format}\n必须对缺失字段标注信息缺口，不输出综合四色评级。"
+            output_format = f"{output_format}\n Information gaps must be marked for missing fields, and a comprehensive four-color rating will not be output."
         if not clean_agent_id or not clean_agent_name or not clean_responsibility or not clean_system_prompt:
-            return _json_response({"status": "error", "message": "agent_id、agent_name、target_responsibility、system_prompt 不能为空"})
+            return _json_response({"status": "error", "message": "agent_id, agent_name, target_responsibility, system_prompt cannot be empty"})
 
         db = get_mongo_db()
         overwrite_risk = await _inspect_agent_overwrite_risk(db, clean_agent_id, status=status)
         if overwrite_risk["requires_explicit_overwrite"] and not allow_overwrite:
             return _json_response({
                 "status": "error",
-                "message": "目标 Agent 已存在配置、模板或工具绑定，未提供 allow_overwrite=True。",
+                "message": "The target Agent already has configuration, template or tool binding, but is not provided. allow_overwrite=True. ",
                 "overwrite_risk": overwrite_risk,
             })
 
@@ -6075,9 +6075,9 @@ async def generate_confirmed_candidate_agent(
             workshop_constraints = constraints
             if clean_selected_plan_id == "quick" and _quick_plan_constraint_text(parsed_acknowledged_gaps) not in workshop_constraints:
                 workshop_constraints = f"{workshop_constraints}\n{_quick_plan_constraint_text(parsed_acknowledged_gaps)}"
-            # 🔑 关键追踪日志：写库前打印 agent_id 和 agent_name
+            # 🔑 Key tracking log: print agent_id and agent_name
             logger.info(
-                "[GenAgent][WriteDraft] 即将调用 create_or_update_agent_workshop_draft "
+                "[GenAgent][WriteDraft] About to be called create_or_update_agent_workshop_draft "
                 "agent_id=%r agent_name=%r responsibility=%r",
                 clean_agent_id, clean_agent_name, clean_responsibility[:80],
             )
@@ -6094,9 +6094,9 @@ async def generate_confirmed_candidate_agent(
                 "preferred_methods": "quick_plan" if clean_selected_plan_id == "quick" else "",
                 "constraints": workshop_constraints,
             }))
-            # 🔑 关键追踪日志：写库结果
+            # 🔑 Key tracking log: writing library results
             logger.info(
-                "[GenAgent][WriteDraft] 结果 status=%s spec_id=%r session_id=%r message=%s",
+                "[GenAgent][WriteDraft] result status=%s spec_id=%r session_id=%r message=%s",
                 workshop_result.get("status", ""),
                 workshop_result.get("spec_id", ""),
                 workshop_result.get("session_id", ""),
@@ -6104,7 +6104,7 @@ async def generate_confirmed_candidate_agent(
             )
             if workshop_result.get("status") != "ok":
                 logger.warning(
-                    "[GenAgent][WriteDraft] ❌ workshop_draft 失败！agent 不会写入数据库。full_result=%s",
+                    "[GenAgent][WriteDraft] ❌ workshop_draft Failure! The agent will not write to the database.full_result=%s",
                     json.dumps(workshop_result, ensure_ascii=False)[:500],
                 )
                 return _json_response({"status": "error", "stage": "workshop_draft", "result": workshop_result})
@@ -6126,9 +6126,9 @@ async def generate_confirmed_candidate_agent(
         if config_result.get("status") != "ok":
             return _json_response({"status": "error", "stage": "agent_config", "result": config_result})
 
-        # 🔑 只有不同步到 Workshop 时才单独创建通用模板
-        # 同步到 Workshop 时，Workshop 会在构建版本时创建版本模板，并同步短名配置的模板绑定
-        # 避免生成两套重复的模板
+        # 🔑 Generic templates are only created separately when not synchronized to Workshop
+        # When synchronizing to Workshop, Workshop will create the version template when building the version and synchronize the template binding of the short name configuration
+        # Avoid generating two sets of duplicate templates
         prompt_result = {"status": "ok", "message": "skipped (workshop manages templates)"}
         if not sync_to_workshop_draft:
             prompt_result = _parse_json_tool_result(await create_or_update_universal_agent_prompt_template.ainvoke({
@@ -6203,9 +6203,9 @@ async def generate_confirmed_candidate_agent(
         should_auto_build_workshop_version = (
             auto_build_workshop_version
             and not (clean_selected_plan_id == "complete" and bool(parsed_acknowledged_gaps))
-            and clean_selected_plan_id != "quick"  # quick 方案已接受缺口，跳过 auto-build
+            and clean_selected_plan_id != "quick"  # quick Scheme accepted gap, skipped auto-build
         )
-        # ── 🔍 追踪日志：auto-build 决策 ──
+        # ── 🔍 Trace log: auto-build decisions ──
         logger.info(
             "[GenAgent][AutoBuild] should_auto=%s plan=%s has_gaps=%s gap_report_keys=%s session_id=%s",
             should_auto_build_workshop_version,
@@ -6214,12 +6214,12 @@ async def generate_confirmed_candidate_agent(
             sorted(gap_report.keys()) if gap_report else [],
             str(workshop_result.get("session_id") or "") if isinstance(workshop_result, dict) else "N/A",
         )
-        # 安全网：complete/quick 方案下，若 gap_report 未传入，禁止 auto-build
-        # 否则 build_version 会重新运行 analyze_spec_gaps，产生不一致的 blocking_gap 文本，
-        # 导致 acknowledged_gaps 无法匹配而错误阻断
+        # Safety net: In the complete/quick scheme, if gap_report is not passed in, it is prohibited. auto-build
+        # Otherwise build_version will rerun analyze_spec_gaps, resulting in inconsistent blocking_gap text,
+        # As a result, acknowledged_gaps cannot be matched and the error is blocked.
         if clean_selected_plan_id in {"complete", "quick"} and not gap_report:
             logger.warning(
-                "[GenAgent] gap_report_json 未传入但为 %s 方案，跳过 auto-build session_id=%s",
+                "[GenAgent] gap_report_json Not passed in but is %s scheme, skip auto-build session_id=%s",
                 clean_selected_plan_id,
                 str(workshop_result.get("session_id") or "").strip(),
             )
@@ -6239,11 +6239,11 @@ async def generate_confirmed_candidate_agent(
                         stage="gap_resolving" if likely_gap_blocked else "ready_to_build",
                         spec_id=clean_agent_id,
                         spec_name=clean_agent_name,
-                        intent_summary=f"Agent「{clean_agent_name}」已生成，但自动构建未通过",
+                        intent_summary=f"Agent [{clean_agent_name}] Generated, but automatic build failed",
                         next_action=(
-                            "解释自动构建发现的 blocking gap，并在用户确认后调用 resolve_agent_workshop_blocking_gaps"
+                            "Interpret the blocking gap found by the automatic build and call it after user confirmation resolve_agent_workshop_blocking_gaps"
                             if likely_gap_blocked
-                            else "检查构建失败原因，修复后重新调用 build_agent_workshop_version"
+                            else "Check the cause of the build failure and call it again after repairing it. build_agent_workshop_version"
                         ),
                         task={
                             "type": "agent",
@@ -6283,34 +6283,34 @@ async def generate_confirmed_candidate_agent(
             "acceptance_ready": False,
             "release_ready": False,
             "next_required_action": (
-                "当前已自动生成 Agent Workshop 测试版本；下一步直接做真数据测试，并以最新评估结论决定是否可发布。"
+                "At present, the Agent Workshop test version has been automatically generated; the next step is to conduct real data testing directly, and decide whether it can be released based on the latest evaluation conclusion."
                 if (workshop_version_result or {}).get("version")
-                else "下一步应先生成 Agent Workshop 测试版本，再做真数据测试；当前 dry-run 仅证明候选运行时配置可实例化。"
+                else "The next step should be to generate a test version of Agent Workshop before testing on real data; the current dry-run only proves that the candidate runtime configuration can be instantiated."
                 if sync_to_workshop_draft
-                else "当前只完成了运行时候选生成；如需 Agent Workshop 正式测试验收，请先同步到 Draft 并生成 version。"
+                else "Currently, only runtime selection and generation have been completed; if you need formal test acceptance of Agent Workshop, please synchronize to Draft first and generate version."
             ),
         }
 
-        # 🔥 自动更新意图上下文为"生成完成"
-        #    auto-build 成功: building = 版本已构建，准备测试
-        #    未 auto-build: ready_to_build = Draft 已生成，待构建版本
-        #    quick 方案: building = 缺口已接受，可直接测试（跳过 auto-build）
+        # 🔥 Automatically update the intent context as"Generation completed"
+        #    auto-build success: building = Version is built and ready for testing
+        #    Not yet auto-build: ready_to_build = Draft Generated, version to be built
+        #    quick Plan: building = Gap accepted, ready for testing (skipping auto-build)
         built_workshop_version = bool((workshop_version_result or {}).get("version"))
         if clean_selected_plan_id == "complete" and parsed_acknowledged_gaps and not built_workshop_version:
             next_stage = "gap_resolving"
-            next_action_text = "按已确认 complete 方案补齐 blocking gaps，完成后再构建测试版本"
+            next_action_text = "Fill in the blocking gaps according to the confirmed complete plan, and then build the test version after completion"
             task_status = "gap_resolving"
         elif clean_selected_plan_id == "quick":
             next_stage = "building"
-            next_action_text = "简化版 Agent 已生成，缺口已确认接受；下一步直接运行真数据测试（run_agent_workshop_real_data_test）"
+            next_action_text = "The simplified version of Agent has been generated, and the gap has been confirmed and accepted; the next step is to directly run the real data test (run_agent_workshop_real_data_test)"
             task_status = "building"
         elif built_workshop_version:
             next_stage = "building"
-            next_action_text = "按已确认方案已生成测试版本；下一步运行真数据测试（run_agent_workshop_real_data_test）"
+            next_action_text = "The test version has been generated according to the confirmed plan; the next step is to run the real data test (run_agent_workshop_real_data_test)"
             task_status = "building"
         else:
             next_stage = "ready_to_build"
-            next_action_text = "按已确认方案已生成 Draft；下一步调用 build_agent_workshop_version 生成测试版本"
+            next_action_text = "Draft has been generated according to the confirmed plan; the next step is to call build_agent_workshop_version to generate a test version"
             task_status = "ready_to_build"
         _auto_update_intent(
             action="create_agent",
@@ -6332,21 +6332,21 @@ async def generate_confirmed_candidate_agent(
             "status": "ok",
             "agent_id": clean_agent_id,
             "nanobot_guidance": (
-                "候选 Agent 已生成成功。请向用户简洁汇报生成结果，以业务价值为主。\n\n"
-                "回复规则：\n"
-                "1. 说明 Agent 名称、核心职责、输出什么报告即可。\n"
-                "2. 可以简要介绍报告结构（几个章节分别讲什么），帮用户建立预期。\n"
-                "3. 【禁止】罗列「可用路径 / 调用入口 / Assistant / Workflow / Agent Workshop」等技术接入方式——用户不关心从哪里调用，这是平台内部的事。\n"
-                "4. 【禁止】展示 Agent ID、执行顺序、运行模式、输出字段名等技术元数据。\n"
-                "5. 工具名可以在「已绑定能力」里用业务语言简述（如「同业估值对比、历史分位、DCF估值」），但不要写 get_xxx 这种函数名。\n"
-                "6. 结尾自然引导用户进入下一步：可以用真实股票代码跑一次测试验证效果（如「要不要用 600519 试跑一次？」）。"
+                "Candidate Agent has been generated successfully. Please briefly report the generated results to users, focusing on business value.\n\n"
+                "Reply rules:\n"
+                "1. Just describe the Agent name, core responsibilities, and what reports to output.\n"
+                "2. You can briefly introduce the report structure (what each chapter covers) to help users establish expectations.\n"
+                "3.  [Prohibited] Listing available paths/call portals/Assistant/Workflow/Agent Workshop and other technical access methods——Users don t care where they are called from, this is an internal matter of the platform.\n"
+                "4.  [Prohibited] Display of technical metadata such as Agent ID, execution sequence, running mode, output field name, etc.\n"
+                "5. The tool name can be briefly described in business language (such as peer valuation comparison, historical quantile, DCF valuation ) in Bound Capabilities , but do not write function names like get_xxx.\n"
+                "6. The end naturally guides the user to the next step: you can run it with a real stock code to test and verify the effect (such as Do you want to run it with 600519? )."
             ),
             "confirmation": {
                 "confirmed": confirmed,
                 "allow_overwrite": allow_overwrite,
                 "selected_plan_id": clean_selected_plan_id or "legacy_confirmed",
                 "acknowledged_gaps": parsed_acknowledged_gaps,
-                "execution_message": "已按用户在 prepare 阶段确认的方案执行，本次不再重新要求确认缺口分析。",
+                "execution_message": "The plan confirmed by the user in the prepare stage has been executed, and the gap analysis will not be reconfirmed this time.",
             },
             "steps": {
                 "workshop_draft": workshop_result,
@@ -6369,45 +6369,45 @@ async def generate_confirmed_candidate_agent(
                 "workshop_governance": workshop_governance,
                 "warnings": [
                     (
-                        "Dry-run 只代表候选 Agent 可按运行时配置被实例化；当前已自动生成测试版本，但这仍不代表真数据测试已经通过。"
+                        "Dry-run It only means that the candidate Agent can be instantiated according to the runtime configuration; the test version has been automatically generated, but this still does not mean that the real data test has passed."
                         if workshop_governance["version_generated"]
-                        else "Dry-run 只代表候选 Agent 可按运行时配置被实例化，不代表 Agent Workshop 已生成 version。"
+                        else "Dry-run It only means that the candidate Agent can be instantiated according to the runtime configuration, but it does not mean that the Agent Workshop has generated a version."
                         if clean_selected_plan_id != "quick"
-                        else "简化版 Agent 已跳过 Workshop 版本构建（缺口已确认接受）。可直接运行真数据测试，或手动调用 build_agent_workshop_version 生成版本。"
+                        else "Lite Agent has skipped the Workshop version build (Gap confirmed acceptance). You can run real data tests directly, or manually call build_agent_workshop_version to generate a version."
                     ),
-                    "即使已自动生成测试版本，也必须先完成记录在 Agent Workshop 中的样例真数据测试评估，并以最新评估结论作为发布依据。"
+                    "Even if the test version has been automatically generated, the sample real data test evaluation recorded in the Agent Workshop must first be completed, and the latest evaluation conclusion should be used as the basis for release."
                     if workshop_governance["version_generated"]
-                    else "简化版 Agent 可直接用 run_agent_workshop_real_data_test 进行真数据测试；测试通过后再评估是否发布。"
+                    else "The simplified version of Agent can directly use run_agent_workshop_real_data_test to conduct real data testing; after passing the test, it will be evaluated whether to release it."
                     if clean_selected_plan_id == "quick"
-                    else "即使已自动生成测试版本，也必须先完成记录在 Agent Workshop 中的样例真数据测试评估，并以最新评估结论作为发布依据。",
+                    else "Even if the test version has been automatically generated, the sample real data test evaluation recorded in the Agent Workshop must first be completed, and the latest evaluation conclusion should be used as the basis for release.",
                 ],
             },
         })
     except Exception as exc:
-        logger.error("确认后生成候选 Agent 失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"确认后生成候选 Agent 失败: {exc}"})
+        logger.error("Failed to generate candidate Agent after confirmation: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to generate candidate Agent after confirmation: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="resolve_agent_workshop_blocking_gaps",
-    name="补全 Agent 工坊能力缺口",
-    description="当缺口分析发现 blocking_gaps 时，自动为每个缺口创建 Skill 生成会话并等待完成，返回可绑定的新能力。",
+    name="Completing the gaps in Agent s workshop capabilities",
+    description="When gap analysis finds blocking_gaps, Skill generation sessions are automatically created for each gap and wait for completion, returning new capabilities that can be bound.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
     timeout_tier="heavy",
     when_to_use=(
-        "当发现 blocking_gaps（来源不限：auto-build 的 gap_report、analyze_agent_workshop_gaps 返回值、或评估反馈），"
-        "且这些缺口确实是可复用能力时使用。"
-        "无需手动逐个调用 Skill 创建工具，一个调用即可完成缺口补全。"
+        "When blocking_gaps are found (from any source: auto-build s gap_report, analyze_agent_workshop_gaps return value, or evaluation feedback),"
+        "And these gaps are used when they are indeed reusable capabilities."
+        "Instead of manually calling the Skill creation tool one by one, gap completion can be completed in one call."
     ),
     when_not_to_use=(
-        "不适合在缺口尚未明确时调用（先确认 blocking_gaps 存在）；"
-        "不适合一次性补全过多（>3 个）缺口，那种情况建议分批处理；"
-        "不适合在没有 gap 的 TESTING 或 PUBLISHING 阶段调用。"
+        "Not suitable for calling when the gap is not yet clear (confirm blocking_gaps exists first);"
+        "Not suitable for completing too many items at once (>3 ) gaps, in that case it is recommended to process them in batches;"
+        "Not suitable for calling in TESTING or PUBLISHING phases without gaps."
     ),
-    returns="返回 JSON 字符串，包含每个缺口的处理结果、生成的 Skill 信息，以及后续建议。",
+    returns="Returns a JSON string containing the processing results for each gap, the resulting Skill information, and subsequent recommendations.",
     example="resolve_agent_workshop_blocking_gaps(session_id='ws_abc123')",
     related_tools=[
         "analyze_agent_workshop_gaps",
@@ -6417,38 +6417,38 @@ async def generate_confirmed_candidate_agent(
     data_source_handling="local_only",
 )
 async def resolve_agent_workshop_blocking_gaps(
-    session_id: Annotated[str, "Agent 工坊会话 ID"],
-    blocking_gaps_json: Annotated[str, "可选 JSON 数组，直接指定要补全的缺口描述；若为空则从 session 的 gap_report 中读取"] = "",
-    max_wait_seconds: Annotated[int, "每个 Skill 生成的最长等待时间（秒），默认 300"] = 300,
-    auto_continue_build: Annotated[bool, "补齐后是否自动执行能力重检并继续构建版本，默认 true"] = True,
-    confirm_external_data_risk: Annotated[bool, "若缺口涉及外部数据源/第三方接口，是否已向用户明确披露风险并获得确认"] = False,
-    allow_medium_similarity_autocreate: Annotated[bool, "命中中等相似度（0.6-0.85）候选 Skill 时，是否允许直接继续新建"] = False,
-    mode: Annotated[str, "任务模式：auto 或 manual_confirmed，与 start_agent_workshop_gap_resolution 保持一致；若指定则覆盖 allow_medium_similarity_autocreate"] = "",
+    session_id: Annotated[str, "Agent workshop session ID"],
+    blocking_gaps_json: Annotated[str, "Optional JSON array, directly specifying the gap description to be completed; if it is empty, it will be read from the session s gap_report"] = "",
+    max_wait_seconds: Annotated[int, "The maximum waiting time (seconds) for each Skill to be generated, default 300"] = 300,
+    auto_continue_build: Annotated[bool, "Whether to automatically perform capability recheck after completion and continue building the version, default true"] = True,
+    confirm_external_data_risk: Annotated[bool, "If the gap involves external data sources/third-party interfaces, have the risks been clearly disclosed to users and confirmed?"] = False,
+    allow_medium_similarity_autocreate: Annotated[bool, "When hitting a candidate Skill with medium similarity (0.6-0.85), whether to allow the new creation to continue directly"] = False,
+    mode: Annotated[str, "Task mode: auto or manual_confirmed, consistent with start_agent_workshop_gap_resolution; overridden if specified allow_medium_similarity_autocreate"] = "",
 ) -> str:
-    """自动补全 Agent 工坊的能力缺口。
+    """Automatically complete the ability gaps in Agent s workshop.
 
-    流程：
-    1. 从 workshop session 中读取 gap_report.blocking_gaps
-    2. 对每个缺口并行启动 Skill 生成会话
-    3. 等待所有 Skill 生成完成（带超时）
-    4. 返回结果，供后续 build_version 使用
+    Process:
+    1. Read from workshop session gap_report.blocking_gaps
+    2. Start skill generation sessions in parallel for each gap
+    3. Wait for all Skill generation to complete (with timeout)
+    4. Return results for subsequent build_version use
     """
     try:
         clean_session_id = str(session_id or "").strip()
         if not clean_session_id:
-            return _json_response({"status": "error", "message": "session_id 不能为空"})
+            return _json_response({"status": "error", "message": "session_id cannot be empty"})
 
-        # 统一 mode 参数：若指定 mode 则覆盖 allow_medium_similarity_autocreate
+        # Unify the mode parameter: override if mode is specified allow_medium_similarity_autocreate
         clean_mode = str(mode or "").strip().lower()
         if clean_mode in ("auto", "manual_confirmed"):
             allow_medium_similarity_autocreate = clean_mode == "auto"
         elif clean_mode:
-            return _json_response({"status": "error", "message": f"mode 只支持 auto 或 manual_confirmed，实际传入: {clean_mode}"})
+            return _json_response({"status": "error", "message": f"mode Only supports auto or manual_confirmed, actually passed in: {clean_mode}"})
 
         db = get_mongo_db()
         from app.services.skill_generation_service import SESSION_COLLECTION
 
-        # 解析真实发起用户（用于 Skill 归属与权限），失败回退到 nanobot
+        # Parse the real initiating user (for Skill ownership and permissions), and fall back to nanobot
         resolved_user_id = ""
         try:
             resolved_user_id = str(require_current_user_id() or "").strip()
@@ -6456,7 +6456,7 @@ async def resolve_agent_workshop_blocking_gaps(
             resolved_user_id = ""
         effective_user_id = resolved_user_id or "nanobot"
 
-        # 始终加载工坊会话，提取 Agent 来源上下文（spec_id / 名称 / 目标），用于反向追溯
+        # Always load the workshop session and extract the Agent source context (spec_id/name/target) for reverse tracing
         ws_service = AgentWorkshopService(db=db)
         workshop_session = await ws_service._load_session(clean_session_id)
         agent_spec_id = ""
@@ -6468,13 +6468,13 @@ async def resolve_agent_workshop_blocking_gaps(
             if spec_snapshot is not None:
                 agent_name = str(getattr(spec_snapshot, "name", "") or "")
                 agent_goal = str(getattr(spec_snapshot, "primary_goal", "") or "")
-            # 调用方无用户上下文时，回退到工坊会话归属用户，避免落到匿名 nanobot
+            # When the caller has no user context, it will fall back to the workshop session and belong to the user to avoid falling into anonymity. nanobot
             if not resolved_user_id:
                 session_user = str(getattr(workshop_session, "user_id", "") or "").strip()
                 if session_user:
                     effective_user_id = session_user
 
-        # 1. 获取 blocking_gaps
+        # 1. get blocking_gaps
         gaps: list[str] = []
         if blocking_gaps_json.strip():
             try:
@@ -6482,21 +6482,21 @@ async def resolve_agent_workshop_blocking_gaps(
                 if isinstance(parsed, list):
                     gaps = [str(g).strip() for g in parsed if str(g).strip()]
             except (json.JSONDecodeError, TypeError):
-                return _json_response({"status": "error", "message": "blocking_gaps_json 不是有效的 JSON 数组"})
+                return _json_response({"status": "error", "message": "blocking_gaps_json Not a valid JSON array"})
 
         if not gaps:
-            # 从已加载的 workshop session 中读取
+            # Reading from a loaded workshop session
             if workshop_session is None:
                 return _json_response({"status": "error", "message": f"Agent 工坊会话 {clean_session_id} 不存在"})
 
             gap_report = workshop_session.gap_report
             if not gap_report:
-                # 尝试先执行缺口分析
+                # Try performing a gap analysis first
                 gap_analysis = await ws_service.analyze_gaps(clean_session_id)
                 gap_report = gap_analysis.get("gap_report") if isinstance(gap_analysis, dict) else None
 
             if not gap_report:
-                return _json_response({"status": "error", "message": "无法获取缺口分析报告，请先执行 analyze_agent_workshop_gaps"})
+                return _json_response({"status": "error", "message": "Unable to obtain gap analysis report, please execute first analyze_agent_workshop_gaps"})
 
             blocking_gaps = getattr(gap_report, "blocking_gaps", None) or []
             if isinstance(blocking_gaps, list):
@@ -6513,7 +6513,7 @@ async def resolve_agent_workshop_blocking_gaps(
         capped_gaps = gaps[:3]
         if len(gaps) > 3:
             logger.warning(
-                "[resolve_gaps] 缺口数量 %d 超过默认上限，只处理前 3 个，其余建议分批: %s",
+                "[resolve_gaps] The number of gaps %d exceeds the default upper limit. Only the first 3 will be processed. The rest are recommended to be batched.: %s",
                 len(gaps), capped_gaps,
             )
 
@@ -6522,20 +6522,20 @@ async def resolve_agent_workshop_blocking_gaps(
             return _json_response({
                 "status": "blocked",
                 "blocked_by": "external_data_risk_confirmation",
-                "message": "检测到缺口可能依赖外部数据源或第三方接口，需先向用户披露来源与风险并获得确认后再生成。",
+                "message": "Detected gaps may rely on external data sources or third-party interfaces, and the sources and risks must be disclosed to the user and confirmed before being generated.",
                 "workshop_session_id": clean_session_id,
                 "risky_gaps": risky_gaps,
-                "next_action": "与用户确认后，重新调用 resolve_agent_workshop_blocking_gaps 并传 confirm_external_data_risk=true",
+                "next_action": "After confirming with the user, call resolve_agent_workshop_blocking_gaps again and pass confirm_external_data_risk=true",
             })
 
         wait_seconds = max(60, min(int(max_wait_seconds), 600))
 
         logger.info(
-            "[resolve_gaps] 开始补全 %d 个能力缺口 (workshop_session=%s, timeout=%ds): %s",
+            "[resolve_gaps] Start filling %d capability gaps (workshop_session=%s, timeout=%ds): %s",
             len(capped_gaps), clean_session_id, wait_seconds, capped_gaps,
         )
 
-        # 2. 对每个缺口启动 Skill 生成
+        # 2. Start skill generation for each gap
         results: list[dict[str, Any]] = []
 
         async def _process_single_gap(gap_index: int, gap_description: str) -> dict[str, Any]:
@@ -6589,7 +6589,7 @@ async def resolve_agent_workshop_blocking_gaps(
                     gap_result["skill_tool_id"] = spec.get("tool_id", "")
                     gap_result["skill_display_name"] = spec.get("display_name", "")
                     logger.info(
-                        "[resolve_gaps] Skill #%d 生成完成: tool_id=%s display_name=%s elapsed=%ds",
+                        "[resolve_gaps] Skill #%d Generation completed: tool_id=%s display_name=%s elapsed=%ds",
                         gap_index,
                         gap_result["skill_tool_id"],
                         gap_result["skill_display_name"],
@@ -6603,7 +6603,7 @@ async def resolve_agent_workshop_blocking_gaps(
                     return gap_result
 
                 logger.debug(
-                    "[resolve_gaps] Skill #%d 仍在生成中: status=%s stage=%s elapsed=%ds",
+                    "[resolve_gaps] Skill #%d still being generated: status=%s stage=%s elapsed=%ds",
                     gap_index, status, pipeline_stage, elapsed,
                 )
 
@@ -6611,7 +6611,7 @@ async def resolve_agent_workshop_blocking_gaps(
             gap_result["error"] = f"Skill 生成超时（{wait_seconds}s）"
             return gap_result
 
-        # 并行处理所有缺口
+        # Process all gaps in parallel
         tasks = [
             _process_single_gap(i, gap_desc)
             for i, gap_desc in enumerate(capped_gaps)
@@ -6636,7 +6636,7 @@ async def resolve_agent_workshop_blocking_gaps(
 
         if auto_continue_build and successful:
             try:
-                # Step A: 重新检索能力，帮助后续缺口/工具规划消费新生成 Skill
+                # Step A: Re-retrieval capabilities to help subsequent gap/tool planning and consumption new generation Skill
                 capability_query = " ".join(_dedupe_string_list([
                     *capped_gaps,
                     agent_name,
@@ -6656,16 +6656,16 @@ async def resolve_agent_workshop_blocking_gaps(
                     "top_results": [_format_capability_hit(hit) for hit in capability_hits[:5]],
                 }
 
-                # Step B/C: 重新分析缺口 -> 生成工具计划
-                # v3.6.0 项6 路径B：生成完成后不再自动调用 build_version / sync_version_required_tools
-                # 改为写入 skill_review_queue 等待用户审核，用户确认后才触发绑定
+                # Step B/C: Reanalyze the gap -> Generate tool plan
+                # v3.6.0 Item 6 Path B: No longer automatically called after the generation is completed build_version / sync_version_required_tools
+                # Instead, write skill_review_queue and wait for user review. The binding will be triggered only after user confirmation.
                 gap_analysis_result = await ws_service.analyze_gaps(clean_session_id)
                 tooling_plan_result = await ws_service.generate_tooling_plan(clean_session_id)
                 phase_context = await _resolve_workshop_session_phase_context(db, clean_session_id)
                 current_version_id = str(phase_context.get("current_version_id") or "").strip()
                 current_version_status = str(phase_context.get("version_status") or "").strip().lower()
 
-                # 写入待审核记录（路径B HITL）
+                # Write records to be audited (path B HITL)
                 pending_reviews: list[dict[str, Any]] = []
                 try:
                     from app.pro.services.skill_review_service import SkillReviewService
@@ -6679,7 +6679,7 @@ async def resolve_agent_workshop_blocking_gaps(
                     )
                 except Exception as review_exc:
                     logger.warning(
-                        "[resolve_gaps] 写入 skill_review_queue 失败（不阻塞）: %s",
+                        "[resolve_gaps] Writing to skill_review_queue failed (not blocking): %s",
                         review_exc, exc_info=True,
                     )
 
@@ -6691,7 +6691,7 @@ async def resolve_agent_workshop_blocking_gaps(
                     "spec_id": tooling_plan_result.get("spec_id") if isinstance(tooling_plan_result, dict) else "",
                     "missing_capabilities": len(_read_mapping_or_attr(tooling_plan_result.get("tooling_plan") if isinstance(tooling_plan_result, dict) else None, "missing_capabilities", []) or []),
                 }
-                # build_version 字段保留向后兼容，但不再自动构建版本
+                # build_version Fields remain backwards compatible, but versions are no longer automatically built
                 auto_continue["build_version"] = {
                     "spec_id": agent_spec_id,
                     "version_id": current_version_id,
@@ -6705,13 +6705,13 @@ async def resolve_agent_workshop_blocking_gaps(
                     "tool_ids": [r.get("tool_id") for r in pending_reviews if r.get("tool_id")],
                     "review_ids": [r.get("review_id") for r in pending_reviews if r.get("review_id")],
                     "next_action": (
-                        "用户审核后调用 "
-                        "/api/agent-workshop/skill-review/{session_id}/{tool_id}/confirm 或 /reject"
+                        "Called after user review "
+                        "/api/agent-workshop/skill-review/{session_id}/{tool_id}/confirm or /reject"
                     ),
                 }
                 auto_continue["status"] = "pending_user_review"
             except Exception as auto_exc:
-                logger.warning("[resolve_gaps] 自动续建失败: %s", auto_exc, exc_info=True)
+                logger.warning("[resolve_gaps] Automatic renewal failed: %s", auto_exc, exc_info=True)
                 auto_continue["status"] = "failed"
                 auto_continue["error"] = str(auto_exc)
 
@@ -6745,7 +6745,7 @@ async def resolve_agent_workshop_blocking_gaps(
             ],
             "next_action": (
                 (
-                    "存在中等相似度候选 Skill 等待确认："
+                    "There is a medium similarity candidate Skill waiting for confirmation:"
                     + "；".join([
                         f"缺口「{r.get('gap_description') or r.get('gap_id') or '?'}」"
                         + "命中候选 Skill「"
@@ -6753,20 +6753,20 @@ async def resolve_agent_workshop_blocking_gaps(
                         + f"（相似度 {(r.get('dedup_candidate') or {}).get('score') or 0:.0%}）"
                         for r in pending_confirmation
                     ])
-                    + "。请向用户展示候选 Skill 的名称、功能描述和相似度，"
-                    "让用户确认是复用现有 Skill 还是创建新的。"
+                    + ". Please show the user the name, functional description and similarity of the candidate Skill."
+                    "Ask the user to confirm whether to reuse an existing skill or create a new one."
                 )
                 if pending_confirmation
                 else (
-                    # v3.6.0 项6 路径B：所有 Skill 生成后均需用户审核，不再自动绑定
-                    "所有缺口已补全，生成的 Skill 等待用户审核。请向用户展示每个 Skill 的代码和测试结果，"
-                    "用户确认后调用 /api/agent-workshop/skill-review/{session_id}/{tool_id}/confirm 绑定，"
-                    "或 /reject 拒绝（Skill 留在工坊）。所有 Skill 审核通过后再调用 build_agent_workshop_version 构建版本。"
+                    # v3.6.0 Item 6 Path B: All Skills require user review after generation and will no longer be automatically bound.
+                    "All gaps have been filled, and the generated Skill is waiting for user review. Please show users the code and test results for each Skill,"
+                    "Called after user confirmation /api/agent-workshop/skill-review/{session_id}/{tool_id}/confirm binding,"
+                    "or /reject to reject (the skill remains in the workshop). After all Skills are approved, the build_agent_workshop_version build version will be called."
                     if len(successful) == len(capped_gaps)
                     else (
                         f"已补全 {len(completed)}/{len(capped_gaps)} 个缺口，"
-                        "剩余缺口可能需要手动处理。已生成的 Skill 等待用户审核（确认后才绑定），"
-                        "审核完成后建议调用 build_agent_workshop_version 构建版本。"
+                        "Remaining gaps may require manual processing. The generated Skill is waiting for user review (bind after confirmation)."
+                        "After the review is completed, it is recommended to call build_agent_workshop_version to build the version."
                     )
                 )
             ),
@@ -6774,56 +6774,56 @@ async def resolve_agent_workshop_blocking_gaps(
                 (
                     f"Agent「{agent_name}」有 {len(failed)} 个能力缺口自动补齐失败，Agent 版本不能视为完整通过："
                     + "、".join([
-                        f"「{r.get('gap_description') or r.get('gap_id') or '?'}」失败原因：{r.get('error') or r.get('pipeline_message') or '未知'}"
+                        f" [{r.get('gap_description') or r.get('gap_id') or '?'}] Reason for failure:{r.get('error') or r.get('pipeline_message') or 'unknown'}"
                         for r in failed
                     ])
-                    + "。请先修复或重试这些 Skill，再继续构建、评审或发布 Agent。"
+                    + ". Please fix or retry these skills before continuing to build, review, or publish the Agent."
                 )
                 if failed
                 else (
                     (
-                        "存在中等相似度候选 Skill 等待确认：\n"
+                        "There is a medium similarity candidate Skill waiting for confirmation:\n"
                         + "\n".join([
                             f"• 缺口「{r.get('gap_description') or r.get('gap_id') or '?'}」"
-                            + f" → 候选 Skill：「{str((r.get('dedup_candidate') or {}).get('name') or '?')}」"
+                            + f" → Candidate Skill: {str((r.get('dedup_candidate') or {}).get('name') or '?')}] "
                             + f"（相似度 {round(float((r.get('dedup_candidate') or {}).get('score') or 0) * 100)}%）"
                             + (
-                                f"\n  功能描述：{str((r.get('dedup_candidate') or {}).get('description') or '')[:200]}"
+                                f"\n  Function description:{str((r.get('dedup_candidate') or {}).get('description') or '')[:200]}"
                                 if str((r.get('dedup_candidate') or {}).get('description') or '').strip()
                                 else ""
                             )
                             for r in pending_confirmation
                         ])
-                        + "\n\n请向用户展示候选 Skill 的名称与功能描述，说明复用 vs 新建的利弊，让用户做出选择。"
+                        + "\n\n Please show the name and function description of the candidate Skill to the user, explain the pros and cons of reusing vs. creating a new one, and let the user make a choice."
                     )
                     if pending_confirmation
                     else (
-                        # v3.6.0 项6 路径B：生成成功后不再自动绑定，提示用户审核
+                        # v3.6.0 Item 6 Path B: After successful generation, it will no longer be automatically bound and the user will be prompted for review.
                         f"已为 Agent「{agent_name}」自动补齐 {len(successful)} 个能力缺口：\n"
                         + "\n".join([
                             f"• 「{r.get('skill_display_name') or r.get('skill_tool_id') or '?'}」"
-                            + f"（缺口：{r.get('gap_description', '')}）"
+                            + f" (Gap:{r.get('gap_description', '')}) "
                             for r in successful
                         ])
-                        + "\n\n这些 Skill 已通过质量门禁（语法/沙箱/评估），但不会自动绑定到 Agent。"
-                        "请向用户展示每个 Skill 的代码和测试结果，让用户决定是否绑定：\n"
-                        "  - 确认绑定：调用 /api/agent-workshop/skill-review/{session_id}/{tool_id}/confirm\n"
-                        "  - 拒绝绑定：调用 /api/agent-workshop/skill-review/{session_id}/{tool_id}/reject（Skill 留在工坊可后续复用）\n"
-                        "所有 Skill 审核完成后，再继续 Agent 版本构建流程。"
+                        + "\n\n These skills pass quality gates (grammar/sandbox/evaluation) but are not automatically bound to the Agent."
+                        "Please show the code and test results of each Skill to users and let them decide whether to bind:\n"
+                        "  - Confirm binding: call /api/agent-workshop/skill-review/{session_id}/{tool_id}/confirm\n"
+                        "  - Refuse to bind: call /api/agent-workshop/skill-review/{session_id}/{tool_id}/reject (Skill Leave it in the workshop and can be reused later)\n"
+                        "After all Skill reviews are completed, continue the Agent version building process."
                         if successful
-                        else "未能成功补齐任何缺口，请检查失败原因后重试。"
+                        else "If any gaps were not successfully filled, please check the reason for the failure and try again."
                     )
                 )
             ),
         }
 
         logger.info(
-            "[resolve_gaps] 补全完成: completed=%d failed=%d tool_ids=%s",
+            "[resolve_gaps] Completed: completed=%d failed=%d tool_ids=%s",
             len(completed), len(failed), summary["generated_tool_ids"],
         )
 
-        # 🔥 记录 Agent → Gap → Skill 的父子任务链，确保 Nanobot 完成 Skill 后回到父 Agent
-        # 同时把需要用户确认的 dedup candidate 写入 last_proposed_items，支持后续指代消解
+        # 🔥 record Agent → Gap → Skill The parent-child task chain ensures that Nanobot returns to the parent after completing the Skill. Agent
+        # At the same time, write the dedup candidates that require user confirmation into last_proposed_items to support subsequent reference resolution.
         dedup_items = [
             {
                 "index": idx + 1,
@@ -6831,7 +6831,7 @@ async def resolve_agent_workshop_blocking_gaps(
                 "name": f"缺口「{r.get('gap_description') or r.get('gap_id') or '?'}」的候选 Skill「{str((r.get('dedup_candidate') or {}).get('name') or '?')}」",
                 "description": (
                     f"相似度 {round(float((r.get('dedup_candidate') or {}).get('score') or 0) * 100)}%；"
-                    + f"候选描述：{str((r.get('dedup_candidate') or {}).get('description') or '')[:200]}"
+                    + f"Candidate description:{str((r.get('dedup_candidate') or {}).get('description') or '')[:200]}"
                 ),
                 "gap_id": str(r.get("gap_id") or ""),
                 "candidate_name": str((r.get("dedup_candidate") or {}).get("name") or ""),
@@ -6847,8 +6847,8 @@ async def resolve_agent_workshop_blocking_gaps(
                 spec_name=agent_name,
                 pending_question=f"Agent「{agent_name}」有 {len(dedup_items)} 个缺口发现相似候选 Skill，请确认对每个缺口是复用候选还是新建 Skill？",
                 proposed_items=dedup_items,
-                active_subtask="等待用户确认候选 Skill 复用/新建",
-                next_action="用户确认后再次调用 resolve_agent_workshop_blocking_gaps 并传入明确参数",
+                active_subtask="Waiting for user confirmation of candidate Skill reuse/new creation",
+                next_action="After the user confirms, call resolve_agent_workshop_blocking_gaps again and pass in clear parameters.",
             )
 
         for idx, gap_text in enumerate(capped_gaps):
@@ -6858,7 +6858,7 @@ async def resolve_agent_workshop_blocking_gaps(
                 spec_id=agent_spec_id,
                 spec_name=agent_name,
                 active_subtask=f"为 Agent「{agent_name}」补齐缺口：{gap_text}",
-                next_action=summary.get("next_action") or "回到父 Agent 继续构建/测试",
+                next_action=summary.get("next_action") or "Return to the parent Agent to continue building/testing",
                 task={
                     "type": "gap",
                     "id": f"{clean_session_id}:gap_{idx + 1}",
@@ -6906,22 +6906,22 @@ async def resolve_agent_workshop_blocking_gaps(
         })
 
     except Exception as exc:
-        logger.error("补全 Agent 工坊能力缺口失败: %s", exc, exc_info=True)
+        logger.error("Failed to fill gaps in Agent s workshop capabilities: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"补全能力缺口失败: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="start_agent_workshop_gap_resolution",
-    name="启动 Agent 能力缺口异步补齐任务",
-    description="创建 gap resolution job 并返回 job_id，供后续轮询进度与控制。",
+    name="Start the asynchronous filling task of Agent capability gap",
+    description="Create a gap resolution job and return job_id for subsequent polling progress and control.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当缺口补齐可能耗时较长时，先创建异步 job，再通过 inspect/cancel/retry 工具治理。",
-    when_not_to_use="不适合在 session_id 无效时调用。",
-    returns="返回 JSON 字符串，包含 job_id、status、gaps 与 idempotency_key。",
+    when_to_use="When gap filling may take a long time, create an asynchronous job first and then manage it through the inspect/cancel/retry tool.",
+    when_not_to_use="Not suitable for calling when session_id is invalid.",
+    returns="Returns a JSON string containing job_id, status, gaps and idempotency_key.",
     example="start_agent_workshop_gap_resolution(session_id='ws_123')",
     related_tools=[
         "inspect_agent_workshop_gap_resolution",
@@ -6931,17 +6931,17 @@ async def resolve_agent_workshop_blocking_gaps(
     data_source_handling="local_only",
 )
 async def start_agent_workshop_gap_resolution(
-    session_id: Annotated[str, "Agent 工坊会话 ID"],
-    blocking_gaps_json: Annotated[str, "可选 JSON 数组，直接指定缺口描述；为空时从 session gap_report 读取"] = "",
-    mode: Annotated[str, "任务模式：auto 或 manual_confirmed，默认 manual_confirmed"] = "manual_confirmed",
-    idempotency_key: Annotated[str, "幂等键；为空时按 session_id + gaps 自动生成"] = "",
-    max_items: Annotated[int, "最多纳入 job 的缺口数，默认 3，最大 10"] = 3,
+    session_id: Annotated[str, "Agent workshop session ID"],
+    blocking_gaps_json: Annotated[str, "Optional JSON array, directly specify the gap description; when empty, read from session gap_report"] = "",
+    mode: Annotated[str, "Task mode: auto or manual_confirmed, default manual_confirmed"] = "manual_confirmed",
+    idempotency_key: Annotated[str, "Idempotent key; press when empty session_id + gaps Automatically generated"] = "",
+    max_items: Annotated[int, "The maximum number of gaps included in the job, default 3, maximum 10"] = 3,
 ) -> str:
-    """创建 Agent 能力缺口异步补齐 job，并返回 job_id 与初始状态。"""
+    """Create a job to fill the Agent capability gap asynchronously, and return job_id and initial status."""
     try:
         clean_session_id = str(session_id or "").strip()
         if not clean_session_id:
-            return _json_response({"status": "error", "message": "session_id 不能为空"})
+            return _json_response({"status": "error", "message": "session_id cannot be empty"})
 
         db = get_mongo_db()
         ws_service = AgentWorkshopService(db=db)
@@ -6956,7 +6956,7 @@ async def start_agent_workshop_gap_resolution(
                 if isinstance(parsed, list):
                     gaps = [str(item).strip() for item in parsed if str(item).strip()]
             except Exception as exc:
-                return _json_response({"status": "error", "message": f"blocking_gaps_json 解析失败: {exc}"})
+                return _json_response({"status": "error", "message": f"blocking_gaps_json Parsing failed: {exc}"})
         if not gaps:
             gap_report = getattr(workshop_session, "gap_report", None)
             if gap_report is None:
@@ -6969,7 +6969,7 @@ async def start_agent_workshop_gap_resolution(
         if not gaps:
             return _json_response({
                 "status": "ok",
-                "message": "当前没有 blocking gaps，无需创建异步补齐任务",
+                "message": "There are currently no blocking gaps, so there is no need to create an asynchronous completion task.",
                 "workshop_session_id": clean_session_id,
                 "created": False,
             })
@@ -6999,7 +6999,7 @@ async def start_agent_workshop_gap_resolution(
                 return _json_response({
                     "status": "ok",
                     "created": False,
-                    "message": "命中幂等任务，返回现有进行中 job",
+                    "message": "Hit an idempotent task and return to the existing one in progress job",
                     "job": {
                         "job_id": doc.get("job_id"),
                         "status": doc.get("status"),
@@ -7045,7 +7045,7 @@ async def start_agent_workshop_gap_resolution(
             "execution": {
                 "runner": "worker_required",
                 "state": "queued",
-                "note": "Phase 3 先落 job 协议；执行由后台 worker 接管",
+                "note": "Phase 3 The job protocol is dropped first; execution is taken over by the background worker",
                 "retry_policy": {
                     "max_attempts": _GAP_AUTO_RETRY_MAX_ATTEMPTS,
                     "base_delay_seconds": _GAP_AUTO_RETRY_BASE_DELAY_SECONDS,
@@ -7070,7 +7070,7 @@ async def start_agent_workshop_gap_resolution(
         return _json_response({
             "status": "ok",
             "created": True,
-            "message": "已创建 gap resolution job，等待 worker 消费",
+            "message": "A gap resolution job has been created and is waiting for worker consumption",
             "job": {
                 "job_id": job_id,
                 "status": "pending",
@@ -7082,22 +7082,22 @@ async def start_agent_workshop_gap_resolution(
             },
         })
     except Exception as exc:
-        logger.error("启动 Agent 缺口异步补齐任务失败: %s", exc, exc_info=True)
+        logger.error("Failed to start Agent gap asynchronous filling task: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"启动异步补齐任务失败: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="inspect_agent_workshop_gap_resolution",
-    name="查看 Agent 能力缺口异步补齐任务",
-    description="查询 gap resolution job 的当前状态与每个 gap 的进度。",
+    name="View the asynchronous filling tasks for Agent capability gaps",
+    description="Query the current status of the gap resolution job and the progress of each gap.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="需要在 Agent Studio 里持续查看补齐任务进度时使用。",
-    when_not_to_use="不适合在 job_id 不存在时调用。",
-    returns="返回 JSON 字符串，包含 job 状态、gap 列表与汇总计数。",
+    when_to_use="Use it when you need to continuously check the progress of the completion task in Agent Studio.",
+    when_not_to_use="Not suitable for calling when job_id does not exist.",
+    returns="Returns a JSON string containing job status, gap list, and summary count.",
     example="inspect_agent_workshop_gap_resolution(job_id='gap_job_xxx')",
     related_tools=[
         "start_agent_workshop_gap_resolution",
@@ -7108,9 +7108,9 @@ async def start_agent_workshop_gap_resolution(
 )
 async def inspect_agent_workshop_gap_resolution(
     job_id: Annotated[str, "gap resolution job_id"],
-    include_gaps: Annotated[bool, "是否返回每个 gap 明细，默认 true"] = True,
+    include_gaps: Annotated[bool, "Whether to return each gap details, default true"] = True,
 ) -> str:
-    """查询 gap resolution job 的状态、汇总与（可选）gap 明细。"""
+    """Query the status, summary and (optional) gap details of the gap resolution job."""
     try:
         clean_job_id = str(job_id or "").strip()
         if not clean_job_id:
@@ -7154,22 +7154,22 @@ async def inspect_agent_workshop_gap_resolution(
             payload["job"]["gaps"] = gaps
         return _json_response(payload)
     except Exception as exc:
-        logger.error("查看 Agent 缺口异步补齐任务失败: %s", exc, exc_info=True)
+        logger.error("View Agent gap asynchronous filling task failed: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"查看异步补齐任务失败: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="cancel_agent_workshop_gap_resolution",
-    name="取消 Agent 能力缺口异步补齐任务",
-    description="将 pending/running 的 gap resolution job 标记为 cancelled。",
+    name="Cancel Agent capability gap asynchronous filling task",
+    description="Mark the pending/running gap resolution job as canceled.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="用户明确要求停止当前补齐任务时使用。",
-    when_not_to_use="不适合取消已完成任务。",
-    returns="返回 JSON 字符串，包含取消结果与更新后的汇总。",
+    when_to_use="Used when the user explicitly requests to stop the current completion task.",
+    when_not_to_use="Not suitable for canceling completed tasks.",
+    returns="Returns a JSON string containing the cancellation results and updated summary.",
     example="cancel_agent_workshop_gap_resolution(job_id='gap_job_xxx')",
     related_tools=[
         "inspect_agent_workshop_gap_resolution",
@@ -7179,9 +7179,9 @@ async def inspect_agent_workshop_gap_resolution(
 )
 async def cancel_agent_workshop_gap_resolution(
     job_id: Annotated[str, "gap resolution job_id"],
-    reason: Annotated[str, "取消原因，可选"] = "",
+    reason: Annotated[str, "Reason for cancellation, optional"] = "",
 ) -> str:
-    """取消 pending/running 的 gap resolution job。"""
+    """Cancel pending/running gap resolution job."""
     try:
         clean_job_id = str(job_id or "").strip()
         if not clean_job_id:
@@ -7241,7 +7241,7 @@ async def cancel_agent_workshop_gap_resolution(
 
         return _json_response({
             "status": "ok",
-            "message": "已取消 gap resolution job",
+            "message": "Canceled gap resolution job",
             "job": {
                 "job_id": clean_job_id,
                 "status": "cancelled",
@@ -7250,22 +7250,22 @@ async def cancel_agent_workshop_gap_resolution(
             },
         })
     except Exception as exc:
-        logger.error("取消 Agent 缺口异步补齐任务失败: %s", exc, exc_info=True)
+        logger.error("Failed to cancel Agent gap asynchronous filling task: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"取消异步补齐任务失败: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="retry_agent_workshop_gap_resolution_item",
-    name="重试 Agent 缺口补齐任务中的单个缺口",
-    description="将某个 gap 重新置为 pending，等待 worker 重新执行该项。",
+    name="Retrying a single gap in an Agent gap filling task",
+    description="Reset a gap to pending and wait for the worker to re-execute the item.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当某个 gap 失败/超时/取消后，希望单项重试时使用。",
-    when_not_to_use="不适合对仍在运行的 gap 重复重试。",
-    returns="返回 JSON 字符串，包含重试后的 job 汇总与目标 gap 状态。",
+    when_to_use="Use it when you want to retry a single item after a gap fails/times out/cancels.",
+    when_not_to_use="It is not appropriate to repeatedly retry a gap that is still running.",
+    returns="Returns a JSON string containing the job summary and target gap status after retry.",
     example="retry_agent_workshop_gap_resolution_item(job_id='gap_job_xxx', gap_id='gap_1')",
     related_tools=[
         "inspect_agent_workshop_gap_resolution",
@@ -7275,10 +7275,10 @@ async def cancel_agent_workshop_gap_resolution(
 )
 async def retry_agent_workshop_gap_resolution_item(
     job_id: Annotated[str, "gap resolution job_id"],
-    gap_id: Annotated[str, "目标缺口 ID，如 gap_1"],
-    reason: Annotated[str, "重试原因，可选"] = "",
+    gap_id: Annotated[str, "Target gap ID, e.g. gap_1"],
+    reason: Annotated[str, "Retry reason, optional"] = "",
 ) -> str:
-    """重试 gap resolution job 中的单个失败/超时/取消项。"""
+    """Retry a single failure/timeout/cancellation item in a gap resolution job."""
     try:
         clean_job_id = str(job_id or "").strip()
         clean_gap_id = str(gap_id or "").strip()
@@ -7316,7 +7316,7 @@ async def retry_agent_workshop_gap_resolution_item(
 
             item["status"] = "pending"
             item["pipeline_stage"] = "queued"
-            item["pipeline_message"] = str(reason or "已提交重试，等待 worker 执行")
+            item["pipeline_message"] = str(reason or "Submitted for retry, waiting for worker execution")
             item["error"] = None
             item["updated_at"] = now_iso
             item["retry_count"] = int(item.get("retry_count") or 0) + 1
@@ -7343,7 +7343,7 @@ async def retry_agent_workshop_gap_resolution_item(
 
         return _json_response({
             "status": "ok",
-            "message": "已重置目标 gap 为 pending",
+            "message": "Target gap has been reset to pending",
             "job": {
                 "job_id": clean_job_id,
                 "status": "pending",
@@ -7353,7 +7353,7 @@ async def retry_agent_workshop_gap_resolution_item(
             "gap": target_after,
         })
     except Exception as exc:
-        logger.error("重试 Agent 缺口异步补齐项失败: %s", exc, exc_info=True)
+        logger.error("Retry Agent gap asynchronous completion failed: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"重试异步补齐项失败: {exc}"})
 
 
@@ -7388,7 +7388,7 @@ __all__ = [
 
 
 async def _get_progress_collection():
-    """获取 workshop_test_progress 集合（懒初始化）。"""
+    """Get workshop_test_progress collection (lazy initialization)."""
     try:
         db = get_mongo_db()
         collection = db.get_collection("workshop_test_progress")
@@ -7399,7 +7399,7 @@ async def _get_progress_collection():
 
 
 def _get_current_intent_stage() -> str:
-    """读取当前线程的 intent stage（优先 module 存储，其次 contextvar）。"""
+    """Read the intent stage of the current thread (module storage first, contextvar second)."""
     try:
         from core.tools.context import get_latest_nanobot_intent
         intent = get_latest_nanobot_intent()
@@ -7419,10 +7419,10 @@ def _get_current_intent_stage() -> str:
 
 
 def _extract_json_from_markdown(text: str) -> str:
-    """从 markdown 代码块中提取 JSON 字符串。"""
+    """Extract JSON string from markdown code block."""
     clean = str(text or "").strip()
     if clean.startswith("```"):
-        # 去掉首行的 ```json / ```
+        # Remove the first line ```json / ```
         lines = clean.splitlines()
         if lines and lines[0].strip().startswith("```"):
             lines = lines[1:]
@@ -7433,7 +7433,7 @@ def _extract_json_from_markdown(text: str) -> str:
 
 
 def _humanize_plan_id(plan_id: str) -> str:
-    """把内部 plan_id 翻译成用户可读的方案名。"""
+    """Translate the internal plan_id into a user-readable plan name."""
     mapping = {
         "direct": "推荐完整交付",
         "strict": "保守可追溯版",
@@ -7446,11 +7446,11 @@ def _humanize_plan_id(plan_id: str) -> str:
 
 
 def _to_str_list(value: Any) -> list[str]:
-    """将任意值转换为字符串列表。
+    """Convert any value to a list of strings.
 
-    - None / 空值 → []
-    - list / tuple → 逐项 str() 并过滤空值
-    - 其它 → [str(value)] （过滤空值）
+    - None / null value → []
+    - list / tuple → item by item str() and filter out null values
+    - Others → [str(value)]  (filter null values)
     """
     if value is None:
         return []
@@ -7466,7 +7466,7 @@ def _to_str_list(value: Any) -> list[str]:
 
 
 def _fallback_build_plans(blocking_gaps: list[Any], non_blocking_gaps: list[Any]) -> dict[str, Any]:
-    """当 LLM 解析失败时的规则化方案生成。"""
+    """Regularized plan generation when LLM parsing fails."""
     blocking_count = len(blocking_gaps)
     blocking_descriptions = []
     for g in blocking_gaps:
@@ -7482,34 +7482,34 @@ def _fallback_build_plans(blocking_gaps: list[Any], non_blocking_gaps: list[Any]
             {
                 "plan_id": "direct",
                 "plan_name": "推荐完整交付",
-                "description": "现有能力已覆盖需求，可直接生成完整版 Agent，并按原定核心风险/分析维度进入真数据测试。",
+                "description": "The existing capabilities have covered the requirements and can directly generate a complete version of Agent and enter real data testing according to the original core risk/analysis dimensions.",
                 "required_new_skills": [],
                 "estimated_effort": "低",
-                "risk": "能力已覆盖，主要风险来自真实数据质量和后续验收结果。",
-                "gap_summary": "所有分析维度均有直接工具支撑，无数据缺口。",
-                "feasibility": "可直接实现，无需额外开发。",
+                "risk": "Capabilities are covered and the main risks come from real data quality and subsequent acceptance results.",
+                "gap_summary": "All analysis dimensions are supported by direct tools and there are no data gaps.",
+                "feasibility": "Can be implemented directly without additional development.",
                 "recommended": True,
             },
             {
                 "plan_id": "strict",
                 "plan_name": "保守可追溯版",
-                "description": "仍使用现有能力，但收紧输出边界：只输出工具和数据明确支撑的结论，未覆盖或数据不足的部分标注为信息缺口。",
+                "description": "Existing capabilities are still used, but output boundaries are tightened: only conclusions clearly supported by tools and data are output, and parts that are not covered or have insufficient data are marked as information gaps.",
                 "required_new_skills": [],
                 "estimated_effort": "低",
-                "risk": "覆盖更稳健，但报告表达会更保守，部分扩展解读不会展开。",
-                "gap_summary": "所有分析维度均有直接工具支撑，但对推断性结论做严格限制。",
-                "feasibility": "可直接实现，无需额外开发。",
+                "risk": "The coverage is more robust, but the report expression will be more conservative, and some extended interpretations will not be carried out.",
+                "gap_summary": "All analysis dimensions are supported by direct tools, but inferential conclusions are strictly limited.",
+                "feasibility": "Can be implemented directly without additional development.",
                 "recommended": False,
             },
             {
                 "plan_id": "enhanced",
                 "plan_name": "扩展增强版",
-                "description": "在核心需求已满足的基础上，把非阻塞增强项作为可选扩展，例如更细的预警分级、更多风险信号或更丰富的情景说明。",
+                "description": "On the basis that the core requirements have been met, non-blocking enhancements can be used as optional extensions, such as more detailed warning classification, more risk signals or richer scenario descriptions.",
                 "required_new_skills": [],
                 "estimated_effort": "中",
-                "risk": "不是当前交付的必要条件；如果扩展过多，可能增加测试和解释复杂度。",
-                "gap_summary": "核心维度有直接工具支撑，扩展维度可能需要额外数据接入。",
-                "feasibility": "可实现，但扩展部分需要额外开发和数据接入。",
+                "risk": "Not required for current delivery; may increase testing and interpretation complexity if extended too much.",
+                "gap_summary": "Core dimensions are supported by direct tools, while extended dimensions may require additional data access.",
+                "feasibility": "Achievable, but extensions require additional development and data access.",
                 "recommended": False,
             },
         ]
@@ -7522,20 +7522,20 @@ def _fallback_build_plans(blocking_gaps: list[Any], non_blocking_gaps: list[Any]
                 "description": f"补齐 {blocking_count} 个阻塞性能力缺口，输出完整功能。",
                 "required_new_skills": blocking_descriptions,
                 "estimated_effort": "高",
-                "risk": "需要生成新能力，可能失败或耗时",
+                "risk": "New capabilities need to be generated, which may fail or be time consuming",
                 "gap_summary": f"有 {blocking_count} 个阻塞性缺口需要补齐，补齐后所有维度均可覆盖。",
-                "feasibility": f"需要新建 Skill 补齐 {blocking_count} 个缺口，可能失败或耗时。补齐方式：新建 Skill 或接入外部数据源。",
+                "feasibility": f"Need to create new Skill to complete {blocking_count} gap, may fail or be time consuming. Completion method: Create a new Skill or access external data sources.",
                 "recommended": True,
             },
             {
                 "plan_id": "quick",
                 "plan_name": "快速方案",
-                "description": "用现有能力做简化版，跳过暂缺的能力。",
+                "description": "Use existing capabilities to make simplified versions and skip missing capabilities.",
                 "required_new_skills": [],
                 "estimated_effort": "低",
-                "risk": "功能不完整，部分输出会降级或省略",
+                "risk": "Incomplete functionality, some output will be degraded or omitted",
                 "gap_summary": f"有 {blocking_count} 个维度无法覆盖，将标注为'数据不足'或做降级处理。",
-                "feasibility": "可直接实现，但部分分析维度会缺失或降级。",
+                "feasibility": "It can be implemented directly, but some analysis dimensions will be missing or degraded.",
                 "recommended": False,
             },
         ]
@@ -7548,31 +7548,31 @@ def _fallback_build_plans(blocking_gaps: list[Any], non_blocking_gaps: list[Any]
                 "description": f"补齐 {blocking_count} 个阻塞性能力缺口，输出完整功能。",
                 "required_new_skills": blocking_descriptions,
                 "estimated_effort": "高",
-                "risk": "需要生成多个新能力，周期较长",
+                "risk": "Multiple new capabilities need to be generated, which takes a long time",
                 "gap_summary": f"有 {blocking_count} 个阻塞性缺口需要补齐，补齐后所有维度均可覆盖。",
-                "feasibility": f"需要新建多个 Skill 补齐 {blocking_count} 个缺口，周期较长，可能失败。补齐方式：新建 Skill 或接入外部数据源。",
+                "feasibility": f"Need to create multiple skills to complete {blocking_count} A gap has a long cycle and may fail. Completion method: Create a new Skill or access external data sources.",
                 "recommended": True,
             },
             {
                 "plan_id": "quick",
                 "plan_name": "快速方案",
-                "description": "用现有能力做简化版，优先覆盖核心维度。",
+                "description": "Use existing capabilities to make a simplified version, giving priority to covering core dimensions.",
                 "required_new_skills": [],
                 "estimated_effort": "低",
-                "risk": "功能不完整，部分输出会降级或省略",
+                "risk": "Incomplete functionality, some output will be degraded or omitted",
                 "gap_summary": f"有 {blocking_count} 个维度无法覆盖，将标注为'数据不足'或做降级处理。",
-                "feasibility": "可直接实现，但多个分析维度会缺失或降级。",
+                "feasibility": "It can be implemented directly, but many analysis dimensions will be missing or degraded.",
                 "recommended": False,
             },
             {
                 "plan_id": "narrow",
                 "plan_name": "缩小范围",
-                "description": "把需求范围缩小到现有能力可覆盖的子集。",
+                "description": "Narrow the scope of requirements to a subset that can be covered by existing capabilities.",
                 "required_new_skills": [],
                 "estimated_effort": "低",
                 "risk": "只覆盖部分需求",
-                "gap_summary": f"缩小范围后，只覆盖现有能力可支撑的维度，{blocking_count} 个缺口维度不在范围内。",
-                "feasibility": "可实现，但需要缩小 Agent 的职责范围。",
+                "gap_summary": f"After narrowing the scope, only the dimensions that can be supported by existing capabilities are covered.{blocking_count} gap dimensions are not in range.",
+                "feasibility": "Achievable, but requires narrowing the Agent s scope of responsibilities.",
                 "recommended": False,
             },
         ]
@@ -7581,5 +7581,5 @@ def _fallback_build_plans(blocking_gaps: list[Any], non_blocking_gaps: list[Any]
     return {
         "candidate_plans": candidate_plans,
         "recommended_plan_id": recommended_plan_id,
-        "pending_question": "你希望采用哪个方案？",
+        "pending_question": "Which option do you want to adopt?",
     }

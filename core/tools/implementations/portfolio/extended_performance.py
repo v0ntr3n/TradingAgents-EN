@@ -1,9 +1,9 @@
 """
-扩展投资组合绩效指标工具
+Expanded Portfolio Performance Metrics Tool
 
-提供 Sortino 比率、Treynor 比率、信息比率、Calmar 比率、Jensen Alpha、
-压力测试、情景分析、Brinson 归因、行业归因等专业投资组合绩效分析功能。
-所有指标基于纯数学计算，无需 LLM 参与。
+Provides Sortino Ratio, Treynor Ratio, Information Ratio, Calmar Ratio, Jensen Alpha,
+Professional portfolio performance analysis functions such as stress testing, scenario analysis, Brinson attribution, and industry attribution.
+All indicators are based on purely mathematical calculations without the involvement of LLM.
 """
 
 import json
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-#  辅助函数
+#  Helper function
 # ============================================================
 
 def _safe_float(value) -> Optional[float]:
@@ -46,7 +46,7 @@ def _days_ago(days: int) -> str:
 
 
 def _load_returns(symbol: str, lookback_days: int) -> Optional[np.ndarray]:
-    """获取单只股票的日收益率序列。"""
+    """Get the daily return series of a single stock."""
     end_date = _today()
     start_date = _days_ago(int(lookback_days) * 2 + 50)
     quotes = get_stock_daily_quotes(
@@ -65,11 +65,11 @@ def _load_returns(symbol: str, lookback_days: int) -> Optional[np.ndarray]:
 
 
 def _load_benchmark_returns(lookback_days: int = 252) -> Optional[np.ndarray]:
-    """从本地 DB 获取基准指数（沪深300）收益率，失败时用 AKShare 兜底。"""
+    """Obtain the benchmark index (CSI 300) return rate from the local DB, and use AKShare to cover it up if it fails."""
     import pandas as pd
     end = _today()
     start = _days_ago(lookback_days * 2 + 50)
-    # 先试 000300
+    # Try first 000300
     quotes = get_stock_daily_quotes("000300", start, end, limit=lookback_days + 100)
     if quotes:
         df = pd.DataFrame(quotes)
@@ -78,7 +78,7 @@ def _load_benchmark_returns(lookback_days: int = 252) -> Optional[np.ndarray]:
         df = df.dropna(subset=["close"]).sort_values("trade_date")
         df["return"] = df["close"].pct_change()
         return df["return"].dropna().values
-    # DB 无数据，用 AKShare 兜底
+    # DB No data, use AKShare to find out
     try:
         import akshare as ak
         df = ak.stock_zh_index_daily(symbol="sh000300")
@@ -107,11 +107,11 @@ def _max_drawdown_from_returns(returns: np.ndarray) -> float:
 
 
 def _parse_symbols_weights(symbols_str: str, weights_str: Optional[str] = None):
-    """解析符号和权重字符串，返回 (symbols_list, weights_list_or_equal)."""
+    """Parse the symbol and weight strings and return (symbols_list, weights_list_or_equal)."""
     sym_list = [s.strip() for s in str(symbols_str).split(",") if s.strip()]
     if weights_str:
         w_list = [float(w.strip()) for w in str(weights_str).split(",") if w.strip()]
-        # 如果权重数量与符号数量不一致，回退等权
+        # If the number of weights is inconsistent with the number of symbols, fall back to equal weighting.
         if len(w_list) != len(sym_list):
             w_list = [1.0 / len(sym_list)] * len(sym_list)
         else:
@@ -124,14 +124,14 @@ def _parse_symbols_weights(symbols_str: str, weights_str: Optional[str] = None):
 
 
 # ============================================================
-#  Tool 1: Sortino 比率
+#  Tool 1: Sortino Ratio
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_sortino_ratio",
     name="Sortino 比率",
-    description="计算 Sortino 比率衡量下行风险调整后收益，返回年化收益、下行波动率、Sortino 比率、目标收益率和样本数，用于评估资产收益",
+    description="Calculate the Sortino Ratio, a measure of downside risk-adjusted returns, returning annualized returns, downside volatility, Sortino Ratio, target return, and sample size for evaluating asset returns",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -140,39 +140,39 @@ def _parse_symbols_weights(symbols_str: str, weights_str: Optional[str] = None):
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["sortino_ratio", "downside_risk_adjusted_return"],
-    when_to_use="当需要评估资产的风险调整收益，且希望只惩罚下行波动而非整体波动时使用。",
-    when_not_to_use="当数据不足（少于30个交易日）时指标参考价值有限。",
-    returns="返回 JSON，包含 sortino_ratio、downside_deviation、annualized_return、excess_return。",
+    when_to_use="Use when you need to evaluate the risk-adjusted return of an asset and wish to penalize only downside volatility rather than overall volatility.",
+    when_not_to_use="When there is insufficient data (less than 30 trading days), the indicator has limited reference value.",
+    returns="Returns JSON, including sortino_ratio, downward_deviation, annualized_return, excess_return.",
     example="get_sortino_ratio(symbol='600519', lookback_days=252, risk_free_rate=0.025)",
     related_tools=["get_sharpe_ratio", "get_calmar_ratio"],
 )
 def get_sortino_ratio(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看交易日数，默认252（约1年）"] = 252,
-    risk_free_rate: Annotated[float, "无风险利率，默认 0.025（2.5%）"] = 0.025,
-    target_return: Annotated[float, "目标收益率，默认 0.0"] = 0.0,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "Number of trading days to look back, default is 252 (approximately 1 year)"] = 252,
+    risk_free_rate: Annotated[float, "Risk-free interest rate, default 0.025 (2.5%)"] = 0.025,
+    target_return: Annotated[float, "Target rate of return, default 0.0"] = 0.0,
 ) -> str:
-    """计算 Sortino 比率。仅以负收益偏离（下行偏差）作为风险度量，衡量单位下行风险的超额收益。
+    """Calculate the Sortino ratio. Only negative return deviation (downside deviation) is used as a risk measure to measure the excess return per unit of downside risk.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看交易日数，默认 252（约 1 年）
-        risk_free_rate: 无风险利率，默认 0.025（2.5%）
-        target_return: 目标收益率（MAR），默认 0.0
+        symbol: A stock code, such as 600519,000001
+        lookback_days: Number of trading days to look back, default is 252 (about 1 year)
+        risk_free_rate: Risk-free interest rate, default 0.025 (2.5%)
+        target_return: Target rate of return (MAR), default 0.0
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            symbol: 标的股票代码
-            sortino_ratio: 年化 Sortino 比率（不可计算时为 None）
-            downside_deviation: 年化下行偏差
-            annualized_return: 年化收益率
-            excess_return: 年化超额收益（年化收益 - 无风险利率）
-            risk_free_rate: 实际使用的无风险利率
-            target_return: 实际使用的目标收益率
-            data_points: 有效收益率样本数
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            symbol: Underlying stock code
+            sortino_ratio: Annualized Sortino ratio (None if not computable)
+            downside_deviation: annualized downward bias
+            annualized_return: annualized rate of return
+            excess_return: Annualized excess return (annualized return – risk-free interest rate)
+            risk_free_rate: The actual risk-free rate used
+            target_return: Actual target rate of return used
+            data_points: Effective rate of return sample number
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         warnings: list = []
@@ -186,13 +186,13 @@ def get_sortino_ratio(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 年化收益率
+        # annualized rate of return
         ann_return = _annualized_return(returns)
 
-        # 超额收益 (Rp - Rf)
+        # excess return (Rp - Rf)
         excess_return = ann_return - rf
 
-        # 下行偏差：收益率低于 target_return 部分的标准差
+        # Downside deviation: the standard deviation of the return below target_return
         downside_returns = returns[returns < target]
         if len(downside_returns) >= 2:
             downside_deviation = float(np.std(downside_returns, ddof=1)) * np.sqrt(252)
@@ -201,7 +201,7 @@ def get_sortino_ratio(
         else:
             downside_deviation = 0.0
 
-        # Sortino 比率
+        # Sortino Ratio
         if downside_deviation > 0:
             sortino_ratio = excess_return / downside_deviation
         else:
@@ -222,19 +222,19 @@ def get_sortino_ratio(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("Sortino 比率计算失败: %s", exc, exc_info=True)
+        logger.error("Sortino Ratio calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ============================================================
-#  Tool 2: Treynor 比率
+#  Tool 2: Treynor Ratio
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_treynor_ratio",
     name="Treynor 比率",
-    description="计算 Treynor 比率衡量单位系统性风险超额收益，返回超额收益、Beta、Treynor 比率、无风险利率和样本区间",
+    description="Calculate the Treynor Ratio, which measures the excess return per unit of systematic risk, returning the excess return, Beta, Treynor Ratio, risk-free rate, and sample interval",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -243,36 +243,36 @@ def get_sortino_ratio(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["treynor_ratio", "systematic_risk_adjusted_return"],
-    when_to_use="当需要评估资产相对于系统性风险的超额收益表现时使用。",
-    when_not_to_use="当数据不足或 Beta 无法计算时指标不可用。",
-    returns="返回 JSON，包含 treynor_ratio、beta、annualized_return、excess_return。",
+    when_to_use="Used when it is necessary to evaluate the excess return performance of an asset relative to systemic risk.",
+    when_not_to_use="The indicator is not available when there is insufficient data or beta cannot be calculated.",
+    returns="Returns JSON containing treynor_ratio, beta, annualized_return, excess_return.",
     example="get_treynor_ratio(symbol='600519', lookback_days=252, risk_free_rate=0.025)",
     related_tools=["get_beta_calculation", "get_sortino_ratio"],
 )
 def get_treynor_ratio(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看交易日数，默认252（约1年）"] = 252,
-    risk_free_rate: Annotated[float, "无风险利率，默认 0.025（2.5%）"] = 0.025,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "Number of trading days to look back, default is 252 (approximately 1 year)"] = 252,
+    risk_free_rate: Annotated[float, "Risk-free interest rate, default 0.025 (2.5%)"] = 0.025,
 ) -> str:
-    """计算 Treynor 比率。以 Beta 衡量系统性风险，衡量单位系统性风险的超额收益。
+    """Calculate the Treynor ratio. Beta measures systemic risk and measures the excess return per unit of systemic risk.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看交易日数，默认 252（约 1 年）
-        risk_free_rate: 无风险利率，默认 0.025（2.5%）
+        symbol: A stock code, such as 600519,000001
+        lookback_days: Number of trading days to look back, default is 252 (about 1 year)
+        risk_free_rate: Risk-free interest rate, default 0.025 (2.5%)
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            symbol: 标的股票代码
-            treynor_ratio: Treynor 比率（不可计算时为 None）
-            beta: 相对沪深300 的 Beta 系数（Beta 计算失败时回退为 1.0）
-            annualized_return: 年化收益率
-            excess_return: 年化超额收益
-            risk_free_rate: 实际使用的无风险利率
-            data_points: 有效收益率样本数
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            symbol: Underlying stock code
+            treynor_ratio: Treynor Ratio (None if not computable)
+            beta: Beta coefficient relative to CSI 300 (reverts to 1.0 when Beta calculation fails)
+            annualized_return: annualized rate of return
+            excess_return: annualized excess return
+            risk_free_rate: The actual risk-free rate used
+            data_points: Effective rate of return sample number
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         warnings: list = []
@@ -287,7 +287,7 @@ def get_treynor_ratio(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 从 get_beta_calculation 获取 Beta
+        # Get from get_beta_calculation Beta
         from core.tools.registry import ToolRegistry as _TR
         _reg = _TR()
         beta_raw = _reg.get_function('get_beta_calculation')
@@ -304,11 +304,11 @@ def get_treynor_ratio(
 
         if beta == 0:
             return json.dumps(
-                {"status": "error", "message": "Beta 为零，无法计算 Treynor 比率。"},
+                {"status": "error", "message": "Beta is zero, the Treynor ratio cannot be calculated."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 年化收益率
+        # annualized rate of return
         ann_return = _annualized_return(returns)
         excess_return = ann_return - rf
         treynor_ratio = excess_return / beta
@@ -327,19 +327,19 @@ def get_treynor_ratio(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("Treynor 比率计算失败: %s", exc, exc_info=True)
+        logger.error("Treynor Ratio calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ============================================================
-#  Tool 3: 信息比率
+#  Tool 3: information ratio
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_information_ratio",
     name="信息比率",
-    description="计算信息比率（Information Ratio），衡量投资组合相对于基准指数的超额收益与跟踪误差之比。",
+    description="Calculate the information ratio (Information Ratio), which measures the ratio of excess return and tracking error of a portfolio relative to the benchmark index.",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -348,35 +348,35 @@ def get_treynor_ratio(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["information_ratio", "active_management"],
-    when_to_use="当需要评估主动管理能力，衡量相对于基准的超额收益稳定性时使用。",
-    when_not_to_use="当数据不足跟踪误差无法可靠计算时指标参考价值有限。",
-    returns="返回 JSON，包含 information_ratio、tracking_error、excess_return。",
+    when_to_use="Used when it is necessary to evaluate active management capabilities and measure the stability of excess returns relative to a benchmark.",
+    when_not_to_use="When the data is insufficient and the tracking error cannot be reliably calculated, the indicator has limited reference value.",
+    returns="Return JSON, including information_ratio, tracking_error, excess_return.",
     example="get_information_ratio(symbol='600519', benchmark_symbol='000300', lookback_days=252)",
     related_tools=["get_sortino_ratio", "get_treynor_ratio"],
 )
 def get_information_ratio(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    benchmark_symbol: Annotated[str, "基准指数代码，默认 000300（沪深300）"] = "000300",
-    lookback_days: Annotated[int, "回看交易日数，默认252（约1年）"] = 252,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    benchmark_symbol: Annotated[str, "Benchmark index code, default 000300 (CSI 300)"] = "000300",
+    lookback_days: Annotated[int, "Number of trading days to look back, default is 252 (approximately 1 year)"] = 252,
 ) -> str:
-    """计算信息比率。衡量组合相对基准的超额收益与跟踪误差之比。
+    """Calculate the information ratio. Measures the ratio of excess return to tracking error of a portfolio relative to the benchmark.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        benchmark_symbol: 基准指数代码，默认 "000300"（沪深300）
-        lookback_days: 回看交易日数，默认 252（约 1 年）
+        symbol: A stock code, such as 600519,000001
+        benchmark_symbol: Benchmark index code, default "000300" (CSI 300)
+        lookback_days: Number of trading days to look back, default is 252 (about 1 year)
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            symbol: 标的股票代码
-            benchmark_symbol: 实际使用的基准代码
-            information_ratio: 信息比率
-            tracking_error: 年化跟踪误差
-            excess_return: 年化超额收益
-            data_points: 实际对齐使用的样本数
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            symbol: Underlying stock code
+            benchmark_symbol: Actual benchmark code used
+            information_ratio: information ratio
+            tracking_error: annualized tracking error
+            excess_return: annualized excess return
+            data_points: Number of samples actually used for alignment
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         warnings: list = []
@@ -386,7 +386,7 @@ def get_information_ratio(
 
         stock_returns = _load_returns(sym, ldays)
 
-        # 基准指数：000300 用 AKShare 兜底
+        # Benchmark Index: 000300 Use AKShare to save money
         if bench in ("000300", "399300", "sh000300"):
             benchmark_returns = _load_benchmark_returns(ldays)
         else:
@@ -404,12 +404,12 @@ def get_information_ratio(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 对齐长度（取较短者）
+        # Alignment length (whichever is shorter)
         min_len = min(len(stock_returns), len(benchmark_returns))
         stock_r = stock_returns[-min_len:]
         bench_r = benchmark_returns[-min_len:]
 
-        # 超额收益序列
+        # excess return series
         excess_series = stock_r - bench_r
         excess_return = float(np.mean(excess_series) * 252)
         tracking_error = float(np.std(excess_series, ddof=1) * np.sqrt(252))
@@ -437,14 +437,14 @@ def get_information_ratio(
 
 
 # ============================================================
-#  Tool 4: Calmar 比率
+#  Tool 4: Calmar Ratio
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_calmar_ratio",
     name="Calmar 比率",
-    description="计算 Calmar 比率衡量年化收益与最大回撤之比，返回年化收益、最大回撤、Calmar 比率和回撤区间，反映资产回撤调整后收益",
+    description="Calculate the Calmar ratio, which measures the ratio of annualized return to maximum drawdown. Returns annualized return, maximum drawdown, Calmar ratio and drawdown range, reflecting asset drawdown-adjusted returns.",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -453,32 +453,32 @@ def get_information_ratio(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["calmar_ratio", "drawdown_adjusted_return"],
-    when_to_use="当需要评估资产在经历最大回撤后的收益恢复能力时使用。",
-    when_not_to_use="当数据不足（少于30个交易日）时指标参考价值有限。",
-    returns="返回 JSON，包含 calmar_ratio、annualized_return、max_drawdown。",
+    when_to_use="Used when it is necessary to evaluate an asset s ability to recover returns after experiencing a maximum drawdown.",
+    when_not_to_use="When there is insufficient data (less than 30 trading days), the indicator has limited reference value.",
+    returns="Returns JSON, including calmar_ratio, annualized_return, max_drawdown.",
     example="get_calmar_ratio(symbol='600519', lookback_days=252)",
     related_tools=["get_sortino_ratio", "get_sharpe_ratio"],
 )
 def get_calmar_ratio(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看交易日数，默认252（约1年）"] = 252,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "Number of trading days to look back, default is 252 (approximately 1 year)"] = 252,
 ) -> str:
-    """计算 Calmar 比率。年化收益率与最大回撤（绝对值）之比，衡量回撤调整后收益。
+    """Calculate the Calmar ratio. The ratio of annualized return to maximum drawdown (in absolute terms), which measures drawdown-adjusted returns.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看交易日数，默认 252（约 1 年）
+        symbol: A stock code, such as 600519,000001
+        lookback_days: Number of trading days to look back, default is 252 (about 1 year)
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            symbol: 标的股票代码
-            calmar_ratio: Calmar 比率（最大回撤为 0 时为 None）
-            annualized_return: 年化收益率
-            max_drawdown: 最大回撤（负数）
-            data_points: 有效收益率样本数
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            symbol: Underlying stock code
+            calmar_ratio: Calmar Ratio (None when maximum drawdown is 0)
+            annualized_return: annualized rate of return
+            max_drawdown: Maximum drawdown (negative number)
+            data_points: Effective rate of return sample number
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         warnings: list = []
@@ -512,7 +512,7 @@ def get_calmar_ratio(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("Calmar 比率计算失败: %s", exc, exc_info=True)
+        logger.error("Calmar Ratio calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
@@ -524,7 +524,7 @@ def get_calmar_ratio(
 @register_tool(
     tool_id="get_jensen_alpha",
     name="Jensen Alpha",
-    description="计算 Jensen Alpha（詹森阿尔法），衡量投资组合实际收益与 CAPM 模型预期收益之间的差异。",
+    description="Calculate Jensen Alpha, which measures the difference between a portfolio s actual return and the CAPM model s expected return.",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -533,37 +533,37 @@ def get_calmar_ratio(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["jensen_alpha", "excess_return_attribution"],
-    when_to_use="当需要评估基金经理或资产的超额收益能力，判断收益是否超越市场风险补偿时使用。",
-    when_not_to_use="当数据不足或 Beta 无法计算时指标不可用。",
-    returns="返回 JSON，包含 jensen_alpha、beta、expected_return、actual_return。",
+    when_to_use="It is used when it is necessary to evaluate the excess return capability of a fund manager or asset and determine whether the return exceeds market risk compensation.",
+    when_not_to_use="The indicator is not available when there is insufficient data or beta cannot be calculated.",
+    returns="Returns JSON, containing jensen_alpha, beta, expected_return, actual_return.",
     example="get_jensen_alpha(symbol='600519', lookback_days=252, risk_free_rate=0.025)",
     related_tools=["get_beta_calculation", "get_treynor_ratio"],
 )
 def get_jensen_alpha(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回看交易日数，默认252（约1年）"] = 252,
-    risk_free_rate: Annotated[float, "无风险利率，默认 0.025（2.5%）"] = 0.025,
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "Number of trading days to look back, default is 252 (approximately 1 year)"] = 252,
+    risk_free_rate: Annotated[float, "Risk-free interest rate, default 0.025 (2.5%)"] = 0.025,
 ) -> str:
-    """计算 Jensen Alpha。基于 CAPM 模型衡量组合实际收益与预期收益之差。
+    """Calculate Jensen Alpha. Based on the CAPM model, the difference between the actual return and the expected return of the portfolio is measured.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回看交易日数，默认 252（约 1 年）
-        risk_free_rate: 无风险利率，默认 0.025（2.5%）
+        symbol: A stock code, such as 600519,000001
+        lookback_days: Number of trading days to look back, default is 252 (about 1 year)
+        risk_free_rate: Risk-free interest rate, default 0.025 (2.5%)
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            symbol: 标的股票代码
-            jensen_alpha: Jensen Alpha（实际收益 - CAPM 预期收益）
-            beta: 相对沪深300 的 Beta 系数
-            expected_return: CAPM 预期收益
-            actual_return: 实际年化收益
-            market_return: 基准年化收益
-            risk_free_rate: 实际使用的无风险利率
-            data_points: 实际对齐使用的样本数
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            symbol: Underlying stock code
+            jensen_alpha: Jensen Alpha (Actual Returns - CAPM Expected Returns)
+            beta: Beta coefficient relative to CSI 300
+            expected_return: CAPM expected return
+            actual_return: actual annualized return
+            market_return: Base annualized return
+            risk_free_rate: The actual risk-free rate used
+            data_points: Number of samples actually used for alignment
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         warnings: list = []
@@ -578,34 +578,34 @@ def get_jensen_alpha(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 获取市场收益率（沪深300，AKShare 兜底）
+        # Get the market rate of return (CSI 300, AKShare)
         market_returns = _load_benchmark_returns(ldays)
         if market_returns is None or len(market_returns) < 30:
             return json.dumps(
-                {"status": "error", "message": "未获取到基准指数（000300）足够的历史数据，无法计算 Jensen Alpha。"},
+                {"status": "error", "message": "Not enough historical data for the benchmark index (000300) was obtained to calculate Jensen Alpha."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 对齐
+        # Alignment
         min_len = min(len(returns), len(market_returns))
         stock_r = returns[-min_len:]
         mkt_r = market_returns[-min_len:]
 
-        # 计算 Beta
+        # Calculate Beta
         cov = np.cov(stock_r, mkt_r)
         mkt_var = np.var(mkt_r, ddof=1)
         if mkt_var == 0:
             return json.dumps(
-                {"status": "error", "message": "基准指数方差为零，无法计算 Beta。"},
+                {"status": "error", "message": "The benchmark index variance is zero and beta cannot be calculated."},
                 ensure_ascii=False, indent=2, default=str,
             )
         beta = cov[0, 1] / mkt_var
 
-        # 年化收益率
+        # annualized rate of return
         actual_return = _annualized_return(stock_r)
         market_return = _annualized_return(mkt_r)
 
-        # CAPM 预期收益: E(R) = Rf + beta * (Rm - Rf)
+        # CAPM expected return: E(R) = Rf + beta * (Rm - Rf)
         expected_return = rf + beta * (market_return - rf)
 
         # Jensen Alpha
@@ -626,19 +626,19 @@ def get_jensen_alpha(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("Jensen Alpha 计算失败: %s", exc, exc_info=True)
+        logger.error("Jensen Alpha Calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ============================================================
-#  Tool 6: 投资组合压力测试
+#  Tool 6: Portfolio stress testing
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_portfolio_stress_test",
     name="投资组合压力测试",
-    description="对投资组合进行历史情景压力测试，模拟 2008 金融危机、2015 股灾、2020 疫情、2022 调整等极端市场情景下的影响。",
+    description="Conduct historical scenario stress tests on investment portfolios to simulate the impact of extreme market scenarios such as the 2008 financial crisis, the 2015 stock market crash, the 2020 epidemic, and the 2022 adjustment.",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -647,41 +647,41 @@ def get_jensen_alpha(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["stress_test", "scenario_analysis"],
-    when_to_use="当需要评估投资组合在极端市场条件下的潜在损失时使用。",
-    when_not_to_use="当无法获取股票当前价格或基础信息时压力测试无法进行。",
-    returns="返回 JSON，包含 current_value、scenarios（每个情景的名称、总收益率、影响金额）。",
+    when_to_use="Used when there is a need to evaluate a portfolio s potential losses under extreme market conditions.",
+    when_not_to_use="Stress testing cannot be conducted when the current price or fundamental information of the stock is not available.",
+    returns="Returns JSON containing current_value, scenarios (name of each scenario, total return, impact amount).",
     example="get_portfolio_stress_test(symbols='600519,000001,300750', weights='0.4,0.3,0.3')",
     related_tools=["get_scenario_analysis", "get_var_calculation"],
 )
 def get_portfolio_stress_test(
-    symbols: Annotated[str, "股票代码列表，用逗号分隔，如 '600519,000001,300750'"],
-    weights: Annotated[Optional[str], "权重列表，用逗号分隔，如 '0.4,0.3,0.3'，不传则等权"] = None,
+    symbols: Annotated[str, "List of stock symbols, separated by commas, such as '600519,000001,300750'"],
+    weights: Annotated[Optional[str], "List of weights, separated by commas, such as '0.4,0.3,0.3', No transfer will result in equal rights"] = None,
 ) -> str:
-    """对投资组合进行压力测试。模拟 2008 金融危机、2015 股灾、2020 疫情、2022 调整等极端情景下的影响。
+    """Stress test portfolios. Simulate the impact of extreme scenarios such as the 2008 financial crisis, the 2015 stock market crash, the 2020 epidemic, and the 2022 adjustment.
 
     Args:
-        symbols: 股票代码列表，用逗号分隔，如 "600519,000001,300750"
-        weights: 权重列表，用逗号分隔，如 "0.4,0.3,0.3"；为 None 时等权；
-            权重数量与 symbols 不一致时回退等权；权重会被归一化
+        symbols: List of stock symbols, separated by commas, such as "600519,000001,300750"
+        weights: List of weights, separated by commas, such as "0.4,0.3,0.3"; Equal weight when None;
+            When the number of weights is inconsistent with symbols, it will fall back to equal weighting; the weights will be normalized.
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            current_value: 组合当前总价值（按权重 × 价格聚合）
-            num_assets: 资产数量
-            assets: list[dict]，资产清单，元素结构——
-                — symbol: 股票代码
-                — weight: 归一化后的权重
-                — price: 当前价格（缺失时使用假设价格 100.0）
-            scenarios: list[dict]，情景结果，元素结构——
-                — name: 情景名（"2008 金融危机" / "2015 股灾" / "2020 疫情冲击" / "2022 市场调整"）
-                — description: 情景描述
-                — shock: 情景冲击幅度（如 -0.50）
-                — total_return: 组合总收益率
-                — impact: 影响金额
-                — remaining_value: 剩余价值
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            current_value: Total current value of the portfolio (by weight × price aggregation)
+            num_assets: Asset quantity
+            assets: list[dict], Asset list, element structure——
+                — symbol: Stock code
+                — weight: Normalized weight
+                — price: Current price (use an assumed price of 100.0 when missing)
+            scenarios: list[dict], Scenario results, element structure——
+                — name: scene name ("2008 financial crisis" / "2015 stock market crash" / "2020 Impact of the epidemic" / "2022 market adjustment") 
+                — description: Scenario description
+                — shock: Scenario shock magnitude (e.g. -0.50)
+                — total_return: total portfolio return
+                — impact: Impact amount
+                — remaining_value: residual value
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         warnings: list = []
@@ -689,18 +689,18 @@ def get_portfolio_stress_test(
 
         if not sym_list:
             return json.dumps(
-                {"status": "error", "message": "至少需要提供一个股票代码。"},
+                {"status": "error", "message": "At least one ticker symbol is required."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 获取当前价格和基础信息
+        # Get current prices and underlying information
         current_prices = {}
         for sym in sym_list:
             basic_info = get_stock_basic_info(sym) or {}
-            # 尝试从基础信息获取最新价格
+            # Try to get the latest price from basic information
             price = _safe_float(basic_info.get("close")) or _safe_float(basic_info.get("price")) or _safe_float(basic_info.get("latest_price"))
             if price is None:
-                # 回退：从日线获取最新收盘价
+                # Fallback: Get the latest closing price from the daily line
                 end_date = _today()
                 start_date = _days_ago(10)
                 quotes = get_stock_daily_quotes(sym, start_date, end_date, limit=5)
@@ -712,22 +712,22 @@ def get_portfolio_stress_test(
                 warnings.append(f"无法获取 {sym} 的当前价格，使用假设价格 100。")
                 current_prices[sym] = 100.0
 
-        # 计算组合当前总价值（假设每只股票持有1个单位或按权重）
-        # 使用归一化权重与价格
+        # Calculate the total current value of the portfolio (assuming each stock holds 1 unit or by weight)
+        # Use normalized weights and prices
         total_value = sum(w_list[i] * current_prices[sym_list[i]] for i in range(len(sym_list)))
 
-        # 四个历史压力情景
+        # Four historical stress scenarios
         scenarios_config = [
-            {"name": "2008 金融危机", "shock": -0.50, "description": "2008年全球金融危机，市场下跌约50%"},
-            {"name": "2015 股灾", "shock": -0.40, "description": "2015年中国股灾，市场下跌约40%"},
-            {"name": "2020 疫情冲击", "shock": -0.30, "description": "2020年新冠疫情冲击，市场下跌约30%"},
-            {"name": "2022 市场调整", "shock": -0.20, "description": "2022年市场调整，下跌约20%"},
+            {"name": "2008 金融危机", "shock": -0.50, "description": "2008 During the global financial crisis, markets fell by approx.50%"},
+            {"name": "2015 股灾", "shock": -0.40, "description": "2015 China s stock market crash in 2016, the market fell by about 40%"},
+            {"name": "2020 疫情冲击", "shock": -0.30, "description": "2020 Impacted by the COVID-19 epidemic in 2019, the market fell by approximately 30%"},
+            {"name": "2022 市场调整", "shock": -0.20, "description": "2022 The market adjusted in 2018, falling by approximately 20%"},
         ]
 
         scenario_results = []
         for sc in scenarios_config:
             shock = sc["shock"]
-            # 简化：所有资产承受相同冲击
+            # Simplification: all assets receive the same shock
             portfolio_return = shock
             impact = total_value * shock
 
@@ -756,14 +756,14 @@ def get_portfolio_stress_test(
 
 
 # ============================================================
-#  Tool 7: 情景分析
+#  Tool 7: Scenario analysis
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_scenario_analysis",
     name="情景分析",
-    description="对投资组合进行自定义情景分析，按用户指定各资产涨跌幅计算组合整体影响，返回各情景下组合市值变化、盈亏额、新权重和风险指标",
+    description="Conduct custom scenario analysis on the investment portfolio, calculate the overall impact of the portfolio based on the rise and fall of each asset specified by the user, and return changes in market value, profit and loss, new weights and risk indicators of the portfolio under each scenario",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -772,44 +772,44 @@ def get_portfolio_stress_test(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["custom_scenario_analysis", "what_if_analysis"],
-    when_to_use="当需要模拟自定义市场情景对投资组合的影响时使用。",
-    when_not_to_use="当情景 JSON 格式不正确时无法解析。",
-    returns="返回 JSON，包含 base_value、scenario_results（每个情景的名称、冲击后的总价值、总收益率、详情）。",
-    example="get_scenario_analysis(symbols='600519,000001', weights='0.5,0.5', scenarios='[{\"name\":\"牛市\",\"shocks\":{\"600519\":0.2,\"000001\":0.1}}]')",
+    when_to_use="Use when you need to simulate the impact of custom market scenarios on your portfolio.",
+    when_not_to_use="The scenario JSON cannot be parsed when it is not properly formatted.",
+    returns="Returns JSON containing base_value, scenario_results (name of each scenario, total value after shock, total return, details).",
+    example="get_scenario_analysis(symbols='600519,000001', weights='0.5,0.5', scenarios='[{\"name\":\"bull market\",\"shocks\":{\"600519\":0.2,\"000001\":0.1}}]')",
     related_tools=["get_portfolio_stress_test"],
 )
 def get_scenario_analysis(
-    symbols: Annotated[str, "股票代码列表，用逗号分隔，如 '600519,000001'"],
-    weights: Annotated[Optional[str], "权重列表，用逗号分隔，如 '0.5,0.5'，不传则等权"] = None,
-    scenarios: Annotated[str, "情景 JSON 字符串，格式为 [{\"name\": \"情景名\", \"shocks\": {\"600519\": -0.1, \"000001\": 0.05}}]"] = "[]",
+    symbols: Annotated[str, "List of stock symbols, separated by commas, such as '600519,000001'"],
+    weights: Annotated[Optional[str], "List of weights, separated by commas, such as '0.5,0.5', No transfer will result in equal rights"] = None,
+    scenarios: Annotated[str, "Scenario JSON string in the format [{\"name\": \"scene name\", \"shocks\": {\"600519\": -0.1, \"000001\": 0.05}}]"] = "[]",
 ) -> str:
-    """对投资组合进行自定义情景分析。按用户指定的各资产涨跌幅计算组合整体影响。
+    """Perform custom scenario analysis on your portfolio. The overall impact of the portfolio is calculated based on the rise and fall of each asset specified by the user.
 
     Args:
-        symbols: 股票代码列表，用逗号分隔，如 "600519,000001"
-        weights: 权重列表，用逗号分隔，如 "0.5,0.5"；为 None 时等权；权重会被归一化
-        scenarios: 情景 JSON 字符串，默认 "[]"；
-            格式为 [{"name": "情景名", "shocks": {"600519": -0.1, "000001": 0.05}}]
+        symbols: List of stock symbols, separated by commas, such as "600519,000001"
+        weights: List of weights, separated by commas, such as "0.5,0.5"; Equal weight when None; weights will be normalized
+        scenarios: Context JSON string, default "[]"; 
+            The format is [{"name": "scene name", "shocks": {"600519": -0.1, "000001": 0.05}}]
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            base_value: 组合基础总价值
-            num_assets: 资产数量
-            num_scenarios: 解析得到的情景数
-            scenario_results: list[dict]，情景结果，元素结构——
-                — name: 情景名
-                — total_return: 组合总收益率
-                — post_value: 冲击后组合总价值
-                — impact: 影响金额
-                — asset_details: list[dict]，资产明细，元素结构——
-                    — symbol: 股票代码
-                    — weight: 权重
-                    — shock: 该资产的冲击幅度
-                    — contribution: 对组合收益的贡献
-                    — value_change: 资产价值变化
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            base_value: Portfolio base total value
+            num_assets: Asset quantity
+            num_scenarios: The number of scenarios obtained by analysis
+            scenario_results: list[dict], Scenario results, element structure——
+                — name: scene name
+                — total_return: total portfolio return
+                — post_value: Total post-shock portfolio value
+                — impact: Impact amount
+                — asset_details: list[dict], Asset details, element structure——
+                    — symbol: Stock code
+                    — weight: weight
+                    — shock: The magnitude of the asset s impact
+                    — contribution: Contribution to portfolio returns
+                    — value_change: Change in asset value
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         warnings: list = []
@@ -817,11 +817,11 @@ def get_scenario_analysis(
 
         if not sym_list:
             return json.dumps(
-                {"status": "error", "message": "至少需要提供一个股票代码。"},
+                {"status": "error", "message": "At least one ticker symbol is required."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 获取当前价格
+        # Get current price
         current_prices = {}
         for sym in sym_list:
             basic_info = get_stock_basic_info(sym) or {}
@@ -840,14 +840,14 @@ def get_scenario_analysis(
 
         base_value = sum(w_list[i] * current_prices[sym_list[i]] for i in range(len(sym_list)))
 
-        # 解析情景
+        # Analyze the situation
         try:
             parsed_scenarios = json.loads(str(scenarios))
             if not isinstance(parsed_scenarios, list):
                 parsed_scenarios = [parsed_scenarios]
         except (json.JSONDecodeError, TypeError):
             return json.dumps(
-                {"status": "error", "message": "情景 JSON 格式不正确，请提供有效的 JSON 数组。"},
+                {"status": "error", "message": "Scenario JSON is not in the correct format, please provide a valid JSON array."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
@@ -898,14 +898,14 @@ def get_scenario_analysis(
 
 
 # ============================================================
-#  Tool 8: Brinson 归因
+#  Tool 8: Brinson attribution
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_brinson_attribution",
     name="Brinson 归因分析",
-    description="使用 Brinson 模型对投资组合进行绩效归因，分解超额收益来源，返回配置效应、选股效应、交互效应、各行业贡献和超额收益分解",
+    description="Use the Brinson model to perform performance attribution on the portfolio, decompose the sources of excess returns, and return allocation effects, stock selection effects, interaction effects, industry contributions, and excess return decompositions",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -914,41 +914,41 @@ def get_scenario_analysis(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["brinson_attribution", "performance_decomposition"],
-    when_to_use="当需要分析投资组合超额收益的来源，区分配置决策和选股决策的贡献时使用。",
-    when_not_to_use="当数据不足或行业分类信息不可用时归因结果可能不完整。",
-    returns="返回 JSON，包含 allocation_effect、selection_effect、interaction_effect、total_excess_return。",
+    when_to_use="It is used when it is necessary to analyze the sources of excess returns of a portfolio and distinguish the contributions of allocation decisions and stock selection decisions.",
+    when_not_to_use="Attribution results may be incomplete when insufficient data or industry classification information is unavailable.",
+    returns="Returns JSON, including allocation_effect, selection_effect, interaction_effect, total_excess_return.",
     example="get_brinson_attribution(symbols='600519,000001,300750', benchmark_symbols='000300,399001,399006')",
     related_tools=["get_sector_attribution", "get_factor_attribution"],
 )
 def get_brinson_attribution(
-    symbols: Annotated[str, "投资组合股票代码列表，用逗号分隔，如 '600519,000001,300750'"],
-    benchmark_symbols: Annotated[str, "基准指数代码列表，用逗号分隔，默认 '000300,399001,399006'（沪深300、深证成指、创业板指）"] = "000300,399001,399006",
+    symbols: Annotated[str, "List of portfolio ticker symbols, separated by commas, e.g. '600519,000001,300750'"],
+    benchmark_symbols: Annotated[str, "List of benchmark index codes, comma separated, default '000300,399001,399006' (CSI 300, Shenzhen Component Index, GEM Index)"] = "000300,399001,399006",
 ) -> str:
-    """对投资组合进行 Brinson 绩效归因。将超额收益分解为配置效应、选股效应和交互效应。
+    """Perform Brinson performance attribution on portfolios. Decompose excess returns into allocation effects, stock selection effects and interaction effects.
 
     Args:
-        symbols: 投资组合股票代码列表，用逗号分隔，如 "600519,000001,300750"
-        benchmark_symbols: 基准指数代码列表，用逗号分隔，默认 "000300,399001,399006"
-            （沪深300、深证成指、创业板指）
+        symbols: List of portfolio ticker symbols, separated by commas, e.g. "600519,000001,300750"
+        benchmark_symbols: List of benchmark index codes, comma separated, default "000300,399001,399006"
+             (CSI 300, Shenzhen Component Index, GEM Index)
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            allocation_effect: 配置效应
-            selection_effect: 选股效应
-            interaction_effect: 交互效应
-            total_excess_return: 总超额收益（组合 - 基准）
-            portfolio_return: 组合年化收益
-            benchmark_return: 基准年化收益
-            portfolio_assets: list[str]，组合股票代码列表
-            benchmark_assets: list[str]，基准指数代码列表
-            industry_breakdown: dict，行业分解——
-                — portfolio: dict[str, dict]，组合各行业——
-                    — <行业名>: {weight: 权重, return: 行业收益}
-                — benchmark: dict[str, dict]，基准各行业——
-                    — <行业名>: {weight: 权重, return: 行业收益}
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            allocation_effect: allocation effect
+            selection_effect: stock picking effect
+            interaction_effect: interaction effect
+            total_excess_return: Total excess return (portfolio - benchmark)
+            portfolio_return: Portfolio annualized return
+            benchmark_return: Base annualized return
+            portfolio_assets: list[str], Combined stock code list
+            benchmark_assets: list[str], Benchmark Index Code List
+            industry_breakdown: dict, Industry breakdown——
+                — portfolio: dict[str, dict], Combine various industries——
+                    — <Industry name>: {weight: weight, return: Industry income}
+                — benchmark: dict[str, dict], Benchmark various industries——
+                    — <Industry name>: {weight: weight, return: Industry income}
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         warnings: list = []
@@ -957,7 +957,7 @@ def get_brinson_attribution(
 
         if not sym_list:
             return json.dumps(
-                {"status": "error", "message": "至少需要提供一个投资组合股票代码。"},
+                {"status": "error", "message": "At least one portfolio ticker is required."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
@@ -968,7 +968,7 @@ def get_brinson_attribution(
         end_date = _today()
         start_date = _days_ago(ldays * 2 + 50)
 
-        # 获取组合中各股票的行业分类和收益率
+        # Get the industry classification and return rate of each stock in the portfolio
         portfolio_sectors = {}
         portfolio_returns = {}
         for sym in sym_list:
@@ -990,12 +990,12 @@ def get_brinson_attribution(
                     portfolio_returns[sym] = float(np.mean(df["return"].values) * 252)
                 else:
                     portfolio_returns[sym] = 0.0
-                    warnings.append(f"{sym} 数据不足，收益率设为 0。")
+                    warnings.append(f"{sym} Insufficient data, return rate set to 0.")
             else:
                 portfolio_returns[sym] = 0.0
                 warnings.append(f"无法获取 {sym} 的日线数据，收益率设为 0。")
 
-        # 获取基准指数的行业分类和收益率
+        # Get the industry classification and return rate of the benchmark index
         benchmark_sectors = {}
         benchmark_returns = {}
         for bench in bench_list:
@@ -1020,22 +1020,22 @@ def get_brinson_attribution(
             else:
                 benchmark_returns[bench] = 0.0
 
-        # 简化版 Brinson 归因
-        # 等权假设
+        # Simplified Brinson Attribution
+        # Equal weight assumption
         port_weight = 1.0 / len(sym_list)
         bench_weight = 1.0 / len(bench_list)
 
-        # 组合总收益率
+        # total portfolio return
         port_total_return = sum(portfolio_returns.get(sym, 0.0) for sym in sym_list) / len(sym_list)
-        # 基准总收益率
+        # Benchmark total return
         bench_total_return = sum(benchmark_returns.get(b, 0.0) for b in bench_list) / len(bench_list)
 
-        # 配置效应: 各行业配置权重差异 * 基准行业收益率
+        # allocation effect: Differences in allocation weights across industries * Benchmark industry returns
         allocation_effect = 0.0
         selection_effect = 0.0
         interaction_effect = 0.0
 
-        # 按行业分组
+        # Group by industry
         port_industry_weights = {}
         port_industry_returns = {}
         for sym in sym_list:
@@ -1082,19 +1082,19 @@ def get_brinson_attribution(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("Brinson 归因分析失败: %s", exc, exc_info=True)
+        logger.error("Brinson Attribution analysis failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 # ============================================================
-#  Tool 9: 行业归因
+#  Tool 9: Industry attribution
 # ============================================================
 
 @tool
 @register_tool(
     tool_id="get_sector_attribution",
     name="行业归因分析",
-    description="对投资组合中各股票按行业分类计算收益贡献，返回各行业权重、收益率、贡献占比、资产数量及明细列表等结构化归因报告",
+    description="Calculate the income contribution of each stock in the investment portfolio by industry classification, and return structured attribution reports such as industry weight, rate of return, contribution proportion, asset quantity and detailed list",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -1103,38 +1103,38 @@ def get_brinson_attribution(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["sector_attribution", "industry_contribution"],
-    when_to_use="当需要分析投资组合中各行业对总收益的贡献度时使用。",
-    when_not_to_use="当无法获取股票的行业分类信息时归因无法完成。",
-    returns="返回 JSON，包含 sector_contributions 列表（每个行业的名称、权重、收益率、贡献度）。",
+    when_to_use="Used when it is necessary to analyze the contribution of each industry in the portfolio to total returns.",
+    when_not_to_use="Attribution cannot be completed when the industry classification information of the stock cannot be obtained.",
+    returns="Returns JSON, containing a list of sector_contributions (name, weight, rate of return, contribution of each industry).",
     example="get_sector_attribution(symbols='600519,000001,300750,002415,601318')",
     related_tools=["get_brinson_attribution", "get_factor_attribution"],
 )
 def get_sector_attribution(
-    symbols: Annotated[str, "股票代码列表，用逗号分隔，如 '600519,000001,300750'"],
+    symbols: Annotated[str, "List of stock symbols, separated by commas, such as '600519,000001,300750'"],
 ) -> str:
-    """对投资组合进行行业归因分析。按行业分类计算各行业对组合总收益的贡献度。
+    """Conduct industry attribution analysis on portfolios. Calculate the contribution of each industry to the total return of the portfolio by industry classification.
 
     Args:
-        symbols: 股票代码列表，用逗号分隔，如 "600519,000001,300750"
+        symbols: List of stock symbols, separated by commas, such as "600519,000001,300750"
 
     Returns:
-        str: JSON 字符串，字段说明——
+        str: JSON String, field description——
             status: "success" | "error"
-            portfolio_return: 组合年化收益
-            num_sectors: 行业数量
-            num_assets: 资产数量
-            sector_contributions: list[dict]，按行业收益降序排列，元素结构——
-                — sector: 行业名
-                — weight: 行业权重
-                — return: 行业加权收益
-                — contribution_pct: 收益贡献百分比
-                — num_assets: 该行业资产数
-                — assets: list[dict]，该行业资产清单——
-                    — symbol: 股票代码
-                    — return: 年化收益
-                    — weight: 权重
-            warnings: list[str]，过程中产生的告警信息
-            message: 当 status 为 "error" 时的错误描述
+            portfolio_return: Portfolio annualized return
+            num_sectors: Number of industries
+            num_assets: Asset quantity
+            sector_contributions: list[dict], Arranged in descending order by industry revenue, element structure——
+                — sector: Industry name
+                — weight: Industry weight
+                — return: Industry Weighted Returns
+                — contribution_pct: Revenue contribution percentage
+                — num_assets: Number of assets in the industry
+                — assets: list[dict], List of assets in the industry——
+                    — symbol: Stock code
+                    — return: annualized income
+                    — weight: weight
+            warnings: list[str], Alarm information generated during the process
+            message: When status is "error" error description when
     """
     try:
         warnings: list = []
@@ -1142,7 +1142,7 @@ def get_sector_attribution(
 
         if not sym_list:
             return json.dumps(
-                {"status": "error", "message": "至少需要提供一个股票代码。"},
+                {"status": "error", "message": "At least one ticker symbol is required."},
                 ensure_ascii=False, indent=2, default=str,
             )
 
@@ -1150,7 +1150,7 @@ def get_sector_attribution(
         end_date = _today()
         start_date = _days_ago(ldays * 2 + 50)
 
-        # 获取每个股票的行业信息和收益率
+        # Get industry information and returns for each stock
         sector_data = {}  # sector -> {total_return, weight, symbols}
         total_weight = 1.0 / len(sym_list)
 
@@ -1160,7 +1160,7 @@ def get_sector_attribution(
             if industry in ("None", "", "未知"):
                 industry = "未知"
 
-            # 获取收益率
+            # Get rate of return
             quotes = get_stock_daily_quotes(sym, start_date, end_date, limit=ldays + 50)
             stock_return = 0.0
             if quotes:
@@ -1173,7 +1173,7 @@ def get_sector_attribution(
                 if len(df) >= 20:
                     stock_return = float(np.mean(df["return"].values) * 252)
                 else:
-                    warnings.append(f"{sym} 数据不足，收益率设为 0。")
+                    warnings.append(f"{sym} Insufficient data, return rate set to 0.")
             else:
                 warnings.append(f"无法获取 {sym} 的日线数据，收益率设为 0。")
 

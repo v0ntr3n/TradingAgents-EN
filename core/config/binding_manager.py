@@ -1,8 +1,8 @@
 """
-绑定管理器
+binding manager
 
-管理工具-Agent、Agent-工作流之间的绑定关系
-支持从数据库和代码配置两种方式加载
+The binding relationship between management tool-Agent and Agent-workflow
+Supports loading from database and code configuration
 """
 
 import logging
@@ -25,14 +25,14 @@ LEGACY_AGENT_TOOL_REWRITES = {
 
 class BindingManager:
     """
-    统一绑定管理器
+    Unified binding manager
     
-    管理：
-    1. 工具 -> Agent 的绑定
-    2. Agent -> 工作流的绑定
-    3. Agent 的 IO 定义
+    Management:
+    1. Tools -> Agent binding
+    2. Agent -> Workflow binding
+    3. Agent IO definition of
     
-    优先级：数据库配置 > 代码配置
+    Priority: Database Configuration > Code configuration
     """
     
     _instance = None
@@ -53,84 +53,84 @@ class BindingManager:
             "agent_workflow": {},  # workflow_id -> [agent_id, ...]
             "agent_io": {},        # agent_id -> AgentIODefinition
         }
-        self._cache_ttl = 300  # 5分钟缓存
+        self._cache_ttl = 300  # 5 minutes cache
         self._cache_time = {}
         self._initialized = True
     
     def set_database(self, db):
-        """设置数据库连接"""
+        """Set up database connection"""
         self._db = db
         self._clear_cache()
     
     def _clear_cache(self):
-        """清空缓存"""
+        """Clear cache"""
         for key in self._cache:
             self._cache[key] = {}
         self._cache_time = {}
     
     def _is_cache_valid(self, cache_key: str) -> bool:
-        """检查缓存是否有效"""
+        """Check if cache is valid"""
         if cache_key not in self._cache_time:
             return False
         elapsed = (datetime.utcnow() - self._cache_time[cache_key]).total_seconds()
         return elapsed < self._cache_ttl
     
-    # ==================== 工具-Agent 绑定 ====================
+    # ==================== Tool-Agent Binding ====================
     
     def get_tools_for_agent(self, agent_id: str) -> List[str]:
         """
-        获取 Agent 绑定的工具列表
+        Get the list of tools bound to the Agent
 
         Args:
             agent_id: Agent ID
 
         Returns:
-            工具ID列表
+            Tool ID list
         """
-        logger.info(f"🔍 [BindingManager] 查询 {agent_id} 的工具绑定...")
+        logger.info(f"🔍 [BindingManager] Query {agent_id} tool binding...")
 
         cache_key = f"tool_agent:{agent_id}"
 
-        # 检查缓存
+        # Check cache
         if agent_id in self._cache["tool_agent"] and self._is_cache_valid(cache_key):
             cached_tools = self._cache["tool_agent"][agent_id]
-            logger.info(f"📦 [BindingManager] 从缓存获取 {agent_id} 工具: {cached_tools}")
+            logger.info(f"📦 [BindingManager] Get from cache {agent_id} Tools: {cached_tools}")
             return cached_tools
 
         tool_ids = []
 
-        # 从数据库加载
+        # Load from database
         if self._db is not None:
             try:
-                logger.info(f"🔍 [BindingManager] 查询数据库 tool_agent_bindings 集合...")
+                logger.info(f"🔍 [BindingManager] Query the database tool_agent_bindings collection...")
                 bindings = list(self._db.tool_agent_bindings.find(
                     {"agent_id": agent_id, "is_active": {"$ne": False}},
                     sort=[("priority", -1)]
                 ))
                 tool_ids = [b["tool_id"] for b in bindings]
-                logger.info(f"📦 [BindingManager] 数据库查询结果: {len(bindings)} 条绑定, 工具: {tool_ids}")
+                logger.info(f"📦 [BindingManager] Database query results: {len(bindings)} strip binding, Tools: {tool_ids}")
             except Exception as e:
-                logger.warning(f"从数据库加载工具绑定失败: {e}")
+                logger.warning(f"Loading tool binding from database failed: {e}")
         else:
-            logger.warning(f"⚠️ [BindingManager] 数据库未连接")
+            logger.warning(f"⚠️ [BindingManager] Database not connected")
 
-        # 如果数据库没有，从代码配置加载
+        # If the database does not exist, load it from the code configuration
         if not tool_ids:
-            logger.info(f"🔍 [BindingManager] 数据库无结果，尝试从代码配置加载...")
+            logger.info(f"🔍 [BindingManager] No results in database, try loading from code configuration...")
             tool_ids = self._get_default_tools_for_agent(agent_id)
-            logger.info(f"📦 [BindingManager] 代码配置结果: {tool_ids}")
+            logger.info(f"📦 [BindingManager] Code configuration results: {tool_ids}")
 
         tool_ids = self._normalize_tool_ids(agent_id, tool_ids)
 
-        # 更新缓存
+        # Update cache
         self._cache["tool_agent"][agent_id] = tool_ids
         self._cache_time[cache_key] = datetime.utcnow()
 
-        logger.info(f"✅ [BindingManager] {agent_id} 最终工具列表: {tool_ids}")
+        logger.info(f"✅ [BindingManager] {agent_id} The ultimate tool list: {tool_ids}")
         return tool_ids
 
     def _normalize_tool_ids(self, agent_id: str, tool_ids: List[str]) -> List[str]:
-        """归一化工具列表，过滤脏数据并兼容旧绑定。"""
+        """Normalize tool list, filter dirty data and be compatible with old bindings."""
         normalized_tools: List[str] = []
         seen_tools = set()
         invalid_tools: List[str] = []
@@ -141,7 +141,7 @@ class BindingManager:
 
             registry = ToolRegistry()
         except Exception as exc:
-            logger.warning(f"⚠️ [BindingManager] 初始化工具注册表失败，跳过工具有效性校验: {exc}")
+            logger.warning(f"⚠️ [BindingManager] Failed to initialize tool registry, skipping tool validity verification: {exc}")
 
         for tool_id in tool_ids:
             if not tool_id or tool_id in seen_tools:
@@ -156,7 +156,7 @@ class BindingManager:
 
         if invalid_tools:
             logger.warning(
-                f"⚠️ [BindingManager] {agent_id} 检测到无效工具绑定，已自动忽略: {invalid_tools}"
+                f"⚠️ [BindingManager] {agent_id} Invalid tool binding detected, automatically ignored: {invalid_tools}"
             )
 
         rewrite_rule = LEGACY_AGENT_TOOL_REWRITES.get(agent_id)
@@ -176,7 +176,7 @@ class BindingManager:
 
         if removed_tools:
             logger.info(
-                f"🔄 [BindingManager] {agent_id} 检测到旧工具绑定，已替换为新工具流程: {removed_tools}"
+                f"🔄 [BindingManager] {agent_id} Old tool binding detected, replaced with new tool flow: {removed_tools}"
             )
 
         added_tools = []
@@ -185,19 +185,19 @@ class BindingManager:
                 continue
             if registry is not None and not registry.has_tool(required_tool):
                 logger.warning(
-                    f"⚠️ [BindingManager] {agent_id} 需要的工具未注册，无法自动补齐: {required_tool}"
+                    f"⚠️ [BindingManager] {agent_id} The required tools are not registered and cannot be automatically completed.: {required_tool}"
                 )
                 continue
             normalized_tools.append(required_tool)
             added_tools.append(required_tool)
 
         if added_tools:
-            logger.info(f"✅ [BindingManager] {agent_id} 自动补齐工具: {added_tools}")
+            logger.info(f"✅ [BindingManager] {agent_id} Autocomplete tool: {added_tools}")
 
         return normalized_tools
     
     def _get_default_tools_for_agent(self, agent_id: str) -> List[str]:
-        """从代码配置获取默认工具列表"""
+        """Get default tools list from code configuration"""
         from core.agents.config import BUILTIN_AGENTS
 
         if agent_id in BUILTIN_AGENTS:
@@ -207,18 +207,18 @@ class BindingManager:
     
     def bind_tool(self, agent_id: str, tool_id: str, priority: int = 0) -> bool:
         """
-        绑定工具到 Agent
+        bind tool to Agent
         
         Args:
             agent_id: Agent ID
-            tool_id: 工具 ID
-            priority: 优先级（越大越优先）
+            tool_id: Tools ID
+            priority: Priority (the bigger the priority)
             
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接，无法绑定工具")
+            logger.error("The database is not connected and the tool cannot be bound.")
             return False
         
         try:
@@ -239,7 +239,7 @@ class BindingManager:
                 upsert=True
             )
             
-            # 清除缓存
+            # clear cache
             cache_key = f"tool_agent:{agent_id}"
             if agent_id in self._cache["tool_agent"]:
                 del self._cache["tool_agent"][agent_id]
@@ -248,11 +248,11 @@ class BindingManager:
             
             return True
         except Exception as e:
-            logger.error(f"绑定工具失败: {e}")
+            logger.error(f"Binding tool failed: {e}")
             return False
     
     def unbind_tool(self, agent_id: str, tool_id: str) -> bool:
-        """解绑工具"""
+        """Unbundling tool"""
         if self._db is None:
             return False
 
@@ -262,26 +262,26 @@ class BindingManager:
                 {"$set": {"is_active": False, "updated_at": datetime.utcnow().isoformat()}}
             )
 
-            # 清除缓存
+            # clear cache
             if agent_id in self._cache["tool_agent"]:
                 del self._cache["tool_agent"][agent_id]
 
             return True
         except Exception as e:
-            logger.error(f"解绑工具失败: {e}")
+            logger.error(f"Failed to unbind tool: {e}")
             return False
 
-    # ==================== Agent-工作流绑定 ====================
+    # ==================== Agent-Workflow binding ====================
 
     def get_agents_for_workflow(self, workflow_id: str) -> List[str]:
         """
-        获取工作流包含的 Agent 列表
+        Get the list of Agents included in the workflow
 
         Args:
-            workflow_id: 工作流 ID
+            workflow_id: Workflow ID
 
         Returns:
-            Agent ID 列表（按顺序）
+            Agent ID List (in order)
         """
         cache_key = f"agent_workflow:{workflow_id}"
 
@@ -298,18 +298,18 @@ class BindingManager:
                 ))
                 agent_ids = [b["agent_id"] for b in bindings]
             except Exception as e:
-                logger.warning(f"从数据库加载Agent绑定失败: {e}")
+                logger.warning(f"Failed to load Agent binding from database: {e}")
 
-        # 更新缓存
+        # Update cache
         self._cache["agent_workflow"][workflow_id] = agent_ids
         self._cache_time[cache_key] = datetime.utcnow()
 
         return agent_ids
 
     def bind_agent(self, workflow_id: str, agent_id: str, order: int = 0) -> bool:
-        """绑定 Agent 到工作流"""
+        """Bind Agent to Workflow"""
         if self._db is None:
-            logger.error("数据库未连接，无法绑定Agent")
+            logger.error("The database is not connected and cannot be bound.Agent")
             return False
 
         try:
@@ -335,10 +335,10 @@ class BindingManager:
 
             return True
         except Exception as e:
-            logger.error(f"绑定Agent失败: {e}")
+            logger.error(f"Failed to bind Agent: {e}")
             return False
 
-    # ==================== 节点级别工具绑定（三层优先级）====================
+    # ==================== Node level tool binding (three levels of priority)====================
 
     def get_tools_for_node(
         self,
@@ -347,20 +347,20 @@ class BindingManager:
         node_id: Optional[str] = None,
     ) -> List[str]:
         """
-        获取指定节点的工具列表（三层优先级）
+        Get the tool list of the specified node (three-level priority)
 
-        优先级：
-        1. 节点级别 (workflow_id + node_id + agent_id)  ← 最高优先级
-        2. 工作流级别 (workflow_id + agent_id, 无 node_id)
-        3. Agent 默认 (agent_id only)                   ← 保底
+        Priority:
+        1. node level (workflow_id + node_id + agent_id)  ← highest priority
+        2. Workflow level (workflow_id + agent_id, None node_id)
+        3. Agent Default (agent_id only)                   ← Guaranteed
 
         Args:
             agent_id: Agent ID
-            workflow_id: 工作流 ID（可选）
-            node_id: 节点 ID（可选）
+            workflow_id: Workflow ID (optional)
+            node_id: Node ID (optional)
 
         Returns:
-            工具ID列表
+            Tool ID list
         """
         logger.info(
             f"🔍 [BindingManager] get_tools_for_node: agent={agent_id}, "
@@ -381,10 +381,10 @@ class BindingManager:
                 ))
                 if bindings:
                     tool_ids = [b["tool_id"] for b in bindings]
-                    logger.info(f"✅ [BindingManager] 节点级别工具 ({node_id}): {tool_ids}")
+                    logger.info(f"✅ [BindingManager] Node level tools ({node_id}): {tool_ids}")
                     return tool_ids
             except Exception as e:
-                logger.warning(f"查询节点级别工具绑定失败: {e}")
+                logger.warning(f"Query node level tool binding failed: {e}")
 
         # Priority 2: Workflow-specific bindings (no node_id)
         if workflow_id and self._db is not None:
@@ -400,13 +400,13 @@ class BindingManager:
                 ))
                 if bindings:
                     tool_ids = [b["tool_id"] for b in bindings]
-                    logger.info(f"✅ [BindingManager] 工作流级别工具 ({workflow_id}): {tool_ids}")
+                    logger.info(f"✅ [BindingManager] Workflow level tools ({workflow_id}): {tool_ids}")
                     return tool_ids
             except Exception as e:
-                logger.warning(f"查询工作流级别工具绑定失败: {e}")
+                logger.warning(f"Query workflow level tool binding failed: {e}")
 
         # Priority 3: Agent-level default
-        logger.info(f"🔍 [BindingManager] 回落到 Agent 默认工具: {agent_id}")
+        logger.info(f"🔍 [BindingManager] Fall back to Agent default tool: {agent_id}")
         return self.get_tools_for_agent(agent_id)
 
     def bind_tool_for_node(
@@ -419,21 +419,21 @@ class BindingManager:
         is_active: bool = True,
     ) -> bool:
         """
-        在节点级别绑定工具到 Agent
+        At the node level bind tools to Agent
 
         Args:
             agent_id: Agent ID
-            tool_id: 工具 ID
-            workflow_id: 工作流 ID
-            node_id: 节点 ID
-            priority: 优先级（越大越优先）
-            is_active: 是否激活（False 表示草稿状态）
+            tool_id: Tools ID
+            workflow_id: Workflow ID
+            node_id: node ID
+            priority: Priority (the bigger the priority)
+            is_active: Whether to activate (False indicates draft status)
 
         Returns:
-            是否成功
+            Is it successful?
         """
         if self._db is None:
-            logger.error("数据库未连接，无法绑定节点级工具")
+            logger.error("The database is not connected and node-level tools cannot be bound.")
             return False
 
         try:
@@ -461,32 +461,32 @@ class BindingManager:
                 upsert=True,
             )
             logger.info(
-                f"✅ [BindingManager] 节点级工具绑定成功: "
+                f"✅ [BindingManager] Node-level tool binding successful: "
                 f"{tool_id} → {agent_id} (workflow={workflow_id}, node={node_id})"
             )
             return True
         except Exception as e:
-            logger.error(f"节点级别绑定工具失败: {e}")
+            logger.error(f"Node level binding tool failed: {e}")
             return False
 
-    # ==================== 工作流级别工具覆盖 ====================
+    # ==================== Workflow level tool coverage ====================
 
     def get_tools_for_workflow_agent(
         self, workflow_id: str, agent_id: str
     ) -> List[str]:
         """
-        获取工作流中特定 Agent 的工具列表
+        Get the tool list for a specific Agent in the workflow
 
-        优先级：工作流级别覆盖 > Agent 默认绑定
+        Priority: Workflow level override > Agent Default binding
 
         Args:
-            workflow_id: 工作流 ID
+            workflow_id: Workflow ID
             agent_id: Agent ID
 
         Returns:
-            工具 ID 列表
+            Tool ID list
         """
-        # 先检查工作流级别的覆盖
+        # Check workflow level coverage first
         if self._db is not None:
             try:
                 override = self._db.agent_workflow_bindings.find_one(
@@ -495,22 +495,22 @@ class BindingManager:
                 if override and override.get("tool_overrides"):
                     return override["tool_overrides"]
             except Exception as e:
-                logger.warning(f"获取工作流工具覆盖失败: {e}")
+                logger.warning(f"Failed to get workflow tool coverage: {e}")
 
-        # 回退到 Agent 默认绑定
+        # Fallback to Agent default binding
         return self.get_tools_for_agent(agent_id)
 
-    # ==================== Agent IO 定义 ====================
+    # ==================== Agent IO definition ====================
 
     def get_agent_io_definition(self, agent_id: str) -> Optional[Dict[str, Any]]:
         """
-        获取 Agent 的输入输出定义
+        Get the input and output definitions of the Agent
 
         Args:
             agent_id: Agent ID
 
         Returns:
-            IO 定义字典，包含 inputs, outputs, reads_from
+            IO Definition dictionary, containing inputs, outputs, reads_from
         """
         cache_key = f"agent_io:{agent_id}"
 
@@ -519,15 +519,15 @@ class BindingManager:
 
         io_def = None
 
-        # 从数据库加载
+        # Load from database
         if self._db is not None:
             try:
                 io_def = self._db.agent_io_definitions.find_one({"agent_id": agent_id})
             except Exception as e:
-                logger.warning(f"从数据库加载IO定义失败: {e}")
+                logger.warning(f"Loading IO definition from database failed: {e}")
 
-        # 🔥 从 agent_configs 兜底加载（Agent 工坊发布的动态 Agent）
-        # 工坊 Agent 的 inputs/outputs 存在 agent_configs 中，但可能未同步到 agent_io_definitions
+        # 🔥 Load from agent_configs (dynamic Agent released by Agent Workshop)
+        # The inputs/outputs of the workshop Agent exist in agent_configs, but may not be synchronized to agent_io_definitions
         if io_def is None and self._db is not None:
             try:
                 agent_doc = self._db.agent_configs.find_one(
@@ -535,14 +535,14 @@ class BindingManager:
                     {"inputs": 1, "outputs": 1, "workflow_stage": 1, "output_field": 1},
                 )
                 if agent_doc and (agent_doc.get("inputs") or agent_doc.get("outputs")):
-                    # 🔑 关键修复：用 output_field 覆盖 outputs 的字段名
-                    # Agent 实际写入 state 的 key 是 output_field（如 "valuation_report"），
-                    # 而不是 outputs 里的 name（如 "valuation_analysis_report"）。
-                    # 如果两者不一致，LangGraph 会因为字段名不匹配而丢弃 Agent 的输出。
+                    # 🔑 Critical fix: override the field name of outputs with output_field
+                    # Agent The key actually written to state is output_field (such as "valuation_report") , 
+                    # Instead of the name in outputs (such as "valuation_analysis_report") . 
+                    # If the two are inconsistent, LangGraph will discard the Agent's output because the field names do not match.
                     output_field = agent_doc.get("output_field")
                     outputs = list(agent_doc.get("outputs") or [])
                     if output_field and outputs:
-                        # 把所有 outputs 的 name 统一为 output_field
+                        # Unify the names of all outputs to output_field
                         for out_item in outputs:
                             if isinstance(out_item, dict):
                                 out_item["name"] = output_field
@@ -552,15 +552,15 @@ class BindingManager:
                         "outputs": outputs,
                         "reads_from": [],
                     }
-                    logger.info(f"从 agent_configs 兜底加载 IO 定义: {agent_id} (output_field={output_field})")
+                    logger.info(f"Load IO definitions from agent_configs: {agent_id} (output_field={output_field})")
             except Exception as e:
-                logger.warning(f"从 agent_configs 兜底加载 IO 定义失败: {e}")
+                logger.warning(f"Failed to load IO definition from agent_configs: {e}")
 
-        # 从代码配置加载
+        # Load from code configuration
         if io_def is None:
             io_def = self._get_default_io_definition(agent_id)
 
-        # 更新缓存
+        # Update cache
         if io_def:
             self._cache["agent_io"][agent_id] = io_def
             self._cache_time[cache_key] = datetime.utcnow()
@@ -568,12 +568,12 @@ class BindingManager:
         return io_def
 
     def _get_default_io_definition(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """从代码配置获取默认 IO 定义"""
+        """Get default IO definitions from code configuration"""
         from core.agents.config import BUILTIN_AGENTS
 
         if agent_id in BUILTIN_AGENTS:
             agent = BUILTIN_AGENTS[agent_id]
-            # 将 Pydantic 模型转换为字典
+            # Convert Pydantic model to dictionary
             inputs = [inp.model_dump() for inp in agent.inputs] if hasattr(agent, 'inputs') else []
             outputs = [out.model_dump() for out in agent.outputs] if hasattr(agent, 'outputs') else []
             reads_from = agent.reads_from if hasattr(agent, 'reads_from') else []
@@ -587,14 +587,14 @@ class BindingManager:
         return None
 
     def save_agent_io_definition(self, io_def: Dict[str, Any]) -> bool:
-        """保存 Agent IO 定义到数据库"""
+        """Save Agent IO definition to database"""
         if self._db is None:
-            logger.error("数据库未连接")
+            logger.error("Database not connected")
             return False
 
         agent_id = io_def.get("agent_id")
         if not agent_id:
-            logger.error("IO定义缺少agent_id")
+            logger.error("IO definition missing agent_id")
             return False
 
         try:
@@ -608,28 +608,28 @@ class BindingManager:
                 upsert=True
             )
 
-            # 清除缓存
+            # clear cache
             if agent_id in self._cache["agent_io"]:
                 del self._cache["agent_io"][agent_id]
 
             return True
         except Exception as e:
-            logger.error(f"保存IO定义失败: {e}")
+            logger.error(f"Failed to save IO definition: {e}")
             return False
 
-    # ==================== 批量操作 ====================
+    # ==================== Batch operations ====================
 
     def get_all_agent_io_definitions(self) -> List[Dict[str, Any]]:
-        """获取所有 Agent 的 IO 定义"""
+        """Get the IO definitions of all Agents"""
         result = []
 
         if self._db is not None:
             try:
                 result = list(self._db.agent_io_definitions.find({}))
             except Exception as e:
-                logger.warning(f"获取所有IO定义失败: {e}")
+                logger.warning(f"Failed to get all IO definitions: {e}")
 
-        # 合并代码配置中的定义
+        # Merge definitions in code configuration
         from core.agents.config import BUILTIN_AGENTS
         db_agent_ids = {r["agent_id"] for r in result}
 

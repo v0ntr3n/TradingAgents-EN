@@ -1,191 +1,191 @@
 #!/usr/bin/env python3
 """
-Agent Utils Tushare修复验证测试
-验证agent_utils中的函数已成功从TDX迁移到Tushare统一接口
+Agent Utils Tushare Fix validation tests
+Verify that functions in agent_utils have been successfully migrated from TDX to Tushare unified interface
 """
 
 import os
 import sys
 from datetime import datetime, timedelta
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 
 def test_get_china_stock_data_fix():
-    """测试get_china_stock_data函数的Tushare修复"""
-    print("\n🔧 测试get_china_stock_data函数修复")
+    """Tushare fix for testing get_china_stock_data function"""
+    print("\n🔧 Test get_china_stock_data function fix")
     print("=" * 60)
     
     try:
         from tradingagents.agents.utils.agent_utils import Toolkit
 
-        print("✅ Toolkit导入成功")
+        print("✅ Toolkit Import successful")
 
-        # 测试股票数据获取
-        print("🔄 测试股票数据获取...")
+        # Test stock data acquisition
+        print("🔄 Test stock data acquisition...")
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d')
 
         result = Toolkit.get_china_stock_data("600036", start_date, end_date)
         
         if result and len(result) > 100:
-            print("✅ 股票数据获取成功")
-            print(f"📊 数据长度: {len(result)}字符")
+            print("✅ Stock data obtained successfully")
+            print(f"📊 Data length: {len(result)}character")
             
-            # 检查是否使用了统一接口（而不是TDX）
-            if "统一数据源接口" in result or "tushare" in result.lower():
-                print("✅ 已成功使用统一数据源接口")
-            elif "通达信" in result:
-                print("⚠️ 警告: 仍在使用中国股票数据源")
+            # Check if unified interface is used (instead of TDX)
+            if "Unified data source interface" in result or "tushare" in result.lower():
+                print("✅ Successfully used unified data source interface")
+            elif "Tong Da Xin" in result:
+                print("⚠️ warning: Still using China stock data source")
             else:
-                print("✅ 数据源已更新")
+                print("✅ Data source updated")
                 
-            # 显示部分结果
-            print(f"📋 结果预览: {result[:200]}...")
+            # Show partial results
+            print(f"📋 Results preview: {result[:200]}...")
         else:
-            print("❌ 股票数据获取失败")
-            print(f"返回结果: {result}")
+            print("❌ Failed to obtain stock data")
+            print(f"Return results: {result}")
         
         return True
         
     except Exception as e:
-        print(f"❌ get_china_stock_data测试失败: {e}")
+        print(f"❌ get_china_stock_data test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_get_china_market_overview_fix():
-    """测试get_china_market_overview函数的修复"""
-    print("\n🔧 测试get_china_market_overview函数修复")
+    """Test fix for get_china_market_overview function"""
+    print("\n🔧 Test get_china_market_overview function fix")
     print("=" * 60)
     
     try:
         from tradingagents.agents.utils.agent_utils import Toolkit
 
-        print("✅ Toolkit导入成功")
+        print("✅ Toolkit Import successful")
 
-        # 测试市场概览获取
-        print("🔄 测试市场概览获取...")
+        # Get a test market overview
+        print("🔄 Get a test market overview...")
         curr_date = datetime.now().strftime('%Y-%m-%d')
 
         result = Toolkit.get_china_market_overview(curr_date)
         
         if result and len(result) > 50:
-            print("✅ 市场概览获取成功")
-            print(f"📊 数据长度: {len(result)}字符")
+            print("✅ Market overview for success")
+            print(f"📊 Data length: {len(result)}character")
             
-            # 检查是否提到了Tushare迁移
-            if "Tushare" in result or "迁移" in result:
-                print("✅ 已更新为Tushare数据源说明")
-            elif "通达信" in result and "TDX" not in result:
-                print("⚠️ 警告: 仍在使用中国股票数据源")
+            # Check if Tushare migration is mentioned
+            if "Tushare" in result or "Migrate" in result:
+                print("✅ Updated to Tushare data source description")
+            elif "Tong Da Xin" in result and "TDX" not in result:
+                print("⚠️ warning: Still using China stock data source")
             else:
-                print("✅ 市场概览功能已更新")
+                print("✅ Market overview feature has been updated")
                 
-            # 显示部分结果
-            print(f"📋 结果预览: {result[:300]}...")
+            # Show partial results
+            print(f"📋 Results preview: {result[:300]}...")
         else:
-            print("❌ 市场概览获取失败")
-            print(f"返回结果: {result}")
+            print("❌ Failed to obtain market overview")
+            print(f"Return results: {result}")
         
         return True
         
     except Exception as e:
-        print(f"❌ get_china_market_overview测试失败: {e}")
+        print(f"❌ get_china_market_overview test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_stock_name_mapping_fix():
-    """测试股票名称映射的修复"""
-    print("\n🔧 测试股票名称映射修复")
+    """Test fix for stock name mapping"""
+    print("\n🔧 Test stock name mapping fix")
     print("=" * 60)
     
     try:
         from tradingagents.agents.utils.agent_utils import Toolkit
 
-        print("✅ Toolkit导入成功")
+        print("✅ Toolkit Import successful")
 
-        # 测试基本面数据获取（会触发股票名称映射）
-        print("🔄 测试基本面数据获取（包含股票名称映射）...")
+        # Test fundamental data acquisition (will trigger stock name mapping)
+        print("🔄 Test fundamental data acquisition (including stock name mapping)...")
         curr_date = datetime.now().strftime('%Y-%m-%d')
 
         result = Toolkit.get_fundamentals_openai("600036", curr_date)
         
         if result and len(result) > 100:
-            print("✅ 基本面数据获取成功")
-            print(f"📊 数据长度: {len(result)}字符")
+            print("✅ Fundamental data obtained successfully")
+            print(f"📊 Data length: {len(result)}character")
             
-            # 检查是否包含正确的股票名称
-            if "招商银行" in result:
-                print("✅ 股票名称映射成功: 600036 -> 招商银行")
+            # Check if the correct stock name is included
+            if "China Merchants Bank" in result:
+                print("✅ Stock name mapping successful: 600036 -> China Merchants Bank")
             else:
-                print("⚠️ 股票名称映射可能有问题")
+                print("⚠️ There may be a problem with stock name mapping")
                 
-            # 显示部分结果
-            print(f"📋 结果预览: {result[:200]}...")
+            # Show partial results
+            print(f"📋 Results preview: {result[:200]}...")
         else:
-            print("❌ 基本面数据获取失败")
-            print(f"返回结果: {result}")
+            print("❌ Failed to obtain fundamental data")
+            print(f"Return results: {result}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 股票名称映射测试失败: {e}")
+        print(f"❌ Stock name mapping test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def check_debug_output():
-    """检查调试输出是否显示使用了统一接口"""
-    print("\n🔧 检查调试输出")
+    """Check the debug output to see if the unified interface is used"""
+    print("\n🔧 Check debug output")
     print("=" * 60)
     
     try:
         from tradingagents.agents.utils.agent_utils import Toolkit
 
-        print("🔄 运行股票数据获取并检查调试输出...")
+        print("🔄 Run stock data acquisition and inspect debug output...")
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=5)).strftime('%Y-%m-%d')
 
-        # 这应该会产生调试输出
+        # This should produce debug output
         result = Toolkit.get_china_stock_data("000001", start_date, end_date)
         
-        print("✅ 调试输出检查完成")
-        print("💡 请查看上面的调试输出，确认是否显示:")
-        print("   - '成功导入统一数据源接口'")
-        print("   - '正在调用统一数据源接口'")
-        print("   - 而不是 'tdx_utils.get_china_stock_data'")
+        print("✅ Debug output inspection completed")
+        print("💡 Please check the debug output above to confirm whether it is displayed:")
+        print("   - 'Successfully imported unified data source interface'")
+        print("   - 'Calling the unified data source interface'")
+        print("   - instead of 'tdx_utils.get_china_stock_data'")
         
         return True
         
     except Exception as e:
-        print(f"❌ 调试输出检查失败: {e}")
+        print(f"❌ Debug output check failed: {e}")
         return False
 
 
 def main():
-    """主测试函数"""
-    print("🔬 Agent Utils Tushare修复验证测试")
+    """Main test function"""
+    print("🔬 Agent Utils Tushare Fix validation tests")
     print("=" * 70)
-    print("💡 测试目标:")
-    print("   - 验证get_china_stock_data已迁移到统一接口")
-    print("   - 验证get_china_market_overview已更新")
-    print("   - 验证股票名称映射使用统一接口")
-    print("   - 检查调试输出确认修复生效")
+    print("💡 Test target:")
+    print("   - Verify that get_china_stock_data has been migrated to the unified interface")
+    print("   - Verify that get_china_market_overview has been updated")
+    print("   - Verify stock name mapping using unified interface")
+    print("   - Check the debug output to confirm the fix took effect")
     print("=" * 70)
     
-    # 运行所有测试
+    # Run all tests
     tests = [
-        ("get_china_stock_data修复", test_get_china_stock_data_fix),
-        ("get_china_market_overview修复", test_get_china_market_overview_fix),
-        ("股票名称映射修复", test_stock_name_mapping_fix),
-        ("调试输出检查", check_debug_output)
+        ("get_china_stock_data Repair", test_get_china_stock_data_fix),
+        ("get_china_market_overview Repair", test_get_china_market_overview_fix),
+        ("Stock name mapping fix", test_stock_name_mapping_fix),
+        ("Debug output inspection", check_debug_output)
     ]
     
     results = []
@@ -194,40 +194,40 @@ def main():
             result = test_func()
             results.append((test_name, result))
         except Exception as e:
-            print(f"❌ {test_name}测试异常: {e}")
+            print(f"❌ {test_name}Test exception: {e}")
             results.append((test_name, False))
     
-    # 总结
-    print("\n📋 Agent Utils修复测试总结")
+    # Summary
+    print("\n📋 Agent Utils Repair test summary")
     print("=" * 60)
     
     passed = 0
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{test_name}: {status}")
         if result:
             passed += 1
     
     total = len(results)
-    print(f"\n📊 测试结果: {passed}/{total} 通过")
+    print(f"\n📊 Test results: {passed}/{total} Pass")
     
     if passed == total:
-        print("\n🎉 Agent Utils修复测试完全成功！")
-        print("\n💡 修复效果:")
-        print("   ✅ get_china_stock_data已使用统一数据源接口")
-        print("   ✅ get_china_market_overview已更新为Tushare说明")
-        print("   ✅ 股票名称映射使用统一接口")
-        print("   ✅ 调试输出确认修复生效")
-        print("\n🚀 现在Agent工具完全使用Tushare数据源！")
+        print("\n🎉 Agent Utils The repair test was completely successful!")
+        print("\n💡 Repair effect:")
+        print("   ✅ get_china_stock_data Unified data source interface has been used")
+        print("   ✅ get_china_market_overview Updated to Tushare instructions")
+        print("   ✅ Stock name mapping uses unified interface")
+        print("   ✅ Debug output confirms the fix took effect")
+        print("\n🚀 Now the Agent tool completely uses Tushare data source!")
     else:
-        print("\n⚠️ 部分测试失败，请检查相关配置")
+        print("\n⚠️ Some tests failed, please check the relevant configuration")
     
-    print("\n🎯 验证方法:")
-    print("   1. 查看调试输出中的'统一数据源接口'字样")
-    print("   2. 确认不再出现'tdx_utils'相关调用")
-    print("   3. 股票数据应该来自Tushare而不是TDX")
+    print("\n🎯 Verification method:")
+    print("   1. View the debug output for'Unified data source interface'words")
+    print("   2. Confirm not to appear again'tdx_utils'Related calls")
+    print("   3. Stock data should come from Tushare instead TDX")
     
-    input("按回车键退出...")
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

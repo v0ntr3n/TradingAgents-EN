@@ -1,7 +1,7 @@
 """
-启动配置验证器
+Start configuration validator
 
-验证系统启动所需的必需配置项，提供友好的错误提示。
+Verify the required configuration items required for system startup and provide friendly error prompts.
 """
 
 import os
@@ -14,99 +14,99 @@ logger = logging.getLogger(__name__)
 
 
 class ConfigLevel(Enum):
-    """配置级别"""
-    REQUIRED = "required"      # 必需配置，缺少则无法启动
-    RECOMMENDED = "recommended"  # 推荐配置，缺少会影响功能
-    OPTIONAL = "optional"      # 可选配置，缺少不影响基本功能
+    """configuration level"""
+    REQUIRED = "required"      # Required configuration, if it is missing, it will not start.
+    RECOMMENDED = "recommended"  # Recommended configuration, lack of it will affect functionality
+    OPTIONAL = "optional"      # Optional configuration, lack of which does not affect basic functions
 
 
 @dataclass
 class ConfigItem:
-    """配置项"""
-    key: str                    # 配置键名
-    level: ConfigLevel          # 配置级别
-    description: str            # 配置描述
-    example: Optional[str] = None  # 配置示例
-    help_url: Optional[str] = None  # 帮助链接
-    validator: Optional[callable] = None  # 自定义验证函数
+    """Configuration items"""
+    key: str                    # Configuration key name
+    level: ConfigLevel          # configuration level
+    description: str            # Configuration description
+    example: Optional[str] = None  # Configuration example
+    help_url: Optional[str] = None  # Help link
+    validator: Optional[callable] = None  # Custom validation function
 
 
 @dataclass
 class ValidationResult:
-    """验证结果"""
-    success: bool               # 是否验证成功
-    missing_required: List[ConfigItem]  # 缺少的必需配置
-    missing_recommended: List[ConfigItem]  # 缺少的推荐配置
-    invalid_configs: List[tuple[ConfigItem, str]]  # 无效的配置（配置项，错误信息）
-    warnings: List[str]         # 警告信息
+    """Verification results"""
+    success: bool               # Is the verification successful?
+    missing_required: List[ConfigItem]  # Missing required configuration
+    missing_recommended: List[ConfigItem]  # Missing recommended configuration
+    invalid_configs: List[tuple[ConfigItem, str]]  # Invalid configuration (configuration item, error message)
+    warnings: List[str]         # warning message
 
 
 class StartupValidator:
-    """启动配置验证器"""
+    """Start configuration validator"""
     
-    # 必需配置项
+    # Required configuration items
     REQUIRED_CONFIGS = [
         ConfigItem(
             key="MONGODB_HOST",
             level=ConfigLevel.REQUIRED,
-            description="MongoDB主机地址",
+            description="MongoDB host address",
             example="localhost"
         ),
         ConfigItem(
             key="MONGODB_PORT",
             level=ConfigLevel.REQUIRED,
-            description="MongoDB端口",
+            description="MongoDB port",
             example="27017",
             validator=lambda v: v.isdigit() and 1 <= int(v) <= 65535
         ),
         ConfigItem(
             key="MONGODB_DATABASE",
             level=ConfigLevel.REQUIRED,
-            description="MongoDB数据库名称",
+            description="MongoDB Database name",
             example="tradingagents"
         ),
         ConfigItem(
             key="REDIS_HOST",
             level=ConfigLevel.REQUIRED,
-            description="Redis主机地址",
+            description="Redis host address",
             example="localhost"
         ),
         ConfigItem(
             key="REDIS_PORT",
             level=ConfigLevel.REQUIRED,
-            description="Redis端口",
+            description="Redis port",
             example="6379",
             validator=lambda v: v.isdigit() and 1 <= int(v) <= 65535
         ),
         ConfigItem(
             key="JWT_SECRET",
             level=ConfigLevel.REQUIRED,
-            description="JWT密钥（用于生成认证令牌）",
+            description="JWT Key (used to generate authentication tokens)",
             example="your-super-secret-jwt-key-change-in-production",
             validator=lambda v: len(v) >= 16
         ),
     ]
     
-    # 推荐配置项
+    # Recommended configuration items
     RECOMMENDED_CONFIGS = [
         ConfigItem(
             key="DEEPSEEK_API_KEY",
             level=ConfigLevel.RECOMMENDED,
-            description="DeepSeek API密钥（推荐，性价比高）",
+            description="DeepSeek API Key (recommended, cost-effective)",
             example="sk-xxx",
             help_url="https://platform.deepseek.com/"
         ),
         ConfigItem(
             key="DASHSCOPE_API_KEY",
             level=ConfigLevel.RECOMMENDED,
-            description="阿里百炼API密钥（推荐，国产稳定）",
+            description="Alibaba Bailian API key (recommended, domestically produced and stable)",
             example="sk-xxx",
             help_url="https://dashscope.aliyun.com/"
         ),
         ConfigItem(
             key="TUSHARE_TOKEN",
             level=ConfigLevel.RECOMMENDED,
-            description="Tushare Token（推荐，专业A股数据）",
+            description="Tushare Token (Recommended, professional A-share data)",
             example="xxx",
             help_url="https://tushare.pro/weborder/#/login?reg=tacn"
         ),
@@ -123,33 +123,33 @@ class StartupValidator:
 
     def _is_valid_api_key(self, api_key: str) -> bool:
         """
-        判断 API Key 是否有效（不是占位符）
+        Determine whether the API Key is valid (not a placeholder)
 
         Args:
-            api_key: 待验证的 API Key
+            api_key: To be verified API Key
 
         Returns:
-            bool: True 表示有效，False 表示无效或占位符
+            bool: True Indicates valid, False indicates invalid or placeholder
         """
         if not api_key:
             return False
 
-        # 去除首尾空格和引号
+        # Remove leading and trailing spaces and quotes
         api_key = api_key.strip().strip('"').strip("'")
 
-        # 检查是否为空
+        # Check if it is empty
         if not api_key:
             return False
 
-        # 检查是否为占位符（前缀）
+        # Check if it is a placeholder (prefix)
         if api_key.startswith('your_') or api_key.startswith('your-'):
             return False
 
-        # 检查是否为占位符（后缀）
+        # Check if it is a placeholder (suffix)
         if api_key.endswith('_here') or api_key.endswith('-here'):
             return False
 
-        # 检查长度（允许较短的测试 Key，但仍需排除明显无效值）
+        # Check length (allow shorter test keys, but still exclude obviously invalid values)
         if len(api_key) < 5:
             return False
 
@@ -157,89 +157,89 @@ class StartupValidator:
 
     def validate(self) -> ValidationResult:
         """
-        验证配置
+        Verify configuration
         
         Returns:
-            ValidationResult: 验证结果
+            ValidationResult: Verification results
         """
-        logger.info("🔍 开始验证启动配置...")
+        logger.info("🔍 Start verifying startup configuration...")
         
-        # 验证必需配置
+        # Verify required configuration
         self._validate_required_configs()
         
-        # 验证推荐配置
+        # Verify recommended configuration
         self._validate_recommended_configs()
         
-        # 检查安全配置
+        # Check security configuration
         self._check_security_configs()
         
-        # 设置验证结果
+        # Set verification results
         self.result.success = len(self.result.missing_required) == 0 and len(self.result.invalid_configs) == 0
         
-        # 输出验证结果
+        # Output verification results
         self._print_validation_result()
         
         return self.result
     
     def _validate_required_configs(self):
-        """验证必需配置"""
+        """Verify required configuration"""
         for config in self.REQUIRED_CONFIGS:
             value = os.getenv(config.key)
             
             if not value:
                 self.result.missing_required.append(config)
-                logger.error(f"❌ 缺少必需配置: {config.key}")
+                logger.error(f"❌ Missing required configuration: {config.key}")
             elif config.validator and not config.validator(value):
-                self.result.invalid_configs.append((config, "配置值格式不正确"))
-                logger.error(f"❌ 配置格式错误: {config.key}")
+                self.result.invalid_configs.append((config, "Configuration value format is incorrect"))
+                logger.error(f"❌ Configuration format error: {config.key}")
             else:
-                logger.debug(f"✅ {config.key}: 已配置")
+                logger.debug(f"✅ {config.key}: configured")
     
     def _validate_recommended_configs(self):
-        """验证推荐配置"""
+        """Verify recommended configuration"""
         for config in self.RECOMMENDED_CONFIGS:
             value = os.getenv(config.key)
 
             if not value:
                 self.result.missing_recommended.append(config)
-                logger.warning(f"⚠️  缺少推荐配置: {config.key}")
+                logger.warning(f"⚠️  Missing recommended configuration: {config.key}")
             elif not self._is_valid_api_key(value):
-                # API Key 存在但是占位符，视为未配置
+                # API Key Exists but is a placeholder, treated as unconfigured
                 self.result.missing_recommended.append(config)
-                logger.warning(f"⚠️  {config.key} 配置为占位符，视为未配置")
+                logger.warning(f"⚠️  {config.key} Configured as placeholder, treated as unconfigured")
             else:
-                logger.debug(f"✅ {config.key}: 已配置")
+                logger.debug(f"✅ {config.key}: configured")
     
     def _check_security_configs(self):
-        """检查安全配置"""
-        # 检查JWT密钥是否使用默认值
+        """Check security configuration"""
+        # Check if JWT key is using default value
         jwt_secret = os.getenv("JWT_SECRET", "")
         if jwt_secret in ["change-me-in-production", "your-super-secret-jwt-key-change-in-production"]:
             self.result.warnings.append(
-                "⚠️  JWT_SECRET 使用默认值，生产环境请务必修改！"
+                "⚠️  JWT_SECRET Use the default value, please be sure to modify it for production environment!"
             )
         
-        # 检查CSRF密钥是否使用默认值
+        # Check if CSRF key is using default value
         csrf_secret = os.getenv("CSRF_SECRET", "")
         if csrf_secret in ["change-me-csrf-secret", "your-csrf-secret-key-change-in-production"]:
             self.result.warnings.append(
-                "⚠️  CSRF_SECRET 使用默认值，生产环境请务必修改！"
+                "⚠️  CSRF_SECRET Use the default value, please be sure to modify it for production environment!"
             )
         
-        # 检查是否在生产环境使用DEBUG模式
+        # Check whether DEBUG mode is used in production environment
         debug = os.getenv("DEBUG", "true").lower() in ("true", "1", "yes", "on")
         if not debug:
-            logger.info("ℹ️  生产环境模式")
+            logger.info("ℹ️  Production environment mode")
         else:
-            logger.info("ℹ️  开发环境模式（DEBUG=true）")
+            logger.info("ℹ️  Development environment mode (DEBUG=true) ")
     
     def _print_validation_result(self):
-        """输出验证结果"""
+        """Output verification results"""
         logger.info("\n" + "=" * 70)
         logger.info("TradingAgents-CN Configuration Validation Result")
         logger.info("=" * 70)
         
-        # 必需配置
+        # Required configuration
         if self.result.missing_required:
             logger.info("\nMissing required configurations:")
             for config in self.result.missing_required:
@@ -252,7 +252,7 @@ class StartupValidator:
         else:
             logger.info("\nAll required configurations are complete")
 
-        # 无效配置
+        # Invalid configuration
         if self.result.invalid_configs:
             logger.info("\nInvalid configurations:")
             for config, error in self.result.invalid_configs:
@@ -260,7 +260,7 @@ class StartupValidator:
                 if config.example:
                     logger.info(f"     Example: {config.example}")
 
-        # 推荐配置
+        # Recommended configuration
         if self.result.missing_recommended:
             logger.info("\nMissing recommended configurations (won't affect startup):")
             for config in self.result.missing_recommended:
@@ -269,13 +269,13 @@ class StartupValidator:
                 if config.help_url:
                     logger.info(f"     Get it from: {config.help_url}")
 
-        # 警告信息
+        # warning message
         if self.result.warnings:
             logger.info("\nSecurity warnings:")
             for warning in self.result.warnings:
                 logger.info(f"   - {warning}")
 
-        # 总结
+        # Summary
         logger.info("\n" + "=" * 70)
         if self.result.success:
             logger.info("Configuration validation passed, system can start")
@@ -287,40 +287,40 @@ class StartupValidator:
         logger.info("=" * 70 + "\n")
     
     def raise_if_failed(self):
-        """如果验证失败则抛出异常"""
+        """Throws an exception if validation fails"""
         if not self.result.success:
             error_messages = []
             
             if self.result.missing_required:
                 error_messages.append(
-                    f"缺少必需配置: {', '.join(c.key for c in self.result.missing_required)}"
+                    f"Missing required configuration: {', '.join(c.key for c in self.result.missing_required)}"
                 )
             
             if self.result.invalid_configs:
                 error_messages.append(
-                    f"配置格式错误: {', '.join(c.key for c, _ in self.result.invalid_configs)}"
+                    f"Configuration format error: {', '.join(c.key for c, _ in self.result.invalid_configs)}"
                 )
             
             raise ConfigurationError(
-                "配置验证失败:\n" + "\n".join(f"  • {msg}" for msg in error_messages) +
-                "\n\n请检查 .env 文件并参考 docs/configuration_guide.md"
+                "Configuration verification failed:\n" + "\n".join(f"  • {msg}" for msg in error_messages) +
+                "\n\n Please check the .env file and refer to docs/configuration_guide.md"
             )
 
 
 class ConfigurationError(Exception):
-    """配置错误异常"""
+    """Configuration error exception"""
     pass
 
 
 def validate_startup_config() -> ValidationResult:
     """
-    验证启动配置（便捷函数）
+    Verify startup configuration (convenience function)
     
     Returns:
-        ValidationResult: 验证结果
+        ValidationResult: Verification results
     
     Raises:
-        ConfigurationError: 如果验证失败
+        ConfigurationError: If verification fails
     """
     validator = StartupValidator()
     result = validator.validate()

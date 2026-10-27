@@ -1,11 +1,11 @@
 # tradingagents/core/contracts/__init__.py
 """
-数据契约定义模块
+Data contract definition module
 
-定义所有 Agent 的数据契约，包括：
-- 分析师契约 (analysts)
-- 研究员契约 (researchers)
-- 交易员和风控契约 (traders, risk_managers)
+Define data contracts for all Agents, including:
+- analyst contract (analysts)
+- Researcher Contract (researchers)
+- Trader and Risk Control Contract (traders, risk_managers)
 """
 
 from tradingagents.core.contracts.analysts import (
@@ -32,7 +32,7 @@ from tradingagents.core.contracts.traders import (
     TRADER_CONTRACTS,
 )
 
-# 所有契约汇总
+# Summary of all contracts
 ALL_CONTRACTS = {
     **ANALYST_CONTRACTS,
     **RESEARCHER_CONTRACTS,
@@ -40,7 +40,7 @@ ALL_CONTRACTS = {
 }
 
 __all__ = [
-    # 分析师契约
+    # analyst contract
     "MARKET_ANALYST_CONTRACT",
     "NEWS_ANALYST_CONTRACT",
     "SENTIMENT_ANALYST_CONTRACT",
@@ -48,19 +48,19 @@ __all__ = [
     "SECTOR_ANALYST_CONTRACT",
     "INDEX_ANALYST_CONTRACT",
     "ANALYST_CONTRACTS",
-    # 研究员契约
+    # Researcher Contract
     "BULL_RESEARCHER_CONTRACT",
     "BEAR_RESEARCHER_CONTRACT",
     "RESEARCH_MANAGER_CONTRACT",
     "RESEARCHER_CONTRACTS",
-    # 交易员和风控契约
+    # Trader and Risk Control Contract
     "TRADER_CONTRACT",
     "RISKY_RISK_CONTRACT",
     "SAFE_RISK_CONTRACT",
     "NEUTRAL_RISK_CONTRACT",
     "RISK_MANAGER_CONTRACT",
     "TRADER_CONTRACTS",
-    # 汇总
+    # Summary
     "ALL_CONTRACTS",
 ]
 

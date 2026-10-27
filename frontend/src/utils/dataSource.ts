@@ -46,7 +46,7 @@ export const loadCurrentDataSourceInfo = async (): Promise<CurrentDataSourceInfo
       return response.data
     }
   } catch (error) {
-    console.warn('获取当前数据源失败', error)
+    console.warn('Failed to obtain current data source', error)
   }
 
   return null
@@ -74,7 +74,7 @@ export const loadManualSyncSourceState = async (): Promise<ManualSyncSourceState
 
     statuses = ((statusResponse as ApiResponse<DataSourceStatus[]>)?.data || []) as DataSourceStatus[]
   } catch (error) {
-    console.warn('并行获取数据源信息失败，尝试降级加载', error)
+    console.warn('Failed to obtain data source information in parallel, try downgraded loading', error)
 
     const currentInfo = await loadCurrentDataSourceInfo()
     preferredSource = normalizeManualSyncSource(currentInfo?.name)
@@ -83,7 +83,7 @@ export const loadManualSyncSourceState = async (): Promise<ManualSyncSourceState
       const statusResponse = await getDataSourcesStatus()
       statuses = ((statusResponse as ApiResponse<DataSourceStatus[]>)?.data || []) as DataSourceStatus[]
     } catch (statusError) {
-      console.warn('获取数据源状态失败', statusError)
+      console.warn('Failed to get data source status', statusError)
     }
   }
 

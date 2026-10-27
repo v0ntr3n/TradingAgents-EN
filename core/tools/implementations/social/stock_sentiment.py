@@ -1,8 +1,8 @@
 """
-统一股票情绪分析工具
+Unified Stock Sentiment Analysis Tool
 
-自动识别股票类型（A股、港股、美股）并调用相应的情绪数据源
-优先使用用户上传的社媒数据
+Automatically identify stock types (A shares, Hong Kong stocks, US stocks) and call the corresponding sentiment data sources
+Prioritize the use of social media data uploaded by users
 """
 
 import logging
@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
     tool_id="get_stock_sentiment_unified",
     name="统一股票情绪分析",
     description=(
-        "获取股票市场情绪和社交媒体情绪，支持 A 股、港股、美股。"
-        "这里的“情绪/信号”指新闻、社交媒体和市场舆论情绪，不是技术买卖信号、财务风险信号、公告风险事件或 Agent 能力缺口。"
+        "Get stock market sentiment and social media sentiment, supporting A shares, Hong Kong stocks, and US stocks."
+        "Here s emotions/signals Refers to news, social media and market sentiment, not technical buying and selling signals, financial risk signals, announcements of risk events or Agent capability gaps."
     ),
     category="social",
     is_online=True,
@@ -30,59 +30,59 @@ logger = logging.getLogger(__name__)
     tool_role_hint="specialized",
     output_shape="markdown",
     preferred_for=["sentiment_analysis", "social_media_monitoring", "market_sentiment_assessment"],
-    when_to_use="当需要分析市场舆情、社交媒体情绪、投资者情绪和情绪面影响时使用。",
-    when_not_to_use="不用于技术指标交叉信号、财务报表异常、现金流风险、监管处罚/诉讼等公告事件识别或基本面估值。",
+    when_to_use="Use it when you need to analyze market public opinion, social media sentiment, investor sentiment and the impact of sentiment.",
+    when_not_to_use="It is not used for the identification of announcement events such as technical indicator cross signals, financial statement anomalies, cash flow risks, regulatory penalties/litigation, etc. or for fundamental valuation.",
 )
 def get_stock_sentiment_unified(
-    ticker: Annotated[str, "股票代码（支持A股、港股、美股）"],
-    curr_date: Annotated[str, "当前日期，格式：YYYY-MM-DD"]
+    ticker: Annotated[str, "Stock code (supports A shares, Hong Kong stocks, and US stocks)"],
+    curr_date: Annotated[str, "Current date, format:YYYY-MM-DD"]
 ) -> str:
     """
-    统一的股票情绪分析工具
-    自动识别股票类型（A股、港股、美股）并调用相应的情绪数据源
+    Unified stock sentiment analysis tool
+    Automatically identify stock types (A shares, Hong Kong stocks, US stocks) and call the corresponding sentiment data sources
 
     Args:
-        ticker: 股票代码（如：000001、0700.HK、AAPL）
-        curr_date: 当前日期（格式：YYYY-MM-DD）
+        ticker: Stock code (such as: 000001, 0700.HK, AAPL)
+        curr_date: Current date (format: YYYY-MM-DD)
 
     Returns:
-        str: 情绪分析报告
+        str: Sentiment Analysis Report
     """
-    logger.info(f"😊 [统一情绪工具] 分析股票: {ticker}")
+    logger.info(f"😊 [Unifying Emotion Tools] Analyze stocks: {ticker}")
 
     try:
         from tradingagents.utils.stock_utils import StockUtils
 
-        # 自动识别股票类型
+        # Automatically identify stock types
         market_info = StockUtils.get_market_info(ticker)
         is_china = market_info['is_china']
         is_hk = market_info['is_hk']
         is_us = market_info['is_us']
 
-        logger.info(f"😊 [统一情绪工具] 股票类型: {market_info['market_name']}")
+        logger.info(f"😊 [Unifying Emotion Tools] Stock type: {market_info['market_name']}")
 
         result_data = []
 
         if is_china or is_hk:
-            # 中国A股和港股：优先使用用户上传的社媒数据
-            logger.info(f"🇨🇳🇭🇰 [统一情绪工具] 处理中文市场情绪...")
+            # China A-shares and Hong Kong stocks: give priority to social media data uploaded by users
+            logger.info(f"🇨🇳🇭🇰 [Unifying Emotion Tools] Dealing with Chinese market sentiment...")
 
-            # 🔥 优先查询用户上传的社媒数据（使用同步方式）
+            # 🔥 Prioritize query of social media data uploaded by users (using synchronization method)
             user_uploaded_data = None
             try:
-                logger.info(f"🔍 [统一情绪工具] 开始查询数据库中的社媒数据...")
+                logger.info(f"🔍 [Unifying Emotion Tools] Start querying social media data in the database...")
                 from app.core.database import get_mongo_db_sync
                 
-                # 清理代码后缀
+                # Clean code suffix
                 clean_ticker = ticker
                 for suffix in ['.SH', '.SZ', '.SS', '.HK', '.XSHE', '.XSHG']:
                     clean_ticker = clean_ticker.replace(suffix, '')
                 
-                # 使用同步方式查询数据库
+                # Query the database using synchronous mode
                 db = get_mongo_db_sync()
                 collection = db.social_media_messages
                 
-                # 查询最近7天的社媒数据
+                # Query the social media data of the last 7 days
                 end_time = datetime.utcnow()
                 start_time = end_time - timedelta(days=7)
                 
@@ -94,18 +94,18 @@ def get_stock_sentiment_unified(
                     }
                 }
                 
-                # 同步查询
-                logger.info(f"🔍 [统一情绪工具] 查询数据库: collection=social_media_messages, symbol={clean_ticker}, time_range=最近7天")
-                logger.debug(f"🔍 [统一情绪工具] 查询条件详情: {query}")
+                # Synchronous query
+                logger.info(f"🔍 [Unifying Emotion Tools] Query database: collection=social_media_messages, symbol={clean_ticker}, time_range=Last 7 days")
+                logger.debug(f"🔍 [Unifying Emotion Tools] Query condition details: {query}")
                 cursor = collection.find(query).sort("publish_time", -1).limit(100)
                 user_messages = list(cursor)
                 logger.info(f"📊 [统一情绪工具] 数据库查询完成: 找到 {len(user_messages)} 条消息")
                 
                 if user_messages and len(user_messages) > 0:
-                    logger.info(f"✅ [统一情绪工具] 找到 {len(user_messages)} 条用户上传的社媒数据，开始分析...")
+                    logger.info(f"✅ [Unifying Emotion Tools] found {len(user_messages)} Start analyzing social media data uploaded by users...")
                     user_uploaded_data = user_messages
                     
-                    # 🔥 详细分析用户上传的社媒数据
+                    # 🔥 Detailed analysis of social media data uploaded by users
                     sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0}
                     platform_counts = {}
                     recent_messages = []
@@ -121,19 +121,19 @@ def get_stock_sentiment_unified(
                         platform = msg.get("platform", "unknown")
                         platform_counts[platform] = platform_counts.get(platform, 0) + 1
                         
-                        # 统计关键词
+                        # Statistical keywords
                         keywords = msg.get("keywords", [])
                         if isinstance(keywords, list):
                             for kw in keywords:
                                 keyword_counts[kw] = keyword_counts.get(kw, 0) + 1
                         
-                        # 统计话题标签
+                        # statistics hashtag
                         hashtags = msg.get("hashtags", [])
                         if isinstance(hashtags, list):
                             for tag in hashtags:
                                 hashtag_counts[tag] = hashtag_counts.get(tag, 0) + 1
                         
-                        # 统计互动数据
+                        # Statistical interaction data
                         engagement = msg.get("engagement", {})
                         if isinstance(engagement, dict):
                             total_engagement["views"] += engagement.get("views", 0)
@@ -141,7 +141,7 @@ def get_stock_sentiment_unified(
                             total_engagement["shares"] += engagement.get("shares", 0)
                             total_engagement["comments"] += engagement.get("comments", 0)
                         
-                        # 收集高影响力消息（影响力评分>50或互动率高）
+                        # Collect high-impact messages (impact score>50 or high interaction rate)
                         author = msg.get("author", {})
                         influence_score = author.get("influence_score", 0) if isinstance(author, dict) else 0
                         engagement_rate = engagement.get("engagement_rate", 0) if isinstance(engagement, dict) else 0
@@ -157,7 +157,7 @@ def get_stock_sentiment_unified(
                                     "author": author.get("author_name", "未知") if isinstance(author, dict) else "未知"
                                 })
                         
-                        # 收集最近消息摘要（优先高影响力）
+                        # Collect a summary of recent news (prioritizing high impact)
                         content = msg.get("content", "")
                         if content and len(recent_messages) < 10:
                             recent_messages.append({
@@ -168,11 +168,11 @@ def get_stock_sentiment_unified(
                                 "influence_score": influence_score
                             })
                     
-                    # 按影响力排序最近消息
+                    # Sort recent news by influence
                     recent_messages.sort(key=lambda x: x.get("influence_score", 0), reverse=True)
-                    recent_messages = recent_messages[:5]  # 只保留前5条
+                    recent_messages = recent_messages[:5]  # Only keep the first 5 items
                     
-                    # 计算情绪评分
+                    # Calculate sentiment score
                     total = sum(sentiment_counts.values())
                     if total > 0:
                         sentiment_score_val = (sentiment_counts["positive"] - sentiment_counts["negative"]) / total
@@ -185,32 +185,32 @@ def get_stock_sentiment_unified(
                     else:
                         sentiment_score = "中性"
                     
-                    # 构建详细报告
+                    # Build detailed reports
                     platform_summary = ", ".join([f"{k}({v})" for k, v in sorted(platform_counts.items(), key=lambda x: x[1], reverse=True)[:5]])
                     
-                    # 热门关键词
+                    # Popular keywords
                     top_keywords = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:5]
                     keywords_summary = ", ".join([f"{k}({v})" for k, v in top_keywords]) if top_keywords else "无"
                     
-                    # 热门话题
+                    # hot topics
                     top_hashtags = sorted(hashtag_counts.items(), key=lambda x: x[1], reverse=True)[:5]
                     hashtags_summary = ", ".join([f"#{k}({v})" for k, v in top_hashtags]) if top_hashtags else "无"
                     
-                    # 互动数据汇总
+                    # Interactive data summary
                     total_interactions = sum(total_engagement.values())
                     engagement_summary = f"总浏览量:{total_engagement['views']}, 点赞:{total_engagement['likes']}, 转发:{total_engagement['shares']}, 评论:{total_engagement['comments']}"
                     
-                    # 高影响力消息
+                    # high impact message
                     high_influence_summary = ""
                     if high_influence_messages:
-                        # 构建高影响力消息列表（避免在f-string中使用反斜杠）
+                        # Build a list of high-impact messages (avoid using backslashes in f-strings)
                         influence_lines = []
                         for m in high_influence_messages:
                             line = f"- [{m['platform']}] [{m['sentiment']}] 作者:{m['author']} (影响力:{m['influence_score']:.1f}, 互动率:{m['engagement_rate']:.2f}%)"
                             content_line = f"  {m['content']}"
                             influence_lines.append(f"{line}\n{content_line}")
                         high_influence_summary = f"""
-### 高影响力消息（影响力评分>50或互动率>5%）
+### High Impact Messages (Impact Score>50 or interaction rate>5%) 
 {chr(10).join(influence_lines)}
 """
                     
@@ -233,36 +233,36 @@ def get_stock_sentiment_unified(
                     result_data.append(sentiment_summary)
                     
             except Exception as e:
-                logger.warning(f"⚠️ [统一情绪工具] 查询用户上传社媒数据失败: {e}", exc_info=True)
-                logger.info(f"🔍 [统一情绪工具] 查询参数: symbol={clean_ticker}, start_time={start_time}, end_time={end_time}")
-                # 继续使用备用数据源
+                logger.warning(f"⚠️ [Unifying Emotion Tools] Failed to query user uploaded social media data: {e}", exc_info=True)
+                logger.info(f"🔍 [Unifying Emotion Tools] query parameters: symbol={clean_ticker}, start_time={start_time}, end_time={end_time}")
+                # Continue to use alternative data sources
             
-            # 如果没有用户上传的数据或数据不足，使用备用数据源
+            # If there is no user-uploaded data or insufficient data, use an alternate data source
             if not user_uploaded_data or len(user_uploaded_data) < 5:
                 if user_uploaded_data:
-                    logger.info(f"📰 [统一情绪工具] 用户上传数据不足（{len(user_uploaded_data)}条 < 5条），使用备用数据源（新闻）...")
+                    logger.info(f"📰 [Unifying Emotion Tools] Insufficient data uploaded by user ({len(user_uploaded_data)}Article < 5 bars), using an alternate data source (news)...")
                 else:
-                    logger.info(f"📰 [统一情绪工具] 未找到用户上传的社媒数据（数据库查询返回0条或查询失败），使用备用数据源（新闻）...")
+                    logger.info(f"📰 [Unifying Emotion Tools] The social media data uploaded by the user was not found (the database query returned 0 items or the query failed), and an alternate data source (news) was used....")
                 try:
-                    # 尝试使用 AKShareProvider 获取新闻进行情绪分析
+                    # Try using AKShareProvider to get news for sentiment analysis
                     from tradingagents.dataflows.providers.china.akshare import AKShareProvider
                     ak_provider = AKShareProvider()
                     
-                    # 清理代码后缀
+                    # Clean code suffix
                     clean_ticker = ticker
                     for suffix in ['.SH', '.SZ', '.SS', '.HK', '.XSHE', '.XSHG']:
                         clean_ticker = clean_ticker.replace(suffix, '')
                     
-                    # 获取新闻 (优先使用 _get_stock_news_direct 如果公开接口不可用)
+                    # Get news (Prefer _get_stock_news_direct if the public interface is not available)
                     if hasattr(ak_provider, 'get_stock_news_sync'):
                         news_df = ak_provider.get_stock_news_sync(symbol=clean_ticker)
                     else:
                         news_df = ak_provider._get_stock_news_direct(symbol=clean_ticker)
                     
                     if news_df is not None and not news_df.empty:
-                        # 简单分析
+                        # Simple analysis
                         news_titles = []
-                        # 兼容不同的列名
+                        # Compatible with different column names
                         col_map = {'新闻标题': 'title', '标题': 'title', 'title': 'title'}
                         
                         for col in news_df.columns:
@@ -271,17 +271,17 @@ def get_stock_sentiment_unified(
                                 break
                         
                         if not news_titles and not news_df.empty:
-                             # 如果没找到标题列，尝试第一列
+                             # If the header column is not found, try the first column
                              news_titles = news_df.iloc[:, 0].astype(str).tolist()
 
-                        # 关键词统计
+                        # Keyword statistics
                         pos_words = ['上涨', '利好', '增长', '突破', '买入', '增持', '大涨', '新高', '预增']
                         neg_words = ['下跌', '利空', '减少', '跌破', '卖出', '减持', '大跌', '新低', '亏损']
                         
                         pos_count = 0
                         neg_count = 0
                         
-                        recent_titles = news_titles[:10] # 只看最近10条
+                        recent_titles = news_titles[:10] # View only the last 10 items
                         
                         for title in recent_titles:
                             if not isinstance(title, str): continue
@@ -306,26 +306,26 @@ def get_stock_sentiment_unified(
                         result_data.append(news_summary)
                     else:
                         if not user_uploaded_data:
-                            result_data.append(f"## 中文市场情绪\n暂无相关数据（建议上传社媒数据）")
+                            result_data.append(f"## Chinese market sentiment\n There is currently no relevant data (it is recommended to upload social media data)")
                             
                 except Exception as e:
                     logger.error(f"中文情绪分析失败: {e}")
                     if not user_uploaded_data:
-                        result_data.append(f"## 中文市场情绪\n分析失败: {e}，建议上传社媒数据")
+                        result_data.append(f"## Chinese market sentiment\n Analysis failed: {e}, It is recommended to upload social media data")
 
         else:
-            # 美股：使用Reddit情绪分析
-            logger.info(f"🇺🇸 [统一情绪工具] 处理美股情绪...")
+            # US Stocks: Using Reddit Sentiment Analysis
+            logger.info(f"🇺🇸 [Unifying Emotion Tools] Dealing with U.S. stock market sentiment...")
 
             try:
                 from tradingagents.dataflows.interface import get_reddit_sentiment
 
                 sentiment_data = get_reddit_sentiment(ticker, curr_date)
-                result_data.append(f"## 美股Reddit情绪\n{sentiment_data}")
+                result_data.append(f"## US Stocks Reddit Sentiment\n{sentiment_data}")
             except Exception as e:
-                result_data.append(f"## 美股Reddit情绪\n获取失败: {e}")
+                result_data.append(f"## US Stocks Reddit Sentiment\n Failed to obtain: {e}")
 
-        # 组合所有数据
+        # Combine all data
         combined_result = f"""# {ticker} 情绪分析
 
 **股票类型**: {market_info['market_name']}
@@ -337,11 +337,11 @@ def get_stock_sentiment_unified(
 *数据来源: 根据股票类型自动选择最适合的情绪数据源*
 """
 
-        logger.info(f"😊 [统一情绪工具] 数据获取完成，总长度: {len(combined_result)}")
+        logger.info(f"😊 [Unifying Emotion Tools] Data acquisition completed, total length: {len(combined_result)}")
         return combined_result
 
     except Exception as e:
-        error_msg = f"统一情绪分析工具执行失败: {str(e)}"
+        error_msg = f"Unified sentiment analysis tool execution failed: {str(e)}"
         logger.error(f"❌ [统一情绪工具] {error_msg}")
         return error_msg
 

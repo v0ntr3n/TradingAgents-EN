@@ -65,25 +65,25 @@
     <g>
       <rect x="520" y="130" width="200" height="40" rx="10" fill="#f7fbff" stroke="#e9eff8"/>
       <circle cx="540" cy="150" r="12" fill="url(#primary)"/>
-      <text x="560" y="154" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="13" fill="#48627a">基本面分析</text>
+      <text x="560" y="154" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="13" fill="#48627a">fundamental analysis</text>
       <rect x="700" y="140" width="20" height="8" rx="4" fill="#409EFF"/>
     </g>
     <g>
       <rect x="520" y="180" width="200" height="40" rx="10" fill="#f7fbff" stroke="#e9eff8"/>
       <circle cx="540" cy="200" r="12" fill="url(#warn)"/>
-      <text x="560" y="204" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="13" fill="#48627a">技术面分析</text>
+      <text x="560" y="204" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="13" fill="#48627a">Technical analysis</text>
       <rect x="700" y="190" width="30" height="8" rx="4" fill="#E6A23C"/>
     </g>
     <g>
       <rect x="520" y="230" width="200" height="40" rx="10" fill="#f7fbff" stroke="#e9eff8"/>
       <circle cx="540" cy="250" r="12" fill="url(#accent)"/>
-      <text x="560" y="254" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="13" fill="#48627a">情绪面分析</text>
+      <text x="560" y="254" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="13" fill="#48627a">Emotional analysis</text>
       <rect x="700" y="240" width="16" height="8" rx="4" fill="#67C23A"/>
     </g>
     <g>
       <rect x="520" y="280" width="200" height="40" rx="10" fill="#f7fbff" stroke="#e9eff8"/>
       <circle cx="540" cy="300" r="12" fill="#9AA5B1"/>
-      <text x="560" y="304" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="13" fill="#48627a">量化分析</text>
+      <text x="560" y="304" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="13" fill="#48627a">Quantitative analysis</text>
       <rect x="700" y="290" width="24" height="8" rx="4" fill="#9AA5B1"/>
     </g>
   </g>
@@ -91,6 +91,6 @@
   <!-- Footer tag -->
   <g>
     <rect x="320" y="340" width="160" height="24" rx="12" fill="#f0f4ff"/>
-    <text x="400" y="356" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="12" text-anchor="middle" fill="#5f77a1">多智能体股票分析学习平台</text>
+    <text x="400" y="356" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="12" text-anchor="middle" fill="#5f77a1">Multi-agent stock analysis learning platform</text>
   </g>
 </svg>

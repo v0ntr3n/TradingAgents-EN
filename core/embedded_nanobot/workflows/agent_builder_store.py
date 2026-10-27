@@ -1,8 +1,8 @@
 """
-Agent Builder Graph MongoDB 状态存储
+Agent Builder Graph MongoDB state storage
 
-基于 MongoDB 的 checkpoint 机制，用于等待节点跨 HTTP 请求暂停和恢复。
-不依赖 LangGraph 内置的 interrupt（它依赖进程内内存）。
+Based on MongoDB s checkpoint mechanism, it is used to wait for nodes to be paused and resumed across HTTP requests.
+Does not rely on LangGraph s built-in interrupt (it relies on in-process memory).
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "agent_builder_graph_sessions"
 
-# 已知字段白名单
+# Known field whitelist
 _KNOWN_KEYS = frozenset({
     "thread_id", "user_id", "user_message", "channel", "chat_id",
     "current_node", "stage", "awaiting_user", "pending_question",
@@ -31,29 +31,29 @@ _KNOWN_KEYS = frozenset({
     "decision_context",
     "test_symbol", "test_result", "official_acceptance_decision",
     "errors", "conversation_summary", "tool_events", "final_response",
-    # ── 意图分类 v2 字段 ──
+    # ── Intent classification v2 fields ──
     "user_intent", "user_selected_index", "user_selected_id",
     "intent_confidence", "intent_reason",
-    # ── 对话历史（跨请求持久化，LLM 意图分类用） ──
+    # ── Conversation history (persistent across requests, used for LLM intent classification) ──
     "message_history",
-    # ── 澄清标记（跨请求保持） ──
+    # ── Clarification markup (persisted across requests) ──
     "clarification_needed",
     "skill_creation_requested",
-    # ── 工具进度 ──
+    # ── tool progress ──
     "test_progress",
 })
 
-# 运行时注入字段（不持久化）
+# Inject fields at runtime (not persisted)
 _RUNTIME_KEYS = frozenset({
     "db", "workspace", "provider", "event_callback",
     "_tool_registry", "_llm_client", "_event_callback", "_on_stream",
-    # 兼容旧 checkpoint 中可能残留的字段（加载时会被自动剥离）
+    # Compatible with fields that may remain in old checkpoints (will be automatically stripped when loading)
     "_provider", "_model",
 })
 
 
 class AgentBuilderGraphStore:
-    """Agent Builder Graph 的 MongoDB 状态存储。"""
+    """Agent Builder Graph MongoDB state store."""
 
     def __init__(self, db: Any):
         self.db = db
@@ -71,7 +71,7 @@ class AgentBuilderGraphStore:
         state: AgentBuilderState,
         current_node: str,
     ) -> None:
-        """在 wait_* 节点前保存状态。"""
+        """in wait_* Save the state before the node."""
         now = datetime.now(timezone.utc)
         safe_state = _make_state_serializable(state)
 
@@ -96,7 +96,7 @@ class AgentBuilderGraphStore:
             logger.error("[GraphStore][SaveError] thread=%s: %s", thread_id, e)
 
     async def load_checkpoint(self, thread_id: str) -> Optional[AgentBuilderState]:
-        """恢复已保存的状态。返回 None 表示没有 checkpoint（新会话）。"""
+        """Restore a saved state. Returning None means there is no checkpoint (new session)."""
         try:
             doc = await self.collection.find_one({"thread_id": thread_id})
             if not doc:
@@ -116,7 +116,7 @@ class AgentBuilderGraphStore:
             return None
 
     async def update_state(self, thread_id: str, state: AgentBuilderState) -> None:
-        """更新已保存的状态（非等待节点）。"""
+        """Update saved state (non-waiting nodes)."""
         safe_state = _make_state_serializable(state)
         try:
             await self.collection.update_one(
@@ -134,7 +134,7 @@ class AgentBuilderGraphStore:
             logger.error("[GraphStore][UpdateError] thread=%s: %s", thread_id, e)
 
     async def delete_checkpoint(self, thread_id: str) -> None:
-        """Graph 完成/取消后清理。"""
+        """Graph Clean up after completion/cancellation."""
         try:
             await self.collection.delete_one({"thread_id": thread_id})
             logger.info("[GraphStore][Delete] thread=%s: checkpoint deleted", thread_id)
@@ -142,7 +142,7 @@ class AgentBuilderGraphStore:
             logger.error("[GraphStore][DeleteError] thread=%s: %s", thread_id, e)
 
     async def get_current_node(self, thread_id: str) -> Optional[str]:
-        """获取当前节点名（不加载完整 state）。"""
+        """Get the current node name (without loading the full state)."""
         try:
             doc = await self.collection.find_one(
                 {"thread_id": thread_id}, {"current_node": 1}
@@ -153,7 +153,7 @@ class AgentBuilderGraphStore:
 
 
 def _make_state_serializable(state: AgentBuilderState) -> Dict[str, Any]:
-    """将 state 中不可序列化的字段移除，生成可安全写入 MongoDB 的字典。"""
+    """Remove the non-serializable fields in the state and generate a dictionary that can be safely written to MongoDB."""
     safe = {}
     for key, value in state.items():
         if key in _RUNTIME_KEYS:
@@ -165,7 +165,7 @@ def _make_state_serializable(state: AgentBuilderState) -> Dict[str, Any]:
 
 
 def _deep_clean(value: Any) -> Any:
-    """递归清理不可序列化的值。"""
+    """Recursively clean up non-serializable values."""
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     if isinstance(value, _asyncio.Future):
@@ -174,7 +174,7 @@ def _deep_clean(value: Any) -> Any:
         return [_deep_clean(v) for v in value]
     if isinstance(value, dict):
         return {k: _deep_clean(v) for k, v in value.items() if not isinstance(v, _asyncio.Future)}
-    # 其他类型转字符串
+    # Convert other types to string
     try:
         str(value)
         return value

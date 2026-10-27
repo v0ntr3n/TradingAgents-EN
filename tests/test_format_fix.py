@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 """
-测试格式化修复
+Test format repair
 """
 
 import sys
 from pathlib import Path
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 def test_format_analysis_results():
-    """测试分析结果格式化函数"""
+    """Test analysis result formatting function"""
     
     from web.utils.analysis_runner import format_analysis_results
     
-    print("🧪 测试分析结果格式化")
+    print("🧪 Formatting test analysis results")
     print("=" * 50)
     
-    # 测试案例1: decision 是字符串
-    print("测试案例1: decision 是字符串")
+    # test case 1: decision is a string
+    print("test case 1: decision is a string")
     results1 = {
         'stock_symbol': 'AAPL',
         'analysis_date': '2025-06-27',
@@ -27,26 +27,26 @@ def test_format_analysis_results():
         'research_depth': 3,
         'llm_model': 'qwen-plus',
         'state': {
-            'market_report': '技术分析报告...',
-            'fundamentals_report': '基本面分析报告...'
+            'market_report': 'technical analysis report...',
+            'fundamentals_report': 'Fundamental Analysis Report...'
         },
-        'decision': 'BUY',  # 字符串格式
+        'decision': 'BUY',  # String format
         'success': True,
         'error': None
     }
     
     try:
         formatted1 = format_analysis_results(results1)
-        print("✅ 字符串decision格式化成功")
-        print(f"  决策: {formatted1['decision']['action']}")
-        print(f"  推理: {formatted1['decision']['reasoning']}")
+        print("✅ String decision formatted successfully")
+        print(f"  decision making: {formatted1['decision']['action']}")
+        print(f"  reasoning: {formatted1['decision']['reasoning']}")
     except Exception as e:
-        print(f"❌ 字符串decision格式化失败: {e}")
+        print(f"❌ String decision formatting failed: {e}")
     
     print()
     
-    # 测试案例2: decision 是字典
-    print("测试案例2: decision 是字典")
+    # test case 2: decision is a dictionary
+    print("test case 2: decision is a dictionary")
     results2 = {
         'stock_symbol': 'AAPL',
         'analysis_date': '2025-06-27',
@@ -54,15 +54,15 @@ def test_format_analysis_results():
         'research_depth': 3,
         'llm_model': 'qwen-plus',
         'state': {
-            'market_report': '技术分析报告...',
-            'fundamentals_report': '基本面分析报告...'
+            'market_report': 'technical analysis report...',
+            'fundamentals_report': 'Fundamental Analysis Report...'
         },
-        'decision': {  # 字典格式
+        'decision': {  # Dictionary format
             'action': 'SELL',
             'confidence': 0.8,
             'risk_score': 0.4,
             'target_price': 180.0,
-            'reasoning': '基于技术分析，建议卖出'
+            'reasoning': 'Based on technical analysis, it is recommended to sell'
         },
         'success': True,
         'error': None
@@ -70,17 +70,17 @@ def test_format_analysis_results():
     
     try:
         formatted2 = format_analysis_results(results2)
-        print("✅ 字典decision格式化成功")
-        print(f"  决策: {formatted2['decision']['action']}")
-        print(f"  置信度: {formatted2['decision']['confidence']}")
-        print(f"  推理: {formatted2['decision']['reasoning']}")
+        print("✅ Dictionary decision formatting successful")
+        print(f"  decision making: {formatted2['decision']['action']}")
+        print(f"  Confidence: {formatted2['decision']['confidence']}")
+        print(f"  reasoning: {formatted2['decision']['reasoning']}")
     except Exception as e:
-        print(f"❌ 字典decision格式化失败: {e}")
+        print(f"❌ Dictionary decision formatting failed: {e}")
     
     print()
     
-    # 测试案例3: decision 是其他类型
-    print("测试案例3: decision 是其他类型")
+    # test case 3: decision is other type
+    print("test case 3: decision is other type")
     results3 = {
         'stock_symbol': 'AAPL',
         'analysis_date': '2025-06-27',
@@ -88,48 +88,48 @@ def test_format_analysis_results():
         'research_depth': 3,
         'llm_model': 'qwen-plus',
         'state': {
-            'market_report': '技术分析报告...',
-            'fundamentals_report': '基本面分析报告...'
+            'market_report': 'technical analysis report...',
+            'fundamentals_report': 'Fundamental Analysis Report...'
         },
-        'decision': 123,  # 数字类型
+        'decision': 123,  # Numeric type
         'success': True,
         'error': None
     }
     
     try:
         formatted3 = format_analysis_results(results3)
-        print("✅ 其他类型decision格式化成功")
-        print(f"  决策: {formatted3['decision']['action']}")
-        print(f"  推理: {formatted3['decision']['reasoning']}")
+        print("✅ Other types of decision formatting successful")
+        print(f"  decision making: {formatted3['decision']['action']}")
+        print(f"  reasoning: {formatted3['decision']['reasoning']}")
     except Exception as e:
-        print(f"❌ 其他类型decision格式化失败: {e}")
+        print(f"❌ Other types of decision formatting failed: {e}")
     
     print()
     
-    # 测试案例4: 失败的结果
-    print("测试案例4: 失败的结果")
+    # test case 4: failed result
+    print("test case 4: failed result")
     results4 = {
         'stock_symbol': 'AAPL',
         'success': False,
-        'error': '分析失败'
+        'error': 'Analysis failed'
     }
     
     try:
         formatted4 = format_analysis_results(results4)
-        print("✅ 失败结果格式化成功")
-        print(f"  成功: {formatted4['success']}")
-        print(f"  错误: {formatted4['error']}")
+        print("✅ Failure result formatting successful")
+        print(f"  success: {formatted4['success']}")
+        print(f"  Error: {formatted4['error']}")
     except Exception as e:
-        print(f"❌ 失败结果格式化失败: {e}")
+        print(f"❌ Failure result format failed: {e}")
 
 def main():
-    """主测试函数"""
-    print("🧪 格式化修复测试")
+    """Main test function"""
+    print("🧪 Format repair test")
     print("=" * 60)
     
     test_format_analysis_results()
     
-    print("\n🎉 测试完成！")
+    print("\n🎉 Test completed!")
 
 if __name__ == "__main__":
     main()

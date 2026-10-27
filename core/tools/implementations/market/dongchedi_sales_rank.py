@@ -1,16 +1,16 @@
 """
-懂车帝汽车品牌月度销量查询工具
+The monthly sales query tool for car brands that understands Chedi
 
-数据来源：懂车帝公开销量榜接口
+Data source: Understanding Chedi s public sales list interface
     https://www.dongchedi.com/motor/pc/car/rank_data
-    ?month=202608          # 指定月份；500=近半年、1000=近一年聚合
-    &rank_data_type=11     # 全国月度销量榜
-    &count=100             # 单次上限 100
-    &offset=0              # 翻页有效
+    ?month=202608          # Specify month;500=In the past half year,1000=Aggregation in the past year
+    &rank_data_type=11     # National monthly sales list
+    &count=100             # Single limit 100
+    &offset=0              # Page turning is valid
 
-接口仅需 User-Agent + Referer，无需认证。
-榜单为车系（车型）粒度，含 brand_name（如 "AITO问界"），
-因此按品牌查询需要拉取全量榜单后再按品牌名匹配。
+The interface only requires User-Agent + Referer, No certification required.
+The list is at the granularity of car series (model), including brand_name (such as "AITO Ask the world") , 
+Therefore, querying by brand requires fetching the full list and then matching by brand name.
 """
 
 import logging
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 _RANK_API = "https://www.dongchedi.com/motor/pc/car/rank_data"
 
-# 懂车帝仅要求携带 UA + Referer，无需认证
+# Those who understand cars only require carrying UA + Referer, No certification required
 _HTTP_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -37,14 +37,14 @@ _HTTP_HEADERS = {
     "Referer": "https://www.dongchedi.com/auto/rank",
 }
 
-_RANK_TYPE_SALES = 11   # 11=全国月度销量榜（缺省为关注度榜）
-_PAGE_SIZE = 100        # 接口单次返回上限
-_MAX_PAGES = 12         # 翻页上限（1200 条），防御异常情况下的无限翻页
+_RANK_TYPE_SALES = 11   # 11=National monthly sales list (default is attention list)
+_PAGE_SIZE = 100        # The upper limit of the interface's single return
+_MAX_PAGES = 12         # The upper limit of page turning (1200 items) prevents unlimited page turning under abnormal circumstances.
 _REQUEST_TIMEOUT = 15
 _REQUEST_RETRIES = 2
 _RETRY_INTERVAL = 0.5
 
-# 缓存键前缀（走项目统一缓存入口，避免同一月份榜单被反复拉取）
+# Cache key prefix (take the unified cache entrance of the project to avoid the list of the same month being pulled repeatedly)
 _CACHE_SYMBOL_PREFIX = "dongchedi_rank"
 _CACHE_DATA_SOURCE = "dongchedi"
 
@@ -64,7 +64,7 @@ def _request_rank(params: Dict[str, Any]) -> Dict[str, Any]:
             payload = resp.json()
             if payload.get("status") == 0:
                 return payload
-            last_error = f"接口返回异常状态: status={payload.get('status')}, message={payload.get('message')}"
+            last_error = f"The interface returns an exception status: status={payload.get('status')}, message={payload.get('message')}"
         except Exception as e:
             last_error = str(e)
         if attempt < _REQUEST_RETRIES:
@@ -85,7 +85,7 @@ def _fetch_page(month: str, offset: int, count: int = _PAGE_SIZE) -> Dict[str, A
 
 
 def _fetch_rank_list(month: str) -> List[Dict[str, Any]]:
-    """翻页拉取指定月份的全国销量榜全量数据"""
+    """Turn the page to pull the full data of the national sales list for the specified month"""
     items: List[Dict[str, Any]] = []
     offset = 0
     for page in range(_MAX_PAGES):
@@ -103,7 +103,7 @@ def _fetch_rank_list(month: str) -> List[Dict[str, Any]]:
 
 
 def _probe_month(month: str) -> bool:
-    """探测某月是否有销量数据（仅取 1 条，节省流量）"""
+    """Detect whether there is sales data in a certain month (only take 1 to save traffic)"""
     try:
         data = _fetch_page(month, 0, count=1)
         return bool(data.get("list"))
@@ -112,7 +112,7 @@ def _probe_month(month: str) -> bool:
 
 
 def _previous_month(year_month: int) -> int:
-    """返回上一个自然月（YYYYMM 整数形式）"""
+    """Returns the previous calendar month (YYYYMM integer form)"""
     year, month = divmod(year_month, 100)
     if month == 1:
         return (year - 1) * 100 + 12
@@ -121,10 +121,10 @@ def _previous_month(year_month: int) -> int:
 
 def _detect_latest_month() -> str:
     """
-    返回最近一个有数据的完整月份
+    Returns the most recent complete month with data
 
-    起点取上一个自然月：当月榜单为滚动累计口径（月内尚未结束），
-    作为「月度销量」不完整，故默认不采用。
+    The starting point is the previous natural month: the current month s list is a rolling cumulative caliber (the month has not yet ended),
+    As monthly sales is incomplete, it is not used by default.
     """
     today = datetime.now()
     cursor = _previous_month(today.year * 100 + today.month)
@@ -138,23 +138,23 @@ def _detect_latest_month() -> str:
 
 def _normalize_month(month: str) -> Optional[str]:
     """
-    归一化月份输入
+    Normalized month input
 
     Returns:
-        接口可用的 month 值；None 表示未提供（需自动探测）；空字符串表示格式非法
+        Month value available for the interface; None means not provided (automatic detection required); empty string means the format is illegal
     """
     if month is None or str(month).strip() == "":
         return None
     text = str(month).strip()
-    # 先处理带分隔符的写法（2026年8月 / 2026-8 / 2026/8 / 2026.8），
-    # 否则“8”在去除非数字字符后会变成“20268”，月份前导 0 丢失
-    separated = re.search(r"(\d{4})\s*[年\-/.]\s*(\d{1,2})", text)
+    # First deal with the writing method with delimiters (August 2026 / 2026-8 / 2026/8 / 2026.8),
+    # Otherwise"8"After removing non-numeric characters it will become"20268", Month leading 0 missing
+    separated = re.search(r"(\d{4})\s*[year\-/.]\s*(\d{1,2})", text)
     if separated:
         return f"{separated.group(1)}{int(separated.group(2)):02d}"
     digits = re.sub(r"\D", "", text)
     if not digits:
         return ""
-    if digits in ("500", "1000"):   # 近半年 / 近一年聚合口径
+    if digits in ("500", "1000"):   # Aggregated caliber in the past half year/last year
         return digits
     if len(digits) == 6:            # YYYYMM
         return digits
@@ -162,7 +162,7 @@ def _normalize_month(month: str) -> Optional[str]:
 
 
 def _format_month_label(month: str) -> str:
-    """把 month 参数值转为可读的统计口径描述"""
+    """Convert the month parameter value into a readable statistical caliber description"""
     if month == "500":
         return "近半年（销量聚合）"
     if month == "1000":
@@ -173,16 +173,16 @@ def _format_month_label(month: str) -> str:
 
 
 def _normalize_text(value: Any) -> str:
-    """归一化品牌/车型名，便于大小写与空白无关的匹配"""
+    """Normalize brand/model names to facilitate case-independent and whitespace-independent matching"""
     return re.sub(r"\s+", "", str(value or "")).lower()
 
 
 def _match_brand_items(items: List[Dict[str, Any]], brand: str) -> List[Dict[str, Any]]:
     """
-    按品牌名匹配榜单条目
+    Match list entries by brand name
 
-    匹配优先级：品牌名精确匹配 > 品牌名/子品牌名/车系名包含关键词
-    （懂车帝品牌名常带前缀，如 "AITO问界"，故必须支持包含匹配）
+    Matching priority: brand name exact match > Brand name/sub-brand name/car series name contains keywords
+     (Understand that Chedi brand names often have prefixes, such as "AITO Ask the world", Therefore, inclusion matching must be supported)
     """
     key = _normalize_text(brand)
     if not key:
@@ -203,7 +203,7 @@ def _match_brand_items(items: List[Dict[str, Any]], brand: str) -> List[Dict[str
 
 
 def _format_rank_trend(rank: Any, last_rank: Any) -> str:
-    """根据本期/上期排名计算名次变化"""
+    """Calculate ranking changes based on current/previous issue rankings"""
     if not rank:
         return "-"
     if not last_rank:
@@ -227,7 +227,7 @@ def _render_brand_section(brand_name: str, sub_brand_name: str, rows: List[Dict[
     lines = [
         header,
         "",
-        "| 排名 | 车型 | 月销量(辆) | 售价区间 | 上期排名 | 名次变化 |",
+        "| Ranking | car model | monthly sales(vehicle) | Selling price range | Last issue ranking | Ranking changes |",
         "| --- | --- | --- | --- | --- | --- |",
     ]
     for item in rows:
@@ -244,7 +244,7 @@ def _render_brand_section(brand_name: str, sub_brand_name: str, rows: List[Dict[
 
 
 def _load_rank_list(month: str) -> List[Dict[str, Any]]:
-    """获取指定月份榜单全量数据（优先命中项目统一缓存）"""
+    """Obtain the full data of the list of the specified month (unified cache of prioritized hit items)"""
     symbol = f"{_CACHE_SYMBOL_PREFIX}_{month}_{_RANK_TYPE_SALES}"
 
     try:
@@ -263,7 +263,7 @@ def _load_rank_list(month: str) -> List[Dict[str, Any]]:
                 logger.info(f"✅ 懂车帝销量榜命中缓存: {symbol}（{len(cached)} 条）")
                 return cached
     except Exception as e:
-        logger.warning(f"⚠️ 懂车帝销量榜缓存读取失败，改为实时拉取: {e}")
+        logger.warning(f"⚠️ The cache reading of the car sales list failed and was changed to real-time fetching.: {e}")
 
     items = _fetch_rank_list(month)
 
@@ -278,7 +278,7 @@ def _load_rank_list(month: str) -> List[Dict[str, Any]]:
             data_source=_CACHE_DATA_SOURCE,
         )
     except Exception as e:
-        logger.warning(f"⚠️ 懂车帝销量榜缓存写入失败: {e}")
+        logger.warning(f"⚠️ Failed to write cache of car sales list: {e}")
 
     return items
 
@@ -287,7 +287,7 @@ def _load_rank_list(month: str) -> List[Dict[str, Any]]:
 @register_tool(
     tool_id="get_auto_brand_monthly_sales",
     name="汽车品牌月度销量",
-    description="查询指定汽车品牌在某个月份下的全部车型销量（懂车帝全国月度销量榜），返回车型排名、月销量、售价区间与名次变化",
+    description="Query the sales volume of all models of a specified car brand in a certain month (Dongchedi national monthly sales list), and return the model ranking, monthly sales volume, price range and ranking changes",
     category="market",
     is_online=True,
     auto_register=True,
@@ -297,35 +297,35 @@ def _load_rank_list(month: str) -> List[Dict[str, Any]]:
     preferred_for=["汽车品牌月度销量查询", "品牌旗下车型销量对比", "整车厂商销量跟踪"],
 )
 def get_auto_brand_monthly_sales(
-    brand: Annotated[str, "汽车品牌名称，如“问界”“比亚迪”“理想汽车”。支持模糊匹配：输入“问界”可匹配懂车帝品牌名“AITO问界”"],
-    month: Annotated[str, "统计月份，格式 YYYYMM（如 202608 表示 2026 年 8 月）；也可传 500（近半年聚合）或 1000（近一年聚合）；留空则自动使用最近一个有数据的完整月份"] = "",
+    brand: Annotated[str, "Car brand name, such as Ask the world  BYD  ideal car . Support fuzzy matching: input Ask the world Can match the brand name of the Chedi brand AITO Ask the world "],
+    month: Annotated[str, "Statistics month, format YYYYMM (for example, 202608 means August 2026); you can also pass 500 (aggregation in the past half year) or 1000 (aggregation in the past year); if left blank, the most recent complete month with data will be automatically used."] = "",
 ) -> str:
     """
-    查询汽车品牌月度销量。
+    Check the monthly sales volume of car brands.
 
-    通过懂车帝全国月度销量榜获取指定品牌旗下所有车型的月销量，
-    适用于汽车产业链/整车厂商的销量跟踪与横向对比。
+    Obtain the monthly sales of all models under the designated brand through the national monthly sales list of Dianchedi.
+    Suitable for sales tracking and horizontal comparison of the automotive industry chain/vehicle manufacturers.
 
     Args:
-        brand: 汽车品牌名称（支持模糊匹配）
-        month: 统计月份 YYYYMM，或 500/1000 聚合口径，留空自动取最近一个完整月份
+        brand: Car brand name (supports fuzzy matching)
+        month: Statistical month YYYYMM, or 500/1000 aggregation caliber, leave it blank to automatically select the latest complete month
 
     Returns:
-        str: markdown 格式的品牌车型销量报告
+        str: markdown Brand model sales report in format
     """
     if not brand or not str(brand).strip():
-        return "❌ 请提供汽车品牌名称，例如：问界、比亚迪、理想汽车。"
+        return "❌ Please provide the car brand name, for example: Wenjie, BYD, Li Auto."
 
     normalized_month = _normalize_month(month)
     if normalized_month == "":
-        return f"❌ 月份格式无法识别：{month}。请使用 YYYYMM 格式（如 202608），或 500（近半年）/1000（近一年）。"
+        return f"❌ The month format is not recognized:{month}. Please use YYYYMM format (such as 202608), or 500 (last half year)/1000 (last year)."
 
     try:
         if normalized_month is None:
             normalized_month = _detect_latest_month()
             if not normalized_month:
-                return "❌ 未能获取到最近的销量榜数据，请稍后重试或显式指定月份（如 202608）。"
-            logger.info(f"📅 懂车帝销量榜自动选用最新月份: {normalized_month}")
+                return "❌ Failed to obtain the latest sales list data, please try again later or specify the month explicitly (such as 202608)."
+            logger.info(f"📅 The car sales list automatically selects the latest month: {normalized_month}")
 
         month_label = _format_month_label(normalized_month)
         logger.info(f"🚗 [汽车品牌销量] 品牌={brand}, 月份={month_label}")
@@ -345,11 +345,11 @@ def get_auto_brand_monthly_sales(
                     break
             return (
                 f"❌ 未在 {month_label} 销量榜中找到品牌“{brand}”。\n\n"
-                f"该月榜单共 {len(items)} 款车型、{len(set(i.get('brand_name') for i in items))} 个品牌。\n"
-                f"可参考的品牌名示例：{'、'.join(top_brands)}。"
+                f"This month s list includes a total of {len(items)} models,{len(set(i.get('brand_name') for i in items))} brand.\n"
+                f"Examples of brand names to consider:{', '.join(top_brands)}. "
             )
 
-        # 按品牌分组（模糊匹配可能命中同一车企的多个品牌，如“吉利银河”“吉利汽车”）
+        # Group by brand (fuzzy matching may hit multiple brands of the same car company, such as"Geely Galaxy""Geely Automobile") 
         grouped: Dict[str, List[Dict[str, Any]]] = {}
         for item in matched:
             grouped.setdefault(item.get("brand_name") or str(brand), []).append(item)
@@ -361,9 +361,9 @@ def get_auto_brand_monthly_sales(
             sections.append(_render_brand_section(brand_name, sub_brand, rows))
 
         total_count = sum(int(item.get("count") or 0) for item in matched)
-        # 当月榜单为滚动累计口径，需向读者说明数据尚未完整
+        # The list of the current month is a rolling cumulative caliber, and readers need to be informed that the data is not yet complete.
         current_month = f"{datetime.now():%Y%m}"
-        month_note = "（该月尚未结束，为滚动累计数据）" if normalized_month == current_month else ""
+        month_note = " (The month has not yet ended, it is rolling cumulative data)" if normalized_month == current_month else ""
         report = f"""# 汽车品牌月度销量：{brand}
 
 - **统计口径**：懂车帝全国月度销量榜（{month_label}）{month_note}
@@ -379,5 +379,5 @@ def get_auto_brand_monthly_sales(
         return report
 
     except Exception as e:
-        logger.error(f"❌ [汽车品牌销量] 查询失败: {e}", exc_info=True)
-        return f"汽车品牌月度销量查询失败：{e}"
+        logger.error(f"❌ [car brand sales] Query failed: {e}", exc_info=True)
+        return f"Car brand monthly sales query failed:{e}"

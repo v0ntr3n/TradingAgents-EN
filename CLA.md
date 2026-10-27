@@ -1,43 +1,43 @@
-# 贡献者许可协议（CLA）—— 个人版
+# Contributor License Agreement (CLA) — Individual
 
-> 本协议用于 TradingAgents-CN 项目（含社区版与 Pro 版，下称"本项目"）接收社区贡献。签署前请仔细阅读；有疑问可邮件咨询维护者。
+> This agreement governs community contributions received by the TradingAgents-CN project (including both the Community Edition and Pro Edition, hereinafter referred to as "the Project"). Please read carefully before signing; if you have any questions, please contact the maintainer via email.
 
-**项目维护者**：hsliuping
-**贡献者**：＿＿＿＿＿＿＿＿（GitHub ID：＿＿＿＿＿＿＿＿）
-**签署日期**：＿＿＿＿＿＿＿＿
+**Project Maintainer**: hsliuping
+**Contributor**: ________________ (GitHub ID: ________________)
+**Date Signed**: ________________
 
-## 1. 定义
+## 1. Definitions
 
-**"贡献"** 指贡献者有意提交给本项目的任何原创作品，包括但不限于源代码、文档、配置、课程内容与测试用例。以下内容不视为贡献：贡献者明确标注为不受本协议约束的提交。
+**"Contribution"** means any original work of authorship intentionally submitted by the Contributor to the Project, including but not limited to source code, documentation, configurations, course content, and test cases. Submissions explicitly marked by the Contributor as "Not a Contribution" are excluded from this Agreement.
 
-## 2. 版权许可授予
+## 2. Grant of Copyright License
 
-贡献者授予维护者一份**永久、全球范围、免版税、非独占、不可撤销**的许可，允许维护者将贡献全部或部分纳入本项目及其衍生版本，并在本项目适用的任何许可下（包括但不限于 Apache License 2.0 及专有组件的商业许可）使用、复制、修改、再许可、分发与商业利用。
+The Contributor hereby grants to the Maintainer a **perpetual, worldwide, royalty-free, non-exclusive, irrevocable** copyright license to reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, distribute, and commercially exploit the Contribution (in whole or in part) as part of the Project and its derivative versions under any license applicable to the Project (including but not limited to the Apache License 2.0 and commercial licenses for proprietary components).
 
-**贡献者保留其贡献的全部版权。** 本条仅为许可授予，不构成版权转让。
+**The Contributor retains all copyright in their Contribution.** This section is solely a license grant and does not constitute an assignment of copyright.
 
-## 3. 专利许可授予（如适用）
+## 3. Grant of Patent License (If Applicable)
 
-如贡献包含可授予专利的内容，贡献者据此授予维护者及其被许可人一份**永久、全球范围、免版税、非独占、不可撤销**的专利许可，仅限用于制作、使用、销售本项目，且仅覆盖因维护者或其被许可人发起的专利诉讼而被撤销的范围。
+To the extent that the Contribution includes patentable subject matter, the Contributor hereby grants to the Maintainer and its licensees a **perpetual, worldwide, royalty-free, non-exclusive, irrevocable** patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Project, where such license applies only to those patent claims licensable by the Contributor that are necessarily infringed by their Contribution(s) alone or by combination of their Contribution(s) with the Project, and may be revoked only to the extent of patent litigation initiated by the Maintainer or its licensees.
 
-## 4. 声明与保证
+## 4. Representations and Warranties
 
-贡献者声明：
+The Contributor represents and warrants that:
 
-- 贡献是贡献者的原创作品，或贡献者已获得按本协议授予许可所需的充分权利
-- 贡献不侵犯任何第三方的版权、专利、商标、商业秘密或其他权利
-- 贡献不含恶意代码，不含密钥、隐私数据等敏感信息
-- 贡献不违反贡献者与任何第三方签署的协议（如雇佣协议中的知识产权条款）
+- The Contribution is the Contributor's original creation, or the Contributor has sufficient rights to grant the licenses set forth in this Agreement
+- The Contribution does not infringe upon any third party's copyright, patent, trademark, trade secret, or other rights
+- The Contribution does not contain malicious code, nor does it contain sensitive information such as secret keys or private data
+- The Contribution does not violate any agreement entered into by the Contributor with any third party (such as intellectual property clauses in an employment agreement)
 
-## 5. 免责声明
+## 5. Disclaimer of Warranties
 
-除本协议第 4 条的声明外，贡献按"现状"提供，不附带任何明示或默示的担保。在任何情况下，贡献者不对因贡献使用产生的损害承担责任。
+Except for the representations in Section 4 of this Agreement, the Contribution is provided on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. In no event shall the Contributor be liable for any damages arising out of the use of the Contribution.
 
-## 6. 签署
+## 6. Signature
 
-贡献者：＿＿＿＿＿＿＿＿　日期：＿＿＿＿＿＿＿＿
-维护者：＿＿＿＿＿＿＿＿　日期：＿＿＿＿＿＿＿＿
+Contributor: ________________  Date: ________________
+Maintainer:  ________________  Date: ________________
 
 ---
 
-*参考结构：Apache Software Foundation Individual Contributor License Agreement（ICLA）。本协议以中文文本为准。*
+*Reference structure: Apache Software Foundation Individual Contributor License Agreement (ICLA). In the event of any discrepancy between the Chinese and English versions, the Chinese text shall prevail.*

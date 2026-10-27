@@ -1,13 +1,13 @@
 """
-空白工作流模板
+Blank workflow template
 
-最简单的空白流程，只包含开始和结束节点。
-用户可以在此基础上自由添加自定义节点，构建个性化的分析流程。
+The simplest blank process contains only start and end nodes.
+Users can freely add custom nodes on this basis to build a personalized analysis process.
 
-适用场景:
-- 自定义分析流程
-- 学习工作流构建
-- 快速原型开发
+Applicable scenarios:
+- Custom analysis process
+- Learning workflow construction
+- rapid prototyping
 """
 
 from ..models import (
@@ -22,51 +22,51 @@ from ..models import (
 
 BLANK_WORKFLOW = WorkflowDefinition(
     id="blank_workflow",
-    name="空白流程",
-    description="最简单的空白工作流模板，只包含开始和结束节点。用户可以在此基础上自由添加自定义节点，构建个性化的分析流程。适合学习工作流构建或快速原型开发。",
-    version="2.0.0",  # 使用 v2.0 版本，支持 v2.0 Agent
+    name="Blank process",
+    description="The simplest blank workflow template, containing only start and end nodes. Users can freely add custom nodes on this basis to build a personalized analysis process. Ideal for learning workflow building or rapid prototyping.",
+    version="2.0.0",  # Using v2.0 version, support v2.0 Agent
     is_template=True,
-    tags=["空白", "自定义", "模板", "v2.0"],  # 添加 v2.0 标签以便在前端显示
+    tags=["blank", "Customize", "Template", "v2.0"],  # Add v2.0 tag to display on frontend
     
     config={
-        "description": "这是一个空白工作流模板，您可以添加任意节点",
-        "usage": "点击画布添加节点，拖拽连接节点创建流程",
+        "description": "This is a blank workflow template, you can add any nodes",
+        "usage": "Click on the canvas to add nodes, drag and drop to connect the node creation process",
     },
     
     nodes=[
-        # 开始节点
+        # start node
         NodeDefinition(
             id="start",
             type=NodeType.START,
-            label="开始",
+            label="start",
             position=Position(x=400, y=50),
             config={
-                "description": "工作流起点",
+                "description": "Workflow starting point",
             }
         ),
         
-        # 结束节点
+        # end node
         NodeDefinition(
             id="end",
             type=NodeType.END,
-            label="结束",
+            label="end",
             position=Position(x=400, y=500),
             config={
-                "description": "工作流终点",
+                "description": "Workflow end point",
             }
         ),
     ],
     
     edges=[
-        # 开始 -> 结束 (默认直连，用户可以删除此边并添加中间节点)
+        # start -> end (Direct connection by default, user can delete this edge and add intermediate nodes)
         EdgeDefinition(
             id="e_start_end",
             source="start",
             target="end",
             type=EdgeType.NORMAL,
             config={
-                "description": "默认连接，可以删除并添加中间节点",
-                "style": "dashed",  # 虚线表示这是临时连接
+                "description": "Default connection, intermediate nodes can be removed and added",
+                "style": "dashed",  # The dotted line indicates that this is a temporary connection
             }
         ),
     ],

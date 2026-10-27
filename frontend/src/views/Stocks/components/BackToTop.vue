@@ -4,7 +4,7 @@
       v-show="visible"
       class="back-to-top"
       @click="scrollToTop"
-      aria-label="回到顶部"
+      aria-label="back to top"
     >
       ↑
     </button>

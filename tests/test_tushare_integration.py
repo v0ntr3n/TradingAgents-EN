@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Tushare集成测试
-验证Tushare数据源的集成功能，包括数据获取、缓存、接口调用等
+Tushare Integration testing
+Verify the integrated functions of Tushare data source, including data acquisition, caching, interface calling, etc.
 """
 
 import os
@@ -9,128 +9,128 @@ import sys
 import pandas as pd
 from datetime import datetime, timedelta
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 
 def test_tushare_provider():
-    """测试Tushare提供器基本功能"""
-    print("\n🔧 测试Tushare提供器")
+    """Test the basic functions of Tushare provider"""
+    print("\n🔧 Test the Tushare provider")
     print("=" * 60)
     
     try:
         from tradingagents.dataflows.tushare_utils import get_tushare_provider
         
-        print("✅ Tushare工具库加载成功")
+        print("✅ Tushare Tool library loaded successfully")
         
-        # 创建提供器实例
+        # Create provider instance
         provider = get_tushare_provider()
         
         if provider.connected:
-            print("✅ Tushare API连接成功")
+            print("✅ Tushare API Connection successful")
             
-            # 测试获取股票列表
-            print("🔄 测试获取股票列表...")
+            # Test to get the stock list
+            print("🔄 Test to get the stock list...")
             stock_list = provider.get_stock_list()
             
             if not stock_list.empty:
-                print(f"✅ 获取股票列表成功: {len(stock_list)}条")
-                print(f"📊 示例股票: {stock_list.head(3)[['ts_code', 'name']].to_string(index=False)}")
+                print(f"✅ Obtained stock list successfully: {len(stock_list)}Article")
+                print(f"📊 Example stocks: {stock_list.head(3)[['ts_code', 'name']].to_string(index=False)}")
             else:
-                print("❌ 获取股票列表失败")
+                print("❌ Failed to get stock list")
             
-            # 测试获取股票信息
-            print("🔄 测试获取股票信息...")
+            # Test to obtain stock information
+            print("🔄 Test to obtain stock information...")
             stock_info = provider.get_stock_info("000001")
             
             if stock_info and stock_info.get('name'):
-                print(f"✅ 获取股票信息成功: {stock_info['name']}")
+                print(f"✅ Obtained stock information successfully: {stock_info['name']}")
             else:
-                print("❌ 获取股票信息失败")
+                print("❌ Failed to obtain stock information")
             
-            # 测试获取股票数据
-            print("🔄 测试获取股票数据...")
+            # Test to obtain stock data
+            print("🔄 Test to obtain stock data...")
             end_date = datetime.now().strftime('%Y-%m-%d')
             start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
             
             stock_data = provider.get_stock_daily("000001", start_date, end_date)
             
             if not stock_data.empty:
-                print(f"✅ 获取股票数据成功: {len(stock_data)}条")
+                print(f"✅ Obtaining stock data successfully: {len(stock_data)}Article")
             else:
-                print("❌ 获取股票数据失败")
+                print("❌ Failed to get stock data")
         else:
-            print("❌ Tushare API连接失败")
+            print("❌ Tushare API Connection failed")
         
     except Exception as e:
-        print(f"❌ Tushare提供器测试失败: {e}")
+        print(f"❌ Tushare Provider test failed: {e}")
         import traceback
         traceback.print_exc()
 
 
 def test_tushare_adapter():
-    """测试Tushare适配器功能"""
-    print("\n🔧 测试Tushare适配器")
+    """Test Tushare adapter functionality"""
+    print("\n🔧 Test Tushare Adapter")
     print("=" * 60)
     
     try:
         from tradingagents.dataflows.tushare_adapter import get_tushare_adapter
         
-        print("✅ Tushare适配器库加载成功")
+        print("✅ Tushare Adapter library loaded successfully")
         
-        # 创建适配器实例
+        # Create adapter instance
         adapter = get_tushare_adapter()
         
-        # 测试获取股票数据
-        print("🔄 测试获取股票数据...")
+        # Test to obtain stock data
+        print("🔄 Test to obtain stock data...")
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
         
         stock_data = adapter.get_stock_data("000001", start_date, end_date)
         
         if not stock_data.empty:
-            print(f"✅ 获取股票数据成功: {len(stock_data)}条")
-            print(f"📊 数据列: {list(stock_data.columns)}")
+            print(f"✅ Obtaining stock data successfully: {len(stock_data)}Article")
+            print(f"📊 data column: {list(stock_data.columns)}")
         else:
-            print("❌ 获取股票数据失败")
+            print("❌ Failed to get stock data")
         
-        # 测试获取股票信息
-        print("🔄 测试获取股票信息...")
+        # Test to obtain stock information
+        print("🔄 Test to obtain stock information...")
         stock_info = adapter.get_stock_info("000001")
         
         if stock_info and stock_info.get('name'):
-            print(f"✅ 获取股票信息成功: {stock_info['name']}")
+            print(f"✅ Obtained stock information successfully: {stock_info['name']}")
         else:
-            print("❌ 获取股票信息失败")
+            print("❌ Failed to obtain stock information")
         
-        # 测试搜索股票
-        print("🔄 测试搜索股票...")
-        search_results = adapter.search_stocks("平安")
+        # Test searching for stocks
+        print("🔄 Test searching for stocks...")
+        search_results = adapter.search_stocks("Peace")
         
         if not search_results.empty:
-            print(f"✅ 搜索股票成功: {len(search_results)}条结果")
+            print(f"✅ Stock search successful: {len(search_results)}results")
         else:
-            print("❌ 搜索股票失败")
+            print("❌ Stock search failed")
         
-        # 测试基本面数据
-        print("🔄 测试基本面数据...")
+        # Test fundamental data
+        print("🔄 Test fundamental data...")
         fundamentals = adapter.get_fundamentals("000001")
         
         if fundamentals and len(fundamentals) > 100:
-            print(f"✅ 获取基本面数据成功: {len(fundamentals)}字符")
+            print(f"✅ Fundamental data obtained successfully: {len(fundamentals)}character")
         else:
-            print("❌ 获取基本面数据失败")
+            print("❌ Failed to obtain fundamental data")
         
     except Exception as e:
-        print(f"❌ Tushare适配器测试失败: {e}")
+        print(f"❌ Tushare Adapter test failed: {e}")
         import traceback
         traceback.print_exc()
 
 
 def test_tushare_interface():
-    """测试Tushare接口函数"""
-    print("\n🔧 测试Tushare接口函数")
+    """Test Tushare interface function"""
+    print("\n🔧 Test Tushare interface function")
     print("=" * 60)
     
     try:
@@ -141,56 +141,56 @@ def test_tushare_interface():
             get_china_stock_info_tushare
         )
         
-        print("✅ Tushare接口函数加载成功")
+        print("✅ Tushare Interface function loaded successfully")
         
-        # 测试获取股票数据接口
-        print("🔄 测试股票数据接口...")
+        # Test the interface for obtaining stock data
+        print("🔄 Test the stock data interface...")
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
         
         data_result = get_china_stock_data_tushare("000001", start_date, end_date)
         
-        if "股票代码: 000001" in data_result:
-            print("✅ 股票数据接口测试成功")
+        if "Stock code: 000001" in data_result:
+            print("✅ Stock data interface test successful")
         else:
-            print("❌ 股票数据接口测试失败")
+            print("❌ Stock data interface test failed")
         
-        # 测试搜索接口
-        print("🔄 测试搜索接口...")
-        search_result = search_china_stocks_tushare("平安")
+        # Test search interface
+        print("🔄 Test search interface...")
+        search_result = search_china_stocks_tushare("Peace")
         
-        if "搜索关键词: 平安" in search_result:
-            print("✅ 搜索接口测试成功")
+        if "Search keywords: Peace" in search_result:
+            print("✅ Search interface test successful")
         else:
-            print("❌ 搜索接口测试失败")
+            print("❌ Search interface test failed")
         
-        # 测试股票信息接口
-        print("🔄 测试股票信息接口...")
+        # Test the stock information interface
+        print("🔄 Test the stock information interface...")
         info_result = get_china_stock_info_tushare("000001")
         
-        if "股票代码: 000001" in info_result:
-            print("✅ 股票信息接口测试成功")
+        if "Stock code: 000001" in info_result:
+            print("✅ Stock information interface test successful")
         else:
-            print("❌ 股票信息接口测试失败")
+            print("❌ Stock information interface test failed")
         
-        # 测试基本面接口
-        print("🔄 测试基本面接口...")
+        # Test fundamental interface
+        print("🔄 Test fundamental interface...")
         fundamentals_result = get_china_stock_fundamentals_tushare("000001")
         
-        if "基本面分析报告" in fundamentals_result:
-            print("✅ 基本面接口测试成功")
+        if "Fundamental Analysis Report" in fundamentals_result:
+            print("✅ Basic interface test successful")
         else:
-            print("❌ 基本面接口测试失败")
+            print("❌ Fundamental interface test failed")
         
     except Exception as e:
-        print(f"❌ Tushare接口函数测试失败: {e}")
+        print(f"❌ Tushare Interface function test failed: {e}")
         import traceback
         traceback.print_exc()
 
 
 def test_tushare_cache():
-    """测试Tushare缓存功能"""
-    print("\n🔧 测试Tushare缓存功能")
+    """Test Tushare caching function"""
+    print("\n🔧 Test Tushare caching function")
     print("=" * 60)
     
     try:
@@ -199,119 +199,119 @@ def test_tushare_cache():
         adapter = get_tushare_adapter()
         
         if not adapter.enable_cache:
-            print("⚠️ 缓存功能未启用，跳过缓存测试")
+            print("⚠️ Cache function is not enabled, skip cache test")
             return
         
-        print("✅ 缓存功能已启用")
+        print("✅ Caching is enabled")
         
-        # 第一次获取数据（应该从API获取）
-        print("🔄 第一次获取数据（从API）...")
+        # Get data for the first time (should be obtained from API)
+        print("🔄 Getting data for the first time (from API)...")
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=10)).strftime('%Y-%m-%d')
         
         data1 = adapter.get_stock_data("000001", start_date, end_date)
         
         if not data1.empty:
-            print(f"✅ 第一次获取成功: {len(data1)}条")
+            print(f"✅ First time success: {len(data1)}Article")
         else:
-            print("❌ 第一次获取失败")
+            print("❌ The first acquisition failed")
             return
         
-        # 第二次获取数据（应该从缓存获取）
-        print("🔄 第二次获取数据（从缓存）...")
+        # Second time to get data (should be from cache)
+        print("🔄 Second time getting data (from cache)...")
         data2 = adapter.get_stock_data("000001", start_date, end_date)
         
         if not data2.empty:
-            print(f"✅ 第二次获取成功: {len(data2)}条")
+            print(f"✅ Successful second time: {len(data2)}Article")
             
-            # 比较数据是否一致
+            # Compare data for consistency
             if len(data1) == len(data2):
-                print("✅ 缓存数据一致性验证通过")
+                print("✅ Cache data consistency verification passed")
             else:
-                print("⚠️ 缓存数据可能不一致")
+                print("⚠️ Cache data may be inconsistent")
         else:
-            print("❌ 第二次获取失败")
+            print("❌ The second acquisition failed")
         
     except Exception as e:
-        print(f"❌ Tushare缓存测试失败: {e}")
+        print(f"❌ Tushare Cache test failed: {e}")
         import traceback
         traceback.print_exc()
 
 
 def check_tushare_environment():
-    """检查Tushare环境配置"""
-    print("\n🔧 检查Tushare环境配置")
+    """Check Tushare environment configuration"""
+    print("\n🔧 Check Tushare environment configuration")
     print("=" * 60)
     
-    # 检查Tushare库
+    # Check Tushare library
     try:
         import tushare as ts
-        print("✅ Tushare库已安装")
-        print(f"📦 Tushare版本: {ts.__version__}")
+        print("✅ Tushare Library installed")
+        print(f"📦 Tushare version: {ts.__version__}")
     except ImportError:
-        print("❌ Tushare库未安装，请运行: pip install tushare")
+        print("❌ Tushare The library is not installed, please run: pip install tushare")
         return False
     
-    # 检查API Token
+    # Check API Token
     token = os.getenv('TUSHARE_TOKEN')
     if token:
-        print("✅ TUSHARE_TOKEN环境变量已设置")
-        print(f"🔑 Token长度: {len(token)}字符")
+        print("✅ TUSHARE_TOKEN Environment variables are set")
+        print(f"🔑 Token length: {len(token)}character")
     else:
-        print("❌ 未设置TUSHARE_TOKEN环境变量")
-        print("💡 请在.env文件中设置: TUSHARE_TOKEN=your_token_here")
+        print("❌ TUSHARE_TOKEN environment variable not set")
+        print("💡 Please set it in the .env file: TUSHARE_TOKEN=your_token_here")
         return False
     
-    # 检查缓存目录
+    # Check cache directory
     try:
         from tradingagents.dataflows.cache_manager import get_cache
         cache = get_cache()
-        print("✅ 缓存管理器可用")
+        print("✅ Cache manager available")
     except Exception as e:
-        print(f"⚠️ 缓存管理器不可用: {e}")
+        print(f"⚠️ Cache manager is unavailable: {e}")
     
     return True
 
 
 def main():
-    """主测试函数"""
-    print("🔬 Tushare集成测试")
+    """Main test function"""
+    print("🔬 Tushare Integration testing")
     print("=" * 70)
-    print("💡 测试目标:")
-    print("   - Tushare环境配置检查")
-    print("   - Tushare提供器功能测试")
-    print("   - Tushare适配器功能测试")
-    print("   - Tushare接口函数测试")
-    print("   - Tushare缓存功能测试")
+    print("💡 Test target:")
+    print("   - Tushare Environment configuration check")
+    print("   - Tushare Provider functionality testing")
+    print("   - Tushare Adapter functional test")
+    print("   - Tushare Interface function testing")
+    print("   - Tushare Cache function test")
     print("=" * 70)
     
-    # 检查环境配置
+    # Check environment configuration
     if not check_tushare_environment():
-        print("\n❌ 环境配置检查失败，请先配置Tushare环境")
+        print("\n❌ The environment configuration check failed. Please configure the Tushare environment first.")
         return
     
-    # 运行所有测试
+    # Run all tests
     test_tushare_provider()
     test_tushare_adapter()
     test_tushare_interface()
     test_tushare_cache()
     
-    # 总结
-    print("\n📋 Tushare集成测试总结")
+    # Summary
+    print("\n📋 Tushare Integration test summary")
     print("=" * 60)
-    print("✅ Tushare提供器: 基本功能测试")
-    print("✅ Tushare适配器: 数据获取和处理")
-    print("✅ Tushare接口: 统一接口函数")
-    print("✅ Tushare缓存: 性能优化功能")
+    print("✅ Tushare provider: Basic functional testing")
+    print("✅ Tushare adapter: Data acquisition and processing")
+    print("✅ Tushare interface: Unified interface function")
+    print("✅ Tushare cache: Performance optimization features")
     
-    print("\n🎉 Tushare集成测试完成！")
-    print("\n🎯 现在可以使用Tushare数据源:")
-    print("   1. 在CLI中选择Tushare作为A股数据源")
-    print("   2. 在Web界面中配置Tushare数据源")
-    print("   3. 使用API接口获取A股数据")
-    print("   4. 享受高质量的A股数据服务")
+    print("\n🎉 Tushare Integration testing completed!")
+    print("\n🎯 Tushare data sources are now available:")
+    print("   1. Select Tushare as the A-share data source in the CLI")
+    print("   2. Configure Tushare data source in web interface")
+    print("   3. Use API interface to obtain A-share data")
+    print("   4. Enjoy high-quality A-share data services")
     
-    input("按回车键退出...")
+    input("Press Enter to exit...")
 
 
 if __name__ == "__main__":

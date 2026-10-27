@@ -1,24 +1,24 @@
 """
-报告与通知 API 验收测试
+Reporting and Notification API Acceptance Testing
 
-覆盖:
-- GET  /api/reports/list           报告列表
-- GET  /api/notifications          通知列表
-- GET  /api/usage/statistics       使用统计
+Cover:
+- GET  /api/reports/list           Report list
+- GET  /api/notifications          Notification list
+- GET  /api/usage/statistics       usage statistics
 """
 import pytest
 
 
 class TestReports:
-    """报告测试。"""
+    """Report the test."""
 
     def test_get_reports_list(self, api_client):
-        """获取报告列表。"""
+        """Get a list of reports."""
         resp = api_client.get("/api/reports/list")
-        assert resp.status_code == 200, f"获取报告列表失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to get report list: {resp.text}"
 
     def test_get_reports_list_with_pagination(self, api_client):
-        """分页获取报告列表。"""
+        """Get the report list in pages."""
         resp = api_client.get("/api/reports/list", params={
             "page": 1,
             "page_size": 10,
@@ -27,28 +27,28 @@ class TestReports:
 
 
 class TestNotifications:
-    """通知测试。"""
+    """Notify the test."""
 
     def test_get_notifications(self, api_client):
-        """获取通知列表。"""
+        """Get a list of notifications."""
         resp = api_client.get("/api/notifications")
-        assert resp.status_code == 200, f"获取通知列表失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to get notification list: {resp.text}"
 
     def test_get_unread_count(self, api_client):
-        """获取未读通知数量。"""
+        """Get the number of unread notifications."""
         resp = api_client.get("/api/notifications/unread-count")
-        assert resp.status_code in (200, 404), f"获取未读数量异常: {resp.status_code}"
+        assert resp.status_code in (200, 404), f"Get unread count exception: {resp.status_code}"
 
 
 class TestUsageStatistics:
-    """使用统计测试。"""
+    """Use statistical tests."""
 
     def test_get_usage_statistics(self, api_client):
-        """获取使用统计。"""
+        """Get usage statistics."""
         resp = api_client.get("/api/usage/statistics")
-        assert resp.status_code == 200, f"获取使用统计失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain usage statistics: {resp.text}"
 
     def test_get_token_statistics(self, api_client):
-        """获取 Token 使用统计。"""
+        """Get Token usage statistics."""
         resp = api_client.get("/api/usage/token-statistics")
-        assert resp.status_code in (200, 404), f"获取Token统计异常: {resp.status_code}"
+        assert resp.status_code in (200, 404), f"Obtaining Token statistics exception: {resp.status_code}"

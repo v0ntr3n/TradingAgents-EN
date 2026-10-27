@@ -46,7 +46,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: 'CN',
-  placeholder: '选择市场',
+  placeholder: 'Choose a market',
   size: 'default',
   clearable: false,
   disabled: false
@@ -55,7 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const markets: Market[] = [
-  { code: 'CN', label: 'A股', flag: '🇨🇳' }
+  { code: 'CN', label: 'A shares', flag: '🇨🇳' }
 ]
 
 const selectedMarket = ref(props.modelValue)

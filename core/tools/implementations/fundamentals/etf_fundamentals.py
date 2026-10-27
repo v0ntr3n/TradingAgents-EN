@@ -1,8 +1,8 @@
 """
-ETF 基本面数据工具
+ETF Fundamental Data Tools
 
-获取 ETF 的净值、规模、费率、折溢价、申赎状态等指标（ETF 无 PE/PB/ROE）。
-支持本地数据优先：若 etf_basic_info、etf_daily_quotes 有数据则使用，否则回退到 AKShare / Tushare 在线接口。
+Get the net value, size, fee rate, discount and premium, subscription and redemption status and other indicators of the ETF (ETF does not have PE/PB/ROE).
+Support local data priority: if etf_basic_info and etf_daily_quotes have data, use it, otherwise fall back to AKShare / Tushare online interface.
 """
 
 import logging
@@ -59,7 +59,7 @@ def _normalize_source_name(name: str) -> str:
 
 
 def _get_etf_source_priority() -> list:
-    """获取 ETF 可用数据源优先级，遵循统一配置。"""
+    """Get the priority of ETF available data sources and follow the unified configuration."""
     try:
         from app.core.data_source_priority import get_enabled_data_sources_sync
 
@@ -72,17 +72,17 @@ def _get_etf_source_priority() -> list:
                     priority.append(normalized)
 
         if priority:
-            logger.info(f"📊 [ETF 基本面] 数据源优先级: {priority}")
+            logger.info(f"📊 [ETF Fundamentals] Data source priority: {priority}")
             return priority
     except Exception as e:
-        logger.warning(f"⚠️ [ETF 基本面] 获取统一数据源优先级失败: {e}")
+        logger.warning(f"⚠️ [ETF Fundamentals] Failed to obtain unified data source priority: {e}")
 
-    logger.info(f"📊 [ETF 基本面] 使用默认数据源优先级: {ETF_DEFAULT_SOURCE_PRIORITY}")
+    logger.info(f"📊 [ETF Fundamentals] Use default data source priority: {ETF_DEFAULT_SOURCE_PRIORITY}")
     return ETF_DEFAULT_SOURCE_PRIORITY.copy()
 
 
 def _normalize_etf_symbol(symbol: str) -> str:
-    """将 ETF 代码标准化为 6 位数字"""
+    """Standardize ETF symbols to 6 digits"""
     if not symbol:
         return ""
     s = str(symbol).strip().upper()
@@ -99,7 +99,7 @@ def _normalize_etf_symbol(symbol: str) -> str:
 
 
 def _get_etf_full_symbol(symbol: str) -> str:
-    """根据代码前缀生成完整代码（510050.SH, 159919.SZ）"""
+    """Generate complete code based on code prefix (510050.SH, 159919.SZ) """
     code = _normalize_etf_symbol(symbol)
     if not code or len(code) != 6:
         return ""
@@ -111,7 +111,7 @@ def _get_etf_full_symbol(symbol: str) -> str:
 
 
 def _fetch_etf_from_local(code: str) -> Tuple[Optional[dict], list]:
-    """从本地 MongoDB 获取 ETF 基础信息和日线数据。"""
+    """Get ETF fundamentals and daily data from local MongoDB."""
     try:
         from app.core.database import get_mongo_db_sync
 
@@ -130,12 +130,12 @@ def _fetch_etf_from_local(code: str) -> Tuple[Optional[dict], list]:
         daily = list(cursor)
         return basic, daily
     except Exception as e:
-        logger.debug(f"本地 ETF 数据查询失败: {e}")
+        logger.debug(f"Local ETF data query failed: {e}")
         return None, []
 
 
 def _fetch_etf_data_akshare(symbol: str) -> Optional[dict]:
-    """从 AKShare 获取 ETF 实时行情数据。"""
+    """Get real-time ETF market data from AKShare."""
     try:
         import akshare as ak
 
@@ -169,12 +169,12 @@ def _fetch_etf_data_akshare(symbol: str) -> Optional[dict]:
             "fund_type": record.get("基金类型", ""),
         }
     except Exception as e:
-        logger.warning(f"AKShare ETF 数据获取失败: {e}")
+        logger.warning(f"AKShare ETF Data acquisition failed: {e}")
         return None
 
 
 def _fetch_etf_valuation_akshare(symbol: str) -> Optional[dict]:
-    """从 AKShare 获取 ETF 净值、折溢价和场内申赎状态。"""
+    """Get ETF net value, discount and premium, and on-market application and redemption status from AKShare."""
     try:
         import akshare as ak
 
@@ -225,16 +225,16 @@ def _fetch_etf_valuation_akshare(symbol: str) -> Optional[dict]:
                     }
                 )
         except Exception as exc:
-            logger.warning(f"AKShare ETF 申赎状态获取失败: {exc}")
+            logger.warning(f"AKShare ETF Failed to obtain redemption status: {exc}")
 
         return result
     except Exception as e:
-        logger.warning(f"AKShare ETF 估值数据获取失败: {e}")
+        logger.warning(f"AKShare ETF Failed to obtain valuation data: {e}")
         return None
 
 
 def _fetch_etf_data_tushare(symbol: str) -> Optional[dict]:
-    """从 Tushare 获取 ETF 数据（fund_basic + 最新 fund_daily）。"""
+    """Get ETF data from Tushare (fund_basic + latest fund_daily)."""
     try:
         from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
 
@@ -297,12 +297,12 @@ def _fetch_etf_data_tushare(symbol: str) -> Optional[dict]:
             "redemption_start_date": record.get("redm_startdate"),
         }
     except Exception as e:
-        logger.warning(f"Tushare ETF 数据获取失败: {e}")
+        logger.warning(f"Tushare ETF Data acquisition failed: {e}")
         return None
 
 
 def _fetch_etf_hist_tushare(symbol: str, days: int = 30) -> list:
-    """从 Tushare 获取 ETF 历史数据。"""
+    """Get ETF historical data from Tushare."""
     try:
         from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
 
@@ -342,12 +342,12 @@ def _fetch_etf_hist_tushare(symbol: str, days: int = 30) -> list:
             )
         return records
     except Exception as e:
-        logger.warning(f"Tushare ETF 历史数据获取失败: {e}")
+        logger.warning(f"Tushare ETF Failed to obtain historical data: {e}")
         return []
 
 
 def _fetch_etf_hist_akshare(symbol: str, days: int = 30) -> list:
-    """从 AKShare 获取 ETF 历史数据。"""
+    """Get historical ETF data from AKShare."""
     try:
         import akshare as ak
 
@@ -361,7 +361,7 @@ def _fetch_etf_hist_akshare(symbol: str, days: int = 30) -> list:
             return []
         return df.to_dict("records")
     except Exception as e:
-        logger.warning(f"AKShare ETF 历史数据获取失败: {e}")
+        logger.warning(f"AKShare ETF Failed to obtain historical data: {e}")
         return []
 
 
@@ -374,7 +374,7 @@ def _merge_missing_fields(target: dict, extra: Optional[dict]) -> dict:
 
 
 def _fetch_etf_online_bundle(symbol: str, source: str, include_hist: bool = True) -> Tuple[Optional[dict], list]:
-    """按指定在线数据源获取 ETF 数据，避免跨源无序回退。"""
+    """Obtain ETF data from specified online data sources to avoid disordered rollback across sources."""
     normalized = _normalize_source_name(source)
     hist = []
 
@@ -400,7 +400,7 @@ def _fetch_etf_online_bundle(symbol: str, source: str, include_hist: bool = True
 @register_tool(
     tool_id="get_etf_fundamentals",
     name="ETF 基本面数据",
-    description="获取 ETF 的净值、规模、费率、折溢价、申赎状态、跟踪指数、涨跌幅等。",
+    description="Get the net value, size, fee rate, discount and premium, subscription and redemption status, tracking index, rise and fall, etc. of the ETF.",
     category="fundamentals",
     is_online=True,
     auto_register=True,
@@ -410,42 +410,42 @@ def _fetch_etf_online_bundle(symbol: str, source: str, include_hist: bool = True
     preferred_for=["etf_analysis", "etf_valuation_review", "fund_basics_lookup"],
 )
 def get_etf_fundamentals(
-    ticker: Annotated[str, "ETF 代码（如 510050、159919）"],
-    start_date: Annotated[Optional[str], "开始日期，格式：YYYY-MM-DD"] = None,
-    end_date: Annotated[Optional[str], "结束日期，格式：YYYY-MM-DD"] = None,
-    curr_date: Annotated[Optional[str], "当前日期，格式：YYYY-MM-DD"] = None,
+    ticker: Annotated[str, "ETF Code (such as 510050, 159919)"],
+    start_date: Annotated[Optional[str], "Start date, format:YYYY-MM-DD"] = None,
+    end_date: Annotated[Optional[str], "End date, format:YYYY-MM-DD"] = None,
+    curr_date: Annotated[Optional[str], "Current date, format:YYYY-MM-DD"] = None,
 ) -> str:
-    """获取 ETF 基本面分析数据。
+    """Get ETF fundamental analysis data.
 
     Args:
-        ticker: ETF 代码（如 "510050"、"159919"）
-        start_date: 开始日期（YYYY-MM-DD），默认 None（当前未使用）
-        end_date: 结束日期（YYYY-MM-DD），默认 None（当前未使用）
-        curr_date: 当前日期（YYYY-MM-DD），为 None 时使用 datetime.now()，默认 None
+        ticker: ETF code (such as "510050", "159919") 
+        start_date: Start date (YYYY-MM-DD), default None (currently not used)
+        end_date: End date (YYYY-MM-DD), default None (currently not used)
+        curr_date: Current date (YYYY-MM-DD), used when None datetime.now(), Default None
 
     Returns:
-        str: Markdown 格式字符串，包含以下章节——
-            标题: "{ticker} ETF 基本面分析数据"
-            分析日期: 当前或指定日期
-            ETF 基本信息: 名称、代码、完整代码、基金类型、跟踪指数、管理人、托管人、成立日期、上市日期
-            当前行情: 最新价、涨跌幅、成交量、成交额、规模
-            ETF 深属性: 单位净值、累计净值、净值日期、场内市价、折溢价率、净值增长率、
-                管理费、托管费、起购金额、申购开始日、赎回开始日、申购状态、赎回状态、
-                投资类型、基金状态、跟踪误差、申赎清单结构
-            近期走势: 最近 5 个交易日的日期、收盘价、涨跌幅
-            说明: 关于 ETF 不适用个股估值指标的提示
+        str: Markdown Format string containing the following sections——
+            Title: "{ticker} ETF fundamental analysis data"
+            Analysis date: current or specified date
+            ETF Basic information: Name, code, complete code, fund type, tracking index, manager, custodian, establishment date, listing date
+            Current market: Latest price, increase or decrease, trading volume, turnover, scale
+            ETF Deep attributes: Unit net value, accumulated net value, net value date, market price on the market, discount and premium rate, net value growth rate,
+                Management fee, custody fee, minimum purchase amount, subscription start date, redemption start date, subscription status, redemption status,
+                Investment type, fund status, tracking error, subscription and redemption list structure
+            Recent trends: Date, closing price, increase and decrease of the last 5 trading days
+            Description: A reminder that ETFs do not apply to individual stock valuation indicators
 
-            若代码非法返回 "❌ 无效的 ETF 代码..." 提示字符串；
-            若代码非 ETF 代码返回 "❌ {ticker} 不是 ETF 代码..." 提示字符串。
+            If the code is illegal return "❌ Invalid ETF symbol..." prompt string;
+            Returns if the code is not an ETF code "❌ {ticker} Not an ETF symbol..." Prompt string.
     """
-    logger.info(f"📊 [ETF 基本面] 分析: {ticker}")
+    logger.info(f"📊 [ETF Fundamentals] analysis: {ticker}")
 
     code = _normalize_etf_symbol(ticker)
     if not code or len(code) != 6:
-        return f"❌ 无效的 ETF 代码: {ticker}，请输入 6 位数字（如 510050、159919）"
+        return f"❌ Invalid ETF symbol: {ticker}, Please enter a 6-digit number (e.g. 510050, 159919)"
 
     if not (code.startswith(("50", "51", "52")) or code.startswith(("15", "16"))):
-        return f"❌ {ticker} 不是 ETF 代码。ETF 代码通常为 50/51/52 开头（沪市）或 15/16 开头（深市）"
+        return f"❌ {ticker} Not an ETF symbol. ETF codes usually start with 50/51/52 (Shanghai stock market) or 15/16 (Shenzhen stock market)"
 
     source_priority = _get_etf_source_priority()
     online_sources = [source for source in source_priority if source in ETF_SUPPORTED_ONLINE_SOURCES]
@@ -489,7 +489,7 @@ def get_etf_fundamentals(
             "redemption_status": basic_local.get("redemption_status"),
         }
         hist = [{"日期": item.get("trade_date"), "收盘": item.get("close"), "涨跌幅": item.get("pct_chg")} for item in daily_local]
-        logger.info(f"📊 [ETF 基本面] 使用本地数据: {code}")
+        logger.info(f"📊 [ETF Fundamentals] Use local data: {code}")
 
     if not spot:
         spot_source = None
@@ -499,17 +499,17 @@ def get_etf_fundamentals(
                 spot = source_spot
                 hist = source_hist
                 spot_source = source
-                logger.info(f"📊 [ETF 基本面] 使用在线数据源: {source}")
+                logger.info(f"📊 [ETF Fundamentals] Use online data sources: {source}")
                 break
 
     spot = spot or {}
 
     if spot_source == "local" and online_sources:
-        # 本地命中时，仅使用最高优先级在线数据源做一次补充，避免次优源额外报错。
+        # When there is a local hit, only the highest priority online data source is used for one supplement to avoid additional errors from suboptimal sources.
         enrichment_source = online_sources[0]
         enrichment_spot, _ = _fetch_etf_online_bundle(ticker, enrichment_source, include_hist=False)
         spot = _merge_missing_fields(spot, enrichment_spot)
-        logger.info(f"📊 [ETF 基本面] 本地数据补充来源: {enrichment_source}")
+        logger.info(f"📊 [ETF Fundamentals] Supplementary sources of local data: {enrichment_source}")
 
     lines = [
         f"# {ticker} ETF 基本面分析数据",
@@ -554,13 +554,13 @@ def get_etf_fundamentals(
                 f"- 赎回状态: {_format_value(spot.get('redemption_status'))}",
                 f"- 投资类型: {_format_value(spot.get('invest_type'))}",
                 f"- 基金状态: {_format_value(spot.get('status'))}",
-                "- 跟踪误差: 暂无直接数据源",
-                "- 申赎清单结构: 暂无直接数据源",
+                "- tracking error: No direct data source yet",
+                "- Application and redemption list structure: No direct data source yet",
                 "",
             ]
         )
     else:
-        lines.append("## 当前行情\n⚠️ 未能获取实时数据，请检查网络或数据源。\n")
+        lines.append("## Current market\n⚠️ Unable to obtain real-time data, please check the network or data source.\n")
 
     if hist:
         lines.append("## 近期走势")
@@ -572,9 +572,9 @@ def get_etf_fundamentals(
             lines.append(f"- {date}: 收盘 {close}, 涨跌幅 {pct}%")
         lines.append("")
     else:
-        lines.append("## 近期走势\n⚠️ 未能获取历史数据。\n")
+        lines.append("## Recent trends\n⚠️ Failed to obtain historical data.\n")
 
     lines.append("---")
-    lines.append("*说明: ETF 无 PE/PB/ROE 等个股估值指标，分析时请关注净值、规模、费率、折溢价、申赎状态、跟踪指数等。跟踪误差与申赎清单结构当前暂无直接数据源。*")
+    lines.append("*Description: ETF There are no individual stock valuation indicators such as PE/PB/ROE. When analyzing, please pay attention to net value, size, fee rate, discount and premium, subscription and redemption status, tracking index, etc. There is currently no direct data source for tracking error and redemption list structure.*")
 
     return "\n".join(lines)

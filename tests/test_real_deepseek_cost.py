@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-实际测试DeepSeek成本计算修复效果
+Actual test of DeepSeek cost calculation repair effect
 """
 
 import os
@@ -8,21 +8,21 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def test_real_deepseek_analysis():
-    """测试真实的DeepSeek股票分析，观察成本计算"""
-    print("🧪 实际测试DeepSeek成本计算")
+    """Test real-life DeepSeek stock analysis and watch cost calculations"""
+    print("🧪 Practical test of DeepSeek cost calculation")
     print("=" * 60)
     
-    # 检查API密钥
+    # Check API key
     if not os.getenv("DEEPSEEK_API_KEY"):
-        print("❌ 未找到DEEPSEEK_API_KEY，无法测试")
+        print("❌ DEEPSEEK_API_KEY not found, unable to test")
         return False
     
     try:
@@ -31,115 +31,115 @@ def test_real_deepseek_analysis():
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        print("🔧 初始化DeepSeek分析师...")
+        print("🔧 Initialize DeepSeek Analyst...")
         
-        # 创建DeepSeek LLM
+        # Create DeepSeek LLM
         deepseek_llm = ChatDeepSeek(
             model="deepseek-chat",
             temperature=0.1,
             max_tokens=1000
         )
         
-        # 创建工具包
+        # Create toolkit
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         toolkit = Toolkit(config)
         
-        # 创建ReAct市场分析师
+        # Create ReAct Market Analyst
         market_analyst = create_market_analyst_react(deepseek_llm, toolkit)
         
-        print("📊 开始分析股票000002...")
-        print("⏱️ 请观察成本计算输出...")
+        print("📊 Start analyzing stocks 000002...")
+        print("⏱️ Please observe the costing output...")
         print("-" * 50)
         
-        # 模拟状态
+        # simulation state
         state = {
             "company_of_interest": "000002",
             "trade_date": "2025-07-08",
             "messages": []
         }
         
-        # 执行分析
+        # Perform analysis
         result = market_analyst(state)
         
         print("-" * 50)
-        print("📋 分析完成！")
+        print("📋 Analysis completed!")
         
         market_report = result.get('market_report', '')
-        print(f"📊 市场报告长度: {len(market_report)}")
+        print(f"📊 Market report length: {len(market_report)}")
         
         if len(market_report) > 500:
-            print("✅ 分析成功生成详细报告")
-            print(f"📄 报告前200字符: {market_report[:200]}...")
+            print("✅ Analysis successfully generates detailed report")
+            print(f"📄 Report first 200 characters: {market_report[:200]}...")
             return True
         else:
-            print("❌ 分析报告过短，可能有问题")
+            print("❌ The analysis report is too short and there may be a problem")
             return False
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_simple_deepseek_call():
-    """测试简单的DeepSeek调用，观察成本"""
-    print("\n🤖 测试简单DeepSeek调用")
+    """Test a simple DeepSeek call and observe the cost"""
+    print("\n🤖 Testing a simple DeepSeek call")
     print("=" * 60)
     
-    # 检查API密钥
+    # Check API key
     if not os.getenv("DEEPSEEK_API_KEY"):
-        print("❌ 未找到DEEPSEEK_API_KEY，无法测试")
+        print("❌ DEEPSEEK_API_KEY not found, unable to test")
         return False
     
     try:
         from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
         
-        print("🔧 创建DeepSeek实例...")
+        print("🔧 Create DeepSeek instance...")
         
-        # 创建DeepSeek实例
+        # Create DeepSeek instance
         deepseek_llm = ChatDeepSeek(
             model="deepseek-chat",
             temperature=0.1,
             max_tokens=200
         )
         
-        print("📤 发送测试请求...")
-        print("⏱️ 请观察成本计算输出...")
+        print("📤 Send test request...")
+        print("⏱️ Please observe the costing output...")
         print("-" * 30)
         
-        # 测试调用
-        result = deepseek_llm.invoke("请简要分析一下当前A股市场的整体趋势，不超过100字。")
+        # test call
+        result = deepseek_llm.invoke("Please briefly analyze the overall trend of the current A-share market in no more than 100 words.")
         
         print("-" * 30)
-        print("📋 调用完成！")
-        print(f"📊 响应长度: {len(result.content)}")
-        print(f"📄 响应内容: {result.content}")
+        print("📋 Call completed!")
+        print(f"📊 response length: {len(result.content)}")
+        print(f"📄 Response content: {result.content}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 简单调用测试失败: {e}")
+        print(f"❌ Simple call test fails: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_multiple_calls():
-    """测试多次调用，观察累计成本"""
-    print("\n🔄 测试多次DeepSeek调用")
+    """Test multiple calls and observe the cumulative cost"""
+    print("\n🔄 Test multiple DeepSeek calls")
     print("=" * 60)
     
-    # 检查API密钥
+    # Check API key
     if not os.getenv("DEEPSEEK_API_KEY"):
-        print("❌ 未找到DEEPSEEK_API_KEY，无法测试")
+        print("❌ DEEPSEEK_API_KEY not found, unable to test")
         return False
     
     try:
         from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
         
-        print("🔧 创建DeepSeek实例...")
+        print("🔧 Create DeepSeek instance...")
         
-        # 创建DeepSeek实例
+        # Create DeepSeek instance
         deepseek_llm = ChatDeepSeek(
             model="deepseek-chat",
             temperature=0.1,
@@ -147,73 +147,73 @@ def test_multiple_calls():
         )
         
         questions = [
-            "什么是股票？",
-            "什么是技术分析？",
-            "什么是基本面分析？"
+            "What are stocks?",
+            "What is technical analysis?",
+            "What is fundamental analysis?"
         ]
         
-        print(f"📤 发送{len(questions)}个测试请求...")
-        print("⏱️ 请观察每次调用的成本计算...")
+        print(f"📤 send{len(questions)}test requests...")
+        print("⏱️ Please observe the cost calculation for each call...")
         print("-" * 40)
         
         for i, question in enumerate(questions, 1):
-            print(f"\n🔸 第{i}次调用: {question}")
+            print(f"\n🔸 No.{i}calls: {question}")
             result = deepseek_llm.invoke(question)
-            print(f"   响应: {result.content[:50]}...")
+            print(f"   response: {result.content[:50]}...")
         
         print("-" * 40)
-        print("📋 多次调用完成！")
+        print("📋 Multiple calls completed!")
         
         return True
         
     except Exception as e:
-        print(f"❌ 多次调用测试失败: {e}")
+        print(f"❌ Test failed when called multiple times: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主函数"""
-    print("🔬 DeepSeek成本计算实际测试")
+    """main function"""
+    print("🔬 DeepSeek Cost calculation practical test")
     print("=" * 80)
-    print("📝 注意观察输出中的成本信息：")
-    print("   - 应该显示具体的成本金额（如¥0.004537）")
-    print("   - 不应该显示¥0.000000")
+    print("📝 Pay attention to the cost information in the output:")
+    print("   - Specific cost amounts should be shown (e.g.¥0.004537) ")
+    print("   - should not be displayed¥0.000000")
     print("=" * 80)
     
-    # 测试简单调用
+    # Test simple calls
     simple_success = test_simple_deepseek_call()
     
-    # 测试多次调用
+    # Test multiple calls
     multiple_success = test_multiple_calls()
     
-    # 测试实际分析（可选，比较耗时）
-    print(f"\n❓ 是否要测试完整的股票分析？（比较耗时，约1-2分钟）")
-    print(f"   如果只想验证成本计算，前面的测试已经足够了。")
+    # Test actual analysis (optional, more time-consuming)
+    print(f"\n❓ Want to test out a complete stock analysis? (It takes more time, about 1-2 minutes)")
+    print(f"   If you just want to verify the cost calculation, the previous test is enough.")
     
-    # 这里我们跳过完整分析，因为比较耗时
+    # We skip the complete analysis here because it is more time consuming.
     analysis_success = True  # test_real_deepseek_analysis()
     
-    # 总结
-    print("\n📋 测试总结")
+    # Summary
+    print("\n📋 Test summary")
     print("=" * 60)
     
-    print(f"简单调用: {'✅ 成功' if simple_success else '❌ 失败'}")
-    print(f"多次调用: {'✅ 成功' if multiple_success else '❌ 失败'}")
-    print(f"完整分析: {'⏭️ 跳过' if analysis_success else '❌ 失败'}")
+    print(f"simple call: {'✅ success' if simple_success else '❌ failed'}")
+    print(f"Called multiple times: {'✅ success' if multiple_success else '❌ failed'}")
+    print(f"full analysis: {'⏭️ skip' if analysis_success else '❌ failed'}")
     
     overall_success = simple_success and multiple_success
     
     if overall_success:
-        print("\n🎉 DeepSeek成本计算测试成功！")
-        print("   如果你在上面的输出中看到了具体的成本金额")
-        print("   （如¥0.004537而不是¥0.000000），")
-        print("   那么成本计算修复就是成功的！")
+        print("\n🎉 DeepSeek Cost calculation test successful!")
+        print("   If you see specific cost amounts in the output above")
+        print("    (Such as¥0.004537 instead of¥0.000000) , ")
+        print("   Then the costing repair is a success!")
     else:
-        print("\n❌ DeepSeek成本计算测试失败")
-        print("   请检查API密钥配置和网络连接")
+        print("\n❌ DeepSeek Costing test failed")
+        print("   Please check API key configuration and network connection")
     
-    print("\n🎯 测试完成！")
+    print("\n🎯 Test completed!")
     return overall_success
 
 if __name__ == "__main__":

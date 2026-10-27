@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 """
-简单的.env配置测试
+Simple .env configuration test
 """
 
 import os
 
 def test_env_reading():
-    """测试.env文件读取"""
-    print("🔧 测试.env配置读取")
+    """Test .env file reading"""
+    print("🔧 Test .env configuration reading")
     print("=" * 30)
     
-    # 检查.env文件
+    # Check .env file
     if os.path.exists('.env'):
-        print("✅ .env文件存在")
+        print("✅ .env File exists")
     else:
-        print("❌ .env文件不存在")
+        print("❌ .env File does not exist")
         return False
     
-    # 读取环境变量
-    print("\n📊 数据库配置:")
+    # Read environment variables
+    print("\n📊 Database configuration:")
     
-    # MongoDB配置
+    # MongoDB Configuration
     mongodb_host = os.getenv("MONGODB_HOST", "localhost")
     mongodb_port = os.getenv("MONGODB_PORT", "27017")
     mongodb_username = os.getenv("MONGODB_USERNAME")
@@ -30,11 +30,11 @@ def test_env_reading():
     print(f"MongoDB:")
     print(f"  Host: {mongodb_host}")
     print(f"  Port: {mongodb_port}")
-    print(f"  Username: {mongodb_username or '未设置'}")
-    print(f"  Password: {'***' if mongodb_password else '未设置'}")
+    print(f"  Username: {mongodb_username or 'not set'}")
+    print(f"  Password: {'***' if mongodb_password else 'not set'}")
     print(f"  Database: {mongodb_database}")
     
-    # Redis配置
+    # Redis Configuration
     redis_host = os.getenv("REDIS_HOST", "localhost")
     redis_port = os.getenv("REDIS_PORT", "6379")
     redis_password = os.getenv("REDIS_PASSWORD")
@@ -43,13 +43,13 @@ def test_env_reading():
     print(f"\nRedis:")
     print(f"  Host: {redis_host}")
     print(f"  Port: {redis_port}")
-    print(f"  Password: {'***' if redis_password else '未设置'}")
+    print(f"  Password: {'***' if redis_password else 'not set'}")
     print(f"  DB: {redis_db}")
     
-    # 测试数据库连接
-    print("\n🧪 测试数据库连接...")
+    # Test database connection
+    print("\n🧪 Test database connection...")
     
-    # 测试MongoDB
+    # test MongoDB
     mongodb_available = False
     try:
         import pymongo
@@ -64,13 +64,13 @@ def test_env_reading():
         client.server_info()
         client.close()
         mongodb_available = True
-        print("✅ MongoDB 连接成功")
+        print("✅ MongoDB Connection successful")
     except ImportError:
-        print("❌ pymongo 未安装")
+        print("❌ pymongo Not installed")
     except Exception as e:
-        print(f"❌ MongoDB 连接失败: {e}")
+        print(f"❌ MongoDB Connection failed: {e}")
     
-    # 测试Redis
+    # test Redis
     redis_available = False
     try:
         import redis
@@ -83,22 +83,22 @@ def test_env_reading():
         )
         r.ping()
         redis_available = True
-        print("✅ Redis 连接成功")
+        print("✅ Redis Connection successful")
     except ImportError:
-        print("❌ redis 未安装")
+        print("❌ redis Not installed")
     except Exception as e:
-        print(f"❌ Redis 连接失败: {e}")
+        print(f"❌ Redis Connection failed: {e}")
     
-    # 总结
-    print(f"\n📊 总结:")
-    print(f"MongoDB: {'✅ 可用' if mongodb_available else '❌ 不可用'}")
-    print(f"Redis: {'✅ 可用' if redis_available else '❌ 不可用'}")
+    # Summary
+    print(f"\n📊 Summary:")
+    print(f"MongoDB: {'✅ Available' if mongodb_available else '❌ Not available'}")
+    print(f"Redis: {'✅ Available' if redis_available else '❌ Not available'}")
     
     if mongodb_available or redis_available:
-        print("🚀 数据库可用，系统将使用高性能模式")
+        print("🚀 The database is available and the system will use high performance mode")
     else:
-        print("📁 数据库不可用，系统将使用文件缓存模式")
-        print("💡 这是正常的，系统可以正常工作")
+        print("📁 The database is unavailable, the system will use file cache mode")
+        print("💡 This is normal and the system can work normally")
     
     return True
 

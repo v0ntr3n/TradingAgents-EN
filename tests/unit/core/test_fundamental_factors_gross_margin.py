@@ -1,4 +1,4 @@
-"""基本面因子毛利率字段优先级测试。"""
+"""Fundamental Factor Gross Margin Field Priority Test."""
 
 from core.skill_runtime import fundamental_factors
 

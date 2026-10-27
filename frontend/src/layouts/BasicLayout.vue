@@ -1,6 +1,6 @@
 <template>
   <div class="basic-layout">
-    <!-- 侧边栏 -->
+    <!-- sidebar -->
     <aside
       class="sidebar"
       :class="{ collapsed: appStore.sidebarCollapsed }"
@@ -24,19 +24,19 @@
       </div>
     </aside>
 
-    <!-- 点击蒙层：移动端展开时，点击空白处收起侧边栏 -->
+    <!-- Click on the mask: When the mobile terminal is expanded, click on the blank space to collapse the sidebar. -->
     <div
       v-if="isMobile && !appStore.sidebarCollapsed"
       class="sidebar-overlay"
       @click="appStore.setSidebarCollapsed(true)"
     ></div>
 
-    <!-- 主内容区 -->
+    <!-- Main content area -->
     <div class="main-container" :style="{ marginLeft: appStore.actualSidebarWidth + 'px' }" @click="handleMainClick">
-      <!-- 授权状态提醒条 -->
+      <!-- Authorization status reminder bar -->
       <LicenseAlert />
 
-      <!-- 顶部导航栏 -->
+      <!-- top navigation bar -->
       <header class="header">
         <div class="header-left">
           <el-button
@@ -55,7 +55,7 @@
         </div>
       </header>
 
-      <!-- 页面内容 -->
+      <!-- Page content -->
       <main class="main-content">
         <div class="content-wrapper" :class="{ 'content-wrapper--full': isFullWidthRoute }">
           <router-view v-slot="{ Component, route }">
@@ -72,13 +72,13 @@
         </div>
       </main>
 
-      <!-- 页脚 -->
+      <!-- footer -->
       <footer v-if="!hideFooterRoute" class="footer">
         <AppFooter />
       </footer>
     </div>
 
-    <!-- 回到顶部 -->
+    <!-- back to top -->
     <el-backtop :right="40" :bottom="40" />
   </div>
 </template>
@@ -100,7 +100,7 @@ const appStore = useAppStore()
 const route = useRoute()
 const { width } = useWindowSize()
 
-// 需要缓存的组件
+// Components that need to be cached
 const keepAliveComponents = computed(() => [
   'Dashboard',
   'StockScreening',
@@ -116,24 +116,24 @@ const hideFooterRoute = computed(() => {
   return route.path.startsWith('/workflow/agent-studio')
 })
 
-// 移动端判断
+// Mobile terminal judgment
 const isMobile = computed(() => width.value < 768)
 
-// 点击主内容时，若移动端且侧边栏已展开，则收起
+// When clicking on the main content, if the mobile terminal and the sidebar are expanded, they will be collapsed.
 const handleMainClick = () => {
   if (isMobile.value && !appStore.sidebarCollapsed) {
     appStore.setSidebarCollapsed(true)
   }
 }
 
-// 监听窗口大小变化：在小屏幕上自动折叠侧边栏
+// Listen for window size changes: automatically collapse the sidebar on small screens
 watch(width, (newWidth) => {
   if (newWidth < 768 && !appStore.sidebarCollapsed) {
     appStore.setSidebarCollapsed(true)
   }
 })
 
-// 路由变化时，移动端收起侧边栏
+// When the route changes, the mobile terminal closes the sidebar
 watch(() => route.fullPath, () => {
   if (isMobile.value) {
     appStore.setSidebarCollapsed(true)
@@ -151,7 +151,7 @@ watch(() => route.fullPath, () => {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
-  z-index: 950; // 低于侧边栏(1000)，高于内容区
+  z-index: 950; // below sidebar(1000), above content area
 }
 
 .sidebar {
@@ -275,7 +275,7 @@ watch(() => route.fullPath, () => {
   padding: 12px 0;
 }
 
-// 响应式设计
+// Responsive design
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
@@ -298,7 +298,7 @@ watch(() => route.fullPath, () => {
   }
 }
 
-// 路由过渡动画
+// Route transition animation
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;

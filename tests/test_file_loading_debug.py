@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-调试文件加载问题
+Debug file loading issues
 """
 
 import os
@@ -8,66 +8,66 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def test_file_loading():
-    """测试文件加载"""
-    print("🔬 文件加载调试")
+    """Test file loading"""
+    print("🔬 File loading debugging")
     print("=" * 80)
     
     try:
         from tradingagents.config.config_manager import ConfigManager
         
-        print("🔧 创建ConfigManager...")
+        print("🔧 Create ConfigManager...")
         config_manager = ConfigManager()
         
-        print("\n📊 加载定价配置...")
+        print("\n📊 Load pricing configuration...")
         print("=" * 60)
         
-        # 这会触发详细的文件加载日志
+        # This triggers detailed file load logs
         pricing_configs = config_manager.load_pricing()
         
         print("=" * 60)
-        print(f"📊 最终加载的配置数量: {len(pricing_configs)}")
+        print(f"📊 The final number of configurations loaded: {len(pricing_configs)}")
         
-        # 查找DeepSeek配置
+        # Find DeepSeek configuration
         deepseek_configs = [p for p in pricing_configs if p.provider == "deepseek"]
-        print(f"📊 DeepSeek配置数量: {len(deepseek_configs)}")
+        print(f"📊 DeepSeek Configuration quantity: {len(deepseek_configs)}")
         
         if deepseek_configs:
-            print("✅ 找到DeepSeek配置:")
+            print("✅ Find DeepSeek configuration:")
             for config in deepseek_configs:
-                print(f"   - {config.model_name}: 输入¥{config.input_price_per_1k}/1K, 输出¥{config.output_price_per_1k}/1K")
+                print(f"   - {config.model_name}: input¥{config.input_price_per_1k}/1K, output¥{config.output_price_per_1k}/1K")
         else:
-            print("❌ 未找到DeepSeek配置")
+            print("❌ DeepSeek configuration not found")
         
         return True
         
     except Exception as e:
-        print(f"❌ 文件加载测试失败: {e}")
+        print(f"❌ File loading test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主函数"""
-    print("🔬 文件加载调试测试")
+    """main function"""
+    print("🔬 File loading debugging test")
     print("=" * 80)
-    print("📝 这个测试将显示实际加载的配置文件内容")
+    print("📝 This test will show the actual loaded configuration file contents")
     print("=" * 80)
     
     success = test_file_loading()
     
     if success:
-        print("\n🎉 文件加载测试完成！")
-        print("请查看上面的详细日志，确认加载的文件内容。")
+        print("\n🎉 File loading test completed!")
+        print("Please review the detailed log above to confirm the loaded file contents.")
     else:
-        print("\n❌ 文件加载测试失败")
+        print("\n❌ File loading test failed")
     
     return success
 

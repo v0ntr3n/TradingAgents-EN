@@ -1,4 +1,4 @@
-"""Nanobot 友好的可复用 Skill 生成工具。"""
+"""Nanobot Friendly reusable skill generation tool."""
 
 from __future__ import annotations
 
@@ -77,28 +77,28 @@ def _summarize_session_doc(session_doc: dict[str, Any]) -> dict[str, Any]:
 @tool
 @register_tool(
     tool_id="start_external_skill_generation_session",
-    name="启动 External Skill 生成会话",
-    description="当 Nanobot 判断当前缺口是可复用能力时，启动真实的 SkillGenerationService 会话，而不是停在 temp 脚本。",
+    name="Start an External Skill build session",
+    description="When Nanobot determines that the current gap is a reusable capability, start the real SkillGenerationService session instead of stopping at the temp script.",
     category="external",
     is_online=True,
     auto_register=True,
     timeout_tier="medium",
-    when_to_use="当现有能力缺失，但目标明显是可复用、可参数化的能力时使用，例如杜邦分析、估值子模块、财务比率分析。",
-    when_not_to_use="当任务只是一次性调试、临时探测、短期数据核验时不要使用；那种情况应优先用 temp 脚本。",
-    returns="返回 JSON 字符串，包含 session_id、AI 首轮需求沟通消息、清晰度判断，以及建议下一步。",
-    example='start_external_skill_generation_session(description="创建一个可复用的 A 股杜邦分析 skill，输入 symbol，输出结构化三因素分解和趋势摘要")',
+    when_to_use="Used when existing capabilities are missing, but the target is obviously a reusable, parameterizable capability, such as DuPont analysis, valuation sub-module, and financial ratio analysis.",
+    when_not_to_use="Do not use it when the task is only one-time debugging, temporary detection, or short-term data verification; in that case, the temp script should be used first.",
+    returns="Returns a JSON string, including session_id, AI first round demand communication message, clarity judgment, and recommended next steps.",
+    example='start_external_skill_generation_session(description="Create a reusable A-share DuPont analysis skill, input symbol, and output structured three-factor decomposition and trend summary")',
     related_tools=["respond_to_external_skill_generation_session", "preview_external_skill_spec", "generate_confirmed_external_skill", "inspect_external_skill_generation_session"],
     data_source_handling="local_only",
 )
 async def start_external_skill_generation_session(
-    description: Annotated[str, "Skill 的自然语言需求描述，需明确这是一个可复用能力而不是一次性脚本"],
-    handoff_context_json: Annotated[str, "可选 JSON 对象，补充上游交接上下文，例如原目标、保持的能力边界、禁止缩窄的约束"] = "",
+    description: Annotated[str, "Skill Natural language requirement description, it must be clear that this is a reusable capability rather than a one-time script"],
+    handoff_context_json: Annotated[str, "Optional JSON object to supplement the upstream handover context, such as the original goal, retained capability boundaries, and prohibitive narrowing constraints"] = "",
 ) -> str:
-    """启动 external skill 生成会话。"""
+    """Start an external skill to generate a session."""
     try:
         clean_description = str(description or "").strip()
         if not clean_description:
-            return _json_response({"status": "error", "message": "description 不能为空"})
+            return _json_response({"status": "error", "message": "description cannot be empty"})
 
         handoff_context = _parse_optional_json_dict(handoff_context_json, "handoff_context_json")
         service = _get_skill_generation_service()
@@ -122,38 +122,38 @@ async def start_external_skill_generation_session(
             ],
         })
     except Exception as exc:
-        logger.error("启动 external skill 生成会话失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"启动 external skill 生成会话失败: {exc}"})
+        logger.error("Failed to start external skill to generate session: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to start external skill to generate session: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="respond_to_external_skill_generation_session",
-    name="回复 External Skill 生成会话",
-    description="继续回答 Skill 需求澄清问题，让 SkillGenerationService 把自然语言需求收敛成稳定的 SkillSpec。",
+    name="Reply to External Skill Generate Conversation",
+    description="Continue to answer Skill requirement clarification questions and let the SkillGenerationService converge the natural language requirements into a stable SkillSpec.",
     category="external",
     is_online=True,
     auto_register=True,
     timeout_tier="medium",
-    when_to_use="当已存在 skill 生成会话，且 AI 还在追问职责边界、输入输出、数据来源、非目标时使用。",
-    when_not_to_use="当会话已经足够清晰并准备预览 spec 或确认生成时，不必重复调用。",
-    returns="返回 JSON 字符串，包含 AI 新一轮回复、当前轮次和建议下一步。",
-    example="respond_to_external_skill_generation_session(session_id='abc123', user_message='输入只要 symbol，输出结构化 JSON，不给交易建议')",
+    when_to_use="Used when a skill generation session already exists and the AI is still asking about responsibility boundaries, input and output, data sources, and non-targets.",
+    when_not_to_use="You don t have to call it again when the session is clear enough and you re ready to preview the spec or confirm the build.",
+    returns="Returns a JSON string containing the AI s new round of responses, the current round, and suggested next steps.",
+    example="respond_to_external_skill_generation_session(session_id='abc123', user_message='Only symbols are input, structured JSON is output, and no trading advice is given.')",
     related_tools=["start_external_skill_generation_session", "preview_external_skill_spec"],
     data_source_handling="local_only",
 )
 async def respond_to_external_skill_generation_session(
-    session_id: Annotated[str, "已有 Skill 创建会话 ID"],
-    user_message: Annotated[str, "对 Skill 需求澄清问题的回复"] = "确认按可复用能力来设计",
+    session_id: Annotated[str, "There is already a Skill created session ID"],
+    user_message: Annotated[str, "Responses to Skill Requirements Clarification Questions"] = "确认按可复用能力来设计",
 ) -> str:
-    """继续 external skill 需求沟通。"""
+    """Continue to communicate external skill needs."""
     try:
         clean_session_id = str(session_id or "").strip()
         clean_user_message = str(user_message or "").strip()
         if not clean_session_id:
-            return _json_response({"status": "error", "message": "session_id 不能为空"})
+            return _json_response({"status": "error", "message": "session_id cannot be empty"})
         if not clean_user_message:
-            return _json_response({"status": "error", "message": "user_message 不能为空"})
+            return _json_response({"status": "error", "message": "user_message cannot be empty"})
 
         service = _get_skill_generation_service()
         result = await service.respond_to_session(clean_session_id, clean_user_message)
@@ -168,40 +168,40 @@ async def respond_to_external_skill_generation_session(
             ],
         })
     except Exception as exc:
-        logger.error("回复 external skill 生成会话失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"回复 external skill 生成会话失败: {exc}"})
+        logger.error("Reply external skill failed to generate session: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Reply external skill failed to generate session: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="preview_external_skill_spec",
-    name="预览 External Skill 规格",
-    description="基于当前 skill 会话生成 SkillSpec 预览和侦察报告，用于确认这是不是正确的可复用能力形状。",
+    name="Preview External Skill specifications",
+    description="Generate SkillSpec preview and recon reports based on the current skill session to confirm if this is the correct reusable capability shape.",
     category="external",
     is_online=True,
     auto_register=True,
     timeout_tier="heavy",
-    when_to_use="当需求已基本明确，需要先看结构化 SkillSpec、参数、输出契约和侦察结论，再决定是否真正生成 skill 时使用。",
-    when_not_to_use="当需求仍然明显模糊时，优先继续 respond_to_external_skill_generation_session。",
-    returns="返回 JSON 字符串，包含 spec 预览、侦察 fact_report、推荐生成上下文，以及建议下一步。",
+    when_to_use="Use it when the requirements are basically clear and you need to look at the structured SkillSpec, parameters, output contracts and reconnaissance conclusions before deciding whether to actually generate the skill.",
+    when_not_to_use="When the requirements are still clearly ambiguous, continue with respond_to_external_skill_generation_session in preference.",
+    returns="Returns a JSON string containing the spec preview, recon fact_report, recommended build context, and recommended next steps.",
     example="preview_external_skill_spec(session_id='abc123')",
     related_tools=["respond_to_external_skill_generation_session", "generate_confirmed_external_skill"],
     data_source_handling="local_only",
 )
 async def preview_external_skill_spec(
-    session_id: Annotated[str, "已有 Skill 创建会话 ID"],
-    user_message: Annotated[str, "可选确认语，默认使用 确认"] = "确认",
+    session_id: Annotated[str, "There is already a Skill created session ID"],
+    user_message: Annotated[str, "Optional confirmation, default is confirmation"] = "确认",
 ) -> str:
-    """预览 external skill 的 SkillSpec。"""
+    """Preview the SkillSpec of the external skill."""
     try:
         clean_session_id = str(session_id or "").strip()
         if not clean_session_id:
-            return _json_response({"status": "error", "message": "session_id 不能为空"})
+            return _json_response({"status": "error", "message": "session_id cannot be empty"})
 
         service = _get_skill_generation_service()
         preview = await service.preview_spec(clean_session_id, str(user_message or "确认").strip() or "确认")
         if not preview:
-            return _json_response({"status": "error", "message": "未生成可用的 SkillSpec 预览"})
+            return _json_response({"status": "error", "message": "No usable SkillSpec preview generated"})
         return _json_response({
             "status": "ok",
             "session_id": clean_session_id,
@@ -213,40 +213,40 @@ async def preview_external_skill_spec(
             ],
         })
     except Exception as exc:
-        logger.error("预览 external skill 规格失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"预览 external skill 规格失败: {exc}"})
+        logger.error("Failed to preview external skill specifications: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to preview external skill specifications: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="generate_confirmed_external_skill",
-    name="确认后生成 External Skill",
-    description="在用户确认这确实是可复用能力后，调用真实的 SkillGenerationService 进入 external skill 生成管线。",
+    name="Generate after confirmation External Skill",
+    description="After the user confirms that this is indeed a reusable capability, call the real SkillGenerationService to enter the external skill generation pipeline.",
     category="external",
     is_online=True,
     auto_register=True,
     timeout_tier="heavy",
-    when_to_use="当 spec 预览已经确认无误，且目标不是一次性 temp 脚本而是可复用 skill 时使用。",
-    when_not_to_use="未确认前不要调用；也不适用于临时探测脚本。",
-    returns="返回 JSON 字符串，包含生成任务的启动状态、spec 摘要和后续状态查询建议。",
+    when_to_use="Used when the spec preview has been confirmed and the target is not a one-time temp script but a reusable skill.",
+    when_not_to_use="Do not call without confirmation; it does not apply to temporary detection scripts.",
+    returns="Returns a JSON string containing the build task s startup status, spec summary, and subsequent status query suggestions.",
     example="generate_confirmed_external_skill(session_id='abc123', confirmed=true)",
     related_tools=["preview_external_skill_spec", "inspect_external_skill_generation_session"],
     data_source_handling="local_only",
 )
 async def generate_confirmed_external_skill(
-    session_id: Annotated[str, "已有 Skill 创建会话 ID"],
-    confirmed: Annotated[bool, "是否已拿到用户对 SkillSpec 的明确确认"] = False,
-    user_message: Annotated[str, "确认消息，默认使用 确认"] = "确认",
+    session_id: Annotated[str, "There is already a Skill created session ID"],
+    confirmed: Annotated[bool, "Whether explicit confirmation of the SkillSpec has been obtained from the user"] = False,
+    user_message: Annotated[str, "Confirmation message, default to confirm"] = "确认",
 ) -> str:
-    """确认后触发 external skill 生成。"""
+    """Trigger external skill generation after confirmation."""
     try:
         clean_session_id = str(session_id or "").strip()
         if not clean_session_id:
-            return _json_response({"status": "error", "message": "session_id 不能为空"})
+            return _json_response({"status": "error", "message": "session_id cannot be empty"})
         if not confirmed:
             return _json_response({
                 "status": "error",
-                "message": "未拿到用户明确确认，拒绝触发 external skill 生成。请先预览 spec 并确认。",
+                "message": "Without explicit confirmation from the user, the external skill generation is refused to be triggered. Please preview the spec first and confirm.",
             })
 
         service = _get_skill_generation_service()
@@ -259,34 +259,34 @@ async def generate_confirmed_external_skill(
             "available_next_steps": ["inspect_external_skill_generation_session"],
         })
     except Exception as exc:
-        logger.error("确认后生成 external skill 失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"确认后生成 external skill 失败: {exc}"})
+        logger.error("Failed to generate external skill after confirmation: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to generate external skill after confirmation: {exc}"})
 
 
 @tool
 @register_tool(
     tool_id="inspect_external_skill_generation_session",
-    name="查看 External Skill 生成会话",
-    description="查看 external skill 生成会话的当前状态、spec、侦察摘要和生成进度，便于跟踪异步生成结果。",
+    name="View External Skill generation session",
+    description="View the current status, spec, scout summary, and build progress of an external skill build session to easily track asynchronous build results.",
     category="external",
     is_online=True,
     auto_register=True,
     timeout_tier="light",
-    when_to_use="当已触发 external skill 生成，或者需要查看当前会话处于 gathering、confirmed、generating、completed、failed 哪个阶段时使用。",
-    when_not_to_use="如果只是继续补充需求，应使用 respond_to_external_skill_generation_session。",
-    returns="返回 JSON 字符串，包含会话摘要、pipeline 阶段、spec 和推荐生成上下文。",
+    when_to_use="Use it when external skill generation has been triggered, or you need to check which stage the current session is in: gathering, confirmed, generating, completed, or failed.",
+    when_not_to_use="If you are just continuing to replenish your needs, respond_to_external_skill_generation_session should be used.",
+    returns="Returns a JSON string containing session summary, pipeline stage, spec, and recommendation build context.",
     example="inspect_external_skill_generation_session(session_id='abc123')",
     related_tools=["generate_confirmed_external_skill", "respond_to_external_skill_generation_session"],
     data_source_handling="local_only",
 )
 async def inspect_external_skill_generation_session(
-    session_id: Annotated[str, "Skill 创建会话 ID"],
+    session_id: Annotated[str, "Skill Create session ID"],
 ) -> str:
-    """查看 external skill 生成会话状态。"""
+    """View external skill generated session status."""
     try:
         clean_session_id = str(session_id or "").strip()
         if not clean_session_id:
-            return _json_response({"status": "error", "message": "session_id 不能为空"})
+            return _json_response({"status": "error", "message": "session_id cannot be empty"})
 
         service = _get_skill_generation_service()
         session_doc = await service.get_session(clean_session_id)
@@ -297,5 +297,5 @@ async def inspect_external_skill_generation_session(
             "session": _summarize_session_doc(session_doc),
         })
     except Exception as exc:
-        logger.error("查看 external skill 生成会话失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"查看 external skill 生成会话失败: {exc}"})
+        logger.error("View external skill failed to generate session: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"View external skill failed to generate session: {exc}"})

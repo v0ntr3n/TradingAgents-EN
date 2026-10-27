@@ -1,11 +1,11 @@
 """
-智能体工厂
+Intelligent body factory
 
-负责创建和配置智能体实例
+Responsible for creating and configuring agent instances
 
-v2.0 新特性:
-- 支持从配置或数据库动态加载工具
-- 支持 LangChain LLM 集成
+v2.0 new features:
+- Supports dynamic loading of tools from configuration or database
+- Supports LangChain LLM integration
 """
 
 import logging
@@ -23,15 +23,15 @@ logger = logging.getLogger(__name__)
 
 class AgentFactory:
     """
-    智能体工厂
+    Intelligent body factory
     
-    用法:
+    Usage:
         factory = AgentFactory()
         
-        # 创建智能体实例
+        # Create an agent instance
         agent = factory.create("market_analyst", config=my_config)
         
-        # 批量创建
+        # Create in batches
         agents = factory.create_many(["market_analyst", "news_analyst"])
     """
     
@@ -48,49 +48,49 @@ class AgentFactory:
         **config_overrides
     ) -> BaseAgent:
         """
-        创建智能体实例
+        Create an agent instance
 
         Args:
-            agent_id: 智能体 ID
-            config: 智能体配置（旧版）
-            llm: LangChain LLM 实例（新版）
-            tool_ids: 工具 ID 列表（新版，可选）
-            memory: 记忆系统实例（v2.0，可选）
-            **config_overrides: 配置覆盖参数
+            agent_id: agent ID
+            config: Agent Configuration (Legacy)
+            llm: LangChain LLM Example (new version)
+            tool_ids: Tool ID list (new version, optional)
+            memory: Memory system instance (v2.0, optional)
+            **config_overrides: Configure coverage parameters
 
         Returns:
-            初始化后的智能体实例
+            Initialized agent instance
         """
-        logger.info(f"[AgentFactory] 🏭 开始创建 Agent: {agent_id}")
+        logger.info(f"[AgentFactory] 🏭 Start creating Agent: {agent_id}")
         logger.info(f"   - config: {config.model_dump() if config else 'None'}")
         logger.info(f"   - llm: {type(llm).__name__ if llm else 'None'}")
         logger.info(f"   - tool_ids: {tool_ids}")
         logger.info(f"   - config_overrides: {config_overrides}")
 
-        # 🔥 检查是否为废弃 Agent
+        # 🔥 Check if it is obsolete Agent
         metadata = self.registry.get_metadata(agent_id)
         if metadata and metadata.maintenance_status == AgentMaintenanceStatus.DEPRECATED:
             import warnings
             warnings.warn(
-                f"Agent '{agent_id}' 已废弃，请使用 v2 版本（如 '{agent_id}_v2'）。"
-                f"该 Agent 将在未来的版本中被移除。",
+                f"Agent '{agent_id}' Deprecated, please use v2 version (e.g. '{agent_id}_v2') . "
+                f"This agent will be removed in a future release.",
                 DeprecationWarning,
                 stacklevel=3
             )
-            logger.warning(f"[AgentFactory] ⚠️ Agent '{agent_id}' 已废弃，建议使用 v2 版本")
+            logger.warning(f"[AgentFactory] ⚠️ Agent '{agent_id}' Deprecated, it is recommended to use v2 version")
 
         agent_class = self.registry.get(agent_id)
 
         if agent_class is None:
-            # 🆕 降级：尝试从 agent_configs 数据库加载并创建 UniversalAgent
+            # 🆕 Downgrade: Try loading and creating from agent_configs database UniversalAgent
             universal = self._try_create_universal_agent(
                 agent_id, config, llm, tool_ids, memory
             )
             if universal is not None:
                 return universal
-            raise ValueError(f"智能体 '{agent_id}' 未注册实现，且在 agent_configs 中也找不到对应配置")
+            raise ValueError(f"agent '{agent_id}' The implementation is not registered and the corresponding configuration cannot be found in agent_configs")
 
-        # 合并配置
+        # Merge configuration
         if config is None:
             config = AgentConfig()
 
@@ -98,7 +98,7 @@ class AgentFactory:
             if hasattr(config, key):
                 setattr(config, key, value)
 
-        # v2.0: 检查 Agent 支持的参数
+        # v2.0: Check the parameters supported by the Agent
         import inspect
         supports_llm = False
         supports_memory = False
@@ -108,30 +108,30 @@ class AgentFactory:
                 sig = inspect.signature(agent_class.__init__)
                 supports_llm = "llm" in sig.parameters
                 supports_memory = "memory" in sig.parameters
-                logger.info(f"[AgentFactory] 🔍 检查 Agent 构造函数签名:")
-                logger.info(f"   - Agent 类: {agent_class.__name__}")
-                logger.info(f"   - 支持 llm 参数: {supports_llm}")
-                logger.info(f"   - 支持 memory 参数: {supports_memory}")
-                logger.info(f"   - 构造函数参数: {list(sig.parameters.keys())}")
+                logger.info(f"[AgentFactory] 🔍 Check Agent constructor signature:")
+                logger.info(f"   - Agent class: {agent_class.__name__}")
+                logger.info(f"   - Support llm parameter: {supports_llm}")
+                logger.info(f"   - Support memory parameter: {supports_memory}")
+                logger.info(f"   - Constructor parameters: {list(sig.parameters.keys())}")
             except Exception as e:
-                logger.warning(f"[AgentFactory] ⚠️ 检查构造函数签名失败: {e}")
+                logger.warning(f"[AgentFactory] ⚠️ Checking constructor signature failed: {e}")
 
         try:
-            # 构建初始化参数
+            # Build initialization parameters
             init_kwargs = {"config": config}
 
             if llm is not None and supports_llm:
                 init_kwargs["llm"] = llm
-                logger.info(f"[AgentFactory] ✅ 将传入 LLM 参数: {type(llm).__name__}")
+                logger.info(f"[AgentFactory] ✅ Will pass in LLM parameters: {type(llm).__name__}")
             elif llm is not None and not supports_llm:
                 logger.warning(
-                    f"[AgentFactory] ⚠️ Agent {agent_id} 的构造函数不支持 llm 参数，"
-                    f"但调用方传入了 llm。将使用旧版依赖注入方式。"
+                    f"[AgentFactory] ⚠️ Agent {agent_id} The constructor of does not support the llm parameter,"
+                    f"But the caller passed in llm. Legacy dependency injection will be used."
                 )
             elif llm is None:
                 logger.warning(
-                    f"[AgentFactory] ⚠️ 调用方未传入 llm 参数。"
-                    f"Agent {agent_id} 将需要从配置或环境变量创建 LLM 客户端。"
+                    f"[AgentFactory] ⚠️ The caller did not pass in the llm parameter."
+                    f"Agent {agent_id} You will need to create the LLM client from configuration or environment variables."
                 )
 
             if tool_ids is not None and supports_llm:
@@ -140,26 +140,26 @@ class AgentFactory:
             if memory is not None and supports_memory:
                 init_kwargs["memory"] = memory
 
-            # 创建 Agent
-            if len(init_kwargs) > 1:  # 有额外参数
-                logger.info(f"[AgentFactory] ✅ 使用 v2.0 方式创建 Agent: {agent_id}")
-                logger.info(f"   - 传递参数: {list(init_kwargs.keys())}")
+            # Create Agent
+            if len(init_kwargs) > 1:  # There are additional parameters
+                logger.info(f"[AgentFactory] ✅ Created using v2.0 method Agent: {agent_id}")
+                logger.info(f"   - Pass parameters: {list(init_kwargs.keys())}")
                 agent = agent_class(**init_kwargs)
             else:
-                logger.info(f"[AgentFactory] ⚠️ 使用旧版方式创建 Agent: {agent_id}")
+                logger.info(f"[AgentFactory] ⚠️ Created using legacy methods Agent: {agent_id}")
                 agent = agent_class(config)
 
         except TypeError as e:
             error_msg = str(e)
             if "unexpected keyword argument" in error_msg:
-                logger.warning(f"[AgentFactory] ⚠️ Agent {agent_id} 不支持部分 v2.0 参数，降级为旧版方式")
-                logger.warning(f"   - 错误: {e}")
+                logger.warning(f"[AgentFactory] ⚠️ Agent {agent_id} Some v2.0 parameters are not supported and will be downgraded to the old version.")
+                logger.warning(f"   - Error: {e}")
                 agent = agent_class(config)
             else:
-                logger.error(f"[AgentFactory] ❌ 创建 Agent 失败: {e}")
+                logger.error(f"[AgentFactory] ❌ Agent creation failed: {e}")
                 raise
 
-        # 旧版适配：如果提供了 llm，但构造函数不支持，尝试注入依赖
+        # Legacy adaptation: If llm is provided but the constructor does not support it, try injecting the dependency
         if llm is not None and not supports_llm and hasattr(agent, "set_dependencies"):
             try:
                 from tradingagents.agents.utils.agent_utils import Toolkit
@@ -169,27 +169,27 @@ class AgentFactory:
                 except Exception:
                     toolkit = Toolkit()
                 agent.set_dependencies(llm, toolkit)
-                logger.info(f"已为 Agent {agent_id} 注入旧版依赖 (LLM/Toolkit)")
+                logger.info(f"Already for Agent {agent_id} Inject legacy dependencies (LLM/Toolkit)")
             except Exception as dep_err:
-                logger.warning(f"为 Agent {agent_id} 注入依赖失败: {dep_err}")
+                logger.warning(f"for Agent {agent_id} Dependency injection failed: {dep_err}")
 
-        # 初始化（如果需要）
+        # Initialization (if needed)
         if hasattr(agent, 'initialize'):
-            logger.info(f"[AgentFactory] 🔧 调用 Agent.initialize()")
+            logger.info(f"[AgentFactory] 🔧 call Agent.initialize()")
             agent.initialize()
 
-        # 🔍 打印 Agent 的最终状态
-        logger.info(f"[AgentFactory] ✅ Agent 创建完成: {agent_id}")
-        logger.info(f"   - Agent 类型: {type(agent).__name__}")
-        logger.info(f"   - 是否有 _llm: {hasattr(agent, '_llm')}")
-        logger.info(f"   - 是否有 _tools: {hasattr(agent, '_tools')}")
+        # 🔍 Print the final status of the Agent
+        logger.info(f"[AgentFactory] ✅ Agent Creation completed: {agent_id}")
+        logger.info(f"   - Agent Type: {type(agent).__name__}")
+        logger.info(f"   - Is there _llm: {hasattr(agent, '_llm')}")
+        logger.info(f"   - Is there _tools: {hasattr(agent, '_tools')}")
         if hasattr(agent, '_llm'):
-            logger.info(f"   - _llm 值: {type(agent._llm).__name__ if agent._llm else 'None'}")
+            logger.info(f"   - _llm value: {type(agent._llm).__name__ if agent._llm else 'None'}")
         if hasattr(agent, '_tools'):
-            logger.info(f"   - _tools 值: {agent._tools}")
+            logger.info(f"   - _tools value: {agent._tools}")
             if agent._tools:
-                logger.info(f"   - 工具数量: {len(agent._tools)}")
-                logger.info(f"   - 工具名称: {[t.name if hasattr(t, 'name') else str(t) for t in agent._tools]}")
+                logger.info(f"   - Number of tools: {len(agent._tools)}")
+                logger.info(f"   - Tool name: {[t.name if hasattr(t, 'name') else str(t) for t in agent._tools]}")
 
         return agent
 
@@ -202,25 +202,25 @@ class AgentFactory:
         memory: Optional[Any],
     ) -> Optional[BaseAgent]:
         """
-        尝试从 agent_configs 数据库加载配置，创建 UniversalAgent。
+        Try to load the configuration from the agent_configs database to create the UniversalAgent.
 
-        当 agent_id 不在硬编码注册表中时调用，实现"数据库驱动的新 Agent"能力。
+        Called when agent_id is not in the hardcoded registry, implemented"database driven new Agent"Ability.
 
         Args:
-            agent_id: 要创建的 Agent ID
-            config: 运行时配置（可能为 None）
-            llm: LangChain LLM 实例
-            tool_ids: 工具列表（可能已由 WorkflowBuilder 解析好）
-            memory: 记忆系统实例
+            agent_id: to create Agent ID
+            config: Runtime configuration (may be None)
+            llm: LangChain LLM Example
+            tool_ids: Tool list (may have been parsed by WorkflowBuilder)
+            memory: Memory system example
 
         Returns:
-            UniversalAgent 实例，或 None（若数据库中也找不到）
+            UniversalAgent instance, or None if it is not found in the database either.
         """
         try:
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
             if db is None:
-                logger.warning(f"[AgentFactory] 数据库未连接，无法创建 UniversalAgent: {agent_id}")
+                logger.warning(f"[AgentFactory] The database is not connected and cannot be created UniversalAgent: {agent_id}")
                 return None
 
             doc = db.agent_configs.find_one({
@@ -232,15 +232,15 @@ class AgentFactory:
                 ],
             })
             if doc is None:
-                logger.debug(f"[AgentFactory] agent_configs 中找不到可运行的 '{agent_id}'，无法创建 UniversalAgent")
+                logger.debug(f"[AgentFactory] agent_configs No runnable found in '{agent_id}', Unable to create UniversalAgent")
                 return None
 
             agent_name = doc.get("name") or doc.get("agent_name") or agent_id
-            agent_description = doc.get("description") or f"{agent_name} - 由数据库配置驱动"
+            agent_description = doc.get("description") or f"{agent_name} - Driven by database configuration"
             output_field = doc.get("output_field") or "analysis_report"
 
-            # 工具列表：优先使用调用方传入的（WorkflowBuilder 已解析的），
-            # 否则读取 agent_configs 的 default_tools
+            # Tool list: Priority is given to the one passed in by the caller (the one that has been parsed by WorkflowBuilder),
+            # Otherwise read agent_configs default_tools
             resolved_tool_ids = tool_ids
             if not resolved_tool_ids:
                 resolved_tool_ids = doc.get("default_tools") or doc.get("tools") or []
@@ -249,7 +249,7 @@ class AgentFactory:
                 config = AgentConfig()
 
             logger.info(
-                f"[AgentFactory] 🌐 从 agent_configs 创建 UniversalAgent: {agent_id} "
+                f"[AgentFactory] 🌐 Created from agent_configs UniversalAgent: {agent_id} "
                 f"(name={agent_name}, output_field={output_field}, tools={resolved_tool_ids})"
             )
 
@@ -274,11 +274,11 @@ class AgentFactory:
             if hasattr(agent, "initialize"):
                 agent.initialize()
 
-            logger.info(f"[AgentFactory] ✅ UniversalAgent 创建成功: {agent_id}")
+            logger.info(f"[AgentFactory] ✅ UniversalAgent Created successfully: {agent_id}")
             return agent
 
         except Exception as e:
-            logger.warning(f"[AgentFactory] ⚠️ 创建 UniversalAgent 失败 ({agent_id}): {e}")
+            logger.warning(f"[AgentFactory] ⚠️ Failed to create UniversalAgent ({agent_id}): {e}")
             return None
 
     def create_with_dynamic_tools(
@@ -288,27 +288,27 @@ class AgentFactory:
         config: Optional[AgentConfig] = None
     ) -> BaseAgent:
         """
-        v2.0: 创建智能体实例，自动从配置加载工具
+        v2.0: Create an agent instance and automatically load tools from the configuration
 
         Args:
-            agent_id: 智能体 ID
-            llm: LangChain LLM 实例
-            config: 智能体配置（可选）
+            agent_id: agent ID
+            llm: LangChain LLM Example
+            config: Agent configuration (optional)
 
         Returns:
-            初始化后的智能体实例
+            Initialized agent instance
         """
-        # 从配置加载工具列表
+        # Load tool list from configuration
         from core.config.binding_manager import BindingManager
         tool_ids = BindingManager().get_tools_for_agent(agent_id)
 
         if not tool_ids:
-            # 降级：使用元数据中的默认工具
+            # Downgrade: Use default tools from metadata
             metadata = self.registry.get_metadata(agent_id)
             if metadata:
                 tool_ids = getattr(metadata, 'default_tools', None) or getattr(metadata, 'tools', [])
 
-        logger.info(f"为 Agent '{agent_id}' 加载工具: {tool_ids}")
+        logger.info(f"for Agent '{agent_id}' Loading tools: {tool_ids}")
 
         return self.create(
             agent_id=agent_id,
@@ -324,15 +324,15 @@ class AgentFactory:
         **config_overrides
     ) -> Dict[str, BaseAgent]:
         """
-        批量创建智能体
+        Create agents in batches
         
         Args:
-            agent_ids: 智能体 ID 列表
-            shared_config: 共享配置
-            **config_overrides: 配置覆盖
+            agent_ids: Agent ID list
+            shared_config: Shared configuration
+            **config_overrides: Configuration override
             
         Returns:
-            {agent_id: agent_instance} 字典
+            {agent_id: agent_instance} dictionary
         """
         agents = {}
         for agent_id in agent_ids:
@@ -343,24 +343,24 @@ class AgentFactory:
                     **config_overrides
                 )
             except ValueError as e:
-                # 记录警告但继续创建其他智能体
-                print(f"警告: {e}")
+                # Log warning but continue creating other agents
+                print(f"warning: {e}")
         
         return agents
     
     def get_available_agents(self) -> list:
-        """获取所有已注册实现的智能体 ID"""
+        """Get all registered implemented agents ID"""
         return [
             m.id for m in self.registry.list_all()
             if self.registry.is_registered(m.id)
         ]
     
     def get_agent_metadata(self, agent_id: str) -> Optional[AgentMetadata]:
-        """获取智能体元数据"""
+        """Get agent metadata"""
         return self.registry.get_metadata(agent_id)
 
 
-# 便捷函数
+# Convenience function
 def create_agent(
     agent_id: str,
     config: Optional[AgentConfig] = None,
@@ -370,15 +370,15 @@ def create_agent(
     **kwargs
 ) -> BaseAgent:
     """
-    便捷函数: 创建智能体
+    Convenience function: Create an agent
 
-    用法:
+    Usage:
         from core.agents import create_agent
 
-        # 旧版
+        # Old version
         agent = create_agent("market_analyst", llm_provider="deepseek")
 
-        # 新版（v2.0）
+        # New version (v2.0)
         from langchain_openai import ChatOpenAI
         llm = ChatOpenAI(model="gpt-4")
         agent = create_agent("market_analyst", llm=llm, tool_ids=["get_stock_market_data_unified"])
@@ -399,9 +399,9 @@ def create_agent_with_dynamic_tools(
     config: Optional[AgentConfig] = None
 ) -> BaseAgent:
     """
-    v2.0 便捷函数: 创建智能体，自动从配置加载工具
+    v2.0 Convenience function: Create an agent and automatically load tools from the configuration
 
-    用法:
+    Usage:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent_with_dynamic_tools
 

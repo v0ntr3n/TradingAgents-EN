@@ -1,54 +1,54 @@
 ---
 name: stock-cyq-analyzer
 description: >
-  筹码分布分析工具（CYQ - Chip Distribution）。
-  基于量价数据计算获利盘比例、主力成本区、筹码集中度等专业指标。
-  使用三角分布模型，支持A股所有股票。
-  Use when: 用户提到"筹码分布"、"筹码分析"、"CYQ"、"获利盘"、"主力成本"、"筹码集中度"、"90%成本"。
-  NOT for: 推荐买卖时机、预测股价走势、给出投资建议。
+  Chip distribution analysis tool (CYQ - Chip Distribution).
+  Calculate professional indicators such as profit ratio, main cost area, and chip concentration based on volume and price data.
+  Using the triangular distribution model, all A-share stocks are supported.
+  Use when: User mentioned"Chip distribution", "Chip analysis", "CYQ", "Take profit", "Main cost", "Chip concentration", "90%cost". 
+  NOT for: Recommend buying and selling opportunities, predict stock price trends, and give investment advice.
 ---
 
-# CYQ 筹码分布分析工具
+# CYQ Chip distribution analysis tool
 
-## 技能概述
+## Skills Overview
 
-本工具计算股票的筹码分布（CYQ），基于量价数据采用三角分布模型，输出专业的筹码分析指标和可视化图表。
+This tool calculates the chip distribution (CYQ) of a stock, uses a triangular distribution model based on volume and price data, and outputs professional chip analysis indicators and visual charts.
 
-### 核心算法
-- 典型价格：`(Open + High + Low + Close) / 4`
-- 分布假设：三角分布（低点、高点、典型价格）
-- 历史衰减：按换手率线性衰减 `(1 - turnover)`
-- 价格步长：0.1 元
+### Core algorithm
+- Typical prices:`(Open + High + Low + Close) / 4`
+- Distribution assumptions: Triangular distribution (low, high, typical price)
+- Historical decay: linear decay according to turnover rate `(1 - turnover)`
+- Price step size: 0.1 yuan
 
-### 输出指标
-| 指标 | 说明 |
+### Output indicators
+| indicator | Description |
 |------|------|
-| 获利盘比例 | 当前价以下筹码占比 |
-| 平均成本 | 持仓者的平均成本价 |
-| 筹码峰值 | 筹码最密集的价格 |
-| 90%筹码集中度 | 90%筹码所在价格区间宽度 |
-| 主力成本区 | 筹码最密集的20%区间 |
+| Profit ratio | The proportion of chips below the current price |
+| average cost | Average cost price of position holders |
+| chip peak | The price with the most intensive chips |
+| 90%Chip concentration | 90%The width of the price range where the chips are located |
+| main cost area | The 20% range with the most intensive chips |
 
-## 前置条件
+## Preconditions
 
-### 安装依赖
-首次使用前，安装 Python 依赖（版本已在 requirements.txt 中限定）：
+### Install dependencies
+Before first use, install Python dependencies (versions are specified in requirements.txt):
 
 ```bash
 pip3 install -r requirements.txt
 ```
 
-### 使用方法
+### How to use
 
 ```bash
 cd scripts
-python3 cyq_analyzer.py <股票代码>
+python3 cyq_analyzer.py <Stock code>
 ```
 
-示例：
+Example:
 
 ```bash
 python3 cyq_analyzer.py 000547
 ```
 
-输出为标准 JSON 格式，包含筹码分析指标和图表路径。
+The output is in standard JSON format and contains chip analysis indicators and chart paths.

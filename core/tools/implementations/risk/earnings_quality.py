@@ -36,8 +36,8 @@ def _safe_div(numerator, denominator) -> float | None:
     tool_id="get_earnings_quality_score",
     name="盈利质量评分",
     description=(
-        "从应计质量、现金流稳定性、盈利持续性、自由现金流覆盖和一次性项目影响五个维度评估公司盈利质量，总分100分。"
-        "这里的“质量”指盈利真实性、可持续性和会计质量，不是数据质量、报告质量、产品质量、技术信号质量或单纯现金流量表分析。"
+        "The company s profitability quality is evaluated from five dimensions: accrual quality, cash flow stability, profitability sustainability, free cash flow coverage and the impact of one-time items, with a total score of 100 points."
+        "Here s quality It refers to earnings authenticity, sustainability and accounting quality, not data quality, reporting quality, product quality, technical signal quality or pure cash flow statement analysis."
     ),
     category="fundamentals",
     is_online=False,
@@ -47,52 +47,52 @@ def _safe_div(numerator, denominator) -> float | None:
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["earnings_quality_assessment"],
-    when_to_use="当需要评估公司盈利真实性、盈利可持续性、会计质量、应计利润风险、现金流对盈利覆盖情况时使用。",
-    when_not_to_use="不用于短期盈利预测；不用于数据质量检查、报告质量评审、技术信号或交易资金流分析；盈利质量评分衡量历史质量而非未来盈利。",
-    returns="返回JSON字符串，包含total_score、rating、dimensions和data_quality。",
+    when_to_use="Used when it is necessary to evaluate the authenticity of the company s earnings, earnings sustainability, accounting quality, accrual risk, and cash flow coverage of earnings.",
+    when_not_to_use="Not used for short-term earnings forecasts; not used for data quality checks, report quality reviews, technical signals, or trading capital flow analysis; earnings quality scores measure historical quality rather than future earnings.",
+    returns="Returns a JSON string containing total_score, rating, dimensions and data_quality.",
     example="get_earnings_quality_score(symbol='600519')",
     related_tools=["get_beneish_mscore", "get_piotroski_fscore"],
 )
-def get_earnings_quality_score(symbol: Annotated[str, "A 股股票代码，如 600519、000001"]) -> str:
-    """评估公司盈利质量。从应计质量、现金流稳定性、盈利持续性、自由现金流覆盖和一次性项目影响五个维度打分。
+def get_earnings_quality_score(symbol: Annotated[str, "A stock code, such as 600519,000001"]) -> str:
+    """Assess the quality of company earnings. Scores are scored from five dimensions: accrual quality, cash flow stability, profitability sustainability, free cash flow coverage and the impact of one-time items.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
+        symbol: A stock code, such as 600519,000001
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: "error" 时存在；成功时不包含该字段
-            symbol: 标的股票代码
-            total_score: 总分（满分 100）
-            rating: 评级，"优质" | "良好" | "一般" | "较差" | "差"
-            dimensions: dict，五个维度评分（每维度满分 20）——
-                — accrual_quality: dict，应计质量——
-                    — score: 得分
-                    — max: 满分 20
-                    — value: 应计比率均值（数据不足时为 None）
-                — cashflow_stability: dict，现金流稳定性——
-                    — score: 得分
-                    — max: 满分 20
-                    — value: 经营现金流变异系数（数据不足时为 None）
-                — earnings_persistence: dict，盈利持续性——
-                    — score: 得分
-                    — max: 满分 20
-                    — detail: 正增长年份占比文案
-                — fcf_coverage: dict，自由现金流覆盖——
-                    — score: 得分
-                    — max: 满分 20
-                    — value: 自由现金流 / 净利润 均值（数据不足时为 None）
-                — recurring_quality: dict，一次性项目影响（净利率稳定性）——
-                    — score: 得分
-                    — max: 满分 20
-                    — value: 净利率标准差（数据不足时为 None）
-            data_quality: dict，数据质量——
-                — years_available: 可用年报年数
-                — warnings: list[str]，告警信息
-            message: 当 status 为 "error" 时的错误描述
+        str: JSON String, field description——
+            status: "error" exists; this field is not included when successful
+            symbol: Underlying stock code
+            total_score: Total score (out of 100)
+            rating: rating,"high quality" | "good" | "Average" | "Poor" | "Poor"
+            dimensions: dict, Rating across five dimensions (maximum score 20 for each dimension)——
+                — accrual_quality: dict, Accrual quality——
+                    — score: score
+                    — max: Full marks 20
+                    — value: Accrual ratio mean (None if insufficient data)
+                — cashflow_stability: dict, cash flow stability——
+                    — score: score
+                    — max: Full marks 20
+                    — value: Operating cash flow coefficient of variation (None if data is insufficient)
+                — earnings_persistence: dict, Profitability sustainability——
+                    — score: score
+                    — max: Full marks 20
+                    — detail: Proportion of positive growth years copywriting
+                — fcf_coverage: dict, free cash flow coverage——
+                    — score: score
+                    — max: Full marks 20
+                    — value: Free cash flow / net profit mean (None if data is insufficient)
+                — recurring_quality: dict, Impact of one-time items (net interest rate stability)——
+                    — score: score
+                    — max: Full marks 20
+                    — value: Standard deviation of net interest rate (None if data is insufficient)
+            data_quality: dict, Data quality——
+                — years_available: Number of years of annual reports available
+                — warnings: list[str], Alarm information
+            message: When status is "error" error description when
     """
     try:
-        # 获取5年年报数据
+        # Get 5-year annual report data
         annual_data = get_historical_financial_annual_series(symbol, years=5)
         records = annual_data.get("records") or []
         warnings: list[str] = list(annual_data.get("warnings") or [])
@@ -101,27 +101,27 @@ def get_earnings_quality_score(symbol: Annotated[str, "A 股股票代码，如 6
             return json.dumps(
                 {
                     "status": "error",
-                    "message": f"年报数据不足，仅获取到 {len(records)} 年数据，需要至少2年",
+                    "message": f"There is insufficient data in the annual report and only the {len(records)} Annual data, at least 2 years required",
                     "symbol": symbol,
                 },
                 ensure_ascii=False, indent=2, default=str,
             )
 
         if len(records) < 5:
-            warnings.append(f"理想需要5年数据，当前仅{len(records)}年，评分可靠性降低")
+            warnings.append(f"Ideally, 5 years of data are required, currently only{len(records)}Years later, scoring reliability decreased")
 
-        # 将 records 按年份升序（便于计算增长率）
+        # Sort records in ascending order by year (facilitates calculation of growth rate)
         sorted_records = sorted(records, key=lambda r: r.get("year") or 0)
 
         n = len(sorted_records)
 
-        # 提取关键字段
+        # Extract key fields
         net_profits = [_safe_float(r.get("net_profit")) for r in sorted_records]
         operating_cashflows = [_safe_float(r.get("operating_cashflow")) for r in sorted_records]
         free_cashflows = [_safe_float(r.get("free_cashflow")) for r in sorted_records]
         netprofit_margins = [_safe_float(r.get("netprofit_margin")) for r in sorted_records]
 
-        # ===== D1: 应计质量 (20pts) =====
+        # ===== D1: Accrual quality (20pts) =====
         # mean(abs(net_profit - operating_cashflow) / abs(net_profit))
         accrual_ratios = []
         for np_val, ocf_val in zip(net_profits, operating_cashflows):
@@ -134,9 +134,9 @@ def get_earnings_quality_score(symbol: Annotated[str, "A 股股票代码，如 6
         else:
             mean_accrual_ratio = None
             d1_score = 10.0
-            warnings.append("应计质量无法计算，已赋中间分")
+            warnings.append("Accrual quality cannot be calculated, intermediate points have been assigned")
 
-        # ===== D2: 现金流稳定性 (20pts) =====
+        # ===== D2: cash flow stability (20pts) =====
         valid_ocfs = [v for v in operating_cashflows if v is not None]
         if len(valid_ocfs) >= 2:
             mean_ocf = float(np.mean(valid_ocfs))
@@ -148,9 +148,9 @@ def get_earnings_quality_score(symbol: Annotated[str, "A 股股票代码，如 6
         else:
             cv_ocf = None
             d2_score = 10.0
-            warnings.append("现金流稳定性数据不足，已赋中间分")
+            warnings.append("Insufficient data on cash flow stability, an intermediate score has been assigned")
 
-        # ===== D3: 盈利持续性 (20pts) =====
+        # ===== D3: Profitability sustainability (20pts) =====
         positive_growth_years = 0
         total_growth_years = 0
         for i in range(1, n):
@@ -166,7 +166,7 @@ def get_earnings_quality_score(symbol: Annotated[str, "A 股股票代码，如 6
         else:
             d3_score = 10.0
 
-        # ===== D4: 自由现金流覆盖 (20pts) =====
+        # ===== D4: free cash flow coverage (20pts) =====
         fcf_coverage_ratios = []
         for fcf_val, np_val in zip(free_cashflows, net_profits):
             if fcf_val is not None and np_val is not None and np_val > 0:
@@ -179,15 +179,15 @@ def get_earnings_quality_score(symbol: Annotated[str, "A 股股票代码，如 6
         else:
             mean_fcf_coverage = None
             d4_score = 10.0
-            warnings.append("自由现金流覆盖数据不足，已赋中间分")
+            warnings.append("Insufficient free cash flow coverage data, middle points have been assigned")
 
-        # ===== D5: 一次性项目影响 (20pts) =====
+        # ===== D5: One-time project impact (20pts) =====
         valid_margins = [v for v in netprofit_margins if v is not None]
         if len(valid_margins) >= 2:
-            # netprofit_margin 已经是百分比（如30表示30%），这里处理小数形式
-            # 先判断值域：如果大部分值 > 1 则视为百分比形式
+            # netprofit_margin It is already a percentage (for example, 30 means 30%), and the decimal form is processed here.
+            # First determine the value range: if most of the values > 1 is treated as a percentage
             if float(np.mean(valid_margins)) > 1:
-                # 百分比形式，转成小数
+                # Percentage form, converted to decimal
                 valid_margins_dec = [v / 100.0 for v in valid_margins]
             else:
                 valid_margins_dec = valid_margins
@@ -196,9 +196,9 @@ def get_earnings_quality_score(symbol: Annotated[str, "A 股股票代码，如 6
         else:
             std_margin = None
             d5_score = 10.0
-            warnings.append("净利率数据不足，已赋中间分")
+            warnings.append("Insufficient net interest rate data, an intermediate score has been assigned")
 
-        # ===== 总分与评级 =====
+        # ===== Overall score and rating =====
         total_score = round(d1_score + d2_score + d3_score + d4_score + d5_score, 1)
 
         if total_score >= 80:
@@ -252,7 +252,7 @@ def get_earnings_quality_score(symbol: Annotated[str, "A 股股票代码，如 6
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("盈利质量评分计算失败: %s", exc, exc_info=True)
+        logger.error("Earnings quality score calculation failed: %s", exc, exc_info=True)
         return json.dumps(
             {"status": "error", "message": str(exc)},
             ensure_ascii=False, indent=2, default=str,

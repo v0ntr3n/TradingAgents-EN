@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-测试操作日志功能
+Test operation log function
 """
 
 import asyncio
 import sys
 import os
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.core.database import init_db, get_mongo_db
@@ -15,54 +15,54 @@ from app.services.operation_log_service import log_operation, get_operation_log_
 from app.models.operation_log import ActionType
 
 async def test_operation_logs():
-    """测试操作日志功能"""
-    print("🧪 开始测试操作日志功能...")
+    """Test operation log function"""
+    print("🧪 Start testing the operation log function...")
     
     try:
-        # 初始化数据库
+        # Initialize database
         await init_db()
-        print("✅ 数据库初始化成功")
+        print("✅ Database initialization successful")
         
-        # 获取服务实例
+        # Get service instance
         service = get_operation_log_service()
-        print("✅ 操作日志服务获取成功")
+        print("✅ Operation log service is obtained successfully")
         
-        # 测试1: 创建操作日志
-        print("\n📝 测试1: 创建操作日志")
+        # test 1: Create operation log
+        print("\n📝 test 1: Create operation log")
         log_id = await log_operation(
             user_id="admin",
             username="admin",
             action_type=ActionType.USER_LOGIN,
-            action="测试用户登录",
+            action="Test user login",
             details={"test": True, "ip": "127.0.0.1"},
             success=True,
             duration_ms=100,
             ip_address="127.0.0.1",
             user_agent="Test Agent"
         )
-        print(f"✅ 创建日志成功，ID: {log_id}")
+        print(f"✅ Log created successfully,ID: {log_id}")
         
-        # 测试2: 创建更多测试日志
-        print("\n📝 测试2: 创建更多测试日志")
+        # test 2: Create more test logs
+        print("\n📝 test 2: Create more test logs")
         test_logs = [
             {
                 "action_type": ActionType.STOCK_ANALYSIS,
-                "action": "分析股票 000001",
+                "action": "Analyze stocks 000001",
                 "details": {"stock_code": "000001", "analysis_type": "comprehensive"},
                 "success": True,
                 "duration_ms": 1500
             },
             {
                 "action_type": ActionType.CONFIG_MANAGEMENT,
-                "action": "更新大模型配置",
+                "action": "Update large model configuration",
                 "details": {"provider": "openai", "model": "gpt-4"},
                 "success": False,
-                "error_message": "API密钥验证失败",
+                "error_message": "API Key verification failed",
                 "duration_ms": 500
             },
             {
                 "action_type": ActionType.DATABASE_OPERATION,
-                "action": "数据库备份",
+                "action": "Database backup",
                 "details": {"backup_type": "full", "size_mb": 150},
                 "success": True,
                 "duration_ms": 3000
@@ -77,46 +77,46 @@ async def test_operation_logs():
                 ip_address="127.0.0.1",
                 user_agent="Test Agent"
             )
-            print(f"✅ 创建测试日志 {i+1} 成功，ID: {log_id}")
+            print(f"✅ Create test log {i+1} success,ID: {log_id}")
         
-        # 测试3: 查询操作日志
-        print("\n📋 测试3: 查询操作日志")
+        # test 3: Query operation log
+        print("\n📋 test 3: Query operation log")
         from app.models.operation_log import OperationLogQuery
         
         query = OperationLogQuery(page=1, page_size=10)
         logs, total = await service.get_logs(query)
-        print(f"✅ 查询成功，总数: {total}, 返回: {len(logs)} 条")
+        print(f"✅ Query successful, total number: {total}, Return: {len(logs)} Article")
         
-        for log in logs[:3]:  # 显示前3条
+        for log in logs[:3]:  # Show first 3 items
             print(f"  - {log.timestamp} | {log.username} | {log.action} | {'✅' if log.success else '❌'}")
         
-        # 测试4: 获取统计信息
-        print("\n📊 测试4: 获取统计信息")
+        # test 4: Get statistics
+        print("\n📊 test 4: Get statistics")
         stats = await service.get_stats(days=30)
-        print(f"✅ 统计信息获取成功:")
-        print(f"  - 总日志数: {stats.total_logs}")
-        print(f"  - 成功日志: {stats.success_logs}")
-        print(f"  - 失败日志: {stats.failed_logs}")
-        print(f"  - 成功率: {stats.success_rate}%")
-        print(f"  - 操作类型分布: {stats.action_type_distribution}")
+        print(f"✅ Statistics obtained successfully:")
+        print(f"  - Total number of logs: {stats.total_logs}")
+        print(f"  - success log: {stats.success_logs}")
+        print(f"  - Failure log: {stats.failed_logs}")
+        print(f"  - success rate: {stats.success_rate}%")
+        print(f"  - Operation type distribution: {stats.action_type_distribution}")
         
-        # 测试5: 检查数据库中的记录
-        print("\n🔍 测试5: 检查数据库记录")
+        # test 5: Check records in database
+        print("\n🔍 test 5: Check database records")
         db = get_mongo_db()
         count = await db.operation_logs.count_documents({})
-        print(f"✅ 数据库中共有 {count} 条操作日志记录")
+        print(f"✅ There are total in the database {count} Operation log records")
         
-        # 显示最新的几条记录
+        # Show the latest records
         cursor = db.operation_logs.find().sort("timestamp", -1).limit(3)
         recent_logs = await cursor.to_list(length=3)
-        print("📝 最新的3条记录:")
+        print("📝 The latest 3 records:")
         for log in recent_logs:
             print(f"  - {log.get('timestamp')} | {log.get('username')} | {log.get('action')} | {log.get('success')}")
         
-        print("\n🎉 所有测试完成！操作日志功能正常工作。")
+        print("\n🎉 All tests completed! The operation log function works normally.")
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
 

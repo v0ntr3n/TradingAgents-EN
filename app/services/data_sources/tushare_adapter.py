@@ -15,7 +15,7 @@ class TushareAdapter(DataSourceAdapter):
     """Tusharedata source adapter"""
 
     def __init__(self):
-        super().__init__()  # 调用父类初始化
+        super().__init__()  # Call parent class initialization
         self._provider = None
         self._initialize()
 
@@ -33,7 +33,7 @@ class TushareAdapter(DataSourceAdapter):
         return "tushare"
 
     def _get_default_priority(self) -> int:
-        return 3  # highest priority (数字越大优先级越高)  # highest priority
+        return 3  # highest priority (The larger the number, the higher the priority.)  # highest priority
 
     def get_token_source(self) -> Optional[str]:
         """获取 Token 来源"""
@@ -43,7 +43,7 @@ class TushareAdapter(DataSourceAdapter):
 
     def is_available(self) -> bool:
         """Check whether Tushare is available"""
-        # 如果未连接，尝试连接
+        # If not connected, try to connect
         if self._provider and not getattr(self._provider, "connected", False):
             try:
                 self._provider.connect_sync()
@@ -58,7 +58,7 @@ class TushareAdapter(DataSourceAdapter):
 
     def get_stock_list(self) -> Optional[pd.DataFrame]:
         """Get stock list"""
-        # 如果未连接，尝试连接
+        # If not connected, try to connect
         if self._provider and not self.is_available():
             logger.info("Tushare: Provider not connected, attempting to connect...")
             try:
@@ -70,7 +70,7 @@ class TushareAdapter(DataSourceAdapter):
             logger.warning("Tushare: Provider is not available")
             return None
         try:
-            # 使用 TushareProvider 的同步方法
+            # Synchronization method using TushareProvider
             df = self._provider.get_stock_list_sync()
             if df is not None and not df.empty:
                 logger.info(f"Tushare: Successfully fetched {len(df)} stocks")
@@ -84,7 +84,7 @@ class TushareAdapter(DataSourceAdapter):
         if not self.is_available():
             return None
         try:
-            # 🔥 新增 ps, ps_ttm, total_share, float_share, dv_ratio, dv_ttm 字段
+            # 🔥 New ps, ps_ttm, total_share, float_share, dv_ratio, dv_ttm Field
             fields = "ts_code,total_mv,circ_mv,pe,pb,ps,turnover_rate,volume_ratio,pe_ttm,pb_mrq,ps_ttm,total_share,float_share,dv_ratio,dv_ttm"
             df = self._provider.api.daily_basic(trade_date=trade_date, fields=fields)
             if df is not None and not df.empty:
@@ -101,11 +101,11 @@ class TushareAdapter(DataSourceAdapter):
         """Get full-market near real-time quotes via Tushare rt_k fallback
         Returns dict keyed by 6-digit code: {'000001': {'close': ..., 'pct_chg': ..., 'amount': ...}}
         
-        🔥 已禁用：Tushare 实时行情接口统一由定时任务 run_tushare_realtime_quotes_hourly 管理
-        避免与每小时31分的定时任务冲突（免费用户每小时只能调用一次）
+        🔥 Disabled: Tushare real-time market interface is managed by the scheduled task run_tushare_realtime_quotes_hourly
+        Avoid conflict with the scheduled task of 31 minutes per hour (free users can only call it once per hour)
         """
-        # 🔥 已禁用 Tushare 实时行情接口调用，统一由定时任务管理
-        logger.info("⏸️ Tushare 实时行情接口已禁用，跳过调用（由定时任务统一管理）")
+        # 🔥 Tushare real-time market interface calls have been disabled and are managed by scheduled tasks.
+        logger.info("⏸️ Tushare The real-time market interface has been disabled and the call is skipped (managed by scheduled tasks)")
         return None
 
     def get_kline(self, code: str, period: str = "day", limit: int = 120, adj: Optional[str] = None):
@@ -140,8 +140,8 @@ class TushareAdapter(DataSourceAdapter):
             freq = freq_map.get(period, "D")
             adj_arg = adj if adj in (None, "qfq", "hfq") else None
 
-            # 根据频率决定请求的字段
-            # 日线及以上周期只有 trade_date，分钟线才有 trade_time
+            # Determine requested fields based on frequency
+            # Only trade_date is available for the daily line and above periods, and it is only available for the minute line. trade_time
             if freq in ["5min", "15min", "30min", "60min"]:
                 fields = "open,high,low,close,vol,amount,trade_date,trade_time"
             else:
@@ -235,11 +235,11 @@ class TushareAdapter(DataSourceAdapter):
         return items if items else None
 
     def find_latest_trade_date(self) -> Optional[str]:
-        """通过交易日历API查找最新交易日期（带缓存）"""
+        """Find latest trading date via Trading Calendar API (with caching)"""
         if not self.is_available():
             return None
         
-        # 先尝试从缓存获取
+        # Try to get it from cache first
         try:
             from app.services.trade_date_cache_service import get_trade_date_cache_service
             
@@ -251,30 +251,30 @@ class TushareAdapter(DataSourceAdapter):
         except Exception as e:
             logger.debug(f"Tushare: Cache check failed: {e}, will fetch from API")
         
-        # 缓存不存在或已过期，调用API获取
+        # The cache does not exist or has expired. Call the API to obtain it.
         try:
             api = self._provider.api if self._provider else None
             if api is None:
                 return None
             
-            # 从今天向前1个月，获取交易日历
+            # Get a trading calendar 1 month ahead from today
             today = datetime.now()
             end_date = today.strftime("%Y%m%d")
             start_date = (today - timedelta(days=30)).strftime("%Y%m%d")
             
-            # 调用 trade_cal API 获取交易日历
+            # Call the trade_cal API to get the trading calendar
             df = api.trade_cal(exchange='SSE', start_date=start_date, end_date=end_date)
             
             if df is not None and not df.empty:
-                # 筛选出交易日（is_open == 1）
+                # Filter out trading days (is_open == 1) 
                 trading_days = df[df['is_open'] == 1]
                 if not trading_days.empty:
-                    # 按日期排序，取最后一个（最新的交易日）
+                    # Sort by date, take the last one (latest trading day)
                     trading_days = trading_days.sort_values('cal_date', ascending=False)
                     latest_date = str(trading_days.iloc[0]['cal_date'])
                     logger.info(f"Tushare: Found latest trade date from calendar: {latest_date}")
                     
-                    # 保存到缓存
+                    # Save to cache
                     try:
                         from app.services.trade_date_cache_service import get_trade_date_cache_service
                         cache_service = get_trade_date_cache_service()
@@ -284,7 +284,7 @@ class TushareAdapter(DataSourceAdapter):
                     
                     return latest_date
             
-            # 如果交易日历API失败，回退到原来的方法
+            # If the trading calendar API fails, fall back to the original method
             logger.warning("Tushare: Trade calendar API failed, falling back to daily_basic probing")
             for delta in range(0, 10):  # up to 10 days back
                 d = (today - timedelta(days=delta)).strftime("%Y%m%d")
@@ -293,7 +293,7 @@ class TushareAdapter(DataSourceAdapter):
                     if db is not None and not db.empty:
                         logger.info(f"Tushare: Found latest trade date by probing: {d}")
                         
-                        # 保存到缓存
+                        # Save to cache
                         try:
                             import asyncio
                             from app.services.trade_date_cache_service import get_trade_date_cache_service

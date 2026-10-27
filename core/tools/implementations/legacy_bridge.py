@@ -1,6 +1,6 @@
 """
-遗留工具桥接模块
-自动将 tradingagents.agents.utils.agent_utils 中的旧版工具注册到新系统中。
+Legacy Tools Bridge Module
+Automatically register legacy tools from tradingagents.agents.utils.agent_utils to the new system.
 """
 import logging
 from typing import Annotated, Optional
@@ -12,412 +12,412 @@ logger = logging.getLogger(__name__)
 def _invoke_legacy_tool(tool_func, **kwargs):
     """通用桥接调用逻辑"""
     try:
-        # LangChain @tool 装饰后的对象通常有 invoke 方法
+        # LangChain @tool Decorated objects usually have an invoke method
         if hasattr(tool_func, "invoke"):
             return tool_func.invoke(kwargs)
-        # 如果是普通函数，直接调用
+        # If it is an ordinary function, call it directly
         return tool_func(**kwargs)
     except Exception as e:
         logger.error(f"调用旧版工具失败 {tool_func}: {e}")
         return f"Error executing legacy tool: {str(e)}"
 
 # ==============================================================================
-# 新闻类 (News)
+# News (News)
 # ==============================================================================
 
 @register_tool(
     tool_id="get_reddit_news_legacy",
-    name="Reddit 全球新闻 (Legacy)",
-    description="获取 Reddit 上的全球新闻聚合（旧版接口）",
+    name="Reddit global news (Legacy)",
+    description="Get global news aggregation on Reddit (legacy interface)",
     category="news",
     is_online=True
 )
 def get_reddit_news_bridge(curr_date: str) -> str:
-    """Reddit 全球新闻聚合（旧版接口）。
+    """Reddit Global news aggregation (legacy interface).
 
     Args:
-        curr_date: 当前日期（YYYY-MM-DD）
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_reddit_news, curr_date=curr_date)
 
 @register_tool(
     tool_id="get_finnhub_news_legacy",
-    name="Finnhub 财经新闻 (Legacy)",
-    description="从 Finnhub 获取特定股票的新闻（旧版接口）",
+    name="Finnhub financial news (Legacy)",
+    description="Get news about a specific stock from Finnhub (legacy interface)",
     category="news",
     is_online=True
 )
 def get_finnhub_news_bridge(ticker: str, start_date: str, end_date: str) -> str:
-    """从 Finnhub 获取特定股票的新闻（旧版接口）。
+    """Get news for a specific stock from Finnhub (legacy interface).
 
     Args:
-        ticker: 股票代码（如 ``AAPL``）
-        start_date: 起始日期（YYYY-MM-DD）
-        end_date: 结束日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``AAPL``) 
+        start_date: Start date (YYYY-MM-DD)
+        end_date: End date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_finnhub_news, ticker=ticker, start_date=start_date, end_date=end_date)
 
 @register_tool(
     tool_id="get_google_news_legacy",
-    name="Google 新闻搜索 (Legacy)",
-    description="通过 Google News 搜索特定关键词的新闻（旧版接口）",
+    name="Google News search (Legacy)",
+    description="Search news for specific keywords through Google News (old interface)",
     category="news",
     is_online=True
 )
 def get_google_news_bridge(query: str, curr_date: str) -> str:
-    """通过 Google News 搜索特定关键词的新闻（旧版接口）。
+    """Search news for specific keywords through Google News (old interface).
 
     Args:
-        query: 搜索关键词
-        curr_date: 当前日期（YYYY-MM-DD）
+        query: Search keywords
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_google_news, query=query, curr_date=curr_date)
 
 @register_tool(
     tool_id="get_realtime_stock_news_legacy",
-    name="实时股票新闻 (Legacy)",
-    description="获取股票的实时新闻分析（旧版接口）",
+    name="Live stock news (Legacy)",
+    description="Get real-time news analysis of stocks (old version interface)",
     category="news",
     is_online=True
 )
 def get_realtime_stock_news_bridge(ticker: str, curr_date: str) -> str:
-    """获取股票的实时新闻分析（旧版接口）。
+    """Get real-time news analysis of stocks (legacy interface).
 
     Args:
-        ticker: 股票代码（如 ``AAPL``）
-        curr_date: 当前日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``AAPL``) 
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_realtime_stock_news, ticker=ticker, curr_date=curr_date)
 
 @register_tool(
     tool_id="get_stock_news_openai_legacy",
-    name="OpenAI 股票新闻分析 (Legacy)",
-    description="使用 OpenAI 接口获取并分析股票新闻（旧版接口）",
+    name="OpenAI Stock news analysis (Legacy)",
+    description="Obtain and analyze stock news using the OpenAI interface (legacy interface)",
     category="news",
     is_online=True,
     timeout_tier="heavy",
 )
 def get_stock_news_openai_bridge(ticker: str, curr_date: str) -> str:
-    """使用 OpenAI 接口获取并分析股票新闻（旧版接口）。
+    """Get and analyze stock news using the OpenAI interface (legacy interface).
 
     Args:
-        ticker: 股票代码（如 ``AAPL``）
-        curr_date: 当前日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``AAPL``) 
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_stock_news_openai, ticker=ticker, curr_date=curr_date)
 
 @register_tool(
     tool_id="get_global_news_openai_legacy",
-    name="OpenAI 宏观新闻分析 (Legacy)",
-    description="使用 OpenAI 接口获取并分析宏观经济新闻（旧版接口）",
+    name="OpenAI Macro News Analysis (Legacy)",
+    description="Obtain and analyze macroeconomic news using the OpenAI interface (legacy interface)",
     category="news",
     is_online=True,
     timeout_tier="heavy",
 )
 def get_global_news_openai_bridge(curr_date: str) -> str:
-    """使用 OpenAI 接口获取并分析宏观经济新闻（旧版接口）。
+    """Get and analyze macroeconomic news using the OpenAI interface (legacy interface).
 
     Args:
-        curr_date: 当前日期（YYYY-MM-DD）
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_global_news_openai, curr_date=curr_date)
 
 # ==============================================================================
-# 社交情绪类 (Social)
+# social-emotional (Social)
 # ==============================================================================
 
 @register_tool(
     tool_id="get_reddit_stock_info_legacy",
-    name="Reddit 股票讨论 (Legacy)",
-    description="获取 Reddit 上关于特定股票的讨论信息（旧版接口）",
+    name="Reddit stock discussion (Legacy)",
+    description="Get discussion information about a specific stock on Reddit (legacy interface)",
     category="social",
     is_online=True
 )
 def get_reddit_stock_info_bridge(ticker: str, curr_date: str) -> str:
-    """获取 Reddit 上关于特定股票的讨论信息（旧版接口）。
+    """Get discussion information about a specific stock on Reddit (legacy interface).
 
     Args:
-        ticker: 股票代码（如 ``AAPL``）
-        curr_date: 当前日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``AAPL``) 
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_reddit_stock_info, ticker=ticker, curr_date=curr_date)
 
 @register_tool(
     tool_id="get_chinese_social_sentiment_legacy",
-    name="中国社交情绪 (Legacy)",
-    description="获取中国社交媒体（雪球、股吧等）的股票情绪（旧版接口）",
+    name="Chinese social sentiment (Legacy)",
+    description="Get stock sentiment from Chinese social media (Xueqiu, Stock Bar, etc.) (old version interface)",
     category="social",
     is_online=True
 )
 def get_chinese_social_sentiment_bridge(ticker: str, curr_date: str) -> str:
-    """获取中国社交媒体（雪球、股吧等）的股票情绪（旧版接口）。
+    """Get stock sentiment from Chinese social media (Snowball, Stock Bar, etc.) (old version interface).
 
     Args:
-        ticker: 股票代码（如 ``000001`` 或 ``AAPL``）
-        curr_date: 当前日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``000001`` or ``AAPL``) 
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_chinese_social_sentiment, ticker=ticker, curr_date=curr_date)
 
 # ==============================================================================
-# 市场行情类 (Market)
+# Market conditions (Market)
 # ==============================================================================
 
 @register_tool(
     tool_id="get_china_market_overview_legacy",
-    name="中国市场概览 (Legacy)",
-    description="获取中国股市主要指数行情概览（旧版接口）",
+    name="China market overview (Legacy)",
+    description="Get an overview of major Chinese stock market indexes (old version interface)",
     category="market",
     is_online=True
 )
 def get_china_market_overview_bridge(curr_date: str) -> str:
-    """获取中国股市主要指数行情概览（旧版接口）。
+    """Get an overview of China s major stock market indexes (old version interface).
 
     Args:
-        curr_date: 当前日期（YYYY-MM-DD）
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_china_market_overview, curr_date=curr_date)
 
 # ==============================================================================
-# 技术分析类 (Technical)
+# Technical analysis (Technical)
 # ==============================================================================
 
 @register_tool(
     tool_id="get_stockstats_indicators_report_legacy",
-    name="技术指标报告 (Stockstats/Legacy)",
-    description="生成特定技术指标的分析报告（旧版接口）",
+    name="Technical indicator report (Stockstats/Legacy)",
+    description="Generate analysis reports for specific technical indicators (old version interface)",
     category="technical",
     is_online=False,
-    when_to_use="仅用于兼容旧版工作流。新项目应使用 get_technical_indicators 或 get_technical_factor_bundle_tool。",
-    when_not_to_use="新项目/新分析不应使用此旧版接口；数据准确性可能不如新版工具。",
+    when_to_use="Only for compatibility with legacy workflows. New projects should use get_technical_indicators or get_technical_factor_bundle_tool.",
+    when_not_to_use="New projects/analyses should not use this legacy interface; data accuracy may not be as good as with newer versions of the tool.",
     tool_role_hint="fallback",
     related_tools=["get_technical_indicators", "get_technical_factor_bundle_tool"],
     capability_tags=["legacy", "technical_analysis", "deprecated"],
 )
 def get_stockstats_indicators_report_bridge(symbol: str, indicator: str, curr_date: str, look_back_days: int = 30) -> str:
-    """生成特定技术指标的分析报告（旧版接口，离线）。
+    """Generate analysis reports for specific technical indicators (old version interface, offline).
 
     Args:
-        symbol: 标的代码（股票代码/指数代码）
-        indicator: 技术指标名称（如 ``MACD``、``RSI``、``KDJ``）
-        curr_date: 当前日期（YYYY-MM-DD）
-        look_back_days: 回看天数，默认 30
+        symbol: Underlying code (stock code/index code)
+        indicator: Technical indicator name (such as ``MACD``, ``RSI``, ``KDJ``) 
+        curr_date: Current date (YYYY-MM-DD)
+        look_back_days: Number of days to look back, default 30
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_stockstats_indicators_report, symbol=symbol, indicator=indicator, curr_date=curr_date, look_back_days=look_back_days)
 
 @register_tool(
     tool_id="get_stockstats_indicators_report_online_legacy",
-    name="实时技术指标报告 (Stockstats/Online/Legacy)",
-    description="生成特定技术指标的实时分析报告（旧版接口）",
+    name="Real-time technical indicator reporting (Stockstats/Online/Legacy)",
+    description="Generate real-time analysis reports of specific technical indicators (old version interface)",
     category="technical",
     is_online=True,
-    when_to_use="仅用于兼容旧版工作流。新项目应使用 get_technical_indicators 或 get_technical_factor_bundle_tool。",
-    when_not_to_use="新项目/新分析不应使用此旧版接口。",
+    when_to_use="Only for compatibility with legacy workflows. New projects should use get_technical_indicators or get_technical_factor_bundle_tool.",
+    when_not_to_use="New projects/new analyzes should not use this legacy interface.",
     tool_role_hint="fallback",
     related_tools=["get_technical_indicators", "get_technical_factor_bundle_tool"],
     capability_tags=["legacy", "technical_analysis", "deprecated"],
 )
 def get_stockstats_indicators_report_online_bridge(symbol: str, indicator: str, curr_date: str, look_back_days: int = 30) -> str:
-    """生成特定技术指标的实时分析报告（旧版接口，在线）。
+    """Generate real-time analysis reports of specific technical indicators (old version interface, online).
 
     Args:
-        symbol: 标的代码（股票代码/指数代码）
-        indicator: 技术指标名称（如 ``MACD``、``RSI``、``KDJ``）
-        curr_date: 当前日期（YYYY-MM-DD）
-        look_back_days: 回看天数，默认 30
+        symbol: Underlying code (stock code/index code)
+        indicator: Technical indicator name (such as ``MACD``, ``RSI``, ``KDJ``) 
+        curr_date: Current date (YYYY-MM-DD)
+        look_back_days: Number of days to look back, default 30
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_stockstats_indicators_report_online, symbol=symbol, indicator=indicator, curr_date=curr_date, look_back_days=look_back_days)
 
 @register_tool(
     tool_id="get_yfin_data_legacy",
-    name="Yahoo Finance 数据 (Legacy)",
-    description="从 Yahoo Finance 获取股票价格数据（旧版接口）",
+    name="Yahoo Finance data (Legacy)",
+    description="Get stock price data from Yahoo Finance (legacy interface)",
     category="market",
     is_online=False
 )
 def get_yfin_data_bridge(symbol: str, start_date: str, end_date: str) -> str:
-    """从 Yahoo Finance 获取股票价格数据（旧版接口，离线/缓存）。
+    """Get stock price data from Yahoo Finance (legacy interface, offline/cached).
 
     Args:
-        symbol: 标的代码（如 ``AAPL``）
-        start_date: 起始日期（YYYY-MM-DD）
-        end_date: 结束日期（YYYY-MM-DD）
+        symbol: target code (e.g. ``AAPL``) 
+        start_date: Start date (YYYY-MM-DD)
+        end_date: End date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_YFin_data, symbol=symbol, start_date=start_date, end_date=end_date)
 
 @register_tool(
     tool_id="get_yfin_data_online_legacy",
-    name="Yahoo Finance 实时数据 (Legacy)",
-    description="从 Yahoo Finance 获取实时股票价格数据（旧版接口）",
+    name="Yahoo Finance real time data (Legacy)",
+    description="Get real-time stock price data from Yahoo Finance (legacy interface)",
     category="market",
     is_online=True
 )
 def get_yfin_data_online_bridge(symbol: str, start_date: str, end_date: str) -> str:
-    """从 Yahoo Finance 获取实时股票价格数据（旧版接口，在线）。
+    """Get real-time stock price data from Yahoo Finance (legacy interface, online).
 
     Args:
-        symbol: 标的代码（如 ``AAPL``）
-        start_date: 起始日期（YYYY-MM-DD）
-        end_date: 结束日期（YYYY-MM-DD）
+        symbol: target code (e.g. ``AAPL``) 
+        start_date: Start date (YYYY-MM-DD)
+        end_date: End date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_YFin_data_online, symbol=symbol, start_date=start_date, end_date=end_date)
 
 # ==============================================================================
-# 基本面类 (Fundamentals)
+# Fundamentals (Fundamentals)
 # ==============================================================================
 
 @register_tool(
     tool_id="get_finnhub_company_insider_sentiment_legacy",
-    name="内部人情绪 (Finnhub/Legacy)",
-    description="获取公司内部人士的交易情绪（旧版接口）",
+    name="insider sentiment (Finnhub/Legacy)",
+    description="Get the trading sentiment of company insiders (old version interface)",
     category="fundamentals",
     is_online=True
 )
 def get_finnhub_company_insider_sentiment_bridge(ticker: str, curr_date: str) -> str:
-    """获取公司内部人士的交易情绪（旧版接口）。
+    """Get trading sentiment of company insiders (legacy interface).
 
     Args:
-        ticker: 股票代码（如 ``AAPL``）
-        curr_date: 当前日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``AAPL``) 
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_finnhub_company_insider_sentiment, ticker=ticker, curr_date=curr_date)
 
 @register_tool(
     tool_id="get_finnhub_company_insider_transactions_legacy",
-    name="内部人交易 (Finnhub/Legacy)",
-    description="获取公司内部人士的具体交易记录（旧版接口）",
+    name="insider trading (Finnhub/Legacy)",
+    description="Obtain specific transaction records of company insiders (old version interface)",
     category="fundamentals",
     is_online=True
 )
 def get_finnhub_company_insider_transactions_bridge(ticker: str, curr_date: str) -> str:
-    """获取公司内部人士的具体交易记录（旧版接口）。
+    """Obtain specific transaction records of company insiders (old version interface).
 
     Args:
-        ticker: 股票代码（如 ``AAPL``）
-        curr_date: 当前日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``AAPL``) 
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_finnhub_company_insider_transactions, ticker=ticker, curr_date=curr_date)
 
 @register_tool(
     tool_id="get_simfin_income_stmt_legacy",
-    name="利润表 (SimFin/Legacy)",
-    description="获取公司利润表数据（旧版接口）",
+    name="income statement (SimFin/Legacy)",
+    description="Get company income statement data (old version interface)",
     category="fundamentals",
     is_online=False
 )
 def get_simfin_income_stmt_bridge(ticker: str, freq: str, curr_date: str) -> str:
-    """获取公司利润表数据（旧版接口）。
+    """Get company income statement data (old version interface).
 
     Args:
-        ticker: 股票代码（如 ``AAPL``）
-        freq: 财报频率（如 ``annual``、``quarterly``）
-        curr_date: 当前日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``AAPL``) 
+        freq: Frequency of financial reporting (e.g. ``annual``, ``quarterly``) 
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_simfin_income_stmt, ticker=ticker, freq=freq, curr_date=curr_date)
 
 @register_tool(
     tool_id="get_simfin_balance_sheet_legacy",
-    name="资产负债表 (SimFin/Legacy)",
-    description="获取公司资产负债表数据（旧版接口）",
+    name="balance sheet (SimFin/Legacy)",
+    description="Get company balance sheet data (old version interface)",
     category="fundamentals",
     is_online=False
 )
 def get_simfin_balance_sheet_bridge(ticker: str, freq: str, curr_date: str) -> str:
-    """获取公司资产负债表数据（旧版接口）。
+    """Get company balance sheet data (old version interface).
 
     Args:
-        ticker: 股票代码（如 ``AAPL``）
-        freq: 财报频率（如 ``annual``、``quarterly``）
-        curr_date: 当前日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``AAPL``) 
+        freq: Frequency of financial reporting (e.g. ``annual``, ``quarterly``) 
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_simfin_balance_sheet, ticker=ticker, freq=freq, curr_date=curr_date)
 
 @register_tool(
     tool_id="get_simfin_cashflow_legacy",
-    name="现金流量表 (SimFin/Legacy)",
-    description="获取公司现金流量表数据（旧版接口）",
+    name="cash flow statement (SimFin/Legacy)",
+    description="Get company cash flow statement data (old version interface)",
     category="fundamentals",
     is_online=False
 )
 def get_simfin_cashflow_bridge(ticker: str, freq: str, curr_date: str) -> str:
-    """获取公司现金流量表数据（旧版接口）。
+    """Get company cash flow statement data (old version interface).
 
     Args:
-        ticker: 股票代码（如 ``AAPL``）
-        freq: 财报频率（如 ``annual``、``quarterly``）
-        curr_date: 当前日期（YYYY-MM-DD）
+        ticker: Stock code (e.g. ``AAPL``) 
+        freq: Frequency of financial reporting (e.g. ``annual``, ``quarterly``) 
+        curr_date: Current date (YYYY-MM-DD)
 
     Returns:
-        str: 旧版工具返回的文本/JSON 字符串；调用失败时返回
-            ``"Error executing legacy tool: <错误信息>"``
+        str: Text/JSON string returned by legacy tools; returned on failure
+            ``"Error executing legacy tool: <error message>"``
     """
     return _invoke_legacy_tool(Toolkit.get_simfin_cashflow, ticker=ticker, freq=freq, curr_date=curr_date)
 
-logger.info("✅ 已加载所有遗留工具桥接 (Legacy Bridge Loaded)")
+logger.info("✅ All legacy tool bridges loaded (Legacy Bridge Loaded)")

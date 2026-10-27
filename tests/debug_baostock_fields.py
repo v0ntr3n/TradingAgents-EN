@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-调试BaoStock返回的字段结构
+Debugging the field structure returned by BaoStock
 """
 import sys
 import os
@@ -10,73 +10,73 @@ import logging
 import pandas as pd
 from datetime import datetime, timedelta
 
-# 设置日志
+# Setup log
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)-8s | %(message)s'
 )
 
 def debug_baostock_fields():
-    """调试BaoStock返回的字段结构"""
+    """Debugging the field structure returned by BaoStock"""
     print("=" * 60)
-    print("🔍 调试BaoStock返回的字段结构")
+    print("🔍 Debugging the field structure returned by BaoStock")
     print("=" * 60)
     
     try:
         import baostock as bs
         
-        # 登录BaoStock
+        # Login BaoStock
         lg = bs.login()
         if lg.error_code != '0':
-            print(f"❌ BaoStock登录失败: {lg.error_msg}")
+            print(f"❌ BaoStock Login failed: {lg.error_msg}")
             return
         
-        print("✅ BaoStock登录成功")
+        print("✅ BaoStock Login successful")
         
-        # 获取股票列表
+        # Get a list of stocks
         trade_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-        print(f"📅 查询日期: {trade_date}")
+        print(f"📅 Query date: {trade_date}")
         
         rs = bs.query_all_stock(day=trade_date)
-        print(f"返回码: {rs.error_code}")
-        print(f"返回消息: {rs.error_msg}")
-        print(f"字段列表: {rs.fields}")
+        print(f"return code: {rs.error_code}")
+        print(f"return message: {rs.error_msg}")
+        print(f"Field list: {rs.fields}")
         
         if rs.error_code == '0':
-            # 解析数据
+            # Parse data
             data_list = []
             count = 0
             while (rs.error_code == '0') & rs.next():
                 row = rs.get_row_data()
                 data_list.append(row)
                 count += 1
-                if count <= 10:  # 显示前10条
-                    print(f"第{count}条: {row}")
-                if count >= 100:  # 限制总数
+                if count <= 10:  # Show the first 10 items
+                    print(f"No.{count}Article: {row}")
+                if count >= 100:  # total limit
                     break
             
-            print(f"\n📊 总共获取到 {len(data_list)} 条记录")
+            print(f"\n📊 Obtained in total {len(data_list)} records")
             
             if data_list:
-                # 转换为DataFrame
+                # Convert to DataFrame
                 df = pd.DataFrame(data_list, columns=rs.fields)
-                print(f"DataFrame形状: {df.shape}")
-                print(f"列名: {list(df.columns)}")
-                print(f"前5行数据:")
+                print(f"DataFrame shape: {df.shape}")
+                print(f"List: {list(df.columns)}")
+                print(f"First 5 rows of data:")
                 print(df.head())
                 
-                # 分析A股股票
-                print(f"\n🔍 分析A股股票:")
+                # Analyze A-share stocks
+                print(f"\n🔍 Analyze A-share stocks:")
                 a_stock_pattern = r'^(sh|sz)\.[0-9]{6}$'
                 a_stocks = df[df['code'].str.contains(a_stock_pattern, na=False)]
-                print(f"匹配A股模式的股票数量: {len(a_stocks)}")
+                print(f"The number of stocks matching the A-share pattern: {len(a_stocks)}")
                 
                 if len(a_stocks) > 0:
-                    print(f"A股样本:")
+                    print(f"A stock sample:")
                     print(a_stocks.head())
                     
-                    # 检查字段映射
-                    print(f"\n📋 字段映射分析:")
+                    # Check field mapping
+                    print(f"\n📋 Field mapping analysis:")
                     print(f"code -> symbol: {a_stocks['code'].head(3).tolist()}")
                     if 'code_name' in a_stocks.columns:
                         print(f"code_name -> name: {a_stocks['code_name'].head(3).tolist()}")
@@ -84,10 +84,10 @@ def debug_baostock_fields():
                         print(f"tradeStatus: {a_stocks['tradeStatus'].head(3).tolist()}")
         
         bs.logout()
-        print("\n✅ BaoStock登出成功")
+        print("\n✅ BaoStock Logout successful")
         
     except Exception as e:
-        print(f"❌ 调试失败: {e}")
+        print(f"❌ Debugging failed: {e}")
         import traceback
         traceback.print_exc()
 

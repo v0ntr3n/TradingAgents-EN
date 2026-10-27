@@ -1,588 +1,588 @@
-# TradingAgents-CN v3.0 完整使用手册
+# TradingAgents-CN v3.0 Complete user manual
 
-> 版本：v3.0 | 更新日期：2026-07-25 | 适用对象：新用户与进阶用户
+> Version:v3.0 | Update date:2026-07-25 | Applicable objects: new users and advanced users
 >
-> TradingAgents-CN Pro 是一款多智能体（Multi-Agent）投资研究平台，通过自然语言对话、可编排的分析工作流与可扩展的 Agent/Skill 工坊，把投资研究全流程串联起来。
+> TradingAgents-CN Pro It is a multi-agent investment research platform that connects the entire investment research process through natural language dialogue, programmable analysis workflows and scalable Agent/Skill workshops.
 
 ---
 
-## 目录
+## Directory
 
-- [v3.0 分析能力全景](#v30-分析能力全景)
-- [快速了解（30秒入门）](#快速了解30秒入门)
-- [学习路径（从入门到精通）](#学习路径从入门到精通)
-- [系统能为您做什么](#系统能为您做什么)
-  - [v3.0 治理能力（让 AI 不再是黑盒）](#v30-治理能力让-ai-不再是非黑盒)
-- [第一章 安装部署](#第一章-安装部署)
-  - [1.1 Windows 安装包部署](#11-windows-安装包部署)
-  - [1.2 Docker 部署](#12-docker-部署)
-  - [1.3 部署验证](#13-部署验证)
-  - [1.4 京东云合作版部署（可选）](#14-京东云合作版部署可选)
-- [第二章 首次配置](#第二章-首次配置)
-  - [2.1 API 密钥配置](#21-api-密钥配置)
-  - [2.2 系统初始化](#22-系统初始化)
-  - [2.4 使用指南](#24-使用指南-guide)
-- [第三章 基础功能](#第三章-基础功能)
-  - [3.1 仪表板](#31-仪表板-dashboard)
-  - [3.2 单股研究](#32-单股研究-analysissingle)
-  - [3.3 研究报告](#33-研究报告-reports)
-  - [3.4 股票筛选](#34-股票筛选-screening)
-  - [3.5 股票关注列表](#35-股票关注列表-favorites)
-  - [3.6 任务中心](#36-任务中心-tasksunified)
-  - [3.7 股票详情页](#37-股票详情页-stockscode)
-- [第四章 交易功能](#第四章-交易功能)
-  - [4.1 模拟交易](#41-模拟交易-paper)
-  - [4.2 持仓研究](#42-持仓研究-portfolio)
-  - [4.3 操作复盘](#43-操作复盘-review)
-  - [4.4 交易计划](#44-交易计划-trading-system)
-- [第五章 智能助手](#第五章-智能助手)
-  - [5.1 AI 对话助手](#51-ai-对话助手-assistant)
-  - [5.2 AI 记忆](#52-ai-记忆-memory)
-- [第六章 高级功能](#第六章-高级功能)
-  - [6.1 分析流](#61-分析流-workflow)
-  - [6.1.1 流程管理](#611-流程管理)
-  - [6.1.2 AI 工作流架构师](#612-ai-工作流架构师)
-  - [6.1.3 工具配置](#613-工具配置)
-  - [6.1.4 Agent 工坊](#614-agent-工坊)
-  - [6.1.5 Skill 中心](#615-skill-中心)
-  - [6.1.6 MCP 服务器](#616-mcp-服务器)
-  - [6.2 Agent 工坊（独立入口）](#62-agent-工坊独立入口)
-  - [6.3 Skill 中心（独立入口）](#63-skill-中心独立入口)
-  - [6.4 批量分析](#64-批量分析-analysisbatch)
-  - [6.5 定时分析](#65-定时分析)
-    - [6.5.1 定时分析分组](#651-定时分析分组-settingswatchlist-groups)
-    - [6.5.2 定时分析配置](#652-定时分析配置-settingsscheduled-analysis)
-  - [6.6 通用研究（/analysis/general）](#66-通用研究analysisgeneral)
-- [第七章 学习中心](#第七章-学习中心-learning)
-- [第八章 系统管理](#第八章-系统管理)
-  - [8.1 配置管理](#81-配置管理)
-  - [8.2 数据库管理](#82-数据库管理)
-  - [8.3 数据同步](#83-数据同步)
-  - [8.4 定时任务](#84-定时任务)
-  - [8.5 日志管理](#85-日志管理)
-  - [8.6 能力索引](#86-能力索引)
-  - [8.7 缓存管理](#87-缓存管理)
-  - [8.8 数据导入管理](#88-数据导入管理-settingsdata-import)
-  - [8.9 社媒消息管理](#89-社媒消息管理-settingssocial-media)
-  - [8.10 系统更新](#810-系统更新-settingsupdate)
-  - [8.11 提示词模板](#811-提示词模板-settingstemplates)
-  - [8.12 注入策略管理](#812-注入策略管理-settingsprompt-policies)
-  - [8.13 Prompt 设计助手](#813-prompt-设计助手-settingsprompt-design)
-  - [8.14 行业/个股配置](#814-行业个股配置-settingsanalysis-profiles)
-  - [8.15 使用统计](#815-使用统计-settingsusage)
-- [第九章 个人设置](#第九章-个人设置-settings)
-- [第十章 常见问题（FAQ）](#第十章-常见问题faq)
-  - [Q13：京东云合作版与标准版有什么区别？](#q13京东云合作版与标准版有什么区别)
-  - [Q14：京东云版分析任务报 429 限速错误怎么办？](#q14京东云版分析任务报-429-限速错误怎么办)
-- [第十一章 最佳实践](#第十一章-最佳实践)
-  - [11.1 从安装到首次分析](#111-从安装到首次分析)
-  - [11.2 日常研究工作流](#112-日常研究工作流)
-  - [11.3 成本控制实践](#113-成本控制实践)
-  - [11.4 深度使用：自定义工作流、Agent 和 Skill](#114-深度使用自定义工作流agent-和-skill)
-  - [11.5 数据管理实践](#115-数据管理实践)
-  - [11.6 安全实践](#116-安全实践)
-  - [11.7 版本升级实践](#117-版本升级实践)
-  - [11.8 京东云合作版使用建议](#118-京东云合作版使用建议)
-- [第十二章 关于（/about）](#第十二章-关于-about)
-- [新手常见错误与避免方法](#新手常见错误与避免方法)
-- [附录](#附录)
-
----
-
-## 关于本手册
-
-### 阅读对象
-
-本手册面向首次使用 TradingAgents-CN Pro v3.0 的用户，从安装部署开始，逐步介绍所有功能模块的使用方法。无论您是普通投资者还是进阶用户，都可以按照章节顺序学习，或通过目录直接跳转到感兴趣的功能。
-
-### 高级功能标识
-
-本手册中出现的 **（高级功能）** 标识，表示该功能需要"高级学员"权限才能使用。普通用户可浏览相关界面，但执行操作时会被提示权限不足。
-
-### v3.0 版本说明
-
-v3.0 是一次平台化升级，核心变化包括：
-
-- 智能助手从"分析触发器"升级为"投资研究协同入口"，支持 20+ 操作工具、多主题会话。
-- 新增 MCP Server 开放接口，可被 Claude Desktop、Cursor 等外部客户端调用。
-- 新增 AI 工作流架构师，自然语言描述需求即可自动规划工作流。
-- 新增 Skill 自动生成系统，AI 自主编写并验证新工具。
-- 新增选股助手、统一通知系统（邮件/飞书/钉钉/企业微信多渠道推送）、QQ Bot 接入等能力。
+- [v3.0 Panorama of analytical capabilities](#v30-Panorama of analytical capabilities)
+- [Quick introduction (30 seconds to get started)](#Quickly learn how to get started in 30 seconds)
+- [Learning path (from beginner to proficient)](#Learning path from beginner to proficient)
+- [What the system can do for you](#What the system can do for you)
+  - [v3.0 Governance capabilities (making AI no longer a black box)](#v30-Governance capabilities make -ai- no longer a black box)
+- [Chapter 1 Installation and Deployment](#Chapter 1-Installation and Deployment)
+  - [1.1 Windows Installation package deployment](#11-windows-Installation package deployment)
+  - [1.2 Docker deploy](#12-docker-deploy)
+  - [1.3 Deployment verification](#13-Deployment verification)
+  - [1.4 JD Cloud cooperation version deployment (optional)](#14-JD Cloud cooperation version deployment is optional)
+- [Chapter 2 First Configuration](#Chapter 2 - First time configuration)
+  - [2.1 API Key configuration](#21-api-Key configuration)
+  - [2.2 System initialization](#22-System initialization)
+  - [2.4 User Guide](#24-User Guide-guide)
+- [Chapter 3 Basic Functions](#Chapter 3-Basic Functions)
+  - [3.1 Dashboard](#31-Dashboard-dashboard)
+  - [3.2 single stock research](#32-single stock research-analysissingle)
+  - [3.3 research report](#33-research report-reports)
+  - [3.4 stock screen](#34-stock screen-screening)
+  - [3.5 Stock Watchlist](#35-Stock Watchlist-favorites)
+  - [3.6 mission center](#36-mission center-tasksunified)
+  - [3.7 Stock details page](#37-Stock details page-stockscode)
+- [Chapter 4 Trading Function](#Chapter 4 - Trading Functions)
+  - [4.1 simulated trading](#41-simulated trading-paper)
+  - [4.2 Position research](#42-Position research-portfolio)
+  - [4.3 Operation review](#43-Operation review-review)
+  - [4.4 trading plan](#44-trading plan-trading-system)
+- [Chapter 5 Intelligent Assistant](#Chapter 5 - Intelligent Assistant)
+  - [5.1 AI Conversation Assistant](#51-ai-Conversation Assistant-assistant)
+  - [5.2 AI memory](#52-ai-memory-memory)
+- [Chapter 6 Advanced Functions](#Chapter 6 - Advanced Functions)
+  - [6.1 Analysis flow](#61-Analysis flow-workflow)
+  - [6.1.1 process management](#611-process management)
+  - [6.1.2 AI workflow architect](#612-ai-workflow architect)
+  - [6.1.3 Tool configuration](#613-Tool configuration)
+  - [6.1.4 Agent workshop](#614-agent-workshop)
+  - [6.1.5 Skill Center](#615-skill-Center)
+  - [6.1.6 MCP server](#616-mcp-server)
+  - [6.2 Agent Workshop (independent entrance)](#62-agent-Independent entrance to the workshop)
+  - [6.3 Skill Center (independent entrance)](#63-skill-Central independent entrance)
+  - [6.4 Batch analysis](#64-Batch analysis-analysisbatch)
+  - [6.5 timing analysis](#65-timing analysis)
+    - [6.5.1 Timed analysis grouping](#651-Timed analysis grouping-settingswatchlist-groups)
+    - [6.5.2 Timing analysis configuration](#652-Timing analysis configuration-settingsscheduled-analysis)
+  - [6.6 General Research (/analysis/general)](#66-general studies analysisgeneral)
+- [Chapter 7 Learning Center](#Chapter 7-Learning Center-learning)
+- [Chapter 8 System Management](#Chapter 8 - System Management)
+  - [8.1 Configuration management](#81-Configuration management)
+  - [8.2 Database management](#82-Database management)
+  - [8.3 Data synchronization](#83-Data synchronization)
+  - [8.4 scheduled tasks](#84-scheduled tasks)
+  - [8.5 Log management](#85-Log management)
+  - [8.6 Competency Index](#86-Competency Index)
+  - [8.7 Cache management](#87-Cache management)
+  - [8.8 Data import management](#88-Data import management-settingsdata-import)
+  - [8.9 Social media message management](#89-Social media message management-settingssocial-media)
+  - [8.10 System update](#810-System update-settingsupdate)
+  - [8.11 prompt word template](#811-prompt word template-settingstemplates)
+  - [8.12 Injection strategy management](#812-Injection strategy management-settingsprompt-policies)
+  - [8.13 Prompt design assistant](#813-prompt-design assistant-settingsprompt-design)
+  - [8.14 Industry/Stock Allocation](#814-Industry stock allocation-settingsanalysis-profiles)
+  - [8.15 usage statistics](#815-usage statistics-settingsusage)
+- [Chapter 9 Personal Settings](#Chapter 9 - Personal Settings-settings)
+- [Chapter 10 Frequently Asked Questions (FAQ)](#Chapter 10 - Frequently Asked Questions faq)
+  - [Q13: What is the difference between the JD Cloud Cooperation Edition and the Standard Edition?](#q13 What is the difference between JD Cloud Cooperation Edition and Standard Edition?)
+  - [Q14: JD Cloud Edition Analysis Task Report 429 Speed Limit Error What should I do?](#q14 Jingdong Cloud version analysis task report-429-speed limit error what to do)
+- [Chapter 11 Best Practices](#Chapter 11 - Best Practices)
+  - [11.1 From installation to first analysis](#111-From installation to first analysis)
+  - [11.2 Daily research workflow](#112-Daily research workflow)
+  - [11.3 cost control practices](#113-cost control practices)
+  - [11.4 In-depth use: customized workflow, Agent and Skill](#114-In-depth use of custom workflow agents-and-skill)
+  - [11.5 Data management practices](#115-Data management practices)
+  - [11.6 safety practices](#116-safety practices)
+  - [11.7 Version upgrade practice](#117-Version upgrade practice)
+  - [11.8 Suggestions for using JD Cloud Cooperation Edition](#118-Suggestions for using JD Cloud Cooperation Edition)
+- [Chapter 12 About (/about)](#Chapter 12 - About-about)
+- [Common mistakes for newbies and how to avoid them](#Common mistakes for newbies and how to avoid them)
+- [Appendix](#Appendix)
 
 ---
 
-## v3.0 分析能力全景
+## About this manual
 
-v3.0 内置 **80+ 个分析工具**，覆盖 **10 大类**，把传统需要付费第三方工具才能完成的事，全部内置到平台里。下面这张表是您升级 v3.0 后**能直接用**的能力清单（数字为各类工具的概数，完整列表见 8.6 工具能力索引）。
+### Reading object
 
-### 一张表看懂 80+ 分析工具
+This manual is intended for users who are using TradingAgents-CN Pro v3.0 for the first time. Starting from installation and deployment, it will gradually introduce the use of all functional modules. Whether you are an ordinary investor or an advanced user, you can study in the order of chapters, or jump directly to the functions of interest through the table of contents.
 
-| 大类 | 数量 | 典型能力 | 解决什么问题 |
+### Advanced function identification
+
+appearing in this manual ** (advanced features)** Identification, indicating that the function requires"Senior student"permission to use. Ordinary users can browse the relevant interfaces, but will be prompted with insufficient permissions when performing operations.
+
+### v3.0 Release Notes
+
+v3.0 It is a platform upgrade. The core changes include:
+
+- Intelligent assistant from"Analysis trigger"upgraded to"Investment research collaborative portal", support 20+ Operational tools, multi-topic sessions.
+- Added MCP Server open interface, which can be called by external clients such as Claude Desktop and Cursor.
+- A new AI workflow architect is added to automatically plan workflows by describing requirements in natural language.
+- A new Skill automatic generation system is added, and AI independently writes and verifies new tools.
+- New capabilities include stock selection assistant, unified notification system (email/Feishu/DingTalk/enterprise WeChat multi-channel push), QQ Bot access and other capabilities.
+
+---
+
+## v3.0 Panorama of analytical capabilities
+
+v3.0 Built-in **80+ analysis tools**, Cover **10 Category**, All things that traditionally require paid third-party tools are built into the platform. The table below is after you upgrade to v3.0**Can be used directly**Capability list (the numbers are approximate for each type of tool, see 8.6 Tool Capability Index for the complete list).
+
+### One table to understand 80+ Analysis tools
+
+| Category | Quantity | Typical abilities | what problem to solve |
 |------|------|---------|-------------|
-| **基本面** | 20+ | PE/PB/ROE、毛利率、营收、现金流、DCF 估值、WACC、杜邦分析 | 这家公司赚不赚钱、值不值钱 |
-| **技术面** | 9 | MA、RSI、KDJ、MACD、K 线形态、图表形态、斐波那契、支撑压力 | 这只股票该不该买、什么时候买 |
-| **风险检测** | 5 | Altman Z（破产预警）、Beneish M（财报造假）、Piotroski F（财务健康）、Ohlson O（破产预测）、财报造假信号 | 这家公司有没有爆雷风险 |
-| **市场行情** | 9 | 大盘、板块、筹码分布（获利比例/平均成本）、个股行情、QMT 接入 | 现在是什么市场环境、哪些板块在涨 |
-| **组合分析** | 9 | 夏普比率、信息比率、最大回撤、收益归因、VaR、压力测试 | 我的持仓风险大不大、哪里贡献了收益 |
-| **新闻情绪** | 2 | 新闻拉取（标题+明细双阶段）、雪球/股吧情绪 | 市场在讨论什么、情绪偏多还是偏空 |
-| **复盘分析** | 4 | 交易记录、账户信息、行情快照、归因分析 | 上次为什么赚/亏，下次怎么改 |
-| **选股估值** | 5 | 多因子选股、价值选股、PEG、Graham 估值、期权定价 | 哪些股票值得进一步研究 |
-| **智能助手操作** | 20+ | 触发分析、查报告、管关注、管定时、看 Token 统计、看系统状态 | 不用找菜单，对话就能操作 |
-| **自构建工具** | 2 | Agent 工坊、Skill 中心 | 您自己也能造新分析师和新工具 |
+| **Fundamentals** | 20+ | PE/PB/ROE, Gross margin, revenue, cash flow, DCF valuation, WACC, DuPont analysis | Is this company profitable and valuable? |
+| **technical aspect** | 9 | MA, RSI, KDJ, MACD, K Line patterns, chart patterns, Fibonacci, support pressure | Should you buy this stock and when? |
+| **Risk detection** | 5 | Altman Z (Bankruptcy warning), Beneish M (financial report fraud), Piotroski F (financial health), Ohlson O (bankruptcy prediction), financial report fraud signal | Is this company at risk of thunderstorms? |
+| **Market conditions** | 9 | Market, sector, chip distribution (profit ratio/average cost), individual stock prices, QMT access | What is the market environment now and which sectors are rising? |
+| **Portfolio analysis** | 9 | Sharpe ratio, information ratio, maximum drawdown, return attribution, VaR, stress test | Is the risk of my position high and how does it contribute to the income? |
+| **news sentiment** | 2 | News pull (title+Detailed dual-stage), snowball/stock bar emotions | What is the market talking about and whether the sentiment is bullish or bearish? |
+| **Review analysis** | 4 | Transaction records, account information, market snapshots, attribution analysis | Why did you make/lose money last time and how to change it next time? |
+| **stock selection valuation** | 5 | Multi-factor stock picking, value stock picking, PEG, Graham valuation, option pricing | Which stocks deserve further research |
+| **Intelligent assistant operation** | 20+ | Trigger analysis, check reports, manage attention, manage timing, view token statistics, and view system status | No need to look for menus, just talk and operate |
+| **self-build tools** | 2 | Agent Workshop, Skill Center | You can also create new analysts and tools yourself |
 
-### 5 个最值得立刻体验的能力
+### 5 The most valuable ability to experience immediately
 
-> 这 5 个能力很多是 v2.x 已有、v3.0 加强的实用工具，**v3.0 的真正升级在治理能力（可追溯/可验证/可纠错）**，分析工具只是基础。
+> Many of these five capabilities are practical tools already available in v2.x and enhanced in v3.0.**v3.0 The real upgrade lies in governance capabilities (traceable/verifiable/correctable)**, Analysis tools are just the foundation.
 
-| 能力 | 工具名 | 用法 | 适用场景 |
+| Ability | Tool name | Usage | Applicable scenarios |
 |------|--------|------|---------|
-| **1. 财报造假检测** | `get_beneish_mscore` | 输入股票代码，5 分钟出 8 维度评分（> -1.78 提示造假可能） | 重仓股/关注标的必查 |
-| **2. 破产风险评估** | `get_altman_zscore` | 5 因子模型，< 1.81 提示破产风险 | ST 候选/财务异常股 |
-| **3. DCF 现金流折现估值** | `get_dcf_valuation` | 预测期 + 永续期，自动算公司值多少钱 | 长期价值投资决策 |
-| **4. K 线形态识别** | `get_candlestick_patterns` | 自动识别 25+ 种 K 线形态（锤子/吞没/十字星/晨星/三兵） | 短线择时、找拐点 |
-| **5. 经典图表形态** | `get_chart_patterns` | 头肩顶底、双顶双底、三角、旗形、楔形 | 中长线趋势判断 |
+| **1. Financial report fraud detection** | `get_beneish_mscore` | Enter the stock code and get an 8-dimensional score in 5 minutes (> -1.78 Prompts possible fraud) | Must-check stocks with heavy holdings/targets of concern |
+| **2. Bankruptcy Risk Assessment** | `get_altman_zscore` | 5 factor model,< 1.81 Tips on bankruptcy risk | ST Candidate/Financial Abnormal Stocks |
+| **3. DCF discounted cash flow valuation** | `get_dcf_valuation` | forecast period + Perpetual period, automatically calculate how much the company is worth | Long-term value investment decisions |
+| **4. K Line shape recognition** | `get_candlestick_patterns` | automatic recognition 25+ K-line patterns (hammer/engulfing/cross star/morning star/three soldiers) | Short-term timing and finding turning points |
+| **5. Classic chart patterns** | `get_chart_patterns` | Head and shoulders top and bottom, double top and double bottom, triangle, flag, wedge | Judgment of medium and long-term trends |
 
-### 数据有出处，不是"AI 猜的"
+### The data has a provenance, isn't it?"AI Guess"
 
-每个数据点都能查到来源：
+The source of each data point can be found:
 
-- **PE/PB/ROE** → 来自 Tushare 财报数据
-- **行情数据** → 来自 Tushare / QMT / AKShare 实时接口
-- **新闻** → 来自 Tushare / AKShare 公开来源新闻接口
-- **情绪** → 优先基于新闻内容和用户提交的社交媒体记录进行分析
-- **AI 推论** → 来自 LLM，**系统会标记哪些是 AI 推论哪些是真实数据**
+- **PE/PB/ROE** → Data from Tushare financial report
+- **Market data** → From Tushare / QMT / AKShare real-time interface
+- **News** → From the Tushare / AKShare open source news interface
+- **emotions** → Prioritize analysis based on news content and user-submitted social media records
+- **AI inference** → from LLM,**The system will mark which ones are AI inferences and which ones are real data.**
 
-报告里如果出现"AI 推论"标签，说明这个结论是 AI 推理的（不是直接拿到的数据），请结合其他信息判断。
+If it appears in the report"AI inference"Label, indicating that this conclusion is based on AI inference (not directly obtained data), please combine it with other information to judge.
 
-### 完整工具索引
+### Full tool index
 
-> 💡 **提示**：本节只是**能力全景**。具体怎么用，在第五章智能助手、第六章分析流、以及 11.4 最佳实践中按场景讲解。
+> 💡 **Tips**: This section is just**Capability Panorama**. How to use it specifically is explained by scenario in Chapter 5 Intelligent Assistant, Chapter 6 Analysis Flow, and 11.4 Best Practices.
 
-如果您想了解某个具体工具的详细参数和计算方法：
-- 估值类（DCF/WACC/PEG/Graham）→ 系统管理 → 工具能力索引（8.6 节）
-- 技术类（MA/RSI/形态/支撑压力）→ 系统管理 → 工具能力索引（8.6 节）
-- 风险类（Altman/Beneish/Piotroski）→ 系统管理 → 工具能力索引（8.6 节）
+If you want to know the detailed parameters and calculation methods of a specific tool:
+- Valuation category (DCF/WACC/PEG/Graham)→ System management → Tool Capability Index (Section 8.6)
+- Technical (MA/RSI/Pattern/Support Pressure)→ System management → Tool Capability Index (Section 8.6)
+- Risk category (Altman/Beneish/Piotroski)→ System management → Tool Capability Index (Section 8.6)
 
 ---
 
-## 快速了解（30秒入门）
+## Quick introduction (30 seconds to get started)
 
-**TradingAgents-CN Pro 是什么？**
+**TradingAgents-CN Pro What is it?**
 
-一款 AI 驱动的投资研究平台，通过多个智能体（Agent）协同工作，帮您完成从数据收集、基本面分析、技术面分析到风险评估的全流程研究。
+An AI-driven investment research platform uses multiple agents to work together to help you complete the entire research process from data collection, fundamental analysis, technical analysis to risk assessment.
 
-**能帮我做什么？**
+**What can you do for me?**
 
-| 场景 | 功能 | 耗时 |
+| scene | Function | Time consuming |
 |------|------|------|
-| 快速了解一只股票 | 单股研究（快速分析） | 5-10分钟 |
-| 深度研究持仓标的 | 单股研究（深度分析） | 10-15 分钟 |
-| 同时分析多只股票 | 批量分析 | 每只 5-15 分钟 |
-| 定时跟踪股票关注列表 | 定时分析 | 自动执行 |
-| 自然语言对话研究 | 智能助手 | 实时 |
-| 自定义分析流程 | 分析流（工作流编辑器） | 一次性配置 |
-| 模拟交易验证策略 | 模拟交易 | 实时 |
+| Learn about a stock quickly | Single Stock Research (Quick Analysis) | 5-10 minutes |
+| In-depth research on position targets | Single Stock Research (In-depth Analysis) | 10-15 minutes |
+| Analyze multiple stocks simultaneously | Batch analysis | 5-15 minutes each |
+| Regularly track stock watchlists | timing analysis | Automatic execution |
+| Natural language dialogue research | Smart Assistant | real time |
+| Custom analysis process | Analyze Flow (Workflow Editor) | One-time configuration |
+| Simulated trading verification strategy | simulated trading | real time |
 
-**我该怎么开始？**
+**How do I start?**
 
-1. 按第一章安装部署系统
-2. 按第二章完成首次配置（API密钥 + 数据源）
-3. 跟随"使用指南"（左侧导航栏）完成引导配置
-4. 在"单股研究"中输入股票代码，开始第一次分析
+1. Install and deploy the system according to Chapter 1
+2. Follow Chapter 2 to complete the first configuration (API key + data source)
+3. follow"User Guide" (Left navigation bar) Complete the boot configuration
+4. in"single stock research"Enter the stock code in to start the first analysis
 
-> 💡 **提示**：新手建议先使用"3级-标准分析"深度，选中"市场分析师"和"基本面分析师"两个角色，4-8分钟即可获得一份完整的研究报告。
+> 💡 **Tips**: Newbies are advised to use it first"3 Level-Standard Analysis"Depth, selected"market analyst"and"fundamental analyst"With two roles, you can get a complete research report in 4-8 minutes.
 
 ---
 
-## 学习路径（从入门到精通）
+## Learning path (from beginner to proficient)
 
-本手册按5个阶段组织，每个阶段有明确的学习目标和完成标志。建议按顺序学习，循序渐进。
+This manual is organized into 5 stages, with clear learning objectives and completion marks for each stage. It is recommended to study in order and step by step.
 
-### 阶段 1：入门（第 1 天）— 跑通第一次分析
+### Phase 1: Getting Started (Day 1)— Run through the first analysis
 
-**目标**：完成系统安装和配置，生成第一份分析报告。
+**target**: Complete system installation and configuration and generate the first analysis report.
 
-| 序号 | 学习内容 | 手册章节 | 预计耗时 |
+| serial number | Learning content | Manual Chapter | Estimated time |
 |------|---------|---------|---------|
-| 1 | 安装系统 | 第一章 安装部署 | 30 分钟 |
-| 2 | 配置 API 密钥和数据源 | 第二章 首次配置 | 20 分钟 |
-| 4 | 跟随使用指南完成引导配置 | 2.4 使用指南 | 15 分钟 |
-| 5 | 完成第一次单股研究 | 3.2 单股研究 | 10 分钟 |
+| 1 | Install system | Chapter 1 Installation and Deployment | 30 minutes |
+| 2 | Configure API keys and data sources | Chapter 2 First Configuration | 20 minutes |
+| 4 | Follow the user guide to complete boot configuration | 2.4 User Guide | 15 minutes |
+| 5 | Completed first single stock research | 3.2 single stock research | 10 minutes |
 
-**✅ 完成标志**：成功生成一份完整的分析报告，能看到综合评级和各维度分析。
+**✅ Done sign**: A complete analysis report is successfully generated, and you can see the comprehensive rating and analysis of each dimension.
 
-**📋 推荐练习**：选择一只熟悉的股票（如贵州茅台 600519），使用"标准分析"深度，选中全部分析师，观察报告结构。
+**📋 Recommended exercises**: Choose a familiar stock (such as Kweichow Moutai 600519) and use"standard analysis"Depth, select all analysts and observe the report structure.
 
 ---
 
-### 阶段 2：基础（第 1 周）— 熟练使用核心功能
+### Phase 2: Basics (Week 1)— Proficient in using core functions
 
-**目标**：理解报告内容，熟练使用核心研究功能。
+**target**: Understand report content and become proficient in using core research functions.
 
-| 序号 | 学习内容 | 手册章节 | 预计耗时 |
+| serial number | Learning content | Manual Chapter | Estimated time |
 |------|---------|---------|---------|
-| 1 | 了解仪表板布局 | 3.1 仪表板 | 10 分钟 |
-| 2 | 学习报告解读方法 | 3.2 分析报告解读指南 | 15 分钟 |
-| 3 | 管理历史研究报告 | 3.3 研究报告 | 10 分钟 |
-| 4 | 使用股票筛选发现标的 | 3.4 股票筛选 | 15 分钟 |
-| 5 | 建立股票关注列表关注列表 | 3.5 股票关注列表 | 10 分钟 |
-| 6 | 查看任务执行状态 | 3.6 任务中心 | 5 分钟 |
+| 1 | Understand dashboard layout | 3.1 Dashboard | 10 minutes |
+| 2 | How to interpret study reports | 3.2 Analysis Report Interpretation Guide | 15 minutes |
+| 3 | Management History Research Report | 3.3 research report | 10 minutes |
+| 4 | Use stock screens to discover stocks | 3.4 stock screen | 15 minutes |
+| 5 | Create a stock watchlist watchlist | 3.5 Stock Watchlist | 10 minutes |
+| 6 | View task execution status | 3.6 mission center | 5 minutes |
 
-**✅ 完成标志**：能独立完成"筛选股票 → 加入关注 → 单股研究 → 解读报告"全流程。
+**✅ Done sign**: Able to complete independently"Screen stocks → Join the following → single stock research → Interpret the report"The whole process.
 
-**📋 推荐练习**：用股票筛选找出 3 只不同行业的标的，分别分析后对比报告差异。
+**📋 Recommended exercises**: Use stock screening to find 3 targets in different industries, analyze them separately and then compare the report differences.
 
 ---
 
-### 阶段 3：进阶（第 2-4 周）— 交易功能与高级分析
+### Phase 3: Advancement (Weeks 2-4)— Trading features and advanced analytics
 
-**目标**：使用模拟交易验证策略，掌握批量分析和定时分析。
+**target**: Use simulated trading to verify strategies and master batch analysis and scheduled analysis.
 
-| 序号 | 学习内容 | 手册章节 | 预计耗时 |
+| serial number | Learning content | Manual Chapter | Estimated time |
 |------|---------|---------|---------|
-| 1 | 模拟交易操作 | 4.1 模拟交易 | 20 分钟 |
-| 2 | 持仓研究与跟踪 | 4.2 持仓研究 | 15 分钟 |
-| 3 | 操作复盘改进策略 | 4.3 操作复盘 | 15 分钟 |
-| 4 | 制定交易计划 | 4.4 交易计划 | 20 分钟 |
-| 5 | 使用智能助手对话研究 | 5.1 AI 对话助手 | 15 分钟 |
-| 6 | 管理 AI 记忆 | 5.2 AI 记忆 | 10 分钟 |
-| 7 | 批量分析多只股票 | 6.4 批量分析 | 15 分钟 |
-| 8 | 配置定时自动分析 | 6.5 定时分析 | 20 分钟 |
+| 1 | Simulated trading operations | 4.1 simulated trading | 20 minutes |
+| 2 | Position research and tracking | 4.2 Position research | 15 minutes |
+| 3 | Operation review improvement strategy | 4.3 Operation review | 15 minutes |
+| 4 | Develop a trading plan | 4.4 trading plan | 20 minutes |
+| 5 | Conversation research using smart assistants | 5.1 AI Conversation Assistant | 15 minutes |
+| 6 | Manage AI memory | 5.2 AI memory | 10 minutes |
+| 7 | Analyze multiple stocks in batches | 6.4 Batch analysis | 15 minutes |
+| 8 | Configure scheduled automatic analysis | 6.5 timing analysis | 20 minutes |
 
-**✅ 完成标志**：能使用模拟交易验证策略，配置定时分析自动跟踪股票关注列表。
+**✅ Done sign**: You can use simulated trading to verify strategies and configure scheduled analysis to automatically track stock watch lists.
 
-**📋 推荐练习**：建立一个 5 只股票的关注分组，配置每日盘后定时分析，观察一周的报告变化。
+**📋 Recommended exercises**: Establish a focus group of 5 stocks, configure daily after-hours timed analysis, and observe the report changes during the week.
 
 ---
 
-### 阶段 4：高级（第 1-2 月）— 自定义工作流与 Agent
+### Phase 4: Advanced (Months 1-2)— Custom workflows and Agent
 
-**目标**：创建自定义工作流、Agent 和 Skill，实现个性化分析。
+**target**: Create custom workflows, agents, and skills for personalized analysis.
 
-| 序号 | 学习内容 | 手册章节 | 预计耗时 |
+| serial number | Learning content | Manual Chapter | Estimated time |
 |------|---------|---------|---------|
-| 1 | 理解工作流概念 | 6.1 分析流 | 20 分钟 |
-| 2 | 使用 AI 工作流架构师生成流程 | 6.1.2 AI 工作流架构师 | 30 分钟 |
-| 3 | 配置工具能力 | 6.1.3 工具配置 | 15 分钟 |
-| 4 | 在 Agent 工坊创建自定义 Agent | 6.1.4 Agent 工坊 | 40 分钟 |
-| 5 | 在 Skill 中心创建自定义 Skill | 6.1.5 Skill 中心 | 40 分钟 |
-| 6 | 使用通用研究探索非个股主题 | 6.6 通用研究 | 20 分钟 |
-| 7 | 学习中心进阶课程 | 第七章 学习中心 | 持续 |
+| 1 | Understand workflow concepts | 6.1 Analysis flow | 20 minutes |
+| 2 | Generate processes using AI Workflow Architect | 6.1.2 AI workflow architect | 30 minutes |
+| 3 | Configuration tool capabilities | 6.1.3 Tool configuration | 15 minutes |
+| 4 | Create customizations in the Agent Workshop Agent | 6.1.4 Agent workshop | 40 minutes |
+| 5 | Create customizations in Skill Center Skill | 6.1.5 Skill Center | 40 minutes |
+| 6 | Use general research to explore non-individual stock topics | 6.6 general studies | 20 minutes |
+| 7 | Learning Center Advanced Courses | Chapter 7 Learning Center | continue |
 
-**✅ 完成标志**：能使用 AI 工作流架构师生成自定义流程，或手动创建一个包含自定义 Agent 的工作流。
+**✅ Done sign**: You can use AI Workflow Architect to generate a custom process, or manually create a workflow that includes a custom Agent.
 
-**📋 推荐练习**：用自然语言描述"我需要一个重点关注 ESG 评分的分析流程"，让 AI 工作流架构师生成，然后在单股研究中使用该流程。
+**📋 Recommended exercises**: Describe in natural language"I need an analytical process that focuses on ESG scoring", Let the AI ​​workflow architect generate and then use the process in single-strand research.
 
 ---
 
-### 阶段 5：专家（持续）— 系统优化与最佳实践
+### Stage 5: Expert (ongoing)— System Optimization and Best Practices
 
-**目标**：优化系统配置、控制成本、保障数据质量。
+**target**: Optimize system configuration, control costs, and ensure data quality.
 
-| 序号 | 学习内容 | 手册章节 | 预计耗时 |
+| serial number | Learning content | Manual Chapter | Estimated time |
 |------|---------|---------|---------|
-| 1 | 系统配置优化 | 第八章 系统管理 | 按需 |
-| 2 | 个人偏好设置 | 第九章 个人设置 | 15 分钟 |
-| 3 | 成本控制实践 | 11.3 成本控制实践 | 15 分钟 |
-| 4 | 数据管理实践 | 11.5 数据管理实践 | 15 分钟 |
-| 5 | 安全实践 | 11.6 安全实践 | 10 分钟 |
-| 6 | 提示词模板优化 | 8.11 提示词模板 | 30 分钟 |
-| 7 | MCP 服务器集成 | 6.1.6 MCP 服务器 | 按需 |
-| 8 | 渠道推送配置 | 9.8 渠道推送 | 20 分钟 |
+| 1 | System configuration optimization | Chapter 8 System Management | on demand |
+| 2 | Personal preferences | Chapter 9 Personal Settings | 15 minutes |
+| 3 | cost control practices | 11.3 cost control practices | 15 minutes |
+| 4 | Data management practices | 11.5 Data management practices | 15 minutes |
+| 5 | safety practices | 11.6 safety practices | 10 minutes |
+| 6 | Prompt word template optimization | 8.11 prompt word template | 30 minutes |
+| 7 | MCP Server integration | 6.1.6 MCP server | on demand |
+| 8 | Channel push configuration | 9.8 Channel push | 20 minutes |
 
-**✅ 完成标志**：能根据自身需求优化系统配置，建立稳定高效的研究工作流。
+**✅ Done sign**: Able to optimize system configuration according to own needs and establish stable and efficient research workflow.
 
-**📋 推荐练习**：配置飞书/钉钉渠道推送，让定时分析结果自动推送到工作群。
+**📋 Recommended exercises**: Configure Feishu/DingTalk channel push to automatically push scheduled analysis results to the work group.
 
 ---
 
-### 学习路径总结
+### Learning path summary
 
-| 阶段 | 时长 | 核心能力 | 关键章节 |
+| stage | duration | core competencies | key chapters |
 |------|------|---------|---------|
-| 🟢 入门 | 第1天 | 跑通第一次分析 | 第一、二章 + 3.2 |
-| 🔵 基础 | 第1周 | 熟练核心功能 | 第三章 + 报告解读 |
-| 🟡 进阶 | 第2-4周 | 交易+高级分析 | 第四、五、六章（部分） |
-| 🟠 高级 | 第1-2月 | 自定义工作流 | 6.1-6.6 + 第七章 |
-| 🔴 专家 | 持续 | 系统优化 | 第八、九章 + 第十一章 |
+| 🟢 Getting Started | Day 1 | Run through the first analysis | Chapter 1 and 2 + 3.2 |
+| 🔵 Basics | Week 1 | Proficient in core functions | Chapter 3 + Report interpretation |
+| 🟡 Advanced | Weeks 2-4 | transaction+Advanced analytics | Chapters 4, 5, and 6 (parts) |
+| 🟠 Advanced | Month 1-2 | Custom workflow | 6.1-6.6 + Chapter 7 |
+| 🔴 expert | continue | System optimization | Chapter 8 and 9 + Chapter 11 |
 
-> 💡 **提示**：不必严格按照阶段顺序学习。如果您有特定需求（如只想用定时分析），可以直接跳到对应章节。但建议至少完成阶段1和阶段2，确保理解基础概念。
+> 💡 **Tips**: It is not necessary to study in strict order of stages. If you have specific needs (for example, you only want to use timing analysis), you can jump directly to the corresponding chapter. However, it is recommended to complete at least Phase 1 and Phase 2 to ensure that you understand the basic concepts.
 
 ---
 
-## 系统能为您做什么
+## What the system can do for you
 
-本系统是一个**投资研究辅助工具**，通过 AI 多智能体协同，帮您整理信息、提供多维度分析参考。以下客观说明各功能能提供的具体帮助。
+This system is a**Investment research aids**, Through AI multi-agent collaboration, we help you organize information and provide multi-dimensional analysis references. The following is an objective description of the specific help each function can provide.
 
-### 功能与实际帮助对照
+### Comparison of functions and practical help
 
-| 功能 | 能帮您做什么 | 不能做什么 |
+| Function | What can I do for you? | What not to do |
 |------|------------|-----------|
-| **单股研究** | 整理一只股票的技术面、基本面、新闻事件、市场情绪等多维度信息，生成结构化报告，帮您节省自行搜集整理信息的时间 | 不能预测股价涨跌，不能给出必涨必跌的结论，分析结果可能存在偏差 |
-| **批量分析** | 同时对多只单只股票分别执行分析，为您节省逐只操作的时间，不生成股票之间的横向比较 | 不能替代人工判断，分析结果需要您逐只核实关键数据 |
-| **定时分析** | 按设定时间自动执行分析，帮您定期跟踪股票关注列表，无需每天手动操作 | 不能自动交易，不能在盘中实时预警（定时执行有延迟） |
-| **模拟交易** | 提供虚拟资金环境，帮您在学习研究中验证策略假设、记录模拟操作点、统计盈亏 | 模拟环境不考虑滑点、流动性不足等真实市场因素，结果仅供学习研究参考，不构成投资建议 |
-| **持仓研究** | 对已持仓股票进行深度分析，帮您梳理是否继续跟踪的参考依据 | 不能保证分析结论正确，投资决策需您自行承担 |
-| **操作复盘** | 回顾历史交易记录，帮您总结操作模式中的规律性问题 | 过去的操作经验不能保证未来收益，复盘结论仅供参考 |
-| **智能助手** | 通过自然语言快速查询股票信息、触发分析任务，减少操作步骤 | AI 回答可能出错，关键数据（如财务数字）请以官方公告为准 |
-| **股票筛选** | 按市盈率、市净率、涨幅等条件批量筛选股票，缩小研究范围 | 筛选条件较粗，筛选结果仍需逐只深入研究 |
-| **自定义工作流** | 根据自身关注点定制分析维度（如重点看 ESG、现金流等） | 需要一定学习成本，自定义 Agent 的分析质量取决于提示词设计 |
-| **渠道推送** | 分析完成后自动推送到飞书/钉钉/邮件，帮您及时获知结果 | 只是通知工具，不改变分析结果本身 |
+| **single stock research** | Organize a stock's technical, fundamental, news events, market sentiment and other multi-dimensional information and generate structured reports to help you save time in collecting and organizing information by yourself | It is impossible to predict the rise or fall of the stock price, and it cannot give a conclusion that it will definitely rise or fall, and the analysis results may be biased. |
+| **Batch analysis** | Perform analysis on multiple individual stocks at the same time, saving you time on individual operations and eliminating horizontal comparisons between stocks. | It cannot replace manual judgment. The analysis results require you to verify key data one by one. |
+| **timing analysis** | Automatically perform analysis at set times to help you track your stock watch list regularly, eliminating the need for manual operations every day | Automatic trading is not possible, and real-time intraday warnings are not available (timed execution is delayed) |
+| **simulated trading** | Provide a virtual capital environment to help you verify strategic assumptions, record simulated operating points, and calculate profits and losses in learning and research | The simulation environment does not consider real market factors such as slippage and insufficient liquidity. The results are only for learning and research reference and do not constitute investment advice. |
+| **Position research** | Conduct in-depth analysis of the stocks you already hold to help you sort out the reference basis for whether to continue tracking. | There is no guarantee that the analysis conclusion is correct, and investment decisions are your own responsibility. |
+| **Operation review** | Review historical transaction records to help you summarize regular issues in the operating model | Past operating experience cannot guarantee future returns, and review conclusions are for reference only. |
+| **Smart Assistant** | Quickly query stock information, trigger analysis tasks, and reduce operating steps through natural language | AI The answer may be wrong. For key data (such as financial figures), please refer to the official announcement. |
+| **stock screen** | Screen stocks in batches based on price-to-earning ratio, price-to-book ratio, growth rate and other conditions to narrow the scope of research | The filtering conditions are rough, and the filtering results still need to be studied in depth one by one. |
+| **Custom workflow** | Customize analysis dimensions according to your own concerns (such as focusing on ESG, cash flow, etc.) | A certain learning cost is required, and the analysis quality of the custom Agent depends on the prompt word design. |
+| **Channel push** | After the analysis is completed, it will be automatically pushed to Feishu/DingTalk/email to help you get the results in time. | It is just a notification tool and does not change the analysis results themselves. |
 
-### 实际使用场景
+### Actual usage scenarios
 
-**场景1：准备研究一只股票前**
+**Scenario 1: Before preparing to research a stock**
 
-1. 用"单股研究"生成一份标准分析报告，了解该股的基本面、技术面、风险点
-2. 重点阅读"风险情景研究"部分，了解审慎情景，避免单边乐观
-3. 用"模拟交易"记录假设仓位，观察一段时间以验证研究假设
+1. use"single stock research"Generate a standard analysis report to understand the fundamentals, technical aspects, and risk points of the stock
+2. Important reading"risk scenario research"Part, understand prudent scenarios and avoid unilateral optimism
+3. use"simulated trading"Record hypothetical positions and observe them for a period of time to verify research hypotheses
 
-**场景2：跟踪已持有的股票**
+**Scenario 2: Tracking stocks you already own**
 
-1. 将持仓股票加入"关注列表"分组
-2. 配置"定时分析"，每周盘后自动分析一次
-3. 开启"渠道推送"，分析完成后自动推送到手机
-4. 定期查看"持仓研究"，跟踪基本面变化
+1. Add holding stocks to"watchlist"Group
+2. Configuration"timing analysis", Automatic analysis once a week after the market opens
+3. turn on"Channel push", After the analysis is completed, it will be automatically pushed to the mobile phone.
+4. Check regularly"Position research", Track changes in fundamentals
 
-**场景3：从行业中发现标的**
+**Scenario 3: Discover targets from the industry**
 
-1. 用"股票筛选"按行业和财务指标（如 ROE>15%）缩小范围
-2. 用"批量分析"对筛选结果做快速分析
-3. 对有潜力的标的再用"单股研究"做深度分析
+1. use"stock screen"By industry and financial indicators such as ROE>15%) Narrow down the scope
+2. use"Batch analysis"Quickly analyze filter results
+3. Reuse targets with potential"single stock research"Do in-depth analysis
 
-### 重要提醒
+### Important reminder
 
-- **系统提供的是信息整理和多维度分析参考，不构成投资建议**
-- AI 模型可能存在数据偏差或逻辑错误，关键信息请以上市公司公告和监管披露为准
-- 投资决策的风险由您自行承担，系统无法保证任何投资收益
-- 建议将系统分析作为研究参考之一，结合多方信息独立判断
+- **The system provides information collection and multi-dimensional analysis reference, and does not constitute investment advice.**
+- AI The model may contain data deviations or logic errors. For key information, please refer to the announcements and regulatory disclosures of listed companies.
+- The risk of investment decisions is borne by you, and the system cannot guarantee any investment returns.
+- It is recommended to use system analysis as one of the research references and make independent judgments based on information from multiple parties.
 
-### v3.0 治理能力（让 AI 不再是黑盒）
+### v3.0 Governance capabilities (making AI no longer a black box)
 
-v3.0 在"让 AI 跑得动"的基础上，重点解决了"**让 AI 出错能查、能改**"：
+v3.0 in"Let AI run"On the basis of, the key points are solved"**Let AI errors be checked and corrected**": 
 
-- **可追溯**：报告里每个结论都能回溯到具体哪个 Agent 看了什么数据、用什么工具、返回了什么结果
-- **可验证**：Agent 输出不符合格式时系统会标记，而不是悄悄放过
-- **可纠错**：踩过的坑会被系统记住，下次自动拦截类似错误
-- **可审计**：所有 LLM 调用都被记录，方便复盘
+- **traceable**: Each conclusion in the report can be traced back to which Agent read what data, used what tools, and returned what results.
+- **Verifiable**: Agent When the output does not conform to the format, the system will mark it instead of quietly letting it go.
+- **Correctable**: The pitfalls you have stepped on will be remembered by the system, and similar errors will be automatically intercepted next time.
+- **auditable**: All LLM calls are logged for easy review
 
-具体怎么用，详见：
-- **执行轨迹查看** → 3.6 任务中心
-- **断言管理（高级）** → 8.1 配置管理
+For details on how to use it, see:
+- **Execution trace view** → 3.6 mission center
+- **Assertion Management (Advanced)** → 8.1 Configuration management
 
 ---
 
-## 第一章 安装部署
+## Chapter 1 Installation and Deployment
 
-TradingAgents-CN Pro v3.0 提供两种主要部署方式：**Windows 安装包**（适合普通用户）和 **Docker 部署**（适合进阶用户与服务器环境）。
+TradingAgents-CN Pro v3.0 Two main deployment methods are provided:**Windows Installation package** (Suitable for ordinary users) and **Docker deploy** (Suitable for advanced users and server environments).
 
-### v3.0 环境端口约定
+### v3.0 Environment port convention
 
-| 服务 | 端口 | 说明 |
+| service | port | Description |
 |------|------|------|
-| MongoDB | 27019 | v3.0 专用数据库端口 |
-| Redis | 6381 | v3.0 专用缓存端口 |
-| 后端服务 | 8002 | API 服务端口 |
-| 前端界面 | 8082 | Web 访问端口 |
-| Docker 项目名 | `ta-v3` | v3.0 容器编排项目名 |
+| MongoDB | 27019 | v3.0 Dedicated database port |
+| Redis | 6381 | v3.0 Dedicated cache port |
+| Backend services | 8002 | API service port |
+| Front-end interface | 8082 | Web access port |
+| Docker Project name | `ta-v3` | v3.0 Container orchestration project name |
 
-> 注意：v3.0 与 v2.1.0、v2.0.1 使用独立目录、独立端口、独立数据卷，可在同一台机器上共存互不干扰。
+> Note: v3.0, v2.1.0, and v2.0.1 use independent directories, independent ports, and independent data volumes, and can coexist on the same machine without interfering with each other.
 
-### 1.1 Windows 安装包部署
+### 1.1 Windows Installation package deployment
 
-#### 功能说明
+#### Function description
 
-Windows 安装包是面向普通用户的最简部署方式，无需手动安装 Python 环境和依赖，双击安装即可使用。安装包含嵌入式 Python 运行时，不污染系统环境。
+Windows The installation package is the simplest deployment method for ordinary users. There is no need to manually install the Python environment and dependencies. You can use it by double-clicking the installation. The installation includes an embedded Python runtime and does not pollute the system environment.
 
-#### 操作步骤
+#### Operation steps
 
-1. **获取安装包**
-   - 主渠道：百度网盘 + QQ 群下载
-   - 备用渠道：阿里云 OSS / 腾讯云 COS 加速下载
-   - 归档渠道：GitHub Releases（历史版本）
+1. **Get the installation package**
+   - Main channel: Baidu Netdisk + QQ Group download
+   - Alternate channel: Alibaba Cloud OSS / Tencent Cloud COS accelerated download
+   - Archive channel: GitHub Releases (historical version)
 
-2. **系统要求**
-   - 操作系统：Windows 10 64 位及以上（推荐 Windows 11）
-   - 内存：8GB 及以上
-   - 磁盘空间：至少 5GB 可用空间
-   - 需安装 .NET Framework 4.7.2 及以上（系统通常已自带）
+2. **System requirements**
+   - Operating system: Windows 10 64-bit and above (Windows 11 recommended)
+   - Memory: 8GB and above
+   - Disk space: At least 5GB free space
+   - Requires .NET Framework 4.7.2 and above to be installed (the system usually comes with it)
 
-3. **安装过程**
-   - 双击 `TradingAgentsCN-Pro-v3.0-setup.exe` 启动安装向导
-   - 选择安装目录（建议使用默认路径，避免中文和空格）
-   - 勾选"创建桌面快捷方式"
-   - 点击"安装"等待安装完成
-   - 安装完成后可选择"立即启动"
+3. **Installation process**
+   - Double click `TradingAgentsCN-Pro-v3.0-setup.exe` Start the installation wizard
+   - Select the installation directory (it is recommended to use the default path and avoid Chinese characters and spaces)
+   - Check"Create desktop shortcut"
+   - Click"Installation"Wait for installation to complete
+   - After installation is complete, you can choose"Start now"
 
-4. **首次启动**
-   - 双击桌面快捷方式启动服务
-   - 系统会自动启动后端服务（端口 8002）和前端服务（端口 8082）
-   - 浏览器自动打开 `http://localhost:8082` 即可进入系统
+4. **first start**
+   - Double-click the desktop shortcut to start the service
+   - The system will automatically start the back-end service (port 8002) and front-end service (port 8082)
+   - Browser opens automatically `http://localhost:8082` You can enter the system
 
-5. **服务管理**
-   - 系统托盘有 TradingAgents 图标，右键可停止/重启服务
-   - 也可通过"开始菜单 → TradingAgentsCN Pro → 服务管理"操作
+5. **Service management**
+   - There is a TradingAgents icon in the system tray. Right-click to stop/restart the service.
+   - Also available via"start menu → TradingAgentsCN Pro → Service management"Operation
 
-#### 注意事项
+#### Things to note
 
-- 安装路径不要包含中文、空格或特殊字符，否则可能导致服务启动失败。
-- 如果 8002 或 8082 端口被占用，安装程序会提示，请在防火墙或服务管理中释放端口。
-- 首次启动需要初始化数据库，可能耗时 1-2 分钟，请耐心等待。
-- 杀毒软件可能误报，请将安装目录加入白名单。
+- The installation path must not contain Chinese characters, spaces, or special characters, otherwise the service may fail to start.
+- If port 8002 or 8082 is occupied, the installer will prompt you to release the port in the firewall or service management.
+- The first startup requires initializing the database, which may take 1-2 minutes, please be patient.
+- Anti-virus software may report false positives, please add the installation directory to the whitelist.
 
-### 1.2 Docker 部署
+### 1.2 Docker deploy
 
-#### 功能说明
+#### Function description
 
-Docker 部署适合进阶用户和服务器环境，提供环境隔离、一键启停、便于升级维护等优势。v3.0 使用独立的 Docker 项目名 `ta-v3`，与 v2.x 完全隔离。
+Docker The deployment is suitable for advanced users and server environments, providing advantages such as environment isolation, one-click start and stop, and easy upgrade and maintenance. v3.0 uses independent Docker project name `ta-v3`, Completely isolated from v2.x.
 
-#### 操作步骤
+#### Operation steps
 
-1. **前置要求**
+1. **Prerequisites**
 
-   | 组件 | 最低版本 | 推荐版本 |
+   | components | Minimum version | Recommended version |
    |------|---------|----------|
-   | Docker | 20.0+ | 最新版 |
-   | Docker Compose | 2.0+ | 最新版 |
-   | 内存 | 4GB | 8GB+ |
-   | 磁盘空间 | 10GB | 20GB+ |
+   | Docker | 20.0+ | Latest version |
+   | Docker Compose | 2.0+ | Latest version |
+   | memory | 4GB | 8GB+ |
+   | disk space | 10GB | 20GB+ |
 
-2. **安装 Docker**
-   - Windows：下载并安装 [Docker Desktop](https://www.docker.com/products/docker-desktop)，启动后确保状态为运行中。
-   - Linux：参考 [Docker 官方安装指南](https://docs.docker.com/engine/install/)。
+2. **Installation Docker**
+   - Windows: Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop), After starting, make sure the status is Running.
+   - Linux: Reference [Docker Official installation guide](https://docs.docker.com/engine/install/). 
 
-3. **获取项目文件**
+3. **Get project files**
    ```bash
    git clone https://github.com/hsliuping/TradingAgents-CN.git
    cd TradingAgents-CN
    ```
 
-4. **配置环境变量**
+4. **Configure environment variables**
    ```bash
    cp .env.example .env
    ```
-   编辑 `.env` 文件，填入您的 API 密钥（详见 [第二章 首次配置](#第二章-首次配置)）。
+   Edit `.env` file and fill in your API key (see [Chapter 2 First Configuration](#Chapter 2 - First time configuration)) . 
 
-5. **使用预构建镜像启动（推荐）**
+5. **Launch using a pre-built image (recommended)**
    ```bash
-   # 拉取 v3.0 镜像
+   # Pull v3.0 image
    docker pull hsliuping/tradingagents-backend:3-latest
    docker pull hsliuping/tradingagents-frontend:3-latest
 
-   # 启动服务（使用 ta-v3 项目名）
+   # Start the service (use ta-v3 project name)
    docker-compose -p ta-v3 up -d
    ```
 
-6. **本地构建镜像（可选）**
+6. **Build the image locally (optional)**
    ```bash
-   # AMD64 架构（Intel/AMD）
+   # AMD64 Architecture (Intel/AMD)
    ./scripts/build-amd64.sh
 
-   # ARM64 架构（Apple Silicon / ARM 服务器）
+   # ARM64 Architecture (Apple Silicon / ARM Server)
    ./scripts/build-arm64.sh
    ```
 
-7. **访问应用**
-   - 浏览器打开：`http://localhost:8082`
+7. **Access the app**
+   - Browser opens:`http://localhost:8082`
 
-8. **常用 Docker 命令**
+8. **Commonly used Docker commands**
    ```bash
-   # 查看服务状态
+   # Check service status
    docker-compose -p ta-v3 ps
 
-   # 查看日志
+   # View log
    docker-compose -p ta-v3 logs -f backend
    docker-compose -p ta-v3 logs -f frontend
 
-   # 停止服务
+   # Stop service
    docker-compose -p ta-v3 down
 
-   # 重启服务
+   # Restart service
    docker-compose -p ta-v3 restart
 
-   # 升级镜像
+   # Upgrade image
    docker-compose -p ta-v3 pull
    docker-compose -p ta-v3 up -d
    ```
 
-#### 注意事项
+#### Things to note
 
-- Docker 镜像标签使用 `3-latest`（滚动更新）或精确版本号（如 `3.0.0`，不可变）。生产环境建议使用精确版本号。
-- 数据持久化通过 Docker Volume 实现，升级镜像不会丢失数据。
-- v3.0 与 v2.x 的 Docker 项目名不同（`ta-v3` vs `ta-v210` vs `ta-v201`），互不影响。
-- 在 Windows 上使用 Docker Desktop 时，请确保 WSL 2 后端已启用。
-- 如遇 MongoDB 连接问题，请检查端口 27019 是否被其他服务占用。
+- Docker Mirror tag usage `3-latest` (rolling update) or precise version number (e.g. `3.0.0`, immutable). It is recommended to use precise version numbers in production environments.
+- Data persistence is implemented through Docker Volume, and no data will be lost when upgrading the image.
+- v3.0 Different from the Docker project name of v2.x (`ta-v3` vs `ta-v210` vs `ta-v201`) , Do not affect each other.
+- When using Docker Desktop on Windows, make sure the WSL 2 backend is enabled.
+- If you encounter MongoDB connection issues, please check whether port 27019 is occupied by other services.
 
-### 1.3 部署验证
+### 1.3 Deployment verification
 
-#### 功能说明
+#### Function description
 
-部署完成后，通过以下步骤验证系统是否正常运行。
+After the deployment is complete, use the following steps to verify that the system is functioning properly.
 
-#### 操作步骤
+#### Operation steps
 
-1. **检查服务端口**
-   - 打开浏览器访问 `http://localhost:8082`，应看到登录页面。
-   - 访问 `http://localhost:8002/docs`，应看到后端 API 文档（Swagger）。
+1. **Check service port**
+   - Open browser to visit `http://localhost:8082`, You should see the login page.
+   - visit `http://localhost:8002/docs`, You should see the backend API documentation (Swagger).
 
-2. **检查数据库连接**
-   - 登录系统后进入"设置 → 系统管理 → 数据库"，查看连接状态是否为"已连接"。
+2. **Check database connection**
+   - Log in to the system and enter"settings → System management → database", Check whether the connection status is"Connected". 
 
-3. **完成首次配置**
-   - 按照引导完成 API 密钥配置（详见下一章）。
+3. **Complete first configuration**
+   - Follow the instructions to complete the API key configuration (see next chapter for details).
 
-4. **运行测试分析**
-   - 在"单股研究"中输入一只常见股票代码（如 `600519`），执行一次分析，确认全流程通畅。
+4. **Run test analysis**
+   - in"single stock research"Enter a common stock symbol (such as `600519`) , Perform an analysis to confirm that the entire process is smooth.
 
-#### 注意事项
+#### Things to note
 
-- 如果前端可访问但 API 报错，通常是后端服务未完全启动，请等待 30 秒后重试。
-- 首次运行分析时需要下载数据依赖，耗时较长属正常现象。
+- If the front-end is accessible but the API reports an error, it is usually because the back-end service has not been fully started. Please wait 30 seconds and try again.
+- When you run the analysis for the first time, you need to download the data dependencies. It is normal for it to take a long time.
 
-### 1.4 京东云合作版部署（可选）
+### 1.4 JD Cloud cooperation version deployment (optional)
 
-#### 功能说明
+#### Function description
 
-京东云合作版是 TradingAgents-CN Pro 与京东云模型服务合作的定制版本。与标准版相比，京东云版通过环境变量注入大模型和数据源配置，用户无需在界面手动配置，开箱即用。
+JD Cloud Cooperation Edition is a customized version of TradingAgents-CN Pro that cooperates with JD Cloud Model Service. Compared with the standard version, the JD Cloud version injects large models and data source configurations through environment variables. Users do not need to manually configure the interface and can be used out of the box.
 
-**京东云版与标准版的核心差异：**
+**The core differences between JD Cloud Edition and Standard Edition:**
 
-| 对比项 | 标准版 | 京东云版 |
+| Comparative item | Standard Edition | Jingdong cloud version |
 |--------|--------|---------|
-| 大模型配置 | 用户在界面手动配置 Provider 和 API Key | 通过环境变量注入，界面隐藏配置入口 |
-| 可用模型 | 支持多家供应商（通义千问、DeepSeek、智谱等） | 仅京东云提供的模型（GLM-5 / GLM-5.1 / GLM-5.2 / DeepSeek-V4-Flash） |
-| 数据源 | 支持 Tushare / AKShare / BaoStock | 仅 Tushare（Token 由京东云提供） |
-| Embedding | 用户选择 Embedding 模型 | 固定使用 Qwen3-Embedding-8B |
-| 首次启动 | 需手动配置 API 密钥 | 自动从环境变量初始化数据库 |
-| LLM 限速 | 无特殊限制 | 内置 429 重试 + 降并发机制 |
+| Large model configuration | Users manually configure Provider and API Key | Through environment variable injection, the interface hides the configuration entry |
+| Available models | Support multiple suppliers (Tongyi Qianwen, DeepSeek, Zhipu, etc.) | Only models provided by JD Cloud (GLM-5/GLM-5.1/GLM-5.2/DeepSeek-V4-Flash) |
+| data source | support Tushare / AKShare / BaoStock | Tushare only (Token provided by JD Cloud) |
+| Embedding | User selects Embedding model | Fixed use Qwen3-Embedding-8B |
+| first start | Requires manual configuration of API key | Automatically initialize database from environment variables |
+| LLM speed limit | No special restrictions | Built-in 429 retry + Concurrency reduction mechanism |
 
-#### 环境变量配置
+#### Environment variable configuration
 
-京东云版通过以下环境变量驱动所有配置，部署时在 `.env` 文件中设置：
+Jingdong Cloud version drives all configurations through the following environment variables, which are deployed during deployment. `.env` Settings in the file:
 
-| 环境变量 | 必填 | 说明 | 示例值 |
+| environment variables | Required | Description | Example value |
 |---------|------|------|--------|
-| `JDYUN_MODE` | 是 | 京东云模式开关，必须为 `true` | `true` |
-| `OPENAI_API_BASE` | 是 | 京东云模型服务地址 | `https://modelservice.jdcloud.com/v1` |
-| `OPENAI_API_KEY` | 是 | 京东云提供的 API Key | `your_jdyun_api_key` |
-| `OPENAI_MODEL` | 是 | 默认对话模型 | `GLM-5` |
-| `EMBEDDING_MODEL` | 是 | Embedding 模型 | `Qwen3-Embedding-8B` |
-| `TUSHARE_TOKEN` | 是 | Tushare 数据源 Token | `your_tushare_token` |
+| `JDYUN_MODE` | Yes | Jingdong cloud mode switch, must be `true` | `true` |
+| `OPENAI_API_BASE` | Yes | JD Cloud Model Service Address | `https://modelservice.jdcloud.com/v1` |
+| `OPENAI_API_KEY` | Yes | Provided by JD Cloud API Key | `your_jdyun_api_key` |
+| `OPENAI_MODEL` | Yes | Default dialogue model | `GLM-5` |
+| `EMBEDDING_MODEL` | Yes | Embedding model | `Qwen3-Embedding-8B` |
+| `TUSHARE_TOKEN` | Yes | Tushare data source Token | `your_tushare_token` |
 
-**LLM 限速配置（可选，默认值已优化，通常无需修改）：**
+**LLM Speed limit configuration (optional, the default value is optimized and usually does not need to be modified):**
 
-| 环境变量 | 默认值 | 说明 |
+| environment variables | Default value | Description |
 |---------|--------|------|
-| `JDYUN_LLM_MAX_RETRIES` | 8 | LLM 调用遇到 429 限速时的最大重试次数（指数退避：1s→2s→4s→...→128s） |
-| `JDYUN_LLM_MAX_RPM` | 30 | LLM 每分钟最大请求数 |
-| `JDYUN_BATCH_MAX_CONCURRENT` | 1 | 批量分析最大并发数（降为 1 避免限速） |
-| `JDYUN_WORKER_MAX_CONCURRENT` | 1 | Worker 最大并发任务数 |
-| `JDYUN_STOCK_INTERVAL_SECONDS` | 10 | 定时分析股票间的间隔秒数 |
+| `JDYUN_LLM_MAX_RETRIES` | 8 | LLM The maximum number of retries when the call encounters the 429 rate limit (exponential backoff:1s→2s→4s→...→128s)  |
+| `JDYUN_LLM_MAX_RPM` | 30 | LLM Maximum number of requests per minute |
+| `JDYUN_BATCH_MAX_CONCURRENT` | 1 | Maximum number of concurrent batch analyzes (reduced to 1 to avoid speed limit) |
+| `JDYUN_WORKER_MAX_CONCURRENT` | 1 | Worker Maximum number of concurrent tasks |
+| `JDYUN_STOCK_INTERVAL_SECONDS` | 10 | The number of seconds between regular analysis of stocks |
 
-#### Docker 部署步骤
+#### Docker Deployment steps
 
-1. **准备配置文件**
-   - 复制 `.env.jdyun.example` 为 `.env`，填入京东云提供的凭据：
+1. **Prepare configuration file**
+   - Copy `.env.jdyun.example` for `.env`, Fill in the credentials provided by JD Cloud:
      ```
      JDYUN_MODE=true
      OPENAI_API_BASE=https://modelservice.jdcloud.com/v1
@@ -592,2488 +592,2488 @@ Docker 部署适合进阶用户和服务器环境，提供环境隔离、一键�
      TUSHARE_TOKEN=your_tushare_token
      ```
 
-2. **启动服务**
+2. **Start service**
    ```bash
    docker-compose -f docker-compose.jdyun.yml up -d
    ```
-   - 服务端口：前端 `8082`，后端 `8002`，MongoDB `27019`，Redis `6381`
+   - Service port: front end `8082`, backend `8002`, MongoDB `27019`, Redis `6381`
 
-3. **访问系统**
-   - 浏览器打开 `http://your-server:8082`
-   - 首次启动时系统自动从环境变量初始化数据库（写入京东云 Provider、模型配置、Tushare 数据源）
-   - 无需手动配置 API 密钥，直接开始使用
+3. **access system**
+   - Browser opens `http://your-server:8082`
+   - The system automatically initializes the database from environment variables when starting for the first time (writing to JD Cloud Provider, model configuration, Tushare data source)
+   - No need to manually configure API keys, just get started
 
-#### 便携版部署步骤
+#### Portable version deployment steps
 
-1. **打包京东云版**
+1. **Package JD Cloud Version**
    ```powershell
    .\scripts\deployment\build_pro_package.ps1 -Edition jdyun
    ```
-   - 打包脚本会自动使用 `--mode jdyun` 构建前端，注入 `VITE_JDYUN_MODE=true`
-   - 生成 `.env.jdyun.example` 配置模板
+   - The packaging script will automatically use `--mode jdyun` Build the front end, inject `VITE_JDYUN_MODE=true`
+   - generate `.env.jdyun.example` Configuration template
 
-2. **部署到目标机器**
-   - 将打包好的便携版目录复制到目标机器
-   - 编辑 `.env` 文件，填入京东云提供的凭据
-   - 运行启动脚本
+2. **Deploy to target machine**
+   - Copy the packaged portable version directory to the target machine
+   - Edit `.env` file, fill in the credentials provided by JD Cloud
+   - Run startup script
 
-#### 开发环境启动
+#### Start the development environment
 
-开发环境下使用 `start_dev.ps1` 脚本启动京东云模式：
+Used in development environment `start_dev.ps1` The script starts JD Cloud mode:
 
 ```powershell
-.\start_dev.ps1 docker 3.0      # 启动 MongoDB + Redis
-.\start_dev.ps1 backend 3.0 -jdyun   # 以京东云模式启动后端
-.\start_dev.ps1 frontend 3.0 -jdyun  # 以京东云模式启动前端
+.\start_dev.ps1 docker 3.0      # start MongoDB + Redis
+.\start_dev.ps1 backend 3.0 -jdyun   # Start the backend in JD Cloud mode
+.\start_dev.ps1 frontend 3.0 -jdyun  # Start the front end in JD Cloud mode
 ```
 
-#### 注意事项
+#### Things to note
 
-- 京东云版**隐藏了大模型和数据源的配置界面**，用户无法在界面修改这些配置，只能通过环境变量调整。
-- 京东云版**禁用了 Provider 和数据源的增删改 API**，防止误操作覆盖环境变量配置。
-- 京东云版内置 **LLM 限速应对机制**：批量分析和定时分析的并发数自动降为 1，任务间间隔 10 秒，遇到 429 限速时指数退避重试最多 8 次。
-- 可用模型仅限京东云提供的 4 个：`GLM-5`、`GLM-5.1`、`GLM-5.2`、`DeepSeek-V4-Flash`，用户可在分析时切换。
-- 如遇 LLM 限速频繁，可适当调大 `JDYUN_STOCK_INTERVAL_SECONDS`（如 20 或 30 秒）。
+- Jingdong cloud version**Hiding the configuration interface of large models and data sources**, Users cannot modify these configurations on the interface and can only adjust them through environment variables.
+- Jingdong cloud version**Provider and data source additions, deletions, and modifications are disabled API**, Prevent accidental operations from overwriting environment variable configuration.
+- Jingdong cloud version built-in **LLM speed limit response mechanism**: The concurrency number of batch analysis and scheduled analysis is automatically reduced to 1, the interval between tasks is 10 seconds, and exponential backoff retries up to 8 times when encountering the 429 speed limit.
+- The available models are limited to 4 provided by JD Cloud:`GLM-5`, `GLM-5.1`, `GLM-5.2`, `DeepSeek-V4-Flash`, Users can switch during analysis.
+- If LLM speed limit occurs frequently, you can increase the speed appropriately. `JDYUN_STOCK_INTERVAL_SECONDS` (such as 20 or 30 seconds).
 
 ---
 
-## 第二章 首次配置
+## Chapter 2 First Configuration
 
-### 2.1 API 密钥配置
+### 2.1 API Key configuration
 
-#### 功能说明
+#### Function description
 
-TradingAgents-CN Pro 需要配置大语言模型（LLM）API 密钥来驱动智能分析。系统支持多家模型提供商，您可以选择其中一家或多家组合使用。
+TradingAgents-CN Pro A Large Language Model (LLM) API key needs to be configured to drive intelligent analysis. The system supports multiple model providers, and you can choose one or a combination of them.
 
-> **京东云合作版用户**：无需执行本节操作。京东云版通过环境变量自动配置大模型和数据源，首次启动时自动初始化，可直接跳到 [2.2 系统初始化](#22-系统初始化)。
+> **JD Cloud cooperative version users**: There is no need to perform this section. Jingdong Cloud version automatically configures large models and data sources through environment variables, and automatically initializes when it is first started. You can jump directly to [2.2 System initialization](#22-System initialization). 
 
-#### 操作步骤
+#### Operation steps
 
-1. **进入配置页面**
-   - 登录系统后，点击左侧导航栏"设置 → 系统配置"，或按引导提示进入。
+1. **Enter the configuration page**
+   - After logging in to the system, click on the left navigation bar"settings → System configuration", Or follow the guidance prompts to enter.
 
-2. **选择 LLM 提供商**（推荐任选其一）
+2. **Choose an LLM provider** (Recommended to choose one)
 
-   **DeepSeek（推荐，性价比最高）**
-   - 注册地址：https://platform.deepseek.com/
-   - 费用：约 ¥1/万 tokens，新用户有免费额度
-   - 配置项：`DEEPSEEK_API_KEY`
+   **DeepSeek (Recommended, best value for money)**
+   - Registered address:https://platform.deepseek.com/
+   - Cost: approx. ¥1/10,000 tokens, new users have free quota
+   - Configuration items:`DEEPSEEK_API_KEY`
 
-   **通义千问 / DashScope（国产稳定）**
-   - 注册地址：https://dashscope.aliyun.com/
-   - 费用：按量计费，有免费额度
-   - 配置项：`DASHSCOPE_API_KEY`
+   **Tongyi Qianwen / DashScope (domestic and stable)**
+   - Registered address:https://dashscope.aliyun.com/
+   - Cost: Pay by volume, with free quota
+   - Configuration items:`DASHSCOPE_API_KEY`
 
-   **OpenAI（功能强大）**
-   - 注册地址：https://platform.openai.com/
-   - 费用：按使用量计费，需美元支付
-   - 配置项：`OPENAI_API_KEY`
+   **OpenAI (powerful function)**
+   - Registered address:https://platform.openai.com/
+   - Cost: Billed based on usage, payable in U.S. dollars
+   - Configuration items:`OPENAI_API_KEY`
 
    **Google AI / Gemini**
-   - 注册地址：https://aistudio.google.com/
-   - 配置项：`GOOGLE_API_KEY`
+   - Registered address:https://aistudio.google.com/
+   - Configuration items:`GOOGLE_API_KEY`
 
-   **SiliconFlow（聚合平台）**
-   - 注册地址：https://siliconflow.cn/
-   - 配置项：`SILICONFLOW_API_KEY`
+   **SiliconFlow (aggregation platform)**
+   - Registered address:https://siliconflow.cn/
+   - Configuration items:`SILICONFLOW_API_KEY`
 
-3. **配置数据源 API**（可选但推荐）
-   - **Tushare**（A 股数据推荐）：https://tushare.pro/ 注册获取 token，配置 `TUSHARE_TOKEN`
+3. **Configure data source API** (Optional but recommended)
+   - **Tushare** (A Stock data recommendation):https://tushare.pro/ Register to obtain token and configure `TUSHARE_TOKEN`
 
-4. **在界面中配置**
-   - "设置 → 系统配置"中找到对应配置项，填入密钥。
-   - 点击"测试连接"按钮验证密钥有效性。
-   - 保存配置。
+4. **Configure in the interface**
+   - "settings → System configuration"Find the corresponding configuration item and fill in the key.
+   - Click"test connection"button to verify key validity.
+   - Save configuration.
 
-> **注意**：直接修改 `.env` 文件仅为旧版兼容方式，v3.0 推荐通过“设置 → 系统配置”界面完成配置。
+> **Note**: Modify directly `.env` The file is only compatible with the old version, v3.0 is recommended."settings → System configuration"The interface is configured.
 
-5. **设置模型优先级**
-   - 在"设置 → 系统配置"中可设置默认模型和分析偏好。
-   - 支持为不同分析师（如基本面、新闻、风险）指定不同模型，以平衡成本与效果。
+5. **Set model priority**
+   - in"settings → System configuration"Default model and analysis preferences can be set in .
+   - Supports specifying different models for different analysts (such as fundamentals, news, risk) to balance cost and effectiveness.
 
-#### 注意事项
+#### Things to note
 
-- API 密钥以加密方式存储在数据库中，不会明文展示。
-- 建议同时配置两个 LLM 提供商作为主备，当主模型不可用时自动切换。
-- DeepSeek 和通义千问对中文金融语境支持较好，推荐作为主力模型。
-- Tushare 根据积分等级有不同的接口权限，新用户积分较低可能部分数据无法获取。
-- 密钥配置后请点击"测试连接"确认有效，否则分析任务会因模型调用失败而中断。
+- API The key is stored in the database encrypted and will not be displayed in plain text.
+- It is recommended to configure two LLM providers as active and backup at the same time, and automatically switch when the active model is unavailable.
+- DeepSeek He Tongyi Qianwen has good support for the Chinese financial context and is recommended as the main model.
+- Tushare There are different interface permissions according to the points level. New users with low points may not be able to obtain some data.
+- After configuring the key, please click"test connection"Confirm that it is valid, otherwise the analysis task will be interrupted due to model call failure.
 
-### 2.2 系统初始化
+### 2.2 System initialization
 
-#### 功能说明
+#### Function description
 
-首次部署后，系统已自动创建默认管理员账号并完成数据库初始化。用户只需使用默认账号登录，完成基础数据同步和数据源配置即可开始使用。
+After the first deployment, the system has automatically created a default administrator account and completed database initialization. Users only need to log in with the default account, complete basic data synchronization and data source configuration, and then start using it.
 
-#### 操作步骤
+#### Operation steps
 
-1. **使用默认账号登录**
-   - 系统已预置默认管理员账号。
-   - 用户名：`admin`
-   - 密码：`admin123`
-   - 首次登录后请立即在"设置 → 个人中心"修改默认密码。
+1. **Log in with default account**
+   - The system has preset a default administrator account.
+   - Username:`admin`
+   - Password:`admin123`
+   - After logging in for the first time, please immediately"settings → Personal center"Change the default password.
 
-2. **初始化数据库**
-   - 系统会自动创建必要的集合和索引。
-   - 可在"设置 → 系统管理 → 数据库"查看初始化状态。
+2. **Initialize database**
+   - The system automatically creates the necessary collections and indexes.
+   - Available at"settings → System management → database"Check the initialization status.
 
-3. **同步基础数据**
-   - 进入"设置 → 系统管理 → 数据同步"。
-   - 点击"初始化股票基础数据"，同步 A 股的股票列表。
-   - 该过程可能耗时 10-30 分钟，取决于网络状况。
+3. **Synchronize basic data**
+   - enter"settings → System management → Data synchronization". 
+   - Click"Initialize basic stock data", Synchronize the stock list of A shares.
+   - This process may take 10-30 minutes, depending on network conditions.
 
-4. **配置数据源**
-   - 在"设置 → 系统配置 → 数据源"中选择主力数据源。
-   - A 股推荐 Tushare，可配置多数据源互为备份。
+4. **Configure data source**
+   - in"settings → System configuration → data source"Select the main data source.
+   - A We recommend Tushare, which can configure multiple data sources to back up each other.
 
-5. **检查系统状态**
-   - 进入"仪表板"，查看系统状态卡片是否全部为绿色。
+5. **Check system status**
+   - enter"Dashboard", Check whether the system status cards are all green.
 
-#### 注意事项
+#### Things to note
 
-- 默认密码仅用于首次登录，请务必尽快修改。
-- 基础数据同步是后续分析功能正常运作的前提，必须完成。
-- 如果同步失败，可点击"重试"或检查网络与 API 配额。
+- The default password is only used for first login, please be sure to change it as soon as possible.
+- Basic data synchronization is a prerequisite for the normal operation of subsequent analysis functions and must be completed.
+- If synchronization fails, click"Try again"Or check network and API quotas.
 
-### 2.4 使用指南（/guide）
+### 2.4 User Guide (/guide)
 
-#### 功能说明
+#### Function description
 
-使用指南是系统内置的引导式初始设置向导，位于左侧导航栏"使用指南"菜单。通过分步骤引导帮助新用户完成从 API 密钥配置到完成首次 AI 研究的全流程，适合首次使用的用户跟随操作。
+The user guide is the system's built-in guided initial setup wizard, located on the left navigation bar"User Guide"menu. Help new users complete the entire process from API key configuration to completing their first AI research through step-by-step guidance, which is suitable for first-time users to follow.
 
-#### 引导步骤
+#### Guided steps
 
-使用指南采用步骤条形式，逐步引导完成初始配置：
+The user guide adopts the form of step-by-step guide to complete the initial configuration step by step:
 
-1. **获取大模型 API 密钥**
-   - 说明如何获取 DeepSeek / 通义千问 / OpenAI 等 LLM 的 API 密钥。
-   - 提供各平台注册链接和注意事项。
-   - 点击"前往配置"跳转到系统配置页面。
+1. **Get the big model API key**
+   - Explain how to obtain the API key of LLM such as DeepSeek / Tongyi Qianwen / OpenAI.
+   - Provide registration links and precautions for each platform.
+   - Click"Go to configuration"Jump to the system configuration page.
 
-2. **获取数据源 API 密钥**
-   - 说明如何注册 Tushare 账号并获取 Token。
-   - 提示不同积分等级的权限差异。
-   - 点击"前往配置"跳转到数据源配置。
+2. **Get data source API key**
+   - Explain how to register a Tushare account and obtain Token.
+   - Prompt the differences in permissions at different points levels.
+   - Click"Go to configuration"Jump to data source configuration.
 
-3. **填写 Token 配置**
-   - 引导将获取的 API 密钥填入系统配置。
-   - 配置完成后可点击"测试连接"验证。
+3. **Fill in the Token configuration**
+   - The guide will populate the obtained API key into the system configuration.
+   - After the configuration is completed, click"test connection"verify.
 
-5. **同步股票数据**
-   - 引导执行股票基础数据初始化同步。
-   - 说明同步范围和预计耗时。
-   - 点击"前往同步"跳转到数据同步页面。
+5. **Sync stock data**
+   - Guide the initialization and synchronization of basic stock data.
+   - Describe the synchronization scope and estimated time.
+   - Click"Go to sync"Jump to the data synchronization page.
 
-6. **搜索并添加股票关注列表**
-   - 引导在关注列表中添加感兴趣的股票。
-   - 提供搜索和分组操作指引。
+6. **Search and add stocks to watchlist**
+   - Guide to add stocks of interest to your watchlist.
+   - Provides search and grouping operation guidance.
 
-7. **完成第一次研究**
-   - 引导进入单股研究，选择分析维度并启动分析。
-   - 完成后查看研究报告。
+7. **Complete your first study**
+   - Navigate to single stock research, select analysis dimensions and start analysis.
+   - View the research report when completed.
 
-#### 操作步骤
+#### Operation steps
 
-1. 登录系统后，点击左侧导航栏"使用指南"。
-2. 按步骤条顺序依次操作，每步完成后自动标记为已完成。
-3. 每个步骤提供"前往操作"按钮，直接跳转到对应功能页面。
-4. 可随时返回使用指南查看进度，已完成的步骤会保留标记。
+1. After logging in to the system, click on the left navigation bar"User Guide". 
+2. Follow the steps in the order of the steps, and each step will be automatically marked as completed after completion.
+3. Provided for each step"Go to operation"button to jump directly to the corresponding function page.
+4. You can return to the user guide at any time to review your progress, and completed steps will remain marked.
 
-#### 注意事项
+#### Things to note
 
-- 使用指南仅为引导，不影响系统功能使用，可随时跳过。
-- 已完成初始配置的老用户无需再跟随此指南。
-- 步骤进度存储在本地浏览器中，清除浏览器数据后进度会重置。
+- The user guide is only a guide and does not affect the use of system functions and can be skipped at any time.
+- Existing users who have completed the initial configuration no longer need to follow this guide.
+- Step progress is stored locally in the browser and will be reset after clearing browser data.
 
 ---
 
-## 第三章 基础功能
+## Chapter 3 Basic Functions
 
-本章介绍日常使用频率最高的基础功能模块，包括仪表板、单股研究、研究报告、股票筛选、关注列表和任务中心。
+This chapter introduces the basic functional modules that are most frequently used in daily life, including dashboards, single stock research, research reports, stock screening, watch lists, and task centers.
 
-### 3.1 仪表板（/dashboard）
+### 3.1 Dashboard (/dashboard)
 
-#### 功能说明
+#### Function description
 
-仪表板是登录后的默认首页，提供系统就绪度引导、快捷功能入口、最近分析记录和股票关注列表概览，帮助用户快速了解系统配置状态并一键进入常用功能。
+The dashboard is the default homepage after logging in. It provides system readiness guidance, quick function entry, recent analysis records and stock watch list overview, helping users quickly understand the system configuration status and enter commonly used functions with one click.
 
-#### 界面组成
+#### Interface composition
 
-- **系统就绪度引导卡片**：以步骤形式展示系统配置进度（配置数据源 → 配置大模型 → 同步数据），未完成的步骤可点击"前往设置"跳转到对应配置页面。
-- **快速操作区**：单股研究、批量分析、股票筛选、任务中心、持仓研究、复盘分析、交易计划等常用功能的快速跳转入口。
-- **最近分析区**：以表格形式展示最近的分析任务，包含股票代码、名称、状态、创建时间，支持"查看"和"下载"操作。
-- **股票关注列表概览**：展示关注列表中的股票，支持"添加到研究列表"快速发起分析。
+- **System readiness boot card**: Display the system configuration progress in the form of steps (configuration data source → Configure large model → Synchronize data), unfinished steps can be clicked"Go to settings"Jump to the corresponding configuration page.
+- **Quick operation area**: Quick jump entrance to common functions such as single stock research, batch analysis, stock screening, task center, position research, review analysis, trading plan, etc.
+- **Recent analysis area**: Display the latest analysis tasks in table form, including stock code, name, status, creation time, support"View"and"Download"operation.
+- **Stock Watchlist Overview**: Display the stocks in the watch list, support"Add to study list"Quickly initiate analysis.
 
-#### 操作步骤
+#### Operation steps
 
-1. 登录系统后自动进入仪表板。
-2. 首次使用时，根据"系统就绪度引导卡片"完成数据源配置、大模型配置和数据同步。
-3. 点击"快速操作区"的功能卡片，可直接跳转到对应功能页面。
-4. 在"最近分析"表格中点击"查看"按钮，可查看完整报告；点击"下载"可导出报告。
-5. 在"股票关注列表概览"中点击"添加到研究列表"，可快速发起单股分析。
+1. Automatically enter the dashboard after logging into the system.
+2. When used for the first time, according to"System readiness boot card"Complete data source configuration, large model configuration and data synchronization.
+3. Click"Quick operation area"The function card can jump directly to the corresponding function page.
+4. in"recent analysis"Click in the form"View"button to view the full report; click"Download"Reports can be exported.
+5. in"Stock Watchlist Overview"middle click"Add to study list", Single stock analysis can be quickly initiated.
 
-#### 注意事项
+#### Things to note
 
-- 系统就绪度引导卡片在所有配置步骤完成后会显示完成状态。
-- 首次使用建议先按照引导卡片完成基础配置，再进行股票分析。
+- The system readiness guide card displays the completion status after all configuration steps are completed.
+- When using it for the first time, it is recommended to complete the basic configuration according to the guide card before conducting stock analysis.
 
-### 3.2 单股研究（/analysis/single）
+### 3.2 Single Stock Research (/analysis/single)
 
-#### 功能说明
+#### Function description
 
-单股研究是系统的核心功能，输入一只股票代码，选择需要的分析维度和分析深度，系统将调用多个 AI 分析师协同完成深度分析，生成结构化研究报告。
+Single stock research is the core function of the system. Enter a stock code, select the required analysis dimension and depth of analysis, and the system will call multiple AI analysts to collaboratively complete in-depth analysis and generate a structured research report.
 
-#### 支持的市场
+#### supported markets
 
-- **A 股市场**：沪深主板、创业板、科创板、北交所（6 位数字代码，如 `000001`）
-- **ETF 基金**：如 `510050`、`159919` 等
+- **A stock market**: Shanghai and Shenzhen Main Board, GEM, Science and Technology Innovation Board, Beijing Stock Exchange (6-digit code, such as `000001`) 
+- **ETF fund**: Such as `510050`, `159919` Wait
 
-> 注意：v3.0 暂不支持美股和港股市场分析，相关功能已暂停，后续版本将重新开放。
+> Note: v3.0 does not currently support U.S. and Hong Kong stock market analysis. Related functions have been suspended and will be reopened in subsequent versions.
 
-#### 操作步骤
+#### Operation steps
 
-1. **进入单股研究**
-   - 左侧导航栏"单股研究"，或仪表板快捷入口。
+1. **Go to single stock research**
+   - Left navigation bar"single stock research", Or dashboard quick access.
 
-2. **输入股票信息**
-   - 在"股票代码"输入框中直接输入股票代码（如 `000001`、`512400`）。
-   - 在"市场类型"下拉框选择对应市场：A 股市场、ETF 基金。
-   - 各市场代码格式提示：A 股（6 位数字）、ETF（510050、159919 等）。
+2. **Enter stock information**
+   - in"Stock code"Enter the stock code directly into the input box (such as `000001`, `512400`) . 
+   - in"market type"Select the corresponding market from the drop-down box: A-share market, ETF fund.
+   - Each market code format prompt: A shares (6 digits), ETF (510050, 159919, etc.).
 
-3. **选择分析日期（可选）**
-   - 默认为当天，可手动选择历史日期作为分析基准日。
-   - 点击"数据检验"按钮可预先验证该股票的数据完整性。
+3. **Select analysis date (optional)**
+   - The default is today, and you can manually select a historical date as the analysis base day.
+   - Click"Data inspection"button to pre-verify the data integrity of that stock.
 
-4. **选择分析深度**
-   - 系统提供 5 个分析深度级别：
-     - **1 级 - 快速分析**：基础数据概览，快速决策（2-5 分钟）
-     - **2 级 - 基础分析**：常规投资决策（3-6 分钟）
-     - **3 级 - 标准分析**：技术 + 基本面，推荐（4-8 分钟）
-     - **4 级 - 深度分析**：多轮辩论，深度研究（6-11 分钟）
-     - **5 级 - 全面分析**：最全面的分析报告（8-16 分钟）
+4. **Select analysis depth**
+   - The system provides 5 levels of analysis depth:
+     - **1 Level - Quick Analysis**: Basic data overview, quick decision-making (2-5 minutes)
+     - **2 Level - Basic Analysis**: General investment decisions (3-6 minutes)
+     - **3 Level - Standard Analysis**: technology + Fundamentals, Recommended (4-8 minutes)
+     - **4 Level - In-Depth Analysis**: Multiple rounds of debate and in-depth research (6-11 minutes)
+     - **5 Level - Comprehensive Analysis**: The most comprehensive analysis report (8-16 minutes)
 
-5. **选择分析师团队**
-   - 系统提供多个分析师角色，以卡片形式展示，点击卡片切换选中/取消：
-     - **市场分析师**：分析个股价格走势与技术指标（均线/MACD/RSI/布林带）
-     - **基本面分析师**：分析公司财务状况、业务模式和竞争优势
-     - **新闻分析师**：分析相关新闻、公告和市场事件的影响
-     - **社媒分析师**：分析社交媒体情绪、投资者心理和舆论导向
-     - **大盘分析师**：分析大盘指数走势、市场环境和系统性风险（仅 A 股可选）
-     - **板块分析师**：分析行业趋势、板块轮动和同业对比（仅 A 股可选）
-     - **ETF 分析师**：分析 ETF 净值、跟踪误差和持仓结构（仅 ETF 市场可选）
-   - 默认选中"市场分析师"和"基本面分析师"。
-   - 非对应市场的分析师会显示"仅 A 股"标签并不可选。
+5. **Choose an analyst team**
+   - The system provides multiple analyst roles, displayed in the form of cards. Click the card to switch between selection/cancel:
+     - **market analyst**: Analyze individual stock price trends and technical indicators (moving average/MACD/RSI/Bollinger Bands)
+     - **fundamental analyst**: Analyze company financial condition, business model and competitive advantages
+     - **news analyst**: Analyze the impact of relevant news, announcements and market events
+     - **social media analyst**: Analyze social media sentiment, investor psychology and public opinion guidance
+     - **Market Analyst**: Analyze market index trends, market environment and systemic risks (optional only for A shares)
+     - **Sector Analyst**: Analyze industry trends, sector rotation and peer comparison (optional only for A shares)
+     - **ETF analyst**: Analyze ETF net worth, tracking error, and position structure (optional for ETF market only)
+   - Selected by default"market analyst"and"fundamental analyst". 
+   - Analysts who do not correspond to the market will display"A shares only"Labels are not optional.
 
-#### 一份完整的报告覆盖哪些维度
+#### What dimensions does a complete report cover?
 
-下面这张表是**每次分析实际会跑的分析维度**，让您知道报告里的每个结论是怎么来的：
+The table below is**The actual analysis dimensions that will be run for each analysis**, Let you know how each conclusion in the report comes from:
 
-| 维度 | 由谁负责 | 用了什么数据/工具 | 在报告里能看到什么 |
+| Dimensions | Who is responsible | What data/tools were used? | What can you see in the report? |
 |------|---------|----------------|------------------|
-| **价格走势** | 市场分析师 | 历史 K 线、实时行情 | 当前价、涨跌幅、成交量、换手率 |
-| **技术指标** | 市场分析师 | MA/RSI/KDJ/MACD、布林带 | 方向信号、超买超卖、趋势方向 |
-| **K线形态** | 市场分析师 | 25+ 形态自动识别 | 锤子线、吞没、晨星/黄昏之星等 |
-| **图表形态** | 市场分析师 | 头肩顶底、双顶双底、三角 | 中长线趋势判断 |
-| **支撑压力** | 市场分析师 | Pivot + 历史极值聚类 | 3 档支撑位、3 档压力位 |
-| **财务表数据** | 基本面分析师 | Tushare 财报数据（资产负债表/利润表/现金流量表/所有者权益表） | 营收、利润、毛利率、现金流 |
-| **盈利质量** | 基本面分析师 | 应计/现金流/盈利持续性 | 5 维度 0-100 分 |
-| **财务健康** | 基本面分析师 | Altman Z、Piotroski F | 是否存在破产风险、财务健康度 |
-| **财报造假检测** | 基本面分析师 | Beneish M（8 维度） | 是否有造假嫌疑（> -1.78 提示） |
-| **估值水平** | 基本面分析师 | PE/PB/PS/PEG | 相对估值高还是低 |
-| **DCF 估值** | 基本面分析师 | 现金流折现 + WACC | 公司值多少钱 |
-| **行业对比** | 板块分析师 | 同行业上市公司数据 | 在行业内的位置、市值排名 |
-| **大盘环境** | 大盘分析师 | 指数 + 涨跌家数 | 牛市/熊市/震荡市判断 |
-| **新闻事件** | 新闻分析师 | 东方财富/新浪/同花顺 | 近期重要新闻、催化、风险事件 |
-| **市场情绪** | 社媒分析师 | 雪球/股吧讨论 | 情绪倾向、讨论热度 |
-| **筹码分布** | 内置工具 | AkShare/Tushare | 获利比例、平均成本、90%/70% 集中度 |
-| **多情景研究** | 高弹性/防御/基准情景分析师 | 综合上述报告 | 三种情景视角并列的研究观察（不构成投资建议） |
-| **研究观察汇总** | 研究整合员 | 上述全部 | 平衡的多情景研究观察汇总（无方向性结论） |
+| **price trend** | market analyst | Historical K-line, real-time market | Current price, increase or decrease, trading volume, turnover rate |
+| **Technical indicators** | market analyst | MA/RSI/KDJ/MACD, Bollinger Bands | Directional signals, overbought and oversold, trend direction |
+| **K line pattern** | market analyst | 25+ Automatic shape recognition | Hammer line, engulfing, morning star/evening star, etc. |
+| **chart pattern** | market analyst | Head and shoulders top and bottom, double top and double bottom, triangle | Judgment of medium and long-term trends |
+| **support pressure** | market analyst | Pivot + Historical extreme value clustering | 3 3rd gear support position, 3rd gear pressure position |
+| **financial table data** | fundamental analyst | Tushare Financial report data (balance sheet/income statement/cash flow statement/owner's equity statement) | Revenue, profit, gross profit margin, cash flow |
+| **Earnings quality** | fundamental analyst | Accruals/Cash Flow/Earnings Sustainability | 5 Dimensions 0-100 points |
+| **financial health** | fundamental analyst | Altman Z, Piotroski F | Whether there is bankruptcy risk and financial health |
+| **Financial report fraud detection** | fundamental analyst | Beneish M (8 Dimensions) | Is there any suspicion of fraud (> -1.78 Tips) |
+| **Valuation level** | fundamental analyst | PE/PB/PS/PEG | Is the relative valuation high or low? |
+| **DCF Valuation** | fundamental analyst | discounted cash flow + WACC | How much is the company worth? |
+| **Industry comparison** | Sector Analyst | Data of listed companies in the same industry | Position and market value ranking in the industry |
+| **Market environment** | Market Analyst | Index + Number of stocks rising and falling | Bull market/bear market/shock market judgment |
+| **news events** | news analyst | Oriental Fortune/Sina/Flush | Recent important news, catalysts, and risk events |
+| **market sentiment** | social media analyst | Snowball/Stock Bar Discussion | Emotional tendencies, discussion enthusiasm |
+| **Chip distribution** | Built-in tools | AkShare/Tushare | Profit ratio, average cost, 90%/70% concentration ratio |
+| **multi-scenario research** | High Resilience/Defense/Baseline Scenario Analyst | Based on the above reports | Research observations of three scenario perspectives juxtaposed (does not constitute investment advice) |
+| **Summary of research observations** | research integrator | All of the above | Balanced summary of observations from multi-scenario studies (non-directional conclusions) |
 
-**重点说明**：
-- 报告里所有数据点都能查到出处（详见 v3.0 分析能力全景章节）
-- "AI 推论"标签说明是 LLM 推理的，不是直接拿到的数据
-- 多情景研究是 v3.0 新能力，3 级标准分析会自动启用
-- 4 级深度分析会增加多轮辩论环节
+**Key points**: 
+- The source of all data points in the report can be found (see v3.0 analysis capability panorama chapter for details)
+- "AI inference"The label description is inferred by LLM, not the data obtained directly.
+- Multi-scenario research is a new capability in v3.0, and Level 3 standard analysis will be automatically enabled
+- 4 Level-in-depth analysis will add multiple rounds of debate sessions
 
-6. **启动分析**
-   - 点击"开始智能分析"按钮。
-   - 系统进入分析进度页面，实时显示已用时间、预计剩余时间、进度条和当前任务描述。
-   - 分析过程中按钮显示为"分析进行中..."（不可重复点击）。
+6. **Start analysis**
+   - Click"Start smart analysis"button.
+   - The system enters the analysis progress page and displays the elapsed time, estimated remaining time, progress bar, and current task description in real time.
+   - During analysis, the button appears as"Analysis in progress..." (Cannot be clicked repeatedly).
 
-7. **查看报告**
-   - 分析完成后按钮变为"查看结果"和"重新分析"。
-   - 点击"查看结果"展开分析报告，包含：综合研究观察、各维度分析、风险提示、后续观察事项。
-   - 可导出为 PDF、Word、Markdown 等格式。
+7. **View report**
+   - After the analysis is complete, the button changes to"View results"and"Reanalyze". 
+   - Click"View results"Expand the analysis report, including: comprehensive research observations, analysis of various dimensions, risk reminders, and follow-up observations.
+   - Can be exported to PDF, Word, Markdown and other formats.
 
-#### 注意事项
+#### Things to note
 
-- 单次分析会消耗 LLM Token，深度分析消耗较大，请根据授权配额合理安排。
-- 分析过程中请勿关闭浏览器标签页，否则可能中断任务（任务可在"任务中心"恢复查看）。
-- 首次分析某只股票时，数据下载耗时较长；后续分析会使用缓存，速度更快。
-- 分析结果仅供参考，不构成投资建议，请结合自身判断决策。
-- 大盘分析师和板块分析师仅支持 A 股市场；ETF 市场仅显示 ETF 分析师、市场分析师和新闻分析师。
+- A single analysis will consume LLM Token, and in-depth analysis will consume a larger amount. Please make reasonable arrangements according to the authorization quota.
+- Do not close the browser tab during the analysis, otherwise the task may be interrupted (the task can be found in"mission center"resume viewing).
+- When analyzing a stock for the first time, the data download takes a long time; subsequent analysis will use cache and be faster.
+- The analysis results are for reference only and do not constitute investment advice. Please make your own decisions based on your own judgment.
+- Large-cap analysts and sector analysts only support the A-share market; the ETF market only displays ETF analysts, market analysts, and news analysts.
 
-#### 分析报告解读指南
+#### Analysis Report Interpretation Guide
 
-分析完成后，报告按以下结构展示，帮助您快速获取关键信息：
+After the analysis is completed, the report is displayed in the following structure to help you quickly obtain key information:
 
-| 报告章节 | 内容说明 | 关注重点 |
+| Report Chapter | Content description | focus |
 |---------|---------|---------|
-| **综合评级** | AI 给出的整体研究观察（无方向性结论） | 把握度与不确定性说明 |
-| **市场分析** | 技术指标解读（均线、MACD、RSI、布林带）、价格走势 | 当前处于技术性多头还是空头 |
-| **基本面分析** | 财务数据、估值水平、行业地位、竞争优势 | PE/PB 是否合理，营收利润趋势 |
-| **新闻分析** | 近期重要新闻、公告事件影响 | 是否有重大利好或利空事件 |
-| **社媒分析** | 社交媒体情绪、投资者讨论热度 | 市场情绪偏乐观还是悲观 |
-| **大盘分析** | 大盘指数走势、市场环境、系统性风险 | 当前市场环境是否适合操作 |
-| **板块分析** | 行业趋势、板块轮动、同业对比 | 该股所在行业是否处于景气周期 |
-| **多情景研究** | 三种情景视角并列研究观察 | 主要风险点和潜在下行空间 |
-| **研究观察汇总** | 平衡的多情景研究观察 | 汇总性的研究观察，无投资建议 |
+| **Overall rating** | AI Overall research observations given (non-directional conclusions) | Certainty and Uncertainty Statement |
+| **market analysis** | Interpretation of technical indicators (moving average, MACD, RSI, Bollinger Bands), price trend | Are you currently technically bullish or bearish? |
+| **fundamental analysis** | Financial data, valuation level, industry status, competitive advantages | PE/PB Is it reasonable? Revenue and profit trends |
+| **news analysis** | Impact of recent important news and announcements | Are there any major positive or negative events? |
+| **social media analysis** | Social media sentiment and investor discussion | Is market sentiment optimistic or pessimistic? |
+| **Market analysis** | Market index trends, market environment, systemic risks | Is the current market environment suitable for operation? |
+| **Sector analysis** | Industry trends, sector rotation, peer comparison | Is the industry in which the stock belongs to a boom cycle? |
+| **multi-scenario research** | Parallel research and observation of three situational perspectives | Main risk points and potential downside |
+| **Summary of research observations** | Balanced multi-scenario research observations | Summary of research observations, no investment advice |
 
-> 💡 **阅读建议**：
-> - **时间紧张时**：只看"综合评级"和"研究观察汇总"两节。
-> - **决策前**：重点阅读"多情景研究"，了解不同视角的研究观察，避免确认偏误。
-> - **长期跟踪**：关注"基本面分析"的趋势变化，判断公司经营是否改善。
+> 💡 **reading suggestions**: 
+> - **When time is tight**: Just watch"Overall rating"and"Summary of research observations"Two sections.
+> - **before decision**: Important reading"multi-scenario research", Understand research observations from different perspectives and avoid confirmation bias.
+> - **Long term tracking**: Follow"fundamental analysis"trend changes to determine whether the company's operations have improved.
 
-### 3.3 研究报告（/reports）
+### 3.3 Research reports (/reports)
 
-#### 功能说明
+#### Function description
 
-研究报告模块管理所有历史分析报告，支持按条件搜索、查看详情、批量导出。
+The research report module manages all historical analysis reports and supports searching by conditions, viewing details, and batch exporting.
 
-#### 操作步骤
+#### Operation steps
 
-1. **查看报告列表**
-   - "研究报告"页面展示所有历史报告。
-   - 每条报告显示：报告标题、类型、格式、状态、分析模型、分析深度、创建时间。
-   - 支持按股票代码/名称搜索、按市场（A 股/ETF）筛选、按日期范围筛选。
+1. **View report list**
+   - "research report"This page displays all historical reports.
+   - Each report displays: report title, type, format, status, analysis model, analysis depth, and creation time.
+   - Supports searching by stock code/name, filtering by market (A shares/ETF), and filtering by date range.
 
-2. **查看报告详情**
-   - 点击报告行中的"查看"按钮，进入报告详情页。
-   - 详情页包含：综合研究观察、各分析师详细分析、数据图表、风险提示、后续观察事项。
-   - 报告支持在线阅读，支持目录跳转。
+2. **View report details**
+   - Click in the report row"View"button to enter the report details page.
+   - The details page includes: comprehensive research observations, detailed analysis by each analyst, data charts, risk warnings, and follow-up observations.
+   - The report supports online reading and directory jump.
 
-3. **下载报告**
-   - 点击报告行中的"下载"按钮，可下载单个报告。
-   - 也支持勾选多份报告后点击"批量导出"，选择格式：Markdown / Word / PDF。
+3. **Download report**
+   - Click in the report row"Download"button to download a single report.
+   - It also supports checking multiple reports and then clicking"Batch export", Choose format: Markdown/Word/PDF.
 
-4. **删除报告**
-   - 点击报告行中的"删除"按钮，可删除不需要的报告。
+4. **Delete report**
+   - Click in the report row"Delete"button to delete unnecessary reports.
 
-5. **Token 消耗查看**
-   - 在"系统管理 → 使用统计"页面可查看各功能的 Token 消耗情况，包括单股研究、批量分析、Agent 工坊、Skill 生成、AI 对话助手、持仓分析、操作复盘等。
-   - 也可在研究报告页面点击"Token 统计"按钮，进入 Token 使用统计页面，按时间范围（今天/7天/30天/90天/全部）和供应商筛选查看详细的 Token 使用情况和成本分析，支持导出统计数据。
+5. **Token consumption view**
+   - in"System management → usage statistics"The Token consumption of each function can be viewed on the page, including single stock research, batch analysis, Agent workshop, Skill generation, AI dialogue assistant, position analysis, operation review, etc.
+   - You can also click on the research report page"Token statistics"button to enter the Token usage statistics page, filter by time range (today/7 days/30 days/90 days/all) and suppliers to view detailed Token usage and cost analysis, and support exporting statistical data.
 
-#### 注意事项
+#### Things to note
 
-- 导出 PDF 时如遇中文字体问题，请确保系统已安装中文字体（Docker 镜像已内置）。
-- Word 格式导出需要系统配置 pandoc（Docker 部署默认包含）。
+- If you encounter problems with Chinese fonts when exporting PDF, please ensure that the Chinese fonts are installed on the system (the Docker image is built-in).
+- Word Format export requires system configuration pandoc (included by default with Docker deployments).
 
-### 3.4 股票筛选（/screening）
+### 3.4 Stock Screening (/screening)
 
-#### 功能说明
+#### Function description
 
-股票筛选模块支持多条件组合筛选股票，帮助用户从全市场中快速找到符合特定条件的标的。v3.0 新增"选股助手"模式，支持自然语言对话式筛选。
+The stock screening module supports multi-condition combination screening for stocks, helping users quickly find targets that meet specific conditions from the entire market. v3.0 new"Stock Picking Assistant"mode to support natural language conversational filtering.
 
-#### 操作步骤
+#### Operation steps
 
-1. **传统条件筛选**
-   - 进入"股票筛选"页面。
-   - 选择市场范围：A 股全市场 / 沪深 300 / 创业板 / 股票关注列表等。
-   - 添加筛选条件：
-     - 基本面：市盈率、市净率、ROE、营收增长率、净利润增长率
-     - 技术面：涨跌幅、换手率、量比、均线位置
-     - 规模：总市值、流通市值
-     - 行业：按申万行业分类筛选
-   - 设置条件逻辑（大于/小于/介于/等于）。
-   - 点击"开始筛选"，查看结果列表。
+1. **Traditional filtering**
+   - enter"stock screen"page.
+   - Select the market scope: A-share market / CSI 300 / GEM / stock watch list, etc.
+   - Add filter criteria:
+     - Fundamentals: P/E ratio, P/B ratio, ROE, revenue growth rate, net profit growth rate
+     - Technical aspect: rise and fall, turnover rate, volume ratio, moving average position
+     - Scale: total market capitalization, circulating market capitalization
+     - Industry: Filter by Shenwan industry classification
+   - Set conditional logic (greater than/less than/between/equal to).
+   - Click"Start filtering", View the list of results.
 
-2. **选股助手（对话式）** 
-   - 点击"选股助手"标签页。
-   - 用自然语言描述筛选需求，例如：
-     - "帮我找 ROE 大于 15%、市盈率低于 20 的消费股"
-     - "最近一周涨幅超过 10% 且换手率活跃的创业板股票"
-   - 系统会经过三阶段处理：
-     1. **需求确认**：AI 与您确认筛选意图。
-     2. **策略规划**：AI 规划筛选工具调用方案。
-     3. **执行筛选**：调用工具执行筛选，返回结果。
-   - 筛选结果支持一键加入股票关注列表。
+2. **Stock Picking Assistant (Conversational)** 
+   - Click"Stock Picking Assistant"tab page.
+   - Use natural language to describe screening requirements, for example:
+     - "Help me find consumer stocks with ROE greater than 15% and P/E ratio less than 20"
+     - "GEM stocks that have increased by more than 10% in the past week and have active turnover rates"
+   - The system will go through three stages of processing:
+     1. **Requirements confirmation**: AI Confirm screening intent with you.
+     2. **strategic planning**: AI Plan how to use screening tools.
+     3. **Perform filtering**: Call the tool to perform filtering and return the results.
+   - The filter results support one-click addition to the stock watch list.
 
-3. **结果操作**
-   - 点击股票名称进入详情。
-   - 勾选股票后可"加入股票关注列表"或"批量分析"。
-   - 支持导出筛选结果为 Excel。
+3. **Result operation**
+   - Click on the stock name to enter details.
+   - After selecting the stock, you can"Add to stock watchlist"or"Batch analysis". 
+   - Supports exporting filter results to Excel.
 
-#### 注意事项
+#### Things to note
 
-- 选股助手为高级功能，需要高级版授权。
-- 筛选结果数据依赖基础数据同步，如果同步未完成，结果可能不完整。
-- 选股助手在超时或无结果时，会自动 fallback 到历史成功结果或数据库快速粗筛，确保总有候选输出。
+- The stock selection assistant is an advanced function and requires premium version authorization.
+- Filter result data relies on underlying data synchronization, and if synchronization is not completed, the results may be incomplete.
+- When the stock selection assistant times out or has no results, it will automatically fallback to historical successful results or a quick rough screening of the database to ensure that there are always candidate outputs.
 
-### 3.5 股票关注列表（/favorites）
+### 3.5 Stock Watchlist (/favorites)
 
-#### 功能说明
+#### Function description
 
-关注列表（股票关注列表）用于管理您关注的股票，支持分组管理、实时行情、快速分析。
+Watch list (stock watch list) is used to manage the stocks you follow, supporting group management, real-time market conditions, and quick analysis.
 
-#### 操作步骤
+#### Operation steps
 
-1. **创建分组**
-   - "股票关注列表"页面，点击"新建分组"。
-   - 输入分组名称（如"白酒板块"、"长期观察"、"止损线"）。
-   - 可设置分组颜色标识。
+1. **Create group**
+   - "Stock Watchlist"page, click"Create new group". 
+   - Enter a group name (e.g."Liquor sector", "long term observation", "stop loss line") . 
+   - Group color identification can be set.
 
-2. **添加股票**
-   - 方式一：在分组内点击"添加股票"，搜索股票后加入。
-   - 方式二：在筛选结果、报告详情页点击"加入股票关注列表"。
-   - 方式三：在智能助手中说"把 600519 加入我的白酒板块"。
+2. **add stock**
+   - Method 1: Click within the group"add stock", Join after searching for stocks.
+   - Method 2: Click on the filter results and report details page"Add to stock watchlist". 
+   - Method 3: Say it in the smart assistant"Add 600519 to my liquor section". 
 
-3. **管理关注股**
-   - 拖拽股票调整顺序。
-   - 支持跨分组移动。
-   - 点击股票代码进入**股票详情页**（详见 [3.7 股票详情页](#37-股票详情页-stockscode)），查看实时行情、K线图、核心指标、单股分析、持仓与复盘，并可使用智能助手全景解读。
-   - 股票详情页支持的操作：发起 AI 研究、持仓分析、同步最新数据、清除缓存、跳转模拟交易、加入/移出关注列表。
+3. **Management concern stocks**
+   - Drag and drop stocks to adjust the order.
+   - Supports cross-group movement.
+   - Click on the stock code to enter**Stock details page** (See details [3.7 Stock details page](#37-Stock details page-stockscode)) , View real-time market conditions, K-line charts, core indicators, single stock analysis, positions and reviews, and use smart assistants for panoramic interpretation.
+   - Operations supported by the stock details page: initiate AI research, position analysis, synchronize the latest data, clear cache, jump to simulated trading, and add/remove from the watch list.
 
-4. **批量操作**
-   - 勾选多只股票，可"批量分析"（跳转到批量分析）。
-   - 可"批量导出"为 Excel。
+4. **Batch operations**
+   - Check multiple stocks to"Batch analysis" (Jump to batch analysis).
+   - Yes"Batch export"for Excel.
 
-#### 注意事项
+#### Things to note
 
-- 每个分组建议不超过 50 只股票，过多会影响页面加载速度。
-- 关注列表的行情数据为延迟行情，不作为交易依据。
-- 股票详情页的行情数据可能延迟，如需最新数据可点击"同步"按钮手动拉取。
+- It is recommended that each grouping should not exceed 50 stocks, as too many stocks will affect the page loading speed.
+- The market data in the watch list is delayed market data and is not used as a basis for trading.
+- The market data on the stock details page may be delayed. If you need the latest data, please click"sync"Button to pull manually.
 
-### 3.6 任务中心（/tasks/unified）
+### 3.6 Task Center (/tasks/unified)
 
-#### 功能说明
+#### Function description
 
-任务中心统一展示所有类型的分析任务状态，包括单股分析、批量分析、定时分析等，方便追踪任务进度。
+The task center uniformly displays the status of all types of analysis tasks, including single-stock analysis, batch analysis, scheduled analysis, etc., making it easy to track task progress.
 
-#### 操作步骤
+#### Operation steps
 
-1. **查看任务列表**
-   - "任务中心"页面展示所有任务的统一视图。
-   - 每条任务显示：任务类型、目标股票/分析目标、状态、创建时间、耗时。
-   - 状态包括：排队中、运行中、已完成、已失败、已取消。
-   - 通用研究类型的任务目标显示为分析目标文本（而非股票代码）。
+1. **View task list**
+   - "mission center"The page presents a unified view of all tasks.
+   - Each task displays: task type, target stock/analysis target, status, creation time, and time taken.
+   - Status includes: Queuing, Running, Completed, Failed, Canceled.
+   - The task objective for the generic research type appears as the analysis target text (instead of the stock symbol).
 
-2. **筛选任务**
-   - 按任务类型筛选。
-   - 按状态筛选。
-   - 按时间范围筛选。
+2. **Filter tasks**
+   - Filter by task type.
+   - Filter by status.
+   - Filter by time range.
 
-3. **任务操作**
-   - **运行中任务**：可查看实时进度、取消任务。
-   - **已完成任务**：可查看报告、重新分析、导出报告。
-   - **已失败任务**：可查看错误日志、重试任务。
+3. **Task operation**
+   - **Running tasks**: You can check real-time progress and cancel tasks.
+   - **Task completed**: Reports can be viewed, reanalyzed, and exported.
+   - **Failed task**: You can view error logs and retry tasks.
 
-4. **任务详情**
-   - 点击任务进入详情页，查看每个分析师的执行步骤和耗时。
+4. **Mission details**
+   - Click the task to enter the details page to view the execution steps and time-consuming of each analyst.
 
-#### 执行轨迹（v3.0 核心能力 — 让 AI 跑哪里都能查到）
+#### Execution trace (v3.0 core capabilities — Let AI check it wherever it goes)
 
-**这是 v3.0 最重要的可追溯能力。** 任务详情页的"执行轨迹"标签页会把这次分析**每一步**都记录下来，AI 不是黑盒了。
+**This is the most important traceability capability of v3.0.** Task details page"Execution trace"The tab page will analyze this**every step**With everything recorded, AI is no longer a black box.
 
-**怎么开**（两种方式）：
+**How to open** (Two ways):
 
-- **方式 1（推荐）— 全局开关**："系统设置 → 高级设置 → 执行轨迹" → 启用。开启后所有新分析任务都会记录。
-- **方式 2（单次）— 任务级开关**：在任务详情页右上角点击"开启记录"按钮，只针对当前任务。
+- **Method 1 (recommended)— global switch**: "System settings → Advanced settings → Execution trace" → Enable. All new analysis tasks will be recorded when enabled.
+- **Method 2 (single)— Task level switch**: Click on the upper right corner of the task details page"Turn on recording"button, only for the current task.
 
-> 💡 默认**关闭**（避免给数据库造成压力）。建议在排查问题时开启，正常分析时关闭。
+> 💡 Default**close** (avoid putting pressure on the database). It is recommended to turn it on when troubleshooting problems and turn it off during normal analysis.
 
-**开启后能看到什么**：
+**What can you see after opening it?**: 
 
-| 字段 | 含义 | 排查问题时的用途 |
+| Field | meaning | Use when troubleshooting |
 |------|------|----------------|
-| **Agent 列表** | 这次分析跑了哪些 Agent（市场、基本面、新闻…） | 确认每个 Agent 是不是都跑到了 |
-| **每个 Agent 的输入** | 它看到了什么（上游报告、数据） | 排查"为什么这个 Agent 结论这么奇怪" |
-| **系统提示词 + 用户提示词** | LLM 实际收到的 prompt | 排查"是不是 prompt 没传对" |
-| **LLM 原始返回** | LLM 实际说了什么 | 排查"是不是 LLM 答非所问" |
-| **工具调用记录** | 调用了哪些工具、传了什么参数、返回了什么 | 排查"是不是工具拿错数据了" |
-| **校验结果** | 输出是否符合格式（passed/failed/warning） | 排查"为什么这次报告格式不对" |
-| **Token 用量** | 这次分析消耗多少 Token | 排查"为什么 Token 涨这么多" |
-| **耗时** | 每个 Agent 用了多少秒 | 排查"为什么这么慢" |
+| **Agent list** | Which Agents (market, fundamentals, news) were run in this analysis…)  | Confirm whether each Agent has run |
+| **Input for each Agent** | What it sees (upstream reporting, data) | troubleshooting"Why is this Agent conclusion so strange?" |
+| **System prompt word + User prompt words** | LLM actually received prompt | troubleshooting"Is the prompt not transmitted correctly?" |
+| **LLM original return** | LLM what was actually said | troubleshooting"Is it LLM? The answer is incorrect." |
+| **Tool call record** | Which tools are called, what parameters are passed, and what is returned | troubleshooting"Did the tool get the wrong data?" |
+| **Verification result** | Whether the output conforms to the format (passed/failed/warning) | troubleshooting"Why is the report format wrong this time?" |
+| **Token Dosage** | How much does this analysis cost? Token | troubleshooting"Why did Token rise so much?" |
+| **Time consuming** | How many seconds did each Agent take? | troubleshooting"why so slow" |
 
-**一个真实的排查场景**：
+**A real investigation scenario**: 
 
-> 问：为什么这次新闻分析说"该公司近期无重大事件"？
+> Question: Why does this news analysis say"The company has no major events recently"? 
 >
-> 答：打开执行轨迹 → 找到"新闻分析师" → 看它的"工具调用" → 发现它只调了"标题"工具，没调"明细"工具 → 知道是工具选错了
+> Answer: Open the execution trace → found"news analyst" → look at it"Tool call" → Found that it only adjusted"Title"Tool, not adjusted"Details"Tools → I know I chose the wrong tool
 
-**怎么用最划算**：
+**How to use it most cost-effectively**: 
 
-- ✅ 排查问题时开（分析结果不对、Token 异常、报告格式奇怪）
-- ✅ 学习时开（看 AI 是怎么工作的）
-- ❌ 日常分析时关（增加数据库存储）
-- ❌ 批量分析时关（除非排查某只具体股票）
+- ✅ Turn on when troubleshooting (incorrect analysis results, abnormal Token, strange report format)
+- ✅ Turn on while learning (see how AI works)
+- ❌ Daily analysis time (increased database storage)
+- ❌ Batch analysis time is off (unless troubleshooting a specific stock)
 
-> 💡 **Token 影响**：开启执行轨迹**几乎不影响 Token 消耗**（只记录不增加新调用），但会增加数据库存储。默认 7 天后归档。
+> 💡 **Token influence**: Enable execution trace**Almost no impact on Token consumption** (Only records and does not add new calls), but will increase database storage. Archive after 7 days by default.
 
-#### 注意事项
+#### Things to note
 
-- 任务并发数受授权等级限制，标准版同时运行 1 个任务，高级版支持并发。
-- 排队中的任务可以随时取消。
-- 失败任务重试时，会重新消耗 Token。
-- 开启执行轨迹对 Token 消耗几乎无影响（只记录不增加新 LLM 调用），但会增加数据库存储。
+- The number of concurrent tasks is limited by the authorization level. The standard version can run one task at the same time, and the advanced version supports concurrency.
+- Queued tasks can be canceled at any time.
+- When a failed task is retried, the Token will be consumed again.
+- Enabling execution traces has almost no impact on token consumption (only logging does not add new LLM calls), but it will increase database storage.
 
 ---
 
-### 3.7 股票详情页（/stocks/:code）
+### 3.7 Stock details page (/stocks/:code) 
 
-#### 功能说明
+#### Function description
 
-股票详情页是 v3.0 重新设计的个股研究工作台，将行情、研究、持仓、复盘、智能助手整合到一个页面，提供"全景解读"体验。页面采用模块化布局，从上到下分为 8 个区域，并配有 sticky 研究路径导航，帮助用户快速定位所需信息。
+The stock details page is a redesigned individual stock research workbench in v3.0, which integrates market conditions, research, positions, review, and intelligent assistants into one page, providing"Panoramic interpretation"experience. The page adopts a modular layout, divided into 8 areas from top to bottom, and is equipped with sticky research path navigation to help users quickly locate the required information.
 
-#### 页面布局
+#### Page layout
 
-| 区域 | 模块 | 说明 |
+| area | module | Description |
 |------|------|------|
-| 1 | 股票概览 + 操作入口 | 当前价/涨跌、今开/最高/最低/成交量，右侧 6 个快捷操作按钮 |
-| 2 | 智能助手主入口 | 紫色渐变大卡片，显示已加载模块状态，提供 4 个快捷问题按钮 |
-| 3 | 研究路径（sticky） | 5 步研究路径导航，滚动时固定在顶部 |
-| 4 | K线图 + 核心指标 | K线（含 MA5/MA20/成交量）+ 核心财务指标卡片 |
-| 5 | 单股分析结果 | 最近一次 AI 分析报告，含一句话结论和重新分析入口 |
-| 6 | 持仓与复盘 | 标签页切换持仓分析和交易复盘 |
-| 7 | 智能助手对话区 | 全景解读对话窗口，限定在当前股票主题内 |
-| 8 | 基本面 + 财务明细 + 新闻 | 基本面数据、财务明细快照、近期新闻与公告（支持 ETF 模式） |
-| — | 回到顶部按钮 | 右下角紫色悬浮按钮，滚动超过 600px 时出现 |
+| 1 | Stock overview + Operation entrance | Current price/up/down, today's opening/highest/lowest/trading volume, 6 shortcut operation buttons on the right |
+| 2 | Smart assistant main entrance | A large card with purple gradient showing the status of loaded modules and providing 4 quick question buttons |
+| 3 | Research Path (sticky) | 5 Step-by-step research path navigation, fixed on top when scrolling |
+| 4 | K line graph + core indicators | K Line (including MA5/MA20/trading volume)+ Core Financial Indicators Card |
+| 5 | Single stock analysis results | The latest AI analysis report, including one-sentence conclusion and re-analysis entry |
+| 6 | Position holding and review | Switching tabs: position analysis and transaction review |
+| 7 | Intelligent assistant dialogue area | Panoramic interpretation dialogue window, limited to the current stock theme |
+| 8 | Fundamentals + financial details + News | Fundamental data, snapshots of financial details, recent news and announcements (supports ETF mode) |
+| — | back to top button | Purple floating button in the lower right corner, appears when the scroll exceeds 600px |
 
-页面整体适配宽屏布局，模块 4、6、8 采用双栏网格排列；屏幕宽度小于 1024px 时自动切换为单栏。
+The page as a whole adapts to the widescreen layout, and modules 4, 6, and 8 are arranged in a double-column grid; when the screen width is less than 1024px, it automatically switches to a single column.
 
-#### 智能助手主入口
+#### Smart assistant main entrance
 
-页面顶部紧接股票概览的位置，有一个紫色渐变的醒目卡片，这是智能助手的主入口区域。卡片左侧显示：
+At the top of the page, immediately next to the stock overview, there is an eye-catching card with a purple gradient, which is the main entrance area of the smart assistant. The left side of the card displays:
 
-- 助手头像和"智能研究助手"标题
-- 当前正在解读的股票代码、名称
-- 已加载的模块状态（动态显示，如"已加载 K线·单股分析·持仓·复盘·基本面"）
-- 说明文字："我已整合该股票的单股分析、持仓分析、交易复盘、基本面和 K线走势，可以为你全景解读"
+- Assistant avatar and"Intelligent research assistant"Title
+- The stock code and name currently being interpreted
+- Loaded module status (displayed dynamically, e.g."K line loaded·single stock analysis·Position·Review·Fundamentals") 
+- Description text:"I have integrated the stock's single stock analysis, position analysis, trading review, fundamentals and K-line trend, which can provide you with a panoramic interpretation"
 
-卡片右侧提供 4 个快捷问题按钮（2×2 网格），点击后会自动填入下方对话区并发送：
+There are 4 quick question buttons on the right side of the card (2×2 Grid), after clicking, it will automatically fill in the dialogue area below and send:
 
-| 快捷按钮 | 触发的问题 |
+| shortcut button | Triggered issues |
 |----------|-----------|
-| 🔗 全景解读 | 帮我全景分析这只股票，从分析结果、持仓、复盘整体怎么看？ |
-| 📋 分析结论 | 最近一次单股分析的核心结论是什么？ |
-| 💼 持仓视角 | 结合我的持仓和复盘，下一步重点跟踪什么？ |
-| ⚠️ 风险评估 | 当前估值和基本面是否匹配？有哪些风险？ |
+| 🔗 Panoramic interpretation | Help me analyze this stock in a panoramic manner. What do you think of the analysis results, positions, and review as a whole? |
+| 📋 Analysis conclusion | What is the core conclusion of the latest single stock analysis? |
+| 💼 Position perspective | Combining my positions and review, what should I focus on tracking next? |
+| ⚠️ risk assessment | Do current valuations and fundamentals match? What are the risks? |
 
-> 快捷按钮会根据已加载的模块动态展示状态。如果某模块数据未加载，助手会在回答中说明数据缺失情况。
+> The shortcut button will dynamically display the status according to the loaded module. If the data of a certain module is not loaded, the assistant will explain the missing data in the answer.
 
-#### 智能助手全景解读（核心功能）
+#### Intelligent Assistant Panoramic Interpretation (Core Functions)
 
-详情页内的智能助手与独立的智能助手模块（[5.1 AI 对话助手](#51-ai-对话助手-assistant)）打通，但做了主题限定，提供"全景解读"体验：
+The smart assistant and independent smart assistant module in the details page ([5.1 AI Conversation Assistant](#51-ai-Conversation Assistant-assistant)) Opened, but subject-limited, provided"Panoramic interpretation"Experience:
 
-**1. 一个股票一个主题**
+**1. One stock, one theme**
 
-进入详情页时，系统会自动创建或获取该股票的研究主题（标题为"股票研究 · {代码} {名称}"）。同一只股票反复进入页面会复用同一主题，历史对话自动加载回来，不会丢失上下文。
+When entering the details page, the system will automatically create or obtain the research topic for the stock (titled"Equity research · {code} {Name}") . Repeatedly entering the page for the same stock will reuse the same topic, and historical conversations will be automatically loaded back without losing the context.
 
-**2. 聚合解读三份报告**
+**2. Interpretation of three reports**
 
-智能助手同时拿到单股分析报告、持仓分析报告、复盘报告的摘要一起解读，无需用户手动切换。例如用户问"结合分析和持仓，我下一步应该重点跟踪什么？"，助手会综合三份报告给出判断，而不是只看其中一份。
+The intelligent assistant gets the summary of the single stock analysis report, position analysis report, and review report at the same time and interprets them together, without the need for the user to switch manually. For example, the user asked"Combining analysis and holdings, what should I focus on tracking next?", The assistant will make a judgment based on the three reports instead of just one.
 
-**3. 主题边界限定**
+**3. Topic Boundary Limitation**
 
-对话限定在当前股票范围内。聊天区头部会显示"当前主题限定于：XX 股票"提示条。如果用户询问其他股票，助手会回复：
+The conversation is limited to the current stock range. The header of the chat area will display"The current topic is limited to: XX stocks"Tip bar. If the user asks about other stocks, the assistant will reply:
 
-> 当前在 XX 股票详情页，无法切换到其他股票。如需咨询其他标的，请前往「智能助手」主页面创建新主题。
+> Currently on the XX stock details page, you cannot switch to other stocks. If you need to inquire about other topics, please go to the "Intelligent Assistant" main page to create a new topic.
 
-**4. 过期报告主动提醒**
+**4. Proactive reminder of overdue reports**
 
-如果关联的报告超过 24 小时未更新，助手会：
+If the associated report has not been updated for more than 24 hours, the assistant:
 
-- 进入页面时主动推送一条提醒消息，列出哪些报告已过期
-- 拒绝基于旧报告给出结论，并询问是否需要重新发起分析
-- 用户确认后，可点击对应模块（单股分析、持仓、复盘）的"重新分析"按钮生成新报告
+- Actively push a reminder message when entering the page to list which reports have expired
+- Refuse to draw conclusions based on old reports and ask if the analysis needs to be reinitiated
+- After the user confirms, he can click on the corresponding module (single stock analysis, position, review)"Reanalyze"button to generate a new report
 
-#### 研究路径导航
+#### Research path navigation
 
-页面顶部有一条 sticky 导航条，展示研究路径的 5 个步骤及完成状态：
+There is a sticky navigation bar at the top of the page, showing the 5 steps and completion status of the research path:
 
-| 步骤 | 说明 | 完成条件 |
+| steps | Description | Completion conditions |
 |------|------|----------|
-| 行情走势 | K线 + 核心指标 | 已有日线数据 |
-| 单股分析 | AI 研究报告 | 有已完成的单股分析任务 |
-| 持仓与复盘 | 持仓状态 + 交易回顾 | 有持仓分析或复盘记录 |
-| 基本面 | 财务数据 + 新闻 | 有财务数据 |
-| 智能助手解读 | 全景涵盖以上所有模块 | 始终为"待使用"状态 |
+| Market trend | K line + core indicators | Daily data available |
+| single stock analysis | AI research report | There are completed single stock analysis tasks |
+| Position holding and review | Position status + Transaction Review | Have position analysis or review records |
+| Fundamentals | financial data + News | Have financial data |
+| Intelligent Assistant Interpretation | Panorama covers all the above modules | always"To be used"Status |
 
-点击任一步骤可快速滚动到对应区域；滚动时当前所在区域会自动高亮，导航条阴影随滚动增强。
+Click on any step to quickly scroll to the corresponding area; the current area will be automatically highlighted when scrolling, and the shadow of the navigation bar will increase as you scroll.
 
-#### K线图
+#### K line graph
 
-- 支持日K/周K/月K切换
-- MA5（5 日均线，橙色）和 MA20（20 日均线，紫色）叠加显示
-- 底部显示成交量柱状图，配有图例
-- 支持数据缩放（鼠标滚轮）和拖动查看历史区间
-- 数据来源：`stock_daily_quotes` 集合的 `volume` 字段
+- Support daily K/week K/month K switching
+- MA5 (5 Daily moving average, orange) and MA20 (20-day moving average, purple) are displayed in an overlay
+- Volume histogram shown at the bottom with legend
+- Supports data zoom (mouse wheel) and dragging to view historical intervals
+- Data source:`stock_daily_quotes` collected `volume` Field
 
-#### 核心指标
+#### core indicators
 
-核心指标区域以 4 张分类卡片（2×2 网格）展示财务全貌，每张卡片配有状态标签和进度条，便于快速判断：
+The core indicator area is divided into 4 classification cards (2×2 Grid) displays the overall financial picture, and each card is equipped with a status label and progress bar to facilitate quick judgment:
 
-**1. 估值卡片**
-- 指标：PE(TTM)、PB、PS
-- 状态标签：低估（PE < 15）/ 中性（PE 15~30）/ 偏高（PE > 30）/ 亏损 / 无数据
-- PE 为实时数据时显示"实时"小标签
-- 进度条颜色：蓝色（低估）/ 橙色（中性）/ 红色（偏高）
+**1. valuation card**
+- Indicators:PE(TTM), PB, PS
+- Status tag: Undervalued (PE < 15) / Neutral (PE 15~30) / On the high side (PE > 30) / Loss / No data
+- PE Displayed when the data is real-time"real time"small label
+- Progress bar color: blue (underestimated) / orange (neutral) / red (high)
 
-**2. 盈利能力卡片**
-- 指标：ROE、毛利率、净利率
-- 状态标签：优秀（ROE ≥ 15%）/ 良好（ROE 8~15%）/ 偏弱（ROE < 8%）/ 亏损 / 无数据
+**2. profitability card**
+- Indicators: ROE, gross profit margin, net profit margin
+- Status Label: Excellent (ROE ≥ 15%) / good (ROE 8~15%) / Weak (ROE < 8%) / Loss / No data
 
-**3. 财务健康卡片**
-- 指标：负债率、流动比率、股息率
-- 状态标签：健康（负债率 < 40%）/ 中性（40~60%）/ 偏高（> 60%）/ 无数据
+**3. Financial Wellness Card**
+- Indicators: debt ratio, current ratio, dividend rate
+- Status label: Health (debt ratio < 40%) / Neutral (40~60%) / On the high side (> 60%) / No data
 
-**4. 经营规模卡片**
-- 指标：总市值、营收、净利润
-- 底部显示财报公告日期
+**4. business scale card**
+- Indicators: total market value, revenue, net profit
+- The financial report announcement date is shown at the bottom.
 
-**因子提示信息**
+**Factor prompt information**
 
-卡片下方可能显示因子警告和因子诊断标签（hover 查看详情）：
-- **因子警告标签**：显示该股票触发的风险条件（如"高估值风险"），hover 查看具体触发条件
-- **因子诊断标签**：显示因子状态、原因、缺失输入（如某因子因数据不足无法计算）
+Factor warnings and factor diagnostic labels may appear below the card (hover to view details):
+- **factor warning label**: Displays the risk conditions triggered by the stock (e.g."High valuation risk") , hover View specific trigger conditions
+- **Factor Diagnostic Tags**: Display factor status, reason, and missing input (for example, a factor cannot be calculated due to insufficient data)
 
-> 数据来源优先级：财务指标（ROE、负债率等）优先从 `stock_financial_data` 集合获取，降级使用 `stock_basic_info`；估值数据（PE/PB/PS）来自 `stock_basic_info`。字段缺失时显示为 `-`。
+> Data source priority: Financial indicators (ROE, debt ratio, etc.) are prioritized from `stock_financial_data` Collection acquisition, downgrade use `stock_basic_info`; Valuation data (PE/PB/PS) comes from `stock_basic_info`. When a field is missing, it appears as `-`. 
 
-#### 单股分析结果
+#### Single stock analysis results
 
-展示最近一次单股分析报告，标题旁标注"深度研究"徽章。根据分析状态显示不同内容：
+Displays the latest single stock analysis report, marked next to the title"in-depth research"Badge. Different content is displayed according to the analysis status:
 
-**运行中状态**
-- 分析任务进行中时显示进度条（百分比）和提示信息（如"正在生成分析报告…"）
+**Running status**
+- When the analysis task is in progress, a progress bar (percentage) and prompt information (such as"Generating analysis report…") 
 
-**空状态**
-- 无分析记录时显示"暂无单股分析结果"，提供"发起单股分析"按钮
+**Empty state**
+- Displayed when there is no analysis record"No single stock analysis results yet", provide"Initiate single stock analysis"button
 
-**有结果时展示**
-- **研究结论**：紫色渐变背景卡片，展示一句话结论（基于研究整合员研究简报提炼）
-- **分析元信息**：分析时间（完整时间 + 相对时间标签，如"3 小时前""2 天前""1 个月前"）、报告数量
-- **数据过期提醒**：报告超过 1 天时显示橙色"🔄 数据已过期，重新分析"按钮
-- **报告标签预览**：各子报告以可点击标签形式排列（如"市场分析""基本面分析""风险测评"），点击直接跳转对应报告；另有"查看完整报告"按钮打开多标签页对话框
-- **详细报告内容（可折叠）**：点击"展开详情"后，以双栏网格展示 6 类子报告：
-  - 📈 市场分析、💰 基本面分析、📰 新闻分析、⚠️ 风险测评（红色边框）、💬 社会情绪、🎯 研究整合员研究简报
-- **历史记录**：右上角"📜 历史记录"按钮（带计数徽章），点击跳转任务中心查看该股票的所有历史分析
-- **合规免责声明**：底部标注"本分析由 AI 多智能体系统基于公开信息生成，仅供研究参考，不构成任何交易建议"
+**Display when there are results**
+- **Research conclusion**: Card with purple gradient background, showing one sentence conclusion (based on the research brief of the research integrator)
+- **Analyze meta information**: Analysis time (full time + Relative time labels, such as"3 hours ago""2 days ago""1 months ago") , Report quantity
+- **Data expiration reminder**: Displays orange if the report is older than 1 day"🔄 Data has expired, re-analyze"button
+- **Report label preview**: Each sub-report is arranged in clickable tabs (e.g."market analysis""fundamental analysis""Risk assessment") , Click to jump directly to the corresponding report; there are also"View full report"button to open a multi-tab dialog box
+- **Detailed report content (foldable)**: Click"Expand details"Finally, 6 types of sub-reports are displayed in a two-column grid:
+  - 📈 market analysis,💰 fundamental analysis,📰 news analysis,⚠️ Risk assessment (red border),💬 social emotions,🎯 Research Integrator Research Briefing
+- **History**: upper right corner"📜 History"button (with counting badge), click to jump to the task center to view all historical analysis of this stock
+- **Compliance Disclaimer**: bottom mark"This analysis is generated by the AI multi-agent system based on public information. It is for research reference only and does not constitute any trading advice."
 
-> 合规说明：本区域不展示信心度和操作建议标签，仅保留研究性元数据。
+> Compliance instructions: This area does not display confidence and operation recommendation labels, and only retains research metadata.
 
-#### 持仓与复盘
+#### Position holding and review
 
-通过标签页切换两个模块，标签上显示状态徽章：
+Switch between two modules via tabs, with status badges displayed on the tabs:
 
-**持仓分析标签页**（徽章显示"浮盈 X%"/"浮亏 X%"/"已分析"）
+**Position analysis tab page** (Badge display"floating profit X%"/"floating loss X%"/"Analyzed") 
 
-- **持仓快照摘要**：成本价、现价、浮动盈亏（金额 + 百分比）、持有天数、仓位占比
-- **研究观察**：紫色背景卡片，展示 AI 持仓研究观察（最多 3 条，仅供参考）
-- **实盘/模拟持仓信息**：分别展示持仓数量、成本价、现价、市值、浮动盈亏（实盘红色标签、模拟橙色标签）
-- **过期提醒**：分析超过 1 天时显示"🔄 数据已过期，重新分析"按钮
-- **操作按钮**：重新分析、查看详情（跳转任务详情页）
-- **持仓历史**：右上角"📜 持仓历史"按钮（带计数徽章）
+- **Position Snapshot Summary**: Cost price, current price, floating profit and loss (amount + percentage), holding days, position proportion
+- **research observation**: Purple background card showing AI position research observations (maximum 3, for reference only)
+- **Real offer/simulated position information**: Display the position quantity, cost price, current price, market value, and floating profit and loss respectively (real red label, simulated orange label)
+- **Expiration reminder**: Shown when analysis is older than 1 day"🔄 Data has expired, re-analyze"button
+- **Action button**: Reanalyze and view details (jump to task details page)
+- **Position history**: upper right corner"📜 Position history"Button (with counting badge)
 
-**交易复盘标签页**（徽章显示"X 次"/"已复盘"）
+**Transaction review tab page** (Badge display"X times"/"Reviewed") 
 
-- **复盘摘要**：交易次数、风险等级、完成时间（含相对时间）
-- **过期横幅**：复盘超过 1 天时显示橙色横幅"⚠ 本次复盘距今较久，市场环境可能已变化"+ 重新复盘按钮
-- **复盘结论**：Markdown 渲染的结论正文
-- **研究观察**：原"操作建议"改为研究性表述（合规调整）
-- **操作按钮**：重新复盘、查看详情（跳转复盘详情对话框）
-- **复盘历史切换**：多条复盘记录时，右上角下拉框可切换查看不同历史复盘；另有"📜 复盘历史"按钮（带计数徽章）
+- **Review summary**: Number of transactions, risk level, completion time (including relative time)
+- **expired banner**: An orange banner is displayed when the review is more than 1 day old"⚠ This review is a long time ago, and the market environment may have changed."+ Resume button
+- **Review conclusion**: Markdown Rendered conclusion text
+- **research observation**: Original"Operation suggestions"Changed to research statement (compliance adjustment)
+- **Action button**: Re-review and view details (jump to the review details dialog box)
+- **Review history switch**: When there are multiple review records, the drop-down box in the upper right corner can switch to view different historical reviews;"📜 Review history"Button (with counting badge)
 
-> 合规说明：持仓分析不展示操作建议和信心度，交易复盘的"操作建议"已改为"研究观察"表述。两个标签页底部均有免责声明。
+> Compliance instructions: Position analysis does not display operational suggestions and confidence. Transaction review"Operation suggestions"has been changed to"research observation"Expression. There is a disclaimer at the bottom of both tabs.
 
-#### 操作入口
+#### Operation entrance
 
-右上角提供 6 个快捷操作按钮（3×2 网格布局）：
+There are 6 shortcut operation buttons in the upper right corner (3×2 Grid layout):
 
-| 按钮 | 功能 |
+| button | Function |
 |------|------|
-| 发起研究 | 启动 AI 多智能体深度分析（数分钟完成） |
-| 持仓分析 | 对当前持仓发起 AI 分析 |
-| 同步数据 | 手动拉取最新行情/财务数据（可选数据源和同步内容） |
-| 模拟交易 | 跳转模拟交易页面，预填当前股票 |
-| 加入/移出关注列表 | 快速管理关注状态 |
-| 清除缓存 | 清除该股票的本地缓存，强制重新拉取 |
+| initiate research | Start AI multi-agent in-depth analysis (complete in minutes) |
+| Position analysis | Initiate AI analysis on current positions |
+| Sync data | Manually pull the latest market/financial data (optional data source and synchronization content) |
+| simulated trading | Jump to the simulated trading page and pre-fill the current stock |
+| Add/remove watchlist | Quickly manage attention status |
+| clear cache | Clear the local cache of the stock and force a retrieval. |
 
-#### 基本面数据与新闻
+#### Fundamental Data and News
 
-页面底部的第 8 区域包含三张卡片（双栏网格排列），根据股票/ETF 类型自动切换显示内容：
+Area 8 at the bottom of the page contains three cards (arranged in a double-column grid), which automatically switches the display content according to the stock/ETF type:
 
-**1. 基本面数据卡片（股票模式）**
+**1. Fundamental Data Card (Stock Mode)**
 
-展示基础估值与财务指标：
+Show basic valuations and financial metrics:
 
-| 指标 | 说明 |
+| indicator | Description |
 |------|------|
-| 行业、板块 | 所属行业和市场板块（主板/创业板/科创板等） |
-| 总市值 | 以"亿"为单位显示 |
-| PE(TTM) | 滚动市盈率，实时数据时显示"实时"标签 |
-| PB(市净率)、PS(TTM) | 市净率、市销率 |
-| ROE | 净资产收益率 |
-| 负债率 | 资产负债率 |
-| 股息率 | 年化股息率 |
-| 流动比率 | 流动资产/流动负债 |
+| Industry, sector | Industry and market sector (Main Board/GEM/Science and Technology Innovation Board, etc.) |
+| Total market capitalization | to"billion"Display in units |
+| PE(TTM) | Rolling P/E ratio, displayed with real-time data"real time"label |
+| PB(price to book ratio), PS(TTM) | Price-to-book ratio, price-to-sales ratio |
+| ROE | ROE |
+| Debt ratio | Asset-liability ratio |
+| dividend yield | annualized dividend rate |
+| current ratio | Current assets/current liabilities |
 
-**ETF 基础数据卡片（ETF 模式）**
+**ETF Basic data card (ETF mode)**
 
-当查看 ETF 时，自动切换为 ETF 专属字段：基金类型、跟踪指数、基金规模、基金份额、单位净值、累计净值、折溢价率、净值增长率、管理人、托管人。
+When viewing an ETF, it automatically switches to ETF-specific fields: fund type, tracking index, fund size, fund shares, unit net value, cumulative net value, discount and premium rate, net value growth rate, manager, and custodian.
 
-**2. 财务明细快照卡片（仅股票）**
+**2. Financial Details Snapshot Card (Stocks Only)**
 
-展示最新一期财报的明细数据：
+Display detailed data from the latest financial report:
 
-| 指标 | 说明 |
+| indicator | Description |
 |------|------|
-| 毛利率、净利率 | 盈利能力指标 |
-| 营收、净利润 | 经营规模（以"亿"为单位） |
-| 经营现金流 | 经营活动产生的现金流 |
-| 总资产、总负债 | 资产负债表摘要 |
-| 数据源 | 财务数据来源（如 tushare） |
+| gross profit margin, net profit margin | profitability indicator |
+| Revenue, net profit | Business scale (in"billion"as unit) |
+| operating cash flow | cash flow from operating activities |
+| total assets, total liabilities | Balance Sheet Summary |
+| data source | Financial data source (e.g. tushare) |
 
-- 卡片头部显示报告期（如 `20250630`）
-- 底部显示 `raw_data` 分组标签，列出可下钻的原始数据分组及条数（如"利润表 12 条"），这些分组已通过主股票接口暴露，后续可下钻调用
+- The card header shows the reporting period (e.g. `20250630`) 
+- bottom display `raw_data` Grouping label, lists the original data groups and number of items that can be drilled down (such as"Income statement 12 items") , These groups have been exposed through the main stock interface and can be drilled down later.
 
-**3. 近期新闻与公告卡片**
+**3. Recent news and announcements cards**
 
-| 功能 | 说明 |
+| Function | Description |
 |------|------|
-| 筛选下拉框 | 支持"全部 / 新闻 / 公告"三种筛选 |
-| 新闻列表 | 每条显示：类型标签（蓝色"新闻" / 橙色"公告"）、标题（可点击跳转原文）、相对时间（如"2 小时前""3 天前"）、来源 |
-| 加载状态 | 数据加载中显示 loading 动画 |
-| 空状态 | 无新闻时显示"暂无新闻"占位 |
+| Filter drop down box | support"All/News/Announcements"Three kinds of screening |
+| News list | Display for each bar: type label (blue"News" / orange"Announcement") , Title (click to jump to the original text), relative time (such as"2 hours ago""3 days ago") , Source |
+| Loading status | Display loading animation during data loading |
+| Empty state | Show when there is no news"No news yet"Placeholder |
 
-> 新闻数据来源（如 tushare / akshare）显示在每条新闻的来源行。
+> News data sources (such as tushare / akshare) are shown in the source line of each news item.
 
-#### 操作步骤
+#### Operation steps
 
-1. **进入详情页**
-   - 从股票关注列表点击股票代码
-   - 从研究报告点击股票代码
-   - 从智能助手对话中点击股票链接
-   - 直接访问 `/stocks/{股票代码}`
+1. **Enter the details page**
+   - Click on a stock symbol from the stock watchlist
+   - Click on a stock symbol from a research report
+   - Click a stock link from a smart assistant conversation
+   - direct access `/stocks/{Stock code}`
 
-2. **快速研究流程**
-   - 查看行情走势和核心指标，了解基本面
-   - 点击"发起研究"启动 AI 多智能体分析（数分钟后完成）
-   - 分析完成后，在智能助手对话区问"结合分析和持仓给我解读"
-   - 助手会聚合单股分析、持仓、复盘给出综合判断
+2. **Quick research process**
+   - Check market trends and core indicators to understand fundamentals
+   - Click"initiate research"Start AI multi-agent analysis (completes in minutes)
+   - After the analysis is completed, ask in the intelligent assistant dialogue area"Give me an explanation based on analysis and positions"
+   - The assistant will aggregate single stock analysis, positions, and review to give a comprehensive judgment.
 
-3. **数据同步**
-   - 点击"同步数据"按钮
-   - 勾选同步内容（实时行情 / 历史行情 / 财务数据 / 基础数据）
-   - 选择数据源（Tushare / AKShare / QMT）
-   - 可指定历史数据天数（最多 3650 天，约 10 年）
-   - 同步完成后刷新页面查看最新数据
+3. **Data synchronization**
+   - Click"Sync data"button
+   - Check the synchronization content (real-time market / historical market / financial data / basic data)
+   - Select data source (Tushare/AKShare/QMT)
+   - The number of days of historical data can be specified (up to 3650 days, approximately 10 years)
+   - After synchronization is completed, refresh the page to view the latest data.
 
-#### 注意事项
+#### Things to note
 
-- 详情页内的智能助手对话限定在当前股票主题内，无法切换到其他股票；如需咨询其他标的，请前往独立的智能助手页面（`/assistant`）
-- 报告超过 24 小时会被标记为过期，智能助手不会基于过期报告给出结论，需重新发起分析
-- K线图和核心指标依赖已同步的数据，如数据为空请先点击"同步数据"
-- 行情数据为延迟行情，不作为交易依据
-- 智能助手回答基于已加载的研究数据生成，仅供研究参考，不构成投资建议
+- The intelligent assistant dialogue in the details page is limited to the current stock topic and cannot be switched to other stocks; if you need to consult other subjects, please go to the independent intelligent assistant page (`/assistant`) 
+- Reports that are more than 24 hours old will be marked as expired. The intelligent assistant will not draw conclusions based on expired reports and the analysis needs to be reinitiated.
+- K Line charts and core indicators rely on synchronized data. If the data is empty, please click first."Sync data"
+- The market data is delayed and not used as a basis for trading.
+- The intelligent assistant's answers are generated based on loaded research data and are for research reference only and do not constitute investment advice.
 
 ---
 
-## 第四章 学习研究与模拟功能
+## Chapter 4 Learning Research and Simulation Function
 
-本章介绍用于学习研究和策略验证的功能模块，包括模拟交易、持仓研究、操作复盘和交易计划。这些功能帮助您在虚拟环境中验证研究假设、复盘操作行为、制定系统化跟踪计划，不构成任何投资建议。
+This chapter introduces the functional modules used for learning research and strategy verification, including simulated trading, position research, operation review and trading plan. These functions help you verify research hypotheses, review operating behaviors, and develop systematic tracking plans in a virtual environment, and do not constitute any investment advice.
 
-### 4.1 模拟交易（/paper）
+### 4.1 Simulated trading (/paper)
 
-#### 功能说明
+#### Function description
 
-模拟交易系统提供虚拟资金环境，支持模拟买入、模拟卖出、模拟持仓管理，帮助您在不投入真实资金的情况下学习市场操作流程、验证研究假设。v3.0 支持 A 股和 ETF 模拟交易。模拟交易仅用于学习研究，不构成任何投资建议。
+The simulated trading system provides a virtual capital environment, supports simulated buying, simulated selling, and simulated position management, helping you learn market operation processes and verify research hypotheses without investing real funds. v3.0 supports A-share and ETF simulated trading. Simulated trading is only for learning and research and does not constitute any investment advice.
 
-#### 操作步骤
+#### Operation steps
 
-1. **初始化模拟账户**
-   - 首次进入"模拟交易"，系统会提示创建模拟账户。
-   - 设置初始资金（默认 100 万人民币）。
-   - 选择账户类型：A股账户。
+1. **Initialize demo account**
+   - first time entry"simulated trading", The system will prompt you to create a demo account.
+   - Set initial capital (default 1 million RMB).
+   - Select account type: A-share account.
 
-2. **模拟买入（虚拟建仓）**
-   - 点击"买入"按钮。
-   - 输入股票代码、模拟买入价格、数量。
-   - 可选择"市价"（以最新价成交）或"限价"（按指定价格挂单）。
-   - 系统自动计算手续费、印花税等成本。
-   - 确认后提交，成交后更新持仓和可用资金。
+2. **Simulated buying (virtual position opening)**
+   - Click"buy"button.
+   - Enter the stock code, simulated buying price, and quantity.
+   - optional"market price" (Transaction at the latest price) or"price limit" (Place an order at the specified price).
+   - The system automatically calculates handling fees, stamp duty and other costs.
+   - Submit after confirmation, and update positions and available funds after transaction.
 
-3. **模拟卖出（虚拟平仓）**
-   - 在持仓列表中选择要卖出的股票。
-   - 点击"卖出"，输入模拟卖出价格和数量。
-   - 系统自动计算盈亏。
+3. **Simulated selling (virtual closing)**
+   - Select the stock you want to sell in the position list.
+   - Click"sell", Enter the simulated selling price and quantity.
+   - The system automatically calculates profit and loss.
 
-4. **持仓查看**
-   - "持仓"页签显示当前所有持仓。
-   - 每只股票显示：持仓数量、成本价、现价、浮动盈亏、盈亏比例。
-   - 支持按盈亏排序。
+4. **Position view**
+   - "Position"The tab displays all current positions.
+   - Each stock displays: position quantity, cost price, current price, floating profit and loss, and profit and loss ratio.
+   - Support sorting by profit and loss.
 
-5. **交易记录**
-   - "记录"页签显示所有历史交易明细。
-   - 支持按时间、股票筛选。
+5. **transaction history**
+   - "record"The tab displays all historical transaction details.
+   - Supports filtering by time and stocks.
 
-6. **账户统计**
-   - "统计"页签显示账户总览：总资产、总市值、可用资金、总盈亏、收益率。
-   - 提供收益曲线图。
+6. **Account statistics**
+   - "statistics"The tab displays the account overview: total assets, total market value, available funds, total profit and loss, and rate of return.
+   - Provide a revenue curve graph.
 
-#### 注意事项
+#### Things to note
 
-- 模拟交易数据不影响真实账户，仅用于学习研究和策略验证，不构成投资建议。
-- 模拟交易不模拟涨跌停限制和停牌，与真实交易存在差异。
-- 手续费按真实费率计算（A股约万分之 2.5 + 印花税千分之 1），便于真实评估策略。
-- 模拟账户资金可重置，重置后清空所有持仓和记录。
+- Simulated trading data does not affect real accounts and is only used for learning, research and strategy verification, and does not constitute investment advice.
+- Simulated trading does not simulate price limits and trading suspensions, and is different from real trading.
+- The handling fee is calculated based on the real rate (approximately 10,000 for A shares 2.5 + Stamp duty 1 per thousand), allowing for a true assessment of the strategy.
+- Demo account funds can be reset, and all positions and records will be cleared after reset.
 
-### 4.2 持仓研究（/portfolio）
+### 4.2 Portfolio Research (/portfolio)
 
-#### 功能说明
+#### Function description
 
-持仓研究模块对您当前的模拟持仓进行深度分析，评估组合的风险暴露、行业集中度、相关性和优化建议。
+The position research module performs an in-depth analysis of your current simulated positions to evaluate the risk exposure, industry concentration, correlation and optimization suggestions of the portfolio.
 
-#### 操作步骤
+#### Operation steps
 
-1. **进入持仓研究**
-   - "持仓研究"页面自动读取模拟交易中的持仓数据。
-   - 也可手动导入持仓（支持 Excel 模板上传）。
+1. **Enter position research**
+   - "Position research"The page automatically reads the position data in simulated trading.
+   - Positions can also be imported manually (Excel template upload is supported).
 
-2. **组合概览**
-   - 显示组合总市值、行业分布、仓位分布。
-   - 饼图展示各行业占比、各股票占比。
+2. **Portfolio overview**
+   - Displays the total market value of the portfolio, industry distribution, and position distribution.
+   - The pie chart shows the proportion of each industry and the proportion of each stock.
 
-3. **风险评估**
-   - **行业集中度**：分析是否过度集中于某行业。
-   - **个股集中度**：分析单只股票占比是否过高。
-   - **相关性分析**：计算持仓间相关系数，评估分散度。
-   - **Beta 暴露**：计算组合相对大盘的 Beta 值。
+3. **risk assessment**
+   - **Industry concentration**: Analyze whether there is excessive concentration in a certain industry.
+   - **Concentration of individual stocks**: Analyze whether the proportion of a single stock is too high.
+   - **correlation analysis**: Calculate the correlation coefficient between positions and evaluate the dispersion.
+   - **Beta exposed**: Calculate the beta of a portfolio relative to the market.
 
-4. **优化建议**
-   - 系统基于现代投资组合理论给出配置参考。
-   - 标注过度集中的持仓，提示仓位集中风险。
-   - 推荐可补充的行业或标的以提升分散度。
+4. **Optimization suggestions**
+   - The system gives allocation references based on modern portfolio theory.
+   - Mark excessively concentrated positions to indicate the risk of concentrated positions.
+   - Recommend complementary industries or targets to improve diversification.
 
-5. **一键分析**
-   - 可对单只持仓发起"单股研究"，快速获取深度分析报告。
+5. **One-click analysis**
+   - Can be initiated for a single position"single stock research", Get in-depth analysis reports quickly.
 
-#### 注意事项
+#### Things to note
 
-- 持仓研究依赖模拟交易数据，请先在模拟交易中建立持仓。
-- 相关性分析需要历史数据，新股或数据不足的股票可能无法计算。
-- 优化观察仅供参考，不构成投资建议。
+- Position research relies on simulated trading data. Please establish a position in simulated trading first.
+- Correlation analysis requires historical data and may not be calculated for new stocks or stocks with insufficient data.
+- Optimization observations are for reference only and do not constitute investment advice.
 
-### 4.3 操作复盘（/review）
+### 4.3 Operation review (/review)
 
-#### 功能说明
+#### Function description
 
-操作复盘模块帮助您回顾历史交易行为，分析盈亏原因，总结交易经验，持续改进交易策略。v3.0 引入 **5 个专项复盘 Agent**，把复盘从"凭感觉写总结"升级为"结构化归因分析"。
+The operation review module helps you review historical trading behaviors, analyze the reasons for profits and losses, summarize trading experience, and continuously improve trading strategies. v3.0 introduced **5 Special review Agent**, Take the review from"Write a summary based on your feelings"upgraded to"Structured attribution analysis". 
 
-#### 5 类复盘 Agent
+#### 5 Class review Agent
 
-每次创建复盘时，**5 个 Agent 会各管一摊**，从不同角度帮您分析这笔交易：
+Each time a review is created,**5 Each Agent will take care of its own share.**, Help you analyze this transaction from different angles:
 
-| 复盘 Agent | 关注什么 | 会问您什么 |
+| Review Agent | What to focus on | what will you be asked |
 |-----------|---------|----------|
-| **时机复盘**（timing） | 交易时点 | 当时是不是好时机？是不是追高了？是不是杀跌了？ |
-| **仓位复盘**（position） | 仓位大小 | 仓位是不是太重？调仓节奏是否合理？ |
-| **情绪复盘**（emotion） | 决策心态 | 当时是不是被情绪左右？有没有 FOMO、恐惧、贪婪？ |
-| **归因复盘**（attribution） | 盈亏来源 | 这次赚/亏是来自行业 β、个股 α、还是运气？ |
-| **复盘经理**（review_manager） | 综合归因 | 综合上述 4 个角度，给出最终结论 |
+| **Time to review** (timing)  | Trading time | Was it a good time? Is it chasing high? Did it fall? |
+| **Position review** (position)  | Position size | Is the position too heavy? Is the pace of position adjustment reasonable? |
+| **Emotional review** (emotion)  | decision-making mentality | Were you dominated by emotions at that time? Is there FOMO, fear, greed? |
+| **Attribution review** (attribution)  | Source of profit and loss | This time the profit/loss comes from the industry β, individual stocks α, Or luck? |
+| **Review manager** (review_manager)  | Comprehensive attribution | Based on the above 4 perspectives, the final conclusion is given |
 
-#### 操作步骤
+#### Operation steps
 
-1. **创建复盘记录**
-   - "操作复盘"页面，点击"新建复盘"。
-   - 选择要复盘的交易（从模拟交易记录中选取）。
-   - 或手动录入一笔交易进行复盘。
+1. **Create a review record**
+   - "Operation review"page, click"Create a new review". 
+   - Select the transaction to be reviewed (selected from simulated transaction records).
+   - Or manually enter a transaction for review.
 
-2. **5 类复盘自动触发**
-   - 选择交易后，系统自动调用 5 个 Agent 并行分析
-   - 每个 Agent 独立生成报告（3-5 分钟）
-   - 复盘经理综合 4 个角度给出最终结论
+2. **5 Class review automatically triggered**
+   - After selecting a transaction, the system automatically calls 5 Agents for parallel analysis
+   - Each Agent generates reports independently (3-5 minutes)
+   - The review manager gives the final conclusion based on 4 perspectives
 
-3. **复盘内容**
-   - **交易背景**：当时为什么做这笔交易？（可从对应日期的分析报告中自动带入）
-   - **决策依据**：基于什么信息或信号？
-   - **实际结果**：盈亏情况、持有时间。
-   - **5 类 Agent 报告**：时机、仓位、情绪、归因、综合
-   - **经验总结**：做对了什么？做错了什么？
-   - **改进点**：下次类似情况如何操作？
+3. **Review content**
+   - **Transaction background**: Why did you make this deal? (Can be automatically brought in from the analysis report of the corresponding date)
+   - **Decision basis**: Based on what information or signal?
+   - **actual results**: Profit and loss situation, holding time.
+   - **5 Agent-like reports**: Timing, position, sentiment, attribution, synthesis
+   - **Experience summary**: What did you do right? What did you do wrong?
+   - **Improvement points**: What should I do in a similar situation next time?
 
-4. **复盘分类**
-   - 可为复盘打标签：顺势交易、逆势抄底、止损、止盈、错误操作等。
-   - 支持按标签统计胜率和盈亏。
+4. **Review classification**
+   - You can label the review: trading with the trend, buying the bottom against the trend, stop loss, take profit, wrong operation, etc.
+   - Supports statistics of winning rate and profit and loss by tag.
 
-5. **复盘统计**
-   - 统计页面展示：总交易次数、胜率、平均盈亏、盈亏比。
-   - 按标签维度分析哪些类型的交易表现更好。
-   - 按 Agent 维度看：您的"时机判断"准确率 vs "仓位控制"准确率
+5. **Review statistics**
+   - The statistics page displays: total number of transactions, winning rate, average profit and loss, and profit and loss ratio.
+   - Analyze which types of transactions perform better by tag dimension.
+   - Viewed by Agent dimension: your"timing judgment"Accuracy vs "Position control"Accuracy
 
-6. **关联分析报告**
-   - 复盘时可关联当时的研究报告，对比"分析结论"与"实际走势"的偏差。
+6. **Correlation analysis report**
+   - When reviewing, you can correlate the research reports at that time and compare them."Analysis conclusion"with"actual trend"deviation.
 
-#### 反思自动沉淀
+#### Reflection automatically settles
 
-每次复盘完成后，**复盘反思**（trade_lesson）会被自动写入 AI 记忆。Agent 在下次分析时会引用您之前的教训：
+After each review is completed,**Review and reflection** (trade_lesson) will be automatically written into AI memory. The Agent will reference your previous lessons the next time it analyzes:
 
-- 之前复盘发现"我经常在涨停次日追高" → 下次分析时，Agent 会主动提醒
-- 之前复盘发现"白酒股我总拿不住" → 下次分析白酒股时，Agent 会提到您这个习惯
+- Previous review found"I often chase the high on the day after the daily limit" → The Agent will proactively remind you during the next analysis
+- Previous review found"I can't always hold on to liquor stocks." → Next time when analyzing liquor stocks, the Agent will mention this habit of yours.
 
-#### 注意事项
+#### Things to note
 
-- 复盘是提升交易能力的关键环节，建议对每笔重要交易都进行复盘。
-- 复盘记录会自动关联到 AI 记忆系统，智能助手可在后续分析中参考您的交易偏好。
-- 5 类复盘 Agent 每次都会跑（不可单独关闭），但您可以只看"复盘经理"的综合结论。
+- Review is a key link to improve trading ability, and it is recommended to review every important transaction.
+- The review records will be automatically linked to the AI memory system, and the intelligent assistant can refer to your trading preferences in subsequent analysis.
+- 5 The similar review agent will run every time (cannot be closed separately), but you can only view"Review manager"comprehensive conclusion.
 
-### 4.4 交易计划（/trading-system）
+### 4.4 Trading plan (/trading-system)
 
-#### 功能说明
+#### Function description
 
-交易计划模块帮助您制定系统化的交易计划，包括入场条件、仓位管理、止盈止损规则，并可关联分析报告自动生成计划。
+The trading plan module helps you develop a systematic trading plan, including entry conditions, position management, stop-profit and stop-loss rules, and can automatically generate plans based on associated analysis reports.
 
-#### 操作步骤
+#### Operation steps
 
-1. **创建交易计划**
-   - "交易计划"页面，点击"新建计划"。
-   - 选择目标股票。
-   - 可选择"从分析报告生成"（系统根据最新报告自动填充建议参数）。
+1. **Create a trading plan**
+   - "trading plan"page, click"New plan". 
+   - Select target stocks.
+   - optional"Generate from analysis report" (The system automatically populates the recommended parameters based on the latest reports).
 
-2. **设置计划要素**
-   - **入场条件**：价格触发条件、技术指标条件、基本面条件。
-   - **计划仓位**：初始仓位、追加观察规则、最大仓位。
-   - **收益关注规则**：收益关注价位、分批跟踪、移动跟踪。
-   - **风险关注规则**：风险关注价位、风险比例、时间观察。
-   - **跟踪周期**：短线（数日）/ 波段（数周）/ 中线（数月）/ 长线（数年）。
+2. **Set up plan elements**
+   - **Entry conditions**: Price trigger conditions, technical indicator conditions, and fundamental conditions.
+   - **Planned position**: Initial position, additional observation rules, maximum position.
+   - **Revenue focus rules**: Revenue focuses on price, batch tracking, and mobile tracking.
+   - **Risk focus rules**: Risks focus on price, risk ratio, and time observation.
+   - **tracking period**: Short term (days) / Band (weeks) / Medium term (months) / Long term (years).
 
-3. **计划模板**
-   - 系统内置多种研究跟踪计划模板（趋势跟踪、价值投资、事件驱动等）。
-   - 可基于模板快速创建，再根据实际情况调整。
-   - 支持保存自定义模板。
+3. **plan template**
+   - The system has built-in multiple research tracking plan templates (trend tracking, value investing, event-driven, etc.).
+   - It can be quickly created based on templates and then adjusted according to actual conditions.
+   - Supports saving custom templates.
 
-4. **计划执行跟踪**
-   - 计划创建后进入"待执行"状态。
-   - 当市场价格触发入场条件时，系统会发出通知。
-   - 可手动标记"已入场"、"已触及收益关注位"、"已触及风险关注位"。
-   - 系统自动计算计划执行情况与计划目标的偏差。
+4. **Plan execution tracking**
+   - Enter after plan creation"To be executed"status.
+   - The system sends a notification when the market price triggers an entry condition.
+   - Can be marked manually"Already admitted", "The income concern level has been touched", "The risk concern level has been touched". 
+   - The system automatically calculates the deviation between plan execution and planned targets.
 
-5. **计划与复盘联动**
-   - 计划完成后可一键生成"操作复盘"记录，形成闭环。
+5. **Linkage of planning and review**
+   - After the plan is completed, it can be generated with one click"Operation review"Record and form a closed loop.
 
-#### 注意事项
+#### Things to note
 
-- 交易计划不会自动下单，仅作为学习研究和纪律约束工具，不构成投资建议。
-- 收益/风险价格条件触发时系统会推送通知，但不会自动执行交易。
-- 建议在模拟交易中验证计划假设后再作为个人决策参考。
+- The trading plan will not automatically place orders. It is only used as a learning research and discipline restraint tool and does not constitute investment advice.
+- The system will push notifications when profit/risk price conditions are triggered, but transactions will not be executed automatically.
+- It is recommended to verify the plan assumptions in simulated trading before using it as a reference for personal decision-making.
 
 ---
 
-## 第五章 智能助手
+## Chapter 5 Intelligent Assistant
 
-### 5.1 AI 对话助手（/assistant）
+### 5.1 AI Conversation Assistant (/assistant)
 
-#### 功能说明
+#### Function description
 
-智能助手是 v3.0 的核心升级模块，从"分析触发器"进化为"投资研究协同入口"。支持自然语言对话，可调用 20+ 操作工具，跨模块完成任务，支持多主题会话。
+Intelligent assistant is the core upgrade module of v3.0, starting from"Analysis trigger"evolve into"Investment research collaborative portal". Supports natural language dialogue and can be called 20+ Operation tools, complete tasks across modules, and support multi-topic sessions.
 
-#### 核心能力
+#### core competencies
 
-- **分析触发**：自然语言发起单股/批量分析。
-- **报告查询**：搜索、查看、解读历史报告。
-- **任务管理**：查询任务状态、管理定时任务。
-- **股票关注列表管理**：添加、删除、查询关注股。
-- **持仓分析**：查询持仓、分析组合。
-- **交易复盘**：查询历史交易、辅助复盘。
-- **投资计划**：创建、查询交易计划。
-- **价格下限提醒**：设置价格下限提醒。
-- **复杂任务拆解**：自动将复杂需求拆解为多步骤执行。
-- **RAG 金融知识检索**：内置金融知识库，减少幻觉。
+- **Analysis trigger**: Natural language initiated single stock/batch analysis.
+- **Report query**: Search, view, and interpret historical reports.
+- **task management**: Query task status and manage scheduled tasks.
+- **Stock watch list management**: Add, delete, and query stocks of interest.
+- **Position analysis**: Query positions and analyze portfolios.
+- **Transaction review**: Query historical transactions and assist in review.
+- **investment plan**: Create and query trading plans.
+- **Price lower limit reminder**: Set price floor reminders.
+- **Break down complex tasks**: Automatically break down complex requirements into multi-step execution.
+- **RAG Financial knowledge search**: Built-in financial knowledge base to reduce illusions.
 
-#### 操作步骤
+#### Operation steps
 
-1. **进入智能助手**
-   - 左侧导航栏"智能助手"，或按 `Ctrl+/` 快捷键。
+1. **Enter smart assistant**
+   - Left navigation bar"Smart Assistant", or press `Ctrl+/` Shortcut keys.
 
-2. **创建会话**
-   - 点击"新建会话"，可选择会话主题（如"贵州茅台研究"、"消费板块跟踪"）。
-   - 每个主题独立维护消息历史与上下文。
+2. **Create session**
+   - Click"New session", Conversation topics can be selected (e.g."Kweichow Moutai Research", "Consumption sector tracking") . 
+   - Each topic independently maintains message history and context.
 
-3. **对话交互**
-   - 直接输入问题或指令，例如：
-     - "帮我分析一下贵州茅台最近的基本面"
-     - "我最近关注的股票表现怎么样？"
-     - "帮我把 ROE 大于 20% 的股票筛出来"
-     - "查一下我上个月买的宁德时代现在赚了多少"
-     - "解释一下什么是 PEG 估值"
-   - 助手会理解意图、调用工具、返回结构化结果。
+3. **Dialogue interaction**
+   - Type questions or instructions directly, for example:
+     - "Help me analyze Kweichow Moutai's recent fundamentals"
+     - "How are the stocks I've been following recently performing?"
+     - "Help me screen out stocks with ROE greater than 20%"
+     - "Check how much I earned from the CATL I bought last month."
+     - "Explain what PEG valuation is"
+   - The assistant understands the intent, calls tools, and returns structured results.
 
-4. **多轮对话**
-   - 助手会记住最近 10 条对话上下文，支持追问。
-   - 例如先问"分析贵州茅台"，再问"它的风险点有哪些"，助手能理解"它"指代贵州茅台。
+4. **Multiple rounds of dialogue**
+   - The assistant will remember the context of the last 10 conversations and support follow-up questions.
+   - For example, ask first"Analysis of Kweichow Moutai", Ask again"What are its risks?", Assistant understands"it"Refers to Kweichow Moutai.
 
-5. **会话管理**
-   - 可创建多个会话主题，切换时上下文独立。
-   - 支持手动"总结会话"生成结构化摘要。
-   - 可重命名、删除、归档会话。
+5. **Session management**
+   - Multiple conversation topics can be created and the context is independent when switching.
+   - Support manual"Wrap up session"Generate structured summaries.
+   - Sessions can be renamed, deleted, and archived.
 
-6. **IM 格式适配**
-   - 当通过 QQ 等即时通讯渠道使用助手时，输出会自动转为精简纯文本格式。
+6. **IM format adaptation**
+   - When using the assistant through instant messaging channels such as QQ, the output is automatically converted to a condensed plain text format.
 
-#### 注意事项
+#### Things to note
 
-- 助手调用工具时会消耗 Token，复杂任务消耗较大。
-- 滑动窗口记忆保留最近 10 条对话，更早的对话不会进入上下文。如需长期记忆，请使用"总结会话"功能或依赖 AI 记忆系统。
-- 助手会自动注入用户画像信息（近期分析、关注领域），以提供更精准的回答。
-- 助手回答仅供参考，重要决策请结合研究报告独立判断。
-- **股票详情页内的智能助手**：在股票详情页（[3.7 股票详情页](#37-股票详情页-stockscode)）中使用助手时，对话会自动限定在该股票的主题内，并聚合解读单股分析、持仓、复盘三份报告。超出该股票的问题会被引导前往独立的智能助手主页面继续。
+- Tokens will be consumed when the assistant calls tools, and complex tasks consume a lot of money.
+- Sliding window memory retains the last 10 conversations, older conversations do not enter context. For long-term memory, use"Wrap up session"Functionality or reliance on AI memory systems.
+- The assistant will automatically inject user profile information (recent analysis, areas of concern) to provide more accurate answers.
+- The assistant's answers are for reference only. For important decisions, please make independent judgments based on the research report.
+- **Intelligent assistant in stock details page**: On the stock details page ([3.7 Stock details page](#37-Stock details page-stockscode)) When using the assistant, the conversation will be automatically limited to the topic of the stock, and the three reports of single stock analysis, position position, and review will be aggregated and interpreted. Questions beyond this stock will be directed to the independent smart assistant main page to continue.
 
-### 5.2 AI 记忆（/memory）
+### 5.2 AI Memory (/memory)
 
-#### 功能说明
+#### Function description
 
-AI 记忆是 v3.0 的股票对象记忆系统，系统会自动记忆每次分析的关键结论、用户的交易偏好和关注重点，在后续分析中作为上下文注入，实现"越用越懂你"。
+AI Memory is the stock object memory system of v3.0. The system will automatically memorize the key conclusions of each analysis, the user's trading preferences and focus, and inject them as context in subsequent analysis to achieve"The more I use it, the better I understand you.". 
 
-#### 记忆类型
+#### memory type
 
-v3.0 提供 **7 种记忆类型**，覆盖对话、用户、Agent 经验、Skill 教训、交易模式等所有层面：
+v3.0 provide **7 memory type**, Covering all levels of conversations, users, Agent experience, Skill lessons, transaction models, etc.:
 
-| 记忆类型 | 范围 | 记忆什么 | 谁能看到 |
+| memory type | range | What to remember | who can see |
 |---------|------|---------|---------|
-| **对话记忆**（CONVERSATION） | 单次会话 | 您和智能助手最近的对话（默认滑动窗口 10 条） | 您 |
-| **用户偏好**（USER_PREFERENCE） | 跨会话 | 投资风格、风险偏好、持仓周期、行业偏好 | 您 + 系统 |
-| **分析洞见**（ANALYSIS_INSIGHT） | 跨次分析 | 每次分析的结论、关键判断、风险点（按股票） | 您 + 该股票的下次分析 |
-| **Agent 经验**（AGENT_EXPERIENCE） | 跨次分析 | Agent 自我反思的教训（辩论后提炼的复用框架） | 您 + 所有 Agent |
-| **技能教训**（SKILL_LESSON） | 跨次生成 | Skill 生成失败的模式（避免下次重犯） | 系统 + Skill 工坊 |
-| **交易模式**（TRADE_PATTERN） | 跨次交易 | 您的交易行为画像（习惯、偏好、容易犯的错） | 您 + 智能助手 |
-| **Agent 构建教训**（AGENT_BUILDER_LESSON） | 跨次构建 | Agent 工坊创建时踩过的坑 | 系统 + Agent 工坊 |
+| **dialogue memory** (CONVERSATION)  | single session | Recent conversations between you and the smart assistant (default sliding window 10) | you |
+| **User preferences** (USER_PREFERENCE)  | Across sessions | Investment style, risk preference, holding cycle, industry preference | you + system |
+| **Analytical insights** (ANALYSIS_INSIGHT)  | span analysis | Conclusions, key judgments, and risk points of each analysis (by stock) | you + Next analysis of this stock |
+| **Agent experience** (AGENT_EXPERIENCE)  | span analysis | Agent Lessons for self-reflection (reusable framework refined after debate) | you + all Agent |
+| **Skills Lessons** (SKILL_LESSON)  | span generation | Skill Generate failed patterns (to avoid repeating the same mistake next time) | system + Skill workshop |
+| **trading model** (TRADE_PATTERN)  | span transaction | Profile of your trading behavior (habits, preferences, common mistakes) | you + Smart Assistant |
+| **Agent Build Lessons** (AGENT_BUILDER_LESSON)  | span build | Agent Pitfalls encountered when creating the workshop | system + Agent workshop |
 
-**对您来说最重要的 3 种记忆**：
+**3 memories that mean the most to you**: 
 
-1. **用户偏好**（USER_PREFERENCE）：告诉系统"我关心什么"。比如"我偏好低估值、高分红"，下次分析时智能助手会主动找这类股票。
-2. **分析洞见**（ANALYSIS_INSIGHT）：每只股票的历史分析会自动积累。下次分析同一只股票时，系统会引用之前的结论。
-3. **交易模式**（TRADE_PATTERN）：基于您的历史交易，归类出"您是左侧还是右侧交易者""经常止损在哪"。复盘时智能助手会引用。
+1. **User preferences** (USER_PREFERENCE) : Tell the system"what do i care about". For example"I prefer low valuations and high dividends", The smart assistant will actively look for such stocks during the next analysis.
+2. **Analytical insights** (ANALYSIS_INSIGHT) : Historical analysis of each stock is automatically accumulated. The next time the same stock is analyzed, the system will refer to the previous conclusion.
+3. **trading model** (TRADE_PATTERN) : Categorized based on your historical transactions"Are you a left or right side trader?""Where is the usual stop loss?". The smart assistant will refer to it during review.
 
-**其他 4 种是给"系统自己"用的**，普通用户不需要关注。
+**The other 4 types are for"system itself"Used**, Ordinary users don't need to pay attention.
 
-#### 操作步骤
+#### Operation steps
 
-1. **查看记忆**
-   - "AI 记忆"页面分三个标签页：股票记忆、用户画像、交易行为。
-   - 股票记忆按股票代码组织，点击可查看该股票的所有历史记忆条目。
+1. **View memory**
+   - "AI memory"The page is divided into three tabs: stock memory, user portrait, and trading behavior.
+   - Stock memories are organized by stock code. Click to view all historical memory entries for that stock.
 
-2. **记忆详情**
-   - 每条记忆显示：内容摘要、来源（哪次分析/对话产生）、创建时间、优先级。
-   - 支持编辑记忆内容（修正错误信息）。
+2. **memory details**
+   - Each memory displays: content summary, source (which analysis/conversation occurred), creation time, priority.
+   - Supports editing memory content (correcting error messages).
 
-3. **记忆管理**
-   - **删除记忆**：过期或错误的记忆可删除。
-   - **调整优先级**：高优先级记忆会优先注入到分析上下文。
-   - **手动添加**：可手动录入一条记忆（如"该股有大股东减持计划"）。
+3. **memory management**
+   - **erase memory**: Expired or erroneous memories can be deleted.
+   - **Adjust priority**: High-priority memories will be injected into the analysis context first.
+   - **Add manually**: A memory can be entered manually (such as"The stock has a major shareholder plan to reduce its holdings") . 
 
-4. **记忆注入**
-   - 系统在执行分析时，会自动检索相关记忆并注入到分析师的上下文中。
-   - 在智能助手对话中，用户画像记忆会自动注入，使助手更懂您。
+4. **memory injection**
+   - As the system performs analysis, relevant memories are automatically retrieved and injected into the analyst's context.
+   - In the smart assistant conversation, user portrait memory is automatically injected so that the assistant understands you better.
 
-#### 注意事项
+#### Things to note
 
-- 记忆系统是 AI 能力的"放大器"，但记忆条目过多可能增加 Token 消耗。
-- 建议定期清理过期记忆（如半年以上未更新的股票记忆）。
-- 记忆内容会被加密存储，不会泄露给第三方。
-- 记忆系统为高级功能，记忆条目数量上限受授权等级影响。
+- The memory system is AI capable"amplifier", However, too many memory entries may increase Token consumption.
+- It is recommended to regularly clean up expired memories (such as stock memories that have not been updated for more than half a year).
+- The memory content will be encrypted and stored and will not be leaked to third parties.
+- The memory system is an advanced function, and the upper limit of the number of memory entries is affected by the authorization level.
 
 ---
 
-## 第六章 高级功能
+## Chapter 6 Advanced Functions
 
-> **本章功能均为高级功能，需要高级版权限。** 标准版用户可浏览界面，但执行操作时会提示权限不足。
+> **The functions in this chapter are all advanced functions and require advanced version permissions.** Standard Edition users can browse the interface, but will be prompted with insufficient permissions when performing operations.
 
-### 6.1 分析流（/workflow）
+### 6.1 Analysis flow (/workflow)
 
-#### 功能说明
+#### Function description
 
-分析流是 v3.0 的核心高级功能，提供可视化的工作流编辑器，支持拖拽式编排分析流程。v3.0 采用 v2.0 分析引擎，在 v1.0 基础上新增条件分支、多轮辩论、并行/合并、后处理器等控制节点，支持 6 种流程类型和 AI 智能创建。包含五大子模块：流程管理、工具配置、Agent 工坊、Skill 中心、MCP 服务器。
+Analysis flow is the core advanced feature of v3.0, which provides a visual workflow editor and supports drag-and-drop arrangement of analysis processes. v3.0 adopts the v2.0 analysis engine, adds conditional branching, multi-round debate, parallel/merging, post-processor and other control nodes based on v1.0, and supports 6 process types and AI intelligent creation. Contains five major sub-modules: process management, tool configuration, Agent workshop, Skill center, and MCP server.
 
-#### 6.1.1 流程管理
+#### 6.1.1 process management
 
-##### 功能说明
+##### Function description
 
-流程管理支持创建自定义分析工作流，通过拖拽节点和连线编排分析流程，每个节点可绑定不同的 Agent 和工具集。v3.0 默认使用 v2.0 引擎，提供更丰富的节点类型和更灵活的流程编排能力。
+Process management supports the creation of customized analysis workflows, and arranges the analysis process by dragging nodes and connecting lines. Each node can be bound to different Agents and tool sets. v3.0 uses the v2.0 engine by default, providing richer node types and more flexible process orchestration capabilities.
 
-##### v2.0 分析引擎
+##### v2.0 Analysis engine
 
-v3.0 的分析流全面升级为 v2.0 引擎，相比 v1.0 的改进：
+v3.0 The analysis flow has been fully upgraded to the v2.0 engine, with improvements compared to v1.0:
 
-| 特性 | v1.0 引擎 | v2.0 引擎 |
+| Features | v1.0 engine | v2.0 engine |
 |------|-----------|-----------|
-| 分析师 | 基础分析师 | 专业 v2.0 分析师（大盘、板块、市场、基本面、新闻、社媒） |
-| 辩论机制 | 简单多情景研究 | 多轮多情景研究 + 三方风险情景研究 |
-| 条件分支 | 不支持 | 支持 |
-| 并行/合并 | 不支持 | 支持 |
-| 后处理器 | 不支持 | 支持（报告生成等） |
-| 风险评估 | 单一风险分析 | 高弹性/防御/基准三方风险情景研究 + 风险评估师审阅 |
-| 研究整合 | 研究整合员 | 研究整合员（风险审阅后生成用户版结论） |
-| 维护状态 | 已停止维护 | 持续维护 |
+| analyst | fundamental analyst | Professional v2.0 analyst (market, sector, market, fundamentals, news, social media) |
+| debate mechanism | Simple multi-scenario study | Multiple rounds of multi-scenario research + Three-party risk scenario research |
+| conditional branch | Not supported | support |
+| Parallel/Merge | Not supported | support |
+| post processor | Not supported | Support (report generation, etc.) |
+| risk assessment | single risk analysis | Highly resilient/defensive/baseline tri-party risk scenario study + Risk Assessor Review |
+| research integration | research integrator | Research integrator (generates user version conclusions after risk review) |
+| maintenance status | Maintenance has been stopped | Ongoing maintenance |
 
-> 提示：打开 v1.0 遗留流程时，编辑器会显示"当前工作流属于 v1.0 遗留流程，已停止维护"的警告，建议迁移到 v2.0 工作流。
+> Tip: When opening a v1.0 legacy process, the editor will display"The current workflow is a v1.0 legacy process and has been discontinued for maintenance."warning, it is recommended to migrate to v2.0 workflow.
 
-##### 流程类型
+##### Process type
 
-创建工作流时需要选择流程类型，不同类型对应不同的分析场景：
+When creating a workflow, you need to select a process type. Different types correspond to different analysis scenarios:
 
-| 流程类型 | 说明 | 适用场景 |
+| Process type | Description | Applicable scenarios |
 |----------|------|----------|
-| 单股研究流程 | 完整的单股分析流程 | 分析单只股票，结果在"研究报告"中查看 |
-| ETF 分析流程 | ETF 专用分析流程 | 分析 ETF 基金（净值、规模、跟踪误差） |
-| 持仓分析流程 | 持仓健康度分析 | 分析持仓股票的技术面、基本面和风险 |
-| 操作复盘流程 | 交易复盘流程 | 复盘时机、仓位、情绪和归因 |
-| 组合健康度流程 | 组合整体诊断 | 评估组合分散度、集中度 |
-| 通用研究流程 | 自由探索 | 结果在"流程中心"查看 |
+| Single stock research process | Complete single stock analysis process | Analyzing a single stock, the results are in"research report"View in |
+| ETF Analysis process | ETF Dedicated analysis process | Analyze ETF funds (net value, size, tracking error) |
+| Position analysis process | Position health analysis | Analyze the technical aspects, fundamentals and risks of stocks held |
+| Operation review process | Transaction review process | Review timing, positions, sentiment and attribution |
+| Portfolio health process | Combined holistic diagnosis | Assess portfolio dispersion and concentration |
+| Common research process | Free to explore | The result is"process center"View |
 
-##### 操作步骤
+##### Operation steps
 
-1. **创建工作流**
-   - "分析流 → 流程管理"，点击"新建分析流程"。
-   - 选择流程类型（必选）和模板（可选）。
-   - 输入名称和描述。
-   - 点击"创建并进入编辑"。
+1. **Create workflow**
+   - "Analysis flow → process management", Click"Create a new analysis process". 
+   - Select a process type (required) and a template (optional).
+   - Enter a name and description.
+   - Click"Create and edit". 
 
-2. **从模板创建**
-   - 页面展示系统预置的 v2.0 模板，每个模板显示流程预览图和节点数量。
-   - 点击"预览"查看模板的详细节点结构和流程说明。
-   - 点击"使用此模板"，命名后创建副本，可在此基础上修改。
+2. **Create from template**
+   - The page displays the system's preset v2.0 templates, and each template displays a process preview and the number of nodes.
+   - Click"Preview"View the detailed node structure and process description of the template.
+   - Click"use this template", A copy is created after naming and can be modified on this basis.
 
-3. **可用模板**
+3. **Available templates**
 
-   | 模板名称 | 说明 | 节点数 |
+   | Template name | Description | Number of nodes |
    |----------|------|--------|
-   | v2.0 完整分析流 | 6 个分析师并行 → 多情景研究 → 研究整合员 → 风险多情景研究 → 风险评估师 → 研究整合员 | 16 |
-   | v2.0 ETF 分析流 | ETF 分析师 + 市场分析师 + 新闻分析师，无多情景研究 | 8 |
-   | 持仓研究流程 v2.0 | 技术面 + 基本面并行 → 风险复核 → 研究整合 | 7 |
-   | 交易复盘流程 v2.0 | 时机/仓位/情绪/归因并行复盘 → 复盘总结 | 7 |
-   | 空白流程 | 仅含开始和结束节点，从零构建 | 2 |
+   | v2.0 Complete analysis flow | 6 analysts in parallel → multi-scenario research → research integrator → Risk multi-scenario research → risk assessor → research integrator | 16 |
+   | v2.0 ETF Analysis flow | ETF analyst + market analyst + News Analyst, No Multiple Scenario Research | 8 |
+   | Position research process v2.0 | technical aspect + Fundamental Parallelism → risk review → research integration | 7 |
+   | Transaction review process v2.0 | Timing/position/sentiment/attribution parallel review → Review summary | 7 |
+   | Blank process | Only start and end nodes, built from scratch | 2 |
 
-4. **编辑工作流**
-   - 从左侧节点面板拖拽节点到画布。
-   - 连接节点：点击节点的输出端口，再点击目标节点的输入端口。
-   - 配置节点：点击节点，在右侧面板设置参数。
+4. **Edit workflow**
+   - Drag nodes from the node panel on the left to the canvas.
+   - Connect a node: Click the output port of the node, then click the input port of the target node.
+   - Configure node: Click the node and set parameters in the right panel.
 
-5. **节点类型**
+5. **Node type**
 
-   工作流编辑器提供两类节点：
+   The workflow editor provides two types of nodes:
 
-   **智能体节点**（按类别分组）：
-   - 分析师（analyst）：大盘分析师、板块分析师、市场分析师、基本面分析师、新闻分析师、社媒分析师
-   - 研究员（researcher）：乐观情景研究员、审慎情景研究员
-   - 风险分析（risk）：高弹性情景分析师、防御情景分析师、基准情景分析师
-   - 经理（manager）：研究整合员、风险评估师
-   - 研究整合员（trader）：研究整合员
-   - 后处理器（post_processor）：报告生成器等
+   **agent node** (Grouped by category):
+   - Analyst: market analyst, sector analyst, market analyst, fundamental analyst, news analyst, social media analyst
+   - researcher: optimistic scenario researcher, cautious scenario researcher
+   - Risk analysis (risk): high resilience scenario analyst, defensive scenario analyst, baseline scenario analyst
+   - manager: research integrator, risk assessor
+   - research integrator (trader): research integrator
+   - Post-processor (post_processor): report generator, etc.
 
-   **控制节点**：
-   - 开始（start）：工作流入口
-   - 结束（end）：工作流出口
-   - 条件分支（condition）：根据条件表达式选择不同执行路径
-   - 并行开始（parallel）：多个分支同时执行
-   - 并行合并（merge）：等待所有并行分支完成后继续
-   - 辩论节点（debate）：多轮对抗式辩论
+   **control node**: 
+   - Start: Workflow entry
+   - End (end): workflow exit
+   - Conditional branch (condition): select different execution paths based on conditional expressions
+   - Parallel start (parallel): multiple branches are executed simultaneously
+   - Parallel merge: wait for all parallel branches to complete before continuing
+   - Debate: multiple rounds of confrontational debate
 
-6. **条件分支**
-   - 条件分支节点支持根据条件表达式动态选择执行路径。
-   - 从条件分支节点出发的边可以设置条件标签（如"true"/"false"）。
-   - 适用于根据分析深度、市场类型等条件动态调整流程的场景。
+6. **conditional branch**
+   - Conditional branch nodes support dynamic selection of execution paths based on conditional expressions.
+   - Edges starting from conditional branch nodes can be set with conditional labels (such as"true"/"false") . 
+   - It is suitable for scenarios where the process is dynamically adjusted based on analysis depth, market type and other conditions.
 
-7. **辩论节点**
-   - 辩论节点是 v2.0 的核心创新，支持多轮对抗式辩论。
-   - 配置辩论参与者（如乐观研究员 vs 审慎研究员，或三方风险分析师）。
-   - 辩论轮次根据分析深度自动调整：
-     - 1 级快速：多情景 1 轮 + 风险 1 轮
-     - 2 级基础：多情景 1 轮 + 风险 1 轮
-     - 3 级标准：多情景 1 轮 + 风险 2 轮
-     - 4 级深度：多情景 2 轮 + 风险 2 轮
-     - 5 级全面：多情景 3 轮 + 风险 3 轮
+7. **debate node**
+   - Debate nodes are the core innovation of v2.0, supporting multi-round confrontational debates.
+   - Configure debate participants (e.g. optimistic researchers vs cautious researchers, or tripartite risk analysts).
+   - Debate rounds automatically adjust based on depth of analysis:
+     - 1 Level Fast: Multiple Scenarios 1 round + Risk 1 round
+     - 2 Level Basics: Multiple Scenarios 1 round + Risk 1 round
+     - 3 Level Standard: Multiple Scenarios 1 round + Risk 2 rounds
+     - 4 Level Depth: Multiple Scenarios 2 rounds + Risk 2 rounds
+     - 5 Level Comprehensive: Multiple Scenarios 3 rounds + Risk 3 rounds
 
-8. **三层配置优先级**
-   - **Node 级**：单个节点的配置，优先级最高。
-   - **Workflow 级**：工作流全局配置，作为节点默认值。
-   - **Agent 级**：Agent 自身的默认配置，优先级最低。
+8. **Layer 3 configuration priority**
+   - **Node level**: The configuration of a single node has the highest priority.
+   - **Workflow level**: Workflow global configuration as node default.
+   - **Agent level**: Agent Its own default configuration has the lowest priority.
 
-9. **工具栏操作**
-   - **编辑/预览**：切换编辑模式和预览模式。
-   - **验证**：检查工作流的结构完整性（节点连接、必填配置等）。
-   - **保存**：保存当前工作流配置。
-   - **设为默认**：将当前工作流设为默认分析流程，后续分析任务自动使用。
-   - **执行**：仅单股研究流程和 ETF 分析流程支持直接执行。
+9. **Toolbar operations**
+   - **Edit/Preview**: Switch between edit mode and preview mode.
+   - **Verify**: Check the structural integrity of the workflow (node ​​connections, required configuration, etc.).
+   - **save**: Save the current workflow configuration.
+   - **Set as default**: Set the current workflow as the default analysis process and use it automatically for subsequent analysis tasks.
+   - **execute**: Only the single stock research process and the ETF analysis process support direct execution.
 
-10. **管理已有工作流**
-    - 在"我的分析流"区域查看已创建的工作流，按流程类型分组展示。
-    - 支持操作：编辑、执行、复制、设为默认、删除。
-    - 可修改流程类型：在编辑器工具栏点击"修改"切换流程类型。
+10. **Manage existing workflows**
+    - in"My analysis flow"Area to view created workflows, grouped and displayed by process type.
+    - Supported operations: edit, execute, copy, set as default, delete.
+    - The process type can be modified: click on the editor toolbar"Modify"Switch process type.
 
-##### 注意事项
+##### Things to note
 
-- 工作流编辑器支持撤销/重做（Ctrl+Z / Ctrl+Y）。
-- 复杂工作流建议先在小范围股票上试运行验证。
-- v1.0 遗留流程已停止维护，建议迁移到 v2.0 工作流。
-- Agent 工坊中创建的自定义 Agent 可在编辑器的智能体节点面板中使用。
-- 设为默认的工作流会被单股研究、批量分析、定时分析自动选用。
-- 持仓分析和操作复盘流程暂不支持从编辑器直接执行，需通过对应功能入口触发。
+- Workflow editor supports undo/redo (Ctrl+Z / Ctrl+Y) . 
+- For complex workflows, it is recommended to test run verification on a small range of stocks first.
+- v1.0 The legacy process has been discontinued for maintenance and it is recommended to migrate to v2.0 workflow.
+- Agent Custom Agents created in the Workshop are available in the Agent Nodes panel of the editor.
+- The workflow set as the default will be automatically selected for single stock research, batch analysis, and scheduled analysis.
+- The position analysis and operation review process does not currently support direct execution from the editor and needs to be triggered through the corresponding function entrance.
 
-#### 6.1.2 AI 工作流架构师
+#### 6.1.2 AI workflow architect
 
-##### 功能说明
+##### Function description
 
-AI 工作流架构师是 v3.0 的智能建流功能，通过自然语言对话自动规划和生成自定义工作流。系统会自动识别缺失的 Skill 并创建，最终生成可发布的工作流。
+AI Workflow Architect is v3.0's intelligent flow-building feature that automatically plans and generates customized workflows through natural language dialogue. The system will automatically identify missing Skills and create them, ultimately generating a publishable workflow.
 
-##### 操作步骤
+##### Operation steps
 
-1. **进入 AI 建流**
-   - "分析流 → 流程管理"，点击"AI 智能创建"。
-   - 或在分析流列表页点击"AI 智能创建"按钮。
+1. **Enter AI Jianliu**
+   - "Analysis flow → process management", Click"AI Smart creation". 
+   - Or click on the analysis flow list page"AI Smart creation"button.
 
-2. **选择流程类型**（步骤一）
-   - 选择要创建的分析流程类型（单股研究 / ETF 分析 / 持仓分析 / 操作复盘 / 通用研究）。
+2. **Select process type** (Step 1)
+   - Select the type of analysis process to create (Single Stock Research / ETF Analysis / Position Analysis / Operational Review / General Research).
 
-3. **需求沟通**（步骤二）
-   - 用自然语言描述需求，例如："我需要一个专门分析白酒行业景气度的流程，关注批价、库存和动销数据"。
-   - AI 会与您多轮对话，澄清需求细节。
+3. **Requirements communication** (Step 2)
+   - Use natural language to describe requirements, for example:"I need a process that specifically analyzes the prosperity of the liquor industry, focusing on pricing, inventory and sales data.". 
+   - AI We will have multiple rounds of conversations with you to clarify the details of your needs.
 
-4. **方案确认**（步骤三）
-   - AI 生成工作流规划方案，包含节点拓扑和 Agent 配置。
-   - 确认方案后进入下一步。
+4. **Plan confirmation** (Step 3)
+   - AI Generate workflow planning solution, including node topology and Agent configuration.
+   - After confirming the plan, proceed to the next step.
 
-5. **自动补全**（步骤四）
-   - 系统自动创建缺失的 Skill 和 Agent。
-   - 补全节点配置、绑定工具集。
-   - 可查看自动创建的 Skill 详情。
+5. **Autocomplete** (Step 4)
+   - The system automatically creates missing Skills and Agents.
+   - Complete node configuration and binding toolset.
+   - You can view the details of automatically created Skills.
 
-6. **完成发布**（步骤五）
-   - 检查生成的工作流，确认后发布。
-   - AI 建流生成的 Skill 会自动注册到 ToolRegistry，可在 Skill 中心查看。
+6. **Complete publishing** (Step 5)
+   - Check the generated workflow and publish it after confirmation.
+   - AI Skills generated by stream building will be automatically registered to ToolRegistry and can be viewed in the Skill Center.
 
-##### 注意事项
+##### Things to note
 
-- AI 建流过程消耗 LLM Token，建议需求描述清晰以减少迭代次数。
-- 生成的 Skill 代码建议人工 review 后再使用。
-- 如果对话中断，可返回列表页保存草稿。
+- AI The flow building process consumes LLM Token. It is recommended that the requirements be clearly described to reduce the number of iterations.
+- It is recommended that the generated Skill code be manually reviewed before use.
+- If the conversation is interrupted, you can return to the list page to save your draft.
 
-#### 6.1.3 工具配置
+#### 6.1.3 Tool configuration
 
-##### 功能说明
+##### Function description
 
-工具配置用于管理分析工具的参数，包括数据源、缓存策略、调用频率等。
+Tool configuration is used to manage the parameters of the analysis tool, including data sources, caching strategies, calling frequency, etc.
 
-##### 操作步骤
+##### Operation steps
 
-1. "分析流 → 工具配置"查看所有已注册工具。
-2. 点击工具进入参数配置页面。
-3. 可调整：超时时间、重试次数、缓存时长、并发限制。
-4. 配置保存后立即生效。
+1. "Analysis flow → Tool configuration"View all registered tools.
+2. Click Tools to enter the parameter configuration page.
+3. Adjustable: timeout, number of retries, cache duration, concurrency limit.
+4. The configuration takes effect immediately after saving.
 
-#### 6.1.4 Agent 工坊
+#### 6.1.4 Agent workshop
 
-##### 功能说明
+##### Function description
 
-Agent 工坊支持创建自定义 Agent，通过下拉选择 Agent 类型（如基本面分析师、新闻分析师）和名称，配置其使用的工具集和系统提示词。
+Agent The workshop supports the creation of custom Agents. Select the Agent type (such as fundamental analyst, news analyst) and name through the drop-down menu, and configure the tool set and system prompt words it uses.
 
-##### 你能用什么工具
+##### what tools can you use
 
-在创建自定义 Agent 时，可以从 **78 个内置工具**中选择绑定。常见分类：
+When creating a custom Agent, you can start with **78 built-in tools**Select Binding. Common categories:
 
-| 您想做的分析 | 可绑定的工具（示例） |
+| The analysis you want to do | Bindable tools (examples) |
 |------------|------------------|
-| **想算公司值多少钱** | `get_dcf_valuation`（DCF 估值）、`get_wacc_calculation`（WACC）、`get_peg_valuation`（PEG） |
-| **想看有没有造假** | `get_beneish_mscore`（Beneish M 8 维度评分）、`get_financial_fraud_signals`（造假信号） |
-| **想看会不会破产** | `get_altman_zscore`（Altman Z）、`get_ohlson_oscore`（Ohlson O） |
-| **想看财务健不健康** | `get_piotroski_fscore`（Piotroski F 0-9 分）、`get_earnings_quality_score`（盈利质量 0-100） |
-| **想看技术形态** | `get_candlestick_patterns`（K线 25+ 形态）、`get_chart_patterns`（图表形态）、`get_fibonacci_retracement`（斐波那契） |
-| **想看支撑压力** | `get_support_resistance_levels`（支撑压力）、`get_pivot_points`（枢轴点） |
-| **想看估值水平** | `get_comparable_company_valuation`（可比公司）、`get_industry_valuation_distribution`（行业分布） |
-| **想看组合风险** | `get_var_calculation`（VaR）、`get_sharpe_ratio`（夏普）、`get_max_drawdown`（最大回撤） |
-| **想选股票** | `get_multi_factor_screening`（多因子）、`get_graham_screen`（Graham 式）、`get_dividend_stock_screen`（红利股） |
-| **想看市场情绪** | `get_stock_sentiment`（雪球/股吧）、`get_stock_news_*`（新闻） |
+| **Want to calculate how much the company is worth** | `get_dcf_valuation` (DCF valuation),`get_wacc_calculation` (WACC) , `get_peg_valuation` (PEG)  |
+| **I want to see if there is any fraud** | `get_beneish_mscore` (Beneish M 8 dimension score),`get_financial_fraud_signals` (false signals) |
+| **Wondering if it will go bankrupt?** | `get_altman_zscore` (Altman Z) , `get_ohlson_oscore` (Ohlson O)  |
+| **Want to see if your finances are healthy?** | `get_piotroski_fscore` (Piotroski F 0-9 points),`get_earnings_quality_score` (Earnings quality 0-100) |
+| **Want to see the technical form** | `get_candlestick_patterns` (K line 25+ form),`get_chart_patterns` (chart form),`get_fibonacci_retracement` (Fibonacci) |
+| **Want to see support pressure** | `get_support_resistance_levels` (support pressure),`get_pivot_points` (pivot point) |
+| **Want to see the valuation level** | `get_comparable_company_valuation` (Comparable companies),`get_industry_valuation_distribution` (Industry distribution) |
+| **Want to see portfolio risk** | `get_var_calculation` (VaR) , `get_sharpe_ratio` (Sharp),`get_max_drawdown` (maximum drawdown) |
+| **Want to choose stocks** | `get_multi_factor_screening` (multiple factors),`get_graham_screen` (Graham formula),`get_dividend_stock_screen` (bonus shares) |
+| **Want to see market sentiment** | `get_stock_sentiment` (Snowball/stock bar),`get_stock_news_*` (News) |
 
-> 💡 **提示**：完整的 78 个工具列表在 v3.0 分析能力全景章节有详细说明，绑定时可以按关键词搜索。
+> 💡 **Tips**: The complete list of 78 tools is described in detail in the v3.0 Analysis Capability Panorama chapter, which can be searched by keywords when binding.
 
-##### 操作步骤
+##### Operation steps
 
-1. **创建 Agent**
-   - "分析流 → Agent 工坊"，点击"新建 Agent"。
-   - **下拉选择 Agent 类型**：从系统预设类型中选择（分析师、数据处理、决策、通用等）。
-   - **下拉选择 Agent 名称**：命名 Agent（如"白酒行业专家"、"风险预警专员"）。
-   - 配置系统提示词（定义 Agent 的行为和角色）。
-   - 选择绑定的工具集。
+1. **Create Agent**
+   - "Analysis flow → Agent workshop", Click"New Agent". 
+   - **Drop down to select the Agent type**: Choose from system preset types (Analyst, Data Processing, Decision, General, etc.).
+   - **Pull down to select Agent name**: Name the Agent (e.g."Liquor industry expert", "Risk warning specialist") . 
+   - Configure system prompt words (define the behavior and role of the Agent).
+   - Select the bundled toolset.
 
-2. **配置 Agent**
-   - 设置默认 LLM 模型。
-   - 设置温度（Temperature）、最大 Token 等参数。
-   - 配置工具白名单（限制 Agent 只能调用指定工具）。
+2. **Configuration Agent**
+   - Set the default LLM model.
+   - Set parameters such as temperature (Temperature) and maximum Token.
+   - Configure a tool whitelist (restricting the Agent to only call specified tools).
 
-3. **测试 Agent**
-   - 在工坊中可直接测试 Agent，输入消息查看响应。
-   - 工坊严格暴露 LLM 错误，不做规则兜底，便于定位问题。
+3. **test Agent**
+   - You can test the Agent directly in the workshop, enter a message and view the response.
+   - The workshop strictly exposes LLM errors without making any rules to make it easier to locate problems.
 
-4. **发布 Agent**
-   - 测试通过后发布，Agent 可在工作流中被引用。
+4. **publish Agent**
+   - After the test passes and is published, the Agent can be referenced in the workflow.
 
-##### 注意事项
+##### Things to note
 
-- Agent 类型决定其可用的工具范围，选择时请参考说明。
-- UniversalAgent 作为兜底：未注册的 Agent 会从 `agent_configs` 自动创建 UniversalAgent 实例。
-- 修改已发布的 Agent 会影响所有引用它的工作流，请谨慎操作。
-- 一个 Agent 建议绑定 3-7 个工具，工具太多会让 LLM 选择困难、Token 消耗高。
+- Agent The type determines the range of available tools, please refer to the instructions when selecting.
+- UniversalAgent As a safety net: Unregistered Agents will be `agent_configs` Automatically create UniversalAgent instances.
+- Modifying a published Agent will affect all workflows that reference it, so please proceed with caution.
+- It is recommended to bind 3-7 tools to an Agent. Too many tools will make LLM selection difficult and token consumption will be high.
 
-#### 6.1.5 Skill 中心
+#### 6.1.5 Skill Center
 
-##### 功能说明
+##### Function description
 
-Skill 中心支持通过对话式交互生成和管理 Skill（分析工具）。v3.0 的 Skill 自动生成系统采用 6 阶段管线，AI 自主编写并验证新工具。
+Skill The center supports the generation and management of Skills (analytics tools) through conversational interactions. The v3.0 Skill automatic generation system uses a 6-stage pipeline, and AI independently writes and verifies new tools.
 
-##### 操作步骤
+##### Operation steps
 
-1. **对话式生成 Skill**
-   - "分析流 → Skill 中心"，点击"生成新 Skill"。
-   - 通过对话描述需求，例如："我需要一个能获取北向资金流入流出的工具"。
-   - AI 会多轮对话澄清：输入输出、边界条件、异常处理。
+1. **conversational generation Skill**
+   - "Analysis flow → Skill Center", Click"generate new Skill". 
+   - Describe requirements through dialogue, for example:"I need a tool that can capture northbound inflows and outflows". 
+   - AI There will be multiple rounds of dialogue to clarify: input and output, boundary conditions, exception handling.
 
-2. **6 阶段管线**（工程师视角）
-   - **需求分析**（RequirementAnalyzer）：明确 Skill 功能规格。
-   - **代码生成**（CodeGenerator）：AI 编写 Skill 代码。
-   - **静态验证**（StaticValidator）：语法检查、安全检查。
-   - **沙箱运行**（SandboxRunner）：在隔离环境中运行测试。
-   - **输出评估**（OutputEvaluator）：评估输出质量。
-   - **迭代优化**（IterationController）：根据评估结果迭代改进。
+2. **6 stage pipeline** (Engineer's perspective)
+   - **needs analysis** (RequirementAnalyzer) : Clarify Skill functional specifications.
+   - **code generation** (CodeGenerator) : AI Write skill code.
+   - **Static verification** (StaticValidator) : Grammar check, security check.
+   - **sandbox run** (SandboxRunner) : Run tests in an isolated environment.
+   - **Output evaluation** (OutputEvaluator) : Evaluate output quality.
+   - **iterative optimization** (IterationController) : Iterative improvements based on evaluation results.
 
-3. **查看生成过程**
-   - 每个阶段的结果都可查看，包括 AI 生成的代码、测试输出、评估报告。
-   - 失败阶段会标注原因，可手动干预修正。
+3. **View the generation process**
+   - The results of each stage can be viewed, including AI-generated code, test output, and evaluation reports.
+   - The reason for the failure phase will be marked and can be corrected through manual intervention.
 
-4. **注册入库**
-   - 生成的 Skill 自动保存到 `external_skills` 集合。
-   - 自动注册到 ToolRegistry，可在 Agent 工坊中被引用。
+4. **Register and store**
+   - The generated Skill is automatically saved to `external_skills` collection.
+   - Automatically registered to ToolRegistry and can be referenced in the Agent workshop.
 
-5. **管理 Skill**
-   - 查看所有已生成的 Skill。
-   - 可禁用、编辑、删除 Skill。
-   - 支持版本管理，保留历史版本。
+5. **management Skill**
+   - View all generated skills.
+   - Skills can be disabled, edited, and deleted.
+   - Support version management and retain historical versions.
 
-##### 您看到的 4 步流程
+##### The 4-step process you see
 
-对普通用户来说，**生成一个 Skill 只要 4 步**：
+For ordinary users,**Generate a Skill in just 4 steps**: 
 
-| 步骤 | 您做什么 | 系统做什么 |
+| steps | what do you do | what the system does |
 |------|---------|----------|
-| **1. 提需求** | 用自然语言说"我想要一个能 ______ 的工具" | 系统多轮对话确认细节（输入输出格式、数据源） |
-| **2. 自动生成 + 测试** | 等待（一般 5-15 分钟） | 内部完成需求分析 → 代码生成 → 静态验证 → 沙箱运行 → 评估 → 迭代 |
-| **3. 看效果** | 看生成的代码 + 测试结果，满意就发布 | 列出所有版本、测试得分、是否通过验证 |
-| **4. 绑定到 Agent** | 选一个 Agent，把 Skill 绑上去 | 自动注册到工具表，下次分析时 Agent 就能调用 |
+| **1. Make demands** | speak in natural language"I want a tool that ______" | System multiple rounds of dialogue to confirm details (input and output formats, data sources) |
+| **2. Automatically generated + test** | Wait (usually 5-15 minutes) | Complete needs analysis in-house → code generation → Static verification → sandbox run → Assessment → Iterate |
+| **3. See the effect** | Look at the generated code + Test results will be released if satisfied | List all versions, test scores, whether they passed verification |
+| **4. bind to Agent** | Choose an Agent and bind the Skill to it | Automatically registered in the tool table, the Agent can be called during the next analysis |
 
-**什么时候需要看 6 阶段管线？**
-- Skill 没跑通时，定位"是需求没说明白、还是代码有问题、还是测试数据有问题"
-- 想优化 Skill 时，看哪个阶段可以改
-- 普通用户**不需要懂** 6 阶段，只需要按 4 步走
+**When do you need to look at a 6-stage pipeline?**
+- Skill When there is no run-through, positioning"Is it because the requirements are not clearly stated, or there is a problem with the code, or there is a problem with the test data?"
+- When you want to optimize a Skill, look at which stage can be modified
+- Ordinary user**No need to understand** 6 stage, just follow steps 4
 
-##### 注意事项
+##### Things to note
 
-- Skill 生成会消耗较多 Token，建议需求描述清晰以减少迭代次数。
-- 沙箱运行有超时限制，复杂 Skill 可能需要多次迭代。
-- 生成的 Skill 在正式使用前建议人工 review 代码。
-- 已绑定的旧版 Skill 不会被新版本覆盖，升级不破坏已有 Agent。
+- Skill Generation will consume more Tokens, so it is recommended to describe the requirements clearly to reduce the number of iterations.
+- Sandbox runs have timeout limits, and complex Skills may require multiple iterations.
+- It is recommended that the generated Skill be manually reviewed before official use.
+- The bound old Skill will not be overwritten by the new version, and the upgrade will not destroy the existing Agent.
 
-#### 6.1.6 MCP 服务器
+#### 6.1.6 MCP server
 
-##### 功能说明
+##### Function description
 
-MCP（Model Context Protocol）服务器将系统的 6 个标准工具通过 MCP 协议暴露，支持被 Claude Desktop、Cursor 等外部客户端直接调用。
+MCP (Model Context Protocol) The server exposes the system's six standard tools through the MCP protocol and supports direct calls by external clients such as Claude Desktop and Cursor.
 
-##### 暴露的工具
+##### exposed tools
 
-- `analyze_stock`：触发股票分析（支持阻塞/非阻塞模式）
-- `get_report`：获取分析报告
-- `chat_with_assistant`：与智能助手对话
-- `list_workflows`：列出可用工作流
-- `screen_stocks`：股票筛选
-- `get_market_overview`：获取市场概览
+- `analyze_stock`: Trigger stock analysis (supports blocking/non-blocking mode)
+- `get_report`: Get analysis report
+- `chat_with_assistant`: Talk to smart assistant
+- `list_workflows`: List available workflows
+- `screen_stocks`: stock screen
+- `get_market_overview`: Get a market overview
 
-##### 操作步骤
+##### Operation steps
 
-1. **配置 MCP API Key**
-   - "分析流 → MCP 服务器"，点击"生成 API Key"。
-   - 系统在 `system_configs` 中管理 MCP API Key，支持多 Key 分发。
+1. **Configuration MCP API Key**
+   - "Analysis flow → MCP server", Click"generate API Key". 
+   - The system is in `system_configs` Manage MCP API Key and support multi-Key distribution.
 
-2. **设置每日配额**
-   - 为每个 API Key 设置每日调用配额。
-   - 系统按"用户 + 日期"统计调用量，超额自动拒绝。
+2. **Set daily quota**
+   - Set a daily call quota for each API Key.
+   - System press"User + Date"The number of calls is counted and calls that exceed the quota are automatically rejected.
 
-3. **在 Claude Desktop 中接入**
-   - 在 Claude Desktop 配置文件中添加 MCP 服务器地址和 API Key。
-   - 即可在 Claude Desktop 中直接调用 TradingAgents 的分析能力。
+3. **Access in Claude Desktop**
+   - Add the MCP server address and API Key in the Claude Desktop configuration file.
+   - The analytical capabilities of TradingAgents can be called directly from Claude Desktop.
 
-4. **查看调用统计**
-   - MCP 服务器页面展示各 API Key 的调用量、成功率、错误日志。
+4. **View call statistics**
+   - MCP The server page displays the call volume, success rate, and error log of each API Key.
 
-##### 注意事项
+##### Things to note
 
-- MCP 功能基于 FastMCP 框架实现，符合 Anthropic MCP 规范。
-- API Key 请妥善保管，泄露后请立即重置。
-- 每日配额按北京时间 0 点重置。
+- MCP The function is implemented based on the FastMCP framework and complies with the Anthropic MCP specification.
+- API Key Please keep it properly and reset it immediately after leakage.
+- The daily quota is reset at 0:00 Beijing time.
 
-### 6.2 Agent 工坊（独立入口）
+### 6.2 Agent Workshop (independent entrance)
 
-> 本节为导航说明。Agent 工坊的完整使用指南详见 [6.1.4 Agent 工坊](#614-agent-工坊)。
+> This section provides navigation instructions. A complete guide to using the Agent Workshop is available here [6.1.4 Agent workshop](#614-agent-workshop). 
 
-Agent 工坊是创建和管理自定义 Agent 的可视化工具。当系统内置的分析师、研究员无法满足您的研究需求时，可在工坊中创建专属 Agent。
+Agent Workshop is a visual tool for creating and managing custom Agents. When the system's built-in analysts and researchers cannot meet your research needs, you can create an exclusive Agent in the workshop.
 
-**快速入口**："分析流 → Agent 工坊"，详细操作请参考 6.1.4 节。
+**Quick entry**: "Analysis flow → Agent workshop", Please refer to Section 6.1.4 for detailed operations.
 
-### 6.3 Skill 中心（独立入口）
+### 6.3 Skill Center (independent entrance)
 
-> 本节为导航说明。Skill 中心的完整使用指南详见 [6.1.5 Skill 中心](#615-skill-中心)。
+> This section provides navigation instructions. A complete guide to using the Skill Center is available here [6.1.5 Skill Center](#615-skill-Center). 
 
-Skill 中心管理分析流中可调用的 Skill（技能），包括系统内置 Skill 和自定义 Skill。当需要为 Agent 添加新的数据查询或分析能力时，可在 Skill 中心创建。
+Skill The center manages Skills that can be called in the analysis flow, including system built-in Skills and custom Skills. When new data query or analysis capabilities need to be added to the Agent, they can be created in the Skill Center.
 
-**快速入口**："分析流 → Skill 中心"，详细操作请参考 6.1.5 节。
+**Quick entry**: "Analysis flow → Skill Center", Please refer to Section 6.1.5 for detailed operations.
 
-### 6.4 批量分析（/analysis/batch）
+### 6.4 Batch analysis (/analysis/batch)
 
-#### 功能说明
+#### Function description
 
-批量分析支持同时分析多只股票，适合需要横向比较或大范围筛选后深度分析的场景。
+Batch analysis supports the analysis of multiple stocks at the same time, which is suitable for scenarios that require horizontal comparison or in-depth analysis after large-scale screening.
 
-#### 操作步骤
+#### Operation steps
 
-1. **进入批量分析**
-   - "批量分析"页面。
+1. **Enter batch analysis**
+   - "Batch analysis"page.
 
-2. **添加股票**
-   - 方式一：逐个输入股票代码添加。
-   - 方式二：从关注列表导入（选择一个分组）。
-   - 方式三：从筛选结果导入。
-   - 方式四：批量粘贴股票代码（每行一个或逗号分隔）。
+2. **add stock**
+   - Method 1: Enter the stock codes one by one to add.
+   - Method 2: Import from the watch list (select a group).
+   - Method 3: Import from filter results.
+   - Method 4: Paste stock codes in batches (one per line or separated by commas).
 
-3. **设置分析参数**
-   - 选择分析维度（与单股研究一致）。
-   - 选择分析深度（建议批量分析使用"快速"或"标准"深度）。
-   - 设置并发数（高级版支持并发，标准版串行执行）。
+3. **Set analysis parameters**
+   - Select analysis dimensions (consistent with single stock studies).
+   - Select analysis depth (recommended for batch analysis"fast"or"Standard"depth).
+   - Set the number of concurrencies (the advanced version supports concurrency, and the standard version executes serially).
 
-4. **启动批量分析**
-   - 点击"开始批量分析"。
-   - 系统显示总体进度和每只股票的子任务状态。
-   - 可在任务中心查看完整进度。
+4. **Start batch analysis**
+   - Click"Start batch analysis". 
+   - The system displays overall progress and subtask status for each stock.
+   - Full progress can be viewed in the Mission Center.
 
-5. **查看批量结果**
-   - 完成后生成批量分析报告汇总表。
-   - 表格展示每只股票的综合评级、关键指标、风险等级。
-   - 支持按指标排序，快速找出最优标的。
-   - 可导出为 Excel。
+5. **View batch results**
+   - After completion, a batch analysis report summary table is generated.
+   - The table displays the comprehensive rating, key indicators, and risk level of each stock.
+   - Supports sorting by indicators to quickly find the optimal target.
+   - Can be exported to Excel.
 
-#### 注意事项
+#### Things to note
 
-- 批量分析消耗 Token 较大，建议每次不超过 20 只股票。
-- 并发数受授权等级和 API 速率限制双重约束。
-- 批量分析中途可取消，已完成的子任务报告会保留。
-- 建议先用股票筛选缩小范围，再对候选股批量分析，效率更高。
+- Batch analysis consumes a large amount of Tokens, and it is recommended not to exceed 20 stocks at a time.
+- The number of concurrencies is subject to both authorization levels and API rate limits.
+- Batch analysis can be canceled midway, and completed subtask reports will be retained.
+- It is recommended to use stock screening to narrow the scope first, and then analyze the candidate stocks in batches, which is more efficient.
 
-### 6.5 定时分析
+### 6.5 timing analysis
 
-#### 功能说明
+#### Function description
 
-定时分析支持按 CRON 表达式定时执行分析任务，适合需要持续跟踪某些股票的场景。分为"定时分析分组"和"定时分析配置"两个子模块，均位于"设置 → 个人设置"下。
+Scheduled analysis supports scheduled execution of analysis tasks based on CRON expressions, which is suitable for scenarios that require continuous tracking of certain stocks. divided into"Timed analysis grouping"and"Timing analysis configuration"Two submodules, both located in"settings → personal settings"Down.
 
-#### 6.5.1 定时分析分组（/settings/watchlist-groups）
+#### 6.5.1 Regular analysis grouping (/settings/watchlist-groups)
 
-##### 功能说明
+##### Function description
 
-定时分析分组用于为定时分析任务准备股票集合，支持创建/编辑分组并配置分组的名称、描述、颜色标识、图标、默认分析深度，可从股票列表或标签导入股票。
+Scheduled analysis grouping is used to prepare stock collections for scheduled analysis tasks. It supports creating/editing groups and configuring the grouping name, description, color identification, icon, and default analysis depth. Stocks can be imported from a stock list or tag.
 
-##### 操作步骤
+##### Operation steps
 
-1. **创建分组**
-   - "设置 → 个人设置 → 定时分析分组"，点击"新建分组"。
-   - 填写分组名称（如"每日早报"、"每周复盘"、"白酒板块跟踪"）。
-   - 填写分组描述（可选）。
-   - 选择颜色标识（便于在列表中快速识别）。
-   - 选择图标。
-   - 设置默认分析深度（快速 / 标准 / 深度）。
+1. **Create group**
+   - "settings → personal settings → Timed analysis grouping", Click"Create new group". 
+   - Fill in the group name (such as"daily morning paper", "Weekly review", "Liquor sector tracking") . 
+   - Fill in the group description (optional).
+   - Choose color identification (for quick identification in lists).
+   - Select icon.
+   - Set default analysis depth (Quick/Standard/Deep).
 
-2. **导入股票**
-   - 方式一：从股票列表中逐个添加。
-   - 方式二：从已有标签批量导入。
-   - 方式三：从关注列表分组导入。
+2. **Import stocks**
+   - Method 1: Add one by one from the stock list.
+   - Method 2: Batch import from existing tags.
+   - Method 3: Import from watch list groups.
 
-3. **管理分组**
-   - 编辑分组信息或调整股票列表。
-   - 删除分组（分组下的定时任务需先迁移或删除）。
+3. **Management grouping**
+   - Edit grouping information or adjust stock lists.
+   - Delete the group (the scheduled tasks under the group need to be migrated or deleted first).
 
-##### 注意事项
+##### Things to note
 
-- 分组是定时分析配置的基础，创建定时任务前需先准备好分组。
-- 每个分组建议不超过 20 只股票，避免单次定时执行耗时过长。
+- Grouping is the basis for scheduled analysis configuration. Grouping must be prepared before creating a scheduled task.
+- It is recommended that each group should not exceed 20 stocks to avoid a single scheduled execution taking too long.
 
-#### 6.5.2 定时分析配置（/settings/scheduled-analysis）
+#### 6.5.2 Scheduled analysis configuration (/settings/scheduled-analysis)
 
-##### 功能说明
+##### Function description
 
-定时分析配置用于创建和管理定时执行的分析任务，支持简单模式和高级模式（Cron 表达式），可配置执行时间段、默认分组、分析深度、邮件通知等。
+Scheduled analysis configuration is used to create and manage scheduled execution analysis tasks. It supports simple mode and advanced mode (Cron expression), and can configure execution time period, default grouping, analysis depth, email notification, etc.
 
-##### 操作步骤
+##### Operation steps
 
-1. **创建定时分析配置**
-   - "设置 → 个人设置 → 定时分析配置"，点击"新建配置"。
-   - 选择默认分析分组（从 6.5.1 创建的分组中选择）。
-   - 选择分析深度（快速 / 标准 / 深度）。
-   - 配置邮件通知（可选，需先在通知设置中配置 SMTP）。
+1. **Create scheduled analysis configuration**
+   - "settings → personal settings → Timing analysis configuration", Click"New configuration". 
+   - Select the default analysis grouping (selected from the groupings created in 6.5.1).
+   - Select analysis depth (Quick/Standard/Deep).
+   - Configure email notifications (optional, you need to configure SMTP in notification settings first).
 
-2. **设置执行时间**
-   - **简单模式**：选择每日/每周/每月 + 执行时间，系统自动生成 CRON 表达式。
-   - **高级模式**：直接输入 CRON 表达式，适合复杂调度需求。
-   - **快速 Preset**：系统预设常用时间模板（如"每个交易日盘后"、"每周一早报"），一键应用。
+2. **Set execution time**
+   - **Simple mode**: Choose daily/weekly/monthly + At execution time, the system automatically generates a CRON expression.
+   - **Advanced mode**: Directly enter CRON expressions, suitable for complex scheduling requirements.
+   - **fast Preset**: The system presets commonly used time templates (such as"After the market opens on each trading day", "Every Monday morning newspaper") , One click application.
 
-3. **执行测试**
-   - 配置完成后可点击"执行测试"立即运行一次，验证配置是否正确。
-   - 测试结果会显示在执行历史中。
+3. **Execute tests**
+   - After the configuration is completed, click"Execute tests"Run it once now to verify that the configuration is correct.
+   - Test results are displayed in the execution history.
 
-4. **查看执行历史**
-   - 每次定时执行后自动记录到历史列表。
-   - 可查看每次执行的状态、耗时、报告链接、错误信息。
+4. **View execution history**
+   - After each scheduled execution, it is automatically recorded in the history list.
+   - You can view the status, time taken, report link, and error information of each execution.
 
-5. **管理定时任务**
-   - 列表页可启用/禁用、编辑、删除定时配置。
-   - 支持批量操作。
+5. **Manage scheduled tasks**
+   - The list page can enable/disable, edit, and delete scheduled configurations.
+   - Support batch operations.
 
-##### 注意事项
+##### Things to note
 
-- CRON 表达式使用 5 段格式（分 时 日 月 周），时区为 Asia/Shanghai。
-- 定时分析在非交易日也会执行，如需仅交易日执行，请在工作流中配置过滤逻辑。
-- 定时任务执行失败会自动重试 3 次，仍失败则发送通知。
-- 定时分析消耗的 Token 计入账户配额，请注意成本控制。
-- 建议将定时分析安排在盘后（如 16:00 之后），确保当日数据已同步。
+- CRON The expression uses a 5-segment format (minute, hour, day, month, week), and the time zone is Asia/Shanghai.
+- Scheduled analysis will also be executed on non-trading days. If you need to execute it only on trading days, please configure filtering logic in the workflow.
+- If the scheduled task fails to execute, it will be automatically retried three times. If it still fails, a notification will be sent.
+- Tokens consumed by regular analysis will be included in the account quota. Please pay attention to cost control.
+- It is recommended to arrange scheduled analysis after the market opens (such as 16:00 Afterwards), make sure that the day's data is synchronized.
 
-#### 6.5.3 通过智能助手管理
+#### 6.5.3 Manage via smart assistant
 
-可对智能助手说：
-- "帮我创建一个每天早上 9 点分析贵州茅台的定时任务"
-- "查看我所有的定时分析任务"
-- "禁用每日早报定时任务"
+You can say to the smart assistant:
+- "Help me create a scheduled task to analyze Kweichow Moutai at 9 a.m. every day"
+- "View all my scheduled analysis tasks"
+- "Disable the daily morning report scheduled task"
 
-### 6.6 通用研究（/analysis/general）
+### 6.6 General Research (/analysis/general)
 
-#### 功能说明
+#### Function description
 
-通用研究是一个基于通用流程的灵活研究工作台，与单股研究不同，它不限定分析目标为股票代码，而是支持任意自定义分析目标（如行业趋势、宏观事件、主题概念等），配合通用类型的工作流完成自由探索式研究。
+Universal research is a flexible research workbench based on universal processes. Unlike single-stock research, it does not limit the analysis target to stock codes, but supports any customized analysis targets (such as industry trends, macro events, theme concepts, etc.), and cooperates with universal types of workflows to complete free exploratory research.
 
-**与单股研究的核心差异：**
+**Core differences from single-stock research:**
 
-| 对比项 | 单股研究 | 通用研究 |
+| Comparative item | single stock research | general studies |
 |--------|---------|---------|
-| 分析目标 | 股票代码（如 600519） | 任意文本（如"新能源车产业链"） |
-| 工作流类型 | 单股研究流程 / ETF 分析流程 | 通用研究流程 |
-| 表单参数 | 固定（股票代码、分析日期、深度等） | 动态（由所选流程的配置决定） |
-| 结果查看位置 | 研究报告页面 | 任务中心 |
-| 历史记录 | 研究报告页面 | 通用研究页面的"历史结果"标签页 |
+| Analyze goals | Stock code (e.g. 600519) | Arbitrary text (such as"New energy vehicle industry chain")  |
+| Workflow type | Single stock research process/ETF analysis process | Common research process |
+| form parameters | Fixed (stock code, analysis date, depth, etc.) | Dynamic (determined by the configuration of the selected process) |
+| Results view location | Research report page | mission center |
+| History | Research report page | general research page"historical results"tab page |
 
-#### 操作步骤
+#### Operation steps
 
-1. **进入通用研究**
-   - 左侧导航栏"通用研究"，进入通用研究页面。
-   - 页面分为"新分析"和"历史结果"两个标签页。
+1. **Enter General Studies**
+   - Left navigation bar"general studies", Go to the General Research page.
+   - The page is divided into"new analysis"and"historical results"Two tabs.
 
-2. **选择分析流程**
-   - 在"新分析"标签页的"流程选择"下拉框中，选择一个通用研究流程。
-   - 下拉框仅显示通用类型（general）的工作流，带"默认"标签的为系统默认流程。
-   - 选中后下方会显示流程描述。
+2. **Select analysis process**
+   - in"new analysis"tab page"Process selection"In the drop-down box, select a common research process.
+   - The drop-down box only displays workflows of general type, with"Default"The labeled one is the system default process.
+   - When selected, a process description will be displayed below.
 
-3. **配置执行参数**
-   - 选中流程后，页面动态展示该流程配置的参数表单。
-   - 参数表单根据流程的 `input_config` 自动生成，不同流程的参数可能不同。
-   - 常见参数类型：
-     - **文本输入**：单行或多行文本（如分析目标、研究方向）
-     - **数字输入**：数值型参数（如回看天数）
-     - **下拉选择**：单选或多选（如模型选择、分析师选择）
-     - **日期选择**：日期型参数
-     - **开关**：布尔型参数（如是否启用记忆）
-   - 必填项会有红色 `*` 标识。
+3. **Configure execution parameters**
+   - After selecting a process, the page dynamically displays the parameter form configured for the process.
+   - The parameter form is based on the process `input_config` Automatically generated, parameters for different processes may be different.
+   - Common parameter types:
+     - **Text input**: Single or multiple lines of text (such as analysis objectives, research directions)
+     - **digital input**: Numeric parameters (such as the number of days to look back)
+     - **drop down selection**: Single or multiple selection (such as model selection, analyst selection)
+     - **date selection**: date parameter
+     - **switch**: Boolean parameters (such as whether to enable memory)
+   - Required fields will be in red `*` logo.
 
-4. **启动分析**
-   - 点击"开始分析"按钮。
-   - 系统创建分析任务并进入执行状态，页面展示：
-     - 任务 ID（可复制）
-     - 分析目标
-     - 开始时间和已用时间
-     - 实时进度条和当前执行步骤
-   - 分析过程中按钮显示为加载状态，不可重复点击。
+4. **Start analysis**
+   - Click"Start analysis"button.
+   - The system creates an analysis task and enters the execution state. The page displays:
+     - Task ID (can be copied)
+     - Analyze goals
+     - Start time and elapsed time
+     - Real-time progress bar and current execution steps
+   - During the analysis process, the button is displayed in the loading state and cannot be clicked repeatedly.
 
-5. **查看结果**
-   - 分析完成后，页面显示成功提示。
-   - 点击"查看结果"按钮跳转到**任务中心**查看完整分析报告。
-   - 通用研究的结果**不会出现在研究报告页面**，仅在任务中心可查。
-   - 点击"重新分析"可回到表单重新提交。
+5. **View results**
+   - After the analysis is completed, the page displays a success message.
+   - Click"View results"Button jump to**mission center**View the full analysis report.
+   - General research results**Will not appear on the research report page**, Only available in the Mission Center.
+   - Click"Reanalyze"You can go back to the form and resubmit.
 
-6. **查看历史结果**
-   - 切换到"历史结果"标签页。
-   - 支持按以下条件筛选：
-     - 流程：选择特定通用研究流程
-     - 时间范围：按日期范围筛选
-     - 关键字：搜索分析目标或摘要
-     - 状态：全部 / 成功 / 失败
-   - 点击历史记录可查看详情，包含：基本信息、错误信息、分析摘要、完整工作流输出、决策信息、原始数据。
+6. **View historical results**
+   - switch to"historical results"tab page.
+   - Supports filtering by the following conditions:
+     - Process: Select a specific generic research process
+     - Time range: Filter by date range
+     - Keywords: Search analysis target or summary
+     - Status: All/Success/Failed
+   - Click the history record to view details, including: basic information, error information, analysis summary, complete workflow output, decision information, and raw data.
 
-#### 注意事项
+#### Things to note
 
-- 通用研究必须选择一个通用类型的工作流，若没有可用流程，请联系管理员在"分析流 → 流程管理"中创建。
-- 通用研究的分析目标由流程定义决定，部分流程可能要求输入股票代码作为分析目标，请参考流程描述。
-- 通用研究结果仅在任务中心查看，不会出现在研究报告页面。
-- 定时分析也支持通用研究流程，可在"定时分析配置"中选择通用流程并配置参数。
-- 单次分析会消耗 LLM Token，请根据授权配额合理安排。
-
----
-
-## 第七章 学习中心（/learning）
-
-### 功能说明
-
-学习中心提供丰富的学习资料，包括 AI 基础知识、提示词工程、模型选择指南、分析原理、风险提示、论文资源和高级课程。帮助用户从零开始理解 AI 投资分析的原理和方法。
-
-### 内容分类
-
-1. **AI 基础知识**：什么是大语言模型（LLM）、LLM 的工作原理、能力与局限。
-2. **提示词工程**：Prompt 基础、最佳实践、如何写出有效的分析指令。
-3. **模型选择**：不同 LLM 的特点对比、适用场景、成本考量。
-4. **分析原理**：多智能体系统原理、TradingAgents 框架设计思路。
-5. **风险与局限**：AI 分析的局限性、投资风险提示、如何理性使用 AI 建议。
-6. **资源**：TradingAgents 论文解读、相关学术资源。
-7. **高级课程**：（高级功能）系统化投资课程，涵盖策略构建、风控体系、组合管理等。
-
-### 操作步骤
-
-1. **浏览学习资料**
-   - "学习中心"页面按分类展示所有资料。
-   - 点击文章标题进入阅读。
-   - 支持搜索功能。
-
-2. **高级课程**（高级功能）
-   - 高级课程为付费内容，需要高级版授权。
-   - 课程以章节形式组织，支持学习进度跟踪。
-   - 每章配有练习和案例。
-
-3. **使用指南**
-   - "使用指南"（/guide）是内置的快速上手教程。
-   - 适合首次使用时浏览。
-
-### 注意事项
-
-- 学习中心内容会持续更新，建议定期浏览。
-- 高级课程内容仅供学习，不构成投资建议。
+- General research must select a general type of workflow. If there is no available process, please contact the administrator at"Analysis flow → process management"Created in .
+- The analysis target of general research is determined by the process definition. Some processes may require the input of stock codes as analysis targets. Please refer to the process description.
+- General research results can only be viewed in the task center and will not appear on the research report page.
+- Timed analysis also supports common research workflows and is available at"Timing analysis configuration"Select a common process and configure parameters.
+- A single analysis will consume LLM Token, please make reasonable arrangements according to the authorization quota.
 
 ---
 
-## 第八章 系统管理
+## Chapter 7 Learning Center (/learning)
 
-本章介绍系统管理相关的功能，位于"设置 → 系统管理"下。这些功能主要由管理员使用。
+### Function description
 
-### 8.1 配置管理
+The Learning Center provides a wealth of learning materials, including AI basics, prompt word engineering, model selection guides, analysis principles, risk tips, paper resources, and advanced courses. Help users understand the principles and methods of AI investment analysis from scratch.
 
-#### 功能说明
+### Content classification
 
-配置管理是系统的核心配置入口，统一管理所有配置项，包括 LLM 密钥、数据源、分析参数、通知设置等。
+1. **AI basic knowledge**: What is a large language model (LLM), the working principle, capabilities and limitations of LLM.
+2. **prompt word project**: Prompt Basics, best practices, how to write effective analysis instructions.
+3. **Model selection**: Comparison of features, applicable scenarios, and cost considerations of different LLMs.
+4. **Analysis principle**: Multi-agent system principles and TradingAgents framework design ideas.
+5. **Risks and Limitations**: AI Limitations of analysis, investment risk tips, and how to use AI recommendations rationally.
+6. **Resources**: TradingAgents Interpretation of papers and related academic resources.
+7. **Advanced courses**:  (Advanced functions) Systematic investment courses, covering strategy construction, risk control system, portfolio management, etc.
 
-#### 操作步骤
+### Operation steps
 
-1. **进入配置管理**
-   - "设置 → 系统配置 → 配置管理"。
+1. **Browse study materials**
+   - "Learning Center"The page displays all information by category.
+   - Click on the article title to read.
+   - Support search function.
 
-2. **配置分类**
-   - **LLM 配置**：API 密钥、模型选择、模型优先级、温度等参数。
-   - **数据源配置**：Tushare、FinnHub、通联数据等数据源密钥和优先级。
-   - **分析配置**：默认分析深度、缓存策略、并发数。
-   - **通知配置**：邮件 SMTP、Webhook 地址、QQ Bot 配置。
-   - **系统配置**：时区、语言、日志级别。
+2. **Advanced courses** (advanced features)
+   - Advanced courses are paid content and require premium version authorization.
+   - Courses are organized into chapters to support learning progress tracking.
+   - Each chapter is equipped with exercises and cases.
 
-3. **QQ Bot 配置**
-   - QQ Bot 接入允许通过 QQ 即时通讯与智能助手交互。
-   - 配置项：QQ Bot 账号、密码、 WebSocket 连接地址。
-   - 配置后可在 QQ 中直接与智能助手对话，输出会自动转为精简纯文本格式（适配 IM 场景）。
-   - 详见 [5.1 AI 对话助手](#51-ai-对话助手-assistant) 中的"IM 格式适配"。
+3. **User Guide**
+   - "User Guide" (/guide) It is a built-in quick start tutorial.
+   - Suitable for first time browsing.
 
-4. **配置导入导出**
-   - 支持导出当前配置为 JSON 文件（密钥会脱敏）。
-   - 支持从 JSON 文件导入配置（便于迁移或备份）。
+### Things to note
 
-5. **配置验证**
-   - 修改配置后点击"验证"检查配置项有效性。
-   - 系统内置配置校验器，会提示不合理的配置组合。
+- The content of the learning center will be continuously updated, and it is recommended to browse it regularly.
+- Advanced course content is for learning purposes only and does not constitute investment advice.
 
-#### 注意事项
+---
 
-- 配置修改后部分项需要重启服务生效，系统会提示。
-- 切勿在生产环境随意修改数据库连接等核心配置。
-- 配置导出文件不含明文密钥，可安全分享。
+## Chapter 8 System Management
 
-### 8.2 数据库管理
+This chapter introduces system management-related functions, located in"settings → System management"Down. These features are primarily used by administrators.
 
-#### 功能说明
+### 8.1 Configuration management
 
-数据库管理提供 MongoDB 数据库的状态查看、备份恢复、集合管理功能。
+#### Function description
 
-#### 操作步骤
+Configuration management is the core configuration entrance of the system and manages all configuration items in a unified manner, including LLM keys, data sources, analysis parameters, notification settings, etc.
 
-1. **查看数据库状态**
-   - "设置 → 系统管理 → 数据库"。
-   - 显示连接状态、数据库大小、各集合大小、索引状态。
+#### Operation steps
 
-2. **数据备份**
-   - 点击"备份数据库"，选择导出范围（全部集合或指定集合）。
-   - 系统生成备份文件（.archive 格式），可下载保存。
+1. **Enter configuration management**
+   - "settings → System configuration → Configuration management". 
 
-3. **数据恢复**
-   - 上传备份文件，点击"恢复"。
-   - 恢复前系统会提示确认，避免误操作。
+2. **Configuration classification**
+   - **LLM Configuration**: API Parameters such as key, model selection, model priority, temperature, etc.
+   - **Data source configuration**: Tushare, FinnHub, Data source keys and priorities such as communication data.
+   - **Analysis configuration**: Default analysis depth, cache strategy, and number of concurrencies.
+   - **Notification configuration**: Email SMTP, Webhook address, QQ Bot configuration.
+   - **System configuration**: Time zone, language, log level.
 
-4. **集合管理**
-   - 查看所有集合（如 `analysis_reports`、`paper_trades`、`favorites`、`external_skills` 等）。
-   - 可查看集合的文档数量、占用空间。
-   - 支持清空指定集合（危险操作，需二次确认）。
+3. **QQ Bot Configuration**
+   - QQ Bot Access allows interaction with the smart assistant through QQ instant messaging.
+   - Configuration items: QQ Bot account, password, WebSocket connection address.
+   - After configuration, you can directly chat with the intelligent assistant in QQ, and the output will be automatically converted into a simplified plain text format (adapted to IM scenarios).
+   - See details [5.1 AI Conversation Assistant](#51-ai-Conversation Assistant-assistant) in"IM format adaptation". 
 
-5. **索引管理**
-   - 查看各集合的索引。
-   - 可创建、删除索引。
+4. **Configuration import and export**
+   - Supports exporting the current configuration as a JSON file (keys will be desensitized).
+   - Supports importing configurations from JSON files (for easy migration or backup).
 
-#### 注意事项
+5. **Configuration verification**
+   - After modifying the configuration, click"Verify"Check the validity of configuration items.
+   - The system has a built-in configuration checker that will prompt unreasonable configuration combinations.
 
-- 数据库备份建议定期执行，可配合定时任务自动化。
-- 恢复操作会覆盖现有数据，请谨慎。
-- 清空集合不可恢复，操作前务必备份。
-- v3.0 使用 MongoDB 端口 27019，与 v2.x 隔离。
+#### Things to note
 
-### 8.3 多数据源同步
+- After the configuration is modified, some items need to be restarted to take effect, and the system will prompt you.
+- Never modify core configurations such as database connections at will in the production environment.
+- The configuration export file does not contain clear text keys and can be shared safely.
 
-#### 功能说明
+### 8.2 Database management
 
-多数据源同步负责从外部数据源同步股票基础数据、行情数据、财务数据等，是分析功能正常运作的基础。支持多数据源状态查看、使用建议和同步控制。
+#### Function description
 
-#### 操作步骤
+Database management provides MongoDB database status viewing, backup and recovery, and collection management functions.
 
-1. **查看数据源状态**
-   - "设置 → 系统管理 → 多数据源同步"。
-   - 页面展示各数据源（Tushare、AKShare 等）的连接状态和可用性。
+#### Operation steps
 
-2. **同步控制**
-   - 可手动触发数据同步。
-   - 查看同步历史记录，了解同步进度和失败原因。
+1. **View database status**
+   - "settings → System management → database". 
+   - Displays the connection status, database size, each collection size, and index status.
 
-3. **数据源使用建议**
-   - 页面提供各数据源的使用建议，帮助选择合适的数据源。
+2. **Data backup**
+   - Click"Back up database", Select the export scope (all collections or specified collections).
+   - The system generates a backup file (.archive format), which can be downloaded and saved.
 
-#### 注意事项
+3. **data recovery**
+   - To upload the backup file, click"restore". 
+   - The system will prompt for confirmation before restoring to avoid misoperation.
 
-- 数据同步依赖数据源 API 配额，Tushare 不同积分等级有不同调用限制。
-- 首次同步耗时较长（30 分钟以上），建议在非高峰期执行。
-- 同步失败时可查看日志定位原因，常见原因包括 API 配额耗尽、网络超时。
+4. **Collection management**
+   - View all collections (such as `analysis_reports`, `paper_trades`, `favorites`, `external_skills` etc.).
+   - You can view the number of documents in the collection and the space occupied.
+   - Supports clearing specified collections (dangerous operation, requires secondary confirmation).
 
-### 8.4 定时任务
+5. **Index management**
+   - View the index for each collection.
+   - Indexes can be created and deleted.
 
-#### 功能说明
+#### Things to note
 
-定时任务管理系统的所有后台调度任务，包括数据同步、报告清理、缓存刷新等系统级任务，以及用户创建的定时分析任务。
+- Database backup is recommended to be performed regularly and can be automated with scheduled tasks.
+- The restore operation will overwrite existing data, so please be careful.
+- Cleared collections are irrecoverable, so be sure to back them up before operating.
+- v3.0 Uses MongoDB port 27019, isolated from v2.x.
 
-#### 操作步骤
+### 8.3 Synchronization of multiple data sources
 
-1. **查看定时任务列表**
-   - "设置 → 系统管理 → 定时任务"。
-   - 显示任务名称、CRON 表达式、上次执行时间、下次执行时间、状态。
+#### Function description
 
-2. **系统内置任务**
-   - 数据同步任务（每日盘后）
-   - 通知清理任务（90 天过期清理）
-   - 缓存刷新任务
+Multi-data source synchronization is responsible for synchronizing basic stock data, market data, financial data, etc. from external data sources, which is the basis for the normal operation of the analysis function. Supports multi-data source status viewing, usage suggestions and synchronization control.
 
-3. **任务操作**
-   - 启用/禁用任务。
-   - 手动触发执行。
-   - 查看执行历史和日志。
+#### Operation steps
 
-#### 注意事项
+1. **View data source status**
+   - "settings → System management → Synchronization of multiple data sources". 
+   - The page displays the connection status and availability of each data source (Tushare, AKShare, etc.).
 
-- 系统内置任务请勿随意禁用，否则可能影响系统正常运行。
-- 定时分析任务的配置入口在"设置 → 定时分析配置"，不在此处。
-- 定时任务基于 APScheduler 实现，服务重启后任务会自动恢复。
+2. **Synchronous control**
+   - Data synchronization can be triggered manually.
+   - View sync history to understand sync progress and failure reasons.
 
-### 8.5 操作日志与系统日志
+3. **Data source usage recommendations**
+   - The page provides usage suggestions for each data source to help choose the appropriate data source.
 
-#### 功能说明
+#### Things to note
 
-系统提供两个独立的日志查看页面："操作日志"记录用户业务操作，"系统日志"记录系统运行事件，便于排障和审计。
+- Data synchronization depends on the data source API quota, and different Tushare points levels have different calling restrictions.
+- The first synchronization takes a long time (more than 30 minutes), so it is recommended to perform it during off-peak periods.
+- When synchronization fails, you can check the log to locate the reason. Common reasons include API quota exhaustion and network timeout.
 
-#### 操作步骤
+### 8.4 scheduled tasks
 
-1. **查看操作日志**
-   - "设置 → 系统管理 → 操作日志"。
-   - 记录用户的业务操作（分析任务、交易操作、配置变更等）。
-   - 支持按时间范围、操作类型筛选。
+#### Function description
 
-2. **查看系统日志**
-   - "设置 → 系统管理 → 系统日志"。
-   - 记录系统运行事件（服务启动、配置加载、定时任务、错误信息等）。
-   - 支持按级别筛选（DEBUG / INFO / WARNING / ERROR）。
-   - 支持按关键字搜索。
+Scheduled tasks manage all background scheduling tasks of the system, including system-level tasks such as data synchronization, report cleaning, cache refresh, etc., as well as scheduled analysis tasks created by users.
 
-3. **下载日志**
-   - 可按日期下载日志文件。
-   - Docker 部署可通过 `docker-compose -p ta-v3 logs` 查看实时日志。
+#### Operation steps
 
-#### 注意事项
+1. **View scheduled task list**
+   - "settings → System management → scheduled tasks". 
+   - Displays the task name, CRON expression, last execution time, next execution time, and status.
 
-- 日志默认保存 30 天，可在配置中调整。
-- DEBUG 级别日志量大，生产环境建议使用 INFO 级别。
-- 日志中不含 API 密钥等敏感信息（已脱敏处理）。
+2. **System built-in tasks**
+   - Data synchronization task (daily after hours)
+   - Notification of cleanup tasks (90 days overdue cleanup)
+   - Cache refresh task
 
-### 8.6 工具能力索引
+3. **Task operation**
+   - Enable/disable tasks.
+   - Manually trigger execution.
+   - View execution history and logs.
 
-#### 功能说明
+#### Things to note
 
-工具能力索引为系统中所有 Agent、Tool、Skill 建立统一的索引，支持语义搜索，便于在工作流编排和智能助手中快速定位可用能力。
+- Do not disable system built-in tasks at will, otherwise it may affect the normal operation of the system.
+- The configuration entry for scheduled analysis tasks is at"settings → Timing analysis configuration", Not here.
+- Scheduled tasks are implemented based on APScheduler, and the tasks will automatically resume after the service is restarted.
 
-#### 操作步骤
+### 8.5 Operation log and system log
 
-1. **查看能力索引**
-   - "设置 → 系统管理 → 工具能力索引"。
-   - 展示所有已注册的 Agent、Tool、Skill 清单。
+#### Function description
 
-2. **语义搜索**
-   - 输入自然语言描述需要的能力，例如"获取北向资金数据"。
-   - 系统返回匹配的 Tool/Skill 列表。
+The system provides two independent log viewing pages:"Operation log"Record user business operations,"System log"Record system operation events to facilitate troubleshooting and auditing.
 
-3. **索引管理**
-   - 可手动重建索引（新增 Tool/Skill 后建议重建）。
-   - 查看索引状态和统计信息。
+#### Operation steps
 
-#### 注意事项
+1. **View operation log**
+   - "settings → System management → Operation log". 
+   - Record the user's business operations (analysis tasks, transaction operations, configuration changes, etc.).
+   - Supports filtering by time range and operation type.
 
-- 能力索引是 AI 工作流架构师和智能助手调用工具的基础，保持索引最新很重要。
-- 新增 Tool 或 Skill 后，系统会自动更新索引，但建议定期手动重建以确保一致性。
+2. **View system log**
+   - "settings → System management → System log". 
+   - Record system running events (service startup, configuration loading, scheduled tasks, error messages, etc.).
+   - Supports filtering by level (DEBUG/INFO/WARNING/ERROR).
+   - Supports search by keyword.
 
-### 8.7 缓存管理
+3. **Download log**
+   - Log files can be downloaded by date.
+   - Docker Deployment can be done via `docker-compose -p ta-v3 logs` View real-time logs.
 
-#### 功能说明
+#### Things to note
 
-缓存管理用于查看和管理 Redis 缓存，包括行情数据缓存、分析结果缓存、会话缓存等。
+- Logs are saved for 30 days by default and can be adjusted in the configuration.
+- DEBUG The level log volume is large, and it is recommended to use the INFO level in production environments.
+- The logs do not contain sensitive information such as API keys (which have been desensitized).
 
-#### 操作步骤
+### 8.6 Tool capability index
 
-1. **查看缓存状态**
-   - "设置 → 系统配置 → 缓存管理"。
-   - 显示 Redis 连接状态、内存使用、各缓存类别命中率。
+#### Function description
 
-2. **缓存操作**
-   - 清空指定类别缓存（行情、分析结果、会话）。
-   - 清空全部缓存（需二次确认）。
+The tool capability index establishes a unified index for all Agents, Tools, and Skills in the system and supports semantic search, making it easy to quickly locate available capabilities in workflow orchestration and intelligent assistants.
 
-3. **缓存策略配置**
-   - 行情数据缓存时长（默认 1 小时）。
-   - 分析结果缓存时长（默认 24 小时）。
+#### Operation steps
 
-#### 注意事项
+1. **View capability index**
+   - "settings → System management → Tool capability index". 
+   - Displays a list of all registered Agents, Tools, and Skills.
 
-- 清空缓存会导致后续请求重新获取数据，短暂变慢。
-- v3.0 使用 Redis 端口 6381，与 v2.x 隔离。
+2. **Semantic search**
+   - Capabilities required to enter natural language descriptions, e.g."Get northbound funding data". 
+   - The system returns a list of matching Tools/Skills.
 
-### 8.8 数据导入管理（/settings/data-import）
+3. **Index management**
+   - The index can be rebuilt manually (rebuilding is recommended after adding Tool/Skill).
+   - View index status and statistics.
 
-#### 功能说明
+#### Things to note
 
-数据导入管理提供股票数据和社媒消息的批量导入入口，支持通过 API 接口将外部数据导入系统数据库。此功能为高级功能，需要高级版授权。
+- The capability index is the basis for AI workflow architects and intelligent assistant call tools, and it is important to keep the index up to date.
+- After a new Tool or Skill is added, the system will automatically update the index, but it is recommended to manually rebuild it regularly to ensure consistency.
 
-#### 操作步骤
+### 8.7 Cache management
 
-1. **进入数据导入管理**
-   - "设置 → 系统管理 → 数据导入管理"。
+#### Function description
 
-2. **股票数据导入**
-   - 点击"股票数据导入"，查看支持的导入数据类型和 API 文档。
-   - 支持导入：行情数据、财务数据、自定义指标等。
-   - 提供 JSON/CSV 模板下载，按模板格式准备数据后通过 API 上传。
+Cache management is used to view and manage Redis cache, including market data cache, analysis result cache, session cache, etc.
 
-3. **社媒消息导入**
-   - 点击"社媒消息导入"，查看社媒消息导入 API 指南。
-   - 支持 JSON 和 CSV 格式批量上传。
-   - 导入的社媒消息可在"社媒消息管理"中查看和使用。
+#### Operation steps
 
-4. **查看 API 指南**
-   - 页面提供详细的 API 接入文档链接。
-   - 包含认证方式、请求格式、字段说明、示例代码。
+1. **View cache status**
+   - "settings → System configuration → Cache management". 
+   - Displays Redis connection status, memory usage, and hit rate of each cache category.
 
-#### 注意事项
+2. **Caching operations**
+   - Clear cache of specified categories (quotes, analysis results, sessions).
+   - Clear all caches (requires second confirmation).
 
-- 数据导入需高级版授权，标准版用户仅可查看文档不可执行导入。
-- 导入前请确认数据格式正确，错误格式会导致导入失败。
-- 大批量导入建议分批执行，避免单次请求过大超时。
+3. **Cache policy configuration**
+   - Market data cache duration (default 1 hour).
+   - How long to cache analysis results (default 24 hours).
 
-### 8.9 社媒消息管理（/settings/social-media）
+#### Things to note
 
-#### 功能说明
+- Clearing the cache will cause subsequent requests to re-fetch data and be temporarily slowed down.
+- v3.0 Uses Redis port 6381, isolated from v2.x.
 
-社媒消息管理用于查看和管理导入的社交媒体舆情数据，支持按股票代码、市场、平台、情绪等多维度筛选，为新闻分析师提供额外的舆情信息源。
+### 8.8 Data import management (/settings/data-import)
 
-#### 操作步骤
+#### Function description
 
-1. **查看社媒消息**
-   - "设置 → 系统管理 → 社媒消息管理"。
-   - 列表展示所有已导入的社媒消息，包含来源平台、发布时间、内容摘要、情绪标签。
+Data import management provides batch import portals for stock data and social media messages, and supports importing external data into the system database through API interfaces. This feature is an advanced feature and requires premium version authorization.
 
-2. **筛选消息**
-   - 按股票代码筛选：查看与特定股票相关的舆情。
-   - 按市场筛选：A 股 / ETF。
-   - 按平台筛选：东方财富股吧、雪球、微博等。
-   - 按情绪筛选：利好 / 利空 / 中性。
+#### Operation steps
 
-3. **查看消息详情**
-   - 点击消息查看完整内容、原始链接、关联股票。
-   - 可查看该消息被哪些分析报告引用。
+1. **Enter data import management**
+   - "settings → System management → Data import management". 
 
-4. **上传社媒数据**
-   - 点击"上传数据"按钮。
-   - 选择文件格式（JSON / CSV）。
-   - 必填字段：股票代码、平台、内容、发布时间。
-   - 选择编码（UTF-8 / GBK）。
+2. **Stock data import**
+   - Click"Stock data import", View supported import data types and API documentation.
+   - Supports importing: market data, financial data, custom indicators, etc.
+   - Provide JSON/CSV template download, prepare data according to the template format and then upload it through API.
 
-5. **查看 API 指南**
-   - 点击"API 接入指南"查看详细的 API 文档。
-   - 包含认证方式、请求格式、字段说明。
+3. **Social media message import**
+   - Click"Social media message import", View the Social Media Message Import API Guide.
+   - Supports bulk uploads in JSON and CSV formats.
+   - Imported social media messages can be found in"Social media message management"View and use it.
 
-#### 注意事项
+4. **View the API guide**
+   - The page provides detailed API access document links.
+   - Contains authentication methods, request formats, field descriptions, and sample codes.
 
-- 社媒数据由用户自行导入，系统不主动采集。
-- 情绪标签由导入时指定或系统自动判断。
-- 社媒消息保留 90 天，过期自动清理。
+#### Things to note
 
-### 8.10 系统更新（/settings/update）
+- Data import requires Advanced Edition authorization. Standard Edition users can only view documents and cannot perform imports.
+- Please confirm that the data format is correct before importing. Incorrect format will cause the import to fail.
+- It is recommended to perform large batch imports in batches to avoid excessive timeout for a single request.
 
-#### 功能说明
+### 8.9 Social media message management (/settings/social-media)
 
-系统更新用于检查和安装系统版本更新，根据部署方式（Docker / Windows 便携版 / Windows 安装版）提供不同的更新方式。
+#### Function description
 
-#### 操作步骤
+Social media message management is used to view and manage imported social media public opinion data. It supports multi-dimensional filtering by stock code, market, platform, sentiment, etc., providing additional public opinion information sources for news analysts.
 
-1. **查看当前版本**
-   - "设置 → 系统管理 → 系统更新"。
-   - 显示当前版本号、构建号、发布日期。
+#### Operation steps
 
-2. **检查更新**
-   - 点击"检查更新"，系统连接更新服务器查询最新版本。
-   - 如有新版本，显示版本号、更新内容摘要、更新包大小。
+1. **Check social media news**
+   - "settings → System management → Social media message management". 
+   - The list displays all imported social media messages, including source platform, release time, content summary, and sentiment tags.
 
-3. **Docker 部署更新**
-   - Docker 部署不通过此页面更新。
-   - 使用命令行拉取新镜像并重启：
+2. **Filter messages**
+   - Filter by ticker: View sentiment related to a specific stock.
+   - Filter by market: A-shares/ETFs.
+   - Filter by platform: Oriental Fortune Stock Bar, Snowball, Weibo, etc.
+   - Filter by sentiment: Positive / Negative / Neutral.
+
+3. **View message details**
+   - Click on the message to view the full content, original link, and associated stocks.
+   - You can check which analysis reports this news is quoted by.
+
+4. **Upload social media data**
+   - Click"Upload data"button.
+   - Select file format (JSON/CSV).
+   - Required fields: stock code, platform, content, release time.
+   - Select encoding (UTF-8/GBK).
+
+5. **View the API guide**
+   - Click"API Access Guide"View detailed API documentation.
+   - Contains authentication method, request format, and field description.
+
+#### Things to note
+
+- Social media data is imported by users themselves and is not actively collected by the system.
+- Emotion labels are specified when importing or automatically determined by the system.
+- Social media messages are retained for 90 days and automatically cleared upon expiration.
+
+### 8.10 System update (/settings/update)
+
+#### Function description
+
+System Update is used to check and install system version updates, providing different update methods according to the deployment method (Docker/Windows Portable Edition/Windows Installation Edition).
+
+#### Operation steps
+
+1. **View current version**
+   - "settings → System management → System update". 
+   - Displays the current version number, build number, and release date.
+
+2. **Check for updates**
+   - Click"Check for updates", The system connects to the update server to query the latest version.
+   - If there is a new version, the version number, update content summary, and update package size are displayed.
+
+3. **Docker Deploy updates**
+   - Docker Deployments are not updated through this page.
+   - Use the command line to pull the new image and restart:
      ```bash
      docker-compose -p ta-v3 pull
      docker-compose -p ta-v3 up -d
      ```
 
-4. **Windows 便携版/安装版更新**
-   - 点击"下载更新包"，下载最新版本安装包。
-   - 下载完成后点击"应用更新"，系统自动停止服务、替换文件、重启。
-   - 更新过程中请勿关闭程序或断电。
+4. **Windows Portable/installed version updates**
+   - Click"Download update package", Download the latest version installation package.
+   - After the download is complete, click"Apply updates", The system automatically stops services, replaces files, and restarts.
+   - Do not close the program or cut off power during the update process.
 
-5. **查看更新历史**
-   - 页面展示已安装的版本历史记录。
+5. **View update history**
+   - The page displays the installed version history.
 
-#### 注意事项
+#### Things to note
 
-- 更新前建议备份配置和数据。
-- Docker 部署请通过拉取新镜像方式更新，不使用此页面。
-- 更新失败可查看日志定位原因，通常为网络问题或文件占用。
-- 大版本升级（如 v2.x → v3.0）不支持在线更新，需全新安装。
+- It is recommended to back up configuration and data before updating.
+- Docker Please update the deployment by pulling new images and do not use this page.
+- If the update fails, you can check the log to locate the reason, which is usually a network problem or file occupation.
+- Major version upgrades (such as v2.x → v3.0) Online updates are not supported and a new installation is required.
 
-### 8.11 提示词模板（/settings/templates）
+### 8.11 Prompt word template (/settings/templates)
 
-#### 功能说明
+#### Function description
 
-提示词模板管理用于管理各 Agent 的系统提示词模板，支持按 Agent 类型、Agent 名称、模板名称、偏好、来源、状态筛选，提供查看、克隆、编辑、删除、设为当前、调试等操作。此功能为高级功能。
+Prompt word template management is used to manage the system prompt word templates of each Agent. It supports filtering by Agent type, Agent name, template name, preference, source, status, and provides operations such as viewing, cloning, editing, deleting, setting as current, and debugging. This feature is advanced.
 
-#### 操作步骤
+#### Operation steps
 
-1. **查看模板列表**
-   - "设置 → 分析配置 → 提示词模板"。
-   - 支持多维度筛选：Agent 类型、Agent 名称、模板名称、偏好标签、来源（系统内置/自定义）、状态（启用/禁用）。
+1. **View template list**
+   - "settings → Analysis configuration → prompt word template". 
+   - Supports multi-dimensional filtering: Agent type, Agent name, template name, preference label, source (system built-in/customized), status (enabled/disabled).
 
-2. **编辑模板**
-   - 点击模板进入编辑页面。
-   - 编辑区展示可用变量（如 `{stock_name}`、`{industry}`、`{financial_data}` 等）。
-   - 提示词字段说明帮助理解每个字段的用途。
-   - 保存时系统会进行基本语法检查。
+2. **Edit template**
+   - Click on the template to enter the editing page.
+   - The editing area displays available variables (such as `{stock_name}`, `{industry}`, `{financial_data}` etc.).
+   - Prompt word field descriptions help understand the purpose of each field.
+   - The system will perform a basic syntax check when saving.
 
-3. **克隆模板**
-   - 克隆现有模板作为基础，修改后另存为新模板。
-   - 适合基于系统内置模板进行定制化。
+3. **Clone template**
+   - Clone an existing template as a base, then modify it and save it as a new template.
+   - Suitable for customization based on system built-in templates.
 
-4. **设为当前模板**
-   - 每个 Agent 可设置一个"当前模板"，分析时使用该模板。
-   - 切换当前模板会立即生效。
+4. **Set as current template**
+   - Each Agent can set one"Current template", Use this template when analyzing.
+   - Switching the current template will take effect immediately.
 
-5. **调试模板**
-   - 在编辑页面可点击"调试"，用测试数据渲染模板。
-   - 查看实际注入给 LLM 的完整提示词，便于优化。
+5. **debug template**
+   - Clickable on the edit page"Debugging", Render the template with test data.
+   - View the complete prompt words actually injected into LLM to facilitate optimization.
 
-6. **Prompt 实时预览（/settings/prompt-preview）**
-   - 在"设置 → 分析配置"中点击"Prompt 预览"，进入 Prompt 实时预览页面。
-   - 选择 Agent 类型和 Agent 名称，预览分层组装后的最终 Prompt。
-   - 查看各段来源（系统模板、自定义模板、注入策略等）和能力缺口分析。
-   - 便于理解 Prompt 组装流程和排查提示词问题。
+6. **Prompt Real-time preview (/settings/prompt-preview)**
+   - in"settings → Analysis configuration"middle click"Prompt Preview", Enter the Prompt real-time preview page.
+   - Select the Agent type and Agent name to preview the final prompt after layered assembly.
+   - Review the sources of each segment (system templates, custom templates, injection strategies, etc.) and capability gap analysis.
+   - It is easy to understand the Prompt assembly process and troubleshoot prompt word problems.
 
-#### 注意事项
+#### Things to note
 
-- 系统内置模板不可删除，但可克隆后修改。
-- 修改模板会影响使用该模板的所有分析任务，请先调试验证。
-- 模板中使用的变量必须与 Agent 上下文匹配，否则渲染时会留空。
-- Prompt 预览为只读查看，修改 Prompt 请到提示词模板或注入策略管理。
+- The system's built-in templates cannot be deleted, but they can be cloned and modified.
+- Modifying the template will affect all analysis tasks using the template. Please debug and verify it first.
+- Variables used in the template must match the Agent context, otherwise they will be left empty when rendering.
+- Prompt The preview is read-only. To modify Prompt, please go to prompt word template or injection policy management.
 
-### 8.12 注入策略管理（/settings/prompt-policies）
+### 8.12 Inject policy management (/settings/prompt-policies)
 
-#### 功能说明
+#### Function description
 
-注入策略管理用于按 Agent + 场景控制上下文注入规则，精细化管理每个 Agent 在不同场景下接收的上下文信息。此功能为高级功能。
+Injection strategy management is used to press Agent + Scenario control context injection rules, finely manage the context information received by each Agent in different scenarios. This feature is advanced.
 
-#### 配置项说明
+#### Configuration item description
 
-1. **注入模式**：控制上下文注入的整体策略。
-2. **行业/个股画像继承**：是否将行业和个股的画像信息注入到 Agent 上下文。
-3. **能力块注入**：是否注入可用工具/能力的描述，让 Agent 知道可以调用哪些工具。
-4. **外部缺口提醒**：当数据缺失时是否提醒 Agent 注意数据局限性。
-5. **可比公司注入**：是否注入同行业可比公司信息供 Agent 参考。
-6. **注入位置**：控制注入内容在提示词中的位置（前置/后置/内联）。
+1. **injection mode**: Control the overall strategy of context injection.
+2. **Industry/stock portrait inheritance**: Whether to inject industry and stock portrait information into the Agent context.
+3. **ability block injection**: Whether to inject descriptions of available tools/capabilities so that the Agent knows which tools can be called.
+4. **External gap reminder**: Whether to remind the Agent to pay attention to data limitations when data is missing.
+5. **Comparable company injection**: Whether to inject information about comparable companies in the same industry for Agent's reference.
+6. **Injection location**: Control the position of the injected content in the prompt word (prefix/postfix/inline).
 
-#### 操作步骤
+#### Operation steps
 
-1. **创建注入策略**
-   - "设置 → 分析配置 → 注入策略管理"，点击"新建策略"。
-   - 选择目标 Agent 和场景。
-   - 配置各项注入规则。
-   - 保存并启用。
+1. **Create an injection strategy**
+   - "settings → Analysis configuration → Injection strategy management", Click"New strategy". 
+   - Select the target agent and scenario.
+   - Configure various injection rules.
+   - Save and enable.
 
-2. **管理策略**
-   - 支持启用/禁用、编辑、删除策略。
-   - 每个 Agent + 场景组合可配置独立策略。
+2. **management strategy**
+   - Support enabling/disabling, editing, and deleting policies.
+   - each Agent + Scenario combinations can be configured with independent strategies.
 
-#### 注意事项
+#### Things to note
 
-- 注入策略影响 Agent 的分析质量和 Token 消耗，配置越详细 Token 消耗越大。
-- 建议先使用默认策略，仅在分析效果不理想时调整。
-- 策略变更后需重新执行分析才能生效。
+- The injection strategy affects the Agent's analysis quality and Token consumption. The more detailed the configuration, the greater the Token consumption.
+- It is recommended to use the default strategy first and only adjust it when the analysis effect is not satisfactory.
+- After the policy is changed, the analysis needs to be re-executed to take effect.
 
-### 8.13 Prompt 设计助手（/settings/prompt-design）
+### 8.13 Prompt Design Assistant (/settings/prompt-design)
 
-#### 功能说明
+#### Function description
 
-Prompt 设计助手是一个引导式工具，通过四步流程帮助用户设计高质量的分析提示词，适合不熟悉提示词工程的用户快速上手。此功能为高级功能。
+Prompt The design assistant is a guided tool that helps users design high-quality analysis prompt words through a four-step process. It is suitable for users who are not familiar with prompt word engineering to get started quickly. This feature is advanced.
 
-#### 设计流程（四步）
+#### Design process (four steps)
 
-1. **选择分析目标**
-   - 选择本次分析的核心目标（如估值分析、风险评估、行业对比等）。
+1. **Select analysis target**
+   - Select the core objective of this analysis (such as valuation analysis, risk assessment, industry comparison, etc.).
 
-2. **选择股票与行业**
-   - 指定目标股票和所属行业。
-   - 系统会据此推荐相关变量和数据。
+2. **Select stocks and industries**
+   - Specify the target stock and industry.
+   - The system will recommend relevant variables and data accordingly.
 
-3. **行业配置**
-   - 查询行业是否已有配置。
-   - 如已有配置可直接使用，如无则可创建新的行业配置。
-   - 行业配置包含行业特征、关键指标、可比公司等。
+3. **Industry configuration**
+   - Check whether the industry has been configured.
+   - If there is an existing configuration, you can use it directly; if not, you can create a new industry configuration.
+   - Industry configuration includes industry characteristics, key indicators, comparable companies, etc.
 
-4. **流程与节点**
-   - 选择分析流程（对应工作流）。
-   - 优化各节点的提示词。
-   - 系统根据行业配置自动推荐优化建议。
+4. **Processes and nodes**
+   - Select the analysis process (corresponding to the workflow).
+   - Optimize the prompt words of each node.
+   - The system automatically recommends optimization suggestions based on industry configurations.
 
-#### 操作步骤
+#### Operation steps
 
-1. "设置 → 分析配置 → Prompt 设计助手"。
-2. 按四步流程依次配置。
-3. 完成后可预览生成的提示词。
-4. 一键保存为提示词模板，或直接应用到指定 Agent。
+1. "settings → Analysis configuration → Prompt design assistant". 
+2. Follow the four-step process to configure.
+3. After completion, you can preview the generated prompt words.
+4. Save it as a prompt word template with one click, or apply it directly to the specified Agent.
 
-#### 注意事项
+#### Things to note
 
-- Prompt 设计助手生成的提示词建议人工 review 后再应用。
-- 行业配置是 Prompt 设计的基础，建议先完善行业配置。
-- 不同分析目标适合不同的提示词结构，不要一概而论。
+- Prompt The prompt words generated by the design assistant are recommended to be manually reviewed before application.
+- Industry configuration is the basis of Prompt design. It is recommended to improve the industry configuration first.
+- Different analysis goals are suitable for different prompt word structures, so do not generalize.
 
-### 8.14 行业/个股配置（/settings/analysis-profiles）
+### 8.14 Industry/Stock Configuration (/settings/analysis-profiles)
 
-#### 功能说明
+#### Function description
 
-行业/个股配置通过聊天式协作生成行业分析草案，帮助系统理解特定行业和个股的特征，从而提升分析质量。配置内容包括行业特征、分析维度、关键指标、可比公司等。此功能为智能配置功能。
+Industry/stock configuration generates industry analysis drafts through chat-style collaboration, helping the system understand the characteristics of specific industries and individual stocks, thereby improving the quality of analysis. Configuration content includes industry characteristics, analysis dimensions, key indicators, comparable companies, etc. This function is an intelligent configuration function.
 
-#### 操作步骤
+#### Operation steps
 
-1. **进入配置页面**
-   - "设置 → 分析配置 → 行业/个股配置"。
+1. **Enter the configuration page**
+   - "settings → Analysis configuration → Industry/Stock Allocation". 
 
-2. **选择行业**
-   - 从预设行业列表中选择目标行业，或输入自定义行业名称。
+2. **Select industry**
+   - Select your target industry from a list of preset industries, or enter a custom industry name.
 
-3. **生成行业草案**
-   - 点击"生成草案"，AI 会根据行业信息生成首版配置草案。
-   - 草案包含：行业特征描述、推荐分析维度、关键指标、可比公司列表。
+3. **Generate industry draft**
+   - Click"Generate draft", AI The first version of the configuration draft will be generated based on industry information.
+   - The draft includes: description of industry characteristics, recommended analysis dimensions, key indicators, and list of comparable companies.
 
-4. **手动精修**
-   - 在右侧面板查看当前草案。
-   - 可手动编辑各字段，补充或修正 AI 生成的内容。
-   - 数据覆盖评估显示配置的数据完整度。
+4. **Manual finishing**
+   - View the current draft in the right panel.
+   - Each field can be manually edited to supplement or correct the AI-generated content.
+   - The data coverage assessment shows the data completeness of the configuration.
 
-5. **保存配置**
-   - 精修完成后保存配置。
-   - 配置生效后，分析该行业的股票时会自动应用。
+5. **Save configuration**
+   - Save the configuration after refinement is completed.
+   - After the configuration takes effect, it will be automatically applied when analyzing stocks in this industry.
 
-6. **下一步建议**
-   - 系统根据当前配置给出下一步优化建议（如补充可比公司、增加关键指标等）。
+6. **Suggestions for next steps**
+   - The system gives next-step optimization suggestions based on the current configuration (such as adding comparable companies, adding key indicators, etc.).
 
-#### 注意事项
+#### Things to note
 
-- 行业配置越完善，分析质量越高，但配置时间也越长。
-- 可比公司建议选择同行业、相近市值的 3-5 只股票。
-- 配置可随时修改，修改后新执行的分析会使用最新配置。
-- 系统预设了部分常见行业的配置模板，可直接使用或在此基础上修改。
+- The more complete the industry configuration, the higher the analysis quality, but the longer the configuration time.
+- For comparable companies, it is recommended to select 3-5 stocks in the same industry and similar market capitalization.
+- The configuration can be modified at any time, and newly executed analyzes will use the latest configuration after modification.
+- The system has preset configuration templates for some common industries, which can be used directly or modified on this basis.
 
-### 8.15 使用统计（/settings/usage）
+### 8.15 Usage statistics (/settings/usage)
 
-#### 功能说明
+#### Function description
 
-使用统计页面展示系统各功能模块的 LLM 调用记录和 Token 消耗情况，帮助用户了解资源使用趋势和成本估算。
+The usage statistics page displays the LLM call records and token consumption of each functional module of the system, helping users understand resource usage trends and cost estimates.
 
-#### 统计范围说明
+#### Description of statistical scope
 
-使用统计覆盖以下功能的 LLM 调用：
-- 单股研究（analysis_type: stock_analysis）
-- 批量分析（analysis_type: stock_analysis）
-- 定时分析（走分析服务链路）
-- Agent 工坊（analysis_type: agent_workshop）
-- Skill 生成（analysis_type: skill_generation）
-- Skill 参数提取/测试（analysis_type: skill_test）
-- AI 对话助手（analysis_type: assistant）
-- Prompt 设计助手（analysis_type: prompt_design）
-- 持仓分析（analysis_type: portfolio）
-- 操作复盘（analysis_type: trade_review）
+Usage statistics cover LLM calls for the following functions:
+- Single Stock Research (analysis_type: stock_analysis) 
+- Batch analysis (analysis_type: stock_analysis) 
+- Scheduled analysis (take the analysis service link)
+- Agent Workshop (analysis_type: agent_workshop) 
+- Skill generate(analysis_type: skill_generation) 
+- Skill Parameter extraction/testing (analysis_type: skill_test) 
+- AI Conversation Assistant (analysis_type: assistant) 
+- Prompt Design Assistant (analysis_type: prompt_design) 
+- Position analysis (analysis_type: portfolio) 
+- Operation review (analysis_type: trade_review) 
 
-#### 统计概览
+#### Statistical overview
 
-页面顶部展示四个核心指标：
+Four core indicators are displayed at the top of the page:
 
-| 指标 | 说明 |
+| indicator | Description |
 |------|------|
-| 总请求数 | 统计周期内股票分析的 LLM API 请求总次数 |
-| 总输入 Token | 统计周期内股票分析请求的输入 Token 总量 |
-| 总输出 Token | 统计周期内股票分析请求的输出 Token 总量 |
-| 总成本 | 按系统配置的 Token 单价估算的成本（仅供参考） |
+| Total requests | Total number of LLM API requests for stock analysis during the statistical period |
+| total input Token | The total amount of input tokens for stock analysis requests during the statistical period |
+| total output Token | The total amount of output tokens for stock analysis requests during the statistical period |
+| total cost | Estimated cost based on system configuration Token unit price (for reference only) |
 
-#### 关于成本估算
+#### About cost estimates
 
-- 成本是按系统配置中各模型的 Token 单价**估算**得出，并非实际账单金额。
-- 各 LLM 供应商的计费规则不同（如订阅制、Coding Plan、包月套餐等），估算成本与实际账单可能存在较大偏差。
-- 建议将此成本数据作为**相对趋势参考**（观察消耗增减趋势），而非绝对费用依据。
-- 实际费用请以 LLM 供应商官方账单为准。
+- The cost is based on the Token unit price of each model in the system configuration.**Estimate**derived, not the actual bill amount.
+- Each LLM provider has different billing rules (such as subscription system, coding plan, monthly package, etc.), and there may be a large deviation between the estimated cost and the actual bill.
+- It is recommended that this cost data be**Relative trend reference** (Observe consumption increase and decrease trends) rather than absolute cost basis.
+- Please refer to the LLM supplier's official bill for actual charges.
 
-#### 图表区域
+#### chart area
 
-1. **按供应商统计**：饼图展示各 LLM 供应商（DeepSeek、通义千问、OpenAI 等）的 Token 占比。
-2. **按模型统计**：饼图展示各模型（如 deepseek-chat、deepseek-reasoner、qwen-plus 等）的 Token 占比。
-3. **每日成本趋势**：折线图展示统计周期内每日的估算成本变化趋势。
+1. **Statistics by supplier**: The pie chart shows the Token proportion of each LLM provider (DeepSeek, Tongyi Qianwen, OpenAI, etc.).
+2. **Statistics by model**: The pie chart shows the Token proportion of each model (such as deepseek-chat, deepseek-reasoner, qwen-plus, etc.).
+3. **daily cost trend**: The line chart shows the daily estimated cost change trend within the statistical period.
 
-#### 使用记录
+#### Usage records
 
-底部表格展示详细的使用记录，包含：
-- 时间：请求时间。
-- 供应商：LLM 供应商名称。
-- 模型：使用的模型名称。
-- 输入/输出 Token：本次请求的 Token 消耗。
-- 成本：本次请求的估算费用。
-- 功能：调用的功能模块（如单股分析、批量分析等）。
+The bottom table displays detailed usage records, including:
+- Time: Request time.
+- Supplier: LLM supplier name.
+- Model: The name of the model to use.
+- Input/output Token: Token consumption for this request.
+- Cost: The estimated cost of this request.
+- Function: the function module called (such as single stock analysis, batch analysis, etc.).
 
-#### 操作步骤
+#### Operation steps
 
-1. "设置 → 系统管理 → 使用统计"。
-2. 选择统计周期（最近 7 天 / 30 天 / 90 天）。
-3. 查看统计概览和图表。
-4. 如需最新数据，点击"刷新"按钮。
-5. 可清理旧记录释放存储空间。
+1. "settings → System management → usage statistics". 
+2. Select a fiscal period (last 7 days / 30 days / 90 days).
+3. View statistical overviews and charts.
+4. For the latest data, click"Refresh"button.
+5. Old records can be cleared to free up storage space.
 
-#### 注意事项
+#### Things to note
 
-- 使用统计覆盖系统主要功能的 LLM 调用，包括股票分析、Agent 工坊、Skill 生成、AI 对话助手、持仓分析、操作复盘等。
-- 估算成本仅供参考，实际费用以 LLM 供应商账单为准。
-- 建议关注 Token 消耗的**相对趋势**，而非绝对金额。
-- 如发现 Token 消耗异常突增，可排查是否有异常的分析任务或密钥泄露。
+- Use statistics to cover LLM calls for the main functions of the system, including stock analysis, Agent workshop, Skill generation, AI dialogue assistant, position analysis, operation review, etc.
+- Estimated costs are for reference only, actual charges are subject to LLM supplier bill.
+- It is recommended to pay attention to Token consumption**relative trend**, rather than an absolute amount.
+- If you find an abnormal sudden increase in Token consumption, you can check whether there are abnormal analysis tasks or key leaks.
 
 ---
 
-## 第九章 个人设置（/settings）
+## Chapter 9 Personal Settings (/settings)
 
-个人设置模块管理当前用户的个人偏好和账户安全配置，位于"设置 → 个人设置"下。包含以下子模块：通用设置、外观设置、分析偏好、通知设置、安全设置、助理设置、邮件通知（高级功能）、渠道推送（高级功能）、定时分析分组、定时分析配置、授权管理。其中定时分析分组和定时分析配置详见 [6.5 定时分析](#65-定时分析)。
+The personal settings module manages the current user's personal preferences and account security configuration, located at"settings → personal settings"Down. Contains the following sub-modules: general settings, appearance settings, analysis preferences, notification settings, security settings, assistant settings, email notifications (advanced functions), channel push (advanced functions), scheduled analysis grouping, scheduled analysis configuration, and authorization management. For details on timing analysis grouping and timing analysis configuration, see [6.5 timing analysis](#65-timing analysis). 
 
-### 9.1 通用设置
+### 9.1 General settings
 
-#### 功能说明
+#### Function description
 
-配置用户的基本信息偏好。
+Configure the user's basic information preferences.
 
-#### 操作步骤
+#### Operation steps
 
-- **用户名**：显示当前登录用户名（只读，不可修改）。
-- **邮箱**：设置或修改个人邮箱地址。
-- **语言**：简体中文 / English。
-- **时区**：北京时间 (UTC+8) / 纽约时间 (UTC-5) / 伦敦时间 (UTC+0)。
-- 点击"保存设置"按钮生效。
+- **Username**: Displays the current login user name (read-only, cannot be modified).
+- **Email**: Set or modify your personal email address.
+- **language**: Simplified Chinese / English.
+- **time zone**: Beijing time (UTC+8) / new york time (UTC-5) / london time (UTC+0). 
+- Click"Save settings"button takes effect.
 
-### 9.2 外观设置
+### 9.2 Appearance settings
 
-#### 功能说明
+#### Function description
 
-配置界面显示偏好。
+Configure interface display preferences.
 
-#### 操作步骤
+#### Operation steps
 
-- **主题模式**：浅色主题 / 深色主题 / 跟随系统。
-- **侧边栏宽度**：通过滑块调整侧边栏宽度（200-400px，步进 20px）。
-- 点击"保存设置"按钮生效。
+- **theme mode**: Light theme / dark theme / follow system.
+- **sidebar width**: Adjust sidebar width via slider (200-400px in 20px steps).
+- Click"Save settings"button takes effect.
 
-### 9.3 分析偏好
+### 9.3 Analyze preferences
 
-#### 功能说明
+#### Function description
 
-配置单股分析时的默认行为，减少每次分析时的重复设置。
+Configure the default behavior when analyzing single stocks to reduce repeated settings for each analysis.
 
-#### 操作步骤
+#### Operation steps
 
-- **默认市场**：A 股 / ETF，影响进入单股研究时的默认市场选择。
-- **默认分析深度**：1 级 - 快速分析 / 2 级 - 基础分析 / 3 级 - 标准分析（推荐）/ 4 级 - 深度分析 / 5 级 - 全面分析。
-- **默认分析师**：勾选每次分析默认选中的分析师（大盘分析师、板块分析师、市场分析师、基本面分析师、新闻分析师、社媒分析师）。
-- **风险偏好**：防御 / 中性 / 高弹性（仅影响情景研究视角的呈现风格，不构成投资建议）。
-- **自动刷新**：开启后自动刷新分析结果。
-- **刷新间隔**：设置自动刷新间隔（10-300 秒）。
-- 点击"保存设置"按钮生效。
+- **Default market**: A Stock/ETF, affects the default market selection when entering individual stock research.
+- **Default analysis depth**: 1 Level - Quick analysis / Level 2 - Basic analysis / Level 3 - Standard analysis (recommended) / Level 4 - In-depth analysis / Level 5 - Comprehensive analysis.
+- **Default analyst**: Check the analysts selected by default for each analysis (market analysts, sector analysts, market analysts, fundamental analysts, news analysts, social media analysts).
+- **risk appetite**: Defensive / Neutral / Highly Resilient (only affects the presentation style of the scenario research perspective and does not constitute investment advice).
+- **Auto refresh**: Automatically refresh analysis results after turning on.
+- **refresh interval**: Set the auto-refresh interval (10-300 seconds).
+- Click"Save settings"button takes effect.
 
-### 9.4 通知设置
+### 9.4 Notification settings
 
-#### 功能说明
+#### Function description
 
-配置系统通知的接收方式。
+Configure how system notifications are received.
 
-#### 操作步骤
+#### Operation steps
 
-- **桌面通知**：开启/关闭浏览器桌面通知。
-- **研究完成通知**：开启/关闭分析任务完成时的通知。
-- **系统维护通知**：开启/关闭系统维护相关通知。
-- 点击"保存设置"按钮生效。
+- **Desktop notifications**: Turn on/off browser desktop notifications.
+- **Research completion notice**: Turn on/off notifications when analysis tasks are completed.
+- **System maintenance notification**: Turn on/off system maintenance related notifications.
+- Click"Save settings"button takes effect.
 
-### 9.5 安全设置
+### 9.5 Security settings
 
-#### 功能说明
+#### Function description
 
-账户安全相关配置。
+Account security related configurations.
 
-#### 操作步骤
+#### Operation steps
 
-- **修改密码**：点击"修改密码"按钮，在弹出的对话框中设置新密码。
+- **Change password**: Click"Change password"button to set a new password in the pop-up dialog box.
 
-### 9.6 助理设置
+### 9.6 Assistant settings
 
-#### 功能说明
+#### Function description
 
-配置智能助手的行为偏好和回复风格。
+Configure the smart assistant's behavior preferences and reply style.
 
-#### 操作步骤
+#### Operation steps
 
-- **助理名字**：设置智能助手的名称（如"小财"、"投研助手"），可在对话中直接称呼。
-- **语气风格**：专业严谨 / 轻松友好 / 简洁高效。
-- **自定义指令**：输入自定义指令（如"回答尽量简短、多用表格、回复时带上数据来源"），助理会参考这些指令调整回答风格。
-- 点击"保存设置"按钮生效。
+- **Assistant name**: Set the name of the smart assistant (such as"small fortune", "Investment research assistant") , Can be addressed directly in conversation.
+- **tone style**: Professional and rigorous / relaxed and friendly / concise and efficient.
+- **Custom instructions**: Enter custom instructions (such as"Keep answers as short as possible, use tables, and bring data sources when replying.") , The assistant will use these instructions to adjust the answering style.
+- Click"Save settings"button takes effect.
 
-### 9.7 邮件通知（/settings/email，高级功能）
+### 9.7 Email notification (/settings/email, advanced features)
 
-#### 功能说明
+#### Function description
 
-邮件通知是一个独立的高级功能页面，用于配置 SMTP 邮件服务器并管理各类分析任务的邮件通知规则。与 9.4 通知设置中的桌面通知不同，邮件通知支持将分析报告和执行结果通过邮件推送到指定邮箱。
+Email notification is an independent advanced function page used to configure the SMTP email server and manage email notification rules for various analysis tasks. Unlike desktop notifications in 9.4 notification settings, email notifications support pushing analysis reports and execution results to designated mailboxes via email.
 
-#### 操作步骤
+#### Operation steps
 
-1. **配置 SMTP 服务器**
-   - "设置 → 个人设置 → 邮件通知"。
-   - 填写 SMTP 服务器地址、端口、发送方邮箱、SMTP 用户名和密码。
-   - 选择加密方式（SSL / TLS / 无加密）。
-   - 点击"发送测试邮件"验证配置是否正确。
+1. **Configure SMTP server**
+   - "settings → personal settings → Email notification". 
+   - Fill in the SMTP server address, port, sender email, SMTP username and password.
+   - Select encryption method (SSL / TLS / No encryption).
+   - Click"Send test email"Verify that the configuration is correct.
 
-2. **配置通知规则**
-   - 选择需要邮件通知的事件类型：
-     - **单股研究完成**：单股分析任务完成后发送报告摘要。
-     - **批量分析完成**：批量分析全部完成后发送汇总结果。
-     - **定时分析完成**：定时分析任务完成后发送报告。
-     - **分析失败通知**：任务失败时发送错误通知。
-   - 设置收件人邮箱（支持多个，逗号分隔）。
+2. **Configure notification rules**
+   - Select the event type that requires email notification:
+     - **Single stock research completed**: A report summary is sent after the single stock analysis task is completed.
+     - **Batch analysis completed**: The summary results are sent after all batch analyzes are completed.
+     - **Timing analysis completed**: Send a report after the scheduled analysis task is completed.
+     - **Analysis failure notification**: Send error notification when task fails.
+   - Set the recipient email address (multiple are supported, separated by commas).
 
-3. **查看发送历史**
-   - 页面下方展示邮件发送历史记录。
-   - 可查看每封邮件的发送状态、发送时间、收件人、主题。
-   - 发送失败的邮件可点击"重发"。
+3. **View sending history**
+   - The email sending history is displayed at the bottom of the page.
+   - You can view the sending status, sending time, recipients, and subject of each email.
+   - Emails that failed to be sent can be clicked"Resend". 
 
-#### 注意事项
+#### Things to note
 
-- 邮件通知为高级功能，需要高级版授权。
-- SMTP 密码以加密方式存储，不会明文展示。
-- 建议使用专用邮箱发送通知，避免主邮箱被限流。
-- 定时分析的邮件通知建议配合 6.5 定时分析配置使用。
+- Email notification is an advanced feature and requires premium version authorization.
+- SMTP Passwords are stored in encrypted form and will not be displayed in clear text.
+- It is recommended to use a dedicated mailbox to send notifications to avoid being limited by the main mailbox.
+- It is recommended to use the scheduled analysis email notification in conjunction with the 6.5 scheduled analysis configuration.
 
-### 9.8 渠道推送（/settings/channel-configs，高级功能）
+### 9.8 Channel push (/settings/channel-configs, advanced features)
 
-#### 功能说明
+#### Function description
 
-渠道推送是一个独立的高级功能页面，支持将系统事件推送到多种即时通讯渠道（飞书、钉钉、企业微信、邮件），实现多渠道消息触达。与 9.7 邮件通知不同，渠道推送支持多种 IM 平台和更灵活的事件订阅。
+Channel push is an independent advanced function page that supports pushing system events to multiple instant messaging channels (Feishu, DingTalk, Enterprise WeChat, and email) to achieve multi-channel message access. Unlike 9.7 email notifications, channel push supports multiple IM platforms and more flexible event subscriptions.
 
-#### 支持的推送渠道
+#### Supported push channels
 
-| 渠道 | 说明 | 配置项 |
+| channel | Description | Configuration items |
 |------|------|--------|
-| **飞书** | 推送到飞书群或个人 | Webhook URL、签名密钥 |
-| **钉钉** | 推送到钉钉群 | Webhook URL、加签密钥 |
-| **企业微信** | 推送到企业微信群 | Webhook URL |
-| **邮件** | 推送到指定邮箱 | SMTP 配置（与 9.7 共享） |
+| **Feishu** | Push to Feishu group or individual | Webhook URL, Signing key |
+| **DingTalk** | Push to DingTalk group | Webhook URL, Signing key |
+| **Enterprise WeChat** | Push to corporate WeChat group | Webhook URL |
+| **Mail** | Push to designated email | SMTP Configuration (shared with 9.7) |
 
-#### 支持的事件订阅
+#### Supported event subscriptions
 
-| 事件 | 说明 |
+| event | Description |
 |------|------|
-| **分析完成** | 单股/批量/定时分析完成后推送报告摘要 |
-| **预警通知** | 价格预警、止盈止损触发时推送 |
-| **工具缺口** | AI 工作流架构师发现 Skill 缺口时推送 |
-| **系统通知** | 系统更新、授权到期等系统事件推送 |
+| **Analysis completed** | Push report summary after completion of single stock/batch/timed analysis |
+| **Warning notification** | Pushed when price warning, take profit and stop loss are triggered |
+| **tool gap** | AI Pushed when the workflow architect finds a skill gap |
+| **System notification** | Push system events such as system updates and authorization expiration |
 
-#### 操作步骤
+#### Operation steps
 
-1. **进入渠道推送页面**
-   - "设置 → 个人设置 → 渠道推送"。
+1. **Enter the channel push page**
+   - "settings → personal settings → Channel push". 
 
-2. **添加推送渠道**
-   - 点击"新增渠道"。
-   - 选择渠道类型（飞书 / 钉钉 / 企业微信 / 邮件）。
-   - 填写渠道配置（Webhook URL、密钥等）。
-   - 点击"测试连接"验证渠道可用性。
+2. **Add push channel**
+   - Click"Add new channels". 
+   - Select the channel type (Feishu / DingTalk / Business WeChat / Email).
+   - Fill in the channel configuration (Webhook URL, keys, etc.).
+   - Click"test connection"Verify channel availability.
 
-3. **配置事件订阅**
-   - 在渠道详情中选择要订阅的事件类型。
-   - 可为不同渠道订阅不同的事件组合。
+3. **Configure event subscription**
+   - Select the event type to subscribe to in the channel details.
+   - Different event combinations can be subscribed to different channels.
 
-4. **管理渠道**
-   - 支持启用/禁用、编辑、删除渠道。
-   - 可查看每个渠道的推送历史和成功率。
+4. **Management channels**
+   - Supports enabling/disabling, editing, and deleting channels.
+   - You can view the push history and success rate of each channel.
 
-#### 注意事项
+#### Things to note
 
-- 渠道推送为高级功能，需要高级版授权。
-- Webhook URL 和密钥以加密方式存储。
-- 各 IM 平台对消息频率有限制，建议只订阅重要事件。
-- 飞书和钉钉的加签密钥请妥善保管，泄露后请立即重置。
+- Channel push is an advanced feature and requires premium version authorization.
+- Webhook URL and keys are stored encrypted.
+- Each IM platform has limits on message frequency. It is recommended to only subscribe to important events.
+- Please keep your Feishu and DingTalk signing keys properly and reset them immediately if they are leaked.
 
 ---
 
-## 第十章 常见问题（FAQ）
+## Chapter 10 Frequently Asked Questions (FAQ)
 
-### Q1：安装时提示端口被占用怎么办？
+### Q1: What should I do if it prompts that the port is occupied during installation?
 
-**A：** v3.0 默认使用端口 8002（后端）和 8082（前端）。如果端口被占用：
+**A: ** v3.0 By default, ports 8002 (backend) and 8082 (frontend) are used. If the port is occupied:
 
-1. Windows 安装包：安装程序会提示，可选择其他端口或释放占用端口。
-2. Docker 部署：修改 `docker-compose.yml` 中的端口映射。
-3. 查看端口占用：Windows 使用 `netstat -ano | findstr :8002`，Linux 使用 `lsof -i:8002`。
+1. Windows Installation package: The installation program will prompt you to select another port or release the occupied port.
+2. Docker Deployment:Modify `docker-compose.yml` port mapping in .
+3. View port occupancy: Windows uses `netstat -ano | findstr :8002`, Linux Use `lsof -i:8002`. 
 
-### Q2：API 密钥配置后分析任务报错？
+### Q2: API Does the analysis task report an error after key configuration?
 
-**A：** 请按以下步骤排查：
+**A: ** Please follow the following steps to troubleshoot:
 
-1. 在"设置 → 系统配置"中点击"测试连接"验证密钥有效性。
-2. 检查密钥是否有足够余额/配额。
-3. 检查网络是否能访问对应的 API 端点（特别是 OpenAI 需要代理）。
-4. 查看"日志管理"中的错误日志获取详细信息。
-5. 如果使用代理，请在配置中设置 `HTTP_PROXY` / `HTTPS_PROXY`。
+1. in"settings → System configuration"middle click"test connection"Verify key validity.
+2. Check if the key has sufficient balance/quota.
+3. Check whether the corresponding API endpoint is accessible from the network (especially OpenAI requires a proxy).
+4. View"Log management"Get details in the error log.
+5. If using a proxy, set this in the configuration `HTTP_PROXY` / `HTTPS_PROXY`. 
 
-### Q3：分析任务一直排队中无法执行？
+### Q3: Analysis tasks are always queued and cannot be executed?
 
-**A：** 可能原因：
+**A: ** Possible reasons:
 
-1. 授权等级限制并发数，标准版同时只能运行 1 个任务，请等待当前任务完成。
-2. 检查是否有"僵尸"任务占用并发槽，可在任务中心取消。
-3. 系统资源不足（CPU/内存），请检查服务资源占用。
+1. The authorization level limits the number of concurrencies. The standard version can only run 1 task at the same time. Please wait for the current task to be completed.
+2. Check if there is"zombie"Tasks occupy concurrency slots and can be canceled in the task center.
+3. Insufficient system resources (CPU/memory), please check the service resource usage.
 
-### Q4：分析报告显示数据不完整或为空？
+### Q4: Analysis reports show incomplete or empty data?
 
-**A：** 可能原因：
+**A: ** Possible reasons:
 
-1. 数据源 API 配额耗尽，请在数据同步页面检查同步状态。
-2. 该股票为新股或次新股，历史数据不足。
-3. 股票代码输入有误，请核对代码格式。
-4. 基础数据未同步完成，请先执行"初始化股票基础数据"。
+1. The data source API quota is exhausted, please check the synchronization status on the data synchronization page.
+2. The stock is a new or sub-new stock and there is insufficient historical data.
+3. The stock code is entered incorrectly, please check the code format.
+4. Basic data synchronization is not completed, please execute first"Initialize basic stock data". 
 
-### Q5：如何降低 Token 消耗？
+### Q5: How to reduce Token consumption?
 
-**A：** 建议：
+**A: ** Suggestions:
 
-1. 日常分析使用低深度（1-2 级），重要标的再用高深度（3-4 级）。
-2. 选择性价比高的模型（如 DeepSeek）作为主力。
-3. 按需选择分析师，不需要的分析维度不要勾选。
-4. 善用缓存，对相同股票的重复分析会命中缓存。
-5. 在"系统管理 → 使用统计"中查看各功能的 Token 消耗趋势，及时调整策略（注意估算成本仅供参考，实际费用以供应商账单为准）。
+1. Use low depth (level 1-2) for daily analysis, and high depth (level 3-4) for important targets.
+2. Choose cost-effective models (such as DeepSeek) as your main workhorse.
+3. Select analysts as needed, and do not check unnecessary analysis dimensions.
+4. Make good use of cache, repeated analysis of the same stock will hit the cache.
+5. in"System management → usage statistics"Check the Token consumption trend of each function and adjust the strategy in a timely manner (note that the estimated cost is for reference only, and the actual cost is subject to the supplier's bill).
 
-### Q6：Docker 部署后如何升级版本？
+### Q6: Docker How to upgrade the version after deployment?
 
-**A：** 升级步骤：
+**A: ** Upgrade steps:
 
 ```bash
-# 1. 拉取新版本镜像
+# 1. Pull the new version image
 docker-compose -p ta-v3 pull
 
-# 2. 重启服务（数据不会丢失）
+# 2. Restart the service (data will not be lost)
 docker-compose -p ta-v3 up -d
 
-# 3. 查看日志确认启动正常
+# 3. Check the log to confirm that the startup is normal
 docker-compose -p ta-v3 logs -f backend
 ```
 
-如需回退，将镜像标签改为之前的精确版本号即可。
+If you need to roll back, just change the image label to the previous precise version number.
 
-### Q7：智能助手总是不理解我的问题怎么办？
+### Q7: What should I do if my smart assistant always doesn't understand my questions?
 
-**A：** 建议：
+**A: ** Suggestions:
 
-1. 尽量明确股票代码或名称，避免使用代词（如"那只股票"）。
-2. 一次只问一个问题，复杂需求可分步描述。
-3. 利用多主题会话，每个主题聚焦一个研究目标。
-4. 如果助手调用了错误的工具，可反馈"不对，我想要的是..."进行纠正。
-5. 定期清理不相关的会话历史，避免上下文干扰。
+1. Try to be clear about the stock symbol or name and avoid using pronouns (e.g."that stock") . 
+2. Only ask one question at a time, and complex requirements can be described step by step.
+3. Utilize multi-topic sessions, with each topic focusing on a research objective.
+4. If the assistant calls the wrong tool, you can provide feedback"No, what I want is..."Make corrections.
+5. Regularly clean up irrelevant session history to avoid contextual interference.
 
-### Q9：v3.0 能否与 v2.x 同时使用？
+### Q9: v3.0 Can it be used with v2.x?
 
-**A：** 可以。v3.0 与 v2.1.0、v2.0.1 使用完全独立的端口和数据卷：
+**A: ** Can. v3.0 and v2.1.0, v2.0.1 use completely independent ports and data volumes:
 
-| 版本 | MongoDB | Redis | Backend | 前端 | Docker 项目名 |
+| version | MongoDB | Redis | Backend | front end | Docker Project name |
 |------|---------|-------|---------|------|--------------|
 | v3.0 | 27019 | 6381 | 8002 | 8082 | `ta-v3` |
 | v2.1.0 | 27018 | 6380 | 8001 | 8081 | `ta-v210` |
 | v2.0.1 | 27017 | 6379 | 8000 | 8080 | `ta-v201` |
 
-三者可在同一台机器上共存，互不干扰。
+The three can coexist on the same machine without interfering with each other.
 
-### Q10：生成的 Skill 代码有安全问题吗？
+### Q10: Are there security issues with the generated Skill code?
 
-**A：** Skill 自动生成系统采取以下安全措施：
+**A: ** Skill The automatic generation system takes the following security measures:
 
-1. 静态验证阶段会进行安全检查，识别危险代码模式。
-2. 沙箱运行在隔离环境中，限制文件系统和网络访问。
-3. 生成的 Skill 建议在正式使用前人工 review 代码。
-4. Skill 的权限受工具白名单约束，仅能调用授权的工具。
+1. The static verification phase performs security checks to identify dangerous code patterns.
+2. Sandboxes run in an isolated environment with restricted file system and network access.
+3. It is recommended that the generated Skill be manually reviewed before official use.
+4. Skill The permissions are restricted by the tool whitelist, and only authorized tools can be called.
 
-### Q11：MCP 服务器如何被 Claude Desktop 调用？
+### Q11: MCP How is the server called by Claude Desktop?
 
-**A：** 配置步骤：
+**A: ** Configuration steps:
 
-1. 在"分析流 → MCP 服务器"生成 API Key。
-2. 在 Claude Desktop 配置文件（`claude_desktop_config.json`）中添加：
+1. in"Analysis flow → MCP server"Generate API Key.
+2. In the Claude Desktop configuration file (`claude_desktop_config.json`) Add in:
    ```json
    {
      "mcpServers": {
@@ -3088,381 +3088,381 @@ docker-compose -p ta-v3 logs -f backend
      }
    }
    ```
-3. 重启 Claude Desktop，即可在对话中调用 TradingAgents 的分析能力。
+3. Restart Claude Desktop to invoke the analytical capabilities of TradingAgents in a conversation.
 
-### Q12：如何备份和迁移数据？
+### Q12: How to back up and migrate data?
 
 **A：**
 
-1. **备份**：在"设置 → 系统管理 → 数据库"点击"备份数据库"，下载备份文件。
-2. **迁移**：在新环境部署系统后，通过"恢复"功能上传备份文件。
-3. **Docker 数据卷备份**：
+1. **backup**: in"settings → System management → database"Click"Back up database", Download the backup file.
+2. **Migrate**: After deploying the system in the new environment, pass"restore"Function to upload backup files.
+3. **Docker Data volume backup**: 
    ```bash
-   # 备份 MongoDB 数据卷
+   # Back up MongoDB data volumes
    docker run --rm -v ta-v3_mongodb_data:/data -v $(pwd):/backup ubuntu tar czf /backup/mongodb-backup.tar.gz /data
    ```
-4. 建议定期自动备份，可配合定时任务实现。
+4. It is recommended to automatically back up regularly, which can be implemented in conjunction with scheduled tasks.
 
-### Q13：京东云合作版与标准版有什么区别？
+### Q13: What is the difference between the JD Cloud Cooperation Edition and the Standard Edition?
 
-**A：** 京东云合作版是专为京东云用户定制的版本，主要区别：
+**A: ** JD Cloud Cooperation Edition is a version specially customized for JD Cloud users. The main differences are:
 
-1. **配置方式**：京东云版通过环境变量注入大模型和数据源配置，无需在界面手动配置；标准版需在界面配置。
-2. **可用模型**：京东云版仅支持京东云提供的 4 个模型（GLM-5 / GLM-5.1 / GLM-5.2 / DeepSeek-V4-Flash）；标准版支持多家供应商。
-3. **数据源**：京东云版仅支持 Tushare；标准版支持 Tushare / AKShare / BaoStock。
-4. **界面差异**：京东云版隐藏了大模型和数据源配置界面，禁用了相关 API。
-5. **LLM 限速**：京东云版内置 429 重试 + 降并发机制，确保在京东云 API 限速下稳定运行。
+1. **Configuration method**: The JD Cloud version injects large models and data source configurations through environment variables, eliminating the need for manual configuration on the interface; the Standard version requires configuration on the interface.
+2. **Available models**: JD Cloud version only supports 4 models (GLM-5 / GLM-5.1 / GLM-5.2 / DeepSeek-V4-Flash) provided by JD Cloud; the standard version supports multiple vendors.
+3. **data source**: JD Cloud version only supports Tushare; the standard version supports Tushare / AKShare / BaoStock.
+4. **Interface differences**: JD Cloud version hides the large model and data source configuration interface, and disables related APIs.
+5. **LLM speed limit**: Jingdong cloud version built-in 429 retry + Concurrency reduction mechanism ensures stable operation under JD Cloud API speed limit.
 
-详见 [1.4 京东云合作版部署](#14-京东云合作版部署可选)。
+See details [1.4 JD Cloud Cooperation Edition Deployment](#14-JD Cloud cooperation version deployment is optional). 
 
-### Q14：京东云版分析任务报 429 限速错误怎么办？
+### Q14: JD Cloud Edition Analysis Task Report 429 Speed Limit Error What should I do?
 
-**A：** 京东云版已内置限速应对机制，通常无需干预。如仍频繁报错：
+**A: ** JD.com Cloud version has built-in speed limit response mechanism, which usually does not require intervention. If errors still occur frequently:
 
-1. **调大任务间隔**：在 `.env` 中设置 `JDYUN_STOCK_INTERVAL_SECONDS=30`（默认 10 秒）。
-2. **避免高峰时段**：将定时分析安排在非高峰时段（如凌晨）。
-3. **降低分析深度**：使用较低的分析深度减少 LLM 调用次数。
-4. **检查并发数**：确保 `JDYUN_BATCH_MAX_CONCURRENT=1` 和 `JDYUN_WORKER_MAX_CONCURRENT=1`。
-5. **查看重试日志**：系统会自动指数退避重试最多 8 次，检查日志确认重试是否生效。
+1. **Increase task interval**: in `.env` Medium settings `JDYUN_STOCK_INTERVAL_SECONDS=30` (Default 10 seconds).
+2. **avoid peak hours**: Schedule scheduled analysis during off-peak hours (such as early morning).
+3. **Reduce the depth of analysis**: Use lower analysis depth to reduce the number of LLM calls.
+4. **Check the number of concurrency**: ensure `JDYUN_BATCH_MAX_CONCURRENT=1` and `JDYUN_WORKER_MAX_CONCURRENT=1`. 
+5. **View retry log**: The system will automatically retry up to 8 times with exponential backoff. Check the log to confirm whether the retry is effective.
 
 ---
 
-## 第十一章 最佳实践
+## Chapter 11 Best Practices
 
-本章基于一个典型个人投资者的实际使用场景，串联系统各功能模块，帮助您高效使用系统。
+This chapter is based on the actual usage scenario of a typical individual investor and connects the functional modules of the system to help you use the system efficiently.
 
-**典型场景**：您是一位个人投资者，希望通过 AI 辅助分析提升研究效率。以下是从零开始到日常使用的完整路径。
+**Typical scenario**: You are an individual investor looking to improve research efficiency through AI-assisted analysis. Here's the complete path from scratch to daily use.
 
-### 11.1 从安装到首次分析
+### 11.1 From installation to first analysis
 
-#### 第一步：安装与基础配置
+#### Step One: Installation and Basic Configuration
 
-1. **安装系统**：Windows 用户运行安装包，按向导完成安装；进阶用户使用 Docker 部署。
-2. **登录系统**：使用默认账号 `admin / admin123` 登录，首次登录后到"个人设置 → 安全设置"修改密码。
-3. **跟随使用指南**：点击左侧"使用指南"，按引导依次完成配置：
-   - 配置 LLM 密钥和数据源密钥，填写 Token 配置
-   - 同步股票基础数据
-   - 搜索并添加股票关注列表
-   - 完成第一次研究
-4. **关键配置建议**：
-   - LLM 密钥：推荐 DeepSeek（性价比高），配置后到"个人设置 → 分析偏好"设置默认分析深度和分析师。
-   - 数据源密钥：推荐 Tushare，积分建议 2000+ 以解锁完整接口。
-   - 修改默认密码：到"个人设置 → 安全设置"修改。
+1. **Install system**: Windows Users run the installation package and follow the wizard to complete the installation; advanced users use Docker deployment.
+2. **Log in to the system**: Use default account `admin / admin123` Log in, after logging in for the first time"personal settings → Security settings"Change password.
+3. **Follow the user guide**: Click on the left"User Guide", Follow the instructions to complete the configuration:
+   - Configure the LLM key and data source key, and fill in the Token configuration
+   - Synchronize basic stock data
+   - Search and add stocks to watchlist
+   - Complete your first study
+4. **Key configuration recommendations**: 
+   - LLM Key: DeepSeek is recommended (high cost performance), arrive after configuration"personal settings → Analyze preferences"Set default analysis depth and analysts.
+   - Data source key: Tushare is recommended, points are recommended 2000+ to unlock the full interface.
+   - Change default password: to"personal settings → Security settings"Modify.
 
-#### 第二步：首次分析验证
+#### Step Two: First Analysis and Verification
 
-1. 进入"单股研究"，输入一只熟悉的股票代码（如 `000001` 平安银行）。
-2. 选择"3 级 - 标准分析"深度（推荐入门使用，4-8 分钟）。
-3. 默认选中"市场分析师"和"基本面分析师"，可按需添加"新闻分析师"。
-4. 点击"开始智能分析"，等待分析完成。
-5. 查看报告，确认各分析师的输出是否符合预期。
+1. enter"single stock research", Enter a familiar stock symbol (e.g. `000001` Ping An Bank).
+2. Choose"3 Level - Standard Analysis"Depth (recommended for beginners, 4-8 minutes).
+3. Selected by default"market analyst"and"fundamental analyst", Can be added as needed"news analyst". 
+4. Click"Start smart analysis", Wait for the analysis to complete.
+5. Check the report to confirm whether each analyst's output is in line with expectations.
 
-**避免的坑**：
-- 不要在基础数据同步未完成时就开始分析，会导致数据不完整。
-- 不要首次分析就使用 5 级全面分析，先用 3 级标准分析验证配置正确。
+**Pitfalls to avoid**: 
+- Do not start analysis before basic data synchronization is completed, as this will result in incomplete data.
+- Do not use Level 5 Full Analysis for your first analysis, first verify correct configuration with Level 3 Standard Analysis.
 
-### 11.2 日常研究工作流
+### 11.2 Daily research workflow
 
-#### 建立关注列表
+#### Create a watchlist
 
-1. **添加股票关注列表**：在"股票关注列表"中添加关注的股票，按板块或策略分组管理。
-2. **分组管理**：可创建多个分组（如"长线持仓"、"短线观察"、"打新标的"），每个分组可设置颜色和图标便于区分。
-3. **快速分析**：在关注列表中可直接选择股票发起单股研究，无需重复输入代码。
+1. **Add a stock watchlist**: in"Stock Watchlist"Add stocks you are following and manage them by sector or strategy grouping.
+2. **Group management**: Multiple groups can be created (e.g."Long term position", "Short term observation", "New bid") , Colors and icons can be set for each group to make them easier to distinguish.
+3. **Quick analysis**: You can directly select stocks in the watch list to initiate single-stock research without having to repeatedly enter codes.
 
-#### 定时分析配置
+#### Timing analysis configuration
 
-对于需要定期跟踪的股票，使用定时分析功能自动化：
+For stocks that need to be tracked regularly, use the scheduled analysis function to automate:
 
-1. **创建分析分组**：到"个人设置 → 定时分析分组"创建分组（如"每日早报组"），添加需要定期分析的股票。
-2. **创建定时配置**：到"个人设置 → 定时分析配置"创建配置：
-   - 选择默认分析分组和分析深度（建议 3 级标准分析）。
-   - 设置执行时间段（建议 16:30 盘后，确保当日数据已同步）。
-   - 开启邮件通知，执行完成后自动接收报告摘要。
-3. **查看执行历史**：在配置列表中点击"历史"查看每次执行的结果和报告。
+1. **Create analysis grouping**: Arrive"personal settings → Timed analysis grouping"Create groups (such as"daily morning report group") , Add stocks that require regular analysis.
+2. **Create a scheduled configuration**: Arrive"personal settings → Timing analysis configuration"Create configuration:
+   - Select a default analysis grouping and analysis depth (Level 3 standard analysis recommended).
+   - Set execution time period (recommended 16:30 After the market opens, make sure the data for the day is synchronized).
+   - Enable email notification to automatically receive a summary of the report after execution is completed.
+3. **View execution history**: Click in the configuration list"history"View results and reports for each execution.
 
-#### 批量分析
+#### Batch analysis
 
-需要一次性分析多只股票时使用批量分析：
+Use batch analysis when you need to analyze multiple stocks at one time:
 
-1. 进入"批量分析"，添加多只股票代码。
-2. 建议使用 2 级基础分析深度，平衡耗时和 Token 消耗。
-3. 分析完成后可在"研究报告"中对比查看。
+1. enter"Batch analysis", Add multiple stock symbols.
+2. It is recommended to use level 2 basic analysis depth to balance time-consuming and token consumption.
+3. After the analysis is completed, you can"research report"Compare and view.
 
-### 11.3 成本控制实践
+### 11.3 cost control practices
 
-#### Token 消耗管理
+#### Token Consumption management
 
-1. **查看 Token 统计**：到"系统管理 → 使用统计"查看各功能的 Token 消耗趋势，包括单股研究、Agent 工坊、Skill 生成、AI 对话助手、持仓分析等。注意：估算成本仅供参考，实际费用以 LLM 供应商账单为准。
-2. **按需选择分析师**：每次分析只勾选必要的分析师，每个分析师独立消耗 Token。
-3. **善用缓存**：相同股票的重复分析会命中缓存，24 小时内不重复消耗 Token。可到"系统配置 → 缓存管理"查看缓存状态。
-4. **深度选择策略**：
-   - 日常快速筛选：1 级快速分析（2-5 分钟，Token 消耗低）
-   - 常规研究：3 级标准分析（4-8 分钟，推荐）
-   - 重要标的决策：4 级深度分析（6-11 分钟，多轮辩论）
-   - 批量分析：2 级基础分析（3-6 分钟，平衡成本）
+1. **View Token Statistics**: Arrive"System management → usage statistics"Check the Token consumption trend of each function, including single stock research, Agent workshop, Skill generation, AI dialogue assistant, position analysis, etc. NOTE: Estimated costs are for reference only, actual charges are subject to LLM supplier bill.
+2. **Select analysts on demand**: Only the necessary analysts are checked for each analysis, and each analyst consumes Token independently.
+3. **Make good use of caching**: Repeated analysis of the same stock will hit the cache, and Tokens will not be consumed repeatedly within 24 hours. Available"System configuration → Cache management"View cache status.
+4. **Deep selection strategy**: 
+   - Daily rapid screening: Level 1 rapid analysis (2-5 minutes, low token consumption)
+   - Routine studies: Level 3 standard analysis (4-8 minutes, recommended)
+   - Important decision-making: Level 4 in-depth analysis (6-11 minutes, multiple rounds of debate)
+   - Batch Analysis: Level 2 Basic Analysis (3-6 minutes, balanced cost)
 
-#### 关于估算成本
+#### About estimated costs
 
-使用统计中的"总成本"是按系统配置的 Token 单价估算的，仅供参考。各 LLM 供应商的计费规则不同（如订阅制、Coding Plan、包月套餐等），估算成本与实际账单可能存在较大偏差。建议关注 Token 消耗的相对趋势，而非绝对金额。
+usage statistics"total cost"It is estimated based on the Token unit price configured in the system and is for reference only. Each LLM provider has different billing rules (such as subscription system, coding plan, monthly package, etc.), and there may be a large deviation between the estimated cost and the actual bill. It is recommended to pay attention to the relative trend of Token consumption rather than the absolute amount.
 
-#### 缓存管理
+#### Cache management
 
-1. 到"系统配置 → 缓存管理"定期查看缓存占用。
-2. 可清理过期缓存释放空间，或清空所有缓存强制重新分析。
+1. Arrive"System configuration → Cache management"Check cache usage regularly.
+2. You can clear expired caches to free up space, or clear all caches to force reanalysis.
 
-### 11.4 深度使用：自定义工作流、Agent 和 Skill
+### 11.4 In-depth use: customized workflow, Agent and Skill
 
-当默认分析师无法满足特定需求时，可通过自定义工作流、Agent 工坊和 Skill 中心扩展能力。
+When the default analysts don't meet specific needs, capabilities can be expanded through custom workflows, Agent Workshops, and Skill Centers.
 
-#### 自定义工作流
+#### Custom workflow
 
-1. **选择创建方式**：
-   - **从模板创建**（推荐）：在"分析流"页面选择一个系统模板（如 v2.0 完整分析流），创建副本后修改。
-   - **AI 智能创建**：点击"AI 智能创建"，通过自然语言对话让 AI 自动规划工作流。
-   - **空白流程**：选择"空白流程"模板，从零构建自定义流程。
+1. **Choose how to create**: 
+   - **Create from template** (Recommended): in"Analysis flow"Select a system template (such as v2.0 complete analysis flow) on the page, create a copy and modify it.
+   - **AI Smart creation**: Click"AI Smart creation", Let AI automatically plan workflows through natural language conversations.
+   - **Blank process**: Choose"Blank process"Templates to build custom processes from scratch.
 
-2. **编排流程**：
-   - 使用并行节点让多个分析师同时工作，提升效率。
-   - 使用辩论节点实现多情景对抗，获得更全面的分析视角。
-   - 使用条件分支根据分析深度或市场类型动态调整流程。
-   - 自定义 Agent 需先在"Agent 工坊"中创建并发布，才能在编辑器中使用。
+2. **orchestration process**: 
+   - Use parallel nodes to allow multiple analysts to work simultaneously to improve efficiency.
+   - Use debate nodes to implement multi-scenario confrontations and gain a more comprehensive analytical perspective.
+   - Use conditional branches to dynamically adjust the process based on depth of analysis or market type.
+   - Custom Agent needs to be"Agent workshop"Create and publish it in the editor before it can be used in the editor.
 
-3. **验证与发布**：
-   - 使用编辑器的"验证"功能检查工作流结构完整性。
-   - 发布前在 2-3 只股票上试运行验证输出质量。
-   - 使用"设为默认"让后续分析任务自动使用该工作流。
+3. **Verify and publish**: 
+   - Using the editor"Verify"Functionality checks workflow structural integrity.
+   - Validate output quality by piloting it on 2-3 stocks before publishing.
+   - Use"Set as default"Have subsequent analysis tasks automatically use this workflow.
 
-#### Agent 工坊：创建自定义分析师
+#### Agent Workshop: Create a Custom Analyst
 
-Agent 工坊通过对话式流程创建自定义 Agent，不支持克隆系统 Agent。
+Agent The workshop creates custom Agents through a conversational process and does not support cloning system Agents.
 
-1. **进入 Agent 工坊**：到"分析流 → Agent 工坊"，点击"新建 Agent"。
-2. **描述需求**：用自然语言描述你想要的 Agent（如"我需要一个专门分析白酒行业景气度的分析师，关注批价、库存、动销数据"）。可使用"快速填充示例"参考格式。
-3. **讨论需求**：系统会与你对话确认需求细节，可补充说明分析维度、输出格式等。
-4. **确认规格**：讨论完成后，系统生成 Agent 规格说明，确认无误后点击"生成可测试版本"。
-5. **测试验证**：在测试页面验证 Agent 输出是否符合预期。
-6. **迭代优化**：如不满意，可提意见继续讨论，系统会迭代生成新版本（每次迭代生成独立版本，不影响已绑定的 Agent）。
-7. **发布使用**：测试通过后发布，可在工作流编排中引用该 Agent。
+1. **Enter Agent Workshop**: Arrive"Analysis flow → Agent workshop", Click"New Agent". 
+2. **Describe requirements**: Use natural language to describe the Agent you want (e.g."I need an analyst who specializes in analyzing the prosperity of the liquor industry, focusing on pricing, inventory, and sales data.") . Available"Quick fill example"Reference format.
+3. **Discuss requirements**: The system will talk to you to confirm the requirements details, and can add analysis dimensions, output format, etc.
+4. **Confirm specifications**: After the discussion is completed, the system generates the Agent specification. Click after confirming that it is correct."Generate testable version". 
+5. **Test verification**: Verify that the Agent output is as expected on the test page.
+6. **iterative optimization**: If you are not satisfied, you can provide comments and continue the discussion, and the system will iteratively generate a new version (each iteration generates an independent version, which does not affect the bound Agent).
+7. **Release for use**: After the test passes, it is published and the Agent can be referenced in workflow orchestration.
 
-#### Skill 中心：创建自定义工具
+#### Skill Center: Creating Custom Tools
 
-当 Agent 需要调用系统未提供的工具时，通过 Skill 中心生成：
+When the Agent needs to call tools not provided by the system, it is generated through the Skill Center:
 
-1. **进入 Skill 中心**：到"分析流 → Skill 中心"。
-2. **描述需求**：描述需要的工具功能（如"获取港股实时分笔数据"）。
-3. **生成与验证**：系统生成 Skill 代码，经过静态检查、沙箱执行、质量评估和边缘测试后可用。
-4. **迭代优化**：如不满意可迭代，每次迭代生成独立版本（如 original_v2、original_v3），不影响已绑定的 Agent。
-5. **人工审查**：AI 生成的代码务必人工审查，确认无安全风险后使用。
+1. **Enter Skill Center**: Arrive"Analysis flow → Skill Center". 
+2. **Describe requirements**: Describe the required tool functionality (e.g."Get real-time transaction data of Hong Kong stocks") . 
+3. **Generation and verification**: The system generates Skill code, which is available after static checking, sandbox execution, quality assessment, and edge testing.
+4. **iterative optimization**: If you are not satisfied, it can be iterated. Each iteration generates an independent version (such as original_v2, original_v3), which does not affect the bound Agent.
+5. **Manual review**: AI The generated code must be manually reviewed and used after confirming that there are no security risks.
 
-#### 工作流编排最佳实践
+#### Workflow orchestration best practices
 
-1. 善用并行节点：分析师之间通常互不依赖，并行执行可显著缩短分析耗时。
-2. 辩论轮次与深度匹配：日常分析使用 1 轮辩论即可，重要标的决策使用 2-3 轮。
-3. 条件分支用例：可根据 `analysis_depth` 或 `market_type` 条件，让同一工作流适配不同场景。
-4. 工作流和节点使用清晰的中文命名，便于维护。
-5. 提示词模板支持绑定 `workflow_id`，可为不同工作流定制专属提示词（详见"系统管理 → 提示词模板"）。
+1. Make good use of parallel nodes: Analysts usually do not depend on each other, and parallel execution can significantly shorten the analysis time.
+2. Matching of debate rounds and depth: Use 1 round of debate for daily analysis, and 2-3 rounds for important decision-making.
+3. Conditional branch use case: can be based on `analysis_depth` or `market_type` Conditions allow the same workflow to adapt to different scenarios.
+4. Workflows and nodes use clear Chinese naming for easy maintenance.
+5. Prompt word template supports binding `workflow_id`, Exclusive prompt words can be customized for different workflows (for details, see"System management → prompt word template") . 
 
-### 11.5 数据管理实践
+### 11.5 Data management practices
 
-#### 数据同步
+#### Data synchronization
 
-1. **首次同步**：到"系统管理 → 多数据源同步"执行初始化，建议在非高峰期（如夜间）执行。
-2. **日常同步**：系统每日盘后自动同步，无需手动干预。
-3. **监控同步状态**：定期查看同步页面，关注失败记录并重试。
+1. **First sync**: Arrive"System management → Synchronization of multiple data sources"To perform initialization, it is recommended to perform it during off-peak periods (such as at night).
+2. **Daily synchronization**: The system automatically synchronizes after the market opens every day without manual intervention.
+3. **Monitor sync status**: Check the sync page regularly, pay attention to failure records and try again.
 
-#### 数据导入
+#### Data import
 
-到"系统管理 → 数据导入管理"可批量导入：
-- **股票数据**：导入自有的股票基础数据或历史行情。
-- **社媒消息**：导入社交媒体舆情数据，丰富新闻分析师和社媒分析师的信息源。
+Arrive"System management → Data import management"Can be imported in batches:
+- **stock data**: Import your own basic stock data or historical quotes.
+- **social media news**: Import social media public opinion data to enrich the information sources of news analysts and social media analysts.
 
-#### 数据备份
+#### Data backup
 
-1. **Docker 部署**：定期备份 MongoDB 数据卷（`docker-compose -p ta-v3 exec mongodb mongodump`）。
-2. **Windows 部署**：定期备份 `data/` 目录下的 MongoDB 数据文件。
-3. **配置导出**：系统配置可导出（密钥自动脱敏），便于灾难恢复。
+1. **Docker deploy**: Regularly back up MongoDB data volumes (`docker-compose -p ta-v3 exec mongodb mongodump`) . 
+2. **Windows deploy**: Regular backup `data/` MongoDB data files in the directory.
+3. **Configuration export**: System configuration can be exported (keys are automatically desensitized) to facilitate disaster recovery.
 
-### 11.6 安全实践
+### 11.6 safety practices
 
-#### 账户安全
+#### Account security
 
-1. **修改默认密码**：首次登录后立即到"个人设置 → 安全设置"修改默认密码。
-2. **强密码**：使用 12 位以上密码，包含大小写字母、数字和特殊字符。
-3. **定期更换**：建议每 90 天更换一次密码。
+1. **Change default password**: Immediately after logging in for the first time"personal settings → Security settings"Change the default password.
+2. **Strong password**: Use a password of at least 12 characters, including uppercase and lowercase letters, numbers, and special characters.
+3. **Regular replacement**: It is recommended to change your password every 90 days.
 
-#### API 密钥安全
+#### API Key security
 
-1. **最小权限**：数据源 API 只开通必要接口权限。
-2. **密钥轮换**：建议每 6 个月轮换一次 API 密钥。
-3. **监控异常**：关注"使用统计"中的 Token 消耗突增，可能是密钥泄露。
-4. **不分享密钥**：不要将配置文件（含明文密钥）分享给他人。
-5. **Docker 部署**：`docker/.env` 中使用占位符，启动后通过系统设置页面手动配置真实密钥。
+1. **least privilege**: The data source API only provides necessary interface permissions.
+2. **Key rotation**: It is recommended to rotate API keys every 6 months.
+3. **Monitoring anomalies**: Follow"usage statistics"A sudden increase in Token consumption may be due to key leakage.
+4. **Don't share keys**: Do not share configuration files (including plaintext keys) with others.
+5. **Docker deploy**: `docker/.env` Use placeholders in the key and manually configure the real key through the system settings page after startup.
 
-#### Skill 代码安全
+#### Skill code security
 
-1. **人工审查**：AI 生成的 Skill 代码务必人工审查。
-2. **沙箱验证**：生成的 Skill 必须通过沙箱运行验证后使用。
-3. **工具白名单**：通过工具白名单限制 Skill 可调用的工具。
+1. **Manual review**: AI The generated Skill code must be manually reviewed.
+2. **Sandbox verification**: The generated Skill must be run through the sandbox for verification before use.
+3. **Tool whitelist**: Limit the tools that a Skill can call through tool whitelisting.
 
-### 11.7 版本升级实践
+### 11.7 Version upgrade practice
 
-#### 升级前
+#### Before upgrading
 
-1. **备份数据**：升级前必须备份 MongoDB 数据库。
-2. **查看发布说明**：了解新版本变更和破坏性改动。
-4. **选择时机**：选择非交易时段升级，避免影响使用。
+1. **Back up data**: The MongoDB database must be backed up before upgrading.
+2. **View release notes**: Learn about new version changes and breaking changes.
+4. **Choose the moment**: Choose to upgrade during non-trading hours to avoid affecting use.
 
-#### 升级后
+#### After upgrade
 
-1. **功能验证**：执行一次完整分析，验证核心功能正常。
-2. **配置检查**：检查配置项是否丢失或需要调整。
-3. **监控运行**：升级后 24 小时内密切关注系统运行状态。
-4. **保留回滚能力**：升级前保留旧版本镜像/安装包，便于回滚。
+1. **Functional verification**: Perform a complete analysis to verify core functionality.
+2. **Configuration check**: Check whether configuration items are missing or need to be adjusted.
+3. **Monitor operation**: Pay close attention to the system operating status within 24 hours after the upgrade.
+4. **Preserve rollback capabilities**: Keep the old version image/installation package before upgrading to facilitate rollback.
 
-### 11.8 京东云合作版使用建议
+### 11.8 Suggestions for using JD Cloud Cooperation Edition
 
-#### 部署建议
+#### Deployment recommendations
 
-1. **环境变量优先**：所有配置通过 `.env` 文件管理，修改后重启服务生效。
-2. **凭据安全**：`.env` 文件含敏感信息，不要提交到版本控制或分享给他人。
-3. **首次启动**：京东云版首次启动会自动初始化数据库，请耐心等待 1-2 分钟。
+1. **Environment variables take precedence**: All configurations passed `.env` File management, restart the service after modification to take effect.
+2. **Credential security**: `.env` Files contain sensitive information, do not submit to version control or share with others.
+3. **first start**: JD Cloud Edition will automatically initialize the database when it is started for the first time, please wait patiently for 1-2 minutes.
 
-#### 分析任务优化
+#### Analysis task optimization
 
-1. **避免高峰时段**：京东云 LLM 存在限速，建议将批量分析和定时分析安排在非高峰时段（如凌晨 1-6 点）。
-2. **合理设置任务间隔**：默认 10 秒间隔适用于大多数场景，如遇限速频繁可调大至 20-30 秒。
-3. **分批执行批量分析**：单次批量分析不超过 10 只股票，避免长时间占用 LLM 资源。
-4. **优先使用标准深度**：3 级标准分析在效果和耗时之间平衡最佳，深度和全面分析会显著增加 LLM 调用次数。
+1. **avoid peak hours**: JD Cloud LLM has speed limits, and it is recommended to schedule batch analysis and scheduled analysis during off-peak hours (such as 1-6 am).
+2. **Set task intervals appropriately**: The default interval of 10 seconds is suitable for most scenarios. If the speed limit is frequent, it can be adjusted to 20-30 seconds.
+3. **Perform batch analysis in batches**: No more than 10 stocks can be analyzed in a single batch to avoid occupying LLM resources for a long time.
+4. **Prefer standard depth**: 3 Level-standard analysis provides the best balance between effectiveness and time consumption, and deep and comprehensive analysis significantly increases the number of LLM calls.
 
-#### 定时分析建议
+#### Regular analysis suggestions
 
-1. **错峰执行**：将不同分组的定时分析安排在不同时间段，避免同时触发多个分析任务。
-2. **盘后分析**：建议在 16:30 之后执行定时分析，确保当日数据已同步。
-3. **监控执行状态**：定期查看"任务中心"中的定时分析执行记录，及时发现限速导致的失败。
+1. **Off-peak execution**: Arrange scheduled analysis of different groups in different time periods to avoid triggering multiple analysis tasks at the same time.
+2. **After-hours analysis**: It is recommended to 16:30 Then perform scheduled analysis to ensure that the data of the day is synchronized.
+3. **Monitor execution status**: Check regularly"mission center"Timing analysis of execution records in the system enables timely detection of failures caused by speed limiting.
 
 ---
 
-## 第十二章 关于（/about）
+## Chapter 12 About (/about)
 
-### 功能说明
+### Function description
 
-关于页面展示系统介绍、核心功能、版本信息、技术架构和联系方式，帮助用户快速了解系统定位和技术栈。该页面无需登录即可访问。
+The About page displays the system introduction, core functions, version information, technical architecture and contact information to help users quickly understand the system positioning and technology stack. This page can be accessed without logging in.
 
-### 页面内容
+### Page content
 
-#### 1. Hero 区（系统介绍）
+#### 1. Hero District (system introduction)
 
-- **标题**：TradingAgents-CN v3.0
-- **副标题**：AI辅助股票分析技术学习平台
-- **描述**：专注于AI辅助分析技术的学习与验证平台，通过优化的工作流引擎和全流程分析辅助，帮助系统学习股票分析方法
-- **定位徽章**：用于学习AI股票分析技术 / 不作操盘指导 / 实践学习方法论
-- **原项目致谢**：基于 TradingAgents 项目开发
-- **统计卡片**：智能体数量、数据源数量、监控时长等
-- **快速入口**："开始分析"（跳转单股研究）、"查看课程"（跳转学习中心）
+- **Title**: TradingAgents-CN v3.0
+- **subtitle**: AI Assisted stock analysis technology learning platform
+- **Description**: A learning and verification platform focusing on AI-assisted analysis technology, helping the system learn stock analysis methods through optimized workflow engines and full-process analysis assistance.
+- **Location badge**: Used to learn AI stock analysis technology / no trading guidance / practical learning methodology
+- **Original project acknowledgments**: Developed based on TradingAgents project
+- **Statistics cards**: Number of agents, number of data sources, monitoring duration, etc.
+- **Quick entry**: "Start analysis" (Jump to single stock research),"View courses" (Jump to Learning Center)
 
-#### 2. 学习中心引导横幅
+#### 2. Learning center guidance banner
 
-- 展示系统化学习课程的简介
-- "查看课程"按钮跳转学习中心
+- Presenting an introduction to the systematic learning course
+- "View courses"Button to jump to learning center
 
-#### 3. 核心功能
+#### 3. Core functions
 
-| 功能 | 说明 |
+| Function | Description |
 |------|------|
-| 优化分析引擎 | v3.0 工作流引擎，可视化流程定义、Agent 工坊、Skill 中心、MCP 服务器 |
-| 全流程分析辅助 | 数据收集→指标计算→智能体分析→报告生成，支持多种分析场景 |
-| 提升学习能力 | AI 辅助学习专业分析方法论，过程透明，技能提升 |
-| 配置化架构 | 工作流、智能体、工具、提示词均可动态配置 |
+| Optimize analysis engine | v3.0 Workflow engine, visual process definition, Agent workshop, Skill center, MCP server |
+| Full process analysis assistance | data collection→Indicator calculation→agent analysis→Report generation supports multiple analysis scenarios |
+| Improve learning ability | AI Assisted learning of professional analysis methodology, transparent process, and skill improvement |
+| Configurable architecture | Workflow, agents, tools, and prompt words can all be dynamically configured |
 
-#### 4. 版本信息
+#### 4. Version information
 
-- 版本号：v3.0（从系统 API 动态获取）
-- 版本状态：动态判断（beta 版显示"测试版"标识）
-- 构建时间、构建类型
-- Git 提交哈希
-- API 版本：v3.0
-- 技术版本：Vue 3.4.0、Element Plus 2.4.4、FastAPI 0.104.0、Python 3.11.9
+- Version number: v3.0 (dynamically obtained from system API)
+- Version status: dynamic judgment (beta version display"beta version"logo)
+- Build time, build type
+- Git commit hash
+- API Version:v3.0
+- Technical version: Vue 3.4.0, Element Plus 2.4.4, FastAPI 0.104.0,Python 3.11.9
 
-#### 5. 技术架构
+#### 5. Technical architecture
 
-| 类别 | 技术栈 |
+| Category | technology stack |
 |------|--------|
-| 前端 | Vue 3、TypeScript、Element Plus、Pinia、Vite |
-| 后端 | FastAPI、Python 3.11.9、Redis、MongoDB、异步处理 |
-| v3.0 核心引擎 | 工作流引擎、Agent 工坊、Skill 中心、MCP 服务器、能力索引面板 |
+| front end | Vue 3, TypeScript, Element Plus, Pinia, Vite |
+| backend | FastAPI, Python 3.11.9, Redis, MongoDB, Asynchronous processing |
+| v3.0 core engine | Workflow engine, Agent workshop, Skill center, MCP server, capability index panel |
 
-#### 6. 项目来源
+#### 6. Project source
 
-- 基于 TradingAgents（Tauric Research 团队开发）开源项目
-- v3.0 核心改进：工作流引擎、Agent 工坊、Skill 中心、MCP 服务器
+- Based on TradingAgents (developed by Tauric Research team) open source project
+- v3.0 Core improvements: Workflow engine, Agent workshop, Skill center, MCP server
 
-#### 7. 联系方式
+#### 7. Contact information
 
-| 渠道 | 信息 | 用途 |
+| channel | information | Purpose |
 |------|------|------|
-| 邮箱 | hsliup@163.com | 技术支持和商务合作 |
-| QQ 交流群 | 1079484482 | 用户交流和问题讨论 |
-| 微信公众号 | TradingAgents-CN | 最新动态和使用教程 |
+| Email | hsliup@163.com | Technical support and business cooperation |
+| QQ Communication group | 1079484482 | User communication and problem discussion |
+| WeChat public account | TradingAgents-CN | Latest news and tutorials |
 
-### 操作步骤
+### Operation steps
 
-1. 点击左侧导航栏"关于"菜单。
-2. 浏览各板块了解系统信息。
-3. 如需技术支持，查看"联系方式"板块获取联系方式。
+1. Click on the left navigation bar"About"menu.
+2. Browse each section for system information.
+3. For technical support, check out"Contact information"Section to get contact information.
 
 ---
 
-## 新手常见错误与避免方法
+## Common mistakes for newbies and how to avoid them
 
-| 常见错误 | 原因 | 解决方法 |
+| Common mistakes | Reason | Solution |
 |---------|------|---------|
-| **分析任务一直排队不执行** | Worker 未启动 | 检查后端 Worker 进程是否运行，参考 8.4 定时任务 |
-| **报告显示"数据不足"** | 股票数据未同步 | 先在 8.3 多数据源同步中拉取基础数据 |
-| **LLM 调用报错 401** | API Key 无效或欠费 | 在 8.1 配置管理中检查 API Key，确认账户余额充足 |
-| **LLM 调用报错 429** | 超出 API 限速 | 降低并发数，或升级 API 套餐（京东云版参考 Q14） |
-| **分析结果全是"未知"** | 系统变量未注入 | 检查数据源配置，确认股票基础信息已同步 |
-| **定时分析不执行** | 时间段配置错误 | 检查 6.5.2 定时分析配置的时间段是否正确 |
-| **导出 PDF 中文乱码** | 系统缺少中文字体 | Docker 部署已内置；Windows 部署需安装中文字体 |
-| **批量分析很慢** | 并发数过低或网络慢 | 适当调高并发数（京东云版保持默认1） |
-| **模拟交易持仓不更新** | 行情数据未同步 | 在关注列表或股票详情页点击"同步"按钮 |
-| **Agent 工坊创建的 Agent 不生效** | 未发布或未添加到流程 | 在 Agent 详情页点击"发布"，然后在流程管理中添加 |
+| **Analysis tasks are always queued and not executed.** | Worker Not started | Check whether the backend Worker process is running, refer to 8.4 Scheduled Tasks |
+| **Report shows"Not enough data"** | Stock data not synced | First pull the basic data in 8.3 multi-data source synchronization |
+| **LLM Call error 401** | API Key Invalid or in arrears | Check the API Key in 8.1 configuration management to confirm that the account balance is sufficient |
+| **LLM Call error 429** | API rate limit exceeded | Reduce the number of concurrencies or upgrade the API package (JD Cloud version reference Q14) |
+| **The analysis results are all"unknown"** | System variables are not injected | Check the data source configuration and confirm that the basic stock information has been synchronized |
+| **Scheduled analysis is not performed** | Time period configuration error | Check whether the time period configured in 6.5.2 scheduled analysis is correct |
+| **Export PDF Chinese garbled characters** | The system is missing Chinese fonts | Docker Deployment is built-in; Windows deployment requires Chinese fonts to be installed |
+| **Batch analysis is slow** | The number of concurrency is too low or the network is slow | Increase the number of concurrency appropriately (JD Cloud version keeps the default 1) |
+| **Simulated trading positions are not updated** | Market data is not synchronized | Click on the watch list or stock details page"sync"button |
+| **Agent The Agent created by the workshop does not take effect** | Not published or added to process | Click on the Agent details page"publish", Then add in process management |
 
 ---
 
-## 附录
+## Appendix
 
-### A. 工作流编辑器画布操作
+### A. Workflow Editor Canvas Actions
 
-> v3.0 工作流编辑器画布支持以下鼠标 + 键盘操作（来自 [WorkflowCanvas.vue](file:///c:/TradingAgentsCN/frontend/src/views/Workflow/components/WorkflowCanvas.vue) 的 `canvas-help` 提示）：
+> v3.0 The workflow editor canvas supports the following mice + Keyboard operation (from [WorkflowCanvas.vue](file:///c:/TradingAgentsCN/frontend/src/views/Workflow/components/WorkflowCanvas.vue) of `canvas-help` Tips):
 
-| 操作 | 效果 |
+| Operation | Effect |
 |------|------|
-| **滚轮** | 缩放画布 |
-| **空格 + 拖动** | 平移画布 |
-| **点击节点** | 选中节点 |
-| **拖动节点** | 调整位置 |
-| **节点之间连线** | 拖动节点边缘的连接点 |
+| **roller** | Zoom canvas |
+| **space + Drag** | Pan the canvas |
+| **Click on node** | Select node |
+| **Drag node** | Adjust position |
+| **Connections between nodes** | Drag the connection point of the node edge |
 
-> 💡 **提示**：v3.0 当前版本**未实现**全局快捷键（如 `Ctrl+/` 打开助手、`Ctrl+K` 全局搜索、`Ctrl+Z` 撤销等）。这些功能计划在后续小版本中提供。
+> 💡 **Tips**: v3.0 Current version**Not implemented**Global shortcut keys (such as `Ctrl+/` Open the assistant,`Ctrl+K` global search,`Ctrl+Z` cancellation, etc.). These features are planned to be provided in subsequent minor releases.
 
-### B. 相关文档
+### B. Related documents
 
-- [快速开始指南](getting-started/quick-start.md)
-- [安装部署指南](getting-started/installation.md)
-- [Docker 部署指南](getting-started/docker-deployment-guide.md)
-- [API 密钥管理](configuration/api-key-management.md)
-- [LLM 配置指南](configuration/llm-config.md)
-- [模拟交易详解](features/paper-trading.md)
-- [定时分析指南](features/scheduled-analysis-guide.md)
-- [v2.1 vs v3.0 对比](../01-product/comparison/v2.1-vs-v3.0.md)
-- [v3.0 发布说明](../01-product/release-notes/v3.0.0-beta.1.md)
+- [Quick start guide](getting-started/quick-start.md)
+- [Installation and Deployment Guide](getting-started/installation.md)
+- [Docker Deployment Guide](getting-started/docker-deployment-guide.md)
+- [API Key management](configuration/api-key-management.md)
+- [LLM Configuration Guide](configuration/llm-config.md)
+- [Detailed explanation of simulated trading](features/paper-trading.md)
+- [Timing Analysis Guide](features/scheduled-analysis-guide.md)
+- [v2.1 vs v3.0 Contrast](../01-product/comparison/v2.1-vs-v3.0.md)
+- [v3.0 Release Notes](../01-product/release-notes/v3.0.0-beta.1.md)
 
-### C. 技术支持
+### C. Technical support
 
-- **QQ 群**：参见安装包内说明
+- **QQ group**: See the instructions in the installation package
 - **GitHub Issues**：https://github.com/hsliuping/TradingAgents-CN/issues
-- **邮箱**：参见官网联系方式
+- **Email**: See the official website for contact information
 
 ---
 
-> **免责声明**：TradingAgents-CN Pro 提供的所有分析结果、研究观察、学习工具和模拟交易功能仅供学习和研究使用，不构成任何投资建议。投资有风险，决策需谨慎。系统基于 AI 模型生成分析，可能存在偏差或错误，请结合多方信息独立判断。
+> **Disclaimer**: TradingAgents-CN Pro All analysis results, research observations, learning tools and simulated trading functions provided are for learning and research purposes only and do not constitute any investment advice. Investment is risky and decisions need to be made with caution. The system generates analysis based on AI models, which may contain biases or errors. Please make independent judgments based on information from multiple parties.

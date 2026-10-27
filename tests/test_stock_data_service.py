@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-股票数据服务测试程序
-测试MongoDB -> Tushare数据接口的完整降级机制
+Stock data service test program
+test MongoDB -> Tushare Complete degradation mechanism for data interfaces
 """
 
 import sys
@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
@@ -23,92 +23,92 @@ try:
     )
     SERVICES_AVAILABLE = True
 except ImportError as e:
-    print(f"⚠️ 服务不可用: {e}")
+    print(f"⚠️ Service unavailable: {e}")
     SERVICES_AVAILABLE = False
 
 class TestStockDataService(unittest.TestCase):
-    """股票数据服务测试类"""
+    """Stock data service test class"""
     
     def setUp(self):
-        """测试前准备"""
+        """Preparation before test"""
         if not SERVICES_AVAILABLE:
-            self.skipTest("股票数据服务不可用")
+            self.skipTest("Stock data service is unavailable")
         
         self.service = StockDataService()
     
     def test_service_initialization(self):
-        """测试服务初始化"""
-        print("\n🧪 测试服务初始化...")
+        """Test service initialization"""
+        print("\n🧪 Test service initialization...")
         
-        # 检查服务是否正确初始化
+        # Check if the service is initialized correctly
         self.assertIsNotNone(self.service)
         
-        # 检查各组件的初始化状态
-        print(f"  📊 数据库管理器: {'✅' if self.service.db_manager else '❌'}")
-        print(f"  📡 统一数据接口: {'✅' if hasattr(self.service, 'get_stock_data') else '❌'}")
+        # Check the initialization status of each component
+        print(f"  📊 Database manager: {'✅' if self.service.db_manager else '❌'}")
+        print(f"  📡 unified data interface: {'✅' if hasattr(self.service, 'get_stock_data') else '❌'}")
         
-        print("  ✅ 服务初始化测试通过")
+        print("  ✅ Service initialization test passed")
     
     def test_get_stock_basic_info_single(self):
-        """测试获取单个股票基础信息"""
-        print("\n🧪 测试获取单个股票基础信息...")
+        """Test to obtain basic information of a single stock"""
+        print("\n🧪 Test to obtain basic information of a single stock...")
         
         test_codes = ['000001', '600000', '300001']
         
         for code in test_codes:
-            print(f"  🔍 测试股票代码: {code}")
+            print(f"  🔍 Test ticker: {code}")
             
             result = self.service.get_stock_basic_info(code)
             
-            # 结果不应该为None
+            # The result should not be None
             self.assertIsNotNone(result)
             
             if isinstance(result, dict):
                 if 'error' in result:
-                    print(f"    ⚠️ 获取失败: {result['error']}")
+                    print(f"    ⚠️ Failed to obtain: {result['error']}")
                 else:
-                    print(f"    ✅ 获取成功: {result.get('name', 'N/A')}")
-                    # 检查必要字段
+                    print(f"    ✅ get success: {result.get('name', 'N/A')}")
+                    # Check required fields
                     self.assertIn('code', result)
                     self.assertIn('name', result)
                     self.assertIn('source', result)
             
-        print("  ✅ 单个股票信息测试完成")
+        print("  ✅ Single stock information test completed")
     
     def test_get_stock_basic_info_all(self):
-        """测试获取所有股票基础信息"""
-        print("\n🧪 测试获取所有股票基础信息...")
+        """Test to obtain basic information of all stocks"""
+        print("\n🧪 Test to obtain basic information of all stocks...")
         
         result = self.service.get_stock_basic_info()
         
-        # 结果不应该为None
+        # The result should not be None
         self.assertIsNotNone(result)
         
         if isinstance(result, list) and len(result) > 0:
-            print(f"  ✅ 获取成功: {len(result)} 只股票")
+            print(f"  ✅ get success: {len(result)} only stocks")
             
-            # 检查第一个股票的字段
+            # Check the fields of the first stock
             first_stock = result[0]
             if 'error' not in first_stock:
                 self.assertIn('code', first_stock)
                 self.assertIn('name', first_stock)
-                print(f"  📊 示例股票: {first_stock.get('code')} - {first_stock.get('name')}")
+                print(f"  📊 Example stocks: {first_stock.get('code')} - {first_stock.get('name')}")
         elif isinstance(result, dict) and 'error' in result:
-            print(f"  ⚠️ 获取失败: {result['error']}")
+            print(f"  ⚠️ Failed to obtain: {result['error']}")
         else:
-            print(f"  ⚠️ 未获取到数据")
+            print(f"  ⚠️ No data obtained")
         
-        print("  ✅ 所有股票信息测试完成")
+        print("  ✅ All stock information testing completed")
     
     def test_market_classification(self):
-        """测试市场分类功能"""
-        print("\n🧪 测试市场分类功能...")
+        """Test market classification functionality"""
+        print("\n🧪 Test market classification functionality...")
         
         test_cases = [
-            ('000001', '深圳', '深市主板'),
-            ('600000', '上海', '沪市主板'),
-            ('300001', '深圳', '创业板'),
-            ('688001', '上海', '科创板')
+            ('000001', 'Shenzhen', 'Shenzhen Main Board'),
+            ('600000', 'Shanghai', 'Shanghai Main Board'),
+            ('300001', 'Shenzhen', 'GEM'),
+            ('688001', 'Shanghai', 'Science and Technology Innovation Board')
         ]
         
         for code, expected_market, expected_category in test_cases:
@@ -120,303 +120,303 @@ class TestStockDataService(unittest.TestCase):
             self.assertEqual(market, expected_market)
             self.assertEqual(category, expected_category)
         
-        print("  ✅ 市场分类测试通过")
+        print("  ✅ Market classification test passed")
     
     def test_fallback_data(self):
-        """测试降级数据功能"""
-        print("\n🧪 测试降级数据功能...")
+        """Test downgrade data functionality"""
+        print("\n🧪 Test downgrade data functionality...")
         
-        # 测试单个股票的降级数据
+        # Test downgrade data for individual stocks
         fallback_single = self.service._get_fallback_data('999999')
         self.assertIsInstance(fallback_single, dict)
         self.assertIn('code', fallback_single)
         self.assertIn('error', fallback_single)
-        print(f"  📊 单个股票降级: {fallback_single['code']} - {fallback_single.get('name')}")
+        print(f"  📊 Single stock downgrade: {fallback_single['code']} - {fallback_single.get('name')}")
         
-        # 测试所有股票的降级数据
+        # Test downgrade data for all stocks
         fallback_all = self.service._get_fallback_data()
         self.assertIsInstance(fallback_all, dict)
         self.assertIn('error', fallback_all)
-        print(f"  📊 所有股票降级: {fallback_all['error']}")
+        print(f"  📊 All stocks downgraded: {fallback_all['error']}")
         
-        print("  ✅ 降级数据测试通过")
+        print("  ✅ Downgraded data test passed")
 
 class TestStockAPI(unittest.TestCase):
-    """股票API测试类"""
+    """Stock API test class"""
     
     def setUp(self):
-        """测试前准备"""
+        """Preparation before test"""
         if not SERVICES_AVAILABLE:
-            self.skipTest("股票API不可用")
+            self.skipTest("Stock API is not available")
     
     def test_service_status(self):
-        """测试服务状态检查"""
-        print("\n🧪 测试服务状态检查...")
+        """Test service status check"""
+        print("\n🧪 Test service status check...")
         
         status = check_service_status()
         
         self.assertIsInstance(status, dict)
         self.assertIn('service_available', status)
         
-        print(f"  📊 服务状态:")
+        print(f"  📊 Service status:")
         for key, value in status.items():
             print(f"    {key}: {value}")
         
-        print("  ✅ 服务状态测试通过")
+        print("  ✅ Service status test passed")
     
     def test_get_stock_info_api(self):
-        """测试股票信息API"""
-        print("\n🧪 测试股票信息API...")
+        """Test stock information API"""
+        print("\n🧪 Test stock information API...")
         
-        test_codes = ['000001', '600000', '999999']  # 包含一个不存在的代码
+        test_codes = ['000001', '600000', '999999']  # Contains a code that does not exist
         
         for code in test_codes:
-            print(f"  🔍 测试API获取: {code}")
+            print(f"  🔍 Test API access: {code}")
             
             result = get_stock_info(code)
             
             self.assertIsInstance(result, dict)
             
             if 'error' in result:
-                print(f"    ⚠️ 预期错误: {result['error']}")
+                print(f"    ⚠️ expected error: {result['error']}")
             else:
-                print(f"    ✅ 获取成功: {result.get('name')}")
+                print(f"    ✅ get success: {result.get('name')}")
                 self.assertIn('code', result)
                 self.assertIn('name', result)
         
-        print("  ✅ 股票信息API测试完成")
+        print("  ✅ Stock information API testing completed")
     
     def test_search_stocks_api(self):
-        """测试股票搜索API"""
-        print("\n🧪 测试股票搜索API...")
+        """Test stock search API"""
+        print("\n🧪 Test stock search API...")
         
-        keywords = ['平安', '银行', '000001', 'xyz123']  # 包含一个不存在的关键词
+        keywords = ['Peace', 'bank', '000001', 'xyz123']  # Contains a keyword that does not exist
         
         for keyword in keywords:
-            print(f"  🔍 搜索关键词: '{keyword}'")
+            print(f"  🔍 Search keywords: '{keyword}'")
             
             results = search_stocks(keyword)
             
             self.assertIsInstance(results, list)
             
             if not results or (len(results) == 1 and 'error' in results[0]):
-                print(f"    ⚠️ 未找到匹配结果")
+                print(f"    ⚠️ No matching results found")
             else:
-                print(f"    ✅ 找到 {len(results)} 个匹配结果")
-                # 检查第一个结果
+                print(f"    ✅ found {len(results)} matching results")
+                # Check first result
                 if results and 'error' not in results[0]:
                     first_result = results[0]
-                    print(f"    📊 示例: {first_result.get('code')} - {first_result.get('name')}")
+                    print(f"    📊 Example: {first_result.get('code')} - {first_result.get('name')}")
         
-        print("  ✅ 股票搜索API测试完成")
+        print("  ✅ Stock search API testing completed")
     
     def test_market_summary_api(self):
-        """测试市场概览API"""
-        print("\n🧪 测试市场概览API...")
+        """Test market overview API"""
+        print("\n🧪 Test market overview API...")
         
         summary = get_market_summary()
         
         self.assertIsInstance(summary, dict)
         
         if 'error' in summary:
-            print(f"  ⚠️ 获取失败: {summary['error']}")
+            print(f"  ⚠️ Failed to obtain: {summary['error']}")
         else:
-            print(f"  ✅ 获取成功:")
-            print(f"    📊 总股票数: {summary.get('total_count', 0):,}")
-            print(f"    🏢 沪市股票: {summary.get('shanghai_count', 0):,}")
-            print(f"    🏢 深市股票: {summary.get('shenzhen_count', 0):,}")
-            print(f"    🔗 数据源: {summary.get('data_source', 'unknown')}")
+            print(f"  ✅ get success:")
+            print(f"    📊 Total number of shares: {summary.get('total_count', 0):,}")
+            print(f"    🏢 Shanghai stock market: {summary.get('shanghai_count', 0):,}")
+            print(f"    🏢 Shenzhen stock market: {summary.get('shenzhen_count', 0):,}")
+            print(f"    🔗 data source: {summary.get('data_source', 'unknown')}")
             
-            # 检查必要字段
+            # Check required fields
             self.assertIn('total_count', summary)
             self.assertIn('data_source', summary)
         
-        print("  ✅ 市场概览API测试完成")
+        print("  ✅ Market Overview API Test Completed")
     
     def test_stock_data_api(self):
-        """测试股票数据API"""
-        print("\n🧪 测试股票数据API...")
+        """Test stock data API"""
+        print("\n🧪 Test stock data API...")
         
-        # 测试获取股票历史数据
+        # Test to obtain stock historical data
         stock_code = '000001'
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
         
-        print(f"  📊 获取 {stock_code} 从 {start_date} 到 {end_date} 的数据")
+        print(f"  📊 get {stock_code} from {start_date} Arrive {end_date} data")
         
         result = get_stock_data(stock_code, start_date, end_date)
         
         self.assertIsInstance(result, str)
         
-        # 检查结果是否包含预期内容
+        # Check if the results contain expected content
         if "❌" in result:
-            print(f"    ⚠️ 获取失败（预期情况）")
+            print(f"    ⚠️ Failed to get (expected situation)")
         else:
-            print(f"    ✅ 获取成功（数据长度: {len(result)} 字符）")
+            print(f"    ✅ Get success (data length: {len(result)} characters)")
         
-        print("  ✅ 股票数据API测试完成")
+        print("  ✅ Stock data API testing completed")
 
 class TestFallbackMechanism(unittest.TestCase):
-    """降级机制测试类"""
+    """Downgrade mechanism test class"""
     
     def setUp(self):
-        """测试前准备"""
+        """Preparation before test"""
         if not SERVICES_AVAILABLE:
-            self.skipTest("降级机制测试不可用")
+            self.skipTest("Downgrade mechanism test is not available")
     
     @patch('tradingagents.dataflows.stock_data_service.DATABASE_MANAGER_AVAILABLE', False)
     def test_mongodb_unavailable_fallback(self):
-        """测试MongoDB不可用时的降级"""
-        print("\n🧪 测试MongoDB不可用时的降级...")
+        """Testing for downgrade when MongoDB is unavailable"""
+        print("\n🧪 Testing for downgrade when MongoDB is unavailable...")
         
-        # 创建一个新的服务实例（模拟MongoDB不可用）
+        # Create a new service instance (simulating MongoDB is not available)
         service = StockDataService()
         
-        # 数据库管理器应该为None
+        # The database manager should be None
         self.assertIsNone(service.db_manager)
         
-        # 尝试获取股票信息（应该降级到Tushare数据接口）
+        # Try to get stock information (should downgrade to Tushare data interface)
         result = service.get_stock_basic_info('000001')
         
         self.assertIsNotNone(result)
         
         if isinstance(result, dict):
             if 'error' in result:
-                print(f"    ⚠️ 降级失败: {result['error']}")
+                print(f"    ⚠️ Downgrade failed: {result['error']}")
             else:
-                print(f"    ✅ 降级成功: {result.get('name')}")
+                print(f"    ✅ Downgrade successful: {result.get('name')}")
                 self.assertEqual(result.get('source'), 'unified_api')
         
-        print("  ✅ MongoDB降级测试完成")
+        print("  ✅ MongoDB Downgrade test completed")
     
     def test_invalid_stock_code_fallback(self):
-        """测试无效股票代码的降级"""
-        print("\n🧪 测试无效股票代码的降级...")
+        """Testing the downgrade of an invalid stock symbol"""
+        print("\n🧪 Testing the downgrade of an invalid stock symbol...")
         
         service = StockDataService()
         
-        # 测试明显无效的股票代码
+        # Testing for obviously invalid stock symbols
         invalid_codes = ['999999', 'INVALID', '123456']
         
         for code in invalid_codes:
-            print(f"  🔍 测试无效代码: {code}")
+            print(f"  🔍 Test invalid code: {code}")
             
             result = service.get_stock_basic_info(code)
             
             self.assertIsNotNone(result)
             
             if isinstance(result, dict):
-                # 应该包含错误信息或降级数据
+                # Should contain error messages or downgrade data
                 if 'error' in result:
-                    print(f"    ✅ 正确识别无效代码")
+                    print(f"    ✅ Correctly identify invalid codes")
                 else:
-                    print(f"    ⚠️ 返回了数据: {result.get('name')}")
+                    print(f"    ⚠️ Data returned: {result.get('name')}")
         
-        print("  ✅ 无效代码降级测试完成")
+        print("  ✅ Invalid code downgrade test completed")
 
 def run_comprehensive_test():
-    """运行综合测试"""
-    print("🚀 股票数据服务综合测试")
+    """Run comprehensive tests"""
+    print("🚀 Comprehensive testing of stock data services")
     print("=" * 60)
     
     if not SERVICES_AVAILABLE:
-        print("❌ 服务不可用，无法运行测试")
+        print("❌ Service is unavailable and tests cannot be run")
         return
     
-    # 创建测试套件
+    # Create test suite
     test_suite = unittest.TestSuite()
     
-    # 添加测试用例
+    # Add test case
     test_suite.addTest(unittest.makeSuite(TestStockDataService))
     test_suite.addTest(unittest.makeSuite(TestStockAPI))
     test_suite.addTest(unittest.makeSuite(TestFallbackMechanism))
     
-    # 运行测试
+    # Run tests
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(test_suite)
     
-    # 输出测试结果摘要
+    # Output summary of test results
     print("\n" + "=" * 60)
-    print("📊 测试结果摘要:")
-    print(f"  ✅ 成功: {result.testsRun - len(result.failures) - len(result.errors)}")
-    print(f"  ❌ 失败: {len(result.failures)}")
-    print(f"  💥 错误: {len(result.errors)}")
-    print(f"  ⏭️ 跳过: {len(result.skipped)}")
+    print("📊 Summary of test results:")
+    print(f"  ✅ success: {result.testsRun - len(result.failures) - len(result.errors)}")
+    print(f"  ❌ failed: {len(result.failures)}")
+    print(f"  💥 Error: {len(result.errors)}")
+    print(f"  ⏭️ skip: {len(result.skipped)}")
     
     if result.failures:
-        print("\n❌ 失败的测试:")
+        print("\n❌ failed test:")
         for test, traceback in result.failures:
             print(f"  - {test}: {traceback.split('AssertionError:')[-1].strip()}")
     
     if result.errors:
-        print("\n💥 错误的测试:")
+        print("\n💥 wrong test:")
         for test, traceback in result.errors:
             print(f"  - {test}: {traceback.split('Exception:')[-1].strip()}")
     
-    # 总体评估
+    # overall assessment
     if result.wasSuccessful():
-        print("\n🎉 所有测试通过！股票数据服务工作正常")
+        print("\n🎉 All tests passed! The stock data service is working fine")
     else:
-        print("\n⚠️ 部分测试失败，请检查相关配置")
+        print("\n⚠️ Some tests failed, please check the relevant configuration")
     
     return result.wasSuccessful()
 
 def run_manual_test():
-    """运行手动测试（用于调试）"""
-    print("🔧 手动测试模式")
+    """Run manual tests (for debugging)"""
+    print("🔧 Manual test mode")
     print("=" * 40)
     
     if not SERVICES_AVAILABLE:
-        print("❌ 服务不可用")
+        print("❌ Service unavailable")
         return
     
     try:
-        # 测试服务状态
-        print("\n1. 检查服务状态:")
+        # Test service status
+        print("\n1. Check service status:")
         status = check_service_status()
         for key, value in status.items():
             print(f"   {key}: {value}")
         
-        # 测试获取股票信息
-        print("\n2. 获取股票信息:")
+        # Test to obtain stock information
+        print("\n2. Get stock information:")
         stock_info = get_stock_info('000001')
         if 'error' in stock_info:
-            print(f"   错误: {stock_info['error']}")
+            print(f"   Error: {stock_info['error']}")
         else:
-            print(f"   成功: {stock_info.get('code')} - {stock_info.get('name')}")
+            print(f"   success: {stock_info.get('code')} - {stock_info.get('name')}")
         
-        # 测试搜索功能
-        print("\n3. 搜索股票:")
-        results = search_stocks('平安')
+        # Test search functionality
+        print("\n3. Search stocks:")
+        results = search_stocks('Peace')
         if results and 'error' not in results[0]:
-            print(f"   找到 {len(results)} 只股票")
+            print(f"   found {len(results)} only stocks")
             for i, stock in enumerate(results[:3], 1):
                 print(f"   {i}. {stock.get('code')} - {stock.get('name')}")
         else:
-            print("   未找到匹配的股票")
+            print("   No matching stock found")
         
-        # 测试市场概览
-        print("\n4. 市场概览:")
+        # Test market overview
+        print("\n4. Market overview:")
         summary = get_market_summary()
         if 'error' in summary:
-            print(f"   错误: {summary['error']}")
+            print(f"   Error: {summary['error']}")
         else:
-            print(f"   总股票数: {summary.get('total_count', 0):,}")
-            print(f"   数据源: {summary.get('data_source')}")
+            print(f"   Total number of shares: {summary.get('total_count', 0):,}")
+            print(f"   data source: {summary.get('data_source')}")
         
-        print("\n✅ 手动测试完成")
+        print("\n✅ Manual testing completed")
         
     except Exception as e:
-        print(f"\n❌ 手动测试失败: {e}")
+        print(f"\n❌ Manual test failed: {e}")
         import traceback
         traceback.print_exc()
 
 if __name__ == '__main__':
     import argparse
     
-    parser = argparse.ArgumentParser(description='股票数据服务测试程序')
-    parser.add_argument('--manual', action='store_true', help='运行手动测试模式')
-    parser.add_argument('--comprehensive', action='store_true', help='运行综合测试')
+    parser = argparse.ArgumentParser(description='Stock data service test program')
+    parser.add_argument('--manual', action='store_true', help='Run manual test mode')
+    parser.add_argument('--comprehensive', action='store_true', help='Run comprehensive tests')
     
     args = parser.parse_args()
     
@@ -425,7 +425,7 @@ if __name__ == '__main__':
     elif args.comprehensive:
         run_comprehensive_test()
     else:
-        # 默认运行综合测试
-        print("💡 提示: 使用 --manual 运行手动测试，--comprehensive 运行综合测试")
-        print("默认运行综合测试...\n")
+        # Run comprehensive tests by default
+        print("💡 Tips: Use --manual to run manual tests and --comprehensive to run comprehensive tests")
+        print("Run comprehensive tests by default...\n")
         run_comprehensive_test()

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试优化后的基本面分析数据获取策略
-验证新策略是否能正确获取必要的财务数据和当前股价，而不获取大量历史日线数据
+Test the optimized fundamental analysis data acquisition strategy
+Verify that the new strategy can correctly obtain the necessary financial data and current stock prices without obtaining a large amount of historical daily data
 """
 
 import sys
@@ -12,38 +12,38 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from tradingagents.agents.utils.agent_utils import Toolkit
 
 def test_optimized_fundamentals():
-    """测试优化后的基本面分析数据获取"""
+    """Test optimized fundamental analysis data acquisition"""
     print("=" * 80)
-    print("🧪 测试优化后的基本面分析数据获取策略")
+    print("🧪 Test the optimized fundamental analysis data acquisition strategy")
     print("=" * 80)
     
-    # 测试股票：平安银行 (000001)
+    # Test stocks: Ping An Bank (000001)
     test_symbol = "000001"
     
-    # 测试不同日期范围（对应不同数据深度）
+    # Test different date ranges (corresponding to different data depths)
     from datetime import datetime, timedelta
     
     today = datetime.now()
     test_cases = [
-        ("basic", 7, "基础分析 - 1周数据"),
-        ("standard", 14, "标准分析 - 2周数据"), 
-        ("full", 21, "完整分析 - 3周数据"),
-        ("detailed", 28, "详细分析 - 4周数据"),
-        ("comprehensive", 30, "全面分析 - 1个月数据")
+        ("basic", 7, "Fundamental Analysis - 1 Week Data"),
+        ("standard", 14, "Standard Analysis - 2 Weeks of Data"), 
+        ("full", 21, "Full analysis - 3 weeks of data"),
+        ("detailed", 28, "Detailed Analysis - 4 Weeks of Data"),
+        ("comprehensive", 30, "Full analysis - 1 month of data")
     ]
     
     results = {}
     
     for depth_name, days_back, description in test_cases:
-        print(f"\n📊 测试: {description}")
+        print(f"\n📊 test: {description}")
         print("-" * 50)
         
-        # 计算日期范围
+        # Calculate date range
         end_date = today.strftime('%Y-%m-%d')
         start_date = (today - timedelta(days=days_back)).strftime('%Y-%m-%d')
         
         try:
-            # 直接调用静态方法，绕过工具装饰器
+            # Call static methods directly, bypassing tool decorators
             toolkit = Toolkit()
             result = toolkit.get_stock_fundamentals_unified.__func__(
                 test_symbol,
@@ -61,47 +61,47 @@ def test_optimized_fundamentals():
                     'description': description
                 }
                 
-                print(f"✅ 成功获取数据")
-                print(f"📏 数据长度: {data_length:,} 字符")
-                print(f"📝 数据预览:\n{result[:200]}...")
+                print(f"✅ Data obtained successfully")
+                print(f"📏 Data length: {data_length:,} character")
+                print(f"📝 Data preview:\n{result[:200]}...")
                 
-                # 检查是否包含基本面关键信息
-                has_price = "价格" in result or "股价" in result or "Price" in result
-                has_fundamentals = "财务" in result or "基本面" in result or "投资建议" in result
-                has_company = "公司" in result or "企业" in result
+                # Check whether fundamental key information is included
+                has_price = "price" in result or "stock price" in result or "Price" in result
+                has_fundamentals = "Finance" in result or "Fundamentals" in result or "investment advice" in result
+                has_company = "company" in result or "enterprise" in result
                 
-                print(f"🔍 数据质量检查:")
-                print(f"   - 包含价格信息: {'✅' if has_price else '❌'}")
-                print(f"   - 包含基本面信息: {'✅' if has_fundamentals else '❌'}")
-                print(f"   - 包含公司信息: {'✅' if has_company else '❌'}")
+                print(f"🔍 Data quality check:")
+                print(f"   - Contains price information: {'✅' if has_price else '❌'}")
+                print(f"   - Contains fundamental information: {'✅' if has_fundamentals else '❌'}")
+                print(f"   - Contains company information: {'✅' if has_company else '❌'}")
                 
             else:
                 results[depth_name] = {
                     'success': False,
                     'data_length': 0,
-                    'preview': "无数据返回",
+                    'preview': "No data returned",
                     'description': description
                 }
-                print(f"❌ 未获取到数据")
+                print(f"❌ No data obtained")
                 
         except Exception as e:
             results[depth_name] = {
                 'success': False,
                 'data_length': 0,
-                'preview': f"错误: {str(e)}",
+                'preview': f"Error: {str(e)}",
                 'description': description
             }
-            print(f"❌ 获取数据时出错: {e}")
+            print(f"❌ Error while getting data: {e}")
     
-    # 汇总结果
+    # Summary results
     print("\n" + "=" * 80)
-    print("📈 测试结果汇总")
+    print("📈 Summary of test results")
     print("=" * 80)
     
     successful_tests = sum(1 for r in results.values() if r['success'])
     total_tests = len(results)
     
-    print(f"🎯 成功率: {successful_tests}/{total_tests} ({successful_tests/total_tests*100:.1f}%)")
+    print(f"🎯 success rate: {successful_tests}/{total_tests} ({successful_tests/total_tests*100:.1f}%)")
     
     if successful_tests > 0:
         data_lengths = [r['data_length'] for r in results.values() if r['success']]
@@ -109,25 +109,25 @@ def test_optimized_fundamentals():
         min_length = min(data_lengths)
         max_length = max(data_lengths)
         
-        print(f"📏 数据长度统计:")
-        print(f"   - 平均长度: {avg_length:,.0f} 字符")
-        print(f"   - 最小长度: {min_length:,} 字符")
-        print(f"   - 最大长度: {max_length:,} 字符")
-        print(f"   - 数据扩展倍数: {max_length/min_length:.1f}x")
+        print(f"📏 Data length statistics:")
+        print(f"   - average length: {avg_length:,.0f} character")
+        print(f"   - minimum length: {min_length:,} character")
+        print(f"   - maximum length: {max_length:,} character")
+        print(f"   - Data expansion multiple: {max_length/min_length:.1f}x")
         
-        # 对比优化前后的数据量变化
-        print(f"\n💡 优化效果:")
-        print(f"   - 新策略只获取最近2天价格数据 + 基本面财务数据")
-        print(f"   - 相比之前7-30天的历史数据，大幅减少了数据传输量")
-        print(f"   - 保持了基本面分析所需的核心信息完整性")
+        # Compare the changes in data volume before and after optimization
+        print(f"\n💡 Optimization effect:")
+        print(f"   - The new strategy only obtains the price data of the last 2 days + Fundamental Financial Data")
+        print(f"   - Compared with the previous 7-30 days of historical data, the amount of data transmission has been significantly reduced.")
+        print(f"   - Maintains the integrity of core information required for fundamental analysis")
     
-    # 详细结果
-    print(f"\n📋 各深度详细结果:")
+    # Detailed results
+    print(f"\n📋 Detailed results for each depth:")
     for depth_name, result in results.items():
-        status = "✅ 成功" if result['success'] else "❌ 失败"
-        print(f"   {result['description']:20} | {status} | {result['data_length']:6,} 字符")
+        status = "✅ success" if result['success'] else "❌ failed"
+        print(f"   {result['description']:20} | {status} | {result['data_length']:6,} character")
     
-    print("\n🎉 测试完成！")
+    print("\n🎉 Test completed!")
     return results
 
 if __name__ == "__main__":

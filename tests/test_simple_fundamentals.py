@@ -1,50 +1,50 @@
 #!/usr/bin/env python3
 """
-简单基本面分析测试
+Simple fundamental analysis test
 """
 
 import os
 import sys
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_simple_fundamentals():
-    """测试简单的基本面分析流程"""
-    print("\n🔍 简单基本面分析测试")
+    """Test a simple fundamental analysis process"""
+    print("\n🔍 Simple fundamental analysis test")
     print("=" * 80)
     
-    # 测试分众传媒 002027
+    # Test Focus Media 002027
     test_ticker = "002027"
-    print(f"📊 测试股票代码: {test_ticker} (分众传媒)")
+    print(f"📊 Test ticker: {test_ticker} (focus media)")
     
     try:
-        # 设置日志级别
+        # Set log level
         from tradingagents.utils.logging_init import get_logger
         logger = get_logger("default")
         logger.setLevel("INFO")
         
-        print(f"\n🔧 步骤1: 创建LLM实例...")
+        print(f"\n🔧 steps 1: Create LLM instance...")
         
-        # 检查API密钥
+        # Check API key
         api_key = os.getenv("DASHSCOPE_API_KEY")
         if not api_key:
-            print("⚠️ 未找到DASHSCOPE_API_KEY，跳过LLM测试")
+            print("⚠️ DASHSCOPE_API_KEY not found, skipping LLM test")
             return True
         
-        # 创建LLM实例
+        # Create LLM instance
         from tradingagents.llm_adapters import ChatDashScopeOpenAI
         llm = ChatDashScopeOpenAI(
             model="qwen-turbo",
             temperature=0.1,
             max_tokens=1000
         )
-        print(f"✅ LLM实例创建完成: {type(llm).__name__}")
+        print(f"✅ LLM Instance creation completed: {type(llm).__name__}")
         
-        print(f"\n🔧 步骤2: 创建工具包...")
+        print(f"\n🔧 steps 2: Create toolkit...")
         
-        # 创建工具包
+        # Create toolkit
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
@@ -52,11 +52,11 @@ def test_simple_fundamentals():
         config["online_tools"] = True
         toolkit = Toolkit()
         toolkit.update_config(config)
-        print(f"✅ 工具包创建完成")
+        print(f"✅ Toolkit created")
         
-        print(f"\n🔧 步骤3: 测试统一基本面工具...")
+        print(f"\n🔧 steps 3: Test Unified Fundamentals Tool...")
         
-        # 直接测试统一基本面工具
+        # Direct testing of unified fundamental tools
         result = toolkit.get_stock_fundamentals_unified.invoke({
             'ticker': test_ticker,
             'start_date': '2025-06-01',
@@ -64,80 +64,80 @@ def test_simple_fundamentals():
             'curr_date': '2025-07-15'
         })
         
-        print(f"✅ 统一基本面工具调用完成")
-        print(f"📊 返回结果长度: {len(result) if result else 0}")
+        print(f"✅ Unified fundamental tool call completed")
+        print(f"📊 Return result length: {len(result) if result else 0}")
         
-        # 检查结果中的股票代码
+        # Check the stock symbol in the results
         if result:
-            print(f"\n🔍 检查工具返回结果中的股票代码...")
+            print(f"\n🔍 Check the ticker in tool return results...")
             if "002027" in result:
-                print("✅ 工具返回结果中包含正确的股票代码 002027")
+                print("✅ The tool returns results that contain the correct ticker symbol 002027")
                 count_002027 = result.count("002027")
-                print(f"   002027 出现次数: {count_002027}")
+                print(f"   002027 Number of occurrences: {count_002027}")
             else:
-                print("❌ 工具返回结果中不包含正确的股票代码 002027")
+                print("❌ Tool return results do not contain correct stock symbol 002027")
                 
             if "002021" in result:
-                print("⚠️ 工具返回结果中包含错误的股票代码 002021")
+                print("⚠️ Tool returns results containing wrong stock symbol 002021")
                 count_002021 = result.count("002021")
-                print(f"   002021 出现次数: {count_002021}")
+                print(f"   002021 Number of occurrences: {count_002021}")
             else:
-                print("✅ 工具返回结果中不包含错误的股票代码 002021")
+                print("✅ Tool return results do not contain incorrect stock symbols 002021")
         
-        print(f"\n🔧 步骤4: 测试LLM处理...")
+        print(f"\n🔧 steps 4: Test LLM processing...")
         
-        # 创建一个简单的提示词，包含工具返回的数据
-        prompt = f"""请基于以下真实数据，对股票{test_ticker}进行基本面分析：
+        # Create a simple prompt word containing the data returned by the tool
+        prompt = f"""Please base your opinion on the stock based on the following real data{test_ticker}Perform fundamental analysis:
 
 {result}
 
-要求：
-1. 分析要详细且专业
-2. 必须使用中文
-3. 股票代码必须准确
-4. 不要编造任何信息
+Requirements:
+1. The analysis must be detailed and professional
+2. Must use Chinese
+3. Stock code must be accurate
+4. Don t make up any information
 """
         
-        print(f"🔍 [股票代码追踪] 发送给LLM的提示词中的股票代码: {test_ticker}")
+        print(f"🔍 [Stock symbol tracking] Stock symbol in prompt word sent to LLM: {test_ticker}")
         
-        # 调用LLM
+        # call LLM
         from langchain_core.messages import HumanMessage
         response = llm.invoke([HumanMessage(content=prompt)])
         
-        print(f"✅ LLM调用完成")
-        print(f"📊 LLM响应长度: {len(response.content) if response.content else 0}")
+        print(f"✅ LLM Call completed")
+        print(f"📊 LLM response length: {len(response.content) if response.content else 0}")
         
-        # 检查LLM响应中的股票代码
+        # Check the stock symbol in the LLM response
         if response.content:
-            print(f"\n🔍 检查LLM响应中的股票代码...")
+            print(f"\n🔍 Check the stock symbol in the LLM response...")
             if "002027" in response.content:
-                print("✅ LLM响应中包含正确的股票代码 002027")
+                print("✅ LLM The response contains the correct ticker symbol 002027")
                 count_002027 = response.content.count("002027")
-                print(f"   002027 出现次数: {count_002027}")
+                print(f"   002027 Number of occurrences: {count_002027}")
             else:
-                print("❌ LLM响应中不包含正确的股票代码 002027")
+                print("❌ LLM Response does not contain correct ticker symbol 002027")
                 
             if "002021" in response.content:
-                print("⚠️ LLM响应中包含错误的股票代码 002021")
+                print("⚠️ LLM Response contains wrong stock symbol 002021")
                 count_002021 = response.content.count("002021")
-                print(f"   002021 出现次数: {count_002021}")
+                print(f"   002021 Number of occurrences: {count_002021}")
                 
-                # 找出错误代码的位置
+                # Find the location of the error code
                 import re
                 positions = [m.start() for m in re.finditer("002021", response.content)]
-                print(f"   002021 出现位置: {positions}")
+                print(f"   002021 Appear location: {positions}")
                 
-                # 显示错误代码周围的文本
-                for pos in positions[:3]:  # 只显示前3个位置
+                # Show text around error code
+                for pos in positions[:3]:  # Only show first 3 positions
                     start = max(0, pos - 100)
                     end = min(len(response.content), pos + 100)
                     context = response.content[start:end]
-                    print(f"   位置 {pos} 周围文本: ...{context}...")
+                    print(f"   location {pos} surrounding text: ...{context}...")
             else:
-                print("✅ LLM响应中不包含错误的股票代码 002021")
+                print("✅ LLM The response does not contain the wrong stock symbol 002021")
                 
-            # 显示LLM响应的前1000字符
-            print(f"\n📄 LLM响应前1000字符:")
+            # Display the first 1000 characters of the LLM response
+            print(f"\n📄 LLM First 1000 characters of response:")
             print("-" * 80)
             print(response.content[:1000])
             print("-" * 80)
@@ -145,18 +145,18 @@ def test_simple_fundamentals():
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 if __name__ == "__main__":
-    print("🚀 开始简单基本面分析测试")
+    print("🚀 Start a simple fundamental analysis test")
     
-    # 执行测试
+    # Execute tests
     success = test_simple_fundamentals()
     
     if success:
-        print("\n✅ 测试完成")
+        print("\n✅ Test completed")
     else:
-        print("\n❌ 测试失败")
+        print("\n❌ test failed")

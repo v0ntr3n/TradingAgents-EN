@@ -1,4 +1,4 @@
-"""测试新建模拟交易时是否正确保存 name 字段"""
+"""Test whether the name field is saved correctly when creating a new simulated transaction"""
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,23 +11,23 @@ from datetime import datetime
 load_dotenv()
 
 async def test_new_position():
-    """测试新建持仓时的 name 字段"""
+    """Test the name field when creating a new position"""
     mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017')
     client = AsyncIOMotorClient(mongo_uri)
     db = client['tradingagents']
     
-    print('=== 测试新建持仓时的 name 字段 ===\n')
+    print('=== Test the name field when creating a new position ===\n')
     
-    # 测试用户ID
+    # test user ID
     test_user_id = "test_user_001"
     
-    # 清理旧数据
+    # Clean old data
     await db['paper_positions'].delete_many({'user_id': test_user_id})
     await db['paper_accounts'].delete_many({'user_id': test_user_id})
     
-    print('✅ 已清理旧测试数据\n')
+    print('✅ Old test data cleaned\n')
     
-    # 创建账户
+    # Create account
     now_iso = datetime.utcnow().isoformat()
     account = {
         'user_id': test_user_id,
@@ -45,27 +45,27 @@ async def test_new_position():
         'updated_at': now_iso
     }
     await db['paper_accounts'].insert_one(account)
-    print('✅ 已创建测试账户\n')
+    print('✅ Test account created\n')
     
-    # 测试用例：A股、港股、美股
+    # Test cases: A shares, Hong Kong stocks, US stocks
     test_cases = [
-        {'code': '300750', 'market': 'CN', 'name': '宁德时代'},
-        {'code': '00700', 'market': 'HK', 'name': '腾讯控股'},
-        {'code': 'AAPL', 'market': 'US', 'name': '苹果公司'},
+        {'code': '300750', 'market': 'CN', 'name': 'Ningde era'},
+        {'code': '00700', 'market': 'HK', 'name': 'Tencent Holdings'},
+        {'code': 'AAPL', 'market': 'US', 'name': 'apple inc.'},
     ]
     
-    print('=== 模拟新建持仓 ===\n')
+    print('=== Simulate a new position ===\n')
     
     for test_case in test_cases:
         code = test_case['code']
         market = test_case['market']
         expected_name = test_case['name']
         
-        # 创建持仓（模拟下单逻辑）
+        # Create a position (simulate order logic)
         position = {
             'user_id': test_user_id,
             'code': code,
-            'name': expected_name,  # 这是新增的字段
+            'name': expected_name,  # This is a new field
             'market': market,
             'currency': {'CN': 'CNY', 'HK': 'HKD', 'US': 'USD'}[market],
             'quantity': 100,
@@ -76,32 +76,32 @@ async def test_new_position():
         }
         
         result = await db['paper_positions'].insert_one(position)
-        print(f'✅ 创建持仓: {code} ({market})')
-        print(f'   名称: {expected_name}')
+        print(f'✅ Create a position: {code} ({market})')
+        print(f'   Name: {expected_name}')
         print(f'   ID: {result.inserted_id}\n')
     
-    # 验证数据
-    print('=== 验证保存的数据 ===\n')
+    # Validate data
+    print('=== Verify saved data ===\n')
     positions = await db['paper_positions'].find({'user_id': test_user_id}).to_list(None)
     
     for pos in positions:
         code = pos.get('code')
-        name = pos.get('name', '(无名称)')
+        name = pos.get('name', '(no name)')
         market = pos.get('market')
-        print(f'代码: {code:6} | 名称: {name:20} | 市场: {market}')
+        print(f'code: {code:6} | Name: {name:20} | market: {market}')
     
-    # 统计
+    # statistics
     total = len(positions)
     with_name = sum(1 for p in positions if p.get('name'))
     
-    print(f'\n=== 统计 ===')
-    print(f'总记录数: {total}')
-    print(f'有名称: {with_name}')
-    print(f'名称完整率: {(with_name/total*100):.1f}%' if total > 0 else '名称完整率: 0%')
+    print(f'\n=== statistics ===')
+    print(f'Total number of records: {total}')
+    print(f'has a name: {with_name}')
+    print(f'name completeness: {(with_name/total*100):.1f}%' if total > 0 else 'name completeness: 0%')
     
-    # 注意：不清理数据，保留在数据库中供验证
-    print('\n✅ 测试数据已保存到数据库，用户ID: test_user_001')
-    print('   可以在 MongoDB 中查看 paper_positions 集合')
+    # Note: The data is not cleaned and remains in the database for verification.
+    print('\n✅ The test data has been saved to the database and the user ID: test_user_001')
+    print('   The paper_positions collection can be viewed in MongoDB')
 
     client.close()
 

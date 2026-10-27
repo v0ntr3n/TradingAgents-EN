@@ -1,10 +1,10 @@
 """
-工具实现模块
+Tool implementation module
 
-所有工具按类别组织在子目录中
+All tools organized by category in subdirectories
 """
 
-# 导入所有工具以触发自动注册
+# Import all tools to trigger automatic registration
 from .market.stock_market_data import get_stock_market_data_unified
 from .fundamentals.stock_fundamentals import get_stock_fundamentals_unified
 from .fundamentals.etf_fundamentals import get_etf_fundamentals
@@ -32,7 +32,7 @@ from .news.stock_news import get_stock_news_unified
 from .social.stock_sentiment import get_stock_sentiment_unified
 from . import legacy_bridge
 
-# 导入大盘/指数分析工具
+# Import market/index analysis tools
 from .market.index_market_tools import (
     get_index_data,
     get_market_breadth,
@@ -40,7 +40,7 @@ from .market.index_market_tools import (
     identify_market_cycle,
 )
 
-# 导入板块分析工具
+# Import sector analysis tools
 from .market.sector_market_tools import (
     get_sector_data,
     get_fund_flow_data,
@@ -48,45 +48,45 @@ from .market.sector_market_tools import (
     analyze_sector,
 )
 
-# 导入筹码分布分析工具
+# Import chip distribution analysis tool
 from .market.chip_distribution_tools import (
     get_chip_distribution,
     get_chip_distribution_akshare_tool,
     get_chip_distribution_tushare_tool,
 )
 
-# 导入全市场批量筛选工具
+# Import market-wide batch screening tools
 from .market.stock_screening_tool import screen_stocks_by_criteria
 from .market.technical_factor_bundle_tool import get_technical_factor_bundle_tool
 
-# 导入批量盈利稳定性验证工具
+# Import batch profit stability verification tool
 from .fundamentals.batch_profit_consistency import batch_check_profit_consistency
 
-# 导入估值模型工具
+# Import valuation model tool
 from .fundamentals.valuation.dcf_valuation import get_dcf_valuation
 from .fundamentals.valuation.wacc_calculator import get_wacc_calculation
 
-# 导入风险评分工具
+# Import risk scoring tool
 from .risk.altman_zscore import get_altman_zscore
 from .risk.piotroski_fscore import get_piotroski_fscore
 from .risk.beneish_mscore import get_beneish_mscore
 from .risk.earnings_quality import get_earnings_quality_score
 
-# 导入投资组合管理工具
+# Import portfolio management tools
 from .portfolio.performance_metrics import (
     get_beta_calculation,
     get_sharpe_ratio,
     get_var_calculation,
 )
 
-# 导入技术分析工具
+# Import technical analysis tools
 from .technical.candlestick_patterns import get_candlestick_patterns
 from .technical.crossover_signals import get_crossover_signals
 from .technical.support_resistance import get_support_resistance_levels
 from .technical.chart_patterns import get_chart_patterns
 from .technical.fibonacci_tools import get_fibonacci_retracement
 
-# 导入 P1 新增工具
+# Import P1 new tools
 from .fundamentals.macro_tools import (
     get_macro_dashboard,
     get_yield_curve_analysis,
@@ -101,7 +101,7 @@ from .portfolio.quant_tools import (
     get_factor_attribution,
 )
 
-# A类-估值扩展工具
+# A Class - Valuation Extension Tools
 from .fundamentals.valuation.extended_valuation import (
     get_dcf_three_stage_valuation,
     get_ddm_valuation,
@@ -114,7 +114,7 @@ from .fundamentals.valuation.extended_valuation import (
     get_growth_adjusted_valuation,
 )
 
-# A类-财务风险扩展工具
+# A Class - Financial Risk Extension Tools
 from .risk.extended_risk_models import (
     get_ohlson_oscore,
     get_receivables_quality,
@@ -123,7 +123,7 @@ from .risk.extended_risk_models import (
     get_debt_structure_analysis,
 )
 
-# A类-投资组合扩展工具
+# A Class - Portfolio Extension Tool
 from .portfolio.extended_performance import (
     get_sortino_ratio,
     get_treynor_ratio,
@@ -136,7 +136,7 @@ from .portfolio.extended_performance import (
     get_sector_attribution,
 )
 
-# A类-高级技术分析工具
+# A Class - Advanced Technical Analysis Tools
 from .technical.advanced_technical import (
     get_adx_trend_strength,
     get_macd_divergence,
@@ -152,7 +152,7 @@ from .technical.volume_analysis import (
     get_fibonacci_extension,
 )
 
-# A类-统计工具
+# A Class - Statistical Tools
 from .fundamentals.statistical_tools import (
     get_correlation_matrix,
     get_cointegration_test,
@@ -162,7 +162,7 @@ from .fundamentals.statistical_tools import (
     get_garch_volatility,
 )
 
-# A类-筛选工具
+# A Class-Filter Tool
 from .fundamentals.screening.value_screening import (
     get_graham_screen,
     get_growth_stock_screen,
@@ -170,21 +170,21 @@ from .fundamentals.screening.value_screening import (
     get_turnaround_screen,
 )
 
-# B类-宏观周期工具
+# B Class - Macrocycle Tools
 from .fundamentals.macro_cycle_tools import (
     get_economic_cycle_position,
     get_monetary_environment,
     get_sector_rotation_signals,
 )
 
-# B类-债券工具
+# B Class - Bond Instrument
 from .fundamentals.bond_tools import (
     get_bond_yield_calculation,
     get_credit_spread_analysis,
     get_bond_duration_convexity,
 )
 
-# B类-增强工具
+# B Class - Enhancement Tools
 from .fundamentals.dividend_enhancement import (
     get_dividend_valuation_context,
     get_industry_valuation_distribution,
@@ -199,7 +199,7 @@ __all__ = [
     'get_stock_fundamentals_unified',
     'get_stock_news_unified',
     'get_stock_sentiment_unified',
-    # 专项财务分析工具
+    # Special financial analysis tools
     'get_income_analysis',
     'get_balance_sheet_analysis',
     'get_cashflow_analysis',
@@ -214,55 +214,55 @@ __all__ = [
     'get_cashflow_quality_trend_tool',
     'get_historical_valuation_percentile_tool',
     'get_technical_factor_bundle_tool',
-    # 大盘/指数分析工具
+    # Market/index analysis tools
     'get_index_data',
     'get_market_breadth',
     'get_market_environment',
     'identify_market_cycle',
-    # 板块分析工具
+    # Sector analysis tools
     'get_sector_data',
     'get_fund_flow_data',
     'get_peer_comparison',
     'analyze_sector',
-    # 筹码分布分析工具
+    # Chip distribution analysis tool
     'get_chip_distribution',
     'get_chip_distribution_akshare_tool',
     'get_chip_distribution_tushare_tool',
-    # 全市场批量筛选工具
+    # Market-wide batch screening tool
     'screen_stocks_by_criteria',
-    # 批量盈利稳定性验证工具
+    # Batch profit stability verification tool
     'batch_check_profit_consistency',
-    # 估值模型工具
+    # Valuation Model Tools
     'get_dcf_valuation',
     'get_wacc_calculation',
-    # 风险评分工具
+    # Risk scoring tool
     'get_altman_zscore',
     'get_piotroski_fscore',
     'get_beneish_mscore',
     'get_earnings_quality_score',
-    # 投资组合管理工具
+    # Portfolio Management Tools
     'get_beta_calculation',
     'get_sharpe_ratio',
     'get_var_calculation',
-    # 技术分析高级工具
+    # Advanced Tools for Technical Analysis
     'get_candlestick_patterns',
     'get_crossover_signals',
     'get_support_resistance_levels',
     'get_chart_patterns',
     'get_fibonacci_retracement',
-    # P1-宏观/事件/选股
+    # P1-Macro/Events/Stock Picking
     'get_macro_dashboard',
     'get_yield_curve_analysis',
     'get_event_study',
     'get_multi_factor_screening',
-    # P1-估值/风险
+    # P1-Valuation/Risk
     'get_comparable_company_valuation',
     'get_financial_fraud_signals',
-    # P1-组合量化
+    # P1-Combinatorial quantification
     'get_efficient_frontier',
     'get_monte_carlo_simulation',
     'get_factor_attribution',
-    # A类-估值扩展
+    # A Class-ValuationExtension
     'get_dcf_three_stage_valuation',
     'get_ddm_valuation',
     'get_residual_income_valuation',
@@ -272,13 +272,13 @@ __all__ = [
     'get_graham_valuation',
     'get_capm_cost_of_equity',
     'get_growth_adjusted_valuation',
-    # A类-财务风险扩展
+    # A Class - Financial Risk Extension
     'get_ohlson_oscore',
     'get_receivables_quality',
     'get_inventory_quality',
     'get_liquidity_stress_test',
     'get_debt_structure_analysis',
-    # A类-组合扩展
+    # A Class-combination extension
     'get_sortino_ratio',
     'get_treynor_ratio',
     'get_information_ratio',
@@ -288,7 +288,7 @@ __all__ = [
     'get_scenario_analysis',
     'get_brinson_attribution',
     'get_sector_attribution',
-    # A类-高级技术分析
+    # A Class - Advanced Technical Analysis
     'get_adx_trend_strength',
     'get_macd_divergence',
     'get_rsi_divergence',
@@ -299,27 +299,27 @@ __all__ = [
     'get_pivot_points',
     'get_volume_profile',
     'get_fibonacci_extension',
-    # A类-统计
+    # A Class - Statistics
     'get_correlation_matrix',
     'get_cointegration_test',
     'get_rolling_regression',
     'get_normality_test',
     'get_stationarity_test',
     'get_garch_volatility',
-    # A类-筛选
+    # A Class-Filter
     'get_graham_screen',
     'get_growth_stock_screen',
     'get_dividend_stock_screen',
     'get_turnaround_screen',
-    # B类-宏观周期
+    # B Class - Macro Cycle
     'get_economic_cycle_position',
     'get_monetary_environment',
     'get_sector_rotation_signals',
-    # B类-债券
+    # B Class-Bond
     'get_bond_yield_calculation',
     'get_credit_spread_analysis',
     'get_bond_duration_convexity',
-    # B类-增强
+    # B class-enhancement
     'get_dividend_valuation_context',
     'get_industry_valuation_distribution',
     'get_cashflow_quality_deep',

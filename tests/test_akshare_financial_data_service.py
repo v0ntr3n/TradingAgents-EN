@@ -9,11 +9,11 @@ def test_extract_latest_period_and_indicators_from_akshare_matrix_records():
 
     financial_data = {
         "main_indicators": [
-            {"指标": "营业总收入", "20260331": 129131041000.0, "20251231": 423701834000.0},
-            {"指标": "归母净利润", "20260331": 20737710000.0, "20251231": 72201280000.0},
-            {"指标": "股东权益合计(净资产)", "20260331": 394232291000.0, "20251231": 371026300000.0},
-            {"指标": "净资产收益率_平均", "20260331": 5.973097, "20251231": 24.72487},
-            {"指标": "资产负债率", "20260331": 62.32234, "20251231": 61.93928},
+            {"indicator": "total operating income", "20260331": 129131041000.0, "20251231": 423701834000.0},
+            {"indicator": "Net profit attributable to parent company", "20260331": 20737710000.0, "20251231": 72201280000.0},
+            {"indicator": "Total shareholders equity(net worth)", "20260331": 394232291000.0, "20251231": 371026300000.0},
+            {"indicator": "Return on equity_average", "20260331": 5.973097, "20251231": 24.72487},
+            {"indicator": "Asset-liability ratio", "20260331": 62.32234, "20251231": 61.93928},
         ],
         "balance_sheet": [],
         "income_statement": [],

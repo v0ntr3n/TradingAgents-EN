@@ -12,12 +12,12 @@ def test_digest_session_thread_uses_llm_summary(monkeypatch):
 
     async def fake_build_summary(db, messages, title=""):
         captured["summary_calls"] += 1
-        assert title == "外部会话沉淀"
+        assert title == "External session precipitation"
         return {
-            "abstract": "外部沟通围绕宁德时代短期涨幅是否过快展开，当前结论偏向高位震荡而非极端泡沫。",
-            "confirmed_facts": ["最近一轮已讨论价格偏离和技术位置"],
-            "open_questions": ["是否继续补行业景气验证"],
-            "next_actions": ["继续跟踪后续盈利兑现和动能变化"],
+            "abstract": "External communication revolves around whether CATL s short-term gains are too rapid, and the current conclusion is biased towards high levels of shock rather than extreme bubbles.",
+            "confirmed_facts": ["Price divergences and technical positions have been discussed in the latest round"],
+            "open_questions": ["Whether to continue to supplement industry prosperity verification"],
+            "next_actions": ["Continue to track subsequent profit realization and momentum changes"],
             "focus_score": 0.82,
         }
 
@@ -46,9 +46,9 @@ def test_digest_session_thread_uses_llm_summary(monkeypatch):
 
     assert digested is True
     assert captured["summary_calls"] == 1
-    assert "高位震荡而非极端泡沫" in captured["append_content"]
-    assert "已确认信息:" in captured["append_content"]
-    assert captured["update_payload"]["$set"]["last_digest_summary"].startswith("外部沟通围绕宁德时代")
+    assert "High volatility rather than extreme bubble" in captured["append_content"]
+    assert "Confirmed information:" in captured["append_content"]
+    assert captured["update_payload"]["$set"]["last_digest_summary"].startswith("External communication revolves around CATL")
 
 
 class _FakeCursor:
@@ -90,10 +90,10 @@ class _FakeDB:
     def __init__(self, captured):
         self.assistant_thread_messages = _FakeMessagesCollection(
             [
-                {"role": "user", "content": "宁德时代涨得太多了吧。"},
-                {"role": "assistant", "content": "我先按价格偏离和技术位置看一下。"},
-                {"role": "user", "content": "主要担心是不是已经过热了。"},
-                {"role": "assistant", "content": "目前更像涨快了，需要结合行业景气继续看。"},
+                {"role": "user", "content": "It probably rose too much during the Ningde era."},
+                {"role": "assistant", "content": "I ll first look at it by price deviation and technical position."},
+                {"role": "user", "content": "The main concern is whether it has overheated."},
+                {"role": "assistant", "content": "At present, it seems that the price is rising rapidly, and we need to continue to look at it based on the industry prosperity."},
             ]
         )
         self.assistant_threads = _FakeThreadsCollection(captured)

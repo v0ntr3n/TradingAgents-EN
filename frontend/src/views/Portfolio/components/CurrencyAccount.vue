@@ -3,25 +3,25 @@
     <el-row :gutter="16">
       <el-col :span="6">
         <div class="stat-item">
-          <div class="label">总资产</div>
+          <div class="label">total assets</div>
           <div class="value">{{ symbol }}{{ formatMoney(summary?.total_assets?.[currency] || 0) }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="stat-item">
-          <div class="label">可用资金</div>
+          <div class="label">available funds</div>
           <div class="value">{{ symbol }}{{ formatMoney(summary?.cash?.[currency] || 0) }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="stat-item">
-          <div class="label">持仓市值</div>
+          <div class="label">Position market value</div>
           <div class="value">{{ symbol }}{{ formatMoney(summary?.positions_value?.[currency] || 0) }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="stat-item">
-          <div class="label">累计收益</div>
+          <div class="label">Cumulative income</div>
           <div class="value" :class="profitClass">
             {{ profitPrefix }}{{ symbol }}{{ formatMoney(Math.abs(profit)) }}
             <span class="pct">({{ profitPctPrefix }}{{ profitPct.toFixed(2) }}%)</span>
@@ -34,19 +34,19 @@
 
     <el-row :gutter="16" class="detail-row">
       <el-col :span="6">
-        <span class="detail-label">初始资金:</span>
+        <span class="detail-label">Initial capital:</span>
         <span class="detail-value">{{ symbol }}{{ formatMoney(summary?.initial_capital?.[currency] || 0) }}</span>
       </el-col>
       <el-col :span="6">
-        <span class="detail-label">累计入金:</span>
+        <span class="detail-label">Cumulative deposit:</span>
         <span class="detail-value">{{ symbol }}{{ formatMoney(summary?.total_deposit?.[currency] || 0) }}</span>
       </el-col>
       <el-col :span="6">
-        <span class="detail-label">累计出金:</span>
+        <span class="detail-label">Cumulative withdrawals:</span>
         <span class="detail-value">{{ symbol }}{{ formatMoney(summary?.total_withdraw?.[currency] || 0) }}</span>
       </el-col>
       <el-col :span="6">
-        <span class="detail-label">净入金:</span>
+        <span class="detail-label">net deposit:</span>
         <span class="detail-value">{{ symbol }}{{ formatMoney(summary?.net_capital?.[currency] || 0) }}</span>
       </el-col>
     </el-row>
@@ -96,11 +96,11 @@ const profitPctPrefix = computed(() => profitPct.value >= 0 ? '+' : '')
 }
 
 .stat-item .value.profit {
-  color: #f56c6c; /* 红色表示盈利（中国股市规范） */
+  color: #f56c6c; /* Red indicates profit (Chinese stock market norm) */
 }
 
 .stat-item .value.loss {
-  color: #67c23a; /* 绿色表示亏损（中国股市规范） */
+  color: #67c23a; /* Green indicates loss (Chinese stock market norm) */
 }
 
 .stat-item .pct {

@@ -1,80 +1,80 @@
 #!/usr/bin/env python3
 """
-测试优化后的提示词效果
-验证股票代码和公司名称的正确分离
+Test the optimized prompt word effect
+Verify correct separation of ticker symbol and company name
 """
 
 import os
 import sys
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_company_name_extraction():
-    """测试公司名称提取功能"""
-    print("\n🔍 测试公司名称提取功能")
+    """Test the company name extraction function"""
+    print("\n🔍 Test the company name extraction function")
     print("=" * 80)
     
     try:
-        # 测试不同类型的股票
+        # Test different types of stocks
         test_cases = [
-            ("002027", "中国A股"),
-            ("000001", "中国A股"),
-            ("AAPL", "美股"),
-            ("TSLA", "美股"),
-            ("0700.HK", "港股"),
+            ("002027", "China A shares"),
+            ("000001", "China A shares"),
+            ("AAPL", "US stocks"),
+            ("TSLA", "US stocks"),
+            ("0700.HK", "Hong Kong stocks"),
         ]
         
         from tradingagents.utils.stock_utils import StockUtils
         from tradingagents.agents.analysts.market_analyst import _get_company_name
         
         for ticker, market_type in test_cases:
-            print(f"\n📊 测试股票: {ticker} ({market_type})")
+            print(f"\n📊 test stocks: {ticker} ({market_type})")
             
-            # 获取市场信息
+            # Get market information
             market_info = StockUtils.get_market_info(ticker)
-            print(f"   市场信息: {market_info['market_name']}")
-            print(f"   货币: {market_info['currency_name']} ({market_info['currency_symbol']})")
+            print(f"   market information: {market_info['market_name']}")
+            print(f"   Currency: {market_info['currency_name']} ({market_info['currency_symbol']})")
             
-            # 获取公司名称
+            # Get company name
             company_name = _get_company_name(ticker, market_info)
-            print(f"   公司名称: {company_name}")
+            print(f"   Company name: {company_name}")
             
-            # 验证结果
-            if company_name != f"股票{ticker}":
-                print(f"   ✅ 成功获取公司名称")
+            # Verification results
+            if company_name != f"stocks{ticker}":
+                print(f"   ✅ Successfully obtained company name")
             else:
-                print(f"   ⚠️ 使用默认名称")
+                print(f"   ⚠️ Use default name")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_market_analyst_prompt():
-    """测试市场分析师的优化提示词"""
-    print("\n🔍 测试市场分析师优化提示词")
+    """Test market analysts optimization tips"""
+    print("\n🔍 Test market analyst optimization prompt words")
     print("=" * 80)
     
     try:
-        # 设置日志级别
+        # Set log level
         from tradingagents.utils.logging_init import get_logger
         logger = get_logger("default")
         logger.setLevel("INFO")
         
-        # 检查API密钥
+        # Check API key
         api_key = os.getenv("DASHSCOPE_API_KEY")
         if not api_key:
-            print("⚠️ 未找到DASHSCOPE_API_KEY，跳过LLM测试")
+            print("⚠️ DASHSCOPE_API_KEY not found, skipping LLM test")
             return True
         
-        print(f"\n🔧 创建市场分析师...")
+        print(f"\n🔧 Create a market analyst...")
         
-        # 创建LLM和工具包
+        # Create LLM and toolkit
         from tradingagents.llm_adapters import ChatDashScopeOpenAI
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
@@ -90,13 +90,13 @@ def test_market_analyst_prompt():
         toolkit = Toolkit()
         toolkit.update_config(config)
         
-        # 创建市场分析师
+        # Create a market analyst
         from tradingagents.agents.analysts.market_analyst import create_market_analyst
         market_analyst = create_market_analyst(llm, toolkit)
         
-        print(f"✅ 市场分析师创建完成")
+        print(f"✅ Market analyst created")
         
-        # 测试分析状态
+        # Test analysis status
         test_ticker = "002027"
         state = {
             "company_of_interest": test_ticker,
@@ -104,49 +104,49 @@ def test_market_analyst_prompt():
             "messages": []
         }
         
-        print(f"\n🔧 测试股票: {test_ticker}")
-        print(f"🔍 [提示词验证] 检查提示词是否正确包含公司名称和股票代码...")
+        print(f"\n🔧 test stocks: {test_ticker}")
+        print(f"🔍 [prompt word verification] Check whether the prompt word correctly contains the company name and stock code...")
         
-        # 这里我们不实际执行分析师（避免API调用），只验证提示词构建
+        # Here we do not actually perform the analysis (avoiding API calls), only verify the prompt word construction
         from tradingagents.utils.stock_utils import StockUtils
         from tradingagents.agents.analysts.market_analyst import _get_company_name
         
         market_info = StockUtils.get_market_info(test_ticker)
         company_name = _get_company_name(test_ticker, market_info)
         
-        print(f"✅ 股票代码: {test_ticker}")
-        print(f"✅ 公司名称: {company_name}")
-        print(f"✅ 市场类型: {market_info['market_name']}")
-        print(f"✅ 货币信息: {market_info['currency_name']} ({market_info['currency_symbol']})")
+        print(f"✅ Stock code: {test_ticker}")
+        print(f"✅ Company name: {company_name}")
+        print(f"✅ market type: {market_info['market_name']}")
+        print(f"✅ currency information: {market_info['currency_name']} ({market_info['currency_symbol']})")
         
-        # 验证提示词模板
+        # Verification prompt word template
         expected_elements = [
-            f"公司名称：{company_name}",
-            f"股票代码：{test_ticker}",
-            f"所属市场：{market_info['market_name']}",
-            f"计价货币：{market_info['currency_name']}"
+            f"Company name:{company_name}",
+            f"Stock code:{test_ticker}",
+            f"Market:{market_info['market_name']}",
+            f"Quotation currency:{market_info['currency_name']}"
         ]
         
-        print(f"\n🔍 验证提示词应包含的关键元素:")
+        print(f"\n🔍 Key elements that verification prompt words should contain:")
         for element in expected_elements:
             print(f"   ✅ {element}")
         
-        print(f"\n✅ 提示词优化验证完成")
+        print(f"\n✅ Prompt word optimization verification completed")
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_fundamentals_analyst_prompt():
-    """测试基本面分析师的优化提示词"""
-    print("\n🔍 测试基本面分析师优化提示词")
+    """Testing optimization tips from fundamental analysts"""
+    print("\n🔍 Test fundamental analyst optimization prompt words")
     print("=" * 80)
     
     try:
-        # 测试基本面分析师的公司名称获取
+        # Test fundamental analyst's company name acquisition
         from tradingagents.agents.analysts.fundamentals_analyst import _get_company_name_for_fundamentals
         from tradingagents.utils.stock_utils import StockUtils
         
@@ -154,78 +154,78 @@ def test_fundamentals_analyst_prompt():
         market_info = StockUtils.get_market_info(test_ticker)
         company_name = _get_company_name_for_fundamentals(test_ticker, market_info)
         
-        print(f"📊 测试股票: {test_ticker}")
-        print(f"✅ 公司名称: {company_name}")
-        print(f"✅ 市场类型: {market_info['market_name']}")
+        print(f"📊 test stocks: {test_ticker}")
+        print(f"✅ Company name: {company_name}")
+        print(f"✅ market type: {market_info['market_name']}")
         
-        # 验证提示词关键元素
+        # Validation prompt word key elements
         expected_elements = [
-            f"分析{company_name}（股票代码：{test_ticker}",
+            f"analysis{company_name} (Stock code:{test_ticker}",
             f"{market_info['market_name']}",
             f"ticker='{test_ticker}'",
-            f"公司名称：{company_name}",
-            f"股票代码：{test_ticker}"
+            f"Company name:{company_name}",
+            f"Stock code:{test_ticker}"
         ]
         
-        print(f"\n🔍 验证基本面分析师提示词应包含的关键元素:")
+        print(f"\n🔍 Verify the key elements that a fundamental analyst s tip words should contain:")
         for element in expected_elements:
             print(f"   ✅ {element}")
         
-        print(f"\n✅ 基本面分析师提示词优化验证完成")
+        print(f"\n✅ Fundamental analyst prompt word optimization verification completed")
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主测试函数"""
-    print("🚀 开始测试优化后的提示词")
+    """Main test function"""
+    print("🚀 Start testing optimized prompt words")
     print("=" * 100)
     
     results = []
     
-    # 测试1: 公司名称提取
+    # test 1: Company name extraction
     results.append(test_company_name_extraction())
     
-    # 测试2: 市场分析师提示词
+    # test 2: Market Analyst Tips
     results.append(test_market_analyst_prompt())
     
-    # 测试3: 基本面分析师提示词
+    # test 3: Fundamental Analyst Tips
     results.append(test_fundamentals_analyst_prompt())
     
-    # 总结结果
+    # Summary results
     print("\n" + "=" * 100)
-    print("📋 测试结果总结")
+    print("📋 Summary of test results")
     print("=" * 100)
     
     passed = sum(results)
     total = len(results)
     
     test_names = [
-        "公司名称提取功能",
-        "市场分析师提示词优化",
-        "基本面分析师提示词优化"
+        "Company name extraction function",
+        "Market analyst tips for word optimization",
+        "Fundamental analyst tip word optimization"
     ]
     
     for i, (name, result) in enumerate(zip(test_names, results)):
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{i+1}. {name}: {status}")
     
-    print(f"\n📊 总体结果: {passed}/{total} 测试通过")
+    print(f"\n📊 Overall results: {passed}/{total} Test passed")
     
     if passed == total:
-        print("🎉 所有测试通过！提示词优化成功")
-        print("\n📋 优化效果:")
-        print("1. ✅ 股票代码和公司名称正确分离")
-        print("2. ✅ 提示词中明确区分公司名称和股票代码")
-        print("3. ✅ 支持多市场股票类型（A股、港股、美股）")
-        print("4. ✅ 货币信息正确匹配市场类型")
-        print("5. ✅ 分析师能够获取正确的公司名称")
+        print("🎉 All tests passed! Prompt word optimization successful")
+        print("\n📋 Optimization effect:")
+        print("1. ✅ Stock code and company name are properly separated")
+        print("2. ✅ Clearly distinguish the company name and stock code in the prompt word")
+        print("3. ✅ Supports multiple market stock types (A shares, Hong Kong stocks, US stocks)")
+        print("4. ✅ Currency information correctly matches the market type")
+        print("5. ✅ Analysts are able to obtain the correct company name")
     else:
-        print("⚠️ 部分测试失败，需要进一步优化")
+        print("⚠️ Some tests failed and need further optimization")
     
     return passed == total
 

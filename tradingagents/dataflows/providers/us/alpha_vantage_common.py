@@ -1,13 +1,13 @@
 """
-Alpha Vantage API 公共模块
+Alpha Vantage API Public module
 
-提供 Alpha Vantage API 的通用请求功能，包括：
-- API 请求封装
-- 错误处理和重试
-- 速率限制处理
-- 响应解析
+Provides common request functionality for the Alpha Vantage API, including:
+- API Request encapsulation
+- Error handling and retrying
+- Rate limiting handling
+- Response parsing
 
-参考原版 TradingAgents 实现
+Refer to the original TradingAgents implementation
 """
 
 import os
@@ -17,124 +17,124 @@ import requests
 from typing import Dict, Any, Optional
 from datetime import datetime
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 
 
 class AlphaVantageRateLimitError(Exception):
-    """Alpha Vantage 速率限制错误"""
+    """Alpha Vantage rate limit error"""
     pass
 
 
 class AlphaVantageAPIError(Exception):
-    """Alpha Vantage API 错误"""
+    """Alpha Vantage API Error"""
     pass
 
 
 def _get_api_key_from_database() -> Optional[str]:
     """
-    从数据库读取 Alpha Vantage API Key
+    Read from database Alpha Vantage API Key
 
-    优先级：数据库配置 > 环境变量
-    这样用户在 Web 后台修改配置后可以立即生效
+    Priority: Database Configuration > environment variables
+    In this way, after users modify the configuration in the web background, it can take effect immediately.
 
     Returns:
-        Optional[str]: API Key，如果未找到返回 None
+        Optional[str]: API Key, If not found return None
     """
     try:
-        logger.debug("🔍 [DB查询] 开始从数据库读取 Alpha Vantage API Key...")
+        logger.debug("🔍 [DB Query] Start reading from database Alpha Vantage API Key...")
         from app.core.database import get_mongo_db_sync
         db = get_mongo_db_sync()
         config_collection = db.system_configs
 
-        # 获取最新的激活配置
-        logger.debug("🔍 [DB查询] 查询 is_active=True 的配置...")
+        # Get the latest activation configuration
+        logger.debug("🔍 [DB Query] Query is_active=True configuration...")
         config_data = config_collection.find_one(
             {"is_active": True},
             sort=[("version", -1)]
         )
 
         if config_data:
-            logger.debug(f"✅ [DB查询] 找到激活配置，版本: {config_data.get('version')}")
+            logger.debug(f"✅ [DB Query] Find activation configuration, version: {config_data.get('version')}")
             if config_data.get('data_source_configs'):
                 logger.debug(f"✅ [DB查询] 配置中有 {len(config_data['data_source_configs'])} 个数据源")
                 for ds_config in config_data['data_source_configs']:
                     ds_type = ds_config.get('type')
-                    logger.debug(f"🔍 [DB查询] 检查数据源: {ds_type}")
+                    logger.debug(f"🔍 [DB Query] Check data source: {ds_type}")
                     if ds_type == 'alpha_vantage':
                         api_key = ds_config.get('api_key')
-                        logger.debug(f"✅ [DB查询] 找到 Alpha Vantage 配置，api_key 长度: {len(api_key) if api_key else 0}")
+                        logger.debug(f"✅ [DB Query] Find Alpha Vantage configuration, api_key length: {len(api_key) if api_key else 0}")
                         if api_key and not api_key.startswith("your_"):
-                            logger.debug(f"✅ [DB查询] API Key 有效 (长度: {len(api_key)})")
+                            logger.debug(f"✅ [DB Query] API Key valid (length: {len(api_key)})")
                             return api_key
                         else:
-                            logger.debug(f"⚠️ [DB查询] API Key 无效或为占位符")
+                            logger.debug(f"⚠️ [DB Query] API Key Invalid or a placeholder")
             else:
-                logger.debug("⚠️ [DB查询] 配置中没有 data_source_configs")
+                logger.debug("⚠️ [DB Query] Not in configuration data_source_configs")
         else:
-            logger.debug("⚠️ [DB查询] 未找到激活的配置")
+            logger.debug("⚠️ [DB Query] Activated configuration not found")
 
-        logger.debug("⚠️ [DB查询] 数据库中未找到有效的 Alpha Vantage API Key")
+        logger.debug("⚠️ [DB Query] No valid one found in database Alpha Vantage API Key")
     except Exception as e:
-        logger.debug(f"❌ [DB查询] 从数据库读取 API Key 失败: {e}")
+        logger.debug(f"❌ [DB Query] Failed to read API Key from database: {e}")
 
     return None
 
 
 def get_api_key() -> str:
     """
-    获取 Alpha Vantage API Key
+    get Alpha Vantage API Key
 
-    优先级：
-    1. 数据库配置（system_configs 集合）
-    2. 环境变量 ALPHA_VANTAGE_API_KEY
-    3. 配置文件
+    Priority:
+    1. Database configuration (system_configs collection)
+    2. environment variables ALPHA_VANTAGE_API_KEY
+    3. Configuration file
 
     Returns:
         str: API Key
 
     Raises:
-        ValueError: 如果未配置 API Key
+        ValueError: if not configured API Key
     """
-    # 1. 从数据库获取（最高优先级）
-    logger.debug("🔍 [步骤1] 开始从数据库读取 Alpha Vantage API Key...")
+    # 1. Get from database (highest priority)
+    logger.debug("🔍 [steps 1] Start reading from database Alpha Vantage API Key...")
     db_api_key = _get_api_key_from_database()
     if db_api_key:
-        logger.debug(f"✅ [步骤1] 数据库中找到 API Key (长度: {len(db_api_key)})")
+        logger.debug(f"✅ [steps 1] found in database API Key (length: {len(db_api_key)})")
         return db_api_key
     else:
-        logger.debug("⚠️ [步骤1] 数据库中未找到 API Key")
+        logger.debug("⚠️ [steps 1] Not found in database API Key")
 
-    # 2. 从环境变量获取
-    logger.debug("🔍 [步骤2] 读取 .env 中的 API Key...")
+    # 2. Get from environment variables
+    logger.debug("🔍 [steps 2] Read from .env API Key...")
     api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
     if api_key:
-        logger.debug(f"✅ [步骤2] .env 中找到 API Key (长度: {len(api_key)})")
+        logger.debug(f"✅ [steps 2] .env found in API Key (length: {len(api_key)})")
         return api_key
     else:
-        logger.debug("⚠️ [步骤2] .env 中未找到 API Key")
+        logger.debug("⚠️ [steps 2] .env Not found in API Key")
 
-    # 3. 从配置文件获取
-    logger.debug("🔍 [步骤3] 读取配置文件中的 API Key...")
+    # 3. Get from configuration file
+    logger.debug("🔍 [steps 3] Read the configuration file API Key...")
     try:
         from tradingagents.config.config_manager import ConfigManager
         config_manager = ConfigManager()
         api_key = config_manager.get("ALPHA_VANTAGE_API_KEY")
         if api_key:
-            logger.debug(f"✅ [步骤3] 配置文件中找到 API Key (长度: {len(api_key)})")
+            logger.debug(f"✅ [steps 3] Found in configuration file API Key (length: {len(api_key)})")
             return api_key
     except Exception as e:
-        logger.debug(f"⚠️ [步骤3] 无法从配置文件获取 Alpha Vantage API Key: {e}")
+        logger.debug(f"⚠️ [steps 3] Unable to get from configuration file Alpha Vantage API Key: {e}")
 
-    # 所有方式都失败
+    # all ways fail
     raise ValueError(
-        "❌ Alpha Vantage API Key 未配置！\n"
-        "请通过以下任一方式配置：\n"
-        "1. Web 后台配置（推荐）: http://localhost:3000/api/config/datasource\n"
-        "2. 设置环境变量: ALPHA_VANTAGE_API_KEY\n"
-        "3. 在配置文件中配置\n"
-        "获取 API Key: https://www.alphavantage.co/support/#api-key"
+        "❌ Alpha Vantage API Key Not configured!\n"
+        "Please configure in any of the following ways:\n"
+        "1. Web Backend configuration (recommended): http://localhost:3000/api/config/datasource\n"
+        "2. Set environment variables: ALPHA_VANTAGE_API_KEY\n"
+        "3. Configure in configuration file\n"
+        "get API Key: https://www.alphavantage.co/support/#api-key"
     )
 
     return api_key
@@ -142,13 +142,13 @@ def get_api_key() -> str:
 
 def format_datetime_for_api(date_str: str) -> str:
     """
-    格式化日期时间为 Alpha Vantage API 要求的格式
+    Format date and time to the format required by Alpha Vantage API
     
     Args:
-        date_str: 日期字符串，格式 YYYY-MM-DD
+        date_str: Date string, format YYYY-MM-DD
         
     Returns:
-        格式化后的日期时间字符串，格式 YYYYMMDDTHHMM
+        Formatted date and time string, format YYYYMMDDTHHMM
     """
     try:
         dt = datetime.strptime(date_str, "%Y-%m-%d")
@@ -165,51 +165,51 @@ def _make_api_request(
     retry_delay: int = 2
 ) -> Dict[str, Any] | str:
     """
-    发起 Alpha Vantage API 请求
+    Make an Alpha Vantage API request
     
     Args:
-        function: API 函数名（如 NEWS_SENTIMENT, OVERVIEW 等）
-        params: 请求参数字典
-        max_retries: 最大重试次数
-        retry_delay: 重试延迟（秒）
+        function: API Function name (such as NEWS_SENTIMENT, OVERVIEW etc.)
+        params: Request parameter dictionary
+        max_retries: Maximum number of retries
+        retry_delay: Retry delay (seconds)
         
     Returns:
-        API 响应的 JSON 数据或错误信息字符串
+        API Response JSON data or error message string
         
     Raises:
-        AlphaVantageRateLimitError: 速率限制错误
-        AlphaVantageAPIError: API 错误
+        AlphaVantageRateLimitError: rate limit error
+        AlphaVantageAPIError: API Error
     """
     api_key = get_api_key()
     base_url = "https://www.alphavantage.co/query"
     
-    # 构建请求参数
+    # Build request parameters
     request_params = {
         "function": function,
         "apikey": api_key,
         **params
     }
     
-    logger.debug(f"📡 [Alpha Vantage] 请求 {function}: {params}")
+    logger.debug(f"📡 [Alpha Vantage] Request {function}: {params}")
     
     for attempt in range(max_retries):
         try:
-            # 发起请求
+            # Make a request
             response = requests.get(base_url, params=request_params, timeout=30)
             response.raise_for_status()
             
-            # 解析响应
+            # Parse response
             data = response.json()
             
-            # 检查错误信息
+            # Check error messages
             if "Error Message" in data:
                 error_msg = data["Error Message"]
-                logger.error(f"❌ [Alpha Vantage] API 错误: {error_msg}")
+                logger.error(f"❌ [Alpha Vantage] API Error: {error_msg}")
                 raise AlphaVantageAPIError(f"Alpha Vantage API Error: {error_msg}")
             
-            # 检查速率限制
+            # Check rate limits
             if "Note" in data and "API call frequency" in data["Note"]:
-                logger.warning(f"⚠️ [Alpha Vantage] 速率限制: {data['Note']}")
+                logger.warning(f"⚠️ [Alpha Vantage] rate limit: {data['Note']}")
                 
                 if attempt < max_retries - 1:
                     wait_time = retry_delay * (attempt + 1)
@@ -222,12 +222,12 @@ def _make_api_request(
                         "Please wait a moment and try again, or upgrade your API plan."
                     )
             
-            # 检查信息字段（可能包含限制提示）
+            # Check information fields (may contain restriction hints)
             if "Information" in data:
                 info_msg = data["Information"]
-                logger.warning(f"⚠️ [Alpha Vantage] 信息: {info_msg}")
+                logger.warning(f"⚠️ [Alpha Vantage] information: {info_msg}")
                 
-                # 如果是速率限制信息
+                # If it is a rate limit message
                 if "premium" in info_msg.lower() or "limit" in info_msg.lower():
                     if attempt < max_retries - 1:
                         wait_time = retry_delay * (attempt + 1)
@@ -239,12 +239,12 @@ def _make_api_request(
                             f"Alpha Vantage API limit: {info_msg}"
                         )
             
-            # 成功获取数据
-            logger.debug(f"✅ [Alpha Vantage] 请求成功: {function}")
+            # Data obtained successfully
+            logger.debug(f"✅ [Alpha Vantage] Request successful: {function}")
             return data
             
         except requests.exceptions.Timeout:
-            logger.warning(f"⚠️ [Alpha Vantage] 请求超时 (尝试 {attempt + 1}/{max_retries})")
+            logger.warning(f"⚠️ [Alpha Vantage] Request timeout (try {attempt + 1}/{max_retries})")
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
                 continue
@@ -252,7 +252,7 @@ def _make_api_request(
                 raise AlphaVantageAPIError("Alpha Vantage API request timeout")
                 
         except requests.exceptions.RequestException as e:
-            logger.error(f"❌ [Alpha Vantage] 请求失败: {e}")
+            logger.error(f"❌ [Alpha Vantage] Request failed: {e}")
             if attempt < max_retries - 1:
                 time.sleep(retry_delay)
                 continue
@@ -260,30 +260,30 @@ def _make_api_request(
                 raise AlphaVantageAPIError(f"Alpha Vantage API request failed: {e}")
         
         except json.JSONDecodeError as e:
-            logger.error(f"❌ [Alpha Vantage] JSON 解析失败: {e}")
+            logger.error(f"❌ [Alpha Vantage] JSON Parsing failed: {e}")
             raise AlphaVantageAPIError(f"Failed to parse Alpha Vantage API response: {e}")
     
-    # 所有重试都失败
+    # All retries failed
     raise AlphaVantageAPIError(f"Failed to get data from Alpha Vantage after {max_retries} attempts")
 
 
 def format_response_as_string(data: Dict[str, Any], title: str = "Alpha Vantage Data") -> str:
     """
-    将 API 响应格式化为字符串
+    Format API response as string
     
     Args:
-        data: API 响应数据
-        title: 数据标题
+        data: API response data
+        title: Data header
         
     Returns:
-        格式化后的字符串
+        Formatted string
     """
     try:
-        # 添加头部信息
+        # Add header information
         header = f"# {title}\n"
         header += f"# Data retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
         
-        # 转换为 JSON 字符串（格式化）
+        # Convert to JSON string (formatted)
         json_str = json.dumps(data, indent=2, ensure_ascii=False)
         
         return header + json_str
@@ -295,24 +295,24 @@ def format_response_as_string(data: Dict[str, Any], title: str = "Alpha Vantage 
 
 def check_api_key_valid() -> bool:
     """
-    检查 Alpha Vantage API Key 是否有效
+    Check if Alpha Vantage API Key is valid
     
     Returns:
-        True 如果 API Key 有效，否则 False
+        True If the API Key is valid, otherwise False
     """
     try:
-        # 使用简单的 API 调用测试
+        # Test using simple API calls
         data = _make_api_request("GLOBAL_QUOTE", {"symbol": "IBM"})
         
-        # 检查是否有错误
+        # Check for errors
         if isinstance(data, dict) and "Global Quote" in data:
-            logger.info("✅ Alpha Vantage API Key 有效")
+            logger.info("✅ Alpha Vantage API Key valid")
             return True
         else:
-            logger.warning("⚠️ Alpha Vantage API Key 可能无效")
+            logger.warning("⚠️ Alpha Vantage API Key May not be valid")
             return False
             
     except Exception as e:
-        logger.error(f"❌ Alpha Vantage API Key 验证失败: {e}")
+        logger.error(f"❌ Alpha Vantage API Key Authentication failed: {e}")
         return False
 

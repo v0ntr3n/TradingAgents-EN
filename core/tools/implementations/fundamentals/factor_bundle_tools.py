@@ -1,4 +1,4 @@
-"""标准化因子 bundle 工具。"""
+"""Normalization factor bundle tool."""
 
 import json
 import logging
@@ -26,28 +26,28 @@ def _json_response(payload: dict) -> str:
     tool_id="get_value_factor_bundle_tool",
     name="价值因子包",
     description=(
-        "返回股票的 value_core 标准化价值因子包。"
-        "适合一次性获取 PE、PE_TTM、PB、PB_MRQ、PS_TTM、股息率、PEG、行业 PE/PB 中位数等估值指标，"
-        "并附带缺失因子、回退告警和计算说明。"
-        "这里的“价值/估值因子”是横截面估值输入，不直接生成 DCF 目标价、历史估值分位或完整投资评级。"
+        "Returns the stock s value_core package of standardized value factors."
+        "Suitable for one-time acquisition of valuation indicators such as PE, PE_TTM, PB, PB_MRQ, PS_TTM, dividend yield, PEG, industry PE/PB median, etc."
+        "It also comes with missing factors, rollback warnings and calculation instructions."
+        "Here s Value/Valuation Factor is a cross-sectional valuation input and does not directly generate DCF price targets, historical valuation quantiles or full investment ratings."
     ),
     category="fundamentals",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
     when_to_use=(
-        "当 Agent 需要做估值判断、便宜/贵的初筛、PE/PB/PEG 横向比较、行业估值对比时使用。"
-        "如果需求是获取价值类指标集合，而不是单独读某一个原始字段，优先绑定这个工具。"
+        "It is used when the Agent needs to make valuation judgments, preliminary screening of cheap/expensive, horizontal comparison of PE/PB/PEG, and industry valuation comparison."
+        "If the need is to obtain a collection of value indicators instead of reading a certain original field individually, bind this tool first."
     ),
     when_not_to_use=(
-        "不适合做利润表趋势、偿债能力、现金流质量分析；"
-        "也不适合做技术面判断、DCF 目标价或历史估值分位。需要质量因子请用 get_quality_factor_bundle_tool，"
-        "需要成长/现金流请用 get_growth_cashflow_factor_bundle_tool，需要历史分位请用 get_historical_valuation_percentile_tool。"
+        "Not suitable for analysis of income statement trends, solvency, and cash flow quality;"
+        "It is also not suitable for making technical judgments, DCF target prices or historical valuation points. If you need quality factor, please use get_quality_factor_bundle_tool."
+        "If you need growth/cash flow, please use get_growth_cashflow_factor_bundle_tool, if you need historical percentile, please use get_historical_valuation_percentile_tool."
     ),
     returns=(
-        "返回 JSON 字符串，结构包含 symbol、name、industry、current_price、bundle=value_core、"
+        "Returns a JSON string, the structure contains symbol, name, industry, current_price,bundle=value_core, "
         "factors、factor_warnings、industry_samples、calculation_notes、missing_factors。"
-        "factors 中重点字段包括 pe、pe_ttm、pb、pb_mrq、ps_ttm、dividend_yield、peg、industry_pe_median、industry_pb_median。"
+        "factors The key fields include pe, pe_ttm, pb, pb_mrq, ps_ttm, divided_yield, peg, industry_pe_median, industry_pb_median."
     ),
     example="get_value_factor_bundle_tool(symbol='600519')",
     related_tools=[
@@ -58,45 +58,45 @@ def _json_response(payload: dict) -> str:
     ],
 )
 def get_value_factor_bundle_tool(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"]
+    symbol: Annotated[str, "A stock code, such as 600519,000001"]
 ) -> str:
-    """获取标准化价值因子包。
+    """Get a package of standardized value factors.
 
     Args:
-        symbol: A 股股票代码，如 "600519"、"000001"
+        symbol: A stock stock code, such as "600519", "000001"
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbol: 标准化后的股票代码
-            name: 股票名称
-            industry: 所属行业
-            current_price: 当前价格
-            report_period: 报告期
-            data_source: 数据来源
-            bundle: 因子包标识，固定为 "value_core"
-            factors: dict 价值因子集合——
-                — pe: 市盈率
-                — pe_ttm: TTM市盈率
-                — pb: 市净率
-                — pb_mrq: MRQ市净率
-                — ps_ttm: TTM市销率
-                — dividend_yield: 股息率
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbol: Standardized stock code
+            name: Stock name
+            industry: Industry
+            current_price: current price
+            report_period: reporting period
+            data_source: Data source
+            bundle: Factor package identifier, fixed to "value_core"
+            factors: dict value factor set——
+                — pe: P/E ratio
+                — pe_ttm: TTM P/E ratio
+                — pb: price to book ratio
+                — pb_mrq: MRQ price to book ratio
+                — ps_ttm: TTM price to sales ratio
+                — dividend_yield: dividend yield
                 — peg: PEG
-                — industry_pe_median: 行业PE中位数
-                — industry_pb_median: 行业PB中位数
-            factor_warnings: dict 因子告警信息
-            industry_samples: dict 行业样本数——
-                — pe_count: PE样本数
-                — pb_count: PB样本数
-            calculation_notes: list[str] 计算说明
-            missing_factors: list[str] 缺失因子列表
-            message: 错误信息（仅 status="error" 时存在）
+                — industry_pe_median: Industry PE median
+                — industry_pb_median: Industry PB median
+            factor_warnings: dict Factor alarm information
+            industry_samples: dict Number of industry samples——
+                — pe_count: PE Number of samples
+                — pb_count: PB Number of samples
+            calculation_notes: list[str] Calculation instructions
+            missing_factors: list[str] Missing factor list
+            message: Error message (only status="error" exist)
     """
     try:
         return _json_response(get_value_factor_bundle(symbol))
     except Exception as exc:
-        logger.error("价值因子包获取失败: %s", exc, exc_info=True)
+        logger.error("Failed to obtain value factor package: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"获取价值因子包失败: {exc}"})
 
 
@@ -105,29 +105,29 @@ def get_value_factor_bundle_tool(
     tool_id="get_quality_factor_bundle_tool",
     name="质量因子包",
     description=(
-        "返回股票的 quality_core 标准化质量因子包。"
-        "适合一次性获取 ROE、ROA、毛利率、净利率、资产负债率、流动比率、ROIC、"
-        "现金转换率、应计利润比率、利息保障倍数、Piotroski F-Score、Altman Z-Score、Beneish M-Score 等质量指标。"
-        "这里的“质量”指公司基本面和财务报表质量，不是数据质量、报告质量、技术信号质量或产品质量。"
+        "Returns the stock s quality_core package of standardized quality factors."
+        "Suitable for obtaining ROE, ROA, gross profit margin, net profit margin, asset-liability ratio, current ratio, ROIC,"
+        "Quality metrics such as cash conversion ratio, accrual ratio, interest coverage ratio, Piotroski F-Score, Altman Z-Score, Beneish M-Score and more."
+        "Here s quality Refers to company fundamentals and financial statement quality, not data quality, reporting quality, technical signal quality, or product quality."
     ),
     category="fundamentals",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
     when_to_use=(
-        "当 Agent 需要判断企业盈利质量、财务健康度、偿债能力、利润含金量、"
-        "盈余操纵风险或财务困境风险时使用。"
-        "如果希望直接拿到一组质量类指标做评分、筛选或报告生成，优先绑定这个工具。"
+        "When the Agent needs to judge the company s profit quality, financial health, debt solvency, profit content,"
+        "Used when dealing with earnings manipulation risk or financial distress risk."
+        "If you want to directly get a set of quality indicators for scoring, screening or report generation, bind this tool first."
     ),
     when_not_to_use=(
-        "不适合做估值贵不贵的判断，也不适合输出 MA、RSI、MACD 这类技术指标。"
-        "不用于数据质量检查、报告质量评审、技术信号质量或短线资金流向分析。"
-        "需要估值因子请用 get_value_factor_bundle_tool，需要技术因子请用 get_technical_factor_bundle_tool。"
+        "It is not suitable for judging whether the valuation is expensive or not, nor is it suitable for outputting technical indicators such as MA, RSI, and MACD."
+        "Not used for data quality inspection, report quality review, technical signal quality or short-term capital flow analysis."
+        "If you need the valuation factor, please use get_value_factor_bundle_tool. If you need the technical factor, please use get_technical_factor_bundle_tool."
     ),
     returns=(
-        "返回 JSON 字符串，结构包含 symbol、bundle=quality_core、factors、factor_diagnostics、"
+        "Returns a JSON string, the structure contains symbol,bundle=quality_core, factors, factor_diagnostics, "
         "factor_warnings、calculation_notes、missing_factors。"
-        "factors 中重点字段包括 roe、roa、gross_margin、netprofit_margin、debt_to_assets、current_ratio、quick_ratio、cash_ratio、"
+        "factors The key fields include roe, roa, gross_margin, netprofit_margin, debt_to_assets, current_ratio, quick_ratio, cash_ratio,"
         "roic、cash_conversion、accrual_ratio、asset_turnover、gross_profit_to_assets、interest_coverage、inventory_turnover、"
         "receivable_turnover、net_cash_position、piotroski_f_score、altman_z_score、beneish_m_score。"
     ),
@@ -139,55 +139,55 @@ def get_value_factor_bundle_tool(
     ],
 )
 def get_quality_factor_bundle_tool(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"]
+    symbol: Annotated[str, "A stock code, such as 600519,000001"]
 ) -> str:
-    """获取标准化质量因子包。
+    """Get a package of standardized quality factors.
 
     Args:
-        symbol: A 股股票代码，如 "600519"、"000001"
+        symbol: A stock stock code, such as "600519", "000001"
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbol: 标准化后的股票代码
-            name: 股票名称
-            industry: 所属行业
-            current_price: 当前价格
-            report_period: 报告期
-            data_source: 数据来源
-            bundle: 因子包标识，固定为 "quality_core"
-            factors: dict 质量因子集合——
-                — roe: 净资产收益率
-                — roa: 总资产收益率
-                — gross_margin: 毛利率
-                — netprofit_margin: 净利率
-                — debt_to_assets: 资产负债率
-                — assets_to_eqt: 权益乘数
-                — current_ratio: 流动比率
-                — quick_ratio: 速动比率
-                — cash_ratio: 现金比率
-                — roic: 投入资本回报率
-                — cash_conversion: 现金转换率（经营现金流/净利润）
-                — accrual_ratio: 应计利润比率（%）
-                — asset_turnover: 总资产周转率
-                — gross_profit_to_assets: 毛利/总资产（%）
-                — interest_coverage: 利息保障倍数
-                — inventory_turnover: 存货周转率
-                — receivable_turnover: 应收账款周转率
-                — net_cash_position: 净现金状况
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbol: Standardized stock code
+            name: Stock name
+            industry: Industry
+            current_price: current price
+            report_period: reporting period
+            data_source: Data source
+            bundle: Factor package identifier, fixed to "quality_core"
+            factors: dict quality factor set——
+                — roe: ROE
+                — roa: return on total assets
+                — gross_margin: Gross profit margin
+                — netprofit_margin: net profit margin
+                — debt_to_assets: Asset-liability ratio
+                — assets_to_eqt: equity multiplier
+                — current_ratio: current ratio
+                — quick_ratio: quick ratio
+                — cash_ratio: cash ratio
+                — roic: return on invested capital
+                — cash_conversion: Cash conversion ratio (operating cash flow/net profit)
+                — accrual_ratio: Accrual profit ratio (%)
+                — asset_turnover: total asset turnover ratio
+                — gross_profit_to_assets: Gross profit/total assets (%)
+                — interest_coverage: interest coverage ratio
+                — inventory_turnover: Inventory turnover
+                — receivable_turnover: Accounts receivable turnover ratio
+                — net_cash_position: net cash position
                 — piotroski_f_score: Piotroski F-Score
                 — altman_z_score: Altman Z-Score
                 — beneish_m_score: Beneish M-Score
-            factor_diagnostics: dict 因子诊断信息
-            factor_warnings: dict 因子告警信息
-            calculation_notes: list[str] 计算说明
-            missing_factors: list[str] 缺失因子列表
-            message: 错误信息（仅 status="error" 时存在）
+            factor_diagnostics: dict Factor diagnostic information
+            factor_warnings: dict Factor alarm information
+            calculation_notes: list[str] Calculation instructions
+            missing_factors: list[str] Missing factor list
+            message: Error message (only status="error" exist)
     """
     try:
         return _json_response(get_quality_factor_bundle(symbol))
     except Exception as exc:
-        logger.error("质量因子包获取失败: %s", exc, exc_info=True)
+        logger.error("Failed to obtain quality factor package: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"获取质量因子包失败: {exc}"})
 
 
@@ -196,11 +196,11 @@ def get_quality_factor_bundle_tool(
     tool_id="get_growth_cashflow_factor_bundle_tool",
     name="成长现金流因子包",
     description=(
-        "返回股票的 growth_cashflow_core 标准化成长/现金流因子包。"
-        "适合一次性获取营收同比、净利润同比、营业利润同比、三年 CAGR、TTM 营收、TTM 净利润、"
-        "经营现金流、自由现金流、自由现金流收益率、经营现金流收益率、净营运资本等指标。"
-        "可用于现金流恶化分析、经营现金流持续下滑识别、自由现金流长期为负识别、现金收入质量判断、"
-        "利润含金量评估、财务风险信号识别和成长质量分析。"
+        "Returns the growth_cashflow_core package of standardized growth/cashflow factors for the stock."
+        "Suitable for obtaining year-on-year revenue, year-on-year net profit, year-on-year operating profit, three-year CAGR, TTM revenue, TTM net profit,"
+        "Operating cash flow, free cash flow, free cash flow yield, operating cash flow yield, net working capital and other indicators."
+        "It can be used to analyze deterioration of cash flow, identify continued decline in operating cash flow, identify long-term negative free cash flow, and judge the quality of cash income."
+        "Profit content assessment, financial risk signal identification and growth quality analysis."
     ),
     category="fundamentals",
     is_online=False,
@@ -211,19 +211,19 @@ def get_quality_factor_bundle_tool(
     output_shape="structured_json",
     preferred_for=["cashflow_quality_analysis", "financial_risk_signal_detection", "growth_quality_analysis", "valuation_analysis"],
     when_to_use=(
-        "当 Agent 需要判断公司增长速度、现金流造血能力、自由现金流质量、"
-        "经营现金流是否持续下滑、自由现金流是否长期为负、现金收入质量是否变差、"
-        "营运资本变化时使用。适合成长分析、现金流健康度分析、现金流恶化风险识别和 PEG/成长估值的前置取数。"
+        "When the Agent needs to judge the company s growth rate, cash flow hematopoietic ability, free cash flow quality,"
+        "Whether operating cash flow continues to decline, whether free cash flow is negative for a long time, whether the quality of cash income deteriorates,"
+        "Used when working capital changes. Ideal for front-loading growth analysis, cash flow health analysis, cash flow deterioration risk identification, and PEG/growth valuation."
     ),
     when_not_to_use=(
-        "不适合单独做估值倍数比较，也不适合技术面择时。"
-        "这里的现金流是财务报表口径的经营/自由现金流，不用于查询主力资金流、北向资金、成交资金流向或短线交易资金面。"
-        "如果目标是 PE/PB/股息率等估值字段，优先用 get_value_factor_bundle_tool。"
+        "It is not suitable for separate valuation multiple comparisons, nor is it suitable for technical timing."
+        "The cash flow here is operating/free cash flow based on financial statements and is not used to inquire about main capital flow, northbound capital, transaction capital flow or short-term trading capital."
+        "If the target is valuation fields such as PE/PB/dividend rate, use get_value_factor_bundle_tool first."
     ),
     returns=(
-        "返回 JSON 字符串，结构包含 symbol、bundle=growth_cashflow_core、factors、factor_warnings、"
+        "Returns a JSON string, the structure contains symbol,bundle=growth_cashflow_core, factors, factor_warnings, "
         "calculation_notes、missing_factors。"
-        "factors 中重点字段包括 revenue_yoy、net_profit_yoy、oper_profit_yoy、revenue_cagr_3y、profit_cagr_3y、"
+        "factors The key fields include revenue_yoy, net_profit_yoy, oper_profit_yoy, revenue_cagr_3y, profit_cagr_3y,"
         "revenue_ttm、net_profit_ttm、n_cashflow_act、fcf、fcf_yield、fcf_margin、ocf_yield、net_working_capital、working_capital_change。"
     ),
     example="get_growth_cashflow_factor_bundle_tool(symbol='600519')",
@@ -234,50 +234,50 @@ def get_quality_factor_bundle_tool(
     ],
 )
 def get_growth_cashflow_factor_bundle_tool(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"]
+    symbol: Annotated[str, "A stock code, such as 600519,000001"]
 ) -> str:
-    """获取标准化成长/现金流因子包。
+    """Get the standardized growth/cash flow factor package.
 
     Args:
-        symbol: A 股股票代码，如 "600519"、"000001"
+        symbol: A stock stock code, such as "600519", "000001"
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbol: 标准化后的股票代码
-            name: 股票名称
-            industry: 所属行业
-            current_price: 当前价格
-            report_period: 报告期
-            data_source: 数据来源
-            bundle: 因子包标识，固定为 "growth_cashflow_core"
-            factors: dict 成长/现金流因子集合——
-                — revenue_yoy: 营收同比增长率
-                — net_profit_yoy: 净利润同比增长率
-                — oper_profit_yoy: 营业利润同比增长率
-                — revenue_cagr_3y: 营收3年CAGR
-                — profit_cagr_3y: 净利润3年CAGR
-                — revenue_ttm: TTM营收
-                — net_profit_ttm: TTM净利润
-                — n_cashflow_act: 经营现金流
-                — fcf: 自由现金流
-                — fcf_yield: 自由现金流收益率（%）
-                — fcf_margin: 自由现金流利润率（%）
-                — ocf_yield: 经营现金流收益率（%）
-                — total_cur_assets: 流动资产
-                — total_cur_liab: 流动负债
-                — net_working_capital: 净营运资本
-                — working_capital_change: 营运资本变化
-            factor_warnings: dict 因子告警信息
-            calculation_notes: list[str] 计算说明
-            missing_factors: list[str] 缺失因子列表
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbol: Standardized stock code
+            name: Stock name
+            industry: Industry
+            current_price: current price
+            report_period: reporting period
+            data_source: Data source
+            bundle: Factor package identifier, fixed to "growth_cashflow_core"
+            factors: dict Growth/cash flow factor set——
+                — revenue_yoy: Year-on-year revenue growth rate
+                — net_profit_yoy: Net profit year-on-year growth rate
+                — oper_profit_yoy: Operating profit year-on-year growth rate
+                — revenue_cagr_3y: Revenue for 3 years CAGR
+                — profit_cagr_3y: Net profit for 3 years CAGR
+                — revenue_ttm: TTM Revenue
+                — net_profit_ttm: TTM net profit
+                — n_cashflow_act: operating cash flow
+                — fcf: free cash flow
+                — fcf_yield: Free cash flow yield (%)
+                — fcf_margin: Free cash flow margin (%)
+                — ocf_yield: Operating cash flow yield (%)
+                — total_cur_assets: current assets
+                — total_cur_liab: current liabilities
+                — net_working_capital: net working capital
+                — working_capital_change: working capital changes
+            factor_warnings: dict Factor alarm information
+            calculation_notes: list[str] Calculation instructions
+            missing_factors: list[str] Missing factor list
+            message: Error message (only status="error" exist)
     """
     try:
         return _json_response(get_growth_cashflow_factor_bundle(symbol))
     except Exception as exc:
-        logger.error("成长现金流因子包获取失败: %s", exc, exc_info=True)
-        return _json_response({"status": "error", "message": f"获取成长现金流因子包失败: {exc}"})
+        logger.error("Failed to obtain growth cash flow factor package: %s", exc, exc_info=True)
+        return _json_response({"status": "error", "message": f"Failed to obtain growth cash flow factor package: {exc}"})
 
 
 @tool
@@ -285,26 +285,26 @@ def get_growth_cashflow_factor_bundle_tool(
     tool_id="get_fundamental_factor_snapshot_tool",
     name="标准化基本面因子快照",
     description=(
-        "返回单只 A 股股票的标准化基本面因子总快照。"
-        "这是一个聚合型工具，会同时给出 value_core、quality_core、growth_cashflow_core 三个因子包，"
-        "适合 Agent 一次绑定后拿到大部分常用基本面指标，而不需要分别调用多个工具。"
+        "Returns a snapshot of the total normalized fundamental factors for a single A-share stock."
+        "This is an aggregation tool that will provide three factor packages: value_core, quality_core, and growth_cashflow_core at the same time."
+        "It is suitable for Agent to obtain most common fundamental indicators after one binding without the need to call multiple tools separately."
     ),
     category="fundamentals",
     is_online=False,
     auto_register=True,
     timeout_tier="light",
     when_to_use=(
-        "当 Agent 需要一次拿到完整的基本面因子快照，用于综合分析、报告生成、初步筛选、"
-        "或后续再在 Prompt 中做多维解释时使用。"
+        "When the Agent needs to obtain a complete snapshot of fundamental factors at one time for comprehensive analysis, report generation, preliminary screening,"
+        "Or it can be used later when doing multi-dimensional interpretation in Prompt."
     ),
     when_not_to_use=(
-        "如果 Agent 只关心某一类指标，优先绑定更窄的 bundle 工具，避免拿太多无关字段。"
-        "例如只做估值就用 get_value_factor_bundle_tool，只做财务质量就用 get_quality_factor_bundle_tool。"
+        "If the Agent only cares about a certain type of indicators, it should first bind narrower bundle tools to avoid taking too many irrelevant fields."
+        "For example, if you only do valuation, use get_value_factor_bundle_tool, and if you only do financial quality, use get_quality_factor_bundle_tool."
     ),
     returns=(
-        "返回 JSON 字符串，结构包含 symbol、name、industry、current_price、report_period、data_source、"
+        "Returns a JSON string, the structure contains symbol, name, industry, current_price, report_period, data_source,"
         "factors、factor_diagnostics、factor_warnings、missing_factors、bundles。"
-        "bundles 下按 value_core、quality_core、growth_cashflow_core 分组，适合 Agent 直接消费。"
+        "bundles The following groups are grouped by value_core, quality_core, and growth_cashflow_core, which are suitable for direct consumption by Agent."
     ),
     example="get_fundamental_factor_snapshot_tool(symbol='600519')",
     related_tools=[
@@ -314,37 +314,37 @@ def get_growth_cashflow_factor_bundle_tool(
     ],
 )
 def get_fundamental_factor_snapshot_tool(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"]
+    symbol: Annotated[str, "A stock code, such as 600519,000001"]
 ) -> str:
-    """获取标准化基本面因子快照。
+    """Get a snapshot of normalized fundamental factors.
 
     Args:
-        symbol: A 股股票代码，如 "600519"、"000001"
+        symbol: A stock stock code, such as "600519", "000001"
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbol: 标准化后的股票代码
-            name: 股票名称
-            industry: 所属行业
-            current_price: 当前价格
-            report_period: 报告期
-            data_source: 数据来源
-            factors: dict 合并后的全部因子（value_core + quality_core + growth_cashflow_core）
-            factor_diagnostics: dict 合并后的因子诊断信息
-            factor_warnings: dict 合并后的因子告警信息
-            missing_factors: list[str] 合并后的缺失因子列表（去重排序）
-            bundles: dict 三个因子包分组——
-                — value_core: dict 价值因子包（结构同 get_value_factor_bundle_tool 返回）
-                — quality_core: dict 质量因子包（结构同 get_quality_factor_bundle_tool 返回）
-                — growth_cashflow_core: dict 成长现金流因子包（结构同 get_growth_cashflow_factor_bundle_tool 返回）
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbol: Standardized stock code
+            name: Stock name
+            industry: Industry
+            current_price: current price
+            report_period: reporting period
+            data_source: Data source
+            factors: dict All factors after combining (value_core + quality_core + growth_cashflow_core) 
+            factor_diagnostics: dict Combined factor diagnostic information
+            factor_warnings: dict Merged factor alarm information
+            missing_factors: list[str] Merged list of missing factors (deduplication sorting)
+            bundles: dict three factor package grouping——
+                — value_core: dict Value factor package (the structure is the same as that returned by get_value_factor_bundle_tool)
+                — quality_core: dict Quality factor package (the structure is the same as that returned by get_quality_factor_bundle_tool)
+                — growth_cashflow_core: dict Growth cash flow factor package (the structure is the same as that returned by get_growth_cashflow_factor_bundle_tool)
+            message: Error message (only status="error" exist)
     """
     try:
         snapshot = get_fundamental_factor_snapshot(symbol)
         return _json_response(snapshot)
     except Exception as exc:
-        logger.error("标准化基本面因子快照获取失败: %s", exc, exc_info=True)
+        logger.error("Normalized fundamental factor snapshot acquisition failed: %s", exc, exc_info=True)
         return _json_response({"status": "error", "message": f"获取基本面因子快照失败: {exc}"})
 
 

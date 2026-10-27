@@ -1,20 +1,20 @@
 /**
- * 交易复盘 API
+ * Transaction review API
  */
 import { ApiClient } from './request'
 
-// ==================== 类型定义 ====================
+// ==================== type definition ====================
 
-/** 复盘类型 */
+/** Review type */
 export type ReviewType = 'single_trade' | 'complete_trade' | 'periodic'
 
-/** 复盘状态 */
+/** Review status */
 export type ReviewStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
-/** 交易方向 */
+/** Trading direction */
 export type TradeSide = 'buy' | 'sell'
 
-/** 交易记录 */
+/** transaction history */
 export interface TradeRecord {
   trade_id: string
   code: string
@@ -31,7 +31,7 @@ export interface TradeRecord {
   created_at?: string
 }
 
-/** 交易信息汇总 */
+/** Transaction information summary */
 export interface TradeInfo {
   code: string
   name?: string
@@ -46,17 +46,17 @@ export interface TradeInfo {
   total_commission: number
   realized_pnl: number
   realized_pnl_pct: number
-  unrealized_pnl?: number  // 🆕 浮动盈亏（持仓中时）
-  unrealized_pnl_pct?: number  // 🆕 浮动盈亏百分比（持仓中时）
-  current_price?: number  // 🆕 当前价格（持仓中时）
-  is_holding?: boolean  // 🆕 是否还在持仓中
-  remaining_quantity?: number  // 🆕 剩余持仓数量
+  unrealized_pnl?: number  // 🆕 Floating profit and loss (when holding a position)
+  unrealized_pnl_pct?: number  // 🆕 Floating profit and loss percentage (when the position is held)
+  current_price?: number  // 🆕 Current price (when the position is open)
+  is_holding?: boolean  // 🆕 Are you still holding a position?
+  remaining_quantity?: number  // 🆕 Remaining position quantity
   first_buy_date?: string
   last_sell_date?: string
   holding_days: number
 }
 
-/** 市场数据快照 */
+/** Market data snapshot */
 export interface MarketSnapshot {
   period_high?: number
   period_high_date?: string
@@ -84,7 +84,7 @@ export interface MarketSnapshot {
   }>
 }
 
-/** AI复盘分析结果 */
+/** AI Review analysis results */
 export interface AITradeReview {
   overall_score: number
   timing_score?: number
@@ -95,7 +95,7 @@ export interface AITradeReview {
   summary: string
   strengths: string[]
   weaknesses: string[]
-  suggestions: string[]  // 兼容字段名，实际展示为复盘改进项
+  suggestions: string[]  // Compatible field names, actually displayed as review improvement items
   timing_analysis?: string
   position_analysis?: string
   emotion_analysis?: string
@@ -104,11 +104,11 @@ export interface AITradeReview {
   optimal_pnl?: number
   missed_profit?: number
   avoided_loss?: number
-  plan_adherence?: string  // 计划执行情况
-  plan_deviation?: string   // 偏离说明
+  plan_adherence?: string  // Plan execution status
+  plan_deviation?: string   // Deviation instructions
 }
 
-/** 复盘报告 */
+/** Review report */
 export interface TradeReviewReport {
   review_id: string
   task_id?: string
@@ -123,11 +123,11 @@ export interface TradeReviewReport {
   tags: string[]
   execution_time?: number
   created_at: string
-  trading_system_id?: string  // 关联的交易计划ID
-  trading_system_name?: string  // 关联的交易计划名称
+  trading_system_id?: string  // Associated trading plans ID
+  trading_system_name?: string  // Associated trading plan name
 }
 
-/** 复盘列表项 */
+/** Review list items */
 export interface ReviewListItem {
   review_id: string
   review_type: ReviewType
@@ -140,7 +140,7 @@ export interface ReviewListItem {
   created_at: string
 }
 
-/** 交易统计 */
+/** Transaction statistics */
 export interface TradingStatistics {
   total_trades: number
   winning_trades: number
@@ -155,12 +155,12 @@ export interface TradingStatistics {
   total_commission: number
 }
 
-/** 可复盘的股票 */
+/** Stocks that can be reviewed */
 export interface ReviewableStock {
   code: string
   name?: string
   market?: string
-  status?: 'completed' | 'holding'  // completed=已完成交易, holding=持仓中
+  status?: 'completed' | 'holding'  // completed=Transaction completed, holding=In position
   buy_count: number
   sell_count: number
   total_pnl: number
@@ -169,27 +169,27 @@ export interface ReviewableStock {
   last_trade_time?: string
 }
 
-// ==================== 请求类型 ====================
+// ==================== Request type ====================
 
-/** 创建复盘请求 */
+/** Create review request */
 export interface CreateTradeReviewRequest {
   trade_ids: string[]
   review_type?: ReviewType
   code?: string
-  source?: 'real' | 'paper'  // 数据源：用户持仓或模拟持仓
-  trading_system_id?: string  // 关联的交易计划ID
-  workflow_id?: string  // 关联的工作流ID
-  use_workflow?: boolean  // 是否使用工作流引擎（v2.0）
+  source?: 'real' | 'paper'  // Data source: user positions or simulated positions
+  trading_system_id?: string  // Associated trading plans ID
+  workflow_id?: string  // Associated workflows ID
+  use_workflow?: boolean  // Whether to use workflow engine (v2.0)
 }
 
-/** 保存案例请求 */
+/** Save case request */
 export interface SaveAsCaseRequest {
   review_id: string
   tags?: string[]
-  source?: 'paper' | 'position' | 'real'  // 数据源: paper(模拟交易) 或 position(持仓操作)
+  source?: 'paper' | 'position' | 'real'  // data source: paper(simulated trading) or position(Position operation)
 }
 
-/** 复盘历史筛选参数 */
+/** Review history filter parameters */
 export interface ReviewHistoryFilter {
   page?: number
   pageSize?: number
@@ -197,10 +197,10 @@ export interface ReviewHistoryFilter {
   startDate?: string
   endDate?: string
   reviewType?: ReviewType
-  source?: 'paper' | 'position'  // 数据源: paper(模拟交易) 或 position(持仓操作)
+  source?: 'paper' | 'position'  // data source: paper(simulated trading) or position(Position operation)
 }
 
-/** 可复盘交易筛选参数 */
+/** Reviewable transaction filtering parameters */
 export interface ReviewableTradesFilter {
   code?: string
   startDate?: string
@@ -209,30 +209,30 @@ export interface ReviewableTradesFilter {
   pageSize?: number
 }
 
-/** 阶段性复盘周期类型 */
+/** Periodic review cycle type */
 export type PeriodType = 'week' | 'month' | 'quarter' | 'year'
 
-/** 创建阶段性复盘请求 */
+/** Create a staged review request */
 export interface CreatePeriodicReviewRequest {
   period_type: PeriodType
   start_date: string
   end_date: string
-  source?: 'paper' | 'position'  // 数据源: paper(模拟交易) 或 position(持仓操作)
+  source?: 'paper' | 'position'  // data source: paper(simulated trading) or position(Position operation)
 }
 
-/** AI阶段性复盘结果 */
+/** AI Phased review results */
 export interface AIPeriodicReview {
   overall_score: number
   summary: string
   trading_style: string
   common_mistakes: string[]
-  improvement_areas: string[]  // 复盘改进方向
-  action_plan: string[]  // 兼容字段名，实际展示为后续观察项
+  improvement_areas: string[]  // Review and improvement directions
+  action_plan: string[]  // Compatible field name, actually displayed as subsequent observation items
   best_trade?: string
   worst_trade?: string
 }
 
-/** 交易摘要项 */
+/** transaction summary item */
 export interface TradeSummaryItem {
   code: string
   name?: string
@@ -244,7 +244,7 @@ export interface TradeSummaryItem {
   timestamp: string
 }
 
-/** 阶段性复盘报告 */
+/** Periodic review report */
 export interface PeriodicReviewReport {
   review_id: string
   period_type: PeriodType
@@ -258,7 +258,7 @@ export interface PeriodicReviewReport {
   created_at: string
 }
 
-/** 阶段性复盘列表项 */
+/** Periodic review list items */
 export interface PeriodicReviewListItem {
   review_id: string
   period_type: PeriodType
@@ -273,19 +273,19 @@ export interface PeriodicReviewListItem {
   created_at: string
 }
 
-// ==================== API 方法 ====================
+// ==================== API method ====================
 
 export const reviewApi = {
-  /** 创建交易复盘 */
+  /** Create a transaction review */
   async createTradeReview(data: CreateTradeReviewRequest) {
     return ApiClient.post<TradeReviewReport>('/api/review/trade', data, {
       showLoading: true,
-      timeout: 30000,  // 30秒超时（后端立即返回任务ID，不需要等待任务完成）
-      retryCount: 0     // 禁用重试，避免重复分析
+      timeout: 30000,  // 30 seconds timeout (the backend returns the task ID immediately, without waiting for the task to complete)
+      retryCount: 0     // Disable retries to avoid repeated analysis
     })
   },
 
-  /** 获取复盘历史列表，支持筛选 */
+  /** Get the review history list and support filtering */
   async getReviewHistory(filter: ReviewHistoryFilter = {}) {
     const { page = 1, pageSize = 10, code, startDate, endDate, reviewType, source } = filter
     return ApiClient.get<{ items: ReviewListItem[]; total: number; page: number; page_size: number }>(
@@ -302,17 +302,17 @@ export const reviewApi = {
     )
   },
 
-  /** 获取复盘详情 */
+  /** Get review details */
   async getReviewDetail(reviewId: string) {
     return ApiClient.get<TradeReviewReport>(`/api/review/trade/${reviewId}`)
   },
 
-  /** 保存为案例 */
+  /** Save as case */
   async saveAsCase(data: SaveAsCaseRequest) {
     return ApiClient.post<{ message: string }>('/api/review/case', data, { showLoading: true })
   },
 
-  /** 获取案例库 */
+  /** Get case library */
   async getCases(params: { page?: number; pageSize?: number; source?: 'paper' | 'position' } = {}) {
     const { page = 1, pageSize = 10, source } = params
     const queryParams: Record<string, any> = { page, page_size: pageSize }
@@ -325,17 +325,17 @@ export const reviewApi = {
     )
   },
 
-  /** 从案例库删除 */
+  /** Delete from case library */
   async deleteCase(reviewId: string) {
     return ApiClient.delete<{ message: string }>(`/api/review/case/${reviewId}`, { showLoading: true })
   },
 
-  /** 删除复盘记录 */
+  /** Delete review record */
   async deleteReview(reviewId: string) {
     return ApiClient.delete<{ message: string }>(`/api/review/trade/${reviewId}`, { showLoading: true })
   },
 
-  /** 获取交易统计 */
+  /** Get transaction statistics */
   async getTradingStatistics(startDate?: string, endDate?: string) {
     return ApiClient.get<TradingStatistics>('/api/review/statistics', {
       start_date: startDate,
@@ -343,7 +343,7 @@ export const reviewApi = {
     })
   },
 
-  /** 获取可复盘的交易列表，支持筛选 */
+  /** Obtain a list of transactions that can be reviewed and support filtering */
   async getReviewableTrades(filter: ReviewableTradesFilter = {}) {
     const { code, startDate, endDate, page = 1, pageSize = 20 } = filter
     return ApiClient.get<{
@@ -352,7 +352,7 @@ export const reviewApi = {
       page: number
       page_size: number
       completed_stocks: ReviewableStock[]
-      all_stocks: ReviewableStock[]  // 所有有交易的股票（包括只买入的）
+      all_stocks: ReviewableStock[]  // All traded stocks (including buy-only ones)
     }>('/api/review/reviewable-trades', {
       code,
       start_date: startDate,
@@ -362,7 +362,7 @@ export const reviewApi = {
     })
   },
 
-  /** 获取某只股票的所有交易 */
+  /** Get all transactions for a stock */
   async getTradesByCode(code: string, source: 'real' | 'paper' = 'real') {
     return ApiClient.get<{
       code: string
@@ -377,18 +377,18 @@ export const reviewApi = {
     }>(`/api/review/trades-by-code/${code}`, { source })
   },
 
-  // ==================== 阶段性复盘 ====================
+  // ==================== Periodic review ====================
 
-  /** 创建阶段性复盘 */
+  /** Create a staged review */
   async createPeriodicReview(data: CreatePeriodicReviewRequest) {
     return ApiClient.post<PeriodicReviewReport>('/api/review/periodic', data, {
       showLoading: true,
-      timeout: 600000,  // 600秒超时（10分钟）
-      retryCount: 0     // 禁用重试，避免重复分析
+      timeout: 600000,  // 600 Second timeout (10 minutes)
+      retryCount: 0     // Disable retries to avoid repeated analysis
     })
   },
 
-  /** 获取阶段性复盘历史 */
+  /** Get periodic review history */
   async getPeriodicReviewHistory(page = 1, pageSize = 10, source?: 'paper' | 'position') {
     const params: Record<string, any> = { page, page_size: pageSize }
     if (source) {
@@ -400,18 +400,18 @@ export const reviewApi = {
     )
   },
 
-  /** 获取阶段性复盘详情 */
+  /** Get details of periodic review */
   async getPeriodicReviewDetail(reviewId: string) {
     return ApiClient.get<PeriodicReviewReport>(`/api/review/periodic/${reviewId}`)
   },
 
-  /** 按股票代码获取复盘摘要（用于股票详情页） */
+  /** Get review summary by stock code (for stock details page) */
   async getTradeReviewSummary(code: string) {
     return ApiClient.get<ReviewSummary>(`/api/review/summary`, { code })
   }
 }
 
-/** 复盘摘要类型（股票详情页使用） */
+/** Review summary type (used on the stock details page) */
 interface ReviewSummary {
   has: boolean
   task_id?: string

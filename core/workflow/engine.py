@@ -1,7 +1,7 @@
 """
-工作流执行引擎
+Workflow execution engine
 
-负责工作流的加载、验证和执行
+Responsible for the loading, verification and execution of workflows
 """
 
 import logging
@@ -23,7 +23,7 @@ from .validator import WorkflowValidator, ValidationResult
 logger = logging.getLogger(__name__)
 
 _BUILTIN_REPORT_FIELDS = [
-    # analyst 阶段
+    # analyst stage
     "market_report",
     "sentiment_report",
     "news_report",
@@ -32,26 +32,26 @@ _BUILTIN_REPORT_FIELDS = [
     "sector_report",
     "social_report",
     "chip_report",
-    # research 阶段
+    # research stage
     "bull_report",
     "bear_report",
     "investment_plan",
-    # risk 阶段
+    # risk stage
     "risky_opinion",
     "safe_opinion",
     "neutral_opinion",
     "risk_assessment",
-    # manager 阶段
+    # manager stage
     "trader_investment_plan",
     "risk_conclusion",
-    # trader 阶段
+    # trader stage
     "final_trade_decision",
-    # 持仓分析阶段
+    # Position analysis stage
     "technical_analysis",
     "fundamental_analysis",
     "risk_analysis",
     "action_advice",
-    # 复盘阶段
+    # Review stage
     "timing_analysis",
     "position_analysis",
     "emotion_analysis",
@@ -61,9 +61,9 @@ _BUILTIN_REPORT_FIELDS = [
 
 
 def _get_dynamic_report_fields(agent_ids: List[str]) -> List[str]:
-    """从 Agent metadata 和 agent_configs 动态推导报告字段列表（替代硬编码）
+    """Dynamically derive report field list from agent metadata and agent_configs (replaces hard coding)
 
-    只返回 show_in_reports=True 的 agent 的 output_field。
+    Return only show_in_reports=True The agent s output_field.
     """
     fields = []
 
@@ -72,11 +72,11 @@ def _get_dynamic_report_fields(agent_ids: List[str]) -> List[str]:
         registry = get_registry()
         for meta in registry.list_all():
             if meta.id in agent_ids and meta.output_field and meta.output_field not in fields:
-                # 检查 show_in_reports 标志，默认 True
+                # Check show_in_reports flag, default True
                 if getattr(meta, 'show_in_reports', True):
                     fields.append(meta.output_field)
     except Exception as e:
-        logger.warning(f"[动态报告字段] 从 AgentRegistry 获取失败: {e}")
+        logger.warning(f"[Dynamic reporting fields] Failed to get from AgentRegistry: {e}")
 
     try:
         from pymongo import MongoClient
@@ -94,26 +94,26 @@ def _get_dynamic_report_fields(agent_ids: List[str]) -> List[str]:
         for doc in docs:
             output_field = doc.get("output_field") or (doc.get("metadata") or {}).get("output_field")
             if output_field and output_field not in fields:
-                # 检查 show_in_reports 标志，默认 True
+                # Check show_in_reports flag, default True
                 show = doc.get("show_in_reports")
                 if show is None:
                     show = (doc.get("metadata") or {}).get("show_in_reports", True)
                 if show:
                     fields.append(output_field)
     except Exception as e:
-        logger.warning(f"[动态报告字段] 从 agent_configs 获取失败: {e}")
+        logger.warning(f"[Dynamic reporting fields] Failed to get from agent_configs: {e}")
 
     if "final_trade_decision" not in fields:
         fields.append("final_trade_decision")
     return fields if fields else _BUILTIN_REPORT_FIELDS
 
 _AGENT_CATEGORY_DISPLAY = {
-    "analyst": "分析师团队",
-    "researcher": "研究团队",
-    "trader": "交易团队",
-    "risk": "风险管理团队",
-    "manager": "决策层",
-    "post_processor": "后处理",
+    "analyst": "Analyst Team",
+    "researcher": "research team",
+    "trader": "trading team",
+    "risk": "risk management team",
+    "manager": "decision-making level",
+    "post_processor": "Post-processing",
 }
 
 
@@ -123,7 +123,7 @@ def _prepare_workflow_runtime_inputs(
     execution_id: str,
     task_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """向工作流初始 state 注入轻量运行时上下文，不污染返回结果。"""
+    """Inject lightweight runtime context into the initial state of the workflow without polluting the returned results."""
     prepared_inputs = inputs.copy() if inputs else {}
     runtime_context = dict(prepared_inputs.get("_workflow_runtime") or {})
     context = prepared_inputs.get("context")
@@ -141,7 +141,7 @@ def _prepare_workflow_runtime_inputs(
         runtime_context["workflow_id"] = workflow_id
     if execution_id and not runtime_context.get("execution_id"):
         runtime_context["execution_id"] = execution_id
-    # 🔑 注入 task_id（任务中心的 task_id，执行轨迹按此关联，前端按 task_id 查轨迹）
+    # 🔑 Inject task_id (task_id in the task center, the execution track is associated according to this, the front end checks the track according to task_id)
     if task_id and not runtime_context.get("task_id"):
         runtime_context["task_id"] = task_id
     if prepared_inputs.get("user_id") and not runtime_context.get("user_id"):
@@ -157,10 +157,10 @@ def _prepare_workflow_runtime_inputs(
         runtime_context["growth_memory_recall"] = prepared_inputs["growth_memory_recall"]
 
     ticker = prepared_inputs.get("ticker") or prepared_inputs.get("symbol") or prepared_inputs.get("stock_symbol") or prepared_inputs.get("company_of_interest")
-    # 🔍 调试日志：排查 ticker 丢失问题
+    # 🔍 Debug log: troubleshooting ticker loss problem
     import logging as _logging
     _logger = _logging.getLogger("core.workflow.engine")
-    _logger.info(f"🔍 [_prepare_workflow_runtime_inputs] ticker 映射: ticker={prepared_inputs.get('ticker')}, symbol={prepared_inputs.get('symbol')}, stock_symbol={prepared_inputs.get('stock_symbol')}, company_of_interest={prepared_inputs.get('company_of_interest')}, 最终ticker={ticker}")
+    _logger.info(f"🔍 [_prepare_workflow_runtime_inputs] ticker mapping: ticker={prepared_inputs.get('ticker')}, symbol={prepared_inputs.get('symbol')}, stock_symbol={prepared_inputs.get('stock_symbol')}, company_of_interest={prepared_inputs.get('company_of_interest')}, eventually ticker={ticker}")
     if ticker:
         prepared_inputs.setdefault("ticker", ticker)
         prepared_inputs.setdefault("stock_symbol", ticker)
@@ -177,7 +177,7 @@ def _prepare_workflow_runtime_inputs(
 
 
 class ProgressCallback(Protocol):
-    """进度回调协议"""
+    """Progress callback protocol"""
     def __call__(
         self,
         progress: float,
@@ -186,38 +186,38 @@ class ProgressCallback(Protocol):
         **kwargs
     ) -> None:
         """
-        进度回调
+        Progress callback
 
         Args:
-            progress: 进度百分比 (0-100)
-            message: 进度消息
-            step_name: 当前步骤名称
-            **kwargs: 额外参数
+            progress: progress percentage (0-100)
+            message: progress message
+            step_name: Current step name
+            **kwargs: extra parameters
         """
         ...
 
 
 class WorkflowEngine:
     """
-    工作流执行引擎
+    Workflow execution engine
 
-    用法:
+    Usage:
         engine = WorkflowEngine()
 
-        # 加载工作流
+        # Load workflow
         engine.load(workflow_definition)
 
-        # 验证
+        # Verify
         result = engine.validate()
 
-        # 执行
+        # execute
         output = engine.execute({"ticker": "AAPL", "trade_date": "2024-01-15"})
 
-        # 或流式执行
+        # or streaming execution
         async for event in engine.execute_stream(inputs):
             print(event)
 
-        # 带进度回调执行
+        # Execution with progress callback
         def on_progress(progress, message, **kwargs):
             print(f"{progress}% - {message}")
         output = engine.execute(inputs, progress_callback=on_progress)
@@ -227,17 +227,17 @@ class WorkflowEngine:
         self,
         legacy_config: Optional[Dict[str, Any]] = None,
         task_id: Optional[str] = None,
-        use_dynamic_state: bool = True,  # 🔥 改为默认启用，动态 Agent 工作流需要
+        use_dynamic_state: bool = True,  # 🔥 Changed to enabled by default, required for dynamic Agent workflows
         llm: Optional[Any] = None
     ):
         """
-        初始化工作流引擎
+        Initialize the workflow engine
 
         Args:
-            legacy_config: 遗留智能体配置（用于创建 LLM 和 Toolkit）
-            task_id: 任务 ID（用于进度跟踪）
-            use_dynamic_state: 是否使用动态状态生成（默认 True，支持动态 Agent 字段）
-            llm: 可选的 LLM 实例（优先于 legacy_config）
+            legacy_config: Legacy agent configuration (used to create LLM and Toolkit)
+            task_id: Task ID (for progress tracking)
+            use_dynamic_state: Whether to use dynamic state generation (default True, supports dynamic Agent field)
+            llm: Optional LLM instance (takes precedence over legacy_config)
         """
         self._definition: Optional[WorkflowDefinition] = None
         self._compiled_graph = None
@@ -248,14 +248,14 @@ class WorkflowEngine:
         self._current_execution: Optional[WorkflowExecution] = None
         self._progress_callback: Optional[Callable] = None
 
-        # 🆕 进度跟踪状态（按已完成 agent 数 / 总数计算进度，只增不减）
-        self._progress_agent_nodes = []      # 有 agent_id 的 agent 节点列表
-        self._progress_node_keys = {}        # {key: node} 映射，匹配 stream 返回的 node_name
-        self._progress_completed = set()     # 已完成 agent 的 key 集合
-        self._progress_total = 0             # agent 节点总数 N
-        self._progress_max = 10              # 已上报的最大进度值（保证只增不减）
+        # 🆕 Progress tracking status (progress is calculated based on the number of completed agents / total number, only increases but not decreases)
+        self._progress_agent_nodes = []      # List of agent nodes with agent_id
+        self._progress_node_keys = {}        # {key: node} Mapping, matching what stream returns node_name
+        self._progress_completed = set()     # The key collection of agent has been completed
+        self._progress_total = 0             # agent Total number of nodes N
+        self._progress_max = 10              # The maximum reported progress value (guaranteed to only increase but not decrease)
 
-        # 🆕 动态状态生成
+        # 🆕 Dynamic state generation
         self._use_dynamic_state = use_dynamic_state
         self._state_schema = None
         if use_dynamic_state:
@@ -263,54 +263,54 @@ class WorkflowEngine:
             from ..state.registry import StateRegistry
             self._state_builder = StateSchemaBuilder()
             self._state_registry = StateRegistry()
-            logger.info("[WorkflowEngine] 启用动态状态生成")
+            logger.info("[WorkflowEngine] Enable dynamic state generation")
     
     def load(self, definition: WorkflowDefinition) -> "WorkflowEngine":
-        """加载工作流定义"""
+        """Load workflow definition"""
         self._definition = definition
-        self._compiled_graph = None  # 清除已编译的图
+        self._compiled_graph = None  # Clear compiled graph
         return self
     
     def load_from_dict(self, data: Dict[str, Any]) -> "WorkflowEngine":
-        """从字典加载工作流"""
+        """Load workflow from dictionary"""
         definition = WorkflowDefinition.from_dict(data)
         return self.load(definition)
     
     def load_from_json(self, json_str: str) -> "WorkflowEngine":
-        """从 JSON 字符串加载工作流"""
+        """Load workflow from JSON string"""
         definition = WorkflowDefinition.from_json(json_str)
         return self.load(definition)
     
     def validate(self) -> ValidationResult:
-        """验证工作流"""
+        """Validation workflow"""
         if self._definition is None:
             result = ValidationResult()
-            result.add_error("NO_DEFINITION", "未加载工作流定义")
+            result.add_error("NO_DEFINITION", "Workflow definition not loaded")
             return result
         
         return self._validator.validate(self._definition)
     
     def compile(self) -> "WorkflowEngine":
-        """编译工作流"""
+        """Compilation workflow"""
         if self._definition is None:
-            raise ValueError("未加载工作流定义")
+            raise ValueError("Workflow definition not loaded")
 
-        # 先验证
+        # Verify first
         result = self.validate()
         if not result.is_valid:
             errors = "\n".join(str(e) for e in result.errors)
-            raise ValueError(f"工作流验证失败:\n{errors}")
+            raise ValueError(f"Workflow validation failed:\n{errors}")
 
-        # 🆕 如果启用动态状态，生成状态 Schema
+        # 🆕 If dynamic status is enabled, generate status Schema
         state_schema = None
         if self._use_dynamic_state:
             agent_ids = self._extract_agent_ids(self._definition)
             if agent_ids:
-                logger.info(f"[WorkflowEngine] 为工作流 {self._definition.id} 生成动态状态，Agent 列表: {agent_ids}")
+                logger.info(f"[WorkflowEngine] for workflow {self._definition.id} Generate dynamic status, Agent list: {agent_ids}")
 
                 internal_state_fields = self._build_internal_state_fields(self._definition)
 
-                # 使用 StateRegistry 获取或构建状态类
+                # Use StateRegistry to get or build a state class
                 schema = self._state_registry.get_or_build(
                     workflow_id=self._definition.id,
                     agent_ids=agent_ids,
@@ -318,15 +318,15 @@ class WorkflowEngine:
                 )
                 state_schema = self._state_registry.get_state_class(self._definition.id)
 
-                logger.info(f"[WorkflowEngine] 状态类生成成功: {state_schema.__name__ if state_schema else 'None'}")
-                logger.info(f"[WorkflowEngine] 状态字段: {list(schema.fields.keys())}")
+                logger.info(f"[WorkflowEngine] Status class generated successfully: {state_schema.__name__ if state_schema else 'None'}")
+                logger.info(f"[WorkflowEngine] status field: {list(schema.fields.keys())}")
 
-        # 构建图
+        # Build diagram
         self._compiled_graph = self._builder.build(self._definition, state_schema=state_schema)
         return self
 
     def _extract_agent_ids(self, definition: WorkflowDefinition) -> list:
-        """从工作流定义中提取 Agent ID 列表（含辩论参与者和委派 Agent）"""
+        """Extract the list of Agent IDs (containing debate participants and delegation agents) from the workflow definition"""
         agent_ids = []
         for node in definition.nodes:
             candidates = []
@@ -343,15 +343,15 @@ class WorkflowEngine:
         return agent_ids
     
     def _build_internal_state_fields(self, definition: WorkflowDefinition) -> Dict[str, FieldType]:
-        """根据工作流定义补齐动态 State 需要的内部控制字段。"""
+        """Complete the internal control fields required by the dynamic State according to the workflow definition."""
         fields: Dict[str, FieldType] = {
             "investment_debate_state": FieldType.OBJECT,
             "risk_debate_state": FieldType.OBJECT,
             "_max_debate_rounds": FieldType.NUMBER,
             "_max_risk_rounds": FieldType.NUMBER,
-            # A9-P1: 风险自我辩论开关（True=深度/全面档走单节点自我辩论路径）
+            # A9-P1: Risk Self Debate Switch (True=The depth/comprehensive file takes the single-node self-debate path)
             "_risk_self_debate": FieldType.BOOLEAN,
-            # A3: 投资辩论并行开局开关（True=第一轮乐观/审慎研究员并行出简报）
+            # A3: Investment debate parallel opening switch (True=First round of optimistic/cautious researchers concurrent briefing)
             "_parallel_opening": FieldType.BOOLEAN,
             "context": FieldType.OBJECT,
             "skip_cache": FieldType.BOOLEAN,
@@ -362,10 +362,10 @@ class WorkflowEngine:
             "_condition_result": FieldType.BOOLEAN,
             "_condition_error": FieldType.STRING,
             "_analysis_data_source": FieldType.STRING,
-            # 外部事实记忆注入（智能助手联网提取的事实，供辩论/风险评估环节参考）
+            # External fact memory injection (facts extracted by the intelligent assistant online for reference in debate/risk assessment sessions)
             "memory_facts_summary": FieldType.STRING,
-            # 持仓分析工作流输入：position_info/portfolio_data 若不声明，LangGraph 动态
-            # State 会丢弃未声明键，导致 agents 拿不到持仓数据并报 "Missing required parameters: ticker"
+            # Position analysis workflow input: position_info/portfolio_data If not declared, LangGraph will dynamically
+            # State Undeclared keys will be discarded, causing agents to be unable to obtain position data and report "Missing required parameters: ticker"
             "position_info": FieldType.OBJECT,
             "portfolio_data": FieldType.OBJECT,
             "position_type": FieldType.STRING,
@@ -402,7 +402,7 @@ class WorkflowEngine:
         return fields
     
     def set_progress_callback(self, callback: Optional[Callable]) -> "WorkflowEngine":
-        """设置进度回调"""
+        """Set progress callback"""
         self._progress_callback = callback
         return self
 
@@ -413,7 +413,7 @@ class WorkflowEngine:
         step_name: Optional[str] = None,
         **kwargs
     ) -> None:
-        """报告进度"""
+        """Report progress"""
         if self._progress_callback:
             try:
                 self._progress_callback(
@@ -424,7 +424,7 @@ class WorkflowEngine:
                     **kwargs
                 )
             except Exception as e:
-                logger.warning(f"进度回调失败: {e}")
+                logger.warning(f"Progress callback failed: {e}")
 
     def _build_execution_config(
         self,
@@ -448,21 +448,21 @@ class WorkflowEngine:
         progress_callback: Optional[Callable] = None,
     ) -> Dict[str, Any]:
         """
-        同步执行工作流（使用 stream 模式以获取节点级进度更新）
+        Execute workflows synchronously (use stream mode to get node-level progress updates)
 
         Args:
-            inputs: 输入参数
-            config: 执行配置
-            progress_callback: 进度回调函数
+            inputs: input parameters
+            config: Execute configuration
+            progress_callback: Progress callback function
 
         Returns:
-            执行结果
+            Execution result
         """
         if progress_callback:
             self.set_progress_callback(progress_callback)
 
         if self._compiled_graph is None:
-            self._report_progress(5, "编译工作流...", "compile")
+            self._report_progress(5, "Compilation workflow...", "compile")
             self.compile()
 
         runtime_inputs = _prepare_workflow_runtime_inputs(
@@ -473,53 +473,53 @@ class WorkflowEngine:
         )
         execution_config = self._build_execution_config(config, runtime_inputs)
 
-        # 创建执行记录
+        # Create execution record
         execution = self._create_execution(inputs)
         self._init_progress_tracking()
-        self._report_progress(10, "开始执行工作流", "start")
+        self._report_progress(10, "Start executing workflow", "start")
 
         try:
             execution.state = WorkflowExecutionState.RUNNING
             execution.started_at = datetime.now().isoformat()
 
-            logger.info(f"开始执行工作流: {self._definition.id if self._definition else 'unknown'}")
+            logger.info(f"Start executing workflow: {self._definition.id if self._definition else 'unknown'}")
 
-            # 使用 stream 模式以获取节点级别的进度更新
-            # stream_mode 应该作为关键字参数传递，而不是放在 config 字典中
+            # Use stream mode to get node-level progress updates
+            # stream_mode should be passed as keyword arguments rather than placed in the config dictionary
             final_state = inputs.copy() if inputs else {}
 
             for chunk in self._compiled_graph.stream(runtime_inputs, config=execution_config, stream_mode="updates"):
-                # chunk 格式: {node_name: state_update}
+                # chunk Format: {node_name: state_update}
                 if isinstance(chunk, dict):
                     for node_name, node_update in chunk.items():
                         if node_name.startswith('__'):
-                            continue  # 跳过特殊节点
+                            continue  # Skip special nodes
 
-                        # 获取进度信息
+                        # Get progress information
                         progress_info = self._get_node_progress_info(node_name)
                         progress, message, step_name = progress_info
 
                         if progress is not None:
                             self._report_progress(progress, message, step_name)
 
-                        # 累积状态更新
+                        # Cumulative status updates
                         if isinstance(node_update, dict):
                             try:
-                                # 🔍 调试：打印节点更新的字段
+                                # 🔍 Debugging: Print fields updated by nodes
                                 update_keys = list(node_update.keys())
-                                logger.debug(f"[执行引擎] 📝 节点 {node_name} 返回字段: {update_keys}")
-                                # 检查是否有 index_report 或 sector_report
+                                logger.debug(f"[execution engine] 📝 node {node_name} Return field: {update_keys}")
+                                # Check if there is index_report or sector_report
                                 if "index_report" in node_update:
-                                    logger.debug(f"[执行引擎] ✅ 检测到 index_report ({len(str(node_update['index_report']))} 字符)")
+                                    logger.debug(f"[execution engine] ✅ detected index_report ({len(str(node_update['index_report']))} character)")
                                 if "sector_report" in node_update:
-                                    logger.debug(f"[执行引擎] ✅ 检测到 sector_report ({len(str(node_update['sector_report']))} 字符)")
+                                    logger.debug(f"[execution engine] ✅ detected sector_report ({len(str(node_update['sector_report']))} character)")
                                 final_state.update(node_update)
                             except Exception:
                                 final_state[node_name] = node_update
                         else:
                             final_state[node_name] = node_update
 
-            # 使用累积的最终状态
+            # Use accumulated final state
             result = final_state
             result = self._build_output_results(result)
 
@@ -527,7 +527,7 @@ class WorkflowEngine:
             execution.outputs = result
             execution.completed_at = datetime.now().isoformat()
 
-            self._report_progress(100, "工作流执行完成", "completed")
+            self._report_progress(100, "Workflow execution completed", "completed")
             return result
 
         except Exception as e:
@@ -536,7 +536,7 @@ class WorkflowEngine:
             execution.completed_at = datetime.now().isoformat()
             self._report_progress(
                 progress=self._progress_max,
-                message=f"执行失败: {str(e)}",
+                message=f"Execution failed: {str(e)}",
                 step_name="error",
                 error=str(e)
             )
@@ -546,11 +546,11 @@ class WorkflowEngine:
             self._current_execution = execution
     
     def _init_progress_tracking(self) -> None:
-        """初始化进度跟踪：统计 agent 节点总数，建立匹配映射
+        """Initialization progress tracking: counting the total number of agent nodes and establishing matching mappings
 
-        以「有 agent_id 的节点」作为 agent 节点（控制节点
-        PARALLEL/MERGE/DEBATE/START/END 无 agent_id，自动排除）。
-        进度按 已完成agent数/总数 计算，只增不减，自动适应 agent 增减。
+        Use the node with agent_id as the agent node (control node
+        PARALLEL/MERGE/DEBATE/START/END No agent_id, automatically excluded).
+        The progress is calculated according to the number of completed agents/total number. It only increases but does not decrease, and automatically adapts to the increase or decrease of agents.
         """
         self._progress_completed = set()
         self._progress_max = 10
@@ -564,9 +564,9 @@ class WorkflowEngine:
         for node in self._definition.nodes:
             agent_id = getattr(node, "agent_id", None)
             if not agent_id:
-                continue  # 控制节点（start/end/parallel/merge/debate）跳过
+                continue  # Control node (start/end/parallel/merge/debate) skip
             self._progress_agent_nodes.append(node)
-            # 建立多种 key 的映射，匹配 stream 返回的 node_name
+            # Establish mapping of multiple keys to match those returned by stream node_name
             for key in (agent_id, node.label, node.id):
                 if key:
                     self._progress_node_keys[key] = node
@@ -574,141 +574,141 @@ class WorkflowEngine:
         self._progress_total = len(self._progress_agent_nodes)
 
     def _get_node_progress_info(self, node_name: str) -> tuple:
-        """获取节点的进度信息（百分比和友好消息）
+        """Get node s progress information (percentage and friendly messages)
 
-        🔥 按「已完成 agent 数 / 总数」计算进度，只增不减：
-        - 10% 起（编译/开始），10%-90% 区间按 completed/N 均分，100% 在工作流完成时上报
-        - 控制节点不增加 completed，但上报当前进度 + 友好消息
-        - 无 definition（N==0）时回退到 node_mapping 固定百分比，兼容单 agent 调试
+        🔥 Calculate the progress according to number of completed agents / total number , only increase but not decrease:
+        - 10% Starting (compile/start), the 10%-90% range is evenly divided according to completed/N, and 100% is reported when the workflow is completed.
+        - The control node does not increase completed, but reports the current progress. + friendly news
+        - no definition(N==0) Fall back to node_mapping fixed percentage, compatible with single agent debugging
 
         Args:
-            node_name: 节点名称（从 LangGraph stream 返回）
+            node_name: Node name (returned from LangGraph stream)
 
         Returns:
             (progress_percentage, friendly_message, step_name)
         """
-        # 节点名称到友好消息的映射（仅用于展示，进度值不再取自此映射）
-        # 支持三种格式：旧格式（"Market Analyst"）、v1格式（"market_analyst"）、v2格式（"market_analyst_v2"）
-        # 格式：(progress_percentage, friendly_message, step_name)
-        # - progress_percentage: 进度百分比
-        # - friendly_message: 详细描述（显示在 message 字段）
-        # - step_name: 简短名称（显示在 current_step_name 字段）
+        # Mapping of node names to friendly messages (for display only, progress values are no longer taken from this mapping)
+        # Three formats are supported: old format ("Market Analyst") , v1 format("market_analyst") , v2 format("market_analyst_v2") 
+        # Format:(progress_percentage, friendly_message, step_name)
+        # - progress_percentage: progress percentage
+        # - friendly_message: Detailed description (displayed in the message field)
+        # - step_name: Short name (shown in the current_step_name field)
         node_mapping = {
-            # === v2.0 分析师节点 ===
-            "market_analyst_v2": (15, "📈 市场分析师正在分析技术指标和市场趋势...", "市场分析师"),
-            "fundamentals_analyst_v2": (25, "💰 基本面分析师正在分析财务数据...", "基本面分析师"),
-            "news_analyst_v2": (35, "📰 新闻分析师正在分析相关新闻和事件...", "新闻分析师"),
-            "social_analyst_v2": (40, "💬 社媒分析师正在分析社交媒体情绪...", "社媒分析师"),
-            "sector_analyst_v2": (20, "📊 板块分析师正在分析行业趋势...", "板块分析师"),
-            "index_analyst_v2": (10, "📈 大盘分析师正在分析市场环境...", "大盘分析师"),
+            # === v2.0 Analyst Node ===
+            "market_analyst_v2": (15, "📈 Market analysts are analyzing technical indicators and market trends...", "market analyst"),
+            "fundamentals_analyst_v2": (25, "💰 Fundamental analyst is analyzing financial data...", "fundamental analyst"),
+            "news_analyst_v2": (35, "📰 News analysts are analyzing relevant news and events...", "news analyst"),
+            "social_analyst_v2": (40, "💬 Social media analysts are analyzing social media sentiment...", "social media analyst"),
+            "sector_analyst_v2": (20, "📊 Sector analysts are analyzing industry trends...", "Sector Analyst"),
+            "index_analyst_v2": (10, "📈 Market analysts are analyzing the market environment...", "Market Analyst"),
 
-            # === v2.0 研究团队 ===
-            "bull_researcher_v2": (50, "🐂 乐观情景研究员正在构建偏乐观论证...", "乐观情景研究员"),
-            "bear_researcher_v2": (55, "🐻 审慎情景研究员正在构建偏审慎论证...", "审慎情景研究员"),
-            "research_manager_v2": (60, "🔬 研究经理正在综合研究观点...", "研究经理"),
+            # === v2.0 research team ===
+            "bull_researcher_v2": (50, "🐂 Optimistic scenario researchers are constructing optimistic arguments...", "Optimistic Scenario Researcher"),
+            "bear_researcher_v2": (55, "🐻 Prudential Scenario Researchers are Constructing Precautionary Arguments...", "Prudential Scenario Researcher"),
+            "research_manager_v2": (60, "🔬 Research managers are synthesizing research ideas...", "research manager"),
 
-            # === v2.0 研究整合阶段 ===
-            "trader_v2": (92, "🧩 研究整合员正在生成用户版研究简报...", "研究整合员"),
+            # === v2.0 Research integration stage ===
+            "trader_v2": (92, "🧩 Research integrator is generating a user version of the research brief...", "research integrator"),
 
-            # === v2.0 风险管理团队 ===
-            "risky_analyst_v2": (72, "⚡ 高弹性情景分析师正在审阅结论上修条件...", "高弹性情景分析师"),
-            "safe_analyst_v2": (78, "🛡️ 防御情景分析师正在审阅脆弱点与关键风险...", "防御情景分析师"),
-            "neutral_analyst_v2": (84, "⚖️ 基准情景分析师正在审阅基准情景与证据完整性...", "基准情景分析师"),
-            "risk_manager_v2": (90, "👔 风险评估师正在审阅研究结论稳健性...", "风险评估师"),
+            # === v2.0 risk management team ===
+            "risky_analyst_v2": (72, "⚡ High-resilience scenario analysts are reviewing conditions for upward revisions to conclusions...", "Highly Resilient Scenario Analyst"),
+            "safe_analyst_v2": (78, "🛡️ Defense scenario analysts reviewing vulnerabilities and critical risks...", "Defense Scenario Analyst"),
+            "neutral_analyst_v2": (84, "⚖️ Baseline scenario analysts are reviewing the baseline scenario and evidence completeness...", "Baseline Scenario Analyst"),
+            "risk_manager_v2": (90, "👔 Risk assessors are reviewing the robustness of research conclusions...", "risk assessor"),
 
-            # === v1.0 分析师节点（向后兼容）===
-            "market_analyst": (15, "📈 市场分析师正在分析技术指标和市场趋势...", "市场分析师"),
-            "fundamentals_analyst": (25, "💰 基本面分析师正在分析财务数据...", "基本面分析师"),
-            "news_analyst": (35, "📰 新闻分析师正在分析相关新闻和事件...", "新闻分析师"),
-            "social_analyst": (40, "💬 社媒分析师正在分析社交媒体情绪...", "社媒分析师"),
-            "sentiment_analyst": (40, "💭 情绪分析师正在分析市场情绪...", "情绪分析师"),
+            # === v1.0 Analyst node (backwards compatible)===
+            "market_analyst": (15, "📈 Market analysts are analyzing technical indicators and market trends...", "market analyst"),
+            "fundamentals_analyst": (25, "💰 Fundamental analyst is analyzing financial data...", "fundamental analyst"),
+            "news_analyst": (35, "📰 News analysts are analyzing relevant news and events...", "news analyst"),
+            "social_analyst": (40, "💬 Social media analysts are analyzing social media sentiment...", "social media analyst"),
+            "sentiment_analyst": (40, "💭 Sentiment analysts are analyzing market sentiment...", "sentiment analyst"),
 
-            # === v1.0 研究团队 ===
-            "bull_researcher": (50, "🐂 乐观情景研究员正在构建偏乐观论证...", "乐观情景研究员"),
-            "bear_researcher": (55, "🐻 审慎情景研究员正在构建偏审慎论证...", "审慎情景研究员"),
-            "research_manager": (60, "🔬 研究经理正在综合研究观点...", "研究经理"),
+            # === v1.0 research team ===
+            "bull_researcher": (50, "🐂 Optimistic scenario researchers are constructing optimistic arguments...", "Optimistic Scenario Researcher"),
+            "bear_researcher": (55, "🐻 Prudential Scenario Researchers are Constructing Precautionary Arguments...", "Prudential Scenario Researcher"),
+            "research_manager": (60, "🔬 Research managers are synthesizing research ideas...", "research manager"),
 
-            # === v1.0 研究整合阶段 ===
-            "trader": (70, "🧩 研究整合员正在汇总研究结论...", "研究整合员"),
+            # === v1.0 Research integration stage ===
+            "trader": (70, "🧩 A research integrator is summarizing research conclusions...", "research integrator"),
 
-            # === v1.0 风险管理团队 ===
-            "risky_analyst": (75, "⚡ 高弹性情景研究员正在评估上行空间...", "高弹性情景研究员"),
-            "safe_analyst": (80, "🛡️ 防御情景研究员正在评估下行风险...", "防御情景研究员"),
-            "neutral_analyst": (82, "⚖️ 中性分析师正在平衡风险收益...", "中性分析师"),
-            "risk_manager": (90, "👔 风险评估师正在形成最终研究结论...", "风险评估师"),
-            "risk_judge": (90, "👔 风险评估师正在形成最终研究结论...", "风险评估师"),
-            "portfolio_manager": (90, "👔 风险评估师正在做最终研究审阅...", "风险评估师"),
+            # === v1.0 risk management team ===
+            "risky_analyst": (75, "⚡ High-resilience scenario researchers are assessing the upside...", "Highly Resilient Scenario Researcher"),
+            "safe_analyst": (80, "🛡️ Defense scenario researchers are assessing downside risks...", "Defense scenario researcher"),
+            "neutral_analyst": (82, "⚖️ Neutral analysts are balancing risk-return...", "neutral analyst"),
+            "risk_manager": (90, "👔 Risk assessors are forming final conclusions...", "risk assessor"),
+            "risk_judge": (90, "👔 Risk assessors are forming final conclusions...", "risk assessor"),
+            "portfolio_manager": (90, "👔 Risk assessor doing final study review...", "risk assessor"),
 
-            # === 工作流控制节点 ===
-            "start": (5, "🚀 开始分析...", "开始"),
-            "parallel_analysts": (10, "📊 启动分析师团队...", "启动分析师"),
-            "merge_analysts": (42, "📋 汇总分析师报告...", "汇总报告"),
-            "debate": (45, "💬 研究团队开始讨论...", "研究讨论"),
-            "risk_debate": (72, "⚖️ 风险评估团队开始讨论...", "风险讨论"),
-            "end": (95, "✅ 分析即将完成...", "完成"),
+            # === Workflow control node ===
+            "start": (5, "🚀 Start analysis...", "start"),
+            "parallel_analysts": (10, "📊 Start an analyst team...", "Launch Analyst"),
+            "merge_analysts": (42, "📋 Aggregate analyst reports...", "summary report"),
+            "debate": (45, "💬 The research team started discussing...", "research discussion"),
+            "risk_debate": (72, "⚖️ The risk assessment team begins discussions...", "risk discussion"),
+            "end": (95, "✅ Analysis is almost complete...", "Complete"),
 
-            # === 旧格式（向后兼容）===
-            "Market Analyst": (15, "📈 市场分析师正在分析技术指标和市场趋势...", "市场分析师"),
-            "Fundamentals Analyst": (25, "💰 基本面分析师正在分析财务数据...", "基本面分析师"),
-            "News Analyst": (35, "📰 新闻分析师正在分析相关新闻和事件...", "新闻分析师"),
-            "Social Analyst": (40, "💬 社媒分析师正在分析社交媒体情绪...", "社媒分析师"),
-            "Bull Researcher": (50, "🐂 乐观情景研究员正在构建偏乐观论证...", "乐观情景研究员"),
-            "Bear Researcher": (55, "🐻 审慎情景研究员正在构建偏审慎论证...", "审慎情景研究员"),
-            "Research Manager": (60, "🔬 研究经理正在综合研究观点...", "研究经理"),
-            "Trader": (70, "🧩 研究整合员正在汇总研究结论...", "研究整合员"),
-            "Risky Analyst": (75, "⚡ 高弹性情景研究员正在评估上行空间...", "高弹性情景研究员"),
-            "Safe Analyst": (80, "🛡️ 防御情景研究员正在评估下行风险...", "防御情景研究员"),
-            "Neutral Analyst": (82, "⚖️ 中性分析师正在平衡风险收益...", "中性分析师"),
-            "Risk Judge": (90, "👔 风险评估师正在形成最终研究结论...", "风险评估师"),
-            "Portfolio Manager": (90, "👔 风险评估师正在做最终研究审阅...", "风险评估师"),
+            # === Old format (backwards compatible)===
+            "Market Analyst": (15, "📈 Market analysts are analyzing technical indicators and market trends...", "market analyst"),
+            "Fundamentals Analyst": (25, "💰 Fundamental analyst is analyzing financial data...", "fundamental analyst"),
+            "News Analyst": (35, "📰 News analysts are analyzing relevant news and events...", "news analyst"),
+            "Social Analyst": (40, "💬 Social media analysts are analyzing social media sentiment...", "social media analyst"),
+            "Bull Researcher": (50, "🐂 Optimistic scenario researchers are constructing optimistic arguments...", "Optimistic Scenario Researcher"),
+            "Bear Researcher": (55, "🐻 Prudential Scenario Researchers are Constructing Precautionary Arguments...", "Prudential Scenario Researcher"),
+            "Research Manager": (60, "🔬 Research managers are synthesizing research ideas...", "research manager"),
+            "Trader": (70, "🧩 A research integrator is summarizing research conclusions...", "research integrator"),
+            "Risky Analyst": (75, "⚡ High-resilience scenario researchers are assessing the upside...", "Highly Resilient Scenario Researcher"),
+            "Safe Analyst": (80, "🛡️ Defense scenario researchers are assessing downside risks...", "Defense scenario researcher"),
+            "Neutral Analyst": (82, "⚖️ Neutral analysts are balancing risk-return...", "neutral analyst"),
+            "Risk Judge": (90, "👔 Risk assessors are forming final conclusions...", "risk assessor"),
+            "Portfolio Manager": (90, "👔 Risk assessor doing final study review...", "risk assessor"),
         }
 
-        # 忽略的节点（工具节点、消息清理节点等）
+        # Ignored nodes (tool nodes, message cleaning nodes, etc.)
         ignored_patterns = ["tools_", "Msg Clear", "msg_clear_", "__start__", "__end__"]
 
         for pattern in ignored_patterns:
             if pattern in node_name:
-                return (None, None, None)  # 跳过这些节点
+                return (None, None, None)  # skip these nodes
 
-        # 从映射取友好消息（命中时；进度值不再取自映射）
+        # Get friendly message from map (on hit; progress value is no longer taken from map)
         mapped = node_mapping.get(node_name)
 
-        # 匹配 agent 节点并累积完成数（控制节点无 agent_id，不会命中）
+        # Match the agent node and accumulate the number of completions (the control node has no agent_id and will not be hit)
         agent_node = self._progress_node_keys.get(node_name)
         if agent_node is not None and node_name not in self._progress_completed:
             self._progress_completed.add(node_name)
 
-        # 计算进度
+        # Calculate progress
         if self._progress_total > 0:
-            # 按已完成 agent 数均分 10%-90% 区间
+            # Divide the 10%-90% interval equally according to the number of completed agents
             progress = 10 + int(round(80 * len(self._progress_completed) / self._progress_total))
         elif mapped is not None:
-            # 无 definition 回退：使用固定百分比（兼容单 agent 调试等场景）
+            # No definition fallback: use a fixed percentage (compatible with scenarios such as single-agent debugging)
             progress = mapped[0]
         else:
-            progress = self._progress_max  # 未知节点，保持当前
+            progress = self._progress_max  # Unknown node, keep current
 
-        # 只增不减
+        # only increase but not decrease
         if progress < self._progress_max:
             progress = self._progress_max
         else:
             self._progress_max = progress
 
-        # 友好消息与 step_name
+        # Friendly news and step_name
         if mapped is not None:
             return (progress, mapped[1], mapped[2])
 
-        # 动态推导：从工作流定义中查找节点 label
+        # Dynamic derivation: finding nodes from workflow definition label
         for node in self._progress_agent_nodes:
             agent_id = node.agent_id or ""
             if agent_id == node_name or node.label == node_name or node.id == node_name:
                 meta = self._lookup_agent_metadata(agent_id) if agent_id else None
                 label = (meta.node_name if meta and meta.node_name
                          else node.label or agent_id.replace("_", " ").title())
-                return (progress, f"正在执行: {label}", label)
+                return (progress, f"Executing: {label}", label)
 
         friendly_name = node_name.replace("_v2", "").replace("_", " ").title()
-        return (progress, f"正在执行: {friendly_name}", friendly_name)
+        return (progress, f"Executing: {friendly_name}", friendly_name)
 
     async def execute_async(
         self,
@@ -717,21 +717,21 @@ class WorkflowEngine:
         progress_callback: Optional[Callable] = None,
     ) -> Dict[str, Any]:
         """
-        异步执行工作流（使用 stream 模式以获取节点级进度更新）
+        Execute workflows asynchronously (use stream mode to get node-level progress updates)
 
         Args:
-            inputs: 输入参数
-            config: 执行配置
-            progress_callback: 进度回调函数
+            inputs: input parameters
+            config: Execute configuration
+            progress_callback: Progress callback function
 
         Returns:
-            执行结果
+            Execution result
         """
         if progress_callback:
             self.set_progress_callback(progress_callback)
 
         if self._compiled_graph is None:
-            self._report_progress(5, "编译工作流...", "compile")
+            self._report_progress(5, "Compilation workflow...", "compile")
             self.compile()
 
         runtime_inputs = _prepare_workflow_runtime_inputs(
@@ -744,37 +744,37 @@ class WorkflowEngine:
 
         execution = self._create_execution(inputs)
         self._init_progress_tracking()
-        self._report_progress(10, "开始执行工作流", "start")
+        self._report_progress(10, "Start executing workflow", "start")
 
         try:
             execution.state = WorkflowExecutionState.RUNNING
             execution.started_at = datetime.now().isoformat()
 
-            logger.info(f"开始异步执行工作流: {self._definition.id if self._definition else 'unknown'}")
+            logger.info(f"Start asynchronous execution workflow: {self._definition.id if self._definition else 'unknown'}")
 
-            # 使用 astream 模式以获取节点级别的进度更新
-            # stream_mode 应该作为关键字参数传递，而不是放在 config 字典中
+            # Using astream mode to get node-level progress updates
+            # stream_mode should be passed as keyword arguments rather than placed in the config dictionary
             final_state = inputs.copy() if inputs else {}
 
             async for chunk in self._compiled_graph.astream(runtime_inputs, config=execution_config, stream_mode="updates"):
-                # chunk 格式: {node_name: state_update}
+                # chunk Format: {node_name: state_update}
                 if isinstance(chunk, dict):
                     for node_name, node_update in chunk.items():
                         if node_name.startswith('__'):
-                            continue  # 跳过特殊节点
+                            continue  # Skip special nodes
 
-                        # 🔥 关键：在每个节点执行后检查取消标记
-                        # 通过调用 progress_callback 来触发取消检查
-                        # 获取进度信息
+                        # 🔥 Key: check for cancellation flag after each node execution
+                        # Trigger the cancellation check by calling progress_callback
+                        # Get progress information
                         progress_info = self._get_node_progress_info(node_name)
                         progress, message, step_name = progress_info
 
                         if progress is not None:
-                            # 🔥 关键：调用 progress_callback 会触发取消检查
-                            # 如果任务被取消，wrapped_progress_callback 会抛出 TaskCancelledException
+                            # 🔥 Key: calling progress_callback triggers a cancellation check
+                            # If the task is canceled, wrapped_progress_callback will throw TaskCancelledException
                             self._report_progress(progress, message, step_name)
 
-                        # 累积状态更新
+                        # Cumulative status updates
                         if isinstance(node_update, dict):
                             try:
                                 final_state.update(node_update)
@@ -783,7 +783,7 @@ class WorkflowEngine:
                         else:
                             final_state[node_name] = node_update
 
-            # 使用累积的最终状态
+            # Use accumulated final state
             result = final_state
             result = self._build_output_results(result)
 
@@ -791,7 +791,7 @@ class WorkflowEngine:
             execution.outputs = result
             execution.completed_at = datetime.now().isoformat()
 
-            self._report_progress(100, "工作流执行完成", "completed")
+            self._report_progress(100, "Workflow execution completed", "completed")
             return result
 
         except Exception as e:
@@ -800,7 +800,7 @@ class WorkflowEngine:
             execution.completed_at = datetime.now().isoformat()
             self._report_progress(
                 progress=self._progress_max,
-                message=f"执行失败: {str(e)}",
+                message=f"Execution failed: {str(e)}",
                 step_name="error",
                 error=str(e)
             )
@@ -815,10 +815,10 @@ class WorkflowEngine:
         config: Optional[Dict[str, Any]] = None
     ) -> AsyncIterator[Dict[str, Any]]:
         """
-        流式执行工作流
+        Streaming execution workflow
         
         Yields:
-            执行事件 {"type": "node_start|node_end|output", ...}
+            execution event {"type": "node_start|node_end|output", ...}
         """
         if self._compiled_graph is None:
             self.compile()
@@ -836,7 +836,7 @@ class WorkflowEngine:
         
         try:
             async for event in self._compiled_graph.astream(runtime_inputs, config):
-                # 包装事件
+                # wrapper event
                 yield {
                     "type": "node_output",
                     "execution_id": execution.id,
@@ -868,7 +868,7 @@ class WorkflowEngine:
             self._current_execution = execution
     
     def _create_execution(self, inputs: Dict[str, Any]) -> WorkflowExecution:
-        """创建执行记录"""
+        """Create execution record"""
         return WorkflowExecution(
             id=self._task_id,
             workflow_id=self._definition.id if self._definition else "",
@@ -877,25 +877,25 @@ class WorkflowEngine:
 
     @property
     def task_id(self) -> str:
-        """任务 ID"""
+        """Task ID"""
         return self._task_id
 
     @task_id.setter
     def task_id(self, value: str) -> None:
-        """设置任务 ID"""
+        """Set tasks ID"""
         self._task_id = value
 
     @property
     def definition(self) -> Optional[WorkflowDefinition]:
-        """当前加载的工作流定义"""
+        """Currently loaded workflow definition"""
         return self._definition
 
     # ------------------------------------------------------------------
-    # 动态产出物收集
+    # Dynamic output collection
     # ------------------------------------------------------------------
 
     def _is_builtin_workflow(self, definition: WorkflowDefinition) -> bool:
-        """判断是否为内置工作流（使用标准报告字段的旧工作流）"""
+        """Determine whether it is a built-in workflow (old workflow using standard report fields)"""
         if not definition:
             return True
         agent_ids = self._extract_agent_ids(definition)
@@ -916,8 +916,8 @@ class WorkflowEngine:
         return has_builtin_agents
 
     def _lookup_agent_metadata(self, agent_id: str):
-        """查询 Agent 元数据：优先 DB 动态 Agent，再 registry，最后代码常量"""
-        # 1. 优先从 MongoDB agent_configs 查找动态 Agent（Agent 工坊创建的自定义 Agent）
+        """Query Agent metadata: first DB dynamic Agent, then registry, and finally code constants"""
+        # 1. First search for dynamic Agent (custom Agent created by Agent Workshop) from MongoDB agent_configs
         try:
             from app.core.database import get_mongo_db
             db = get_mongo_db()
@@ -944,7 +944,7 @@ class WorkflowEngine:
         except Exception:
             pass
 
-        # 2. 从 AgentRegistry 查找
+        # 2. Find from AgentRegistry
         try:
             from core.agents.registry import get_registry
             metadata = get_registry().get_metadata(agent_id)
@@ -953,7 +953,7 @@ class WorkflowEngine:
         except Exception:
             pass
 
-        # 3. 从代码常量回退
+        # 3. Fallback from code constants
         try:
             from core.agents.config import AGENT_METADATA_REGISTRY
             return AGENT_METADATA_REGISTRY.get(agent_id)
@@ -967,7 +967,7 @@ class WorkflowEngine:
         definition: WorkflowDefinition,
     ):
         """
-        根据 output_config 从 state 中收集产出物。
+        Collect outputs from state based on output_config.
 
         Returns:
             (structured_reports, report_manifest)
@@ -985,7 +985,7 @@ class WorkflowEngine:
             return self._collect_auto(state, definition)
 
     def _collect_auto(self, state, definition):
-        """AUTO 策略：自动从工作流拓扑和 Agent 声明推导产出物"""
+        """AUTO Strategy: Automatically derive outputs from workflow topology and Agent declarations"""
         agent_nodes = [n for n in definition.nodes if n.agent_id]
         if not agent_nodes:
             return {}, []
@@ -993,7 +993,7 @@ class WorkflowEngine:
         field_infos = []
         for node in agent_nodes:
             meta = self._lookup_agent_metadata(node.agent_id)
-            # 检查 show_in_reports 标志，默认 True
+            # Check show_in_reports flag, default True
             if meta and not getattr(meta, 'show_in_reports', True):
                 continue
             field_name = (meta.output_field if meta and meta.output_field
@@ -1007,7 +1007,7 @@ class WorkflowEngine:
             if meta:
                 cat_val = meta.category.value if hasattr(meta.category, "value") else str(meta.category)
                 cat = _AGENT_CATEGORY_DISPLAY.get(cat_val, cat_val)
-            cat = cat or "其他"
+            cat = cat or "Others"
 
             order = meta.execution_order if meta else 100
             field_infos.append({
@@ -1029,11 +1029,11 @@ class WorkflowEngine:
         return self._extract_from_state(state, field_infos)
 
     def _collect_all_agents(self, state, definition):
-        """COLLECT_ALL 策略：收集所有 Agent 节点的 output_field"""
+        """COLLECT_ALL Strategy: Collect the information of all Agent nodes output_field"""
         return self._collect_auto(state, definition)
 
     def _collect_last_node(self, state, definition):
-        """LAST_NODE 策略：只收集 END 节点直接前驱的 Agent 输出"""
+        """LAST_NODE Strategy: Only collect the Agent output of the immediate predecessor of the END node"""
         end_nodes = definition.get_end_nodes()
         predecessor_agent_ids = set()
         for end_node in end_nodes:
@@ -1053,7 +1053,7 @@ class WorkflowEngine:
         field_infos = []
         for node in agent_nodes:
             meta = self._lookup_agent_metadata(node.agent_id)
-            # 检查 show_in_reports 标志，默认 True
+            # Check show_in_reports flag, default True
             if meta and not getattr(meta, 'show_in_reports', True):
                 continue
             field_name = (meta.output_field if meta and meta.output_field
@@ -1067,7 +1067,7 @@ class WorkflowEngine:
             field_infos.append({
                 "field": field_name,
                 "display_name": display_name.strip("【】"),
-                "category": _AGENT_CATEGORY_DISPLAY.get(cat_val, cat_val) or "其他",
+                "category": _AGENT_CATEGORY_DISPLAY.get(cat_val, cat_val) or "Others",
                 "order": meta.execution_order if meta else 100,
                 "is_primary": True,
                 "format_hint": "markdown",
@@ -1079,13 +1079,13 @@ class WorkflowEngine:
         return self._extract_from_state(state, field_infos)
 
     def _collect_specified(self, state, output_config):
-        """SPECIFIED 策略：使用用户手动指定的字段列表"""
+        """SPECIFIED Strategy: Use a manually specified field list by the user"""
         field_infos = []
         for fc in output_config.fields:
             field_infos.append({
                 "field": fc.field_name,
                 "display_name": fc.display_name or fc.field_name.replace("_", " ").title(),
-                "category": fc.category or "其他",
+                "category": fc.category or "Others",
                 "order": fc.order,
                 "is_primary": fc.is_primary,
                 "format_hint": fc.format_hint or "markdown",
@@ -1110,7 +1110,7 @@ class WorkflowEngine:
         return "" if v is None else str(v)
 
     def _extract_from_state(self, state, field_infos):
-        """从 state 中提取字段内容，构建 structured_reports 和 report_manifest"""
+        """Extract field content from state, build structured_reports and report_manifest"""
         structured = {}
         manifest = []
 
@@ -1138,8 +1138,8 @@ class WorkflowEngine:
 
     def _build_output_results(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """
-        在 execute 完成后构建产出物。
-        内置工作流走旧逻辑，自定义工作流走动态收集。
+        Build the output after execute completes.
+        The built-in workflow uses old logic, and the customized workflow uses dynamic collection.
         """
         definition = self._definition
         if not definition:
@@ -1170,45 +1170,45 @@ class WorkflowEngine:
         if node_errors:
             result["degraded_nodes"] = node_errors
             logger.warning(
-                f"[WorkflowEngine] 工作流存在降级节点: "
+                f"[WorkflowEngine] There is a downgrade node in the workflow: "
                 f"{list(node_errors.keys())}"
             )
 
         logger.info(
-            f"[WorkflowEngine] 动态产出物收集完成: "
-            f"{len(structured)} 个报告, {len(manifest)} 条 manifest"
+            f"[WorkflowEngine] Dynamic output collection completed: "
+            f"{len(structured)} reports, {len(manifest)} Article manifest"
         )
         return result
 
     def _build_builtin_output(self, result: Dict[str, Any]) -> Dict[str, Any]:
-        """内置工作流的产出物逻辑（动态字段 + 向后兼容）"""
-        # 动态推导报告字段列表（新 Agent 的 output_field 自动包含）
+        """Built-in workflow output logic (dynamic fields + backward compatible)"""
+        # Dynamically derive report field list (new Agent's output_field is automatically included)
         agent_ids = self._extract_agent_ids(self._definition) if self._definition else []
         report_fields = _get_dynamic_report_fields(agent_ids) if agent_ids else _BUILTIN_REPORT_FIELDS
         
-        # 内置字段的显示名映射
+        # Display name mapping for built-in fields
         builtin_display_names = {
-            "market_report": "📈 市场技术研究",
-            "sentiment_report": "💭 情绪研究",
-            "news_report": "📰 新闻研究",
-            "fundamentals_report": "💰 基本面研究",
-            "index_report": "📊 大盘环境研究",
-            "sector_report": "🏭 行业板块研究",
-            "social_report": "💭 社交媒体研究",
-            "chip_report": "🧮 筹码分布研究",
-            "bull_report": "🐂 乐观情景研究员",
-            "bear_report": "🐻 审慎情景研究员",
-            "investment_plan": "📋 研究经理简报",
-            "trader_investment_plan": "🧩 研究简报",
-            "risky_opinion": "🔥 高弹性情景观点",
-            "safe_opinion": "🛡️ 防御情景观点",
-            "neutral_opinion": "⚖️ 基准情景观点",
-            "risk_assessment": "⚠️ 风险审阅结论",
-            "risk_management_decision": "⚠️ 风险审阅结论",
-            "final_trade_decision": "📝 综合研究结论",
+            "market_report": "📈 Market Technology Research",
+            "sentiment_report": "💭 emotion research",
+            "news_report": "📰 Journalism Research",
+            "fundamentals_report": "💰 fundamental research",
+            "index_report": "📊 market environment research",
+            "sector_report": "🏭 Industry sector research",
+            "social_report": "💭 social media research",
+            "chip_report": "🧮 Chip distribution research",
+            "bull_report": "🐂 Optimistic Scenario Researcher",
+            "bear_report": "🐻 Prudential Scenario Researcher",
+            "investment_plan": "📋 Research Manager Briefing",
+            "trader_investment_plan": "🧩 research brief",
+            "risky_opinion": "🔥 Highly resilient scenario perspective",
+            "safe_opinion": "🛡️ defensive situational view",
+            "neutral_opinion": "⚖️ base case view",
+            "risk_assessment": "⚠️ Risk review conclusion",
+            "risk_management_decision": "⚠️ Risk review conclusion",
+            "final_trade_decision": "📝 Comprehensive research conclusion",
         }
         
-        # 工坊 Agent 的显示名缓存（从 agent_configs 读取）
+        # Display name cache of workshop Agent (read from agent_configs)
         workshop_display_names = {}
         try:
             from tradingagents.config.mongodb_utils import build_mongodb_connection_string, get_mongodb_database_name
@@ -1227,7 +1227,7 @@ class WorkflowEngine:
                     if _display_name:
                         workshop_display_names[_output_field] = f"📊 {_display_name}"
         except Exception as _e:
-            logger.warning(f"⚠️ [WorkflowEngine] 读取工坊 Agent 显示名失败: {_e}")
+            logger.warning(f"⚠️ [WorkflowEngine] Failed to read workshop Agent display name: {_e}")
         
         structured = {}
         manifest = []
@@ -1246,10 +1246,10 @@ class WorkflowEngine:
                 d["stance"] = "bear"
             structured[f] = d
             
-            # 获取显示名
+            # Get display name
             display_name = workshop_display_names.get(f) or builtin_display_names.get(f) or f.replace("_", " ").title()
             
-            # 分配 category
+            # allocate category
             category = "analyst"
             if f in ["bull_report", "bear_report", "investment_plan", "trader_investment_plan", "research_team_decision"]:
                 category = "research"
@@ -1280,7 +1280,7 @@ class WorkflowEngine:
         if has_action:
             action = existing_ftd.get("action") or existing_ftd.get("analysis_view")
             logger.info(
-                f"[WorkflowEngine] 使用 RiskManagerV2 的 final_trade_decision: "
+                f"[WorkflowEngine] Using RiskManagerV2 final_trade_decision: "
                 f"action={action}, confidence={existing_ftd.get('confidence')}"
             )
         else:
@@ -1292,126 +1292,126 @@ class WorkflowEngine:
         if node_errors:
             result["degraded_nodes"] = node_errors
             logger.warning(
-                f"[WorkflowEngine] 内置工作流存在降级节点: "
+                f"[WorkflowEngine] There is a downgrade node in the built-in workflow: "
                 f"{list(node_errors.keys())}"
             )
         return result
 
     def _generate_final_trade_decision(self, state: Dict[str, Any]) -> str:
         """
-        生成最终研究结论
+        Generate final research conclusions
 
-        综合以下内容：
-        1. investment_plan (研究整合员的研究观察汇总)
-        2. trader_investment_plan (研究整合员的整合意见)
-        3. risk_assessment (风险评估师的风险审阅结论)
+        Taking into account the following:
+        1. investment_plan (Summary of research observations from a research integrator)
+        2. trader_investment_plan (Integration opinions from research integrators)
+        3. risk_assessment (Risk Assessor s Risk Review Conclusions)
 
         Args:
-            state: 工作流执行状态
+            state: Workflow execution status
 
         Returns:
-            最终研究结论文本（Markdown 格式）
+            Final research conclusion text (Markdown format)
         """
-        # 🔍 调试：打印 state 中的关键字段
-        logger.debug(f"🔍 [WorkflowEngine] state 中的字段: {list(state.keys())}")
-        logger.debug(f"🔍 [WorkflowEngine] investment_plan 存在: {'investment_plan' in state}")
-        logger.debug(f"🔍 [WorkflowEngine] trader_investment_plan 存在: {'trader_investment_plan' in state}")
-        logger.debug(f"🔍 [WorkflowEngine] risk_assessment 存在: {'risk_assessment' in state}")
+        # 🔍 Debugging: Print key fields in state
+        logger.debug(f"🔍 [WorkflowEngine] state fields in: {list(state.keys())}")
+        logger.debug(f"🔍 [WorkflowEngine] investment_plan exist: {'investment_plan' in state}")
+        logger.debug(f"🔍 [WorkflowEngine] trader_investment_plan exist: {'trader_investment_plan' in state}")
+        logger.debug(f"🔍 [WorkflowEngine] risk_assessment exist: {'risk_assessment' in state}")
 
-        # 提取各个报告
+        # Extract individual reports
         investment_plan = self._extract_text_from_state(state, "investment_plan")
         trader_plan = self._extract_text_from_state(state, "trader_investment_plan")
         risk_assessment = self._extract_text_from_state(state, "risk_assessment")
 
-        # 🔍 调试：打印提取结果
-        logger.debug(f"🔍 [WorkflowEngine] investment_plan 长度: {len(investment_plan)}")
-        logger.debug(f"🔍 [WorkflowEngine] trader_plan 长度: {len(trader_plan)}")
-        logger.debug(f"🔍 [WorkflowEngine] risk_assessment 长度: {len(risk_assessment)}")
+        # 🔍 Debugging: Print extraction results
+        logger.debug(f"🔍 [WorkflowEngine] investment_plan length: {len(investment_plan)}")
+        logger.debug(f"🔍 [WorkflowEngine] trader_plan length: {len(trader_plan)}")
+        logger.debug(f"🔍 [WorkflowEngine] risk_assessment length: {len(risk_assessment)}")
 
-        # 如果三个都为空，返回空字符串
+        # If all three are empty, return an empty string
         if not any([investment_plan, trader_plan, risk_assessment]):
-            logger.warning("⚠️ [WorkflowEngine] 无法生成 final_trade_decision：所有输入报告均为空")
+            logger.warning("⚠️ [WorkflowEngine] Unable to generate final_trade_decision: all input reports are empty")
             return ""
 
-        # 🔥 新方案：简单拼接三个报告（保持原有行为）
-        # 注意：这里只是拼接，不进行综合分析
-        # 真正的综合决策由 TaskAnalysisService 从 investment_plan 中提取
+        # 🔥 New solution: simply splice three reports (maintain original behavior)
+        # Note: This is just splicing, not comprehensive analysis.
+        # The real comprehensive decision is extracted from investment_plan by TaskAnalysisService
         sections = []
 
         if investment_plan:
-            sections.append(f"## 📋 研究结论\n\n{investment_plan}")
+            sections.append(f"## 📋 Research conclusion\n\n{investment_plan}")
 
         if trader_plan:
-            sections.append(f"## 🧩 研究整合意见\n\n{trader_plan}")
+            sections.append(f"## 🧩 Research and integrate opinions\n\n{trader_plan}")
 
         if risk_assessment:
-            sections.append(f"## 🛡️ 风险审阅结论\n\n{risk_assessment}")
+            sections.append(f"## 🛡️ Risk review conclusion\n\n{risk_assessment}")
 
         final_decision = "\n\n".join(sections)
-        logger.info(f"✅ [WorkflowEngine] 生成 final_trade_decision，包含 {len(sections)} 个部分")
-        logger.info(f"✅ [WorkflowEngine] 生成 final_trade_decision，长度: {len(final_decision)}")
-        logger.debug(f"🔍 [WorkflowEngine] final_trade_decision 内容前500字符:\n{final_decision[:500]}")
+        logger.info(f"✅ [WorkflowEngine] Generate final_trade_decision, containing {len(sections)} parts")
+        logger.info(f"✅ [WorkflowEngine] Generate final_trade_decision, length: {len(final_decision)}")
+        logger.debug(f"🔍 [WorkflowEngine] final_trade_decision The first 500 characters of the content:\n{final_decision[:500]}")
 
         return final_decision
 
     def _extract_text_from_state(self, state: Dict[str, Any], field: str) -> str:
         """
-        从 state 中提取文本内容
+        Extract text content from state
 
         Args:
-            state: 工作流执行状态
-            field: 字段名
+            state: Workflow execution status
+            field: Field name
 
         Returns:
-            提取的文本内容
+            Extracted text content
         """
         value = state.get(field)
 
-        # 🔍 调试日志
-        logger.debug(f"🔍 [_extract_text_from_state] 提取字段: {field}")
-        logger.debug(f"🔍 [_extract_text_from_state] 值类型: {type(value)}")
+        # 🔍 debug log
+        logger.debug(f"🔍 [_extract_text_from_state] Extract fields: {field}")
+        logger.debug(f"🔍 [_extract_text_from_state] value type: {type(value)}")
 
         if value is None:
-            logger.debug(f"🔍 [_extract_text_from_state] {field} 为 None，返回空字符串")
+            logger.debug(f"🔍 [_extract_text_from_state] {field} is None, returns an empty string")
             return ""
 
         if isinstance(value, str):
-            logger.debug(f"🔍 [_extract_text_from_state] {field} 是字符串，长度: {len(value)}")
-            logger.debug(f"🔍 [_extract_text_from_state] {field} 内容前200字符: {value[:200]}")
+            logger.debug(f"🔍 [_extract_text_from_state] {field} is a string, length: {len(value)}")
+            logger.debug(f"🔍 [_extract_text_from_state] {field} The first 200 characters of the content: {value[:200]}")
             return value.strip()
 
         if isinstance(value, dict):
-            logger.debug(f"🔍 [_extract_text_from_state] {field} 是字典，字段: {list(value.keys())}")
-            # 🛡️ Q1: 失败/空响应形态不进报告——识别 {'success': False, 'error': ...}（节点异常）
-            # 与 {'content': '', 'success': True}（空响应被包装成成功）两类异常包装，
-            # 渲染友好提示而非裸 dict 字符串
+            logger.debug(f"🔍 [_extract_text_from_state] {field} is a dictionary, field: {list(value.keys())}")
+            # 🛡️ Q1: Failure/empty response status is not reported——identify {'success': False, 'error': ...} (Node abnormality)
+            # with {'content': '', 'success': True} (Empty response is packaged as success) Two types of exception packaging,
+            # Render friendly hints instead of bare dict strings
             _content_val = value.get("content")
             if value.get("success") is False or (
                 value.get("success") is True
                 and not (isinstance(_content_val, str) and _content_val.strip())
             ):
-                _err = value.get("error") or "模型响应异常（空内容）"
+                _err = value.get("error") or "Model response exception (empty content)"
                 logger.warning(
-                    f"⚠️ [_extract_text_from_state] {field} 为失败/空响应形态，"
-                    f"将以提示替代报告内容: success={value.get('success')}, error={_err}"
+                    f"⚠️ [_extract_text_from_state] {field} It is a failure/empty response form,"
+                    f"Report content will be replaced with prompts: success={value.get('success')}, error={_err}"
                 )
-                return f"> ⚠️ **本节生成失败**：{_err}。建议重新分析以获取完整报告。"
-            # 尝试从字典中提取文本
+                return f"> ⚠️ **Generation of this section failed**: {_err}. It is recommended to reanalyze to get the full report."
+            # Try to extract text from dictionary
             for key in ("content", "markdown", "text", "message", "report"):
                 text = value.get(key)
                 if isinstance(text, str) and text.strip():
-                    logger.debug(f"🔍 [_extract_text_from_state] 从 {field}.{key} 提取到文本，长度: {len(text)}")
-                    logger.debug(f"🔍 [_extract_text_from_state] 内容前200字符: {text[:200]}")
+                    logger.debug(f"🔍 [_extract_text_from_state] from {field}.{key} Extract to text, length: {len(text)}")
+                    logger.debug(f"🔍 [_extract_text_from_state] The first 200 characters of the content: {text[:200]}")
                     return text.strip()
 
-            logger.debug(f"🔍 [_extract_text_from_state] {field} 字典中未找到文本字段")
+            logger.debug(f"🔍 [_extract_text_from_state] {field} Text field not found in dictionary")
 
-        # 其他类型转为字符串
+        # Convert other types to string
         result = str(value).strip()
-        logger.debug(f"🔍 [_extract_text_from_state] {field} 转为字符串，长度: {len(result)}")
+        logger.debug(f"🔍 [_extract_text_from_state] {field} Convert to string, length: {len(result)}")
         return result
 
     @property
     def last_execution(self) -> Optional[WorkflowExecution]:
-        """最近一次执行记录"""
+        """Last execution record"""
         return self._current_execution

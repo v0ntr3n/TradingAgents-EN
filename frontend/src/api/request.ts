@@ -20,7 +20,7 @@ declare module 'axios' {
   }
 }
 
-// API响应接口
+// API response interface
 export interface ApiResponse<T = any> {
   success: boolean
   data: T
@@ -30,27 +30,27 @@ export interface ApiResponse<T = any> {
   request_id?: string
 }
 
-// 请求配置接口
+// Request configuration interface
 export interface RequestConfig extends AxiosRequestConfig {
   skipAuth?: boolean
-  skipAuthError?: boolean  // 跳过 401 错误的自动处理（用于登录等接口）
+  skipAuthError?: boolean  // Skip automatic handling of 401 errors (used for login and other interfaces)
   skipErrorHandler?: boolean
   showLoading?: boolean
   loadingText?: string
-  retryCount?: number  // 重试次数
-  retryDelay?: number  // 重试延迟（毫秒）
+  retryCount?: number  // Number of retries
+  retryDelay?: number  // Retry delay (milliseconds)
   _retry?: boolean
   __retryCount?: number
 }
 
-// 消息去重：记录最近显示的错误消息
+// Message deduplication: record the most recently displayed error message
 const recentMessages = new Map<string, number>()
-const MESSAGE_THROTTLE_TIME = 3000 // 3秒内相同消息不重复显示
+const MESSAGE_THROTTLE_TIME = 3000 // 3 The same message will not be displayed repeatedly within seconds.
 
-// 401 错误处理标志（避免多个请求同时触发登录跳转）
+// 401 Error handling flag (to avoid multiple requests triggering login jumps at the same time)
 let isHandling401 = false
 
-// Token 刷新单飞控制，避免并发 401 触发刷新风暴
+// Token Refresh solo flight control to avoid concurrent 401 triggering refresh storm
 let refreshTokenPromise: Promise<boolean> | null = null
 
 const maskTokenFingerprint = (token?: string | null): string => {
@@ -75,73 +75,73 @@ const ensureSingleFlightTokenRefresh = (authStore: any) => {
   return refreshTokenPromise
 }
 
-// 显示错误消息（带去重）
+// Show error message (with duplicates removed)
 const showErrorMessage = (message: string) => {
   const now = Date.now()
   const lastTime = recentMessages.get(message)
 
-  // 如果3秒内已经显示过相同消息，则跳过
+  // If the same message has been displayed within 3 seconds, skip
   if (lastTime && now - lastTime < MESSAGE_THROTTLE_TIME) {
-    console.log('⏭️ 跳过重复消息:', message)
+    console.log('⏭️ Skip duplicate messages:', message)
     return
   }
 
-  // 记录消息显示时间
+  // Record message display time
   recentMessages.set(message, now)
 
-  // 清理过期的消息记录（保持Map不会无限增长）
+  // Clean up expired message records (to keep the Map from growing infinitely)
   if (recentMessages.size > 50) {
     const entries = Array.from(recentMessages.entries())
     entries.sort((a, b) => a[1] - b[1])
-    // 删除最旧的25条记录
+    // Delete the oldest 25 records
     entries.slice(0, 25).forEach(([key]) => recentMessages.delete(key))
   }
 
   ElMessage.error(message)
 }
 
-// 处理 401 错误（带防抖）
-const handle401Error = (authStore: any, message: string = '登录已过期，请重新登录') => {
-  // 如果正在处理 401 错误，跳过
+// Handling 401 errors (with anti-shake)
+const handle401Error = (authStore: any, message: string = 'Login has expired, please log in again') => {
+  // Skip if handling 401 error
   if (isHandling401) {
-    console.log('⏭️ 正在处理 401 错误，跳过重复处理')
+    console.log('⏭️ Processing 401 error, skipping repeated processing')
     return
   }
 
   isHandling401 = true
 
-  // 清除认证信息并跳转到登录页
-  console.log('🔒 处理 401 错误：清除认证信息并跳转登录页')
+  // Clear authentication information and jump to login page
+  console.log('🔒 Handle 401 errors: clear authentication information and jump to the login page')
   authStore.clearAuthInfo()
   router.push('/login')
   showErrorMessage(message)
 
-  // 3秒后重置标志
+  // 3 Reset flag after seconds
   setTimeout(() => {
     isHandling401 = false
   }, 3000)
 }
 
-// 创建axios实例
+// Create axios instance
 const createAxiosInstance = (): AxiosInstance => {
   const instance = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || '',
-    timeout: 600000, // 增加超时时间到600秒（10分钟，用于长时间操作如交易复盘分析）
-    withCredentials: true,  // 🔥 重要：允许发送和接收 Cookie（用于 Session 认证）
+    timeout: 600000, // Increase the timeout to 600 seconds (10 minutes, used for long-term operations such as transaction review analysis)
+    withCredentials: true,  // 🔥 Important: Allow sending and receiving cookies (for session authentication)
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache',  // 禁用客户端缓存
+      'Cache-Control': 'no-cache',  // Disable client cache
       'Pragma': 'no-cache'
     }
   })
 
-  // 请求拦截器
+  // request interceptor
   instance.interceptors.request.use(
     async (config: any) => {
       const authStore = useAuthStore()
       const appStore = useAppStore()
 
-      // 添加认证头（总是覆盖为最新Token；支持localStorage兜底，避免早期请求丢Token）
+      // Add authentication header (always overwrite with the latest Token; support localStorage to avoid losing Token in early requests)
       if (!config.skipAuth) {
         const storedToken = authStore.token || localStorage.getItem('auth-token')
         const shouldTryRefresh = Boolean(
@@ -152,14 +152,14 @@ const createAxiosInstance = (): AxiosInstance => {
         )
 
         if (shouldTryRefresh) {
-          console.log('🔄 请求发送前检测到 access token 已过期，先尝试刷新', {
+          console.log('🔄 It is detected that the access token has expired before the request is sent. Try to refresh it first.', {
             url: config.url,
             staleTokenFingerprint: maskTokenFingerprint(storedToken),
             refreshTokenFingerprint: maskTokenFingerprint(authStore.refreshToken),
           })
           const refreshed = await ensureSingleFlightTokenRefresh(authStore)
           if (!refreshed) {
-            console.warn('⚠️ 请求发送前刷新 token 失败，将继续按原有 401 流程处理')
+            console.warn('⚠️ If the token refresh fails before the request is sent, the original 401 process will continue to be processed.')
           }
         }
 
@@ -169,7 +169,7 @@ const createAxiosInstance = (): AxiosInstance => {
           config.headers.Authorization = `Bearer ${token}`
         }
 
-        // 添加 App Token 头（用于许可证验证）
+        // Add App Token header (for license verification)
         const appToken = localStorage.getItem('app-token')
         if (appToken) {
           config.headers = config.headers || {}
@@ -177,18 +177,18 @@ const createAxiosInstance = (): AxiosInstance => {
         }
       }
 
-      // 添加请求ID
+      // Add request ID
       config.headers['X-Request-ID'] = generateRequestId()
 
-      // 添加语言头
+      // Add language header
       config.headers['Accept-Language'] = appStore.language
 
-      // 显示加载状态
+      // show loading status
       if (config.showLoading) {
         appStore.setLoading(true, 0)
       }
 
-      // 端点兼容守卫：阻止/修正误用的 /api/stocks/quote（缺少路径参数 {code}）
+      // Endpoint Compatibility Guard: Block/Fix misuse of /api/stocks/quote (missing path parameter {code}) 
       try {
         const rawUrl = String(config.url || '')
         const pathOnly = rawUrl.split('?')[0].replace(/\/+$|^\s+|\s+$/g, '')
@@ -202,8 +202,8 @@ const createAxiosInstance = (): AxiosInstance => {
               delete (config.params as any).stock_code
             }
           } else {
-            console.error('❌ 误用端点: /api/stocks/quote 缺少 code')
-            return Promise.reject(new Error('前端误用端点：缺少 code，请改用 /api/stocks/{code}/quote'))
+            console.error('❌ Misuse of endpoints: /api/stocks/quote missing code')
+            return Promise.reject(new Error('Frontend misused endpoint: code is missing, please use instead /api/stocks/{code}/quote'))
           }
         }
 
@@ -215,59 +215,59 @@ const createAxiosInstance = (): AxiosInstance => {
           config.url = urlStr.replace(/^\/api(\/)?/, '/$1')
         }
 
-        // 统一去除 /api/* 路径末尾斜杠，避免 FastAPI 默认 307 重定向
+        // Uniform removal /api/* Slash at the end of the path to avoid FastAPI default 307 redirect
         const finalUrl = String(config.url || '')
         if (finalUrl.startsWith('/api/') && finalUrl.length > 5) {
           config.url = finalUrl.replace(/\/+(\?|$)/, '$1')
         }
       } catch (e) {
-        console.warn('端点兼容检查异常', e)
+        console.warn('Endpoint compatibility check exception', e)
       }
 
       return config
     },
     (error) => {
-      console.error('❌ 请求拦截器错误:', error)
+      console.error('❌ Request interceptor error:', error)
       return Promise.reject(error)
     }
   )
 
-  // 响应拦截器
+  // response interceptor
   instance.interceptors.response.use(
     (response: AxiosResponse) => {
       const appStore = useAppStore()
       const authStore = useAuthStore()
       const config = response.config as RequestConfig
 
-      // 隐藏加载状态
+      // Hide loading status
       if (config.showLoading) {
         appStore.setLoading(false)
       }
 
-      // 检查业务状态码
+      // Check business status code
       const data = response.data as ApiResponse
       if (data && typeof data === 'object' && 'success' in data) {
         if (!data.success) {
-          // 检查是否是认证错误（优先处理，不依赖 skipErrorHandler）
+          // Check whether it is an authentication error (processed first, does not rely on skipErrorHandler)
           const code = data.code
           if (code === 401 || code === 40101 || code === 40102 || code === 40103) {
-            // 如果请求标记为跳过认证错误处理（如登录请求），不自动处理
+            // If the request is marked to skip authentication error handling (such as a login request), it is not automatically processed
             if (!config.skipAuthError) {
-              console.log('🔒 业务错误：认证失败 (HTTP 200)')
-              handle401Error(authStore, data.message || '登录已过期，请重新登录')
+              console.log('🔒 Business error: Authentication failed (HTTP 200)')
+              handle401Error(authStore, data.message || 'Login has expired, please log in again')
             }
-            return Promise.reject(new Error(data.message || '认证失败'))
+            return Promise.reject(new Error(data.message || 'Authentication failed'))
           }
 
-          // 其他业务错误
+          // Other business errors
           if (!config.skipErrorHandler) {
             handleBusinessError(data)
-            return Promise.reject(new Error(data.message || '请求失败'))
+            return Promise.reject(new Error(data.message || 'Request failed'))
           }
         }
       }
 
-      // 返回 response.data 而不是 response，这样调用方可以直接访问 ApiResponse
+      // Return response.data instead of response so the caller can access it directly ApiResponse
       return response.data
     },
     async (error) => {
@@ -275,84 +275,84 @@ const createAxiosInstance = (): AxiosInstance => {
       const authStore = useAuthStore()
       const config = error.config as RequestConfig
 
-      // 隐藏加载状态
+      // Hide loading status
       if (config?.showLoading) {
         appStore.setLoading(false)
       }
 
-      // 处理HTTP状态码错误
+      // Handling HTTP status code errors
       if (error.response) {
         const { status, data } = error.response
 
         switch (status) {
           case 401:
-            // 如果是refresh请求本身失败，不要再次尝试刷新（避免无限循环）
+            // If the refresh request itself fails, do not try to refresh again (to avoid infinite loops)
             if (config?.url?.includes('/auth/refresh')) {
-              console.error('❌ Refresh token请求失败')
+              console.error('❌ Refresh token Request failed')
               if (config?.skipAuthError) {
                 ;(error as any).__skipGlobalAuthRedirect = true
                 break
               }
-              handle401Error(authStore, '登录已过期，请重新登录')
+              handle401Error(authStore, 'Login has expired, please log in again')
               break
             }
 
-            // 未授权时优先尝试刷新 token，即使 skipAuthError=true 也不应跳过刷新。
+            // When unauthorized, try to refresh the token first, even if skipAuthError=true Refreshing should also not be skipped.
             if (!config?.skipAuth && authStore.refreshToken && !config?._retry) {
               try {
-                console.log('🔄 401错误，尝试刷新token...')
+                console.log('🔄 401 Error, try refreshing token...')
                 config._retry = true
                 const success = await ensureSingleFlightTokenRefresh(authStore)
                 if (success) {
-                  console.log('✅ Token刷新成功，重试原请求')
-                  // 重新发送原请求
+                  console.log('✅ Token Refresh successful, retry the original request')
+                  // Resend original request
                   return instance.request(config)
                 } else {
-                  console.log('❌ Token刷新失败')
+                  console.log('❌ Token Refresh failed')
                 }
               } catch (refreshError) {
-                console.error('❌ Token刷新异常:', refreshError)
+                console.error('❌ Token Refresh exception:', refreshError)
               }
             }
 
-            // 如果请求标记为跳过认证错误处理（如局部可降级接口），不要自动登出/跳转。
+            // If the request is marked to skip authentication error handling (such as a partially downgradeable interface), do not automatically logout/jump.
             if (config?.skipAuthError) {
               ;(error as any).__skipGlobalAuthRedirect = true
               break
             }
 
-            // 清除认证信息并跳转到登录页
-            handle401Error(authStore, '登录已过期，请重新登录')
+            // Clear authentication information and jump to login page
+            handle401Error(authStore, 'Login has expired, please log in again')
             break
 
           case 403:
-            showErrorMessage('权限不足，无法访问该资源')
+            showErrorMessage('Insufficient permissions to access the resource')
             break
 
           case 400:
-            // 参数错误，显示详细的错误信息
+            // Parameter error, display detailed error information
             if (!config?.skipErrorHandler) {
-              const message = data?.detail || data?.message || error.message || '请求参数错误'
+              const message = data?.detail || data?.message || error.message || 'Request parameter error'
               showErrorMessage(message)
             }
             break
 
           case 404:
             if (!config?.skipErrorHandler) {
-              showErrorMessage('请求的资源不存在')
+              showErrorMessage('The requested resource does not exist')
             }
             break
 
           case 429:
-            showErrorMessage('请求过于频繁，请稍后重试')
+            showErrorMessage('The request is too frequent, please try again later.')
             break
 
           case 500:
-            // 优先显示后端返回的详细错误信息
+            // Prioritize display of detailed error information returned by the backend
             if (!config?.skipErrorHandler) {
-              const message = data?.detail || data?.message || '服务器内部错误，请稍后重试'
+              const message = data?.detail || data?.message || 'Internal server error, please try again later'
               showErrorMessage(message)
-              // 将详细错误信息附加到错误对象上，供组件使用
+              // Attach detailed error information to the error object for use by the component
               error.message = message
             }
             break
@@ -360,65 +360,65 @@ const createAxiosInstance = (): AxiosInstance => {
           case 502:
           case 503:
           case 504:
-            showErrorMessage('服务暂时不可用，请稍后重试')
+            showErrorMessage('The service is temporarily unavailable, please try again later')
             break
 
           default:
             if (!config?.skipErrorHandler) {
-              const message = data?.detail || data?.message || error.message || '网络请求失败'
+              const message = data?.detail || data?.message || error.message || 'Network request failed'
               showErrorMessage(message)
             }
         }
       } else if (error.code === 'ECONNABORTED') {
-        console.error('🔍 [REQUEST] 请求超时错误:', {
+        console.error('🔍 [REQUEST] Request timeout error:', {
           code: error.code,
           message: error.message,
           timeout: config?.timeout,
           url: config?.url
         })
 
-        // 尝试重试
+        // Try again
         if (await shouldRetry(config, error)) {
           return retryRequest(instance, config)
         }
 
-        showErrorMessage('请求超时，请检查网络连接')
+        showErrorMessage('Request timed out, please check network connection')
       } else if (error.message === 'Network Error') {
-        console.error('🔍 [REQUEST] 网络连接错误:', {
+        console.error('🔍 [REQUEST] Network connection error:', {
           message: error.message,
           code: error.code,
           url: config?.url,
           baseURL: config?.baseURL
         })
 
-        // 尝试重试
+        // Try again
         if (await shouldRetry(config, error)) {
           return retryRequest(instance, config)
         }
 
-        showErrorMessage('网络连接失败，请检查网络设置')
+        showErrorMessage('Network connection failed, please check network settings')
       } else if (error.message.includes('Failed to fetch')) {
-        console.error('🔍 [REQUEST] Fetch失败错误:', {
+        console.error('🔍 [REQUEST] Fetch failure error:', {
           message: error.message,
           code: error.code,
           url: config?.url,
           baseURL: config?.baseURL
         })
 
-        // 尝试重试
+        // Try again
         if (await shouldRetry(config, error)) {
           return retryRequest(instance, config)
         }
 
-        showErrorMessage('网络请求失败，请检查服务器连接')
+        showErrorMessage('Network request failed, please check server connection')
       } else if (!config?.skipErrorHandler) {
-        console.error('🔍 [REQUEST] 其他错误:', {
+        console.error('🔍 [REQUEST] Other errors:', {
           message: error.message,
           code: error.code,
           name: error.name,
           url: config?.url
         })
-        showErrorMessage(error.message || '未知错误')
+        showErrorMessage(error.message || 'unknown error')
       }
 
       return Promise.reject(error)
@@ -428,34 +428,34 @@ const createAxiosInstance = (): AxiosInstance => {
   return instance
 }
 
-// 处理业务错误
+// Handle business errors
 const handleBusinessError = (data: ApiResponse) => {
   const { code, message } = data
   const authStore = useAuthStore()
 
   switch (code) {
     case 401:
-    case 40101:  // 未授权
-    case 40102:  // Token 无效
-    case 40103:  // Token 过期
-      console.log('🔒 业务错误：认证失败')
-      handle401Error(authStore, message || '登录已过期，请重新登录')
+    case 40101:  // Unauthorized
+    case 40102:  // Token Invalid
+    case 40103:  // Token Expired
+      console.log('🔒 Business error: Authentication failed')
+      handle401Error(authStore, message || 'Login has expired, please log in again')
       break
     case 40001:
-      showErrorMessage('参数错误')
+      showErrorMessage('Parameter error')
       break
     case 403:
     case 40003:
-      showErrorMessage('权限不足')
+      showErrorMessage('Insufficient permissions')
       break
     case 40004:
-      showErrorMessage('资源不存在')
+      showErrorMessage('Resource does not exist')
       break
     case 40005:
-      showErrorMessage('操作失败')
+      showErrorMessage('Operation failed')
       break
     case 50001:
-      showErrorMessage('服务器错误')
+      showErrorMessage('Server error')
       break
     default:
       if (message) {
@@ -464,29 +464,29 @@ const handleBusinessError = (data: ApiResponse) => {
   }
 }
 
-// 生成请求ID
+// Generate request ID
 const generateRequestId = (): string => {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
 
-// 判断是否应该重试
+// Determine whether you should try again
 const shouldRetry = async (config: RequestConfig | undefined, error: any): Promise<boolean> => {
   if (!config) return false
 
-  // 获取重试配置（默认重试 2 次）
+  // Get retry configuration (default retries 2 times)
   let retryCount = 2
   if (config.retryCount !== undefined) {
     retryCount = config.retryCount
   }
   const currentRetry = (config as any).__retryCount || 0
 
-  // 如果已经重试过指定次数，不再重试
+  // If it has been retried the specified number of times, it will not be retried again.
   if (currentRetry >= retryCount) {
-    console.log(`🔄 已达到最大重试次数 (${retryCount})，停止重试`)
+    console.log(`🔄 Maximum number of retries reached (${retryCount}), Stop retrying`)
     return false
   }
 
-  // 只对网络错误和超时错误重试
+  // Only retry on network errors and timeout errors
   const shouldRetryError =
     error.code === 'ECONNABORTED' ||
     error.message === 'Network Error' ||
@@ -496,30 +496,30 @@ const shouldRetry = async (config: RequestConfig | undefined, error: any): Promi
   return shouldRetryError
 }
 
-// 重试请求
+// Retry request
 const retryRequest = async (instance: AxiosInstance, config: RequestConfig): Promise<any> => {
   const currentRetry = (config as any).__retryCount || 0
-  // 使用显式的默认值处理
+  // Use explicit default value processing
   let retryDelay = 1000
   if (config.retryDelay !== undefined) {
     retryDelay = config.retryDelay
   }
 
-  // 增加重试计数
+  // Increase retry count
   (config as any).__retryCount = currentRetry + 1
 
-  console.log(`🔄 第 ${currentRetry + 1} 次重试请求: ${config.url}`)
+  console.log(`🔄 No. ${currentRetry + 1} Retry requests: ${config.url}`)
 
-  // 延迟后重试
+  // Retry after delay
   await new Promise(resolve => setTimeout(resolve, retryDelay * (currentRetry + 1)))
 
   return instance.request(config)
 }
 
-// 创建请求实例
+// Create request instance
 const request = createAxiosInstance()
 
-// 测试API连接
+// Test API connection
 export const testApiConnection = async (): Promise<boolean> => {
   try {
     await request.get('/api/health', {
@@ -529,64 +529,64 @@ export const testApiConnection = async (): Promise<boolean> => {
 
     return true
   } catch (error: any) {
-    console.error('❌ API连接测试失败:', error.code || error.message)
+    console.error('❌ API Connection test failed:', error.code || error.message)
 
     return false
   }
 }
 
-// 请求方法封装
+// Request method encapsulation
 export class ApiClient {
-  // GET请求
+  // GET Request
   static async get<T = any>(
     url: string,
     params?: any,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    // 响应拦截器已经返回 response.data，所以这里直接返回
+    // The response interceptor has already returned response.data, so it is returned directly here
     return await request.get(url, { params, ...config })
   }
 
-  // POST请求
+  // POST Request
   static async post<T = any>(
     url: string,
     data?: any,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    // 响应拦截器已经返回 response.data，所以这里直接返回
+    // The response interceptor has already returned response.data, so it is returned directly here
     return await request.post(url, data, config)
   }
 
-  // PUT请求
+  // PUT Request
   static async put<T = any>(
     url: string,
     data?: any,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    // 响应拦截器已经返回 response.data，所以这里直接返回
+    // The response interceptor has already returned response.data, so it is returned directly here
     return await request.put(url, data, config)
   }
 
-  // DELETE请求
+  // DELETE Request
   static async delete<T = any>(
     url: string,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    // 响应拦截器已经返回 response.data，所以这里直接返回
+    // The response interceptor has already returned response.data, so it is returned directly here
     return await request.delete(url, config)
   }
 
-  // PATCH请求
+  // PATCH Request
   static async patch<T = any>(
     url: string,
     data?: any,
     config?: RequestConfig
   ): Promise<ApiResponse<T>> {
-    // 响应拦截器已经返回 response.data，所以这里直接返回
+    // The response interceptor has already returned response.data, so it is returned directly here
     return await request.patch(url, data, config)
   }
 
-  // 上传文件
+  // Upload files
   static async upload<T = any>(
     url: string,
     file: File,
@@ -596,7 +596,7 @@ export class ApiClient {
     const formData = new FormData()
     formData.append('file', file)
 
-    // 响应拦截器已经返回 response.data，所以这里直接返回
+    // The response interceptor has already returned response.data, so it is returned directly here
     return await request.post(url, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -611,13 +611,13 @@ export class ApiClient {
     })
   }
 
-  // 下载文件
+  // Download file
   static async download(
     url: string,
     filename?: string,
     config?: RequestConfig
   ): Promise<void> {
-    // 对于 blob 响应，响应拦截器返回的就是 blob 数据
+    // For blob responses, the response interceptor returns the blob data
     const blobData = await request.get(url, {
       responseType: 'blob',
       ...config

@@ -1,11 +1,11 @@
 """
-配置系统单元测试
+Configure system unit tests
 
-测试新的配置管理系统，包括：
-- 配置验证器
-- 配置服务
-- 配置提供者
-- 配置兼容层
+Test new configuration management systems, including:
+- Configure validator
+- Configuration service
+- Configuration provider
+- Configure compatibility layer
 """
 
 import pytest
@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from unittest.mock import Mock, patch, AsyncMock
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.core.startup_validator import (
@@ -27,10 +27,10 @@ from app.core.startup_validator import (
 
 
 class TestStartupValidator:
-    """测试启动配置验证器"""
+    """Test launch configuration validator"""
     
     def test_config_item_creation(self):
-        """测试配置项创建"""
+        """Test configuration item creation"""
         config = ConfigItem(
             key="TEST_KEY",
             level=ConfigLevel.REQUIRED,
@@ -44,7 +44,7 @@ class TestStartupValidator:
         assert config.example == "test_value"
     
     def test_validation_result_creation(self):
-        """测试验证结果创建"""
+        """Test verification result creation"""
         result = ValidationResult(
             success=True,
             missing_required=[],
@@ -59,14 +59,14 @@ class TestStartupValidator:
     
     @patch.dict(os.environ, {}, clear=True)
     def test_validate_missing_required_configs(self):
-        """测试缺少必需配置的验证"""
+        """Test is missing validation of required configuration"""
         validator = StartupValidator()
         result = validator.validate()
         
         assert result.success is False
         assert len(result.missing_required) > 0
         
-        # 检查是否包含必需的配置项
+        # Check whether required configuration items are included
         required_keys = [config.key for config in result.missing_required]
         assert "MONGODB_HOST" in required_keys
         assert "MONGODB_PORT" in required_keys
@@ -81,7 +81,7 @@ class TestStartupValidator:
         "JWT_SECRET": "test-secret-key-with-enough-length"
     })
     def test_validate_with_required_configs(self):
-        """测试有必需配置的验证"""
+        """Test verification with required configuration"""
         validator = StartupValidator()
         result = validator.validate()
         
@@ -90,14 +90,14 @@ class TestStartupValidator:
     
     @patch.dict(os.environ, {
         "MONGODB_HOST": "localhost",
-        "MONGODB_PORT": "invalid_port",  # 无效端口
+        "MONGODB_PORT": "invalid_port",  # Invalid port
         "MONGODB_DATABASE": "test_db",
         "REDIS_HOST": "localhost",
         "REDIS_PORT": "6379",
         "JWT_SECRET": "test-secret-key-with-enough-length"
     })
     def test_validate_invalid_port(self):
-        """测试无效端口验证"""
+        """Test invalid port verification"""
         validator = StartupValidator()
         result = validator.validate()
         
@@ -110,10 +110,10 @@ class TestStartupValidator:
         "MONGODB_DATABASE": "test_db",
         "REDIS_HOST": "localhost",
         "REDIS_PORT": "6379",
-        "JWT_SECRET": "short"  # 太短的密钥
+        "JWT_SECRET": "short"  # Key too short
     })
     def test_validate_short_jwt_secret(self):
-        """测试过短的 JWT 密钥"""
+        """Testing for JWT keys that are too short"""
         validator = StartupValidator()
         result = validator.validate()
         
@@ -126,10 +126,10 @@ class TestStartupValidator:
         "MONGODB_DATABASE": "test_db",
         "REDIS_HOST": "localhost",
         "REDIS_PORT": "6379",
-        "JWT_SECRET": "your-super-secret-jwt-key-change-in-production"  # 默认值
+        "JWT_SECRET": "your-super-secret-jwt-key-change-in-production"  # Default value
     })
     def test_validate_default_jwt_secret_warning(self):
-        """测试使用默认 JWT 密钥时的警告"""
+        """Warning when testing using default JWT key"""
         validator = StartupValidator()
         result = validator.validate()
         
@@ -146,20 +146,20 @@ class TestStartupValidator:
         "JWT_SECRET": "test-secret-key-with-enough-length"
     })
     def test_validate_missing_recommended_configs(self):
-        """测试缺少推荐配置"""
+        """Testing is missing recommended configuration"""
         validator = StartupValidator()
         result = validator.validate()
         
         assert result.success is True
         assert len(result.missing_recommended) > 0
         
-        # 检查推荐配置
+        # Check recommended configuration
         recommended_keys = [config.key for config in result.missing_recommended]
         assert "DEEPSEEK_API_KEY" in recommended_keys or "DASHSCOPE_API_KEY" in recommended_keys
     
     @patch.dict(os.environ, {}, clear=True)
     def test_raise_if_failed(self):
-        """测试验证失败时抛出异常"""
+        """Exception thrown when test verification fails"""
         validator = StartupValidator()
         validator.validate()
         
@@ -175,26 +175,26 @@ class TestStartupValidator:
         "JWT_SECRET": "test-secret-key-with-enough-length"
     })
     def test_raise_if_failed_success(self):
-        """测试验证成功时不抛出异常"""
+        """No exception is thrown when test verification is successful"""
         validator = StartupValidator()
         validator.validate()
         
-        # 不应该抛出异常
+        # should not throw exception
         validator.raise_if_failed()
 
 
 class TestConfigCompat:
-    """测试配置兼容层"""
+    """Test configuration compatibility layer"""
     
     def test_config_manager_compat_creation(self):
-        """测试配置管理器兼容层创建"""
+        """Test Configuration Manager Compatibility Layer Creation"""
         from app.core.config_compat import ConfigManagerCompat
         
         config_manager = ConfigManagerCompat()
         assert config_manager is not None
     
     def test_get_data_dir(self):
-        """测试获取数据目录"""
+        """Test to obtain data directory"""
         from app.core.config_compat import ConfigManagerCompat
         
         config_manager = ConfigManagerCompat()
@@ -205,7 +205,7 @@ class TestConfigCompat:
     
     @patch.dict(os.environ, {"DATA_DIR": "/custom/data/dir"})
     def test_get_data_dir_from_env(self):
-        """测试从环境变量获取数据目录"""
+        """Test to get the data directory from environment variables"""
         from app.core.config_compat import ConfigManagerCompat
         
         config_manager = ConfigManagerCompat()
@@ -214,7 +214,7 @@ class TestConfigCompat:
         assert data_dir == "/custom/data/dir"
     
     def test_load_settings(self):
-        """测试加载系统设置"""
+        """Test loading system settings"""
         from app.core.config_compat import ConfigManagerCompat
         
         config_manager = ConfigManagerCompat()
@@ -225,14 +225,14 @@ class TestConfigCompat:
         assert "max_debate_rounds" in settings
     
     def test_token_tracker_compat_creation(self):
-        """测试 Token 跟踪器兼容层创建"""
+        """Test Token tracker compatibility layer creation"""
         from app.core.config_compat import TokenTrackerCompat
         
         tracker = TokenTrackerCompat()
         assert tracker is not None
     
     def test_track_usage(self):
-        """测试记录 Token 使用量"""
+        """Test record Token usage"""
         from app.core.config_compat import TokenTrackerCompat
         
         tracker = TokenTrackerCompat()
@@ -251,7 +251,7 @@ class TestConfigCompat:
         assert summary["test_provider:test_model"]["call_count"] == 1
     
     def test_reset_usage(self):
-        """测试重置使用统计"""
+        """Test reset usage statistics"""
         from app.core.config_compat import TokenTrackerCompat
         
         tracker = TokenTrackerCompat()
@@ -264,19 +264,19 @@ class TestConfigCompat:
 
 
 class TestConfigPriority:
-    """测试配置优先级"""
+    """Test configuration priority"""
     
     @patch.dict(os.environ, {
         "TEST_CONFIG": "from_env",
         "MONGODB_HOST": "localhost"
     })
     def test_env_priority(self):
-        """测试环境变量优先级"""
-        # 环境变量应该有最高优先级
+        """Test environment variable priority"""
+        # Environment variables should have the highest priority
         assert os.getenv("TEST_CONFIG") == "from_env"
     
     def test_default_values(self):
-        """测试默认值"""
+        """Test defaults"""
         from app.core.config_compat import ConfigManagerCompat
         
         config_manager = ConfigManagerCompat()

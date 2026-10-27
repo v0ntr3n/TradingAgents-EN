@@ -1,8 +1,8 @@
 """
-智能助手主题管理工具
+Smart assistant theme management tool
 
-让 AI 可以直接创建研究主题、创建子主题、查看主题树、删除主题树。
-用户身份和当前主题上下文通过 core.tools.context 获取。
+Allow AI to directly create research topics, create subtopics, view topic trees, and delete topic trees.
+The user identity and current topic context are obtained through core.tools.context.
 """
 
 import logging
@@ -229,8 +229,8 @@ async def _resolve_target_thread_id(db, user_id: str, title: Optional[str]) -> O
 @register_tool(
     tool_id="list_assistant_topics",
     name="查看研究主题树",
-    description="列出当前用户的研究主题树。返回主题层级缩进、主题ID和各主题消息数量，便于查看研究目录结构。",
-    when_to_use="当用户想查看当前研究目录、主题结构、行业与公司子主题层级时使用。",
+    description="Lists the current user s research topic tree. Returns the topic level indentation, topic ID, and number of messages for each topic to facilitate viewing the research directory structure.",
+    when_to_use="Used when the user wants to view the current research directory, topic structure, industry and company subtopic levels.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -240,30 +240,30 @@ async def _resolve_target_thread_id(db, user_id: str, title: Optional[str]) -> O
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["topic_tree_viewing", "research_structure_browsing", "topic_hierarchy_query", "thread_listing", "research_directory_viewing"],
-    returns="返回文本格式的主题树，包含主题层级缩进、主题ID和各主题消息数量。",
+    returns="Returns the topic tree in text format, including topic level indentation, topic ID, and number of messages in each topic.",
 )
 async def list_assistant_topics() -> str:
-    """查看当前用户的研究主题树。"""
+    """View the current user s research topic tree."""
     from app.core.database import get_mongo_db
 
     user_id = require_current_user_id()
     db = get_mongo_db()
     docs = await _load_threads(db, user_id)
     if not docs:
-        return "📁 当前还没有研究主题。你可以让我先创建一个行业或公司主题。"
+        return "📁 There are currently no research topics. You can ask me to create an industry or company theme first."
     current_topic = await _get_bound_current_topic_doc(db, user_id)
     current_topic_line = ""
     if current_topic:
-        current_topic_line = f"🎯 当前外部会话主题：{current_topic.get('title') or current_topic.get('thread_id')}\n"
-    return current_topic_line + "📁 当前研究主题树：\n" + _format_thread_tree(docs)
+        current_topic_line = f"🎯 Current external conversation topic:{current_topic.get('title') or current_topic.get('thread_id')}\n"
+    return current_topic_line + "📁 Current research topic tree:\n" + _format_thread_tree(docs)
 
 
 @tool
 @register_tool(
     tool_id="create_assistant_topic",
     name="创建研究主题",
-    description="创建新的顶层研究主题，用于行业、策略或独立研究主线。返回创建结果（新建/复用）和主题ID。",
-    when_to_use="当用户明确表示要新建研究主题、行业目录、研究主线时使用。",
+    description="Create new top-level research topics for industry, strategy, or independent research lines. Returns the creation result (new/reused) and topic ID.",
+    when_to_use="It is used when the user explicitly states that he wants to create a new research topic, industry directory, or research main line.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -273,12 +273,12 @@ async def list_assistant_topics() -> str:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["topic_creation", "research_mainline_setup", "new_topic_initialization", "research_directory_creation"],
-    returns="返回文本消息，包含创建结果（新建/复用）和主题ID。",
+    returns="Returns a text message, including the creation result (new/reused) and topic ID.",
 )
 async def create_assistant_topic(
-    title: Annotated[str, "要创建的主题名称，如 电池行业跟踪 或 券商板块研究"],
+    title: Annotated[str, "Topic name to create, such as Battery Industry Tracking or Brokerage Sector Research"],
 ) -> str:
-    """创建顶层研究主题。"""
+    """Create top-level research topics."""
     from app.core.database import get_mongo_db
     from app.services.intelligent_assistant_service import create_assistant_thread
 
@@ -288,23 +288,23 @@ async def create_assistant_topic(
     if current_topic and _titles_match(current_topic.get("title") or "", title):
         await _bind_current_topic(db, user_id, current_topic.get("thread_id"))
         return (
-            f"ℹ️ 当前就在语义相同的主题「{current_topic.get('title') or title}」下，"
-            f"无需重复创建。\n- 主题ID: {current_topic.get('thread_id')}"
+            f"ℹ️ Currently on the topic with the same semantics {current_topic.get('title') or title}] down,"
+            f"No need to re-create.\n- Topic ID: {current_topic.get('thread_id')}"
         )
 
     item = await create_assistant_thread(db, user_id, title=title, parent_thread_id=None)
     await _bind_current_topic(db, user_id, item["thread_id"])
     if _titles_match(item.get("title") or "", title):
-        return f"✅ 已创建并切换到研究主题「{item['title']}」\n- 主题ID: {item['thread_id']}"
-    return f"ℹ️ 已复用并切换到语义相近的现有主题「{item['title']}」\n- 主题ID: {item['thread_id']}"
+        return f"✅ Created and switched to research topic {item['title']}] \n- Topic ID: {item['thread_id']}"
+    return f"ℹ️ Reused and switched to an existing theme with similar semantics {item['title']}] \n- Topic ID: {item['thread_id']}"
 
 
 @tool
 @register_tool(
     tool_id="create_assistant_subtopic",
     name="创建研究子主题",
-    description="在当前或指定父主题下创建子主题（行业拆公司、公司拆估值等）。返回子主题创建结果、父主题和子主题ID。",
-    when_to_use="当用户说‘在这个主题下新增子主题’、‘在某个行业下面加公司’、‘拆一个子问题出来’时使用。",
+    description="Create subtopics (industry company splits, company split valuations, etc.) under the current or specified parent topic. Returns the child theme creation result, parent theme and child theme ID.",
+    when_to_use="When the user says Add a new subtopic under this topic ,  Add a company under an industry ,  Break out a sub-problem when used.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -314,13 +314,13 @@ async def create_assistant_topic(
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["subtopic_creation", "topic_branching", "research_subdivision", "child_topic_setup"],
-    returns="返回文本消息，包含子主题创建结果、父主题ID和子主题ID。",
+    returns="Returns a text message, including the child topic creation result, parent topic ID, and child topic ID.",
 )
 async def create_assistant_subtopic(
-    title: Annotated[str, "子主题名称，如 宁德时代、估值拆解、风险点"],
-    parent_title: Annotated[Optional[str], "可选，父主题标题；不填时默认挂到当前正在讨论的主题下"] = None,
+    title: Annotated[str, "Subtopic names, such as CATL, valuation breakdown, risk points"],
+    parent_title: Annotated[Optional[str], "Optional, parent topic title; if left blank, it will default to the topic currently being discussed."] = None,
 ) -> str:
-    """创建研究子主题。"""
+    """Create research subtopics."""
     from app.core.database import get_mongo_db
     from app.services.intelligent_assistant_service import create_assistant_thread
 
@@ -332,22 +332,22 @@ async def create_assistant_subtopic(
         return f"❌ {str(exc)}"
 
     if not parent_thread_id:
-        return "❌ 当前没有可用的父主题。请先创建一个研究主题，或明确告诉我要挂到哪个主题下面。"
+        return "❌ There is currently no available parent theme. Please create a research topic first, or tell me explicitly which topic you want to link to."
 
     all_docs = await _load_threads(db, user_id)
     similar_child = _find_matching_thread(all_docs, title, parent_thread_id=parent_thread_id)
     if similar_child:
         return (
-            f"ℹ️ 当前主题下已存在语义相近的子主题「{similar_child.get('title') or title}」，"
-            f"无需重复创建。\n- 子主题ID: {similar_child.get('thread_id')}"
+            f"ℹ️ There are already sub-topics with similar semantics under the current topic {similar_child.get('title') or title}] , "
+            f"No need to re-create.\n- subtopic ID: {similar_child.get('thread_id')}"
         )
 
     item = await create_assistant_thread(db, user_id, title=title, parent_thread_id=parent_thread_id)
     return (
         f"✅ 已创建子主题「{item['title']}」\n"
-        f"- 当前会话仍绑定父主题: {parent_thread_id}\n"
-        f"- 父主题ID: {parent_thread_id}\n"
-        f"- 子主题ID: {item['thread_id']}"
+        f"- The current session is still bound to the parent topic: {parent_thread_id}\n"
+        f"- Parent topic ID: {parent_thread_id}\n"
+        f"- subtopic ID: {item['thread_id']}"
     )
 
 
@@ -355,8 +355,8 @@ async def create_assistant_subtopic(
 @register_tool(
     tool_id="get_current_assistant_topic",
     name="查看当前研究主题",
-    description="查看当前外部会话绑定的研究主题。返回主题名称和主题ID，便于确认后续讨论归属的研究主线。",
-    when_to_use="当用户问当前在聊哪个主题、这个主题是什么、现在挂在哪个研究目录下时使用。",
+    description="View current research topics on external session binding. Return the topic name and topic ID to facilitate confirmation of the main research line to which subsequent discussions belong.",
+    when_to_use="It is used when the user asks which topic they are currently talking about, what this topic is, and which research directory it is currently hanging in.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -366,20 +366,20 @@ async def create_assistant_subtopic(
     tool_role_hint="supporting",
     output_shape="text",
     preferred_for=["current_topic_query", "session_context_check", "active_topic_verification"],
-    returns="返回文本消息，包含当前主题名称和主题ID。",
+    returns="Returns a text message containing the current topic name and topic ID.",
 )
 async def get_current_assistant_topic() -> str:
-    """查看当前外部会话绑定的研究主题。"""
+    """View current research topics on external session binding."""
     from app.core.database import get_mongo_db
 
     user_id = require_current_user_id()
     db = get_mongo_db()
     current_topic = await _get_bound_current_topic_doc(db, user_id)
     if not current_topic:
-        return "ℹ️ 当前外部会话还没有绑定研究主题。你可以先让我创建一个主题，或者明确说“切换到某个主题”。"
+        return "ℹ️ The current external session does not have a research topic bound to it. You can ask me to create a topic first, or explicitly say Switch to a topic . "
     return (
         f"🎯 当前研究主题：{current_topic.get('title') or current_topic.get('thread_id')}\n"
-        f"- 主题ID: {current_topic.get('thread_id')}"
+        f"- Topic ID: {current_topic.get('thread_id')}"
     )
 
 
@@ -387,8 +387,8 @@ async def get_current_assistant_topic() -> str:
 @register_tool(
     tool_id="switch_assistant_topic",
     name="切换当前研究主题",
-    description="将当前会话切换绑定到某个已有研究主题，后续讨论默认指向该主题。返回切换结果和目标主题ID。",
-    when_to_use="当用户明确要求切换到某个主题、继续另一个行业或公司主题、或指定当前会话应绑定到某条研究主线时使用。",
+    description="Bind the current session switch to an existing research topic, and subsequent discussions will be directed to this topic by default. Returns the switching result and target topic ID.",
+    when_to_use="Use when the user explicitly requests to switch to a certain topic, continue with another industry or company topic, or specify that the current session should be bound to a certain line of research.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -398,12 +398,12 @@ async def get_current_assistant_topic() -> str:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["topic_switching", "research_mainline_change", "session_binding_update", "active_topic_selection"],
-    returns="返回文本消息，包含切换结果和目标主题ID。",
+    returns="Returns a text message containing the switch result and target topic ID.",
 )
 async def switch_assistant_topic(
-    title: Annotated[str, "要切换到的主题标题，如 新能源车研究、宁德时代、券商板块研究"],
+    title: Annotated[str, "The topic title to be switched to, such as new energy vehicle research, CATL, securities sector research"],
 ) -> str:
-    """切换当前外部会话绑定的研究主题。"""
+    """Toggles the research topic bound to the current external session."""
     from app.core.database import get_mongo_db
 
     user_id = require_current_user_id()
@@ -414,7 +414,7 @@ async def switch_assistant_topic(
         return f"❌ {str(exc)}"
 
     if not thread_id:
-        return "❌ 没有找到可切换的目标主题。请先创建主题，或提供更精确的主题标题。"
+        return "❌ No switchable target theme found. Please create a topic first, or provide a more precise topic title."
 
     target = await db.assistant_threads.find_one({
         "user_id": user_id,
@@ -422,12 +422,12 @@ async def switch_assistant_topic(
         "archived": {"$ne": True},
     })
     if not target:
-        return "❌ 目标主题不存在或已删除。"
+        return "❌ The target topic does not exist or has been deleted."
 
     await _bind_current_topic(db, user_id, thread_id)
     return (
-        f"✅ 已切换当前研究主题到「{target.get('title') or thread_id}」\n"
-        f"- 主题ID: {thread_id}"
+        f"✅ The current research topic has been switched to {target.get('title') or thread_id}] \n"
+        f"- Topic ID: {thread_id}"
     )
 
 
@@ -435,8 +435,8 @@ async def switch_assistant_topic(
 @register_tool(
     tool_id="delete_assistant_topic",
     name="删除研究主题树",
-    description="删除研究主题及其全部子主题、消息和摘要（默认当前主题或按标题）。返回删除主题数量和主题ID列表。",
-    when_to_use="仅当用户明确要求删除某个研究主题、清理某条研究主线、或删除当前主题及其子主题时使用。涉及破坏性操作，必须在用户明确表达删除意图后调用。",
+    description="Delete a research topic and all its subtopics, messages and abstracts (default current topic or by title). Returns the deleted topic number and topic ID list.",
+    when_to_use="Only used when the user explicitly requests to delete a research topic, clean up a research main line, or delete the current topic and its subtopics. Involves destructive operations and must be called after the user clearly expresses the intention to delete.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -446,12 +446,12 @@ async def switch_assistant_topic(
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["topic_deletion", "research_cleanup", "topic_tree_removal", "theme_removal"],
-    returns="返回文本消息，包含删除结果、删除主题数和删除的主题ID列表。",
+    returns="Returns a text message containing the deletion result, the number of deleted topics, and the list of deleted topic IDs.",
 )
 async def delete_assistant_topic(
-    title: Annotated[Optional[str], "可选，要删除的主题标题；不填时默认删除当前主题"] = None,
+    title: Annotated[Optional[str], "Optional, topic title to be deleted; if left blank, the current topic will be deleted by default"] = None,
 ) -> str:
-    """删除研究主题树。"""
+    """Delete the research topic tree."""
     from app.core.database import get_mongo_db
     from app.services.intelligent_assistant_service import ASSISTANT_DEFAULT_THREAD_ID, delete_assistant_thread
 
@@ -464,9 +464,9 @@ async def delete_assistant_topic(
         return f"❌ {str(exc)}"
 
     if not thread_id:
-        return "❌ 当前没有可删除的目标主题。请先指定主题标题，或在某个主题下再执行删除。"
+        return "❌ There are currently no target topics to delete. Please specify the topic title first, or perform deletion under a certain topic."
     if thread_id == ASSISTANT_DEFAULT_THREAD_ID:
-        return "❌ 默认主题不能删除。请切换到其他主题，或删除默认主题下的子主题。"
+        return "❌ The default theme cannot be deleted. Please switch to another theme or delete the child theme under the default theme."
 
     target = await db.assistant_threads.find_one({
         "user_id": user_id,
@@ -474,7 +474,7 @@ async def delete_assistant_topic(
         "archived": {"$ne": True},
     })
     if not target:
-        return "❌ 目标主题不存在或已删除。"
+        return "❌ The target topic does not exist or has been deleted."
 
     try:
         deleted_ids = await delete_assistant_thread(db, user_id, thread_id)
@@ -489,6 +489,6 @@ async def delete_assistant_topic(
     deleted_count = len(deleted_ids)
     return (
         f"✅ 已删除主题树「{target.get('title') or thread_id}」\n"
-        f"- 删除主题数: {deleted_count}\n"
-        f"- 删除主题ID: {', '.join(deleted_ids)}"
+        f"- Number of topics deleted: {deleted_count}\n"
+        f"- Delete topic ID: {', '.join(deleted_ids)}"
     )

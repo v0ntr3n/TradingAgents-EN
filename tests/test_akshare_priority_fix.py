@@ -1,48 +1,48 @@
 #!/usr/bin/env python3
 """
-测试AKShare数据源优先级修复
-验证AKShare已被设置为第一优先级数据源
+Test AKShare data source priority fix
+Verify that AKShare has been set as the first priority data source
 """
 
 import os
 import sys
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_default_data_source():
-    """测试默认数据源设置"""
-    print("🔧 测试默认数据源设置")
+    """Test default data source settings"""
+    print("🔧 Test default data source settings")
     print("=" * 60)
     
     try:
         from tradingagents.dataflows.data_source_manager import DataSourceManager, ChinaDataSource
         
-        # 创建数据源管理器
+        # Create data source manager
         manager = DataSourceManager()
         
-        print(f"📊 默认数据源: {manager.default_source.value}")
-        print(f"📊 当前数据源: {manager.current_source.value}")
-        print(f"📊 可用数据源: {[s.value for s in manager.available_sources]}")
+        print(f"📊 Default data source: {manager.default_source.value}")
+        print(f"📊 Current data source: {manager.current_source.value}")
+        print(f"📊 Available data sources: {[s.value for s in manager.available_sources]}")
         
-        # 验证默认数据源是AKShare
+        # Verify that the default data source is AKShare
         if manager.default_source == ChinaDataSource.AKSHARE:
-            print("✅ 默认数据源正确设置为AKShare")
+            print("✅ The default data source is correctly set to AKShare")
             return True
         else:
-            print(f"❌ 默认数据源错误: 期望akshare，实际{manager.default_source.value}")
+            print(f"❌ Default data source error: expected akshare, actual{manager.default_source.value}")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_fallback_priority():
-    """测试备用数据源优先级"""
-    print("\n🔧 测试备用数据源优先级")
+    """Test alternative data source priorities"""
+    print("\n🔧 Test alternative data source priorities")
     print("=" * 60)
     
     try:
@@ -50,50 +50,50 @@ def test_fallback_priority():
         
         manager = DataSourceManager()
         
-        # 模拟当前数据源失败，测试备用数据源顺序
-        print("📊 模拟数据源失败，检查备用数据源优先级...")
+        # Simulate current data source failure and test alternate data source sequence
+        print("📊 Simulation data source failed, check backup data source priority...")
         
-        # 检查_try_fallback_sources方法中的fallback_order
-        # 这里我们通过检查源代码来验证
+        # Check the _try_fallback_sources method fallback_order
+        # Here we verify by checking the source code
         import inspect
         source_code = inspect.getsource(manager._try_fallback_sources)
         
         if "ChinaDataSource.AKSHARE" in source_code:
-            # 检查AKShare是否在Tushare之前
+            # Check if AKShare is before Tushare
             akshare_pos = source_code.find("ChinaDataSource.AKSHARE")
             tushare_pos = source_code.find("ChinaDataSource.TUSHARE")
             
             if akshare_pos < tushare_pos and akshare_pos != -1:
-                print("✅ 备用数据源优先级正确: AKShare > Tushare")
+                print("✅ Alternate data source priority is correct: AKShare > Tushare")
                 return True
             else:
-                print("❌ 备用数据源优先级错误: AKShare应该在Tushare之前")
+                print("❌ Alternate data source priority error: AKShare Should be before Tushare")
                 return False
         else:
-            print("❌ 备用数据源配置中未找到AKShare")
+            print("❌ Alternate data source configuration not found AKShare")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_environment_variable_override():
-    """测试环境变量覆盖"""
-    print("\n🔧 测试环境变量覆盖")
+    """Test environment variable coverage"""
+    print("\n🔧 Test environment variable coverage")
     print("=" * 60)
     
     try:
-        # 保存原始环境变量
+        # Save original environment variables
         original_env = os.getenv('DEFAULT_CHINA_DATA_SOURCE')
         
-        # 测试设置为tushare
+        # The test is set to tushare
         os.environ['DEFAULT_CHINA_DATA_SOURCE'] = 'tushare'
         
         from tradingagents.dataflows.data_source_manager import DataSourceManager, ChinaDataSource
         
-        # 重新导入以获取新的环境变量
+        # Re-import to get new environment variables
         import importlib
         import tradingagents.dataflows.data_source_manager as dsm
         importlib.reload(dsm)
@@ -101,13 +101,13 @@ def test_environment_variable_override():
         manager = dsm.DataSourceManager()
         
         if manager.default_source == ChinaDataSource.TUSHARE:
-            print("✅ 环境变量覆盖功能正常")
+            print("✅ Environment variable coverage function is normal")
             result = True
         else:
-            print(f"❌ 环境变量覆盖失败: 期望tushare，实际{manager.default_source.value}")
+            print(f"❌ Environment variable override failed: expected tushare, actual{manager.default_source.value}")
             result = False
         
-        # 恢复原始环境变量
+        # Restore original environment variables
         if original_env:
             os.environ['DEFAULT_CHINA_DATA_SOURCE'] = original_env
         else:
@@ -116,39 +116,39 @@ def test_environment_variable_override():
         return result
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_akshare_availability():
-    """测试AKShare可用性"""
-    print("\n🔧 测试AKShare可用性")
+    """Test AKShare usability"""
+    print("\n🔧 Test AKShare usability")
     print("=" * 60)
     
     try:
         import akshare as ak
-        print(f"✅ AKShare库已安装: v{ak.__version__}")
+        print(f"✅ AKShare Library installed: v{ak.__version__}")
         
-        # 简单测试AKShare功能
-        print("📊 测试AKShare基本功能...")
+        # Simple test AKShare function
+        print("📊 Test AKShare basic functions...")
         
-        # 这里不实际调用API，只测试导入
+        # The API is not actually called here, only the import is tested.
         from tradingagents.dataflows.akshare_utils import get_china_stock_data_akshare
-        print("✅ AKShare工具函数导入成功")
+        print("✅ AKShare Tool function imported successfully")
         
         return True
         
     except ImportError:
-        print("❌ AKShare库未安装")
+        print("❌ AKShare Library not installed")
         return False
     except Exception as e:
-        print(f"❌ AKShare测试失败: {e}")
+        print(f"❌ AKShare test failed: {e}")
         return False
 
 def test_data_source_switching():
-    """测试数据源切换功能"""
-    print("\n🔧 测试数据源切换功能")
+    """Test data source switching function"""
+    print("\n🔧 Test data source switching function")
     print("=" * 60)
     
     try:
@@ -157,83 +157,83 @@ def test_data_source_switching():
         manager = DataSourceManager()
         original_source = manager.current_source
         
-        print(f"📊 原始数据源: {original_source.value}")
+        print(f"📊 original data source: {original_source.value}")
         
-        # 测试切换到不同数据源
+        # Test switching to different data sources
         test_sources = [ChinaDataSource.TUSHARE, ChinaDataSource.BAOSTOCK]
         
         for source in test_sources:
             if source in manager.available_sources:
                 success = manager.set_current_source(source)
                 if success:
-                    print(f"✅ 成功切换到: {source.value}")
+                    print(f"✅ Successfully switched to: {source.value}")
                     current = manager.get_current_source()
                     if current == source:
-                        print(f"✅ 当前数据源确认: {current.value}")
+                        print(f"✅ Confirm current data source: {current.value}")
                     else:
-                        print(f"❌ 数据源切换验证失败")
+                        print(f"❌ Data source switching verification failed")
                         return False
                 else:
-                    print(f"❌ 切换到{source.value}失败")
+                    print(f"❌ switch to{source.value}failed")
                     return False
             else:
-                print(f"⚠️ 数据源{source.value}不可用，跳过测试")
+                print(f"⚠️ data source{source.value}Not available, skip test")
         
-        # 恢复原始数据源
+        # Restore original data source
         manager.set_current_source(original_source)
-        print(f"📊 恢复原始数据源: {original_source.value}")
+        print(f"📊 Restore original data source: {original_source.value}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主测试函数"""
-    print("🧪 AKShare数据源优先级修复验证")
+    """Main test function"""
+    print("🧪 AKShare Data source priority repair verification")
     print("=" * 80)
     
     tests = [
-        ("默认数据源设置", test_default_data_source),
-        ("备用数据源优先级", test_fallback_priority),
-        ("环境变量覆盖", test_environment_variable_override),
-        ("AKShare可用性", test_akshare_availability),
-        ("数据源切换功能", test_data_source_switching),
+        ("Default data source settings", test_default_data_source),
+        ("Alternate data source priority", test_fallback_priority),
+        ("Environment variable override", test_environment_variable_override),
+        ("AKShare Availability", test_akshare_availability),
+        ("Data source switching function", test_data_source_switching),
     ]
     
     results = []
     for test_name, test_func in tests:
-        print(f"\n🔍 执行测试: {test_name}")
+        print(f"\n🔍 Execute tests: {test_name}")
         try:
             result = test_func()
             results.append((test_name, result))
         except Exception as e:
-            print(f"❌ 测试{test_name}异常: {e}")
+            print(f"❌ test{test_name}Abnormal: {e}")
             results.append((test_name, False))
     
-    # 总结结果
+    # Summary results
     print("\n" + "=" * 80)
-    print("📊 测试结果总结:")
+    print("📊 Summary of test results:")
     
     passed = 0
     total = len(results)
     
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"  {test_name}: {status}")
         if result:
             passed += 1
     
-    print(f"\n🎯 总体结果: {passed}/{total} 测试通过")
+    print(f"\n🎯 Overall results: {passed}/{total} Test passed")
     
     if passed == total:
-        print("🎉 所有测试通过！AKShare数据源优先级修复成功！")
+        print("🎉 All tests passed! AKShare data source priority repaired successfully!")
         return True
     else:
-        print("⚠️ 部分测试失败，需要进一步检查。")
+        print("⚠️ Some tests failed and require further inspection.")
         return False
 
 if __name__ == "__main__":

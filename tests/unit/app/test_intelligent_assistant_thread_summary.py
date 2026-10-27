@@ -8,12 +8,12 @@ from core.llm.models import LLMResponse
 
 def test_build_thread_summary_with_llm_prefers_structured_output(monkeypatch):
     messages = [
-        {"role": "user", "content": "宁德时代涨得太多了吧。"},
+        {"role": "user", "content": "It probably rose too much during the Ningde era."},
         {
             "role": "assistant",
             "content": (
-                "数据回来了，咱们用数字说话。短期涨幅偏快，但 RSI 还没到超买，"
-                "更像高位震荡而不是极端泡沫。"
+                "The data is back, let s talk with numbers. The short-term increase is relatively fast, but the RSI is not overbought yet."
+                "More like a high shock than an extreme bubble."
             ),
         },
     ]
@@ -22,10 +22,10 @@ def test_build_thread_summary_with_llm_prefers_structured_output(monkeypatch):
         async def achat(self, messages):
             return LLMResponse(
                 content=(
-                    '{"abstract":"宁德时代短期涨幅偏快，但当前更接近高位强势震荡，尚未出现极端过热信号。",'
-                    '"confirmed_facts":["最新一轮回复已比较价格偏离、RSI 与估值位置","结论偏向短期涨快了，但不是泡沫化极端状态"],'
-                    '"open_questions":["是否要继续看行业景气和后续盈利兑现"],'
-                    '"next_actions":["继续补充行业景气与盈利增速验证","观察后续动能是否继续走弱"],'
+                    '{"abstract":"CATL s short-term gains are relatively fast, but it is currently closer to highs and experiencing strong fluctuations, and no extreme overheating signals have yet appeared.",'
+                    '"confirmed_facts":["The latest round of replies has compared price deviation, RSI and valuation positions","The conclusion is that the short-term rise is rapid, but it is not an extreme state of bubbles."],'
+                    '"open_questions":["Whether we should continue to look at the industry boom and subsequent profit realization"],'
+                    '"next_actions":["Continue to supplement industry prosperity and profit growth verification","Observe whether the subsequent momentum continues to weaken"],'
                     '"focus_score":0.86}'
                 )
             )
@@ -33,19 +33,19 @@ def test_build_thread_summary_with_llm_prefers_structured_output(monkeypatch):
     monkeypatch.setattr(service, "get_coding_llm_config", _async_return(_fake_llm_config()))
     monkeypatch.setattr(service.UnifiedLLMClient, "from_config", lambda config: DummyClient())
 
-    summary = asyncio.run(service._build_thread_summary_with_llm(db=object(), messages=messages, title="宁德时代"))
+    summary = asyncio.run(service._build_thread_summary_with_llm(db=object(), messages=messages, title="Ningde era"))
 
-    assert summary["abstract"] == "宁德时代短期涨幅偏快，但当前更接近高位强势震荡，尚未出现极端过热信号。"
-    assert summary["confirmed_facts"][0] == "最新一轮回复已比较价格偏离、RSI 与估值位置"
-    assert summary["open_questions"] == ["是否要继续看行业景气和后续盈利兑现"]
-    assert summary["next_actions"][0] == "继续补充行业景气与盈利增速验证"
+    assert summary["abstract"] == "CATL s short-term gains are relatively fast, but it is currently closer to highs and experiencing strong fluctuations, and no extreme overheating signals have yet appeared."
+    assert summary["confirmed_facts"][0] == "The latest round of replies has compared price deviation, RSI and valuation positions"
+    assert summary["open_questions"] == ["Whether we should continue to look at the industry boom and subsequent profit realization"]
+    assert summary["next_actions"][0] == "Continue to supplement industry prosperity and profit growth verification"
     assert summary["focus_score"] == 0.86
 
 
 def test_build_thread_summary_with_llm_falls_back_when_llm_fails(monkeypatch):
     messages = [
-        {"role": "user", "content": "宁德时代涨得太多了吧。"},
-        {"role": "assistant", "content": "数据回来了，咱们用数字说话，不靠感觉。整理如下：\n\n## 当前状态\n价格偏离均线较多。"},
+        {"role": "user", "content": "It probably rose too much during the Ningde era."},
+        {"role": "assistant", "content": "The data is back, we use numbers to speak, not feelings. It is organized as follows:\n\n## Current status\n The price deviates more from the moving average."},
     ]
 
     class BrokenClient:
@@ -55,16 +55,16 @@ def test_build_thread_summary_with_llm_falls_back_when_llm_fails(monkeypatch):
     monkeypatch.setattr(service, "get_coding_llm_config", _async_return(_fake_llm_config()))
     monkeypatch.setattr(service.UnifiedLLMClient, "from_config", lambda config: BrokenClient())
 
-    summary = asyncio.run(service._build_thread_summary_with_llm(db=object(), messages=messages, title="宁德时代"))
+    summary = asyncio.run(service._build_thread_summary_with_llm(db=object(), messages=messages, title="Ningde era"))
 
-    assert summary == service._build_thread_summary_from_messages(messages, "宁德时代")
-    assert summary["abstract"].startswith("数据回来了")
+    assert summary == service._build_thread_summary_from_messages(messages, "Ningde era")
+    assert summary["abstract"].startswith("Data is back")
 
 
 def test_build_thread_summary_with_llm_falls_back_when_client_init_fails(monkeypatch):
     messages = [
-        {"role": "user", "content": "宁德时代符合价值投资的概念吗"},
-        {"role": "assistant", "content": "我从估值、盈利质量和现金流三层来拆。"},
+        {"role": "user", "content": "Does CATL conform to the concept of value investing?"},
+        {"role": "assistant", "content": "I break it down from three levels: valuation, earnings quality and cash flow."},
     ]
 
     monkeypatch.setattr(service, "get_coding_llm_config", _async_return(_fake_llm_config()))
@@ -74,9 +74,9 @@ def test_build_thread_summary_with_llm_falls_back_when_client_init_fails(monkeyp
 
     monkeypatch.setattr(service.UnifiedLLMClient, "from_config", _raise_client_error)
 
-    summary = asyncio.run(service._build_thread_summary_with_llm(db=object(), messages=messages, title="宁德时代"))
+    summary = asyncio.run(service._build_thread_summary_with_llm(db=object(), messages=messages, title="Ningde era"))
 
-    assert summary == service._build_thread_summary_from_messages(messages, "宁德时代")
+    assert summary == service._build_thread_summary_from_messages(messages, "Ningde era")
     assert summary["focus_score"] > 0
 
 
@@ -84,15 +84,15 @@ def test_thread_doc_to_item_hides_legacy_raw_abstract_summary():
     item = service._thread_doc_to_item(
         {
             "thread_id": "thr_legacy",
-            "title": "宁德时代",
+            "title": "Ningde era",
             "topic_type": "general",
             "pinned": False,
             "archived": False,
             "message_count": 2,
-            "last_user_message": "宁德时代符合价值投资的概念吗",
+            "last_user_message": "Does CATL conform to the concept of value investing?",
             "report_refs": [],
             "current_summary": {
-                "abstract": "好啦，数据已经齐了。下面我用**价值投资的经典框架**来逐层拆解宁德时代。\n\n---\n\n## 🔍 宁德时代 × 价值投资体检",
+                "abstract": "Okay, the data is complete. Below I use**The classic framework of value investing**Let s dismantle the Ningde era layer by layer.\n\n---\n\n## 🔍 Ningde era × Value investment physical examination",
                 "confirmed_facts": [],
                 "open_questions": [],
                 "next_actions": [],
@@ -105,9 +105,9 @@ def test_thread_doc_to_item_hides_legacy_raw_abstract_summary():
 
 
 def test_store_thread_summary_memory_is_noop(monkeypatch):
-    """契约：主题摘要只保留在 Mongo 线程集合，不再写入 mem0 长期记忆。
+    """Contract: Topic summaries are only kept in the Mongo thread collection and are no longer written to mem0 long-term memory.
 
-    （旧测试断言写入 mem0，但该函数已改为 no-op；保留测试防止行为被意外改回。）
+     (The old test asserted that it was written to mem0, but the function was changed to no-op; retaining the test prevents the behavior from being accidentally changed back. )
     """
     called = {"count": 0}
 
@@ -123,10 +123,10 @@ def test_store_thread_summary_memory_is_noop(monkeypatch):
             db=object(),
             user_id="user-1",
             thread_id="thr-1",
-            title="宁德时代",
+            title="Ningde era",
             summary={
-                "abstract": "宁德时代当前更接近高位震荡而不是极端泡沫。",
-                "confirmed_facts": ["PEG 仍低于 1"],
+                "abstract": "CATL is currently closer to a high level of shock than an extreme bubble.",
+                "confirmed_facts": ["PEG still below 1"],
                 "open_questions": [],
                 "next_actions": [],
                 "focus_score": 0.82,
@@ -147,46 +147,46 @@ def _async_return(value):
 
 class TestSummaryTranscriptBudget:
     def test_total_budget_caps_length_and_keeps_latest(self):
-        """总量封顶 6000 字符，超预算时保留最新消息（旧消息被舍弃）"""
+        """The total amount is capped at 6,000 characters. When the budget is exceeded, the latest messages will be retained (old messages will be discarded)"""
         messages = (
-            [{"role": "user", "content": "老问题" + "甲" * 700}]
+            [{"role": "user", "content": "old question" + "A" * 700}]
             + [
-                {"role": "assistant", "content": f"第{i}条回复" + "乙" * 700}
+                {"role": "assistant", "content": f"No.{i}Replies" + "B" * 700}
                 for i in range(9)
             ]
-            + [{"role": "user", "content": "最新问题" + "丙" * 700}]
-        )  # 共 11 条，每条约 700+ 字符，总计远超 6000
+            + [{"role": "user", "content": "Latest questions" + "C" * 700}]
+        )  # 11 articles in total, each article 700+ characters, totaling well over 6000
 
         text = service._format_messages_for_summary(messages)
 
-        assert len(text) <= 6100  # 允许编号/角色前缀的少量开销
-        assert "最新问题" in text
-        assert "老问题" not in text  # 最老的消息被预算挤出
+        assert len(text) <= 6100  # Allow small overhead for number/role prefixes
+        assert "Latest questions" in text
+        assert "old question" not in text  # The oldest news is squeezed out of the budget
 
     def test_short_conversation_kept_intact(self):
         messages = [
-            {"role": "user", "content": "问界最近销量"},
-            {"role": "assistant", "content": "M9 月销过万"},
+            {"role": "user", "content": "Ask about recent sales"},
+            {"role": "assistant", "content": "M9 Monthly sales exceed 10,000"},
         ]
         text = service._format_messages_for_summary(messages)
-        assert "问界最近销量" in text
-        assert "M9 月销过万" in text
-        # 编号按时间顺序
+        assert "Ask about recent sales" in text
+        assert "M9 Monthly sales exceed 10,000" in text
+        # Numbered in chronological order
         assert text.index("1. [user]") < text.index("2. [assistant]")
 
     def test_empty_content_skipped(self):
         messages = [
             {"role": "user", "content": ""},
-            {"role": "assistant", "content": "有内容"},
+            {"role": "assistant", "content": "There is content"},
         ]
         text = service._format_messages_for_summary(messages)
-        assert "有内容" in text
+        assert "There is content" in text
 
 
 class TestSaveAssistantMessageSummaryScheduling:
     def test_summary_runs_in_background_without_blocking_save(self, monkeypatch):
-        """消息同步落库，摘要 fire-and-forget：save 返回时摘要尚未执行，
-        让出事件循环后后台执行。"""
+        """The message is synchronized and dropped into the database, and the summary fire-and-forget:save has not yet been executed when returning.
+        Execute in the background after leaving the event loop."""
         appended = []
 
         async def fake_append(db, *, user_id, role, content, conversation_id=None, **kw):
@@ -198,7 +198,7 @@ class TestSaveAssistantMessageSummaryScheduling:
 
         async def fake_summarize(db, user_id, conversation_id=None, summary_type="manual"):
             summary_started.set()
-            # 模拟 LLM 摘要耗时；关键路径不应等待它
+            # Simulating the LLM summary is time consuming; the critical path should not wait for it
             await asyncio.sleep(0.05)
             summary_done.set()
 
@@ -209,16 +209,16 @@ class TestSaveAssistantMessageSummaryScheduling:
             await service.save_assistant_message(
                 db=object(),
                 user_id="u1",
-                user_content="问界销量",
-                assistant_content="M9 过万",
+                user_content="Ask about sales volume",
+                assistant_content="M9 Over ten thousand",
                 tools_used=["dongchedi_x"],
                 conversation_id=None,
             )
-            # save 已返回：两条消息同步落库……
+            # save Returned: Two messages are dropped into the database simultaneously……
             assert appended == ["user", "assistant"]
-            # ……但摘要仍在后台排队/执行中（未阻塞 save）
+            # ……But the digest is still being queued/executed in the background (save is not blocked)
             assert not summary_done.is_set()
-            # 等待后台任务跑完
+            # Wait for the background task to finish
             await asyncio.wait_for(summary_done.wait(), timeout=2)
             assert summary_started.is_set()
 

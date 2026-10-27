@@ -1,14 +1,14 @@
 """
-Skill 导入与测试验证 API 验收测试
+Skill Import and test verification API acceptance testing
 
-覆盖:
-- POST /api/skills/import                  本地 SKILL.md 内容导入
-- POST /api/skills/import-url              URL 导入
-- POST /api/skills/test                    Skill 沙箱测试
-- GET  /api/skills/github/repo/{owner}/{repo} GitHub 仓库 Skill 浏览
-- POST /api/skills/import-github           从 GitHub 导入并测试
-- GET  /api/skills/smithery/servers        Smithery MCP Server 列表
-- GET  /api/skill-center/skills            统一 Skill 中心列表（验证注册）
+Cover:
+- POST /api/skills/import                  Local SKILL.md content import
+- POST /api/skills/import-url              URL import
+- POST /api/skills/test                    Skill sandbox testing
+- GET  /api/skills/github/repo/{owner}/{repo} GitHub Warehouse Skill Browse
+- POST /api/skills/import-github           Import from GitHub and test
+- GET  /api/skills/smithery/servers        Smithery MCP Server list
+- GET  /api/skill-center/skills            Unified Skill Center List (Verify Registration)
 """
 import pytest
 
@@ -16,14 +16,14 @@ import pytest
 SAMPLE_SKILL_MD = """---
 name: test-hello-skill
 version: "1.0.0"
-description: 用于验收测试的示例 Skill
+description: Example for acceptance testing Skill
 author: acceptance-test
 category: test
 tags: [test]
 parameters:
   - name: name
     type: string
-    description: 名称
+    description: Name
     required: false
 implementation:
   type: python
@@ -37,68 +37,68 @@ implementation:
     print("__SANDBOX_OUTPUT_END__")
 ---
 
-这是一个用于验收测试的 Skill，导入后会自动注册到 ToolRegistry。
+This is a Skill used for acceptance testing and will be automatically registered to ToolRegistry after import.
 """
 
 
 class TestSkillImport:
-    """Skill 导入与测试。"""
+    """Skill Import and test."""
 
     def test_import_skill_from_content(self, api_client):
-        """从内容导入 Skill。"""
+        """Import Skills from content."""
         resp = api_client.post("/api/skills/import", json={"content": SAMPLE_SKILL_MD})
-        assert resp.status_code in (200, 400), f"导入异常: {resp.status_code} {resp.text}"
+        assert resp.status_code in (200, 400), f"Import exception: {resp.status_code} {resp.text}"
         if resp.status_code == 200:
             data = resp.json()
             assert data["name"] == "test-hello-skill"
 
     def test_test_skill_with_args(self, api_client):
-        """测试已导入的 Skill 并传入参数。"""
+        """Test the imported Skill and pass in the parameters."""
         resp = api_client.post("/api/skills/test", json={
             "skill_name": "test-hello-skill",
             "args": {"name": "trading"}
         })
-        assert resp.status_code == 200, f"测试失败: {resp.status_code} {resp.text}"
+        assert resp.status_code == 200, f"test failed: {resp.status_code} {resp.text}"
         data = resp.json()
         assert data["success"] is True
         assert data["result"]["message"] == "hello trading"
 
     def test_skill_appears_in_skill_center(self, api_client):
-        """导入的 Skill 出现在统一 Skill 中心。"""
+        """The imported skill appears in the Unified Skill Center."""
         resp = api_client.get("/api/skill-center/skills")
-        assert resp.status_code == 200, f"获取 Skill 中心失败: {resp.status_code} {resp.text}"
+        assert resp.status_code == 200, f"Failed to get Skill Center: {resp.status_code} {resp.text}"
         skills = resp.json()
         skill_ids = [s["skill_id"] for s in skills]
-        assert "test-hello-skill" in skill_ids, f"导入的 Skill 未出现在 Skill 中心: {skill_ids}"
+        assert "test-hello-skill" in skill_ids, f"The imported skill does not appear in the Skill Center: {skill_ids}"
 
     def test_import_skill_already_exists(self, api_client):
-        """重复导入同一个 Skill 应返回 400。"""
+        """Repeated imports of the same Skill should return 400."""
         resp = api_client.post("/api/skills/import", json={"content": SAMPLE_SKILL_MD})
-        assert resp.status_code == 400, f"重复导入应失败: {resp.status_code} {resp.text}"
+        assert resp.status_code == 400, f"Repeated imports should fail: {resp.status_code} {resp.text}"
 
     def test_github_repo_skills_browse(self, api_client):
-        """GitHub 仓库浏览接口可用（使用示例仓库）。"""
-        # 使用一个不依赖网络稳定性的公开示例仓库；接口成功返回结构即可
+        """GitHub A repository browsing interface is available (using the sample repository)."""
+        # Use a public example repository that does not rely on network stability; the interface can successfully return the structure
         resp = api_client.get("/api/skills/github/repo/modelcontextprotocol/servers")
-        # 该仓库可能没有 SKILL.md，但接口本身应正常返回
-        assert resp.status_code in (200, 404), f"GitHub 浏览接口异常: {resp.status_code} {resp.text}"
+        # The repository may not have SKILL.md, but the interface itself should return normally
+        assert resp.status_code in (200, 404), f"GitHub Browsing interface exception: {resp.status_code} {resp.text}"
 
     def test_smithery_servers_list(self, api_client):
-        """Smithery MCP Server 列表接口可用。"""
+        """Smithery MCP Server A list interface is available."""
         resp = api_client.get("/api/skills/smithery/servers")
-        assert resp.status_code in (200, 500), f"Smithery 接口异常: {resp.status_code} {resp.text}"
+        assert resp.status_code in (200, 500), f"Smithery Interface exception: {resp.status_code} {resp.text}"
         if resp.status_code == 200:
             data = resp.json()
             assert isinstance(data, list)
 
 
 class TestSkillTestFailures:
-    """Skill 测试失败场景。"""
+    """Skill Test failure scenario."""
 
     def test_test_nonexistent_skill(self, api_client):
-        """测试不存在的 Skill 返回 404。"""
+        """Testing a non-existent Skill returns 404."""
         resp = api_client.post("/api/skills/test", json={
             "skill_name": "skill-not-exists-xyz",
             "args": {}
         })
-        assert resp.status_code == 404, f"应返回 404: {resp.status_code} {resp.text}"
+        assert resp.status_code == 404, f"should return 404: {resp.status_code} {resp.text}"

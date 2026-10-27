@@ -1,7 +1,7 @@
-"""使用问答机器人工具：查询用户当前状态。
+"""Use the Q&A robot tool: query the user s current status.
 
-提供查询当前用户的关注列表股票数、历史任务数、最近任务、定时分析配置数等能力，
-让使用问答助手能"看到"用户当前真实状态，而非凭 FAQ 猜答案。
+Provides the ability to query the current user s watch list stocks, historical tasks, recent tasks, scheduled analysis configurations, etc.
+Allows using Q&A Assistant to"see"The user s current status, rather than guessing the answer based on the FAQ.
 """
 
 import logging
@@ -28,7 +28,7 @@ def _is_valid_object_id(user_id: str) -> bool:
 
 
 async def _count_user_favorites(db, user_id: str) -> tuple[int, List[Dict[str, Any]]]:
-    """返回 (关注列表股票数, 前 5 条股票名)"""
+    """Return (Number of stocks on watch list, Top 5 stock names)"""
     try:
         if _is_valid_object_id(user_id):
             from bson import ObjectId
@@ -47,14 +47,14 @@ async def _count_user_favorites(db, user_id: str) -> tuple[int, List[Dict[str, A
         ]
         return count, preview
     except Exception as exc:
-        logger.warning("[get_user_current_state] 查询关注列表失败: %s", exc)
+        logger.warning("[get_user_current_state] Failed to query watchlist: %s", exc)
         return -1, []
 
 
 async def _count_user_tasks(db, user_id: str) -> tuple[int, int, List[Dict[str, Any]]]:
-    """返回 (任务总数, 失败任务数, 最近 5 条任务摘要)"""
+    """Return (total number of tasks, Number of failed tasks, Summary of the last 5 tasks)"""
     try:
-        # unified_analysis_tasks 集合 user_id 可能是字符串或 ObjectId
+        # unified_analysis_tasks The collection user_id may be a string or ObjectId
         query: Dict[str, Any] = {"user_id": user_id}
         total = await db.unified_analysis_tasks.count_documents(query)
         if total == 0 and _is_valid_object_id(user_id):
@@ -93,17 +93,17 @@ async def _count_user_tasks(db, user_id: str) -> tuple[int, int, List[Dict[str, 
             })
         return total, failed, preview
     except Exception as exc:
-        logger.warning("[get_user_current_state] 查询任务失败: %s", exc)
+        logger.warning("[get_user_current_state] Query task failed: %s", exc)
         return -1, 0, []
 
 
 async def _count_scheduled(db, user_id: str) -> int:
-    """返回启用中的定时分析配置数"""
+    """Returns the number of enabled scheduled analysis configurations"""
     try:
         count = await db.scheduled_analysis_configs.count_documents({"user_id": user_id, "enabled": True})
         return count
     except Exception as exc:
-        logger.warning("[get_user_current_state] 查询定时分析配置失败: %s", exc)
+        logger.warning("[get_user_current_state] Query timing analysis configuration failed: %s", exc)
         return -1
 
 
@@ -111,7 +111,7 @@ async def _count_scheduled(db, user_id: str) -> int:
 @register_tool(
     tool_id="get_user_current_state",
     name="获取用户当前状态",
-    description="查询当前用户的关注列表股票数、历史任务总数、最近任务执行情况、定时分析配置数。当用户问'我的任务在哪''关注列表里有几只股票''今日任务为什么是0'等问题时使用。",
+    description="Query the number of stocks in the current user s watch list, the total number of historical tasks, the execution status of recent tasks, and the number of scheduled analysis configurations. When the user asks'where is my mission''How many stocks are on the watch list?''Why is today s task 0'Use it when you have questions.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
@@ -121,11 +121,11 @@ async def _count_scheduled(db, user_id: str) -> int:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["查询关注列表数量", "查看任务总数", "今日任务为什么是0", "最近任务执行情况"],
-    when_to_use="当用户问到自己当前状态（关注列表数/任务数/定时分析配置）时使用。",
-    returns="返回文本格式的用户状态摘要，包含关注列表股票数、任务总数、失败任务数、最近 5 条任务和定时分析配置数。",
+    when_to_use="Used when the user asks about his current status (number of watch lists/number of tasks/scheduled analysis configuration).",
+    returns="Returns a user status summary in text format, including the number of watch list stocks, total number of tasks, number of failed tasks, the last 5 tasks and the number of scheduled analysis configurations.",
 )
 async def get_user_current_state() -> str:
-    """获取当前用户的系统状态摘要。"""
+    """Get a summary of the current user s system status."""
     from app.core.database import get_mongo_db
 
     user_id = require_current_user_id()
@@ -141,11 +141,11 @@ async def get_user_current_state() -> str:
         if fav_preview:
             lines.append(f"  前 5 只: {', '.join(fav_preview)}")
     else:
-        lines.append("- 关注列表股票数: 查询失败")
+        lines.append("- Number of stocks on watch list: Query failed")
 
     if task_total >= 0:
         lines.append(f"- 历史任务总数: {task_total}")
-        lines.append(f"- 最近 5 条任务中失败数: {task_failed}")
+        lines.append(f"- Number of failures in the last 5 tasks: {task_failed}")
         for t in task_recent:
             err_hint = f" ❌错误: {t['error']}" if t.get("error") else ""
             lines.append(f"  • {t['symbol']} | {t['task_type']} | {t['status']} | {t['created_at']}{err_hint}")
@@ -153,8 +153,8 @@ async def get_user_current_state() -> str:
         lines.append("- 历史任务: 查询失败")
 
     if scheduled_count >= 0:
-        lines.append(f"- 启用中的定时分析配置: {scheduled_count}")
+        lines.append(f"- Enabling scheduled analysis configuration: {scheduled_count}")
     else:
-        lines.append("- 定时分析配置: 查询失败")
+        lines.append("- Timing analysis configuration: Query failed")
 
     return "\n".join(lines)

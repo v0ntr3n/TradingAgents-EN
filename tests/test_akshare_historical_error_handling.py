@@ -71,7 +71,7 @@ def test_get_historical_data_raises_network_error_when_primary_and_fallback_both
             asyncio.run(provider.get_historical_data("300750", "2026-04-01", "2026-04-29"))
             assert False, "expected AKShareNetworkError"
         except AKShareNetworkError as exc:
-            assert "300750 网络连接中断" in str(exc)
+            assert "300750 Network connection interrupted" in str(exc)
 
 
 def test_build_single_historical_sync_result_prefers_real_error_message():
@@ -79,11 +79,11 @@ def test_build_single_historical_sync_result_prefers_real_error_message():
         "success_count": 0,
         "error_count": 1,
         "total_records": 0,
-        "errors": [{"error": "300750 网络连接中断，建议稍后重试或减小时间范围"}],
+        "errors": [{"error": "300750 The network connection is interrupted. It is recommended to try again later or reduce the time range."}],
     })
 
     assert result == {
         "success": False,
         "records": 0,
-        "error": "300750 网络连接中断，建议稍后重试或减小时间范围"
+        "error": "300750 The network connection is interrupted. It is recommended to try again later or reduce the time range."
     }

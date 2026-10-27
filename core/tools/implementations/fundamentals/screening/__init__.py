@@ -1,4 +1,4 @@
-"""多因子选股工具。"""
+"""Multi-factor stock picking tool."""
 
 from .multi_factor_screening import get_multi_factor_screening
 

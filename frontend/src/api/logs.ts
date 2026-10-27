@@ -1,5 +1,5 @@
 /**
- * 日志管理 API
+ * Log management API
  */
 
 import { ApiClient } from './request'
@@ -53,21 +53,21 @@ export interface LogExportRequest {
 
 export const LogsApi = {
   /**
-   * 获取日志文件列表
+   * Get a list of log files
    */
   listLogFiles(): Promise<LogFileInfo[]> {
     return ApiClient.get('/api/system/system-logs/files').then((response: any) => response.data ?? response)
   },
 
   /**
-   * 读取日志文件内容
+   * Read log file contents
    */
   readLogFile(request: LogReadRequest): Promise<LogContentResponse> {
     return ApiClient.post('/api/system/system-logs/read', request).then((response: any) => response.data ?? response)
   },
 
   /**
-   * 导出日志文件
+   * Export log file
    */
   async exportLogs(request: LogExportRequest): Promise<Blob> {
     const response = await ApiClient.post('/api/system/system-logs/export', request, {
@@ -77,14 +77,14 @@ export const LogsApi = {
   },
 
   /**
-   * 获取日志统计信息
+   * Get log statistics
    */
   getStatistics(days: number = 7): Promise<LogStatistics> {
     return ApiClient.get('/api/system/system-logs/statistics', { params: { days } }).then((response: any) => response.data ?? response)
   },
 
   /**
-   * 删除日志文件
+   * Delete log files
    */
   deleteLogFile(filename: string): Promise<{ success: boolean; message: string }> {
     return ApiClient.delete(`/api/system/system-logs/files/${filename}`)

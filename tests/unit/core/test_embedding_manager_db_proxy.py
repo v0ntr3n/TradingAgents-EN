@@ -51,7 +51,7 @@ class _FakeSyncDb:
             docs=[
                 {
                     "name": "dashscope",
-                    "display_name": "阿里云通义千问",
+                    "display_name": "Alibaba Cloud Tongyi Qianwen",
                     "api_key": "test-key",
                     "default_base_url": "https://dashscope.aliyuncs.com/api/v1",
                     "embedding_model": "text-embedding-v3",

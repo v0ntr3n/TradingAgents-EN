@@ -1,13 +1,13 @@
 """
-多市场股票API路由
-支持A股、港股、美股的统一查询接口
+Multi-market stock API routing
+Supports unified query interface for A-shares, Hong Kong stocks, and US stocks
 
-功能：
-1. 跨市场股票信息查询
-2. 多数据源优先级查询
-3. 统一的响应格式
+Function:
+1. Cross-market stock information query
+2. Multiple data source priority query
+3. Unified response format
 
-路径前缀: /api/markets
+path prefix: /api/markets
 """
 from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/markets", tags=["multi-market"])
 @router.get("", response_model=dict)
 async def get_supported_markets(current_user: dict = Depends(get_current_user)):
     """
-    获取支持的市场列表
+    Get a list of supported markets
     
     Returns:
         {
@@ -35,7 +35,7 @@ async def get_supported_markets(current_user: dict = Depends(get_current_user)):
                 "markets": [
                     {
                         "code": "CN",
-                        "name": "A股",
+                        "name": "A shares",
                         "name_en": "China A-Shares",
                         "currency": "CNY",
                         "timezone": "Asia/Shanghai"
@@ -48,7 +48,7 @@ async def get_supported_markets(current_user: dict = Depends(get_current_user)):
     markets = [
         {
             "code": "CN",
-            "name": "A股",
+            "name": "A shares",
             "name_en": "China A-Shares",
             "currency": "CNY",
             "timezone": "Asia/Shanghai",
@@ -56,7 +56,7 @@ async def get_supported_markets(current_user: dict = Depends(get_current_user)):
         },
         {
             "code": "HK",
-            "name": "港股",
+            "name": "Hong Kong stocks",
             "name_en": "Hong Kong Stocks",
             "currency": "HKD",
             "timezone": "Asia/Hong_Kong",
@@ -64,7 +64,7 @@ async def get_supported_markets(current_user: dict = Depends(get_current_user)):
         },
         {
             "code": "US",
-            "name": "美股",
+            "name": "US stocks",
             "name_en": "US Stocks",
             "currency": "USD",
             "timezone": "America/New_York",
@@ -78,17 +78,17 @@ async def get_supported_markets(current_user: dict = Depends(get_current_user)):
 @router.get("/{market}/stocks/search", response_model=dict)
 async def search_stocks(
     market: str,
-    q: str = Query(..., description="搜索关键词（代码或名称）"),
-    limit: int = Query(20, ge=1, le=100, description="返回结果数量"),
+    q: str = Query(..., description="Search keyword (code or name)"),
+    limit: int = Query(20, ge=1, le=100, description="Number of results returned"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    搜索股票（支持多市场）
+    Search for stocks (multi-market supported)
     
     Args:
-        market: 市场类型 (CN/HK/US)
-        q: 搜索关键词
-        limit: 返回结果数量
+        market: market type (CN/HK/US)
+        q: Search keywords
+        limit: Number of results returned
     
     Returns:
         {
@@ -97,7 +97,7 @@ async def search_stocks(
                 "stocks": [
                     {
                         "code": "00700",
-                        "name": "腾讯控股",
+                        "name": "Tencent Holdings",
                         "name_en": "Tencent Holdings",
                         "market": "HK",
                         "source": "yfinance",
@@ -112,7 +112,7 @@ async def search_stocks(
     if market not in ["CN", "HK", "US"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"不支持的市场类型: {market}"
+            detail=f"Unsupported market type: {market}"
         )
     
     db = get_mongo_db()
@@ -125,10 +125,10 @@ async def search_stocks(
             "total": len(results)
         })
     except Exception as e:
-        logger.error(f"❌ 搜索股票失败: market={market}, q={q}, error={e}", exc_info=True)
+        logger.error(f"❌ Stock search failed: market={market}, q={q}, error={e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"搜索失败: {str(e)}"
+            detail=f"Search failed: {str(e)}"
         )
 
 
@@ -136,23 +136,23 @@ async def search_stocks(
 async def get_stock_info(
     market: str,
     code: str,
-    source: Optional[str] = Query(None, description="指定数据源（可选）"),
+    source: Optional[str] = Query(None, description="Specify data source (optional)"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取股票基础信息（支持多市场、多数据源）
+    Obtain basic stock information (supports multiple markets and multiple data sources)
     
     Args:
-        market: 市场类型 (CN/HK/US)
-        code: 股票代码
-        source: 指定数据源（可选，不指定则按优先级自动选择）
+        market: market type (CN/HK/US)
+        code: Stock code
+        source: Specify the data source (optional, if not specified, it will be automatically selected according to priority)
     
     Returns:
         {
             "success": true,
             "data": {
                 "code": "00700",
-                "name": "腾讯控股",
+                "name": "Tencent Holdings",
                 "name_en": "Tencent Holdings",
                 "market": "HK",
                 "source": "yfinance",
@@ -169,7 +169,7 @@ async def get_stock_info(
     if market not in ["CN", "HK", "US"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"不支持的市场类型: {market}"
+            detail=f"Unsupported market type: {market}"
         )
     
     db = get_mongo_db()
@@ -181,17 +181,17 @@ async def get_stock_info(
         if not stock_info:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"未找到股票: {market}:{code}"
+                detail=f"No stock found: {market}:{code}"
             )
         
         return ok(data=stock_info)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ 获取股票信息失败: market={market}, code={code}, error={e}", exc_info=True)
+        logger.error(f"❌ Failed to obtain stock information: market={market}, code={code}, error={e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取股票信息失败: {str(e)}"
+            detail=f"Failed to obtain stock information: {str(e)}"
         )
 
 
@@ -202,11 +202,11 @@ async def get_stock_quote(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取股票实时行情（支持多市场）
+    Get real-time stock quotes (supports multiple markets)
     
     Args:
-        market: 市场类型 (CN/HK/US)
-        code: 股票代码
+        market: market type (CN/HK/US)
+        code: Stock code
     
     Returns:
         {
@@ -230,7 +230,7 @@ async def get_stock_quote(
     if market not in ["CN", "HK", "US"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"不支持的市场类型: {market}"
+            detail=f"Unsupported market type: {market}"
         )
     
     db = get_mongo_db()
@@ -242,17 +242,17 @@ async def get_stock_quote(
         if not quote:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"未找到股票行情: {market}:{code}"
+                detail=f"No stock quotes found: {market}:{code}"
             )
         
         return ok(data=quote)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ 获取股票行情失败: market={market}, code={code}, error={e}", exc_info=True)
+        logger.error(f"❌ Failed to get stock quotes: market={market}, code={code}, error={e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取股票行情失败: {str(e)}"
+            detail=f"Failed to get stock quotes: {str(e)}"
         )
 
 
@@ -260,20 +260,20 @@ async def get_stock_quote(
 async def get_stock_daily_quotes(
     market: str,
     code: str,
-    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
-    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
-    limit: int = Query(100, ge=1, le=1000, description="返回记录数"),
+    start_date: Optional[str] = Query(None, description="start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="end date (YYYY-MM-DD)"),
+    limit: int = Query(100, ge=1, le=1000, description="Return the number of records"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取股票历史K线数据（支持多市场）
+    Obtain stock historical K-line data (supports multiple markets)
     
     Args:
-        market: 市场类型 (CN/HK/US)
-        code: 股票代码
-        start_date: 开始日期
-        end_date: 结束日期
-        limit: 返回记录数
+        market: market type (CN/HK/US)
+        code: Stock code
+        start_date: start date
+        end_date: end date
+        limit: Return the number of records
     
     Returns:
         {
@@ -301,7 +301,7 @@ async def get_stock_daily_quotes(
     if market not in ["CN", "HK", "US"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"不支持的市场类型: {market}"
+            detail=f"Unsupported market type: {market}"
         )
     
     db = get_mongo_db()
@@ -319,9 +319,9 @@ async def get_stock_daily_quotes(
             "total": len(quotes)
         })
     except Exception as e:
-        logger.error(f"❌ 获取历史K线失败: market={market}, code={code}, error={e}", exc_info=True)
+        logger.error(f"❌ Failed to obtain historical K-line: market={market}, code={code}, error={e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取历史K线失败: {str(e)}"
+            detail=f"Failed to obtain historical K-line: {str(e)}"
         )
 

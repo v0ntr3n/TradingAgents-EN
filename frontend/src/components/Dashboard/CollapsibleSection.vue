@@ -13,7 +13,7 @@
         <el-tag v-if="badge" size="small" :type="badgeType" effect="light">{{ badge }}</el-tag>
       </div>
       <div class="header-right">
-        <span class="expand-text">{{ isExpanded ? '收起' : '展开' }}</span>
+        <span class="expand-text">{{ isExpanded ? 'close' : 'Expand' }}</span>
       </div>
     </div>
 
@@ -51,7 +51,7 @@ const toggleExpand = () => {
     try {
       localStorage.setItem(props.storageKey, String(isExpanded.value))
     } catch (e) {
-      console.warn('localStorage 写入失败:', e)
+      console.warn('localStorage Write failed:', e)
     }
   }
 }
@@ -68,7 +68,7 @@ onMounted(() => {
         isExpanded.value = saved === 'true'
       }
     } catch (e) {
-      console.warn('localStorage 读取失败:', e)
+      console.warn('localStorage Read failed:', e)
     }
   }
 })

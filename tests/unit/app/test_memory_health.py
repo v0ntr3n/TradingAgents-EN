@@ -15,7 +15,7 @@ def test_memory_health_returns_503_when_mem0_unavailable(monkeypatch):
         async def health_check(self):
             return {
                 "ok": False,
-                "error": "缺少 LLM API Key，mem0 记忆层不可用",
+                "error": "Missing LLM API Key, mem0 memory layer is unavailable",
             }
 
     monkeypatch.setattr("core.memory.service.get_memory_service", lambda db: DummyMemoryService())
@@ -26,7 +26,7 @@ def test_memory_health_returns_503_when_mem0_unavailable(monkeypatch):
     assert response.status_code == 503
     assert payload["success"] is False
     assert payload["data"]["ok"] is False
-    assert payload["message"] == "缺少 LLM API Key，mem0 记忆层不可用"
+    assert payload["message"] == "Missing LLM API Key, mem0 memory layer is unavailable"
 
 
 def test_memory_health_returns_200_when_mem0_available(monkeypatch):
@@ -84,7 +84,7 @@ def test_memory_service_health_check_builds_mem0_config_once(monkeypatch):
     class DummyAsyncMemory:
         @staticmethod
         def from_config(_config):
-            raise AssertionError("缺少 LLM API Key 时不应真正初始化 AsyncMemory")
+            raise AssertionError("Should not actually initialize when LLM API Key is missing AsyncMemory")
 
     dummy_mem0.AsyncMemory = DummyAsyncMemory
 
@@ -96,7 +96,7 @@ def test_memory_service_health_check_builds_mem0_config_once(monkeypatch):
 
     assert build_calls["count"] == 1
     assert result["ok"] is False
-    assert result["error"] == "缺少 LLM API Key，mem0 记忆层不可用"
+    assert result["error"] == "Missing LLM API Key, mem0 memory layer is unavailable"
     assert result["diagnostics"]["llm"]["has_api_key"] is False
 
 

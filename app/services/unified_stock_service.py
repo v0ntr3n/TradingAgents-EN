@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-统一股票数据服务（跨市场，支持多数据源）
+Unified stock data service (cross-market, supports multiple data sources)
 
-功能：
-1. 跨市场数据访问（A股/港股/美股）
-2. 多数据源优先级查询
-3. 统一的查询接口
+Function:
+1. Cross-market data access (A shares/Hong Kong stocks/US stocks)
+2. Multiple data source priority query
+3. Unified query interface
 
-设计说明：
-- 参考A股多数据源设计
-- 同一股票可有多个数据源记录
-- 通过 (code, source) 联合查询
-- 数据源优先级从数据库配置读取
+Design description:
+- Reference A-share multi-data source design
+- The same stock can have multiple data source records
+- Pass (code, source) Union query
+- Data source priority is read from database configuration
 """
 
 import logging
@@ -23,12 +23,12 @@ logger = logging.getLogger("webapi")
 
 
 class UnifiedStockService:
-    """统一股票数据服务（跨市场，支持多数据源）"""
+    """Unified stock data service (cross-market, supports multiple data sources)"""
 
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         
-        # 集合映射
+        # Collection mapping
         self.collection_map = {
             "CN": {
                 "basic_info": "stock_basic_info",
@@ -53,9 +53,9 @@ class UnifiedStockService:
             },
             "ETF": {
                 "basic_info": "etf_basic_info",
-                "quotes": "market_quotes",  # ETF 与 A 股共用实时行情
+                "quotes": "market_quotes",  # ETF Share real-time quotes with A-shares
                 "daily": "etf_daily_quotes",
-                "financial": None,  # ETF 无 PE/PB/ROE
+                "financial": None,  # ETF None PE/PB/ROE
                 "news": "stock_news"
             }
         }
@@ -67,27 +67,27 @@ class UnifiedStockService:
         source: Optional[str] = None
     ) -> Optional[Dict]:
         """
-        获取股票基础信息（支持多数据源）
+        Obtain basic stock information (supports multiple data sources)
         
         Args:
-            market: 市场类型 (CN/HK/US)
-            code: 股票代码
-            source: 指定数据源（可选）
+            market: market type (CN/HK/US)
+            code: Stock code
+            source: Specify data source (optional)
         
         Returns:
-            股票基础信息字典
+            Dictionary of basic stock information
         """
         collection_name = self.collection_map[market]["basic_info"]
         collection = self.db[collection_name]
         
         if source:
-            # 指定数据源
+            # Specify data source
             query = {"code": code, "source": source}
             doc = await collection.find_one(query, {"_id": 0})
             if doc:
                 logger.debug(f"✅ 使用指定数据源: {source}")
         else:
-            # 🔥 按优先级查询（参考A股设计）
+            # 🔥 Query by priority (refer to A-share design)
             source_priority = await self._get_source_priority(market)
             doc = None
             
@@ -98,23 +98,23 @@ class UnifiedStockService:
                     logger.debug(f"✅ 使用数据源: {src} (优先级查询)")
                     break
             
-            # 如果没有找到，尝试不指定source查询（兼容旧数据）
+            # If not found, try query without specifying source (compatible with old data)
             if not doc:
                 doc = await collection.find_one({"code": code}, {"_id": 0})
                 if doc:
-                    logger.debug(f"✅ 使用默认数据源（兼容模式）")
+                    logger.debug(f"✅ Use default data source (compatibility mode)")
         
         return doc
 
     async def _get_source_priority(self, market: str) -> List[str]:
         """
-        从数据库获取数据源优先级
+        Get data source priority from database
         
         Args:
-            market: 市场类型 (CN/HK/US/ETF)
+            market: market type (CN/HK/US/ETF)
         
         Returns:
-            数据源优先级列表
+            Data source priority list
         """
         if market == "ETF":
             return ["akshare"]
@@ -128,7 +128,7 @@ class UnifiedStockService:
         market_category_id = market_category_map.get(market)
         
         try:
-            # 从 datasource_groupings 集合查询
+            # Query from datasource_groupings collection
             groupings = await self.db.datasource_groupings.find({
                 "market_category_id": market_category_id,
                 "enabled": True
@@ -136,12 +136,12 @@ class UnifiedStockService:
             
             if groupings:
                 priority_list = [g["data_source_name"] for g in groupings]
-                logger.debug(f"📊 {market} 数据源优先级（从数据库）: {priority_list}")
+                logger.debug(f"📊 {market} Data source priority (from database): {priority_list}")
                 return priority_list
         except Exception as e:
-            logger.warning(f"⚠️ 从数据库读取数据源优先级失败: {e}")
+            logger.warning(f"⚠️ Failed to read data source priority from database: {e}")
         
-        # 默认优先级
+        # Default priority
         default_priority = {
             "CN": ["tushare", "akshare", "baostock"],
             "HK": ["yfinance_hk", "akshare_hk"],
@@ -153,14 +153,14 @@ class UnifiedStockService:
 
     async def get_stock_quote(self, market: str, code: str) -> Optional[Dict]:
         """
-        获取实时行情
+        Get real-time quotes
         
         Args:
-            market: 市场类型 (CN/HK/US)
-            code: 股票代码
+            market: market type (CN/HK/US)
+            code: Stock code
         
         Returns:
-            实时行情字典
+            Real-time Quote Dictionary
         """
         collection_name = self.collection_map[market]["quotes"]
         collection = self.db[collection_name]
@@ -173,20 +173,20 @@ class UnifiedStockService:
         limit: int = 20
     ) -> List[Dict]:
         """
-        搜索股票（去重，只返回每个股票的最优数据源）
+        Search for stocks (remove duplication, only return the optimal data source for each stock)
         
         Args:
-            market: 市场类型 (CN/HK/US)
-            query: 搜索关键词
-            limit: 返回数量限制
+            market: market type (CN/HK/US)
+            query: Search keywords
+            limit: Return quantity limit
         
         Returns:
-            股票列表
+            stock list
         """
         collection_name = self.collection_map[market]["basic_info"]
         collection = self.db[collection_name]
 
-        # 支持代码和名称搜索
+        # Supports code and name search
         filter_query = {
             "$or": [
                 {"code": {"$regex": query, "$options": "i"}},
@@ -195,14 +195,14 @@ class UnifiedStockService:
             ]
         }
 
-        # 查询所有匹配的记录
+        # Query all matching records
         cursor = collection.find(filter_query)
         all_results = await cursor.to_list(length=None)
         
         if not all_results:
             return []
         
-        # 按 code 分组，每个 code 只保留优先级最高的数据源
+        # Grouped by code, each code only retains the highest priority data source
         source_priority = await self._get_source_priority(market)
         unique_results = {}
         
@@ -213,17 +213,17 @@ class UnifiedStockService:
             if code not in unique_results:
                 unique_results[code] = doc
             else:
-                # 比较优先级
+                # Compare priorities
                 current_source = unique_results[code].get("source")
                 try:
                     if source in source_priority and current_source in source_priority:
                         if source_priority.index(source) < source_priority.index(current_source):
                             unique_results[code] = doc
                 except ValueError:
-                    # 如果source不在优先级列表中，保持当前记录
+                    # If the source is not in the priority list, keep the current record
                     pass
         
-        # 返回前 limit 条
+        # Return to the previous limit bar
         result_list = list(unique_results.values())[:limit]
         logger.info(f"🔍 搜索 {market} 市场: '{query}' -> {len(result_list)} 条结果（已去重）")
         return result_list
@@ -237,17 +237,17 @@ class UnifiedStockService:
         limit: int = 100
     ) -> List[Dict]:
         """
-        获取历史K线数据
+        Get historical K-line data
         
         Args:
-            market: 市场类型 (CN/HK/US)
-            code: 股票代码
-            start_date: 开始日期 (YYYY-MM-DD)
-            end_date: 结束日期 (YYYY-MM-DD)
-            limit: 返回数量限制
+            market: market type (CN/HK/US)
+            code: Stock code
+            start_date: start date (YYYY-MM-DD)
+            end_date: end date (YYYY-MM-DD)
+            limit: Return quantity limit
         
         Returns:
-            K线数据列表
+            K Line data list
         """
         collection_name = self.collection_map[market]["daily"]
         collection = self.db[collection_name]
@@ -265,10 +265,10 @@ class UnifiedStockService:
 
     async def get_supported_markets(self) -> List[Dict]:
         """
-        获取支持的市场列表
+        Get a list of supported markets
         
         Returns:
-            市场列表
+            Market list
         """
         return [
             {

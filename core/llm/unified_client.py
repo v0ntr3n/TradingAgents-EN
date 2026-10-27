@@ -1,7 +1,7 @@
 """
-统一 LLM 客户端
+Unified LLM client
 
-提供统一的接口调用各种 LLM 提供商
+Provide a unified interface to call various LLM providers
 """
 
 import asyncio
@@ -20,7 +20,7 @@ from .models import LLMConfig, LLMProvider, LLMResponse, Message, ToolCall, Tool
 from .providers.base import BaseAdapter
 from .providers.openai_compat import OpenAICompatAdapter
 
-# 可选适配器
+# Optional adapter
 try:
     from .providers.google import GoogleAdapter
     GOOGLE_AVAILABLE = True
@@ -40,15 +40,15 @@ from .tool_normalizer import ToolCallNormalizer
 
 class UnifiedLLMClient:
     """
-    统一 LLM 客户端
+    Unified LLM client
     
-    自动选择合适的适配器，提供统一的调用接口
+    Automatically select the appropriate adapter and provide a unified calling interface
     
-    用法:
+    Usage:
         client = UnifiedLLMClient.from_config(config)
         response = client.chat(messages)
         
-        # 或使用便捷方法
+        # Or use the convenience method
         client = UnifiedLLMClient.from_provider("deepseek")
     """
     
@@ -58,7 +58,7 @@ class UnifiedLLMClient:
 
     @classmethod
     def _get_adapter_map(cls) -> Dict[LLMProvider, type]:
-        """动态构建适配器映射（根据可用性）"""
+        """Dynamically build adapter mappings (based on availability)"""
         adapter_map = {
             LLMProvider.OPENAI: OpenAICompatAdapter,
             LLMProvider.DEEPSEEK: OpenAICompatAdapter,
@@ -79,15 +79,15 @@ class UnifiedLLMClient:
 
     @classmethod
     def from_config(cls, config: LLMConfig) -> "UnifiedLLMClient":
-        """从配置创建客户端"""
+        """Create client from configuration"""
         adapter_map = cls._get_adapter_map()
         adapter_class = adapter_map.get(config.provider)
 
         if not adapter_class:
             available_providers = list(adapter_map.keys())
             raise ValueError(
-                f"不支持的提供商: {config.provider}。"
-                f"可用的提供商: {available_providers}"
+                f"Unsupported provider: {config.provider}. "
+                f"Available providers: {available_providers}"
             )
         
         adapter = adapter_class(config)
@@ -102,12 +102,12 @@ class UnifiedLLMClient:
         **kwargs
     ) -> "UnifiedLLMClient":
         """
-        从提供商名称创建客户端 (自动从环境变量读取配置)
+        Create client from provider name (Automatically read configuration from environment variables)
         
         Args:
-            provider: 提供商名称 (deepseek, dashscope, google, etc.)
-            model: 模型名称 (可选，使用默认值)
-            **kwargs: 其他配置参数
+            provider: Provider name (deepseek, dashscope, google, etc.)
+            model: Model name (Optional, use default value)
+            **kwargs: Other configuration parameters
         """
         provider_enum = LLMProvider(provider.lower())
         config = LLMConfig.from_env(provider_enum)
@@ -128,15 +128,15 @@ class UnifiedLLMClient:
         description: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        注册工具函数
+        Register tool function
         
         Args:
-            func: 工具函数
-            name: 工具名称
-            description: 工具描述
+            func: Utility function
+            name: Tool name
+            description: Tool description
             
         Returns:
-            工具定义 (可用于 chat 调用)
+            Tool definition (Can be used for chat calls)
         """
         tool_def = ToolCallNormalizer.normalize_tool_definition(func, name, description)
         tool_name = tool_def["function"]["name"]
@@ -145,8 +145,8 @@ class UnifiedLLMClient:
 
     def inject_tools(self, tools: Dict[str, Callable]) -> None:
         """
-        批量注入工具函数（用于智能助手等场景）
-        tools: {tool_name: callable} 映射
+        Batch injection of tool functions (used in scenarios such as smart assistants)
+        tools: {tool_name: callable} mapping
         """
         self._tools.update(tools)
 
@@ -340,7 +340,7 @@ class UnifiedLLMClient:
         )
 
     async def _emit_progress(self, progress_callback: Optional[Callable], payload: Dict[str, Any]) -> None:
-        """统一处理可选的进度回调，兼容同步/异步函数。"""
+        """Unified processing of optional progress callbacks, compatible with synchronous/asynchronous functions."""
         if not progress_callback:
             return
 
@@ -349,25 +349,25 @@ class UnifiedLLMClient:
             if inspect.isawaitable(result):
                 await result
         except Exception as e:
-            logger.debug("[UnifiedLLM] 进度回调失败(忽略): %s", e)
+            logger.debug("[UnifiedLLM] Progress callback failed(ignore): %s", e)
 
     def _summarize_tool_result(self, tool_name: str, content: str) -> Dict[str, Any]:
-        """提取批量工具结果摘要，便于前端展示执行产出。"""
+        """Extract batch tool result summaries to facilitate front-end display of execution output."""
         if not content:
             return {}
 
         if tool_name == "screen_stocks_by_criteria":
-            match = re.search(r"共找到\s*(\d+)\s*只符合条件的股票，以下展示前\s*(\d+)\s*只", content)
+            match = re.search(r"Found in total\s*(\d+)\s*Only stocks that meet the criteria, before display below\s*(\d+)\s*only", content)
             if match:
                 return {
                     "total_candidates": int(match.group(1)),
                     "displayed_candidates": int(match.group(2)),
                 }
-            if "未找到符合条件的股票" in content:
+            if "No matching stocks found" in content:
                 return {"total_candidates": 0, "displayed_candidates": 0}
 
         if tool_name == "batch_check_profit_consistency":
-            match = re.search(r"稳定\s*(\d+)\s*只\s*\|\s*不稳定\s*(\d+)\s*只\s*\|\s*无数据\s*(\d+)\s*只", content)
+            match = re.search(r"stable\s*(\d+)\s*only\s*\|\s*unstable\s*(\d+)\s*only\s*\|\s*No data\s*(\d+)\s*only", content)
             if match:
                 return {
                     "stable_count": int(match.group(1)),
@@ -377,9 +377,9 @@ class UnifiedLLMClient:
 
         if tool_name == "add_stocks_to_favorites":
             summary: Dict[str, Any] = {}
-            added_match = re.search(r"已添加\s*(\d+)\s*只股票到股票关注列表", content)
-            existed_match = re.search(r"已存在\s*(\d+)\s*只", content)
-            failed_match = re.search(r"失败\s*(\d+)\s*只", content)
+            added_match = re.search(r"Added\s*(\d+)\s*Only stocks to stock watchlist", content)
+            existed_match = re.search(r"Already exists\s*(\d+)\s*only", content)
+            failed_match = re.search(r"failed\s*(\d+)\s*only", content)
             if added_match:
                 summary["added_count"] = int(added_match.group(1))
             if existed_match:
@@ -390,9 +390,9 @@ class UnifiedLLMClient:
 
         if tool_name == "add_stock_to_watchlist":
             summary: Dict[str, Any] = {}
-            added_match = re.search(r"已添加\s*(\d+)\s*只股票到[「\"]?([^」\"\n]+)[」\"]?", content)
-            created_match = re.search(r"已自动创建分组[「\"]?([^」\"\n]+)[」\"]?并添加\s*(\d+)\s*只股票", content)
-            existing_match = re.search(r"已在分组[「\"]?([^」\"\n]+)[」\"]?中", content)
+            added_match = re.search(r"Added\s*(\d+)\s*Only stocks arrive[ [\"]?([^] \"\n]+)[] \"]?", content)
+            created_match = re.search(r"Groups automatically created[ [\"]?([^] \"\n]+)[] \"]?and add\s*(\d+)\s*only stocks", content)
+            existing_match = re.search(r"Already in group[ [\"]?([^] \"\n]+)[] \"]?in", content)
             if added_match:
                 summary["added_count"] = int(added_match.group(1))
             if created_match:
@@ -414,7 +414,7 @@ class UnifiedLLMClient:
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> LLMResponse:
-        """同步调用适配器，带指数退避重试。"""
+        """Call the adapter synchronously and retry with exponential backoff."""
         return retry_sync(
             self._adapter.chat,
             messages, tools,
@@ -429,7 +429,7 @@ class UnifiedLLMClient:
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> LLMResponse:
-        """异步调用适配器，带指数退避重试。"""
+        """Call the adapter asynchronously and retry with exponential backoff."""
         return await retry_async(
             self._adapter.achat,
             messages, tools,
@@ -447,14 +447,14 @@ class UnifiedLLMClient:
         **kwargs
     ) -> LLMResponse:
         """
-        同步聊天
+        synchronous chat
         
         Args:
-            messages: 消息列表
-            tools: 工具定义列表
-            auto_execute_tools: 是否自动执行工具调用
-            max_tool_rounds: 最大工具调用轮次
-            **kwargs: 其他参数
+            messages: Message list
+            tools: tool definition list
+            auto_execute_tools: Whether to automatically execute tool calls
+            max_tool_rounds: Maximum tool call rounds
+            **kwargs: Other parameters
         """
         response = self._retry_chat(messages, tools, **kwargs)
         
@@ -471,15 +471,15 @@ class UnifiedLLMClient:
         on_delta: Optional[Callable[[str, str], None]] = None,
         **kwargs,
     ) -> LLMResponse:
-        """同步流式聊天：逐段回调思考/正文增量，最终返回完整 LLMResponse。
+        """Synchronous streaming chat: callback thoughts/text increments piece by piece, eventually returning the full LLMResponse.
 
         Args:
-            messages: 消息列表（仅支持无工具调用的单轮场景）
-            on_delta: 回调 on_delta(kind, text)，kind ∈ {"reset", "reasoning", "content"}；
-                      重试开始前会先发一次 ("reset", "") 让调用方清空已收内容
-            **kwargs: 其他参数（max_tokens、temperature 等）
+            messages: Message list (only supports single-round scenarios without tool invocation)
+            on_delta: callback on_delta(kind, text), kind ∈ {"reset", "reasoning", "content"}; 
+                      It will be sent once before retrying. ("reset", "") Let the caller clear the received content
+            **kwargs: Other parameters (max_tokens, temperature, etc.)
 
-        适配器不支持流式时自动回退到普通 chat，并把完整回复作为一次 content 增量回调。
+        When the adapter does not support streaming, it automatically falls back to normal chat and uses the complete reply as a content incremental callback.
         """
         stream_adapter = getattr(self._adapter, "chat_stream_deltas", None)
 
@@ -529,18 +529,18 @@ class UnifiedLLMClient:
         **kwargs
     ) -> LLMResponse:
         """
-        异步聊天
+        Asynchronous chat
 
         Args:
-            tools_used: 可选，用于收集各轮工具调用名称（智能助手展示执行步骤用）
-            tool_results_collector: 可选，用于收集各轮工具返回原文（数字溯源校验用），
-                每项为 {"tool": 工具名, "content": 返回文本, "is_error": 是否出错}
-            dry_run: 若为 True，工具调用只记日志并返回模拟结果，不真正执行函数（用于意图路由测试）
-            tool_interceptor: 可选，在真正执行工具前调用；返回 ToolResult 则跳过默认执行
+            tools_used: Optional, used to collect each round of tool call names (used by the intelligent assistant to display execution steps)
+            tool_results_collector: Optional, used to collect each round of tools and return the original text (for digital traceability verification),
+                Each item is {"tool": Tool name, "content": return text, "is_error": Is there an error?}
+            dry_run: If True, the tool call only records logs and returns simulation results, without actually executing the function (used for intent routing testing)
+            tool_interceptor: Optional, called before actually executing the tool; return ToolResult to skip the default execution
         """
         if log_payloads:
             self._log_llm_payload(
-                loop_name="UnifiedLLM·异步",
+                loop_name="UnifiedLLM·asynchronous",
                 stage="initial_llm_prompt",
                 payload_label=payload_log_label,
                 messages=messages,
@@ -549,13 +549,13 @@ class UnifiedLLMClient:
         response = await self._aretry_chat(messages, tools, **kwargs)
         if log_payloads:
             self._log_llm_payload(
-                loop_name="UnifiedLLM·异步",
+                loop_name="UnifiedLLM·asynchronous",
                 stage="initial_llm_response",
                 payload_label=payload_log_label,
                 response=response,
             )
         self._log_llm_call_timing(
-            loop_name="UnifiedLLM·异步",
+            loop_name="UnifiedLLM·asynchronous",
             stage="initial_llm_completed",
             elapsed_seconds=time.perf_counter() - initial_started_at,
             messages=messages,
@@ -583,7 +583,7 @@ class UnifiedLLMClient:
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> AsyncIterator[str]:
-        """异步流式输出"""
+        """Asynchronous streaming output"""
         async for chunk in self._adapter.astream(messages, tools, **kwargs):
             yield chunk
     
@@ -595,27 +595,27 @@ class UnifiedLLMClient:
         max_rounds: int,
         **kwargs
     ) -> LLMResponse:
-        """执行工具调用循环"""
+        """Execute tool call loop"""
         current_messages = messages.copy()
         current_response = response
         rounds = 0
         
         while current_response.has_tool_calls and rounds < max_rounds:
             self._log_tool_round_state(
-                loop_name="UnifiedLLM·同步",
+                loop_name="UnifiedLLM·sync",
                 round_number=rounds + 1,
                 stage="tool_round_started",
                 messages=current_messages,
             )
-            # 添加助手消息
+            # Add assistant message
             current_messages.append(current_response.to_message())
             
-            # 执行所有工具调用
+            # Execute all tool calls
             for tool_call in current_response.tool_calls:
                 result = ToolCallNormalizer.execute_tool_call(
                     tool_call, self._tools
                 )
-                # 添加工具结果消息
+                # Add tool result message
                 current_messages.append(Message(
                     role="tool",
                     content=result.content,
@@ -623,7 +623,7 @@ class UnifiedLLMClient:
                     name=result.name
                 ))
                 logger.info(
-                    "[UnifiedLLM·同步] tool_result_appended | round=%s | tool=%s | chars=%s | is_error=%s",
+                    "[UnifiedLLM·sync] tool_result_appended | round=%s | tool=%s | chars=%s | is_error=%s",
                     rounds + 1,
                     result.name,
                     len(result.content or ""),
@@ -631,7 +631,7 @@ class UnifiedLLMClient:
                 )
 
             self._log_tool_round_state(
-                loop_name="UnifiedLLM·同步",
+                loop_name="UnifiedLLM·sync",
                 round_number=rounds + 1,
                 stage="before_retry_chat",
                 messages=current_messages,
@@ -640,14 +640,14 @@ class UnifiedLLMClient:
             current_response = self._retry_chat(current_messages, tools, **kwargs)
             rounds += 1
 
-        # ── 最终综合：当工具轮次耗尽但 LLM 仍想调用工具时，强制生成文本回复 ──
+        # ── Final Synthesis: Force text reply generation when tool rounds are exhausted but LLM still wants to call the tool ──
         if current_response.has_tool_calls:
             logger.warning(
-                f"[UnifiedLLM·同步] 工具调用轮次已达上限 ({max_rounds})，"
-                f"LLM 仍请求工具调用，启动最终综合..."
+                f"[UnifiedLLM·sync] The number of tool calling rounds has reached the upper limit ({max_rounds}), "
+                f"LLM Still requesting tool calls to start final synthesis..."
             )
-            # 不能把带 tool_calls 的 assistant 消息直接加入历史，
-            # 否则 API 会要求紧跟对应的 tool response 消息（400 错误）。
+            # Assistant messages with tool_calls cannot be directly added to the history.
+            # Otherwise the API will require the corresponding tool response message (400 error) to be followed immediately.
             if current_response.content:
                 current_messages.append(Message(
                     role="assistant",
@@ -656,8 +656,8 @@ class UnifiedLLMClient:
             current_messages.append(Message(
                 role="user",
                 content=(
-                    "工具调用次数已达到上限，请不要再调用任何工具。"
-                    "请根据上面已经获取到的所有数据，直接生成完整的分析回复。"
+                    "The number of tool calls has reached the upper limit, please do not call any more tools."
+                    "Please directly generate a complete analysis response based on all the data you have obtained above."
                 ),
             ))
             current_response = self._retry_chat(
@@ -681,15 +681,15 @@ class UnifiedLLMClient:
         tool_interceptor: Optional[Callable[[ToolCall], Awaitable[Optional[ToolResult]]]] = None,
         **kwargs
     ) -> LLMResponse:
-        """异步执行工具调用循环，可选收集每轮调用的工具名称"""
-        from .models import LLMResponse  # 🔥 函数开头统一导入：避免 dry_run 分支内局部导入导致 intercepted 分支 UnboundLocalError
+        """Asynchronously execute the tool call loop, optionally collecting the tool name called in each round"""
+        from .models import LLMResponse  # 🔥 Unified import at the beginning of the function: avoid local import in dry_run branch causing intercepted branch UnboundLocalError
         current_messages = messages.copy()
         current_response = response
         rounds = 0
 
         while current_response.has_tool_calls and rounds < max_rounds:
             self._log_tool_round_state(
-                loop_name="UnifiedLLM·异步",
+                loop_name="UnifiedLLM·asynchronous",
                 round_number=rounds + 1,
                 stage="tool_round_started",
                 messages=current_messages,
@@ -713,7 +713,7 @@ class UnifiedLLMClient:
                     "arguments": tool_call.arguments,
                 })
 
-                # ── v3.5.0 项4：工具执行拦截器（如智能助手 HITL）──
+                # ── v3.5.0 Item 4: Tool execution interceptor (such as smart assistant HITL)──
                 intercepted_result: Optional[ToolResult] = None
                 if tool_interceptor is not None and not dry_run:
                     try:
@@ -722,34 +722,34 @@ class UnifiedLLMClient:
                             intercepted_any = True
                     except Exception as exc:
                         logger.warning(
-                            "[UnifiedLLM·异步] tool_interceptor 异常，继续默认执行: %s",
+                            "[UnifiedLLM·asynchronous] tool_interceptor Exception, continue execution by default: %s",
                             exc,
                         )
 
                 if intercepted_result is not None:
                     result = intercepted_result
                 elif dry_run:
-                    # ── 测试模式：只记日志，返回模拟结果 ──
+                    # ── Test mode: only log and return simulation results ──
                     logger.info(
-                        "[DRY_RUN] 🏷️ LLM 选择工具: %s | 参数: %s",
+                        "[DRY_RUN] 🏷️ LLM Select tool: %s | parameters: %s",
                         tool_call.name,
                         json.dumps(tool_call.arguments, ensure_ascii=False),
                     )
                     result = ToolResult(
                         tool_call_id=tool_call.id,
                         name=tool_call.name,
-                        content=f"[dry_run] 工具 {tool_call.name} 已被调用，参数: {json.dumps(tool_call.arguments, ensure_ascii=False)}",
+                        content=f"[dry_run] Tools {tool_call.name} has been called with parameters: {json.dumps(tool_call.arguments, ensure_ascii=False)}",
                         is_error=False,
                     )
                 else:
-                    # ── 正常模式：真正执行工具 ──
+                    # ── Normal mode: Really execute the tool ──
                     tool_started_at = time.perf_counter()
                     result = await ToolCallNormalizer.aexecute_tool_call(
                         tool_call,
                         self._tools
                     )
                     self._log_tool_call_timing(
-                        loop_name="UnifiedLLM·异步",
+                        loop_name="UnifiedLLM·asynchronous",
                         round_number=rounds + 1,
                         tool_name=tool_call.name,
                         elapsed_seconds=time.perf_counter() - tool_started_at,
@@ -758,7 +758,7 @@ class UnifiedLLMClient:
                     if log_payloads:
                         logger.info(
                             "[%s] tool_exec_payload | label=%s | round=%s | tool=%s | payload=%s",
-                            "UnifiedLLM·异步",
+                            "UnifiedLLM·asynchronous",
                             payload_log_label or "-",
                             rounds + 1,
                             tool_call.name,
@@ -791,70 +791,70 @@ class UnifiedLLMClient:
                         "tool": result.name or tool_call.name,
                         "content": result.content or "",
                         "is_error": bool(result.is_error),
-                        # 工具调用参数（事实记忆层用 query/url 作主题键）
+                        # Tool calling parameters (the fact memory layer uses query/url as the subject key)
                         "args": dict(tool_call.arguments) if tool_call.arguments else {},
                     })
                 logger.info(
-                    "[UnifiedLLM·异步] tool_result_appended | round=%s | tool=%s | chars=%s | is_error=%s",
+                    "[UnifiedLLM·asynchronous] tool_result_appended | round=%s | tool=%s | chars=%s | is_error=%s",
                     rounds + 1,
                     result.name,
                     len(result.content or ""),
                     result.is_error,
                 )
 
-            # dry_run 模式：只看第一轮 LLM 选了什么工具，不继续后续轮次
+            # dry_run Mode: Only look at what tools were selected in the first round of LLM, and do not continue with subsequent rounds.
             if dry_run:
-                logger.info("[DRY_RUN] ✅ 第 1 轮工具选择已记录，跳过后续轮次")
-                # 不再调 LLM，直接构造一个纯文本回复返回
+                logger.info("[DRY_RUN] ✅ Round 1 tool selection recorded, subsequent rounds skipped")
+                # No longer calling LLM, directly construct a plain text reply and return it
                 return LLMResponse(
-                    content=f"[dry_run 测试模式] LLM 选择的工具: {', '.join(tools_used or [])}",
+                    content=f"[dry_run test mode] LLM Tools of choice: {', '.join(tools_used or [])}",
                     model=current_response.model,
                 )
 
-            # 如果有工具被拦截（如 HITL 暂停），直接返回确认消息，不再继续后续轮次
+            # If a tool is intercepted (such as HITL pause), a confirmation message will be returned directly and subsequent rounds will not continue.
             if intercepted_any:
                 confirmation_contents = [
                     msg.content for msg in current_messages
-                    if msg.role == "tool" and msg.content and "即将执行关键操作" in msg.content
+                    if msg.role == "tool" and msg.content and "A critical operation is about to be performed" in msg.content
                 ]
                 return LLMResponse(
-                    content="\n\n".join(confirmation_contents) or "有待确认的操作，请确认后继续。",
+                    content="\n\n".join(confirmation_contents) or "The operation needs to be confirmed, please confirm before continuing.",
                     model=current_response.model,
                 )
 
             self._log_tool_round_state(
-                loop_name="UnifiedLLM·异步",
+                loop_name="UnifiedLLM·asynchronous",
                 round_number=rounds + 1,
                 stage="before_retry_chat",
                 messages=current_messages,
             )
             if log_payloads:
                 self._log_llm_payload(
-                    loop_name="UnifiedLLM·异步",
+                    loop_name="UnifiedLLM·asynchronous",
                     stage="post_tool_llm_prompt",
                     payload_label=payload_log_label,
                     round_number=rounds + 1,
                     messages=current_messages,
                 )
             retry_started_at = time.perf_counter()
-            # 工具结果回传后的下一轮 LLM 思考同样可能持续较长时间（推理模型），
-            # 发一条进度事件避免前端在「工具完成」后陷入长时间静默
+            # The next round of LLM thinking after the tool results are returned may also last for a long time (inference model).
+            # Send a progress event to prevent the front end from falling into long silence after "tool completion"
             await self._emit_progress(progress_callback, {
                 "event": "llm_thinking",
                 "round": rounds + 2,
-                "message": f"正在结合第 {rounds + 1} 轮工具结果继续分析…",
+                "message": f"Being combined with the {rounds + 1} Wheel tool results continue to analyze…",
             })
             current_response = await self._aretry_chat(current_messages, tools, **kwargs)
             if log_payloads:
                 self._log_llm_payload(
-                    loop_name="UnifiedLLM·异步",
+                    loop_name="UnifiedLLM·asynchronous",
                     stage="post_tool_llm_response",
                     payload_label=payload_log_label,
                     round_number=rounds + 1,
                     response=current_response,
                 )
             self._log_llm_call_timing(
-                loop_name="UnifiedLLM·异步",
+                loop_name="UnifiedLLM·asynchronous",
                 stage="post_tool_llm_completed",
                 round_number=rounds + 1,
                 elapsed_seconds=time.perf_counter() - retry_started_at,
@@ -867,35 +867,35 @@ class UnifiedLLMClient:
             })
             rounds += 1
 
-        # ── 最终综合：当工具轮次耗尽但 LLM 仍想调用工具时，强制生成文本回复 ──
+        # ── Final Synthesis: Force text reply generation when tool rounds are exhausted but LLM still wants to call the tool ──
         if current_response.has_tool_calls:
             logger.warning(
-                f"[UnifiedLLM] 工具调用轮次已达上限 ({max_rounds})，"
-                f"LLM 仍请求工具调用，启动最终综合..."
+                f"[UnifiedLLM] The number of tool calling rounds has reached the upper limit ({max_rounds}), "
+                f"LLM Still requesting tool calls to start final synthesis..."
             )
             await self._emit_progress(progress_callback, {
                 "event": "tool_limit_reached",
                 "max_rounds": max_rounds,
             })
-            # 注意：不能把带 tool_calls 的 assistant 消息直接加入历史，
-            # 否则 API 会要求紧跟对应的 tool response 消息（400 错误）。
-            # 只保留其中的文本内容（如果有），作为纯文本 assistant 消息。
+            # Note: Assistant messages with tool_calls cannot be directly added to the history.
+            # Otherwise the API will require the corresponding tool response message (400 error) to be followed immediately.
+            # Only the text content within it (if any) is retained as a plain text assistant message.
             if current_response.content:
                 current_messages.append(Message(
                     role="assistant",
                     content=current_response.content,
                 ))
-            # 添加一条 user 消息，强制 LLM 基于已有数据生成最终分析
+            # Add a user message to force LLM to generate the final analysis based on existing data
             current_messages.append(Message(
                 role="user",
                 content=(
-                    "工具调用次数已达到上限，请不要再调用任何工具。"
-                    "请根据上面已经获取到的所有数据，直接生成完整的分析回复。"
+                    "The number of tool calls has reached the upper limit, please do not call any more tools."
+                    "Please directly generate a complete analysis response based on all the data you have obtained above."
                 ),
             ))
             if log_payloads:
                 self._log_llm_payload(
-                    loop_name="UnifiedLLM·异步",
+                    loop_name="UnifiedLLM·asynchronous",
                     stage="final_summary_llm_prompt",
                     payload_label=payload_log_label,
                     round_number=rounds + 1,
@@ -907,21 +907,21 @@ class UnifiedLLMClient:
             )
             if log_payloads:
                 self._log_llm_payload(
-                    loop_name="UnifiedLLM·异步",
+                    loop_name="UnifiedLLM·asynchronous",
                     stage="final_summary_llm_response",
                     payload_label=payload_log_label,
                     round_number=rounds + 1,
                     response=current_response,
                 )
             self._log_llm_call_timing(
-                loop_name="UnifiedLLM·异步",
+                loop_name="UnifiedLLM·asynchronous",
                 stage="final_summary_llm_completed",
                 round_number=rounds + 1,
                 elapsed_seconds=time.perf_counter() - final_summary_started_at,
                 messages=current_messages,
                 response=current_response,
             )
-            logger.info("[UnifiedLLM] ✅ 最终综合完成")
+            logger.info("[UnifiedLLM] ✅ Final comprehensive completion")
             await self._emit_progress(progress_callback, {
                 "event": "tool_limit_summary_completed",
                 "max_rounds": max_rounds,
@@ -931,11 +931,11 @@ class UnifiedLLMClient:
 
     @property
     def provider(self) -> LLMProvider:
-        """当前提供商"""
+        """Current provider"""
         return self._adapter.config.provider
     
     @property
     def model(self) -> str:
-        """当前模型"""
+        """current model"""
         return self._adapter.config.model
 

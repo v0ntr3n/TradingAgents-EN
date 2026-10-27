@@ -1,52 +1,52 @@
 """
-A 股股票代码标准化工具
+A Stock ticker standardization tool
 
-供代码生成器在 Prompt 中引用，使生成的 Skill 支持多种输入格式。
-生成的代码运行在沙箱中，不能 import core，因此需将逻辑内联到生成代码中。
+For the code generator to reference in Prompt, so that the generated Skill supports multiple input formats.
+The generated code runs in a sandbox and cannot import core, so the logic needs to be inlined into the generated code.
 """
 
 
 def normalize_a_share_symbol(symbol: str) -> str:
     """
-    将多种格式的 A 股代码统一为 6 位数字代码。
+    Unify multiple formats of A-share codes into a 6-digit code.
 
-    支持的输入格式：
-    - 600519（纯数字）
-    - SH600519、SZ000001、BJ830001、BJ920985（交易所前缀）
-    - 600519.SH、000001.SZ、830001.BJ、920985.BJ（交易所后缀，920 为北交所 2025-10 起统一号段）
+    Supported input formats:
+    - 600519 (pure numbers)
+    - SH600519, SZ000001, BJ830001, BJ920985 (exchange prefix)
+    - 600519.SH, 000001.SZ, 830001.BJ, 920985.BJ (Exchange suffix, 920 is the unified number section of the Beijing Stock Exchange starting from 2025-10)
 
     Args:
-        symbol: 用户输入的股票代码
+        symbol: Stock code entered by user
 
     Returns:
-        6 位数字代码，如 "600519"、"000001"
+        6 digit code such as "600519", "000001"
     """
     if not symbol:
         return ""
     s = str(symbol).strip().upper()
-    # 移除 SH/SZ/SS/BJ 前缀
+    # Remove SH/SZ/SS/BJ prefix
     for prefix in ("SH", "SZ", "SS", "BJ"):
         if s.startswith(prefix):
             s = s[len(prefix):]
             break
-    # 移除 .SH/.SZ/.SS/.BJ 后缀
+    # Remove .SH/.SZ/.SS/.BJ suffix
     for suffix in (".SH", ".SZ", ".SS", ".BJ"):
         if s.endswith(suffix):
             s = s[:-len(suffix)]
             break
-    # 只保留数字
+    # Keep only numbers
     digits = "".join(c for c in s if c.isdigit())
     if not digits:
         return ""
-    # 保持 6 位（A 股标准），不足则补齐前导零，超过取后 6 位
+    # Keep 6 digits (A-share standard). If insufficient, leading zeros will be added. If exceeded, the last 6 digits will be used.
     return digits.zfill(6)[-6:] if len(digits) <= 6 else digits[-6:]
 
 
-# 内联代码片段（供 Prompt 注入，LLM 生成时使用）
-# 生成的 Skill 不能 import core，因此需将逻辑复制到函数体内
+# Inline code snippet (for Prompt injection, used when LLM is generated)
+# The generated Skill cannot import core, so the logic needs to be copied into the function body.
 SYMBOL_NORMALIZE_INLINE = '''
 def _normalize_a_share_symbol(symbol: str) -> str:
-    """将多种格式的 A 股代码统一为 6 位数字。支持: 600519, SH600519, 600519.SH, 830001.BJ, 920985.BJ 等"""
+    """Unify multiple formats of A-share codes into 6 digits. support: 600519, SH600519, 600519.SH, 830001.BJ, 920985.BJ Wait"""
     if not symbol:
         return ""
     s = str(symbol).strip().upper()

@@ -1,8 +1,8 @@
 """
-智能筛选服务 — LLM 多轮对话选股
+Intelligent screening service — LLM Multiple rounds of dialogue stock selection
 
-复用智能助手的 LLM 配置、工具注册表、超时机制等基础设施，
-新增两阶段流程（需求确认 → 执行筛选）和多轮记忆。
+Reuse the LLM configuration, tool registry, timeout mechanism and other infrastructure of the intelligent assistant,
+Added two-stage process (requirement confirmation → perform screening) and multiple rounds of memorization.
 """
 
 import asyncio
@@ -17,7 +17,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-# 复用智能助手的基础设施
+# Reuse the infrastructure of smart assistants
 from app.services.factor_registry_service import build_screening_fields_markdown
 from app.services.screening_metric_display import resolve_metric_value, select_metric_display_spec
 from app.services.intelligent_assistant_service import (
@@ -33,12 +33,12 @@ from core.llm.models import Message, MessageRole
 
 logger = logging.getLogger(__name__)
 
-# 会话历史最大条数（每用户）
+# Maximum number of session history items (per user)
 SCREENING_CONVERSATION_LIMIT = 50
-# 每次请求最多传给 LLM 的历史消息条数
+# The maximum number of historical messages sent to LLM per request
 MAX_CONTEXT_MESSAGES = 20
-# 选股相关的工具类别
-# "screening" 类别包含 screen_stocks_by_criteria 批量筛选工具（核心）
+# Tool categories related to stock picking
+# "screening" Category Contains screen_stocks_by_criteria Batch Filter Tool (Core)
 SCREENING_TOOL_CATEGORIES = ["screening", "market", "fundamentals", "news", "china", "technical"]
 SCREENING_TOOL_IDS = {
     "add_stocks_to_favorites",
@@ -46,7 +46,7 @@ SCREENING_TOOL_IDS = {
     "add_stock_to_watchlist",
 }
 
-# 执行阶段工具收敛：优先仅允许批量筛选链路，避免单股重工具放大时延
+# Tool convergence in the execution phase: Prioritize only allowing batch screening of links to avoid single-strand heavy tool amplification delays
 RESULT_TOOL_ALLOWLIST = {
     "screen_stocks_by_criteria",
     "batch_check_profit_consistency",
@@ -55,7 +55,7 @@ RESULT_TOOL_ALLOWLIST = {
     "add_stock_to_watchlist",
 }
 
-# 选股场景独立预算，默认比全局助手更紧，避免长尾请求拖垮体验
+# Independent budget for stock selection scenarios, tighter than the global assistant by default, to avoid long-tail requests from dragging down the experience
 SCREENING_MAX_TOOL_ROUNDS = int(os.environ.get("SCREENING_MAX_TOOL_ROUNDS", "3"))
 SCREENING_RESULT_TIMEOUT_SECONDS = int(os.environ.get("SCREENING_RESULT_TIMEOUT_SECONDS", "300"))
 
@@ -174,10 +174,10 @@ SCREENING_YI_FIELDS = {"n_cashflow_act", "revenue_ttm", "net_profit_ttm"}
 
 class IntelligentScreeningService:
     """
-    智能筛选服务 — LLM 多轮对话选股
+    Intelligent screening service — LLM Multiple rounds of dialogue stock selection
 
-    复用智能助手的 LLM 配置、工具注册表、超时机制等基础设施，
-    新增两阶段流程（需求确认 → 执行筛选）和多轮记忆。
+    Reuse the LLM configuration, tool registry, timeout mechanism and other infrastructure of the intelligent assistant,
+    Added two-stage process (requirement confirmation → perform screening) and multiple rounds of memorization.
     """
 
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -188,7 +188,7 @@ class IntelligentScreeningService:
         self._tool_functions: Optional[dict] = None
 
     async def _ensure_client(self) -> bool:
-        """懒加载 LLM 客户端和工具（只加载选股相关的 5 类工具）"""
+        """Lazy loading of LLM clients and tools (only 5 types of tools related to stock selection are loaded)"""
         if self._llm_client is not None:
             return True
 
@@ -199,10 +199,10 @@ class IntelligentScreeningService:
         try:
             self._llm_client = UnifiedLLMClient.from_config(llm_config)
         except Exception as e:
-            logger.error(f"[智能筛选] 创建 LLM 客户端失败: {e}", exc_info=True)
+            logger.error(f"[Smart filtering] Creating LLM client failed: {e}", exc_info=True)
             return False
 
-        # 只加载选股相关的工具
+        # Only load tools related to stock selection
         registry = get_tool_registry()
         all_metadata = registry.list_all()
         screening_metadata = [
@@ -218,21 +218,21 @@ class IntelligentScreeningService:
                 if func:
                     self._tool_functions[tool.id] = func
 
-        # 结果执行阶段仅保留批量筛选相关工具，限制工具链复杂度
+        # In the results execution phase, only tools related to batch screening are retained to limit the complexity of the tool chain.
         self._result_openai_tools = self._filter_result_tools(self._openai_tools)
         if not self._result_openai_tools:
             self._result_openai_tools = self._openai_tools
-            logger.warning("[智能筛选] 结果阶段批量工具白名单为空，回退到完整工具集")
+            logger.warning("[Smart filtering] In the result stage, the batch tool whitelist is empty and falls back to the complete tool set.")
 
         self._llm_client.inject_tools(self._tool_functions)
         logger.info(
             f"[智能筛选] 已加载 {len(self._openai_tools)} 个选股工具，"
-            f"结果阶段使用 {len(self._result_openai_tools)} 个执行工具"
+            f"Used in the results phase {len(self._result_openai_tools)} execution tools"
         )
         return True
 
     def _filter_result_tools(self, openai_tools: Optional[list]) -> list:
-        """过滤 result 阶段可用工具，优先保留批量筛选链路。"""
+        """The tools available in the filtering result stage give priority to retaining batch filtering links."""
         if not openai_tools:
             return []
 
@@ -245,7 +245,7 @@ class IntelligentScreeningService:
         return filtered
 
     def _infer_request_focus(self, message: str) -> str:
-        """从用户请求中提取核心筛选诉求，用于无结果与降级提示。"""
+        """Extract core filtering requirements from user requests for no-result and downgrade prompts."""
         text = (message or "").strip()
         if not text:
             return "原筛选条件"
@@ -265,7 +265,7 @@ class IntelligentScreeningService:
         return "原筛选条件"
 
     def _extract_single_stock_keyword(self, message: str) -> Optional[str]:
-        """从单股判断问题中提取股票代码或简称。"""
+        """Extract stock symbols or abbreviations from single stock judgment questions."""
         text = re.sub(r"\s+", "", message or "")
         if not text:
             return None
@@ -282,8 +282,8 @@ class IntelligentScreeningService:
 
         normalized = re.sub(r"[？?！!。,.，：:；;]", "", normalized)
         patterns = [
-            r"([A-Za-z\u4e00-\u9fa5]{2,16})(?:\(|（)?(?:\d{6})?(?:\)|）)?(?:是不是|是否|算不算|属不属于|属于|是)",
-            r"([A-Za-z\u4e00-\u9fa5]{2,16})(?:\(|（)?(?:\d{6})?(?:\)|）)?(?:的)?(?:股息率|分红)",
+            r"([A-Za-z\u4e00-\u9fa5]{2,16})(?:\(| ()?(?:\d{6})?(?:\)|) )?(?:Isn t it|Whether|Does it count?|does not belong to|Belong to|Yes)",
+            r"([A-Za-z\u4e00-\u9fa5]{2,16})(?:\(| ()?(?:\d{6})?(?:\)|) )?(?:of)?(?:dividend yield|dividend)",
         ]
         stopwords = {"这个", "这只", "该股", "股票", "A股", "个股"}
         for pattern in patterns:
@@ -298,7 +298,7 @@ class IntelligentScreeningService:
         return None
 
     def _looks_like_single_stock_judgement_query(self, message: str) -> bool:
-        """识别“单只股票是否满足某属性”的直接判断问题。"""
+        """identify Whether a single stock meets a certain attribute of direct judgment."""
         text = re.sub(r"\s+", "", message or "")
         if not text:
             return False
@@ -318,7 +318,7 @@ class IntelligentScreeningService:
         return any(token in text for token in ("是不是", "是否", "算不算", "属于", "是", "吗"))
 
     async def _fetch_single_stock_item(self, keyword: str) -> Optional[dict]:
-        """按代码或名称检索最匹配的单只股票快照。"""
+        """Retrieve the best matching single stock snapshot by symbol or name."""
         items, _total = await _execute_screening_query(
             [{"field": "keyword", "operator": "contains", "value": keyword}],
             10,
@@ -385,7 +385,7 @@ class IntelligentScreeningService:
         message: str,
         progress_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
     ) -> Optional[Dict[str, Any]]:
-        """对单股属性判断问题直接返回结果，避免误入全市场筛选流程。"""
+        """Directly return results for single stock attribute judgment questions to avoid entering the market-wide screening process by mistake."""
         if not self._looks_like_single_stock_judgement_query(message):
             return None
 
@@ -393,7 +393,7 @@ class IntelligentScreeningService:
             progress_callback,
             "status",
             phase="result",
-            message="正在核验单只股票的分红指标",
+            message="Checking the dividend index of a single stock",
         )
 
         keyword = self._extract_single_stock_keyword(message)
@@ -416,7 +416,7 @@ class IntelligentScreeningService:
         dividend_yield = item.get("dividend_yield")
         if not isinstance(dividend_yield, (int, float)):
             reply = f"已找到 {stock_name}（{stock_code}），但当前快照里没有可用的股息率数据，暂时无法判断它是否属于高分红股票。"
-            stock = self._build_single_stock_snapshot(item, "当前缺少可用股息率数据，无法直接判断是否属于高分红。")
+            stock = self._build_single_stock_snapshot(item, "There is currently a lack of available dividend yield data, so it is impossible to directly determine whether it is a high dividend payout.")
             return {
                 "reply": reply,
                 "tools_used": [],
@@ -428,8 +428,8 @@ class IntelligentScreeningService:
         is_high_dividend = dividend_yield >= SINGLE_STOCK_DIVIDEND_YIELD_THRESHOLD
         verdict = "可以算" if is_high_dividend else "严格按当前默认口径暂不算"
         reason = (
-            f"单股核验：默认以近12个月股息率 ≥ {SINGLE_STOCK_DIVIDEND_YIELD_THRESHOLD:.1f}% 作为高分红口径；"
-            f"当前股息率={dividend_yield:.2f}%，因此{verdict}高分红。"
+            f"Single stock verification: the default is based on the dividend rate of the past 12 months ≥ {SINGLE_STOCK_DIVIDEND_YIELD_THRESHOLD:.1f}% As a high dividend caliber;"
+            f"current dividend yield={dividend_yield:.2f}%, Therefore{verdict}High dividends."
         )
         stock = self._build_single_stock_snapshot(item, reason)
 
@@ -442,14 +442,14 @@ class IntelligentScreeningService:
             metrics.append(f"财报期={stock['report_period']}")
 
         reply_lines = [
-            f"结论：{stock_name}（{stock_code}）{verdict}高分红股票。",
-            f"判断口径：若未额外指定阈值，本系统默认把近12个月股息率 ≥ {SINGLE_STOCK_DIVIDEND_YIELD_THRESHOLD:.1f}% 视为高分红。",
-            f"当前指标：{'；'.join(metrics)}。",
+            f"Conclusion:{stock_name} ({stock_code}) {verdict}High dividend stocks.",
+            f"Judgment criteria: If no additional threshold is specified, this system defaults to the dividend rate of the past 12 months ≥ {SINGLE_STOCK_DIVIDEND_YIELD_THRESHOLD:.1f}% Considered a high dividend.",
+            f"Current indicators:{'; '.join(metrics)}. ",
         ]
         if is_high_dividend:
-            reply_lines.append("补充说明：它更接近稳定分红的高质量白马，不等同于市场里股息率最高的红利型标的。")
+            reply_lines.append("Additional explanation: It is closer to a high-quality white horse that pays stable dividends, and is not the same as a dividend target with the highest dividend yield in the market.")
         else:
-            reply_lines.append("补充说明：如果您更关注分红稳定性或分红比例，而不是静态股息率阈值，可以换该口径再判断。")
+            reply_lines.append("Supplementary note: If you are more concerned about dividend stability or dividend ratio rather than the static dividend rate threshold, you can use this caliber to make your judgment.")
 
         return {
             "reply": "\n\n".join(reply_lines),
@@ -460,20 +460,20 @@ class IntelligentScreeningService:
         }
 
     def _build_no_match_reply(self, message: str) -> str:
-        """未命中条件时返回硬提示，不推荐任何替代股票。"""
+        """A hard tip is returned when the condition is not hit, and no alternative stocks are recommended."""
         focus = self._infer_request_focus(message)
         return (
             f"未找到符合“{focus}”条件的股票。\n\n"
-            "当前没有适合该筛选要求的标的，不推荐其它不符合条件的股票。"
-            "如果您仍想继续筛选，请进一步补充阈值、缩小行业范围，或调整筛选条件后重试。"
+            "There is currently no target that meets the screening requirements, and other stocks that do not meet the conditions are not recommended."
+            "If you still want to continue filtering, please further add thresholds, narrow the industry scope, or adjust the filtering conditions and try again."
         )
 
     def _build_timeout_reply(self, timeout_seconds: int) -> str:
-        """执行超时时返回硬提示，不推荐任何替代股票。"""
+        """A hard prompt is returned when execution times out and no alternative stocks are recommended."""
         return (
-            f"抱歉，处理您的选股需求已超时（超过 {timeout_seconds} 秒）。\n\n"
-            "本次不会改为推荐其它不符合原筛选条件的股票。"
-            "建议您缩小筛选范围、补充更明确的阈值或行业条件，或稍后重试。"
+            f"Sorry, processing your stock selection request has timed out (more than {timeout_seconds} seconds).\n\n"
+            "This time we will not recommend other stocks that do not meet the original screening conditions."
+            "It is recommended that you narrow the filter scope, add more specific thresholds or industry conditions, or try again later."
         )
 
     def _find_last_assistant(self, history: list) -> Optional[dict]:
@@ -484,9 +484,9 @@ class IntelligentScreeningService:
 
     async def _classify_intent(self, message: str, history: list) -> Dict[str, Any]:
         """
-        让LLM来分析用户意图，而不是用硬编码关键词。
+        Let LLM analyze user intent instead of hard-coding keywords.
 
-        返回:
+        Return:
         {
             "intent": "adjustment" | "approval" | "new_request" | "follow_up" | "single_stock_query",
             "adjustment_target": "roe" | "pe" | "pb" | "margin" | "other" | null,
@@ -496,7 +496,7 @@ class IntelligentScreeningService:
         }
         """
         if not await self._ensure_client():
-            # 如果LLM不可用，回退到关键词方式
+            # If LLM is not available, fall back to keyword mode
             return {
                 "intent": "adjustment" if self._is_adjustment_message(message) else
                           "approval" if self._is_approval_message(message) else
@@ -511,60 +511,60 @@ class IntelligentScreeningService:
 
         history_summary = ""
         if history:
-            recent = history[-4:]  # 最近4条足够理解上下文
+            recent = history[-4:]  # The last 4 items are enough to understand the context
             for h in recent:
                 role = "用户" if h["role"] == "user" else "助手"
                 content = h["content"][:200] + "..." if len(h["content"]) > 200 else h["content"]
                 history_summary += f"{role}: {content}\n"
 
-        system_prompt = """你是一个意图分类器。请分析用户最新消息，并结合对话历史，判断用户意图。
+        system_prompt = """You are an intent classifier. Please analyze the user s latest news and combine it with the conversation history to determine the user s intention.
 
-返回JSON格式：
+Return JSON format:
 {
     "intent": "adjustment" | "approval" | "new_request" | "follow_up" | "single_stock_query",
     "adjustment_target": "roe" | "pe" | "pb" | "margin" | "debt" | "cashflow" | "other" | null,
     "adjustment_direction": "loosen" | "tighten" | null,
-    "explicit_parameters": "用户明确提到的具体参数，如'把ROE放宽到10%'中的'10%'" | null,
-    "confidence": 0.0-1.0之间的置信度
+    "explicit_parameters": "Specific parameters explicitly mentioned by the user, e.g.'Relax ROE to 10%'in'10%'" | null,
+    "confidence": 0.0-1.0 confidence level between
 }
 
-意图定义：
-- adjustment: 用户希望调整之前的筛选条件（放宽、收紧、修改等）
-- approval: 用户明确批准某个方案（"执行"、"按此方案"、"好的"等）
-- new_request: 用户提出了全新的选股需求，与之前的筛选关系不大
-- follow_up: 用户基于当前结果追问（"这几只怎么样"、"加入自选"等）
-- single_stock_query: 用户询问单只股票的情况
+Intent definition:
+- adjustment: The user wants to adjust the previous filtering conditions (relax, tighten, modify, etc.)
+- approval: The user explicitly approves a plan ("execute", "According to this plan", "OK"etc.)
+- new_request: Users have put forward new stock selection needs, which have little to do with the previous screening.
+- follow_up: The user asks based on the current results ("How about these ones?", "Add to your choice"etc.)
+- single_stock_query: User asks about a single stock
 
-adjustment_target: 当intent=adjustment时，指出用户想调整哪个指标
-adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收紧(tighten)
+adjustment_target: When intent=adjustment, indicate which indicator the user wants to adjust
+adjustment_direction: When intent=adjustment when it is pointed out that it is relaxing(loosen)Still tighten(tighten)
 
-注意：
-- 如果用户说"先放宽ROE吧"，intent=adjustment, adjustment_target=roe, adjustment_direction=loosen
-- 如果用户说"把PE改成<20"，intent=adjustment, adjustment_target=pe, adjustment_direction=loosen, explicit_parameters="20"
-- 如果用户说"执行筛选方案"，intent=approval
-- 如果用户说"重新帮我选科技股"，intent=new_request
-- 如果用户说"把这几只加入自选"，intent=follow_up
-- 如果用户问"贵州茅台怎么样"，intent=single_stock_query
+Note:
+- If the user says"Let s relax ROE first", intent=adjustment, adjustment_target=roe, adjustment_direction=loosen
+- If the user says"Change PE to<20", intent=adjustment, adjustment_target=pe, adjustment_direction=loosen, explicit_parameters="20"
+- If the user says"Execute screening plan", intent=approval
+- If the user says"Help me choose technology stocks again", intent=new_request
+- If the user says"Add these to your choice", intent=follow_up
+- If the user asks"How about Kweichow Moutai?", intent=single_stock_query
 """
 
         messages = [
             Message(role=MessageRole.SYSTEM, content=system_prompt),
-            Message(role=MessageRole.USER, content=f"对话历史：\n{history_summary}\n\n用户最新消息：{message}")
+            Message(role=MessageRole.USER, content=f"Conversation history:\n{history_summary}\n\n Latest user news:{message}")
         ]
 
         try:
             resp = await self._llm_client.achat(messages, tools=None, log_payloads=True, payload_log_label="intent_classification")
             content = resp.content if resp else ""
-            # 提取JSON
+            # Extract JSON
             import re
             json_match = re.search(r'\{[\s\S]*\}', content)
             if json_match:
                 result = json.loads(json_match.group(0))
                 return result
         except Exception as e:
-            logger.warning(f"[智能筛选] 意图分类LLM调用失败: {e}")
+            logger.warning(f"[Smart filtering] Intent classification LLM call failed: {e}")
 
-        # 失败时回退
+        # Fallback on failure
         return {
             "intent": "adjustment" if self._is_adjustment_message(message) else
                       "approval" if self._is_approval_message(message) else
@@ -598,12 +598,12 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         return any(keyword in text for keyword in SCREENING_RESULT_REFERENCE_KEYWORDS)
 
     def _select_phase_history(self, history: list, phase: str, message: str, intent: Dict[str, Any] = None) -> list:
-        """按阶段压缩历史，避免 result 阶段继续继承整段旧会话。"""
+        """Compress history by stage to avoid the result stage continuing to inherit the entire old session."""
         recent_history = history[-MAX_CONTEXT_MESSAGES:]
         if not recent_history:
             return []
 
-        # 如果是调整类、批准类或追问消息，保留完整历史以便 LLM 理解上下文
+        # If it is an adjustment class, approval class, or follow-up message, keep the full history so LLM understands the context
         intent_type = intent.get("intent") if intent else None
         if intent_type in ["adjustment", "approval", "follow_up"]:
             return recent_history
@@ -642,7 +642,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         return selected_history or recent_history[-2:]
 
     def _extract_locked_execution_plan(self, history: list) -> Optional[dict]:
-        """从最近的 planning 回复中提取已批准的批量执行参数。"""
+        """Extract approved batch execution parameters from the most recent planning reply."""
         latest_planning = None
         for item in reversed(history or []):
             if item.get("role") == "assistant" and item.get("phase") == "planning":
@@ -690,7 +690,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         return plan
 
     def _extract_candidate_codes(self, screening_output: str) -> list[str]:
-        match = re.search(r"候选代码列表（按当前排序，共\s*\d+\s*只）:\s*([^\n]+)", screening_output or "")
+        match = re.search(r"Candidate code list (sorted by current, total\s*\d+\s*only):\s*([^\n]+)", screening_output or "")
         if not match:
             return []
         return [code.strip() for code in match.group(1).split(",") if code.strip()]
@@ -702,7 +702,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         except json.JSONDecodeError:
             conditions = []
 
-        lines = ["已批准执行计划摘要："]
+        lines = ["Summary of approved execution plan:"]
         if conditions:
             lines.append(f"- 筛选条件: {json.dumps(conditions, ensure_ascii=False)}")
         lines.append(f"- limit: {screen_plan.get('limit', 50)}")
@@ -712,7 +712,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         batch_plan = locked_plan.get("batch")
         if batch_plan:
             lines.append(
-                f"- 盈利稳定性验证: years={batch_plan.get('years', 3)}, "
+                f"- Profit stability verification: years={batch_plan.get('years', 3)}, "
                 f"threshold_cv={batch_plan.get('threshold_cv', 0.3)}"
             )
 
@@ -721,7 +721,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
     def _compact_screening_output_for_llm(self, screening_output: str) -> str:
         lines = [line for line in (screening_output or "").splitlines() if line.strip()]
         if not lines:
-            return "无筛选结果。"
+            return "No filter results."
 
         summary_lines: List[str] = [lines[0]]
         candidate_lines = [line for line in lines if re.match(r"^\d+\.\s", line)]
@@ -733,14 +733,14 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
     def _compact_batch_output_for_llm(self, batch_output: str) -> str:
         lines = [line for line in (batch_output or "").splitlines() if line.strip()]
         if not lines:
-            return "本轮未执行盈利稳定性验证。"
+            return "No profit stability verification was performed in this round."
 
         summary_lines = [lines[0]]
-        summary_match = next((line for line in lines if line.startswith("📊 汇总：")), "")
+        summary_match = next((line for line in lines if line.startswith("📊 Summary:")), "")
         if summary_match:
             summary_lines.append(summary_match)
 
-        stable_match = re.search(r"✅ 稳定股票代码：([^\n]+)", batch_output or "")
+        stable_match = re.search(r"✅ Stable stock code:([^\n]+)", batch_output or "")
         if stable_match:
             stable_codes = [code.strip() for code in stable_match.group(1).split(",") if code.strip()]
             preview = ", ".join(stable_codes[:8])
@@ -748,14 +748,14 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
             if len(stable_codes) > 8:
                 summary_lines.append(f"其余 {len(stable_codes) - 8} 只稳定股票代码已省略。")
 
-        no_data_match = re.search(r"无数据\s*(\d+)\s*只", batch_output or "")
+        no_data_match = re.search(r"No data\s*(\d+)\s*only", batch_output or "")
         if no_data_match:
             summary_lines.append(f"无数据股票数量: {no_data_match.group(1)}")
 
         return "\n".join(summary_lines)
 
     def _extract_stable_codes(self, batch_output: str) -> list[str]:
-        stable_match = re.search(r"✅ 稳定股票代码：([^\n]+)", batch_output or "")
+        stable_match = re.search(r"✅ Stable stock code:([^\n]+)", batch_output or "")
         if not stable_match:
             return []
         return [code.strip() for code in stable_match.group(1).split(",") if code.strip()]
@@ -847,12 +847,12 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
             reason_parts.append(f"财报期={report_period}")
 
         if stability_checked:
-            reason_parts.append("近3年盈利稳定性验证通过" if stability_passed else "本轮未纳入盈利稳定性通过名单")
+            reason_parts.append("近3年盈利稳定性验证通过" if stability_passed else "This round was not included in the profit stability pass list")
 
         if not reason_parts:
-            return "符合已批准的筛选条件。"
+            return "Matches approved filters."
 
-        return "符合已批准条件：" + "，".join(reason_parts[:5]) + "。"
+        return "Meet approved conditions:" + "，".join(reason_parts[:5]) + "。"
 
     def _build_structured_stocks(
         self,
@@ -921,12 +921,12 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         return stocks
 
     def _build_locked_result_reply(self, total_candidates: int, stocks: list[dict[str, Any]], batch_output: str) -> str:
-        lines = ["已按批准的筛选方案执行完成。"]
+        lines = ["The approved screening plan has been implemented."]
         if total_candidates:
             lines.append(f"共筛出 {total_candidates} 只候选。")
 
         batch_summary = next(
-            (line.strip() for line in (batch_output or "").splitlines() if line.strip().startswith("📊 汇总：")),
+            (line.strip() for line in (batch_output or "").splitlines() if line.strip().startswith("📊 Summary:")),
             "",
         )
         if batch_summary:
@@ -934,14 +934,14 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
 
         if not stocks:
             if batch_output:
-                lines.append("原始筛选已有候选，但结合盈利稳定性验证后未形成最终清单，不再放宽阈值。")
+                lines.append("There were candidates in the original screening, but after verification of profitability stability, no final list was formed, and the threshold will no longer be relaxed.")
             else:
-                lines.append("当前未形成可展示的最终候选，不再放宽阈值。")
+                lines.append("No final candidates have been formed to be displayed, and the threshold will no longer be relaxed.")
         else:
             if len(stocks) < 5:
                 lines.append(f"当前仅有 {len(stocks)} 只候选满足条件，不再放宽阈值。")
             else:
-                lines.append("以下为最符合当前条件的 5 只候选：")
+                lines.append("The following are the 5 candidates that best meet the current conditions:")
 
             for index, stock in enumerate(stocks, 1):
                 metrics = []
@@ -961,9 +961,9 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                     header += f"（{stock['industry']}）"
                 lines.append(header)
                 if metrics:
-                    lines.append(f"   - 关键指标：{'；'.join(metrics[:5])}")
+                    lines.append(f"   - Key indicators:{'; '.join(metrics[:5])}")
                 if stock.get("reason"):
-                    lines.append(f"   - 理由：{stock['reason']}")
+                    lines.append(f"   - Reason:{stock['reason']}")
 
         lines.append("")
         lines.append("```json")
@@ -974,7 +974,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
     async def _invoke_tool_function(self, tool_name: str, **kwargs) -> str:
         func = (self._tool_functions or {}).get(tool_name)
         if not func:
-            raise ValueError(f"工具不存在：{tool_name}")
+            raise ValueError(f"Tool does not exist:{tool_name}")
 
         result = func(**kwargs)
         if inspect.isawaitable(result):
@@ -987,7 +987,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         locked_plan: dict,
         progress_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
     ) -> tuple[str, List[str], list[dict[str, Any]]]:
-        """按已批准的 planning 参数直接执行工具，并由服务端生成最终结构化结果。"""
+        """The tool is executed directly according to the approved planning parameters, and the final structured result is generated by the server."""
         tools_used: List[str] = []
 
         screen_args = locked_plan["screen"]
@@ -996,7 +996,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
             progress_callback,
             "status",
             phase="result",
-            message="按已批准的执行计划直接运行批量筛选",
+            message="Run batch filters directly against approved execution plans",
         )
         screen_items, total_candidates = await _execute_screening_query(
             raw_conditions,
@@ -1043,7 +1043,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         event: str,
         **data,
     ) -> None:
-        """发送智能筛选进度事件，供 WebSocket 流式展示。"""
+        """Send smart filtering progress events for WebSocket streaming display."""
         if not progress_callback:
             return
 
@@ -1055,7 +1055,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         try:
             await progress_callback(payload)
         except Exception as e:
-            logger.debug("[智能筛选] 进度推送失败(忽略): %s", e)
+            logger.debug("[Smart filtering] Progress push failed(ignore): %s", e)
 
     def _build_conversation_title(self, message: str) -> str:
         text = re.sub(r"\s+", " ", (message or "").strip())
@@ -1113,22 +1113,22 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         progress_callback: Optional[Callable[[Dict[str, Any]], Awaitable[None]]] = None,
     ) -> Dict[str, Any]:
         """
-        核心方法：处理用户的选股请求（三阶段流程）
+        Core method: Processing user s stock selection request (three-stage process)
 
-        阶段 1 — 需求确认（confirmation）：LLM 分析需求，返回理解 + 改进建议，不调用工具
-        阶段 2 — 执行规划（planning）：LLM 说明具体调用哪些工具、用什么参数，不实际执行
-        阶段 3 — 执行筛选（result）：LLM 调用工具，返回 5 只股票
+        stage 1 — Requirement confirmation (confirmation): LLM analyzes the requirements and returns understanding + Improvement suggestions without calling tools
+        stage 2 — Execution planning (planning): LLM explains which tools to call and what parameters to use, but does not actually execute it.
+        stage 3 — Execute screening (result): LLM calls the tool and returns 5 stocks
         """
-        # 1. 获取历史对话
+        # 1. Get historical conversations
         resolved_conversation_id, history = await self._get_context_messages(user_id, conversation_id)
         if not resolved_conversation_id:
             resolved_conversation_id = conversation_id or uuid.uuid4().hex
 
-        # 2. LLM意图分类
+        # 2. LLM Intent classification
         intent = await self._classify_intent(message, history)
         logger.info(f"[智能筛选] 用户={user_id} 意图分类={intent.get('intent')} 置信度={intent.get('confidence'):.2f}")
 
-        # 3. 先检查是否是单只股票查询
+        # 3. First check whether it is a single stock query
         if intent.get("intent") == "single_stock_query":
             direct_result = await self._maybe_handle_single_stock_query(
                 message,
@@ -1150,7 +1150,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
 
         if not await self._ensure_client():
             return {
-                "reply": "智能筛选暂时不可用，请检查 LLM 配置是否已在「设置」中正确配置。",
+                "reply": "Smart filtering is temporarily unavailable, please check whether the LLM configuration has been configured correctly in Settings.",
                 "tools_used": [],
                 "stocks": [],
                 "phase": "result",
@@ -1160,7 +1160,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
 
         set_current_user_id(user_id)
 
-        # 4. 判断当前应进入哪个阶段
+        # 4. Determine which stage you should enter now
         phase = self._determine_phase(history, message, intent)
         logger.info(f"[智能筛选] 用户={user_id} 当前阶段={phase} 消息={message[:50]}")
         await self._emit_progress(
@@ -1174,8 +1174,8 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
             ),
         )
 
-        # 5. 构建消息列表（包含历史）
-        # planning 阶段需要将实际可用的工具清单传入提示词，防止 LLM 幻觉工具名
+        # 5. Build message list (including history)
+        # planning At this stage, the list of actually available tools needs to be passed into the prompt word to prevent LLM from hallucinating tool names.
         tool_summary = self._build_tool_summary(self._result_openai_tools) if phase == "planning" else ""
         system_prompt = self._get_system_prompt(phase, tool_summary, intent)
         messages = [Message(role=MessageRole.SYSTEM, content=system_prompt)]
@@ -1200,10 +1200,10 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                     progress_callback,
                     "status",
                     phase=phase,
-                    message="已进入执行阶段，开始调用筛选与股票关注列表工具",
+                    message="It has entered the execution stage and started to call the screening and stock watch list tools.",
                 )
                 if locked_plan:
-                    logger.info("[智能筛选] 使用已批准计划直接执行 result 阶段")
+                    logger.info("[Smart filtering] Directly execute the result phase using the approved plan")
                     content, locked_tools_used, locked_stocks = await self._run_locked_result_execution(
                         message,
                         locked_plan,
@@ -1212,7 +1212,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                     tools_used.extend(locked_tools_used)
                     structured_stocks = locked_stocks
                     return content
-                # 阶段 3：实际调用工具执行筛选
+                # Stage 3: Actual call to tool to perform filtering
                 resp = await self._llm_client.achat(
                     messages,
                     tools=self._result_openai_tools,
@@ -1230,7 +1230,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                     phase=phase,
                     message="正在生成阶段性回复",
                 )
-                # 阶段 1（confirmation）和阶段 2（planning）：均不调用工具
+                # Phase 1 (confirmation) and phase 2 (planning): neither tool is called
                 resp = await self._llm_client.achat(
                     messages,
                     tools=None,
@@ -1245,10 +1245,10 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                 _do_chat(),
                 timeout=SCREENING_RESULT_TIMEOUT_SECONDS if phase == "result" else ASSISTANT_TIMEOUT_SECONDS,
             )
-            reply = content or "抱歉，暂时无法生成回答，请稍后再试。"
+            reply = content or "Sorry, the answer cannot be generated at the moment, please try again later."
             elapsed = (datetime.now(timezone.utc) - started_at).total_seconds()
             logger.info(
-                f"[智能筛选] 完成 phase={phase} elapsed={elapsed:.2f}s tools_used={len(tools_used)}"
+                f"[Smart filtering] Complete phase={phase} elapsed={elapsed:.2f}s tools_used={len(tools_used)}"
             )
             await self._emit_progress(
                 progress_callback,
@@ -1284,9 +1284,9 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                 progress_callback,
                 "error",
                 phase=phase,
-                message=f"处理失败：{str(e)}",
+                message=f"Processing failed:{str(e)}",
             )
-            reply = f"处理您的请求时发生错误：{str(e)}。请稍后重试。"
+            reply = f"An error occurred while processing your request:{str(e)}. Please try again later."
             await self._save_message(user_id, resolved_conversation_id, message, reply, tools_used, [], "result")
             return {
                 "reply": reply,
@@ -1296,10 +1296,10 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                 "conversation_id": resolved_conversation_id,
             }
 
-        # 提取股票（仅 result 阶段）
+        # Extract stocks (result stage only)
         stocks = structured_stocks if phase == "result" and structured_stocks else self._extract_stocks(reply) if phase == "result" else []
 
-        # 清理reply中的JSON代码块（股票数据已通过stocks字段返回）
+        # Clean up JSON code block in reply (stock data has been returned via stocks field)
         if phase == "result":
             reply = re.sub(r'```json\s*\{[\s\S]*?\}\s*```', '', reply)
             reply = re.sub(r'```\s*\{[\s\S]*?\}\s*```', '', reply)
@@ -1312,7 +1312,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                 progress_callback,
                 "no_match",
                 phase="result",
-                message="未找到符合原筛选条件的股票",
+                message="No stocks matching the original filter criteria were found.",
                 stocks=[],
             )
             await self._save_message(user_id, resolved_conversation_id, message, reply, tools_used, stocks, phase)
@@ -1337,17 +1337,17 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
 
     def _determine_phase(self, history: list, message: str, intent: Dict[str, Any] = None) -> str:
         """
-        基于LLM意图分类来判断当前消息应进入哪个阶段
+        Determine which stage the current message should enter based on LLM intent classification
 
-        返回 'confirmation' → 阶段 1：LLM 分析需求，不调用工具
-        返回 'planning'     → 阶段 2：LLM 解释执行计划，不调用工具
-        返回 'result'       → 阶段 3：LLM 调用工具，返回股票列表
+        Return 'confirmation' → Phase 1: LLM analyzes requirements without calling tools
+        Return 'planning'     → Phase 2: LLM interprets the execution plan without calling tools
+        Return 'result'       → Stage 3: LLM calls the tool and returns the stock list
         """
-        # 无历史 → 新需求 → 确认阶段
+        # no history → new needs → Confirmation phase
         if not history:
             return "confirmation"
 
-        # 找到最近一条 assistant 消息
+        # Find the most recent assistant message
         last_assistant = self._find_last_assistant(history)
 
         if not last_assistant:
@@ -1357,27 +1357,27 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         intent_type = intent.get("intent") if intent else None
 
         if last_phase == "confirmation":
-            # 用户回应了确认消息 → 进入规划阶段
+            # The user responded to the confirmation message → Entering the planning stage
             return "planning"
 
         if last_phase == "planning":
-            # 用户回应了规划消息
+            # User responded to planning message
             if intent_type == "adjustment":
-                # 用户要调整需求 → 回到确认阶段重新理解
+                # Users need to adjust their needs → Go back to the confirmation stage and re-understand
                 return "confirmation"
-            # 批准计划或其他 → 进入执行阶段
+            # Approval of plans or other → Entering the execution phase
             return "result"
 
         # last_phase == "result"
         if intent_type == "new_request":
-            # 全新的选股需求 → 重新确认
+            # Brand new stock selection needs → Reconfirm
             return "confirmation"
 
-        # adjustment/approval/follow_up/single_stock_query → 都留在 result 阶段处理
+        # adjustment/approval/follow_up/single_stock_query → All are left in the result stage for processing.
         return "result"
 
     async def _get_context_messages(self, user_id: str, conversation_id: Optional[str] = None) -> tuple[str, list]:
-        """获取最近 N 条对话历史，用于传给 LLM 作为上下文"""
+        """Get the latest N conversation history, which is used to pass to LLM as context"""
         doc = await self._get_conversation_doc(user_id, conversation_id)
         if not doc or not doc.get("messages"):
             return conversation_id or "", []
@@ -1385,7 +1385,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         return doc.get("conversation_id", conversation_id or ""), messages[-MAX_CONTEXT_MESSAGES:]
 
     def _build_tool_summary(self, tools: Optional[list] = None) -> str:
-        """将当前注册的工具列表转为文字说明，供 planning 阶段系统提示词使用"""
+        """Convert the currently registered tool list into text descriptions for system prompts in the planning stage"""
         target_tools = tools if tools is not None else self._openai_tools
         if not target_tools:
             return "（暂无可用工具）"
@@ -1396,149 +1396,149 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
             desc = fn.get("description", "")
             params = fn.get("parameters", {}).get("properties", {})
             param_names = ", ".join(params.keys()) if params else "无参数"
-            lines.append(f"- `{name}`：{desc}\n  参数：{param_names}")
+            lines.append(f"- `{name}`: {desc}\n  Parameters:{param_names}")
         return "\n".join(lines)
 
     def _get_system_prompt(self, phase: str, tool_summary: str = "", intent: Dict[str, Any] = None) -> str:
-        """构建选股专家的系统提示词（根据阶段定制）"""
+        """Construct system prompt words for stock picking experts (customized according to the stage)"""
         curr_date = _get_latest_trade_date()
 
         if phase == "confirmation":
-            return f"""你是一位专业的 A 股选股专家。用户刚提出了新的选股需求。
+            return f"""You are a professional A-share stock picking expert. Users have just put forward new stock selection requirements.
 
-## 你的任务：需求分析与确认
+## Your task: Requirements analysis and confirmation
 
-**不要调用任何工具，不要推荐股票。** 请按以下步骤回复：
+**Do not call any instruments and do not recommend stocks.** Please follow these steps to reply:
 
-1. **分析理解**：提炼用户需求的核心条件（行业、估值、风格、时间维度等）
-2. **展示理解**：用清晰的列表形式告诉用户"我理解您的需求是..."
-3. **改进建议**：基于专业判断，提出 2-3 条可选的改进建议（增加筛选维度、调整阈值、补充考量因素等）
-4. **等待确认**：明确询问用户是"按原需求筛选"还是"采纳建议后再筛选"
+1. **Analyze and understand**: Refining the core conditions of user needs (industry, valuation, style, time dimension, etc.)
+2. **show understanding**: Tell users in a clear list"I understand your need is..."
+3. **Improvement suggestions**: Based on professional judgment, put forward 2-3 optional improvement suggestions (increase screening dimensions, adjust thresholds, supplementary considerations, etc.)
+4. **Waiting for confirmation**: Explicitly ask the user whether"Filter by original requirements"Still"Filter after taking suggestions into consideration"
 
-补充规则：
-- 如果用户使用“低估值”“低PE”“低PB”这类模糊估值描述，但没有明确口径，必须在确认阶段显式指出这一歧义
-- PE 相关口径要区分 `pe`（PE）和 `pe_ttm`（PE(TTM)）
-- PB 相关口径要区分 `pb`（PB）和 `pb_mrq`（PB(MRQ)）
-- 遇到这类模糊估值需求时，你可以先给出默认建议口径，但必须把口径写清，并提示用户确认是否采用该口径
+Additional rules:
+- If the user uses low valuation  low PE  low PB This type of vague valuation description, but without a clear caliber, must explicitly point out this ambiguity during the confirmation stage.
+- PE Relevant calibers should be distinguished `pe` (PE) and `pe_ttm` (PE(TTM)) 
+- PB Relevant calibers should be distinguished `pb` (PB) and `pb_mrq` (PB(MRQ)) 
+- When encountering such vague valuation requirements, you can first give a default recommended caliber, but the caliber must be clearly stated and the user must be prompted to confirm whether to adopt this caliber.
 
-回复格式：
+Reply format:
 ```
-## 📋 需求分析
+## 📋 needs analysis
 
-我理解您的选股需求如下：
-- **行业范围**：xxx
-- **核心条件**：xxx
-- **筛选风格**：xxx
-- **待确认口径**：若您提到“低PE/低PB/低估值”，我会进一步确认是使用 `pe` / `pe_ttm`、`pb` / `pb_mrq`
+I understand your stock selection needs are as follows:
+- **Industry scope**: xxx
+- **core conditions**: xxx
+- **filter style**: xxx
+- **Caliber to be confirmed**: If you mentioned Low PE/low PB/low valuation , I will further confirm using `pe` / `pe_ttm`, `pb` / `pb_mrq`
 
-## 💡 改进建议
+## 💡 Improvement suggestions
 
-基于专业分析，我建议您可以考虑：
-1. xxx（原因）
-2. xxx（原因）
-3. 若“低估值”是核心要求，建议明确采用 `pe_ttm`（PE(TTM)）还是 `pe`（PE），以及采用 `pb_mrq`（PB(MRQ)）还是 `pb`（PB）
+Based on professional analysis, I suggest you consider:
+1. xxx (reason)
+2. xxx (reason)
+3. If low valuation It is a core requirement and it is recommended to adopt it explicitly. `pe_ttm` (PE(TTM)) Still `pe` (PE) , and adopt `pb_mrq` (PB(MRQ)) Still `pb` (PB) 
 
-## ⏳ 请确认
+## ⏳ Please confirm
 
-请选择：
-- **按原需求筛选** — 直接按您的条件执行
-- **采纳建议后筛选** — 添加以上改进条件后再执行
+Please select:
+- **Filter by original requirements** — Execute directly according to your conditions
+- **Filter after taking suggestions** — Add the above improvement conditions before executing
 ```
 
-当前日期：{curr_date}
-只分析需求，不推荐股票，不调用工具。
+Current date:{curr_date}
+It only analyzes needs, does not recommend stocks, and does not use tools.
 """
 
         if phase == "planning":
             screening_fields_markdown = build_screening_fields_markdown(public_only=True)
-            return f"""你是一位专业的 A 股选股专家。用户已确认选股需求，请制定详细的执行计划。
+            return f"""You are a professional A-share stock picking expert. The user has confirmed the stock selection needs, please formulate a detailed execution plan.
 
-## 可用工具清单（严格限于以下工具，不得使用其他工具名）
+## List of available tools (strictly limited to the following tools, no other tool names may be used)
 
 {tool_summary}
 
-## `screen_stocks_by_criteria` 支持的筛选字段
+## `screen_stocks_by_criteria` Supported filter fields
 
 {screening_fields_markdown}
 
-支持的操作符：> < >= <= == != between in not_in contains
+Supported operators:> < >= <= == != between in not_in contains
 
-**注意**：不支持 audit_opinion_type（审计意见类型）、margin_of_safety_score（自定义安全边际评分）等字段。
-若用户需求涉及这些条件，请在计划中说明将用现有字段近似替代，或诚实告知此限制。
+**Note**: Fields such as audit_opinion_type (audit opinion type) and margin_of_safety_score (custom safety margin score) are not supported.
+If user needs involve these conditions, please state in the plan that existing fields will be approximately replaced, or be honest about this restriction.
 
-## 推荐两步法工作流
+## Recommended two-step workflow
 
-**第一步（宽口径批量筛选）**：调用 `screen_stocks_by_criteria`，设置 limit=50，按硬性指标（PE(TTM)/PE、PB(MRQ)/PB、市值、资产负债率、is_st 等）过滤候选池。
-**第二步（盈利稳定性验证）**：将候选股票代码列表传给 `batch_check_profit_consistency`，一次查询验证近N年ROE稳定性。**禁止对每只股票单独重复查询财务数据。**
+**The first step (wide-diameter batch screening)**: call `screen_stocks_by_criteria`, settings limit=50, According to hard indicators (PE(TTM)/PE, PB(MRQ)/PB, Market value, gearing ratio, is_st, etc.) to filter the candidate pool.
+**Step Two (Profitability Stability Verification)**: Pass the list of candidate stock symbols to `batch_check_profit_consistency`, A query verifies the ROE stability in the past N years.**It is prohibited to repeatedly query financial data for each stock individually.**
 
-## 字段使用建议
+## Field usage suggestions
 
-- 估值口径必须显式写清，不要只写笼统的“PE/PB”：`pe` 表示 PE，`pe_ttm` 表示 PE(TTM)，`pb` 表示 PB，`pb_mrq` 表示 PB(MRQ)
-- 如果用户只说“PE”但未说明口径，优先在计划中明确成你实际选择的字段，例如“使用 `pe_ttm`（PE(TTM)）<= 15”或“使用 `pe`（PE）<= 15”
-- 如果用户只说“PB”但未说明口径，优先在计划中明确成你实际选择的字段，例如“使用 `pb`（PB）<= 1.5”或“使用 `pb_mrq`（PB(MRQ)）<= 1.5”
-- 优先使用可比较的比率型指标做硬筛选，如 PE(TTM)/PE、PB(MRQ)/PB、ROE、毛利率、资产负债率、流动比率、股息率
-- `revenue_ttm`、`net_profit_ttm`、`n_cashflow_act` 更适合作为质量补充条件，不宜单独作为唯一标准
-- 如果用户强调“现金流好”“利润扎实”“财务稳健”，优先考虑 `n_cashflow_act > 0`、`net_profit_ttm > 0`、`debt_to_assets`、`current_ratio`
-- 如果用户强调“高分红”“防御型”，优先考虑 `dividend_yield` 并结合 `debt_to_assets`、`n_cashflow_act`
-- 如果用户强调“财报最新”“只看最新财报”，可通过 `report_period` 增加约束
+- The valuation caliber must be written explicitly, not just in general terms. PE/PB : `pe` means PE,`pe_ttm` express PE(TTM), `pb` means PB,`pb_mrq` express PB(MRQ)
+- If the user just says PE However, the caliber is not specified. Priority is given to specifying the fields you actually choose in the plan, for example Use `pe_ttm` (PE(TTM)) <= 15 or Use `pe` (PE) <= 15 
+- If the user just says PB However, the caliber is not specified. Priority is given to specifying the fields you actually choose in the plan, for example Use `pb` (PB) <= 1.5 or Use `pb_mrq` (PB(MRQ)) <= 1.5 
+- Prioritize using comparable ratio indicators for hard screening, such as PE(TTM)/PE, PB(MRQ)/PB, ROE, Gross profit margin, asset-liability ratio, current ratio, dividend rate
+- `revenue_ttm`, `net_profit_ttm`, `n_cashflow_act` It is more suitable as a supplementary condition for quality and should not be used as the sole criterion alone.
+- If the user emphasizes good cash flow  Solid profits  Financially sound , Prioritize `n_cashflow_act > 0`, `net_profit_ttm > 0`, `debt_to_assets`, `current_ratio`
+- If the user emphasizes High dividends  Defensive , Prioritize `dividend_yield` and combine `debt_to_assets`, `n_cashflow_act`
+- If the user emphasizes Latest financial report  Only view the latest financial reports , Passable `report_period` Add constraints
 
-## 股票关注列表联动规则
+## Stock watch list linkage rules
 
-- 若用户明确要求“筛选完成后加入股票关注列表”或“把上次推荐加入股票关注列表”，可在最终推荐确定后调用 `add_stocks_to_favorites`
-- 若用户明确要求“加标签/打标签/标记”（如“打上巴菲特标签”），优先调用 `add_stocks_to_favorites` 并传入 `tags`
-- 若用户明确要求放入某个分类/分组（如“银行”“待分析”），可调用 `add_stock_to_watchlist`，必要时先用 `list_watchlist_groups` 查看现有分类
-- “标签”和“分组”不是同一概念：标签写入股票关注列表的 `tags`，分组写入 watchlist group
-- 未明确提出股票关注列表操作时，不要主动添加
+- If the user explicitly requests After the screening is completed, add the stock to the watch list or Add last recommendation to stock watchlist , Can be called after the final recommendation is determined `add_stocks_to_favorites`
+- If the user explicitly requests Tag/Tag/Tag  (Such as Tag Buffett ) , Priority call `add_stocks_to_favorites` and pass in `tags`
+- If the user explicitly requests to be placed in a certain category/group (such as bank  To be analyzed ) , callable `add_stock_to_watchlist`, Use first when necessary `list_watchlist_groups` View existing categories
+-  label and Group Not the same concept: tags written into stock watchlists `tags`, Group writing watchlist group
+- Do not take the initiative to add stocks to your watch list if it is not explicitly proposed.
 
-## 你的任务：执行计划说明
+## Your Task: Execution Plan Description
 
-**不要调用任何工具，不要推荐股票。** 请详细说明你打算如何执行此次筛选：
+**Do not call any instruments and do not recommend stocks.** Please describe in detail how you plan to perform this screening:
 
-1. **筛选策略**：总结最终采用的筛选条件，注明哪些需求能被现有字段支持，哪些无法精确筛选
-2. **工具调用计划**：**仅使用上方可用工具清单中的工具**，列出工具名和具体参数
-   - 步骤1：`screen_stocks_by_criteria` 的 conditions JSON 数组（每个条件的 field/operator/value），limit 建议 30-50
-    - 若使用估值字段，必须在文字说明里同步写明展示口径，例如“`pe_ttm`（PE(TTM)）”“`pb_mrq`（PB(MRQ)）”
-   - 步骤2（如需验证盈利稳定性）：`batch_check_profit_consistency`，传入步骤1的候选股代码列表
-3. **数据处理**：说明如何从工具返回结果中选出最终 5 只股票（排序依据、优先级等）
-4. **限制说明**：诚实告知用户哪些条件无法精确筛选（如审计意见类型、自定义安全边际评分）
-5. **请求批准**：询问用户是否同意该方案
+1. **Screening strategy**: Summarize the final filtering conditions and indicate which requirements can be supported by existing fields and which cannot be accurately filtered.
+2. **Tool call plan**: **Only use tools from the list of available tools above**, List tool name and specific parameters
+   - Step 1:`screen_stocks_by_criteria` JSON array of conditions (field/operator/value for each condition), limit suggestions 30-50
+    - If a valuation field is used, the display caliber must be stated simultaneously in the text description, for example `pe_ttm` (PE(TTM))   `pb_mrq` (PB(MRQ))  
+   - Step 2 (if you need to verify profitability stability):`batch_check_profit_consistency`, Pass in the candidate stock code list in step 1
+3. **Data processing**: Explain how to select the final 5 stocks from the results returned by the tool (sort by, priority, etc.)
+4. **Restrictions**: Honestly tell users which conditions cannot be accurately filtered (such as audit opinion types, customized safety margin scores)
+5. **request approval**: Ask the user if they agree to the proposal
 
-回复格式：
+Reply format:
 ```
-## 🔧 执行计划
+## 🔧 execution plan
 
-### 筛选条件（最终版）
-- PE(TTM) < xxx（使用 `pe_ttm` 字段）
-- 市值 > 50亿（现有字段支持）
-- 资产负债率 ≤ 60%（debt_to_assets 字段支持）
-- 非ST股（is_st 字段支持）
-- 近3年ROE稳定（batch_check_profit_consistency 工具支持）
+### Filter criteria (final version)
+- PE(TTM) < xxx (Use `pe_ttm` field)
+- Market value > 50 billion (existing field support)
+- Asset-liability ratio ≤ 60% (debt_to_assets field support)
+- Non-ST shares (supported by is_st field)
+- ROE stable in the past 3 years (batch_check_profit_consistency tool support)
 
-### 工具调用
-**步骤 1**：调用 `screen_stocks_by_criteria`
+### Tool call
+**steps 1**: call `screen_stocks_by_criteria`
 - conditions: [{{{{"field": "pe_ttm", "operator": "<", "value": 15}}}}, {{{{"field": "pb_mrq", "operator": "<=", "value": 1.5}}}}, {{{{"field": "total_mv", "operator": ">", "value": 50}}}}, {{{{"field": "is_st", "operator": "==", "value": false}}}}]
 - limit: 50
 - order_by_field: "pb_mrq"
 - order_direction: "asc"
 
-**步骤 2**：调用 `batch_check_profit_consistency`（对步骤1的候选股批量验证盈利稳定性）
-- stock_codes_json: 步骤1返回的全部股票代码列表
+**steps 2**: call `batch_check_profit_consistency` (Verify the profitability stability of the candidate stocks in step 1 in batches)
+- stock_codes_json: List of all stock symbols returned in step 1
 - years: 3
 - threshold_cv: 0.3
 
-### 数据处理
-- 从步骤2结果中筛选"盈利稳定"的股票，按 PB(MRQ) 升序取前 5 只
-- 确保行业不重叠
+### Data processing
+- Filter from step 2 results"Stable profits"stocks, press PB(MRQ) Take the first 5 in ascending order
+- Make sure industries don t overlap
 
-## ✅ 请确认
+## ✅ Please confirm
 
-以上是我的执行方案，请选择：
-- **执行筛选方案** — 按此方案立即执行
-- **重新描述需求** — 重新调整筛选条件
+The above is my execution plan, please choose:
+- **Execute screening plan** — Execute this plan immediately
+- **Re-describe requirements** — Re-adjust filters
 ```
 
-当前日期：{curr_date}
-只说明计划，不调用工具，不推荐股票。**严禁使用工具清单以外的工具名。**
+Current date:{curr_date}
+It only explains the plan, does not use tools, and does not recommend stocks.**It is strictly prohibited to use tool names other than those listed in the tool list.**
 """
 
         # phase == "result"
@@ -1550,38 +1550,38 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                 direction = intent.get("adjustment_direction")
                 params = intent.get("explicit_parameters")
                 intent_hint = f"""
-## 当前用户意图分析（重要）
+## Current user intent analysis (important)
 
-用户希望**调整筛选条件**：
-- 调整目标：{target or '未知指标'}
-- 调整方向：{'放宽条件' if direction == 'loosen' else '收紧条件' if direction == 'tighten' else '未知'}
-- 明确参数：{params or '用户未明确给出具体数值，请根据对话历史中的建议推断'}
+User wishes**Adjust filters**: 
+- Adjust goals:{target or 'unknown indicator'}
+- Adjust direction:{'relax conditions' if direction == 'loosen' else 'tighten conditions' if direction == 'tighten' else 'unknown'}
+- Explicit parameters:{params or 'The user did not explicitly give a specific value, please infer based on the suggestions in the conversation history.'}
 
-请仔细阅读对话历史，找到之前的筛选条件，然后按用户意图调整后重新筛选。
-特别注意：如果历史中助手给出了具体的调整建议表格（如"放宽 ROE > 15% → ROE > 10%"），请优先采用那个建议值。
+Please read the conversation history carefully to find the previous filtering conditions, then adjust them according to the user s intent and filter again.
+Special note: If the assistant gives a specific adjustment suggestion form in the history (such as"relax ROE > 15% → ROE > 10%") , Please use that recommended value first.
 """
             elif intent_type == "approval":
                 intent_hint = """
-## 当前用户意图分析（重要）
+## Current user intent analysis (important)
 
-用户已**批准执行计划**，请按之前规划的参数立即执行筛选。
+The user has**Approve execution plan**, Please perform filtering immediately according to the previously planned parameters.
 """
 
-        return f"""你是一位专业的 A 股选股专家。用户已批准执行计划，请立即执行筛选并推荐股票。
+        return f"""You are a professional A-share stock picking expert. The user has approved the execution plan, please execute the screening and recommend stocks immediately.
 {intent_hint}
-## 你的任务：执行筛选
+## Your task: Perform screening
 
-1. **调用工具**：按之前计划的参数调用 `screen_stocks_by_criteria` 等工具获取数据
-2. **精选推荐**：每次严格推荐 **5 只** 最符合条件的股票
-3. **结构化输出**：在回答最后包含以下 JSON 代码块
+1. **Call tool**: Called according to previously planned parameters `screen_stocks_by_criteria` Other tools to obtain data
+2. **Featured recommendations**: Strictly recommended every time **5 only** The most eligible stocks
+3. **Structured output**: Include the following JSON code block at the end of your answer
 
 ```json
 {{{{
   "stocks": [
     {{{{
       "code": "600519",
-      "name": "贵州茅台",
-      "industry": "白酒",
+      "name": "Kweichow Moutai",
+      "industry": "Liquor",
       "price": 1680.00,
       "pe": 25.3,
     "pe_display_label": "PE",
@@ -1602,36 +1602,36 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
             "n_cashflow_act": 39876500000,
             "report_period": "20250930",
       "pct_change": 2.1,
-      "reason": "白马股龙头，业绩稳定增长，估值处于历史中位"
+      "reason": "The leading white horse stock, with stable performance growth and valuation at the historical mid-range"
     }}}}
   ]
 }}}}
 ```
 
-## 规则
+## rules
 
-- 当前日期：{curr_date}
-- 默认最多执行 **两轮数据工具调用**：
-    - 第 1 轮：`screen_stocks_by_criteria`
-    - 第 2 轮：仅当确有必要时才调用 `batch_check_profit_consistency`
-- 若步骤 1 已能直接选出最终推荐，则**跳过**步骤 2，直接输出最终结果
-- 一旦已有足够数据生成最终推荐，**立即停止继续调用工具**
-- 不要为了“凑满信息”反复改阈值、重复筛选或重新扩大范围；当前条件下结果不足时，应直接说明限制
-- 每次推荐恰好 5 只股票，不多不少
-- 推荐理由要具体，结合数据说话
-- 若工具结果中已提供 ROE、股息率、资产负债率、流动比率、财报期，优先一并放入 JSON 字段，便于前端直接展示
-- 若工具结果中已提供 ROA、毛利率、净利率、滚动营收、滚动净利润、经营现金流、权益乘数、速动比率、现金比率，也可一并放入 JSON 字段，便于前端直接展示
-- 若实际筛选或展示口径使用 `pe_ttm` / `pb_mrq`，必须把对应数值写入 `pe` / `pb` 字段，并分别补充 `pe_display_label` / `pb_display_label`，严禁把 `PE(TTM)` 写成 `PE`、把 `PB(MRQ)` 写成 `PB`
-- 如果用户要求调整（如"换个行业""PE 再低点"），直接重新调用工具调整筛选
-- 如果用户明确要求将当前推荐结果加入股票关注列表，可调用 `add_stocks_to_favorites` 一次性添加；若同时要求“打标签/标记”，把标签通过 `tags` 参数一并写入
-- 如果用户明确要求将当前推荐结果放入某个分类/分组，可调用 `add_stock_to_watchlist`，分组不存在时允许自动创建，例如“银行”“待分析”
-- 若用户同时要求“加入自选 + 打标签 + 放入分组”，应先调用 `add_stocks_to_favorites` 写入 tags，再调用 `add_stock_to_watchlist`
-- 不给出具体的买入/卖出建议，只做选股推荐和分析
-- 只推荐 A 股（沪深两市）
+- Current date:{curr_date}
+- The default is to execute at most **Two rounds of data tool calls**: 
+    - Round 1:`screen_stocks_by_criteria`
+    - Round 2: Call only when absolutely necessary `batch_check_profit_consistency`
+- If step 1 can directly select the final recommendation, then**skip**Step 2, directly output the final result
+- Once enough data is available to generate final recommendations,**Stop calling tools immediately**
+- Don t do it for Gather information Repeatedly change the threshold, repeat screening, or re-expand the scope; when the results under the current conditions are insufficient, the restrictions should be directly stated
+- Recommend exactly 5 stocks each time, no more, no less
+- Reasons for recommendations should be specific and combined with data.
+- If ROE, dividend rate, asset-liability ratio, current ratio, and financial reporting period are already provided in the tool results, they should be put into the JSON field first to facilitate direct display on the front end.
+- If ROA, gross profit margin, net profit margin, rolling revenue, rolling net profit, operating cash flow, equity multiplier, quick ratio, and cash ratio are already provided in the tool results, they can also be put into the JSON field to facilitate direct display on the front end.
+- If the actual screening or display caliber is used `pe_ttm` / `pb_mrq`, The corresponding value must be written in `pe` / `pb` fields, and add them separately `pe_display_label` / `pb_display_label`, Strictly prohibited `PE(TTM)` written as `PE`, put `PB(MRQ)` written as `PB`
+- If the user requests adjustments (e.g."Change industry""PE Lower") , Directly re-invoke the tool to adjust filtering
+- If the user explicitly requests that the current recommendation result be added to the stock watch list, the user can call `add_stocks_to_favorites` One-time addition; if requested at the same time Tag/mark , pass tag `tags` Parameters are written together
+- If the user explicitly requests to put the current recommendation results into a certain category/group, you can call `add_stock_to_watchlist`, Allows automatic creation of groups if they do not exist, e.g. bank  To be analyzed 
+- If the user also requires Add to your choice + Tag + put into group , should be called first `add_stocks_to_favorites` Write tags and call again `add_stock_to_watchlist`
+- Does not give specific buying/selling advice, only stock selection recommendations and analysis
+- Only recommend A shares (Shanghai and Shenzhen Stock Exchanges)
 """
 
     def _extract_stocks(self, reply: str) -> list:
-        """从 LLM 回复中提取结构化股票列表"""
+        """Extract structured stock list from LLM reply"""
         pattern = r'```json\s*(\{[\s\S]*?\})\s*```'
         match = re.search(pattern, reply)
         if match:
@@ -1646,7 +1646,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         self, user_id: str, conversation_id: str, user_msg: str, assistant_reply: str,
         tools_used: List[str], stocks: list, phase: str, is_fallback: bool = False,
     ) -> None:
-        """持久化对话消息到 screening_conversations"""
+        """Persistent conversation messages arrive screening_conversations"""
         now = datetime.now(timezone.utc)
         user_entry = {"role": "user", "content": user_msg, "timestamp": now}
         assistant_entry = {
@@ -1684,20 +1684,20 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
         max_stocks: int = 10,
     ) -> Dict[str, Any]:
         """
-        直接执行选股（单轮，不经过确认/规划阶段）。
-        供 MCP / API 等外部调用，无需多轮对话。
+        Execute stock picking directly (single round, no confirmation/planning stage).
+        For external calls such as MCP/API, without the need for multiple rounds of dialogue.
 
         Args:
-            user_id: 用户 ID（用于 LLM 配额等）
-            criteria: 筛选条件（自然语言），如 "PE小于20的科技股"
-            max_stocks: 最多返回股票数量，默认 10
+            user_id: User ID (used for LLM quotas, etc.)
+            criteria: Filter criteria (natural language) such as "PE Technology stocks less than 20"
+            max_stocks: Maximum number of stocks returned, default 10
 
         Returns:
             {"reply": str, "stocks": list, "phase": "result"}
         """
         if not await self._ensure_client():
             return {
-                "reply": "智能筛选暂时不可用，请检查 LLM 配置。",
+                "reply": "Smart filtering is temporarily unavailable, please check your LLM configuration.",
                 "stocks": [],
                 "phase": "result",
             }
@@ -1709,15 +1709,15 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                 Message(
                     role=MessageRole.SYSTEM,
                     content=(
-                        "【直接执行模式】用户要求你在单轮内给出可执行的选股方案。"
-                        "你现在只负责生成 planning 阶段的工具执行计划，不要调用工具，不要输出最终股票推荐。"
-                        f"最终展示股票数量上限为 {max_stocks} 只。\n\n"
+                        " [Direct execution mode] The user requires you to provide an executable stock selection plan within a single round."
+                        "You are now only responsible for generating the tool execution plan in the planning phase. Do not call the tool or output the final stock recommendation."
+                        f"The final limit on the number of stocks displayed is {max_stocks} Only.\n\n"
                         + self._get_system_prompt("planning", self._build_tool_summary(self._result_openai_tools))
                     ),
                 ),
                 Message(
                     role=MessageRole.USER,
-                    content=f"请根据以下条件直接生成筛选执行计划，无需确认环节。\n\n条件：{criteria}",
+                    content=f"Please directly generate a screening execution plan based on the following conditions without confirmation.\n\n Conditions:{criteria}",
                 ),
             ]
             planning_response = await self._llm_client.achat(
@@ -1731,7 +1731,7 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                 {"role": "assistant", "phase": "planning", "content": planning_content}
             ])
             if not locked_plan:
-                raise ValueError("未能解析出可执行的筛选计划，请补充更明确的筛选条件后重试。")
+                raise ValueError("An executable filtering plan could not be parsed. Please add more specific filtering conditions and try again.")
 
             locked_plan["screen"]["limit"] = min(int(locked_plan["screen"].get("limit", max_stocks)), max_stocks)
             return await self._run_locked_result_execution(criteria, locked_plan)
@@ -1743,14 +1743,14 @@ adjustment_direction: 当intent=adjustment时，指出是放宽(loosen)还是收
                 timeout=SCREENING_RESULT_TIMEOUT_SECONDS,
             )
             elapsed = (datetime.now(timezone.utc) - started_at).total_seconds()
-            logger.info(f"[智能筛选] run_direct_screening 完成 elapsed={elapsed:.2f}s tools_used={len(tools_used)}")
+            logger.info(f"[Smart filtering] run_direct_screening Complete elapsed={elapsed:.2f}s tools_used={len(tools_used)}")
         except asyncio.TimeoutError:
             reply = self._build_timeout_reply(SCREENING_RESULT_TIMEOUT_SECONDS)
             stocks = []
             tools_used = []
         except Exception as e:
-            logger.exception("[智能筛选] run_direct_screening 失败")
-            reply = f"处理选股请求时发生错误：{str(e)}。请稍后重试。"
+            logger.exception("[Smart filtering] run_direct_screening failed")
+            reply = f"An error occurred while processing the stock pick request:{str(e)}. Please try again later."
             stocks = []
         if not stocks and "screen_stocks_by_criteria" in tools_used:
             reply = self._build_no_match_reply(criteria)

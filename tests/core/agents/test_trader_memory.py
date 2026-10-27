@@ -30,7 +30,7 @@ class _Mem0StyleMemory:
         )
         return [
             {
-                "content": "历史交易计划 A",
+                "content": "Historical trading plan A",
                 "metadata": {"ticker": "300750", "source": "mem0"},
                 "similarity": 0.93,
             }
@@ -50,8 +50,8 @@ class _LegacyStyleMemory:
         self.get_calls.append({"current_situation": current_situation, "n_matches": n_matches})
         return [
             {
-                "situation": "股票代码: 300750\n交易分析计划",
-                "recommendation": "历史交易计划 B",
+                "situation": "Stock code: 300750\n Transaction Analysis Plan",
+                "recommendation": "Historical trading plan B",
                 "similarity": 0.81,
             }
         ]
@@ -68,14 +68,14 @@ def test_trader_agent_get_historical_trades_from_mem0_style_memory():
 
     assert memories == [
         {
-            "content": "历史交易计划 A",
+            "content": "Historical trading plan A",
             "metadata": {"ticker": "300750", "source": "mem0"},
             "similarity": 0.93,
         }
     ]
     assert memory.search_calls == [
         {
-            "query": "股票代码: 300750\n交易分析计划\n历史交易经验",
+            "query": "Stock code: 300750\n Transaction Analysis Plan\n Historical trading experience",
             "n_results": 3,
             "filter_metadata": {"ticker": "300750"},
         }
@@ -96,11 +96,11 @@ def test_trader_agent_save_to_mem0_style_memory():
     memory = _Mem0StyleMemory()
     agent = _TestTraderAgent(memory=memory)
 
-    agent._save_to_memory("300750", {"content": "新的交易分析计划", "market_view": "bullish"})
+    agent._save_to_memory("300750", {"content": "New Transaction Analysis Program", "market_view": "bullish"})
 
     assert len(memory.add_calls) == 1
     call = memory.add_calls[0]
-    assert call["content"] == "{\"content\": \"新的交易分析计划\", \"market_view\": \"bullish\"}"
+    assert call["content"] == "{\"content\": \"New Transaction Analysis Program\", \"market_view\": \"bullish\"}"
     assert call["metadata"]["ticker"] == "300750"
     assert call["metadata"]["agent_id"] == agent.agent_id
     assert call["metadata"]["memory_kind"] == "trader_plan"
@@ -111,6 +111,6 @@ def test_trader_agent_skips_save_when_memory_lacks_add_interface():
     memory = _LegacyStyleMemory()
     agent = _TestTraderAgent(memory=memory)
 
-    agent._save_to_memory("300750", {"content": "新的交易分析计划", "market_view": "bullish"})
+    agent._save_to_memory("300750", {"content": "New Transaction Analysis Program", "market_view": "bullish"})
 
     assert memory.add_calls == []

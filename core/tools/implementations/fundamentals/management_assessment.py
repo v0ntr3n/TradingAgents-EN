@@ -1,6 +1,6 @@
-"""管理层评估数据获取工具 - A股审计意见、信息披露评级、股权激励、违规处罚
+"""Management evaluation data acquisition tool - A-share audit opinions, information disclosure ratings, equity incentives, violation penalties
 
-基于 Tushare Provider 的 stk_audit / disclosure_rating / equity_incentive / stk_penalty 接口
+stk_audit / disclosure_rating / equity_incentive / stk_penalty interface based on Tushare Provider
 """
 
 import asyncio
@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 def _ticker_to_ts_code(ticker: str) -> str:
-    """将通用 ticker 转为 Tushare ts_code 格式"""
+    """Convert general ticker to Tushare ts_code format"""
     ticker = str(ticker).strip()
     if "." in ticker:
-        return ticker  # 已经是 ts_code 格式
-    # 纯数字，根据市场判断
+        return ticker  # Already in ts_code format
+    # Pure numbers, judged based on the market
     if ticker.startswith("6"):
         return f"{ticker}.SH"
     elif ticker.startswith(("0", "3")):
@@ -51,12 +51,12 @@ def _run_async_in_thread(coro, timeout: int = 30):
 @register_tool(
     tool_id="get_audit_opinion",
     name="审计意见查询",
-    description="获取A股公司历史审计意见类型（标准无保留/带强调事项/保留/否定/无法表示）及审计机构、审计费用等，用于评估财务诚信",
+    description="Obtain the type of historical audit opinions of A-share companies (standard unqualified/emphasized matters/qualified/negative/unable to express), audit institutions, audit fees, etc., to evaluate financial integrity",
     category="fundamentals",
     is_online=True,
     auto_register=True,
     capability_tags=["审计", "审计意见", "审计机构", "财务诚信", "A股", "管理层"],
-    when_to_use="评估管理层财务诚信、检查审计意见异常、判断财务信息可靠性时使用",
+    when_to_use="Used when assessing management s financial integrity, checking for abnormalities in audit opinions, and judging the reliability of financial information.",
     tool_role_hint="primary",
     output_shape="structured_records",
 )
@@ -65,19 +65,19 @@ def get_audit_opinion(
     start_date: str = "2020-01-01",
     end_date: str = "2025-12-31",
 ) -> str:
-    """获取A股公司审计意见
+    """Obtain audit opinions from A-share companies
 
     Args:
-        ticker: 股票代码，如 600519、000001
-        start_date: 起始日期
-        end_date: 截止日期
+        ticker: Stock code, such as 600519,000001
+        start_date: start date
+        end_date: Deadline
     """
     try:
         from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
 
         provider = get_tushare_provider()
         if not provider.is_available():
-            return json.dumps({"error": "Tushare 不可用（Token 未配置或库未安装）", "ticker": ticker}, ensure_ascii=False)
+            return json.dumps({"error": "Tushare Not available (Token is not configured or library is not installed)", "ticker": ticker}, ensure_ascii=False)
 
         ts_code = _ticker_to_ts_code(ticker)
 
@@ -128,12 +128,12 @@ def get_audit_opinion(
 @register_tool(
     tool_id="get_disclosure_rating",
     name="信息披露评级查询",
-    description="获取交易所对A股公司信息披露工作的年度考评结果（A/B/C/D），用于评估公司治理透明度",
+    description="Obtain the exchange s annual evaluation results (A/B/C/D) on A-share companies information disclosure to evaluate corporate governance transparency",
     category="fundamentals",
     is_online=True,
     auto_register=True,
     capability_tags=["信息披露", "信披评级", "公司治理", "透明度", "A股", "管理层"],
-    when_to_use="评估公司信息披露质量、检查交易所信披考评记录时使用",
+    when_to_use="Used when assessing the quality of company information disclosure and checking exchange information disclosure evaluation records.",
     tool_role_hint="primary",
     output_shape="structured_records",
 )
@@ -141,18 +141,18 @@ def get_disclosure_rating(
     ticker: str = "600519",
     end_date: str = "2025-12-31",
 ) -> str:
-    """获取交易所信息披露考评结果
+    """Obtain exchange information disclosure evaluation results
 
     Args:
-        ticker: 股票代码，如 600519
-        end_date: 截止报告期
+        ticker: Stock code, such as 600519
+        end_date: Closing reporting period
     """
     try:
         from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
 
         provider = get_tushare_provider()
         if not provider.is_available():
-            return json.dumps({"error": "Tushare 不可用（Token 未配置或库未安装）", "ticker": ticker}, ensure_ascii=False)
+            return json.dumps({"error": "Tushare Not available (Token is not configured or library is not installed)", "ticker": ticker}, ensure_ascii=False)
 
         ts_code = _ticker_to_ts_code(ticker)
 
@@ -173,7 +173,7 @@ def get_disclosure_rating(
                 "latest_rating": "未知",
             }, ensure_ascii=False)
 
-        # Tushare disclosure_rating 返回字段：ts_code, end_date, announcement_date, disclosure_result
+        # Tushare disclosure_rating Return fields:ts_code, end_date, announcement_date, disclosure_result
         records = []
         for _, row in df.iterrows():
             rec = {
@@ -192,7 +192,7 @@ def get_disclosure_rating(
         }, ensure_ascii=False)
 
     except Exception as e:
-        logger.error(f"❌ 信息披露评级查询失败: {e}")
+        logger.error(f"❌ Information disclosure rating query failed: {e}")
         return json.dumps({"error": str(e), "ticker": ticker}, ensure_ascii=False)
 
 
@@ -200,12 +200,12 @@ def get_disclosure_rating(
 @register_tool(
     tool_id="get_equity_incentive",
     name="股权激励计划查询",
-    description="获取A股公司股权激励计划明细（激励方案、授予价格、行权条件、激励年限、总股本占比），用于评估管理层激励合理性",
+    description="Obtain the details of the A-share company s equity incentive plan (incentive plan, grant price, exercise conditions, incentive period, proportion of total equity) to evaluate the rationality of management incentives",
     category="fundamentals",
     is_online=True,
     auto_register=True,
     capability_tags=["股权激励", "激励计划", "行权条件", "管理层激励", "A股", "管理层"],
-    when_to_use="评估管理层股权激励合理性、检查激励覆盖率与行权条件、判断激励计划对股东利益的影响时使用",
+    when_to_use="Used when assessing the rationality of management s equity incentives, checking incentive coverage and exercise conditions, and judging the impact of incentive plans on shareholder interests.",
     tool_role_hint="specialized",
     output_shape="structured_records",
 )
@@ -214,19 +214,19 @@ def get_equity_incentive(
     start_date: str = "2020-01-01",
     end_date: str = "2025-12-31",
 ) -> str:
-    """获取股权激励计划明细
+    """Get Equity Incentive Plan Details
 
     Args:
-        ticker: 股票代码，如 600519
-        start_date: 起始日期
-        end_date: 截止日期
+        ticker: Stock code, such as 600519
+        start_date: start date
+        end_date: Deadline
     """
     try:
         from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
 
         provider = get_tushare_provider()
         if not provider.is_available():
-            return json.dumps({"error": "Tushare 不可用（Token 未配置或库未安装）", "ticker": ticker}, ensure_ascii=False)
+            return json.dumps({"error": "Tushare Not available (Token is not configured or library is not installed)", "ticker": ticker}, ensure_ascii=False)
 
         ts_code = _ticker_to_ts_code(ticker)
 
@@ -278,12 +278,12 @@ def get_equity_incentive(
 @register_tool(
     tool_id="get_management_penalties",
     name="管理层违规处罚查询",
-    description="获取A股公司及其管理层的历史违规处罚记录（处罚类型、处罚对象、处罚金额、违规事由），用于评估管理层行为风险",
+    description="Obtain the historical violation penalty records of A-share companies and their management (penalty type, penalty object, penalty amount, violation reasons) to assess management behavioral risks",
     category="fundamentals",
     is_online=True,
     auto_register=True,
     capability_tags=["违规", "处罚", "管理层", "监管", "行为风险", "A股", "管理层"],
-    when_to_use="评估管理层历史行为风险、检查违规处罚记录、判断公司合规文化时使用",
+    when_to_use="Used when assessing management s historical behavioral risks, checking violation penalty records, and judging the company s compliance culture",
     tool_role_hint="primary",
     output_shape="structured_records",
 )
@@ -292,19 +292,19 @@ def get_management_penalties(
     start_date: str = "2020-01-01",
     end_date: str = "2025-12-31",
 ) -> str:
-    """获取管理层违规处罚记录
+    """Obtain management violation penalty records
 
     Args:
-        ticker: 股票代码，如 600519
-        start_date: 起始日期
-        end_date: 截止日期
+        ticker: Stock code, such as 600519
+        start_date: start date
+        end_date: Deadline
     """
     try:
         from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
 
         provider = get_tushare_provider()
         if not provider.is_available():
-            return json.dumps({"error": "Tushare 不可用（Token 未配置或库未安装）", "ticker": ticker}, ensure_ascii=False)
+            return json.dumps({"error": "Tushare Not available (Token is not configured or library is not installed)", "ticker": ticker}, ensure_ascii=False)
 
         ts_code = _ticker_to_ts_code(ticker)
 
@@ -321,7 +321,7 @@ def get_management_penalties(
             return json.dumps({
                 "ticker": ticker,
                 "ts_code": ts_code,
-                "message": "未查询到违规处罚记录（近5年无违规记录，正面信号）",
+                "message": "No violation penalty records found (no violation records in the past 5 years, a positive sign)",
                 "has_penalties": False,
                 "total_records": 0,
                 "records": [],

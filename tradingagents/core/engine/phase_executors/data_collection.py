@@ -1,16 +1,16 @@
 # tradingagents/core/engine/phase_executors/data_collection.py
 """
-数据收集阶段执行器（初始化阶段）
+Data collection phase executor (initialization phase)
 
-职责：
-- 初始化分析上下文的基本信息
-- 验证输入参数的有效性
-- 可选：预加载公共基础数据（如公司基本信息）
+Responsibilities:
+- Initialize basic information of the analysis context
+- Verify the validity of input parameters
+- Optional: Preload public basic data (such as basic company information)
 
-注意：
-- 此阶段不替代 Agent 的 tools 数据获取能力
-- Agent 仍通过各自的 tools 从 dataflows 获取所需数据
-- Agent 将分析结果写入 Context 供其他 Agent 读取
+Note:
+- This stage does not replace the Agent s tools data acquisition capabilities.
+- Agent Still get the required data from dataflows through their respective tools
+- Agent Write the analysis results to the Context for other Agents to read
 """
 
 from typing import Any, Dict, Optional
@@ -27,14 +27,14 @@ logger = get_logger("default")
 
 class DataCollectionPhase(PhaseExecutor):
     """
-    数据收集阶段执行器（实际为初始化阶段）
+    Data collection phase executor (actually initialization phase)
 
-    主要职责：
-    1. 验证和规范化输入参数（ticker, trade_date 等）
-    2. 初始化 Context 的基本信息
-    3. 可选：预加载公司基本信息等公共数据
+    Main responsibilities:
+    1. Validate and normalize input parameters (ticker, trade_date etc.)
+    2. Initialize basic information of Context
+    3. Optional: Preload public data such as basic company information
 
-    注意：原始数据获取由各 Agent 通过 tools 自行完成
+    Note: Original data acquisition is completed by each Agent through tools.
     """
 
     phase_name = "DataCollectionPhase"
@@ -45,11 +45,11 @@ class DataCollectionPhase(PhaseExecutor):
         config: Optional[Dict[str, Any]] = None
     ):
         """
-        初始化数据收集阶段
+        Initial data collection phase
 
         Args:
-            llm_provider: LLM 提供者（此阶段不需要）
-            config: 阶段配置
+            llm_provider: LLM Provider (not required at this stage)
+            config: stage configuration
         """
         super().__init__(llm_provider, config)
 
@@ -59,42 +59,42 @@ class DataCollectionPhase(PhaseExecutor):
         data_manager: DataAccessManager
     ) -> Dict[str, Any]:
         """
-        执行初始化阶段
+        Execute initialization phase
 
         Args:
-            context: 分析上下文
-            data_manager: 数据访问管理器
+            context: Analyze context
+            data_manager: Data Access Manager
 
         Returns:
-            初始化结果摘要
+            Summary of initialization results
         """
         self.log_start()
 
-        # 获取并验证上下文信息
+        # Obtain and verify contextual information
         ticker = context.get(DataLayer.CONTEXT, "ticker")
         trade_date = context.get(DataLayer.CONTEXT, "trade_date")
         company_name = context.get(DataLayer.CONTEXT, "company_name")
         market_type = context.get(DataLayer.CONTEXT, "market_type") or self._detect_market_type(ticker)
 
-        logger.info(f"📊 [{self.phase_name}] 初始化分析上下文: {ticker} ({trade_date})")
+        logger.info(f"📊 [{self.phase_name}] Initialize analysis context: {ticker} ({trade_date})")
 
-        # 验证必要参数
+        # Verify necessary parameters
         if not ticker:
-            raise ValueError("ticker 是必需参数")
+            raise ValueError("ticker is a required parameter")
         if not trade_date:
-            raise ValueError("trade_date 是必需参数")
+            raise ValueError("trade_date is a required parameter")
 
-        # 规范化 ticker 格式
+        # Normalize ticker format
         normalized_ticker = self._normalize_ticker(ticker, market_type)
         if normalized_ticker != ticker:
             context.set(DataLayer.CONTEXT, "ticker", normalized_ticker, source=self.phase_name)
-            logger.debug(f"📊 [{self.phase_name}] ticker 规范化: {ticker} -> {normalized_ticker}")
+            logger.debug(f"📊 [{self.phase_name}] ticker Standardize: {ticker} -> {normalized_ticker}")
 
-        # 设置市场类型（如果未设置）
+        # Set market type (if not set)
         if not context.get(DataLayer.CONTEXT, "market_type"):
             context.set(DataLayer.CONTEXT, "market_type", market_type, source=self.phase_name)
 
-        # 构建输出摘要
+        # Build output summary
         outputs = {
             "ticker": normalized_ticker,
             "trade_date": trade_date,
@@ -108,44 +108,44 @@ class DataCollectionPhase(PhaseExecutor):
 
     def _detect_market_type(self, ticker: str) -> str:
         """
-        根据 ticker 格式检测市场类型
+        Detect market type based on ticker format
 
         Args:
-            ticker: 股票代码
+            ticker: Stock code
 
         Returns:
-            市场类型 ("cn", "us", "hk")
+            market type ("cn", "us", "hk")
         """
         if not ticker:
             return "cn"
 
         ticker_upper = ticker.upper()
 
-        # 中国 A 股格式
+        # China A share format
         if ticker_upper.endswith((".SZ", ".SH", ".BJ")):
             return "cn"
         if ticker.isdigit() and len(ticker) == 6:
             return "cn"
 
-        # 港股格式
+        # Hong Kong stock format
         if ticker_upper.endswith(".HK"):
             return "hk"
 
-        # 默认为美股
+        # Default is US stocks
         return "us"
 
     def _normalize_ticker(self, ticker: str, market_type: str) -> str:
         """
-        规范化 ticker 格式
+        Normalize ticker format
 
-        注意：前后端统一约定 A 股代码使用纯 6 位数字，不带后缀
+        Note: The front and back ends agree that A-share codes use pure 6-digit numbers without suffixes.
 
         Args:
-            ticker: 原始股票代码
-            market_type: 市场类型
+            ticker: Original stock symbol
+            market_type: market type
 
         Returns:
-            规范化后的股票代码
+            Standardized stock code
         """
         import re
 
@@ -155,10 +155,10 @@ class DataCollectionPhase(PhaseExecutor):
         ticker = ticker.strip().upper()
 
         if market_type == "cn":
-            # 中国 A 股：去掉后缀，只保留纯 6 位数字（前后端统一）
+            # China A-shares: remove the suffix and keep only the pure 6-digit number (the front and back ends are unified)
             ticker = re.sub(r'\.(SZ|SH|BJ)$', '', ticker)
             return ticker
 
-        # 其他市场保持原样
+        # Other markets remain as is
         return ticker
 

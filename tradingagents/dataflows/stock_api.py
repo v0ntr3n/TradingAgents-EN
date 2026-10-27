@@ -1,46 +1,46 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-股票数据API接口
-提供简单易用的股票数据获取接口，内置完整的降级机制
+Stock data API interface
+Provides a simple and easy-to-use stock data acquisition interface with a complete built-in downgrade mechanism
 """
 
 from typing import Dict, List, Optional, Any
 from .stock_data_service import get_stock_data_service
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 
 def get_stock_info(stock_code: str) -> Optional[Dict[str, Any]]:
     """
-    获取单个股票的基础信息
+    Get basic information about a single stock
     
     Args:
-        stock_code: 股票代码（如 '000001'）
+        stock_code: Stock code (e.g. '000001') 
     
     Returns:
-        Dict: 股票信息，包含code, name, market, category等字段
-              如果获取失败，返回包含error字段的字典
+        Dict: Stock information, including code, name, market, category etc fields
+              If the acquisition fails, a dictionary containing the error field is returned.
     
     Example:
         >>> info = get_stock_info('000001')
-        >>> print(info['name'])  # 输出: 平安银行
+        >>> print(info['name'])  # output: Ping An Bank
     """
     service = get_stock_data_service()
     return service.get_stock_basic_info(stock_code)
 
 def get_all_stocks() -> List[Dict[str, Any]]:
     """
-    获取所有股票列表
+    Get a list of all stocks
     
     Returns:
-        List[Dict]: 股票列表，每个元素包含股票基础信息
-                   如果获取失败，返回包含error字段的字典
+        List[Dict]: Stock list, each element contains basic stock information
+                   If the acquisition fails, a dictionary containing the error field is returned.
     
     Example:
         >>> stocks = get_all_stocks()
-        logger.info(f"共有{len(stocks)}只股票")
+        logger.info(f"share{len(stocks)}only stocks")
     """
     service = get_stock_data_service()
     result = service.get_stock_basic_info()
@@ -48,21 +48,21 @@ def get_all_stocks() -> List[Dict[str, Any]]:
     if isinstance(result, list):
         return result
     elif isinstance(result, dict) and 'error' in result:
-        return [result]  # 返回错误信息
+        return [result]  # Return error message
     else:
         return []
 
 def get_stock_data(stock_code: str, start_date: str, end_date: str) -> str:
     """
-    获取股票历史数据（带降级机制）
+    Get stock historical data (with downgrade mechanism)
     
     Args:
-        stock_code: 股票代码
-        start_date: 开始日期 'YYYY-MM-DD'
-        end_date: 结束日期 'YYYY-MM-DD'
+        stock_code: Stock code
+        start_date: start date 'YYYY-MM-DD'
+        end_date: end date 'YYYY-MM-DD'
     
     Returns:
-        str: 格式化的股票数据报告
+        str: Formatted stock data reports
     
     Example:
         >>> data = get_stock_data('000001', '2024-01-01', '2024-01-31')
@@ -73,20 +73,20 @@ def get_stock_data(stock_code: str, start_date: str, end_date: str) -> str:
 
 def search_stocks_by_name(name: str) -> List[Dict[str, Any]]:
     """
-    根据股票名称搜索股票（需要MongoDB支持）
+    Search stocks based on stock name (requires MongoDB support)
     
     Args:
-        name: 股票名称关键词
+        name: Stock name keywords
     
     Returns:
-        List[Dict]: 匹配的股票列表
+        List[Dict]: Matching stock list
     
     Example:
-        >>> results = search_stocks_by_name('银行')
+        >>> results = search_stocks_by_name('bank')
         >>> for stock in results:
         logger.info(f"{stock['code']}: {stock['name']}")
     """
-    # 这个功能需要MongoDB支持，暂时通过原有方式实现
+    # This function requires MongoDB support and is temporarily implemented through the original method.
     try:
         from ..examples.stock_query_examples import EnhancedStockQueryService
 
@@ -97,25 +97,25 @@ def search_stocks_by_name(name: str) -> List[Dict[str, Any]]:
 
 def check_data_sources() -> Dict[str, Any]:
     """
-    检查数据源状态
+    Check data source status
     
     Returns:
-        Dict: 各数据源的可用状态
+        Dict: Availability status of each data source
     
     Example:
         >>> status = check_data_sources()
-        logger.info(f"MongoDB可用: {status['mongodb_available']}")
-        logger.info(f"统一数据接口可用: {status['unified_api_available']}")
+        logger.info(f"MongoDB Available: {status['mongodb_available']}")
+        logger.info(f"Unified data interface available: {status['unified_api_available']}")
     """
     service = get_stock_data_service()
     
     return {
         'mongodb_available': service.db_manager is not None and service.db_manager.mongodb_db is not None,
-        'unified_api_available': True,  # 统一接口总是可用
-        'enhanced_fetcher_available': True,  # 这个通常都可用
+        'unified_api_available': True,  # Unified interface is always available
+        'enhanced_fetcher_available': True,  # This is usually available
         'fallback_mode': service.db_manager is None or service.db_manager.mongodb_db is None,
         'recommendation': (
             "所有数据源正常" if service.db_manager and service.db_manager.mongodb_db 
-            else "建议配置MongoDB以获得最佳性能，当前使用统一数据接口降级模式"
+            else "It is recommended to configure MongoDB for optimal performance, currently using Unified Data Interface degraded mode"
         )
     }

@@ -1,4 +1,4 @@
-"""Skill 运行时外部数据源桥接。"""
+"""Skill Runtime external data source bridging."""
 
 from __future__ import annotations
 
@@ -26,19 +26,19 @@ def get_external_stock_news(
     limit: int = 10,
     market_category: str = "a_shares",
 ) -> Dict[str, Any]:
-    """同步获取外部新闻数据。
+    """Synchronously obtain external news data.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀）
-        source: 指定数据源（目前仅支持 "akshare"），为 None 时自动选择已配置的源
-        limit: 返回新闻条数上限，默认 10
-        market_category: 市场类别，默认 "a_shares"
+        symbol: A Stock code (6 digits or including exchange suffix and suffix)
+        source: Specify data source (currently only supports "akshare") , Automatically selects the configured source when None
+        limit: Returns the upper limit of news items, default 10
+        market_category: Market category, default "a_shares"
 
     Returns:
-        dict: 字段说明（代码中使用 .get() 或 [] 访问这些 key）——
-            source: 数据源标识: "akshare" | None（无可用源或调用失败时为 None）
-            data: 新闻列表，元素为按列归一化的 dict（trade_date/title/content 等字段，
-                  依上游数据源而定）；无数据时为空列表 []
+        dict: Field description (used in code .get() or [] access these keys)——
+            source: Data source identifier: "akshare" | None (None if no source is available or the call fails)
+            data: News list, the elements are dict normalized by column (trade_date/title/content and other fields,
+                  Depends on the upstream data source); if there is no data, it is an empty list []
     """
     for source_id in _resolve_sources(source, market_category):
         try:
@@ -51,7 +51,7 @@ def get_external_stock_news(
                 if normalized:
                     return {"source": source_id, "data": normalized}
         except Exception as exc:
-            logger.warning("外部新闻源 %s 调用失败: %s", source_id, exc)
+            logger.warning("External news source %s call failed: %s", source_id, exc)
 
     return {"source": None, "data": []}
 
@@ -63,37 +63,37 @@ def get_external_valuation_data(
     source: Optional[str] = None,
     market_category: str = "a_shares",
 ) -> Dict[str, Any]:
-    """同步获取外部历史估值数据（PE_TTM、PB_MRQ、PS_TTM、PCF_TTM）。
+    """Synchronously obtain external historical valuation data (PE_TTM, PB_MRQ, PS_TTM, PCF_TTM).
 
-    使用 Tushare daily_basic 日期范围查询，一次调用获取全量数据。
+    Use Tushare daily_basic date range query to obtain the entire data in one call.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀）
-        start_date: 起始日期（YYYY-MM-DD 或 YYYYMMDD）
-        end_date: 结束日期（YYYY-MM-DD 或 YYYYMMDD）
-        source: 指定数据源（"tushare" / "baostock"），为 None 时自动选择；
-                baostock 不稳定会自动降级到 tushare
-        market_category: 市场类别，默认 "a_shares"
+        symbol: A Stock code (6 digits or including exchange suffix and suffix)
+        start_date: Start date (YYYY-MM-DD or YYYYMMDD)
+        end_date: End date (YYYY-MM-DD or YYYYMMDD)
+        source: Specify the data source ("tushare" / "baostock") , Automatically selected when None;
+                baostock Unstable will automatically downgrade to tushare
+        market_category: Market category, default "a_shares"
 
     Returns:
-        dict: 字段说明（代码中使用 .get() 或 [] 访问这些 key）——
-            成功时直接透传 tushare provider 返回的 dict，常见字段 ——
-                source: 数据源标识: "tushare"
-                symbol: 标准化后的股票代码
-                data: 估值序列列表，元素为 dict ——
-                    trade_date: 交易日期
-                    pe_ttm: 滚动市盈率
-                    pb_mrq: 最近报告期市净率
-                    ps_ttm: 滚动市销率
-                    pcf_ttm: 滚动市现率
-            失败降级时返回 ——
+        dict: Field description (used in code .get() or [] access these keys)——
+            When successful, the dict returned by tushare provider will be transparently transmitted directly. Common fields ——
+                source: Data source identifier: "tushare"
+                symbol: Standardized stock code
+                data: Valuation sequence list, the elements are dict ——
+                    trade_date: transaction date
+                    pe_ttm: rolling price to earnings ratio
+                    pb_mrq: Price to Book Ratio for the Most Recent Reporting Period
+                    ps_ttm: rolling price-to-sales ratio
+                    pcf_ttm: rolling price to cash ratio
+            Returned when downgrade fails ——
                 source: None
-                data: 空列表 []
+                data: empty list []
     """
     for source_id in _resolve_sources(source, market_category):
         try:
             if source_id == "baostock":
-                # Baostock 不稳定，降级到 Tushare
+                # Baostock Unstable, downgraded to Tushare
                 pass
             elif source_id == "tushare":
                 from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
@@ -105,9 +105,9 @@ def get_external_valuation_data(
                 if result.get("data"):
                     return result
         except Exception as exc:
-            logger.warning("外部估值源 %s 调用失败: %s", source_id, exc)
+            logger.warning("Call to external valuation source %s failed: %s", source_id, exc)
 
-    # 降级：直接再试一次 Tushare
+    # Downgrade: Just try again Tushare
     try:
         from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
 
@@ -131,21 +131,21 @@ def get_external_historical_data(
     source: Optional[str] = None,
     market_category: str = "a_shares",
 ) -> Dict[str, Any]:
-    """同步获取外部历史行情。
+    """Synchronously obtain external historical quotes.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀）
-        start_date: 起始日期（YYYY-MM-DD 或 YYYYMMDD）
-        end_date: 结束日期（YYYY-MM-DD 或 YYYYMMDD）
-        period: K 线周期，默认 "daily"；可选 "daily" / "weekly" / "monthly"（依上游数据源支持情况）
-        source: 指定数据源（"tushare" / "akshare" / "baostock"），为 None 时自动选择
-        market_category: 市场类别，默认 "a_shares"
+        symbol: A Stock code (6 digits or including exchange suffix and suffix)
+        start_date: Start date (YYYY-MM-DD or YYYYMMDD)
+        end_date: End date (YYYY-MM-DD or YYYYMMDD)
+        period: K Line period, default "daily"; Optional "daily" / "weekly" / "monthly" (Subject to upstream data source support)
+        source: Specify the data source ("tushare" / "akshare" / "baostock") , Automatically selected when None
+        market_category: Market category, default "a_shares"
 
     Returns:
-        dict: 字段说明（代码中使用 .get() 或 [] 访问这些 key）——
-            source: 数据源标识: "tushare" | "akshare" | "baostock" | None（无可用源或调用失败时为 None）
-            data: 行情序列列表，元素为按列归一化的 dict（trade_date/open/high/low/close/volume
-                  等字段，依上游数据源而定）；无数据时为空列表 []
+        dict: Field description (used in code .get() or [] access these keys)——
+            source: Data source identifier: "tushare" | "akshare" | "baostock" | None (None if no source is available or the call fails)
+            data: Quotation sequence list, the elements are column-normalized dict (trade_date/open/high/low/close/volume
+                  fields, depending on the upstream data source); if there is no data, it will be an empty list []
     """
     for source_id in _resolve_sources(source, market_category):
         try:
@@ -171,7 +171,7 @@ def get_external_historical_data(
             if normalized:
                 return {"source": source_id, "data": normalized}
         except Exception as exc:
-            logger.warning("外部历史行情源 %s 调用失败: %s", source_id, exc)
+            logger.warning("Failed to call external historical market source %s: %s", source_id, exc)
 
     return {"source": None, "data": []}
 
@@ -184,21 +184,21 @@ def get_external_financial_data(
     period: Optional[str] = None,
     limit: int = 4,
 ) -> Dict[str, Any]:
-    """同步获取外部财务数据。
+    """Synchronously obtain external financial data.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀）
-        source: 指定数据源（"tushare" / "akshare" / "baostock"），为 None 时自动选择
-        market_category: 市场类别，默认 "a_shares"
-        report_type: 财报类型，默认 "quarterly"；可选 "quarterly" / "annual" 等（tushare 路径使用）
-        period: 报告期（如 "20240331"），为 None 时由上游默认行为决定；baostock 路径会解析为 year/quarter
-        limit: 返回记录数上限，默认 4（仅 tushare 路径生效）
+        symbol: A Stock code (6 digits or including exchange suffix and suffix)
+        source: Specify the data source ("tushare" / "akshare" / "baostock") , Automatically selected when None
+        market_category: Market category, default "a_shares"
+        report_type: Financial report type, default "quarterly"; Optional "quarterly" / "annual" etc. (use tushare path)
+        period: reporting period (e.g. "20240331") , When None is determined by the upstream default behavior; the baostock path will be resolved to year/quarter
+        limit: Return the upper limit of the number of records, the default is 4 (only the tushare path takes effect)
 
     Returns:
-        dict: 字段说明（代码中使用 .get() 或 [] 访问这些 key）——
-            source: 数据源标识: "tushare" | "akshare" | "baostock" | None（无可用源或调用失败时为 None）
-            data: 财务数据，按列归一化的 dict（注意成功时为 dict 结构，而非列表）；
-                  字段依上游数据源而定（如总资产/净利润/营收等），无数据时为空 dict {}
+        dict: Field description (used in code .get() or [] access these keys)——
+            source: Data source identifier: "tushare" | "akshare" | "baostock" | None (None if no source is available or the call fails)
+            data: Financial data, column-normalized dict (note that on success it is a dict structure, not a list);
+                  The fields depend on the upstream data source (such as total assets/net profit/revenue, etc.) and will be empty if there is no data. dict {}
     """
     for source_id in _resolve_sources(source, market_category):
         try:
@@ -236,7 +236,7 @@ def get_external_financial_data(
             if normalized:
                 return {"source": source_id, "data": normalized}
         except Exception as exc:
-            logger.warning("外部财务源 %s 调用失败: %s", source_id, exc)
+            logger.warning("External financial source %s call failed: %s", source_id, exc)
 
     return {"source": None, "data": {}}
 
@@ -247,19 +247,19 @@ def get_external_query_news(
     look_back_days: int = 7,
     source: str = "google_news",
 ) -> Dict[str, Any]:
-    """同步获取按查询词聚合的外部新闻。
+    """Synchronously obtain external news aggregated by query terms.
 
     Args:
-        query: 查询关键词（公司名、股票名或主题词）
-        curr_date: 当前日期（YYYY-MM-DD），作为查询的右端点
-        look_back_days: 向前回溯天数，默认 7
-        source: 数据源，默认 "google_news"；可选 "google_news" / "finnhub"
+        query: Search keywords (company name, stock name or subject keyword)
+        curr_date: The current date (YYYY-MM-DD), as the right endpoint of the query
+        look_back_days: Number of days to look back, default 7
+        source: data source, default "google_news"; Optional "google_news" / "finnhub"
 
     Returns:
-        dict: 字段说明（代码中使用 .get() 或 [] 访问这些 key）——
-            source: 数据源标识: "google_news" | "finnhub" | None（无可用源或调用失败时为 None）
-            data: 新闻聚合结果，类型依上游返回而定（通常为字符串形式的新闻摘要文本）；
-                  无数据或调用失败时为空字符串 ""
+        dict: Field description (used in code .get() or [] access these keys)——
+            source: Data source identifier: "google_news" | "finnhub" | None (None if no source is available or the call fails)
+            data: News aggregation results, the type depends on the upstream return (usually news summary text in the form of a string);
+                  No data or empty string when call fails ""
     """
     try:
         if source == "google_news":
@@ -272,6 +272,6 @@ def get_external_query_news(
 
             return {"source": source, "data": get_finnhub_news(query, curr_date, look_back_days)}
     except Exception as exc:
-        logger.warning("外部查询新闻源 %s 调用失败: %s", source, exc)
+        logger.warning("External query news source %s call failed: %s", source, exc)
 
     return {"source": None, "data": ""}

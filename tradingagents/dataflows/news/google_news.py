@@ -14,7 +14,7 @@ from tenacity import (
 )
 
 from tradingagents.config.runtime_settings import get_float
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 
@@ -36,8 +36,8 @@ def make_request(url, headers):
     """Make a request with retry logic for rate limiting and connection issues"""
     # Random delay before each request to avoid detection
     time.sleep(random.uniform(SLEEP_MIN, SLEEP_MAX))
-    # 添加超时参数，设置连接超时和读取超时
-    response = requests.get(url, headers=headers, timeout=(10, 30))  # 连接超时10秒，读取超时30秒
+    # Add timeout parameters, set connection timeout and read timeout
+    response = requests.get(url, headers=headers, timeout=(10, 30))  # Connection timeout is 10 seconds, read timeout is 30 seconds
     return response
 
 
@@ -113,22 +113,22 @@ def getNewsData(query, start_date, end_date):
 
         except requests.exceptions.Timeout as e:
             logger.error(f"连接超时: {e}")
-            # 不立即中断，记录错误后继续尝试下一页
+            # Do not interrupt immediately, record the error and continue trying the next page.
             page += 1
-            if page > 3:  # 如果连续多页都超时，则退出循环
-                logger.error("多次连接超时，停止获取Google新闻")
+            if page > 3:  # If multiple consecutive pages time out, exit the loop
+                logger.error("Connection timed out multiple times and stopped getting Google News")
                 break
             continue
         except requests.exceptions.ConnectionError as e:
             logger.error(f"连接错误: {e}")
-            # 不立即中断，记录错误后继续尝试下一页
+            # Do not interrupt immediately, record the error and continue trying the next page.
             page += 1
-            if page > 3:  # 如果连续多页都连接错误，则退出循环
-                logger.error("多次连接错误，停止获取Google新闻")
+            if page > 3:  # If multiple consecutive pages have connection errors, exit the loop.
+                logger.error("Multiple connection errors, stopped getting Google News")
                 break
             continue
         except Exception as e:
-            logger.error(f"获取Google新闻失败: {e}")
+            logger.error(f"Failed to get Google News: {e}")
             break
 
     return news_results

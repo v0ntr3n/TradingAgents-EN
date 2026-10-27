@@ -1,11 +1,11 @@
 """
-分析师注册表
+Analyst Registration Form
 
-专门管理分析师类型的 Agent，提供工作流构建相关功能
+Specializes in managing analyst-type Agents and provides functions related to workflow construction
 
-扩展功能：
-- 支持数据契约注册和验证
-- 自动将 Agent 输出字段注册到数据字典
+Extended functions:
+- Support data contract registration and verification
+- Automatically register Agent output fields to the data dictionary
 """
 
 from typing import Dict, List, Optional, Type, Callable, Any
@@ -13,33 +13,33 @@ from .base import BaseAgent
 from .config import AgentCategory, AgentMetadata, BUILTIN_AGENTS
 from .registry import AgentRegistry, get_registry
 
-# 数据契约相关导入
+# Data contract related import
 from tradingagents.core.engine.data_contract import AgentDataContract
 from tradingagents.core.engine.data_schema import data_schema
 from tradingagents.core.engine.contract_validator import ContractValidator
 
-# 导入日志
+# Import logs
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
 
 class AnalystRegistry:
     """
-    分析师注册表
+    Analyst Registration Form
     
-    扩展 AgentRegistry，专门管理分析师类型的 Agent，
-    提供工作流构建和报告聚合相关功能
+    Extend AgentRegistry to specifically manage analyst type Agents,
+    Provides functions related to workflow construction and report aggregation
     
-    用法:
+    Usage:
         registry = AnalystRegistry()
         
-        # 注册分析师
+        # Certified Analyst
         registry.register("sector", SectorAnalystAgent, metadata)
         
-        # 获取所有分析师（按执行顺序）
+        # Get all analysts (in order of execution)
         analysts = registry.get_analysts_ordered()
         
-        # 获取分析师元数据
+        # Get analyst metadata
         meta = registry.get_analyst_metadata("sector")
     """
     
@@ -54,15 +54,15 @@ class AnalystRegistry:
     def __init__(self):
         if not self._initialized:
             self._analysts: Dict[str, Type[BaseAgent]] = {}
-            self._analyst_factories: Dict[str, Callable] = {}  # 工厂函数
+            self._analyst_factories: Dict[str, Callable] = {}  # Factory function
             self._analyst_metadata: Dict[str, AgentMetadata] = {}
-            self._contracts: Dict[str, AgentDataContract] = {}  # 数据契约
-            self._contract_validator = ContractValidator()  # 契约验证器
+            self._contracts: Dict[str, AgentDataContract] = {}  # data contract
+            self._contract_validator = ContractValidator()  # contract validator
             self._load_builtin_analysts()
             self._initialized = True
     
     def _load_builtin_analysts(self) -> None:
-        """加载内置分析师元数据"""
+        """Load built-in analyst metadata"""
         for agent_id, metadata in BUILTIN_AGENTS.items():
             if metadata.category == AgentCategory.ANALYST:
                 self._analyst_metadata[agent_id] = metadata
@@ -77,18 +77,18 @@ class AnalystRegistry:
         override: bool = False
     ) -> None:
         """
-        注册分析师
+        Certified Analyst
 
         Args:
-            analyst_id: 分析师ID，如 "sector"
-            agent_class: Agent 类（可选）
-            factory: 工厂函数（可选），用于创建 Agent 实例
-            metadata: 元数据（可选，如果未提供则使用内置元数据）
-            contract: 数据契约（可选），定义输入输出字段
-            override: 是否覆盖已存在的注册
+            analyst_id: Analyst ID, such as "sector"
+            agent_class: Agent class (optional)
+            factory: Factory function (optional), used to create Agent instances
+            metadata: Metadata (optional, if not provided built-in metadata will be used)
+            contract: Data contract (optional), defining input and output fields
+            override: Whether to overwrite existing registrations
         """
         if analyst_id in self._analysts and not override:
-            raise ValueError(f"分析师 '{analyst_id}' 已注册，使用 override=True 覆盖")
+            raise ValueError(f"analyst '{analyst_id}' Registered, using override=True Cover")
 
         if agent_class:
             self._analysts[analyst_id] = agent_class
@@ -97,83 +97,83 @@ class AnalystRegistry:
         if metadata:
             self._analyst_metadata[analyst_id] = metadata
 
-        # 注册数据契约
+        # Registration Data Contract
         if contract:
             self._register_contract(analyst_id, contract)
 
-        logger.debug(f"📋 [AnalystRegistry] 注册分析师: {analyst_id}")
+        logger.debug(f"📋 [AnalystRegistry] Certified Analyst: {analyst_id}")
 
     def _register_contract(self, analyst_id: str, contract: AgentDataContract) -> None:
         """
-        注册数据契约
+        Registration Data Contract
 
-        1. 验证契约合法性
-        2. 将输出字段注册到数据字典
-        3. 保存契约到注册表
+        1. Verify the legality of the contract
+        2. Register output fields to the data dictionary
+        3. Save contract to registry
 
         Args:
-            analyst_id: 分析师ID
-            contract: 数据契约
+            analyst_id: analyst ID
+            contract: data contract
         """
-        # 验证契约
+        # Verify contract
         result = self._contract_validator.validate_contract(contract)
         if not result.is_valid:
             error_msgs = [e.message for e in result.errors]
-            raise ValueError(f"契约验证失败 [{analyst_id}]: {error_msgs}")
+            raise ValueError(f"Contract verification failed [{analyst_id}]: {error_msgs}")
 
-        # 将输出字段注册到数据字典
+        # Register output fields to the data dictionary
         data_schema.register_agent_fields(analyst_id, contract.outputs)
 
-        # 保存契约
+        # preservation deed
         self._contracts[analyst_id] = contract
         self._contract_validator.register_contract(contract)
 
-        logger.debug(f"📋 [AnalystRegistry] 注册契约: {analyst_id}")
+        logger.debug(f"📋 [AnalystRegistry] registration deed: {analyst_id}")
     
     def get_analyst_class(self, analyst_id: str) -> Optional[Type[BaseAgent]]:
-        """获取分析师类"""
+        """Get analyst class"""
         return self._analysts.get(analyst_id)
     
     def get_analyst_factory(self, analyst_id: str) -> Optional[Callable]:
-        """获取分析师工厂函数"""
+        """Get analyst factory function"""
         return self._analyst_factories.get(analyst_id)
     
     def get_analyst_metadata(self, analyst_id: str) -> Optional[AgentMetadata]:
-        """获取分析师元数据"""
+        """Get analyst metadata"""
         return self._analyst_metadata.get(analyst_id)
     
     def get_analysts_ordered(self, selected: Optional[List[str]] = None) -> List[AgentMetadata]:
         """
-        获取分析师列表（按 execution_order 排序）
+        Get a list of analysts (sorted by execution_order)
         
         Args:
-            selected: 指定的分析师ID列表，如果为 None 则返回所有
+            selected: Specified list of analyst IDs, if None returns all
             
         Returns:
-            按执行顺序排列的分析师元数据列表
+            Analyst metadata list in order of execution
         """
         analysts = []
         for analyst_id, metadata in self._analyst_metadata.items():
             if selected is None or analyst_id in selected:
-                # 确保只包含已注册实现的分析师，或内置分析师
+                # Make sure to only include analysts with registered implementations, or built-in analysts
                 if analyst_id in self._analysts or analyst_id in self._analyst_factories:
                     analysts.append(metadata)
                 elif metadata.category == AgentCategory.ANALYST:
-                    # 内置但未注册实现的分析师也包含（由原始 setup.py 处理）
+                    # Built-in but unregistered implementations of analysts are also included (handled by the original setup.py)
                     analysts.append(metadata)
         
-        # 按 execution_order 排序
+        # Sort by execution_order
         return sorted(analysts, key=lambda m: m.execution_order)
     
     def get_output_fields(self, selected: Optional[List[str]] = None) -> Dict[str, str]:
         """
-        获取所有分析师的输出字段映射
+        Get output field mappings for all analysts
         
         Args:
-            selected: 指定的分析师ID列表
+            selected: List of specified analyst IDs
             
         Returns:
-            {analyst_id: output_field} 映射
+            {analyst_id: output_field} mapping
         """
         result = {}
         for analyst_id, metadata in self._analyst_metadata.items():
@@ -183,46 +183,46 @@ class AnalystRegistry:
         return result
     
     def is_registered(self, analyst_id: str) -> bool:
-        """检查分析师是否已注册实现"""
+        """Check if the analyst has registered the implementation"""
         return analyst_id in self._analysts or analyst_id in self._analyst_factories
 
     def list_all(self) -> List[str]:
-        """列出所有已知的分析师ID"""
+        """List all known analysts ID"""
         return list(self._analyst_metadata.keys())
 
     # =========================================
-    # 契约相关方法
+    # Contract related methods
     # =========================================
 
     def get_contract(self, analyst_id: str) -> Optional[AgentDataContract]:
-        """获取分析师的数据契约"""
+        """Get an analyst s data contract"""
         return self._contracts.get(analyst_id)
 
     def get_all_contracts(self) -> Dict[str, AgentDataContract]:
-        """获取所有已注册的契约"""
+        """Get all registered deeds"""
         return self._contracts.copy()
 
     def has_contract(self, analyst_id: str) -> bool:
-        """检查分析师是否有数据契约"""
+        """Check if analyst has data contract"""
         return analyst_id in self._contracts
 
     def validate_all_contracts(self) -> Dict[str, Any]:
         """
-        验证所有已注册契约的依赖关系
+        Verify dependencies of all registered contracts
 
         Returns:
-            验证结果字典 {analyst_id: ValidationResult}
+            Verify result dictionary {analyst_id: ValidationResult}
         """
         contracts = list(self._contracts.values())
         return self._contract_validator.validate_all_contracts(contracts)
 
 
-# 全局实例
+# global instance
 _analyst_registry: Optional[AnalystRegistry] = None
 
 
 def get_analyst_registry() -> AnalystRegistry:
-    """获取全局分析师注册表实例"""
+    """Get global analyst registry instance"""
     global _analyst_registry
     if _analyst_registry is None:
         _analyst_registry = AnalystRegistry()

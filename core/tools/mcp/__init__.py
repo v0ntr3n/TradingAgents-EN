@@ -1,11 +1,11 @@
 """
-MCP (Model Context Protocol) 集成模块
+MCP (Model Context Protocol) Integrated module
 
-提供客户端管理和工具包装，支持用户自定义 MCP 服务器接入。
-传输类型：
+Provides client management and tool packaging, and supports user-defined MCP server access.
+Transmission type:
   - sse              — Server-Sent Events (HTTP)
-  - streamable_http  — Streamable HTTP (新版 MCP 标准)
-  - stdio            — 子进程标准输入输出
+  - streamable_http  — Streamable HTTP (New version of MCP standard)
+  - stdio            — child process standard input and output
 """
 
 from .client_manager import MCPClientManager, get_mcp_client_manager

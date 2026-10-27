@@ -1,4 +1,4 @@
-"""宏观仪表盘与收益率曲线分析工具。"""
+"""Macro dashboard and yield curve analysis tools."""
 
 import datetime
 import json
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_db():
-    """获取同步 MongoDB 连接。"""
+    """Get a synchronous MongoDB connection."""
     from app.core.database import get_mongo_db_sync
 
     return get_mongo_db_sync()
@@ -45,7 +45,7 @@ def _safe_float(value: Any) -> Optional[float]:
 
 
 def _get_market_pe_pb_distribution() -> Dict[str, Any]:
-    """从 stock_basic_info 统计全市场 PE/PB 分布。"""
+    """Statistics on market-wide PE/PB distribution from stock_basic_info."""
     db = _get_db()
     col = db["stock_basic_info"]
 
@@ -109,8 +109,8 @@ def _get_market_pe_pb_distribution() -> Dict[str, Any]:
     tool_id="get_macro_dashboard",
     name="宏观仪表盘",
     description=(
-        "返回市场宏观概览仪表盘，包含全市场估值分布（PE/PB）、宏观指标占位槽（CPI/GDP/PMI/利率）"
-        "和市场宽度统计。宏观指标需从外部来源补充。"
+        "Return to the market macro overview dashboard, including market valuation distribution (PE/PB) and macro indicator slots (CPI/GDP/PMI/Interest Rate)"
+        "and market breadth statistics. Macro indicators need to be supplemented from external sources."
     ),
     category="fundamentals",
     is_online=False,
@@ -121,48 +121,48 @@ def _get_market_pe_pb_distribution() -> Dict[str, Any]:
     output_shape="structured_json",
     preferred_for=["市场整体估值概览", "宏观数据框架查询"],
     when_to_use=(
-        "当需要快速了解全市场估值水平、PE/PB 分布、市场整体宽度时使用。"
-        "此工具可提供从本地数据库能拿到的市场统计，以及需要外部填充的宏观指标清单。"
+        "Use it when you need to quickly understand the full market valuation level, PE/PB distribution, and overall market width."
+        "This tool provides market statistics available from a local database, as well as a list of macro indicators that need to be populated externally."
     ),
     when_not_to_use=(
-        "不适合查询具体股票的基本面或财务数据；"
-        "不适合获取实时 CPI/GDP/PMI 实际数值（这些需要外部数据源补充）。"
+        "Not suitable for querying the fundamentals or financial data of specific stocks;"
+        "Not suitable for obtaining real-time CPI/GDP/PMI actual values (these need to be supplemented by external data sources)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 market_overview（全市场估值统计）、"
-        "indicator_slots（宏观指标占位，状态为 pending_external_data）、"
-        "market_breadth（市场宽度，含数据来源说明）。"
+        "Returns a JSON string, including market_overview (full market valuation statistics),"
+        "indicator_slots (Macro indicator occupancy, status is pending_external_data),"
+        "market_breadth (Market breadth, including data source description)."
     ),
     example="get_macro_dashboard()",
     related_tools=["get_yield_curve_analysis", "get_sector_performance"],
 )
 def get_macro_dashboard() -> str:
-    """获取市场宏观概览仪表盘。
+    """Get a macro overview of the market dashboard.
 
-    返回全市场 PE/PB 统计数据，以及需要外部数据源补充的宏观指标框架。
+    Returns market-wide PE/PB statistics, as well as a macro indicator framework that needs to be supplemented by external data sources.
 
     Returns:
-        str: JSON 字符串，字段说明——
-            dashboard_date: 仪表盘日期（YYYY-MM-DD）
-            data_source_note: 数据来源说明
-            market_overview: dict 市场总览——
-                — total_stocks_tracked: 跟踪的股票总数
-                — pe_ttm_distribution: dict PE_TTM分布（avg/median/min/max/valid_samples）
-                — pb_distribution: dict PB分布（avg/median/min/max/valid_samples）
-                — industry_coverage: dict 行业覆盖（total_industries）
-            indicator_slots: dict 宏观指标占位，每个指标结构——
-                — label: 指标名称
-                — status: 状态（固定为 "pending_external_data"）
-                — suggested_source: 建议数据源
-                — note: 说明
-                包含 key: cpi / gdp / pmi / interest_rates
-            market_breadth: dict 市场宽度——
-                — status: 状态（固定为 "partial_data"）
-                — note: 说明
-                — available_from_system: list[str] 系统可用数据源
-            suggested_external_sources: dict 建议的外部数据源（akshare/tushare/eastmoney）
-            status: 状态（仅异常时为 "error"）
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            dashboard_date: Dashboard date (YYYY-MM-DD)
+            data_source_note: Data source description
+            market_overview: dict Market overview——
+                — total_stocks_tracked: Total number of stocks tracked
+                — pe_ttm_distribution: dict PE_TTM Distribution (avg/median/min/max/valid_samples)
+                — pb_distribution: dict PB Distribution (avg/median/min/max/valid_samples)
+                — industry_coverage: dict Industry coverage (total_industries)
+            indicator_slots: dict Macro indicator occupancy, each indicator structure——
+                — label: Indicator name
+                — status: status (fixed to "pending_external_data") 
+                — suggested_source: Suggested data sources
+                — note: Description
+                contains key: cpi / gdp / pmi / interest_rates
+            market_breadth: dict market breadth——
+                — status: status (fixed to "partial_data") 
+                — note: Description
+                — available_from_system: list[str] System available data sources
+            suggested_external_sources: dict Suggested external data sources (akshare/tushare/eastmoney)
+            status: Status (only when abnormal) "error") 
+            message: Error message (only status="error" exist)
     """
     try:
         today = datetime.date.today()
@@ -171,9 +171,9 @@ def get_macro_dashboard() -> str:
         dashboard = {
             "dashboard_date": today.isoformat(),
             "data_source_note": (
-                "以下 market_overview 来自本地数据库 stock_basic_info 集合的统计快照，"
-                "反映系统已同步的 A 股全市场 PE/PB 分布。"
-                "indicator_slots 中的宏观指标需要从外部数据源（如东方财富、国家统计局 API）获取。"
+                "The following market_overview is a statistics snapshot from the local database stock_basic_info collection,"
+                "Reflects the system-synchronized A-share market-wide PE/PB distribution."
+                "indicator_slots The macro indicators in need to be obtained from external data sources (such as Oriental Fortune, National Bureau of Statistics API)."
             ),
             "market_overview": {
                 "total_stocks_tracked": market_stats["total_tracked"],
@@ -197,45 +197,45 @@ def get_macro_dashboard() -> str:
             },
             "indicator_slots": {
                 "cpi": {
-                    "label": "居民消费价格指数 (CPI)",
+                    "label": "consumer price index (CPI)",
                     "status": "pending_external_data",
-                    "suggested_source": "国家统计局 / 东方财富宏观经济数据",
-                    "note": "需外部 API 补充月度 CPI 同比/环比数据",
+                    "suggested_source": "National Bureau of Statistics/Oriental Fortune Macroeconomic Data",
+                    "note": "External API is required to supplement monthly CPI year-on-year/month-on-month data",
                 },
                 "gdp": {
                     "label": "国内生产总值 (GDP)",
                     "status": "pending_external_data",
-                    "suggested_source": "国家统计局 / 东方财富宏观经济数据",
-                    "note": "需外部 API 补充季度 GDP 同比/累计增速",
+                    "suggested_source": "National Bureau of Statistics/Oriental Fortune Macroeconomic Data",
+                    "note": "External API is needed to supplement quarterly GDP year-on-year/cumulative growth rate",
                 },
                 "pmi": {
-                    "label": "采购经理人指数 (PMI)",
+                    "label": "purchasing managers index (PMI)",
                     "status": "pending_external_data",
-                    "suggested_source": "国家统计局 / 东方财富宏观经济数据",
-                    "note": "需外部 API 补充制造业/非制造业 PMI",
+                    "suggested_source": "National Bureau of Statistics/Oriental Fortune Macroeconomic Data",
+                    "note": "Requires external API to supplement manufacturing/non-manufacturing industries PMI",
                 },
                 "interest_rates": {
-                    "label": "利率 (LPR/MLF/国债收益率)",
+                    "label": "interest rate (LPR/MLF/Treasury yield)",
                     "status": "pending_external_data",
-                    "suggested_source": "中国人民银行 / 中国货币网 / 东方财富",
-                    "note": "需外部 API 补充 LPR、MLF 利率及国债收益率曲线",
+                    "suggested_source": "People s Bank of China / China Money Network / Oriental Fortune",
+                    "note": "External API is needed to supplement LPR, MLF interest rates and government bond yield curves",
                 },
             },
             "market_breadth": {
                 "status": "partial_data",
                 "note": (
-                    "市场宽度统计（涨跌家数、MA50 以上占比等）需要日线数据全量计算，"
-                    "当前系统暂未预聚合该统计。可通过外部数据源或下游查询补充。"
+                    "Market breadth statistics (number of rising and falling stocks, proportion above MA50, etc.) require full calculation of daily data."
+                    "The current system has not pre-aggregated this statistics. Can be supplemented by external data sources or downstream queries."
                 ),
                 "available_from_system": [
-                    "单只股票的日线行情（get_stock_daily_quotes）",
-                    "行业估值汇总（summarize_industry_valuation）",
-                    "全市场 PE/PB 分布（本工具已提供）",
+                    "Daily quotes of a single stock (get_stock_daily_quotes)",
+                    "Industry valuation summary (summarize_industry_valuation)",
+                    "Market-wide PE/PB distribution (provided by this tool)",
                 ],
             },
             "suggested_external_sources": {
-                "akshare": "可通过 akshare 获取宏观经济指标和债券收益率数据",
-                "tushare": "可通过 tushare 获取宏观经济指标（需积分）",
+                "akshare": "Macroeconomic indicators and bond yield data are available through akshare",
+                "tushare": "Macroeconomic indicators can be obtained through tushare (points required)",
                 "eastmoney": "东方财富宏观经济数据接口",
             },
         }
@@ -243,20 +243,20 @@ def get_macro_dashboard() -> str:
         return json.dumps(dashboard, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("宏观仪表盘获取失败: %s", exc, exc_info=True)
+        logger.error("Failed to obtain macro dashboard: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
 def _fetch_china_yield_curve() -> dict:
-    """通过 AKShare 获取中国国债收益率曲线最新数据。"""
+    """Get the latest data on China s government bond yield curve via AKShare."""
     try:
         import akshare as ak
         df = ak.bond_china_yield()
-        # 筛选"中债国债收益率曲线"
+        # Filter"ChinaBond Treasury Bond Yield Curve"
         treasury = df[df["曲线名称"] == "中债国债收益率曲线"]
         if treasury.empty:
             return {"status": "no_data", "message": "未找到国债收益率曲线数据"}
-        # 取最新日期
+        # Get the latest date
         treasury["日期"] = pd.to_datetime(treasury["日期"])
         latest = treasury.loc[treasury["日期"].idxmax()]
         yields = {}
@@ -272,12 +272,12 @@ def _fetch_china_yield_curve() -> dict:
             "yields": yields,
         }
     except Exception as e:
-        logger.warning("AKShare 国债收益率获取失败: %s", e)
+        logger.warning("AKShare Failed to obtain treasury bond yield: %s", e)
         return {"status": "error", "message": str(e)}
 
 
 def _fetch_zh_us_rate() -> dict:
-    """通过 AKShare 获取中美收益率对比最新数据。"""
+    """Get the latest data comparing U.S. and Chinese yields with AKShare."""
     try:
         import akshare as ak
         df = ak.bond_zh_us_rate()
@@ -306,7 +306,7 @@ def _fetch_zh_us_rate() -> dict:
             result["spread_cn"]["10Y-2Y"] = round(float(spread), 4)
         return result
     except Exception as e:
-        logger.warning("AKShare 中美收益率获取失败: %s", e)
+        logger.warning("AKShare Failed to obtain Sino-US yield: %s", e)
         return {"status": "error", "message": str(e)}
 
 
@@ -315,9 +315,9 @@ def _fetch_zh_us_rate() -> dict:
     tool_id="get_yield_curve_analysis",
     name="收益率曲线分析",
     description=(
-        "通过 akshare 实时获取中国国债收益率曲线数据，"
-        "包含各期限（3月/6月/1年/3年/5年/7年/10年/30年）国债到期收益率、"
-        "10Y-2Y 期限利差、中美收益率对比。同时提供曲线形态判断。"
+        "Get real-time data on China s government bond yield curve through akshare,"
+        "Including the yield to maturity of government bonds of various maturities (3 months/6 months/1 year/3 years/5 years/7 years/10 years/30 years),"
+        "10Y-2Y Term spreads and yield comparison between China and the United States. It also provides curve shape judgment."
     ),
     category="fundamentals",
     is_online=True,
@@ -328,43 +328,43 @@ def _fetch_zh_us_rate() -> dict:
     output_shape="structured_json",
     preferred_for=["国债收益率查询", "收益率曲线形态判断", "中美利差对比"],
     when_to_use=(
-        "当用户问及当前国债收益率水平、收益率曲线形态（正常/倒挂/平坦）、"
-        "中美利差对比、期限利差（10Y-2Y）时使用。"
+        "When users ask about the current level of government bond yields, the shape of the yield curve (normal/inverted/flat),"
+        "Used when comparing Sino-US interest rate spreads and term interest rate spreads (10Y-2Y)."
     ),
     when_not_to_use=(
-        "不适合查询个券（单只债券）的收益率或估值数据；"
-        "不适合查询历史收益率序列（如需长时间序列请直接使用 akshare）。"
+        "Not suitable for querying the yield or valuation data of individual bonds (single bonds);"
+        "It is not suitable for querying historical return series (if you need a long-term series, please use akshare directly)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 yield_curve（中国国债各期限收益率）、"
-        "date（数据日期）、curve_shape（曲线形态判断）、"
-        "key_spreads（关键利差）、zh_us_comparison（中美对比）。"
+        "Returns a JSON string, including yield_curve (the yield of each maturity of Chinese government bonds),"
+        "date (Data date), curve_shape (curve shape judgment),"
+        "key_spreads (Key spreads), zh_us_comparison (Comparison between China and the United States)."
     ),
     example="get_yield_curve_analysis()",
     related_tools=["get_macro_dashboard", "get_bond_yield_calculation", "get_monetary_environment", "get_credit_spread_analysis"],
 )
 def get_yield_curve_analysis() -> str:
-    """获取中国国债收益率曲线实时分析。
+    """Get real-time analysis of China s government bond yield curve.
 
-    通过 AKShare 获取中债国债收益率曲线数据，包含各期限收益率、
-    曲线形态判断、期限利差和中美对比。
+    Obtain ChinaBond treasury bond yield curve data through AKShare, including yields of each maturity,
+    Judgment of curve shape, term spread and comparison between China and the United States.
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            date: 数据日期（YYYY-MM-DD）
-            data_source: 数据来源说明
-            yield_curve: dict 各期限收益率（key 为 "3月"/"6月"/"1年"/"3年"/"5年"/"7年"/"10年"/"30年"）
-            curve_shape: 曲线形态: "正常向上倾斜" | "倒挂" | "平坦" | "数据不足无法判断"
-            key_spreads: dict 关键利差（key 如 "10Y-1Y"/"10Y-3Y"/"10Y-5Y"）
-            zh_us_comparison: dict 中美收益率对比（数据不可用时为 {"status": "unavailable", "message": ...}）——
-                — date: 日期
-                — china: dict 中国各期限收益率
-                — us: dict 美国各期限收益率
-                — spread_cn: dict 中国期限利差（如 10Y-2Y）
-            data_note: 数据注释
-            message: 错误信息（仅 status="error" 时存在）
-            suggestion: 建议（仅部分错误场景存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            date: Data date (YYYY-MM-DD)
+            data_source: Data source description
+            yield_curve: dict The yield rate of each term (key is "3 month"/"6 month"/"1 year"/"3 year"/"5 year"/"7 year"/"10 year"/"30 year") 
+            curve_shape: curve shape: "normal upward tilt" | "hanging upside down" | "flat" | "Insufficient data to determine"
+            key_spreads: dict Key spread (key such as "10Y-1Y"/"10Y-3Y"/"10Y-5Y") 
+            zh_us_comparison: dict Comparison of U.S. and Chinese yields (when data are not available) {"status": "unavailable", "message": ...}) ——
+                — date: Date
+                — china: dict Yields of various terms in China
+                — us: dict U.S. yields by maturity
+                — spread_cn: dict China term spread (such as 10Y-2Y)
+            data_note: Data annotation
+            message: Error message (only status="error" exist)
+            suggestion: Suggestions (only some error scenarios exist)
     """
     try:
         curve = _fetch_china_yield_curve()
@@ -374,13 +374,13 @@ def get_yield_curve_analysis() -> str:
             return json.dumps({
                 "status": "error",
                 "message": f"国债收益率数据获取失败: {curve.get('message')}",
-                "suggestion": "可通过 akshare.bond_china_yield() 直接获取",
+                "suggestion": "Passable akshare.bond_china_yield() Get it directly",
             }, ensure_ascii=False, indent=2, default=str)
 
         yields = curve.get("yields", {})
         date = curve.get("date", "未知")
 
-        # 判断曲线形态
+        # Determine curve shape
         y1 = yields.get("1年")
         y10 = yields.get("10年")
         y2 = yields.get("3月")
@@ -394,7 +394,7 @@ def get_yield_curve_analysis() -> str:
         else:
             curve_shape = "数据不足无法判断"
 
-        # 关键利差
+        # key spread
         spreads = {}
         if y10 is not None and yields.get("1年") is not None:
             spreads["10Y-1Y"] = round(y10 - yields["1年"], 4)
@@ -414,13 +414,13 @@ def get_yield_curve_analysis() -> str:
                 "status": "unavailable",
                 "message": zh_us.get("message", ""),
             },
-            "data_note": "曲线基于中债国债收益率曲线最新数据，单位为百分比（%）",
+            "data_note": "The curve is based on the latest data of ChinaBond Treasury Bond Yield Curve, the unit is percentage (%)",
         }
 
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("收益率曲线分析失败: %s", exc, exc_info=True)
+        logger.error("Yield curve analysis fails: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 

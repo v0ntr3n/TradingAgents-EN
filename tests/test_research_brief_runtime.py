@@ -14,10 +14,10 @@ from app.utils.report_formatter import (
 
 def test_sanitize_analysis_payload_strips_legacy_execution_fields() -> None:
     raw_result = {
-        "summary": "建议买入，目标价100元，仓位20%。",
+        "summary": "It is recommended to buy, with a target price of 100 yuan and a position of 20%.",
         "reports": {
-            "market_report": "公司订单回暖，盈利能力改善，后续仍需跟踪原材料波动。",
-            "final_trade_decision": "建议买入并关注目标价100元。",
+            "market_report": "The company s orders have picked up and profitability has improved, but it still needs to track the fluctuations in raw materials in the future.",
+            "final_trade_decision": "It is recommended to buy and pay attention to the target price of 100 yuan.",
         },
         "decision": {
             "action": "BUY",
@@ -27,36 +27,36 @@ def test_sanitize_analysis_payload_strips_legacy_execution_fields() -> None:
             "price_analysis_range": [90, 100],
             "risk_exposure_ratio": "20%",
             "stop_loss": 88,
-            "reasoning": "订单回暖，毛利率修复，现金流改善。",
-            "summary": "盈利修复趋势在延续，但仍需关注成本压力。",
-            "risk_warning": "原材料价格波动可能侵蚀利润。",
-            "core_evidence": ["订单回暖", "毛利率修复"],
-            "uncertainties": ["需求持续性"],
-            "invalidation_conditions": ["订单再次下滑"],
-            "watch_items": ["下一期财报"],
+            "reasoning": "Orders have picked up, gross profit margins have recovered, and cash flow has improved.",
+            "summary": "The trend of profit restoration continues, but cost pressures still need to be paid attention to.",
+            "risk_warning": "Fluctuations in raw material prices can erode profits.",
+            "core_evidence": ["Orders pick up", "Gross profit margin repair"],
+            "uncertainties": ["Continuity of demand"],
+            "invalidation_conditions": ["Orders drop again"],
+            "watch_items": ["Next financial report"],
         },
     }
 
     sanitized = sanitize_analysis_payload(raw_result)
 
     assert sanitized["reports"] == {
-        "market_report": "公司订单回暖，盈利能力改善，后续仍需跟踪原材料波动。"
+        "market_report": "The company s orders have picked up and profitability has improved, but it still needs to track the fluctuations in raw materials in the future."
     }
-    assert sanitized["decision"]["action"] == "乐观"
-    assert sanitized["decision"]["analysis_view"] == "乐观"
+    assert sanitized["decision"]["action"] == "optimistic"
+    assert sanitized["decision"]["analysis_view"] == "optimistic"
     assert sanitized["decision"]["confidence"] == 0.82
     assert sanitized["decision"]["risk_score"] == 0.65
-    assert sanitized["decision"]["core_evidence"] == ["订单回暖", "毛利率修复"]
-    assert sanitized["decision"]["uncertainties"] == ["需求持续性"]
-    assert sanitized["decision"]["invalidation_conditions"] == ["订单再次下滑"]
-    assert sanitized["decision"]["watch_items"] == ["下一期财报"]
+    assert sanitized["decision"]["core_evidence"] == ["Orders pick up", "Gross profit margin repair"]
+    assert sanitized["decision"]["uncertainties"] == ["Continuity of demand"]
+    assert sanitized["decision"]["invalidation_conditions"] == ["Orders drop again"]
+    assert sanitized["decision"]["watch_items"] == ["Next financial report"]
     assert "target_price" not in sanitized["decision"]
     assert "price_analysis_range" not in sanitized["decision"]
     assert "risk_exposure_ratio" not in sanitized["decision"]
     assert "stop_loss" not in sanitized["decision"]
-    assert sanitized["recommendation"].startswith("研究判断：乐观；")
-    assert "目标价" not in sanitized["recommendation"]
-    assert "仓位" not in sanitized["recommendation"]
+    assert sanitized["recommendation"].startswith("Research Judgment: Optimistic;")
+    assert "target price" not in sanitized["recommendation"]
+    assert "position" not in sanitized["recommendation"]
 
 
 def test_format_decision_keeps_research_brief_fields_only() -> None:
@@ -67,28 +67,28 @@ def test_format_decision_keeps_research_brief_fields_only() -> None:
             "risk_score": 0.32,
             "target_price": 120,
             "position_ratio": "15%",
-            "reasoning": "需求改善带动盈利预期上修。",
-            "summary": "当前证据偏向乐观，但需继续跟踪兑现节奏。",
-            "risk_warning": "若需求复苏不及预期，判断可能转弱。",
-            "core_evidence": ["需求改善", "盈利预期上修"],
-            "uncertainties": ["兑现节奏"],
-            "invalidation_conditions": ["景气度再次转弱"],
-            "watch_items": ["月度销售数据"],
+            "reasoning": "Improved demand has led to upward revisions to earnings expectations.",
+            "summary": "The current evidence is biased towards optimism, but the pace of realization needs to be continued.",
+            "risk_warning": "If the demand recovery is less than expected, the judgment may weaken.",
+            "core_evidence": ["Demand improvement", "Earnings forecast revised upwards"],
+            "uncertainties": ["deliver rhythm"],
+            "invalidation_conditions": ["Economic sentiment weakens again"],
+            "watch_items": ["monthly sales data"],
         }
     )
 
     assert decision == {
-        "action": "乐观",
-        "analysis_view": "乐观",
+        "action": "optimistic",
+        "analysis_view": "optimistic",
         "confidence": 0.78,
         "risk_score": 0.32,
-        "reasoning": "需求改善带动盈利预期上修。",
-        "summary": "当前证据偏向乐观，但需继续跟踪兑现节奏。",
-        "risk_warning": "若需求复苏不及预期，判断可能转弱。",
-        "core_evidence": ["需求改善", "盈利预期上修"],
-        "uncertainties": ["兑现节奏"],
-        "invalidation_conditions": ["景气度再次转弱"],
-        "watch_items": ["月度销售数据"],
+        "reasoning": "Improved demand has led to upward revisions to earnings expectations.",
+        "summary": "The current evidence is biased towards optimism, but the pace of realization needs to be continued.",
+        "risk_warning": "If the demand recovery is less than expected, the judgment may weaken.",
+        "core_evidence": ["Demand improvement", "Earnings forecast revised upwards"],
+        "uncertainties": ["deliver rhythm"],
+        "invalidation_conditions": ["Economic sentiment weakens again"],
+        "watch_items": ["monthly sales data"],
     }
 
 
@@ -98,137 +98,137 @@ def test_format_decision_demotes_inferential_core_evidence() -> None:
             "action": "HOLD",
             "confidence": 0.66,
             "risk_score": 0.41,
-            "reasoning": "当前关键分歧仍需等待更完整披露验证。",
-            "core_evidence": ["ROE连续四季度回升", "零售贷款占比推断超60%"],
-            "uncertainties": ["净息差变动方向未披露"],
-            "watch_items": ["下一期财报"],
+            "reasoning": "The current key differences still need to be verified by more complete disclosure.",
+            "core_evidence": ["ROE Four consecutive quarters of recovery", "The proportion of retail loans is inferred to exceed 60%"],
+            "uncertainties": ["The direction of change in net interest margin was not disclosed"],
+            "watch_items": ["Next financial report"],
         }
     )
 
-    assert decision["core_evidence"] == ["ROE连续四季度回升"]
-    assert "零售贷款占比推断超60%" in decision["uncertainties"]
+    assert decision["core_evidence"] == ["ROE Four consecutive quarters of recovery"]
+    assert "The proportion of retail loans is inferred to exceed 60%" in decision["uncertainties"]
 
 
 def test_convert_final_decision_json_to_markdown_uses_research_brief_sections() -> None:
     markdown = _convert_final_decision_json_to_markdown(
         {
-            "risk_level": "中",
+            "risk_level": "in",
             "risk_score": 0.4,
             "final_trade_decision": {
-                "analysis_view": "中性",
+                "analysis_view": "Neutral",
                 "confidence": 72,
                 "target_price": 88,
                 "risk_control_reference": 75,
                 "risk_exposure_ratio": "10%",
-                "reasoning": "当前证据尚不足以支持更明确方向，需要继续观察经营数据。",
-                "summary": "判断维持中性，等待更多经营验证。",
-                "core_evidence": ["盈利表现企稳"],
-                "uncertainties": ["需求恢复斜率"],
-                "invalidation_conditions": ["盈利再次恶化"],
-                "watch_items": ["下一期经营披露"],
-                "risk_warning": "若行业需求持续走弱，结论可能下修。",
+                "reasoning": "The current evidence is not enough to support a clearer direction, and operating data need to continue to be observed.",
+                "summary": "The judgment remains neutral and awaits more operational verification.",
+                "core_evidence": ["Earnings performance stabilizes"],
+                "uncertainties": ["demand recovery slope"],
+                "invalidation_conditions": ["Earnings worsen again"],
+                "watch_items": ["Next issue operating disclosure"],
+                "risk_warning": "If industry demand continues to weaken, the conclusion may be revised downwards.",
             },
         }
     )
 
-    assert "# 🎯 综合研究结论" in markdown
-    assert "- **研究观点**: ⚪ 中性" in markdown
-    assert "## 🔍 核心依据" in markdown
-    assert "## ❓ 关键不确定性" in markdown
-    assert "## 🔄 判断调整条件" in markdown
-    assert "## 👀 后续观察事项" in markdown
-    assert "观察区间参考" not in markdown
-    assert "关键验证位" not in markdown
-    assert "风险承受前提" not in markdown
+    assert "# 🎯 Comprehensive research conclusion" in markdown
+    assert "- **research perspective**: ⚪ Neutral" in markdown
+    assert "## 🔍 core basis" in markdown
+    assert "## ❓ key uncertainties" in markdown
+    assert "## 🔄 Determine adjustment conditions" in markdown
+    assert "## 👀 Follow-up observations" in markdown
+    assert "Observation interval reference" not in markdown
+    assert "key verification bit" not in markdown
+    assert "Risk tolerance premise" not in markdown
 
 
 def test_convert_final_decision_json_to_markdown_reindexes_non_empty_lists() -> None:
     markdown = _convert_final_decision_json_to_markdown(
         {
             "final_trade_decision": {
-                "analysis_view": "中性",
-                "core_evidence": ["证据A", "", None, "证据B"],
-                "uncertainties": [None, "不确定性A"],
-                "invalidation_conditions": ["条件A", "", "条件B"],
-                "watch_items": ["观察项A", None, "观察项B"],
+                "analysis_view": "Neutral",
+                "core_evidence": ["evidence A", "", None, "evidence B"],
+                "uncertainties": [None, "uncertainty A"],
+                "invalidation_conditions": ["Conditions A", "", "Conditions B"],
+                "watch_items": ["Observations A", None, "Observations B"],
             }
         }
     )
 
-    assert "1. 证据A" in markdown
-    assert "2. 证据B" in markdown
-    assert "3. 证据B" not in markdown
-    assert "1. 不确定性A" in markdown
-    assert "1. 条件A" in markdown
-    assert "2. 条件B" in markdown
-    assert "1. 观察项A" in markdown
-    assert "2. 观察项B" in markdown
+    assert "1. evidence A" in markdown
+    assert "2. evidence B" in markdown
+    assert "3. evidence B" not in markdown
+    assert "1. uncertainty A" in markdown
+    assert "1. Conditions A" in markdown
+    assert "2. Conditions B" in markdown
+    assert "1. Observations A" in markdown
+    assert "2. Observations B" in markdown
 
 
 def test_sanitize_display_report_text_normalizes_legacy_disclaimer() -> None:
-    raw_text = """## 综合研究结论
+    raw_text = """## Comprehensive research conclusion
 
-当前判断仍需结合后续披露继续验证。
+The current judgment still needs to be verified in conjunction with subsequent disclosures.
 
-**免责声明**：请结合自身情况独立判断。投资有风险，决策需谨慎。必要时请咨询专业顾问。
+**Disclaimer**: Please make independent judgment based on your own situation. Investment is risky and decisions need to be made with caution. Please consult professional advisors if necessary.
 """
 
     sanitized = sanitize_display_report_text(raw_text)
 
-    assert "当前判断仍需结合后续披露继续验证。" in sanitized
-    assert "投资有风险，决策需谨慎" not in sanitized
-    assert "本报告仅供研究参考，不构成个股推荐、投资建议或操作依据。请结合公开信息披露与自身研究独立判断。" in sanitized
+    assert "The current judgment still needs to be verified in conjunction with subsequent disclosures." in sanitized
+    assert "Investment is risky and decisions need to be made with caution" not in sanitized
+    assert "This report is for research reference only and does not constitute individual stock recommendation, investment advice or operation basis. Please make independent judgments based on public information disclosure and your own research." in sanitized
 
 
 def test_sanitize_display_report_text_removes_price_and_actionable_lines() -> None:
-    raw_text = """## 情景结论
+    raw_text = """## Scenario conclusion
 
-当前判断仍依赖后续财报与经营数据验证。
+Current judgment still relies on verification of subsequent financial reports and operating data.
 
-- 价格中枢可能上移至12.8-13.5元区间
-- 若突破11.33元则强化上行预期
-- 建议维持60%-80%风险敞口
+- The price center may move up to the 12.8-13.5 yuan range
+- If it breaks through 11.33 yuan, it will strengthen upward expectations.
+- It is recommended to maintain 60%-80% risk exposure
 
-## 继续验证的公开信号
+## public signal to continue verification
 
-1. 下一期财报是否披露更完整的资产质量数据
-2. 监管口径是否出现变化
+1. Will the next financial report disclose more complete asset quality data?
+2. Are there any changes in regulatory standards?
 """
 
     sanitized = sanitize_display_report_text(raw_text)
 
-    assert "当前判断仍依赖后续财报与经营数据验证。" in sanitized
-    assert "下一期财报是否披露更完整的资产质量数据" in sanitized
-    assert "监管口径是否出现变化" in sanitized
-    assert "12.8-13.5元区间" not in sanitized
-    assert "突破11.33元" not in sanitized
-    assert "60%-80%风险敞口" not in sanitized
+    assert "Current judgment still relies on verification of subsequent financial reports and operating data." in sanitized
+    assert "Will the next financial report disclose more complete asset quality data?" in sanitized
+    assert "Are there any changes in regulatory standards?" in sanitized
+    assert "12.8-13.5 meta interval" not in sanitized
+    assert "Breaking through 11.33 yuan" not in sanitized
+    assert "60%-80%risk exposure" not in sanitized
 
 
 def test_sanitize_display_report_text_normalizes_legacy_titles_and_soft_investment_language() -> None:
-    raw_text = """## 新闻分析师研究报告
+    raw_text = """## News Analyst Research Report
 
-该事件可能成为价值修复的起点，对配置型投资者具备一定吸引力。
+This event may become the starting point for value restoration and has certain appeal to allocation investors.
 
-## 板块分析师研究观察报告
+## Sector Analyst Research Observation Report
 
-当前行业讨论热度上升，但更适合作为后续研究线索而非投资机会。
+The current industry discussion is on the rise, but it is more suitable as a follow-up research clue than an investment opportunity.
 """
 
     sanitized = sanitize_display_report_text(raw_text)
 
-    assert "## 新闻研究" in sanitized
-    assert "## 行业板块研究" in sanitized
-    assert "价值修复的起点" not in sanitized
-    assert "配置型投资者" not in sanitized
-    assert "投资机会" not in sanitized
-    assert "估值与预期修复的早期信号" in sanitized
-    assert "研究型用户" in sanitized
-    assert "研究线索" in sanitized
+    assert "## Journalism Research" in sanitized
+    assert "## Industry sector research" in sanitized
+    assert "The starting point of value restoration" not in sanitized
+    assert "allocation investor" not in sanitized
+    assert "investment opportunities" not in sanitized
+    assert "Early signs of valuation and expected repairs" in sanitized
+    assert "research users" in sanitized
+    assert "research leads" in sanitized
 
 
 def test_sanitize_report_artifacts_removes_raw_news_tool_call_payload() -> None:
-    raw_text = """## 新闻研究报告
+    raw_text = """## news research report
 
 {"name": "get_stock_news_details_unified", "arguments": {"news_ids": "news_1,news_2"}}
 </tool_call>
@@ -238,19 +238,19 @@ def test_sanitize_report_artifacts_removes_raw_news_tool_call_payload() -> None:
 
     assert 'get_stock_news_details_unified' not in sanitized
     assert '</tool_call>' not in sanitized
-    assert '## 新闻研究报告' in sanitized
+    assert '## news research report' in sanitized
 
 
 def test_sanitize_report_artifacts_downgrades_conflicting_stable_data_snapshot_date() -> None:
-    raw_text = """### 核心观察
-当前尚无分析日（2026-04-21）对应的稳定收盘后日频数据，因此本次历史估值分位与同业比较均按前一可用交易日口径执行。
-所有估值指标快照日期统一为 **2026-04-21**。
+    raw_text = """### core observation
+There is currently no stable post-closing daily frequency data corresponding to the analysis day (2026-04-21), so the historical valuation quantiles and peer comparisons are all based on the previous available trading day.
+The snapshot date of all valuation indicators is unified to **2026-04-21**. 
 """
 
     sanitized = sanitize_report_artifacts(raw_text)
 
-    assert '所有估值指标快照日期统一为 **2026-04-21**' not in sanitized
-    assert '当前正文日期口径仍待验证' in sanitized
+    assert 'The snapshot date of all valuation indicators is unified to **2026-04-21**' not in sanitized
+    assert 'The current text date and caliber are still to be verified.' in sanitized
 
 
 def test_convert_json_report_to_markdown_downgrades_error_payload_dict() -> None:
@@ -259,26 +259,26 @@ def test_convert_json_report_to_markdown_downgrades_error_payload_dict() -> None
         report_type="risk",
     )
 
-    assert markdown == "风险审阅模块执行未完成，当前风险结论仍待验证。"
+    assert markdown == "The execution of the risk review module has not been completed, and the current risk conclusions still need to be verified."
 
 
 def test_convert_json_report_to_markdown_downgrades_execution_failure_text() -> None:
     markdown = _convert_json_to_markdown(
-        "执行失败: LLM API 调用失败（已重试 0 次）: Request timed out.",
+        "Execution failed: LLM API Call failed (retried 0 times): Request timed out.",
         report_type="investment",
     )
 
-    assert markdown == "综合研究结论模块执行未完成，当前结论仍待验证。"
+    assert markdown == "The implementation of the comprehensive research conclusion module has not been completed, and the current conclusions still need to be verified."
 
 
 def test_sanitize_position_analysis_payload_strips_execution_fields() -> None:
     raw_result = {
         "action": "add",
-        "action_reason": "建议加仓，跌破9.8元止损，目标价12元。",
-        "summary": "建议继续持有并等待12元目标价。",
-        "detailed_analysis": "公司基本面稳定，但若跌破9.8元需要止损。",
-        "risk_assessment": "若行业景气继续走弱，盈利能力会承压。",
-        "opportunity_assessment": "若资产质量改善，估值修复弹性可能提升。",
+        "action_reason": "It is recommended to increase the position, stop loss if it falls below 9.8 yuan, and the target price is 12 yuan.",
+        "summary": "It is recommended to continue to hold and wait for the target price of 12 yuan.",
+        "detailed_analysis": "The company s fundamentals are stable, but if it falls below 9.8 yuan, it needs to stop losses.",
+        "risk_assessment": "If industry sentiment continues to weaken, profitability will come under pressure.",
+        "opportunity_assessment": "If asset quality improves, valuation recovery flexibility may increase.",
         "price_targets": {"stop_loss_price": 9.8, "take_profit_price": 12.0},
         "suggested_quantity": 1000,
         "suggested_amount": 10000,
@@ -292,87 +292,87 @@ def test_sanitize_position_analysis_payload_strips_execution_fields() -> None:
     assert sanitized["suggested_quantity"] is None
     assert sanitized["suggested_amount"] is None
     assert sanitized["confidence"] == 88.0
-    assert "加仓" not in sanitized["action_reason"]
-    assert "止损" not in sanitized["action_reason"]
-    assert "目标价" not in sanitized["summary"]
-    assert sanitized["recommendation"].startswith("该持仓研究仅提供研究观察")
+    assert "Add to position" not in sanitized["action_reason"]
+    assert "stop loss" not in sanitized["action_reason"]
+    assert "target price" not in sanitized["summary"]
+    assert sanitized["recommendation"].startswith("This position research only provides research observations")
 
 
 def test_sanitize_analysis_payload_strips_news_and_sentiment_execution_language() -> None:
     raw_result = {
         "reports": {
-            "news_report": "建议买入，目标价12元。\n公司公告显示新产线投产，后续仍需跟踪放量节奏。",
-            "sentiment_report": "社交媒体建议加仓并设置止损。\n讨论热度上升，但分歧明显且噪音较多。",
+            "news_report": "It is recommended to buy with a target price of 12 yuan.\n The company s announcement shows that the new production line has been put into production, and the pace of volume expansion still needs to be tracked in the future.",
+            "sentiment_report": "Social media suggests adding to your position and setting a stop loss.\n Discussions are heating up, but the differences are clear and there is a lot of noise.",
         },
-        "summary": "建议买入，目标价12元。",
-        "key_points": ["建议买入", "新产线投产"],
+        "summary": "It is recommended to buy with a target price of 12 yuan.",
+        "key_points": ["Recommended to buy", "New production line put into operation"],
     }
 
     sanitized = sanitize_analysis_payload(raw_result)
 
-    assert "买入" not in sanitized["summary"]
-    assert "目标价" not in sanitized["summary"]
-    assert "公司公告显示新产线投产" in sanitized["reports"]["news_report"]
-    assert "讨论热度上升" in sanitized["reports"]["sentiment_report"]
-    assert all("买入" not in point for point in sanitized["key_points"])
+    assert "buy" not in sanitized["summary"]
+    assert "target price" not in sanitized["summary"]
+    assert "Company announcement shows new production line put into production" in sanitized["reports"]["news_report"]
+    assert "Discussion heats up" in sanitized["reports"]["sentiment_report"]
+    assert all("buy" not in point for point in sanitized["key_points"])
 
 
 def test_sanitize_analysis_payload_demotes_inferential_core_evidence() -> None:
     raw_result = {
-        "summary": "等待年报进一步验证。",
+        "summary": "Awaiting further verification in the annual report.",
         "reports": {
-            "market_report": "价格仍处于震荡区间。"
+            "market_report": "Prices are still in a volatile range."
         },
         "decision": {
-            "analysis_view": "中性",
+            "analysis_view": "Neutral",
             "confidence": 68,
             "risk_score": 52,
-            "reasoning": "当前更适合基于已披露数据维持中性研究判断。",
-            "core_evidence": ["PB为0.48倍", "零售贷款占比推断超60%"],
-            "uncertainties": ["不良贷款率细分数据缺失"],
-            "watch_items": ["下一期财报"],
+            "reasoning": "It is currently more appropriate to maintain neutral research judgments based on disclosed data.",
+            "core_evidence": ["PB is 0.48 times", "The proportion of retail loans is inferred to exceed 60%"],
+            "uncertainties": ["Missing breakdown of non-performing loan ratio data"],
+            "watch_items": ["Next financial report"],
         },
     }
 
     sanitized = sanitize_analysis_payload(raw_result)
 
-    assert sanitized["decision"]["core_evidence"] == ["PB为0.48倍"]
-    assert "零售贷款占比推断超60%" in sanitized["decision"]["uncertainties"]
+    assert sanitized["decision"]["core_evidence"] == ["PB is 0.48 times"]
+    assert "The proportion of retail loans is inferred to exceed 60%" in sanitized["decision"]["uncertainties"]
 
 
 def test_sanitize_analysis_payload_strips_index_and_sector_execution_language() -> None:
     raw_result = {
         "reports": {
-            "index_report": "建议关注3300点支撑位并逢低布局。\n流动性中性，仍需跟踪政策节奏。",
-            "sector_report": "新能源板块具备配置建议和安全边际。\n行业景气度修复，但同业分化明显。",
+            "index_report": "It is recommended to pay attention to the support level of 3300 points and plan for dips.\n Liquidity is neutral, and policy rhythm still needs to be tracked.",
+            "sector_report": "The new energy sector has allocation suggestions and safety margins.\n The prosperity of the industry has recovered, but the differentiation among peers is obvious.",
         },
-        "summary": "建议关注3300点支撑位并逢低布局。",
-        "key_points": ["配置建议", "行业景气度修复"],
+        "summary": "It is recommended to pay attention to the support level of 3300 points and plan for dips.",
+        "key_points": ["Configuration recommendations", "Restoration of industry prosperity"],
     }
 
     sanitized = sanitize_analysis_payload(raw_result)
 
-    assert "支撑位" not in sanitized["summary"]
-    assert "配置建议" not in sanitized["summary"]
-    assert "流动性中性" in sanitized["reports"]["index_report"]
-    assert "行业景气度修复" in sanitized["reports"]["sector_report"]
-    assert all("配置建议" not in point for point in sanitized["key_points"])
+    assert "support level" not in sanitized["summary"]
+    assert "Configuration recommendations" not in sanitized["summary"]
+    assert "Liquidity Neutral" in sanitized["reports"]["index_report"]
+    assert "Restoration of industry prosperity" in sanitized["reports"]["sector_report"]
+    assert all("Configuration recommendations" not in point for point in sanitized["key_points"])
 
 
 def test_sanitize_trade_review_payload_strips_future_trade_actions() -> None:
     raw_result = {
-        "summary": "下次可在10元附近买回，并把仓位提升到五成。",
-        "timing_analysis": "若回到10.2元可再次买入，跌破9.8元应止损。",
-        "position_analysis": "建议下次加仓到50%，并设置止盈。",
-        "emotion_analysis": "出现了恐慌卖出，但可以通过预设规则改善。",
-        "attribution_analysis": "本次收益更多来自行业回暖，而非稳定的择时能力。",
-        "suggestions": ["下次跌到10元买入", "仓位提到50%"],
+        "summary": "Next time, you can buy it back near 10 yuan and increase your position to 50%.",
+        "timing_analysis": "If it returns to 10.2 yuan, you can buy again. If it falls below 9.8 yuan, you should stop the loss.",
+        "position_analysis": "It is recommended to increase the position to 50% next time and set a take profit.",
+        "emotion_analysis": "Panic selling occurs, but can be improved with preset rules.",
+        "attribution_analysis": "The gains this time come more from industry recovery than from stable timing capabilities.",
+        "suggestions": ["Buy next time it drops to 10 yuan", "Position mentioned 50%"],
     }
 
     sanitized = sanitize_trade_review_payload(raw_result)
 
-    assert "10元" not in sanitized["summary"]
-    assert "买入" not in sanitized["timing_analysis"]
-    assert "加仓" not in sanitized["position_analysis"]
-    assert all("买入" not in item for item in sanitized["suggestions"])
+    assert "10 Yuan" not in sanitized["summary"]
+    assert "buy" not in sanitized["timing_analysis"]
+    assert "Add to position" not in sanitized["position_analysis"]
+    assert all("buy" not in item for item in sanitized["suggestions"])
     assert all("50%" not in item for item in sanitized["suggestions"])

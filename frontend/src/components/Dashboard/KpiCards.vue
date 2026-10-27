@@ -6,13 +6,13 @@
           <el-icon><Calendar /></el-icon>
         </div>
         <div class="kpi-info">
-          <div class="kpi-label">今日任务</div>
+          <div class="kpi-label">Today s task</div>
           <div class="kpi-value">{{ todayStats.completed }}<span class="kpi-divider">/{{ todayStats.total }}</span></div>
           <div class="kpi-sub" v-if="todayStats.running > 0">
             <el-icon class="running-icon"><Loading /></el-icon>
-            {{ todayStats.running }} 个进行中
+            {{ todayStats.running }} in progress
           </div>
-          <div class="kpi-sub" v-else>暂无进行中任务</div>
+          <div class="kpi-sub" v-else>No tasks in progress</div>
         </div>
       </div>
     </el-card>
@@ -23,9 +23,9 @@
           <el-icon><DataAnalysis /></el-icon>
         </div>
         <div class="kpi-info">
-          <div class="kpi-label">本周分析</div>
-          <div class="kpi-value">{{ weekStats.total }}<span class="kpi-unit">次</span></div>
-          <div class="kpi-sub">成功率 {{ weekStats.successRate }}%</div>
+          <div class="kpi-label">Analysis of the week</div>
+          <div class="kpi-value">{{ weekStats.total }}<span class="kpi-unit">times</span></div>
+          <div class="kpi-sub">success rate {{ weekStats.successRate }}%</div>
         </div>
       </div>
     </el-card>
@@ -36,14 +36,14 @@
           <el-icon><Wallet /></el-icon>
         </div>
         <div class="kpi-info">
-          <div class="kpi-label">模拟交易总资产</div>
+          <div class="kpi-label">Simulated trading total assets</div>
           <div class="kpi-value" v-if="paperAccount">¥{{ formatMoney(getAmount(paperAccount.equity)) }}</div>
           <div class="kpi-value kpi-placeholder" v-else>—</div>
           <div class="kpi-sub" v-if="paperAccount && hasPnl">
-            持仓市值 ¥{{ formatMoney(getAmount(paperAccount.positions_value)) }}
+            Position market value ¥{{ formatMoney(getAmount(paperAccount.positions_value)) }}
           </div>
-          <div class="kpi-sub kpi-action" v-else-if="paperAccount">查看账户详情 →</div>
-          <div class="kpi-sub kpi-action" v-else>前往开通 →</div>
+          <div class="kpi-sub kpi-action" v-else-if="paperAccount">View account details →</div>
+          <div class="kpi-sub kpi-action" v-else>Go to activate →</div>
         </div>
         <el-icon class="kpi-card-arrow"><ArrowRight /></el-icon>
       </div>
@@ -55,10 +55,10 @@
           <el-icon><Coin /></el-icon>
         </div>
         <div class="kpi-info">
-          <div class="kpi-label">本周 Token 用量</div>
+          <div class="kpi-label">Token usage this week</div>
           <div class="kpi-value" v-if="tokenStats.total > 0">{{ formatToken(tokenStats.total) }}</div>
           <div class="kpi-value kpi-placeholder" v-else>—</div>
-          <div class="kpi-sub">{{ tokenStats.requests }} 次调用</div>
+          <div class="kpi-sub">{{ tokenStats.requests }} calls</div>
         </div>
       </div>
     </el-card>
@@ -86,14 +86,14 @@ defineEmits<{
 const paperAccount = ref<PaperAccountSummary | null>(null)
 const tokenStats = ref({ total: 0, requests: 0 })
 
-// 今日任务统计（基于传入的任务列表）
+// Today s task statistics (based on incoming task list)
 const todayStats = computed(() => {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const todayStart = today.getTime()
 
   const todayTasks = props.recentTasks.filter((t: any) => {
-    // unifiedTasks 返回 started_at/created_at（字符串，含时区），兼容旧版 start_time
+    // unifiedTasks Return started_at/created_at (string, including time zone), compatible with older versions start_time
     const ts = new Date(t.started_at || t.start_time || t.created_at || '').getTime()
     return ts >= todayStart
   })
@@ -107,11 +107,11 @@ const todayStats = computed(() => {
   }
 })
 
-// 本周分析统计
+// This week s statistics
 const weekStats = computed(() => {
   const now = new Date()
   const weekStart = new Date(now)
-  weekStart.setDate(now.getDate() - 6) // 含今天共 7 天
+  weekStart.setDate(now.getDate() - 6) // Total 7 days including today
   weekStart.setHours(0, 0, 0, 0)
   const weekStartTs = weekStart.getTime()
 
@@ -156,21 +156,21 @@ const loadPaperAccount = async () => {
       paperAccount.value = response.data.account
     }
   } catch (error) {
-    console.error('加载模拟交易账户失败:', error)
+    console.error('Failed to load demo trading account:', error)
   }
 }
 
 const loadTokenStats = async () => {
   try {
     const resp = await getUsageStatistics({ days: 7 })
-    // 兼容不同返回结构
+    // Compatible with different return structures
     const data: any = (resp as any)?.data?.data || (resp as any)?.data || resp || {}
     tokenStats.value = {
       total: (data.total_input_tokens || 0) + (data.total_output_tokens || 0),
       requests: data.total_requests || 0
     }
   } catch (error) {
-    console.error('加载 Token 用量失败:', error)
+    console.error('Failed to load Token usage:', error)
     tokenStats.value = { total: 0, requests: 0 }
   }
 }
@@ -195,7 +195,7 @@ onMounted(() => {
   }
 }
 
-// 可点击的 KPI 卡片（如"模拟交易总资产"，整卡跳转）
+// Clickable KPI cards (e.g."Simulated trading total assets", Whole card jump)
 .kpi-card-clickable {
   cursor: pointer;
   transition: all 0.2s ease;
@@ -221,7 +221,7 @@ onMounted(() => {
   }
 }
 
-// 卡片右下角箭头（hover 时显示）
+// Arrow in the lower right corner of the card (displayed when hovering)
 .kpi-card-arrow {
   position: absolute;
   right: 16px;

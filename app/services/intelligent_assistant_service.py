@@ -1,7 +1,7 @@
 """
-智能助手服务 - Agent 自主编排模式
+Intelligent assistant service - Agent autonomous orchestration mode
 
-支持 ReAct 模式的工具自主调用，用于事件驱动分析、探索性查询等场景。
+Tools that support the ReAct mode can be called autonomously for event-driven analysis, exploratory query and other scenarios.
 """
 
 import asyncio
@@ -17,17 +17,17 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 from bson import ObjectId
 
-# 智能助手整体超时（LLM + 多轮工具调用）。
-# 设计对齐主流 Agent（ChatGPT/Manus 等）：agent 循环不设短的全局超时，
-# 依靠「单步超时（工具 tier 15/180s）+ 轮次上限（max_tool_rounds=8）+
-# 流式进度反馈 + 用户手动停止」控制时长；全局超时只是防挂死的安全网。
-# 实测：推理模型（长思考）+ 277 工具 schema + 长会话历史，首轮 LLM 思考
-# 可达 4 分钟，300s 会在工具刚执行完就被掐断（2026-09-15 营收预测导出案例）。
+# Intelligent assistant overall timeout (LLM + Multiple rounds of tool calls).
+# The design is aligned with mainstream Agents (ChatGPT/Manus, etc.): the agent cycle does not have a short global timeout,
+# Rely on "single step timeout (tool tier 15/180s)+ Round limit (max_tool_rounds=8) +
+# Streaming progress feedback + User manual stop" controls the duration; the global timeout is just a safety net to prevent hangups.
+# Actual Measurement: Inference Model (Long Thinking)+ 277 Tools schema + Long session history, first round LLM thoughts
+# Up to 4 minutes, 300s will be cut off just after the tool is executed (2026-09-15 revenue forecast export case).
 ASSISTANT_TIMEOUT_SECONDS = int(os.environ.get("ASSISTANT_TIMEOUT_SECONDS", "900"))
-# 当对话中使用了重型工具（Agent 调用等）时，额外追加的超时余量
+# Additional timeout margin added when heavy tools (Agent calls, etc.) are used in the conversation
 ASSISTANT_HEAVY_TOOL_EXTRA_SECONDS = 120
 
-# 会话历史最大条数（每用户）
+# Maximum number of session history items (per user)
 ASSISTANT_CONVERSATION_LIMIT = 100
 ASSISTANT_DEFAULT_THREAD_ID = "default"
 ASSISTANT_MAX_CONTEXT_MESSAGES = 10
@@ -39,9 +39,9 @@ from core.tools.context import set_current_assistant_thread_id, set_current_user
 from core.llm import UnifiedLLMClient
 from core.llm.models import LLMConfig, LLMProvider, Message, MessageRole, ToolCall, ToolResult
 
-# A11 智能助手质量架构：回复质量防线（编造检测/数字溯源）与契约型唯一出口。
-# 防线实现已收编至 core.assistant.defense（单一事实源），此处统一 import 复用；
-# 所有路径回复经 ReplyGate 出口，证据经 Evidence/ReplyCandidate 携带，data_refs 真实现。
+# A11 Intelligent assistant quality architecture: recovery quality defense line (fabricated detection/digital traceability) and contract-based sole export.
+# The defense implementation has been integrated into core.assistant.defense (single source of truth), where import is unified and reused;
+# All path replies are exported through ReplyGate, evidence is carried through Evidence/ReplyCandidate, and data_refs is implemented.
 from core.assistant import (
     EVIDENCE_MEMORY,
     EVIDENCE_SEARCH,
@@ -103,7 +103,7 @@ def _extract_memory_subject(user_msg: str, assistant_msg: str) -> str:
     if title_match:
         return title_match.group(1).strip()
 
-    user_match = re.search(r"([A-Za-z0-9\u4e00-\u9fff]{2,20})(?:股票|走势|业绩|表现|分红|怎么看|为什么|如何)", user_msg or "")
+    user_match = re.search(r"([A-Za-z0-9\u4e00-\u9fff]{2,20})(?:stocks|trend|performance|performance|dividend|How to see|why|how)", user_msg or "")
     if user_match:
         return user_match.group(1).strip()
 
@@ -149,7 +149,7 @@ def _build_fallback_memory_facts(user_msg: str, assistant_msg: str, limit: int =
     return facts
 
 
-# 数据相关关键词——用于判断用户问题是否涉及股票数据查询
+# Data related keywords——Used to determine whether the user's question involves stock data query
 _STOCK_DATA_KEYWORDS = [
     "财报", "利润", "营收", "收入", "净利润", "毛利率", "现金流", "资产", "负债",
     "估值", "市盈率", "市净率", "pe", "pb", "ps",
@@ -161,16 +161,16 @@ _STOCK_DATA_KEYWORDS = [
 
 
 def _extract_stock_code(user_message: str) -> Optional[str]:
-    """从用户消息中提取 6 位 A 股股票代码（正则事实源：core.assistant.lexicon）。"""
+    """Extract the 6-digit A-share stock code from user messages (regular fact source: core.assistant.lexicon)."""
     return extract_a_share_code(user_message)
 
 
 async def _resolve_stock_name_to_code(user_message: str, db=None) -> Optional[str]:
-    """尝试从用户消息中匹配股票名称并返回股票代码。
+    """Attempts to match a stock name from a user message and return a stock symbol.
 
-    事实源：core.assistant.lexicon.stock_directory（stock_basic_info 全量
-    名称→代码目录 + TTL 缓存），替代历史上的硬编码常见名 + 每请求 regex 查库。
-    db 参数优先；未传时尝试 get_mongo_db()（某些上下文会失败）。
+    Source of fact: core.assistant.lexicon.stock_directory (stock_basic_info full
+    Name→Code directory + TTL cache), replacing the historically hard-coded common names + Check the regex library on every request.
+    db Parameters take precedence; try if not passed get_mongo_db() (will fail in some contexts).
     """
     if not user_message:
         return None
@@ -180,17 +180,17 @@ async def _resolve_stock_name_to_code(user_message: str, db=None) -> Optional[st
             db = get_mongo_db()
         return await stock_directory.resolve_symbol(user_message, db)
     except Exception as e:
-        logger.warning("[智能助手] 股票名称解析失败: %s", e)
+        logger.warning("[Smart Assistant] Stock name resolution failed: %s", e)
         return None
 
 
 async def _check_stock_data_sync(symbol: str, db=None) -> dict:
-    """检查单只股票的数据同步状态，返回 {has_historical, has_financial, has_basic, ...}。
+    """Check the data synchronization status of a single stock and return {has_historical, has_financial, has_basic, ...}. 
 
-    直接查询实际数据集合（与前端数据检验接口一致）：
-    - 基础数据: stock_basic_info（按 symbol）
-    - 历史行情: stock_daily_quotes（按 symbol/code）
-    - 财务数据: stock_financial_data（按 symbol）
+    Directly query the actual data collection (consistent with the front-end data inspection interface):
+    - Basic data: stock_basic_info (press symbol)
+    - Historical Quotes: stock_daily_quotes (press symbol/code)
+    - financial data: stock_financial_data (press symbol)
     """
     try:
         if db is None:
@@ -201,12 +201,12 @@ async def _check_stock_data_sync(symbol: str, db=None) -> dict:
         if "." in normalized:
             normalized = normalized.split(".", 1)[0]
 
-        # 基础数据
+        # Basic data
         basic_doc = await db["stock_basic_info"].find_one(
             {"symbol": normalized}, {"symbol": 1, "name": 1}
         )
 
-        # 历史行情（stock_daily_quotes，兼容 symbol/code 两种字段）
+        # Historical quotes (stock_daily_quotes, compatible with both symbol/code fields)
         hist_count = await db["stock_daily_quotes"].count_documents({"symbol": normalized})
         if hist_count == 0:
             hist_count = await db["stock_daily_quotes"].count_documents({"code": normalized})
@@ -220,7 +220,7 @@ async def _check_stock_data_sync(symbol: str, db=None) -> dict:
             d = hist_latest.get("trade_date") or hist_latest.get("date")
             hist_last_date = str(d)[:10] if d else None
 
-        # 财务数据
+        # financial data
         fin_count = await db["stock_financial_data"].count_documents({"symbol": normalized})
 
         return {
@@ -234,35 +234,35 @@ async def _check_stock_data_sync(symbol: str, db=None) -> dict:
             "symbol": normalized,
         }
     except Exception as e:
-        logger.warning("[智能助手] 检查股票数据同步状态失败(%s): %s", symbol, e)
+        logger.warning("[Smart Assistant] Checking stock data sync status failed(%s): %s", symbol, e)
         return {"error": str(e)}
 
 
-# 回复质量防线（编造检测正则/数字溯源/重试指令/透明化附注）已收编至
-# core.assistant.defense（A11，单一事实源），符号见文件顶部 import。
+# The reply quality defense line (fabricated detection rules/digital traceability/retry instructions/transparency notes) has been incorporated into
+# core.assistant.defense (A11, single source of truth), see import at the top of the file for symbols.
 
 
 def _retry_message(role: str, content: str) -> Message:
-    """构造重试反馈消息。
+    """Construct a retry feedback message.
 
-    注意：achat 要求 messages 为 core.llm.models.Message 对象（pydantic），
-    直接 append dict 会触发 'dict' object has no attribute 'role'。
+    Note: achat requires messages to be core.llm.models.Message objects (pydantic),
+    Direct append dict will trigger 'dict' object has no attribute 'role'. 
     """
     return Message(role=MessageRole(role), content=content)
 
 
-# 四道主防线（编造JSON/伪造引用/未溯源数字/高风险数字溯源）已收编至
-# core.assistant.defense（A11），由 ReplyGate 统一调用。
+# The four main lines of defense (fabricated JSON/forged references/untraceable numbers/high-risk digital traceability) have been incorporated into
+# core.assistant.defense (A11) , Called uniformly by ReplyGate.
 
 
 def _extract_history_tool_contents(messages: List[Any]) -> List[str]:
-    """从对话历史中提取可溯源的可信文本（多轮溯源用）。
+    """Extract traceable and credible text from the conversation history (for multi-round tracing).
 
-    覆盖两类内容：
-    1. 历史 tool 消息（工具返回原文）；
-    2. 历史 assistant 回复——这些回复均通过四道防线验证才落库，
-       属已验证可信文本。LLM 引用自己上一轮回复中的数字（如推导值、
-       上轮搜索结论）不应被判为编造。
+    Covers two types of content:
+    1. Historical tool messages (the tool returns the original text);
+    2. History assistant replies——These responses are all verified through the four lines of defense before being dropped into the database.
+       It is a verified and trusted text. LLM refers to numbers from its previous round of responses (e.g. derived values,
+       The conclusion of the last round of search) should not be judged as fabrication.
     """
     contents = []
     for m in (messages or []):
@@ -276,11 +276,11 @@ def _extract_history_tool_contents(messages: List[Any]) -> List[str]:
 
 
 def _recent_user_context(messages: List[Any], max_messages: int = 6) -> str:
-    """提取会话近期用户消息拼接文本（用于记忆保存时提取关联股票）。
+    """Extract the spliced text of recent user messages in the session (used to extract related stocks when saving memory).
 
-    行业类记忆（如"生猪养殖成本"）的主题不含股票名，但保存该记忆的
-    会话上下文里通常有（如"牧原股份值得入手吗"）——据此建立
-    股票↔行业记忆的关联。
+    Industry memory (such as"Pig breeding cost") The subject does not contain the stock name, but the memory of the
+    Session context usually has (such as"Is Muyuan shares worth buying?") ——Establish accordingly
+    stocks↔Industry memory associations.
     """
     texts = []
     for m in (messages or []):
@@ -293,24 +293,24 @@ def _recent_user_context(messages: List[Any], max_messages: int = 6) -> str:
     return " ".join(texts[-max_messages:])[-2000:]
 
 
-# ── 事实记忆层（带时间标签，跨会话复用工具获取的真实数据）──────────────────────
-# 设计要点：
-# 1. 仅对 web_search/fetch_url 等在线工具的成功结果建立记忆（含来源、跨会话有价值）；
-#    本地数据类工具（财务/行情）不建记忆——数据库每次查询都是最新值，缓存无意义。
-# 2. 每条记忆带 fetched_at（采集时间）+ category（数据类别）+ valid_until（失效时间），
-#    检索时只返回未过期记忆；过期数据不注入、由新一轮工具结果覆盖。
-# 3. 注入 prompt 的记忆加入溯源候选集：助手引用记忆数字不会被第4道防线误拦。
+# ── Factual memory layer (with time tags, real data obtained by reusing tools across sessions)──────────────────────
+# Design points:
+# 1. Establish memory only for successful results of online tools such as web_search/fetch_url (including source, valuable across sessions);
+#    Local data tools (financial/markets) do not build memory——Every time the database is queried, the latest value is obtained, so caching is meaningless.
+# 2. Each memory strip fetched_at (acquisition time)+ category (data category)+ valid_until (expiration time),
+#    During retrieval, only unexpired memories are returned; expired data is not injected and will be overwritten by the new round of tool results.
+# 3. The memory injected into prompt is added to the traceability candidate set: the assistant's reference to the memory number will not be mistakenly blocked by the fourth line of defense.
 _MEMORY_FACTS_COLLECTION = "assistant_memory_facts"
-# 可保存为事实记忆的在线工具（结果含外部世界数据，跨会话有复用价值）
-# 注意：tool_id 必须与 core/tools 注册名一致（此前误写 web_search/fetch_url
-# 导致从未命中，现修正为真实 ID；旧名保留做兼容）
+# An online tool that can be saved as factual memory (results include external world data and have reuse value across sessions)
+# Note: tool_id must be consistent with core/tools registration name (previously written by mistake web_search/fetch_url
+# As a result, it was never hit, and now it is corrected to the real ID; the old name is retained for compatibility)
 _MEMORY_FACT_TOOLS = {
-    "search_recent_information",  # 联网搜索（真实工具ID）
-    "get_stock_news_unified",     # 个股新闻聚合
-    "web_search",                 # 兼容保留
-    "fetch_url",                  # 兼容保留
+    "search_recent_information",  # Internet search (real tool ID)
+    "get_stock_news_unified",     # Individual stock news aggregation
+    "web_search",                 # Compatibility reserved
+    "fetch_url",                  # Compatibility reserved
 }
-# 类别规则：(类别名, 关键词列表, 有效天数)，顺序即优先级
+# Category rules:(Category name, keyword list, Valid days), order is priority
 _FACT_CATEGORY_RULES = [
     ("realtime_quote", ["价格", "行情", "均价", "现价", "股价", "涨跌", "实时", "点位"], 3),
     ("industry_metric", ["成本", "存栏", "产能", "出栏", "销量", "市场份额", "行业"], 30),
@@ -318,7 +318,7 @@ _FACT_CATEGORY_RULES = [
     ("company_static", ["上市日期", "主营业务", "公司简介", "注册地", "成立时间", "发展历程"], 365),
 ]
 _FACT_DEFAULT_VALID_DAYS = 7
-# 事实句提取：回复/工具原文中"含数字 + 命中这些关键词"的短句才作为记忆落库
+# Fact sentence extraction: reply/tool in original text"Contains numbers + Hit these keywords"Only short sentences will be stored in memory
 _FACT_SENTENCE_KEYWORDS = [
     "销量", "交付", "产量", "出栏", "存栏", "产能",
     "成本", "价格", "均价", "毛利", "利润", "营收", "收入", "净利", "亏损", "盈利",
@@ -327,18 +327,18 @@ _FACT_SENTENCE_KEYWORDS = [
     "调研", "评级", "公告",
     "亿元", "万元", "元/", "公斤", "千克", "kg", "吨", "斤", "万辆", "万头",
 ]
-# 每轮最多落库的事实条数 / 单条事实最大长度
+# The maximum number of facts stored in each round / the maximum length of a single fact
 _MEMORY_FACT_MAX_PER_TURN = 6
 _MEMORY_FACT_MAX_CHARS = 150
-# 检索返回条数上限 / 单条注入长度上限
+# The upper limit of the number of items returned by the search/the upper limit of the length of a single injection
 _MEMORY_RECALL_TOP_K = 3
 _MEMORY_INJECT_MAX_CHARS = 1500
-# 主题匹配：bigram 交集达到该数量视为命中
+# Topic matching: Bigram intersections reaching this number are considered hits.
 _MEMORY_MATCH_THRESHOLD = 2
 
 
 def _classify_fact_category(text: str) -> str:
-    """根据文本关键词判定数据类别（决定记忆有效期）。"""
+    """Determine the data category based on text keywords (determine the memory validity period)."""
     t = text or ""
     for category, keywords, _days in _FACT_CATEGORY_RULES:
         if any(k in t for k in keywords):
@@ -354,53 +354,53 @@ def _fact_valid_days(category: str) -> int:
 
 
 def _extract_match_tokens(text: str) -> set:
-    """提取文本匹配词元：中文 bigram + 英文单词 + 数字串。"""
+    """Extract text matching tokens: Chinese bigram + English words + Number string."""
     if not text:
         return set()
     tokens = set()
-    # 中文 bigram（"生猪养殖" → {生猪, 猪养, 养殖}）
+    # Chinese bigram ("Pig breeding" → {pig, Pig raising, Breeding}) 
     chinese_runs = re.findall(r"[\u4e00-\u9fa5]+", text)
     for run in chinese_runs:
         for i in range(len(run) - 1):
             tokens.add(run[i : i + 2])
-    # 英文单词 / 数字串
+    # English word / number string
     for w in re.findall(r"[A-Za-z]{2,}|\d{4,}", text):
         tokens.add(w.lower())
     return tokens
 
 
 def _extract_symbol_hint(text: str) -> Optional[str]:
-    """从文本中提取 6 位 A 股代码（记忆关联股票，可空）。"""
+    """Extract the 6-digit A-share code from the text (memory associated stock, optional)."""
     m = re.search(r"\b(\d{6})\b", text or "")
     return m.group(1) if m else None
 
 
-# 关联主体提取：股票名（XX股份/XX集团等常见后缀）与 6 位代码。
-# 用途：行业类记忆（如"生猪养殖成本"）保存时记录当时会话涉及的股票
-# （如"牧原股份"），后续问该股任何问题（如"牧原反弹了吗"）都能带出行业背景
+# Extraction of related entities: stock name (common suffixes such as XX shares/XX group) and 6-digit code.
+# Purpose: Industry memory (such as"Pig breeding cost") When saving, record the stocks involved in the current session
+#  (Such as"Muyuan shares") , Follow up by asking any questions about the stock (such as"Has Muhara rebounded?") Can bring out the industry background
 _RELATED_NAME_RE = re.compile(
-    r"[\u4e00-\u9fa5]{2,4}(?:股份|集团|科技|生物|能源|牧业|农业|银行|证券|药业|重工|电工|汽车|医药)"
+    r"[\u4e00-\u9fa5]{2,4}(?:shares|Group|Technology|biology|energy|animal husbandry|Agriculture|bank|securities|Pharmaceutical industry|Heavy industry|electrician|car|Medicine)"
 )
 
 
 def _extract_related_terms(
     *texts: str, name_map: Optional[Dict[str, str]] = None
 ) -> List[str]:
-    """从多段文本中提取关联主体（股票名+代码），最多8个。
+    """Extract related subjects (stock names) from multiple paragraphs of text+code), up to 8.
 
-    name_map: 股票名→代码 映射（None 时仅正则提取名称）。
-    传入映射后，"赛力斯"这类不带后缀的公司名也能得到关联代码（如 601127），
-    保证行业/个股类记忆保存与检索两侧提取结果一致。
+    name_map: Stock name→Code mapping (if None, only regular names are extracted).
+    After passing in the mapping,"Thalys"Such company names without suffix can also get associated codes (such as 601127),
+    Ensure that industry/stock memory storage and retrieval results are consistent on both sides.
     """
     terms = set()
-    _connectives = "与和及对比跟或者、，。？?；;：: "
+    _connectives = "With and and contrast with or,,. ??; ;: : "
     joined = " ".join(t for t in texts if t)
     for t in texts:
         if not t:
             continue
         for m in _RELATED_NAME_RE.finditer(t):
             name = m.group(0).lstrip(_connectives)
-            if len(name) >= 4:  # 至少2字公司名+2字后缀
+            if len(name) >= 4:  # At least 2 words company name+2 word suffix
                 terms.add(name)
         for code in re.findall(r"\b\d{6}\b", t):
             terms.add(code)
@@ -410,17 +410,17 @@ def _extract_related_terms(
     return sorted(terms)[:8]
 
 
-# 记忆链路的股票名称→代码映射改用 core.assistant.lexicon.stock_directory
-# （全量 + TTL 缓存），不再维护本模块私有缓存。语义桥梁说明：行业类记忆
-# （如"生猪养殖完全成本"）虽不含股票名，但保存时的会话上下文（用户在聊牧原）
-# 可建立关联，检索时问该股票即命中——解决"问个股时想要行业背景记忆"的问题
+# Memory link stock name→Code mapping uses core.assistant.lexicon.stock_directory
+#  (full amount + TTL cache), the private cache of this module is no longer maintained. Semantic bridge description: industry memory
+#  (Such as"Complete cost of pig breeding") Although the stock name is not included, the session context when saving (the user is in Liamu Yuan)
+# Association can be established, and the stock will be hit when searching——solve"When asking about individual stocks, I want to remember the industry background."question
 
 
 def _clean_fact_line(text: str) -> str:
-    """清洗候选事实句：仅去除列表符号/星号/反引号，保留数字开头的原样。
+    """Clean candidate fact sentences: only remove list symbols/asterisks/backticks, leaving the beginning of the number intact.
 
-    注意：不复用 _clean_memory_line——它会剥离行首数字（把"1-7月累计销量"
-    误清理成"月累计销量"），破坏销量/产量等以数字开头的事实。
+    Note: Do not reuse _clean_memory_line——It will strip the first digits of the line (putting"1-7 Monthly cumulative sales"
+    mistakenly cleared to"Monthly cumulative sales") , Destroy the fact that sales/production etc. begin with a number.
     """
     cleaned = (text or "").strip()
     cleaned = re.sub(r"^[>\-\*\s✅⚠️📌🔍💡]+", "", cleaned)
@@ -431,14 +431,14 @@ def _clean_fact_line(text: str) -> str:
 
 
 def _extract_fact_sentences(text: str, max_facts: int = _MEMORY_FACT_MAX_PER_TURN) -> List[str]:
-    """从文本中提取"含数字 + 命中事实关键词"的短句（记忆落库用，不额外调 LLM）。
+    """extract from text"Contains numbers + hit fact keywords"Short sentences (used for memorization, no additional adjustment of LLM).
 
-    适用场景（按优先级）：
-    1. 助手最终回复——已通过四道数字溯源防线，句中数字可回溯到本轮工具结果，
-       作为事实直接落库（如"赛力斯2026年7月新能源销量24,229辆"）；
-    2. 工具返回原文兜底——搜索结果摘要本身往往就是一条事实。
+    Applicable scenarios (by priority):
+    1. Assistant s final reply——Four digital traceability lines have been passed. The number in the sentence can be traced back to the results of this round of tools.
+       Drop it directly into the database as a fact (e.g."Cyrus new energy sales in July 2026 24,229 vehicle") ; 
+    2. Tools return to the original text——A search result snippet is often a fact in itself.
 
-    规则：按句号/分号/换行切句，保留含数字且命中事实关键词的句子，清洗去重。
+    Rules: Cut sentences according to periods/semicolons/line breaks, keep sentences that contain numbers and hit factual keywords, and clean and remove duplicates.
     """
     if not text:
         return []
@@ -448,12 +448,12 @@ def _extract_fact_sentences(text: str, max_facts: int = _MEMORY_FACT_MAX_PER_TUR
         sent = _clean_fact_line(raw)
         if len(sent) < 8:
             continue
-        if sent.startswith("|"):  # 表格行
+        if sent.startswith("|"):  # table row
             continue
         if any(t in sent for t in ("数据来源", "免责声明", "不构成投资建议", "以上内容")):
             continue
         if not re.search(r"\d", sent):
-            continue  # 无数字不成事实
+            continue  # There is no fact without numbers
         if not any(k in sent for k in _FACT_SENTENCE_KEYWORDS):
             continue
         sent = sent[:_MEMORY_FACT_MAX_CHARS]
@@ -469,15 +469,15 @@ def _extract_fact_sentences(text: str, max_facts: int = _MEMORY_FACT_MAX_PER_TUR
 def _fact_topic(
     fact: str, user_message: str, name_map: Optional[Dict[str, str]] = None
 ) -> str:
-    """为单条事实生成记忆主题（主体+概念），如"赛力斯 销量"。
+    """Generate a memory topic (subject) for a single fact+concept), such as"Cyrus Sales". 
 
-    主体来源（按优先级）：
-    1. 用户消息中的明确主体（正则匹配"股票/走势/业绩…"等后缀）；
-    2. 股票名称映射中最长命中名（如"赛力斯"不带后缀也能识别，取最长
-       避免"力斯"之类子串误配）；
-    3. 事实文本中的"XX股份/XX汽车"类名称。
-    概念为事实命中的第一个核心词（销量/成本/价格…）。
-    检索时以"主体+概念"的 bigram 命中即可召回。
+    Subject sources (by priority):
+    1. Unambiguous body in user messages (regex matching"Stock/Trend/Performance…"etc. suffix);
+    2. The longest hit name in the stock name map (e.g."Thalys"It can also be recognized without suffix, take the longest
+       avoid"Lis"substring mismatch);
+    3. factual text"XX Shares/XX Automobile"Class name.
+    The concept is the first core word hit by the fact (sales/cost/price…) . 
+    Search with"Subject+concept"The bigram hit can be recalled.
     """
     subject = _extract_memory_subject(user_message, fact)
     if not subject and name_map:
@@ -504,27 +504,27 @@ async def _persist_memory_facts(
     assistant_reply: str = "",
     related_context: str = "",
 ) -> int:
-    """将本轮在线工具背后的"提取事实"保存为记忆（不再存工具返回全文）。
+    """Put behind this round of online tools"extract facts"Save as memory (no longer save tool to return to full text).
 
-    事实来源（按优先级）：
-    1. 助手最终回复——已通过数字溯源防线，其中"含数字+事实关键词"的短句
-       即可信事实（如"赛力斯2026年7月新能源销量24,229辆"）；
-    2. 兜底：从工具返回原文中抽取同样格式的短句（搜索结果摘要往往本身就是
-       一条事实，如"牧原获11家机构调研：2025年完全成本12元/公斤"）。
+    Sources of facts (in order of priority):
+    1. Assistant s final reply——Passed the digital traceability defense line, among which"Contains numbers+fact keywords"short sentences
+       i.e. credible facts (e.g."Cyrus new energy sales in July 2026 24,229 vehicle") ; 
+    2. Get the bottom line: Extract short sentences in the same format from the original text returned by the tool (the search result summary itself is often
+       a fact such as"Muyuan was surveyed by 11 institutions: the full cost in 2025 is 12 yuan/kg") . 
 
-    相比旧实现（把工具返回全文存 content[:8000]）：
-    - 每条记忆≤150字符，体积小、检索注入无压力；
-    - 数字直接存在于 content，换会话召回后可进入溯源候选集（memory_trusted_contents）；
-    - 主题按"主体+概念"生成（如"赛力斯 销量"），bigram 命中即可召回。
+    Compared to the old implementation (returning the tool to full text storage content[:8000]) : 
+    - every memory≤150 Characters, small size, no pressure for retrieval and injection;
+    - The number exists directly in the content, and can be entered into the traceability candidate set (memory_trusted_contents) after changing the session and recalling it;
+    - Topic button"Subject+concept"Generate (such as"Cyrus Sales") , bigram Recall on hit.
 
     Args:
-        assistant_reply: 本轮助手最终回复（已通过数字溯源防线）。
-        related_context: 会话近期上下文（如最近几条用户消息拼接），
-            用于提取关联股票存入 related_terms——行业类事实借此在该股
-            的后续问题中被召回。
+        assistant_reply: The final reply of this round of assistants (passed the digital traceability defense line).
+        related_context: Session recent context (such as the splicing of several recent user messages),
+            Used to withdraw associated stock deposits related_terms——Industry facts thereby influence the stock
+            was recalled in a follow-up question.
 
     Returns:
-        保存条数（0 表示无可保存事实）。
+        Number of items saved (0 means no facts can be saved).
     """
     saved = 0
     try:
@@ -532,7 +532,7 @@ async def _persist_memory_facts(
         related_terms = _extract_related_terms(user_message, related_context, name_map=name_map)
         facts = _extract_fact_sentences(assistant_reply or "")
         if not facts:
-            # 回复里无可提取事实（如纯会话回复），退回从工具原文抽取
+            # There is no fact that can be extracted from the reply (such as a pure conversational reply), and it will be extracted from the original text of the tool.
             for item in (tool_results or []):
                 if item.get("tool") not in _MEMORY_FACT_TOOLS or item.get("is_error"):
                     continue
@@ -562,17 +562,17 @@ async def _persist_memory_facts(
                 "valid_until": valid_until.isoformat(timespec="seconds"),
                 "thread_id": thread_id,
             }
-            # 相同事实句（topic+content）upsert 刷新，不同事实各自成条
+            # Same factual sentences (topic+content) upsert Refresh, different facts are separated into strips
             await db[_MEMORY_FACTS_COLLECTION].update_one(
                 {"topic": topic, "content": fact}, {"$set": doc}, upsert=True
             )
             saved += 1
             logger.info(
-                "[智能助手·记忆] 已保存事实: topic=%.40s category=%s fact=%.50s",
+                "[Smart Assistant·memory] Saved facts: topic=%.40s category=%s fact=%.50s",
                 topic, category, fact,
             )
     except Exception as e:
-        logger.warning("[智能助手·记忆] 保存事实记忆失败（不影响回复）: %s", e)
+        logger.warning("[Smart Assistant·memory] Failed to save fact memory (does not affect reply): %s", e)
     return saved
 
 
@@ -581,15 +581,15 @@ async def _recall_memory_facts(
     user_message: str,
     current_thread_id: str,
 ) -> List[Dict[str, Any]]:
-    """检索与当前问题匹配且未过期的事实记忆（排除本会话自己保存的）。
+    """Retrieve unexpired fact memories that match the current question (excluding those saved by this session).
 
-    匹配策略（双通道）：
-    1. 主题/内容匹配：用户消息与记忆的"主题+事实内容"词元交集（bigram 为主）
-       ——事实句（≤150字）整体参与匹配，问"赛力斯7月销量"可直接命中
-       "赛力斯2026年7月新能源销量24,229辆"这类落库事实；
-    2. 关联主体匹配：用户消息提及的股票（如"牧原股份"/"002714"，含名称→代码
-       映射）与记忆保存时记录的 related_terms 交集——行业类记忆（如
-       "生猪养殖成本"）借此在个股问题（如"牧原反弹了吗"）中被召回。
+    Matching strategy (dual channel):
+    1. Topic/Content Matching: User Messages and Memories"Topic+factual content"Intersection of word elements (mainly bigram)
+       ——factual sentences (≤150 word) overall participation in matching, ask"Cyrus sales in July"Can hit directly
+       "Cyrus new energy sales in July 2026 24,229 vehicle"This type of tacked-on fact;
+    2. Related subject matching: stocks mentioned in user messages (such as"Muyuan shares"/"002714", Contains name→code
+       mapping) intersects with the related_terms recorded when the memory was saved——Industry memory (such as
+       "Pig breeding cost") This can be used to analyze individual stock issues (such as"Has Muhara rebounded?") was recalled.
     """
     try:
         now_iso = datetime.now().isoformat(timespec="seconds")
@@ -607,7 +607,7 @@ async def _recall_memory_facts(
         scored = []
         async for doc in cursor:
             if current_thread_id and doc.get("thread_id") == current_thread_id:
-                continue  # 本会话已有该数据在上下文里，无需重复注入
+                continue  # This data already exists in the context of this session, so there is no need to re-inject it.
             match_text = f"{doc.get('topic') or ''} {doc.get('content') or ''}"
             topic_tokens = _extract_match_tokens(match_text)
             overlap = user_tokens & topic_tokens
@@ -615,30 +615,30 @@ async def _recall_memory_facts(
                 user_terms & set(doc.get("related_terms") or [])
             )
             if len(overlap) >= _MEMORY_MATCH_THRESHOLD or related_hit:
-                # 主题直接命中权重高于关联主体命中
+                # Topic direct hits have a higher weight than associated subject hits
                 scored.append((len(overlap) * 10 + (1 if related_hit else 0), doc))
         scored.sort(key=lambda x: -x[0])
         recalled = [doc for _score, doc in scored[:_MEMORY_RECALL_TOP_K]]
         if recalled:
             logger.info(
-                "[智能助手·记忆] 命中 %d 条事实记忆: %s",
+                "[Smart Assistant·memory] Hit %d fact memories: %s",
                 len(recalled),
                 [d.get("topic", "")[:30] for d in recalled],
             )
         return recalled
     except Exception as e:
-        logger.warning("[智能助手·记忆] 检索事实记忆失败（降级为无记忆）: %s", e)
+        logger.warning("[Smart Assistant·memory] Failed to retrieve fact memory (downgraded to no memory): %s", e)
         return []
 
 
 def _build_memory_injection(recalled: List[Dict[str, Any]]) -> str:
-    """将命中的记忆构建为注入 prompt 的文本区块。"""
+    """Construct the memory of the hit as a block of text injected into prompt."""
     if not recalled:
         return ""
     blocks = [
-        "【历史事实记忆】以下是之前会话中通过工具获取的真实数据（已通过时效校验），"
-        "可直接引用，但引用时必须标注数据采集日期；若用户在追问最新情况，"
-        "应主动说明数据采集时间并建议重新核实。"
+        " [Memory of historical facts] The following is the real data obtained through the tool in the previous session (passed timeliness verification),"
+        "Can be quoted directly, but the date of data collection must be marked when quoting; if the user is asking about the latest situation,"
+        "The time of data collection should be proactively stated and re-verification recommended."
     ]
     for i, doc in enumerate(recalled, 1):
         fetched = str(doc.get("fetched_at", ""))[:16].replace("T", " ")
@@ -651,12 +651,12 @@ def _build_memory_injection(recalled: List[Dict[str, Any]]) -> str:
 
 
 def _should_force_tool_retry(user_message: str) -> bool:
-    """判断是否属于“应优先调用工具”的个人数据查询请求。"""
+    """Determine whether it belongs to Tools should be called first personal data inquiry request."""
     text = (user_message or "").strip().lower()
     if not text:
         return False
 
-    # 个人数据+操作查询意图（计划/持仓/复盘/任务/报告等）
+    # personal data+Operation query intention (plan/position/review/task/report, etc.)
     personal_markers = ["我的", "我", "当前", "现在"]
     domain_markers = [
         "交易计划", "投资计划", "计划", "持仓", "仓位", "复盘", "报告", "分析任务", "任务状态",
@@ -679,8 +679,8 @@ def _should_force_tool_retry(user_message: str) -> bool:
     has_market = any(k in text for k in market_markers)
     has_recency = any(k in text for k in recency_markers)
 
-    # 至少满足：个人+领域，或 领域+查询，或 市场+近期，或 股票+数据
-    # 股票数据类问题：股票代码/名称 + 数据相关词汇（如"牧原股份值得入手吗"）
+    # Meet at least: personal+field, or field+Query, or Market+Recently, or stocks+data
+    # Stock data issues: stock code/name + Data-related vocabulary (e.g."Is Muyuan shares worth buying?") 
     import re
     has_stock_code = bool(re.search(r"(00|30|60|68)\d{4}", text))
     has_stock_name = any(k in text for k in ["股份", "集团", "科技", "新能", "汽车", "银行", "证券", "保险", "能源", "牧原", "赛力斯", "比亚迪", "宁德"])
@@ -703,7 +703,7 @@ async def _record_assistant_token_usage(
     session_id: str,
     analysis_type: str = "assistant",
 ) -> None:
-    """记录 LLM 调用的 token 使用情况（失败不影响主流程）。"""
+    """Record the token usage of LLM calls (failure does not affect the main process)."""
     try:
         from app.services.usage_statistics_service import usage_statistics_service
         await usage_statistics_service.record_llm_usage(
@@ -712,39 +712,39 @@ async def _record_assistant_token_usage(
             analysis_type=analysis_type,
         )
     except Exception as e:
-        logger.warning(f"记录 token 使用失败: {e}")
+        logger.warning(f"Record token usage failure: {e}")
 
 
 # =============================================================================
-# 用户记忆元工具：让 LLM 在用户表达"请记住""请帮我记下"等意图时主动登记
-# 设计文档参考：docs/05-design/v3.0/unified-memory-layer-mem0.md §15.5 P0-1
+# User mnemonic tool: LLM allows users to express"please remember""Please help me write it down"Actively register when waiting for intention
+# Design document reference:docs/05-design/v3.0/unified-memory-layer-mem0.md §15.5 P0-1
 # =============================================================================
 
 REMEMBER_THIS_TOOL_NAME = "remember_this"
 
 
 def _build_remember_this_tool_def() -> Dict[str, Any]:
-    """构造 `remember_this` 的 OpenAI Function Calling 定义"""
+    """structure `remember_this` Definition of OpenAI Function Calling"""
     return {
         "type": "function",
         "function": {
             "name": REMEMBER_THIS_TOOL_NAME,
             "description": (
-                "当用户明确表达「请记住」「请帮我记下」「我希望以后也按这个偏好」等意图时调用此工具，"
-                "把这条偏好/事实写入用户长期记忆（user_preference）。"
-                "调用后请告知用户『已记下』，然后继续完成原本的任务。"
-                "禁止滥用：仅当用户**明确表达需要记忆**时调用；用户随口提到的偏好不要写入。"
+                "This tool is called when the user clearly expresses intentions such as please remember , please write it down for me , I hope this preference will be followed in the future , etc."
+                "Write this preference/fact into the user s long-term memory (user_preference)."
+                "After calling, please inform the user that it has been noted and then continue to complete the original task."
+                "Abuse prohibited: only if the user**Explicit expression requires memorization**When called; preferences mentioned casually by the user should not be written."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "content": {
                         "type": "string",
-                        "description": "需要记住的事实文本（一句话，包含足够上下文，如『用户偏好分红率>3%的高股息蓝筹股，回避高市盈率成长股』）",
+                        "description": "Factual text that needs to be remembered (one sentence, containing enough context, such as User preference dividend rate >3%high-dividend blue-chip stocks and avoid growth stocks with high price-to-earnings ratios )",
                     },
                     "category": {
                         "type": "string",
-                        "description": "偏好类型：investment_style（投资风格）/ risk_tolerance（风险偏好）/ industry_preference（行业偏好）/ trading_discipline（交易纪律）/ other",
+                        "description": "Preference type: investment_style (investment style) / risk_tolerance (risk preference) / industry_preference (industry preference) / trading_discipline (trading discipline)/ other",
                         "enum": [
                             "investment_style",
                             "risk_tolerance",
@@ -761,14 +761,14 @@ def _build_remember_this_tool_def() -> Dict[str, Any]:
 
 
 def _make_remember_this_callable(db, user_id: str):
-    """生成绑定了 db + user_id 的 remember_this 异步实现。"""
+    """Generated binding db + user_id The asynchronous implementation of remember_this."""
 
     async def _remember_this(content: str, category: str = "other") -> str:
         if not user_id:
-            return "记忆失败：当前会话未关联用户。"
+            return "Memory failure: The user is not associated with the current session."
         text = (content or "").strip()
         if not text:
-            return "记忆失败：内容为空。"
+            return "Memory failed: content is empty."
         try:
             from core.memory.service import get_memory_service
             from core.memory.models import MemoryScope
@@ -782,22 +782,22 @@ def _make_remember_this_callable(db, user_id: str):
                     "source": "user_explicit_remember",
                     "category": (category or "other").strip().lower(),
                 },
-                infer=False,  # 用户已明确表达，不需要 LLM 再提取
+                infer=False,  # The user has made it clear that no further LLM extraction is required
             )
             if not result.success:
-                logger.warning(f"[智能助手] remember_this 写入失败: {result.error}")
-                return f"记忆失败：{result.error or '记忆层不可用'}"
-            logger.info(f"[智能助手] remember_this 已写入: user={user_id} category={category}")
-            return f"已记下：{text[:60]}{'...' if len(text) > 60 else ''}。下次对话会自动参考此偏好。"
+                logger.warning(f"[Smart Assistant] remember_this Write failed: {result.error}")
+                return f"Memory failure:{result.error or 'Memory layer is not available'}"
+            logger.info(f"[Smart Assistant] remember_this has been written: user={user_id} category={category}")
+            return f"Note down:{text[:60]}{'...' if len(text) > 60 else ''}. This preference will be automatically referenced in the next conversation."
         except Exception as e:
-            logger.warning(f"[智能助手] remember_this 异常: {e}")
-            return f"记忆失败：{e}"
+            logger.warning(f"[Smart Assistant] remember_this Abnormal: {e}")
+            return f"Memory failure:{e}"
 
     return _remember_this
 
 
 def _should_use_recent_search(user_message: str) -> bool:
-    """判断是否属于应优先走近期搜索的事实确认类问题。"""
+    """Determine whether it is a fact-confirming question that should be searched first in the near future."""
     text = (user_message or "").strip().lower()
     if not text:
         return False
@@ -816,9 +816,9 @@ def _should_use_recent_search(user_message: str) -> bool:
     return has_recency and has_fact
 
 
-# 领域词匹配的噪声词：接口工程术语、时间词、通用动词/虚词等，
-# 出现在任何工具描述里都不代表业务领域。数据驱动匹配时必须剔除，
-# 否则「销量数据接口」这类描述会因「数据/接口」与任意问题误匹配。
+# Noise words for domain word matching: interface engineering terms, time words, general verbs/function words, etc.,
+# Appearance in any tool description does not represent a business domain. Must be eliminated during data-driven matching,
+# Otherwise, descriptions such as "sales data interface" will be mismatched with any problem due to "data/interface".
 _SKILL_DOMAIN_STOPGRAMS = {
     "接口", "数据", "参数", "返回", "结果", "查询", "获取", "调用", "支持",
     "提供", "相关", "信息", "时间", "月份", "月度", "类型", "情况", "变化",
@@ -830,17 +830,17 @@ _SKILL_DOMAIN_STOPGRAMS = {
 
 
 def _domain_terms(text: str) -> set:
-    """从文本提取领域词集合：连续中文段的 2-gram + 长度≥2 的英文/数字词。
+    """Extracting domain word sets from text: continuous Chinese segments 2-gram + length≥2 English/numeric words.
 
-    不用分词库：2-gram 对「车型/销量/问界/懂车帝」这类领域词召回稳定，
-    噪声由 _SKILL_DOMAIN_STOPGRAMS 通用词表统一剔除。
+    No word segmentation library is needed: 2-gram has stable recall of words in fields such as car models/sales/questions/knowing car emperors .
+    Noise is uniformly removed by the _SKILL_DOMAIN_STOPGRAMS common vocabulary.
     """
     terms: set = set()
     text = (text or "").lower()
-    # 英文/数字词（品牌英文、型号等，如 model、m9）
+    # English/numeric words (brand in English, model, etc., such as model, m9)
     for token in re.findall(r"[a-z0-9]{2,}", text):
         terms.add(token)
-    # 连续中文段逐字取 2-gram
+    # Continuous Chinese segments are taken word by word 2-gram
     for segment in re.findall(r"[\u4e00-\u9fa5]{2,}", text):
         for i in range(len(segment) - 1):
             gram = segment[i:i + 2]
@@ -850,20 +850,20 @@ def _domain_terms(text: str) -> set:
 
 
 def _matches_generated_skill(user_message: str) -> Optional[tuple]:
-    """判断问题是否能被某个「用户生成的外部 Skill」结构化承接。
+    """Determine whether the problem can be structured into a user-generated external Skill .
 
-    近期搜索快路径是股票时代留下的关键词规则（「最近」+「变化/持股」即
-    直接网页搜索），系统支持自定义外部 Skill 后，它会在 LLM 工具选择之前
-    抢先拦截本应由专用工具回答的问题（真实案例：「问界各车型最近半年销量
-    变化」→ 没走懂车帝销量 Skill，直接网页搜索，只拿到新闻标题）。
+    The fast path to recent searches is a keyword rule left over from the stock era ( recently + [Change/Shareholding i.e.
+    Direct web search), after the system supports custom external Skills, it will be selected before the LLM tool
+    Preemptively intercept questions that should be answered by special tools (real case: Ask the sales volume of various models in the industry in the past six months
+    change→ I didn t understand Chedi s sales skill, so I searched directly on the web and only got the news headlines).
 
-    匹配完全数据驱动：只读取注册表里 source=generated 的 Skill 元数据
-    （名称/描述/when_to_use），与用户问题做领域词交集；交集≥2 个不同领域
-    词才算命中（单词命中过宽，容易被「品牌/销量」之类的偶然共现误判）。
-    不写死任何具体 Skill 名称或行业关键词——新装任何领域的 Skill 同样生效。
+    Matches full data drive: only reads the registry source=generated Skill metadata
+     (name/description/when_to_use), do domain word intersection with user questions; intersection≥2 different fields
+    Only words are considered hits (word hits are too broad and can easily be misjudged by accidental co-occurrences such as brand/sales ).
+    Do not write down any specific skill names or industry keywords——Newly installed Skills in any field will also take effect.
 
     Returns:
-        命中时返回 (tool_id, tool_name)；否则 None
+        Return on hit (tool_id, tool_name); Otherwise None
     """
     msg_terms = _domain_terms(user_message)
     if len(msg_terms) < 2:
@@ -883,7 +883,7 @@ def _matches_generated_skill(user_message: str) -> Optional[tuple]:
         overlap = msg_terms & _domain_terms(skill_text)
         if len(overlap) >= 2:
             logger.info(
-                "[智能助手] 问题命中专用 Skill「%s」领域词 %s，搜索快路径让路",
+                "[Smart Assistant] The problem hits the special Skill %s field word %s, and the search fast path gives way.",
                 getattr(skill, "id", ""), sorted(overlap),
             )
             return (getattr(skill, "id", ""), getattr(skill, "name", ""))
@@ -921,20 +921,20 @@ def _rewrite_number_selection_reply(user_message: str, history_messages: Optiona
         selected_option = options.get(selected_index)
         if not selected_option:
             continue
-        logger.info("[智能助手] 将裸数字回复重写为编号选项选择: %s -> %s", original_text, selected_option)
+        logger.info("[Smart Assistant] Rewrite bare numeric responses to numbered option choices: %s -> %s", original_text, selected_option)
         return (
             f"用户上一轮只回复了数字“{selected_index}”，这是在选择你上一条消息里的第{selected_index}项，不是新的独立问题。\n"
-            f"用户选择的选项是：{selected_option}\n"
-            "请直接沿着这个选项继续回答或继续分析，不要再次猜测这个数字可能代表别的含义，也不要重复发起二次确认。"
+            f"The options chosen by the user are:{selected_option}\n"
+            "Please continue to answer or analyze directly along this option. Do not second guess that this number may mean something else, and do not initiate a second confirmation again."
         )
 
     return original_text
 
 
 def _get_latest_trade_date() -> str:
-    """获取 A 股最近交易日（周末回退到上周五）"""
+    """Get the latest trading day of A shares (return to last Friday on weekends)"""
     now = datetime.now()
-    # 周六(5)、周日(6) 用上周五
+    # Saturday(5), Sunday(6) Used last Friday
     if now.weekday() == 5:
         now = now - timedelta(days=1)
     elif now.weekday() == 6:
@@ -943,7 +943,7 @@ def _get_latest_trade_date() -> str:
 
 
 def _build_profile_block(user_profile: Optional[dict]) -> str:
-    """将用户画像格式化为系统提示词中的一个段落"""
+    """Format the user portrait as a paragraph in the system prompt word"""
     if not user_profile:
         return ""
     lines = ["【你对该用户的了解】"]
@@ -958,7 +958,7 @@ def _build_profile_block(user_profile: Optional[dict]) -> str:
         elif isinstance(date, str) and "T" in date:
             date = date[:10]
         conclusion = latest.get("conclusion", "")
-        lines.append(f"- 最近分析：{name}({sym}) · {date} · 结论：{conclusion}")
+        lines.append(f"- Recent analysis:{name}({sym}) · {date} · Conclusion:{conclusion}")
         if len(recently) > 1:
             prev = [f"{r.get('name', r.get('symbol', ''))}({r.get('symbol', '')})" for r in recently[-4:-1]]
             lines.append(f"- 历史分析：{', '.join(prev)} 等共 {len(recently)} 条")
@@ -976,109 +976,109 @@ def _build_profile_block(user_profile: Optional[dict]) -> str:
         if sectors:
             parts.append("/".join(sectors[:3]) + "板块")
         if parts:
-            lines.append(f"- 偏好：{', '.join(parts)}")
+            lines.append(f"- Preference:{', '.join(parts)}")
     return "\n".join(lines) + "\n" if len(lines) > 1 else ""
 
 
 # ============================================================
-# 使用问答机器人专用系统提示词（v3.0 新增）
+# Use special system prompt words for Q&A robot (new in v3.0)
 # ============================================================
 
-USAGE_HELPER_SYSTEM_PROMPT_TEMPLATE = """你是 TradingAgents-CN 平台的**使用问答助手**。
+USAGE_HELPER_SYSTEM_PROMPT_TEMPLATE = """You are from the TradingAgents-CN platform**Use the Q&A Assistant**. 
 
-【你的职责】
-- 帮助用户理解和使用本系统
-- 回答系统功能、操作流程、配置等方面的问题
-- 当用户遇到具体问题时，**先调工具查真实状态，再回答**；不要凭记忆或 FAQ 猜答案
+ [Your responsibilities]
+- Help users understand and use this system
+- Answer questions about system functions, operating procedures, configuration, etc.
+- When a user encounters a specific problem,**Investigate the real status first, then answer**; Don t guess the answer from memory or FAQ
 
-【你可以使用的工具】
-1. `get_user_current_state` — 查询用户当前的关注列表股票数、历史任务数、最近任务、定时分析配置数
-2. `get_system_status` — 查询系统模式（标准版/京东云版）、当前默认大模型、数据源启用状态、版本号
-3. `get_user_recent_activity` — 查询用户最近的任务执行记录，包括失败任务的错误信息
-4. `search_user_manual` — **向量语义检索用户手册**（推荐优先使用）。当用户用自然语言提问（如"怎么做分析""怎么研究一只股票""持仓分析怎么用""如何配置 Token""429 限速怎么办"）时使用本工具，它会返回语义最相关的 Top-5 章节。本工具能理解自然语言意图，比 read_user_manual_section 更适合处理用户提问。
-5. `read_user_manual_section` — 按章节名精确读取用户手册（支持"快速开始"、"安装部署"、"首次配置"、"基础功能"、"模拟交易"、"智能助手"、"License"、"数据源配置"、"定时分析"、"股票关注列表"等关键字）。**京东云版用户问操作流程时，本工具会自动读取京东云版专用手册**。当用户已经明确提到某个章节名，或 search_user_manual 返回的某个章节需要查看完整内容时使用本工具。
-6. `get_data_sync_status` — 查询 tushare/akshare 的数据同步状态（股票基础数据、历史行情、财务数据的最近同步时间、记录数、是否正在运行同步任务）。可传 symbol 参数查单只股票的同步状态。
-7. `get_paper_trading_status` — 查询模拟交易账户状态（总资产、可用资金、持仓市值、已实现盈亏、浮动盈亏、持仓股票数、盈利/亏损股票数、持仓明细）。无需参数。
-8. `get_token_usage` — 查询 Token 用量统计（已用 Token、配额上限、剩余配额、使用率、按模型分组消耗、每日趋势）。可选 days 参数（1=今日/7=本周/30=本月，默认 7）。
-9. `get_running_tasks` — 查询当前正在运行和排队的分析任务（当前步骤、进度百分比、已耗时、预估剩余时间、排队位置、最近完成任务）。无需参数。
+ [Tools you can use]
+1. `get_user_current_state` — Query the user s current number of stocks on the watch list, number of historical tasks, recent tasks, and number of scheduled analysis configurations
+2. `get_system_status` — Query system mode (standard version/JD Cloud version), current default large model, data source activation status, version number
+3. `get_user_recent_activity` — Query the user s recent task execution records, including error information of failed tasks
+4. `search_user_manual` — **Vector Semantic Retrieval User Manual** (It is recommended to use it first). When a user asks a question in natural language (e.g."How to do analysis""How to research a stock""How to use position analysis""How to configure Token""429 What to do about speed limit") When using this tool, it will return the Top-5 chapters with the most semantic relevance. This tool can understand natural language intent and is more suitable for handling user questions than read_user_manual_section.
+5. `read_user_manual_section` — Read the user manual accurately by chapter name (support"quick start", "Installation and deployment", "First time configuration", "Basic functions", "simulated trading", "Smart Assistant", "License", "Data source configuration", "timing analysis", "Stock Watchlist"and other keywords).**When JD Cloud Edition users ask about the operating procedures, this tool will automatically read the JD Cloud Edition special manual**. Use this tool when the user has explicitly mentioned a chapter name, or a chapter returned by search_user_manual needs to view the complete content.
+6. `get_data_sync_status` — Query the data synchronization status of tushare/akshare (the latest synchronization time of basic stock data, historical quotes, financial data, number of records, and whether the synchronization task is running). You can pass the symbol parameter to check the synchronization status of a single stock.
+7. `get_paper_trading_status` — Query the status of the simulated trading account (total assets, available funds, market value of positions, realized profit and loss, floating profit and loss, number of stocks held, number of profit/loss stocks, position details). No parameters are required.
+8. `get_token_usage` — Query token usage statistics (used tokens, quota upper limit, remaining quota, usage rate, consumption grouped by model, daily trend). Optional days parameter (1=today/7=this week/30=This month, default 7).
+9. `get_running_tasks` — Query the currently running and queued analysis tasks (current step, progress percentage, elapsed time, estimated remaining time, queue position, recently completed tasks). No parameters are required.
 
-【使用规则】
-- 当用户问到"为什么 XXX 不显示""怎么没有 XXX 功能""XXX 怎么用"等问题时，**优先调用 get_user_current_state 和 get_system_status 看真实状态**
-- 当用户问到操作流程、功能用法、系统使用方法时（如"怎么做分析""怎么研究股票""持仓分析怎么用""怎么配置 Token""429 限速怎么办"），**优先调用 search_user_manual 做向量语义检索**；如果检索结果中某个章节需要查看完整内容，再用 read_user_manual_section 按标题精确读取
-- 当用户明确提到某个章节名（如"看下'模拟交易'章节"）时，直接调用 read_user_manual_section
-- 当用户问到"我的任务去哪了""为什么报错"时，**优先调用 get_user_recent_activity 查最近记录**
-- 当用户问到"数据同步好了吗""数据是否最新""要不要重新同步""tushare 数据什么时候同步的""某股数据同步了吗"时，**必须调用 get_data_sync_status 查真实同步状态**，不要凭 FAQ 或任务记录猜测数据同步情况。这是用户最容易问错方向的话题，必须基于真实状态回答
-- 当用户问到某只股票的数据时（如"中国银行数据同步了吗"），**调用 get_data_sync_status 并传入 symbol 参数**查该股同步状态
-- 当用户问到"模拟账户多少钱""今天盈亏多少""可用资金还有多少""持仓几只股票""哪只股票亏得最多"等模拟交易问题时，**必须调用 get_paper_trading_status 查真实账户状态**，不要凭 FAQ 猜测
-- 当用户问到"今天用了多少 token""还剩多少配额""Token 用量""哪个模型消耗最多""还能用多少次分析"时，**必须调用 get_token_usage 查真实用量**。可选传入 days 参数（1/7/30）
-- 当用户问到"任务跑到哪一步了""还要多久""有几个任务在排队""分析什么时候完成""我的任务完成了吗"时，**必须调用 get_running_tasks 查真实任务状态**，不要凭最近任务记录猜测正在运行的任务进度
-- 查到真实状态后再用一两句话直接回答用户问题，不要堆砌 FAQ 内容
+ [Rules of use]
+- When users ask"Why doesn t XXX show up?""Why is there no XXX function?""XXX How to use"While waiting for questions,**Prioritize calling get_user_current_state and get_system_status to see the real status**
+- When users ask about operating procedures, function usage, and system usage (such as"How to do analysis""How to research stocks""How to use position analysis""How to configure Token""429 What to do about speed limit") , **Prioritize calling search_user_manual to do vector semantic retrieval**; If you need to view the complete content of a certain chapter in the search results, use read_user_manual_section to read it accurately by title.
+- When the user explicitly mentions a chapter name (e.g."Take a look'simulated trading'Chapter") when, call directly read_user_manual_section
+- When users ask"Where did my mission go?""Why is the error reported?"when,**Call get_user_recent_activity first to check recent records**
+- When users ask"Is the data synchronized?""Is the data up to date?""Do you want to resynchronize?""tushare When is the data synchronized?""Is the data of a certain stock synchronized?"when,**Must call get_data_sync_status to check the real synchronization status**, Don t guess at data synchronization based on FAQs or task logs. This is the topic that users are most likely to ask in the wrong direction, and answers must be based on the true status.
+- When a user asks for data about a certain stock (e.g."Is the Bank of China data synchronized?") , **Call get_data_sync_status and pass in the symbol parameter**Check the synchronization status of the stock
+- When users ask"How much does a demo account cost?""What s the profit and loss today?""How much funds are available?""How many stocks are held?""Which stock lost the most?"When waiting for simulated trading problems,**You must call get_paper_trading_status to check the real account status**, Don t guess based on the FAQ
+- When users ask"How much did you use today? token""How much quota is left?""Token Dosage""Which model consumes the most""How many more analyzes can be used?"when,**You must call get_token_usage to check the real usage**. Optional days parameter (1/7/30)
+- When users ask"Where did the mission go?""How long will it take""There are several tasks queued""When will the analysis be completed?""Is my mission accomplished?"when,**Must call get_running_tasks to check the real task status**, Do not guess the progress of running tasks based on recent task records
+- After finding the true status, directly answer the user s question in one or two sentences instead of piling up FAQ content.
 
-【回答风格】
-- 简洁直接，先给结论再给原因
-- 涉及操作步骤时用编号列表
-- 不要重复用户已知道的内容
-- 不要讲投资/股票分析理论（那是通用助手的职责，不是你的）
+ [Answer style]
+- Be concise and direct, give conclusions first and then give reasons.
+- Use numbered lists when referring to steps
+- Don t repeat what users already know
+- Don t talk about investment/stock analysis theory (that s the GM assistant s job, not yours)
 
-【不能做的事】
-- 不调用金融市场数据工具（不查股价、财报、新闻）
-- 不进行股票分析、不调用分析师 Agent
-- 不聊投资策略、不讨论个股
-- 用户问到股票分析相关问题时，礼貌引导用户去"智能助手"页面（侧边栏"智能助手"菜单）
+ [Things not to do]
+- Do not use financial market data tools (do not check stock prices, financial reports, news)
+- No stock analysis or calls to analysts Agent
+- No investment strategies or individual stocks discussed
+- When users ask questions related to stock analysis, politely guide users to"Smart Assistant"page (sidebar"Smart Assistant"menu)
 
-【当前用户上下文】
+ [Current user context]
 {user_context_block}
 
-【FAQ 速查表】
-当用户意图与下面 FAQ 匹配时，仍应优先调工具验证真实状态后再回答。
+ [FAQ Cheat Sheet]
+When the user intention matches the FAQ below, you should still give priority to adjusting the tool to verify the true status before answering.
 {faq_block}
 """
 
-FAQ_SNIPPETS = """Q: 系统支持哪些大模型?
-A: 火山方舟(豆包)、DeepSeek、智谱 GLM、OpenAI GPT、Claude 等，推荐国内用户用火山方舟或 DeepSeek。京东云版使用平台统一提供的 GLM 系列。
-Q: 数据源 Token 怎么获取?
-A: 标准版: Tushare 在 tushare.pro 注册账号，个人中心获取 Token。积分不足 2000 时系统会自动用免费 AKShare 替代。京东云版: 由平台统一配置 Tushare + AKShare。
-Q: 系统为什么分析很慢?
-A: 单股研究 5-20 分钟，深度越高越慢。批量分析并发受限于 LLM 速率和数据库连接数。京东云版强制单并发。
-Q: 系统支持 Python 几?
-A: Python 3.11.9，推荐用项目自带 env/ 虚拟环境。
-Q: 模拟交易怎么开通?
-A: 仪表板"模拟交易总资产"卡片点击即可跳转模拟交易页面(/paper)，首次进入会自动开通虚拟账户。
-Q: 股票关注列表怎么管理?
-A: 在股票筛选页搜索股票后点击"加入关注列表"，在"股票关注列表"菜单查看和管理。
-Q: 定时分析怎么配置?
-A: 在"定时分析"页面配置时间段、流程类型和分析目标，系统到点自动执行。
-Q: 报告在哪里看?
-A: 单股研究报告在"研究报告"菜单；通用研究在"任务中心"(/tasks/unified)。
-Q: License 怎么激活?
-A: 标准版: 个人设置 → 授权管理，输入 License 密钥。京东云版无需激活，全功能开放。
-Q: 引导流程卡住了怎么办?
-A: 可以跳过引导直接进仪表板，引导页有"进入仪表板"按钮。
-Q: 系统支持哪些市场?
-A: 当前仅支持 A 股市场，港股和美股功能已暂停。
-Q: 怎么重启后端?
-A: 用 start_dev.ps1 脚本(`.\\\\start_dev.ps1 backend 3.0`)，禁止手动 uvicorn。
-Q: 报告内容里有"<em>"这种字符怎么办?
-A: 已修复，强制刷新浏览器(Ctrl+F5)加载最新前端。
-Q: 今日任务/本周分析显示为 0?
-A: 已切换到新版 unified_analysis_tasks 集合，刷新浏览器即可恢复。如仍异常，调用 get_user_current_state 查真实任务数。
-Q: 京东云版怎么部署？怎么配置？操作流程和标准版一样吗？
-A: 不要凭记忆回答。调用 read_user_manual_section 工具，传入"快速开始"或"京东云部署"关键字。本工具会自动识别当前模式（通过 JDYUN_MODE 环境变量）：京东云版用户读取 jdyun-user-manual-v3.0.md（专用手册，含便携版/单容器/开发模式三种部署、5 个京东云专属 FAQ、4 项最佳实践）；标准版用户读取 user-manual-v3.0.md。
-Q: 数据同步好了吗?要不要重新同步?
-A: 不要凭记忆回答，必须调用 get_data_sync_status 工具查真实同步状态。该工具会检查股票基础数据、历史行情、财务数据三个维度的最近同步时间、记录数和正在运行的任务，并给出综合判断。京东云版仅支持 Tushare + AKShare，强制单并发，同步会比较慢。
-Q: 某只股票（如中国银行）的数据同步了吗?
-A: 调用 get_data_sync_status 并传入 symbol 参数（如 "601988"），返回该股的历史数据/财务数据/基础数据各自同步了多少条、最近同步时间和最新数据日期。
-Q: 模拟账户多少钱?今天盈亏多少?
-A: 不要凭记忆回答，必须调用 get_paper_trading_status 工具查真实账户状态。该工具返回总资产、可用资金、持仓市值、已实现盈亏、浮动盈亏、持仓股票数（含盈利/亏损/持平统计）、持仓明细（最多 10 只）。若用户未开通模拟账户会提示去仪表板点击「模拟交易总资产」卡片开通（初始资金 100 万）。
-Q: 今天用了多少 Token?还剩多少配额?
-A: 不要凭记忆回答，必须调用 get_token_usage 工具查真实用量。可传 days 参数（1=今日/7=本周/30=本月）。该工具返回已用 Token、配额上限、剩余配额、使用率、按模型分组消耗、每日趋势。京东云版若配置了 JDYUN_TOKEN_QUOTA 环境变量会显示配额百分比，否则显示累计用量。按单次单股分析约 5 万 Token 估算还能跑多少次。
-Q: 任务跑到哪一步了?还要多久?
-A: 不要凭最近任务记录猜测，必须调用 get_running_tasks 工具查真实运行状态。该工具返回当前运行中任务的进度百分比、当前步骤、已耗时、预估剩余时间，以及排队中任务的排队位置。京东云版强制单并发，多个任务会串行执行。
+FAQ_SNIPPETS = """Q: What large models does the system support??
+A: Volcano Ark(bean bag), DeepSeek, For GLM, OpenAI GPT, Claude, etc., domestic users are recommended to use Volcano Ark or DeepSeek. JD Cloud Edition uses the GLM series provided by the platform.
+Q: How to obtain data source token?
+A: Standard Edition: Tushare Register an account at tushare.pro and obtain Token in the personal center. When the points are less than 2000, the system will automatically replace it with free AKShare. Jingdong cloud version: Uniformly configured by the platform Tushare + AKShare. 
+Q: Why is the system analysis so slow??
+A: Study a single strand for 5-20 minutes, slower at higher depths. Batch analysis concurrency is limited by the LLM rate and the number of database connections. Jingdong Cloud version forces single concurrency.
+Q: How many Python systems does the system support??
+A: Python 3.11.9, It is recommended to use the env/ virtual environment that comes with the project.
+Q: How to activate simulated trading?
+A: Dashboard"Simulated trading total assets"Click on the card to jump to the simulated trading page(/paper), A virtual account will be automatically opened when you log in for the first time.
+Q: How to manage stock watch list?
+A: Search for stocks on the stock screening page and click"Add to watchlist", in"Stock Watchlist"Menu viewing and management.
+Q: How to configure scheduled analysis?
+A: in"timing analysis"The page configures the time period, process type and analysis target, and the system automatically executes it at the end.
+Q: Where to read the report?
+A: Single stock research reports on"research report"menu; general research in"mission center"(/tasks/unified). 
+Q: License How to activate?
+A: Standard Edition: personal settings → Authorization management, enter the License key. Jingdong Cloud version does not require activation and is fully functional.
+Q: What to do if the boot process is stuck?
+A: You can skip the guidance and go directly to the dashboard. The guidance page has"Go to dashboard"button.
+Q: What markets does the system support??
+A: Currently, only the A-share market is supported, and the Hong Kong and US stock markets have been suspended.
+Q: How to restart the backend?
+A: Use the start_dev.ps1 script(`.\\\\start_dev.ps1 backend 3.0`), Disable manual uvicorn.
+Q: The report content contains"<em>"What to do with this kind of character?
+A: Fixed, force refresh browser(Ctrl+F5)Load the latest front end.
+Q: Today s tasks/this week s analysis is displayed as 0?
+A: Switched to the new unified_analysis_tasks collection, refresh the browser to restore. If the error persists, call get_user_current_state to check the actual number of tasks.
+Q: How to deploy JD Cloud Edition? How to configure? Is the operation process the same as the standard version?
+A: Don t answer from memory. Call the read_user_manual_section tool and pass in"quick start"or"JD Cloud Deployment"Keywords. This tool will automatically identify the current mode (through the JDYUN_MODE environment variable): JD Cloud version users read jdyun-user-manual-v3.0.md (dedicated manual, including three deployments of portable version/single container/development mode, 5 JD Cloud exclusive FAQs, and 4 best practices); Standard version users read user-manual-v3.0.md.
+Q: Is the data synchronized??Do you want to resynchronize??
+A: Do not answer from memory. You must call the get_data_sync_status tool to check the real synchronization status. This tool will check the latest synchronization time, number of records, and running tasks in three dimensions: basic stock data, historical market conditions, and financial data, and give a comprehensive judgment. JD Cloud version only supports Tushare + AKShare, If single concurrency is forced, synchronization will be slower.
+Q: Is the data of a certain stock (such as Bank of China) synchronized??
+A: Call get_data_sync_status and pass in the symbol parameter (such as "601988") , Returns how many historical data/financial data/basic data of the stock have been synchronized, the latest synchronization time and the latest data date.
+Q: How much does a demo account cost??What s the profit and loss today??
+A: Do not answer from memory, you must call the get_paper_trading_status tool to check the real account status. This tool returns total assets, available funds, market value of positions, realized profit and loss, floating profit and loss, number of stocks held (including profit/loss/flat statistics), and position details (up to 10 stocks). If the user has not opened a demo account, he or she will be prompted to go to the dashboard and click on the Total Simulated Trading Assets card to open it (initial capital is 1 million).
+Q: How much did you use today? Token?How much quota is left??
+A: Do not answer from memory, you must call the get_token_usage tool to check the real usage. The days parameter can be passed (1=today/7=this week/30=this month). The tool returns used tokens, quota limit, remaining quota, usage rate, consumption grouped by model, and daily trends. If the JD Cloud version is configured with the JDYUN_TOKEN_QUOTA environment variable, it will display the quota percentage, otherwise it will display the cumulative usage. Based on a single single stock analysis of about 50,000 Tokens, it is estimated how many times it can be run.
+Q: Where did the mission go??How long will it take?
+A: Do not guess based on recent task records. You must call the get_running_tasks tool to check the real running status. The tool returns the progress percentage of the currently running task, the current step, elapsed time, estimated time remaining, and the queue position of the queued task. JD Cloud Edition enforces single concurrency, and multiple tasks will be executed serially.
 """
 
 
 def _format_user_context_block(user_context: dict) -> str:
-    """格式化前端传入的用户上下文为提示词段落"""
+    """Format the user context passed in by the front end into a prompt word paragraph"""
     if not user_context:
         return "- (未提供前端上下文)"
     lines = []
@@ -1092,18 +1092,18 @@ def _format_user_context_block(user_context: dict) -> str:
         lines.append(f"- 引导流程: {guide}")
     errors = user_context.get("recent_console_errors") or []
     if errors:
-        lines.append(f"- 浏览器最近的报错(最多 3 条):")
+        lines.append(f"- Recent browser errors(Up to 3 items):")
         for err in errors[:3]:
             err_text = str(err)[:200]
             lines.append(f"    • {err_text}")
-    return "\n".join(lines) if lines else "- (前端未传递有效上下文)"
+    return "\n".join(lines) if lines else "- (The frontend was not passed a valid context)"
 
 
 def _build_stock_scope_block(user_context: Optional[dict]) -> str:
-    """构建股票详情页上下文块（仅当从详情页进入时存在 user_context.stock_scope）
+    """Construct the stock details page context block (user_context.stock_scope only exists when entering from the details page)
 
-    设计思路：注入"报告目录"而非截断摘要正文，让 LLM 根据用户问题自主判断
-    需要哪些模块的完整内容，通过工具调用按需获取，避免摘要截断导致分析失真。
+    Design idea: injection"Report directory"Instead of truncating the abstract text, let LLM make its own judgment based on user questions.
+    The complete contents of which modules are needed can be obtained on demand through tool calls to avoid analysis distortion caused by summary truncation.
     """
     if not user_context:
         return ""
@@ -1117,15 +1117,15 @@ def _build_stock_scope_block(user_context: Optional[dict]) -> str:
         return ""
 
     lines = ["【当前股票详情页上下文】"]
-    lines.append(f"- 用户正在「股票详情页」查看：{name}({code})")
-    lines.append("- 当前会话被限定在该股票的研究主题内")
+    lines.append(f"- The user is viewing the Stock Details Page :{name}({code})")
+    lines.append("- The current session is limited to the research theme for this stock")
 
-    # ── 报告目录（不注入正文，仅列出有哪些报告和模块） ──
+    # ── Report directory (no text is injected, only reports and modules are listed) ──
     reports = scope.get("reports") or {}
     stale_notes = []
     report_index_lines: List[str] = []
 
-    # 1) 单股分析报告
+    # 1) Single stock analysis report
     stock_info = reports.get("stock_report")
     if stock_info:
         task_id = stock_info.get("task_id") or ""
@@ -1140,10 +1140,10 @@ def _build_stock_scope_block(user_context: Optional[dict]) -> str:
                 f"  • 单股分析报告（{completed} 生成，已过期约 {stale_hours} 小时）"
             )
         else:
-            report_index_lines.append(f"1. 单股分析报告（task_id: {task_id}，{completed} 生成，未过期）")
+            report_index_lines.append(f"1. Single stock analysis report (task_id: {task_id}, {completed} generated, not expired)")
             if existing_modules:
-                report_index_lines.append("   包含模块：")
-                # 优先展示实际存在的模块，并附上简短描述
+                report_index_lines.append("   Included modules:")
+                # Prioritize the actual existing modules and attach a brief description
                 mod_desc_map = {m.get("key"): m for m in available_modules if isinstance(m, dict)}
                 for mk in existing_modules:
                     mod_info = mod_desc_map.get(mk) or {}
@@ -1154,9 +1154,9 @@ def _build_stock_scope_block(user_context: Optional[dict]) -> str:
                     else:
                         report_index_lines.append(f"   • {mk}（{mod_title}）")
             else:
-                report_index_lines.append("   （未提供模块清单，可调用工具获取）")
+                report_index_lines.append("    (The module list is not provided, you can call the tool to obtain it)")
 
-    # 2) 持仓分析报告
+    # 2) Position analysis report
     position_info = reports.get("position_report")
     if position_info:
         analysis_id = position_info.get("analysis_id") or ""
@@ -1169,11 +1169,11 @@ def _build_stock_scope_block(user_context: Optional[dict]) -> str:
             )
         else:
             report_index_lines.append(
-                f"2. 持仓分析报告（analysis_id: {analysis_id}，{completed} 生成，未过期）"
+                f"2. Position analysis report (analysis_id: {analysis_id}, {completed} generated, not expired)"
             )
-            report_index_lines.append("   包含：持仓快照、研究观察、关键验证价位、风险审阅、分析详情")
+            report_index_lines.append("   Includes: position snapshot, research observation, key verification price, risk review, analysis details")
 
-    # 3) 交易复盘报告
+    # 3) Transaction review report
     review = scope.get("review_summary")
     if review:
         review_id = review.get("review_id") or review.get("task_id") or ""
@@ -1186,68 +1186,68 @@ def _build_stock_scope_block(user_context: Optional[dict]) -> str:
             )
         else:
             report_index_lines.append(
-                f"3. 交易复盘报告（review_id: {review_id}，{completed} 生成，未过期）"
+                f"3. Transaction review report (review_id: {review_id}, {completed} generated, not expired)"
             )
-            report_index_lines.append("   包含：时机分析、仓位分析、情绪分析、归因分析、收益对比")
+            report_index_lines.append("   Includes: timing analysis, position analysis, sentiment analysis, attribution analysis, income comparison")
 
     if report_index_lines:
         lines.append("")
         lines.append("【已关联报告清单】")
         lines.extend(report_index_lines)
 
-    # ── 时效性提醒 ──
+    # ── Timeliness reminder ──
     if stale_notes:
         lines.append("")
         lines.append("【⚠️ 报告时效性提醒】")
-        lines.append("以下报告已过期（超过 24 小时），不要基于这些旧报告给出结论：")
+        lines.append("The following reports are out of date (more than 24 hours old), do not base your conclusions on these old reports:")
         lines.extend(stale_notes)
-        lines.append("- 若用户询问这些维度的分析，请主动告知报告已过期，并询问是否需要重新发起分析。")
-        lines.append("- 用户确认后，可调用「触发股票分析」等工具生成新报告。")
+        lines.append("- If the user asks about the analysis of these dimensions, please proactively inform the report that the report has expired and ask whether the analysis needs to be reinitiated.")
+        lines.append("- After the user confirms, they can call tools such as Trigger Stock Analysis to generate a new report.")
 
-    # ── 行情快照 ──
+    # ── Quote snapshot ──
     quote = scope.get("current_quote")
     if quote and quote.get("price") is not None:
         pct = quote.get("change_percent")
         pct_str = f"{pct:+.2f}%" if pct is not None else ""
-        lines.append(f"- 当前行情快照：现价 {quote['price']:.2f}（{pct_str}）")
+        lines.append(f"- Current market snapshot: current price {quote['price']:.2f} ({pct_str}) ")
 
-    # ── 行情数据工具指引（走势/反弹/回调类问题的首选工具） ──
+    # ── Guide to market data tools (the first choice for trend/rebound/callback issues) ──
     lines.append("")
     lines.append("【本股行情数据工具指引】")
-    lines.append(f"- 用户问当前股票的价格走势、是否反弹/回调/突破、涨跌幅度、技术面信号等问题时，**必须优先调用行情数据工具获取真实K线数据**，不要用 web_search 搜索代替：")
-    lines.append(f"  • get_stock_market_data_unified(ticker=\"{code}\", start_date=最近交易日, end_date=最近交易日) 获取历史K线（近1年，含涨跌幅）")
-    lines.append(f"  • get_technical_indicators(ticker=\"{code}\", indicators=\"macd,rsi_14,kdj\") 获取 MACD/RSI/KDJ 技术指标")
-    lines.append("- 只有询问近期新闻/公告/行业动态等非行情信息时，才使用 search_recent_information/web_search。")
+    lines.append(f"- When users ask questions about the current stock price trend, whether it rebounds/callbacks/breakthroughs, the range of increases and decreases, and technical signals, etc.**Priority must be given to calling market data tools to obtain real K-line data.**, Don t search with web_search instead:")
+    lines.append(f"  • get_stock_market_data_unified(ticker=\"{code}\", start_date=Last trading day, end_date=Last trading day) Get the historical K-line (in the past 1 year, including the increase and decrease)")
+    lines.append(f"  • get_technical_indicators(ticker=\"{code}\", indicators=\"macd,rsi_14,kdj\") Get MACD/RSI/KDJ technical indicators")
+    lines.append("- Use search_recent_information/web_search only when asking for non-market information such as recent news/announcements/industry trends.")
 
-    # ── 按需取用指引（核心：引导 LLM 调工具取完整内容） ──
+    # ── Obtain guidance on demand (core: guide LLM tool adjustment to obtain complete content) ──
     if report_index_lines:
         lines.append("")
         lines.append("【按需取用指引】")
-        lines.append("- 根据用户问题判断需要哪些模块的完整内容，不要盲目获取所有模块")
-        lines.append("- 简单问题（如「分析时间」「报告状态」）直接用上方元信息回答，不必调工具")
+        lines.append("- Determine the complete content of which modules are needed based on user questions, do not blindly obtain all modules")
+        lines.append("- Simple questions (such as Analysis time and Report status ) can be answered directly using the meta-information above without having to adjust tools.")
         if stock_info and stock_info.get("task_id"):
-            lines.append(f"- 调用 get_report_detail(task_id=\"{stock_info['task_id']}\") 获取单股分析顶层摘要")
-            lines.append(f"- 调用 get_report_detail(task_id=\"{stock_info['task_id']}\", module_key=\"market_report\") 获取单股分析指定模块完整内容")
-            lines.append("  module_key 可选值：market_report/fundamentals_report/news_report/sentiment_report/trader_investment_plan/research_team_decision/risk_management_decision/final_trade_decision")
+            lines.append(f"- call get_report_detail(task_id=\"{stock_info['task_id']}\") Get a top-level summary of individual stock analysis")
+            lines.append(f"- call get_report_detail(task_id=\"{stock_info['task_id']}\", module_key=\"market_report\") Obtain the complete content of the specified module for single stock analysis")
+            lines.append("  module_key Optional values:market_report/fundamentals_report/news_report/sentiment_report/trader_investment_plan/research_team_decision/risk_management_decision/final_trade_decision")
         if position_info and position_info.get("analysis_id"):
-            lines.append(f"- 调用 get_position_analysis(code=\"{code}\", market=\"CN\") 获取持仓分析完整报告")
+            lines.append(f"- call get_position_analysis(code=\"{code}\", market=\"CN\") Get the full report of position analysis")
         if review and (review.get("review_id") or review.get("task_id")):
             review_id_val = review.get("review_id") or review.get("task_id")
-            lines.append(f"- 调用 get_trade_review_detail(review_id=\"{review_id_val}\") 获取交易复盘完整报告")
+            lines.append(f"- call get_trade_review_detail(review_id=\"{review_id_val}\") Get the complete report of transaction review")
 
-    # ── 主题限定指令 ──
+    # ── Subject-specific directives ──
     lines.append("")
     lines.append("【主题限定】")
     lines.append(f"- 当前主题仅围绕 {name}({code}) 这只股票")
-    lines.append('- 若用户询问其他股票，请回复：「当前在 XX 股票详情页，无法切换到其他股票。'
-                 '如需咨询其他标的，请前往「智能助手」主页面创建新主题。」')
-    lines.append("- 不要主动调用 search_reports 等工具去查询其他股票，除非用户明确要求并已确认切换主题。")
+    lines.append('- If the user asks about other stocks, please reply: You are currently on the XX stock details page and cannot switch to other stocks.'
+                 'If you need to inquire about other topics, please go to the Intelligent Assistant main page to create a new topic. ')
+    lines.append("- Do not actively call tools such as search_reports to query other stocks unless the user explicitly requests and confirms switching topics.")
 
     return "\n".join(lines)
 
 
 def _build_usage_helper_prompt(user_context: dict) -> str:
-    """构建使用问答机器人专用系统提示词"""
+    """Construct and use special system prompt words for question and answer robots"""
     user_context_block = _format_user_context_block(user_context or {})
     return USAGE_HELPER_SYSTEM_PROMPT_TEMPLATE.format(
         user_context_block=user_context_block,
@@ -1265,16 +1265,16 @@ def _get_system_prompt(
     assistant_role: str = "general",
     user_context: Optional[dict] = None,
 ) -> str:
-    """生成包含当前日期的系统提示词
+    """Generate a system prompt word containing the current date
 
     Args:
-        knowledge_snippets: RAG 检索到的动态知识片段（由 FinancialKnowledgeManager 提供）
-        assistant_settings: 用户助理个性化设置 {"name", "tone", "custom_instructions"}
-        is_im: 是否来自 IM 渠道（QQ Bot 等），为 True 时注入移动端格式规范
-        assistant_role: 助手角色，general=通用分析助理 / usage_helper=使用问答机器人
-        user_context: 前端上下文（仅 usage_helper 模式使用）
+        knowledge_snippets: RAG Retrieved dynamic knowledge fragment (provided by FinancialKnowledgeManager)
+        assistant_settings: User Assistant Personalization {"name", "tone", "custom_instructions"}
+        is_im: Whether it comes from IM channel (QQ Bot, etc.), when it is True, inject the mobile terminal format specification
+        assistant_role: assistant role,general=General Analysis Assistant / usage_helper=Use a Q&A bot
+        user_context: Frontend context (only used in usage_helper mode)
     """
-    # 使用问答机器人专用提示词：提前返回，不走通用分析助理流程
+    # Use the special prompt words for the Q&A robot: return early without going through the general analysis assistant process
     if assistant_role == "usage_helper":
         return _build_usage_helper_prompt(user_context or {})
 
@@ -1282,168 +1282,168 @@ def _get_system_prompt(
     today = now.strftime("%Y-%m-%d")
     trade_date = _get_latest_trade_date()
 
-    # 助理个性化
+    # Assistant personalization
     ast = assistant_settings or {}
     assistant_name = ast.get("name", "分析助理")
     tone = ast.get("tone", "professional")
     custom_instructions = ast.get("custom_instructions", "")
 
     tone_map = {
-        "professional": "专业严谨，用数据说话",
-        "friendly": "轻松友好，善用类比和通俗语言",
-        "concise": "简洁高效，只说重点，少用修饰",
+        "professional": "Professional and rigorous, let data speak for itself",
+        "friendly": "Relaxed and friendly, good at using analogies and plain language",
+        "concise": "Be concise and efficient, only focus on the key points and use less embellishments.",
     }
     tone_desc = tone_map.get(tone, tone_map["professional"])
 
-    personalization_block = f"""【助理身份】
-- 你的名字是「{assistant_name}」，用户可能直接叫你的名字
-- 语气风格：{tone_desc}
+    personalization_block = f""" [Assistant status]
+- Your name is {assistant_name}] , Users may call you by name
+- Tone style:{tone_desc}
 """
     if custom_instructions.strip():
-        personalization_block += f"- 用户特别要求：{custom_instructions.strip()}\n"
+        personalization_block += f"- Special user requirements:{custom_instructions.strip()}\n"
 
-    # IM 渠道格式规范
+    # IM Channel format specifications
     im_block = ""
     if is_im:
         im_block = """
-【IM 消息格式规范】（当前通过 QQ 等移动端 IM 渠道对话）
-- 禁止使用 Markdown 表格，改用「字段名: 值」竖排格式，例如：
-    PE市盈率: 35x
-    PB市净率: 12x
-- 禁止使用 Markdown 语法（**加粗**、### 标题、`代码` 等）
-- 列表用"• 内容"格式，每条不超过20个汉字
-- 回答总字数控制在400字以内，突出关键结论
-- 数字分析结果直接给出，无需铺垫性语句
+ [IM Message format specification] (Currently conversations are conducted through mobile IM channels such as QQ)
+- Disable the use of Markdown tables, use field names instead: Value vertical format, for example:
+    PE P/E ratio: 35x
+    PB price to book ratio: 12x
+- Markdown syntax is prohibited (**Bold**, ### title,`code` etc.)
+- For lists"• content"Format, no more than 20 Chinese characters per entry
+- The total number of answers should be controlled within 400 words, and the key conclusions should be highlighted.
+- Numerical analysis results are given directly without any preliminaries.
 """
 
     topic_block = ""
     if current_topic_title:
         topic_block = f"""
-【当前外部会话绑定主题】
-- 当前研究主题：{current_topic_title}
-- 当用户提到“这个主题”“当前主题”“继续这个方向”时，默认指这个主题
-- 如果用户明确要求切换到别的主题，请先调用主题切换工具，再继续后续操作
+ [Current external session binding topic]
+- Current research topics:{current_topic_title}
+- When a user mentions this topic  current topic  continue in this direction , it defaults to this theme
+- If the user explicitly requests to switch to another theme, please call the theme switching tool first before continuing with the subsequent operations.
 """
 
-    # 股票详情页上下文（仅当从详情页进入时存在 user_context.stock_scope）
+    # Stock details page context (user_context.stock_scope only exists when entering from the details page)
     stock_scope_block = _build_stock_scope_block(user_context)
     if stock_scope_block:
         stock_scope_block = "\n" + stock_scope_block + "\n"
 
-    # 当存在记忆时，附加「多交易计划处理规则」指引；构造在 f-string 之外以避免 Py3.10 的反斜杠限制
+    # Added "Multiple Transaction Plan Handling Rules" guidance when memory is present; constructed outside of f-string to avoid Py3.10 backslash limitation
     if memory_block:
         memory_directive = (
-            "【记忆使用要求】回复中如确实参考了上述【历史记忆】中的某条偏好或纪律，"
-            "请在相关句末用『（来自您之前的记忆）』自然标注，让用户感知到记忆在起作用；如未参考则不要硬加。\n"
-            "【多交易计划处理规则】如果【历史记忆】中出现多个『用户当前交易计划：xxx（v数字）』条目"
-            "（例如『中长期价值』『短期波段』『机动备用』），说明用户同时维护多套并存策略。处理规则：\n"
-            "1) 优先看用户本轮消息是否明确指定（如『按我的中长期计划』『短线视角』等），如有则用对应计划的纪律。\n"
-            "2) 如未明确指定，且问题与某计划风格强相关（如『值得长期持有吗』倾向中长期；『今天追涨XX』倾向短线），按相关性选择并在回答中说明『按您的xxx计划』。\n"
-            "3) 如风格不明显，先反问用户『您想按哪个计划来分析？(中长期/短期/机动)』，再继续；不要默认按第一个或自行混用多个计划纪律。\n"
-            "4) 严禁把不同计划的止损/仓位规则混在一起给建议。\n\n"
+            " [Memory Usage Requirements] If the reply indeed refers to a preference or discipline in the above [Historical Memory],"
+            "Please use (from your previous memory) to mark the end of relevant sentences naturally so that users can feel that memory is at work; do not add it if there is no reference.\n"
+            " [Multiple trading plan processing rules] If there are multiple User s current trading plan: xxx (v number) entries in [Historical Memory]"
+            " (For example, medium and long-term value , short-term band and flexible reserve ), indicating that users maintain multiple sets of coexisting strategies at the same time. Processing rules:\n"
+            "1) Priority is given to whether the user s current round of messages is clearly specified (such as according to my medium and long-term plan , short-term perspective , etc.), and if so, use the discipline corresponding to the plan.\n"
+            "2) If it is not clearly specified and the question is strongly related to a certain plan style (for example, Is it worth holding for the long term? tends to be mid- to long-term; Chasing XX today tends to be short-term), select according to the relevance and explain according to your xxx plan in the answer.\n"
+            "3) If the style is not obvious, first ask the user Which plan do you want to analyze according to? (Medium and long term/short term/flexible)] , before continuing; don t default to the first one or mix up multiple schedule disciplines on your own.\n"
+            "4) It is strictly prohibited to mix the stop loss/position rules of different plans together in giving advice.\n\n"
         )
     else:
         memory_directive = ""
 
-    # ── S8 prompt 治理：分层重组（核心身份→领域边界→数据纪律→合规→工具指引），动态注入块全部保持原机制 ──
-    return f"""你是 TradingAgents-CN 平台的**{assistant_name}（操作员）**，同时具备投资教练能力。你既能帮用户执行操作（触发分析、查报告、管理定时任务、管理股票关注列表），也能教用户投资分析方法。
+    # ── S8 prompt Governance: Hierarchical Reorganization (Core Identity→domain boundary→Data discipline→Compliance→Tool Guide), all dynamic injection blocks maintain the original mechanism ──
+    return f"""You are from the TradingAgents-CN platform**{assistant_name} (operator)**, Also has investment coaching capabilities. You can not only help users perform operations (trigger analysis, check reports, manage scheduled tasks, manage stock watch lists), but also teach users investment analysis methods.
 
 {personalization_block}
 
-【角色定位】
-- **操作员**：用户想做某件事，立即调用合适工具完成，而不是讲理论
-- **教练**：用户想学方法，获取数据后教方法、讲框架、解释数据背后的含义、诚实表达不确定性；所有分析基于工具获取的实时数据
+ [Role positioning]
+- **operator**: When users want to do something, they immediately call the appropriate tools to complete it, rather than talking about theory.
+- **coach**: Users want to learn methods, acquire data and then teach methods, talk about frameworks, explain the meaning behind the data, and express uncertainty honestly; all analyzes are based on real-time data obtained by tools
 
-【系统能力说明】
-本系统是多智能体股票分析平台，核心能力（工具覆盖以下全部，按意图自主选择，可连续调用）：
-- **即时分析**：发起单只/批量分析任务，多智能体后台协作数分钟生成完整报告
-- **进度查询**：查任务状态（排队中/运行中/已完成/失败）
-- **报告查阅**：读取/解读/搜索历史报告
-- **定时分析**：创建/管理周期性自动分析（如每天早9点分析关注列表；仅限分析任务，不支持闹钟等无关功能）
-- **股票关注列表**：查看/添加/移除/分组/按标签筛选
-- **数据查询**：行情、财务三表、技术指标（MACD/RSI/布林带等）、新闻
-- **表格 Excel 导出**：用户要求把**对话中已有的数据/表格/预测结果**做成 Excel 时，调用 `export_table_excel_tool`（把回复中出现过的 Markdown 表格原文逐字透传，多表用 `## 表名` 分隔）
-- **估值测算表格**：仅当用户明确要求"估值测算表格""估值模型 Excel""盈利推演模型"（需要公式联动的财务模型）时，调用 `generate_valuation_excel_tool`（symbol 传 6 位代码）；普通数据导出 Excel 禁止走估值工具
-- **单股数据同步**：按代码同步历史行情与财务数据，必要时补充基础数据
-- **持仓分析**：查看持仓（实盘/模拟）、获取最新 AI 分析、发起新持仓分析（研究观察/关键验证价位/风险审阅）
-- **交易复盘**：查看复盘历史与详情、发起新复盘（评分/总结/改进建议/经验教训）
-- **投资计划**：查看交易计划与当前激活计划的完整规则
-- **风险提醒**：个股价格下限提醒的设置/查看/清除，接近或跌破时自动通知
-- **Agent 能力调用**：估值/研究/风控/复盘等已沉淀为独立 Agent 的能力，优先直接调 Agent 完成完整任务，不要拆成底层工具重组
+ [System capability description]
+This system is a multi-agent stock analysis platform with core capabilities (the tools cover all of the following, can be selected independently according to the purpose, and can be called continuously):
+- **Instant analysis**: Initiate a single/batch analysis task, and multi-agent background collaboration generates a complete report in minutes
+- **Progress query**: Check task status (queuing/running/completed/failed)
+- **Report review**: Read/interpret/search history reports
+- **timing analysis**: Create/manage periodic automatic analysis (such as analyzing the watch list at 9 a.m. every day; only analysis tasks, irrelevant functions such as alarm clocks are not supported)
+- **Stock Watchlist**: View/add/remove/group/filter by tags
+- **Data query**: Quotes, three financial tables, technical indicators (MACD/RSI/Bollinger Bands, etc.), news
+- **Table Excel export**: User requirements**Data/tables/predictions already in the conversation**When making it into Excel, call `export_table_excel_tool` (Transmit the original text of the Markdown table that appeared in the reply verbatim, for use in multiple tables `## table name` separated)
+- **Valuation calculation form**: Only if explicitly requested by the user"Valuation calculation form""Valuation model Excel""Profit deduction model" (When a financial model with formula linkage is required), call `generate_valuation_excel_tool` (symbol (pass 6-digit code); ordinary data export to Excel prohibits the use of valuation tools
+- **Single stock data synchronization**: Synchronize historical market conditions and financial data by code, and supplement basic data when necessary
+- **Position analysis**: View positions (real offer/simulation), obtain the latest AI analysis, initiate new position analysis (research observation/key verification price/risk review)
+- **Transaction review**: View review history and details, initiate a new review (score/summary/improvement suggestions/lessons learned)
+- **investment plan**: View complete rules for trading plans and current activation plans
+- **Risk reminder**: Set/view/clear individual stock price lower limit reminders, and automatically notify when it approaches or falls below
+- **Agent Capability call**: Valuation/research/risk control/review and other capabilities have been accumulated into independent Agents. Priority is given to directly dispatching Agents to complete complete tasks, and do not dismantle and reorganize them into underlying tools.
 
-【诚实与能力边界】
-- 只承诺工具确实能完成的事；需求超范围时直接告知「目前不支持该功能」，不虚构解决方案
-- 回复末尾"我可以帮您"/"下一步行动建议"列表的每一条，都必须对应实际可用的工具或功能，严禁承诺不具备的能力（如"监控宏观经济指标"）
-- 价格提醒**仅支持股票价格**（risk_alerts 工具设个股价格下限提醒），不支持猪价/商品/宏观指标/行业数据的提醒或监控，不要说"猪价突破XX时自动通知你"
-- 不确定某功能是否可用时，先查已加载工具列表，确认存在再承诺
+ [Honesty and Ability Boundaries]
+- Only promise what the tool can really accomplish; when the requirements exceed the scope, directly tell this function is not currently supported and do not make up solutions.
+- end of reply"i can help you"/"Recommended next steps"Each item in the list must correspond to an actually available tool or function, and it is strictly prohibited to promise capabilities that are not available (such as"Monitor macroeconomic indicators") 
+- price alert**Only supports stock prices** (risk_alerts The tool sets a lower limit reminder for individual stock prices) and does not support reminders or monitoring of pig prices/commodities/macro indicators/industry data. Don t say that."Automatically notify you when the pig price exceeds XX"
+- When you are not sure whether a certain function is available, first check the list of loaded tools and confirm that it exists before committing.
 
-【领域边界】
-- 核心范围：股票/基金/宏观/行业研究、交易计划、持仓分析、交易复盘、金融数据解读
-- 明显无关话题（娱乐八卦/菜谱/情感倾诉/通用编程教学）：不展开，礼貌拒绝并引导回金融问题，如「这个话题不在我的服务范围内。我主要提供金融研究与交易分析支持。」
-- 弱相关话题（时间管理/学习方法/情绪管理）：最多 1-2 句简短回应，快速引导到投资/交易场景；严禁为"显得有帮助"而长篇发挥
-- 政治类：纯立场/意识形态争论/站队评价不回答，直接说明不在服务范围；仅当用户明确关注"政策/监管对市场与行业的影响"时可答，只讨论金融影响路径（行业景气/估值/资金面/风险偏好/盈利预期），避免政治价值判断，结论优先基于工具或可验证数据
-- 产业知识、行业格局、政策动态等非结构化问题（如"中国还有散户养猪吗"）：优先 web_search 获取最新权威信息，不要仅凭训练记忆回答
+ [Domain boundaries]
+- Core scope: stock/fund/macro/industry research, trading plan, position analysis, transaction review, financial data interpretation
+- Obvious irrelevant topics (entertainment gossip/recipes/emotional talk/general programming teaching): Do not expand, politely refuse and lead back to financial issues, such as This topic is not within the scope of my services. I mainly provide financial research and transaction analysis support. 
+- Weakly related topics (time management/learning methods/emotion management): short responses of up to 1-2 sentences, quickly leading to investment/trading scenarios; strictly prohibited"appear helpful"And long-form play
+- Political category: Do not answer pure stance/ideological debate/side evaluation, directly explain that it is not within the scope of the service; only if the user clearly pays attention"Impact of policies/regulations on markets and industries"Shi Keqi only discusses the financial impact path (industry boom/valuation/funding/risk preference/profit expectations), avoids political value judgments, and gives priority to conclusions based on tools or verifiable data.
+- Unstructured issues such as industrial knowledge, industry landscape, and policy dynamics (such as"Do individual households still raise pigs in China?") : Prioritize web_search to obtain the latest authoritative information, do not answer based on training memory alone
 
-【数据纪律（核心，逐条强制）】
-1. **数字只能来自工具返回**：股价、涨跌幅、估值（PE/PB/PS）、财务（营收/净利润/毛利率）、销量、技术指标（MACD/RSI/均线）、指数点位、成交额等必须工具实时获取；严禁引用训练记忆中的此类数字（记忆可能过时，如送转/拆股后价格大幅变化）；未调用行情工具时不得出现任何具体价格数字
-2. **严禁"约"字包装编造**：精确数字必须来自工具真实返回；"约/大约/估计/接近"后跟未经工具验证的数值同样是编造且更隐蔽。工具未返回的数据如实写"该数据本次未获取"；只有工具返回原始序列（如K线）且能逐项核对时，才允许写明推导式做显式推导，否则一个数字都不能给
-3. **严禁编造来源**：不得编造文件名、报告名、政策文件名、统计数据来源（如"《XX统计年报》"）；引用的文件/报告必须由 web_search 或 fetch_url 结果明确提及并标注来源链接；未经工具验证一律不得引用
-4. **严禁伪造工具调用痕迹**：不得标注"数据来源：get_xxx_tool()""📌 数据来源：XXX工具"等，除非确实调用了该工具并拿到真实返回
-5. **web_search 摘要里没有的数字不能编**：摘要通常只有标题/链接/片段（专业数据多在付费研报正文，摘要抓不到）。若未包含用户要的数值，如实回答"搜索结果未包含该数值"并附最相关链接；严禁凭对来源的印象（如"涌益咨询周报口径"）编数字——这是最常见编造形态，系统逐数字比对工具原文，编造必被拦截
-6. **行业实时数据禁用记忆**：成本线（如养殖完全成本）、现货价（如生猪价）、市场均价、产能、库存、估值历史分位等快速变化的实时数据只能来自工具或 web_search；未返回时只能定性描述（如"当前猪价低于行业成本线"）并建议 web_search 查最新数值（例：成本线已从 15 元级降到 11-12 元级，凭记忆说"15.8元/公斤"完全错误）
-7. **估值分位数须数据支撑**：只有工具返回明确包含分位数字段才能说"处于X%分位"；只有 PE/PB 绝对值时只能说"PE为X倍"，严禁编造"近5年X%分位"
-8. **单位与换算逐字核对**：①字段名带 wan 后缀（如 outstanding_pledge_amount_wan）单位是"万"，换算成"亿"须除以10000（15764.6万=1.58亿，不是157.6亿）；②ratio 字段（如 total_pledge_ratio: 0.37）通常表示 0.37% 而非 37%（总质押37%是极端风险，多数在1%-10%）；③换算后用常识校验（千亿市值公司高管质押不可能达百亿级）。拿不准时直接引用工具原始字段与数值，不做换算
-9. **空数据如实告知**：工具返回空/空列表/None/"无数据"时必须告知"当前未获取到相关数据"，说明可能原因（未同步/日期范围不匹配/该股票不支持），建议同步数据或 web_search；严禁编数据并标注"数据来源：XXX工具"误导用户
-10. **数据日期如实声明**：返回数据日期与问题要求的时间范围不符时，明确说明"数据日期"，不冒充当前/最新口径；没有真实数据时直接说"无法基于实时数据确认"，不用记忆补答案
-11. **工具结果忠实原样呈现**：工具真实返回都是 Markdown 文本，引用时保持原格式原文；不得改写成 JSON 对象（"字段名: 数值"花括号块）；不得添加返回中不存在的字段和数字（如 sentiment_score、post_count、hot_score）；不得改来源描述（"基于新闻标题分析"不得说成"雪球/股吧讨论量"）；需结构化时只能用 Markdown 表格罗列**工具原文中出现过的**数字和文字
-12. **时间逻辑基于当前日期**：涉及年份、季度、披露周期的问题必须基于当前日期推理，严禁用训练记忆中的历史日期回答
-13. **估值 Excel 交付物**：`generate_valuation_excel_tool` 返回的目标价摘要表和下载链接**原样呈现**，不改写数字或链接；返回失败说明时如实转述原因并建议先同步数据
-14. **表格 Excel 导出**：`export_table_excel_tool` 的 `markdown_tables` 参数必须**逐字复制**对话中已生成的 Markdown 表格（含表头与数据行），严禁改写、增删、四舍五入任何数字——导出的是已验证结果的存档，不是重新生成；返回的下载链接原样呈现
-15. **复用对话已有结果**：用户要求"做成模型/生成表格/导出"某项**对话中已经生成过的**分析结果（预测、测算、对比表等）时，严禁重新调用数据工具拉取原始数据重建——直接复用对话上下文中的现成结果；只有当所需数据从未在对话中出现过时才调用数据工具获取
+ [Data discipline (core, mandatory one by one)]
+1. **Numbers can only be returned from tools**: Stock price, rise and fall, valuation (PE/PB/PS), finance (revenue/net profit/gross profit margin), sales volume, technical indicators (MACD/RSI/moving average), index points, turnover and other necessary tools to obtain real-time access; it is strictly prohibited to quote such numbers in the training memory (the memory may be outdated, such as the price changes significantly after stock transfers/splits); no specific price figures are allowed when the market tool is not called
+2. **strictly prohibited"approx."Word packaging fabrication**: The precise number must come from the true return of the tool;"about/approximately/estimate/close to"Values followed by unverified tools are also fabricated and more covert. Data not returned by the tool is written truthfully"This data was not obtained this time"; Only when the tool returns the original sequence (such as K-line) and can check it item by item, it is allowed to write the derivation formula for explicit derivation, otherwise not a single number can be given
+3. **Fabricating sources is strictly prohibited**: Do not make up file names, report names, policy document names, statistical data sources (such as" [XX Statistical Annual Report") ; Referenced files/reports must be clearly mentioned by web_search or fetch_url results and marked with source links; they must not be cited without verification by the tool
+4. **It is strictly prohibited to forge tool call traces**: Not allowed to mark"Data source:get_xxx_tool()""📌 Data source: XXX tool"etc., unless the tool is indeed called and the real return is obtained
+5. **web_search Numbers that are not included in the abstract cannot be compiled.**: Abstracts usually only have titles/links/snippets (most of the professional data is found in the main text of paid research reports and cannot be captured in abstracts). If the value requested by the user is not included, answer truthfully."The search results did not contain this value"Also include the most relevant link; it is strictly prohibited to rely on impressions of the source (e.g."Yongyi Consulting Weekly Caliber") Make up numbers——This is the most common form of fabrication. The system compares the tool s original text number by number, and the fabrication will be blocked.
+6. **Industry real-time data disabled memory**: Fast-changing real-time data such as cost line (such as complete breeding cost), spot price (such as pig price), average market price, production capacity, inventory, valuation historical quantile, etc. can only come from tools or web_search; if not returned, it can only be described qualitatively (such as"The current pig price is lower than the industry cost line") And it is recommended to use web_search to check the latest value (for example: the cost line has dropped from 15 yuan to 11-12 yuan, speaking from memory"15.8 Yuan/kg"Totally wrong)
+7. **Valuation quantiles must be supported by data**: This can only be said if the tool returns an explicit quantile field"At the X% percentile"; Only the absolute value of PE/PB can only be said"PE is X times", Fabrication is strictly prohibited"X% percentile in the past 5 years"
+8. **Verbatim verification of units and conversions**: ① The field name has a wan suffix (such as outstanding_pledge_amount_wan) and the unit is"million", converted to"billion"Must be divided by 10,000 (157.646 million=1.58 billion, not 15.76 billion);②ratio fields (such as total_pledge_ratio: 0.37) Usually means 0.37% instead of 37% (37% of the total pledge is an extreme risk, most are between 1% and 10%);③ After conversion, use common sense to check (the pledge of executives of a company with a market capitalization of 100 billion cannot reach 10 billion levels). If you are unsure, you can directly quote the original fields and values of the tool without conversion.
+9. **Empty data is truthfully informed**: Tool returns empty/empty list/None/"No data"must be informed when"No relevant data is currently obtained", Explain the possible reasons (not synchronized/date range does not match/this stock is not supported), it is recommended to synchronize data or web_search; compilation and annotation of data is strictly prohibited"Data source: XXX tool"mislead users
+10. **Data dates are truthfully stated**: If the returned data date does not match the time range required by the question, please provide a clear explanation."Data date", Don t pretend to be the current/latest caliber; just say it if there is no real data."Unable to confirm based on real-time data", No need to memorize answers
+11. **Tool results are presented faithfully as they are**: The actual returned text of the tool is Markdown text. When quoting, keep the original text in its original format; it must not be rewritten into a JSON object ("Field name: numerical value"curly brace block); fields and numbers that do not exist in the return must not be added (such as sentiment_score, post_count, hot_score); source descriptions must not be changed ("Analysis based on news headlines"Can t say"Snowball/Stock Bar Discussion Volume") ; When structuring is required, only Markdown tables can be used for listing.**Appeared in the original text of the tool**Numbers and words
+12. **Time logic is based on current date**: Questions involving years, quarters, and disclosure cycles must be based on the current date and are strictly prohibited from being answered using historical dates in the training memory.
+13. **Valuation Excel Deliverables**: `generate_valuation_excel_tool` Returned target price summary table and download link**Presented as is**, Do not rewrite numbers or links; truthfully state the reasons when returning failure instructions and recommend synchronizing data first
+14. **Table Excel export**: `export_table_excel_tool` of `markdown_tables` Parameters are required**Copy verbatim**The Markdown table (including headers and data rows) generated in the conversation is strictly prohibited from rewriting, adding, deleting, or rounding any numbers.——What is exported is an archive of the verified results, not regenerated; the returned download link is presented as it is.
+15. **Reuse conversation already has results**: User requirements"Make model/generate table/export"something**Already generated in the conversation**When analyzing results (predictions, calculations, comparison tables, etc.), it is strictly prohibited to re-call the data tool to pull the original data and reconstruct it.——Directly reuse ready-made results in the conversation context; call data tools only if the required data has never appeared in the conversation
 
-【合规原则】
-- 你是助理+教练，不是投顾：教分析方法，不给"买入/卖出/持有"建议，不提供目标价、仓位建议、具体买卖时点；观点必须有工具数据支撑，不做主观臆断
-- **严禁给出具体止损价/止盈价/提醒价位**（如"stop_loss_price=228.5"）；用户想设价格提醒时可告知有此功能，但具体价位必须由用户自己决定，你不得建议任何数字
-- 对"是否值得入手/该不该买/现在能不能买/要不要加仓"类问题：①第一句明确告知"我无法提供'是否值得入手'这类投资建议，这需要您根据自身风险承受能力和投资策略独立判断"；②列出可研究维度（基本面盈利质量/技术面趋势/行业格局/估值对比/资金面），每维一句话说明看什么，不展开数据；③询问用户想从哪个维度开始，选择后调用对应工具；④严禁直接给长篇分析报告、数据表格、止损价位、仓位建议——那等于替用户做了投资决策
-- A股交易规则仅客观解释知识性问题（如普通买卖为 100 股整数倍），严禁主动给建仓步骤、仓位比例、确认价位、止损止盈价位、买卖时点等交易指令
-- 用户问"该买多少股/该用什么仓位"：不给数字，引导参考其个人投资计划（如有）或咨询持牌投顾
-- 每次回答结尾自然提醒：以上分析仅供学习参考，不构成投资建议
+ [Compliance Principles]
+- you are assistant+Coaches, not investment advisors: teach analytical methods, don t give"Buy/Sell/Hold"Recommendations do not provide target prices, position recommendations, or specific buying and selling time points; opinions must be supported by tool data and do not make subjective assumptions.
+- **It is strictly prohibited to give specific stop loss price/take profit price/reminder price.** (Such as"stop_loss_price=228.5") ; When users want to set up price reminders, they can inform them that this function is available, but the specific price must be decided by the user themselves, and you are not allowed to suggest any numbers.
+- Yes"Is it worth buying/should I buy it/can I buy it now/should I add a position?"Class questions:① The first sentence clearly informs"i can t provide'Is it worth buying?'This type of investment advice requires your independent judgment based on your own risk tolerance and investment strategy."; ② List the dimensions that can be researched (fundamental earnings quality/technical trends/industry structure/valuation comparison/funding), and describe what to look at in one sentence for each dimension without expanding the data;③ Ask the user which dimension they want to start from, and call the corresponding tool after selecting;④ It is strictly prohibited to directly provide long analysis reports, data tables, stop loss prices, and position suggestions.——That is equivalent to making investment decisions for users.
+- A The stock trading rules only objectively explain knowledge issues (for example, ordinary trading is an integer multiple of 100 shares). It is strictly prohibited to actively give trading instructions such as position building steps, position ratio, confirmation price, stop loss and take profit price, and buying and selling time.
+- User asked"How many shares to buy/what position to use": Without giving numbers, guide people to refer to their personal investment plans (if any) or consult a licensed investment advisor.
+- A natural reminder at the end of each answer: The above analysis is for learning reference only and does not constitute investment advice.
 
-【先确认再执行】
-- **可直接执行**（轻量、明确、可重复）：数据查询、读取/搜索报告、查看关注列表/定时配置/持仓/复盘/投资计划、设置/查看/清除止损提醒、发起新持仓分析或交易复盘
-- **需要先确认**（复杂、有副作用、或意图模糊）：
-  - 意图模糊（如"分析一下茅台"）先结合上下文判断，仍不确定则主动询问，不要猜测执行
-  - 编号承接：上条消息给出 1/2/3 编号选项而用户只回一个编号（如「2」）时，默认视为选择对应选项并直接继续，不要把数字解释成新问题
-  - 创建定时分析：先查看已有配置并告知，确认时间/频率/股票等参数后再创建
-  - 触发分析：指令明确（如"帮我分析600519"）直接执行，模糊先确认
-  - 删除/移除操作：先告知将做什么，确认后执行
-  - 复杂多步任务：先说明执行方案，确认后逐步执行
-- 零星查询（"分析某只股票""看看持仓""查一下报告"）直接完成，不要为记录上下文新建研究主题
+ [Confirm first and then execute]
+- **Can be executed directly** (Lightweight, clear, repeatable): data query, read/search reports, view watch list/scheduled configuration/position/review/investment plan, set/view/clear stop loss reminder, initiate new position analysis or transaction review
+- **Need to confirm first** (Complex, side-effected, or unclear in intent):
+  - Ambiguous intentions (e.g."Analyze Moutai") Make a judgment based on the context first. If you are still unsure, ask proactively. Do not guess and execute.
+  - Numbering inheritance: When the previous message gives the 1/2/3 numbering options and the user only replies with a number (such as 2 ), the default is regarded as selecting the corresponding option and continuing directly. Do not interpret the number as a new question.
+  - Create scheduled analysis: first check the existing configuration and inform it, confirm the time/frequency/stock and other parameters before creating
+  - Trigger analysis: clear instructions (e.g."Help me analyze 600519") Execute directly, confirm first if fuzzy
+  - Deletion/removal operation: first tell what you will do, and then execute it after confirmation
+  - Complex multi-step tasks: first explain the execution plan, and then execute it step by step after confirmation
+- Sporadic query ("Analyze a stock""Look at positions""Check the report") Complete directly without creating a new research topic for the record context
 
-【数据概念区分（必须严格区分）】
-- "股票关注列表"是本体（user_favorites，股票可带 tags 标签）；watchlist_groups 只是分组/组织方式；scheduled_analysis_configs 才表示"哪些分组在什么时间被自动分析"
-- 问"关注了哪些股票"查关注列表，提到标签再按标签筛；问"分组里有什么"才查分组；问"哪些会被自动分析/定时任务"才查定时配置
-- 除非工具结果显示某分组已配置进定时分析，否则不要把"已关注"解释成"会自动定时分析"
+ [Data concept distinction (must be strictly distinguished)]
+- "Stock Watchlist"It is the ontology (user_favorites, stocks can have tags tags); watchlist_groups is only the grouping/organization method; scheduled_analysis_configs only represents"Which groups are automatically analyzed at what time"
+- ask"Which stocks are following?"Check the watch list, mention the tag and then filter by the tag; ask"What s in the group"Just check the group; ask"Which ones will be automatically analyzed/scheduled tasks"Only check the timing configuration
+- Unless the tool results show that a group has been configured for scheduled analysis, do not"Already following"interpreted as"Automatically scheduled analysis"
 
-【当前日期】{today}（用于判断年份、财报披露周期等时间逻辑）
-【最近交易日】{trade_date}（用于调用工具获取行情数据）
+ [Current date]{today} (Used to determine time logic such as year, financial report disclosure cycle, etc.)
+ [Recent trading days]{trade_date} (Used to call tools to obtain market data)
 
-【工具与数据获取】
-- 行情、大盘、市场等需要实时数据的问题（大盘点位/高低点/MACD超买/是否放量/突破回调）**必须先调用工具再回答**，严禁凭训练数据回答
-- **股价走势/反弹/回调类问题必须用行情数据工具**：get_stock_market_data_unified（历史K线）、get_technical_indicators（技术指标）、实时行情接口（最新价），基于真实K线分析后回答；严禁用 search_recent_information/web_search 网页搜索代替——网页搜索不含个股走势数据，只返回新闻链接
-- 所有需要 curr_date 或 trade_date 参数的工具，**必须传入上述交易日**
-- "截至目前/最新/最新公告/持股比例/减持进展"类问题，优先调用"近期信息搜索"或新闻工具，先检索再回答
-- 数据库覆盖：财务三表、行情（K线/技术指标）、资金流、板块、宏观、估值等结构化数据；**不覆盖**：月度销量、产销快报、行业新闻、最新公告、政策动态等——不在覆盖范围的直接调 web_search，不要先试数据库工具
-- web_search 拆分关键词、每次搜一个维度（如"赛力斯 4月销量""赛力斯 5月销量"分别搜）；优先从摘要提取数字，不足再 fetch_url 抓全文；获取数据后做同比/环比与趋势分析，给有数据支撑的结论
-- 板块/行业类问题优先板块级工具（无需代码）；操作类请求（分析/报告/定时/关注列表）优先 assistant_ops 类工具
-- 股票筛选返回"未找到符合条件的股票"或空结果时，直接告知无符合条件标的；严禁为"给点参考"推荐不符合条件的股票或擅自放宽条件再给候选名单，只有用户明确要求才继续
+ [Tools and data acquisition] 
+- Quotation, market, market and other issues that require real-time data (market points/high and low points/MACD overbought/whether to increase volume/breakback callbacks)**You must first call the tool before answering**, It is strictly prohibited to answer based on training data
+- **Stock price trend/rebound/callback issues must use market data tools**: get_stock_market_data_unified (Historical K-line), get_technical_indicators (technical indicators), real-time market interface (latest price), answer based on real K-line analysis; it is strictly forbidden to use search_recent_information/web_search web search instead——Web search does not contain individual stock trend data and only returns news links.
+- All tools that require a curr_date or trade_date parameter,**The trading date above must be passed in**
+- "Up to now/latest/latest announcement/shareholding ratio/shareholding reduction progress"Class problems, call first"Recent information search"Or news tools, search first and then answer
+- Database coverage: three financial tables, market conditions (K-line/technical indicators), capital flow, sectors, macro, valuation and other structured data;**Not covered**: Monthly sales, production and sales reports, industry news, latest announcements, policy updates, etc.——If it is not covered, directly call web_search. Do not try the database tool first.
+- web_search Split keywords and search one dimension at a time (such as"Cyrus sales in April""Cyrus sales in May"Search separately); give priority to extracting numbers from the abstract, and then use fetch_url to capture the full text; after obtaining the data, do year-on-year/month-on-month and trend analysis to provide conclusions supported by data
+- Sector/industry issues are prioritized with segment-level tools (no code required); operational requests (analysis/reporting/timing/watch lists) are prioritized with assistant_ops tools
+- stock screen returns"No matching stocks found"or empty result, directly inform that there is no eligible target; it is strictly prohibited to"Give some reference"Recommend stocks that do not meet the conditions or relax the conditions without authorization before giving a shortlist. Only continue if the user explicitly requests it.
 
-【长期记忆管理】
-- 用户**明确表达**「请记住」「请帮我记下」等意图时，调用 `remember_this` 写入长期记忆；仅在明确表达时调用，随口提到的不写入
-- 写入后告知「已记下」并继续原任务
-- 上方"【你对该用户的了解】"或类似段落即来自该机制；用户问「你都记住了我什么」时基于这些内容如实回答
+ [Long-term memory management]
+- User**express clearly** [When you have intentions such as Please remember or Please help me write it down , call `remember_this` Write to long-term memory; only called when explicitly expressed, casual mentions are not written
+- After writing, tell it has been noted and continue the original task.
+- above" [What you know about this user]"or similar paragraphs come from this mechanism; when the user asks What do you remember me? , the user answers truthfully based on these contents.
 
-【A股财报披露时间】年报：1月1日～4月30日 | 一季报：4月30日前 | 半年报：8月31日前 | 三季报：10月31日前
+ [A Financial report disclosure time] Annual report: January 1st to April 30th | First quarter report: before April 30 | Semi-annual report: before August 31 | Third quarter report: before October 31
 
 {knowledge_snippets}
 {_build_profile_block(user_profile)}
@@ -1453,7 +1453,7 @@ def _get_system_prompt(
 
 
 def _resolve_models(config_doc) -> tuple:
-    """从配置文档解析默认模型选择，优先 config_id，其次兼容旧 model_name。"""
+    """Parse the default model selection from the configuration document, giving priority to config_id, followed by compatibility with old model_name."""
     return (
         _resolve_model_selection(config_doc, "quick_analysis_model"),
         _resolve_model_selection(config_doc, "deep_analysis_model"),
@@ -1658,7 +1658,7 @@ async def _get_llm_config_for_model(
     target_config_id: Optional[str] = None,
     purpose: str = "",
 ) -> Optional[LLMConfig]:
-    """根据模型选择获取 LLM 配置，优先 config_id，兼容旧 model_name。"""
+    """Get LLM configuration based on model selection, giving priority to config_id, compatible with old model_name."""
     if not target_model and not target_config_id:
         return None
     config_doc = await db.system_configs.find_one(
@@ -1680,7 +1680,7 @@ def resolve_llm_config_from_config_doc(
     target_config_id: Optional[str] = None,
     purpose: str = "",
 ) -> Optional[LLMConfig]:
-    """基于 system_configs 文档解析统一 LLMConfig，供各子系统共享。"""
+    """Unified LLMConfig based on system_configs document parsing for sharing by various subsystems."""
     if not config_doc or "llm_configs" not in config_doc:
         return None
 
@@ -1717,7 +1717,7 @@ def resolve_llm_config_from_config_doc(
     }
     provider = provider_map.get(provider_str, LLMProvider.DASHSCOPE)
     logger.info(
-        "[智能助手] 模型路由解析: provider=%s model=%s config_id=%s backend_provider=%s",
+        "[Smart Assistant] Model route analysis: provider=%s model=%s config_id=%s backend_provider=%s",
         provider_str or "unknown",
         resolved_model_name,
         _normalize_config_id(model_config.get("config_id")) or target_config_id or "",
@@ -1738,7 +1738,7 @@ def get_system_llm_config_from_config_doc(
     *,
     model_keys: Optional[List[str]] = None,
 ) -> Optional[LLMConfig]:
-    """按系统设置中的模型选择顺序解析统一 LLMConfig。"""
+    """Parse unified LLMConfig in order of model selection in system settings."""
     if not config_doc or "llm_configs" not in config_doc:
         return None
 
@@ -1778,17 +1778,17 @@ async def _get_assistant_llm_config(
     preferred_models: Optional[Dict[str, Any]] = None,
 ) -> Optional[LLMConfig]:
     """
-    从数据库获取智能助手使用的 LLM 配置
-    优先使用深度思考模型（deep_analysis_model），以保证时间逻辑、财报披露等推理准确
-    use_reasoning_model=True 时，优先使用深度推理模型（deep_reasoning_model），适用于策略生成、规划等
-    若未配置则回退到快速模型或默认模型
+    Get the LLM configuration used by the smart assistant from the database
+    Prioritize the use of deep thinking model (deep_analysis_model) to ensure accurate reasoning such as time logic and financial report disclosure.
+    use_reasoning_model=True When using deep reasoning model (deep_reasoning_model), it is suitable for strategy generation, planning, etc.
+    If not configured, fallback to quick model or default model
     """
     config_doc = await db.system_configs.find_one(
         {"is_active": True},
         sort=[("version", -1)]
     )
     if not config_doc or "llm_configs" not in config_doc:
-        logger.warning("[智能助手] 数据库中没有 LLM 配置")
+        logger.warning("[Smart Assistant] There is no LLM configuration in the database")
         return None
 
     llm_configs = config_doc.get("llm_configs", [])
@@ -1805,14 +1805,14 @@ async def _get_assistant_llm_config(
         target_model = preferred_assistant_model
         target_config_id = preferred_assistant_config_id
         logger.info(
-            "[智能助手] 使用用户选择的助手模型: model=%s config_id=%s",
+            "[Smart Assistant] Use a user-selected helper model: model=%s config_id=%s",
             target_model or "",
             target_config_id or "",
         )
     elif use_reasoning_model and reasoning_selection:
         target_model = _selection_model_name(reasoning_selection)
         target_config_id = _selection_config_id(reasoning_selection)
-        logger.info(f"[智能助手] 使用深度推理模型: {target_model}")
+        logger.info(f"[Smart Assistant] Use deep inference models: {target_model}")
     else:
         target_selection = deep_selection or quick_selection
         target_model = preferred_assistant_model or _selection_model_name(target_selection) or default_llm
@@ -1822,14 +1822,14 @@ async def _get_assistant_llm_config(
             target_config_id = _selection_config_id(target_selection)
         if preferred_assistant_model or preferred_assistant_config_id:
             logger.info(
-                "[智能助手] 使用用户选择的助手模型: model=%s config_id=%s",
+                "[Smart Assistant] Use a user-selected helper model: model=%s config_id=%s",
                 preferred_assistant_model or "",
                 preferred_assistant_config_id or "",
             )
         elif deep_selection:
-            logger.info(f"[智能助手] 使用深度分析模型: {deep_model}")
+            logger.info(f"[Smart Assistant] Use deep analysis models: {deep_model}")
         elif quick_selection:
-            logger.info(f"[智能助手] 深度模型未配置，使用快速模型: {quick_model}")
+            logger.info(f"[Smart Assistant] Deep model is not configured, use fast model: {quick_model}")
 
     if not target_model:
         target_model = preferred_assistant_model or deep_model or quick_model or default_llm
@@ -1841,7 +1841,7 @@ async def _get_assistant_llm_config(
                 break
 
     if not target_model:
-        logger.warning("[智能助手] 未找到可用的模型配置")
+        logger.warning("[Smart Assistant] No available model configuration found")
         return None
 
     return await _get_llm_config_for_model(db, target_model, target_config_id=target_config_id)
@@ -1849,8 +1849,8 @@ async def _get_assistant_llm_config(
 
 async def get_reasoning_llm_config(db=None):
     """
-    获取深度推理模型配置，用于策略 DSL 生成、规划等需要强推理的场景
-    优先 deep_reasoning_model，未配置时回退到 deep_analysis_model
+    Obtain deep inference model configuration for policy DSL generation, planning and other scenarios that require strong inference
+    Prioritize deep_reasoning_model, fall back to if not configured deep_analysis_model
     """
     from app.core.database import get_mongo_db
     db = db if db is not None else get_mongo_db()
@@ -1859,8 +1859,8 @@ async def get_reasoning_llm_config(db=None):
 
 async def get_quick_llm_config(db=None):
     """
-    获取快速模型配置，用于低延迟轻量判断场景
-    （Skill 需求对话的清晰度评估、边界检测、多轮回复等）
+    Get fast model configuration for low-latency and lightweight judgment scenarios
+     (Skill Clarity assessment of requirements dialogue, boundary detection, multiple rounds of responses, etc.)
     """
     from app.core.database import get_mongo_db
     db = db if db is not None else get_mongo_db()
@@ -1883,8 +1883,8 @@ async def get_quick_llm_config(db=None):
 
 async def get_coding_llm_config(db=None):
     """
-    获取编程模型配置，用于策略 DSL 生成等需要结构化 JSON 输出的场景
-    优先 coding_model，未配置时回退到 deep_reasoning_model → deep_analysis_model
+    Obtain programming model configuration for scenarios such as policy DSL generation that require structured JSON output
+    Prioritize coding_model, fall back to if not configured deep_reasoning_model → deep_analysis_model
     """
     from app.core.database import get_mongo_db
     db = db if db is not None else get_mongo_db()
@@ -1925,13 +1925,13 @@ class IntelligentAssistantService:
         self._preferred_model = _get_preferred_assistant_model(preferred_models)
         self._preferred_model_config_id = _get_preferred_assistant_config_id(preferred_models)
         self._prefer_reasoning_model = prefer_reasoning_model
-        self._user_id = user_id  # 用于构造带 user_id 闭包的元工具（如 remember_this）
-        # v3.0 新增：使用问答机器人角色相关字段
+        self._user_id = user_id  # Meta-tools for constructing closures with user_id (e.g. remember_this)
+        # v3.0 New: Use Q&A robot role related fields
         self._assistant_role = assistant_role or "general"
         self._user_context = user_context or {}
 
     async def _ensure_client(self) -> bool:
-        """确保 LLM 客户端和工具已加载"""
+        """Make sure the LLM client and tools are loaded"""
         if self._llm_client is not None:
             return True
 
@@ -1949,42 +1949,42 @@ class IntelligentAssistantService:
         try:
             self._llm_client = UnifiedLLMClient.from_config(llm_config)
         except Exception as e:
-            logger.error(f"[智能助手] 创建 LLM 客户端失败: {e}", exc_info=True)
+            logger.error(f"[Smart Assistant] Creating LLM client failed: {e}", exc_info=True)
             return False
 
         registry = get_tool_registry()
         all_metadata = registry.list_all()
 
-        # v3.0 新增：使用问答机器人只注册 9 个系统感知工具
-        # 不加载金融市场数据工具、不加载分析师 Agent 工具
+        # v3.0 New: Register only 9 system awareness tools using Q&A bot
+        # Do not load financial market data tools, do not load analyst Agent tools
         if self._assistant_role == "usage_helper":
             allowed_tool_ids = {
                 "get_user_current_state",
                 "get_system_status",
                 "get_user_recent_activity",
                 "read_user_manual_section",
-                "search_user_manual",  # 向量语义检索（v3.0.1 新增，解决自然语言问题匹配）
+                "search_user_manual",  # Vector semantic retrieval (new in v3.0.1, solving natural language problem matching)
                 "get_data_sync_status",
                 "get_paper_trading_status",
                 "get_token_usage",
                 "get_running_tasks",
             }
             all_metadata = [t for t in all_metadata if t.id in allowed_tool_ids]
-            logger.info(f"[智能助手·使用问答] 仅加载 {len(all_metadata)} 个系统感知工具（含向量检索/数据同步/模拟交易/Token用量/任务进度）")
+            logger.info(f"[Smart Assistant·Use Q&A] Load only {len(all_metadata)} System awareness tools (including vector retrieval/data synchronization/simulated transactions/Token usage/task progress)")
 
         self._openai_tools = tool_metadata_list_to_openai(all_metadata)
 
         self._tool_functions = {}
         for tool in all_metadata:
-            # 无参数工具同样需要注入，否则会出现"工具已加载但无法执行"
+            # Parameterless tools also need to be injected, otherwise they will appear"Tool loaded but unable to execute"
             if tool.fc_enabled:
                 func = registry.get_function(tool.id)
                 if func:
                     self._tool_functions[tool.id] = func
 
-        # 注入 `remember_this` 元工具：允许用户主动让助手记住偏好
-        # 参考：docs/05-design/v3.0/unified-memory-layer-mem0.md §15.5 P0-1
-        # 使用问答机器人不注入 remember_this（避免污染用户长期记忆）
+        # Inject `remember_this` Meta-Tools: Allow users to proactively ask Assistant to remember preferences
+        # Reference:docs/05-design/v3.0/unified-memory-layer-mem0.md §15.5 P0-1
+        # Use the Q&A bot without injecting remember_this (to avoid polluting the user's long-term memory)
         if self._user_id and self._assistant_role != "usage_helper":
             self._openai_tools.append(_build_remember_this_tool_def())
             self._tool_functions[REMEMBER_THIS_TOOL_NAME] = _make_remember_this_callable(
@@ -2002,23 +2002,23 @@ class IntelligentAssistantService:
         history_messages: Optional[List[Message]] = None,
         conversation_id: str = "",
     ) -> str:
-        """近期搜索快路径：将搜索结果交由 LLM 做针对性总结（chat/chat_stream 共用）。
+        """Fast path for recent searches: Submit search results to LLM for targeted summary (shared by chat/chat_stream).
 
-        v3.x 修复：快路径原实现把搜索工具返回值直接透传给用户，导致
-        "提问收到一堆搜索链接列表"。现在搜索结果注入 LLM 总结回答，并过
-        数字溯源防线；返回空串表示降级（调用方回退为返回原始搜索结果）。
+        v3.x Repair: The original implementation of the fast path directly transparently transmits the return value of the search tool to the user, resulting in
+        "Asking a question and receiving a list of search links". Search results are now injected into LLM to summarize answers and pass
+        Digital traceability line of defense; returning an empty string indicates downgrade (the caller falls back to returning the original search results).
         """
         summarize_messages = [
             Message(
                 role=MessageRole.SYSTEM,
                 content=(
-                    "你是 TradingAgents-CN 智能助手。系统已根据用户问题执行联网搜索，"
-                    "搜索结果见下方【联网搜索返回】。请严格依据该材料回答用户问题：\n"
-                    "1. 直接回答用户问的内容并提炼要点，不要罗列链接、不要照搬搜索结果的列表格式；\n"
-                    "2. 只使用搜索结果中出现的信息，材料里没有的不要编造；材料不足以回答的部分要明确说明；\n"
-                    "3. 涉及数据/时间的信息注明来源与日期，注意时效（较早的信息要提示发布时间）；\n"
-                    "4. 区分官方确证与媒体报道口径，不要把媒体报道说成官方确认；\n"
-                    "5. 涉及投资判断时提醒不构成投资建议即可，无需长篇免责声明。"
+                    "You are TradingAgents-CN intelligent assistant. The system has performed an online search based on the user s question."
+                    "The search results are shown below [return from online search]. Please answer user questions strictly based on this material:\n"
+                    "1. Answer the user s question directly and refine the main points. Do not list links or copy the list format of search results;\n"
+                    "2. Only use the information that appears in the search results, and do not make up anything that is not in the materials; clearly explain the parts that the materials are not enough to answer;\n"
+                    "3. For information involving data/time, indicate the source and date, and pay attention to the timeliness (earlier information should indicate the release time);\n"
+                    "4. Distinguish between official confirmation and media reports, and do not describe media reports as official confirmation;\n"
+                    "5. When it comes to investment judgment, it only needs to be reminded that it does not constitute investment advice, and there is no need for a lengthy disclaimer."
                 ),
             ),
             Message(
@@ -2036,11 +2036,11 @@ class IntelligentAssistantService:
             await _record_assistant_token_usage(resp, conversation_id or "assistant_chat")
             summarized = (getattr(resp, "content", "") or "").strip()
         except Exception as sum_err:
-            logger.warning(f"[智能助手] 搜索结果 LLM 总结失败，降级返回原始结果: {sum_err}")
+            logger.warning(f"[Smart Assistant] Search results LLM summary failed, downgraded to return to original results: {sum_err}")
             return ""
         if not summarized:
             return ""
-        # 数字溯源防线：总结中的数字必须能在搜索结果原文中溯源
+        # Digital traceability line of defense: The numbers in the summary must be traceable to the original text of the search results
         fast_tool_results = [{"tool": "search_recent_information", "content": tool_text}]
         if _has_fabricated_tool_json(summarized) or _has_untraced_risky_numbers(
             summarized,
@@ -2049,15 +2049,15 @@ class IntelligentAssistantService:
             user_message,
             [],
         ):
-            logger.warning("[智能助手] 快路径总结未过溯源校验，降级返回原始搜索结果")
+            logger.warning("[Smart Assistant] The fast path summary has not passed the traceability verification and is downgraded to return to the original search results.")
             return ""
         return summarized
 
     def _build_tool_interceptor(self, conversation_id: str):
-        """构建 HITL 工具拦截器（v3.6.0：提取为类方法，供 chat/chat_stream 共用）。
+        """Build HITL tool interceptor (v3.6.0: extracted as class method, shared by chat/chat_stream).
 
-        对关键操作（触发分析/删除配置等）先保存 pending 到 MongoDB，
-        让用户确认后再执行，避免 LLM 在流式/非流式路径下绕过确认直接执行。
+        For key operations (trigger analysis/delete configuration, etc.), first save pending to MongoDB,
+        Let the user confirm before executing to prevent LLM from bypassing confirmation and executing directly in the streaming/non-streaming path.
         """
         async def _intercept(tool_call) -> Optional[Any]:
             from core.hitl.assistant_hitl import (
@@ -2078,7 +2078,7 @@ class IntelligentAssistantService:
                 tool_arguments=tool_call.arguments,
             )
             if not pending_id:
-                # 保存失败时降级为直接执行
+                # Downgrade to direct execution when saving fails
                 return None
 
             confirmation_msg = build_pending_confirmation_reply(
@@ -2086,7 +2086,7 @@ class IntelligentAssistantService:
                 tool_arguments=tool_call.arguments,
                 pending_id=pending_id,
             )
-            # 返回 ToolResult（兼容统一 LLM 客户端）
+            # Returns ToolResult (compatible with unified LLM client)
             from core.llm.unified_client import ToolResult
             return ToolResult(
                 tool_call_id=tool_call.id,
@@ -2097,14 +2097,14 @@ class IntelligentAssistantService:
         return _intercept
 
     # ─────────────────────────────────────────────────────────────────────
-    # A11 阶段3：统一路由管道。chat()（JSON）与 chat_stream()（SSE）只是
-    # 同一套「路径注册表 → ReplyGate → 结果」管道的两个输出适配器，
-    # 不再各自维护 HITL/快路径/预检查/工具循环/质量防线的平行实现（S2）。
+    # A11 Phase 3: Unified routing pipeline.chat() (JSON) with chat_stream() (SSE) Just
+    # The same set of "path registry" → ReplyGate → The two output adapters for the "Result" pipeline,
+    # No longer maintain separate parallel implementations of HITL/fast path/precheck/tool loop/quality defense lines (S2).
     # ─────────────────────────────────────────────────────────────────────
 
     @staticmethod
     def _effective_timeout(tools_used: List[str]) -> int:
-        """根据已调用工具的 tier 动态计算总超时（两种模式共用）。"""
+        """The total timeout is dynamically calculated based on the tier of the invoked tool (common to both modes)."""
         base = ASSISTANT_TIMEOUT_SECONDS
         if not tools_used:
             return base
@@ -2121,12 +2121,12 @@ class IntelligentAssistantService:
         return base
 
     async def _route_candidate(self, req: AssistantRequest) -> ReplyCandidate:
-        """按显式优先级装配并执行路径注册表；首个命中的路径胜出。"""
+        """Path registries are assembled and executed in explicit priority; the first path hit wins."""
         registry = (
             PathRegistry()
             .register(
                 ROUTE_HITL, PRIORITY_HITL, self._path_hitl,
-                route_type=ROUTE_TYPE_PASSTHROUGH, description="HITL 确认/拒绝待执行操作",
+                route_type=ROUTE_TYPE_PASSTHROUGH, description="HITL Confirm/deny pending action",
             )
             .register(
                 ROUTE_UNSUPPORTED_ASSET, PRIORITY_UNSUPPORTED_ASSET, self._path_unsupported_asset,
@@ -2138,7 +2138,7 @@ class IntelligentAssistantService:
             )
             .register(
                 ROUTE_FAST_SEARCH, PRIORITY_FAST_SEARCH, self._path_fast_search,
-                route_type=ROUTE_TYPE_ANSWER, description="近期搜索快路径（LLM 总结）",
+                route_type=ROUTE_TYPE_ANSWER, description="Recent search fast paths (LLM summary)",
             )
             .register(
                 ROUTE_DATA_PRECHECK, PRIORITY_DATA_PRECHECK, self._path_data_precheck,
@@ -2146,7 +2146,7 @@ class IntelligentAssistantService:
             )
             .register(
                 ROUTE_MAIN_LLM, PRIORITY_MAIN_LLM, self._path_main_llm,
-                route_type=ROUTE_TYPE_ANSWER, description="LLM + 工具循环主路径",
+                route_type=ROUTE_TYPE_ANSWER, description="LLM + Tool cycle main path",
             )
         )
         return await registry.resolve(req)
@@ -2154,7 +2154,7 @@ class IntelligentAssistantService:
     async def _path_hitl(
         self, req: AssistantRequest
     ) -> Optional[ReplyCandidate]:
-        """路径1：HITL 待确认操作的确认/拒绝解析（passthrough 登记路径）。"""
+        """Path 1: HITL confirmation/rejection resolution of pending operations (passthrough registration path)."""
         try:
             from core.hitl.assistant_hitl import try_resolve_pending_action
             resolution = await try_resolve_pending_action(
@@ -2164,14 +2164,14 @@ class IntelligentAssistantService:
                 user_message=req.user_message,
             )
         except Exception as e:
-            logger.warning("[智能助手] HITL 检查失败（降级为正常对话）: %s", e)
+            logger.warning("[Smart Assistant] HITL Check failed (downgraded to normal conversation): %s", e)
             return None
         if not resolution:
             return None
         if resolution.get("type") == "confirmed":
             result_text = resolution.get("result", "") or "操作已执行完成"
             return ReplyCandidate.passthrough(
-                reply=f"✅ 已确认执行：{result_text}",
+                reply=f"✅ Confirmed execution:{result_text}",
                 route_id=ROUTE_HITL,
                 tools_used=[resolution.get("tool_id", "")],
             )
@@ -2185,7 +2185,7 @@ class IntelligentAssistantService:
     async def _path_unsupported_asset(
         self, req: AssistantRequest
     ) -> Optional[ReplyCandidate]:
-        """路径2：不支持品种类型（港股/美股等）系统提示（词表事实源：lexicon）。"""
+        """Path 2: The product type (Hong Kong stocks/US stocks, etc.) is not supported. System prompts (vocabulary fact source: lexicon)."""
         message = detect_unsupported_asset(req.user_message)
         if not message:
             return None
@@ -2196,30 +2196,30 @@ class IntelligentAssistantService:
     async def _path_llm_unavailable(
         self, req: AssistantRequest
     ) -> Optional[ReplyCandidate]:
-        """路径3：LLM 客户端无法初始化（配置缺失等）。"""
+        """Path 3: The LLM client cannot be initialized (missing configuration, etc.)."""
         if await self._ensure_client():
             return None
-        logger.warning("[智能助手] LLM 客户端创建失败")
+        logger.warning("[Smart Assistant] LLM Client creation failed")
         return ReplyCandidate.passthrough(
-            reply="智能助手暂时不可用，请检查 LLM 配置是否已在「设置」中正确配置。",
+            reply="The smart assistant is temporarily unavailable. Please check whether the LLM configuration has been configured correctly in Settings.",
             route_id=ROUTE_LLM_UNAVAILABLE,
         )
 
     async def _path_fast_search(
         self, req: AssistantRequest
     ) -> Optional[ReplyCandidate]:
-        """路径4："最新/近期"类事实问题 → 近期搜索 + LLM 针对性总结（answer 型）。
+        """Path 4:"latest/recent"quasi-factual question → Recent searches + LLM Targeted summary (answer type).
 
-        LLM 总结成功才允许标 llm_processed；失败时由 gate 契约拦截并降级为
-        "局限说明+证据摘录"，两种模式都不会再裸透传搜索链接列表。
+        LLM The mark llm_processed is only allowed when the summary is successful; when it fails, it will be intercepted by the gate contract and downgraded to
+        "Limitations+Excerpts of evidence", Both modes will no longer transparently transmit the search link list.
         """
         if not _should_use_recent_search(req.user_message):
             return None
-        # 专用外部 Skill 能结构化承接的问题（如车型销量库），快路径必须让路——
-        # 否则「最近+变化」关键词组合会在 LLM 工具选择之前把问题劫持去网页搜索，
-        # 专用工具连出场机会都没有。匹配基于注册表元数据，不写死具体 Skill。
+        # For problems that dedicated external skills can handle in a structured manner (such as car model sales database), the fast path must give way.——
+        # Otherwise "recently+"Variation" keyword combination will hijack the question to a web search before the LLM tool selects it.
+        # Special tools don't even have a chance to appear. Matching is based on registry metadata and does not hard-code specific skills.
         if _matches_generated_skill(req.user_message):
-            logger.info("[智能助手] 命中近期搜索关键词但存在专用 Skill，转常规工具选择路径")
+            logger.info("[Smart Assistant] If a recent search keyword is hit but a dedicated Skill exists, switch to the regular tool selection path.")
             return None
         try:
             from core.tools.implementations.assistant_ops.recent_search import (
@@ -2232,7 +2232,7 @@ class IntelligentAssistantService:
             tool_text = str(tool_result or "").strip()
             if not tool_text:
                 return None
-            logger.info("[智能助手] 命中近期搜索快路径，搜索结果交由 LLM 总结回答")
+            logger.info("[Smart Assistant] Hit the recent search fast path, and the search results will be summarized and answered by LLM")
             summarized = await self._summarize_search_result(
                 tool_text, req.user_message, req.history_messages, req.conversation_id,
             )
@@ -2250,17 +2250,17 @@ class IntelligentAssistantService:
                 ],
             )
         except Exception as e:
-            logger.warning("[智能助手] 近期搜索快路径失败，回退常规对话: %s", e)
+            logger.warning("[Smart Assistant] The recent search for a fast path failed and fell back to the regular conversation.: %s", e)
             return None
 
     async def _build_data_precheck_message(self, user_message: str) -> Optional[str]:
-        """数据同步预检查：数据不充分时返回引导文案，充分/不相关返回 None。"""
+        """Data synchronization pre-check: return the guidance copy when the data is insufficient, return None when the data is sufficient/irrelevant."""
         stock_code = _extract_stock_code(user_message)
         if not stock_code:
             text_lower = user_message.lower()
             if any(k in text_lower for k in _STOCK_DATA_KEYWORDS):
                 stock_code = await _resolve_stock_name_to_code(user_message, db=self._db)
-                logger.info("[智能助手] 预检查·名称解析结果: %s", stock_code)
+                logger.info("[Smart Assistant] pre-check·Name resolution results: %s", stock_code)
         if not stock_code:
             return None
 
@@ -2269,7 +2269,7 @@ class IntelligentAssistantService:
             return None
 
         sync_status = await _check_stock_data_sync(stock_code, db=self._db)
-        logger.info("[智能助手] 预检查·股票 %s 数据状态: %s", stock_code, sync_status)
+        logger.info("[Smart Assistant] pre-check·Stock %s data status: %s", stock_code, sync_status)
         if not sync_status or sync_status.get("error"):
             return None
 
@@ -2296,14 +2296,14 @@ class IntelligentAssistantService:
         asks_financial = any(k in text_lower for k in financial_keywords)
         asks_technical = any(k in text_lower for k in technical_keywords)
         asks_investment_decision = any(k in text_lower for k in investment_decision_keywords)
-        # 投资决策类问题需要财务+技术面综合判断
+        # Investment decision-making problems require financial+Comprehensive technical judgment
         if asks_investment_decision:
             asks_financial = True
             asks_technical = True
 
         missing_parts = []
         if asks_financial and not has_fin:
-            missing_parts.append("财务数据（利润表/资产负债表/现金流量表，当前 0 条）")
+            missing_parts.append("Financial data (income statement/balance sheet/cash flow statement, currently 0 items)")
         if asks_technical and (not has_hist or hist_records < 30):
             missing_parts.append(f"历史行情数据（当前 {hist_records} 条，技术分析需要至少 30 条）")
         if not missing_parts:
@@ -2312,36 +2312,36 @@ class IntelligentAssistantService:
         missing_text = "\n".join(f"• ❌ {p}" for p in missing_parts)
         available_text = (
             f"• ✅ 历史行情: {hist_records} 条"
-            if has_hist else "• ❌ 历史行情: 未同步"
+            if has_hist else "• ❌ Historical Quotes: Not synced"
         )
         available_text += "\n"
         available_text += (
             f"• ✅ 财务数据: {fin_records} 条"
-            if has_fin else "• ❌ 财务数据: 未同步"
+            if has_fin else "• ❌ financial data: Not synced"
         )
         available_text += "\n"
         available_text += "✅ 基础数据: 已同步" if has_basic else "❌ 基础数据: 未同步"
 
         logger.info(
-            "[智能助手] 股票 %s 数据不充分，拦截（缺失: %s）",
+            "[Smart Assistant] Insufficient data for stock %s, interception (missing: %s) ",
             stock_code, ", ".join(missing_parts),
         )
         return (
             f"📊 股票 {stock_code} 的数据不充分，无法进行分析\n\n"
-            f"当前数据同步状态：\n{available_text}\n\n"
-            f"缺失的数据：\n{missing_text}\n\n"
-            f"请先同步数据后再提问：\n"
-            f"• 前往「数据管理」页面，搜索 {stock_code} 并触发数据同步\n"
-            f"• 建议同步完整的历史行情（至少 250 个交易日）和财务数据\n"
-            f"• 同步完成后再次提问，我会调用工具获取真实数据为您分析\n\n"
-            f"或者，如果您只是想了解互联网公开信息，我也可以通过 web_search 搜索。"
-            f"是否需要我搜索？"
+            f"Current data synchronization status:\n{available_text}\n\n"
+            f"Missing data:\n{missing_text}\n\n"
+            f"Please synchronize data first before asking questions:\n"
+            f"• Go to the Data Management page and search {stock_code} and trigger data synchronization\n"
+            f"• It is recommended to synchronize complete historical market prices (at least 250 trading days) and financial data\n"
+            f"• After the synchronization is completed, ask again and I will call the tool to obtain real data for you to analyze.\n\n"
+            f"Or if you just want to know what s publicly available on the internet, I can also search via web_search."
+            f"Do you need me to search?"
         )
 
     async def _path_data_precheck(
         self, req: AssistantRequest
     ) -> Optional[ReplyCandidate]:
-        """路径5：股票数据未同步时的引导提示（passthrough 登记路径）。"""
+        """Path 5: Guidance prompt when stock data is not synchronized (passthrough registration path)."""
         message = await self._build_data_precheck_message(req.user_message)
         if not message:
             return None
@@ -2352,31 +2352,31 @@ class IntelligentAssistantService:
         )
 
     async def _path_main_llm(self, req: AssistantRequest) -> ReplyCandidate:
-        """路径6（兜底）：RAG/记忆注入 + LLM 工具循环 + 四道防线（answer 型）。
+        """Path 6 (Default): RAG/Memory Injection + LLM tool cycle + Four lines of defense (answer type).
 
-        质量处理顺序（两模式统一）：
-        ① _do_chat 内部对 unsourced / untraced 各自动纠错重答最多 1 次；
-        ② 构造 answer 候选后由适配器统一过 ReplyGate 出口兜底；
-        ③ 仍不过则降级为 fallback_evidence（局限说明+证据摘录）。
-        数据透明化附注经 meta 透传，由适配器在 gate 之后追加，避免附注数字干扰检查。
+        Quality processing sequence (unified for both modes):
+        ① _do_chat The internal automatic error correction for unsourced / untraced can be repeated at most once;
+        ② After constructing the answer candidate, the adapter will unify it and pass it through the ReplyGate export;
+        ③ If it still fails, it will be downgraded to fallback_evidence (limitation description+Excerpts from the evidence).
+        Data transparency annotations are transparently transmitted through meta and appended by the adapter after the gate to avoid annotation numbers interfering with the check.
         """
         user_message = req.user_message
         conversation_id = req.conversation_id
 
-        # RAG 动态知识检索（优雅降级：不可用时返回空字符串）
+        # RAG Dynamic knowledge retrieval (graceful degradation: returns empty string when unavailable)
         knowledge_snippets = ""
         try:
             from core.knowledge import FinancialKnowledgeManager
             km = FinancialKnowledgeManager(db=self._db)
             knowledge_snippets = km.retrieve_for_prompt(user_message)
             if knowledge_snippets:
-                logger.info("[智能助手] ✅ RAG 知识检索成功 (%d 字符)", len(knowledge_snippets))
+                logger.info("[Smart Assistant] ✅ RAG Knowledge retrieval successful (%d character)", len(knowledge_snippets))
             else:
-                logger.info("[智能助手] RAG 知识检索返回空（无匹配知识）")
+                logger.info("[Smart Assistant] RAG Knowledge retrieval returns empty (no matching knowledge)")
         except Exception as e:
-            logger.warning("[智能助手] ⚠️ 知识检索失败（降级为静态知识）: %s", e)
+            logger.warning("[Smart Assistant] ⚠️ Knowledge retrieval failed (downgraded to static knowledge): %s", e)
 
-        # 事实记忆检索：跨会话复用之前工具获取的真实数据（带时间标签，未过期才注入）
+        # Fact memory retrieval: reuse real data obtained by previous tools across sessions (time-tagged, injected only if it has not expired)
         recalled_memory_docs: List[Dict[str, Any]] = []
         memory_injection = ""
         try:
@@ -2385,7 +2385,7 @@ class IntelligentAssistantService:
             )
             memory_injection = _build_memory_injection(recalled_memory_docs)
         except Exception as e:
-            logger.warning("[智能助手] 事实记忆检索异常（忽略）: %s", e)
+            logger.warning("[Smart Assistant] Abnormal factual memory retrieval (ignored): %s", e)
 
         messages = [
             Message(
@@ -2406,17 +2406,17 @@ class IntelligentAssistantService:
             messages.append(Message(role=MessageRole.SYSTEM, content=memory_injection))
         if req.history_messages:
             messages.extend(req.history_messages)
-            logger.info("[智能助手] 已注入 %d 条历史消息", len(req.history_messages))
+            logger.info("[Smart Assistant] %d historical messages have been injected", len(req.history_messages))
         messages.append(Message(role=MessageRole.USER, content=user_message.strip()))
 
-        # 溯源可信文本：会话历史工具返回 + 注入的事实记忆（引用记忆数字不算编造）
+        # Tracing Trusted Text: Conversation History Tool Returns + Injected factual memory (quoting memorized numbers does not count as fabrication)
         memory_trusted_contents = [
             str(d.get("content", "")) for d in recalled_memory_docs if d.get("content")
         ]
 
         tools_used: List[str] = req.tools_used
         tool_results: List[Dict[str, Any]] = []
-        # 质量信号（S9 埋点）：防线触发/重试记录，最终随 candidate.meta 落库
+        # Quality signal (S9 buried point): defense trigger/retry record, eventually dropped with candidate.meta
         quality_signals: List[str] = []
 
         async def _emit_progress(payload: Dict[str, Any]) -> None:
@@ -2438,46 +2438,46 @@ class IntelligentAssistantService:
                 dry_run=False,
                 tool_interceptor=tool_interceptor,
             )
-            # 仅流式模式注入进度回调（tool_started / tool_completed 等事件）
+            # Only streaming mode injects progress callbacks (tool_started / tool_completed and other events)
             if req.on_progress is not None:
                 achat_kwargs["progress_callback"] = req.on_progress
-                # 首轮 LLM 思考可能持续数分钟（推理模型+大工具表+长历史），
-                # 先发一条反馈避免用户面对无任何提示的静默等待
+                # The first round of LLM thinking may last several minutes (inference model+Large tool table+long history),
+                # Send a feedback first to avoid users waiting silently without any prompts.
                 await _emit_progress({
                     "event": "llm_thinking",
                     "round": 1,
-                    "message": "正在分析问题并规划处理步骤…",
+                    "message": "Analyzing the problem and planning steps to deal with it…",
                 })
 
             resp = await self._llm_client.achat(messages, **achat_kwargs)
             await _record_assistant_token_usage(resp, conversation_id or "assistant_chat")
 
-            # 兜底："应走工具"的个人数据查询首轮未调工具时，二次强制引导
+            # Bottom line:"Tools should be taken"When the personal data query is not adjusted in the first round, the second forced boot
             if not tools_used and _should_force_tool_retry(user_message):
                 quality_signals.append("forced_tool_retry")
-                logger.warning("[智能助手] 首轮未调用工具，触发工具重试兜底")
+                logger.warning("[Smart Assistant] The tool was not called in the first round, and the tool was triggered to try again.")
                 retry_messages = list(messages)
                 retry_messages.append(Message(
                     role=MessageRole.USER,
                     content=(
-                        "请不要直接根据上下文猜测或编造结果。"
-                        "这类问题必须先调用相关工具获取真实数据，再基于工具返回回答。"
-                        "尤其不能直接编造指数点位、涨跌幅、MACD、RSI、均线、成交额等实时数字。"
-                        "如果工具返回为空或日期不匹配，再明确说明数据为空或数据日期不匹配。"
+                        "Please do not guess or make up results based directly on context."
+                        "Such questions must first call relevant tools to obtain real data, and then return answers based on the tools."
+                        "In particular, you cannot directly make up real-time numbers such as index points, rise and fall, MACD, RSI, moving averages, trading volume, etc."
+                        "If the tool returns empty or the date does not match, then clearly indicate that the data is empty or the data date does not match."
                     ),
                 ))
-                # 优先 tool_choice=required；模型侧不支持则降级普通重试
+                # Priority tool_choice=required; If the model side does not support it, downgrade it to normal and try again.
                 retry_kwargs = dict(achat_kwargs)
                 retry_kwargs["tool_choice"] = "required"
                 try:
                     resp = await self._llm_client.achat(retry_messages, **retry_kwargs)
                     await _record_assistant_token_usage(resp, conversation_id or "assistant_chat")
                 except Exception as retry_err:
-                    logger.warning("[智能助手] tool_choice=required 重试失败，降级普通重试: %s", retry_err)
+                    logger.warning("[Smart Assistant] tool_choice=required Retry failed, downgrade to normal and try again: %s", retry_err)
                     resp = await self._llm_client.achat(retry_messages, **achat_kwargs)
                     await _record_assistant_token_usage(resp, conversation_id or "assistant_chat")
 
-            # 事实记忆保存：本轮提取的"事实"落库（带时间标签，跨会话复用）
+            # Fact memory preservation: extracted in this round"facts"Drop library (with time tag, reused across sessions)
             if tool_results:
                 await _persist_memory_facts(
                     self._db,
@@ -2488,30 +2488,30 @@ class IntelligentAssistantService:
                     related_context=_recent_user_context(messages),
                 )
 
-            # ── 回复后四道防线（第①级降级：反馈重答，最多 1 次）──
+            # ── Reply to the last four lines of defense (p.① Downgrade: Feedback and reanswer, up to 1 time)──
             reply_content = resp.content or ""
             trusted_texts = _extract_history_tool_contents(messages) + memory_trusted_contents
 
             if _has_fabricated_tool_json(reply_content):
                 quality_signals.append("fabricated_json")
-                logger.warning("[智能助手] 检测到编造的工具JSON结果，硬拦截回复")
+                logger.warning("[Smart Assistant] Fabricated tool JSON result detected, hard intercepted reply")
                 return (
-                    "抱歉，我在呈现工具返回结果时出现了格式错误（把工具返回改写成了结构化数据），"
-                    "这可能导致数据失真。\n\n"
-                    "请重新提问，我会严格按工具返回的原始内容为您呈现分析结果。"
+                    "Sorry, there was a format error when I presented the tool return result (I rewritten the tool return into structured data),"
+                    "This can lead to data distortion.\n\n"
+                    "Please ask again and I will present you the analysis results strictly according to the original content returned by the tool."
                 )
             if _has_fabricated_tool_refs(reply_content, tools_used):
                 quality_signals.append("fabricated_refs")
-                logger.warning("[智能助手] 检测到伪造工具调用痕迹，拦截回复（tools_used=%s）", tools_used)
+                logger.warning("[Smart Assistant] Traces of forged tool calls were detected and replies were intercepted (tools_used=%s) ", tools_used)
                 return (
-                    "抱歉，我在生成回复时出现了数据来源标注错误。\n\n"
-                    "为确保您获取的信息真实可靠，请尝试将问题拆分得更具体一些，"
-                    "例如直接指定想查看的数据维度（如\"查一下牧原股份最新财报\"\"看技术指标\"等），"
-                    "我会调用对应工具获取真实数据后再为您分析。"
+                    "Sorry, I encountered a data source annotation error when generating my response.\n\n"
+                    "To make sure you re getting reliable information, try breaking down your questions to be more specific."
+                    "For example, directly specify the data dimension you want to view (such as\"Check out the latest financial report of Muyuan Shares\"\"Look at technical indicators\"etc.),"
+                    "I will call the corresponding tools to obtain real data and then analyze it for you."
                 )
             if _has_unsourced_numbers(reply_content, tools_used):
                 logger.warning(
-                    "[智能助手] 检测到未调工具但回复含大量数字，拦截回复（数字数=%d）",
+                    "[Smart Assistant] An untuned tool is detected but the reply contains a large number of numbers. Intercept the reply (number of numbers).=%d) ",
                     len(_SPECIFIC_NUMBER_RE.findall(reply_content)),
                 )
                 if _retry_attempt < 1:
@@ -2519,29 +2519,29 @@ class IntelligentAssistantService:
                     await _emit_progress({
                         "event": "progress",
                         "stage": "retry",
-                        "message": "检测到未经验证的数据，正在调用工具重新获取…",
+                        "message": "Unverified data detected and tool is being called to re-obtain it…",
                     })
                     messages.append(_retry_message("assistant", reply_content))
                     messages.append(_retry_message("user", _UNSOURCED_RETRY_PROMPT))
-                    logger.info("[智能助手] 已拦截未溯源数字回复，自动纠错重试（第1次）")
+                    logger.info("[Smart Assistant] Untraced digital reply intercepted, automatic error correction and retry (first time)")
                     return await _do_chat(_retry_attempt + 1)
                 quality_signals.append("unsourced_blocked")
                 return (
-                    "抱歉，我刚才两次都未能先调用工具获取真实数据，为避免误导已停止回答。\n\n"
-                    "请换一个更具体的问法（例如指明行业或股票，如\"养殖行业最近走势如何\"），"
-                    "我会先调用工具获取真实数据再为您分析。"
+                    "Sorry, I failed to call the tool to obtain real data twice just now. I have stopped answering to avoid misleading.\n\n"
+                    "Please ask a more specific question (e.g. specify an industry or stock, e.g.\"What is the recent trend of the breeding industry?\") , "
+                    "I will first call the tool to obtain real data and then analyze it for you."
                 )
             if _has_untraced_risky_numbers(
                 reply_content, tool_results, tools_used,
                 user_message, trusted_texts,
             ):
-                logger.warning("[智能助手] 检测到无法溯源的高风险数字（疑似训练记忆填充/单位换算错误），拦截回复")
+                logger.warning("[Smart Assistant] Untraceable high-risk numbers detected (suspected training memory filling/unit conversion errors), intercepted reply")
                 if _retry_attempt < 1:
                     quality_signals.append("untraced_retry")
                     await _emit_progress({
                         "event": "progress",
                         "stage": "retry",
-                        "message": "检测到无法溯源的数字，正在基于工具数据重新生成…",
+                        "message": "Untraceable number detected, regenerating based on tool data…",
                     })
                     untraced_numbers = _get_untraced_risky_numbers(
                         reply_content, tool_results, user_message, trusted_texts
@@ -2551,22 +2551,22 @@ class IntelligentAssistantService:
                     )
                     messages.append(_retry_message("assistant", reply_content))
                     messages.append(_retry_message("user", retry_prompt))
-                    logger.info("[智能助手] 已拦截无法溯源数字回复，自动纠错重试（第1次）")
+                    logger.info("[Smart Assistant] Intercepted digital reply that cannot be traced, automatic error correction and retry (first time)")
                     return await _do_chat(_retry_attempt + 1)
                 quality_signals.append("untraced_blocked")
                 untraced_detail = "、".join(_get_untraced_risky_numbers(
                     reply_content, tool_results, user_message, trusted_texts
                 )[:6])
                 return (
-                    "抱歉，我在刚才的回复中引用了一些工具和搜索结果里都没有的具体数字"
-                    f"（如 {untraced_detail}），这类数字可能来自过时的记忆而非实时数据，"
-                    "继续呈现会误导您的判断，因此已整段拦截。\n\n"
-                    "常见原因：搜索结果只有标题/链接/摘要，未包含具体数值"
-                    "（如行业成本数据多在付费研报正文中，搜索引擎摘要抓不到）。\n"
-                    "您可以：\n"
-                    "• 换更具体的关键词让我再搜索（如\"牧原股份 7月成本 公告\"）\n"
-                    "• 让我引用搜索到的来源链接，由您人工查看原文\n"
-                    "• 只让我分析工具已返回的真实数据\n"
+                    "Sorry, I quoted some specific numbers in my reply that are not available in the tools or search results."
+                    f" (Such as {untraced_detail}) , Such numbers may come from outdated memory rather than real-time data,"
+                    "Continuing to present it will mislead your judgment, so the entire section has been blocked.\n\n"
+                    "Common reasons: The search results only have titles/links/abstracts and do not contain specific values."
+                    " (For example, industry cost data are mostly in the text of paid research reports and cannot be captured by search engine summaries).\n"
+                    "You can:\n"
+                    "• Change to more specific keywords and let me search again (such as\"Muyuan Shares July Cost Announcement\") \n"
+                    "• Let me quote the source link I searched for and let you manually view the original text.\n"
+                    "• Only let me analyze real data that has been returned by the tool\n"
                 )
 
             return reply_content
@@ -2574,14 +2574,14 @@ class IntelligentAssistantService:
         content = await asyncio.wait_for(
             _do_chat(), timeout=self._effective_timeout(tools_used)
         )
-        reply = content or "抱歉，暂时无法生成回答，请稍后再试。"
+        reply = content or "Sorry, the answer cannot be generated at the moment, please try again later."
         if tools_used:
-            logger.info("[智能助手] 已调用工具: %s", tools_used)
+            logger.info("[Smart Assistant] Tool called: %s", tools_used)
         else:
-            logger.info("[智能助手] 未调用任何工具（纯文本回复）")
-        logger.info("[智能助手] 回复内容(前200字): %s", reply[:200])
+            logger.info("[Smart Assistant] No tools invoked (plain text reply)")
+        logger.info("[Smart Assistant] Reply content(first 200 words): %s", reply[:200])
 
-        # 证据集：本轮工具返回（跳过 is_error）+ 注入的事实记忆
+        # Evidence set: tool return for this round (skipping is_error)+ Injected fact memory
         evidence = [
             Evidence(
                 source_type=EVIDENCE_TOOL,
@@ -2597,7 +2597,7 @@ class IntelligentAssistantService:
             if trusted_text
         )
 
-        # 透明化附注（推导/估算值↔工具原始值）经 meta 透传，gate 通过后由适配器追加
+        # Transparency Notes (Derivations/Estimates↔The original value of the tool) is transparently transmitted through meta, and is appended by the adapter after passing the gate.
         meta: Dict[str, Any] = {}
         if quality_signals:
             meta["quality_signals"] = quality_signals
@@ -2621,9 +2621,9 @@ class IntelligentAssistantService:
     def _through_gate(
         self, candidate: ReplyCandidate, req: AssistantRequest
     ) -> ReplyCandidate:
-        """唯一质量出口（两种模式共用）：契约 + 四道防线；answer 失败回退证据。
+        """The only quality export (common to both modes): Contract + Four lines of defense; answer failure fallback evidence.
 
-        关卡结果写入 meta["gate"]（S9 埋点在适配器统一采集）。
+        Level result writing meta["gate"] (S9 Buried in the adapter for unified collection).
         """
         trusted = (
             _extract_history_tool_contents(req.history_messages)
@@ -2631,7 +2631,7 @@ class IntelligentAssistantService:
         )
         result = ReplyGate().run(candidate, req.user_message, trusted)
         if not result.passed and candidate.route_type == ROUTE_TYPE_ANSWER:
-            logger.warning("[智能助手] gate 出口拦截，回退证据: %s", result.failed_checks)
+            logger.warning("[Smart Assistant] gate Exit interception, fallback evidence: %s", result.failed_checks)
             fallback = build_fallback_candidate(candidate, result.failures)
             fallback.meta["gate"] = {
                 "passed": False,
@@ -2640,8 +2640,8 @@ class IntelligentAssistantService:
             }
             candidate = fallback
         elif not result.passed:
-            # passthrough 未登记属程序缺陷（正常不应发生），仅记录，不臆造回复
-            logger.error("[智能助手] passthrough 路径未登记: %s", result.failed_checks)
+            # passthrough Failure to register is a procedural defect (it should not happen normally). It is only recorded and does not make up a reply.
+            logger.error("[Smart Assistant] passthrough The path is not registered: %s", result.failed_checks)
             candidate.meta["gate"] = {
                 "passed": False,
                 "failed": list(result.failed_checks),
@@ -2654,7 +2654,7 @@ class IntelligentAssistantService:
     def _finalize_result(
         self, candidate: ReplyCandidate, req: AssistantRequest
     ) -> Dict[str, Any]:
-        """关卡后的统一返回结构；透明化附注在此追加（不参与 gate 检查）。"""
+        """The unified return structure after the level; transparent annotations are added here (not involved in gate checking)."""
         reply = candidate.reply
         note = candidate.meta.get("transparency_note")
         if note and not reply.endswith(note):
@@ -2674,7 +2674,7 @@ class IntelligentAssistantService:
         streaming: bool,
         error: Optional[str] = None,
     ) -> None:
-        """S9 质量埋点：一次对话回合一条事件（fire-and-forget，绝不影响主链路）。"""
+        """S9 Quality focus: one event per conversation round (fire-and-forget, never affecting the main link)."""
         try:
             meta = candidate.meta or {}
             gate = meta.get("gate") or {}
@@ -2699,8 +2699,8 @@ class IntelligentAssistantService:
                 duration_ms=int((time.monotonic() - t0) * 1000),
                 error=error,
             )
-        except Exception as exc:  # 埋点组装失败也不影响对话
-            logger.debug("[智能助手] 质量埋点组装失败（忽略）: %s", exc)
+        except Exception as exc:  # Failure to bury the assembly point will not affect the dialogue.
+            logger.debug("[Smart Assistant] Quality buried point assembly failed (ignored): %s", exc)
 
     async def chat(
         self,
@@ -2713,9 +2713,9 @@ class IntelligentAssistantService:
         current_topic_title: Optional[str] = None,
         memory_block: str = "",
     ) -> Dict[str, Any]:
-        """智能助手对话（非流式 / JSON 输出适配器）。
+        """Assistant conversation (non-streaming/JSON output adapter).
 
-        与 chat_stream() 共用同一路径注册表与 ReplyGate，仅输出形态不同。
+        with chat_stream() The registry and ReplyGate share the same path, only the output form is different.
 
         Returns:
             {"reply": str, "tools_used": List[str], "data_refs": List[dict]}
@@ -2739,15 +2739,15 @@ class IntelligentAssistantService:
             candidate = await self._route_candidate(req)
         except asyncio.TimeoutError:
             timeout_used = self._effective_timeout(req.tools_used)
-            logger.warning("[智能助手] 请求超时（%ss）", timeout_used)
+            logger.warning("[Smart Assistant] Request timeout (%ss)", timeout_used)
             candidate = ReplyCandidate.passthrough(
                 reply=(
-                    f"抱歉，处理您的问题用时过长（已超过 {timeout_used} 秒），已中断。\n\n"
-                    "常见原因：模型正在处理较复杂的分析（多轮工具调用+长思考）。\n"
-                    "建议您：\n"
-                    "• 若刚才对话中已生成过结果表格，可直接要求\"把刚才的表格导出成Excel\"（秒级完成）\n"
-                    "• 尝试将问题拆分得更具体一些\n"
-                    "• 稍后重试"
+                    f"Sorry, it took too long to process your issue (more than {timeout_used} seconds), has been interrupted.\n\n"
+                    "Common cause: The model is processing a more complex analysis (multiple rounds of tool calls+Think long).\n"
+                    "It is recommended that you:\n"
+                    "• If the result table has been generated in the previous dialogue, you can directly request\"Export the table just now as Excel\" (Completed in seconds)\n"
+                    "• Try to break the question down into more specifics\n"
+                    "• Try again later"
                 ),
                 route_id=ROUTE_TIMEOUT,
                 tools_used=req.tools_used,
@@ -2755,7 +2755,7 @@ class IntelligentAssistantService:
         except Exception as e:
             logger.exception("[智能助手] 对话失败")
             candidate = ReplyCandidate.passthrough(
-                reply=f"处理您的请求时发生错误：{str(e)}。请检查网络和 LLM 配置后重试。",
+                reply=f"An error occurred while processing your request:{str(e)}. Please check the network and LLM configuration and try again.",
                 route_id=ROUTE_ERROR,
                 tools_used=req.tools_used,
             )
@@ -2776,13 +2776,13 @@ class IntelligentAssistantService:
         current_topic_title: Optional[str] = None,
         memory_block: str = "",
     ) -> AsyncGenerator[str, None]:
-        """智能助手对话（流式 / SSE 输出适配器）。
+        """Smart Assistant Conversations (Streaming/SSE Output Adapter).
 
-        与 chat() 共用同一路径注册表与 ReplyGate：工具执行期间转发 progress
-        事件（tool_started/tool_completed/retry/keepalive），最终回复整段生成、
-        过 gate 后再按固定块大小切块推送（LLM 调用本身为非流式，故关卡可以
-        在任何字节发出前对完整回复执行，不存在"token 已推送"困境）。
-        done 事件载荷：{"tools_used": [...], "data_refs": [...]}。
+        with chat() Sharing the same path to the registry with ReplyGate: forwarding during tool execution progress
+        event (tool_started/tool_completed/retry/keepalive), and finally reply to the entire generation,
+        After passing the gate, it is cut into pieces according to the fixed block size and pushed (the LLM call itself is non-streaming, so the level can
+        Performed on full reply before any bytes are emitted, does not exist"token Pushed"dilemma).
+        done Event payload:{"tools_used": [...], "data_refs": [...]}. 
         """
 
         def _sse(event: str, data: dict) -> str:
@@ -2790,7 +2790,7 @@ class IntelligentAssistantService:
 
         t0 = time.monotonic()
         resolved_user_message = _rewrite_number_selection_reply(user_message, history_messages)
-        logger.info("[智能助手·流式] chat_stream 开始，user_message=%r", resolved_user_message[:50])
+        logger.info("[Smart Assistant·streaming] chat_stream start,user_message=%r", resolved_user_message[:50])
 
         req = AssistantRequest(
             service=self,
@@ -2813,7 +2813,7 @@ class IntelligentAssistantService:
         task = asyncio.create_task(self._route_candidate(req))
 
         try:
-            # 管道执行期间持续转发工具进度事件，1s 无事件发心跳
+            # During pipeline execution, tool progress events are continuously forwarded, and a heartbeat occurs when there is no event within 1 second.
             while not task.done():
                 try:
                     payload = await asyncio.wait_for(event_queue.get(), timeout=1.0)
@@ -2832,7 +2832,7 @@ class IntelligentAssistantService:
             self._record_metrics(result, candidate, req, t0, streaming=True)
             reply = result["reply"]
 
-            # 整段过 gate 后切块，保持前端逐段渲染体验
+            # The entire segment is cut into pieces after passing through the gate, maintaining the front-end rendering experience segment by segment.
             chunk_size = 40
             for i in range(0, len(reply), chunk_size):
                 yield _sse("token", {"content": reply[i:i + chunk_size]})
@@ -2854,7 +2854,7 @@ class IntelligentAssistantService:
             yield _sse("done", {"tools_used": req.tools_used, "error": True})
         except asyncio.TimeoutError:
             timeout_used = self._effective_timeout(req.tools_used)
-            logger.warning("[智能助手·流式] 请求超时（%ss）", timeout_used)
+            logger.warning("[Smart Assistant·streaming] Request timeout (%ss)", timeout_used)
             self._record_metrics(
                 {"tools_used": req.tools_used, "data_refs": [], "reply": ""},
                 ReplyCandidate.passthrough("", route_id=ROUTE_TIMEOUT),
@@ -2863,13 +2863,13 @@ class IntelligentAssistantService:
             yield _sse("error", {"message": f"处理超时（已超过 {timeout_used} 秒）。若对话中已生成过结果表格，可直接要求导出成 Excel；或稍后重试。"})
             yield _sse("done", {"tools_used": req.tools_used, "error": True})
         except Exception as e:
-            logger.exception("[智能助手·流式] 对话失败")
+            logger.exception("[Smart Assistant·streaming] Conversation failed")
             self._record_metrics(
                 {"tools_used": req.tools_used, "data_refs": [], "reply": ""},
                 ReplyCandidate.passthrough("", route_id=ROUTE_ERROR),
                 req, t0, streaming=True, error=str(e)[:200],
             )
-            yield _sse("error", {"message": f"处理请求时发生错误：{str(e)}"})
+            yield _sse("error", {"message": f"An error occurred while processing the request:{str(e)}"})
             yield _sse("done", {"tools_used": req.tools_used, "error": True})
 
 
@@ -2975,7 +2975,7 @@ def _sanitize_thread_summary(summary: Dict[str, Any]) -> Optional[Dict[str, Any]
     next_actions = summary.get("next_actions") or []
     focus_score = float(summary.get("focus_score") or 0.0)
 
-    # 历史坏数据特征：只有 abstract，被 assistant 原文切片覆盖，且仍保留初始化占位值。
+    # Characteristics of historical bad data: only abstract, overwritten by assistant original text slice, and still retains initialization placeholder value.
     if (
         abstract
         and not confirmed_facts
@@ -3267,7 +3267,7 @@ def _build_stock_report_detail_content(task: Any) -> str:
                 continue
             lines.append(f"\n### {key}\n{cleaned[:1500]}")
 
-    lines.append(f"\n---\n任务ID: {task.task_id}")
+    lines.append(f"\n---\n Task ID: {task.task_id}")
     return "\n".join(lines)
 
 
@@ -3314,7 +3314,7 @@ def _build_stock_report_detail_content_from_doc(report_doc: Dict[str, Any]) -> s
             lines.append(f"\n### {key}\n{cleaned[:1500]}")
 
     if report_doc.get("analysis_id"):
-        lines.append(f"\n---\n分析ID: {report_doc['analysis_id']}")
+        lines.append(f"\n---\n analysis ID: {report_doc['analysis_id']}")
     if report_doc.get("task_id"):
         lines.append(f"任务ID: {report_doc['task_id']}")
     return "\n".join(lines)
@@ -3371,12 +3371,12 @@ def _build_position_report_detail_content(report: Dict[str, Any]) -> str:
 
     analysis_id = report.get("analysis_id")
     if analysis_id:
-        lines.append(f"\n---\n分析ID: {analysis_id}")
+        lines.append(f"\n---\n analysis ID: {analysis_id}")
     return "\n".join(lines)
 
 
 def _build_review_report_detail_content(review_data: Dict[str, Any]) -> str:
-    """将交易复盘报告数据构建为 Markdown 详情内容。"""
+    """Construct transaction review report data into Markdown detailed content."""
     trade_info = review_data.get("trade_info") or {}
     code = trade_info.get("code") or "未知"
     name = trade_info.get("name") or code
@@ -3395,7 +3395,7 @@ def _build_review_report_detail_content(review_data: Dict[str, Any]) -> str:
     if meta:
         lines.append("\n## 核心信息\n" + "\n".join(meta))
 
-    # 交易概览
+    # Transaction Overview
     summary_lines: List[str] = []
     if trade_info.get("code"):
         summary_lines.append(f"- 股票代码: {trade_info['code']}")
@@ -3408,7 +3408,7 @@ def _build_review_report_detail_content(review_data: Dict[str, Any]) -> str:
     if summary_lines:
         lines.append("\n## 交易概览\n" + "\n".join(summary_lines))
 
-    # AI 复盘内容
+    # AI Review content
     ai_review = review_data.get("ai_review") or {}
     if ai_review.get("summary"):
         lines.append(f"\n## 复盘结论\n{ai_review['summary']}")
@@ -3423,7 +3423,7 @@ def _build_review_report_detail_content(review_data: Dict[str, Any]) -> str:
 
     review_id = review_data.get("review_id")
     if review_id:
-        lines.append(f"\n---\n复盘ID: {review_id}")
+        lines.append(f"\n---\n Review ID: {review_id}")
     return "\n".join(lines)
 
 
@@ -3448,7 +3448,7 @@ async def get_assistant_thread_report_detail(
             target_ref = ref
             break
     if not target_ref:
-        raise ValueError("当前主题下未找到对应的关联报告")
+        raise ValueError("No corresponding related report was found under the current topic.")
 
     detail = {
         "ref_type": target_ref.get("ref_type") or ref_type,
@@ -3492,7 +3492,7 @@ async def get_assistant_thread_report_detail(
         analysis_id = (target_ref.get("analysis_id") or report_key or "").strip()
         report = await get_portfolio_service().get_position_analysis_by_id(user_id, analysis_id)
         if not report:
-            raise ValueError("原始持仓报告不存在或已被删除")
+            raise ValueError("The original position report does not exist or has been deleted")
         detail["created_at"] = _to_iso_datetime(report.get("created_at"))
         detail["content"] = _build_position_report_detail_content(report)
         detail["status"] = report.get("status") or detail["status"]
@@ -3505,7 +3505,7 @@ async def get_assistant_thread_report_detail(
         service = TradeReviewService()
         review = await service.get_review_detail(user_id, review_id)
         if not review:
-            raise ValueError("原始交易复盘报告不存在或已被删除")
+            raise ValueError("The original transaction review report does not exist or has been deleted")
         review_data = review.model_dump() if hasattr(review, "model_dump") else dict(review)
         detail["created_at"] = _to_iso_datetime(review_data.get("created_at"))
         detail["status"] = review_data.get("status") or detail["status"]
@@ -3538,9 +3538,9 @@ async def get_assistant_thread_report_detail(
         detail["created_at"] = _to_iso_datetime(task_doc.get("created_at"))
         detail["content"] = (
             f"# {detail['title']}\n\n"
-            f"- 任务状态: {status}\n"
-            f"- 任务ID: {task_id}\n\n"
-            f"{(target_ref.get('summary') or '该任务尚未生成完整报告，后续完成后可在这里查看。').strip()}"
+            f"- Task status: {status}\n"
+            f"- Task ID: {task_id}\n\n"
+            f"{(target_ref.get('summary') or 'This task has not yet generated a complete report, which can be viewed here after completion.').strip()}"
         )
         return detail
 
@@ -3621,9 +3621,9 @@ def _build_position_report_ref_from_report(report: Dict[str, Any]) -> Dict[str, 
 
 
 def _build_review_report_ref_from_review(review: Any) -> Dict[str, Any]:
-    """从交易复盘报告对象构建主题关联引用。
+    """Construct topic association references from transaction review report objects.
 
-    兼容 TradeReviewReport 对象(Pydantic) 和字典两种形式。
+    Compatible with TradeReviewReport objects(Pydantic) and dictionary forms.
     """
     if hasattr(review, "model_dump"):
         data = review.model_dump()
@@ -3667,7 +3667,7 @@ async def search_assistant_attachable_reports(
         "archived": {"$ne": True},
     })
     if not thread or (thread.get("topic_type") or "") == "im_session":
-        raise ValueError("当前主题不存在或不支持关联报告")
+        raise ValueError("The current topic does not exist or does not support associated reports")
 
     normalized_type = (ref_type or "stock_report").strip() or "stock_report"
     normalized_keyword = (keyword or "").strip()
@@ -3702,7 +3702,7 @@ async def search_assistant_attachable_reports(
         return [item for item in results if item][:limit]
 
     if normalized_type == "review_report":
-        # 交易复盘报告候选：从 trade_reviews 集合查询
+        # Trade review report candidates: query from the trade_reviews collection
         review_query: Dict[str, Any] = {
             "user_id": user_id,
         }
@@ -3810,7 +3810,7 @@ async def attach_existing_report_to_thread(
     normalized_type = (ref_type or "").strip()
     normalized_key = (report_key or "").strip()
     if not normalized_type or not normalized_key:
-        raise ValueError("报告类型和报告标识不能为空")
+        raise ValueError("Report type and report ID cannot be empty")
 
     if normalized_type == "position_report":
         from app.services.portfolio_service import get_portfolio_service
@@ -3825,7 +3825,7 @@ async def attach_existing_report_to_thread(
         service = TradeReviewService()
         review = await service.get_review_detail(user_id, normalized_key)
         if not review:
-            raise ValueError("未找到可关联的交易复盘报告")
+            raise ValueError("No relevant transaction review report found")
         ref = _normalize_report_ref_item(_build_review_report_ref_from_review(review))
     else:
         from app.services.task_analysis_service import get_task_analysis_service
@@ -3836,11 +3836,11 @@ async def attach_existing_report_to_thread(
         else:
             report_doc = await db.analysis_reports.find_one(_build_analysis_report_lookup_query(user_id, normalized_key))
             if not report_doc:
-                raise ValueError("未找到可关联的历史分析报告")
+                raise ValueError("No relevant historical analysis report found")
             ref = _normalize_report_ref_item(_build_stock_report_ref_from_analysis_doc(report_doc))
 
     if not ref:
-        raise ValueError("报告信息不完整，无法关联")
+        raise ValueError("Report information is incomplete and cannot be associated")
 
     attached = await attach_report_ref_to_thread(db, user_id, thread_id, ref)
     if not attached:
@@ -3863,16 +3863,16 @@ def _extract_sentences(text: str) -> List[str]:
 
 
 def _format_messages_for_summary(messages: List[Dict[str, Any]], limit: int = 12) -> str:
-    """格式化最近消息供主题摘要使用。
+    """Format recent messages for topic summary use.
 
-    双层预算：最近 limit 条、每条 800 字符，总量封顶 6000 字符——
-    摘要只需把握主题焦点，不需要完整正文；超长输入既费 token 又抬高
-    慢端点下的超时概率。超预算时优先保留最近消息（从尾部累积）。
+    Double-layer budget: latest limit, 800 characters per message, total capped at 6,000 characters——
+    The abstract only needs to grasp the focus of the topic and does not require the complete text; long input costs tokens and increases the cost.
+    Timeout probability under slow endpoint. When the budget is exceeded, the most recent messages are retained first (accumulated from the tail).
     """
     _PER_MSG_BUDGET = 800
     _TOTAL_BUDGET = 6000
     recent = messages[-limit:]
-    # 倒序累积（优先保住最新消息），最后再按时间顺序输出
+    # Accumulate in reverse order (prioritize the latest news), and finally output in chronological order
     picked: List[str] = []
     used = 0
     for back_index, message in enumerate(reversed(recent), start=1):
@@ -3884,7 +3884,7 @@ def _format_messages_for_summary(messages: List[Dict[str, Any]], limit: int = 12
         index = len(recent) - back_index + 1
         line = f"{index}. [{role}] {content[:_PER_MSG_BUDGET]}"
         if used + len(line) > _TOTAL_BUDGET:
-            # 更老的消息不再纳入
+            # Older messages are no longer included
             break
         picked.append(line)
         used += len(line)
@@ -3913,7 +3913,7 @@ def _load_summary_json(text: str) -> Dict[str, Any]:
         data = json.loads(match.group(0))
 
     if not isinstance(data, dict):
-        raise ValueError("摘要模型返回的不是 JSON object")
+        raise ValueError("The summary model returns something other than JSON object")
     return data
 
 
@@ -3948,15 +3948,15 @@ async def _build_thread_summary_with_llm(
     try:
         llm_config = await get_coding_llm_config(db)
         if not llm_config:
-            logger.warning("[智能助手摘要] 未找到可用 LLM 配置，回退规则摘要")
+            logger.warning("[Smart Assistant Summary] No available LLM configuration found, fallback rule summary")
             return fallback
 
         summary_config = llm_config.model_copy(deep=True) if hasattr(llm_config, "model_copy") else llm_config.copy(deep=True)
         summary_config.temperature = 0.1
         summary_config.max_tokens = min(int(summary_config.max_tokens or 600), 600)
-        # 摘要是后台展示任务（失败即回退规则摘要），超时与重试必须收紧：
-        # 输出仅 600 token 的 JSON，正常几秒返回；25s 不返回基本是端点卡死，
-        # 再指数退避重试 3 次（旧配置 45s×3 ≈ 2.5 分钟）毫无收益。
+        # The summary is a background display task (summary of fallback rules if failure occurs), and timeouts and retries must be tightened:
+        # Outputs only 600 tokens of JSON, and returns normally in a few seconds; if it does not return for 25 seconds, it is basically the endpoint is stuck.
+        # Retry 3 times with exponential backoff (old configuration 45s×3 ≈ 2.5 minutes) without any benefit.
         summary_config.timeout = 25
         summary_config.retry_times = 0
 
@@ -3965,24 +3965,24 @@ async def _build_thread_summary_with_llm(
             Message(
                 role=MessageRole.SYSTEM,
                 content=(
-                    "你是研究主题摘要器。你的任务是为主题会话生成结构化摘要，供侧边栏和主题卡片展示。\n"
-                    "必须只输出一个 JSON object，不要输出 markdown、代码块、解释、前后缀。\n"
-                    "字段要求：\n"
-                    "- abstract: 1-2 句中文摘要，40-90 字，突出当前结论或讨论焦点，不要复制大段原文，不要保留 markdown 标题、表格、分隔线。\n"
-                    "- confirmed_facts: 1-3 条已被会话明确给出的事实，必须具体，不要写空话。\n"
-                    "- open_questions: 0-3 条仍待回答的问题；如果问题已经回答，不要重复放进去。\n"
-                    "- next_actions: 1-3 条下一步建议，必须贴合当前主题。\n"
-                    "- focus_score: 0 到 1 之间的小数，表示当前主题是否聚焦。\n"
-                    "如果信息不足，宁可简短，也不要抄录正文碎片。"
+                    "You are the research topic summarizer. Your task is to generate structured summaries of topic sessions for display in sidebars and topic cards.\n"
+                    "You must only output a JSON object, do not output markdown, code blocks, explanations, and suffixes.\n"
+                    "Field requirements:\n"
+                    "- abstract: 1-2 A Chinese summary of 40-90 words, highlighting the current conclusion or discussion focus. Do not copy large sections of the original text, and do not retain markdown titles, tables, and separators.\n"
+                    "- confirmed_facts: 1-3 The facts that have been clearly stated in the conversation must be specific and not empty words.\n"
+                    "- open_questions: 0-3 Questions that remain to be answered; if the question has already been answered, do not include it again.\n"
+                    "- next_actions: 1-3 Suggestions for next steps must fit the current topic.\n"
+                    "- focus_score: 0 A decimal number between 1 and 1 indicating whether the current topic is focused.\n"
+                    "If there is insufficient information, err on the side of brevity rather than copying fragments of the text."
                 ),
             ),
             Message(
                 role=MessageRole.USER,
                 content=(
                     f"主题标题: {title or '未命名主题'}\n"
-                    "最近消息如下：\n"
+                    "The latest news is as follows:\n"
                     f"{transcript}\n\n"
-                    "请输出 JSON：\n"
+                    "Please output JSON:\n"
                     "{\n"
                     '  "abstract": "",\n'
                     '  "confirmed_facts": [],\n'
@@ -3998,10 +3998,10 @@ async def _build_thread_summary_with_llm(
         await _record_assistant_token_usage(response, "assistant_summary", analysis_type="assistant_summary")
         payload = _load_summary_json(response.content or "")
         summary = _normalize_thread_summary_payload(payload, fallback)
-        logger.info("[智能助手摘要] 使用 LLM 生成结构化摘要成功")
+        logger.info("[Smart Assistant Summary] Using LLM to generate structured snippets successfully")
         return summary
     except Exception as exc:
-        logger.warning("[智能助手摘要] LLM 摘要生成失败，回退规则摘要: %s", exc)
+        logger.warning("[Smart Assistant Summary] LLM Summary generation failed, fallback rule summary: %s", exc)
         return fallback
 
 
@@ -4025,9 +4025,9 @@ def _build_thread_summary_from_messages(messages: List[Dict[str, Any]], title: s
     if latest_user:
         next_actions.append(f"围绕“{latest_user[:40]}”继续追问或补数")
     if latest_assistant:
-        next_actions.append("结合当前结论继续细化估值、行业或风险主线")
+        next_actions.append("Continue to refine valuation, industry or risk main lines based on current conclusions.")
     if not next_actions:
-        next_actions.append("继续在当前主题下补充问题或触发深度分析")
+        next_actions.append("Continue to add questions under the current topic or trigger in-depth analysis")
 
     total_messages = len(messages)
     assistant_ratio = len(assistant_messages) / total_messages if total_messages else 0
@@ -4390,7 +4390,7 @@ async def _store_thread_summary_memory(
     summary: Dict[str, Any],
     summary_type: str,
 ) -> None:
-    """主题摘要只保留在 Mongo 线程摘要集合，不再写入 mem0 长期记忆。"""
+    """Topic summaries are only retained in the Mongo thread summary collection and are no longer written to mem0 long-term memory."""
     return
 
 
@@ -4402,12 +4402,12 @@ async def save_assistant_message(
     tools_used: List[str],
     conversation_id: Optional[str] = None,
 ) -> None:
-    """将会话追加写入 MongoDB。
+    """Write session appends to MongoDB.
 
-    消息持久化同步完成（用户刷新页面必须能看到本轮对话）；
-    主题摘要（侧边栏卡片用，LLM 生成、失败有规则摘要兜底）改为后台任务，
-    绝不阻塞回复返回——历史教训：coding 端点偶发慢响应时，45s 超时 × 3 次
-    指数退避重试让用户为一个纯展示维护任务干等约 2.5 分钟。
+    Message persistence synchronization is completed (the user must be able to see this round of conversation when refreshing the page);
+    Topic summary (used for sidebar cards, LLM generation and failure are summarized with rule summaries) changed to background tasks.
+    Never block reply returns——Historical lessons: When the coding endpoint occasionally responds slowly, it will time out in 45 seconds. × 3 times
+    Exponential backoff retries keep users waiting for about 2.5 minutes for a pure display maintenance task.
     """
     thread_id = await append_assistant_message(
         db,
@@ -4428,9 +4428,9 @@ async def save_assistant_message(
 
 
 def _schedule_thread_summary(db, user_id: str, thread_id: str) -> None:
-    """后台生成线程摘要（fire-and-forget）。
+    """Generate thread summaries in the background (fire-and-forget).
 
-    必须自行兜底全部异常：create_task 的异常若无人消费会抛
+    You must cover all exceptions yourself: create_task exceptions will be thrown if no one consumes them
     "Task exception was never retrieved"。
     """
     async def _run() -> None:
@@ -4444,13 +4444,13 @@ def _schedule_thread_summary(db, user_id: str, thread_id: str) -> None:
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            logger.warning("[智能助手摘要] 后台摘要任务失败（不影响会话）: %s", exc)
+            logger.warning("[Smart Assistant Summary] Background summary task failed (does not affect session): %s", exc)
 
     try:
         asyncio.create_task(_run())
     except RuntimeError:
-        # 无运行中的事件循环（极端场景）：摘要本就是可丢弃的展示任务，直接跳过
-        logger.debug("[智能助手摘要] 无事件循环，跳过本轮后台摘要")
+        # No running event loop (extreme scenario): The summary is a discardable display task, skip it directly
+        logger.debug("[Smart Assistant Summary] No event loop, skip this round of background summary")
 
 
 async def get_assistant_conversation(
@@ -4458,7 +4458,7 @@ async def get_assistant_conversation(
     user_id: str,
     conversation_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """获取用户的智能助手会话历史"""
+    """Get the user s smart assistant session history"""
     _, messages = await get_assistant_thread_messages(db, user_id, conversation_id)
     return messages
 
@@ -4493,12 +4493,12 @@ async def clear_assistant_conversation(
 
 
 async def load_user_profile(db, user_id: str) -> Optional[dict]:
-    """从 assistant_user_profiles 集合加载用户画像"""
+    """Load user profiles from the assistant_user_profiles collection"""
     try:
         doc = await db.assistant_user_profiles.find_one({"user_id": user_id})
         return doc
     except Exception as e:
-        logger.warning("[智能助手] 加载用户画像失败: %s", e)
+        logger.warning("[Smart Assistant] Failed to load user portrait: %s", e)
     return None
 
 
@@ -4511,8 +4511,8 @@ async def update_user_profile_with_analysis(
     task_id: str,
 ) -> None:
     """
-    分析任务完成后，将结果追加到用户画像的 recently_analyzed 列表。
-    保留最近 20 条，upsert 方式写入 assistant_user_profiles 集合。
+    After the analysis task is completed, the results are appended to the recently_analyzed list of the user portrait.
+    Keep the latest 20 profiles and write them into the assistant_user_profiles collection in upsert mode.
     """
     try:
         now = datetime.now(timezone.utc)
@@ -4538,11 +4538,11 @@ async def update_user_profile_with_analysis(
         )
         logger.info(f"[用户画像] ✅ 已更新 {user_id} 的 recently_analyzed: {symbol}({name})")
     except Exception as e:
-        logger.warning(f"[用户画像] 更新失败（已忽略）: {e}")
+        logger.warning(f"[User portrait] Update failed (ignored): {e}")
 
 
 async def _load_assistant_settings(db, user_id: str) -> Optional[dict]:
-    """从数据库加载用户的助理个性化设置"""
+    """Load the user s assistant personalization settings from the database"""
     try:
         from bson import ObjectId
         user_doc = await db.users.find_one(
@@ -4553,20 +4553,20 @@ async def _load_assistant_settings(db, user_id: str) -> Optional[dict]:
             prefs = user_doc.get("preferences", {})
             return prefs.get("assistant_settings")
     except Exception as e:
-        logger.warning("[智能助手] 加载助理设置失败: %s", e)
+        logger.warning("[Smart Assistant] Failed to load assistant settings: %s", e)
     return None
 
 
 # ------------------------------------------------------------------
-#  mem0 统一记忆层 — 助手对话集成
+#  mem0 unified memory layer — Assistant conversation integration
 # ------------------------------------------------------------------
 
 async def _recall_memory_block(db, user_id: str, user_message: str) -> str:
-    """从 mem0 召回与当前用户/问题相关的记忆，格式化为可注入 prompt 的文本。
+    """Recall the memory related to the current user/question from mem0, formatted into text that can be injected into prompt.
 
-    召回范围：
-    - user_preference: 用户偏好（通过 remember_this 显式登记）
-    - trade_pattern:   交易纪律记忆（复盘完成后写入）
+    Recall scope:
+    - user_preference: User preferences (explicitly registered via remember_this)
+    - trade_pattern:   Trading discipline memory (written after review is completed)
     """
     try:
         from core.memory.service import get_memory_service
@@ -4579,7 +4579,7 @@ async def _recall_memory_block(db, user_id: str, user_message: str) -> str:
             max_chars=800,
         )
     except Exception as e:
-        logger.debug("[mem0] 记忆召回失败（已忽略）: %s", e)
+        logger.debug("[mem0] Memory recall failed (ignored): %s", e)
         return ""
 
 
@@ -4600,13 +4600,13 @@ async def chat_with_assistant(
     user_context: Optional[dict] = None,
 ) -> Dict[str, Any]:
     """
-    便捷函数：使用智能助手进行对话
-    user_id: 用于持久化会话；若提供则对话会后保存
-    is_im: 是否来自 IM 渠道（QQ Bot 等），为 True 时注入移动端格式规范
-    assistant_role: 助手角色 general=通用分析助理 / usage_helper=使用问答机器人
-    user_context: 前端上下文（仅 usage_helper 模式使用）
+    Convenience functions: Use smart assistants to have conversations
+    user_id: Used to persist the session; if provided, the session will be saved after the session
+    is_im: Whether it comes from IM channel (QQ Bot, etc.), when it is True, inject the mobile terminal format specification
+    assistant_role: assistant role general=General Analysis Assistant / usage_helper=Use a Q&A bot
+    user_context: Frontend context (only used in usage_helper mode)
     """
-    # 设置用户上下文，供 assistant_ops 工具获取当前用户
+    # Set the user context for the assistant_ops tool to obtain the current user
     if user_id:
         set_current_user_id(user_id)
     if current_thread_id:
@@ -4614,12 +4614,12 @@ async def chat_with_assistant(
     elif conversation_id:
         set_current_assistant_thread_id(conversation_id)
 
-    # 加载用户助理个性化设置
+    # Load user assistant personalization settings
     assistant_settings = None
     if user_id:
         assistant_settings = await _load_assistant_settings(db, user_id)
 
-    # 加载用户画像（跨会话持久记忆）
+    # Load user portrait (persistent memory across sessions)
     user_profile: Optional[dict] = None
     current_topic_title: Optional[str] = None
     if user_id:
@@ -4628,7 +4628,7 @@ async def chat_with_assistant(
             if user_profile and user_profile.get("recently_analyzed"):
                 logger.info(f"[智能助手] ✅ 用户画像加载成功，最近分析 {len(user_profile['recently_analyzed'])} 条")
         except Exception as e:
-            logger.warning(f"[智能助手] 加载用户画像失败（已跳过）: {e}")
+            logger.warning(f"[Smart Assistant] Failed to load user portrait (skipped): {e}")
 
     if user_id and current_thread_id:
         try:
@@ -4643,9 +4643,9 @@ async def chat_with_assistant(
             if current_topic:
                 current_topic_title = (current_topic.get("title") or "").strip() or None
         except Exception as e:
-            logger.warning(f"[智能助手] 加载当前主题失败（已跳过）: {e}")
+            logger.warning(f"[Smart Assistant] Failed to load current theme (skipped): {e}")
 
-    # 加载最近会话历史（最多 10 条，注入到 LLM 上下文）
+    # Load recent session history (up to 10, injected into LLM context)
     history_messages: Optional[List[Message]] = None
     if user_id:
         try:
@@ -4661,9 +4661,9 @@ async def chat_with_assistant(
                 if not history_messages:
                     history_messages = None
         except Exception as e:
-            logger.warning(f"[智能助手] 加载历史会话失败（已跳过）: {e}")
+            logger.warning(f"[Smart Assistant] Failed to load history session (skipped): {e}")
 
-    # mem0 记忆召回（降级安全）
+    # mem0 Memory recall (downgrade safety)
     memory_block = ""
     if user_id:
         memory_block = await _recall_memory_block(db, user_id, user_message)
@@ -4693,8 +4693,8 @@ async def chat_with_assistant(
         memory_block=memory_block,
     )
     if user_id and user_message.strip():
-        # 回复为空（异常/超时等）也保存：用户提问不能因失败而丢失
-        assistant_content = (result.get("reply") or "").strip() or "⚠️ 本轮回复生成失败（未收到任何内容）"
+        # Empty replies (exception/timeout, etc.) are also saved: user questions cannot be lost due to failure
+        assistant_content = (result.get("reply") or "").strip() or "⚠️ Reply generation failed for this round (no content received)"
         try:
             await save_assistant_message(
                 db,
@@ -4705,10 +4705,10 @@ async def chat_with_assistant(
                 conversation_id=conversation_id,
             )
         except Exception as e:
-            logger.warning("[智能助手] 保存会话失败: %s", e)
+            logger.warning("[Smart Assistant] Failed to save session: %s", e)
 
-        # 注：mem0 conversation scope 已废弃，对话不再自动写入长期记忆。
-        # 用户偏好通过 `remember_this` 元工具显式登记，详见 mem0 §15.5 P0-1。
+        # Note: mem0 conversation scope is deprecated and conversations are no longer automatically written to long-term memory.
+        # User preferences via `remember_this` Explicit registration of meta-tools, see mem0 §15.5 P0-1. 
     if user_id:
         thread = await get_or_create_assistant_thread(db, user_id, conversation_id)
         result["conversation_id"] = thread["thread_id"]
@@ -4731,9 +4731,9 @@ async def stream_chat_with_assistant(
     user_context: Optional[dict] = None,
 ) -> AsyncGenerator[str, None]:
     """
-    流式便捷函数：使用智能助手进行流式对话，返回 SSE 事件字符串的 async generator。
-    assistant_role: 助手角色 general=通用分析助理 / usage_helper=使用问答机器人
-    user_context: 前端上下文（仅 usage_helper 模式使用）
+    Streaming convenience functions: Use intelligent assistants for streaming conversations, async generators that return SSE event strings.
+    assistant_role: assistant role general=General Analysis Assistant / usage_helper=Use a Q&A bot
+    user_context: Frontend context (only used in usage_helper mode)
     """
     def _sse(event: str, data: dict) -> str:
         return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
@@ -4786,12 +4786,12 @@ async def stream_chat_with_assistant(
         except Exception:
             pass
 
-    # mem0 记忆召回
+    # mem0 memory recall
     memory_block = ""
     if user_id:
         memory_block = await _recall_memory_block(db, user_id, user_message)
 
-    logger.info("[智能助手·流式] mem0 召回完成，memory_block 长度=%d，准备创建 service", len(memory_block))
+    logger.info("[Smart Assistant·streaming] mem0 Recall completed, memory_block length=%d, ready to create service", len(memory_block))
 
     service = IntelligentAssistantService(
         db,
@@ -4811,9 +4811,9 @@ async def stream_chat_with_assistant(
     collected_reply = ""
     collected_tools: List[str] = []
     collected_data_refs: List[Dict[str, Any]] = []
-    error_note = ""  # 本轮错误说明（内层超时/异常/取消，或外层生成器异常），随会话落库
+    error_note = ""  # Error description for this round (inner timeout/exception/cancellation, or outer generator exception), dropped with the session
 
-    logger.info("[智能助手·流式] 准备调用 service.chat_stream")
+    logger.info("[Smart Assistant·streaming] ready to call service.chat_stream")
 
     try:
         async for event_str in service.chat_stream(
@@ -4842,7 +4842,7 @@ async def stream_chat_with_assistant(
                 except Exception:
                     pass
             elif event_str.startswith("event: error\n"):
-                # 记录内层错误（超时/异常/取消），随会话落库便于事后排查
+                # Record internal errors (timeout/exception/cancellation) and log them into the database with the session to facilitate subsequent troubleshooting.
                 try:
                     data_line = event_str.split("\ndata: ", 1)[1].rstrip("\n")
                     data = json.loads(data_line)
@@ -4852,15 +4852,15 @@ async def stream_chat_with_assistant(
                     pass
             yield event_str
     except Exception as e:
-        logger.error("[智能助手·流式] chat_stream 生成器抛出异常: %s", e, exc_info=True)
-        error_note = f"处理过程发生异常：{e}"
-        # 发 error 事件让前端明确感知失败（而不是把异常伪装成回复文本）
+        logger.error("[Smart Assistant·streaming] chat_stream Generator throws exception: %s", e, exc_info=True)
+        error_note = f"An exception occurred during processing:{e}"
+        # Send an error event to let the front end clearly perceive the failure (instead of disguising the exception as a reply text)
         yield _sse("error", {"message": error_note})
     finally:
-        # 会话持久化兜底：无论正常结束、内部错误还是客户端中途断开，
-        # 用户提问必须落库，已生成的部分回复与错误说明也要落库。
-        # 历史教训：原先只在「回复完整收集」时才保存，超时/中断后刷新
-        # 页面用户提问直接消失——既丢上下文，也无从排查当时出了什么错。
+        # Session persistence is guaranteed: regardless of normal end, internal error or client disconnection,
+        # User questions must be logged into the database, and some of the generated responses and error descriptions must also be logged into the database.
+        # Historical lessons: Originally, it was only saved when "reply to complete collection" and refreshed after timeout/interruption.
+        # Questions asked by users on the page disappear directly.——Without the context, there is no way to find out what went wrong at the time.
         if user_id and user_message.strip():
             assistant_content = collected_reply.strip()
             if error_note:
@@ -4870,7 +4870,7 @@ async def stream_chat_with_assistant(
                     else f"⚠️ {error_note}"
                 )
             if not assistant_content:
-                assistant_content = "⚠️ 本轮回复生成失败（未收到任何内容）"
+                assistant_content = "⚠️ Reply generation failed for this round (no content received)"
             try:
                 await save_assistant_message(
                     db,
@@ -4881,10 +4881,10 @@ async def stream_chat_with_assistant(
                     conversation_id=conversation_id,
                 )
             except Exception as e:
-                logger.warning("[智能助手·流式] 保存会话失败: %s", e)
+                logger.warning("[Smart Assistant·streaming] Failed to save session: %s", e)
 
-        # 注：mem0 conversation scope 已废弃，对话不再自动写入长期记忆。
-        # 用户偏好通过 `remember_this` 元工具显式登记，详见 mem0 §15.5 P0-1。
+        # Note: mem0 conversation scope is deprecated and conversations are no longer automatically written to long-term memory.
+        # User preferences via `remember_this` Explicit registration of meta-tools, see mem0 §15.5 P0-1. 
 
     conv_id = conversation_id
     if user_id:

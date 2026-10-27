@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试增强的分析历史功能
+Test enhanced analysis history capabilities
 """
 
 import sys
@@ -9,75 +9,75 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import json
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 def test_load_analysis_results():
-    """测试加载分析结果功能"""
+    """Test loading analysis results function"""
     try:
         from web.components.analysis_results import load_analysis_results
         
-        print("🔍 测试加载分析结果...")
+        print("🔍 Test loading analysis results...")
         
-        # 测试基本加载
+        # Test basic loading
         results = load_analysis_results(limit=10)
-        print(f"✅ 成功加载 {len(results)} 个分析结果")
+        print(f"✅ successfully loaded {len(results)} analysis results")
         
         if results:
-            # 检查结果结构
+            # Check result structure
             first_result = results[0]
             required_fields = ['analysis_id', 'timestamp', 'stock_symbol', 'status']
             
             for field in required_fields:
                 if field in first_result:
-                    print(f"✅ 字段 '{field}' 存在")
+                    print(f"✅ Field '{field}' exist")
                 else:
-                    print(f"❌ 字段 '{field}' 缺失")
+                    print(f"❌ Field '{field}' Missing")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 
 def test_comparison_functions():
-    """测试对比功能"""
+    """Test comparison function"""
     try:
         from web.components.analysis_results import (
             calculate_text_similarity,
             get_report_content
         )
         
-        print("🔍 测试对比功能...")
+        print("🔍 Test comparison function...")
         
-        # 测试文本相似度计算
-        text1 = "这是一个测试文本"
-        text2 = "这是另一个测试文本"
+        # Test text similarity calculation
+        text1 = "This is a test text"
+        text2 = "This is another test text"
         similarity = calculate_text_similarity(text1, text2)
-        print(f"✅ 文本相似度计算: {similarity:.2f}")
+        print(f"✅ Text similarity calculation: {similarity:.2f}")
         
-        # 测试报告内容获取
+        # Obtain test report content
         mock_result = {
             'source': 'file_system',
             'reports': {
-                'final_trade_decision': '买入建议'
+                'final_trade_decision': 'Buy recommendation'
             }
         }
         
         content = get_report_content(mock_result, 'final_trade_decision')
-        print(f"✅ 报告内容获取: {content}")
+        print(f"✅ Obtain report content: {content}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 
 def test_chart_functions():
-    """测试图表功能"""
+    """Test chart functionality"""
     try:
         import pandas as pd
         from web.components.analysis_results import (
@@ -85,9 +85,9 @@ def test_chart_functions():
             render_time_distribution_charts
         )
         
-        print("🔍 测试图表功能...")
+        print("🔍 Test chart functionality...")
         
-        # 创建模拟数据
+        # Create simulated data
         mock_data = []
         for i in range(10):
             mock_data.append({
@@ -104,33 +104,33 @@ def test_chart_functions():
             })
         
         df = pd.DataFrame(mock_data)
-        print(f"✅ 创建模拟数据: {len(df)} 条记录")
+        print(f"✅ Create simulated data: {len(df)} records")
         
-        # 注意：这里只是测试函数是否可以导入，实际渲染需要Streamlit环境
-        print("✅ 图表函数导入成功")
+        # Note: This is just to test whether the function can be imported. Actual rendering requires the Streamlit environment.
+        print("✅ Chart function imported successfully")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 
 def create_test_data():
-    """创建测试数据"""
+    """Create test data"""
     try:
-        print("🔍 创建测试数据...")
+        print("🔍 Create test data...")
         
-        # 确保测试数据目录存在
+        # Make sure the test data directory exists
         test_data_dir = project_root / "data" / "analysis_results" / "detailed" / "TEST001"
         test_date_dir = test_data_dir / "2025-07-31" / "reports"
         test_date_dir.mkdir(parents=True, exist_ok=True)
         
-        # 创建测试报告
+        # Create test report
         test_reports = {
-            'final_trade_decision.md': '# 测试交易决策\n\n建议买入',
-            'fundamentals_report.md': '# 测试基本面分析\n\n公司基本面良好',
-            'market_report.md': '# 测试技术分析\n\n技术指标显示上涨趋势'
+            'final_trade_decision.md': '# Test trading decisions\n\n Recommended to buy',
+            'fundamentals_report.md': '# Test fundamental analysis\n\n The company s fundamentals are good',
+            'market_report.md': '# Test technical analysis\n\n Technical indicators point to an uptrend'
         }
         
         for filename, content in test_reports.items():
@@ -138,45 +138,45 @@ def create_test_data():
             with open(report_file, 'w', encoding='utf-8') as f:
                 f.write(content)
         
-        print(f"✅ 测试数据创建成功: {test_date_dir}")
+        print(f"✅ Test data created successfully: {test_date_dir}")
         return True
         
     except Exception as e:
-        print(f"❌ 创建测试数据失败: {e}")
+        print(f"❌ Failed to create test data: {e}")
         return False
 
 
 def main():
-    """主测试函数"""
-    print("🚀 开始测试增强的分析历史功能")
+    """Main test function"""
+    print("🚀 Start testing enhanced analysis history capabilities")
     print("=" * 50)
     
     tests = [
-        ("创建测试数据", create_test_data),
-        ("加载分析结果", test_load_analysis_results),
-        ("对比功能", test_comparison_functions),
-        ("图表功能", test_chart_functions)
+        ("Create test data", create_test_data),
+        ("Load analysis results", test_load_analysis_results),
+        ("Compare function", test_comparison_functions),
+        ("Chart function", test_chart_functions)
     ]
     
     passed = 0
     total = len(tests)
     
     for test_name, test_func in tests:
-        print(f"\n📋 测试: {test_name}")
+        print(f"\n📋 test: {test_name}")
         if test_func():
             passed += 1
-            print(f"✅ {test_name} 通过")
+            print(f"✅ {test_name} Pass")
         else:
-            print(f"❌ {test_name} 失败")
+            print(f"❌ {test_name} failed")
     
     print("\n" + "=" * 50)
-    print(f"📊 测试结果: {passed}/{total} 通过")
+    print(f"📊 Test results: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 所有测试通过！")
+        print("🎉 All tests passed!")
         return True
     else:
-        print("⚠️ 部分测试失败，请检查代码")
+        print("⚠️ Some tests failed, please check the code")
         return False
 
 

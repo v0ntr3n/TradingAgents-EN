@@ -1,10 +1,10 @@
 """
-ETF 数据同步服务
+ETF Data synchronization service
 
-使用项目统一的数据源配置（get_enabled_data_sources_async），按优先级依次尝试同步。
-优先级最高的先调用，同步成功则结束；失败则尝试下一优先级。
-- etf_basic_info：ETF 基础信息（代码、名称、规模、跟踪指数等）
-- etf_daily_quotes：ETF 日线行情
+Use the project s unified data source configuration (get_enabled_data_sources_async) to try synchronization in order of priority.
+The one with the highest priority is called first, and ends if the synchronization is successful; if it fails, the next priority is tried.
+- etf_basic_info: ETF Basic information (code, name, scale, tracking index, etc.)
+- etf_daily_quotes: ETF Daily market price
 """
 
 import asyncio
@@ -20,15 +20,15 @@ from app.services.data_sources.qmt_adapter import QMTAdapter
 
 logger = logging.getLogger(__name__)
 
-# 集合名（与设计文档一致）
+# Collection name (consistent with design document)
 ETF_BASIC_INFO_COLLECTION = "etf_basic_info"
 ETF_DAILY_QUOTES_COLLECTION = "etf_daily_quotes"
-DEFAULT_SOURCE_PRIORITY = ["akshare"]  # 统一配置获取失败时的默认值
+DEFAULT_SOURCE_PRIORITY = ["akshare"]  # Default value when unified configuration fails to obtain
 ETF_FULL_SYNC_FALLBACK_START = "19900101"
 
 ETF_SH_PREFIXES = ("50", "51", "52", "56", "58")
 ETF_SZ_PREFIXES = ("15", "16", "18")
-ETF_BJ_PREFIXES = ("89",)  # 北交所 ETF 前缀
+ETF_BJ_PREFIXES = ("89",)  # North Exchange ETF prefix
 
 
 def _is_missing(value: Any) -> bool:
@@ -93,7 +93,7 @@ def _needs_tushare_backfill(existing: Optional[Dict[str, Any]]) -> bool:
 
 
 def _normalize_etf_code(s: str) -> str:
-    """标准化 ETF 代码为 6 位"""
+    """Standardized ETF symbols are 6 digits"""
     if not s:
         return ""
     digits = "".join(c for c in str(s) if c.isdigit())
@@ -101,7 +101,7 @@ def _normalize_etf_code(s: str) -> str:
 
 
 def _get_full_symbol(code: str) -> str:
-    """根据代码前缀生成完整代码"""
+    """Generate complete code based on code prefix"""
     if not code or len(code) != 6:
         return ""
     if code.startswith(ETF_SH_PREFIXES):
@@ -118,20 +118,20 @@ def _is_etf_code(code: str) -> bool:
 
 
 def _normalize_source_name(name: str) -> str:
-    """将数据源名称规范化为小写（如 AKShare -> akshare）"""
+    """Normalize data source names to lowercase (e.g. AKShare -> akshare) """
     return str(name or "").strip().lower()
 
 
 def _fetch_etf_spot_list_akshare() -> List[Dict[str, Any]]:
-    """从 AKShare 获取 ETF 实时行情列表（阻塞调用）"""
+    """Get the ETF real-time price list from AKShare (blocking call)"""
     try:
         import akshare as ak
         df = ak.fund_etf_spot_em()
         if df is None or df.empty:
             return []
 
-        code_col = "代码" if "代码" in df.columns else "基金代码"
-        name_col = "名称" if "名称" in df.columns else "基金名称"
+        code_col = "code" if "code" in df.columns else "Fund code"
+        name_col = "Name" if "Name" in df.columns else "Fund name"
 
         rows = []
         for _, r in df.iterrows():
@@ -157,12 +157,12 @@ def _fetch_etf_spot_list_akshare() -> List[Dict[str, Any]]:
             })
         return rows
     except Exception as e:
-        logger.warning(f"AKShare fund_etf_spot_em 获取失败: {e}")
+        logger.warning(f"AKShare fund_etf_spot_em Failed to obtain: {e}")
         return []
 
 
 def _fetch_etf_valuation_map_akshare() -> Dict[str, Dict[str, Any]]:
-    """从 AKShare 获取 ETF 净值、折溢价和申赎状态映射。"""
+    """Obtain ETF net value, discount and premium, and redemption status mapping from AKShare."""
     try:
         import akshare as ak
 
@@ -170,10 +170,10 @@ def _fetch_etf_valuation_map_akshare() -> Dict[str, Dict[str, Any]]:
         if valuation_df is None or valuation_df.empty:
             return {}
 
-        code_col = "基金代码" if "基金代码" in valuation_df.columns else "代码"
+        code_col = "Fund code" if "Fund code" in valuation_df.columns else "code"
         valuation_df["code_clean"] = valuation_df[code_col].astype(str).str.extract(r"(\d{6})", expand=False).fillna("")
-        unit_nav_col = next((col for col in valuation_df.columns if str(col).endswith("单位净值")), None)
-        accum_nav_col = next((col for col in valuation_df.columns if str(col).endswith("累计净值")), None)
+        unit_nav_col = next((col for col in valuation_df.columns if str(col).endswith("net unit value")), None)
+        accum_nav_col = next((col for col in valuation_df.columns if str(col).endswith("Cumulative net worth")), None)
 
         result: Dict[str, Dict[str, Any]] = {}
         for _, row in valuation_df.iterrows():
@@ -192,24 +192,24 @@ def _fetch_etf_valuation_map_akshare() -> Dict[str, Dict[str, Any]]:
 
         return result
     except Exception as e:
-        logger.warning(f"AKShare ETF 估值映射获取失败: {e}")
+        logger.warning(f"AKShare ETF Failed to obtain valuation mapping: {e}")
         return {}
 
 
 def _get_tushare_pro_api():
-    """获取 Tushare pro_api（复用单例，避免重复连接）"""
+    """Get Tushare pro_api (reuse singleton to avoid repeated connections)"""
     try:
         from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
         provider = get_tushare_provider()
         if provider and provider.api:
             return provider.api
     except Exception as e:
-        logger.warning(f"Tushare 连接失败: {e}")
+        logger.warning(f"Tushare Connection failed: {e}")
     return None
 
 
 def _fetch_etf_spot_list_tushare() -> List[Dict[str, Any]]:
-    """从 Tushare fund_basic(market='E') 获取 ETF 基础信息列表（阻塞调用）"""
+    """from Tushare fund_basic(market='E') Get the ETF basic information list (blocking call)"""
     pro = _get_tushare_pro_api()
     if pro is None:
         return []
@@ -255,12 +255,12 @@ def _fetch_etf_spot_list_tushare() -> List[Dict[str, Any]]:
             })
         return rows
     except Exception as e:
-        logger.warning(f"Tushare fund_basic 获取失败: {e}")
+        logger.warning(f"Tushare fund_basic Failed to obtain: {e}")
         return []
 
 
 def _fetch_etf_nav_map_tushare(target_codes: Optional[set[str]] = None, recent_days: int = 15) -> Dict[str, Dict[str, Any]]:
-    """从 Tushare fund_nav 批量获取 ETF 最新净值映射。"""
+    """Get the latest net worth mapping of ETFs in batches from Tushare fund_nav."""
     pro = _get_tushare_pro_api()
     if pro is None:
         return {}
@@ -322,12 +322,12 @@ def _fetch_etf_nav_map_tushare(target_codes: Optional[set[str]] = None, recent_d
 
         return result
     except Exception as e:
-        logger.warning(f"Tushare fund_nav 获取失败: {e}")
+        logger.warning(f"Tushare fund_nav Failed to obtain: {e}")
         return {}
 
 
 def _fetch_etf_share_map_tushare(target_codes: Optional[set[str]] = None, recent_days: int = 30) -> Dict[str, Dict[str, Any]]:
-    """从 Tushare fund_share 批量获取 ETF 最新份额映射。"""
+    """Get ETF latest share mapping in bulk from Tushare fund_share."""
     pro = _get_tushare_pro_api()
     if pro is None:
         return {}
@@ -373,12 +373,12 @@ def _fetch_etf_share_map_tushare(target_codes: Optional[set[str]] = None, recent
             for code, row in latest_by_code.items()
         }
     except Exception as e:
-        logger.warning(f"Tushare fund_share 获取失败: {e}")
+        logger.warning(f"Tushare fund_share Failed to obtain: {e}")
         return {}
 
 
 def _fetch_etf_hist_tushare(symbol: str, start_date: str, end_date: str) -> List[Dict[str, Any]]:
-    """从 Tushare fund_daily 获取单只 ETF 历史日线（阻塞调用）"""
+    """Get the historical daily line of a single ETF from Tushare fund_daily (blocking call)"""
     pro = _get_tushare_pro_api()
     if pro is None:
         return []
@@ -428,12 +428,12 @@ def _fetch_etf_hist_tushare(symbol: str, start_date: str, end_date: str) -> List
             })
         return records
     except Exception as e:
-        logger.warning(f"Tushare fund_daily {symbol} 获取失败: {e}")
+        logger.warning(f"Tushare fund_daily {symbol} Failed to obtain: {e}")
         return []
 
 
 def _fetch_etf_hist_akshare(symbol: str, start_date: str, end_date: str) -> List[Dict[str, Any]]:
-    """从 AKShare 获取单只 ETF 历史日线（阻塞调用）"""
+    """Get the historical daily line of a single ETF from AKShare (blocking call)"""
     try:
         import akshare as ak
         code = _normalize_etf_code(symbol)
@@ -443,17 +443,17 @@ def _fetch_etf_hist_akshare(symbol: str, start_date: str, end_date: str) -> List
         if df is None or df.empty:
             return []
 
-        # 列名兼容：日期/date、开盘/open、收盘/close、最高/high、最低/low、成交量/volume、成交额/amount、涨跌幅
-        date_col = "日期" if "日期" in df.columns else "date"
-        open_col = "开盘" if "开盘" in df.columns else "open"
-        high_col = "最高" if "最高" in df.columns else "high"
-        low_col = "最低" if "最低" in df.columns else "low"
-        close_col = "收盘" if "收盘" in df.columns else "close"
-        vol_col = "成交量" if "成交量" in df.columns else "volume"
-        amt_col = "成交额" if "成交额" in df.columns else "amount"
-        pct_col = "涨跌幅" if "涨跌幅" in df.columns else "增长率"
-        nav_col = "单位净值" if "单位净值" in df.columns else None
-        accum_col = "累计净值" if "累计净值" in df.columns else None
+        # Column names are compatible: date/date, opening/open, closing/close, highest/high, lowest/low, trading volume/volume, trading amount/amount, price increase or decrease
+        date_col = "Date" if "Date" in df.columns else "date"
+        open_col = "Open" if "Open" in df.columns else "open"
+        high_col = "highest" if "highest" in df.columns else "high"
+        low_col = "lowest" if "lowest" in df.columns else "low"
+        close_col = "close" if "close" in df.columns else "close"
+        vol_col = "Volume" if "Volume" in df.columns else "volume"
+        amt_col = "Turnover" if "Turnover" in df.columns else "amount"
+        pct_col = "Increase or decrease" if "Increase or decrease" in df.columns else "growth rate"
+        nav_col = "net unit value" if "net unit value" in df.columns else None
+        accum_col = "Cumulative net worth" if "Cumulative net worth" in df.columns else None
 
         records = []
         full_symbol = _get_full_symbol(code)
@@ -468,7 +468,7 @@ def _fetch_etf_hist_akshare(symbol: str, start_date: str, end_date: str) -> List
 
             rec = {
                 "symbol": code,
-                "code": code,  # 与 stock_daily_quotes 一致，便于 UnifiedStockService 查询
+                "code": code,  # Consistent with stock_daily_quotes, convenient for UnifiedStockService query
                 "full_symbol": full_symbol,
                 "trade_date": trade_date,
                 "open": r.get(open_col),
@@ -478,7 +478,7 @@ def _fetch_etf_hist_akshare(symbol: str, start_date: str, end_date: str) -> List
                 "volume": r.get(vol_col),
                 "amount": r.get(amt_col),
                 "pct_chg": r.get(pct_col),
-                "data_source": "akshare",  # 由 sync 方法按实际 source 覆盖
+                "data_source": "akshare",  # Overridden by sync method by actual source
             }
             if nav_col and nav_col in r:
                 rec["unit_nav"] = r.get(nav_col)
@@ -487,12 +487,12 @@ def _fetch_etf_hist_akshare(symbol: str, start_date: str, end_date: str) -> List
             records.append(rec)
         return records
     except Exception as e:
-        logger.warning(f"AKShare fund_etf_hist_em {symbol} 获取失败: {e}")
+        logger.warning(f"AKShare fund_etf_hist_em {symbol} Failed to obtain: {e}")
         return []
 
 
 def _fetch_etf_spot_list_qmt() -> List[Dict[str, Any]]:
-    """从 QMT 获取 ETF 基础信息与近实时快照"""
+    """Get underlying ETF information and near real-time snapshots from QMT"""
     try:
         adapter = QMTAdapter()
         if not adapter.is_available():
@@ -523,12 +523,12 @@ def _fetch_etf_spot_list_qmt() -> List[Dict[str, Any]]:
             })
         return rows
     except Exception as e:
-        logger.warning(f"QMT ETF 列表获取失败: {e}")
+        logger.warning(f"QMT ETF Failed to get list: {e}")
         return []
 
 
 def _fetch_etf_hist_qmt(symbol: str, start_date: str, end_date: str) -> List[Dict[str, Any]]:
-    """从 QMT 获取单只 ETF 历史日线"""
+    """Get the historical daily line of a single ETF from QMT"""
     try:
         adapter = QMTAdapter()
         if not adapter.is_available():
@@ -588,11 +588,11 @@ def _fetch_etf_hist_qmt(symbol: str, start_date: str, end_date: str) -> List[Dic
             records.append(record)
         return records
     except Exception as e:
-        logger.warning(f"QMT ETF 历史日线获取失败 {symbol}: {e}")
+        logger.warning(f"QMT ETF Failed to obtain historical daily line {symbol}: {e}")
         return []
 
 
-# 数据源与 fetcher 映射（可扩展 Tushare 等）
+# Data source and fetcher mapping (extensible to Tushare, etc.)
 _FETCH_BASIC: Dict[str, Callable] = {
     "akshare": _fetch_etf_spot_list_akshare,
     "tushare": _fetch_etf_spot_list_tushare,
@@ -606,7 +606,7 @@ _FETCH_HIST: Dict[str, Callable[[str, str, str], List[Dict[str, Any]]]] = {
 
 
 class EtfSyncService:
-    """ETF 数据同步服务（按数据源优先级依次尝试）"""
+    """ETF Data synchronization service (try in order according to data source priority)"""
 
     def __init__(self):
         self.db = None
@@ -643,7 +643,7 @@ class EtfSyncService:
         duplicate_sample = await self._find_duplicate_key_sample(collection, keys)
         if duplicate_sample:
             logger.warning(
-                f"⚠️ {collection_name} 存在重复数据，暂时无法升级唯一索引: "
+                f"⚠️ {collection_name} Duplicate data exists and the unique index cannot be upgraded temporarily.: "
                 f"keys={list(duplicate_sample.get('_id', {}).items())}, count={duplicate_sample.get('count')}"
             )
             return
@@ -651,14 +651,14 @@ class EtfSyncService:
         if index_name:
             await collection.drop_index(index_name)
             logger.info(
-                f"🧹 已移除 {collection_name} 的旧非唯一索引，准备升级为唯一索引: {index_name}"
+                f"🧹 Removed {collection_name} The old non-unique index is ready to be upgraded to a unique index: {index_name}"
             )
 
         await collection.create_index(keys, unique=True, background=True)
-        logger.info(f"✅ 已确保 {collection_name} 唯一索引: {keys}")
+        logger.info(f"✅ secured {collection_name} unique index: {keys}")
 
     async def _ensure_indexes(self):
-        """确保 ETF 基础信息和日线集合具备关键索引。"""
+        """Ensure ETF fundamentals and daily aggregation have key indexes."""
         try:
             if self.db is None:
                 self.db = get_mongo_db()
@@ -666,7 +666,7 @@ class EtfSyncService:
             basic_collection = self.db[ETF_BASIC_INFO_COLLECTION]
             daily_collection = self.db[ETF_DAILY_QUOTES_COLLECTION]
 
-            logger.info("📊 检查并创建 ETF 集合索引...")
+            logger.info("📊 Check and create ETF collection index...")
 
             await self._ensure_unique_index(
                 basic_collection,
@@ -682,13 +682,13 @@ class EtfSyncService:
             )
             await daily_collection.create_index([("symbol", 1), ("trade_date", -1)], background=True)
 
-            logger.info("✅ ETF 集合索引检查完成")
+            logger.info("✅ ETF Collection index check completed")
         except Exception as e:
-            logger.warning(f"⚠️ ETF 集合索引检查/创建失败（不阻塞主流程）: {e}")
+            logger.warning(f"⚠️ ETF Collection index check/creation failed (without blocking the main process): {e}")
 
     @staticmethod
     def _calculate_stage_progress(stage_start: int, stage_end: int, processed_items: int, total_items: int) -> int:
-        """按阶段区间计算整体进度，确保进度单调递增。"""
+        """Calculate the overall progress according to stage intervals to ensure that the progress increases monotonically."""
         stage_start = max(0, min(100, stage_start))
         stage_end = max(stage_start, min(100, stage_end))
         if total_items <= 0:
@@ -707,7 +707,7 @@ class EtfSyncService:
         total_items: Optional[int] = None,
         processed_items: Optional[int] = None,
     ) -> None:
-        """向调度执行历史回写进度，供前端显示进度/当前操作/剩余时间。"""
+        """Write back the progress to the scheduling execution history for the front end to display the progress/current operation/remaining time."""
         if not job_id:
             return
 
@@ -725,11 +725,11 @@ class EtfSyncService:
         except TaskCancelledException:
             raise
         except Exception as e:
-            logger.debug(f"ETF 同步进度回写失败（不影响主流程）: {e}")
+            logger.debug(f"ETF Synchronization progress writeback failed (does not affect the main process): {e}")
 
     @staticmethod
     def _build_sync_result(basic_stats: Dict[str, Any], daily_stats: Dict[str, Any], source: str) -> Dict[str, Any]:
-        """将 ETF 分阶段结果扁平化，兼容调度器完成态统计。"""
+        """Flatten ETF phased results and be compatible with scheduler completion statistics."""
         daily_total = int(daily_stats.get("total_processed") or 0)
         basic_total = int(basic_stats.get("total_processed") or 0)
         total_processed = daily_total or basic_total
@@ -787,13 +787,13 @@ class EtfSyncService:
         basic_doc: Optional[Dict[str, Any]] = None,
         smart_incremental: bool = False,
     ) -> tuple[str, str, str]:
-        """确定 ETF 日线同步窗口：首次全量，后续按库内最新日期增量补齐。"""
+        """Determine the ETF daily synchronization window: the first full amount, and subsequent increments based on the latest date in the library."""
         end_dt = datetime.now()
         end_date = end_dt.strftime("%Y%m%d")
 
         if force_update or not smart_incremental:
             start_dt = end_dt - timedelta(days=fallback_days)
-            return start_dt.strftime("%Y%m%d"), end_date, f"按指定窗口同步最近 {fallback_days} 天"
+            return start_dt.strftime("%Y%m%d"), end_date, f"Sync recent by specified window {fallback_days} day"
 
         collection = self.db[ETF_DAILY_QUOTES_COLLECTION]
         latest_doc = await collection.find_one(
@@ -805,9 +805,9 @@ class EtfSyncService:
         if latest_trade_date:
             try:
                 next_dt = datetime.strptime(latest_trade_date, "%Y-%m-%d") + timedelta(days=1)
-                return next_dt.strftime("%Y%m%d"), end_date, f"增量补齐（最新入库 {latest_trade_date}）"
+                return next_dt.strftime("%Y%m%d"), end_date, f"Incremental completion (latest entry into database {latest_trade_date}) "
             except ValueError:
-                logger.debug(f"ETF {code} 最新 trade_date 解析失败，回退到全量起点: {latest_trade_date}")
+                logger.debug(f"ETF {code} The latest trade_date parsing failed and fell back to the full starting point.: {latest_trade_date}")
 
         initial_start_date = self._get_initial_full_sync_date(basic_doc)
 
@@ -826,30 +826,30 @@ class EtfSyncService:
             initial_start_date = self._get_initial_full_sync_date(basic_doc)
 
         if initial_start_date:
-            return initial_start_date, end_date, f"首次全量（从 {initial_start_date[:4]}-{initial_start_date[4:6]}-{initial_start_date[6:8]} 开始）"
+            return initial_start_date, end_date, f"First full amount (from {initial_start_date[:4]}-{initial_start_date[4:6]}-{initial_start_date[6:8]} start)"
 
-        return ETF_FULL_SYNC_FALLBACK_START, end_date, "首次全量（缺少上市日，使用全历史兜底起点）"
+        return ETF_FULL_SYNC_FALLBACK_START, end_date, "Full volume for the first time (lacking the launch date, using the full historical starting point)"
 
     async def initialize(self):
-        """初始化数据库连接"""
+        """Initialize database connection"""
         self.db = get_mongo_db()
         await self._ensure_indexes()
-        logger.info("✅ ETF 同步服务初始化完成")
+        logger.info("✅ ETF Synchronization service initialization completed")
 
     async def _get_source_priority(self) -> List[str]:
-        """使用项目统一的数据源配置（a_shares，ETF 与 A 股同市场），排除 local 后按优先级返回"""
+        """Use the unified data source configuration of the project (a_shares, ETF and A-shares are in the same market), exclude local and return according to priority"""
         try:
             enabled = await get_enabled_data_sources_async("a_shares")
-            # 排除 local（local 为读库，同步需调用外部 API）
+            # Exclude local (local is the reading library, synchronization requires calling external API)
             raw = [s for s in enabled if s and s.lower() != "local"]
-            # 只保留已实现 ETF 同步的数据源，并规范化为小写
+            # Only keep ETF-synced data sources and normalize to lowercase
             priority = [_normalize_source_name(p) for p in raw if _normalize_source_name(p) in _FETCH_BASIC]
             if priority:
-                logger.info(f"📊 [ETF 同步] 数据源优先级（统一配置）: {priority}")
+                logger.info(f"📊 [ETF sync] Data source priority (unified configuration): {priority}")
                 return priority
         except Exception as e:
-            logger.warning(f"⚠️ [ETF 同步] 获取统一数据源配置失败: {e}")
-        logger.info(f"📊 [ETF 同步] 使用默认数据源: {DEFAULT_SOURCE_PRIORITY}")
+            logger.warning(f"⚠️ [ETF sync] Failed to obtain unified data source configuration: {e}")
+        logger.info(f"📊 [ETF sync] Use default data source: {DEFAULT_SOURCE_PRIORITY}")
         return DEFAULT_SOURCE_PRIORITY
 
     async def _sync_basic_by_source(
@@ -861,12 +861,12 @@ class EtfSyncService:
         stage_start: int = 5,
         stage_end: int = 45,
     ) -> Dict[str, Any]:
-        """按指定数据源同步 ETF 基础信息"""
+        """Synchronize ETF basic information according to specified data source"""
         if self.db is None:
             await self.initialize()
         fetch_fn = _FETCH_BASIC.get(source)
         if not fetch_fn:
-            return {"total_processed": 0, "success_count": 0, "error_count": 1, "errors": [{"error": f"未实现的数据源: {source}"}]}
+            return {"total_processed": 0, "success_count": 0, "error_count": 1, "errors": [{"error": f"Unimplemented data source: {source}"}]}
 
         stats = {"total_processed": 0, "success_count": 0, "error_count": 0, "skipped_count": 0, "start_time": datetime.utcnow(), "end_time": None, "duration": 0, "errors": [], "data_source": source}
 
@@ -888,18 +888,18 @@ class EtfSyncService:
                 await self._report_job_progress(
                     job_id,
                     stage_start,
-                    f"未获取到 ETF 基础信息（{source.upper()}），尝试其他数据源",
+                    f"ETF basic information was not obtained ({source.upper()}) , Try other data sources",
                     current_item=source.upper(),
                 )
-                logger.warning(f"⚠️ [{source}] 未获取到 ETF 列表")
+                logger.warning(f"⚠️ [{source}] No ETF list obtained")
                 return stats
 
             stats["total_processed"] = len(rows)
-            logger.info(f"📊 [{source}] 获取到 {len(rows)} 只 ETF 基础信息")
+            logger.info(f"📊 [{source}] Get {len(rows)} Only ETF basic information")
             await self._report_job_progress(
                 job_id,
                 stage_start,
-                f"正在同步 ETF 基础信息（{source.upper()}）",
+                f"Synchronizing ETF basic information ({source.upper()}) ",
                 total_items=len(rows),
                 processed_items=0,
             )
@@ -916,7 +916,7 @@ class EtfSyncService:
                         existing = await collection.find_one({"code": code, "source": source})
                         if existing and self._is_fresh(existing.get("updated_at"), hours=24):
                             if source == "tushare" and _needs_tushare_backfill(existing):
-                                logger.info(f"🔄 [{source}] ETF {code} 基础信息较新但缺净值/份额字段，执行回填")
+                                logger.info(f"🔄 [{source}] ETF {code} The basic information is newer but the net worth/share field is missing, so backfill is performed.")
                             else:
                                 stats["skipped_count"] += 1
                                 skip_item = True
@@ -979,7 +979,7 @@ class EtfSyncService:
                     await self._report_job_progress(
                         job_id,
                         self._calculate_stage_progress(stage_start, stage_end, index, len(rows)),
-                        f"正在同步 ETF 基础信息（{source.upper()}）",
+                        f"Synchronizing ETF basic information ({source.upper()}) ",
                         current_item=current_item,
                         total_items=len(rows),
                         processed_items=index,
@@ -988,13 +988,13 @@ class EtfSyncService:
 
             stats["end_time"] = datetime.utcnow()
             stats["duration"] = (stats["end_time"] - stats["start_time"]).total_seconds()
-            logger.info(f"🎉 [{source}] ETF 基础信息同步完成: 成功 {stats['success_count']}, 跳过 {stats['skipped_count']}, 错误 {stats['error_count']}")
+            logger.info(f"🎉 [{source}] ETF Basic information synchronization completed: success {stats['success_count']}, skip {stats['skipped_count']}, Error {stats['error_count']}")
         except Exception as e:
             from app.services.scheduler_service import TaskCancelledException
 
             if isinstance(e, TaskCancelledException):
                 raise
-            logger.error(f"❌ [{source}] ETF 基础信息同步失败: {e}", exc_info=True)
+            logger.error(f"❌ [{source}] ETF Basic information synchronization failed: {e}", exc_info=True)
             stats["errors"].append({"error": str(e), "context": "sync_etf_basic_info"})
 
         return stats
@@ -1010,12 +1010,12 @@ class EtfSyncService:
         stage_end: int = 95,
         smart_incremental: bool = False,
     ) -> Dict[str, Any]:
-        """按指定数据源同步 ETF 日线"""
+        """Synchronize ETF daily lines according to specified data source"""
         if self.db is None:
             await self.initialize()
         fetch_fn = _FETCH_HIST.get(source)
         if not fetch_fn:
-            return {"total_processed": 0, "success_count": 0, "records_inserted": 0, "errors": [{"error": f"未实现的数据源: {source}"}]}
+            return {"total_processed": 0, "success_count": 0, "records_inserted": 0, "errors": [{"error": f"Unimplemented data source: {source}"}]}
 
         stats = {"total_processed": 0, "success_count": 0, "error_count": 0, "records_inserted": 0, "start_time": datetime.utcnow(), "end_time": None, "duration": 0, "errors": [], "data_source": source}
 
@@ -1037,23 +1037,23 @@ class EtfSyncService:
                 await self._report_job_progress(
                     job_id,
                     stage_start,
-                    f"未找到可同步的 ETF 日线代码（{source.upper()}）",
+                    f"No syncable ETF daily ticker found ({source.upper()}) ",
                     current_item=source.upper(),
                 )
-                logger.warning(f"⚠️ [{source}] 没有可同步的 ETF 代码")
+                logger.warning(f"⚠️ [{source}] No ETF ticker to sync")
                 return stats
 
             stats["total_processed"] = len(code_entries)
             if smart_incremental and not force_update:
-                sync_scope_message = "首次全量，后续按最新入库日期增量补齐"
+                sync_scope_message = "Full quantity for the first time, subsequent increments based on the latest storage date"
             else:
-                sync_scope_message = f"按指定窗口同步最近 {days} 天"
+                sync_scope_message = f"Sync recent by specified window {days} day"
 
-            logger.info(f"📊 [{source}] 开始同步 {len(code_entries)} 只 ETF 的日线数据（{sync_scope_message}）")
+            logger.info(f"📊 [{source}] Start syncing {len(code_entries)} Only daily data for ETFs ({sync_scope_message}) ")
             await self._report_job_progress(
                 job_id,
                 stage_start,
-                f"正在同步 ETF 日线（{source.upper()}）",
+                f"Synchronizing ETF daily line ({source.upper()}) ",
                 total_items=len(code_entries),
                 processed_items=0,
             )
@@ -1077,13 +1077,13 @@ class EtfSyncService:
                     fetch_started_at = loop.time()
                     if start_date > end_date:
                         logger.info(
-                            f"🌐 [{source}] 跳过网络抓取: code={code}, name={current_name or '-'}, "
-                            f"reason=同步窗口为空, start_date={start_date}, end_date={end_date}"
+                            f"🌐 [{source}] Skip web scraping: code={code}, name={current_name or '-'}, "
+                            f"reason=Sync window is empty, start_date={start_date}, end_date={end_date}"
                         )
                         records = []
                     else:
                         logger.info(
-                            f"🌐 [{source}] 开始抓取 ETF 日线: code={code}, name={current_name or '-'}, "
+                            f"🌐 [{source}] Start grabbing ETF daily lines: code={code}, name={current_name or '-'}, "
                             f"start_date={start_date}, end_date={end_date}"
                         )
                         records = await asyncio.wait_for(
@@ -1092,13 +1092,13 @@ class EtfSyncService:
                         )
                         fetch_elapsed = loop.time() - fetch_started_at
                         logger.info(
-                            f"🌐 [{source}] 抓取完成: code={code}, records={len(records)}, "
+                            f"🌐 [{source}] Fetching completed: code={code}, records={len(records)}, "
                             f"elapsed={fetch_elapsed:.2f}s"
                         )
                     if not records:
                         inserted = 0
                         logger.info(
-                            f"💾 [{source}] 跳过数据库写入: code={code}, name={current_name or '-'}, records=0"
+                            f"💾 [{source}] Skip database writes: code={code}, name={current_name or '-'}, records=0"
                         )
                     else:
                         from pymongo import UpdateOne
@@ -1109,7 +1109,7 @@ class EtfSyncService:
                         write_started_at = loop.time()
                         write_timestamp = datetime.utcnow()
                         logger.info(
-                            f"💾 [{source}] 开始写入 ETF 日线: code={code}, name={current_name or '-'}, "
+                            f"💾 [{source}] Start writing ETF daily line: code={code}, name={current_name or '-'}, "
                             f"records={len(records)}, force_update={force_update}"
                         )
 
@@ -1139,7 +1139,7 @@ class EtfSyncService:
                             if not force_update and record_exists:
                                 skipped_existing += 1
                                 logger.info(
-                                    f"💾 [{source}] 跳过已存在日线: code={record_code}, "
+                                    f"💾 [{source}] Skip existing daily lines: code={record_code}, "
                                     f"trade_date={trade_date}, action=skip_existing"
                                 )
                                 continue
@@ -1158,7 +1158,7 @@ class EtfSyncService:
                                 updated_count += 1
                             written_count += 1
                             logger.info(
-                                f"💾 [{source}] 写入日线记录: code={record_code}, "
+                                f"💾 [{source}] Write daily record: code={record_code}, "
                                 f"trade_date={trade_date}, action={action}"
                             )
 
@@ -1171,7 +1171,7 @@ class EtfSyncService:
 
                         write_elapsed = loop.time() - write_started_at
                         logger.info(
-                            f"💾 [{source}] 写入完成: code={code}, inserted={written_count}, "
+                            f"💾 [{source}] Writing completed: code={code}, inserted={written_count}, "
                             f"updated={updated_count}, skipped_existing={skipped_existing}, elapsed={write_elapsed:.2f}s"
                         )
 
@@ -1180,20 +1180,20 @@ class EtfSyncService:
                     stats["success_count"] += 1
 
                     if i % 20 == 0:
-                        logger.info(f"📈 [{source}] ETF 日线同步进度: {i}/{len(code_entries)}")
+                        logger.info(f"📈 [{source}] ETF Daily synchronization progress: {i}/{len(code_entries)}")
                 except asyncio.TimeoutError:
                     stats["error_count"] += 1
-                    timeout_message = f"抓取超时（>{self.item_timeout_seconds}s）"
+                    timeout_message = f"Fetch timeout (>{self.item_timeout_seconds}s) "
                     stats["errors"].append({"code": code, "error": timeout_message})
                     sync_window_desc = timeout_message
                     logger.warning(
-                        f"⏰ [{source}] ETF 日线抓取超时: code={code}, "
+                        f"⏰ [{source}] ETF Daily crawl timeout: code={code}, "
                         f"timeout={self.item_timeout_seconds}s, start_date={start_date}, end_date={end_date}"
                     )
                 except Exception as e:
                     stats["error_count"] += 1
                     stats["errors"].append({"code": code, "error": str(e)})
-                    sync_window_desc = "同步失败"
+                    sync_window_desc = "Sync failed"
 
                 if i == 1 or i == len(code_entries) or i % 10 == 0:
                     current_item = f"{code} {current_name}".strip()
@@ -1202,7 +1202,7 @@ class EtfSyncService:
                     await self._report_job_progress(
                         job_id,
                         self._calculate_stage_progress(stage_start, stage_end, i, len(code_entries)),
-                        f"正在同步 ETF 日线（{source.upper()}）",
+                        f"Synchronizing ETF daily line ({source.upper()}) ",
                         current_item=current_item,
                         total_items=len(code_entries),
                         processed_items=i,
@@ -1212,20 +1212,20 @@ class EtfSyncService:
 
             stats["end_time"] = datetime.utcnow()
             stats["duration"] = (stats["end_time"] - stats["start_time"]).total_seconds()
-            logger.info(f"🎉 [{source}] ETF 日线同步完成: {stats['success_count']}/{len(code_entries)} 只, 插入 {stats['records_inserted']} 条")
+            logger.info(f"🎉 [{source}] ETF Daily synchronization completed: {stats['success_count']}/{len(code_entries)} only, Insert {stats['records_inserted']} Article")
         except Exception as e:
             from app.services.scheduler_service import TaskCancelledException
 
             if isinstance(e, TaskCancelledException):
                 raise
-            logger.error(f"❌ [{source}] ETF 日线同步失败: {e}", exc_info=True)
+            logger.error(f"❌ [{source}] ETF Daily synchronization failed: {e}", exc_info=True)
             stats["errors"].append({"error": str(e), "context": "sync_etf_daily_quotes"})
 
         return stats
 
     async def sync_all(self, force_update: bool = False, days: int = 30, job_id: Optional[str] = None) -> Dict[str, Any]:
         """
-        全量同步：按数据源优先级依次尝试，优先级最高的先调用，同步成功则结束，失败则尝试下一优先级。
+        Full synchronization: Try in order according to the priority of the data source. The one with the highest priority is called first. If the synchronization is successful, it will end. If it fails, the next priority will be tried.
         """
         if self.db is None:
             await self.initialize()
@@ -1234,17 +1234,17 @@ class EtfSyncService:
         valid_sources = [source for source in priority if source in _FETCH_BASIC]
         last_error = None
 
-        await self._report_job_progress(job_id, 1, "开始同步 ETF 数据...")
+        await self._report_job_progress(job_id, 1, "Start syncing ETF data...")
 
         if not valid_sources:
             return {
-                "basic_info": {"total_processed": 0, "errors": [{"error": "未找到可用的 ETF 数据源"}]},
+                "basic_info": {"total_processed": 0, "errors": [{"error": "No available ETF data source found"}]},
                 "daily_quotes": {"records_inserted": 0, "total_processed": 0},
                 "data_source_used": None,
                 "total_processed": 0,
                 "success_count": 0,
                 "error_count": 1,
-                "errors": [{"error": "未找到可用的 ETF 数据源"}],
+                "errors": [{"error": "No available ETF data source found"}],
             }
 
         total_sources = len(valid_sources)
@@ -1256,11 +1256,11 @@ class EtfSyncService:
             basic_end = min(slot_end - 1, slot_start + max(1, int((slot_end - slot_start) * 0.45)))
             daily_start = min(slot_end, basic_end + 1)
 
-            logger.info(f"🔄 [ETF 同步] 尝试数据源: {source}")
+            logger.info(f"🔄 [ETF sync] try data source: {source}")
             await self._report_job_progress(
                 job_id,
                 slot_start,
-                f"准备同步 ETF 数据（{source.upper()}）",
+                f"Prepare to sync ETF data ({source.upper()}) ",
                 current_item=source.upper(),
             )
 
@@ -1275,10 +1275,10 @@ class EtfSyncService:
                     stage_end=basic_end,
                 )
 
-                # 基础信息同步成功：获取到数据即可（total_processed > 0）
+                # Basic information synchronization is successful: just get the data (total_processed > 0) 
                 if basic_stats.get("total_processed", 0) > 0:
-                    # 一旦当前数据源拿到了 ETF 列表，当前任务就会直接使用该数据源完成日线同步并返回，
-                    # 不会再继续尝试后续数据源；因此日线阶段应覆盖到全任务的完成区间，而不是停留在当前槽位上限。
+                    # Once the current data source gets the ETF list, the current task will directly use the data source to complete daily synchronization and return.
+                    # Subsequent data sources will not be tried again; therefore, the daily phase should cover the completion interval of all tasks, rather than staying at the upper limit of the current slot.
                     daily_stats = await self._sync_daily_by_source(
                         source,
                         None,
@@ -1293,22 +1293,22 @@ class EtfSyncService:
                     await self._report_job_progress(
                         job_id,
                         99,
-                        f"ETF 数据同步即将完成（{source.upper()}）",
+                        f"ETF Data synchronization is about to be completed ({source.upper()}) ",
                         current_item=source.upper(),
                         total_items=result.get("total_processed") or None,
                         processed_items=result.get("total_processed") or None,
                     )
-                    logger.info(f"✅ [ETF 同步] 数据源 {source} 同步完成")
+                    logger.info(f"✅ [ETF sync] data source {source} Synchronization completed")
                     return result
                 else:
-                    last_error = basic_stats.get("errors", [{"error": "未获取到 ETF 列表"}])
+                    last_error = basic_stats.get("errors", [{"error": "No ETF list obtained"}])
                     await self._report_job_progress(
                         job_id,
                         slot_end,
-                        f"数据源 {source.upper()} 未获取到 ETF 数据，尝试下一数据源",
+                        f"data source {source.upper()} No ETF data was obtained, try the next data source",
                         current_item=source.upper(),
                     )
-                    logger.warning(f"⚠️ [ETF 同步] 数据源 {source} 未获取到数据，尝试下一优先级")
+                    logger.warning(f"⚠️ [ETF sync] data source {source} No data was obtained, try the next priority")
             except TaskCancelledException:
                 raise
             except Exception as e:
@@ -1316,12 +1316,12 @@ class EtfSyncService:
                 await self._report_job_progress(
                     job_id,
                     slot_end,
-                    f"数据源 {source.upper()} 失败，尝试下一数据源",
+                    f"data source {source.upper()} Failed, try next data source",
                     current_item=source.upper(),
                 )
-                logger.warning(f"⚠️ [ETF 同步] 数据源 {source} 失败: {e}，尝试下一优先级")
+                logger.warning(f"⚠️ [ETF sync] data source {source} failed: {e}, Try next priority")
 
-        logger.error(f"❌ [ETF 同步] 所有数据源均失败，最后错误: {last_error}")
+        logger.error(f"❌ [ETF sync] All data sources fail with the final error: {last_error}")
         return {
             "basic_info": {"total_processed": 0, "errors": [{"error": str(last_error)}]},
             "daily_quotes": {"records_inserted": 0},
@@ -1339,7 +1339,7 @@ class EtfSyncService:
         days: int = 30,
         job_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """按指定 ETF 代码同步基础信息与日线数据。"""
+        """Synchronize fundamental information and daily data by specified ETF code."""
         if self.db is None:
             await self.initialize()
 
@@ -1353,13 +1353,13 @@ class EtfSyncService:
 
         if not normalized_symbols:
             return {
-                "basic_info": {"total_processed": 0, "errors": [{"error": "未提供有效的 ETF 代码"}]},
+                "basic_info": {"total_processed": 0, "errors": [{"error": "No valid ETF code provided"}]},
                 "daily_quotes": {"records_inserted": 0, "total_processed": 0},
                 "data_source_used": None,
                 "total_processed": 0,
                 "success_count": 0,
                 "error_count": 1,
-                "errors": [{"error": "未提供有效的 ETF 代码"}],
+                "errors": [{"error": "No valid ETF code provided"}],
                 "requested_symbols": [],
             }
 
@@ -1370,29 +1370,29 @@ class EtfSyncService:
         await self._report_job_progress(
             job_id,
             1,
-            "开始同步指定 ETF 数据...",
+            "Start synchronizing specified ETF data...",
             total_items=len(normalized_symbols),
             processed_items=0,
         )
 
         if not valid_sources:
             return {
-                "basic_info": {"total_processed": 0, "errors": [{"error": "未找到可用的 ETF 数据源"}]},
+                "basic_info": {"total_processed": 0, "errors": [{"error": "No available ETF data source found"}]},
                 "daily_quotes": {"records_inserted": 0, "total_processed": 0},
                 "data_source_used": None,
                 "total_processed": 0,
                 "success_count": 0,
                 "error_count": 1,
-                "errors": [{"error": "未找到可用的 ETF 数据源"}],
+                "errors": [{"error": "No available ETF data source found"}],
                 "requested_symbols": normalized_symbols,
             }
 
         for source in valid_sources:
-            logger.info(f"🔄 [ETF 同步] 尝试指定代码同步，数据源: {source}, 数量: {len(normalized_symbols)}")
+            logger.info(f"🔄 [ETF sync] Try to specify code synchronization, data source: {source}, Quantity: {len(normalized_symbols)}")
             await self._report_job_progress(
                 job_id,
                 5,
-                f"准备同步指定 ETF 数据（{source.upper()}）",
+                f"Prepare to synchronize specified ETF data ({source.upper()}) ",
                 current_item=source.upper(),
                 total_items=len(normalized_symbols),
                 processed_items=0,
@@ -1423,12 +1423,12 @@ class EtfSyncService:
                     result["requested_symbols"] = normalized_symbols
                     return result
 
-                last_error = basic_stats.get("errors", [{"error": "未获取到 ETF 列表"}])
+                last_error = basic_stats.get("errors", [{"error": "No ETF list obtained"}])
             except Exception as e:
                 last_error = str(e)
-                logger.warning(f"⚠️ [ETF 同步] 指定 ETF 同步失败: source={source}, error={e}")
+                logger.warning(f"⚠️ [ETF sync] Synchronization failed for specified ETF: source={source}, error={e}")
 
-        logger.error(f"❌ [ETF 同步] 指定 ETF 同步失败，最后错误: {last_error}")
+        logger.error(f"❌ [ETF sync] Specified ETF synchronization failed with final error: {last_error}")
         return {
             "basic_info": {"total_processed": 0, "errors": [{"error": str(last_error)}]},
             "daily_quotes": {"records_inserted": 0, "total_processed": 0},
@@ -1441,7 +1441,7 @@ class EtfSyncService:
         }
 
     def _is_fresh(self, updated_at: Any, hours: int = 24) -> bool:
-        """检查数据是否在指定小时内更新过"""
+        """Check if the data has been updated within the specified hour"""
         if not updated_at:
             return False
         try:
@@ -1458,7 +1458,7 @@ _etf_sync_service: Optional[EtfSyncService] = None
 
 
 async def get_etf_sync_service() -> EtfSyncService:
-    """获取 ETF 同步服务单例"""
+    """Get ETF synchronization service singleton"""
     global _etf_sync_service
     if _etf_sync_service is None:
         _etf_sync_service = EtfSyncService()
@@ -1467,7 +1467,7 @@ async def get_etf_sync_service() -> EtfSyncService:
 
 
 async def run_etf_sync(force_update: bool = False, days: int = 30, job_id: str = None) -> Dict[str, Any]:
-    """运行 ETF 全量同步（供 APScheduler 或 API 调用）"""
+    """Run ETF full volume synchronization (for APScheduler or API call)"""
     try:
         service = await get_etf_sync_service()
         result = await service.sync_all(force_update=force_update, days=days, job_id=job_id)
@@ -1482,9 +1482,9 @@ async def run_etf_sync(force_update: bool = False, days: int = 30, job_id: str =
         from app.services.scheduler_service import TaskCancelledException
 
         if isinstance(e, TaskCancelledException):
-            logger.info("ℹ️ ETF 同步任务已被用户取消")
-            return {"cancelled": True, "message": "任务已被用户取消"}
-        logger.error(f"❌ ETF 同步失败: {e}", exc_info=True)
+            logger.info("ℹ️ ETF The synchronization task has been canceled by the user")
+            return {"cancelled": True, "message": "The task has been canceled by the user"}
+        logger.error(f"❌ ETF Sync failed: {e}", exc_info=True)
         if job_id:
             try:
                 from app.services.scheduler_service import mark_job_completed

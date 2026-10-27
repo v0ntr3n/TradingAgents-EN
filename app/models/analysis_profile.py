@@ -1,9 +1,9 @@
 """
-行业/个股分析配置数据模型
+Industry/Stock Analysis Configuration Data Model
 
-用于上下文感知提示词注入：
-- IndustryAnalysisProfile: 行业级分析维度（如银行关注NIM、不良率）
-- StockAnalysisProfile: 个股级分析维度（如比亚迪关注月销量、DM-i占比）
+For context-aware prompt word injection:
+- IndustryAnalysisProfile: Industry-level analysis dimensions (such as banks focusing on NIM, NPL ratio)
+- StockAnalysisProfile: Dimensions of individual stock-level analysis (for example, BYD focuses on monthly sales and DM-i proportion)
 """
 
 from datetime import datetime
@@ -14,7 +14,7 @@ from app.utils.timezone import now_tz
 
 
 def validate_object_id(v: Any) -> ObjectId:
-    """验证ObjectId"""
+    """Verify ObjectId"""
     if isinstance(v, ObjectId):
         return v
     if isinstance(v, str):
@@ -24,7 +24,7 @@ def validate_object_id(v: Any) -> ObjectId:
 
 
 def serialize_object_id(v: ObjectId) -> str:
-    """序列化ObjectId为字符串"""
+    """Serialize ObjectId to string"""
     return str(v)
 
 
@@ -36,50 +36,50 @@ PyObjectId = Annotated[
 
 
 class AnalysisDimension(BaseModel):
-    """分析维度"""
-    name: str = Field(..., description="维度名称，如'净息差(NIM)'")
-    description: str = Field(..., description="维度说明，如'银行核心盈利能力指标'")
-    importance: str = Field(default="high", description="重要性: critical, high, medium, low")
-    data_source: str = Field(default="fundamentals", description="数据来源: fundamentals, news, technical, mixed")
+    """Analysis Dimensions"""
+    name: str = Field(..., description="Dimension name, such as'net interest margin(NIM)'")
+    description: str = Field(..., description="Dimension description, such as'Bank core profitability indicators'")
+    importance: str = Field(default="high", description="importance: critical, high, medium, low")
+    data_source: str = Field(default="fundamentals", description="Data source: fundamentals, news, technical, mixed")
 
 
 class IndustryAnalysisProfile(BaseModel):
-    """行业分析配置"""
+    """Industry analysis configuration"""
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
-    industry: str = Field(..., description="行业名称（与 stock_basic_info 的 industry 字段对齐）")
-    display_name: str = Field(default="", description="行业显示名称")
-    analysis_dimensions: List[AnalysisDimension] = Field(default_factory=list, description="行业核心分析维度")
-    analysis_focus: str = Field(default="", description="行业分析重点说明")
-    key_metrics: List[str] = Field(default_factory=list, description="关键指标列表")
-    comparable_companies: List[str] = Field(default_factory=list, description="行业内可比公司")
-    source: str = Field(default="system", description="来源: system, ai_generated, user")
-    is_active: bool = Field(default=True, description="是否启用")
-    created_at: datetime = Field(default_factory=now_tz, description="创建时间")
-    updated_at: datetime = Field(default_factory=now_tz, description="更新时间")
+    industry: str = Field(..., description="Industry name (aligned with the industry field of stock_basic_info)")
+    display_name: str = Field(default="", description="Industry display name")
+    analysis_dimensions: List[AnalysisDimension] = Field(default_factory=list, description="Industry core analysis dimensions")
+    analysis_focus: str = Field(default="", description="Industry analysis highlights")
+    key_metrics: List[str] = Field(default_factory=list, description="List of key indicators")
+    comparable_companies: List[str] = Field(default_factory=list, description="Comparable companies in the industry")
+    source: str = Field(default="system", description="Source: system, ai_generated, user")
+    is_active: bool = Field(default=True, description="Whether to enable")
+    created_at: datetime = Field(default_factory=now_tz, description="creation time")
+    updated_at: datetime = Field(default_factory=now_tz, description="Update time")
 
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
 
 class StockAnalysisProfile(BaseModel):
-    """个股分析配置（覆盖行业默认配置）"""
+    """Individual stock analysis configuration (covering industry default configuration)"""
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
-    stock_symbol: str = Field(..., description="股票代码，如 002594.SZ")
-    company_name: str = Field(default="", description="公司名称")
-    industry: str = Field(default="", description="所属行业")
-    analysis_dimensions: List[AnalysisDimension] = Field(default_factory=list, description="个股专属分析维度")
-    special_notes: str = Field(default="", description="个股特殊说明")
-    source: str = Field(default="user", description="来源: system, ai_generated, user")
-    is_active: bool = Field(default=True, description="是否启用")
-    created_at: datetime = Field(default_factory=now_tz, description="创建时间")
-    updated_at: datetime = Field(default_factory=now_tz, description="更新时间")
+    stock_symbol: str = Field(..., description="Stock code, such as 002594.SZ")
+    company_name: str = Field(default="", description="Company name")
+    industry: str = Field(default="", description="Industry")
+    analysis_dimensions: List[AnalysisDimension] = Field(default_factory=list, description="Exclusive analysis dimensions for individual stocks")
+    special_notes: str = Field(default="", description="Special instructions for individual stocks")
+    source: str = Field(default="user", description="Source: system, ai_generated, user")
+    is_active: bool = Field(default=True, description="Whether to enable")
+    created_at: datetime = Field(default_factory=now_tz, description="creation time")
+    updated_at: datetime = Field(default_factory=now_tz, description="Update time")
 
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
 
-# === Request/Response 模型 ===
+# === Request/Response model ===
 
 class AnalysisDimensionCreate(BaseModel):
-    """创建分析维度请求"""
+    """Create an analysis dimension request"""
     name: str
     description: str
     importance: str = "high"
@@ -87,7 +87,7 @@ class AnalysisDimensionCreate(BaseModel):
 
 
 class IndustryProfileCreate(BaseModel):
-    """创建行业配置请求"""
+    """Create an industry configuration request"""
     industry: str
     display_name: str = ""
     analysis_dimensions: List[AnalysisDimensionCreate] = []
@@ -98,7 +98,7 @@ class IndustryProfileCreate(BaseModel):
 
 
 class IndustryProfileUpdate(BaseModel):
-    """更新行业配置请求"""
+    """Update Industry Configuration Request"""
     display_name: Optional[str] = None
     analysis_dimensions: Optional[List[AnalysisDimensionCreate]] = None
     analysis_focus: Optional[str] = None
@@ -108,7 +108,7 @@ class IndustryProfileUpdate(BaseModel):
 
 
 class StockProfileCreate(BaseModel):
-    """创建个股配置请求"""
+    """Create a stock allocation request"""
     stock_symbol: str
     company_name: str = ""
     industry: str = ""
@@ -118,7 +118,7 @@ class StockProfileCreate(BaseModel):
 
 
 class StockProfileUpdate(BaseModel):
-    """更新个股配置请求"""
+    """Update individual stock allocation request"""
     company_name: Optional[str] = None
     industry: Optional[str] = None
     analysis_dimensions: Optional[List[AnalysisDimensionCreate]] = None
@@ -127,7 +127,7 @@ class StockProfileUpdate(BaseModel):
 
 
 class IndustryProfileResponse(BaseModel):
-    """行业配置响应"""
+    """Industry configuration response"""
     id: str
     industry: str
     display_name: str
@@ -142,7 +142,7 @@ class IndustryProfileResponse(BaseModel):
 
 
 class StockProfileResponse(BaseModel):
-    """个股配置响应"""
+    """Individual stock allocation response"""
     id: str
     stock_symbol: str
     company_name: str

@@ -1,8 +1,8 @@
 """
-Skill 运行时本地数据访问模块。
+Skill Runtime local data access module.
 
-生成的 Skill 只应从此模块导入数据库访问 helper，
-避免触发 Skill 生成管线包的初始化副作用。
+The generated Skill should only import the database access helper from this module,
+Avoid triggering initialization side effects of Skill generation pipeline packages.
 """
 
 import logging
@@ -153,69 +153,69 @@ def _flatten_financial_period_record(period_record: Dict[str, Any]) -> Dict[str,
 
 
 def expand_financial_document_to_periods(document: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """将单条财务快照文档按报告期展开为多期标准财务记录。
+    """Expand a single financial snapshot document into multi-period standard financial records by reporting period.
 
     Args:
-        document: 财务快照文档 dict，需含 raw_data（含 income_statement/balance_sheet/
-                  cashflow_statement/financial_indicators/main_business 子段）及
-                  symbol/code/name/data_source/report_period 等元信息；为 None 或空时返回空列表
+        document: Financial snapshot document dict, which must contain raw_data (including income_statement/balance_sheet/
+                  cashflow_statement/financial_indicators/main_business subsection) and
+                  symbol/code/name/data_source/report_period Equivalent information; returns an empty list if None or empty
 
     Returns:
-        list[dict]: 按报告期降序排列的标准财务记录列表（无数据时返回 []），每项字段 ——
-            symbol: 股票代码（取 document.symbol 或 document.code）
-            code: 股票代码（取 document.code 或 document.symbol）
-            name: 股票名称
-            data_source: 数据源名称
-            source: 数据源名称（同 data_source）
-            report_period: 报告期 8 位日期串（YYYYMMDD）
-            report_date: 报告日期 8 位日期串（同 report_period）
-            report_type: 报告类型: "annual"(年报) | "quarterly"(季报) | "unknown"
-            ann_date: 公告日期 8 位日期串
-            updated_at: 原始文档的更新时间
-            income_statement: 利润表分项 dict
-            balance_sheet: 资产负债表分项 dict
-            cashflow_statement: 现金流量表分项 dict
-            financial_indicators: 财务指标分项 dict
-            main_business: 主营业务分项 dict（如存在）
-            revenue: 营业收入（从 income_statement 提取）
-            oper_rev: 营业收入（备用字段）
-            net_income: 净利润
-            net_profit: 归母净利润
-            oper_profit: 经营利润
-            operating_profit: 经营利润（同 oper_profit）
-            ebit: 息税前利润
-            total_profit: 利润总额
-            oper_cost: 营业成本
-            oper_exp: 营业费用
-            admin_exp: 管理费用
-            fin_exp: 财务费用
-            rd_exp: 研发费用
-            total_assets: 总资产
-            total_liab: 总负债
-            total_equity: 股东权益
-            total_cur_assets: 流动资产
-            total_nca: 非流动资产
-            total_cur_liab: 流动负债
-            total_ncl: 非流动负债
-            money_cap: 货币资金
-            accounts_receiv: 应收账款
-            inventories: 存货
-            fix_assets: 固定资产
-            n_cashflow_act: 经营活动现金流净额
-            n_cashflow_inv_act: 投资活动现金流净额
-            n_cashflow_fin_act: 筹资活动现金流净额
-            c_cash_equ_end_period: 期末现金及等价物
-            c_cash_equ_beg_period: 期初现金及等价物
-            roe: 净资产收益率
-            roa: 总资产收益率
-            gross_margin: 毛利率
-            netprofit_margin: 净利率
-            debt_to_assets: 资产负债率
-            assets_to_eqt: 权益乘数
-            current_ratio: 流动比率
-            quick_ratio: 速动比率
-            cash_ratio: 现金比率
-            raw_data: 原始分项数据 dict — income_statement, balance_sheet, cashflow_statement, financial_indicators
+        list[dict]: Standard list of financial records in descending order by reporting period (returned if no data is available []) , Each field ——
+            symbol: Stock code (take document.symbol or document.code)
+            code: Stock code (take document.code or document.symbol)
+            name: Stock name
+            data_source: Data source name
+            source: Data source name (same as data_source)
+            report_period: Reporting period 8-digit date string (YYYYMMDD)
+            report_date: Report date 8-digit date string (same as report_period)
+            report_type: report type: "annual"(annual report) | "quarterly"(quarterly report) | "unknown"
+            ann_date: Announcement date 8-digit date string
+            updated_at: Original document update time
+            income_statement: Income statement breakdown dict
+            balance_sheet: Balance Sheet Items dict
+            cashflow_statement: Cash Flow Statement Items dict
+            financial_indicators: Financial indicator breakdown dict
+            main_business: Main business sub-item dict (if exists)
+            revenue: Operating income (extracted from income_statement)
+            oper_rev: Operating Income (Alternate Field)
+            net_income: net profit
+            net_profit: Net profit attributable to parent company
+            oper_profit: operating profit
+            operating_profit: Operating profit (same as oper_profit)
+            ebit: EBIT
+            total_profit: total profit
+            oper_cost: operating costs
+            oper_exp: operating expenses
+            admin_exp: overhead
+            fin_exp: financial charges
+            rd_exp: R&D expenses
+            total_assets: total assets
+            total_liab: total liabilities
+            total_equity: Shareholders equity
+            total_cur_assets: current assets
+            total_nca: non-current assets
+            total_cur_liab: current liabilities
+            total_ncl: non-current liabilities
+            money_cap: Monetary funds
+            accounts_receiv: Accounts receivable
+            inventories: Inventory
+            fix_assets: fixed assets
+            n_cashflow_act: Net cash flow from operating activities
+            n_cashflow_inv_act: Net cash flow from investing activities
+            n_cashflow_fin_act: Net cash flow from financing activities
+            c_cash_equ_end_period: Closing cash and equivalents
+            c_cash_equ_beg_period: Opening cash and equivalents
+            roe: ROE
+            roa: return on total assets
+            gross_margin: Gross profit margin
+            netprofit_margin: net profit margin
+            debt_to_assets: Asset-liability ratio
+            assets_to_eqt: equity multiplier
+            current_ratio: current ratio
+            quick_ratio: quick ratio
+            cash_ratio: cash ratio
+            raw_data: Original breakdown dict — income_statement, balance_sheet, cashflow_statement, financial_indicators
     """
     if not document:
         return []
@@ -328,14 +328,14 @@ def _query_financial_snapshot_documents(symbol: str, source: Optional[str], limi
 
 
 def _get_db():
-    """获取同步 MongoDB 连接。"""
+    """Get a synchronous MongoDB connection."""
     from app.core.database import get_mongo_db_sync
 
     return get_mongo_db_sync()
 
 
 def _get_sources(market: str = "a_shares") -> List[str]:
-    """获取数据源优先级列表。"""
+    """Get a prioritized list of data sources."""
     try:
         from app.core.data_source_priority import get_enabled_data_sources_sync
 
@@ -345,28 +345,28 @@ def _get_sources(market: str = "a_shares") -> List[str]:
 
 
 def get_stock_basic_info(symbol: str, source: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """获取股票基础信息。
+    """Get basic stock information.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀，会被 zfill 到 6 位）
-        source: 指定数据源（如 "tushare" / "akshare"），为 None 时按 _get_sources() 优先级依次尝试
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix, will be zfilled to 6 digits)
+        source: Specify the data source (such as "tushare" / "akshare") , When None, press _get_sources() Try in order of priority
 
     Returns:
-        dict | None: 股票基础信息文档，无匹配时返回 None。字段（以 stock_basic_info 集合存储为准）——
-            symbol: 6 位股票代码
-            code: 6 位股票代码（备用字段）
-            name: 股票名称
-            industry: 行业分类
-            area: 地区
-            list_date: 上市日期
-            total_mv: 总市值（万元）
-            circ_mv: 流通市值（万元）
-            pe_ttm: 滚动市盈率
-            pb: 市净率
-            pb_mrq: 最近报告期市净率
-            ps_ttm: 滚动市销率
-            source: 数据源名称
-            其他可能的字段：close/current_price/pre_close/open 等行情快照字段
+        dict | None: Stock basic information document, returns None if there is no match. Field (based on stock_basic_info collection storage)——
+            symbol: 6 stock code
+            code: 6 Bit stock code (alternate field)
+            name: Stock name
+            industry: Industry classification
+            area: area
+            list_date: Listing date
+            total_mv: Total market value (10,000 yuan)
+            circ_mv: Circulation market value (10,000 yuan)
+            pe_ttm: rolling price to earnings ratio
+            pb: price to book ratio
+            pb_mrq: Price to Book Ratio for the Most Recent Reporting Period
+            ps_ttm: rolling price-to-sales ratio
+            source: Data source name
+            Other possible fields: close/current_price/pre_close/open and other market snapshot fields
     """
     symbol = str(symbol).strip().zfill(6)
     db = _get_db()
@@ -395,34 +395,34 @@ def get_stock_daily_quotes(
     source: Optional[str] = None,
     limit: int = 1000,
 ) -> List[Dict[str, Any]]:
-    """获取股票日线或 K 线数据。
+    """Get daily stock or K-line data.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀，会被 zfill 到 6 位）
-        start_date: 起始日期，格式 YYYYMMDD 或 YYYY-MM-DD
-        end_date: 结束日期，格式 YYYYMMDD 或 YYYY-MM-DD
-        period: K 线周期（默认 "daily"），可选 "daily"/"weekly"/"monthly" 等数据库中已存的 period 值
-        source: 指定数据源（如 "tushare" / "akshare"），为 None 时按 _get_sources() 优先级依次尝试，
-                优先返回第一个有数据的数据源
-        limit: 最多返回记录数（默认 1000）
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix, will be zfilled to 6 digits)
+        start_date: Starting date in the format YYYYMMDD or YYYY-MM-DD
+        end_date: End date in the format YYYYMMDD or YYYY-MM-DD
+        period: K Line period (default "daily") , Optional "daily"/"weekly"/"monthly" Wait for the period value stored in the database
+        source: Specify the data source (such as "tushare" / "akshare") , When None, press _get_sources() Try in order of priority,
+                Return the first data source with data first
+        limit: Maximum number of records returned (default 1000)
 
     Returns:
-        list[dict]: 按 trade_date 升序排列的日线/K 线记录列表（无数据时返回 []），每项字段 ——
-            symbol: 6 位股票代码
-            period: K 线周期
-            trade_date: 交易日期（YYYYMMDD 或 YYYY-MM-DD，与数据库存储一致）
-            open: 开盘价
-            high: 最高价
-            low: 最低价
-            close: 收盘价
-            pre_close: 前收盘价
-            volume: 成交量
-            amount: 成交额
-            pct_chg: 涨跌幅（%）
-            change: 涨跌额
-            turnover: 换手率
-            data_source: 数据源名称
-            其他字段以数据库 stock_daily_quotes 集合存储为准
+        list[dict]: List of daily/K-line records sorted by trade_date in ascending order (returned when there is no data []) , Each field ——
+            symbol: 6 stock code
+            period: K line period
+            trade_date: Transaction date (YYYYMMDD or YYYY-MM-DD, consistent with database storage)
+            open: opening price
+            high: highest price
+            low: lowest price
+            close: closing price
+            pre_close: previous closing price
+            volume: Volume
+            amount: Turnover
+            pct_chg: Increase or decrease (%)
+            change: Changes
+            turnover: turnover rate
+            data_source: Data source name
+            Other fields are stored in the database stock_daily_quotes collection.
     """
     symbol = str(symbol).strip().zfill(6)
     start = start_date.replace("-", "")[:8]
@@ -463,24 +463,24 @@ def get_stock_news(
     end_date: Optional[datetime] = None,
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
-    """获取股票新闻。
+    """Get stock news.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀，会被 zfill 到 6 位）
-        start_date: 起始时间（datetime 对象，为 None 时不限起点），同时匹配 publish_time / pub_date 字段
-        end_date: 结束时间（datetime 对象，为 None 时不限终点）
-        limit: 最多返回记录数（默认 20）
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix, will be zfilled to 6 digits)
+        start_date: Starting time (datetime object, no limit to the starting point when None), and also matches the publish_time / pub_date fields
+        end_date: End time (datetime object, no end point when None)
+        limit: Maximum number of records returned (default 20)
 
     Returns:
-        list[dict]: 按 publish_time（或 pub_date）降序排列的新闻记录列表（无数据时返回 []），每项字段 ——
-            symbol: 6 位股票代码
-            title: 新闻标题
-            content: 新闻正文
-            publish_time: 发布时间（datetime，优先字段）
-            pub_date: 发布时间（备用字段）
-            url: 新闻链接
-            source: 新闻来源
-            其他字段以数据库 stock_news 集合存储为准
+        list[dict]: List of news records sorted in descending order by publish_time (or pub_date) (returned when no data is available []) , Each field ——
+            symbol: 6 stock code
+            title: News headline
+            content: News text
+            publish_time: Release time (datetime, priority field)
+            pub_date: Release time (alternative field)
+            url: News link
+            source: news source
+            Other fields are stored in the database stock_news collection.
     """
     symbol = str(symbol).strip().zfill(6)
     db = _get_db()
@@ -507,24 +507,24 @@ def get_stock_news_by_date_range(
     end_date: str,
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
-    """按日期范围获取股票新闻。
+    """Get stock news by date range.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀，会被 zfill 到 6 位）
-        start_date: 起始日期字符串，格式 YYYY-MM-DD（仅取前 10 位解析）
-        end_date: 结束日期字符串，格式 YYYY-MM-DD
-        limit: 最多返回记录数（默认 20）
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix, will be zfilled to 6 digits)
+        start_date: Starting date string, format YYYY-MM-DD (only the first 10 digits are parsed)
+        end_date: End date string, format YYYY-MM-DD
+        limit: Maximum number of records returned (default 20)
 
     Returns:
-        list[dict]: 按发布时间降序排列的新闻记录列表（无数据或日期解析失败时返回 []），每项字段 ——
-            symbol: 6 位股票代码
-            title: 新闻标题
-            content: 新闻正文
-            publish_time: 发布时间（datetime，优先字段）
-            pub_date: 发布时间（备用字段）
-            url: 新闻链接
-            source: 新闻来源
-            其他字段以数据库 stock_news 集合存储为准
+        list[dict]: List of news records sorted in descending order by publication time (returned when there is no data or date parsing fails []) , Each field ——
+            symbol: 6 stock code
+            title: News headline
+            content: News text
+            publish_time: Release time (datetime, priority field)
+            pub_date: Release time (alternative field)
+            url: News link
+            source: news source
+            Other fields are stored in the database stock_news collection.
     """
     symbol = str(symbol).strip().zfill(6)
     try:
@@ -536,29 +536,29 @@ def get_stock_news_by_date_range(
 
 
 def get_market_quotes(symbol: str) -> Optional[Dict[str, Any]]:
-    """获取股票实时行情。
+    """Get real-time stock quotes.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀，会被 zfill 到 6 位）
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix, will be zfilled to 6 digits)
 
     Returns:
-        dict | None: 实时行情文档，无匹配时返回 None。字段（以 market_quotes 集合存储为准）——
-            symbol: 6 位股票代码
-            code: 6 位股票代码（备用字段）
-            name: 股票名称
-            close: 收盘价/最新价
-            current_price: 最新价
-            pre_close: 前收盘价
-            open: 开盘价
-            high: 最高价
-            low: 最低价
-            volume: 成交量
-            amount: 成交额
-            pct_chg: 涨跌幅（%）
-            change: 涨跌额
-            turnover: 换手率
-            trade_date: 交易日期
-            其他字段以数据库 market_quotes 集合存储为准
+        dict | None: Real-time quotation document, returns None when there is no match. Field (based on market_quotes collection storage)——
+            symbol: 6 stock code
+            code: 6 Bit stock code (alternate field)
+            name: Stock name
+            close: Closing price/Latest price
+            current_price: latest price
+            pre_close: previous closing price
+            open: opening price
+            high: highest price
+            low: lowest price
+            volume: Volume
+            amount: Turnover
+            pct_chg: Increase or decrease (%)
+            change: Changes
+            turnover: turnover rate
+            trade_date: transaction date
+            Other fields are stored in the market_quotes collection of the database.
     """
     symbol = str(symbol).strip().zfill(6)
     db = _get_db()
@@ -567,16 +567,16 @@ def get_market_quotes(symbol: str) -> Optional[Dict[str, Any]]:
 
 
 def get_latest_stock_price(symbol: str) -> Optional[float]:
-    """获取股票最新可用价格。
+    """Get the latest available price for a stock.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀，会被 zfill 到 6 位）
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix, will be zfilled to 6 digits)
 
     Returns:
-        float | None: 标准价格入口，按以下优先级返回第一个有效正值 ——
-            1. get_market_quotes() 返回的 close / current_price / pre_close / open 字段
-            2. get_stock_basic_info() 返回的 close / current_price / pre_close / open 字段
-            若以上均无有效正值，返回 None
+        float | None: Standard price entry, returns the first valid positive value according to the following priorities ——
+            1. get_market_quotes() Returned close / current_price / pre_close / open fields
+            2. get_stock_basic_info() Returned close / current_price / pre_close / open fields
+            If none of the above are valid positive values, return None
     """
     symbol = str(symbol).strip().zfill(6)
 
@@ -602,32 +602,32 @@ def get_stock_financial_data(
     limit: int = 20,
     source: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """获取股票财务数据。
+    """Get stock financial data.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀，会被 zfill 到 6 位）
-        start_date: 起始日期（YYYYMMDD 或 YYYY-MM-DD，为 None 时不限起点），
-                    同时匹配 report_period / report_date 字段
-        end_date: 结束日期（YYYYMMDD 或 YYYY-MM-DD，为 None 时不限终点）
-        limit: 最多返回记录数（默认 20，实际查询会放大 3 倍以保证排序后样本充足）
-        source: 指定数据源（如 "tushare" / "akshare"），为 None 时不按 source 过滤
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix, will be zfilled to 6 digits)
+        start_date: Starting date (YYYYMMDD or YYYY-MM-DD, no starting point is required when None),
+                    Match report_period / report_date fields at the same time
+        end_date: End date (YYYYMMDD or YYYY-MM-DD, no limit to the end date when None)
+        limit: Maximum number of records returned (default 20, the actual query will be enlarged 3 times to ensure sufficient samples after sorting)
+        source: Specify the data source (such as "tushare" / "akshare") , When None, do not filter by source
 
     Returns:
-        list[dict]: 按 report_period（或 report_date）降序排列的财务记录列表（无数据时返回 []），
-                    每项字段 ——
-            symbol: 6 位股票代码
-            code: 6 位股票代码（备用字段）
-            name: 股票名称
-            data_source: 数据源名称
-            source: 数据源名称（同 data_source）
-            report_period: 报告期
-            report_date: 报告日期（备用字段）
-            ann_date: 公告日期
-            updated_at: 更新时间
-            raw_data: 原始分项数据 dict（如存在）— income_statement, balance_sheet,
+        list[dict]: List of financial records in descending order by report_period (or report_date) (returned when no data is available []) , 
+                    Each field ——
+            symbol: 6 stock code
+            code: 6 Bit stock code (alternate field)
+            name: Stock name
+            data_source: Data source name
+            source: Data source name (same as data_source)
+            report_period: reporting period
+            report_date: Report date (alternative field)
+            ann_date: Announcement date
+            updated_at: Update time
+            raw_data: Raw itemized data dict (if present)— income_statement, balance_sheet,
                       cashflow_statement, financial_indicators, main_business
-            其他字段以数据库 stock_financial_data 集合存储为准（可能含 revenue/net_profit/
-                      total_assets/roe 等扁平字段，结构因数据源而异）
+            Other fields are stored in the database stock_financial_data collection (which may include revenue/net_profit/
+                      total_assets/roe flat fields, the structure varies depending on the data source)
     """
     symbol = str(symbol).strip().zfill(6)
     db = _get_db()
@@ -656,33 +656,33 @@ def get_stock_financial_periods(
     source: Optional[str] = None,
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
-    """获取按报告期展开后的标准财务记录。
+    """Get standard financial records expanded by reporting period.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀，会被 zfill 到 6 位）
-        source: 指定数据源（如 "tushare" / "akshare"），为 None 时按 _get_sources() 优先级依次尝试，
-                优先返回第一个有数据的数据源
-        limit: 最多返回记录数（默认 20）
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix, will be zfilled to 6 digits)
+        source: Specify the data source (such as "tushare" / "akshare") , When None, press _get_sources() Try in order of priority,
+                Return the first data source with data first
+        limit: Maximum number of records returned (default 20)
 
     Returns:
-        list[dict]: 按报告期降序排列的标准财务记录列表（无数据时返回 []），每项字段 ——
-            symbol: 股票代码
-            code: 股票代码（备用字段）
-            name: 股票名称
-            data_source: 数据源名称
-            source: 数据源名称（同 data_source）
-            report_period: 报告期 8 位日期串（YYYYMMDD）
-            report_date: 报告日期 8 位日期串（同 report_period）
-            report_type: 报告类型: "annual"(年报) | "quarterly"(季报) | "unknown"
-            ann_date: 公告日期 8 位日期串
-            updated_at: 更新时间
-            income_statement: 利润表分项 dict
-            balance_sheet: 资产负债表分项 dict
-            cashflow_statement: 现金流量表分项 dict
-            financial_indicators: 财务指标分项 dict
-            main_business: 主营业务分项 dict（如存在）
-            raw_data: 原始分项数据 dict — income_statement, balance_sheet, cashflow_statement, financial_indicators
-            以及经 _flatten_financial_period_record 提取的扁平字段 —
+        list[dict]: Standard list of financial records in descending order by reporting period (returned if no data is available []) , Each field ——
+            symbol: Stock code
+            code: Stock code (alternative field)
+            name: Stock name
+            data_source: Data source name
+            source: Data source name (same as data_source)
+            report_period: Reporting period 8-digit date string (YYYYMMDD)
+            report_date: Report date 8-digit date string (same as report_period)
+            report_type: report type: "annual"(annual report) | "quarterly"(quarterly report) | "unknown"
+            ann_date: Announcement date 8-digit date string
+            updated_at: Update time
+            income_statement: Income statement breakdown dict
+            balance_sheet: Balance Sheet Items dict
+            cashflow_statement: Cash Flow Statement Items dict
+            financial_indicators: Financial indicator breakdown dict
+            main_business: Main business sub-item dict (if exists)
+            raw_data: Original breakdown dict — income_statement, balance_sheet, cashflow_statement, financial_indicators
+            and flattened fields extracted by _flatten_financial_period_record —
                 revenue, oper_rev, net_income, net_profit, oper_profit, operating_profit, ebit,
                 total_profit, oper_cost, oper_exp, admin_exp, fin_exp, rd_exp, total_assets,
                 total_liab, total_equity, total_cur_assets, total_nca, total_cur_liab, total_ncl,
@@ -748,30 +748,30 @@ def get_industry_peer_basic_info(
     limit: int = 200,
     source: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """按行业获取同行股票基础信息。
+    """Get basic information on peer stocks by industry.
 
     Args:
-        industry: 行业名称关键词（大小写不敏感，使用 regex 子串匹配，例如 "银行" / "半导体"）
-        exclude_symbol: 需要排除的股票代码（6 位数字，为 None 时不排除）
-        limit: 最多返回记录数（默认 200）
-        source: 指定数据源（如 "tushare" / "akshare"），为 None 时不按 source 过滤
+        industry: Industry name keywords (case insensitive, use regex substring matching, for example "bank" / "Semiconductor") 
+        exclude_symbol: Stock code to be excluded (6 digits, not excluded if None)
+        limit: Maximum number of records returned (default 200)
+        source: Specify the data source (such as "tushare" / "akshare") , When None, do not filter by source
 
     Returns:
-        list[dict]: 同行股票基础信息列表（industry 为空时返回 []），每项字段 ——
-            symbol: 6 位股票代码
-            code: 6 位股票代码（备用字段）
-            name: 股票名称
-            industry: 行业分类
-            area: 地区
-            list_date: 上市日期
-            total_mv: 总市值（万元）
-            circ_mv: 流通市值（万元）
-            pe_ttm: 滚动市盈率
-            pb: 市净率
-            pb_mrq: 最近报告期市净率
-            ps_ttm: 滚动市销率
-            source: 数据源名称
-            其他字段以数据库 stock_basic_info 集合存储为准
+        list[dict]: Peer stock basic information list (returned when industry is empty []) , Each field ——
+            symbol: 6 stock code
+            code: 6 Bit stock code (alternate field)
+            name: Stock name
+            industry: Industry classification
+            area: area
+            list_date: Listing date
+            total_mv: Total market value (10,000 yuan)
+            circ_mv: Circulation market value (10,000 yuan)
+            pe_ttm: rolling price to earnings ratio
+            pb: price to book ratio
+            pb_mrq: Price to Book Ratio for the Most Recent Reporting Period
+            ps_ttm: rolling price-to-sales ratio
+            source: Data source name
+            Other fields are stored in the database stock_basic_info collection.
     """
     industry_text = str(industry or "").strip()
     if not industry_text:
@@ -803,30 +803,30 @@ def summarize_industry_valuation(
     min_value: float = 0.0,
     max_value: float = 1000.0,
 ) -> Dict[str, Any]:
-    """汇总行业估值指标统计结果。
+    """Summarize the statistical results of industry valuation indicators.
 
     Args:
-        industry: 行业名称关键词（同 get_industry_peer_basic_info）
-        metric: 估值指标（默认 "pb"），可选 "pb" / "pe" / "ps" 或自定义字段名；
-                "pb" 取 pb/pb_mrq，"pe" 取 pe_ttm/pe，"ps" 取 ps_ttm/ps
-        exclude_symbol: 需要排除的股票代码（6 位数字，为 None 时不排除）
-        limit: 同行样本最大数量（默认 200）
-        source: 指定数据源（同 get_industry_peer_basic_info，为 None 时不按 source 过滤）
-        min_value: 指标下界（默认 0.0），低于此值的样本会被剔除
-        max_value: 指标上界（默认 1000.0），高于此值的样本会被剔除
+        industry: Industry name keyword (same as get_industry_peer_basic_info)
+        metric: Valuation metric (default "pb") , Optional "pb" / "pe" / "ps" Or custom field name;
+                "pb" Take pb/pb_mrq,"pe" Take pe_ttm/pe,"ps" take ps_ttm/ps
+        exclude_symbol: Stock code to be excluded (6 digits, not excluded if None)
+        limit: Maximum number of peer samples (default 200)
+        source: Specify the data source (same as get_industry_peer_basic_info, no filtering by source when None)
+        min_value: Indicator lower bound (default 0.0), samples lower than this value will be eliminated
+        max_value: Indicator upper bound (default 1000.0), samples higher than this value will be eliminated
 
     Returns:
-        dict: 行业估值统计结果，字段（代码中使用 .get() 或 [] 访问这些 key）——
-            industry: 输入的行业关键词原值
-            metric: 标准化后的指标名（小写）
-            count: 有效样本数（int，无样本时为 0）
-            average: 均值（float，无样本时为 None）
-            median: 中位数（float，无样本时为 None）
-            min: 最小值（float，无样本时为 None）
-            max: 最大值（float，无样本时为 None）
-            samples: 样本列表（最多 20 条），每项结构 —
-                {"symbol": 6 位代码, "name": 股票名称, <metric_key>: 指标值}
-                （无样本时为 []）
+        dict: Industry valuation statistical results, fields (used in the code .get() or [] access these keys)——
+            industry: The original value of the input industry keyword
+            metric: Standardized indicator name (lowercase)
+            count: Number of valid samples (int, 0 when no sample)
+            average: Mean (float, None when there is no sample)
+            median: Median (float, None if no sample)
+            min: Minimum value (float, None if no sample)
+            max: Maximum value (float, None if no sample)
+            samples: Sample list (up to 20 items), each structure —
+                {"symbol": 6 bit code, "name": Stock name, <metric_key>: indicator value}
+                 (When there is no sample, it is []) 
     """
     metric_key = str(metric or "pb").strip().lower()
     metric_fields = {
@@ -891,21 +891,21 @@ def summarize_industry_valuation(
 
 
 def get_stock_valuation_context(symbol: str, financial_limit: int = 8) -> Dict[str, Any]:
-    """获取估值场景标准输入上下文。
+    """Gets the valuation scenario standard input context.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀，会被 zfill 到 6 位）
-        financial_limit: 财务记录期数（默认 8），传给 get_stock_financial_periods(limit=...)
+        symbol: A Stock stock code (6 digits or including exchange prefix and suffix, will be zfilled to 6 digits)
+        financial_limit: Financial record period number (default 8), passed to get_stock_financial_periods(limit=...)
 
     Returns:
-        dict: 估值场景标准输入上下文，字段（代码中使用 .get() 或 [] 访问这些 key）——
-            basic_info: 股票基础信息 dict（无数据时为 {}），字段见 get_stock_basic_info
-            market_quotes: 实时行情 dict（无数据时为 {}），字段见 get_market_quotes
-            current_price: 最新可用价格（float | None，详见 get_latest_stock_price）
-            pe_ttm: 滚动市盈率（取 basic_info.pe_ttm 或 basic_info.pe，可能为 None）
-            pb: 市净率（取 basic_info.pb 或 basic_info.pb_mrq，可能为 None）
-            ps_ttm: 滚动市销率（取 basic_info.ps_ttm 或 basic_info.ps，可能为 None）
-            financial_data: 标准财务记录列表（list[dict]，每项字段见 get_stock_financial_periods）
+        dict: Valuation scenario standard input context, field (used in code .get() or [] access these keys)——
+            basic_info: Basic stock information dict (if no data is available) {}) , field see get_stock_basic_info
+            market_quotes: Real-time market quotation dict (when there is no data, it is {}) , field see get_market_quotes
+            current_price: Latest available prices (float | None, See get_latest_stock_price for details)
+            pe_ttm: Rolling P/E ratio (takes basic_info.pe_ttm or basic_info.pe, may be None)
+            pb: Price-to-book ratio (takes basic_info.pb or basic_info.pb_mrq, may be None)
+            ps_ttm: Rolling price-to-sales ratio (takes basic_info.ps_ttm or basic_info.ps, may be None)
+            financial_data: List of standard financial records (list[dict], See get_stock_financial_periods for each field)
     """
     symbol = str(symbol).strip().zfill(6)
     basic_info = get_stock_basic_info(symbol) or {}
@@ -925,85 +925,85 @@ def get_stock_valuation_context(symbol: str, financial_limit: int = 8) -> Dict[s
 
 
 LOCAL_DATA_API_DOC = """
-【本地数据访问 — 可从数据库获取已有数据】
+ [local data access — Existing data can be obtained from the database]
 
-本系统已同步的股票数据存储在 MongoDB 中，生成的 Skill 可直接查询，无需调用外部 API。
-优先考虑从本地数据获取，再考虑外部数据源。数据不足时再调用 akshare、tushare 等。
+The synchronized stock data of this system is stored in MongoDB, and the generated Skill can be queried directly without calling external API.
+Prioritize obtaining local data before considering external data sources. When there is insufficient data, call akshare, tushare, etc.
 
-允许导入：from core.skill_runtime.data_access import ...
+Allow import:from core.skill_runtime.data_access import ...
 
-可用函数（均为同步函数，直接调用即可）：
+Available functions (all are synchronous functions, just call them directly):
 
 1. get_stock_basic_info(symbol: str, source=None) -> dict | None
-   - 股票基础信息：name、industry、total_mv、pe_ttm、pb 等
-   - symbol: 6 位代码
+   - Basic stock information: name, industry, total_mv, pe_ttm, pb, etc.
+   - symbol: 6 bit code
 
 2. get_stock_daily_quotes(symbol, start_date, end_date, period="daily", source=None, limit=1000) -> list
-   - 日线/K 线数据：open、high、low、close、volume 等
-   - 日期格式：YYYYMMDD 或 YYYY-MM-DD
+   - Daily/K line data: open, high, low, close, volume, etc.
+   - Date format: YYYYMMDD or YYYY-MM-DD
 
 3. get_stock_news(symbol, start_date=None, end_date=None, limit=20) -> list
-   或 get_stock_news_by_date_range(symbol, start_date, end_date, limit=20) -> list
-   - 股票新闻：title、content、publish_time、url
+   or get_stock_news_by_date_range(symbol, start_date, end_date, limit=20) -> list
+   - Stock news: title, content, publish_time,url
 
 4. get_market_quotes(symbol) -> dict | None
-   - 实时行情：close、pct_chg、volume、amount
+   - Real-time quotes: close, pct_chg, volume,amount
 
 5. get_latest_stock_price(symbol) -> float | None
-   - 标准价格入口：优先 market_quotes，再回退 basic_info
-   - 估值类 Skill 优先用这个函数取 current_price，不要把价格默默设成 0
+   - Standard price entry: give priority to market_quotes, then fall back basic_info
+   - Valuation Skills should first use this function to get current_price. Do not set the price silently to 0
 
 6. get_stock_financial_data(symbol, start_date=None, end_date=None, limit=20, source=None) -> list
-   - 财务数据：兼容 report_period / report_date 两种报告期字段
+   - Financial data: compatible with report_period / report_date two reporting period fields
 
 7. get_stock_financial_periods(symbol, source=None, limit=20) -> list
-    - 按报告期展开后的标准财务记录，适合同比、CAGR 和多期质量因子计算
+    - Standard financial records after the reporting period is expanded, suitable for year-on-year, CAGR and multi-period quality factor calculations
 
 8. get_stock_valuation_context(symbol, financial_limit=8) -> dict
-   - 估值场景标准入口：一次返回 basic_info、market_quotes、current_price、pe_ttm、pb、ps_ttm、financial_data
+   - Valuation scenario standard entry: return basic_info, market_quotes, current_price, pe_ttm, pb, ps_ttm,financial_data
 
 9. get_industry_peer_basic_info(industry, exclude_symbol=None, limit=200, source=None) -> list
-   - 从本地 stock_basic_info 中按行业取同行样本
-   - 适合 PB/PE/PS 相对估值、行业对比、样本筛选
+   - Sample peers by industry from local stock_basic_info
+   - Suitable for PB/PE/PS relative valuation, industry comparison, and sample screening
 
 10. summarize_industry_valuation(industry, metric="pb", exclude_symbol=None, limit=200, source=None, min_value=0.0, max_value=1000.0) -> dict
-   - 基于本地同行样本，返回 average / median / min / max / count
-   - 相对估值类 Skill 优先用这个函数，不要自行写 Mongo 聚合
+   - Based on local peer samples, return average / median / min / max / count
+   - Relative valuation skills use this function first, do not write Mongo aggregation by yourself
 
-【标准结构化金融数据能力 — 推荐 Agent/Skill 优先复用】
-允许导入：from core.skill_runtime.standard_financial_apis import ...
+ [Standard structured financial data capabilities — Recommend Agent/Skill to be reused first]
+Allow import:from core.skill_runtime.standard_financial_apis import ...
 
 11. get_historical_financial_annual_series(symbol, years=10, source=None) -> dict
-   - 一键返回最近 N 年年报序列，字段含 revenue、net_profit、roe、gross_margin、operating_cashflow、free_cashflow、debt_to_assets 等
-   - 适合巴菲特深度分析、长期财务台账、5-10 年趋势，不要用 get_income_analysis 的 Markdown 表格替代
+   - Return the last N years of annual report series with one click, with fields including revenue, net_profit, roe, gross_margin, operating_cashflow, free_cashflow, debt_to_assets, etc.
+   - Suitable for Buffett s in-depth analysis, long-term financial ledgers, and 5-10 year trends. Do not use get_income_analysis s Markdown table instead.
 
 12. get_profitability_stability_metrics(symbol, years=10, source=None) -> dict
-   - 基于年报序列计算营收/净利/ROE/毛利率及同比增长的均值、中位数、波动率、变异系数
-   - 盈利稳定性、护城河财务证据、质量分析优先用这个函数
+   - Calculate the mean, median, volatility, and coefficient of variation of revenue/net profit/ROE/gross profit margin and year-on-year growth based on the annual report sequence
+   - This function is preferred for profitability stability, moat financial evidence, and quality analysis.
 
 13. get_cashflow_quality_trend(symbol, years=10, source=None) -> dict
-   - 基于年报序列返回 OCF/净利、FCF/净利、OCF margin、FCF margin 的年度趋势和统计摘要
-   - 现金流质量、利润含金量、自由现金流分析优先用这个函数
+   - Returns the annual trend and statistical summary of OCF/net profit, FCF/net profit, OCF margin, and FCF margin based on the annual report sequence
+   - This function is preferred for cash flow quality, profit content, and free cash flow analysis.
 
 14. get_historical_valuation_percentile(symbol, metrics=None, lookback_years=5, as_of_date=None) -> dict
-   - 结构化返回 pe_ttm / pb / ps_ttm / pcf_ttm 的历史分位、当前值、中位数、样本数和窗口
-   - 替代 get_stock_fundamentals_unified 中隐藏的 3 年文本分位输出
+   - Structured returns the historical quantile, current value, median, sample number and window of pe_ttm / pb / ps_ttm / pcf_ttm
+   - Replaces the hidden 3-year text quantile output in get_stock_fundamentals_unified
 
-⚠️ 注意：以上函数 4-5（get_market_quotes、get_latest_stock_price）和 8（get_stock_valuation_context）只能拿到当前 PE/PB 快照。
-需要 **结构化历史 PE/PB 分位**（如历史分位数、PE 通道、安全边际）时，优先用标准函数：
+⚠️ Note: The above functions 4-5 (get_market_quotes, get_latest_stock_price) and 8 (get_stock_valuation_context) can only get the current PE/PB snapshot.
+need **Structured historical PE/PB quantiles** (Such as historical quantile, PE channel, safety margin), the standard function is preferred:
 
     from core.skill_runtime.standard_financial_apis import get_historical_valuation_percentile
     result = get_historical_valuation_percentile("600519", metrics=["pe_ttm", "pb"], lookback_years=5)
 
-如果只需要原始历史估值序列，可用 project_access 的专用函数：
+If you only need the original historical valuation series, you can use the dedicated function of project_access:
 
     from core.skill_runtime.project_access import get_external_valuation_data
     result = get_external_valuation_data("600519", "2020-01-01", "2025-06-01")
-    # 返回 {source: "baostock", data: [{date, close, pe_ttm, pb_mrq, ps_ttm, pcf_ttm}, ...]}
+    # Return {source: "baostock", data: [{date, close, pe_ttm, pb_mrq, ps_ttm, pcf_ttm}, ...]}
 
-不要用 get_external_historical_data 代替——它只含 OHLCV 价格，不含 PE/PB 字段。
+Do not use get_external_historical_data instead——It contains only OHLCV prices and no PE/PB fields.
 
-示例1：先查本地，无数据再调外部 API
+Example 1: Check local first, if there is no data, then transfer externally API
     from core.skill_runtime.data_access import get_stock_basic_info, get_stock_daily_quotes
     info = get_stock_basic_info("600519")
     if info:
@@ -1011,19 +1011,19 @@ LOCAL_DATA_API_DOC = """
     else:
         ...
 
-示例2：估值类 Skill 的推荐写法
+Example 2: Recommended writing method for valuation skills
     from core.skill_runtime.data_access import get_stock_valuation_context
     ctx = get_stock_valuation_context("600519")
     current_price = ctx["current_price"]
     if current_price is None or current_price <= 0:
-        return {"status": "error", "message": "未获取到有效现价，无法估值"}
+        return {"status": "error", "message": "No effective current price has been obtained and cannot be valued."}
 
     pe_ttm = ctx["pe_ttm"]
     pb = ctx["pb"]
     ps_ttm = ctx["ps_ttm"]
     financial_data = ctx["financial_data"]
 
-示例3：行业 PB 相对估值的推荐写法
+Example 3: Recommended way to write relative valuation of industry PB
     from core.skill_runtime.data_access import get_stock_valuation_context, summarize_industry_valuation
 
     ctx = get_stock_valuation_context(symbol)

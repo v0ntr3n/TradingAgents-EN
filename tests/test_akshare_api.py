@@ -1,74 +1,74 @@
 #!/usr/bin/env python3
 """
-直接测试AKShare API
+direct test AKShare API
 """
 
 import akshare as ak
 import logging
 
-# 设置日志级别
+# Set log level
 logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)-8s | %(message)s')
 
 def test_akshare_apis():
-    """测试AKShare各个财务数据API"""
+    """Test various financial data of AKShare API"""
     print("=" * 60)
-    print("🔍 直接测试AKShare财务数据API")
+    print("🔍 Test AKShare financial data directly API")
     print("=" * 60)
     
     symbol = "600519"
     
-    # 1. 测试主要财务指标API
-    print(f"\n1. 测试主要财务指标API: stock_financial_abstract")
+    # 1. Test key financial indicators API
+    print(f"\n1. Test key financial indicators API: stock_financial_abstract")
     try:
         data = ak.stock_financial_abstract(symbol=symbol)
         if data is not None and not data.empty:
-            print(f"✅ 成功获取主要财务指标: {len(data)}条记录")
-            print(f"   列名: {list(data.columns)}")
-            print(f"   前3行数据:")
+            print(f"✅ Successfully obtain key financial indicators: {len(data)}records")
+            print(f"   List: {list(data.columns)}")
+            print(f"   First 3 rows of data:")
             print(data.head(3))
         else:
-            print("❌ 主要财务指标为空")
+            print("❌ Key financial indicators are empty")
     except Exception as e:
-        print(f"❌ 主要财务指标API失败: {e}")
+        print(f"❌ Key Financial Indicators API failed: {e}")
     
-    # 2. 测试资产负债表API
-    print(f"\n2. 测试资产负债表API: stock_balance_sheet_by_report_em")
+    # 2. Test balance sheet API
+    print(f"\n2. Test balance sheet API: stock_balance_sheet_by_report_em")
     try:
         data = ak.stock_balance_sheet_by_report_em(symbol=symbol)
         if data is not None and not data.empty:
-            print(f"✅ 成功获取资产负债表: {len(data)}条记录")
-            print(f"   列名: {list(data.columns)}")
+            print(f"✅ Successfully obtained the balance sheet: {len(data)}records")
+            print(f"   List: {list(data.columns)}")
         else:
-            print("❌ 资产负债表为空")
+            print("❌ Balance sheet is empty")
     except Exception as e:
-        print(f"❌ 资产负债表API失败: {e}")
+        print(f"❌ Balance Sheet API failed: {e}")
     
-    # 3. 测试利润表API
-    print(f"\n3. 测试利润表API: stock_profit_sheet_by_report_em")
+    # 3. Test the income statement API
+    print(f"\n3. Test the income statement API: stock_profit_sheet_by_report_em")
     try:
         data = ak.stock_profit_sheet_by_report_em(symbol=symbol)
         if data is not None and not data.empty:
-            print(f"✅ 成功获取利润表: {len(data)}条记录")
-            print(f"   列名: {list(data.columns)}")
+            print(f"✅ Successfully obtained income statement: {len(data)}records")
+            print(f"   List: {list(data.columns)}")
         else:
-            print("❌ 利润表为空")
+            print("❌ Income statement is empty")
     except Exception as e:
-        print(f"❌ 利润表API失败: {e}")
+        print(f"❌ Income Statement API failed: {e}")
     
-    # 4. 测试现金流量表API
-    print(f"\n4. 测试现金流量表API: stock_cash_flow_sheet_by_report_em")
+    # 4. Test Cash Flow Statement API
+    print(f"\n4. Test Cash Flow Statement API: stock_cash_flow_sheet_by_report_em")
     try:
         data = ak.stock_cash_flow_sheet_by_report_em(symbol=symbol)
         if data is not None and not data.empty:
-            print(f"✅ 成功获取现金流量表: {len(data)}条记录")
-            print(f"   列名: {list(data.columns)}")
+            print(f"✅ Successfully obtained cash flow statement: {len(data)}records")
+            print(f"   List: {list(data.columns)}")
         else:
-            print("❌ 现金流量表为空")
+            print("❌ Cash flow statement is empty")
     except Exception as e:
-        print(f"❌ 现金流量表API失败: {e}")
+        print(f"❌ Cash flow statement API failed: {e}")
     
     print("\n" + "=" * 60)
-    print("✅ API测试完成")
+    print("✅ API Test completed")
     print("=" * 60)
 
 if __name__ == "__main__":

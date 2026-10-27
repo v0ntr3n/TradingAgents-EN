@@ -1,10 +1,10 @@
 /**
- * 工作流 API
+ * Workflow API
  */
 import request from './request'
 import type { ApiResponse } from './request'
 
-// 类型定义
+// type definition
 export interface Position {
   x: number
   y: number
@@ -50,31 +50,31 @@ export interface WorkflowDefinition {
 }
 
 /**
- * 输入参数控件类型
+ * Input parameter control type
  */
 export type InputFieldType = 'string' | 'textarea' | 'number' | 'boolean' | 'date' | 'select' | 'multiselect'
 
 /**
- * 单个输入参数定义
+ * Single input parameter definition
  */
 export interface InputFieldConfig {
-  name: string                  // 参数名（传给后端的 key）
-  label: string                 // 表单显示标签
+  name: string                  // Parameter name (key passed to the backend)
+  label: string                 // form display label
   type: InputFieldType
   required: boolean
   default?: any
-  description?: string          // 参数描述/提示
+  description?: string          // Parameter description/tips
   placeholder?: string
-  options?: any[]               // 选项列表（select/multiselect 时使用）
-  option_labels?: string[]      // 选项显示名（与 options 一一对应）
+  options?: any[]               // Option list (used when selecting/multiselect)
+  option_labels?: string[]      // Option display name (one-to-one correspondence with options)
   min?: number
   max?: number
-  group?: string                // 分组标签
+  group?: string                // Group labels
   order?: number
 }
 
 /**
- * 工作流输入参数配置
+ * Workflow input parameter configuration
  */
 export interface WorkflowInputConfig {
   fields: InputFieldConfig[]
@@ -94,21 +94,21 @@ export interface WorkflowSummary {
 }
 
 /**
- * 判断工作流是否适合在分析页面（单股/批量分析）的"分析流程"下拉框中选择。
+ * Determine whether the workflow is suitable for the analysis page (single stock/batch analysis)"Analysis process"Select from the drop-down box.
  *
- * 排除以下流程：
- * 1. v1.0 及更早的已弃用流程（主版本 < 2）
- * 2. 快速分析流（非完整分析流）
- * 3. 空白流程
+ * Exclude the following processes:
+ * 1. v1.0 and earlier deprecated processes (major version < 2) 
+ * 2. Quick analysis flow (non-complete analysis flow)
+ * 3. Blank process
  */
 export function isSelectableAnalysisWorkflow(w: WorkflowSummary, expectedType: string): boolean {
   if (w.workflow_type !== expectedType) return false
-  // v1.0 及更早流程已弃用，仅保留主版本 >= 2 的流程
+  // v1.0 and earlier processes are deprecated, only the main version remains >= 2 process
   const major = parseInt((w.version || '0').split('.')[0], 10) || 0
   if (major < 2) return false
-  // 排除快速分析流、空白流程等非完整分析流
+  // Exclude non-complete analysis flows such as fast analysis flows and blank flows
   const name = w.name || ''
-  if (name.includes('快速') || name.includes('空白')) return false
+  if (name.includes('fast') || name.includes('blank')) return false
   return true
 }
 
@@ -120,11 +120,11 @@ export interface ValidationResult {
 
 export interface ExecutionResult {
   success: boolean
-  task_id?: string  // v2.0 异步执行返回的任务ID
-  status?: string   // v2.0 任务状态
-  message?: string  // v2.0 提示消息
-  result?: Record<string, any>  // v1.x 同步执行的结果
-  execution?: {  // v1.x 执行信息
+  task_id?: string  // v2.0 Asynchronously execute the returned task ID
+  status?: string   // v2.0 Task status
+  message?: string  // v2.0 Prompt message
+  result?: Record<string, any>  // v1.x The result of synchronous execution
+  execution?: {  // v1.x execution information
     id: string
     workflow_id: string
     state: string
@@ -135,10 +135,10 @@ export interface ExecutionResult {
   error?: string
 }
 
-// API 方法
+// API method
 export const workflowApi = {
   /**
-   * 获取所有工作流列表
+   * Get a list of all workflows
    */
   async listAll(): Promise<WorkflowSummary[]> {
     const res: ApiResponse<WorkflowSummary[]> = await request.get('/api/workflows')
@@ -146,7 +146,7 @@ export const workflowApi = {
   },
 
   /**
-   * 获取预定义模板
+   * Get predefined templates
    */
   async getTemplates(): Promise<WorkflowDefinition[]> {
     const res: ApiResponse<WorkflowDefinition[]> = await request.get('/api/workflows/templates')
@@ -154,7 +154,7 @@ export const workflowApi = {
   },
 
   /**
-   * 获取单个工作流详情
+   * Get individual workflow details
    */
   async get(id: string): Promise<WorkflowDefinition | null> {
     const res: ApiResponse<WorkflowDefinition> = await request.get(`/api/workflows/${id}`)
@@ -162,28 +162,28 @@ export const workflowApi = {
   },
 
   /**
-   * 创建新工作流
+   * Create new workflow
    */
   create(data: Partial<WorkflowDefinition>): Promise<ApiResponse<WorkflowDefinition>> {
     return request.post('/api/workflows', data)
   },
 
   /**
-   * 更新工作流
+   * Update workflow
    */
   update(id: string, data: Partial<WorkflowDefinition>): Promise<ApiResponse<WorkflowDefinition>> {
     return request.put(`/api/workflows/${id}`, data)
   },
 
   /**
-   * 删除工作流
+   * Delete workflow
    */
   delete(id: string): Promise<{ success: boolean; error?: string }> {
     return request.delete(`/api/workflows/${id}`)
   },
 
   /**
-   * 验证工作流定义
+   * Validate workflow definition
    */
   async validate(data: Partial<WorkflowDefinition>): Promise<ApiResponse<ValidationResult>> {
     const res: ApiResponse<ValidationResult> = await request.post('/api/workflows/validate', data)
@@ -191,41 +191,41 @@ export const workflowApi = {
   },
 
   /**
-   * 执行工作流
-   * 注意：工作流执行是长时间操作（可能需要5-30分钟），设置较长超时时间并禁用重试
+   * Execute workflow
+   * NOTE: Workflow execution is a long operation (may take 5-30 minutes), set a longer timeout and disable retries
    */
   async execute(id: string, inputs: Record<string, any>): Promise<ExecutionResult> {
     const res: ApiResponse<ExecutionResult> = await request.post(`/api/workflows/${id}/execute`, inputs, {
-      timeout: 30 * 60 * 1000,  // 30分钟超时
-      retryCount: 0  // 禁用重试，避免重复执行
+      timeout: 30 * 60 * 1000,  // 30 minutes timeout
+      retryCount: 0  // Disable retries to avoid repeated executions
     } as any)
-    // 从 ApiResponse 中提取实际的执行结果
+    // Extract actual execution results from ApiResponse
     if (res.success && res.data) {
       return res.data
     }
-    // 如果外层失败，构造一个失败的 ExecutionResult
+    // If the outer layer fails, construct a failed ExecutionResult
     return {
       success: false,
-      error: res.message || '执行失败'
+      error: res.message || 'Execution failed'
     }
   },
 
   /**
-   * 从模板创建工作流
+   * Create a workflow from a template
    */
   createFromTemplate(templateId: string, name: string): Promise<ApiResponse<WorkflowDefinition>> {
     return request.post('/api/workflows/from-template', { template_id: templateId, name })
   },
 
   /**
-   * 复制工作流
+   * Copy workflow
    */
   duplicate(id: string, name: string): Promise<ApiResponse<WorkflowDefinition>> {
     return request.post(`/api/workflows/${id}/duplicate`, { name })
   },
 
   /**
-   * 设为默认分析流
+   * Set as default analysis flow
    */
   setAsDefault(id: string): Promise<ApiResponse<void>> {
     return request.post(`/api/workflows/${id}/set-default`)

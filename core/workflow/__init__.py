@@ -1,7 +1,7 @@
 """
-工作流引擎模块
+Workflow engine module
 
-提供可视化工作流的定义、构建和执行能力
+Provides the ability to define, build and execute visual workflows
 """
 
 from .models import (

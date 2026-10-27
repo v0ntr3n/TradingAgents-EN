@@ -10,30 +10,30 @@ import pandas as pd
 
 class BaseStockDataProvider(ABC):
     """
-    股票数据提供器基类
-    定义了所有数据源提供器的统一接口
+    Stock data provider base class
+    Defines a unified interface for all data source providers
     """
     
     def __init__(self, provider_name: str):
         """
-        初始化数据提供器
+        Initialize data provider
         
         Args:
-            provider_name: 提供器名称
+            provider_name: provider name
         """
         self.provider_name = provider_name
         self.connected = False
         self.logger = logging.getLogger(f"{__name__}.{provider_name}")
     
-    # ==================== 连接管理 ====================
+    # ==================== Connection management ====================
     
     @abstractmethod
     async def connect(self) -> bool:
         """
-        连接到数据源
+        Connect to data source
         
         Returns:
-            bool: 连接是否成功
+            bool: Is the connection successful?
         """
         pass
     
@@ -46,31 +46,31 @@ class BaseStockDataProvider(ABC):
         """检查数据源是否可用"""
         return self.connected
     
-    # ==================== 核心数据接口 ====================
+    # ==================== core data interface ====================
     
     @abstractmethod
     async def get_stock_basic_info(self, symbol: str = None) -> Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]:
         """
-        获取股票基础信息
+        Get basic stock information
         
         Args:
-            symbol: 股票代码，为空则获取所有股票
+            symbol: Stock code, if empty, get all stocks
             
         Returns:
-            单个股票信息字典或股票列表
+            Single stock information dictionary or stock list
         """
         pass
     
     @abstractmethod
     async def get_stock_quotes(self, symbol: str) -> Optional[Dict[str, Any]]:
         """
-        获取实时行情
+        Get real-time quotes
         
         Args:
-            symbol: 股票代码
+            symbol: Stock code
             
         Returns:
-            实时行情数据字典
+            Real-time market data dictionary
         """
         pass
     
@@ -82,74 +82,74 @@ class BaseStockDataProvider(ABC):
         end_date: Union[str, date] = None
     ) -> Optional[pd.DataFrame]:
         """
-        获取历史数据
+        Get historical data
         
         Args:
-            symbol: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
+            symbol: Stock code
+            start_date: start date
+            end_date: end date
             
         Returns:
-            历史数据DataFrame
+            historical data DataFrame
         """
         pass
     
-    # ==================== 扩展接口 ====================
+    # ==================== Extended interface ====================
     
     async def get_stock_list(self, market: str = None) -> Optional[List[Dict[str, Any]]]:
         """
-        获取股票列表
+        Get a list of stocks
         
         Args:
-            market: 市场代码 (CN/HK/US)
+            market: market code (CN/HK/US)
             
         Returns:
-            股票列表
+            stock list
         """
         return await self.get_stock_basic_info()
     
     async def get_financial_data(self, symbol: str, report_type: str = "annual") -> Optional[Dict[str, Any]]:
         """
-        获取财务数据
+        Get financial data
         
         Args:
-            symbol: 股票代码
-            report_type: 报告类型 (annual/quarterly)
+            symbol: Stock code
+            report_type: report type (annual/quarterly)
             
         Returns:
-            财务数据字典
+            Financial Data Dictionary
         """
-        # 默认实现返回None，子类可以重写
+        # The default implementation returns None, subclasses can override
         return None
     
-    # ==================== 数据标准化方法 ====================
+    # ==================== Data normalization methods ====================
     
     def standardize_basic_info(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        标准化股票基础信息
+        Standardized stock basic information
         
         Args:
-            raw_data: 原始数据
+            raw_data: raw data
             
         Returns:
-            标准化后的数据
+            standardized data
         """
-        # 基础标准化逻辑
+        # Basic standardization logic
         return {
             "code": raw_data.get("code", raw_data.get("symbol", "")),
             "name": raw_data.get("name", ""),
             "symbol": raw_data.get("symbol", raw_data.get("code", "")),
             "full_symbol": raw_data.get("full_symbol", raw_data.get("ts_code", "")),
             
-            # 市场信息
+            # market information
             "market_info": self._determine_market_info(raw_data),
             
-            # 业务信息
+            # business information
             "industry": raw_data.get("industry"),
             "area": raw_data.get("area"),
             "list_date": self._format_date_output(raw_data.get("list_date")),
             
-            # 元数据
+            # metadata
             "data_source": self.provider_name.lower(),
             "data_version": 1,
             "updated_at": datetime.utcnow()
@@ -157,24 +157,24 @@ class BaseStockDataProvider(ABC):
     
     def standardize_quotes(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        标准化实时行情数据
+        Standardized real-time market data
         
         Args:
-            raw_data: 原始数据
+            raw_data: raw data
             
         Returns:
-            标准化后的数据
+            standardized data
         """
         symbol = raw_data.get("symbol", raw_data.get("code", ""))
         
         return {
-            # 基础字段
+            # Basic fields
             "code": symbol,
             "symbol": symbol,
             "full_symbol": raw_data.get("full_symbol", raw_data.get("ts_code", symbol)),
             "market": self._determine_market(raw_data),
             
-            # 价格数据
+            # price data
             "close": self._convert_to_float(raw_data.get("close")),
             "current_price": self._convert_to_float(raw_data.get("current_price", raw_data.get("close"))),
             "open": self._convert_to_float(raw_data.get("open")),
@@ -182,29 +182,29 @@ class BaseStockDataProvider(ABC):
             "low": self._convert_to_float(raw_data.get("low")),
             "pre_close": self._convert_to_float(raw_data.get("pre_close")),
             
-            # 变动数据
+            # Change data
             "change": self._convert_to_float(raw_data.get("change")),
             "pct_chg": self._convert_to_float(raw_data.get("pct_chg")),
             
-            # 成交数据
+            # Transaction data
             "volume": self._convert_to_float(raw_data.get("volume", raw_data.get("vol"))),
             "amount": self._convert_to_float(raw_data.get("amount")),
             
-            # 时间数据
+            # time data
             "trade_date": self._format_date_output(raw_data.get("trade_date")),
             "timestamp": datetime.utcnow(),
             
-            # 元数据
+            # metadata
             "data_source": self.provider_name.lower(),
             "data_version": 1,
             "updated_at": datetime.utcnow()
         }
     
-    # ==================== 辅助方法 ====================
+    # ==================== Helper methods ====================
     
     def _determine_market_info(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """确定市场信息"""
-        # 默认实现，子类可以重写
+        # Default implementation, subclasses can override
         return {
             "market": "CN",
             "exchange": "UNKNOWN",
@@ -228,23 +228,23 @@ class BaseStockDataProvider(ABC):
             return None
     
     def _format_date_output(self, date_value: Any) -> Optional[str]:
-        """格式化日期为输出格式 (YYYY-MM-DD)"""
+        """Format date into output format (YYYY-MM-DD)"""
         if not date_value:
             return None
         
         date_str = str(date_value)
         
-        # 处理YYYYMMDD格式
+        # Processing YYYYMMDD format
         if len(date_str) == 8 and date_str.isdigit():
             return f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
         
-        # 处理其他格式
+        # Process other formats
         if isinstance(date_value, (date, datetime)):
             return date_value.strftime('%Y-%m-%d')
         
         return date_str
     
-    # ==================== 上下文管理器支持 ====================
+    # ==================== Context manager support ====================
     
     async def __aenter__(self):
         """异步上下文管理器入口"""

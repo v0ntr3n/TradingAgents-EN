@@ -8,9 +8,9 @@ import platform
 
 from app.core.logging_context import LoggingContextFilter, trace_id_var
 
-# 🔥 在所有平台上使用 concurrent-log-handler 支持多进程安全写入
-# Windows: 解决文件锁定问题
-# Linux/Mac: 支持多进程（后端 + Worker）同时写入同一日志文件
+# 🔥 Support multi-process safe writing using concurrent-log-handler on all platforms
+# Windows: Fix file locking issues
+# Linux/Mac: Supports multi-process (backend + Worker) Write to the same log file simultaneously
 try:
     from concurrent_log_handler import ConcurrentRotatingFileHandler
     _USE_CONCURRENT_HANDLER = True
@@ -18,9 +18,9 @@ except ImportError:
     _USE_CONCURRENT_HANDLER = False
     _IS_WINDOWS = platform.system() == "Windows"
     if _IS_WINDOWS:
-        logging.warning("concurrent-log-handler 未安装，在 Windows 上可能遇到日志轮转问题")
+        logging.warning("concurrent-log-handler Not installed, may experience log rotation issues on Windows")
     else:
-        logging.warning("concurrent-log-handler 未安装，多进程写入日志文件可能不安全（后端和 Worker 同时写入）")
+        logging.warning("concurrent-log-handler Not installed, it may be unsafe for multiple processes to write to the log file (backend and Worker write at the same time)")
 
 try:
     import tomllib as toml_loader  # Python 3.11+
@@ -32,8 +32,8 @@ except Exception:
 
 
 def resolve_logging_cfg_path() -> Path:
-    """根据环境选择日志配置文件路径（可能不存在）
-    优先 docker 配置，其次默认配置。
+    """Select the log configuration file path according to the environment (may not exist)
+    Prioritize docker configuration, followed by default configuration.
     """
     profile = os.environ.get("LOGGING_PROFILE", "").lower()
     is_docker_env = os.environ.get("DOCKER", "").lower() in {"1", "true", "yes"} or Path("/.dockerenv").exists()
@@ -55,7 +55,7 @@ class SimpleJsonFormatter(logging.Formatter):
 
 
 class ErrorLogNoiseFilter(logging.Filter):
-    """过滤 error.log 中的已知非致命第三方/可选能力噪声。"""
+    """Filter error.log for known non-fatal third-party/optional capability noise."""
 
     _NOISY_PATTERNS = (
         "predates v3 hybrid search",
@@ -80,7 +80,7 @@ def _build_common_filters() -> dict:
 
 
 def _parse_size(size_str: str) -> int:
-    """解析大小字符串（如 '10MB'）为字节数"""
+    """Parse size strings (like '10MB') is the number of bytes"""
     if isinstance(size_str, int):
         return size_str
     if isinstance(size_str, str) and size_str.upper().endswith("MB"):
@@ -92,30 +92,30 @@ def _parse_size(size_str: str) -> int:
 
 def setup_logging(log_level: str = "INFO"):
     """
-    设置应用日志配置：
-    1) 优先尝试从 config/logging.toml 读取并转化为 dictConfig
-    2) 失败或不存在时，回退到内置默认配置
+    Set application log configuration:
+    1) First try to read from config/logging.toml and convert it to dictConfig
+    2) On failure or non-existence, fall back to the built-in default configuration
     """
-    # 🔐 生产环境默认不输出敏感配置信息
-    # 设置 TRADINGAGENTS_VERBOSE_SETUP=true 可启用详细输出（调试用）
+    # 🔐 The production environment does not output sensitive configuration information by default
+    # settings TRADINGAGENTS_VERBOSE_SETUP=true Enable verbose output (for debugging)
     verbose_setup = os.getenv("TRADINGAGENTS_VERBOSE_SETUP", "").lower() in ("true", "1", "yes")
     
-    # 1) 若存在 TOML 配置且可解析，则优先使用
+    # 1) If TOML configuration exists and can be parsed, it will be used first.
     try:
         cfg_path = resolve_logging_cfg_path()
         if verbose_setup:
-            print(f"🔍 [setup_logging] 日志配置文件路径: {cfg_path}")
-            print(f"🔍 [setup_logging] 配置文件存在: {cfg_path.exists()}")
-            print(f"🔍 [setup_logging] TOML加载器可用: {toml_loader is not None}")
+            print(f"🔍 [setup_logging] Log configuration file path: {cfg_path}")
+            print(f"🔍 [setup_logging] Configuration file exists: {cfg_path.exists()}")
+            print(f"🔍 [setup_logging] TOML Loader available: {toml_loader is not None}")
 
         if cfg_path.exists() and toml_loader is not None:
             with cfg_path.open("rb") as f:
                 toml_data = toml_loader.load(f)
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] 成功加载TOML配置")
+                print(f"🔍 [setup_logging] Successfully loaded TOML configuration")
 
-            # 读取基础字段
+            # Read basic fields
             logging_root = toml_data.get("logging", {})
             level = logging_root.get("level", log_level)
             fmt_cfg = logging_root.get("format", {})
@@ -125,7 +125,7 @@ def setup_logging(log_level: str = "INFO"):
             fmt_file = fmt_cfg.get(
                 "file", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             )
-            # 确保文本格式包含 trace_id（若未显式包含）
+            # Make sure the text format includes trace_id if not included explicitly
             if "%(trace_id)" not in str(fmt_console):
                 fmt_console = str(fmt_console) + " trace=%(trace_id)s"
             if "%(trace_id)" not in str(fmt_file):
@@ -136,7 +136,7 @@ def setup_logging(log_level: str = "INFO"):
             file_dir = file_handler_cfg.get("directory", "./logs")
             file_level = file_handler_cfg.get("level", "DEBUG")
             max_bytes = file_handler_cfg.get("max_size", "10MB")
-            # 支持 "10MB" 形式
+            # support "10MB" form
             if isinstance(max_bytes, str) and max_bytes.upper().endswith("MB"):
                 try:
                     max_bytes = int(float(max_bytes[:-2]) * 1024 * 1024)
@@ -148,18 +148,18 @@ def setup_logging(log_level: str = "INFO"):
 
             Path(file_dir).mkdir(parents=True, exist_ok=True)
 
-            # 从TOML配置读取各个日志文件路径
+            # Read individual log file paths from TOML configuration
             main_handler_cfg = handlers_cfg.get("main", {})
             webapi_handler_cfg = handlers_cfg.get("webapi", {})
             worker_handler_cfg = handlers_cfg.get("worker", {})
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] handlers配置: {list(handlers_cfg.keys())}")
+                print(f"🔍 [setup_logging] handlers Configuration: {list(handlers_cfg.keys())}")
                 print(f"🔍 [setup_logging] main_handler_cfg: {main_handler_cfg}")
                 print(f"🔍 [setup_logging] webapi_handler_cfg: {webapi_handler_cfg}")
                 print(f"🔍 [setup_logging] worker_handler_cfg: {worker_handler_cfg}")
 
-            # 主日志文件（tradingagents.log）
+            # Main log file (tradingagents.log)
             main_log = main_handler_cfg.get("filename", str(Path(file_dir) / "tradingagents.log"))
             main_enabled = main_handler_cfg.get("enabled", True)
             main_level = main_handler_cfg.get("level", "INFO")
@@ -167,14 +167,14 @@ def setup_logging(log_level: str = "INFO"):
             main_backup_count = int(main_handler_cfg.get("backup_count", 5))
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] 主日志文件配置:")
-                print(f"  - 文件路径: {main_log}")
-                print(f"  - 是否启用: {main_enabled}")
-                print(f"  - 日志级别: {main_level}")
-                print(f"  - 最大大小: {main_max_bytes} bytes")
-                print(f"  - 备份数量: {main_backup_count}")
+                print(f"🔍 [setup_logging] Master log file configuration:")
+                print(f"  - file path: {main_log}")
+                print(f"  - Whether to enable: {main_enabled}")
+                print(f"  - Log level: {main_level}")
+                print(f"  - maximum size: {main_max_bytes} bytes")
+                print(f"  - Number of backups: {main_backup_count}")
 
-            # WebAPI日志文件
+            # WebAPI log file
             webapi_log = webapi_handler_cfg.get("filename", str(Path(file_dir) / "webapi.log"))
             webapi_enabled = webapi_handler_cfg.get("enabled", True)
             webapi_level = webapi_handler_cfg.get("level", "DEBUG")
@@ -182,9 +182,9 @@ def setup_logging(log_level: str = "INFO"):
             webapi_backup_count = int(webapi_handler_cfg.get("backup_count", 5))
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] WebAPI日志文件: {webapi_log}, 启用: {webapi_enabled}")
+                print(f"🔍 [setup_logging] WebAPI log file: {webapi_log}, enable: {webapi_enabled}")
 
-            # Worker日志文件
+            # Worker log file
             worker_log = worker_handler_cfg.get("filename", str(Path(file_dir) / "worker.log"))
             worker_enabled = worker_handler_cfg.get("enabled", True)
             worker_level = worker_handler_cfg.get("level", "DEBUG")
@@ -192,13 +192,13 @@ def setup_logging(log_level: str = "INFO"):
             worker_backup_count = int(worker_handler_cfg.get("backup_count", 5))
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] Worker日志文件: {worker_log}, 启用: {worker_enabled}")
+                print(f"🔍 [setup_logging] Worker log file: {worker_log}, enable: {worker_enabled}")
 
-            # 错误日志文件
+            # error log file
             error_handler_cfg = handlers_cfg.get("error", {})
             error_dir = error_handler_cfg.get("directory", file_dir)
             error_filename = error_handler_cfg.get("filename", "error.log")
-            # 如果 filename 是相对路径，则与 directory 组合
+            # If filename is a relative path, combined with directory
             if not Path(error_filename).is_absolute():
                 error_log = str(Path(error_dir) / error_filename)
             else:
@@ -209,12 +209,12 @@ def setup_logging(log_level: str = "INFO"):
             error_backup_count = int(error_handler_cfg.get("backup_count", 5))
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] 错误日志文件配置:")
-                print(f"  - 文件路径: {error_log}")
-                print(f"  - 是否启用: {error_enabled}")
-                print(f"  - 日志级别: {error_level}")
+                print(f"🔍 [setup_logging] Error log file configuration:")
+                print(f"  - file path: {error_log}")
+                print(f"  - Whether to enable: {error_enabled}")
+                print(f"  - Log level: {error_level}")
 
-            # Skill工坊日志文件（单独记录skill生成过程）
+            # Skill Workshop log file (separately records the skill generation process)
             skill_handler_cfg = handlers_cfg.get("skill", {})
             skill_dir = skill_handler_cfg.get("directory", file_dir)
             skill_filename = skill_handler_cfg.get("filename", "skill_workshop.log")
@@ -228,12 +228,12 @@ def setup_logging(log_level: str = "INFO"):
             skill_backup_count = int(skill_handler_cfg.get("backup_count", 10))
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] Skill工坊日志文件配置:")
-                print(f"  - 文件路径: {skill_log}")
-                print(f"  - 是否启用: {skill_enabled}")
-                print(f"  - 日志级别: {skill_level}")
+                print(f"🔍 [setup_logging] Skill Workshop log file configuration:")
+                print(f"  - file path: {skill_log}")
+                print(f"  - Whether to enable: {skill_enabled}")
+                print(f"  - Log level: {skill_level}")
 
-            # JSON 开关：保持向后兼容（json/mode 仅控制台）；新增 file_json/file_mode 控制文件 handler
+            # JSON Switch: Maintain backward compatibility (json/mode console only); add file_json/file_mode control file handler
             use_json_console = bool(fmt_cfg.get("json", False)) or str(fmt_cfg.get("mode", "")).lower() == "json"
             use_json_file = (
                 bool(fmt_cfg.get("file_json", False))
@@ -241,7 +241,7 @@ def setup_logging(log_level: str = "INFO"):
                 or str(fmt_cfg.get("file_mode", "")).lower() == "json"
             )
 
-            # 构建处理器配置
+            # Build processor configuration
             handlers_config = {
                 "console": {
                     "class": "logging.StreamHandler",
@@ -253,15 +253,15 @@ def setup_logging(log_level: str = "INFO"):
             }
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] 开始构建handlers配置")
+                print(f"🔍 [setup_logging] Start building handlers configuration")
 
-            # 🔥 选择日志处理器类（Windows 使用 ConcurrentRotatingFileHandler）
+            # 🔥 Select a log handler class (Windows uses ConcurrentRotatingFileHandler)
             handler_class = "concurrent_log_handler.ConcurrentRotatingFileHandler" if _USE_CONCURRENT_HANDLER else "logging.handlers.RotatingFileHandler"
 
-            # 主日志文件（tradingagents.log）
+            # Main log file (tradingagents.log)
             if main_enabled:
                 if verbose_setup:
-                    print(f"✅ [setup_logging] 添加 main_file handler: {main_log} (使用 {handler_class})")
+                    print(f"✅ [setup_logging] add main_file handler: {main_log} (Use {handler_class})")
                 handlers_config["main_file"] = {
                     "class": handler_class,
                     "formatter": "json_file_fmt" if use_json_file else "file_fmt",
@@ -274,9 +274,9 @@ def setup_logging(log_level: str = "INFO"):
                 }
             else:
                 if verbose_setup:
-                    print(f"⚠️ [setup_logging] main_file handler 未启用")
+                    print(f"⚠️ [setup_logging] main_file handler Not enabled")
 
-            # WebAPI日志文件
+            # WebAPI log file
             if webapi_enabled:
                 handlers_config["file"] = {
                     "class": handler_class,
@@ -289,7 +289,7 @@ def setup_logging(log_level: str = "INFO"):
                     "filters": ["request_context"],
                 }
 
-            # Worker日志文件
+            # Worker log file
             if worker_enabled:
                 handlers_config["worker_file"] = {
                     "class": handler_class,
@@ -302,10 +302,10 @@ def setup_logging(log_level: str = "INFO"):
                     "filters": ["request_context"],
                 }
 
-            # 添加错误日志处理器（如果启用）
+            # Add error log handler (if enabled)
             if error_enabled:
                 handlers_config["error_file"] = {
-                    "class": handler_class,  # 🔥 使用与主日志相同的处理器类
+                    "class": handler_class,  # 🔥 Use the same processor class as the main log
                     "formatter": "json_file_fmt" if use_json_file else "file_fmt",
                     "level": error_level,
                     "filename": error_log,
@@ -315,7 +315,7 @@ def setup_logging(log_level: str = "INFO"):
                     "filters": _error_handler_filters(),
                 }
 
-            # Skill工坊日志处理器（单独记录skill生成过程）
+            # Skill Workshop log processor (separately records the skill generation process)
             if skill_enabled:
                 handlers_config["skill_file"] = {
                     "class": handler_class,
@@ -328,7 +328,7 @@ def setup_logging(log_level: str = "INFO"):
                     "filters": ["request_context"],
                 }
 
-            # 构建logger handlers列表
+            # Build a list of logger handlers
             main_handlers = ["console"]
             if main_enabled:
                 main_handlers.append("main_file")
@@ -360,7 +360,7 @@ def setup_logging(log_level: str = "INFO"):
             if verbose_setup:
                 print(f"🔍 [setup_logging] worker_handlers: {worker_handlers}")
 
-            # Skill工坊 handlers：console + skill_file（+ error_file 捕获错误）
+            # Skill Workshop handlers:console + skill_file (+ error_file catch errors)
             skill_handlers = ["console"]
             if skill_enabled:
                 skill_handlers.append("skill_file")
@@ -427,14 +427,14 @@ def setup_logging(log_level: str = "INFO"):
                         "handlers": main_handlers,
                         "propagate": False
                     },
-                    # Skill工坊专用 logger：skill 生成过程的日志单独输出到 skill_workshop.log
-                    # code_generator / iteration_controller / reconnaissance_controller 等模块使用
+                    # Skill Workshop-specific logger: The logs of the skill generation process are output separately to skill_workshop.log
+                    # code_generator / iteration_controller / reconnaissance_controller Use other modules
                     "skill_workshop": {
                         "level": "DEBUG",
                         "handlers": skill_handlers,
                         "propagate": False
                     },
-                    # core.tools.external 下的 skill 生成相关模块也输出到 skill_workshop.log
+                    # core.tools.external The skill generation related modules under are also output to skill_workshop.log
                     "core.tools.external": {
                         "level": "DEBUG",
                         "handlers": skill_handlers,
@@ -455,37 +455,37 @@ def setup_logging(log_level: str = "INFO"):
             }
 
             if verbose_setup:
-                print(f"🔍 [setup_logging] 最终handlers配置: {list(handlers_config.keys())}")
-                print(f"🔍 [setup_logging] 开始应用 dictConfig")
+                print(f"🔍 [setup_logging] Final handlers configuration: {list(handlers_config.keys())}")
+                print(f"🔍 [setup_logging] Start applying dictConfig")
 
             logging.config.dictConfig(logging_config)
 
             if verbose_setup:
-                print(f"✅ [setup_logging] dictConfig 应用成功")
+                print(f"✅ [setup_logging] dictConfig Application successful")
 
             logging.getLogger("webapi").info(f"Logging configured from {cfg_path}")
 
-            # 测试主日志文件是否可写
+            # Test whether the main log file is writable
             if main_enabled:
                 test_logger = logging.getLogger("tradingagents")
-                test_logger.info(f"🔍 测试主日志文件写入: {main_log}")
+                test_logger.info(f"🔍 Test main log file writing: {main_log}")
                 if verbose_setup:
-                    print(f"🔍 [setup_logging] 已向 tradingagents logger 写入测试日志")
+                    print(f"🔍 [setup_logging] Test log written to tradingagents logger")
 
             return
     except Exception as e:
-        # TOML 存在但加载失败，回退到默认配置
+        # TOML Exists but fails to load, falling back to default configuration
         if verbose_setup:
-            print(f"⚠️ [setup_logging] TOML配置加载失败: {e}，使用默认配置")
+            print(f"⚠️ [setup_logging] TOML Configuration load failed: {e}, Use default configuration")
         logging.getLogger("webapi").warning(f"Failed to load logging.toml, fallback to defaults: {e}")
 
-    # 2) 默认内置配置（与原先一致）
+    # 2) Default built-in configuration (consistent with the original)
     if verbose_setup:
-        print(f"✅ [setup_logging] 使用内置默认配置")
+        print(f"✅ [setup_logging] Use built-in default configuration")
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
 
-    # 🔥 选择日志处理器类（Windows 使用 ConcurrentRotatingFileHandler）
+    # 🔥 Select a log handler class (Windows uses ConcurrentRotatingFileHandler)
     handler_class = "concurrent_log_handler.ConcurrentRotatingFileHandler" if _USE_CONCURRENT_HANDLER else "logging.handlers.RotatingFileHandler"
 
     logging_config = {

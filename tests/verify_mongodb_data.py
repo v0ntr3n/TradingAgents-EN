@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MongoDB数据验证脚本
-验证A股股票基础信息是否正确同步到MongoDB
+MongoDB Data validation script
+Verify whether the basic information of A-share stocks is correctly synchronized to MongoDB
 """
 
 import os
@@ -14,16 +14,16 @@ try:
     MONGODB_AVAILABLE = True
 except ImportError:
     MONGODB_AVAILABLE = False
-    print("❌ pymongo未安装，请运行: pip install pymongo")
+    print("❌ pymongo Not installed, please run: pip install pymongo")
 
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    print("⚠️ python-dotenv未安装，将使用系统环境变量")
+    print("⚠️ python-dotenv Not installed, system environment variables will be used")
 
 def get_mongodb_config() -> Dict[str, Any]:
-    """获取MongoDB配置"""
+    """Get MongoDB configuration"""
     return {
         'host': os.getenv('MONGODB_HOST', 'localhost'),
         'port': int(os.getenv('MONGODB_PORT', 27018)),
@@ -34,55 +34,55 @@ def get_mongodb_config() -> Dict[str, Any]:
     }
 
 def connect_mongodb():
-    """连接MongoDB"""
+    """connect MongoDB"""
     if not MONGODB_AVAILABLE:
         return None, None
     
     config = get_mongodb_config()
     
     try:
-        # 构建连接字符串
+        # Build connection string
         if config.get('username') and config.get('password'):
             connection_string = f"mongodb://{config['username']}:{config['password']}@{config['host']}:{config['port']}/{config['auth_source']}"
         else:
             connection_string = f"mongodb://{config['host']}:{config['port']}/"
         
-        # 创建客户端
+        # Create client
         client = MongoClient(
             connection_string,
             serverSelectionTimeoutMS=5000
         )
         
-        # 测试连接
+        # test connection
         client.admin.command('ping')
         
-        # 选择数据库
+        # Select database
         db = client[config['database']]
         
-        print(f"✅ MongoDB连接成功: {config['host']}:{config['port']}")
+        print(f"✅ MongoDB Connection successful: {config['host']}:{config['port']}")
         return client, db
         
     except Exception as e:
-        print(f"❌ MongoDB连接失败: {e}")
+        print(f"❌ MongoDB Connection failed: {e}")
         return None, None
 
 def verify_stock_data(db):
-    """验证股票数据"""
+    """Verify stock data"""
     if db is None:
         return
     
     collection = db['stock_basic_info']
     
     print("\n" + "="*60)
-    print("📊 MongoDB中的A股基础信息验证")
+    print("📊 MongoDB A-share basic information verification in")
     print("="*60)
     
-    # 1. 总记录数
+    # 1. Total number of records
     total_count = collection.count_documents({})
-    print(f"📈 总记录数: {total_count:,}")
+    print(f"📈 Total number of records: {total_count:,}")
     
-    # 2. 按市场统计
-    print("\n🏢 市场分布:")
+    # 2. Statistics by market
+    print("\n🏢 Market distribution:")
     market_pipeline = [
         {'$group': {
             '_id': '$sse',
@@ -92,11 +92,11 @@ def verify_stock_data(db):
     ]
     
     for market in collection.aggregate(market_pipeline):
-        market_name = '上海' if market['_id'] == 'sh' else '深圳'
-        print(f"  {market_name}市场 ({market['_id']}): {market['count']:,} 条")
+        market_name = 'Shanghai' if market['_id'] == 'sh' else 'Shenzhen'
+        print(f"  {market_name}market ({market['_id']}): {market['count']:,} Article")
     
-    # 3. 按分类统计
-    print("\n📊 分类分布:")
+    # 3. Statistics by category
+    print("\n📊 Classification distribution:")
     category_pipeline = [
         {'$group': {
             '_id': '$sec',
@@ -107,30 +107,30 @@ def verify_stock_data(db):
     
     for category in collection.aggregate(category_pipeline):
         category_name = {
-            'stock_cn': '股票',
-            'etf_cn': 'ETF基金',
-            'index_cn': '指数',
-            'bond_cn': '债券'
+            'stock_cn': 'stocks',
+            'etf_cn': 'ETF fund',
+            'index_cn': 'Index',
+            'bond_cn': 'bonds'
         }.get(category['_id'], category['_id'])
-        print(f"  {category_name}: {category['count']:,} 条")
+        print(f"  {category_name}: {category['count']:,} Article")
     
-    # 4. 数据样本
-    print("\n📋 数据样本 (前10条):")
+    # 4. data sample
+    print("\n📋 data sample (Top 10):")
     samples = collection.find({}).limit(10)
     
     for i, stock in enumerate(samples, 1):
-        market_name = '上海' if stock['sse'] == 'sh' else '深圳'
+        market_name = 'Shanghai' if stock['sse'] == 'sh' else 'Shenzhen'
         print(f"  {i:2d}. {stock['code']} - {stock['name']} ({market_name})")
     
-    # 5. 最近更新时间
+    # 5. last updated time
     latest = collection.find_one({}, sort=[('updated_at', -1)])
     if latest and 'updated_at' in latest:
-        print(f"\n🕒 最近更新时间: {latest['updated_at']}")
+        print(f"\n🕒 last updated time: {latest['updated_at']}")
     
-    # 6. 数据完整性检查
-    print("\n🔍 数据完整性检查:")
+    # 6. Data integrity check
+    print("\n🔍 Data integrity check:")
     
-    # 检查必需字段
+    # Check required fields
     required_fields = ['code', 'name', 'sse']
     for field in required_fields:
         missing_count = collection.count_documents({field: {'$exists': False}})
@@ -138,59 +138,59 @@ def verify_stock_data(db):
         empty_count = collection.count_documents({field: ''})
         
         if missing_count + null_count + empty_count == 0:
-            print(f"  ✅ {field}: 完整")
+            print(f"  ✅ {field}: complete")
         else:
-            print(f"  ⚠️ {field}: 缺失{missing_count}, 空值{null_count}, 空字符串{empty_count}")
+            print(f"  ⚠️ {field}: Missing{missing_count}, null value{null_count}, empty string{empty_count}")
     
-    # 7. 查询示例
-    print("\n🔍 查询示例:")
+    # 7. Query example
+    print("\n🔍 Query example:")
     
-    # 查找平安相关股票
+    # Find Ping An related stocks
     ping_an_stocks = list(collection.find(
-        {'name': {'$regex': '平安', '$options': 'i'}}
+        {'name': {'$regex': 'Peace', '$options': 'i'}}
     ).limit(5))
     
     if ping_an_stocks:
-        print("  平安相关股票:")
+        print("  Ping An related stocks:")
         for stock in ping_an_stocks:
-            market_name = '上海' if stock['sse'] == 'sh' else '深圳'
+            market_name = 'Shanghai' if stock['sse'] == 'sh' else 'Shenzhen'
             print(f"    {stock['code']} - {stock['name']} ({market_name})")
     
-    # 查找ETF
+    # Find ETF
     etf_count = collection.count_documents({'sec': 'etf_cn'})
-    print(f"  ETF基金总数: {etf_count:,}")
+    print(f"  ETF Total number of funds: {etf_count:,}")
     
-    # 查找指数
+    # Find index
     index_count = collection.count_documents({'sec': 'index_cn'})
-    print(f"  指数总数: {index_count:,}")
+    print(f"  Total number of indices: {index_count:,}")
 
 def main():
-    """主函数"""
-    print("🔍 正在验证MongoDB中的A股基础信息...")
+    """main function"""
+    print("🔍 Verifying basic A-share information in MongoDB...")
     
-    # 连接MongoDB
+    # connect MongoDB
     client, db = connect_mongodb()
     
     if client is None or db is None:
-        print("❌ 无法连接到MongoDB，验证失败")
+        print("❌ Unable to connect to MongoDB, authentication failed")
         return
     
     try:
-        # 验证数据
+        # Validate data
         verify_stock_data(db)
         
-        print("\n✅ 数据验证完成")
+        print("\n✅ Data verification completed")
         
     except Exception as e:
-        print(f"❌ 验证过程中发生错误: {e}")
+        print(f"❌ An error occurred during verification: {e}")
         import traceback
         traceback.print_exc()
     
     finally:
-        # 关闭连接
+        # close connection
         if client:
             client.close()
-            print("🔒 MongoDB连接已关闭")
+            print("🔒 MongoDB connection closed")
 
 if __name__ == "__main__":
     main()

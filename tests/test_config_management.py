@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-配置管理功能测试
+Configuration management function testing
 """
 
 import os
@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -18,20 +18,20 @@ from tradingagents.config.config_manager import ConfigManager, ModelConfig, Pric
 
 
 def test_config_manager():
-    """测试配置管理器基本功能"""
-    print("🧪 测试配置管理器")
+    """Test basic functionality of Configuration Manager"""
+    print("🧪 Test Configuration Manager")
     print("=" * 50)
     
-    # 创建临时目录用于测试
+    # Create a temporary directory for testing
     with tempfile.TemporaryDirectory() as temp_dir:
         config_manager = ConfigManager(temp_dir)
         
-        # 测试模型配置
-        print("📝 测试模型配置...")
+        # Test model configuration
+        print("📝 Test model configuration...")
         models = config_manager.load_models()
-        assert len(models) > 0, "应该有默认模型配置"
+        assert len(models) > 0, "There should be a default model configuration"
         
-        # 添加新模型
+        # Add new model
         new_model = ModelConfig(
             provider="test_provider",
             model_name="test_model",
@@ -43,22 +43,22 @@ def test_config_manager():
         models.append(new_model)
         config_manager.save_models(models)
         
-        # 重新加载验证
+        # Reload verification
         reloaded_models = config_manager.load_models()
-        assert len(reloaded_models) == len(models), "模型数量应该匹配"
+        assert len(reloaded_models) == len(models), "The number of models should match"
         
         test_model = next((m for m in reloaded_models if m.provider == "test_provider"), None)
-        assert test_model is not None, "应该找到测试模型"
-        assert test_model.api_key == "test_key_123", "API密钥应该匹配"
+        assert test_model is not None, "The test model should be found"
+        assert test_model.api_key == "test_key_123", "API The key should match"
         
-        print("✅ 模型配置测试通过")
+        print("✅ Model configuration test passed")
         
-        # 测试定价配置
-        print("📝 测试定价配置...")
+        # Test pricing configuration
+        print("📝 Test pricing configuration...")
         pricing_configs = config_manager.load_pricing()
-        assert len(pricing_configs) > 0, "应该有默认定价配置"
+        assert len(pricing_configs) > 0, "There should be a default pricing configuration"
         
-        # 添加新定价
+        # Add new pricing
         new_pricing = PricingConfig(
             provider="test_provider",
             model_name="test_model",
@@ -70,15 +70,15 @@ def test_config_manager():
         pricing_configs.append(new_pricing)
         config_manager.save_pricing(pricing_configs)
         
-        # 测试成本计算
+        # Test cost calculation
         cost = config_manager.calculate_cost("test_provider", "test_model", 1000, 500)
         expected_cost = (1000 / 1000) * 0.001 + (500 / 1000) * 0.002
-        assert abs(cost - expected_cost) < 0.000001, f"成本计算错误: {cost} != {expected_cost}"
+        assert abs(cost - expected_cost) < 0.000001, f"Cost calculation error: {cost} != {expected_cost}"
         
-        print("✅ 定价配置测试通过")
+        print("✅ Pricing configuration test passed")
         
-        # 测试使用记录
-        print("📝 测试使用记录...")
+        # Test usage record
+        print("📝 Test usage record...")
         record = config_manager.add_usage_record(
             provider="test_provider",
             model_name="test_model",
@@ -88,40 +88,40 @@ def test_config_manager():
             analysis_type="test_analysis"
         )
         
-        assert record.cost == expected_cost, "使用记录成本应该匹配"
+        assert record.cost == expected_cost, "The usage record cost should match"
         
-        # 测试统计
+        # test statistics
         stats = config_manager.get_usage_statistics(30)
-        assert stats["total_requests"] >= 1, "应该有至少一条使用记录"
-        assert stats["total_cost"] >= expected_cost, "总成本应该包含测试记录"
+        assert stats["total_requests"] >= 1, "There should be at least one usage record"
+        assert stats["total_cost"] >= expected_cost, "Total cost should include test records"
         
-        print("✅ 使用记录测试通过")
+        print("✅ Test passed using record")
         
-        # 测试设置
-        print("📝 测试系统设置...")
+        # Test setup
+        print("📝 Test system settings...")
         settings = config_manager.load_settings()
-        assert "default_provider" in settings, "应该有默认设置"
+        assert "default_provider" in settings, "There should be a default setting"
         
         settings["test_setting"] = "test_value"
         config_manager.save_settings(settings)
         
         reloaded_settings = config_manager.load_settings()
-        assert reloaded_settings["test_setting"] == "test_value", "设置应该被保存"
+        assert reloaded_settings["test_setting"] == "test_value", "Settings should be saved"
         
-        print("✅ 系统设置测试通过")
+        print("✅ System settings test passed")
 
 
 def test_token_tracker():
-    """测试Token跟踪器"""
-    print("\n🧪 测试Token跟踪器")
+    """Test Token Tracker"""
+    print("\n🧪 Test Token Tracker")
     print("=" * 50)
     
     with tempfile.TemporaryDirectory() as temp_dir:
         config_manager = ConfigManager(temp_dir)
         token_tracker = TokenTracker(config_manager)
         
-        # 测试使用跟踪
-        print("📝 测试使用跟踪...")
+        # Test usage tracking
+        print("📝 Test usage tracking...")
         record = token_tracker.track_usage(
             provider="dashscope",
             model_name="qwen-turbo",
@@ -131,15 +131,15 @@ def test_token_tracker():
             analysis_type="stock_analysis"
         )
         
-        assert record is not None, "应该返回使用记录"
-        assert record.input_tokens == 2000, "输入token数应该匹配"
-        assert record.output_tokens == 1000, "输出token数应该匹配"
-        assert record.cost > 0, "成本应该大于0"
+        assert record is not None, "Usage records should be returned"
+        assert record.input_tokens == 2000, "The input token number should match"
+        assert record.output_tokens == 1000, "The output token number should match"
+        assert record.cost > 0, "The cost should be greater than 0"
         
-        print("✅ 使用跟踪测试通过")
+        print("✅ Test passes using trace")
         
-        # 测试成本估算
-        print("📝 测试成本估算...")
+        # Test cost estimate
+        print("📝 Test cost estimate...")
         estimated_cost = token_tracker.estimate_cost(
             provider="dashscope",
             model_name="qwen-turbo",
@@ -147,27 +147,27 @@ def test_token_tracker():
             estimated_output_tokens=500
         )
         
-        assert estimated_cost > 0, "估算成本应该大于0"
+        assert estimated_cost > 0, "The estimated cost should be greater than 0"
         
-        print("✅ 成本估算测试通过")
+        print("✅ Cost estimation test passed")
         
-        # 测试会话成本
-        print("📝 测试会话成本...")
+        # Test session cost
+        print("📝 Test session cost...")
         session_cost = token_tracker.get_session_cost("test_session_123")
-        assert session_cost == record.cost, "会话成本应该匹配记录成本"
+        assert session_cost == record.cost, "Session cost should match record cost"
         
-        print("✅ 会话成本测试通过")
+        print("✅ Session cost test passed")
 
 
 def test_pricing_accuracy():
-    """测试定价准确性"""
-    print("\n🧪 测试定价准确性")
+    """Test pricing accuracy"""
+    print("\n🧪 Test pricing accuracy")
     print("=" * 50)
     
     with tempfile.TemporaryDirectory() as temp_dir:
         config_manager = ConfigManager(temp_dir)
         
-        # 测试不同供应商的定价
+        # Test pricing from different vendors
         test_cases = [
             ("dashscope", "qwen-turbo", 1000, 500),
             ("dashscope", "qwen-plus", 2000, 1000),
@@ -179,28 +179,28 @@ def test_pricing_accuracy():
             cost = config_manager.calculate_cost(provider, model, input_tokens, output_tokens)
             print(f"📊 {provider} {model}: {input_tokens}+{output_tokens} tokens = ¥{cost:.6f}")
             
-            # 验证成本计算逻辑
+            # Validate costing logic
             pricing_configs = config_manager.load_pricing()
             pricing = next((p for p in pricing_configs if p.provider == provider and p.model_name == model), None)
             
             if pricing:
                 expected_cost = (input_tokens / 1000) * pricing.input_price_per_1k + (output_tokens / 1000) * pricing.output_price_per_1k
-                assert abs(cost - expected_cost) < 0.000001, f"成本计算错误: {cost} != {expected_cost}"
+                assert abs(cost - expected_cost) < 0.000001, f"Cost calculation error: {cost} != {expected_cost}"
             else:
-                assert cost == 0.0, f"未知模型应该返回0成本，但得到 {cost}"
+                assert cost == 0.0, f"Unknown model should return 0 cost but gets {cost}"
         
-        print("✅ 定价准确性测试通过")
+        print("✅ Pricing accuracy test passed")
 
 
 def test_usage_statistics():
-    """测试使用统计功能"""
-    print("\n🧪 测试使用统计功能")
+    """Test usage statistics function"""
+    print("\n🧪 Test usage statistics function")
     print("=" * 50)
     
     with tempfile.TemporaryDirectory() as temp_dir:
         config_manager = ConfigManager(temp_dir)
         
-        # 添加多条使用记录
+        # Add multiple usage records
         test_records = [
             ("dashscope", "qwen-turbo", 1000, 500, "session1", "stock_analysis"),
             ("dashscope", "qwen-plus", 2000, 1000, "session2", "stock_analysis"),
@@ -220,28 +220,28 @@ def test_usage_statistics():
             )
             total_expected_cost += record.cost
         
-        # 测试统计数据
+        # test statistics
         stats = config_manager.get_usage_statistics(30)
         
-        assert stats["total_requests"] == len(test_records), f"请求数应该是 {len(test_records)}"
-        print(f"📊 统计总成本: {stats['total_cost']:.6f}, 预期总成本: {total_expected_cost:.6f}")
-        assert abs(stats["total_cost"] - total_expected_cost) < 0.001, "总成本应该匹配"
+        assert stats["total_requests"] == len(test_records), f"The number of requests should be {len(test_records)}"
+        print(f"📊 Statistical total cost: {stats['total_cost']:.6f}, expected total cost: {total_expected_cost:.6f}")
+        assert abs(stats["total_cost"] - total_expected_cost) < 0.001, "Total cost should match"
         
-        # 测试按供应商统计
+        # Test statistics by supplier
         provider_stats = stats["provider_stats"]
-        assert "dashscope" in provider_stats, "应该有dashscope统计"
-        assert "openai" in provider_stats, "应该有openai统计"
-        assert "google" in provider_stats, "应该有google统计"
+        assert "dashscope" in provider_stats, "There should be dashscope statistics"
+        assert "openai" in provider_stats, "There should be openai statistics"
+        assert "google" in provider_stats, "There should be Google statistics"
         
         dashscope_stats = provider_stats["dashscope"]
-        assert dashscope_stats["requests"] == 2, "dashscope应该有2个请求"
+        assert dashscope_stats["requests"] == 2, "dashscope There should be 2 requests"
         
-        print("✅ 使用统计测试通过")
+        print("✅ Pass using statistical tests")
 
 
 def main():
-    """主测试函数"""
-    print("🧪 配置管理功能测试")
+    """Main test function"""
+    print("🧪 Configuration management function testing")
     print("=" * 60)
     
     try:
@@ -250,19 +250,19 @@ def main():
         test_pricing_accuracy()
         test_usage_statistics()
         
-        print("\n🎉 所有测试通过！")
+        print("\n🎉 All tests passed!")
         print("=" * 60)
-        print("✅ 配置管理功能正常")
-        print("✅ Token跟踪功能正常")
-        print("✅ 成本计算准确")
-        print("✅ 使用统计正确")
+        print("✅ Configuration management function is normal")
+        print("✅ Token Tracking function is normal")
+        print("✅ Accurate cost calculation")
+        print("✅ Correct usage statistics")
         
         return True
         
     except Exception as e:
-        print(f"\n❌ 测试失败: {e}")
+        print(f"\n❌ test failed: {e}")
         import traceback
-        print(f"错误详情: {traceback.format_exc()}")
+        print(f"Error details: {traceback.format_exc()}")
         return False
 
 

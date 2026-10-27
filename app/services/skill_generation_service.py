@@ -1,7 +1,7 @@
 """
-Skill 生成服务 — 业务逻辑层
+Skill Build service — business logic layer
 
-封装 core/tools/external/ 的各模块，处理 MongoDB 持久化和异步编排。
+Encapsulates each module in core/tools/external/ to handle MongoDB persistence and asynchronous orchestration.
 """
 
 import asyncio
@@ -37,19 +37,19 @@ logger = logging.getLogger("webapi")
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SKILL_CODE_SNAPSHOT_DIR = PROJECT_ROOT / "data" / "code" / "skill"
 
-# MongoDB 集合名
+# MongoDB Collection name
 SESSION_COLLECTION = "skill_creation_sessions"
 SKILL_COLLECTION = "external_skills"
-# 与 iteration_controller.MAX_ITERATIONS 保持一致；如需调整请同步修改
+# Consistent with iteration_controller.MAX_ITERATIONS; if you need to adjust it, please modify it simultaneously.
 SKILL_PIPELINE_MAX_ITERATIONS = 10
 SKILL_GENERATION_AGENTIC_ENABLED = os.getenv("SKILL_GENERATION_AGENTIC_ENABLED", "true").lower() not in {"0", "false", "no", "off"}
 
 
 class SkillGenerationService:
     """
-    Skill 生成服务
+    Skill Build service
 
-    提供需求沟通、代码生成、Skill 管理的完整业务逻辑。
+    Provides complete business logic for demand communication, code generation, and skill management.
     """
 
     def __init__(
@@ -63,11 +63,11 @@ class SkillGenerationService:
     ):
         """
         Args:
-            db: MongoDB 数据库
-            reasoning_llm_client: 需求分析用（深度推理大模型），规格生成等重推理环节
-            coding_llm_client: 代码生成用（编程大模型），生成代码、Judge 评分
-            quick_llm_client: 需求对话用（快速模型），清晰度/边界/多轮回复等低延迟环节
-            provider, model: 回退用，当上述客户端均为空时使用
+            db: MongoDB database
+            reasoning_llm_client: For requirements analysis (large model for deep reasoning), specification generation and other heavy reasoning steps
+            coding_llm_client: For code generation (large programming model), code generation and Judge scoring
+            quick_llm_client: Used for demand dialogue (quick model), clarity/boundary/multi-round reply and other low-latency links
+            provider, model: Used for fallback, used when all the above clients are empty.
         """
         self._db = db
         self._provider = provider
@@ -123,20 +123,20 @@ class SkillGenerationService:
         return result
 
     async def _search_capability_index(self, spec: SkillSpec) -> list:
-        """从能力索引（Qdrant 向量库）中搜索与 spec 语义相关的工具。
+        """Search the capabilities index (Qdrant vector library) for tools related to spec semantics.
 
-        使用 spec 的 display_name + description 构造查询，召回 top_k=12 的相关工具。
-        如果能力索引服务不可用，返回空列表（不阻塞流程）。
+        using spec display_name + description Construct query, recall top_k=12 related tools.
+        If the capability index service is unavailable, an empty list is returned (does not block the process).
         """
         try:
             from app.services.capability_index_service import CapabilityIndexService
-            # 构造语义查询文本
+            # Construct semantic query text
             query_parts = [
                 spec.display_name or "",
                 spec.description or "",
                 spec.category or "",
             ]
-            # 加入参数描述，让搜索更精准
+            # Add parameter description to make the search more accurate
             for param in (spec.parameters or []):
                 desc = getattr(param, "description", None) or (param.get("description") if isinstance(param, dict) else None)
                 if desc:
@@ -153,13 +153,13 @@ class SkillGenerationService:
                 source_types=["builtin_tool", "mcp_tool"],
             )
             logger.info(
-                "🧭 能力索引向量搜索: query='%s...' → %d 个命中",
+                "🧭 Capability Index Vector Search: query='%s...' → %d hit",
                 query[:40],
                 len(hits),
             )
             return hits
         except Exception as exc:
-            logger.warning("⚠️ 能力索引搜索失败（不阻塞流程）: %s", exc)
+            logger.warning("⚠️ Capability index search failed (does not block the process): %s", exc)
             return []
 
     @staticmethod
@@ -184,14 +184,14 @@ class SkillGenerationService:
 
         capability_tags: List[str] = []
         tag_patterns = [
-            (r"现金流|cash\s*flow|cashflow|ocf|fcf|cfo|自由现金流", "cashflow_quality"),
-            (r"财务健康|偿债|负债|debt|solvency|liquidity|current_ratio|interest_coverage", "financial_health"),
-            (r"风险|risk|预警|异常|商誉|应收|goodwill|receivable", "financial_risk"),
-            (r"估值|valuation|pe|pb|percentile|分位|dcf|peg", "valuation"),
-            (r"趋势|trend|series|历史|多年|time_series", "historical_series"),
-            (r"质量|quality|roe|roa|roic|piotroski|altman|beneish", "quality_factor"),
-            (r"技术|technical|macd|rsi|kdj|ma20", "technical"),
-            (r"新闻|news|舆情|sentiment", "news_sentiment"),
+            (r"cash flow|cash\s*flow|cashflow|ocf|fcf|cfo|free cash flow", "cashflow_quality"),
+            (r"financial health|debt repayment|Liabilities|debt|solvency|liquidity|current_ratio|interest_coverage", "financial_health"),
+            (r"risk|risk|early warning|Abnormal|goodwill|receivable|goodwill|receivable", "financial_risk"),
+            (r"Valuation|valuation|pe|pb|percentile|Quantile|dcf|peg", "valuation"),
+            (r"Trend|trend|series|history|many years|time_series", "historical_series"),
+            (r"quality|quality|roe|roa|roic|piotroski|altman|beneish", "quality_factor"),
+            (r"technology|technical|macd|rsi|kdj|ma20", "technical"),
+            (r"News|news|public opinion|sentiment", "news_sentiment"),
         ]
         for pattern, tag in tag_patterns:
             if re.search(pattern, text):
@@ -200,7 +200,7 @@ class SkillGenerationService:
         output_fields = [str(item or "").lower() for item in (spec.expected_output.fields or [])]
         output_type = str(spec.expected_output.type or "").lower()
         if output_type in {"dict", "list[dict]", "list"} and output_fields:
-            if any(re.search(r"ratio|rate|score|metrics?|指标|比率|分数|flag", field) for field in output_fields):
+            if any(re.search(r"ratio|rate|score|metrics?|indicator|Ratio|score|flag", field) for field in output_fields):
                 output_shape = "structured_metrics"
             else:
                 output_shape = "structured_records"
@@ -303,9 +303,9 @@ class SkillGenerationService:
         *,
         max_chars: int,
         head_chars: Optional[int] = None,
-        separator: str = "\n... (中间省略) ...\n",
+        separator: str = "\n... (Omit the middle) ...\n",
     ) -> str:
-        """长文本摘要默认保留首尾，避免只看到前半段导致误判。"""
+        """Long text summaries keep the beginning and the end by default to avoid misjudgment caused by only seeing the first half."""
         if text is None:
             return ""
 
@@ -330,27 +330,27 @@ class SkillGenerationService:
         compact: bool = False,
     ) -> List[str]:
         """
-        将单次管线结果格式化为结构化文本行列表。
+        Format single-shot pipeline results into a structured list of text lines.
 
         Args:
-            compact: True 时只保留根因分析和评分，省略 stdout/stderr/feedback
-                     等大体积字段，用于压缩历史管线。
+            compact: True When only retaining root cause analysis and scoring, omit stdout/stderr/feedback
+                     Equally large volume field, used to compress historical pipelines.
         """
         parts: List[str] = []
         if label:
             parts.append(f"\n{'='*20} {label} {'='*20}")
         if pipeline_result.error:
-            parts.append(f"最终结论：{pipeline_result.error}")
+            parts.append(f"Final conclusion:{pipeline_result.error}")
 
         for iteration in pipeline_result.iterations or []:
             parts.append(f"\n[第{iteration.round_number}轮 | 决策={iteration.decision or 'UNKNOWN'}]")
 
             if iteration.validation and iteration.validation.errors:
-                parts.append("静态验证问题：")
+                parts.append("Static validation issues:")
                 parts.extend(f"- {item}" for item in iteration.validation.errors[:3])
 
             if iteration.sandbox and not iteration.sandbox.success:
-                parts.append(f"沙箱执行失败：{iteration.sandbox.error or '未知错误'}")
+                parts.append(f"Sandbox execution failed:{iteration.sandbox.error or 'unknown error'}")
 
             if not compact and iteration.sandbox and iteration.sandbox.success and iteration.sandbox.output is not None:
                 import json as _json
@@ -366,11 +366,11 @@ class SkillGenerationService:
                         max_chars=1200,
                         head_chars=700,
                     )
-                parts.append(f"沙箱返回值（摘要）：{out_str}")
+                parts.append(f"Sandbox return value (summary):{out_str}")
 
             if iteration.eval_score:
                 parts.append(
-                    "评估分数："
+                    "Assessment score:"
                     f"total={iteration.eval_score.total}, "
                     f"executability={iteration.eval_score.executability}, "
                     f"authenticity={iteration.eval_score.authenticity}, "
@@ -380,9 +380,9 @@ class SkillGenerationService:
                 )
 
             if iteration.reflection and iteration.reflection.root_cause:
-                parts.append(f"根因分析：{iteration.reflection.root_cause}")
+                parts.append(f"Root cause analysis:{iteration.reflection.root_cause}")
                 if iteration.reflection.fix_plan:
-                    parts.append("修复计划：" + " → ".join(iteration.reflection.fix_plan[:5]))
+                    parts.append("Repair plan:" + " → ".join(iteration.reflection.fix_plan[:5]))
 
             if not compact and iteration.feedback:
                 feedback_excerpt = SkillGenerationService._summarize_text(
@@ -390,13 +390,13 @@ class SkillGenerationService:
                     max_chars=1200,
                     head_chars=700,
                 )
-                parts.append(f"系统反馈（摘要）：{feedback_excerpt}")
+                parts.append(f"System feedback (summary):{feedback_excerpt}")
 
         return parts
 
     @staticmethod
     def _extract_lessons(results: List[PipelineResult]) -> List[str]:
-        """从管线结果列表中提取去重的关键教训。"""
+        """Key lessons for extracting duplicates from pipeline result lists."""
         lessons: List[str] = []
         for pr in results:
             for it in pr.iterations or []:
@@ -412,17 +412,17 @@ class SkillGenerationService:
         if not pipeline_result:
             return user_feedback.strip()
 
-        parts: List[str] = ["=== 上一轮管线失败信息 ==="]
+        parts: List[str] = ["=== Last round of pipeline failure information ==="]
         parts.extend(
             SkillGenerationService._format_single_pipeline(pipeline_result, compact=False)
         )
 
         if user_feedback.strip():
-            parts.append(f"\n=== 用户补充修正意见 ===\n{user_feedback.strip()}")
+            parts.append(f"\n=== User s additional correction comments ===\n{user_feedback.strip()}")
 
         return "\n".join(parts)
 
-    # 经验反馈的 token 预算（按 1 中文字 ≈ 2 token 估算，8K token ≈ 4K 字符）
+    # Token budget for experience feedback (press 1 Chinese character ≈ 2 token estimate,8K token ≈ 4K characters)
     _EXPERIENCE_CHAR_BUDGET = 6000
 
     @staticmethod
@@ -432,12 +432,12 @@ class SkillGenerationService:
         user_feedback: str = "",
     ) -> str:
         """
-        构建累积经验反馈 — 渐进式压缩策略：
+        Build cumulative experience feedback — Progressive compression strategy:
 
-        1. 最近一次管线：完整详情（stdout/返回值/反馈）
-        2. 更早的管线：仅保留根因分析和评分（compact 模式）
-        3. 全量教训去重汇总
-        4. 如果仍然超预算，从最早的历史开始裁剪
+        1. Most recent pipeline: full details (stdout/return value/feedback)
+        2. Older pipeline: only root cause analysis and scoring (compact mode)
+        3. Summary of all lessons learned with deduplication
+        4. If still over budget, start cropping from oldest history
         """
         history = list(pipeline_history or [])
         all_results = list(history)
@@ -450,10 +450,10 @@ class SkillGenerationService:
         budget = SkillGenerationService._EXPERIENCE_CHAR_BUDGET
         parts: List[str] = [
             f"=== 累积生成经验（共 {len(all_results)} 次尝试）===",
-            "请从历史教训中吸取经验，避免重复犯错。\n",
+            "Please learn from the lessons of history and avoid making the same mistakes again.\n",
         ]
 
-        # ---- 关键教训汇总（始终保留，最高优先级）----
+        # ---- Summary of key lessons learned (always retained, highest priority)----
         lessons = SkillGenerationService._extract_lessons(all_results)
         if lessons:
             parts.append(f"=== 关键教训总结（{len(lessons)} 条，必须遵守）===")
@@ -461,20 +461,20 @@ class SkillGenerationService:
                 parts.append(f"{i}. {lesson}")
             parts.append("")
 
-        # ---- 最近一次管线：完整详情 ----
+        # ---- Most recent pipeline: full details ----
         latest = all_results[-1]
         success_label = "✅ 成功" if latest.success else "❌ 失败"
         latest_label = f"最近一次尝试（第 {len(all_results)} 次, {latest.total_rounds} 轮, {latest.total_time}s, {success_label}）"
         latest_lines = SkillGenerationService._format_single_pipeline(latest, latest_label, compact=False)
         parts.extend(latest_lines)
 
-        # ---- 更早的管线：compact 模式，从最近往最早填充 ----
+        # ---- Earlier pipeline: compact mode, filling from latest to earliest ----
         older = all_results[:-1]
         if older:
             parts.append(f"\n=== 更早的 {len(older)} 次尝试（摘要）===")
 
             current_len = sum(len(p) for p in parts)
-            remaining = budget - current_len - 300  # 预留尾部空间
+            remaining = budget - current_len - 300  # Reserve tail space
 
             included = 0
             for pr in reversed(older):
@@ -491,10 +491,10 @@ class SkillGenerationService:
                 included += 1
 
         if user_feedback.strip():
-            parts.append(f"\n=== 用户本轮补充意见 ===\n{user_feedback.strip()}")
+            parts.append(f"\n=== Users additional comments in this round ===\n{user_feedback.strip()}")
 
         parts.append("\n=== 要求 ===")
-        parts.append("请结合以上教训，避免重复之前的错误，定向修复并生成高质量代码。")
+        parts.append("Please combine the above lessons to avoid repeating previous mistakes, make targeted repairs, and generate high-quality code.")
 
         return "\n".join(parts)
 
@@ -506,21 +506,21 @@ class SkillGenerationService:
     ) -> str:
         return "\n".join([
             "## 我理解到的问题",
-            f"- 当前 Skill 的目标仍然是：{spec.description}",
-            f"- 你强调的新问题是：{feedback.strip() or '请按失败信息修正'}",
-            "- 我会优先修复静态校验、沙箱执行和评分阶段已经暴露出的确定性错误，不会改动已确认的需求边界。",
+            f"- The current goal of Skill is still:{spec.description}",
+            f"- The new issues you highlighted are:{feedback.strip() or 'Please correct the failure message'}",
+            "- I will give priority to fixing the deterministic errors that have been exposed in the static verification, sandbox execution and scoring phases, and will not change the confirmed requirement boundaries.",
             "",
             "## 修正计划",
-            "1. 先根据上一轮失败信息定位最先导致失败的根因，优先消除阻断执行的问题。",
-            "2. 保留现有 Skill 规格和目标输出，避免把修正过程扩展成新的需求。",
-            "3. 基于上一轮代码定向修改，而不是重新从零生成。",
-            "4. 对关键输入、关键数据缺失场景显式返回 error / invalid，避免用伪造默认值继续输出。",
-            "5. 修正后重新通过静态校验、沙箱执行和质量评估。",
+            "1. First, locate the root cause of the failure based on the previous round of failure information, and prioritize the elimination of problems that block execution.",
+            "2. Preserve existing skill specifications and target outputs to avoid extending the revision process into new requirements.",
+            "3. Directly modify based on the previous round of code instead of regenerating it from scratch.",
+            "4. Explicitly return error / invalid in scenarios where key inputs or key data are missing, to avoid using forged default values to continue output.",
+            "5. After correction, it re-passed static verification, sandbox execution and quality assessment.",
             "",
-            "## 重新生成时的重点检查项",
-            pipeline_feedback.strip() or "- 以上一轮失败会话的静态验证、沙箱和评估错误为主进行逐项修复。",
+            "## Important things to check when regenerating",
+            pipeline_feedback.strip() or "- Repairs are made one by one, focusing on static verification, sandboxing and evaluation errors in the previous round of failed sessions.",
             "",
-            "如果这份计划没有偏差，你再确认让我按这个计划重新生成。",
+            "If there is no deviation from this plan, please confirm and let me regenerate according to this plan.",
         ])
 
     def _generate_repair_plan_message(
@@ -529,15 +529,15 @@ class SkillGenerationService:
         feedback: str,
     ) -> Tuple[str, Optional[Any]]:
         """
-        生成修正计划消息。
+        Generate correction plan messages.
 
         Returns:
-            (ai_message, llm_response) — llm_response 可能为 None（无规格或回退方案）。
-            llm_response 供异步调用方记录 token 使用，避免在同步上下文中调用异步方法。
+            (ai_message, llm_response) — llm_response May be None (no specification or fallback scheme).
+            llm_response Used by asynchronous callers to record tokens to avoid calling asynchronous methods in a synchronous context.
         """
         spec = session.spec
         if not spec:
-            return "当前会话还没有可用的 Skill 规格，无法生成修正计划。", None
+            return "There are no Skill specifications available for the current session and a remediation plan cannot be generated.", None
 
         accumulated_exp = self._build_accumulated_experience(
             pipeline_history=session.pipeline_history,
@@ -596,7 +596,7 @@ test_input: {spec.test_input}
             if content:
                 return content, response
         except Exception as e:
-            logger.warning(f"生成修正计划失败，使用回退方案: {e}")
+            logger.warning(f"Failed to generate correction plan, use fallback plan: {e}")
 
         return self._build_repair_plan_fallback(spec, feedback, pipeline_feedback), None
 
@@ -611,15 +611,15 @@ test_input: {spec.test_input}
         codegen_timeout: Optional[int] = None,
         iteration_mode: str = "repair",
     ) -> Dict[str, Any]:
-        # 代码生成单次调用超时（秒）：None 用管线默认值；仅接受 60~1800 的整数
+        # Code generation single call timeout (seconds): None Use pipeline default; only accepted 60~1800 integer
         if isinstance(codegen_timeout, bool) or not isinstance(codegen_timeout, int):
             codegen_timeout = None
         elif not (60 <= codegen_timeout <= 1800):
             codegen_timeout = None
 
-        # external_api 模式：把接口预检实测事实（连通性/真实字段/实测查询参数）注入
-        # spec.metadata，代码生成 prompt 据此构造【接口实测事实】区块——
-        # LLM 不再臆造返回字段，也不再把业务过滤参数（如 brand）拼进 URL
+        # external_api Mode: Inject the interface preflight measured facts (connectivity/real fields/measured query parameters)
+        # spec.metadata, Code generation prompt constructs the [Interface Measured Facts] block based on this——
+        # LLM No more imaginary return fields, no more business filtering parameters (such as brand) URL
         try:
             if classify_requirement_mode(spec) == "external_api":
                 sess_doc = await self._db[SESSION_COLLECTION].find_one(
@@ -631,14 +631,14 @@ test_input: {spec.test_input}
                     metadata["interface_preflight"] = preflight
                     spec.metadata = metadata
                     logger.info(
-                        "[Preflight] 接口实测事实已注入代码生成: status=%s data_items=%s fields=%s probed_params=%s",
+                        "[Preflight] Interface measured facts are injected into code generation: status=%s data_items=%s fields=%s probed_params=%s",
                         preflight.get("status"),
                         preflight.get("data_items"),
                         preflight.get("sample_fields"),
                         list((preflight.get("probed_params") or {}).keys()),
                     )
         except Exception as exc:
-            logger.debug("[Preflight] 实测事实注入代码生成失败（已忽略）: %s", exc)
+            logger.debug("[Preflight] Measured fact injection code generation failed (ignored): %s", exc)
 
         session.status = SessionStatus.GENERATING
         if session.pipeline_result is not None:
@@ -683,7 +683,7 @@ test_input: {spec.test_input}
                     "pipeline_progress": progress,
                     "updated_at": datetime.utcnow(),
                 }
-                # 质量评估完成：结构化结果实时落库，前端轮询即可看到分数/评语
+                # Quality assessment completed: structured results are logged into the database in real time, and scores/comments can be seen through front-end polling
                 eval_result = (extra or {}).get("eval_result")
                 if eval_result:
                     detail_event["eval_result"] = eval_result
@@ -702,12 +702,12 @@ test_input: {spec.test_input}
                     },
                 )
             except Exception as e:
-                logger.warning(f"更新 pipeline 进度失败: {e}")
+                logger.warning(f"Failed to update pipeline progress: {e}")
 
-        # 思考过程实时展示：缓冲 reasoning 增量，节流写入会话文档（前端轮询读取）
+        # Real-time display of the thinking process: buffering reasoning increments, throttling writing of session documents (front-end polling reading)
         thinking_state = {"buf": "", "last_flush": 0.0}
-        THINKING_FLUSH_INTERVAL = 1.5   # 秒
-        THINKING_DOC_TAIL = 6000        # 文档中仅保留尾部，防止无限增长
+        THINKING_FLUSH_INTERVAL = 1.5   # seconds
+        THINKING_DOC_TAIL = 6000        # Only the tail is retained in the document to prevent unlimited growth
 
         def _flush_thinking() -> None:
             try:
@@ -719,7 +719,7 @@ test_input: {spec.test_input}
                     }},
                 )
             except Exception as e:
-                logger.warning(f"写入 pipeline_thinking 失败: {e}")
+                logger.warning(f"Writing to pipeline_thinking failed: {e}")
 
         def _thinking_cb(kind: str, text: str):
             try:
@@ -737,11 +737,11 @@ test_input: {spec.test_input}
                     thinking_state["last_flush"] = now
                     _flush_thinking()
             except Exception as e:
-                logger.warning(f"更新 pipeline_thinking 失败: {e}")
+                logger.warning(f"Update pipeline_thinking failed: {e}")
 
         async def _run_pipeline():
             try:
-                # mem0: 召回同类 Skill 的历史教训，注入到 initial_feedback
+                # mem0: Recall the historical lessons of similar skills and inject them into initial_feedback
                 enriched_feedback = initial_feedback
                 try:
                     mem0_lessons = await _recall_skill_lessons(self._db, spec)
@@ -754,12 +754,12 @@ test_input: {spec.test_input}
                         metadata["cross_session_skill_lessons"] = mem0_lessons[:2000]
                         spec.metadata = metadata
                 except Exception as e:
-                    logger.debug("[mem0] Skill 教训召回失败（已忽略）: %s", e)
+                    logger.debug("[mem0] Skill Lesson recall failed (ignored): %s", e)
 
-                # 捕获 fact_report 到局部变量，避免 lambda 闭包问题
+                # Capture fact_report into local variables to avoid lambda closure issues
                 _fr = fact_report
                 method_name = "run_agentic" if SKILL_GENERATION_AGENTIC_ENABLED else "run"
-                logger.info("Skill 生成引擎: %s", method_name)
+                logger.info("Skill Build engine: %s", method_name)
                 result = await asyncio.get_event_loop().run_in_executor(
                     None,
                     lambda: getattr(self._controller, method_name)(
@@ -773,7 +773,7 @@ test_input: {spec.test_input}
                         iteration_mode=iteration_mode,
                     ),
                 )
-                # 流结束后冲刷剩余思考内容，避免尾部丢失
+                # After the flow ends, flush the remaining thinking content to avoid tail loss.
                 _flush_thinking()
                 session.status = SessionStatus.COMPLETED if result.success else SessionStatus.FAILED
                 session.pipeline_result = result
@@ -788,20 +788,20 @@ test_input: {spec.test_input}
                     )
                     if written_files:
                         logger.info(
-                            "📝 Skill 代码快照已保存: %s",
+                            "📝 Skill Code snapshot saved: %s",
                             str((SKILL_CODE_SNAPSHOT_DIR / spec.tool_id / session.session_id).resolve()),
                         )
                 except Exception as e:
-                    logger.warning("⚠️ 保存 Skill 代码快照失败: %s", e)
+                    logger.warning("⚠️ Failed to save skill code snapshot: %s", e)
 
                 if result.success:
                     await self._save_skill(session, spec, result)
 
-                # mem0: 将本次迭代教训写入记忆
+                # mem0: Write the lessons learned from this iteration into memory
                 try:
                     await _store_skill_lessons(self._db, spec, result)
                 except Exception as e:
-                    logger.debug("[mem0] Skill 教训存储失败（已忽略）: %s", e)
+                    logger.debug("[mem0] Skill Lesson storage failed (ignored): %s", e)
             except Exception as e:
                 logger.error(f"管线执行异常: {e}", exc_info=True)
                 await self._db[SESSION_COLLECTION].update_one(
@@ -844,7 +844,7 @@ test_input: {spec.test_input}
 
     @staticmethod
     def _apply_handoff_context_to_spec(spec: SkillSpec, handoff_context: Any) -> None:
-        """将上游交接上下文附加到 SkillSpec.metadata，供 Agentic Loop 使用。"""
+        """Attach the upstream handoff context to SkillSpec.metadata for use by Agentic Loop."""
         if spec is None or handoff_context is None:
             return
         metadata = dict(getattr(spec, "metadata", None) or {})
@@ -952,7 +952,7 @@ test_input: {spec.test_input}
 
         return doc
 
-    # ==================== 需求沟通 ====================
+    # ==================== Requirements communication ====================
 
     async def start_session(
         self,
@@ -962,24 +962,24 @@ test_input: {spec.test_input}
         iterate_skill_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        开始创建会话：提交初始需求
+        Start creating a session: Submit initial requirements
 
         Args:
-            description: 用户需求描述
-            user_id: 用户 ID
-            handoff_context: 来自上游工坊的交接上下文
-            iterate_skill_id: 迭代模式下的已有 Skill tool_id
+            description: User requirement description
+            user_id: User ID
+            handoff_context: Handover context from upstream workshop
+            iterate_skill_id: Existing in iteration mode Skill tool_id
 
         Returns:
-            包含 session_id, ai_message, clarity_level 等信息的 dict
+            contains session_id, ai_message, clarity_level Waiting for information dict
         """
-        # 创建会话
+        # Create session
         context = SkillHandoffContext(**handoff_context) if handoff_context else None
         session = self._analyzer.create_session(
             user_id=user_id, handoff_context=context, iterate_skill_id=iterate_skill_id,
         )
 
-        # 迭代模式：加载已有 Skill 的上下文
+        # Iterative mode: load the context of an existing Skill
         skill_context: Optional[str] = None
         if iterate_skill_id:
             try:
@@ -999,27 +999,27 @@ test_input: {spec.test_input}
                         "code_abbreviated": code[:1500] + ("..." if len(code) > 1500 else ""),
                     }, ensure_ascii=False, indent=2)
                     logger.info(
-                        "[SkillGeneration][Iterate] 加载已有 Skill 上下文: tool_id=%s",
+                        "[SkillGeneration][Iterate] Load an existing Skill context: tool_id=%s",
                         iterate_skill_id,
                     )
                 else:
                     logger.warning(
-                        "[SkillGeneration][Iterate] 未找到 Skill: tool_id=%s",
+                        "[SkillGeneration][Iterate] not found Skill: tool_id=%s",
                         iterate_skill_id,
                     )
             except Exception as exc:
-                logger.error("[SkillGeneration][Iterate] 加载 Skill 失败: %s", exc)
+                logger.error("[SkillGeneration][Iterate] Failed to load skill: %s", exc)
 
-        # 处理第一轮输入（会做清晰度评估和边界检测）
+        # Process the first round of input (will do clarity evaluation and boundary detection)
         session, ai_message = await asyncio.get_event_loop().run_in_executor(
             None,
             self._analyzer.process_user_input,
             session,
             description,
-            skill_context,  # 迭代模式下传入已有 Skill 上下文
+            skill_context,  # Pass in existing Skill context in iterative mode
         )
 
-        # 持久化到 MongoDB
+        # persist to MongoDB
         session_doc = session.model_dump(mode="json")
         await self._db[SESSION_COLLECTION].insert_one(session_doc)
 
@@ -1038,25 +1038,25 @@ test_input: {spec.test_input}
         self, session_id: str, user_message: str
     ) -> Dict[str, Any]:
         """
-        用户回复对话轮次
+        User reply conversation turn
 
         Returns:
-            包含 ai_message, current_round, is_final_round 等信息的 dict
+            contains ai_message, current_round, is_final_round Waiting for information dict
         """
-        # 从 MongoDB 加载会话
+        # Load session from MongoDB
         session = await self._load_session(session_id)
         if not session:
             raise ValueError(f"会话 {session_id} 不存在")
 
         if session.spec_confirmed:
-            raise ValueError("规格已确认，无法继续对话")
+            raise ValueError("The specifications have been confirmed and the conversation cannot be continued.")
 
-        # 处理用户输入
+        # Handle user input
         session, ai_message = await asyncio.get_event_loop().run_in_executor(
             None, self._analyzer.process_user_input, session, user_message
         )
 
-        # 更新 MongoDB
+        # update MongoDB
         await self._save_session(session)
 
         max_rounds = self._analyzer._get_max_rounds(session.clarity_level)
@@ -1073,13 +1073,13 @@ test_input: {spec.test_input}
     async def _inherit_parent_interface_constraints(
         self, spec: SkillSpec, parent_tool_id: str
     ) -> bool:
-        """迭代模式：从父 Skill 继承接口规格约束（含 URL 的 constraints）。
+        """Iteration mode: Inherit interface specification constraints (including URL constraints) from the parent Skill.
 
-        背景：升级会话的对话中没有原始需求文本，规格生成的 URL 兜底提取
-        拿不到接口地址，导致新版本 spec 丢失接口契约——确认页出现
-        「未识别到接口 URL」警告，代码生成阶段会臆造 URL。
-        来源优先级：父 Skill 的 constraints 字段（新版本已持久化）；
-        老版本回退从父代码中提取接口 URL。
+        Background: There is no original requirement text in the dialogue of the upgrade session, and the URL generated by the specification is extracted.
+        Unable to obtain the interface address, causing the new version spec to lose the interface contract——Confirmation page appears
+         [ Interface URL not recognized warning, the URL will be forged during the code generation phase.
+        Source priority: constraints field of parent Skill (new version has been persisted);
+        Older versions fall back to extracting the interface URL from the parent code.
         """
         url_re = re.compile(r"https?://[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+")
 
@@ -1095,15 +1095,15 @@ test_input: {spec.test_input}
                 {"constraints": 1, "code": 1, "session_id": 1},
             )
         except Exception as exc:
-            logger.warning("[Iterate] 加载父 Skill 失败（跳过接口约束继承）: %s", exc)
+            logger.warning("[Iterate] Failed to load parent Skill (interface constraint inheritance skipped): %s", exc)
             return False
         if not parent:
             return False
 
-        # 来源优先级：
-        # 1) 父 Skill 的 constraints 字段（_save_skill 已持久化，新版本技能可用）
-        # 2) 父 Skill 来源会话的 spec.constraints（老版本技能也有完整接口约束行）
-        # 3) 父代码中提取接口 URL（最后兜底，要求多级路径以排除 Referer 等纯域名）
+        # Source priority:
+        # 1) The constraints field of the parent Skill (_save_skill has been persisted and the new version of the skill is available)
+        # 2) spec.constraints of the parent Skill source session (older version skills also have complete interface constraint lines)
+        # 3) Extract the interface URL from the parent code (finally, multi-level paths are required to exclude pure domain names such as Referer)
         interface_lines = [
             str(c) for c in (parent.get("constraints") or []) if url_re.search(str(c))
         ]
@@ -1115,7 +1115,7 @@ test_input: {spec.test_input}
                         {"session_id": origin_session_id}, {"spec.constraints": 1}
                     )
                 except Exception as exc:
-                    logger.debug("[Iterate] 加载父会话失败: %s", exc)
+                    logger.debug("[Iterate] Failed to load parent session: %s", exc)
                     origin_sess = None
                 if origin_sess and origin_sess.get("spec"):
                     interface_lines = [
@@ -1127,14 +1127,14 @@ test_input: {spec.test_input}
             urls = [
                 u
                 for u in _base_urls(parent.get("code") or "")
-                # 域名后至少 2 级路径（如 /motor/pc/car/rank_data），
-                # 排除纯域名与单级路径的 Referer 引用
+                # At least 2 levels of path after the domain name (such as /motor/pc/car/rank_data),
+                # Exclude Referer references of pure domain names and single-level paths
                 if len([s for s in u.split("//", 1)[-1].split("/") if s]) >= 3
             ]
             interface_lines = [
                 f"【接口规格 — 必须原样使用】接口 URL: {u}（继承自父版本 {parent_tool_id}，"
-                "路径/参数名严禁改写，如 rank_data 不得写成 rank/data；"
-                "URL 中的查询参数仅是示例，实现时以函数参数传参）"
+                "It is strictly prohibited to rewrite the path/parameter name. For example, rank_data must not be written as rank/data;"
+                "URL The query parameters in are only examples, and parameters are passed as function parameters during implementation)"
                 for u in urls
             ]
         if not interface_lines:
@@ -1150,16 +1150,16 @@ test_input: {spec.test_input}
                 added = True
         if added:
             logger.info(
-                "[Iterate] 已继承父版本接口规格约束 (parent=%s)", parent_tool_id
+                "[Iterate] Inherited the interface specification constraints of the parent version (parent=%s)", parent_tool_id
             )
         return added
 
     async def _load_parent_skill_code(self, parent_tool_id: str) -> str:
-        """迭代模式：加载父版本完整已验证代码作为升级基线。
+        """Iteration mode: Load the complete verified code of the parent version as the upgrade baseline.
 
-        背景：升级通常只是加字段/加参数等小调整，人类做法是在原代码上改几行。
-        若不带父代码，首轮生成从零重写，既浪费又会丢掉父版本多轮迭代才修好的
-        细节（分页/重试/本地过滤/字段映射等）。
+        Background: Upgrades are usually just small adjustments such as adding fields/parameters. The human approach is to change a few lines of the original code.
+        If there is no parent code, the first round of generation will be rewritten from scratch, which is wasteful and will lose the parent version. It took many rounds of iterations to fix it.
+        Details (pagination/retries/local filtering/field mapping, etc.).
         """
         try:
             parent = await self._db[SKILL_COLLECTION].find_one(
@@ -1167,15 +1167,15 @@ test_input: {spec.test_input}
                 {"code": 1, "implementation": 1, "status": 1},
             )
         except Exception as exc:
-            logger.warning("[Iterate] 加载父 Skill 代码失败（按从零生成处理）: %s", exc)
+            logger.warning("[Iterate] Failed to load parent Skill code (handled as generated from scratch): %s", exc)
             return ""
         if not parent:
-            logger.warning("[Iterate] 未找到父 Skill: tool_id=%s", parent_tool_id)
+            logger.warning("[Iterate] Parent not found Skill: tool_id=%s", parent_tool_id)
             return ""
         code = parent.get("code") or parent.get("implementation") or ""
         if code:
             logger.info(
-                "[Iterate] 已加载父版本代码作为升级基线: parent=%s chars=%d status=%s",
+                "[Iterate] Parent version code loaded as upgrade baseline: parent=%s chars=%d status=%s",
                 parent_tool_id, len(code), parent.get("status"),
             )
         return code
@@ -1183,26 +1183,26 @@ test_input: {spec.test_input}
     async def _load_parent_skill_contract(
         self, parent_tool_id: str
     ) -> Optional[Dict[str, Any]]:
-        """迭代模式：加载父版本完整契约（参数/约束/输出/完整代码）+ 计算新版本号。
+        """Iteration mode: load the parent version of the complete contract (parameters/constraints/output/complete code)+ Calculate the new version number.
 
-        升级补丁模式的事实源：规格生成 LLM 读它定位变更点，补丁套用
-        从它原样继承未提及的字段。版本号查询与 _save_skill 同一套逻辑，
-        保证 spec.tool_id 在生成期就与最终落库一致（codegen 函数名/
-        静态校验都按 tool_id 对齐，事后改会导致整轮作废）。
+        Source of truth for upgrade patch mode: spec generation LLM reads it to locate change points, patch is applied
+        Unmentioned fields are inherited from it as is. Version number query has the same logic as _save_skill.
+        Ensure that spec.tool_id is consistent with the final library during the generation period (codegen function name/
+        Static verification is aligned according to tool_id, and subsequent changes will invalidate the entire round).
         """
         try:
             parent = await self._db[SKILL_COLLECTION].find_one(
                 {"tool_id": parent_tool_id}
             )
         except Exception as exc:
-            logger.warning("[Iterate] 加载父 Skill 契约失败: %s", exc)
+            logger.warning("[Iterate] Failed to load parent Skill contract: %s", exc)
             return None
         if not parent:
-            logger.warning("[Iterate] 未找到父 Skill（契约加载）: tool_id=%s", parent_tool_id)
+            logger.warning("[Iterate] Parent Skill not found (contract loading): tool_id=%s", parent_tool_id)
             return None
 
         root_tool_id = parent.get("parent_skill_id") or parent_tool_id
-        # 系列内最大版本号（含根版本），与 _save_skill 的版本计算保持一致
+        # The maximum version number in the series (including the root version), consistent with the version calculation of _save_skill
         new_version = 2
         try:
             cursor = (
@@ -1215,7 +1215,7 @@ test_input: {spec.test_input}
             if max_docs:
                 new_version = int(max_docs[0].get("version") or 1) + 1
         except Exception as exc:
-            logger.warning("[Iterate] 查询系列版本号失败，使用默认 v2: %s", exc)
+            logger.warning("[Iterate] Failed to query the series version number, use the default v2: %s", exc)
 
         contract = {
             "tool_id": parent.get("tool_id") or parent_tool_id,
@@ -1233,7 +1233,7 @@ test_input: {spec.test_input}
             "code": parent.get("code") or parent.get("implementation") or "",
         }
         logger.info(
-            "[Iterate] 已加载父版本契约（补丁模式基座）: parent=%s root=%s next=%s "
+            "[Iterate] Parent version contract loaded (patch mode base): parent=%s root=%s next=%s "
             "params=%d constraints=%d code_chars=%d",
             contract["tool_id"], root_tool_id, contract["new_tool_id"],
             len(contract["parameters"]), len(contract["constraints"]),
@@ -1244,14 +1244,14 @@ test_input: {spec.test_input}
     async def _preflight_external_interface(
         self, spec: SkillSpec, parent_code: str = ""
     ) -> Optional[Dict[str, Any]]:
-        """external_api 模式：沙箱内真实调用接口做连通性预检。
+        """external_api Mode: Really call the interface in the sandbox to do connectivity pre-check.
 
-        在规格确认阶段就发现「URL 错误/接口不可达/参数问题」，
-        避免等代码生成（每轮 2-4 分钟）后沙箱执行才暴露。
+        During the specification confirmation stage, URL error/interface unreachable/parameter problem was discovered.
+        Avoid waiting for code generation (2-4 minutes per round) before sandbox execution is exposed.
 
-        parent_code: 升级场景的父版本代码——约束中只有裸 URL（无查询串）时，
-        从中提取父代码已验证的查询参数（如 count/offset）作为预检基线，
-        防止新 spec 参数（如 limit）被误判为接口可用参数。
+        parent_code: Upgrade the parent version code of the scene——When there is only a bare URL (no query string) in the constraint,
+        Extract the parent code s validated query parameters (such as count/offset) from it as a preflight baseline,
+        Prevent new spec parameters (such as limit) from being misjudged as interface available parameters.
         """
         from core.tools.external.interface_preflight import (
             build_interface_probe,
@@ -1268,15 +1268,15 @@ test_input: {spec.test_input}
         )
         verdict = interpret_probe_result(sandbox)
         verdict["url"] = probe["url"]
-        # 实测验证可用的查询参数 = 基线参数（用户 URL 文档化查询参数）。
-        # 疑似业务过滤参数（如 brand_name）经差分测试后落在
-        # ignored_params（被忽略→本地过滤）/ server_filter_params（服务端过滤生效）
+        # Available query parameters verified by actual testing = Baseline parameters (user URL documented query parameters).
+        # The suspected business filtering parameters (such as brand_name) fall into
+        # ignored_params (ignored→Local filtering)/server_filter_params (server filtering takes effect)
         baseline = probe.get("baseline_params") or {}
         if baseline:
             verdict["probed_params"] = dict(baseline)
         verdict["checked_at"] = datetime.utcnow().isoformat()
         logger.info(
-            "[Preflight] 外部接口预检 tool_id=%s url=%s status=%s message=%s",
+            "[Preflight] External interface preflight tool_id=%s url=%s status=%s message=%s",
             spec.tool_id,
             probe["url"],
             verdict.get("status"),
@@ -1288,43 +1288,43 @@ test_input: {spec.test_input}
         self, session_id: str, user_message: str = "确认"
     ) -> Optional[Dict[str, Any]]:
         """
-        仅生成 SkillSpec 预览，不修改会话状态。
-        用于规格确认步骤展示。
+        Only a SkillSpec preview is generated, the session state is not modified.
+        Used to demonstrate specification confirmation steps.
 
-        流程：先生成草稿 spec → 运行侦察 → 基于侦察事实重新生成 enriched spec。
+        Process: First generate a draft spec → run recon → Regenerate enriched spec based on recon facts.
         """
         session = await self._load_session(session_id)
         if not session:
             raise ValueError(f"会话 {session_id} 不存在")
 
-        # 迭代模式：加载父版本契约，规格生成走升级补丁模式（父契约 + delta）
+        # Iteration mode: Load the parent version contract, and use the upgrade patch mode for specification generation (parent contract + delta) 
         parent_contract = None
         if session.iterate_skill_id:
             parent_contract = await self._load_parent_skill_contract(
                 session.iterate_skill_id
             )
 
-        # 第一遍：生成草稿 spec（无侦察事实）
+        # First pass: Generate draft spec (no recon facts)
         draft_spec = await asyncio.get_event_loop().run_in_executor(
             None, self._analyzer.preview_spec, session, user_message, None, parent_contract
         )
         if not draft_spec:
             return None
 
-        # 向量搜索：用 spec 描述从能力索引中召回语义相关的工具
+        # Vector Search: Tools for Recalling Semantic Relevance from Capability Indexes Using Spec Descriptions
         capability_hits = await self._search_capability_index(draft_spec)
 
-        # 运行侦察层：基于草稿 spec 探测真实数据可用性（附带向量搜索结果）
+        # Run reconnaissance layer: detect real data availability based on draft spec (with vector search results)
         fact_report = await asyncio.get_event_loop().run_in_executor(
             None, self._reconnaissance.analyze, draft_spec, capability_hits
         )
-        logger.info("🧭 侦察完成 (preview)，置信度: %.0f%%", fact_report.confidence * 100)
+        logger.info("🧭 Reconnaissance completed (preview), Confidence: %.0f%%", fact_report.confidence * 100)
 
-        # 第二遍：基于侦察事实重新生成 enriched spec。
-        # 仅在侦察产出字段级实证事实且非 external_api 模式时执行——
-        # external_api 模式侦察不探测外部接口，报告内容均为模式派生的静态指引
-        # （字段清单还是从草稿回抄的），二次生成输入与草稿无实质差异，
-        # 只会白白多花一次 LLM 调用（思考模型下约 5 分钟）。
+        # Second pass: Regenerate enriched spec based on recon facts.
+        # Only executed when scouting output field-level empirical facts and not in external_api mode——
+        # external_api Pattern reconnaissance does not detect external interfaces, and the report content is static guidance derived from the pattern.
+        #  (The field list is still copied from the draft), and there is no substantial difference between the secondary generation input and the draft.
+        # It only costs one more LLM call (about 5 minutes under the thinking model).
         enriched_spec = None
         if (
             classify_requirement_mode(draft_spec) != "external_api"
@@ -1336,12 +1336,12 @@ test_input: {spec.test_input}
             )
         final_spec = enriched_spec or draft_spec
 
-        # 缓存 spec 与 fact_report 到 session，confirm_spec 时直接复用，
-        # 避免再次调用 LLM 生成规格导致前端长时间停留在 0%。
+        # Cache spec and fact_report to session and reuse them directly when confirm_spec.
+        # Avoid calling LLM generation specs again causing the front end to stay at 0% for a long time.
         session.spec = final_spec
         self._apply_handoff_context_to_spec(session.spec, session.handoff_context)
-        # 迭代模式：继承父版本接口规格约束（含 URL），确认页不再出现
-        # 「未识别到接口 URL」警告，代码生成也不丢接口契约
+        # Iteration mode: inherit the parent version interface specification constraints (including URL), and the confirmation page will no longer appear
+        # ""Interface URL not recognized" warning, code generation does not lose the interface contract
         if session.iterate_skill_id:
             await self._inherit_parent_interface_constraints(
                 session.spec, session.iterate_skill_id
@@ -1349,10 +1349,10 @@ test_input: {spec.test_input}
         session.fact_report = fact_report
         await self._save_session(session)
 
-        # 外部接口预检：沙箱内真实调用接口验证连通性，结果展示在确认页
+        # External interface pre-check: Really call the interface in the sandbox to verify connectivity, and the results are displayed on the confirmation page
         interface_preflight = None
         if classify_requirement_mode(session.spec) == "external_api":
-            # 升级场景：带父代码，预检基线沿用父版本已验证的查询参数
+            # Upgrade scenario: with parent code, the preflight baseline inherits the verified query parameters of the parent version
             preview_parent_code = ""
             if session.iterate_skill_id:
                 preview_parent_code = await self._load_parent_skill_code(session.iterate_skill_id)
@@ -1361,7 +1361,7 @@ test_input: {spec.test_input}
                     session.spec, parent_code=preview_parent_code
                 )
             except Exception as exc:
-                logger.warning("[Preflight] 接口预检失败（不阻塞确认）: %s", exc)
+                logger.warning("[Preflight] Interface preflight failed (no blocking confirmation): %s", exc)
             if interface_preflight is not None:
                 try:
                     await self._db[SESSION_COLLECTION].update_one(
@@ -1369,14 +1369,14 @@ test_input: {spec.test_input}
                         {"$set": {"interface_preflight": interface_preflight}},
                     )
                 except Exception as exc:
-                    logger.warning("[Preflight] 预检结果落库失败: %s", exc)
+                    logger.warning("[Preflight] The pre-check result failed to be dropped into the database.: %s", exc)
 
         return {
             "spec": final_spec.model_dump(),
             "recommendations": self._build_session_recommendations(spec=final_spec, fact_report=fact_report),
             "fact_report": fact_report.model_dump() if fact_report else None,
             "interface_preflight": interface_preflight,
-            # 升级补丁模式的变更点清单（确认页 diff 式展示：改了什么、其余继承）
+            # List of change points in the upgrade patch mode (diff-style display on the confirmation page: what has been changed, the rest will be inherited)
             "upgrade_change_points": (
                 (final_spec.metadata or {}).get("upgrade_change_points")
                 if parent_contract else None
@@ -1387,27 +1387,27 @@ test_input: {spec.test_input}
         self, session_id: str, user_message: str = "确认", codegen_timeout: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        确认规格并触发代码生成
+        Confirm specs and trigger code generation
 
-        流程：复用 preview 阶段缓存的 fact_report，若无则现场侦察。
-        将 fact_report 同时注入 spec 生成和管线执行，实现"侦察→定规→生成"闭环。
+        Process: Reuse the fact_report cached in the preview stage, and conduct on-site reconnaissance if there is none.
+        Inject fact_report into spec generation and pipeline execution at the same time to achieve"reconnaissance→Make rules→generate"Closed loop.
 
         Args:
-            session_id: 会话 ID
-            user_message: 确认消息
-            codegen_timeout: 代码生成单次 LLM 调用超时（秒），None 用默认值
+            session_id: session ID
+            user_message: Confirm message
+            codegen_timeout: Code generation single LLM call timeout (seconds), None uses the default value
 
         Returns:
-            包含 status, spec, generation_result 等信息的 dict
+            contains status, spec, generation_result Waiting for information dict
         """
         session = await self._load_session(session_id)
         if not session:
             raise ValueError(f"会话 {session_id} 不存在")
 
-        # 复用 preview 阶段缓存的 fact_report，若无则先跑侦察
+        # Reuse the fact_report cached in the preview stage. If there is none, run reconnaissance first.
         fact_report = session.fact_report
         if fact_report is None:
-            # 需要先生成草稿 spec 用于侦察
+            # Need to generate draft spec first for reconnaissance
             draft_parent_contract = (
                 await self._load_parent_skill_contract(session.iterate_skill_id)
                 if session.iterate_skill_id else None
@@ -1417,15 +1417,15 @@ test_input: {spec.test_input}
                 None, draft_parent_contract,
             )
             if draft_spec:
-                # 向量搜索：从能力索引中召回语义相关的工具
+                # Vector search: Recalling semantically related tools from capability indexes
                 capability_hits = await self._search_capability_index(draft_spec)
                 fact_report = await asyncio.get_event_loop().run_in_executor(
                     None, self._reconnaissance.analyze, draft_spec, capability_hits
                 )
-                logger.info("🧭 侦察完成 (confirm)，置信度: %.0f%%", fact_report.confidence * 100)
+                logger.info("🧭 Reconnaissance completed (confirm), Confidence: %.0f%%", fact_report.confidence * 100)
 
-        # 如果 preview 阶段已经缓存了规格，并且当前只是常规“确认”，
-        # 则直接复用，避免 confirm 时再次调用 LLM 生成 SkillSpec。
+        # If the specification has been cached in the preview stage and is currently only regular"Confirm", 
+        # Then reuse it directly to avoid calling LLM again to generate SkillSpec when confirming.
         normalized_message = (user_message or "").strip()
         can_reuse_preview_spec = bool(
             session.spec
@@ -1440,7 +1440,7 @@ test_input: {spec.test_input}
             session.updated_at = datetime.utcnow()
             await self._save_session(session)
         else:
-            # 基于侦察事实生成最终 SkillSpec（迭代模式带父契约走补丁模式）
+            # Generate the final SkillSpec based on the reconnaissance facts (iteration mode with parent contract in patch mode)
             confirm_parent_contract = (
                 await self._load_parent_skill_contract(session.iterate_skill_id)
                 if session.iterate_skill_id else None
@@ -1453,27 +1453,27 @@ test_input: {spec.test_input}
         if not spec:
             return {
                 "status": "failed",
-                "message": "规格生成失败，请重新描述需求",
+                "message": "Specification generation failed, please describe the requirements again",
             }
 
         self._apply_handoff_context_to_spec(spec, session.handoff_context)
 
-        # 迭代模式：继承父版本接口规格约束（含 URL）——preview 缓存复用路径
-        # 也要兜底，防止升级版丢失接口契约导致代码生成臆造 URL
+        # Iteration mode: inherit the parent version interface specification constraints (including URL)——preview Cache reuse path
+        # We must also be careful to prevent the upgraded version from losing the interface contract, resulting in fictitious code generation. URL
         if session.iterate_skill_id and await self._inherit_parent_interface_constraints(
             spec, session.iterate_skill_id
         ):
             session.spec = spec
             await self._save_session(session)
 
-        # 迭代模式：提前加载父版本代码（预检基线参数 + 管线升级基线共用，避免重复查库）
+        # Iteration mode: Load parent version code in advance (preflight baseline parameters + Pipeline upgrade baselines are shared to avoid repeated library checks)
         parent_code = ""
         if session.iterate_skill_id:
             parent_code = await self._load_parent_skill_code(session.iterate_skill_id)
 
-        # 外部接口预检拦截：接口明确不可用（不可达/4xx/5xx）时阻止代码生成，
-        # 避免烧掉 2-4 分钟/轮的生成后才在沙箱发现接口问题。
-        # preview 已缓存结果则复用；直接确认（跳过 preview）时现跑。
+        # External interface preflight interception: prevent code generation when the interface is clearly unavailable (unreachable/4xx/5xx),
+        # Avoid burning through 2-4 minutes/round of builds only to discover interface issues in the sandbox.
+        # preview Cached results are reused; run now when confirmed directly (skip preview).
         if classify_requirement_mode(spec) == "external_api":
             preflight = None
             try:
@@ -1489,7 +1489,7 @@ test_input: {spec.test_input}
                         spec, parent_code=parent_code
                     )
                 except Exception as exc:
-                    logger.warning("[Preflight] 确认阶段预检失败（放行）: %s", exc)
+                    logger.warning("[Preflight] Confirmation phase pre-inspection failed (release): %s", exc)
                 if preflight is not None:
                     try:
                         await self._db[SESSION_COLLECTION].update_one(
@@ -1502,16 +1502,16 @@ test_input: {spec.test_input}
                 return {
                     "status": "failed",
                     "message": (
-                        f"外部接口预检未通过，已阻止代码生成：{preflight.get('message')}。"
-                        "请修正接口规格（URL/请求头/参数）后重新确认。"
+                        f"The external interface preflight failed and code generation has been blocked:{preflight.get('message')}. "
+                        "Please correct the interface specifications (URL/request headers/parameters) and reconfirm."
                     ),
                     "interface_preflight": preflight,
                 }
 
-        # 迭代模式：父版本代码作为升级基线（小改动场景，避免从零重写）
+        # Iteration mode: The parent version code is used as the upgrade baseline (small change scenarios to avoid rewriting from scratch)
         iteration_mode = "upgrade" if parent_code else "repair"
 
-        # fact_report 同时传递给管线，跳过内部重复侦察
+        # fact_report Also passed to the pipeline, skipping internal repeated reconnaissance
         return await self._launch_pipeline_task(
             session=session, spec=spec, fact_report=fact_report,
             codegen_timeout=codegen_timeout,
@@ -1527,23 +1527,23 @@ test_input: {spec.test_input}
         codegen_timeout: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
-        基于当前失败会话重新修正并生成。
+        Re-correct and generate based on the current failed session.
 
-        使用累积的所有历史管线经验 + 用户补充意见作为新一轮的初始反馈，
-        确保 LLM 能吸取之前每次尝试的教训，而不是只看到最近一次失败。
+        Use all accumulated historical pipeline experience + Users additional comments serve as the initial feedback for a new round,
+        Make sure the LLM learns from each previous attempt rather than just seeing the latest failure.
         """
         session = await self._load_session(session_id)
         if not session:
             raise ValueError(f"会话 {session_id} 不存在")
         if not session.spec_confirmed or not session.spec:
-            raise ValueError("当前会话还没有确认规格，无法进入修正模式")
+            raise ValueError("The current session has not confirmed the specifications and cannot enter correction mode.")
         if session.status != SessionStatus.FAILED:
-            raise ValueError("只有失败的创建会话才能确认修正并重跑")
+            raise ValueError("Only failed creation sessions can be confirmed and rerun.")
 
         merged_feedback = feedback.strip()
         if repair_plan.strip():
             merged_feedback = (
-                f"{merged_feedback}\n\n=== 已确认的修正计划 ===\n{repair_plan.strip()}"
+                f"{merged_feedback}\n\n=== Confirmed correction plan ===\n{repair_plan.strip()}"
             )
 
         attempt_count = len(session.pipeline_history) + (1 if session.pipeline_result else 0)
@@ -1578,15 +1578,15 @@ test_input: {spec.test_input}
         feedback: str,
     ) -> Dict[str, Any]:
         """
-        先生成 AI 修正计划，等待用户确认后再重跑。
+        First generate an AI correction plan and wait for user confirmation before running again.
         """
         session = await self._load_session(session_id)
         if not session:
             raise ValueError(f"会话 {session_id} 不存在")
         if not session.spec_confirmed or not session.spec:
-            raise ValueError("当前会话还没有确认规格，无法生成修正计划")
+            raise ValueError("The current session has not confirmed the specifications and cannot generate a correction plan.")
         if session.status != SessionStatus.FAILED:
-            raise ValueError("只有失败的创建会话才能先生成修正计划")
+            raise ValueError("Only failed creation sessions can generate remediation plans first")
 
         ai_message, repair_llm_response = await asyncio.get_event_loop().run_in_executor(
             None,
@@ -1595,7 +1595,7 @@ test_input: {spec.test_input}
             feedback,
         )
 
-        # 记录 token 使用（LLM 调用在同步方法中完成，此处在其异步调用方中记录）
+        # Logging token usage (LLM calls are done in synchronous methods, here they are logged in their asynchronous callers)
         try:
             if repair_llm_response is not None:
                 from app.services.usage_statistics_service import usage_statistics_service
@@ -1605,7 +1605,7 @@ test_input: {spec.test_input}
                     analysis_type="skill_generation",
                 )
         except Exception as e:
-            logger.warning(f"记录 token 使用失败: {e}")
+            logger.warning(f"Record token usage failure: {e}")
 
         session.rounds.append(ConversationRound(
             round_number=len(session.rounds) + 1,
@@ -1620,7 +1620,7 @@ test_input: {spec.test_input}
             "ai_message": ai_message,
         }
 
-    # ==================== Skill 管理 ====================
+    # ==================== Skill management ====================
 
     async def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """获取会话详情"""
@@ -1636,7 +1636,7 @@ test_input: {spec.test_input}
             rounds = doc.get("rounds", []) or []
             conversation = "\n\n".join(
                 f"[用户 - 第{item.get('round_number', '?')}轮]: {item.get('user_message', '')}\n"
-                f"[AI - 第{item.get('round_number', '?')}轮]: {item.get('ai_message', '')}"
+                f"[AI - No.{item.get('round_number', '?')}wheel]: {item.get('ai_message', '')}"
                 for item in rounds
             )
             doc["recommendations"] = self._analyzer.build_recommendations(conversation=conversation)
@@ -1649,10 +1649,10 @@ test_input: {spec.test_input}
         page: int = 1,
         page_size: int = 20,
     ) -> Dict[str, Any]:
-        """列出创建会话（草稿/未完成）"""
+        """List creation sessions (draft/incomplete)"""
         query: Dict[str, Any] = {}
         if status:
-            # 支持逗号分隔的多状态：gathering,confirmed
+            # Supports comma separated multiple states:gathering,confirmed
             statuses = [s.strip() for s in status.split(",")]
             query["status"] = {"$in": statuses}
         if user_id:
@@ -1679,7 +1679,7 @@ test_input: {spec.test_input}
                 rounds = doc.get("rounds", []) or []
                 conversation = "\n\n".join(
                     f"[用户 - 第{item.get('round_number', '?')}轮]: {item.get('user_message', '')}\n"
-                    f"[AI - 第{item.get('round_number', '?')}轮]: {item.get('ai_message', '')}"
+                    f"[AI - No.{item.get('round_number', '?')}wheel]: {item.get('ai_message', '')}"
                     for item in rounds
                 )
                 doc["recommendations"] = self._analyzer.build_recommendations(conversation=conversation)
@@ -1705,7 +1705,7 @@ test_input: {spec.test_input}
         page: int = 1,
         page_size: int = 20,
     ) -> Dict[str, Any]:
-        """列出外部 Skill（分页）"""
+        """List external skills (paginated)"""
         query: Dict[str, Any] = {}
         if category:
             query["category"] = category
@@ -1785,7 +1785,7 @@ test_input: {spec.test_input}
         return doc
 
     async def _find_skill_agent_usage(self, skill_id: str) -> List[Dict[str, Any]]:
-        """反查 Skill 被哪些 Agent 版本使用。"""
+        """Check which Agent versions the Skill is used by."""
         clean_skill_id = str(skill_id or "").strip()
         if not clean_skill_id:
             return []
@@ -1840,14 +1840,14 @@ test_input: {spec.test_input}
 
     async def get_skill_history(self, skill_id: str) -> Optional[Dict[str, Any]]:
         """
-        获取 Skill 完整沟通历史：原始创建会话 + 所有优化会话
+        Get Skill full communication history: original creation session + All optimization sessions
 
         Returns:
             {
                 "skill_id": "...",
                 "sections": [
-                    { "type": "creation", "label": "创建", "session_id": "...", "rounds": [...], "created_at": "..." },
-                    { "type": "optimize", "label": "优化 v2", "session_id": "...", "rounds": [...], "created_at": "...", "feedback": "..." },
+                    { "type": "creation", "label": "Create", "session_id": "...", "rounds": [...], "created_at": "..." },
+                    { "type": "optimize", "label": "Optimize v2", "session_id": "...", "rounds": [...], "created_at": "...", "feedback": "..." },
                     ...
                 ]
             }
@@ -1858,7 +1858,7 @@ test_input: {spec.test_input}
 
         sections = []
 
-        # 原始创建会话
+        # original create session
         original_session_id = skill_doc.get("session_id", "")
         if original_session_id:
             session = await self.get_session(original_session_id)
@@ -1871,9 +1871,9 @@ test_input: {spec.test_input}
                     "created_at": session.get("created_at", ""),
                 })
 
-        # 所有优化会话
+        # All optimization sessions
         optimize_ids = skill_doc.get("optimize_session_ids", [])
-        # 向后兼容：如果只有旧的 optimize_session_id 字段
+        # Backward compatibility: if only the old optimize_session_id field
         legacy_id = skill_doc.get("optimize_session_id", "")
         if legacy_id and legacy_id not in optimize_ids:
             optimize_ids = [legacy_id] + optimize_ids
@@ -1882,7 +1882,7 @@ test_input: {spec.test_input}
             session = await self.get_session(opt_sid)
             if session:
                 version_label = f"优化 v{idx + 2}"
-                # 从 rounds 中提取优化反馈
+                # Extract optimization feedback from rounds
                 feedback = ""
                 rounds = session.get("rounds", [])
                 if rounds:
@@ -1907,7 +1907,7 @@ test_input: {spec.test_input}
     async def update_skill_status(
         self, skill_id: str, new_status: str
     ) -> bool:
-        """更新 Skill 状态（active / disabled / archived），并同步运行时 ToolRegistry。"""
+        """Update Skill status (active / disabled / archived) and synchronize the runtime ToolRegistry."""
         skill_doc = await self._db[SKILL_COLLECTION].find_one({"tool_id": skill_id})
         if not skill_doc:
             return False
@@ -1934,11 +1934,11 @@ test_input: {spec.test_input}
     async def update_skill_info(
         self, skill_id: str, display_name: str, description: str
     ) -> bool:
-        """更新 Skill 的展示名称与功能说明（用户手动编辑）。
+        """Update the display name and function description of the Skill (manually edited by the user).
 
-        仅允许改这两个展示字段——参数/代码/约束属于已验证契约，
-        要改请走迭代优化生成新版本。更新后同步运行时 ToolRegistry
-        （名称/描述是 ToolMetadata 的一部分）与能力索引。
+        Only these two display fields are allowed to be changed——Parameters/code/constraints belong to the verified contract,
+        To change, please use iterative optimization to generate a new version. Sync runtime after update ToolRegistry
+         (The name/description is part of the ToolMetadata) and capability index.
         """
         clean_name = str(display_name or "").strip()
         clean_desc = str(description or "").strip()
@@ -1960,7 +1960,7 @@ test_input: {spec.test_input}
             },
         )
 
-        # 同步运行时注册（用更新后的文档重新注册，ToolMetadata 名称/描述随之刷新）
+        # Synchronous runtime registration (re-register with updated documentation, ToolMetadata name/description refreshed)
         try:
             from core.tools.registry import get_tool_registry
             from core.tools.external_skill_loader import register_single_external_skill
@@ -1970,9 +1970,9 @@ test_input: {spec.test_input}
             skill_doc["status"] = skill_doc.get("status", "active")
             register_single_external_skill(None, get_tool_registry(), skill_doc)
         except Exception as e:
-            logger.warning(f"⚠️ Skill '{skill_id}' 说明更新后运行时同步失败: {e}")
+            logger.warning(f"⚠️ Skill '{skill_id}' Description Runtime synchronization failed after update: {e}")
 
-        # 能力索引含名称/描述，异步刷新
+        # Capability index contains name/description, refreshed asynchronously
         try:
             from app.services.capability_index_service import CapabilityIndexService
             asyncio.create_task(CapabilityIndexService(self._db).ensure_index())
@@ -1982,7 +1982,7 @@ test_input: {spec.test_input}
         return True
 
     async def delete_skill(self, skill_id: str) -> bool:
-        """删除 Skill，并清理运行时注册和工具绑定。"""
+        """Remove the skill and clean up the runtime registration and tool bindings."""
         result = await self._db[SKILL_COLLECTION].delete_one({"tool_id": skill_id})
         if result.deleted_count:
             await self._db.tool_agent_bindings.delete_many({"tool_id": skill_id})
@@ -2005,23 +2005,23 @@ test_input: {spec.test_input}
         if not code:
             raise ValueError("Skill 没有代码")
 
-        # 🔬 把即将执行的代码打到日志
-        logger.info(f"🔬 [test_skill] 即将执行 skill={skill_id}, code_len={len(code)}\n" + code)
+        # 🔬 Write the code to be executed to the log
+        logger.info(f"🔬 [test_skill] About to be executed skill={skill_id}, code_len={len(code)}\n" + code)
 
-        # 使用 SandboxRunner 执行
+        # Execute using SandboxRunner
         from core.tools.external import SandboxRunner, SkillSpec
 
-        # 🔬 打印前端传来的 test_args
-        logger.info(f"🔬 [test_skill] 原始 test_args={test_args}")
+        # 🔬 Printed from the front end test_args
+        logger.info(f"🔬 [test_skill] original test_args={test_args}")
 
-        # 过滤掉未填写的参数（None/空字符串），让函数默认值生效。
-        # 注意 0/False 是合法入参（如 offset=0），不能当 falsy 删掉。
+        # Filter out unfilled parameters (None/empty string) and let the function default value take effect.
+        # Note that 0/False is a legal input parameter (such as offset=0) , It cannot be deleted as falsy.
         if test_args:
             test_args = {k: v for k, v in test_args.items() if v is not None and v != ''}
-            logger.info(f"🔬 [test_skill] 过滤后 test_args={test_args}")
+            logger.info(f"🔬 [test_skill] After filtering test_args={test_args}")
 
         runner = SandboxRunner()
-        # 构建简单的 spec 用于测试
+        # Build a simple spec for testing
         spec = SkillSpec(
             tool_id=doc["tool_id"],
             display_name=doc.get("display_name", ""),
@@ -2030,17 +2030,17 @@ test_input: {spec.test_input}
         )
         sandbox_result = runner.run(code, spec)
 
-        # 把子进程的 stdout/stderr 打到 webapi 日志
+        # Write the stdout/stderr of the child process to the webapi log
         if sandbox_result.stdout:
             for line in sandbox_result.stdout.split("\n"):
                 line = line.strip()
                 if line:
-                    logger.info(f"📦 [Skill测试沙箱stdout] {line}")
+                    logger.info(f"📦 [Skill Test sandbox stdout] {line}")
         if sandbox_result.stderr:
             for line in sandbox_result.stderr.split("\n"):
                 line = line.strip()
                 if line:
-                    logger.warning(f"📦 [Skill測試沙箱stderr] {line}")
+                    logger.warning(f"📦 [Skill Test sandbox stderr] {line}")
 
         return {
             "success": sandbox_result.success,
@@ -2055,27 +2055,27 @@ test_input: {spec.test_input}
         self, skill_id: str, feedback: str
     ) -> Dict[str, Any]:
         """
-        优化已有 Skill：基于用户反馈重新生成代码
+        Optimize existing skills: regenerate code based on user feedback
 
-        流程：
-        1. 加载已有 Skill 和原始 Session
-        2. 将原始对话 + 当前代码 + 用户反馈 合成新的上下文
-        3. 创建新 Session 记录优化过程
-        4. 执行代码生成管线
-        5. 成功则更新 Skill 代码，并保存优化版本号
+        Process:
+        1. Load existing Skill and original Session
+        2. convert original conversation + current code + User feedback Synthesize new context
+        3. Create a new Session to record the optimization process
+        4. Execute code generation pipeline
+        5. If successful, the Skill code will be updated and the optimized version number will be saved.
         """
-        # 加载现有 Skill
+        # Load existing Skill
         skill_doc = await self._db[SKILL_COLLECTION].find_one({"tool_id": skill_id})
         if not skill_doc:
             raise ValueError(f"Skill {skill_id} 不存在")
 
-        # 加载原始会话（获取原始沟通记录和 spec）
+        # Load the original session (get the original communication record and spec)
         original_session_id = skill_doc.get("session_id", "")
         original_session = None
         if original_session_id:
             original_session = await self.get_session(original_session_id)
 
-        # 重建 SkillSpec
+        # rebuild SkillSpec
         params = [SkillParameter(**p) for p in skill_doc.get("parameters", [])]
         expected_output_data = skill_doc.get("expected_output", {})
         expected_output = ExpectedOutput(**expected_output_data) if expected_output_data else ExpectedOutput()
@@ -2091,14 +2091,14 @@ test_input: {spec.test_input}
             test_input=skill_doc.get("test_input", {}),
         )
 
-        # 构造增强反馈：原始对话摘要 + 当前代码 + 用户反馈
+        # Constructing Augmented Feedback: Raw Conversation Summaries + current code + User feedback
         enhanced_feedback = self._build_optimization_feedback(
             original_session=original_session,
             current_code=skill_doc.get("code", ""),
             user_feedback=feedback,
         )
 
-        # 创建优化 Session
+        # Create optimization Session
         optimize_session = self._analyzer.create_session(
             user_id=skill_doc.get("user_id", "")
         )
@@ -2106,13 +2106,13 @@ test_input: {spec.test_input}
         optimize_session.rounds.append(ConversationRound(
             round_number=1,
             user_message=f"[优化] {feedback}",
-            ai_message="开始优化 Skill...",
+            ai_message="Start optimizing Skill...",
         ))
         optimize_session.spec = spec
         optimize_session.spec_confirmed = True
         await self._save_session(optimize_session)
 
-        # 执行代码生成管线（带 feedback 和 previous_code）
+        # Execute code generation pipeline (with feedback and previous_code)
         current_code = skill_doc.get("code", "")
         method_name = "run_agentic" if SKILL_GENERATION_AGENTIC_ENABLED else "run"
         result = await asyncio.get_event_loop().run_in_executor(
@@ -2124,7 +2124,7 @@ test_input: {spec.test_input}
             )
         )
 
-        # 更新优化 Session
+        # Update optimization Session
         optimize_session.status = (
             SessionStatus.COMPLETED if result.success else SessionStatus.FAILED
         )
@@ -2133,7 +2133,7 @@ test_input: {spec.test_input}
 
         generation_context = None
 
-        # 如果成功，更新 Skill
+        # If successful, update Skill
         if result.success:
             version = skill_doc.get("version", 1) + 1
             now = datetime.utcnow().isoformat()
@@ -2191,26 +2191,26 @@ test_input: {spec.test_input}
         """构建优化反馈上下文"""
         parts = []
 
-        # 原始需求沟通摘要
+        # Summary of original requirements communication
         if original_session and original_session.get("rounds"):
-            parts.append("=== 原始需求沟通记录 ===")
+            parts.append("=== Original requirement communication record ===")
             for r in original_session["rounds"]:
                 parts.append(f"[用户]: {r.get('user_message', '')}")
                 parts.append(f"[AI]: {r.get('ai_message', '')}")
 
-        # 当前代码
+        # current code
         if current_code:
-            parts.append(f"\n=== 当前代码（需优化）===\n```python\n{current_code}\n```")
+            parts.append(f"\n=== Current code (needs optimization)===\n```python\n{current_code}\n```")
 
-        # 用户反馈
-        parts.append(f"\n=== 用户优化需求 ===\n{user_feedback}")
+        # User feedback
+        parts.append(f"\n=== User optimization needs ===\n{user_feedback}")
 
         return "\n".join(parts)
 
-    # ==================== 内部工具方法 ====================
+    # ==================== internal tool methods ====================
 
     async def _load_session(self, session_id: str) -> Optional[SkillCreationSession]:
-        """从 MongoDB 加载会话"""
+        """Load session from MongoDB"""
         doc = await self._db[SESSION_COLLECTION].find_one({"session_id": session_id})
         if not doc:
             return None
@@ -2218,7 +2218,7 @@ test_input: {spec.test_input}
         return SkillCreationSession(**doc)
 
     async def _save_session(self, session: SkillCreationSession) -> None:
-        """保存会话到 MongoDB"""
+        """Save session to MongoDB"""
         session.updated_at = datetime.utcnow()
         session_doc = session.model_dump(mode="json")
         await self._db[SESSION_COLLECTION].update_one(
@@ -2233,7 +2233,7 @@ test_input: {spec.test_input}
         spec: SkillSpec,
         result: PipelineResult,
     ) -> str:
-        """保存生成的 Skill 到 external_skills 集合"""
+        """Save the generated Skill to the external_skills collection"""
         now = datetime.utcnow().isoformat()
         generation_context = self._build_session_recommendations(spec=spec, session=session)
         role_metadata = self._infer_skill_role_metadata(spec, session)
@@ -2248,8 +2248,8 @@ test_input: {spec.test_input}
             "data_source": spec.data_source,
             "parameters": [p.model_dump() for p in spec.parameters],
             "expected_output": spec.expected_output.model_dump(),
-            # 持久化行为/接口规格约束：迭代升级时从中继承接口契约（含 URL），
-            # 避免新版本丢失接口地址导致代码生成臆造 URL
+            # Persistence behavior/interface specification constraints: inherit the interface contract (including URL) from it during iterative upgrades,
+            # Prevent the new version from losing the interface address, resulting in code generation and artifacts URL
             "constraints": list(spec.constraints or []),
             "code": result.final_code,
             "metadata": metadata,
@@ -2277,7 +2277,7 @@ test_input: {spec.test_input}
             "updated_at": now,
         }
 
-        # 反向来源追溯：来自 Agent Studio 缺口补齐的 Skill 写回 origin_* 字段（Phase 2）
+        # Reverse provenance: Skill writeback from Agent Studio gap filling origin_* Fields (Phase 2)
         handoff = session.handoff_context
         if handoff is not None:
             handoff_source = str(getattr(handoff, "source", "") or "").strip()
@@ -2289,7 +2289,7 @@ test_input: {spec.test_input}
                 skill_doc["origin_gap_id"] = str(getattr(handoff, "gap_id", "") or "")
                 skill_doc["origin_agent_name"] = str(getattr(handoff, "agent_name", "") or getattr(handoff, "source_name", "") or "")
 
-        # 🔧 版本管理：迭代模式下计算版本号，确保 tool_id 符合 _v{N} 命名规则
+        # 🔧 Version management: Calculate the version number in iteration mode to ensure that tool_id matches _v{N} Naming rules
         is_iteration = bool(session.iterate_skill_id)
         if is_iteration:
             original_tool_id = session.iterate_skill_id or ""
@@ -2298,14 +2298,14 @@ test_input: {spec.test_input}
                     {"tool_id": original_tool_id}
                 )
             except Exception as exc:
-                logger.warning("[SkillGeneration][Iterate] 查询原 Skill 失败，按新建处理: %s", exc)
+                logger.warning("[SkillGeneration][Iterate] Failed to query the original Skill, press New Process: %s", exc)
                 original = None
 
             if original:
-                # parent_skill_id 指向根 Skill（如果原 Skill 也有 parent，沿用；否则用原 tool_id）
+                # parent_skill_id Points to the root Skill (if the original Skill also has a parent, it will be used; otherwise, the original tool_id will be used)
                 parent_skill_id = original.get("parent_skill_id") or original_tool_id
 
-                # 查找当前最大版本号（在所有同系列版本中）
+                # Find the current maximum version number (among all versions in the same series)
                 try:
                     cursor = self._db[SKILL_COLLECTION].find({
                         "$or": [
@@ -2316,22 +2316,22 @@ test_input: {spec.test_input}
                     max_docs = await cursor.to_list(1)
                     new_version = (max_docs[0].get("version", 1) + 1) if max_docs else 2
                 except Exception as exc:
-                    logger.warning("[SkillGeneration][Iterate] 查询版本号失败，使用默认 v2: %s", exc)
+                    logger.warning("[SkillGeneration][Iterate] Failed to query version number, use default v2: %s", exc)
                     new_version = 2
 
-                # 确保 tool_id 符合命名规则：{parent_skill_id}_v{new_version}
+                # Make sure tool_id follows naming rules:{parent_skill_id}_v{new_version}
                 expected_tool_id = f"{parent_skill_id}_v{new_version}"
                 if skill_doc["tool_id"] != expected_tool_id:
-                    # LLM 可能没遵守约束，这里强制修正
+                    # LLM Constraints may not be adhered to, so corrections are mandatory here.
                     logger.info(
-                        "[SkillGeneration][Iterate] 修正 tool_id: %s → %s",
+                        "[SkillGeneration][Iterate] Correction tool_id: %s → %s",
                         skill_doc["tool_id"],
                         expected_tool_id,
                     )
                     skill_doc["tool_id"] = expected_tool_id
                     spec.tool_id = expected_tool_id
 
-                # 提取版本说明（取 session 第一轮用户消息前 50 字）
+                # Extract the version description (take the first 50 words of the first round of user messages in the session)
                 version_note = ""
                 if session.rounds:
                     version_note = (session.rounds[0].user_message or "")[:50]
@@ -2344,15 +2344,15 @@ test_input: {spec.test_input}
                 skill_doc["iteration_session_id"] = session.session_id
 
                 logger.info(
-                    "[SkillGeneration][Iterate] 迭代保存: parent=%s, version=%d, tool_id=%s",
+                    "[SkillGeneration][Iterate] iterative save: parent=%s, version=%d, tool_id=%s",
                     parent_skill_id,
                     new_version,
                     expected_tool_id,
                 )
             else:
-                # 原 Skill 不存在，降级为新建
+                # The original Skill does not exist and is downgraded to a new one.
                 logger.warning(
-                    "[SkillGeneration][Iterate] 原 Skill %s 不存在，降级为新建",
+                    "[SkillGeneration][Iterate] The original Skill %s does not exist and is downgraded to new",
                     original_tool_id,
                 )
                 skill_doc["version"] = 1
@@ -2360,7 +2360,7 @@ test_input: {spec.test_input}
             skill_doc["version"] = 1
 
         await self._db[SKILL_COLLECTION].insert_one(skill_doc)
-        logger.info(f"✅ Skill '{spec.tool_id}' 已保存到数据库 (version={skill_doc.get('version', 1)})")
+        logger.info(f"✅ Skill '{spec.tool_id}' Saved to database (version={skill_doc.get('version', 1)})")
 
         try:
             from core.tools.registry import get_tool_registry
@@ -2369,13 +2369,13 @@ test_input: {spec.test_input}
             register_single_external_skill(None, get_tool_registry(), skill_doc)
             await CapabilityIndexService(self._db).ensure_index()
         except Exception as e:
-            logger.warning(f"⚠️ Skill '{spec.tool_id}' 热注册失败（重启后生效）: {e}")
+            logger.warning(f"⚠️ Skill '{spec.tool_id}' Hot registration failed (takes effect after restart): {e}")
 
         return spec.tool_id
 
 
 # ------------------------------------------------------------------
-#  mem0 统一记忆层 — Skill 生成集成
+#  mem0 unified memory layer — Skill Build integration
 # ------------------------------------------------------------------
 
 def _build_skill_memory_metadata_filters(spec: SkillSpec) -> Optional[Dict[str, str]]:
@@ -2397,7 +2397,7 @@ def _build_skill_memory_metadata_filters(spec: SkillSpec) -> Optional[Dict[str, 
 
 
 async def _recall_skill_lessons(db, spec: SkillSpec) -> str:
-    """从 mem0 召回同类 Skill 的历史教训"""
+    """Historical lessons from recalling similar Skills from mem0"""
     try:
         from core.memory.service import get_memory_service
         svc = get_memory_service(db)
@@ -2414,12 +2414,12 @@ async def _recall_skill_lessons(db, spec: SkillSpec) -> str:
             per_scope_limit=5,
         )
     except Exception as e:
-        logger.debug("[mem0] Skill 教训召回失败: %s", e)
+        logger.debug("[mem0] Skill Lesson recall failed: %s", e)
         return ""
 
 
 async def _store_skill_lessons(db, spec: SkillSpec, result: PipelineResult) -> None:
-    """将本次管线中的迭代教训写入 mem0。"""
+    """Write the iteration lessons learned in this pipeline to mem0."""
     try:
         from core.memory.service import get_memory_service
         svc = get_memory_service(db)
@@ -2437,7 +2437,7 @@ async def _store_skill_lessons(db, spec: SkillSpec, result: PipelineResult) -> N
 
         if last_failure_summary:
             lessons.append(
-                f"Skill '{spec.tool_id}' ({spec.category}/{spec.data_source}) Agentic 失败摘要: {last_failure_summary[:1200]}"
+                f"Skill '{spec.tool_id}' ({spec.category}/{spec.data_source}) Agentic Failure summary: {last_failure_summary[:1200]}"
             )
         if verified_facts:
             lessons.append(
@@ -2447,7 +2447,7 @@ async def _store_skill_lessons(db, spec: SkillSpec, result: PipelineResult) -> N
             if it.reflection and it.reflection.root_cause:
                 lessons.append(
                     f"Skill '{spec.tool_id}' ({spec.category}/{spec.data_source}) "
-                    f"第{it.round_number}轮失败: {it.reflection.root_cause}"
+                    f"No.{it.round_number}Round failed: {it.reflection.root_cause}"
                 )
 
         if result.success:
@@ -2474,5 +2474,5 @@ async def _store_skill_lessons(db, spec: SkillSpec, result: PipelineResult) -> N
             },
         )
     except Exception as e:
-        logger.debug("[mem0] Skill 教训存储失败: %s", e)
+        logger.debug("[mem0] Skill Lesson storage failed: %s", e)
 

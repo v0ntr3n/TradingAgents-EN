@@ -1,7 +1,7 @@
 """
-板块分析工具函数
+Sector analysis tool function
 
-提供板块表现分析、轮动识别、同业对比等功能
+Provides sector performance analysis, rotation identification, peer comparison and other functions
 """
 
 import asyncio
@@ -14,17 +14,17 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 # ============================================================
-# MongoDB 缓存配置 — 板块列表 & 成分股（TTL=30天）
+# MongoDB Cache configuration — Section list & Constituent stocks (TTL=30 days)
 # ============================================================
 
 SECTOR_CACHE_COLLECTION = "ths_sector_cache"
 SECTOR_CACHE_TTL_DAYS = 30
 
-_sector_cache_db = None   # 延迟初始化
+_sector_cache_db = None   # Lazy initialization
 
 
 def _get_sector_cache_db():
-    """获取同步 MongoDB 连接（用于缓存读写）"""
+    """Get a synchronous MongoDB connection (for caching reads and writes)"""
     global _sector_cache_db
     if _sector_cache_db is not None:
         return _sector_cache_db
@@ -37,7 +37,7 @@ def _get_sector_cache_db():
 
 
 def _read_sector_cache(cache_key: str) -> Optional[pd.DataFrame]:
-    """从 MongoDB 读取板块缓存，过期返回 None"""
+    """Read the section cache from MongoDB and return after expiration None"""
     db = _get_sector_cache_db()
     if db is None:
         return None
@@ -55,7 +55,7 @@ def _read_sector_cache(cache_key: str) -> Optional[pd.DataFrame]:
 
 
 def _write_sector_cache(cache_key: str, cache_type: str, df: pd.DataFrame):
-    """写入板块缓存到 MongoDB（upsert）"""
+    """Write section cache to MongoDB (upsert)"""
     db = _get_sector_cache_db()
     if db is None:
         return
@@ -78,15 +78,15 @@ def _write_sector_cache(cache_key: str, cache_type: str, df: pd.DataFrame):
 
 
 async def _get_ths_index_list_cached(provider, index_type: str) -> Optional[pd.DataFrame]:
-    """带 MongoDB 缓存的板块列表获取（缓存30天）"""
+    """Obtain section list with MongoDB cache (cache for 30 days)"""
     cache_key = f"sector_list_{index_type}"
 
-    # 1. 读缓存
+    # 1. read cache
     cached = _read_sector_cache(cache_key)
     if cached is not None:
         return cached
 
-    # 2. 调 Tushare API
+    # 2. tune Tushare API
     df = await provider.get_ths_index_list(index_type=index_type)
     if df is not None and not df.empty:
         _write_sector_cache(cache_key, "sector_list", df)
@@ -94,15 +94,15 @@ async def _get_ths_index_list_cached(provider, index_type: str) -> Optional[pd.D
 
 
 async def _get_ths_member_cached(provider, ts_code: str) -> Optional[pd.DataFrame]:
-    """带 MongoDB 缓存的板块成分股获取（正向：板块→成分股，缓存30天）"""
+    """Sector component acquisition with MongoDB cache (forward: sector→Constituent stocks, cached for 30 days)"""
     cache_key = f"sector_member_{ts_code}"
 
-    # 1. 读缓存
+    # 1. read cache
     cached = _read_sector_cache(cache_key)
     if cached is not None:
         return cached
 
-    # 2. 调 Tushare API
+    # 2. tune Tushare API
     df = await provider.get_ths_member(ts_code=ts_code)
     if df is not None and not df.empty:
         _write_sector_cache(cache_key, "sector_member", df)
@@ -110,15 +110,15 @@ async def _get_ths_member_cached(provider, ts_code: str) -> Optional[pd.DataFram
 
 
 async def _get_ths_member_reverse_cached(provider, con_code: str) -> Optional[pd.DataFrame]:
-    """带 MongoDB 缓存的个股所属板块获取（反向：个股→所属板块，缓存30天）"""
+    """Obtain the sector to which individual stocks belong with MongoDB cache (reverse: individual stocks→The section to which it belongs, cached for 30 days)"""
     cache_key = f"stock_sectors_{con_code}"
 
-    # 1. 读缓存
+    # 1. read cache
     cached = _read_sector_cache(cache_key)
     if cached is not None:
         return cached
 
-    # 2. 调 Tushare API
+    # 2. tune Tushare API
     df = await provider.get_ths_member(con_code=con_code)
     if df is not None and not df.empty:
         _write_sector_cache(cache_key, "stock_sectors", df)
@@ -126,13 +126,13 @@ async def _get_ths_member_reverse_cached(provider, con_code: str) -> Optional[pd
 
 
 def _get_tushare_provider():
-    """延迟导入获取 Tushare Provider"""
+    """Delayed import acquisition Tushare Provider"""
     from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
     return get_tushare_provider()
 
 
 def _clean_date_string(date_str: str) -> str:
-    """清理日期字符串，去掉可能的时间部分"""
+    """Clean date string, remove possible time part"""
     if not date_str:
         return date_str
     return date_str.split()[0] if ' ' in date_str else date_str
@@ -140,46 +140,46 @@ def _clean_date_string(date_str: str) -> str:
 
 async def _get_latest_trade_date(trade_date: str) -> str:
     """
-    获取最新可用的交易日期
+    Get the latest available transaction date
 
-    一次性获取最近8天的数据，取最后一条有效交易日
+    Obtain the data of the last 8 days at one time, and take the last valid transaction date
 
     Args:
-        trade_date: 原始交易日期 (YYYY-MM-DD 或 YYYYMMDD)
+        trade_date: original transaction date (YYYY-MM-DD or YYYYMMDD)
 
     Returns:
-        最新可用的交易日期 (YYYYMMDD格式)
+        Latest available transaction date (YYYYMMDD Format)
     """
     provider = _get_tushare_provider()
-    # 清理日期字符串，去掉可能的时间部分
+    # Clean date string, remove possible time part
     trade_date_clean = _clean_date_string(trade_date).replace('-', '')
 
     try:
-        # 计算8天前的日期
+        # Calculate date 8 days ago
         end_date = datetime.strptime(trade_date_clean, '%Y%m%d')
         start_date = end_date - timedelta(days=8)
         start_date_str = start_date.strftime('%Y%m%d')
 
-        # 一次性获取最近8天的上证指数数据
+        # Get the Shanghai Composite Index data for the last 8 days at one time
         df = await provider.get_index_daily(
             ts_code='000001.SH',
             start_date=start_date_str,
             end_date=trade_date_clean,
-            use_cache=False  # 不使用缓存，确保获取最新数据
+            use_cache=False  # No caching is used to ensure the latest data is obtained
         )
 
         if df is not None and not df.empty:
-            # 按日期排序，取最后一条（最新的交易日）
+            # Sort by date, take the last item (latest trading day)
             df = df.sort_values('trade_date', ascending=False)
             latest_trade_date = str(df.iloc[0]['trade_date'])
 
             if latest_trade_date != trade_date_clean:
-                logger.info(f"📅 {trade_date} 无数据，使用最近交易日 {latest_trade_date}")
+                logger.info(f"📅 {trade_date} No data, use the latest trading day {latest_trade_date}")
 
             return latest_trade_date
 
-        # 如果都没有找到，返回原始日期
-        logger.warning(f"⚠️ 无法找到有效交易日，使用原始日期 {trade_date_clean}")
+        # If neither is found, return the original date
+        logger.warning(f"⚠️ Unable to find valid trading day, use original date {trade_date_clean}")
         return trade_date_clean
 
     except Exception as e:
@@ -189,13 +189,13 @@ async def _get_latest_trade_date(trade_date: str) -> str:
 
 async def get_stock_sector_info(ticker: str) -> Dict[str, Any]:
     """
-    获取股票所属的板块信息
+    Get sector information to which a stock belongs
     
     Args:
-        ticker: 股票代码（如 000001 或 000001.SZ）
+        ticker: Stock code (such as 000001 or 000001.SZ)
     
     Returns:
-        包含行业和所属板块列表的字典
+        Dictionary containing list of industries and sectors
     """
     provider = _get_tushare_provider()
     
@@ -207,11 +207,11 @@ async def get_stock_sector_info(ticker: str) -> Dict[str, Any]:
     }
     
     try:
-        # 1. 获取行业分类
+        # 1. Get industry classification
         industry = await provider.get_stock_industry(ticker)
         result["industry"] = industry
         
-        # 2. 获取所属板块（同花顺概念/行业板块）— 带缓存
+        # 2. Get the sector you belong to (flush concept/industry sector)— With cache
         ts_code = provider._normalize_ts_code(ticker)
         sectors_df = await _get_ths_member_reverse_cached(provider, con_code=ts_code)
 
@@ -232,33 +232,33 @@ async def get_sector_performance(
     lookback_days: int = 20
 ) -> str:
     """
-    分析目标股票所属行业的整体表现
+    Analyze the overall performance of the industry to which the target stock belongs
     
     Args:
-        ticker: 股票代码
-        trade_date: 交易日期 (YYYY-MM-DD 或 YYYYMMDD)
-        lookback_days: 回看天数
+        ticker: Stock code
+        trade_date: transaction date (YYYY-MM-DD or YYYYMMDD)
+        lookback_days: Number of days to look back
     
     Returns:
-        板块表现分析报告（字符串）
+        Sector performance analysis report (string)
     """
     provider = _get_tushare_provider()
     
     try:
-        # 1. 获取股票所属行业
+        # 1. Get the industry to which the stock belongs
         industry = await provider.get_stock_industry(ticker)
         if not industry:
             return f"⚠️ 无法获取股票 {ticker} 的行业信息"
         
-        # 2. 获取股票所属板块 — 带缓存
+        # 2. Get the sector to which the stock belongs — With cache
         ts_code = provider._normalize_ts_code(ticker)
         sectors_df = await _get_ths_member_reverse_cached(provider, con_code=ts_code)
         
-        # 3. 计算日期范围
-        # 清理日期字符串，去掉可能的时间部分
+        # 3. Calculate date range
+        # Clean date string, remove possible time part
         trade_date_clean = _clean_date_string(trade_date).replace('-', '')
         end_date = datetime.strptime(trade_date_clean, '%Y%m%d')
-        start_date = end_date - timedelta(days=lookback_days + 10)  # 多取几天应对非交易日
+        start_date = end_date - timedelta(days=lookback_days + 10)  # Take extra days to deal with non-trading days
         start_date_str = start_date.strftime('%Y%m%d')
         end_date_str = trade_date_clean
         
@@ -272,9 +272,9 @@ async def get_sector_performance(
             "",
         ]
         
-        # 4. 分析板块表现
+        # 4. Analyze sector performance
         if sectors_df is not None and not sectors_df.empty:
-            # ths_member 反查仅含板块代码，构建代码→名称映射（N行业板块 + I行业指数）
+            # ths_member The reverse check only contains the section code and the construction code→Name Mapping (N Industry Segment + I industry index)
             name_map = {}
             for idx_type in ["N", "I"]:
                 ldf = await _get_ths_index_list_cached(provider, idx_type)
@@ -287,9 +287,9 @@ async def get_sector_performance(
             report_lines.append("")
             report_lines.append("【板块涨跌幅排行】")
             
-            # 获取每个板块的行情数据
+            # Get market data for each sector
             sector_performance = []
-            for _, row in sectors_df.head(10).iterrows():  # 最多分析10个板块
+            for _, row in sectors_df.head(10).iterrows():  # Analyze up to 10 sectors
                 sector_code = row.get('ts_code')
                 if not sector_code:
                     continue
@@ -301,14 +301,14 @@ async def get_sector_performance(
                 )
                 
                 if daily_df is not None and not daily_df.empty:
-                    # 计算累计涨跌幅
+                    # Calculate the cumulative increase and decrease
                     daily_df = daily_df.sort_values('trade_date')
                     if len(daily_df) >= 2:
                         first_close = daily_df.iloc[0]['close']
                         last_close = daily_df.iloc[-1]['close']
                         pct_change = ((last_close - first_close) / first_close) * 100
                         
-                        # 获取最新一日涨跌
+                        # Get the latest one-day price increase and decrease
                         today_pct = daily_df.iloc[-1].get('pct_change', 0)
                         
                         sector_performance.append({
@@ -318,14 +318,14 @@ async def get_sector_performance(
                             'today_pct': round(today_pct, 2) if today_pct else 0
                         })
             
-            # 按累计涨幅排序
+            # Sort by cumulative increase
             sector_performance.sort(key=lambda x: x['period_pct'], reverse=True)
             
             for i, sp in enumerate(sector_performance, 1):
                 trend = "📈" if sp['period_pct'] > 0 else "📉"
                 report_lines.append(
                     f"  {i}. {sp['name']}: {trend} {sp['period_pct']:+.2f}% "
-                    f"(今日: {sp['today_pct']:+.2f}%)"
+                    f"(today: {sp['today_pct']:+.2f}%)"
                 )
         
         return "\n".join(report_lines)
@@ -338,27 +338,27 @@ async def get_sector_performance(
 async def get_sector_rotation(trade_date: str, top_n: int = 10,
                               lookback_days: int = 1) -> str:
     """
-    识别板块轮动趋势
+    Identify sector rotation trends
 
-    使用行业板块(moneyflow_ind_ths)和概念板块(moneyflow_cnt_ths)的资金流向数据，
-    分析板块资金轮动方向。支持单日和多日（累计）两种模式。
+    Use industry sections(moneyflow_ind_ths)and concept section(moneyflow_cnt_ths)capital flow data,
+    Analyze the direction of fund rotation in the sector. Supports single-day and multi-day (cumulative) modes.
 
     Args:
-        trade_date: 截止交易日期
-        top_n: 返回前N个板块
-        lookback_days: 回溯天数，1=仅当天，>1=累计多天聚合
+        trade_date: closing date
+        top_n: Return the first N sections
+        lookback_days: Looking back the number of days,1=On that day only,>1=Accumulated multi-day aggregation
 
     Returns:
-        板块轮动分析报告
+        Sector rotation analysis report
     """
     provider = _get_tushare_provider()
 
     try:
-        # 获取最新可用的交易日
+        # Get the latest available trading day
         trade_date_clean = await _get_latest_trade_date(trade_date)
         trade_date_fmt = f"{trade_date_clean[:4]}-{trade_date_clean[4:6]}-{trade_date_clean[6:8]}"
 
-        # ── 确定日期范围 ──
+        # ── Determine date range ──
         is_multi_day = lookback_days > 1
         if is_multi_day:
             from datetime import datetime, timedelta
@@ -373,14 +373,14 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
             period_label = trade_date_fmt
 
         report_lines = [
-            f"🔄 板块资金流向与轮动分析",
+            f"🔄 Sector capital flow and rotation analysis",
             f"{'='*50}",
             f"📅 分析周期: {period_label}",
             f"📊 模式: {'累计聚合' if is_multi_day else '单日快照'}",
             "",
         ]
 
-        # ── 拉取数据 ──
+        # ── Pull data ──
         if is_multi_day:
             ind_df = await provider.get_moneyflow_ind_ths(
                 start_date=start_date_str, end_date=end_date_str)
@@ -392,7 +392,7 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
             cnt_df = await provider.get_moneyflow_cnt_ths(
                 trade_date=trade_date_clean)
 
-        # ── 1. 行业板块资金流向 ──
+        # ── 1. Industry sector capital flows ──
         if ind_df is not None and not ind_df.empty:
             if is_multi_day:
                 trade_days = ind_df['trade_date'].nunique()
@@ -402,7 +402,7 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
             else:
                 ind_agg = None
 
-            report_lines.append("【🏭 行业板块 — 资金净流入TOP】")
+            report_lines.append(" [🏭 Industry sector — Net capital inflow TOP]")
             if is_multi_day and ind_agg is not None:
                 _append_multi_day_rows(report_lines, ind_agg, top_n, ascending=False)
             else:
@@ -410,7 +410,7 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
                                         name_col='industry', ascending=False)
 
             report_lines.append("")
-            report_lines.append("【🏭 行业板块 — 资金净流出TOP】")
+            report_lines.append(" [🏭 Industry sector — Net outflow of funds TOP]")
             if is_multi_day and ind_agg is not None:
                 _append_multi_day_rows(report_lines, ind_agg, top_n, ascending=True)
             else:
@@ -418,10 +418,10 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
                                         name_col='industry', ascending=True)
             report_lines.append("")
         else:
-            report_lines.append("⚠️ 暂无行业板块资金流向数据")
+            report_lines.append("⚠️ There is no data on capital flows of industry sectors.")
             report_lines.append("")
 
-        # ── 2. 概念板块资金流向 ──
+        # ── 2. Concept sector capital flow ──
         if cnt_df is not None and not cnt_df.empty:
             if is_multi_day:
                 trade_days = cnt_df['trade_date'].nunique()
@@ -431,7 +431,7 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
             else:
                 cnt_agg = None
 
-            report_lines.append("【💡 概念板块 — 资金净流入TOP】")
+            report_lines.append(" [💡 Concept section — Net capital inflow TOP]")
             if is_multi_day and cnt_agg is not None:
                 _append_multi_day_rows(report_lines, cnt_agg, top_n, ascending=False)
             else:
@@ -439,7 +439,7 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
                                         name_col='name', ascending=False)
 
             report_lines.append("")
-            report_lines.append("【💡 概念板块 — 资金净流出TOP】")
+            report_lines.append(" [💡 Concept section — Net outflow of funds TOP]")
             if is_multi_day and cnt_agg is not None:
                 _append_multi_day_rows(report_lines, cnt_agg, top_n, ascending=True)
             else:
@@ -447,10 +447,10 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
                                         name_col='name', ascending=True)
             report_lines.append("")
         else:
-            report_lines.append("⚠️ 暂无概念板块资金流向数据")
+            report_lines.append("⚠️ There is currently no data on capital flows in the concept sector.")
             report_lines.append("")
 
-        # ── 3. 轮动判断 ──
+        # ── 3. rotation judgment ──
         report_lines.append("【🎯 轮动判断】")
         if ind_df is not None and not ind_df.empty:
             if is_multi_day and ind_agg is not None:
@@ -465,14 +465,14 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
                 label = "当日"
 
             if total_net > 0 and inflow_count > outflow_count * 1.5:
-                report_lines.append(f"  • {label}行业资金面整体偏多，多数板块获得净流入")
+                report_lines.append(f"  • {label}The overall funding level of the industry is relatively high, with most sectors receiving net inflows")
             elif total_net < 0 and outflow_count > inflow_count * 1.5:
-                report_lines.append(f"  • {label}行业资金面整体偏空，多数板块资金净流出")
+                report_lines.append(f"  • {label}The overall financial situation of the industry is bearish, and most sectors have net outflows of funds.")
             else:
-                report_lines.append(f"  • {label}行业资金进出分化，板块轮动明显")
+                report_lines.append(f"  • {label}The capital inflow and outflow of the industry is differentiated, and the sector rotation is obvious.")
             report_lines.append(
                 f"  • 行业板块{label}净流入: {inflow_count} 个 | 净流出: {outflow_count} 个 | "
-                f"合计净额: {total_net:+.2f}亿"
+                f"Total net amount: {total_net:+.2f}billion"
             )
 
         return "\n".join(report_lines)
@@ -482,19 +482,19 @@ async def get_sector_rotation(trade_date: str, top_n: int = 10,
         return f"❌ 板块轮动分析失败: {e}"
 
 
-# ── 多日聚合辅助函数 ──
+# ── Multi-day aggregation helper function ──
 
 def _aggregate_multi_day(df, name_col: str):
     """
-    将多日板块资金流向数据聚合为累计值。
+    Aggregate multi-day sector capital flow data into a cumulative value.
 
-    返回 DataFrame，按 cum_net 降序排列，包含:
-    - name: 板块名称
-    - cum_net: 累计净流入(亿元)
-    - avg_net: 日均净流入(亿元)
-    - inflow_days: 净流入天数
-    - total_days: 总交易天数
-    - avg_pct: 期间平均涨跌幅(%)
+    Returns a DataFrame, sorted in descending order by cum_net, containing:
+    - name: Section name
+    - cum_net: Cumulative net inflow(billion)
+    - avg_net: average daily net inflow(billion)
+    - inflow_days: Net inflow days
+    - total_days: Total trading days
+    - avg_pct: Average increase or decrease during the period(%)
     """
     import pandas as pd
 
@@ -531,8 +531,8 @@ def _append_multi_day_rows(report_lines: list, agg_df, top_n: int,
         trend = "🔴" if cum > 0 else "🟢"
         report_lines.append(
             f"  {i}. {name}: {trend} 累计{cum:+.2f}亿 "
-            f"(日均{avg:+.2f}亿, 净流入{inflow_d}/{total_d}天, "
-            f"均涨跌幅{avg_pct:+.2f}%)"
+            f"(Daily average{avg:+.2f}billion, net inflow{inflow_d}/{total_d}day, "
+            f"average increase or decrease{avg_pct:+.2f}%)"
         )
 
 
@@ -545,7 +545,7 @@ def _append_single_day_rows(report_lines: list, df, top_n: int,
     else:
         rows = sorted_df.head(top_n)
 
-    # 对于净流出 TOP，用 ascending=True 排序后取 head
+    # For net outflow TOP, use ascending=True Take after sorting head
     if ascending:
         sorted_df_asc = df.sort_values('net_amount', ascending=True)
         rows = sorted_df_asc.head(top_n)
@@ -571,31 +571,31 @@ async def get_peer_comparison(
     top_n: int = 10
 ) -> str:
     """
-    同业竞争对手对比分析
+    Comparative analysis of competitors in the same industry
 
-    对比目标股票与同行业其他股票的表现
+    Compare the performance of the target stock with other stocks in the same industry
 
     Args:
-        ticker: 目标股票代码
-        trade_date: 交易日期
-        top_n: 对比的同业公司数量
+        ticker: target stock code
+        trade_date: transaction date
+        top_n: Number of peer companies compared
 
     Returns:
-        同业对比分析报告
+        Comparative analysis report of peers
     """
     provider = _get_tushare_provider()
 
     try:
-        # 1. 获取股票所属行业
+        # 1. Get the industry to which the stock belongs
         industry = await provider.get_stock_industry(ticker)
         if not industry:
             return f"⚠️ 无法获取股票 {ticker} 的行业信息"
 
-        # 2. 获取最新可用的交易日
+        # 2. Get the latest available trading day
         trade_date_clean = await _get_latest_trade_date(trade_date)
         trade_date_formatted = f"{trade_date_clean[:4]}-{trade_date_clean[4:6]}-{trade_date_clean[6:8]}"
 
-        # 3. 获取同行业股票每日基础数据
+        # 3. Obtain daily basic data of stocks in the same industry
         industry_df = await provider.get_sector_stocks_daily_basic(
             industry=industry,
             trade_date=trade_date_clean
@@ -614,13 +614,13 @@ async def get_peer_comparison(
             report_lines.append(f"⚠️ 暂无行业 {industry} 的对比数据")
             return "\n".join(report_lines)
 
-        # 3. 按市值排序，取TOP N
+        # 3. Sort by market value, take TOP N
         industry_df = industry_df.sort_values('total_mv', ascending=False)
         total_count = len(industry_df)
         report_lines.append(f"📌 行业内上市公司: {total_count} 家")
         report_lines.append("")
 
-        # 4. 找到目标股票的数据
+        # 4. Find data for the target stock
         ts_code = provider._normalize_ts_code(ticker)
         target_row = industry_df[industry_df['ts_code'] == ts_code]
 
@@ -638,11 +638,11 @@ async def get_peer_comparison(
             report_lines.append(f"  • 换手率: {target.get('turnover_rate', 'N/A')}%")
             report_lines.append("")
 
-        # 5. 行业龙头对比
+        # 5. Comparison of industry leaders
         report_lines.append(f"【🏆 行业龙头TOP{min(top_n, total_count)}】")
         for i, row in enumerate(industry_df.head(top_n).itertuples(), 1):
             name = getattr(row, 'name', getattr(row, 'ts_code', ''))
-            total_mv = getattr(row, 'total_mv', 0) / 10000  # 转换为亿
+            total_mv = getattr(row, 'total_mv', 0) / 10000  # Convert to billions
             pe_ttm = getattr(row, 'pe_ttm', 'N/A')
             pb = getattr(row, 'pb', 'N/A')
 
@@ -652,7 +652,7 @@ async def get_peer_comparison(
                 f"PE: {pe_ttm} | PB: {pb}"
             )
 
-        # 6. 计算行业统计（过滤掉 NaN 值）
+        # 6. Calculate industry statistics (filter out NaN values)
         import pandas as pd
         report_lines.append("")
         report_lines.append("【📈 行业统计】")
@@ -665,14 +665,14 @@ async def get_peer_comparison(
         if pd.notna(pe_median):
             report_lines.append(f"  • PE中位数: {pe_median:.2f} | PE均值: {pe_mean:.2f}")
         else:
-            report_lines.append(f"  • PE数据: 暂无有效数据")
+            report_lines.append(f"  • PE data: No valid data yet")
 
         if pd.notna(pb_median):
             report_lines.append(f"  • PB中位数: {pb_median:.2f} | PB均值: {pb_mean:.2f}")
         else:
-            report_lines.append(f"  • PB数据: 暂无有效数据")
+            report_lines.append(f"  • PB data: No valid data yet")
 
-        # 7. 目标股票在行业中的估值位置
+        # 7. The valuation position of the target stock in the industry
         if not target_row.empty:
             target_pe = target.get('pe_ttm')
             target_pb = target.get('pb')
@@ -680,7 +680,7 @@ async def get_peer_comparison(
             report_lines.append("")
             report_lines.append("【📊 估值评价】")
 
-            # 处理 PE 估值（检查是否为 None 或 NaN）
+            # Handle PE valuation (check if None or NaN)
             if pd.notna(target_pe) and pd.notna(pe_median):
                 if target_pe < pe_median * 0.8:
                     report_lines.append(f"  • PE估值: {target_pe:.2f}，低于行业中位数({pe_median:.1f})，估值偏低")
@@ -689,9 +689,9 @@ async def get_peer_comparison(
                 else:
                     report_lines.append(f"  • PE估值: {target_pe:.2f}，接近行业中位数({pe_median:.1f})，估值合理")
             else:
-                report_lines.append(f"  • PE估值: 数据缺失（可能亏损或数据未更新）")
+                report_lines.append(f"  • PE Valuation: Missing data (may be a loss or the data has not been updated)")
 
-            # 处理 PB 估值（检查是否为 None 或 NaN）
+            # Handle PB estimates (check if None or NaN)
             if pd.notna(target_pb) and pd.notna(pb_median):
                 if target_pb < pb_median * 0.8:
                     report_lines.append(f"  • PB估值: {target_pb:.2f}，低于行业中位数({pb_median:.1f})，估值偏低")
@@ -714,28 +714,28 @@ async def get_industry_top_companies(
     top_n: int = 5,
 ) -> str:
     """
-    获取同行业 TOP N 公司列表（轻量版，自动取最新交易日）
+    Get the list of TOP N companies in the same industry (light version, automatically get the latest trading day)
 
     Args:
-        ticker: 目标股票代码（如 600519 或 600519.SH）
-        top_n: 返回前 N 家公司，默认 5
+        ticker: Target stock code (such as 600519 or 600519.SH)
+        top_n: Returns the top N companies, default 5
 
     Returns:
-        同行业 TOP N 公司简表（代码、名称、市值、PE、PB）
+        Brief list of TOP N companies in the same industry (code, name, market capitalization, PE, PB)
     """
     provider = _get_tushare_provider()
 
     try:
-        # 1. 获取股票所属行业
+        # 1. Get the industry to which the stock belongs
         industry = await provider.get_stock_industry(ticker)
         if not industry:
             return f"⚠️ 无法获取股票 {ticker} 的行业信息"
 
-        # 2. 自动取最新交易日（用今天往前找）
+        # 2. Automatically retrieve the latest trading day (use today to search forward)
         today_str = datetime.now().strftime('%Y-%m-%d')
         trade_date_clean = await _get_latest_trade_date(today_str)
 
-        # 3. 获取同行业股票每日基础数据
+        # 3. Obtain daily basic data of stocks in the same industry
         industry_df = await provider.get_sector_stocks_daily_basic(
             industry=industry,
             trade_date=trade_date_clean
@@ -744,12 +744,12 @@ async def get_industry_top_companies(
         if industry_df is None or industry_df.empty:
             return f"⚠️ 暂无行业「{industry}」在 {trade_date_clean} 的数据"
 
-        # 4. 按市值排序
+        # 4. Sort by market capitalization
         industry_df = industry_df.sort_values('total_mv', ascending=False)
         total_count = len(industry_df)
         top_n_actual = min(top_n, total_count)
 
-        # 5. 找目标股票的排名
+        # 5. Find the ranking of target stocks
         ts_code = provider._normalize_ts_code(ticker)
         target_rank = 0
         target_row = industry_df[industry_df['ts_code'] == ts_code]
@@ -758,20 +758,20 @@ async def get_industry_top_companies(
 
         trade_date_formatted = f"{trade_date_clean[:4]}-{trade_date_clean[4:6]}-{trade_date_clean[6:8]}"
 
-        # 6. 构建简表
+        # 6. Build a profile
         lines = [
             f"🏭 {industry} — 同行业 TOP {top_n_actual} 公司",
             f"📅 数据日期: {trade_date_formatted} | 行业共 {total_count} 家",
             "",
-            f"{'排名':>4}  {'代码':<12} {'名称':<8} {'市值(亿)':>10} {'PE':>8} {'PB':>8}",
+            f"{'Ranking':>4}  {'code':<12} {'Name':<8} {'Market value(billion)':>10} {'PE':>8} {'PB':>8}",
             f"{'─'*4}  {'─'*12} {'─'*8} {'─'*10} {'─'*8} {'─'*8}",
         ]
 
         for i, row in enumerate(industry_df.head(top_n_actual).itertuples(), 1):
-            name = str(getattr(row, 'name', ''))[:6]  # 中文名截断对齐
+            name = str(getattr(row, 'name', ''))[:6]  # Chinese name truncation and alignment
             code = str(getattr(row, 'ts_code', ''))
             total_mv = getattr(row, 'total_mv', 0) or 0
-            total_mv_yi = total_mv / 10000  # 万元 → 亿元
+            total_mv_yi = total_mv / 10000  # Ten thousand yuan → billion
             pe = getattr(row, 'pe_ttm', None)
             pb = getattr(row, 'pb', None)
             pe_str = f"{pe:.1f}" if pe and pe == pe else "N/A"
@@ -781,7 +781,7 @@ async def get_industry_top_companies(
                 f"{marker}{i:>3}  {code:<12} {name:<8} {total_mv_yi:>10.1f} {pe_str:>8} {pb_str:>8}"
             )
 
-        # 7. 目标股票如果在 TOP N 之外，追加显示
+        # 7. If the target stock is outside the TOP N, additional display
         if target_rank > top_n_actual:
             target = target_row.iloc[0]
             name = str(target.get('name', ''))[:6]
@@ -796,37 +796,37 @@ async def get_industry_top_companies(
             )
 
         lines.append("")
-        lines.append("💡 提示: 使用 get_peer_comparison 可获取更详细的同业对比分析报告。")
+        lines.append("💡 Tips: Use get_peer_comparison to obtain a more detailed peer comparison analysis report.")
 
         return "\n".join(lines)
 
     except Exception as e:
-        logger.error(f"获取同行业 TOP 公司失败: {e}")
-        return f"❌ 获取同行业 TOP 公司失败: {e}"
+        logger.error(f"Failed to obtain TOP company in the same industry: {e}")
+        return f"❌ Failed to obtain TOP company in the same industry: {e}"
 
 
 async def analyze_sector(ticker: str, trade_date: str) -> str:
     """
-    综合板块分析（SectorAnalyst 主入口）
+    Comprehensive sector analysis (SectorAnalyst main entrance)
 
-    整合板块表现、轮动趋势、同业对比三个维度的分析
+    Integrate analysis from three dimensions: sector performance, rotation trends, and peer comparison
 
     Args:
-        ticker: 目标股票代码（如果是 "MARKET" 则分析整体板块情况）
-        trade_date: 交易日期
+        ticker: Target stock symbol (if it is "MARKET" Then analyze the overall sector situation)
+        trade_date: transaction date
 
     Returns:
-        综合板块分析报告
+        Comprehensive sector analysis report
     """
     try:
-        # 判断是整体板块分析还是个股板块分析
+        # Determine whether it is overall sector analysis or individual stock sector analysis
         is_market_analysis = (ticker == "MARKET" or not ticker)
 
         if is_market_analysis:
-            # 整体板块分析：只分析板块轮动
+            # Overall sector analysis: only analyze sector rotation
             rotation_report = await get_sector_rotation(trade_date)
 
-            # 组合报告
+            # Portfolio Report
             full_report = [
                 "=" * 60,
                 "🏭 板块分析师综合报告",
@@ -839,13 +839,13 @@ async def analyze_sector(ticker: str, trade_date: str) -> str:
                 "=" * 60,
             ]
 
-            full_report.append("请根据以上数据综合判断：")
-            full_report.append("1. 当前市场热点板块和资金流向")
-            full_report.append("2. 板块轮动的方向和强度")
+            full_report.append("Please make a comprehensive judgment based on the above data:")
+            full_report.append("1. Current market hot sectors and capital flows")
+            full_report.append("2. The direction and intensity of plate rotation")
             full_report.append("3. 市场整体的风险偏好")
 
         else:
-            # 个股板块分析：分析目标股票所属板块
+            # Individual stock sector analysis: analyze the sector to which the target stock belongs
             performance_task = get_sector_performance(ticker, trade_date)
             rotation_task = get_sector_rotation(trade_date)
             peer_task = get_peer_comparison(ticker, trade_date)
@@ -854,7 +854,7 @@ async def analyze_sector(ticker: str, trade_date: str) -> str:
                 performance_task, rotation_task, peer_task
             )
 
-            # 组合报告
+            # Portfolio Report
             full_report = [
                 "=" * 60,
                 "🏭 板块分析师综合报告",
@@ -871,10 +871,10 @@ async def analyze_sector(ticker: str, trade_date: str) -> str:
                 "=" * 60,
             ]
 
-            full_report.append("请根据以上数据综合判断：")
-            full_report.append("1. 目标股票所属板块是否处于热点轮动中")
-            full_report.append("2. 个股在行业中的地位和估值水平")
-            full_report.append("3. 板块资金流向是否支持当前投资方向")
+            full_report.append("Please make a comprehensive judgment based on the above data:")
+            full_report.append("1. Whether the sector to which the target stock belongs is in hot rotation")
+            full_report.append("2. The position and valuation level of individual stocks in the industry")
+            full_report.append("3. Does the sector s capital flow support the current investment direction?")
 
         return "\n".join(full_report)
 
@@ -884,42 +884,42 @@ async def analyze_sector(ticker: str, trade_date: str) -> str:
 
 
 # ============================================================
-# 板块级别工具函数（以板块名称/代码为入口）
+# Sector level tool function (use the sector name/code as the entry)
 # ============================================================
 
-# 常见行业/概念别名 → 同花顺板块关键词
-# 同花顺板块命名与常识叫法不一致时兜底（如"生猪养殖行业"在THS体系中叫"猪肉"）
-# 注意：映射目标必须是THS体系中真实存在的板块名关键词
+# Common industry/concept aliases → Flush section keywords
+# When the name of the Flush section is inconsistent with the common sense, be sure to explain (such as"Pig breeding industry"In the THS system it is called"Pork") 
+# Note: The mapping target must be the real sector name keyword in the THS system
 _SECTOR_SYNONYMS = {
-    # 畜禽养殖：THS无"养殖/畜牧/生猪"板块，A股对应"猪肉"
+    # Livestock and poultry breeding: THS None"Breeding/Animal Husbandry/Pigs"Sector, corresponding to A shares"Pork"
     "养殖": "猪",
     "生猪": "猪",
     "养猪": "猪",
     "畜牧": "猪",
     "猪周期": "猪",
     "肉鸡": "鸡",
-    # 金融：THS无"证券"板块，对应"参股券商/中资券商股"
+    # Finance: THS None"securities"section, corresponding"Participating securities companies/Chinese securities companies"
     "证券": "券商",
-    # 新能源
+    # new energy
     "新能源车": "新能源汽车",
     "电动车": "新能源汽车",
     "锂电": "锂电池",
     "锂矿": "锂",
-    # 军工航天：THS对应"军工"
+    # Military and aerospace: THS correspondence"Military industry"
     "国防": "军工",
     "船舶": "船",
-    # 石化
+    # petrochemical
     "石化": "石油",
-    # 电子
+    # electronic
     "封测": "集成电路",
     "面板": "OLED",
-    # 汽车
+    # car
     "汽车零部件": "汽车",
     "智能驾驶": "无人驾驶",
-    # 农业
+    # Agriculture
     "种业": "转基因",
     "渔业": "水产",
-    # 消费
+    # consumption
     "乳制品": "乳业",
     "奶牛": "乳",
     "零食": "休闲食品",
@@ -928,7 +928,7 @@ _SECTOR_SYNONYMS = {
     "中药": "中医药",
     "服装": "服饰",
     "造纸": "纸",
-    # 基建物流
+    # Infrastructure logistics
     "基建": "基础建设",
     "快递": "物流",
     "运营商": "电信运营",
@@ -938,7 +938,7 @@ _SECTOR_SYNONYMS = {
 
 
 def _synonym_keywords(keyword: str) -> List[str]:
-    """扩展关键词：原词 + 命中的同义词映射目标（去重保序）。"""
+    """Extended keywords: original word + Hit synonym mapping target (removing duplication and preserving order)."""
     candidates = [keyword]
     for k, v in _SECTOR_SYNONYMS.items():
         if k in keyword and v not in candidates:
@@ -947,7 +947,7 @@ def _synonym_keywords(keyword: str) -> List[str]:
 
 
 def _suggest_similar_sectors(df, keyword: str, top_n: int = 5) -> List[tuple]:
-    """字符重叠模糊推荐：板块名与关键词至少重叠2个字符时按重叠数降序推荐。"""
+    """Fuzzy recommendation with overlapping characters: When the section name and keyword overlap by at least 2 characters, recommendations are made in descending order of the number of overlaps."""
     if df is None or df.empty:
         return []
     chars = set(keyword)
@@ -962,8 +962,8 @@ def _suggest_similar_sectors(df, keyword: str, top_n: int = 5) -> List[tuple]:
 
 
 async def _sector_not_found_hint(provider, keyword: str) -> str:
-    """板块未命中时生成候选建议文本，帮助调用方（LLM）自我纠正板块名。"""
-    # 1. 同义词重试提示
+    """Candidate suggestion text is generated when a section is missed to help the caller (LLM) self-correct the section name."""
+    # 1. Synonyms retry prompt
     synonym_names = []
     for idx_type in ["N", "I", "S"]:
         df = await _get_ths_index_list_cached(provider, idx_type)
@@ -975,7 +975,7 @@ async def _sector_not_found_hint(provider, keyword: str) -> str:
                 synonym_names.append(f"{row['name']} ({row['ts_code']})")
         if synonym_names:
             break
-    # 2. 字符重叠候选
+    # 2. Character overlap candidates
     if not synonym_names:
         for idx_type in ["N", "I", "S"]:
             df = await _get_ths_index_list_cached(provider, idx_type)
@@ -987,8 +987,8 @@ async def _sector_not_found_hint(provider, keyword: str) -> str:
                     break
     hint = f"⚠️ 未找到包含 \"{keyword}\" 的板块。"
     if synonym_names:
-        hint += f"相近板块：{'、'.join(synonym_names[:5])}。"
-    hint += "建议：① 用上述板块名重试；② 调用 search_sector 搜索正确板块名；③ 若已知个股代码，改用 get_sector_performance(ticker) 按个股反查所属板块。"
+        hint += f"Similar sectors:{', '.join(synonym_names[:5])}. "
+    hint += "Suggestions:① Try again with the above section name;② Call search_sector to search for the correct section name;③ If the stock code is known, use get_sector_performance(ticker) Check the sector by individual stocks."
     return hint
 
 
@@ -997,27 +997,27 @@ async def search_sector(
     sector_type: str = "N",
 ) -> str:
     """
-    按名称关键词搜索同花顺板块
+    Search the Flush section by name and keywords
 
     Args:
-        keyword: 板块名称关键词（如 "光伏"、"半导体"、"白酒"）
-        sector_type: 板块类型 N=行业板块 I=行业指数 S=概念 R=地域，默认 N
+        keyword: Section name keywords (such as "photovoltaic", "Semiconductor", "Liquor") 
+        sector_type: Section type N=Industry sector I=Industry Index S=concept R=Region, default N
 
     Returns:
-        匹配的板块列表（含代码、名称、成分股数量）
+        Matching sector list (including code, name, number of constituent stocks)
     """
     provider = _get_tushare_provider()
 
     try:
         df = await _get_ths_index_list_cached(provider, sector_type)
         if df is None or df.empty:
-            return f"⚠️ 暂无板块列表数据（类型={sector_type}）"
+            return f"⚠️ There is no section list data (type={sector_type}) "
 
-        # 模糊匹配
+        # fuzzy matching
         matched = df[df['name'].str.contains(keyword, case=False, na=False)]
 
         if matched.empty:
-            # 尝试其他类型（含I类行业指数：完整行业体系，"养殖/调味品"等仅存在于I类）
+            # Try other types (including Type I industry index: complete industry system,"Breeding/Condiments"etc. only exist in category I)
             for alt_type in ["I", "N", "S", "R"]:
                 if alt_type == sector_type:
                     continue
@@ -1030,7 +1030,7 @@ async def search_sector(
 
         matched_kw = keyword
         if matched.empty:
-            # 同义词兜底：如"养殖"→"猪"（THS板块命名与常识叫法不一致）
+            # Synonyms: such as"Breeding"→"pig" (THS The section naming is inconsistent with common sense)
             all_types = ["N", "I", "S", "R"]
             for kw in _synonym_keywords(keyword)[1:]:
                 for t in all_types:
@@ -1052,7 +1052,7 @@ async def search_sector(
         type_map = {"N": "行业", "S": "概念", "R": "地域", "I": "行业指数"}
         title_kw = f"\"{keyword}\"" if matched_kw == keyword else f"\"{keyword}\"（按同义词\"{matched_kw}\"匹配）"
         lines = [
-            f"🔍 板块搜索结果：{title_kw}",
+            f"🔍 Section search results:{title_kw}",
             f"类型: {type_map.get(sector_type, sector_type)}",
             f"匹配数量: {len(matched)} 个",
             "",
@@ -1074,27 +1074,27 @@ async def get_sector_daily(
     lookback_days: int = 20,
 ) -> str:
     """
-    获取板块指数日线行情（按板块名称）
+    Get the daily market price of sector index (by sector name)
 
     Args:
-        sector_name: 板块名称关键词（如 "光伏"、"半导体"）
-        trade_date: 交易日期 YYYY-MM-DD
-        lookback_days: 回看天数，默认 20
+        sector_name: Section name keywords (such as "photovoltaic", "Semiconductor") 
+        trade_date: transaction date YYYY-MM-DD
+        lookback_days: Number of days to look back, default 20
 
     Returns:
-        板块指数行情报告
+        Sector index market report
     """
     provider = _get_tushare_provider()
 
     try:
-        # 1. 搜索板块代码
+        # 1. Search section code
         sector_code = await _resolve_sector_code(provider, sector_name)
         if not sector_code:
             return await _sector_not_found_hint(provider, sector_name)
 
         sector_ts_code, sector_display_name = sector_code
 
-        # 2. 获取日线数据
+        # 2. Get daily data
         trade_date_clean = _clean_date_string(trade_date).replace('-', '')
         end_date = datetime.strptime(trade_date_clean, '%Y%m%d')
         start_date = end_date - timedelta(days=lookback_days + 10)
@@ -1114,12 +1114,12 @@ async def get_sector_daily(
         ]
 
         if daily_df is None or daily_df.empty:
-            lines.append("⚠️ 暂无该板块的日线行情数据")
+            lines.append("⚠️ There is currently no daily market data for this sector.")
             return "\n".join(lines)
 
         daily_df = daily_df.sort_values('trade_date', ascending=True)
 
-        # 最新一日
+        # Latest day
         latest = daily_df.iloc[-1]
         lines.append("【最新行情】")
         lines.append(f"  • 收盘: {latest.get('close', 'N/A')}")
@@ -1130,7 +1130,7 @@ async def get_sector_daily(
             lines.append(f"  • 总市值: {latest['total_mv']/10000:.0f}亿")
         lines.append("")
 
-        # 区间统计
+        # interval statistics
         if len(daily_df) >= 2:
             first_close = daily_df.iloc[0]['close']
             last_close = daily_df.iloc[-1]['close']
@@ -1156,27 +1156,27 @@ async def get_sector_constituents(
     top_n: int = 15,
 ) -> str:
     """
-    获取板块成分股列表及表现
+    Get the list of sector constituent stocks and their performance
 
     Args:
-        sector_name: 板块名称关键词（如 "光伏"、"半导体"）
-        trade_date: 交易日期 YYYY-MM-DD
-        top_n: 返回前 N 只成分股，默认 15
+        sector_name: Section name keywords (such as "photovoltaic", "Semiconductor") 
+        trade_date: transaction date YYYY-MM-DD
+        top_n: Returns the top N constituent stocks, default 15
 
     Returns:
-        板块成分股列表及市值/估值排名
+        List of sector constituent stocks and market capitalization/valuation rankings
     """
     provider = _get_tushare_provider()
 
     try:
-        # 1. 搜索板块代码
+        # 1. Search section code
         sector_code = await _resolve_sector_code(provider, sector_name)
         if not sector_code:
             return await _sector_not_found_hint(provider, sector_name)
 
         sector_ts_code, sector_display_name = sector_code
 
-        # 2. 获取成分股 — 带缓存
+        # 2. Get constituent stocks — With cache
         members_df = await _get_ths_member_cached(provider, sector_ts_code)
         if members_df is None or members_df.empty:
             return f"⚠️ 板块 {sector_display_name} 暂无成分股数据"
@@ -1190,7 +1190,7 @@ async def get_sector_constituents(
             "",
         ]
 
-        # 3. 获取成分股的每日基础数据（市值、PE、PB 等）
+        # 3. Get daily basic data of constituent stocks (market capitalization, PE, PB, etc.)
         trade_date_clean = await _get_latest_trade_date(trade_date)
         daily_df = None
         try:
@@ -1200,35 +1200,35 @@ async def get_sector_constituents(
                 fields='ts_code,close,pe_ttm,pb,total_mv,circ_mv,turnover_rate'
             )
         except Exception as e:
-            logger.warning(f"获取 daily_basic 失败: {e}")
+            logger.warning(f"Failed to get daily_basic: {e}")
 
         if daily_df is not None and not daily_df.empty:
-            # 合并成分股与每日数据
+            # Combined constituents and daily data
             member_codes = set(members_df['code'].tolist()) if 'code' in members_df.columns else set()
             if not member_codes:
-                # 尝试用 con_code 字段
+                # Try using the con_code field
                 member_codes = set(members_df['con_code'].tolist()) if 'con_code' in members_df.columns else set()
 
-            # 匹配
+            # match
             matched_daily = daily_df[daily_df['ts_code'].isin(member_codes)]
             if matched_daily.empty and member_codes:
-                # 可能 code 格式不同，尝试不带后缀匹配
+                # Maybe the code format is different, try matching without suffix
                 member_codes_short = {c.split('.')[0] for c in member_codes}
                 daily_df['code_short'] = daily_df['ts_code'].str.split('.').str[0]
                 matched_daily = daily_df[daily_df['code_short'].isin(member_codes_short)]
 
             if not matched_daily.empty:
-                # 按市值排序
+                # Sort by market capitalization
                 matched_daily = matched_daily.sort_values('total_mv', ascending=False)
 
                 lines.append(f"【市值排名 TOP{min(top_n, len(matched_daily))}】")
-                # 合并名称
+                # merge name
                 name_map = {}
                 for _, row in members_df.iterrows():
                     code = row.get('code') or row.get('con_code', '')
                     name = row.get('name', code)
                     name_map[code] = name
-                    # 也存短码
+                    # Also save short codes
                     name_map[code.split('.')[0]] = name
 
                 for i, row in enumerate(matched_daily.head(top_n).itertuples(), 1):
@@ -1243,10 +1243,10 @@ async def get_sector_constituents(
 
                     lines.append(
                         f"  {i:>2}. {name}({ts_code}): "
-                        f"市值 {mv_yi:.0f}亿 | PE {pe_str} | PB {pb_str}"
+                        f"Market value {mv_yi:.0f}billion | PE {pe_str} | PB {pb_str}"
                     )
             else:
-                lines.append("⚠️ 无法获取成分股的市值/估值数据")
+                lines.append("⚠️ Unable to obtain market capitalization/valuation data for constituent stocks")
                 lines.append("")
                 lines.append("【成分股列表】")
                 for i, row in enumerate(members_df.head(top_n).iterrows(), 1):
@@ -1273,19 +1273,19 @@ async def analyze_sector_by_name(
     trade_date: str,
 ) -> str:
     """
-    板块综合分析（以板块名称为入口）
+    Comprehensive analysis of sectors (use sector name as entry)
 
-    整合板块行情、成分股龙头、资金流向，一站式分析。
+    Integrate sector trends, leading component stocks, and capital flows for one-stop analysis.
 
     Args:
-        sector_name: 板块名称关键词（如 "光伏"、"半导体"、"白酒"）
-        trade_date: 交易日期 YYYY-MM-DD
+        sector_name: Section name keywords (such as "photovoltaic", "Semiconductor", "Liquor") 
+        trade_date: transaction date YYYY-MM-DD
 
     Returns:
-        板块综合分析报告
+        Comprehensive sector analysis report
     """
     try:
-        # 并行获取三个维度的数据
+        # Obtain data in three dimensions in parallel
         daily_task = get_sector_daily(sector_name, trade_date)
         members_task = get_sector_constituents(sector_name, trade_date, top_n=10)
         rotation_task = get_sector_rotation(trade_date, top_n=10)
@@ -1308,10 +1308,10 @@ async def analyze_sector_by_name(
             "=" * 60,
             "📋 分析要点",
             "=" * 60,
-            "请根据以上数据综合判断：",
-            "1. 该板块近期走势和资金关注度",
-            "2. 板块内龙头股的估值水平",
-            "3. 板块在全市场资金流向中的位置",
+            "Please make a comprehensive judgment based on the above data:",
+            "1. The sector s recent trends and financial attention",
+            "2. Valuation level of leading stocks within the sector",
+            "3. The position of the sector in the overall market capital flow",
         ]
 
         return "\n".join(full_report)
@@ -1322,28 +1322,28 @@ async def analyze_sector_by_name(
 
 
 # ============================================================
-# 辅助函数
+# Helper function
 # ============================================================
 
 async def _resolve_sector_code(
     provider, keyword: str
 ) -> Optional[tuple]:
     """
-    根据关键词搜索板块，返回 (ts_code, name) 或 None。
-    原词优先在 N(行业板块)/I(行业指数)/S(概念)/R(地域) 四类中查找，
-    全部未命中再用同义词表重试（如"锂电"→"锂电池"）。
-    注意：I类（881/884开头）是同花顺完整行业指数体系（约1100个），
-    "养殖/生猪/调味品/港口"等行业仅在I类中存在，不可遗漏。
+    Search sections based on keywords and return (ts_code, name) or None.
+    The original word takes precedence N(Industry sector)/I(Industry Index)/S(concept)/R(Region) Search in four categories,
+    If all misses, try again using the synonym list (e.g."Lithium battery"→"Lithium battery") . 
+    Note: Category I (starting with 881/884) is a complete industry index system (about 1100).
+    "Breeding/Pigs/Condiments/Ports"Such industries only exist in Category I and cannot be omitted.
     """
     candidates = _synonym_keywords(keyword)
-    for kw in candidates:  # 原词优先，同义词兜底
+    for kw in candidates:  # The original word takes priority, synonyms are used
         for idx_type in ["N", "I", "S", "R"]:
             df = await _get_ths_index_list_cached(provider, idx_type)
             if df is None or df.empty:
                 continue
             matched = df[df['name'].str.contains(kw, case=False, na=False)]
             if not matched.empty:
-                # 取成分股最多的那个（通常是最主要的板块）
+                # Take the one with the most constituents (usually the most important sector)
                 if 'count' in matched.columns:
                     matched = matched.sort_values('count', ascending=False)
                 top = matched.iloc[0]
@@ -1351,51 +1351,51 @@ async def _resolve_sector_code(
     return None
 
 
-# ==================== 同步包装函数 ====================
-# 为 LangGraph 工具提供同步接口
+# ==================== Synchronous wrapper function ====================
+# Provides a synchronization interface for LangGraph tools
 
 def analyze_sector_sync(ticker: str, trade_date: str) -> str:
-    """analyze_sector 的同步版本"""
+    """analyze_sector synchronized version of"""
     return asyncio.run(analyze_sector(ticker, trade_date))
 
 
 def get_sector_performance_sync(ticker: str, trade_date: str, lookback_days: int = 20) -> str:
-    """get_sector_performance 的同步版本"""
+    """get_sector_performance synchronized version of"""
     return asyncio.run(get_sector_performance(ticker, trade_date, lookback_days))
 
 
 def get_sector_rotation_sync(trade_date: str, top_n: int = 10,
                              lookback_days: int = 1) -> str:
-    """get_sector_rotation 的同步版本"""
+    """get_sector_rotation synchronized version of"""
     return asyncio.run(get_sector_rotation(trade_date, top_n, lookback_days))
 
 
 def get_peer_comparison_sync(ticker: str, trade_date: str, top_n: int = 10) -> str:
-    """get_peer_comparison 的同步版本"""
+    """get_peer_comparison synchronized version of"""
     return asyncio.run(get_peer_comparison(ticker, trade_date, top_n))
 
 
 def get_industry_top_companies_sync(ticker: str, top_n: int = 5) -> str:
-    """get_industry_top_companies 的同步版本"""
+    """get_industry_top_companies synchronized version of"""
     return asyncio.run(get_industry_top_companies(ticker, top_n))
 
 
 def search_sector_sync(keyword: str, sector_type: str = "N") -> str:
-    """search_sector 的同步版本"""
+    """search_sector synchronized version of"""
     return asyncio.run(search_sector(keyword, sector_type))
 
 
 def get_sector_daily_sync(sector_name: str, trade_date: str, lookback_days: int = 20) -> str:
-    """get_sector_daily 的同步版本"""
+    """get_sector_daily synchronized version of"""
     return asyncio.run(get_sector_daily(sector_name, trade_date, lookback_days))
 
 
 def get_sector_constituents_sync(sector_name: str, trade_date: str, top_n: int = 15) -> str:
-    """get_sector_constituents 的同步版本"""
+    """get_sector_constituents synchronized version of"""
     return asyncio.run(get_sector_constituents(sector_name, trade_date, top_n))
 
 
 def analyze_sector_by_name_sync(sector_name: str, trade_date: str) -> str:
-    """analyze_sector_by_name 的同步版本"""
+    """analyze_sector_by_name synchronized version of"""
     return asyncio.run(analyze_sector_by_name(sector_name, trade_date))
 

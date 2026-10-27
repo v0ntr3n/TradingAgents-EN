@@ -1,8 +1,8 @@
 """
-AI 智能工作流生成器
+AI Smart Workflow Builder
 
-通过自然语言对话，结合系统中可用的 Agent、Tool、Skill、提示词模板，
-自动生成完整的 WorkflowDefinition 及相关绑定。
+Through natural language dialogue, combined with the Agent, Tool, Skill and prompt word templates available in the system,
+Automatically generate a complete WorkflowDefinition and related bindings.
 """
 
 from .workflow_spec import (
@@ -22,7 +22,7 @@ from .prompt_generator import PromptGenerator
 from .skill_orchestrator import SkillOrchestrator
 
 __all__ = [
-    # 数据模型
+    # data model
     "WorkflowGenerationSession",
     "WorkflowBlueprint",
     "GenerationSessionStatus",
@@ -32,7 +32,7 @@ __all__ = [
     "AgentReshapingPlan",
     "SkillCreationRequest",
     "GapAnalysisResult",
-    # 核心模块
+    # core module
     "ResourceCollector",
     "WorkflowPlanner",
     "PromptGenerator",

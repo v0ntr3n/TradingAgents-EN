@@ -1,29 +1,29 @@
 [server]
-# 服务器配置
+# Server configuration
 port = 8501
-address = "0.0.0.0"  # Docker环境需要监听所有接口
-headless = true      # Docker环境无头模式
+address = "0.0.0.0"  # Docker The environment needs to listen on all interfaces
+headless = true      # Docker Environment headless mode
 enableCORS = false
 enableXsrfProtection = false
 
-# 文件监控配置 - 解决Windows下的文件锁定问题
+# File Monitoring Configuration - Solving File Locking Problems under Windows
 fileWatcherType = "none"
 runOnSave = false
 
 [browser]
-# 浏览器配置
+# Browser configuration
 gatherUsageStats = false
 
 [logger]
-# 日志配置
+# Log configuration
 level = "info"
 
 [global]
-# 全局配置
+# Global configuration
 developmentMode = false
 
 [theme]
-# 主题配置
+# Theme configuration
 base = "light"
 primaryColor = "#1f77b4"
 backgroundColor = "#ffffff"

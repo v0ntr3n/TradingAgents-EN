@@ -6,22 +6,22 @@
     :close-on-click-modal="false"
   >
     <el-form :model="form" label-width="100px">
-      <el-form-item label="复盘周期" required>
+      <el-form-item label="Review cycle" required>
         <el-radio-group v-model="form.period_type" @change="handlePeriodTypeChange">
-          <el-radio value="week">周度</el-radio>
-          <el-radio value="month">月度</el-radio>
-          <el-radio value="quarter">季度</el-radio>
-          <el-radio value="year">年度</el-radio>
+          <el-radio value="week">Weekly</el-radio>
+          <el-radio value="month">monthly</el-radio>
+          <el-radio value="quarter">quarter</el-radio>
+          <el-radio value="year">annual</el-radio>
         </el-radio-group>
       </el-form-item>
 
-      <el-form-item label="时间范围" required>
+      <el-form-item label="time range" required>
         <el-date-picker
           v-model="dateRange"
           type="daterange"
-          range-separator="至"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
+          range-separator="to"
+          start-placeholder="start date"
+          end-placeholder="end date"
           value-format="YYYY-MM-DD"
           style="width: 100%"
           :shortcuts="dateShortcuts"
@@ -38,9 +38,9 @@
     </el-form>
     
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">Cancel</el-button>
       <el-button type="primary" :loading="submitting" :disabled="!dateRange" @click="submit">
-        开始复盘
+        Start review
       </el-button>
     </template>
   </el-dialog>
@@ -53,7 +53,7 @@ import { reviewApi, type PeriodType } from '@/api/review'
 
 const props = withDefaults(defineProps<{
   modelValue: boolean
-  source?: 'paper' | 'position'  // 数据源: paper(模拟交易) 或 position(持仓操作)
+  source?: 'paper' | 'position'  // data source: paper(simulated trading) or position(Position operation)
 }>(), {
   source: 'paper'
 })
@@ -68,13 +68,13 @@ const visible = computed({
 })
 
 const dialogTitle = computed(() => {
-  return props.source === 'position' ? '发起阶段性复盘（持仓操作）' : '发起阶段性复盘（模拟交易）'
+  return props.source === 'position' ? 'Initiate a periodic review (position operation)' : 'Initiate periodic review (simulated trading)'
 })
 
 const alertText = computed(() => {
   return props.source === 'position'
-    ? '阶段性复盘将分析选定时间段内的所有持仓操作，生成综合评估报告'
-    : '阶段性复盘将分析选定时间段内的所有模拟交易，生成综合评估报告'
+    ? 'The periodic review will analyze all position operations within the selected time period and generate a comprehensive assessment report'
+    : 'The periodic review will analyze all simulated transactions within the selected time period and generate a comprehensive evaluation report'
 })
 
 const form = ref<{ period_type: PeriodType }>({
@@ -84,10 +84,10 @@ const form = ref<{ period_type: PeriodType }>({
 const dateRange = ref<[string, string] | null>(null)
 const submitting = ref(false)
 
-// 日期快捷选项
+// Date shortcut options
 const dateShortcuts = [
   {
-    text: '上周',
+    text: 'last week',
     value: () => {
       const end = new Date()
       const start = new Date()
@@ -98,7 +98,7 @@ const dateShortcuts = [
     }
   },
   {
-    text: '本月',
+    text: 'this month',
     value: () => {
       const end = new Date()
       const start = new Date(end.getFullYear(), end.getMonth(), 1)
@@ -106,16 +106,16 @@ const dateShortcuts = [
     }
   },
   {
-    text: '上月',
+    text: 'last month',
     value: () => {
       const end = new Date()
-      end.setDate(0) // 上月最后一天
+      end.setDate(0) // last day of last month
       const start = new Date(end.getFullYear(), end.getMonth(), 1)
       return [start, end]
     }
   },
   {
-    text: '本季度',
+    text: 'this quarter',
     value: () => {
       const end = new Date()
       const quarter = Math.floor(end.getMonth() / 3)
@@ -124,7 +124,7 @@ const dateShortcuts = [
     }
   },
   {
-    text: '今年',
+    text: 'this year',
     value: () => {
       const end = new Date()
       const start = new Date(end.getFullYear(), 0, 1)
@@ -133,7 +133,7 @@ const dateShortcuts = [
   }
 ]
 
-// 根据周期类型更新日期范围
+// Update date range based on period type
 const updateDateRange = (type: PeriodType) => {
   const now = new Date()
   let start: Date, end: Date
@@ -173,7 +173,7 @@ const handlePeriodTypeChange = (type: string | number | boolean | undefined) => 
 
 const submit = async () => {
   if (!dateRange.value || dateRange.value.length !== 2) {
-    ElMessage.warning('请选择时间范围')
+    ElMessage.warning('Please select a time range')
     return
   }
 
@@ -187,19 +187,19 @@ const submit = async () => {
     })
 
     if (res.success && res.data?.review_id) {
-      ElMessage.success('阶段性复盘完成')
+      ElMessage.success('Phased review completed')
       emit('success', res.data.review_id)
     } else {
-      ElMessage.error(res.message || '复盘失败')
+      ElMessage.error(res.message || 'Review failed')
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '复盘失败')
+    ElMessage.error(e.message || 'Review failed')
   } finally {
     submitting.value = false
   }
 }
 
-// 初始化日期范围
+// Initialize date range
 watch(visible, (val) => {
   if (val) {
     updateDateRange(form.value.period_type)

@@ -1,46 +1,46 @@
 #!/usr/bin/env python3
 """
-版本号一致性检查工具
-确保项目中所有版本号引用都是一致的
+Version number consistency checking tool
+Ensure that all version number references in the project are consistent
 """
 
 import os
 import re
 from pathlib import Path
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('default')
 
 
 def get_target_version():
-    """从VERSION文件获取目标版本号"""
+    """Get target version number from VERSION file"""
     version_file = Path("VERSION")
     if version_file.exists():
         with open(version_file, 'r', encoding='utf-8') as f:
             return f.read().strip()
     return None
 
-# 低噪声版本规范辅助函数与专用检查
+# Low-noise version specification helper functions and dedicated checks
 
 def normalize_version(v: str) -> str:
-    """标准化版本字符串用于比较（去掉前缀与修饰）"""
+    """Standardized version string for comparison (prefixes and modifications removed)"""
     return (
         v.lower()
          .replace('version-', '')
-         .replace('版本', '')
+         .replace('version', '')
          .lstrip('v')
          .strip()
     )
 
 
 def check_special_files(file_path: Path, content: str, target_version: str):
-    """对特定文件做精准校验，减少误报"""
+    """Perform precise verification on specific files to reduce false positives"""
     issues = []
     target_norm = normalize_version(target_version)
-    target_numeric = target_norm.replace('cn-', '')  # pyproject.toml 使用纯数字版本
+    target_numeric = target_norm.replace('cn-', '')  # pyproject.toml Use a digital-only version
 
-    # 1) pyproject.toml: version 字段应与目标数字版本一致
+    # 1) pyproject.toml: version Fields should be consistent with the target digital version
     if file_path.name == 'pyproject.toml':
         m = re.search(r'(?m)^\s*version\s*=\s*"([^"]+)"', content)
         if m:
@@ -56,9 +56,9 @@ def check_special_files(file_path: Path, content: str, target_version: str):
             issues.append({'line': 1, 'found': '(missing version)', 'expected': target_numeric, 'context': ''})
         return issues
 
-    # 2) README.md: 徽章与“最新版本”提示
+    # 2) README.md: badge with"latest version"Tips
     if file_path.name == 'README.md':
-        # shields 徽章会把单个 - 显示为 --
+        # shields The badge will display a single - as --
         badge_text = normalize_version(target_version).replace('cn-', 'cn-').replace('-', '--')
         if badge_text not in content:
             issues.append({'line': 1, 'found': '(missing/old badge)', 'expected': badge_text, 'context': 'badge'})
@@ -66,7 +66,7 @@ def check_special_files(file_path: Path, content: str, target_version: str):
             issues.append({'line': 1, 'found': '(missing latest tip)', 'expected': target_version, 'context': 'latest-tip'})
         return issues
 
-    # 3) CHANGELOG: 允许历史版本存在，无需校验
+    # 3) CHANGELOG: Allow historical versions to exist without verification
     if file_path.name.upper() == 'CHANGELOG.MD':
         return []
 
@@ -74,43 +74,43 @@ def check_special_files(file_path: Path, content: str, target_version: str):
 
 
 def check_file_versions(file_path: Path, target_version: str):
-    """检查文件中的版本号（低噪声策略）"""
+    """Check version number in file (low noise strategy)"""
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # 对特定文件做精准检查
+        # Perform precise checks on specific files
         special_issues = check_special_files(file_path, content, target_version)
         if special_issues:
             return special_issues
 
-        # CHANGELOG 与其他文档默认忽略（允许历史版本与依赖版本存在）
+        # CHANGELOG and other documents are ignored by default (allow historical versions and dependent versions to exist)
         if file_path.name.upper() == 'CHANGELOG.MD':
             return []
 
-        return []  # 其余文件不做泛化扫描，避免误报
+        return []  # The remaining files will not be scanned in a generalized manner to avoid false positives.
 
     except Exception as e:
         return [{'error': str(e)}]
 
 def main():
-    """主检查函数"""
-    logger.debug(f"🔍 版本号一致性检查")
+    """main check function"""
+    logger.debug(f"🔍 Version number consistency check")
     logger.info(f"=")
 
-    # 获取目标版本号
+    # Get target version number
     target_version = get_target_version()
     if not target_version:
-        logger.error(f"❌ 无法读取VERSION文件")
+        logger.error(f"❌ Unable to read VERSION file")
         return
 
-    logger.info(f"🎯 目标版本: {target_version}")
+    logger.info(f"🎯 target version: {target_version}")
 
-    # 需要检查的文件
+    # Documents to be checked
     files_to_check = [
         "README.md",
         "pyproject.toml",
-        "docs/releases/CHANGELOG.md",  # 仅用于存在性校验，内部忽略检查
+        "docs/releases/CHANGELOG.md",  # Only used for existence verification, checks are ignored internally
     ]
 
     total_issues = 0
@@ -118,40 +118,40 @@ def main():
     for file_path in files_to_check:
         path = Path(file_path)
         if not path.exists():
-            logger.warning(f"⚠️ 文件不存在: {file_path}")
+            logger.warning(f"⚠️ File does not exist: {file_path}")
             continue
 
-        logger.info(f"\n📄 检查文件: {file_path}")
+        logger.info(f"\n📄 Check files: {file_path}")
         issues = check_file_versions(path, target_version)
 
         if not issues:
-            logger.info(f"   ✅ 版本号一致")
+            logger.info(f"   ✅ The version number is consistent")
         else:
             for issue in issues:
                 if 'error' in issue:
-                    logger.error(f"   ❌ 检查错误: {issue['error']}")
+                    logger.error(f"   ❌ Check for errors: {issue['error']}")
                 else:
-                    logger.error(f"   ❌ 第{issue['line']}行: 发现 '{issue['found']}', 期望 '{issue['expected']}'")
-                    logger.info(f"      上下文: ...{issue['context']}...")
+                    logger.error(f"   ❌ No.{issue['line']}OK: discover '{issue['found']}', Expectation '{issue['expected']}'")
+                    logger.info(f"      context: ...{issue['context']}...")
                 total_issues += len(issues)
 
-    # 总结
-    logger.info(f"\n📊 检查总结")
+    # Summary
+    logger.info(f"\n📊 Inspection summary")
     logger.info(f"=")
 
     if total_issues == 0:
-        logger.info(f"🎉 所有版本号都是一致的！")
-        logger.info(f"✅ 当前版本: {target_version}")
+        logger.info(f"🎉 All version numbers are consistent!")
+        logger.info(f"✅ Current version: {target_version}")
     else:
-        logger.warning(f"⚠️ 发现 {total_issues} 个版本号不一致问题")
-        logger.info(f"请手动修复上述问题")
+        logger.warning(f"⚠️ discover {total_issues} Version number inconsistency issue")
+        logger.info(f"Please fix the above issue manually")
 
-    # 版本号规范提醒
-    logger.info(f"\n💡 版本号规范:")
-    logger.info(f"   - 主版本文件: VERSION")
-    logger.info(f"   - 当前版本: {target_version}")
-    logger.info(f"   - 格式要求: v0.1.x")
-    logger.info(f"   - 历史版本: 可以保留在CHANGELOG中")
+    # Version number specification reminder
+    logger.info(f"\n💡 Version number specification:")
+    logger.info(f"   - master version file: VERSION")
+    logger.info(f"   - Current version: {target_version}")
+    logger.info(f"   - Format requirements: v0.1.x")
+    logger.info(f"   - Historical version: Can be retained in CHANGELOG")
 
 if __name__ == "__main__":
     main()

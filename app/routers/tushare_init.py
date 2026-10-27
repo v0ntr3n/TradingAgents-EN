@@ -1,6 +1,6 @@
 """
-Tushare数据初始化API路由
-提供Web界面的数据初始化功能
+Tushare Data initialization API routing
+Provides data initialization function for Web interface
 """
 import asyncio
 from datetime import datetime, timedelta
@@ -13,36 +13,36 @@ from app.core.database import get_mongo_db
 from app.worker.tushare_init_service import get_tushare_init_service
 from app.core.response import ok
 
-router = APIRouter(prefix="/api/tushare-init", tags=["Tushare初始化"])
+router = APIRouter(prefix="/api/tushare-init", tags=["Tushare initialization"])
 
 
 class InitializationRequest(BaseModel):
-    """初始化请求模型"""
-    historical_days: int = Field(default=365, ge=1, le=3650, description="历史数据天数")
-    skip_if_exists: bool = Field(default=True, description="如果数据已存在是否跳过")
-    force_update: bool = Field(default=False, description="强制更新已有数据")
+    """Initialize request model"""
+    historical_days: int = Field(default=365, ge=1, le=3650, description="Historical data days")
+    skip_if_exists: bool = Field(default=True, description="Whether to skip if the data already exists")
+    force_update: bool = Field(default=False, description="Force update of existing data")
 
 
 class DatabaseStatusResponse(BaseModel):
-    """数据库状态响应模型"""
-    basic_info_count: int = Field(description="基础信息数量")
-    quotes_count: int = Field(description="行情数据数量")
-    extended_coverage: float = Field(description="扩展字段覆盖率")
-    latest_basic_update: Optional[datetime] = Field(description="基础信息最新更新时间")
-    latest_quotes_update: Optional[datetime] = Field(description="行情数据最新更新时间")
-    needs_initialization: bool = Field(description="是否需要初始化")
+    """Database status response model"""
+    basic_info_count: int = Field(description="Amount of basic information")
+    quotes_count: int = Field(description="Quantity of market data")
+    extended_coverage: float = Field(description="Extended field coverage")
+    latest_basic_update: Optional[datetime] = Field(description="Basic information latest update time")
+    latest_quotes_update: Optional[datetime] = Field(description="Latest update time of market data")
+    needs_initialization: bool = Field(description="Whether initialization is required")
 
 
 class InitializationStatusResponse(BaseModel):
-    """初始化状态响应模型"""
-    is_running: bool = Field(description="是否正在运行")
-    current_step: Optional[str] = Field(description="当前步骤")
-    progress: Optional[str] = Field(description="进度")
-    started_at: Optional[datetime] = Field(description="开始时间")
-    estimated_completion: Optional[datetime] = Field(description="预计完成时间")
+    """Initialize state response model"""
+    is_running: bool = Field(description="Is it running")
+    current_step: Optional[str] = Field(description="current step")
+    progress: Optional[str] = Field(description="Progress")
+    started_at: Optional[datetime] = Field(description="start time")
+    estimated_completion: Optional[datetime] = Field(description="Estimated completion time")
 
 
-# 全局初始化状态跟踪
+# Global initialization status tracking
 _initialization_status = {
     "is_running": False,
     "current_step": None,
@@ -57,17 +57,17 @@ async def get_database_status(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取数据库状态
-    检查当前数据库中的数据情况，判断是否需要初始化
+    Get database status
+    Check the data situation in the current database to determine whether initialization is needed
     """
     try:
         db = get_mongo_db()
         
-        # 检查各集合状态
+        # Check the status of each collection
         basic_count = await db.stock_basic_info.count_documents({})
         quotes_count = await db.market_quotes.count_documents({})
         
-        # 检查扩展字段覆盖率
+        # Check extension field coverage
         extended_count = 0
         extended_coverage = 0.0
         if basic_count > 0:
@@ -77,7 +77,7 @@ async def get_database_status(
             })
             extended_coverage = extended_count / basic_count
         
-        # 检查最新更新时间
+        # Check the latest update time
         latest_basic = await db.stock_basic_info.find_one(
             {}, sort=[("updated_at", -1)]
         )
@@ -85,7 +85,7 @@ async def get_database_status(
             {}, sort=[("updated_at", -1)]
         )
         
-        # 判断是否需要初始化
+        # Determine whether initialization is required
         needs_initialization = (
             basic_count == 0 or 
             extended_coverage < 0.5
@@ -101,11 +101,11 @@ async def get_database_status(
         )
         
         return ok(data=status,
-            message="数据库状态获取成功"
+            message="Database status obtained successfully"
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取数据库状态失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get database status: {str(e)}")
 
 
 @router.get("/initialization-status", response_model=dict)
@@ -113,11 +113,11 @@ async def get_initialization_status(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取初始化状态
-    检查当前是否有初始化任务在运行
+    Get initialization status
+    Check if there are any initialization tasks currently running
     """
     try:
-        # 根据进度估算完成时间
+        # Estimate completion time based on progress
         estimated_completion = None
         if (_initialization_status["is_running"]
             and _initialization_status["started_at"]
@@ -143,11 +143,11 @@ async def get_initialization_status(
         )
         
         return ok(data=status,
-            message="初始化状态获取成功"
+            message="Initialization status obtained successfully"
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取初始化状态失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to obtain initialization status: {str(e)}")
 
 
 @router.post("/start-basic", response_model=dict)
@@ -156,22 +156,22 @@ async def start_basic_initialization(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    启动基础信息初始化
-    仅同步股票基础信息，适合快速初始化
+    Start basic information initialization
+    Only basic stock information is synchronized, suitable for quick initialization
     """
     if _initialization_status["is_running"]:
-        raise HTTPException(status_code=400, detail="初始化任务已在运行中")
+        raise HTTPException(status_code=400, detail="The initialization task is already running")
     
     try:
-        # 启动后台任务
+        # Start background task
         background_tasks.add_task(_run_basic_initialization)
         
-        return ok(data={"message": "基础信息初始化已启动"},
-            message="基础信息初始化任务已在后台启动"
+        return ok(data={"message": "Basic information initialization has started"},
+            message="The basic information initialization task has been started in the background"
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"启动基础信息初始化失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to initialize basic startup information: {str(e)}")
 
 
 @router.post("/start-full", response_model=dict)
@@ -181,14 +181,14 @@ async def start_full_initialization(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    启动完整数据初始化
-    包括基础信息、历史数据、财务数据、行情数据的完整同步
+    Start full data initialization
+    Including complete synchronization of basic information, historical data, financial data, and market data
     """
     if _initialization_status["is_running"]:
-        raise HTTPException(status_code=400, detail="初始化任务已在运行中")
+        raise HTTPException(status_code=400, detail="The initialization task is already running")
     
     try:
-        # 启动后台任务
+        # Start background task
         background_tasks.add_task(
             _run_full_initialization,
             request.historical_days,
@@ -196,15 +196,15 @@ async def start_full_initialization(
         )
         
         return ok(data={
-                "message": "完整数据初始化已启动",
+                "message": "Full data initialization started",
                 "historical_days": request.historical_days,
                 "force_update": not request.skip_if_exists or request.force_update
             },
-            message="完整数据初始化任务已在后台启动"
+            message="The complete data initialization task has been started in the background"
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"启动完整数据初始化失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Start full data initialization failed: {str(e)}")
 
 
 @router.post("/stop", response_model=dict)
@@ -212,18 +212,18 @@ async def stop_initialization(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    停止初始化任务
-    尝试取消正在运行的初始化任务
+    Stop initialization task
+    Try to cancel a running initialization task
     """
     if not _initialization_status["is_running"]:
-        raise HTTPException(status_code=400, detail="没有正在运行的初始化任务")
+        raise HTTPException(status_code=400, detail="There are no initialization tasks running")
     
     try:
-        # 尝试取消任务
+        # Try to cancel the task
         if _initialization_status["task"]:
             _initialization_status["task"].cancel()
         
-        # 重置状态
+        # reset state
         _initialization_status.update({
             "is_running": False,
             "current_step": None,
@@ -232,19 +232,19 @@ async def stop_initialization(
             "task": None
         })
         
-        return ok(data={"message": "初始化任务已停止"},
-            message="初始化任务停止成功"
+        return ok(data={"message": "The initialization task has stopped"},
+            message="Initialization task stopped successfully"
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"停止初始化任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Stop initialization task failed: {str(e)}")
 
 
 async def _run_basic_initialization():
-    """运行基础信息初始化（后台任务）"""
+    """Run basic information initialization (background task)"""
     _initialization_status.update({
         "is_running": True,
-        "current_step": "基础信息初始化",
+        "current_step": "Basic information initialization",
         "progress": "0/1",
         "started_at": datetime.utcnow()
     })
@@ -255,23 +255,23 @@ async def _run_basic_initialization():
         
         _initialization_status.update({
             "is_running": False,
-            "current_step": "完成",
+            "current_step": "Complete",
             "progress": "1/1"
         })
         
     except Exception as e:
         _initialization_status.update({
             "is_running": False,
-            "current_step": f"失败: {str(e)}",
-            "progress": "错误"
+            "current_step": f"failed: {str(e)}",
+            "progress": "Error"
         })
 
 
 async def _run_full_initialization(historical_days: int, force_update: bool):
-    """运行完整数据初始化（后台任务）"""
+    """Run full data initialization (background task)"""
     _initialization_status.update({
         "is_running": True,
-        "current_step": "准备初始化",
+        "current_step": "ready to initialize",
         "progress": "0/6",
         "started_at": datetime.utcnow()
     })
@@ -279,7 +279,7 @@ async def _run_full_initialization(historical_days: int, force_update: bool):
     try:
         service = await get_tushare_init_service()
         
-        # 创建一个任务来跟踪进度
+        # Create a task to track progress
         async def progress_tracker():
             while _initialization_status["is_running"]:
                 if hasattr(service, 'stats') and service.stats:
@@ -289,22 +289,22 @@ async def _run_full_initialization(historical_days: int, force_update: bool):
                     })
                 await asyncio.sleep(1)
         
-        # 启动进度跟踪
+        # Start progress tracking
         tracker_task = asyncio.create_task(progress_tracker())
         _initialization_status["task"] = tracker_task
         
-        # 运行初始化
+        # Run initialization
         result = await service.run_full_initialization(
             historical_days=historical_days,
             skip_if_exists=not force_update
         )
         
-        # 停止进度跟踪
+        # Stop progress tracking
         tracker_task.cancel()
         
         _initialization_status.update({
             "is_running": False,
-            "current_step": "完成" if result["success"] else "部分完成",
+            "current_step": "Complete" if result["success"] else "partially completed",
             "progress": result["progress"],
             "task": None
         })
@@ -312,7 +312,7 @@ async def _run_full_initialization(historical_days: int, force_update: bool):
     except Exception as e:
         _initialization_status.update({
             "is_running": False,
-            "current_step": f"失败: {str(e)}",
-            "progress": "错误",
+            "current_step": f"failed: {str(e)}",
+            "progress": "Error",
             "task": None
         })

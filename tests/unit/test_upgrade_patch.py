@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""升级补丁模式（upgrade_patch）单元测试。
+"""Upgrade patch mode (upgrade_patch) unit test.
 
-核心回归：升级会话曾把父版本多轮验证的 `rank_data_type: int = 11`
-重写成字符串「月度销量榜」直接发给接口，接口静默回退热度榜，
-业务校验判「月销 102 万辆」不合理，死循环 4 次尝试。
-补丁模式下 LLM 只输出 delta，未提及的字段由 apply_upgrade_patch
-从父契约原样继承——想重写都没有输出通道。
+Core regression: The upgrade session had multiple rounds of verification of the parent version `rank_data_type: int = 11`
+Rewrite the string monthly sales list and send it directly to the interface, and the interface silently rolls back the popularity list.
+The business verification determined that monthly sales of 1.02 million vehicles was unreasonable, resulting in an endless loop of 4 attempts.
+In patch mode, LLM only outputs delta, and unmentioned fields are represented by apply_upgrade_patch
+Inherit unchanged from parent contract——There is no output channel even if you want to rewrite it.
 """
 
 import json
@@ -18,78 +18,78 @@ from core.tools.external.upgrade_patch import (
 
 
 def _parent_contract() -> dict:
-    """父版本契约：真实场景（懂车帝月销榜 v1，多轮验证通过后落库的形态）"""
+    """Parent version contract: real scene (Understanding Car Emperor Monthly Sales List v1, after passing multiple rounds of verification, it will be dropped into the warehouse)"""
     return {
         "tool_id": "dongchedi_car_monthly_sales_rank",
         "root_tool_id": "dongchedi_car_monthly_sales_rank",
         "new_tool_id": "dongchedi_car_monthly_sales_rank_v2",
         "new_version": 2,
-        "display_name": "懂车帝车型月销量查询",
-        "description": "通过懂车帝PC端车型销量排行接口，获取全国车型月度销量数据",
+        "display_name": "Monthly sales query of car models",
+        "description": "Obtain national monthly sales data of vehicle models through the car model sales ranking interface on the PC version of DianCheDi",
         "category": "market",
         "data_source": "dongchedi",
         "parameters": [
-            {"name": "month", "type": "string", "description": "月份 YYYYMM", "required": True, "default": None, "enum": None},
-            {"name": "rank_data_type", "type": "integer", "description": "榜单类型，固定为 11 表示全国月度销量榜", "required": True, "default": None, "enum": None},
-            {"name": "count", "type": "integer", "description": "单次返回条数，默认 100", "required": False, "default": None, "enum": None},
-            {"name": "offset", "type": "integer", "description": "翻页偏移量", "required": False, "default": None, "enum": None},
+            {"name": "month", "type": "string", "description": "month YYYYMM", "required": True, "default": None, "enum": None},
+            {"name": "rank_data_type", "type": "integer", "description": "List type, fixed to 11, indicating the national monthly sales list", "required": True, "default": None, "enum": None},
+            {"name": "count", "type": "integer", "description": "Number of items returned at a time, default 100", "required": False, "default": None, "enum": None},
+            {"name": "offset", "type": "integer", "description": "Page turning offset", "required": False, "default": None, "enum": None},
         ],
         "expected_output": {
             "type": "list[dict]",
             "fields": ["rank", "model_name", "brand", "sales_volume", "month"],
-            "description": "车型月度销量排行",
+            "description": "Car model monthly sales ranking",
         },
         "constraints": [
-            "【接口规格 — 必须原样使用】接口 URL: https://www.dongchedi.com/motor/pc/car/rank_data（路径严禁改写）",
-            "请求需携带 User-Agent 和 Referer 请求头",
-            "rank_data_type 需为 11 才能获取全国月度销量榜，缺省可能是关注度榜",
+            " [Interface specifications — The interface must be used as is URL: https://www.dongchedi.com/motor/pc/car/rank_data (Rewriting of the path is strictly prohibited)",
+            "The request must carry User-Agent and Referer request headers",
+            "rank_data_type It needs to be 11 to obtain the national monthly sales list. The default may be the attention list.",
         ],
         "test_input": {"month": "202501", "rank_data_type": 11},
         "code": (
             "def dongchedi_car_monthly_sales_rank(month='202608', rank_data_type=11, ...):\n"
             "    if rank_data_type != 11:\n"
-            "        return _error('INVALID_PARAM', 'rank_data_type 必须为整数 11')\n"
+            "        return _error('INVALID_PARAM', 'rank_data_type Must be an integer 11')\n"
         ),
     }
 
 
-# 真实升级需求的补丁：只加售价区间，其余不动
+# Patch for real upgrade needs: only increase the price range and leave the rest unchanged
 _PRICE_PATCH = {
-    "upgrade_summary": "输出新增售价区间字段",
-    "change_points": ["输出字段新增 price_range（厂商指导价区间）"],
+    "upgrade_summary": "Output the new selling price range field",
+    "change_points": ["Added price_range (manufacturer s guide price range) to the output field"],
     "output_field_changes": {"add": ["price_range"], "remove": []},
     "parameter_changes": {"add": [], "modify": [], "remove": []},
-    "constraint_additions": ["若接口返回缺少售价区间，price_range 置为空字符串"],
+    "constraint_additions": ["If the interface returns a missing price range, price_range is set to an empty string."],
 }
 
 
 class TestApplyUpgradePatch:
     def test_verified_param_contract_cannot_be_rewritten(self):
-        """核心回归：补丁没提 rank_data_type → 新 spec 原样继承 int=11 契约。
+        """Core regression: patch not mentioned rank_data_type → The new spec is inherited as is int=11 contract.
 
-        全量重生成模式曾把它重写成 string「月度销量榜」直接发给接口，
-        接口静默回退热度榜导致死循环——补丁模式下该字段没有输出通道。
+        The full regeneration mode once rewrote it into a string monthly sales list and sent it directly to the interface.
+        The interface silently rolls back to the hot list, causing an infinite loop——There is no output channel for this field in patch mode.
         """
         spec = apply_upgrade_patch(_parent_contract(), dict(_PRICE_PATCH))
 
         params = {p.name: p for p in spec.parameters}
         assert params["rank_data_type"].type == "integer"
-        assert "固定为 11" in params["rank_data_type"].description
-        # count/offset 等父版本参数不丢失
+        assert "fixed to 11" in params["rank_data_type"].description
+        # count/offset Wait for parent version parameters not to be lost
         assert set(params) == {"month", "rank_data_type", "count", "offset"}
 
     def test_parent_constraints_inherited_verbatim(self):
-        """父版本接口约束（URL/请求头/取值要求）原样继承，不靠 LLM 转述"""
+        """The parent version interface constraints (URL/request header/value requirements) are inherited as they are without relying on LLM representation."""
         spec = apply_upgrade_patch(_parent_contract(), dict(_PRICE_PATCH))
 
         joined = "\n".join(spec.constraints)
         assert "https://www.dongchedi.com/motor/pc/car/rank_data" in joined
-        assert "rank_data_type 需为 11" in joined
-        assert "User-Agent 和 Referer" in joined
-        # 补丁新增约束在列
-        assert "price_range 置为空字符串" in joined
-        # 迭代版本说明自动追加
-        assert "本 Skill 是 dongchedi_car_monthly_sales_rank 的迭代优化版本" in joined
+        assert "rank_data_type Need to be 11" in joined
+        assert "User-Agent and Referer" in joined
+        # The new constraints in the patch are listed
+        assert "price_range Set to empty string" in joined
+        # Iteration version description automatically appended
+        assert "This Skill is an iteratively optimized version of dongchedi_car_monthly_sales_rank" in joined
 
     def test_output_fields_add_only(self):
         spec = apply_upgrade_patch(_parent_contract(), dict(_PRICE_PATCH))
@@ -98,45 +98,45 @@ class TestApplyUpgradePatch:
         ]
 
     def test_version_naming_from_contract(self):
-        """tool_id/display_name/版本号按服务层计算的值确定（与 _save_skill 一致）"""
+        """tool_id/display_name/The version number is determined by the value calculated by the service layer (consistent with _save_skill)"""
         spec = apply_upgrade_patch(_parent_contract(), dict(_PRICE_PATCH))
         assert spec.tool_id == "dongchedi_car_monthly_sales_rank_v2"
-        assert spec.display_name == "懂车帝车型月销量查询 v2"
+        assert spec.display_name == "Monthly sales query of car models v2"
         assert spec.parent_skill_id == "dongchedi_car_monthly_sales_rank"
         assert spec.version == 2
 
     def test_display_name_strips_old_suffix(self):
-        """父版本显示名已带 v2 后缀时先剥离再加新后缀（v2 → v3 不叠加）"""
+        """If the display name of the parent version already has the v2 suffix, it should be stripped first and then added with the new suffix (v2 → v3 not superimposed)"""
         contract = _parent_contract()
-        contract["display_name"] = "懂车帝车型月销量查询 v2"
+        contract["display_name"] = "Monthly sales query of car models v2"
         contract["new_version"] = 3
         contract["new_tool_id"] = "dongchedi_car_monthly_sales_rank_v3"
         spec = apply_upgrade_patch(contract, dict(_PRICE_PATCH))
-        assert spec.display_name == "懂车帝车型月销量查询 v3"
+        assert spec.display_name == "Monthly sales query of car models v3"
 
     def test_modify_param_only_touches_listed_fields(self):
-        """modify 是部分更新：只改列出的字段，type/default/required 原样保留"""
+        """modify It is a partial update: only the listed fields are changed, and type/default/required is retained as is."""
         patch = {
-            "upgrade_summary": "月份参数描述更新",
-            "change_points": ["参数 month 描述更新"],
+            "upgrade_summary": "Month parameter description updated",
+            "change_points": ["Parameter month description update"],
             "parameter_changes": {
                 "add": [],
-                "modify": [{"name": "month", "description": "统计月份，支持 500/1000 聚合值"}],
+                "modify": [{"name": "month", "description": "Statistics month, supports 500/1000 aggregate value"}],
                 "remove": [],
             },
         }
         spec = apply_upgrade_patch(_parent_contract(), patch)
         month = {p.name: p for p in spec.parameters}["month"]
-        assert month.description == "统计月份，支持 500/1000 聚合值"
+        assert month.description == "Statistics month, supports 500/1000 aggregate value"
         assert month.type == "string"
         assert month.required is True
 
     def test_add_and_remove_params(self):
         patch = {
-            "upgrade_summary": "参数调整",
-            "change_points": ["新增 brand", "删除 count"],
+            "upgrade_summary": "Parameter adjustment",
+            "change_points": ["New brand", "Delete count"],
             "parameter_changes": {
-                "add": [{"name": "brand", "type": "string", "description": "品牌筛选", "required": False}],
+                "add": [{"name": "brand", "type": "string", "description": "Brand filter", "required": False}],
                 "modify": [],
                 "remove": ["count"],
             },
@@ -145,28 +145,28 @@ class TestApplyUpgradePatch:
         names = {p.name for p in spec.parameters}
         assert "brand" in names
         assert "count" not in names
-        assert "rank_data_type" in names  # 未提及的不动
+        assert "rank_data_type" in names  # unmentioned unmoving
 
     def test_test_input_merge_and_validation_checks(self):
-        """测试输入父+子合并；验收检查从最终输出字段推导（存在性检查）"""
+        """test input parent+Sub-merge; acceptance check derived from final output fields (existence check)"""
         patch = {
-            "upgrade_summary": "换测试月份",
+            "upgrade_summary": "Change test month",
             "change_points": [],
             "test_input_updates": {"month": "202608"},
         }
         spec = apply_upgrade_patch(_parent_contract(), patch)
         assert spec.test_input["month"] == "202608"
-        assert spec.test_input["rank_data_type"] == 11  # 父版本值保留
+        assert spec.test_input["rank_data_type"] == 11  # Parent version value retained
 
         check_names = [c.name for c in spec.validation_checks]
         assert "status_success" in check_names
         assert "required_field:sales_volume" in check_names
-        # 存在性检查（forbid_null=False）：允许合法空值（如 price_range 空字符串）
+        # Existence check (forbid_null=False) : Allow legal empty values (such as price_range empty string)
         sv_check = next(c for c in spec.validation_checks if c.name == "required_field:sales_volume")
         assert sv_check.forbid_null is False
 
     def test_change_points_fallback_to_applied_notes(self):
-        """LLM 没给 change_points 时，用套用过程记录的实际变更兜底"""
+        """LLM When change_points is not given, the actual changes recorded by the application process are used."""
         patch = {"upgrade_summary": "s", "output_field_changes": {"add": ["price_range"]}}
         spec = apply_upgrade_patch(_parent_contract(), patch)
         notes = spec.metadata["upgrade_change_points"]
@@ -176,28 +176,28 @@ class TestApplyUpgradePatch:
         spec = apply_upgrade_patch(_parent_contract(), dict(_PRICE_PATCH))
         assert spec.metadata["upgrade_mode"] == "patch"
         assert spec.metadata["upgrade_change_points"] == [
-            "输出字段新增 price_range（厂商指导价区间）"
+            "Added price_range (manufacturer s guide price range) to the output field"
         ]
         assert spec.metadata["upgrade_parent_tool_id"] == "dongchedi_car_monthly_sales_rank"
 
 
 class TestBuildUpgradePatchPrompt:
     def test_prompt_contains_full_code_and_constraints(self):
-        """读后写：父版本完整代码（不截断）+ 契约全部进 prompt"""
+        """Read and write: parent version complete code (not truncated)+ All contracts entered prompt"""
         contract = _parent_contract()
-        prompt = build_upgrade_patch_prompt(contract, "用户：增加售价区间")
-        assert "rank_data_type != 11" in prompt  # 代码关键校验逻辑
-        assert "固定为 11" in prompt               # 参数契约
-        assert "rank_data_type 需为 11" in prompt  # 约束
-        assert "增加售价区间" in prompt
-        # 输出格式是补丁 JSON，不是全量 spec
+        prompt = build_upgrade_patch_prompt(contract, "User: Increase the selling price range")
+        assert "rank_data_type != 11" in prompt  # Code key verification logic
+        assert "fixed to 11" in prompt               # parameter contract
+        assert "rank_data_type Need to be 11" in prompt  # constraint
+        assert "Increase selling price range" in prompt
+        # The output format is patch JSON, not the full amount. spec
         assert "parameter_changes" in prompt
-        assert "没有权限重写父版本契约" in prompt
+        assert "No permission to override parent version contract" in prompt
 
     def test_prompt_contract_json_parseable(self):
         contract = _parent_contract()
-        prompt = build_upgrade_patch_prompt(contract, "升级")
-        # prompt 中的契约 JSON 块可解析且包含参数定义
+        prompt = build_upgrade_patch_prompt(contract, "Upgrade")
+        # prompt The contract JSON block in is parsable and contains parameter definitions
         block = prompt.split("```json\n")[1].split("\n```")[0]
         parsed = json.loads(block)
         assert any(p["name"] == "rank_data_type" for p in parsed["parameters"])
@@ -205,30 +205,30 @@ class TestBuildUpgradePatchPrompt:
 
 class TestAnalyzerRouting:
     def test_generate_spec_routes_to_patch_mode(self, monkeypatch):
-        """传入 parent_contract 时 _generate_spec 优先走补丁模式，不碰全量路径"""
+        """When parent_contract is passed in, _generate_spec takes priority in patch mode and does not touch the full path."""
         analyzer = RequirementAnalyzer()
 
         def _fake_upgrade(conversation, parent_contract):
             return apply_upgrade_patch(parent_contract, dict(_PRICE_PATCH))
 
         def _forbid_full_path(*args, **kwargs):
-            raise AssertionError("不应走到全量规格生成路径（补丁模式应短路返回）")
+            raise AssertionError("Should not go to the full spec generation path (patch mode should short-circuit back)")
 
         monkeypatch.setattr(analyzer, "_generate_upgrade_spec", _fake_upgrade)
         monkeypatch.setattr(analyzer, "_chat_with_quick_fallback", _forbid_full_path)
 
         spec = analyzer._generate_spec(
-            "对话内容", fact_report=None, session=None,
+            "Conversation content", fact_report=None, session=None,
             parent_contract=_parent_contract(),
         )
         assert spec is not None
         assert spec.metadata["upgrade_mode"] == "patch"
-        # 未提及的字段从父契约继承
+        # Fields not mentioned are inherited from the parent contract
         params = {p.name: p for p in spec.parameters}
         assert params["rank_data_type"].type == "integer"
 
     def test_generate_spec_falls_back_when_patch_fails(self, monkeypatch):
-        """补丁生成失败时降级为全量生成（父契约注入 prompt）"""
+        """Downgrade to full generation when patch generation fails (parent contract injection prompt)"""
         analyzer = RequirementAnalyzer()
 
         def _broken_upgrade(conversation, parent_contract):
@@ -238,7 +238,7 @@ class TestAnalyzerRouting:
 
         def _fake_full_chat(messages, stage=""):
             captured["prompt"] = messages[0].content
-            return "{}"  # 让全量路径解析失败 → _raise_analysis_error
+            return "{}"  # Let full path parsing fail → _raise_analysis_error
 
         monkeypatch.setattr(analyzer, "_generate_upgrade_spec", _broken_upgrade)
         monkeypatch.setattr(analyzer, "_chat_with_quick_fallback", _fake_full_chat)
@@ -246,13 +246,13 @@ class TestAnalyzerRouting:
         session = type("S", (), {"iterate_skill_id": "dongchedi_car_monthly_sales_rank"})()
         try:
             analyzer._generate_spec(
-                "对话内容", fact_report=None, session=session,
+                "Conversation content", fact_report=None, session=session,
                 parent_contract=_parent_contract(),
             )
             raised = False
         except Exception:
             raised = True
-        # 全量路径被走到，且父契约注入了降级 prompt
+        # The full path is walked and the parent contract injects downgrades prompt
         assert raised
-        assert "父版本契约" in captured.get("prompt", "")
-        assert "固定为 11" in captured.get("prompt", "")
+        assert "parent version contract" in captured.get("prompt", "")
+        assert "fixed to 11" in captured.get("prompt", "")

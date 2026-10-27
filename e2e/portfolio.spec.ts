@@ -2,23 +2,23 @@ import { test, expect } from '@playwright/test'
 import { login, waitForLoadingDone, waitForTableLoaded } from './utils'
 
 /**
- * 持仓管理 E2E 测试
+ * Position management E2E test
  *
- * 产品定位：基于历史数据的投资组合管理
+ * Product positioning: Portfolio management based on historical data
  *
- * 覆盖：
- * - 持仓列表查看
- * - 持仓收益分析
- * - 持仓分布图表
- * - 模拟交易（买入/卖出/交易记录）
- * - 交易复盘（胜率/盈亏/交易明细）
+ * Coverage:
+ * - View position list
+ * - Position profit analysis
+ * - Position distribution chart
+ * - Simulated trading (buy/sell/transaction record)
+ * - Transaction review (win rate/profit and loss/transaction details)
  */
-test.describe('持仓管理', () => {
+test.describe('Position management', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('持仓列表页面加载', async ({ page }) => {
+  test('Position list page loads', async ({ page }) => {
     await page.goto('/portfolio')
     await waitForLoadingDone(page)
 
@@ -28,15 +28,15 @@ test.describe('持仓管理', () => {
     await expect(content).toBeVisible({ timeout: 10000 })
   })
 
-  test('持仓收益统计', async ({ page }) => {
+  test('Position income statistics', async ({ page }) => {
     await page.goto('/portfolio')
     await waitForLoadingDone(page)
 
-    const totalAssets = page.locator(':text("总资产"), .total-assets').first()
+    const totalAssets = page.locator(':text("total assets"), .total-assets').first()
     await expect(totalAssets).toBeVisible({ timeout: 10000 })
   })
 
-  test('持仓统计卡片', async ({ page }) => {
+  test('Position statistics card', async ({ page }) => {
     await page.goto('/portfolio')
     await waitForLoadingDone(page)
 
@@ -44,11 +44,11 @@ test.describe('持仓管理', () => {
     await expect(statCard).toBeVisible({ timeout: 10000 })
   })
 
-  test('从持仓发起分析', async ({ page }) => {
+  test('Initiate analysis from a position', async ({ page }) => {
     await page.goto('/portfolio')
     await waitForLoadingDone(page)
 
-    const analyzeBtn = page.locator('button:has-text("分析"), .analyze-btn').first()
+    const analyzeBtn = page.locator('button:has-text("analysis"), .analyze-btn').first()
     if (await analyzeBtn.isVisible({ timeout: 5000 })) {
       await analyzeBtn.click()
       await page.waitForTimeout(3000)
@@ -56,12 +56,12 @@ test.describe('持仓管理', () => {
   })
 })
 
-test.describe('模拟交易', () => {
+test.describe('simulated trading', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('模拟交易页面加载', async ({ page }) => {
+  test('Simulated trading page loading', async ({ page }) => {
     await page.goto('/paper')
     await waitForLoadingDone(page)
 
@@ -71,38 +71,38 @@ test.describe('模拟交易', () => {
     await expect(content).toBeVisible({ timeout: 10000 })
   })
 
-  test('买入股票流程', async ({ page }) => {
+  test('Stock buying process', async ({ page }) => {
     await page.goto('/paper')
     await waitForLoadingDone(page)
 
-    const buyTab = page.locator('text=买入, .buy-tab').first()
+    const buyTab = page.locator('text=buy, .buy-tab').first()
     if (await buyTab.isVisible({ timeout: 5000 })) {
       await buyTab.click()
     }
 
-    const stockInput = page.locator('input[placeholder*="股票"], input[name*="code"]').first()
+    const stockInput = page.locator('input[placeholder*="stocks"], input[name*="code"]').first()
     if (await stockInput.isVisible({ timeout: 3000 })) {
       await stockInput.fill('000001')
       await page.waitForTimeout(2000)
     }
 
-    const amountInput = page.locator('input[placeholder*="数量"], input[name*="amount"]').first()
+    const amountInput = page.locator('input[placeholder*="Quantity"], input[name*="amount"]').first()
     if (await amountInput.isVisible({ timeout: 3000 })) {
       await amountInput.fill('100')
     }
 
-    const submitBtn = page.locator('button:has-text("买入"), button[type="primary"]').first()
+    const submitBtn = page.locator('button:has-text("buy"), button[type="primary"]').first()
     if (await submitBtn.isVisible({ timeout: 3000 })) {
       await submitBtn.click()
       await page.waitForTimeout(3000)
     }
   })
 
-  test('卖出股票流程', async ({ page }) => {
+  test('Selling Stock Process', async ({ page }) => {
     await page.goto('/paper')
     await waitForLoadingDone(page)
 
-    const sellTab = page.locator('text=卖出, .sell-tab').first()
+    const sellTab = page.locator('text=sell, .sell-tab').first()
     if (await sellTab.isVisible({ timeout: 5000 })) {
       await sellTab.click()
     }
@@ -114,43 +114,43 @@ test.describe('模拟交易', () => {
     }
   })
 
-  test('查看交易记录', async ({ page }) => {
+  test('View transaction history', async ({ page }) => {
     await page.goto('/paper')
     await waitForLoadingDone(page)
 
-    const tradeHistoryTab = page.locator('text=交易记录, .history-tab').first()
+    const tradeHistoryTab = page.locator('text=transaction history, .history-tab').first()
     if (await tradeHistoryTab.isVisible({ timeout: 5000 })) {
       await tradeHistoryTab.click()
       await waitForTableLoaded(page)
     }
   })
 
-  test('查看持仓明细', async ({ page }) => {
+  test('View position details', async ({ page }) => {
     await page.goto('/paper')
     await waitForLoadingDone(page)
 
-    const positionTab = page.locator('text=持仓, .position-tab').first()
+    const positionTab = page.locator('text=Position, .position-tab').first()
     if (await positionTab.isVisible({ timeout: 5000 })) {
       await positionTab.click()
       await waitForTableLoaded(page)
     }
   })
 
-  test('资产概览', async ({ page }) => {
+  test('Asset overview', async ({ page }) => {
     await page.goto('/paper')
     await waitForLoadingDone(page)
 
-    const assetOverview = page.locator('.asset-summary, .el-card:has-text("总资产")').first()
+    const assetOverview = page.locator('.asset-summary, .el-card:has-text("total assets")').first()
     await expect(assetOverview).toBeVisible({ timeout: 10000 })
   })
 })
 
-test.describe('交易复盘', () => {
+test.describe('Transaction review', () => {
   test.beforeEach(async ({ page }) => {
     await login(page)
   })
 
-  test('复盘概览页面加载', async ({ page }) => {
+  test('The review overview page loads', async ({ page }) => {
     await page.goto('/review')
     await waitForLoadingDone(page)
 
@@ -160,38 +160,38 @@ test.describe('交易复盘', () => {
     await expect(overview).toBeVisible({ timeout: 10000 })
   })
 
-  test('查看交易明细', async ({ page }) => {
+  test('View transaction details', async ({ page }) => {
     await page.goto('/review')
     await waitForLoadingDone(page)
 
-    const detailTab = page.locator('text=交易明细, .detail-tab').first()
+    const detailTab = page.locator('text=Transaction details, .detail-tab').first()
     if (await detailTab.isVisible({ timeout: 5000 })) {
       await detailTab.click()
       await waitForTableLoaded(page)
     }
   })
 
-  test('查看盈亏分析', async ({ page }) => {
+  test('View profit and loss analysis', async ({ page }) => {
     await page.goto('/review')
     await waitForLoadingDone(page)
 
-    const profitTab = page.locator('text=盈亏, text=收益, .profit-tab').first()
+    const profitTab = page.locator('text=Profit and loss, text=income, .profit-tab').first()
     if (await profitTab.isVisible({ timeout: 5000 })) {
       await profitTab.click()
       await page.waitForTimeout(3000)
     }
   })
 
-  test('查看胜率统计', async ({ page }) => {
+  test('View win rate statistics', async ({ page }) => {
     await page.goto('/review')
     await waitForLoadingDone(page)
 
-    // 切换到模拟交易复盘标签页才能看到胜率统计
-    await page.locator('.el-tabs__item').filter({ hasText: '模拟交易复盘' }).first().click()
+    // Switch to the simulated trading review tab to see the winning rate statistics
+    await page.locator('.el-tabs__item').filter({ hasText: 'Simulated trading review' }).first().click()
     await page.waitForTimeout(3000)
     await waitForLoadingDone(page)
 
-    const winRate = page.locator('.stat-label:has-text("胜率"), :text("胜率")').first()
+    const winRate = page.locator('.stat-label:has-text("winning rate"), :text("winning rate")').first()
     await expect(winRate).toBeVisible({ timeout: 10000 })
   })
 })

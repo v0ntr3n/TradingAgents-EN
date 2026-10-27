@@ -1,10 +1,10 @@
 """
-规划分析服务 — Plan-then-Execute 模式
+Planning analysis services — Plan-then-Execute mode
 
-编排三级保障流程：
-  1. 种子流程匹配 → 2. LLM 自主规划 → 3. ReAct 回退
+Arrange three-level assurance process:
+  1. Seed process matching → 2. LLM independent planning → 3. ReAct rollback
 
-依赖共享层（来自 intelligent_assistant_service）：
+Dependency sharing layer (from intelligent_assistant_service):
   - _get_assistant_llm_config()
   - _get_system_prompt()
   - _get_latest_trade_date()
@@ -61,30 +61,30 @@ async def _store_planned_analysis_memory(
     tools_used: List[str],
     source: str,
 ) -> None:
-    """规划分析回复不再写入 mem0 长期记忆，避免自由文本污染。"""
+    """Planning analysis replies are no longer written to mem0 long-term memory to avoid free text pollution."""
     return
 
 
 # ============================================================
-# 不支持品种检测
+# Does not support variety detection
 # ============================================================
-# 词表与检测逻辑已收编至 core.assistant.lexicon（A11 阶段4：词典收敛单处，
-# 助手路由与规划分析共用同一套品种闸门），此处仅保留兼容委托。
+# The vocabulary list and detection logic have been integrated into core.assistant.lexicon (A11 Phase 4: Dictionary Convergence Unit,
+# Assistant routing and planning analysis share the same set of variety gates), and only compatible commissions are retained here.
 
 
 def _check_unsupported_asset(question: str) -> Optional[str]:
-    """检测用户问题是否涉及不支持的品种类型（事实源：core.assistant.lexicon）。
+    """Detect if the user question involves an unsupported symbol type (source of fact: core.assistant.lexicon).
 
     Returns:
-        如果检测到不支持的品种，返回提示信息；否则返回 None。
+        If an unsupported variety is detected, a prompt message is returned; otherwise, None is returned.
     """
     from core.assistant.lexicon import detect_unsupported_asset
     return detect_unsupported_asset(question)
 
-# 整体超时
+# overall timeout
 PLANNED_ANALYSIS_TIMEOUT = int(os.environ.get("PLANNED_ANALYSIS_TIMEOUT", "180"))
 
-# 会话上下文最大条数
+# Maximum number of session contexts
 MAX_CONTEXT_MESSAGES = 5
 
 
@@ -93,14 +93,14 @@ def _build_synthesize_prompt(
     plan: AnalysisPlan,
     step_results: List[StepResult],
 ) -> str:
-    """构建综合阶段 prompt"""
+    """build synthesis phase prompt"""
     results_text = ""
     for sr in step_results:
         status = "✅ 成功" if sr.success else f"❌ 失败: {sr.error}"
         result_preview = str(sr.result)[:2000] if sr.result else "(无数据)"
         results_text += f"\n### 步骤 {sr.step_id}: {sr.intent}\n"
         results_text += f"- 工具: {sr.tool}\n- 状态: {status}\n"
-        results_text += f"- 数据:\n```\n{result_preview}\n```\n"
+        results_text += f"- data:\n```\n{result_preview}\n```\n"
 
     return f"""基于以下分析数据，回答用户问题。
 
@@ -126,7 +126,7 @@ def _build_supplement_prompt(
     question: str,
     current_answer: str,
 ) -> str:
-    """构建补充请求判断 prompt"""
+    """Build supplementary request judgment prompt"""
     return f"""你之前基于工具数据回答了用户问题，但标记了数据不足。
 
 ## 用户问题
@@ -150,10 +150,10 @@ def _build_supplement_prompt(
 
 class PlannedAnalysisService:
     """
-    规划分析服务
+    Planning analysis services
 
-    编排完整的 Plan → Execute → Synthesize 流程。
-    若规划失败，回退到 ReAct 模式（复用 IntelligentAssistantService）。
+    Completely arranged Plan → Execute → Synthesize process.
+    If planning fails, fall back to ReAct mode (reuse IntelligentAssistantService).
     """
 
     def __init__(self, db, preferred_models: Optional[Dict[str, Any]] = None):
@@ -175,7 +175,7 @@ class PlannedAnalysisService:
         return preferred
 
     async def _ensure_client(self) -> bool:
-        """确保 LLM 客户端和工具已加载"""
+        """Make sure the LLM client and tools are loaded"""
         if self._llm_client is not None:
             return True
 
@@ -189,7 +189,7 @@ class PlannedAnalysisService:
         try:
             self._llm_client = UnifiedLLMClient.from_config(llm_config)
         except Exception as e:
-            logger.error(f"[规划分析] 创建 LLM 客户端失败: {e}", exc_info=True)
+            logger.error(f"[planning analysis] Creating LLM client failed: {e}", exc_info=True)
             return False
 
         registry = get_tool_registry()
@@ -208,7 +208,7 @@ class PlannedAnalysisService:
         return True
 
     # ----------------------------------------------------------
-    # 公共接口
+    # public interface
     # ----------------------------------------------------------
 
     async def analyze(
@@ -218,20 +218,20 @@ class PlannedAnalysisService:
         conversation_id: Optional[str] = None,
     ) -> PlannedAnalysisResult:
         """
-        执行规划分析。
+        Perform planning analysis.
 
         Args:
-            question: 用户问题
-            user_id: 用户 ID（用于获取会话历史）
-            conversation_id: 会话 ID
+            question: User issues
+            user_id: User ID (used to get session history)
+            conversation_id: session ID
 
         Returns:
             PlannedAnalysisResult
         """
-        # === 前置检查：不支持的品种类型 ===
+        # === Pre-check: Unsupported symbol type ===
         unsupported_msg = _check_unsupported_asset(question)
         if unsupported_msg:
-            logger.info(f"[规划分析] 检测到不支持的品种类型，直接返回提示")
+            logger.info(f"[planning analysis] If an unsupported variety type is detected, a prompt will be returned directly.")
             return PlannedAnalysisResult(
                 reply=unsupported_msg,
                 source=PlanSource.SEED_FLOW,
@@ -239,7 +239,7 @@ class PlannedAnalysisService:
 
         if not await self._ensure_client():
             return PlannedAnalysisResult(
-                reply="智能分析暂时不可用，请检查 LLM 配置是否已在「设置」中正确配置。",
+                reply="Intelligent analysis is temporarily unavailable, please check whether the LLM configuration has been configured correctly in Settings.",
                 source=PlanSource.REACT_FALLBACK,
             )
 
@@ -251,14 +251,14 @@ class PlannedAnalysisService:
         except asyncio.TimeoutError:
             logger.warning(f"[规划分析] 整体超时（{PLANNED_ANALYSIS_TIMEOUT}s）")
             return PlannedAnalysisResult(
-                reply=f"抱歉，分析用时过长（已超过 {PLANNED_ANALYSIS_TIMEOUT} 秒）。\n\n"
-                      "建议您尝试将问题拆分得更具体一些，或稍后重试。",
+                reply=f"Sorry, the analysis took too long (exceeded {PLANNED_ANALYSIS_TIMEOUT} seconds).\n\n"
+                      "We recommend that you try breaking the question into more specific details or try again later.",
                 source=PlanSource.REACT_FALLBACK,
             )
         except Exception as e:
             logger.exception("[规划分析] 分析失败")
             return PlannedAnalysisResult(
-                reply=f"处理您的请求时发生错误：{str(e)}。请检查网络和 LLM 配置后重试。",
+                reply=f"An error occurred while processing your request:{str(e)}. Please check the network and LLM configuration and try again.",
                 source=PlanSource.REACT_FALLBACK,
             )
 
@@ -268,7 +268,7 @@ class PlannedAnalysisService:
         user_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
     ) -> AsyncGenerator[str, None]:
-        """流式执行规划分析，输出 SSE 事件。"""
+        """Streaming execution planning analysis and output SSE events."""
         unsupported_msg = _check_unsupported_asset(question)
         if unsupported_msg:
             yield _sse("token", {"content": unsupported_msg})
@@ -284,7 +284,7 @@ class PlannedAnalysisService:
             return
 
         if not await self._ensure_client():
-            message = "智能分析暂时不可用，请检查 LLM 配置是否已在「设置」中正确配置。"
+            message = "Intelligent analysis is temporarily unavailable, please check whether the LLM configuration has been configured correctly in Settings."
             yield _sse("token", {"content": message})
             yield _sse(
                 "done",
@@ -314,7 +314,7 @@ class PlannedAnalysisService:
                 km = FinancialKnowledgeManager(db=self._db)
                 knowledge_snippets = km.retrieve_for_prompt(question)
             except Exception as e:
-                logger.debug(f"[规划分析] 知识检索跳过: {e}")
+                logger.debug(f"[planning analysis] Knowledge retrieval skip: {e}")
 
             yield _sse("plan_started", {"message": "正在规划分析步骤"})
 
@@ -328,7 +328,7 @@ class PlannedAnalysisService:
             if plan.source == PlanSource.REACT_FALLBACK:
                 yield _sse(
                     "mode_switch",
-                    {"source": PlanSource.REACT_FALLBACK.value, "message": "规划失败，回退到 ReAct 模式"},
+                    {"source": PlanSource.REACT_FALLBACK.value, "message": "Planning fails and falls back to ReAct mode"},
                 )
                 react_service = IntelligentAssistantService(
                     self._db,
@@ -407,7 +407,7 @@ class PlannedAnalysisService:
                         collected_step_results.append(sr)
                         yield _sse("step_completed", {"step_result": sr.model_dump()})
 
-                    yield _sse("synthesis_started", {"message": "补充完成，正在重新整理答案"})
+                    yield _sse("synthesis_started", {"message": "Supplement completed, answers are being rearranged"})
                     reply_parts = []
                     async for chunk in self._stream_synthesize_chunks(question, plan, collected_step_results):
                         reply_parts.append(chunk)
@@ -430,12 +430,12 @@ class PlannedAnalysisService:
             yield _sse("error", {"message": "请求已取消"})
             yield _sse("done", {"tools_used": list(set(tools_used)), "error": True})
         except Exception as e:
-            logger.exception("[规划分析] 流式分析失败")
-            yield _sse("error", {"message": f"处理请求时发生错误：{str(e)}"})
+            logger.exception("[planning analysis] Streaming analysis failed")
+            yield _sse("error", {"message": f"An error occurred while processing the request:{str(e)}"})
             yield _sse("done", {"tools_used": list(set(tools_used)), "error": True})
 
     # ----------------------------------------------------------
-    # 内部实现
+    # internal implementation
     # ----------------------------------------------------------
 
     async def _do_analyze(
@@ -445,22 +445,22 @@ class PlannedAnalysisService:
         conversation_id: Optional[str] = None,
     ) -> PlannedAnalysisResult:
         """核心分析流程"""
-        # 获取会话上下文
+        # Get session context
         context_messages = await self._get_context_messages(user_id, conversation_id)
 
         curr_date = _get_latest_trade_date()
-        trade_date = curr_date  # 交易日与当前日期一致（_get_latest_trade_date 已处理周末）
+        trade_date = curr_date  # The trading day is consistent with the current date (_get_latest_trade_date handles weekends)
 
-        # RAG 动态知识检索（优雅降级：不可用时返回空字符串）
+        # RAG Dynamic knowledge retrieval (graceful degradation: returns empty string when unavailable)
         knowledge_snippets = ""
         try:
             from core.knowledge import FinancialKnowledgeManager
             km = FinancialKnowledgeManager(db=self._db)
             knowledge_snippets = km.retrieve_for_prompt(question)
         except Exception as e:
-            logger.debug(f"[规划分析] 知识检索跳过: {e}")
+            logger.debug(f"[planning analysis] Knowledge retrieval skip: {e}")
 
-        # === 阶段 1：规划 ===
+        # === Phase 1: Planning ===
         planner = Planner(
             llm_client=self._llm_client,
             curr_date=curr_date,
@@ -468,11 +468,11 @@ class PlannedAnalysisService:
         )
         plan = await planner.plan(question, context_messages, knowledge_snippets=knowledge_snippets)
 
-        # 第三级回退：ReAct
+        # Third level fallback:ReAct
         if plan.source == PlanSource.REACT_FALLBACK:
             return await self._react_fallback(question, conversation_id)
 
-        # === 阶段 2：执行 ===
+        # === Phase 2: Execution ===
         tools_used: List[str] = []
         executor = PlanExecutor()
         step_results = await executor.execute(
@@ -484,15 +484,15 @@ class PlannedAnalysisService:
                 tools_used.append(sr.tool),
                 logger.info(
                     f"[规划分析] 步骤 {sr.step_id} 完成: "
-                    f"{'成功' if sr.success else '失败'} ({sr.duration_ms}ms)"
+                    f"{'success' if sr.success else 'failed'} ({sr.duration_ms}ms)"
                 ),
             ),
         )
 
-        # === 阶段 3：综合 ===
+        # === Stage 3: Synthesis ===
         reply = await self._synthesize(question, plan, step_results)
 
-        # 有限补充机制
+        # Limited replenishment mechanism
         supplemented = False
         if "[NEED_SUPPLEMENT]" in reply:
             reply = reply.replace("[NEED_SUPPLEMENT]", "").strip()
@@ -520,7 +520,7 @@ class PlannedAnalysisService:
         plan: AnalysisPlan,
         step_results: List[StepResult],
     ) -> str:
-        """综合阶段：基于步骤结果生成最终回答"""
+        """Synthesis phase: generating the final answer based on the results of the steps"""
         system_prompt = _get_system_prompt()
         synth_prompt = _build_synthesize_prompt(question, plan, step_results)
 
@@ -531,15 +531,15 @@ class PlannedAnalysisService:
 
         try:
             resp = await self._llm_client.achat(messages)
-            return resp.content or "抱歉，暂时无法生成综合分析。"
+            return resp.content or "Sorry, we are unable to generate a comprehensive analysis at this time."
         except Exception as e:
-            logger.error(f"[规划分析] 综合阶段失败: {e}")
-            # 降级：拼接原始数据
+            logger.error(f"[planning analysis] Synthesis phase failed: {e}")
+            # Downgrade: splicing raw data
             parts = [f"## {question}\n"]
             for sr in step_results:
                 if sr.success and sr.result:
                     parts.append(f"### {sr.intent}\n{str(sr.result)[:1000]}\n")
-            parts.append("\n> ⚠️ 综合分析生成失败，以上为原始数据摘要。")
+            parts.append("\n> ⚠️ Comprehensive analysis failed to generate. The above is a summary of the original data.")
             return "\n".join(parts)
 
     async def _stream_synthesize_chunks(
@@ -548,7 +548,7 @@ class PlannedAnalysisService:
         plan: AnalysisPlan,
         step_results: List[StepResult],
     ) -> AsyncIterator[str]:
-        """综合阶段流式输出 token。"""
+        """The synthesis stage streams the token."""
         system_prompt = _get_system_prompt()
         synth_prompt = _build_synthesize_prompt(question, plan, step_results)
 
@@ -568,7 +568,7 @@ class PlannedAnalysisService:
                 for i in range(0, len(fallback), 120):
                     yield fallback[i:i + 120]
         except Exception as e:
-            logger.warning(f"[规划分析] 综合流式输出失败，回退到非流式综合: {e}")
+            logger.warning(f"[planning analysis] Synthetic streaming output fails, falling back to non-streaming synthesis: {e}")
             fallback = await self._synthesize(question, plan, step_results)
             for i in range(0, len(fallback), 120):
                 yield fallback[i:i + 120]
@@ -580,10 +580,10 @@ class PlannedAnalysisService:
         plan: AnalysisPlan,
         tools_used: List[str],
     ) -> Optional[List[StepResult]]:
-        """有限补充机制：最多 1 轮，最多 2 个工具调用"""
+        """Limited replenishment mechanic: max 1 round, max 2 tool calls"""
         prompt = _build_supplement_prompt(question, current_answer)
         messages = [
-            Message(role=MessageRole.SYSTEM, content="你是股票分析规划器，只输出 JSON 或 none。"),
+            Message(role=MessageRole.SYSTEM, content="You are a stock analysis planner that only outputs JSON or none."),
             Message(role=MessageRole.USER, content=prompt),
         ]
 
@@ -594,7 +594,7 @@ class PlannedAnalysisService:
             if raw.lower() == "none" or not raw:
                 return None
 
-            # 解析补充请求
+            # Parse supplementary requests
             import re
             json_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", raw)
             text = json_match.group(1).strip() if json_match else raw.strip()
@@ -604,9 +604,9 @@ class PlannedAnalysisService:
                 return None
 
             data = json.loads(text[start:end + 1])
-            raw_steps = data.get("steps", [])[:2]  # 最多 2 个
+            raw_steps = data.get("steps", [])[:2]  # Up to 2
 
-            # 构建补充步骤并执行
+            # Build the supplementary steps and execute
             supplement_steps = []
             max_id = max((s.id for s in plan.steps), default=0)
             for i, s in enumerate(raw_steps):
@@ -634,7 +634,7 @@ class PlannedAnalysisService:
             return results
 
         except Exception as e:
-            logger.warning(f"[规划分析] 补充调用失败: {e}")
+            logger.warning(f"[planning analysis] Supplementary call failed: {e}")
             return None
 
     async def _react_fallback(
@@ -642,8 +642,8 @@ class PlannedAnalysisService:
         question: str,
         conversation_id: Optional[str] = None,
     ) -> PlannedAnalysisResult:
-        """第三级回退：使用现有 ReAct 模式"""
-        logger.info("[规划分析] 回退到 ReAct 模式")
+        """Third level fallback: Use existing ReAct mode"""
+        logger.info("[planning analysis] Fallback to ReAct mode")
         react_service = IntelligentAssistantService(
             self._db,
             preferred_models=self._get_react_preferred_models(),
@@ -660,7 +660,7 @@ class PlannedAnalysisService:
         user_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
     ) -> Optional[List[Message]]:
-        """获取最近的会话历史作为上下文"""
+        """Get recent session history as context"""
         if not user_id:
             return None
 
@@ -679,7 +679,7 @@ class PlannedAnalysisService:
                 role = MessageRole.USER if m["role"] == "user" else MessageRole.ASSISTANT
                 content = m.get("content", "")
                 if content:
-                    # 截断过长的历史消息
+                    # Truncate too long historical messages
                     messages.append(Message(
                         role=role,
                         content=content[:500],
@@ -687,7 +687,7 @@ class PlannedAnalysisService:
             return messages if messages else None
 
         except Exception as e:
-            logger.warning(f"[规划分析] 获取会话历史失败: {e}")
+            logger.warning(f"[planning analysis] Failed to get session history: {e}")
             return None
 
 
@@ -703,7 +703,7 @@ async def stream_planned_analysis_with_assistant(
     deep_model: Optional[str] = None,
     deep_model_config_id: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
-    """对外提供带持久化的规划分析流式接口。"""
+    """Provides external planning and analysis streaming interface with persistence."""
     service = PlannedAnalysisService(
         db,
         preferred_models=_build_assistant_model_preferences(
@@ -785,7 +785,7 @@ async def stream_planned_analysis_with_assistant(
                 conversation_id=conversation_id,
             )
         except Exception as e:
-            logger.warning("[规划分析·流式] 保存会话失败: %s", e)
+            logger.warning("[planning analysis·streaming] Failed to save session: %s", e)
 
         asyncio.create_task(
             _store_planned_analysis_memory(

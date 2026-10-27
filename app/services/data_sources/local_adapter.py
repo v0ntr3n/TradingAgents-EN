@@ -11,26 +11,26 @@ logger = logging.getLogger(__name__)
 
 
 class LocalAdapter(DataSourceAdapter):
-    """本地数据源适配器（用户通过API导入的数据）"""
+    """Local data source adapter (data imported by users through API)"""
 
     def __init__(self):
-        super().__init__()  # 调用父类初始化
+        super().__init__()  # Call parent class initialization
 
     @property
     def name(self) -> str:
         return "local"
 
     def _get_default_priority(self) -> int:
-        return 10  # 默认最高优先级（数字越大优先级越高）
+        return 10  # The default is the highest priority (the larger the number, the higher the priority)
 
     def is_available(self) -> bool:
-        """检查本地数据源是否可用（检查MongoDB中是否有本地数据）"""
+        """Check if the local data source is available (check if there is local data in MongoDB)"""
         try:
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
             collection = db.stock_basic_info
             
-            # 检查是否有 source='local' 的数据
+            # Check if there is source='local' data
             count = collection.count_documents({"source": "local"}, limit=1)
             return count > 0
         except Exception as e:
@@ -44,7 +44,7 @@ class LocalAdapter(DataSourceAdapter):
             db = get_mongo_db_sync()
             collection = db.stock_basic_info
             
-            # 查询 source='local' 的股票
+            # Query source='local' stocks
             cursor = collection.find({"source": "local"})
             stocks = list(cursor)
             
@@ -52,10 +52,10 @@ class LocalAdapter(DataSourceAdapter):
                 logger.info("Local: No local stocks found")
                 return None
             
-            # 转换为 DataFrame
+            # Convert to DataFrame
             df = pd.DataFrame(stocks)
             
-            # 标准化字段名（确保有必需的字段）
+            # Standardize field names (make sure you have the required fields)
             if 'symbol' in df.columns and 'name' in df.columns:
                 logger.info(f"Local: Successfully fetched {len(df)} local stocks")
                 return df
@@ -68,18 +68,18 @@ class LocalAdapter(DataSourceAdapter):
             return None
 
     def get_daily_basic(self, trade_date: str) -> Optional[pd.DataFrame]:
-        """获取每日基础财务数据（本地数据源暂不支持）"""
+        """Obtain daily basic financial data (local data sources are not supported yet)"""
         logger.warning("Local: get_daily_basic not supported")
         return None
 
     def find_latest_trade_date(self) -> Optional[str]:
-        """查找最新交易日期（从本地K线数据中查找）"""
+        """Find the latest transaction date (from local K-line data)"""
         try:
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
             collection = db.stock_daily_quotes
 
-            # 查询 data_source='local' 的最新交易日期
+            # Query data_source='local' latest transaction date
             cursor = collection.find(
                 {"data_source": "local"},
                 {"trade_date": 1}
@@ -99,13 +99,13 @@ class LocalAdapter(DataSourceAdapter):
             return None
 
     def get_realtime_quotes(self) -> Optional[Dict[str, Dict[str, Optional[float]]]]:
-        """获取实时行情（从本地数据库读取）"""
+        """Get real-time quotes (read from local database)"""
         try:
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
             collection = db.market_quotes
             
-            # 查询所有行情数据
+            # Query all market data
             cursor = collection.find({})
             quotes = list(cursor)
             
@@ -113,7 +113,7 @@ class LocalAdapter(DataSourceAdapter):
                 logger.info("Local: No local quotes found")
                 return None
             
-            # 转换为字典格式
+            # Convert to dictionary format
             result = {}
             for quote in quotes:
                 symbol = quote.get('symbol')
@@ -132,7 +132,7 @@ class LocalAdapter(DataSourceAdapter):
             return None
 
     def get_kline(self, code: str, period: str = "day", limit: int = 120, adj: Optional[str] = None):
-        """获取K线数据（从本地数据库读取）"""
+        """Get K-line data (read from local database)"""
         try:
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
@@ -149,7 +149,7 @@ class LocalAdapter(DataSourceAdapter):
             }
             normalized_period = period_map.get(period, period)
             
-            # 查询K线数据
+            # Query K line data
             cursor = collection.find(
                 {"symbol": code, "data_source": "local", "period": normalized_period}
             ).sort("trade_date", 1).limit(limit)
@@ -160,7 +160,7 @@ class LocalAdapter(DataSourceAdapter):
                 logger.info(f"Local: No kline data found for {code} (period={normalized_period})")
                 return []
             
-            # 转换为标准格式
+            # Convert to standard format
             result = []
             for kline in klines:
                 result.append({
@@ -181,7 +181,7 @@ class LocalAdapter(DataSourceAdapter):
             return []
 
     def get_news(self, code: str, days: int = 2, limit: int = 50, include_announcements: bool = True):
-        """获取新闻/公告（本地数据源暂不支持）"""
+        """Get news/announcements (not supported by local data sources)"""
         logger.warning("Local: get_news not supported")
         return []
 

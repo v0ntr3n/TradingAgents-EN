@@ -1,5 +1,5 @@
 /**
- * mem0 统一记忆层 API
+ * mem0 unified memory layer API
  */
 
 import { ApiClient, request } from './request'
@@ -52,7 +52,7 @@ export interface MemoryRecallData {
   items: MemoryItem[]
 }
 
-/** 智能助手事实记忆（assistant_memory_facts） */
+/** Intelligent Assistant Fact Memory (assistant_memory_facts) */
 export interface AssistantFactItem {
   id: string
   topic: string
@@ -74,20 +74,20 @@ export interface AssistantFactListData {
 }
 
 export const FACT_CATEGORY_LABELS: Record<string, string> = {
-  realtime_quote: '实时行情',
-  industry_metric: '行业指标',
-  company_financial: '公司财务',
-  company_static: '公司资料',
-  default: '通用',
+  realtime_quote: 'Real-time quotes',
+  industry_metric: 'Industry indicators',
+  company_financial: 'corporate finance',
+  company_static: 'Company information',
+  default: 'Universal',
 }
 
 export const SCOPE_LABELS: Record<string, string> = {
-  conversation: '对话记忆',
-  user_preference: '用户偏好',
-  analysis_insight: '分析洞察',
-  skill_lesson: '技能经验',
-  agent_experience: 'Agent 经验',
-  trade_pattern: '交易模式',
+  conversation: 'dialogue memory',
+  user_preference: 'User preferences',
+  analysis_insight: 'Analytical Insights',
+  skill_lesson: 'Skills experience',
+  agent_experience: 'Agent experience',
+  trade_pattern: 'trading model',
 }
 
 export const SCOPE_COLORS: Record<string, string> = {
@@ -112,7 +112,7 @@ export const memoryApi = {
       const responseData = error?.response?.data
       return responseData?.data ?? {
         ok: false,
-        error: responseData?.message || error?.message || '记忆层不可用',
+        error: responseData?.message || error?.message || 'Memory layer is not available',
       }
     }
   },
@@ -149,7 +149,7 @@ export const memoryApi = {
     return res?.data ?? { deleted: 0 }
   },
 
-  // ── 智能助手事实记忆（assistant_memory_facts）───────────────────────────
+  // ── Intelligent Assistant Fact Memory (assistant_memory_facts)───────────────────────────
   async getAssistantFacts(
     params: { q?: string; symbol?: string; category?: string; page?: number; page_size?: number } = {},
   ): Promise<AssistantFactListData> {

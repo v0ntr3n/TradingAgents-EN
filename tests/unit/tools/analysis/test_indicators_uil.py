@@ -33,11 +33,11 @@ def test_compute_many_basic_columns():
     ]
     out = compute_many(df, specs)
 
-    # 列存在
+    # Column exists
     for col in ['ma5','ma20','dif','dea','macd_hist','rsi14','boll_mid','boll_upper','boll_lower','atr14','kdj_k','kdj_d','kdj_j']:
         assert col in out.columns
 
-    # 最后一行应有数值（对应窗口已满足）
+    # The last line should have a numerical value (the corresponding window has been satisfied)
     last = out.iloc[-1]
     for col in ['ma5','ma20','dif','dea','macd_hist','rsi14','boll_mid','boll_upper','boll_lower','atr14','kdj_k','kdj_d','kdj_j']:
         assert not pd.isna(last[col]), f"{col} should not be NaN"

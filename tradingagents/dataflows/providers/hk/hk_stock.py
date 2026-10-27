@@ -1,6 +1,6 @@
 """
-港股数据获取工具
-提供港股数据的获取、处理和缓存功能
+Hong Kong stock data acquisition tool
+Provides the acquisition, processing and caching functions of Hong Kong stock data
 """
 
 import pandas as pd
@@ -17,7 +17,7 @@ import os
 import os
 
 from tradingagents.config.runtime_settings import get_float, get_int
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 
@@ -34,17 +34,17 @@ class HKStockProvider:
         self.max_retries = get_int("TA_HK_MAX_RETRIES", "ta_hk_max_retries", 3)
         self.rate_limit_wait = get_int("TA_HK_RATE_LIMIT_WAIT_SECONDS", "ta_hk_rate_limit_wait_seconds", 60)
 
-        # 构建带代理与UA的会话，确保 yfinance 使用代理
+        # Build a session with proxy and UA, make sure yfinance uses proxy
         self.session = self._create_session()
 
-        logger.info(f"🇭🇰 港股数据提供器初始化完成")
+        logger.info(f"🇭🇰 Hong Kong stock data provider initialization completed")
 
     def _create_session(self) -> requests.Session:
-        """创建带代理与UA的 requests.Session 供 yfinance 复用"""
+        """Create requests.Session with proxy and UA for reuse by yfinance"""
         try:
             session = requests.Session()
 
-            # 代理：优先读取环境变量（由后端统一设置）
+            # Agent: Prioritize reading environment variables (set uniformly by the backend)
             http_proxy = os.environ.get('HTTP_PROXY', '')
             https_proxy = os.environ.get('HTTPS_PROXY', '')
             proxies: Dict[str, str] = {}
@@ -54,11 +54,11 @@ class HKStockProvider:
                 proxies['https'] = https_proxy
             if proxies:
                 session.proxies.update(proxies)
-                logger.info(f"🌐 使用代理访问 Yahoo Finance: {proxies}")
+                logger.info(f"🌐 Use proxy access Yahoo Finance: {proxies}")
             else:
-                logger.info("🌐 未配置代理，直接访问 Yahoo Finance")
+                logger.info("🌐 No proxy configured, direct access Yahoo Finance")
 
-            # UA：允许通过环境变量覆盖，默认使用常见浏览器UA并标识应用
+            # UA: Allows overriding through environment variables, uses common browser UAs by default and identifies the application
             ua = os.environ.get('TA_HTTP_USER_AGENT', '').strip() or (
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
                 '(KHTML, like Gecko) Chrome/121.0 Safari/537.36 TradingAgentsCN/1.0'
@@ -67,7 +67,7 @@ class HKStockProvider:
             logger.info(f"🪪 使用UA: {ua}")
             return session
         except Exception as e:
-            logger.warning(f"⚠️ 创建代理会话失败，使用默认会话: {e}")
+            logger.warning(f"⚠️ Failed to create proxy session, using default session: {e}")
             return requests.Session()
 
     def _wait_for_rate_limit(self):
@@ -83,21 +83,21 @@ class HKStockProvider:
 
     def get_stock_data(self, symbol: str, start_date: str = None, end_date: str = None) -> Optional[pd.DataFrame]:
         """
-        获取港股历史数据
+        Get historical data of Hong Kong stocks
 
         Args:
-            symbol: 港股代码 (如: 0700.HK)
-            start_date: 开始日期 (YYYY-MM-DD)
-            end_date: 结束日期 (YYYY-MM-DD)
+            symbol: Hong Kong stock code (Such as: 0700.HK)
+            start_date: start date (YYYY-MM-DD)
+            end_date: end date (YYYY-MM-DD)
 
         Returns:
-            DataFrame: 股票历史数据
+            DataFrame: Stock historical data
         """
         try:
-            # 标准化港股代码
+            # Standardized Hong Kong Stock Code
             symbol = self._normalize_hk_symbol(symbol)
 
-            # 设置默认日期
+            # Set default date
             if not end_date:
                 end_date = datetime.now(ZoneInfo(get_timezone_name())).strftime('%Y-%m-%d')
             if not start_date:
@@ -105,12 +105,12 @@ class HKStockProvider:
 
             logger.info(f"🇭🇰 获取港股数据: {symbol} ({start_date} 到 {end_date})")
 
-            # 多次重试获取数据
+            # Retry multiple times to get data
             for attempt in range(self.max_retries):
                 try:
                     self._wait_for_rate_limit()
 
-                    # 使用yfinance获取数据（不传递 session 参数）
+                    # Use yfinance to get data (without passing session parameter)
                     ticker = yf.Ticker(symbol)
                     data = ticker.history(
                         start=start_date,
@@ -119,7 +119,7 @@ class HKStockProvider:
                     )
 
                     if not data.empty:
-                        # 数据预处理
+                        # Data preprocessing
                         data = data.reset_index()
                         data['Symbol'] = symbol
 
@@ -130,21 +130,21 @@ class HKStockProvider:
 
                 except Exception as e:
                     error_msg = str(e)
-                    logger.error(f"❌ 港股数据获取失败 (尝试 {attempt + 1}/{self.max_retries}): {error_msg}")
+                    logger.error(f"❌ Failed to obtain Hong Kong stock data (try {attempt + 1}/{self.max_retries}): {error_msg}")
 
-                    # 检查是否是频率限制错误
+                    # Check if it is a frequency limit error
                     if "Rate limited" in error_msg or "Too Many Requests" in error_msg:
                         if attempt < self.max_retries - 1:
                             logger.info(f"⏳ 检测到频率限制，等待{self.rate_limit_wait}秒...")
                             time.sleep(self.rate_limit_wait)
                         else:
-                            logger.error(f"❌ 频率限制，跳过重试")
+                            logger.error(f"❌ Frequency limit, skip retries")
                             break
                     else:
                         if attempt < self.max_retries - 1:
-                            time.sleep(2 ** attempt)  # 指数退避
+                            time.sleep(2 ** attempt)  # exponential backoff
 
-            logger.error(f"❌ 港股数据获取最终失败: {symbol}")
+            logger.error(f"❌ Obtaining Hong Kong stock data ultimately failed: {symbol}")
             return None
 
         except Exception as e:
@@ -153,13 +153,13 @@ class HKStockProvider:
 
     def get_stock_info(self, symbol: str) -> Dict[str, Any]:
         """
-        获取港股基本信息
+        Get basic information about Hong Kong stocks
 
         Args:
-            symbol: 港股代码
+            symbol: Hong Kong stock code
 
         Returns:
-            Dict: 股票基本信息
+            Dict: Basic stock information
         """
         try:
             symbol = self._normalize_hk_symbol(symbol)
@@ -168,7 +168,7 @@ class HKStockProvider:
 
             self._wait_for_rate_limit()
 
-            # 不传递 session 参数，让 yfinance 自己处理
+            # Do not pass session parameters and let yfinance handle it by itself
             ticker = yf.Ticker(symbol)
             info = ticker.info
 
@@ -205,41 +205,41 @@ class HKStockProvider:
 
     def get_real_time_price(self, symbol: str) -> Optional[Dict]:
         """
-        获取港股实时价格
+        Get real-time prices of Hong Kong stocks
 
         Args:
-            symbol: 港股代码
+            symbol: Hong Kong stock code
 
         Returns:
-            Dict: 实时价格信息（包含股票名称）
+            Dict: Real-time price information (including stock name)
         """
         try:
             symbol = self._normalize_hk_symbol(symbol)
 
             self._wait_for_rate_limit()
 
-            # 不传递 session 参数，让 yfinance 自己处理（新版本 yfinance 需要 curl_cffi）
+            # Do not pass session parameters and let yfinance handle it by itself (new version of yfinance requires curl_cffi)
             ticker = yf.Ticker(symbol)
 
-            # 获取最新的历史数据（1天）
+            # Get the latest historical data (1 day)
             data = ticker.history(period="1d", timeout=self.timeout)
 
             if not data.empty:
                 latest = data.iloc[-1]
 
-                # 尝试获取股票名称（从 ticker.info）
+                # Try to get the stock name (from ticker.info)
                 stock_name = f'港股{symbol}'
                 try:
                     info = ticker.info
                     if info and 'longName' in info:
                         stock_name = info.get('longName', info.get('shortName', stock_name))
                 except Exception:
-                    # 静默失败，使用默认名称
+                    # Fails silently, using default name
                     pass
 
                 return {
                     'symbol': symbol,
-                    'name': stock_name,  # 添加股票名称
+                    'name': stock_name,  # Add stock name
                     'price': latest['Close'],
                     'open': latest['Open'],
                     'high': latest['High'],
@@ -252,35 +252,35 @@ class HKStockProvider:
                 return None
 
         except Exception as e:
-            logger.error(f"❌ 获取港股实时价格失败: {e}")
+            logger.error(f"❌ Failed to obtain real-time price of Hong Kong stocks: {e}")
             return None
 
     def _normalize_hk_symbol(self, symbol: str) -> str:
         """
-        标准化港股代码格式
+        Standardized Hong Kong stock code format
 
-        Yahoo Finance 期望的格式：0700.HK（4位数字）
-        输入可能的格式：00700, 700, 0700, 0700.HK, 00700.HK
+        Yahoo Finance Expected format: 0700.HK (4 digits)
+        Possible input formats:00700, 700, 0700, 0700.HK, 00700.HK
 
         Args:
-            symbol: 原始港股代码
+            symbol: Original Hong Kong stock code
 
         Returns:
-            str: 标准化后的港股代码（格式：0700.HK）
+            str: Standardized Hong Kong stock code (format: 0700.HK)
         """
         if not symbol:
             return symbol
 
         symbol = str(symbol).strip().upper()
 
-        # 如果已经有.HK后缀，先移除
+        # If there is already a .HK suffix, remove it first
         if symbol.endswith('.HK'):
             symbol = symbol[:-3]
 
-        # 如果是纯数字，标准化为4位数字
+        # If it is a pure number, normalize to 4 digits
         if symbol.isdigit():
-            # 移除前导0，然后补齐到4位
-            clean_code = symbol.lstrip('0') or '0'  # 如果全是0，保留一个0
+            # Remove leading 0s, then pad to 4 digits
+            clean_code = symbol.lstrip('0') or '0'  # If all are 0, keep one 0
             normalized_code = clean_code.zfill(4)
             return f"{normalized_code}.HK"
 
@@ -288,16 +288,16 @@ class HKStockProvider:
 
     def format_stock_data(self, symbol: str, data: pd.DataFrame, start_date: str, end_date: str) -> str:
         """
-        格式化港股数据为文本格式（包含技术指标）
+        Format Hong Kong stock data into text format (including technical indicators)
 
         Args:
-            symbol: 股票代码
-            data: 股票数据DataFrame
-            start_date: 开始日期
-            end_date: 结束日期
+            symbol: Stock code
+            data: stock data DataFrame
+            start_date: start date
+            end_date: end date
 
         Returns:
-            str: 格式化的股票数据文本（包含技术指标）
+            str: Formatted stock data text (contains technical indicators)
         """
         if data is None or data.empty:
             return f"❌ 无法获取港股 {symbol} 的数据"
@@ -306,48 +306,48 @@ class HKStockProvider:
             original_data_count = len(data)
             logger.info(f"📊 [港股技术指标] 开始计算技术指标，原始数据: {original_data_count}条")
 
-            # 获取股票基本信息
+            # Get basic stock information
             stock_info = self.get_stock_info(symbol)
             stock_name = stock_info.get('name', f'港股{symbol}')
 
-            # 确保数据按日期排序
+            # Make sure the data is sorted by date
             if 'Date' in data.columns:
                 data = data.sort_values('Date')
             else:
                 data = data.sort_index()
 
-            # 计算移动平均线
+            # Calculate moving average
             data['ma5'] = data['Close'].rolling(window=5, min_periods=1).mean()
             data['ma10'] = data['Close'].rolling(window=10, min_periods=1).mean()
             data['ma20'] = data['Close'].rolling(window=20, min_periods=1).mean()
             data['ma60'] = data['Close'].rolling(window=60, min_periods=1).mean()
 
-            # 计算RSI（相对强弱指标）
+            # Calculate RSI (Relative Strength Index)
             delta = data['Close'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
             loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
             rs = gain / (loss.replace(0, np.nan))
             data['rsi'] = 100 - (100 / (1 + rs))
 
-            # 计算MACD
+            # Calculate MACD
             ema12 = data['Close'].ewm(span=12, adjust=False).mean()
             ema26 = data['Close'].ewm(span=26, adjust=False).mean()
             data['macd_dif'] = ema12 - ema26
             data['macd_dea'] = data['macd_dif'].ewm(span=9, adjust=False).mean()
             data['macd'] = (data['macd_dif'] - data['macd_dea']) * 2
 
-            # 计算布林带
+            # Calculate Bollinger Bands
             data['boll_mid'] = data['Close'].rolling(window=20, min_periods=1).mean()
             std = data['Close'].rolling(window=20, min_periods=1).std()
             data['boll_upper'] = data['boll_mid'] + 2 * std
             data['boll_lower'] = data['boll_mid'] - 2 * std
 
-            # 只保留最后3-5天的数据用于展示（减少token消耗）
+            # Only retain the last 3-5 days of data for display (reduce token consumption)
             display_rows = min(5, len(data))
             display_data = data.tail(display_rows)
             latest_data = data.iloc[-1]
 
-            # 🔍 [调试日志] 打印最近5天的原始数据和技术指标
+            # 🔍 [debug log] Print raw data and technical indicators for the last 5 days
             logger.info(f"🔍 [港股技术指标详情] ===== 最近{display_rows}个交易日数据 =====")
             for i, (idx, row) in enumerate(display_data.iterrows(), 1):
                 date_str = row.get('Date', idx.strftime('%Y-%m-%d') if hasattr(idx, 'strftime') else str(idx))
@@ -358,22 +358,22 @@ class HKStockProvider:
                 logger.info(f"   RSI: {row.get('rsi', 0):.2f}")
                 logger.info(f"   BOLL: 上={row.get('boll_upper', 0):.2f}, 中={row.get('boll_mid', 0):.2f}, 下={row.get('boll_lower', 0):.2f}")
 
-            logger.info(f"🔍 [港股技术指标详情] ===== 数据详情结束 =====")
+            logger.info(f"🔍 [Details of Hong Kong stock technical indicators] ===== end of data details =====")
 
-            # 格式化输出包含所有技术指标和解读
+            # Formatted output contains all technical indicators and interpretations
             result = f"📊 {stock_name}({symbol}) - 港股技术分析数据\n"
             result += "=" * 60 + "\n\n"
 
-            # 基本信息
+            # Basic information
             result += "📈 基本信息\n"
             result += f"   代码: {symbol}\n"
             result += f"   名称: {stock_name}\n"
             result += f"   货币: 港币 (HKD)\n"
-            result += f"   交易所: 香港交易所 (HKG)\n"
+            result += f"   exchange: Hong Kong Exchange (HKG)\n"
             result += f"   数据期间: {start_date} 至 {end_date}\n"
             result += f"   交易天数: {len(data)}天\n\n"
 
-            # 最新价格
+            # latest price
             latest_price = latest_data['Close']
             result += "💰 最新价格\n"
             result += f"   收盘价: HK${latest_price:.2f}\n"
@@ -382,7 +382,7 @@ class HKStockProvider:
             result += f"   最低价: HK${latest_data['Low']:.2f}\n"
             result += f"   成交量: {latest_data['Volume']:,.0f}股\n\n"
 
-            # 移动平均线
+            # moving average
             result += "📊 移动平均线 (MA)\n"
             ma5 = latest_data['ma5']
             ma10 = latest_data['ma10']
@@ -409,7 +409,7 @@ class HKStockProvider:
                 ma60_pos = "上方" if latest_price > ma60 else "下方"
                 result += f"   MA60: HK${ma60:.2f} (价格在MA60{ma60_pos} {abs(ma60_diff):.2f}%)\n"
 
-            # 判断均线排列
+            # Determine moving average arrangement
             if not pd.isna(ma5) and not pd.isna(ma10) and not pd.isna(ma20):
                 if ma5 > ma10 > ma20:
                     result += "   ✅ 均线呈多头排列\n\n"
@@ -420,7 +420,7 @@ class HKStockProvider:
             else:
                 result += "\n"
 
-            # MACD指标
+            # MACD indicator
             result += "📉 MACD指标\n"
             macd_dif = latest_data['macd_dif']
             macd_dea = latest_data['macd_dea']
@@ -431,7 +431,7 @@ class HKStockProvider:
                 result += f"   DEA: {macd_dea:.4f}\n"
                 result += f"   MACD柱: {macd:.4f} ({'多头' if macd > 0 else '空头'})\n"
 
-                # MACD金叉/死叉检测
+                # MACD Golden cross/dead cross detection
                 if len(data) > 1:
                     prev_dif = data.iloc[-2]['macd_dif']
                     prev_dea = data.iloc[-2]['macd_dea']
@@ -440,9 +440,9 @@ class HKStockProvider:
 
                     if not pd.isna(prev_dif) and not pd.isna(prev_dea):
                         if prev_dif <= prev_dea and curr_dif > curr_dea:
-                            result += "   ⚠️ MACD金叉信号（DIF上穿DEA）\n\n"
+                            result += "   ⚠️ MACD Golden cross signal (DIF crosses DEA)\n\n"
                         elif prev_dif >= prev_dea and curr_dif < curr_dea:
-                            result += "   ⚠️ MACD死叉信号（DIF下穿DEA）\n\n"
+                            result += "   ⚠️ MACD Death cross signal (DIF crosses DEA below)\n\n"
                         else:
                             result += "\n"
                     else:
@@ -450,9 +450,9 @@ class HKStockProvider:
                 else:
                     result += "\n"
             else:
-                result += "   数据不足，无法计算MACD\n\n"
+                result += "   Insufficient data to calculate MACD\n\n"
 
-            # RSI指标
+            # RSI indicator
             result += "📊 RSI指标\n"
             rsi = latest_data['rsi']
 
@@ -469,9 +469,9 @@ class HKStockProvider:
                 else:
                     result += " (中性区域)\n\n"
             else:
-                result += "   数据不足，无法计算RSI\n\n"
+                result += "   Insufficient data to calculate RSI\n\n"
 
-            # 布林带
+            # Bollinger Bands
             result += "📐 布林带 (BOLL)\n"
             boll_upper = latest_data['boll_upper']
             boll_mid = latest_data['boll_mid']
@@ -482,7 +482,7 @@ class HKStockProvider:
                 result += f"   中轨: HK${boll_mid:.2f}\n"
                 result += f"   下轨: HK${boll_lower:.2f}\n"
 
-                # 计算价格在布林带中的位置
+                # Calculate the price's position within the Bollinger Bands
                 boll_width = boll_upper - boll_lower
                 if boll_width > 0:
                     boll_position = ((latest_price - boll_lower) / boll_width) * 100
@@ -497,9 +497,9 @@ class HKStockProvider:
                 else:
                     result += "\n"
             else:
-                result += "   数据不足，无法计算布林带\n\n"
+                result += "   Insufficient data to calculate Bollinger Bands\n\n"
 
-            # 最近交易日数据
+            # Last trading day data
             result += "📅 最近交易日数据\n"
             for _, row in display_data.iterrows():
                 if 'Date' in row:
@@ -514,7 +514,7 @@ class HKStockProvider:
                 result += f"最低HK${row['Low']:.2f}, "
                 result += f"成交量{row['Volume']:,.0f}\n"
 
-            result += "\n数据来源: Yahoo Finance (港股)\n"
+            result += "\n Data source: Yahoo Finance (Hong Kong stocks)\n"
 
             logger.info(f"✅ [港股技术指标] 技术指标计算完成，展示最后{display_rows}天数据")
 
@@ -525,7 +525,7 @@ class HKStockProvider:
             return f"❌ 港股数据格式化失败: {symbol}"
 
 
-# 全局提供器实例
+# Global provider instance
 _hk_provider = None
 
 def get_hk_stock_provider() -> HKStockProvider:
@@ -538,15 +538,15 @@ def get_hk_stock_provider() -> HKStockProvider:
 
 def get_hk_stock_data(symbol: str, start_date: str = None, end_date: str = None) -> str:
     """
-    获取港股数据的便捷函数
+    Convenient function to obtain Hong Kong stock data
 
     Args:
-        symbol: 港股代码
-        start_date: 开始日期
-        end_date: 结束日期
+        symbol: Hong Kong stock code
+        start_date: start date
+        end_date: end date
 
     Returns:
-        str: 格式化的港股数据
+        str: Formatted Hong Kong stock data
     """
     provider = get_hk_stock_provider()
     data = provider.get_stock_data(symbol, start_date, end_date)
@@ -555,13 +555,13 @@ def get_hk_stock_data(symbol: str, start_date: str = None, end_date: str = None)
 
 def get_hk_stock_info(symbol: str) -> Dict:
     """
-    获取港股信息的便捷函数
+    Convenient function to obtain Hong Kong stock information
 
     Args:
-        symbol: 港股代码
+        symbol: Hong Kong stock code
 
     Returns:
-        Dict: 港股信息
+        Dict: Hong Kong stock information
     """
     provider = get_hk_stock_provider()
     return provider.get_stock_info(symbol)

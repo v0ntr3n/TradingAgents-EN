@@ -1,9 +1,9 @@
 """
-中国市场数据提供器
-包含 A股、港股等中国市场的数据源
+China market data provider
+Contains data sources from Chinese markets such as A-shares and Hong Kong stocks
 """
 
-# 导入 AKShare 提供器
+# Import the AKShare provider
 try:
     from .akshare import AKShareProvider
     AKSHARE_AVAILABLE = True
@@ -11,7 +11,7 @@ except ImportError:
     AKShareProvider = None
     AKSHARE_AVAILABLE = False
 
-# 导入 Tushare 提供器
+# Import Tushare provider
 try:
     from .tushare import TushareProvider
     TUSHARE_AVAILABLE = True
@@ -19,7 +19,7 @@ except ImportError:
     TushareProvider = None
     TUSHARE_AVAILABLE = False
 
-# 导入 Baostock 提供器
+# Import Baostock provider
 try:
     from .baostock import BaostockProvider
     BAOSTOCK_AVAILABLE = True
@@ -27,7 +27,7 @@ except ImportError:
     BaostockProvider = None
     BAOSTOCK_AVAILABLE = False
 
-# 导入基本面快照工具
+# Import Fundamental Snapshot Tool
 try:
     from .fundamentals_snapshot import get_fundamentals_snapshot
     FUNDAMENTALS_SNAPSHOT_AVAILABLE = True

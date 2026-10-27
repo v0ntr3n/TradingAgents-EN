@@ -1,4 +1,4 @@
-# 标准库导入
+# Standard library imports
 import datetime
 import os
 import re
@@ -11,7 +11,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Optional
 
-# 第三方库导入
+# Third-party library imports
 import typer
 from dotenv import load_dotenv
 from rich import box
@@ -26,7 +26,7 @@ from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
 
-# 项目内部导入
+# Internal project imports
 from cli.models import AnalystType
 from cli.utils import (
     select_analysts,
@@ -39,10 +39,10 @@ from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.utils.logging_manager import get_logger
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
-# 常量定义
+# Constants
 DEFAULT_MESSAGE_BUFFER_SIZE = 100
 DEFAULT_MAX_TOOL_ARGS_LENGTH = 100
 DEFAULT_MAX_CONTENT_LENGTH = 200
@@ -50,101 +50,100 @@ DEFAULT_MAX_DISPLAY_MESSAGES = 12
 DEFAULT_REFRESH_RATE = 4
 DEFAULT_API_KEY_DISPLAY_LENGTH = 12
 
-# 初始化日志系统
+# Initialize logging system
 logger = get_logger("cli")
 
-# CLI专用日志配置：禁用控制台输出，只保留文件日志
+# CLI-specific logging configuration: disable console output and keep file logging only
 def setup_cli_logging():
     """
-    CLI模式下的日志配置：移除控制台输出，保持界面清爽
-    Configure logging for CLI mode: remove console output to keep interface clean
+    Configure logging for CLI mode: remove console output to keep the interface clean
     """
     import logging
     from tradingagents.utils.logging_manager import get_logger_manager
 
     logger_manager = get_logger_manager()
 
-    # 获取根日志器
+    # Get root logger
     root_logger = logging.getLogger()
 
-    # 移除所有控制台处理器，只保留文件日志
+    # Remove all console handlers and keep file logs only
     for handler in root_logger.handlers[:]:
         if isinstance(handler, logging.StreamHandler) and hasattr(handler, 'stream'):
             if handler.stream.name in ['<stderr>', '<stdout>']:
                 root_logger.removeHandler(handler)
 
-    # 同时移除tradingagents日志器的控制台处理器
+    # Also remove console handlers from the tradingagents logger
     tradingagents_logger = logging.getLogger('tradingagents')
     for handler in tradingagents_logger.handlers[:]:
         if isinstance(handler, logging.StreamHandler) and hasattr(handler, 'stream'):
             if handler.stream.name in ['<stderr>', '<stdout>']:
                 tradingagents_logger.removeHandler(handler)
 
-    # 记录CLI启动日志（只写入文件）
-    logger.debug("🚀 CLI模式启动，控制台日志已禁用，保持界面清爽")
+    # Log CLI startup (written to file only)
+    logger.debug("🚀 CLI mode started; console logging disabled to keep the interface clean")
 
-# 设置CLI日志配置
+# Apply CLI logging configuration
 setup_cli_logging()
 
 console = Console()
 
-# CLI用户界面管理器
+# CLI User Interface Manager
 class CLIUserInterface:
-    """CLI用户界面管理器：处理用户显示和进度提示"""
+    """CLI User Interface Manager: handles user display and progress prompts"""
 
     def __init__(self):
         self.console = Console()
         self.logger = get_logger("cli")
 
     def show_user_message(self, message: str, style: str = ""):
-        """显示用户消息"""
+        """Display a message to the user"""
         if style:
             self.console.print(f"[{style}]{message}[/{style}]")
         else:
             self.console.print(message)
 
     def show_progress(self, message: str):
-        """显示进度信息"""
+        """Display progress information"""
         self.console.print(f"🔄 {message}")
-        # 同时记录到日志文件
-        self.logger.info(f"进度: {message}")
+        # Also record to log file
+        self.logger.info(f"Progress: {message}")
 
     def show_success(self, message: str):
-        """显示成功信息"""
+        """Display success message"""
         self.console.print(f"[green]✅ {message}[/green]")
-        self.logger.info(f"成功: {message}")
+        self.logger.info(f"Success: {message}")
 
     def show_error(self, message: str):
-        """显示错误信息"""
+        """Display error message"""
         self.console.print(f"[red]❌ {message}[/red]")
-        self.logger.error(f"错误: {message}")
+        self.logger.error(f"Error: {message}")
 
     def show_warning(self, message: str):
-        """显示警告信息"""
+        """Display warning message"""
         self.console.print(f"[yellow]⚠️ {message}[/yellow]")
-        self.logger.warning(f"警告: {message}")
+        self.logger.warning(f"Warning: {message}")
 
     def show_step_header(self, step_num: int, title: str):
-        """显示步骤标题"""
-        self.console.print(f"\n[bold cyan]步骤 {step_num}: {title}[/bold cyan]")
+        """Display step header"""
+        self.console.print(f"\n[bold cyan]Step {step_num}: {title}[/bold cyan]")
         self.console.print("─" * 60)
 
     def show_data_info(self, data_type: str, symbol: str, details: str = ""):
-        """显示数据获取信息"""
+        """Display data fetching info"""
         if details:
             self.console.print(f"📊 {data_type}: {symbol} - {details}")
         else:
             self.console.print(f"📊 {data_type}: {symbol}")
 
-# 创建全局UI管理器
+# Create global UI manager
 ui = CLIUserInterface()
 
 app = typer.Typer(
     name="TradingAgents",
-    help="TradingAgents CLI: 多智能体大语言模型金融交易框架 | Multi-Agents LLM Financial Trading Framework",
+    help="TradingAgents CLI: Multi-Agents LLM Financial Trading Framework",
     add_completion=True,  # Enable shell completion
     rich_markup_mode="rich",  # Enable rich markup
-    no_args_is_help=False,  # 不显示帮助，直接进入分析模式
+    no_args_is_help=False,  # Enter analysis mode directly when invoked without arguments
 )
 
 
@@ -286,8 +285,7 @@ message_buffer = MessageBuffer()
 
 def create_layout():
     """
-    创建CLI界面的布局结构
-    Create the layout structure for CLI interface
+    Create the layout structure for the CLI interface
     """
     layout = Layout()
     layout.split_column(
@@ -306,12 +304,11 @@ def create_layout():
 
 def update_display(layout, spinner_text=None):
     """
-    更新CLI界面显示内容
     Update CLI interface display content
     
     Args:
-        layout: Rich Layout对象
-        spinner_text: 可选的spinner文本
+        layout: Rich Layout object
+        spinner_text: Optional spinner text
     """
     # Header with welcome message
     layout["header"].update(
@@ -529,10 +526,9 @@ def get_user_selections():
 
     # Create welcome box content
     welcome_content = f"{welcome_ascii}\n"
-    welcome_content += "[bold green]TradingAgents: 多智能体大语言模型金融交易框架 - CLI[/bold green]\n"
-    welcome_content += "[bold green]Multi-Agents LLM Financial Trading Framework - CLI[/bold green]\n\n"
-    welcome_content += "[bold]工作流程 | Workflow Steps:[/bold]\n"
-    welcome_content += "I. 分析师团队 | Analyst Team → II. 研究团队 | Research Team → III. 交易员 | Trader → IV. 风险管理 | Risk Management → V. 投资组合管理 | Portfolio Management\n\n"
+    welcome_content += "[bold green]TradingAgents: Multi-Agents LLM Financial Trading Framework - CLI[/bold green]\n\n"
+    welcome_content += "[bold]Workflow Steps:[/bold]\n"
+    welcome_content += "I. Analyst Team → II. Research Team → III. Trader → IV. Risk Management → V. Portfolio Management\n\n"
     welcome_content += (
         "[dim]Built by [Tauric Research](https://github.com/TauricResearch)[/dim]"
     )
@@ -542,8 +538,8 @@ def get_user_selections():
         welcome_content,
         border_style="green",
         padding=(1, 2),
-        title="欢迎使用 TradingAgents | Welcome to TradingAgents",
-        subtitle="多智能体大语言模型金融交易框架 | Multi-Agents LLM Financial Trading Framework",
+        title="Welcome to TradingAgents",
+        subtitle="Multi-Agents LLM Financial Trading Framework",
     )
     console.print(Align.center(welcome_box))
     console.print()  # Add a blank line after the welcome box
@@ -559,8 +555,8 @@ def get_user_selections():
     # Step 1: Market selection
     console.print(
         create_question_box(
-            "步骤 1: 选择市场 | Step 1: Select Market",
-            "请选择要分析的股票市场 | Please select the stock market to analyze",
+            "Step 1: Select Market",
+            "Please select the stock market to analyze",
             ""
         )
     )
@@ -569,8 +565,8 @@ def get_user_selections():
     # Step 2: Ticker symbol
     console.print(
         create_question_box(
-            "步骤 2: 股票代码 | Step 2: Ticker Symbol",
-            f"请输入{selected_market['name']}股票代码 | Enter {selected_market['name']} ticker symbol",
+            "Step 2: Ticker Symbol",
+            f"Enter {selected_market['name_en']} ticker symbol",
             selected_market['default']
         )
     )
@@ -580,8 +576,8 @@ def get_user_selections():
     default_date = datetime.datetime.now().strftime("%Y-%m-%d")
     console.print(
         create_question_box(
-            "步骤 3: 分析日期 | Step 3: Analysis Date",
-            "请输入分析日期 (YYYY-MM-DD) | Enter the analysis date (YYYY-MM-DD)",
+            "Step 3: Analysis Date",
+            "Enter the analysis date (YYYY-MM-DD)",
             default_date,
         )
     )
@@ -590,20 +586,20 @@ def get_user_selections():
     # Step 4: Select analysts
     console.print(
         create_question_box(
-            "步骤 4: 分析师团队 | Step 4: Analysts Team",
-            "选择您的LLM分析师智能体进行分析 | Select your LLM analyst agents for the analysis"
+            "Step 4: Analysts Team",
+            "Select your LLM analyst agents for the analysis"
         )
     )
     selected_analysts = select_analysts(selected_ticker)
     console.print(
-        f"[green]已选择的分析师 | Selected analysts:[/green] {', '.join(analyst.value for analyst in selected_analysts)}"
+        f"[green]Selected analysts:[/green] {', '.join(analyst.value for analyst in selected_analysts)}"
     )
 
     # Step 5: Research depth
     console.print(
         create_question_box(
-            "步骤 5: 研究深度 | Step 5: Research Depth",
-            "选择您的研究深度级别 | Select your research depth level"
+            "Step 5: Research Depth",
+            "Select your research depth level"
         )
     )
     selected_research_depth = select_research_depth()
@@ -611,8 +607,8 @@ def get_user_selections():
     # Step 6: LLM Provider
     console.print(
         create_question_box(
-            "步骤 6: LLM提供商 | Step 6: LLM Provider",
-            "选择要使用的LLM服务 | Select which LLM service to use"
+            "Step 6: LLM Provider",
+            "Select which LLM service to use"
         )
     )
     selected_llm_provider, backend_url = select_llm_provider()
@@ -620,8 +616,8 @@ def get_user_selections():
     # Step 7: Thinking agents
     console.print(
         create_question_box(
-            "步骤 7: 思考智能体 | Step 7: Thinking Agents",
-            "选择您的思考智能体进行分析 | Select your thinking agents for analysis"
+            "Step 7: Thinking Agents",
+            "Select your thinking agents for analysis"
         )
     )
     selected_shallow_thinker = select_shallow_thinking_agent(selected_llm_provider)
@@ -641,122 +637,122 @@ def get_user_selections():
 
 
 def select_market():
-    """选择股票市场"""
+    """Select stock market"""
     markets = {
         "1": {
-            "name": "美股",
+            "name": "US Stock",
             "name_en": "US Stock",
             "default": "SPY",
             "examples": ["SPY", "AAPL", "TSLA", "NVDA", "MSFT"],
-            "format": "直接输入代码 (如: AAPL)",
+            "format": "Ticker symbol directly (e.g., AAPL)",
             "pattern": r'^[A-Z]{1,5}$',
             "data_source": "yahoo_finance"
         },
         "2": {
-            "name": "A股",
+            "name": "China A-Share",
             "name_en": "China A-Share",
             "default": "600036",
-            "examples": ["000001 (平安银行)", "600036 (招商银行)", "000858 (五粮液)"],
-            "format": "6位数字代码 (如: 600036, 000001)",
+            "examples": ["000001 (Ping An Bank)", "600036 (China Merchants Bank)", "000858 (Wuliangye)"],
+            "format": "6-digit code (e.g., 600036, 000001)",
             "pattern": r'^\d{6}$',
             "data_source": "china_stock"
         },
         "3": {
-            "name": "港股",
+            "name": "Hong Kong Stock",
             "name_en": "Hong Kong Stock",
             "default": "0700.HK",
-            "examples": ["0700.HK (腾讯)", "09988.HK (阿里巴巴)", "03690.HK (美团)"],
-            "format": "代码.HK (如: 0700.HK, 09988.HK)",
+            "examples": ["0700.HK (Tencent)", "09988.HK (Alibaba)", "03690.HK (Meituan)"],
+            "format": "Code.HK (e.g., 0700.HK, 09988.HK)",
             "pattern": r'^\d{4,5}\.HK$',
             "data_source": "yahoo_finance"
         }
     }
 
-    console.print(f"\n[bold cyan]请选择股票市场 | Please select stock market:[/bold cyan]")
+    console.print("\n[bold cyan]Please select stock market:[/bold cyan]")
     for key, market in markets.items():
         examples_str = ", ".join(market["examples"][:3])
-        console.print(f"[cyan]{key}[/cyan]. 🌍 {market['name']} | {market['name_en']}")
-        console.print(f"   示例 | Examples: {examples_str}")
+        console.print(f"[cyan]{key}[/cyan]. 🌍 {market['name_en']}")
+        console.print(f"   Examples: {examples_str}")
 
     while True:
-        choice = typer.prompt("\n请选择市场 | Select market", default="2")
+        choice = typer.prompt("\nSelect market", default="2")
         if choice in markets:
             selected_market = markets[choice]
-            console.print(f"[green]✅ 已选择: {selected_market['name']} | Selected: {selected_market['name_en']}[/green]")
-            # 记录系统日志（只写入文件）
-            logger.info(f"用户选择市场: {selected_market['name']} ({selected_market['name_en']})")
+            console.print(f"[green]✅ Selected: {selected_market['name_en']}[/green]")
+            # Record to system log (file only)
+            logger.info(f"User selected market: {selected_market['name_en']}")
             return selected_market
         else:
-            console.print(f"[red]❌ 无效选择，请输入 1、2 或 3 | Invalid choice, please enter 1, 2, or 3[/red]")
-            logger.warning(f"用户输入无效选择: {choice}")
+            console.print("[red]❌ Invalid choice, please enter 1, 2, or 3[/red]")
+            logger.warning(f"User entered invalid choice: {choice}")
 
 
 def get_ticker(market):
-    """根据选定市场获取股票代码"""
-    console.print(f"\n[bold cyan]{market['name']}股票示例 | {market['name_en']} Examples:[/bold cyan]")
+    """Get ticker symbol for the selected market"""
+    console.print(f"\n[bold cyan]{market['name_en']} Examples:[/bold cyan]")
     for example in market['examples']:
         console.print(f"  • {example}")
 
-    console.print(f"\n[dim]格式要求 | Format: {market['format']}[/dim]")
+    console.print(f"\n[dim]Format: {market['format']}[/dim]")
 
     while True:
-        ticker = typer.prompt(f"\n请输入{market['name']}股票代码 | Enter {market['name_en']} ticker",
+        ticker = typer.prompt(f"\nEnter {market['name_en']} ticker",
                              default=market['default'])
 
-        # 记录用户输入（只写入文件）
-        logger.info(f"用户输入股票代码: {ticker}")
+        # Log user input (file only)
+        logger.info(f"User entered ticker: {ticker}")
 
-        # 验证股票代码格式
+        # Validate ticker format
         import re
         
-        # 添加边界条件检查
-        ticker = ticker.strip()  # 移除首尾空格
-        if not ticker:  # 检查空字符串
-            console.print(f"[red]❌ 股票代码不能为空 | Ticker cannot be empty[/red]")
-            logger.warning(f"用户输入空股票代码")
+        # Check boundary conditions
+        ticker = ticker.strip()  # Strip leading/trailing whitespace
+        if not ticker:  # Check for empty string
+            console.print("[red]❌ Ticker cannot be empty[/red]")
+            logger.warning("User entered empty ticker")
             continue
             
         ticker_to_check = ticker.upper() if market['data_source'] != 'china_stock' else ticker
 
         if re.match(market['pattern'], ticker_to_check):
-            # 对于A股，返回纯数字代码
+            # For China A-shares, return numeric code as-is
             if market['data_source'] == 'china_stock':
-                console.print(f"[green]✅ A股代码有效: {ticker} (将使用中国股票数据源)[/green]")
-                logger.info(f"A股代码验证成功: {ticker}")
+                console.print(f"[green]✅ Valid A-share ticker: {ticker} (using China stock data source)[/green]")
+                logger.info(f"A-share ticker validated: {ticker}")
                 return ticker
             else:
-                console.print(f"[green]✅ 股票代码有效: {ticker.upper()}[/green]")
-                logger.info(f"股票代码验证成功: {ticker.upper()}")
+                console.print(f"[green]✅ Valid ticker: {ticker.upper()}[/green]")
+                logger.info(f"Ticker validated: {ticker.upper()}")
                 return ticker.upper()
         else:
-            console.print(f"[red]❌ 股票代码格式不正确 | Invalid ticker format[/red]")
-            console.print(f"[yellow]请使用正确格式: {market['format']}[/yellow]")
-            logger.warning(f"股票代码格式验证失败: {ticker}")
+            console.print("[red]❌ Invalid ticker format[/red]")
+            console.print(f"[yellow]Please use the required format: {market['format']}[/yellow]")
+            logger.warning(f"Ticker format validation failed: {ticker}")
 
 
 def get_analysis_date():
     """Get the analysis date from user input."""
     while True:
         date_str = typer.prompt(
-            "请输入分析日期 | Enter analysis date", default=datetime.datetime.now().strftime("%Y-%m-%d")
+            "Enter analysis date", default=datetime.datetime.now().strftime("%Y-%m-%d")
         )
         try:
             # Validate date format and ensure it's not in the future
             analysis_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
             if analysis_date.date() > datetime.datetime.now().date():
-                console.print(f"[red]错误：分析日期不能是未来日期 | Error: Analysis date cannot be in the future[/red]")
-                logger.warning(f"用户输入未来日期: {date_str}")
+                console.print("[red]Error: Analysis date cannot be in the future[/red]")
+                logger.warning(f"User entered a future date: {date_str}")
                 continue
             return date_str
         except ValueError:
             console.print(
-                "[red]错误：日期格式无效，请使用 YYYY-MM-DD 格式 | Error: Invalid date format. Please use YYYY-MM-DD[/red]"
+                "[red]Error: Invalid date format. Please use YYYY-MM-DD[/red]"
             )
 
 
 def display_complete_report(final_state):
     """Display the complete analysis report with team-based panels."""
-    logger.info(f"\n[bold green]Complete Analysis Report[/bold green]\n")
+    logger.info("\n[bold green]Complete Analysis Report[/bold green]\n")
 
     # I. Analyst Team Reports
     analyst_reports = []
@@ -946,11 +942,10 @@ def display_complete_report(final_state):
 
 def update_research_team_status(status):
     """
-    更新所有研究团队成员和交易员的状态
     Update status for all research team members and trader
     
     Args:
-        status: 新的状态值
+        status: New status value
     """
     research_team = ["Bull Researcher", "Bear Researcher", "Research Manager", "Trader"]
     for agent in research_team:
@@ -958,14 +953,13 @@ def update_research_team_status(status):
 
 def extract_content_string(content):
     """
-    从各种消息格式中提取字符串内容
     Extract string content from various message formats
     
     Args:
-        content: 消息内容，可能是字符串、列表或其他格式
+        content: Message content, which may be a string, list, or other format
     
     Returns:
-        str: 提取的字符串内容
+        str: Extracted string content
     """
     if isinstance(content, str):
         return content
@@ -974,11 +968,11 @@ def extract_content_string(content):
         text_parts = []
         for item in content:
             if isinstance(item, dict):
-                item_type = item.get('type')  # 缓存type值
+                item_type = item.get('type')  # Cache type value
                 if item_type == 'text':
                     text_parts.append(item.get('text', ''))
                 elif item_type == 'tool_use':
-                    tool_name = item.get('name', 'unknown')  # 缓存name值
+                    tool_name = item.get('name', 'unknown')  # Cache name value
                     text_parts.append(f"[Tool: {tool_name}]")
             else:
                 text_parts.append(str(item))
@@ -987,14 +981,14 @@ def extract_content_string(content):
         return str(content)
 
 def check_api_keys(llm_provider: str) -> bool:
-    """检查必要的API密钥是否已配置"""
+    """Check whether required API keys are configured"""
 
     missing_keys = []
 
-    # 检查LLM提供商对应的API密钥
-    if "阿里百炼" in llm_provider or "dashscope" in llm_provider.lower():
+    # Check API key corresponding to the selected LLM provider
+    if "dashscope" in llm_provider.lower() or "bailian" in llm_provider.lower():
         if not os.getenv("DASHSCOPE_API_KEY"):
-            missing_keys.append("DASHSCOPE_API_KEY (阿里百炼)")
+            missing_keys.append("DASHSCOPE_API_KEY (Alibaba Bailian / DashScope)")
     elif "openai" in llm_provider.lower():
         if not os.getenv("OPENAI_API_KEY"):
             missing_keys.append("OPENAI_API_KEY")
@@ -1005,21 +999,21 @@ def check_api_keys(llm_provider: str) -> bool:
         if not os.getenv("GOOGLE_API_KEY"):
             missing_keys.append("GOOGLE_API_KEY")
 
-    # 检查金融数据API密钥
+    # Check financial data API key
     if not os.getenv("FINNHUB_API_KEY"):
-        missing_keys.append("FINNHUB_API_KEY (金融数据)")
+        missing_keys.append("FINNHUB_API_KEY (Financial data)")
 
     if missing_keys:
-        logger.error("[red]❌ 缺少必要的API密钥 | Missing required API keys[/red]")
+        logger.error("[red]❌ Missing required API keys[/red]")
         for key in missing_keys:
             logger.info(f"   • {key}")
 
-        logger.info(f"\n[yellow]💡 解决方案 | Solutions:[/yellow]")
-        logger.info(f"1. 在项目根目录创建 .env 文件 | Create .env file in project root:")
-        logger.info(f"   DASHSCOPE_API_KEY=your_dashscope_key")
-        logger.info(f"   FINNHUB_API_KEY=your_finnhub_key")
-        logger.info(f"\n2. 或设置环境变量 | Or set environment variables")
-        logger.info(f"\n3. 运行 'python -m cli.main config' 查看详细配置说明")
+        logger.info("\n[yellow]💡 Solutions:[/yellow]")
+        logger.info("1. Create a .env file in the project root:")
+        logger.info("   DASHSCOPE_API_KEY=your_dashscope_key")
+        logger.info("   FINNHUB_API_KEY=your_finnhub_key")
+        logger.info("\n2. Or set environment variables")
+        logger.info("\n3. Run 'python -m cli.main config' for detailed configuration instructions")
 
         return False
 
@@ -1027,21 +1021,21 @@ def check_api_keys(llm_provider: str) -> bool:
 
 def run_analysis():
     import time
-    start_time = time.time()  # 记录开始时间
+    start_time = time.time()  # Record start time
     
     # First get all user selections
     selections = get_user_selections()
 
     # Check API keys before proceeding
     if not check_api_keys(selections["llm_provider"]):
-        ui.show_error("分析终止 | Analysis terminated")
+        ui.show_error("Analysis terminated")
         return
 
-    # 显示分析开始信息
-    ui.show_step_header(1, "准备分析环境 | Preparing Analysis Environment")
-    ui.show_progress(f"正在分析股票: {selections['ticker']}")
-    ui.show_progress(f"分析日期: {selections['analysis_date']}")
-    ui.show_progress(f"选择的分析师: {', '.join(analyst.value for analyst in selections['analysts'])}")
+    # Display analysis start information
+    ui.show_step_header(1, "Preparing Analysis Environment")
+    ui.show_progress(f"Analyzing ticker: {selections['ticker']}")
+    ui.show_progress(f"Analysis date: {selections['analysis_date']}")
+    ui.show_progress(f"Selected analysts: {', '.join(analyst.value for analyst in selections['analysts'])}")
 
     # Create config with selected research depth
     config = DEFAULT_CONFIG.copy()
@@ -1050,17 +1044,17 @@ def run_analysis():
     config["quick_think_llm"] = selections["shallow_thinker"]
     config["deep_think_llm"] = selections["deep_thinker"]
     config["backend_url"] = selections["backend_url"]
-    # 处理LLM提供商名称，确保正确识别
+    # Normalize LLM provider name
     selected_llm_provider_name = selections["llm_provider"].lower()
-    if "阿里百炼" in selections["llm_provider"] or "dashscope" in selected_llm_provider_name:
+    if "dashscope" in selected_llm_provider_name or "bailian" in selected_llm_provider_name:
         config["llm_provider"] = "dashscope"
-    elif "deepseek" in selected_llm_provider_name or "DeepSeek" in selections["llm_provider"]:
+    elif "deepseek" in selected_llm_provider_name:
         config["llm_provider"] = "deepseek"
-    elif "openai" in selected_llm_provider_name and "自定义" not in selections["llm_provider"]:
+    elif "openai" in selected_llm_provider_name and "custom" not in selected_llm_provider_name:
         config["llm_provider"] = "openai"
-    elif "自定义openai端点" in selected_llm_provider_name or "自定义" in selections["llm_provider"]:
+    elif "custom" in selected_llm_provider_name:
         config["llm_provider"] = "custom_openai"
-        # 从环境变量获取自定义URL
+        # Retrieve custom URL from environment variable
         custom_url = os.getenv('CUSTOM_OPENAI_BASE_URL', selections["backend_url"])
         config["custom_openai_base_url"] = custom_url
         config["backend_url"] = custom_url
@@ -1072,23 +1066,23 @@ def run_analysis():
         config["llm_provider"] = selected_llm_provider_name
 
     # Initialize the graph
-    ui.show_progress("正在初始化分析系统...")
+    ui.show_progress("Initializing analysis system...")
     try:
         graph = TradingAgentsGraph(
             [analyst.value for analyst in selections["analysts"]], config=config, debug=True
         )
-        ui.show_success("分析系统初始化完成")
+        ui.show_success("Analysis system initialized")
     except ImportError as e:
-        ui.show_error(f"模块导入失败 | Module import failed: {str(e)}")
-        ui.show_warning("💡 请检查依赖安装 | Please check dependencies installation")
+        ui.show_error(f"Module import failed: {str(e)}")
+        ui.show_warning("💡 Please check dependencies installation")
         return
     except ValueError as e:
-        ui.show_error(f"配置参数错误 | Configuration error: {str(e)}")
-        ui.show_warning("💡 请检查配置参数 | Please check configuration parameters")
+        ui.show_error(f"Configuration error: {str(e)}")
+        ui.show_warning("💡 Please check configuration parameters")
         return
     except Exception as e:
-        ui.show_error(f"初始化失败 | Initialization failed: {str(e)}")
-        ui.show_warning("💡 请检查API密钥配置 | Please check API key configuration")
+        ui.show_error(f"Initialization failed: {str(e)}")
+        ui.show_warning("💡 Please check API key configuration")
         return
 
     # Create result directory
@@ -1177,65 +1171,41 @@ def run_analysis():
         )
         update_display(layout, spinner_text)
 
-        # 显示数据预获取和验证阶段
-        ui.show_step_header(2, "数据验证阶段 | Data Validation Phase")
-        ui.show_progress("🔍 验证股票代码并预获取数据...")
+        # Display data pre-fetching and validation phase
+        ui.show_step_header(2, "Data Validation Phase")
+        ui.show_progress("🔍 Validating ticker and pre-fetching data...")
 
         try:
             from tradingagents.utils.stock_validator import prepare_stock_data
 
-            # 确定市场类型
-            market_type_map = {
-                "china_stock": "A股",
-                "yahoo_finance": "港股" if ".HK" in selections["ticker"] else "美股"
-            }
-
-            # 获取选定市场的数据源类型
-            selected_market = None
-            for choice, market in {
-                "1": {"data_source": "yahoo_finance"},
-                "2": {"data_source": "china_stock"},
-                "3": {"data_source": "yahoo_finance"}
-            }.items():
-                # 这里需要从用户选择中获取市场类型，暂时使用代码推断
-                pass
-
-            # 根据股票代码推断市场类型
-            if re.match(r'^\d{6}$', selections["ticker"]):
-                market_type = "A股"
-            elif ".HK" in selections["ticker"].upper():
-                market_type = "港股"
-            else:
-                market_type = "美股"
-
-            # 预获取股票数据（默认30天历史数据）
+            # Pre-fetch stock data (default 30 days of historical data, auto-detect market type)
             preparation_result = prepare_stock_data(
                 stock_code=selections["ticker"],
-                market_type=market_type,
+                market_type="auto",
                 period_days=30,
                 analysis_date=selections["analysis_date"]
             )
 
             if not preparation_result.is_valid:
-                ui.show_error(f"❌ 股票数据验证失败: {preparation_result.error_message}")
-                ui.show_warning(f"💡 建议: {preparation_result.suggestion}")
-                logger.error(f"股票数据验证失败: {preparation_result.error_message}")
+                ui.show_error(f"❌ Stock data validation failed: {preparation_result.error_message}")
+                ui.show_warning(f"💡 Suggestion: {preparation_result.suggestion}")
+                logger.error(f"Stock data validation failed: {preparation_result.error_message}")
                 return
 
-            # 数据预获取成功
-            ui.show_success(f"✅ 数据准备完成: {preparation_result.stock_name} ({preparation_result.market_type})")
-            ui.show_user_message(f"📊 缓存状态: {preparation_result.cache_status}", "dim")
-            logger.info(f"股票数据预获取成功: {preparation_result.stock_name}")
+            # Data pre-fetching succeeded
+            ui.show_success(f"✅ Data preparation completed: {preparation_result.stock_name} ({preparation_result.market_type})")
+            ui.show_user_message(f"📊 Cache status: {preparation_result.cache_status}", "dim")
+            logger.info(f"Stock data pre-fetched successfully: {preparation_result.stock_name}")
 
         except Exception as e:
-            ui.show_error(f"❌ 数据预获取过程中发生错误: {str(e)}")
-            ui.show_warning("💡 请检查网络连接或稍后重试")
-            logger.error(f"数据预获取异常: {str(e)}")
+            ui.show_error(f"❌ Error occurred during data pre-fetching: {str(e)}")
+            ui.show_warning("💡 Please check your network connection or try again later")
+            logger.error(f"Data pre-fetching error: {str(e)}")
             return
 
-        # 显示数据获取阶段
-        ui.show_step_header(3, "数据获取阶段 | Data Collection Phase")
-        ui.show_progress("正在获取股票基本信息...")
+        # Display data collection phase
+        ui.show_step_header(3, "Data Collection Phase")
+        ui.show_progress("Fetching basic stock information...")
 
         # Initialize state and get graph args
         init_agent_state = graph.propagator.create_initial_state(
@@ -1243,25 +1213,25 @@ def run_analysis():
         )
         args = graph.propagator.get_graph_args()
 
-        ui.show_success("数据获取准备完成")
+        ui.show_success("Data collection preparation completed")
 
-        # 显示分析阶段
-        ui.show_step_header(4, "智能分析阶段 | AI Analysis Phase (预计耗时约10分钟)")
-        ui.show_progress("启动分析师团队...")
-        ui.show_user_message("💡 提示：智能分析包含多个团队协作，请耐心等待约10分钟", "dim")
+        # Display AI analysis phase
+        ui.show_step_header(4, "AI Analysis Phase (estimated ~10 minutes)")
+        ui.show_progress("Starting analyst team...")
+        ui.show_user_message("💡 Tip: AI analysis involves multi-team collaboration; please wait ~10 minutes", "dim")
 
         # Stream the analysis
         trace = []
         current_analyst = None
         analysis_steps = {
-            "market_report": "📈 市场分析师",
-            "fundamentals_report": "📊 基本面分析师",
-            "technical_report": "🔍 技术分析师",
-            "sentiment_report": "💭 情感分析师",
-            "final_report": "🤖 信号处理器"
+            "market_report": "📈 Market Analyst",
+            "fundamentals_report": "📊 Fundamentals Analyst",
+            "technical_report": "🔍 Technical Analyst",
+            "sentiment_report": "💭 Sentiment Analyst",
+            "final_report": "🤖 Signal Processor"
         }
 
-        # 跟踪已完成的分析师，避免重复提示
+        # Track completed analysts to avoid duplicate notifications
         completed_analysts = set()
 
         for chunk in graph.graph.stream(init_agent_state, **args):
@@ -1294,15 +1264,13 @@ def run_analysis():
                 # Update reports and agent status based on chunk content
                 # Analyst Team Reports
                 if "market_report" in chunk and chunk["market_report"]:
-                    # 只在第一次完成时显示提示
+                    # Show notification only on first completion
                     if "market_report" not in completed_analysts:
-                        ui.show_success("📈 市场分析完成")
+                        ui.show_success("📈 Market analysis completed")
                         completed_analysts.add("market_report")
-                        # 调试信息（写入日志文件）
-                        logger.info(f"首次显示市场分析完成提示，已完成分析师: {completed_analysts}")
+                        logger.info(f"First market analysis completion notification shown; completed analysts: {completed_analysts}")
                     else:
-                        # 调试信息（写入日志文件）
-                        logger.debug(f"跳过重复的市场分析完成提示，已完成分析师: {completed_analysts}")
+                        logger.debug(f"Skipping duplicate market analysis completion notification; completed analysts: {completed_analysts}")
 
                     message_buffer.update_report_section(
                         "market_report", chunk["market_report"]
@@ -1315,15 +1283,13 @@ def run_analysis():
                         )
 
                 if "sentiment_report" in chunk and chunk["sentiment_report"]:
-                    # 只在第一次完成时显示提示
+                    # Show notification only on first completion
                     if "sentiment_report" not in completed_analysts:
-                        ui.show_success("💭 情感分析完成")
+                        ui.show_success("💭 Sentiment analysis completed")
                         completed_analysts.add("sentiment_report")
-                        # 调试信息（写入日志文件）
-                        logger.info(f"首次显示情感分析完成提示，已完成分析师: {completed_analysts}")
+                        logger.info(f"First sentiment analysis completion notification shown; completed analysts: {completed_analysts}")
                     else:
-                        # 调试信息（写入日志文件）
-                        logger.debug(f"跳过重复的情感分析完成提示，已完成分析师: {completed_analysts}")
+                        logger.debug(f"Skipping duplicate sentiment analysis completion notification; completed analysts: {completed_analysts}")
 
                     message_buffer.update_report_section(
                         "sentiment_report", chunk["sentiment_report"]
@@ -1336,15 +1302,13 @@ def run_analysis():
                         )
 
                 if "news_report" in chunk and chunk["news_report"]:
-                    # 只在第一次完成时显示提示
+                    # Show notification only on first completion
                     if "news_report" not in completed_analysts:
-                        ui.show_success("📰 新闻分析完成")
+                        ui.show_success("📰 News analysis completed")
                         completed_analysts.add("news_report")
-                        # 调试信息（写入日志文件）
-                        logger.info(f"首次显示新闻分析完成提示，已完成分析师: {completed_analysts}")
+                        logger.info(f"First news analysis completion notification shown; completed analysts: {completed_analysts}")
                     else:
-                        # 调试信息（写入日志文件）
-                        logger.debug(f"跳过重复的新闻分析完成提示，已完成分析师: {completed_analysts}")
+                        logger.debug(f"Skipping duplicate news analysis completion notification; completed analysts: {completed_analysts}")
 
                     message_buffer.update_report_section(
                         "news_report", chunk["news_report"]
@@ -1357,15 +1321,13 @@ def run_analysis():
                         )
 
                 if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
-                    # 只在第一次完成时显示提示
+                    # Show notification only on first completion
                     if "fundamentals_report" not in completed_analysts:
-                        ui.show_success("📊 基本面分析完成")
+                        ui.show_success("📊 Fundamentals analysis completed")
                         completed_analysts.add("fundamentals_report")
-                        # 调试信息（写入日志文件）
-                        logger.info(f"首次显示基本面分析完成提示，已完成分析师: {completed_analysts}")
+                        logger.info(f"First fundamentals analysis completion notification shown; completed analysts: {completed_analysts}")
                     else:
-                        # 调试信息（写入日志文件）
-                        logger.debug(f"跳过重复的基本面分析完成提示，已完成分析师: {completed_analysts}")
+                        logger.debug(f"Skipping duplicate fundamentals analysis completion notification; completed analysts: {completed_analysts}")
 
                     message_buffer.update_report_section(
                         "fundamentals_report", chunk["fundamentals_report"]
@@ -1385,9 +1347,9 @@ def run_analysis():
 
                     # Update Bull Researcher status and report
                     if "bull_history" in debate_state and debate_state["bull_history"]:
-                        # 显示研究团队开始工作
+                        # Show research team started notification
                         if "research_team_started" not in completed_analysts:
-                            ui.show_progress("🔬 研究团队开始深度分析...")
+                            ui.show_progress("🔬 Research team starting in-depth analysis...")
                             completed_analysts.add("research_team_started")
 
                         # Keep all research team members in progress
@@ -1423,9 +1385,9 @@ def run_analysis():
                         "judge_decision" in debate_state
                         and debate_state["judge_decision"]
                     ):
-                        # 显示研究团队完成
+                        # Show research team completion notification
                         if "research_team" not in completed_analysts:
-                            ui.show_success("🔬 研究团队分析完成")
+                            ui.show_success("🔬 Research team analysis completed")
                             completed_analysts.add("research_team")
 
                         # Keep all research team members in progress until final decision
@@ -1451,14 +1413,14 @@ def run_analysis():
                     "trader_investment_plan" in chunk
                     and chunk["trader_investment_plan"]
                 ):
-                    # 显示交易团队开始工作
+                    # Show trading team started notification
                     if "trading_team_started" not in completed_analysts:
-                        ui.show_progress("💼 交易团队制定投资计划...")
+                        ui.show_progress("💼 Trading team formulating investment plan...")
                         completed_analysts.add("trading_team_started")
 
-                    # 显示交易团队完成
+                    # Show trading team completion notification
                     if "trading_team" not in completed_analysts:
-                        ui.show_success("💼 交易团队计划完成")
+                        ui.show_success("💼 Trading team plan completed")
                         completed_analysts.add("trading_team")
 
                     message_buffer.update_report_section(
@@ -1476,9 +1438,9 @@ def run_analysis():
                         "current_risky_response" in risk_state
                         and risk_state["current_risky_response"]
                     ):
-                        # 显示风险管理团队开始工作
+                        # Show risk management team started notification
                         if "risk_team_started" not in completed_analysts:
-                            ui.show_progress("⚖️ 风险管理团队评估投资风险...")
+                            ui.show_progress("⚖️ Risk management team evaluating investment risks...")
                             completed_analysts.add("risk_team_started")
 
                         message_buffer.update_agent_status(
@@ -1532,9 +1494,9 @@ def run_analysis():
 
                     # Update Portfolio Manager status and final decision
                     if "judge_decision" in risk_state and risk_state["judge_decision"]:
-                        # 显示风险管理团队完成
+                        # Show risk management team completion notification
                         if "risk_management" not in completed_analysts:
-                            ui.show_success("⚖️ 风险管理团队分析完成")
+                            ui.show_success("⚖️ Risk management team analysis completed")
                             completed_analysts.add("risk_management")
 
                         message_buffer.update_agent_status(
@@ -1564,15 +1526,15 @@ def run_analysis():
 
             trace.append(chunk)
 
-        # 显示最终决策阶段
-        ui.show_step_header(5, "投资决策生成 | Investment Decision Generation")
-        ui.show_progress("正在处理投资信号...")
+        # Display final decision phase
+        ui.show_step_header(5, "Investment Decision Generation")
+        ui.show_progress("Processing investment signals...")
 
         # Get final state and decision
         final_state = trace[-1]
         decision = graph.process_signal(final_state["final_trade_decision"], selections['ticker'])
 
-        ui.show_success("🤖 投资信号处理完成")
+        ui.show_success("🤖 Investment signal processing completed")
 
         # Update all agent statuses to completed
         for agent in message_buffer.agent_status:
@@ -1587,30 +1549,29 @@ def run_analysis():
             if section in final_state:
                 message_buffer.update_report_section(section, final_state[section])
 
-        # 显示报告生成完成
-        ui.show_step_header(6, "分析报告生成 | Analysis Report Generation")
-        ui.show_progress("正在生成最终报告...")
+        # Display report generation phase
+        ui.show_step_header(6, "Analysis Report Generation")
+        ui.show_progress("Generating final report...")
 
         # Display the complete final report
         display_complete_report(final_state)
 
-        ui.show_success("📋 分析报告生成完成")
-        ui.show_success(f"🎉 {selections['ticker']} 股票分析全部完成！")
+        ui.show_success("📋 Analysis report generation completed")
+        ui.show_success(f"🎉 {selections['ticker']} stock analysis completed!")
         
-        # 记录总执行时间
+        # Record total execution time
         total_time = time.time() - start_time
-        ui.show_user_message(f"⏱️ 总分析时间: {total_time:.1f}秒", "dim")
+        ui.show_user_message(f"⏱️ Total analysis time: {total_time:.1f}s", "dim")
 
         update_display(layout)
 
 
 @app.command(
     name="analyze",
-    help="开始股票分析 | Start stock analysis"
+    help="Start stock analysis"
 )
 def analyze():
     """
-    启动交互式股票分析工具
     Launch interactive stock analysis tool
     """
     run_analysis()
@@ -1618,58 +1579,57 @@ def analyze():
 
 @app.command(
     name="config",
-    help="配置设置 | Configuration settings"
+    help="Configuration settings"
 )
 def config():
     """
-    显示和配置系统设置
     Display and configure system settings
     """
-    logger.info(f"\n[bold blue]🔧 TradingAgents 配置 | Configuration[/bold blue]")
-    logger.info(f"\n[yellow]当前支持的LLM提供商 | Supported LLM Providers:[/yellow]")
+    logger.info("\n[bold blue]🔧 TradingAgents Configuration[/bold blue]")
+    logger.info("\n[yellow]Supported LLM Providers:[/yellow]")
 
     providers_table = Table(show_header=True, header_style="bold magenta")
-    providers_table.add_column("提供商 | Provider", style="cyan")
-    providers_table.add_column("模型 | Models", style="green")
-    providers_table.add_column("状态 | Status", style="yellow")
-    providers_table.add_column("说明 | Description")
+    providers_table.add_column("Provider", style="cyan")
+    providers_table.add_column("Models", style="green")
+    providers_table.add_column("Status", style="yellow")
+    providers_table.add_column("Description")
 
     providers_table.add_row(
-        "🇨🇳 阿里百炼 (DashScope)",
+        "🇨🇳 Alibaba Bailian (DashScope)",
         "qwen-turbo, qwen-plus, qwen-max",
-        "✅ 推荐 | Recommended",
-        "国产大模型，中文优化 | Chinese-optimized"
+        "✅ Recommended",
+        "Domestic flagship models, Chinese-optimized"
     )
     providers_table.add_row(
         "🌍 OpenAI",
         "gpt-4o, gpt-4o-mini, gpt-3.5-turbo",
-        "✅ 支持 | Supported",
-        "需要国外API | Requires overseas API"
+        "✅ Supported",
+        "Requires international API access"
     )
     providers_table.add_row(
         "🤖 Anthropic",
         "claude-3-opus, claude-3-sonnet",
-        "✅ 支持 | Supported",
-        "需要国外API | Requires overseas API"
+        "✅ Supported",
+        "Requires international API access"
     )
     providers_table.add_row(
         "🔍 Google AI",
         "gemini-pro, gemini-2.0-flash",
-        "✅ 支持 | Supported",
-        "需要国外API | Requires overseas API"
+        "✅ Supported",
+        "Requires international API access"
     )
 
     console.print(providers_table)
 
-    # 检查API密钥状态
-    logger.info(f"\n[yellow]API密钥状态 | API Key Status:[/yellow]")
+    # Check API key status
+    logger.info("\n[yellow]API Key Status:[/yellow]")
 
     api_keys_table = Table(show_header=True, header_style="bold magenta")
-    api_keys_table.add_column("API密钥 | API Key", style="cyan")
-    api_keys_table.add_column("状态 | Status", style="yellow")
-    api_keys_table.add_column("说明 | Description")
+    api_keys_table.add_column("API Key", style="cyan")
+    api_keys_table.add_column("Status", style="yellow")
+    api_keys_table.add_column("Description")
 
-    # 检查各个API密钥
+    # Check individual API keys
     dashscope_key = os.getenv("DASHSCOPE_API_KEY")
     openai_key = os.getenv("OPENAI_API_KEY")
     finnhub_key = os.getenv("FINNHUB_API_KEY")
@@ -1678,180 +1638,177 @@ def config():
 
     api_keys_table.add_row(
         "DASHSCOPE_API_KEY",
-        "✅ 已配置" if dashscope_key else "❌ 未配置",
-        f"阿里百炼 | {dashscope_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if dashscope_key else "阿里百炼API密钥"
+        "✅ Configured" if dashscope_key else "❌ Not configured",
+        f"Alibaba Bailian | {dashscope_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if dashscope_key else "Alibaba Bailian API key"
     )
     api_keys_table.add_row(
         "FINNHUB_API_KEY",
-        "✅ 已配置" if finnhub_key else "❌ 未配置",
-        f"金融数据 | {finnhub_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if finnhub_key else "金融数据API密钥"
+        "✅ Configured" if finnhub_key else "❌ Not configured",
+        f"Financial data | {finnhub_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if finnhub_key else "Financial data API key"
     )
     api_keys_table.add_row(
         "OPENAI_API_KEY",
-        "✅ 已配置" if openai_key else "❌ 未配置",
-        f"OpenAI | {openai_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if openai_key else "OpenAI API密钥"
+        "✅ Configured" if openai_key else "❌ Not configured",
+        f"OpenAI | {openai_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if openai_key else "OpenAI API key"
     )
     api_keys_table.add_row(
         "ANTHROPIC_API_KEY",
-        "✅ 已配置" if anthropic_key else "❌ 未配置",
-        f"Anthropic | {anthropic_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if anthropic_key else "Anthropic API密钥"
+        "✅ Configured" if anthropic_key else "❌ Not configured",
+        f"Anthropic | {anthropic_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if anthropic_key else "Anthropic API key"
     )
     api_keys_table.add_row(
         "GOOGLE_API_KEY",
-        "✅ 已配置" if google_key else "❌ 未配置",
-        f"Google AI | {google_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if google_key else "Google AI API密钥"
+        "✅ Configured" if google_key else "❌ Not configured",
+        f"Google AI | {google_key[:DEFAULT_API_KEY_DISPLAY_LENGTH]}..." if google_key else "Google AI API key"
     )
 
     console.print(api_keys_table)
 
-    logger.info(f"\n[yellow]配置API密钥 | Configure API Keys:[/yellow]")
-    logger.info(f"1. 编辑项目根目录的 .env 文件 | Edit .env file in project root")
-    logger.info(f"2. 或设置环境变量 | Or set environment variables:")
-    logger.info(f"   - DASHSCOPE_API_KEY (阿里百炼)")
-    logger.info(f"   - OPENAI_API_KEY (OpenAI)")
-    logger.info(f"   - FINNHUB_API_KEY (金融数据 | Financial data)")
+    logger.info("\n[yellow]Configure API Keys:[/yellow]")
+    logger.info("1. Edit the .env file in the project root")
+    logger.info("2. Or set environment variables:")
+    logger.info("   - DASHSCOPE_API_KEY (Alibaba Bailian / DashScope)")
+    logger.info("   - OPENAI_API_KEY (OpenAI)")
+    logger.info("   - FINNHUB_API_KEY (Financial data)")
 
-    # 如果缺少关键API密钥，给出提示
+    # Warn if critical API keys are missing
     if not dashscope_key or not finnhub_key:
-        logger.warning("[red]⚠️ 警告 | Warning:[/red]")
+        logger.warning("[red]⚠️ Warning:[/red]")
         if not dashscope_key:
-            logger.info(f"   • 缺少阿里百炼API密钥，无法使用推荐的中文优化模型")
+            logger.info("   • DASHSCOPE_API_KEY is missing; recommended Chinese-optimized models are unavailable")
         if not finnhub_key:
-            logger.info(f"   • 缺少金融数据API密钥，无法获取实时股票数据")
+            logger.info("   • FINNHUB_API_KEY is missing; real-time US stock data may be unavailable")
 
-    logger.info(f"\n[yellow]示例程序 | Example Programs:[/yellow]")
-    logger.info(f"• python examples/dashscope/demo_dashscope_chinese.py  # 中文分析演示")
-    logger.info(f"• python examples/dashscope/demo_dashscope_simple.py   # 简单测试")
-    logger.info(f"• python tests/integration/test_dashscope_integration.py  # 集成测试")
+    logger.info("\n[yellow]Example Programs:[/yellow]")
+    logger.info("• python examples/dashscope/demo_dashscope_chinese.py  # DashScope analysis demo")
+    logger.info("• python examples/dashscope/demo_dashscope_simple.py   # Simple test")
+    logger.info("• python tests/integration/test_dashscope_integration.py  # Integration test")
 
 
 @app.command(
     name="version",
-    help="版本信息 | Version information"
+    help="Version information"
 )
 def version():
     """
-    显示版本信息
     Display version information
     """
-    # 读取版本号
+    # Read version number
     try:
         with open("VERSION", "r", encoding="utf-8") as f:
             version = f.read().strip()
     except FileNotFoundError:
         version = "1.0.0"
 
-    logger.info(f"\n[bold blue]📊 TradingAgents 版本信息 | Version Information[/bold blue]")
-    logger.info(f"[green]版本 | Version:[/green] {version} [yellow](预览版 | Preview)[/yellow]")
-    logger.info(f"[green]发布日期 | Release Date:[/green] 2025-06-26")
-    logger.info(f"[green]框架 | Framework:[/green] 多智能体金融交易分析 | Multi-Agent Financial Trading Analysis")
-    logger.info(f"[green]支持的语言 | Languages:[/green] 中文 | English")
-    logger.info(f"[green]开发状态 | Development Status:[/green] [yellow]早期预览版，功能持续完善中[/yellow]")
-    logger.info(f"[green]基于项目 | Based on:[/green] [blue]TauricResearch/TradingAgents[/blue]")
-    logger.info(f"[green]创建目的 | Purpose:[/green] [cyan]更好地在中国推广TradingAgents[/cyan]")
-    logger.info(f"[green]主要功能 | Features:[/green]")
-    logger.info(f"  • 🤖 多智能体协作分析 | Multi-agent collaborative analysis")
-    logger.info(f"  • 🇨🇳 阿里百炼大模型支持 | Alibaba DashScope support")
-    logger.info(f"  • 📈 实时股票数据分析 | Real-time stock data analysis")
-    logger.info(f"  • 🧠 智能投资建议 | Intelligent investment recommendations")
-    logger.debug(f"  • 🔍 风险评估 | Risk assessment")
+    logger.info("\n[bold blue]📊 TradingAgents Version Information[/bold blue]")
+    logger.info(f"[green]Version:[/green] {version} [yellow](Preview)[/yellow]")
+    logger.info("[green]Release Date:[/green] 2025-06-26")
+    logger.info("[green]Framework:[/green] Multi-Agent Financial Trading Analysis")
+    logger.info("[green]Supported Languages:[/green] English / Chinese")
+    logger.info("[green]Development Status:[/green] [yellow]Early preview; features under active development[/yellow]")
+    logger.info("[green]Based on:[/green] [blue]TauricResearch/TradingAgents[/blue]")
+    logger.info("[green]Purpose:[/green] [cyan]Enhanced multi-market support for TradingAgents[/cyan]")
+    logger.info("[green]Features:[/green]")
+    logger.info("  • 🤖 Multi-agent collaborative analysis")
+    logger.info("  • 🇨🇳 Alibaba Bailian (DashScope) LLM support")
+    logger.info("  • 📈 Real-time stock data analysis")
+    logger.info("  • 🧠 Intelligent investment recommendations")
+    logger.debug("  • 🔍 Risk assessment")
 
-    logger.warning(f"\n[yellow]⚠️  预览版本提醒 | Preview Version Notice:[/yellow]")
-    logger.info(f"  • 这是早期预览版本，功能仍在完善中")
-    logger.info(f"  • 建议仅在测试环境中使用")
-    logger.info(f"  • 投资建议仅供参考，请谨慎决策")
-    logger.info(f"  • 欢迎反馈问题和改进建议")
+    logger.warning("\n[yellow]⚠️  Preview Version Notice:[/yellow]")
+    logger.info("  • This is an early preview release; features are still being refined")
+    logger.info("  • Recommended for testing and educational environments only")
+    logger.info("  • Investment recommendations are for reference only; please make decisions prudently")
+    logger.info("  • Feedback and improvement suggestions are welcome")
 
-    logger.info(f"\n[blue]🙏 致敬源项目 | Tribute to Original Project:[/blue]")
-    logger.info(f"  • 💎 感谢 Tauric Research 团队提供的珍贵源码")
-    logger.info(f"  • 🔄 感谢持续的维护、更新和改进工作")
-    logger.info(f"  • 🌍 感谢选择Apache 2.0协议的开源精神")
-    logger.info(f"  • 🎯 本项目旨在更好地在中国推广TradingAgents")
-    logger.info(f"  • 🔗 源项目: https://github.com/TauricResearch/TradingAgents")
+    logger.info("\n[blue]🙏 Tribute to Original Project:[/blue]")
+    logger.info("  • 💎 Thanks to the Tauric Research team for the open-source codebase")
+    logger.info("  • 🔄 Thanks for continuous maintenance, updates, and improvements")
+    logger.info("  • 🌍 Released under the Apache 2.0 open-source license")
+    logger.info("  • 🔗 Upstream repository: https://github.com/TauricResearch/TradingAgents")
 
 
 @app.command(
     name="data-config",
-    help="数据目录配置 | Data directory configuration"
+    help="Data directory configuration"
 )
 def data_config(
-    show: bool = typer.Option(False, "--show", "-s", help="显示当前配置 | Show current configuration"),
-    set_dir: Optional[str] = typer.Option(None, "--set", "-d", help="设置数据目录 | Set data directory"),
-    reset: bool = typer.Option(False, "--reset", "-r", help="重置为默认配置 | Reset to default configuration")
+    show: bool = typer.Option(False, "--show", "-s", help="Show current configuration"),
+    set_dir: Optional[str] = typer.Option(None, "--set", "-d", help="Set data directory"),
+    reset: bool = typer.Option(False, "--reset", "-r", help="Reset to default configuration")
 ):
     """
-    配置数据目录路径
     Configure data directory paths
     """
     from tradingagents.config.config_manager import config_manager
 
-    # 使用 config_manager 的方法
+    # Use config_manager methods
     get_data_dir = config_manager.get_data_dir
     set_data_dir = config_manager.set_data_dir
     
-    logger.info(f"\n[bold blue]📁 数据目录配置 | Data Directory Configuration[/bold blue]")
+    logger.info("\n[bold blue]📁 Data Directory Configuration[/bold blue]")
     
     if reset:
-        # 重置为默认配置
+        # Reset to default configuration
         default_data_dir = os.path.join(os.path.expanduser("~"), "Documents", "TradingAgents", "data")
         set_data_dir(default_data_dir)
-        logger.info(f"[green]✅ 已重置数据目录为默认路径: {default_data_dir}[/green]")
+        logger.info(f"[green]✅ Reset data directory to default path: {default_data_dir}[/green]")
         return
     
     if set_dir:
-        # 设置新的数据目录
+        # Set new data directory
         try:
             set_data_dir(set_dir)
-            logger.info(f"[green]✅ 数据目录已设置为: {set_dir}[/green]")
+            logger.info(f"[green]✅ Data directory set to: {set_dir}[/green]")
             
-            # 显示创建的目录结构
+            # Display created directory structure
             if os.path.exists(set_dir):
-                logger.info(f"\n[blue]📂 目录结构:[/blue]")
+                logger.info("\n[blue]📂 Directory Structure:[/blue]")
                 for root, dirs, files in os.walk(set_dir):
                     level = root.replace(set_dir, '').count(os.sep)
-                    if level > 2:  # 限制显示深度
+                    if level > 2:  # Limit display depth
                         continue
                     indent = '  ' * level
                     logger.info(f"{indent}📁 {os.path.basename(root)}/")
         except Exception as e:
-            logger.error(f"[red]❌ 设置数据目录失败: {e}[/red]")
+            logger.error(f"[red]❌ Failed to set data directory: {e}[/red]")
         return
     
-    # 显示当前配置（默认行为或使用--show）
+    # Show current configuration (default behavior or --show)
     settings = config_manager.load_settings()
     current_data_dir = get_data_dir()
     
-    # 配置信息表格
+    # Configuration table
     config_table = Table(show_header=True, header_style="bold magenta")
-    config_table.add_column("配置项 | Configuration", style="cyan")
-    config_table.add_column("路径 | Path", style="green")
-    config_table.add_column("状态 | Status", style="yellow")
+    config_table.add_column("Configuration", style="cyan")
+    config_table.add_column("Path", style="green")
+    config_table.add_column("Status", style="yellow")
     
     directories = {
-        "数据目录 | Data Directory": settings.get("data_dir", "未配置"),
-        "缓存目录 | Cache Directory": settings.get("cache_dir", "未配置"),
-        "结果目录 | Results Directory": settings.get("results_dir", "未配置")
+        "Data Directory": settings.get("data_dir", "Not configured"),
+        "Cache Directory": settings.get("cache_dir", "Not configured"),
+        "Results Directory": settings.get("results_dir", "Not configured")
     }
     
     for name, path in directories.items():
-        if path and path != "未配置":
-            status = "✅ 存在" if os.path.exists(path) else "❌ 不存在"
+        if path and path != "Not configured":
+            status = "✅ Exists" if os.path.exists(path) else "❌ Does not exist"
         else:
-            status = "⚠️ 未配置"
+            status = "⚠️ Not configured"
         config_table.add_row(name, str(path), status)
     
     console.print(config_table)
     
-    # 环境变量信息
-    logger.info(f"\n[blue]🌍 环境变量 | Environment Variables:[/blue]")
+    # Environment variables info
+    logger.info("\n[blue]🌍 Environment Variables:[/blue]")
     env_table = Table(show_header=True, header_style="bold magenta")
-    env_table.add_column("环境变量 | Variable", style="cyan")
-    env_table.add_column("值 | Value", style="green")
+    env_table.add_column("Variable", style="cyan")
+    env_table.add_column("Value", style="green")
     
     env_vars = {
-        "TRADINGAGENTS_DATA_DIR": os.getenv("TRADINGAGENTS_DATA_DIR", "未设置"),
-        "TRADINGAGENTS_CACHE_DIR": os.getenv("TRADINGAGENTS_CACHE_DIR", "未设置"),
-        "TRADINGAGENTS_RESULTS_DIR": os.getenv("TRADINGAGENTS_RESULTS_DIR", "未设置")
+        "TRADINGAGENTS_DATA_DIR": os.getenv("TRADINGAGENTS_DATA_DIR", "Not set"),
+        "TRADINGAGENTS_CACHE_DIR": os.getenv("TRADINGAGENTS_CACHE_DIR", "Not set"),
+        "TRADINGAGENTS_RESULTS_DIR": os.getenv("TRADINGAGENTS_RESULTS_DIR", "Not set")
     }
     
     for var, value in env_vars.items():
@@ -1859,81 +1816,79 @@ def data_config(
     
     console.print(env_table)
     
-    # 使用说明
-    logger.info(f"\n[yellow]💡 使用说明 | Usage:[/yellow]")
-    logger.info(f"• 设置数据目录: tradingagents data-config --set /path/to/data")
-    logger.info(f"• 重置为默认: tradingagents data-config --reset")
-    logger.info(f"• 查看当前配置: tradingagents data-config --show")
-    logger.info(f"• 环境变量优先级最高 | Environment variables have highest priority")
+    # Usage instructions
+    logger.info("\n[yellow]💡 Usage:[/yellow]")
+    logger.info("• Set data directory: tradingagents data-config --set /path/to/data")
+    logger.info("• Reset to default: tradingagents data-config --reset")
+    logger.info("• Show current config: tradingagents data-config --show")
+    logger.info("• Environment variables take highest priority")
 
 
 @app.command(
     name="examples",
-    help="示例程序 | Example programs"
+    help="Example programs"
 )
 def examples():
     """
-    显示可用的示例程序
     Display available example programs
     """
-    logger.info(f"\n[bold blue]📚 TradingAgents 示例程序 | Example Programs[/bold blue]")
+    logger.info("\n[bold blue]📚 TradingAgents Example Programs[/bold blue]")
 
     examples_table = Table(show_header=True, header_style="bold magenta")
-    examples_table.add_column("类型 | Type", style="cyan")
-    examples_table.add_column("文件名 | Filename", style="green")
-    examples_table.add_column("说明 | Description")
+    examples_table.add_column("Type", style="cyan")
+    examples_table.add_column("Filename", style="green")
+    examples_table.add_column("Description")
 
     examples_table.add_row(
-        "🇨🇳 阿里百炼",
+        "🇨🇳 Alibaba Bailian",
         "examples/dashscope/demo_dashscope_chinese.py",
-        "中文优化的股票分析演示 | Chinese-optimized stock analysis"
+        "Chinese-optimized stock analysis demonstration"
     )
     examples_table.add_row(
-        "🇨🇳 阿里百炼",
+        "🇨🇳 Alibaba Bailian",
         "examples/dashscope/demo_dashscope.py",
-        "完整功能演示 | Full feature demonstration"
+        "Full feature demonstration"
     )
     examples_table.add_row(
-        "🇨🇳 阿里百炼",
+        "🇨🇳 Alibaba Bailian",
         "examples/dashscope/demo_dashscope_simple.py",
-        "简化测试版本 | Simplified test version"
+        "Simplified test version"
     )
     examples_table.add_row(
         "🌍 OpenAI",
         "examples/openai/demo_openai.py",
-        "OpenAI模型演示 | OpenAI model demonstration"
+        "OpenAI model demonstration"
     )
     examples_table.add_row(
-        "🧪 测试",
+        "🧪 Test",
         "tests/integration/test_dashscope_integration.py",
-        "集成测试 | Integration test"
+        "Integration test"
     )
     examples_table.add_row(
-        "📁 配置演示",
+        "📁 Config Demo",
         "examples/data_dir_config_demo.py",
-        "数据目录配置演示 | Data directory configuration demo"
+        "Data directory configuration demo"
     )
 
     console.print(examples_table)
 
-    logger.info(f"\n[yellow]运行示例 | Run Examples:[/yellow]")
-    logger.info(f"1. 确保已配置API密钥 | Ensure API keys are configured")
-    logger.info(f"2. 选择合适的示例程序运行 | Choose appropriate example to run")
-    logger.info(f"3. 推荐从中文版本开始 | Recommended to start with Chinese version")
+    logger.info("\n[yellow]Run Examples:[/yellow]")
+    logger.info("1. Ensure API keys are configured")
+    logger.info("2. Choose an appropriate example program to run")
+    logger.info("3. Recommended to start with the DashScope examples")
 
 
 @app.command(
     name="test",
-    help="运行测试 | Run tests"
+    help="Run tests"
 )
 def test():
     """
-    运行系统测试
     Run system tests
     """
-    logger.info(f"\n[bold blue]🧪 TradingAgents 测试 | Tests[/bold blue]")
+    logger.info("\n[bold blue]🧪 TradingAgents Tests[/bold blue]")
 
-    logger.info(f"[yellow]正在运行集成测试... | Running integration tests...[/yellow]")
+    logger.info("[yellow]Running integration tests...[/yellow]")
 
     try:
         result = subprocess.run([
@@ -1942,111 +1897,110 @@ def test():
         ], capture_output=True, text=True, cwd=".")
 
         if result.returncode == 0:
-            logger.info(f"[green]✅ 测试通过 | Tests passed[/green]")
+            logger.info("[green]✅ Tests passed[/green]")
             console.print(result.stdout)
         else:
-            logger.error(f"[red]❌ 测试失败 | Tests failed[/red]")
+            logger.error("[red]❌ Tests failed[/red]")
             console.print(result.stderr)
 
     except Exception as e:
-        logger.error(f"[red]❌ 测试执行错误 | Test execution error: {e}[/red]")
-        logger.info(f"\n[yellow]手动运行测试 | Manual test execution:[/yellow]")
-        logger.info(f"python tests/integration/test_dashscope_integration.py")
+        logger.error(f"[red]❌ Test execution error: {e}[/red]")
+        logger.info("\n[yellow]Manual test execution:[/yellow]")
+        logger.info("python tests/integration/test_dashscope_integration.py")
 
 
 @app.command(
     name="help",
-    help="中文帮助 | Chinese help"
+    help="Display help information"
 )
 def help_chinese():
     """
-    显示中文帮助信息
-    Display Chinese help information
+    Display CLI help information
     """
-    logger.info(f"\n[bold blue]📖 TradingAgents 中文帮助 | Chinese Help[/bold blue]")
+    logger.info("\n[bold blue]📖 TradingAgents CLI Help[/bold blue]")
 
-    logger.info(f"\n[bold yellow]🚀 快速开始 | Quick Start:[/bold yellow]")
-    logger.info(f"1. [cyan]python -m cli.main config[/cyan]     # 查看配置信息")
-    logger.info(f"2. [cyan]python -m cli.main examples[/cyan]   # 查看示例程序")
-    logger.info(f"3. [cyan]python -m cli.main test[/cyan]       # 运行测试")
-    logger.info(f"4. [cyan]python -m cli.main analyze[/cyan]    # 开始股票分析")
+    logger.info("\n[bold yellow]🚀 Quick Start:[/bold yellow]")
+    logger.info("1. [cyan]python -m cli.main config[/cyan]     # View configuration settings")
+    logger.info("2. [cyan]python -m cli.main examples[/cyan]   # View example programs")
+    logger.info("3. [cyan]python -m cli.main test[/cyan]       # Run integration tests")
+    logger.info("4. [cyan]python -m cli.main analyze[/cyan]    # Start interactive stock analysis")
 
-    logger.info(f"\n[bold yellow]📋 主要命令 | Main Commands:[/bold yellow]")
+    logger.info("\n[bold yellow]📋 Main Commands:[/bold yellow]")
 
     commands_table = Table(show_header=True, header_style="bold magenta")
-    commands_table.add_column("命令 | Command", style="cyan")
-    commands_table.add_column("功能 | Function", style="green")
-    commands_table.add_column("说明 | Description")
+    commands_table.add_column("Command", style="cyan")
+    commands_table.add_column("Function", style="green")
+    commands_table.add_column("Description")
 
     commands_table.add_row(
         "analyze",
-        "股票分析 | Stock Analysis",
-        "启动交互式多智能体股票分析工具"
+        "Stock Analysis",
+        "Launch the interactive multi-agent stock analysis tool"
     )
     commands_table.add_row(
         "config",
-        "配置设置 | Configuration",
-        "查看和配置LLM提供商、API密钥等设置"
+        "Configuration",
+        "View and configure LLM providers, API keys, and other settings"
     )
     commands_table.add_row(
         "examples",
-        "示例程序 | Examples",
-        "查看可用的演示程序和使用说明"
+        "Examples",
+        "View available demo programs and usage instructions"
     )
     commands_table.add_row(
         "test",
-        "运行测试 | Run Tests",
-        "执行系统集成测试，验证功能正常"
+        "Run Tests",
+        "Execute system integration tests to verify functionality"
     )
     commands_table.add_row(
         "version",
-        "版本信息 | Version",
-        "显示软件版本和功能特性信息"
+        "Version",
+        "Display software version and feature information"
     )
 
     console.print(commands_table)
 
-    logger.info(f"\n[bold yellow]🇨🇳 推荐使用阿里百炼大模型:[/bold yellow]")
-    logger.info(f"• 无需翻墙，网络稳定")
-    logger.info(f"• 中文理解能力强")
-    logger.info(f"• 成本相对较低")
-    logger.info(f"• 符合国内合规要求")
+    logger.info("\n[bold yellow]🇨🇳 Alibaba Bailian (DashScope) Highlights:[/bold yellow]")
+    logger.info("• Stable domestic network connectivity")
+    logger.info("• Strong Chinese financial context understanding")
+    logger.info("• Cost-effective pricing")
+    logger.info("• Compliant with domestic regulatory requirements")
 
-    logger.info(f"\n[bold yellow]📞 获取帮助 | Get Help:[/bold yellow]")
-    logger.info(f"• 项目文档: docs/ 目录")
-    logger.info(f"• 示例程序: examples/ 目录")
-    logger.info(f"• 集成测试: tests/ 目录")
-    logger.info(f"• GitHub: https://github.com/TauricResearch/TradingAgents")
+    logger.info("\n[bold yellow]📞 Get Help:[/bold yellow]")
+    logger.info("• Documentation: docs/ directory")
+    logger.info("• Examples: examples/ directory")
+    logger.info("• Integration tests: tests/ directory")
+    logger.info("• GitHub: https://github.com/TauricResearch/TradingAgents")
 
 
 def main():
-    """主函数 - 默认进入分析模式"""
+    """Main entry point - enters analysis mode by default when called without arguments"""
 
-    # 如果没有参数，直接进入分析模式
+    # If no arguments are passed, enter analysis mode directly
     if len(sys.argv) == 1:
         run_analysis()
     else:
-        # 有参数时使用typer处理命令
+        # Use typer to handle commands when arguments are provided
         try:
             app()
         except SystemExit as e:
-            # 只在退出码为2（typer的未知命令错误）时提供智能建议
+            # Provide smart suggestions only on exit code 2 (typer unknown command error)
             if e.code == 2 and len(sys.argv) > 1:
                 unknown_command = sys.argv[1]
                 available_commands = ['analyze', 'config', 'version', 'data-config', 'examples', 'test', 'help']
                 
-                # 使用difflib找到最相似的命令
+                # Find the closest matching commands using difflib
                 suggestions = get_close_matches(unknown_command, available_commands, n=3, cutoff=0.6)
                 
                 if suggestions:
-                    logger.error(f"\n[red]❌ 未知命令: '{unknown_command}'[/red]")
-                    logger.info(f"[yellow]💡 您是否想要使用以下命令之一？[/yellow]")
+                    logger.error(f"\n[red]❌ Unknown command: '{unknown_command}'[/red]")
+                    logger.info("[yellow]💡 Did you mean one of these commands?[/yellow]")
                     for suggestion in suggestions:
                         logger.info(f"   • [cyan]python -m cli.main {suggestion}[/cyan]")
-                    logger.info(f"\n[dim]使用 [cyan]python -m cli.main help[/cyan] 查看所有可用命令[/dim]")
+                    logger.info("\n[dim]Use [cyan]python -m cli.main help[/cyan] to see all available commands[/dim]")
                 else:
-                    logger.error(f"\n[red]❌ 未知命令: '{unknown_command}'[/red]")
-                    logger.info(f"[yellow]使用 [cyan]python -m cli.main help[/cyan] 查看所有可用命令[/yellow]")
+                    logger.error(f"\n[red]❌ Unknown command: '{unknown_command}'[/red]")
+                    logger.info("[yellow]Use [cyan]python -m cli.main help[/cyan] to see all available commands[/yellow]")
             raise e
 
 if __name__ == "__main__":

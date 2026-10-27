@@ -1,4 +1,4 @@
-"""金融 schema registry。"""
+"""Financial schema registry."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from .financial_schema_models import FinancialSchemaObject, LoadedFinancialSchem
 
 
 class FinancialSchemaRegistry:
-    """维护已加载 bundle 的对象索引。"""
+    """Maintains an object index of loaded bundles."""
 
     def __init__(self):
         self._bundles: Dict[str, LoadedFinancialSchemaBundle] = {}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试增强的股票筛选功能
+Test enhanced stock screening capabilities
 """
 
 import asyncio
@@ -9,53 +9,53 @@ import os
 import time
 from dotenv import load_dotenv
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 async def test_enhanced_screening():
-    """测试增强筛选功能"""
-    print("🧪 测试增强的股票筛选功能...")
+    """Test enhanced filtering"""
+    print("🧪 Test enhanced stock screening capabilities...")
     
     try:
-        # 导入服务
+        # Import services
         from app.core.database import init_db
         from app.services.enhanced_screening_service import get_enhanced_screening_service
         from app.models.screening import ScreeningCondition, OperatorType
         
-        # 初始化数据库
+        # Initialize database
         await init_db()
-        print("✅ 数据库连接成功")
+        print("✅ Database connection successful")
         
-        # 获取服务实例
+        # Get service instance
         service = get_enhanced_screening_service()
         
-        # 测试1: 获取支持的字段信息
-        print("\n📋 测试1: 获取支持的字段信息")
+        # test 1: Get supported field information
+        print("\n📋 test 1: Get supported field information")
         fields = await service.get_all_supported_fields()
-        print(f"✅ 支持的字段数量: {len(fields)}")
-        for field in fields[:5]:  # 显示前5个字段
+        print(f"✅ Number of fields supported: {len(fields)}")
+        for field in fields[:5]:  # Show first 5 fields
             print(f"  - {field['name']}: {field['display_name']} ({field['field_type']})")
         
-        # 测试2: 基础信息筛选（数据库优化）
-        print("\n🔍 测试2: 基础信息筛选（数据库优化）")
+        # test 2: Basic information screening (database optimization)
+        print("\n🔍 test 2: Basic information screening (database optimization)")
         conditions = [
             ScreeningCondition(
                 field="total_mv",
                 operator=OperatorType.GTE,
-                value=100  # 总市值 >= 100亿
+                value=100  # Total market capitalization >= 100 billion
             ),
             ScreeningCondition(
                 field="pe",
                 operator=OperatorType.BETWEEN,
-                value=[5, 30]  # 市盈率在5-30之间
+                value=[5, 30]  # The P/E ratio is between 5-30
             ),
             ScreeningCondition(
                 field="industry",
                 operator=OperatorType.CONTAINS,
-                value="银行"  # 行业包含"银行"
+                value="bank"  # Industry includes"bank"
             )
         ]
         
@@ -67,45 +67,45 @@ async def test_enhanced_screening():
         )
         end_time = time.time()
         
-        print(f"✅ 筛选完成:")
-        print(f"  - 总数量: {result['total']}")
-        print(f"  - 返回数量: {len(result['items'])}")
-        print(f"  - 耗时: {result.get('took_ms', 0)}ms")
-        print(f"  - 优化方式: {result.get('optimization_used')}")
-        print(f"  - 数据源: {result.get('source')}")
+        print(f"✅ Screening completed:")
+        print(f"  - total quantity: {result['total']}")
+        print(f"  - Return quantity: {len(result['items'])}")
+        print(f"  - Time consuming: {result.get('took_ms', 0)}ms")
+        print(f"  - Optimization method: {result.get('optimization_used')}")
+        print(f"  - data source: {result.get('source')}")
         
-        # 显示前3个结果
+        # Show first 3 results
         if result['items']:
-            print("  - 前3个结果:")
+            print("  - Top 3 results:")
             for i, item in enumerate(result['items'][:3], 1):
                 print(f"    {i}. {item.get('code')} {item.get('name')} "
-                      f"市值:{item.get('total_mv')}亿 PE:{item.get('pe')} "
-                      f"行业:{item.get('industry')}")
+                      f"Market value:{item.get('total_mv')}billion PE:{item.get('pe')} "
+                      f"Industry:{item.get('industry')}")
         
-        # 测试3: 验证筛选条件
-        print("\n✅ 测试3: 验证筛选条件")
+        # test 3: Validate filters
+        print("\n✅ test 3: Validate filters")
         validation = await service.validate_conditions(conditions)
-        print(f"  - 验证结果: {'通过' if validation['valid'] else '失败'}")
+        print(f"  - Verification results: {'Pass' if validation['valid'] else 'failed'}")
         if validation['errors']:
-            print(f"  - 错误: {validation['errors']}")
+            print(f"  - Error: {validation['errors']}")
         if validation['warnings']:
-            print(f"  - 警告: {validation['warnings']}")
+            print(f"  - warning: {validation['warnings']}")
         
-        # 测试4: 字段统计信息
-        print("\n📊 测试4: 字段统计信息")
+        # test 4: Field statistics
+        print("\n📊 test 4: Field statistics")
         field_info = await service.get_field_info("total_mv")
         if field_info:
             stats = field_info.get('statistics', {})
-            print(f"  - 总市值统计:")
-            print(f"    最小值: {stats.get('min')}亿")
-            print(f"    最大值: {stats.get('max')}亿")
-            print(f"    平均值: {stats.get('avg')}亿")
-            print(f"    数据量: {stats.get('count')}条")
+            print(f"  - Total market capitalization statistics:")
+            print(f"    minimum value: {stats.get('min')}billion")
+            print(f"    maximum value: {stats.get('max')}billion")
+            print(f"    average: {stats.get('avg')}billion")
+            print(f"    Data volume: {stats.get('count')}Article")
         
-        # 测试5: 性能对比（数据库 vs 传统）
-        print("\n⚡ 测试5: 性能对比")
+        # test 5: Performance comparison (database vs traditional)
+        print("\n⚡ test 5: Performance comparison")
         
-        # 简单条件（适合数据库优化）
+        # Simple conditions (suitable for database optimization)
         simple_conditions = [
             ScreeningCondition(
                 field="total_mv",
@@ -114,7 +114,7 @@ async def test_enhanced_screening():
             )
         ]
         
-        # 数据库优化方式
+        # Database optimization methods
         start_time = time.time()
         db_result = await service.screen_stocks(
             conditions=simple_conditions,
@@ -123,7 +123,7 @@ async def test_enhanced_screening():
         )
         db_time = time.time() - start_time
         
-        # 传统方式
+        # traditional way
         start_time = time.time()
         traditional_result = await service.screen_stocks(
             conditions=simple_conditions,
@@ -132,17 +132,17 @@ async def test_enhanced_screening():
         )
         traditional_time = time.time() - start_time
         
-        print(f"  - 数据库优化: {db_result.get('took_ms', 0)}ms, 结果数: {len(db_result['items'])}")
-        print(f"  - 传统方式: {traditional_result.get('took_ms', 0)}ms, 结果数: {len(traditional_result['items'])}")
-        print(f"  - 性能提升: {traditional_time/db_time:.1f}x" if db_time > 0 else "  - 无法计算性能提升")
+        print(f"  - Database optimization: {db_result.get('took_ms', 0)}ms, Number of results: {len(db_result['items'])}")
+        print(f"  - traditional way: {traditional_result.get('took_ms', 0)}ms, Number of results: {len(traditional_result['items'])}")
+        print(f"  - Performance improvements: {traditional_time/db_time:.1f}x" if db_time > 0 else "  - Unable to calculate performance gain")
         
-        # 测试6: 复杂筛选条件
-        print("\n🔧 测试6: 复杂筛选条件")
+        # test 6: Complex filter conditions
+        print("\n🔧 test 6: Complex filter conditions")
         complex_conditions = [
             ScreeningCondition(
                 field="total_mv",
                 operator=OperatorType.BETWEEN,
-                value=[100, 1000]  # 市值100-1000亿
+                value=[100, 1000]  # Market value 10-100 billion
             ),
             ScreeningCondition(
                 field="pe",
@@ -157,7 +157,7 @@ async def test_enhanced_screening():
             ScreeningCondition(
                 field="area",
                 operator=OperatorType.IN,
-                value=["北京", "上海", "深圳"]  # 地区在一线城市
+                value=["Beijing", "Shanghai", "Shenzhen"]  # Region in first-tier cities
             )
         ]
         
@@ -167,23 +167,23 @@ async def test_enhanced_screening():
             order_by=[{"field": "total_mv", "direction": "desc"}]
         )
         
-        print(f"✅ 复杂筛选完成:")
-        print(f"  - 总数量: {complex_result['total']}")
-        print(f"  - 返回数量: {len(complex_result['items'])}")
-        print(f"  - 耗时: {complex_result.get('took_ms', 0)}ms")
-        print(f"  - 优化方式: {complex_result.get('optimization_used')}")
+        print(f"✅ Complex screening completed:")
+        print(f"  - total quantity: {complex_result['total']}")
+        print(f"  - Return quantity: {len(complex_result['items'])}")
+        print(f"  - Time consuming: {complex_result.get('took_ms', 0)}ms")
+        print(f"  - Optimization method: {complex_result.get('optimization_used')}")
         
         if complex_result['items']:
-            print("  - 前5个结果:")
+            print("  - Top 5 results:")
             for i, item in enumerate(complex_result['items'][:5], 1):
                 print(f"    {i}. {item.get('code')} {item.get('name')} "
-                      f"市值:{item.get('total_mv')}亿 PE:{item.get('pe')} "
-                      f"PB:{item.get('pb')} 地区:{item.get('area')}")
+                      f"Market value:{item.get('total_mv')}billion PE:{item.get('pe')} "
+                      f"PB:{item.get('pb')} area:{item.get('area')}")
         
-        print("\n🎉 所有测试完成！")
+        print("\n🎉 All tests completed!")
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
 

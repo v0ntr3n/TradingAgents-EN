@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-独立的文档转换测试脚本
-用于测试Markdown到Word/PDF的转换，无需重新生成分析内容
+Standalone document conversion test script
+Used to test Markdown to Word/PDF conversion without regenerating analysis content
 """
 
 import os
@@ -10,114 +10,114 @@ import pypandoc
 from datetime import datetime
 
 def test_markdown_content():
-    """生成测试用的Markdown内容"""
+    """Generate Markdown content for testing"""
     
-    # 模拟真实的分析结果数据
-    test_content = """# 605499 股票分析报告
+    # Simulate real analysis result data
+    test_content = """# 605499 Stock analysis report
 
-**生成时间**: 2025-01-12 16:20:00  
-**分析状态**: 正式分析
+**Generation time**: 2025-01-12 16:20:00  
+**analysis status**: formal analysis
 
-## 🎯 投资决策摘要
+## 🎯 Investment Decision Summary
 
-| 指标 | 数值 |
+| indicator | numerical value |
 |------|------|
-| **投资建议** | BUY |
-| **置信度** | 85.0% |
-| **风险评分** | 25.0% |
-| **目标价位** | ¥275.00 |
+| **investment advice** | BUY |
+| **Confidence** | 85.0% |
+| **risk score** | 25.0% |
+| **target price** | ¥275.00 |
 
-### 分析推理
-基于技术分析和基本面分析，该股票显示出强劲的上涨趋势。市场情绪积极，建议买入。
+### analytical reasoning
+Based on technical and fundamental analysis, the stock is showing a strong upward trend. The market sentiment is positive and it is recommended to buy.
 
-## 📋 分析配置信息
+## 📋 Analyze configuration information
 
-- **LLM提供商**: qwen
-- **LLM模型**: qwen-turbo  
-- **分析师**: market, fundamentals
-- **研究深度**: 标准分析
+- **LLM provider**: qwen
+- **LLM model**: qwen-turbo  
+- **analyst**: market, fundamentals
+- **Research depth**: standard analysis
 
-## 📊 市场技术分析
+## 📊 Market technical analysis
 
-### 技术指标分析
-- **趋势方向**: 上涨
-- **支撑位**: ¥250.00
-- **阻力位**: ¥300.00
-- **RSI指标**: 65 (中性偏强)
+### Technical indicator analysis
+- **trend direction**: rise
+- **support level**: ¥250.00
+- **resistance level**: ¥300.00
+- **RSI indicator**: 65 (Neutral to strong)
 
-### 成交量分析
-近期成交量放大，显示市场关注度提升。
+### Volume analysis
+The recent increase in trading volume shows that market attention has increased.
 
-## 📈 基本面分析
+## 📈 fundamental analysis
 
-### 财务状况
-- **营收增长**: 15.2%
-- **净利润率**: 8.5%
+### financial condition
+- **revenue growth**: 15.2%
+- **net profit margin**: 8.5%
 - **ROE**: 12.3%
 
-### 行业地位
-公司在行业中处于领先地位，具有较强的竞争优势。
+### Industry status
+The company is in a leading position in the industry and has strong competitive advantages.
 
-## ⚠️ 风险提示
+## ⚠️ Risk warning
 
-1. **市场风险**: 整体市场波动可能影响股价
-2. **行业风险**: 行业政策变化风险
-3. **公司风险**: 经营管理风险
+1. **market risk**: Overall market volatility may affect share prices
+2. **Industry risks**: Risks of industry policy changes
+3. **corporate risk**: Operation and management risks
 
-## 📝 免责声明
+## 📝 Disclaimer
 
-本报告仅供参考，不构成投资建议。投资有风险，入市需谨慎。
+This report is for reference only and does not constitute investment advice. Investment is risky, so be cautious when entering the market.
 
 ---
-*报告生成时间: 2025-01-12 16:20:00*
+*Report generation time: 2025-01-12 16:20:00*
 """
     
     return test_content
 
 def save_test_content():
-    """保存测试内容到文件"""
+    """Save test content to file"""
     content = test_markdown_content()
     
     with open('test_content.md', 'w', encoding='utf-8') as f:
         f.write(content)
     
-    print(f"✅ 测试内容已保存到 test_content.md")
-    print(f"📊 内容长度: {len(content)} 字符")
+    print(f"✅ Test content has been saved to test_content.md")
+    print(f"📊 content length: {len(content)} character")
     return content
 
 def test_word_conversion(md_content):
-    """测试Word转换"""
-    print("\n🔄 测试Word转换...")
+    """Test Word conversion"""
+    print("\n🔄 Test Word conversion...")
     
     try:
-        # 创建临时文件
+        # Create temporary files
         with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
             output_file = tmp_file.name
         
-        print(f"📁 临时文件: {output_file}")
+        print(f"📁 temporary files: {output_file}")
         
-        # 测试不同的转换参数
+        # Test different conversion parameters
         test_cases = [
             {
-                'name': '基础转换',
+                'name': 'Basic conversion',
                 'format': 'markdown',
                 'extra_args': []
             },
             {
-                'name': '带目录转换',
+                'name': 'With directory conversion',
                 'format': 'markdown',
                 'extra_args': ['--toc', '--number-sections']
             },
             {
-                'name': '禁用YAML转换',
+                'name': 'Disable YAML conversion',
                 'format': 'markdown',
                 'extra_args': ['--from=markdown-yaml_metadata_block']
             }
         ]
         
         for i, test_case in enumerate(test_cases, 1):
-            print(f"\n📝 测试 {i}: {test_case['name']}")
-            print(f"🔧 参数: format={test_case['format']}, extra_args={test_case['extra_args']}")
+            print(f"\n📝 test {i}: {test_case['name']}")
+            print(f"🔧 parameters: format={test_case['format']}, extra_args={test_case['extra_args']}")
             
             try:
                 pypandoc.convert_text(
@@ -128,60 +128,60 @@ def test_word_conversion(md_content):
                     extra_args=test_case['extra_args']
                 )
                 
-                # 检查文件
+                # Check files
                 if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
                     file_size = os.path.getsize(output_file)
-                    print(f"✅ 转换成功! 文件大小: {file_size} 字节")
+                    print(f"✅ Conversion successful! file size: {file_size} Bytes")
                     
-                    # 保存成功的文件
+                    # Successfully saved file
                     success_file = f"test_output_{i}.docx"
                     os.rename(output_file, success_file)
-                    print(f"💾 文件已保存为: {success_file}")
+                    print(f"💾 The file has been saved as: {success_file}")
                     return True
                 else:
-                    print(f"❌ 转换失败: 文件未生成或为空")
+                    print(f"❌ Conversion failed: File not generated or empty")
                     
             except Exception as e:
-                print(f"❌ 转换失败: {e}")
+                print(f"❌ Conversion failed: {e}")
                 
-            # 清理临时文件
+            # Clean temporary files
             if os.path.exists(output_file):
                 os.unlink(output_file)
         
         return False
         
     except Exception as e:
-        print(f"❌ Word转换测试失败: {e}")
+        print(f"❌ Word Conversion test failed: {e}")
         return False
 
 def test_pdf_conversion(md_content):
-    """测试PDF转换"""
-    print("\n🔄 测试PDF转换...")
+    """Test PDF conversion"""
+    print("\n🔄 Test PDF conversion...")
     
     try:
-        # 创建临时文件
+        # Create temporary files
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
             output_file = tmp_file.name
         
-        print(f"📁 临时文件: {output_file}")
+        print(f"📁 temporary files: {output_file}")
         
-        # 测试不同的PDF引擎
+        # Test different PDF engines
         test_engines = [
-            ('wkhtmltopdf', 'HTML转PDF引擎'),
-            ('weasyprint', '现代HTML转PDF引擎'),
-            (None, '默认引擎')
+            ('wkhtmltopdf', 'HTML Convert to PDF engine'),
+            ('weasyprint', 'Modern HTML to PDF engine'),
+            (None, 'Default engine')
         ]
         
         for i, (engine, description) in enumerate(test_engines, 1):
-            print(f"\n📊 测试 {i}: {description}")
+            print(f"\n📊 test {i}: {description}")
             
             try:
                 extra_args = []
                 if engine:
                     extra_args.append(f'--pdf-engine={engine}')
-                    print(f"🔧 使用引擎: {engine}")
+                    print(f"🔧 use engine: {engine}")
                 else:
-                    print(f"🔧 使用默认引擎")
+                    print(f"🔧 Use default engine")
                 
                 pypandoc.convert_text(
                     md_content,
@@ -191,61 +191,61 @@ def test_pdf_conversion(md_content):
                     extra_args=extra_args
                 )
                 
-                # 检查文件
+                # Check files
                 if os.path.exists(output_file) and os.path.getsize(output_file) > 0:
                     file_size = os.path.getsize(output_file)
-                    print(f"✅ 转换成功! 文件大小: {file_size} 字节")
+                    print(f"✅ Conversion successful! file size: {file_size} Bytes")
                     
-                    # 保存成功的文件
+                    # Successfully saved file
                     success_file = f"test_output_{i}.pdf"
                     os.rename(output_file, success_file)
-                    print(f"💾 文件已保存为: {success_file}")
+                    print(f"💾 The file has been saved as: {success_file}")
                     return True
                 else:
-                    print(f"❌ 转换失败: 文件未生成或为空")
+                    print(f"❌ Conversion failed: File not generated or empty")
                     
             except Exception as e:
-                print(f"❌ 转换失败: {e}")
+                print(f"❌ Conversion failed: {e}")
                 
-            # 清理临时文件
+            # Clean temporary files
             if os.path.exists(output_file):
                 os.unlink(output_file)
         
         return False
         
     except Exception as e:
-        print(f"❌ PDF转换测试失败: {e}")
+        print(f"❌ PDF Conversion test failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("🧪 独立文档转换测试 (Volume映射版本)")
+    """Main test function"""
+    print("🧪 Standalone document conversion testing (Volume Mapping version)")
     print("=" * 50)
-    print(f"📁 当前工作目录: {os.getcwd()}")
-    print(f"🐳 Docker环境检测: {os.path.exists('/.dockerenv')}")
+    print(f"📁 current working directory: {os.getcwd()}")
+    print(f"🐳 Docker Environmental testing: {os.path.exists('/.dockerenv')}")
     
-    # 保存测试内容
+    # Save test content
     md_content = save_test_content()
     
-    # 测试Word转换
+    # Test Word conversion
     word_success = test_word_conversion(md_content)
     
-    # 测试PDF转换
+    # Test PDF conversion
     pdf_success = test_pdf_conversion(md_content)
     
-    # 总结
+    # Summary
     print("\n" + "=" * 50)
-    print("📊 测试结果总结")
+    print("📊 Summary of test results")
     print("=" * 50)
-    print(f"Word转换: {'✅ 成功' if word_success else '❌ 失败'}")
-    print(f"PDF转换:  {'✅ 成功' if pdf_success else '❌ 失败'}")
+    print(f"Word Convert: {'✅ success' if word_success else '❌ failed'}")
+    print(f"PDF Convert:  {'✅ success' if pdf_success else '❌ failed'}")
     
     if word_success or pdf_success:
-        print("\n🎉 至少有一种格式转换成功!")
-        print("💡 可以将成功的参数应用到主程序中")
+        print("\n🎉 At least one format was converted successfully!")
+        print("💡 Success parameters can be applied to the main program")
     else:
-        print("\n⚠️ 所有转换都失败了")
-        print("💡 需要检查pandoc安装和配置")
+        print("\n⚠️ All conversions failed")
+        print("💡 Need to check pandoc installation and configuration")
 
 if __name__ == "__main__":
     main()

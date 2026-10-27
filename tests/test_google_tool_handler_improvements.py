@@ -1,12 +1,12 @@
 """
-测试Google工具处理器的改进
+Testing Google Tools Processor Improvements
 """
 import sys
 import os
 import logging
 from datetime import datetime
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from tradingagents.agents.utils.google_tool_handler import GoogleToolCallHandler
@@ -14,7 +14,7 @@ from tradingagents.agents.utils.agent_utils import Toolkit
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema import HumanMessage, AIMessage, SystemMessage
 
-# 配置日志
+# Configuration log
 os.makedirs(os.path.join('data', 'logs'), exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -27,33 +27,33 @@ logging.basicConfig(
 logger = logging.getLogger("test_google_tool_handler")
 
 def test_google_tool_handler_improvements():
-    """测试Google工具处理器的改进"""
-    logger.info("开始测试Google工具处理器的改进...")
+    """Testing Google Tools Processor Improvements"""
+    logger.info("Start testing Google Tools processor improvements...")
     
-    # 创建Google模型
+    # Create a Google model
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.1)
     
-    # 创建工具集
+    # Create toolset
     tools = [Toolkit.get_stock_market_data_unified]
     
-    # 测试场景1: 检查是否为Google模型
-    logger.info("测试场景1: 检查是否为Google模型")
+    # test scenario 1: Check if it is a Google model
+    logger.info("test scenario 1: Check if it is a Google model")
     try:
         is_google = GoogleToolCallHandler.is_google_model(llm)
-        logger.info(f"场景1结果: 是否为Google模型: {is_google}")
+        logger.info(f"Scenario 1 results: Is it a Google model?: {is_google}")
     except Exception as e:
-        logger.error(f"场景1异常: {e}")
+        logger.error(f"Scenario 1 exception: {e}")
     
-    # 测试场景2: 模拟空工具调用的AIMessage
-    logger.info("测试场景2: 模拟空工具调用的AIMessage")
+    # test scenario 2: Simulating empty tool calls AIMessage
+    logger.info("test scenario 2: Simulating empty tool calls AIMessage")
     try:
-        # 创建一个没有工具调用的AIMessage
-        ai_message = AIMessage(content="我需要获取股票数据来进行分析")
+        # Create one without tool calls AIMessage
+        ai_message = AIMessage(content="I need to get stock data for analysis")
         
         state = {
-            "messages": [HumanMessage(content="请分析贵州茅台(600519)的市场情况")],
+            "messages": [HumanMessage(content="Please analyze Kweichow Moutai(600519)market conditions")],
             "trade_date": "2023-12-31",
-            "company_of_interest": "贵州茅台",
+            "company_of_interest": "Kweichow Moutai",
             "ticker": "600519"
         }
         
@@ -62,19 +62,19 @@ def test_google_tool_handler_improvements():
             llm=llm,
             tools=tools,
             state=state,
-            analysis_prompt_template="请基于以上数据生成详细的市场分析报告",
-            analyst_name="市场分析师"
+            analysis_prompt_template="Please generate a detailed market analysis report based on the above data",
+            analyst_name="market analyst"
         )
-        logger.info(f"场景2结果: {result[:100]}...")
+        logger.info(f"Scenario 2 results: {result[:100]}...")
     except Exception as e:
-        logger.error(f"场景2异常: {e}")
+        logger.error(f"Scenario 2 exception: {e}")
     
-    # 测试场景3: 模拟有工具调用的AIMessage
-    logger.info("测试场景3: 模拟有工具调用的AIMessage")
+    # test scenario 3: Simulate tool calls AIMessage
+    logger.info("test scenario 3: Simulate tool calls AIMessage")
     try:
-        # 创建一个有工具调用的AIMessage
+        # Create a tool call AIMessage
         ai_message = AIMessage(
-            content="我需要获取股票数据",
+            content="I need to get stock data",
             tool_calls=[{
                 'id': 'test_tool_call_1',
                 'name': 'get_stock_market_data_unified',
@@ -87,9 +87,9 @@ def test_google_tool_handler_improvements():
         )
         
         state = {
-            "messages": [HumanMessage(content="请分析贵州茅台(600519)的市场情况")],
+            "messages": [HumanMessage(content="Please analyze Kweichow Moutai(600519)market conditions")],
             "trade_date": "2023-12-31",
-            "company_of_interest": "贵州茅台",
+            "company_of_interest": "Kweichow Moutai",
             "ticker": "600519"
         }
         
@@ -98,14 +98,14 @@ def test_google_tool_handler_improvements():
             llm=llm,
             tools=tools,
             state=state,
-            analysis_prompt_template="请基于以上数据生成详细的市场分析报告",
-            analyst_name="市场分析师"
+            analysis_prompt_template="Please generate a detailed market analysis report based on the above data",
+            analyst_name="market analyst"
         )
-        logger.info(f"场景3结果: {result[:100]}...")
+        logger.info(f"Scenario 3 results: {result[:100]}...")
     except Exception as e:
-        logger.error(f"场景3异常: {e}")
+        logger.error(f"Scenario 3 exception: {e}")
     
-    logger.info("Google工具处理器改进测试完成")
+    logger.info("Google Tool processor improvement testing completed")
 
 if __name__ == "__main__":
     test_google_tool_handler_improvements()

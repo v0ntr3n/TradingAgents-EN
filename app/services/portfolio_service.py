@@ -1,6 +1,6 @@
 """
-持仓分析服务
-提供持仓管理和AI分析功能
+Position analysis service
+Provide position management and AI analysis functions
 """
 
 import asyncio
@@ -16,74 +16,74 @@ from app.utils.api_key_utils import truncate_api_key
 from app.core.database import get_mongo_db
 
 
-# ==================== 工具函数 ====================
+# ==================== Utility function ====================
 def _format_user_friendly_error(error_msg: str) -> str:
-    """将技术性/英文错误消息转换为用户可理解的友好中文提示。
+    """Convert technical/English error messages into user-understandable friendly Chinese prompts.
 
-    针对常见的限流、网络、超时、余额不足等情况做专门处理，
-    避免把英文报错直接展示给用户。
+    Specially handle common current limiting, network, timeout, insufficient balance and other situations.
+    Avoid displaying English errors directly to users.
     """
     if not error_msg:
-        return "分析过程中出现错误，请稍后重试"
+        return "An error occurred during analysis, please try again later."
 
     msg = error_msg.lower()
 
-    # 限流类（429 / RATE_LIMIT）
+    # Rate limiting class (429/RATE_LIMIT)
     if any(key in msg for key in (
         "429", "rate_limit", "rate limit", "tokens limit",
         "rate_limited", "访问限制", "限流", "quota exceeded"
     )):
-        return "当前使用AI分析的人数较多，服务繁忙，请稍后再试。（提示：避免短时间内连续发起多次分析）"
+        return "There are currently many people using AI analysis and the service is busy. Please try again later. (Tip: Avoid initiating multiple analyzes in a short period of time)"
 
-    # 网络/连接类
+    # Network/Connectivity
     if any(key in msg for key in (
         "network error", "connection error", "connection refused",
         "failed to fetch", "连接失败", "网络错误",
     )):
-        return "网络连接失败，请检查网络状态后重试。"
+        return "The network connection failed, please check the network status and try again."
 
-    # 超时类
+    # timeout class
     if any(key in msg for key in ("timeout", "timed out", "超时")):
-        return "请求超时，请稍后重试。若频繁出现，请联系管理员。"
+        return "The request timed out, please try again later. If it occurs frequently, please contact the administrator."
 
-    # 认证/权限类
+    # Authentication/Permission Class
     if any(key in msg for key in ("401", "403", "unauthorized", "forbidden", "无权限", "未授权")):
-        return "登录已过期，请刷新页面重新登录后再试。"
+        return "Login has expired, please refresh the page and log in again and try again."
 
-    # 余额/额度不足
+    # Insufficient balance/limit
     if any(key in msg for key in (
         "insufficient balance", "余额不足", "额度不足", "out of quota",
     )):
-        return "AI分析额度不足，请联系管理员补充额度后再试。"
+        return "AI Analysis: The quota is insufficient. Please contact the administrator to replenish the quota and try again."
 
-    # 服务端错误
+    # Server error
     if any(key in msg for key in ("server error", "500", "502", "503", "internal error")):
-        return "服务器暂时不可用，请稍后重试。"
+        return "The server is temporarily unavailable, please try again later."
 
-    # 如果是中文且相对简短，直接返回
+    # If it is Chinese and relatively short, return directly
     import re as _re
     if _re.search(r"[\u4e00-\u9fa5]", error_msg) and len(error_msg) <= 80:
         return error_msg
 
-    # 默认兜底
-    return "分析过程中出现错误，请稍后重试"
+    # Default to cover up
+    return "An error occurred during analysis, please try again later."
 
 
-# ==================== 特性开关 ====================
-# 是否使用模板系统生成提示词（默认关闭，保持向后兼容）
-# 注意：使用函数动态读取，确保 .env 文件已加载
+# ==================== Feature switch ====================
+# Whether to use the template system to generate prompt words (off by default to maintain backward compatibility)
+# NOTE: Use functions to read dynamically and make sure the .env file is loaded
 def _use_template_prompts() -> bool:
-    """动态读取 USE_TEMPLATE_PROMPTS 环境变量"""
+    """Dynamically read the USE_TEMPLATE_PROMPTS environment variable"""
     return os.getenv("USE_TEMPLATE_PROMPTS", "false").lower() == "true"
 
-# 是否使用新版股票分析引擎（默认关闭，保持向后兼容）
+# Whether to use the new version of the stock analysis engine (off by default to maintain backward compatibility)
 def _use_stock_engine() -> bool:
-    """动态读取 USE_STOCK_ENGINE 环境变量"""
+    """Dynamically read the USE_STOCK_ENGINE environment variable"""
     return os.getenv("USE_STOCK_ENGINE", "false").lower() == "true"
 
-# 是否使用新版分析引擎（包括工作流引擎）
+# Whether to use the new version of analysis engine (including workflow engine)
 def _use_stock_engine() -> bool:
-    """动态读取 USE_STOCK_ENGINE 环境变量"""
+    """Dynamically read the USE_STOCK_ENGINE environment variable"""
     return os.getenv("USE_STOCK_ENGINE", "false").lower() == "true"
 
 from app.models.portfolio import (
@@ -106,14 +106,14 @@ logger = logging.getLogger("app.services.portfolio_service")
 
 ETF_CODE_PREFIXES = ("50", "51", "52", "56", "58", "15", "16", "18")
 
-# 市场代码映射：前端/数据库使用的代码 -> 单股分析服务使用的中文名称
+# Market code mapping: code used by frontend/database -> Chinese name used for single stock analysis service
 MARKET_CODE_TO_NAME = {
     "CN": "A股",
     "HK": "港股",
     "US": "美股"
 }
 
-# 市场名称映射：中文名称 -> 代码
+# Market name mapping: Chinese name -> code
 MARKET_NAME_TO_CODE = {
     "A股": "CN",
     "港股": "HK",
@@ -127,7 +127,7 @@ def _is_cn_etf_symbol(code: str) -> bool:
 
 
 def convert_market_code_to_name(market_code: str, stock_code: Optional[str] = None) -> str:
-    """将市场代码转换为中文名称（用于单股分析服务）"""
+    """Convert market symbols to Chinese names (for single stock analysis services)"""
     if str(market_code).upper() == "ETF":
         return "ETF"
     if str(market_code).upper() == "CN" and stock_code and _is_cn_etf_symbol(stock_code):
@@ -136,7 +136,7 @@ def convert_market_code_to_name(market_code: str, stock_code: Optional[str] = No
 
 
 def convert_market_name_to_code(market_name: str) -> str:
-    """将市场中文名称转换为代码（用于数据库存储）"""
+    """Convert market Chinese name to code (for database storage)"""
     return MARKET_NAME_TO_CODE.get(market_name, market_name)
 
 
@@ -153,7 +153,7 @@ class PortfolioService:
         self.transactions_collection = "capital_transactions"
         self.position_changes_collection = "position_changes"
 
-    # ==================== 资金账户管理 ====================
+    # ==================== Capital account management ====================
 
     async def get_or_create_account(self, user_id: str) -> Dict[str, Any]:
         """获取或创建资金账户"""
@@ -180,15 +180,15 @@ class PortfolioService:
     async def initialize_account(
         self, user_id: str, initial_capital: float, currency: str = "CNY"
     ) -> Dict[str, Any]:
-        """初始化资金账户（设置初始资金）"""
+        """Initialize capital account (set initial capital)"""
         acc = await self.get_or_create_account(user_id)
         now = now_tz()
 
-        # 获取当前余额
+        # Get current balance
         current_cash = acc.get("cash", {}).get(currency, 0.0)
         new_cash = current_cash + initial_capital
 
-        # 更新账户
+        # Update account
         update_data = {
             f"cash.{currency}": new_cash,
             f"initial_capital.{currency}": acc.get("initial_capital", {}).get(currency, 0.0) + initial_capital,
@@ -199,7 +199,7 @@ class PortfolioService:
             {"$set": update_data}
         )
 
-        # 记录交易
+        # record transaction
         transaction = {
             "user_id": user_id,
             "transaction_type": CapitalTransactionType.INITIAL.value,
@@ -276,7 +276,7 @@ class PortfolioService:
         transaction = {
             "user_id": user_id,
             "transaction_type": CapitalTransactionType.WITHDRAW.value,
-            "amount": -amount,  # 出金为负数
+            "amount": -amount,  # Withdrawal is a negative number
             "currency": currency,
             "balance_before": current_cash,
             "balance_after": new_cash,
@@ -310,20 +310,20 @@ class PortfolioService:
         return await self.get_or_create_account(user_id)
 
     async def get_account_summary(self, user_id: str) -> AccountSummary:
-        """获取账户摘要（含持仓市值计算）"""
+        """Get account summary (including position market value calculation)"""
         acc = await self.get_or_create_account(user_id)
 
-        # 获取持仓市值（只计算用户持仓，排除模拟盘）
+        # Get the market value of positions (only calculate user positions, exclude simulated trading)
         positions = await self.get_positions(user_id, include_market_data=True)
         positions_value = {"CNY": 0.0, "HKD": 0.0, "USD": 0.0}
         for pos in positions:
-            # 只计算非模拟盘的持仓
+            # Only positions that are not simulated are calculated
             if pos.source == "paper":
                 continue
             currency = pos.currency or "CNY"
             positions_value[currency] = positions_value.get(currency, 0.0) + (pos.market_value or 0.0)
 
-        # 计算各项指标
+        # Calculate various indicators
         cash = acc.get("cash", {"CNY": 0.0, "HKD": 0.0, "USD": 0.0})
         initial_capital = acc.get("initial_capital", {"CNY": 0.0, "HKD": 0.0, "USD": 0.0})
         total_deposit = acc.get("total_deposit", {"CNY": 0.0, "HKD": 0.0, "USD": 0.0})
@@ -335,21 +335,21 @@ class PortfolioService:
         profit_pct = {}
 
         for currency in ["CNY", "HKD", "USD"]:
-            # 净入金 = 初始 + 入金 - 出金
+            # net deposit = initial + Deposit - Withdraw
             net = (initial_capital.get(currency, 0.0) +
                    total_deposit.get(currency, 0.0) -
                    total_withdraw.get(currency, 0.0))
             net_capital[currency] = round(net, 2)
 
-            # 总资产 = 现金 + 持仓市值
+            # total assets = Cash + Position market value
             assets = cash.get(currency, 0.0) + positions_value.get(currency, 0.0)
             total_assets[currency] = round(assets, 2)
 
-            # 收益 = 总资产 - 净入金
+            # income = Total Assets - Net Deposits
             pnl = assets - net
             profit[currency] = round(pnl, 2)
 
-            # 收益率
+            # Yield
             if net > 0:
                 profit_pct[currency] = round((pnl / net) * 100, 2)
             else:
@@ -379,18 +379,18 @@ class PortfolioService:
         cursor = self.db[self.transactions_collection].find(query).sort("created_at", -1).limit(limit)
         transactions = await cursor.to_list(None)
 
-        # 转换 ObjectId
+        # Convert ObjectId
         for t in transactions:
             t["id"] = str(t.pop("_id"))
 
         return transactions
 
     async def get_total_capital(self, user_id: str, currency: str = "CNY") -> float:
-        """获取用户的总资金（现金 + 持仓市值），用于持仓分析"""
+        """Get the user s total funds (cash + Position market value), used for position analysis"""
         summary = await self.get_account_summary(user_id)
         return summary.total_assets.get(currency, 0.0)
 
-    # ==================== 持仓变动记录 ====================
+    # ==================== Position change record ====================
 
     async def record_position_change(
         self,
@@ -411,17 +411,17 @@ class PortfolioService:
         trade_time: datetime = None,
         extra_data: Dict[str, Any] = None
     ) -> Dict[str, Any]:
-        """记录持仓变动
+        """Record position changes
 
         Args:
-            trade_time: 交易时间（实际交易发生的时间，由用户手工录入）
-                       如果不提供，则使用当前时间
-            extra_data: 额外数据（如手续费明细）
+            trade_time: Transaction time (the time when the actual transaction occurs, manually entered by the user)
+                       If not provided, the current time is used
+            extra_data: Additional data (such as handling fee details)
         """
         cost_value_before = quantity_before * cost_price_before
         cost_value_after = quantity_after * cost_price_after
         quantity_change = quantity_after - quantity_before
-        cash_change = cost_value_before - cost_value_after  # 正数表示释放资金
+        cash_change = cost_value_before - cost_value_after  # A positive number means releasing funds
 
         change_doc = {
             "user_id": user_id,
@@ -442,11 +442,11 @@ class PortfolioService:
             "trade_price": trade_price,
             "realized_profit": round(realized_profit, 2) if realized_profit else None,
             "description": description,
-            "trade_time": trade_time or now_tz(),  # 交易时间，如果不提供则使用当前时间
-            "created_at": now_tz()  # 记录创建时间
+            "trade_time": trade_time or now_tz(),  # Transaction time, if not provided the current time will be used
+            "created_at": now_tz()  # record creation time
         }
 
-        # 合并额外数据（如手续费明细）
+        # Incorporate additional data (such as fee details)
         if extra_data:
             change_doc.update(extra_data)
 
@@ -498,7 +498,7 @@ class PortfolioService:
                 trade_price=c.get("trade_price"),
                 realized_profit=c.get("realized_profit"),
                 description=c.get("description"),
-                trade_time=c.get("trade_time"),  # 交易时间
+                trade_time=c.get("trade_time"),  # trading hours
                 created_at=c["created_at"]
             ))
 
@@ -531,8 +531,8 @@ class PortfolioService:
         trade_time: datetime = None
     ) -> Dict[str, Any]:
         """
-        修改单笔交易记录（用于修正录入错误：数量、单价）
-        支持 buy/add/reduce/sell 类型，修改后会级联重算后续记录并更新持仓
+        Modify single transaction record (used to correct entry errors: quantity, unit price)
+        Supports buy/add/reduce/sell type. After modification, subsequent records will be recalculated in cascade and positions will be updated.
         """
         from bson import ObjectId
         try:
@@ -548,14 +548,14 @@ class PortfolioService:
 
         ct = change.get("change_type")
         if ct not in ("buy", "add", "reduce", "sell"):
-            raise ValueError("仅支持修改买入、加仓、减仓、卖出记录")
+            raise ValueError("Only supports modification of buying, adding, reducing, and selling records")
 
         code = change["code"]
         name = change.get("name", code)
         market = change.get("market", "CN")
         currency = change.get("currency", "CNY")
 
-        # 获取该股票所有变动记录，按时间排序
+        # Get all change records of the stock, sorted by time
         cursor = self.db[self.position_changes_collection].find(
             {"user_id": user_id, "code": code, "market": market}
         ).sort("created_at", 1)
@@ -569,7 +569,7 @@ class PortfolioService:
         if edit_idx is None:
             raise ValueError("变动记录不存在")
 
-        # 计算编辑前的状态（前一笔的 quantity_after, cost_value_after）
+        # Calculate the state before editing (the previous one's quantity_after, cost_value_after) 
         prev_qty = 0
         prev_cost_val = 0.0
         if edit_idx > 0:
@@ -577,7 +577,7 @@ class PortfolioService:
             prev_qty = prev.get("quantity_after", 0)
             prev_cost_val = prev.get("cost_value_after", 0.0)
 
-        # 根据类型计算编辑后的记录
+        # Calculate edited records based on type
         def compute_updated_change(c, qty_before, cost_val_before, new_qty, new_price):
             ct = c.get("change_type")
             cost_val_before = round(cost_val_before, 2)
@@ -621,7 +621,7 @@ class PortfolioService:
                     "realized_profit": realized,
                 }
 
-        # 更新编辑的记录
+        # Update edited record
         updated = compute_updated_change(change, prev_qty, prev_cost_val, quantity, price)
         update_doc = {**updated}
         if trade_time:
@@ -631,7 +631,7 @@ class PortfolioService:
             {"$set": update_doc}
         )
 
-        # 级联更新后续记录（用新的 curr 状态重算每笔的派生字段）
+        # Cascading updates to subsequent records (recalculating the derived fields of each transaction with the new curr state)
         curr_qty = updated["quantity_after"]
         curr_cost_val = updated["cost_value_after"]
         for i in range(edit_idx + 1, len(all_changes)):
@@ -657,7 +657,7 @@ class PortfolioService:
 
         cost_price = round(curr_cost_val / curr_qty, 4) if curr_qty > 0 else 0.0
 
-        # 更新 positions 表
+        # Update positions table
         position = await self.db[self.positions_collection].find_one(
             {"user_id": user_id, "code": code, "market": market}
         )
@@ -681,7 +681,7 @@ class PortfolioService:
         change_id: str
     ) -> Dict[str, Any]:
         """
-        删除单笔变动记录，级联重算后续记录并更新持仓
+        Delete a single change record, cascade recalculate subsequent records and update positions
         """
         from bson import ObjectId
         try:
@@ -698,19 +698,19 @@ class PortfolioService:
         code = change["code"]
         market = change.get("market", "CN")
 
-        # 获取该股票所有变动记录，按时间排序，排除要删除的
+        # Get all change records of the stock, sort by time, and exclude those to be deleted
         cursor = self.db[self.position_changes_collection].find(
             {"user_id": user_id, "code": code, "market": market}
         ).sort("created_at", 1)
         all_changes = await cursor.to_list(None)
         remaining = [c for c in all_changes if c["_id"] != obj_id]
 
-        # 删除该记录
+        # Delete this record
         await self.db[self.position_changes_collection].delete_one(
             {"_id": obj_id, "user_id": user_id}
         )
 
-        # 重放剩余记录，级联更新每条
+        # Replay the remaining records and update each record cascade
         def compute_updated_change(c, qty_before, cost_val_before, new_qty, new_price):
             ct = c.get("change_type")
             cost_val_before = round(cost_val_before, 2)
@@ -781,7 +781,7 @@ class PortfolioService:
                 }}
             )
         elif curr_qty > 0:
-            # 有变动记录但无持仓，需新建
+            # There is a change record but no position, a new one needs to be created
             name = change.get("name", code)
             currency = change.get("currency", "CNY")
             now = now_tz()
@@ -797,7 +797,7 @@ class PortfolioService:
 
     async def reset_position(self, user_id: str, code: str, market: str = "CN") -> Dict[str, Any]:
         """
-        重置整个持仓：删除该股票的所有变动记录和持仓，资金不返还（用户重新录入）
+        Reset the entire position: delete all change records and positions of the stock, and the funds will not be returned (the user will re-enter)
         """
         position = await self.db[self.positions_collection].find_one(
             {"user_id": user_id, "code": code, "market": market}
@@ -817,8 +817,8 @@ class PortfolioService:
 
     async def reset_all_positions(self, user_id: str) -> Dict[str, Any]:
         """
-        清零全部持仓：删除该用户所有持仓和变动记录，并完全清零资金账户
-        资金账户全部归零：现金、初始资金、入金、出金、累计收益均为 0
+        Clear all positions: Delete all positions and change records of the user, and completely clear the capital account
+        All capital accounts are reset to zero: cash, initial funds, deposits, withdrawals, and accumulated income are all 0
         """
         deleted_changes = await self.db[self.position_changes_collection].delete_many(
             {"user_id": user_id}
@@ -827,7 +827,7 @@ class PortfolioService:
             {"user_id": user_id}
         )
 
-        # 完全清零资金账户：现金、初始资金、入金、出金全部置为 0
+        # Completely clear the capital account: cash, initial funds, deposits, and withdrawals are all set to 0
         zero_balance = {"CNY": 0.0, "HKD": 0.0, "USD": 0.0}
         now = now_tz()
         await self.db[self.accounts_collection].update_one(
@@ -849,7 +849,7 @@ class PortfolioService:
         }
 
     async def _clear_existing_real_positions_for_sync(self, user_id: str) -> Dict[str, Any]:
-        """清空当前用户的实盘持仓，并把持仓成本退回到现金中，用于 QMT 覆盖同步。"""
+        """Clear the current user s real positions and return the position costs to cash for QMT coverage synchronization."""
         positions = await self.db[self.positions_collection].find(
             {"user_id": user_id, "quantity": {"$gt": 0}}
         ).to_list(None)
@@ -887,7 +887,7 @@ class PortfolioService:
             )
 
         logger.info(
-            "QMT 覆盖同步前清空本地实盘持仓: user=%s, 删除 %s 个持仓, %s 条变动, 退回资金 %s",
+            "QMT Clear local real positions before overwriting synchronization: user=%s, Delete %s positions, %s Article changes, Return funds %s",
             user_id,
             deleted_positions.deleted_count,
             deleted_changes.deleted_count,
@@ -900,7 +900,7 @@ class PortfolioService:
         }
 
     def _build_qmt_import_positions(self, positions_df: Any) -> List[PositionCreate]:
-        """将 QMT 持仓 DataFrame 转为系统导入使用的 PositionCreate 列表。"""
+        """Convert the QMT position DataFrame into a PositionCreate list used by the system to import."""
         positions: List[PositionCreate] = []
         if positions_df is None:
             return positions
@@ -934,7 +934,7 @@ class PortfolioService:
         return positions
 
     async def _sync_qmt_cash_to_account(self, user_id: str, asset_summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-        """将 QMT 账户可用现金镜像到本地资金账户。"""
+        """Mirror QMT account available cash to local funds account."""
         asset_summary = asset_summary or {}
         qmt_cash = asset_summary.get("cash")
         if qmt_cash is None:
@@ -951,7 +951,7 @@ class PortfolioService:
             {"$set": {"cash.CNY": synced_cash, "updated_at": now_tz()}}
         )
 
-        logger.info("QMT 现金同步完成: user=%s, CNY=%s", user_id, synced_cash)
+        logger.info("QMT Cash synchronization completed: user=%s, CNY=%s", user_id, synced_cash)
         return {
             "cash_synced": True,
             "synced_currency": "CNY",
@@ -964,13 +964,13 @@ class PortfolioService:
         account_id: str,
         account_type: str = "STOCK",
     ) -> Dict[str, Any]:
-        """预览 QMT 持仓覆盖同步对当前账户的影响。"""
+        """Preview the impact of QMT position coverage synchronization on the current account."""
         from app.services.data_sources.qmt_adapter import QMTAdapter
 
         adapter = QMTAdapter()
         snapshot = await asyncio.to_thread(adapter.query_account_snapshot, account_id, account_type)
         if snapshot is None:
-            raise ValueError("QMT 未查询到账户信息，请确认 QMT 已登录且账号可用")
+            raise ValueError("QMT No account information found, please confirm that QMT is logged in and the account is available")
 
         positions_df = snapshot.get("positions_df")
         asset_summary = snapshot.get("asset") or {}
@@ -1001,10 +1001,10 @@ class PortfolioService:
             "qmt_total_asset": round(float(qmt_total_asset), 2) if qmt_total_asset is not None else None,
             "will_sync_cash": qmt_cash is not None,
             "cash_currency": "CNY",
-            "sync_note": "将覆盖本地实盘持仓，并把 CNY 可用现金更新为 QMT 账户现金；初始资金和累计入出金记录保持不变。",
+            "sync_note": "The local real position will be overwritten, and the CNY available cash will be updated to the QMT account cash; the initial funds and cumulative deposit and withdrawal records will remain unchanged.",
         }
 
-    # ==================== 持仓管理 ====================
+    # ==================== Position management ====================
 
     async def get_positions(
         self, 
@@ -1013,16 +1013,16 @@ class PortfolioService:
         include_market_data: bool = True
     ) -> List[PositionResponse]:
         """
-        获取用户持仓列表
+        Get the user s position list
         
         Args:
-            user_id: 用户ID
-            source: 数据来源 (all/real/paper)
-            include_market_data: 是否包含实时行情
+            user_id: User ID
+            source: Data source (all/real/paper)
+            include_market_data: Whether to include real-time quotes
         """
         positions = []
 
-        # 获取用户持仓（只获取 quantity > 0 的持仓）
+        # Get user holdings (only get quantity > 0 position)
         if source in ["all", "real"]:
             real_positions = await self.db[self.positions_collection].find(
                 {"user_id": user_id, "quantity": {"$gt": 0}}
@@ -1032,7 +1032,7 @@ class PortfolioService:
                 pos = await self._enrich_position(p, "real", include_market_data)
                 positions.append(pos)
 
-        # 获取模拟交易持仓（只获取 quantity > 0 的持仓）
+        # Get simulated trading positions (only get quantity > 0 position)
         if source in ["all", "paper"]:
             paper_positions = await self.db[self.paper_positions_collection].find(
                 {"user_id": user_id, "quantity": {"$gt": 0}}
@@ -1052,11 +1052,11 @@ class PortfolioService:
         skip: int = 0
     ) -> Dict[str, Any]:
         """
-        获取历史持仓（已清仓的记录）
-        按股票代码聚合，显示每只股票的交易汇总
-        只显示已完全清仓的持仓（买入数量 = 卖出数量）
+        Get historical positions (records of cleared positions)
+        Aggregated by ticker, showing a summary of trades for each stock
+        Only positions that have been completely liquidated (buy quantity = quantity sold)
         """
-        # 从变动记录中聚合历史持仓数据
+        # Aggregate historical position data from change records
         pipeline = [
             {"$match": {"user_id": user_id}},
             {"$group": {
@@ -1097,7 +1097,7 @@ class PortfolioService:
                     "$trade_price", None
                 ]}}
             }},
-            # 只显示已完全清仓的（买入数量 = 卖出数量）
+            # Only displayed positions that have been completely cleared (buying quantity = quantity sold)
             {"$match": {
                 "$expr": {
                     "$and": [
@@ -1113,7 +1113,7 @@ class PortfolioService:
 
         results = await self.db[self.position_changes_collection].aggregate(pipeline).to_list(None)
 
-        # 计算总数
+        # Calculate the total
         count_pipeline = [
             {"$match": {"user_id": user_id}},
             {"$group": {
@@ -1142,12 +1142,12 @@ class PortfolioService:
 
         items = []
         for r in results:
-            # 计算持有天数
+            # Calculate holding days
             first_buy = r.get("first_buy_date")
             last_sell = r.get("last_sell_date")
             hold_days = 0
             if first_buy and last_sell:
-                # 🔥 处理字符串类型的日期（MongoDB可能返回字符串）
+                # 🔥 Handle dates of string type (MongoDB may return strings)
                 if isinstance(first_buy, str):
                     first_buy = datetime.fromisoformat(first_buy.replace('Z', '+00:00'))
                 if isinstance(last_sell, str):
@@ -1155,7 +1155,7 @@ class PortfolioService:
                 delta = last_sell - first_buy
                 hold_days = delta.days
 
-            # 计算盈亏百分比
+            # Calculate profit and loss percentage
             total_buy_amount = r.get("total_buy_amount", 0)
             total_realized_pnl = r.get("total_realized_pnl", 0)
             realized_pnl_pct = 0
@@ -1193,25 +1193,25 @@ class PortfolioService:
         source: str,
         include_market_data: bool = True
     ) -> PositionResponse:
-        """丰富持仓数据（添加实时行情）"""
+        """Enrich position data (add real-time quotes)"""
         code = position.get("code", "")
         market = position.get("market", "CN")
         quantity = int(position.get("quantity", 0))
         
-        # 获取成本价
+        # Get cost price
         if source == "paper":
             cost_price = float(position.get("avg_cost", 0.0))
-            original_avg_cost = cost_price  # 模拟盘无原始成本区分
+            original_avg_cost = cost_price  # There is no original cost distinction for simulated disks
         else:
             cost_price = float(position.get("cost_price", 0.0))
-            # 向后兼容：无 original_avg_cost 时使用 cost_price
+            # Backward compatibility: used when original_avg_cost is not available cost_price
             original_avg_cost = position.get("original_avg_cost")
             if original_avg_cost is None:
                 original_avg_cost = cost_price
             else:
                 original_avg_cost = float(original_avg_cost)
 
-        # 获取实时价格
+        # Get real-time prices
         current_price = None
         market_value = None
         unrealized_pnl = None
@@ -1226,24 +1226,24 @@ class PortfolioService:
                     unrealized_pnl = round(market_value - cost_value, 2)
                     unrealized_pnl_pct = round((unrealized_pnl / cost_value) * 100, 2)
 
-        # 获取股票名称
+        # Get stock name
         name = position.get("name")
         if not name:
             name = await self._get_stock_name(code, market)
 
-        # 🔥 获取行业信息：如果为空，尝试从数据库获取并更新
+        # 🔥 Get industry information: If empty, try to get and update from the database
         industry = position.get("industry")
         if not industry or industry == "未知":
             logger.info(f"🔄 [丰富持仓] 持仓 {code} ({source}) 行业为空或'未知'，尝试获取...")
             industry = await self._get_stock_industry(code, market)
             logger.info(f"📊 [丰富持仓] 持仓 {code} 获取到的行业: {industry}")
             
-            # 如果获取到了行业信息，更新到数据库
+            # If industry information is obtained, update it to the database
             if industry:
                 try:
                     position_id = position.get("_id")
                     if position_id:
-                        # 根据数据源选择对应的集合
+                        # Select the corresponding collection according to the data source
                         collection_name = self.paper_positions_collection if source == "paper" else self.positions_collection
                         
                         update_result = await self.db[collection_name].update_one(
@@ -1257,7 +1257,7 @@ class PortfolioService:
                 except Exception as e:
                     logger.warning(f"⚠️ [丰富持仓] 更新持仓 {code} 行业信息失败: {e}")
             else:
-                # 如果无法获取，使用"未知"
+                # If it is not available, use"unknown"
                 logger.warning(f"⚠️ [丰富持仓] 持仓 {code} 无法获取行业信息，使用'未知'")
                 industry = "未知"
 
@@ -1291,9 +1291,9 @@ class PortfolioService:
         source: PositionSource = PositionSource.MANUAL,
         validate_input: bool = True,
     ) -> PositionResponse:
-        """添加用户持仓（如果已有持仓则自动加仓）"""
-        # 手工录入时仍然保留历史数据校验；QMT 快照同步会跳过这层校验，直接按已知持仓写入。
-        adjust_info = None  # 复权转换信息
+        """Add user position (if there is already a position, it will be added automatically)"""
+        # Historical data verification is still retained during manual entry; QMT snapshot synchronization will skip this level of verification and write directly according to known positions.
+        adjust_info = None  # Restoration conversion information
         if validate_input:
             current_price = await self._get_stock_price(data.code, data.market)
             if not current_price or current_price <= 0:
@@ -1301,9 +1301,9 @@ class PortfolioService:
                     f"股票 {data.code} 暂无行情数据，无法添加持仓。请先在「股票筛选」或「单股分析」中同步该股票的历史数据后再添加。"
                 )
 
-            # 🔥 必须填写买入日期，并校验成本价是否在该日历史高低价范围内
+            # 🔥 You must fill in the purchase date and verify whether the cost price is within the historical high and low price range of that day
             if not data.buy_date:
-                raise ValueError("添加持仓时必须填写买入日期，以便校验成本价是否正确。")
+                raise ValueError("When adding a position, the purchase date must be filled in to verify whether the cost price is correct.")
             adjust_info = await self._validate_cost_price_against_historical(
                 code=data.code,
                 market=data.market,
@@ -1311,89 +1311,89 @@ class PortfolioService:
                 cost_price=data.cost_price
             )
 
-        # ---- 复权价格转换 ----
-        # adjust_info 不为 None 说明用户输入的是不复权价格，需要转为前复权保存
-        original_cost_price = None  # 保存原始不复权价格
-        price_adjust_type = None    # 价格标注
-        effective_cost_price = data.cost_price  # 实际用于计算的成本价（前复权）
+        # ---- Restoration price conversion ----
+        # adjust_info If it is not None, it means that the user input is the non-rights restoration price and needs to be converted to the pre-rights restoration price.
+        original_cost_price = None  # Save the original irrevocable price
+        price_adjust_type = None    # Price mark
+        effective_cost_price = data.cost_price  # Cost price actually used for calculation (before re-righting)
 
         if adjust_info and adjust_info.get("adjust_type") == "none":
-            original_cost_price = data.cost_price  # 保存用户原始输入的不复权价格
+            original_cost_price = data.cost_price  # Save the non-rightsing price originally input by the user
             price_adjust_type = "none"
             qfq_price = adjust_info.get("qfq_price")
             if qfq_price is not None and qfq_price > 0:
-                effective_cost_price = qfq_price  # 使用转换后的前复权价格
+                effective_cost_price = qfq_price  # Use the converted pre-right price
                 logger.info(
                     f"🔄 成本价转换：不复权 {data.cost_price:.2f} → 前复权 {qfq_price:.2f}"
-                    f"（复权因子={adjust_info.get('adj_factor', 'N/A')}）"
+                    f" (Reweighting factor={adjust_info.get('adj_factor', 'N/A')}) "
                 )
             else:
-                # 无法转换，保留不复权价格（后续盈亏计算可能有小误差）
+                # Unable to convert, retain the non-rights price (there may be small errors in subsequent profit and loss calculations)
                 effective_cost_price = data.cost_price
                 logger.warning(
                     f"⚠️ 无法将不复权价格 {data.cost_price:.2f} 转为前复权，"
-                    f"将以不复权价格保存（盈亏计算可能存在分红导致的误差）"
+                    f"It will be saved at a non-restorable price (the profit and loss calculation may contain errors caused by dividends)"
                 )
 
-        # 获取股票名称和行业
+        # Get stock name and industry
         name = data.name
         logger.debug(f"📝 [添加持仓] 股票代码: {data.code}, 市场: {data.market}, 已有名称: {name}")
         
-        # 🔥 修复：无论名称是否为空，都尝试获取行业信息
-        # 如果名称为空，先获取名称；如果名称不为空，也要获取行业信息
+        # 🔥 Fix: Try to get industry information regardless of name being empty
+        # If the name is empty, get the name first; if the name is not empty, also get the industry information
         if not name:
             name = await self._get_stock_name(data.code, data.market)
-            logger.debug(f"📝 [添加持仓] 获取到的名称: {name}")
+            logger.debug(f"📝 [Add position] The name obtained: {name}")
         
-        # 始终尝试获取行业信息（即使名称已存在）
+        # Always try to get industry information (even if the name already exists)
         industry = await self._get_stock_industry(data.code, data.market)
         logger.info(f"📝 [添加持仓] 股票 {data.code} 行业信息: {industry}")
 
-        # 计算持仓成本（使用转换后的前复权价格）
+        # Calculate holding cost (using converted pre-right price)
         currency = self._get_currency_by_market(data.market)
         position_cost = data.quantity * effective_cost_price
 
-        # 🔥 计算买入手续费
+        # 🔥 Calculate purchase fees
         trade_amount = data.quantity * effective_cost_price
         market_rules = await self._get_real_market_rules(data.market)
         commission_info = self._calculate_real_commission(data.market, "buy", trade_amount, market_rules or {})
         total_commission = commission_info["commission"]
-        total_cost = position_cost + total_commission  # 总支出 = 成交金额 + 手续费
+        total_cost = position_cost + total_commission  # total expenditure = Transaction amount + handling fee
 
-        # 从资金账户中扣除成本+手续费
+        # Deduct costs from funding account+handling fee
         account = await self.get_or_create_account(user_id)
         current_cash = account.get("cash", {}).get(currency, 0.0)
 
         if current_cash < total_cost:
             raise ValueError(f"可用资金不足。当前可用: {current_cash:.2f} {currency}，需要: {total_cost:.2f} {currency}（含手续费 {total_commission:.2f}）")
 
-        # 检查是否已有该股票的持仓（同一用户、同一股票代码、同一市场）
+        # Check whether there is already a position in the stock (same user, same stock code, same market)
         existing_position = await self.db[self.positions_collection].find_one({
             "user_id": user_id,
             "code": data.code,
             "market": data.market,
-            "quantity": {"$gt": 0}  # 只查找数量大于0的持仓（未清仓的）
+            "quantity": {"$gt": 0}  # Only search for positions with a quantity greater than 0 (uncleared positions)
         })
 
         if existing_position:
-            # 已有持仓，执行加仓操作
+            # Already have a position, perform add position operation
             old_quantity = existing_position.get("quantity", 0)
             old_cost_price = existing_position.get("cost_price", 0.0)
             old_total_cost = old_quantity * old_cost_price
 
-            # 计算新的持仓数量和平均成本价
+            # Calculate new position quantity and average cost price
             new_quantity = old_quantity + data.quantity
             new_total_cost = old_total_cost + position_cost
             new_cost_price = new_total_cost / new_quantity if new_quantity > 0 else 0.0
 
-            # 扣除资金（含手续费）
+            # Deduct funds (including handling fees)
             new_cash = current_cash - total_cost
             await self.db[self.accounts_collection].update_one(
                 {"user_id": user_id},
                 {"$set": {f"cash.{currency}": new_cash, "updated_at": now_tz()}}
             )
 
-            # 更新持仓记录（加仓时 cost_price 与 original_avg_cost 均为加权均价）
+            # Update the position record (when adding a position, cost_price and original_avg_cost are both weighted average prices)
             now = now_tz()
             update_fields = {
                 "quantity": new_quantity,
@@ -1402,7 +1402,7 @@ class PortfolioService:
                 "updated_at": now,
                 "notes": data.notes if data.notes else existing_position.get("notes")
             }
-            # 加仓时如有不复权标注，也保存到持仓记录
+            # If there is a no-rights mark when adding a position, it will also be saved to the position record.
             if original_cost_price is not None:
                 update_fields["original_cost_price"] = original_cost_price
                 update_fields["price_adjust_type"] = price_adjust_type
@@ -1411,7 +1411,7 @@ class PortfolioService:
                 {"$set": update_fields}
             )
 
-            # 记录持仓变动（加仓，含手续费明细）
+            # Record position changes (position addition, including handling fee details)
             change_description = f"加仓: +{data.quantity}股 @ {effective_cost_price:.2f}"
             if total_commission > 0:
                 change_description += f"（手续费 ¥{total_commission:.2f}）"
@@ -1433,12 +1433,12 @@ class PortfolioService:
 
             logger.info(f"✅ 加仓成功: {user_id} - {data.code}，{old_quantity} → {new_quantity}股，成本价: {old_cost_price:.2f} → {new_cost_price:.2f}，扣除资金: {total_cost:.2f} {currency}（含手续费 {total_commission:.2f}）")
 
-            # 返回更新后的持仓
+            # Return updated positions
             updated_position = await self.db[self.positions_collection].find_one({"_id": existing_position["_id"]})
             return await self._enrich_position(updated_position, "real")
 
-        # 没有已有持仓，新建持仓记录
-        # 扣除资金（含手续费）
+        # There is no existing position, create a new position record
+        # Deduct funds (including handling fees)
         new_cash = current_cash - total_cost
         await self.db[self.accounts_collection].update_one(
             {"user_id": user_id},
@@ -1468,7 +1468,7 @@ class PortfolioService:
         result = await self.db[self.positions_collection].insert_one(position_doc)
         position_doc["_id"] = result.inserted_id
 
-        # 记录持仓变动（含手续费明细）
+        # Record position changes (including handling fee details)
         change_description = f"新建持仓: {data.notes}" if data.notes else "新建持仓"
         if total_commission > 0:
             change_description += f"（手续费 ¥{total_commission:.2f}）"
@@ -1498,9 +1498,9 @@ class PortfolioService:
         data: PositionOperationRequest
     ) -> Dict[str, Any]:
         """
-        执行持仓操作（加仓、减仓、分红、拆股、合股、调整成本）
+        Execute position operations (increase positions, reduce positions, dividends, split shares, combine shares, adjust costs)
         """
-        # 查找该股票的现有持仓
+        # Find existing positions in this stock
         existing_position = await self.db[self.positions_collection].find_one({
             "user_id": user_id,
             "code": data.code,
@@ -1515,27 +1515,27 @@ class PortfolioService:
         now = now_tz()
 
         if data.operation_type == PositionOperationType.ADD:
-            # 加仓：复用 add_position 逻辑
+            # Add position: reuse add_position logic
             return await self._handle_add_operation(user_id, data, existing_position, currency, now)
 
         elif data.operation_type == PositionOperationType.REDUCE:
-            # 减仓
+            # Reduce positions
             return await self._handle_reduce_operation(user_id, data, existing_position, currency, now)
 
         elif data.operation_type == PositionOperationType.DIVIDEND:
-            # 分红
+            # dividend
             return await self._handle_dividend_operation(user_id, data, existing_position, currency, now)
 
         elif data.operation_type == PositionOperationType.SPLIT:
-            # 拆股
+            # stock split
             return await self._handle_split_operation(user_id, data, existing_position, currency, now)
 
         elif data.operation_type == PositionOperationType.MERGE:
-            # 合股
+            # partnership
             return await self._handle_merge_operation(user_id, data, existing_position, currency, now)
 
         elif data.operation_type == PositionOperationType.ADJUST:
-            # 调整成本价
+            # Adjust cost price
             return await self._handle_adjust_operation(user_id, data, existing_position, currency, now)
 
         else:
@@ -1551,26 +1551,26 @@ class PortfolioService:
 
         position_cost = data.quantity * data.price
 
-        # 🔥 计算买入手续费
+        # 🔥 Calculate purchase fees
         market_rules = await self._get_real_market_rules(data.market)
         commission_info = self._calculate_real_commission(data.market, "buy", position_cost, market_rules or {})
         total_commission = commission_info["commission"]
         total_cost = position_cost + total_commission
 
-        # 检查资金
+        # Check funds
         account = await self.get_or_create_account(user_id)
         current_cash = account.get("cash", {}).get(currency, 0.0)
         if current_cash < total_cost:
             raise ValueError(f"可用资金不足。当前: {current_cash:.2f}，需要: {total_cost:.2f}（含手续费 {total_commission:.2f}）")
 
-        # 扣除资金（含手续费）
+        # Deduct funds (including handling fees)
         await self.db[self.accounts_collection].update_one(
             {"user_id": user_id},
             {"$set": {f"cash.{currency}": current_cash - total_cost, "updated_at": now}}
         )
 
         if existing_position:
-            # 已有持仓，合并（加仓时 cost_price 与 original_avg_cost 均为加权均价）
+            # Already have positions, merge them (when adding positions, cost_price and original_avg_cost are both weighted average prices)
             old_qty = existing_position["quantity"]
             old_cost = existing_position["cost_price"]
             new_qty = old_qty + data.quantity
@@ -1594,13 +1594,13 @@ class PortfolioService:
                 quantity_before=old_qty, cost_price_before=old_cost,
                 quantity_after=new_qty, cost_price_after=new_cost,
                 description=f"加仓: +{data.quantity}股 @ {data.price:.2f}",
-                trade_time=data.operation_date  # 使用操作日期作为交易时间
+                trade_time=data.operation_date  # Use operation date as transaction time
             )
 
             logger.info(f"✅ 加仓成功: {data.code}, {old_qty} → {new_qty}股")
             return {"message": "加仓成功", "new_quantity": new_qty, "new_cost_price": round(new_cost, 4)}
         else:
-            # 新建持仓
+            # New position
             name = await self._get_stock_name(data.code, data.market)
             position_doc = {
                 "user_id": user_id, "code": data.code, "name": name,
@@ -1621,7 +1621,7 @@ class PortfolioService:
                 quantity_before=0, cost_price_before=0.0,
                 quantity_after=data.quantity, cost_price_after=data.price,
                 description="新建持仓",
-                trade_time=data.operation_date  # 使用操作日期作为交易时间
+                trade_time=data.operation_date  # Use operation date as transaction time
             )
 
             logger.info(f"✅ 新建持仓: {data.code}, {data.quantity}股 @ {data.price:.2f}")
@@ -1641,16 +1641,16 @@ class PortfolioService:
         if data.quantity > old_qty:
             raise ValueError(f"减仓数量({data.quantity})超过持仓数量({old_qty})")
 
-        # 计算卖出金额
+        # Calculate selling amount
         sell_amount = data.quantity * data.price
 
-        # 🔥 计算卖出手续费
+        # 🔥 Calculate selling fees
         market_rules = await self._get_real_market_rules(data.market)
         commission_info = self._calculate_real_commission(data.market, "sell", sell_amount, market_rules or {})
         total_commission = commission_info["commission"]
-        net_proceeds = sell_amount - total_commission  # 实际到账 = 卖出金额 - 手续费
+        net_proceeds = sell_amount - total_commission  # Actual arrival = Amount sold - handling fee
 
-        # 增加到现金（扣除手续费后）
+        # Add to cash (after deducting handling fees)
         account = await self.get_or_create_account(user_id)
         current_cash = account.get("cash", {}).get(currency, 0.0)
 
@@ -1663,7 +1663,7 @@ class PortfolioService:
         old_total_cost = old_qty * old_cost
 
         if new_qty == 0:
-            # 清仓
+            # Clearance
             await self.db[self.positions_collection].update_one(
                 {"_id": existing_position["_id"]},
                 {"$set": {"quantity": 0, "updated_at": now}}
@@ -1674,12 +1674,12 @@ class PortfolioService:
                 description += f"（手续费 ¥{total_commission:.2f}）"
             new_cost = 0.0
         else:
-            # 部分减仓：使用摊薄成本逻辑（与主流交易软件一致）
-            # 剩余成本 = (原持仓总成本 - 本次卖出金额) / 剩余数量
-            # 盈利减仓时成本降低，亏损减仓时成本升高
+            # Partial reduction of positions: using dilution cost logic (consistent with mainstream trading software)
+            # remaining cost = (Total cost of original position - Amount of current sale) / Remaining quantity
+            # When you reduce your position with profit, the cost decreases, and when you reduce your position with loss, the cost increases.
             remaining_cost = old_total_cost - sell_amount
             new_cost = remaining_cost / new_qty if new_qty > 0 else 0.0
-            # 避免负成本（极端盈利时），保底为 0.01
+            # To avoid negative costs (when extremely profitable), the minimum guarantee is 0.01
             new_cost = max(0.01, round(new_cost, 4))
 
             await self.db[self.positions_collection].update_one(
@@ -1691,7 +1691,7 @@ class PortfolioService:
             if total_commission > 0:
                 description += f"（手续费 ¥{total_commission:.2f}）"
 
-        # 计算盈亏（扣除手续费后的实际盈亏）
+        # Calculate profit and loss (actual profit and loss after deducting handling fees)
         profit = (data.price - old_cost) * data.quantity - total_commission
         profit_pct = (profit) / (old_cost * data.quantity) * 100 if old_cost > 0 else 0
 
@@ -1711,7 +1711,7 @@ class PortfolioService:
 
         logger.info(
             f"✅ 减仓成功: {data.code}, {old_qty} → {new_qty}股, "
-            f"成本 {old_cost:.2f} → {new_cost:.2f}, 盈亏: {profit:.2f}"
+            f"cost {old_cost:.2f} → {new_cost:.2f}, Profit and loss: {profit:.2f}"
         )
         result = {
             "message": "清仓成功" if new_qty == 0 else "减仓成功",
@@ -1734,7 +1734,7 @@ class PortfolioService:
         if not data.dividend_amount or data.dividend_amount <= 0:
             raise ValueError("分红需要指定分红金额")
 
-        # 分红金额加入现金
+        # Dividend amount added to cash
         account = await self.get_or_create_account(user_id)
         current_cash = account.get("cash", {}).get(currency, 0.0)
 
@@ -1743,7 +1743,7 @@ class PortfolioService:
             {"$set": {f"cash.{currency}": current_cash + data.dividend_amount, "updated_at": now}}
         )
 
-        # 记录变动
+        # Record changes
         await self.record_position_change(
             user_id=user_id, change_type=PositionChangeType.ADJUST,
             code=data.code, name=existing_position.get("name", data.code),
@@ -1754,7 +1754,7 @@ class PortfolioService:
             quantity_after=existing_position["quantity"],
             cost_price_after=existing_position["cost_price"],
             description=f"现金分红: +{data.dividend_amount:.2f} {currency}",
-            trade_time=data.operation_date  # 使用操作日期作为交易时间
+            trade_time=data.operation_date  # Use operation date as transaction time
         )
 
         logger.info(f"✅ 分红成功: {data.code}, +{data.dividend_amount:.2f} {currency}")
@@ -1764,9 +1764,9 @@ class PortfolioService:
         self, user_id: str, data: PositionOperationRequest,
         existing_position: Dict, currency: str, now
     ) -> Dict[str, Any]:
-        """处理拆股操作（如 10送10，比例为 2:1）"""
+        """Handle stock split operations (such as 10 for 10, the ratio is 2:1) """
         if not data.ratio:
-            raise ValueError("拆股需要指定比例，如 2:1")
+            raise ValueError("A stock split requires a specified ratio, such as 2:1")
 
         try:
             parts = data.ratio.split(":")
@@ -1774,7 +1774,7 @@ class PortfolioService:
             old_ratio = float(parts[1])
             multiplier = new_ratio / old_ratio
         except Exception:
-            raise ValueError("比例格式错误，应为 x:y 格式，如 2:1")
+            raise ValueError("Scale format error, should be x:y format, such as 2:1")
 
         old_qty = existing_position["quantity"]
         old_cost = existing_position["cost_price"]
@@ -1795,7 +1795,7 @@ class PortfolioService:
             quantity_before=old_qty, cost_price_before=old_cost,
             quantity_after=new_qty, cost_price_after=new_cost,
             description=f"拆股: {data.ratio}，数量 {old_qty} → {new_qty}",
-            trade_time=data.operation_date  # 使用操作日期作为交易时间
+            trade_time=data.operation_date  # Use operation date as transaction time
         )
 
         logger.info(f"✅ 拆股成功: {data.code}, {old_qty} → {new_qty}股")
@@ -1805,9 +1805,9 @@ class PortfolioService:
         self, user_id: str, data: PositionOperationRequest,
         existing_position: Dict, currency: str, now
     ) -> Dict[str, Any]:
-        """处理合股操作（如 10合1，比例为 1:10）"""
+        """Handles partnership operations (e.g. 10-in-1, with a ratio of 1:10) """
         if not data.ratio:
-            raise ValueError("合股需要指定比例，如 1:10")
+            raise ValueError("A partnership requires a specified proportion, such as 1:10")
 
         try:
             parts = data.ratio.split(":")
@@ -1815,7 +1815,7 @@ class PortfolioService:
             old_ratio = float(parts[1])
             multiplier = new_ratio / old_ratio
         except Exception:
-            raise ValueError("比例格式错误，应为 x:y 格式，如 1:10")
+            raise ValueError("Scale format error, should be x:y format, such as 1:10")
 
         old_qty = existing_position["quantity"]
         old_cost = existing_position["cost_price"]
@@ -1839,7 +1839,7 @@ class PortfolioService:
             quantity_before=old_qty, cost_price_before=old_cost,
             quantity_after=new_qty, cost_price_after=new_cost,
             description=f"合股: {data.ratio}，数量 {old_qty} → {new_qty}",
-            trade_time=data.operation_date  # 使用操作日期作为交易时间
+            trade_time=data.operation_date  # Use operation date as transaction time
         )
 
         logger.info(f"✅ 合股成功: {data.code}, {old_qty} → {new_qty}股")
@@ -1851,7 +1851,7 @@ class PortfolioService:
     ) -> Dict[str, Any]:
         """处理调整成本价操作"""
         if not data.new_cost_price or data.new_cost_price <= 0:
-            raise ValueError("调整成本价需要指定新成本价")
+            raise ValueError("Adjusting the cost price requires specifying a new cost price")
 
         old_cost = existing_position["cost_price"]
 
@@ -1870,7 +1870,7 @@ class PortfolioService:
             quantity_after=existing_position["quantity"],
             cost_price_after=data.new_cost_price,
             description=f"调整成本价: {old_cost:.2f} → {data.new_cost_price:.2f}",
-            trade_time=data.operation_date  # 使用操作日期作为交易时间
+            trade_time=data.operation_date  # Use operation date as transaction time
         )
 
         logger.info(f"✅ 调整成本价成功: {data.code}, {old_cost:.2f} → {data.new_cost_price:.2f}")
@@ -1889,28 +1889,28 @@ class PortfolioService:
             logger.error(f"无效的持仓ID: {position_id}")
             return None
 
-        # 获取原持仓信息
+        # Get original position information
         old_position = await self.db[self.positions_collection].find_one(
             {"_id": obj_id, "user_id": user_id}
         )
         if not old_position:
             return None
 
-        # 计算资金变化
+        # Calculate changes in funds
         old_cost = old_position["quantity"] * old_position["cost_price"]
         new_quantity = data.quantity if data.quantity is not None else old_position["quantity"]
         new_cost_price = data.cost_price if data.cost_price is not None else old_position["cost_price"]
         new_cost = new_quantity * new_cost_price
-        cost_diff = new_cost - old_cost  # 正数表示需要追加资金，负数表示释放资金
+        cost_diff = new_cost - old_cost  # A positive number indicates the need for additional funds, a negative number indicates the release of funds.
 
-        # 更新资金账户
+        # Update funding account
         if cost_diff != 0:
             currency = old_position["currency"]
             account = await self.get_or_create_account(user_id)
             current_cash = account.get("cash", {}).get(currency, 0.0)
 
             if cost_diff > 0 and current_cash < cost_diff:
-                raise ValueError(f"可用资金不足。当前可用: {current_cash:.2f} {currency}，需要追加: {cost_diff:.2f} {currency}")
+                raise ValueError(f"Insufficient funds available. Currently available: {current_cash:.2f} {currency}, Need to add: {cost_diff:.2f} {currency}")
 
             new_cash = current_cash - cost_diff
             await self.db[self.accounts_collection].update_one(
@@ -1918,7 +1918,7 @@ class PortfolioService:
                 {"$set": {f"cash.{currency}": new_cash, "updated_at": now_tz()}}
             )
 
-        # 构建更新数据
+        # Build update data
         update_data = {"updated_at": now_tz()}
         if data.name is not None:
             update_data["name"] = data.name
@@ -1938,12 +1938,12 @@ class PortfolioService:
         )
 
         if result:
-            # 记录持仓变动
+            # Record position changes
             currency = old_position["currency"]
             old_qty = old_position["quantity"]
             old_price = old_position["cost_price"]
 
-            # 判断变动类型
+            # Determine the type of change
             if new_quantity > old_qty:
                 change_type = PositionChangeType.ADD
                 desc = f"加仓 {new_quantity - old_qty} 股"
@@ -1981,14 +1981,14 @@ class PortfolioService:
             logger.error(f"无效的持仓ID: {position_id}")
             return False
 
-        # 获取持仓信息以释放资金
+        # Get position information to release funds
         position = await self.db[self.positions_collection].find_one(
             {"_id": obj_id, "user_id": user_id}
         )
         if not position:
             return False
 
-        # 释放资金（将持仓成本返还到可用资金）
+        # Release funds (return holding costs to available funds)
         position_cost = position["quantity"] * position["cost_price"]
         currency = position["currency"]
 
@@ -2001,7 +2001,7 @@ class PortfolioService:
             {"$set": {f"cash.{currency}": new_cash, "updated_at": now_tz()}}
         )
 
-        # 记录持仓变动（在删除前记录）
+        # Record position changes (recorded before deletion)
         await self.record_position_change(
             user_id=user_id,
             change_type=PositionChangeType.SELL,
@@ -2017,7 +2017,7 @@ class PortfolioService:
             description="清仓卖出"
         )
 
-        # 删除持仓
+        # Delete position
         result = await self.db[self.positions_collection].delete_one(
             {"_id": obj_id, "user_id": user_id}
         )
@@ -2073,20 +2073,20 @@ class PortfolioService:
         account_id: str,
         account_type: str = "STOCK",
     ) -> Dict[str, Any]:
-        """从 QMT 只读查询持仓并导入到当前用户的持仓列表。"""
+        """Read-only query of positions from QMT and import into current user s position list."""
         from app.services.data_sources.qmt_adapter import QMTAdapter
 
         adapter = QMTAdapter()
         snapshot = await asyncio.to_thread(adapter.query_account_snapshot, account_id, account_type)
         if snapshot is None:
-            raise ValueError("QMT 未查询到账户信息，请确认 QMT 已登录且账号可用")
+            raise ValueError("QMT No account information found, please confirm that QMT is logged in and the account is available")
 
         positions_df = snapshot.get("positions_df")
         asset_summary = snapshot.get("asset") or {}
         positions = self._build_qmt_import_positions(positions_df)
 
         if (positions_df is None or len(positions_df) == 0) and asset_summary.get("cash") is None:
-            raise ValueError("QMT 未查询到可同步的持仓或账户资产")
+            raise ValueError("QMT No positions or account assets that can be synchronized were found.")
 
         result = await self.import_positions(
             user_id,
@@ -2102,11 +2102,11 @@ class PortfolioService:
             "imported_count": len(positions),
             "qmt_market_value": asset_summary.get("market_value"),
             "qmt_total_asset": asset_summary.get("total_asset"),
-            "sync_note": "已覆盖本地实盘持仓，并将 CNY 可用现金同步为 QMT 账户现金。初始资金和累计入出金记录未改动。",
+            "sync_note": "Local real market positions have been covered, and CNY available cash has been synchronized to QMT account cash. The initial funds and cumulative deposits and withdrawals records remain unchanged.",
         })
         return result
 
-    # ==================== 持仓统计 ====================
+    # ==================== Position statistics ====================
 
     async def get_portfolio_statistics(self, user_id: str) -> PortfolioStatsResponse:
         """获取持仓统计"""
@@ -2124,19 +2124,19 @@ class PortfolioService:
             if pos.market_value:
                 total_value += pos.market_value
             else:
-                total_value += cost  # 无法获取市值时使用成本
+                total_value += cost  # Use cost when market cap cannot be obtained
 
-            # 🔥 修复：如果行业为空，尝试实时获取并更新到数据库
+            # 🔥 Fix: If industry is empty, try to get and update to database in real time
             industry = pos.industry
             logger.info(f"📊 [统计] 持仓 {pos.code} ({pos.name}) 当前行业: {industry}")
             
             if not industry or industry == "未知":
                 logger.info(f"🔄 [统计] 持仓 {pos.code} 行业为空或'未知'，尝试实时获取...")
-                # 尝试从数据库获取行业信息
+                # Try to get industry information from the database
                 industry = await self._get_stock_industry(pos.code, pos.market)
                 logger.info(f"📊 [统计] 持仓 {pos.code} 获取到的行业: {industry}")
                 
-                # 如果获取到了行业信息，更新到数据库
+                # If industry information is obtained, update it to the database
                 if industry:
                     try:
                         update_result = await self.db[self.positions_collection].update_one(
@@ -2150,27 +2150,27 @@ class PortfolioService:
                     except Exception as e:
                         logger.error(f"❌ [统计] 更新持仓 {pos.code} 行业信息失败: {e}", exc_info=True)
                 else:
-                    # 如果无法获取，使用"未知"
+                    # If it is not available, use"unknown"
                     logger.warning(f"⚠️ [统计] 持仓 {pos.code} 无法获取行业信息，使用'未知'")
                     industry = "未知"
             
-            # 行业统计
+            # Industry Statistics
             if industry not in industry_map:
                 industry_map[industry] = {"value": 0.0, "count": 0}
             industry_map[industry]["value"] += pos.market_value or cost
             industry_map[industry]["count"] += 1
 
-            # 市场统计
+            # market statistics
             market = pos.market
             if market not in market_map:
                 market_map[market] = 0.0
             market_map[market] += pos.market_value or cost
 
-        # 计算盈亏
+        # Calculate profit and loss
         unrealized_pnl = total_value - total_cost
         unrealized_pnl_pct = (unrealized_pnl / total_cost * 100) if total_cost > 0 else 0.0
 
-        # 转换行业分布
+        # Convert industry distribution
         industry_dist = []
         for industry, data in industry_map.items():
             pct = (data["value"] / total_value * 100) if total_value > 0 else 0.0
@@ -2192,7 +2192,7 @@ class PortfolioService:
             market_distribution={k: round(v, 2) for k, v in market_map.items()}
         )
 
-    # ==================== 持仓分析 ====================
+    # ==================== Position analysis ====================
 
     async def analyze_portfolio(
         self,
@@ -2201,17 +2201,17 @@ class PortfolioService:
         research_depth: str = "标准"
     ) -> PortfolioAnalysisReport:
         """
-        执行持仓分析
+        Perform position analysis
 
         Args:
-            user_id: 用户ID
-            include_paper: 是否包含模拟交易持仓
-            research_depth: 分析深度
+            user_id: User ID
+            include_paper: Whether to include simulated trading positions
+            research_depth: Analysis depth
         """
         analysis_id = str(uuid.uuid4())
         analysis_date = datetime.now().strftime("%Y-%m-%d")
 
-        # 创建分析报告
+        # Create analysis report
         report = PortfolioAnalysisReport(
             analysis_id=analysis_id,
             user_id=user_id,
@@ -2220,7 +2220,7 @@ class PortfolioService:
         )
 
         try:
-            # 1. 获取持仓数据
+            # 1. Get position data
             source = "all" if include_paper else "real"
             positions = await self.get_positions(user_id, source=source)
 
@@ -2230,20 +2230,20 @@ class PortfolioService:
                 await self._save_analysis_report(report)
                 return report
 
-            # 2. 获取资金账户信息
+            # 2. Get fund account information
             account_summary = await self.get_account_summary(user_id)
 
-            # 3. 构建持仓快照（包含资金账户信息）
+            # 3. Build a position snapshot (including capital account information)
             portfolio_snapshot = await self._build_portfolio_snapshot(positions, account_summary)
             report.portfolio_snapshot = portfolio_snapshot
 
-            # 4. 计算行业分布
+            # 4. Calculate industry distribution
             report.industry_distribution = await self._calculate_industry_distribution(positions)
 
-            # 5. 计算集中度
+            # 5. Calculate concentration
             report.concentration_analysis = self._calculate_concentration(positions)
 
-            # 6. 调用AI分析（传入资金账户信息）
+            # 6. Call AI analysis (incoming capital account information)
             start_time = datetime.now()
             ai_result = await self._call_ai_analysis(portfolio_snapshot, report.industry_distribution, user_id)
             execution_time = (datetime.now() - start_time).total_seconds()
@@ -2261,7 +2261,7 @@ class PortfolioService:
             report.status = PortfolioAnalysisStatus.FAILED
             report.error_message = str(e)
 
-        # 保存报告
+        # save report
         await self._save_analysis_report(report)
         return report
 
@@ -2292,19 +2292,19 @@ class PortfolioService:
         """获取分析报告详情"""
         return await self.db[self.analysis_collection].find_one({"analysis_id": analysis_id})
 
-    # ==================== 辅助方法 ====================
+    # ==================== Helper methods ====================
 
     async def _build_portfolio_snapshot(
         self,
         positions: List[PositionResponse],
         account_summary: AccountSummary = None
     ) -> PortfolioSnapshot:
-        """构建持仓快照（包含资金账户信息）"""
+        """Build a position snapshot (including capital account information)"""
         total_value = 0.0
         total_cost = 0.0
         snapshots = []
 
-        # 获取总资产用于计算占比（默认使用CNY）
+        # Obtain total assets for calculating proportion (CNY is used by default)
         total_assets = 0.0
         if account_summary:
             total_assets = account_summary.total_assets.get("CNY", 0.0)
@@ -2315,12 +2315,12 @@ class PortfolioService:
             total_cost += cost
             total_value += value
 
-            # 计算持仓天数
+            # Calculate position holding days
             holding_days = None
             if pos.buy_date:
                 holding_days = (datetime.now() - pos.buy_date).days
 
-            # 计算资金占用比例（相对于总资产）
+            # Calculate the capital occupation ratio (relative to total assets)
             cost_pct = None
             position_pct = None
             if total_assets > 0:
@@ -2347,7 +2347,7 @@ class PortfolioService:
         unrealized_pnl = total_value - total_cost
         unrealized_pnl_pct = (unrealized_pnl / total_cost * 100) if total_cost > 0 else 0.0
 
-        # 构建资金账户快照
+        # Build a capital account snapshot
         account_snapshot = None
         if account_summary:
             cash_cny = account_summary.cash.get("CNY", 0.0)
@@ -2420,7 +2420,7 @@ class PortfolioService:
         if not positions:
             return ConcentrationAnalysis()
 
-        # 计算每只股票的市值
+        # Calculate the market capitalization of each stock
         values = []
         industries = set()
         total_value = 0.0
@@ -2435,14 +2435,14 @@ class PortfolioService:
         if total_value == 0:
             return ConcentrationAnalysis(stock_count=len(positions))
 
-        # 排序获取Top N
+        # Sort to get Top N
         values.sort(reverse=True)
 
         top1_pct = (values[0] / total_value * 100) if len(values) >= 1 else 0
         top3_pct = (sum(values[:3]) / total_value * 100) if len(values) >= 3 else (sum(values) / total_value * 100)
         top5_pct = (sum(values[:5]) / total_value * 100) if len(values) >= 5 else (sum(values) / total_value * 100)
 
-        # 计算HHI指数
+        # Calculate HHI index
         hhi = sum((v / total_value * 100) ** 2 for v in values)
 
         return ConcentrationAnalysis(
@@ -2462,15 +2462,15 @@ class PortfolioService:
     ) -> AIAnalysisResult:
         """调用AI进行持仓分析"""
         try:
-            # 查询分红数据
+            # Query dividend data
             dividend_info = {}
             if user_id:
                 dividend_info = await self._get_dividend_summary(user_id)
 
-            # 构建分析提示词
+            # Build analysis prompt words
             prompt = self._build_analysis_prompt(snapshot, industry_dist, dividend_info)
 
-            # 从系统配置获取深度分析模型（与个股分析保持一致）
+            # Obtain in-depth analysis model from system configuration (consistent with individual stock analysis)
             from app.services.model_capability_service import get_model_capability_service
             from app.services.simple_analysis_service import get_provider_and_url_by_model_sync
             from tradingagents.graph.trading_graph import create_llm_by_provider
@@ -2479,24 +2479,24 @@ class PortfolioService:
             _, deep_model = capability_service._get_default_models()
             model_name = deep_model
 
-            logger.info(f"🤖 [整体持仓AI分析] 从系统配置获取深度分析模型: {model_name}")
+            logger.info(f"🤖 [Overall position AI analysis] Get deep analysis model from system configuration: {model_name}")
 
             provider_info = get_provider_and_url_by_model_sync(model_name)
             backend_url = provider_info.get("backend_url")
             api_key = provider_info.get("api_key")
 
-            logger.info(f"🏭 [整体持仓AI分析] 模型供应商: {provider_info.get('provider', '未知')}")
-            logger.info(f"🔗 [整体持仓AI分析] API地址: {backend_url or '未配置'}")
-            logger.info(f"🔑 [整体持仓AI分析] API Key: {'已配置' if api_key else '未配置'}")
+            logger.info(f"🏭 [Overall position AI analysis] model supplier: {provider_info.get('provider', 'unknown')}")
+            logger.info(f"🔗 [Overall position AI analysis] API address: {backend_url or 'Not configured'}")
+            logger.info(f"🔑 [Overall position AI analysis] API Key: {'configured' if api_key else 'Not configured'}")
 
             if not backend_url:
                 raise ValueError(f"模型 {model_name} 的API地址未配置，请在设置页面配置")
 
-            # 使用统一的 LLM 适配器
+            # Use unified LLM adapter
             provider_name = provider_info.get("provider", "dashscope")
-            logger.info(f"🔧 [持仓AI分析] 准备创建 LLM: provider={provider_name}, model={model_name}, temperature=0.3")
+            logger.info(f"🔧 [Position AI analysis] ready to create LLM: provider={provider_name}, model={model_name}, temperature=0.3")
             if api_key:
-                logger.info(f"🔑 [持仓AI分析] API Key: {truncate_api_key(api_key)}")
+                logger.info(f"🔑 [Position AI analysis] API Key: {truncate_api_key(api_key)}")
             llm = create_llm_by_provider(
                 provider=provider_name,
                 model=model_name,
@@ -2509,7 +2509,7 @@ class PortfolioService:
 
             response = await llm.ainvoke(prompt)
 
-            # 记录 token 使用
+            # Record token usage
             try:
                 from app.services.usage_statistics_service import usage_statistics_service
                 await usage_statistics_service.record_llm_usage(
@@ -2518,11 +2518,11 @@ class PortfolioService:
                     analysis_type="portfolio"
                 )
             except Exception as e:
-                logger.warning(f"记录 token 使用失败: {e}")
+                logger.warning(f"Record token usage failure: {e}")
 
             content = response.content if hasattr(response, 'content') else str(response)
 
-            # 解析响应
+            # Parse response
             return self._parse_ai_response(content)
 
         except Exception as e:
@@ -2531,12 +2531,12 @@ class PortfolioService:
 
             user_message = ErrorFormatter.format_user_message(str(e))
             return AIAnalysisResult(
-                summary=f"AI分析暂时不可用：{user_message}",
-                suggestions=["请检查大模型账号、API Key、余额或套餐配置后重试"]
+                summary=f"AI Analysis is temporarily unavailable:{user_message}",
+                suggestions=["Please check the big model account, API Key, balance or package configuration and try again"]
             )
 
     async def _get_real_market_rules(self, market: str) -> Optional[Dict[str, Any]]:
-        """获取真实持仓的市场规则配置（复用 paper_market_rules 集合）"""
+        """Obtain the market rule configuration of the real position (reusing the paper_market_rules collection)"""
         try:
             rules_doc = await self.db["paper_market_rules"].find_one({"market": market})
             if rules_doc:
@@ -2548,21 +2548,21 @@ class PortfolioService:
     def _calculate_real_commission(
         self, market: str, side: str, amount: float, rules: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """计算真实持仓交易的手续费
+        """Calculate the handling fees for real position transactions
 
         Args:
-            market: 市场（CN/HK/US）
-            side: 买/卖（buy/sell）
-            amount: 成交金额
-            rules: 市场规则配置
+            market: Market (CN/HK/US)
+            side: buy/sell
+            amount: Transaction amount
+            rules: Market rules configuration
 
         Returns:
             {
-                "commission": float,        # 总手续费
-                "broker_fee": float,        # 佣金
-                "stamp_duty": float,        # 印花税
-                "transfer_fee": float,      # 过户费
-                "other_fee": float,         # 其他费用（港股/美股）
+                "commission": float,        # total handling fee
+                "broker_fee": float,        # Commission
+                "stamp_duty": float,        # stamp duty
+                "transfer_fee": float,      # Transfer fee
+                "other_fee": float,         # Other fees (Hong Kong stocks/US stocks)
             }
         """
         result = {
@@ -2577,13 +2577,13 @@ class PortfolioService:
 
         config = rules["commission"]
 
-        # 佣金
+        # Commission
         comm_rate = config.get("rate", 0.0)
         comm_min = config.get("min", 0.0)
         broker_fee = max(amount * comm_rate, comm_min) if comm_rate > 0 else 0.0
         result["broker_fee"] = round(broker_fee, 2)
 
-        # 印花税（A股仅卖出，港股买卖都收）
+        # Stamp duty (A-shares are only sold, Hong Kong stocks are collected for all transactions)
         stamp_duty = 0.0
         if "stamp_duty_rate" in config:
             if market == "CN" and side == "sell":
@@ -2592,13 +2592,13 @@ class PortfolioService:
                 stamp_duty = amount * config["stamp_duty_rate"]
         result["stamp_duty"] = round(stamp_duty, 2)
 
-        # 过户费（A股）
+        # Transfer fee (A shares)
         transfer_fee = 0.0
         if "transfer_fee_rate" in config and market == "CN":
             transfer_fee = amount * config["transfer_fee_rate"]
         result["transfer_fee"] = round(transfer_fee, 2)
 
-        # 其他费用（港股）
+        # Other expenses (Hong Kong stocks)
         other_fee = 0.0
         if market == "HK":
             if "transaction_levy_rate" in config:
@@ -2608,7 +2608,7 @@ class PortfolioService:
             if "settlement_fee_rate" in config:
                 other_fee += amount * config["settlement_fee_rate"]
 
-        # SEC费用（美股，仅卖出）
+        # SEC Fees (US stocks, sell only)
         if market == "US" and side == "sell" and "sec_fee_rate" in config:
             other_fee += amount * config["sec_fee_rate"]
         result["other_fee"] = round(other_fee, 2)
@@ -2619,21 +2619,21 @@ class PortfolioService:
         return result
 
     async def _get_dividend_summary(self, user_id: str) -> Dict[str, Any]:
-        """查询用户的分红收益汇总
+        """Query the user s dividend income summary
 
         Returns:
             {
-                "total_dividend": float,      # 累计分红总额
-                "dividend_count": int,         # 分红股票数
-                "by_stock": {                  # 按股票汇总
-                    "000001": {"name": "平安银行", "amount": 120.0, "count": 2},
+                "total_dividend": float,      # Total cumulative dividends
+                "dividend_count": int,         # Number of dividend stocks
+                "by_stock": {                  # Summary by stock
+                    "000001": {"name": "Ping An Bank", "amount": 120.0, "count": 2},
                     ...
                 }
             }
         """
         result = {"total_dividend": 0.0, "dividend_count": 0, "by_stock": {}}
         try:
-            # 查询资金账户中的分红记录
+            # Query the dividend record in the capital account
             cursor = self.db[self.transactions_collection].find({
                 "user_id": user_id,
                 "type": "dividend"
@@ -2669,9 +2669,9 @@ class PortfolioService:
         industry_dist: List[IndustryDistribution],
         dividend_info: Dict[str, Any] = None
     ) -> str:
-        """构建分析提示词（包含资金账户、个股收益和分红信息）"""
+        """Construct analysis prompt words (including capital account, individual stock income and dividend information)"""
 
-        # 资金账户信息
+        # Fund account information
         account_section = ""
         if snapshot.account:
             acc = snapshot.account
@@ -2690,11 +2690,11 @@ class PortfolioService:
 
 """
 
-        # 持仓明细表（增强版：包含资金占用和收益详情）
-        position_table = "| 股票代码 | 股票名称 | 行业 | 持仓天数 | 成本金额 | 市值 | 盈亏金额 | 盈亏% | 资金占比 |\n"
+        # Position details (enhanced version: includes fund occupation and income details)
+        position_table = "| Stock code | Stock name | Industry | Position holding days | cost amount | Market value | Profit and loss amount | Profit and loss% | Fund proportion |\n"
         position_table += "|---------|---------|-----|--------|---------|-----|---------|------|--------|\n"
 
-        # 按盈亏金额排序，便于分析
+        # Sort by profit and loss amount for easy analysis
         sorted_positions = sorted(
             snapshot.positions,
             key=lambda x: x.unrealized_pnl or 0,
@@ -2710,7 +2710,7 @@ class PortfolioService:
             position_table += f"{pnl_emoji} ¥{pos.unrealized_pnl or 0:,.0f} | {pos.unrealized_pnl_pct or 0:.2f}% | "
             position_table += f"{pos.position_pct or '-'}% |\n"
 
-        # 个股收益分析
+        # Individual stock income analysis
         profitable_positions = [p for p in snapshot.positions if (p.unrealized_pnl or 0) > 0]
         losing_positions = [p for p in snapshot.positions if (p.unrealized_pnl or 0) < 0]
         total_profit = sum(p.unrealized_pnl or 0 for p in profitable_positions)
@@ -2732,22 +2732,22 @@ class PortfolioService:
             if (pos.unrealized_pnl or 0) < 0:
                 performance_section += f"- {pos.name}({pos.code}): ¥{pos.unrealized_pnl:,.0f} ({pos.unrealized_pnl_pct:.2f}%)\n"
 
-        # 资金占用分析
+        # Fund occupation analysis
         capital_section = ""
         if snapshot.account and snapshot.account.total_assets > 0:
             high_concentration = [p for p in snapshot.positions if (p.position_pct or 0) > 20]
             if high_concentration:
-                capital_section = "\n### ⚠️ 高集中度持仓（单只>20%）\n"
+                capital_section = "\n### ⚠️ High concentration of positions (single stock>20%) \n"
                 for pos in high_concentration:
                     capital_section += f"- {pos.name}({pos.code}): 占比 {pos.position_pct:.1f}%，资金占用 ¥{pos.cost_value:,.0f}\n"
 
-        # 行业分布
+        # Industry distribution
         industry_text = "\n".join([
             f"- {d.industry}: {d.percentage:.1f}% ({d.count}只)"
             for d in industry_dist[:5]
         ])
 
-        # 分红收益信息
+        # Dividend income information
         dividend_section = ""
         if dividend_info and dividend_info.get("total_dividend", 0) > 0:
             dividend_section = f"""
@@ -2757,11 +2757,11 @@ class PortfolioService:
 """
             stock_dividends = dividend_info.get("by_stock", {})
             if stock_dividends:
-                dividend_section += "\n| 股票代码 | 股票名称 | 累计分红 | 分红次数 |\n"
+                dividend_section += "\n| Stock code | Stock name | Cumulative dividends | Number of dividends |\n"
                 dividend_section += "|---------|---------|---------|--------|\n"
                 for code, info in sorted(stock_dividends.items(), key=lambda x: x[1]["amount"], reverse=True):
                     dividend_section += f"| {code} | {info.get('name', '-')} | ¥{info['amount']:,.2f} | {info.get('count', 0)}次 |\n"
-            dividend_section += "\n**注意**：分红收益未计入浮动盈亏，实际总收益 = 浮动盈亏 + 累计分红。\n"
+            dividend_section += "\n**Note**: Dividend income is not included in floating profits and losses, and the actual total income = floating profit and loss + Cumulative dividends.\n"
 
         prompt = f"""# 持仓组合分析任务
 
@@ -2802,7 +2802,7 @@ class PortfolioService:
 
     def _parse_ai_response(self, content: str) -> AIAnalysisResult:
         """解析AI响应"""
-        # 简单解析，提取关键信息
+        # Simple analysis to extract key information
         lines = content.split('\n')
 
         summary = ""
@@ -2845,22 +2845,22 @@ class PortfolioService:
         )
 
     def _calculate_health_score(self, report: PortfolioAnalysisReport) -> float:
-        """计算健康度评分
+        """Calculate health score
 
-        改进逻辑：
-        1. 单股持仓时不因集中度扣分（单股起步是正常的）
-        2. 主要根据盈亏情况评分
-        3. 多股时才考虑集中度和行业分散度
+        Improve logic:
+        1. No points will be deducted due to concentration when holding a single stock position (it is normal to start with a single stock)
+        2. Rating is mainly based on profit and loss situation
+        3. Concentration and industry dispersion are considered only when there are multiple stocks
         """
-        score = 70.0  # 基础分提高到70
+        score = 70.0  # The basic score is increased to 70
 
         concentration = report.concentration_analysis
         stock_count = concentration.stock_count or 1
         pnl_pct = report.portfolio_snapshot.total_unrealized_pnl_pct or 0
 
-        # === 单股持仓的评分逻辑 ===
+        # === Scoring logic for single stock positions ===
         if stock_count == 1:
-            # 单股时不扣集中度分，主要看盈亏
+            # Concentration points are not deducted for single stocks, and the main focus is on profit and loss.
             if pnl_pct > 20:
                 score += 20
             elif pnl_pct > 10:
@@ -2870,18 +2870,18 @@ class PortfolioService:
             elif pnl_pct > 0:
                 score += 5
             elif pnl_pct > -5:
-                score += 0  # 小幅亏损，不扣分
+                score += 0  # Small losses, no points will be deducted
             elif pnl_pct > -10:
                 score -= 5
             elif pnl_pct > -20:
                 score -= 10
             else:
-                score -= 20  # 亏损超20%
+                score -= 20  # Loss exceeds 20%
 
             return max(0, min(100, score))
 
-        # === 多股持仓的评分逻辑 ===
-        # 集中度评分 (最多扣15分)
+        # === Scoring logic for multi-stock positions ===
+        # concentration score (Up to 15 points deducted)
         if concentration.top1_pct > 60:
             score -= 12
         elif concentration.top1_pct > 40:
@@ -2892,7 +2892,7 @@ class PortfolioService:
         elif concentration.hhi_index > 2500:
             score -= 4
 
-        # 行业分散度加分 (最多加15分)
+        # Bonus points for industry dispersion (Up to 15 points added)
         if concentration.industry_count >= 5:
             score += 12
         elif concentration.industry_count >= 3:
@@ -2900,7 +2900,7 @@ class PortfolioService:
         elif concentration.industry_count >= 2:
             score += 4
 
-        # 盈利情况加分 (最多加/扣15分)
+        # Bonus points for profitability (Up to 15 points added/deducted)
         if pnl_pct > 20:
             score += 12
         elif pnl_pct > 10:
@@ -2915,45 +2915,45 @@ class PortfolioService:
         return max(0, min(100, score))
 
     def _calculate_risk_level(self, report: PortfolioAnalysisReport) -> str:
-        """计算风险等级
+        """Calculate risk level
 
-        改进逻辑：
-        1. 单股持仓时，不单纯按集中度判高风险
-        2. 结合持仓市值、亏损比例等绝对风险指标
-        3. 小资金轻仓位应判为低风险
+        Improve logic:
+        1. When holding a single stock position, high risk should not be judged simply based on concentration.
+        2. Combined with absolute risk indicators such as position market value and loss ratio
+        3. Small funds and light positions should be judged as low risk
         """
         concentration = report.concentration_analysis
         snapshot = report.portfolio_snapshot
 
-        # 获取基本指标
+        # Get basic indicators
         stock_count = concentration.stock_count or 1
         total_value = snapshot.total_market_value or 0
         total_pnl_pct = snapshot.total_unrealized_pnl_pct or 0
 
-        # === 单股持仓的特殊处理 ===
+        # === Special treatment for single stock positions ===
         if stock_count == 1:
-            # 单股持仓时，主要看亏损幅度和绝对金额
-            # 小资金单股起步是正常的投资行为，不应判高风险
+            # When holding a single stock position, the main focus is the loss magnitude and absolute amount.
+            # Starting a single stock with small capital is a normal investment behavior and should not be considered high risk
 
-            # 亏损超过20%为高风险
+            # Losses exceeding 20% are considered high risk
             if total_pnl_pct < -20:
                 return "高"
-            # 亏损超过10%为中风险
+            # Loss of more than 10% is medium risk
             elif total_pnl_pct < -10:
                 return "中"
-            # 盈利或小幅亏损为低风险
+            # Profit or small loss is low risk
             else:
                 return "低"
 
-        # === 多股持仓的集中度风险评估 ===
-        # 高风险条件：集中度过高且有较大亏损
+        # === Concentration risk assessment of multiple stock positions ===
+        # High-risk conditions: excessive concentration and large losses
         if concentration.top1_pct > 50 and total_pnl_pct < -10:
             return "高"
 
         if concentration.hhi_index > 3000 and total_pnl_pct < -5:
             return "高"
 
-        # 低风险条件：分散度好
+        # Low risk conditions: good diversification
         if concentration.top1_pct < 30 and concentration.industry_count >= 3:
             return "低"
 
@@ -2968,13 +2968,13 @@ class PortfolioService:
         await self.db[self.analysis_collection].insert_one(report_dict)
         logger.info(f"✅ 保存分析报告: {report.analysis_id}")
 
-    # ==================== 数据获取工具 ====================
+    # ==================== data acquisition tool ====================
 
     async def _get_stock_price(self, code: str, market: str) -> Optional[float]:
         """获取股票最新价格"""
         code6 = str(code).strip().zfill(6)
         if market in {"CN", "ETF"}:
-            # A股从数据库获取：1) market_quotes 2) stock_basic_info 3) stock_daily_quotes 历史数据
+            # A Shares are obtained from the database:1) market_quotes 2) stock_basic_info 3) stock_daily_quotes historical data
             q = await self.db["market_quotes"].find_one(
                 {"$or": [{"code": code}, {"code": code6}, {"symbol": code}, {"symbol": code6}]},
                 {"_id": 0, "close": 1}
@@ -2985,7 +2985,7 @@ class PortfolioService:
                 except (ValueError, TypeError):
                     pass
 
-            # 回退到 basic_info
+            # Fallback to basic_info
             basic = await self.db["stock_basic_info"].find_one(
                 {"$or": [{"code": code}, {"code": code6}, {"symbol": code}, {"symbol": code6}]},
                 {"_id": 0, "current_price": 1}
@@ -2996,7 +2996,7 @@ class PortfolioService:
                 except (ValueError, TypeError):
                     pass
 
-            # 回退到 stock_daily_quotes 历史数据（取最新收盘价）
+            # Return to stock_daily_quotes historical data (get the latest closing price)
             daily = await self.db["stock_daily_quotes"].find_one(
                 {"$or": [{"symbol": code}, {"symbol": code6}, {"code": code}, {"code": code6}]},
                 sort=[("trade_date", -1)],
@@ -3008,7 +3008,7 @@ class PortfolioService:
                 except (ValueError, TypeError):
                     pass
 
-            # 回退到 etf_daily_quotes（ETF 行情）
+            # Fall back to etf_daily_quotes (ETF quotes)
             etf_daily = await self.db["etf_daily_quotes"].find_one(
                 {"code": code6},
                 sort=[("trade_date", -1)],
@@ -3020,7 +3020,7 @@ class PortfolioService:
                 except (ValueError, TypeError):
                     pass
         else:
-            # 港股/美股
+            # Hong Kong stocks/US stocks
             try:
                 from app.services.foreign_stock_service import ForeignStockService
                 service = ForeignStockService(db=self.db)
@@ -3038,37 +3038,37 @@ class PortfolioService:
         self, code: str, market: str, buy_date, cost_price: float
     ) -> Optional[Dict[str, Any]]:
         """
-        校验成本价是否在买入日历史数据的最高价和最低价范围内。
+        Verify whether the cost price is within the range of the highest and lowest price of the historical data on the purchase day.
 
-        校验策略：
-        1. 优先用数据库中的前复权数据校验（大多数情况成本价就是前复权价格）
-        2. 若前复权校验失败，实时调用 API 获取不复权数据兜底校验
-           （用户输入的实际成交价是不复权的，与前复权K线可能不一致）
-        3. 不复权校验通过时，计算复权因子用于将用户价格转为前复权保存
+        Verification strategy:
+        1. Priority is given to using the pre-reright data in the database for verification (in most cases the cost price is the pre-reright price)
+        2. If the previous restoration verification fails, call the API in real time to obtain the non-restoration data for full verification.
+            (The actual transaction price input by the user is not re-righted and may be inconsistent with the previous re-righted K-line)
+        3. When the non-restoration verification is passed, the restoration factor is calculated and used to convert the user price to the pre-restoration save.
 
         Args:
-            code: 股票代码
-            market: 市场类型
-            buy_date: 买入日期
-            cost_price: 用户输入的成本价
+            code: Stock code
+            market: market type
+            buy_date: Purchase date
+            cost_price: Cost price entered by user
 
         Returns:
-            None — 成本价与前复权数据一致，无需转换
-            Dict — 成本价是不复权价格，需要转换：
+            None — The cost price is consistent with the previous re-righting data, no conversion is required
+            Dict — The cost price is the non-rights price and needs to be converted:
                 {"adjust_type": "none", "qfq_price": float, "adj_factor": float}
 
         Raises:
-            ValueError — 成本价明显错误，拒绝添加
+            ValueError — The cost price is obviously wrong and the addition is refused.
         """
         if not buy_date:
             return None
-        # 格式化买入日期：支持 datetime、date、ISO 字符串
-        # ⚠️ 时区修正：前端通过 toISOString() 发送 UTC 字符串（如 "2026-05-11T16:00:00.000Z"），
-        # Pydantic 解析为 aware datetime。直接 strftime 会用 UTC 字段值，导致东八区用户
-        # 选的 5月12日 被格式化为 "2026-05-11"。必须先转成本地时区再格式化。
+        # Format purchase date: support datetime, date, ISO string
+        # ⚠️ Time zone correction: frontend passed toISOString() Send a UTC string (such as "2026-05-11T16:00:00.000Z") , 
+        # Pydantic Resolves as aware datetime. Direct strftime will use the UTC field value, causing users in the East Eighth District to
+        # The selected May 12th is formatted as "2026-05-11". Must be converted to local time zone before formatting.
         if hasattr(buy_date, "strftime"):
             if getattr(buy_date, "tzinfo", None) is not None:
-                # aware datetime：转到本地时区（服务器 TZ，通常为 Asia/Shanghai）
+                # aware datetime: Go to local time zone (server TZ, usually Asia/Shanghai)
                 buy_date = buy_date.astimezone()
             buy_date_str = buy_date.strftime("%Y-%m-%d")
             buy_date_compact = buy_date.strftime("%Y%m%d")
@@ -3076,13 +3076,13 @@ class PortfolioService:
             buy_date_str = buy_date[:10] if len(buy_date) >= 10 else buy_date
             buy_date_compact = buy_date_str.replace("-", "") if "-" in buy_date_str else buy_date_str
         else:
-            return None  # 无法解析则跳过校验
+            return None  # If it cannot be parsed, the verification will be skipped.
         code6 = str(code).strip().zfill(6)
         symbol_conds = [{"symbol": code}, {"symbol": code6}, {"code": code}, {"code": code6}]
         date_conds = [{"trade_date": buy_date_str}, {"trade_date": buy_date_compact}]
         normalized_market = "CN" if market == "ETF" else market
 
-        # ---- 第一层：使用数据库中的前复权数据校验 ----
+        # ---- The first level: Use the pre-replacement data verification in the database ----
         collection_map = {"CN": "stock_daily_quotes", "HK": "stock_daily_quotes_hk", "US": "stock_daily_quotes_us"}
         coll_name = collection_map.get(normalized_market, "stock_daily_quotes")
         coll = self.db[coll_name]
@@ -3094,7 +3094,7 @@ class PortfolioService:
             )
             if doc:
                 break
-        # 回退到 etf_daily_quotes（ETF 行情）
+        # Fall back to etf_daily_quotes (ETF quotes)
         if not doc and normalized_market == "CN":
             for date_cond in date_conds:
                 doc = await self.db["etf_daily_quotes"].find_one(
@@ -3105,12 +3105,12 @@ class PortfolioService:
                     break
 
         if not doc:
-            # 数据库无历史数据，尝试 API 不复权兜底
+            # There is no historical data in the database. Trying the API does not allow you to know the details.
             return await self._validate_with_unadjusted_api(
                 code6, normalized_market, buy_date_str, cost_price
             )
 
-        # 提取前复权 high/low
+        # Restoration before withdrawal high/low
         high_val = doc.get("high")
         low_val = doc.get("low")
         if high_val is None or low_val is None:
@@ -3120,32 +3120,32 @@ class PortfolioService:
                 high_val = max(open_val, close_val)
                 low_val = min(open_val, close_val)
             else:
-                return None  # 无法校验则放行
+                return None  # If it cannot be verified, it will be released.
         try:
             high_f = float(high_val)
             low_f = float(low_val)
         except (ValueError, TypeError):
             return None
 
-        # 前复权校验通过 — 用户输入的价格与前复权数据一致
-        # ⚠️ 容差策略：用户从券商 app 复制的"成本价"通常包含佣金/过户费等交易成本，
-        # 不是纯成交价。按 2% 容差放宽上下限，覆盖手续费和滑点影响。
-        #   买入成本价 = 成交价 + 佣金 + 过户费（约 0.05%~0.5%）
-        #   2% 容差远大于实际手续费比例，既能容错又不会放过明显错误。
+        # Pre-right verification passed — The price entered by the user is consistent with the previous weighting data
+        # ⚠️ Tolerance strategy: copied by the user from the brokerage app"cost price"Usually includes transaction costs such as commission/transfer fee,
+        # It is not a pure transaction price. The upper and lower limits are relaxed by 2% tolerance to cover the impact of handling fees and slippage.
+        #   Buying cost price = Transaction price + Commission + Transfer fee (approx. 0.05%~0.5%) 
+        #   2% The tolerance is much larger than the actual handling fee ratio, which can tolerate errors without letting go of obvious errors.
         tolerance = 0.02
         high_with_tol = high_f * (1 + tolerance)
         low_with_tol = low_f * (1 - tolerance)
         if low_with_tol <= cost_price <= high_with_tol:
             logger.info(
                 f"✅ 成本价 {cost_price:.2f} 通过前复权校验（{buy_date_str}，"
-                f"原始范围 {low_f:.2f}~{high_f:.2f}，含 2% 容差 {low_with_tol:.2f}~{high_with_tol:.2f}）"
+                f"original range {low_f:.2f}~{high_f:.2f}, With 2% tolerance {low_with_tol:.2f}~{high_with_tol:.2f}) "
             )
             return None
 
-        # ---- 第二层：前复权校验失败，尝试不复权 API 兜底 ----
+        # ---- Second level: The pre-right restoration verification failed, and the non-right restoration API was tried to find out. ----
         logger.info(
             f"⚠️ 成本价 {cost_price:.2f} 未通过前复权校验（{buy_date_str}，范围 {low_f:.2f}~{high_f:.2f}），"
-            f"尝试不复权数据兜底校验..."
+            f"Try to verify the data without regaining rights..."
         )
         return await self._validate_with_unadjusted_api(
             code6, normalized_market, buy_date_str, cost_price
@@ -3155,18 +3155,18 @@ class PortfolioService:
         self, code6: str, market: str, buy_date_str: str, cost_price: float
     ) -> Optional[Dict[str, Any]]:
         """
-        通过 API 获取不复权数据进行兜底校验，并计算复权因子用于价格转换。
+        Obtain the non-reweighting data through the API for full verification, and calculate the re-weighting factor for price conversion.
 
-        场景：用户输入的是不复权（实际成交价），而数据库存的是前复权数据。
-        例如：不复权成交价 14.11，前复权最高价 13.72（因分红/送股导致差异）。
+        Scenario: The user inputs the non-restoration price (actual transaction price), while the data stored in the data inventory is the pre-restoration data.
+        For example: the transaction price without reinstatement is 14.11, and the highest price before reinstatement is 13.72 (the difference is caused by dividends/bonus shares).
 
         Returns:
-            None — 不复权校验也失败，拒绝（由调用方抛出 ValueError）
-            Dict — 不复权校验通过，返回转换信息：
+            None — The non-rights verification also fails and is rejected (ValueError is thrown by the caller)
+            Dict — If the non-rights verification passes, the conversion information will be returned:
                 {"adjust_type": "none", "qfq_price": float, "adj_factor": float}
         """
         if market != "CN":
-            # 目前仅支持 A 股的不复权兜底校验
+            # Currently, only A-share non-resumption verification is supported.
             raise ValueError(
                 f"成本价 {cost_price:.2f} 无法通过校验，非 A 股市场暂不支持不复权兜底校验。"
             )
@@ -3180,14 +3180,14 @@ class PortfolioService:
                 f"成本价 {cost_price:.2f} 无法通过校验，数据源服务不可用。"
             )
 
-        # 获取不复权日线数据
+        # Obtain daily data without regaining rights
         unadj_ohlc, unadj_source = ds_manager.get_daily_ohlc_with_fallback(
             code=code6, trade_date=buy_date_str, adj=None
         )
         if not unadj_ohlc:
             raise ValueError(
                 f"成本价 {cost_price:.2f} 无法校验：数据库为前复权数据且 API 无法获取不复权数据。"
-                f"请检查买入日期是否为交易日，或暂不填写买入日期。"
+                f"Please check whether the purchase date is a trading day, or leave the purchase date blank for now."
             )
 
         unadj_high = unadj_ohlc.get("high")
@@ -3205,37 +3205,37 @@ class PortfolioService:
                 f"成本价 {cost_price:.2f} 无法校验：API 返回的不复权数据格式异常。"
             )
 
-        # 不复权校验
-        # ⚠️ 同前复权校验，按 2% 容差放宽上下限，覆盖券商 app 成本价含手续费的情况
+        # Non-rights verification
+        # ⚠️ Same as the previous weight verification, the upper and lower limits are relaxed according to a 2% tolerance, covering the situation where the cost price of the brokerage app includes handling fees.
         tolerance = 0.02
         unadj_high_with_tol = unadj_high_f * (1 + tolerance)
         unadj_low_with_tol = unadj_low_f * (1 - tolerance)
         if cost_price < unadj_low_with_tol or cost_price > unadj_high_with_tol:
             raise ValueError(
                 f"成本价 {cost_price:.2f} 超出 {buy_date_str} 的波动范围"
-                f"（不复权最低 {unadj_low_f:.2f}～最高 {unadj_high_f:.2f}，"
-                f"含 2% 手续费容差 {unadj_low_with_tol:.2f}~{unadj_high_with_tol:.2f}）。"
-                f"券商 app 显示的成本价通常包含佣金/过户费（约 0.05%~0.5%），"
-                f"建议改用纯成交价录入。"
+                f" (Non-resumption of rights is the lowest {unadj_low_f:.2f}~highest {unadj_high_f:.2f}, "
+                f"Includes 2% handling fee tolerance {unadj_low_with_tol:.2f}~{unadj_high_with_tol:.2f}) . "
+                f"The cost price displayed on the brokerage app usually includes commission/transfer fee (approximately 0.05%~0.5%) , "
+                f"It is recommended to use pure transaction price entry instead."
             )
 
-        # ---- 不复权校验通过，计算复权因子 ----
-        # 获取同日的前复权数据，计算转换比例：前复权 / 不复权
+        # ---- If the non-reweighting verification passes, calculate the reweighting factor. ----
+        # Obtain the data of the previous restoration of rights on the same day and calculate the conversion ratio: former restoration of rights / no restoration of rights
         qfq_ohlc, qfq_source = ds_manager.get_daily_ohlc_with_fallback(
             code=code6, trade_date=buy_date_str, adj="qfq"
         )
         if not qfq_ohlc or qfq_ohlc.get("close") is None or unadj_ohlc.get("close") is None:
-            # 无法获取前复权数据，保留不复权价格，标注类型
+            # Unable to obtain pre-restoration data, retain non-restoration price and label type
             logger.warning(
                 f"无法获取前复权数据进行转换，成本价 {cost_price:.2f} 将以不复权价格保存"
             )
             return {
                 "adjust_type": "none",
-                "qfq_price": None,  # 无法转换
+                "qfq_price": None,  # Unable to convert
                 "adj_factor": None,
             }
 
-        # 复权因子 = 前复权收盘价 / 不复权收盘价
+        # Reweighting factor = Closing price before restoration of rights / Closing price without restoration of rights
         qfq_close = float(qfq_ohlc["close"])
         unadj_close = float(unadj_ohlc["close"])
 
@@ -3252,17 +3252,17 @@ class PortfolioService:
 
         logger.info(
             f"✅ 成本价 {cost_price:.2f} 通过不复权校验（{buy_date_str}，范围 {unadj_low_f:.2f}~{unadj_high_f:.2f}），"
-            f"复权因子={adj_factor:.6f}，转为前复权价格={qfq_price:.2f}"
+            f"Reweighting factor={adj_factor:.6f}, Price before conversion to restoration price={qfq_price:.2f}"
         )
 
         return {
-            "adjust_type": "none",  # 原始输入为不复权
+            "adjust_type": "none",  # The original input is unrecoverable
             "qfq_price": round(qfq_price, 4),
             "adj_factor": round(adj_factor, 6),
         }
 
     async def _get_stock_name(self, code: str, market: str) -> Optional[str]:
-        """获取股票名称（含 ETF 回退）"""
+        """Get the stock name (with ETF fallback)"""
         if market in {"CN", "ETF"}:
             basic = await self.db["stock_basic_info"].find_one(
                 {"$or": [{"code": code}, {"symbol": code}]},
@@ -3270,7 +3270,7 @@ class PortfolioService:
             )
             if basic and basic.get("name"):
                 return basic["name"]
-            # 回退到 etf_basic_info
+            # Fallback to etf_basic_info
             etf = await self.db["etf_basic_info"].find_one(
                 {"code": code}, {"_id": 0, "name": 1}
             )
@@ -3279,40 +3279,40 @@ class PortfolioService:
         return None
 
     async def _get_stock_industry(self, code: str, market: str) -> Optional[str]:
-        """获取股票所属行业
+        """Get the industry to which the stock belongs
         
-        优先从官网获取（避免 AKShare 轮询封号），其次按数据库数据源优先级查询
+        Get it from the official website first (to avoid AKShare polling and banning accounts), and then query according to the priority of the database data source
         """
         try:
             if market == "CN":
                 logger.info(f"🔍 [获取行业] 查询股票代码: {code}, 市场: {market}")
 
-                # 🔥 优先从官网获取行业数据（避免 AKShare 轮询封号）
+                # 🔥 Prioritize obtaining industry data from the official website (to avoid AKShare polling and banning accounts)
                 from app.services.official_industry_service import get_industry
                 official_industry = await get_industry(code)
                 if official_industry:
-                    logger.info(f"✅ [获取行业] 从官网获取: {code} -> {official_industry}")
+                    logger.info(f"✅ [Get industry] Get it from the official website: {code} -> {official_industry}")
                     return official_industry
                 
-                # 🔥 获取启用的数据源列表（按优先级从高到低排序）
+                # 🔥 Get the list of enabled data sources (sorted by priority from high to low)
                 from app.core.data_source_priority import get_enabled_data_sources_async
                 enabled_sources = await get_enabled_data_sources_async(market_category="a_shares")
-                logger.info(f"📊 [获取行业] 数据源优先级: {enabled_sources}")
+                logger.info(f"📊 [Get industry] Data source priority: {enabled_sources}")
                 
-                # 尝试多种查询方式
+                # Try multiple query methods
                 query_conditions = [
                     {"code": code},
                     {"symbol": code},
-                    {"code": code.strip().zfill(6)},  # 补齐前导零
+                    {"code": code.strip().zfill(6)},  # pad leading zeros
                     {"symbol": code.strip().zfill(6)}
                 ]
                 
-                # 🔥 按数据源优先级顺序查询
+                # 🔥 Query by data source priority order
                 for source in enabled_sources:
-                    logger.info(f"🔍 [获取行业] 尝试数据源: {source}")
+                    logger.info(f"🔍 [Get industry] try data source: {source}")
                     
                     for condition in query_conditions:
-                        # 🔥 添加数据源筛选条件
+                        # 🔥 Add data source filters
                         condition_with_source = {**condition, "source": source}
                         basic = await self.db["stock_basic_info"].find_one(
                             condition_with_source,
@@ -3332,20 +3332,20 @@ class PortfolioService:
                                 return industry
                             else:
                                 logger.warning(f"⚠️ [获取行业] 股票 {code} 在数据源 {source_found} 中找到记录，但 industry 字段为空，继续尝试下一个数据源")
-                                break  # 跳出查询条件循环，尝试下一个数据源
+                                break  # Break out of the query condition loop and try the next data source
                 
-                # 🔥 如果所有数据源都没有找到行业信息，记录警告
+                # 🔥 If no industry information is found from all data sources, log a warning
                 logger.warning(f"⚠️ [获取行业] 股票 {code} 在所有数据源中均未找到行业信息")
-                # 打印一些调试信息
+                # Print some debugging information
                 count = await self.db["stock_basic_info"].count_documents({})
-                logger.info(f"📊 [获取行业] stock_basic_info 集合总记录数: {count}")
-                # 查找类似的代码（不限制数据源）
+                logger.info(f"📊 [Get industry] stock_basic_info The total number of records in the collection: {count}")
+                # Find similar code (without limiting the data source)
                 similar = await self.db["stock_basic_info"].find_one(
-                    {"code": {"$regex": code[-4:]}},  # 查找后4位相同的
+                    {"code": {"$regex": code[-4:]}},  # Find the same last 4 digits
                     {"_id": 0, "code": 1, "symbol": 1, "name": 1, "source": 1}
                 )
                 if similar:
-                    logger.info(f"🔍 [获取行业] 找到类似的代码: {similar}")
+                    logger.info(f"🔍 [Get industry] Find similar code: {similar}")
             else:
                 logger.info(f"🔍 [获取行业] 市场 {market} 暂不支持行业查询")
         except Exception as e:
@@ -3361,7 +3361,7 @@ class PortfolioService:
         }
         return currency_map.get(market, "CNY")
 
-    # ==================== 单股持仓分析 ====================
+    # ==================== Single stock position analysis ====================
 
     async def get_position_by_id(self, user_id: str, position_id: str) -> Optional[PositionResponse]:
         """根据ID获取持仓"""
@@ -3383,17 +3383,17 @@ class PortfolioService:
         position_id: str,
         params: PositionAnalysisRequest
     ) -> PositionAnalysisReport:
-        """单股持仓分析
+        """Single stock position analysis
 
-        流程：
-        1. 检查是否有缓存的单股分析报告（只读取缓存，不创建新任务）
-        2. 如果有缓存，使用缓存的报告；如果没有缓存，使用空报告
-        3. 将分析报告（或空报告）+ 持仓信息发给持仓分析专用LLM
-        4. 生成个性化的持仓研究观察（非交易建议）
+        Process:
+        1. Check whether there is a cached single stock analysis report (only read the cache, do not create a new task)
+        2. If there is a cache, use the cached report; if there is no cache, use the empty report
+        3. Will analyze the report (or empty report)+ Position information is sent to position analysis only LLM
+        4. Generate personalized position research observations (not trading recommendations)
         """
         analysis_id = str(uuid.uuid4())
 
-        # 获取持仓数据
+        # Get position data
         position = await self.get_position_by_id(user_id, position_id)
         if not position:
             report = PositionAnalysisReport(
@@ -3405,12 +3405,12 @@ class PortfolioService:
             )
             return report
 
-        # 构建持仓快照
+        # Build a position snapshot
         holding_days = None
         if position.buy_date:
             holding_days = (datetime.now() - datetime.fromisoformat(position.buy_date.replace('Z', '+00:00').split('+')[0])).days
 
-        # 计算仓位占比（如果提供了资金总量）
+        # Calculate position proportion (if total funds are provided)
         position_pct = None
         if params.total_capital and params.total_capital > 0 and position.market_value:
             position_pct = round((position.market_value / params.total_capital) * 100, 2)
@@ -3442,20 +3442,20 @@ class PortfolioService:
         try:
             start_time = datetime.now()
 
-            # 将市场代码转换为中文名称（用于缓存查询）
+            # Convert market code to Chinese name (for cached queries)
             market_name = convert_market_code_to_name(position.market, position.code)
 
-            # 检查是否有缓存的单股分析报告（只读取缓存，不创建新任务）
+            # Check whether there is a cached single stock analysis report (only read the cache, do not create a new task)
             logger.info(f"📊 [持仓分析] 检查单股分析报告缓存 - {position.code} (市场: {position.market} -> {market_name})")
             stock_analysis_report = await self._get_cached_stock_analysis_report(
                 stock_code=position.code,
                 market=market_name,
-                cache_hours=24  # 使用24小时内的缓存
+                cache_hours=24  # Use cache within 24 hours
             )
 
-            # 如果没有缓存报告，创建空结构，直接进行持仓分析
+            # If there is no cached report, create an empty structure and perform position analysis directly.
             if not stock_analysis_report:
-                logger.info(f"ℹ️ [持仓分析] 未找到缓存报告，直接进行持仓分析 - {position.code}")
+                logger.info(f"ℹ️ [Position analysis] Cache report not found, proceed directly to position analysis - {position.code}")
                 stock_analysis_report = {
                     "task_id": None,
                     "reports": {},
@@ -3467,12 +3467,12 @@ class PortfolioService:
             else:
                 logger.info(f"✅ [持仓分析] 找到缓存报告，将作为参考 - {position.code}, 来源: {stock_analysis_report.get('source', 'unknown')}")
 
-            # 结合持仓信息进行持仓分析
-            logger.info(f"📊 [持仓分析] 开始持仓专用分析 - {position.code}")
+            # Conduct position analysis based on position information
+            logger.info(f"📊 [Position analysis] Start position-specific analysis - {position.code}")
 
-            # 根据配置选择分析引擎（USE_STOCK_ENGINE=true 时使用工作流引擎v2.0）
+            # Choose an analysis engine based on your configuration (USE_STOCK_ENGINE=true when using Workflow Engine v2.0)
             if _use_stock_engine():
-                logger.info(f"🚀 [持仓分析] 使用工作流引擎v2.0进行分析")
+                logger.info(f"🚀 [Position analysis] Analysis using Workflow Engine v2.0")
                 ai_result = await self._call_position_ai_analysis_workflow(
                     snapshot=snapshot,
                     params=params,
@@ -3480,7 +3480,7 @@ class PortfolioService:
                     user_id=user_id
                 )
             else:
-                logger.info(f"🤖 [持仓分析] 使用传统LLM分析")
+                logger.info(f"🤖 [Position analysis] Using traditional LLM analysis")
                 ai_result = await self._call_position_ai_analysis_v2(
                     snapshot=snapshot,
                     params=params,
@@ -3493,7 +3493,7 @@ class PortfolioService:
             report.ai_analysis = ai_result
             report.execution_time = execution_time
             report.status = PortfolioAnalysisStatus.COMPLETED
-            # 保存单股分析报告的引用
+            # Save a reference to a single stock analysis report
             report.stock_analysis_task_id = stock_analysis_report.get("task_id")
             logger.info(f"✅ 单股持仓分析完成: {position.code}, 建议: {ai_result.action}")
 
@@ -3502,7 +3502,7 @@ class PortfolioService:
             report.status = PortfolioAnalysisStatus.FAILED
             report.error_message = str(e)
 
-        # 保存报告
+        # save report
         report_dict = report.model_dump(by_alias=True, exclude={"id"})
         await self.db[self.position_analysis_collection].insert_one(report_dict)
         return report
@@ -3514,16 +3514,16 @@ class PortfolioService:
         market: str,
         params: "PositionAnalysisByCodeRequest"
     ) -> Dict[str, Any]:
-        """创建持仓分析任务（异步模式）
+        """Create a position analysis task (asynchronous mode)
 
-        立即返回任务信息，后台执行分析
+        Immediately return task information and perform analysis in the background
         """
         import asyncio
         from app.models.portfolio import PositionAnalysisByCodeRequest
 
         analysis_id = str(uuid.uuid4())
 
-        # 检查是否已有正在进行的分析
+        # Check if there is already an analysis in progress
         existing = await self.db[self.position_analysis_collection].find_one({
             "user_id": user_id,
             "position_id": f"{code}_{market}",
@@ -3540,8 +3540,8 @@ class PortfolioService:
                 "created_at": existing.get("created_at").isoformat() if existing.get("created_at") else None
             }
 
-        # 检查是否有最近完成的分析（30分钟内）
-        # 🔥 使用 now_tz() 确保时区一致
+        # Check for recently completed analysis (within 30 minutes)
+        # 🔥 Use now_tz() Make sure the time zone matches
         recent_cutoff = now_tz() - timedelta(minutes=30)
         recent_completed = await self.db[self.position_analysis_collection].find_one({
             "user_id": user_id,
@@ -3556,11 +3556,11 @@ class PortfolioService:
                 "code": code,
                 "market": market,
                 "status": "completed",
-                "message": "已有最近的分析报告，可直接查看",
+                "message": "The most recent analysis reports are available and can be viewed directly",
                 "created_at": recent_completed.get("created_at").isoformat() if recent_completed.get("created_at") else None
             }
 
-        # 创建新的分析任务记录
+        # Create a new analysis task record
         report = PositionAnalysisReport(
             analysis_id=analysis_id,
             user_id=user_id,
@@ -3571,7 +3571,7 @@ class PortfolioService:
         report_dict = report.model_dump(by_alias=True, exclude={"id"})
         await self.db[self.position_analysis_collection].insert_one(report_dict)
 
-        # 在后台启动分析任务
+        # Start analysis tasks in the background
         asyncio.create_task(self._execute_position_analysis_background(
             user_id=user_id,
             analysis_id=analysis_id,
@@ -3585,7 +3585,7 @@ class PortfolioService:
             "code": code,
             "market": market,
             "status": "pending",
-            "message": "分析任务已创建，预计需要2-5分钟",
+            "message": "The analysis task has been created and is expected to take 2-5 minutes.",
             "created_at": report.created_at.isoformat()
         }
 
@@ -3599,16 +3599,16 @@ class PortfolioService:
     ):
         """后台执行持仓分析"""
         try:
-            # 更新状态为处理中
+            # Update status is processing
             await self.db[self.position_analysis_collection].update_one(
                 {"analysis_id": analysis_id},
                 {"$set": {"status": "processing"}}
             )
 
-            # 执行实际分析
+            # Perform actual analysis
             report = await self.analyze_position_by_code(user_id, code, market, params)
 
-            # 更新分析结果
+            # Update analysis results
             update_data = {
                 "status": report.status.value,
                 "position_snapshot": report.position_snapshot.model_dump() if report.position_snapshot else None,
@@ -3655,19 +3655,19 @@ class PortfolioService:
         market: str,
         position_type: str = "real"
     ) -> Optional[Dict[str, Any]]:
-        """获取某只股票的最新分析报告
+        """Get the latest analysis report on a stock
         
         Args:
-            user_id: 用户ID
-            code: 股票代码
-            market: 市场类型
-            position_type: 持仓类型 (real/simulated)
+            user_id: User ID
+            code: Stock code
+            market: market type
+            position_type: Position type (real/simulated)
         """
-        # 🔥 根据 position_type 查询对应的分析报告
+        # 🔥 Query the corresponding analysis report based on position_type
         query = {
             "user_id": user_id,
             "position_id": f"{code}_{market}",
-            "position_type": position_type  # 添加 position_type 筛选条件
+            "position_type": position_type  # Add position_type filter
         }
         
         report = await self.db[self.position_analysis_collection].find_one(
@@ -3686,7 +3686,7 @@ class PortfolioService:
         ai_analysis = report.get("ai_analysis") or {}
         price_targets = ai_analysis.get("price_targets") or {}
         
-        # 处理action_reason：如果是JSON格式，转换为Markdown
+        # Process action_reason: If it is in JSON format, convert it to Markdown
         action_reason_raw = ai_analysis.get("action_reason")
         action_reason_formatted = action_reason_raw
         
@@ -3696,39 +3696,39 @@ class PortfolioService:
             import json
             advice_json = None
             
-            # 如果是字符串，尝试解析JSON
+            # If it is a string, try to parse JSON
             if isinstance(action_reason_raw, str):
                 action_reason_str = action_reason_raw.strip()
-                logger.info(f"📊 [格式化报告] action_reason前100字符: {action_reason_str[:100]}")
+                logger.info(f"📊 [Format reports] action_reason first 100 characters: {action_reason_str[:100]}")
                 
-                # 检查是否包含JSON代码块或JSON格式
+                # Check if it contains JSON code block or JSON format
                 if "```json" in action_reason_str or (action_reason_str.startswith("{") and ("analysis_summary" in action_reason_str or "neutral_operation" in action_reason_str)):
                     try:
-                        # 提取JSON
+                        # Extract JSON
                         if "```json" in action_reason_str:
                             json_start = action_reason_str.find("```json") + 7
                             json_end = action_reason_str.find("```", json_start)
                             if json_end > json_start:
                                 json_str = action_reason_str[json_start:json_end].strip()
-                                logger.info(f"📊 [格式化报告] 从代码块提取JSON，长度: {len(json_str)}")
+                                logger.info(f"📊 [Format reports] Extract JSON from code block, length: {len(json_str)}")
                                 advice_json = json.loads(json_str)
                         elif action_reason_str.strip().startswith("{"):
-                            logger.info(f"📊 [格式化报告] 直接解析JSON格式")
+                            logger.info(f"📊 [Format reports] Directly parse JSON format")
                             advice_json = json.loads(action_reason_str)
                         
                         if advice_json:
-                            logger.info(f"📊 [格式化报告] JSON解析成功，字段: {list(advice_json.keys())}")
+                            logger.info(f"📊 [Format reports] JSON Parsed successfully, field: {list(advice_json.keys())}")
                             action_reason_formatted = self._convert_action_advice_json_to_markdown(advice_json)
-                            logger.info(f"📊 [格式化报告] JSON转换为Markdown成功，长度: {len(action_reason_formatted)}")
+                            logger.info(f"📊 [Format reports] JSON Conversion to Markdown successful, length: {len(action_reason_formatted)}")
                         else:
-                            logger.warning(f"⚠️ [格式化报告] JSON解析后为空，使用原始值")
+                            logger.warning(f"⚠️ [Format reports] JSON Empty after parsing, use original value")
                     except Exception as e:
-                        logger.warning(f"⚠️ [格式化报告] JSON解析失败，使用原始值: {e}", exc_info=True)
+                        logger.warning(f"⚠️ [Format reports] JSON Parse failed, original value used: {e}", exc_info=True)
             elif isinstance(action_reason_raw, dict):
-                # 如果已经是字典格式，直接转换
-                logger.info(f"📊 [格式化报告] action_reason是字典格式，字段: {list(action_reason_raw.keys())}")
+                # If it is already in dictionary format, convert it directly
+                logger.info(f"📊 [Format reports] action_reason is a dictionary format, field: {list(action_reason_raw.keys())}")
                 action_reason_formatted = self._convert_action_advice_json_to_markdown(action_reason_raw)
-                logger.info(f"📊 [格式化报告] 字典转换为Markdown成功，长度: {len(action_reason_formatted)}")
+                logger.info(f"📊 [Format reports] Dictionary converted to Markdown successfully, length: {len(action_reason_formatted)}")
         
         return {
             "analysis_id": report.get("analysis_id"),
@@ -3766,29 +3766,29 @@ class PortfolioService:
         market: str,
         params: "PositionAnalysisByCodeRequest"
     ) -> PositionAnalysisReport:
-        """按股票代码分析持仓 - 汇总同一股票的所有建仓记录
+        """Analyze positions by stock symbol - summarize all positions opened on the same stock
 
-        这个方法会：
-        1. 查询该股票的所有持仓记录
-        2. 汇总计算总数量、平均成本价、总市值等
-        3. 作为一个整体进行分析
+        This method will:
+        1. Query all position records of this stock
+        2. Summarize and calculate total quantity, average cost price, total market value, etc.
+        3. Analyze as a whole
         """
         from app.models.portfolio import PositionAnalysisByCodeRequest
 
         analysis_id = str(uuid.uuid4())
 
-        # 🔥 根据 position_type 选择查询用户持仓还是模拟持仓
+        # 🔥 Choose whether to query user positions or simulate positions based on position_type
         position_type = params.position_type if hasattr(params, 'position_type') else "real"
         if position_type == "simulated":
-            # 查询模拟持仓
+            # Query simulated positions
             collection = self.paper_positions_collection
-            logger.info(f"📊 [持仓分析] 查询模拟持仓: {code} ({market})")
+            logger.info(f"📊 [Position analysis] Query simulated positions: {code} ({market})")
         else:
-            # 查询用户持仓
+            # Query user positions
             collection = self.positions_collection
-            logger.info(f"📊 [持仓分析] 查询用户持仓: {code} ({market})")
+            logger.info(f"📊 [Position analysis] Query user positions: {code} ({market})")
 
-        # 查询该股票的所有持仓记录
+        # Query all position records of this stock
         storage_market = "CN" if market == "ETF" else market
         positions = await self.db[collection].find({
             "user_id": user_id,
@@ -3800,24 +3800,24 @@ class PortfolioService:
             report = PositionAnalysisReport(
                 analysis_id=analysis_id,
                 user_id=user_id,
-                position_id=f"{code}_{storage_market}",  # 使用股票代码作为标识
+                position_id=f"{code}_{storage_market}",  # Use stock symbols as identifiers
                 status=PortfolioAnalysisStatus.FAILED,
                 error_message=f"未找到 {code} 的持仓记录"
             )
             return report
 
-        # 汇总计算
+        # Summary calculation
         total_quantity = sum(p.get("quantity", 0) for p in positions)
-        # 🔥 根据持仓类型选择成本价字段：模拟持仓使用 avg_cost，用户持仓使用 cost_price
+        # 🔥 Select the cost price field according to the position type: use avg_cost for simulated positions, use avg_cost for user positions cost_price
         if position_type == "simulated":
             total_cost = sum(p.get("quantity", 0) * p.get("avg_cost", 0) for p in positions)
         else:
             total_cost = sum(p.get("quantity", 0) * p.get("cost_price", 0) for p in positions)
         avg_cost_price = total_cost / total_quantity if total_quantity > 0 else 0
 
-        # 获取当前价格
+        # Get current price
         current_price = await self._get_stock_price(code, storage_market)
-        # 🔥 修复：确保 market_value、unrealized_pnl 和 unrealized_pnl_pct 不为 None（模拟持仓分析时可能为 None）
+        # 🔥 Fix: Make sure market_value, unrealized_pnl and unrealized_pnl_pct are not None (may be None when simulating position analysis)
         if current_price and current_price > 0:
             market_value = current_price * total_quantity
             unrealized_pnl = market_value - total_cost
@@ -3827,11 +3827,11 @@ class PortfolioService:
             unrealized_pnl = 0.0
             unrealized_pnl_pct = 0.0
 
-        # 获取股票名称和行业
+        # Get stock name and industry
         name = positions[0].get("name") or await self._get_stock_name(code, storage_market)
         industry = positions[0].get("industry") or await self._get_stock_industry(code, storage_market)
 
-        # 计算持仓天数（使用最早的建仓日期）
+        # Calculate the number of days the position has been held (using the earliest opening date)
         holding_days = None
         earliest_date = None
         for p in positions:
@@ -3844,12 +3844,12 @@ class PortfolioService:
         if earliest_date:
             holding_days = (datetime.now() - earliest_date).days
 
-        # 计算仓位占比
+        # Calculate position proportion
         position_pct = None
         if params.total_capital and params.total_capital > 0 and market_value:
             position_pct = round((market_value / params.total_capital) * 100, 2)
 
-        # 构建持仓快照（汇总后的）
+        # Construct a position snapshot (aggregated)
         snapshot = PositionSnapshot(
             code=code,
             name=name,
@@ -3866,7 +3866,7 @@ class PortfolioService:
             position_pct=position_pct
         )
 
-        # 创建分析参数（转换为 PositionAnalysisRequest）
+        # Create analysis parameters (converted to PositionAnalysisRequest)
         analysis_params = PositionAnalysisRequest(
             research_depth=params.research_depth,
             include_add_position=params.include_add_position,
@@ -3879,7 +3879,7 @@ class PortfolioService:
         report = PositionAnalysisReport(
             analysis_id=analysis_id,
             user_id=user_id,
-            position_id=f"{code}_{storage_market}",  # 使用股票代码作为标识
+            position_id=f"{code}_{storage_market}",  # Use stock symbols as identifiers
             position_snapshot=snapshot,
             status=PortfolioAnalysisStatus.PROCESSING
         )
@@ -3887,28 +3887,28 @@ class PortfolioService:
         try:
             start_time = datetime.now()
 
-            # 将市场代码转换为中文名称（单股分析服务需要）
+            # Convert market symbols to Chinese names (required for single stock analysis service)
             market_name = convert_market_code_to_name(market, code)
 
-            # 检查是否有缓存的单股分析报告（只读取缓存，不创建新任务）
+            # Check whether there is a cached single stock analysis report (only read the cache, do not create a new task)
             stock_analysis_report = None
             if params.use_stock_analysis:
                 logger.info(f"📊 [汇总持仓分析] 检查单股分析报告缓存 - {code} (市场: {market} -> {market_name}, 共{len(positions)}条记录)")
                 stock_analysis_report = await self._get_cached_stock_analysis_report(
                     stock_code=code,
                     market=market_name,
-                    cache_hours=24  # 使用24小时内的缓存
+                    cache_hours=24  # Use cache within 24 hours
                 )
 
-                # 如果没有缓存报告，记录日志
+                # If no report is cached, log
                 if not stock_analysis_report:
-                    logger.info(f"ℹ️ [汇总持仓分析] 未找到缓存报告，将直接进行持仓分析 - {code}")
+                    logger.info(f"ℹ️ [Summary position analysis] Cache report not found, position analysis will be performed directly - {code}")
                 else:
                     logger.info(f"✅ [汇总持仓分析] 找到缓存报告，将作为参考 - {code}, 来源: {stock_analysis_report.get('source', 'unknown')}")
             else:
-                logger.info(f"⏭️ [汇总持仓分析] 用户选择不使用单股分析报告 - {code}")
+                logger.info(f"⏭️ [Summary position analysis] User chooses not to use single stock analysis report - {code}")
 
-            # 如果没有单股分析报告，创建一个空的报告结构，避免后续代码报错
+            # If there is no single stock analysis report, create an empty report structure to avoid subsequent code errors.
             if not stock_analysis_report:
                 stock_analysis_report = {
                     "task_id": None,
@@ -3919,12 +3919,12 @@ class PortfolioService:
                     "source": "none"
                 }
 
-            # 第二阶段：结合持仓信息进行持仓分析
-            logger.info(f"📊 [汇总持仓分析] 第二阶段：持仓专用分析 - {code}")
+            # The second stage: position analysis based on position information
+            logger.info(f"📊 [Summary position analysis] The second stage: position-specific analysis - {code}")
 
-            # 根据配置选择分析引擎（USE_STOCK_ENGINE=true 时使用工作流引擎v2.0）
+            # Choose an analysis engine based on your configuration (USE_STOCK_ENGINE=true when using Workflow Engine v2.0)
             if _use_stock_engine():
-                logger.info(f"🚀 [汇总持仓分析] 使用工作流引擎v2.0进行分析")
+                logger.info(f"🚀 [Summary position analysis] Analysis using Workflow Engine v2.0")
                 ai_result = await self._call_position_ai_analysis_workflow(
                     snapshot=snapshot,
                     params=analysis_params,
@@ -3932,7 +3932,7 @@ class PortfolioService:
                     user_id=user_id
                 )
             else:
-                logger.info(f"🤖 [汇总持仓分析] 使用传统LLM分析")
+                logger.info(f"🤖 [Summary position analysis] Using traditional LLM analysis")
                 ai_result = await self._call_position_ai_analysis_v2(
                     snapshot=snapshot,
                     params=analysis_params,
@@ -3953,9 +3953,9 @@ class PortfolioService:
             report.status = PortfolioAnalysisStatus.FAILED
             report.error_message = str(e)
 
-        # 保存报告
+        # save report
         report_dict = report.model_dump(by_alias=True, exclude={"id"})
-        # 🔥 添加 position_type 字段到报告记录中，用于后续查询时区分模拟持仓和用户持仓
+        # 🔥 Add the position_type field to the report record, which can be used to distinguish simulated positions and user positions in subsequent queries.
         report_dict["position_type"] = position_type
         await self.db[self.position_analysis_collection].insert_one(report_dict)
         return report
@@ -3967,22 +3967,22 @@ class PortfolioService:
         market: str,
         params: "PositionAnalysisByCodeRequest"
     ) -> PositionAnalysisReport:
-        """按股票代码分析持仓 v2.0 - 使用统一任务引擎
+        """Analyze positions by ticker v2.0 - using the Unified Task Engine
 
-        优势:
-        - 支持多引擎切换（workflow/legacy/llm）
-        - 统一的任务管理和进度跟踪
-        - 自动选择最佳引擎
-        - 任务可查询、可取消
+        Advantages:
+        - Support multi-engine switching (workflow/legacy/llm)
+        - Unified task management and progress tracking
+        - Automatically select the best engine
+        - Tasks can be queried and canceled
 
         Args:
-            user_id: 用户ID
-            code: 股票代码
-            market: 市场类型（CN/HK/US）
-            params: 分析参数
+            user_id: User ID
+            code: Stock code
+            market: Market type (CN/HK/US)
+            params: Analysis parameters
 
         Returns:
-            持仓分析报告
+            Position analysis report
         """
         from app.services.task_analysis_service import get_task_analysis_service
         from app.models.analysis import AnalysisTaskType
@@ -3991,7 +3991,7 @@ class PortfolioService:
 
         logger.info(f"🚀 [持仓分析v2.0] 使用统一任务引擎分析: {code} (市场: {market})")
 
-        # 查询该股票的所有持仓记录（用于构建快照）
+        # Query all position records of this stock (used to build a snapshot)
         positions = await self.db[self.positions_collection].find({
             "user_id": user_id,
             "code": code,
@@ -3999,7 +3999,7 @@ class PortfolioService:
         }).to_list(None)
 
         if not positions:
-            # 如果没有持仓记录，返回失败报告
+            # If there is no position record, a failure report will be returned.
             analysis_id = str(uuid.uuid4())
             report = PositionAnalysisReport(
                 analysis_id=analysis_id,
@@ -4010,22 +4010,22 @@ class PortfolioService:
             )
             return report
 
-        # 汇总计算持仓数据
+        # Summarize and calculate position data
         total_quantity = sum(p.get("quantity", 0) for p in positions)
         total_cost = sum(p.get("quantity", 0) * p.get("cost_price", 0) for p in positions)
         avg_cost_price = total_cost / total_quantity if total_quantity > 0 else 0
 
-        # 获取当前价格
+        # Get current price
         current_price = await self._get_stock_price(code, market)
         market_value = current_price * total_quantity if current_price else None
         unrealized_pnl = (market_value - total_cost) if market_value else None
         unrealized_pnl_pct = (unrealized_pnl / total_cost * 100) if unrealized_pnl and total_cost > 0 else None
 
-        # 获取股票名称和行业
+        # Get stock name and industry
         name = positions[0].get("name") or await self._get_stock_name(code, market)
         industry = positions[0].get("industry") or await self._get_stock_industry(code, market)
 
-        # 计算持仓天数
+        # Calculate position holding days
         holding_days = None
         earliest_date = None
         for p in positions:
@@ -4038,12 +4038,12 @@ class PortfolioService:
         if earliest_date:
             holding_days = (datetime.now() - earliest_date).days
 
-        # 计算仓位占比
+        # Calculate position proportion
         position_pct = None
         if params.total_capital and params.total_capital > 0 and market_value:
             position_pct = round((market_value / params.total_capital) * 100, 2)
 
-        # 构建持仓快照
+        # Build a position snapshot
         snapshot = PositionSnapshot(
             code=code,
             name=name,
@@ -4060,7 +4060,7 @@ class PortfolioService:
             position_pct=position_pct
         )
 
-        # 准备任务参数
+        # Prepare task parameters
         task_params = {
             "code": code,
             "market": market,
@@ -4074,20 +4074,20 @@ class PortfolioService:
             "use_stock_analysis": params.use_stock_analysis
         }
 
-        # 使用统一任务引擎
+        # Use unified task engine
         task_service = get_task_analysis_service()
 
         try:
-            # 创建并执行任务
+            # Create and execute tasks
             task = await task_service.create_and_execute_task(
                 user_id=PyObjectId(user_id),
                 task_type=AnalysisTaskType.POSITION_ANALYSIS,
                 task_params=task_params,
-                engine_type=getattr(params, "engine_type", "auto"),  # 支持引擎选择
+                engine_type=getattr(params, "engine_type", "auto"),  # Support engine selection
                 preference_type=getattr(params, "preference_type", "neutral")
             )
 
-            # 将任务结果转换为 PositionAnalysisReport
+            # Convert task results to PositionAnalysisReport
             report = PositionAnalysisReport(
                 analysis_id=task.task_id,
                 user_id=user_id,
@@ -4098,22 +4098,22 @@ class PortfolioService:
                 error_message=task.error_message
             )
 
-            # 从任务结果中提取 AI 分析
+            # Extract AI analytics from task results
             if task.result and "ai_analysis" in task.result:
                 report.ai_analysis = AIAnalysisResult(**task.result["ai_analysis"])
 
             logger.info(f"✅ [持仓分析v2.0] 分析完成: {code}, 任务ID: {task.task_id}")
 
-            # 保存报告
+            # save report
             report_dict = report.model_dump(by_alias=True, exclude={"id"})
             await self.db[self.position_analysis_collection].insert_one(report_dict)
 
             return report
 
         except Exception as e:
-            logger.error(f"❌ [持仓分析v2.0] 分析失败: {code} - {e}", exc_info=True)
+            logger.error(f"❌ [Position analysis v2.0] Analysis failed: {code} - {e}", exc_info=True)
 
-            # 返回失败报告
+            # Return failure report
             report = PositionAnalysisReport(
                 analysis_id=str(uuid.uuid4()),
                 user_id=user_id,
@@ -4123,7 +4123,7 @@ class PortfolioService:
                 error_message=str(e)
             )
 
-            # 保存报告
+            # save report
             report_dict = report.model_dump(by_alias=True, exclude={"id"})
             await self.db[self.position_analysis_collection].insert_one(report_dict)
 
@@ -4134,32 +4134,32 @@ class PortfolioService:
         stock_code: str,
         market: str = "A股"
     ) -> Dict[str, Any]:
-        """检查单股分析报告缓存状态
+        """Check Single Stock Analysis Report Cache Status
         
         Args:
-            stock_code: 股票代码
-            market: 市场类型（A股/港股/美股）
+            stock_code: Stock code
+            market: Market type (A shares/Hong Kong stocks/US stocks)
             
         Returns:
-            包含缓存状态的字典：
+            Dictionary containing cache status:
             {
-                "has_cache": bool,  # 是否有缓存
-                "cache_age_minutes": int,  # 缓存年龄（分钟）
-                "cache_age_hours": float,  # 缓存年龄（小时）
-                "source": str  # 缓存来源（"engine" 或 "legacy"）
+                "has_cache": bool,  # Is there a cache
+                "cache_age_minutes": int,  # Cache age (minutes)
+                "cache_age_hours": float,  # Cache age (hours)
+                "source": str  # cache source ("engine" or "legacy") 
             }
         """
         from app.core.database import get_mongo_db
         
         db = get_mongo_db()
         
-        # 检查24小时内的报告（前端提示用户的标准）
+        # Check reports within 24 hours (standard for front-end prompts users)
         cache_hours = 24
-        # 🔥 使用 now_tz() 确保时区一致
+        # 🔥 Use now_tz() Make sure the time zone matches
         recent_cutoff = now_tz() - timedelta(hours=cache_hours)
         
-        # 检查旧版引擎的缓存（analysis_reports 集合）
-        # 这是最常用的缓存位置，无论是否启用新引擎都会使用
+        # Check the cache of legacy engines (analysis_reports collection)
+        # This is the most common cache location and will be used regardless of whether the new engine is enabled or not
         existing_report = await db.analysis_reports.find_one({
             "stock_symbol": stock_code,
             "created_at": {"$gte": recent_cutoff},
@@ -4174,16 +4174,16 @@ class PortfolioService:
             elif created_at is None:
                 created_at = now_tz()
             
-            # 🔥 确保时区一致：MongoDB 存储的是 UTC 时间
-            # 如果从 MongoDB 读取的是 naive datetime，应该假定为 UTC
-            # 注意：tz 和 now_tz 已在文件顶部导入
+            # 🔥 Make sure the time zone is consistent: MongoDB stores UTC time
+            # If reading from MongoDB is a naive datetime, it should be assumed to be UTC
+            # Note: tz and now_tz are imported at the top of the file
             current_time = now_tz()
             
             if created_at:
-                # 如果 created_at 是 naive datetime，假定为 UTC（因为 MongoDB 存储的是 UTC）
+                # If created_at is a naive datetime, UTC is assumed (because MongoDB stores UTC)
                 if isinstance(created_at, datetime) and created_at.tzinfo is None:
                     created_at = created_at.replace(tzinfo=tz.utc)
-                # 转换为配置时区以便计算时间差
+                # Convert to configured time zone for calculating time differences
                 if created_at.tzinfo:
                     created_at = created_at.astimezone(current_time.tzinfo)
             else:
@@ -4201,8 +4201,8 @@ class PortfolioService:
                 "source": "legacy"
             }
         
-        # 没有找到缓存
-        logger.info(f"❌ [检查缓存] 未找到缓存: {stock_code}")
+        # cache not found
+        logger.info(f"❌ [Check cache] cache not found: {stock_code}")
         return {
             "has_cache": False,
             "cache_age_minutes": None,
@@ -4216,25 +4216,25 @@ class PortfolioService:
         market: str = "A股",
         cache_hours: int = 24
     ) -> Optional[Dict[str, Any]]:
-        """只从缓存中获取股票分析报告（不创建新任务）
+        """Only get the stock analysis report from the cache (do not create a new task)
         
-        仅用于持仓分析场景，只读取已有缓存，不会创建新的单股分析任务
+        It is only used in position analysis scenarios. It only reads the existing cache and does not create new single stock analysis tasks.
         
         Args:
-            stock_code: 股票代码
-            market: 市场类型（A股/港股/美股）
-            cache_hours: 缓存有效期（小时）
+            stock_code: Stock code
+            market: Market type (A shares/Hong Kong stocks/US stocks)
+            cache_hours: Cache validity period (hours)
             
         Returns:
-            分析报告字典，如果没有缓存则返回 None
+            Analysis report dictionary, returned if not cached None
         """
         from app.core.database import get_mongo_db
         
         db = get_mongo_db()
-        # 🔥 使用 now_tz() 确保时区一致
+        # 🔥 Use now_tz() Make sure the time zone matches
         recent_cutoff = now_tz() - timedelta(hours=cache_hours)
         
-        # 检查是否有已完成的分析报告（任意用户）
+        # Check if there is a completed analysis report (any user)
         existing_report = await db.analysis_reports.find_one({
             "stock_symbol": stock_code,
             "created_at": {"$gte": recent_cutoff},
@@ -4247,16 +4247,16 @@ class PortfolioService:
                 from dateutil.parser import parse
                 created_at = parse(created_at)
             
-            # 🔥 确保时区一致：MongoDB 存储的是 UTC 时间
-            # 如果从 MongoDB 读取的是 naive datetime，应该假定为 UTC
-            # 注意：tz 和 now_tz 已在文件顶部导入
+            # 🔥 Make sure the time zone is consistent: MongoDB stores UTC time
+            # If reading from MongoDB is a naive datetime, it should be assumed to be UTC
+            # Note: tz and now_tz are imported at the top of the file
             current_time = now_tz()
             
             if created_at:
-                # 如果 created_at 是 naive datetime，假定为 UTC（因为 MongoDB 存储的是 UTC）
+                # If created_at is a naive datetime, UTC is assumed (because MongoDB stores UTC)
                 if isinstance(created_at, datetime) and created_at.tzinfo is None:
                     created_at = created_at.replace(tzinfo=tz.utc)
-                # 转换为配置时区以便计算时间差
+                # Convert to configured time zone for calculating time differences
                 if created_at.tzinfo:
                     created_at = created_at.astimezone(current_time.tzinfo)
             else:
@@ -4268,7 +4268,7 @@ class PortfolioService:
             
             logger.info(f"📚 [持仓分析] 从缓存读取单股分析报告: {stock_code}, "
                        f"task_id={existing_report.get('task_id')}, "
-                       f"报告时间: {age_minutes}分钟前 (created_at: {created_at}, current_time: {current_time})")
+                       f"reporting time: {age_minutes}minutes ago (created_at: {created_at}, current_time: {current_time})")
             return {
                 "task_id": existing_report.get("task_id"),
                 "reports": existing_report.get("reports", {}),
@@ -4280,7 +4280,7 @@ class PortfolioService:
                 "cache_age_hours": round(age_hours, 2)
             }
         
-        logger.info(f"❌ [持仓分析] 未找到缓存的单股分析报告: {stock_code}")
+        logger.info(f"❌ [Position analysis] Cached single stock analysis report not found: {stock_code}")
         return None
 
     async def _get_stock_analysis_via_engine(
@@ -4288,25 +4288,25 @@ class PortfolioService:
         stock_code: str,
         market: str = "A股"
     ) -> Optional[Dict[str, Any]]:
-        """使用新版 StockAnalysisEngine 获取分析报告 — 已停用
+        """Get analysis reports using the new version of StockAnalysisEngine — Deactivated
 
-        v3.0 起旧版 StockAnalysisEngine 已停用（死代码，无调用者）。
-        详见 docs/99-archive/deprecated-features/legacy-agents-deprecation.md
+        v3.0 The old version of StockAnalysisEngine is deprecated (dead code, no caller).
+        See details docs/99-archive/deprecated-features/legacy-agents-deprecation.md
 
         Raises:
-            RuntimeError: 始终抛出（方法已停用）
+            RuntimeError: always throws (method deactivated)
         """
         raise RuntimeError(
-            "[已停用] PortfolioService._get_stock_analysis_via_engine 已停用，"
-            "请使用 analyze_position_by_code_v2 或 _get_cached_stock_analysis_report。"
-            "详见 docs/99-archive/deprecated-features/legacy-agents-deprecation.md"
+            "[Deactivated] PortfolioService._get_stock_analysis_via_engine deactivated,"
+            "Please use analyze_position_by_code_v2 or _get_cached_stock_analysis_report."
+            "See details docs/99-archive/deprecated-features/legacy-agents-deprecation.md"
         )
-        # pragma: no cover - 以下原代码保留但不执行，为 v4.0 删除做准备
+        # pragma: no cover - The following original code is retained but not executed in preparation for v4.0 deletion
         try:
             from tradingagents.core.engine.stock_analysis_engine import StockAnalysisEngine
             from core.workflow.builder import LegacyDependencyProvider
 
-            # 转换市场类型
+            # Switch market type
             market_type_map = {
                 "A股": "cn",
                 "港股": "hk",
@@ -4317,7 +4317,7 @@ class PortfolioService:
 
             logger.info(f"🚀 [持仓分析] 使用 StockAnalysisEngine 分析: {stock_code} (市场: {market_type})")
 
-            # 创建 LLM 依赖提供者（从数据库配置获取 LLM）
+            # Create LLM dependency provider (get LLM from database configuration)
             dependency_provider = LegacyDependencyProvider.get_instance()
             llm = dependency_provider.get_llm("quick")
 
@@ -4332,13 +4332,13 @@ class PortfolioService:
             )
 
             if result and result.success:
-                logger.info(f"✅ [持仓分析] StockAnalysisEngine 分析完成: {stock_code}")
+                logger.info(f"✅ [Position analysis] StockAnalysisEngine Analysis completed: {stock_code}")
 
-                # 转换为统一的返回格式
+                # Convert to unified return format
                 context = result.context
                 reports = {}
 
-                # 从 context 提取各分析师报告
+                # Extract each analyst report from context
                 if hasattr(context, 'reports') and context.reports:
                     reports = context.reports
                 elif hasattr(context, 'get'):
@@ -4359,14 +4359,14 @@ class PortfolioService:
                     "recommendation": result.recommendation if hasattr(result, 'recommendation') else ""
                 }
             else:
-                logger.warning(f"⚠️ [持仓分析] StockAnalysisEngine 返回失败结果: {stock_code}")
+                logger.warning(f"⚠️ [Position analysis] StockAnalysisEngine Return failure result: {stock_code}")
                 return None
 
         except ImportError as e:
-            logger.warning(f"⚠️ [持仓分析] StockAnalysisEngine 模块不可用: {e}")
+            logger.warning(f"⚠️ [Position analysis] StockAnalysisEngine Module not available: {e}")
             return None
         except Exception as e:
-            logger.error(f"❌ [持仓分析] StockAnalysisEngine 调用异常: {e}", exc_info=True)
+            logger.error(f"❌ [Position analysis] StockAnalysisEngine Call exception: {e}", exc_info=True)
             return None
 
     async def _get_stock_analysis_via_legacy(
@@ -4376,29 +4376,29 @@ class PortfolioService:
         market: str = "A股",
         skip_if_not_exists: bool = False
     ) -> Optional[Dict[str, Any]]:
-        """使用旧版 simple_analysis_service 获取分析报告（降级方案）— 已停用
+        """Use the old version of simple_analysis_service to obtain analysis reports (downgrade scenario)— Deactivated
 
-        v3.0 起旧版 legacy 引擎已停用（死代码，无调用者）。
-        详见 docs/99-archive/deprecated-features/legacy-agents-deprecation.md
+        v3.0 The legacy engine has been deactivated (dead code, no callers).
+        See details docs/99-archive/deprecated-features/legacy-agents-deprecation.md
 
         Args:
-            user_id: 用户ID
-            stock_code: 股票代码
-            market: 市场类型
-            skip_if_not_exists: 如果没有缓存报告，是否跳过（不创建新任务）
+            user_id: User ID
+            stock_code: Stock code
+            market: market type
+            skip_if_not_exists: If there is no cached report, whether to skip it (no new task will be created)
 
         Returns:
-            分析报告字典，如果 skip_if_not_exists=True 且没有缓存则返回 None
+            Analysis report dictionary if skip_if_not_exists=True And if there is no cache, return None
 
         Raises:
-            RuntimeError: 始终抛出（方法已停用）
+            RuntimeError: always throws (method deactivated)
         """
         raise RuntimeError(
-            "[已停用] PortfolioService._get_stock_analysis_via_legacy 已停用，"
-            "请使用 analyze_position_by_code_v2 或 _get_cached_stock_analysis_report。"
-            "详见 docs/99-archive/deprecated-features/legacy-agents-deprecation.md"
+            "[Deactivated] PortfolioService._get_stock_analysis_via_legacy deactivated,"
+            "Please use analyze_position_by_code_v2 or _get_cached_stock_analysis_report."
+            "See details docs/99-archive/deprecated-features/legacy-agents-deprecation.md"
         )
-        # pragma: no cover - 以下原代码保留但不执行，为 v4.0 删除做准备
+        # pragma: no cover - The following original code is retained but not executed in preparation for v4.0 deletion
         from app.services.simple_analysis_service import get_simple_analysis_service
         from app.models.analysis import SingleAnalysisRequest, AnalysisParameters
         from app.core.database import get_mongo_db
@@ -4408,16 +4408,16 @@ class PortfolioService:
 
         db = get_mongo_db()
 
-        # 3小时内的报告可以复用（股票基本面、技术面数据变化不大）
+        # 3 Reports within hours can be reused (stock fundamentals and technical data change little)
         cache_hours = 3
-        # 🔥 使用 now_tz() 确保时区一致
+        # 🔥 Use now_tz() Make sure the time zone matches
         recent_cutoff = now_tz() - timedelta(hours=cache_hours)
 
-        # 1. 首先检查是否有已完成的分析报告（3小时内，不限用户）
-        # 单股分析的结果对所有用户都是一样的，可以共享
-        # 注意：analysis_reports 集合中使用的是 stock_symbol 字段（不是 stock_code）
+        # 1. First check whether there is a completed analysis report (within 3 hours, no limit to users)
+        # The results of single stock analysis are the same for all users and can be shared
+        # Note: The stock_symbol field (not stock_code) is used in the analysis_reports collection
         existing_report = await db.analysis_reports.find_one({
-            "stock_symbol": stock_code,  # 使用 stock_symbol 字段匹配
+            "stock_symbol": stock_code,  # Use stock_symbol field matching
             "created_at": {"$gte": recent_cutoff},
             "status": "completed"
         }, sort=[("created_at", -1)])
@@ -4428,16 +4428,16 @@ class PortfolioService:
                 from dateutil.parser import parse
                 created_at = parse(created_at)
             
-            # 🔥 确保时区一致：MongoDB 存储的是 UTC 时间
-            # 如果从 MongoDB 读取的是 naive datetime，应该假定为 UTC
-            # 注意：tz 和 now_tz 已在文件顶部导入
+            # 🔥 Make sure the time zone is consistent: MongoDB stores UTC time
+            # If reading from MongoDB is a naive datetime, it should be assumed to be UTC
+            # Note: tz and now_tz are imported at the top of the file
             current_time = now_tz()
             
             if created_at:
-                # 如果 created_at 是 naive datetime，假定为 UTC（因为 MongoDB 存储的是 UTC）
+                # If created_at is a naive datetime, UTC is assumed (because MongoDB stores UTC)
                 if isinstance(created_at, datetime) and created_at.tzinfo is None:
                     created_at = created_at.replace(tzinfo=tz.utc)
-                # 转换为配置时区以便计算时间差
+                # Convert to configured time zone for calculating time differences
                 if created_at.tzinfo:
                     created_at = created_at.astimezone(current_time.tzinfo)
             else:
@@ -4447,7 +4447,7 @@ class PortfolioService:
             age_minutes = int(report_age.total_seconds() / 60)
             logger.info(f"📚 [持仓分析] 复用已完成的分析报告: {stock_code}, "
                        f"task_id={existing_report.get('task_id')}, "
-                       f"报告时间: {age_minutes}分钟前 (created_at: {created_at}, current_time: {current_time})")
+                       f"reporting time: {age_minutes}minutes ago (created_at: {created_at}, current_time: {current_time})")
             return {
                 "task_id": existing_report.get("task_id"),
                 "reports": existing_report.get("reports", {}),
@@ -4458,47 +4458,47 @@ class PortfolioService:
                 "cache_age_minutes": age_minutes
             }
 
-        # 如果设置了 skip_if_not_exists，且没有缓存报告，直接返回 None
+        # If skip_if_not_exists is set and there is no cached report, return directly None
         if skip_if_not_exists:
-            logger.info(f"⏭️ [持仓分析] 没有缓存的单股分析报告，跳过单股分析: {stock_code}")
+            logger.info(f"⏭️ [Position analysis] No cached single stock analysis report, skip single stock analysis: {stock_code}")
             return None
 
-        # 2. 检查是否有正在运行的分析任务（避免重复创建，不限用户）
-        # 注意：analysis_reports 集合中使用的是 stock_symbol 字段
+        # 2. Check if there are any running analysis tasks (avoid duplicate creation, not limited to users)
+        # Note: The stock_symbol field is used in the analysis_reports collection
         running_report = await db.analysis_reports.find_one({
-            "stock_symbol": stock_code,  # 使用 stock_symbol 字段匹配
+            "stock_symbol": stock_code,  # Use stock_symbol field matching
             "created_at": {"$gte": recent_cutoff},
             "status": {"$in": ["pending", "running"]}
         }, sort=[("created_at", -1)])
 
         if running_report:
             task_id = running_report.get("task_id")
-            logger.info(f"⏳ [持仓分析] 发现正在运行的任务，等待完成: {stock_code}, task_id={task_id}")
-            # 等待这个正在运行的任务完成
+            logger.info(f"⏳ [Position analysis] Found running tasks, waiting for completion: {stock_code}, task_id={task_id}")
+            # Wait for this running task to complete
             return await self._wait_for_analysis_task(analysis_service, task_id, stock_code)
 
-        # 3. 没有缓存也没有正在运行的任务，创建新的分析
-        logger.info(f"🔄 [持仓分析] 3小时内无可用报告，执行新的单股分析: {stock_code}, market={market}")
+        # 3. There is no cache and no running tasks, create a new analysis
+        logger.info(f"🔄 [Position analysis] 3 No reports available within hours, perform new single stock analysis: {stock_code}, market={market}")
 
-        # 创建分析请求（使用快速分析模式）
+        # Create an analysis request (using quick analysis mode)
         analysis_request = SingleAnalysisRequest(
             symbol=stock_code,
             stock_code=stock_code,
             parameters=AnalysisParameters(
-                research_depth="快速",  # 使用快速模式，减少等待时间
+                research_depth="快速",  # Use fast mode to reduce waiting time
                 selected_analysts=["market", "fundamentals", "news"],
                 market_type=market
             )
         )
 
-        # 创建任务
+        # Create task
         task_result = await analysis_service.create_analysis_task(user_id, analysis_request)
         task_id = task_result.get("task_id")
 
-        # 同步执行分析（等待完成）
+        # Execute analysis synchronously (wait for completion)
         await analysis_service.execute_analysis_background(task_id, user_id, analysis_request)
 
-        # 等待任务完成
+        # Wait for task to complete
         return await self._wait_for_analysis_task(analysis_service, task_id, stock_code)
 
     async def _wait_for_analysis_task(
@@ -4508,7 +4508,7 @@ class PortfolioService:
         stock_code: str,
         max_wait: int = 300
     ) -> Dict[str, Any]:
-        """等待分析任务完成并返回结果"""
+        """Wait for the analysis task to complete and return results"""
         import asyncio
 
         waited = 0
@@ -4516,7 +4516,7 @@ class PortfolioService:
             task_status = await analysis_service.get_task_status(task_id)
             if task_status and task_status.get("status") == "completed":
                 result_data = task_status.get("result_data", {})
-                logger.info(f"✅ [持仓分析] 单股分析完成: {stock_code}")
+                logger.info(f"✅ [Position analysis] Single stock analysis completed: {stock_code}")
                 return {
                     "task_id": task_id,
                     "reports": result_data.get("reports", {}),
@@ -4528,7 +4528,7 @@ class PortfolioService:
             elif task_status and task_status.get("status") == "failed":
                 error_msg = task_status.get("error_message", "未知错误")
                 logger.warning(f"⚠️ [持仓分析] 单股分析失败: {stock_code}, 错误: {error_msg}")
-                # 返回空报告，持仓分析仍可基于持仓信息给出建议
+                # If an empty report is returned, the position analysis can still give suggestions based on the position information.
                 return {
                     "task_id": task_id,
                     "reports": {},
@@ -4541,8 +4541,8 @@ class PortfolioService:
             await asyncio.sleep(2)
             waited += 2
 
-        # 超时
-        logger.warning(f"⚠️ [持仓分析] 单股分析超时: {stock_code}")
+        # timeout
+        logger.warning(f"⚠️ [Position analysis] Single stock analysis timeout: {stock_code}")
         return {
             "task_id": task_id,
             "reports": {},
@@ -4559,15 +4559,15 @@ class PortfolioService:
         stock_analysis_report: Dict[str, Any],
         user_id: Optional[str] = None
     ) -> PositionAnalysisResult:
-        """调用AI进行单股持仓分析 - 方案2
+        """Calling AI for single stock position analysis - solution 2
 
-        基于完整的单股分析报告 + 持仓信息，生成个性化持仓研究观察
-        使用系统配置的深度分析模型
+        Based on complete single stock analysis report + Position information to generate personalized position research observations
+        Deep analysis model using system configuration
         """
         import httpx
 
         try:
-            # 构建持仓分析专用提示词
+            # Construct special prompt words for position analysis
             prompt = self._build_position_analysis_prompt_v2(
                 snapshot=snapshot,
                 params=params,
@@ -4579,39 +4579,39 @@ class PortfolioService:
             from app.services.model_capability_service import get_model_capability_service
             from tradingagents.graph.trading_graph import create_llm_by_provider
 
-            # 使用系统配置的深度分析模型
+            # Deep analysis model using system configuration
             capability_service = get_model_capability_service()
             _, deep_model = capability_service._get_default_models()
             model_name = deep_model
 
-            logger.info(f"🤖 [持仓AI分析] 从系统配置获取深度分析模型: {model_name}")
+            logger.info(f"🤖 [Position AI analysis] Get deep analysis model from system configuration: {model_name}")
 
-            # 从数据库获取模型的完整配置（包括 API URL 和 API Key）
+            # Get the complete configuration of the model from the database (including API URL and API Key)
             provider_info = get_provider_and_url_by_model_sync(model_name)
 
             base_url = provider_info.get("backend_url")
             api_key = provider_info.get("api_key")
             provider = provider_info.get("provider")
 
-            logger.info(f"🤖 [持仓AI分析] 使用模型: {model_name}")
-            logger.info(f"🏭 [持仓AI分析] 模型供应商: {provider}")
-            logger.info(f"🔗 [持仓AI分析] API地址: {base_url}")
-            logger.info(f"🔑 [持仓AI分析] API Key: {'已配置' if api_key else '未配置'}")
+            logger.info(f"🤖 [Position AI analysis] Use model: {model_name}")
+            logger.info(f"🏭 [Position AI analysis] model supplier: {provider}")
+            logger.info(f"🔗 [Position AI analysis] API address: {base_url}")
+            logger.info(f"🔑 [Position AI analysis] API Key: {'configured' if api_key else 'Not configured'}")
 
             if not api_key:
-                logger.warning("⚠️ [持仓AI分析] API Key 未配置，将尝试从环境变量获取")
+                logger.warning("⚠️ [Position AI analysis] API Key Not configured, will try to get from environment variables")
 
             if not base_url:
-                logger.error("❌ [持仓AI分析] API地址未配置")
+                logger.error("❌ [Position AI analysis] API Address not configured")
                 return PositionAnalysisResult(
                     action=PositionAction.HOLD,
-                    action_reason="AI模型未正确配置，请在设置中配置深度分析模型的API地址"
+                    action_reason="AI The model is not configured correctly. Please configure the API address of the in-depth analysis model in the settings."
                 )
 
-            # 使用统一的 LLM 适配器
-            logger.info(f"🔧 [持仓AI分析v2] 准备创建 LLM: provider={provider}, model={model_name}, temperature=0.3")
+            # Use unified LLM adapter
+            logger.info(f"🔧 [Position AI analysis v2] ready to create LLM: provider={provider}, model={model_name}, temperature=0.3")
             if api_key:
-                logger.info(f"🔑 [持仓AI分析v2] API Key: {truncate_api_key(api_key)}")
+                logger.info(f"🔑 [Position AI analysis v2] API Key: {truncate_api_key(api_key)}")
             llm = create_llm_by_provider(
                 provider=provider,
                 model=model_name,
@@ -4622,10 +4622,10 @@ class PortfolioService:
                 api_key=api_key
             )
 
-            logger.info(f"📤 [持仓AI分析] 开始调用 LLM...")
+            logger.info(f"📤 [Position AI analysis] Start calling LLM...")
             response = await llm.ainvoke(prompt)
 
-            # 记录 token 使用
+            # Record token usage
             try:
                 from app.services.usage_statistics_service import usage_statistics_service
                 await usage_statistics_service.record_llm_usage(
@@ -4635,19 +4635,19 @@ class PortfolioService:
                     stock_code=snapshot.code
                 )
             except Exception as e:
-                logger.warning(f"记录 token 使用失败: {e}")
+                logger.warning(f"Record token usage failure: {e}")
 
             content = response.content if hasattr(response, 'content') else str(response)
-            logger.info(f"📥 [持仓AI分析] LLM 响应成功，内容长度: {len(content)}")
+            logger.info(f"📥 [Position AI analysis] LLM Response successful, content length: {len(content)}")
 
             return self._parse_position_ai_response_v2(content, snapshot)
 
         except Exception as e:
             error_msg = str(e)
-            logger.error(f"❌ [持仓AI分析] 分析失败: {error_msg}", exc_info=True)
+            logger.error(f"❌ [Position AI analysis] Analysis failed: {error_msg}", exc_info=True)
             from app.utils.error_formatter import ErrorFormatter
 
-            action_reason = f"AI分析暂时不可用：{ErrorFormatter.format_user_message(error_msg, include_suggestion=False)}"
+            action_reason = f"AI Analysis is temporarily unavailable:{ErrorFormatter.format_user_message(error_msg, include_suggestion=False)}"
 
             return PositionAnalysisResult(
                 action=PositionAction.HOLD,
@@ -4659,7 +4659,7 @@ class PortfolioService:
         snapshot: PositionSnapshot,
         params: PositionAnalysisRequest
     ) -> PositionAnalysisResult:
-        """调用AI进行单股持仓分析 (旧版本，保留兼容)"""
+        """Call AI to conduct single stock position analysis (Old version, retain compatibility)"""
         try:
             prompt = self._build_position_analysis_prompt(snapshot, params)
 
@@ -4669,7 +4669,7 @@ class PortfolioService:
             model_name = "qwen-turbo"
             provider_info = get_provider_and_url_by_model_sync(model_name)
 
-            # 使用统一的 LLM 适配器
+            # Use unified LLM adapter
             llm = create_llm_by_provider(
                 provider=provider_info.get("provider", "dashscope"),
                 model=model_name,
@@ -4682,7 +4682,7 @@ class PortfolioService:
 
             response = await llm.ainvoke(prompt)
 
-            # 记录 token 使用
+            # Record token usage
             try:
                 from app.services.usage_statistics_service import usage_statistics_service
                 await usage_statistics_service.record_llm_usage(
@@ -4692,7 +4692,7 @@ class PortfolioService:
                     stock_code=snapshot.code
                 )
             except Exception as e:
-                logger.warning(f"记录 token 使用失败: {e}")
+                logger.warning(f"Record token usage failure: {e}")
 
             content = response.content if hasattr(response, 'content') else str(response)
             return self._parse_position_ai_response(content, snapshot)
@@ -4703,7 +4703,7 @@ class PortfolioService:
 
             return PositionAnalysisResult(
                 action=PositionAction.HOLD,
-                action_reason=f"AI分析暂时不可用：{ErrorFormatter.format_user_message(str(e), include_suggestion=False)}"
+                action_reason=f"AI Analysis is temporarily unavailable:{ErrorFormatter.format_user_message(str(e), include_suggestion=False)}"
             )
 
     def _build_position_analysis_prompt(
@@ -4754,15 +4754,15 @@ class PortfolioService:
         stock_analysis_report: Dict[str, Any],
         user_id: Optional[str] = None
     ) -> str:
-        """构建持仓分析专用提示词 - 方案2
+        """Constructing special prompt words for position analysis - plan 2
 
-        基于完整的单股分析报告 + 持仓信息，生成个性化持仓研究观察
-        支持模板系统（通过 USE_TEMPLATE_PROMPTS 特性开关控制）
+        Based on complete single stock analysis report + Position information to generate personalized position research observations
+        Support template system (controlled by USE_TEMPLATE_PROMPTS feature switch)
         """
-        # 先构建硬编码版本作为降级兜底
+        # Build a hardcoded version first as a fallback for downgrades
         legacy_prompt = self._build_legacy_position_prompt(snapshot, params, stock_analysis_report)
 
-        # 如果启用模板系统，尝试使用模板生成提示词
+        # If the template system is enabled, try to use templates to generate prompt words
         if _use_template_prompts():
             try:
                 from tradingagents.utils.template_client import get_agent_prompt
@@ -4779,11 +4779,11 @@ class PortfolioService:
                 )
 
                 if prompt and prompt != legacy_prompt:
-                    logger.info(f"✅ [持仓分析] 使用模板系统生成提示词 (长度: {len(prompt)})")
+                    logger.info(f"✅ [Position analysis] Use template system to generate prompt words (length: {len(prompt)})")
                     return prompt
 
             except Exception as e:
-                logger.warning(f"⚠️ [持仓分析] 模板系统调用失败，使用硬编码提示词: {e}")
+                logger.warning(f"⚠️ [Position analysis] Template system call failed with hardcoded prompt word: {e}")
 
         return legacy_prompt
 
@@ -4793,22 +4793,22 @@ class PortfolioService:
         params: PositionAnalysisRequest,
         stock_analysis_report: Dict[str, Any]
     ) -> str:
-        """构建硬编码持仓分析提示词（旧版，作为降级兜底）"""
+        """Construct hard-coded position analysis prompt words (old version, as a cover for downgrade)"""
         pnl_status = "盈利" if (snapshot.unrealized_pnl or 0) >= 0 else "亏损"
         pnl_pct = snapshot.unrealized_pnl_pct or 0
 
-        # 提取各分析师报告
+        # Extract each analyst report
         reports = stock_analysis_report.get("reports", {})
         decision = stock_analysis_report.get("decision", {})
         summary = stock_analysis_report.get("summary", "")
         recommendation = stock_analysis_report.get("recommendation", "")
 
-        # 构建分析报告摘要
+        # Build an analysis report summary
         market_report = reports.get("market_report", "")[:1500] if reports.get("market_report") else "暂无"
         fundamentals_report = reports.get("fundamentals_report", "")[:1500] if reports.get("fundamentals_report") else "暂无"
         news_report = reports.get("news_report", "")[:1000] if reports.get("news_report") else "暂无"
 
-        # 提取研究结论倾向
+        # Extract research conclusion tendencies
         trade_action = decision.get("action", "未知") if decision else "未知"
         target_price = decision.get("target_price") if decision else None
 
@@ -4904,20 +4904,20 @@ class PortfolioService:
         if not params.total_capital or params.total_capital <= 0:
             return ""
 
-        # 计算各项风险指标
+        # Calculate various risk indicators
         market_value = snapshot.market_value or (snapshot.quantity * (snapshot.current_price or snapshot.cost_price))
         position_pct = (market_value / params.total_capital) * 100 if params.total_capital > 0 else 0
 
-        # 计算最大可能亏损（假设跌到止损线）
-        stop_loss_pct = params.max_loss_pct  # 默认10%
+        # Calculate the maximum possible loss (assuming it falls to the stop loss line)
+        stop_loss_pct = params.max_loss_pct  # Default 10%
         max_loss_amount = market_value * (stop_loss_pct / 100)
         max_loss_impact_pct = (max_loss_amount / params.total_capital) * 100
 
-        # 计算可加仓金额（基于最大仓位限制）
+        # Calculate the amount that can be added (based on the maximum position limit)
         max_position_value = params.total_capital * (params.max_position_pct / 100)
         available_add_amount = max(0, max_position_value - market_value)
 
-        # 判断风险等级
+        # Determine risk level
         risk_level = "low"
         if position_pct > params.max_position_pct:
             risk_level = "critical"
@@ -4927,30 +4927,30 @@ class PortfolioService:
             risk_level = "medium"
 
         section = f"""
-## 💰 资金与仓位分析
+## 💰 Fund and position analysis
 
-| 项目 | 数值 | 说明 |
+| Project | numerical value | Description |
 |------|------|------|
-| 投资资金总量 | {params.total_capital:,.0f} 元 | 用户设置的总投资资金 |
-| 当前持仓市值 | {market_value:,.2f} 元 | 该股票的持仓市值 |
-| 当前仓位占比 | {position_pct:.2f}% | 占总资金比例 |
-| 最大仓位限制 | {params.max_position_pct:.0f}% | 单只股票最大仓位 |
-| 仓位风险等级 | {risk_level} | low/medium/high/critical |
+| Total amount of investment funds | {params.total_capital:,.0f} Yuan | The total investment funds set by the user |
+| Current position market value | {market_value:,.2f} Yuan | The market value of the stock s holdings |
+| Current position proportion | {position_pct:.2f}% | Proportion of total funds |
+| Maximum position limit | {params.max_position_pct:.0f}% | Maximum position in a single stock |
+| Position risk level | {risk_level} | low/medium/high/critical |
 
-### 风险敞口分析
-- 如果该股票下跌 {stop_loss_pct:.0f}%（止损线），最大亏损金额: {max_loss_amount:,.2f} 元
-- 最大亏损对总资金影响: {max_loss_impact_pct:.2f}%
-- 用户可接受最大亏损比例: {params.max_loss_pct:.0f}%
+### Risk exposure analysis
+- If the stock falls {stop_loss_pct:.0f}% (Stop loss line), maximum loss amount: {max_loss_amount:,.2f} Yuan
+- The impact of maximum loss on total funds: {max_loss_impact_pct:.2f}%
+- The maximum acceptable loss ratio for users: {params.max_loss_pct:.0f}%
 
-### 加仓空间分析
-- 最大允许持仓市值: {max_position_value:,.0f} 元
-- 当前已占用: {market_value:,.2f} 元
-- 剩余可加仓金额: {available_add_amount:,.0f} 元
-- 剩余可加仓数量（按当前价）: {int(available_add_amount / (snapshot.current_price or snapshot.cost_price))} 股
+### Analysis of space for adding positions
+- Maximum allowed position market value: {max_position_value:,.0f} Yuan
+- Currently occupied: {market_value:,.2f} Yuan
+- The remaining amount that can be added to the position: {available_add_amount:,.0f} Yuan
+- Remaining quantity that can be added (according to current price): {int(available_add_amount / (snapshot.current_price or snapshot.cost_price))} shares
 
-**⚠️ 重要提醒**：
-- 仓位风险等级为 **{risk_level}**
-- {'仓位已超限！建议减仓' if risk_level == 'critical' else '仓位接近上限，谨慎加仓' if risk_level == 'high' else '仓位合理' if risk_level == 'medium' else '仓位较轻，有加仓空间'}
+**⚠️ Important reminder**: 
+- The position risk level is **{risk_level}**
+- {'The position has exceeded the limit! Recommended to reduce positions' if risk_level == 'critical' else 'The position is close to the upper limit, add positions cautiously' if risk_level == 'high' else 'The position is reasonable' if risk_level == 'medium' else 'The position is light and there is room to add more positions'}
 """
         return section
 
@@ -4960,17 +4960,17 @@ class PortfolioService:
         params: PositionAnalysisRequest,
         stock_analysis_report: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """构建模板变量（用于模板系统）
+        """Build template variables (for use in template systems)
 
-        根据设计文档 portfolio-trade-review-engine-integration.md 中定义的变量规范
+        According to the variable specification defined in the design document portfolio-trade-review-engine-integration.md
         """
         pnl_pct = snapshot.unrealized_pnl_pct or 0
 
-        # 提取分析报告
+        # Extract analysis report
         reports = stock_analysis_report.get("reports", {})
         decision = stock_analysis_report.get("decision", {})
 
-        # 计算仓位信息
+        # Calculate position information
         market_value = snapshot.market_value or (snapshot.quantity * (snapshot.current_price or snapshot.cost_price))
         position_pct = 0.0
         position_risk_level = "unknown"
@@ -4987,7 +4987,7 @@ class PortfolioService:
                 position_risk_level = "low"
 
         return {
-            # 持仓信息
+            # Position information
             "position": {
                 "code": snapshot.code,
                 "name": snapshot.name or "未知",
@@ -5001,7 +5001,7 @@ class PortfolioService:
                 "industry": snapshot.industry or "未知"
             },
 
-            # 账户与仓位
+            # Accounts and positions
             "capital": {
                 "total_assets": f"{params.total_capital:,.0f}" if params.total_capital else "未提供",
                 "position_pct": f"{position_pct:.2f}",
@@ -5009,14 +5009,14 @@ class PortfolioService:
                 "max_position_pct": f"{params.max_position_pct:.0f}"
             },
 
-            # 用户设置
+            # User settings
             "goal": {
                 "target_profit_pct": f"{params.target_profit_pct}",
                 "max_loss_pct": f"{params.max_loss_pct}",
                 "include_add_position": "是" if params.include_add_position else "否"
             },
 
-            # 单股分析报告
+            # Single stock analysis report
             "engine": {
                 "market_report": (reports.get("market_report", "") or "暂无")[:1500],
                 "fundamentals_report": (reports.get("fundamentals_report", "") or "暂无")[:1500],
@@ -5030,7 +5030,7 @@ class PortfolioService:
                 }
             },
 
-            # 上下文
+            # context
             "context": {
                 "analysis_date": datetime.now().strftime("%Y-%m-%d"),
                 "user_style": params.invest_style or "neutral"
@@ -5042,17 +5042,17 @@ class PortfolioService:
         content: str,
         snapshot: PositionSnapshot
     ) -> PositionAnalysisResult:
-        """解析持仓AI响应 - 方案2 (增强JSON解析)"""
+        """Analyzing Position AI Response - Solution 2 (Enhanced JSON parsing)"""
         import re
         import json
 
-        # 尝试提取JSON
+        # Try to extract JSON
         json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
         if json_match:
             try:
                 data = json.loads(json_match.group(1))
 
-                # 解析研究结论倾向（兼容旧版操作建议术语）
+                # Analyze the tendency of research conclusions (compatible with the old version of operational advice terminology)
                 action_str = data.get("action", "中性")
                 action = PositionAction.HOLD
                 if any(k in action_str for k in ["乐观", "加仓", "买入"]):
@@ -5062,20 +5062,20 @@ class PortfolioService:
                 elif "中性" in action_str or "持有" in action_str:
                     action = PositionAction.HOLD
 
-                # 构建价格目标
+                # Construct price target
                 price_targets = PriceTarget(
                     stop_loss_price=float(data.get("stop_loss_price", 0)) if data.get("stop_loss_price") else None,
                     take_profit_price=float(data.get("take_profit_price", 0)) if data.get("take_profit_price") else None,
                     breakeven_price=snapshot.cost_price
                 )
 
-                # 计算百分比
+                # Calculate percentage
                 if price_targets.stop_loss_price and snapshot.cost_price > 0:
                     price_targets.stop_loss_pct = round((price_targets.stop_loss_price - snapshot.cost_price) / snapshot.cost_price * 100, 2)
                 if price_targets.take_profit_price and snapshot.cost_price > 0:
                     price_targets.take_profit_pct = round((price_targets.take_profit_price - snapshot.cost_price) / snapshot.cost_price * 100, 2)
 
-                # 解析建议数量和金额
+                # Parse recommended quantities and amounts
                 suggested_quantity = None
                 suggested_amount = None
                 if data.get("suggested_quantity"):
@@ -5089,7 +5089,7 @@ class PortfolioService:
                     except (ValueError, TypeError):
                         pass
 
-                # 构建风险指标（如果提供了资金总量）
+                # Construct risk metrics (if total funding is provided)
                 risk_metrics = None
                 if snapshot.total_capital and snapshot.total_capital > 0:
                     risk_metrics = self._calculate_risk_metrics(snapshot, price_targets)
@@ -5107,9 +5107,9 @@ class PortfolioService:
                     risk_metrics=risk_metrics
                 )
             except json.JSONDecodeError:
-                logger.warning("JSON解析失败，使用备用解析方法")
+                logger.warning("JSON Parsing failed, use alternate parsing method")
 
-        # 备用解析方法（与原有方法类似）
+        # Alternate parsing method (similar to the original method)
         return self._parse_position_ai_response(content, snapshot)
 
     def _parse_position_ai_response(
@@ -5118,7 +5118,7 @@ class PortfolioService:
         snapshot: PositionSnapshot
     ) -> PositionAnalysisResult:
         """解析单股持仓AI响应"""
-        # 确定研究结论倾向（兼容旧版操作建议术语）
+        # Determine the tendency of research conclusions (compatible with the old version of operational advice terminology)
         action = PositionAction.HOLD
         if any(k in content for k in ["乐观", "加仓", "买入"]):
             action = PositionAction.ADD
@@ -5127,22 +5127,22 @@ class PortfolioService:
         elif "中性" in content or "持有" in content:
             action = PositionAction.HOLD
 
-        # 提取置信度
+        # Extract confidence
         confidence = 50.0
         import re
-        conf_match = re.search(r'置信度[：:]\s*(\d+)', content)
+        conf_match = re.search(r'Confidence[: :]\s*(\d+)', content)
         if conf_match:
             confidence = float(conf_match.group(1))
 
-        # 提取风险关注/收益关注价格（兼容旧版止损/止盈表述）
+        # Extract risk focus/income focus price (compatible with old stop loss/take profit expressions)
         price_targets = PriceTarget()
-        stop_loss_match = re.search(r'(风险关注价格|止损价)[：:]\s*(\d+\.?\d*)', content)
+        stop_loss_match = re.search(r'(risk focus price|Stop loss price)[: :]\s*(\d+\.?\d*)', content)
         if stop_loss_match:
             price_targets.stop_loss_price = float(stop_loss_match.group(2))
             if snapshot.cost_price > 0:
                 price_targets.stop_loss_pct = round((price_targets.stop_loss_price - snapshot.cost_price) / snapshot.cost_price * 100, 2)
 
-        take_profit_match = re.search(r'(收益关注价格|止盈价)[：:]\s*(\d+\.?\d*)', content)
+        take_profit_match = re.search(r'(Earnings focus on price|Take profit price)[: :]\s*(\d+\.?\d*)', content)
         if take_profit_match:
             price_targets.take_profit_price = float(take_profit_match.group(2))
             if snapshot.cost_price > 0:
@@ -5150,7 +5150,7 @@ class PortfolioService:
 
         price_targets.breakeven_price = snapshot.cost_price
 
-        # 提取各部分内容
+        # Extract the content of each part
         reason = ""
         risk = ""
         opportunity = ""
@@ -5196,19 +5196,19 @@ class PortfolioService:
         market_value = snapshot.market_value or (snapshot.quantity * (snapshot.current_price or snapshot.cost_price))
         position_pct = (market_value / total_capital) * 100 if total_capital > 0 else 0
 
-        # 计算最大可能亏损（使用风险关注价格或默认10%）
-        stop_loss_pct = 10.0  # 默认10%
+        # Calculate maximum possible loss (use Risk Focus Price or default 10%)
+        stop_loss_pct = 10.0  # Default 10%
         if price_targets.stop_loss_pct:
             stop_loss_pct = abs(price_targets.stop_loss_pct)
         max_loss_amount = market_value * (stop_loss_pct / 100)
         max_loss_impact_pct = (max_loss_amount / total_capital) * 100
 
-        # 计算可加仓金额（假设最大仓位30%）
+        # Calculate the amount that can be added (assuming the maximum position is 30%)
         max_position_pct = 30.0
         max_position_value = total_capital * (max_position_pct / 100)
         available_add_amount = max(0, max_position_value - market_value)
 
-        # 判断风险等级
+        # Determine risk level
         if position_pct > max_position_pct:
             risk_level = "critical"
             risk_summary = f"仓位{position_pct:.1f}%已超出上限{max_position_pct:.0f}%，建议减仓"
@@ -5240,22 +5240,22 @@ class PortfolioService:
         page_size: int = 10,
         position_type: str = "real"
     ) -> Dict[str, Any]:
-        """获取单股分析历史
+        """Get single stock analysis history
         
         Args:
-            user_id: 用户ID
-            position_id: 持仓ID（格式：code_market）
-            page: 页码
-            page_size: 每页大小
-            position_type: 持仓类型 (real/simulated)
+            user_id: User ID
+            position_id: Position ID (format: code_market)
+            page: Page number
+            page_size: page size
+            position_type: Position type (real/simulated)
         """
         skip = (page - 1) * page_size
 
-        # 🔥 根据 position_type 添加筛选条件
+        # 🔥 Add filter criteria based on position_type
         query = {
             "user_id": user_id,
             "position_id": position_id,
-            "position_type": position_type  # 添加 position_type 筛选条件
+            "position_type": position_type  # Add position_type filter
         }
 
         cursor = self.db[self.position_analysis_collection].find(query).sort("created_at", -1).skip(skip).limit(page_size)
@@ -5263,21 +5263,21 @@ class PortfolioService:
         items = await cursor.to_list(None)
         total = await self.db[self.position_analysis_collection].count_documents(query)
 
-        # 格式化数据：将 ai_analysis 中的所有字段提取到顶层，方便前端使用
+        # Format data: Extract all fields in ai_analysis to the top level to facilitate front-end use
         formatted_items = []
         for item in items:
             formatted_item = dict(item)
             
-            # 🔥 提取 position_type 字段（用于区分模拟持仓和用户持仓）
+            # 🔥 Extract the position_type field (used to distinguish simulated positions and user positions)
             formatted_item["position_type"] = item.get("position_type", "real")
             
-            # 提取 ai_analysis 中的所有字段到顶层
+            # Extract all fields in ai_analysis to the top level
             ai_analysis = item.get("ai_analysis", {})
             if ai_analysis:
-                # 提取 action（可能是枚举类型，需要转换为字符串）
+                # Extract action (may be an enumeration type and needs to be converted to a string)
                 action_value = ai_analysis.get("action")
                 if action_value:
-                    # 如果是枚举类型，获取其值
+                    # If it is an enumeration type, get its value
                     if hasattr(action_value, "value"):
                         formatted_item["action"] = action_value.value
                     elif isinstance(action_value, str):
@@ -5287,17 +5287,17 @@ class PortfolioService:
                 else:
                     formatted_item["action"] = None
                 
-                # 提取其他字段
+                # Extract other fields
                 formatted_item["confidence"] = ai_analysis.get("confidence")
                 formatted_item["action_reason"] = ai_analysis.get("action_reason", "")
                 formatted_item["risk_assessment"] = ai_analysis.get("risk_assessment", "")
                 formatted_item["opportunity_assessment"] = ai_analysis.get("opportunity_assessment", "")
                 formatted_item["detailed_analysis"] = ai_analysis.get("detailed_analysis", "")
                 
-                # 提取 price_targets（如果存在）
+                # Extract price_targets if present
                 price_targets = ai_analysis.get("price_targets")
                 if price_targets:
-                    # 如果是字典，直接使用；如果是对象，转换为字典
+                    # If it is a dictionary, use it directly; if it is an object, convert it to a dictionary.
                     if isinstance(price_targets, dict):
                         formatted_item["price_targets"] = price_targets
                     elif hasattr(price_targets, "model_dump"):
@@ -5309,14 +5309,14 @@ class PortfolioService:
                 else:
                     formatted_item["price_targets"] = None
                 
-                # 提取其他可选字段
+                # Extract other optional fields
                 formatted_item["suggested_quantity"] = ai_analysis.get("suggested_quantity")
                 formatted_item["suggested_amount"] = ai_analysis.get("suggested_amount")
                 formatted_item["risk_metrics"] = ai_analysis.get("risk_metrics")
                 formatted_item["summary"] = ai_analysis.get("summary", "")
                 formatted_item["recommendation"] = ai_analysis.get("recommendation", "")
             else:
-                # 如果没有 ai_analysis，设置默认值
+                # If there is no ai_analysis, set the default value
                 formatted_item["action"] = None
                 formatted_item["confidence"] = None
                 formatted_item["action_reason"] = ""
@@ -5325,18 +5325,18 @@ class PortfolioService:
                 formatted_item["detailed_analysis"] = ""
                 formatted_item["price_targets"] = None
             
-            # 保留 position_snapshot 中的持仓信息，方便前端显示
+            # Keep the position information in position_snapshot to facilitate front-end display
             position_snapshot = item.get("position_snapshot")
             if position_snapshot:
-                # 直接保留完整的 position_snapshot 对象
+                # Directly retain the complete position_snapshot object
                 formatted_item["position_snapshot"] = position_snapshot
                 
-                # 同时提取常用字段到顶层（用于列表显示）
+                # At the same time, extract common fields to the top level (for list display)
                 formatted_item["quantity"] = position_snapshot.get("quantity", 0)
                 formatted_item["cost_price"] = position_snapshot.get("cost_price", 0.0)
                 formatted_item["current_price"] = position_snapshot.get("current_price", 0.0)
                 
-                # 计算浮动盈亏（如果 position_snapshot 中没有）
+                # Calculate floating profit and loss (if not present in position_snapshot)
                 if "unrealized_pnl" not in position_snapshot:
                     if formatted_item.get("quantity") and formatted_item.get("cost_price") and formatted_item.get("current_price"):
                         quantity = formatted_item["quantity"]
@@ -5359,7 +5359,7 @@ class PortfolioService:
             "page_size": page_size
         }
 
-    # ==================== 工作流引擎集成 ====================
+    # ==================== Workflow engine integration ====================
 
     async def _call_position_ai_analysis_workflow(
         self,
@@ -5368,22 +5368,22 @@ class PortfolioService:
         stock_analysis_report: Dict[str, Any],
         user_id: Optional[str] = None
     ) -> PositionAnalysisResult:
-        """使用工作流引擎进行持仓分析
+        """Position analysis using workflow engine
 
-        使用持仓分析工作流，包含：
-        1. 持仓技术面分析师 - 分析技术指标和走势
-        2. 持仓基本面分析师 - 分析财务数据和估值
-        3. 持仓风险评估师 - 评估风险并给出风险关注价格参考
-        4. 持仓研究观察员 - 综合分析给出持仓研究观察
+        Use the position analysis workflow, which includes:
+        1. Position Technical Analyst - Analyze technical indicators and trends
+        2. Position Fundamental Analyst - Analyze financial data and valuations
+        3. Position Risk Assessor - Assess risks and give risk concern price references
+        4. Position Research Observer - Comprehensive analysis gives position research observations
         """
         try:
             from core.api.workflow_api import WorkflowAPI
 
-            # 准备单股分析报告数据（agents中使用的字段名是 stock_analysis_report）
-            # 如果有缓存，需要设置 has_cache 标志，并提取 reports 子报告
+            # Prepare single stock analysis report data (the field name used in agents is stock_analysis_report)
+            # If there is a cache, you need to set the has_cache flag and extract the reports sub-report
             stock_analysis_report_for_workflow = {}
             if stock_analysis_report and stock_analysis_report.get("reports"):
-                # 有缓存：设置标志并提取报告
+                # Has cache: set flag and pull report
                 stock_analysis_report_for_workflow = {
                     "has_cache": True,
                     "reports": stock_analysis_report.get("reports", {}),
@@ -5392,18 +5392,18 @@ class PortfolioService:
                 }
                 logger.info(f"📊 [工作流持仓分析] 传递缓存报告到工作流: {snapshot.code}, reports字段: {list(stock_analysis_report_for_workflow.get('reports', {}).keys())}")
             else:
-                # 无缓存：设置标志为空
+                # No cache: Set flag to empty
                 stock_analysis_report_for_workflow = {
                     "has_cache": False,
                     "reports": {},
                     "task_id": None,
                     "source": "none"
                 }
-                logger.info(f"📊 [工作流持仓分析] 无缓存报告，传递空结构到工作流: {snapshot.code}")
+                logger.info(f"📊 [Workflow position analysis] No cached report, passing empty structure to workflow: {snapshot.code}")
             
-            # 准备工作流输入数据
+            # Prepare workflow input data
             workflow_inputs = {
-                # 持仓基础信息
+                # Basic information of positions
                 "position_info": {
                     "code": snapshot.code,
                     "name": snapshot.name,
@@ -5420,13 +5420,13 @@ class PortfolioService:
                     "total_capital": snapshot.total_capital
                 },
 
-                # 分析目标股票：顶层 ticker 字段（工作流 agents 依赖 ticker 定位股票，缺失会报
-                # "Missing required parameters: ticker"）；同时补齐 symbol/company_of_interest 兼容别名
+                # Analyze target stocks: top-level ticker field (workflow agents rely on ticker to locate stocks, missing will be reported
+                # "Missing required parameters: ticker") ; Also complete the symbol/company_of_interest compatible alias
                 "ticker": snapshot.code,
                 "symbol": snapshot.code,
                 "company_of_interest": snapshot.code,
 
-                # 分析参数
+                # Analysis parameters
                 "analysis_params": {
                     "research_depth": params.research_depth,
                     "include_add_position": params.include_add_position,
@@ -5440,85 +5440,85 @@ class PortfolioService:
                     "position_type": params.position_type
                 },
 
-                # 单股分析报告（agents中使用的字段名是 stock_analysis_report）
+                # Single stock analysis report (the field name used in agents is stock_analysis_report)
                 "stock_analysis_report": stock_analysis_report_for_workflow,
 
-                # 用户偏好（用于选择提示词模板风格）
+                # User preferences (used to select prompt word template style)
                 "user_preference": self._get_user_analysis_preference(user_id, params.risk_tolerance),
 
-                # 持仓类型标识
+                # Position type identifier
                 "position_type": params.position_type
             }
 
-            logger.info(f"🚀 [工作流持仓分析] 开始执行持仓分析工作流 - {snapshot.code}")
+            logger.info(f"🚀 [Workflow position analysis] Start executing the position analysis workflow - {snapshot.code}")
 
-            # 🔥 从数据库获取模型配置并构建 legacy_config（与单股分析流程保持一致）
+            # 🔥 Get the model configuration from the database and build legacy_config (consistent with the single-strand analysis process)
             legacy_config = {}
             try:
                 from app.services.config_provider import provider as config_provider
                 from app.services.unified_analysis_engine import UnifiedAnalysisEngine
                 
-                # 使用 config_provider 获取系统设置（包含 quick_analysis_model 和 deep_analysis_model）
+                # Use config_provider to obtain system settings (including quick_analysis_model and deep_analysis_model)
                 effective_settings = await config_provider.get_effective_system_settings()
                 
-                # 从 system_settings 中读取 quick_analysis_model 和 deep_analysis_model
+                # Read quick_analysis_model and deep_analysis_model
                 quick_analysis_model = effective_settings.get("quick_analysis_model")
                 deep_analysis_model = effective_settings.get("deep_analysis_model")
                 
                 if quick_analysis_model and deep_analysis_model:
-                    # 🔥 使用 UnifiedAnalysisEngine 的 _build_llm_config 方法获取完整的LLM配置
-                    # 这样可以获取 temperature, timeout, max_tokens 等参数
+                    # 🔥 Get the complete LLM configuration using UnifiedAnalysisEngine's _build_llm_config method
+                    # This way you can get temperature, timeout, max_tokens and other parameters
                     engine = UnifiedAnalysisEngine()
                     full_config = await engine._build_llm_config(quick_analysis_model, deep_analysis_model)
                     
                     if full_config:
                         legacy_config.update(full_config)
-                        logger.info(f"📊 [工作流持仓分析] 从数据库获取完整模型配置: quick={quick_analysis_model}, deep={deep_analysis_model}")
+                        logger.info(f"📊 [Workflow position analysis] Get full model configuration from database: quick={quick_analysis_model}, deep={deep_analysis_model}")
                         logger.info(f"  quick: temperature={legacy_config.get('quick_temperature')}, max_tokens={legacy_config.get('quick_max_tokens')}, timeout={legacy_config.get('quick_timeout')}")
                         logger.info(f"  deep: temperature={legacy_config.get('deep_temperature')}, max_tokens={legacy_config.get('deep_max_tokens')}, timeout={legacy_config.get('deep_timeout')}")
                     else:
-                        # 如果获取失败，至少设置模型名称
+                        # If retrieval fails, at least set the model name
                         legacy_config["quick_think_llm"] = quick_analysis_model
                         legacy_config["deep_think_llm"] = deep_analysis_model
                         legacy_config["llm_provider"] = "dashscope"
-                        logger.warning(f"⚠️ [工作流持仓分析] 无法获取完整模型配置，仅设置模型名称")
+                        logger.warning(f"⚠️ [Workflow position analysis] Unable to get full model configuration, only set model name")
                 else:
-                    logger.warning(f"⚠️ [工作流持仓分析] system_settings中未找到quick_analysis_model或deep_analysis_model，使用默认配置")
-                    # 如果没有配置，使用默认值
+                    logger.warning(f"⚠️ [Workflow position analysis] system_settings quick_analysis_model or deep_analysis_model not found, use default configuration")
+                    # If not configured, use default value
                     legacy_config["quick_think_llm"] = quick_analysis_model or "qwen-turbo"
                     legacy_config["deep_think_llm"] = deep_analysis_model or "qwen-plus"
                     legacy_config["llm_provider"] = "dashscope"
             except Exception as e:
-                logger.error(f"❌ [工作流持仓分析] 从数据库获取模型配置失败: {e}", exc_info=True)
-                # 失败时使用默认配置
+                logger.error(f"❌ [Workflow position analysis] Failed to get model configuration from database: {e}", exc_info=True)
+                # Use default configuration on failure
                 legacy_config["quick_think_llm"] = "qwen-turbo"
                 legacy_config["deep_think_llm"] = "qwen-plus"
                 legacy_config["llm_provider"] = "dashscope"
 
-            # 执行工作流（注意：WorkflowAPI.execute() 是同步方法，不需要 await）
+            # Execute workflow (Note:WorkflowAPI.execute() It is a synchronous method and does not require await)
             from core.workflow.default_workflow_provider import get_default_workflow_provider
             workflow_id = get_default_workflow_provider().get_active_workflow_id("position_analysis")
             workflow_api = WorkflowAPI()
             result = workflow_api.execute(
                 workflow_id=workflow_id,
                 inputs=workflow_inputs,
-                legacy_config=legacy_config if legacy_config else None  # 🔥 传递模型配置
+                legacy_config=legacy_config if legacy_config else None  # 🔥 Pass model configuration
             )
 
             if not result.get("success"):
                 error_msg = result.get("error", "工作流执行失败")
-                logger.error(f"❌ [工作流持仓分析] 执行失败: {error_msg}")
+                logger.error(f"❌ [Workflow position analysis] Execution failed: {error_msg}")
                 return PositionAnalysisResult(
                     action=PositionAction.HOLD,
                     action_reason=f"分析失败: {error_msg}"
                 )
 
-            # 解析工作流结果
+            # Parse workflow results
             workflow_result = result.get("result", {})
 
-            # 提取各个分析师的结果（处理可能是字典的情况）
+            # Extract results for individual analysts (handling possible dictionary cases)
             def extract_content(value):
-                """安全提取内容，处理可能是字典的情况"""
+                """Safely extract content, handling possible dictionary cases"""
                 if isinstance(value, dict):
                     return value.get("content", value.get("error", str(value)))
                 elif isinstance(value, str):
@@ -5530,59 +5530,59 @@ class PortfolioService:
             fundamental_analysis = extract_content(workflow_result.get("fundamental_analysis", ""))
             risk_analysis = extract_content(workflow_result.get("risk_analysis", ""))
             
-            # action_advice可能是字符串（JSON）或字典（包含content字段）
+            # action_advice May be a string (JSON) or a dictionary (containing the content field)
             action_advice_raw = workflow_result.get("action_advice", "")
-            logger.info(f"📊 [工作流持仓分析] action_advice_raw类型: {type(action_advice_raw)}")
+            logger.info(f"📊 [Workflow position analysis] action_advice_raw Type: {type(action_advice_raw)}")
             
-            # 使用extract_content提取content字段（无论原始格式是什么）
+            # Use extract_content to extract the content field (regardless of the original format)
             action_advice = extract_content(action_advice_raw)
             logger.info(f"📊 [工作流持仓分析] action_advice提取后类型: {type(action_advice)}, 长度: {len(str(action_advice))}")
 
-            logger.info(f"✅ [工作流持仓分析] 分析完成 - {snapshot.code}")
+            logger.info(f"✅ [Workflow position analysis] Analysis completed - {snapshot.code}")
 
-            # 初始化默认值
+            # Initialize default value
             from app.models.portfolio import PriceTarget
             action = PositionAction.HOLD
             action_reason = ""
             confidence = 0.0
             price_targets = PriceTarget()
-            risk_assessment_text = risk_analysis  # 默认使用工作流的风险评估
+            risk_assessment_text = risk_analysis  # Risk assessment using workflow by default
             opportunity_assessment_text = ""
             
-            # 从研究观察中提取研究结论和理由
-            # 如果action_advice是JSON格式，先转换为Markdown
+            # Extract research conclusions and rationales from research observations
+            # If action_advice is in JSON format, first convert it to Markdown
             import json
             advice_json = None
             logger.info(f"📊 [工作流持仓分析] 开始解析action_advice，类型: {type(action_advice)}, 长度: {len(action_advice) if action_advice else 0}")
             
-            # 尝试解析JSON（action_advice应该是字符串）
+            # Try parsing JSON (action_advice should be a string)
             if action_advice and isinstance(action_advice, str) and ("```json" in action_advice or action_advice.strip().startswith("{")):
                 try:
-                    # 提取JSON
+                    # Extract JSON
                     if "```json" in action_advice:
                         json_start = action_advice.find("```json") + 7
                         json_end = action_advice.find("```", json_start)
                         if json_end > json_start:
                             json_str = action_advice[json_start:json_end].strip()
-                            logger.info(f"📊 [工作流持仓分析] 从代码块中提取JSON，长度: {len(json_str)}")
+                            logger.info(f"📊 [Workflow position analysis] Extract JSON from code block, length: {len(json_str)}")
                             advice_json = json.loads(json_str)
                     elif action_advice.strip().startswith("{"):
-                        logger.info(f"📊 [工作流持仓分析] 直接解析JSON格式")
+                        logger.info(f"📊 [Workflow position analysis] Directly parse JSON format")
                         advice_json = json.loads(action_advice)
                 except Exception as e:
-                    logger.warning(f"⚠️ [工作流持仓分析] JSON解析失败: {e}")
+                    logger.warning(f"⚠️ [Workflow position analysis] JSON Parsing failed: {e}")
                     advice_json = None
             
-            # 转换为Markdown格式并提取其他字段（无论action_advice是字典还是解析后的JSON字符串）
+            # Convert to Markdown format and extract other fields (whether action_advice is a dictionary or a parsed JSON string)
             if advice_json:
-                logger.info(f"📊 [工作流持仓分析] JSON解析成功，字段: {list(advice_json.keys())}")
+                logger.info(f"📊 [Workflow position analysis] JSON Parsed successfully, field: {list(advice_json.keys())}")
                 action_reason = self._convert_action_advice_json_to_markdown(advice_json)
-                logger.info(f"📊 [工作流持仓分析] JSON转换为Markdown成功，长度: {len(action_reason)}")
-                # 从JSON中提取action
+                logger.info(f"📊 [Workflow position analysis] JSON Conversion to Markdown successful, length: {len(action_reason)}")
+                # Extract from JSON action
                 action = self._extract_action_from_json(advice_json)
-                logger.info(f"📊 [工作流持仓分析] 提取的action: {action}")
-                # 提取其他字段
-                # 置信度可能在多个位置
+                logger.info(f"📊 [Workflow position analysis] extracted action: {action}")
+                # Extract other fields
+                # Confidence may be in multiple locations
                 confidence = None
                 if "confidence" in advice_json:
                     confidence = advice_json.get("confidence")
@@ -5598,33 +5598,33 @@ class PortfolioService:
                 if confidence is not None:
                     try:
                         confidence = float(confidence)
-                        # 确保置信度在0-100范围内
+                        # Make sure the confidence level is in the range 0-100
                         confidence = max(0.0, min(100.0, confidence))
                     except (ValueError, TypeError):
-                        confidence = 50.0  # 默认值
-                        logger.warning(f"⚠️ [工作流持仓分析] confidence转换失败，使用默认值50")
+                        confidence = 50.0  # Default value
+                        logger.warning(f"⚠️ [Workflow position analysis] confidence Conversion failed, using default value 50")
                 else:
-                    # 如果AI没有生成置信度，根据分析质量设置一个合理的默认值
-                    confidence = 50.0  # 默认中等置信度
-                    logger.info(f"📊 [工作流持仓分析] JSON中没有confidence字段，使用默认值50")
+                    # If AI does not generate confidence, set a reasonable default based on analysis quality
+                    confidence = 50.0  # Default medium confidence
+                    logger.info(f"📊 [Workflow position analysis] JSON There is no confidence field in, use the default value 50")
                 
-                logger.info(f"📊 [工作流持仓分析] 提取的confidence: {confidence}")
+                logger.info(f"📊 [Workflow position analysis] extracted confidence: {confidence}")
                 price_targets = self._extract_price_targets_from_json(advice_json, snapshot, params)
-                logger.info(f"📊 [工作流持仓分析] 提取的price_targets: stop_loss={price_targets.stop_loss_price}, take_profit={price_targets.take_profit_price}, breakeven={price_targets.breakeven_price}")
+                logger.info(f"📊 [Workflow position analysis] extracted price_targets: stop_loss={price_targets.stop_loss_price}, take_profit={price_targets.take_profit_price}, breakeven={price_targets.breakeven_price}")
                 risk_assessment_text = advice_json.get("risk_assessment", "") or risk_analysis
-                logger.info(f"📊 [工作流持仓分析] 提取的risk_assessment长度: {len(risk_assessment_text)}")
+                logger.info(f"📊 [Workflow position analysis] Extracted risk_assessment length: {len(risk_assessment_text)}")
                 opportunity_assessment_text = advice_json.get("opportunity_assessment", "")
-                logger.info(f"📊 [工作流持仓分析] 提取的opportunity_assessment长度: {len(opportunity_assessment_text)}")
+                logger.info(f"📊 [Workflow position analysis] Extracted opportunity_assessment length: {len(opportunity_assessment_text)}")
             else:
-                logger.warning(f"⚠️ [工作流持仓分析] advice_json为空，使用文本解析")
+                logger.warning(f"⚠️ [Workflow position analysis] advice_json If empty, use text parsing")
                 action, action_reason = self._parse_workflow_action_advice(action_advice if isinstance(action_advice, str) else str(action_advice))
 
-            # 构建完整的分析结果
-            # 注意：使用转换后的 action_reason（Markdown格式）而不是原始的 action_advice（可能是JSON）
+            # Build complete analysis results
+            # NOTE: Use converted action_reason (Markdown format) instead of original action_advice (probably JSON)
             action_advice_for_summary = action_reason if action_reason else action_advice
-            logger.info(f"📊 [工作流持仓分析] 构建analysis_summary: 使用转换后的action_reason（长度: {len(action_advice_for_summary)}）")
+            logger.info(f"📊 [Workflow position analysis] build analysis_summary: Use converted action_reason(length: {len(action_advice_for_summary)}) ")
             
-            # analysis_summary 包含所有内容（用于summary字段）
+            # analysis_summary Include everything (for summary field)
             analysis_summary = f"""
 【技术面分析】
 {technical_analysis}
@@ -5639,7 +5639,7 @@ class PortfolioService:
 {action_advice_for_summary}
             """.strip()
             
-            # detailed_analysis 只包含技术面、基本面和风险评估，不包含研究观察（避免与action_reason重复）
+            # detailed_analysis Contains only technical aspects, fundamentals and risk assessment, and does not include research observations (to avoid duplication with action_reason)
             detailed_analysis = f"""
 【技术面分析】
 {technical_analysis}
@@ -5651,33 +5651,33 @@ class PortfolioService:
 {risk_analysis}
             """.strip()
             
-            logger.info(f"📊 [工作流持仓分析] analysis_summary长度: {len(analysis_summary)}, detailed_analysis长度: {len(detailed_analysis)}")
+            logger.info(f"📊 [Workflow position analysis] analysis_summary length: {len(analysis_summary)}, detailed_analysis length: {len(detailed_analysis)}")
             
-            # 确保 detailed_analysis 不为空
+            # Make sure detailed_analysis is not empty
             if not detailed_analysis:
-                logger.warning(f"⚠️ [工作流持仓分析] detailed_analysis为空，使用默认内容")
+                logger.warning(f"⚠️ [Workflow position analysis] detailed_analysis Empty, use default content")
                 detailed_analysis = f"【技术面分析】\n{technical_analysis}\n\n【基本面分析】\n{fundamental_analysis}\n\n【风险评估】\n{risk_analysis}".strip()
 
-            logger.info(f"📊 [工作流持仓分析] 构建分析结果: action={action}, risk_assessment长度={len(risk_assessment_text)}, detailed_analysis长度={len(detailed_analysis)}")
+            logger.info(f"📊 [Workflow position analysis] Build analysis results: action={action}, risk_assessment length={len(risk_assessment_text)}, detailed_analysis length={len(detailed_analysis)}")
             
-            # recommendation 字段也应该使用转换后的 Markdown 格式（与 action_reason 保持一致）
-            # 如果 action_reason 已经转换过，直接使用它；否则使用原始的 action_advice（但必须是字符串）
+            # recommendation Fields should also be in converted Markdown format (consistent with action_reason)
+            # If action_reason has been converted, use it directly; otherwise use the original action_advice (but must be a string)
             if action_reason and isinstance(action_reason, str) and action_reason:
                 recommendation_markdown = action_reason
             elif isinstance(action_advice, str):
                 recommendation_markdown = action_advice
             else:
-                # 如果 action_advice 是字典，使用转换后的 action_reason，或者空字符串
+                # If action_advice is a dictionary, use the converted action_reason, or the empty string
                 recommendation_markdown = action_reason if isinstance(action_reason, str) else ""
             
-            # 确保 recommendation_markdown 是字符串
+            # Make sure recommendation_markdown is a string
             if not isinstance(recommendation_markdown, str):
-                logger.warning(f"⚠️ [工作流持仓分析] recommendation不是字符串，类型: {type(recommendation_markdown)}，转换为字符串")
+                logger.warning(f"⚠️ [Workflow position analysis] recommendation Not a string, type: {type(recommendation_markdown)}, Convert to string")
                 recommendation_markdown = str(recommendation_markdown) if recommendation_markdown else ""
             
-            logger.info(f"📊 [工作流持仓分析] recommendation字段: 使用转换后的Markdown，长度: {len(recommendation_markdown)}")
+            logger.info(f"📊 [Workflow position analysis] recommendation Field: Using converted Markdown, length: {len(recommendation_markdown)}")
 
-            # 构建用户版展示内容（user_view）：从 LLM 返回的 JSON 中提取，供前端主界面直接展示
+            # Build user version display content (user_view): Extract from the JSON returned by LLM for direct display on the front-end main interface
             user_view = PositionUserView()
             raw_user_view = advice_json.get("user_view") if advice_json else None
             if isinstance(raw_user_view, dict):
@@ -5700,8 +5700,8 @@ class PortfolioService:
                                 cleaned_items.append(text)
                     setattr(user_view, field, cleaned_items[:3])
 
-            # ===== 兜底：若 LLM 未生成合规的 user_view 列表字段，从 neutral_operation_advice / specific_plan 等字段降级提取 =====
-            # 确保「核心依据 / 风险提示 / 后续观察点」三个卡片至少有内容可展示
+            # ===== Bottom line: If LLM does not generate compliant user_view list fields, downgrade and extract them from fields such as neutral_operation_advice / specific_plan =====
+            # Make sure that the three cards "Core Basis/Risk Warning/Follow-up Observation Points" have at least content to display.
             def _to_clean_list(value, limit=3):
                 if not value:
                     return []
@@ -5719,7 +5719,7 @@ class PortfolioService:
             neutral_advice = advice_json.get("neutral_operation_advice") if advice_json else None
             specific_plan = advice_json.get("specific_plan") if advice_json else None
             if isinstance(neutral_advice, dict):
-                # 核心依据：优先用 reasoning，其次 core_judgment
+                # Core basis: Reasoning is used first, followed by core_judgment
                 if not user_view.key_points:
                     reasoning = neutral_advice.get("reasoning") or []
                     core_judgment = neutral_advice.get("core_judgment") or ""
@@ -5728,13 +5728,13 @@ class PortfolioService:
                         merged = [core_judgment]
                     user_view.key_points = merged
 
-                # 风险提示：优先用 risk_reminder（字符串），拆分展示
+                # Risk reminder: Prioritize using risk_reminder (string), split display
                 if not user_view.risk_focus:
                     risk_reminder = neutral_advice.get("risk_reminder") or ""
                     if risk_reminder:
                         user_view.risk_focus = _to_clean_list(risk_reminder, 3)
 
-                # 后续观察点：优先用 analysis_points，其次 specific_plan.observation_factors / immediate_step
+                # Follow-up observation points: use analysis_points first, followed by specific_plan.observation_factors / immediate_step
                 if not user_view.watch_items:
                     analysis_points = neutral_advice.get("analysis_points") or []
                     obs_factors = (specific_plan.get("observation_factors") or []) if isinstance(specific_plan, dict) else []
@@ -5746,7 +5746,7 @@ class PortfolioService:
                         merged = [immediate_step]
                     user_view.watch_items = merged
 
-            # 结论兜底：若 conclusion 为空，用 recommendation_markdown / action_reason 替代
+            # Conclusion: If conclusion is empty, use recommendation_markdown / action_reason instead
             if not user_view.conclusion:
                 if recommendation_markdown:
                     user_view.conclusion = recommendation_markdown
@@ -5755,7 +5755,7 @@ class PortfolioService:
 
             logger.info(
                 f"📊 [工作流持仓分析] 构建user_view: conclusion={user_view.conclusion[:40]}, "
-                f"key_points={len(user_view.key_points)}条, risk_focus={len(user_view.risk_focus)}条, watch_items={len(user_view.watch_items)}条"
+                f"key_points={len(user_view.key_points)}Article, risk_focus={len(user_view.risk_focus)}Article, watch_items={len(user_view.watch_items)}Article"
             )
 
             return PositionAnalysisResult(
@@ -5773,8 +5773,8 @@ class PortfolioService:
             )
 
         except Exception as e:
-            logger.error(f"❌ [工作流持仓分析] 执行异常: {e}", exc_info=True)
-            # 将技术性/英文错误消息转换为用户友好的中文提示
+            logger.error(f"❌ [Workflow position analysis] Execution exception: {e}", exc_info=True)
+            # Convert technical/English error messages into user-friendly Chinese prompts
             error_msg = _format_user_friendly_error(str(e))
             return PositionAnalysisResult(
                 action=PositionAction.HOLD,
@@ -5783,32 +5783,32 @@ class PortfolioService:
             )
 
     def _get_user_analysis_preference(self, user_id: Optional[str], risk_tolerance: str) -> str:
-        """根据用户ID和风险偏好确定分析风格
+        """Determine analysis style based on user ID and risk appetite
 
         Returns:
             str: 'aggressive', 'neutral', 'conservative'
         """
-        # 根据风险偏好映射到分析风格
+        # Mapping to analysis style based on risk appetite
         risk_to_preference = {
-            "low": "conservative",      # 低风险 -> 保守型
-            "medium": "neutral",        # 中等风险 -> 中性型
-            "high": "aggressive"        # 高风险 -> 激进型
+            "low": "conservative",      # low risk -> Conservative
+            "medium": "neutral",        # medium risk -> neutral type
+            "high": "aggressive"        # high risk -> Radical
         }
 
         return risk_to_preference.get(risk_tolerance, "neutral")
 
     def _convert_action_advice_json_to_markdown(self, advice_json: Dict[str, Any]) -> str:
-        """将JSON格式的研究观察转换为Markdown格式的文本
+        """Convert JSON-formatted research observations to Markdown-formatted text
         
         Args:
-            advice_json: 研究观察的JSON对象
+            advice_json: JSON object for research observations
             
         Returns:
-            Markdown格式的研究观察文本
+            Markdown Formatted Research Observation Text
         """
         lines = []
         
-        # 1. 分析摘要（如果有）
+        # 1. Analysis summary (if available)
         if "analysis_summary" in advice_json:
             summary = advice_json["analysis_summary"]
             if isinstance(summary, str) and summary:
@@ -5819,18 +5819,18 @@ class PortfolioService:
                     lines.append(f"## 📊 分析摘要\n\n{overall_view}\n")
                 key_points = summary.get("key_points", [])
                 if isinstance(key_points, list) and key_points:
-                    lines.append("\n**关键点**：\n\n")
+                    lines.append("\n**Key points**: \n\n")
                     for point in key_points:
                         if point:
                             lines.append(f"- {point}\n")
         
-        # 2. 综合评估（如果有）
+        # 2. Comprehensive assessment (if any)
         if "comprehensive_assessment" in advice_json:
             assessment = advice_json["comprehensive_assessment"]
             if isinstance(assessment, dict):
                 lines.append("\n## 🔍 综合评估\n\n")
                 
-                # 持仓状态
+                # Position status
                 if "position_status" in assessment:
                     pos_status = assessment["position_status"]
                     if isinstance(pos_status, dict):
@@ -5840,13 +5840,13 @@ class PortfolioService:
                         floating_loss_ratio = pos_status.get("floating_loss_ratio", "")
                         assessment_text = pos_status.get("assessment", "")
                         if current_price or cost_price or floating_loss_ratio:
-                            lines.append(f"- **当前价格**: ¥{current_price}\n")
-                            lines.append(f"- **成本价格**: ¥{cost_price}\n")
+                            lines.append(f"- **current price**: ¥{current_price}\n")
+                            lines.append(f"- **cost price**: ¥{cost_price}\n")
                             lines.append(f"- **浮动盈亏**: {floating_loss_ratio}\n")
                         if assessment_text:
                             lines.append(f"\n{assessment_text}\n")
                 
-                # 技术面视角
+                # technical perspective
                 if "technical_perspective" in assessment:
                     tech = assessment["technical_perspective"]
                     if isinstance(tech, dict):
@@ -5861,7 +5861,7 @@ class PortfolioService:
                         if neutral_view:
                             lines.append(f"**中性观点**: {neutral_view}\n\n")
                 
-                # 基本面视角
+                # fundamental perspective
                 if "fundamental_perspective" in assessment:
                     fund = assessment["fundamental_perspective"]
                     if isinstance(fund, dict):
@@ -5876,7 +5876,7 @@ class PortfolioService:
                         if neutral_view:
                             lines.append(f"**中性观点**: {neutral_view}\n\n")
                 
-                # 风险视角
+                # risk perspective
                 if "risk_perspective" in assessment:
                     risk = assessment["risk_perspective"]
                     if isinstance(risk, dict):
@@ -5891,8 +5891,8 @@ class PortfolioService:
                         if neutral_view:
                             lines.append(f"**中性观点**: {neutral_view}\n\n")
         
-        # 3. 中性研究观察（最核心的内容）
-        # 支持两种格式：neutral_operation_advice 和 neutral_operation_suggestion
+        # 3. Neutral research observation (the core content)
+        # Two formats are supported: neutral_operation_advice and neutral_operation_suggestion
         neutral_advice = None
         if "neutral_operation_advice" in advice_json:
             neutral_advice = advice_json["neutral_operation_advice"]
@@ -5902,17 +5902,17 @@ class PortfolioService:
         if neutral_advice and isinstance(neutral_advice, dict):
             lines.append("\n## 💡 研究观察\n\n")
             
-            # 核心判断
+            # core judgment
             core_judgment = neutral_advice.get("core_judgment", "")
             if core_judgment:
                 lines.append(f"### 核心判断\n\n{core_judgment}\n\n")
             
-            # 研究结论倾向/建议（兼容不同字段名）
+            # Research conclusion tendencies/suggestions (compatible with different field names)
             recommended_action = neutral_advice.get("analysis_view", neutral_advice.get("recommended_action", neutral_advice.get("suggested_action", "")))
             if recommended_action:
                 lines.append(f"**研究结论倾向**: {recommended_action}\n\n")
             
-            # 理由说明（reasoning字段，可能是列表或字符串）
+            # Reason description (reasoning field, may be a list or string)
             reasoning = neutral_advice.get("reasoning", [])
             if isinstance(reasoning, list) and reasoning:
                 lines.append("### 理由说明\n\n")
@@ -5920,14 +5920,14 @@ class PortfolioService:
                     if isinstance(reason_item, str) and reason_item:
                         lines.append(f"{idx}. {reason_item}\n\n")
                     elif isinstance(reason_item, dict):
-                        # 如果是字典，提取所有键值对
+                        # If it is a dictionary, extract all key-value pairs
                         for key, value in reason_item.items():
                             if value:
                                 lines.append(f"**{key}**: {value}\n\n")
             elif isinstance(reasoning, str) and reasoning:
                 lines.append(f"### 理由说明\n\n{reasoning}\n\n")
             
-            # 具体建议（新格式）
+            # Specific recommendations (new format)
             specific_suggestions = neutral_advice.get("specific_suggestions", [])
             if isinstance(specific_suggestions, list) and specific_suggestions:
                 lines.append("### 具体建议\n\n")
@@ -5938,10 +5938,10 @@ class PortfolioService:
                         if action or reason:
                             lines.append(f"#### {idx}. {action}\n\n")
                             if reason:
-                                # 处理reason中的Markdown格式（如**加粗**）
+                                # Handle Markdown format in reason (such as**Bold**) 
                                 lines.append(f"{reason}\n\n")
             
-            # 详细建议步骤（兼容旧格式）
+            # Detailed recommended steps (compatible with older formats)
             detailed_suggestions = neutral_advice.get("detailed_suggestions", [])
             if isinstance(detailed_suggestions, list) and detailed_suggestions:
                 for suggestion in detailed_suggestions:
@@ -5954,28 +5954,28 @@ class PortfolioService:
                             if content:
                                 lines.append(f"{content}\n\n")
             
-            # 理由说明（兼容旧格式）
+            # Reason statement (compatible with old format)
             action_reasoning = neutral_advice.get("action_reasoning", "")
             if action_reasoning:
                 lines.append(f"{action_reasoning}\n\n")
             
-            # 风险提醒
+            # Risk reminder
             risk_reminder = neutral_advice.get("risk_reminder", "")
             if risk_reminder:
-                lines.append(f"\n---\n\n> ⚠️ **风险提醒**: {risk_reminder}\n")
+                lines.append(f"\n---\n\n> ⚠️ **Risk reminder**: {risk_reminder}\n")
         
-        # 处理 specific_plan 字段（新格式）
+        # Handle specific_plan field (new format)
         if "specific_plan" in advice_json:
             specific_plan = advice_json["specific_plan"]
             if isinstance(specific_plan, dict):
                 lines.append("\n## 📋 具体计划\n\n")
                 
-                # 立即步骤
+                # Immediate steps
                 immediate_step = specific_plan.get("immediate_step", "")
                 if immediate_step:
                     lines.append(f"### 立即行动\n\n{immediate_step}\n\n")
                 
-                # 价格监控
+                # price monitoring
                 price_monitoring = specific_plan.get("price_monitoring", {})
                 if isinstance(price_monitoring, dict) and price_monitoring:
                     lines.append("### 价格监控\n\n")
@@ -5984,12 +5984,12 @@ class PortfolioService:
                         lines.append(f"**风险关注参考价**: {stop_loss_ref}\n\n")
                     first_target = price_monitoring.get("第一关键验证价位（减亏/解套）", price_monitoring.get("第一目标价（减亏/解套）", ""))
                     if first_target:
-                        lines.append(f"**第一关键验证价位（减亏/解套）**: {first_target}\n\n")
+                        lines.append(f"**The first key is to verify the price (loss reduction/unwinding)**: {first_target}\n\n")
                     second_target = price_monitoring.get("第二关键验证价位（达成收益）", price_monitoring.get("第二目标价（达成收益）", ""))
                     if second_target:
-                        lines.append(f"**第二关键验证价位（达成收益）**: {second_target}\n\n")
+                        lines.append(f"**The second key is to verify the price (achieve profit)**: {second_target}\n\n")
                 
-                # 观察因素
+                # Observation factors
                 observation_factors = specific_plan.get("observation_factors", [])
                 if isinstance(observation_factors, list) and observation_factors:
                     lines.append("### 观察要点\n\n")
@@ -5998,11 +5998,11 @@ class PortfolioService:
                             lines.append(f"- {factor}\n")
                     lines.append("\n")
         
-        # 4. 基于目标的具体建议（兼容旧格式）
+        # 4. Specific recommendations based on goals (compatible with older formats)
         if "specific_suggestions_based_on_your_goals" in advice_json:
             suggestions = advice_json["specific_suggestions_based_on_your_goals"]
             if isinstance(suggestions, dict):
-                lines.append("\n## 🎯 基于您的目标的具体建议\n\n")
+                lines.append("\n## 🎯 Specific recommendations based on your goals\n\n")
                 
                 if_price_rises = suggestions.get("if_price_rises", {})
                 if isinstance(if_price_rises, dict):
@@ -6031,29 +6031,29 @@ class PortfolioService:
                     scenario = if_price_consolidates.get("scenario", "")
                     suggestion = if_price_consolidates.get("suggestion", "")
                     if scenario or suggestion:
-                        lines.append(f"### ➡️ 如果股价盘整\n\n")
+                        lines.append(f"### ➡️ If the stock price consolidates\n\n")
                         if scenario:
                             lines.append(f"**情景**: {scenario}\n\n")
                         if suggestion:
                             lines.append(f"{suggestion}\n\n")
         
-        # 5. 风险提醒（顶层，兼容旧格式）
+        # 5. Risk reminder (top level, compatible with old formats)
         if "risk_reminder" in advice_json and "neutral_operation_advice" not in advice_json:
             risk_reminder = advice_json["risk_reminder"]
             if risk_reminder:
-                lines.append(f"\n---\n\n> ⚠️ **风险提醒**: {risk_reminder}\n")
+                lines.append(f"\n---\n\n> ⚠️ **Risk reminder**: {risk_reminder}\n")
         
-        # 6. 数据差异说明（兼容旧格式）
+        # 6. Data difference description (compatible with old formats)
         if "data_discrepancy_note" in advice_json:
             note = advice_json["data_discrepancy_note"]
             if isinstance(note, dict):
                 important_note = note.get("**重要提示**", note.get("important_note", ""))
                 if important_note:
-                    lines.append(f"\n> 📌 **重要提示**: {important_note}\n")
+                    lines.append(f"\n> 📌 **Important tips**: {important_note}\n")
             elif isinstance(note, str) and note:
-                lines.append(f"\n> 📌 **数据差异说明**: {note}\n")
+                lines.append(f"\n> 📌 **Data difference explanation**: {note}\n")
         
-        # 如果没有提取到任何内容，尝试其他字段
+        # If nothing is extracted, try other fields
         if len(lines) == 0:
             if "conclusion" in advice_json:
                 lines.append(advice_json["conclusion"])
@@ -6063,52 +6063,52 @@ class PortfolioService:
         return "\n".join(lines).strip() if lines else "基于综合分析给出建议"
     
     def _extract_price_targets_from_json(self, advice_json: Dict[str, Any], snapshot: PositionSnapshot, params: Optional[PositionAnalysisRequest] = None) -> PriceTarget:
-        """从JSON中提取风险关注/收益关注价格
+        """Extract risk focus/return focus prices from JSON
         
         Args:
-            advice_json: 研究观察的JSON对象
-            snapshot: 持仓快照
+            advice_json: JSON object for research observations
+            snapshot: Position snapshot
             
         Returns:
-            PriceTarget对象
+            PriceTarget object
         """
         from app.models.portfolio import PriceTarget
         import re
         price_targets = PriceTarget()
         
-        logger.info(f"📊 [提取价格目标] JSON字段: {list(advice_json.keys())}")
+        logger.info(f"📊 [Extract price target] JSON Field: {list(advice_json.keys())}")
         
-        # 提取风险关注价格（可能在多个位置，兼容旧版止损价字段）
+        # Extract risk focus price (possibly at multiple positions, compatible with legacy stop price field)
         stop_loss_price = None
         
-        # 1. 从顶层提取
+        # 1. Extract from top level
         stop_loss_price = advice_json.get("stop_loss_price")
         
-        # 2. 从specific_plan.price_monitoring中提取
+        # 2. Extracted from specific_plan.price_monitoring
         if not stop_loss_price and "specific_plan" in advice_json:
             specific_plan = advice_json["specific_plan"]
             if isinstance(specific_plan, dict):
                 price_monitoring = specific_plan.get("price_monitoring", {})
                 if isinstance(price_monitoring, dict):
-                    # 提取"风险关注参考价"字段（兼容旧版"止损参考价"，可能是字符串，包含价格）
+                    # Extract"Risk focus reference price"Field (compatible with older versions"Stop loss reference price", May be a string containing price)
                     stop_loss_ref = price_monitoring.get("风险关注参考价", price_monitoring.get("止损参考价", ""))
                     if stop_loss_ref:
-                        # 尝试从字符串中提取价格数字（如"¥4.73"或"4.73"）
+                        # Try to extract the price number from a string (like"¥4.73"or"4.73") 
                         price_match = re.search(r'[\d.]+', str(stop_loss_ref))
                         if price_match:
                             try:
                                 stop_loss_price = float(price_match.group())
-                                logger.info(f"📊 [提取价格目标] 从specific_plan.price_monitoring提取风险关注价格: {stop_loss_price}")
+                                logger.info(f"📊 [Extract price target] Extract risk focus price from specific_plan.price_monitoring: {stop_loss_price}")
                             except (ValueError, TypeError):
                                 pass
         
-        # 3. 从neutral_operation_advice中提取（如果有）
+        # 3. Extracted from neutral_operation_advice if available
         if not stop_loss_price and "neutral_operation_advice" in advice_json:
             neutral = advice_json["neutral_operation_advice"]
             if isinstance(neutral, dict):
                 stop_loss_price = neutral.get("stop_loss_price")
         
-        # 处理风险关注价格
+        # Deal with risk and focus on price
         if stop_loss_price:
             try:
                 price_targets.stop_loss_price = float(stop_loss_price)
@@ -6118,33 +6118,33 @@ class PortfolioService:
                     )
                 logger.info(f"📊 [提取价格目标] 风险关注价格: {price_targets.stop_loss_price}, 百分比: {price_targets.stop_loss_pct}")
             except (ValueError, TypeError) as e:
-                logger.warning(f"⚠️ [提取价格目标] 风险关注价格转换失败: {e}")
+                logger.warning(f"⚠️ [Extract price target] Risk focus price conversion failed: {e}")
         else:
-            logger.info(f"📊 [提取价格目标] JSON中没有找到stop_loss_price字段")
+            logger.info(f"📊 [Extract price target] JSON The stop_loss_price field was not found in")
         
-        # 提取收益关注价格（可能在多个位置，兼容旧版止盈价字段）
+        # Extract the profit and focus on the price (may be in multiple positions, compatible with the old version of the take profit price field)
         take_profit_price = None
         
-        # 1. 从顶层提取
+        # 1. Extract from top level
         take_profit_price = advice_json.get("take_profit_price")
         
-        # 2. 从specific_plan.price_monitoring中提取（第二关键验证价位通常是收益关注价格）
+        # 2. Extracted from specific_plan.price_monitoring (the second key verification price is usually the earnings focus price)
         if not take_profit_price and "specific_plan" in advice_json:
             specific_plan = advice_json["specific_plan"]
             if isinstance(specific_plan, dict):
                 price_monitoring = specific_plan.get("price_monitoring", {})
                 if isinstance(price_monitoring, dict):
-                    # 优先使用"第二关键验证价位（达成收益）"
+                    # priority use"The second key is to verify the price (achieve profit)"
                     second_target = price_monitoring.get("第二关键验证价位（达成收益）", price_monitoring.get("第二目标价（达成收益）", ""))
                     if second_target:
                         price_match = re.search(r'[\d.]+', str(second_target))
                         if price_match:
                             try:
                                 take_profit_price = float(price_match.group())
-                                logger.info(f"📊 [提取价格目标] 从specific_plan.price_monitoring提取收益关注价格: {take_profit_price}")
+                                logger.info(f"📊 [Extract price target] Extract the revenue focus price from specific_plan.price_monitoring: {take_profit_price}")
                             except (ValueError, TypeError):
                                 pass
-                    # 如果没有第二关键验证价位，尝试使用第一关键验证价位
+                    # If there is no second key verification price, try to use the first key verification price
                     if not take_profit_price:
                         first_target = price_monitoring.get("第一关键验证价位（减亏/解套）", price_monitoring.get("第一目标价（减亏/解套）", ""))
                         if first_target:
@@ -6152,17 +6152,17 @@ class PortfolioService:
                             if price_match:
                                 try:
                                     take_profit_price = float(price_match.group())
-                                    logger.info(f"📊 [提取价格目标] 从specific_plan.price_monitoring提取收益关注价格（使用第一关键验证价位）: {take_profit_price}")
+                                    logger.info(f"📊 [Extract price target] Extract revenue focus price from specific_plan.price_monitoring (use first key to verify price): {take_profit_price}")
                                 except (ValueError, TypeError):
                                     pass
         
-        # 3. 从neutral_operation_advice中提取（如果有）
+        # 3. Extracted from neutral_operation_advice if available
         if not take_profit_price and "neutral_operation_advice" in advice_json:
             neutral = advice_json["neutral_operation_advice"]
             if isinstance(neutral, dict):
                 take_profit_price = neutral.get("take_profit_price")
         
-        # 处理收益关注价格
+        # Handle earnings focus on price
         if take_profit_price:
             try:
                 price_targets.take_profit_price = float(take_profit_price)
@@ -6172,26 +6172,26 @@ class PortfolioService:
                     )
                 logger.info(f"📊 [提取价格目标] 收益关注价格: {price_targets.take_profit_price}, 百分比: {price_targets.take_profit_pct}")
             except (ValueError, TypeError) as e:
-                logger.warning(f"⚠️ [提取价格目标] 收益关注价格转换失败: {e}")
+                logger.warning(f"⚠️ [Extract price target] Yield focus price conversion failed: {e}")
         else:
-            logger.info(f"📊 [提取价格目标] JSON中没有找到take_profit_price字段")
+            logger.info(f"📊 [Extract price target] JSON The take_profit_price field was not found in")
         
-        # 回本价就是成本价
+        # The return price is the cost price
         if snapshot.cost_price and snapshot.cost_price > 0:
             price_targets.breakeven_price = snapshot.cost_price
-            logger.info(f"📊 [提取价格目标] 回本价: {price_targets.breakeven_price}")
+            logger.info(f"📊 [Extract price target] return price: {price_targets.breakeven_price}")
         
-        # 如果AI没有生成价格目标，根据用户设定的百分比计算（fallback逻辑）
+        # If the AI does not generate a price target, it is calculated based on the percentage set by the user (fallback logic)
         if not price_targets.stop_loss_price and params and snapshot.cost_price and snapshot.cost_price > 0:
-            # 使用用户设定的最大亏损百分比计算风险关注价格
-            max_loss_pct = params.max_loss_pct if params.max_loss_pct else 10.0  # 默认10%
+            # Calculate risk focus price using user-set maximum loss percentage
+            max_loss_pct = params.max_loss_pct if params.max_loss_pct else 10.0  # Default 10%
             price_targets.stop_loss_price = round(snapshot.cost_price * (1 - max_loss_pct / 100), 2)
             price_targets.stop_loss_pct = round(-max_loss_pct, 2)
             logger.info(f"📊 [提取价格目标] AI未生成风险关注价格，根据用户设定计算: stop_loss={price_targets.stop_loss_price} (基于{max_loss_pct}%亏损)")
         
         if not price_targets.take_profit_price and params and snapshot.cost_price and snapshot.cost_price > 0:
-            # 使用用户设定的目标收益百分比计算收益关注价格
-            target_profit_pct = params.target_profit_pct if params.target_profit_pct else 10.0  # 默认10%
+            # Calculate the revenue focus price using the target revenue percentage set by the user
+            target_profit_pct = params.target_profit_pct if params.target_profit_pct else 10.0  # Default 10%
             price_targets.take_profit_price = round(snapshot.cost_price * (1 + target_profit_pct / 100), 2)
             price_targets.take_profit_pct = round(target_profit_pct, 2)
             logger.info(f"📊 [提取价格目标] AI未生成收益关注价格，根据用户设定计算: take_profit={price_targets.take_profit_price} (基于{target_profit_pct}%收益)")
@@ -6199,19 +6199,19 @@ class PortfolioService:
         return price_targets
     
     def _extract_action_from_json(self, advice_json: Dict[str, Any]) -> PositionAction:
-        """从JSON中提取研究结论倾向对应的PositionAction
+        """Extract research conclusion tendencies corresponding to JSON PositionAction
         
         Args:
-            advice_json: 研究观察的JSON对象
+            advice_json: JSON object for research observations
             
         Returns:
-            PositionAction枚举值（仅供学习研究参考，非交易建议）
+            PositionAction Enumeration values (for learning and research reference only, not trading advice)
         """
-        # 优先从neutral_operation_advice.specific_suggestions中提取（新格式）
+        # Prioritize extraction from neutral_operation_advice.specific_suggestions (new format)
         if "neutral_operation_advice" in advice_json:
             neutral = advice_json["neutral_operation_advice"]
             if isinstance(neutral, dict):
-                # 新格式：从specific_suggestions数组中提取第一个action
+                # New format: extract the first one from the specific_suggestions array action
                 specific_suggestions = neutral.get("specific_suggestions", [])
                 if isinstance(specific_suggestions, list) and specific_suggestions:
                     first_suggestion = specific_suggestions[0]
@@ -6226,7 +6226,7 @@ class PortfolioService:
                             elif any(k in action_lower for k in ["中性", "持有", "继续持有", "观察"]):
                                 return PositionAction.HOLD
                 
-                # 兼容旧格式：从recommended_action/analysis_view中提取
+                # Compatible with old formats: extracted from recommended_action/analysis_view
                 recommended = neutral.get("analysis_view", neutral.get("recommended_action", ""))
                 if recommended:
                     recommended_lower = recommended.lower()
@@ -6237,25 +6237,25 @@ class PortfolioService:
                     elif any(k in recommended_lower for k in ["中性", "持有"]):
                         return PositionAction.HOLD
         
-        # 默认持有
+        # Hold by default
         return PositionAction.HOLD
     
     def _parse_workflow_action_advice(self, action_advice: str) -> tuple[PositionAction, str]:
-        """从工作流的研究观察中解析出研究结论倾向和理由
+        """Analyze the tendencies and reasons for research conclusions from research observations on workflow
 
         Args:
-            action_advice: 研究观察员的输出文本
+            action_advice: Research observer output text
 
         Returns:
-            tuple: (PositionAction, 研究观察理由)
+            tuple: (PositionAction, Reasons for research and observation)
         """
         if not action_advice:
             return PositionAction.HOLD, "未获取到研究观察"
 
-        # 转换为小写便于匹配
+        # Convert to lowercase for easier matching
         advice_lower = action_advice.lower()
 
-        # 根据关键词判断研究结论倾向（兼容合规术语与旧版操作术语）
+        # Determine the tendency of research conclusions based on keywords (compatible with compliance terms and old version operational terms)
         if any(keyword in advice_lower for keyword in ["乐观", "买入", "加仓", "增持", "建议买", "推荐买", "add"]):
             action = PositionAction.ADD
         elif any(keyword in advice_lower for keyword in ["审慎", "清仓", "建议卖", "推荐卖", "clear", "卖出", "减仓", "reduce"]):
@@ -6265,7 +6265,7 @@ class PortfolioService:
         else:
             action = PositionAction.HOLD
 
-        # 提取研究观察理由（取前200个字符作为简要理由）
+        # Extract reasons for research observations (take the first 200 characters as brief reasons)
         action_reason = action_advice[:200] + "..." if len(action_advice) > 200 else action_advice
 
         return action, action_reason
@@ -6275,11 +6275,11 @@ class PortfolioService:
         data: Dict[str, Any],
         position_snapshot: Dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
-        """统一清洗持仓研究详情和历史记录中的结果字段（合规化：移除执行性交易指令）。"""
+        """Unified cleansing of result fields in position study details and history (compliance: removal of execution trading orders)."""
         return sanitize_position_analysis_payload(data, position_snapshot=position_snapshot)
 
 
-# 服务实例
+# Service instance
 _portfolio_service: Optional[PortfolioService] = None
 
 

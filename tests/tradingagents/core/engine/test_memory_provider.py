@@ -38,7 +38,7 @@ def test_mem0_compat_memory_add_situations_stores_with_object_metadata(monkeypat
 
     monkeypatch.setattr("core.memory.service.get_memory_service", lambda: fake_service)
 
-    memory.add_situations([("贵州茅台 600519 基本面改善", "继续跟踪高端白酒需求与估值切换")])
+    memory.add_situations([("Kweichow Moutai 600519 fundamentals improving", "Continue to track high-end liquor demand and valuation switching")])
 
     assert len(fake_service.store_calls) == 1
     call = fake_service.store_calls[0]
@@ -46,7 +46,7 @@ def test_mem0_compat_memory_add_situations_stores_with_object_metadata(monkeypat
     assert call["agent_id"] == "bull_researcher_v2"
     assert call["scope"] == "agent_experience"
     assert call["infer"] is False
-    assert call["messages"] == [{"role": "user", "content": "Legacy situation:\n贵州茅台 600519 基本面改善\n\nRecommendation:\n继续跟踪高端白酒需求与估值切换"}]
+    assert call["messages"] == [{"role": "user", "content": "Legacy situation:\n Kweichow Moutai 600519 fundamentals improving\n\nRecommendation:\n Continue to track high-end liquor demand and valuation switching"}]
     assert call["metadata"]["symbol"] == "600519"
     assert call["metadata"]["object_type"] == "stock"
     assert call["metadata"]["object_key"] == "600519"
@@ -59,11 +59,11 @@ def test_mem0_compat_memory_get_memories_prefers_v2_alias_for_migrated_records(m
                 return [
                     MemoryItem(
                         id="m-v2-1",
-                        memory="推荐继续关注渠道改善",
+                        memory="It is recommended to continue to pay attention to channel improvement",
                         score=0.91,
                         metadata={
-                            "legacy_situation": "贵州茅台 600519 基本面改善",
-                            "legacy_recommendation": "继续关注渠道改善",
+                            "legacy_situation": "Kweichow Moutai 600519 fundamentals improving",
+                            "legacy_recommendation": "Continue to pay attention to channel improvements",
                             "symbol": "600519",
                         },
                     )
@@ -75,10 +75,10 @@ def test_mem0_compat_memory_get_memories_prefers_v2_alias_for_migrated_records(m
 
     monkeypatch.setattr("core.memory.service.get_memory_service", lambda: fake_service)
 
-    memories = memory.get_memories("请回顾 600519 的历史判断", n_matches=2)
+    memories = memory.get_memories("Please review the historical judgment of 600519", n_matches=2)
 
     assert len(memories) == 1
-    assert memories[0]["recommendation"] == "继续关注渠道改善"
+    assert memories[0]["recommendation"] == "Continue to pay attention to channel improvements"
     assert fake_service.recall_calls[0]["agent_id"] == "bull_researcher_v2"
 
 def test_mem0_compat_memory_get_memories_falls_back_to_secondary_alias(monkeypatch):
@@ -92,8 +92,8 @@ def test_mem0_compat_memory_get_memories_falls_back_to_secondary_alias(monkeypat
                         memory="legacy recall",
                         score=0.88,
                         metadata={
-                            "legacy_situation": "贵州茅台 600519 基本面改善",
-                            "legacy_recommendation": "继续跟踪",
+                            "legacy_situation": "Kweichow Moutai 600519 fundamentals improving",
+                            "legacy_recommendation": "Continue to follow",
                             "symbol": "600519",
                         },
                     )
@@ -105,7 +105,7 @@ def test_mem0_compat_memory_get_memories_falls_back_to_secondary_alias(monkeypat
 
     monkeypatch.setattr("core.memory.service.get_memory_service", lambda: fake_service)
 
-    memories = memory.get_memories("请回顾 600519 的历史判断", n_matches=1)
+    memories = memory.get_memories("Please review the historical judgment of 600519", n_matches=1)
 
     assert len(memories) == 1
     assert [call["agent_id"] for call in fake_service.recall_calls] == ["bull_researcher_v2", "bull_researcher"]
@@ -115,11 +115,11 @@ def test_mem0_compat_memory_get_memories_formats_mem0_results(monkeypatch):
         recall_result=[
             MemoryItem(
                 id="m1",
-                memory="推荐继续关注渠道改善",
+                memory="It is recommended to continue to pay attention to channel improvement",
                 score=0.91,
                 metadata={
-                    "legacy_situation": "贵州茅台 600519 基本面改善",
-                    "legacy_recommendation": "继续关注渠道改善",
+                    "legacy_situation": "Kweichow Moutai 600519 fundamentals improving",
+                    "legacy_recommendation": "Continue to pay attention to channel improvements",
                     "symbol": "600519",
                 },
             )
@@ -129,11 +129,11 @@ def test_mem0_compat_memory_get_memories_formats_mem0_results(monkeypatch):
 
     monkeypatch.setattr("core.memory.service.get_memory_service", lambda: fake_service)
 
-    memories = memory.get_memories("请回顾 600519 的历史判断", n_matches=2)
+    memories = memory.get_memories("Please review the historical judgment of 600519", n_matches=2)
 
     assert len(memories) == 1
-    assert memories[0]["recommendation"] == "继续关注渠道改善"
-    assert memories[0]["situation"] == "贵州茅台 600519 基本面改善"
+    assert memories[0]["recommendation"] == "Continue to pay attention to channel improvements"
+    assert memories[0]["situation"] == "Kweichow Moutai 600519 fundamentals improving"
     assert fake_service.recall_calls[0]["metadata_filters"] == {"symbol": "600519"}
 def test_mem0_compat_memory_returns_empty_when_recall_empty(monkeypatch):
     fake_service = _FakeMemoryService(recall_result=[])
@@ -141,7 +141,7 @@ def test_mem0_compat_memory_returns_empty_when_recall_empty(monkeypatch):
 
     monkeypatch.setattr("core.memory.service.get_memory_service", lambda: fake_service)
 
-    memories = memory.get_memories("没有股票代码的情境", n_matches=1)
+    memories = memory.get_memories("Scenario without stock code", n_matches=1)
 
     assert memories == []
 

@@ -1,8 +1,8 @@
 import request from './request'
 
-// ==================== 类型定义 ====================
+// ==================== type definition ====================
 
-/** 开始会话请求 */
+/** Start session request */
 export interface StartSessionRequest {
   description: string
   user_id?: string
@@ -10,9 +10,9 @@ export interface StartSessionRequest {
   iterate_skill_id?: string
   provider?: string
   model?: string
-  /** 需求分析模型（覆盖系统默认的深度推理模型） */
+  /** Requirements analysis model (overrides the system s default in-depth reasoning model) */
   reasoning_model?: string
-  /** 代码生成模型（覆盖系统默认的编程模型） */
+  /** Code generation model (overrides the system s default programming model) */
   coding_model?: string
 }
 
@@ -24,7 +24,7 @@ export interface SkillHandoffContext {
   handoff_intent?: string
 }
 
-/** 可用模型项 */
+/** Available model items */
 export interface AvailableModelItem {
   model_name: string
   display_name: string
@@ -32,14 +32,14 @@ export interface AvailableModelItem {
   enabled: boolean
 }
 
-/** 模型列表响应 */
+/** model list response */
 export interface AvailableModelsResult {
   models: AvailableModelItem[]
   default_reasoning_model: string | null
   default_coding_model: string | null
 }
 
-/** 会话响应 */
+/** session response */
 export interface SessionStartResult {
   session_id: string
   ai_message: string
@@ -49,7 +49,7 @@ export interface SessionStartResult {
   expected_rounds: number
 }
 
-/** 对话回复结果 */
+/** Conversation reply results */
 export interface SessionRespondResult {
   session_id: string
   ai_message: string
@@ -59,7 +59,7 @@ export interface SessionRespondResult {
   boundary_check?: BoundaryCheck | null
 }
 
-/** 确认生成结果 */
+/** Confirm the generated results */
 export interface ConfirmResult {
   status: string
   session_id: string
@@ -70,7 +70,7 @@ export interface ConfirmResult {
   total_time: number
   final_score: number | null
   error: string | null
-  /** 外部接口预检拦截时的说明 */
+  /** Instructions for external interface preflight interception */
   message?: string | null
   interface_preflight?: InterfacePreflightResult | null
 }
@@ -117,7 +117,7 @@ export interface PipelineResultDetail {
   error?: string | null
 }
 
-/** 质量评估实时结果（Judge 白盒评分） */
+/** Real-time results of quality assessment (Judge white box scoring) */
 export interface PipelineEvalResult {
   executability: number
   authenticity: number
@@ -125,17 +125,17 @@ export interface PipelineEvalResult {
   relevance: number
   format_quality: number
   total: number
-  /** 第几轮评估（从 1 开始） */
+  /** Which round of evaluation (starting from 1) */
   round?: number
-  /** 是否达到通过阈值 */
+  /** Whether the passing threshold is reached */
   passed: boolean
-  /** Judge 专家一句话评语 */
+  /** Judge One word comment from an expert */
   expert_comment?: string
-  /** 业务验收（黑盒）是否通过，agentic 路径下可能返回 */
+  /** Whether the business acceptance (black box) is passed, it may be returned under the agent path */
   business_passed?: boolean
 }
 
-/** 边界检测 */
+/** Boundary detection */
 export interface BoundaryCheck {
   within_boundary: boolean
   complexity_score: number
@@ -153,7 +153,7 @@ export interface SkillAgentUsage {
   updated_at?: string
 }
 
-/** 外部 Skill */
+/** external Skill */
 export interface ExternalSkill {
   tool_id: string
   display_name: string
@@ -180,7 +180,7 @@ export interface ExternalSkill {
   updated_at: string
 }
 
-/** Skill 参数 */
+/** Skill parameters */
 export interface SkillParameter {
   name: string
   type: string
@@ -231,9 +231,9 @@ export interface SkillGenerationRecommendations {
   data_source_hint: string
   stock_collections: string[]
   external_sources: string[]
-  /** 目录外数据源名（如 dongchedi）；非空表示需求指定了系统目录之外的来源 */
+  /** The name of the data source outside the directory (such as dongchedi); non-empty indicates that the requirement specifies a source outside the system directory */
   unknown_data_source?: string
-  /** 需求类型：external_api（外部 API 集成，不评估本地/目录资产）/ local_data（默认） */
+  /** Requirement type: external_api (external API integration, does not evaluate local/catalog assets) / local_data (default) */
   requirement_mode?: 'external_api' | 'local_data'
 }
 
@@ -246,20 +246,20 @@ export interface ReconToolTrace {
   error?: string
 }
 
-/** 外部接口预检结果（规格确认阶段的连通性验证） */
+/** External interface pre-check results (connectivity verification in the specification confirmation phase) */
 export interface InterfacePreflightResult {
-  /** verified=连通且有数据 / warning=可达但无数据 / failed=不可用 */
+  /** verified=Connected and data available / warning=Reachable but no data / failed=Not available */
   status: 'verified' | 'warning' | 'failed'
   message: string
   url?: string
   http_status?: number
   data_items?: number
   sample_fields?: string[]
-  /** 差分测试：实测被接口忽略的参数（传入与否返回相同数据，须本地过滤） */
+  /** Differential test: measured parameters ignored by the interface (the same data is returned whether passed in or not, local filtering is required) */
   ignored_params?: string[]
-  /** 差分测试：实测会改变接口返回的业务参数（服务端过滤疑似生效，可拼 URL） */
+  /** Differential testing: Actual testing will change the business parameters returned by the interface (server-side filtering is suspected to be effective, you can spell the URL) */
   server_filter_params?: string[]
-  /** 实测验证可用的查询参数（用户 URL 文档化查询参数） */
+  /** Available query parameters verified by actual testing (user URL documented query parameters) */
   probed_params?: Record<string, any>
   checked_at?: string
 }
@@ -275,7 +275,7 @@ export interface ImplementationFactReportView {
   confidence: number
 }
 
-/** 分页列表 */
+/** Paginated list */
 export interface PaginatedSkills {
   total: number
   page: number
@@ -283,7 +283,7 @@ export interface PaginatedSkills {
   items: ExternalSkill[]
 }
 
-/** 沙箱测试结果 */
+/** Sandbox test results */
 export interface TestResult {
   success: boolean
   output: any
@@ -293,7 +293,7 @@ export interface TestResult {
   error: string | null
 }
 
-/** 对话轮次 */
+/** dialogue turns */
 export interface ConversationRound {
   round_number: number
   ai_message: string
@@ -301,7 +301,7 @@ export interface ConversationRound {
   timestamp: string
 }
 
-/** 会话详情 */
+/** Session details */
 export interface SessionDetail {
   session_id: string
   user_id: string
@@ -320,9 +320,9 @@ export interface SessionDetail {
   pipeline_message?: string
   pipeline_iteration?: number
   pipeline_progress?: number
-  /** 代码生成的实时思考过程（reasoning_content 尾部片段） */
+  /** Real-time thinking process for code generation (reasoning_content tail snippet) */
   pipeline_thinking?: string
-  /** 最近一轮质量评估结果（Judge 评分，评估完成即出现） */
+  /** The results of the latest round of quality assessment (Judge score, which appears when the assessment is completed) */
   pipeline_eval_result?: PipelineEvalResult | null
   pipeline_details?: Array<{
     stage: string
@@ -336,7 +336,7 @@ export interface SessionDetail {
   updated_at: string
 }
 
-/** 优化结果 */
+/** Optimize results */
 export interface OptimizeResult {
   status: string
   skill_id: string
@@ -350,7 +350,7 @@ export interface OptimizeResult {
   error: string | null
 }
 
-/** 沟通历史分段（创建/优化） */
+/** Communication history segmentation (creation/optimization) */
 export interface HistorySection {
   type: 'creation' | 'optimize'
   label: string
@@ -360,91 +360,91 @@ export interface HistorySection {
   feedback?: string
 }
 
-/** Skill 完整沟通历史 */
+/** Skill Complete communication history */
 export interface SkillHistory {
   skill_id: string
   display_name: string
   sections: HistorySection[]
 }
 
-/** 标准 API 响应包装 */
+/** Standard API response wrapper */
 interface ApiOk<T> {
   success: boolean
   data: T
   message: string
 }
 
-// ==================== API 函数 ====================
+// ==================== API function ====================
 
 const BASE = '/api/skill-generation'
 
-// LLM 慢接口专用配置：
-// - 超时提高到 20 分钟：需求对话/规格生成涉及多次 LLM 调用，可能超过全局默认 600s，
-//   超时截断会导致后端还在跑、前端却已报错（旧会话即因此出现连环重发）
-// - retryCount: 0 禁止超时自动重发：这些 POST 非幂等（会新建会话/推进轮次/触发生成），
-//   自动重发会在后端堆积重复的长耗时任务并触发 LLM 限流
+// LLM Dedicated configuration for slow interface:
+// - Timeout increased to 20 minutes: requirements dialogue/spec generation involves multiple LLM calls, which may exceed the global default of 600s,
+//   Timeout truncation will cause the backend to still run, but the frontend will report an error (old sessions will be retransmitted continuously as a result)
+// - retryCount: 0 Disable automatic retransmission after timeout: These POSTs are non-idempotent (will create a new session/advance rounds/trigger generation),
+//   Automatic retransmission will accumulate repeated long-term tasks in the backend and trigger LLM current limiting
 const SLOW_LLM_OP_CONFIG = { timeout: 1200000, retryCount: 0 }
 
 export const skillGenerationApi = {
-  // ---------- 模型选择 ----------
+  // ---------- Model selection ----------
 
-  /** 获取 Skill 生成可用的模型列表（用于下拉选择） */
+  /** Get the Skill to generate a list of available models (for drop-down selection) */
   listAvailableModels: async (): Promise<AvailableModelsResult> => {
     const res = await request.get<ApiOk<AvailableModelsResult>>(`${BASE}/models`)
     return (res as any).data
   },
 
-  /** 获取股票数据集合目录 */
+  /** Get stock data collection directory */
   getStockDataCatalog: async (): Promise<StockDataCatalogResult> => {
     const res = await request.get<ApiOk<StockDataCatalogResult>>(`${BASE}/catalog/stock-data`)
     return (res as any).data
   },
 
-  /** 获取外部接口与数据源目录 */
+  /** Get the external interface and data source directory */
   getExternalDataSourceCatalog: async (): Promise<ExternalDataSourceCatalogResult> => {
     const res = await request.get<ApiOk<ExternalDataSourceCatalogResult>>(`${BASE}/catalog/external-data-sources`)
     return (res as any).data
   },
 
-  // ---------- 需求沟通 ----------
+  // ---------- Requirements communication ----------
 
-  /** 开始创建会话 */
+  /** Start creating a session */
   startSession: async (data: StartSessionRequest): Promise<SessionStartResult> => {
     const res = await request.post<ApiOk<SessionStartResult>>(`${BASE}/sessions/start`, data, SLOW_LLM_OP_CONFIG)
     return (res as any).data
   },
 
-  /** 回复对话 */
+  /** Reply to conversation */
   respondToSession: async (sessionId: string, message: string): Promise<SessionRespondResult> => {
     const res = await request.post<ApiOk<SessionRespondResult>>(`${BASE}/sessions/${sessionId}/respond`, { message }, SLOW_LLM_OP_CONFIG)
     return (res as any).data
   },
 
-  /** 预览规格（不执行管线），用于规格确认步骤 */
-  previewSpec: async (sessionId: string, message: string = '确认'): Promise<{ spec: Record<string, any>; recommendations?: SkillGenerationRecommendations | null; fact_report?: ImplementationFactReportView | null; interface_preflight?: InterfacePreflightResult | null; upgrade_change_points?: string[] | null }> => {
+  /** Preview specs (without executing the pipeline) for spec confirmation steps */
+  previewSpec: async (sessionId: string, message: string = 'Confirm'): Promise<{ spec: Record<string, any>; recommendations?: SkillGenerationRecommendations | null; fact_report?: ImplementationFactReportView | null; interface_preflight?: InterfacePreflightResult | null; upgrade_change_points?: string[] | null }> => {
     const res = await request.post<ApiOk<{ spec: Record<string, any>; recommendations?: SkillGenerationRecommendations | null; fact_report?: ImplementationFactReportView | null; interface_preflight?: InterfacePreflightResult | null; upgrade_change_points?: string[] | null }>>(`${BASE}/sessions/${sessionId}/preview-spec`, { message }, SLOW_LLM_OP_CONFIG)
     return (res as any).data
   },
 
-  /** 确认规格并生成（异步，返回 generating 后需轮询 getSession 获取最终结果） */
-  confirmSpec: async (sessionId: string, message: string = '确认', codegenTimeout?: number): Promise<ConfirmResult> => {
+  /** Confirm the specifications and generate (asynchronous, after returning generating you need to poll getSession to get the final result) */
+  confirmSpec: async (sessionId: string, message: string = 'Confirm', codegenTimeout?: number): Promise<ConfirmResult> => {
     const res = await request.post<ApiOk<ConfirmResult>>(`${BASE}/sessions/${sessionId}/confirm`, { message, codegen_timeout: codegenTimeout ?? null }, SLOW_LLM_OP_CONFIG)
     return (res as any).data
   },
 
-  /** 先让 AI 解释它理解到的问题和修正计划 */
+  /** First let the AI explain the problem it understands and its correction plan */
   previewRepairSession: async (sessionId: string, feedback: string): Promise<RepairPlanResult> => {
     const res = await request.post<ApiOk<RepairPlanResult>>(`${BASE}/sessions/${sessionId}/repair-plan`, { feedback }, SLOW_LLM_OP_CONFIG)
     return (res as any).data
   },
 
-  /** 当修正计划确认后，再真正重新生成 */
+  /** After the correction plan is confirmed, it will be regenerated. */
   repairSession: async (sessionId: string, feedback: string, repairPlan: string = '', codegenTimeout?: number): Promise<ConfirmResult> => {
     const res = await request.post<ApiOk<ConfirmResult>>(`${BASE}/sessions/${sessionId}/repair`, { feedback, repair_plan: repairPlan, codegen_timeout: codegenTimeout ?? null }, SLOW_LLM_OP_CONFIG)
     return (res as any).data
   },
 
-  /** 列出会话（草稿/未完成） */
+  /** List sessions (draft/incomplete) */
   listSessions: async (params?: {
     status?: string
     user_id?: string
@@ -455,51 +455,51 @@ export const skillGenerationApi = {
     return (res as any).data
   },
 
-  /** 获取会话详情（包含对话轮次） */
+  /** Get session details (including conversation turns) */
   getSession: async (sessionId: string): Promise<SessionDetail> => {
     const res = await request.get<ApiOk<SessionDetail>>(`${BASE}/sessions/${sessionId}`)
     return (res as any).data
   },
 
-  /** 删除草稿会话 */
+  /** Delete draft conversation */
   deleteSession: async (sessionId: string): Promise<any> => {
     const res = await request.delete<ApiOk<any>>(`${BASE}/sessions/${sessionId}`)
     return (res as any).data
   },
 
-  // ---------- Skill 管理 ----------
+  // ---------- Skill management ----------
 
-  /** 列出外部 Skill */
+  /** list external Skill */
   listSkills: async (params?: { category?: string; status?: string; source?: string; page?: number; page_size?: number }): Promise<PaginatedSkills> => {
     const res = await request.get<ApiOk<PaginatedSkills>>(`${BASE}/skills`, { params })
     return (res as any).data
   },
 
-  /** 获取 Skill 详情 */
+  /** Get Skill details */
   getSkill: async (skillId: string): Promise<ExternalSkill> => {
     const res = await request.get<ApiOk<ExternalSkill>>(`${BASE}/skills/${skillId}`)
     return (res as any).data
   },
 
-  /** 查看 Skill 源代码 */
+  /** View Skill source code */
   getSkillCode: async (skillId: string): Promise<{ tool_id: string; code: string }> => {
     const res = await request.get<ApiOk<{ tool_id: string; code: string }>>(`${BASE}/skills/${skillId}/code`)
     return (res as any).data
   },
 
-  /** 获取 Skill 完整沟通历史（创建 + 所有优化） */
+  /** Get Skill complete communication history (create + All optimizations) */
   getSkillHistory: async (skillId: string): Promise<SkillHistory> => {
     const res = await request.get<ApiOk<SkillHistory>>(`${BASE}/skills/${skillId}/history`)
     return (res as any).data
   },
 
-  /** 更新 Skill 状态 */
+  /** Update skill status */
   updateSkillStatus: async (skillId: string, status: string): Promise<any> => {
     const res = await request.put<ApiOk<any>>(`${BASE}/skills/${skillId}/status`, { status })
     return (res as any).data
   },
 
-  /** 更新 Skill 展示名称与功能说明 */
+  /** Update Skill display name and function description */
   updateSkillInfo: async (
     skillId: string,
     displayName: string,
@@ -512,19 +512,19 @@ export const skillGenerationApi = {
     return (res as any).data
   },
 
-  /** 删除 Skill */
+  /** Delete Skill */
   deleteSkill: async (skillId: string): Promise<any> => {
     const res = await request.delete<ApiOk<any>>(`${BASE}/skills/${skillId}`)
     return (res as any).data
   },
 
-  /** 测试 Skill */
+  /** test Skill */
   testSkill: async (skillId: string, args?: Record<string, any>): Promise<TestResult> => {
     const res = await request.post<ApiOk<TestResult>>(`${BASE}/skills/${skillId}/test`, { args: args || {} })
     return (res as any).data
   },
 
-  /** 优化 Skill */
+  /** Optimize Skill */
   optimizeSkill: async (skillId: string, feedback: string): Promise<OptimizeResult> => {
     const res = await request.post<ApiOk<OptimizeResult>>(`${BASE}/skills/${skillId}/optimize`, { feedback })
     return (res as any).data

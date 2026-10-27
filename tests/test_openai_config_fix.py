@@ -1,163 +1,163 @@
 #!/usr/bin/env python3
 """
-测试OpenAI配置修复效果
-验证在没有OpenAI API Key的情况下，系统是否正确跳过OpenAI API调用
+Test the OpenAI configuration repair effect
+Verify that the system correctly skips OpenAI API calls without the OpenAI API Key
 """
 
 import os
 import sys
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_openai_config_detection():
-    """测试OpenAI配置检测逻辑"""
-    print("\n🔍 测试OpenAI配置检测逻辑")
+    """Test OpenAI configuration detection logic"""
+    print("\n🔍 Test OpenAI configuration detection logic")
     print("=" * 80)
     
     try:
-        # 检查当前环境变量
+        # Check current environment variables
         openai_key = os.getenv("OPENAI_API_KEY")
         dashscope_key = os.getenv("DASHSCOPE_API_KEY")
         finnhub_key = os.getenv("FINNHUB_API_KEY")
         
-        print(f"📊 当前环境变量状态:")
-        print(f"   OPENAI_API_KEY: {'✅ 已配置' if openai_key else '❌ 未配置'}")
-        print(f"   DASHSCOPE_API_KEY: {'✅ 已配置' if dashscope_key else '❌ 未配置'}")
-        print(f"   FINNHUB_API_KEY: {'✅ 已配置' if finnhub_key else '❌ 未配置'}")
+        print(f"📊 Current environment variable status:")
+        print(f"   OPENAI_API_KEY: {'✅ configured' if openai_key else '❌ Not configured'}")
+        print(f"   DASHSCOPE_API_KEY: {'✅ configured' if dashscope_key else '❌ Not configured'}")
+        print(f"   FINNHUB_API_KEY: {'✅ configured' if finnhub_key else '❌ Not configured'}")
         
-        # 检查配置
+        # Check configuration
         from tradingagents.dataflows.config import get_config
         config = get_config()
         
-        print(f"\n📊 当前系统配置:")
+        print(f"\n📊 Current system configuration:")
         print(f"   llm_provider: {config.get('llm_provider', 'N/A')}")
         print(f"   backend_url: {config.get('backend_url', 'N/A')}")
         print(f"   quick_think_llm: {config.get('quick_think_llm', 'N/A')}")
         print(f"   deep_think_llm: {config.get('deep_think_llm', 'N/A')}")
         
-        # 模拟OpenAI配置检查逻辑
-        print(f"\n🔍 模拟OpenAI配置检查:")
+        # Simulate OpenAI configuration check logic
+        print(f"\n🔍 Simulate OpenAI configuration check:")
         
-        # 检查1: OpenAI API Key
+        # Check 1: OpenAI API Key
         if not openai_key:
-            print(f"   ❌ 检查1失败: 未配置OPENAI_API_KEY")
+            print(f"   ❌ Check 1 failed: Not configured OPENAI_API_KEY")
             should_skip_openai = True
         else:
-            print(f"   ✅ 检查1通过: OPENAI_API_KEY已配置")
+            print(f"   ✅ Check 1 passed: OPENAI_API_KEY configured")
             should_skip_openai = False
         
-        # 检查2: 基本配置
+        # Check 2: Basic configuration
         if not should_skip_openai:
             if not config.get("backend_url") or not config.get("quick_think_llm"):
-                print(f"   ❌ 检查2失败: OpenAI配置不完整")
+                print(f"   ❌ Check 2 failed: OpenAI Incomplete configuration")
                 should_skip_openai = True
             else:
-                print(f"   ✅ 检查2通过: OpenAI基本配置完整")
+                print(f"   ✅ Check 2 passed: OpenAI Basic configuration is complete")
         
-        # 检查3: backend_url是否是OpenAI的
+        # Check 3: backend_url Is it from OpenAI?
         if not should_skip_openai:
             backend_url = config.get("backend_url", "")
             if "openai.com" not in backend_url:
-                print(f"   ❌ 检查3失败: backend_url不是OpenAI API ({backend_url})")
+                print(f"   ❌ Check 3 failed: backend_url No OpenAI API ({backend_url})")
                 should_skip_openai = True
             else:
-                print(f"   ✅ 检查3通过: backend_url是OpenAI API")
+                print(f"   ✅ Check 3 passed: backend_url Yes OpenAI API")
         
-        print(f"\n📋 最终决策:")
+        print(f"\n📋 final decision:")
         if should_skip_openai:
-            print(f"   🔄 跳过OpenAI API，直接使用FinnHub")
+            print(f"   🔄 Skip the OpenAI API and use it directly FinnHub")
         else:
-            print(f"   🔄 使用OpenAI API")
+            print(f"   🔄 Use OpenAI API")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_fundamentals_api_selection():
-    """测试基本面数据API选择逻辑"""
-    print("\n📊 测试基本面数据API选择逻辑")
+    """Test fundamental data API selection logic"""
+    print("\n📊 Test fundamental data API selection logic")
     print("=" * 80)
     
     try:
-        # 设置日志级别
+        # Set log level
         from tradingagents.utils.logging_init import get_logger
         logger = get_logger("default")
         logger.setLevel("INFO")
         
-        # 测试美股基本面数据获取
+        # Test the acquisition of U.S. stock fundamental data
         test_ticker = "MSFT"
         test_date = "2025-07-16"
         
-        print(f"📊 测试股票: {test_ticker}")
-        print(f"📊 测试日期: {test_date}")
+        print(f"📊 test stocks: {test_ticker}")
+        print(f"📊 Test date: {test_date}")
         
-        print(f"\n🔄 调用基本面数据获取...")
+        print(f"\n🔄 Call fundamental data acquisition...")
         
         from tradingagents.dataflows.interface import get_fundamentals_openai
         
-        # 这个调用应该会跳过OpenAI，直接使用FinnHub
+        # This call should skip OpenAI and use it directly FinnHub
         result = get_fundamentals_openai(test_ticker, test_date)
         
-        print(f"✅ 基本面数据获取完成")
-        print(f"   结果类型: {type(result)}")
-        print(f"   结果长度: {len(result) if result else 0}")
+        print(f"✅ Fundamental data acquisition completed")
+        print(f"   result type: {type(result)}")
+        print(f"   Result length: {len(result) if result else 0}")
         
         if result:
-            # 检查结果来源
+            # Check result source
             if "finnhub" in result.lower() or "FinnHub" in result:
-                print(f"   ✅ 确认使用了FinnHub数据源")
+                print(f"   ✅ Confirm that FinnHub data source is used")
             elif "openai" in result.lower() or "OpenAI" in result:
-                print(f"   ⚠️ 意外使用了OpenAI数据源")
+                print(f"   ⚠️ Accidental use of OpenAI data source")
             else:
-                print(f"   ℹ️ 无法确定数据源")
+                print(f"   ℹ️ Unable to determine data source")
             
-            # 显示结果摘要
-            print(f"\n📄 结果摘要 (前200字符):")
+            # Show summary of results
+            print(f"\n📄 summary of results (first 200 characters):")
             print("-" * 40)
             print(result[:200])
             if len(result) > 200:
                 print("...")
             print("-" * 40)
         else:
-            print(f"   ❌ 未获取到数据")
+            print(f"   ❌ No data obtained")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_config_scenarios():
-    """测试不同配置场景"""
-    print("\n🧪 测试不同配置场景")
+    """Test different configuration scenarios"""
+    print("\n🧪 Test different configuration scenarios")
     print("=" * 80)
     
     scenarios = [
         {
-            "name": "场景1: 无OpenAI Key + Google配置",
+            "name": "scene 1: None OpenAI Key + Google Configuration",
             "openai_key": None,
             "backend_url": "https://generativelanguage.googleapis.com/v1",
-            "expected": "跳过OpenAI，使用FinnHub"
+            "expected": "Skip OpenAI, use FinnHub"
         },
         {
-            "name": "场景2: 无OpenAI Key + OpenAI配置",
+            "name": "scene 2: None OpenAI Key + OpenAI Configuration",
             "openai_key": None,
             "backend_url": "https://api.openai.com/v1",
-            "expected": "跳过OpenAI，使用FinnHub"
+            "expected": "Skip OpenAI, use FinnHub"
         },
         {
-            "name": "场景3: 有OpenAI Key + 非OpenAI配置",
+            "name": "scene 3: Yes OpenAI Key + Non-OpenAI configuration",
             "openai_key": "sk-test123",
             "backend_url": "https://generativelanguage.googleapis.com/v1",
-            "expected": "跳过OpenAI，使用FinnHub"
+            "expected": "Skip OpenAI, use FinnHub"
         }
     ]
     
@@ -165,86 +165,86 @@ def test_config_scenarios():
         print(f"\n📊 {scenario['name']}")
         print("-" * 60)
         
-        # 模拟配置检查
+        # Simulate configuration check
         openai_key = scenario["openai_key"]
         backend_url = scenario["backend_url"]
         
-        print(f"   配置: OPENAI_API_KEY = {openai_key}")
-        print(f"   配置: backend_url = {backend_url}")
+        print(f"   Configuration: OPENAI_API_KEY = {openai_key}")
+        print(f"   Configuration: backend_url = {backend_url}")
         
-        # 执行检查逻辑
+        # Execute check logic
         should_skip = False
         
         if not openai_key:
-            print(f"   ❌ 未配置OPENAI_API_KEY")
+            print(f"   ❌ Not configured OPENAI_API_KEY")
             should_skip = True
         elif "openai.com" not in backend_url:
-            print(f"   ❌ backend_url不是OpenAI API")
+            print(f"   ❌ backend_url No OpenAI API")
             should_skip = True
         else:
-            print(f"   ✅ 配置检查通过")
+            print(f"   ✅ Configuration check passed")
         
-        result = "跳过OpenAI，使用FinnHub" if should_skip else "使用OpenAI API"
+        result = "Skip OpenAI, use FinnHub" if should_skip else "Use OpenAI API"
         expected = scenario["expected"]
         
         if result == expected:
-            print(f"   ✅ 结果符合预期: {result}")
+            print(f"   ✅ The results are as expected: {result}")
         else:
-            print(f"   ❌ 结果不符合预期: 期望 {expected}, 实际 {result}")
+            print(f"   ❌ The result is not as expected: Expectation {expected}, actual {result}")
     
     return True
 
 def main():
-    """主测试函数"""
-    print("🚀 开始测试OpenAI配置修复效果")
+    """Main test function"""
+    print("🚀 Start testing the OpenAI configuration repair effect")
     print("=" * 100)
     
     results = []
     
-    # 测试1: OpenAI配置检测逻辑
+    # test 1: OpenAI Configure detection logic
     results.append(test_openai_config_detection())
     
-    # 测试2: 基本面数据API选择逻辑
+    # test 2: Fundamental Data API Selection Logic
     results.append(test_fundamentals_api_selection())
     
-    # 测试3: 不同配置场景
+    # test 3: Different configuration scenarios
     results.append(test_config_scenarios())
     
-    # 总结结果
+    # Summary results
     print("\n" + "=" * 100)
-    print("📋 测试结果总结")
+    print("📋 Summary of test results")
     print("=" * 100)
     
     passed = sum(results)
     total = len(results)
     
     test_names = [
-        "OpenAI配置检测逻辑",
-        "基本面数据API选择逻辑",
-        "不同配置场景测试"
+        "OpenAI Configure detection logic",
+        "Fundamental Data API Selection Logic",
+        "Testing different configuration scenarios"
     ]
     
     for i, (name, result) in enumerate(zip(test_names, results)):
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{i+1}. {name}: {status}")
     
-    print(f"\n📊 总体结果: {passed}/{total} 测试通过")
+    print(f"\n📊 Overall results: {passed}/{total} Test passed")
     
     if passed == total:
-        print("🎉 所有测试通过！OpenAI配置修复成功")
-        print("\n📋 修复效果:")
-        print("1. ✅ 正确检测OpenAI API Key是否配置")
-        print("2. ✅ 正确检测backend_url是否为OpenAI API")
-        print("3. ✅ 在配置不匹配时跳过OpenAI，直接使用FinnHub")
-        print("4. ✅ 避免了404错误和配置混乱")
+        print("🎉 All tests passed! OpenAI configuration repair successful")
+        print("\n📋 Repair effect:")
+        print("1. ✅ Correctly detect whether the OpenAI API Key is configured")
+        print("2. ✅ Correctly detect whether backend_url is OpenAI API")
+        print("3. ✅ Skip OpenAI when configuration does not match and use it directly FinnHub")
+        print("4. ✅ Avoid 404 errors and configuration confusion")
         
-        print("\n🔧 解决的问题:")
-        print("- ❌ 在没有OpenAI Key时仍尝试调用OpenAI API")
-        print("- ❌ 使用Google URL调用OpenAI API格式导致404错误")
-        print("- ❌ 配置检查逻辑不够严格")
-        print("- ❌ 错误的API调用浪费时间和资源")
+        print("\n🔧 Problem solved:")
+        print("- ❌ Trying to call without OpenAI Key OpenAI API")
+        print("- ❌ Calling OpenAI API format using Google URL results in 404 error")
+        print("- ❌ Configuration check logic is not strict enough")
+        print("- ❌ Wrong API calls waste time and resources")
     else:
-        print("⚠️ 部分测试失败，需要进一步优化")
+        print("⚠️ Some tests failed and need further optimization")
     
     return passed == total
 

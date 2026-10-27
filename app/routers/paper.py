@@ -16,54 +16,54 @@ logger = logging.getLogger("webapi")
 ETF_CODE_PREFIXES = ("50", "51", "52", "56", "58", "15", "16", "18")
 
 
-# 每个市场的初始资金配置
+# Initial capital allocation per market
 INITIAL_CASH_BY_MARKET = {
-    "CNY": 1_000_000.0,   # A股：100万人民币
-    "HKD": 1_000_000.0,   # 港股：100万港币
-    "USD": 100_000.0      # 美股：10万美元
+    "CNY": 1_000_000.0,   # A Shares: 1 million RMB
+    "HKD": 1_000_000.0,   # Hong Kong stocks: HKD 1 million
+    "USD": 100_000.0      # U.S. stocks: $100,000
 }
 
 
 class PlaceOrderRequest(BaseModel):
-    code: str = Field(..., description="股票代码（支持A股/ETF/港股/美股）")
+    code: str = Field(..., description="Stock code (supports A shares/ETF/Hong Kong stocks/US stocks)")
     side: Literal["buy", "sell"]
     quantity: int = Field(..., gt=0)
-    market: Optional[str] = Field(None, description="市场类型 (CN/ETF/HK/US)，不传则自动识别")
-    # 可选：指定价格（如果不指定，则使用当前实时价格）
-    price: Optional[float] = Field(None, description="指定价格（必须在当天最高最低价之间）")
-    # 可选：关联的分析ID，便于从分析页面一键下单后追踪
+    market: Optional[str] = Field(None, description="market type (CN/ETF/HK/US), If not passed, it will be automatically recognized.")
+    # Optional: Specify price (if not specified, current real-time price is used)
+    price: Optional[float] = Field(None, description="Specify price (must be between the highest and lowest price of the day)")
+    # Optional: associated analysis ID to facilitate tracking after placing an order with one click from the analysis page
     analysis_id: Optional[str] = None
 
 
 def _detect_market_and_code(code: str) -> Tuple[str, str]:
     """
-    检测股票代码的市场类型并标准化代码
+    Detect the market type of a ticker and standardize the ticker
 
     Returns:
-        (market, normalized_code): 市场类型和标准化后的代码
-            - CN: A股（6位数字）
-            - HK: 港股（4-5位数字或带.HK后缀）
-            - US: 美股（字母代码）
+        (market, normalized_code): Market types and standardized codes
+            - CN: A Share (6 digits)
+            - HK: Hong Kong stocks (4-5 digits or with .HK suffix)
+            - US: US stocks (letter code)
     """
     code = code.strip().upper()
 
-    # 港股：带 .HK 后缀
+    # Hong Kong stocks: with .HK suffix
     if code.endswith('.HK'):
         return ('HK', code[:-3].zfill(5))
 
-    # 美股：纯字母
+    # US stocks: pure letters
     if re.match(r'^[A-Z]+$', code):
         return ('US', code)
 
-    # 港股：4-5位数字
+    # Hong Kong stocks: 4-5 digits
     if re.match(r'^\d{4,5}$', code):
         return ('HK', code.zfill(5))
 
-    # A股：6位数字
+    # A Share: 6 digits
     if re.match(r'^\d{6}$', code):
         return ('CN', code)
 
-    # 默认当作A股，补齐6位
+    # By default, it is treated as A shares, and 6 digits are added.
     return ('CN', code.zfill(6))
 
 
@@ -93,26 +93,26 @@ def _resolve_market_and_code(code: str, market: Optional[str] = None) -> Tuple[s
 
 
 async def _get_or_create_account(user_id: str) -> Dict[str, Any]:
-    """获取或创建账户（多货币）"""
+    """Get or create an account (multi-currency)"""
     db = get_mongo_db()
     acc = await db["paper_accounts"].find_one({"user_id": user_id})
     if not acc:
         now = datetime.utcnow().isoformat()
         acc = {
             "user_id": user_id,
-            # 多货币现金账户
+            # Multi-currency cash account
             "cash": {
                 "CNY": INITIAL_CASH_BY_MARKET["CNY"],
                 "HKD": INITIAL_CASH_BY_MARKET["HKD"],
                 "USD": INITIAL_CASH_BY_MARKET["USD"]
             },
-            # 多货币已实现盈亏
+            # Achieved profit and loss in multiple currencies
             "realized_pnl": {
                 "CNY": 0.0,
                 "HKD": 0.0,
                 "USD": 0.0
             },
-            # 账户设置
+            # Account settings
             "settings": {
                 "auto_currency_conversion": False,
                 "default_market": "CN"
@@ -122,7 +122,7 @@ async def _get_or_create_account(user_id: str) -> Dict[str, Any]:
         }
         await db["paper_accounts"].insert_one(acc)
     else:
-        # 兼容旧账户结构：如果 cash 或 realized_pnl 仍为标量，迁移为多货币对象
+        # Compatible with old account structures: if cash or realized_pnl are still scalars, migrate to multi-currency objects
         updates: Dict[str, Any] = {}
         try:
             cash_val = acc.get("cash")
@@ -138,10 +138,10 @@ async def _get_or_create_account(user_id: str) -> Dict[str, Any]:
             if updates:
                 updates["updated_at"] = datetime.utcnow().isoformat()
                 await db["paper_accounts"].update_one({"user_id": user_id}, {"$set": updates})
-                # 重新读取迁移后的账户
+                # Reread migrated accounts
                 acc = await db["paper_accounts"].find_one({"user_id": user_id})
         except Exception as e:
-            logger.error(f"❌ 账户结构迁移失败 user_id={user_id}: {e}")
+            logger.error(f"❌ Account structure migration failed user_id={user_id}: {e}")
 
     if acc:
         acc = serialize_document(acc)
@@ -150,7 +150,7 @@ async def _get_or_create_account(user_id: str) -> Dict[str, Any]:
 
 
 async def _get_market_rules(market: str) -> Optional[Dict[str, Any]]:
-    """获取市场规则配置"""
+    """Get market rule configuration"""
     db = get_mongo_db()
     rules_doc = await db["paper_market_rules"].find_one({"market": market})
     if rules_doc:
@@ -159,23 +159,23 @@ async def _get_market_rules(market: str) -> Optional[Dict[str, Any]]:
 
 
 def _calculate_commission(market: str, side: str, amount: float, rules: Dict[str, Any]) -> float:
-    """计算手续费"""
+    """Calculate handling fees"""
     if not rules or "commission" not in rules:
         return 0.0
 
     commission_config = rules["commission"]
     commission = 0.0
 
-    # 佣金
+    # Commission
     comm_rate = commission_config.get("rate", 0.0)
     comm_min = commission_config.get("min", 0.0)
     commission += max(amount * comm_rate, comm_min)
 
-    # 印花税（仅卖出）
+    # Stamp duty (sale only)
     if side == "sell" and "stamp_duty_rate" in commission_config:
         commission += amount * commission_config["stamp_duty_rate"]
 
-    # 其他费用（港股）
+    # Other expenses (Hong Kong stocks)
     if market == "HK":
         if "transaction_levy_rate" in commission_config:
             commission += amount * commission_config["transaction_levy_rate"]
@@ -184,7 +184,7 @@ def _calculate_commission(market: str, side: str, amount: float, rules: Dict[str
         if "settlement_fee_rate" in commission_config:
             commission += amount * commission_config["settlement_fee_rate"]
 
-    # SEC费用（美股，仅卖出）
+    # SEC Fees (US stocks, sell only)
     if market == "US" and side == "sell" and "sec_fee_rate" in commission_config:
         commission += amount * commission_config["sec_fee_rate"]
 
@@ -192,7 +192,7 @@ def _calculate_commission(market: str, side: str, amount: float, rules: Dict[str
 
 
 async def _get_available_quantity(user_id: str, code: str, market: str) -> int:
-    """获取可用数量（考虑T+1限制）"""
+    """Get the available quantity (consider T+1 restrictions)"""
     db = get_mongo_db()
     pos = await db["paper_positions"].find_one({"user_id": user_id, "code": code})
 
@@ -201,12 +201,12 @@ async def _get_available_quantity(user_id: str, code: str, market: str) -> int:
 
     total_qty = pos.get("quantity", 0)
 
-    # A股T+1：今天买入的不能卖出
+    # A shares T+1: What you bought today cannot be sold
     if market == "CN":
-        # 获取市场规则
+        # Get market rules
         rules = await _get_market_rules(market)
         if rules and rules.get("t_plus", 0) > 0:
-            # 查询今天的买入数量
+            # Check today's buying quantity
             today = datetime.utcnow().date().isoformat()
             pipeline = [
                 {"$match": {
@@ -221,26 +221,26 @@ async def _get_available_quantity(user_id: str, code: str, market: str) -> int:
             today_buy_qty = today_buy[0]["total"] if today_buy else 0
             return max(0, total_qty - today_buy_qty)
 
-    # 港股/美股T+0：全部可用
+    # Hong Kong stocks/US stocks T+0: All available
     return total_qty
 
 
 async def _get_stock_name(code: str, market: str) -> str:
     """
-    获取股票名称（支持多市场）
+    Get stock name (supports multiple markets)
 
-    - A股：从 stock_basic_info 表获取
-    - 港股/美股：使用 ForeignStockService.get_quote()（已包含 name 字段）
+    - A Stock: Obtained from stock_basic_info table
+    - Hong Kong stocks/US stocks: use ForeignStockService.get_quote() (name field included)
 
     Args:
-        code: 股票代码
-        market: 市场类型 (CN/HK/US)
+        code: Stock code
+        market: market type (CN/HK/US)
 
     Returns:
-        股票名称
+        Stock name
     """
     try:
-        # A股：从 stock_basic_info 获取
+        # A Stock: Obtained from stock_basic_info
         if market in {"CN", "ETF"}:
             db = get_mongo_db()
             code6 = str(code or "").strip().zfill(6)
@@ -252,54 +252,54 @@ async def _get_stock_name(code: str, market: str) -> str:
             etf_info = await db["etf_basic_info"].find_one({"code": code6}, {"_id": 0, "name": 1})
             if etf_info and etf_info.get("name"):
                 return etf_info.get("name")
-            return f"A股{code}"
+            return f"A shares{code}"
 
-        # 港股/美股：使用 ForeignStockService（复用已获取的行情数据）
+        # Hong Kong stocks/US stocks: Use ForeignStockService (reuse the obtained market data)
         elif market in ["HK", "US"]:
             try:
                 from app.services.foreign_stock_service import ForeignStockService
                 db = get_mongo_db()
                 service = ForeignStockService(db=db)
 
-                # 获取行情（会优先从缓存读取，避免重复API调用）
+                # Get market information (will be read from the cache first to avoid repeated API calls)
                 quote = await service.get_quote(market, code, force_refresh=False)
 
                 if quote and quote.get("name"):
                     name = quote.get("name")
-                    # 避免返回默认格式的名称
-                    if not name.startswith("港股") and not name.startswith("美股"):
+                    # Avoid returning names in default format
+                    if not name.startswith("Hong Kong stocks") and not name.startswith("US stocks"):
                         return name
 
-                return f"{'港股' if market == 'HK' else '美股'}{code}"
+                return f"{'Hong Kong stocks' if market == 'HK' else 'US stocks'}{code}"
             except Exception as e:
-                logger.warning(f"⚠️ {market}股名称获取失败 {code}: {e}")
-                return f"{'港股' if market == 'HK' else '美股'}{code}"
+                logger.warning(f"⚠️ {market}Failed to obtain stock name {code}: {e}")
+                return f"{'Hong Kong stocks' if market == 'HK' else 'US stocks'}{code}"
 
         else:
-            return f"股票{code}"
+            return f"stocks{code}"
 
     except Exception as e:
-        logger.error(f"❌ 获取股票名称失败 {code} ({market}): {e}")
-        return f"股票{code}"
+        logger.error(f"❌ Failed to get stock name {code} ({market}): {e}")
+        return f"stocks{code}"
 
 
 async def _get_last_price(code: str, market: str) -> Optional[float]:
     """
-    获取股票最新价格（支持多市场）
+    Get the latest stock price (supports multiple markets)
 
     Args:
-        code: 股票代码
-        market: 市场类型 (CN/HK/US)
+        code: Stock code
+        market: market type (CN/HK/US)
 
     Returns:
-        最新价格，如果获取失败返回 None
+        The latest price, returned if the acquisition fails None
     """
     db = get_mongo_db()
 
-    # A股：从数据库获取
+    # A Shares: obtained from database
     if market in {"CN", "ETF"}:
         code6 = str(code or "").strip().zfill(6)
-        # 1. 尝试从 market_quotes 获取
+        # 1. Try to get from market_quotes
         q = await db["market_quotes"].find_one(
             {"$or": [{"code": code}, {"code": code6}, {"symbol": code}, {"symbol": code6}]},
             {"_id": 0, "close": 1}
@@ -308,12 +308,12 @@ async def _get_last_price(code: str, market: str) -> Optional[float]:
             try:
                 price = float(q["close"])
                 if price > 0:
-                    logger.debug(f"✅ 从 market_quotes 获取价格: {code} = {price}")
+                    logger.debug(f"✅ Get prices from market_quotes: {code} = {price}")
                     return price
             except Exception as e:
-                logger.warning(f"⚠️ market_quotes 价格转换失败 {code}: {e}")
+                logger.warning(f"⚠️ market_quotes Price conversion failed {code}: {e}")
 
-        # 2. 回退到 stock_basic_info 的 current_price
+        # 2. Fallback to stock_basic_info current_price
         basic_info = await db["stock_basic_info"].find_one(
             {"$or": [{"code": code}, {"code": code6}, {"symbol": code}, {"symbol": code6}]},
             {"_id": 0, "current_price": 1}
@@ -322,10 +322,10 @@ async def _get_last_price(code: str, market: str) -> Optional[float]:
             try:
                 price = float(basic_info["current_price"])
                 if price > 0:
-                    logger.debug(f"✅ 从 stock_basic_info 获取价格: {code} = {price}")
+                    logger.debug(f"✅ Get prices from stock_basic_info: {code} = {price}")
                     return price
             except Exception as e:
-                logger.warning(f"⚠️ stock_basic_info 价格转换失败 {code}: {e}")
+                logger.warning(f"⚠️ stock_basic_info Price conversion failed {code}: {e}")
 
         etf_daily = await db["etf_daily_quotes"].find_one(
             {"code": code6},
@@ -336,15 +336,15 @@ async def _get_last_price(code: str, market: str) -> Optional[float]:
             try:
                 price = float(etf_daily["close"])
                 if price > 0:
-                    logger.debug(f"✅ 从 etf_daily_quotes 获取价格: {code6} = {price}")
+                    logger.debug(f"✅ Get prices from etf_daily_quotes: {code6} = {price}")
                     return price
             except Exception as e:
-                logger.warning(f"⚠️ etf_daily_quotes 价格转换失败 {code6}: {e}")
+                logger.warning(f"⚠️ etf_daily_quotes Price conversion failed {code6}: {e}")
 
-        logger.error(f"❌ 无法从数据库获取A股/ETF价格: {code}")
+        logger.error(f"❌ Unable to obtain A-share/ETF price from database: {code}")
         return None
 
-    # 港股/美股：使用 ForeignStockService
+    # Hong Kong stocks/US stocks: use ForeignStockService
     elif market in ['HK', 'US']:
         try:
             from app.services.foreign_stock_service import ForeignStockService
@@ -354,33 +354,33 @@ async def _get_last_price(code: str, market: str) -> Optional[float]:
             quote = await service.get_quote(market, code, force_refresh=False)
 
             if quote:
-                # 尝试多个可能的价格字段
+                # Try multiple possible price fields
                 price = quote.get("price") or quote.get("current_price") or quote.get("close")
                 if price and float(price) > 0:
-                    logger.debug(f"✅ 从 ForeignStockService 获取{market}价格: {code} = {price}")
+                    logger.debug(f"✅ Get from ForeignStockService{market}price: {code} = {price}")
                     return float(price)
         except Exception as e:
-            logger.error(f"❌ 获取{market}股价格失败 {code}: {e}")
+            logger.error(f"❌ get{market}stock price failure {code}: {e}")
             return None
 
-    logger.error(f"❌ 无法获取股票价格: {code} (market={market})")
+    logger.error(f"❌ Unable to get stock price: {code} (market={market})")
     return None
 
 
 async def _get_today_price_range(code: str, market: str) -> Optional[Dict[str, float]]:
     """
-    获取股票当天的最高价和最低价（支持多市场）
+    Get the highest and lowest price of the stock on the day (supports multiple markets)
 
     Args:
-        code: 股票代码
-        market: 市场类型 (CN/HK/US)
+        code: Stock code
+        market: market type (CN/HK/US)
 
     Returns:
-        包含 high 和 low 的字典，如果获取失败返回 None
+        A dictionary containing high and low, returned if acquisition fails None
     """
     db = get_mongo_db()
 
-    # A股：从 market_quotes 获取
+    # A Shares: obtained from market_quotes
     if market in {"CN", "ETF"}:
         code6 = str(code or "").strip().zfill(6)
         q = await db["market_quotes"].find_one(
@@ -392,10 +392,10 @@ async def _get_today_price_range(code: str, market: str) -> Optional[Dict[str, f
                 high = float(q.get("high", 0)) if q.get("high") is not None else None
                 low = float(q.get("low", 0)) if q.get("low") is not None else None
                 if high is not None and low is not None and high > 0 and low > 0:
-                    logger.debug(f"✅ 从 market_quotes 获取价格区间: {code} = high:{high}, low:{low}")
+                    logger.debug(f"✅ Get price range from market_quotes: {code} = high:{high}, low:{low}")
                     return {"high": high, "low": low}
             except Exception as e:
-                logger.warning(f"⚠️ market_quotes 价格区间转换失败 {code}: {e}")
+                logger.warning(f"⚠️ market_quotes Price range conversion failed {code}: {e}")
 
         etf_daily = await db["etf_daily_quotes"].find_one(
             {"code": code6},
@@ -415,15 +415,15 @@ async def _get_today_price_range(code: str, market: str) -> Optional[Dict[str, f
                 high_val = float(high) if high is not None else None
                 low_val = float(low) if low is not None else None
                 if high_val is not None and low_val is not None and high_val > 0 and low_val > 0:
-                    logger.debug(f"✅ 从 etf_daily_quotes 获取价格区间: {code6} = high:{high_val}, low:{low_val}")
+                    logger.debug(f"✅ Get price range from etf_daily_quotes: {code6} = high:{high_val}, low:{low_val}")
                     return {"high": high_val, "low": low_val}
             except Exception as e:
-                logger.warning(f"⚠️ etf_daily_quotes 价格区间转换失败 {code6}: {e}")
+                logger.warning(f"⚠️ etf_daily_quotes Price range conversion failed {code6}: {e}")
 
-        logger.warning(f"⚠️ 无法从数据库获取A股/ETF价格区间: {code}")
+        logger.warning(f"⚠️ Unable to obtain the A-share/ETF price range from the database: {code}")
         return None
 
-    # 港股/美股：使用 ForeignStockService
+    # Hong Kong stocks/US stocks: use ForeignStockService
     elif market in ['HK', 'US']:
         try:
             from app.services.foreign_stock_service import ForeignStockService
@@ -439,15 +439,15 @@ async def _get_today_price_range(code: str, market: str) -> Optional[Dict[str, f
                         high_val = float(high)
                         low_val = float(low)
                         if high_val > 0 and low_val > 0:
-                            logger.debug(f"✅ 从 ForeignStockService 获取{market}价格区间: {code} = high:{high_val}, low:{low_val}")
+                            logger.debug(f"✅ Get from ForeignStockService{market}price range: {code} = high:{high_val}, low:{low_val}")
                             return {"high": high_val, "low": low_val}
                     except Exception as e:
-                        logger.warning(f"⚠️ {market}股价格区间转换失败 {code}: {e}")
+                        logger.warning(f"⚠️ {market}Stock price range conversion failed {code}: {e}")
         except Exception as e:
-            logger.error(f"❌ 获取{market}股价格区间失败 {code}: {e}")
+            logger.error(f"❌ get{market}stock price range failure {code}: {e}")
             return None
 
-    logger.warning(f"⚠️ 无法获取股票价格区间: {code} (market={market})")
+    logger.warning(f"⚠️ Unable to get stock price range: {code} (market={market})")
     return None
 
 
@@ -460,11 +460,11 @@ def _zfill_code(code: str) -> str:
 
 @router.get("/account", response_model=dict)
 async def get_account(current_user: dict = Depends(get_current_user)):
-    """获取或创建纸上账户，返回资金与持仓估值汇总（支持多市场）"""
+    """Obtain or create a paper account, return funds and position valuation summary (supports multiple markets)"""
     db = get_mongo_db()
     acc = await _get_or_create_account(current_user["id"])
 
-    # 聚合持仓估值（按货币分类）
+    # Aggregated position valuation by currency
     positions = await db["paper_positions"].find({"user_id": current_user["id"]}).to_list(None)
 
     positions_value_by_currency = {
@@ -476,21 +476,21 @@ async def get_account(current_user: dict = Depends(get_current_user)):
     detailed_positions: List[Dict[str, Any]] = []
     for p in positions:
         code = p.get("code")
-        name = p.get("name", "")  # 从数据库获取股票名称
+        name = p.get("name", "")  # Get stock name from database
         market = p.get("market", "CN")
         currency = p.get("currency", "CNY")
         qty = int(p.get("quantity", 0))
         avg_cost = float(p.get("avg_cost", 0.0))
         available_qty = p.get("available_qty", qty)
 
-        # 获取最新价
+        # Get the latest price
         last = await _get_last_price(code, market)
         mkt_value = round((last or 0.0) * qty, 2)
         positions_value_by_currency[currency] += mkt_value
 
         detailed_positions.append({
             "code": code,
-            "name": name,  # 添加股票名称到响应
+            "name": name,  # Add stock name to response
             "market": market,
             "currency": currency,
             "quantity": qty,
@@ -501,11 +501,11 @@ async def get_account(current_user: dict = Depends(get_current_user)):
             "unrealized_pnl": None if last is None else round((last - avg_cost) * qty, 2)
         })
 
-    # 计算总资产（按货币分别显示）
+    # Calculate total assets (displayed separately by currency)
     cash = acc.get("cash", {})
     realized_pnl = acc.get("realized_pnl", {})
 
-    # 兼容旧格式（单一现金）
+    # Compatible with old formats (single cash)
     if not isinstance(cash, dict):
         cash = {"CNY": float(cash), "HKD": 0.0, "USD": 0.0}
     if not isinstance(realized_pnl, dict):
@@ -536,21 +536,21 @@ async def get_account(current_user: dict = Depends(get_current_user)):
 
 @router.post("/order", response_model=dict)
 async def place_order(payload: PlaceOrderRequest, current_user: dict = Depends(get_current_user)):
-    """提交市价单，按最新价即时成交（支持多市场）"""
+    """Submit a market price order and the transaction will be completed immediately at the latest price (supports multiple markets)"""
     db = get_mongo_db()
 
-    # 1. 识别市场类型
+    # 1. Identify market type
     market, normalized_code, is_etf = _resolve_market_and_code(payload.code, payload.market)
 
     side = payload.side
     qty = int(payload.quantity)
     analysis_id = payload.analysis_id if hasattr(payload, "analysis_id") else None
-    # 🔥 修复：直接从 Pydantic 模型获取 price 字段（Pydantic 模型可以直接访问字段）
+    # 🔥 Fix: Get price field directly from Pydantic model (Pydantic model can access the field directly)
     specified_price = payload.price
     
-    logger.info(f"📊 [模拟交易下单] 收到请求: code={normalized_code}, market={market}, is_etf={is_etf}, side={side}, qty={qty}, specified_price={specified_price}")
+    logger.info(f"📊 [Simulated trading order] Request received: code={normalized_code}, market={market}, is_etf={is_etf}, side={side}, qty={qty}, specified_price={specified_price}")
 
-    # 2. 确定货币
+    # 2. Determine currency
     currency_map = {
         "CN": "CNY",
         "HK": "HKD",
@@ -558,17 +558,17 @@ async def place_order(payload: PlaceOrderRequest, current_user: dict = Depends(g
     }
     currency = currency_map.get(market, "CNY")
 
-    # 3. 获取账户
+    # 3. Get an account
     acc = await _get_or_create_account(current_user["id"])
 
-    # 4. 获取价格
+    # 4. get price
     if specified_price is not None and specified_price > 0:
-        # 🔥 如果指定了价格，验证价格是否在当天最高最低价范围内
+        # 🔥 If a price is specified, verify whether the price is within the range of the highest and lowest prices of the day
         price_range = await _get_today_price_range(normalized_code, market)
         if not price_range:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"无法获取股票 {normalized_code} ({market}) 的当天价格区间，无法验证指定价格"
+                detail=f"Unable to get stock {normalized_code} ({market}) of the day s price range, the specified price cannot be verified"
             )
         
         high = price_range.get("high", 0)
@@ -577,71 +577,71 @@ async def place_order(payload: PlaceOrderRequest, current_user: dict = Depends(g
         if specified_price < low or specified_price > high:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"指定价格 {specified_price:.2f} 超出当天价格区间 [{low:.2f}, {high:.2f}]，模拟交易不能成功"
+                detail=f"Specify price {specified_price:.2f} Exceeding the price range of the day [{low:.2f}, {high:.2f}], Simulated trading cannot be successful"
             )
         
         price = float(specified_price)
-        logger.info(f"✅ [模拟交易] 使用指定价格: {normalized_code} = {price:.2f} (区间: [{low:.2f}, {high:.2f}])")
+        logger.info(f"✅ [simulated trading] Use specified price: {normalized_code} = {price:.2f} (interval: [{low:.2f}, {high:.2f}])")
     else:
-        # 未指定价格，使用当前实时价格
+        # No price specified, current real-time price used
         price = await _get_last_price(normalized_code, market)
         if price is None or price <= 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"无法获取股票 {normalized_code} ({market}) 的最新价格"
+                detail=f"Unable to get stock {normalized_code} ({market}) latest price"
             )
-        logger.info(f"✅ [模拟交易] 使用实时价格: {normalized_code} = {price:.2f}")
+        logger.info(f"✅ [simulated trading] Use real-time prices: {normalized_code} = {price:.2f}")
 
-    # 5. 计算金额
+    # 5. Calculate amount
     notional = round(price * qty, 2)
 
-    # 6. 获取市场规则并计算手续费
+    # 6. Get market rules and calculate fees
     rules = await _get_market_rules(market)
     commission = _calculate_commission(market, side, notional, rules) if rules else 0.0
     total_cost = notional + commission
 
-    # 7. 获取持仓
+    # 7. Get a position
     pos = await db["paper_positions"].find_one({"user_id": current_user["id"], "code": normalized_code})
 
     now_iso = datetime.utcnow().isoformat()
     realized_pnl_delta = 0.0
 
-    # 8. 执行买卖逻辑
+    # 8. Execute buying and selling logic
     if side == "buy":
-        # 资金检查（使用对应货币的账户）
+        # Funds check (account using corresponding currency)
         cash = acc.get("cash", {})
         if isinstance(cash, dict):
             available_cash = float(cash.get(currency, 0.0))
         else:
-            # 兼容旧格式
+            # Compatible with older formats
             available_cash = float(cash) if currency == "CNY" else 0.0
 
         if available_cash < total_cost:
             raise HTTPException(
                 status_code=400,
-                detail=f"可用{currency}不足：需要 {total_cost:.2f}，可用 {available_cash:.2f}"
+                detail=f"Available{currency}Disadvantage: need {total_cost:.2f}, Available {available_cash:.2f}"
             )
 
-        # 扣除资金（从对应货币账户）
+        # Deduct funds (from corresponding currency account)
         new_cash = round(available_cash - total_cost, 2)
         await db["paper_accounts"].update_one(
             {"user_id": current_user["id"]},
             {"$set": {f"cash.{currency}": new_cash, "updated_at": now_iso}}
         )
 
-        # 更新/创建持仓：加权平均成本
+        # Update/Create Position: Weighted Average Cost
         if not pos:
-            # 获取股票名称（根据市场类型）
+            # Get stock name (according to market type)
             stock_name = await _get_stock_name(normalized_code, market)
 
             new_pos = {
                 "user_id": current_user["id"],
                 "code": normalized_code,
-                "name": stock_name,  # 添加股票名称
+                "name": stock_name,  # Add stock name
                 "market": market,
                 "currency": currency,
                 "quantity": qty,
-                "available_qty": qty if market != "CN" else 0,  # A股T+1，今天买入不可用
+                "available_qty": qty if market != "CN" else 0,  # A shares T+1, Not available for buying today
                 "frozen_qty": 0,
                 "avg_cost": price,
                 "updated_at": now_iso
@@ -653,11 +653,11 @@ async def place_order(payload: PlaceOrderRequest, current_user: dict = Depends(g
             new_qty = old_qty + qty
             new_avg = round((old_cost * old_qty + price * qty) / new_qty, 4) if new_qty > 0 else price
 
-            # A股T+1：新买入的不可用
+            # A shares T+1: Not available for new purchases
             if market == "CN":
-                new_available = pos.get("available_qty", old_qty)  # 保持原有可用数量
+                new_available = pos.get("available_qty", old_qty)  # Keep the original available quantity
             else:
-                new_available = new_qty  # 港股/美股T+0，全部可用
+                new_available = new_qty  # Hong Kong stocks/US stocks T+0, All available
 
             await db["paper_positions"].update_one(
                 {"_id": pos["_id"]},
@@ -670,12 +670,12 @@ async def place_order(payload: PlaceOrderRequest, current_user: dict = Depends(g
             )
 
     else:  # sell
-        # 检查可用数量（考虑T+1）
+        # Check available quantities (consider T+1) 
         available_qty = await _get_available_quantity(current_user["id"], normalized_code, market)
         if available_qty < qty:
             raise HTTPException(
                 status_code=400,
-                detail=f"可用持仓不足：需要 {qty}，可用 {available_qty}"
+                detail=f"Insufficient available positions: required {qty}, Available {available_qty}"
             )
 
         old_qty = int(pos.get("quantity", 0))
@@ -684,7 +684,7 @@ async def place_order(payload: PlaceOrderRequest, current_user: dict = Depends(g
         pnl = round((price - avg_cost) * qty, 2)
         realized_pnl_delta = pnl
 
-        # 卖出收入（加到对应货币账户，扣除手续费）
+        # Sales income (added to the corresponding currency account, deducting handling fees)
         net_proceeds = notional - commission
         await db["paper_accounts"].update_one(
             {"user_id": current_user["id"]},
@@ -697,7 +697,7 @@ async def place_order(payload: PlaceOrderRequest, current_user: dict = Depends(g
             }
         )
 
-        # 更新持仓
+        # Update positions
         if new_qty == 0:
             await db["paper_positions"].delete_one({"_id": pos["_id"]})
         else:
@@ -711,7 +711,7 @@ async def place_order(payload: PlaceOrderRequest, current_user: dict = Depends(g
                 }}
             )
 
-    # 9. 记录订单与成交（即成）
+    # 9. Record orders and transactions (concluded)
     order_doc = {
         "user_id": current_user["id"],
         "code": normalized_code,
@@ -752,13 +752,13 @@ async def place_order(payload: PlaceOrderRequest, current_user: dict = Depends(g
 
 @router.get("/positions", response_model=dict)
 async def list_positions(current_user: dict = Depends(get_current_user)):
-    """获取持仓列表（支持多市场）"""
+    """Get the position list (supports multiple markets)"""
     db = get_mongo_db()
     items = await db["paper_positions"].find({"user_id": current_user["id"]}).to_list(None)
     enriched: List[Dict[str, Any]] = []
     for p in items:
         code = p.get("code")
-        name = p.get("name", "")  # 从数据库获取股票名称
+        name = p.get("name", "")  # Get stock name from database
         market = p.get("market", "CN")
         currency = p.get("currency", "CNY")
         qty = int(p.get("quantity", 0))
@@ -769,7 +769,7 @@ async def list_positions(current_user: dict = Depends(get_current_user)):
         mkt = round((last or 0.0) * qty, 2)
         enriched.append({
             "code": code,
-            "name": name,  # 添加股票名称到响应
+            "name": name,  # Add stock name to response
             "market": market,
             "currency": currency,
             "quantity": qty,
@@ -787,7 +787,7 @@ async def list_orders(limit: int = Query(50, ge=1, le=200), current_user: dict =
     db = get_mongo_db()
     cursor = db["paper_orders"].find({"user_id": current_user["id"]}).sort("created_at", -1).limit(limit)
     items = await cursor.to_list(None)
-    # 去除 _id
+    # remove _id
     cleaned = [{k: v for k, v in it.items() if k != "_id"} for it in items]
     return ok({"items": cleaned})
 
@@ -795,17 +795,17 @@ async def list_orders(limit: int = Query(50, ge=1, le=200), current_user: dict =
 @router.get("/quote/{code}", response_model=dict)
 async def get_quote(
     code: str,
-    market: Optional[str] = Query(None, description="市场类型 (CN/ETF/HK/US)，不传则自动识别"),
+    market: Optional[str] = Query(None, description="market type (CN/ETF/HK/US), If not passed, it will be automatically recognized."),
     current_user: dict = Depends(get_current_user)
 ):
-    """获取股票价格信息（当前价格和当天价格区间）"""
-    # 1. 识别市场类型
+    """Get stock price information (current price and today s price range)"""
+    # 1. Identify market type
     market, normalized_code, is_etf = _resolve_market_and_code(code, market)
     
-    # 2. 获取当前价格
+    # 2. Get current price
     current_price = await _get_last_price(normalized_code, market)
     
-    # 3. 获取当天价格区间
+    # 3. Get the price range of the day
     price_range = await _get_today_price_range(normalized_code, market)
     
     return ok({
@@ -818,22 +818,22 @@ async def get_quote(
 
 
 class InitializeAccountRequest(BaseModel):
-    """初始化账户请求（设置初始金额）"""
+    """Initialize account request (set initial amount)"""
     initial_cash: Dict[str, float] = Field(
         default_factory=lambda: {
             "CNY": INITIAL_CASH_BY_MARKET["CNY"],
             "HKD": INITIAL_CASH_BY_MARKET["HKD"],
             "USD": INITIAL_CASH_BY_MARKET["USD"]
         },
-        description="各市场的初始资金（CNY/HKD/USD）"
+        description="Initial capital for each market (CNY/HKD/USD)"
     )
 
 
 class ResetAccountRequest(BaseModel):
-    """重置账户请求"""
+    """Reset account request"""
     initial_cash: Optional[Dict[str, float]] = Field(
         None,
-        description="重置后的初始资金（CNY/HKD/USD），如果不提供则使用默认值"
+        description="Initial funds after reset (CNY/HKD/USD), if not provided, the default value will be used"
     )
 
 
@@ -843,25 +843,25 @@ async def initialize_account(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    初始化账户（设置初始金额）
+    Initialize account (set initial amount)
     
-    如果账户已存在，会更新初始金额（清空持仓和订单，重置为指定金额）
-    如果账户不存在，会创建新账户
+    If the account already exists, the initial amount will be updated (clear positions and orders, reset to the specified amount)
+    If the account does not exist, a new account will be created
     """
     db = get_mongo_db()
     user_id = current_user["id"]
     
-    # 验证金额
+    # Verification amount
     initial_cash = request.initial_cash
     for currency, amount in initial_cash.items():
         if amount < 0:
-            raise HTTPException(status_code=400, detail=f"{currency} 初始金额不能为负数")
+            raise HTTPException(status_code=400, detail=f"{currency} The initial amount cannot be negative")
     
-    # 检查账户是否存在
+    # Check if the account exists
     existing_acc = await db["paper_accounts"].find_one({"user_id": user_id})
     
     if existing_acc:
-        # 账户已存在，清空持仓和订单，重置为指定金额
+        # The account already exists, clear positions and orders, and reset to the specified amount
         await db["paper_positions"].delete_many({"user_id": user_id})
         await db["paper_orders"].delete_many({"user_id": user_id})
         await db["paper_trades"].delete_many({"user_id": user_id})
@@ -880,9 +880,9 @@ async def initialize_account(
             {"user_id": user_id},
             {"$set": update_data}
         )
-        logger.info(f"✅ 账户已初始化: user_id={user_id}, initial_cash={initial_cash}")
+        logger.info(f"✅ Account has been initialized: user_id={user_id}, initial_cash={initial_cash}")
     else:
-        # 账户不存在，创建新账户
+        # Account does not exist, create a new account
         now = datetime.utcnow().isoformat()
         acc = {
             "user_id": user_id,
@@ -900,12 +900,12 @@ async def initialize_account(
             "updated_at": now,
         }
         await db["paper_accounts"].insert_one(acc)
-        logger.info(f"✅ 账户已创建: user_id={user_id}, initial_cash={initial_cash}")
+        logger.info(f"✅ Account has been created: user_id={user_id}, initial_cash={initial_cash}")
     
-    # 返回更新后的账户
+    # Return to updated account
     acc = await _get_or_create_account(user_id)
     return ok({
-        "message": "账户已初始化",
+        "message": "Account has been initialized",
         "cash": acc.get("cash", {}),
         "account": acc
     })
@@ -918,34 +918,34 @@ async def reset_account(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    重置账户（支持多货币和自定义初始金额）
+    Reset account (supports multiple currencies and custom initial amounts)
     
-    如果提供了 initial_cash，则使用指定的金额；否则使用默认金额
+    If initial_cash is provided, the specified amount is used; otherwise the default amount is used
     """
     if not confirm:
-        raise HTTPException(status_code=400, detail="请设置 confirm=true 以确认重置")
+        raise HTTPException(status_code=400, detail="Please set confirm=true to confirm reset")
     
     db = get_mongo_db()
     user_id = current_user["id"]
     
-    # 确定重置后的初始金额
+    # Determine the initial amount after reset
     if request and request.initial_cash:
         initial_cash = request.initial_cash
-        # 验证金额
+        # Verification amount
         for currency, amount in initial_cash.items():
             if amount < 0:
-                raise HTTPException(status_code=400, detail=f"{currency} 初始金额不能为负数")
+                raise HTTPException(status_code=400, detail=f"{currency} The initial amount cannot be negative")
     else:
-        # 使用默认金额
+        # Use default amount
         initial_cash = INITIAL_CASH_BY_MARKET.copy()
     
-    # 清空所有数据
+    # Clear all data
     await db["paper_accounts"].delete_many({"user_id": user_id})
     await db["paper_positions"].delete_many({"user_id": user_id})
     await db["paper_orders"].delete_many({"user_id": user_id})
     await db["paper_trades"].delete_many({"user_id": user_id})
     
-    # 重新创建账户（使用指定的初始金额）
+    # Recreate account (with specified initial amount)
     now = datetime.utcnow().isoformat()
     acc = {
         "user_id": user_id,
@@ -964,19 +964,19 @@ async def reset_account(
     }
     await db["paper_accounts"].insert_one(acc)
     
-    logger.info(f"✅ 账户已重置: user_id={user_id}, initial_cash={initial_cash}")
-    return ok({"message": "账户已重置", "cash": acc.get("cash", {})})
+    logger.info(f"✅ Account has been reset: user_id={user_id}, initial_cash={initial_cash}")
+    return ok({"message": "Account has been reset", "cash": acc.get("cash", {})})
 
 
-# ==================== 市场规则配置 API ====================
+# ==================== Market rules configuration API ====================
 
 @router.get("/market-rules")
 async def get_market_rules():
-    """获取所有市场的交易规则配置"""
+    """Get trading rule configurations for all markets"""
     db = get_mongo_db()
     rules = await db["paper_market_rules"].find({}, {"_id": 0}).to_list(None)
     if not rules:
-        # 如果没有配置，返回默认值（scripts 目录在社区版被剔除，缺失时返回空并提示初始化）
+        # If there is no configuration, return to the default value (the scripts directory is deleted in the community version, and if missing, it returns empty and prompts for initialization)
         try:
             from scripts.init_paper_trading_market_rules import MARKET_RULES
             return ok(MARKET_RULES)
@@ -986,12 +986,12 @@ async def get_market_rules():
 
 
 class CommissionUpdateRequest(BaseModel):
-    rules: List[Dict[str, Any]] = Field(..., description="各市场的佣金配置")
+    rules: List[Dict[str, Any]] = Field(..., description="Commission allocation for each market")
 
 
 @router.post("/market-rules/commission")
 async def update_market_rules_commission(req: CommissionUpdateRequest):
-    """更新各市场的佣金配置"""
+    """Update commission allocation for each market"""
     db = get_mongo_db()
     updated = 0
     for item in req.rules:
@@ -999,7 +999,7 @@ async def update_market_rules_commission(req: CommissionUpdateRequest):
         commission = item.get("commission", {})
         if not market:
             continue
-        # 只更新 commission 部分，保留其他规则
+        # Only update the commission part and keep other rules
         result = await db["paper_market_rules"].update_one(
             {"market": market},
             {"$set": {f"rules.commission.{k}": v for k, v in commission.items()}}
@@ -1007,8 +1007,8 @@ async def update_market_rules_commission(req: CommissionUpdateRequest):
         if result.modified_count > 0:
             updated += 1
         elif result.matched_count == 0:
-            # 市场规则不存在，创建基础记录
-            logger.warning(f"市场 {market} 规则不存在，跳过佣金配置更新")
+            # Market rules do not exist, create basic records
+            logger.warning(f"market {market} Rule does not exist, skip commission configuration update")
 
-    logger.info(f"✅ 更新佣金配置: {updated} 个市场")
-    return ok({"message": f"已更新 {updated} 个市场的佣金配置", "updated": updated})
+    logger.info(f"✅ Update commission configuration: {updated} market")
+    return ok({"message": f"updated {updated} Commission allocation for each market", "updated": updated})

@@ -1,13 +1,13 @@
 <template>
   <div class="model-config-component">
-    <!-- AI模型配置 -->
+    <!-- AI Model configuration -->
     <div class="config-section">
-      <h4 class="config-title">🤖 AI模型配置</h4>
+      <h4 class="config-title">🤖 AI Model configuration</h4>
       <div class="model-config">
         <div class="model-item">
           <div class="model-label">
-            <span>快速分析模型</span>
-            <el-tooltip content="用于市场分析、新闻分析、基本面分析等" placement="top">
+            <span>Quickly analyze models</span>
+            <el-tooltip content="Used for market analysis, news analysis, fundamental analysis, etc." placement="top">
               <el-icon class="help-icon"><InfoFilled /></el-icon>
             </el-tooltip>
           </div>
@@ -21,7 +21,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                 <span style="flex: 1;">{{ model.model_display_name || model.model_name }}</span>
                 <div style="display: flex; align-items: center; gap: 4px;">
-                  <!-- 能力等级徽章 -->
+                  <!-- Ability Level Badge -->
                   <el-tag
                     v-if="model.capability_level"
                     :type="getCapabilityTagType(model.capability_level)"
@@ -30,14 +30,14 @@
                   >
                     {{ getCapabilityText(model.capability_level) }}
                   </el-tag>
-                  <!-- 角色标签 -->
+                  <!-- role tag -->
                   <el-tag
                     v-if="isQuickAnalysisRole(model.suitable_roles)"
                     type="success"
                     size="small"
                     effect="plain"
                   >
-                    ⚡快速
+                    ⚡fast
                   </el-tag>
                   <span style="font-size: 12px; color: #909399;">{{ model.provider }}</span>
                 </div>
@@ -48,8 +48,8 @@
 
         <div class="model-item">
           <div class="model-label">
-            <span>深度决策模型</span>
-            <el-tooltip content="用于研究整合员综合决策、风险评估师最终评估" placement="top">
+            <span>Deep decision-making model</span>
+            <el-tooltip content="Used for comprehensive decision-making by research integrators and final assessment by risk assessors" placement="top">
               <el-icon class="help-icon"><InfoFilled /></el-icon>
             </el-tooltip>
           </div>
@@ -63,7 +63,7 @@
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                 <span style="flex: 1;">{{ model.model_display_name || model.model_name }}</span>
                 <div style="display: flex; align-items: center; gap: 4px;">
-                  <!-- 能力等级徽章 -->
+                  <!-- Ability Level Badge -->
                   <el-tag
                     v-if="model.capability_level"
                     :type="getCapabilityTagType(model.capability_level)"
@@ -72,14 +72,14 @@
                   >
                     {{ getCapabilityText(model.capability_level) }}
                   </el-tag>
-                  <!-- 角色标签 -->
+                  <!-- role tag -->
                   <el-tag
                     v-if="isDeepAnalysisRole(model.suitable_roles)"
                     type="warning"
                     size="small"
                     effect="plain"
                   >
-                    🧠深度
+                    🧠Depth
                   </el-tag>
                   <span style="font-size: 12px; color: #909399;">{{ model.provider }}</span>
                 </div>
@@ -89,7 +89,7 @@
         </div>
       </div>
 
-      <!-- 🆕 模型推荐提示 -->
+      <!-- 🆕 Model recommendation tips -->
       <el-alert
         v-if="modelRecommendation"
         :title="modelRecommendation.title"
@@ -109,7 +109,7 @@
               @click="applyRecommendedModels"
               style="flex-shrink: 0;"
             >
-              应用推荐
+              Application recommendations
             </el-button>
           </div>
         </template>
@@ -136,7 +136,7 @@ interface Props {
   quickAnalysisModel: string
   deepAnalysisModel: string
   availableModels: any[]
-  analysisDepth: string | number  // 支持字符串（如"标准"）或数字（如3）
+  analysisDepth: string | number  // Supports strings (such as"Standard") or number (such as 3)
 }
 
 const props = defineProps<Props>()
@@ -151,7 +151,7 @@ const emit = defineEmits<{
 const localQuickModel = ref(props.quickAnalysisModel)
 const localDeepModel = ref(props.deepAnalysisModel)
 
-// 模型推荐提示
+// Model recommendation tips
 const modelRecommendation = ref<{
   title: string
   message: string
@@ -179,21 +179,21 @@ const onDeepModelChange = (value: string) => {
 }
 
 /**
- * 获取能力等级文本
+ * Get ability level text
  */
 const getCapabilityText = (level: number): string => {
   const texts: Record<number, string> = {
-    1: '⚡基础',
-    2: '📊标准',
-    3: '🎯高级',
-    4: '🔥专业',
-    5: '👑旗舰'
+    1: '⚡Basics',
+    2: '📊Standard',
+    3: '🎯Advanced',
+    4: '🔥Professional',
+    5: '👑flagship'
   }
-  return texts[level] || '📊标准'
+  return texts[level] || '📊Standard'
 }
 
 /**
- * 获取能力等级标签类型
+ * Get ability level label type
  */
 const getCapabilityTagType = (level: number): 'success' | 'info' | 'warning' | 'danger' => {
   if (level >= 4) return 'danger'
@@ -203,7 +203,7 @@ const getCapabilityTagType = (level: number): 'success' | 'info' | 'warning' | '
 }
 
 /**
- * 判断是否适合快速分析
+ * Determine whether it is suitable for rapid analysis
  */
 const isQuickAnalysisRole = (roles: string[] | undefined): boolean => {
   if (!roles || !Array.isArray(roles)) return false
@@ -211,7 +211,7 @@ const isQuickAnalysisRole = (roles: string[] | undefined): boolean => {
 }
 
 /**
- * 判断是否适合深度分析
+ * Determine whether it is suitable for in-depth analysis
  */
 const isDeepAnalysisRole = (roles: string[] | undefined): boolean => {
   if (!roles || !Array.isArray(roles)) return false
@@ -219,32 +219,32 @@ const isDeepAnalysisRole = (roles: string[] | undefined): boolean => {
 }
 
 /**
- * 检查模型适配性并提供推荐
+ * Check model suitability and provide recommendations
  */
 const checkModelSuitability = async () => {
-  // 将分析深度转换为标准格式
+  // Convert analysis depth to standard format
   let depthName: string
   if (typeof props.analysisDepth === 'number') {
     const depthNames: Record<number, string> = {
-      1: '快速',
-      2: '基础',
-      3: '标准',
-      4: '深度',
-      5: '全面'
+      1: 'fast',
+      2: 'Basics',
+      3: 'Standard',
+      4: 'Depth',
+      5: 'Comprehensive'
     }
-    depthName = depthNames[props.analysisDepth] || '标准'
+    depthName = depthNames[props.analysisDepth] || 'Standard'
   } else {
     depthName = props.analysisDepth
   }
 
   try {
-    // 获取推荐模型
+    // Get recommended models
     const recommendRes = await recommendModels(depthName)
     const responseData = recommendRes?.data?.data
 
     if (responseData) {
-      const quickModel = responseData.quick_model || '未知'
-      const deepModel = responseData.deep_model || '未知'
+      const quickModel = responseData.quick_model || 'unknown'
+      const deepModel = responseData.deep_model || 'unknown'
       const quickSelection = resolveModelSelection(
         quickModel,
         props.availableModels,
@@ -256,57 +256,57 @@ const checkModelSuitability = async () => {
         parseModelSelection(localDeepModel.value).provider
       )
 
-      // 获取模型的显示名称
+      // Get the display name of the model
       const quickModelInfo = findModelBySelection(props.availableModels, quickSelection)
       const deepModelInfo = findModelBySelection(props.availableModels, deepSelection)
 
       const quickDisplayName = quickModelInfo?.model_display_name || quickModel
       const deepDisplayName = deepModelInfo?.model_display_name || deepModel
 
-      // 获取推荐理由
+      // Get recommendation reasons
       const reason = responseData.reason || ''
 
-      // 构建推荐说明
+      // Build recommended instructions
       const depthDescriptions: Record<string, string> = {
-        '快速': '快速浏览，获取基本信息',
-        '基础': '基础分析，了解主要指标',
-        '标准': '标准分析，全面评估股票',
-        '深度': '深度研究，挖掘投资机会',
-        '全面': '全面分析，形成系统研究结论'
+        'fast': 'Browse quickly to get basic information',
+        'Basics': 'Basic analysis to understand the main indicators',
+        'Standard': 'Standard analysis to fully evaluate stocks',
+        'Depth': 'Conduct in-depth research and explore investment opportunities',
+        'Comprehensive': 'Comprehensive analysis and formation of systematic research conclusions'
       }
 
-      const message = `${depthDescriptions[depthName] || '标准分析'}\n\n推荐模型配置：\n• 快速模型：${quickDisplayName}\n• 深度模型：${deepDisplayName}\n\n${reason}`
+      const message = `${depthDescriptions[depthName] || 'standard analysis'}\n\n Recommended model configuration:\n• Quick model:${quickDisplayName}\n• Deep model:${deepDisplayName}\n\n${reason}`
 
       modelRecommendation.value = {
-        title: '💡 模型推荐',
+        title: '💡 Model recommendation',
         message,
         type: 'info',
         quickModel: quickSelection,
         deepModel: deepSelection
       }
     } else {
-      // 如果没有推荐数据，显示通用说明
+      // If there is no recommended data, show a general description
       const generalDescriptions: Record<string, string> = {
-        '快速': '快速分析：使用基础模型即可，注重速度和成本',
-        '基础': '基础分析：快速模型用基础级，深度模型用标准级',
-        '标准': '标准分析：快速模型用基础级，深度模型用标准级以上',
-        '深度': '深度分析：快速模型用标准级，深度模型用高级以上，需要推理能力',
-        '全面': '全面分析：快速模型用标准级，深度模型用专业级以上，强推理能力'
+        'fast': 'Quick analysis: Just use the basic model, focusing on speed and cost',
+        'Basics': 'Basic analysis: use the basic level for fast models and the standard level for deep models.',
+        'Standard': 'Standard analysis: Use basic level for fast models, and use standard level or above for deep models.',
+        'Depth': 'Depth analysis: Use standard level for fast models, and use advanced level or higher for deep models, which require reasoning capabilities.',
+        'Comprehensive': 'Comprehensive analysis: use standard level for fast models, professional level or above for deep models, strong reasoning ability'
       }
 
       modelRecommendation.value = {
-        title: '💡 模型推荐',
-        message: generalDescriptions[depthName] || generalDescriptions['标准'],
+        title: '💡 Model recommendation',
+        message: generalDescriptions[depthName] || generalDescriptions['Standard'],
         type: 'info'
       }
     }
   } catch (error) {
-    console.error('获取模型推荐失败:', error)
+    console.error('Failed to obtain model recommendations:', error)
   }
 }
 
 /**
- * 应用推荐的模型配置
+ * Apply the recommended model configuration
  */
 const applyRecommendedModels = () => {
   if (modelRecommendation.value?.quickModel && modelRecommendation.value?.deepModel) {
@@ -316,24 +316,24 @@ const applyRecommendedModels = () => {
     emit('update:quickAnalysisModel', modelRecommendation.value.quickModel)
     emit('update:deepAnalysisModel', modelRecommendation.value.deepModel)
 
-    // 清除推荐提示
+    // Clear recommendations
     modelRecommendation.value = null
 
-    ElMessage.success('已应用推荐的模型配置')
+    ElMessage.success('Recommended model configuration applied')
   }
 }
 
-// 监听分析深度变化
+// Monitor and analyze depth changes
 watch(() => props.analysisDepth, () => {
   checkModelSuitability()
 })
 
-// 监听模型选择变化
+// Listen for model selection changes
 watch([localQuickModel, localDeepModel], () => {
   checkModelSuitability()
 })
 
-// 初始化
+// initialization
 onMounted(() => {
   localQuickModel.value = resolveModelSelection(props.quickAnalysisModel, props.availableModels)
   localDeepModel.value = resolveModelSelection(props.deepAnalysisModel, props.availableModels)

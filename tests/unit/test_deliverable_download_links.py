@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""交付物签名下载链接测试。
+"""Deliverable signature download link test.
 
-背景：浏览器直接点击 markdown 下载链接不带 JWT 头，原路由必然 401
-（"未登录或登录已过期"）。修复采用 presigned URL 模式：工具生成链接时
-附加 HMAC 签名 + 过期时间，路由验证签名放行；无签名回退登录鉴权。
+Background: If the browser directly clicks the markdown download link without the JWT header, the original route must be 401
+ ("Not logged in or your login has expired") . Fix using presigned URL pattern: when tool generates link
+Append HMAC signature + Expiration time, routing verification signature release; no signature fallback login authentication.
 """
 
 import time
@@ -20,14 +20,14 @@ from core.deliverables.download_links import (
 
 class TestSignatureHelper:
     def test_sign_then_verify_roundtrip(self):
-        filename = "table_赛力斯（601127）营收预测_20260915_174922.xlsx"
+        filename = "table_Cyrus (601127) revenue forecast_20260915_174922.xlsx"
         query = sign_deliverable_query(filename)
         assert query.startswith("exp=")
         parts = dict(p.split("=", 1) for p in query.split("&"))
         assert verify_deliverable_signature(filename, parts["exp"], parts["sig"]) is True
 
     def test_wrong_filename_rejected(self):
-        """签名与文件名绑定：拿 A 文件的签名访问 B 文件必须拒绝。"""
+        """The signature is bound to the file name: accessing file B with the signature of file A must be denied."""
         query = sign_deliverable_query("table_a.xlsx")
         parts = dict(p.split("=", 1) for p in query.split("&"))
         assert verify_deliverable_signature("table_b.xlsx", parts["exp"], parts["sig"]) is False
@@ -50,7 +50,7 @@ class TestSignatureHelper:
         assert verify_deliverable_signature("a.xlsx", parts["exp"], bad_sig) is False
 
     def test_ascii_filename_also_works(self):
-        """估值工具的纯 ASCII 文件名（valuation_601127_xxx.xlsx）同样可签名。"""
+        """The plain ASCII file name of the valuation instrument (valuation_601127_xxx.xlsx) is also signable."""
         query = sign_deliverable_query("valuation_601127_20260915_120000.xlsx")
         parts = dict(p.split("=", 1) for p in query.split("&"))
         assert (
@@ -60,18 +60,18 @@ class TestSignatureHelper:
 
 
 class TestDownloadRouteAuth:
-    """下载路由双通道鉴权：签名有效放行 / 无签名要求登录。"""
+    """Dual-channel authentication for download routing: valid signature release / no signature required to log in."""
 
     @pytest.fixture
     def client_with_file(self):
-        """创建测试文件并返回 TestClient 工厂（settings 已配置）。"""
+        """Creates a test file and returns the TestClient factory (settings configured)."""
         import os
         from pathlib import Path
 
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
 
-        filename = "table_测试签名下载_20260915_000000.xlsx"
+        filename = "table_Test signature download_20260915_000000.xlsx"
         base_dir = Path.cwd() / "data" / "deliverables"
         base_dir.mkdir(parents=True, exist_ok=True)
         file_path = base_dir / filename
@@ -85,7 +85,7 @@ class TestDownloadRouteAuth:
         from app.routers.intelligent_assistant import router
 
         app = FastAPI()
-        # get_current_user 访问 request.session，需要 SessionMiddleware（与主应用一致）
+        # get_current_user To access request.session, SessionMiddleware is required (consistent with the main application)
         app.add_middleware(SessionMiddleware, secret_key="test-secret")
         app.include_router(router)
         client = TestClient(app)
@@ -98,17 +98,17 @@ class TestDownloadRouteAuth:
             pass
 
     def test_signed_link_downloads_without_jwt(self, client_with_file):
-        """核心回归场景：浏览器直接点击签名链接（无 Authorization 头）应 200。"""
+        """Core regression scenario: The browser directly clicks the signed link (without Authorization header) and should respond to 200."""
         from urllib.parse import quote
 
         client, filename = client_with_file
         url = f"/api/assistant/deliverables/{quote(filename)}?{sign_deliverable_query(filename)}"
         resp = client.get(url)
-        assert resp.status_code == 200, f"签名链接应放行，实际 {resp.status_code}: {resp.text[:200]}"
+        assert resp.status_code == 200, f"The signed link should be released, and the actual {resp.status_code}: {resp.text[:200]}"
         assert resp.content.startswith(b"PK")
 
     def test_unsigned_link_returns_401(self, client_with_file):
-        """无签名且未登录 → 401（保持原有安全行为）。"""
+        """No signature and not logged in → 401 (Maintain the original safe behavior)."""
         from urllib.parse import quote
 
         client, filename = client_with_file
@@ -116,7 +116,7 @@ class TestDownloadRouteAuth:
         assert resp.status_code == 401
 
     def test_path_traversal_still_blocked(self):
-        """安全回归：路径穿越必须仍然被拦截。"""
+        """Safe return: path crossing must still be intercepted."""
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
         from starlette.middleware.sessions import SessionMiddleware
@@ -131,7 +131,7 @@ class TestDownloadRouteAuth:
         app.include_router(router)
         client = TestClient(app)
 
-        # ..%2F 穿越在 path param 解码后包含 ".."，正则放行 ".." 但显式排除
+        # ..%2F The traversal is included after decoding the path param "..", Regular release ".." but explicitly exclude
         resp = client.get("/api/assistant/deliverables/..%2Fsecret.xlsx")
         assert resp.status_code in (400, 404)
 
@@ -139,14 +139,14 @@ class TestDownloadRouteAuth:
         from urllib.parse import quote
 
         client, _ = client_with_file
-        fn = "table_恶意.exe"
+        fn = "table_malicious.exe"
         url = f"/api/assistant/deliverables/{quote(fn)}?{sign_deliverable_query(fn)}"
         resp = client.get(url)
         assert resp.status_code == 400
 
 
 class TestToolLinkGeneration:
-    """工具返回的 markdown 链接必须带签名参数。"""
+    """The markdown link returned by the tool must have signed parameters."""
 
     def test_export_tool_link_contains_signature(self, monkeypatch, tmp_path):
         from core.tools.implementations.assistant_ops import export_table_excel_tool as mod
@@ -154,13 +154,13 @@ class TestToolLinkGeneration:
         monkeypatch.setattr(mod, "_OUTPUT_DIR", str(tmp_path))
 
         markdown = (
-            "| 月份 | 销量 | 营收(亿) |\n|---|---:|---:|\n| 2026-09 | 10,500 | 106.5 |"
+            "| month | Sales volume | Revenue(billion) |\n|---|---:|---:|\n| 2026-09 | 10,500 | 106.5 |"
         )
         result = mod.export_table_excel_tool.invoke(
-            {"markdown_tables": f"## 营收预测\n{markdown}", "title": "赛力斯（601127）营收预测"}
+            {"markdown_tables": f"## revenue forecast\n{markdown}", "title": "Cyrus (601127) revenue forecast"}
         )
         assert "exp=" in result and "sig=" in result
-        # 半角括号不得出现在链接中（markdown 链接目标会截断）
+        # Half-angle brackets must not appear in links (markdown link targets will be truncated)
         assert "(" not in result.split("](")[-1]
 
     def test_filename_fullwidth_parens(self):
@@ -168,5 +168,5 @@ class TestToolLinkGeneration:
             _sanitize_filename_part,
         )
 
-        assert "(" not in _sanitize_filename_part("赛力斯(601127)模型")
-        assert "（601127）" in _sanitize_filename_part("赛力斯(601127)模型")
+        assert "(" not in _sanitize_filename_part("Thalys(601127)model")
+        assert "（601127）" in _sanitize_filename_part("Thalys(601127)model")

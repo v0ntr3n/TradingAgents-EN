@@ -1,4 +1,4 @@
-"""标准化技术因子包工具。"""
+"""Standardized technology factor package tool."""
 
 import json
 import logging
@@ -41,10 +41,10 @@ def _pick_numeric(doc: Dict[str, Any], *keys: str) -> Any:
     tool_id="get_technical_factor_bundle_tool",
     name="技术因子包",
     description=(
-        "返回股票的 technical_core 标准化技术因子包。"
-        "适合一次性获取 MA20、RSI14、KDJ(K/D/J)、MACD(DIF/DEA/HIST) 这批当前仓库已物化并稳定支持的技术指标。"
-        "输出是结构化 JSON，适合 Agent 直接绑定后做择时、趋势判断和技术面筛选。"
-        "这里的“因子/信号”是技术面价格指标，不是基本面因子、财务风险信号、情绪信号或 Agent 能力缺口。"
+        "Returns the stock s technical_core package of standardized technical factors."
+        "Suitable for obtaining MA20, RSI14,KDJ(K/D/J), MACD(DIF/DEA/HIST) This batch of technical indicators that the current warehouse has materialized and stably supports."
+        "The output is structured JSON, which is suitable for direct binding to Agent for timing, trend judgment and technical screening."
+        "Here s factor/signal It is a technical price indicator, not a fundamental factor, financial risk signal, sentiment signal or Agent capability gap."
     ),
     category="technical",
     is_online=False,
@@ -55,18 +55,18 @@ def _pick_numeric(doc: Dict[str, Any], *keys: str) -> Any:
     preferred_for=["技术指标批量获取", "结构化技术因子", "Agent 技术面输入"],
     data_source="stock_technical_indicators/market_quotes",
     when_to_use=(
-        "当 Agent 需要趋势、动量、超买超卖、MACD/KDJ 信号这类技术面指标时使用。"
-        "如果你需要的是技术指标字段集合而不是长篇技术分析报告，优先绑定这个工具。"
+        "It is used when the Agent needs technical indicators such as trend, momentum, overbought and oversold, and MACD/KDJ signals."
+        "If you need a collection of technical indicator fields rather than a long technical analysis report, bind this tool first."
     ),
     when_not_to_use=(
-        "不适合获取 PE/PB/ROE/现金流等基本面指标；"
-        "不适合财务风险、现金流恶化、公告事件、情绪面或 Agent 工坊能力缺口分析；"
-        "也不适合需要完整历史序列回测的场景。若只需可读性较强的文本技术分析，可考虑 get_technical_indicators。"
+        "Not suitable for obtaining fundamental indicators such as PE/PB/ROE/cash flow;"
+        "Not suitable for financial risk, cash flow deterioration, announcement events, emotional aspects or Agent workshop capability gap analysis;"
+        "It is also not suitable for scenarios that require complete historical sequence backtesting. If you only need readable text for technical analysis, consider get_technical_indicators."
     ),
     returns=(
-        "返回 JSON 字符串，结构包含 symbol、name、current_price、trade_date、data_source、bundle=technical_core、"
+        "Returns a JSON string, the structure contains symbol, name, current_price, trade_date, data_source,bundle=technical_core, "
         "factors、missing_factors、calculation_notes。"
-        "factors 中固定包含 ma20、rsi14、kdj_k、kdj_d、kdj_j、dif、dea、macd_hist。"
+        "factors Fixed to include ma20, rsi14, kdj_k, kdj_d, kdj_j, dif, dea, macd_hist."
     ),
     example="get_technical_factor_bundle_tool(symbol='600519')",
     related_tools=[
@@ -76,36 +76,36 @@ def _pick_numeric(doc: Dict[str, Any], *keys: str) -> Any:
     ],
 )
 def get_technical_factor_bundle_tool(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"]
+    symbol: Annotated[str, "A stock code, such as 600519,000001"]
 ) -> str:
-    """获取标准化技术因子包，从 MongoDB 物化快照中读取 MA20、RSI14、KDJ、MACD 等核心技术指标。
+    """Obtain the standardized technical factor package and read core technical indicators such as MA20, RSI14, KDJ, and MACD from MongoDB materialized snapshots.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
+        symbol: A stock code, such as 600519,000001
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 标准化后的 6 位股票代码
-            name: 股票名称
-            current_price: 最新价格
-            trade_date: 数据交易日
-            data_source: 数据来源
-            bundle: 因子包标识，固定为 "technical_core"
-            factors: 技术因子字典，子字段 —
-                ma20: 20 日移动平均线
-                rsi14: 14 日 RSI
-                kdj_k: KDJ 的 K 值
-                kdj_d: KDJ 的 D 值
-                kdj_j: KDJ 的 J 值
-                dif: MACD 的 DIF
-                dea: MACD 的 DEA
-                macd_hist: MACD 柱状图
-            missing_factors: 缺失因子字段名列表（值为 None 的字段）
-            calculation_notes: 计算说明文本列表
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Standardized 6-digit stock code
+            name: Stock name
+            current_price: latest price
+            trade_date: Data transaction day
+            data_source: Data source
+            bundle: Factor package identifier, fixed to "technical_core"
+            factors: Technical factors dictionary, subfield —
+                ma20: 20 daily moving average
+                rsi14: 14 day RSI
+                kdj_k: KDJ The K value of
+                kdj_d: KDJ The D value of
+                kdj_j: KDJ The J value of
+                dif: MACD of DIF
+                dea: MACD of DEA
+                macd_hist: MACD bar chart
+            missing_factors: List of missing factor field names (fields with value None)
+            calculation_notes: Calculation description text list
+        Field returned on exception —
             status: "error"
-            message: 错误信息
-            symbol: 标准化后的股票代码
+            message: error message
+            symbol: Standardized stock code
     """
     normalized_symbol = _normalize_symbol(symbol)
 
@@ -134,15 +134,15 @@ def get_technical_factor_bundle_tool(
             "factors": factors,
             "missing_factors": missing_factors,
             "calculation_notes": [
-                "技术指标优先读取 stock_technical_indicators 中最新物化快照。",
-                "当前标准技术因子包固定包含 MA20、RSI14、KDJ(K/D/J)、MACD(DIF/DEA/HIST)。",
-                "如果 missing_factors 非空，表示对应指标在最新技术快照中暂不可用。",
+                "Technical indicators give priority to reading the latest materialized snapshot in stock_technical_indicators.",
+                "The current standard technical factor package includes MA20, RSI14,KDJ(K/D/J), MACD(DIF/DEA/HIST). ",
+                "If missing_factors is non-empty, it means that the corresponding indicator is temporarily unavailable in the latest technology snapshot.",
             ],
         }
 
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
     except Exception as exc:
-        logger.error("技术因子包获取失败: %s", exc, exc_info=True)
+        logger.error("Failed to obtain technical factor package: %s", exc, exc_info=True)
         return json.dumps(
             {"status": "error", "message": f"获取技术因子包失败: {exc}", "symbol": normalized_symbol},
             ensure_ascii=False,

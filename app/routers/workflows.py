@@ -1,7 +1,7 @@
 """
-工作流 API 路由
+Workflow API routing
 
-提供工作流的 CRUD 和执行端点
+Provides CRUD and execution endpoints for workflows
 """
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
@@ -27,16 +27,16 @@ router = APIRouter(
 )
 
 
-# ==================== 数据模型 ====================
+# ==================== data model ====================
 
 class Position(BaseModel):
-    """节点位置"""
+    """Node position"""
     x: float
     y: float
 
 
 class NodeDefinition(BaseModel):
-    """节点定义"""
+    """Node definition"""
     id: str
     type: str
     agent_id: Optional[str] = None
@@ -47,7 +47,7 @@ class NodeDefinition(BaseModel):
 
 
 class EdgeDefinition(BaseModel):
-    """边定义"""
+    """edge definition"""
     id: str
     source: str
     target: str
@@ -58,8 +58,8 @@ class EdgeDefinition(BaseModel):
 
 
 class WorkflowCreate(BaseModel):
-    """创建工作流请求"""
-    id: Optional[str] = None  # 可选，验证时可传入
+    """Create workflow request"""
+    id: Optional[str] = None  # Optional, can be passed in during verification
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = None
     version: str = "1.0.0"
@@ -72,7 +72,7 @@ class WorkflowCreate(BaseModel):
 
 
 class WorkflowUpdate(BaseModel):
-    """更新工作流请求"""
+    """Update workflow request"""
     name: Optional[str] = None
     description: Optional[str] = None
     version: Optional[str] = None
@@ -84,53 +84,53 @@ class WorkflowUpdate(BaseModel):
 
 
 class ModelConfig(BaseModel):
-    """模型配置"""
-    model_name: str = Field(..., description="模型名称")
-    provider: str = Field(..., description="模型厂家：openai/dashscope/deepseek/google等")
-    api_key: Optional[str] = Field(default=None, description="API Key（可选，默认从数据库获取）")
-    api_base: Optional[str] = Field(default=None, description="API Base URL（可选）")
+    """Model configuration"""
+    model_name: str = Field(..., description="Model name")
+    provider: str = Field(..., description="Model manufacturer: openai/dashscope/deepseek/google, etc.")
+    api_key: Optional[str] = Field(default=None, description="API Key (Optional, obtained from database by default)")
+    api_base: Optional[str] = Field(default=None, description="API Base URL (optional)")
     temperature: float = Field(default=0.1, ge=0, le=2)
     max_tokens: int = Field(default=2000, ge=100, le=32000)
     timeout: int = Field(default=60, ge=10, le=600)
 
 
 class WorkflowExecuteRequest(BaseModel):
-    """执行工作流请求"""
-    ticker: Optional[str] = Field(default=None, description="股票代码（stock_analysis/etf_analysis 必填，其他类型可选）")
+    """Execute workflow requests"""
+    ticker: Optional[str] = Field(default=None, description="Stock code (stock_analysis/etf_analysis required, other types are optional)")
     analysis_date: Optional[datetime] = None
-    research_depth: str = Field(default="标准", description="分析深度：快速/基础/标准/深度/全面")
-    # 🆕 分析师选择（用于动态裁剪工作流）
+    research_depth: str = Field(default="Standard", description="Analysis depth: Quick/Basic/Standard/In-depth/Comprehensive")
+    # 🆕 Analyst selection (for dynamic cropping workflow)
     selected_analysts: Optional[List[str]] = Field(
         default=None,
-        description="选中的分析师列表，如 ['market', 'fundamentals']，为空则使用所有分析师"
+        description="List of selected analysts, such as ['market', 'fundamentals'], Empty to use all analysts"
     )
-    # 向后兼容旧字段
-    quick_analysis_model: Optional[str] = Field(default=None, description="快速分析模型名称（向后兼容）")
-    deep_analysis_model: Optional[str] = Field(default=None, description="深度分析模型名称（向后兼容）")
-    # 新的完整模型配置
-    quick_model_config: Optional[ModelConfig] = Field(default=None, description="快速分析模型完整配置")
-    deep_model_config: Optional[ModelConfig] = Field(default=None, description="深度分析模型完整配置")
+    # Backward compatibility with old fields
+    quick_analysis_model: Optional[str] = Field(default=None, description="Quick analysis of model names (backwards compatible)")
+    deep_analysis_model: Optional[str] = Field(default=None, description="Deep analysis model name (backwards compatible)")
+    # New complete model configuration
+    quick_model_config: Optional[ModelConfig] = Field(default=None, description="Quick analysis model complete configuration")
+    deep_model_config: Optional[ModelConfig] = Field(default=None, description="Complete configuration of in-depth analysis model")
     lookback_days: int = Field(default=30, ge=1, le=365)
     max_debate_rounds: int = Field(default=3, ge=1, le=10)
-    # 🆕 自定义参数（透传到 task_params，用于通用研究等场景）
+    # 🆕 Custom parameters (transparently transmitted to task_params, used for general research and other scenarios)
     custom_params: Dict[str, Any] = Field(
         default_factory=dict,
-        description="自定义参数，会合并到任务参数中"
+        description="Custom parameters will be merged into task parameters"
     )
 
 
 class ValidationResult(BaseModel):
-    """验证结果"""
+    """Verification results"""
     is_valid: bool
     errors: List[str] = []
     warnings: List[str] = []
 
 
-# ==================== API 端点 ====================
+# ==================== API endpoint ====================
 
 @router.get("", dependencies=[Depends(require_pro)])
 async def list_workflows():
-    """获取所有工作流列表"""
+    """Get a list of all workflows"""
     try:
         from core.api import WorkflowAPI
         from core.workflow.default_workflow_provider import get_default_workflow_provider
@@ -138,13 +138,13 @@ async def list_workflows():
         workflows = api.list_all()
         return ok(workflows)
     except Exception as e:
-        logger.error(f"获取工作流列表失败: {e}")
+        logger.error(f"Failed to get workflow list: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/templates")
 async def get_templates(user: dict = Depends(get_current_user)):
-    """获取预定义模板"""
+    """Get predefined templates"""
     try:
         from core.api import WorkflowAPI
         from core.workflow.default_workflow_provider import get_default_workflow_provider
@@ -152,30 +152,30 @@ async def get_templates(user: dict = Depends(get_current_user)):
         templates = api.get_templates()
         return ok(templates)
     except Exception as e:
-        logger.error(f"获取模板失败: {e}")
+        logger.error(f"Failed to get template: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{workflow_id}", dependencies=[Depends(require_pro)])
 async def get_workflow(workflow_id: str):
-    """获取单个工作流详情"""
+    """Get individual workflow details"""
     try:
         from core.api import WorkflowAPI
         api = WorkflowAPI()
         workflow = api.get(workflow_id)
         if workflow is None:
-            raise HTTPException(status_code=404, detail="工作流不存在")
+            raise HTTPException(status_code=404, detail="Workflow does not exist")
         return ok(workflow)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"获取工作流失败: {e}")
+        logger.error(f"Failed to get workflow: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("", dependencies=[Depends(require_pro)])
 async def create_workflow(data: WorkflowCreate):
-    """创建新工作流"""
+    """Create new workflow"""
     try:
         from core.api import WorkflowAPI
         api = WorkflowAPI()
@@ -183,65 +183,65 @@ async def create_workflow(data: WorkflowCreate):
 
         if not result.get("success"):
             return fail(
-                message="创建工作流失败",
+                message="Failed to create workflow",
                 code=400,
-                data={"errors": result.get("errors", ["创建失败"])}
+                data={"errors": result.get("errors", ["Creation failed"])}
             )
 
-        return ok(result.get("workflow"), message="创建成功")
+        return ok(result.get("workflow"), message="Created successfully")
     except Exception as e:
-        logger.error(f"创建工作流失败: {e}")
+        logger.error(f"Failed to create workflow: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/{workflow_id}", dependencies=[Depends(require_pro)])
 async def update_workflow(workflow_id: str, data: WorkflowUpdate):
-    """更新工作流"""
+    """Update workflow"""
     try:
         from core.api import WorkflowAPI
         api = WorkflowAPI()
 
-        # 过滤掉 None 值
+        # Filter out None values
         update_data = {k: v for k, v in data.model_dump().items() if v is not None}
         result = api.update(workflow_id, update_data)
 
         if not result.get("success"):
-            error = result.get("error") or result.get("errors", ["更新失败"])
+            error = result.get("error") or result.get("errors", ["Update failed"])
             return fail(message=str(error), code=400)
 
-        return ok(result.get("workflow"), message="更新成功")
+        return ok(result.get("workflow"), message="Update successful")
     except Exception as e:
-        logger.error(f"更新工作流失败: {e}")
+        logger.error(f"Update workflow failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{workflow_id}", dependencies=[Depends(require_pro)])
 async def delete_workflow(workflow_id: str):
-    """删除工作流"""
+    """Delete workflow"""
     try:
         from core.api import WorkflowAPI
         api = WorkflowAPI()
         result = api.delete(workflow_id)
 
         if not result.get("success"):
-            return fail(message=result.get("error", "删除失败"), code=400)
+            return fail(message=result.get("error", "Delete failed"), code=400)
 
-        return ok(None, message="删除成功")
+        return ok(None, message="Delete successfully")
     except Exception as e:
-        logger.error(f"删除工作流失败: {e}")
+        logger.error(f"Deletion workflow failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/validate", dependencies=[Depends(require_pro)])
 async def validate_workflow(data: WorkflowCreate):
-    """验证工作流定义"""
+    """Validate workflow definition"""
     try:
         from core.api import WorkflowAPI
         api = WorkflowAPI()
         result = api.validate(data.model_dump())
         return ok(result)
     except Exception as e:
-        logger.error(f"验证工作流失败: {e}")
+        logger.error(f"Validation workflow failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -251,12 +251,12 @@ async def execute_workflow(
     data: WorkflowExecuteRequest,
     user: dict = Depends(get_current_user)
 ):
-    """执行工作流 - 使用 v2.0 统一任务引擎（异步执行）
+    """Execution workflow - using v2.0 Unified Task Engine (asynchronous execution)
 
-    改进：
-    - 使用 v2.0 统一任务引擎，支持异步执行
-    - 返回 task_id，前端可轮询进度
-    - 统一的报告格式和进度跟踪
+    Improvements:
+    - Use v2.0 unified task engine to support asynchronous execution
+    - Return task_id, the front end can poll the progress
+    - Unified reporting format and progress tracking
     """
     try:
         from app.services.task_analysis_service import get_task_analysis_service
@@ -268,7 +268,7 @@ async def execute_workflow(
         task_service = get_task_analysis_service()
         user_id = str(user["id"])
 
-        # 🆕 查询工作流类型和 input_config，用于动态决定参数
+        # 🆕 Query workflow type and input_config for dynamically determining parameters
         db = get_mongo_db()
         wf_doc = await db.workflows.find_one(
             {"_id": workflow_id},
@@ -277,27 +277,27 @@ async def execute_workflow(
         workflow_type = wf_doc.get("workflow_type", "stock_analysis") if wf_doc else "stock_analysis"
         input_config = wf_doc.get("input_config") if wf_doc else None
 
-        logger.info(f"📊 [工作流执行] workflow_id={workflow_id}, workflow_type={workflow_type}")
+        logger.info(f"📊 [Workflow execution] workflow_id={workflow_id}, workflow_type={workflow_type}")
 
-        # 🆕 根据 workflow_type 判断 ticker 是否必填
+        # 🆕 Determine whether ticker is required based on workflow_type
         TICKER_REQUIRED_TYPES = {"stock_analysis", "etf_analysis"}
         if workflow_type in TICKER_REQUIRED_TYPES and not data.ticker:
-            raise HTTPException(status_code=400, detail=f"工作流类型 {workflow_type} 必须提供 ticker 参数")
+            raise HTTPException(status_code=400, detail=f"Workflow type {workflow_type} The ticker parameter is required")
 
-        # 🆕 根据 workflow_type 映射 task_type
+        # 🆕 Mapping based on workflow_type task_type
         WORKFLOW_TYPE_TO_TASK_TYPE = {
             "stock_analysis": AnalysisTaskType.STOCK_ANALYSIS,
             "etf_analysis": AnalysisTaskType.ETF_ANALYSIS,
             "position_analysis": AnalysisTaskType.POSITION_ANALYSIS,
             "trade_review": AnalysisTaskType.TRADE_REVIEW,
-            "general": AnalysisTaskType.STOCK_ANALYSIS,  # general 没有独立 task_type，用 STOCK_ANALYSIS 作为载体
+            "general": AnalysisTaskType.STOCK_ANALYSIS,  # general There is no independent task_type, use STOCK_ANALYSIS as the carrier
         }
         task_type = WORKFLOW_TYPE_TO_TASK_TYPE.get(workflow_type, AnalysisTaskType.STOCK_ANALYSIS)
 
-        # 准备任务参数
+        # Prepare task parameters
         task_params = {}
 
-        # ticker 相关参数（仅当提供了 ticker 时才设置）
+        # ticker Related parameters (only set if ticker is provided)
         if data.ticker:
             market = StockUtils.identify_stock_market(data.ticker)
             market_type_mapping = {
@@ -310,9 +310,9 @@ async def execute_workflow(
             task_params["symbol"] = data.ticker
             task_params["stock_code"] = data.ticker
             task_params["market_type"] = market_type
-            logger.info(f"📊 [工作流执行] 股票 {data.ticker} 识别为市场: {market_type}")
+            logger.info(f"📊 [Workflow execution] stocks {data.ticker} identified as market: {market_type}")
 
-        # 通用参数
+        # Common parameters
         task_params["analysis_date"] = data.analysis_date.strftime("%Y-%m-%d") if data.analysis_date else None
         task_params["research_depth"] = data.research_depth
         task_params["quick_analysis_model"] = data.quick_analysis_model
@@ -321,7 +321,7 @@ async def execute_workflow(
         task_params["max_debate_rounds"] = data.max_debate_rounds
         task_params["selected_analysts"] = data.selected_analysts if hasattr(data, 'selected_analysts') else None
 
-        # 🆕 根据 input_config.fields 的 default 值补充缺失参数
+        # 🆕 Supplement missing parameters based on the default value of input_config.fields
         if input_config and isinstance(input_config, dict):
             fields = input_config.get("fields", [])
             for field in fields:
@@ -330,48 +330,48 @@ async def execute_workflow(
                     default_val = field.get("default")
                     if default_val is not None:
                         task_params[fname] = default_val
-                        logger.debug(f"📋 [工作流执行] 从 input_config 补充参数: {fname}={default_val}")
+                        logger.debug(f"📋 [Workflow execution] Supplement parameters from input_config: {fname}={default_val}")
 
-        # 🆕 合并自定义参数（通用研究等场景使用）
+        # 🆕 Merge custom parameters (used in scenarios such as general research)
         if data.custom_params:
             task_params.update(data.custom_params)
 
-        # 🆕 为 general 类型工作流打上 task_category 标记，便于后续查询
+        # 🆕 Mark the general type workflow with task_category to facilitate subsequent queries.
         if workflow_type == "general":
             task_params["task_category"] = "general"
-            logger.info(f"🏷️ [工作流执行] 标记为通用研究任务: workflow_type=general")
+            logger.info(f"🏷️ [Workflow execution] Marked as a general research task: workflow_type=general")
 
-        logger.info(f"🚀 [工作流执行] 创建任务: workflow_id={workflow_id}, ticker={data.ticker}, user={user_id}")
+        logger.info(f"🚀 [Workflow execution] Create task: workflow_id={workflow_id}, ticker={data.ticker}, user={user_id}")
 
-        # 🔥 从用户偏好读取风险偏好设置
+        # 🔥 Read risk preference settings from user preferences
         from app.routers.analysis import get_user_risk_preference
         preference_type = await get_user_risk_preference(user_id)
-        logger.info(f"📊 [工作流执行] 使用用户风险偏好: {preference_type}")
+        logger.info(f"📊 [Workflow execution] Use user risk preferences: {preference_type}")
 
-        # 使用 v2.0 统一任务引擎创建任务
+        # Create tasks using v2.0 Unified Task Engine
         task = await task_service.create_task(
             user_id=PyObjectId(user_id),
             task_type=task_type,
             task_params=task_params,
-            engine_type="workflow",  # 强制使用工作流引擎
-            preference_type=preference_type,  # 🔥 使用用户偏好设置
-            workflow_id=workflow_id  # 指定使用哪个工作流
+            engine_type="workflow",  # Force use of workflow engine
+            preference_type=preference_type,  # 🔥 Use user preferences
+            workflow_id=workflow_id  # Specify which workflow to use
         )
 
-        # 异步执行任务（不等待完成）
+        # Execute tasks asynchronously (without waiting for completion)
         import asyncio
         asyncio.create_task(task_service.execute_task(task))
 
-        logger.info(f"✅ [工作流执行] 任务已创建: task_id={task.task_id}")
+        logger.info(f"✅ [Workflow execution] Task has been created: task_id={task.task_id}")
 
         return ok({
             "task_id": task.task_id,
             "status": task.status,
-            "message": "任务已提交，正在后台执行"
-        }, message="任务已提交")
+            "message": "The task has been submitted and is being executed in the background"
+        }, message="Task has been submitted")
 
     except Exception as e:
-        logger.error(f"❌ [工作流执行] 创建任务失败: {e}", exc_info=True)
+        logger.error(f"❌ [Workflow execution] Failed to create task: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -385,10 +385,10 @@ async def _save_analysis_report(
     execution_time: float = 0.0
 ):
     """
-    保存研究报告到 MongoDB
+    Save research report to MongoDB
 
-    从工作流执行结果中提取各个报告并保存到 analysis_reports 集合
-    与单股分析保持完全一致的报告结构
+    Extract individual reports from the workflow execution results and save them to the analysis_reports collection
+    Maintains a reporting structure that is fully consistent with single stock analysis
     """
     try:
         from app.core.database import get_mongo_db
@@ -396,43 +396,43 @@ async def _save_analysis_report(
 
         db = get_mongo_db()
 
-        # 🔥 生成分析ID - 使用 UTC 时间保持与老版本一致
+        # 🔥 Generate analysis ID - use UTC time to keep consistent with old versions
         timestamp = dt.utcnow()
         analysis_id = f"{ticker}_{timestamp.strftime('%Y%m%d_%H%M%S')}"
 
-        # 🔍 调试：打印 workflow_result 的所有键
-        logger.info(f"[报告保存] 🔍 workflow_result 包含的字段: {list(workflow_result.keys())}")
-        # 检查 index_report 和 sector_report 是否存在
+        # 🔍 Debugging: Print all keys of workflow_result
+        logger.info(f"[report save] 🔍 workflow_result Contained fields: {list(workflow_result.keys())}")
+        # Check whether index_report and sector_report exist
         if "index_report" in workflow_result:
-            logger.info(f"[报告保存] ✅ index_report 存在, 长度: {len(str(workflow_result.get('index_report', '')))}")
+            logger.info(f"[report save] ✅ index_report exist, length: {len(str(workflow_result.get('index_report', '')))}")
         else:
-            logger.warning(f"[报告保存] ❌ index_report 不存在于 workflow_result 中")
+            logger.warning(f"[report save] ❌ index_report does not exist in workflow_result")
         if "sector_report" in workflow_result:
-            logger.info(f"[报告保存] ✅ sector_report 存在, 长度: {len(str(workflow_result.get('sector_report', '')))}")
+            logger.info(f"[report save] ✅ sector_report exist, length: {len(str(workflow_result.get('sector_report', '')))}")
         else:
-            logger.warning(f"[报告保存] ❌ sector_report 不存在于 workflow_result 中")
+            logger.warning(f"[report save] ❌ sector_report does not exist in workflow_result")
 
-        # 从工作流结果中提取报告（字符串类型）
+        # Extract reports from workflow results (String type)
         reports = {}
         string_report_fields = [
-            # 🆕 宏观研究报告（优先提取）
-            ("index_report", "大盘指数研究报告"),
-            ("sector_report", "行业板块研究报告"),
-            # 个股研究报告
-            ("market_report", "市场研究报告"),
-            ("sentiment_report", "情绪研究报告"),
-            ("news_report", "新闻研究报告"),
-            ("fundamentals_report", "基本面研究报告"),
-            # 风险与辩论相关直出字段（如果存在，直接保存）
-            ("risk_assessment", "风险评估结论"),
-            ("bull_report", "积极证据研究报告"),
-            ("bear_report", "谨慎证据研究报告"),
-            ("risky_opinion", "高弹性情景观点"),
-            ("safe_opinion", "防御情景观点"),
-            ("neutral_opinion", "中性风险观点"),
-            ("investment_plan", "研究团队研究结论"),
-            ("trader_investment_plan", "研究整合意见"),
-            ("final_trade_decision", "最终研究结论"),
+            # 🆕 Macro research reports (priority extraction)
+            ("index_report", "Market Index Research Report"),
+            ("sector_report", "Industry sector research report"),
+            # Individual stock research reports
+            ("market_report", "market research report"),
+            ("sentiment_report", "Emotion research report"),
+            ("news_report", "news research report"),
+            ("fundamentals_report", "Fundamental Research Report"),
+            # Risk and debate related direct out fields (if present, save directly)
+            ("risk_assessment", "Risk assessment conclusion"),
+            ("bull_report", "positive evidence research report"),
+            ("bear_report", "Prudence Evidence Research Report"),
+            ("risky_opinion", "Highly resilient scenario perspective"),
+            ("safe_opinion", "defensive situational view"),
+            ("neutral_opinion", "neutral risk view"),
+            ("investment_plan", "Research team s conclusion"),
+            ("trader_investment_plan", "Research and integrate opinions"),
+            ("final_trade_decision", "final research conclusion"),
         ]
 
         def _extract_text(v):
@@ -449,122 +449,122 @@ async def _save_analysis_report(
             content = _extract_text(content_raw)
             if content and isinstance(content, str) and len(content.strip()) > 5:
                 reports[field_name] = content
-                logger.info(f"[报告保存] 提取报告: {report_name} ({len(content)} 字符)")
+                logger.info(f"[report save] Extract report: {report_name} ({len(content)} character)")
 
-        # 处理研究团队辩论状态（字典类型）- 拆分为独立子报告
+        # Handle research team debate status (dict type) - split into independent sub-reports
         investment_debate = workflow_result.get("investment_debate_state", {})
         if investment_debate and isinstance(investment_debate, dict):
-            # 1. 多头研究员报告
+            # 1. Bull Researcher Report
             bull_history = _extract_text(investment_debate.get("bull_history", ""))
             if bull_history and len(bull_history.strip()) > 5:
                 reports["bull_researcher"] = bull_history
-                logger.info(f"[报告保存] 提取报告: 多头研究员 ({len(bull_history)} 字符)")
+                logger.info(f"[report save] Extract report: multi-investigator ({len(bull_history)} character)")
 
-            # 2. 空头研究员报告
+            # 2. Short Researcher Report
             bear_history = _extract_text(investment_debate.get("bear_history", ""))
             if bear_history and len(bear_history.strip()) > 5:
                 reports["bear_researcher"] = bear_history
-                logger.info(f"[报告保存] 提取报告: 空头研究员 ({len(bear_history)} 字符)")
+                logger.info(f"[report save] Extract report: short researcher ({len(bear_history)} character)")
 
-            # 3. 研究经理研究报告
+            # 3. Research Manager Research Report
             judge_decision = _extract_text(investment_debate.get("judge_decision", ""))
             if judge_decision and len(judge_decision.strip()) > 5:
                 reports["research_team_decision"] = judge_decision
-                logger.info(f"[报告保存] 提取报告: 研究经理分析 ({len(judge_decision)} 字符)")
+                logger.info(f"[report save] Extract report: Research Manager Analysis ({len(judge_decision)} character)")
             else:
                 formatted = _format_research_team_report(investment_debate)
                 if formatted and len(formatted.strip()) > 5:
                     reports["research_team_decision"] = formatted
-                    logger.info(f"[报告保存] 生成报告: 研究经理综合决策 ({len(formatted)} 字符)")
+                    logger.info(f"[report save] Generate report: Research manager comprehensive decision-making ({len(formatted)} character)")
 
-        # 处理风险管理团队辩论状态（字典类型）- 拆分为独立子报告
+        # Handling risk management team debate status (dict type) - split into independent sub-reports
         risk_debate = workflow_result.get("risk_debate_state", {})
         if risk_debate and isinstance(risk_debate, dict):
-            # 1. 激进分析师报告
+            # 1. activist analyst report
             risky_history = _extract_text(risk_debate.get("risky_history", ""))
             if risky_history and len(risky_history.strip()) > 5:
                 reports["risky_analyst"] = risky_history
-                logger.info(f"[报告保存] 提取报告: 激进分析师 ({len(risky_history)} 字符)")
+                logger.info(f"[report save] Extract report: activist analyst ({len(risky_history)} character)")
 
-            # 2. 保守分析师报告
+            # 2. conservative analyst report
             safe_history = _extract_text(risk_debate.get("safe_history", ""))
             if safe_history and len(safe_history.strip()) > 5:
                 reports["safe_analyst"] = safe_history
-                logger.info(f"[报告保存] 提取报告: 保守分析师 ({len(safe_history)} 字符)")
+                logger.info(f"[report save] Extract report: conservative analyst ({len(safe_history)} character)")
 
-            # 3. 中性分析师报告
+            # 3. Neutral analyst report
             neutral_history = _extract_text(risk_debate.get("neutral_history", ""))
             if neutral_history and len(neutral_history.strip()) > 5:
                 reports["neutral_analyst"] = neutral_history
-                logger.info(f"[报告保存] 提取报告: 中性分析师 ({len(neutral_history)} 字符)")
+                logger.info(f"[report save] Extract report: neutral analyst ({len(neutral_history)} character)")
 
-            # 4. 风险评估师决策报告
+            # 4. Risk Assessor Decision Report
             judge_decision = _extract_text(risk_debate.get("judge_decision", ""))
             if judge_decision and len(judge_decision.strip()) > 5:
                 reports["risk_management_decision"] = judge_decision
-                logger.info(f"[报告保存] 提取报告: 风险评估师 ({len(judge_decision)} 字符)")
+                logger.info(f"[report save] Extract report: risk assessor ({len(judge_decision)} character)")
             else:
                 formatted = _format_risk_management_report(risk_debate)
                 if formatted and len(formatted.strip()) > 5:
                     reports["risk_management_decision"] = formatted
-                    logger.info(f"[报告保存] 生成报告: 风险管理团队综合决策 ({len(formatted)} 字符)")
+                    logger.info(f"[report save] Generate report: Comprehensive decision-making by the risk management team ({len(formatted)} character)")
 
         if not reports:
-            logger.warning("[报告保存] 没有找到任何报告内容，跳过保存")
+            logger.warning("[report save] No report content found, skip saving")
             return
 
-        # 获取股票名称和市场类型
+        # Get stock name and market type
         stock_name = ticker
-        market_type = "A股"
+        market_type = "A shares"
         try:
             from tradingagents.utils.stock_utils import StockUtils
             market_info = StockUtils.get_market_info(ticker)
             market_type_map = {
-                "china_a": "A股",
-                "hong_kong": "港股",
-                "us": "美股",
-                "unknown": "A股"
+                "china_a": "A shares",
+                "hong_kong": "Hong Kong stocks",
+                "us": "US stocks",
+                "unknown": "A shares"
             }
-            market_type = market_type_map.get(market_info.get("market", "unknown"), "A股")
+            market_type = market_type_map.get(market_info.get("market", "unknown"), "A shares")
 
-            # 尝试获取股票名称
+            # Try to get the stock name
             if market_info.get("market") == "china_a":
                 from tradingagents.dataflows.interface import get_china_stock_info_unified
                 stock_info = get_china_stock_info_unified(ticker)
-                if "股票名称:" in stock_info:
-                    stock_name = stock_info.split("股票名称:")[1].split("\n")[0].strip()
+                if "Stock name:" in stock_info:
+                    stock_name = stock_info.split("Stock name:")[1].split("\n")[0].strip()
         except Exception as e:
-            logger.warning(f"[报告保存] 获取股票信息失败: {e}")
+            logger.warning(f"[report save] Failed to obtain stock information: {e}")
 
-        # 从最终研究结论中提取 recommendation 和 confidence_score
+        # Extract recommendations and confidence_score
         recommendation, confidence_score, risk_level = _extract_recommendation_and_confidence(
             workflow_result, reports
         )
 
-        # 🔥 提取 decision 字段（与单股分析保持一致）
+        # 🔥 Extract decision field (consistent with single stock analysis)
         decision = workflow_result.get("decision", {})
         if not decision:
-            # 如果没有 decision 字段，尝试从最终研究结论中构建
+            # If there is no decision field, try to build from the final research conclusion
             final_decision_text = _extract_text(workflow_result.get("final_trade_decision", ""))
             if final_decision_text:
                 decision = {
                     "action": recommendation,
                     "confidence": confidence_score,
                     "risk_level": risk_level,
-                    "reasoning": final_decision_text[:200]  # 截取前200字符作为理由
+                    "reasoning": final_decision_text[:200]  # Truncate the first 200 characters as the reason
                 }
 
-        # 🔥 提取关键要点（与单股分析保持一致）
+        # 🔥 Extract key takeaways (aligned with single stock analysis)
         key_points = workflow_result.get("key_points", [])
         if not key_points:
-            # 如果没有 key_points，尝试从摘要中提取
+            # If there are no key_points, try to extract from the summary
             summary_text = _extract_text(workflow_result.get("final_trade_decision", ""))
             if summary_text:
-                # 简单提取：按行分割，取前5行作为关键要点
+                # Simple extraction: split by row, take the first 5 rows as key points
                 lines = [line.strip() for line in summary_text.split('\n') if line.strip()]
                 key_points = lines[:5]
 
-        # 构建文档（与单股分析完全一致）
+        # Build documentation (exactly the same as single stock analysis)
         document = {
             "analysis_id": analysis_id,
             "stock_symbol": ticker,
@@ -576,23 +576,23 @@ async def _save_analysis_report(
             "status": "completed",
             "source": "workflow",
 
-            # 分析结果摘要
+            # Summary of analysis results
             "summary": (_extract_text(workflow_result.get("final_trade_decision", ""))[:500]
                         if workflow_result.get("final_trade_decision") else ""),
             "analysts": _get_analysts_from_reports(reports),
             "research_depth": research_depth,
 
-            # 报告内容
+            # Report content
             "reports": reports,
 
-            # 🔥 关键字段：decision（与单股分析保持一致）
+            # 🔥 Key field: decision (consistent with single stock analysis)
             "decision": decision,
 
-            # 元数据
+            # metadata
             "created_at": timestamp,
             "updated_at": timestamp,
 
-            # API特有字段（与单股分析保持一致）
+            # API Unique fields (consistent with single stock analysis)
             "task_id": task_id or "",
             "recommendation": recommendation,
             "confidence_score": confidence_score,
@@ -601,22 +601,22 @@ async def _save_analysis_report(
             "execution_time": execution_time,
             "tokens_used": workflow_result.get("tokens_used", 0),
 
-            # 🆕 性能指标数据（与单股分析保持一致）
+            # 🆕 Performance indicator data (consistent with single stock analysis)
             "performance_metrics": workflow_result.get("performance_metrics", {})
         }
 
-        # 保存到 MongoDB
+        # save to MongoDB
         result = await db.analysis_reports.insert_one(document)
 
         if result.inserted_id:
-            logger.info(f"✅ [报告保存] 研究报告已保存到MongoDB: {analysis_id}, 共 {len(reports)} 个报告模块")
+            logger.info(f"✅ [report save] Research report has been saved to MongoDB: {analysis_id}, total {len(reports)} reporting modules")
         else:
-            logger.error("❌ [报告保存] MongoDB插入失败")
+            logger.error("❌ [report save] MongoDB Insertion failed")
 
     except Exception as e:
-        logger.error(f"❌ [报告保存] 保存研究报告失败: {e}")
+        logger.error(f"❌ [report save] Failed to save research report: {e}")
         import traceback
-        logger.error(f"❌ [报告保存] 详细错误: {traceback.format_exc()}")
+        logger.error(f"❌ [report save] detailed error: {traceback.format_exc()}")
 
 
 def _extract_recommendation_and_confidence(
@@ -624,12 +624,12 @@ def _extract_recommendation_and_confidence(
     reports: Dict[str, Any]
 ) -> tuple:
     """
-    从工作流结果中提取 recommendation、confidence_score 和 risk_level
+    Extract recommendation, confidence_score and risk_level
 
-    提取逻辑：
-    1. recommendation: 从安全报告中提取研究摘要
-    2. confidence_score: 从文本中提取置信度，或根据分析一致性计算
-    3. risk_level: 从风险管理决策中提取
+    Extraction logic:
+    1. recommendation: Extract research summaries from safety reports
+    2. confidence_score: Extract confidence from text, or calculate based on analytical consistency
+    3. risk_level: Extract from risk management decisions
 
     Returns:
         tuple: (recommendation, confidence_score, risk_level)
@@ -648,27 +648,27 @@ def _extract_recommendation_and_confidence(
 
     recommendation = GENERIC_RESEARCH_RECOMMENDATION
     confidence_score = 0.0
-    risk_level = "中等"
+    risk_level = "medium"
 
     safe_reports = filter_analysis_reports(reports or {})
     research_summary = build_research_summary(safe_reports, workflow_result.get("summary", ""))
     if research_summary:
         recommendation = research_summary[:200]
 
-    # 2. 提取 confidence_score（置信度）
-    # 尝试从文本中提取置信度数值
+    # 2. Extract confidence_score (confidence)
+    # Try to extract confidence value from text
     confidence_patterns = [
-        r'置信度[：:]\s*([0-9.]+)%?',
+        r'Confidence[: :]\s*([0-9.]+)%?',
         r'confidence[：:]\s*([0-9.]+)%?',
-        r'可信度[：:]\s*([0-9.]+)%?',
-        r'把握[：:]\s*([0-9.]+)%?',
+        r'Credibility[: :]\s*([0-9.]+)%?',
+        r'grasp[: :]\s*([0-9.]+)%?',
     ]
     for pattern in confidence_patterns:
         match = re.search(pattern, research_summary, re.IGNORECASE)
         if match:
             try:
                 conf_val = float(match.group(1))
-                # 如果值大于1，认为是百分比，需要除以100
+                # If the value is greater than 1, it is considered a percentage and needs to be divided by 100
                 if conf_val > 1:
                     conf_val = conf_val / 100
                 confidence_score = min(1.0, max(0.0, conf_val))
@@ -676,66 +676,66 @@ def _extract_recommendation_and_confidence(
             except ValueError:
                 pass
 
-    # 如果没有提取到，根据分析一致性估算置信度
+    # If not extracted, estimate confidence based on analytical consistency
     if confidence_score == 0.0:
-        # 检查有多少个报告达成一致
+        # Check how many reports are in agreement
         report_count = len(safe_reports)
         if report_count >= 10:
-            confidence_score = 0.85  # 完整分析
+            confidence_score = 0.85  # full analysis
         elif report_count >= 7:
-            confidence_score = 0.75  # 标准分析
+            confidence_score = 0.75  # standard analysis
         elif report_count >= 4:
-            confidence_score = 0.65  # 基础分析
+            confidence_score = 0.65  # Fundamental analysis
         else:
-            confidence_score = 0.55  # 快速分析
+            confidence_score = 0.55  # Quick analysis
 
-    # 3. 提取 risk_level（风险等级）
+    # 3. Extract risk_level (risk level)
     risk_decision = _text(reports.get("risk_management_decision", ""))
     if risk_decision:
-        if re.search(r'高风险|风险较高|谨慎', risk_decision):
-            risk_level = "高风险"
-        elif re.search(r'低风险|风险较低|安全', risk_decision):
-            risk_level = "低风险"
+        if re.search(r'high risk|higher risk|cautious', risk_decision):
+            risk_level = "high risk"
+        elif re.search(r'low risk|lower risk|safe', risk_decision):
+            risk_level = "low risk"
         else:
-            risk_level = "中等"
+            risk_level = "medium"
 
-    logger.info(f"[报告保存] 提取结果: recommendation={len(recommendation)}字符, confidence={confidence_score:.2f}, risk={risk_level}")
+    logger.info(f"[report save] Extract results: recommendation={len(recommendation)}character, confidence={confidence_score:.2f}, risk={risk_level}")
 
     return recommendation, confidence_score, risk_level
 
 
 def _get_analysts_from_reports(reports: Dict[str, Any]) -> List[str]:
     """
-    根据保存的报告动态生成分析师列表
+    Dynamically generate analyst lists based on saved reports
 
-    返回格式与旧系统兼容，用于前端显示 tabs
+    The return format is compatible with older systems and is used for front-end display tabs
     """
-    # 报告字段到分析师标识的映射
+    # Mapping of report fields to analyst IDs
     report_to_analyst = {
-        # 分析师团队（4个）
+        # Analyst team (4)
         "market_report": "market",
         "sentiment_report": "sentiment",
         "news_report": "news",
         "fundamentals_report": "fundamentals",
-        # 研究团队（3个）
+        # Research team (3)
         "bull_researcher": "bull_researcher",
         "bear_researcher": "bear_researcher",
         "research_team_decision": "research_manager",
-        # 交易团队（1个）
+        # Trading team (1)
         "trader_investment_plan": "trader",
-        # 风险管理团队（4个）
+        # Risk management team (4)
         "risky_analyst": "risky_analyst",
         "safe_analyst": "safe_analyst",
         "neutral_analyst": "neutral_analyst",
         "risk_management_decision": "portfolio_manager",
-        # 最终研究结论（1个）
+        # Final research conclusion (1)
         "final_trade_decision": "final_decision",
     }
 
     analysts = []
     for report_key, analyst_id in report_to_analyst.items():
         if report_key in reports and reports[report_key]:
-            # 检查报告内容是否有效（非空字符串或非空字典）
+            # Check if the report content is valid (non-empty string or non-empty dictionary)
             content = reports[report_key]
             if isinstance(content, str) and len(content) > 10:
                 analysts.append(analyst_id)
@@ -747,31 +747,31 @@ def _get_analysts_from_reports(reports: Dict[str, Any]) -> List[str]:
 
 def _format_research_team_report(debate_state: Dict[str, Any]) -> str:
     """
-    格式化研究团队研究报告
+    Formatted Research Team Research Report
 
-    从 investment_debate_state 中提取 bull_history, bear_history, judge_decision
+    Extracted from investment_debate_state bull_history, bear_history, judge_decision
     """
     parts = []
-    parts.append("# 🔬 研究团队研究报告\n")
+    parts.append("# 🔬 Research team research report\n")
 
-    # 多头研究员分析
+    # Analysis by bull researchers
     bull_history = debate_state.get("bull_history", "")
     if bull_history:
-        parts.append("## 📈 多头研究员分析\n")
+        parts.append("## 📈 Analysis by bull researchers\n")
         parts.append(bull_history)
         parts.append("\n")
 
-    # 空头研究员分析
+    # Short Researcher Analysis
     bear_history = debate_state.get("bear_history", "")
     if bear_history:
-        parts.append("## 📉 空头研究员分析\n")
+        parts.append("## 📉 Short Researcher Analysis\n")
         parts.append(bear_history)
         parts.append("\n")
 
-    # 研究经理综合结论
+    # Research manager's comprehensive conclusion
     judge_decision = debate_state.get("judge_decision", "")
     if judge_decision:
-        parts.append("## 🎯 研究经理综合结论\n")
+        parts.append("## 🎯 Research manager s comprehensive conclusion\n")
         parts.append(judge_decision)
         parts.append("\n")
 
@@ -780,38 +780,38 @@ def _format_research_team_report(debate_state: Dict[str, Any]) -> str:
 
 def _format_risk_management_report(debate_state: Dict[str, Any]) -> str:
     """
-    格式化风险审阅结论
+    Formatting Risk Review Conclusions
 
-    从 risk_debate_state 中提取 risky_history, safe_history, neutral_history, judge_decision
+    Extracted from risk_debate_state risky_history, safe_history, neutral_history, judge_decision
     """
     parts = []
-    parts.append("# 👔 风险审阅结论\n")
+    parts.append("# 👔 Risk review conclusion\n")
 
-    # 高弹性情景分析师观点
+    # Highly Resilient Scenario Analyst Perspective
     risky_history = debate_state.get("risky_history", "")
     if risky_history:
-        parts.append("## 🔥 高弹性情景分析师观点\n")
+        parts.append("## 🔥 Highly Resilient Scenario Analyst Perspective\n")
         parts.append(risky_history)
         parts.append("\n")
 
-    # 防御情景分析师观点
+    # Defense Scenario Analyst Perspective
     safe_history = debate_state.get("safe_history", "")
     if safe_history:
-        parts.append("## 🛡️ 防御情景分析师观点\n")
+        parts.append("## 🛡️ Defense Scenario Analyst Perspective\n")
         parts.append(safe_history)
         parts.append("\n")
 
-    # 基准情景分析师观点
+    # Baseline Scenario Analyst View
     neutral_history = debate_state.get("neutral_history", "")
     if neutral_history:
-        parts.append("## ⚖️ 基准情景分析师观点\n")
+        parts.append("## ⚖️ Baseline Scenario Analyst View\n")
         parts.append(neutral_history)
         parts.append("\n")
 
-    # 风险评估师最终结论
+    # Risk assessor's final conclusion
     judge_decision = debate_state.get("judge_decision", "")
     if judge_decision:
-        parts.append("## 🎯 风险评估师最终结论\n")
+        parts.append("## 🎯 Risk assessor s final conclusion\n")
         parts.append(judge_decision)
         parts.append("\n")
 
@@ -820,22 +820,22 @@ def _format_risk_management_report(debate_state: Dict[str, Any]) -> str:
 
 async def _build_legacy_config(data: WorkflowExecuteRequest) -> Dict[str, Any]:
     """
-    构建遗留智能体的 LLM 配置
+    Building LLM configurations for legacy agents
 
-    优先使用新的 ModelConfig，否则从数据库根据模型名称查询
+    Use the new ModelConfig first, otherwise query the database based on the model name
 
-    旧代码中的使用方式：
-    - quick_thinking_llm: 用于分析师、研究员(Bull/Bear)、研究整合员、风险情景分析师
-    - deep_thinking_llm: 用于研究整合员(Research Manager)、风险评估师(Risk Manager)
+    How it is used in old code:
+    - quick_thinking_llm: For analysts, researchers(Bull/Bear), Research Integrator, Risk Scenario Analyst
+    - deep_thinking_llm: for research integrators(Research Manager), risk assessor(Risk Manager)
     """
     config = {}
 
-    # 🔑 添加 selected_analysts（用于动态裁剪工作流）
+    # 🔑 Added selected_analysts (for dynamic cropping workflow)
     if data.selected_analysts:
         config["selected_analysts"] = data.selected_analysts
-        logger.info(f"[工作流执行] 选中的分析师: {data.selected_analysts}")
+        logger.info(f"[Workflow execution] selected analysts: {data.selected_analysts}")
 
-    # 优先使用新的完整配置
+    # Prioritize new complete configurations
     if data.quick_model_config:
         qc = data.quick_model_config
         config["llm_provider"] = qc.provider
@@ -846,7 +846,7 @@ async def _build_legacy_config(data: WorkflowExecuteRequest) -> Dict[str, Any]:
         config["quick_max_tokens"] = qc.max_tokens
         config["quick_timeout"] = qc.timeout
 
-        # 如果没有 deep 配置，默认使用 quick 的配置
+        # If there is no deep configuration, the quick configuration will be used by default.
         if not data.deep_model_config:
             config["deep_think_llm"] = qc.model_name
             config["deep_api_key"] = qc.api_key
@@ -860,21 +860,21 @@ async def _build_legacy_config(data: WorkflowExecuteRequest) -> Dict[str, Any]:
         config["deep_max_tokens"] = dc.max_tokens
         config["deep_timeout"] = dc.timeout
 
-        # 如果 quick 和 deep 厂家不同，标记为混合模式
+        # If quick and deep are from different manufacturers, mark them as mixed mode
         if data.quick_model_config and data.quick_model_config.provider != dc.provider:
             config["quick_llm_provider"] = data.quick_model_config.provider
             config["deep_llm_provider"] = dc.provider
         elif not data.quick_model_config:
-            # 如果没有 quick 配置，使用 deep 的配置
+            # If there is no quick configuration, use the deep configuration.
             config["llm_provider"] = dc.provider
             config["quick_think_llm"] = dc.model_name
             config["quick_api_key"] = dc.api_key
 
-    # 如果已经有了完整配置，需要从数据库补全 API Key
+    # If you already have a complete configuration, you need to complete it from the database. API Key
     if config and not config.get("quick_api_key"):
         config = await _fill_api_keys_from_db(config)
 
-    # 如果没有新配置，尝试从旧字段和数据库获取
+    # If there is no new configuration, try to get from the old fields and database
     if not config:
         config = await _get_llm_config_for_model(
             data.quick_analysis_model,
@@ -885,7 +885,7 @@ async def _build_legacy_config(data: WorkflowExecuteRequest) -> Dict[str, Any]:
 
 
 async def _fill_api_keys_from_db(config: Dict[str, Any]) -> Dict[str, Any]:
-    """从数据库填充 API Keys"""
+    """Populate from database API Keys"""
     from app.core.database import get_mongo_db
     import os
 
@@ -901,7 +901,7 @@ async def _fill_api_keys_from_db(config: Dict[str, Any]) -> Dict[str, Any]:
                 if not config.get("deep_api_key"):
                     config["deep_api_key"] = api_key
 
-    # 如果 deep 厂家不同，也需要获取其 API Key
+    # If the deep manufacturer is different, you also need to obtain its API Key
     deep_provider = config.get("deep_llm_provider")
     if deep_provider and deep_provider != provider:
         provider_doc = await db.llm_providers.find_one({"name": deep_provider})
@@ -915,14 +915,14 @@ async def _fill_api_keys_from_db(config: Dict[str, Any]) -> Dict[str, Any]:
 
 async def _get_llm_config_for_model(quick_model: Optional[str], deep_model: Optional[str]) -> Dict[str, Any]:
     """
-    根据模型名称从数据库获取完整的 LLM 配置
+    Get the complete LLM configuration from the database based on the model name
 
     Args:
-        quick_model: 快速分析模型名称
-        deep_model: 深度分析模型名称
+        quick_model: Quickly analyze model names
+        deep_model: In-depth analysis model name
 
     Returns:
-        包含 provider、api_key、backend_url 等的完整配置
+        Complete configuration including provider, api_key, backend_url, etc.
     """
     if not quick_model and not deep_model:
         return {}
@@ -931,19 +931,19 @@ async def _get_llm_config_for_model(quick_model: Optional[str], deep_model: Opti
 
     db = get_mongo_db()
 
-    # 获取系统配置
+    # Get system configuration
     config_doc = await db.system_configs.find_one(
         {"is_active": True},
         sort=[("version", -1)]
     )
 
     if not config_doc or "llm_configs" not in config_doc:
-        logger.warning("[工作流执行] 数据库中没有 LLM 配置")
+        logger.warning("[Workflow execution] There is no LLM configuration in the database")
         return {}
 
     llm_configs = config_doc["llm_configs"]
 
-    # 查找匹配的模型配置
+    # Find matching model configurations
     target_model = quick_model or deep_model
     model_config = None
 
@@ -953,10 +953,10 @@ async def _get_llm_config_for_model(quick_model: Optional[str], deep_model: Opti
             break
 
     if not model_config:
-        logger.warning(f"[工作流执行] 未找到模型配置: {target_model}")
+        logger.warning(f"[Workflow execution] Model configuration not found: {target_model}")
         return {}
 
-    # 获取厂家配置
+    # Get factory configuration
     provider_name = model_config.get("provider", "")
     provider_doc = await db.llm_providers.find_one({"name": provider_name})
 
@@ -968,7 +968,7 @@ async def _get_llm_config_for_model(quick_model: Optional[str], deep_model: Opti
         if not backend_url:
             backend_url = provider_doc.get("default_base_url", "")
 
-    # 如果数据库没有 API Key，尝试从环境变量获取
+    # If the database does not have an API Key, try to get it from the environment variable
     if not api_key or api_key.startswith("sk-xxx"):
         import os
         env_key_map = {
@@ -994,40 +994,40 @@ async def _get_llm_config_for_model(quick_model: Optional[str], deep_model: Opti
         "quick_timeout": model_config.get("timeout", 60),
     }
 
-    logger.info(f"[工作流执行] 从数据库获取模型配置: provider={provider_name}, model={target_model}")
+    logger.info(f"[Workflow execution] Get model configuration from database: provider={provider_name}, model={target_model}")
 
     return result
 
 
 class CreateFromTemplateRequest(BaseModel):
-    """从模板创建请求"""
+    """Create request from template"""
     template_id: str
     name: str
 
 
 @router.post("/from-template", dependencies=[Depends(require_pro)])
 async def create_from_template(data: CreateFromTemplateRequest):
-    """从模板创建工作流"""
+    """Create a workflow from a template"""
     template_id = data.template_id
     name = data.name
     try:
         from core.api import WorkflowAPI
         api = WorkflowAPI()
 
-        # 获取模板
+        # Get template
         templates = api.get_templates()
         template = next((t for t in templates if t.get("id") == template_id), None)
 
         if template is None:
-            raise HTTPException(status_code=404, detail="模板不存在")
+            raise HTTPException(status_code=404, detail="Template does not exist")
 
-        # 创建新工作流
+        # Create new workflow
         new_workflow = {
             **template,
             "name": name,
             "is_template": False
         }
-        # 移除原 ID，让系统生成新 ID
+        # Remove the original ID and let the system generate a new one ID
         new_workflow.pop("id", None)
         new_workflow.pop("created_at", None)
         new_workflow.pop("updated_at", None)
@@ -1036,43 +1036,43 @@ async def create_from_template(data: CreateFromTemplateRequest):
 
         if not result.get("success"):
             return fail(
-                message="从模板创建失败",
+                message="Create from template failed",
                 code=400,
-                data={"errors": result.get("errors", ["创建失败"])}
+                data={"errors": result.get("errors", ["Creation failed"])}
             )
 
-        return ok(result.get("workflow"), message="创建成功")
+        return ok(result.get("workflow"), message="Created successfully")
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"从模板创建工作流失败: {e}")
+        logger.error(f"Creating workflow from template failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 class DuplicateRequest(BaseModel):
-    """复制工作流请求"""
+    """Copy workflow request"""
     name: str
 
 
 @router.post("/{workflow_id}/duplicate", dependencies=[Depends(require_pro)])
 async def duplicate_workflow(workflow_id: str, data: DuplicateRequest):
-    """复制工作流"""
+    """Copy workflow"""
     try:
         from core.api import WorkflowAPI
         api = WorkflowAPI()
 
-        # 获取原工作流
+        # Get the original workflow
         workflow = api.get(workflow_id)
         if workflow is None:
-            raise HTTPException(status_code=404, detail="工作流不存在")
+            raise HTTPException(status_code=404, detail="Workflow does not exist")
 
-        # 创建副本
+        # Create a copy
         new_workflow = {
             **workflow,
             "name": data.name,
             "is_template": False,
         }
-        # 移除原 ID，让系统生成新 ID
+        # Remove the original ID and let the system generate a new one ID
         new_workflow.pop("id", None)
         new_workflow.pop("created_at", None)
         new_workflow.pop("updated_at", None)
@@ -1081,37 +1081,37 @@ async def duplicate_workflow(workflow_id: str, data: DuplicateRequest):
 
         if not result.get("success"):
             return fail(
-                message="复制失败",
+                message="Copy failed",
                 code=400,
-                data={"errors": result.get("errors", ["复制失败"])}
+                data={"errors": result.get("errors", ["Copy failed"])}
             )
 
-        return ok(result.get("workflow"), message="复制成功")
+        return ok(result.get("workflow"), message="Copied successfully")
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"复制工作流失败: {e}")
+        logger.error(f"Copy workflow failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{workflow_id}/set-default", dependencies=[Depends(require_pro)])
 async def set_as_default(workflow_id: str):
-    """设为默认分析流"""
+    """Set as default analysis flow"""
     try:
         from core.api import WorkflowAPI
         from core.workflow.default_workflow_provider import get_default_workflow_provider
         api = WorkflowAPI()
 
-        # 获取工作流
+        # Get workflow
         workflow = api.get(workflow_id)
         if workflow is None:
-            raise HTTPException(status_code=404, detail="工作流不存在")
+            raise HTTPException(status_code=404, detail="Workflow does not exist")
 
         workflow_name = workflow.get("name", "")
         provider = get_default_workflow_provider()
         workflow_type = provider.infer_workflow_type(workflow, workflow_id)
 
-        # 保存为默认分析流配置：文件用于本地兜底，数据库用于运行时加载
+        # Save as the default analysis flow configuration: the file is used for local analysis, and the database is used for runtime loading.
         import json
         from pathlib import Path
 
@@ -1173,9 +1173,9 @@ async def set_as_default(workflow_id: str):
             upsert=True,
         )
 
-        return ok(message=f"已将 '{workflow_name}' 设为 {workflow_type} 默认分析流")
+        return ok(message=f"Already '{workflow_name}' set to {workflow_type} Default analysis flow")
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"设置默认分析流失败: {e}")
+        logger.error(f"Setting default analysis flow failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

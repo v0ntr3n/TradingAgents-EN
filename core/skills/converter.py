@@ -1,10 +1,10 @@
 """
-Skill ↔ Function Calling 转换器
+Skill ↔ Function Calling converter
 
-将 SkillMetadata 转换为：
-1. OpenAI Function Calling 工具定义格式
-2. ToolMetadata（兼容现有 ToolRegistry）
-3. 从现有 ToolMetadata 转换为 SkillMetadata
+Convert SkillMetadata to:
+1. OpenAI Function Calling tool definition format
+2. ToolMetadata (Compatible with existing ToolRegistry)
+3. Convert from existing ToolMetadata to SkillMetadata
 """
 
 import logging
@@ -21,7 +21,7 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 
-# JSON type 映射
+# JSON type mapping
 _TYPE_MAP = {
     "string": "string",
     "str": "string",
@@ -39,15 +39,15 @@ _TYPE_MAP = {
 
 
 class SkillConverter:
-    """Skill 转换器"""
+    """Skill converter"""
 
     @staticmethod
     def to_openai_tool(skill: SkillMetadata) -> Dict[str, Any]:
         """
-        将 SkillMetadata 转换为 OpenAI Function Calling 工具定义
+        Convert SkillMetadata to OpenAI Function Calling tool definition
 
         Returns:
-            OpenAI 格式的工具定义:
+            OpenAI Format tool definition:
             {
                 "type": "function",
                 "function": {
@@ -57,12 +57,12 @@ class SkillConverter:
                 }
             }
         """
-        # 构建描述：合并 description + when_to_use
+        # Build Description: Merge description + when_to_use
         description = skill.description
         if skill.when_to_use:
-            description += f"\n\n何时使用: {skill.when_to_use}"
+            description += f"\n\n When to use: {skill.when_to_use}"
 
-        # 构建参数的 JSON Schema
+        # build parameters JSON Schema
         properties = {}
         required = []
 
@@ -81,7 +81,7 @@ class SkillConverter:
             if param.required:
                 required.append(param.name)
 
-        # 工具名称：将连字符转为下划线（OpenAI 要求）
+        # Tool name: Convert hyphens to underscores (required by OpenAI)
         tool_name = skill.name.replace("-", "_")
 
         return {
@@ -99,7 +99,7 @@ class SkillConverter:
 
     @staticmethod
     def to_openai_tools(skills: List[SkillMetadata]) -> List[Dict[str, Any]]:
-        """批量转换 SkillMetadata 为 OpenAI 工具定义列表"""
+        """Batch convert SkillMetadata to OpenAI tool definition list"""
         tools = []
         for skill in skills:
             if skill.enabled and skill.fc_enabled and skill.parameters:
@@ -109,9 +109,9 @@ class SkillConverter:
     @staticmethod
     def to_tool_metadata(skill: SkillMetadata) -> "ToolMetadata":
         """
-        将 SkillMetadata 转换为 ToolMetadata（兼容现有 ToolRegistry）
+        Convert SkillMetadata to ToolMetadata (compatible with existing ToolRegistry)
 
-        延迟导入避免循环依赖
+        Delayed import avoids circular dependencies
         """
         from core.tools.config import ToolMetadata, ToolParameter
 
@@ -148,9 +148,9 @@ class SkillConverter:
         tool_id: Optional[str] = None,
     ) -> SkillMetadata:
         """
-        从现有 ToolMetadata 转换为 SkillMetadata
+        Convert from existing ToolMetadata to SkillMetadata
 
-        用于将现有内置工具升级为 Skill
+        Used to upgrade existing built-in tools to Skill
         """
         from core.tools.config import ToolMetadata as TM
 
@@ -178,7 +178,7 @@ class SkillConverter:
             color=tool_metadata.color,
             implementation=PythonImplementation(
                 type=ImplementationType.PYTHON,
-                module="",  # 内置工具不需要指定模块
+                module="",  # Built-in tools do not require specific modules
                 function=actual_id,
             ),
             is_builtin=True,

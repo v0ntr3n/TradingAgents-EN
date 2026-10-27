@@ -1,7 +1,7 @@
 """
-大盘/指数分析师智能体
+Market/Index Analyst Intelligence
 
-分析大盘走势、市场环境和系统性风险
+Analyze market trends, market environment and systemic risks
 """
 
 import logging
@@ -19,47 +19,47 @@ logger = logging.getLogger(__name__)
 @register_agent
 class IndexAnalystAgent(BaseAgent):
     """
-    大盘/指数分析师智能体
+    Market/Index Analyst Intelligence
     
-    职责：
-    1. 分析主要指数走势（上证、深证、创业板等）
-    2. 评估市场宽度（涨跌家数、量能等）
-    3. 判断市场环境和风险水平
-    4. 识别市场周期（牛市/熊市/震荡）
+    Responsibilities:
+    1. Analyze the trend of major indexes (Shanghai Stock Exchange, Shenzhen Stock Exchange, GEM, etc.)
+    2. Assess market width (number of rising and falling stocks, volume, etc.)
+    3. Determine market environment and risk levels
+    4. Identify market cycles (bull/bear/concussive)
     """
     
     metadata = BUILTIN_AGENTS["index_analyst"]
     
-    # 系统提示词
-    SYSTEM_PROMPT = """你是一位专业的大盘分析师，专门分析市场整体环境和系统性风险。
+    # System prompt word
+    SYSTEM_PROMPT = """You are a professional market analyst who specializes in analyzing the overall market environment and systemic risks.
 
-你的分析职责包括：
+Your analytical responsibilities include:
 
-1️⃣ **指数走势分析**
-   - 上证指数、深证成指、创业板指等主要指数走势
-   - 均线系统判断（MA5/MA20/MA60）
-   - 趋势方向判断
+1️⃣ **Index trend analysis**
+   - Trends of major indexes such as Shanghai Composite Index, Shenzhen Composite Component Index and GEM Index
+   - Moving average system judgment (MA5/MA20/MA60)
+   - Trend direction judgment
 
-2️⃣ **市场宽度分析**
-   - 涨跌家数比
-   - 涨停跌停数量
-   - 市场情绪判断
+2️⃣ **Market Breadth Analysis**
+   - Ratio of gainers and losers
+   - The number of daily limit and lower limit
+   - Market sentiment judgment
 
-3️⃣ **市场环境评估**
-   - 指数估值水平（PE/PB）
-   - 市场波动率
-   - 风险水平评估
+3️⃣ **Market environment assessment**
+   - Index valuation level (PE/PB)
+   - market volatility
+   - Risk level assessment
 
-4️⃣ **市场周期识别**
-   - 牛市/熊市/震荡市判断
-   - 年内位置分析
-   - 操作建议
+4️⃣ **Market cycle identification**
+   - Bull market/bear market/shock market judgment
+   - Location analysis during the year
+   - Operation suggestions
 
-📊 输出要求：
-- 市场趋势：上涨/下跌/震荡
-- 风险等级：高/中/低
-- 市场周期：牛市/熊市/震荡市
-- 操作建议：积极/中性/防守
+📊 Output requirements:
+- Market trend: up/down/concussive
+- Risk level: high/medium/low
+- Market cycle: bull market/bear market/shock market
+- Operational suggestions: Positive/Neutral/Defensive
 """
     
     def __init__(self, config: Optional[AgentConfig] = None):
@@ -69,55 +69,55 @@ class IndexAnalystAgent(BaseAgent):
     
     def set_dependencies(self, llm: Any, toolkit: Any) -> "IndexAnalystAgent":
         """
-        设置依赖项
+        Set dependencies
         
         Args:
-            llm: LLM 实例
-            toolkit: 工具包实例
+            llm: LLM Example
+            toolkit: Toolkit Example
             
         Returns:
-            self (支持链式调用)
+            self (Support chain calls)
         """
         self._llm = llm
         self._toolkit = toolkit
         return self
     
     def initialize(self) -> None:
-        """初始化智能体"""
+        """Initialize the agent"""
         pass
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行大盘分析
+        Perform broad market analysis
         
         Args:
-            state: 包含以下键的状态字典:
-                - trade_date: 交易日期
-                - messages: 消息历史
+            state: A status dictionary containing the following keys:
+                - trade_date: transaction date
+                - messages: Message history
                 
         Returns:
-            更新后的状态，包含:
-                - index_report: 大盘分析报告
-                - messages: 更新的消息历史
+            The updated status includes:
+                - index_report: Market analysis report
+                - messages: Updated message history
         """
         trade_date = state.get("trade_date", "")
         
-        logger.info(f"🌐 大盘分析师开始分析 @ {trade_date}")
+        logger.info(f"🌐 Market analysts begin to analyze @ {trade_date}")
         
         try:
-            # 导入并调用大盘分析工具
+            # Import and call market analysis tools
             from core.tools.index_tools import analyze_index_sync
             
-            # 获取综合大盘分析报告
+            # Get comprehensive market analysis report
             index_report = analyze_index_sync(trade_date)
             
-            # 如果有 LLM，可以让 LLM 对报告进行总结
+            # If you have an LLM, you can have the LLM summarize the report
             if self._llm is not None:
                 index_report = self._enhance_with_llm(index_report)
             
-            logger.info(f"✅ 大盘分析完成")
+            logger.info(f"✅ Market analysis completed")
             
-            # 更新状态
+            # update status
             messages = state.get("messages", [])
             messages.append(HumanMessage(content=index_report, name="index_analyst"))
             
@@ -128,8 +128,8 @@ class IndexAnalystAgent(BaseAgent):
             }
             
         except Exception as e:
-            logger.error(f"❌ 大盘分析失败: {e}")
-            error_report = f"大盘分析失败: {e}"
+            logger.error(f"❌ Market analysis failed: {e}")
+            error_report = f"Market analysis failed: {e}"
             
             messages = state.get("messages", [])
             messages.append(HumanMessage(content=error_report, name="index_analyst"))
@@ -142,10 +142,10 @@ class IndexAnalystAgent(BaseAgent):
     
     def _enhance_with_llm(self, data_report: str) -> str:
         """
-        使用 LLM 增强分析报告
+        Enhance analytical reporting with LLM
         """
         try:
-            full_prompt = f"{self.SYSTEM_PROMPT}\n\n以下是大盘数据：\n\n{data_report}\n\n请基于以上数据，给出专业的大盘分析报告。"
+            full_prompt = f"{self.SYSTEM_PROMPT}\n\n The following is the market data:\n\n{data_report}\n\n Please provide a professional market analysis report based on the above data."
             
             response = self._llm.invoke(full_prompt)
             
@@ -154,6 +154,6 @@ class IndexAnalystAgent(BaseAgent):
             return str(response)
             
         except Exception as e:
-            logger.warning(f"LLM 增强分析失败，返回原始报告: {e}")
+            logger.warning(f"LLM Enhanced analysis failed, returning original report: {e}")
             return data_report
 

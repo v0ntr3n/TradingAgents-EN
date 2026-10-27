@@ -1,6 +1,6 @@
 <template>
   <div class="stock-header">
-    <!-- 左侧：股票概览 -->
+    <!-- Left: Stock overview -->
     <div class="stock-card">
       <div class="stock-name-row">
         <span class="stock-code">{{ code }}</span>
@@ -8,7 +8,7 @@
         <span class="market-tag">{{ marketLabel }}</span>
         <template v-if="isEtf">
           <el-tag v-if="etfBasics.fundType" size="small" effect="plain" type="success">{{ etfBasics.fundType }}</el-tag>
-          <el-tag v-if="etfBasics.trackIndex" size="small" effect="plain" type="info">跟踪 {{ etfBasics.trackIndex }}</el-tag>
+          <el-tag v-if="etfBasics.trackIndex" size="small" effect="plain" type="info">Track {{ etfBasics.trackIndex }}</el-tag>
         </template>
       </div>
 
@@ -18,56 +18,56 @@
           {{ fmtPercent(quote.changePercent) }}
         </span>
         <span class="price-meta">
-          <span v-if="quote.tradeDate">{{ quote.tradeDate }} 收盘</span>
+          <span v-if="quote.tradeDate">{{ quote.tradeDate }} close</span>
           <span v-else>{{ refreshText }}</span>
         </span>
-        <el-button text size="small" @click="$emit('refresh')" :icon="Refresh">刷新</el-button>
+        <el-button text size="small" @click="$emit('refresh')" :icon="Refresh">Refresh</el-button>
       </div>
 
       <div class="quick-metrics">
         <div class="quick-metric-item">
-          <div class="label">今开</div>
+          <div class="label">Open today</div>
           <div class="value">{{ fmtPrice(quote.open) }}</div>
         </div>
         <div class="quick-metric-item">
-          <div class="label">最高</div>
+          <div class="label">highest</div>
           <div class="value">{{ fmtPrice(quote.high) }}</div>
         </div>
         <div class="quick-metric-item">
-          <div class="label">最低</div>
+          <div class="label">lowest</div>
           <div class="value">{{ fmtPrice(quote.low) }}</div>
         </div>
         <div class="quick-metric-item">
-          <div class="label">成交量</div>
+          <div class="label">Volume</div>
           <div class="value">{{ fmtVolume(quote.volume) }}</div>
         </div>
         <div class="quick-metric-item">
-          <div class="label">成交额</div>
+          <div class="label">Turnover</div>
           <div class="value">{{ fmtAmount(quote.amount) }}</div>
         </div>
         <div class="quick-metric-item">
-          <div class="label">换手率</div>
+          <div class="label">turnover rate</div>
           <div class="value">{{ fmtPercent(quote.turnover) }}</div>
         </div>
         <div class="quick-metric-item">
-          <div class="label">振幅</div>
+          <div class="label">Amplitude</div>
           <div class="value">{{ Number.isFinite(quote.amplitude) ? quote.amplitude.toFixed(2) + '%' : '-' }}</div>
         </div>
         <div class="quick-metric-item">
-          <div class="label">昨收</div>
+          <div class="label">Collected yesterday</div>
           <div class="value">{{ fmtPrice(quote.prevClose) }}</div>
         </div>
       </div>
 
-      <!-- 数据更新提示 -->
+      <!-- Data update tips -->
       <div class="sync-status" v-if="quote.updatedAt || syncStatus">
         <el-icon><Clock /></el-icon>
         <span class="sync-info">
           <template v-if="quote.updatedAt">
-            数据更新: {{ formatQuoteUpdateTime(quote.updatedAt) }}
+            Data update: {{ formatQuoteUpdateTime(quote.updatedAt) }}
           </template>
           <template v-else-if="syncStatus">
-            后端同步: {{ formatSyncTime(syncStatus.last_sync_time) }}
+            Backend sync: {{ formatSyncTime(syncStatus.last_sync_time) }}
             <span v-if="syncStatus.interval_seconds">{{ formatSyncInterval(syncStatus.interval_seconds) }}</span>
           </template>
           <el-tag v-if="syncStatus?.data_source" size="small" type="success" style="margin-left: 4px">
@@ -77,53 +77,53 @@
       </div>
     </div>
 
-    <!-- 右侧：操作入口 -->
+    <!-- Right: Operation entrance -->
     <div class="action-entry">
       <div class="action-placeholder"></div>
       <button class="action-btn action-btn-primary" @click="$emit('sync')" :disabled="syncLoading">
         <span class="icon">🔄</span>
-        <span class="title">同步数据</span>
-        <span class="desc">更新行情/财务数据</span>
+        <span class="title">Sync data</span>
+        <span class="desc">Update market/financial data</span>
       </button>
       <button class="action-btn" @click="$emit('analyze')">
         <span class="icon">🔬</span>
-        <span class="title">{{ isEtf ? '发起ETF研究' : '发起研究' }}</span>
-        <span class="desc">AI 多智能体深度分析</span>
+        <span class="title">{{ isEtf ? 'Initiate ETF research' : 'initiate research' }}</span>
+        <span class="desc">AI Multi-agent deep analysis</span>
       </button>
       <button class="action-btn" @click="$emit('goPositionAnalysis')">
         <span class="icon">💼</span>
-        <span class="title">持仓分析</span>
-        <span class="desc">查看持仓研究详情</span>
+        <span class="title">Position analysis</span>
+        <span class="desc">View position research details</span>
       </button>
       <button class="action-btn" @click="$emit('addPosition')">
         <span class="icon">➕</span>
-        <span class="title">添加持仓</span>
-        <span class="desc">记录你的持仓信息</span>
+        <span class="title">Add position</span>
+        <span class="desc">Record your position information</span>
       </button>
       <button class="action-btn" @click="$emit('goTradeReview')">
         <span class="icon">📈</span>
-        <span class="title">操作复盘</span>
-        <span class="desc">回顾历史操作决策</span>
+        <span class="title">Operation review</span>
+        <span class="desc">Review historical operational decisions</span>
       </button>
       <button class="action-btn" @click="$emit('paperTrading')">
         <span class="icon">📊</span>
-        <span class="title">模拟交易</span>
-        <span class="desc">进入模拟交易系统</span>
+        <span class="title">simulated trading</span>
+        <span class="desc">Enter the simulated trading system</span>
       </button>
       <button class="action-btn" :class="{ 'is-active': isFav }" @click="$emit('toggleFavorite')">
         <span class="icon">⭐</span>
-        <span class="title">{{ isFav ? '已关注' : '加入自选' }}</span>
-        <span class="desc">{{ isFav ? '点击取消关注' : '添加到关注列表' }}</span>
+        <span class="title">{{ isFav ? 'Already following' : 'Add to your choice' }}</span>
+        <span class="desc">{{ isFav ? 'Click to unfollow' : 'Add to watchlist' }}</span>
       </button>
       <button class="action-btn" @click="$emit('clearCache')" :disabled="clearCacheLoading">
         <span class="icon">🧹</span>
-        <span class="title">清除缓存</span>
-        <span class="desc">强制重新获取数据</span>
+        <span class="title">clear cache</span>
+        <span class="desc">Force data retrieval</span>
       </button>
       <button class="action-btn" @click="$emit('goTradeReviewHistory')">
         <span class="icon">📜</span>
-        <span class="title">历史记录</span>
-        <span class="desc">查看分析/复盘历史</span>
+        <span class="title">History</span>
+        <span class="desc">View analysis/review history</span>
       </button>
     </div>
   </div>
@@ -206,16 +206,16 @@ function fmtPercent(v: any) {
 function fmtVolume(v: any) {
   const n = Number(v)
   if (!Number.isFinite(n)) return '-'
-  if (n >= 1e8) return (n / 1e8).toFixed(2) + '亿'
-  if (n >= 1e4) return (n / 1e4).toFixed(2) + '万'
+  if (n >= 1e8) return (n / 1e8).toFixed(2) + 'billion'
+  if (n >= 1e4) return (n / 1e4).toFixed(2) + 'million'
   return String(n)
 }
 
 function fmtAmount(v: any) {
   const n = Number(v)
   if (!Number.isFinite(n)) return '-'
-  if (n >= 1e8) return (n / 1e8).toFixed(2) + '亿'
-  if (n >= 1e4) return (n / 1e4).toFixed(2) + '万'
+  if (n >= 1e8) return (n / 1e8).toFixed(2) + 'billion'
+  if (n >= 1e4) return (n / 1e4).toFixed(2) + 'million'
   return n.toFixed(2)
 }
 
@@ -231,16 +231,16 @@ function formatQuoteUpdateTime(timeStr: string | null | undefined): string {
 }
 
 function formatSyncTime(timeStr: string | null | undefined): string {
-  if (!timeStr) return '从未同步'
+  if (!timeStr) return 'Never synced'
   try {
     const d = new Date(timeStr)
     if (isNaN(d.getTime())) return timeStr
     const now = new Date()
     const diff = (now.getTime() - d.getTime()) / 1000
-    if (diff < 60) return `${Math.floor(diff)}秒前`
-    if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`
-    if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`
-    return `${Math.floor(diff / 86400)}天前`
+    if (diff < 60) return `${Math.floor(diff)}seconds ago`
+    if (diff < 3600) return `${Math.floor(diff / 60)}minutes ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}hours ago`
+    return `${Math.floor(diff / 86400)}days ago`
   } catch {
     return String(timeStr)
   }
@@ -248,10 +248,10 @@ function formatSyncTime(timeStr: string | null | undefined): string {
 
 function formatSyncInterval(seconds: number): string {
   if (!seconds) return ''
-  if (seconds >= 86400) return `· 每${Math.floor(seconds / 86400)}天`
-  if (seconds >= 3600) return `· 每${Math.floor(seconds / 3600)}小时`
-  if (seconds >= 60) return `· 每${Math.floor(seconds / 60)}分钟`
-  return `· 每${seconds}秒`
+  if (seconds >= 86400) return `· every${Math.floor(seconds / 86400)}day`
+  if (seconds >= 3600) return `· every${Math.floor(seconds / 3600)}hours`
+  if (seconds >= 60) return `· every${Math.floor(seconds / 60)}minutes`
+  return `· every${seconds}seconds`
 }
 </script>
 
@@ -369,7 +369,7 @@ function formatSyncInterval(seconds: number): string {
   flex-wrap: wrap;
 }
 
-/* 操作入口 */
+/* Operation entrance */
 .action-entry {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

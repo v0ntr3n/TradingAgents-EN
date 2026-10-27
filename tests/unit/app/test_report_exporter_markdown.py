@@ -11,14 +11,14 @@ def test_generate_markdown_report_hides_internal_module_keys_and_role_ids():
 			"bull_researcher",
 			"risky_analyst",
 		],
-		"research_depth": "快速",
-		"summary": "这里是摘要。",
+		"research_depth": "fast",
+		"summary": "Here is the summary.",
 		"reports": {
-			"market_report": "## 核心观察\n\n这里是市场技术研究内容。",
-			"trader_investment_plan": "## 研究摘要\n\n这里是用户版研究简报内容。",
-			"final_trade_decision": "## 综合研究结论\n\n这里是综合研究结论内容。\n\n**免责声明**：请结合自身情况独立判断。投资有风险，决策需谨慎。必要时请咨询专业顾问。",
-			"bull_researcher": "## 核心主张\n\n这里是乐观情景论证内容。",
-			"risky_analyst": "## 情景结论\n\n这里是高弹性情景评估内容。",
+			"market_report": "## core observation\n\n Here is the market technology research content.",
+			"trader_investment_plan": "## Research summary\n\n Here is the user version of the research briefing.",
+			"final_trade_decision": "## Comprehensive research conclusion\n\n Here is the comprehensive research conclusion.\n\n**Disclaimer**: Please make independent judgment based on your own situation. Investment is risky and decisions need to be made with caution. Please consult professional advisors if necessary.",
+			"bull_researcher": "## core proposition\n\n Here is the optimistic scenario argument.",
+			"risky_analyst": "## Scenario conclusion\n\n Here s what the high-resilience scenario assessment looks like.",
 		},
 	}
 
@@ -28,17 +28,17 @@ def test_generate_markdown_report_hides_internal_module_keys_and_role_ids():
 	assert "trader_investment_plan" not in markdown_content
 	assert "final_trade_decision" not in markdown_content
 	assert "risky_analyst" not in markdown_content
-	assert "**分析师**: 市场技术分析师, 乐观情景论证, 高弹性情景评估" in markdown_content
-	assert "## 🧩 用户版研究简报" in markdown_content
-	assert "## 📝 综合研究结论" in markdown_content
-	assert "## 🌤️ 乐观情景论证" in markdown_content
-	assert "## ⚡ 高弹性情景评估" in markdown_content
-	assert markdown_content.index("## 🧩 用户版研究简报") < markdown_content.index("## 📝 综合研究结论")
-	assert markdown_content.index("## 🧩 用户版研究简报") < markdown_content.index("## 📈 市场技术研究报告")
-	assert "## 综合研究结论" not in markdown_content
-	assert "### 核心观察" in markdown_content
-	assert "投资有风险，决策需谨慎" not in markdown_content
-	assert "本报告仅供研究参考，不构成个股推荐、投资建议或操作依据。请结合公开信息披露与自身研究独立判断。" in markdown_content
+	assert "**analyst**: Market Technical Analyst, optimistic scenario argument, Highly resilient scenario assessment" in markdown_content
+	assert "## 🧩 User version research briefing" in markdown_content
+	assert "## 📝 Comprehensive research conclusion" in markdown_content
+	assert "## 🌤️ optimistic scenario argument" in markdown_content
+	assert "## ⚡ Highly resilient scenario assessment" in markdown_content
+	assert markdown_content.index("## 🧩 User version research briefing") < markdown_content.index("## 📝 Comprehensive research conclusion")
+	assert markdown_content.index("## 🧩 User version research briefing") < markdown_content.index("## 📈 Market Technology Research Report")
+	assert "## Comprehensive research conclusion" not in markdown_content
+	assert "### core observation" in markdown_content
+	assert "Investment is risky and decisions need to be made with caution" not in markdown_content
+	assert "This report is for research reference only and does not constitute individual stock recommendation, investment advice or operation basis. Please make independent judgments based on public information disclosure and your own research." in markdown_content
 
 
 def test_generate_markdown_report_normalizes_chinese_numbered_subsections():
@@ -46,22 +46,22 @@ def test_generate_markdown_report_normalizes_chinese_numbered_subsections():
 	report_doc = {
 		"stock_symbol": "000001",
 		"analysis_date": "2026-04-11 00:00:00",
-		"research_depth": "快速",
+		"research_depth": "fast",
 		"reports": {
-			"index_report": "## 一、核心观察\n\n量能回升但结构分化仍在。\n\n二、后续关注\n\n关注政策催化与成交持续性。",
-			"sector_report": "**一、景气线索**\n\n板块轮动速度加快。\n\n**二、验证要点**\n\n观察主线成交是否延续。",
+			"index_report": "## 1. Core Observations\n\n Volume can rebound but structural differentiation remains.\n\n 2. Follow-up attention\n\n Pay attention to policy catalysis and transaction sustainability.",
+			"sector_report": "**1. Prosperity clues**\n\n The plate rotation speed is accelerated.\n\n**2. Key points of verification**\n\n Observe whether the main line transactions continue.",
 		},
 	}
 
 	markdown_content = exporter.generate_markdown_report(report_doc)
 
-	assert "## 📊 大盘环境研究报告" in markdown_content
-	assert "## 🏭 行业板块研究报告" in markdown_content
-	assert "### 核心观察" in markdown_content
-	assert "### 后续关注" in markdown_content
-	assert "### 景气线索" in markdown_content
-	assert "### 验证要点" in markdown_content
-	assert "### 一、核心观察" not in markdown_content
-	assert "### 二、后续关注" not in markdown_content
-	assert "一、景气线索" not in markdown_content
-	assert "二、验证要点" not in markdown_content
+	assert "## 📊 Market Environment Research Report" in markdown_content
+	assert "## 🏭 Industry sector research report" in markdown_content
+	assert "### core observation" in markdown_content
+	assert "### Follow up" in markdown_content
+	assert "### Business clues" in markdown_content
+	assert "### Verification points" in markdown_content
+	assert "### 1. Core Observations" not in markdown_content
+	assert "### 2. Follow-up attention" not in markdown_content
+	assert "1. Prosperity clues" not in markdown_content
+	assert "2. Key points of verification" not in markdown_content

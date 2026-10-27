@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-MongoDB 连接字符串工具函数
-统一管理 MongoDB 连接字符串的构建逻辑
+MongoDB Connect string utility function
+Unified management of MongoDB connection string construction logic
 """
 
 import os
@@ -17,29 +17,29 @@ def build_mongodb_connection_string(
     auth_source: Optional[str] = None
 ) -> str:
     """
-    构建 MongoDB 连接字符串
+    Build the MongoDB connection string
     
-    优先级:
-    1. 如果设置了 MONGODB_CONNECTION_STRING 环境变量，直接使用
-    2. 如果传入了参数，使用传入的参数
-    3. 否则从环境变量读取 MONGODB_HOST, MONGODB_PORT 等
+    priority:
+    1. If the MONGODB_CONNECTION_STRING environment variable is set, use it directly
+    2. If parameters are passed in, use the parameters passed in
+    3. Otherwise read from environment variables MONGODB_HOST, MONGODB_PORT Wait
     
     Args:
-        host: MongoDB 主机地址
-        port: MongoDB 端口
-        username: 用户名
-        password: 密码
-        database: 数据库名称
-        auth_source: 认证数据库
+        host: MongoDB host address
+        port: MongoDB port
+        username: Username
+        password: Password
+        database: Database name
+        auth_source: Authentication database
     
     Returns:
-        str: MongoDB 连接字符串
+        str: MongoDB connection string
         
     Examples:
-        >>> # 使用环境变量
+        >>> # Use environment variables
         >>> conn_str = build_mongodb_connection_string()
         
-        >>> # 使用自定义参数
+        >>> # Use custom parameters
         >>> conn_str = build_mongodb_connection_string(
         ...     host='localhost',
         ...     port=27017,
@@ -47,12 +47,12 @@ def build_mongodb_connection_string(
         ...     password='password123'
         ... )
     """
-    # 优先使用 MONGODB_CONNECTION_STRING 环境变量
+    # Prefer using the MONGODB_CONNECTION_STRING environment variable
     env_conn_str = os.getenv('MONGODB_CONNECTION_STRING')
     if env_conn_str:
         return env_conn_str
     
-    # 从参数或环境变量获取配置
+    # Get configuration from parameters or environment variables
     host = host or os.getenv('MONGODB_HOST', 'localhost')
     port = port or int(os.getenv('MONGODB_PORT', '27017'))
     username = username or os.getenv('MONGODB_USERNAME', '')
@@ -60,17 +60,17 @@ def build_mongodb_connection_string(
     database = database or os.getenv('MONGODB_DATABASE', 'tradingagents')
     auth_source = auth_source or os.getenv('MONGODB_AUTH_SOURCE', 'admin')
     
-    # 构建连接字符串
+    # Build connection string
     if username and password:
-        # 带认证的连接字符串
+        # Authentication connection string
         connection_string = f"mongodb://{username}:{password}@{host}:{port}/"
-        # 添加 authSource 参数
+        # Add authSource parameter
         if database:
             connection_string += f"{database}?authSource={auth_source}"
         else:
             connection_string += f"?authSource={auth_source}"
     else:
-        # 不带认证的连接字符串
+        # Connection string without authentication
         connection_string = f"mongodb://{host}:{port}/"
         if database:
             connection_string += database
@@ -80,25 +80,25 @@ def build_mongodb_connection_string(
 
 def get_mongodb_database_name() -> str:
     """
-    获取 MongoDB 数据库名称
+    Get MongoDB database name
     
-    优先级:
-    1. MONGODB_DATABASE_NAME 环境变量
-    2. MONGODB_DATABASE 环境变量
-    3. 默认值 'tradingagents'
+    priority:
+    1. MONGODB_DATABASE_NAME environment variables
+    2. MONGODB_DATABASE environment variables
+    3. Default value 'tradingagents'
     
     Returns:
-        str: 数据库名称
+        str: Database name
     """
     return os.getenv('MONGODB_DATABASE_NAME') or os.getenv('MONGODB_DATABASE', 'tradingagents')
 
 
 def get_mongodb_config() -> dict:
     """
-    获取完整的 MongoDB 配置
+    Get the complete MongoDB configuration
 
     Returns:
-        dict: 包含 connection_string 和 database_name 的字典
+        dict: A dictionary containing connection_string and database_name
     """
     return {
         'connection_string': build_mongodb_connection_string(),
@@ -114,27 +114,27 @@ def build_redis_connection_string(
     db: Optional[int] = None
 ) -> str:
     """
-    构建 Redis 连接字符串
+    Build a Redis connection string
 
-    优先级:
-    1. 如果设置了 REDIS_URL 环境变量，直接使用
-    2. 如果传入了参数，使用传入的参数
-    3. 否则从环境变量读取 REDIS_HOST, REDIS_PORT 等
+    priority:
+    1. If the REDIS_URL environment variable is set, use it directly
+    2. If parameters are passed in, use the parameters passed in
+    3. Otherwise read from environment variables REDIS_HOST, REDIS_PORT Wait
 
     Args:
-        host: Redis 主机地址
-        port: Redis 端口
-        password: 密码
-        db: 数据库编号
+        host: Redis host address
+        port: Redis port
+        password: Password
+        db: database number
 
     Returns:
-        str: Redis 连接字符串
+        str: Redis connection string
 
     Examples:
-        >>> # 使用环境变量
+        >>> # Use environment variables
         >>> conn_str = build_redis_connection_string()
 
-        >>> # 使用自定义参数
+        >>> # Use custom parameters
         >>> conn_str = build_redis_connection_string(
         ...     host='localhost',
         ...     port=6379,
@@ -142,23 +142,23 @@ def build_redis_connection_string(
         ...     db=0
         ... )
     """
-    # 优先使用 REDIS_URL 环境变量
+    # Prefer using the REDIS_URL environment variable
     env_conn_str = os.getenv('REDIS_URL')
     if env_conn_str:
         return env_conn_str
 
-    # 从参数或环境变量获取配置
+    # Get configuration from parameters or environment variables
     host = host or os.getenv('REDIS_HOST', 'localhost')
     port = port or int(os.getenv('REDIS_PORT', '6379'))
     password = password or os.getenv('REDIS_PASSWORD', '')
     db = db if db is not None else int(os.getenv('REDIS_DB', '0'))
 
-    # 构建连接字符串
+    # Build connection string
     if password:
-        # 带密码的连接字符串
+        # Connection string with password
         connection_string = f"redis://:{password}@{host}:{port}/{db}"
     else:
-        # 不带密码的连接字符串
+        # Connection string without password
         connection_string = f"redis://{host}:{port}/{db}"
 
     return connection_string

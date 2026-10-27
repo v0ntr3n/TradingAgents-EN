@@ -1,7 +1,7 @@
 """
-模型能力管理服务
+Model capability management service
 
-提供模型能力评估、验证和推荐功能。
+Provides model capability evaluation, verification and recommendation functions.
 """
 
 from typing import Tuple, Dict, Optional, List, Any
@@ -24,15 +24,15 @@ class ModelCapabilityService:
 
     def _parse_aggregator_model_name(self, model_name: str) -> Tuple[Optional[str], str]:
         """
-        解析聚合渠道的模型名称
+        Resolve model names for aggregation channels
 
         Args:
-            model_name: 模型名称，可能包含前缀（如 openai/gpt-4, anthropic/claude-3-sonnet）
+            model_name: Model name, which may include a prefix (e.g. openai/gpt-4, anthropic/claude-3-sonnet) 
 
         Returns:
-            (原厂商, 原模型名) 元组
+            (original manufacturer, Original model name) tuple
         """
-        # 常见的聚合渠道模型名称格式：
+        # Common aggregation channel model name format:
         # - openai/gpt-4
         # - anthropic/claude-3-sonnet
         # - google/gemini-pro
@@ -43,7 +43,7 @@ class ModelCapabilityService:
                 provider_hint = parts[0].lower()
                 original_model = parts[1]
 
-                # 映射提供商提示到标准名称
+                # Mapping provider hints to fully qualified names
                 provider_map = {
                     "openai": "openai",
                     "anthropic": "anthropic",
@@ -63,38 +63,38 @@ class ModelCapabilityService:
 
     def _get_model_capability_with_mapping(self, model_name: str) -> Tuple[int, Optional[str]]:
         """
-        获取模型能力等级（支持聚合渠道映射）
+        Get model capability level (supports aggregation channel mapping)
 
         Returns:
-            (能力等级, 映射的原模型名) 元组
+            (Ability level, The original model name of the mapping) tuple
         """
-        # 1. 先尝试直接匹配
+        # 1. Try a direct match first
         if model_name in DEFAULT_MODEL_CAPABILITIES:
             return DEFAULT_MODEL_CAPABILITIES[model_name]["capability_level"], None
 
-        # 2. 尝试解析聚合渠道模型名
+        # 2. Try to parse the aggregation channel model name
         provider, original_model = self._parse_aggregator_model_name(model_name)
 
         if original_model and original_model != model_name:
-            # 尝试用原模型名查找
+            # Try to search using the original model name
             if original_model in DEFAULT_MODEL_CAPABILITIES:
                 logger.info(f"🔄 聚合渠道模型映射: {model_name} -> {original_model}")
                 return DEFAULT_MODEL_CAPABILITIES[original_model]["capability_level"], original_model
 
-        # 3. 返回默认值
+        # 3. Return to default value
         return 2, None
 
     def get_model_capability(self, model_name: str) -> int:
         """
-        获取模型的能力等级（支持聚合渠道模型映射）
+        Get the capability level of the model (supports aggregation channel model mapping)
 
         Args:
-            model_name: 模型名称（可能包含聚合渠道前缀，如 openai/gpt-4）
+            model_name: Model name (may include aggregation channel prefix, such as openai/gpt-4)
 
         Returns:
-            能力等级 (1-5)
+            Ability level (1-5)
         """
-        # 1. 优先从数据库配置读取
+        # 1. Read from database configuration first
         try:
             llm_configs = unified_config.get_llm_configs()
             for config in llm_configs:
@@ -103,7 +103,7 @@ class ModelCapabilityService:
         except Exception as e:
             logger.warning(f"从配置读取模型能力失败: {e}")
 
-        # 2. 从默认映射表读取（支持聚合渠道映射）
+        # 2. Read from default mapping table (supports aggregate channel mapping)
         capability, mapped_model = self._get_model_capability_with_mapping(model_name)
         if mapped_model:
             logger.info(f"✅ 使用映射模型 {mapped_model} 的能力等级: {capability}")
@@ -112,68 +112,68 @@ class ModelCapabilityService:
     
     def get_model_config(self, model_name: str) -> Dict[str, Any]:
         """
-        获取模型的完整配置信息（支持聚合渠道模型映射）
+        Obtain the complete configuration information of the model (supports aggregation channel model mapping)
 
         Args:
-            model_name: 模型名称（可能包含聚合渠道前缀）
+            model_name: Model name (may include aggregation channel prefix)
 
         Returns:
-            模型配置字典
+            Model configuration dictionary
         """
-        # 1. 优先从 MongoDB 数据库配置读取（使用同步客户端）
+        # 1. Prefer reading from MongoDB database configuration (using sync client)
         try:
             from pymongo import MongoClient
             from app.core.config import settings
             from app.models.config import SystemConfig
 
-            # 使用同步 MongoDB 客户端
+            # Using the synchronous MongoDB client
             client = MongoClient(settings.MONGO_URI)
             db = client[settings.MONGO_DB]
-            collection = db.system_configs  # 注意：集合名是复数
+            collection = db.system_configs  # Note: the collection name is plural
 
-            # 查询系统配置（与 config_service 保持一致）
+            # Query system configuration (consistent with config_service)
             doc = collection.find_one({"is_active": True}, sort=[("version", -1)])
 
-            logger.info(f"🔍 [MongoDB] 查询结果: doc={'存在' if doc else '不存在'}")
+            logger.info(f"🔍 [MongoDB] Query results: doc={'exist' if doc else 'does not exist'}")
             if doc:
-                logger.info(f"🔍 [MongoDB] 文档版本: {doc.get('version')}, is_active: {doc.get('is_active')}")
+                logger.info(f"🔍 [MongoDB] Document version: {doc.get('version')}, is_active: {doc.get('is_active')}")
 
             if doc and "llm_configs" in doc:
                 llm_configs = doc["llm_configs"]
-                logger.info(f"🔍 [MongoDB] llm_configs 数量: {len(llm_configs)}")
+                logger.info(f"🔍 [MongoDB] llm_configs Quantity: {len(llm_configs)}")
 
                 for config_dict in llm_configs:
                     if config_dict.get("model_name") == model_name:
-                        logger.info(f"🔍 [MongoDB] 找到模型配置: {model_name}")
-                        # 🔧 将字符串列表转换为枚举列表
+                        logger.info(f"🔍 [MongoDB] Find model configuration: {model_name}")
+                        # 🔧 Convert a list of strings to a list of enumerations
                         features_str = config_dict.get('features', [])
                         features_enum = []
                         for feature_str in features_str:
                             try:
-                                # 兼容旧版 function_calling -> tool_calling
+                                # Compatible with older versions function_calling -> tool_calling
                                 if feature_str == "function_calling":
                                     feature_str = "tool_calling"
                                 features_enum.append(ModelFeature(feature_str))
                             except ValueError:
                                 logger.warning(f"⚠️ 未知的特性值: {feature_str}")
 
-                        # 🔧 将字符串列表转换为枚举列表
+                        # 🔧 Convert a list of strings to a list of enumerations
                         roles_str = config_dict.get('suitable_roles', ["both"])
                         roles_enum = []
                         for role_str in roles_str:
                             try:
-                                # 将字符串转换为 ModelRole 枚举
+                                # Convert string to ModelRole enumeration
                                 roles_enum.append(ModelRole(role_str))
                             except ValueError:
                                 logger.warning(f"⚠️ 未知的角色值: {role_str}")
 
-                        # 如果没有角色，默认为 both
+                        # If there is no role, the default is both
                         if not roles_enum:
                             roles_enum = [ModelRole.BOTH]
 
-                        logger.info(f"📊 [MongoDB配置] {model_name}: features={features_enum}, roles={roles_enum}")
+                        logger.info(f"📊 [MongoDB Configuration] {model_name}: features={features_enum}, roles={roles_enum}")
 
-                        # 关闭连接
+                        # close connection
                         client.close()
 
                         return {
@@ -185,27 +185,27 @@ class ModelCapabilityService:
                             "performance_metrics": config_dict.get('performance_metrics', None)
                         }
 
-            # 关闭连接
+            # close connection
             client.close()
 
         except Exception as e:
-            logger.warning(f"从 MongoDB 读取模型信息失败: {e}", exc_info=True)
+            logger.warning(f"Failed to read model information from MongoDB: {e}", exc_info=True)
 
-        # 2. 从默认映射表读取（直接匹配）
+        # 2. Read from default mapping table (direct match)
         if model_name in DEFAULT_MODEL_CAPABILITIES:
             return DEFAULT_MODEL_CAPABILITIES[model_name]
 
-        # 3. 尝试聚合渠道模型映射
+        # 3. Try aggregate channel model mapping
         provider, original_model = self._parse_aggregator_model_name(model_name)
         if original_model and original_model != model_name:
             if original_model in DEFAULT_MODEL_CAPABILITIES:
                 logger.info(f"🔄 聚合渠道模型映射: {model_name} -> {original_model}")
                 config = DEFAULT_MODEL_CAPABILITIES[original_model].copy()
-                config["model_name"] = model_name  # 保持原始模型名
-                config["_mapped_from"] = original_model  # 记录映射来源
+                config["model_name"] = model_name  # Keep original model name
+                config["_mapped_from"] = original_model  # Record mapping source
                 return config
 
-        # 4. 返回默认配置
+        # 4. Return to default configuration
         logger.warning(f"未找到模型 {model_name} 的配置，使用默认配置")
         return {
             "model_name": model_name,
@@ -223,17 +223,17 @@ class ModelCapabilityService:
         research_depth: str
     ) -> Dict[str, Any]:
         """
-        验证模型对是否适合当前分析深度
+        Verify that a model pair is appropriate for the current depth of analysis
 
         Args:
-            quick_model: 快速分析模型名称
-            deep_model: 深度分析模型名称
-            research_depth: 研究深度（快速/基础/标准/深度/全面）
+            quick_model: Quickly analyze model names
+            deep_model: In-depth analysis model name
+            research_depth: Research depth (Quick/Basic/Standard/In-depth/Comprehensive)
 
         Returns:
-            验证结果字典，包含 valid, warnings, recommendations
+            Dictionary of verification results, including valid, warnings, recommendations
         """
-        logger.info(f"🔍 开始验证模型对: quick={quick_model}, deep={deep_model}, depth={research_depth}")
+        logger.info(f"🔍 Start validating the model pair: quick={quick_model}, deep={deep_model}, depth={research_depth}")
 
         requirements = ANALYSIS_DEPTH_REQUIREMENTS.get(research_depth, ANALYSIS_DEPTH_REQUIREMENTS["标准"])
         logger.info(f"🔍 分析深度要求: {requirements}")
@@ -250,15 +250,15 @@ class ModelCapabilityService:
             "recommendations": []
         }
         
-        # 检查快速模型
+        # Check out the quick model
         quick_level = quick_config["capability_level"]
-        logger.info(f"🔍 检查快速模型能力等级: {quick_level} >= {requirements['quick_model_min']}?")
+        logger.info(f"🔍 Check Quick Model Capability Level: {quick_level} >= {requirements['quick_model_min']}?")
         if quick_level < requirements["quick_model_min"]:
             warning = f"⚠️ 快速模型 {quick_model} (能力等级{quick_level}) 低于 {research_depth} 分析的建议等级({requirements['quick_model_min']})"
             result["warnings"].append(warning)
             logger.warning(warning)
 
-        # 检查快速模型角色适配
+        # Check out Quick Model Role Adaptation
         quick_roles = quick_config.get("suitable_roles", [])
         logger.info(f"🔍 检查快速模型角色: {quick_roles}")
         if ModelRole.QUICK_ANALYSIS not in quick_roles and ModelRole.BOTH not in quick_roles:
@@ -266,7 +266,7 @@ class ModelCapabilityService:
             result["warnings"].append(warning)
             logger.warning(warning)
 
-        # 检查快速模型是否支持工具调用
+        # Check if the express model supports tool calls
         quick_features = quick_config.get("features", [])
         logger.info(f"🔍 检查快速模型特性: {quick_features}")
         if ModelFeature.TOOL_CALLING not in quick_features:
@@ -275,9 +275,9 @@ class ModelCapabilityService:
             result["warnings"].append(warning)
             logger.error(warning)
 
-        # 检查深度模型
+        # Check the deep model
         deep_level = deep_config["capability_level"]
-        logger.info(f"🔍 检查深度模型能力等级: {deep_level} >= {requirements['deep_model_min']}?")
+        logger.info(f"🔍 Check deep model capability level: {deep_level} >= {requirements['deep_model_min']}?")
         if deep_level < requirements["deep_model_min"]:
             result["valid"] = False
             warning = f"❌ 深度模型 {deep_model} (能力等级{deep_level}) 不满足 {research_depth} 分析的最低要求(等级{requirements['deep_model_min']})"
@@ -287,7 +287,7 @@ class ModelCapabilityService:
                 self._recommend_model("deep", requirements["deep_model_min"])
             )
 
-        # 检查深度模型角色适配
+        # Checking Deep Model Role Adaptation
         deep_roles = deep_config.get("suitable_roles", [])
         logger.info(f"🔍 检查深度模型角色: {deep_roles}")
         if ModelRole.DEEP_ANALYSIS not in deep_roles and ModelRole.BOTH not in deep_roles:
@@ -295,14 +295,14 @@ class ModelCapabilityService:
             result["warnings"].append(warning)
             logger.warning(warning)
 
-        # 检查必需特性
+        # Check required attributes
         logger.info(f"🔍 检查必需特性: {requirements['required_features']}")
         for feature in requirements["required_features"]:
             if feature == ModelFeature.REASONING:
                 deep_features = deep_config.get("features", [])
-                logger.info(f"🔍 检查深度模型推理能力: {deep_features}")
+                logger.info(f"🔍 Check deep model inference capabilities: {deep_features}")
                 if feature not in deep_features:
-                    warning = f"💡 {research_depth} 分析建议使用具有强推理能力的深度模型"
+                    warning = f"💡 {research_depth} The analysis recommends using deep models with strong inference capabilities"
                     result["warnings"].append(warning)
                     logger.warning(warning)
 
@@ -316,30 +316,30 @@ class ModelCapabilityService:
         research_depth: str
     ) -> Tuple[str, str]:
         """
-        根据分析深度推荐合适的模型对
+        Recommend appropriate model pairs based on depth of analysis
         
         Args:
-            research_depth: 研究深度（快速/基础/标准/深度/全面）
+            research_depth: Research depth (Quick/Basic/Standard/In-depth/Comprehensive)
             
         Returns:
-            (quick_model, deep_model) 元组
+            (quick_model, deep_model) tuple
         """
         requirements = ANALYSIS_DEPTH_REQUIREMENTS.get(research_depth, ANALYSIS_DEPTH_REQUIREMENTS["标准"])
         
-        # 获取所有启用的模型
+        # Get all enabled models
         try:
             llm_configs = unified_config.get_llm_configs()
             enabled_models = [c for c in llm_configs if c.enabled]
         except Exception as e:
             logger.error(f"获取模型配置失败: {e}")
-            # 使用默认模型
+            # Use default model
             return self._get_default_models()
         
         if not enabled_models:
-            logger.warning("没有启用的模型，使用默认配置")
+            logger.warning("No models enabled, use default configuration")
             return self._get_default_models()
         
-        # 筛选适合快速分析的模型
+        # Filter models suitable for rapid analysis
         quick_candidates = []
         for m in enabled_models:
             roles = getattr(m, 'suitable_roles', [ModelRole.BOTH])
@@ -351,7 +351,7 @@ class ModelCapabilityService:
                ModelFeature.TOOL_CALLING in features:
                 quick_candidates.append(m)
         
-        # 筛选适合深度分析的模型
+        # Screen models suitable for in-depth analysis
         deep_candidates = []
         for m in enabled_models:
             roles = getattr(m, 'suitable_roles', [ModelRole.BOTH])
@@ -361,7 +361,7 @@ class ModelCapabilityService:
                level >= requirements["deep_model_min"]:
                 deep_candidates.append(m)
         
-        # 按性价比排序（能力等级 vs 成本）
+        # Sort by cost performance (capability level vs cost)
         quick_candidates.sort(
             key=lambda x: (
                 getattr(x, 'capability_level', 2),
@@ -378,18 +378,18 @@ class ModelCapabilityService:
             reverse=True
         )
         
-        # 选择最佳模型
+        # Choose the best model
         quick_model = quick_candidates[0].model_name if quick_candidates else None
         deep_model = deep_candidates[0].model_name if deep_candidates else None
         
-        # 如果没找到合适的，使用系统默认
+        # If no suitable one is found, use the system default
         if not quick_model or not deep_model:
             return self._get_default_models()
         
         logger.info(
             f"🤖 为 {research_depth} 分析推荐模型: "
-            f"quick={quick_model} (角色:快速分析), "
-            f"deep={deep_model} (角色:深度推理)"
+            f"quick={quick_model} (role:Quick analysis), "
+            f"deep={deep_model} (role:deep reasoning)"
         )
         
         return quick_model, deep_model
@@ -399,7 +399,7 @@ class ModelCapabilityService:
         try:
             quick_model = unified_config.get_quick_analysis_model()
             deep_model = unified_config.get_deep_analysis_model()
-            logger.info(f"使用系统默认模型: quick={quick_model}, deep={deep_model}")
+            logger.info(f"Use system default model: quick={quick_model}, deep={deep_model}")
             return quick_model, deep_model
         except Exception as e:
             logger.error(f"获取默认模型失败: {e}")
@@ -419,7 +419,7 @@ class ModelCapabilityService:
         return "建议升级模型配置"
 
 
-# 单例
+# Singleton
 _model_capability_service = None
 
 

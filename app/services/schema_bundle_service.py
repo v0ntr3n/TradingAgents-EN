@@ -1,4 +1,4 @@
-"""金融 schema bundle 服务骨架。"""
+"""Financial schema bundle service skeleton."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ _DEFAULT_SCHEMA_BUNDLE_SERVICE: Optional["SchemaBundleService"] = None
 
 
 class SchemaBundleService:
-    """统一的 bundle 加载与查询入口。"""
+    """Unified bundle loading and query entry."""
 
     def __init__(self, root_path: Optional[str] = None):
         self._root_path = root_path or os.environ.get("FINANCIAL_SCHEMA_BUNDLE_ROOT")

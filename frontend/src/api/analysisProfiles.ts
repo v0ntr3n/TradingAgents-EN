@@ -1,6 +1,6 @@
 import { ApiClient, type ApiResponse } from './request'
 
-// ── 类型定义 ──
+// ── type definition ──
 
 export interface AnalysisDimension {
   name: string
@@ -36,7 +36,7 @@ export interface StockProfile {
   updated_at?: string
 }
 
-// ── 覆盖评估类型 ──
+// ── Override evaluation type ──
 
 export interface SourceRef {
   type: string
@@ -89,10 +89,10 @@ export interface GenerateIndustryOptions {
   existing_profile?: Partial<IndustryProfile>
 }
 
-// ── API 接口 ──
+// ── API interface ──
 
 export const analysisProfilesApi = {
-  // 行业配置
+  // Industry configuration
   async listIndustries(isActive?: boolean): Promise<ApiResponse<IndustryProfile[]>> {
     const params: Record<string, any> = {}
     if (isActive !== undefined) params.is_active = isActive
@@ -124,12 +124,12 @@ export const analysisProfilesApi = {
     })
   },
 
-  /** 获取数据库中所有实际行业名称（来自 stock_basic_info） */
+  /** Get all actual industry names in the database (from stock_basic_info) */
   async getIndustryList(): Promise<ApiResponse<string[]>> {
     return ApiClient.get('/api/analysis-profiles/industry-list')
   },
 
-  // 个股配置
+  // Individual stock allocation
   async listStocks(industry?: string): Promise<ApiResponse<StockProfile[]>> {
     const params: Record<string, any> = {}
     if (industry) params.industry = industry

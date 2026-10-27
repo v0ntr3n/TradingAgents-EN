@@ -19,44 +19,44 @@ logger = logging.getLogger(__name__)
 
 class DataSourceManager:
     """
-    数据源管理器
-    - 管理多个适配器，基于优先级排序
-    - 提供 fallback 获取能力
-    - 可选：一致性检查（若依赖存在）
+    Data source manager
+    - Manage multiple adapters, sorted based on priority
+    - Provide fallback acquisition capabilities
+    - Optional: Consistency check (if dependencies exist)
     """
 
     def __init__(self):
         self._configured_enabled_map: Dict[str, bool] = {}
         self.adapters: List[DataSourceAdapter] = [
-            LocalAdapter(),      # 本地数据源（用户通过API导入）
+            LocalAdapter(),      # Local data source (user imports through API)
             TushareAdapter(),
             AKShareAdapter(),
             BaoStockAdapter(),
-            QMTAdapter(),        # 迅投 QMT（需 QMT 运行，新闻用 AKShare）
+            QMTAdapter(),        # Xuntou QMT (QMT is required to run, AKShare is used for news)
         ]
 
-        # 使用统一的数据源优先级模块加载配置
+        # Load configuration using unified data source priority module
         self._load_priority_from_unified_config()
 
-        # 按优先级排序（数字越大优先级越高，所以降序排列）
+        # Sort by priority (larger numbers have higher priority, so sort in descending order)
         self.adapters.sort(key=lambda x: x.priority, reverse=True)
 
         try:
             from .data_consistency_checker import DataConsistencyChecker  # type: ignore
             self.consistency_checker = DataConsistencyChecker()
         except Exception:
-            logger.warning("⚠️ 数据一致性检查器不可用")
+            logger.warning("⚠️ Data consistency checker is unavailable")
             self.consistency_checker = None
 
     def _load_priority_from_unified_config(self):
-        """使用统一配置模块加载数据源优先级"""
+        """Use the unified configuration module to load data source priorities"""
         try:
             from app.core.unified_config import UnifiedConfigManager
 
             config = UnifiedConfigManager()
             data_source_configs = config.get_data_source_configs()
 
-            # 创建名称到优先级的映射
+            # Create a name-to-priority mapping
             priority_map = {}
             for ds_config in data_source_configs:
                 data_source_name = ds_config.type.lower()
@@ -68,10 +68,10 @@ class DataSourceManager:
                 if enabled:
                     priority_map[data_source_name] = priority
 
-            # 🔥 强制 .env 开关覆盖（.env 优先级最高，无视数据库缓存）
+            # 🔥 Force .env switch override (.env has the highest priority and ignores database cache)
             self._apply_dotenv_overrides()
 
-            # 更新各个 Adapter 的优先级
+            # Update the priority of each Adapter
             for adapter in self.adapters:
                 if adapter.name in priority_map:
                     adapter._priority = priority_map[adapter.name]
@@ -79,23 +79,23 @@ class DataSourceManager:
                     adapter._priority = adapter._get_default_priority()
 
         except Exception as e:
-            logger.warning(f"⚠️ 从统一配置加载优先级失败: {e}，使用默认优先级")
+            logger.warning(f"⚠️ Loading priorities from unified configuration failed: {e}, Use default priority")
             import traceback
             logger.warning(f"堆栈跟踪:\n{traceback.format_exc()}")
-            # 使用默认优先级
+            # Use default priority
             for adapter in self.adapters:
                 adapter._priority = adapter._get_default_priority()
 
     def _apply_dotenv_overrides(self):
-        """强制应用 .env 中的数据源开关（最高优先级）
+        """Force application of data source switches in .env (highest priority)
 
-        通过 Pydantic BaseSettings 读取 .env 中显式设置的值。
-        多个 key 按优先级排列，第一个被显式设置的值生效。
+        Read values explicitly set in .env via Pydantic BaseSettings.
+        Multiple keys are arranged in priority, and the first explicitly set value takes effect.
         """
         try:
             from app.core.config import settings as runtime_settings
 
-            # 按优先级排列：用户实际在 .env 中设置的 key 放前面
+            # Arranged by priority: the key actually set by the user in .env is placed first
             env_overrides = {
                 "baostock": ["BAOSTOCK_UNIFIED_ENABLED", "ENABLE_BAOSTOCK"],
                 "tushare": ["ENABLE_TUSHARE"],
@@ -108,8 +108,8 @@ class DataSourceManager:
                 for key in env_keys:
                     val = getattr(runtime_settings, key, None)
 
-                    # 只有当值为 False（禁用）时才覆盖。
-                    # True 可能是 Pydantic 默认值，不要用默认 True 去覆盖数据库的 False。
+                    # Only overridden when the value is False (disabled).
+                    # True It may be the Pydantic default value, do not use the default True to override the database's False.
                     if val is False:
                         env_val = False
                         effective_key = key
@@ -118,9 +118,9 @@ class DataSourceManager:
                 if effective_key:
                     old_val = self._configured_enabled_map.get(adapter_name)
                     self._configured_enabled_map[adapter_name] = env_val
-                    logger.info(f"🔧 [DataSourceManager] .env 禁用 ({effective_key}): {adapter_name} enabled=False (原={old_val})")
+                    logger.info(f"🔧 [DataSourceManager] .env Disable ({effective_key}): {adapter_name} enabled=False (Original={old_val})")
         except Exception as e:
-            logger.warning(f"⚠️ [DataSourceManager] .env 覆盖失败: {e}")
+            logger.warning(f"⚠️ [DataSourceManager] .env Overwrite failed: {e}")
 
     def get_available_adapters(self) -> List[DataSourceAdapter]:
         available: List[DataSourceAdapter] = []
@@ -144,32 +144,32 @@ class DataSourceManager:
 
     def get_stock_list_with_fallback(self, preferred_sources: Optional[List[str]] = None, exclude_local: bool = False) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
         """
-        获取股票列表，支持指定优先数据源
+        Get a stock list and support specifying priority data sources
 
         Args:
-            preferred_sources: 优先使用的数据源列表，例如 ['akshare', 'baostock']
-                             如果为 None，则按照默认优先级顺序
-            exclude_local: 是否排除本地数据源（同步操作时应设为 True）
+            preferred_sources: A list of preferred data sources to use, e.g. ['akshare', 'baostock']
+                             If None, follow default priority order
+            exclude_local: Whether to exclude local data sources (should be set to True during synchronization operations)
 
         Returns:
-            (DataFrame, source_name) 或 (None, None)
+            (DataFrame, source_name) or (None, None)
         """
         available_adapters = self.get_available_adapters()
 
-        # 排除本地数据源（用于同步操作）
+        # Exclude local data sources (for sync operations)
         if exclude_local:
             available_adapters = [a for a in available_adapters if a.name != 'local']
-            logger.info("🚫 排除本地数据源（local），仅使用外部数据源进行同步")
+            logger.info("🚫 Exclude local data sources (local) and only use external data sources for synchronization")
 
-        # 如果指定了优先数据源，重新排序
+        # If a preferred data source is specified, reorder
         if preferred_sources:
             logger.info(f"Using preferred data sources: {preferred_sources}")
-            # 创建优先级映射
+            # Create priority mapping
             priority_map = {name: idx for idx, name in enumerate(preferred_sources)}
-            # 将指定的数据源排在前面，其他的保持原顺序
+            # Sort the specified data source first, and keep the others in their original order.
             preferred = [a for a in available_adapters if a.name in priority_map]
             others = [a for a in available_adapters if a.name not in priority_map]
-            # 按照 preferred_sources 的顺序排序
+            # Sort by preferred_sources
             preferred.sort(key=lambda a: priority_map.get(a.name, 999))
             available_adapters = preferred + others
             logger.info(f"Reordered adapters: {[a.name for a in available_adapters]}")
@@ -204,18 +204,18 @@ class DataSourceManager:
 
     def get_daily_basic_with_fallback(self, trade_date: str, preferred_sources: Optional[List[str]] = None) -> Tuple[Optional[pd.DataFrame], Optional[str]]:
         """
-        获取每日基础数据，支持指定优先数据源
+        Obtain daily basic data and support specifying priority data sources
 
         Args:
-            trade_date: 交易日期
-            preferred_sources: 优先使用的数据源列表
+            trade_date: transaction date
+            preferred_sources: List of preferred data sources to use
 
         Returns:
-            (DataFrame, source_name) 或 (None, None)
+            (DataFrame, source_name) or (None, None)
         """
         available_adapters = self.get_available_adapters()
 
-        # 如果指定了优先数据源，重新排序
+        # If a preferred data source is specified, reorder
         if preferred_sources:
             priority_map = {name: idx for idx, name in enumerate(preferred_sources)}
             preferred = [a for a in available_adapters if a.name in priority_map]
@@ -236,17 +236,17 @@ class DataSourceManager:
 
     def find_latest_trade_date_with_fallback(self, preferred_sources: Optional[List[str]] = None) -> Optional[str]:
         """
-        查找最新交易日期，支持指定优先数据源
+        Find the latest transaction date and support specifying priority data sources
 
         Args:
-            preferred_sources: 优先使用的数据源列表
+            preferred_sources: List of preferred data sources to use
 
         Returns:
-            交易日期字符串（YYYYMMDD格式）或 None
+            Transaction date string (YYYYMMDD format) or None
         """
         available_adapters = self.get_available_adapters()
 
-        # 如果指定了优先数据源，重新排序
+        # If a preferred data source is specified, reorder
         if preferred_sources:
             priority_map = {name: idx for idx, name in enumerate(preferred_sources)}
             preferred = [a for a in available_adapters if a.name in priority_map]
@@ -266,9 +266,9 @@ class DataSourceManager:
 
     def get_realtime_quotes_with_fallback(self) -> Tuple[Optional[Dict], Optional[str]]:
         """
-        获取全市场实时快照，按适配器优先级依次尝试，返回首个成功结果
+        Obtain a real-time snapshot of the entire market, try in sequence by adapter priority, and return the first successful result.
         Returns: (quotes_dict, source_name)
-        quotes_dict 形如 { '000001': {'close': 10.0, 'pct_chg': 1.2, 'amount': 1.2e8}, ... }
+        quotes_dict shaped like { '000001': {'close': 10.0, 'pct_chg': 1.2, 'amount': 1.2e8}, ... }
         """
         available_adapters = self.get_available_adapters()
         for adapter in available_adapters:
@@ -287,7 +287,7 @@ class DataSourceManager:
         self, trade_date: str
     ) -> Tuple[Optional[pd.DataFrame], Optional[str], Optional[Dict]]:
         """
-        使用一致性检查获取每日基础数据
+        Get daily base data using consistency checks
 
         Returns:
             Tuple[DataFrame, source_name, consistency_report]
@@ -300,7 +300,7 @@ class DataSourceManager:
         secondary_adapter = available_adapters[1]
         try:
             logger.info(
-                f"🔍 获取数据进行一致性检查: {primary_adapter.name} vs {secondary_adapter.name}"
+                f"🔍 Get data for consistency check: {primary_adapter.name} vs {secondary_adapter.name}"
             )
             primary_data = primary_adapter.get_daily_basic(trade_date)
             secondary_data = secondary_adapter.get_daily_basic(trade_date)
@@ -335,7 +335,7 @@ class DataSourceManager:
                 )
                 return final_data, primary_adapter.name, consistency_report
             else:
-                logger.warning("⚠️ 一致性检查器不可用，使用主数据源")
+                logger.warning("⚠️ Consistency checker is not available, use primary data source")
                 return primary_data, primary_adapter.name, None
         except Exception as e:
             logger.error(f"❌ 一致性检查失败: {e}")
@@ -345,7 +345,7 @@ class DataSourceManager:
 
 
     def get_kline_with_fallback(self, code: str, period: str = "day", limit: int = 120, adj: Optional[str] = None) -> Tuple[Optional[List[Dict]], Optional[str]]:
-        """按优先级尝试获取K线，返回(items, source)"""
+        """Try to get the K line according to priority and return(items, source)"""
         available_adapters = self.get_available_adapters()
         for adapter in available_adapters:
             try:
@@ -359,7 +359,7 @@ class DataSourceManager:
         return None, None
 
     def get_news_with_fallback(self, code: str, days: int = 2, limit: int = 50, include_announcements: bool = True) -> Tuple[Optional[List[Dict]], Optional[str]]:
-        """按优先级尝试获取新闻与公告，返回(items, source)"""
+        """Try to get news and announcements by priority, return(items, source)"""
         available_adapters = self.get_available_adapters()
         for adapter in available_adapters:
             try:
@@ -374,15 +374,15 @@ class DataSourceManager:
 
     def get_daily_ohlc_with_fallback(self, code: str, trade_date: str, adj: Optional[str] = None) -> Tuple[Optional[Dict], Optional[str]]:
         """
-        按优先级尝试获取指定日期的日线 OHLC 数据。
+        Prioritizes attempts to obtain daily OHLC data for a specified date.
 
         Args:
-            code: 6位股票代码
-            trade_date: 交易日期，格式 YYYY-MM-DD 或 YYYYMMDD
-            adj: 复权方式，None=不复权，"qfq"=前复权，"hfq"=后复权
+            code: 6 stock code
+            trade_date: Transaction date, format YYYY-MM-DD or YYYYMMDD
+            adj: Restoration method,None=Not regaining power,"qfq"=Before regaining power,"hfq"=Restoration of rights later
 
         Returns:
-            (ohlc_dict, source_name) 或 (None, None)
+            (ohlc_dict, source_name) or (None, None)
             ohlc_dict: {"date", "open", "high", "low", "close"}
         """
         available_adapters = self.get_available_adapters()

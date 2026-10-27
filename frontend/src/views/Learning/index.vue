@@ -1,104 +1,104 @@
 <template>
   <div class="learning-center">
     <div class="learning-header">
-      <h1>📚 学习中心</h1>
-      <p class="subtitle">了解 AI、大模型与多智能体投研研究流程</p>
+      <h1>📚 Learning Center</h1>
+      <p class="subtitle">Understand the AI, large model and multi-agent investment research process</p>
     </div>
 
     <el-row :gutter="20" class="learning-categories">
-      <!-- AI基础知识 -->
+      <!-- AI basic knowledge -->
       <el-col :xs="24" :sm="12" :md="8" :lg="6">
         <el-card class="category-card" shadow="hover" @click="navigateTo('ai-basics')">
           <div class="card-icon">🤖</div>
-          <h3>AI基础知识</h3>
-          <p>什么是AI？什么是大模型？了解人工智能的基本概念</p>
-          <el-tag type="primary" size="small">1篇文章</el-tag>
+          <h3>AI basic knowledge</h3>
+          <p>What is AI? What is a large model? Understand the basic concepts of artificial intelligence</p>
+          <el-tag type="primary" size="small">1 articles</el-tag>
         </el-card>
       </el-col>
 
-      <!-- 提示词工程 -->
+      <!-- prompt word project -->
       <el-col :xs="24" :sm="12" :md="8" :lg="6">
         <el-card class="category-card" shadow="hover" @click="navigateTo('prompt-engineering')">
           <div class="card-icon">✍️</div>
-          <h3>提示词工程</h3>
-          <p>学习如何编写有效的提示词，让AI更好地理解你的需求</p>
-          <el-tag type="success" size="small">2篇文章</el-tag>
+          <h3>prompt word project</h3>
+          <p>Learn how to write effective prompt words to let AI better understand your needs</p>
+          <el-tag type="success" size="small">2 articles</el-tag>
         </el-card>
       </el-col>
 
-      <!-- 模型选择指南 -->
+      <!-- Model Selection Guide -->
       <el-col :xs="24" :sm="12" :md="8" :lg="6">
         <el-card class="category-card" shadow="hover" @click="navigateTo('model-selection')">
           <div class="card-icon">🎯</div>
-          <h3>模型选择指南</h3>
-          <p>了解不同大模型的特点，选择最适合你的模型</p>
-          <el-tag type="warning" size="small">1篇文章</el-tag>
+          <h3>Model Selection Guide</h3>
+          <p>Understand the characteristics of different large models and choose the model that best suits you</p>
+          <el-tag type="warning" size="small">1 articles</el-tag>
         </el-card>
       </el-col>
 
-      <!-- AI分析股票原理 -->
+      <!-- AI Analyze stock principles -->
       <el-col :xs="24" :sm="12" :md="8" :lg="6">
         <el-card class="category-card" shadow="hover" @click="navigateTo('analysis-principles')">
           <div class="card-icon">📊</div>
-          <h3>AI分析股票原理</h3>
-          <p>深入了解多智能体如何协作分析股票</p>
-          <el-tag type="info" size="small">1篇文章</el-tag>
+          <h3>AI Analyze stock principles</h3>
+          <p>Learn more about how multiple agents collaborate to analyze stocks</p>
+          <el-tag type="info" size="small">1 articles</el-tag>
         </el-card>
       </el-col>
 
-      <!-- 风险与局限性 -->
+      <!-- Risks and Limitations -->
       <el-col :xs="24" :sm="12" :md="8" :lg="6">
         <el-card class="category-card" shadow="hover" @click="navigateTo('risks-limitations')">
           <div class="card-icon">⚠️</div>
-          <h3>风险与局限性</h3>
-          <p>了解AI的潜在问题和正确使用方式</p>
-          <el-tag type="danger" size="small">1篇文章</el-tag>
+          <h3>Risks and Limitations</h3>
+          <p>Understand potential problems with AI and proper ways to use it</p>
+          <el-tag type="danger" size="small">1 articles</el-tag>
         </el-card>
       </el-col>
 
-      <!-- 源项目与论文 -->
+      <!-- Source projects and papers -->
       <el-col :xs="24" :sm="12" :md="8" :lg="6">
         <el-card class="category-card" shadow="hover" @click="navigateTo('resources')">
           <div class="card-icon">📖</div>
-          <h3>源项目与论文</h3>
-          <p>TradingAgents项目介绍和学术论文资源</p>
-          <el-tag type="primary" size="small">2篇文章</el-tag>
+          <h3>Source projects and papers</h3>
+          <p>TradingAgents Project introduction and academic paper resources</p>
+          <el-tag type="primary" size="small">2 articles</el-tag>
         </el-card>
       </el-col>
 
-      <!-- 实战教程 -->
+      <!-- Practical tutorial -->
       <el-col :xs="24" :sm="12" :md="8" :lg="6">
         <el-card class="category-card" shadow="hover" @click="navigateTo('tutorials')">
           <div class="card-icon">🎓</div>
-          <h3>实战教程</h3>
-          <p>通过实际案例学习如何使用本工具</p>
-          <el-tag type="success" size="small">2篇文章</el-tag>
+          <h3>Practical tutorial</h3>
+          <p>Learn how to use this tool through practical cases</p>
+          <el-tag type="success" size="small">2 articles</el-tag>
         </el-card>
       </el-col>
 
-      <!-- 常见问题 -->
+      <!-- FAQ -->
       <el-col :xs="24" :sm="12" :md="8" :lg="6">
         <el-card class="category-card" shadow="hover" @click="navigateTo('faq')">
           <div class="card-icon">❓</div>
-          <h3>常见问题</h3>
-          <p>快速找到常见问题的答案</p>
-          <el-tag type="info" size="small">1篇文章</el-tag>
+          <h3>FAQ</h3>
+          <p>Quickly find answers to frequently asked questions</p>
+          <el-tag type="info" size="small">1 articles</el-tag>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 高级课程区域 -->
+    <!-- Advanced course area -->
     <section class="advanced-courses-section">
       <div class="section-header">
         <div class="header-content">
-          <h2>🎓 从散户到系统交易者：AI赋能的可进化投资法</h2>
-          <el-tag type="success" size="large">{{ freeLessonCount }}节免费</el-tag>
+          <h2>🎓 From retail investors to systematic traders: an evolvable investment approach empowered by AI</h2>
+          <el-tag type="success" size="large">{{ freeLessonCount }}festival free</el-tag>
           <PaidCourseBadge variant="tag-short" size="large" />
         </div>
-        <p class="section-subtitle">30节系统课程，按炒股全生命周期组织：发现 → 跟踪 → 持仓 → 复盘 → 扩展。前{{ freeLessonCount }}节免费预览。<PaidCourseBadge variant="text" /></p>
+        <p class="section-subtitle">30 Systematic courses organized according to the full life cycle of stock trading: Discovery → Track → Position → Review → Extension. before{{ freeLessonCount }}Free preview.<PaidCourseBadge variant="text" /></p>
       </div>
 
-      <!-- 课程分类（所有人可见） -->
+      <!-- Course Category (visible to everyone) -->
       <div class="course-categories">
         <el-row :gutter="20">
           <el-col 
@@ -115,7 +115,7 @@
               <h3>{{ category.name }}</h3>
               <p>{{ category.description }}</p>
               <el-tag type="success" size="small">
-                {{ category.lessonCount }}课
+                {{ category.lessonCount }}class
               </el-tag>
             </el-card>
           </el-col>
@@ -123,9 +123,9 @@
       </div>
     </section>
 
-    <!-- 推荐文章 -->
+    <!-- Recommended articles -->
     <div class="recommended-section">
-      <h2>🌟 推荐阅读</h2>
+      <h2>🌟 Recommended reading</h2>
       <el-row :gutter="20">
         <el-col :xs="24" :sm="12" :md="8" v-for="article in recommendedArticles" :key="article.id">
           <el-card class="article-card" shadow="hover" @click="openArticle(article.id)">
@@ -152,7 +152,7 @@ const router = useRouter()
 
 const freeLessonCount = FREE_LESSON_COUNT
 
-// 为 Element Plus Tag 的 type 属性定义允许的联合类型，避免模板类型不匹配
+// Define allowed union types for the type attribute of Element Plus Tag to avoid template type mismatches
 type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
 
 interface RecommendedArticle {
@@ -164,31 +164,31 @@ interface RecommendedArticle {
   readTime: string
 }
 
-// 推荐文章
+// Recommended articles
 const recommendedArticles = ref<RecommendedArticle[]>([
   {
     id: 'what-is-llm',
-    category: 'AI基础',
+    category: 'AI Basics',
     tagType: 'primary',
-    title: '什么是大语言模型（LLM）？',
-    description: '从零开始了解大语言模型的基本概念和工作原理',
-    readTime: '10分钟'
+    title: 'What is a large language model (LLM)?',
+    description: 'Understand the basic concepts and working principles of large language models from scratch',
+    readTime: '10 minutes'
   },
   {
     id: 'multi-agent-system',
-    category: 'AI分析',
+    category: 'AI analysis',
     tagType: 'info',
-    title: '多智能体系统详解',
-    description: '了解本工具如何通过多个AI智能体协作分析股票',
-    readTime: '15分钟'
+    title: 'Detailed explanation of multi-agent systems',
+    description: 'Learn how this tool collaborates with multiple AI agents to analyze stocks',
+    readTime: '15 minutes'
   },
   {
     id: 'best-practices',
-    category: '提示词',
+    category: 'prompt word',
     tagType: 'success',
-    title: '提示词工程最佳实践',
-    description: '学习如何编写高质量的提示词，提升AI分析效果',
-    readTime: '12分钟'
+    title: 'Prompt Word Engineering Best Practices',
+    description: 'Learn how to write high-quality prompt words to improve AI analysis results',
+    readTime: '12 minutes'
   }
 ])
 
@@ -197,7 +197,7 @@ const navigateTo = (category: string) => {
 }
 
 const openArticle = (articleId: string) => {
-  // 外链文章直接在新标签打开
+  // External link articles are opened directly in a new tab
   const externalMap: Record<string, string> = {
     'getting-started': 'https://mp.weixin.qq.com/s/uAk4RevdJHMuMvlqpdGUEw',
     'usage-guide-preview': 'https://mp.weixin.qq.com/s/ppsYiBncynxlsfKFG8uEbw'
@@ -211,7 +211,7 @@ const openArticle = (articleId: string) => {
 }
 
 const navigateToAdvanced = (categoryId: string) => {
-  // 跳转到高级课程列表页，并传递分类参数（通过query）
+  // Jump to the advanced course list page and pass the classification parameters (via query)
   router.push({ 
     path: '/learning/advanced',
     query: { category: categoryId }
@@ -406,7 +406,7 @@ const navigateToAdvanced = (categoryId: string) => {
   }
 }
 
-// 暗黑模式样式
+// dark mode style
 :global(html.dark) {
   .learning-center {
     background: #000000 !important;

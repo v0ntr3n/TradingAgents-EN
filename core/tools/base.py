@@ -1,7 +1,7 @@
 """
-工具基类和装饰器
+Tool base classes and decorators
 
-提供工具定义的基础设施
+Provide tool-defined infrastructure
 """
 
 import inspect
@@ -15,28 +15,28 @@ logger = logging.getLogger(__name__)
 
 class BaseTool(ABC):
     """
-    工具基类
+    Tool base class
     
-    所有自定义工具应继承此类
+    All custom tools should inherit this class
     
-    示例:
+    Example:
         class MyTool(BaseTool):
             id = "my_tool"
-            name = "我的工具"
-            description = "工具描述"
+            name = "my tools"
+            description = "Tool description"
             category = "custom"
             
             def execute(self, param1: str, param2: int) -> str:
-                return f"结果: {param1} - {param2}"
+                return f"result: {param1} - {param2}"
     """
     
-    # 工具元数据（子类必须定义）
+    # Tool metadata (subclasses must define)
     id: str = ""
     name: str = ""
     description: str = ""
     category: str = "general"
     
-    # 可选配置
+    # Optional configuration
     is_online: bool = True
     timeout: int = 30
     rate_limit: Optional[int] = None
@@ -44,15 +44,15 @@ class BaseTool(ABC):
     @abstractmethod
     def execute(self, *args, **kwargs) -> Any:
         """
-        执行工具逻辑
+        Execute tool logic
         
-        子类必须实现此方法
+        Subclasses must implement this method
         """
         pass
     
     def validate_params(self, **kwargs) -> bool:
         """
-        验证参数（可选重写）
+        Validation parameters (optional override)
         
         Returns:
             True if valid, False otherwise
@@ -60,7 +60,7 @@ class BaseTool(ABC):
         return True
     
     def to_langchain_tool(self):
-        """转换为 LangChain Tool"""
+        """Convert to LangChain Tool"""
         @langchain_tool
         def wrapped_tool(*args, **kwargs):
             if not self.validate_params(**kwargs):
@@ -85,22 +85,22 @@ def register_tool(
     **kwargs
 ):
     """
-    工具注册装饰器
+    Tool registration decorator
 
-    用法1: 装饰函数
+    Usage 1: Decoration function
         @register_tool(
             tool_id="my_tool",
-            name="我的工具",
+            name="my tools",
             category="custom",
             data_source_handling="self_contained"
         )
         def my_tool_func(param1: str) -> str:
             return f"Result: {param1}"
 
-    用法2: 装饰类
+    Usage 2: Decoration
         @register_tool(
             tool_id="my_tool",
-            name="我的工具",
+            name="my tools",
             category="custom",
             data_source_handling="local_only"
         )
@@ -109,26 +109,26 @@ def register_tool(
                 return f"Result: {param1}"
 
     Args:
-        tool_id: 工具唯一ID
-        name: 工具显示名称
-        description: 工具描述
-        category: 工具分类
-        is_online: 是否需要在线
-        auto_register: 是否自动注册到 ToolRegistry
-        data_source_handling: 数据源处理方式标签 (self_contained / local_only / partial)，
-            留空则由 register_function 根据 ToolMetadata 默认值处理
+        tool_id: Tool only ID
+        name: Tool display name
+        description: Tool description
+        category: Tool classification
+        is_online: Do you need to be online?
+        auto_register: Whether to automatically register to ToolRegistry
+        data_source_handling: Data source processing method label (self_contained / local_only / partial), 
+            If left blank, register_function will handle it based on the ToolMetadata default value.
     """
     def decorator(obj):
-        # 如果是类
+        # If it is a class
         if isinstance(obj, type):
-            # 设置元数据
+            # Set metadata
             obj.id = tool_id
             obj.name = name or tool_id
             obj.description = description or obj.__doc__ or ""
             obj.category = category
             obj.is_online = is_online
 
-            # 自动注册
+            # Automatic registration
             if auto_register:
                 extra_kwargs = dict(kwargs)
                 if data_source_handling:
@@ -137,7 +137,7 @@ def register_tool(
 
             return obj
 
-        # 如果是函数
+        # If it is a function
         else:
             func = obj
             func._tool_id = tool_id
@@ -160,16 +160,16 @@ def register_tool(
 
 
 def _auto_register_class(tool_class: type, **kwargs):
-    """自动注册工具类到 ToolRegistry"""
+    """Automatically register tool classes to ToolRegistry"""
     try:
         from core.tools.registry import ToolRegistry
         
         registry = ToolRegistry()
         
-        # 创建实例
+        # Create instance
         instance = tool_class()
         
-        # 注册
+        # Register
         registry.register_function(
             tool_id=tool_class.id,
             func=instance.execute,
@@ -187,12 +187,12 @@ def _auto_register_class(tool_class: type, **kwargs):
 
 def _extract_parameters_from_signature(func: Callable) -> List:
     """
-    从函数签名自动提取参数定义列表。
+    Automatically extract parameter definition lists from function signatures.
 
-    支持:
-    - Annotated[str, "描述"] → ToolParameter(name=..., type="string", description="描述")
-    - 普通类型 str, int, float, bool → 自动映射
-    - 默认值 → required=False, default=值
+    support:
+    - Annotated[str, "Description"] → ToolParameter(name=..., type="string", description="Description")
+    - Common type str, int, float, bool → automatic mapping
+    - Default value → required=False, default=value
     """
     from core.tools.config import ToolParameter
 
@@ -206,7 +206,7 @@ def _extract_parameters_from_signature(func: Callable) -> List:
     }
 
     params = []
-    # 获取原始函数（unwrap @tool 等装饰器）
+    # Get the original function (unwrap @tool and other decorators)
     raw_func = inspect.unwrap(func)
     sig = inspect.signature(raw_func)
 
@@ -223,14 +223,14 @@ def _extract_parameters_from_signature(func: Callable) -> List:
         description = ""
         base_type = "string"
 
-        # 处理 Annotated[Type, "description"]
+        # Process Annotated[Type, "description"]
         if hint is not None and hasattr(hint, "__metadata__"):
             # Annotated type
             base = getattr(hint, "__origin__", hint)
             if hasattr(hint, "__args__") and hint.__args__:
                 base = hint.__args__[0]
             base_type = _type_map.get(getattr(base, "__name__", str(base)), "string")
-            # 从 metadata 提取描述
+            # Extract description from metadata
             for meta in hint.__metadata__:
                 if isinstance(meta, str):
                     description = meta
@@ -252,7 +252,7 @@ def _extract_parameters_from_signature(func: Callable) -> List:
 
 
 def _auto_register_function(func: Callable, parameters: Optional[List] = None, timeout_tier: str = "", **kwargs):
-    """自动注册工具函数到 ToolRegistry"""
+    """Automatically register tool functions to ToolRegistry"""
     try:
         from core.tools.registry import ToolRegistry
 
@@ -278,5 +278,5 @@ def _auto_register_function(func: Callable, parameters: Optional[List] = None, t
 
         logger.info(f"✅ 自动注册工具函数: {func._tool_id}")
     except Exception as e:
-        logger.error(f"❌ 自动注册工具函数失败 ({getattr(func, '_tool_id', 'unknown')}): {e}", exc_info=True)
+        logger.error(f"❌ Automatic registration tool function failed ({getattr(func, '_tool_id', 'unknown')}): {e}", exc_info=True)
 

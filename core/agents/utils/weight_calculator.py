@@ -1,7 +1,7 @@
 """
-权重计算工具
+Weight calculation tool
 
-根据用户选择的分析师，自动计算各报告的权重
+Automatically calculate the weight of each report based on the analyst selected by the user
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -12,26 +12,26 @@ def calculate_report_weights(
     trading_style: Optional[str] = None
 ) -> Dict[str, float]:
     """
-    根据用户选择的分析师报告，计算各报告的权重
+    Calculate the weight of each report based on the analyst reports selected by the user
     
     Args:
-        reports: 报告字典，key为报告字段名，value为报告内容（如果为空字符串或None，表示未选择）
-        trading_style: 交易风格，"short"（短线）或"long"（中长线），如果为None则自动判断
+        reports: Report dictionary, key is the report field name, value is the report content (if it is an empty string or None, it means not selected)
+        trading_style: trading style,"short" (short line) or"long" (medium and long term), if it is None, it will be automatically determined
     
     Returns:
-        权重字典，key为报告字段名，value为权重（0-1之间的浮点数）
+        Weight dictionary, key is the report field name, value is the weight (a floating point number between 0-1)
     """
-    # 报告字段名到分析师类型的映射
+    # Mapping of report field names to analyst types
     REPORT_TO_ANALYST_TYPE = {
-        "market_report": "technical",      # 市场分析师（技术分析）
-        "news_report": "news",             # 新闻分析师
-        "sentiment_report": "social",       # 社媒分析师（情绪分析）
-        "fundamentals_report": "fundamental",  # 基本面分析师
-        "sector_report": "sector",         # 板块分析师（行业分析）
-        "index_report": "index",           # 大盘分析师
+        "market_report": "technical",      # Market Analyst (Technical Analysis)
+        "news_report": "news",             # news analyst
+        "sentiment_report": "social",       # Social Media Analyst (Sentiment Analysis)
+        "fundamentals_report": "fundamental",  # fundamental analyst
+        "sector_report": "sector",         # Sector Analyst (Industry Analysis)
+        "index_report": "index",           # Market Analyst
     }
     
-    # 筛选出非空报告（表示用户选择了这些分析师）
+    # Filter out non-empty reports (indicating that the user selected these analysts)
     selected_reports = {
         report_key: report_content
         for report_key, report_content in reports.items()
@@ -39,22 +39,22 @@ def calculate_report_weights(
     }
     
     if not selected_reports:
-        # 如果没有选择任何报告，返回空权重字典
+        # If no report is selected, an empty weights dictionary is returned
         return {}
     
-    # 如果没有指定交易风格，自动判断
+    # If no trading style is specified, it will be automatically determined
     if trading_style is None:
         trading_style = _infer_trading_style(selected_reports)
     
-    # 根据交易风格设置权重
+    # Set weights based on trading style
     if trading_style == "short":
-        # 短线权重配置
+        # Short-term weight configuration
         weights = _calculate_short_term_weights(selected_reports)
     elif trading_style == "long":
-        # 中长线权重配置
+        # Medium and long-term weight allocation
         weights = _calculate_long_term_weights(selected_reports)
     else:
-        # 默认：平均权重
+        # Default: average weight
         weights = _calculate_equal_weights(selected_reports)
     
     return weights
@@ -62,66 +62,66 @@ def calculate_report_weights(
 
 def _infer_trading_style(reports: Dict[str, str]) -> str:
     """
-    根据选择的报告推断交易风格
+    Infer trading style based on selected reports
     
     Args:
-        reports: 选择的报告字典
+        reports: Selected report dictionary
     
     Returns:
-        "short" 或 "long"
+        "short" or "long"
     """
-    # 如果选择了基本面分析师，更可能是中长线
+    # If you choose a fundamental analyst, it is more likely to be a medium- to long-term analyst.
     if "fundamentals_report" in reports:
         return "long"
     
-    # 如果选择了技术、新闻、社媒分析师，更可能是短线
+    # If you choose technology, news, or social media analysts, you are more likely to be short-term
     if "market_report" in reports and "news_report" in reports and "sentiment_report" in reports:
         return "short"
     
-    # 如果选择了板块分析师，更可能是中长线
+    # If you choose a sector analyst, he is more likely to be a medium to long-term analyst.
     if "sector_report" in reports:
         return "long"
     
-    # 默认返回短线
+    # Default returns short line
     return "short"
 
 
 def _calculate_short_term_weights(reports: Dict[str, str]) -> Dict[str, float]:
     """
-    计算短线交易的权重
+    Calculate the weight of short-term transactions
     
-    短线权重配置：
-    - 技术分析（market_report）：40%
-    - 新闻分析（news_report）：30%
-    - 社媒分析（sentiment_report）：30%
-    - 其他报告：10%或更低
+    Short-term weight configuration:
+    - Technical analysis (market_report):40%
+    - News analysis (news_report):30%
+    - Social media analysis (sentiment_report):30%
+    - Other reports: 10% or less
     """
     weights = {}
     total_weight = 0.0
     
-    # 核心报告权重
+    # Core reporting weight
     core_reports = {
-        "market_report": 0.40,      # 技术分析 40%
-        "news_report": 0.30,        # 新闻分析 30%
-        "sentiment_report": 0.30,   # 社媒分析 30%
+        "market_report": 0.40,      # technical analysis 40%
+        "news_report": 0.30,        # news analysis 30%
+        "sentiment_report": 0.30,   # social media analysis 30%
     }
     
-    # 检查核心报告是否存在
+    # Check if the core report exists
     selected_core_reports = {
         k: v for k, v in core_reports.items() if k in reports
     }
     
     if selected_core_reports:
-        # 如果核心报告都存在，使用预设权重
+        # If core reports are present, use default weights
         for report_key, weight in selected_core_reports.items():
             weights[report_key] = weight
             total_weight += weight
         
-        # 其他报告（基本面、板块、大盘）权重较低
+        # Other reports (fundamentals, sectors, market) have lower weights
         other_reports = {
-            "fundamentals_report": 0.05,  # 基本面 5%
-            "sector_report": 0.05,        # 板块 5%
-            "index_report": 0.10,         # 大盘 10%
+            "fundamentals_report": 0.05,  # Fundamentals 5%
+            "sector_report": 0.05,        # plate 5%
+            "index_report": 0.10,         # Market 10%
         }
         
         for report_key, weight in other_reports.items():
@@ -129,11 +129,11 @@ def _calculate_short_term_weights(reports: Dict[str, str]) -> Dict[str, float]:
                 weights[report_key] = weight
                 total_weight += weight
         
-        # 归一化权重（确保总和为1.0）
+        # Normalized weights (make sure the sum is 1.0)
         if total_weight > 0:
             weights = {k: v / total_weight for k, v in weights.items()}
     else:
-        # 如果核心报告不全，使用平均权重
+        # If core reporting is incomplete, use average weight
         weights = _calculate_equal_weights(reports)
     
     return weights
@@ -141,40 +141,40 @@ def _calculate_short_term_weights(reports: Dict[str, str]) -> Dict[str, float]:
 
 def _calculate_long_term_weights(reports: Dict[str, str]) -> Dict[str, float]:
     """
-    计算中长线投资的权重
+    Calculate the weight of medium and long-term investments
     
-    中长线权重配置：
-    - 基本面分析（fundamentals_report）：50%
-    - 板块分析（sector_report）：30%
-    - 风险分析（通过风险多情景研究体现）：20%
-    - 其他报告：10%或更低
+    Medium and long-term weight configuration:
+    - Fundamental analysis (fundamentals_report):50%
+    - Sector analysis (sector_report):30%
+    - Risk analysis (reflected through risk multi-scenario research):20%
+    - Other reports: 10% or less
     """
     weights = {}
     total_weight = 0.0
     
-    # 核心报告权重
+    # Core reporting weight
     core_reports = {
-        "fundamentals_report": 0.50,  # 基本面分析 50%
-        "sector_report": 0.30,        # 板块分析 30%
+        "fundamentals_report": 0.50,  # fundamental analysis 50%
+        "sector_report": 0.30,        # Sector analysis 30%
     }
     
-    # 检查核心报告是否存在
+    # Check if the core report exists
     selected_core_reports = {
         k: v for k, v in core_reports.items() if k in reports
     }
     
     if selected_core_reports:
-        # 如果核心报告都存在，使用预设权重
+        # If core reports are present, use default weights
         for report_key, weight in selected_core_reports.items():
             weights[report_key] = weight
             total_weight += weight
         
-        # 其他报告权重较低
+        # Other reports have lower weight
         other_reports = {
-            "market_report": 0.10,        # 技术分析 10%（仅用于判断技术面是否在下跌趋势中）
-            "news_report": 0.05,          # 新闻分析 5%
-            "sentiment_report": 0.05,     # 社媒分析 5%
-            "index_report": 0.00,         # 大盘分析 0%（中长线不太关注大盘）
+            "market_report": 0.10,        # Technical analysis 10% (only used to determine whether the technical situation is in a downtrend)
+            "news_report": 0.05,          # news analysis 5%
+            "sentiment_report": 0.05,     # social media analysis 5%
+            "index_report": 0.00,         # Market analysis 0% (not paying much attention to the market in the medium and long term)
         }
         
         for report_key, weight in other_reports.items():
@@ -182,11 +182,11 @@ def _calculate_long_term_weights(reports: Dict[str, str]) -> Dict[str, float]:
                 weights[report_key] = weight
                 total_weight += weight
         
-        # 归一化权重（确保总和为1.0）
+        # Normalized weights (make sure the sum is 1.0)
         if total_weight > 0:
             weights = {k: v / total_weight for k, v in weights.items()}
     else:
-        # 如果核心报告不全，使用平均权重
+        # If core reporting is incomplete, use average weight
         weights = _calculate_equal_weights(reports)
     
     return weights
@@ -194,13 +194,13 @@ def _calculate_long_term_weights(reports: Dict[str, str]) -> Dict[str, float]:
 
 def _calculate_equal_weights(reports: Dict[str, str]) -> Dict[str, float]:
     """
-    计算平均权重（当无法确定交易风格时使用）
+    Calculate the average weight (used when the trading style cannot be determined)
     
     Args:
-        reports: 选择的报告字典
+        reports: Selected report dictionary
     
     Returns:
-        权重字典，所有报告的权重相等
+        A dictionary of weights with equal weights for all reports
     """
     if not reports:
         return {}
@@ -215,27 +215,27 @@ def format_weighted_reports_prompt(
     report_labels: Optional[Dict[str, str]] = None
 ) -> str:
     """
-    格式化带权重的报告提示词
+    Format weighted report prompt words
     
     Args:
-        reports: 报告字典
-        weights: 权重字典
-        report_labels: 报告标签字典（可选），用于显示中文名称
+        reports: report dictionary
+        weights: weight dictionary
+        report_labels: Report label dictionary (optional) to display Chinese names
     
     Returns:
-        格式化后的提示词文本
+        Formatted prompt text
     """
     if not report_labels:
         report_labels = {
-            "market_report": "市场分析（技术分析）",
-            "news_report": "新闻分析",
-            "sentiment_report": "社媒分析（市场情绪）",
-            "fundamentals_report": "基本面分析",
-            "sector_report": "板块分析（行业分析）",
-            "index_report": "大盘分析",
+            "market_report": "Market Analysis (Technical Analysis)",
+            "news_report": "news analysis",
+            "sentiment_report": "Social media analysis (market sentiment)",
+            "fundamentals_report": "fundamental analysis",
+            "sector_report": "Sector analysis (industry analysis)",
+            "index_report": "Market analysis",
         }
     
-    # 按权重排序（从高到低）
+    # Sort by weight (high to low)
     sorted_reports = sorted(
         weights.items(),
         key=lambda x: x[1],
@@ -244,39 +244,39 @@ def format_weighted_reports_prompt(
     
     prompt_parts = []
     
-    # 高权重报告（权重 >= 20%）
+    # High weight report (weight >= 20%) 
     high_weight_reports = [
         (report_key, weight) for report_key, weight in sorted_reports
         if weight >= 0.20 and report_key in reports
     ]
     
     if high_weight_reports:
-        prompt_parts.append("【重要报告】（权重高，请重点关注）")
+        prompt_parts.append(" [Important report] (high weight, please pay attention)")
         for report_key, weight in high_weight_reports:
             label = report_labels.get(report_key, report_key)
             weight_pct = int(weight * 100)
-            prompt_parts.append(f"- {label}（权重{weight_pct}%）：\n{reports[report_key]}\n")
+            prompt_parts.append(f"- {label} (weight{weight_pct}%) : \n{reports[report_key]}\n")
     
-    # 低权重报告（权重 < 20%）
+    # Low weight report (weight < 20%) 
     low_weight_reports = [
         (report_key, weight) for report_key, weight in sorted_reports
         if weight < 0.20 and report_key in reports
     ]
     
     if low_weight_reports:
-        prompt_parts.append("\n【次要报告】（权重低，仅供参考）")
+        prompt_parts.append("\n [Secondary report] (low weight, for reference only)")
         for report_key, weight in low_weight_reports:
             label = report_labels.get(report_key, report_key)
             weight_pct = int(weight * 100)
-            prompt_parts.append(f"- {label}（权重{weight_pct}%，仅供参考）：\n{reports[report_key]}\n")
+            prompt_parts.append(f"- {label} (weight{weight_pct}%, For reference only):\n{reports[report_key]}\n")
     
-    # 添加权重说明
+    # Add weight description
     if prompt_parts:
         prompt_parts.append(
-            "\n**权重说明**："
-            "\n- 请重点关注高权重报告，这些报告对投资决策更重要"
-            "\n- 低权重报告仅作为补充参考，不应过度依赖"
-            "\n- 在综合判断时，请根据权重给予相应的关注度"
+            "\n**Weight description**: "
+            "\n- Please focus on high-weighted reports, which are more important for investment decisions"
+            "\n- Low-weighted reports are only for supplementary reference and should not be overly relied upon."
+            "\n- When making a comprehensive judgment, please give appropriate attention based on the weight."
         )
     
     return "\n".join(prompt_parts)

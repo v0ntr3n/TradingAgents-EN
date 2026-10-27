@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     :model-value="visible"
-    :title="isEdit ? '编辑市场分类' : '添加市场分类'"
+    :title="isEdit ? 'Edit market category' : 'Add market category'"
     width="500px"
     @update:model-value="$emit('update:visible', $event)"
     @close="handleClose"
@@ -13,33 +13,33 @@
       label-width="100px"
       label-position="left"
     >
-      <el-form-item label="分类ID" prop="id">
+      <el-form-item label="Classification ID" prop="id">
         <el-input
           v-model="formData.id"
-          placeholder="请输入分类ID（英文）"
+          placeholder="Please enter the category ID (English)"
           :disabled="isEdit"
         />
-        <div class="form-help">用于系统内部标识，建议使用英文</div>
+        <div class="form-help">Used for system internal identification, it is recommended to use English</div>
       </el-form-item>
 
-      <el-form-item label="分类名称" prop="name">
+      <el-form-item label="Category name" prop="name">
         <el-input
           v-model="formData.name"
-          placeholder="请输入分类名称"
+          placeholder="Please enter the category name"
           :disabled="isEdit"
         />
-        <div class="form-help">系统内部名称，通常与ID相同</div>
+        <div class="form-help">System internal name, usually the same as the ID</div>
       </el-form-item>
 
-      <el-form-item label="显示名称" prop="display_name">
+      <el-form-item label="display name" prop="display_name">
         <el-input
           v-model="formData.display_name"
-          placeholder="请输入显示名称"
+          placeholder="Please enter a display name"
         />
-        <div class="form-help">用户界面显示的名称</div>
+        <div class="form-help">User interface display name</div>
       </el-form-item>
 
-      <el-form-item label="排序顺序" prop="sort_order">
+      <el-form-item label="sort order" prop="sort_order">
         <el-input-number
           v-model="formData.sort_order"
           :min="1"
@@ -47,28 +47,28 @@
           controls-position="right"
           style="width: 200px"
         />
-        <div class="form-help">数值越小排序越靠前</div>
+        <div class="form-help">The smaller the number, the higher the order is.</div>
       </el-form-item>
 
-      <el-form-item label="启用状态">
+      <el-form-item label="Enabled status">
         <el-switch v-model="formData.enabled" />
       </el-form-item>
 
-      <el-form-item label="描述" prop="description">
+      <el-form-item label="Description" prop="description">
         <el-input
           v-model="formData.description"
           type="textarea"
           :rows="3"
-          placeholder="请输入分类描述"
+          placeholder="Please enter a category description"
         />
       </el-form-item>
     </el-form>
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleClose">取消</el-button>
+        <el-button @click="handleClose">Cancel</el-button>
         <el-button type="primary" :loading="loading" @click="handleSubmit">
-          {{ isEdit ? '更新' : '创建' }}
+          {{ isEdit ? 'update' : 'Create' }}
         </el-button>
       </div>
     </template>
@@ -104,7 +104,7 @@ const loading = ref(false)
 // Computed
 const isEdit = computed(() => !!props.category)
 
-// 表单数据
+// form data
 const defaultFormData = {
   id: '',
   name: '',
@@ -116,18 +116,18 @@ const defaultFormData = {
 
 const formData = ref({ ...defaultFormData })
 
-// 表单验证规则
+// form validation rules
 const rules: FormRules = {
   id: [
-    { required: true, message: '请输入分类ID', trigger: 'blur' },
-    { pattern: /^[a-z_]+$/, message: '分类ID只能包含小写字母和下划线', trigger: 'blur' }
+    { required: true, message: 'Please enter the category ID', trigger: 'blur' },
+    { pattern: /^[a-z_]+$/, message: 'Category IDs can only contain lowercase letters and underscores', trigger: 'blur' }
   ],
-  name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
-  display_name: [{ required: true, message: '请输入显示名称', trigger: 'blur' }],
-  sort_order: [{ required: true, message: '请输入排序顺序', trigger: 'blur' }]
+  name: [{ required: true, message: 'Please enter the category name', trigger: 'blur' }],
+  display_name: [{ required: true, message: 'Please enter a display name', trigger: 'blur' }],
+  sort_order: [{ required: true, message: 'Please enter the sort order', trigger: 'blur' }]
 }
 
-// 监听分类变化
+// Monitor classification changes
 watch(
   () => props.category,
   (category) => {
@@ -140,7 +140,7 @@ watch(
   { immediate: true }
 )
 
-// 监听visible变化
+// Monitor visible changes
 watch(
   () => props.visible,
   (visible) => {
@@ -154,12 +154,12 @@ watch(
   }
 )
 
-// 处理关闭
+// processing closed
 const handleClose = () => {
   emit('update:visible', false)
 }
 
-// 处理提交
+// Handle submission
 const handleSubmit = async () => {
   if (!formRef.value) return
 
@@ -168,20 +168,20 @@ const handleSubmit = async () => {
     loading.value = true
 
     if (isEdit.value) {
-      // 更新分类
+      // Update category
       await configApi.updateMarketCategory(formData.value.id, formData.value)
-      ElMessage.success('市场分类更新成功')
+      ElMessage.success('Market classification updated successfully')
     } else {
-      // 创建分类
+      // Create categories
       await configApi.addMarketCategory(formData.value)
-      ElMessage.success('市场分类创建成功')
+      ElMessage.success('Market classification created successfully')
     }
 
     emit('success')
     handleClose()
   } catch (error) {
-    console.error('保存市场分类失败:', error)
-    ElMessage.error('保存市场分类失败')
+    console.error('Failed to save market category:', error)
+    ElMessage.error('Failed to save market category')
   } finally {
     loading.value = false
   }

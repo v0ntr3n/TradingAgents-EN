@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-测试Web界面修复
+Test web interface fix
 """
 
 import sys
 import os
 from pathlib import Path
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 def test_render_decision_summary():
-    """测试render_decision_summary函数修复"""
+    """Test render_decision_summary function fix"""
     
     try:
-        # 模拟streamlit环境
+        # Simulate streamlit environment
         class MockStreamlit:
             def subheader(self, text):
                 print(f"📊 {text}")
@@ -34,48 +34,48 @@ def test_render_decision_summary():
             def __exit__(self, *args):
                 pass
         
-        # 模拟streamlit模块
+        # Simulate streamlit module
         sys.modules['streamlit'] = MockStreamlit()
         
         from web.components.results_display import render_decision_summary
         
-        print("🧪 测试render_decision_summary修复...")
+        print("🧪 Test render_decision_summary fix...")
         
-        # 测试中国A股
+        # Testing China A-shares
         china_decision = {
-            'action': '持有',
+            'action': 'hold',
             'confidence': 0.75,
             'risk_score': 0.40,
             'target_price': 15.00,
-            'reasoning': '基于综合分析的投资建议'
+            'reasoning': 'Investment advice based on comprehensive analysis'
         }
         
-        print("\n📈 测试中国A股决策显示:")
+        print("\n📈 Testing China A-share decision-making display:")
         render_decision_summary(china_decision, "000001")
         
-        # 测试美股
+        # Test US stocks
         us_decision = {
-            'action': '买入',
+            'action': 'buy',
             'confidence': 0.80,
             'risk_score': 0.30,
             'target_price': 180.00,
-            'reasoning': '基于综合分析的投资建议'
+            'reasoning': 'Investment advice based on comprehensive analysis'
         }
         
-        print("\n📈 测试美股决策显示:")
+        print("\n📈 Test the US stock decision display:")
         render_decision_summary(us_decision, "AAPL")
         
-        print("\n✅ render_decision_summary修复测试通过！")
+        print("\n✅ render_decision_summary Repair test passed!")
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def test_currency_detection():
-    """测试货币检测逻辑"""
+    """Test currency detection logic"""
     
     try:
         import re
@@ -83,53 +83,53 @@ def test_currency_detection():
         def is_china_stock(ticker_code):
             return re.match(r'^\d{6}$', str(ticker_code)) if ticker_code else False
         
-        print("🧪 测试货币检测逻辑...")
+        print("🧪 Test currency detection logic...")
         
-        # 测试中国A股代码
+        # Test China A-share code
         china_stocks = ["000001", "600036", "300001", "002001"]
         for stock in china_stocks:
             is_china = is_china_stock(stock)
             currency = "¥" if is_china else "$"
-            print(f"  {stock}: {'中国A股' if is_china else '非A股'} -> {currency}")
+            print(f"  {stock}: {'China A shares' if is_china else 'Non-A shares'} -> {currency}")
             
             if not is_china:
-                print(f"❌ {stock} 应该被识别为中国A股")
+                print(f"❌ {stock} Should be identified as China A-shares")
                 return False
         
-        # 测试非中国股票代码
+        # Test non-China stock symbols
         foreign_stocks = ["AAPL", "MSFT", "GOOGL", "TSLA", "0700.HK"]
         for stock in foreign_stocks:
             is_china = is_china_stock(stock)
             currency = "¥" if is_china else "$"
-            print(f"  {stock}: {'中国A股' if is_china else '非A股'} -> {currency}")
+            print(f"  {stock}: {'China A shares' if is_china else 'Non-A shares'} -> {currency}")
             
             if is_china:
-                print(f"❌ {stock} 不应该被识别为中国A股")
+                print(f"❌ {stock} Should not be identified as China A shares")
                 return False
         
-        print("✅ 货币检测逻辑测试通过！")
+        print("✅ Currency detection logic test passed!")
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 if __name__ == "__main__":
-    print("🧪 开始测试Web界面修复...")
+    print("🧪 Start testing web interface fixes...")
     print("=" * 50)
     
-    # 运行测试
+    # Run tests
     test1_result = test_render_decision_summary()
     test2_result = test_currency_detection()
     
     print("=" * 50)
     if test1_result and test2_result:
-        print("🎉 所有Web界面修复测试通过！")
-        print("📝 现在Web界面应该能正确显示:")
-        print("   - 中国A股: ¥XX.XX")
-        print("   - 美股/港股: $XX.XX")
-        print("   - 不再出现 NameError")
+        print("🎉 All web interface repair tests passed!")
+        print("📝 The web interface should now display correctly:")
+        print("   - China A shares: ¥XX.XX")
+        print("   - US stocks/Hong Kong stocks: $XX.XX")
+        print("   - Never appear again NameError")
         sys.exit(0)
     else:
-        print("❌ 部分测试失败")
+        print("❌ Some tests failed")
         sys.exit(1)

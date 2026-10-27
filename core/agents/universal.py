@@ -1,13 +1,13 @@
 """
-通用 Agent (UniversalAgent)
+Universal Agent (UniversalAgent)
 
-完全由数据库配置驱动的通用智能体，可以替代 80-95% 的专用 Agent 类。
-所有行为（工具、提示词、输出字段）均由数据库配置定义，无任何硬编码业务逻辑。
+A general-purpose agent driven entirely by database configuration that can replace 80-95% of specialized Agent classes.
+All behaviors (tools, prompt words, output fields) are defined by the database configuration without any hard-coded business logic.
 
-设计原则（参考 OpenClaw 单一职责）：
-- 一个 Agent 只做一件事：拿到上下文 → 用工具获取数据 → 写报告
-- 复杂性通过工作流图结构表达，不在 Agent 内部
-- 三层优先级：节点专属 > 工作流专属 > Agent 默认
+Design principles (refer to OpenClaw single responsibility):
+- An Agent only does one thing: get the context → Get data with tools → write report
+- Complexity is expressed through the workflow graph structure, not inside the Agent
+- Three levels of priority: node exclusive > Workflow specific > Agent Default
 """
 
 import logging
@@ -23,21 +23,21 @@ logger = logging.getLogger(__name__)
 
 class UniversalAgent(BaseAgent):
     """
-    通用 Agent — 完全由数据库配置驱动
+    Universal Agent — Completely driven by database configuration
 
-    工具加载顺序（三层优先级）：
-    1. 节点专属：workflow_id + node_id + agent_id
-    2. 工作流专属：workflow_id + agent_id
-    3. Agent 默认：agent_id only
+    Tool loading order (three levels of priority):
+    1. Node specific:workflow_id + node_id + agent_id
+    2. Workflow specific:workflow_id + agent_id
+    3. Agent Default:agent_id only
 
-    提示词加载顺序（已由基类 _get_prompt_from_template 实现）：
-    1. 节点专属模板（workflow_id + node_id）
-    2. 工作流专属模板（workflow_id）
-    3. Agent 默认模板
-    4. 内置默认文本
+    Prompt word loading order (implemented by the base class _get_prompt_from_template):
+    1. Node-specific templates (workflow_id + node_id) 
+    2. Workflow-specific template (workflow_id)
+    3. Agent Default template
+    4. Built-in default text
     """
 
-    # 类级别的 metadata 占位（由工厂动态设置，此处为 None 以满足类型注解）
+    # Class-level metadata placeholder (dynamically set by the factory, here is None to satisfy the type annotation)
     metadata = None
 
     def __init__(
@@ -46,31 +46,31 @@ class UniversalAgent(BaseAgent):
         llm: Optional[Any] = None,
         tool_ids: Optional[List[str]] = None,
         agent_id: str = "universal_agent",
-        agent_name: str = "通用智能体",
-        agent_description: str = "由数据库配置驱动的通用智能体",
+        agent_name: str = "general agent",
+        agent_description: str = "General-purpose agent driven by database configuration",
         output_field: str = "analysis_report",
         **kwargs,
     ):
         """
-        初始化通用 Agent
+        Initialization general Agent
 
         Args:
-            config: Agent 运行时配置
-            llm: LangChain LLM 实例
-            tool_ids: 工具 ID 列表
-            agent_id: 动态 Agent ID（来自 agent_configs 数据库）
-            agent_name: Agent 显示名称
-            agent_description: Agent 描述（用于构建默认提示词）
-            output_field: 输出字段名（写入 state 的 key）
+            config: Agent Runtime configuration
+            llm: LangChain LLM Example
+            tool_ids: Tool ID list
+            agent_id: Dynamic Agent ID (from agent_configs database)
+            agent_name: Agent display name
+            agent_description: Agent Description (used to build the default prompt word)
+            output_field: Output field name (write the key of state)
         """
-        # 在 super().__init__() 之前设置动态属性，因为父类初始化会调用 self.agent_id
+        # in super().__init__() Set dynamic properties before, because the parent class initialization will call self.agent_id
         self._dynamic_agent_id = agent_id
         self._agent_name = agent_name
         self._agent_description = agent_description
         self._output_field = output_field
         self._last_tool_debug = []
         self._last_llm_debug = {}
-        # Agent Workshop 调试态：testing 版本 + debug template
+        # Agent Workshop Debug state: testing version + debug template
         self._version_status = kwargs.pop('version_status', None)
         self._prompt_template_id = kwargs.pop('prompt_template_id', None)
 
@@ -78,21 +78,21 @@ class UniversalAgent(BaseAgent):
 
     @property
     def agent_id(self) -> str:
-        """返回动态 Agent ID（来自数据库配置）"""
+        """Returns dynamic Agent ID (from database configuration)"""
         return getattr(self, "_dynamic_agent_id", "universal_agent")
 
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        通用执行逻辑
+        Common execution logic
 
-        1. 从模板系统加载系统提示词（支持 workflow_id + node_id 三层优先级）
-        2. 从模板系统加载用户提示词（或构建通用用户提示词）
-        3. 调用 LLM + 工具
-        4. 输出到 state[output_field]
+        1. Loading system prompt words from the template system (supports workflow_id + node_id Three levels of priority)
+        2. Load user prompts from the template system (or build generic user prompts)
+        3. call LLM + Tools
+        4. Output to state[output_field]
         """
-        logger.info(f"[UniversalAgent:{self.agent_id}] 🚀 开始执行")
+        logger.info(f"[UniversalAgent:{self.agent_id}] 🚀 Start execution")
 
-        # P1: 启动执行轨迹采集
+        # P1: Start execution trace collection
         from core.agents.execution_trace_recorder import (
             start_execution_trace, is_trace_enabled
         )
@@ -102,14 +102,14 @@ class UniversalAgent(BaseAgent):
                 recorder = start_execution_trace(self, state)
                 self._last_trace_id = recorder.trace_id
             except Exception as e:
-                logger.warning(f"⚠️ [UniversalAgent:{self.agent_id}] 启动轨迹采集失败（不影响 agent）: {e}")
+                logger.warning(f"⚠️ [UniversalAgent:{self.agent_id}] Failed to start trajectory collection (does not affect agent): {e}")
                 self._last_trace_id = None
 
         try:
             context = state.get("context")
             prompt_variables = self._build_prompt_variables(state)
 
-            # 🔥 Agent Workshop 上下文注入：workflow_id + 调试态标记
+            # 🔥 Agent Workshop Context injection:workflow_id + debug state flag
             if isinstance(context, dict):
                 workflow_id = state.get("workflow_id")
                 if workflow_id and "workflow_id" not in context:
@@ -129,7 +129,7 @@ class UniversalAgent(BaseAgent):
                     context.is_debug_mode = True
                     context.debug_template_id = prompt_template_id
 
-            # 1. 系统提示词（从模板系统，三层优先级）
+            # 1. System prompt words (from template system, three levels of priority)
             system_prompt = self._get_prompt_from_template(
                 agent_type="universal",
                 agent_name=self.agent_id,
@@ -143,7 +143,7 @@ class UniversalAgent(BaseAgent):
             if not system_prompt:
                 system_prompt = self._build_default_system_prompt()
 
-            # 2. 用户提示词（从模板系统，三层优先级）
+            # 2. User prompt words (from template system, three levels of priority)
             user_prompt = self._get_prompt_from_template(
                 agent_type="universal",
                 agent_name=self.agent_id,
@@ -159,35 +159,35 @@ class UniversalAgent(BaseAgent):
             else:
                 user_prompt = self._ensure_runtime_context(user_prompt, state)
 
-            # 🔥 应用 prompt_overrides（允许测试时覆盖模板内容）
+            # 🔥 Apply prompt_overrides (allows template content to be overridden when testing)
             overrides = state.get("prompt_overrides") or {}
             if isinstance(overrides, dict) and overrides:
                 override_sys = overrides.get("system_prompt") or overrides.get("system")
                 override_user = overrides.get("user_prompt") or overrides.get("user")
                 if override_sys:
-                    logger.info(f"[UniversalAgent:{self.agent_id}] prompt_overrides.system_prompt 已应用 "
-                                f"(原长度 {len(system_prompt)} → 新长度 {len(str(override_sys))})")
+                    logger.info(f"[UniversalAgent:{self.agent_id}] prompt_overrides.system_prompt Applied "
+                                f"(original length {len(system_prompt)} → new length {len(str(override_sys))})")
                     system_prompt = str(override_sys)
                 if override_user:
-                    logger.info(f"[UniversalAgent:{self.agent_id}] prompt_overrides.user_prompt 已应用 "
-                                f"(原长度 {len(user_prompt)} → 新长度 {len(str(override_user))})")
+                    logger.info(f"[UniversalAgent:{self.agent_id}] prompt_overrides.user_prompt Applied "
+                                f"(original length {len(user_prompt)} → new length {len(str(override_user))})")
                     user_prompt = str(override_user)
-                # 也支持嵌套在 content 里的格式
+                # Also supports formats nested in content
                 content_overrides = overrides.get("content") or {}
                 if isinstance(content_overrides, dict):
                     if content_overrides.get("system_prompt") or content_overrides.get("system"):
                         system_prompt = str(content_overrides.get("system_prompt") or content_overrides.get("system"))
-                        logger.info(f"[UniversalAgent:{self.agent_id}] prompt_overrides.content.system_prompt 已应用")
+                        logger.info(f"[UniversalAgent:{self.agent_id}] prompt_overrides.content.system_prompt Applied")
                     if content_overrides.get("user_prompt") or content_overrides.get("user"):
                         user_prompt = str(content_overrides.get("user_prompt") or content_overrides.get("user"))
-                        logger.info(f"[UniversalAgent:{self.agent_id}] prompt_overrides.content.user_prompt 已应用")
+                        logger.info(f"[UniversalAgent:{self.agent_id}] prompt_overrides.content.user_prompt Applied")
 
             execution_guidance = self._build_execution_plan_guidance(state)
             if execution_guidance:
                 system_prompt = f"{system_prompt}\n\n{execution_guidance}"
                 logger.info(
-                    f"[UniversalAgent:{self.agent_id}] 已注入 Agent Workshop execution_plan 运行约束 "
-                    f"(长度 {len(execution_guidance)})"
+                    f"[UniversalAgent:{self.agent_id}] Agent Workshop execution_plan run constraints injected "
+                    f"(length {len(execution_guidance)})"
                 )
 
             messages = [
@@ -198,21 +198,21 @@ class UniversalAgent(BaseAgent):
             logger.info(f"[UniversalAgent:{self.agent_id}] System prompt length: {len(system_prompt)}")
             logger.info(f"[UniversalAgent:{self.agent_id}] User prompt length: {len(user_prompt)}")
 
-            # P1: 记录 Prompt
+            # P1: record Prompt
             if recorder:
                 try:
                     recorder.record_inputs({"ticker": state.get("ticker"), "workflow_id": state.get("workflow_id")})
                     recorder.record_prompts(system_prompt, user_prompt)
                 except Exception as e:
-                    logger.debug(f"[UniversalAgent:{self.agent_id}] 记录 Prompt 失败（不影响 agent）: {e}")
+                    logger.debug(f"[UniversalAgent:{self.agent_id}] Record Prompt failure (does not affect agent): {e}")
 
             if not self._llm:
                 raise ValueError("LLM not initialized")
 
             if self._langchain_tools:
                 logger.info(
-                    f"[UniversalAgent:{self.agent_id}] 使用工具调用模式，"
-                    f"工具数: {len(self._langchain_tools)}"
+                    f"[UniversalAgent:{self.agent_id}] Use tools to call patterns,"
+                    f"Number of tools: {len(self._langchain_tools)}"
                 )
                 report = self.invoke_with_tools(messages)
                 self._last_llm_debug = {
@@ -222,7 +222,7 @@ class UniversalAgent(BaseAgent):
                     "tool_trace": list(getattr(self, '_tool_call_summaries_collected', [])),
                 }
             else:
-                logger.warning(f"[UniversalAgent:{self.agent_id}] 无工具，直接调用 LLM")
+                logger.warning(f"[UniversalAgent:{self.agent_id}] No tools, call directly LLM")
                 import time as _time_llm
                 _llm_start = _time_llm.time()
                 response = self._llm.invoke(messages)
@@ -234,27 +234,27 @@ class UniversalAgent(BaseAgent):
                     "tool_mode": False,
                     "tool_trace": list(self._last_tool_debug),
                 }
-                # P1: 记录 LLM 响应
+                # P1: Logging LLM response
                 if recorder:
                     try:
                         recorder.record_llm_response(response, llm_duration_ms=_llm_duration_ms)
                     except Exception as e:
-                        logger.debug(f"[UniversalAgent:{self.agent_id}] 记录 LLM 响应失败（不影响 agent）: {e}")
+                        logger.debug(f"[UniversalAgent:{self.agent_id}] Log LLM response failure (does not affect agent): {e}")
 
-            # P1: 记录解析后的输出
+            # P1: Record parsed output
             if recorder:
                 try:
                     recorder.record_parsed_output({"report": report[:500] if isinstance(report, str) else str(report)[:500]})
                 except Exception as e:
-                    logger.debug(f"[UniversalAgent:{self.agent_id}] 记录解析输出失败（不影响 agent）: {e}")
+                    logger.debug(f"[UniversalAgent:{self.agent_id}] Record parsing output failure (does not affect agent): {e}")
 
             is_debug_mode = bool(getattr(context, 'is_debug_mode', False)) if context else False
             if is_debug_mode:
-                logger.info(f"[UniversalAgent:{self.agent_id}] 调试模式 Prompt - system:\n{system_prompt}")
-                logger.info(f"[UniversalAgent:{self.agent_id}] 调试模式 Prompt - user:\n{user_prompt}")
-                logger.info(f"[UniversalAgent:{self.agent_id}] 调试模式 LLM 最终返回:\n{self._last_llm_debug.get('final_response_content', report)}")
+                logger.info(f"[UniversalAgent:{self.agent_id}] debug mode Prompt - system:\n{system_prompt}")
+                logger.info(f"[UniversalAgent:{self.agent_id}] debug mode Prompt - user:\n{user_prompt}")
+                logger.info(f"[UniversalAgent:{self.agent_id}] Debug mode LLM eventually returns:\n{self._last_llm_debug.get('final_response_content', report)}")
 
-            logger.info(f"[UniversalAgent:{self.agent_id}] ✅ 执行完成，输出到 '{self._output_field}'")
+            logger.info(f"[UniversalAgent:{self.agent_id}] ✅ Execution is completed, output to '{self._output_field}'")
             result = {self._output_field: report}
             if is_debug_mode:
                 result["__debug_prompt__"] = {
@@ -268,16 +268,16 @@ class UniversalAgent(BaseAgent):
             return result
 
         except Exception as e:
-            logger.error(f"[UniversalAgent:{self.agent_id}] ❌ 执行失败: {e}", exc_info=True)
-            # P1: 记录异常
+            logger.error(f"[UniversalAgent:{self.agent_id}] ❌ Execution failed: {e}", exc_info=True)
+            # P1: Log exception
             if recorder:
                 try:
                     recorder.record_error(e)
                 except Exception:
                     pass
-            return {self._output_field: f"执行失败: {str(e)}"}
+            return {self._output_field: f"Execution failed: {str(e)}"}
         finally:
-            # P1: 完成轨迹采集并写入 MongoDB（非阻塞）
+            # P1: Complete trajectory collection and write to MongoDB (non-blocking)
             if recorder:
                 try:
                     recorder.finish()
@@ -285,19 +285,19 @@ class UniversalAgent(BaseAgent):
                     pass
 
     def _build_execution_plan_guidance(self, state: Dict[str, Any]) -> str:
-        """把 Agent Workshop execution_plan 注入运行时提示词。
+        """Inject Agent Workshop execution_plan into runtime prompt words.
 
-        build_version 生成的 execution_plan 是版本执行契约，不能只留在评估阶段。
-        Runtime 必须在第一次工具调用前看到这些步骤、工具和验收项，否则 LLM 可能只按
-        宽泛角色提示生成报告，跳过版本声明的关键工具。
+        build_version The generated execution_plan is a version execution contract and cannot just be left in the evaluation phase.
+        Runtime These steps, tools, and acceptance items must be seen before the first tool call, otherwise the LLM may just
+        Generate reports with broad role prompts, skipping version declarations for key tools.
         """
         plan = state.get("agent_workshop_execution_plan")
         if not isinstance(plan, dict) or not plan:
             return ""
 
         lines = [
-            "## Agent Workshop Execution Plan（运行时强约束）",
-            "以下内容来自当前版本的 build_version 执行计划。你必须按它执行，而不是只按角色描述自由发挥。",
+            "## Agent Workshop Execution Plan (Strong constraints at runtime)",
+            "The following is from the build_version execution plan for the current version. You have to follow it, not just follow the role description.",
         ]
 
         sample_input = plan.get("sample_input") if isinstance(plan.get("sample_input"), dict) else {}
@@ -308,12 +308,12 @@ class UniversalAgent(BaseAgent):
                 if value:
                     sample_parts.append(f"{key}={value}")
             if sample_parts:
-                lines.append(f"- 默认样本/任务上下文：{'; '.join(sample_parts)}")
+                lines.append(f"- Default sample/task context:{'; '.join(sample_parts)}")
 
         steps = plan.get("execution_steps") if isinstance(plan.get("execution_steps"), list) else []
         required_tools = []
         if steps:
-            lines.append("- 执行步骤：")
+            lines.append("- Execution steps:")
             for index, step in enumerate(steps[:6], 1):
                 if not isinstance(step, dict):
                     continue
@@ -327,28 +327,28 @@ class UniversalAgent(BaseAgent):
                     line += f"：{objective}"
                 lines.append(line)
                 if tools:
-                    lines.append(f"     - 本步应优先调用工具：{', '.join(tools)}")
+                    lines.append(f"     - In this step, priority should be given to calling tools:{', '.join(tools)}")
                 if expected:
-                    lines.append(f"     - 本步必须形成证据：{'；'.join(expected[:4])}")
+                    lines.append(f"     - This step must form evidence:{'; '.join(expected[:4])}")
 
         required_tools = list(dict.fromkeys(required_tools))
         if required_tools:
-            lines.append(f"- 关键工具调用要求：如果本次任务涉及这些工具对应的核心能力，必须优先调用：{', '.join(required_tools)}。")
-            lines.append("- 如果某个关键工具无法调用或返回无数据，必须在报告中说明失败原因和降级边界，不能用其他泛化报告冒充该工具结果。")
+            lines.append(f"- Requirements for calling key tools: If this task involves the core capabilities corresponding to these tools, the following must be called first:{', '.join(required_tools)}. ")
+            lines.append("- If a key tool cannot be called or returns no data, the cause of the failure and the degradation boundary must be stated in the report, and other generalized reports cannot be used to pretend to be the results of the tool.")
 
         checks = [str(item).strip() for item in (plan.get("acceptance_checks") or []) if str(item).strip()]
         if checks:
-            lines.append("- 交付前自检项：")
+            lines.append("- Self-inspection items before delivery:")
             for item in checks[:8]:
                 lines.append(f"  - {item}")
 
         fallback_rules = [str(item).strip() for item in (plan.get("fallback_rules") or []) if str(item).strip()]
         if fallback_rules:
-            lines.append("- 降级规则：")
+            lines.append("- Downgrade rules:")
             for item in fallback_rules[:6]:
                 lines.append(f"  - {item}")
 
-        lines.append("- 严禁只写 Prompt 演示式报告；最终结论必须能对应到工具调用、上游结构化输入或明确的数据缺口说明。")
+        lines.append("- It is strictly forbidden to write prompt presentation-style reports; the final conclusion must be able to correspond to tool calls, upstream structured input, or clear data gap descriptions.")
         return "\n".join(lines)
 
     def _build_prompt_variables(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -372,48 +372,48 @@ class UniversalAgent(BaseAgent):
 
         context_lines = []
         if ticker:
-            context_lines.append(f"- 股票代码: {ticker}")
+            context_lines.append(f"- Stock code: {ticker}")
         if analysis_date:
-            context_lines.append(f"- 分析日期: {analysis_date}")
+            context_lines.append(f"- Analysis date: {analysis_date}")
         if market_type:
-            context_lines.append(f"- 市场: {market_type}")
+            context_lines.append(f"- market: {market_type}")
         if task_description:
-            context_lines.append(f"- 任务目标: {task_description}")
+            context_lines.append(f"- mission objectives: {task_description}")
 
         if not context_lines:
             return user_prompt
 
-        context_block = "\n\n本次任务输入:\n" + "\n".join(context_lines)
+        context_block = "\n\n Input for this task:\n" + "\n".join(context_lines)
         if ticker and str(ticker) in user_prompt:
             return user_prompt
         return f"{user_prompt.rstrip()}{context_block}"
 
     def _build_default_system_prompt(self) -> str:
-        """构建默认系统提示词（当模板系统无对应模板时使用）"""
-        return f"""你是一位专业的{self._agent_name}。
+        """Build default system prompt words (used when the template system has no corresponding template)"""
+        return f"""you are a professional{self._agent_name}. 
 
 {self._agent_description}
 
-工作原则：
-1. 基于工具获取的真实数据进行分析，不编造、不猜测
-2. 结论明确，有理有据，逻辑清晰
-3. 使用中文输出，格式结构清晰
-4. 如工具返回数据缺失某维度，说明"该维度数据缺失，暂不分析"
+Working principles:
+1. Analyze based on real data obtained by tools, no fabrication or guessing
+2. The conclusion is clear, well-founded and logically clear
+3. Use Chinese output, clear format structure
+4. If the data returned by the tool is missing a certain dimension, please explain"The data in this dimension is missing and will not be analyzed for the time being."
 
-请根据用户请求，调用相应工具获取数据，然后撰写详细的分析报告。"""
+Please call the corresponding tool to obtain data according to the user s request, and then write a detailed analysis report."""
 
     def _build_default_user_prompt(self, state: Dict[str, Any]) -> str:
-        """构建默认用户提示词（当模板系统无对应模板时使用）"""
+        """Build default user prompt words (used when the template system has no corresponding template)"""
         ticker = state.get("ticker") or state.get("company_of_interest", "")
         analysis_date = state.get("analysis_date") or state.get("trade_date", "")
 
         if ticker and analysis_date:
             return (
-                f"请分析 {ticker}（{analysis_date}）。"
-                f"请调用工具获取相关数据，然后生成详细的分析报告。"
+                f"Please analyze {ticker} ({analysis_date}) . "
+                f"Please call the tool to obtain relevant data and then generate a detailed analysis report."
             )
         elif ticker:
-            return f"请对 {ticker} 进行全面分析，调用工具获取相关数据后生成详细报告。"
+            return f"please {ticker} Conduct a comprehensive analysis and use tools to obtain relevant data and generate detailed reports."
         else:
-            return "请根据你的角色职责，调用所需工具获取数据，生成详细的分析报告。"
+            return "Please call the required tools to obtain data and generate detailed analysis reports based on your role and responsibilities."
 

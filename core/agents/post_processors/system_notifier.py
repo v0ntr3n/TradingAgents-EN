@@ -1,7 +1,7 @@
 """
-系统通知Agent
+System notification Agent
 
-发送系统内通知
+Send in-system notifications
 """
 
 import logging
@@ -17,18 +17,18 @@ logger = logging.getLogger(__name__)
 @register_agent
 class SystemNotifierAgent(PostProcessorAgent):
     """
-    系统通知Agent
+    System notification Agent
     
-    功能：
-    - 发送系统内通知
-    - 支持WebSocket实时推送
-    - 支持通知持久化
+    Function:
+    - Send in-system notifications
+    - Support WebSocket real-time push
+    - Support notification persistence
     """
     
     metadata = AgentMetadata(
         id="system_notifier",
-        name="系统通知器",
-        description="发送系统内通知",
+        name="System Notifier",
+        description="Send in-system notifications",
         category=AgentCategory.POST_PROCESSOR,
         version="1.0.0",
         license_tier=LicenseTier.FREE,
@@ -45,46 +45,46 @@ class SystemNotifierAgent(PostProcessorAgent):
         **kwargs
     ):
         """
-        初始化系统通知Agent
+        Initialize system notifications Agent
         
         Args:
-            config: Agent配置
-            operations: 操作配置列表，格式：
+            config: Agent Configuration
+            operations: Operation configuration list, format:
                 [
                     {
                         "type": "send_notification",
                         "notification_type": "analysis",
-                        "title": "{ticker} 分析完成",
+                        "title": "{ticker} Analysis completed",
                         "content": "{summary}",
                         "link": "/analysis/{analysis_id}",
                         "severity": "info"
                     }
                 ]
-            conditions: 执行条件列表
-            **kwargs: 其他参数
+            conditions: Execution condition list
+            **kwargs: Other parameters
         """
         super().__init__(config=config, operations=operations, conditions=conditions, **kwargs)
         
-        # 初始化通知服务（延迟加载）
+        # Initialize notification service (lazy loading)
         self._notification_service = None
     
     def _execute_operation(self, operation: OperationConfig, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行通知发送操作
+        Perform notification sending operation
         
         Args:
-            operation: 操作配置
-            state: 工作流状态
+            operation: Operational configuration
+            state: Workflow status
             
         Returns:
-            操作执行结果
+            Operation execution result
         """
         operation_type = operation.get("type")
         
         if operation_type == "send_notification":
             return self._send_notification(operation, state)
         else:
-            logger.warning(f"未知的操作类型: {operation_type}")
+            logger.warning(f"Unknown operation type: {operation_type}")
             return {
                 "success": False,
                 "operation_type": operation_type,
@@ -93,51 +93,51 @@ class SystemNotifierAgent(PostProcessorAgent):
     
     def _send_notification(self, operation: OperationConfig, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        发送系统通知
+        Send system notification
         
         Args:
-            operation: 操作配置
-            state: 工作流状态
+            operation: Operational configuration
+            state: Workflow status
             
         Returns:
-            操作结果
+            Operation result
         """
         try:
-            # 获取通知服务
+            # Get notification service
             notification_service = self._get_notification_service()
             
-            # 准备通知数据
+            # Prepare notification data
             notification_type = operation.get("notification_type", "analysis")
             title = self._render_template(operation.get("title", ""), state)
             content = self._render_template(operation.get("content", ""), state)
             link = self._render_template(operation.get("link", ""), state)
             severity = operation.get("severity", "info")
             
-            # 获取用户ID
+            # Get user ID
             user_id = state.get("user_id")
             
             if not user_id:
-                logger.warning("未找到user_id，无法发送通知")
+                logger.warning("user_id not found, notification cannot be sent")
                 return {
                     "success": False,
                     "operation_type": "send_notification",
                     "error": "Missing user_id"
                 }
             
-            # 发送通知（这里需要集成实际的通知服务）
-            # 暂时返回模拟结果
-            logger.info(f"准备发送通知给用户: {user_id}, 标题: {title}")
+            # Send notifications (actual notification service needs to be integrated here)
+            # Temporarily return simulation results
+            logger.info(f"Prepare to send notifications to users: {user_id}, Title: {title}")
             
             return {
                 "success": True,
                 "operation_type": "send_notification",
                 "user_id": user_id,
                 "title": title,
-                "notification_id": "mock_notification_id"  # 实际应该是通知服务返回的ID
+                "notification_id": "mock_notification_id"  # It should actually be returned by the notification service ID
             }
             
         except Exception as e:
-            logger.error(f"发送通知失败: {e}", exc_info=True)
+            logger.error(f"Failed to send notification: {e}", exc_info=True)
             return {
                 "success": False,
                 "operation_type": "send_notification",
@@ -145,9 +145,9 @@ class SystemNotifierAgent(PostProcessorAgent):
             }
     
     def _get_notification_service(self):
-        """获取通知服务实例"""
+        """Get notification service instance"""
         if self._notification_service is None:
-            # 延迟导入，避免循环依赖
+            # Delay import to avoid circular dependencies
             try:
                 from app.services.notifications_service import NotificationsService
                 self._notification_service = NotificationsService()
@@ -158,16 +158,16 @@ class SystemNotifierAgent(PostProcessorAgent):
     
     def _render_template(self, template: str, state: Dict[str, Any]) -> str:
         """
-        渲染模板字符串
+        Render template string
         
         Args:
-            template: 模板字符串
-            state: 工作流状态
+            template: template string
+            state: Workflow status
             
         Returns:
-            渲染后的字符串
+            Rendered string
         """
-        # 提取常用变量
+        # Extract commonly used variables
         variables = {
             "ticker": state.get("ticker", ""),
             "date": state.get("analysis_date", ""),
@@ -176,26 +176,26 @@ class SystemNotifierAgent(PostProcessorAgent):
             "summary": self._generate_summary(state),
         }
         
-        # 渲染模板
+        # render template
         try:
             return template.format(**variables)
         except KeyError as e:
-            logger.warning(f"模板变量缺失: {e}")
+            logger.warning(f"Template variable missing: {e}")
             return template
     
     def _generate_summary(self, state: Dict[str, Any]) -> str:
         """
-        生成通知摘要
+        Generate notification summary
         
         Args:
-            state: 工作流状态
+            state: Workflow status
             
         Returns:
-            摘要文本
+            summary text
         """
         ticker = state.get("ticker", "")
         recommendation = self._get_nested_value(state, "investment_plan.recommendation", "")
         confidence = self._get_nested_value(state, "investment_plan.confidence_score", "")
         
-        return f"{ticker} 分析完成，研究摘要：{recommendation}，置信度：{confidence}"
+        return f"{ticker} Analysis completed, research summary:{recommendation}, Confidence:{confidence}"
 

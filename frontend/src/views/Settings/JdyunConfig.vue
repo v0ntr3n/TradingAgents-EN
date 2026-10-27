@@ -3,40 +3,40 @@
     <el-card shadow="never">
       <template #header>
         <div class="card-header">
-          <span>京东云配置</span>
-          <el-tag type="success" size="small">京东云合作版</el-tag>
+          <span>JD Cloud configuration</span>
+          <el-tag type="success" size="small">JD Cloud Cooperation Edition</el-tag>
         </div>
       </template>
 
       <el-alert
-        title="京东云合作版说明"
+        title="JD Cloud Cooperation Edition Instructions"
         type="info"
         :closable="false"
         show-icon
         style="margin-bottom: 20px;"
       >
         <template #default>
-          京东云合作版通过环境变量注入大模型和数据源配置，用户无需手动配置。
-          如需修改配置，请联系管理员更新环境变量后重启服务。
+          JD Cloud Cooperation Edition injects large models and data source configurations through environment variables, so users do not need to manually configure them.
+          If you need to modify the configuration, please contact the administrator to update the environment variables and restart the service.
         </template>
       </el-alert>
 
       <el-descriptions :column="1" border>
-        <el-descriptions-item label="模型服务地址">
+        <el-descriptions-item label="Model service address">
           <span v-if="status.api_base">{{ status.api_base }}</span>
-          <el-tag v-else type="danger" size="small">未配置</el-tag>
+          <el-tag v-else type="danger" size="small">Not configured</el-tag>
         </el-descriptions-item>
 
         <el-descriptions-item label="API Key">
-          <el-tag v-if="status.api_key_configured" type="success" size="small">已配置</el-tag>
-          <el-tag v-else type="danger" size="small">未配置</el-tag>
+          <el-tag v-if="status.api_key_configured" type="success" size="small">configured</el-tag>
+          <el-tag v-else type="danger" size="small">Not configured</el-tag>
         </el-descriptions-item>
 
-        <el-descriptions-item label="当前默认模型">
-          <el-tag type="primary">{{ status.current_model || '未设置' }}</el-tag>
+        <el-descriptions-item label="Current default model">
+          <el-tag type="primary">{{ status.current_model || 'not set' }}</el-tag>
         </el-descriptions-item>
 
-        <el-descriptions-item label="可选模型列表">
+        <el-descriptions-item label="Optional model list">
           <div class="model-list">
             <el-tag
               v-for="model in status.available_models"
@@ -50,26 +50,26 @@
           </div>
         </el-descriptions-item>
 
-        <el-descriptions-item label="Embedding 模型">
-          <el-tag type="info">{{ status.embedding_model || '未设置' }}</el-tag>
+        <el-descriptions-item label="Embedding model">
+          <el-tag type="info">{{ status.embedding_model || 'not set' }}</el-tag>
           <span style="margin-left: 8px; color: #909399; font-size: 12px;">
-            (维度: {{ status.embedding_dims || 0 }})
+            (Dimensions: {{ status.embedding_dims || 0 }})
           </span>
         </el-descriptions-item>
 
-        <el-descriptions-item label="Tushare 数据源">
-          <el-tag v-if="status.tushare_token_configured" type="success" size="small">已配置</el-tag>
-          <el-tag v-else type="danger" size="small">未配置</el-tag>
+        <el-descriptions-item label="Tushare data source">
+          <el-tag v-if="status.tushare_token_configured" type="success" size="small">configured</el-tag>
+          <el-tag v-else type="danger" size="small">Not configured</el-tag>
         </el-descriptions-item>
 
-        <el-descriptions-item label="AKShare 数据源">
-          <el-tag v-if="status.akshare_available" type="success" size="small">可用（免费开源）</el-tag>
-          <el-tag v-else type="danger" size="small">不可用</el-tag>
+        <el-descriptions-item label="AKShare data source">
+          <el-tag v-if="status.akshare_available" type="success" size="small">Available (free and open source)</el-tag>
+          <el-tag v-else type="danger" size="small">Not available</el-tag>
         </el-descriptions-item>
       </el-descriptions>
 
       <div class="config-actions" style="margin-top: 20px;">
-        <el-button @click="loadStatus" :loading="loading">刷新状态</el-button>
+        <el-button @click="loadStatus" :loading="loading">refresh status</el-button>
       </div>
     </el-card>
   </div>
@@ -110,13 +110,13 @@ const loadStatus = async () => {
   loading.value = true
   try {
     const data = await configApi.getJdyunStatus()
-    // 兼容旧后端不返回 akshare_available 的情况
+    // Compatible with the situation where the old backend does not return akshare_available
     status.value = {
       ...data,
       akshare_available: data.akshare_available ?? true,
     }
   } catch (error: any) {
-    ElMessage.error('获取京东云配置状态失败: ' + (error?.message || error))
+    ElMessage.error('Failed to obtain JD Cloud configuration status: ' + (error?.message || error))
   } finally {
     loading.value = false
   }

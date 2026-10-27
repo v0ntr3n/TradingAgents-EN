@@ -1,7 +1,7 @@
 """
-Skill 生成 API — v3.0 AI 驱动的 Skill 创建
+Skill generate API — v3.0 AI Driven Skill Creation
 
-提供需求沟通（多轮对话）、代码生成管线、外部 Skill 管理等端点。
+Provide endpoints such as demand communication (multiple rounds of dialogue), code generation pipeline, external Skill management, etc.
 """
 
 import asyncio
@@ -31,62 +31,62 @@ router = APIRouter(prefix="/api/skill-generation", tags=["skill-generation"])
 
 
 # =============================================================================
-# 请求/响应模型
+# request/response model
 # =============================================================================
 
 class StartSessionRequest(BaseModel):
-    """开始创建会话"""
-    description: str = Field(..., min_length=2, description="需求描述")
-    user_id: str = Field(default="", description="用户 ID")
-    handoff_context: Optional[Dict[str, Any]] = Field(default=None, description="来自上游工坊的交接上下文")
-    iterate_skill_id: Optional[str] = Field(default=None, description="迭代模式：要优化的已有 Skill 的 tool_id")
-    provider: str = Field(default="deepseek", description="LLM 提供商（回退用）")
-    model: Optional[str] = Field(default=None, description="模型名称（回退用）")
-    reasoning_model: Optional[str] = Field(default=None, description="需求分析模型（覆盖系统默认的深度推理模型）")
-    coding_model: Optional[str] = Field(default=None, description="代码生成模型（覆盖系统默认的编程模型）")
+    """Start creating a session"""
+    description: str = Field(..., min_length=2, description="Requirement description")
+    user_id: str = Field(default="", description="User ID")
+    handoff_context: Optional[Dict[str, Any]] = Field(default=None, description="Handover context from upstream workshop")
+    iterate_skill_id: Optional[str] = Field(default=None, description="Iterative mode: There are existing Skills to be optimized tool_id")
+    provider: str = Field(default="deepseek", description="LLM Provider (for fallback)")
+    model: Optional[str] = Field(default=None, description="Model name (for rollback)")
+    reasoning_model: Optional[str] = Field(default=None, description="Requirements analysis model (overrides the system s default in-depth reasoning model)")
+    coding_model: Optional[str] = Field(default=None, description="Code generation model (overrides the system s default programming model)")
 
 
 class RespondRequest(BaseModel):
-    """回复对话"""
-    message: str = Field(..., min_length=1, description="用户回复")
+    """Reply to conversation"""
+    message: str = Field(..., min_length=1, description="User reply")
 
 
 class ConfirmSpecRequest(BaseModel):
-    """确认规格"""
-    message: str = Field(default="确认", description="确认消息或补充说明")
-    codegen_timeout: Optional[int] = Field(default=None, ge=60, le=1800, description="代码生成单次 LLM 调用超时（秒），不传用默认值")
+    """Confirm specifications"""
+    message: str = Field(default="Confirm", description="Confirmation message or additional explanation")
+    codegen_timeout: Optional[int] = Field(default=None, ge=60, le=1800, description="Code generation single LLM call timeout (seconds), default value is used if not passed")
 
 
 class UpdateStatusRequest(BaseModel):
-    """更新 Skill 状态"""
-    status: str = Field(..., description="新状态: active / disabled / archived")
+    """Update skill status"""
+    status: str = Field(..., description="new status: active / disabled / archived")
 
 
 class UpdateSkillInfoRequest(BaseModel):
-    """更新 Skill 展示名称与功能说明"""
-    display_name: str = Field(..., min_length=1, max_length=100, description="展示名称")
-    description: str = Field(default="", max_length=2000, description="功能说明")
+    """Update Skill display name and function description"""
+    display_name: str = Field(..., min_length=1, max_length=100, description="display name")
+    description: str = Field(default="", max_length=2000, description="Function description")
 
 
 class TestSkillRequest(BaseModel):
-    """测试 Skill"""
-    args: Dict[str, Any] = Field(default_factory=dict, description="测试参数")
+    """test Skill"""
+    args: Dict[str, Any] = Field(default_factory=dict, description="Test parameters")
 
 
 class OptimizeSkillRequest(BaseModel):
-    """优化 Skill"""
-    feedback: str = Field(..., min_length=2, description="优化需求描述")
+    """Optimize Skill"""
+    feedback: str = Field(..., min_length=2, description="Optimization requirement description")
 
 
 class RepairSessionRequest(BaseModel):
-    """基于失败结果修正当前创建会话"""
-    feedback: str = Field(..., min_length=2, description="告诉 AI 本轮生成哪里有问题，以及你希望怎么改")
-    repair_plan: Optional[str] = Field(default="", description="用户确认通过的修正计划文本")
-    codegen_timeout: Optional[int] = Field(default=None, ge=60, le=1800, description="代码生成单次 LLM 调用超时（秒），不传用默认值")
+    """Correct the current creation session based on failure results"""
+    feedback: str = Field(..., min_length=2, description="Tell the AI what s wrong with this round of generation and how you want to change it")
+    repair_plan: Optional[str] = Field(default="", description="The text of the correction plan confirmed by the user")
+    codegen_timeout: Optional[int] = Field(default=None, ge=60, le=1800, description="Code generation single LLM call timeout (seconds), default value is used if not passed")
 
 
 # =============================================================================
-# 辅助函数
+# Helper function
 # =============================================================================
 
 async def _get_service_with_llm(
@@ -97,10 +97,10 @@ async def _get_service_with_llm(
     coding_model: Optional[str] = None,
 ) -> SkillGenerationService:
     """
-    创建 SkillGenerationService：
-    - 需求分析：优先 reasoning_model 指定，否则用系统「深度推理大模型」
-    - 代码生成：优先 coding_model 指定，否则用系统「编程大模型」
-    - 均未配置时回退到 provider/model
+    Create SkillGenerationService:
+    - Requirements analysis: Specify reasoning_model first, otherwise use the system deep reasoning large model 
+    - Code generation: coding_model is specified first, otherwise the system programming large model is used
+    - Fall back to when neither is configured. provider/model
     """
     from app.services.intelligent_assistant_service import (
         get_coding_llm_config,
@@ -109,7 +109,7 @@ async def _get_service_with_llm(
     )
     from core.llm import UnifiedLLMClient
 
-    # 需求分析：深度推理大模型
+    # Requirements Analysis: Deep Reasoning Large Model
     reasoning_config = None
     if reasoning_model:
         from app.services.intelligent_assistant_service import _get_llm_config_for_model
@@ -120,17 +120,17 @@ async def _get_service_with_llm(
         UnifiedLLMClient.from_config(reasoning_config) if reasoning_config else None
     )
     if reasoning_client:
-        logger.debug("Skill 需求分析使用深度推理大模型")
+        logger.debug("Skill Requirements analysis uses deep reasoning large models")
 
-    # 需求对话：快速模型（清晰度评估/边界检测/多轮回复），显著降低轮次响应延迟
+    # Requirements dialogue: fast model (clarity assessment/boundary detection/multiple rounds of reply), significantly reducing round response delay
     quick_config = await get_quick_llm_config(db)
     quick_client = (
         UnifiedLLMClient.from_config(quick_config) if quick_config else None
     )
     if quick_client:
-        logger.debug("Skill 需求对话使用快速模型")
+        logger.debug("Skill Requirements dialogue using quick models")
 
-    # 代码生成：编程大模型
+    # Code Generation: The Big Model of Programming
     coding_config = None
     if coding_model:
         from app.services.intelligent_assistant_service import _get_llm_config_for_model
@@ -141,7 +141,7 @@ async def _get_service_with_llm(
         UnifiedLLMClient.from_config(coding_config) if coding_config else None
     )
     if coding_client:
-        logger.debug("Skill 代码生成使用编程大模型")
+        logger.debug("Skill Code generation using large programming models")
 
     return SkillGenerationService(
         db=db,
@@ -154,7 +154,7 @@ async def _get_service_with_llm(
 
 
 # =============================================================================
-# 模型选择 API（开放大模型搜索/选择）
+# Model Selection API (Open Large Model Search/Selection)
 # =============================================================================
 
 @router.get("/models")
@@ -162,8 +162,8 @@ async def list_available_models(
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
     """
-    获取 Skill 生成可用的模型列表，用于前端下拉选择
-    返回系统配置中的模型，并标注默认的需求分析模型、代码生成模型
+    Get Skill to generate a list of available models for front-end drop-down selection
+    Return the model in the system configuration and mark the default requirements analysis model and code generation model
     """
     try:
         config_doc = await db.system_configs.find_one(
@@ -204,13 +204,13 @@ async def list_available_models(
             "default_coding_model": coding,
         })
     except Exception as e:
-        logger.error(f"获取模型列表失败: {e}", exc_info=True)
+        logger.error(f"Failed to get model list: {e}", exc_info=True)
         return ok({"models": [], "default_reasoning_model": None, "default_coding_model": None})
 
 
 @router.get("/catalog/stock-data")
 async def get_stock_data_catalog():
-    """获取 Skill 生成器使用的股票数据集合目录。"""
+    """Get the directory of stock data collections used by the Skill builder."""
     return ok({
         "collections": STOCK_DATA_COLLECTION_CATALOG,
         "doc": STOCK_DATA_COLLECTION_DOC,
@@ -219,7 +219,7 @@ async def get_stock_data_catalog():
 
 @router.get("/catalog/external-data-sources")
 async def get_external_data_source_catalog():
-    """获取 Skill 生成器使用的外部接口与数据源目录。"""
+    """Get the external interface and data source directory used by the Skill generator."""
     return ok({
         "sources": EXTERNAL_DATA_SOURCE_CATALOG,
         "doc": EXTERNAL_DATA_SOURCE_DOC,
@@ -227,7 +227,7 @@ async def get_external_data_source_catalog():
 
 
 # =============================================================================
-# 需求沟通 API
+# Requirements communication API
 # =============================================================================
 
 @router.post("/sessions/start")
@@ -235,7 +235,7 @@ async def start_session(
     req: StartSessionRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """开始 Skill 创建会话：提交初始需求，AI 返回澄清问题"""
+    """Start a Skill creation session: Submit initial requirements, AI returns with clarification questions"""
     try:
         svc = await _get_service_with_llm(
             db,
@@ -252,7 +252,7 @@ async def start_session(
         )
         return ok(result)
     except Exception as e:
-        logger.error(f"❌ 创建会话失败: {e}", exc_info=True)
+        logger.error(f"❌ Failed to create session: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -262,7 +262,7 @@ async def respond_to_session(
     req: RespondRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """用户回复 AI 的问题，推进对话"""
+    """Users reply to AI questions to advance the conversation"""
     try:
         svc = await _get_service_with_llm(db)
         result = await svc.respond_to_session(session_id, req.message)
@@ -270,7 +270,7 @@ async def respond_to_session(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ 会话回复失败: {e}", exc_info=True)
+        logger.error(f"❌ Session reply failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -280,17 +280,17 @@ async def preview_spec(
     req: ConfirmSpecRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """预览 Skill 规格（不执行管线），用于规格确认步骤展示"""
+    """Preview Skill specifications (without executing the pipeline) for display of specification confirmation steps"""
     try:
         svc = await _get_service_with_llm(db)
         result = await svc.preview_spec(session_id, req.message)
         if result is None:
-            raise HTTPException(status_code=400, detail="规格生成失败，请重新描述需求")
+            raise HTTPException(status_code=400, detail="Specification generation failed, please describe the requirements again")
         return ok(result)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ 规格预览失败: {e}", exc_info=True)
+        logger.error(f"❌ Spec preview failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -300,7 +300,7 @@ async def confirm_spec(
     req: ConfirmSpecRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """确认 Skill 规格并触发代码生成管线"""
+    """Confirm Skill specifications and trigger the code generation pipeline"""
     try:
         svc = await _get_service_with_llm(db)
         result = await svc.confirm_spec(session_id, req.message, codegen_timeout=req.codegen_timeout)
@@ -308,7 +308,7 @@ async def confirm_spec(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ 规格确认失败: {e}", exc_info=True)
+        logger.error(f"❌ Specification confirmation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -318,7 +318,7 @@ async def repair_session(
     req: RepairSessionRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """当生成/验证失败后，基于失败原因和用户反馈重新修正并生成"""
+    """When the generation/verification fails, correct and generate again based on the failure reason and user feedback."""
     try:
         svc = await _get_service_with_llm(db)
         result = await svc.repair_session(
@@ -329,7 +329,7 @@ async def repair_session(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ 会话修正失败: {e}", exc_info=True)
+        logger.error(f"❌ Session remediation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -339,7 +339,7 @@ async def preview_repair_session(
     req: RepairSessionRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """失败后先生成 AI 修正计划，待用户确认后再触发重跑"""
+    """After failure, first generate an AI correction plan and wait for user confirmation before triggering a rerun."""
     try:
         svc = await _get_service_with_llm(db)
         result = await svc.preview_repair_session(session_id, req.feedback)
@@ -347,19 +347,19 @@ async def preview_repair_session(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ 生成修正计划失败: {e}", exc_info=True)
+        logger.error(f"❌ Failed to generate remediation plan: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/sessions")
 async def list_sessions(
-    status: Optional[str] = Query(None, description="按状态筛选，多个用逗号分隔: gathering,confirmed,completed"),
-    user_id: Optional[str] = Query(None, description="按用户 ID 筛选"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页条数"),
+    status: Optional[str] = Query(None, description="Filter by status, separate multiple with commas: gathering,confirmed,completed"),
+    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """列出创建会话（支持按状态筛选，用于查看草稿/未完成会话）"""
+    """List creation sessions (supports filtering by status, for viewing drafts/unfinished sessions)"""
     svc = await _get_service_with_llm(db)
     result = await svc.list_sessions(
         status=status, user_id=user_id, page=page, page_size=page_size
@@ -372,11 +372,11 @@ async def get_session(
     session_id: str,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """获取创建会话详情"""
+    """Get session details"""
     svc = await _get_service_with_llm(db)
     session = await svc.get_session(session_id)
     if not session:
-        raise HTTPException(status_code=404, detail=f"会话 {session_id} 不存在")
+        raise HTTPException(status_code=404, detail=f"session {session_id} does not exist")
     return ok(session)
 
 
@@ -385,28 +385,28 @@ async def delete_session(
     session_id: str,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """删除草稿会话"""
+    """Delete draft conversation"""
     svc = await _get_service_with_llm(db)
     deleted = await svc.delete_session(session_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail=f"会话 {session_id} 不存在")
+        raise HTTPException(status_code=404, detail=f"session {session_id} does not exist")
     return ok({"deleted": True})
 
 
 # =============================================================================
-# 外部 Skill 管理 API
+# External Skill Management API
 # =============================================================================
 
 @router.get("/skills")
 async def list_skills(
-    category: Optional[str] = Query(None, description="按分类筛选"),
-    status: Optional[str] = Query(None, description="按状态筛选: active/disabled/archived"),
-    source: Optional[str] = Query(None, description="按来源筛选: agent_studio_auto_gap_resolution/manual_or_other/generated"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页条数"),
+    category: Optional[str] = Query(None, description="Filter by category"),
+    status: Optional[str] = Query(None, description="Filter by status: active/disabled/archived"),
+    source: Optional[str] = Query(None, description="Filter by source: agent_studio_auto_gap_resolution/manual_or_other/generated"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Number of items per page"),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """获取 AI 生成的 Skill 列表（分页）"""
+    """Get the AI-generated Skill list (paginated)"""
     svc = await _get_service_with_llm(db)
     result = await svc.list_skills(
         category=category, status=status, source=source, page=page, page_size=page_size
@@ -419,11 +419,11 @@ async def get_skill(
     skill_id: str,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """获取 Skill 详情"""
+    """Get Skill details"""
     svc = await _get_service_with_llm(db)
     skill = await svc.get_skill(skill_id)
     if not skill:
-        raise HTTPException(status_code=404, detail=f"Skill {skill_id} 不存在")
+        raise HTTPException(status_code=404, detail=f"Skill {skill_id} does not exist")
     return ok(skill)
 
 
@@ -432,11 +432,11 @@ async def get_skill_code(
     skill_id: str,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """查看 Skill 源代码"""
+    """View Skill source code"""
     svc = await _get_service_with_llm(db)
     code = await svc.get_skill_code(skill_id)
     if code is None:
-        raise HTTPException(status_code=404, detail=f"Skill {skill_id} 不存在")
+        raise HTTPException(status_code=404, detail=f"Skill {skill_id} does not exist")
     return ok({"tool_id": skill_id, "code": code})
 
 
@@ -445,11 +445,11 @@ async def get_skill_history(
     skill_id: str,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """获取 Skill 完整沟通历史（原始创建 + 所有优化轮次）"""
+    """Get Skill s complete communication history (originally created + all optimization rounds)"""
     svc = await _get_service_with_llm(db)
     history = await svc.get_skill_history(skill_id)
     if not history:
-        raise HTTPException(status_code=404, detail=f"Skill {skill_id} 不存在")
+        raise HTTPException(status_code=404, detail=f"Skill {skill_id} does not exist")
     return ok(history)
 
 
@@ -458,22 +458,22 @@ async def list_skill_versions(
     skill_id: str,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """查询 Skill 的所有版本（同一系列的所有迭代版本）
+    """Query all versions of a Skill (all iterations of the same series)
 
-    如果 skill_id 是根 Skill，返回 parent_skill_id=skill_id 的所有版本 + 自己
-    如果 skill_id 是子版本，先找根，再返回整条版本链
+    If skill_id is the root Skill, return parent_skill_id=skill_id All versions of + myself
+    If skill_id is a subversion, first find the root, and then return to the entire version chain
 
-    返回按版本号升序排列，每个版本包含: tool_id, version, display_name, version_note, status, created_at
+    Returns are sorted in ascending order by version number, each version contains: tool_id, version, display_name, version_note, status, created_at
     """
-    # 先查当前 skill，确定根 parent_skill_id
+    # First check the current skill and determine the root parent_skill_id
     current = await db["external_skills"].find_one({"tool_id": skill_id})
     if not current:
-        raise HTTPException(status_code=404, detail=f"Skill {skill_id} 不存在")
+        raise HTTPException(status_code=404, detail=f"Skill {skill_id} does not exist")
 
-    # 确定 parent_skill_id（根 Skill 的 parent_skill_id 为空，自己就是根）
+    # Determine parent_skill_id (the parent_skill_id of the root Skill is empty, and you are the root)
     parent_skill_id = current.get("parent_skill_id") or skill_id
 
-    # 查询同系列所有版本：根 Skill 自己 + 所有 parent_skill_id 指向根的版本
+    # Query all versions of the same series: root Skill itself + All parent_skill_id point to the root version
     cursor = db["external_skills"].find({
         "$or": [
             {"tool_id": parent_skill_id},
@@ -509,13 +509,13 @@ async def update_skill_status(
     req: UpdateStatusRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """更新 Skill 状态（启用/禁用/归档）"""
+    """Update skill status (enable/disable/archive)"""
     if req.status not in ("active", "disabled", "archived"):
-        raise HTTPException(status_code=400, detail="状态必须是 active/disabled/archived")
+        raise HTTPException(status_code=400, detail="The status must be active/disabled/archived")
     svc = await _get_service_with_llm(db)
     updated = await svc.update_skill_status(skill_id, req.status)
     if not updated:
-        raise HTTPException(status_code=404, detail=f"Skill {skill_id} 不存在")
+        raise HTTPException(status_code=404, detail=f"Skill {skill_id} does not exist")
     return ok({"tool_id": skill_id, "status": req.status})
 
 
@@ -525,14 +525,14 @@ async def update_skill_info(
     req: UpdateSkillInfoRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """更新 Skill 的展示名称与功能说明（参数/代码等已验证契约不可在此修改）"""
+    """Update the display name and function description of the Skill (verified contracts such as parameters/code cannot be modified here)"""
     try:
         svc = await _get_service_with_llm(db)
         updated = await svc.update_skill_info(
             skill_id, req.display_name, req.description
         )
         if not updated:
-            raise HTTPException(status_code=404, detail=f"Skill {skill_id} 不存在")
+            raise HTTPException(status_code=404, detail=f"Skill {skill_id} does not exist")
         return ok({
             "tool_id": skill_id,
             "display_name": req.display_name.strip(),
@@ -543,7 +543,7 @@ async def update_skill_info(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Skill 说明更新失败: {e}", exc_info=True)
+        logger.error(f"❌ Skill Description update failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -552,12 +552,12 @@ async def delete_skill(
     skill_id: str,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """删除 Skill"""
+    """Delete Skill"""
     svc = await _get_service_with_llm(db)
     deleted = await svc.delete_skill(skill_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail=f"Skill {skill_id} 不存在")
-    # 异步触发能力索引同步，清理幽灵工具
+        raise HTTPException(status_code=404, detail=f"Skill {skill_id} does not exist")
+    # Asynchronous trigger ability index synchronization, cleanup ghost tool
     asyncio.create_task(CapabilityIndexService.refresh_after_change(db))
     return ok({"tool_id": skill_id, "deleted": True})
 
@@ -568,7 +568,7 @@ async def test_skill(
     req: TestSkillRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """手动测试 Skill（在沙箱中执行）"""
+    """Test the skill manually (execute in sandbox)"""
     try:
         svc = await _get_service_with_llm(db)
         result = await svc.test_skill(skill_id, test_args=req.args or None)
@@ -576,7 +576,7 @@ async def test_skill(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ Skill 测试失败: {e}", exc_info=True)
+        logger.error(f"❌ Skill test failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -586,7 +586,7 @@ async def optimize_skill(
     req: OptimizeSkillRequest,
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """优化已有 Skill：基于用户反馈重新生成代码"""
+    """Optimize existing skills: regenerate code based on user feedback"""
     try:
         svc = await _get_service_with_llm(db)
         result = await svc.optimize_skill(skill_id, req.feedback)
@@ -594,5 +594,5 @@ async def optimize_skill(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ Skill 优化失败: {e}", exc_info=True)
+        logger.error(f"❌ Skill Optimization failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

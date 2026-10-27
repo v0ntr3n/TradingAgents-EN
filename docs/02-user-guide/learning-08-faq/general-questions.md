@@ -1,571 +1,571 @@
-# 常见问题解答
+# FAQ
 
-**分类**: 常见问题  
-**难度**: 入门  
-**阅读时间**: 15分钟  
-**更新日期**: 2025-11-14
-
----
-
-## 📋 目录
-
-- [关于TradingAgents-CN](#关于tradingagents-cn)
-- [功能相关](#功能相关)
-- [模型选择](#模型选择)
-- [使用技巧](#使用技巧)
-- [问题排查](#问题排查)
-- [费用相关](#费用相关)
+**Classification**: FAQ  
+**difficulty**: Getting Started  
+**reading time**: 15 minutes  
+**Update date**: 2025-11-14
 
 ---
 
-## 🏢 关于TradingAgents-CN
+## 📋 Directory
 
-### Q1: TradingAgents-CN是什么？
+- [About TradingAgents-CN](#About tradingagents-cn)
+- [Function related](#Function related)
+- [Model selection](#Model selection)
+- [Tips](#Tips)
+- [Troubleshooting](#Troubleshooting)
+- [Cost related](#Cost related)
 
-**A**: TradingAgents-CN是一个基于大语言模型的AI股票分析学习平台，采用多智能体协作机制，帮助用户学习和理解股票分析方法。
+---
 
-**核心特点**：
-- 🤖 多智能体协作分析
-- 🇨🇳 专为中国A股市场优化
-- 📚 学习工具，非投资建议
-- 🔓 开源项目，可自部署
+## 🏢 About TradingAgents-CN
 
-### Q2: 与其他股票分析工具有什么区别？
+### Q1: TradingAgents-CN What is it?
+
+**A**: TradingAgents-CN It is an AI stock analysis learning platform based on a large language model, using a multi-agent collaboration mechanism to help users learn and understand stock analysis methods.
+
+**Core features**: 
+- 🤖 Multi-agent collaborative analysis
+- 🇨🇳 Specifically optimized for China's A-share market
+- 📚 Learning tool, not investment advice
+- 🔓 Open source project, self-deployable
+
+### Q2: How is it different from other stock analysis tools?
 
 **A**: 
 
-| 特点 | TradingAgents-CN | 传统分析工具 |
+| Features | TradingAgents-CN | Traditional analysis tools |
 |------|-----------------|------------|
-| 分析方式 | AI多智能体协作 | 固定算法 |
-| 灵活性 | 可自定义提示词 | 固定模式 |
-| 学习价值 | 展示分析过程 | 只给结果 |
-| 适用市场 | A股优化 | 通用 |
-| 开源性 | 完全开源 | 多为闭源 |
+| Analysis method | AI Multi-agent collaboration | fixed algorithm |
+| Flexibility | Customizable prompt words | fixed pattern |
+| learning value | Show analysis process | Only give results |
+| Applicable market | A stock optimization | Universal |
+| Open source | Completely open source | Mostly closed source |
 
-### Q3: 是否提供投资建议？
+### Q3: Do you provide investment advice?
 
-**A**: ⚠️ **不提供投资建议**
+**A**: ⚠️ **No investment advice is provided**
 
-TradingAgents-CN是**学习工具**，提供的分析仅供参考，不构成投资建议。
+TradingAgents-CN Yes**learning tools**, The analysis provided is for reference only and does not constitute investment advice.
 
 ```
-✅ 我们提供：学习资源、分析参考、工具支持
-❌ 我们不提供：投资建议、收益保证、专业咨询
+✅ We provide: learning resources, analysis reference, tool support
+❌ We do not provide: investment advice, income guarantee, professional consultation
 ```
 
-### Q4: 数据来源是什么？
+### Q4: What is the data source?
 
 **A**: 
 
-**A股数据来源（按优先级与职责）**：
-- 📊 Tushare（主力专业数据，需密钥）
-  - 股票列表、日线/分钟行情、`daily_basic`（PE/PB/市值等）、财务三表（利润/资产负债/现金流）
-  - 框架内用于“动态PE/PB”与基本面分析的核心来源（见 `tradingagents/dataflows/realtime_metrics.py`）
-  - 降级链首选：MongoDB → Tushare → 其他（见 `stock_data_service.py`）
-- 📈 AKShare（开源免费补充）
-  - 历史/实时行情、部分财务数据；港股数据优先走 AKShare（见 `dataflows/providers/hk`）
-  - 新闻接口：东方财富个股新闻 `stock_news_em`、CCTV 市场新闻（见 `dataflows/akshare_utils.py`）
-- 🗃️ BaoStock（免费且稳定的历史数据）
-  - 作为 A 股历史数据的兜底补充（见 `constants/data_sources.py` 与 `providers/china`）
+**A Share data sources (by priority and responsibility)**: 
+- 📊 Tushare (Main professional data, key required)
+  - Stock list, daily/minute quotes,`daily_basic` (PE/PB/Market value, etc.), financial statements (profit/assets and liabilities/cash flow)
+  - used within the frame"Dynamic PE/PB"with core sources of fundamental analysis (see `tradingagents/dataflows/realtime_metrics.py`) 
+  - Downgrade chain preferred:MongoDB → Tushare → Others (see `stock_data_service.py`) 
+- 📈 AKShare (Open source free supplement)
+  - Historical/real-time market conditions and some financial data; Hong Kong stock data is given priority on AKShare (see `dataflows/providers/hk`) 
+  - News interface: Oriental Fortune stock news `stock_news_em`, CCTV Market news (see `dataflows/akshare_utils.py`) 
+- 🗃️ BaoStock (Free and stable historical data)
+  - As a comprehensive supplement to the historical data of A shares (see `constants/data_sources.py` with `providers/china`) 
 
 
-**数据类型**：
-- 实时行情
-- 财务报表
-- 技术指标
-- 市场新闻
+**data type**: 
+- Real-time quotes
+- financial statements
+- Technical indicators
+- market news
 
-**国际与新闻数据来源**：
-- 🇺🇸 yfinance（Yahoo Finance，免费）
-  - 美股/港股行情与基础信息；港股在 AKShare失败时降级到 yfinance（见 `dataflows/interface.py`）
-- 🇺🇸 Finnhub（需密钥）
-  - 美股/港股行情、基本面与新闻；后端/前端均检测 `FINNHUB_API_KEY`（见 `web/modules/config_management.py`）
-- 🇺🇸 Alpha Vantage（需密钥）
-  - 美股基本面与部分新闻；作为 US 市场的备选（见 `providers/us/alpha_vantage_fundamentals.py`）
-- 📚 SimFin（数据集）
-  - 美股财报数据，提供资产负债表/利润表/现金流（见 `dataflows/interface.py`）
-- 📰 新闻聚合（多源）
-  - Tushare 新闻源：sina/eastmoney/10jqka/wallstreetcn/cls/第一财经/金融界/云财经/凤凰财经（见 `docs/features/news/NEWS_SYNC_FEATURE.md`）
-  - AKShare 新闻源：东方财富、CCTV（见 `dataflows/akshare_utils.py`）
-  - 自建聚合：Google News、Reddit（见 `dataflows/interface.py` 与 `features/news/news-analysis-system.md`）
+**International and news data sources**: 
+- 🇺🇸 yfinance (Yahoo Finance, free)
+  - US/Hong Kong stock market quotes and basic information; Hong Kong stocks are downgraded to yfinance when AKShare fails (see `dataflows/interface.py`) 
+- 🇺🇸 Finnhub (Key required)
+  - US stock/Hong Kong stock market conditions, fundamentals and news; back-end/front-end detection `FINNHUB_API_KEY` (see `web/modules/config_management.py`) 
+- 🇺🇸 Alpha Vantage (Key required)
+  - US stock fundamentals and selected news; as an alternative to the US market (see `providers/us/alpha_vantage_fundamentals.py`) 
+- 📚 SimFin (data set)
+  - US stock financial report data, providing balance sheet/income statement/cash flow (see `dataflows/interface.py`) 
+- 📰 News aggregation (multiple sources)
+  - Tushare News source: sina/eastmoney/10jqka/wallstreetcn/cls/First Financial/Financial Circle/Cloud Finance/Phoenix Finance (see `docs/features/news/NEWS_SYNC_FEATURE.md`) 
+  - AKShare News source: Oriental Fortune, CCTV (see `dataflows/akshare_utils.py`) 
+  - Build your own aggregators: Google News, Reddit (see `dataflows/interface.py` with `features/news/news-analysis-system.md`) 
 
-**环境变量与密钥**：
-- `TUSHARE_TOKEN`（必需，用于 Tushare）
-- `FINNHUB_API_KEY`（可选，启用 Finnhub）
-- `ALPHA_VANTAGE_API_KEY`（可选，启用 Alpha Vantage）
-- `NEWSAPI_KEY`（可选，启用部分新闻聚合）
+**Environment variables and keys**: 
+- `TUSHARE_TOKEN` (Required for Tushare)
+- `FINNHUB_API_KEY` (Optional, enable Finnhub)
+- `ALPHA_VANTAGE_API_KEY` (Optional, enable Alpha Vantage)
+- `NEWSAPI_KEY` (Optional, enable some news aggregation)
 
-**数据源选择与降级策略（内置）**：
-- A股：MongoDB → Tushare → AKShare → BaoStock（按优先级自动切换）
-- 港股：AKShare → yfinance → Finnhub（失败时逐级降级）
-- 美股：Alpha Vantage → yfinance → Finnhub（按场景选择与降级）
+**Data source selection and downgrade strategies (built-in)**: 
+- A Shares:MongoDB → Tushare → AKShare → BaoStock (Automatically switch according to priority)
+- Hong Kong stocks:AKShare → yfinance → Finnhub (Downgrade in case of failure)
+- US stocks:Alpha Vantage → yfinance → Finnhub (Select and downgrade by scene)
 
 ---
 
-## 🎯 功能相关
+## 🎯 Function related
 
-### Q5: 支持哪些股票市场？
-
-**A**: 
-
-**当前支持**：
-- ✅ 中国A股（上海、深圳）
-- ✅ 科创板
-- ✅ 创业板
-
-**当前支持（扩展）**：
-- ✅ 港股（AKShare / yfinance / Finnhub）
-- ✅ 美股（yfinance / Finnhub / Alpha Vantage）
-
-### Q6: 可以分析哪些类型的股票？
+### Q5: What stock markets are supported?
 
 **A**: 
 
-**支持的股票类型**：
-- ✅ 主板股票
-- ✅ 科创板股票
-- ✅ 创业板股票
-- ❌ 退市股票
-- ❌ 停牌股票（数据可能不完整）
+**Currently supported**: 
+- ✅ China A shares (Shanghai, Shenzhen)
+- ✅ Science and Technology Innovation Board
+- ✅ GEM
 
-### Q7: 分析需要多长时间？
+**Current support (extended)**: 
+- ✅ Hong Kong stocks (AKShare/yfinance/Finnhub)
+- ✅ US stocks (yfinance / Finnhub / Alpha Vantage)
+
+### Q6: What types of stocks can be analyzed?
 
 **A**: 
 
-| 分析类型 | 时间 | 适用场景 |
+**Supported stock types**: 
+- ✅ Main board stocks
+- ✅ Science and Technology Innovation Board Stocks
+- ✅ GEM stocks
+- ❌ delisted stocks
+- ❌ Suspended stocks (data may be incomplete)
+
+### Q7: How long does the analysis take?
+
+**A**: 
+
+| Analysis type | time | Applicable scenarios |
 |---------|------|---------|
-| 快速分析 | 30秒 | 快速了解 |
-| 标准分析 | 1-2分钟 | 日常分析 |
-| 深度分析 | 2-3分钟 | 重要决策 |
-| 多智能体辩论 | 5-8分钟 | 重大决策 |
+| Quick analysis | 30 seconds | Get to know quickly |
+| standard analysis | 1-2 minutes | daily analysis |
+| In-depth analysis | 2-3 minutes | important decisions |
+| multi-agent debate | 5-8 minutes | major decisions |
 
-**影响因素**：
-- 模型选择（Qwen‑Max更稳但稍慢；DeepSeek V3.1更快、性价比高）
-- 网络状况
-- API响应速度
+**Influencing factors**: 
+- Model selection (Qwen‑Max More stable but slightly slower; DeepSeek V3.1 is faster and cost-effective)
+- Network status
+- API Response speed
 
-### Q8: 可以同时分析多只股票吗？
+### Q8: Can I analyze multiple stocks at the same time?
 
 **A**: 
 
-**可以**，有两种方式：
+**OK**, There are two ways:
 
-**方式1：批量分析**
+**Method 1: Batch analysis**
 ```
-1. 进入"批量分析"页面
-2. 输入多个股票代码（回车换行分隔）
-3. 选择分析维度
-4. 点击"开始分析"
+1. enter"Batch analysis"Page
+2. Enter multiple stock codes (separate by carriage return and line feed)
+3. Select analysis dimensions
+4. Click"Start analysis"
 ```
 
 
-### Q9: 分析报告可以保存吗？
+### Q9: Can analysis reports be saved?
 
 **A**: 
 
-**可以**，支持多种方式：
+**OK**, Supports multiple methods:
 
-- 📄 **导出PDF**：完整报告，适合打印
-- 📊 **导出Excel**：数据表格，适合进一步分析
-- 💾 **保存到历史**：在线查看历史报告
+- 📄 **Export PDF**: Full report, suitable for printing
+- 📊 **Export Excel**: Data table, suitable for further analysis
+- 💾 **save to history**: View historical reports online
 
 
-### Q10: 如何使用多智能体辩论？
+### Q10: How to use multi-agent debate?
 
 **A**: 
 
-**步骤**：
-1. 选择研究深度（1-5级：快速/基础/标准/深度/全面）
-2. 输入股票代码
-3. 点击"开始分析"
-4. 系统按所选级别执行辩论与风险讨论（轮次不同）
-5. 查看辩论过程与综合结论（研究经理/风险裁决）
+**steps**: 
+1. Select research depth (Level 1-5: Quick/Basic/Standard/Deep/Comprehensive)
+2. Enter stock code
+3. Click"Start analysis"
+4. The system executes debate and risk discussion according to the selected level (different rounds)
+5. View the debate process and comprehensive conclusion (Research Manager/Risk Adjudication)
 
-**辩论轮次与风险讨论说明**：
-- 1级 快速：辩论 1 轮；风险讨论 1 轮
-- 2级 基础：辩论 1 轮；风险讨论 1 轮
-- 3级 标准：辩论 1 轮；风险讨论 2 轮
-- 4级 深度：辩论 2 轮；风险讨论 2 轮
-- 5级 全面：辩论 3 轮；风险讨论 3 轮
+**Debate Rounds and Risk Discussion Instructions**: 
+- 1 Level Quick: 1 round of Debate; 1 round of Risk Discussion
+- 2 Level Basic: 1 round of debate; 1 round of risk discussion
+- 3 Level Standard: 1 round of debate; 2 rounds of risk discussion
+- 4 Level Depth: 2 rounds of debate; 2 rounds of risk discussion
+- 5 Level Full: 3 rounds of debate; 3 rounds of risk discussion
 
-提示：实际耗时与所选级别、模型提供商与工具调用有关，级别越高辩论与风险讨论轮次越多，整体时长会相应增加。
+Tip: The actual time consumption is related to the selected level, model provider and tool call. The higher the level, the more rounds of debate and risk discussion, and the overall time will increase accordingly.
 
-**按级别选择建议**：
-- 1级 快速：日常监控、热点扫描、盘中快评；对延迟敏感的轻量场景
-- 2级 基础：常规单股研究、包含最新数据；小额仓位调整、短线策略
-- 3级 标准（推荐）：重要投资决策、需风控校验；覆盖大多数日常场景
-- 4级 深度：重大事件/财报季/高波动；需要多轮辩论与更稳的结论
-- 5级 全面：高金额或组合级决策；产出完整研究报告与合规记录
+**Select recommendations by level**: 
+- 1 Level Fast: daily monitoring, hotspot scanning, intraday quick reviews; lightweight scenarios that are sensitive to delays
+- 2 Level Basics: regular single stock research, including the latest data; small position adjustments, short-term strategies
+- 3 Level Standard (Recommended): Important investment decisions require risk control verification; covers most daily scenarios
+- 4 Level Depth: major events/earnings season/high volatility; requires multiple rounds of debate and more stable conclusions
+- 5 Level Comprehensive: High dollar or portfolio level decisions; produces complete research reports and compliance records
 
-提示：所有级别均支持“多智能体辩论”，只是辩论与风险讨论的轮次不同；选择更高等级意味着更全面的观点整合与更长的耗时。
+Tip: All levels are supported"multi-agent debate", It's just that the rounds of debate and risk discussion are different; choosing a higher level means a more comprehensive integration of views and longer time.
 
 ---
 
-## 🤖 模型选择
+## 🤖 Model selection
 
-### Q11: 应该选择哪个LLM模型？
+### Q11: Which LLM model should be chosen?
 
 **A**: 
 
-**根据预算选择（聚焦 DeepSeek + Qwen 系列）**：
+**Choose based on budget (Focus DeepSeek + Qwen series)**: 
 
-**预算有限**（<¥100/月）：
+**Limited budget** (<¥100/month):
 ```
-主力：DeepSeek V3.1（高性价比，中文表现好）
-重要分析：Qwen3‑Plus（长文本/中文优化）
-```
-
-**预算适中**（¥100‑500/月）：
-```
-主力：DeepSeek V3.1 + Qwen3‑Plus（分工协作）
-深度分析：Qwen‑Max（管理层多轮辩论/裁决）
+Main force: DeepSeek V3.1 (high cost performance, good Chinese performance)
+Important analysis:Qwen3‑Plus (Long text/Chinese optimization)
 ```
 
-**预算充足**（>¥500/月）：
+**Moderate budget** (¥100‑500/month):
 ```
-分析师：DeepSeek V3.1 或 Qwen3‑Plus（快速/长文档）
-经理层：Qwen‑Max（深度推理与综合裁决）
+Main force:DeepSeek V3.1 + Qwen3‑Plus (division of labor and collaboration)
+In-depth analysis:Qwen‑Max (Multiple rounds of debate/adjudication by management)
 ```
 
-**根据需求选择**：
+**Sufficient budget** (>¥500/month):
+```
+Analyst: DeepSeek V3.1 or Qwen3‑Plus (quick/long document)
+Management:Qwen‑Max (In-depth reasoning and comprehensive ruling)
+```
 
-| 需求 | 推荐模型 |
+**Choose according to your needs**: 
+
+| demand | Recommended model |
 |------|---------|
-| 快速分析 | DeepSeek V3.1 |
-| 深度分析/裁决 | Qwen‑Max |
-| 中文优化 | Qwen3‑Plus |
-| 长文本综述 | Qwen3‑Plus |
-| 极致性价比 | DeepSeek V3.1 |
+| Quick analysis | DeepSeek V3.1 |
+| In-depth analysis/adjudication | Qwen‑Max |
+| Chinese optimization | Qwen3‑Plus |
+| long text review | Qwen3‑Plus |
+| Extremely cost-effective | DeepSeek V3.1 |
 
-### Q12: Qwen‑Max 和 Qwen3‑Plus 差别大吗？
+### Q12: Qwen‑Max and Qwen3‑Plus Is the difference big?
 
 **A**: 
 
-**核心差异**：
+**Core differences**: 
 
-| 维度 | Qwen‑Max | Qwen3‑Plus |
+| Dimensions | Qwen‑Max | Qwen3‑Plus |
 |------|----------|------------|
-| 推理能力 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| 分析深度 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| 上下文/长文档 | 中等 | 较长 |
-| 工具调用稳定性 | ✅ 高 | ✅ 高 |
-| 速度 | ⭐⭐⭐ | ⭐⭐⭐⭐ |
-| 成本 | 💰💰💰💰 | 💰💰 |
-| 适配角色 | 管理层/深度裁决 | 分析师/长文档综述 |
+| reasoning ability | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| Analysis depth | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| Context/Long Document | medium | longer |
+| Tool call stability | ✅ high | ✅ high |
+| speed | ⭐⭐⭐ | ⭐⭐⭐⭐ |
+| cost | 💰💰💰💰 | 💰💰 |
+| Adaptation role | Management/In-Depth Verdict | Analyst/Long Document Review |
 
-**建议**：
-- 分析师单点任务、长文本综述：选 Qwen3‑Plus
-- 管理层综合、深度辩论/裁决：选 Qwen‑Max
-- 若预算敏感：DeepSeek V3.1 作为主力，重要环节切换到 Qwen‑Max
+**Suggestions**: 
+- Analyst single task, long text review: Select Qwen3‑Plus
+- Management comprehensive, in-depth debate/adjudication: Select Qwen‑Max
+- If the budget is sensitive: DeepSeek V3.1 is the main workhorse, and important links are switched to Qwen‑Max
 
-### Q13: DeepSeek V3.1 适合哪些场景？
-
-**A**: 
-
-**DeepSeek V3.1 特点（项目已深度适配）**：
-- 💰 成本极优：适合作为日常分析主力模型
-- 🇨🇳 中文理解好：A股与中文资讯语境把握到位
-- 🔧 Function Calling 稳定：工具链调用、数值计算表现可靠
-- ⚡ 响应快：适合盘中与批量任务
-
-**建议**：
-- 日常与批量分析：首选 DeepSeek V3.1（快速、低成本）
-- 长文本/中文综述：Qwen3‑Plus 更稳、更长上下文
-- 深度辩论/最终裁决：Qwen‑Max（研究经理/风险经理）
-
-### Q14: 如何获取API密钥？
+### Q13: DeepSeek V3.1 What scenarios is it suitable for?
 
 **A**: 
 
-**国内模型（推荐）**：
-- **DeepSeek V3.1**：https://platform.deepseek.com（控制台 → API Keys）
-- **通义千问（DashScope）**：https://dashscope.aliyun.com（控制台 → API Keys）
-- （可选）文心一言：https://cloud.baidu.com；讯飞星火：https://xinghuo.xfyun.cn
+**DeepSeek V3.1 Features (the project has been deeply adapted)**: 
+- 💰 Excellent cost: suitable as the main model for daily analysis
+- 🇨🇳 Good understanding of Chinese: A good understanding of A-shares and Chinese information context
+- 🔧 Function Calling Stable: tool chain calls and numerical calculations perform reliably
+- ⚡ Fast response: suitable for intraday and batch tasks
 
-**国际模型（可选）**：
-- OpenAI：https://platform.openai.com（如需海外网络）
+**Suggestions**: 
+- Daily and batch analysis: DeepSeek V3.1 is preferred (fast and low-cost)
+- Long text/Chinese summary:Qwen3‑Plus More stable and longer context
+- In-depth debate/final verdict:Qwen‑Max (Research Manager/Risk Manager)
 
-**注意**：
-- 🔒 妥善保管API密钥
-- 💰 注意API使用额度
-- ⚠️ 不要分享给他人
+### Q14: How to get API key?
+
+**A**: 
+
+**Domestic model (recommended)**: 
+- **DeepSeek V3.1**: https://platform.deepseek.com (console → API Keys) 
+- **DashScope**: https://dashscope.aliyun.com (console → API Keys) 
+-  (Optional) A few words from Wen Xin:https://cloud.baidu.com; iFlytek Spark:https://xinghuo.xfyun.cn
+
+**International model (optional)**: 
+- OpenAI: https://platform.openai.com (If overseas network is required)
+
+**Note**: 
+- 🔒 Keep API keys safe
+- 💰 Pay attention to API usage quota
+- ⚠️ Don't share with others
 
 ---
 
-## 💡 使用技巧
+## 💡 Tips
 
-### Q15: 如何提高分析质量？
+### Q15: How to improve the quality of analysis?
 
 **A**: 
 
-**5个技巧**：
+**5 tips**: 
 
-1. **选择更适配的模型**
+1. **Choose a more suitable model**
   ```
   Qwen‑Max > Qwen3‑Plus > DeepSeek V3.1
-  （深度裁决 → 长文本综述 → 性价比与速度）
+   (in-depth ruling → long text review → Cost-effectiveness and speed)
   ```
 
-2. **提供更详细的数据**
+2. **Provide more detailed data**
    ```
-   不要只输入股票代码
-   提供财务数据、行业信息等
-   ```
-
-3. **自定义提示词**
-   ```
-   根据分析目的调整提示词
-   明确分析重点和角度
+   Don't just enter a stock symbol
+   Provide financial data, industry information, etc.
    ```
 
-4. **使用多智能体辩论**
+3. **Custom prompt words**
    ```
-   重要决策使用辩论模式
-   听取不同角度的观点
-   ```
-
-5. **验证关键数据**
-   ```
-   AI可能出错
-   关键数据要交叉验证
+   Adjust prompt words according to analysis purpose
+   Clarify the focus and angle of analysis
    ```
 
-### Q16: 如何自定义提示词？（未实现，开发中，后续版本提供）
+4. **Using multi-agent debate**
+   ```
+   Use debate mode for important decisions
+   Listen to different perspectives
+   ```
+
+5. **Verify key data**
+   ```
+   AI something could go wrong
+   Key data need to be cross-validated
+   ```
+
+### Q16: How to customize prompt words? (Not implemented, under development, will be provided in subsequent versions)
 
 **A**: 
 
-**步骤**：
-1. 进入"设置" → "提示词管理"
-2. 选择要修改的智能体
-3. 编辑提示词模板
-4. 保存并测试
+**steps**: 
+1. enter"settings" → "Prompt word management"
+2. Select the agent to modify
+3. Edit Prompt Word Template
+4. Save and test
 
-**示例**：
+**Example**: 
 
-**原提示词**：
+**Original prompt word**: 
 ```
-你是一位股票分析师，请分析{股票}的投资价值。
-```
-
-**自定义提示词**：
-```
-你是一位专注于{行业}的资深分析师，
-拥有10年以上的投资经验。
-
-请从价值投资的角度分析{股票}，
-重点关注：
-1. 估值水平（PE、PB）
-2. 盈利能力（ROE、净利率）
-3. 护城河（竞争优势）
-4. 管理层质量
-
-要求：
-- 使用巴菲特的投资理念
-- 关注长期价值
-- 保守估计
+You are a stock analyst, please analyze{stocks}investment value.
 ```
 
-### Q17: 如何管理股票关注列表？
+**Custom prompt words**: 
+```
+Are you someone who focuses on{Industry}senior analyst,
+Have more than 10 years of investment experience.
+
+Please analyze it from the perspective of value investment{stocks}, 
+Focus on:
+1. Valuation level (PE, PB)
+2. Profitability (ROE, net profit margin)
+3. Moat (competitive advantage)
+4. management quality
+
+Requirements:
+- Use Buffett's investment philosophy
+- Focus on long-term value
+- conservative estimate
+```
+
+### Q17: How to manage a stock watchlist?
 
 **A**: 
 
-**添加到研究列表**：
-1. 分析股票后，点击"添加到自选"
-2. 或在"股票关注列表"页面手动添加
+**Add to study list**: 
+1. After analyzing a stock, click"Add to choice"
+2. or in"Stock Watchlist"Pages added manually
 
-**股票关注列表功能**：
-- 📊 查看股票关注列表列表
-- 📈 批量分析股票关注列表
-- 🔔 设置价格提醒
-- 📉 查看涨跌幅排行
+**Stock watch list function**: 
+- 📊 View a list of stocks to watch
+- 📈 Batch analysis of stock watchlists
+- 🔔 Set price alerts
+- 📉 Check the ranking of gains and losses
 
-**分组管理**：
+**Group management**: 
 ```
-可以创建多个分组：
-- 核心持仓
-- 观察名单
-- 行业板块
-- 潜力股
+Multiple groups can be created:
+- Core positions
+- watch list
+- Industry sector
+- Potential stocks
 ```
 
-### Q18: 如何设置价格提醒？（目前未实现，因为实时数据问题）
+### Q18: How to set up price alerts? (Currently not implemented due to real-time data issues)
 
 **A**: 
 
-**步骤**：
-1. 进入股票详情页
-2. 点击"设置提醒"
-3. 选择提醒类型：
-   - 价格到达
-   - 涨跌幅
-   - 成交量异常
-4. 设置提醒条件
-5. 选择通知方式（邮件/站内信）
+**steps**: 
+1. Enter the stock details page
+2. Click"Set reminder"
+3. Select reminder type:
+   - price arrived
+   - Increase or decrease
+   - Abnormal trading volume
+4. Set reminder conditions
+5. Select notification method (email/site message)
 
-**示例**：
+**Example**: 
 ```
-股票：平安银行（000001）
-提醒类型：价格到达
-条件：>= 14.50元
-通知方式：邮件 + 站内信
+Stock: Ping An Bank (000001)
+Reminder Type: Price Arrival
+Conditions:>= 14.50 Yuan
+Notification method: email + Site message
 ```
 
 ---
 
-## 🔧 问题排查
+## 🔧 Troubleshooting
 
-### Q19: 分析失败怎么办？
-
-**A**: 
-
-**常见原因和解决方法**：
-
-**1. API密钥错误**
-```
-错误信息：Invalid API Key
-解决方法：检查API密钥是否正确
-```
-
-**2. API额度不足**
-```
-错误信息：Insufficient quota
-解决方法：充值API账户
-```
-
-**3. 网络问题**
-```
-错误信息：Network timeout
-解决方法：检查网络连接，重试
-```
-
-**4. 股票代码错误**
-```
-错误信息：Stock not found
-解决方法：检查股票代码是否正确
-```
-
-**5. 数据源问题**
-```
-错误信息：Data source error
-解决方法：等待数据源恢复，或切换数据源
-```
-
-### Q20: 分析结果不准确怎么办？
+### Q19: What should I do if the analysis fails?
 
 **A**: 
 
-**可能原因**：
+**Common causes and solutions**: 
 
-1. **AI幻觉**
+**1. API Key error**
+```
+Error message:Invalid API Key
+Workaround: Check if the API key is correct
+```
+
+**2. API Insufficient quota**
+```
+Error message:Insufficient quota
+Solution: Recharge API account
+```
+
+**3. network problems**
+```
+Error message:Network timeout
+Solution: Check network connection and try again
+```
+
+**4. Stock code error**
+```
+Error message:Stock not found
+Solution: Check if the stock symbol is correct
+```
+
+**5. Data source issues**
+```
+Error message:Data source error
+Solution: Wait for the data source to be restored, or switch the data source
+```
+
+### Q20: What should I do if the analysis results are inaccurate?
+
+**A**: 
+
+**Possible reasons**: 
+
+1. **AI hallucination**
    ```
-   AI编造了不存在的数据
-   解决：验证关键数据
+   AI Made up data that doesn't exist
+   Solution: Verify key data
    ```
 
-2. **数据过时**
+2. **Data is out of date**
    ```
-   使用了旧数据
-   解决：提供最新数据
-   ```
-
-3. **提示词不当**
-   ```
-   提示词不够清晰
-   解决：优化提示词
+   Used old data
+   Solution: Provide the latest data
    ```
 
-4. **模型能力不足**
+3. **Inappropriate prompt word**
    ```
-   使用了较弱的模型
-   解决：切换到 Qwen‑Max 或提升分析深度等级（4/5级）
+   The prompt word is not clear enough
+   Solution: Optimize prompt words
+   ```
+
+4. **Insufficient model capabilities**
+   ```
+   Used a weaker model
+   Solution: switch to Qwen‑Max Or increase the analysis depth level (level 4/5)
    ```
 
 ---
 
-## 💰 费用相关
+## 💰 Cost related
 
-### Q21: 使用TradingAgents-CN需要付费吗？
-
-**A**: 
-
-**软件本身**：
-- ✅ 完全免费
-- ✅ 开源项目
-- ✅ 可自部署
-
-**需要付费的部分**：
-- 💰 LLM API调用费用（按使用量计费）
-- 💰 数据源API费用（部分数据源）
-
-### Q22: LLM API费用大概多少？
+### Q21: Is there any fee to use TradingAgents-CN?
 
 **A**: 
 
-**估算（每月）**：
+**software itself**: 
+- ✅ completely free
+- ✅ Open source projects
+- ✅ Self-deployable
 
-**轻度使用**（每天分析2-3只股票）：
-```
-使用 DeepSeek V3.1：约 ¥5-10/月
-使用 Qwen3‑Plus：约 ¥10-30/月
-使用 Qwen‑Max：约 ¥50-150/月
-```
+**Part that needs to be paid**: 
+- 💰 LLM API Call charges (billed by usage)
+- 💰 Data source API fee (some data sources)
 
-**中度使用**（每天分析5-10只股票）：
-```
-使用 DeepSeek V3.1：约 ¥20-40/月
-使用 Qwen3‑Plus：约 ¥30-80/月
-使用 Qwen‑Max：约 ¥150-400/月
-```
-
-**重度使用**（每天分析20+只股票）：
-```
-使用 DeepSeek V3.1：约 ¥40-80/月
-使用 Qwen3‑Plus：约 ¥80-200/月
-使用 Qwen‑Max：约 ¥400-1200/月
-```
-
-**节省费用技巧**：
-1. 日常/批量：优先 DeepSeek V3.1 或 Qwen3‑Plus
-2. 深度裁决：仅在关键环节使用 Qwen‑Max
-3. 批量任务：降低 `max_tokens` 与分析深度级别
-4. 启用缓存与工具复用，避免重复调用
-
-### Q23: 如何查看API使用情况？
+### Q22: LLM API How much does it cost?
 
 **A**: 
 
-**在TradingAgents-CN中**：
-1. 进入"设置" → "使用统计"
-2. 查看：
-   - 总调用次数
-   - Token使用量
-   - 预估费用
+**Estimate (monthly)**: 
 
-**在API提供商官网**：
-1. 登录API提供商账户
-2. 查看Usage页面
-3. 查看详细账单
+**light use** (Analyze 2-3 stocks every day):
+```
+Using DeepSeek V3.1: approx. ¥5-10/month
+Use Qwen3‑Plus: approx. ¥10-30/month
+Use Qwen‑Max: approx. ¥50-150/month
+```
+
+**Moderate use** (Analyze 5-10 stocks every day):
+```
+Using DeepSeek V3.1: approx. ¥20-40/month
+Use Qwen3‑Plus: approx. ¥30-80/month
+Use Qwen‑Max: approx. ¥150-400/month
+```
+
+**heavy use** (Analyze every day 20+only stocks):
+```
+Using DeepSeek V3.1: approx. ¥40-80/month
+Use Qwen3‑Plus: approx. ¥80-200/month
+Use Qwen‑Max: approx. ¥400-1200/month
+```
+
+**cost saving tips**: 
+1. Daily/Batch: Priority DeepSeek V3.1 or Qwen3‑Plus
+2. Depth Verdict: Use only in critical areas Qwen‑Max
+3. Batch tasks: lowered `max_tokens` and analysis depth level
+4. Enable caching and tool reuse to avoid repeated calls
+
+### Q23: How to check API usage?
+
+**A**: 
+
+**In TradingAgents-CN**: 
+1. enter"settings" → "usage statistics"
+2. Check out:
+   - total calls
+   - Token Usage
+   - Estimated cost
+
+**On the official website of the API provider**: 
+1. Log in to API provider account
+2. View the Usage page
+3. View detailed bill
 
 ---
 
-## 📚 更多资源
+## 📚 More resources
 
-### 相关文档
+### Related documents
 
-- 📖 [快速入门教程](../07-tutorials/getting-started.md)
-- 📖 [提示词工程](../02-prompt-engineering/prompt-basics.md)
-- 📖 [模型选择指南](../03-model-selection/model-comparison.md)
-- 📖 [风险提示](../05-risks-limitations/risk-warnings.md)
+- 📖 [Quick Start Tutorial](../07-tutorials/getting-started.md)
+- 📖 [prompt word project](../02-prompt-engineering/prompt-basics.md)
+- 📖 [Model Selection Guide](../03-model-selection/model-comparison.md)
+- 📖 [Risk warning](../05-risks-limitations/risk-warnings.md)
 
-### 获取帮助
+### Get help
 
 - 💬 GitHub Issues
-- 📧 邮件支持
-- 👥 用户社区
+- 📧 Email support
+- 👥 user community
 
 ---
 
-**还有其他问题？**
+**Have other questions?**
 
-欢迎在GitHub Issues中提问，或查看完整文档。
+Feel free to ask questions in GitHub Issues, or view the full documentation.
 

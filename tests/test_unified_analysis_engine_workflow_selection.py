@@ -59,7 +59,7 @@ def test_resolve_workflow_id_falls_back_when_active_stock_workflow_is_missing(mo
     config = SimpleNamespace(workflow_id="v2_stock_analysis")
 
     def _raise_missing(_workflow_id):
-        raise ValueError("工作流不存在")
+        raise ValueError("Workflow does not exist")
 
     provider = SimpleNamespace(
         get_active_workflow_id=lambda: "legacy-custom-uuid",

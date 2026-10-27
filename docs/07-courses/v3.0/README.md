@@ -1,181 +1,181 @@
-# 高级实战课程 v3.0:从散户到系统交易者
+# Advanced practical courses v3.0:From retail trader to system trader
 
-> **版本**: v3.0 | **更新时间**: 2026-07-31 | **适用平台**: TradingAgents-CN v3.0
+> **version**: v3.0 | **Update time**: 2026-07-31 | **Applicable platforms**: TradingAgents-CN v3.0
 >
-> **重要**:本课程**仅适用于 A 股和 ETF 基金分析**。港股、美股的前端入口已下线(2026-07-31),后端代码暂未清理但用户不可见,本课程不涉及。
+> **important**:this course**Only applicable to A-share and ETF fund analysis**. The front-end entrance to Hong Kong and US stocks has been offline(2026-07-31),The backend code has not been cleaned yet but is not visible to users,Not covered in this course.
 >
-> 本课程是**高级实战课程 v2.x(advanced/)的升级版**,按"炒股全生命周期"视角重新组织,覆盖 v3.0 平台全部新增能力。
-> 老学员迁移指引见 [附录 C](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/appendices/C-from-v2-migration-guide.md)。
+> This course is**Advanced practical courses v2.x(advanced/)upgraded version of**,press"The whole life cycle of stock trading"Perspective reorganization,Covers all new capabilities of the v3.0 platform.
+> See migration guidelines for veteran students [Appendix C](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/appendices/C-from-v2-migration-guide.md). 
 
 ---
 
-## 🎯 课程定位
+## 🎯 Course positioning
 
-**这不是"功能手册",而是"炒股全生命周期视角下,使用 TradingAgents-CN 平台做分析的能力培养"。**
+**this is not"Function manual",Rather"From the perspective of the whole life cycle of stock trading,Cultivation of analytical capabilities using the TradingAgents-CN platform". **
 
-学完本课程,你将能够:
-- 在每个炒股阶段(发现→跟踪→持仓→复盘→扩展)熟练使用平台功能
-- 理解"短线"与"中长线"两种风格的真实差异
-- 平台功能不够用时,自己用 AI 工作流架构师、Agent 工坊、Skill 中心扩展
-- 形成自己的个人交易计划,持续迭代
+Complete this course,you will be able to:
+- At every stage of stock trading(discover→Track→Position→Review→Expand)Proficient in using platform features
+- understand"short term"with"Medium and long term"The real difference between the two styles
+- When the platform functions are not enough,Use AI workflow architect, agent workshop, and skill center extensions yourself
+- Form your own personal trading plan,Continuous iteration
 
-## 🗺️ 课程地图(必看)
+## 🗺️ course map(Must see)
 
-**核心视角**: 一次完整的炒股决策,会经历 5 个阶段。本课程按这 5 个阶段组织:
+**core perspective**: A complete stock trading decision,It goes through 5 stages. This course is organized into these 5 stages:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                                                                 │
-│   1.发现 ──→ 2.跟踪 ──→ 3.持仓 ──→ 4.复盘 ──→ 5.扩展(平台)   │
+│   1.discover ──→ 2.Track ──→ 3.Position ──→ 4.Review ──→ 5.Expand(platform)   │
 │    │           │           │           │            │           │
-│   5 课        4 课        6 课        4 课         3 课         │
-│  22 课时     16 课时     24 课时     16 课时      12 课时       │
+│   5 Lesson 4 Lesson 6 Lesson 4 Lesson 3         │
+│  22 Lesson 16 Lesson 24 Lesson 16 Lesson 12 Lesson       │
 │                                                                 │
-│   + 短线风格专章(3 课) + 中长线风格专章(3 课) + 个人计划(2 课) │
+│   + Special chapter on short-term style(3 class) + Special chapter on medium and long term style(3 class) + personal plan(2 class) │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📚 课程结构(30 课,8 阶段 + 1 导读)
+## 📚 Course structure(30 class,8 stage + 1 Introduction)
 
-### [阶段 0:课程导读](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/README.md#导读)
-- **第 0 课**: 全课程地图与学习路径(必读,5 分钟)
+### [stage 0:Course Introduction](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/README.md#Introduction)
+- **Lesson 0**: Full course map and learning path(Must read,5 minutes)
 
-### [阶段 1:发现(5 课)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/README.md) — 怎么从 6000 只股票里找到值得研究的?
-- 第 1 课: 股票筛选(从 6000 → 500)
-- 第 2 课: 批量分析(从 500 → 50)
-- 第 3 课: 单股研究入门(从 50 → 10)
-- 第 4 课: 单股研究进阶·多情景辩论
-- 第 5 课: 发现阶段的常见错误
+### [stage 1:discover(5 class)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/README.md) — How to find the ones worth researching among 6,000 stocks?
+- Lesson 1: stock screen(from 6000 → 500)
+- Lesson 2: Batch analysis(from 500 → 50)
+- Lesson 3: An Introduction to Single Stock Research(from 50 → 10)
+- Lesson 4: Advanced Single Stock Research·multi-scenario debate
+- Lesson 5: Common mistakes in the discovery phase
 
-### [阶段 2:跟踪(4 课)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-02-track/README.md) — 用 AI 助手持续跟进
-- 第 6 课: AI 助手功能全景
-- 第 7 课: 用 AI 助手做行业研究
-- 第 8 课: AI 助手驱动日常研究闭环
-- 第 9 课: 定时分析与跟踪节奏
+### [stage 2:Track(4 class)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-02-track/README.md) — Follow up with AI assistant
+- Lesson 6: AI Assistant function panorama
+- Lesson 7: Use AI assistant to do industry research
+- Lesson 8: AI Assistant drives daily research closed loop
+- Lesson 9: Timing analysis and tracking rhythm
 
-### [阶段 3:持仓(6 课)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-03-position/README.md) — 买了之后怎么管?
-- 第 10 课: 模拟交易:先练手再真金白银
-- 第 11 课: 持仓研究:AI 帮我监控我的持仓
-- 第 12 课: 加减仓决策:看 AI 研究输出做判断
-- 第 13 课: 风险跟踪:用交易计划设置止盈止损规则
-- 第 14 课: 持仓阶段的常见错误
-- 第 15 课: AI 智能助手在持仓阶段的应用
+### [stage 3:Position(6 class)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-03-position/README.md) — What should I do after buying it??
+- Lesson 10: simulated trading:Practice first and then make real money
+- Lesson 11: Position research:AI Help me monitor my positions
+- Lesson 12: Decision of adding or reducing positions:Make judgments based on AI research output
+- Lesson 13: risk tracking:Set up stop-profit and stop-loss rules with a trading plan
+- Lesson 14: Common mistakes during the position holding phase
+- Lesson 15: AI Application of intelligent assistant in position holding stage
 
-### [阶段 4:复盘(4 课)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-04-review/README.md) — 卖完了怎么回顾?
-- 第 16 课: 操作复盘:这笔交易做对了吗
-- 第 17 课: 案例库沉淀:把经验变成可复用的资产
-- 第 18 课: 复盘结果怎么指导下次交易
-- 第 19 课: 持续优化:基于复盘迭代交易计划
+### [stage 4:Review(4 class)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-04-review/README.md) — How to review after sold out?
+- Lesson 16: Operation review:Was this the right deal?
+- Lesson 17: Case library precipitation:Turn experience into reusable assets
+- Lesson 18: How can the review results guide the next transaction?
+- Lesson 19: Continuous optimization:Iterative trading plan based on review
 
-### [阶段 5:短线风格应用(3 课)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-05-short-term/README.md) — 短线用户专章
-- 第 20 课: 短线研究的平台工具链
-- 第 21 课: 短线研究实战(上)·发现与跟踪
-- 第 22 课: 短线研究实战(下)·跟踪与复盘
+### [stage 5:Short-term style application(3 class)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-05-short-term/README.md) — Special chapter for short-term users
+- Lesson 20: Platform tool chain for short-term research
+- Lesson 21: Short-term research practice(on)·Discover and track
+- Lesson 22: Short-term research practice(down)·Tracking and review
 
-### [阶段 6:中长线风格应用(3 课)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-06-long-term/README.md) — 中长线用户专章
-- 第 23 课: 中长线研究的平台工具链
-- 第 24 课: 中长线实战(上)·价值股估值修复
-- 第 25 课: 中长线实战(下)·成长股业绩跟踪
+### [stage 6:Medium and long-term style applications(3 class)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-06-long-term/README.md) — Special chapter for medium and long-term users
+- Lesson 23: Platform tool chain for medium and long-term research
+- Lesson 24: Mid- to long-term practice(on)·Value Stock Valuation Fix
+- Lesson 25: Mid- to long-term practice(down)·Growth stock performance tracking
 
-### [阶段 7:平台扩展(3 课)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-07-extension/README.md) — 功能不够用,自己造!
-- 第 26 课: AI 工作流架构师:用自然语言生成工作流
-- 第 27 课: Agent 工坊 + Skill 中心:自定义分析师
-- 第 28 课: 实战:以巴菲特工作流为例,端到端造一个
+### [stage 7:Platform extension(3 class)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-07-extension/README.md) — Not enough features,Make it yourself!
+- Lesson 26: AI workflow architect:Generate workflows with natural language
+- Lesson 27: Agent workshop + Skill Center:Custom Analyst
+- Lesson 28: Actual combat:Take Buffett's workflow as an example,Build one end-to-end
 
-### [阶段 8:个人交易计划(2 课)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-08-personal-plan/README.md) — 把方法论变成自己的
-- 第 29 课: 个人交易计划模板
-- 第 30 课: 持续优化与成长
+### [stage 8:Personal trading plan(2 class)](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-08-personal-plan/README.md) — Make the methodology your own
+- Lesson 29: Personal Trading Plan Template
+- Lesson 30: Continuous optimization and growth
 
-### [附录](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/appendices/README.md)
-- 附录 A: v3.0 平台能力速查表
-- 附录 B: 学习路径建议(短线 vs 中长线用户怎么选课)
-- 附录 C: 从 v2.x 课程迁移指引(给老学员)
+### [Appendix](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/appendices/README.md)
+- Appendix A: v3.0 Platform Capabilities Cheat Sheet
+- Appendix B: Learning path suggestions(How to choose courses for short-term vs medium- and long-term users?)
+- Appendix C: Guidelines for migrating courses from v2.x(For veteran students)
 
 ---
 
-## 📊 课时统计
+## 📊 Class statistics
 
-| 阶段 | 课数 | 课时(分钟) | 重要程度 |
+| stage | Number of lessons | Class hours(minutes) | importance |
 |------|------|------------|----------|
-| 0.导读 | 1 | 5 | ⭐⭐⭐ 必读 |
-| 1.发现 | 5 | 100 | ⭐⭐⭐ 核心 |
-| 2.跟踪 | 4 | 80 | ⭐⭐⭐ 核心 |
-| 3.持仓 | 6 | 120 | ⭐⭐⭐ 核心 |
-| 4.复盘 | 4 | 80 | ⭐⭐⭐ 核心 |
-| 5.短线 | 3 | 60 | ⭐⭐ 选读(短线用户) |
-| 6.中长线 | 3 | 60 | ⭐⭐ 选读(中长线用户) |
-| 7.平台扩展 | 3 | 60 | ⭐⭐ 进阶 |
-| 8.个人计划 | 2 | 40 | ⭐⭐ 收尾 |
-| **合计** | **30 课** | **约 600 分钟(10 小时)** | — |
+| 0.Introduction | 1 | 5 | ⭐⭐⭐ Must read |
+| 1.discover | 5 | 100 | ⭐⭐⭐ core |
+| 2.Track | 4 | 80 | ⭐⭐⭐ core |
+| 3.Position | 6 | 120 | ⭐⭐⭐ core |
+| 4.Review | 4 | 80 | ⭐⭐⭐ core |
+| 5.short term | 3 | 60 | ⭐⭐ Optional reading(short-term users) |
+| 6.Medium and long term | 3 | 60 | ⭐⭐ Optional reading(Medium and long-term users) |
+| 7.Platform extension | 3 | 60 | ⭐⭐ Advanced |
+| 8.personal plan | 2 | 40 | ⭐⭐ Finishing |
+| **total** | **30 class** | **about 600 minutes(10 hours)** | — |
 
-## 🛤️ 学习路径建议
+## 🛤️ Learning path suggestions
 
-### 🆕 新学员(没学过 v2.x 课程)
-**完整学完所有 30 课**,预计 10-12 小时。
+### 🆕 new student(Have not studied the v2.x course)
+**Complete all 30 lessons**,Expect 10-12 hours.
 
-### 🎯 短线用户
-**必学** 1→2→3→4→5→6→7→8→9→10→11→12→13→14→15→16→17→18→19→20→21→22
-**跳过** 23→24→25(中长线专章)
-**选学** 26→27→28→29→30(平台扩展 + 个人计划)
-预计 7-8 小时。
+### 🎯 short-term users
+**Must learn** 1→2→3→4→5→6→7→8→9→10→11→12→13→14→15→16→17→18→19→20→21→22
+**skip** 23→24→25(Medium and long-term special chapter)
+**Choose a school** 26→27→28→29→30(Platform extension + personal plan)
+Expect 7-8 hours.
 
-### 📈 中长线用户
-**必学** 1→2→3→4→5→6→7→8→9→10→11→12→13→14→15→16→17→18→19→23→24→25
-**跳过** 20→21→22(短线专章)
-**选学** 26→27→28→29→30
-预计 7-8 小时。
+### 📈 Medium and long-term users
+**Must learn** 1→2→3→4→5→6→7→8→9→10→11→12→13→14→15→16→17→18→19→23→24→25
+**skip** 20→21→22(Short term special chapter)
+**Choose a school** 26→27→28→29→30
+Expect 7-8 hours.
 
-### 👴 老学员(学过 advanced/ v2.x)
-**先读** [附录 C 迁移指引](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/appendices/C-from-v2-migration-guide.md),了解与 v2.x 的差异
-**重点学 v3.0 新增/重写的 9 课**(第 5、6、8、14、15、18、26、27、28)
-**复习** 你之前跳过的部分
-预计 3-4 小时。
+### 👴 Veteran students(learned advanced/ v2.x)
+**Read first** [Appendix C Migration Guidelines](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/appendices/C-from-v2-migration-guide.md),Understand the differences from v2.x
+**Focus on learning the 9 new/rewritten lessons in v3.0**(No. 5, 6, 8, 14, 15, 18, 26, 27,28)
+**review** The part you skipped before
+Expect 3-4 hours.
 
 ---
 
-## 🔄 与 v2.x(advanced/)课程的关系
+## 🔄 with v2.x(advanced/)Curriculum Relationship
 
-| 项目 | v2.x 课程(advanced/) | v3.0 课程(本目录) |
+| Project | v2.x courses(advanced/) | v3.0 courses(this directory) |
 |------|------------------|----------------|
-| 组织方式 | 按"功能模块"(选股/择时/执行/...) | 按"炒股生命周期"(发现/跟踪/持仓/复盘/扩展) |
-| 课时 | 25 课 | 30 课(更细颗粒度) |
-| v3.0 平台能力 | ❌ 完全没提 | ✅ 完整覆盖(AI 助手/京东云/MCP/渠道推送) |
-| 港美股内容 | ⚠️ 含已暂停功能 | ✅ 仅 A 股(已清理) |
-| 平台扩展 | 1 课(Buffett) | 3 课(AI 架构师 + Agent + Skill) |
-| 角色 | **保留作为历史** | **推荐学习** |
+| Organization | press"Function module"(Stock selection/timing/execution/...) | press"Stock trading life cycle"(Discover/track/position/review/expand) |
+| Class hours | 25 class | 30 class(finer granularity) |
+| v3.0 Platform capabilities | ❌ Not mentioned at all | ✅ Complete coverage(AI Assistant/JD Cloud/MCP/Channel Push) |
+| Hong Kong and US stock content | ⚠️ Includes paused functionality | ✅ A shares only(Cleaned) |
+| Platform extension | 1 class(Buffett) | 3 class(AI Architect + Agent + Skill) |
+| role | **keep as history** | **Recommended learning** |
 
-**重要**: v2.x 课程**不会删除**,作为历史参考保留。老学员不必重学全部,可参考迁移指引选择性学习。
-
----
-
-## 💡 课程特色
-
-1. **视角化组织**:不是"功能怎么用",而是"这个阶段怎么用"
-2. **真实场景驱动**:每课都有"实际跑一次"的实操作业
-3. **v3.0 完整覆盖**:AI 助手、京东云、平台扩展等新能力都讲透
-4. **风格专章独立**:短线 vs 中长线用户各自有专章
-5. **平台扩展专章**:教你自己造工作流(巴菲特案例)
+**important**: v2.x courses**will not be deleted**,Retained for historical reference. Veteran students don't have to relearn everything,You can refer to the transfer guide for selective learning.
 
 ---
 
-## 📚 配套资源
+## 💡 Course features
 
-- **用户手册**: [v3.0 完整使用手册](file:///c:/TradingAgentsCN/docs/02-user-guide/user-manual-v3.0.md) | [京东云合作版手册](file:///c:/TradingAgentsCN/docs/02-user-guide/jdyun-user-manual-v3.0.md)
-- **使用问答助手**: 平台右下角"使用问答"浮窗(任何系统使用问题都可问)
-- **AI 对话助手**: 主菜单"智能助手"(任何分析/查报告问题都可问)
-- **用户学习中心**: 侧边栏「学习中心」菜单(在线学习路径)
-
----
-
-## 🚀 立即开始
-
-- **第一次来?** 从 [第 0 课:全课程地图](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/README.md#导读) 开始
-- **急用?** 选你的学习路径(短线/中长线/老学员),跳过选读章节
-- **碰到问题?** 随时点右下角"使用问答"浮窗
+1. **perspective organization**:No"How to use the function",Rather"How to use this stage"
+2. **Real scene driven**:Every lesson has"actually run once"practical operations
+3. **v3.0 Complete coverage**:AI New capabilities such as Assistant, JD Cloud, and platform expansion are all explained thoroughly
+4. **Style chapter independent**:There are separate chapters for short-term vs medium- and long-term users.
+5. **Platform expansion chapter**:Teach you to create your own workflow(Buffett case)
 
 ---
 
-> **最后更新**: 2026-07-31 | **版本**: v3.0
-> **配套文档**: [用户手册 v3.0](file:///c:/TradingAgentsCN/docs/02-user-guide/user-manual-v3.0.md) | [京东云手册 v3.0](file:///c:/TradingAgentsCN/docs/02-user-guide/jdyun-user-manual-v3.0.md)
-> **历史版本**: [v2.x 课程(advanced/)](file:///c:/TradingAgentsCN/docs/07-courses/advanced/README.md)
+## 📚 Supporting resources
+
+- **User Manual**: [v3.0 Complete user manual](file:///c:/TradingAgentsCN/docs/02-user-guide/user-manual-v3.0.md) | [JD Cloud Cooperation Edition Manual](file:///c:/TradingAgentsCN/docs/02-user-guide/jdyun-user-manual-v3.0.md)
+- **Use the Q&A Assistant**: Lower right corner of the platform"Use Q&A"floating window(You can ask any questions about using the system)
+- **AI Conversation Assistant**: Main menu"Smart Assistant"(Any analysis/reporting questions can be asked)
+- **User Learning Center**: Sidebar "Learning Center" menu(Online learning paths)
+
+---
+
+## 🚀 Start now
+
+- **First time here?** from [Lesson 0:Full course map](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/README.md#Introduction) start
+- **urgently needed?** Choose your learning path(Short-term/medium- and long-term/veteran students),Skip optional reading chapter
+- **Encountered a problem?** Click the lower right corner at any time"Use Q&A"floating window
+
+---
+
+> **last updated**: 2026-07-31 | **version**: v3.0
+> **Supporting documents**: [User Manual v3.0](file:///c:/TradingAgentsCN/docs/02-user-guide/user-manual-v3.0.md) | [JD Cloud Manual v3.0](file:///c:/TradingAgentsCN/docs/02-user-guide/jdyun-user-manual-v3.0.md)
+> **Historical version**: [v2.x courses(advanced/)](file:///c:/TradingAgentsCN/docs/07-courses/advanced/README.md)

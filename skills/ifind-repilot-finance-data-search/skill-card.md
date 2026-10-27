@@ -1,5 +1,5 @@
 ## Description: <br>
-使用自然语言查询金融数据，支持A股股票、基金、期货等上市品种，覆盖基本资料、财务数据、日频行情信息、持仓信息及各类分析指标等数据，也支持宏观经济数据。 <br>
+Use natural language to query financial data, support A-share stocks, funds, futures and other listed products, covering basic information, financial data, daily market information, position information and various analysis indicators and other data, and also support macroeconomic data. <br>
 
 This skill is ready for commercial/non-commercial use. <br>
 

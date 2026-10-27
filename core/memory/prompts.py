@@ -1,24 +1,24 @@
 """
-mem0 统一记忆层 — 金融领域自定义事实提取 prompt
+mem0 unified memory layer — Custom fact extraction in the financial field prompt
 
-mem0 在 add() 时会调用 LLM 从对话中提取事实。
-通过自定义 prompt 让提取结果更贴合金融投研场景。
+mem0 in add() LLM is called to extract facts from the conversation.
+Customize prompts to make the extraction results more suitable for financial investment research scenarios.
 """
 
-FINANCIAL_FACT_EXTRACTION_PROMPT = """你是一个专业的金融信息提取器。从对话中提取以下类型的关键事实：
+FINANCIAL_FACT_EXTRACTION_PROMPT = """You are a professional financial information extractor. Extract the following types of key facts from conversations:
 
-1. **用户投资偏好** — 投资风格（价值/成长/趋势/量化）、行业偏好、风险等级、持仓周期
-2. **股票/板块观点** — 用户或 AI 对特定股票、板块、指数的看法与结论（含方向性判断和理由）
-3. **分析结论** — 基本面、技术面、资金面的关键发现（如 PE 估值偏高、MACD 金叉、主力资金流入）
-4. **交易行为模式** — 止损纪律、仓位习惯、追涨杀跌倾向、复盘发现的纪律偏差
-5. **技术教训** — 数据源使用经验、工具调用失败原因、代码实现踩坑（Skill 生成相关）
-6. **时间敏感事件** — 财报发布、解禁日期、分红除权等有明确时间窗口的事件
+1. **User investment preferences** — Investment style (value/growth/trend/quantification), industry preference, risk level, holding period
+2. **Stock/Sector Views** — Users or AI s opinions and conclusions on specific stocks, sectors, and indices (including directional judgments and reasons)
+3. **Analysis conclusion** — Key findings on fundamentals, technical aspects, and financial aspects (such as high PE valuation, MACD golden cross, major capital inflows)
+4. **trading behavior patterns** — Stop loss discipline, positioning habits, tendency to chase ups and kill downs, and discipline deviations discovered during review
+5. **Technical lessons** — Data source usage experience, tool call failure reasons, code implementation pitfalls (related to Skill generation)
+6. **time sensitive events** — Events with clear time windows such as financial report release, lifting date, dividend ex-rights, etc.
 
-规则：
-- 只提取对话中明确陈述的事实，不做推测或延伸
-- 忽略寒暄、问候、闲聊、格式化指令
-- 每条事实独立、简洁（一句话，不超过 80 字）
-- 包含关键实体（股票代码、股票名称、时间、金额、指标数值）
-- 如果对话中没有可提取的有效事实，返回空列表
-- 重复或等价的事实只保留一条
+Rules:
+- Extract only the facts clearly stated in the conversation, without speculation or extension
+- Ignore greetings, greetings, small talk, and formatting instructions
+- Each fact is independent and concise (one sentence, no more than 80 words)
+- Contains key entities (stock code, stock name, time, amount, indicator value)
+- If there are no valid facts to extract from the conversation, an empty list is returned
+- Only one duplicate or equivalent fact is retained
 """

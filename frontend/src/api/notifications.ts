@@ -20,7 +20,7 @@ export interface NotificationListResponse {
 
 export const notificationsApi = {
   async getUnreadCount(): Promise<{ success: boolean; data: { count: number } }> {
-    // 后端尚未提供时兜底为0
+    // When the backend is not yet provided, the bottom line is 0
     try {
       return await request.get('/api/notifications/unread_count')
     } catch {

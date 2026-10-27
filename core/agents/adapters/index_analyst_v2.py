@@ -1,7 +1,7 @@
 """
-大盘分析师 v2.0
+Market Analyst v2.0
 
-基于AnalystAgent基类实现的大盘分析师
+Market analyst implemented based on AnalystAgent base class
 """
 
 import logging
@@ -17,37 +17,37 @@ from core.agents.utils.data_source_mode import resolve_market_data_mode
 
 logger = logging.getLogger(__name__)
 
-# ==================== 缓存配置 ====================
-INDEX_REPORT_CACHE_TTL_HOURS = 1  # 大盘分析报告缓存有效期（小时）
+# ==================== Cache configuration ====================
+INDEX_REPORT_CACHE_TTL_HOURS = 1  # Market analysis report cache validity period (hours)
 
 
 def _get_cache_manager():
-    """获取缓存管理器（延迟加载避免循环导入）"""
+    """Get cache manager (lazy loading to avoid circular imports)"""
     try:
         from tradingagents.dataflows.cache import get_cache
         return get_cache()
     except Exception as e:
-        logger.warning(f"⚠️ 无法获取缓存管理器: {e}")
+        logger.warning(f"⚠️ Unable to get cache manager: {e}")
         return None
 
 
 def _get_cached_index_report(trade_date: str) -> Optional[str]:
     """
-    从缓存获取大盘分析报告
+    Get market analysis report from cache
 
     Args:
-        trade_date: 交易日期
+        trade_date: transaction date
 
     Returns:
-        缓存的报告内容，如果没有命中则返回 None
+        The cached report content, returned if there is no hit None
     """
     cache = _get_cache_manager()
     if not cache:
         return None
 
     try:
-        # 大盘分析不依赖具体股票，使用 "market_v2" 作为 symbol 区分 v1.x
-        # 🔑 确保 max_age_hours 是整数
+        # Market analysis does not rely on specific stocks, using "market_v2" as symbol distinction v1.x
+        # 🔑 Make sure max_age_hours is an integer
         max_age_hours = int(INDEX_REPORT_CACHE_TTL_HOURS) if INDEX_REPORT_CACHE_TTL_HOURS else 1
         
         cache_key = cache.find_cached_analysis_report(
@@ -59,32 +59,32 @@ def _get_cached_index_report(trade_date: str) -> Optional[str]:
         if cache_key:
             report = cache.load_analysis_report(cache_key)
             if report and len(report) > 100:
-                logger.info(f"📦 [大盘分析师v2] 命中缓存: @ {trade_date}")
+                logger.info(f"📦 [Market Analyst v2] hit cache: @ {trade_date}")
                 return report
     except Exception as e:
-        logger.warning(f"⚠️ 读取大盘分析缓存失败: {e}")
+        logger.warning(f"⚠️ Failed to read large disk analysis cache: {e}")
 
     return None
 
 
 def _save_index_report_to_cache(trade_date: str, report: str) -> bool:
     """
-    将大盘分析报告保存到缓存
+    Save market analysis report to cache
 
     Args:
-        trade_date: 交易日期
-        report: 报告内容
+        trade_date: transaction date
+        report: Report content
 
     Returns:
-        是否保存成功
+        Is the save successful?
     """
     cache = _get_cache_manager()
     if not cache:
         return False
 
     try:
-        # 🔍 调试日志：记录缓存参数
-        logger.debug(f"💾 [大盘分析师v2] 准备缓存: trade_date={trade_date}, "
+        # 🔍 Debug log: record cache parameters
+        logger.debug(f"💾 [Market Analyst v2] Prepare cache: trade_date={trade_date}, "
                      f"trade_date_type={type(trade_date).__name__}, report_len={len(report)}")
 
         cache.save_analysis_report(
@@ -93,39 +93,39 @@ def _save_index_report_to_cache(trade_date: str, report: str) -> bool:
             symbol="market_v2",
             trade_date=trade_date
         )
-        logger.info(f"💾 [大盘分析师v2] 报告已缓存: @ {trade_date} ({INDEX_REPORT_CACHE_TTL_HOURS}小时有效)")
+        logger.info(f"💾 [Market Analyst v2] Report cached: @ {trade_date} ({INDEX_REPORT_CACHE_TTL_HOURS}Valid for hours)")
         return True
     except Exception as e:
-        # 🔍 增强错误日志：记录完整堆栈
+        # 🔍 Enhanced error log: record the complete stack
         import traceback
-        logger.warning(f"⚠️ 保存大盘分析缓存失败: {e}\n参数: trade_date={trade_date}, "
-                       f"trade_date_type={type(trade_date).__name__}\n堆栈: {traceback.format_exc()}")
+        logger.warning(f"⚠️ Failed to save disk analysis cache: {e}\n parameters: trade_date={trade_date}, "
+                       f"trade_date_type={type(trade_date).__name__}\n stack: {traceback.format_exc()}")
         return False
 
-# 尝试导入股票工具
+# Try importing stock tools
 try:
     from tradingagents.utils.stock_utils import StockUtils
 except ImportError:
-    logger.warning("无法导入StockUtils，部分功能可能不可用")
+    logger.warning("Unable to import StockUtils, some functions may not be available")
     StockUtils = None
 
 
 @register_agent
 class IndexAnalystV2(AnalystAgent):
     """
-    大盘分析师 v2.0
+    Market Analyst v2.0
     
-    功能：
-    - 分析大盘指数走势
-    - 评估市场整体环境
-    - 分析市场风险和机会
+    Function:
+    - Analyze market index trends
+    - Assess the overall market environment
+    - Analyze market risks and opportunities
     
-    工作流程：
-    1. 调用指数数据工具获取大盘数据
-    2. 使用LLM分析大盘趋势
-    3. 生成大盘分析报告
+    Workflow:
+    1. Call the index data tool to obtain market data
+    2. Use LLM to analyze market trends
+    3. Generate market analysis report
     
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent
 
@@ -138,25 +138,25 @@ class IndexAnalystV2(AnalystAgent):
         })
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="index_analyst_v2",
-        name="大盘分析师 v2.0",
-        description="分析大盘指数走势与市场环境，提炼系统性风险和关键观察信号",
+        name="Market Analyst v2.0",
+        description="Analyze market index trends and market environment, and refine systemic risks and key observation signals",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=["get_market_analysis"],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="index_report", type="string", description="大盘分析报告"),
+            AgentOutput(name="index_report", type="string", description="Market analysis report"),
         ],
         requires_tools=True,
         output_field="index_report",
-        report_label="【大盘分析 v2】",
+        report_label=" [Market analysis v2]",
         workflow_stage="analyst",
         growth_role="extractor",
         growth_outputs=["index_report"],
@@ -165,13 +165,13 @@ class IndexAnalystV2(AnalystAgent):
         growth_source_type="analysis_report",
     )
 
-    # 分析师类型
+    # Analyst type
     analyst_type = "index"
 
-    # 输出字段名
+    # Output field name
     output_field = "index_report"
 
-    # 工具列表（与提示词模板中列出的工具一致，所有数据源模式共用）
+    # Tool list (consistent with the tools listed in the prompt word template, common to all data source modes)
     _TOOL_IDS = [
         "get_china_market_overview",
         "get_index_data",
@@ -201,85 +201,85 @@ class IndexAnalystV2(AnalystAgent):
 
         suffix = """
 
-## QMT 模式约束
-当前分析数据源为 QMT，请遵循以下要求：
-1. 优先调用 get_market_analysis 获取 QMT 行情口径的完整盘面分析数据。
-2. 北向资金、两融余额、涨跌停统计等维度可调用对应工具获取 Tushare 数据作为补充。
-3. 如果缺少官方统计口径，必须明确说明当前结论基于 QMT 行情口径与快照代理指标。
-4. 报告应突出交易盘面视角，不要将 QMT 代理指标表述成 Tushare 官方统计。
+## QMT Schema constraints
+The current analysis data source is QMT, please follow the following requirements:
+1. Prioritize calling get_market_analysis to obtain complete market analysis data of QMT market caliber.
+2. For dimensions such as northbound funds, margin financing balance, and price limit statistics, you can call corresponding tools to obtain Tushare data as a supplement.
+3. If there is no official statistical caliber, it must be clearly stated that the current conclusion is based on QMT market caliber and snapshot proxy indicators.
+4. The report should highlight the trading disk perspective and do not express QMT proxy indicators as Tushare official statistics.
 """
         return f"{prompt}{suffix}"
 
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行大盘分析（带缓存）
+        Perform broad market analysis (with caching)
 
-        大盘分析结果会缓存1小时，避免重复分析。
-        调试模式下跳过缓存，直接生成新报告。
+        The market analysis results will be cached for 1 hour to avoid repeated analysis.
+        Skip caching in debug mode and generate new reports directly.
 
         Args:
-            state: 工作流状态字典
+            state: Workflow status dictionary
 
         Returns:
-            更新后的状态字典，包含 index_report
+            The updated status dictionary contains index_report
         """
         analysis_mode = self._prepare_analysis_mode(state)
 
-        # 提取分析日期
+        # Extract analysis date
         raw_date = (
             state.get("analysis_date") or
             state.get("trade_date") or
             state.get("end_date") or
             datetime.now()
         )
-        # 确保是字符串格式 YYYY-MM-DD
+        # Make sure it is in string format YYYY-MM-DD
         if hasattr(raw_date, 'strftime'):
             analysis_date = raw_date.strftime("%Y-%m-%d")
         else:
-            # 可能是 "2026-01-14 00:00:00" 或 "2026-01-14T00:00:00"
+            # may be "2026-01-14 00:00:00" or "2026-01-14T00:00:00"
             analysis_date = str(raw_date).split()[0].split('T')[0]
 
-        # 🔥 检查是否为调试模式或跳过缓存
+        # 🔥 Check if it is debug mode or skip cache
         is_debug_mode = False
-        skip_cache = state.get("skip_cache", False)  # 🆕 支持显式跳过缓存
+        skip_cache = state.get("skip_cache", False)  # 🆕 Support explicit cache skipping
         context = state.get("context") or state.get("agent_context")
 
-        # 🔍 调试：打印 context 信息
-        logger.info(f"🔍 [大盘分析师v2] state keys: {list(state.keys())}")
-        logger.info(f"🔍 [大盘分析师v2] skip_cache from state: {skip_cache}")
-        logger.info(f"🔍 [大盘分析师v2] context={context}, type={type(context)}")
+        # 🔍 Debugging: print context information
+        logger.info(f"🔍 [Market Analyst v2] state keys: {list(state.keys())}")
+        logger.info(f"🔍 [Market Analyst v2] skip_cache from state: {skip_cache}")
+        logger.info(f"🔍 [Market Analyst v2] context={context}, type={type(context)}")
 
         if context:
             if hasattr(context, 'is_debug_mode'):
                 is_debug_mode = context.is_debug_mode
-                logger.info(f"🔍 [大盘分析师v2] is_debug_mode from context (object): {is_debug_mode}")
+                logger.info(f"🔍 [Market Analyst v2] is_debug_mode from context (object): {is_debug_mode}")
             elif isinstance(context, dict):
                 is_debug_mode = context.get('is_debug_mode', False)
-                logger.info(f"🔍 [大盘分析师v2] is_debug_mode from context (dict): {is_debug_mode}")
+                logger.info(f"🔍 [Market Analyst v2] is_debug_mode from context (dict): {is_debug_mode}")
 
-        # 🔥 防止死循环：检查是否已经生成过报告（调试模式下也检查）
+        # 🔥 Prevent infinite loops: Check whether a report has been generated (also check in debug mode)
         existing_report = state.get("index_report", "")
         if existing_report and len(existing_report) > 100:
-            logger.info(f"🌐 [大盘分析师v2] 已存在报告 ({len(existing_report)} 字符)，跳过重复分析")
+            logger.info(f"🌐 [Market Analyst v2] Report already exists ({len(existing_report)} character), Skip duplicate analysis")
             return {}
 
-        # 📦 检查缓存：调试模式或 skip_cache 时跳过缓存
+        # 📦 Check cache: skip cache in debug mode or skip_cache
         if is_debug_mode or skip_cache:
-            logger.info(f"🔧 [大盘分析师v2] 跳过缓存 (debug={is_debug_mode}, skip_cache={skip_cache})")
+            logger.info(f"🔧 [Market Analyst v2] Skip cache (debug={is_debug_mode}, skip_cache={skip_cache})")
         else:
             cached_report = _get_cached_index_report(analysis_date)
             if cached_report:
-                logger.info(f"🌐 [大盘分析师v2] 使用缓存报告 ({len(cached_report)} 字符)")
+                logger.info(f"🌐 [Market Analyst v2] Use cached reports ({len(cached_report)} character)")
                 return {
                     "index_report": cached_report,
                 }
 
-        logger.info(f"🌐 [大盘分析师v2] 开始分析 @ {analysis_date}, mode={analysis_mode}")
+        logger.info(f"🌐 [Market Analyst v2] Start analysis @ {analysis_date}, mode={analysis_mode}")
 
-        # 调用父类的 execute 方法执行实际分析
+        # Call the execute method of the parent class to perform the actual analysis
         result = super().execute(state)
 
-        # 💾 保存到缓存
+        # 💾 Save to cache
         report = result.get("index_report", "")
         if report and isinstance(report, str) and len(report) > 100:
             _save_index_report_to_cache(analysis_date, report)
@@ -288,111 +288,111 @@ class IndexAnalystV2(AnalystAgent):
 
     def _build_system_prompt(self, market_type: str = None, context=None, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词（参考 fundamentals_analyst_v2 的实现）
+        Build system prompt words (refer to the implementation of fundamentals_analyst_v2)
 
         Args:
-            market_type: 市场类型（A股/港股/美股）（保留以兼容基类）
-            context: AgentContext 对象（用于调试模式）
-            state: 工作流状态（用于提取模板变量）
+            market_type: Market type (A shares/Hong Kong stocks/US stocks) (reserved to be compatible with the base class)
+            context: AgentContext Object (for debug mode)
+            state: Workflow status (used to extract template variables)
 
         Returns:
-            系统提示词
+            System prompt word
         """
-        logger.info("🔍 [IndexAnalystV2] 开始构建系统提示词")
+        logger.info("🔍 [IndexAnalystV2] Start building system prompt words")
         
         if state is None:
             state = {}
         
-        # 从 state 中提取必要的变量（如果系统提示词模板需要）
-        # 注意：虽然系统提示词通常不需要变量，但某些模板可能需要 ticker、current_date 等
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
+        # Extract the necessary variables from state (if required by the system prompt word template)
+        # Note: Although system prompt words usually do not require variables, some templates may require ticker, current_date, etc.
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
         template_variables = {}
         
-        # 如果 state 中有 ticker 和 analysis_date，提取它们（系统提示词模板可能需要）
+        # If there are ticker and analysis_date in state, extract them (the system prompt word template may be required)
         if "ticker" in state:
             template_variables["ticker"] = state["ticker"]
         if "analysis_date" in state or "trade_date" in state:
             analysis_date = state.get("analysis_date") or state.get("trade_date")
             if analysis_date:
-                # 确保日期格式正确
+                # Make sure the date is in the correct format
                 if isinstance(analysis_date, str) and len(analysis_date) > 10:
                     analysis_date = analysis_date.split()[0]
                 template_variables["current_date"] = analysis_date
                 template_variables["analysis_date"] = analysis_date
         
-        # 使用基类的通用方法从模板系统获取提示词（参考 research_manager_v2）
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
+        # Use the base class's general method to obtain prompt words from the template system (refer to research_manager_v2)
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
         prompt = self._get_prompt_from_template(
             agent_type="analysts_v2",
             agent_name="index_analyst_v2",
-            variables=template_variables,  # 传递必要的变量
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=context or state.get("context"),  # 优先使用传入的 context，否则从 state 获取
+            variables=template_variables,  # Pass necessary variables
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=context or state.get("context"),  # Priority is given to using the incoming context, otherwise it is obtained from state
             fallback_prompt=None,
-            prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+            prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
         )
         mode = state.get("_analysis_data_source", "tushare")
         prompt = self._apply_mode_prompt_suffix(prompt, mode, "system")
         
-        logger.info(f"📝 系统提示词长度: {len(prompt)} 字符")
+        logger.info(f"📝 System prompt word length: {len(prompt)} character")
 
         if prompt:
             return prompt
 
-        # 降级：使用默认提示词（包含工具信息）
+        # Downgrade: Use default prompt word (contains tool information)
         mode = state.get("_analysis_data_source", "tushare")
         if mode == "qmt":
-            return f"""您是一位专业的{market_type}大盘分析师。
+            return f"""you are a professional{market_type}Market analyst.
 
-    ## 您的职责
-    基于 QMT 行情口径分析指数趋势、市场扩散、活跃度和风格切换，为交易决策提供盘面级背景判断。
+    ## Your responsibilities
+    Based on QMT market caliber analysis of index trends, market diffusion, activity and style switching, it provides disk-level background judgment for trading decisions.
 
-    ## 可用工具
-    您可以调用以下工具获取真实市场数据：
+    ## Available tools
+    You can call the following tools to obtain real market data:
     {tool_descriptions}
 
-    ## ⚠️ 重要规则
-    1. 必须调用工具，不要臆造北向资金、两融、涨跌停官方统计等 QMT 不提供的数据。
-    2. 结论必须明确标注为“QMT 行情口径”或“快照代理指标”。
-    3. 重点做趋势、扩散、活跃度、大小盘/成长风格切换分析。
+    ## ⚠️ Important rules
+    1. Tools must be called and do not invent data such as northbound funds, margin financing, official statistics on price limits, etc. that QMT does not provide.
+    2. Conclusions must be clearly labeled as QMT Quotation caliber or Snapshot Agent Metrics . 
+    3. Focus on trend, diffusion, activity, large and small cap/growth style switching analysis.
 
-    ## 输出格式
-    请使用中文输出结构化报告，并明确哪些判断基于代理指标。"""
+    ## Output format
+    Please use Chinese to output the structured report and make it clear which judgments are based on proxy indicators."""
 
-        return f"""您是一位专业的{market_type}大盘分析师。
+        return f"""you are a professional{market_type}Market analyst.
 
-## 您的职责
-分析大盘指数走势，评估市场整体环境，为投资决策提供宏观背景分析。
+## Your responsibilities
+Analyze market index trends, assess the overall market environment, and provide macro background analysis for investment decisions.
 
-## 可用工具
-您可以调用以下工具获取实时市场数据：
+## Available tools
+You can call the following tools to get real-time market data:
 {tool_descriptions}
 
-## ⚠️ 重要规则
-1. **必须调用工具**：在分析之前，必须先调用相关工具获取真实数据
-2. **基于数据分析**：所有结论必须基于工具返回的真实数据，不要编造数据
-3. **多维度分析**：尽量调用多个工具，从不同维度分析市场状态
+## ⚠️ Important rules
+1. **Tools must be called**: Before analysis, relevant tools must be called to obtain real data.
+2. **Based on data analysis**: All conclusions must be based on real data returned by the tool, do not make up data
+3. **multidimensional analysis**: Try to use multiple tools to analyze the market status from different dimensions
 
-## 分析要点
-1. 大盘指数走势和趋势（上证、深证、创业板等）
-2. 市场技术面分析（MACD、RSI、KDJ等技术指标）
-3. 资金流向分析（北向资金、两融余额）
-4. 市场情绪和风险偏好（涨跌停统计、市场宽度）
-5. 市场周期判断（牛熊阶段、估值水平）
+## Analysis points
+1. Market index movements and trends (Shanghai Stock Exchange, Shenzhen Stock Exchange, GEM, etc.)
+2. Market technical analysis (MACD, RSI, KDJ and other technical indicators)
+3. Fund flow analysis (northbound funds, balance of financing and financing)
+4. Market sentiment and risk appetite (price limit statistics, market width)
+5. Market cycle judgment (bull and bear phases, valuation levels)
 
-## 输出格式
-请使用中文撰写分析报告，结构清晰、数据准确、结论明确。"""
+## Output format
+Please write the analysis report in Chinese with clear structure, accurate data and clear conclusions."""
 
     def _get_tool_descriptions(self) -> str:
-        """获取工具描述信息"""
+        """Get tool description information"""
         if not self._langchain_tools:
-            return "（无可用工具）"
+            return " (No tools available)"
 
         descriptions = []
         for tool in self._langchain_tools:
             name = getattr(tool, 'name', 'unknown')
-            desc = getattr(tool, 'description', '无描述')
-            # 截取描述的前100字符
+            desc = getattr(tool, 'description', 'No description')
+            # Extract the first 100 characters of the description
             if len(desc) > 100:
                 desc = desc[:100] + "..."
             descriptions.append(f"- **{name}**: {desc}")
@@ -403,45 +403,45 @@ class IndexAnalystV2(AnalystAgent):
         self,
         ticker: str,
         analysis_date: str,
-        tool_data: Dict[str, Any],  # 保留参数以兼容基类，但工具数据会通过 ToolMessage 传递
+        tool_data: Dict[str, Any],  # Parameters are retained for compatibility with base classes, but tool data is passed via ToolMessage
         state: Dict[str, Any]
     ) -> str:
         """
-        构建用户提示词（参考 research_manager_v2 和 fundamentals_analyst_v2 的实现）
+        Construct user prompt words (refer to the implementation of research_manager_v2 and fundamentals_analyst_v2)
 
         Args:
-            ticker: 股票代码
-            analysis_date: 分析日期
-            tool_data: 工具返回的数据（保留以兼容基类，但工具数据会通过 ToolMessage 传递）
-            state: 工作流状态（用于提取模板变量）
+            ticker: Stock code
+            analysis_date: Analysis date
+            tool_data: Data returned by the tool (retained for compatibility with base class, but tool data is passed via ToolMessage)
+            state: Workflow status (used to extract template variables)
 
         Returns:
-            用户提示词
+            User prompt words
         """
-        logger.info("🔍 [IndexAnalystV2] 开始构建用户提示词")
-        logger.info(f"📊 股票代码: {ticker}")
-        logger.info(f"📅 分析日期: {analysis_date}")
+        logger.info("🔍 [IndexAnalystV2] Start building user prompt words")
+        logger.info(f"📊 Stock code: {ticker}")
+        logger.info(f"📅 Analysis date: {analysis_date}")
         
         if state is None:
             state = {}
         
-        # 获取公司名称和市场信息
+        # Get company name and market information
         company_name = self._get_company_name(ticker, state)
-        market_type = state.get("market_type", "A股")
+        market_type = state.get("market_type", "A shares")
         market_name = market_type
-        currency_name = "人民币"
+        currency_name = "RMB"
         currency_symbol = "¥"
         
         if StockUtils and ticker:
             try:
                 market_info = StockUtils.get_market_info(ticker)
                 market_name = market_info.get('market_name', market_type)
-                currency_name = market_info.get('currency_name', "人民币")
+                currency_name = market_info.get('currency_name', "RMB")
                 currency_symbol = market_info.get('currency_symbol', "¥")
             except Exception as e:
-                logger.warning(f"获取市场信息失败: {e}")
+                logger.warning(f"Failed to obtain market information: {e}")
         
-        # 准备模板变量（参考 research_manager_v2 的实现）
+        # Prepare template variables (refer to the implementation of research_manager_v2)
         template_variables = {
             "ticker": ticker,
             "company_name": company_name,
@@ -449,110 +449,110 @@ class IndexAnalystV2(AnalystAgent):
             "market_type": market_type,
             "analysis_date": analysis_date,
             "current_date": analysis_date,
-            "start_date": "",  # 可以计算1年前的日期
+            "start_date": "",  # Can calculate the date 1 year ago
             "currency_name": currency_name,
             "currency_symbol": currency_symbol,
             "tool_names": ", ".join([t.name for t in self._langchain_tools]) if self._langchain_tools else ""
         }
         
-        # 使用基类的通用方法获取用户提示词（参考 research_manager_v2）
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
-        # 🔑 注意：工具返回的数据会通过 ToolMessage 传递，不需要在 user_prompt 中检查
+        # Use the general method of the base class to obtain user prompt words (refer to research_manager_v2)
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
+        # 🔑 Note: The data returned by the tool will be passed through ToolMessage and does not need to be checked in user_prompt
         prompt = self._get_prompt_from_template(
             agent_type="analysts_v2",
             agent_name="index_analyst_v2",
             variables=template_variables,
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=state.get("context"),  # 从 state 中获取 context
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=state.get("context"),  # Get from state context
             fallback_prompt=None,
-            prompt_type="user"  # 🔑 明确指定获取用户提示词
+            prompt_type="user"  # 🔑 Explicitly specify the user prompt word to obtain
         )
         mode = state.get("_analysis_data_source", "tushare")
         prompt = self._apply_mode_prompt_suffix(prompt, mode, "user")
         
         if prompt:
-            logger.info(f"✅ 从模板系统获取大盘分析师 v2.0 用户提示词 (长度: {len(prompt)})")
-            logger.info(f"📝 用户提示词前500字符:\n{prompt[:500]}...")
+            logger.info(f"✅ Obtain market analyst v2.0 user prompt words from the template system (length: {len(prompt)})")
+            logger.info(f"📝 The first 500 characters of the user prompt word:\n{prompt[:500]}...")
             return prompt
         
-        # 降级：使用默认提示词（不再检查 tool_data，因为工具数据会通过 ToolMessage 传递）
-        logger.warning("⚠️ 未从模板系统获取到用户提示词，使用默认提示词")
-        # 🔑 关键：在默认提示词中明确告诉LLM要使用什么参数调用工具
+        # Downgrade: Use default prompt word (tool_data is no longer checked as tool data is passed via ToolMessage)
+        logger.warning("⚠️ The user prompt word is not obtained from the template system, and the default prompt word is used.")
+        # 🔑 Key: clearly tell LLM in the default prompt word what parameters to use to call the tool
         if mode == "qmt":
-            return f"""## 分析任务
+            return f"""## Analysis tasks
 
-    请对 **{ticker}（{company_name}）** 所在的{market_type}市场进行宏观环境研究与盘面结构分析。
+    please **{ticker} ({company_name}) ** where{market_type}The market conducts macro-environmental research and market structure analysis.
 
-    **分析日期**: {analysis_date}
-    **数据源模式**: QMT
+    **Analysis date**: {analysis_date}
+    **data source schema**: QMT
 
-    **重要提示**：调用工具时，必须使用以下参数：
+    **Important tips**: When calling the tool, the following parameters must be used:
     - get_market_analysis: trade_date='{analysis_date}', lookback_days=60
 
-    **必须使用上述参数值**，不要编造北向资金、两融、涨跌停官方统计或指数估值数据。
+    **The above parameter values must be used**, Do not make up official statistics on northbound funds, secondary financing, price limits or index valuation data.
 
-    请基于 QMT 指数走势、快照代理指标、风格切换和市场扩散度输出中文研究报告，至少包含：
-    1. 宏观环境研究
-    2. 指数与市场结构现状
-    3. 主要支撑因素、主要风险与资料缺口
-    4. 后续观察事项
+    Please output a Chinese research report based on QMT index trends, snapshot proxy indicators, style switching and market diffusion, containing at least:
+    1. Macro environment research
+    2. Index and market structure status quo
+    3. Main supporting factors, main risks and data gaps
+    4. Follow-up observations
 
-    禁止输出热点追逐表述、对冲安排、仓位配置、买卖建议、目标价、价格区间或任何执行性指令。"""
+    It is prohibited to output hot spot chasing statements, hedging arrangements, position allocations, buying and selling recommendations, target prices, price ranges or any execution instructions."""
 
-        return f"""## 分析任务
+        return f"""## Analysis tasks
 
-    请对 **{ticker}（{company_name}）** 所在的{market_type}市场进行宏观环境研究与市场结构分析。
+    please **{ticker} ({company_name}) ** where{market_type}The market conducts macro-environment research and market structure analysis.
 
-    **分析日期**: {analysis_date}
+    **Analysis date**: {analysis_date}
 
-    **重要提示**：调用工具时，必须使用以下参数：
+    **Important tips**: When calling the tool, the following parameters must be used:
     - get_market_analysis: trade_date='{analysis_date}', lookback_days=60
 
-    **必须使用上述参数值**，不要使用其他日期。
+    **The above parameter values must be used**, Do not use other dates.
 
-    请调用工具获取市场数据，然后基于真实结果输出中文研究报告，至少包含：
-    1. 宏观环境研究
-    2. 指数与市场结构现状
-    3. 主要支撑因素、主要风险与资料缺口
-    4. 后续观察事项
+    Please call the tool to obtain market data, and then output a Chinese research report based on real results, which at least contains:
+    1. Macro environment research
+    2. Index and market structure status quo
+    3. Main supporting factors, main risks and data gaps
+    4. Follow-up observations
 
-    禁止输出热点追逐表述、对冲安排、仓位配置、买卖建议、目标价、价格区间或任何执行性指令。"""
+    It is prohibited to output hot spot chasing statements, hedging arrangements, position allocations, buying and selling recommendations, target prices, price ranges or any execution instructions."""
 
     def _get_tool_suggestions(self, market_type: str) -> str:
-        """根据市场类型生成工具调用建议"""
+        """Generate tool call suggestions based on market type"""
         if not self.tool_names:
-            return "（无可用工具，请基于已有知识分析）"
+            return " (No tools available, please analyze based on existing knowledge)"
 
-        suggestions = ["请根据分析需要调用以下工具："]
+        suggestions = ["Please call the following tools according to your analysis needs:"]
 
-        # 根据工具名称给出调用建议
+        # Give calling suggestions based on tool name
         tool_hints = {
-            "get_market_analysis": "按当前数据源自动获取完整大盘分析数据",
+            "get_market_analysis": "Automatically obtain complete market analysis data based on current data source",
         }
 
         for tool_name in self.tool_names:
-            hint = tool_hints.get(tool_name, "获取相关数据")
+            hint = tool_hints.get(tool_name, "Get relevant data")
             suggestions.append(f"- `{tool_name}`: {hint}")
 
         return "\n".join(suggestions)
 
     def _get_company_name(self, ticker: str, state: Dict[str, Any]) -> str:
-        """获取公司名称"""
-        # 优先从state获取
+        """Get company name"""
+        # Get it from state first
         if "company_name" in state:
             return state["company_name"]
         
-        # 使用StockUtils获取
+        # Get using StockUtils
         if StockUtils:
             try:
                 market_info = StockUtils.get_market_info(ticker)
                 if market_info.get('is_china'):
                     from tradingagents.dataflows.interface import get_china_stock_info_unified
                     stock_info = get_china_stock_info_unified(ticker)
-                    if "股票名称:" in stock_info:
-                        return stock_info.split("股票名称:")[1].split("\n")[0].strip()
+                    if "Stock name:" in stock_info:
+                        return stock_info.split("Stock name:")[1].split("\n")[0].strip()
             except Exception as e:
-                logger.debug(f"获取公司名称失败: {e}")
+                logger.debug(f"Failed to get company name: {e}")
         
-        return f"股票{ticker}"
+        return f"stocks{ticker}"
 

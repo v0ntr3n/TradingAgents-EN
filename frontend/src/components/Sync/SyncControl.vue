@@ -4,14 +4,14 @@
       <template #header>
         <div class="card-header">
           <el-icon class="header-icon"><Refresh /></el-icon>
-          <span class="header-title">基本信息同步</span>
+          <span class="header-title">Basic information synchronization</span>
         </div>
       </template>
 
       <div class="control-content">
-        <!-- 当前同步状态 -->
+        <!-- Current sync status -->
         <div class="sync-status-section">
-          <h4 class="section-title">当前状态</h4>
+          <h4 class="section-title">Current status</h4>
           <div class="status-display">
             <el-tag 
               :type="getStatusType(syncStatus?.status)"
@@ -27,40 +27,40 @@
                 :stroke-width="8"
               />
               <div class="progress-text">
-                正在同步中... {{ syncStatus.total > 0 ? `${syncStatus.updated + syncStatus.inserted}/${syncStatus.total}` : '' }}
+                Synchronizing... {{ syncStatus.total > 0 ? `${syncStatus.updated + syncStatus.inserted}/${syncStatus.total}` : '' }}
               </div>
             </div>
             <div v-else-if="syncStatus?.status === 'queued'" class="progress-text">
-              同步任务已提交，后台正在启动，请稍候自动开始。
+              The synchronization task has been submitted and the background is starting. Please wait and start automatically.
             </div>
           </div>
         </div>
 
-        <!-- 同步统计 -->
+        <!-- Synchronization statistics -->
         <div v-if="syncStatus && syncStatus.status !== 'never_run'" class="sync-stats-section">
-          <h4 class="section-title">同步统计</h4>
+          <h4 class="section-title">Synchronization statistics</h4>
           <div class="stats-grid">
             <div class="stat-item">
               <div class="stat-value">{{ syncStatus.total }}</div>
-              <div class="stat-label">总数</div>
+              <div class="stat-label">total</div>
             </div>
             <div class="stat-item">
               <div class="stat-value success">{{ syncStatus.inserted }}</div>
-              <div class="stat-label">新增</div>
+              <div class="stat-label">New</div>
             </div>
             <div class="stat-item">
               <div class="stat-value primary">{{ syncStatus.updated }}</div>
-              <div class="stat-label">更新</div>
+              <div class="stat-label">update</div>
             </div>
             <div class="stat-item">
               <div class="stat-value danger">{{ syncStatus.errors }}</div>
-              <div class="stat-label">错误</div>
+              <div class="stat-label">Error</div>
             </div>
           </div>
           
-          <!-- 使用的数据源 -->
+          <!-- Data source used -->
           <div v-if="syncStatus.data_sources_used?.length" class="sources-used">
-            <div class="sources-label">使用的数据源:</div>
+            <div class="sources-label">Data source used:</div>
             <div class="sources-tags">
               <el-tag
                 v-for="source in syncStatus.data_sources_used"
@@ -73,25 +73,25 @@
             </div>
           </div>
 
-          <!-- 最后同步时间 -->
+          <!-- Last sync time -->
           <div v-if="syncStatus.finished_at" class="sync-time">
-            <div class="time-label">完成时间:</div>
+            <div class="time-label">completion time:</div>
             <div class="time-value">{{ formatTime(syncStatus.finished_at) }}</div>
           </div>
         </div>
 
-        <!-- 同步控制 -->
+        <!-- Synchronous control -->
         <div class="sync-controls-section">
-          <h4 class="section-title">同步操作</h4>
+          <h4 class="section-title">Synchronous operation</h4>
           
-          <!-- 数据源选择 -->
+          <!-- Data source selection -->
           <div class="source-selection">
             <el-form :model="syncForm" label-width="120px" size="default">
-              <el-form-item label="优先数据源:">
+              <el-form-item label="Prioritize data sources:">
                 <el-select
                   v-model="syncForm.preferred_sources"
                   multiple
-                  placeholder="选择优先使用的数据源（可选）"
+                  placeholder="Choose a preferred data source (optional)"
                   style="width: 100%"
                   clearable
                 >
@@ -104,26 +104,26 @@
                   >
                     <span>{{ source.name.toUpperCase() }}</span>
                     <span style="float: right; color: var(--el-text-color-secondary);">
-                      优先级: {{ source.priority }}
+                      priority: {{ source.priority }}
                     </span>
                   </el-option>
                 </el-select>
               </el-form-item>
               
-              <el-form-item label="强制同步:">
+              <el-form-item label="Force synchronization:">
                 <el-switch
                   v-model="syncForm.force"
-                  active-text="是"
-                  inactive-text="否"
+                  active-text="Yes"
+                  inactive-text="No"
                 />
                 <div class="form-help">
-                  强制同步将忽略正在运行的同步任务
+                  Force sync will ignore running sync tasks
                 </div>
               </el-form-item>
             </el-form>
           </div>
 
-          <!-- 操作按钮 -->
+          <!-- Action button -->
           <div class="action-buttons">
             <el-button
               type="primary"
@@ -142,7 +142,7 @@
               @click="refreshStatus"
             >
               <el-icon><RefreshRight /></el-icon>
-              刷新状态
+              refresh status
             </el-button>
             
             <el-button
@@ -152,10 +152,10 @@
               @click="clearCache"
             >
               <el-icon><Delete /></el-icon>
-              清空缓存
+              Clear cache
             </el-button>
 
-            <!-- 临时测试按钮 -->
+            <!-- Temporary test button -->
 
 
             <el-button
@@ -164,12 +164,12 @@
               :loading="syncing"
               @click="forceSync"
             >
-              🔄 强制重新同步
+              🔄 force resync
             </el-button>
           </div>
         </div>
 
-        <!-- 错误信息 -->
+        <!-- error message -->
         <div v-if="syncStatus?.message && syncStatus.status === 'failed'" class="error-section">
           <el-alert
             :title="syncStatus.message"
@@ -213,7 +213,7 @@ const emit = defineEmits<{
   syncCompleted: [status: string]
 }>()
 
-// 响应式数据
+// Responsive data
 const syncing = ref(false)
 const refreshing = ref(false)
 const clearingCache = ref(false)
@@ -221,7 +221,7 @@ const syncStatus = ref<SyncStatus | null>(null)
 const availableSources = ref<DataSourceStatus[]>([])
 const refreshTimer = ref<NodeJS.Timeout | null>(null)
 
-// 表单数据
+// form data
 const syncForm = reactive({
   preferred_sources: [] as string[],
   force: false
@@ -229,7 +229,7 @@ const syncForm = reactive({
 
 const isSyncInProgress = (status?: string) => ['queued', 'running'].includes(status || '')
 
-// 获取同步状态
+// Get sync status
 const fetchSyncStatus = async () => {
   try {
     const response = await getSyncStatus()
@@ -237,32 +237,32 @@ const fetchSyncStatus = async () => {
       syncStatus.value = response.data
     }
   } catch (err: any) {
-    console.error('获取同步状态失败:', err)
+    console.error('Failed to get sync status:', err)
   }
 }
 
-// 京东云版只展示 Tushare 和 AKShare
+// JD Cloud version only displays Tushare and AKShare
 const JDYUN_ALLOWED_SOURCES = new Set(['tushare', 'akshare'])
 const isJdyunAllowedSource = (name: string) => JDYUN_ALLOWED_SOURCES.has(name?.toLowerCase())
 
-// 获取数据源状态
+// Get data source status
 const fetchDataSources = async () => {
   try {
     const response = await getDataSourcesStatus()
     if (response.success) {
-      // 过滤掉 local 数据源（本地数据源不参与同步操作）
-      // 京东云版只展示 Tushare 和 AKShare
+      // Filter out local data sources (local data sources do not participate in synchronization operations)
+      // JD Cloud version only displays Tushare and AKShare
       availableSources.value = response.data
         .filter(source => source.name !== 'local')
         .filter(source => !isJdyunMode() || isJdyunAllowedSource(source.name))
-        .sort((a, b) => b.priority - a.priority) // 倒序：优先级高的在前
+        .sort((a, b) => b.priority - a.priority) // Reverse order: highest priority first
     }
   } catch (err: any) {
-    console.error('获取数据源状态失败:', err)
+    console.error('Failed to get data source status:', err)
   }
 }
 
-// 开始同步
+// Start syncing
 const startSync = async () => {
   try {
     syncing.value = true
@@ -277,55 +277,55 @@ const startSync = async () => {
     const response = await runStockBasicsSync(params)
     if (response.success) {
       const responseStatus = response.data.status
-      console.log('🚀 同步任务启动成功，当前状态:', responseStatus)
+      console.log('🚀 The synchronization task started successfully, current status:', responseStatus)
 
       syncStatus.value = response.data
 
       if (responseStatus === 'queued') {
-        ElMessage.success(response.data.message || '同步任务已提交，后台正在启动，请稍候')
+        ElMessage.success(response.data.message || 'The synchronization task has been submitted and the background is starting, please wait.')
         startStatusPolling()
-        console.log('⏳ 同步任务已提交到后台，开始轮询状态')
+        console.log('⏳ The synchronization task has been submitted to the background and polling status has started.')
       } else if (responseStatus === 'running') {
-        ElMessage.success('同步任务已启动')
-        // 开始轮询状态
+        ElMessage.success('Synchronization task started')
+        // Start polling status
         startStatusPolling()
-        console.log('🔄 状态轮询已启动，间隔:', props.refreshInterval, 'ms')
+        console.log('🔄 Status polling started, interval:', props.refreshInterval, 'ms')
       } else if (responseStatus === 'success' || responseStatus === 'success_with_errors' || responseStatus === 'failed') {
-        // 同步已经完成，直接显示结果
-        ElMessage.success('同步任务已完成')
-        console.log('✅ 同步已完成，直接显示通知')
+        // Synchronization has been completed and the results are displayed directly.
+        ElMessage.success('Synchronization task completed')
+        console.log('✅ Synchronization is completed, notification will be displayed directly')
         showSyncCompletionNotification(responseStatus)
       } else {
-        ElMessage.info(response.data.message || `同步状态：${getStatusText(responseStatus)}`)
+        ElMessage.info(response.data.message || `Sync status:${getStatusText(responseStatus)}`)
       }
     } else {
-      ElMessage.error(`同步启动失败: ${response.message}`)
+      ElMessage.error(`Sync start failed: ${response.message}`)
     }
   } catch (err: any) {
-    console.error('启动同步失败:', err)
-    ElMessage.error(`同步启动失败: ${err.message}`)
+    console.error('Failed to start sync:', err)
+    ElMessage.error(`Sync start failed: ${err.message}`)
   } finally {
     syncing.value = false
   }
 }
 
-// 刷新状态
+// refresh status
 const refreshStatus = async () => {
   refreshing.value = true
   await fetchSyncStatus()
   refreshing.value = false
-  ElMessage.success('状态已刷新')
+  ElMessage.success('Status has been refreshed')
 }
 
-// 清空缓存
+// Clear cache
 const clearCache = async () => {
   try {
     await ElMessageBox.confirm(
-      '确定要清空同步缓存吗？这将删除所有缓存的数据。',
-      '确认清空缓存',
+      'Are you sure you want to clear the sync cache? This will delete all cached data.',
+      'Confirm to clear cache',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
@@ -333,21 +333,21 @@ const clearCache = async () => {
     clearingCache.value = true
     const response = await clearSyncCache()
     if (response.success) {
-      ElMessage.success('缓存已清空')
+      ElMessage.success('cache cleared')
     } else {
-      ElMessage.error(`清空缓存失败: ${response.message}`)
+      ElMessage.error(`Failed to clear cache: ${response.message}`)
     }
   } catch (err: any) {
     if (err !== 'cancel') {
-      console.error('清空缓存失败:', err)
-      ElMessage.error(`清空缓存失败: ${err.message}`)
+      console.error('Failed to clear cache:', err)
+      ElMessage.error(`Failed to clear cache: ${err.message}`)
     }
   } finally {
     clearingCache.value = false
   }
 }
 
-// 开始状态轮询
+// Start status polling
 const startStatusPolling = () => {
   if (refreshTimer.value) {
     clearInterval(refreshTimer.value)
@@ -356,46 +356,46 @@ const startStatusPolling = () => {
   if (props.autoRefresh) {
     let previousStatus = syncStatus.value?.status
     let pollCount = 0
-    const maxPolls = 60 // 最多轮询60次（5分钟）
+    const maxPolls = 60 // Poll up to 60 times (5 minutes)
 
-    console.log('🔄 开始状态轮询，初始状态:', previousStatus)
+    console.log('🔄 Start status polling, initial status:', previousStatus)
 
     refreshTimer.value = setInterval(async () => {
       pollCount++
       await fetchSyncStatus()
 
       const currentStatus = syncStatus.value?.status
-      console.log(`🔍 轮询 #${pollCount}: ${previousStatus} -> ${currentStatus}`)
+      console.log(`🔍 polling #${pollCount}: ${previousStatus} -> ${currentStatus}`)
 
-      // 检查状态变化，提供用户反馈
+      // Check status changes and provide user feedback
       if (['queued', 'running'].includes(previousStatus || '') && currentStatus && !['queued', 'running'].includes(currentStatus)) {
-        // 同步完成，显示结果通知
-        console.log('🎉 检测到同步完成，状态从', previousStatus, '变为', currentStatus)
+        // Synchronization is completed and result notification is displayed.
+        console.log('🎉 Synchronization completion detected, status changed from', previousStatus, 'become', currentStatus)
         showSyncCompletionNotification(currentStatus)
         stopStatusPolling()
         return
       }
 
-      // 更新前一个状态
+      // Update previous status
       previousStatus = currentStatus
 
-      // 如果同步完成但没有状态变化检测到，也停止轮询
+      // Also stops polling if sync completes but no status change detected
       if (currentStatus && !['queued', 'running'].includes(currentStatus)) {
-        console.log('🛑 检测到非运行状态，停止轮询:', currentStatus)
+        console.log('🛑 Non-running status detected, stop polling:', currentStatus)
         stopStatusPolling()
         return
       }
 
-      // 防止无限轮询
+      // Prevent infinite polling
       if (pollCount >= maxPolls) {
-        console.log('⏰ 轮询次数达到上限，停止轮询')
+        console.log('⏰ The number of polling reaches the upper limit, stop polling')
         stopStatusPolling()
       }
     }, props.refreshInterval)
   }
 }
 
-// 停止状态轮询
+// Stop status polling
 const stopStatusPolling = () => {
   if (refreshTimer.value) {
     clearInterval(refreshTimer.value)
@@ -403,13 +403,13 @@ const stopStatusPolling = () => {
   }
 }
 
-// 显示同步完成通知
+// Show sync completion notification
 const showSyncCompletionNotification = (status: string) => {
-  console.log('📢 显示同步完成通知，状态:', status)
+  console.log('📢 Display synchronization completion notification, status:', status)
 
   const stats = syncStatus.value
   if (!stats) {
-    console.warn('⚠️ 无法获取同步统计信息')
+    console.warn('⚠️ Unable to get sync statistics')
     return
   }
 
@@ -418,27 +418,27 @@ const showSyncCompletionNotification = (status: string) => {
   const updated = stats.updated || 0
   const errors = stats.errors || 0
 
-  console.log('📊 同步统计:', { total, inserted, updated, errors })
+  console.log('📊 Synchronization statistics:', { total, inserted, updated, errors })
 
   let title = ''
   let message = ''
   let type: 'success' | 'warning' | 'error' = 'success'
 
   if (status === 'success') {
-    title = '🎉 同步完成！'
-    message = `处理了 ${total} 条记录，新增 ${inserted} 条，更新 ${updated} 条`
+    title = '🎉 Synchronization completed!'
+    message = `Processed ${total} records, new ${inserted} article, update ${updated} Article`
     type = 'success'
   } else if (status === 'success_with_errors') {
-    title = '⚠️ 同步完成但有错误！'
-    message = `处理了 ${total} 条记录，新增 ${inserted} 条，更新 ${updated} 条，错误 ${errors} 条`
+    title = '⚠️ Sync completed with errors!'
+    message = `Processed ${total} records, new ${inserted} article, update ${updated} bar, error ${errors} Article`
     type = 'warning'
   } else if (status === 'failed') {
-    title = '❌ 同步失败！'
-    message = stats.message || '未知错误'
+    title = '❌ Synchronization failed!'
+    message = stats.message || 'unknown error'
     type = 'error'
   }
 
-  // 显示页面通知
+  // Show page notifications
   ElMessage({
     message: `${title} ${message}`,
     type,
@@ -446,14 +446,14 @@ const showSyncCompletionNotification = (status: string) => {
     showClose: true
   })
 
-  // 发射同步完成事件，通知父组件
+  // Emit a synchronization completion event to notify the parent component
   emit('syncCompleted', status)
 
-  // 如果有使用的数据源信息，也显示出来
+  // If there is data source information used, it will also be displayed.
   if (stats.data_sources_used && stats.data_sources_used.length > 0) {
     setTimeout(() => {
       ElMessage({
-        message: `📡 使用的数据源: ${stats.data_sources_used.join(', ')}`,
+        message: `📡 Data source used: ${stats.data_sources_used.join(', ')}`,
         type: 'info',
         duration: 6000,
         showClose: true
@@ -462,7 +462,7 @@ const showSyncCompletionNotification = (status: string) => {
   }
 }
 
-// 获取状态类型
+// Get status type
 const getStatusType = (status?: string): 'success' | 'warning' | 'info' | 'danger' => {
   const typeMap: Record<string, 'success' | 'warning' | 'info' | 'danger'> = {
     idle: 'info',
@@ -476,46 +476,46 @@ const getStatusType = (status?: string): 'success' | 'warning' | 'info' | 'dange
   return typeMap[status || 'never_run'] || 'info'
 }
 
-// 获取状态文本
+// Get status text
 const getStatusText = (status?: string) => {
   const textMap: Record<string, string> = {
-    idle: '空闲',
-    queued: '后台启动中',
-    running: '运行中',
-    success: '成功',
-    success_with_errors: '部分成功',
-    failed: '失败',
-    never_run: '未运行'
+    idle: 'free',
+    queued: 'Starting in the background',
+    running: 'Running',
+    success: 'success',
+    success_with_errors: 'Partially successful',
+    failed: 'failed',
+    never_run: 'Not running'
   }
-  return textMap[status || 'never_run'] || '未知'
+  return textMap[status || 'never_run'] || 'unknown'
 }
 
-// 获取进度百分比
+// Get progress percentage
 const getProgress = () => {
   if (!syncStatus.value || syncStatus.value.total === 0) return 0
   return Math.round(((syncStatus.value.inserted + syncStatus.value.updated) / syncStatus.value.total) * 100)
 }
 
-// 获取同步按钮文本
+// Get sync button text
 const getSyncButtonText = () => {
-  if (syncing.value) return '启动中...'
+  if (syncing.value) return 'Starting...'
 
   const status = syncStatus.value?.status
   if (status === 'queued') {
-    return '后台启动中...'
+    return 'Starting in the background...'
   }
   if (status === 'running') {
     const progress = getProgress()
     if (progress > 0) {
-      return `同步中 ${progress}%`
+      return `Synchronizing ${progress}%`
     }
-    return '同步中...'
+    return 'Synchronizing...'
   }
 
-  return '开始同步'
+  return 'Start syncing'
 }
 
-// 格式化时间
+// Format time
 const formatTime = (isoString: string) => {
   try {
     const date = new Date(isoString)
@@ -534,39 +534,39 @@ const formatTime = (isoString: string) => {
 
 
 
-// 强制重新同步
+// force resync
 const forceSync = async () => {
-  console.log('🔄 强制重新同步')
+  console.log('🔄 force resync')
 
-  // 先清空当前状态
+  // Clear the current status first
   syncStatus.value = null
 
-  // 设置强制同步标志
+  // Set forced synchronization flag
   const originalForce = syncForm.force
   syncForm.force = true
 
   try {
     await startSync()
   } finally {
-    // 恢复原始设置
+    // Restore original settings
     syncForm.force = originalForce
   }
 }
 
-// 组件挂载
+// Component mounting
 onMounted(async () => {
   await Promise.all([
     fetchSyncStatus(),
     fetchDataSources()
   ])
   
-  // 如果正在同步，开始轮询
+  // If synchronizing, start polling
   if (isSyncInProgress(syncStatus.value?.status)) {
     startStatusPolling()
   }
 })
 
-// 组件卸载
+// Component uninstallation
 onUnmounted(() => {
   stopStatusPolling()
 })

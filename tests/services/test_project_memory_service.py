@@ -93,16 +93,16 @@ async def test_project_memory_service_upserts_and_lists_by_priority():
 
     await svc.upsert_item(
         memory_key="assistant-output",
-        title="回答要先给结论",
-        content="先给结论，再给证据和风险。",
+        title="The answer must first give a conclusion",
+        content="Give the conclusion first, then the evidence and risks.",
         category="analysis_output_constraint",
         priority=20,
         updated_by="user-1",
     )
     await svc.upsert_item(
         memory_key="risk-disclaimer",
-        title="避免投资建议口吻",
-        content="禁止把分析表达成直接买卖指令。",
+        title="Avoid investment advice tone",
+        content="Expressing analysis into direct buying and selling orders is prohibited.",
         category="project_rule",
         priority=10,
         updated_by="user-1",
@@ -120,26 +120,26 @@ async def test_project_memory_service_builds_grouped_prompt_block():
 
     await svc.upsert_item(
         memory_key="assistant-output",
-        title="回答要先给结论",
-        content="先给结论，再给证据和风险。",
+        title="The answer must first give a conclusion",
+        content="Give the conclusion first, then the evidence and risks.",
         category="analysis_output_constraint",
         priority=20,
     )
     await svc.upsert_item(
         memory_key="risk-disclaimer",
-        title="避免投资建议口吻",
-        content="禁止把分析表达成直接买卖指令。",
+        title="Avoid investment advice tone",
+        content="Expressing analysis into direct buying and selling orders is prohibited.",
         category="project_rule",
         priority=10,
     )
 
     block = await svc.build_prompt_block(max_items=6, max_chars=500)
 
-    assert "【项目长期记忆】" in block
-    assert "- 项目规则" in block
-    assert "- 输出约束" in block
-    assert "避免投资建议口吻：禁止把分析表达成直接买卖指令。" in block
-    assert "回答要先给结论：先给结论，再给证据和风险。" in block
+    assert " [Project long-term memory]" in block
+    assert "- Project rules" in block
+    assert "- Output constraints" in block
+    assert "Avoid the tone of investment advice: It is forbidden to express analysis as direct buying and selling orders." in block
+    assert "The answer should give the conclusion first: give the conclusion first, and then give the evidence and risks." in block
 
 
 @pytest.mark.asyncio

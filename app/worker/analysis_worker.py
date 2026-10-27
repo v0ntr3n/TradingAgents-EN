@@ -1,6 +1,6 @@
 """
-分析任务Worker进程
-消费队列中的分析任务，调用TradingAgents进行股票分析
+Analyze task worker process
+Consume analysis tasks in the queue and call TradingAgents for stock analysis
 """
 
 import asyncio
@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -31,17 +31,17 @@ logger = logging.getLogger(__name__)
 
 
 async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) -> Any:
-    """JIT 数据同步：在分析前主动拉取最新行情，并保存到 MongoDB。
+    """JIT Data synchronization: Actively pull the latest market data before analysis and save it to MongoDB.
 
-    该函数是模块级的独立函数，可被 AnalysisWorker 和 ThreadWorker 共同调用，
-    避免代码重复，确保两种 Worker 路径都能触发 JIT 同步。
+    This function is an independent function at the module level and can be called jointly by AnalysisWorker and ThreadWorker.
+    Avoid code duplication and ensure that both worker paths can trigger JIT synchronization.
 
-    只有当所有 API 数据源均失败（网络异常/返回空数据）时才返回 is_valid=False，
-    即使数据陈旧，只要有任何数据源成功，就允许分析继续（附带警告）。
+    Only returned if all API data sources failed (network exception/returned empty data) is_valid=False, 
+    Even if the data is stale, analysis is allowed to continue (with warnings) as long as any data source succeeds.
 
     Args:
-        stock_code: 股票代码（如 "600519"）
-        parameters_dict: 任务参数字典（需包含 market_type 等字段）
+        stock_code: Stock code (e.g. "600519") 
+        parameters_dict: Task parameter dictionary (need to include fields such as market_type)
 
     Returns:
         DataValidationResult
@@ -53,26 +53,26 @@ async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) 
     if not stock_code:
         return DataValidationResult(
             is_valid=False,
-            message="任务参数中缺少股票代码",
+            message="Stock symbol missing in task parameters",
             missing_data=["symbol"],
-            details={"error": "股票代码缺失"}
+            details={"error": "Stock code missing"}
         )
 
-    # 从参数中提取市场类型
+    # Extract market type from parameter
     market_type = parameters_dict.get("market_type", "cn")
     market_type_map = {
-        "A股": "cn", "港股": "hk", "美股": "us",
+        "A shares": "cn", "Hong Kong stocks": "hk", "US stocks": "us",
         "cn": "cn", "hk": "hk", "us": "us"
     }
     market_type = market_type_map.get(market_type, "cn")
 
-    # ETF/FUND 使用独立的数据链路，不应套用个股行情 JIT 硬校验
+    # ETF/FUND Use an independent data link and should not apply JIT hard verification of individual stock quotes
     sec_type = StockUtils.identify_security_type(stock_code)
     if parameters_dict.get("market_type") == "ETF" or sec_type == SecurityType.FUND:
-        logger.info(f"ℹ️ {stock_code} 识别为 ETF/FUND，跳过股票行情 JIT 校验，使用 ETF 专用数据链路")
+        logger.info(f"ℹ️ {stock_code} Identified as ETF/FUND, skips JIT verification of stock quotes, and uses ETF dedicated data link")
         return DataValidationResult(
             is_valid=True,
-            message="ETF/FUND 证券，跳过股票行情 JIT 校验，使用 ETF 专用数据链路",
+            message="ETF/FUND Securities, skip stock quote JIT verification, use ETF dedicated data link",
             missing_data=[],
             details={
                 "symbol": stock_code,
@@ -83,33 +83,33 @@ async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) 
             }
         )
 
-    # 目前只对 A 股做主动拉取（HK/US 可后续扩展）
+    # Currently we only actively pull A-shares (HK/US can be expanded later)
     if market_type != "cn":
-        logger.info(f"ℹ️ 市场类型为 {market_type}，跳过主动数据拉取，使用现有数据")
+        logger.info(f"ℹ️ The market type is {market_type}, Skip active data pull, use existing data")
         return DataValidationResult(
             is_valid=True,
-            message=f"非A股市场（{market_type}），跳过主动数据拉取",
-            missing_data=[],  # 跳过检查，无缺失
+            message=f"Non-A-share market ({market_type}) , Skip active data pull",
+            missing_data=[],  # Skip checking, nothing missing
             details={"symbol": stock_code, "market_type": market_type, "skipped": True}
         )
 
-    # 获取最近 60 个自然日的日线行情（足够覆盖最新交易日）
+    # Get the daily market prices for the last 60 calendar days (enough to cover the latest trading day)
     end_date = datetime.now().strftime('%Y-%m-%d')
     start_date = (datetime.now() - timedelta(days=60)).strftime('%Y-%m-%d')
 
-    # 按优先级获取启用的数据源列表（从数据库配置读取）
-    # 注意：调用方（_trigger_jit_sync_in_thread）会在新线程中初始化独立的异步 MongoDB 连接
+    # Get list of enabled data sources by priority (read from database configuration)
+    # Note: The caller (_trigger_jit_sync_in_thread) will initialize a separate asynchronous MongoDB connection in a new thread
     from app.core.data_source_priority import get_enabled_data_sources_async
     all_sources = await get_enabled_data_sources_async("a_shares")
 
-    # 只保留真正的 API 数据源（排除本地缓存类）
+    # Keep only real API data sources (excluding local cache classes)
     api_sources = [s for s in all_sources if s not in ("local", "mongodb", "local_file")]
     if not api_sources:
-        api_sources = ["tushare", "akshare", "baostock"]  # 默认兜底顺序
+        api_sources = ["tushare", "akshare", "baostock"]  # Default order
 
-    logger.info(f"📡 数据准备：将按优先级依次尝试数据源 {api_sources}，获取 {stock_code} 最新行情 ({start_date} → {end_date})")
+    logger.info(f"📡 Data preparation: Data sources will be tried in order of priority {api_sources}, get {stock_code} Latest Quotes ({start_date} → {end_date})")
 
-    # 数据源名称 → provider 获取函数的映射
+    # Data source name → provider Get the mapping of the function
     def _get_provider(source_name: str):
         if source_name == "tushare":
             from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
@@ -125,21 +125,21 @@ async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) 
     from app.services.historical_data_service import HistoricalDataService
     from app.core.database import get_mongo_db
 
-    # 获取真实最后交易日（来自 Redis 缓存的交易日历服务）
-    # 若 Redis 不可用则回退到当天
+    # Get the real last trading day (from Redis cached trading calendar service)
+    # If Redis is unavailable, fall back to the current day
     last_trade_date: Optional[str] = None
     try:
         from app.services.trading_calendar_service import get_trading_calendar_service
         last_trade_date = await get_trading_calendar_service().get_last_trade_date()
-        logger.info(f"📅 [JIT] 最近交易日（来自交易日历缓存）: {last_trade_date}")
+        logger.info(f"📅 [JIT] Last trading day (from trading calendar cache): {last_trade_date}")
     except Exception as _cal_err:
-        logger.warning(f"⚠️ [JIT] 无法获取交易日历，将使用宽松校验（回退3工作日规则）: {_cal_err}")
+        logger.warning(f"⚠️ [JIT] Unable to obtain transaction calendar, relaxed verification will be used (fallback to 3 working day rule): {_cal_err}")
 
     def _is_data_fresh(df: "pd.DataFrame") -> tuple:
-        """检查 DataFrame 的最新 trade_date 是否已覆盖最近交易日。
+        """Checks whether the DataFrame s latest trade_date covers the most recent trading day.
         Returns: (is_fresh: bool, latest_date_str: str)
-        - 若能取到 last_trade_date（Redis 缓存）：精确对比，数据 >= 最近交易日才算新鲜
-        - 否则回退到「最多容忍3个自然工作日落后」的宽松规则
+        - If last_trade_date (Redis cache) can be obtained: accurate comparison, data >= Only the most recent trading day is considered fresh
+        - Otherwise, it will fall back to the relaxed rule of tolerating up to 3 natural working days behind 
         """
         try:
             date_col = None
@@ -148,7 +148,7 @@ async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) 
                     date_col = col
                     break
             if date_col is None:
-                return True, "unknown"  # 找不到日期列，放行
+                return True, "unknown"  # Date column not found, let go
 
             latest_raw = df[date_col].max()
             if pd.isna(latest_raw):
@@ -157,18 +157,18 @@ async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) 
             latest_dt = pd.to_datetime(str(latest_raw)).date()
             latest_str = latest_dt.strftime('%Y-%m-%d')
 
-            # 精确判断：数据是否已覆盖最近交易日
+            # Accurate judgment: whether the data has covered the most recent trading day
             if last_trade_date:
                 from datetime import date as date_type
                 last_td = pd.to_datetime(last_trade_date).date()
                 is_fresh = latest_dt >= last_td
                 if not is_fresh:
                     logger.debug(
-                        f"[JIT] 数据陈旧判断（精确）：数据最新日={latest_str}, 最近交易日={last_trade_date}"
+                        f"[JIT] Data obsolescence judgment (accurate): latest date of data={latest_str}, Last trading day={last_trade_date}"
                     )
                 return is_fresh, latest_str
 
-            # 回退：简单自然工作日计数（不考虑节假日）
+            # Fallback: Simple natural working day count (does not take into account holidays)
             MAX_STALE_DAYS = 3
             today = datetime.now().date()
             missed = 0
@@ -180,9 +180,9 @@ async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) 
             return missed <= MAX_STALE_DAYS, latest_str
 
         except Exception:
-            return True, "unknown"  # 检查失败时放行，不影响主流程
+            return True, "unknown"  # Release when the check fails and does not affect the main process
 
-    # 记录每个数据源的结果，以便全部陈旧时选最新的
+    # Record the results of each data source so that when all are stale, the latest one can be selected
     best_result: dict = {}   # {"source": ..., "saved_count": ..., "latest_date": ...}
     last_error: str = ""
 
@@ -190,7 +190,7 @@ async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) 
         try:
             provider = _get_provider(source_name)
             if provider is None:
-                logger.warning(f"⚠️ 数据源 {source_name} 不可用（未找到提供器），跳过")
+                logger.warning(f"⚠️ data source {source_name} Not available (provider not found), skipped")
                 continue
 
             hist_data = await provider.get_historical_data(stock_code, start_date, end_date, "daily")
@@ -198,7 +198,7 @@ async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) 
             if hist_data is not None and not hist_data.empty:
                 is_fresh, latest_date_str = _is_data_fresh(hist_data)
 
-                # 保存到 MongoDB（无论新鲜与否，先持久化，避免数据丢失）
+                # Save to MongoDB (no matter whether it is fresh or not, persist it first to avoid data loss)
                 db = get_mongo_db()
                 hist_service = HistoricalDataService()
                 hist_service.db = db
@@ -215,78 +215,78 @@ async def jit_sync_stock_data(stock_code: str, parameters_dict: Dict[str, Any]) 
 
                 if is_fresh:
                     logger.info(
-                        f"✅ 数据准备完成：{stock_code} 已从 {source_name} 同步 {saved_count} 条最新日线行情"
-                        f"（最新日期: {latest_date_str}）"
+                        f"✅ Data preparation is complete:{stock_code} Already from {source_name} sync {saved_count} Latest daily quotes"
+                        f" (latest date: {latest_date_str}) "
                     )
                     return DataValidationResult(
                         is_valid=True,
-                        message=f"数据准备成功，已从 {source_name} 同步 {saved_count} 条最新行情（最新日期: {latest_date_str}）",
-                        missing_data=[],  # 数据完整，无缺失
+                        message=f"Data preparation was successful and has been obtained from {source_name} sync {saved_count} Latest quotes (latest date: {latest_date_str}) ",
+                        missing_data=[],  # The data is complete and no missing items
                         details={"symbol": stock_code, "fetched_records": saved_count, "source": source_name, "latest_date": latest_date_str}
                     )
                 else:
                     logger.warning(
-                        f"⚠️ 数据准备：{source_name} 返回的数据陈旧（最新日期: {latest_date_str}），"
-                        f"已保存但继续尝试下一数据源"
+                        f"⚠️ Data preparation:{source_name} The returned data is stale (latest date: {latest_date_str}) , "
+                        f"Saved but continue trying next data source"
                     )
-                    # 记录最佳候选（以最新日期为准）
+                    # Record the best candidate (as of latest date)
                     if not best_result or latest_date_str > best_result.get("latest_date", ""):
                         best_result = {
                             "source": source_name,
                             "saved_count": saved_count,
                             "latest_date": latest_date_str
                         }
-                    last_error = f"{source_name} 数据陈旧（最新: {latest_date_str}）"
+                    last_error = f"{source_name} Data is stale (latest: {latest_date_str}) "
             else:
-                last_error = f"{source_name} 返回空数据"
-                logger.warning(f"⚠️ 数据准备：{source_name} 未返回 {stock_code} 的行情数据，尝试下一数据源")
+                last_error = f"{source_name} Return empty data"
+                logger.warning(f"⚠️ Data preparation:{source_name} Not returned {stock_code} For market data, try the next data source")
 
         except Exception as e:
-            last_error = f"{source_name} 异常：{e}"
-            logger.warning(f"⚠️ 数据准备：{source_name} 获取 {stock_code} 失败（{e}），尝试下一数据源")
+            last_error = f"{source_name} Exception:{e}"
+            logger.warning(f"⚠️ Data preparation:{source_name} get {stock_code} failed ({e}) , Try next data source")
 
-    # 所有数据源都已尝试。如果至少有一个源返回了（陈旧）数据，放行分析但记录警告
+    # All data sources have been tried. If at least one source returns (stale) data, pass the analysis but log a warning
     if best_result:
         logger.warning(
-            f"⚠️ 数据准备：所有数据源均返回陈旧数据，使用最新可用数据"
-            f"（来源: {best_result['source']}，最新日期: {best_result['latest_date']}）"
+            f"⚠️ Data preparation: All data sources return stale data, use the latest available data"
+            f" (Source: {best_result['source']}, latest date: {best_result['latest_date']}) "
         )
         return DataValidationResult(
             is_valid=True,
             message=(
-                f"数据准备完成（数据可能陈旧）：最新可用数据来自 {best_result['source']}，"
-                f"最新日期 {best_result['latest_date']}，已超过 {MAX_STALE_DAYS} 个工作日"
+                f"Data preparation complete (data may be stale): latest available data from {best_result['source']}, "
+                f"latest date {best_result['latest_date']}, has exceeded {MAX_STALE_DAYS} working days"
             ),
-            missing_data=[],  # 有数据，只是可能陈旧
+            missing_data=[],  # There is data, but it may be out of date
             details={"symbol": stock_code, "best_source": best_result["source"],
                      "latest_date": best_result["latest_date"], "data_stale": True}
         )
 
-    # 所有数据源均失败
-    logger.error(f"❌ 数据准备失败：所有数据源 {api_sources} 均无法获取 {stock_code} 的行情数据，最后错误：{last_error}")
+    # All data sources failed
+    logger.error(f"❌ Data preparation failed: all data sources {api_sources} None can be obtained {stock_code} The market data, the final error:{last_error}")
     return DataValidationResult(
         is_valid=False,
         message=(
-            f"所有数据源（{'、'.join(api_sources)}）均未能返回 {stock_code} 的行情数据，"
-            f"无法进行分析。请检查网络连接或数据源配置。最后错误：{last_error}"
+            f"All data sources ({', '.join(api_sources)}) None returned {stock_code} market data,"
+            f"Unable to perform analysis. Please check the network connection or data source configuration. Final error:{last_error}"
         ),
         missing_data=["historical_quotes"],
         details={"symbol": stock_code, "tried_sources": api_sources, "last_error": last_error}
     )
 
 
-# 🔥 导入状态更新函数（用于退出日志）
+# 🔥 Import status update function (for exit log)
 def _update_worker_state(**kwargs):
-    """更新 Worker 状态（安全调用，不会失败）"""
+    """Update Worker state (safe call, will not fail)"""
     try:
         from app.worker.__main__ import update_worker_state
         update_worker_state(**kwargs)
     except Exception:
-        pass  # 忽略导入或调用错误
+        pass  # Ignore import or call errors
 
 
 class AnalysisWorker:
-    """分析任务Worker类"""
+    """Analysis task Worker class"""
 
     def __init__(self, worker_id: Optional[str] = None):
         self.worker_id = worker_id or f"worker-{uuid.uuid4().hex[:8]}"
@@ -294,90 +294,90 @@ class AnalysisWorker:
         self.running = False
         self.current_task = None
         
-        # 🔥 并发控制：使用 Semaphore 限制同时执行的任务数量
-        self.max_concurrent_tasks = 3  # 默认并发数，会在 start() 中从配置读取
-        self.semaphore = None  # 在 start() 中初始化
-        self.running_tasks = set()  # 跟踪正在运行的任务
+        # 🔥 Concurrency control: Use Semaphore to limit the number of tasks executed simultaneously
+        self.max_concurrent_tasks = 3  # The default number of concurrency will be in start() Read from configuration in
+        self.semaphore = None  # in start() Medium initialization
+        self.running_tasks = set()  # Track running tasks
 
-        # 配置参数（可由系统设置覆盖）
+        # Configuration parameters (can be overridden by system settings)
         self.heartbeat_interval = int(getattr(settings, 'WORKER_HEARTBEAT_INTERVAL', 30))
         self.max_retries = int(getattr(settings, 'QUEUE_MAX_RETRIES', 3))
-        self.poll_interval = float(getattr(settings, 'QUEUE_POLL_INTERVAL_SECONDS', 1))  # 队列轮询间隔（秒）
+        self.poll_interval = float(getattr(settings, 'QUEUE_POLL_INTERVAL_SECONDS', 1))  # Queue polling interval (seconds)
         self.cleanup_interval = float(getattr(settings, 'QUEUE_CLEANUP_INTERVAL_SECONDS', 60))
 
-        # 关闭标志（防止重复打印）
+        # Close flag (to prevent repeated printing)
         self._shutdown_initiated = False
 
-        # 注册信号处理器
+        # Register signal handler
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
 
     def _signal_handler(self, signum, frame):
-        """信号处理器，优雅关闭"""
+        """Signal processor, graceful shutdown"""
         if self._shutdown_initiated:
-            # 已经开始关闭，强制退出
-            logger.warning("⚠️ 强制退出Worker...")
+            # Has started to shut down, force quit
+            logger.warning("⚠️ force quit Worker...")
             sys.exit(1)
 
-        logger.info(f"收到信号 {signum}，准备关闭Worker...")
+        logger.info(f"signal received {signum}, ready to close Worker...")
         self._shutdown_initiated = True
         self.running = False
 
-        # 取消所有正在运行的任务
+        # Cancel all running tasks
         for task in self.running_tasks:
             if not task.done():
                 task.cancel()
 
     async def start(self):
-        """启动Worker"""
+        """start Worker"""
         try:
-            logger.info(f"🚀 启动分析Worker: {self.worker_id}")
+            logger.info(f"🚀 Start analysis Worker: {self.worker_id}")
 
-            # 初始化数据库连接（Redis 生命周期已由 database 层统一管理）
+            # Initialize database connection (Redis life cycle has been managed by the database layer)
             await init_database()
             
-            # 🔥 配置桥接：将统一配置写入环境变量，供 TradingAgents 核心库使用
-            # 这必须在其他初始化之前执行，因为后续的 LLM、数据源等都需要从环境变量读取配置
+            # 🔥 Configuration bridging: Write unified configuration into environment variables for use by TradingAgents core library
+            # This must be performed before other initialization, because subsequent LLM, data sources, etc. will need to read configuration from environment variables
             try:
                 from app.core.config_bridge import bridge_config_to_env
                 bridge_config_to_env()
-                logger.info("✅ 配置桥接完成")
+                logger.info("✅ Configuring the bridge is complete")
             except Exception as e:
-                logger.warning(f"⚠️ 配置桥接失败: {e}")
-                logger.warning("⚠️ TradingAgents 将使用 .env 文件中的配置")
+                logger.warning(f"⚠️ Failed to configure bridge: {e}")
+                logger.warning("⚠️ TradingAgents Will use the configuration in the .env file")
             
-            # 🔥 初始化 Agent 注册表（导入 adapters 模块会触发自动注册）
+            # 🔥 Initialize the Agent registry (importing the adapters module will trigger automatic registration)
             try:
-                logger.info("🔄 开始加载 Agent 适配器模块...")
-                import core.agents.adapters  # 这会触发所有 Agent 的自动注册
+                logger.info("🔄 Start loading the Agent adapter module...")
+                import core.agents.adapters  # This will trigger automatic registration of all Agents
                 from core.agents.registry import get_registry
                 registry = get_registry()
                 agent_count = len(registry.list_all())
-                logger.info(f"✅ Agent 注册表已初始化，共 {agent_count} 个 Agent")
+                logger.info(f"✅ Agent The registry has been initialized, total {agent_count} a Agent")
             except Exception as e:
-                logger.error(f"❌ Agent 注册表初始化失败: {e}")
+                logger.error(f"❌ Agent Registry initialization failed: {e}")
                 import traceback
                 logger.error(traceback.format_exc())
-                # 不阻止 Worker 启动，但会记录错误
+                # Does not prevent workers from starting, but logs errors
             
-            # 🔥 初始化工具注册表（必须在执行任务前初始化，确保工具可用）
+            # 🔥 Initialize the tool registry (must be initialized before executing the task to ensure that the tool is available)
             try:
-                # 1. 显式导入工具实现模块，触发 @register_tool 装饰器
-                logger.info("🔄 开始加载工具实现模块...")
+                # 1. Explicitly import the tool implementation module to trigger @register_tool Decorator
+                logger.info("🔄 Start loading tool implementation module...")
                 try:
-                    # 导入工具实现模块的 __init__.py，这会触发所有工具的自动注册
+                    # Import the __init__.py of the tool implementation module, which will trigger automatic registration of all tools
                     import core.tools.implementations
-                    logger.info("✅ 工具实现模块已导入")
+                    logger.info("✅ Tool implementation module has been imported")
                 except Exception as e:
-                    logger.warning(f"⚠️ 导入工具实现模块失败: {e}")
+                    logger.warning(f"⚠️ Import tool implementation module failed: {e}")
                 
-                # 2. 创建 ToolRegistry 实例（会自动加载所有工具模块）
+                # 2. Create a ToolRegistry instance (all tool modules will be loaded automatically)
                 from core.tools.registry import ToolRegistry
                 registry = ToolRegistry()
                 tool_count = len(registry.list_all())
-                logger.info(f"✅ 工具注册表已初始化，共 {tool_count} 个工具")
+                logger.info(f"✅ The tool registry has been initialized with a total of {tool_count} tools")
                 
-                # 3. 验证关键工具是否已加载
+                # 3. Verify that key tools are loaded
                 critical_tools = [
                     "get_stock_market_data_unified",
                     "get_stock_fundamentals_unified",
@@ -396,38 +396,38 @@ class AnalysisWorker:
                     has_metadata = registry.has_tool(tool_id)
                     has_function = registry.get_function(tool_id) is not None
                     if not has_metadata:
-                        missing_tools.append(f"{tool_id} (无元数据)")
+                        missing_tools.append(f"{tool_id} (No metadata)")
                     elif not has_function:
-                        missing_tools.append(f"{tool_id} (无函数实现)")
+                        missing_tools.append(f"{tool_id} (No function implementation)")
                 
                 if missing_tools:
-                    logger.warning(f"⚠️ 以下关键工具未正确加载: {missing_tools}")
-                    # 尝试手动加载这些工具
+                    logger.warning(f"⚠️ The following key tools are not loading correctly: {missing_tools}")
+                    # Try loading these tools manually
                     from core.tools.loader import get_tool_loader
                     loader = get_tool_loader()
                     for tool_info in missing_tools:
-                        tool_id = tool_info.split(" ")[0]  # 提取工具ID
-                        logger.info(f"🔄 尝试重新加载工具: {tool_id}")
+                        tool_id = tool_info.split(" ")[0]  # Extraction tool ID
+                        logger.info(f"🔄 Try reloading the tool: {tool_id}")
                         loader.load_tool(tool_id)
                     
-                    # 重新验证
+                    # revalidate
                     still_missing = []
                     for tool_id in critical_tools:
                         if not registry.has_tool(tool_id) or registry.get_function(tool_id) is None:
                             still_missing.append(tool_id)
                     if still_missing:
-                        logger.error(f"❌ 以下工具重新加载后仍然缺失: {still_missing}")
+                        logger.error(f"❌ The following tools are still missing after reloading: {still_missing}")
                     else:
-                        logger.info("✅ 所有关键工具已成功重新加载")
+                        logger.info("✅ All critical tools have been successfully reloaded")
                 else:
-                    logger.info("✅ 所有关键工具已正确加载")
+                    logger.info("✅ All key tools have been loaded correctly")
             except Exception as e:
-                logger.error(f"❌ 工具注册表初始化失败: {e}")
+                logger.error(f"❌ Tool registry initialization failed: {e}")
                 import traceback
                 logger.error(traceback.format_exc())
-                # 不阻止 Worker 启动，但会记录错误
+                # Does not prevent workers from starting, but logs errors
             
-            # 🔥 初始化自定义工具（从数据库加载用户自定义的工具）
+            # 🔥 Initialize custom tools (load user-defined tools from the database)
             try:
                 from app.core.database import get_mongo_db
                 from core.tools.custom_tool import CustomToolDefinition, register_custom_tool
@@ -437,25 +437,25 @@ class AnalysisWorker:
                 custom_tool_count = 0
                 async for doc in cursor:
                     try:
-                        # 移除 _id 字段以符合 Pydantic 模型
+                        # Remove _id field to conform to Pydantic model
                         if "_id" in doc:
                             del doc["_id"]
                         definition = CustomToolDefinition(**doc)
                         await register_custom_tool(definition)
                         custom_tool_count += 1
-                        logger.info(f"✅ 加载自定义工具: {definition.id}")
+                        logger.info(f"✅ Load custom tools: {definition.id}")
                     except Exception as e:
-                        logger.error(f"❌ 加载自定义工具失败 {doc.get('id')}: {e}")
+                        logger.error(f"❌ Failed to load custom tool {doc.get('id')}: {e}")
                 
                 if custom_tool_count > 0:
-                    logger.info(f"✅ 自定义工具初始化完成，共加载 {custom_tool_count} 个工具")
+                    logger.info(f"✅ Custom tool initialization completed and loaded in total {custom_tool_count} tools")
                 else:
-                    logger.info("✅ 自定义工具初始化完成（无自定义工具）")
+                    logger.info("✅ Custom tool initialization completed (no custom tool)")
             except Exception as e:
-                logger.warning(f"⚠️ 自定义工具初始化失败: {e}")
-                # 不阻止 Worker 启动，但会记录警告
+                logger.warning(f"⚠️ Custom tool initialization failed: {e}")
+                # Does not prevent workers from starting, but logs warnings
 
-            # 🔥 初始化 Skills（从数据库加载已启用的可执行 Skills）
+            # 🔥 Initialize Skills (load enabled executable Skills from database)
             try:
                 from core.skills.models import SkillMetadata
                 from core.skills.executor import SkillExecutor
@@ -469,7 +469,7 @@ class AnalysisWorker:
                         impl = doc.get("implementation")
                         params = doc.get("parameters", [])
                         if not impl or not params:
-                            continue  # 跳过知识型 Skill（无执行实现）
+                            continue  # Skip knowledge-based Skills (no execution implementation)
 
                         if "_id" in doc:
                             del doc["_id"]
@@ -486,69 +486,69 @@ class AnalysisWorker:
                             override=True,
                         )
                         skill_count += 1
-                        logger.info(f"✅ 加载 Skill: {skill.name} (tool_id={tool_id})")
+                        logger.info(f"✅ Load Skill: {skill.name} (tool_id={tool_id})")
                     except Exception as e:
-                        logger.error(f"❌ 加载 Skill 失败 {doc.get('name')}: {e}")
+                        logger.error(f"❌ Failed to load skill {doc.get('name')}: {e}")
 
                 if skill_count > 0:
-                    logger.info(f"✅ Skills 初始化完成，共加载 {skill_count} 个可执行 Skill")
+                    logger.info(f"✅ Skills Initialization completed, total loading {skill_count} executable Skill")
                 else:
-                    logger.info("✅ Skills 初始化完成（无可执行 Skill）")
+                    logger.info("✅ Skills Initialization completed (no executable Skill)")
             except Exception as e:
-                logger.warning(f"⚠️ Skills 初始化失败: {e}")
-                # 不阻止 Worker 启动，但会记录警告
+                logger.warning(f"⚠️ Skills Initialization failed: {e}")
+                # Does not prevent workers from starting, but logs warnings
 
-            # 🔥 初始化工作流注册表（必须在执行任务前初始化）
+            # 🔥 Initialize the workflow registry (must be initialized before executing the task)
             from app.services.workflow_registry import initialize_builtin_workflows
             initialize_builtin_workflows()
-            logger.info("✅ 工作流注册表已初始化")
+            logger.info("✅ Workflow registry initialized")
 
-            # 读取系统设置（ENV 优先 → DB）
+            # Read system settings (ENV first → DB) 
             try:
                 effective_settings = await config_provider.get_effective_system_settings()
                 
-                # 🔥 应用动态日志级别设置（与 API 进程保持一致）
+                # 🔥 Apply dynamic log level settings (consistent with API processes)
                 try:
                     desired_level = str(effective_settings.get("log_level", "INFO")).upper()
                     logging.getLogger().setLevel(desired_level)
-                    # 设置关键日志器的级别
+                    # Set the level of critical loggers
                     for name in ("worker", "webapi", "core", "tradingagents"):
                         logging.getLogger(name).setLevel(desired_level)
-                    logger.info(f"✅ 日志级别已设置为: {desired_level}")
+                    logger.info(f"✅ The log level has been set to: {desired_level}")
                 except Exception as e:
-                    logger.warning(f"⚠️ 设置日志级别失败: {e}")
+                    logger.warning(f"⚠️ Failed to set log level: {e}")
             except Exception:
                 effective_settings = {}
 
-            # 获取队列服务
+            # Get queue service
             self.queue_service = get_queue_service()
 
             self.running = True
 
-            # 应用队列并发/超时配置 + Worker/轮询参数
+            # Apply queue concurrency/timeout configuration + Worker/Polling parameters
             try:
-                # 🔥 Worker 并发数配置（从系统设置读取，默认3）
+                # 🔥 Worker Concurrency number configuration (read from system settings, default 3)
                 self.max_concurrent_tasks = int(effective_settings.get("worker_max_concurrent_tasks", 3))
-                # 🔧 京东云模式：降低 Worker 并发数，避免 LLM 限速（429）
+                # 🔧 JD Cloud Mode: Reduce the number of worker concurrencies and avoid LLM speed limit (429)
                 if is_jdyun_mode():
                     jdyun_max = get_jdyun_worker_max_concurrent()
                     if self.max_concurrent_tasks > jdyun_max:
-                        logger.info(f"🔧 [京东云模式] Worker 并发数 {self.max_concurrent_tasks} → {jdyun_max}（避免 LLM 限速）")
+                        logger.info(f"🔧 [Jingdong cloud model] Worker Number of concurrencies {self.max_concurrent_tasks} → {jdyun_max} (avoid LLM rate limiting)")
                         self.max_concurrent_tasks = jdyun_max
-                # 初始化 Semaphore
+                # initialization Semaphore
                 self.semaphore = asyncio.Semaphore(self.max_concurrent_tasks)
-                logger.info(f"🔧 Worker 并发数设置为: {self.max_concurrent_tasks}")
+                logger.info(f"🔧 Worker The number of concurrency is set to: {self.max_concurrent_tasks}")
 
                 self.queue_service.user_concurrent_limit = int(effective_settings.get("max_concurrent_tasks", DEFAULT_USER_CONCURRENT_LIMIT))
                 self.queue_service.global_concurrent_limit = int(effective_settings.get("max_concurrent_tasks", GLOBAL_CONCURRENT_LIMIT))
-                # 🔧 京东云模式：降低用户/全局并发限制，避免 LLM 限速（429）
+                # 🔧 JD Cloud Mode: Reduce user/global concurrency limits and avoid LLM speed limits (429)
                 if is_jdyun_mode():
                     jdyun_max = get_jdyun_worker_max_concurrent()
                     if self.queue_service.user_concurrent_limit > jdyun_max:
-                        logger.info(f"🔧 [京东云模式] 用户并发限制 {self.queue_service.user_concurrent_limit} → {jdyun_max}")
+                        logger.info(f"🔧 [Jingdong cloud model] User concurrency limit {self.queue_service.user_concurrent_limit} → {jdyun_max}")
                         self.queue_service.user_concurrent_limit = jdyun_max
                     if self.queue_service.global_concurrent_limit > jdyun_max:
-                        logger.info(f"🔧 [京东云模式] 全局并发限制 {self.queue_service.global_concurrent_limit} → {jdyun_max}")
+                        logger.info(f"🔧 [Jingdong cloud model] Global concurrency limit {self.queue_service.global_concurrent_limit} → {jdyun_max}")
                         self.queue_service.global_concurrent_limit = jdyun_max
                 self.queue_service.visibility_timeout = int(effective_settings.get("default_analysis_timeout", VISIBILITY_TIMEOUT_SECONDS))
                 # Worker intervals
@@ -556,29 +556,29 @@ class AnalysisWorker:
                 self.poll_interval = float(effective_settings.get("queue_poll_interval_seconds", self.poll_interval))
                 self.cleanup_interval = float(effective_settings.get("queue_cleanup_interval_seconds", self.cleanup_interval))
             except Exception:
-                # 如果配置读取失败，使用默认值
+                # If configuration reading fails, use default values
                 self.max_concurrent_tasks = 3
-                # 🔧 京东云模式：异常情况下也应用降并发逻辑
+                # 🔧 JD Cloud Model: Concurrency reduction logic is also applied under abnormal circumstances
                 if is_jdyun_mode():
                     jdyun_max = get_jdyun_worker_max_concurrent()
                     if self.max_concurrent_tasks > jdyun_max:
-                        logger.info(f"🔧 [京东云模式] 异常恢复 Worker 并发数 {self.max_concurrent_tasks} → {jdyun_max}")
+                        logger.info(f"🔧 [Jingdong cloud model] Abnormal recovery Worker concurrency number {self.max_concurrent_tasks} → {jdyun_max}")
                         self.max_concurrent_tasks = jdyun_max
                 self.semaphore = asyncio.Semaphore(self.max_concurrent_tasks)
-                logger.warning(f"⚠️ 使用默认 Worker 并发数: {self.max_concurrent_tasks}")
-            # 🔥 Worker启动时恢复卡住的任务（进程重启后）
+                logger.warning(f"⚠️ Use the default worker concurrency number: {self.max_concurrent_tasks}")
+            # 🔥 Worker Resume stuck tasks on startup (after process restart)
             await self._recover_stuck_tasks()
             
-            # 启动心跳任务
+            # Start heartbeat task
             heartbeat_task = asyncio.create_task(self._heartbeat_loop())
 
-            # 启动清理任务
+            # Start a cleanup task
             cleanup_task = asyncio.create_task(self._cleanup_loop())
 
-            # 主工作循环
+            # Main working cycle
             await self._work_loop()
 
-            # 取消后台任务
+            # Cancel background task
             heartbeat_task.cancel()
             cleanup_task.cancel()
 
@@ -589,110 +589,110 @@ class AnalysisWorker:
                 pass
 
         except Exception as e:
-            # 🔥 记录详细的启动失败信息，并重新抛出异常
-            logger.error(f"❌ Worker启动失败: {e}")
+            # 🔥 Record detailed startup failure information and re-throw the exception
+            logger.error(f"❌ Worker Startup failed: {e}")
             logger.error(traceback.format_exc())
             self.running = False
-            # 🔥 重新抛出异常，让调用者知道启动失败
+            # 🔥 Rethrow the exception to let the caller know that the startup failed
             raise
         finally:
             await self._cleanup()
 
     async def _work_loop(self):
-        """主工作循环 - 支持并发执行多个任务"""
-        logger.info(f"✅ Worker {self.worker_id} 开始工作 (最大并发数: {self.max_concurrent_tasks})")
+        """Main work loop - supports concurrent execution of multiple tasks"""
+        logger.info(f"✅ Worker {self.worker_id} start working (Maximum number of concurrencies: {self.max_concurrent_tasks})")
 
         while self.running:
             try:
-                # 🔥 检查当前并发数，如果未达到上限，继续获取任务
+                # 🔥 Check the current number of concurrencies. If the upper limit is not reached, continue to obtain tasks.
                 current_concurrent = len(self.running_tasks)
                 if current_concurrent < self.max_concurrent_tasks:
-                    # 从队列获取任务
+                    # Get tasks from queue
                     task_data = await self.queue_service.dequeue_task(self.worker_id)
 
                     if task_data:
-                        # 🔥 使用 create_task 并发执行任务，不阻塞主循环
+                        # 🔥 Use create_task to execute tasks concurrently without blocking the main loop
                         task_coro = self._process_task_with_semaphore(task_data)
                         task = asyncio.create_task(task_coro)
                         self.running_tasks.add(task)
 
-                        # 🔥 添加异常回调，确保任务异常时也能从集合中移除
+                        # 🔥 Add an exception callback to ensure that the task can be removed from the collection when there is an exception
                         def remove_task(task_future):
-                            """任务完成或异常时从集合中移除"""
+                            """Removed from the collection when task is completed or abnormal"""
                             try:
                                 self.running_tasks.discard(task_future)
-                                # 如果任务有异常，记录日志但不影响 Worker 进程
+                                # If there is an exception in the task, logs will be recorded but the Worker process will not be affected.
                                 if task_future.exception():
-                                    logger.error(f"❌ 任务执行异常: {task_future.exception()}")
+                                    logger.error(f"❌ Task execution exception: {task_future.exception()}")
                             except Exception as e:
-                                logger.error(f"❌ 移除任务时出错: {e}")
+                                logger.error(f"❌ Error while removing task: {e}")
 
                         task.add_done_callback(remove_task)
 
-                        logger.debug(f"📊 当前并发任务数: {len(self.running_tasks)}/{self.max_concurrent_tasks}")
+                        logger.debug(f"📊 Current number of concurrent tasks: {len(self.running_tasks)}/{self.max_concurrent_tasks}")
                     else:
-                        # 没有任务，短暂休眠
+                        # No tasks, short sleep
                         await asyncio.sleep(self.poll_interval)
                 else:
-                    # 已达到并发上限，等待一段时间后再检查
+                    # The concurrency limit has been reached, please wait for a while and check again.
                     await asyncio.sleep(self.poll_interval)
             except asyncio.CancelledError:
-                # 收到取消信号，立即退出循环
-                logger.info("🛑 工作循环收到取消信号")
+                # Upon receiving the cancellation signal, exit the loop immediately
+                logger.info("🛑 Work cycle receives cancellation signal")
                 break
 
             except Exception as e:
-                # 🔥 工作循环异常不应该导致 Worker 进程退出
-                logger.error(f"❌ 工作循环异常: {e}")
+                # 🔥 Work loop exceptions should not cause the Worker process to exit
+                logger.error(f"❌ Abnormal work cycle: {e}")
                 logger.error(traceback.format_exc())
-                logger.info("🔄 Worker 将继续运行，等待下次循环...")
-                await asyncio.sleep(5)  # 异常后等待5秒再继续
+                logger.info("🔄 Worker Will continue to run, waiting for the next cycle...")
+                await asyncio.sleep(5)  # After an exception, wait 5 seconds before continuing.
 
-        # 🔥 等待所有正在运行的任务完成
+        # 🔥 Wait for all running tasks to complete
         if self.running_tasks:
-            logger.info(f"⏳ 等待 {len(self.running_tasks)} 个任务完成...")
+            logger.info(f"⏳ wait {len(self.running_tasks)} tasks completed...")
             await asyncio.gather(*self.running_tasks, return_exceptions=True)
 
-        logger.info(f"🔄 Worker {self.worker_id} 工作循环结束")
+        logger.info(f"🔄 Worker {self.worker_id} End of work cycle")
 
     async def _process_task_with_semaphore(self, task_data: Dict[str, Any]):
-        """使用 Semaphore 控制并发的任务处理包装器"""
+        """Task processing wrapper to control concurrency using Semaphore"""
         task_id = task_data.get("id", "unknown")
         try:
-            async with self.semaphore:  # 🔥 并发控制：最多同时执行 max_concurrent_tasks 个任务
+            async with self.semaphore:  # 🔥 Concurrency control: Up to max_concurrent_tasks tasks can be executed simultaneously
                 await self._process_task(task_data)
-                # 🔧 京东云模式：任务完成后添加间隔，避免连续密集 LLM 调用触发限速（429）
+                # 🔧 Jingdong Cloud Mode: Add intervals after task completion to avoid continuous intensive LLM calls triggering rate limits (429)
                 if is_jdyun_mode():
                     interval = get_jdyun_stock_interval_seconds()
                     if interval > 0:
-                        logger.info(f"⏳ [京东云模式] 任务 {task_id} 完成，等待 {interval}s 后继续下一个任务（避免 LLM 限速）")
+                        logger.info(f"⏳ [Jingdong cloud model] Task {task_id} done, waiting {interval}s Then continue to the next task (avoiding LLM speed limit)")
                         await asyncio.sleep(interval)
         except Exception as e:
-            # 🔥 确保任务级别的异常不会导致 Worker 进程崩溃
-            logger.error(f"❌ 任务处理包装器捕获异常: {task_id} - {e}")
+            # 🔥 Ensure that task-level exceptions do not cause the Worker process to crash
+            logger.error(f"❌ Task handling wrapper catches exception: {task_id} - {e}")
             logger.error(traceback.format_exc())
 
-            # 🔥 更新 Worker 状态：任务异常
+            # 🔥 Update Worker status: Task exception
             try:
                 from app.worker.__main__ import get_worker_state
                 state = get_worker_state()
                 _update_worker_state(
                     error_count=state.get("error_count", 0) + 1,
-                    last_error=f"包装器异常 {task_id}: {str(e)[:200]}",
+                    last_error=f"wrapper exception {task_id}: {str(e)[:200]}",
                     status="error_recovered"
                 )
             except Exception:
                 pass
             
-            # 尝试更新任务状态为失败
+            # Attempt to update task status to failed
             try:
                 from app.services.queue_service import get_queue_service
                 queue_service = get_queue_service()
                 await queue_service.ack_task(task_id, success=False)
             except Exception as ack_error:
-                logger.error(f"❌ 确认失败任务时出错: {task_id} - {ack_error}")
+                logger.error(f"❌ Error confirming failed task: {task_id} - {ack_error}")
             
-            # 如果是 v2 引擎任务，尝试更新任务状态
+            # If it is a v2 engine task, try to update the task status
             try:
                 parameters_dict = task_data.get("parameters", {})
                 if isinstance(parameters_dict, str):
@@ -709,26 +709,26 @@ class AnalysisWorker:
                     task = await task_service.get_task(task_id)
                     if task:
                         task.status = AnalysisStatus.FAILED
-                        task.error_message = f"任务处理异常: {str(e)}"
+                        task.error_message = f"Task processing exception: {str(e)}"
                         task.completed_at = now_tz()
                         await task_service._update_task(task)
             except Exception as update_error:
-                logger.error(f"❌ 更新任务状态时出错: {task_id} - {update_error}")
+                logger.error(f"❌ An error occurred while updating task status: {task_id} - {update_error}")
             
-            # 异常已处理，不重新抛出，确保 Worker 进程继续运行
+            # The exception has been handled and will not be rethrown, ensuring that the Worker process continues to run.
     
     async def _process_task(self, task_data: Dict[str, Any]):
-        """处理单个任务"""
+        """Work on a single task"""
         task_id = task_data.get("id")
         stock_code = task_data.get("symbol")
         user_id = task_data.get("user")
 
-        logger.info(f"📊 开始处理任务: {task_id} - {stock_code} (当前并发: {len(self.running_tasks)}/{self.max_concurrent_tasks})")
+        logger.info(f"📊 Start working on a task: {task_id} - {stock_code} (Current concurrency: {len(self.running_tasks)}/{self.max_concurrent_tasks})")
 
         self.current_task = task_id
         success = False
 
-        # 🔥 更新 Worker 状态：开始处理任务
+        # 🔥 Update Worker status: Start processing tasks
         _update_worker_state(
             last_task_id=task_id,
             last_task_time=datetime.now().isoformat(),
@@ -736,19 +736,19 @@ class AnalysisWorker:
         )
 
         try:
-            # 解析任务参数
+            # Parse task parameters
             parameters_dict = task_data.get("parameters", {})
             if isinstance(parameters_dict, str):
                 import json
                 parameters_dict = json.loads(parameters_dict)
 
-            # 检查引擎类型（默认使用 v2 引擎）
+            # Check engine type (default uses v2 engine)
             engine_type = parameters_dict.get("engine", "v2")
 
             task_service = None
             task = None
 
-            # v2 任务在数据准备前先推进状态，避免前端长时间停留在 pending/初始化
+            # v2 The task advances the status before data preparation to avoid the front end staying in pending/initialization for a long time.
             if engine_type == "v2":
                 from app.services.task_analysis_service import get_task_analysis_service
                 from app.services.memory_state_manager import get_memory_state_manager, TaskStatus
@@ -757,12 +757,12 @@ class AnalysisWorker:
                 task_service = get_task_analysis_service()
                 task = await task_service.get_task(task_id)
                 if not task:
-                    raise ValueError(f"任务不存在: {task_id}")
+                    raise ValueError(f"Task does not exist: {task_id}")
 
                 memory_manager = get_memory_state_manager()
                 memory_task = await memory_manager.get_task(task_id)
                 if not memory_task:
-                    logger.info(f"📝 [Worker] 任务不在内存中，先创建内存状态: {task_id}")
+                    logger.info(f"📝 [Worker] The task is not in memory, create the memory state first: {task_id}")
                     await memory_manager.create_task(
                         task_id=task_id,
                         user_id=user_id,
@@ -770,14 +770,14 @@ class AnalysisWorker:
                         parameters=parameters_dict,
                         stock_name=None
                     )
-                    logger.info(f"✅ [Worker] 任务已创建到内存状态管理器: {task_id}")
+                    logger.info(f"✅ [Worker] The task has been created to the memory state manager: {task_id}")
 
                 task.status = AnalysisStatus.PROCESSING
                 if not task.started_at:
                     task.started_at = now_tz()
                 task.progress = max(task.progress or 0, 1)
-                task.current_step = "数据准备"
-                task.message = "正在准备分析所需数据..."
+                task.current_step = "Data preparation"
+                task.message = "Preparing data for analysis..."
                 await task_service._update_task(task)
 
                 await memory_manager.update_task_status(
@@ -786,17 +786,17 @@ class AnalysisWorker:
                     progress=task.progress,
                     message=task.message,
                     current_step="data_preparation",
-                    current_step_name="数据准备",
+                    current_step_name="Data preparation",
                     current_step_description=task.message
                 )
             
-            # 数据校验：检查股票数据是否存在且新鲜（防止用陈旧数据分析）
+            # Data verification: Check whether the stock data exists and is fresh (to prevent analysis of stale data)
             validation_result = await self._validate_task_data(stock_code, parameters_dict)
             if not validation_result.is_valid:
                 error_message = validation_result.message
-                logger.warning(f"⚠️ 任务 {task_id} 数据校验失败: {error_message}")
+                logger.warning(f"⚠️ Task {task_id} Data verification failed: {error_message}")
 
-                # 更新任务状态为失败
+                # Update task status is failed
                 engine_type_check = parameters_dict.get("engine", "v2")
                 if engine_type_check in ("v2", "unified"):
                     try:
@@ -810,23 +810,23 @@ class AnalysisWorker:
                             task_tmp.completed_at = now_tz()
                             await task_service_tmp._update_task(task_tmp)
                     except Exception as upd_err:
-                        logger.error(f"❌ 数据校验失败后更新任务状态出错: {upd_err}")
+                        logger.error(f"❌ An error occurred when updating task status after data verification failed.: {upd_err}")
 
-                # 抛出异常，让上层统一处理（记录日志、释放 current_task 等）
+                # Throw an exception and let the upper layer handle it uniformly (logging, releasing current_task, etc.)
                 raise ValueError(error_message)
 
             if engine_type == "v2":
-                # v2 引擎：使用统一任务服务
-                logger.info(f"🔧 [Worker] 使用 v2 引擎执行任务: {task_id}")
+                # v2 Engine: Use unified task service
+                logger.info(f"🔧 [Worker] Use v2 engine to perform tasks: {task_id}")
                 from app.services.memory_state_manager import get_memory_state_manager
                 
-                # 🔥 关键：确保任务在内存状态管理器中存在（Worker 进程和 API 进程是分开的）
+                # 🔥 Key: Make sure the task exists in the memory state manager (Worker process and API process are separate)
                 memory_manager = get_memory_state_manager()
                 try:
-                    # 尝试获取任务，如果不存在则创建
+                    # Try to get the task, create it if it doesn't exist
                     memory_task = await memory_manager.get_task(task_id)
                     if not memory_task:
-                        logger.info(f"📝 [Worker] 任务不在内存中，创建内存状态: {task_id}")
+                        logger.info(f"📝 [Worker] Task is not in memory, create memory state: {task_id}")
                         await memory_manager.create_task(
                             task_id=task_id,
                             user_id=user_id,
@@ -834,67 +834,67 @@ class AnalysisWorker:
                             parameters=parameters_dict,
                             stock_name=None
                         )
-                        logger.info(f"✅ [Worker] 任务已创建到内存状态管理器: {task_id}")
+                        logger.info(f"✅ [Worker] The task has been created to the memory state manager: {task_id}")
                 except Exception as e:
-                    logger.warning(f"⚠️ [Worker] 检查/创建内存任务失败: {e}，继续执行")
+                    logger.warning(f"⚠️ [Worker] Check/create memory task failed: {e}, Continue execution")
                 
-                # 执行任务
+                # perform tasks
                 await task_service.execute_task(task, progress_callback=self._progress_callback)
                 success = True
-                logger.info(f"✅ [v2引擎] 任务完成: {task_id}")
+                logger.info(f"✅ [v2 engine] Mission accomplished: {task_id}")
                 
             elif engine_type == "unified":
-                # unified 引擎：使用统一分析服务
-                logger.info(f"🔧 [Worker] 使用 unified 引擎执行任务: {task_id}")
+                # unified Engine: Using Unified Analytics Services
+                logger.info(f"🔧 [Worker] Perform tasks using the unified engine: {task_id}")
                 from app.services.unified_analysis_service import get_unified_analysis_service
                 from app.models.analysis import SingleAnalysisRequest
                 
                 unified_service = get_unified_analysis_service()
                 
-                # 构建 SingleAnalysisRequest
+                # build SingleAnalysisRequest
                 single_req = SingleAnalysisRequest(
                     symbol=stock_code,
                     stock_code=stock_code,
                     parameters=AnalysisParameters(**parameters_dict) if parameters_dict else None
                 )
                 
-                # 执行分析
+                # Perform analysis
                 await unified_service.execute_analysis_for_ab_test(
                     task_id=task_id,
                     user_id=user_id,
                     request=single_req
                 )
                 success = True
-                logger.info(f"✅ [unified引擎] 任务完成: {task_id}")
+                logger.info(f"✅ [unified engine] Mission accomplished: {task_id}")
                 
             else:
-                # legacy 引擎：使用旧的分析服务
-                logger.info(f"🔧 [Worker] 使用 legacy 引擎执行任务: {task_id}")
+                # legacy Engine: Use old analysis service
+                logger.info(f"🔧 [Worker] Use legacy engine to perform tasks: {task_id}")
                 parameters = AnalysisParameters(**parameters_dict)
 
                 task = AnalysisTask(
                     task_id=task_id,
                     user_id=user_id,
-                    symbol=stock_code,  # 使用 symbol 字段（必填）
-                    stock_code=stock_code,  # 保留 stock_code 字段（兼容）
+                    symbol=stock_code,  # Use symbol field (required)
+                    stock_code=stock_code,  # Keep stock_code field (compatible)
                     batch_id=task_data.get("batch_id"),
                     parameters=parameters
                 )
 
-                # 执行分析
+                # Perform analysis
                 result = await get_analysis_service().execute_analysis_task(
                     task,
                     progress_callback=self._progress_callback
                 )
 
                 success = True
-                logger.info(f"✅ [legacy引擎] 任务完成: {task_id} - 耗时: {result.execution_time:.2f}秒")
+                logger.info(f"✅ [legacy engine] Mission accomplished: {task_id} - Time consuming: {result.execution_time:.2f}seconds")
 
         except Exception as e:
-            logger.error(f"❌ 任务执行失败: {task_id} - {e}")
+            logger.error(f"❌ Task execution failed: {task_id} - {e}")
             logger.error(traceback.format_exc())
 
-            # 🔥 更新 Worker 状态：任务失败
+            # 🔥 Update Worker status: Task failed
             try:
                 from app.worker.__main__ import get_worker_state
                 state = get_worker_state()
@@ -906,13 +906,13 @@ class AnalysisWorker:
                 pass
 
         finally:
-            # 确认任务完成
+            # Confirm task completion
             try:
                 await self.queue_service.ack_task(task_id, success)
             except Exception as e:
-                logger.error(f"确认任务失败: {task_id} - {e}")
+                logger.error(f"Confirm task failed: {task_id} - {e}")
 
-            # 🔥 更新 Worker 状态：任务完成
+            # 🔥 Update Worker status: Task completed
             try:
                 from app.worker.__main__ import get_worker_state
                 state = get_worker_state()
@@ -933,25 +933,25 @@ class AnalysisWorker:
         stock_code: str,
         parameters_dict: Dict[str, Any]
     ) -> 'DataValidationResult':
-        """数据准备阶段：委托给模块级 jit_sync_stock_data 函数执行。"""
+        """Data preparation phase: delegated to module-level jit_sync_stock_data function execution."""
         return await jit_sync_stock_data(stock_code, parameters_dict)
     
     def _progress_callback(self, progress: int, message: str, **kwargs):
-        """进度回调函数
+        """Progress callback function
         
         Args:
-            progress: 进度百分比 (0-100)
-            message: 进度消息
-            **kwargs: 额外参数（如 step_name 等）
+            progress: progress percentage (0-100)
+            message: progress message
+            **kwargs: Additional parameters (such as step_name, etc.)
         """
         step_name = kwargs.get("step_name", "")
         if step_name:
-            logger.debug(f"任务进度 {self.current_task}: {progress}% - {step_name} - {message}")
+            logger.debug(f"Task progress {self.current_task}: {progress}% - {step_name} - {message}")
         else:
-            logger.debug(f"任务进度 {self.current_task}: {progress}% - {message}")
+            logger.debug(f"Task progress {self.current_task}: {progress}% - {message}")
 
     async def _heartbeat_loop(self):
-        """心跳循环"""
+        """heartbeat cycle"""
         while self.running:
             try:
                 await self._send_heartbeat()
@@ -959,11 +959,11 @@ class AnalysisWorker:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"心跳异常: {e}")
+                logger.error(f"Abnormal heartbeat: {e}")
                 await asyncio.sleep(5)
 
     async def _send_heartbeat(self):
-        """发送心跳"""
+        """Send heartbeat"""
         try:
             from app.core.redis_client import get_redis_service
             redis_service = get_redis_service()
@@ -979,10 +979,10 @@ class AnalysisWorker:
             await redis_service.set_json(heartbeat_key, heartbeat_data, ttl=self.heartbeat_interval * 2)
 
         except Exception as e:
-            logger.error(f"发送心跳失败: {e}")
+            logger.error(f"Failed to send heartbeat: {e}")
 
     async def _cleanup_loop(self):
-        """定期清理过期任务的循环"""
+        """Regularly clean up the cycle of expired tasks"""
         while self.running:
             try:
                 await asyncio.sleep(self.cleanup_interval)
@@ -991,42 +991,42 @@ class AnalysisWorker:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.error(f"清理过期任务失败: {e}")
+                logger.error(f"Failed to clean up expired tasks: {e}")
                 await asyncio.sleep(5)
 
     async def _recover_stuck_tasks(self):
-        """Worker启动时处理未完成的任务（进程重启后）
+        """Worker Handle unfinished tasks at startup (after process restart)
 
-        新策略：不自动恢复任务，而是标记为"挂起"状态，让用户决定是否继续
+        New policy: Do not automatically resume tasks, but mark them as"hang"status, allowing the user to decide whether to continue
 
-        检查两种情况：
-        1. Redis队列中标记为"processing"的任务
-        2. 数据库中状态为"processing"或"pending"的任务
+        Check two situations:
+        1. Redis Queue marked as"processing"task
+        2. The status in the database is"processing"or"pending"task
         """
         try:
-            logger.info("🔍 Worker启动：检查未完成的任务...")
+            logger.info("🔍 Worker Startup: Check for unfinished tasks...")
 
-            # 1. 清理Redis队列中的处理中任务（不重新入队）
+            # 1. Clean up the processing tasks in the Redis queue (without requeuing)
             if self.queue_service:
-                # 清空 processing 集合
+                # Clear the processing collection
                 processing_tasks = await self.queue_service.r.smembers("queue:processing")
                 if processing_tasks:
-                    logger.info(f"📋 发现 {len(processing_tasks)} 个Redis处理中任务，将清理...")
+                    logger.info(f"📋 discover {len(processing_tasks)} Redis processing tasks will be cleaned up...")
                     await self.queue_service.r.delete("queue:processing")
 
-                    # 清理用户处理中计数
+                    # Clear user processing count
                     user_keys = await self.queue_service.r.keys("queue:user:*:processing")
                     if user_keys:
                         await self.queue_service.r.delete(*user_keys)
 
-            # 2. 检查数据库中的未完成任务
+            # 2. Check the database for outstanding tasks
             from app.core.database import get_mongo_db_sync
             from app.models.analysis import AnalysisStatus
 
             db = get_mongo_db_sync()
             collection = db["unified_analysis_tasks"]
 
-            # 查找所有"processing"或"pending"状态的任务
+            # Find all"processing"or"pending"status tasks
             unfinished_tasks = collection.find({
                 "status": {"$in": [
                     AnalysisStatus.PROCESSING.value,
@@ -1035,38 +1035,38 @@ class AnalysisWorker:
             })
 
             suspended_count = 0
-            user_notifications = {}  # 用户ID -> 任务列表
+            user_notifications = {}  # User ID -> task list
 
             for task_doc in unfinished_tasks:
                 task_id = task_doc.get("task_id")
                 user_id = task_doc.get("user_id")
-                symbol = task_doc.get("symbol", "未知")
+                symbol = task_doc.get("symbol", "unknown")
 
                 if not task_id:
                     continue
 
                 try:
-                    # 标记为挂起状态
-                    logger.info(f"⏸️ 将任务标记为挂起: {task_id} ({symbol})")
+                    # Mark as pending
+                    logger.info(f"⏸️ Mark task as pending: {task_id} ({symbol})")
                     collection.update_one(
                         {"task_id": task_id},
                         {
                             "$set": {
                                 "status": AnalysisStatus.SUSPENDED.value,
-                                "error_message": "服务重启，任务已挂起。请手动恢复或取消任务。",
+                                "error_message": "The service restarted and the task was suspended. Please resume or cancel the task manually.",
                                 "suspended_at": datetime.utcnow()
                             }
                         }
                     )
 
-                    # 从Redis队列中移除（如果存在）
+                    # Remove from Redis queue (if exists)
                     if self.queue_service:
                         await self.queue_service.r.lrem("queue:ready", 0, task_id)
                         await self.queue_service.r.delete(f"queue:task:{task_id}")
 
                     suspended_count += 1
 
-                    # 收集用户通知信息
+                    # Collect user notification information
                     if user_id:
                         if user_id not in user_notifications:
                             user_notifications[user_id] = []
@@ -1077,24 +1077,24 @@ class AnalysisWorker:
                         })
 
                 except Exception as e:
-                    logger.error(f"标记任务为挂起失败: {task_id} - {e}")
+                    logger.error(f"Mark task as pending failed: {task_id} - {e}")
 
-            # 发送通知给用户
+            # Send notification to user
             if user_notifications:
                 await self._send_suspended_task_notifications(user_notifications)
 
             if suspended_count > 0:
-                logger.warning(f"⏸️ 已将 {suspended_count} 个未完成任务标记为挂起状态")
-                logger.info(f"💡 用户可以在任务列表中手动恢复或取消这些任务")
+                logger.warning(f"⏸️ Already {suspended_count} unfinished tasks marked as pending")
+                logger.info(f"💡 Users can manually resume or cancel these tasks in the task list")
             else:
-                logger.info("✅ 没有发现未完成的任务")
+                logger.info("✅ No unfinished tasks found")
 
         except Exception as e:
-            logger.error(f"处理未完成任务失败: {e}")
+            logger.error(f"Failed to process unfinished tasks: {e}")
             logger.error(traceback.format_exc())
 
     async def _send_suspended_task_notifications(self, user_notifications: Dict[str, List[Dict]]):
-        """发送挂起任务通知给用户"""
+        """Send pending task notifications to users"""
         try:
             from app.core.database import get_mongo_db_sync
 
@@ -1104,18 +1104,18 @@ class AnalysisWorker:
             for user_id, tasks in user_notifications.items():
                 task_count = len(tasks)
                 task_list = "\n".join([
-                    f"- {task['symbol']} (任务ID: {task['task_id'][:8]}...)"
-                    for task in tasks[:5]  # 最多显示5个
+                    f"- {task['symbol']} (Task ID: {task['task_id'][:8]}...)"
+                    for task in tasks[:5]  # Display up to 5
                 ])
 
                 if task_count > 5:
-                    task_list += f"\n... 还有 {task_count - 5} 个任务"
+                    task_list += f"\n... Also {task_count - 5} tasks"
 
                 notification = {
                     "user_id": user_id,
                     "type": "system",
-                    "title": "服务重启通知",
-                    "message": f"检测到 {task_count} 个未完成的分析任务已被挂起：\n\n{task_list}\n\n请在任务列表中查看并决定是否继续分析。",
+                    "title": "Service restart notification",
+                    "message": f"detected {task_count} Unfinished analysis tasks have been suspended:\n\n{task_list}\n\n Please review the task list and decide whether to continue the analysis.",
                     "level": "warning",
                     "read": False,
                     "created_at": datetime.utcnow(),
@@ -1125,81 +1125,81 @@ class AnalysisWorker:
                 }
 
                 notifications_collection.insert_one(notification)
-                logger.info(f"📧 已发送挂起任务通知给用户: {user_id} ({task_count} 个任务)")
+                logger.info(f"📧 Pending task notification sent to user: {user_id} ({task_count} tasks)")
 
         except Exception as e:
-            logger.error(f"发送挂起任务通知失败: {e}")
+            logger.error(f"Failed to send pending task notification: {e}")
 
     async def _cleanup(self):
-        """清理资源"""
-        logger.info(f"🧹 清理Worker资源: {self.worker_id}")
+        """Clean up resources"""
+        logger.info(f"🧹 Clean up worker resources: {self.worker_id}")
 
-        # 等待所有正在运行的任务完成（最多等待10秒）
+        # Wait for all running tasks to complete (up to 10 seconds)
         if self.running_tasks:
-            logger.info(f"⏳ 等待 {len(self.running_tasks)} 个任务完成...")
+            logger.info(f"⏳ wait {len(self.running_tasks)} tasks completed...")
             try:
                 await asyncio.wait_for(
                     asyncio.gather(*self.running_tasks, return_exceptions=True),
                     timeout=10.0
                 )
-                logger.info("✅ 所有任务已完成")
+                logger.info("✅ All tasks completed")
             except asyncio.TimeoutError:
-                logger.warning("⚠️ 等待任务超时，强制取消剩余任务")
+                logger.warning("⚠️ Wait for the task to time out and force the remaining tasks to be cancelled.")
                 for task in self.running_tasks:
                     if not task.done():
                         task.cancel()
             except Exception as e:
-                logger.error(f"等待任务完成时出错: {e}")
+                logger.error(f"Error while waiting for task to complete: {e}")
 
         try:
-            # 清理心跳记录
+            # Clear heartbeat records
             from app.core.redis_client import get_redis_service
             redis_service = get_redis_service()
             heartbeat_key = f"worker:{self.worker_id}:heartbeat"
             await redis_service.redis.delete(heartbeat_key)
         except Exception as e:
-            logger.error(f"清理心跳记录失败: {e}")
+            logger.error(f"Failed to clear heartbeat records: {e}")
 
         try:
-            # 关闭数据库连接
+            # Close database connection
             await close_database()
         except Exception as e:
-            logger.error(f"关闭数据库连接失败: {e}")
+            logger.error(f"Failed to close database connection: {e}")
 
 
 async def main():
-    """主函数"""
-    # 设置日志
+    """main function"""
+    # Setup log
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
-    # 创建并启动Worker
+    # Create and start Worker
     worker = AnalysisWorker()
 
     try:
         await worker.start()
     except KeyboardInterrupt:
-        logger.info("⏹️  收到中断信号，正在关闭...")
+        logger.info("⏹️  Received interrupt signal, shutting down...")
     except Exception as e:
-        # 🔥 记录详细的异常信息，包括堆栈跟踪
-        logger.error(f"❌ Worker异常退出: {e}")
+        # 🔥 Logging detailed exception information, including stack trace
+        logger.error(f"❌ Worker Abnormal exit: {e}")
         logger.error(traceback.format_exc())
-        # 确保清理资源
+        # Make sure to clean up resources
         try:
             await worker._cleanup()
         except Exception as cleanup_error:
-            logger.error(f"❌ Worker清理资源时出错: {cleanup_error}")
+            logger.error(f"❌ Worker An error occurred while cleaning up resources: {cleanup_error}")
         sys.exit(1)
     finally:
-        # 确保 Worker 正确清理资源
+        # Make sure workers clean up resources correctly
         try:
             await worker._cleanup()
         except Exception as cleanup_error:
-            logger.error(f"❌ Worker清理资源时出错: {cleanup_error}")
+            logger.error(f"❌ Worker An error occurred while cleaning up resources: {cleanup_error}")
 
-    logger.info("✅ Worker已安全退出")
+    logger.info("✅ Worker Safely exited")
 
 
 if __name__ == "__main__":

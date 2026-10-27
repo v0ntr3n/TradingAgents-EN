@@ -1,7 +1,7 @@
 """
-线程安全的数据库操作工具
+Thread-safe database operation tools
 
-用于在线程池中安全地执行 MongoDB 操作，避免 event loop 冲突
+Used to safely perform MongoDB operations in the thread pool to avoid event loop conflicts
 """
 import threading
 import asyncio
@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 def is_in_thread_pool() -> bool:
     """
-    检测当前是否在线程池中运行
+    Detect whether it is currently running in the thread pool
     
     Returns:
-        True 如果在线程池中，False 如果在主线程中
+        True False if in the thread pool, False if in the main thread
     """
     current_thread = threading.current_thread()
     return not isinstance(current_thread, threading._MainThread)
@@ -31,24 +31,24 @@ async def safe_bulk_write(
     max_retries: int = 3
 ) -> BulkWriteResult:
     """
-    线程安全的 bulk_write 操作
+    Thread-safe bulk_write operations
     
-    自动检测运行环境：
-    - 在主线程中：使用异步 MongoDB 客户端
-    - 在线程池中：使用同步 MongoDB 客户端
+    Automatically detect the running environment:
+    - In the main thread: Using an asynchronous MongoDB client
+    - In a thread pool: Using a synchronous MongoDB client
     
     Args:
-        collection_name: 集合名称
-        operations: 批量操作列表
-        ordered: 是否按顺序执行
-        async_db: 异步数据库实例（主线程中使用）
-        max_retries: 最大重试次数
+        collection_name: Collection name
+        operations: Bulk operation list
+        ordered: Whether to execute in order
+        async_db: Asynchronous database instance (used in the main thread)
+        max_retries: Maximum number of retries
         
     Returns:
-        BulkWriteResult 对象
+        BulkWriteResult object
         
     Raises:
-        Exception: 如果所有重试都失败
+        Exception: If all retries fail
     """
     in_thread_pool = is_in_thread_pool()
     retry_count = 0
@@ -56,20 +56,20 @@ async def safe_bulk_write(
     while retry_count < max_retries:
         try:
             if in_thread_pool:
-                # 🔥 在线程池中：使用同步 MongoDB 客户端
-                logger.debug(f"🔍 [线程池] 使用同步 bulk_write: 集合={collection_name}, 操作数={len(operations)}, ordered={ordered}")
+                # 🔥 In a thread pool: Using a synchronous MongoDB client
+                logger.debug(f"🔍 [thread pool] Use sync bulk_write: collection={collection_name}, operand={len(operations)}, ordered={ordered}")
                 from app.core.database import get_mongo_db_sync
                 sync_db = get_mongo_db_sync()
                 sync_collection = sync_db[collection_name]
                 result = sync_collection.bulk_write(operations, ordered=ordered)
                 return result
             else:
-                # 🔥 在主线程中：使用异步 MongoDB 客户端
+                # 🔥 In the main thread: Using an asynchronous MongoDB client
                 if async_db is None:
                     from app.core.database import get_mongo_db
                     async_db = get_mongo_db()
                 
-                logger.debug(f"🔍 [主线程] 使用异步 bulk_write: 集合={collection_name}, 操作数={len(operations)}, ordered={ordered}")
+                logger.debug(f"🔍 [main thread] Use async bulk_write: collection={collection_name}, operand={len(operations)}, ordered={ordered}")
                 async_collection = async_db[collection_name]
                 result = await async_collection.bulk_write(operations, ordered=ordered)
                 return result
@@ -77,54 +77,54 @@ async def safe_bulk_write(
         except asyncio.TimeoutError as e:
             retry_count += 1
             if retry_count < max_retries:
-                wait_time = 2 ** retry_count  # 指数退避：2秒、4秒、8秒
-                logger.warning(f"⚠️ 批量写入超时 (第{retry_count}/{max_retries}次重试)，等待{wait_time}秒后重试...")
+                wait_time = 2 ** retry_count  # Exponential backoff: 2 seconds, 4 seconds, 8 seconds
+                logger.warning(f"⚠️ Batch write timeout (No.{retry_count}/{max_retries}retries), wait{wait_time}Try again in seconds...")
                 
-                # 🔥 根据运行环境选择 sleep 方式
+                # 🔥 Choose the sleep mode according to the operating environment
                 if in_thread_pool:
                     import time
                     time.sleep(wait_time)
                 else:
                     await asyncio.sleep(wait_time)
             else:
-                logger.error(f"❌ 批量写入失败，已重试{max_retries}次: {e}")
+                logger.error(f"❌ Batch write failed, retried{max_retries}times: {e}")
                 raise
                 
         except Exception as e:
-            # 检查是否是超时相关的错误
+            # Check if it is a timeout related error
             error_msg = str(e).lower()
             if 'timeout' in error_msg or 'timed out' in error_msg:
                 retry_count += 1
                 if retry_count < max_retries:
                     wait_time = 2 ** retry_count
-                    logger.warning(f"⚠️ 批量写入超时 (第{retry_count}/{max_retries}次重试)，等待{wait_time}秒后重试... 错误: {e}")
+                    logger.warning(f"⚠️ Batch write timeout (No.{retry_count}/{max_retries}retries), wait{wait_time}Try again in seconds... Error: {e}")
                     
-                    # 🔥 根据运行环境选择 sleep 方式
+                    # 🔥 Choose the sleep mode according to the operating environment
                     if in_thread_pool:
                         import time
                         time.sleep(wait_time)
                     else:
                         await asyncio.sleep(wait_time)
                 else:
-                    logger.error(f"❌ 批量写入失败，已重试{max_retries}次: {e}")
+                    logger.error(f"❌ Batch write failed, retried{max_retries}times: {e}")
                     raise
             else:
-                logger.error(f"❌ 批量写入失败: {e}")
+                logger.error(f"❌ Batch write failed: {e}")
                 raise
     
-    raise Exception(f"批量写入失败，已重试{max_retries}次")
+    raise Exception(f"Batch write failed, retried{max_retries}times")
 
 
 async def safe_sleep(seconds: float):
     """
-    线程安全的 sleep 操作
+    Thread-safe sleep operation
     
-    自动检测运行环境：
-    - 在主线程中：使用 asyncio.sleep
-    - 在线程池中：使用 time.sleep
+    Automatically detect the running environment:
+    - In the main thread: use asyncio.sleep
+    - In the thread pool: use time.sleep
     
     Args:
-        seconds: 睡眠秒数
+        seconds: sleep seconds
     """
     if is_in_thread_pool():
         import time

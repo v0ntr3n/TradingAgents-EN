@@ -4,11 +4,11 @@
       <div class="card-header">
         <span class="header-title">
           <el-icon><VideoPlay /></el-icon>
-          进行中任务
+          ongoing tasks
           <el-badge v-if="runningTasks.length > 0" :value="runningTasks.length" type="primary" />
         </span>
         <el-button text size="small" @click="$emit('view-all')">
-          查看全部 <el-icon><ArrowRight /></el-icon>
+          View all <el-icon><ArrowRight /></el-icon>
         </el-button>
       </div>
     </template>
@@ -19,10 +19,10 @@
 
     <div v-else-if="runningTasks.length === 0" class="empty-state">
       <el-icon class="empty-icon"><CircleCheck /></el-icon>
-      <p>当前没有进行中的任务</p>
+      <p>There are currently no tasks in progress</p>
       <el-button type="primary" size="small" @click="$emit('start-analysis')">
         <el-icon><TrendCharts /></el-icon>
-        开始新分析
+        Start a new analysis
       </el-button>
     </div>
 
@@ -57,7 +57,7 @@
               <span class="progress-text">{{ task.progress }}%</span>
             </span>
             <span class="task-duration" v-else-if="task.started_at">
-              已运行 {{ formatDuration(task.started_at) }}
+              Already run {{ formatDuration(task.started_at) }}
             </span>
             <span class="task-type-label">{{ getTaskTypeLabel(task.task_type) }}</span>
           </div>
@@ -93,12 +93,12 @@ const loadRunningTasks = async () => {
     const res = await analysisApi.getTaskList({ status: 'running', limit: 10 })
     const body: any = (res as any)?.data?.data || (res as any)?.data || res || {}
     const tasks = body.tasks || []
-    // 兼容 status=processing 的任务（部分任务用 processing 状态）
+    // Compatible status=processing tasks (some tasks use processing status)
     runningTasks.value = tasks.filter((t: any) =>
       RUNNING_STATUSES.includes(t.status) || t.status === 'processing'
     )
   } catch (error) {
-    console.error('加载进行中任务失败:', error)
+    console.error('Failed to load ongoing tasks:', error)
     runningTasks.value = []
   } finally {
     loading.value = false
@@ -126,17 +126,17 @@ const getTaskTypeClass = (task: any) => {
 
 const getTaskTypeLabel = (type?: string) => {
   const labelMap: Record<string, string> = {
-    stock_analysis: '单股研究',
-    etf_analysis: 'ETF 分析',
-    batch_analysis: '批量分析',
-    position_analysis: '持仓研究',
-    trade_review: '复盘分析',
-    portfolio_health: '持仓健康',
-    market_overview: '市场概览',
-    sector_analysis: '行业分析',
-    general: '通用研究'
+    stock_analysis: 'single stock research',
+    etf_analysis: 'ETF analysis',
+    batch_analysis: 'Batch analysis',
+    position_analysis: 'Position research',
+    trade_review: 'Review analysis',
+    portfolio_health: 'Healthy positions',
+    market_overview: 'Market overview',
+    sector_analysis: 'Industry analysis',
+    general: 'general studies'
   }
-  return labelMap[type || ''] || '分析任务'
+  return labelMap[type || ''] || 'Analysis tasks'
 }
 
 const formatTaskTitle = (task: any) => {
@@ -144,7 +144,7 @@ const formatTaskTitle = (task: any) => {
   const name = task.stock_name || ''
   if (code && name) return `${code} ${name}`
   if (code) return code
-  return task.task_id?.slice(0, 8) || '未命名任务'
+  return task.task_id?.slice(0, 8) || 'Unnamed task'
 }
 
 const getStatusTagType = (status: string): 'success' | 'info' | 'warning' | 'danger' | 'primary' => {
@@ -160,11 +160,11 @@ const getStatusTagType = (status: string): 'success' | 'info' | 'warning' | 'dan
 
 const getStatusText = (status: string) => {
   const map: Record<string, string> = {
-    pending: '等待中',
-    processing: '处理中',
-    running: '运行中',
-    completed: '已完成',
-    failed: '失败'
+    pending: 'Waiting',
+    processing: 'Processing',
+    running: 'Running',
+    completed: 'Completed',
+    failed: 'failed'
   }
   return map[status] || status
 }
@@ -178,15 +178,15 @@ const formatDuration = (startTime: string) => {
   const seconds = Math.floor((diff % 60000) / 1000)
   if (minutes >= 60) {
     const hours = Math.floor(minutes / 60)
-    return `${hours}小时${minutes % 60}分`
+    return `${hours}hours${minutes % 60}points`
   }
-  if (minutes > 0) return `${minutes}分${seconds}秒`
-  return `${seconds}秒`
+  if (minutes > 0) return `${minutes}points${seconds}seconds`
+  return `${seconds}seconds`
 }
 
 onMounted(() => {
   loadRunningTasks()
-  // 每 30 秒刷新一次进行中任务
+  // Refresh ongoing tasks every 30 seconds
   timer = setInterval(loadRunningTasks, 30000)
 })
 

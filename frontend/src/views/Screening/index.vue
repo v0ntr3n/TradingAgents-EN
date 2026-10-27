@@ -1,32 +1,32 @@
 <template>
   <div class="stock-screening">
-    <!-- 页面标题 -->
+    <!-- Page title -->
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><Search /></el-icon>
-        股票筛选
+        stock screen
       </h1>
       <p class="page-description">
-        默认通过智能对话引导你完成选股；只有在需要精细手动配置时，再进入高级模式
+        By default, intelligent dialogue guides you through stock selection; enter advanced mode only when detailed manual configuration is required.
       </p>
     </div>
 
-    <!-- Tab 切换 -->
+    <!-- Tab switch -->
     <el-tabs v-model="activeTab" class="screening-tabs">
-      <el-tab-pane label="智能筛选" name="intelligent">
+      <el-tab-pane label="Smart filtering" name="intelligent">
 
         <div class="intelligent-screening">
           <div class="chat-layout">
             <aside class="history-panel" v-loading="aiHistoryLoading">
               <div class="history-header">
                 <div>
-                  <div class="history-title">筛选历史</div>
-                  <div class="history-subtitle">按会话查看之前的智能筛选记录</div>
+                  <div class="history-title">Filter history</div>
+                  <div class="history-subtitle">View previous smart filter records by session</div>
                 </div>
-                <el-button type="primary" size="small" @click="startNewAiConversation">新建</el-button>
+                <el-button type="primary" size="small" @click="startNewAiConversation">New</el-button>
               </div>
               <div v-if="aiConversationList.length === 0" class="history-empty">
-                暂无历史会话
+                No historical conversations yet
               </div>
               <div v-else class="history-list">
                 <div
@@ -40,9 +40,9 @@
                   tabindex="0"
                 >
                   <div class="history-item-header">
-                    <div class="history-item-title">{{ item.title || '未命名筛选' }}</div>
+                    <div class="history-item-title">{{ item.title || 'unnamed filter' }}</div>
                     <div class="history-item-actions" @click.stop>
-                      <el-tooltip content="删除会话" placement="top">
+                      <el-tooltip content="Delete session" placement="top">
                         <el-button type="danger" link size="small" @click.stop="handleDeleteAiConversation(item)">
                           <el-icon><Delete /></el-icon>
                         </el-button>
@@ -57,7 +57,7 @@
               <div ref="aiMessagesContainer" class="messages-container">
               <el-empty
                 v-if="aiMessages.length === 0 && !aiLoading"
-                description="输入选股需求开始对话，例如：帮我选几只低估值的银行股"
+                description="Enter your stock selection requirements to start the conversation, for example: Help me select a few low-valued bank stocks"
                 :image-size="80"
               />
               <div v-else class="messages-list">
@@ -73,7 +73,7 @@
                       <div v-if="msg.progressSteps?.length" class="progress-timeline">
                         <div class="timeline-header">
                           <span class="timeline-title">{{ getPhaseLabel(msg.phase) }}</span>
-                          <span v-if="aiLoading && idx === aiPendingAssistantIndex" class="timeline-status">处理中</span>
+                          <span v-if="aiLoading && idx === aiPendingAssistantIndex" class="timeline-status">Processing</span>
                         </div>
                         <div v-for="(step, stepIdx) in msg.progressSteps" :key="`${idx}-${stepIdx}`" class="timeline-step">
                           <span class="step-dot" :class="[{ success: step.tone === 'success' }, { active: aiLoading && idx === aiPendingAssistantIndex && stepIdx === msg.progressSteps.length - 1 }]"></span>
@@ -88,16 +88,16 @@
                         <el-tag v-for="t in msg.tools_used" :key="t" size="small" type="info">{{ t }}</el-tag>
                       </div>
                       <div v-if="msg.phase === 'confirmation' && idx === aiMessages.length - 1 && !aiLoading" class="confirmation-actions">
-                        <el-button type="primary" size="small" @click="sendAiMessage('按原需求筛选')">按原需求筛选</el-button>
-                        <el-button type="success" size="small" @click="sendAiMessage('采纳建议后筛选')">采纳建议后筛选</el-button>
+                        <el-button type="primary" size="small" @click="sendAiMessage('Filter by original requirements')">Filter by original requirements</el-button>
+                        <el-button type="success" size="small" @click="sendAiMessage('Filter after taking suggestions')">Filter after taking suggestions</el-button>
                       </div>
                       <div v-if="msg.phase === 'planning' && idx === aiMessages.length - 1 && !aiLoading" class="confirmation-actions">
-                        <el-button type="primary" size="small" @click="sendAiMessage('执行筛选方案')">执行筛选方案</el-button>
-                        <el-button type="default" size="small" @click="sendAiMessage('重新描述需求')">重新描述需求</el-button>
+                        <el-button type="primary" size="small" @click="sendAiMessage('Execute screening plan')">Execute screening plan</el-button>
+                        <el-button type="default" size="small" @click="sendAiMessage('Re-describe requirements')">Re-describe requirements</el-button>
                       </div>
                       <div v-if="msg.stocks?.length" class="stock-cards">
                         <el-alert v-if="msg.is_fallback" type="warning" :closable="false" show-icon
-                          title="以下为优质股替代候选，不代表满足您原始筛选条件；如需继续精确筛选，请补充更明确条件" style="margin-bottom:8px;" />
+                          title="The following are alternative candidates for high-quality stocks, which does not mean that they meet your original screening conditions; if you need to continue precise screening, please add more specific conditions" style="margin-bottom:8px;" />
                         <el-card v-for="s in msg.stocks" :key="s.code" class="stock-card" shadow="hover">
                           <div class="stock-card-header">
                             <span class="stock-name">{{ s.name }}</span>
@@ -105,23 +105,23 @@
                             <el-tag size="small" type="info">{{ s.industry }}</el-tag>
                           </div>
                           <div class="stock-card-metrics">
-                            <span v-if="s.price != null">价格: {{ s.price?.toFixed(2) }}</span>
+                            <span v-if="s.price != null">price: {{ s.price?.toFixed(2) }}</span>
                             <span v-if="s.pe != null">{{ s.pe_display_label || 'PE' }}: {{ s.pe?.toFixed(1) }}</span>
                             <span v-if="s.pb != null">{{ s.pb_display_label || 'PB' }}: {{ s.pb?.toFixed(2) }}</span>
                             <span v-if="s.roe != null">ROE: {{ s.roe?.toFixed(2) }}%</span>
                             <span v-if="s.roa != null">ROA: {{ s.roa?.toFixed(2) }}%</span>
-                            <span v-if="s.gross_margin != null">毛利率: {{ s.gross_margin?.toFixed(1) }}%</span>
-                            <span v-if="s.netprofit_margin != null">净利率: {{ s.netprofit_margin?.toFixed(1) }}%</span>
-                            <span v-if="s.dividend_yield != null">股息率: {{ s.dividend_yield?.toFixed(2) }}%</span>
-                            <span v-if="s.debt_to_assets != null">负债率: {{ s.debt_to_assets?.toFixed(2) }}%</span>
-                            <span v-if="s.assets_to_eqt != null">权益乘数: {{ s.assets_to_eqt?.toFixed(2) }}</span>
-                            <span v-if="s.current_ratio != null">流动比率: {{ s.current_ratio?.toFixed(2) }}</span>
-                            <span v-if="s.quick_ratio != null">速动比率: {{ s.quick_ratio?.toFixed(2) }}</span>
-                            <span v-if="s.cash_ratio != null">现金比率: {{ s.cash_ratio?.toFixed(2) }}</span>
-                            <span v-if="s.revenue_ttm != null">营收TTM: {{ formatAiAmountYi(s.revenue_ttm) }}</span>
-                            <span v-if="s.net_profit_ttm != null">净利TTM: {{ formatAiAmountYi(s.net_profit_ttm) }}</span>
-                            <span v-if="s.n_cashflow_act != null">经营现金流: {{ formatAiAmountYi(s.n_cashflow_act) }}</span>
-                            <span v-if="s.report_period">财报期: {{ s.report_period }}</span>
+                            <span v-if="s.gross_margin != null">Gross profit margin: {{ s.gross_margin?.toFixed(1) }}%</span>
+                            <span v-if="s.netprofit_margin != null">net profit margin: {{ s.netprofit_margin?.toFixed(1) }}%</span>
+                            <span v-if="s.dividend_yield != null">dividend yield: {{ s.dividend_yield?.toFixed(2) }}%</span>
+                            <span v-if="s.debt_to_assets != null">Debt ratio: {{ s.debt_to_assets?.toFixed(2) }}%</span>
+                            <span v-if="s.assets_to_eqt != null">equity multiplier: {{ s.assets_to_eqt?.toFixed(2) }}</span>
+                            <span v-if="s.current_ratio != null">current ratio: {{ s.current_ratio?.toFixed(2) }}</span>
+                            <span v-if="s.quick_ratio != null">quick ratio: {{ s.quick_ratio?.toFixed(2) }}</span>
+                            <span v-if="s.cash_ratio != null">cash ratio: {{ s.cash_ratio?.toFixed(2) }}</span>
+                            <span v-if="s.revenue_ttm != null">Revenue TTM: {{ formatAiAmountYi(s.revenue_ttm) }}</span>
+                            <span v-if="s.net_profit_ttm != null">net profit TTM: {{ formatAiAmountYi(s.net_profit_ttm) }}</span>
+                            <span v-if="s.n_cashflow_act != null">operating cash flow: {{ formatAiAmountYi(s.n_cashflow_act) }}</span>
+                            <span v-if="s.report_period">financial reporting period: {{ s.report_period }}</span>
                             <span v-if="s.pct_change != null" :class="(s.pct_change ?? 0) >= 0 ? 'text-red' : 'text-green'">
                               {{ (s.pct_change ?? 0) >= 0 ? '+' : '' }}{{ s.pct_change?.toFixed(2) }}%
                             </span>
@@ -129,7 +129,7 @@
                           <div class="stock-card-reason">{{ s.reason }}</div>
                           <div class="stock-card-actions">
                             <el-button size="small" :type="isFavorited(s.code) ? 'warning' : 'primary'" plain @click="toggleAiFavorite(s)">
-                              {{ isFavorited(s.code) ? '取消关注' : '加入关注列表' }}
+                              {{ isFavorited(s.code) ? 'Unfollow' : 'Add to watchlist' }}
                             </el-button>
                           </div>
                         </el-card>
@@ -142,13 +142,13 @@
               <div class="input-area">
                 <div class="input-row">
                   <el-input v-model="aiInput" type="textarea" :rows="2" :autosize="{ minRows: 2, maxRows: 5 }"
-                    placeholder="输入选股需求，如：帮我选几只低估值的银行股、PE低于20的消费股"
+                    placeholder="Enter your stock selection requirements, such as: help me select a few bank stocks with low valuations and consumer stocks with a PE lower than 20."
                     :disabled="aiLoading" @keydown.enter.ctrl="handleAiSend" />
-                  <el-button type="primary" :loading="aiLoading" :disabled="!aiInput.trim()" class="send-btn" @click="handleAiSend">发送</el-button>
+                  <el-button type="primary" :loading="aiLoading" :disabled="!aiInput.trim()" class="send-btn" @click="handleAiSend">send</el-button>
                 </div>
                 <div class="input-tip-row">
-                  <span class="input-tip">Ctrl+Enter 发送</span>
-                  <el-button v-if="aiMessages.length > 0 && !aiLoading" type="default" size="small" link @click="handleClearAi">清空当前会话</el-button>
+                  <span class="input-tip">Ctrl+Enter send</span>
+                  <el-button v-if="aiMessages.length > 0 && !aiLoading" type="default" size="small" link @click="handleClearAi">Clear current session</el-button>
                 </div>
               </div>
             </div>
@@ -157,30 +157,30 @@
 
       </el-tab-pane>
 
-      <el-tab-pane label="高级模式" name="traditional">
+      <el-tab-pane label="Advanced mode" name="traditional">
 
-    <!-- 筛选条件面板 -->
+    <!-- filter panel -->
     <el-card class="filter-panel" shadow="never" v-loading="fieldsLoading">
       <template #header>
         <div class="card-header">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <span>筛选条件</span>
+            <span>Filter criteria</span>
             <el-tag v-if="currentDataSource" type="info" size="small" effect="plain">
               <el-icon style="vertical-align: middle; margin-right: 4px;"><Connection /></el-icon>
-              当前数据源: {{ currentDataSource.name }}
+              Current data source: {{ currentDataSource.name }}
               <span v-if="currentDataSource.token_source_display" style="margin-left: 4px; opacity: 0.8;">
                 ({{ currentDataSource.token_source_display }})
               </span>
             </el-tag>
             <el-tag v-else type="warning" size="small">
               <el-icon style="vertical-align: middle; margin-right: 4px;"><Warning /></el-icon>
-              无可用数据源
+              No data source available
             </el-tag>
           </div>
           <div class="header-actions">
             <el-select
               v-model="selectedPresetId"
-              placeholder="选择筛选方案"
+              placeholder="Select filtering plan"
               clearable
               :loading="presetsLoading"
               style="width: 180px"
@@ -194,14 +194,14 @@
               />
             </el-select>
             <el-button type="text" :loading="presetsLoading" @click="saveCurrentPreset">
-              保存方案
+              save scheme
             </el-button>
             <el-button type="text" :disabled="!selectedPresetId || presetsLoading" @click="deleteCurrentPreset">
-              删除方案
+              Delete plan
             </el-button>
             <el-button type="text" @click="resetFilters">
               <el-icon><Refresh /></el-icon>
-              重置
+              reset
             </el-button>
           </div>
         </div>
@@ -211,21 +211,21 @@
         <el-row :gutter="24" class="filter-summary-row">
           <el-col :span="24">
             <div class="registry-hint">
-              默认先展示常用筛选参数；需要更细条件时，再从高级字段里按需添加。全部可用字段共 {{ totalVisibleFieldCount }} 个。
+              By default, common filtering parameters are displayed first; when more detailed conditions are needed, add them as needed from the advanced fields. All available fields total {{ totalVisibleFieldCount }} .
             </div>
           </el-col>
         </el-row>
 
         <el-empty
           v-if="!filterCategorySections.length && !fieldsLoading"
-          description="暂无可用筛选字段"
+          description="No filter fields available yet"
           :image-size="80"
         />
 
         <div v-if="activeConditionSummaries.length" class="active-summary-panel">
           <div class="active-summary-header">
-            <span>当前生效条件</span>
-            <el-tag size="small" type="success" effect="plain">{{ activeConditionSummaries.length }}项</el-tag>
+            <span>Current effective conditions</span>
+            <el-tag size="small" type="success" effect="plain">{{ activeConditionSummaries.length }}item</el-tag>
           </div>
           <div class="active-summary-tags">
             <el-tag
@@ -242,27 +242,27 @@
         <div v-if="hasLegacyCommonFilters" class="common-filter-panel">
           <div class="common-filter-header">
             <div>
-              <div class="common-filter-title">常用条件</div>
-              <div class="common-filter-subtitle">先用最常筛的 {{ commonFieldCount }} 个参数快速缩小范围；不常用字段放到下面的高级字段里再补。</div>
+              <div class="common-filter-title">Common conditions</div>
+              <div class="common-filter-subtitle">Use the most sifted first {{ commonFieldCount }} parameters to quickly narrow down the scope; put the less commonly used fields into the advanced fields below and add them later.</div>
             </div>
           </div>
 
           <el-row :gutter="24" class="common-field-grid">
             <el-col :span="8">
-              <el-form-item label="股票代码/名称" class="dynamic-field-item">
+              <el-form-item label="Stock code/name" class="dynamic-field-item">
                 <el-input
                   v-model="fieldFilters.keyword.scalarValue"
-                  placeholder="请输入股票代码或名称"
+                  placeholder="Please enter stock code or name"
                   clearable
                 />
               </el-form-item>
             </el-col>
 
             <el-col :span="8">
-              <el-form-item label="行业分类" class="dynamic-field-item">
+              <el-form-item label="Industry classification" class="dynamic-field-item">
                 <el-select
                   v-model="fieldFilters.industry.selectedValues"
-                  placeholder="选择行业"
+                  placeholder="Select industry"
                   multiple
                   filterable
                   clearable
@@ -280,18 +280,18 @@
             </el-col>
 
             <el-col :span="8">
-              <el-form-item label="市场类型" class="dynamic-field-item">
-                <el-select v-model="basicFilters.market" placeholder="选择市场" disabled>
-                  <el-option label="A股" value="A股" />
+              <el-form-item label="market type" class="dynamic-field-item">
+                <el-select v-model="basicFilters.market" placeholder="Choose a market" disabled>
+                  <el-option label="A shares" value="A shares" />
                 </el-select>
               </el-form-item>
             </el-col>
 
             <el-col :span="8">
-              <el-form-item label="市值范围" class="dynamic-field-item">
+              <el-form-item label="market capitalization range" class="dynamic-field-item">
                 <el-select
                   v-model="basicFilters.marketCapRange"
-                  placeholder="选择市值范围"
+                  placeholder="Select market cap range"
                   clearable
                 >
                   <el-option
@@ -305,18 +305,18 @@
             </el-col>
 
             <el-col :span="8">
-              <el-form-item label="市盈率 (PE)" class="dynamic-field-item">
+              <el-form-item label="P/E ratio (PE)" class="dynamic-field-item">
                 <div class="range-inputs">
                   <el-input-number
                     v-model="fieldFilters.pe.min"
-                    placeholder="最小值"
+                    placeholder="minimum value"
                     :controls="false"
                     style="width: 45%"
                   />
                   <span class="range-separator">-</span>
                   <el-input-number
                     v-model="fieldFilters.pe.max"
-                    placeholder="最大值"
+                    placeholder="maximum value"
                     :controls="false"
                     style="width: 45%"
                   />
@@ -325,18 +325,18 @@
             </el-col>
 
             <el-col :span="8">
-              <el-form-item label="市净率 (PB)" class="dynamic-field-item">
+              <el-form-item label="price to book ratio (PB)" class="dynamic-field-item">
                 <div class="range-inputs">
                   <el-input-number
                     v-model="fieldFilters.pb.min"
-                    placeholder="最小值"
+                    placeholder="minimum value"
                     :controls="false"
                     style="width: 45%"
                   />
                   <span class="range-separator">-</span>
                   <el-input-number
                     v-model="fieldFilters.pb.max"
-                    placeholder="最大值"
+                    placeholder="maximum value"
                     :controls="false"
                     style="width: 45%"
                   />
@@ -349,14 +349,14 @@
                 <div class="range-inputs">
                   <el-input-number
                     v-model="fieldFilters.roe.min"
-                    placeholder="最小值"
+                    placeholder="minimum value"
                     :controls="false"
                     style="width: 45%"
                   />
                   <span class="range-separator">-</span>
                   <el-input-number
                     v-model="fieldFilters.roe.max"
-                    placeholder="最大值"
+                    placeholder="maximum value"
                     :controls="false"
                     style="width: 45%"
                   />
@@ -365,18 +365,18 @@
             </el-col>
 
             <el-col :span="8">
-              <el-form-item label="涨跌幅 (%)" class="dynamic-field-item">
+              <el-form-item label="Increase or decrease (%)" class="dynamic-field-item">
                 <div class="range-inputs">
                   <el-input-number
                     v-model="fieldFilters.pct_chg.min"
-                    placeholder="最小值"
+                    placeholder="minimum value"
                     :controls="false"
                     style="width: 45%"
                   />
                   <span class="range-separator">-</span>
                   <el-input-number
                     v-model="fieldFilters.pct_chg.max"
-                    placeholder="最大值"
+                    placeholder="maximum value"
                     :controls="false"
                     style="width: 45%"
                   />
@@ -385,10 +385,10 @@
             </el-col>
 
             <el-col :span="8">
-              <el-form-item label="成交量" class="dynamic-field-item">
+              <el-form-item label="Volume" class="dynamic-field-item">
                 <el-select
                   v-model="basicFilters.volumeLevel"
-                  placeholder="选择成交量水平"
+                  placeholder="Select volume level"
                   clearable
                 >
                   <el-option
@@ -406,16 +406,16 @@
         <div v-if="availableAdvancedFieldCount" class="advanced-filter-panel">
           <div class="advanced-filter-header">
             <div>
-              <div class="advanced-filter-title">高级字段</div>
-              <div class="advanced-filter-subtitle">不常用字段不默认铺开；需要时再主动添加到过滤条件里。</div>
+              <div class="advanced-filter-title">Advanced fields</div>
+              <div class="advanced-filter-subtitle">Frequently used fields are not expanded by default; they are actively added to filter conditions when needed.</div>
             </div>
-            <el-tag size="small" type="info" effect="plain">可选 {{ availableAdvancedFieldCount }} 项</el-tag>
+            <el-tag size="small" type="info" effect="plain">Optional {{ availableAdvancedFieldCount }} item</el-tag>
           </div>
 
-          <el-form-item label="添加字段" class="advanced-picker-item">
+          <el-form-item label="Add field" class="advanced-picker-item">
             <el-select
               v-model="selectedAdvancedFieldNames"
-              placeholder="选择要追加的高级字段"
+              placeholder="Select advanced fields to append"
               multiple
               filterable
               clearable
@@ -435,7 +435,7 @@
                 />
               </el-option-group>
             </el-select>
-            <div class="field-help">只显示你主动添加的字段；移除字段会同时清空对应条件。</div>
+            <div class="field-help">Only fields you actively add will be displayed; removing fields will clear the corresponding conditions at the same time.</div>
           </el-form-item>
 
           <div v-if="selectedAdvancedFields.length" class="advanced-selected-tags">
@@ -458,7 +458,7 @@
             >
               <div class="condition-section-header">
                 <span>{{ category.label }}</span>
-                <el-tag size="small" type="info" effect="plain">{{ category.fields.length }}项</el-tag>
+                <el-tag size="small" type="info" effect="plain">{{ category.fields.length }}item</el-tag>
               </div>
 
               <el-row :gutter="24">
@@ -471,7 +471,7 @@
                     <template v-if="field.name === 'industry'">
                       <el-select
                         v-model="fieldFilters[field.name].selectedValues"
-                        placeholder="选择行业"
+                        placeholder="Select industry"
                         multiple
                         filterable
                         clearable
@@ -490,11 +490,11 @@
                     <template v-else-if="isBooleanField(field)">
                       <el-select
                         v-model="fieldFilters[field.name].booleanValue"
-                        placeholder="不限"
+                        placeholder="No limit"
                         clearable
                       >
-                        <el-option label="否" value="false" />
-                        <el-option label="是" value="true" />
+                        <el-option label="No" value="false" />
+                        <el-option label="Yes" value="true" />
                       </el-select>
                     </template>
 
@@ -502,14 +502,14 @@
                       <div class="range-inputs">
                         <el-input-number
                           v-model="fieldFilters[field.name].min"
-                          placeholder="最小值"
+                          placeholder="minimum value"
                           :controls="false"
                           style="width: 45%"
                         />
                         <span class="range-separator">-</span>
                         <el-input-number
                           v-model="fieldFilters[field.name].max"
-                          placeholder="最大值"
+                          placeholder="maximum value"
                           :controls="false"
                           style="width: 45%"
                         />
@@ -542,11 +542,11 @@
           </div>
 
           <div v-else class="advanced-empty-state">
-            还没有添加高级字段。需要更细条件时，再从上方选择要补充的字段。
+            No advanced fields have been added yet. When more detailed conditions are needed, select the fields to be supplemented from above.
           </div>
         </div>
 
-        <!-- 筛选按钮 -->
+        <!-- filter button -->
         <el-row>
           <el-col :span="24">
             <div class="filter-actions">
@@ -557,10 +557,10 @@
                 size="large"
               >
                 <el-icon><Search /></el-icon>
-                开始筛选
+                Start filtering
               </el-button>
               <el-button @click="resetFilters" size="large">
-                重置条件
+                reset condition
               </el-button>
             </div>
           </el-col>
@@ -568,11 +568,11 @@
       </el-form>
     </el-card>
 
-    <!-- 筛选结果 -->
+    <!-- Filter results -->
     <el-card v-if="screeningResults.length > 0" class="results-panel" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>筛选结果 ({{ screeningResults.length }}只股票)</span>
+          <span>Filter results ({{ screeningResults.length }}only stocks)</span>
           <div class="header-actions">
             <el-button
               type="primary"
@@ -580,17 +580,17 @@
               :disabled="selectedStocks.length === 0"
             >
               <el-icon><TrendCharts /></el-icon>
-              批量分析 ({{ selectedStocks.length }})
+              Batch analysis ({{ selectedStocks.length }})
             </el-button>
             <el-button type="text" @click="exportResults">
               <el-icon><Download /></el-icon>
-              导出结果
+              Export results
             </el-button>
           </div>
         </div>
       </template>
 
-      <!-- 结果表格 -->
+      <!-- Result table -->
       <el-table
         :data="paginatedResults"
         @selection-change="handleSelectionChange"
@@ -599,7 +599,7 @@
       >
         <el-table-column type="selection" width="55" />
 
-        <el-table-column prop="code" label="股票代码" width="120">
+        <el-table-column prop="code" label="Stock code" width="120">
           <template #default="{ row }">
             <el-link type="primary" @click="viewStockDetail(row)">
               {{ row.symbol }}
@@ -607,18 +607,18 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="name" label="股票名称" width="150" />
+        <el-table-column prop="name" label="Stock name" width="150" />
 
-        <el-table-column prop="industry" label="行业" width="120" />
+        <el-table-column prop="industry" label="Industry" width="120" />
 
-        <el-table-column prop="close" label="当前价格" width="100" align="right">
+        <el-table-column prop="close" label="current price" width="100" align="right">
           <template #default="{ row }">
             <span v-if="row.close">¥{{ row.close?.toFixed(2) }}</span>
             <span v-else class="text-gray-400">-</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="pct_chg" label="涨跌幅" width="100" align="right">
+        <el-table-column prop="pct_chg" label="Increase or decrease" width="100" align="right">
           <template #default="{ row }">
             <span v-if="row.pct_chg !== null && row.pct_chg !== undefined" :class="getChangeClass(row.pct_chg)">
               {{ row.pct_chg > 0 ? '+' : '' }}{{ row.pct_chg?.toFixed(2) }}%
@@ -627,27 +627,27 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="total_mv" label="市值" width="120" align="right">
+        <el-table-column prop="total_mv" label="Market value" width="120" align="right">
           <template #default="{ row }">
             {{ formatMarketCap(row.total_mv) }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="pe" label="市盈率" width="130" align="right">
+        <el-table-column prop="pe" label="P/E ratio" width="130" align="right">
           <template #default="{ row }">
             <span v-if="row.pe">
               {{ row.pe?.toFixed(2) }}
-              <el-tag v-if="row.pe_is_realtime" type="success" size="small" style="margin-left: 4px">实时</el-tag>
+              <el-tag v-if="row.pe_is_realtime" type="success" size="small" style="margin-left: 4px">real time</el-tag>
             </span>
             <span v-else class="text-gray-400">-</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="pb" label="市净率" width="130" align="right">
+        <el-table-column prop="pb" label="price to book ratio" width="130" align="right">
           <template #default="{ row }">
             <span v-if="row.pb">
               {{ row.pb?.toFixed(2) }}
-              <el-tag v-if="row.pe_is_realtime" type="success" size="small" style="margin-left: 4px">实时</el-tag>
+              <el-tag v-if="row.pe_is_realtime" type="success" size="small" style="margin-left: 4px">real time</el-tag>
             </span>
             <span v-else class="text-gray-400">-</span>
           </template>
@@ -659,7 +659,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="提示信息" min-width="260">
+        <el-table-column label="Prompt message" min-width="260">
           <template #default="{ row }">
             <div v-if="getFactorWarningEntries(row).length || getFactorDiagnosticEntries(row).length" class="warning-cell">
               <el-tooltip
@@ -693,10 +693,10 @@
                 <template #content>
                   <div class="warning-tooltip">
                     <div class="warning-tooltip-title">{{ diagnostic.label }}</div>
-                    <div class="warning-tooltip-line">状态：{{ diagnostic.state }}</div>
-                    <div v-if="diagnostic.reason" class="warning-tooltip-line">原因：{{ diagnostic.reason }}</div>
+                    <div class="warning-tooltip-line">Status:{{ diagnostic.state }}</div>
+                    <div v-if="diagnostic.reason" class="warning-tooltip-line">Reason:{{ diagnostic.reason }}</div>
                     <div v-if="diagnostic.missingInputs.length" class="warning-tooltip-line">
-                      缺失输入：{{ diagnostic.missingInputs.join('、') }}
+                      Missing input:{{ diagnostic.missingInputs.join(', ') }}
                     </div>
                   </div>
                 </template>
@@ -709,32 +709,32 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="board" label="板块" width="100">
+        <el-table-column prop="board" label="plate" width="100">
           <template #default="{ row }">
             {{ row.board || '-' }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="exchange" label="交易所" width="140">
+        <el-table-column prop="exchange" label="exchange" width="140">
           <template #default="{ row }">
             {{ row.exchange || '-' }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="Operation" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="text" size="small" @click="analyzeSingle(row)">
-              分析
+              analysis
             </el-button>
             <el-button type="text" size="small" @click="toggleFavorite(row)">
               <el-icon><Star /></el-icon>
-              {{ isFavorited(row.symbol) ? '取消关注' : '加入关注列表' }}
+              {{ isFavorited(row.symbol) ? 'Unfollow' : 'Add to watchlist' }}
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
+      <!-- Pagination -->
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="currentPage"
@@ -748,14 +748,14 @@
       </div>
     </el-card>
 
-    <!-- 空状态 -->
+    <!-- Empty state -->
     <el-empty
       v-else-if="!screeningLoading && hasSearched"
-      description="未找到符合条件的股票"
+      description="No matching stocks found"
       :image-size="200"
     >
       <el-button type="primary" @click="resetFilters">
-        重新筛选
+        Re-filter
       </el-button>
     </el-empty>
 
@@ -780,12 +780,12 @@ import { getFactorDiagnosticEntries, getFactorWarningEntries } from '@/utils/fac
 import { loadCurrentDataSourceInfo } from '@/utils/dataSource'
 import { normalizeMarketForAnalysis, exchangeCodeToMarket, getMarketByStockCode } from '@/utils/market'
 
-// Markdown 渲染
-// marked 配置已由 @/utils/markdown 统一管理
+// Markdown rendering
+// marked The configuration has been @/utils/markdown Unified management
 const renderScreeningMarkdown = (content: string): string => {
   if (!content?.trim()) return ''
   try {
-    // 移除JSON代码块（股票数据已经通过msg.stocks渲染成卡片了）
+    // Removed JSON code block (stock data has been rendered into cards via msg.stocks)
     let cleanContent = content
       .replace(/```json\s*\{[\s\S]*?\}\s*```/g, '')
       .replace(/```\s*\{[\s\S]*?\}\s*```/g, '')
@@ -795,10 +795,10 @@ const renderScreeningMarkdown = (content: string): string => {
   }
 }
 
-// Tab 状态
+// Tab Status
 const activeTab = ref('intelligent')
 
-// ---- 智能筛选 ----
+// ---- Smart filtering ----
 interface AiDisplayMessage {
   role: 'user' | 'assistant'
   content: string
@@ -829,15 +829,15 @@ const scrollAiToBottom = () => {
 }
 
 const getPhaseLabel = (phase?: AiDisplayMessage['phase']) => {
-  if (phase === 'confirmation') return '需求分析中'
-  if (phase === 'planning') return '执行规划中'
-  if (phase === 'result') return '筛选执行中'
-  return '处理中'
+  if (phase === 'confirmation') return 'Needs analysis in progress'
+  if (phase === 'planning') return 'Execution planning in progress'
+  if (phase === 'result') return 'Filtering in progress'
+  return 'Processing'
 }
 
 const formatAiAmountYi = (value?: number | null) => {
   if (value == null || Number.isNaN(value)) return ''
-  return `${(value / 100000000).toFixed(2)}亿`
+  return `${(value / 100000000).toFixed(2)}billion`
 }
 
 const createAiConversationId = () => `screening-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -857,23 +857,23 @@ const buildToolSummaryText = (tool?: string, summary?: Record<string, number>) =
     const total = summary.total_candidates
     const shown = summary.displayed_candidates
     if (typeof total === 'number' && typeof shown === 'number') {
-      return `${total} 只候选，展示 ${shown} 只`
+      return `${total} Only candidates, display ${shown} only`
     }
   }
 
   if (tool === 'batch_check_profit_consistency') {
     const parts: string[] = []
-    if (typeof summary.stable_count === 'number') parts.push(`稳定 ${summary.stable_count}`)
-    if (typeof summary.volatile_count === 'number') parts.push(`不稳定 ${summary.volatile_count}`)
-    if (typeof summary.no_data_count === 'number') parts.push(`无数据 ${summary.no_data_count}`)
+    if (typeof summary.stable_count === 'number') parts.push(`stable ${summary.stable_count}`)
+    if (typeof summary.volatile_count === 'number') parts.push(`unstable ${summary.volatile_count}`)
+    if (typeof summary.no_data_count === 'number') parts.push(`No data ${summary.no_data_count}`)
     return parts.join(' / ')
   }
 
   if (tool === 'add_stocks_to_favorites') {
     const parts: string[] = []
-    if (typeof summary.added_count === 'number') parts.push(`新增 ${summary.added_count}`)
-    if (typeof summary.existing_count === 'number') parts.push(`已存在 ${summary.existing_count}`)
-    if (typeof summary.failed_count === 'number') parts.push(`失败 ${summary.failed_count}`)
+    if (typeof summary.added_count === 'number') parts.push(`New ${summary.added_count}`)
+    if (typeof summary.existing_count === 'number') parts.push(`Already exists ${summary.existing_count}`)
+    if (typeof summary.failed_count === 'number') parts.push(`failed ${summary.failed_count}`)
     return parts.join(' / ')
   }
 
@@ -901,7 +901,7 @@ const loadAiConversation = async (conversationId?: string | null) => {
       return
     }
     aiMessages.value = []
-  } catch { /* 静默 */ }
+  } catch { /* silence */ }
 }
 
 const loadAiConversationList = async (preferredConversationId?: string | null) => {
@@ -946,13 +946,13 @@ const handleDeleteAiConversation = async (conversation: ScreeningConversationSum
   const conversationId = conversation.conversation_id
   if (!conversationId) return
 
-  const title = conversation.title || '未命名筛选'
+  const title = conversation.title || 'unnamed filter'
   const isCurrentConversation = conversationId === aiCurrentConversationId.value
 
   try {
-    await ElMessageBox.confirm(`确定删除「${title}」吗？相关筛选对话会一起删除。`, '删除筛选会话', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(`Confirm to delete ${title}] ? Related filter conversations will be deleted together.`, 'Delete filtering session', {
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
       type: 'warning',
       confirmButtonClass: 'el-button--danger',
     })
@@ -967,9 +967,9 @@ const handleDeleteAiConversation = async (conversation: ScreeningConversationSum
     }
 
     await loadAiConversationList(isCurrentConversation ? null : aiCurrentConversationId.value)
-    ElMessage.success('筛选会话已删除')
+    ElMessage.success('Filter session deleted')
   } catch {
-    // 用户取消时忽略
+    // Ignore when user cancels
   }
 }
 
@@ -1015,7 +1015,7 @@ const handleAiWebSocketMessage = (envelope: ScreeningWsEnvelope<any>) => {
 
   if (envelope.type === 'started') {
     updatePendingAssistantMessage({ phase: 'result' })
-    appendPendingAssistantLine('已收到请求，开始处理')
+    appendPendingAssistantLine('Request received and processing started')
     return
   }
 
@@ -1026,13 +1026,13 @@ const handleAiWebSocketMessage = (envelope: ScreeningWsEnvelope<any>) => {
     }
 
     if (data.event === 'tool_started' && data.tool) {
-      appendPendingAssistantStep({ text: `正在查询：${data.tool}`, tone: 'info' })
+      appendPendingAssistantStep({ text: `Querying:${data.tool}`, tone: 'info' })
       return
     }
 
     if (data.event === 'tool_completed' && data.tool) {
       appendPendingAssistantStep({
-        text: `已完成：${data.tool}`,
+        text: `Completed:${data.tool}`,
         tone: 'success',
         meta: buildToolSummaryText(data.tool, data.summary),
       })
@@ -1062,8 +1062,8 @@ const handleAiWebSocketMessage = (envelope: ScreeningWsEnvelope<any>) => {
   }
 
   if (envelope.type === 'error') {
-    const message = envelope.data?.message || '智能筛选连接异常'
-    updatePendingAssistantMessage({ content: `抱歉，处理您的请求时出错：${message}` })
+    const message = envelope.data?.message || 'Intelligent filtering connection exception'
+    updatePendingAssistantMessage({ content: `Sorry, an error occurred while processing your request:${message}` })
     aiPendingAssistantIndex.value = null
     aiLoading.value = false
     ElMessage.error(message)
@@ -1081,22 +1081,22 @@ const ensureAiSocket = async (): Promise<ManagedWebSocket> => {
         try {
           aiSocket.value.close()
         } catch (error) {
-          console.debug('[Screening] 关闭旧 AI Socket 失败:', error)
+          console.debug('[Screening] Failed to close old AI Socket:', error)
         }
       }
 
       const token = authStore.token || localStorage.getItem('auth-token') || ''
 
-      // 非京东云模式：必须有 JWT token（京东云模式由 createWebSocket 内部处理）
+      // Non-JD Cloud mode: JWT token is required (JD Cloud mode is handled internally by createWebSocket)
       if (!token) {
-        // 交给 createWebSocket 内部判断京东云模式，这里不提前 reject
-        // 但如果既无 token 又非京东云模式，WS 连接会失败，onError 会 reject
+        // Leave it to createWebSocket to internally determine the JD Cloud mode, and we won t do it in advance here. reject
+        // But if there is neither token nor JD Cloud mode, the WS connection will fail and onError will reject
       }
 
       const ws = createWebSocket('/api/screening/intelligent/ws', {
         autoReconnect: true,
         maxReconnectAttempts: 5,
-        heartbeatInterval: 0, // 筛选 WS 有自己的 ping/pong 机制
+        heartbeatInterval: 0, // Filter WS has its own ping/pong mechanism
         onOpen: () => {
           aiSocketConnected.value = true
           resolve(ws)
@@ -1106,15 +1106,15 @@ const ensureAiSocket = async (): Promise<ManagedWebSocket> => {
         },
         onError: () => {
           aiSocketConnected.value = false
-          // 首次连接失败时 reject
+          // When the first connection fails reject
           if (!aiSocket.value) {
-            reject(new Error('智能筛选 WebSocket 连接失败'))
+            reject(new Error('Smart filtering WebSocket connection failed'))
           }
         },
         onClose: () => {
           aiSocketConnected.value = false
           if (aiLoading.value && aiPendingAssistantIndex.value != null) {
-            updatePendingAssistantMessage({ content: '抱歉，智能筛选流式连接已断开，请重试。' })
+            updatePendingAssistantMessage({ content: 'Sorry, the smart filter streaming connection has been disconnected, please try again.' })
             aiPendingAssistantIndex.value = null
             aiLoading.value = false
           }
@@ -1123,7 +1123,7 @@ const ensureAiSocket = async (): Promise<ManagedWebSocket> => {
 
       aiSocket.value = ws
     } catch (error) {
-      reject(error instanceof Error ? error : new Error('智能筛选连接失败'))
+      reject(error instanceof Error ? error : new Error('Smart filter connection failed'))
     }
   })
 }
@@ -1142,7 +1142,7 @@ const sendAiMessage = async (text: string) => {
       stocks: undefined,
       phase: 'result',
       is_fallback: false,
-      progressSteps: [{ text: '正在建立智能筛选流式连接', tone: 'info' }],
+      progressSteps: [{ text: 'Establishing smart filter streaming connection', tone: 'info' }],
     })
     aiPendingAssistantIndex.value = aiMessages.value.length - 1
     scrollAiToBottom()
@@ -1154,9 +1154,9 @@ const sendAiMessage = async (text: string) => {
       conversation_id: aiCurrentConversationId.value,
     }))
   } catch (e: unknown) {
-    const errMsg = e instanceof Error ? e.message : '请求失败，请稍后重试'
+    const errMsg = e instanceof Error ? e.message : 'Request failed, please try again later'
     ElMessage.error(errMsg)
-    updatePendingAssistantMessage({ content: `抱歉，处理您的请求时出错：${errMsg}` })
+    updatePendingAssistantMessage({ content: `Sorry, an error occurred while processing your request:${errMsg}` })
     aiPendingAssistantIndex.value = null
     aiLoading.value = false
   } finally {
@@ -1169,8 +1169,8 @@ const sendAiMessage = async (text: string) => {
 const handleAiSend = () => sendAiMessage(aiInput.value)
 
 const handleClearAi = () => {
-  ElMessageBox.confirm('确定清空当前筛选会话吗？', '提示', {
-    confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
+  ElMessageBox.confirm('Are you sure you want to clear the current filtering session?', 'Tips', {
+    confirmButtonText: 'OK', cancelButtonText: 'Cancel', type: 'warning'
   }).then(async () => {
     try {
       const clearedConversationId = aiCurrentConversationId.value
@@ -1178,9 +1178,9 @@ const handleClearAi = () => {
       aiMessages.value = []
       aiCurrentConversationId.value = null
       await loadAiConversationList()
-      ElMessage.success('已清空当前会话')
+      ElMessage.success('Current session cleared')
     } catch (e: unknown) {
-      ElMessage.error(e instanceof Error ? e.message : '清空失败')
+      ElMessage.error(e instanceof Error ? e.message : 'Clearing failed')
     }
   }).catch(() => {})
 }
@@ -1191,8 +1191,8 @@ type FavoriteCandidate = {
   market?: string
 }
 
-// ---- 传统筛选 ----
-// 响应式数据
+// ---- traditional screening ----
+// Responsive data
 const screeningLoading = ref(false)
 const hasSearched = ref(false)
 const screeningResults = ref<StockInfo[]>([])
@@ -1200,11 +1200,11 @@ const selectedStocks = ref<StockInfo[]>([])
 const currentPage = ref(1)
 const pageSize = ref(20)
 
-// 路由 & 自选集
+// routing & self-selected collection
 const router = useRouter()
 const favoriteSet = ref<Set<string>>(new Set())
 
-// 当前数据源
+// Current data source
 const currentDataSource = ref<{
   name: string
   priority: number
@@ -1213,7 +1213,7 @@ const currentDataSource = ref<{
   token_source_display?: string
 } | null>(null)
 
-// 字段配置
+// Field configuration
 const fieldConfig = ref<FieldConfigResponse | null>(null)
 const fieldsLoading = ref(false)
 
@@ -1242,38 +1242,38 @@ type BasicFiltersState = {
 }
 
 const createDefaultBasicFilters = (): BasicFiltersState => ({
-  market: 'A股',
+  market: 'A shares',
   marketCapRange: '',
   volumeLevel: '',
 })
 
 const basicFilters = reactive<BasicFiltersState>(createDefaultBasicFilters())
 
-// 行业选项（动态加载）
+// Industry options (dynamically loaded)
 const industryOptions = ref<Array<{label: string, value: string, count?: number}>>([])
 
 const marketCapRangeOptions = [
-  { label: '小盘股 (< 100亿)', value: 'small' as const },
-  { label: '中盘股 (100-500亿)', value: 'medium' as const },
-  { label: '大盘股 (> 500亿)', value: 'large' as const },
+  { label: 'small cap stocks (< 100 billion)', value: 'small' as const },
+  { label: 'mid-cap stocks (100-500 billion)', value: 'medium' as const },
+  { label: 'large cap stocks (> 500 billion)', value: 'large' as const },
 ]
 
 const volumeLevelOptions = [
-  { label: '活跃 (高成交量)', value: 'high' as const },
-  { label: '正常 (中等成交量)', value: 'medium' as const },
-  { label: '清淡 (低成交量)', value: 'low' as const },
+  { label: 'active (high volume)', value: 'high' as const },
+  { label: 'normal (medium volume)', value: 'medium' as const },
+  { label: 'light (low volume)', value: 'low' as const },
 ]
 
 const marketCapRangeLabels: Record<Exclude<BasicFiltersState['marketCapRange'], ''>, string> = {
-  small: '小盘股 (< 100亿)',
-  medium: '中盘股 (100-500亿)',
-  large: '大盘股 (> 500亿)',
+  small: 'small cap stocks (< 100 billion)',
+  medium: 'mid-cap stocks (100-500 billion)',
+  large: 'large cap stocks (> 500 billion)',
 }
 
 const volumeLevelLabels: Record<Exclude<BasicFiltersState['volumeLevel'], ''>, string> = {
-  high: '活跃 (高成交量)',
-  medium: '正常 (中等成交量)',
-  low: '清淡 (低成交量)',
+  high: 'active (high volume)',
+  medium: 'normal (medium volume)',
+  low: 'light (low volume)',
 }
 
 const marketCapRangeMap: Record<Exclude<BasicFiltersState['marketCapRange'], ''>, { min: number | null; max: number | null }> = {
@@ -1337,7 +1337,7 @@ const fieldEnglishMeta: Record<string, string> = {
 
 const selectedAdvancedFieldNames = ref<string[]>([])
 
-// 计算属性
+// Computed properties
 const paginatedResults = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
@@ -1533,11 +1533,11 @@ const activeConditionSummaries = computed(() => {
     const value = condition.value
 
     if (condition.field === 'total_mv' && basicFilters.marketCapRange) {
-      return `市值范围: ${marketCapRangeLabels[basicFilters.marketCapRange]}`
+      return `market capitalization range: ${marketCapRangeLabels[basicFilters.marketCapRange]}`
     }
 
     if (condition.field === 'amount' && basicFilters.volumeLevel) {
-      return `成交量水平: ${volumeLevelLabels[basicFilters.volumeLevel]}`
+      return `volume level: ${volumeLevelLabels[basicFilters.volumeLevel]}`
     }
 
     if (Array.isArray(value)) {
@@ -1548,7 +1548,7 @@ const activeConditionSummaries = computed(() => {
     }
 
     if (typeof value === 'boolean') {
-      return `${label}: ${value ? '是' : '否'}`
+      return `${label}: ${value ? 'Yes' : 'No'}`
     }
 
     return `${label} ${formatOperatorLabel(condition.operator)} ${value}`
@@ -1565,11 +1565,11 @@ const getTextOperators = (field: FieldInfo) => {
 
 const formatOperatorLabel = (operator: string) => {
   const labels: Record<string, string> = {
-    contains: '包含',
-    '==': '等于',
-    '!=': '不等于',
-    in: '属于',
-    not_in: '不属于',
+    contains: 'contains',
+    '==': 'equal to',
+    '!=': 'not equal to',
+    in: 'Belong to',
+    not_in: 'does not belong',
   }
   return labels[operator] || operator
 }
@@ -1597,7 +1597,7 @@ const buildFieldHelp = (field: FieldInfo) => {
   }
 
   if (englishMeta) {
-    parts.push(`英文：${englishMeta}`)
+    parts.push(`English:${englishMeta}`)
   }
 
   return parts.join(' ')
@@ -1605,12 +1605,12 @@ const buildFieldHelp = (field: FieldInfo) => {
 
 const buildFieldPlaceholder = (field: FieldInfo, operator: string) => {
   if (operator === 'in' || operator === 'not_in') {
-    return `请输入${field.display_name}，多个值用逗号分隔`
+    return `Please enter${field.display_name}, Multiple values separated by commas`
   }
   if (field.name === 'keyword') {
-    return '请输入股票代码或名称'
+    return 'Please enter stock code or name'
   }
-  return `请输入${field.display_name}`
+  return `Please enter${field.display_name}`
 }
 
 const parseMultiValueText = (value: string) =>
@@ -1690,7 +1690,7 @@ const loadLegacyLocalPresets = (): SavedFilterPreset[] => {
     const raw = localStorage.getItem(FILTER_PRESET_STORAGE_KEY)
     return raw ? JSON.parse(raw) : []
   } catch (error) {
-    console.warn('加载筛选方案失败:', error)
+    console.warn('Failed to load filtering scheme:', error)
     return []
   }
 }
@@ -1724,7 +1724,7 @@ const migrateLegacyLocalPresets = async () => {
 
   localStorage.removeItem(FILTER_PRESET_STORAGE_KEY)
   if (migratedCount > 0) {
-    ElMessage.success(`已迁移 ${migratedCount} 个本地筛选方案到账号`) 
+    ElMessage.success(`Migrated ${migratedCount} local filtering scheme to account`) 
   }
 }
 
@@ -1742,10 +1742,10 @@ const loadSavedPresets = async () => {
     try {
       await migrateLegacyLocalPresets()
     } catch (migrationError) {
-      console.warn('迁移本地筛选方案失败:', migrationError)
+      console.warn('Migration of local filtering scheme failed:', migrationError)
     }
   } catch (error) {
-    console.warn('加载账号筛选方案失败:', error)
+    console.warn('Failed to load account filtering scheme:', error)
     savedFilterPresets.value = []
   } finally {
     presetsLoading.value = false
@@ -1753,7 +1753,7 @@ const loadSavedPresets = async () => {
 }
 
 const applyPreset = (preset: SavedFilterPreset) => {
-  basicFilters.market = preset.basicFilters.market || 'A股'
+  basicFilters.market = preset.basicFilters.market || 'A shares'
   resetFieldFilters()
 
   Object.entries(preset.fieldFilters || {}).forEach(([fieldName, state]) => {
@@ -1788,18 +1788,18 @@ const handlePresetSelect = (presetId?: string) => {
   const preset = savedFilterPresets.value.find((item) => item.id === presetId)
   if (!preset) return
   applyPreset(preset)
-  ElMessage.success(`已加载筛选方案：${preset.name}`)
+  ElMessage.success(`Filter scheme loaded:${preset.name}`)
 }
 
 const saveCurrentPreset = async () => {
   try {
-    const { value } = await ElMessageBox.prompt('请输入筛选方案名称', '保存筛选方案', {
-      confirmButtonText: '保存',
-      cancelButtonText: '取消',
+    const { value } = await ElMessageBox.prompt('Please enter the filter scheme name', 'Save filter plan', {
+      confirmButtonText: 'save',
+      cancelButtonText: 'Cancel',
       inputValue: selectedPresetId.value
         ? savedFilterPresets.value.find((item) => item.id === selectedPresetId.value)?.name || ''
         : '',
-      inputPlaceholder: '例如：低估值高ROE',
+      inputPlaceholder: 'For example: low valuation is high ROE',
     })
 
     const name = String(value || '').trim()
@@ -1820,7 +1820,7 @@ const saveCurrentPreset = async () => {
 
     const preset = normalizeSavedPreset(unwrapApiPayload((response as any))?.preset)
     if (!preset) {
-      throw new Error('筛选方案保存失败')
+      throw new Error('Failed to save filtering plan')
     }
 
     upsertSavedPreset({
@@ -1832,10 +1832,10 @@ const saveCurrentPreset = async () => {
       updatedAt: preset.updatedAt,
     })
     selectedPresetId.value = preset.id
-    ElMessage.success(`已保存筛选方案：${name}`)
+    ElMessage.success(`Saved filter scheme:${name}`)
   } catch (error) {
     if (error === 'cancel' || error === 'close') return
-    ElMessage.error(error instanceof Error ? error.message : '保存筛选方案失败')
+    ElMessage.error(error instanceof Error ? error.message : 'Failed to save filter scheme')
   }
 }
 
@@ -1844,18 +1844,18 @@ const deleteCurrentPreset = async () => {
   if (!preset) return
 
   try {
-    await ElMessageBox.confirm(`确定删除筛选方案“${preset.name}”吗？`, '删除筛选方案', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(`Confirm to delete filter scheme ${preset.name} ?`, 'Delete filter scheme', {
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
       type: 'warning',
     })
 
     await screeningApi.deletePreset(preset.id)
     savedFilterPresets.value = savedFilterPresets.value.filter((item) => item.id !== preset.id)
     selectedPresetId.value = ''
-    ElMessage.success(`已删除筛选方案：${preset.name}`)
+    ElMessage.success(`Filter scheme deleted:${preset.name}`)
   } catch {
-    // 用户取消
+    // User cancels
   }
 }
 
@@ -1917,7 +1917,7 @@ const buildDynamicConditions = (): ScreeningConditionItem[] => {
   return conditions
 }
 
-// 方法
+// method
 const performScreening = async () => {
   screeningLoading.value = true
   hasSearched.value = true
@@ -1936,44 +1936,44 @@ const performScreening = async () => {
       use_database_optimization: true,
     }
 
-    // 调试日志：打印请求payload
-    console.log('🔍 筛选请求 payload:', JSON.stringify(payload, null, 2))
-    console.log('🔍 筛选条件 conditions:', conditions)
+    // Debug log: print request payload
+    console.log('🔍 Filter requests payload:', JSON.stringify(payload, null, 2))
+    console.log('🔍 Filter criteria conditions:', conditions)
 
     const res = await screeningApi.runEnhanced(payload, { timeout: 120000 })
-    const data = (res as any)?.data || res // ApiClient封装会返回 {success,data} 格式
+    const data = (res as any)?.data || res // ApiClient The package will return {success,data} Format
     const items = data?.items || []
 
-    // 直接使用后端返回的数据，字段名已统一
+    // Use the data returned by the backend directly, and the field names have been unified
     screeningResults.value = items.map((it: any) => ({
-      symbol: it.symbol || it.code,  // 主字段
-      code: it.symbol || it.code,    // 兼容字段
-      name: it.name || it.symbol || it.code,  // 使用股票名称，如果没有则用代码
-      market: it.market || 'A股',
+      symbol: it.symbol || it.code,  // main field
+      code: it.symbol || it.code,    // Compatible fields
+      name: it.name || it.symbol || it.code,  // Use the stock name or ticker if there is none
+      market: it.market || 'A shares',
       industry: it.industry,
       area: it.area,
-      board: it.board,  // 板块（主板、创业板、科创板等）
-      exchange: it.exchange,  // 交易所（上海证券交易所、深圳证券交易所等）
+      board: it.board,  // Sectors (Main Board, GEM, Science and Technology Innovation Board, etc.)
+      exchange: it.exchange,  // Exchanges (Shanghai Stock Exchange, Shenzhen Stock Exchange, etc.)
 
-      // 市值信息
+      // Market capitalization information
       total_mv: it.total_mv,
       circ_mv: it.circ_mv,
 
-      // 财务指标
+      // financial indicators
       pe: it.pe,
       pb: it.pb,
       pe_ttm: it.pe_ttm,
       pb_mrq: it.pb_mrq,
       roe: it.roe,
 
-      // 交易数据
+      // transaction data
       close: it.close,
       pct_chg: it.pct_chg,
       amount: it.amount,
       turnover_rate: it.turnover_rate,
       volume_ratio: it.volume_ratio,
 
-      // 技术指标
+      // Technical indicators
       ma20: it.ma20,
       rsi14: it.rsi14,
       kdj_k: it.kdj_k,
@@ -1986,16 +1986,16 @@ const performScreening = async () => {
       factor_warnings: it.factor_warnings,
     }))
 
-    ElMessage.success(`筛选完成，找到 ${screeningResults.value.length} 只股票`)
+    ElMessage.success(`Filtering completed, found ${screeningResults.value.length} only stocks`)
   } catch (error) {
-    ElMessage.error('筛选失败，请重试')
+    ElMessage.error('Filtering failed, please try again')
   } finally {
     screeningLoading.value = false
   }
 }
 
 const resetFilters = () => {
-  basicFilters.market = 'A股'
+  basicFilters.market = 'A shares'
   resetFieldFilters()
 
   screeningResults.value = []
@@ -2027,22 +2027,22 @@ const handleSelectionChange = (selection: StockInfo[]) => {
 
 const batchAnalyze = async () => {
   if (selectedStocks.value.length === 0) {
-    ElMessage.warning('请先选择要分析的股票')
+    ElMessage.warning('Please select the stock to analyze first')
     return
   }
 
   try {
     await ElMessageBox.confirm(
-      `确定要对选中的 ${selectedStocks.value.length} 只股票进行批量分析吗？`,
-      '确认批量分析',
+      `Make sure you want to check the selected ${selectedStocks.value.length} Do you perform batch analysis on only stocks?`,
+      'Confirm batch analysis',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'info'
       }
     )
 
-    // 跳转到批量分析页面（携带统一市场参数）
+    // Jump to the batch analysis page (carrying unified market parameters)
     router.push({
       name: 'BatchAnalysis',
       query: {
@@ -2051,7 +2051,7 @@ const batchAnalyze = async () => {
       }
     })
   } catch {
-    // 用户取消
+    // User cancels
   }
 }
 
@@ -2067,7 +2067,7 @@ const analyzeSingle = (stock: StockInfo) => {
 }
 
 const viewStockDetail = (stock: StockInfo) => {
-  // 跳转到股票详情页面
+  // Jump to stock details page
   router.push({
     name: 'StockDetail',
     params: { code: stock.symbol }
@@ -2080,34 +2080,34 @@ const toggleFavorite = async (stock: FavoriteCandidate) => {
   try {
     const code = stock.symbol
     if (favoriteSet.value.has(code)) {
-      // 取消关注
+      // Unfollow
       const res = await favoritesApi.remove(code)
-      if ((res as any)?.success === false) throw new Error((res as any)?.message || '取消失败')
+      if ((res as any)?.success === false) throw new Error((res as any)?.message || 'Cancellation failed')
       favoriteSet.value.delete(code)
-      ElMessage.success(`已取消关注：${stock.name || code}`)
+      ElMessage.success(`Unfollowed:${stock.name || code}`)
     } else {
-      // 加入关注列表
-      // 根据股票代码判断市场类型
-      let marketType = 'A股'
+      // Add to watchlist
+      // Determine market type based on stock code
+      let marketType = 'A shares'
       if ((stock as any).market) {
         marketType = exchangeCodeToMarket((stock as any).market)
       } else {
-        marketType = getMarketByStockCode(code) || 'A股'
+        marketType = getMarketByStockCode(code) || 'A shares'
       }
 
       const payload = {
         symbol: code,
-        stock_code: code,  // 兼容字段
+        stock_code: code,  // Compatible fields
         stock_name: stock.name || code,
         market: marketType
       }
       const res = await favoritesApi.add(payload)
-      if ((res as any)?.success === false) throw new Error((res as any)?.message || '添加失败')
+      if ((res as any)?.success === false) throw new Error((res as any)?.message || 'Add failed')
       favoriteSet.value.add(code)
-      ElMessage.success(`已加入关注列表：${stock.name || code}`)
+      ElMessage.success(`Already added to watchlist:${stock.name || code}`)
     }
   } catch (error: any) {
-    ElMessage.error(error?.message || '自选操作失败')
+    ElMessage.error(error?.message || 'Optional operation failed')
   }
 }
 
@@ -2115,13 +2115,13 @@ const toggleAiFavorite = async (stock: StockRecommendation) => {
   await toggleFavorite({
     symbol: stock.code,
     name: stock.name,
-    market: 'A股',
+    market: 'A shares',
   })
 }
 
 const exportResults = () => {
-  // 导出筛选结果
-  ElMessage.info('导出功能开发中...')
+  // Export filter results
+  ElMessage.info('Export function is under development...')
 }
 
 const getChangeClass = (changePercent: number) => {
@@ -2132,9 +2132,9 @@ const getChangeClass = (changePercent: number) => {
 
 const formatMarketCap = (marketCap: number) => {
   if (marketCap >= 10000) {
-    return `${(marketCap / 10000).toFixed(2)}万亿`
+    return `${(marketCap / 10000).toFixed(2)}trillions`
   } else {
-    return `${marketCap.toFixed(2)}亿`
+    return `${marketCap.toFixed(2)}billion`
   }
 }
 
@@ -2147,7 +2147,7 @@ const handleCurrentChange = (page: number) => {
   currentPage.value = page
 }
 
-// 获取字段配置
+// Get field configuration
 const loadFieldConfig = async () => {
   fieldsLoading.value = true
   try {
@@ -2155,54 +2155,54 @@ const loadFieldConfig = async () => {
     fieldConfig.value = response
     resetFieldFilters(fieldConfig.value)
     syncQuickSelectionsFromFieldFilters()
-    console.log('因子注册表字段配置加载成功:', fieldConfig.value)
+    console.log('Factor registry field configuration loaded successfully:', fieldConfig.value)
   } catch (error) {
-    console.error('加载因子注册表字段配置失败:', error)
-    ElMessage.error('加载字段配置失败')
+    console.error('Load factor registry field configuration failed:', error)
+    ElMessage.error('Failed to load field configuration')
   } finally {
     fieldsLoading.value = false
   }
 }
 
-// 加载行业列表
+// Load industry list
 const loadIndustries = async () => {
   try {
     const response = await screeningApi.getIndustries()
     const data = response.data || response
     industryOptions.value = data.industries || []
-    console.log('行业列表加载成功:', industryOptions.value.length, '个行业')
+    console.log('Industry list loaded successfully:', industryOptions.value.length, 'industries')
   } catch (error) {
-    console.error('加载行业列表失败:', error)
-    ElMessage.error('加载行业列表失败')
-    // 如果加载失败，使用默认的行业列表
+    console.error('Failed to load industry list:', error)
+    ElMessage.error('Failed to load industry list')
+    // If loading fails, use the default industry list
     industryOptions.value = [
-      { label: '银行', value: '银行' },
-      { label: '证券', value: '证券' },
-      { label: '保险', value: '保险' },
-      { label: '房地产', value: '房地产' },
-      { label: '医药生物', value: '医药生物' }
+      { label: 'bank', value: 'bank' },
+      { label: 'securities', value: 'securities' },
+      { label: 'insurance', value: 'insurance' },
+      { label: 'real estate', value: 'real estate' },
+      { label: 'Medical biology', value: 'Medical biology' }
     ]
   }
 }
 
-// 加载自选列表，初始化 favoriteSet
+// Load watchlist, initialize favoriteSet
 const loadFavorites = async () => {
   try {
     const resp = await favoritesApi.list()
     const list = (resp as any)?.data || resp
     const set = new Set<string>()
     ;(list || []).forEach((item: any) => {
-      // 兼容新旧字段
+      // Compatible with old and new fields
       const code = item.symbol || item.stock_code || item.code
       if (code) set.add(code)
     })
     favoriteSet.value = set
   } catch (e) {
-    console.warn('加载自选列表失败，可能未登录或接口不可用。', e)
+    console.warn('Failed to load the watchlist. You may not be logged in or the interface may be unavailable.', e)
   }
 }
 
-// 获取当前数据源
+// Get the current data source
 const loadCurrentDataSource = async () => {
   try {
     const currentSource = await loadCurrentDataSourceInfo()
@@ -2210,21 +2210,21 @@ const loadCurrentDataSource = async () => {
       currentDataSource.value = currentSource
     }
   } catch (e) {
-    console.warn('获取当前数据源失败', e)
+    console.warn('Failed to obtain current data source', e)
   }
 }
 
-// 生命周期
+// life cycle
 onMounted(() => {
-  // 加载字段配置和行业列表
+  // Load field configuration and industry list
   void loadSavedPresets()
   loadFieldConfig()
   loadIndustries()
-  // 初始化自选状态
+  // Initialize the selected state
   loadFavorites()
-  // 加载当前数据源
+  // Load current data source
   loadCurrentDataSource()
-  // 加载智能筛选会话历史
+  // Load smart filter session history
   loadAiConversationList()
 })
 
@@ -2233,7 +2233,7 @@ onUnmounted(() => {
     try {
       aiSocket.value.close()
     } catch (error) {
-      console.debug('[Screening] 页面卸载时关闭 AI Socket 失败:', error)
+      console.debug('[Screening] Failed to close AI Socket when page is unloaded:', error)
     }
     aiSocket.value = null
     aiSocketConnected.value = false
@@ -2459,7 +2459,7 @@ onUnmounted(() => {
     color: #67c23a;
   }
 
-  // ---- 智能筛选样式 ----
+  // ---- Smart filter style ----
   .screening-tabs {
     :deep(.el-tabs__content) {
       overflow: visible;

@@ -9,7 +9,7 @@
         {{ item.title }}
       </el-breadcrumb-item>
     </el-breadcrumb>
-    <el-tag v-if="isAdvancedRoute" type="warning" size="small" effect="dark">高级</el-tag>
+    <el-tag v-if="isAdvancedRoute" type="warning" size="small" effect="dark">Advanced</el-tag>
   </div>
 </template>
 
@@ -29,10 +29,10 @@ const breadcrumbList = computed(() => {
     title: item.meta.title as string
   }))
 
-  // 🔥 模板管理路径已调整，不在设置下面，所以去掉"设置"这个面包屑
-  // 如果当前路径包含 templates，过滤掉"设置"标题
+  // 🔥 The template management path has been adjusted and is not under settings, so remove it."settings"this bread crumbs
+  // If the current path contains templates, filter out"settings"Title
   if (route.path.includes('/templates') || route.path.includes('/settings/templates')) {
-    return breadcrumbs.filter(item => item.title !== '设置')
+    return breadcrumbs.filter(item => item.title !== 'settings')
   }
 
   return breadcrumbs

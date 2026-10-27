@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试完整的工具调用工作流程
+Test the complete tool invocation workflow
 """
 
 import os
@@ -8,16 +8,16 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def test_deepseek_complete_workflow():
-    """测试DeepSeek的完整工具调用工作流程"""
-    print("🤖 测试DeepSeek完整工作流程")
+    """Testing DeepSeek s complete tool invocation workflow"""
+    print("🤖 Test the complete DeepSeek workflow")
     print("=" * 60)
     
     try:
@@ -25,116 +25,116 @@ def test_deepseek_complete_workflow():
         from langchain_core.tools import BaseTool
         from langchain_core.messages import HumanMessage, ToolMessage
         
-        # 创建DeepSeek实例
+        # Create DeepSeek instance
         deepseek_llm = ChatDeepSeek(
             model="deepseek-chat",
             temperature=0.1,
             max_tokens=2000
         )
         
-        # 创建模拟工具
+        # Create simulation tools
         class MockChinaStockDataTool(BaseTool):
             name: str = "get_china_stock_data"
-            description: str = "获取中国A股股票000002的市场数据和技术指标"
+            description: str = "Get market data and technical indicators for China A-share stock 000002"
             
             def _run(self, query: str = "") -> str:
-                return """# 000002 万科A 股票数据分析
+                return """# 000002 Vanke A stock data analysis
 
-## 📊 实时行情
-- 股票名称: 万科A
-- 当前价格: ¥6.56
-- 涨跌幅: 0.61%
-- 成交量: 934,783手
+## 📊 Real-time quotes
+- Stock name: Vanke A
+- current price: ¥6.56
+- Increase or decrease: 0.61%
+- Volume: 934,783 hand
 
-## 📈 技术指标
-- 10日EMA: ¥6.45
-- 50日SMA: ¥6.78
-- 200日SMA: ¥7.12
+## 📈 Technical indicators
+- 10 day EMA: ¥6.45
+- 50 day SMA: ¥6.78
+- 200 day SMA: ¥7.12
 - RSI: 42.5
 - MACD: -0.08
-- MACD信号线: -0.12
-- 布林带上轨: ¥7.20
-- 布林带中轨: ¥6.80
-- 布林带下轨: ¥6.40
+- MACD signal line: -0.12
+- Bollinger Bands track: ¥7.20
+- Bollinger Bands Middle Track: ¥6.80
+- Bollinger Bands Lower Track: ¥6.40
 - ATR: 0.25"""
         
         tools = [MockChinaStockDataTool()]
         
-        # 第一步：发送初始请求
-        prompt = """请对中国A股股票000002进行详细的技术分析。
+        # Step 1: Send the initial request
+        prompt = """Please provide a detailed technical analysis of China A-share stock 000002.
 
-要求：
-1. 首先调用get_china_stock_data工具获取数据
-2. 然后基于获取的数据进行分析
-3. 输出完整的技术分析报告"""
+Requirements:
+1. First call the get_china_stock_data tool to get the data
+2. Then perform analysis based on the obtained data
+3. Output a complete technical analysis report"""
         
-        print("📤 发送初始请求...")
+        print("📤 Send initial request...")
         chain = deepseek_llm.bind_tools(tools)
         result1 = chain.invoke([HumanMessage(content=prompt)])
         
-        print(f"📊 第一次响应:")
-        print(f"   工具调用数量: {len(result1.tool_calls) if hasattr(result1, 'tool_calls') else 0}")
-        print(f"   响应内容长度: {len(result1.content)}")
-        print(f"   响应内容: {result1.content[:200]}...")
+        print(f"📊 first response:")
+        print(f"   Number of tool calls: {len(result1.tool_calls) if hasattr(result1, 'tool_calls') else 0}")
+        print(f"   Response content length: {len(result1.content)}")
+        print(f"   Response content: {result1.content[:200]}...")
         
         if hasattr(result1, 'tool_calls') and result1.tool_calls:
-            print(f"\n🔧 执行工具调用...")
+            print(f"\n🔧 Execute tool call...")
             
-            # 模拟工具执行
+            # Simulation tool execution
             tool_messages = []
             for tool_call in result1.tool_calls:
                 tool_name = tool_call.get('name')
                 tool_id = tool_call.get('id')
                 
-                print(f"   执行工具: {tool_name}")
+                print(f"   Execution tool: {tool_name}")
                 
-                # 执行工具
-                tool = tools[0]  # 我们只有一个工具
+                # Execution tool
+                tool = tools[0]  # We only have one tool
                 tool_result = tool._run("")
                 
-                # 创建工具消息
+                # Create tool message
                 tool_message = ToolMessage(
                     content=tool_result,
                     tool_call_id=tool_id
                 )
                 tool_messages.append(tool_message)
             
-            # 第二步：发送工具结果，要求生成分析
-            print(f"\n📤 发送工具结果，要求生成分析...")
+            # Step 2: Send tool results and request analysis generation
+            print(f"\n📤 Send tool results and ask for analysis to be generated...")
             messages = [
                 HumanMessage(content=prompt),
                 result1,
                 *tool_messages,
-                HumanMessage(content="现在请基于上述工具获取的数据，生成详细的技术分析报告。报告应该包含具体的数据分析和投资建议。")
+                HumanMessage(content="Now please generate a detailed technical analysis report based on the data obtained by the above tools. The report should contain specific data analysis and investment recommendations.")
             ]
             
             result2 = deepseek_llm.invoke(messages)
             
-            print(f"📊 第二次响应:")
-            print(f"   响应内容长度: {len(result2.content)}")
-            print(f"   响应内容前500字符:")
+            print(f"📊 second response:")
+            print(f"   Response content length: {len(result2.content)}")
+            print(f"   The first 500 characters of the response content:")
             print("-" * 50)
             print(result2.content[:500])
             print("-" * 50)
             
-            # 检查是否包含实际数据分析
-            has_data = any(keyword in result2.content for keyword in ["¥6.56", "RSI", "MACD", "万科A", "42.5"])
-            print(f"   包含实际数据: {'✅' if has_data else '❌'}")
+            # Check if actual data analysis is included
+            has_data = any(keyword in result2.content for keyword in ["¥6.56", "RSI", "MACD", "Vanke A", "42.5"])
+            print(f"   Contains actual data: {'✅' if has_data else '❌'}")
             
             return result2
         else:
-            print("❌ 没有工具调用")
+            print("❌ No tool calls")
             return result1
         
     except Exception as e:
-        print(f"❌ DeepSeek测试失败: {e}")
+        print(f"❌ DeepSeek test failed: {e}")
         import traceback
         traceback.print_exc()
         return None
 
 def test_dashscope_react_agent():
-    """测试百炼的ReAct Agent模式"""
-    print("\n🌟 测试百炼ReAct Agent模式")
+    """Testing Bailian s ReAct Agent mode"""
+    print("\n🌟 Test Bailian ReAct Agent mode")
     print("=" * 60)
     
     try:
@@ -142,137 +142,137 @@ def test_dashscope_react_agent():
         from langchain_core.prompts import PromptTemplate
         from langchain_core.tools import BaseTool
         
-        # 检查是否有百炼API密钥
+        # Check if you have Bailian API key
         if not os.getenv("DASHSCOPE_API_KEY"):
-            print("⚠️ 未找到DASHSCOPE_API_KEY，跳过百炼测试")
+            print("⚠️ DASHSCOPE_API_KEY not found, skipping Bailian test")
             return None
         
         from tradingagents.llm_adapters.dashscope_adapter import ChatDashScope
         
-        # 创建百炼实例
+        # Create a Bailian instance
         dashscope_llm = ChatDashScope(
             model="qwen-plus",
             temperature=0.1,
             max_tokens=2000
         )
         
-        # 创建工具
+        # Create tools
         class MockChinaStockDataTool(BaseTool):
             name: str = "get_china_stock_data"
-            description: str = "获取中国A股股票000002的市场数据和技术指标。直接调用，无需参数。"
+            description: str = "Get market data and technical indicators for China A-share stock 000002. Called directly without parameters."
             
             def _run(self, query: str = "") -> str:
-                print("🔧 [工具执行] get_china_stock_data被调用")
-                return """# 000002 万科A 股票数据分析
+                print("🔧 [tool execution] get_china_stock_data called")
+                return """# 000002 Vanke A stock data analysis
 
-## 📊 实时行情
-- 股票名称: 万科A
-- 当前价格: ¥6.56
-- 涨跌幅: 0.61%
-- 成交量: 934,783手
+## 📊 Real-time quotes
+- Stock name: Vanke A
+- current price: ¥6.56
+- Increase or decrease: 0.61%
+- Volume: 934,783 hand
 
-## 📈 技术指标
-- 10日EMA: ¥6.45
-- 50日SMA: ¥6.78
-- 200日SMA: ¥7.12
+## 📈 Technical indicators
+- 10 day EMA: ¥6.45
+- 50 day SMA: ¥6.78
+- 200 day SMA: ¥7.12
 - RSI: 42.5
 - MACD: -0.08
-- MACD信号线: -0.12
-- 布林带上轨: ¥7.20
-- 布林带中轨: ¥6.80
-- 布林带下轨: ¥6.40
+- MACD signal line: -0.12
+- Bollinger Bands track: ¥7.20
+- Bollinger Bands Middle Track: ¥6.80
+- Bollinger Bands Lower Track: ¥6.40
 - ATR: 0.25"""
         
         tools = [MockChinaStockDataTool()]
         
-        # 创建ReAct Agent
-        prompt_template = """请对中国A股股票000002进行详细的技术分析。
+        # Create ReAct Agent
+        prompt_template = """Please provide a detailed technical analysis of China A-share stock 000002.
 
-执行步骤：
-1. 使用get_china_stock_data工具获取股票市场数据
-2. 基于获取的真实数据进行深入的技术指标分析
-3. 输出完整的技术分析报告内容
+Execution steps:
+1. Get stock market data using get_china_stock_data tool
+2. Conduct in-depth technical indicator analysis based on acquired real data
+3. Output the complete technical analysis report content
 
-重要要求：
-- 必须调用工具获取数据
-- 必须输出完整的技术分析报告内容，不要只是描述报告已完成
-- 报告必须基于工具获取的真实数据进行分析
+Important requirements:
+- Tools must be called to obtain data
+- The complete content of the technical analysis report must be output, do not just describe that the report is completed
+- Reports must be analyzed based on real data obtained by the tool
 
-你有以下工具可用:
+You have the following tools at your disposal:
 {tools}
 
-使用以下格式:
+Use the following format:
 
-Question: 输入的问题
-Thought: 你应该思考要做什么
-Action: 要采取的行动，应该是[{tool_names}]之一
-Action Input: 行动的输入
-Observation: 行动的结果
-... (这个Thought/Action/Action Input/Observation可以重复N次)
-Thought: 我现在知道最终答案了
-Final Answer: 对原始输入问题的最终答案
+Question: input question
+Thought: You should think about what to do
+Action: The action to be taken should be[{tool_names}]one of
+Action Input: action input
+Observation: result of action
+... (This Thought/Action/Action Input/Observation can be repeated N times)
+Thought: I now know the final answer
+Final Answer: Final answer to original input question
 
 Question: {input}
 {agent_scratchpad}"""
 
         prompt = PromptTemplate.from_template(prompt_template)
         
-        # 创建agent
+        # Create agent
         agent = create_react_agent(dashscope_llm, tools, prompt)
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, max_iterations=3)
         
-        print("📤 执行ReAct Agent...")
+        print("📤 execute ReAct Agent...")
         result = agent_executor.invoke({
-            "input": "请对中国A股股票000002进行详细的技术分析"
+            "input": "Please provide a detailed technical analysis of China A-share stock 000002"
         })
         
-        print(f"📊 ReAct Agent结果:")
-        print(f"   输出长度: {len(result['output'])}")
-        print(f"   输出内容前500字符:")
+        print(f"📊 ReAct Agent result:")
+        print(f"   Output length: {len(result['output'])}")
+        print(f"   Output the first 500 characters of the content:")
         print("-" * 50)
         print(result['output'][:500])
         print("-" * 50)
         
-        # 检查是否包含实际数据分析
-        has_data = any(keyword in result['output'] for keyword in ["¥6.56", "RSI", "MACD", "万科A", "42.5"])
-        print(f"   包含实际数据: {'✅' if has_data else '❌'}")
+        # Check if actual data analysis is included
+        has_data = any(keyword in result['output'] for keyword in ["¥6.56", "RSI", "MACD", "Vanke A", "42.5"])
+        print(f"   Contains actual data: {'✅' if has_data else '❌'}")
         
         return result
         
     except Exception as e:
-        print(f"❌ 百炼ReAct Agent测试失败: {e}")
+        print(f"❌ Bailian ReAct Agent test failed: {e}")
         import traceback
         traceback.print_exc()
         return None
 
 def main():
-    """主函数"""
-    print("🔬 完整工具调用工作流程测试")
+    """main function"""
+    print("🔬 Complete tool invocation workflow testing")
     print("=" * 80)
     
-    # 测试DeepSeek
+    # test DeepSeek
     deepseek_result = test_deepseek_complete_workflow()
     
-    # 测试百炼ReAct Agent
+    # Test one hundred refinements ReAct Agent
     dashscope_result = test_dashscope_react_agent()
     
-    # 总结
-    print("\n📋 测试总结")
+    # Summary
+    print("\n📋 Test summary")
     print("=" * 60)
     
     if deepseek_result:
-        has_data = any(keyword in deepseek_result.content for keyword in ["¥6.56", "RSI", "MACD", "万科A"])
-        print(f"✅ DeepSeek: {'成功生成基于数据的分析' if has_data else '调用工具但分析不完整'}")
+        has_data = any(keyword in deepseek_result.content for keyword in ["¥6.56", "RSI", "MACD", "Vanke A"])
+        print(f"✅ DeepSeek: {'Successfully generate data-based analysis' if has_data else 'Tool called but analysis is incomplete'}")
     else:
-        print(f"❌ DeepSeek: 测试失败")
+        print(f"❌ DeepSeek: test failed")
     
     if dashscope_result:
-        has_data = any(keyword in dashscope_result['output'] for keyword in ["¥6.56", "RSI", "MACD", "万科A"])
-        print(f"✅ 百炼ReAct: {'成功生成基于数据的分析' if has_data else '执行但分析不完整'}")
+        has_data = any(keyword in dashscope_result['output'] for keyword in ["¥6.56", "RSI", "MACD", "Vanke A"])
+        print(f"✅ Bailian ReAct: {'Successfully generate data-based analysis' if has_data else 'Executed but analysis is incomplete'}")
     else:
-        print(f"❌ 百炼ReAct: 测试失败")
+        print(f"❌ Bailian ReAct: test failed")
     
-    print("\n🎯 测试完成！")
+    print("\n🎯 Test completed!")
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,8 @@
 """
-Prompt 注入策略服务
+Prompt Inject strategy service
 
-管理 prompt_injection_policies 集合的 CRUD 操作，
-支持按 Agent + 场景查询策略。
+CRUD operations that manage the prompt_injection_policies collection,
+Support pressing Agent + Scenario query strategy.
 """
 
 import logging
@@ -18,7 +18,7 @@ COLLECTION = "prompt_injection_policies"
 
 
 class PromptInjectionPolicyService:
-    """Prompt 注入策略服务"""
+    """Prompt Inject strategy service"""
 
     async def list_policies(
         self,
@@ -27,7 +27,7 @@ class PromptInjectionPolicyService:
         scope: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
-        列表查询，支持 agent_type / agent_name / scope 过滤
+        List query, supports agent_type / agent_name / scope filtering
         """
         db = get_mongo_db()
         query = {}
@@ -71,7 +71,7 @@ class PromptInjectionPolicyService:
         scope: str,
     ) -> Optional[Dict[str, Any]]:
         """
-        按 Agent + 场景获取策略（用于组装服务，异步）
+        press Agent + Scenario acquisition strategy (for assembly services, asynchronous)
         """
         db = get_mongo_db()
         doc = await db[COLLECTION].find_one({
@@ -91,7 +91,7 @@ class PromptInjectionPolicyService:
         scope: str,
     ) -> Optional[Dict[str, Any]]:
         """
-        按 Agent + 场景获取策略（同步版本，用于 base.py 等同步调用）
+        press Agent + Scene acquisition strategy (synchronous version, used for synchronous calls such as base.py)
         """
         from app.core.database import get_mongo_db_sync
         db = get_mongo_db_sync()
@@ -132,7 +132,7 @@ class PromptInjectionPolicyService:
     async def update_policy(self, policy_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """更新策略"""
         db = get_mongo_db()
-        # 排除不可更新字段
+        # Exclude non-updatable fields
         update_data = {k: v for k, v in data.items() if k not in ("id", "_id", "agent_type", "agent_name", "scope", "created_at")}
         if not update_data:
             return await self.get_policy(policy_id)
@@ -161,15 +161,15 @@ class PromptInjectionPolicyService:
 
     async def upsert_policy(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        创建或更新策略（按 agent_type + agent_name + scope 唯一）
-        用于初始化脚本
+        Create or update a policy (press agent_type + agent_name + scope only)
+        for initialization script
         """
         db = get_mongo_db()
         agent_type = data.get("agent_type")
         agent_name = data.get("agent_name")
         scope = data.get("scope", "general")
         if not agent_type or not agent_name:
-            raise ValueError("agent_type 和 agent_name 必填")
+            raise ValueError("agent_type and agent_name are required")
 
         existing = await db[COLLECTION].find_one({
             "agent_type": agent_type,

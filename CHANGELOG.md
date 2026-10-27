@@ -7,52 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [3.0.0] - 2026-09-22
 
-v3.0 是一次平台化升级：多智能体研究引擎重构、智能助手与 Skill 生态、多数据源同步体系，
-并首次发布免费开源的社区版（与 Pro 版功能边界见下）。
+v3.0 It is a platform upgrade: multi-agent research engine reconstruction, intelligent assistant and Skill ecosystem, multi-data source synchronization system,
+And for the first time, a free and open source community version was released (see below for the functional boundaries with the Pro version).
 
-### 重大变化（社区版与 Pro 通用）
+### Breaking changes (common to Community Edition and Pro)
 
-- **多智能体研究引擎 v2**：分析流程分阶段执行（数据采集 → 分析师 → 研究辩论 → 风险评估 → 交易决策），契约化数据模型，分析师可按需组合
-- **智能助手**：从"分析触发器"升级为投资研究协同入口，支持 20+ 操作工具、多主题会话与流式响应
-- **Skill 生态**：Skill 中心（浏览/搜索/安装）、Skill 生成（从零创建或承接 Agent 工坊产出）、能力索引与质量评估
-- **多数据源同步**：Tushare / AKShare / BaoStock 统一管理，基础数据 / 历史行情 / 财务数据分步同步，数据检验纯本地只读
-- **模拟交易与操作复盘**：虚拟资金练习交易，AI 复盘分析操作记录，执行一致性检查
-- **组合分析**：持仓组合的风险收益分析（VaR、压力测试、Brinson 归因等 20+ 工具）
-- **统一任务中心**：分析任务统一调度、进度跟踪、历史记录
-- **学习中心**：24 节 AI 股票分析系统课程 + 进阶交易课程
-- **通知中心**：站内通知、WebSocket 实时推送、SSE 事件流
-- **分析配置档案**：保存常用分析配置（深度/团队/参数），一键复用
-- **汽车销量数据工具**：按品牌 + 月份查询懂车帝车型销量（多智能体工具链）
-- **基础工具链扩充**：估值（DCF/DDM/EVA 等 12 类）、财务质量（Altman-Z/Beneish-M/Piotroski-F）、宏观与行业、技术面（形态/背离/支撑压力）等 200+ 研究工具
+- **Multi-agent research engine v2**: The analysis process is executed in stages (data collection → analyst → research debate → risk assessment → trading decisions), contractual data model, analysts can combine it on demand
+- **Smart Assistant**: from"Analysis trigger"Upgraded to an investment research collaborative portal to support 20+ Action tools, multi-topic sessions, and streaming responses
+- **Skill ecology**: Skill Center (browse/search/install), Skill generation (create from scratch or inherit Agent workshop output), capability index and quality assessment
+- **Synchronization of multiple data sources**: Tushare / AKShare / BaoStock Unified management, basic data/historical market conditions/financial data are synchronized step by step, and data verification is purely local and read-only.
+- **Simulated trading and operation review**: Virtual fund practice trading, AI review and analysis of operation records, and execution of consistency checks
+- **Portfolio analysis**: Risk-return analysis of position portfolios (VaR, stress testing, Brinson attribution, etc. 20+ tools)
+- **unified mission center**: Analyze task unified scheduling, progress tracking, and historical records
+- **Learning Center**: 24 AI Stock Analysis System Course + Advanced Trading Course
+- **Notification center**: In-site notifications, WebSocket real-time push, SSE event streaming
+- **Analyze configuration files**: Save commonly used analysis configurations (depth/team/parameters) and reuse them with one click
+- **Car Sales Data Tool**: by brand + Query the sales volume of Chedi models by month (multi-agent tool chain)
+- **Basic tool chain expansion**: Valuation (12 categories such as DCF/DDM/EVA), financial quality (Altman-Z/Beneish-M/Piotroski-F), macro and industry, technical aspects (form/divergence/support pressure), etc. 200+ research tools
 
-### 社区版（免费开源）包含
+### Community Edition (free and open source) includes
 
-以上全部通用功能，以及：
+All common features above, plus:
 
-- 完整的单股研究 / 研究报告 / 股票筛选 / 关注列表 / 股票详情
-- 模拟交易、操作复盘、组合分析、学习中心、智能助手、Skill 中心与生成
-- 多数据源同步、数据检验、数据库管理、系统配置、版本更新检查
-- 高级功能（批量分析、报告导出、邮件通知、提示词模板等）通过"高级学员"积分体系解锁
+- Complete Single Stock Research / Research Reports / Stock Screeners / Watch Lists / Stock Details
+- Simulated trading, operation review, portfolio analysis, learning center, intelligent assistant, Skill center and generation
+- Multi-data source synchronization, data verification, database management, system configuration, version update check
+- Advanced functions (batch analysis, report export, email notification, prompt word template, etc.) passed"Senior student"Points system unlocked
 
-### Pro 版独有
+### Pro Edition exclusive
 
-- **Agent 工坊**：可视化构建专属 Agent（AgentSpec 契约、缺口补齐 GapJob、断言与执行轨迹）
-- **交易系统**：交易计划管理与执行评估
-- **回测**：策略历史回测
-- **提示词工程**：提示词模板 / 设计 / 预览 / 注入策略管理
-- **多渠道通知**：邮件通知、渠道推送配置、关注列表分组
-- **报告导出**、**历史数据管理**、**社媒情绪分析**、**MCP 集成**
-- **License 授权体系**：在线/离线激活、功能等级管理
+- **Agent workshop**: Visually build exclusive Agent (AgentSpec contract, gap filling GapJob, assertion and execution trace)
+- **trading system**: Trading plan management and execution evaluation
+- **backtest**: Strategy historical backtesting
+- **prompt word project**: Prompt word template/design/preview/injection strategy management
+- **Multi-channel notifications**: Email notification, channel push configuration, watch list grouping
+- **Report export**, **Historical data management**, **Social media sentiment analysis**, **MCP Integrate**
+- **License Authorization system**: Online/offline activation, function level management
 
-### 修复与改进（自 3.0.0-beta 系列）
+### Fixes and improvements (since 3.0.0-beta series)
 
-- 数据检验改为纯本地只读，不再现场拉取外部数据，修复检验期间接口阻塞
-- 历史数据查询全表扫描优化（$or 双字段探测，356 万文档 3s → 0.03s）
-- 通知中心点击跳转 404 修复（存量通知 link 批量刷新）
-- 使用指南（/guide）License 激活步骤社区版自动隐藏
-- 用户手册剥离 License 激活章节（community:remove 标记机制）
-- 社区版 GapJob 断链刷 WARNING 修复（模块缺失时一次性提示后静默停用）
-- Dashboard 图标 markRaw 修复（消除控制台组件响应式警告）
-- start_dev.ps1 版本化启动注入 MongoDB 认证（修复 requires authentication）
-- 开发环境版本隔离：v3.0 / v2.1 / v2.0 / 京东云版独立端口与数据卷
-- 社区版发布管道：publish_community 全量快照 + 泄露扫描 + 标记剥离 + 完整性自检
+- Data inspection is changed to purely local read-only, external data is no longer pulled on-site, and interface blocking during inspection is fixed.
+- Historical data query full table scan optimization ($or Dual field detection, 3.56 million documents 3s → 0.03s) 
+- Notification center click jump 404 repair (stock notification link batch refresh)
+- User Guide (/guide)License Activation Steps Community Edition is automatically hidden
+- User Manual Strips License Activation Chapter (community:remove Marking mechanism)
+- Community version GapJob broken link brush WARNING repair (when the module is missing, it will be silently disabled after a one-time prompt)
+- Dashboard Icon markRaw fix (eliminates console component responsive warnings)
+- start_dev.ps1 Versioned startup injection MongoDB authentication (fix requires authentication)
+- Development environment version isolation: v3.0 / v2.1 / v2.0 / JD Cloud version independent port and data volume
+- Community version release pipeline: publish_community full snapshot + Leak scan + mark stripping + Integrity self-check

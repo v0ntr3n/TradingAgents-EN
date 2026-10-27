@@ -1,7 +1,7 @@
 """
-后处理Agent模块
+Post-processing Agent module
 
-包含所有后处理Agent的实现
+Contains the implementation of all post-processing Agents
 """
 
 from .report_saver import ReportSaverAgent

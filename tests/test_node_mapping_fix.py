@@ -1,11 +1,11 @@
 """
-测试节点映射修复
+Test node mapping fix
 
-验证：
-1. 所有 v2 节点都有映射（包括 neutral_analyst_v2 等）
-2. step_name 和 message 是不同的
-3. step_name 是简短的中文名称
-4. message 是详细的描述
+Verify:
+1. All v2 nodes have mappings (including neutral_analyst_v2 etc.)
+2. step_name is different from message
+3. step_name is the short Chinese name
+4. message is a detailed description
 """
 
 import pytest
@@ -13,155 +13,155 @@ from core.workflow.engine import WorkflowEngine
 
 
 def test_v2_risk_analysts_mapping():
-    """测试 v2 风险分析师节点映射"""
+    """Test v2 risk analyst node mapping"""
     
     engine = WorkflowEngine(None)
     
-    # 测试所有 v2 风险分析师节点
+    # Test all v2 risk analyst nodes
     test_cases = [
-        ("risky_analyst_v2", "高弹性情景分析师", "⚡ 高弹性情景分析师正在审阅结论上修条件..."),
-        ("safe_analyst_v2", "防御情景分析师", "🛡️ 防御情景分析师正在审阅脆弱点与关键风险..."),
-        ("neutral_analyst_v2", "基准情景分析师", "⚖️ 基准情景分析师正在审阅基准情景与证据完整性..."),
-        ("risk_manager_v2", "风险评估师", "👔 风险评估师正在审阅研究结论稳健性..."),
+        ("risky_analyst_v2", "Highly Resilient Scenario Analyst", "⚡ High-resilience scenario analysts are reviewing conditions for upward revisions to conclusions..."),
+        ("safe_analyst_v2", "Defense Scenario Analyst", "🛡️ Defense scenario analysts reviewing vulnerabilities and critical risks..."),
+        ("neutral_analyst_v2", "Baseline Scenario Analyst", "⚖️ Baseline scenario analysts are reviewing the baseline scenario and evidence completeness..."),
+        ("risk_manager_v2", "risk assessor", "👔 Risk assessors are reviewing the robustness of research conclusions..."),
     ]
     
-    print("\n测试 v2 风险分析师节点映射:")
+    print("\n Test v2 risk analyst node mapping:")
     for node_name, expected_step_name, expected_message in test_cases:
         progress, message, step_name = engine._get_node_progress_info(node_name)
         
-        print(f"\n节点: {node_name}")
-        print(f"  进度: {progress}%")
-        print(f"  步骤名称: {step_name}")
-        print(f"  消息: {message}")
+        print(f"\n node: {node_name}")
+        print(f"  Progress: {progress}%")
+        print(f"  step name: {step_name}")
+        print(f"  news: {message}")
         
-        # 验证步骤名称和消息是不同的
-        assert step_name != message, f"步骤名称和消息不应该相同: {node_name}"
+        # Verification step name and message are different
+        assert step_name != message, f"Step name and message should not be the same: {node_name}"
         
-        # 验证步骤名称是简短的中文
-        assert step_name == expected_step_name, f"步骤名称不匹配: 期望 '{expected_step_name}'，实际 '{step_name}'"
+        # Verification step name is short in Chinese
+        assert step_name == expected_step_name, f"Step names don t match: Expectation '{expected_step_name}', actual '{step_name}'"
         
-        # 验证消息是详细的描述
-        assert message == expected_message, f"消息不匹配: 期望 '{expected_message}'，实际 '{message}'"
+        # The verification message is a detailed description
+        assert message == expected_message, f"Message does not match: Expectation '{expected_message}', actual '{message}'"
         
-        # 验证步骤名称不包含英文下划线
-        assert "_" not in step_name, f"步骤名称不应包含下划线: {step_name}"
+        # Verification step name does not contain English underscores
+        assert "_" not in step_name, f"Step names should not contain underscores: {step_name}"
         
-        print(f"  ✅ 验证通过")
+        print(f"  ✅ Verification passed")
 
 
 def test_all_v2_nodes_mapping():
-    """测试所有 v2 节点都有正确的映射"""
+    """Test that all v2 nodes have correct mappings"""
     
     engine = WorkflowEngine(None)
     
-    # 所有 v2 节点
+    # All v2 nodes
     v2_nodes = [
-        # 分析师
+        # analyst
         "market_analyst_v2",
         "fundamentals_analyst_v2",
         "news_analyst_v2",
         "social_analyst_v2",
         "sector_analyst_v2",
         "index_analyst_v2",
-        # 研究员
+        # researcher
         "bull_researcher_v2",
         "bear_researcher_v2",
         "research_manager_v2",
-        # 交易员
+        # trader
         "trader_v2",
-        # 风险管理
+        # risk management
         "risky_analyst_v2",
         "safe_analyst_v2",
         "neutral_analyst_v2",
         "risk_manager_v2",
     ]
     
-    print("\n测试所有 v2 节点映射:")
+    print("\n Test all v2 node mappings:")
     for node_name in v2_nodes:
         progress, message, step_name = engine._get_node_progress_info(node_name)
         
         print(f"\n{node_name}:")
-        print(f"  步骤名称: {step_name}")
-        print(f"  消息: {message}")
+        print(f"  step name: {step_name}")
+        print(f"  news: {message}")
         
-        # 验证返回值不为空
-        assert progress is not None, f"进度不应为空: {node_name}"
-        assert message is not None, f"消息不应为空: {node_name}"
-        assert step_name is not None, f"步骤名称不应为空: {node_name}"
+        # Verify that the return value is not empty
+        assert progress is not None, f"Progress should not be empty: {node_name}"
+        assert message is not None, f"Message should not be empty: {node_name}"
+        assert step_name is not None, f"Step name should not be empty: {node_name}"
         
-        # 验证步骤名称和消息是不同的
-        assert step_name != message, f"步骤名称和消息不应该相同: {node_name}"
+        # Verification step name and message are different
+        assert step_name != message, f"Step name and message should not be the same: {node_name}"
         
-        # 验证步骤名称是中文（不包含 _v2 后缀）
-        assert "_v2" not in step_name, f"步骤名称不应包含 _v2: {step_name}"
-        assert "_" not in step_name, f"步骤名称不应包含下划线: {step_name}"
+        # The verification step name is in Chinese (without the _v2 suffix)
+        assert "_v2" not in step_name, f"Step names should not contain _v2: {step_name}"
+        assert "_" not in step_name, f"Step names should not contain underscores: {step_name}"
         
-        # 验证消息包含 emoji 和中文描述
-        assert len(message) > len(step_name), f"消息应该比步骤名称更详细: {node_name}"
+        # Verification message contains emoji and Chinese description
+        assert len(message) > len(step_name), f"The message should be more detailed than the step name: {node_name}"
         
-        print(f"  ✅ 验证通过")
+        print(f"  ✅ Verification passed")
 
 
 def test_step_name_vs_message_difference():
-    """测试步骤名称和消息的区别"""
+    """Differences between test step names and messages"""
     
     engine = WorkflowEngine(None)
     
     test_cases = [
-        ("market_analyst_v2", "市场分析师", "📈 市场分析师正在分析技术指标和市场趋势..."),
-        ("neutral_analyst_v2", "基准情景分析师", "⚖️ 基准情景分析师正在审阅基准情景与证据完整性..."),
-        ("trader_v2", "研究整合员", "🧩 研究整合员正在生成用户版研究简报..."),
+        ("market_analyst_v2", "market analyst", "📈 Market analysts are analyzing technical indicators and market trends..."),
+        ("neutral_analyst_v2", "Baseline Scenario Analyst", "⚖️ Baseline scenario analysts are reviewing the baseline scenario and evidence completeness..."),
+        ("trader_v2", "research integrator", "🧩 Research integrator is generating a user version of the research brief..."),
     ]
     
-    print("\n测试步骤名称和消息的区别:")
+    print("\n Differences between test step names and messages:")
     for node_name, expected_step_name, expected_message in test_cases:
         progress, message, step_name = engine._get_node_progress_info(node_name)
         
-        print(f"\n节点: {node_name}")
-        print(f"  步骤名称 (current_step_name): {step_name}")
-        print(f"  消息 (message): {message}")
+        print(f"\n node: {node_name}")
+        print(f"  step name (current_step_name): {step_name}")
+        print(f"  news (message): {message}")
         
-        # 验证步骤名称是简短的
-        assert len(step_name) < 12, f"步骤名称应该简短: {step_name}"
+        # Verification step names are short
+        assert len(step_name) < 12, f"Step names should be short: {step_name}"
         
-        # 验证消息是详细的
-        assert len(message) > 10, f"消息应该详细: {message}"
+        # The verification message is detailed
+        assert len(message) > 10, f"The message should be detailed: {message}"
         
-        # 验证步骤名称不包含 emoji
+        # Verification step name does not contain emoji
         assert not any(ord(c) > 127 for c in step_name if c in "📈💰📰💬📊🐂🐻🔬💼⚡🛡️⚖️👔"), \
-            f"步骤名称不应包含 emoji: {step_name}"
+            f"Step names should not contain emoji: {step_name}"
         
-        # 验证消息包含 emoji
-        assert any(ord(c) > 127 for c in message), f"消息应该包含 emoji: {message}"
+        # The verification message contains emoji
+        assert any(ord(c) > 127 for c in message), f"The message should contain emoji: {message}"
         
-        print(f"  ✅ 验证通过")
+        print(f"  ✅ Verification passed")
 
 
 def test_v1_nodes_also_updated():
-    """测试 v1 节点也更新了"""
+    """Test v1 nodes are also updated"""
     
     engine = WorkflowEngine(None)
     
     test_cases = [
-        ("market_analyst", "市场分析师"),
-        ("neutral_analyst", "中性分析师"),
+        ("market_analyst", "market analyst"),
+        ("neutral_analyst", "neutral analyst"),
     ]
     
-    print("\n测试 v1 节点也更新了:")
+    print("\n Test v1 nodes are also updated:")
     for node_name, expected_step_name in test_cases:
         progress, message, step_name = engine._get_node_progress_info(node_name)
         
-        print(f"\n节点: {node_name}")
-        print(f"  步骤名称: {step_name}")
-        print(f"  消息: {message}")
+        print(f"\n node: {node_name}")
+        print(f"  step name: {step_name}")
+        print(f"  news: {message}")
         
-        # 验证步骤名称是中文
-        assert step_name == expected_step_name, f"步骤名称不匹配: 期望 '{expected_step_name}'，实际 '{step_name}'"
+        # Verification step name is in Chinese
+        assert step_name == expected_step_name, f"Step names don t match: Expectation '{expected_step_name}', actual '{step_name}'"
         
-        # 验证步骤名称和消息是不同的
-        assert step_name != message, f"步骤名称和消息不应该相同: {node_name}"
+        # Verification step name and message are different
+        assert step_name != message, f"Step name and message should not be the same: {node_name}"
         
-        print(f"  ✅ 验证通过")
+        print(f"  ✅ Verification passed")
 
 
 if __name__ == "__main__":

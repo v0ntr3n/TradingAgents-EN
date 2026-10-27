@@ -1,6 +1,6 @@
 """
-回测引擎 HTTP 客户端
-调用独立部署的 Backtrader 服务 (避免 GPL 传染)
+Backtesting engine HTTP client
+Call the independently deployed Backtrader service (Avoid GPL contagion)
 """
 import logging
 import os
@@ -11,19 +11,19 @@ import httpx
 logger = logging.getLogger(__name__)
 
 BACKTEST_SERVICE_URL = os.getenv("BACKTEST_SERVICE_URL", "http://localhost:8900")
-# 回测可能需要较长时间（大量数据、多股票、长周期），默认 20 分钟
+# Backtesting may take a long time (large amounts of data, multiple stocks, long periods), default is 20 minutes
 TIMEOUT = float(os.getenv("BACKTEST_SERVICE_TIMEOUT", "1200"))
 
 
 class BacktestEngineClient:
-    """Backtrader 服务 HTTP 客户端"""
+    """Backtrader Serving HTTP clients"""
 
     def __init__(self, base_url: str | None = None, timeout: float = TIMEOUT):
         self.base_url = (base_url or BACKTEST_SERVICE_URL).rstrip("/")
         self.timeout = timeout
 
     async def health(self) -> Dict[str, Any]:
-        """健康检查"""
+        """health check"""
         async with httpx.AsyncClient(timeout=10) as client:
             r = await client.get(f"{self.base_url}/health")
             r.raise_for_status()
@@ -31,9 +31,9 @@ class BacktestEngineClient:
 
     async def run(self, strategy_dsl: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行回测（DSL）
+        Perform backtesting (DSL)
         Args:
-            strategy_dsl: 策略 DSL (JSON)
+            strategy_dsl: Strategy DSL (JSON)
         Returns:
             {"success": bool, "summary": {...}, "error": str|None}
         """
@@ -49,10 +49,10 @@ class BacktestEngineClient:
         self, code: str, config: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        执行回测（Python 代码 + config）
+        Perform backtesting (Python code + config) 
         Args:
-            code: Backtrader 策略类 Python 代码（类名 GeneratedStrategy）
-            config: 回测配置（symbols/universe、start_year、end_year 等）
+            code: Backtrader Strategy class Python code (class name GeneratedStrategy)
+            config: Backtest configuration (symbols/universe, start_year, end_year, etc.)
         Returns:
             {"success": bool, "summary": {...}, "error": str|None}
         """
@@ -66,5 +66,5 @@ class BacktestEngineClient:
 
 
 def get_engine_client() -> BacktestEngineClient:
-    """获取回测引擎客户端单例"""
+    """Get the backtest engine client singleton"""
     return BacktestEngineClient()

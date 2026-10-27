@@ -1,54 +1,54 @@
-// 市场参数规范化：V3.0 聚焦 A 股，港美股已暂停
+// Standardization of market parameters: V3.0 focuses on A shares, Hong Kong and US stocks have been suspended
 export const normalizeMarketForAnalysis = (market: any): string => {
   const raw = String(market ?? '').trim()
   const upper = raw.toUpperCase()
   const cn = raw
-  const isETF = ['ETF', '场内基金'].includes(cn) || upper === 'ETF'
+  const isETF = ['ETF', 'On-exchange funds'].includes(cn) || upper === 'ETF'
   const isA = [
-    'A股', '主板', '创业板', '科创板', '中小板', '沪市', '深市', '上交所', '深交所', '北交所'
+    'A shares', 'motherboard', 'GEM', 'Science and Technology Innovation Board', 'Small and medium board', 'Shanghai Stock Exchange', 'Shenzhen City', 'Shanghai Stock Exchange', 'Shenzhen Stock Exchange', 'Beijing Exchange'
   ].includes(cn) || ['CN', 'SH', 'SZ', 'SSE', 'SZSE'].includes(upper)
   if (isETF) return 'ETF'
-  if (isA) return 'A股'
-  // 默认按A股处理
-  return 'A股'
+  if (isA) return 'A shares'
+  // By default, it is processed as A shares
+  return 'A shares'
 }
 
 /**
- * 将交易所代码转换为市场类型
- * @param exchangeCode 交易所代码（如 "sz", "sh", "hk", "us"）
- * @returns 市场类型（"A股", "港股", "美股"）
+ * Convert exchange symbol to market type
+ * @param exchangeCode exchange code (e.g. "sz", "sh", "hk", "us") 
+ * @returns market type ("A shares", "Hong Kong stocks", "US stocks") 
  */
 export const exchangeCodeToMarket = (exchangeCode: string): string => {
   const code = String(exchangeCode ?? '').toLowerCase().trim()
 
-  // A股交易所代码
+  // A stock exchange code
   if (['sz', 'sh', 'bj', 'sse', 'szse', 'bse'].includes(code)) {
-    return 'A股'
+    return 'A shares'
   }
 
-  // 默认返回A股
-  return 'A股'
+  // Return to A shares by default
+  return 'A shares'
 }
 
 /**
- * 根据股票代码判断市场类型
- * @param stockCode 股票代码
- * @returns 市场类型（"A股", "港股", "美股", "ETF"）
+ * Determine market type based on stock code
+ * @param stockCode Stock code
+ * @returns market type ("A shares", "Hong Kong stocks", "US stocks", "ETF") 
  */
 export const getMarketByStockCode = (stockCode: string): string => {
   const code = String(stockCode ?? '').trim().toUpperCase()
 
-  // 6位数字：先判断 ETF，否则 A股
+  // 6 Digits: Determine ETF first, otherwise A shares
   if (/^\d{6}$/.test(code)) {
     const prefix = code.substring(0, 2)
     if (['50', '51', '52', '56', '58', '15', '16', '18'].includes(prefix)) {
       return 'ETF'
     }
-    return 'A股'
+    return 'A shares'
   }
 
-  // 默认返回A股
-  return 'A股'
+  // Return to A shares by default
+  return 'A shares'
 }
 
 export default {

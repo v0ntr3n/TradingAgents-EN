@@ -1,29 +1,29 @@
-# Config 目录
+# Config Directory
 
-此目录用于存储TradingAgents的配置文件和使用统计数据。
+This directory is used to store configuration files and usage statistics for TradingAgents.
 
-## 文件说明
+## File Descriptions
 
-- `usage.json` - Token使用统计数据（自动生成）
-- `models.json` - 模型配置文件（自动生成）
-- `pricing.json` - 定价配置文件（自动生成）
-- `settings.json` - 系统设置文件（自动生成）
+- `usage.json` - Token usage statistics (auto-generated)
+- `models.json` - Model configuration file (auto-generated)
+- `pricing.json` - Pricing configuration file (auto-generated)
+- `settings.json` - System settings file (auto-generated)
 
-## 重要说明
+## Important Notes
 
-⚠️ **数据持久化**：此目录已在Docker Compose中配置为卷挂载，确保容器重启后配置和统计数据不会丢失。
+⚠️ **Data Persistence**: This directory is configured as a volume mount in Docker Compose to ensure configuration and usage statistics are not lost when containers restart.
 
-🔒 **安全提醒**：此目录可能包含敏感的使用统计信息，请勿将其提交到公共代码仓库。
+🔒 **Security Reminder**: This directory may contain sensitive usage statistics. Do not commit its contents to public code repositories.
 
-## 备份建议
+## Backup Recommendations
 
-建议定期备份此目录中的重要配置文件，特别是：
-- `usage.json` - 包含完整的Token使用历史
-- `settings.json` - 包含个人化设置
+It is recommended to back up important configuration files in this directory regularly, especially:
+- `usage.json` - Contains complete token usage history
+- `settings.json` - Contains personalized settings
 
-## 故障排除
+## Troubleshooting
 
-如果遇到配置问题：
-1. 检查文件权限是否正确
-2. 确认Docker卷挂载是否正常
-3. 查看应用日志获取详细错误信息
+If you encounter configuration issues:
+1. Check whether file permissions are correct
+2. Verify that the Docker volume mount is working properly
+3. Check the application logs for detailed error messages

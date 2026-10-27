@@ -1,4 +1,4 @@
-"""高级课程内容受权访问路由"""
+"""Advanced course content authorized access routing"""
 
 from pathlib import Path
 from typing import Optional
@@ -25,7 +25,7 @@ LESSON_FILE_PREFIX = "lesson-"
 LESSON_FILE_SUFFIX = ".md"
 
 SAMPLE_FILE_MAP = {
-    "000001-research-report-2026-04-30": "000001_研究报告_2026-04-30.md",
+    "000001-research-report-2026-04-30": "000001_research report_2026-04-30.md",
 }
 
 
@@ -36,17 +36,17 @@ def _resolve_within(root: Path, relative_path: str) -> Path:
     try:
         candidate.relative_to(resolved_root)
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail="资源不存在") from exc
+        raise HTTPException(status_code=404, detail="Resource does not exist") from exc
 
     if not candidate.exists() or not candidate.is_file():
-        raise HTTPException(status_code=404, detail="资源不存在")
+        raise HTTPException(status_code=404, detail="Resource does not exist")
 
     return candidate
 
 
 def _resolve_lesson_file(filename: str) -> Path:
     if not filename.startswith(LESSON_FILE_PREFIX) or not filename.endswith(LESSON_FILE_SUFFIX):
-        raise HTTPException(status_code=404, detail="课程不存在")
+        raise HTTPException(status_code=404, detail="Course does not exist")
 
     return _resolve_within(COURSE_ROOT, filename)
 
@@ -54,7 +54,7 @@ def _resolve_lesson_file(filename: str) -> Path:
 def _resolve_sample_file(sample_id: str) -> Path:
     filename = SAMPLE_FILE_MAP.get(sample_id)
     if not filename:
-        raise HTTPException(status_code=404, detail="课程示例不存在")
+        raise HTTPException(status_code=404, detail="Course example does not exist")
 
     return _resolve_within(COURSE_ROOT, filename)
 

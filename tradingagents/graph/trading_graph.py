@@ -19,10 +19,10 @@ from tradingagents.agents import *
 from tradingagents.default_config import DEFAULT_CONFIG
 from tradingagents.core.engine.memory_provider import MemoryProvider
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 from tradingagents.agents.utils.agent_states import (
@@ -41,16 +41,16 @@ from app.utils.api_key_utils import truncate_api_key
 from app.core.jdyun import get_llm_max_retries, is_jdyun_mode
 
 # ============================================================================
-# 京东云 LLM 调用串行化（避免并行 Agent 同时调用触发 429 限流）
+# JD Cloud LLM call serialization (to avoid concurrent Agent calls triggering 429 current limit)
 # ============================================================================
 _jdyun_llm_semaphore = threading.Semaphore(1)
 
-# JDYun 429 重试间隔（秒）：逐次翻倍，从 3s 开始
+# JDYun 429 Retry interval (seconds): gradually doubled, starting from 3s
 _JYDUN_RETRY_DELAYS = [3, 6, 12]
 
 
 def _is_rate_limit_error(exc: Exception) -> bool:
-    """判断是否为 429 限流错误"""
+    """Determine whether it is a 429 current limiting error"""
     status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
     if status == 429:
         return True
@@ -59,9 +59,9 @@ def _is_rate_limit_error(exc: Exception) -> bool:
 
 
 class _JDYunRateLimitedLLM:
-    """JDYun 模式下的 LLM 代理：
-    1. 信号量确保同一时间只有一个 LLM 调用在飞行
-    2. 429 限流时用较长的间隔重试（3s/6s/12s）
+    """JDYun LLM agent in mode:
+    1. The semaphore ensures that only one LLM call is in flight at a time
+    2. 429 Retry with a longer interval when limiting current (3s/6s/12s)
     """
 
     def __init__(self, _llm):
@@ -70,27 +70,27 @@ class _JDYunRateLimitedLLM:
     def invoke(self, messages, *args, **kwargs):
         last_error = None
         for attempt in range(1 + len(_JYDUN_RETRY_DELAYS)):
-            logger.debug(f"⏳ [JDYun限流] 等待 LLM 调用许可...")
+            logger.debug(f"⏳ [JDYun Current limiting] Waiting for LLM call permission...")
             acquired = _jdyun_llm_semaphore.acquire(timeout=300)
             if not acquired:
-                raise RuntimeError("[JDYun限流] 获取 LLM 调用许可超时（300s），可能存在死锁")
+                raise RuntimeError("[JDYun Current limiting] Timeout for obtaining LLM call permission (300s), there may be a deadlock")
             try:
-                logger.debug(f"✅ [JDYun限流] 获取 LLM 调用许可，开始调用 (attempt {attempt+1})")
+                logger.debug(f"✅ [JDYun Current limiting] Obtain LLM calling permission and start calling (attempt {attempt+1})")
                 return self.__llm.invoke(messages, *args, **kwargs)
             except Exception as exc:
                 last_error = exc
                 if _is_rate_limit_error(exc) and attempt < len(_JYDUN_RETRY_DELAYS):
                     delay = _JYDUN_RETRY_DELAYS[attempt]
                     logger.warning(
-                        f"⚠️ [JDYun限流] 遇到 429 限流，{delay}s 后重试 "
-                        f"(第 {attempt+1}/{len(_JYDUN_RETRY_DELAYS)} 次)"
+                        f"⚠️ [JDYun Current limiting] Encountered 429 current limit,{delay}s Try again later "
+                        f"(No. {attempt+1}/{len(_JYDUN_RETRY_DELAYS)} times)"
                     )
                     time.sleep(delay)
                 else:
                     raise
             finally:
                 _jdyun_llm_semaphore.release()
-                logger.debug(f"🔓 [JDYun限流] 释放 LLM 调用许可")
+                logger.debug(f"🔓 [JDYun Current limiting] Release LLM calling permission")
 
         raise last_error
 
@@ -116,12 +116,12 @@ def _normalize_provider_qualified_model(provider: str, model: str) -> tuple[str,
     return normalized_provider, raw_model
 
 
-# 火山方舟 reasoning_effort 档位顺序（低→高）
+# Volcano Ark reasoning_effort gear order (low→high)
 _REASONING_EFFORT_ORDER = ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
 
 
 def _lower_reasoning_effort(effort: Optional[str], steps: int = 2) -> Optional[str]:
-    """快速模型思考预算在深度档位基础上降档（最低到 minimal，不降到 none 以免关闭思考）"""
+    """The fast model thinking budget is downgraded based on the depth level (minimum to minimal, not to none to avoid shutting down thinking)"""
     if not effort:
         return None
     try:
@@ -134,11 +134,11 @@ def _lower_reasoning_effort(effort: Optional[str], steps: int = 2) -> Optional[s
 def resolve_reasoning_efforts(
     config: dict, quick_model_config: dict, deep_model_config: dict
 ) -> tuple:
-    """合并快速/深度模型的 reasoning_effort。
+    """Incorporate reasoning_effort for fast/deep models.
 
-    优先级：DB 模型配置显式值 > 本次分析档位映射默认（config["depth_reasoning_effort"]）。
-    档位默认仅注入火山方舟 Agent Plan（provider=volcengine）推理模型；
-    Coding Plan（volcengine_coding）与其他厂家不注入；快速模型在深度档位上降两档。
+    Priority: DB model configuration explicit value > The default gear mapping for this analysis is (config["depth_reasoning_effort"]) . 
+    By default, the gear is only injected into Volcano Ark Agent Plan (provider=volcengine) inference model;
+    Coding Plan (volcengine_coding) Unlike other manufacturers there is no injection; the fast model is two gears down from the depth gear.
     """
     quick_effort = quick_model_config.get("reasoning_effort")
     deep_effort = deep_model_config.get("reasoning_effort")
@@ -157,39 +157,39 @@ def resolve_reasoning_efforts(
 
 def create_llm_by_provider(provider: str, model: str, backend_url: str, temperature: float, max_tokens: int, timeout: int, api_key: str = None, reasoning_effort: Optional[str] = None):
     """
-    根据 provider 创建对应的 LLM 实例
+    Create corresponding LLM instance based on provider
 
     Args:
-        provider: 供应商名称 (google, dashscope, deepseek, openai, etc.)
-        model: 模型名称
-        backend_url: API 地址
-        temperature: 温度参数
-        max_tokens: 最大 token 数
-        timeout: 超时时间
-        api_key: API Key（可选，如果未提供则从环境变量读取）
-        reasoning_effort: 推理模型思考深度 (none/minimal/low/medium/high/xhigh/max)，仅火山方舟推理模型支持
+        provider: Supplier name (google, dashscope, deepseek, openai, etc.)
+        model: Model name
+        backend_url: API address
+        temperature: Temperature parameter
+        max_tokens: Maximum number of tokens
+        timeout: timeout
+        api_key: API Key (Optional, read from environment variables if not provided)
+        reasoning_effort: Inference model thinking depth (none/minimal/low/medium/high/xhigh/max), Only the Volcano Ark inference model supports
 
     Returns:
-        LLM 实例
+        LLM Example
     """
     from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
     from tradingagents.llm_adapters.openai_compatible_base import create_openai_compatible_llm, normalize_openai_temperature
 
-    # 🔧 reasoning_effort: 火山方舟推理模型思考深度控制，通过 model_kwargs 传递
-    # 🛡️ Q1: 推理模型（reasoning_effort 已设置）深度思考耗时长（实测单次 300s+），
-    # SDK 重试从全局默认降为 1 次（共 2 次尝试），避免最坏 3×timeout 空等
+    # 🔧 reasoning_effort: Volcano Ark inference model thinking depth control, passed through model_kwargs
+    # 🛡️ Q1: The reasoning model (reasoning_effort has been set) takes a long time to think deeply (single measured 300s+) , 
+    # SDK Retries reduced from global default to 1 (total 2 attempts) to avoid worst-case scenarios 3×timeout Waiting in vain
     _extra = {}
     _base_max_retries = get_llm_max_retries()
     if reasoning_effort:
         _extra["model_kwargs"] = {"reasoning_effort": reasoning_effort}
         if _base_max_retries > 1:
             _base_max_retries = 1
-        logger.info(f"🔧 [reasoning_effort] 设置为 {reasoning_effort}（max_retries=1）")
+        logger.info(f"🔧 [reasoning_effort] set to {reasoning_effort} (max_retries=1) ")
 
     normalized_provider, normalized_model = _normalize_provider_qualified_model(provider, model)
     if normalized_provider != provider or normalized_model != model:
         logger.info(
-            f"🔧 [创建LLM] 归一化 provider/model: provider={provider}, model={model} -> "
+            f"🔧 [Create LLM] normalization provider/model: provider={provider}, model={model} -> "
             f"provider={normalized_provider}, model={normalized_model}"
         )
         provider = normalized_provider
@@ -202,22 +202,22 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
         base_url=backend_url,
     )
 
-    logger.info(f"🔧 [创建LLM] provider={provider}, model={model}, url={backend_url}")
-    logger.info(f"🔑 [API Key] 传入值: {'有值' if api_key else 'None（将使用环境变量）'}")
+    logger.info(f"🔧 [Create LLM] provider={provider}, model={model}, url={backend_url}")
+    logger.info(f"🔑 [API Key] Pass in value: {'valuable' if api_key else 'None (environment variables will be used)'}")
     if api_key:
-        logger.info(f"🔑 [API Key] 传入脱敏值: {truncate_api_key(api_key)}")
-    logger.info(f"🌡️ [参数] temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
+        logger.info(f"🔑 [API Key] Incoming desensitization value: {truncate_api_key(api_key)}")
+    logger.info(f"🌡️ [parameters] temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
 
     if provider.lower() == "google":
-        # 优先使用传入的 API Key，否则从环境变量读取
+        # Prioritize using the passed API Key, otherwise read from environment variables
         google_api_key = api_key or os.getenv('GOOGLE_API_KEY')
         if not google_api_key:
-            raise ValueError("使用Google需要设置GOOGLE_API_KEY环境变量或在数据库中配置API Key")
+            raise ValueError("To use Google, you need to set the GOOGLE_API_KEY environment variable or configure it in the database API Key")
         
-        logger.info(f"✅ [Google] 最终参数: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
-        logger.info(f"🔑 [Google] 最终使用的 API Key: {truncate_api_key(google_api_key)}")
+        logger.info(f"✅ [Google] final parameters: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
+        logger.info(f"🔑 [Google] final use API Key: {truncate_api_key(google_api_key)}")
 
-        # 传递 base_url 参数，使厂家配置的 default_base_url 生效
+        # Pass the base_url parameter to make the default_base_url configured by the manufacturer take effect.
         return ChatGoogleOpenAI(
             model=model,
             google_api_key=google_api_key,
@@ -228,30 +228,30 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
         )
 
     elif provider.lower() == "dashscope":
-        # 优先使用传入的 API Key，否则从环境变量读取
+        # Prioritize using the passed API Key, otherwise read from environment variables
         dashscope_api_key = api_key or os.getenv('DASHSCOPE_API_KEY')
         
-        logger.info(f"✅ [DashScope] 最终参数: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
-        #logger.info(f"🔑 [DashScope] 最终使用的 API Key: {truncate_api_key(dashscope_api_key)}")
+        logger.info(f"✅ [DashScope] final parameters: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
+        #logger.info(f"🔑 [DashScope] final use API Key: {truncate_api_key(dashscope_api_key)}")
 
-        # 传递 base_url 参数，使厂家配置的 default_base_url 生效
+        # Pass the base_url parameter to make the default_base_url configured by the manufacturer take effect.
         return ChatDashScopeOpenAI(
             model=model,
-            api_key=dashscope_api_key,  # 🔥 传递 API Key
-            base_url=backend_url if backend_url else None,  # 如果有自定义 URL 则使用
+            api_key=dashscope_api_key,  # 🔥 pass on API Key
+            base_url=backend_url if backend_url else None,  # If there is a custom URL then use
             temperature=temperature,
             max_tokens=max_tokens,
             request_timeout=timeout
         )
 
     elif provider.lower() == "deepseek":
-        # 优先使用传入的 API Key，否则从环境变量读取
+        # Prioritize using the passed API Key, otherwise read from environment variables
         deepseek_api_key = api_key or os.getenv('DEEPSEEK_API_KEY')
         if not deepseek_api_key:
-            raise ValueError("使用DeepSeek需要设置DEEPSEEK_API_KEY环境变量或在数据库中配置API Key")
+            raise ValueError("Using DeepSeek requires setting the DEEPSEEK_API_KEY environment variable or configuring it in the database API Key")
         
-        logger.info(f"✅ [DeepSeek] 最终参数: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
-        logger.info(f"🔑 [DeepSeek] 最终使用的 API Key: {truncate_api_key(deepseek_api_key)}")
+        logger.info(f"✅ [DeepSeek] final parameters: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
+        logger.info(f"🔑 [DeepSeek] final use API Key: {truncate_api_key(deepseek_api_key)}")
 
         return ChatDeepSeek(
             model=model,
@@ -263,19 +263,19 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
         )
 
     elif provider.lower() == "zhipu":
-        # 智谱AI处理
+        # Wisdom spectrum AI processing
         zhipu_api_key = api_key or os.getenv('ZHIPU_API_KEY')
         if not zhipu_api_key:
-            raise ValueError("使用智谱AI需要设置ZHIPU_API_KEY环境变量或在数据库中配置API Key")
+            raise ValueError("To use ZHIPU AI, you need to set the ZHIPU_API_KEY environment variable or configure it in the database API Key")
         
-        logger.info(f"✅ [Zhipu] 最终参数: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
-        logger.info(f"🔑 [Zhipu] 最终使用的 API Key: {truncate_api_key(zhipu_api_key)}")
+        logger.info(f"✅ [Zhipu] final parameters: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
+        logger.info(f"🔑 [Zhipu] final use API Key: {truncate_api_key(zhipu_api_key)}")
         
         return create_openai_compatible_llm(
             provider="zhipu",
             model=model,
             api_key=zhipu_api_key,
-            base_url=backend_url,  # 使用用户提供的backend_url
+            base_url=backend_url,  # Use user-provided backend_url
             temperature=temperature,
             max_tokens=max_tokens,
             timeout=timeout,
@@ -284,7 +284,7 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
         )
 
     elif provider.lower() in ["openai", "siliconflow", "openrouter", "aihubmix", "ollama", "jdyun"]:
-        # 优先使用传入的 API Key，否则从环境变量读取
+        # Prioritize using the passed API Key, otherwise read from environment variables
         if not api_key:
             if provider.lower() == "siliconflow":
                 api_key = os.getenv('SILICONFLOW_API_KEY')
@@ -295,22 +295,22 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
             elif provider.lower() == "openai":
                 api_key = os.getenv('OPENAI_API_KEY')
             elif provider.lower() == "jdyun":
-                # 🔧 京东云：使用 OPENAI_API_KEY 环境变量
+                # 🔧 JD Cloud: Use OPENAI_API_KEY environment variable
                 api_key = os.getenv('OPENAI_API_KEY')
             elif provider.lower() == "ollama":
-                # 🔥 Ollama 是本地模型，不需要 API Key，使用占位符
+                # 🔥 Ollama It is a local model, does not require API Key, uses placeholders
                 api_key = "ollama"
-                logger.info(f"ℹ️  [Ollama] 本地模型，不需要 API Key，使用占位符")
+                logger.info(f"ℹ️  [Ollama] Local model, no API Key required, use placeholders")
         
-        final_api_key = api_key  # 保存最终使用的 API Key
-        logger.info(f"✅ [{provider.capitalize()}] 最终参数: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
+        final_api_key = api_key  # Save for final use API Key
+        logger.info(f"✅ [{provider.capitalize()}] final parameters: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
         if final_api_key:
-            logger.info(f"🔑 [{provider.capitalize()}] 最终使用的 API Key: {truncate_api_key(final_api_key)}")
+            logger.info(f"🔑 [{provider.capitalize()}] final use API Key: {truncate_api_key(final_api_key)}")
         else:
-            logger.info(f"🔑 [{provider.capitalize()}] 最终使用的 API Key: None（将使用环境变量）")
+            logger.info(f"🔑 [{provider.capitalize()}] final use API Key: None (environment variables will be used)")
 
-        # JDYun 模式：底层只保留 1 次快速重试（应对瞬时网络抖动），
-        # 429 限流由 _JDYunRateLimitedLLM 用长间隔处理
+        # JDYun Mode: The bottom layer only retains 1 fast retry (to deal with instantaneous network jitter),
+        # 429 Rate limiting is handled by _JDYunRateLimitedLLM with long intervals
         _max_retries = 1 if provider.lower() == "jdyun" else _base_max_retries
         llm = ChatOpenAI(
             model=model,
@@ -323,18 +323,18 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
             **_extra
         )
         if provider.lower() == "jdyun":
-            logger.info(f"🔒 [JDYun限流] 启用 LLM 调用串行化（避免并行 Agent 触发 429）")
+            logger.info(f"🔒 [JDYun Current limiting] Enable serialization of LLM calls (avoids parallel Agent triggering 429)")
             return _JDYunRateLimitedLLM(llm)
         return llm
 
     elif provider.lower() in ["volcengine", "volcengine_coding"]:
-        # 🔧 火山方舟：使用专用适配器，支持 reasoning_effort
+        # 🔧 Volcano Ark: Using a dedicated adapter, support reasoning_effort
         if not api_key:
             env_key = "VOLCENGINE_CODING_API_KEY" if provider.lower() == "volcengine_coding" else "VOLCENGINE_API_KEY"
             api_key = os.getenv(env_key)
-        logger.info(f"✅ [火山方舟] provider={provider}, model={model}, reasoning_effort={reasoning_effort or '未设置'}")
+        logger.info(f"✅ [Volcano Ark] provider={provider}, model={model}, reasoning_effort={reasoning_effort or 'not set'}")
         if api_key:
-            logger.info(f"🔑 [火山方舟] API Key: {truncate_api_key(api_key)}")
+            logger.info(f"🔑 [Volcano Ark] API Key: {truncate_api_key(api_key)}")
 
         return create_openai_compatible_llm(
             provider=provider,
@@ -358,11 +358,11 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
         )
 
     elif provider.lower() in ["qianfan", "custom_openai"]:
-        logger.info(f"✅ [{provider.capitalize()}] 最终参数: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
+        logger.info(f"✅ [{provider.capitalize()}] final parameters: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
         if api_key:
-            logger.info(f"🔑 [{provider.capitalize()}] 最终使用的 API Key: {truncate_api_key(api_key)}")
+            logger.info(f"🔑 [{provider.capitalize()}] final use API Key: {truncate_api_key(api_key)}")
         else:
-            logger.info(f"🔑 [{provider.capitalize()}] 最终使用的 API Key: None（将使用环境变量）")
+            logger.info(f"🔑 [{provider.capitalize()}] final use API Key: None (environment variables will be used)")
         
         return create_openai_compatible_llm(
             provider=provider,
@@ -377,32 +377,32 @@ def create_llm_by_provider(provider: str, model: str, backend_url: str, temperat
         )
 
     else:
-        # 🔧 自定义厂家：使用 OpenAI 兼容模式
-        logger.info(f"🔧 使用 OpenAI 兼容模式处理自定义厂家: {provider}")
+        # 🔧 Custom manufacturer: use OpenAI compatibility mode
+        logger.info(f"🔧 Use OpenAI compatibility mode to handle custom manufacturers: {provider}")
 
-        # 🔥 优先使用传入的 api_key 参数
+        # 🔥 Prioritize using the incoming api_key parameter
         custom_api_key = api_key
         
-        # 如果传入的 api_key 为空，尝试从环境变量获取 API Key（支持多种命名格式）
+        # If the incoming api_key is empty, try to obtain the API Key from the environment variable (supports multiple naming formats)
         if not custom_api_key:
             api_key_candidates = [
-                f"{provider.upper()}_API_KEY",  # 例如: KYX_API_KEY
-                f"{provider}_API_KEY",          # 例如: kyx_API_KEY
-                "CUSTOM_OPENAI_API_KEY"         # 通用环境变量
+                f"{provider.upper()}_API_KEY",  # For example: KYX_API_KEY
+                f"{provider}_API_KEY",          # For example: kyx_API_KEY
+                "CUSTOM_OPENAI_API_KEY"         # Common environment variables
             ]
 
             for env_var in api_key_candidates:
                 custom_api_key = os.getenv(env_var)
                 if custom_api_key:
-                    logger.info(f"✅ 从环境变量 {env_var} 获取到 API Key")
+                    logger.info(f"✅ from environment variables {env_var} Get API Key")
                     break
 
         if not custom_api_key:
-            logger.error(f"❌ 未找到自定义厂家 {provider} 的 API Key（既没有传入参数，也没有环境变量）")
-            raise ValueError(f"使用自定义厂家 {provider} 需要设置 API Key，请在数据库中配置或设置环境变量")
+            logger.error(f"❌ Custom manufacturer not found {provider} API Key (neither passed in parameters nor environment variables)")
+            raise ValueError(f"Use custom manufacturers {provider} API Key needs to be set, please configure or set environment variables in the database")
         
-        logger.info(f"✅ [{provider.capitalize()}] 最终参数: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
-        logger.info(f"🔑 [{provider.capitalize()}] 最终使用的 API Key: {truncate_api_key(custom_api_key)}")
+        logger.info(f"✅ [{provider.capitalize()}] final parameters: model={model}, temperature={temperature}, max_tokens={max_tokens}, timeout={timeout}s")
+        logger.info(f"🔑 [{provider.capitalize()}] final use API Key: {truncate_api_key(custom_api_key)}")
 
         return ChatOpenAI(
             model=model,
@@ -445,34 +445,34 @@ class TradingAgentsGraph:
         )
 
         # Initialize LLMs
-        # 🔧 从配置中读取模型参数（优先使用用户配置，否则使用默认值）
+        # 🔧 Read model parameters from configuration (user configuration is used first, otherwise default values are used)
         quick_config = self.config.get("quick_model_config", {})
         deep_config = self.config.get("deep_model_config", {})
 
-        # 读取快速模型参数
+        # Read fast model parameters
         quick_max_tokens = quick_config.get("max_tokens", 4000)
         quick_temperature = quick_config.get("temperature", 0.7)
         quick_timeout = quick_config.get("timeout", 180)
 
-        # 读取深度模型参数
+        # Read depth model parameters
         deep_max_tokens = deep_config.get("max_tokens", 4000)
         deep_temperature = deep_config.get("temperature", 0.7)
         deep_timeout = deep_config.get("timeout", 180)
 
-        # 🔧 reasoning_effort 合并：DB 模型配置显式值 > 本次分析档位映射默认（depth_reasoning_effort）
-        # 档位默认仅注入火山方舟 Agent Plan（volcengine）推理模型；Coding Plan 与其他厂家不注入；
-        # 快速模型在深度档位基础上降两档（轻查询用低档提效）
+        # 🔧 reasoning_effort Merge: DB model configuration explicit value > The default gear mapping for this analysis (depth_reasoning_effort)
+        # By default, the gear is only injected into the Volcano Ark Agent Plan (volcengine) inference model; Coding Plan and other manufacturers are not injected;
+        # The fast model is downgraded by two levels based on the depth level (use low level for light queries to improve efficiency)
         quick_reasoning_effort, deep_reasoning_effort = resolve_reasoning_efforts(
             self.config, quick_config, deep_config
         )
         depth_reasoning_effort = self.config.get("depth_reasoning_effort")
         if depth_reasoning_effort:
             logger.info(
-                f"🧠 [reasoning_effort] 档位默认={depth_reasoning_effort}，"
-                f"quick={quick_reasoning_effort or '未设置'}，deep={deep_reasoning_effort or '未设置'}"
+                f"🧠 [reasoning_effort] Gear default={depth_reasoning_effort}, "
+                f"quick={quick_reasoning_effort or 'not set'}, deep={deep_reasoning_effort or 'not set'}"
             )
 
-        # 🔧 检查是否为混合模式（快速模型和深度模型来自不同厂家）
+        # 🔧 Check whether it is a mixed mode (fast model and deep model are from different manufacturers)
         quick_provider = self.config.get("quick_provider")
         deep_provider = self.config.get("deep_provider")
         quick_backend_url = self.config.get("quick_backend_url")
@@ -480,14 +480,14 @@ class TradingAgentsGraph:
 
         if quick_provider and deep_provider:
             if quick_provider != deep_provider:
-                logger.info(f"🔀 [混合模式] 检测到不同厂家的模型组合")
+                logger.info(f"🔀 [blend mode] Model combinations from different manufacturers detected")
             else:
-                logger.info(f"🧩 [显式模型配置] 检测到同厂家的模型组合，优先使用请求携带的 provider/api_key/backend_url")
+                logger.info(f"🧩 [Explicit model configuration] If a combination of models from the same manufacturer is detected, the one carried in the request will be used first. provider/api_key/backend_url")
 
-            logger.info(f"   快速模型: {self.config['quick_think_llm']} ({quick_provider})")
-            logger.info(f"   深度模型: {self.config['deep_think_llm']} ({deep_provider})")
+            logger.info(f"   quick model: {self.config['quick_think_llm']} ({quick_provider})")
+            logger.info(f"   deep model: {self.config['deep_think_llm']} ({deep_provider})")
 
-            # 使用统一的函数创建 LLM 实例
+            # Create LLM instances using unified functions
             self.quick_thinking_llm = create_llm_by_provider(
                 provider=quick_provider,
                 model=self.config["quick_think_llm"],
@@ -495,8 +495,8 @@ class TradingAgentsGraph:
                 temperature=quick_temperature,
                 max_tokens=quick_max_tokens,
                 timeout=quick_timeout,
-                api_key=self.config.get("quick_api_key"),  # 🔥 传递 API Key
-                reasoning_effort=quick_reasoning_effort  # 🔧 推理模型思考深度
+                api_key=self.config.get("quick_api_key"),  # 🔥 pass on API Key
+                reasoning_effort=quick_reasoning_effort  # 🔧 Inference model thinking depth
             )
 
             self.deep_thinking_llm = create_llm_by_provider(
@@ -506,15 +506,15 @@ class TradingAgentsGraph:
                 temperature=deep_temperature,
                 max_tokens=deep_max_tokens,
                 timeout=deep_timeout,
-                api_key=self.config.get("deep_api_key"),  # 🔥 传递 API Key
-                reasoning_effort=deep_reasoning_effort  # 🔧 推理模型思考深度
+                api_key=self.config.get("deep_api_key"),  # 🔥 pass on API Key
+                reasoning_effort=deep_reasoning_effort  # 🔧 Inference model thinking depth
             )
 
-            logger.info(f"✅ [显式模型配置] LLM 实例创建成功")
+            logger.info(f"✅ [Explicit model configuration] LLM Instance created successfully")
 
         elif self.config["llm_provider"].lower() in ["volcengine", "volcengine_coding"]:
-            # 🔧 火山方舟：使用 create_llm_by_provider 支持 reasoning_effort
-            logger.info(f"🔧 [火山方舟] llm_provider={self.config['llm_provider']}")
+            # 🔧 Volcano Ark: Support using create_llm_by_provider reasoning_effort
+            logger.info(f"🔧 [Volcano Ark] llm_provider={self.config['llm_provider']}")
             volc_api_key = self.config.get("quick_api_key") or self.config.get("deep_api_key")
 
             self.deep_thinking_llm = create_llm_by_provider(
@@ -539,8 +539,8 @@ class TradingAgentsGraph:
             )
 
         elif self.config["llm_provider"].lower() == "openai":
-            logger.info(f"🔧 [OpenAI-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [OpenAI-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [OpenAI-quick model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [OpenAI-deep model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
             self.deep_thinking_llm = ChatOpenAI(
                 model=self.config["deep_think_llm"],
@@ -559,14 +559,14 @@ class TradingAgentsGraph:
                 max_retries=get_llm_max_retries()
             )
         elif self.config["llm_provider"] == "siliconflow":
-            # SiliconFlow支持：使用OpenAI兼容API
+            # SiliconFlow Support: compatible with OpenAI API
             siliconflow_api_key = os.getenv('SILICONFLOW_API_KEY')
             if not siliconflow_api_key:
-                raise ValueError("使用SiliconFlow需要设置SILICONFLOW_API_KEY环境变量")
+                raise ValueError("To use SiliconFlow, you need to set the SILICONFLOW_API_KEY environment variable")
 
-            logger.info(f"🌐 [SiliconFlow] 使用API密钥: {siliconflow_api_key[:20]}...")
-            logger.info(f"🔧 [SiliconFlow-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [SiliconFlow-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🌐 [SiliconFlow] Use API key: {siliconflow_api_key[:20]}...")
+            logger.info(f"🔧 [SiliconFlow-quick model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [SiliconFlow-deep model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
             self.deep_thinking_llm = ChatOpenAI(
                 model=self.config["deep_think_llm"],
@@ -587,14 +587,14 @@ class TradingAgentsGraph:
                 max_retries=get_llm_max_retries()
             )
         elif self.config["llm_provider"] == "openrouter":
-            # OpenRouter支持：优先使用OPENROUTER_API_KEY，否则使用OPENAI_API_KEY
+            # OpenRouter Support: Use OPENROUTER_API_KEY first, otherwise use OPENAI_API_KEY
             openrouter_api_key = os.getenv('OPENROUTER_API_KEY') or os.getenv('OPENAI_API_KEY')
             if not openrouter_api_key:
-                raise ValueError("使用OpenRouter需要设置OPENROUTER_API_KEY或OPENAI_API_KEY环境变量")
+                raise ValueError("Using OpenRouter requires setting the OPENROUTER_API_KEY or OPENAI_API_KEY environment variable")
 
-            logger.info(f"🌐 [OpenRouter] 使用API密钥: {openrouter_api_key[:20]}...")
-            logger.info(f"🔧 [OpenRouter-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [OpenRouter-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🌐 [OpenRouter] Use API key: {openrouter_api_key[:20]}...")
+            logger.info(f"🔧 [OpenRouter-quick model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [OpenRouter-deep model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
             self.deep_thinking_llm = ChatOpenAI(
                 model=self.config["deep_think_llm"],
@@ -617,11 +617,11 @@ class TradingAgentsGraph:
         elif self.config["llm_provider"] == "aihubmix":
             aihubmix_api_key = os.getenv('AIHUBMIX_API_KEY')
             if not aihubmix_api_key:
-                raise ValueError("使用AIHubMix需要设置AIHUBMIX_API_KEY环境变量")
+                raise ValueError("To use AIHubMix, you need to set the AIHUBMIX_API_KEY environment variable")
 
-            logger.info(f"🌐 [AIHubMix] 使用API密钥: {aihubmix_api_key[:20]}...")
-            logger.info(f"🔧 [AIHubMix-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [AIHubMix-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🌐 [AIHubMix] Use API key: {aihubmix_api_key[:20]}...")
+            logger.info(f"🔧 [AIHubMix-quick model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [AIHubMix-deep model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
             self.deep_thinking_llm = ChatOpenAI(
                 model=self.config["deep_think_llm"],
@@ -642,8 +642,8 @@ class TradingAgentsGraph:
                 max_retries=get_llm_max_retries()
             )
         elif self.config["llm_provider"] == "ollama":
-            logger.info(f"🔧 [Ollama-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [Ollama-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [Ollama-quick model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [Ollama-deep model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
             self.deep_thinking_llm = ChatOpenAI(
                 model=self.config["deep_think_llm"],
@@ -662,8 +662,8 @@ class TradingAgentsGraph:
                 max_retries=get_llm_max_retries()
             )
         elif self.config["llm_provider"].lower() == "anthropic":
-            logger.info(f"🔧 [Anthropic-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [Anthropic-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [Anthropic-quick model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [Anthropic-deep model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
             self.deep_thinking_llm = ChatAnthropic(
                 model=self.config["deep_think_llm"],
@@ -680,17 +680,17 @@ class TradingAgentsGraph:
                 timeout=quick_timeout
             )
         elif self.config["llm_provider"].lower() == "google":
-            # 使用 Google OpenAI 兼容适配器，解决工具调用格式不匹配问题
-            logger.info(f"🔧 使用Google AI OpenAI 兼容适配器 (解决工具调用问题)")
+            # Use Google OpenAI compatible adapter to solve tool call format mismatch problem
+            logger.info(f"🔧 Using the Google AI OpenAI Compatible Adapter (Solve tool calling issues)")
 
-            # 🔥 优先使用数据库配置的 API Key，否则从环境变量读取
+            # 🔥 Priority is given to using the API Key configured in the database, otherwise reading from environment variables
             google_api_key = self.config.get("quick_api_key") or self.config.get("deep_api_key") or os.getenv('GOOGLE_API_KEY')
             if not google_api_key:
-                raise ValueError("使用Google AI需要在数据库中配置API Key或设置GOOGLE_API_KEY环境变量")
+                raise ValueError("Using Google AI requires configuring the API Key in the database or setting the GOOGLE_API_KEY environment variable")
 
-            logger.info(f"🔑 [Google AI] API Key 来源: {'数据库配置' if self.config.get('quick_api_key') or self.config.get('deep_api_key') else '环境变量'}")
+            logger.info(f"🔑 [Google AI] API Key Source: {'Database configuration' if self.config.get('quick_api_key') or self.config.get('deep_api_key') else 'environment variables'}")
 
-            # 🔧 从配置中读取模型参数（优先使用用户配置，否则使用默认值）
+            # 🔧 Read model parameters from configuration (user configuration is used first, otherwise default values are used)
             quick_config = self.config.get("quick_model_config", {})
             deep_config = self.config.get("deep_model_config", {})
 
@@ -702,15 +702,15 @@ class TradingAgentsGraph:
             deep_temperature = deep_config.get("temperature", 0.7)
             deep_timeout = deep_config.get("timeout", 180)
 
-            logger.info(f"🔧 [Google-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [Google-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [Google-quick model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [Google-deep model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
-            # 获取 backend_url（如果配置中有的话）
+            # Get backend_url (if there is one in the configuration)
             backend_url = self.config.get("backend_url")
             if backend_url:
-                logger.info(f"🔧 [Google AI] 使用配置的 backend_url: {backend_url}")
+                logger.info(f"🔧 [Google AI] Use configured backend_url: {backend_url}")
             else:
-                logger.info(f"🔧 [Google AI] 未配置 backend_url，使用默认端点")
+                logger.info(f"🔧 [Google AI] backend_url is not configured, default endpoint is used")
 
             self.deep_thinking_llm = ChatGoogleOpenAI(
                 model=self.config["deep_think_llm"],
@@ -730,46 +730,46 @@ class TradingAgentsGraph:
                 transport="rest"
             )
 
-            logger.info(f"✅ [Google AI] 已启用优化的工具调用和内容格式处理并应用用户配置的模型参数")
+            logger.info(f"✅ [Google AI] Optimized tool invocation and content format processing enabled and application of user-configured model parameters")
         elif (self.config["llm_provider"].lower() == "dashscope" or
               self.config["llm_provider"].lower() == "alibaba" or
               "dashscope" in self.config["llm_provider"].lower() or
-              "阿里百炼" in self.config["llm_provider"]):
-            # 使用 OpenAI 兼容适配器，支持原生 Function Calling
-            logger.info(f"🔧 使用阿里百炼 OpenAI 兼容适配器 (支持原生工具调用)")
+              "Ali Bailian" in self.config["llm_provider"]):
+            # Use OpenAI compatible adapter to support native Function Calling
+            logger.info(f"🔧 Using Alibaba Bailian OpenAI compatible adapter (Support native tool calls)")
 
-            # 🔥 优先使用数据库配置的 API Key，否则从环境变量读取
+            # 🔥 Priority is given to using the API Key configured in the database, otherwise reading from environment variables
             dashscope_api_key = self.config.get("quick_api_key") or self.config.get("deep_api_key") or os.getenv('DASHSCOPE_API_KEY')
-            logger.info(f"🔑 [阿里百炼] API Key 来源: {'数据库配置' if self.config.get('quick_api_key') or self.config.get('deep_api_key') else '环境变量'}")
+            logger.info(f"🔑 [Ali Bailian] API Key Source: {'Database configuration' if self.config.get('quick_api_key') or self.config.get('deep_api_key') else 'environment variables'}")
 
-            # 🔧 从配置中读取模型参数（优先使用用户配置，否则使用默认值）
+            # 🔧 Read model parameters from configuration (user configuration is used first, otherwise default values are used)
             quick_config = self.config.get("quick_model_config", {})
             deep_config = self.config.get("deep_model_config", {})
 
-            # 读取快速模型参数
+            # Read fast model parameters
             quick_max_tokens = quick_config.get("max_tokens", 4000)
             quick_temperature = quick_config.get("temperature", 0.7)
             quick_timeout = quick_config.get("timeout", 180)
 
-            # 读取深度模型参数
+            # Read depth model parameters
             deep_max_tokens = deep_config.get("max_tokens", 4000)
             deep_temperature = deep_config.get("temperature", 0.7)
             deep_timeout = deep_config.get("timeout", 180)
 
-            logger.info(f"🔧 [阿里百炼-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [阿里百炼-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [Ali Bailian-Quick Model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [Alibaba Bailian-Deep Model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
-            # 获取 backend_url（如果配置中有的话）
+            # Get backend_url (if there is one in the configuration)
             backend_url = self.config.get("backend_url")
             if backend_url:
-                logger.info(f"🔧 [阿里百炼] 使用自定义 API 地址: {backend_url}")
+                logger.info(f"🔧 [Ali Bailian] Use a custom API address: {backend_url}")
 
-            # 🔥 详细日志：打印所有 LLM 初始化参数
+            # 🔥 Detailed log: print all LLM initialization parameters
             logger.info("=" * 80)
-            logger.info("🤖 [LLM初始化] 阿里百炼深度模型参数:")
+            logger.info("🤖 [LLM initialization] Alibaba Bailian depth model parameters:")
             logger.info(f"   model: {self.config['deep_think_llm']}")
-            logger.info(f"   api_key: {'有值' if dashscope_api_key else '空'} (长度: {len(dashscope_api_key) if dashscope_api_key else 0})")
-            logger.info(f"   base_url: {backend_url if backend_url else '默认'}")
+            logger.info(f"   api_key: {'valuable' if dashscope_api_key else 'empty'} (length: {len(dashscope_api_key) if dashscope_api_key else 0})")
+            logger.info(f"   base_url: {backend_url if backend_url else 'Default'}")
             logger.info(f"   temperature: {deep_temperature}")
             logger.info(f"   max_tokens: {deep_max_tokens}")
             logger.info(f"   request_timeout: {deep_timeout}")
@@ -777,18 +777,18 @@ class TradingAgentsGraph:
 
             self.deep_thinking_llm = ChatDashScopeOpenAI(
                 model=self.config["deep_think_llm"],
-                api_key=dashscope_api_key,  # 🔥 传递 API Key
-                base_url=backend_url if backend_url else None,  # 传递 base_url
+                api_key=dashscope_api_key,  # 🔥 pass on API Key
+                base_url=backend_url if backend_url else None,  # pass on base_url
                 temperature=deep_temperature,
                 max_tokens=deep_max_tokens,
                 request_timeout=deep_timeout
             )
 
             logger.info("=" * 80)
-            logger.info("🤖 [LLM初始化] 阿里百炼快速模型参数:")
+            logger.info("🤖 [LLM initialization] Alibaba Bailian rapid model parameters:")
             logger.info(f"   model: {self.config['quick_think_llm']}")
-            logger.info(f"   api_key: {'有值' if dashscope_api_key else '空'} (长度: {len(dashscope_api_key) if dashscope_api_key else 0})")
-            logger.info(f"   base_url: {backend_url if backend_url else '默认'}")
+            logger.info(f"   api_key: {'valuable' if dashscope_api_key else 'empty'} (length: {len(dashscope_api_key) if dashscope_api_key else 0})")
+            logger.info(f"   base_url: {backend_url if backend_url else 'Default'}")
             logger.info(f"   temperature: {quick_temperature}")
             logger.info(f"   max_tokens: {quick_max_tokens}")
             logger.info(f"   request_timeout: {quick_timeout}")
@@ -796,42 +796,42 @@ class TradingAgentsGraph:
 
             self.quick_thinking_llm = ChatDashScopeOpenAI(
                 model=self.config["quick_think_llm"],
-                api_key=dashscope_api_key,  # 🔥 传递 API Key
-                base_url=backend_url if backend_url else None,  # 传递 base_url
+                api_key=dashscope_api_key,  # 🔥 pass on API Key
+                base_url=backend_url if backend_url else None,  # pass on base_url
                 temperature=quick_temperature,
                 max_tokens=quick_max_tokens,
                 request_timeout=quick_timeout
             )
-            logger.info(f"✅ [阿里百炼] 已应用用户配置的模型参数")
+            logger.info(f"✅ [Ali Bailian] User-configured model parameters applied")
         elif (self.config["llm_provider"].lower() == "deepseek" or
               "deepseek" in self.config["llm_provider"].lower()):
-            # DeepSeek V3配置 - 使用支持token统计的适配器
+            # DeepSeek V3 Configuration - Use an adapter that supports token statistics
             from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
 
             deepseek_api_key = os.getenv('DEEPSEEK_API_KEY')
             if not deepseek_api_key:
-                raise ValueError("使用DeepSeek需要设置DEEPSEEK_API_KEY环境变量")
+                raise ValueError("To use DeepSeek, you need to set the DEEPSEEK_API_KEY environment variable")
 
             deepseek_base_url = os.getenv('DEEPSEEK_BASE_URL', 'https://api.deepseek.com')
 
-            # 🔧 从配置中读取模型参数（优先使用用户配置，否则使用默认值）
+            # 🔧 Read model parameters from configuration (user configuration is used first, otherwise default values are used)
             quick_config = self.config.get("quick_model_config", {})
             deep_config = self.config.get("deep_model_config", {})
 
-            # 读取快速模型参数
+            # Read fast model parameters
             quick_max_tokens = quick_config.get("max_tokens", 4000)
             quick_temperature = quick_config.get("temperature", 0.7)
             quick_timeout = quick_config.get("timeout", 180)
 
-            # 读取深度模型参数
+            # Read depth model parameters
             deep_max_tokens = deep_config.get("max_tokens", 4000)
             deep_temperature = deep_config.get("temperature", 0.7)
             deep_timeout = deep_config.get("timeout", 180)
 
-            logger.info(f"🔧 [DeepSeek-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [DeepSeek-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [DeepSeek-quick model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [DeepSeek-deep model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
-            # 使用支持token统计的DeepSeek适配器
+            # Use the DeepSeek adapter that supports token statistics
             self.deep_thinking_llm = ChatDeepSeek(
                 model=self.config["deep_think_llm"],
                 api_key=deepseek_api_key,
@@ -849,18 +849,18 @@ class TradingAgentsGraph:
                 timeout=quick_timeout
             )
 
-            logger.info(f"✅ [DeepSeek] 已启用token统计功能并应用用户配置的模型参数")
+            logger.info(f"✅ [DeepSeek] The token statistics function has been enabled and user-configured model parameters have been applied.")
         elif self.config["llm_provider"].lower() == "custom_openai":
-            # 自定义OpenAI端点配置
+            # Custom OpenAI endpoint configuration
             from tradingagents.llm_adapters.openai_compatible_base import create_openai_compatible_llm
 
             custom_api_key = os.getenv('CUSTOM_OPENAI_API_KEY')
             if not custom_api_key:
-                raise ValueError("使用自定义OpenAI端点需要设置CUSTOM_OPENAI_API_KEY环境变量")
+                raise ValueError("Using a custom OpenAI endpoint requires setting the CUSTOM_OPENAI_API_KEY environment variable")
 
             custom_base_url = self.config.get("custom_openai_base_url", "https://api.openai.com/v1")
 
-            # 🔧 从配置中读取模型参数（优先使用用户配置，否则使用默认值）
+            # 🔧 Read model parameters from configuration (user configuration is used first, otherwise default values are used)
             quick_config = self.config.get("quick_model_config", {})
             deep_config = self.config.get("deep_model_config", {})
 
@@ -872,11 +872,11 @@ class TradingAgentsGraph:
             deep_temperature = deep_config.get("temperature", 0.7)
             deep_timeout = deep_config.get("timeout", 180)
 
-            logger.info(f"🔧 [自定义OpenAI] 使用端点: {custom_base_url}")
-            logger.info(f"🔧 [自定义OpenAI-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [自定义OpenAI-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [Customize OpenAI] Use endpoints: {custom_base_url}")
+            logger.info(f"🔧 [Custom OpenAI-Quick Model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [Custom OpenAI-Deep Model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
-            # 使用OpenAI兼容适配器创建LLM实例
+            # Create an LLM instance using an OpenAI compatible adapter
             self.deep_thinking_llm = create_openai_compatible_llm(
                 provider="custom_openai",
                 model=self.config["deep_think_llm"],
@@ -894,12 +894,12 @@ class TradingAgentsGraph:
                 timeout=quick_timeout
             )
 
-            logger.info(f"✅ [自定义OpenAI] 已配置自定义端点并应用用户配置的模型参数")
+            logger.info(f"✅ [Customize OpenAI] Custom endpoint configured and user-configured model parameters applied")
         elif self.config["llm_provider"].lower() == "qianfan":
-            # 百度千帆（文心一言）配置 - 统一由适配器内部读取与校验 QIANFAN_API_KEY
+            # Baidu Qianfan (Wen Xin Yiyan) configuration - uniformly read and verified internally by the adapter QIANFAN_API_KEY
             from tradingagents.llm_adapters.openai_compatible_base import create_openai_compatible_llm
 
-            # 🔧 从配置中读取模型参数（优先使用用户配置，否则使用默认值）
+            # 🔧 Read model parameters from configuration (user configuration is used first, otherwise default values are used)
             quick_config = self.config.get("quick_model_config", {})
             deep_config = self.config.get("deep_model_config", {})
 
@@ -911,10 +911,10 @@ class TradingAgentsGraph:
             deep_temperature = deep_config.get("temperature", 0.7)
             deep_timeout = deep_config.get("timeout", 180)
 
-            logger.info(f"🔧 [千帆-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [千帆-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [Qianfan-Quick Model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [Qianfan-Depth Model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
-            # 使用OpenAI兼容适配器创建LLM实例（基类会使用千帆默认base_url并负责密钥校验）
+            # Create an LLM instance using an OpenAI compatible adapter (the base class will use Qianfan's default base_url and be responsible for key verification)
             self.deep_thinking_llm = create_openai_compatible_llm(
                 provider="qianfan",
                 model=self.config["deep_think_llm"],
@@ -929,19 +929,19 @@ class TradingAgentsGraph:
                 max_tokens=quick_max_tokens,
                 timeout=quick_timeout
             )
-            logger.info("✅ [千帆] 文心一言适配器已配置成功并应用用户配置的模型参数")
+            logger.info("✅ [Qianfan] Wenxinyiyan adapter has been successfully configured and the user-configured model parameters are applied")
         elif self.config["llm_provider"].lower() == "zhipu":
-            # 智谱AI GLM配置 - 使用专门的ChatZhipuOpenAI适配器
+            # Zhipu AI GLM configuration - using the dedicated ChatZhipuOpenAI adapter
             from tradingagents.llm_adapters.openai_compatible_base import ChatZhipuOpenAI
             
-            # 🔥 优先使用数据库配置的 API Key，否则从环境变量读取
+            # 🔥 Priority is given to using the API Key configured in the database, otherwise reading from environment variables
             zhipu_api_key = self.config.get("quick_api_key") or self.config.get("deep_api_key") or os.getenv('ZHIPU_API_KEY')
-            logger.info(f"🔑 [智谱AI] API Key 来源: {'数据库配置' if self.config.get('quick_api_key') or self.config.get('deep_api_key') else '环境变量'}")
+            logger.info(f"🔑 [Wisdom spectrum AI] API Key Source: {'Database configuration' if self.config.get('quick_api_key') or self.config.get('deep_api_key') else 'environment variables'}")
             
             if not zhipu_api_key:
-                raise ValueError("使用智谱AI需要在数据库中配置API Key或设置ZHIPU_API_KEY环境变量")
+                raise ValueError("To use ZHIPU AI, you need to configure the API Key in the database or set the ZHIPU_API_KEY environment variable")
             
-            # 🔧 从配置中读取模型参数（优先使用用户配置，否则使用默认值）
+            # 🔧 Read model parameters from configuration (user configuration is used first, otherwise default values are used)
             quick_config = self.config.get("quick_model_config", {})
             deep_config = self.config.get("deep_model_config", {})
             
@@ -953,21 +953,21 @@ class TradingAgentsGraph:
             deep_temperature = deep_config.get("temperature", 0.7)
             deep_timeout = deep_config.get("timeout", 180)
             
-            logger.info(f"🔧 [智谱AI-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [智谱AI-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [Zhipu AI-Quick Model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [Intelligent Spectrum AI-Deep Model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
             
-            # 获取 backend_url（如果配置中有的话）
+            # Get backend_url (if there is one in the configuration)
             backend_url = self.config.get("backend_url")
             if backend_url:
-                logger.info(f"🔧 [智谱AI] 使用配置的 backend_url: {backend_url}")
+                logger.info(f"🔧 [Wisdom spectrum AI] Use configured backend_url: {backend_url}")
             else:
-                logger.info(f"🔧 [智谱AI] 未配置 backend_url，使用默认端点")
+                logger.info(f"🔧 [Wisdom spectrum AI] backend_url is not configured, default endpoint is used")
             
-            # 使用专门的ChatZhipuOpenAI适配器创建LLM实例
+            # Create LLM instance using specialized ChatZhipuOpenAI adapter
             self.deep_thinking_llm = ChatZhipuOpenAI(
                 model=self.config["deep_think_llm"],
                 api_key=zhipu_api_key,
-                base_url=backend_url,  # 使用用户配置的backend_url
+                base_url=backend_url,  # Use user configured backend_url
                 temperature=deep_temperature,
                 max_tokens=deep_max_tokens,
                 timeout=deep_timeout
@@ -975,52 +975,52 @@ class TradingAgentsGraph:
             self.quick_thinking_llm = ChatZhipuOpenAI(
                 model=self.config["quick_think_llm"],
                 api_key=zhipu_api_key,
-                base_url=backend_url,  # 使用用户配置的backend_url
+                base_url=backend_url,  # Use user configured backend_url
                 temperature=quick_temperature,
                 max_tokens=quick_max_tokens,
                 timeout=quick_timeout
             )
             
-            logger.info("✅ [智谱AI] 已使用专用适配器配置成功并应用用户配置的模型参数")
+            logger.info("✅ [Wisdom spectrum AI] Successfully configured using a dedicated adapter and applying user-configured model parameters")
         else:
-            # 🔧 通用的 OpenAI 兼容厂家支持（用于自定义厂家）
-            logger.info(f"🔧 使用通用 OpenAI 兼容适配器处理自定义厂家: {self.config['llm_provider']}")
+            # 🔧 Universal OpenAI compatible vendor support (for custom vendors)
+            logger.info(f"🔧 Handle custom vendors using a generic OpenAI compatible adapter: {self.config['llm_provider']}")
             from tradingagents.llm_adapters.openai_compatible_base import create_openai_compatible_llm
 
-            # 获取厂家配置中的 API Key 和 base_url
+            # Get the API Key and base_url
             provider_name = self.config['llm_provider']
 
-            # 尝试从环境变量获取 API Key（支持多种命名格式）
+            # Try to get API Key from environment variable (supports multiple naming formats)
             api_key_candidates = [
-                f"{provider_name.upper()}_API_KEY",  # 例如: KYX_API_KEY
-                f"{provider_name}_API_KEY",          # 例如: kyx_API_KEY
-                "CUSTOM_OPENAI_API_KEY"              # 通用环境变量
+                f"{provider_name.upper()}_API_KEY",  # For example: KYX_API_KEY
+                f"{provider_name}_API_KEY",          # For example: kyx_API_KEY
+                "CUSTOM_OPENAI_API_KEY"              # Common environment variables
             ]
 
             custom_api_key = None
             for env_var in api_key_candidates:
                 custom_api_key = os.getenv(env_var)
                 if custom_api_key:
-                    logger.info(f"✅ 从环境变量 {env_var} 获取到 API Key")
+                    logger.info(f"✅ from environment variables {env_var} Get API Key")
                     break
 
             if not custom_api_key:
                 raise ValueError(
-                    f"使用自定义厂家 {provider_name} 需要设置以下环境变量之一:\n"
+                    f"Use custom manufacturers {provider_name} One of the following environment variables needs to be set:\n"
                     f"  - {provider_name.upper()}_API_KEY\n"
                     f"  - CUSTOM_OPENAI_API_KEY"
                 )
 
-            # 获取 backend_url（从配置中获取）
+            # Get backend_url (obtained from configuration)
             backend_url = self.config.get("backend_url")
             if not backend_url:
                 raise ValueError(
-                    f"使用自定义厂家 {provider_name} 需要在数据库配置中设置 default_base_url"
+                    f"Use custom manufacturers {provider_name} Need to be set in database configuration default_base_url"
                 )
 
-            logger.info(f"🔧 [自定义厂家 {provider_name}] 使用端点: {backend_url}")
+            logger.info(f"🔧 [Custom manufacturer {provider_name}] Use endpoints: {backend_url}")
 
-            # 🔧 从配置中读取模型参数
+            # 🔧 Read model parameters from configuration
             quick_config = self.config.get("quick_model_config", {})
             deep_config = self.config.get("deep_model_config", {})
 
@@ -1032,10 +1032,10 @@ class TradingAgentsGraph:
             deep_temperature = deep_config.get("temperature", 0.7)
             deep_timeout = deep_config.get("timeout", 180)
 
-            logger.info(f"🔧 [{provider_name}-快速模型] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
-            logger.info(f"🔧 [{provider_name}-深度模型] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
+            logger.info(f"🔧 [{provider_name}-quick model] max_tokens={quick_max_tokens}, temperature={quick_temperature}, timeout={quick_timeout}s")
+            logger.info(f"🔧 [{provider_name}-deep model] max_tokens={deep_max_tokens}, temperature={deep_temperature}, timeout={deep_timeout}s")
 
-            # 使用 custom_openai 适配器创建 LLM 实例
+            # Create an LLM instance using the custom_openai adapter
             self.deep_thinking_llm = create_openai_compatible_llm(
                 provider="custom_openai",
                 model=self.config["deep_think_llm"],
@@ -1055,11 +1055,11 @@ class TradingAgentsGraph:
                 timeout=quick_timeout
             )
 
-            logger.info(f"✅ [自定义厂家 {provider_name}] 已配置自定义端点并应用用户配置的模型参数")
+            logger.info(f"✅ [Custom manufacturer {provider_name}] Custom endpoint configured and user-configured model parameters applied")
         
         self.toolkit = Toolkit(config=self.config)
 
-        # Initialize memories (如果启用)
+        # Initialize memories (If enabled)
         memory_enabled = self.config.get("memory_enabled", True)
         if memory_enabled:
             memory_provider = MemoryProvider(config=self.config, memory_enabled=True)
@@ -1069,7 +1069,7 @@ class TradingAgentsGraph:
             self.invest_judge_memory = memory_provider.get_memory("invest_judge_memory")
             self.risk_manager_memory = memory_provider.get_memory("risk_manager_memory")
         else:
-            # 创建空的内存对象
+            # Create an empty memory object
             self.bull_memory = None
             self.bear_memory = None
             self.trader_memory = None
@@ -1080,12 +1080,12 @@ class TradingAgentsGraph:
         self.tool_nodes = self._create_tool_nodes()
 
         # Initialize components
-        # 🔥 [修复] 从配置中读取辩论轮次参数
+        # 🔥 [Repair] Read debate round parameters from configuration
         self.conditional_logic = ConditionalLogic(
             max_debate_rounds=self.config.get("max_debate_rounds", 1),
             max_risk_discuss_rounds=self.config.get("max_risk_discuss_rounds", 1)
         )
-        logger.info(f"🔧 [ConditionalLogic] 初始化完成:")
+        logger.info(f"🔧 [ConditionalLogic] Initialization completed:")
         logger.info(f"   - max_debate_rounds: {self.conditional_logic.max_debate_rounds}")
         logger.info(f"   - max_risk_discuss_rounds: {self.conditional_logic.max_risk_discuss_rounds}")
 
@@ -1119,62 +1119,62 @@ class TradingAgentsGraph:
     def _create_tool_nodes(self) -> Dict[str, ToolNode]:
         """Create tool nodes for different data sources.
 
-        注意：ToolNode 包含所有可能的工具，但 LLM 只会调用它绑定的工具。
-        ToolNode 的作用是执行 LLM 生成的 tool_calls，而不是限制 LLM 可以调用哪些工具。
+        Note: ToolNode contains all possible tools, but LLM will only call the tools it is bound to.
+        ToolNode The purpose of is to execute tool_calls generated by LLM, rather than restricting which tools LLM can call.
         """
         return {
             "market": ToolNode(
                 [
-                    # 统一工具（推荐）
+                    # Unified tools (recommended)
                     self.toolkit.get_stock_market_data_unified,
-                    # 在线工具（备用）
+                    # Online tools (backup)
                     self.toolkit.get_YFin_data_online,
                     self.toolkit.get_stockstats_indicators_report_online,
-                    # 离线工具（备用）
+                    # Offline tools (backup)
                     self.toolkit.get_YFin_data,
                     self.toolkit.get_stockstats_indicators_report,
                 ]
             ),
             "social": ToolNode(
                 [
-                    # 统一工具（推荐）
+                    # Unified tools (recommended)
                     self.toolkit.get_stock_sentiment_unified,
-                    # 在线工具（备用）
+                    # Online tools (backup)
                     self.toolkit.get_stock_news_openai,
-                    # 离线工具（备用）
+                    # Offline tools (backup)
                     self.toolkit.get_reddit_stock_info,
                 ]
             ),
             "news": ToolNode(
                 [
-                    # 统一工具（推荐）
+                    # Unified tools (recommended)
                     self.toolkit.get_stock_news_unified,
-                    # 在线工具（备用）
+                    # Online tools (backup)
                     self.toolkit.get_global_news_openai,
                     self.toolkit.get_google_news,
-                    # 离线工具（备用）
+                    # Offline tools (backup)
                     self.toolkit.get_finnhub_news,
                     self.toolkit.get_reddit_news,
                 ]
             ),
             "fundamentals": ToolNode(
                 [
-                    # 统一工具（推荐）
+                    # Unified tools (recommended)
                     self.toolkit.get_stock_fundamentals_unified,
-                    # 离线工具（备用）
+                    # Offline tools (backup)
                     self.toolkit.get_finnhub_company_insider_sentiment,
                     self.toolkit.get_finnhub_company_insider_transactions,
                     self.toolkit.get_simfin_balance_sheet,
                     self.toolkit.get_simfin_cashflow,
                     self.toolkit.get_simfin_income_stmt,
-                    # 中国市场工具（备用）
+                    # China Market Tools (Alternate)
                     self.toolkit.get_china_stock_data,
                     self.toolkit.get_china_fundamentals,
                 ]
             ),
             "index_analyst": ToolNode(
                 [
-                    # 大盘/指数分析工具
+                    # Market/index analysis tools
                     self.toolkit.get_stock_market_data_unified,
                     self.toolkit.get_YFin_data_online,
                     self.toolkit.get_stockstats_indicators_report_online,
@@ -1182,7 +1182,7 @@ class TradingAgentsGraph:
             ),
             "sector_analyst": ToolNode(
                 [
-                    # 行业/板块分析工具
+                    # Industry/sector analysis tools
                     self.toolkit.get_stock_market_data_unified,
                     self.toolkit.get_china_stock_data,
                     self.toolkit.get_china_fundamentals,
@@ -1200,33 +1200,33 @@ class TradingAgentsGraph:
             task_id: Optional task ID for tracking performance data
         """
 
-        # 添加详细的接收日志
-        logger.debug(f"🔍 [GRAPH DEBUG] ===== TradingAgentsGraph.propagate 接收参数 =====")
-        logger.debug(f"🔍 [GRAPH DEBUG] 接收到的company_name: '{company_name}' (类型: {type(company_name)})")
-        logger.debug(f"🔍 [GRAPH DEBUG] 接收到的trade_date: '{trade_date}' (类型: {type(trade_date)})")
-        logger.debug(f"🔍 [GRAPH DEBUG] 接收到的task_id: '{task_id}'")
+        # Add detailed receiving log
+        logger.debug(f"🔍 [GRAPH DEBUG] ===== TradingAgentsGraph.propagate Receive parameters =====")
+        logger.debug(f"🔍 [GRAPH DEBUG] received company_name: '{company_name}' (Type: {type(company_name)})")
+        logger.debug(f"🔍 [GRAPH DEBUG] received trade_date: '{trade_date}' (Type: {type(trade_date)})")
+        logger.debug(f"🔍 [GRAPH DEBUG] received task_id: '{task_id}'")
 
         self.ticker = company_name
-        logger.debug(f"🔍 [GRAPH DEBUG] 设置self.ticker: '{self.ticker}'")
+        logger.debug(f"🔍 [GRAPH DEBUG] settings self.ticker: '{self.ticker}'")
 
         # Initialize state
-        logger.debug(f"🔍 [GRAPH DEBUG] 创建初始状态，传递参数: company_name='{company_name}', trade_date='{trade_date}'")
+        logger.debug(f"🔍 [GRAPH DEBUG] Create initial state and pass parameters: company_name='{company_name}', trade_date='{trade_date}'")
         init_agent_state = self.propagator.create_initial_state(
             company_name, trade_date, agent_context
         )
-        logger.debug(f"🔍 [GRAPH DEBUG] 初始状态中的company_of_interest: '{init_agent_state.get('company_of_interest', 'NOT_FOUND')}'")
-        logger.debug(f"🔍 [GRAPH DEBUG] 初始状态中的trade_date: '{init_agent_state.get('trade_date', 'NOT_FOUND')}'")
+        logger.debug(f"🔍 [GRAPH DEBUG] in initial state company_of_interest: '{init_agent_state.get('company_of_interest', 'NOT_FOUND')}'")
+        logger.debug(f"🔍 [GRAPH DEBUG] in initial state trade_date: '{init_agent_state.get('trade_date', 'NOT_FOUND')}'")
 
-        # 初始化计时器
-        node_timings = {}  # 记录每个节点的执行时间
-        total_start_time = time.time()  # 总体开始时间
-        current_node_start = None  # 当前节点开始时间
-        current_node_name = None  # 当前节点名称
+        # Initialize timer
+        node_timings = {}  # Record the execution time of each node
+        total_start_time = time.time()  # overall start time
+        current_node_start = None  # Current node start time
+        current_node_name = None  # Current node name
 
-        # 保存task_id用于后续保存性能数据
+        # Save task_id for subsequent saving of performance data
         self._current_task_id = task_id
 
-        # 根据是否有进度回调选择不同的stream_mode
+        # Choose different ones depending on whether there is a progress callback stream_mode
         args = self.propagator.get_graph_args(use_progress_callback=bool(progress_callback))
 
         if self.debug:
@@ -1234,26 +1234,26 @@ class TradingAgentsGraph:
             trace = []
             final_state = None
             for chunk in self.graph.stream(init_agent_state, **args):
-                # 记录节点计时
+                # Record node timings
                 for node_name in chunk.keys():
                     if not node_name.startswith('__'):
-                        # 如果有上一个节点，记录其结束时间
+                        # If there is a previous node, record its end time
                         if current_node_name and current_node_start:
                             elapsed = time.time() - current_node_start
                             node_timings[current_node_name] = elapsed
-                            logger.info(f"⏱️ [{current_node_name}] 耗时: {elapsed:.2f}秒")
+                            logger.info(f"⏱️ [{current_node_name}] Time consuming: {elapsed:.2f}seconds")
 
-                        # 开始新节点计时
+                        # Start new node timing
                         current_node_name = node_name
                         current_node_start = time.time()
                         break
 
-                # 在 updates 模式下，chunk 格式为 {node_name: state_update}
-                # 在 values 模式下，chunk 格式为完整的状态
+                # In updates mode, the chunk format is {node_name: state_update}
+                # In values mode, the chunk format is complete
                 if progress_callback and args.get("stream_mode") == "updates":
-                    # updates 模式：chunk = {"Market Analyst": {...}}
+                    # updates Mode:chunk = {"Market Analyst": {...}}
                     self._send_progress_update(chunk, progress_callback)
-                    # 累积状态更新
+                    # Cumulative status updates
                     if final_state is None:
                         final_state = init_agent_state.copy()
                     for node_name, node_update in chunk.items():
@@ -1266,42 +1266,42 @@ class TradingAgentsGraph:
                             else:
                                 final_state[node_name] = node_update
                 else:
-                    # values 模式：chunk = {"messages": [...], ...}
+                    # values Mode:chunk = {"messages": [...], ...}
                     if len(chunk.get("messages", [])) > 0:
                         chunk["messages"][-1].pretty_print()
                     trace.append(chunk)
                     final_state = chunk
 
             if not trace and final_state:
-                # updates 模式下，使用累积的状态
+                # updates mode, using the accumulated status
                 pass
             elif trace:
                 final_state = trace[-1]
         else:
             # Standard mode without tracing but with progress updates
             if progress_callback:
-                # 使用 updates 模式以便获取节点级别的进度
+                # Use updates mode to get node-level progress
                 trace = []
                 final_state = None
                 for chunk in self.graph.stream(init_agent_state, **args):
-                    # 记录节点计时
+                    # Record node timings
                     for node_name in chunk.keys():
                         if not node_name.startswith('__'):
-                            # 如果有上一个节点，记录其结束时间
+                            # If there is a previous node, record its end time
                             if current_node_name and current_node_start:
                                 elapsed = time.time() - current_node_start
                                 node_timings[current_node_name] = elapsed
-                                logger.info(f"⏱️ [{current_node_name}] 耗时: {elapsed:.2f}秒")
-                                logger.info(f"🔍 [TIMING] 节点切换: {current_node_name} → {node_name}")
+                                logger.info(f"⏱️ [{current_node_name}] Time consuming: {elapsed:.2f}seconds")
+                                logger.info(f"🔍 [TIMING] Node switching: {current_node_name} → {node_name}")
 
-                            # 开始新节点计时
+                            # Start new node timing
                             current_node_name = node_name
                             current_node_start = time.time()
-                            logger.info(f"🔍 [TIMING] 开始计时: {node_name}")
+                            logger.info(f"🔍 [TIMING] Start timing: {node_name}")
                             break
 
                     self._send_progress_update(chunk, progress_callback)
-                    # 累积状态更新
+                    # Cumulative status updates
                     if final_state is None:
                         final_state = init_agent_state.copy()
                     for node_name, node_update in chunk.items():
@@ -1314,27 +1314,27 @@ class TradingAgentsGraph:
                             else:
                                 final_state[node_name] = node_update
             else:
-                # 原有的invoke模式（也需要计时）
-                logger.info("⏱️ 使用 invoke 模式执行分析（无进度回调）")
-                # 使用stream模式以便计时，但不发送进度更新
+                # Original invoke mode (also requires timing)
+                logger.info("⏱️ Perform analysis using invoke mode (no progress callback)")
+                # Use stream mode for timing purposes but do not send progress updates
                 trace = []
                 final_state = None
                 for chunk in self.graph.stream(init_agent_state, **args):
-                    # 记录节点计时
+                    # Record node timings
                     for node_name in chunk.keys():
                         if not node_name.startswith('__'):
-                            # 如果有上一个节点，记录其结束时间
+                            # If there is a previous node, record its end time
                             if current_node_name and current_node_start:
                                 elapsed = time.time() - current_node_start
                                 node_timings[current_node_name] = elapsed
-                                logger.info(f"⏱️ [{current_node_name}] 耗时: {elapsed:.2f}秒")
+                                logger.info(f"⏱️ [{current_node_name}] Time consuming: {elapsed:.2f}seconds")
 
-                            # 开始新节点计时
+                            # Start new node timing
                             current_node_name = node_name
                             current_node_start = time.time()
                             break
 
-                    # 累积状态更新
+                    # Cumulative status updates
                     if final_state is None:
                         final_state = init_agent_state.copy()
                     for node_name, node_update in chunk.items():
@@ -1347,29 +1347,29 @@ class TradingAgentsGraph:
                             else:
                                 final_state[node_name] = node_update
 
-        # 记录最后一个节点的时间
+        # Record the time of the last node
         if current_node_name and current_node_start:
             elapsed = time.time() - current_node_start
             node_timings[current_node_name] = elapsed
-            logger.info(f"⏱️ [{current_node_name}] 耗时: {elapsed:.2f}秒")
+            logger.info(f"⏱️ [{current_node_name}] Time consuming: {elapsed:.2f}seconds")
 
-        # 计算总时间
+        # Calculate total time
         total_elapsed = time.time() - total_start_time
 
-        # 调试日志
-        logger.info(f"🔍 [TIMING DEBUG] 节点计时数量: {len(node_timings)}")
-        logger.info(f"🔍 [TIMING DEBUG] 总耗时: {total_elapsed:.2f}秒")
-        logger.info(f"🔍 [TIMING DEBUG] 节点列表: {list(node_timings.keys())}")
+        # debug log
+        logger.info(f"🔍 [TIMING DEBUG] Node timing number: {len(node_timings)}")
+        logger.info(f"🔍 [TIMING DEBUG] Total time spent: {total_elapsed:.2f}seconds")
+        logger.info(f"🔍 [TIMING DEBUG] node list: {list(node_timings.keys())}")
 
-        # 打印详细的时间统计
-        logger.info("🔍 [TIMING DEBUG] 准备调用 _print_timing_summary")
+        # Print detailed time statistics
+        logger.info("🔍 [TIMING DEBUG] ready to call _print_timing_summary")
         self._print_timing_summary(node_timings, total_elapsed)
-        logger.info("🔍 [TIMING DEBUG] _print_timing_summary 调用完成")
+        logger.info("🔍 [TIMING DEBUG] _print_timing_summary Call completed")
 
-        # 构建性能数据
+        # Build performance data
         performance_data = self._build_performance_data(node_timings, total_elapsed)
 
-        # 将性能数据添加到状态中
+        # Add performance data to status
         final_state['performance_metrics'] = performance_data
 
         # Store current state for reflection
@@ -1378,7 +1378,7 @@ class TradingAgentsGraph:
         # Log state
         self._log_state(trade_date, final_state)
 
-        # 获取模型信息
+        # Get model information
         model_info = ""
         try:
             if hasattr(self.deep_thinking_llm, 'model_name'):
@@ -1388,7 +1388,7 @@ class TradingAgentsGraph:
         except Exception:
             model_info = "Unknown"
 
-        # 处理决策并添加模型信息
+        # Process decisions and add model information
         decision = self.process_signal(final_state["final_trade_decision"], company_name)
         decision['model_info'] = model_info
 
@@ -1396,10 +1396,10 @@ class TradingAgentsGraph:
         return final_state, decision
 
     def _send_progress_update(self, chunk, progress_callback):
-        """发送进度更新到回调函数
+        """Send progress updates to the callback function
 
-        LangGraph stream 返回的 chunk 格式：{node_name: {...}}
-        节点名称示例：
+        LangGraph stream Returned chunk format:{node_name: {...}}
+        Node name example:
         - "Market Analyst", "Fundamentals Analyst", "News Analyst", "Social Analyst"
         - "tools_market", "tools_fundamentals", "tools_news", "tools_social"
         - "Msg Clear Market", "Msg Clear Fundamentals", etc.
@@ -1408,11 +1408,11 @@ class TradingAgentsGraph:
         - "Risky Analyst", "Safe Analyst", "Neutral Analyst", "Risk Judge"
         """
         try:
-            # 从chunk中提取当前执行的节点信息
+            # Extract currently executing node information from chunk
             if not isinstance(chunk, dict):
                 return
 
-            # 获取第一个非特殊键作为节点名
+            # Get the first non-special key as node name
             node_name = None
             for key in chunk.keys():
                 if not key.startswith('__'):
@@ -1422,75 +1422,75 @@ class TradingAgentsGraph:
             if not node_name:
                 return
 
-            logger.info(f"🔍 [Progress] 节点名称: {node_name}")
+            logger.info(f"🔍 [Progress] Node name: {node_name}")
 
-            # 检查是否为结束节点
+            # Check if it is the end node
             if '__end__' in chunk:
-                logger.info(f"📊 [Progress] 检测到__end__节点")
-                progress_callback("📊 生成报告")
+                logger.info(f"📊 [Progress] __end__ node detected")
+                progress_callback("📊 Generate report")
                 return
 
-            # 节点名称映射表（匹配 LangGraph 实际节点名）
+            # Node name mapping table (matches LangGraph actual node names)
             node_mapping = {
-                # 分析师节点
-                'Market Analyst': "📊 市场分析师",
-                'Fundamentals Analyst': "💼 基本面分析师",
-                'News Analyst': "📰 新闻分析师",
-                'Social Analyst': "💬 社交媒体分析师",
-                # 工具节点（不发送进度更新，避免重复）
+                # Analyst Node
+                'Market Analyst': "📊 market analyst",
+                'Fundamentals Analyst': "💼 fundamental analyst",
+                'News Analyst': "📰 news analyst",
+                'Social Analyst': "💬 social media analyst",
+                # Tool nodes (do not send progress updates to avoid duplication)
                 'tools_market': None,
                 'tools_fundamentals': None,
                 'tools_news': None,
                 'tools_social': None,
-                # 消息清理节点（不发送进度更新）
+                # Message cleanup node (does not send progress updates)
                 'Msg Clear Market': None,
                 'Msg Clear Fundamentals': None,
                 'Msg Clear News': None,
                 'Msg Clear Social': None,
-                # 研究员节点
-                'Bull Researcher': "🐂 看涨研究员",
-                'Bear Researcher': "🐻 看跌研究员",
-                'Research Manager': "👔 研究经理",
-                # 研究整合节点
-                'Trader': "🧩 研究整合员汇总",
-                # 风险评估节点
-                'Risky Analyst': "🔥 激进风险评估",
-                'Safe Analyst': "🛡️ 保守风险评估",
-                'Neutral Analyst': "⚖️ 中性风险评估",
-                'Risk Judge': "🎯 风险经理",
+                # Researcher Node
+                'Bull Researcher': "🐂 bullish researcher",
+                'Bear Researcher': "🐻 bearish researcher",
+                'Research Manager': "👔 research manager",
+                # Research integration node
+                'Trader': "🧩 Summary of research integrators",
+                # Risk assessment node
+                'Risky Analyst': "🔥 Radical risk assessment",
+                'Safe Analyst': "🛡️ conservative risk assessment",
+                'Neutral Analyst': "⚖️ neutral risk assessment",
+                'Risk Judge': "🎯 risk manager",
             }
 
-            # 查找映射的消息
+            # Find mapped messages
             message = node_mapping.get(node_name)
 
             if message is None:
-                # None 表示跳过（工具节点、消息清理节点）
-                logger.debug(f"⏭️ [Progress] 跳过节点: {node_name}")
+                # None Indicates skipping (tool nodes, message cleaning nodes)
+                logger.debug(f"⏭️ [Progress] skip node: {node_name}")
                 return
 
             if message:
-                # 发送进度更新
-                logger.info(f"📤 [Progress] 发送进度更新: {message}")
+                # Send progress updates
+                logger.info(f"📤 [Progress] Send progress updates: {message}")
                 progress_callback(message)
             else:
-                # 未知节点，使用节点名称
-                logger.warning(f"⚠️ [Progress] 未知节点: {node_name}")
+                # Unknown node, use node name
+                logger.warning(f"⚠️ [Progress] unknown node: {node_name}")
                 progress_callback(f"🔍 {node_name}")
 
         except Exception as e:
-            logger.error(f"❌ 进度更新失败: {e}", exc_info=True)
+            logger.error(f"❌ Progress update failed: {e}", exc_info=True)
 
     def _build_performance_data(self, node_timings: Dict[str, float], total_elapsed: float) -> Dict[str, Any]:
-        """构建性能数据结构
+        """Build performance data structures
 
         Args:
-            node_timings: 每个节点的执行时间字典
-            total_elapsed: 总执行时间
+            node_timings: Dictionary of execution times for each node
+            total_elapsed: total execution time
 
         Returns:
-            性能数据字典
+            Performance Data Dictionary
         """
-        # 节点分类（注意：风险管理节点要先于分析师节点判断，因为它们也包含'Analyst'）
+        # Node classification (Note: Risk management nodes should be judged before analyst nodes because they also contain'Analyst') 
         analyst_nodes = {}
         tool_nodes = {}
         msg_clear_nodes = {}
@@ -1500,29 +1500,29 @@ class TradingAgentsGraph:
         other_nodes = {}
 
         for node_name, elapsed in node_timings.items():
-            # 优先匹配风险管理团队（因为它们也包含'Analyst'）
+            # Prioritize matching risk management teams (as they also include'Analyst') 
             if 'Risky' in node_name or 'Safe' in node_name or 'Neutral' in node_name or 'Risk Judge' in node_name:
                 risk_nodes[node_name] = elapsed
-            # 然后匹配分析师团队
+            # Then match the analyst team
             elif 'Analyst' in node_name:
                 analyst_nodes[node_name] = elapsed
-            # 工具节点
+            # tool node
             elif node_name.startswith('tools_'):
                 tool_nodes[node_name] = elapsed
-            # 消息清理节点
+            # Message cleaning node
             elif node_name.startswith('Msg Clear'):
                 msg_clear_nodes[node_name] = elapsed
-            # 研究团队
+            # research team
             elif 'Researcher' in node_name or 'Research Manager' in node_name:
                 research_nodes[node_name] = elapsed
-            # 交易团队
+            # trading team
             elif 'Trader' in node_name:
                 trader_nodes[node_name] = elapsed
-            # 其他节点
+            # Other nodes
             else:
                 other_nodes[node_name] = elapsed
 
-        # 计算统计数据
+        # Calculate statistics
         slowest_node = max(node_timings.items(), key=lambda x: x[1]) if node_timings else (None, 0)
         fastest_node = min(node_timings.items(), key=lambda x: x[1]) if node_timings else (None, 0)
         avg_time = sum(node_timings.values()) / len(node_timings) if node_timings else 0
@@ -1586,21 +1586,21 @@ class TradingAgentsGraph:
         }
 
     def _print_timing_summary(self, node_timings: Dict[str, float], total_elapsed: float):
-        """打印详细的时间统计报告
+        """Print detailed time statistics report
 
         Args:
-            node_timings: 每个节点的执行时间字典
-            total_elapsed: 总执行时间
+            node_timings: Dictionary of execution times for each node
+            total_elapsed: total execution time
         """
-        logger.info("🔍 [_print_timing_summary] 方法被调用")
-        logger.info("🔍 [_print_timing_summary] node_timings 数量: " + str(len(node_timings)))
+        logger.info("🔍 [_print_timing_summary] method is called")
+        logger.info("🔍 [_print_timing_summary] node_timings Quantity: " + str(len(node_timings)))
         logger.info("🔍 [_print_timing_summary] total_elapsed: " + str(total_elapsed))
 
         logger.info("=" * 80)
-        logger.info("⏱️  分析性能统计报告")
+        logger.info("⏱️  Analyze performance statistics reports")
         logger.info("=" * 80)
 
-        # 节点分类（注意：风险管理节点要先于分析师节点判断，因为它们也包含'Analyst'）
+        # Node classification (Note: Risk management nodes should be judged before analyst nodes because they also contain'Analyst') 
         analyst_nodes = []
         tool_nodes = []
         msg_clear_nodes = []
@@ -1610,29 +1610,29 @@ class TradingAgentsGraph:
         other_nodes = []
 
         for node_name, elapsed in node_timings.items():
-            # 优先匹配风险管理团队（因为它们也包含'Analyst'）
+            # Prioritize matching risk management teams (as they also include'Analyst') 
             if 'Risky' in node_name or 'Safe' in node_name or 'Neutral' in node_name or 'Risk Judge' in node_name:
                 risk_nodes.append((node_name, elapsed))
-            # 然后匹配分析师团队
+            # Then match the analyst team
             elif 'Analyst' in node_name:
                 analyst_nodes.append((node_name, elapsed))
-            # 工具节点
+            # tool node
             elif node_name.startswith('tools_'):
                 tool_nodes.append((node_name, elapsed))
-            # 消息清理节点
+            # Message cleaning node
             elif node_name.startswith('Msg Clear'):
                 msg_clear_nodes.append((node_name, elapsed))
-            # 研究团队
+            # research team
             elif 'Researcher' in node_name or 'Research Manager' in node_name:
                 research_nodes.append((node_name, elapsed))
-            # 交易团队
+            # trading team
             elif 'Trader' in node_name:
                 trader_nodes.append((node_name, elapsed))
-            # 其他节点
+            # Other nodes
             else:
                 other_nodes.append((node_name, elapsed))
 
-        # 打印分类统计
+        # Print classification statistics
         def print_category(title: str, nodes: List[Tuple[str, float]]):
             if not nodes:
                 return
@@ -1641,39 +1641,39 @@ class TradingAgentsGraph:
             total_category_time = sum(t for _, t in nodes)
             for node_name, elapsed in sorted(nodes, key=lambda x: x[1], reverse=True):
                 percentage = (elapsed / total_elapsed * 100) if total_elapsed > 0 else 0
-                logger.info(f"  • {node_name:40s} {elapsed:8.2f}秒  ({percentage:5.1f}%)")
-            logger.info(f"  {'小计':40s} {total_category_time:8.2f}秒  ({total_category_time/total_elapsed*100:5.1f}%)")
+                logger.info(f"  • {node_name:40s} {elapsed:8.2f}seconds  ({percentage:5.1f}%)")
+            logger.info(f"  {'Subtotal':40s} {total_category_time:8.2f}seconds  ({total_category_time/total_elapsed*100:5.1f}%)")
 
-        print_category("分析师团队", analyst_nodes)
-        print_category("工具调用", tool_nodes)
-        print_category("消息清理", msg_clear_nodes)
-        print_category("研究团队", research_nodes)
-        print_category("交易团队", trader_nodes)
-        print_category("风险管理团队", risk_nodes)
-        print_category("其他节点", other_nodes)
+        print_category("Analyst Team", analyst_nodes)
+        print_category("Tool call", tool_nodes)
+        print_category("Message cleaning", msg_clear_nodes)
+        print_category("research team", research_nodes)
+        print_category("trading team", trader_nodes)
+        print_category("risk management team", risk_nodes)
+        print_category("Other nodes", other_nodes)
 
-        # 打印总体统计
+        # Print overall statistics
         logger.info("\n" + "=" * 80)
-        logger.info(f"🎯 总执行时间: {total_elapsed:.2f}秒 ({total_elapsed/60:.2f}分钟)")
-        logger.info(f"📈 节点总数: {len(node_timings)}")
+        logger.info(f"🎯 total execution time: {total_elapsed:.2f}seconds ({total_elapsed/60:.2f}minutes)")
+        logger.info(f"📈 Total number of nodes: {len(node_timings)}")
         if node_timings:
             avg_time = sum(node_timings.values()) / len(node_timings)
-            logger.info(f"⏱️  平均节点耗时: {avg_time:.2f}秒")
+            logger.info(f"⏱️  Average node time: {avg_time:.2f}seconds")
             slowest_node = max(node_timings.items(), key=lambda x: x[1])
-            logger.info(f"🐌 最慢节点: {slowest_node[0]} ({slowest_node[1]:.2f}秒)")
+            logger.info(f"🐌 slowest node: {slowest_node[0]} ({slowest_node[1]:.2f}seconds)")
             fastest_node = min(node_timings.items(), key=lambda x: x[1])
-            logger.info(f"⚡ 最快节点: {fastest_node[0]} ({fastest_node[1]:.2f}秒)")
+            logger.info(f"⚡ Fastest node: {fastest_node[0]} ({fastest_node[1]:.2f}seconds)")
 
-        # 打印LLM配置信息
-        logger.info(f"\n🤖 LLM配置:")
-        logger.info(f"  • 提供商: {self.config.get('llm_provider', 'unknown')}")
-        logger.info(f"  • 深度思考模型: {self.config.get('deep_think_llm', 'unknown')}")
-        logger.info(f"  • 快速思考模型: {self.config.get('quick_think_llm', 'unknown')}")
+        # Print LLM configuration information
+        logger.info(f"\n🤖 LLM Configuration:")
+        logger.info(f"  • provider: {self.config.get('llm_provider', 'unknown')}")
+        logger.info(f"  • deep thinking model: {self.config.get('deep_think_llm', 'unknown')}")
+        logger.info(f"  • quick thinking model: {self.config.get('quick_think_llm', 'unknown')}")
         logger.info("=" * 80)
 
     def _log_state(self, trade_date, final_state):
         """Log the final state to a JSON file."""
-        # 使用 .get() 安全访问所有字段，支持用户只选择部分分析师的情况
+        # Use .get() Secure access to all fields, allowing users to select only some analysts
         investment_debate = final_state.get("investment_debate_state", {})
         risk_debate = final_state.get("risk_debate_state", {})
 

@@ -1,7 +1,7 @@
 """
-风险提醒类工具
+Risk reminder tools
 
-提供价格下限提醒的设置、查看、清除能力，便于用户自行跟踪风险。
+Provides the ability to set, view, and clear price lower limit reminders to facilitate users to track risks by themselves.
 """
 
 import logging
@@ -30,7 +30,7 @@ def _normalize_market(market: str) -> str:
 @register_tool(
     tool_id="set_stop_loss_alert",
     name="设置价格下限提醒",
-    description="为股票设置价格下限提醒，价格接近或跌破时通过系统通知推送，便于用户自行跟踪风险。返回股票名称、代码、市场和提醒价格。",
+    description="Set a lower price limit reminder for a stock, and push notifications through the system when the price is close to or falls below, making it easier for users to track risks on their own. Returns the stock name, symbol, market and alert price.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -40,15 +40,15 @@ def _normalize_market(market: str) -> str:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["价格下限提醒设置", "风险关注价格配置", "风险控制提醒", "价格下限提醒"],
-    when_to_use="当用户想为某只股票设置价格下限、希望在价格跌破阈值时收到通知以自行关注风险时使用。",
-    returns="返回文本消息，包含股票名称、代码、市场和已设置的价格下限。",
+    when_to_use="It is used when users want to set a lower price limit for a certain stock and want to be notified when the price falls below the threshold so that they can pay attention to the risk themselves.",
+    returns="Returns a text message containing the stock name, symbol, market, and the price floor that has been set.",
 )
 async def set_stop_loss_alert(
-    symbol: Annotated[str, "股票代码，如 300033、00700、AAPL"],
-    stop_loss_price: Annotated[float, "价格下限（低于或接近该价格时提醒）"],
-    market: Annotated[str, "市场：CN/HK/US，默认 CN"] = "CN",
+    symbol: Annotated[str, "Stock code, such as 300033, 00700,AAPL"],
+    stop_loss_price: Annotated[float, "Price lower limit (alert when it is below or close to this price)"],
+    market: Annotated[str, "Market: CN/HK/US, default CN"] = "CN",
 ) -> str:
-    """设置股票价格下限提醒。"""
+    """Set a stock price floor reminder."""
     try:
         from app.services.favorites_service import favorites_service
         from app.core.database import get_mongo_db
@@ -57,13 +57,13 @@ async def set_stop_loss_alert(
         market_label = _normalize_market(market)
         db = get_mongo_db()
 
-        # 尝试从持仓中补全股票名称
+        # Try to complete the stock name from the position
         name = symbol
         pos = await db.real_positions.find_one({"user_id": user_id, "code": symbol}, {"name": 1})
         if pos and pos.get("name"):
             name = pos["name"]
 
-        # 若不存在则自动加入股票关注列表，再写入提醒阈值
+        # If it does not exist, it will automatically be added to the stock watch list, and then the reminder threshold will be written.
         exists = await favorites_service.is_favorite(user_id, symbol)
         if not exists:
             await favorites_service.add_favorite(
@@ -82,13 +82,13 @@ async def set_stop_loss_alert(
 
         return (
             f"✅ 已设置价格下限提醒\n"
-            f"- 股票: {name}({symbol})\n"
-            f"- 市场: {market_label}\n"
-            f"- 价格下限: {stop_loss_price:.2f}\n"
-            f"当价格接近或跌破该下限时，将收到系统通知，便于您自行关注风险。"
+            f"- stocks: {name}({symbol})\n"
+            f"- market: {market_label}\n"
+            f"- price floor: {stop_loss_price:.2f}\n"
+            f"When the price approaches or falls below the lower limit, you will receive a system notification so that you can pay attention to the risk yourself."
         )
     except Exception as e:
-        logger.exception("[set_stop_loss_alert] 设置价格下限提醒失败: %s", e)
+        logger.exception("[set_stop_loss_alert] Failed to set price minimum reminder: %s", e)
         return f"设置价格下限提醒失败: {e}"
 
 
@@ -96,7 +96,7 @@ async def set_stop_loss_alert(
 @register_tool(
     tool_id="list_stop_loss_alerts",
     name="查看价格下限提醒",
-    description="查看当前已设置的所有价格下限提醒。返回提醒数量及每条提醒的股票名称、代码、市场和提醒价格。",
+    description="View all price floor alerts currently set. Returns the number of alerts and the stock name, symbol, market, and alert price for each alert.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -106,11 +106,11 @@ async def set_stop_loss_alert(
     tool_role_hint="supporting",
     output_shape="text",
     preferred_for=["价格下限提醒查看", "价格下限列表查询", "已配置提醒浏览", "风险控制确认"],
-    when_to_use="当用户想查看当前已设置的所有价格下限提醒、确认哪些股票配置了价格下限时使用。",
-    returns="返回文本消息，包含价格下限提醒数量及每条提醒的股票、市场、提醒价格。",
+    when_to_use="This is used when the user wants to view all currently set price lower limit reminders and confirm which stocks have configured price lower limits.",
+    returns="Returns a text message, including the number of price lower limit reminders and the stock, market, and reminder price of each reminder.",
 )
 async def list_stop_loss_alerts() -> str:
-    """查看已配置的价格下限提醒列表。"""
+    """View a list of configured price floor alerts."""
     try:
         from app.services.favorites_service import favorites_service
 
@@ -119,7 +119,7 @@ async def list_stop_loss_alerts() -> str:
         alerts = [x for x in items if x.get("alert_price_low") is not None]
 
         if not alerts:
-            return "当前没有设置任何价格下限提醒。"
+            return "There are currently no price floor alerts set."
 
         lines = [f"共 {len(alerts)} 条价格下限提醒：\n"]
         for it in alerts:
@@ -130,7 +130,7 @@ async def list_stop_loss_alerts() -> str:
             lines.append(f"- {name}({code}) | {market} | 价格下限: {float(low):.2f}")
         return "\n".join(lines)
     except Exception as e:
-        logger.exception("[list_stop_loss_alerts] 查看价格下限提醒失败: %s", e)
+        logger.exception("[list_stop_loss_alerts] Failed to check price lower limit reminder: %s", e)
         return f"查看价格下限提醒失败: {e}"
 
 
@@ -138,7 +138,7 @@ async def list_stop_loss_alerts() -> str:
 @register_tool(
     tool_id="clear_stop_loss_alert",
     name="清除价格下限提醒",
-    description="清除指定股票的价格下限提醒（仅清提醒，不移除股票关注列表）。返回操作结果或未找到配置的提示。",
+    description="Clear the lower price limit reminder for the specified stock (only clears the reminder, does not remove the stock watch list). Returns the operation result or a prompt that the configuration is not found.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -148,13 +148,13 @@ async def list_stop_loss_alerts() -> str:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["价格下限提醒清除", "风险关注价格移除", "提醒配置删除", "风险提醒取消"],
-    when_to_use="当用户想清除某只股票的价格下限提醒、不再接收该股票的价格下限通知时使用（仅清除提醒，不移除股票关注列表）。",
-    returns="返回文本消息，确认价格下限提醒已清除或提示未找到相关配置。",
+    when_to_use="It is used when the user wants to clear the price lower limit reminder of a certain stock and no longer receive the price lower limit notification of the stock (only clears the reminder and does not remove the stock watch list).",
+    returns="Return a text message to confirm that the price lower limit reminder has been cleared or that the relevant configuration is not found.",
 )
 async def clear_stop_loss_alert(
-    symbol: Annotated[str, "股票代码，如 300033、00700、AAPL"],
+    symbol: Annotated[str, "Stock code, such as 300033, 00700,AAPL"],
 ) -> str:
-    """清除某只股票的价格下限提醒。"""
+    """Clear the price floor alert for a stock."""
     try:
         from app.services.favorites_service import favorites_service
 
@@ -168,5 +168,5 @@ async def clear_stop_loss_alert(
             return f"✅ 已清除 {symbol} 的价格下限提醒。"
         return f"未找到 {symbol} 的价格下限提醒配置，或该股票不在股票关注列表中。"
     except Exception as e:
-        logger.exception("[clear_stop_loss_alert] 清除价格下限提醒失败: %s", e)
+        logger.exception("[clear_stop_loss_alert] Failed to clear price floor reminder: %s", e)
         return f"清除价格下限提醒失败: {e}"

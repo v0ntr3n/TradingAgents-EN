@@ -1,126 +1,126 @@
 # -*- coding: utf-8 -*-
-"""S8 system prompt 治理（A11 §7 并行工作项）单测。
+"""S8 system prompt Governance (A11 §7 Parallel work items) single test.
 
-覆盖：
-- 分层结构完整性（核心身份/领域边界/数据纪律/合规/工具指引）
-- 动态注入机制不受重组影响（日期/IM/记忆指引/主题/usage_helper 分流）
-- 字数缩减验收（基线 8317 字符，验收线 ≤5822 即 ≥30% 缩减，防膨胀回弹）
-- 关键行为锚点存在（与 A 类防线、§5.1 回归测试集对应）
+Coverage:
+- Layer structure integrity (core identity/domain boundaries/data discipline/compliance/tool guidance)
+- The dynamic injection mechanism is not affected by reorganization (date/IM/memory guide/topic/usage_helper diversion)
+- Word count reduction acceptance (baseline 8317 characters, acceptance line ≤5822 That is ≥30% reduction, anti-expansion rebound)
+- Key behavioral anchors exist (with Type A lines of defense,§5.1 Regression test set corresponding)
 """
 import re
 
 from app.services.intelligent_assistant_service import _get_system_prompt
 
-# 阶段 4 重写前的静态规则文本基线（2026-09-13 实测）
+# Phase 4 Static rule text baseline before rewriting (tested on 2026-09-13)
 _BASELINE_CHARS = 8317
-# 验收线：字数缩减 ≥30%（2026-09-15 上调至 6050：新增表格 Excel 导出工具说明、
-# 数据纪律第 14/15 条——导出透传与"复用对话已有结果"防重复拉数规则）
+# Acceptance line: word count reduction ≥30% (2026-09-15 Increased to 6050: Added table Excel export tool instructions,
+# Data Discipline Article 14/15——Export pass-through and"Reuse conversation already has results"Anti-repeated pulling rules)
 _MAX_CHARS = 6050
 
 
 class TestSystemPromptS8:
     def test_layered_blocks_present(self):
-        """分层重组后的核心区块齐全"""
+        """The core blocks after hierarchical reorganization are complete"""
         prompt = _get_system_prompt()
         for block in (
-            "【角色定位】",
-            "【系统能力说明】",
-            "【诚实与能力边界】",
-            "【领域边界】",
-            "【数据纪律（核心，逐条强制）】",
-            "【合规原则】",
-            "【先确认再执行】",
-            "【数据概念区分（必须严格区分）】",
-            "【工具与数据获取】",
-            "【长期记忆管理】",
+            " [Role positioning]",
+            " [System capability description]",
+            " [Honesty and Ability Boundaries]",
+            " [Domain boundaries]",
+            " [Data discipline (core, mandatory one by one)]",
+            " [Compliance Principles]",
+            " [Confirm first and then execute]",
+            " [Data concept distinction (must be strictly distinguished)]",
+            " [Tools and data acquisition] ",
+            " [Long-term memory management]",
         ):
-            assert block in prompt, f"缺少分层区块：{block}"
+            assert block in prompt, f"Missing layered blocks:{block}"
 
     def test_dynamic_date_injection(self):
-        """当前日期与最近交易日动态注入保持"""
+        """The current date and the latest trading day are dynamically injected and maintained"""
         prompt = _get_system_prompt()
-        assert "【当前日期】" in prompt
-        assert "【最近交易日】" in prompt
-        # 两处均为 YYYY-MM-DD
-        dates = re.findall(r"【(?:当前日期|最近交易日)】(\d{4}-\d{2}-\d{2})", prompt)
-        assert len(dates) == 2, f"日期注入异常：{dates}"
+        assert " [Current date]" in prompt
+        assert " [Recent trading days]" in prompt
+        # both places YYYY-MM-DD
+        dates = re.findall(r" [(?:current date|Last trading day)] (\d{4}-\d{2}-\d{2})", prompt)
+        assert len(dates) == 2, f"Date injection exception:{dates}"
 
     def test_im_block_injection(self):
-        """IM 渠道格式规范按需注入"""
-        assert "【IM 消息格式规范】" not in _get_system_prompt()
-        assert "【IM 消息格式规范】" in _get_system_prompt(is_im=True)
+        """IM Channel format specifications are injected on demand"""
+        assert " [IM Message format specification]" not in _get_system_prompt()
+        assert " [IM Message format specification]" in _get_system_prompt(is_im=True)
 
     def test_memory_directive_injection(self):
-        """记忆块注入时附带多交易计划处理规则"""
-        prompt = _get_system_prompt(memory_block="【历史记忆】\n- 用户偏好测试")
-        assert "【历史记忆】" in prompt
-        assert "多交易计划处理规则" in prompt
-        # 无记忆时不注入该指引
-        assert "多交易计划处理规则" not in _get_system_prompt()
+        """Memory block injection comes with multiple transaction plan processing rules"""
+        prompt = _get_system_prompt(memory_block=" [historical memory]\n- User preference testing")
+        assert " [historical memory]" in prompt
+        assert "Multiple trading plan processing rules" in prompt
+        # This guide is not injected when there is no memory
+        assert "Multiple trading plan processing rules" not in _get_system_prompt()
 
     def test_topic_block_injection(self):
-        """外部会话主题注入保持"""
-        prompt = _get_system_prompt(current_topic_title="新能源车产业链")
-        assert "当前研究主题：新能源车产业链" in prompt
+        """External session topic injection holds"""
+        prompt = _get_system_prompt(current_topic_title="New energy vehicle industry chain")
+        assert "Current research topic: New energy vehicle industry chain" in prompt
 
     def test_usage_helper_branch_unchanged(self):
-        """使用问答机器人分流保持（不走通用分析助理 prompt）"""
+        """Use the question and answer robot to divert and maintain (without taking the general analysis assistant prompt)"""
         prompt = _get_system_prompt(assistant_role="usage_helper")
-        assert "使用问答助手" in prompt
-        assert "【数据纪律（核心，逐条强制）】" not in prompt
+        assert "Use the Q&A Assistant" in prompt
+        assert " [Data discipline (core, mandatory one by one)]" not in prompt
 
     def test_size_reduction_acceptance(self):
-        """验收：静态规则文本较基线缩减 ≥30%（防膨胀回弹）"""
+        """Acceptance: Static rule text reduced compared to baseline ≥30% (Anti-expansion and rebound)"""
         prompt = _get_system_prompt()
         assert len(prompt) <= _MAX_CHARS, (
-            f"prompt 长度 {len(prompt)} 超过验收线 {_MAX_CHARS}"
-            f"（基线 {_BASELINE_CHARS} 的 70%），缩减率不足 30%"
+            f"prompt length {len(prompt)} Exceed the acceptance line {_MAX_CHARS}"
+            f" (baseline {_BASELINE_CHARS} 70%), the reduction rate is insufficient 30%"
         )
 
     def test_data_discipline_anchors(self):
-        """数据纪律 13 条关键锚点（A 类防线对齐）"""
+        """Data Discipline 13 Key Anchors (Type A Line of Defense Alignment)"""
         prompt = _get_system_prompt()
         anchors = (
-            "数字只能来自工具返回",
-            "严禁\"约\"字包装编造",
-            "严禁编造来源",
-            "严禁伪造工具调用痕迹",
-            "web_search 摘要里没有的数字不能编",
-            "行业实时数据禁用记忆",
-            "估值分位数须数据支撑",
-            "单位与换算逐字核对",
-            "空数据如实告知",
-            "数据日期如实声明",
-            "工具结果忠实原样呈现",
-            "时间逻辑基于当前日期",
-            "估值 Excel 交付物",
-            "15764.6万=1.58亿",  # 换算行为锚点
-            "0.37% 而非 37%",  # ratio 字段锚点
+            "Numbers can only be returned from tools",
+            "strictly prohibited\"approx.\"Word packaging fabrication",
+            "Fabricating sources is strictly prohibited",
+            "It is strictly prohibited to forge tool call traces",
+            "web_search Numbers that are not included in the abstract cannot be compiled.",
+            "Industry real-time data disabled memory",
+            "Valuation quantiles must be supported by data",
+            "Verbatim verification of units and conversions",
+            "Empty data is truthfully informed",
+            "Data dates are truthfully stated",
+            "Tool results are presented faithfully as they are",
+            "Time logic is based on current date",
+            "Valuation Excel Deliverables",
+            "15764.6 million=1.58 billion",  # conversion behavior anchor
+            "0.37% rather than 37%",  # ratio field anchor
         )
         for a in anchors:
-            assert a in prompt, f"缺少数据纪律锚点：{a}"
+            assert a in prompt, f"Missing data discipline anchor:{a}"
 
     def test_compliance_and_tool_anchors(self):
-        """合规与工具指引关键锚点（§5.1 案例 4/5/6 相关）"""
+        """Compliance and Tool Guidance Key Anchors (§5.1 Case 4/5/6 related)"""
         prompt = _get_system_prompt()
         anchors = (
-            "我无法提供'是否值得入手'这类投资建议",  # 案例 4 合规话术
-            "严禁给出具体止损价/止盈价/提醒价位",
-            "编号承接",  # 案例 5 裸编号回复
-            "必须传入上述交易日",
-            "严禁用 search_recent_information/web_search 网页搜索代替",  # 走势禁搜索
-            "严禁为\"给点参考\"推荐不符合条件的股票",  # 筛选空结果
-            "watchlist_groups 只是分组/组织方式",  # 三概念区分
+            "i can t provide'Is it worth buying?'This type of investment advice",  # Case 4 Compliance rhetoric
+            "It is strictly prohibited to give specific stop loss price/take profit price/reminder price.",
+            "Number acceptance",  # Case 5 Naked number reply
+            "The trading date above must be passed in",
+            "It is strictly forbidden to use search_recent_information/web_search web search instead",  # Trend search is prohibited
+            "strictly prohibited\"Give some reference\"Recommend stocks that do not meet the criteria",  # Filter empty results
+            "watchlist_groups Just a way of grouping/organizing",  # Three concept distinctions
             "user_favorites",
         )
         for a in anchors:
-            assert a in prompt, f"缺少合规/工具锚点：{a}"
+            assert a in prompt, f"Missing compliance/tool anchors:{a}"
 
     def test_personalization_injection(self):
-        """助理个性化设置注入保持"""
+        """Assistant personalization settings injected into hold"""
         prompt = _get_system_prompt(
-            assistant_settings={"name": "小助手", "tone": "friendly", "custom_instructions": "多用表格"}
+            assistant_settings={"name": "Assistant", "tone": "friendly", "custom_instructions": "multi-purpose form"}
         )
-        assert "小助手" in prompt
-        assert "轻松友好" in prompt  # friendly 语气映射
-        assert "多用表格" in prompt
+        assert "Assistant" in prompt
+        assert "Relaxed and friendly" in prompt  # friendly tone mapping
+        assert "multi-purpose form" in prompt

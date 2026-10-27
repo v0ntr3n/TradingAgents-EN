@@ -1,7 +1,7 @@
 """
-mem0 统一记忆层 API
+mem0 unified memory layer API
 
-提供记忆健康检查、状态查询、列表浏览、语义搜索和删除管理接口。
+Provides memory health check, status query, list browsing, semantic search and deletion management interfaces.
 """
 
 import logging
@@ -48,7 +48,7 @@ def _build_metadata_filters(
 
 @router.get("/health")
 async def memory_health(db: AsyncIOMotorDatabase = Depends(get_mongo_db)):
-    """mem0 记忆层健康检查"""
+    """mem0 Memory layer health check"""
     from core.memory.service import get_memory_service
     svc = get_memory_service(db)
     result = await svc.health_check()
@@ -58,7 +58,7 @@ async def memory_health(db: AsyncIOMotorDatabase = Depends(get_mongo_db)):
         content={
             "success": ok,
             "data": result,
-            "message": "" if ok else (result.get("error") or "记忆层不可用"),
+            "message": "" if ok else (result.get("error") or "Memory layer is not available"),
         },
     )
 
@@ -68,7 +68,7 @@ async def memory_stats(
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """获取当前用户的记忆统计（按 scope 计数）"""
+    """Get the memory statistics of the current user (count by scope)"""
     from core.memory.service import get_memory_service, _is_mem0_enabled
     user_id = _resolve_user_id(user)
     logger.info("[memory-api] stats request — resolved_user_id=%s", user_id)
@@ -76,7 +76,7 @@ async def memory_stats(
     if not _is_mem0_enabled():
         return {
             "success": True,
-            "data": {"enabled": False, "message": "记忆功能未启用"},
+            "data": {"enabled": False, "message": "Memory function is not enabled"},
         }
 
     svc = get_memory_service(db)
@@ -117,17 +117,17 @@ async def memory_stats(
 
 @router.get("/list")
 async def memory_list(
-    scope: Optional[str] = Query(None, description="按 scope 过滤"),
-    object_type: Optional[str] = Query(None, description="按对象类型过滤"),
-    symbol: Optional[str] = Query(None, description="按股票代码过滤"),
-    market: Optional[str] = Query(None, description="按市场过滤"),
-    memory_kind: Optional[str] = Query(None, description="按记忆类型过滤"),
+    scope: Optional[str] = Query(None, description="Filter by scope"),
+    object_type: Optional[str] = Query(None, description="Filter by object type"),
+    symbol: Optional[str] = Query(None, description="Filter by ticker"),
+    market: Optional[str] = Query(None, description="Filter by market"),
+    memory_kind: Optional[str] = Query(None, description="Filter by memory type"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """分页获取当前用户的记忆列表"""
+    """Get the memory list of the current user by pagination"""
     from core.memory.service import get_memory_service
     user_id = _resolve_user_id(user)
     logger.info(
@@ -163,17 +163,17 @@ async def memory_list(
 
 @router.get("/recall")
 async def memory_recall(
-    query: str = Query(..., min_length=1, description="查询文本"),
-    scope: Optional[str] = Query(None, description="限定 scope"),
-    object_type: Optional[str] = Query(None, description="按对象类型过滤"),
-    symbol: Optional[str] = Query(None, description="按股票代码过滤"),
-    market: Optional[str] = Query(None, description="按市场过滤"),
-    memory_kind: Optional[str] = Query(None, description="按记忆类型过滤"),
+    query: str = Query(..., min_length=1, description="Query text"),
+    scope: Optional[str] = Query(None, description="limited scope"),
+    object_type: Optional[str] = Query(None, description="Filter by object type"),
+    symbol: Optional[str] = Query(None, description="Filter by ticker"),
+    market: Optional[str] = Query(None, description="Filter by market"),
+    memory_kind: Optional[str] = Query(None, description="Filter by memory type"),
     limit: int = Query(5, ge=1, le=20),
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """语义搜索记忆"""
+    """semantic search memory"""
     from core.memory.service import get_memory_service
     user_id = _resolve_user_id(user)
     logger.info(
@@ -211,7 +211,7 @@ async def memory_batch_delete(
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """批量删除记忆"""
+    """Delete memories in batches"""
     from core.memory.service import get_memory_service
     svc = get_memory_service(db)
     deleted = 0
@@ -226,7 +226,7 @@ async def memory_delete_all(
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """清除当前用户的全部记忆"""
+    """Clear all memories of current user"""
     from core.memory.service import get_memory_service
     user_id = _resolve_user_id(user)
     svc = get_memory_service(db)
@@ -240,26 +240,26 @@ async def memory_delete(
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """删除单条记忆"""
+    """Delete a single memory"""
     from core.memory.service import get_memory_service
     svc = get_memory_service(db)
     ok = await svc.delete_memory(memory_id)
     if ok:
-        return {"success": True, "message": "记忆已删除"}
-    return {"success": False, "message": "删除失败，请稍后重试"}
+        return {"success": True, "message": "memory deleted"}
+    return {"success": False, "message": "Deletion failed, please try again later"}
 
 
 # =============================================================================
-# 智能助手事实记忆（assistant_memory_facts）
-# 与 mem0 对象记忆不同：事实记忆由智能助手从联网工具结果中提取（含数字的
-# 短句，≤150字符），存于 assistant_memory_facts 集合，跨会话召回供助手引用。
-# 这里提供只读浏览、搜索与删除能力。
+# Intelligent Assistant Fact Memory (assistant_memory_facts)
+# Unlike mem0 object memory: fact memory is extracted by the intelligent assistant from the network tool results (including numeric
+# short sentences,≤150 characters), stored in the assistant_memory_facts collection, recalled across sessions for reference by the assistant.
+# Read-only browsing, search and delete capabilities are provided here.
 # =============================================================================
 _FACTS_COLLECTION = "assistant_memory_facts"
 
 
 def _serialize_fact(doc: dict) -> dict:
-    """把事实文档序列化为前端可用 dict（_id -> id）。"""
+    """Serialize the fact document into a front-end usable dict (_id -> id) . """
     out = {"id": str(doc["_id"])}
     out.update({k: v for k, v in doc.items() if k != "_id"})
     return out
@@ -267,15 +267,15 @@ def _serialize_fact(doc: dict) -> dict:
 
 @router.get("/assistant-facts")
 async def assistant_facts_list(
-    q: Optional[str] = Query(None, description="按主题/内容关键词搜索"),
-    symbol: Optional[str] = Query(None, description="按股票代码过滤"),
-    category: Optional[str] = Query(None, description="按数据类别过滤"),
+    q: Optional[str] = Query(None, description="Search by topic/content keywords"),
+    symbol: Optional[str] = Query(None, description="Filter by ticker"),
+    category: Optional[str] = Query(None, description="Filter by data category"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """分页查询智能助手提取的事实记忆（按采集时间倒序）。"""
+    """Paging query of the fact memory extracted by the intelligent assistant (in reverse order of collection time)."""
     query: dict = {}
     if q:
         q = q.strip()
@@ -310,7 +310,7 @@ async def assistant_facts_batch_delete(
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """批量删除事实记忆。"""
+    """Delete fact memories in batches."""
     from bson import ObjectId
     ids = [ObjectId(fid) for fid in fact_ids[:100] if ObjectId.is_valid(fid)]
     result = await db[_FACTS_COLLECTION].delete_many({"_id": {"$in": ids}})
@@ -326,11 +326,11 @@ async def assistant_facts_delete(
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """删除单条事实记忆。"""
+    """Delete single fact memory."""
     from bson import ObjectId
     if not ObjectId.is_valid(fact_id):
-        return {"success": False, "message": "无效的事实 ID"}
+        return {"success": False, "message": "invalid fact ID"}
     result = await db[_FACTS_COLLECTION].delete_one({"_id": ObjectId(fact_id)})
     if result.deleted_count:
-        return {"success": True, "message": "事实记忆已删除"}
-    return {"success": False, "message": "删除失败，请稍后重试"}
+        return {"success": True, "message": "Factual memory deleted"}
+    return {"success": False, "message": "Deletion failed, please try again later"}

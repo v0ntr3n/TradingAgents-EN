@@ -1,7 +1,7 @@
 """
-基本面分析师智能体
+Fundamental Analyst Agent
 
-基于 BaseAgent 的基本面分析师实现
+Implementation of fundamental analysts based on BaseAgent
 """
 
 from typing import Any, Dict, Optional
@@ -14,9 +14,9 @@ from ..registry import register_agent
 @register_agent
 class FundamentalsAnalystAgent(BaseAgent):
     """
-    基本面分析师智能体
+    Fundamental Analyst Agent
     
-    分析公司的财务数据、基本面指标等
+    Analyze the company s financial data, fundamental indicators, etc.
     """
     
     metadata = BUILTIN_AGENTS["fundamentals_analyst"]
@@ -28,33 +28,33 @@ class FundamentalsAnalystAgent(BaseAgent):
         self._toolkit = None
     
     def set_dependencies(self, llm: Any, toolkit: Any) -> "FundamentalsAnalystAgent":
-        """设置依赖项"""
+        """Set dependencies"""
         self._llm = llm
         self._toolkit = toolkit
         return self
     
     def initialize(self) -> None:
-        """初始化智能体"""
+        """Initialize the agent"""
         if self._llm is None or self._toolkit is None:
-            raise ValueError("必须先调用 set_dependencies() 设置 LLM 和 toolkit")
+            raise ValueError("must be called first set_dependencies() Set up LLM and toolkit")
         
         from tradingagents.agents.analysts.fundamentals_analyst import create_fundamentals_analyst
         self._legacy_node = create_fundamentals_analyst(self._llm, self._toolkit)
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行基本面分析
+        Perform fundamental analysis
         
         Args:
-            state: 包含以下键的状态字典:
-                - company_of_interest: 股票代码
-                - trade_date: 交易日期
-                - messages: 消息历史
+            state: A status dictionary containing the following keys:
+                - company_of_interest: Stock code
+                - trade_date: transaction date
+                - messages: Message history
                 
         Returns:
-            更新后的状态，包含:
-                - fundamentals_report: 基本面分析报告
-                - messages: 更新的消息历史
+            The updated status includes:
+                - fundamentals_report: Fundamental Analysis Report
+                - messages: Updated message history
         """
         if self._legacy_node is None:
             self.initialize()

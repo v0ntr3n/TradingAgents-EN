@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-财务数据服务
-统一管理三数据源的财务数据存储和查询
+Financial data services
+Unified management of financial data storage and query from three data sources
 """
 import logging
 from datetime import datetime, timezone
@@ -28,15 +28,15 @@ class FinancialDataService:
         try:
             self.db = get_mongo_db()
             if self.db is None:
-                raise Exception("MongoDB数据库未初始化")
+                raise Exception("MongoDB Database not initialized")
 
-            # 🔥 确保索引存在（提升查询和 upsert 性能）
+            # 🔥 Make sure the index exists (improves query and upsert performance)
             await self._ensure_indexes()
 
-            logger.info("✅ 财务数据服务初始化成功")
+            logger.info("✅ Financial data service initialization successful")
 
         except Exception as e:
-            logger.error(f"❌ 财务数据服务初始化失败: {e}")
+            logger.error(f"❌ Financial data service initialization failed: {e}")
             raise
 
     async def _ensure_indexes(self):
@@ -44,7 +44,7 @@ class FinancialDataService:
         snapshot_collection = self.db[self.collection_name]
         period_collection = self.db[self.period_collection_name]
 
-        logger.info("📊 检查并创建财务数据索引...")
+        logger.info("📊 Examine and create indexes for financial data...")
 
         snapshot_indexes = [
             {
@@ -91,14 +91,14 @@ class FinancialDataService:
         for index_spec in snapshot_indexes:
             await self._create_index(snapshot_collection, self.collection_name, index_spec)
 
-        logger.info("📊 检查并创建按期财务数据索引...")
+        logger.info("📊 Examine and create periodic financial data indexes...")
         for index_spec in period_indexes:
             await self._create_index(period_collection, self.period_collection_name, index_spec)
 
         logger.info("✅ 财务数据索引检查完成")
 
     async def _create_index(self, collection, collection_name: str, index_spec: Dict[str, Any]) -> None:
-        """逐条创建索引，避免单个索引失败阻断其余索引。"""
+        """Create indexes one by one to avoid blocking other indexes if a single index fails."""
         try:
             await collection.create_index(
                 index_spec["keys"],
@@ -121,18 +121,18 @@ class FinancialDataService:
         report_type: str = "quarterly"
     ) -> int:
         """
-        保存财务数据到数据库
+        Save financial data to database
         
         Args:
-            symbol: 股票代码
-            financial_data: 财务数据字典
-            data_source: 数据源 (tushare/akshare/baostock/qmt)
-            market: 市场类型 (CN/HK/US)
-            report_period: 报告期 (YYYYMMDD)
-            report_type: 报告类型 (quarterly/annual)
+            symbol: Stock code
+            financial_data: Financial Data Dictionary
+            data_source: data source (tushare/akshare/baostock/qmt)
+            market: market type (CN/HK/US)
+            report_period: reporting period (YYYYMMDD)
+            report_type: report type (quarterly/annual)
             
         Returns:
-            保存的记录数量
+            Number of records saved
         """
         if self.db is None:
             await self.initialize()
@@ -142,7 +142,7 @@ class FinancialDataService:
             
             collection = self.db[self.collection_name]
             
-            # 标准化财务数据
+            # Standardized financial data
             standardized_data = self._standardize_financial_data(
                 symbol, financial_data, data_source, market, report_period, report_type
             )
@@ -151,11 +151,11 @@ class FinancialDataService:
                 logger.warning(f"⚠️ {symbol} 财务数据标准化后为空")
                 return 0
             
-            # 批量操作
+            # Batch operations
             operations = []
             saved_count = 0
             
-            # 如果是多期数据，分别处理每期
+            # If it is multi-period data, process each period separately.
             if isinstance(standardized_data, list):
                 for data_item in standardized_data:
                     filter_doc = {
@@ -171,7 +171,7 @@ class FinancialDataService:
                     ))
                     saved_count += 1
             else:
-                # 单期数据
+                # Single period data
                 filter_doc = {
                     "symbol": standardized_data["symbol"],
                     "report_period": standardized_data["report_period"],
@@ -185,7 +185,7 @@ class FinancialDataService:
                 ))
                 saved_count = 1
             
-            # 执行批量操作
+            # Perform batch operations
             if operations:
                 result = await collection.bulk_write(operations)
                 actual_saved = result.upserted_count + result.modified_count
@@ -204,7 +204,7 @@ class FinancialDataService:
             return 0
 
     async def _sync_financial_period_records(self, standardized_records: List[Dict[str, Any]]) -> int:
-        """将最新财务快照同步到按期展开集合，供筛选/因子链路直接读取。"""
+        """Synchronize the latest financial snapshot to the expanded collection by period for direct reading by filter/factor links."""
         period_collection = self.db[self.period_collection_name]
         operations: List[ReplaceOne] = []
 
@@ -245,17 +245,17 @@ class FinancialDataService:
         limit: int = None
     ) -> List[Dict[str, Any]]:
         """
-        查询财务数据
+        Query financial data
         
         Args:
-            symbol: 股票代码
-            report_period: 报告期筛选
-            data_source: 数据源筛选
-            report_type: 报告类型筛选
-            limit: 限制返回数量
+            symbol: Stock code
+            report_period: Reporting period screening
+            data_source: Data source filtering
+            report_type: Report type filter
+            limit: Limit the number of returns
             
         Returns:
-            财务数据列表
+            Financial data list
         """
         if self.db is None:
             await self.initialize()
@@ -263,7 +263,7 @@ class FinancialDataService:
         try:
             collection = self.db[self.collection_name]
             
-            # 构建查询条件
+            # Build query conditions
             query = {"symbol": symbol}
             
             if report_period:
@@ -275,7 +275,7 @@ class FinancialDataService:
             if report_type:
                 query["report_type"] = report_type
             
-            # 执行查询
+            # Execute query
             cursor = collection.find(query, {"_id": 0}).sort("report_period", -1)
             
             if limit:
@@ -312,7 +312,7 @@ class FinancialDataService:
         try:
             collection = self.db[self.collection_name]
             
-            # 按数据源统计
+            # Statistics by data source
             pipeline = [
                 {"$group": {
                     "_id": {
@@ -327,7 +327,7 @@ class FinancialDataService:
             
             results = await collection.aggregate(pipeline).to_list(length=None)
             
-            # 格式化统计结果
+            # Format statistical results
             stats = {}
             total_records = 0
             total_symbols = set()
@@ -358,7 +358,7 @@ class FinancialDataService:
             }
             
         except Exception as e:
-            logger.error(f"❌ 获取财务数据统计失败: {e}")
+            logger.error(f"❌ Failed to obtain financial data statistics: {e}")
             return {}
     
     def _standardize_financial_data(
@@ -374,7 +374,7 @@ class FinancialDataService:
         try:
             now = datetime.now(timezone.utc)
             
-            # 根据数据源进行不同的标准化处理
+            # Different normalization processes depending on the data source
             if data_source == "tushare":
                 return self._standardize_tushare_data(
                     symbol, financial_data, market, report_period, report_type, now
@@ -408,8 +408,8 @@ class FinancialDataService:
         report_type: str,
         now: datetime
     ) -> Dict[str, Any]:
-        """标准化Tushare财务数据"""
-        # Tushare数据已经在provider中进行了标准化，直接使用
+        """Standardize Tushare financial data"""
+        # Tushare The data has been standardized in the provider and can be used directly
         resolved_period = report_period or financial_data.get("report_period")
         resolved_report_type = self._resolve_report_type(
             resolved_period,
@@ -418,7 +418,7 @@ class FinancialDataService:
         )
 
         base_data = {
-            "code": symbol,  # 添加 code 字段以兼容唯一索引
+            "code": symbol,  # Add code field for compatibility with unique indexes
             "symbol": symbol,
             "full_symbol": self._get_full_symbol(symbol, market),
             "market": market,
@@ -430,14 +430,14 @@ class FinancialDataService:
             "version": 1
         }
 
-        # 合并Tushare标准化后的财务数据
-        # 排除一些不需要重复的字段
+        # Merge Tushare's standardized financial data
+        # Exclude some fields that do not need to be repeated
         exclude_fields = {'symbol', 'data_source', 'updated_at'}
         for key, value in financial_data.items():
             if key not in exclude_fields:
                 base_data[key] = value
 
-        # 确保关键字段存在
+        # Make sure key fields exist
         if 'ann_date' in financial_data:
             base_data['ann_date'] = financial_data['ann_date']
 
@@ -452,13 +452,13 @@ class FinancialDataService:
         report_type: str,
         now: datetime
     ) -> Dict[str, Any]:
-        """标准化AKShare财务数据"""
-        # AKShare数据需要从多个数据集中提取关键指标
+        """Standardize AKShare financial data"""
+        # AKShare Data needs to extract key metrics from multiple datasets
         resolved_period = report_period or self._extract_latest_period(financial_data)
         resolved_report_type = self._resolve_report_type(resolved_period, None, report_type)
 
         base_data = {
-            "code": symbol,  # 添加 code 字段以兼容唯一索引
+            "code": symbol,  # Add code field for compatibility with unique indexes
             "symbol": symbol,
             "full_symbol": self._get_full_symbol(symbol, market),
             "market": market,
@@ -470,7 +470,7 @@ class FinancialDataService:
             "version": 1
         }
 
-        # 提取关键财务指标
+        # Extract key financial indicators
         base_data.update(self._extract_akshare_indicators(financial_data))
         base_data["raw_data"] = financial_data
         return base_data
@@ -484,12 +484,12 @@ class FinancialDataService:
         report_type: str,
         now: datetime
     ) -> Dict[str, Any]:
-        """标准化BaoStock财务数据"""
+        """Standardized BaoStock financial data"""
         resolved_period = report_period or self._extract_baostock_period(financial_data)
         resolved_report_type = self._resolve_report_type(resolved_period, None, report_type)
 
         base_data = {
-            "code": symbol,  # 添加 code 字段以兼容唯一索引
+            "code": symbol,  # Add code field for compatibility with unique indexes
             "symbol": symbol,
             "full_symbol": self._get_full_symbol(symbol, market),
             "market": market,
@@ -501,7 +501,7 @@ class FinancialDataService:
             "version": 1
         }
 
-        # 合并BaoStock财务数据
+        # Consolidate BaoStock financial data
         base_data.update(financial_data)
         return base_data
 
@@ -552,14 +552,14 @@ class FinancialDataService:
         return symbol
 
     def _normalize_period_value(self, value: Any) -> Optional[str]:
-        """归一化报告期，兼容 YYYY-MM-DD 与 YYYYMMDD。"""
+        """Normalized reporting period, compatible with YYYY-MM-DD and YYYYMMDD."""
         normalized = str(value or "").strip().replace('-', '')
         if len(normalized) == 8 and normalized.isdigit():
             return normalized
         return None
 
     def _extract_latest_period_from_records(self, records: Any) -> Optional[str]:
-        """从列表记录或矩阵列名中提取最新报告期。"""
+        """Extracts the latest reporting period from a list record or matrix column name."""
         if not isinstance(records, list):
             return None
 
@@ -586,7 +586,7 @@ class FinancialDataService:
         indicator_names: List[str],
         report_period: Optional[str],
     ) -> Optional[float]:
-        """从 AKShare 指标矩阵中提取指定报告期的指标值。"""
+        """Extracts metric values ​​from the AKShare metric matrix for the specified reporting period."""
         if not report_period or not isinstance(records, list):
             return None
 
@@ -604,19 +604,19 @@ class FinancialDataService:
         return None
     
     def _extract_latest_period(self, financial_data: Dict[str, Any]) -> str:
-        """从AKShare数据中提取最新报告期"""
-        # 尝试从各个数据集中提取报告期
+        """Extract latest reporting period from AKShare data"""
+        # Try to extract reporting periods from various datasets
         for key in ['main_indicators', 'balance_sheet', 'income_statement']:
             if key in financial_data and financial_data[key]:
                 period = self._extract_latest_period_from_records(financial_data[key])
                 if period:
                     return period
         
-        # 如果无法提取，使用当前季度
+        # If extraction is not possible, use the current quarter
         return self._generate_current_period()
 
     def _extract_baostock_period(self, financial_data: Dict[str, Any]) -> str:
-        """从 BaoStock 财务数据中提取报告期"""
+        """Extract reporting periods from BaoStock financial data"""
         for key in [
             'profit_data',
             'operation_data',
@@ -642,7 +642,7 @@ class FinancialDataService:
         explicit_report_type: Optional[str],
         fallback_report_type: Optional[str],
     ) -> str:
-        """根据报告期推断报告类型，避免统一同步时被固定写成 quarterly。"""
+        """Infer the report type based on the reporting period to avoid being fixed as quarterly during unified synchronization."""
         if explicit_report_type:
             return explicit_report_type
 
@@ -656,11 +656,11 @@ class FinancialDataService:
         return 'quarterly'
     
     def _extract_akshare_indicators(self, financial_data: Dict[str, Any]) -> Dict[str, Any]:
-        """从AKShare数据中提取关键财务指标"""
+        """Extract key financial indicators from AKShare data"""
         indicators = {}
         latest_period = self._extract_latest_period(financial_data)
 
-        # 从主要财务指标中提取
+        # Extracted from key financial indicators
         if 'main_indicators' in financial_data and financial_data['main_indicators']:
             main_records = financial_data['main_indicators']
             main_data = main_records[0] if main_records else {}
@@ -671,12 +671,12 @@ class FinancialDataService:
                 "total_equity": self._safe_float(main_data.get('股东权益合计')),
             })
 
-            # 🔥 新增：提取 ROE（净资产收益率）
+            # 🔥 New: Extract ROE (Return on Equity)
             roe = main_data.get('净资产收益率(ROE)') or main_data.get('净资产收益率')
             if roe is not None:
                 indicators["roe"] = self._safe_float(roe)
 
-            # 🔥 新增：提取负债率（资产负债率）
+            # 🔥 Newly added: Extract liability ratio (asset-liability ratio)
             debt_ratio = main_data.get('资产负债率') or main_data.get('负债率')
             if debt_ratio is not None:
                 indicators["debt_to_assets"] = self._safe_float(debt_ratio)
@@ -700,7 +700,7 @@ class FinancialDataService:
                 if matrix_value is not None:
                     indicators[field_name] = matrix_value
 
-        # 从资产负债表中提取
+        # Taken from the balance sheet
         if 'balance_sheet' in financial_data and financial_data['balance_sheet']:
             balance_data = financial_data['balance_sheet'][0] if financial_data['balance_sheet'] else {}
             indicators.update({
@@ -708,7 +708,7 @@ class FinancialDataService:
                 "cash_and_equivalents": self._safe_float(balance_data.get('货币资金')),
             })
 
-            # 🔥 如果主要指标中没有负债率，从资产负债表计算
+            # 🔥 If there is no debt ratio in the main indicator, it is calculated from the balance sheet
             if "debt_to_assets" not in indicators:
                 total_liab = indicators.get("total_liab")
                 total_assets = indicators.get("total_assets")
@@ -723,7 +723,7 @@ class FinancialDataService:
         year = now.year
         month = now.month
         
-        # 根据月份确定季度
+        # Determine quarter based on month
         if month <= 3:
             quarter = 1
         elif month <= 6:
@@ -733,7 +733,7 @@ class FinancialDataService:
         else:
             quarter = 4
         
-        # 生成报告期格式 YYYYMMDD
+        # Generate reporting period format YYYYMMDD
         quarter_end_months = {1: "03", 2: "06", 3: "09", 4: "12"}
         quarter_end_days = {1: "31", 2: "30", 3: "30", 4: "31"}
         
@@ -745,14 +745,14 @@ class FinancialDataService:
             return None
         try:
             if isinstance(value, str):
-                # 移除可能的单位和格式化字符
+                # Remove possible units and formatting characters
                 value = value.replace(',', '').replace('万', '').replace('亿', '')
             return float(value)
         except (ValueError, TypeError):
             return None
 
 
-# 全局服务实例
+# Global service instance
 _financial_data_service = None
 
 

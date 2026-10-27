@@ -1,7 +1,7 @@
 """
-新闻分析师 v2.0
+news analyst v2.0
 
-基于AnalystAgent基类实现的新闻分析师
+News analyst implemented based on AnalystAgent base class
 """
 
 import logging
@@ -17,30 +17,30 @@ from core.agents.registry import register_agent
 
 logger = logging.getLogger(__name__)
 
-# 尝试导入股票工具
+# Try importing stock tools
 try:
     from tradingagents.utils.stock_utils import StockUtils
 except ImportError:
-    logger.warning("无法导入StockUtils，部分功能可能不可用")
+    logger.warning("Unable to import StockUtils, some functions may not be available")
     StockUtils = None
 
 
 @register_agent
 class NewsAnalystV2(AnalystAgent):
     """
-    新闻分析师 v2.0
+    news analyst v2.0
     
-    功能：
-    - 获取股票相关新闻与公告
-    - 识别事件影响路径与时效性
-    - 提炼催化、风险与待验证事项
+    Function:
+    - Get stock-related news and announcements
+    - Identify the impact path and timeliness of events
+    - Refining catalysts, risks and matters to be verified
     
-    工作流程：
-    1. 调用统一新闻工具获取新闻数据
-    2. 使用LLM分析新闻内容
-    3. 生成新闻分析报告
+    Workflow:
+    1. Call the unified news tool to obtain news data
+    2. Using LLM to analyze news content
+    3. Generate news analysis reports
     
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent
 
@@ -53,36 +53,36 @@ class NewsAnalystV2(AnalystAgent):
         })
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="news_analyst_v2",
-        name="新闻分析师 v2.0",
-        description="分析股票相关新闻与公告，提炼事件影响路径、催化与风险提示",
+        name="news analyst v2.0",
+        description="Analyze stock-related news and announcements, and refine event impact paths, catalysts, and risk warnings",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
         default_tools=["get_stock_news_headlines_unified", "get_stock_news_details_unified"],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="news_report", type="string", description="新闻分析报告"),
+            AgentOutput(name="news_report", type="string", description="News analysis report"),
         ],
         requires_tools=True,
         output_field="news_report",
-        report_label="【新闻分析 v2】",
+        report_label=" [News Analysis v2]",
         workflow_stage="analyst",
     )
 
-    # 分析师类型
+    # Analyst type
     analyst_type = "news"
     
-    # 输出字段名
+    # Output field name
     output_field = "news_report"
 
     def load_tools_from_config(self) -> list:
-        """强制新闻分析师使用拆分后的标题/明细工具。"""
+        """Force news analysts to use split headline/detail tools."""
         tool_ids = super().load_tools_from_config()
         filtered_tool_ids = [
             tool_id
@@ -98,19 +98,19 @@ class NewsAnalystV2(AnalystAgent):
 
     @staticmethod
     def _build_news_tool_workflow_prompt(analysis_date: str) -> str:
-        """返回新闻工具的固定调用顺序说明。"""
+        """Returns the fixed calling order description of the news tool."""
         return f"""
-工具工作流要求：
-1. 第一步必须调用 get_stock_news_headlines_unified，curr_date 必须传 {analysis_date}。
-2. 先根据标题、来源、相关性、明细建议做去重筛选，不要直接开始写分析。
-3. 第二步再调用 get_stock_news_details_unified，并把选中的 1 至 3 个 news_id 一次性传入。
-4. 如果标题工具提示“可暂不展开”，除非该新闻对核心论点必要，否则不要继续拉明细。
-5. 不要调用 get_stock_news_unified；该工具是兼容接口，不是本分析师的默认流程。
+Tool workflow requirements:
+1. The first step must be to call get_stock_news_headlines_unified, curr_date must be passed {analysis_date}. 
+2. First, do duplication screening based on the title, source, relevance, and detailed suggestions. Do not start writing analysis directly.
+3. In the second step, call get_stock_news_details_unified and pass in the selected 1 to 3 news_ids at once.
+4. If title tooltip Can not be expanded temporarily , Don t go into detail unless the news is essential to your core argument.
+5. Do not call get_stock_news_unified; this tool is a compatibility interface and is not the default process for this analyst.
 """.strip()
 
     @staticmethod
     def _sanitize_template_prompt(prompt: Optional[str]) -> str:
-        """移除模板中残留的旧统一新闻工具指令，避免与两阶段工作流冲突。"""
+        """Removed legacy unified news tools directives from templates to avoid conflicts with the two-stage workflow."""
         prompt_text = str(prompt or "").strip()
         if not prompt_text:
             return ""
@@ -123,7 +123,7 @@ class NewsAnalystV2(AnalystAgent):
                 skip_next_param_line = True
                 continue
 
-            if skip_next_param_line and line.strip().startswith("参数:"):
+            if skip_next_param_line and line.strip().startswith("parameters:"):
                 skip_next_param_line = False
                 continue
 
@@ -136,7 +136,7 @@ class NewsAnalystV2(AnalystAgent):
 
     @staticmethod
     def _has_two_stage_news_workflow(prompt: Optional[str]) -> bool:
-        """判断模板是否已经自带两阶段新闻工具工作流。"""
+        """Determine whether the template already comes with a two-stage news tool workflow."""
         prompt_text = str(prompt or "")
         return (
             "get_stock_news_headlines_unified" in prompt_text
@@ -152,13 +152,13 @@ class NewsAnalystV2(AnalystAgent):
     def _invoke_prefetch_tool(self, tool_name: str, tool_args: Dict[str, Any]) -> Optional[str]:
         tool = self._get_langchain_tool_by_name(tool_name)
         if tool is None:
-            logger.warning(f"[NewsAnalystV2] 预取工具未找到，跳过: {tool_name}")
+            logger.warning(f"[NewsAnalystV2] Prefetch tool not found, skipped: {tool_name}")
             return None
 
         try:
             result = tool.invoke(tool_args)
         except Exception as exc:
-            logger.warning(f"[NewsAnalystV2] 预取工具执行失败 {tool_name}: {exc}")
+            logger.warning(f"[NewsAnalystV2] Prefetch tool execution failed {tool_name}: {exc}")
             return None
 
         result_text = str(result or "").strip()
@@ -166,18 +166,18 @@ class NewsAnalystV2(AnalystAgent):
 
     @staticmethod
     def _select_news_ids_for_details(ticker: str, analysis_date: str, limit: int = 3) -> List[str]:
-        """根据标题工具的推荐动作选择需要展开明细的 news_id。"""
+        """Select the news_id that needs to be expanded according to the recommended action of the headline tool."""
         try:
             from core.tools.implementations.news import stock_news as stock_news_module
 
             bundle = stock_news_module._build_stock_news_bundle(ticker, analysis_date, limit=12)
         except Exception as exc:
-            logger.warning(f"[NewsAnalystV2] 读取新闻候选集失败，无法选择 news_id: {exc}")
+            logger.warning(f"[NewsAnalystV2] Failed to read the news candidate set, unable to select news_id: {exc}")
             return []
 
         items = bundle.get("items") or []
         selected_ids: List[str] = []
-        for desired_action in ["建议查看", "按需查看"]:
+        for desired_action in ["Recommended to view", "View on demand"]:
             for item in items:
                 if item.get("detail_action") != desired_action:
                     continue
@@ -197,7 +197,7 @@ class NewsAnalystV2(AnalystAgent):
         ticker: str,
         analysis_date: Optional[str],
     ) -> Tuple[Optional[HumanMessage], List[str]]:
-        """显式执行新闻标题与新闻明细两步工具，避免 LLM 在 live 下卡在伪工具调用文本。"""
+        """Explicitly execute the two-step tool of news title and news details to avoid LLM getting stuck in fake tool call text under live."""
         if not self._langchain_tools:
             return None, []
 
@@ -216,7 +216,7 @@ class NewsAnalystV2(AnalystAgent):
             {"ticker": ticker, "curr_date": effective_date, "limit": 12},
         )
         if headline_result:
-            sections.append(f"### 去重后的新闻标题（get_stock_news_headlines_unified）\n{headline_result}")
+            sections.append(f"### News headlines after deduplication (get_stock_news_headlines_unified)\n{headline_result}")
             consumed_tool_names.append("get_stock_news_headlines_unified")
 
         selected_news_ids = self._select_news_ids_for_details(ticker, effective_date, limit=3)
@@ -230,31 +230,31 @@ class NewsAnalystV2(AnalystAgent):
                 },
             )
             if details_result:
-                sections.append(f"### 已展开的新闻明细（get_stock_news_details_unified）\n{details_result}")
+                sections.append(f"### Expanded news details (get_stock_news_details_unified)\n{details_result}")
                 consumed_tool_names.append("get_stock_news_details_unified")
         elif headline_result:
             sections.append(
-                "### 明细选择说明\n当前标题候选中没有高优先级必须展开的新闻，后续分析需要基于标题级证据谨慎展开。"
+                "### Detailed selection instructions\n There are no high-priority news that must be developed among the current headline candidates, and subsequent analysis needs to be carried out carefully based on headline-level evidence."
             )
 
         if not sections:
             return None, []
 
         content = (
-            "以下新闻工具结果已预先获取。请直接基于这些标题与明细撰写分析，不要再重复调用同名工具；"
-            "如果某条新闻未展开更长明细，请明确写工具结果未提供更长正文。\n\n"
+            "The following news tool results have been pre-fetched. Please write your analysis directly based on these titles and details, and do not call the tool with the same name repeatedly;"
+            "If longer details are not available for a particular story, please make sure that the writing tool results in no longer text.\n\n"
             + "\n\n".join(sections)
         )
         return HumanMessage(content=content), consumed_tool_names
 
     def _invoke_prefetched_analysis(self, messages: List[Any], analysis_prompt: str) -> str:
-        """在新闻工具预取完成后，直接让 LLM 生成最终分析报告。"""
+        """After the news tool prefetching is completed, let LLM generate the final analysis report directly."""
         final_messages = list(messages)
         final_messages.append(
             HumanMessage(
                 content=(
-                    "新闻标题与明细已经提供完毕。不要输出工具调用、JSON 或 XML 标签，"
-                    "直接输出最终中文 Markdown 研究报告。\n\n"
+                    "News titles and details have been provided. Do not output tool calls, JSON or XML tags,"
+                    "Directly output the final Chinese Markdown research report.\n\n"
                     + analysis_prompt
                 )
             )
@@ -264,31 +264,31 @@ class NewsAnalystV2(AnalystAgent):
         report = response.content if hasattr(response, "content") else str(response)
 
         if "```" in report or '"name": "get_stock_news_' in report:
-            logger.warning("[NewsAnalystV2] 预取分析阶段仍返回伪工具调用，追加强约束后重试一次")
+            logger.warning("[NewsAnalystV2] The prefetch analysis phase still returns pseudo tool calls, add strong constraints and try again.")
             final_messages.append(
                 HumanMessage(
                     content=(
-                        "不要再请求调用任何工具。标题与明细都已经给出。现在只输出最终 Markdown 报告正文，"
-                        "必须包含：最新新闻汇总、新闻影响分析、市场情绪评估、分析观点。"
+                        "Do not request any more tool calls. Titles and details have been given. Now only the final Markdown report body is output,"
+                        "Must include: latest news summary, news impact analysis, market sentiment assessment, and analytical opinions."
                     )
                 )
             )
             response = self._invoke_llm_with_trace(final_messages)
             report = response.content if hasattr(response, "content") else str(response)
 
-        # 兜底：若两次重试后 report 仍是工具调用 JSON/XML，降级为文本说明而非存入原始 JSON
+        # Bottom line: If the report is still JSON/XML that the tool calls after two retries, it will be downgraded to a text description instead of storing the original JSON
         if "</tool_call>" in report or '"name": "get_stock_news_' in report:
-            logger.error("[NewsAnalystV2] 两次重试后仍返回伪工具调用，降级处理")
-            report = "当前新闻数据已获取但分析模型未能正常展开，新闻研究结论暂时不可用，请参考其他维度报告。"
+            logger.error("[NewsAnalystV2] After two retries, the pseudo tool call is still returned, and the process is downgraded.")
+            report = "The current news data has been obtained but the analysis model cannot be deployed normally, and news research conclusions are temporarily unavailable. Please refer to other dimension reports."
 
         return report
 
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """覆盖执行逻辑以支持专用新闻分析提示词。"""
+        """Override execution logic to support dedicated news analysis prompt words."""
         try:
             ticker, analysis_date = self._extract_common_params(state)
 
-            market_type = state.get("market_type", "A股")
+            market_type = state.get("market_type", "A shares")
             context = state.get("context")
             overrides = state.get("prompt_overrides") or {}
             system_override = overrides.get("system")
@@ -326,8 +326,8 @@ class NewsAnalystV2(AnalystAgent):
                             if getattr(tool, "name", "") not in prefetched_tool_names
                         ]
 
-                        # 有预取数据（prefetched_message 已追加到 messages）时直接进入分析，
-                        # 避免 LLM 调用残余工具后把工具调用 JSON 存成报告
+                        # When there is prefetched data (prefetched_message has been appended to messages), enter the analysis directly.
+                        # Avoid LLM calling residual tools and then saving the tool calls in JSON as a report
                         if not self._langchain_tools or prefetched_message is not None:
                             report = self._invoke_prefetched_analysis(messages, analysis_prompt)
                         else:
@@ -343,64 +343,64 @@ class NewsAnalystV2(AnalystAgent):
                 raise ValueError("LLM not initialized")
 
             result = {self.output_field: report}
-            # 🆕 附带工具调用摘要
+            # 🆕 Comes with tool call summary
             tool_summary = self._format_tool_call_summary()
             if tool_summary:
                 result["tool_call_summaries"] = {self.analyst_type: tool_summary}
             return result
 
         except Exception as e:
-            logger.error(f"[{self.agent_id}] 执行失败: {e}", exc_info=True)
+            logger.error(f"[{self.agent_id}] Execution failed: {e}", exc_info=True)
             return {self.output_field: GENERIC_REPORT_FALLBACK}
 
     def _build_system_prompt(self, market_type: str = None, context=None, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词（参考 fundamentals_analyst_v2 的实现）
+        Build system prompt words (refer to the implementation of fundamentals_analyst_v2)
         
         Args:
-            market_type: 市场类型（A股/港股/美股）（保留以兼容基类）
-            context: AgentContext 对象（用于调试模式）
-            state: 工作流状态（用于提取模板变量）
+            market_type: Market type (A shares/Hong Kong stocks/US stocks) (reserved to be compatible with the base class)
+            context: AgentContext Object (for debug mode)
+            state: Workflow status (used to extract template variables)
             
         Returns:
-            系统提示词
+            System prompt word
         """
-        logger.info("🔍 [NewsAnalystV2] 开始构建系统提示词")
+        logger.info("🔍 [NewsAnalystV2] Start building system prompt words")
         
         if state is None:
             state = {}
         
-        # 从 state 中提取必要的变量（如果系统提示词模板需要）
-        # 注意：虽然系统提示词通常不需要变量，但某些模板可能需要 ticker、current_date 等
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
+        # Extract the necessary variables from state (if required by the system prompt word template)
+        # Note: Although system prompt words usually do not require variables, some templates may require ticker, current_date, etc.
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
         template_variables = {}
         
-        # 如果 state 中有 ticker 和 analysis_date，提取它们（系统提示词模板可能需要）
+        # If there are ticker and analysis_date in state, extract them (the system prompt word template may be required)
         if "ticker" in state:
             template_variables["ticker"] = state["ticker"]
         if "analysis_date" in state or "trade_date" in state:
             analysis_date = state.get("analysis_date") or state.get("trade_date")
             if analysis_date:
-                # 确保日期格式正确
+                # Make sure the date is in the correct format
                 if isinstance(analysis_date, str) and len(analysis_date) > 10:
                     analysis_date = analysis_date.split()[0]
                 template_variables["current_date"] = analysis_date
                 template_variables["analysis_date"] = analysis_date
         
-        # 使用基类的通用方法从模板系统获取提示词（参考 research_manager_v2）
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
+        # Use the base class's general method to obtain prompt words from the template system (refer to research_manager_v2)
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
         prompt = self._get_prompt_from_template(
             agent_type="analysts_v2",
             agent_name="news_analyst_v2",
-            variables=template_variables,  # 传递必要的变量
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=context or state.get("context"),  # 优先使用传入的 context，否则从 state 获取
+            variables=template_variables,  # Pass necessary variables
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=context or state.get("context"),  # Priority is given to using the incoming context, otherwise it is obtained from state
             fallback_prompt=None,
-            prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+            prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
         )
         prompt = self._sanitize_template_prompt(prompt)
         
-        logger.info(f"📝 系统提示词长度: {len(prompt)} 字符")
+        logger.info(f"📝 System prompt word length: {len(prompt)} character")
 
         workflow_prompt = self._build_news_tool_workflow_prompt(
             template_variables.get("analysis_date") or template_variables.get("current_date") or ""
@@ -412,23 +412,23 @@ class NewsAnalystV2(AnalystAgent):
                 return prompt_text
             return f"{prompt_text}\n\n{workflow_prompt}"
         
-        # 降级：使用默认提示词
-        return f"""您是一位专业的财经新闻分析师。
+        # Downgrade: Use default prompt word
+        return f"""You are a professional financial news analyst.
 
-    您的职责是基于真实新闻、公告与监管信息，识别对公司研究判断有意义的事件线索，区分短期噪音与中期变量。
+    Your responsibility is to identify event clues that are meaningful to company research and judgment based on real news, announcements and regulatory information, and to distinguish short-term noise from medium-term variables.
 
-    分析要点：
-    1. 核心事件事实 - 最近公告、新闻、监管变化的关键信息
-    2. 事件影响路径 - 这些事件将影响经营、估值预期、行业位置还是风险暴露
-    3. 时效性与可信度 - 事件是否过时、是否来自可靠来源
-    4. 催化与风险 - 哪些因素可能强化判断，哪些因素会削弱判断
-    5. 后续观察事项 - 仍需跟踪的披露、数据点或验证信号
+    Analysis points:
+    1. Core Event Facts - key information on recent announcements, news, and regulatory changes
+    2. Event impact path - will these events affect operations, valuation expectations, industry position, or risk exposure?
+    3. Timeliness and credibility - whether the event is out of date and comes from a reliable source
+    4. Catalysts and risks - what factors are likely to strengthen judgment and what factors may weaken it
+    5. Follow-up Watch – Disclosures, data points or validation signals that still need to be tracked
 
-    严格要求：
-    - 不得输出买入、卖出、持有、加减仓、目标价、价格区间、止损止盈或仓位建议。
-    - 允许引用工具返回的真实时间、事件与数字，但不得改写成执行建议或价格触发条件。
+    Strict requirements:
+    - Buying, selling, holding, adding or subtracting positions, target prices, price ranges, stop-loss, take-profit or position recommendations are not allowed.
+    - References to real times, events and numbers returned by the tool are allowed, but may not be rewritten into execution recommendations or price triggers.
 
-    请使用中文，基于真实数据进行分析。
+    Please use Chinese and conduct analysis based on real data.
 
     {workflow_prompt}"""
 
@@ -436,54 +436,54 @@ class NewsAnalystV2(AnalystAgent):
         self,
         ticker: str,
         analysis_date: str,
-        tool_data: Dict[str, Any],  # 保留参数以兼容基类，但工具数据会通过 ToolMessage 传递
+        tool_data: Dict[str, Any],  # Parameters are retained for compatibility with base classes, but tool data is passed via ToolMessage
         state: Dict[str, Any]
     ) -> str:
         """
-        构建用户提示词（参考 research_manager_v2 和 fundamentals_analyst_v2 的实现）
+        Construct user prompt words (refer to the implementation of research_manager_v2 and fundamentals_analyst_v2)
         
         Args:
-            ticker: 股票代码
-            analysis_date: 分析日期
-            tool_data: 工具返回的数据（保留以兼容基类，但工具数据会通过 ToolMessage 传递）
-            state: 工作流状态（用于提取模板变量）
+            ticker: Stock code
+            analysis_date: Analysis date
+            tool_data: Data returned by the tool (retained for compatibility with base class, but tool data is passed via ToolMessage)
+            state: Workflow status (used to extract template variables)
             
         Returns:
-            用户提示词
+            User prompt words
         """
-        logger.info("🔍 [NewsAnalystV2] 开始构建用户提示词")
-        logger.info(f"📊 股票代码: {ticker}")
-        logger.info(f"📅 分析日期: {analysis_date}")
+        logger.info("🔍 [NewsAnalystV2] Start building user prompt words")
+        logger.info(f"📊 Stock code: {ticker}")
+        logger.info(f"📅 Analysis date: {analysis_date}")
         
         if state is None:
             state = {}
         
-        # 获取公司名称和市场信息
+        # Get company name and market information
         company_name = self._get_company_name(ticker, state)
-        market_name = "中国A股"
-        currency_name = "人民币"
+        market_name = "China A shares"
+        currency_name = "RMB"
         currency_symbol = "¥"
         
         if StockUtils and ticker:
             try:
                 market_info = StockUtils.get_market_info(ticker)
-                market_name = market_info.get('market_name', "中国A股")
-                currency_name = market_info.get('currency_name', "人民币")
+                market_name = market_info.get('market_name', "China A shares")
+                currency_name = market_info.get('currency_name', "RMB")
                 currency_symbol = market_info.get('currency_symbol', "¥")
             except Exception as e:
-                logger.warning(f"获取市场信息失败: {e}")
+                logger.warning(f"Failed to obtain market information: {e}")
         
-        # 准备模板变量（参考 research_manager_v2 的实现）
-        # 🔑 关键：确保日期格式正确（YYYY-MM-DD），而不是 datetime 对象
+        # Prepare template variables (refer to the implementation of research_manager_v2)
+        # 🔑 Key: Make sure the date is in the correct format (YYYY-MM-DD), not a datetime object
         if isinstance(analysis_date, str):
-            # 如果已经是字符串，确保格式正确
+            # If it is already a string, make sure the format is correct
             if len(analysis_date) > 10:
-                # 如果是 datetime 字符串（如 "2026-01-14 00:00:00"），只取日期部分
+                # If it is a datetime string (such as "2026-01-14 00:00:00") , Get only the date part
                 analysis_date_str = analysis_date.split()[0]
             else:
                 analysis_date_str = analysis_date
         else:
-            # 如果是 datetime 对象，转换为字符串
+            # If it is a datetime object, convert it to a string
             from datetime import datetime
             if isinstance(analysis_date, datetime):
                 analysis_date_str = analysis_date.strftime("%Y-%m-%d")
@@ -494,20 +494,20 @@ class NewsAnalystV2(AnalystAgent):
             "ticker": ticker,
             "company_name": company_name,
             "market_name": market_name,
-            "analysis_date": analysis_date_str,  # 🔑 确保是字符串格式 YYYY-MM-DD
-            "current_date": analysis_date_str,  # 🔑 确保是字符串格式 YYYY-MM-DD
-            "start_date": "",  # 可以计算1年前的日期
+            "analysis_date": analysis_date_str,  # 🔑 Make sure it is in string format YYYY-MM-DD
+            "current_date": analysis_date_str,  # 🔑 Make sure it is in string format YYYY-MM-DD
+            "start_date": "",  # Can calculate the date 1 year ago
             "currency_name": currency_name,
             "currency_symbol": currency_symbol,
             "tool_names": ", ".join([t.name for t in self._langchain_tools]) if self._langchain_tools else ""
         }
         
-        # 使用基类的通用方法获取用户提示词（参考 research_manager_v2）
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
-        # 🔑 注意：工具返回的数据会通过 ToolMessage 传递，不需要在 user_prompt 中检查
+        # Use the general method of the base class to obtain user prompt words (refer to research_manager_v2)
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
+        # 🔑 Note: The data returned by the tool will be passed through ToolMessage and does not need to be checked in user_prompt
         
-        # 🔍 调试：打印模板变量
-        logger.info(f"🔍 [NewsAnalystV2] 准备传递给模板系统的变量:")
+        # 🔍 Debugging: printing template variables
+        logger.info(f"🔍 [NewsAnalystV2] Prepare variables to be passed to the template system:")
         for k, v in template_variables.items():
             logger.info(f"  - {k}: {v}")
         
@@ -515,42 +515,42 @@ class NewsAnalystV2(AnalystAgent):
             agent_type="analysts_v2",
             agent_name="news_analyst_v2",
             variables=template_variables,
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=state.get("context"),  # 从 state 中获取 context
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=state.get("context"),  # Get from state context
             fallback_prompt=None,
-            prompt_type="user"  # 🔑 明确指定获取用户提示词
+            prompt_type="user"  # 🔑 Explicitly specify the user prompt word to obtain
         )
         prompt = self._sanitize_template_prompt(prompt)
         
         workflow_prompt = self._build_news_tool_workflow_prompt(analysis_date_str)
 
         if prompt:
-            logger.info(f"✅ 从模板系统获取新闻分析师 v2.0 用户提示词 (长度: {len(prompt)})")
-            logger.info(f"📝 用户提示词前500字符:\n{prompt[:500]}...")
+            logger.info(f"✅ Get news analyst v2.0 user prompt words from the template system (length: {len(prompt)})")
+            logger.info(f"📝 The first 500 characters of the user prompt word:\n{prompt[:500]}...")
             prompt_text = prompt.rstrip()
             if self._has_two_stage_news_workflow(prompt_text):
                 return prompt_text
             return f"{prompt_text}\n\n{workflow_prompt}"
         
-        # 降级：使用默认提示词（不再检查 tool_data，因为工具数据会通过 ToolMessage 传递）
-        logger.warning("⚠️ 未从模板系统获取到用户提示词，使用默认提示词")
-        # 🔑 关键：在默认提示词中明确告诉LLM要使用什么日期调用工具
-        return f"""请对股票 {ticker}（{company_name}）进行详细的新闻事件研究：
+        # Downgrade: Use default prompt word (tool_data is no longer checked as tool data is passed via ToolMessage)
+        logger.warning("⚠️ The user prompt word is not obtained from the template system, and the default prompt word is used.")
+        # 🔑 Key: explicitly tell LLM in the default prompt word what date to use to call the tool
+        return f"""Please check the stock {ticker} ({company_name}) Conduct detailed news event research:
 
-**分析日期**：{analysis_date_str}
+**Analysis date**: {analysis_date_str}
 
     {workflow_prompt}
 
-    请调用工具获取新闻数据，然后基于真实结果输出中文研究报告，至少包含：
-    1. 核心新闻与公告事实
-    2. 事件影响路径与时效性判断
-    3. 主要催化、主要风险与信息缺口
-    4. 需要继续跟踪的后续观察事项
+    Please call the tool to obtain news data, and then output a Chinese research report based on the real results, which at least contains:
+    1. Core news and announcement facts
+    2. Event impact path and timeliness judgment
+    3. Main Catalysts, Main Risks and Information Gaps
+    4. Follow-up observations that need to be followed up
 
-    禁止输出买卖建议、目标价、价格区间、止损止盈、仓位计划或任何执行性指令。"""
+    It is prohibited to output buying and selling recommendations, target prices, price ranges, stop-loss and take-profit, position plans or any execution instructions."""
 
     def _get_company_name(self, ticker: str, state: Dict[str, Any]) -> str:
-        """获取公司名称"""
+        """Get company name"""
         company_name = str(
             state.get("company_name")
             or state.get("stock_name")
@@ -560,42 +560,42 @@ class NewsAnalystV2(AnalystAgent):
         if company_name:
             return company_name
         
-        # 使用StockUtils获取
+        # Get using StockUtils
         if StockUtils:
             try:
                 market_info = StockUtils.get_market_info(ticker)
                 if market_info.get('is_china'):
                     from tradingagents.dataflows.interface import get_china_stock_info_unified
                     stock_info = get_china_stock_info_unified(ticker)
-                    if "股票名称:" in stock_info:
-                        return stock_info.split("股票名称:")[1].split("\n")[0].strip()
+                    if "Stock name:" in stock_info:
+                        return stock_info.split("Stock name:")[1].split("\n")[0].strip()
             except Exception as e:
-                logger.debug(f"获取公司名称失败: {e}")
+                logger.debug(f"Failed to get company name: {e}")
         
-        return f"股票{ticker}"
+        return f"stocks{ticker}"
 
     def _build_analysis_prompt(self, ticker: str) -> str:
-        """构建工具调用后的新闻分析提示词。"""
-        return f"""基于获取的数据，请生成 {ticker} 的专业新闻分析报告，包括：
+        """News analysis prompt words after building tool call."""
+        return f"""Based on the obtained data, please generate {ticker} Professional news analysis reports, including:
 
-    1. 最新新闻汇总
-    2. 新闻影响分析
-    3. 市场情绪评估
-    4. 分析观点
+    1. Latest news summary
+    2. News impact analysis
+    3. Market Sentiment Assessment
+    4. analysis point of view
 
-    如果多个标题本质上描述同一事件的不同转述、转载或跟进，必须合并成同一条核心事件，不得重复累加为多份独立证据。
-    如果工具只提供标题、发布时间、来源或链接，而没有正文细节、金额、业绩数值或监管结论，只能基于显性信息说明事件类别和研究相关性，不得补造细节。
-    时效性与来源可信度要单独交代，不要仅因发布时间较近就放大事件确定性。
-    如果新闻之间存在方向冲突，必须明确写出冲突点以及为什么不能下更强结论。
-    如果工具没有返回某项事件细节、市场反馈或后续进展，请直接写“工具结果未提供”或“该环节仍待验证”，不要自行补全。
-    分析 `新闻影响分析` 时，可用表格概括新闻、类型和影响等级；类型优先写偏积极、偏审慎或中性，不要写成买点、利空出尽或交易机会。
-    `市场情绪评估` 只说明新闻对市场情绪的可能影响及其限制，不要把情绪变化直接写成股价结论。
-    `分析观点` 中必须同时给出新闻面评估、短期反应预期和对整体研究结论的影响；短期反应预期只能写预期变化方向与原因，不得写股价点位预测。
-    如存在信息缺口或仍待验证事项，可在对应段落顺带一句说明，无需单列章节。
-    可以引用工具返回的真实时间、来源、标题和数字做事实说明，但不得把这些内容改写成目标价、价格区间、短期股价预测、支撑阻力位或执行计划。
-    请使用研究口径表达事件含义，优先使用“偏积极”“偏审慎”“中性”“强化了某项预期”“增加了某项不确定性”“仍待验证”等表述，不要使用“重大利好”“重大利空”“短线催化”“打开上涨空间”“明确买点”等交易化措辞。
-    在工具结果充分时，报告应保持足够展开，正常情况下不少于700字。
+    If multiple headlines essentially describe different retellings, reprints or follow-ups of the same event, they must be combined into the same core event and may not be repeated and accumulated into multiple independent pieces of evidence.
+    If the tool only provides the title, publication time, source or link, but no text details, amounts, performance values or regulatory conclusions, it can only explain the event category and research relevance based on explicit information, and is not allowed to make up the details.
+    Timeliness and source credibility should be explained separately, and the certainty of the event should not be magnified just because the release time is relatively recent.
+    If there is a conflict of direction between news, the point of conflict must be clearly written and why a stronger conclusion cannot be drawn.
+    If the tool does not return details of an event, market feedback or subsequent progress, please write directly Tool results not provided or This link still needs to be verified , Don t complete it yourself.
+    analysis `News impact analysis` When reporting, a table can be used to summarize the news, type and impact level; the type should be written as positive, cautious or neutral first, and do not write as buying point, exhaustion of bad news or trading opportunity.
+    `Market Sentiment Assessment` Only explain the possible impact of news on market sentiment and its limitations. Do not directly write down changes in sentiment as conclusions on stock prices.
+    `analysis point of view` The news assessment, short-term reaction expectations and the impact on the overall research conclusion must be given simultaneously; short-term reaction expectations can only write the direction and reasons for expected changes, but not stock price point predictions.
+    If there are any information gaps or matters that still need to be verified, they can be explained in the corresponding paragraph in passing, without the need for a separate chapter.
+    You can quote the real time, source, title, and numbers returned by the tool for factual explanations, but you must not rewrite these contents into target prices, price ranges, short-term stock price forecasts, support and resistance levels, or execution plans.
+    Please use research caliber to express the meaning of the event, priority is given to Positive side  Cautious  Neutral  reinforce an expectation  increase some uncertainty  Still to be verified and other expressions, do not use major benefits  major negative  short-term catalysis  Open up room for growth  Clear buying point and other transactional terms.
+    When the tool results are sufficient, the report should be kept sufficiently expanded, normally no less than 700 words.
 
-    不要输出投资建议、目标价、价格区间、仓位或执行计划。
-    不得添加任何署名、作者、分析师、日期或声明信息。"""
+    Do not output investment recommendations, price targets, price ranges, positions, or execution plans.
+    No byline, author, analyst, date or claim information may be added."""
 

@@ -1,5 +1,5 @@
 """
-Core 工具模块
+Core tool module
 """
 
 from .report_aggregator import (

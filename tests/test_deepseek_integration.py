@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DeepSeek V3集成测试
+DeepSeek V3 Integration testing
 """
 
 import sys
@@ -8,192 +8,192 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv(project_root / ".env", override=True)
 
 def test_deepseek_availability():
-    """测试DeepSeek可用性"""
-    print("🔍 测试DeepSeek V3可用性...")
+    """Testing DeepSeek usability"""
+    print("🔍 Testing DeepSeek V3 usability...")
     
     api_key = os.getenv("DEEPSEEK_API_KEY")
     enabled = os.getenv("DEEPSEEK_ENABLED", "false").lower() == "true"
     base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
     
-    print(f"API Key: {'✅ 已设置' if api_key else '❌ 未设置'}")
+    print(f"API Key: {'✅ Already set' if api_key else '❌ not set'}")
     print(f"Base URL: {base_url}")
-    print(f"启用状态: {'✅ 已启用' if enabled else '❌ 未启用'}")
+    print(f"Enabled status: {'✅ Enabled' if enabled else '❌ Not enabled'}")
     
     if not api_key:
-        print("\n⚠️ 请在.env文件中设置DEEPSEEK_API_KEY")
-        print("📝 获取地址: https://platform.deepseek.com/")
-        print("💡 注意：需要注册DeepSeek账号并创建API Key")
+        print("\n⚠️ Please set it in the .env file DEEPSEEK_API_KEY")
+        print("📝 Get address: https://platform.deepseek.com/")
+        print("💡 Note: You need to register and create a DeepSeek account API Key")
         return False
     
     if not enabled:
-        print("\n⚠️ 请在.env文件中设置DEEPSEEK_ENABLED=true")
+        print("\n⚠️ Please set it in the .env file DEEPSEEK_ENABLED=true")
         return False
     
     return True
 
 def test_deepseek_adapter():
-    """测试DeepSeek适配器"""
-    print("\n🧪 测试DeepSeek适配器...")
+    """Test the DeepSeek adapter"""
+    print("\n🧪 Test the DeepSeek adapter...")
     
     try:
         from tradingagents.llm.deepseek_adapter import DeepSeekAdapter, create_deepseek_adapter
         
-        # 测试适配器创建
+        # Test adapter creation
         adapter = create_deepseek_adapter(model="deepseek-chat")
-        print("✅ 适配器创建成功")
+        print("✅ Adapter created successfully")
         
-        # 测试模型信息
+        # Test model information
         model_info = adapter.get_model_info()
-        print(f"✅ 模型信息: {model_info['provider']} - {model_info['model']}")
-        print(f"✅ 上下文长度: {model_info['context_length']}")
+        print(f"✅ Model information: {model_info['provider']} - {model_info['model']}")
+        print(f"✅ context length: {model_info['context_length']}")
         
-        # 测试可用模型列表
+        # List of available models for testing
         models = DeepSeekAdapter.get_available_models()
-        print(f"✅ 可用模型: {list(models.keys())}")
+        print(f"✅ Available models: {list(models.keys())}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 适配器测试失败: {e}")
+        print(f"❌ Adapter test failed: {e}")
         return False
 
 def test_deepseek_connection():
-    """测试DeepSeek连接"""
-    print("\n🔗 测试DeepSeek连接...")
+    """Test DeepSeek connection"""
+    print("\n🔗 Test DeepSeek connection...")
     
     try:
         from tradingagents.llm.deepseek_adapter import create_deepseek_adapter
         from langchain.schema import HumanMessage
         
-        # 创建适配器
+        # Create adapter
         adapter = create_deepseek_adapter(model="deepseek-chat")
         
-        # 测试简单对话
-        messages = [HumanMessage(content="你好，请简单介绍一下股票投资的基本概念，控制在50字以内")]
+        # Test a simple conversation
+        messages = [HumanMessage(content="Hello, please briefly introduce the basic concepts of stock investment, within 50 words.")]
         response = adapter.chat(messages)
-        print(f"✅ 模型响应: {response[:100]}...")
+        print(f"✅ model response: {response[:100]}...")
         
-        # 测试连接
+        # test connection
         connection_ok = adapter.test_connection()
-        print(f"✅ 连接测试: {'成功' if connection_ok else '失败'}")
+        print(f"✅ Connection test: {'success' if connection_ok else 'failed'}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 连接测试失败: {e}")
+        print(f"❌ Connection test failed: {e}")
         return False
 
 def test_deepseek_tools():
-    """测试DeepSeek工具调用"""
-    print("\n🛠️ 测试工具调用功能...")
+    """Test DeepSeek tool calls"""
+    print("\n🛠️ Test tool call function...")
     
     try:
         from langchain.tools import tool
         from tradingagents.llm.deepseek_adapter import create_deepseek_adapter
         
-        # 定义测试工具
+        # Define testing tools
         @tool
         def get_stock_price(symbol: str) -> str:
-            """获取股票价格"""
-            return f"股票{symbol}的当前价格是$150.00"
+            """Get stock price"""
+            return f"stocks{symbol}The current price of is$150.00"
         
         @tool
         def get_market_news(symbol: str) -> str:
-            """获取市场新闻"""
-            return f"股票{symbol}的最新消息：公司业绩良好，分析师看好前景"
+            """Get market news"""
+            return f"stocks{symbol}The latest news: Company performance is good, analysts are optimistic about the prospects"
         
-        # 创建适配器
+        # Create adapter
         adapter = create_deepseek_adapter(model="deepseek-chat")
         
-        # 创建智能体
+        # Create an agent
         tools = [get_stock_price, get_market_news]
-        system_prompt = "你是一个专业的股票分析助手，可以使用工具获取股票信息并进行分析。请用中文回答。"
+        system_prompt = "You are a professional stock analysis assistant who can use tools to obtain stock information and perform analysis. Please answer in Chinese."
         
         agent = adapter.create_agent(tools, system_prompt, verbose=True)
-        print("✅ 智能体创建成功")
+        print("✅ Agent created successfully")
         
-        # 测试工具调用
-        result = agent.invoke({"input": "请帮我查询AAPL的股价和最新消息"})
-        print(f"✅ 工具调用成功: {result['output'][:100]}...")
+        # Test tool call
+        result = agent.invoke({"input": "Please help me check the stock price and latest news of AAPL"})
+        print(f"✅ Tool call successful: {result['output'][:100]}...")
         
         return True
         
     except Exception as e:
-        print(f"❌ 工具调用测试失败: {e}")
+        print(f"❌ Tool call test failed: {e}")
         return False
 
 def test_deepseek_trading_graph():
-    """测试DeepSeek在交易图中的集成"""
-    print("\n📊 测试交易图集成...")
+    """Testing DeepSeek integration in transaction graph"""
+    print("\n📊 Testing the Trading Graph Integration...")
     
     try:
         from tradingagents.default_config import DEFAULT_CONFIG
         from tradingagents.graph.trading_graph import TradingAgentsGraph
         
-        # 创建DeepSeek配置
+        # Create DeepSeek configuration
         config = DEFAULT_CONFIG.copy()
         config["llm_provider"] = "deepseek"
         config["deep_think_llm"] = "deepseek-chat"
         config["quick_think_llm"] = "deepseek-chat"
-        config["max_debate_rounds"] = 1  # 减少测试时间
-        config["online_tools"] = False   # 禁用在线工具以加快测试
+        config["max_debate_rounds"] = 1  # Reduce testing time
+        config["online_tools"] = False   # Disable online tools to speed up testing
         
-        # 创建交易图
+        # Create transaction diagram
         ta = TradingAgentsGraph(debug=True, config=config)
-        print("✅ 交易图创建成功")
+        print("✅ Trading chart created successfully")
         
-        # 注意：这里不执行实际分析，只测试初始化
-        print("✅ DeepSeek集成到交易图成功")
+        # Note: No actual analysis is performed here, only initialization is tested.
+        print("✅ DeepSeek Integrated into trading graph successfully")
         
         return True
         
     except Exception as e:
-        print(f"❌ 交易图集成测试失败: {e}")
+        print(f"❌ Transaction graph integration test failed: {e}")
         return False
 
 def test_deepseek_models():
-    """测试不同DeepSeek模型"""
-    print("\n🎯 测试不同DeepSeek模型...")
+    """Test different DeepSeek models"""
+    print("\n🎯 Test different DeepSeek models...")
     
     try:
         from tradingagents.llm.deepseek_adapter import create_deepseek_adapter
         
-        models_to_test = ["deepseek-chat"]  # 仅测试最适合股票分析的模型
+        models_to_test = ["deepseek-chat"]  # Only test models that are best suited for stock analysis
         
         for model in models_to_test:
             try:
                 adapter = create_deepseek_adapter(model=model)
                 info = adapter.get_model_info()
-                print(f"✅ {model}: {info['context_length']} 上下文")
+                print(f"✅ {model}: {info['context_length']} context")
             except Exception as e:
-                print(f"⚠️ {model}: 测试失败 - {e}")
+                print(f"⚠️ {model}: test failed - {e}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 模型测试失败: {e}")
+        print(f"❌ Model test failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("🎯 DeepSeek V3集成测试")
+    """Main test function"""
+    print("🎯 DeepSeek V3 Integration testing")
     print("=" * 50)
     
     tests = [
-        ("可用性检查", test_deepseek_availability),
-        ("适配器测试", test_deepseek_adapter),
-        ("连接测试", test_deepseek_connection),
-        ("工具调用", test_deepseek_tools),
-        ("交易图集成", test_deepseek_trading_graph),
-        ("模型测试", test_deepseek_models),
+        ("Availability check", test_deepseek_availability),
+        ("Adapter test", test_deepseek_adapter),
+        ("Connection test", test_deepseek_connection),
+        ("Tool call", test_deepseek_tools),
+        ("Transaction graph integration", test_deepseek_trading_graph),
+        ("Model testing", test_deepseek_models),
     ]
     
     results = []
@@ -203,32 +203,32 @@ def main():
             result = test_func()
             results.append((test_name, result))
         except Exception as e:
-            print(f"❌ {test_name}测试异常: {e}")
+            print(f"❌ {test_name}Test exception: {e}")
             results.append((test_name, False))
     
-    # 总结结果
+    # Summary results
     print("\n" + "="*50)
-    print("📋 测试结果总结:")
+    print("📋 Summary of test results:")
     print("="*50)
     
     passed = 0
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{test_name}: {status}")
         if result:
             passed += 1
     
-    print(f"\n总计: {passed}/{len(results)} 项测试通过")
+    print(f"\n total: {passed}/{len(results)} tests passed")
     
     if passed == len(results):
-        print("\n🎉 所有测试通过！DeepSeek V3集成成功！")
-        print("\n📝 下一步:")
-        print("1. 在.env文件中配置您的DeepSeek API密钥")
-        print("2. 设置DEEPSEEK_ENABLED=true启用DeepSeek")
-        print("3. 在Web界面或CLI中选择DeepSeek模型")
-        print("4. 享受高性价比的AI分析服务")
+        print("\n🎉 All tests passed! DeepSeek V3 integration successful!")
+        print("\n📝 Next step:")
+        print("1. Configure your DeepSeek API key in the .env file")
+        print("2. settings DEEPSEEK_ENABLED=true enable DeepSeek")
+        print("3. Select a DeepSeek model in the web interface or CLI")
+        print("4. Enjoy cost-effective AI analysis services")
     else:
-        print(f"\n⚠️ {len(results) - passed} 项测试失败，请检查配置和依赖")
+        print(f"\n⚠️ {len(results) - passed} Test failed, please check configuration and dependencies")
     
     return passed == len(results)
 

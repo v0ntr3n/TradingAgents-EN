@@ -162,8 +162,8 @@ def test_financial_p0_apis_compute_annual_and_solvency(monkeypatch, sample_finan
 def test_security_and_peer_apis(monkeypatch):
     monkeypatch.setattr(api, "get_stock_basic_info", lambda symbol: {
         "symbol": symbol,
-        "name": "贵州茅台",
-        "industry": "白酒",
+        "name": "Kweichow Moutai",
+        "industry": "Liquor",
         "total_mv": 10000,
         "pe_ttm": 20,
         "pb": 5,
@@ -173,8 +173,8 @@ def test_security_and_peer_apis(monkeypatch):
     })
     monkeypatch.setattr(api, "get_market_quotes", lambda symbol: {"close": 100, "trade_date": "20240628"})
     peers = [
-        {"symbol": "000001", "name": "同行A", "industry": "白酒", "pe_ttm": 10, "pb": 2, "roe": 10},
-        {"symbol": "000002", "name": "同行B", "industry": "白酒", "pe_ttm": 30, "pb": 8, "roe": 30},
+        {"symbol": "000001", "name": "peers A", "industry": "Liquor", "pe_ttm": 10, "pb": 2, "roe": 10},
+        {"symbol": "000002", "name": "peers B", "industry": "Liquor", "pe_ttm": 30, "pb": 8, "roe": 30},
     ]
     monkeypatch.setattr(api, "get_industry_peer_basic_info", lambda *args, **kwargs: peers)
     monkeypatch.setattr(api, "summarize_industry_valuation", lambda *args, **kwargs: {
@@ -213,18 +213,18 @@ def test_security_and_peer_apis(monkeypatch):
 def test_industry_market_and_peer_growth_apis(monkeypatch, sample_financial_records):
     monkeypatch.setattr(api, "get_stock_basic_info", lambda symbol: {
         "symbol": symbol,
-        "name": "测试股票",
-        "industry": "白酒",
+        "name": "test stocks",
+        "industry": "Liquor",
         "roe": 20,
         "source": "unit",
     })
     peers = [
-        {"symbol": "000001", "name": "同行A", "industry": "白酒"},
-        {"symbol": "000002", "name": "同行B", "industry": "白酒"},
+        {"symbol": "000001", "name": "peers A", "industry": "Liquor"},
+        {"symbol": "000002", "name": "peers B", "industry": "Liquor"},
     ]
     monkeypatch.setattr(api, "get_industry_peer_basic_info", lambda *args, **kwargs: peers)
     monkeypatch.setattr(api, "_load_tushare_industry_moneyflow_rows", lambda *args, **kwargs: [
-        {"trade_date": "20240102", "industry": "白酒", "pct_change": 1.2, "net_amount": 3.4}
+        {"trade_date": "20240102", "industry": "Liquor", "pct_change": 1.2, "net_amount": 3.4}
     ])
 
     price_map = {
@@ -293,9 +293,9 @@ def test_capital_flow_series_falls_back_to_tushare(monkeypatch):
 
 def test_news_proxy_apis_detect_risk_and_announcements(monkeypatch):
     rows = [
-        {"title": "公司发布年度报告公告", "publish_time": datetime(2024, 3, 1), "content": "披露年报"},
-        {"title": "公司收到监管警示函", "publish_time": datetime(2024, 4, 1), "content": "监管处罚"},
-        {"title": "控股股东计划减持", "publish_time": datetime(2024, 5, 1), "content": "减持"},
+        {"title": "The company releases annual report announcement", "publish_time": datetime(2024, 3, 1), "content": "Annual report disclosure"},
+        {"title": "The company received a regulatory warning letter", "publish_time": datetime(2024, 4, 1), "content": "regulatory penalties"},
+        {"title": "Controlling shareholder plans to reduce holdings", "publish_time": datetime(2024, 5, 1), "content": "Reduce holdings"},
     ]
     monkeypatch.setattr(api, "get_stock_news_by_date_range", lambda *args, **kwargs: rows)
 
@@ -325,8 +325,8 @@ def test_business_segment_shareholder_return_and_portfolio_risk(monkeypatch, sam
             "n_cashflow_act": 240,
             "capex": 40,
             "main_business": [
-                {"end_date": f"{year}1231", "bz_type": "产品", "bz_item": "产品A", "bz_sales": 700, "bz_cost": 300},
-                {"end_date": f"{year}1231", "bz_type": "产品", "bz_item": "产品B", "bz_sales": 300, "bz_cost": 180},
+                {"end_date": f"{year}1231", "bz_type": "Products", "bz_item": "Products A", "bz_sales": 700, "bz_cost": 300},
+                {"end_date": f"{year}1231", "bz_type": "Products", "bz_item": "Products B", "bz_sales": 300, "bz_cost": 180},
             ],
         })
     monkeypatch.setattr(api, "get_stock_financial_periods", lambda *args, **kwargs: financial_rows)
@@ -337,8 +337,8 @@ def test_business_segment_shareholder_return_and_portfolio_risk(monkeypatch, sam
 
     monkeypatch.setattr(api, "_read_local_collection_rows", lambda *args, **kwargs: ([], None))
     monkeypatch.setattr(api, "_load_tushare_dividend_rows", lambda *args, **kwargs: [
-        {"end_date": "20231231", "ann_date": "20240301", "div_proc": "实施", "cash_div_tax": 2.0},
-        {"end_date": "20221231", "ann_date": "20230301", "div_proc": "实施", "cash_div_tax": 1.5},
+        {"end_date": "20231231", "ann_date": "20240301", "div_proc": "implement", "cash_div_tax": 2.0},
+        {"end_date": "20221231", "ann_date": "20230301", "div_proc": "implement", "cash_div_tax": 1.5},
     ])
     monkeypatch.setattr(api, "get_current_valuation_snapshot", lambda *args, **kwargs: {"status": "success", "current_price": 100})
     monkeypatch.setattr(api, "get_historical_financial_annual_series", lambda *args, **kwargs: {"status": "success", "records": [{"free_cashflow": 200}, {"free_cashflow": 180}]})
@@ -347,7 +347,7 @@ def test_business_segment_shareholder_return_and_portfolio_risk(monkeypatch, sam
     assert shareholder["metrics"]["latest_cash_dividend_per_share"] == 2.0
     assert shareholder["metrics"]["latest_dividend_yield"] == pytest.approx(0.02)
 
-    monkeypatch.setattr(api, "get_security_master", lambda symbol: {"symbol": symbol, "name": symbol, "industry": "测试行业"})
+    monkeypatch.setattr(api, "get_security_master", lambda symbol: {"symbol": symbol, "name": symbol, "industry": "Testing industry"})
     return_rows = [{"trade_date": f"2024-01-{day:02d}", "return": 0.01 if day % 2 == 0 else -0.005} for day in range(1, 31)]
     monkeypatch.setattr(api, "get_return_series", lambda *args, **kwargs: {"status": "success", "records": return_rows, "coverage": {"return_sample_count": 30}})
     portfolio = api.get_portfolio_risk_profile([
@@ -367,7 +367,7 @@ def test_real_data_smoke_for_core_standard_apis():
     checks.append(api.get_historical_financial_annual_series("600519", years=3))
     checks.append(api.get_current_valuation_snapshot("600519"))
 
-    assert any(item.get("status") == "success" for item in checks), "至少一个标准 API 应能从本地数据取到真实样本"
+    assert any(item.get("status") == "success" for item in checks), "At least a standard API should be able to get real samples from local data"
     price = checks[1]
     if price.get("status") == "success":
         assert price["coverage"]["sample_count"] > 0

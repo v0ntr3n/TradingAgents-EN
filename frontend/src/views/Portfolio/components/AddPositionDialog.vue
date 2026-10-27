@@ -2,18 +2,18 @@
   <el-dialog
     :model-value="visible"
     @update:model-value="$emit('update:visible', $event)"
-    :title="isEdit ? '编辑持仓' : '添加持仓'"
+    :title="isEdit ? 'Edit positions' : 'Add position'"
     width="500px"
     destroy-on-close
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-      <el-form-item label="股票代码" prop="code">
-        <el-input v-model="form.code" placeholder="如: 600519、510300、AAPL" :disabled="isEdit" />
+      <el-form-item label="Stock code" prop="code">
+        <el-input v-model="form.code" placeholder="Such as: 600519, 510300, AAPL" :disabled="isEdit" />
       </el-form-item>
-      <el-form-item label="股票名称" prop="name">
+      <el-form-item label="Stock name" prop="name">
         <el-input 
           v-model="form.name" 
-          placeholder="可选，自动获取"
+          placeholder="Optional, automatically obtained"
           :disabled="loadingStockName"
         >
           <template #suffix>
@@ -23,33 +23,33 @@
           </template>
         </el-input>
       </el-form-item>
-      <el-form-item label="市场" prop="market">
+      <el-form-item label="market" prop="market">
         <el-select v-model="form.market" style="width: 100%">
-          <el-option label="A股" value="CN" />
+          <el-option label="A shares" value="CN" />
           <el-option label="ETF" value="ETF" />
         </el-select>
         <div v-if="form.market === 'ETF'" style="font-size: 12px; color: #909399; margin-top: 4px;">
-          ETF 持仓会按 A股账户（CNY）入库和计价，但前端会保留 ETF 语义。
+          ETF The position will be stored and priced according to the A-share account (CNY), but the front-end will retain the ETF semantics.
         </div>
       </el-form-item>
-      <el-form-item label="持仓数量" prop="quantity">
+      <el-form-item label="Position quantity" prop="quantity">
         <el-input-number v-model="form.quantity" :min="1" :step="100" style="width: 100%" />
       </el-form-item>
-      <el-form-item label="成本价" prop="cost_price">
+      <el-form-item label="cost price" prop="cost_price">
         <el-input-number v-model="form.cost_price" :min="0.01" :precision="2" :step="0.1" style="width: 100%" />
       </el-form-item>
-      <el-form-item label="买入日期" prop="buy_date" required>
-        <el-date-picker v-model="form.buy_date" type="date" placeholder="必填，用于校验成本价" style="width: 100%" />
+      <el-form-item label="Purchase date" prop="buy_date" required>
+        <el-date-picker v-model="form.buy_date" type="date" placeholder="Required, used to verify cost price" style="width: 100%" />
       </el-form-item>
-      <el-form-item label="备注" prop="notes">
-        <el-input v-model="form.notes" type="textarea" :rows="2" placeholder="可选" />
+      <el-form-item label="Remarks" prop="notes">
+        <el-input v-model="form.notes" type="textarea" :rows="2" placeholder="Optional" />
       </el-form-item>
     </el-form>
     
     <template #footer>
-      <el-button @click="$emit('update:visible', false)">取消</el-button>
+      <el-button @click="$emit('update:visible', false)">Cancel</el-button>
       <el-button type="primary" @click="handleSubmit" :loading="submitting">
-        {{ isEdit ? '保存' : '添加' }}
+        {{ isEdit ? 'save' : 'add' }}
       </el-button>
     </template>
   </el-dialog>
@@ -84,7 +84,7 @@ const formRef = ref<FormInstance>()
 const submitting = ref(false)
 const loadingStockName = ref(false)
 let fetchStockNameTimer: ReturnType<typeof setTimeout> | null = null
-// 🔥 记录上一次自动获取名称时对应的股票代码，用于判断名称是否需要更新
+// 🔥 Record the stock code corresponding to the last time the name was automatically obtained, which is used to determine whether the name needs to be updated.
 const lastFetchedCode = ref<string>('')
 
 const isEdit = computed(() => !!props.editData)
@@ -106,50 +106,50 @@ const form = ref<PositionCreatePayload & { buy_date?: Date | string }>({
   notes: ''
 })
 
-// 添加时买入日期必填（用于校验成本价），编辑时可选
+// The purchase date is required when adding (used to verify the cost price), and is optional when editing.
 const rules = computed<FormRules>(() => ({
-  code: [{ required: true, message: '请输入股票代码', trigger: 'blur' }],
-  quantity: [{ required: true, message: '请输入持仓数量', trigger: 'blur' }],
-  cost_price: [{ required: true, message: '请输入成本价', trigger: 'blur' }],
-  buy_date: isEdit.value ? [] : [{ required: true, message: '请选择买入日期，以便校验成本价是否正确', trigger: 'change' }]
+  code: [{ required: true, message: 'Please enter stock code', trigger: 'blur' }],
+  quantity: [{ required: true, message: 'Please enter the position quantity', trigger: 'blur' }],
+  cost_price: [{ required: true, message: 'Please enter cost price', trigger: 'blur' }],
+  buy_date: isEdit.value ? [] : [{ required: true, message: 'Please select the purchase date to verify that the cost price is correct', trigger: 'change' }]
 }))
 
-// 🔥 自动获取股票名称
+// 🔥 Automatically obtain stock names
 const fetchStockName = async (code: string) => {
   if (!code || code.trim().length === 0) {
     return
   }
   
-  // 编辑模式下不自动获取
+  // Not automatically obtained in edit mode
   if (isEdit.value) {
     return
   }
   
-  // 🔥 修复问题1：对于A股市场，只有当代码长度为6位时才查询
+  // 🔥 Fix issue 1: For the A-share market, only query when the code length is 6 digits
   const trimmedCode = code.trim()
   if ((form.value.market === 'CN' || form.value.market === 'ETF') && trimmedCode.length !== 6) {
-    // A股/ETF 代码必须是6位，未输入完整时不查询
+    // A The stock/ETF code must be 6 digits. If the entire code is not entered, the query will not be performed.
     return
   }
   
-  // 🔥 修复问题3：如果代码改变了，且名称是自动获取的，应该重新查询
+  // 🔥 Fix issue 3: If the code is changed and the name is obtained automatically, the query should be re-queried
   const currentName = form.value.name?.trim() || ''
   const isCodeChanged = trimmedCode !== lastFetchedCode.value
   
-  // 如果代码改变了，且名称是自动获取的（通过 lastFetchedCode 判断），允许重新查询
-  // 如果名称是用户手动输入的（lastFetchedCode 为空或与当前代码不匹配），不自动覆盖
-  if (currentName.length > 0 && currentName !== '可选，自动获取' && !isCodeChanged) {
-    // 名称不为空，且代码没有改变，说明是用户手动输入的，不自动覆盖
+  // If the code changes and the name is automatically obtained (judged by lastFetchedCode), re-query is allowed
+  // If the name is entered manually by the user (lastFetchedCode is empty or does not match the current code), it is not automatically overwritten.
+  if (currentName.length > 0 && currentName !== 'Optional, automatically obtained' && !isCodeChanged) {
+    // The name is not empty and the code has not changed, indicating that it was entered manually by the user and is not automatically overwritten.
     return
   }
   
-  // 清除之前的定时器
+  // Clear previous timer
   if (fetchStockNameTimer) {
     clearTimeout(fetchStockNameTimer)
     fetchStockNameTimer = null
   }
   
-  // 防抖：500ms 后执行
+  // Anti-shake: executed after 500ms
   fetchStockNameTimer = setTimeout(async () => {
     try {
       loadingStockName.value = true
@@ -159,12 +159,12 @@ const fetchStockName = async (code: string) => {
         const stockName = res.data.name
         if (stockName) {
           form.value.name = stockName
-          // 🔥 记录本次查询的股票代码，用于判断名称是否是自动获取的
+          // 🔥 Record the stock code of this query, used to determine whether the name is automatically obtained.
           lastFetchedCode.value = trimmedCode
-          // 如果获取到了市场信息，也自动更新市场
+          // If market information is obtained, the market will also be automatically updated.
           if (res.data.market) {
             const marketMap: Record<string, string> = {
-              'A股': 'CN',
+              'A shares': 'CN',
               'ETF': 'ETF'
             }
             const marketCode = marketMap[res.data.market] || form.value.market
@@ -175,40 +175,40 @@ const fetchStockName = async (code: string) => {
         }
       }
     } catch (error: any) {
-      // 静默失败，不显示错误提示（因为股票名称是可选的）
-      console.debug('自动获取股票名称失败:', error)
+      // Fail silently, no error message is displayed (because the stock name is optional)
+      console.debug('Failed to automatically obtain stock name:', error)
     } finally {
       loadingStockName.value = false
     }
   }, 500)
 }
 
-// 监听股票代码变化
+// Monitor stock code changes
 watch(() => form.value.code, (newCode, oldCode) => {
   const trimmedNewCode = newCode?.trim() || ''
   const trimmedOldCode = oldCode?.trim() || ''
   
-  // 🔥 修复问题2：确保每次代码变化都能触发查询（如果满足条件）
-  // 清除之前的定时器，确保新的输入能触发新的查询
+  // 🔥 Fix problem 2: Ensure that every code change can trigger the query (if the conditions are met)
+  // Clear the previous timer to ensure that new input can trigger new queries
   if (fetchStockNameTimer) {
     clearTimeout(fetchStockNameTimer)
     fetchStockNameTimer = null
   }
   
   if (trimmedNewCode.length > 0) {
-    // 只有当代码发生变化时才查询（避免重复查询相同代码）
+    // Only query when the code changes (avoid querying the same code repeatedly)
     if (trimmedNewCode !== trimmedOldCode) {
-      // 🔥 修复问题3：如果代码改变了，且名称是自动获取的，先清空名称
-      // 判断名称是否是自动获取的：如果 lastFetchedCode 等于旧代码，说明名称是自动获取的
+      // 🔥 Fix problem 3: If the code is changed and the name is obtained automatically, clear the name first
+      // Determine whether the name is obtained automatically: If lastFetchedCode is equal to the old code, it means the name is obtained automatically
       if (lastFetchedCode.value === trimmedOldCode && form.value.name && form.value.name.trim().length > 0) {
-        // 名称是自动获取的，代码改变了，清空名称以便重新查询
+        // The name is obtained automatically. If the code changes, clear the name to query again.
         form.value.name = ''
         lastFetchedCode.value = ''
       }
       fetchStockName(newCode)
     }
   } else {
-    // 清空代码时，也清空名称和记录
+    // When the code is cleared, the name and record are also cleared
     form.value.name = ''
     lastFetchedCode.value = ''
   }
@@ -225,7 +225,7 @@ watch(() => props.visible, (val) => {
       buy_date: props.editData.buy_date || undefined,
       notes: props.editData.notes || ''
     }
-    // 编辑模式下，重置自动获取记录
+    // In edit mode, reset the automatic acquisition record
     lastFetchedCode.value = ''
   } else if (val) {
     const init = props.initialData
@@ -238,13 +238,13 @@ watch(() => props.visible, (val) => {
       buy_date: undefined,
       notes: ''
     }
-    // 如果有预填代码，记录为已自动获取，避免被 watch 清空
+    // If there is a pre-filled code, it will be recorded as automatically obtained to avoid being cleared by watch.
     if (init?.code) {
       lastFetchedCode.value = init.code
     } else {
       lastFetchedCode.value = ''
     }
-    // 清除定时器和记录
+    // Clear timers and records
     if (fetchStockNameTimer) {
       clearTimeout(fetchStockNameTimer)
       fetchStockNameTimer = null
@@ -278,17 +278,17 @@ const handleSubmit = async () => {
         buy_date: payload.buy_date,
         notes: payload.notes
       })
-      ElMessage.success('更新成功')
+      ElMessage.success('Update successful')
     } else {
       await portfolioApi.addPosition(payload)
-      ElMessage.success('添加成功')
+      ElMessage.success('Added successfully')
     }
     
     emit('success')
   } catch (e: any) {
-    // 错误已在 API 拦截器中显示，这里不再重复显示
-    // 只记录日志用于调试
-    console.error('添加/更新持仓失败:', e)
+    // The error has been shown in the API interceptor and will not be repeated here
+    // Only log for debugging
+    console.error('Failed to add/update position:', e)
   } finally {
     submitting.value = false
   }

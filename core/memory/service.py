@@ -1,15 +1,15 @@
 """
-MemoryService — mem0 统一记忆适配层
+MemoryService — mem0 Unified memory adaptation layer
 
-所有子系统（智能助手、Skill 生成、工作流 Agent、成长系统）通过本服务
-存储和召回记忆，不直接调用 mem0 SDK。
+All subsystems (intelligent assistant, skill generation, workflow agent, growth system) use this service
+Store and recall memories without calling mem0 SDK directly.
 
-特性：
-- 异步优先（AsyncMemory）
-- 降级容错：mem0 不可用时返回空结果，不阻塞主流程
-- 通过 metadata.scope 实现记忆分类过滤
-- 单例 + 延迟初始化
-- MEM0_ENABLED 环境变量总开关
+Features:
+- Asynchronous first (AsyncMemory)
+- Downgrade fault tolerance: when mem0 is unavailable, an empty result is returned and the main process is not blocked.
+- Implement memory classification filtering through metadata.scope
+- Singleton + Lazy initialization
+- MEM0_ENABLED Environment variable master switch
 """
 
 import asyncio
@@ -35,15 +35,15 @@ def _validate_embedder_config(config: Dict[str, Any]) -> str:
     model = str(embedder_cfg.get("model") or "").strip()
 
     if not provider:
-        return "缺少可用的 Embedding 配置"
+        return "Missing available Embedding configuration"
     if not model:
-        return "Embedding 模型未配置"
+        return "Embedding Model not configured"
 
     if provider in {"openai", "gemini", "azure_openai", "together"} and not str(embedder_cfg.get("api_key") or "").strip():
-        return f"Embedding provider {provider} 缺少 API Key"
+        return f"Embedding provider {provider} missing API Key"
 
     if provider == "openai" and not str(embedder_cfg.get("openai_base_url") or "").strip():
-        return "OpenAI 兼容 Embedding 缺少 base_url"
+        return "OpenAI Compatible with Embedding missing base_url"
 
     return ""
 
@@ -54,7 +54,7 @@ def _is_mem0_enabled() -> bool:
 
 
 def get_memory_service(db=None) -> "MemoryService":
-    """获取全局 MemoryService 单例（延迟初始化）"""
+    """Get the global MemoryService singleton (lazy initialization)"""
     global _instance
     if _instance is None:
         _instance = MemoryService(db=db)
@@ -64,16 +64,16 @@ def get_memory_service(db=None) -> "MemoryService":
 
 
 class MemoryService:
-    """统一记忆服务 — mem0 适配层"""
+    """Unified memory service — mem0 Adaptation layer"""
 
     def __init__(self, db=None):
         self._db = db
         self._mem: Any = None
         self._init_error: str = ""
-        # A3: 初始化锁必须用 threading.Lock（跨线程安全）。
-        # asyncio.Lock 非线程安全：并行开局场景下两个研究员线程各自的
-        # event loop await 同一把 asyncio.Lock，持有者释放时无法唤醒
-        # 另一线程的等待 future → 永久挂起（实测 E2E bear 线程卡死根因）
+        # A3: The lock must be initialized with threading.Lock (cross-thread safe).
+        # asyncio.Lock Non-thread safety: In the parallel start scenario, the respective threads of the two researchers
+        # event loop await The same asyncio.Lock cannot be awakened when the holder is released
+        # Waiting for another thread future → Permanent hang (actual test root cause of E2E bear thread stuck)
         self._init_lock = threading.Lock()
 
     @property
@@ -81,14 +81,14 @@ class MemoryService:
         return self._mem is not None
 
     async def _ensure_init(self, config: Optional[Dict[str, Any]] = None) -> bool:
-        """延迟初始化 mem0 AsyncMemory 实例（threading.Lock 保证跨线程并发安全）"""
+        """Lazy initialization of mem0 AsyncMemory instance (threading.Lock ensures cross-thread concurrency safety)"""
         if self._mem is not None:
             return True
         if self._init_error:
             return False
 
         if not _is_mem0_enabled():
-            self._init_error = "MEM0_ENABLED=false，记忆层已禁用"
+            self._init_error = "MEM0_ENABLED=false, Memory layer is disabled"
             return False
 
         with self._init_lock:
@@ -102,19 +102,19 @@ class MemoryService:
                 from .config import build_mem0_config
                 from .mem0_mongodb_store import register_mem0_mongodb_provider
 
-                # 注册自定义 MongoDB 向量存储 provider（客户端 cosine）
-                # 替换 mem0 官方 MongoDB provider（依赖 Atlas $vectorSearch）
+                # Register a custom MongoDB vector storage provider (client cosine)
+                # Replace mem0 official MongoDB provider (depends on Atlas $vectorSearch) 
                 register_mem0_mongodb_provider()
 
                 resolved_config = config or build_mem0_config(self._db)
                 if not resolved_config.get("llm", {}).get("config", {}).get("api_key"):
-                    self._init_error = "缺少 LLM API Key，mem0 记忆层不可用"
+                    self._init_error = "Missing LLM API Key, mem0 memory layer is unavailable"
                     logger.warning("[MemoryService] %s", self._init_error)
                     return False
 
                 embedder_error = _validate_embedder_config(resolved_config)
                 if embedder_error:
-                    self._init_error = f"{embedder_error}，mem0 记忆层不可用"
+                    self._init_error = f"{embedder_error}, mem0 Memory layer is not available"
                     logger.warning("[MemoryService] %s", self._init_error)
                     return False
 
@@ -151,15 +151,15 @@ class MemoryService:
                             os.environ[key] = value
 
                 self._mem = mem_client
-                logger.info("[MemoryService] mem0 AsyncMemory 初始化成功")
+                logger.info("[MemoryService] mem0 AsyncMemory Initialization successful")
                 return True
             except Exception as e:
                 self._init_error = str(e)
-                logger.warning("[MemoryService] mem0 初始化失败（已降级）: %s", e, exc_info=True)
+                logger.warning("[MemoryService] mem0 Initialization failed (downgraded): %s", e, exc_info=True)
                 return False
 
     # ------------------------------------------------------------------
-    #  写入
+    #  write
     # ------------------------------------------------------------------
 
     async def store(
@@ -174,22 +174,22 @@ class MemoryService:
         infer: bool = True,
     ) -> StoreResult:
         """
-        存储记忆 — mem0 自动调用 LLM 提取事实并向量化。
+        store memory — mem0 Automatically invoke LLM to extract facts and quantify them.
 
         Args:
-            messages: OpenAI 格式消息列表 [{"role": "user", "content": "..."}]
-            user_id: 用户 ID（跨会话持久）
-            agent_id: agent 类型标识（如 "assistant", "skill_generator"）
-            session_id: 会话 / run ID
-            scope: 记忆分类（见 MemoryScope）
-            metadata: 附加元数据（symbol, task_id 等）
+            messages: OpenAI Format message list [{"role": "user", "content": "..."}]
+            user_id: User ID (persistent across sessions)
+            agent_id: agent type identifier (e.g. "assistant", "skill_generator") 
+            session_id: session / run ID
+            scope: Memory classification (see MemoryScope)
+            metadata: Additional metadata (symbol, task_id etc.)
         """
         if not await self._ensure_init():
             logger.info(
                 "[MemoryService] store SKIP — user=%s agent=%s scope=%s error=%s",
-                user_id, agent_id, scope, self._init_error or "mem0 不可用",
+                user_id, agent_id, scope, self._init_error or "mem0 Not available",
             )
-            return StoreResult(success=False, error=self._init_error or "mem0 不可用")
+            return StoreResult(success=False, error=self._init_error or "mem0 Not available")
 
         truncated = _truncate_messages(messages)
 
@@ -233,7 +233,7 @@ class MemoryService:
             )
             return StoreResult(memory_ids=ids, facts_extracted=count)
         except Exception as e:
-            logger.warning("[MemoryService] store 失败（已忽略）: %s", e)
+            logger.warning("[MemoryService] store failed (ignored): %s", e)
             return StoreResult(success=False, error=str(e))
 
     async def store_stock_analysis(
@@ -251,9 +251,9 @@ class MemoryService:
         evidence: Optional[List[str]] = None,
         next_checks: Optional[List[str]] = None,
     ) -> StoreResult:
-        """写入对象化股票分析长期记忆。"""
+        """Write objectized stock analysis to long-term memory."""
         if not str(symbol or "").strip() or not str(summary or "").strip():
-            return StoreResult(success=False, error="缺少 symbol 或 summary，跳过对象化记忆写入")
+            return StoreResult(success=False, error="Missing symbol or summary, skipping objectized memory writing")
 
         payload = StockAnalysisMemory(
             symbol=str(symbol or "").strip().upper(),
@@ -277,7 +277,7 @@ class MemoryService:
         )
 
     # ------------------------------------------------------------------
-    #  召回
+    #  recall
     # ------------------------------------------------------------------
 
     async def recall(
@@ -291,14 +291,14 @@ class MemoryService:
         limit: int = 5,
     ) -> List[MemoryItem]:
         """
-        语义召回相关记忆。
+        Semantic recall of relevant memories.
 
         Args:
-            query: 查询文本
-            user_id: 限定用户
-            agent_id: 限定 agent
-            scopes: 限定 scope 列表（None = 不限）
-            limit: 最大返回条数
+            query: Query text
+            user_id: Limited users
+            agent_id: limited agent
+            scopes: limited scope list (None = No limit)
+            limit: Maximum number of items returned
         """
         if not await self._ensure_init():
             return []
@@ -309,7 +309,7 @@ class MemoryService:
         kwargs: Dict[str, Any] = {"limit": limit}
 
         exact_filters = _build_mem0_exact_filters(normalized_scopes, normalized_metadata_filters) or {}
-        # mem0 v3 search() 不再支持顶层 user_id / agent_id，必须通过 filters 传递。
+        # mem0 v3 search() Top-level user_id/agent_id is no longer supported and must be passed through filters.
         if user_id:
             exact_filters["user_id"] = user_id
         if agent_id:
@@ -329,7 +329,7 @@ class MemoryService:
             except Exception:
                 if not exact_filters:
                     raise
-                logger.debug("[MemoryService] recall 过滤器回退到客户端过滤")
+                logger.debug("[MemoryService] recall Filter fallback to client side filtering")
                 fallback_kwargs = dict(kwargs)
                 fallback_kwargs.pop("filters", None)
                 fallback_kwargs["limit"] = max(fallback_kwargs.get("limit", limit), max(limit * 10, 50))
@@ -344,7 +344,7 @@ class MemoryService:
             items = _filter_items_by_metadata(items, normalized_metadata_filters)
             return items[:limit]
         except Exception as e:
-            logger.warning("[MemoryService] recall 失败（已降级）: %s", e)
+            logger.warning("[MemoryService] recall Failed (downgraded): %s", e)
             return []
 
     async def recall_formatted(
@@ -362,17 +362,17 @@ class MemoryService:
         per_scope_limit: int = 0,
     ) -> str:
         """
-        召回并格式化为可直接注入 LLM prompt 的文本。
+        Recalled and formatted into text that can be injected directly into the LLM prompt.
 
-        返回空字符串表示无可用记忆（调用方无需额外判断）。
+        Returning an empty string indicates that no memory is available (no additional judgment is required by the caller).
 
         Args:
-            ranking_profile: 排序策略（如 "agent_builder"、"assistant"）。
-                目前仅接受参数以兼容调用方，未来可实现基于 profile 的排序权重。
-            group_by_scope: 是否按 scope 分组返回。
-            per_scope_limit: group_by_scope=True 时，每个 scope 的最大条目数。
+            ranking_profile: sorting strategy (e.g. "agent_builder", "assistant") . 
+                Currently only parameters are accepted to be compatible with the caller, and profile-based sorting weights can be implemented in the future.
+            group_by_scope: Whether to return grouped by scope.
+            per_scope_limit: group_by_scope=True , the maximum number of entries per scope.
         """
-        # 如果需要按 scope 分组，扩大召回数量以确保每个 scope 有足够候选
+        # If grouping by scope is required, expand the number of recalls to ensure there are enough candidates for each scope
         recall_limit = limit
         if group_by_scope and per_scope_limit > 0:
             scope_count = max(len(scopes or []), 1)
@@ -389,7 +389,7 @@ class MemoryService:
         if not items:
             return ""
 
-        # 按 scope 分组并限制每个 scope 的条目数
+        # Group by scope and limit the number of entries per scope
         if group_by_scope and per_scope_limit > 0:
             scoped_buckets: Dict[str, list] = {}
             for item in items:
@@ -410,10 +410,10 @@ class MemoryService:
 
         if not lines:
             return ""
-        return "【历史记忆】\n" + "\n".join(lines) + "\n"
+        return " [historical memory]\n" + "\n".join(lines) + "\n"
 
     # ------------------------------------------------------------------
-    #  辅助
+    #  Auxiliary
     # ------------------------------------------------------------------
 
     async def get_user_summary(
@@ -421,7 +421,7 @@ class MemoryService:
         user_id: str,
         scopes: Optional[List[str]] = None,
     ) -> str:
-        """获取用户所有记忆的摘要文本（用于画像增强）"""
+        """Get the summary text of all the user s memories (for portrait enhancement)"""
         if not await self._ensure_init():
             return ""
 
@@ -446,9 +446,9 @@ class MemoryService:
             if not facts:
                 return ""
             summary_lines = [f"- {f}" for f in facts[:30]]
-            return "【用户记忆摘要】\n" + "\n".join(summary_lines) + "\n"
+            return " [User memory summary]\n" + "\n".join(summary_lines) + "\n"
         except Exception as e:
-            logger.warning("[MemoryService] get_user_summary 失败: %s", e)
+            logger.warning("[MemoryService] get_user_summary failed: %s", e)
             return ""
 
     async def get_all(
@@ -461,7 +461,7 @@ class MemoryService:
         page: int = 1,
     ) -> Dict[str, Any]:
         """
-        获取用户的所有记忆（分页）。
+        Get all the user s memories (pagination).
 
         Returns:
             {"items": [MemoryItem, ...], "total": int}
@@ -469,7 +469,7 @@ class MemoryService:
         if not await self._ensure_init():
             logger.info(
                 "[MemoryService] get_all SKIP — user=%s scopes=%s error=%s",
-                user_id, scopes, self._init_error or "mem0 不可用",
+                user_id, scopes, self._init_error or "mem0 Not available",
             )
             return {"items": [], "total": 0}
 
@@ -479,7 +479,7 @@ class MemoryService:
         kwargs: Dict[str, Any] = {"limit": 200}
         filters_for_mem0 = _build_mem0_exact_filters(normalized_scopes, normalized_metadata_filters)
         if user_id:
-            # mem0 v3 get_all 不再支持顶层 user_id，必须通过 filters 传递。
+            # mem0 v3 get_all Top-level user_id is no longer supported and must be passed through filters.
             if filters_for_mem0 is None:
                 filters_for_mem0 = {}
             filters_for_mem0["user_id"] = user_id
@@ -492,7 +492,7 @@ class MemoryService:
             except Exception:
                 if not filters_for_mem0:
                     raise
-                logger.debug("[MemoryService] get_all 过滤器回退到客户端过滤")
+                logger.debug("[MemoryService] get_all Filter fallback to client side filtering")
                 fallback_kwargs = dict(kwargs)
                 fallback_kwargs.pop("filters", None)
                 results = await self._mem.get_all(**fallback_kwargs)
@@ -514,23 +514,23 @@ class MemoryService:
             )
             return {"items": all_items[start:end], "total": total}
         except Exception as e:
-            logger.warning("[MemoryService] get_all 失败: %s", e)
+            logger.warning("[MemoryService] get_all failed: %s", e)
             return {"items": [], "total": 0}
 
     async def delete_memory(self, memory_id: str) -> bool:
-        """删除单条记忆"""
+        """Delete a single memory"""
         if not await self._ensure_init():
             return False
         try:
             await self._mem.delete(memory_id)
-            logger.info("[MemoryService] 已删除记忆: %s", memory_id)
+            logger.info("[MemoryService] Deleted memory: %s", memory_id)
             return True
         except Exception as e:
-            logger.warning("[MemoryService] delete 失败: %s", e)
+            logger.warning("[MemoryService] delete failed: %s", e)
             return False
 
     async def delete_all_user_memories(self, user_id: str) -> int:
-        """清除用户的全部记忆，返回删除数量"""
+        """Clear all user memories and return the number of deletions"""
         if not await self._ensure_init():
             return 0
         try:
@@ -544,14 +544,14 @@ class MemoryService:
                         count += 1
                     except Exception:
                         pass
-            logger.info("[MemoryService] 已清除用户 %s 的 %d 条记忆", user_id, count)
+            logger.info("[MemoryService] %d memories cleared for user %s", user_id, count)
             return count
         except Exception as e:
-            logger.warning("[MemoryService] delete_all 失败: %s", e)
+            logger.warning("[MemoryService] delete_all failed: %s", e)
             return 0
 
     async def health_check(self) -> Dict[str, Any]:
-        """连通性检查"""
+        """Connectivity check"""
         from .config import build_mem0_config, summarize_mem0_config
 
         config = build_mem0_config(self._db)
@@ -572,8 +572,8 @@ class MemoryService:
             }
         except Exception as e:
             err_msg = str(e)
-            # mem0 2.0.11 get_all() 在空结果时的已知 bug：
-            # 空查询触发 numpy "index 0 is out of bounds"，但此时向量库连通正常（仅无数据）
+            # mem0 2.0.11 get_all() Known bugs with empty results:
+            # Empty query triggers numpy "index 0 is out of bounds", But at this time, the vector library is connected normally (only no data)
             if "out of bounds" in err_msg:
                 return {
                     "ok": True,
@@ -590,16 +590,16 @@ class MemoryService:
 
 
 # ------------------------------------------------------------------
-#  内部工具函数
+#  Internal utility functions
 # ------------------------------------------------------------------
 
 _SCOPE_LABEL = {
-    MemoryScope.CONVERSATION: "对话",
-    MemoryScope.USER_PREFERENCE: "偏好",
-    MemoryScope.ANALYSIS_INSIGHT: "分析",
-    MemoryScope.SKILL_LESSON: "教训",
-    MemoryScope.AGENT_EXPERIENCE: "经验",
-    MemoryScope.TRADE_PATTERN: "交易",
+    MemoryScope.CONVERSATION: "dialogue",
+    MemoryScope.USER_PREFERENCE: "Preference",
+    MemoryScope.ANALYSIS_INSIGHT: "analysis",
+    MemoryScope.SKILL_LESSON: "Lesson",
+    MemoryScope.AGENT_EXPERIENCE: "experience",
+    MemoryScope.TRADE_PATTERN: "transaction",
 }
 
 
@@ -695,13 +695,13 @@ def _format_recall_item(item: MemoryItem) -> str:
         recommendation = str(meta.get("recommendation") or "").strip()
         parts = []
         if object_key:
-            parts.append(f"对象={object_key}")
+            parts.append(f"object={object_key}")
         if analysis_date:
-            parts.append(f"日期={analysis_date}")
+            parts.append(f"Date={analysis_date}")
         if summary:
-            parts.append(f"结论={summary}")
+            parts.append(f"Conclusion={summary}")
         if recommendation:
-            parts.append(f"建议={recommendation}")
+            parts.append(f"Suggestions={recommendation}")
         return f"- [{scope_label}] " + "；".join(parts)
     return f"- [{scope_label}] {item.memory}"
 
@@ -710,12 +710,12 @@ def _truncate_messages(
     messages: List[Dict[str, str]],
     max_chars: int = _STORE_MAX_CONTENT_CHARS,
 ) -> List[Dict[str, str]]:
-    """截断过长的消息内容，避免事实提取阶段浪费 LLM token"""
+    """Truncate overly long message content to avoid waste in the fact extraction phase LLM token"""
     result = []
     for msg in messages:
         content = msg.get("content", "")
         if len(content) > max_chars:
-            content = content[:max_chars] + "...(已截断)"
+            content = content[:max_chars] + "...(Truncated)"
         result.append({**msg, "content": content})
     return result
 

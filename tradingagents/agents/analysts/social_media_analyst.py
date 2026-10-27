@@ -2,124 +2,124 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 import time
 import json
 
-# 导入统一日志系统和分析模块日志装饰器
+# Import the unified log system and analysis module log decorator
 from tradingagents.utils.logging_init import get_logger
 from tradingagents.utils.tool_logging import log_analyst_module
 logger = get_logger("analysts.social_media")
 
-# 导入Google工具调用处理器
+# Import Google tool call processor
 from tradingagents.agents.utils.google_tool_handler import GoogleToolCallHandler
 from tradingagents.agents.utils.compliance_prompting import apply_compliance_guardrails
 
-# 导入模板客户端
+# Import template client
 from tradingagents.utils.template_client import get_agent_prompt
 
 
 def _get_company_name_for_social_media(ticker: str, market_info: dict) -> str:
     """
-    为社交媒体分析师获取公司名称
+    Get Company Name for Social Media Analyst
 
     Args:
-        ticker: 股票代码
-        market_info: 市场信息字典
+        ticker: Stock code
+        market_info: Market Information Dictionary
 
     Returns:
-        str: 公司名称
+        str: Company name
     """
     try:
         if market_info['is_china']:
-            # 中国A股：使用统一接口获取股票信息
+            # China A-shares: Obtain stock information using a unified interface
             from tradingagents.dataflows.interface import get_china_stock_info_unified
             stock_info = get_china_stock_info_unified(ticker)
 
-            logger.debug(f"📊 [社交媒体分析师] 获取股票信息返回: {stock_info[:200] if stock_info else 'None'}...")
+            logger.debug(f"📊 [social media analyst] Get stock information return: {stock_info[:200] if stock_info else 'None'}...")
 
-            # 解析股票名称
-            if stock_info and "股票名称:" in stock_info:
-                company_name = stock_info.split("股票名称:")[1].split("\n")[0].strip()
-                logger.info(f"✅ [社交媒体分析师] 成功获取中国股票名称: {ticker} -> {company_name}")
+            # Parse stock names
+            if stock_info and "Stock name:" in stock_info:
+                company_name = stock_info.split("Stock name:")[1].split("\n")[0].strip()
+                logger.info(f"✅ [social media analyst] Successfully obtained Chinese stock names: {ticker} -> {company_name}")
                 return company_name
             else:
-                # 降级方案：尝试直接从数据源管理器获取
-                logger.warning(f"⚠️ [社交媒体分析师] 无法从统一接口解析股票名称: {ticker}，尝试降级方案")
+                # Downgrade scenario: Try getting it directly from the data source manager
+                logger.warning(f"⚠️ [social media analyst] Unable to parse stock name from unified interface: {ticker}, Try a downgrade solution")
                 try:
                     from tradingagents.dataflows.data_source_manager import get_china_stock_info_unified as get_info_dict
                     info_dict = get_info_dict(ticker)
                     if info_dict and info_dict.get('name'):
                         company_name = info_dict['name']
-                        logger.info(f"✅ [社交媒体分析师] 降级方案成功获取股票名称: {ticker} -> {company_name}")
+                        logger.info(f"✅ [social media analyst] The downgrade plan successfully obtained the stock name: {ticker} -> {company_name}")
                         return company_name
                 except Exception as e:
-                    logger.error(f"❌ [社交媒体分析师] 降级方案也失败: {e}")
+                    logger.error(f"❌ [social media analyst] Downgrade plan also failed: {e}")
 
-                logger.error(f"❌ [社交媒体分析师] 所有方案都无法获取股票名称: {ticker}")
-                return f"股票代码{ticker}"
+                logger.error(f"❌ [social media analyst] All schemes are unable to obtain the stock name: {ticker}")
+                return f"Stock code{ticker}"
 
         elif market_info['is_hk']:
-            # 港股：使用改进的港股工具
+            # Hong Kong stocks: Use improved Hong Kong stocks tools
             try:
                 from tradingagents.dataflows.providers.hk.improved_hk import get_hk_company_name_improved
                 company_name = get_hk_company_name_improved(ticker)
-                logger.debug(f"📊 [社交媒体分析师] 使用改进港股工具获取名称: {ticker} -> {company_name}")
+                logger.debug(f"📊 [social media analyst] Use the improved Hong Kong stock tool to obtain names: {ticker} -> {company_name}")
                 return company_name
             except Exception as e:
-                logger.debug(f"📊 [社交媒体分析师] 改进港股工具获取名称失败: {e}")
-                # 降级方案：生成友好的默认名称
+                logger.debug(f"📊 [social media analyst] Improved Hong Kong stock tool failed to obtain name: {e}")
+                # Downgrade scenario: generate friendly default names
                 clean_ticker = ticker.replace('.HK', '').replace('.hk', '')
-                return f"港股{clean_ticker}"
+                return f"Hong Kong stocks{clean_ticker}"
 
         elif market_info['is_us']:
-            # 美股：使用简单映射或返回代码
+            # US stocks: use simple mapping or return codes
             us_stock_names = {
-                'AAPL': '苹果公司',
-                'TSLA': '特斯拉',
-                'NVDA': '英伟达',
-                'MSFT': '微软',
-                'GOOGL': '谷歌',
-                'AMZN': '亚马逊',
+                'AAPL': 'apple inc.',
+                'TSLA': 'Tesla',
+                'NVDA': 'NVIDIA',
+                'MSFT': 'Microsoft',
+                'GOOGL': 'Google',
+                'AMZN': 'Amazon',
                 'META': 'Meta',
-                'NFLX': '奈飞'
+                'NFLX': 'Netflix'
             }
 
-            company_name = us_stock_names.get(ticker.upper(), f"美股{ticker}")
-            logger.debug(f"📊 [社交媒体分析师] 美股名称映射: {ticker} -> {company_name}")
+            company_name = us_stock_names.get(ticker.upper(), f"US stocks{ticker}")
+            logger.debug(f"📊 [social media analyst] US stock name mapping: {ticker} -> {company_name}")
             return company_name
 
         else:
-            return f"股票{ticker}"
+            return f"stocks{ticker}"
 
     except Exception as e:
-        logger.error(f"❌ [社交媒体分析师] 获取公司名称失败: {e}")
-        return f"股票{ticker}"
+        logger.error(f"❌ [social media analyst] Failed to get company name: {e}")
+        return f"stocks{ticker}"
 
 
 def create_social_media_analyst(llm, toolkit):
     @log_analyst_module("social_media")
     def social_media_analyst_node(state):
-        # 🔧 工具调用计数器 - 防止无限循环
+        # 🔧 Tool call counter - prevent infinite loops
         tool_call_count = state.get("sentiment_tool_call_count", 0)
-        max_tool_calls = 3  # 最大工具调用次数
-        logger.info(f"🔧 [死循环修复] 当前工具调用次数: {tool_call_count}/{max_tool_calls}")
+        max_tool_calls = 3  # Maximum number of tool calls
+        logger.info(f"🔧 [Infinite loop repair] Current number of tool calls: {tool_call_count}/{max_tool_calls}")
 
         current_date = state["trade_date"]
         ticker = state["company_of_interest"]
 
-        # 获取股票市场信息
+        # Get stock market information
         from tradingagents.utils.stock_utils import StockUtils
         market_info = StockUtils.get_market_info(ticker)
 
-        # 获取公司名称
+        # Get company name
         company_name = _get_company_name_for_social_media(ticker, market_info)
-        logger.info(f"[社交媒体分析师] 公司名称: {company_name}")
+        logger.info(f"[social media analyst] Company name: {company_name}")
 
-        # 统一使用 get_stock_sentiment_unified 工具
-        # 该工具内部会自动识别股票类型并调用相应的情绪数据源
-        logger.info(f"[社交媒体分析师] 使用统一情绪分析工具，自动识别股票类型")
+        # Unified use of get_stock_sentiment_unified tool
+        # The tool internally automatically identifies the stock type and calls the corresponding sentiment data source
+        logger.info(f"[social media analyst] Use unified sentiment analysis tools to automatically identify stock types")
         tools = [toolkit.get_stock_sentiment_unified]
 
-        # 🆕 使用模板系统获取提示词
+        # 🆕 Use template system to get prompt words
         try:
-            # 准备模板变量
+            # Prepare template variables
             template_variables = {
                 "ticker": ticker,
                 "company_name": company_name,
@@ -141,9 +141,9 @@ def create_social_media_analyst(llm, toolkit):
                 context=None
             )
             if tpl_info:
-                logger.info(f"📚 [模板选择] source={tpl_info.get('source')} id={tpl_info.get('template_id')} version={tpl_info.get('version')} agent=analysts/social_media_analyst")
+                logger.info(f"📚 [Template selection] source={tpl_info.get('source')} id={tpl_info.get('template_id')} version={tpl_info.get('version')} agent=analysts/social_media_analyst")
 
-            # 从模板系统获取提示词
+            # Get prompt words from template system
             system_prompt = get_agent_prompt(
                 agent_type="analysts",
                 agent_name="social_media_analyst",
@@ -155,31 +155,31 @@ def create_social_media_analyst(llm, toolkit):
             )
             system_prompt = apply_compliance_guardrails(system_prompt, "social_media_analyst")
 
-            logger.info(f"✅ [社交媒体分析师] 成功从模板系统获取提示词 (长度: {len(system_prompt)})")
+            logger.info(f"✅ [social media analyst] Successfully obtained the prompt word from the template system (length: {len(system_prompt)})")
 
         except Exception as e:
-            logger.error(f"❌ [社交媒体分析师] 从模板系统获取提示词失败: {e}")
-            # 降级：使用硬编码提示词
+            logger.error(f"❌ [social media analyst] Failed to obtain prompt word from template system: {e}")
+            # Downgrade: Use hardcoded prompt words
             system_prompt = (
-                f"您是一位专业的社交媒体和投资情绪分析师。\n\n"
-                f"📋 **分析对象：**\n"
-                f"- 公司名称：{company_name}\n"
-                f"- 股票代码：{ticker}\n"
-                f"- 所属市场：{market_info['market_name']}\n"
-                f"- 分析日期：{current_date}\n\n"
-                f"🔧 **工具使用：**\n"
-                f"您可以使用以下工具：get_stock_sentiment_unified\n"
-                f"⚠️ 重要工作流程：\n"
-                f"1. 您的第一个动作必须是调用 get_stock_sentiment_unified 工具\n"
-                f"2. 该工具会自动识别股票类型并获取相应的情绪数据\n"
-                f"3. 只有在成功获取数据后，才能开始分析\n"
-                f"4. 您的回答必须基于工具返回的真实数据\n\n"
-                f"请使用中文，基于真实数据进行分析。"
+                f"You are a professional social media and investment sentiment analyst.\n\n"
+                f"📋 **Analysis objects:**\n"
+                f"- Company name:{company_name}\n"
+                f"- Stock code:{ticker}\n"
+                f"- Market:{market_info['market_name']}\n"
+                f"- Analysis date:{current_date}\n\n"
+                f"🔧 **Tool usage:**\n"
+                f"You can use the following tools:get_stock_sentiment_unified\n"
+                f"⚠️ Important workflow:\n"
+                f"1. Your first action must be to call the get_stock_sentiment_unified tool\n"
+                f"2. The tool automatically identifies stock types and obtains corresponding sentiment data\n"
+                f"3. Analysis can only begin after data has been successfully acquired\n"
+                f"4. Your answer must be based on real data returned by the tool\n\n"
+                f"Please use Chinese and conduct analysis based on real data."
             )
             system_prompt = apply_compliance_guardrails(system_prompt, "social_media_analyst")
-            logger.warning(f"⚠️ [社交媒体分析师] 使用降级提示词 (长度: {len(system_prompt)})")
+            logger.warning(f"⚠️ [social media analyst] Use demotion prompts (length: {len(system_prompt)})")
 
-        # 创建提示模板
+        # Create prompt template
         prompt = ChatPromptTemplate.from_messages(
             [
                 ("system", system_prompt),
@@ -189,39 +189,39 @@ def create_social_media_analyst(llm, toolkit):
 
         chain = prompt | llm.bind_tools(tools)
 
-        # 修复：传递字典而不是直接传递消息列表，以便 ChatPromptTemplate 能正确处理所有变量
+        # Fix: Pass dictionary instead of message list directly so that ChatPromptTemplate handles all variables correctly
         result = chain.invoke({"messages": state["messages"]})
 
-        # 使用统一的Google工具调用处理器
+        # Call handlers using unified Google tools
         if GoogleToolCallHandler.is_google_model(llm):
-            logger.info(f"📊 [社交媒体分析师] 检测到Google模型，使用统一工具调用处理器")
+            logger.info(f"📊 [social media analyst] Google model detected, processor invoked using unified tools")
             
-            # 创建分析提示词
+            # Create analysis prompt words
             analysis_prompt_template = GoogleToolCallHandler.create_analysis_prompt(
                 ticker=ticker,
                 company_name=company_name,
-                analyst_type="社交媒体情绪分析",
-                specific_requirements="重点关注投资者情绪、社交媒体讨论热度、舆论影响等。"
+                analyst_type="Social media sentiment analysis",
+                specific_requirements="Focus on investor sentiment, social media discussion popularity, public opinion influence, etc."
             )
             
-            # 处理Google模型工具调用
+            # Handling Google model tool calls
             report, messages = GoogleToolCallHandler.handle_google_tool_calls(
                 result=result,
                 llm=llm,
                 tools=tools,
                 state=state,
                 analysis_prompt_template=analysis_prompt_template,
-                analyst_name="社交媒体分析师"
+                analyst_name="social media analyst"
             )
         else:
-            # 非Google模型的处理逻辑
-            logger.debug(f"📊 [DEBUG] 非Google模型 ({llm.__class__.__name__})，使用标准处理逻辑")
+            # Processing logic for non-Google models
+            logger.debug(f"📊 [DEBUG] Non-Google model ({llm.__class__.__name__}), Use standard processing logic")
             
             report = ""
             if len(result.tool_calls) == 0:
                 report = result.content
 
-        # 🔧 更新工具调用计数器
+        # 🔧 Update tool call counter
         return {
             "messages": [result],
             "sentiment_report": report,

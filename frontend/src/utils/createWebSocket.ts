@@ -1,13 +1,13 @@
 /**
- * WebSocket 连接工具
+ * WebSocket Connection tools
  *
- * 统一封装 WebSocket 连接,处理:
- * - 认证: JWT token / 京东云模式(网关注入)
- * - 自动重连(指数退避)
- * - 心跳检测
- * - 消息自动 JSON 解析
+ * Unified encapsulation of WebSocket connections,Process:
+ * - Certification: JWT token / Jingdong cloud model(Gateway injection)
+ * - Automatically reconnect(exponential backoff)
+ * - Heartbeat detection
+ * - Automatic JSON parsing of messages
  *
- * 用法:
+ * Usage:
  *   const ws = createWebSocket('/api/ws/xxx', {
  *     onOpen: () => { ... },
  *     onMessage: (data) => { ... },
@@ -22,44 +22,44 @@
 import { isJdyunMode } from '@/utils/config'
 
 export interface CreateWebSocketOptions {
-  /** 连接成功回调 */
+  /** Connection success callback */
   onOpen?: () => void
-  /** 收到消息回调(已 JSON 解析) */
+  /** Receive message callback(JSON parsed) */
   onMessage?: (data: any) => void
-  /** 连接错误回调 */
+  /** Connection error callback */
   onError?: (error: Event) => void
-  /** 连接关闭回调 */
+  /** Connection close callback */
   onClose?: (event: CloseEvent) => void
-  /** 是否自动重连,默认 true */
+  /** Whether to automatically reconnect,Default true */
   autoReconnect?: boolean
-  /** 最大重连次数,默认 5 */
+  /** Maximum number of reconnections,Default 5 */
   maxReconnectAttempts?: number
-  /** 初始重连延迟(毫秒),默认 1000 */
+  /** Initial reconnect delay(milliseconds),Default 1000 */
   initialReconnectDelay?: number
-  /** 最大重连延迟(毫秒),默认 30000 */
+  /** Maximum reconnection delay(milliseconds),Default 30000 */
   maxReconnectDelay?: number
-  /** 心跳间隔(毫秒),默认 30000,设为 0 禁用 */
+  /** heartbeat interval(milliseconds),Default 30000,Set to 0 to disable */
   heartbeatInterval?: number
-  /** 心跳消息内容,默认 { type: 'ping' } */
+  /** Heartbeat message content,Default { type: 'ping' } */
   heartbeatMessage?: any
-  /** 自定义子协议 */
+  /** Custom sub-protocol */
   protocols?: string | string[]
-  /** 是否跳过 token 认证(公开 WS) */
+  /** Whether to skip token authentication(public WS) */
   skipAuth?: boolean
 }
 
 export interface ManagedWebSocket {
-  /** 原生 WebSocket 实例 */
+  /** Native WebSocket instance */
   socket: WebSocket | null
-  /** 发送消息(自动 JSON.stringify) */
+  /** Send message(automatic JSON.stringify) */
   send: (data: any) => void
-  /** 关闭连接 */
+  /** close connection */
   close: (code?: number, reason?: string) => void
-  /** 手动重连 */
+  /** Manual reconnect */
   reconnect: () => void
-  /** 当前重连次数 */
+  /** Current number of reconnections */
   reconnectAttempts: number
-  /** 是否已连接 */
+  /** Is it connected? */
   isConnected: () => boolean
 }
 
@@ -96,7 +96,7 @@ export function createWebSocket(
     if (skipAuth) return base
 
     const token = localStorage.getItem('auth-token') || ''
-    // 京东云模式: 不传 token,由网关注入 Basic Auth
+    // Jingdong cloud model: Not passed on token,Injected by gateway Basic Auth
     if (token && !isJdyunMode()) {
       return `${base}?token=${encodeURIComponent(token)}`
     }
@@ -130,7 +130,7 @@ export function createWebSocket(
     try {
       socket = protocols ? new WebSocket(url, protocols) : new WebSocket(url)
     } catch (error) {
-      console.error('[WS] 创建连接失败:', error)
+      console.error('[WS] Failed to create connection:', error)
       onError?.(error as unknown as Event)
       scheduleReconnect()
       return
@@ -147,13 +147,13 @@ export function createWebSocket(
         const data = JSON.parse(event.data)
         onMessage?.(data)
       } catch {
-        // 非 JSON 消息直接透传
+        // Non-JSON messages are directly transmitted transparently
         onMessage?.(event.data)
       }
     }
 
     socket.onerror = (error) => {
-      console.error('[WS] 连接错误:', error)
+      console.error('[WS] Connection error:', error)
       onError?.(error)
     }
 
@@ -192,7 +192,7 @@ export function createWebSocket(
 
     send(data: any) {
       if (!socket || socket.readyState !== WebSocket.OPEN) {
-        console.warn('[WS] 连接未就绪,消息未发送')
+        console.warn('[WS] Connection not ready,Message not sent')
         return
       }
       socket.send(typeof data === 'string' ? data : JSON.stringify(data))
@@ -229,7 +229,7 @@ export function createWebSocket(
     },
   }
 
-  // 初始连接
+  // initial connection
   connect()
 
   return managed

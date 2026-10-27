@@ -1,7 +1,7 @@
 """
-股票关注列表A股历史数据和财务数据同步任务
+Stock watch list A-share historical data and financial data synchronization task
 
-同步时按项目统一的数据源优先级（get_enabled_data_sources_async）顺序执行。
+During synchronization, it is executed in order according to the unified data source priority (get_enabled_data_sources_async) of the project.
 """
 
 import logging
@@ -17,28 +17,28 @@ from app.worker.financial_data_sync_service import FinancialDataSyncService
 
 logger = logging.getLogger("webapi")
 
-# ETF 代码前缀（与 ETF 同步服务保持一致）
+# ETF Symbol prefix (consistent with ETF sync service)
 ETF_SH_PREFIXES = ("50", "51", "52", "56", "58")
 ETF_SZ_PREFIXES = ("15", "16", "18")
 
 
 def _get_sync_data_sources(enabled_sources: List[str]) -> List[str]:
-    """从启用的数据源中排除 local，得到用于同步的数据源列表（按优先级顺序）。"""
+    """Exclude local from enabled data sources to get a list of data sources used for synchronization (in order of priority)."""
     sync_sources = [s for s in enabled_sources if s and s.lower() != "local"]
     return sync_sources if sync_sources else ["tushare", "akshare", "baostock"]
 
 
 async def get_all_favorite_a_stocks() -> List[str]:
     """
-    获取所有用户股票关注列表中的A股股票代码列表
+    Get the list of A-share stock codes in all users stock watch lists
     
     Returns:
-        A股股票代码列表（去重）
+        A Stock code list (duplication removed)
     """
     db = get_mongo_db()
     
     try:
-        # 从 user_favorites 集合中获取所有用户的股票关注列表
+        # Get all user's stock watchlists from user_favorites collection
         cursor = db.user_favorites.find({}, {"favorites": 1})
         
         a_stock_codes: Set[str] = set()
@@ -46,33 +46,33 @@ async def get_all_favorite_a_stocks() -> List[str]:
         async for doc in cursor:
             favorites = doc.get("favorites", [])
             for favorite in favorites:
-                # 只获取A股股票
-                market = favorite.get("market", "A股")
-                if market == "A股":
+                # Only get A shares
+                market = favorite.get("market", "A shares")
+                if market == "A shares":
                     stock_code = favorite.get("stock_code")
                     if stock_code:
-                        # 确保股票代码是6位数字格式
+                        # Make sure the ticker symbol is in 6 digit format
                         stock_code = str(stock_code).zfill(6)
                         a_stock_codes.add(stock_code)
         
         codes_list = sorted(list(a_stock_codes))
-        logger.info(f"📊 获取到 {len(codes_list)} 只A股股票关注列表需要同步")
+        logger.info(f"📊 Get {len(codes_list)} Only the A-share stock watch list needs to be synchronized")
         
         return codes_list
         
     except Exception as e:
-        logger.error(f"❌ 获取股票关注列表A股列表失败: {e}")
+        logger.error(f"❌ Failed to obtain stock watch list A-share list: {e}")
         return []
 
 
 def _is_etf_code(code: str) -> bool:
-    """判断 6 位代码是否为 ETF。"""
+    """Determine if the 6-digit code is an ETF."""
     normalized = str(code or "").zfill(6)
     return len(normalized) == 6 and normalized.startswith(ETF_SH_PREFIXES + ETF_SZ_PREFIXES)
 
 
 def _split_stock_and_etf_codes(codes: List[str]) -> Tuple[List[str], List[str]]:
-    """将代码列表拆分为普通股票和 ETF。"""
+    """Split the ticker list into common stocks and ETFs."""
     stock_codes: List[str] = []
     etf_codes: List[str] = []
 
@@ -86,30 +86,30 @@ def _split_stock_and_etf_codes(codes: List[str]) -> Tuple[List[str], List[str]]:
 
 
 def _filter_stock_codes_for_financial_sync(codes: List[str]) -> List[str]:
-    """财务同步仅保留股票代码，排除 ETF。"""
+    """Financial sync only retains ticker symbols and excludes ETFs."""
     stock_codes, _ = _split_stock_and_etf_codes(codes)
     return stock_codes
 
 
 async def sync_favorites_historical_data():
     """
-    同步股票关注列表中A股的历史数据。
-    按数据源优先级（get_enabled_data_sources_async）顺序，使用第一个支持指定股票列表的数据源。
+    Synchronize the historical data of A shares in the stock watch list.
+    In order of data source priority (get_enabled_data_sources_async), the first data source that supports the specified stock list is used.
     
     Returns:
-        同步结果统计
+        Synchronization result statistics
     """
-    logger.info("🔄 开始同步股票关注列表A股历史数据...")
+    logger.info("🔄 Start synchronizing stock watchlist A-share historical data...")
     
     try:
-        # 1. 获取所有股票关注列表中的A股代码
+        # 1. Get A-share codes in all stock watchlists
         a_stock_codes = await get_all_favorite_a_stocks()
         
         if not a_stock_codes:
-            logger.info("ℹ️ 没有A股股票关注列表需要同步历史数据")
+            logger.info("ℹ️ There is no A-share stock watch list that requires synchronization of historical data.")
             return {
                 "success": True,
-                "message": "没有A股股票关注列表需要同步",
+                "message": "There is no A-share stock watch list that needs to be synchronized.",
                 "total_count": 0,
                 "synced_count": 0,
                 "data_source": None
@@ -117,44 +117,44 @@ async def sync_favorites_historical_data():
 
         stock_codes, etf_codes = _split_stock_and_etf_codes(a_stock_codes)
         if etf_codes:
-            logger.info(f"🔀 股票关注列表历史同步识别出 ETF，改走 ETF 专用链路: {len(etf_codes)} 只")
+            logger.info(f"🔀 The history of the stock watch list synchronizes the identification of ETFs and switches to the ETF dedicated link.: {len(etf_codes)} only")
         if not stock_codes:
-            logger.info("ℹ️ 股票关注列表历史同步未包含普通股票，将仅执行 ETF 历史同步")
+            logger.info("ℹ️ Stock watchlist history sync does not include common stocks, only ETF history sync will be performed")
         
-        # 2. 按数据源优先级获取同步数据源列表（排除 local）
+        # 2. Get the list of synchronized data sources by data source priority (excluding local)
         enabled_sources = await get_enabled_data_sources_async("a_shares")
         data_sources = _get_sync_data_sources(enabled_sources)
-        logger.info(f"📊 股票关注列表历史数据同步数据源优先级: {data_sources}")
+        logger.info(f"📊 Stock watch list historical data synchronization data source priority: {data_sources}")
         
-        # 🔥 使用统一线程池服务执行同步任务（避免事件循环冲突）
+        # 🔥 Use unified thread pool service to perform synchronization tasks (avoid event loop conflicts)
         from app.worker.unified_thread_pool_sync_service import get_unified_thread_pool_sync_service
         
         unified_service = await get_unified_thread_pool_sync_service()
         
-        # 🔥 优化：不同数据源可以并行执行（因为它们使用不同的API，互不影响）
-        # 同一种数据源内部仍然是串行的（避免API限流）
+        # 🔥 Optimization: Different data sources can be executed in parallel (because they use different APIs and do not affect each other)
+        # The same data source is still serial internally (to avoid API current limiting)
         import asyncio
         
         tasks = []
         task_sources = []
         
-        # 创建并发任务（只包含支持指定股票列表的数据源）
+        # Create concurrent tasks (only include data sources that support the specified stock list)
         for source in data_sources:
             source_lower = source.lower()
             
-            # BaoStock 不支持指定股票列表，跳过
+            # BaoStock Specified stock list is not supported, skip
             if source_lower == "baostock":
-                logger.debug("BaoStock 历史同步不支持指定股票列表，跳过")
+                logger.debug("BaoStock Historical synchronization does not support the specified stock list, skip")
                 continue
 
             if not stock_codes:
                 continue
             
-            # 🔥 创建任务（使用统一线程池服务执行，避免事件循环冲突）
+            # 🔥 Create tasks (executed using a unified thread pool service to avoid event loop conflicts)
             if source_lower == "tushare":
                 async def sync_tushare(codes=stock_codes):
                     service = await get_tushare_sync_service()
-                    # 🔥 在线程池中执行同步方法
+                    # 🔥 Execute synchronized methods in thread pool
                     sync_result = await unified_service.execute_sync_method(
                         sync_method=service.sync_historical_data,
                         method_kwargs={
@@ -163,7 +163,7 @@ async def sync_favorites_historical_data():
                             "period": "daily"
                         },
                         job_id="favorites_tushare_historical_sync",
-                        rate_limit_per_minute=200  # Tushare速率限制
+                        rate_limit_per_minute=200  # Tushare rate limit
                     )
                     if sync_result.success:
                         return sync_result.result
@@ -174,7 +174,7 @@ async def sync_favorites_historical_data():
             elif source_lower == "akshare":
                 async def sync_akshare(codes=stock_codes):
                     service = await get_akshare_sync_service()
-                    # 🔥 在线程池中执行同步方法
+                    # 🔥 Execute synchronized methods in thread pool
                     sync_result = await unified_service.execute_sync_method(
                         sync_method=service.sync_historical_data,
                         method_kwargs={
@@ -183,7 +183,7 @@ async def sync_favorites_historical_data():
                             "period": "daily"
                         },
                         job_id="favorites_akshare_historical_sync",
-                        rate_limit_per_minute=60  # AKShare速率限制
+                        rate_limit_per_minute=60  # AKShare rate limit
                     )
                     if sync_result.success:
                         return sync_result.result
@@ -205,14 +205,14 @@ async def sync_favorites_historical_data():
             tasks.append(sync_etf())
             task_sources.append("etf")
         
-        # 并行执行所有数据源的同步任务
+        # Execute synchronization tasks for all data sources in parallel
         if tasks:
-            logger.info(f"🚀 开始并行同步 {len(tasks)} 个数据源的历史数据: {task_sources}")
+            logger.info(f"🚀 Start parallel synchronization {len(tasks)} historical data from data sources: {task_sources}")
             
-            # 使用 asyncio.gather 并行执行
+            # Parallel execution using asyncio.gather
             results = await asyncio.gather(*tasks, return_exceptions=True)
             
-            # 处理结果：合并所有成功的数据源结果
+            # Processing results: merge all successful data source results
             stock_success_count = 0
             stock_records = 0
             etf_success_count = 0
@@ -222,22 +222,22 @@ async def sync_favorites_historical_data():
             
             for i, (source, result) in enumerate(zip(task_sources, results)):
                 if isinstance(result, Exception):
-                    logger.warning(f"⚠️ {source} 历史数据同步失败: {result}")
+                    logger.warning(f"⚠️ {source} Historical data synchronization failed: {result}")
                     all_details[source] = {"error": str(result)}
                 else:
-                    # 🔥 调试：打印完整的返回结果，查看实际字段
-                    logger.debug(f"📊 {source} 历史数据同步返回结果: {result}")
+                    # 🔥 Debugging: print the complete return result and view the actual fields
+                    logger.debug(f"📊 {source} Historical data synchronization return results: {result}")
                     
-                    # 🔥 检查是否是跳过的情况（增量同步时间检查）
+                    # 🔥 Check whether it is a skip situation (incremental synchronization time check)
                     if result.get("skipped", False):
-                        skip_reason = result.get("skip_reason", result.get("message", "未知原因"))
-                        logger.info(f"⏸️ {source} 历史数据同步已跳过: {skip_reason}")
+                        skip_reason = result.get("skip_reason", result.get("message", "unknown reason"))
+                        logger.info(f"⏸️ {source} Historical data synchronization skipped: {skip_reason}")
                         all_details[source] = {
                             "skipped": True,
                             "skip_reason": skip_reason,
                             "stats": result.get("stats", {})
                         }
-                        # 🔥 跳过的情况也计入used_sources，但不计入成功数量
+                        # 🔥 Skipped situations are also counted in used_sources, but not counted in the number of successes.
                         used_sources.append(source)
                         continue
 
@@ -249,79 +249,79 @@ async def sync_favorites_historical_data():
                         etf_source = result.get("data_source_used")
                         used_sources.append(f"etf:{etf_source}" if etf_source else "etf")
                         all_details[source] = result
-                        logger.info(f"✅ ETF 历史数据同步完成: 成功={success_count}, 记录={records}, 数据源={etf_source}")
+                        logger.info(f"✅ ETF Historical data synchronization completed: success={success_count}, record={records}, data source={etf_source}")
                         continue
 
-                    # 🔥 检查返回结果中是否有嵌套的stats（某些情况下返回格式可能是 {"stats": {...}}）
+                    # 🔥 Check whether there are nested stats in the returned result (in some cases the return format may be {"stats": {...}}) 
                     if "stats" in result and isinstance(result["stats"], dict):
                         stats = result["stats"]
                         success_count = stats.get("success_count", 0)
                         records = stats.get("total_records", 0)
                     else:
-                        # 直接使用result中的字段
+                        # Use fields in result directly
                         success_count = result.get("success_count", 0)
                         records = result.get("total_records", 0)
                     
-                    # 🔥 调试日志：查看具体哪些字段有值
-                    logger.info(f"📊 {source} 历史数据返回: success_count={success_count}, total_records={records}, "
+                    # 🔥 Debug log: Check which fields have values
+                    logger.info(f"📊 {source} Historical data return: success_count={success_count}, total_records={records}, "
                                f"total_processed={result.get('total_processed', result.get('stats', {}).get('total_processed', 'N/A'))}, "
                                f"error_count={result.get('error_count', result.get('stats', {}).get('error_count', 'N/A'))}, "
                                f"result keys={list(result.keys())}")
 
-                    stock_success_count = max(stock_success_count, success_count)  # 取最大值（因不同数据源可能覆盖相同的股票）
-                    stock_records += records  # 累加记录数（不同数据源的数据会合并）
+                    stock_success_count = max(stock_success_count, success_count)  # Take the maximum value (because different data sources may cover the same stocks)
+                    stock_records += records  # Cumulative number of records (data from different data sources will be merged)
                     used_sources.append(source)
                     all_details[source] = result
-                    logger.info(f"✅ {source} 历史数据同步完成: 成功={success_count}, 记录={records}")
+                    logger.info(f"✅ {source} Historical data synchronization completed: success={success_count}, record={records}")
 
             total_success_count = stock_success_count + etf_success_count
             total_records = stock_records + etf_records
 
             if not used_sources:
-                logger.warning("⚠️ 股票关注列表历史数据同步：所有数据源都失败")
+                logger.warning("⚠️ Stock watchlist historical data sync: all data sources failed")
                 return {
                     "success": False,
-                    "message": "所有数据源同步失败",
+                    "message": "Synchronization of all data sources failed",
                     "total_count": len(a_stock_codes),
                     "synced_count": 0,
                     "data_source": None,
-                    "error": "所有数据源同步失败",
+                    "error": "Synchronization of all data sources failed",
                     "details": all_details
                 }
             
             logger.info(
-                f"✅ 股票关注列表A股历史数据同步完成（数据源: {', '.join(used_sources)}）: "
-                f"股票数={len(a_stock_codes)}, 成功={total_success_count}, 记录数={total_records}"
+                f"✅ Stock watch list A-share historical data is synchronized (data source: {', '.join(used_sources)}) : "
+                f"Number of shares={len(a_stock_codes)}, success={total_success_count}, Number of records={total_records}"
             )
             
             return {
                 "success": True,
-                "message": "股票关注列表A股历史数据同步完成",
+                "message": "Stock watch list A-share historical data is synchronized",
                 "total_count": len(a_stock_codes),
                 "synced_count": total_success_count,
                 "total_records": total_records,
                 "stock_count": len(stock_codes),
                 "etf_count": len(etf_codes),
                 "data_source": ", ".join(used_sources) if used_sources else None,
-                "data_sources": used_sources,  # 🔥 新增：返回所有成功的数据源列表
-                "details": all_details  # 🔥 新增：返回所有数据源的详细结果
+                "data_sources": used_sources,  # 🔥 New: Return list of all successful data sources
+                "details": all_details  # 🔥 New: Return detailed results for all data sources
             }
         else:
-            logger.warning("⚠️ 股票关注列表历史数据同步：无可用数据源（已尝试 tushare/akshare）")
+            logger.warning("⚠️ Stock watch list historical data synchronization: no data source available (tried tushare/akshare)")
             return {
                 "success": False,
-                "message": "无可用数据源或全部失败",
+                "message": "No data sources available or all failed",
                 "total_count": len(a_stock_codes),
                 "synced_count": 0,
                 "data_source": None,
-                "error": "无可用数据源"
+                "error": "No data source available"
             }
         
     except Exception as e:
-        logger.error(f"❌ 股票关注列表A股历史数据同步失败: {e}", exc_info=True)
+        logger.error(f"❌ Stock watch list A-share historical data synchronization failed: {e}", exc_info=True)
         return {
             "success": False,
-            "message": f"同步失败: {str(e)}",
+            "message": f"Sync failed: {str(e)}",
             "total_count": 0,
             "synced_count": 0,
             "error": str(e)
@@ -330,39 +330,39 @@ async def sync_favorites_historical_data():
 
 async def sync_favorites_financial_data():
     """
-    同步股票关注列表中A股的财务数据。
-    按数据源优先级（get_enabled_data_sources_async）顺序同步。
+    Synchronize the financial data of A shares in the stock watch list.
+    Synchronize in order of data source priority (get_enabled_data_sources_async).
     
     Returns:
-        同步结果统计
+        Synchronization result statistics
     """
-    logger.info("💰 开始同步股票关注列表A股财务数据...")
+    logger.info("💰 Start synchronizing stock watchlist A-share financial data...")
     
     try:
-        # 1. 获取所有股票关注列表中的A股代码
+        # 1. Get A-share codes in all stock watchlists
         a_stock_codes = await get_all_favorite_a_stocks()
         
         if not a_stock_codes:
-            logger.info("ℹ️ 没有A股股票关注列表需要同步财务数据")
+            logger.info("ℹ️ No A-share stock watchlist needs to synchronize financial data")
             return {
                 "success": True,
-                "message": "没有A股股票关注列表需要同步",
+                "message": "There is no A-share stock watch list that needs to be synchronized.",
                 "total_count": 0,
                 "synced_count": 0
             }
         
-        # 财务数据仅对股票同步，ETF 走 ETF 专用数据链路。
+        # Financial data is only synchronized for stocks, and ETFs use ETF-specific data links.
         stock_codes = _filter_stock_codes_for_financial_sync(a_stock_codes)
         skipped_etf_count = len(a_stock_codes) - len(stock_codes)
 
         if skipped_etf_count > 0:
-            logger.info(f"⏭️ 股票关注列表财务同步已排除 ETF: {skipped_etf_count} 只")
+            logger.info(f"⏭️ Stock Watchlist Financial Sync Excluded ETF: {skipped_etf_count} only")
 
         if not stock_codes:
-            logger.info("ℹ️ 股票关注列表中仅包含 ETF，无需执行股票财务同步")
+            logger.info("ℹ️ Only ETFs are included in the stock watchlist, no stock financial sync is required")
             return {
                 "success": True,
-                "message": "仅包含 ETF，已跳过股票财务同步",
+                "message": "Only includes ETFs, stock financial sync has been skipped",
                 "total_count": len(a_stock_codes),
                 "synced_count": 0,
                 "error_count": 0,
@@ -370,26 +370,26 @@ async def sync_favorites_financial_data():
                 "details": {}
             }
 
-        # 2. 按数据源优先级获取同步数据源列表（排除 local）
+        # 2. Get the list of synchronized data sources by data source priority (excluding local)
         enabled_sources = await get_enabled_data_sources_async("a_shares")
         data_sources = _get_sync_data_sources(enabled_sources)
-        logger.info(f"📊 股票关注列表财务数据同步数据源优先级: {data_sources}")
+        logger.info(f"📊 Stock Watch List Financial Data Synchronization Data Source Priority: {data_sources}")
         
-        # 3. 使用财务数据同步服务，按优先级顺序同步
+        # 3. Use the financial data synchronization service to synchronize in order of priority
         financial_service = FinancialDataSyncService()
         await financial_service.initialize()
         
-        # 同步财务数据（获取最近20期，约5年），数据源按优先级顺序
+        # Synchronize financial data (get the last 20 periods, about 5 years), data sources in order of priority
         result = await financial_service.sync_financial_data(
             symbols=stock_codes,
             data_sources=data_sources,
-            report_types=["quarterly", "annual"],  # 季报和年报
+            report_types=["quarterly", "annual"],  # Quarterly and annual reports
             batch_size=50,
             delay_seconds=1.0,
-            job_id="favorites_financial_sync"  # 🔥 添加job_id用于进度跟踪
+            job_id="favorites_financial_sync"  # 🔥 Add job_id for progress tracking
         )
         
-        # 统计同步结果
+        # Statistical synchronization results
         total_synced = 0
         total_errors = 0
         for source, stats in result.items():
@@ -397,16 +397,16 @@ async def sync_favorites_financial_data():
             total_errors += stats.error_count
         
         logger.info(
-            f"✅ 股票关注列表A股财务数据同步完成: "
-            f"股票数={len(stock_codes)}, "
-            f"排除ETF={skipped_etf_count}, "
-            f"成功同步={total_synced}, "
-            f"失败={total_errors}"
+            f"✅ Stock watch list A-share financial data is synchronized: "
+            f"Number of shares={len(stock_codes)}, "
+            f"exclude ETF={skipped_etf_count}, "
+            f"Synced successfully={total_synced}, "
+            f"failed={total_errors}"
         )
         
         return {
             "success": True,
-            "message": "股票关注列表A股财务数据同步完成",
+            "message": "Stock watch list A-share financial data is synchronized",
             "total_count": len(stock_codes),
             "synced_count": total_synced,
             "error_count": total_errors,
@@ -420,10 +420,10 @@ async def sync_favorites_financial_data():
         }
         
     except Exception as e:
-        logger.error(f"❌ 股票关注列表A股财务数据同步失败: {e}", exc_info=True)
+        logger.error(f"❌ Stock watch list A-share financial data synchronization failed: {e}", exc_info=True)
         return {
             "success": False,
-            "message": f"同步失败: {str(e)}",
+            "message": f"Sync failed: {str(e)}",
             "total_count": 0,
             "synced_count": 0,
             "error": str(e)
@@ -432,50 +432,50 @@ async def sync_favorites_financial_data():
 
 async def run_favorites_data_sync():
     """
-    APScheduler任务：同步股票关注列表中A股的历史数据和财务数据
+    APScheduler Task: Synchronize the historical data and financial data of A shares in the stock watch list
     
-    这个任务会：
-    1. 获取所有用户股票关注列表中的A股股票代码
-    2. 同步这些股票的历史数据（增量同步）
-    3. 同步这些股票的财务数据（最近20期）
+    This task will:
+    1. Get the A-share stock codes in all users stock watch lists
+    2. Synchronize the historical data of these stocks (incremental synchronization)
+    3. Synchronize the financial data of these stocks (last 20 periods)
     """
     job_id = "favorites_data_sync"
-    logger.info("🚀 [APScheduler] 开始执行股票关注列表A股数据同步任务")
+    logger.info("🚀 [APScheduler] Start executing the stock watch list A-share data synchronization task")
     
     start_time = datetime.now()
     
     try:
-        # 导入进度更新函数
+        # Import progress update function
         from app.services.scheduler_service import update_job_progress
         
-        # 获取股票关注列表数量（用于进度计算）
+        # Get the number of stock watchlists (used for progress calculation)
         a_stock_codes = await get_all_favorite_a_stocks()
         total_stocks = len(a_stock_codes)
         
-        # 更新进度：开始（0%）
+        # Update progress: Started (0%)
         try:
             await update_job_progress(
                 job_id=job_id,
                 progress=0,
-                message="开始同步股票关注列表A股数据...",
+                message="Start synchronizing stock watchlist A-share data...",
                 total_items=total_stocks if total_stocks > 0 else 1
             )
         except Exception as e:
-            logger.warning(f"⚠️ 更新任务进度失败: {e}")
+            logger.warning(f"⚠️ Failed to update task progress: {e}")
         
-        # 🔥 优化：历史数据和财务数据可以并行执行（因为它们使用不同的API，互不影响）
-        # 1. 并行执行历史数据和财务数据同步
+        # 🔥 Optimization: Historical data and financial data can be executed in parallel (because they use different APIs and do not affect each other)
+        # 1. Perform historical and financial data synchronization in parallel
         try:
             await update_job_progress(
                 job_id=job_id,
                 progress=10,
-                message="正在并行同步历史数据和财务数据...",
+                message="Synchronizing historical and financial data in parallel...",
                 total_items=total_stocks if total_stocks > 0 else 1
             )
         except Exception:
             pass
         
-        # 使用 asyncio.gather 并行执行历史数据和财务数据同步
+        # Use asyncio.gather to perform historical and financial data synchronization in parallel
         import asyncio
         hist_task = sync_favorites_historical_data()
         fin_task = sync_favorites_financial_data()
@@ -486,28 +486,28 @@ async def run_favorites_data_sync():
             return_exceptions=True
         )
         
-        # 处理异常结果
+        # Handle abnormal results
         if isinstance(hist_result, Exception):
-            logger.error(f"❌ 历史数据同步失败: {hist_result}", exc_info=True)
+            logger.error(f"❌ Historical data synchronization failed: {hist_result}", exc_info=True)
             hist_result = {
                 "success": False,
-                "message": f"历史数据同步失败: {str(hist_result)}",
+                "message": f"Historical data synchronization failed: {str(hist_result)}",
                 "total_count": total_stocks,
                 "synced_count": 0,
                 "error": str(hist_result)
             }
         
         if isinstance(fin_result, Exception):
-            logger.error(f"❌ 财务数据同步失败: {fin_result}", exc_info=True)
+            logger.error(f"❌ Financial data synchronization failed: {fin_result}", exc_info=True)
             fin_result = {
                 "success": False,
-                "message": f"财务数据同步失败: {str(fin_result)}",
+                "message": f"Financial data synchronization failed: {str(fin_result)}",
                 "total_count": total_stocks,
                 "synced_count": 0,
                 "error": str(fin_result)
             }
         
-        # 更新进度：并行同步完成（90%）
+        # Update progress: Parallel synchronization completed (90%)
         try:
             hist_synced = hist_result.get('synced_count', 0) if isinstance(hist_result, dict) else 0
             fin_synced = fin_result.get('synced_count', 0) if isinstance(fin_result, dict) else 0
@@ -515,7 +515,7 @@ async def run_favorites_data_sync():
             await update_job_progress(
                 job_id=job_id,
                 progress=90,
-                message=f"并行同步完成: 历史数据 {hist_synced}/{total_stocks}, 财务数据 {fin_synced}/{total_stocks}",
+                message=f"Parallel synchronization completed: historical data {hist_synced}/{total_stocks}, financial data {fin_synced}/{total_stocks}",
                 total_items=total_stocks if total_stocks > 0 else 1,
                 processed_items=max(hist_synced, fin_synced)
             )
@@ -525,12 +525,12 @@ async def run_favorites_data_sync():
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         
-        # 更新进度：完成（100%）
+        # Update progress: Completed (100%)
         try:
             await update_job_progress(
                 job_id=job_id,
                 progress=100,
-                message=f"任务完成（耗时: {duration:.2f}秒）",
+                message=f"Task completed (time consuming): {duration:.2f}seconds)",
                 total_items=total_stocks if total_stocks > 0 else 1,
                 processed_items=total_stocks if total_stocks > 0 else 1
             )
@@ -538,10 +538,10 @@ async def run_favorites_data_sync():
             pass
         
         logger.info(
-            f"✅ [APScheduler] 股票关注列表A股数据同步任务完成 "
-            f"(耗时: {duration:.2f}秒)\n"
-            f"   历史数据: {hist_result.get('synced_count', 0)}/{hist_result.get('total_count', 0)} 只股票\n"
-            f"   财务数据: {fin_result.get('synced_count', 0)}/{fin_result.get('total_count', 0)} 只股票"
+            f"✅ [APScheduler] Stock watch list A-share data synchronization task completed "
+            f"(Time consuming: {duration:.2f}seconds)\n"
+            f"   historical data: {hist_result.get('synced_count', 0)}/{hist_result.get('total_count', 0)} only stocks\n"
+            f"   financial data: {fin_result.get('synced_count', 0)}/{fin_result.get('total_count', 0)} only stocks"
         )
         
         return {
@@ -552,15 +552,15 @@ async def run_favorites_data_sync():
         }
         
     except Exception as e:
-        logger.error(f"❌ [APScheduler] 股票关注列表A股数据同步任务失败: {e}", exc_info=True)
+        logger.error(f"❌ [APScheduler] Stock watch list A-share data synchronization task failed: {e}", exc_info=True)
         
-        # 更新进度：失败
+        # Update progress: failed
         try:
             from app.services.scheduler_service import update_job_progress
             await update_job_progress(
                 job_id=job_id,
                 progress=0,
-                message=f"任务失败: {str(e)}"
+                message=f"Task failed: {str(e)}"
             )
         except Exception:
             pass

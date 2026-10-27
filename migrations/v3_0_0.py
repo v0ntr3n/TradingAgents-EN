@@ -1,16 +1,16 @@
 """
 v3.0.0 migration
 
-新增集合索引：
-- agent_configs: 工坊 agent 配置
-- agent_versions: agent 版本记录
-- agent_specs: agent 规格
-- agent_workshop_sessions: 工坊会话
-- template_history: 模板迁移历史
-- skill_bindings: Skill-Agent 绑定
-- tool_execution_logs: 工具执行日志
+Add new collection index:
+- agent_configs: Workshop agent configuration
+- agent_versions: agent version record
+- agent_specs: agent Specifications
+- agent_workshop_sessions: workshop session
+- template_history: Template migration history
+- skill_bindings: Skill-Agent binding
+- tool_execution_logs: Tool execution log
 
-所有操作必须幂等（可安全多次运行）。
+All operations must be idempotent (safe to run multiple times).
 """
 
 import logging
@@ -18,11 +18,11 @@ import logging
 logger = logging.getLogger("migrations.v3_0_0")
 
 VERSION = "3.0.0"
-DESCRIPTION = "v3.0.0 新增集合索引"
+DESCRIPTION = "v3.0.0 Add new collection index"
 
 
 async def _create_index_safely(collection, keys, *, name=None, unique=False):
-    """安全创建索引，忽略已存在错误"""
+    """Create indexes safely, ignoring existing errors"""
     options = {}
     if name:
         options["name"] = name
@@ -31,17 +31,17 @@ async def _create_index_safely(collection, keys, *, name=None, unique=False):
 
     try:
         await collection.create_index(keys, **options)
-        logger.info(f"v3.0.0 migration: 创建索引 {name or keys} 于 {collection.name}")
+        logger.info(f"v3.0.0 migration: Create index {name or keys} at {collection.name}")
     except Exception as exc:
         logger.warning(
-            f"v3.0.0 migration: 创建索引 {name or keys} 于 {collection.name} 跳过: {exc}"
+            f"v3.0.0 migration: Create index {name or keys} at {collection.name} skip: {exc}"
         )
 
 
 async def upgrade(db):
     """v3.0.0 migration. All operations are idempotent."""
 
-    # 1. agent_configs 集合索引
+    # 1. agent_configs Collection index
     agent_configs = db["agent_configs"]
     await _create_index_safely(
         agent_configs,
@@ -65,7 +65,7 @@ async def upgrade(db):
         name="category_1",
     )
 
-    # 2. agent_versions 集合索引
+    # 2. agent_versions Collection index
     agent_versions = db["agent_versions"]
     await _create_index_safely(
         agent_versions,
@@ -84,7 +84,7 @@ async def upgrade(db):
         name="status_1",
     )
 
-    # 3. agent_specs 集合索引
+    # 3. agent_specs Collection index
     agent_specs = db["agent_specs"]
     await _create_index_safely(
         agent_specs,
@@ -103,7 +103,7 @@ async def upgrade(db):
         name="status_1",
     )
 
-    # 4. agent_workshop_sessions 集合索引
+    # 4. agent_workshop_sessions Collection index
     sessions = db["agent_workshop_sessions"]
     await _create_index_safely(
         sessions,
@@ -127,7 +127,7 @@ async def upgrade(db):
         name="stage_1",
     )
 
-    # 5. template_history 集合索引
+    # 5. template_history Collection index
     template_history = db["template_history"]
     await _create_index_safely(
         template_history,
@@ -140,7 +140,7 @@ async def upgrade(db):
         name="agent_name_timestamp_desc",
     )
 
-    # 6. skill_bindings 集合索引
+    # 6. skill_bindings Collection index
     skill_bindings = db["skill_bindings"]
     await _create_index_safely(
         skill_bindings,
@@ -154,7 +154,7 @@ async def upgrade(db):
         name="agent_id_1",
     )
 
-    # 7. tool_execution_logs 集合索引
+    # 7. tool_execution_logs Collection index
     tool_logs = db["tool_execution_logs"]
     await _create_index_safely(
         tool_logs,
@@ -177,11 +177,11 @@ async def upgrade(db):
         name="success_1",
     )
 
-    logger.info("v3.0.0 migration: 所有索引创建完成")
+    logger.info("v3.0.0 migration: All indexes are created")
 
 
 async def downgrade(db):
-    """回滚操作（可选）"""
-    # MongoDB 索引删除需要显式指定索引名称
-    # 为安全起见，downgrade 不自动删除索引
+    """Rollback operation (optional)"""
+    # MongoDB Index deletion requires explicitly specifying the index name
+    # For security reasons, downgrade does not automatically delete indexes
     pass

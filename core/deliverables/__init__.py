@@ -1,1 +1,1 @@
-"""交付物层（A10-D1）：声明式可选交付物的生成与校验"""
+"""Deliverable layer (A10-D1): Generation and verification of declarative optional deliverables"""

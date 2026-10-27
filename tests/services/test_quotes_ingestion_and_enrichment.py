@@ -52,9 +52,9 @@ def test_enhanced_screening_enriches_from_db(monkeypatch):
     class _FakeDbService:
         async def screen_stocks(self, conditions, limit, offset, order_by):
             items = [
-                {"code": "1", "name": "平安银行"},
-                {"code": "600000", "name": "浦发银行"},
-                {"code": "300750", "name": "宁德时代"},  # not present in quotes -> stays None
+                {"code": "1", "name": "Ping An Bank"},
+                {"code": "600000", "name": "Shanghai Pudong Development Bank"},
+                {"code": "300750", "name": "Ningde era"},  # not present in quotes -> stays None
             ]
             total = len(items)
             return items, total

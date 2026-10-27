@@ -1,7 +1,7 @@
 """
-股票关注列表列表管理工具
+Stock watchlist list management tool
 
-提供批量添加股票到股票关注列表列表的能力，适合与智能选股结果联动。
+Provides the ability to add stocks to the stock watch list in batches, suitable for linking with intelligent stock selection results.
 """
 
 import json
@@ -44,7 +44,7 @@ def _parse_tags(tags: str) -> list[str]:
 @register_tool(
     tool_id="list_favorite_stocks",
     name="查看股票关注列表",
-    description="查看用户的股票关注列表（即股票关注列表列表），可选按标签筛选。会返回股票代码、名称、市场和已有标签。",
+    description="View the user s stock watch list (that is, the stock watch list list), optionally filtering by tag. The ticker, name, market and existing tags are returned.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -54,13 +54,13 @@ def _parse_tags(tags: str) -> list[str]:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["查看股票关注列表列表", "浏览关注的股票", "按标签筛选股票关注列表", "确认已关注的股票"],
-    when_to_use="当用户想查看自己的股票关注列表、股票关注列表，或按标签筛选已关注的股票时使用。",
-    returns="返回文本格式的股票关注列表列表，包含股票名称、代码、市场和已有标签。",
+    when_to_use="It is used when users want to view their own stock watch list, stock watch list, or filter the stocks they have followed by tags.",
+    returns="Returns a list of stock watchlists in text format, containing stock name, symbol, market, and existing tags.",
 )
 async def list_favorite_stocks(
-    tag: Annotated[str, "可选，按标签筛选，例如 巴菲特；留空表示查看全部关注股票"] = "",
+    tag: Annotated[str, "Optional, filter by tag, such as Buffett; leave blank to view all stocks of interest"] = "",
 ) -> str:
-    """查看当前用户的股票关注列表（即股票关注列表），支持按标签筛选。"""
+    """View the current user s stock watch list (i.e. stock watch list), and supports filtering by tags."""
     from app.services.favorites_service import favorites_service
 
     user_id = require_current_user_id()
@@ -75,8 +75,8 @@ async def list_favorite_stocks(
 
     if not favorites:
         if normalized_tag:
-            return f"📂 你的股票关注列表中没有标签为「{normalized_tag}」的股票。"
-        return "📂 你的股票关注列表目前为空，还没有添加任何股票关注列表。"
+            return f"📂 There are no stocks in your watchlist tagged {normalized_tag}] of stocks."
+        return "📂 Your stock watchlist is currently empty, no stocks have been added to your watchlist yet."
 
     lines = []
     for item in favorites:
@@ -98,8 +98,8 @@ async def list_favorite_stocks(
 @tool
 @register_tool(
     tool_id="add_stocks_to_favorites",
-    name="批量添加股票到股票关注列表",
-    description="将一只或多只股票批量添加到用户股票关注列表列表，适合在智能选股完成后一次保存推荐结果；支持通过 tags 参数同时给这些股票打标签，并为已在股票关注列表中的股票补充标签。",
+    name="Add stocks to stock watchlist in batches",
+    description="Add one or more stocks to the user s stock watch list in batches, which is suitable for saving the recommendation results once after the intelligent stock selection is completed; it supports tagging these stocks at the same time through the tags parameter, and adding tags to the stocks already in the stock watch list.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -109,20 +109,20 @@ async def list_favorite_stocks(
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["批量添加股票关注列表", "保存智能选股结果", "给关注股票打标签", "补充已有股票关注列表标签"],
-    when_to_use="当用户想把一只或多只股票加入股票关注列表列表，或在智能选股完成后批量保存推荐结果时使用。",
-    returns="返回文本消息，包含新增、跳过、补充标签和失败的股票代码统计。",
+    when_to_use="It is used when the user wants to add one or more stocks to the stock watch list, or save the recommendation results in batches after the intelligent stock selection is completed.",
+    returns="Returns a text message with statistics for new, skipped, supplementary tags, and failed tickers.",
 )
 async def add_stocks_to_favorites(
     stocks_json: Annotated[
         str,
-        "股票 JSON 数组，例如 [{\"code\":\"600519\",\"name\":\"贵州茅台\",\"market\":\"A股\"}]",
+        "Stocks JSON array, e.g. [{\"code\":\"600519\",\"name\":\"Kweichow Moutai\",\"market\":\"A shares\"}]",
     ],
     tags: Annotated[
         str,
-        "可选，给这些股票同时打上的标签，逗号分隔，例如 巴菲特,高分红",
+        "Optional, tags to be given to these stocks at the same time, separated by commas, for example, Buffett,High dividends",
     ] = "",
 ) -> str:
-    """批量添加股票到当前用户的股票关注列表列表，并可同时补充标签。"""
+    """Add stocks in batches to the current user s stock watch list, and add tags at the same time."""
     from app.services.favorites_service import favorites_service
     from app.services.tags_service import tags_service
 
@@ -132,10 +132,10 @@ async def add_stocks_to_favorites(
     try:
         items = json.loads(stocks_json)
     except json.JSONDecodeError:
-        return "❌ 参数格式错误，请传入股票 JSON 数组。"
+        return "❌ The parameter format is wrong, please pass in the stock JSON array."
 
     if not isinstance(items, list) or not items:
-        return "❌ 请至少提供一只待加入股票关注列表的股票。"
+        return "❌ Please provide at least one stock to be added to the stock watchlist."
 
     normalized_items = []
     seen_codes = set()
@@ -153,7 +153,7 @@ async def add_stocks_to_favorites(
         })
 
     if not normalized_items:
-        return "❌ 未解析出有效的股票代码。"
+        return "❌ No valid stock symbol was parsed."
 
     existing_favorites = await favorites_service.get_user_favorites(user_id)
     existing_map = {
@@ -176,9 +176,9 @@ async def add_stocks_to_favorites(
                     await tags_service.create_tag(user_id=user_id, name=tag_name)
                     existing_tags.add(tag_name)
                 except Exception:
-                    logger.debug("[add_stocks_to_favorites] 创建标签失败，继续使用收藏标签聚合: %s", tag_name, exc_info=True)
+                    logger.debug("[add_stocks_to_favorites] Failed to create tags, continue to use favorite tag aggregation: %s", tag_name, exc_info=True)
         except Exception:
-            logger.debug("[add_stocks_to_favorites] 读取/创建标签失败，继续执行收藏更新", exc_info=True)
+            logger.debug("[add_stocks_to_favorites] Failed to read/create tags, continue to perform collection update", exc_info=True)
 
     added_codes = []
     skipped_codes = []
@@ -215,11 +215,11 @@ async def add_stocks_to_favorites(
             )
             added_codes.append(code)
         except Exception as e:
-            logger.warning("[add_stocks_to_favorites] 添加股票关注列表失败: %s %s", code, e)
+            logger.warning("[add_stocks_to_favorites] Failed to add stock watchlist: %s %s", code, e)
             failed_codes.append(code)
 
     lines = [
-        f"✅ 已添加 {len(added_codes)} 只股票到股票关注列表" if added_codes else "✅ 本次没有新增股票关注列表",
+        f"✅ 已添加 {len(added_codes)} 只股票到股票关注列表" if added_codes else "✅ There are no new stocks to watch this time",
     ]
     if added_codes:
         lines.append(f"- 新增: {', '.join(added_codes)}")

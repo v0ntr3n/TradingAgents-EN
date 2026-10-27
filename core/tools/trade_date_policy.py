@@ -7,7 +7,7 @@ from tradingagents.config.runtime_settings import get_timezone_name
 
 
 def apply_stable_data_cutoff(date_str: str, cutoff_hour: int = 19) -> str:
-    """在收盘后数据稳定前，将当日请求回退到上一自然日。"""
+    """Before the data stabilizes after the market closes, the current day s request will be rolled back to the previous natural day."""
     if not date_str:
         return date_str
 
@@ -34,11 +34,11 @@ def build_stable_data_cutoff_note(
     *,
     subject: str = "当日收盘后日频数据",
 ) -> str:
-    """构造对用户可见的稳定数据回退说明。"""
+    """Construct stable data fallback instructions visible to the user."""
     if not requested_date or not effective_date or str(requested_date) == str(effective_date):
         return ""
 
     return (
         f"当前尚无 {requested_date} 的{subject}，本次分析按前一可用交易日 "
-        f"{effective_date} 的口径执行。"
+        f"{effective_date} caliber execution."
     )

@@ -1,84 +1,84 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="配置向导"
+    title="Configuration Wizard"
     width="800px"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     :show-close="currentStep > 0"
   >
     <div class="config-wizard">
-      <!-- 步骤指示器 -->
+      <!-- step indicator -->
       <el-steps :active="currentStep" align-center finish-status="success">
-        <el-step title="欢迎" icon="el-icon-star-on" />
-        <el-step title="数据库配置" icon="el-icon-coin" />
-        <el-step title="大模型配置" icon="el-icon-cpu" />
-        <el-step title="数据源配置" icon="el-icon-data-board" />
-        <el-step title="完成" icon="el-icon-circle-check" />
+        <el-step title="welcome" icon="el-icon-star-on" />
+        <el-step title="Database configuration" icon="el-icon-coin" />
+        <el-step title="Large model configuration" icon="el-icon-cpu" />
+        <el-step title="Data source configuration" icon="el-icon-data-board" />
+        <el-step title="Complete" icon="el-icon-circle-check" />
       </el-steps>
 
-      <!-- 步骤内容 -->
+      <!-- Step content -->
       <div class="wizard-content">
-        <!-- 步骤 0: 欢迎 -->
+        <!-- steps 0: welcome -->
         <div v-if="currentStep === 0" class="step-content welcome-step">
           <div class="welcome-icon">
             <el-icon :size="80" color="#409EFF"><Setting /></el-icon>
           </div>
-          <h2>欢迎使用 TradingAgents-CN</h2>
+          <h2>Welcome TradingAgents-CN</h2>
           <p class="welcome-text">
-            让我们通过几个简单的步骤来配置您的系统。
-            这将帮助您快速开始使用股票分析功能。
+            Let s configure your system in a few simple steps.
+            This will help you quickly start using the stock analysis features.
           </p>
           <el-alert
-            title="提示"
+            title="Tips"
             type="info"
             :closable="false"
             show-icon
           >
             <template #default>
-              <div>您可以随时在"配置管理"页面修改这些设置。</div>
-              <div>如果您已经配置过系统，可以跳过此向导。</div>
+              <div>You can always"Configuration management"page to modify these settings.</div>
+              <div>If you have already configured your system, you can skip this wizard.</div>
             </template>
           </el-alert>
         </div>
 
-        <!-- 步骤 1: 数据库配置 -->
+        <!-- steps 1: Database configuration -->
         <div v-if="currentStep === 1" class="step-content">
-          <h3>数据库配置</h3>
+          <h3>Database configuration</h3>
           <p class="step-description">
-            系统需要连接到 MongoDB 和 Redis 数据库。
+            The system needs to connect to MongoDB and Redis databases.
           </p>
 
           <el-form :model="wizardData" label-width="120px">
-            <el-divider content-position="left">MongoDB 配置</el-divider>
-            <el-form-item label="主机地址">
+            <el-divider content-position="left">MongoDB Configuration</el-divider>
+            <el-form-item label="host address">
               <el-input
                 v-model="wizardData.mongodb.host"
                 placeholder="localhost"
               />
             </el-form-item>
-            <el-form-item label="端口">
+            <el-form-item label="port">
               <el-input
                 v-model="wizardData.mongodb.port"
                 placeholder="27017"
                 type="number"
               />
             </el-form-item>
-            <el-form-item label="数据库名">
+            <el-form-item label="Database name">
               <el-input
                 v-model="wizardData.mongodb.database"
                 placeholder="tradingagents"
               />
             </el-form-item>
 
-            <el-divider content-position="left">Redis 配置</el-divider>
-            <el-form-item label="主机地址">
+            <el-divider content-position="left">Redis Configuration</el-divider>
+            <el-form-item label="host address">
               <el-input
                 v-model="wizardData.redis.host"
                 placeholder="localhost"
               />
             </el-form-item>
-            <el-form-item label="端口">
+            <el-form-item label="port">
               <el-input
                 v-model="wizardData.redis.port"
                 placeholder="6379"
@@ -88,49 +88,49 @@
           </el-form>
 
           <el-alert
-            title="注意"
+            title="Note"
             type="warning"
             :closable="false"
             show-icon
-            description="数据库配置需要在 .env 文件中设置，此处仅用于验证连接。"
+            description="The database configuration needs to be set in the .env file, which is only used to verify the connection."
           />
         </div>
 
-        <!-- 步骤 2: 大模型配置 -->
+        <!-- steps 2: Large model configuration -->
         <div v-if="currentStep === 2" class="step-content">
-          <h3>大模型配置</h3>
+          <h3>Large model configuration</h3>
           <p class="step-description">
-            至少配置一个大模型 API 密钥，用于 AI 分析功能。
+            Configure at least one large model API key for AI analysis functionality.
           </p>
 
           <el-form :model="wizardData" label-width="120px">
-            <el-form-item label="选择大模型">
+            <el-form-item label="Choose a large model">
               <el-select
                 v-model="wizardData.llm.provider"
-                placeholder="请选择大模型提供商"
+                placeholder="Please select a large model provider"
                 @change="handleProviderChange"
               >
-                <el-option label="火山方舟（推荐，国产稳定）" value="volcengine" />
-                <el-option label="DeepSeek（推荐，性价比高）" value="deepseek" />
-                <el-option label="通义千问" value="dashscope" />
+                <el-option label="Volcano Ark (recommended, domestically produced and stable)" value="volcengine" />
+                <el-option label="DeepSeek (Recommended, cost-effective)" value="deepseek" />
+                <el-option label="Tongyi Qianwen" value="dashscope" />
                 <el-option label="OpenAI" value="openai" />
                 <el-option label="Google Gemini" value="google" />
               </el-select>
             </el-form-item>
 
-            <el-form-item v-if="wizardData.llm.provider" label="API 密钥">
+            <el-form-item v-if="wizardData.llm.provider" label="API key">
               <el-input
                 v-model="wizardData.llm.apiKey"
                 type="password"
-                placeholder="请输入 API 密钥"
+                placeholder="Please enter API key"
                 show-password
               />
             </el-form-item>
 
-            <el-form-item v-if="wizardData.llm.provider" label="模型名称">
+            <el-form-item v-if="wizardData.llm.provider" label="Model name">
               <el-select
                 v-model="wizardData.llm.modelName"
-                placeholder="请选择模型"
+                placeholder="Please select a model"
               >
                 <template v-for="model in availableModels" :key="model.value">
                   <el-option
@@ -144,7 +144,7 @@
 
           <el-alert
             v-if="wizardData.llm.provider"
-            :title="`如何获取 ${getProviderName(wizardData.llm.provider)} API 密钥？`"
+            :title="`How to get ${getProviderName(wizardData.llm.provider)} API Key?`"
             type="info"
             :closable="false"
             show-icon
@@ -158,7 +158,7 @@
                     type="primary"
                     target="_blank"
                   >
-                    前往获取 →
+                    Go to get →
                   </el-link>
                 </div>
               </div>
@@ -166,21 +166,21 @@
           </el-alert>
         </div>
 
-        <!-- 步骤 3: 数据源配置 -->
+        <!-- steps 3: Data source configuration -->
         <div v-if="currentStep === 3" class="step-content">
-          <h3>数据源配置</h3>
+          <h3>Data source configuration</h3>
           <p class="step-description">
-            选择股票数据源，用于获取行情数据和基本信息。
+            Select a stock data source to obtain market data and basic information.
           </p>
 
           <el-form :model="wizardData" label-width="120px">
-            <el-form-item label="默认数据源">
+            <el-form-item label="Default data source">
               <el-select
                 v-model="datasourceType"
-                placeholder="请选择数据源"
+                placeholder="Please select a data source"
               >
-                <el-option label="AKShare（推荐，免费无需密钥）" value="akshare" />
-                <el-option label="Tushare（专业A股数据）" value="tushare" />
+                <el-option label="AKShare (Recommended, free (no key required)" value="akshare" />
+                <el-option label="Tushare (Professional A-share data)" value="tushare" />
               </el-select>
             </el-form-item>
 
@@ -190,39 +190,39 @@
             >
               <el-input
                 v-model="datasourceToken"
-                placeholder="请输入 Tushare Token"
+                placeholder="Please enter Tushare Token"
               />
             </el-form-item>
           </el-form>
 
           <el-alert
             v-if="datasourceType === 'akshare'"
-            title="AKShare 无需配置"
+            title="AKShare No configuration required"
             type="success"
             :closable="false"
             show-icon
-            description="AKShare 是免费的数据源，无需 API 密钥即可使用。"
+            description="AKShare is a free data source that requires no API key to use."
           />
 
           <el-alert
             v-if="datasourceType === 'tushare'"
-            title="如何获取 Tushare Token？"
+            title="How to get Tushare Token?"
             type="info"
             :closable="false"
             show-icon
           >
             <template #default>
               <div>
-                <div>1. 访问 Tushare 官网注册账号</div>
-                <div>2. 邮箱验证后登录</div>
-                <div>3. 在个人中心获取 Token</div>
+                <div>1. Visit Tushare official website to register an account</div>
+                <div>2. Log in after email verification</div>
+                <div>3. Get it in personal center Token</div>
                 <div style="margin-top: 8px;">
                   <el-link
                     href="https://tushare.pro/weborder/#/login?reg=tacn"
                     type="primary"
                     target="_blank"
                   >
-                    前往注册 →
+                    Go to register →
                   </el-link>
                 </div>
               </div>
@@ -230,42 +230,42 @@
           </el-alert>
         </div>
 
-        <!-- 步骤 4: 完成 -->
+        <!-- steps 4: Complete -->
         <div v-if="currentStep === 4" class="step-content complete-step">
           <div class="complete-icon">
             <el-icon :size="80" color="#67C23A"><CircleCheck /></el-icon>
           </div>
-          <h2>配置完成！</h2>
+          <h2>Configuration completed!</h2>
           <p class="complete-text">
-            恭喜！您已经完成了基本配置。现在可以开始使用系统了。
+            Congratulations! You have completed the basic configuration. Now you can start using the system.
           </p>
 
           <div class="config-summary">
-            <h4>配置摘要</h4>
+            <h4>Configuration summary</h4>
             <el-descriptions :column="1" border>
-              <el-descriptions-item label="数据库">
+              <el-descriptions-item label="database">
                 MongoDB: {{ wizardData.mongodb.host }}:{{ wizardData.mongodb.port }}
               </el-descriptions-item>
-              <el-descriptions-item label="大模型">
+              <el-descriptions-item label="large model">
                 {{ getProviderName(wizardData.llm.provider) }} - {{ wizardData.llm.modelName }}
               </el-descriptions-item>
-              <el-descriptions-item label="数据源">
+              <el-descriptions-item label="data source">
                 {{ getDataSourceName(datasourceType) }}
               </el-descriptions-item>
             </el-descriptions>
           </div>
 
           <el-alert
-            title="下一步"
+            title="Next step"
             type="success"
             :closable="false"
             show-icon
           >
             <template #default>
               <div>
-                <div>• 访问"仪表盘"查看系统概览</div>
-                <div>• 访问"单股研究"开始研究股票</div>
-                <div>• 访问"配置管理"调整详细设置</div>
+                <div>• visit"Dashboard"View system overview</div>
+                <div>• visit"single stock research"Start researching stocks</div>
+                <div>• visit"Configuration management"Adjust detailed settings</div>
               </div>
             </template>
           </el-alert>
@@ -273,20 +273,20 @@
       </div>
     </div>
 
-    <!-- 底部按钮（必须是 el-dialog 的直接子元素） -->
+    <!-- Bottom button (must be a direct child of el-dialog) -->
     <template #footer>
       <div class="wizard-footer">
         <el-button
           v-if="currentStep > 0 && currentStep < 4"
           @click="handlePrevious"
         >
-          上一步
+          Previous step
         </el-button>
         <el-button
           v-if="currentStep === 0"
           @click="handleSkip"
         >
-          跳过向导
+          Skip wizard
         </el-button>
         <el-button
           v-if="currentStep < 4"
@@ -294,14 +294,14 @@
           @click="handleNext"
           :loading="saving"
         >
-          {{ currentStep === 0 ? '开始配置' : '下一步' }}
+          {{ currentStep === 0 ? 'Start configuration' : 'Next step' }}
         </el-button>
         <el-button
           v-if="currentStep === 4"
           type="primary"
           @click="handleComplete"
         >
-          完成
+          Complete
         </el-button>
       </div>
     </template>
@@ -313,7 +313,7 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Setting, CircleCheck } from '@element-plus/icons-vue'
 
-// 类型定义
+// type definition
 interface DataSourceConfig {
   type: string
   token: string
@@ -351,7 +351,7 @@ const emit = defineEmits<{
   (e: 'complete', data: WizardData): void
 }>()
 
-// 响应式数据
+// Responsive data
 const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
@@ -382,7 +382,7 @@ const wizardData = ref<WizardData>({
   }
 })
 
-// 可用模型列表
+// List of available models
 const availableModels = computed(() => {
   const provider = wizardData.value.llm.provider
   const models: Record<string, Array<{ label: string; value: string }>> = {
@@ -429,7 +429,7 @@ const availableModels = computed(() => {
   return models[provider] || []
 })
 
-// 数据源相关的计算属性，用于双向绑定
+// Computed properties related to data sources, used for two-way binding
 const datasourceType = computed({
   get: () => wizardData.value.datasource.type,
   set: (value: string) => {
@@ -445,7 +445,7 @@ const datasourceToken = computed({
 })
 
 
-// 方法
+// method
 const handleProviderChange = () => {
   wizardData.value.llm.modelName = ''
   if (availableModels.value.length > 0) {
@@ -455,9 +455,9 @@ const handleProviderChange = () => {
 
 const getProviderName = (provider: string) => {
   const names: Record<string, string> = {
-    volcengine: '火山方舟',
+    volcengine: 'Volcano Ark',
     deepseek: 'DeepSeek',
-    dashscope: '通义千问',
+    dashscope: 'Tongyi Qianwen',
     openai: 'OpenAI',
     google: 'Google Gemini'
   }
@@ -466,11 +466,11 @@ const getProviderName = (provider: string) => {
 
 const getProviderHelp = (provider: string) => {
   const helps: Record<string, string> = {
-    volcengine: '注册火山引擎账号，注册即领2500万Tokens，享豆包模型',
-    deepseek: '注册 DeepSeek 账号，在控制台创建 API Key',
-    dashscope: '注册阿里云账号，开通百炼服务，获取 API 密钥',
-    openai: '注册 OpenAI 账号，在 API Keys 页面创建密钥',
-    google: '注册 Google Cloud 账号，启用 Gemini API'
+    volcengine: 'Register a Volcano Engine account, receive 25 million Tokens upon registration, and enjoy Doubao models',
+    deepseek: 'Register a DeepSeek account and create it in the console API Key',
+    dashscope: 'Register an Alibaba Cloud account, activate the Bailian service, and obtain the API key',
+    openai: 'Register an OpenAI account and create a key on the API Keys page',
+    google: 'Register a Google Cloud account and enable Gemini API'
   }
   return helps[provider] || ''
 }
@@ -495,14 +495,14 @@ const getDataSourceName = (type: string) => {
 }
 
 const handleNext = async () => {
-  // 验证当前步骤
+  // Verify current step
   if (currentStep.value === 2 && !wizardData.value.llm.provider) {
-    ElMessage.warning('请选择大模型提供商')
+    ElMessage.warning('Please select a large model provider')
     return
   }
 
   if (currentStep.value === 2 && !wizardData.value.llm.apiKey) {
-    ElMessage.warning('请输入 API 密钥')
+    ElMessage.warning('Please enter API key')
     return
   }
 
@@ -520,7 +520,7 @@ const handleSkip = () => {
 const handleComplete = () => {
   emit('complete', wizardData.value)
   visible.value = false
-  ElMessage.success('配置向导完成！')
+  ElMessage.success('The configuration wizard is complete!')
 }
 </script>
 

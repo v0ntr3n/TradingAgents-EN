@@ -1,15 +1,15 @@
 <template>
   <div class="dev-panel">
-    <!-- 开发环境调试面板 -->
+    <!-- Development environment debugging panel -->
   </div>
 </template>
 
 <script setup lang="ts">
-// 开发环境调试面板逻辑
+// Development environment debugging panel logic
 </script>
 
 <style lang="scss" scoped>
 .dev-panel {
-  // 样式
+  // style
 }
 </style>

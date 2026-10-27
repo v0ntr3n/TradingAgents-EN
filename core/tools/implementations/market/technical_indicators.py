@@ -1,8 +1,8 @@
 """
-统一技术指标工具
+Unified Technical Indicators Tool
 
-自动识别股票类型（A股、港股、美股）并调用相应的数据源获取数据，
-然后使用 stockstats 计算技术指标。
+Automatically identify stock types (A shares, Hong Kong stocks, US stocks) and call the corresponding data sources to obtain data.
+Then use stockstats to calculate technical indicators.
 """
 
 import logging
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 @register_tool(
     tool_id="get_technical_indicators",
     name="统一技术指标分析",
-    description="获取股票的各类技术指标（MACD, RSI, KDJ, BOLL等），支持A股/港股/美股",
+    description="Get various technical indicators of stocks (MACD, RSI, KDJ, BOLL etc.), supports A shares/Hong Kong stocks/US stocks",
     category="market",
     is_online=True,
     auto_register=True,
@@ -32,40 +32,40 @@ logger = logging.getLogger(__name__)
     related_tools=["get_stock_market_data_unified", "get_stock_fundamentals_unified", "get_technical_factor_bundle_tool", "get_crossover_signals", "get_candlestick_patterns"],
 )
 def get_technical_indicators(
-    ticker: Annotated[str, "股票代码（支持A股、港股、美股）"],
-    indicators: Annotated[str, "技术指标列表，用逗号分隔，如 'macd,rsi_14,boll,kdj'"],
-    start_date: Annotated[str, "开始日期，格式：YYYY-MM-DD。通常为分析日期的前一年，以确保有足够数据计算指标"] = None,
-    end_date: Annotated[str, "结束日期，格式：YYYY-MM-DD。通常为分析日期"] = None
+    ticker: Annotated[str, "Stock code (supports A shares, Hong Kong stocks, and US stocks)"],
+    indicators: Annotated[str, "List of technical indicators, separated by commas, such as 'macd,rsi_14,boll,kdj'"],
+    start_date: Annotated[str, "Start date, format: YYYY-MM-DD. Usually the year before the analysis date to ensure there is enough data to calculate the indicator"] = None,
+    end_date: Annotated[str, "End date, format: YYYY-MM-DD. Usually the date of analysis"] = None
 ) -> str:
     """
-    获取统一的技术指标分析报告
+    Get a unified technical indicator analysis report
     
     Args:
-        ticker: 股票代码
-        indicators: 指标列表字符串，如 "macd,rsi,kdj"
-        start_date: 开始日期 (默认会自动计算为 end_date 前365天)
-        end_date: 结束日期 (默认为今天)
+        ticker: Stock code
+        indicators: Indicator list string, such as "macd,rsi,kdj"
+        start_date: start date (By default, it will be automatically calculated as 365 days before end_date)
+        end_date: end date (Default is today)
         
     Returns:
-        str: 格式化的技术指标报告
+        str: Formatted technical indicator reports
     """
-    # 1. 初始化日期
+    # 1. initialization date
     if not end_date:
         end_date = datetime.now().strftime("%Y-%m-%d")
     
     if not start_date:
-        # 默认回溯 365 天以确保 MA250 等长周期指标可用
+        # The default lookback is 365 days to ensure that long-term indicators such as MA250 are available
         start_dt = datetime.strptime(end_date, "%Y-%m-%d") - timedelta(days=365)
         start_date = start_dt.strftime("%Y-%m-%d")
 
-    # 2. 标准化股票代码
+    # 2. Standardized stock code
     original_ticker = ticker
     ticker = re.sub(r'\.(SZ|SH|BJ|sz|sh|bj)$', '', ticker.strip())
     
-    logger.info(f"📈 [技术指标] 分析股票: {ticker} ({start_date} -> {end_date})")
+    logger.info(f"📈 [Technical indicators] Analyze stocks: {ticker} ({start_date} -> {end_date})")
     
     try:
-        # 3. 识别市场
+        # 3. Identify the market
         market_info = StockUtils.get_market_info(ticker)
         is_china = market_info['is_china']
         is_hk = market_info['is_hk']
@@ -73,7 +73,7 @@ def get_technical_indicators(
         
         df = None
         
-        # 4. 获取原始数据 (DataFrame)
+        # 4. Get raw data (DataFrame)
         if is_china:
             from tradingagents.dataflows.providers.china.tushare import TushareProvider
             from tradingagents.dataflows.providers.china.akshare import AKShareProvider
@@ -92,7 +92,7 @@ def get_technical_indicators(
                         return asyncio.run(coro)
                     return loop.run_until_complete(coro)
 
-            # 优先尝试 Tushare
+            # Try first Tushare
             try:
                 provider = TushareProvider()
                 # TushareProvider needs async call
@@ -106,9 +106,9 @@ def get_technical_indicators(
                         'vol': 'volume'
                     })
             except Exception as e:
-                logger.warning(f"Tushare 获取数据失败: {e}")
+                logger.warning(f"Tushare Failed to get data: {e}")
             
-            # 降级到 AKShare
+            # downgrade to AKShare
             if df is None or df.empty:
                 try:
                     provider = AKShareProvider()
@@ -116,7 +116,7 @@ def get_technical_indicators(
                     df = run_async(provider.get_historical_data(ticker, start_date, end_date))
                     # AKShareProvider.get_historical_data already standardizes columns
                 except Exception as e:
-                    logger.warning(f"AKShare 获取数据失败: {e}")
+                    logger.warning(f"AKShare Failed to get data: {e}")
 
         elif is_hk:
             from tradingagents.dataflows.providers.hk.improved_hk import ImprovedHKStockProvider
@@ -134,24 +134,24 @@ def get_technical_indicators(
             except Exception as e:
                 logger.warning(f"美股数据获取失败: {e}")
 
-        # 5. 验证数据
+        # 5. Validate data
         if df is None or df.empty:
             return f"❌ 无法获取股票 {ticker} 的历史数据，无法计算技术指标。"
             
-        # 6. 计算指标 (使用 stockstats)
+        # 6. Calculate indicators (Use stockstats)
         from stockstats import wrap
         
-        # 确保列名符合 stockstats 要求 (open, high, low, close, volume)
-        # 我们的 get_daily_data 应该已经标准化了列名，但为了保险再次检查
+        # Make sure column names comply with stockstats requirements (open, high, low, close, volume)
+        # Our get_daily_data should already have normalized column names, but double check just to be safe
         df.columns = [c.lower() for c in df.columns]
         
-        # stockstats 需要 Date 列作为索引或列? 
-        # wrap() 通常接受 DataFrame
+        # stockstats Requires Date column as index or column? 
+        # wrap() usually accepted DataFrame
         stock = wrap(df)
         
         indicator_list = [i.strip() for i in indicators.split(',')]
         
-        # 扩展简写指标
+        # Extended abbreviation indicator
         expanded_list = []
         for ind in indicator_list:
             if ind.lower() == 'kdj':
@@ -162,21 +162,21 @@ def get_technical_indicators(
         
         report_lines = [f"## {original_ticker} 技术指标分析", f"日期范围: {start_date} 至 {end_date}", ""]
         
-        # 获取最近的数据（最后一行）
+        # Get the most recent data (last row)
         latest_date = df.index[-1] if isinstance(df.index, pd.DatetimeIndex) else df['date'].iloc[-1]
         report_lines.append(f"### 最新数据 ({latest_date})")
         report_lines.append(f"收盘价: {stock['close'].iloc[-1]:.2f}")
         
         for ind in indicator_list:
             try:
-                # 计算指标
+                # Calculate indicators
                 series = stock[ind]
                 val = series.iloc[-1]
                 
-                # 格式化输出
+                # Formatted output
                 val_str = f"{val:.4f}" if isinstance(val, (int, float)) else str(val)
                 
-                # 添加简单的趋势判断 (基于最后两天的变化)
+                # Add simple trend judgment (Based on changes in the last two days)
                 trend = ""
                 if len(series) >= 2:
                     prev_val = series.iloc[-2]
@@ -187,22 +187,22 @@ def get_technical_indicators(
                 
                 report_lines.append(f"- **{ind}**: {val_str} {trend}")
                 
-                # 对于某些指标，提供额外信息
+                # For some indicators, additional information is provided
                 if 'rsi' in ind:
                     status = "中性"
                     if val > 70: status = "超买 ⚠️"
                     elif val < 30: status = "超卖 💎"
                     report_lines.append(f"  - 状态: {status}")
                 elif 'macd' in ind and ind == 'macd':
-                    # MACD 包含 macd, macds (signal), macdh (hist)
+                    # MACD contains macd, macds (signal), macdh (hist)
                     macds = stock['macds'].iloc[-1]
                     macdh = stock['macdh'].iloc[-1]
                     report_lines.append(f"  - Signal: {macds:.4f}")
                     report_lines.append(f"  - Hist: {macdh:.4f}")
                     if macdh > 0 and stock['macdh'].iloc[-2] <= 0:
-                        report_lines.append(f"  - 信号: 金叉（正向动能信号）📈")
+                        report_lines.append(f"  - signal: Golden Cross (positive kinetic energy signal)📈")
                     elif macdh < 0 and stock['macdh'].iloc[-2] >= 0:
-                        report_lines.append(f"  - 信号: 死叉（负向动能信号）📉")
+                        report_lines.append(f"  - signal: Death Cross (negative kinetic energy signal)📉")
 
             except Exception as e:
                 report_lines.append(f"- {ind}: 计算失败 ({e})")
@@ -211,4 +211,4 @@ def get_technical_indicators(
 
     except Exception as e:
         logger.error(f"技术指标计算失败: {e}", exc_info=True)
-        return f"❌ 技术指标计算发生错误: {str(e)}"
+        return f"❌ Technical indicator calculation error occurred: {str(e)}"

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-测试SignalProcessor修复后的功能
+Test the repaired functionality of SignalProcessor
 """
 
 import sys
 import os
 from pathlib import Path
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -15,15 +15,15 @@ from dotenv import load_dotenv
 load_dotenv(project_root / ".env", override=True)
 
 def test_signal_processor_currency_fix():
-    """测试SignalProcessor的货币修复"""
+    """Test currency fix for SignalProcessor"""
     
     try:
         from tradingagents.graph.signal_processing import SignalProcessor
         from langchain_openai import ChatOpenAI
         
-        print("🔍 测试SignalProcessor货币修复...")
+        print("🔍 Test SignalProcessor currency fix...")
         
-        # 创建LLM（使用阿里百炼）
+        # Create LLM (using Alibaba Bailian)
         llm = ChatOpenAI(
             model="qwen-turbo",
             openai_api_base="https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -31,27 +31,27 @@ def test_signal_processor_currency_fix():
             temperature=0.1
         )
         
-        # 创建信号处理器
+        # Create signal handler
         processor = SignalProcessor(llm)
         
-        # 测试中国A股信号
+        # Test China A-share signals
         china_signal = """
-        基于对平安银行(000001)的综合分析，我们建议持有该股票。
+        Based on Ping An Bank(000001)Based on our comprehensive analysis, we recommend holding the stock.
         
-        技术面分析显示当前价格为12.50元，目标价位为15.00元。
-        基本面分析表明公司财务状况良好，ROE为12.5%。
+        Technical analysis shows the current price is 12.50 yuan, with a target price of 15.00 yuan.
+        Fundamental analysis shows that the company s financial position is strong, with an ROE of 12.5%.
         
-        置信度：75%
-        风险评分：40%
+        Confidence:75%
+        Risk score:40%
         
-        最终交易建议: **持有**
+        Final trading advice: **hold**
         """
         
-        print("📈 测试中国A股信号处理...")
+        print("📈 Testing China A-share signal processing...")
         china_decision = processor.process_signal(china_signal, "000001")
-        print(f"中国A股决策结果: {china_decision}")
+        print(f"China A-share decision results: {china_decision}")
         
-        # 测试美股信号
+        # Test US stock signals
         us_signal = """
         Based on comprehensive analysis of Apple Inc. (AAPL), we recommend BUY.
         
@@ -64,104 +64,104 @@ def test_signal_processor_currency_fix():
         Final Trading Recommendation: **BUY**
         """
         
-        print("📈 测试美股信号处理...")
+        print("📈 Test US stock signal processing...")
         us_decision = processor.process_signal(us_signal, "AAPL")
-        print(f"美股决策结果: {us_decision}")
+        print(f"US stock decision results: {us_decision}")
         
-        # 验证结果
+        # Verification results
         success = True
         
-        # 检查中国A股结果
-        if china_decision.get('action') not in ['买入', '持有', '卖出']:
-            print(f"❌ 中国A股动作错误: {china_decision.get('action')}")
+        # Check China A-share results
+        if china_decision.get('action') not in ['buy', 'hold', 'sell']:
+            print(f"❌ China A-share action error: {china_decision.get('action')}")
             success = False
         
         if china_decision.get('target_price') is None:
-            print("❌ 中国A股目标价位为空")
+            print("❌ China A-share target price is empty")
             success = False
         
-        # 检查美股结果
-        if us_decision.get('action') not in ['买入', '持有', '卖出']:
-            print(f"❌ 美股动作错误: {us_decision.get('action')}")
+        # Check US stock results
+        if us_decision.get('action') not in ['buy', 'hold', 'sell']:
+            print(f"❌ U.S. stock market moves wrong: {us_decision.get('action')}")
             success = False
         
         if us_decision.get('target_price') is None:
-            print("❌ 美股目标价位为空")
+            print("❌ The target price of US stocks is empty")
             success = False
         
         if success:
-            print("✅ SignalProcessor货币修复测试通过！")
+            print("✅ SignalProcessor Currency repair test passed!")
             return True
         else:
-            print("❌ SignalProcessor货币修复测试失败！")
+            print("❌ SignalProcessor Currency repair test failed!")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def test_web_currency_display():
-    """测试Web界面货币显示修复"""
+    """Test web interface currency display fix"""
     
     try:
         from web.components.results_display import render_decision_summary
         import streamlit as st
         
-        print("🌐 测试Web界面货币显示...")
+        print("🌐 Testing web interface currency display...")
         
-        # 模拟中国A股结果
+        # Simulate China A-share results
         china_results = {
             'stock_symbol': '000001',
             'decision': {
-                'action': '持有',
+                'action': 'hold',
                 'confidence': 0.75,
                 'risk_score': 0.40,
                 'target_price': 15.00,
-                'reasoning': '基于综合分析的投资建议'
+                'reasoning': 'Investment advice based on comprehensive analysis'
             }
         }
         
-        # 模拟美股结果
+        # Simulate U.S. stock results
         us_results = {
             'stock_symbol': 'AAPL',
             'decision': {
-                'action': '买入',
+                'action': 'buy',
                 'confidence': 0.80,
                 'risk_score': 0.30,
                 'target_price': 180.00,
-                'reasoning': '基于综合分析的投资建议'
+                'reasoning': 'Investment advice based on comprehensive analysis'
             }
         }
         
-        print("✅ Web界面货币显示修复已实现")
-        print("📝 中国A股应显示: ¥15.00")
-        print("📝 美股应显示: $180.00")
+        print("✅ Web Interface currency display fix has been implemented")
+        print("📝 China A shares should show: ¥15.00")
+        print("📝 US stocks should show: $180.00")
         
         return True
         
     except Exception as e:
-        print(f"❌ Web界面测试失败: {e}")
+        print(f"❌ Web Interface test failed: {e}")
         return False
 
 if __name__ == "__main__":
-    print("🧪 开始测试SignalProcessor修复...")
+    print("🧪 Start testing SignalProcessor fix...")
     print("=" * 50)
     
-    # 检查环境变量
+    # Check environment variables
     if not os.getenv("DASHSCOPE_API_KEY"):
-        print("❌ DASHSCOPE_API_KEY 环境变量未设置")
+        print("❌ DASHSCOPE_API_KEY Environment variable not set")
         sys.exit(1)
     
-    # 运行测试
+    # Run tests
     test1_result = test_signal_processor_currency_fix()
     test2_result = test_web_currency_display()
     
     print("=" * 50)
     if test1_result and test2_result:
-        print("🎉 所有测试通过！修复成功！")
+        print("🎉 All tests passed! Repair successful!")
         sys.exit(0)
     else:
-        print("❌ 部分测试失败，需要进一步调试")
+        print("❌ Some tests failed and require further debugging")
         sys.exit(1)

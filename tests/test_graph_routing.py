@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试图路由修复
+Test map routing fix
 """
 
 import os
@@ -8,113 +8,113 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def test_graph_routing():
-    """测试图路由是否正常工作"""
-    print("🔬 测试图路由修复")
+    """Test whether graph routing is working properly"""
+    print("🔬 Test map routing fix")
     print("=" * 60)
     
-    # 检查API密钥
+    # Check API key
     if not os.getenv("DEEPSEEK_API_KEY"):
-        print("❌ 未找到DEEPSEEK_API_KEY，无法测试")
+        print("❌ DEEPSEEK_API_KEY not found, unable to test")
         return False
     
     try:
         from tradingagents.graph.setup import TradingAgentsGraph
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        print("🔧 创建交易分析图...")
+        print("🔧 Create transaction analysis chart...")
         
-        # 配置DeepSeek
+        # Configuration DeepSeek
         config = DEFAULT_CONFIG.copy()
         config.update({
             "llm_provider": "deepseek",
             "deep_think_llm": "deepseek-chat",
             "quick_think_llm": "deepseek-chat",
-            "max_debate_rounds": 1,  # 减少轮次，快速测试
+            "max_debate_rounds": 1,  # Reduce rounds and test quickly
             "max_risk_discuss_rounds": 1,
-            "online_tools": False,  # 关闭在线工具，减少复杂度
+            "online_tools": False,  # Close online tools and reduce complexity
             "memory_enabled": False
         })
         
-        print(f"📊 配置信息:")
-        print(f"   LLM提供商: {config['llm_provider']}")
-        print(f"   深度思考模型: {config['deep_think_llm']}")
-        print(f"   快速思考模型: {config['quick_think_llm']}")
+        print(f"📊 Configuration information:")
+        print(f"   LLM provider: {config['llm_provider']}")
+        print(f"   deep thinking model: {config['deep_think_llm']}")
+        print(f"   quick thinking model: {config['quick_think_llm']}")
         
-        # 创建图实例
+        # Create graph instance
         graph = TradingAgentsGraph(config)
         
-        # 设置分析师（只选择市场分析师，减少复杂度）
-        print(f"📈 设置分析师...")
+        # Set analysts (select only market analysts to reduce complexity)
+        print(f"📈 Set up analysts...")
         graph.setup_and_compile(selected_analysts=["market"])
         
-        print(f"✅ 图设置完成")
+        print(f"✅ Picture setting completed")
         
-        # 准备输入
+        # ready to enter
         input_data = {
-            "company_of_interest": "AAPL",  # 使用美股，减少复杂度
+            "company_of_interest": "AAPL",  # Use US stocks to reduce complexity
             "trade_date": "2025-07-08"
         }
         
-        print(f"\n📊 开始测试分析: {input_data['company_of_interest']}")
-        print(f"📅 交易日期: {input_data['trade_date']}")
+        print(f"\n📊 Start test analysis: {input_data['company_of_interest']}")
+        print(f"📅 transaction date: {input_data['trade_date']}")
         print("\n" + "="*60)
-        print("开始图路由测试，观察是否有KeyError...")
+        print("Start the graph routing test and observe whether there is KeyError...")
         print("="*60)
         
-        # 运行分析
+        # Run analysis
         result = graph.run(input_data)
         
         print("="*60)
-        print("图路由测试完成！")
+        print("Graph routing test completed!")
         print("="*60)
         
-        # 输出结果摘要
+        # Summary of output results
         if result and "decision" in result:
             decision = result["decision"]
-            print(f"\n📋 分析结果摘要:")
-            print(f"   投资建议: {decision.get('action', 'N/A')}")
-            print(f"   置信度: {decision.get('confidence', 'N/A')}")
-            print(f"   目标价格: {decision.get('target_price', 'N/A')}")
+            print(f"\n📋 Summary of analysis results:")
+            print(f"   investment advice: {decision.get('action', 'N/A')}")
+            print(f"   Confidence: {decision.get('confidence', 'N/A')}")
+            print(f"   target price: {decision.get('target_price', 'N/A')}")
             
             return True
         else:
-            print("❌ 未获得有效的分析结果")
+            print("❌ No valid analysis results were obtained")
             return False
         
     except KeyError as e:
-        print(f"❌ 图路由KeyError: {e}")
-        print("   这表明节点名称映射仍有问题")
+        print(f"❌ graph routing KeyError: {e}")
+        print("   This indicates that there is still an issue with the node name mapping")
         return False
     except Exception as e:
-        print(f"❌ 其他错误: {e}")
+        print(f"❌ Other errors: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主函数"""
-    print("🔬 图路由修复测试")
+    """main function"""
+    print("🔬 Graph routing repair test")
     print("=" * 80)
-    print("📝 这个测试将验证图路由是否正常工作")
-    print("📝 主要检查是否还有KeyError: 'Bull Researcher'错误")
+    print("📝 This test will verify that graph routing is working properly")
+    print("📝 Mainly check whether there are still KeyError: 'Bull Researcher'Error")
     print("=" * 80)
     
     success = test_graph_routing()
     
     if success:
-        print("\n🎉 图路由测试成功！")
-        print("   KeyError问题已修复")
+        print("\n🎉 The graph routing test was successful!")
+        print("   KeyError Problem fixed")
     else:
-        print("\n❌ 图路由测试失败")
-        print("   需要进一步调试")
+        print("\n❌ Graph routing test failed")
+        print("   Need further debugging")
     
     return success
 

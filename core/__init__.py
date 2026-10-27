@@ -1,71 +1,71 @@
 """
-TradingAgents-CN 核心模块
+TradingAgents-CN core module
 
-此模块包含 TradingAgents-CN 的核心功能层，包括：
-- 统一 LLM 客户端 (llm/)
-- 智能体基类和注册表 (agents/)
-- 工作流引擎 (workflow/)
-- 提示词管理增强 (prompts/)
-- 授权管理 (licensing/)
+This module contains the core functional layers of TradingAgents-CN, including:
+- Unified LLM client (llm/)
+- Agent base class and registry (agents/)
+- workflow engine (workflow/)
+- Enhanced prompt word management (prompts/)
+- Authorization management (licensing/)
 
-与开源组件的关系:
-- 本模块构建在开源 'tradingagents' 包之上
-- 许可归属见本目录 LICENSE 文件
+Relationship to open source components:
+- This module is built on open source 'tradingagents' on the package
+- License ownership can be found in the LICENSE file in this directory.
 """
 
 __version__ = "1.0.0"
 __author__ = "TradingAgents-CN"
 
-# 延迟导入，避免循环依赖
+# Delay import to avoid circular dependencies
 def get_version():
-    """获取版本号"""
+    """Get version number"""
     return __version__
 
 
 def get_llm_client():
-    """获取统一 LLM 客户端"""
+    """Get the unified LLM client"""
     from .llm import UnifiedLLMClient
     return UnifiedLLMClient
 
 
 def get_workflow_engine():
-    """获取工作流引擎"""
+    """Get workflow engine"""
     from .workflow import WorkflowEngine
     return WorkflowEngine
 
 
 def get_agent_registry():
-    """获取智能体注册表"""
+    """Get the agent registry"""
     from .agents import AgentRegistry
     return AgentRegistry
 
 
-# 版本检查
+# version check
 def check_compatibility():
-    """检查与开源 tradingagents 的兼容性"""
+    """Check compatibility with open source tradingagents"""
     try:
         import tradingagents
         ta_version = getattr(tradingagents, '__version__', '0.0.0')
-        # 可以在这里添加版本兼容性检查
+        # Version compatibility checks can be added here
         return True, ta_version
     except ImportError:
         return False, None
 
 
 def get_license_manager():
-    """获取授权管理器"""
+    """Get authorization manager"""
     from .licensing import LicenseManager
     return LicenseManager
 
 
 def get_workflow_api():
-    """获取工作流 API"""
+    """Get workflow API"""
     from .api import WorkflowAPI
     return WorkflowAPI
 
 
 def get_agent_api():
-    """获取智能体 API"""
+    """Get the agent API"""
     from .api import AgentAPI
     return AgentAPI
 

@@ -1,20 +1,20 @@
 """
-持仓分析智能体适配器
+Position Analysis Agent Adapter
 
-包含以下智能体:
-- pa_technical: 技术面分析师 (v1 & v2)
-- pa_fundamental: 基本面分析师 (v1 & v2)
-- pa_risk: 风险评估师 (v1 & v2)
-- pa_advisor: 持仓研究观察员 (v1 & v2)
+Contains the following agents:
+- pa_technical: technical analyst (v1 & v2)
+- pa_fundamental: fundamental analyst (v1 & v2)
+- pa_risk: risk assessor (v1 & v2)
+- pa_advisor: Position Research Observer (v1 & v2)
 """
 
-# v1.0 Agents (基于BaseAgent)
+# v1.0 Agents (Based on BaseAgent)
 from .technical_analyst import TechnicalAnalystAgent
 from .fundamental_analyst import FundamentalAnalystAgent
 from .risk_assessor import RiskAssessorAgent
 from .action_advisor import ActionAdvisorAgent
 
-# v2.0 Agents (基于ResearcherAgent/ManagerAgent)
+# v2.0 Agents (Based on ResearcherAgent/ManagerAgent)
 from .technical_analyst_v2 import TechnicalAnalystV2
 from .fundamental_analyst_v2 import FundamentalAnalystV2
 from .risk_assessor_v2 import RiskAssessorV2

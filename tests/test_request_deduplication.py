@@ -1,6 +1,6 @@
 """
-测试请求去重机制
-验证并发请求不会导致重复的API调用
+Test request deduplication mechanism
+Verify that concurrent requests do not result in duplicate API calls
 """
 import asyncio
 import pytest
@@ -11,34 +11,34 @@ from app.services.foreign_stock_service import ForeignStockService
 @pytest.mark.asyncio
 async def test_concurrent_hk_quote_requests():
     """
-    测试并发港股行情请求的去重机制
+    Test the deduplication mechanism for concurrent Hong Kong stock quotation requests
     
-    场景：
-    1. 同时发起10个相同股票的请求
-    2. 验证只有1个实际的API调用
-    3. 所有请求都应该返回相同的结果
+    Scenario:
+    1. Initiate 10 requests for the same stock at the same time
+    2. Verify there is only 1 actual API call
+    3. All requests should return the same results
     """
-    # 创建服务实例
+    # Create service instance
     service = ForeignStockService(db=None)
     
-    # Mock 数据源优先级
+    # Mock Data source priority
     async def mock_get_source_priority(market):
         return ['akshare']
     
     service._get_source_priority = mock_get_source_priority
     
-    # Mock AKShare API调用（记录调用次数）
+    # Mock AKShare API Call (record the number of calls)
     call_count = 0
     
     def mock_get_hk_quote_from_akshare(code):
         nonlocal call_count
         call_count += 1
-        # 模拟API延迟
+        # Simulate API latency
         import time
         time.sleep(0.1)
         return {
             'code': code,
-            'name': '腾讯控股',
+            'name': 'Tencent Holdings',
             'price': 350.0,
             'open': 348.0,
             'high': 352.0,
@@ -51,39 +51,39 @@ async def test_concurrent_hk_quote_requests():
     
     service._get_hk_quote_from_akshare = mock_get_hk_quote_from_akshare
 
-    # 同时发起10个请求（使用 force_refresh=True 绕过缓存）
+    # Make 10 requests simultaneously (using force_refresh=True Bypass caching)
     code = '00700'
     tasks = [service._get_hk_quote(code, force_refresh=True) for _ in range(10)]
     
-    # 等待所有请求完成
+    # Wait for all requests to complete
     results = await asyncio.gather(*tasks)
     
-    # 验证结果
-    assert len(results) == 10, "应该返回10个结果"
-    assert call_count == 1, f"应该只调用1次API，实际调用了{call_count}次"
+    # Verification results
+    assert len(results) == 10, "should return 10 results"
+    assert call_count == 1, f"The API should only be called once, but it was actually called{call_count}times"
     
-    # 验证所有结果相同
+    # Verify all results are the same
     for result in results:
         assert result['code'] == code
         assert result['price'] == 350.0
     
-    print(f"✅ 测试通过：10个并发请求只触发了{call_count}次API调用")
+    print(f"✅ Test passed: 10 concurrent requests only triggered{call_count}API calls")
 
 
 @pytest.mark.asyncio
 async def test_concurrent_us_quote_requests():
     """
-    测试并发美股行情请求的去重机制
+    Test the deduplication mechanism for concurrent U.S. stock quotation requests
     """
     service = ForeignStockService(db=None)
     
-    # Mock 数据源优先级
+    # Mock Data source priority
     async def mock_get_source_priority(market):
         return ['yahoo_finance']
     
     service._get_source_priority = mock_get_source_priority
     
-    # Mock yfinance API调用
+    # Mock yfinance API call
     call_count = 0
     
     def mock_get_us_quote_from_yfinance(code):
@@ -106,38 +106,38 @@ async def test_concurrent_us_quote_requests():
     
     service._get_us_quote_from_yfinance = mock_get_us_quote_from_yfinance
 
-    # 同时发起10个请求（使用 force_refresh=True 绕过缓存）
+    # Make 10 requests simultaneously (using force_refresh=True Bypass caching)
     code = 'AAPL'
     tasks = [service._get_us_quote(code, force_refresh=True) for _ in range(10)]
     
-    # 等待所有请求完成
+    # Wait for all requests to complete
     results = await asyncio.gather(*tasks)
     
-    # 验证结果
+    # Verification results
     assert len(results) == 10
-    assert call_count == 1, f"应该只调用1次API，实际调用了{call_count}次"
+    assert call_count == 1, f"The API should only be called once, but it was actually called{call_count}times"
     
     for result in results:
         assert result['code'] == code
         assert result['price'] == 180.0
     
-    print(f"✅ 测试通过：10个并发请求只触发了{call_count}次API调用")
+    print(f"✅ Test passed: 10 concurrent requests only triggered{call_count}API calls")
 
 
 @pytest.mark.asyncio
 async def test_different_stocks_no_blocking():
     """
-    测试不同股票的请求不会互相阻塞
+    Testing requests for different stocks will not block each other
     """
     service = ForeignStockService(db=None)
 
-    # Mock 数据源优先级
+    # Mock Data source priority
     async def mock_get_source_priority(market):
         return ['akshare']
 
     service._get_source_priority = mock_get_source_priority
 
-    # Mock API调用
+    # Mock API call
     call_count = {}
 
     def mock_get_hk_quote_from_akshare(code):
@@ -150,7 +150,7 @@ async def test_different_stocks_no_blocking():
 
         return {
             'code': code,
-            'name': f'股票{code}',
+            'name': f'stocks{code}',
             'price': 100.0,
             'open': 99.0,
             'high': 101.0,
@@ -163,28 +163,28 @@ async def test_different_stocks_no_blocking():
 
     service._get_hk_quote_from_akshare = mock_get_hk_quote_from_akshare
 
-    # 同时请求3个不同的股票，每个股票5个并发请求（使用 force_refresh=True 绕过缓存）
-    # 使用不同的股票代码，避免与之前的测试冲突
+    # Request 3 different stocks simultaneously, 5 concurrent requests per stock (using force_refresh=True Bypass caching)
+    # Use a different ticker to avoid conflicts with previous tests
     codes = ['00001', '00002', '00003']
     tasks = []
     for code in codes:
         tasks.extend([service._get_hk_quote(code, force_refresh=True) for _ in range(5)])
 
-    # 等待所有请求完成
+    # Wait for all requests to complete
     results = await asyncio.gather(*tasks)
 
-    # 验证结果
-    assert len(results) == 15  # 3个股票 × 5个请求
+    # Verification results
+    assert len(results) == 15  # 3 stocks × 5 requests
 
-    # 每个股票应该只调用1次API
+    # should only be called 1 time per stock API
     for code in codes:
-        assert call_count.get(code, 0) == 1, f"股票{code}应该只调用1次API，实际调用了{call_count.get(code, 0)}次"
+        assert call_count.get(code, 0) == 1, f"stocks{code}The API should only be called once, but it was actually called{call_count.get(code, 0)}times"
 
-    print(f"✅ 测试通过：3个不同股票各5个并发请求，每个股票只触发了1次API调用")
+    print(f"✅ The test passed: 5 concurrent requests for each of 3 different stocks, and each stock only triggered 1 API call.")
 
 
 if __name__ == '__main__':
-    # 运行测试
+    # Run tests
     asyncio.run(test_concurrent_hk_quote_requests())
     asyncio.run(test_concurrent_us_quote_requests())
     asyncio.run(test_different_stocks_no_blocking())

@@ -1,13 +1,13 @@
 """
-Gateway QQ Bot 集成测试
+Gateway QQ Bot Integration testing
 
-测试场景：
-1. op=13 回调地址验证（ed25519 签名）
-2. C2C 单聊消息解析 + QQ ACK
-3. 群聊 @Bot 消息解析 + QQ ACK
-4. /help 命令处理
-5. 单用户模式：消息自动关联系统用户 → 调用助理 → 被动回复
-6. 未知平台 → 400 错误
+Test scenario:
+1. op=13 Callback address verification (ed25519 signature)
+2. C2C Single chat message analysis + QQ ACK
+3. group chat @Bot Message parsing + QQ ACK
+4. /help command processing
+5. Single user mode: messages are automatically associated with system users → Call Assistant → Passive reply
+6. Unknown platform → 400 Error
 """
 
 import asyncio
@@ -25,12 +25,12 @@ from core.gateway.router import GatewayRouter
 
 
 def run(coro):
-    """兼容 Python 3.10+ 的 async 运行器"""
+    """Compatible Python 3.10+ The async runner"""
     return asyncio.run(coro)
 
 
 # ------------------------------------------------------------------ #
-# 辅助
+# Auxiliary
 # ------------------------------------------------------------------ #
 
 TEST_QQ_CONFIG = {
@@ -67,11 +67,11 @@ HEADERS_OK = {"x-bot-appid": "test_app_id_123"}
 
 
 # ------------------------------------------------------------------ #
-# 测试 QQAdapter 单元
+# Test the QQAdapter unit
 # ------------------------------------------------------------------ #
 
 def test_ed25519_validation():
-    """op=13 回调地址验证：应返回 plain_token + hex 签名"""
+    """op=13 Callback address verification: should return plain_token + hex signature"""
     adapter = QQAdapter(config=TEST_QQ_CONFIG)
     payload = json.dumps({
         "op": 13,
@@ -90,7 +90,7 @@ def test_ed25519_validation():
 
 
 def test_verify_normal_event():
-    """普通 op=0 事件，通过 x-bot-appid 验证"""
+    """Ordinary op=0 Event, verified by x-bot-appid"""
     adapter = QQAdapter(config=TEST_QQ_CONFIG)
     body = _make_c2c_body("hello")
     ok, result = run(
@@ -102,7 +102,7 @@ def test_verify_normal_event():
 
 
 def test_verify_bad_appid():
-    """x-bot-appid 不匹配 → 验证失败"""
+    """x-bot-appid no match → Authentication failed"""
     adapter = QQAdapter(config=TEST_QQ_CONFIG)
     body = _make_c2c_body("hello")
     ok, _ = run(
@@ -113,9 +113,9 @@ def test_verify_bad_appid():
 
 
 def test_parse_c2c_message():
-    """解析 C2C 单聊消息"""
+    """Parsing C2C single chat messages"""
     adapter = QQAdapter(config=TEST_QQ_CONFIG)
-    body = _make_c2c_body("分析贵州茅台", user_openid="u_001", msg_id="m_100")
+    body = _make_c2c_body("Analysis of Kweichow Moutai", user_openid="u_001", msg_id="m_100")
     msg = run(
         adapter.parse_message(HEADERS_OK, body)
     )
@@ -123,7 +123,7 @@ def test_parse_c2c_message():
     assert msg.channel_type == "qq"
     assert msg.channel_id == "c2c:u_001"
     assert msg.user_identity == "u_001"
-    assert msg.content == "分析贵州茅台"
+    assert msg.content == "Analysis of Kweichow Moutai"
     assert msg.message_type == "text"
     assert msg.metadata["msg_id"] == "m_100"
     assert msg.metadata["scene"] == "c2c"
@@ -131,7 +131,7 @@ def test_parse_c2c_message():
 
 
 def test_parse_group_message():
-    """解析群聊 @Bot 消息"""
+    """Parse group chat @Bot news"""
     adapter = QQAdapter(config=TEST_QQ_CONFIG)
     body = _make_group_body("/help", group_openid="g_01", member_openid="m_02")
     msg = run(
@@ -147,7 +147,7 @@ def test_parse_group_message():
 
 
 def test_parse_non_dispatch_event():
-    """op != 0 的事件（心跳等）应返回 None"""
+    """op != 0 The events (heartbeats, etc.) should be returned None"""
     adapter = QQAdapter(config=TEST_QQ_CONFIG)
     body = json.dumps({"op": 11, "d": {}}).encode()
     msg = run(
@@ -158,7 +158,7 @@ def test_parse_non_dispatch_event():
 
 
 # ------------------------------------------------------------------ #
-# 测试 GatewayRouter + QQAdapter 集成
+# test GatewayRouter + QQAdapter Integrate
 # ------------------------------------------------------------------ #
 
 def _make_router_with_qq() -> GatewayRouter:
@@ -169,7 +169,7 @@ def _make_router_with_qq() -> GatewayRouter:
 
 
 def _mock_db():
-    """创建 Mock MongoDB"""
+    """Create Mock MongoDB"""
     db = MagicMock()
     # user_identity_mappings
     db.__getitem__ = MagicMock(side_effect=lambda k: MagicMock())
@@ -177,7 +177,7 @@ def _mock_db():
 
 
 def test_router_unsupported_platform():
-    """未注册的平台 → 400"""
+    """Unregistered platform → 400"""
     router = _make_router_with_qq()
     resp, code = run(
         router.handle_webhook("feishu", {}, b"{}", None)
@@ -188,7 +188,7 @@ def test_router_unsupported_platform():
 
 
 def test_router_qq_validation_challenge():
-    """op=13 验证请求 → 返回 plain_token + signature"""
+    """op=13 Verification request → Return plain_token + signature"""
     router = _make_router_with_qq()
     body = json.dumps({
         "op": 13,
@@ -205,7 +205,7 @@ def test_router_qq_validation_challenge():
 
 
 def test_router_qq_ack_for_non_dispatch():
-    """op != 0 的事件 → 返回 {op: 12} ACK"""
+    """op != 0 events → Return {op: 12} ACK"""
     router = _make_router_with_qq()
     body = json.dumps({"op": 11, "d": {}}).encode()
 
@@ -218,7 +218,7 @@ def test_router_qq_ack_for_non_dispatch():
 
 
 def test_router_qq_help_command():
-    """QQ /help 命令 → send_response + op=12 ACK"""
+    """QQ /help command → send_response + op=12 ACK"""
     router = _make_router_with_qq()
     adapter = router.get_adapter("qq")
 
@@ -243,7 +243,7 @@ def test_router_qq_help_command():
 
 @patch("core.gateway.router.GatewayRouter._invoke_assistant")
 def test_router_qq_single_user_message(mock_invoke):
-    """单用户模式：消息自动关联系统用户 → 调用助理 → 被动回复 → op=12 ACK"""
+    """Single user mode: messages are automatically associated with system users → Call Assistant → Passive reply → op=12 ACK"""
     from bson import ObjectId
     router = _make_router_with_qq()
     adapter = router.get_adapter("qq")
@@ -254,7 +254,7 @@ def test_router_qq_single_user_message(mock_invoke):
         return True
     adapter.send_response = mock_send
 
-    # Mock DB: users.find_one → 系统第一个用户
+    # Mock DB: users.find_one → The first user of the system
     user_oid = ObjectId()
     mock_db = MagicMock()
     mock_users = MagicMock()
@@ -270,11 +270,11 @@ def test_router_qq_single_user_message(mock_invoke):
         channel_type="qq",
         channel_id="c2c:user_001",
         response_type="markdown",
-        content="贵州茅台分析结果：PE 35x...",
+        content="Kweichow Moutai analysis results:PE 35x...",
         metadata={"msg_id": "msg_001", "scene": "c2c", "user_openid": "user_001"},
     )
 
-    body = _make_c2c_body("分析贵州茅台", user_openid="user_001", msg_id="msg_001")
+    body = _make_c2c_body("Analysis of Kweichow Moutai", user_openid="user_001", msg_id="msg_001")
 
     resp, code = run(
         router.handle_webhook("qq", HEADERS_OK, body, mock_db)
@@ -282,10 +282,10 @@ def test_router_qq_single_user_message(mock_invoke):
     assert code == 200
     assert resp == {"op": 12}
     assert len(sent_responses) == 1
-    assert "贵州茅台" in sent_responses[0].content
+    assert "Kweichow Moutai" in sent_responses[0].content
     assert sent_responses[0].metadata.get("msg_id") == "msg_001"
     mock_invoke.assert_called_once()
-    # 验证传入的 user_id 是系统用户
+    # Verify that the user_id passed in is a system user
     call_args = mock_invoke.call_args
     # _invoke_assistant(message, user_id, db) — positional args
     actual_user_id = call_args[0][1] if len(call_args[0]) > 1 else call_args[1].get("user_id")
@@ -294,7 +294,7 @@ def test_router_qq_single_user_message(mock_invoke):
 
 
 # ------------------------------------------------------------------ #
-# 运行全部测试
+# Run all tests
 # ------------------------------------------------------------------ #
 
 if __name__ == "__main__":
@@ -325,9 +325,9 @@ if __name__ == "__main__":
             failed += 1
 
     print(f"\n{'='*50}")
-    print(f"总计: {passed + failed} | 通过: {passed} | 失败: {failed}")
+    print(f"total: {passed + failed} | Pass: {passed} | failed: {failed}")
     if failed == 0:
-        print("🎉 全部测试通过！")
+        print("🎉 All tests passed!")
     else:
         sys.exit(1)
 

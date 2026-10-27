@@ -1,7 +1,7 @@
 """
-工具加载器
+tool loader
 
-动态加载工具模块
+Dynamically loading tool modules
 """
 
 import logging
@@ -16,32 +16,32 @@ logger = logging.getLogger(__name__)
 
 class ToolLoader:
     """
-    工具加载器
+    tool loader
     
-    自动发现和加载工具模块
+    Automatically discover and load tool modules
     
-    用法:
+    Usage:
         loader = ToolLoader()
         
-        # 加载所有工具
+        # Load all tools
         loader.load_all()
         
-        # 加载特定类别
+        # Load specific categories
         loader.load_category("market")
         
-        # 加载特定工具
+        # Load specific tools
         loader.load_tool("get_stock_market_data_unified")
     """
     
     def __init__(self, tools_dir: Optional[str] = None):
         """
-        初始化工具加载器
+        Initialize tool loader
         
         Args:
-            tools_dir: 工具目录路径，默认为 core/tools/implementations
+            tools_dir: Tool directory path, default is core/tools/implementations
         """
         if tools_dir is None:
-            # 默认工具目录
+            # Default tool directory
             current_dir = Path(__file__).parent
             tools_dir = current_dir / "implementations"
         
@@ -50,10 +50,10 @@ class ToolLoader:
     
     def load_all(self) -> int:
         """
-        加载所有工具模块
+        Load all tool modules
         
         Returns:
-            加载的模块数量
+            Number of loaded modules
         """
         if not self.tools_dir.exists():
             logger.warning(f"工具目录不存在: {self.tools_dir}")
@@ -61,13 +61,13 @@ class ToolLoader:
         
         count = 0
 
-        # 遍历所有 Python 文件（含 .pyc：京东云源码保护后 .py 被删，只剩 .pyc）
+        # Traverse all Python files (including .pyc: after JD Cloud source code protection, .py is deleted, leaving only .pyc)
         py_files = list(self.tools_dir.rglob("*.py"))
         py_files += list(self.tools_dir.rglob("*.pyc"))
         for py_file in py_files:
             if py_file.name.startswith("_"):
                 continue
-            # __pycache__ 里的 .pyc 跳过（由同名 .py 或 .pyc 顶层文件覆盖）
+            # __pycache__ .pyc in is skipped (overridden by a .py or .pyc top-level file with the same name)
             if "__pycache__" in py_file.parts:
                 continue
 
@@ -82,13 +82,13 @@ class ToolLoader:
     
     def load_category(self, category: str) -> int:
         """
-        加载特定类别的工具
+        Load a specific category of tools
         
         Args:
-            category: 工具类别（对应子目录名）
+            category: Tool category (corresponding subdirectory name)
             
         Returns:
-            加载的模块数量
+            Number of loaded modules
         """
         category_dir = self.tools_dir / category
         
@@ -113,20 +113,20 @@ class ToolLoader:
     
     def load_tool(self, tool_id: str) -> bool:
         """
-        加载特定工具
+        Load specific tools
         
         Args:
-            tool_id: 工具ID
+            tool_id: Tools ID
             
         Returns:
-            是否加载成功
+            Is loading successful?
         """
-        # 尝试从各个类别目录查找
+        # Try to search from various category directories
         for category_dir in self.tools_dir.iterdir():
             if not category_dir.is_dir():
                 continue
             
-            # 尝试 tool_id.py
+            # try tool_id.py
             tool_file = category_dir / f"{tool_id}.py"
             if tool_file.exists():
                 try:
@@ -142,23 +142,23 @@ class ToolLoader:
     
     def _load_module_from_file(self, file_path: Path) -> None:
         """
-        从文件加载模块
+        Load module from file
 
         Args:
-            file_path: Python 文件路径
+            file_path: Python file path
         """
-        # 计算模块名：从项目根目录开始
-        # 例如：C:\TradingAgentsCN\core\tools\implementations\market\stock_market_data.py
-        # 应该变成：core.tools.implementations.market.stock_market_data
+        # Calculate module name: starting from the project root directory
+        # For example:C:\TradingAgentsCN\core\tools\implementations\market\stock_market_data.py
+        # should become:core.tools.implementations.market.stock_market_data
 
-        # 获取项目根目录（假设是当前工作目录或者向上查找）
+        # Get the project root directory (assuming it is the current working directory or look up)
         current_dir = Path.cwd()
 
         try:
             rel_path = file_path.relative_to(current_dir)
         except ValueError:
-            # 如果文件不在当前目录下，尝试使用绝对路径的后几段
-            # 从 core 开始
+            # If the file is not in the current directory, try using the last few segments of the absolute path
+            # start from core
             parts = file_path.parts
             if 'core' in parts:
                 core_index = parts.index('core')
@@ -168,21 +168,21 @@ class ToolLoader:
 
         module_name = str(rel_path.with_suffix("")).replace(os.sep, ".")
 
-        # 避免重复加载（local tracker）
+        # Avoid repeated loading (local tracker)
         if module_name in self._loaded_modules:
             return
 
-        # 避免与 __init__.py 的显式 import 冲突：如果模块已由其它路径加载
-        # （如 __init__.py 的 from .xxx import ...），直接复用，不再二次导入
+        # Avoid conflicts with explicit imports in __init__.py: if the module is already loaded from another path
+        #  (Such as __init__.py's from .xxx import ...), reuse directly without secondary import.
         if module_name in sys.modules:
             self._loaded_modules.add(module_name)
             return
 
-        # 导入模块
+        # Import module
         try:
             importlib.import_module(module_name)
         except RecursionError:
-            # 循环引用：模块可能在另一个 import 链中正在加载，先记录下来
+            # Circular reference: The module may be loading in another import chain, record it first
             logger.warning(f"模块 {module_name} 因循环引用跳过（可能已由 __init__.py 加载）")
             if module_name not in sys.modules:
                 logger.error(f"模块 {module_name} 未加载成功，存在真实的循环依赖问题")
@@ -199,7 +199,7 @@ class ToolLoader:
         return list(self._loaded_modules)
 
 
-# 全局加载器实例
+# Global loader instance
 _global_loader: Optional[ToolLoader] = None
 
 

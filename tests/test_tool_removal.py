@@ -1,32 +1,32 @@
 #!/usr/bin/env python3
 """
-测试旧工具移除
-验证LLM只能调用统一工具
+Test old tool removal
+Verify that LLM can only call unified tools
 """
 
 def test_available_tools():
-    """测试可用工具列表"""
-    print("🔧 测试可用工具列表...")
+    """List of available tools for testing"""
+    print("🔧 List of available tools for testing...")
     
     try:
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建工具包
+        # Create toolkit
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         toolkit = Toolkit(config)
         
-        # 获取所有工具
+        # Get all the tools
         all_tools = []
         for attr_name in dir(toolkit):
             attr = getattr(toolkit, attr_name)
             if hasattr(attr, 'name') and hasattr(attr, 'description'):
                 all_tools.append(attr.name)
         
-        print(f"  总工具数量: {len(all_tools)}")
+        print(f"  Total number of tools: {len(all_tools)}")
         
-        # 检查旧工具是否已移除
+        # Check if old tools have been removed
         removed_tools = [
             'get_china_stock_data',
             'get_china_fundamentals', 
@@ -34,7 +34,7 @@ def test_available_tools():
             'get_hk_stock_data_unified'
         ]
         
-        # 检查统一工具是否存在
+        # Check if the unified tool exists
         unified_tools = [
             'get_stock_fundamentals_unified',
             'get_stock_market_data_unified',
@@ -42,97 +42,97 @@ def test_available_tools():
             'get_stock_sentiment_unified'
         ]
         
-        print("\n  旧工具移除检查:")
+        print("\n  Old tool removal check:")
         for tool_name in removed_tools:
             if tool_name in all_tools:
-                print(f"    ❌ {tool_name}: 仍然可用（应该已移除）")
+                print(f"    ❌ {tool_name}: Still available (should have been removed)")
                 return False
             else:
-                print(f"    ✅ {tool_name}: 已移除")
+                print(f"    ✅ {tool_name}: Removed")
         
-        print("\n  统一工具可用性检查:")
+        print("\n  Unified tool availability check:")
         for tool_name in unified_tools:
             if tool_name in all_tools:
-                print(f"    ✅ {tool_name}: 可用")
+                print(f"    ✅ {tool_name}: Available")
             else:
-                print(f"    ❌ {tool_name}: 不可用")
+                print(f"    ❌ {tool_name}: Not available")
                 return False
         
-        print(f"\n  所有可用工具:")
+        print(f"\n  All available tools:")
         for tool_name in sorted(all_tools):
             print(f"    - {tool_name}")
         
-        print("✅ 工具移除测试通过")
+        print("✅ Tool removal test passed")
         return True
         
     except Exception as e:
-        print(f"❌ 工具移除测试失败: {e}")
+        print(f"❌ Tool removal test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_fundamentals_analyst_tool_selection():
-    """测试基本面分析师工具选择"""
-    print("\n🔧 测试基本面分析师工具选择...")
+    """Testing Fundamental Analyst Tool Selection"""
+    print("\n🔧 Testing Fundamental Analyst Tool Selection...")
     
     try:
         from tradingagents.agents.analysts.fundamentals_analyst import create_fundamentals_analyst
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         
-        # 创建工具包
+        # Create toolkit
         toolkit = Toolkit(config)
         
-        # 模拟基本面分析师的工具选择逻辑
+        # Simulating the tool selection logic of fundamental analysts
         from tradingagents.utils.stock_utils import StockUtils
         
         test_cases = [
-            ("0700.HK", "港股"),
-            ("000001", "A股"),
-            ("AAPL", "美股")
+            ("0700.HK", "Hong Kong stocks"),
+            ("000001", "A shares"),
+            ("AAPL", "US stocks")
         ]
         
         for ticker, market_type in test_cases:
-            print(f"\n  测试 {ticker} ({market_type}):")
+            print(f"\n  test {ticker} ({market_type}):")
             
-            # 获取市场信息
+            # Get market information
             market_info = StockUtils.get_market_info(ticker)
             
-            # 模拟基本面分析师的工具选择逻辑
+            # Simulating the tool selection logic of fundamental analysts
             if toolkit.config["online_tools"]:
-                # 使用统一的基本面分析工具
+                # Use unified fundamental analysis tools
                 tools = [toolkit.get_stock_fundamentals_unified]
                 tool_names = [tool.name for tool in tools]
                 
-                print(f"    选择的工具: {tool_names}")
+                print(f"    Tools of choice: {tool_names}")
                 
-                # 验证只选择了统一工具
+                # Verify that only the unified tool is selected
                 if len(tools) == 1 and tools[0].name == 'get_stock_fundamentals_unified':
-                    print(f"    ✅ 正确选择统一基本面工具")
+                    print(f"    ✅ Correct selection of unified fundamental tools")
                 else:
-                    print(f"    ❌ 工具选择错误")
+                    print(f"    ❌ Wrong tool selection")
                     return False
             else:
-                print(f"    跳过（online_tools=False）")
+                print(f"    Skip (online_tools=False) ")
         
-        print("✅ 基本面分析师工具选择测试通过")
+        print("✅ Fundamental Analyst Tool Selection Test Passed")
         return True
         
     except Exception as e:
-        print(f"❌ 基本面分析师工具选择测试失败: {e}")
+        print(f"❌ Fundamental Analyst Tool Selection Test Failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_market_analyst_tool_selection():
-    """测试市场分析师工具选择"""
-    print("\n🔧 测试市场分析师工具选择...")
+    """Test Market Analyst Tool Selection"""
+    print("\n🔧 Test Market Analyst Tool Selection...")
     
     try:
         from tradingagents.agents.analysts.market_analyst import create_market_analyst
@@ -140,55 +140,55 @@ def test_market_analyst_tool_selection():
         from tradingagents.default_config import DEFAULT_CONFIG
         from tradingagents.utils.stock_utils import StockUtils
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         
-        # 创建工具包
+        # Create toolkit
         toolkit = Toolkit(config)
         
         test_cases = [
-            ("0700.HK", "港股"),
-            ("000001", "A股"),
-            ("AAPL", "美股")
+            ("0700.HK", "Hong Kong stocks"),
+            ("000001", "A shares"),
+            ("AAPL", "US stocks")
         ]
         
         for ticker, market_type in test_cases:
-            print(f"\n  测试 {ticker} ({market_type}):")
+            print(f"\n  test {ticker} ({market_type}):")
             
-            # 获取市场信息
+            # Get market information
             market_info = StockUtils.get_market_info(ticker)
             
-            # 模拟市场分析师的工具选择逻辑
+            # Simulating the tool selection logic of market analysts
             if toolkit.config["online_tools"]:
-                # 使用统一的市场数据工具
+                # Use unified market data tools
                 tools = [toolkit.get_stock_market_data_unified]
                 tool_names = [tool.name for tool in tools]
                 
-                print(f"    选择的工具: {tool_names}")
+                print(f"    Tools of choice: {tool_names}")
                 
-                # 验证只选择了统一工具
+                # Verify that only the unified tool is selected
                 if len(tools) == 1 and tools[0].name == 'get_stock_market_data_unified':
-                    print(f"    ✅ 正确选择统一市场数据工具")
+                    print(f"    ✅ Choosing the right unified market data tool")
                 else:
-                    print(f"    ❌ 工具选择错误")
+                    print(f"    ❌ Wrong tool selection")
                     return False
             else:
-                print(f"    跳过（online_tools=False）")
+                print(f"    Skip (online_tools=False) ")
         
-        print("✅ 市场分析师工具选择测试通过")
+        print("✅ Market Analyst Tool Selection Test Passed")
         return True
         
     except Exception as e:
-        print(f"❌ 市场分析师工具选择测试失败: {e}")
+        print(f"❌ Market Analyst Tool Selection Test Failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def main():
-    """主测试函数"""
-    print("🔧 旧工具移除测试")
+    """Main test function"""
+    print("🔧 Old tool removal test")
     print("=" * 60)
     
     tests = [
@@ -205,23 +205,23 @@ def main():
             if test():
                 passed += 1
             else:
-                print(f"❌ 测试失败: {test.__name__}")
+                print(f"❌ test failed: {test.__name__}")
         except Exception as e:
-            print(f"❌ 测试异常: {test.__name__} - {e}")
+            print(f"❌ Test exception: {test.__name__} - {e}")
     
     print("\n" + "=" * 60)
-    print(f"📊 测试结果: {passed}/{total} 通过")
+    print(f"📊 Test results: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 所有测试通过！旧工具移除成功")
-        print("\n📋 修复内容:")
-        print("✅ 移除了旧工具的 @tool 装饰器")
-        print("✅ LLM无法再调用旧工具")
-        print("✅ 只能调用统一工具")
-        print("✅ 避免了工具调用混乱")
+        print("🎉 All tests passed! Old tool removed successfully")
+        print("\n📋 Fix content:")
+        print("✅ Removed old tools @tool Decorator")
+        print("✅ LLM Old tools can no longer be recalled")
+        print("✅ Only unified tools can be called")
+        print("✅ Avoid tool calling confusion")
         return True
     else:
-        print("⚠️ 部分测试失败，需要进一步检查")
+        print("⚠️ Some tests failed and require further inspection")
         return False
 
 

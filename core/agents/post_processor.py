@@ -1,8 +1,8 @@
 """
-后处理Agent基类
+Post-processing Agent base class
 
-用于执行分析完成后的后处理操作，如保存报告、发送通知等
-v2.0 新增：可配置的后处理Agent架构
+Used to perform post-processing operations after analysis is completed, such as saving reports, sending notifications, etc.
+v2.0 New: Configurable post-processing Agent architecture
 """
 
 import logging
@@ -17,55 +17,55 @@ logger = logging.getLogger(__name__)
 
 
 class PostProcessorType(str, Enum):
-    """后处理器类型"""
-    SAVE_REPORT = "save_report"           # 保存报告
-    SEND_EMAIL = "send_email"             # 发送邮件
-    SEND_NOTIFICATION = "send_notification"  # 发送系统通知
-    TRIGGER_WEBHOOK = "trigger_webhook"   # 触发Webhook
-    GENERATE_PDF = "generate_pdf"         # 生成PDF
-    GENERATE_CHART = "generate_chart"     # 生成图表
-    UPDATE_CACHE = "update_cache"         # 更新缓存
-    RECORD_METRICS = "record_metrics"     # 记录指标
-    GENERATE_REPORT = "generate_report"   # 生成报告（v2.0）
-    PREPARE_DATA = "prepare_data"         # 准备数据（v2.0）
+    """Postprocessor type"""
+    SAVE_REPORT = "save_report"           # save report
+    SEND_EMAIL = "send_email"             # Send email
+    SEND_NOTIFICATION = "send_notification"  # Send system notification
+    TRIGGER_WEBHOOK = "trigger_webhook"   # trigger Webhook
+    GENERATE_PDF = "generate_pdf"         # generate PDF
+    GENERATE_CHART = "generate_chart"     # Generate chart
+    UPDATE_CACHE = "update_cache"         # Update cache
+    RECORD_METRICS = "record_metrics"     # Record metrics
+    GENERATE_REPORT = "generate_report"   # Generate reports (v2.0)
+    PREPARE_DATA = "prepare_data"         # Prepare data (v2.0)
 
 
 class OperationConfig(dict):
     """
-    后处理操作配置
+    Post-processing operation configuration
     
-    使用字典形式以支持灵活的配置结构
+    Use dictionary form to support flexible configuration structure
     """
     pass
 
 
 class ConditionConfig(dict):
     """
-    执行条件配置
+    Execution condition configuration
     
-    支持字段比较、逻辑运算等
+    Support field comparison, logical operations, etc.
     """
     pass
 
 
 class PostProcessorAgent(BaseAgent):
     """
-    后处理Agent基类
+    Post-processing Agent base class
     
-    特点：
-    - 不调用LLM（或可选调用LLM生成摘要）
-    - 依赖前序Agent的输出
-    - 执行外部操作（数据库、邮件、API等）
-    - 输出格式：执行状态
+    Features:
+    - Do not call LLM (or optionally call LLM to generate a summary)
+    - Depends on the output of the pre-order Agent
+    - Perform external operations (database, email, API, etc.)
+    - Output format: execution status
     
-    工作流程：
-    1. 读取分析结果
-    2. 检查执行条件
-    3. 执行后处理操作
-    4. 返回执行状态
+    Workflow:
+    1. Read analysis results
+    2. Check execution conditions
+    3. Perform post-processing operations
+    4. Return to execution status
     """
     
-    # 后处理器类型
+    # Postprocessor type
     processor_type: PostProcessorType = None
     
     def __init__(
@@ -76,61 +76,61 @@ class PostProcessorAgent(BaseAgent):
         **kwargs
     ):
         """
-        初始化后处理Agent
+        Post-initialization processing Agent
         
         Args:
-            config: Agent配置
-            operations: 操作配置列表
-            conditions: 执行条件列表
-            **kwargs: 其他参数传递给BaseAgent
+            config: Agent Configuration
+            operations: Operation configuration list
+            conditions: Execution condition list
+            **kwargs: Other parameters passed to BaseAgent
         """
         super().__init__(config=config, **kwargs)
         
         self.operations = operations or []
         self.conditions = conditions or []
         
-        logger.debug(f"PostProcessorAgent '{self.agent_id}' 初始化完成")
+        logger.debug(f"PostProcessorAgent '{self.agent_id}' Initialization completed")
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行后处理操作
+        Perform post-processing operations
         
         Args:
-            state: 工作流状态字典
+            state: Workflow status dictionary
             
         Returns:
-            更新后的状态字典，包含执行状态
+            Updated status dictionary containing execution status
         """
-        logger.info(f"开始执行后处理Agent: {self.agent_id}")
+        logger.info(f"Start post-processing Agent: {self.agent_id}")
         
         try:
-            # 1. 检查执行条件
+            # 1. Check execution conditions
             if not self._check_conditions(state):
-                logger.info(f"后处理Agent {self.agent_id} 条件不满足，跳过执行")
+                logger.info(f"Post-processing Agent {self.agent_id} If the condition is not met, execution will be skipped.")
                 return self._create_skip_result(state)
             
-            # 2. 执行后处理操作
+            # 2. Perform post-processing operations
             results = []
             for operation in self.operations:
                 result = self._execute_operation(operation, state)
                 results.append(result)
             
-            # 3. 返回执行状态
+            # 3. Return to execution status
             return self._create_success_result(state, results)
             
         except Exception as e:
-            logger.error(f"后处理Agent {self.agent_id} 执行失败: {e}", exc_info=True)
+            logger.error(f"Post-processing Agent {self.agent_id} Execution failed: {e}", exc_info=True)
             return self._create_error_result(state, str(e))
     
     def _check_conditions(self, state: Dict[str, Any]) -> bool:
         """
-        检查执行条件
+        Check execution conditions
         
         Args:
-            state: 工作流状态
+            state: Workflow status
             
         Returns:
-            是否满足所有条件
+            Are all conditions met?
         """
         if not self.conditions:
             return True
@@ -143,32 +143,32 @@ class PostProcessorAgent(BaseAgent):
     
     def _evaluate_condition(self, condition: ConditionConfig, state: Dict[str, Any]) -> bool:
         """
-        评估单个条件
+        Evaluate a single condition
 
         Args:
-            condition: 条件配置，格式：
+            condition: Conditional configuration, format:
                 {
                     "field": "recommendation",
                     "operator": "in",
-                    "value": ["乐观", "审慎"]
+                    "value": ["optimistic", "Prudence"]
                 }
-            state: 工作流状态
+            state: Workflow status
 
         Returns:
-            条件是否满足
+            Are the conditions met?
         """
         field = condition.get("field")
         operator = condition.get("operator")
         expected_value = condition.get("value")
 
         if not field or not operator:
-            logger.warning(f"条件配置不完整: {condition}")
+            logger.warning(f"Incomplete condition configuration: {condition}")
             return False
 
-        # 获取实际值（支持嵌套路径）
+        # Get the actual value (nested paths are supported)
         actual_value = self._get_nested_value(state, field)
 
-        # 执行比较
+        # perform comparison
         try:
             if operator == "equals":
                 return actual_value == expected_value
@@ -199,36 +199,36 @@ class PostProcessorAgent(BaseAgent):
             elif operator == "not_exists":
                 return actual_value is None
             else:
-                logger.warning(f"未知的操作符: {operator}")
+                logger.warning(f"unknown operator: {operator}")
                 return False
         except Exception as e:
-            logger.error(f"条件评估失败: {e}")
+            logger.error(f"Condition evaluation failed: {e}")
             return False
     
     @abstractmethod
     def _execute_operation(self, operation: OperationConfig, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行单个操作（子类实现）
+        Perform a single operation (subclass implementation)
 
         Args:
-            operation: 操作配置
-            state: 工作流状态
+            operation: Operational configuration
+            state: Workflow status
 
         Returns:
-            操作执行结果
+            Operation execution result
         """
         pass
 
     def _create_success_result(self, state: Dict[str, Any], results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        创建成功结果
+        Create successful results
 
         Args:
-            state: 原始状态
-            results: 操作结果列表
+            state: original state
+            results: Operation result list
 
         Returns:
-            更新后的状态
+            Updated status
         """
         output_key = f"{self.agent_id}_status"
         state[output_key] = {
@@ -243,13 +243,13 @@ class PostProcessorAgent(BaseAgent):
 
     def _create_skip_result(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        创建跳过结果
+        Create skip results
 
         Args:
-            state: 原始状态
+            state: original state
 
         Returns:
-            更新后的状态
+            Updated status
         """
         output_key = f"{self.agent_id}_status"
         state[output_key] = {
@@ -264,14 +264,14 @@ class PostProcessorAgent(BaseAgent):
 
     def _create_error_result(self, state: Dict[str, Any], error: str) -> Dict[str, Any]:
         """
-        创建错误结果
+        Create error results
 
         Args:
-            state: 原始状态
-            error: 错误信息
+            state: original state
+            error: error message
 
         Returns:
-            更新后的状态
+            Updated status
         """
         output_key = f"{self.agent_id}_status"
         state[output_key] = {
@@ -284,22 +284,22 @@ class PostProcessorAgent(BaseAgent):
 
     @property
     def agent_id(self) -> str:
-        """获取Agent ID"""
+        """get Agent ID"""
         if self.metadata:
             return self.metadata.id
         return self.__class__.__name__.lower()
 
     def _get_nested_value(self, data: Dict[str, Any], path: str, default: Any = None) -> Any:
         """
-        获取嵌套字典的值
+        Get the value of a nested dictionary
 
         Args:
-            data: 数据字典
-            path: 路径，如 "user.email_settings.enabled"
-            default: 默认值
+            data: data dictionary
+            path: path, such as "user.email_settings.enabled"
+            default: Default value
 
         Returns:
-            值或默认值
+            value or default
         """
         keys = path.split('.')
         value = data

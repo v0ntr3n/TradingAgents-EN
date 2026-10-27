@@ -1,16 +1,16 @@
 """
-路由注册中心（v3.6.0 社区版开源分离 · M1 收敛改造）
+Routing Registration Center (v3.6.0 Community Edition Open Source Separation · M1 convergence transformation)
 
-- 全部 FastAPI 路由注册从 app/main.py 收敛至此单一文件
-- COMMUNITY_ROUTERS：社区版保留（免费主链路，社区版发布时原样保留）
-- PRO_ROUTERS：Pro 专属（付费功能载体，社区版发布时整体剔除）
-- 发布脚本（scripts/publish_community.py）处理方式：
-  删除 Pro 路由文件 + 用社区版注册文件（本文件删除 PRO_ROUTERS 段）替换
-- 原则：只搬注册行，不动路由实现
-- Pro/社区边界依据：付费功能清单.md + 分离方案 §5.2
-- 见 docs/05-design/v3.0/v3.6.0-community-edition-separation-plan.md §7.1
+- All FastAPI route registrations converge from app/main.py to this single file
+- COMMUNITY_ROUTERS: The community version is retained (the free main link will be retained as it is when the community version is released)
+- PRO_ROUTERS: Pro Exclusive (paid function carrier, removed entirely when the community version is released)
+- Publishing script (scripts/publish_community.py) processing method:
+  Delete Pro routing files + Replace with community version registration file (remove PRO_ROUTERS section in this file)
+- Principle: Only move the registration line, do not leave the routing implementation
+- Pro/Community Boundary Basis: Paid Feature List.md + Separation plan §5.2
+- see docs/05-design/v3.0/v3.6.0-community-edition-separation-plan.md §7.1
 
-注意：新增路由时必须登记到对应清单——新 Pro 路由不入 PRO_ROUTERS = 发布即泄露。
+Note: When adding a route, it must be registered in the corresponding list.——The new Pro router cannot be accessed PRO_ROUTERS = Publish and leak.
 """
 
 import logging
@@ -20,7 +20,7 @@ from fastapi import FastAPI
 logger = logging.getLogger("app.main")
 
 # =============================================================================
-# 社区版路由（免费主链路）
+# Community version routing (free main link)
 # =============================================================================
 from app.routers import auth_db as auth
 from app.routers import (
@@ -54,7 +54,7 @@ from app.routers import analysis_profiles as analysis_profiles_router
 from app.routers import websocket_notifications as websocket_notifications_router
 from app.routers import scheduler as scheduler_router
 from app.routers import analysis_preferences as analysis_preferences_router
-from app.routers import advanced_courses as advanced_courses_router  # 社区版保留（课程内容物理裁剪到前 5 节，见方案 §7.4）
+from app.routers import advanced_courses as advanced_courses_router  # The community version is retained (the course content is physically trimmed to the first 5 sections, see the plan §7.4) 
 from app.routers import embedded_nanobot as embedded_nanobot_router
 from app.routers import paper as paper_router
 from app.routers import portfolio as portfolio_router
@@ -73,13 +73,13 @@ from app.routers import update as update_router
 from app.routers import capability_index as capability_index_router
 from app.routers import quality_metrics as quality_metrics_router
 from app.routers import unified_tasks as unified_tasks_router
-# Skill 中心（v3.6.0 起免费开放，随社区版开源）
+# Skill Center (free and open starting from v3.6.0, open source with the community version)
 from app.routers import skills as skills_router
 from app.routers import skill_generation as skill_generation_router
 from app.routers import skill_gaps as skill_gaps_router
 from app.routers import skill_center as skill_center_router
 
-# (router, 注册名, include_router kwargs)
+# (router, Registered name, include_router kwargs)
 COMMUNITY_ROUTERS = [
     (health.router, "health", {"prefix": "/api", "tags": ["health"]}),
     (auth.router, "auth", {"prefix": "/api/auth", "tags": ["authentication"]}),
@@ -92,15 +92,15 @@ COMMUNITY_ROUTERS = [
     (stocks_router.router, "stocks", {"prefix": "/api", "tags": ["stocks"]}),
     (multi_market_stocks_router.router, "multi_market_stocks", {"prefix": "/api", "tags": ["multi-market"]}),
     (stock_sync_router.router, "stock_sync", {"tags": ["stock-sync"]}),
-    # 新闻数据中心（免费功能，r7 自 Pro 划回社区版；/save 写入端点经社区版 stub 放行）
+    # News Data Center (free function, r7 is transferred back to the Community Edition from Pro; /save write endpoint is released through the Community Edition stub)
     (news_data_router.router, "news_data", {"tags": ["news-data"]}),
-    # 股票/财务数据查询（免费功能，r8 自 Pro 划回社区版；读取端点本无门控，社区股票详情页
-    # Detail.vue 实际调用 sync-status；/save-* 批量导入写入端点经社区版 stub 放行）
+    # Stock/financial data query (free function, r8 has been transferred back to the community version from Pro; the read endpoint is not gated, and the community stock details page
+    # Detail.vue Actual call to sync-status;/save-* Batch import writing endpoint is released through the community version stub)
     (stock_data_router.router, "stock_data", {"tags": ["stock-data"]}),
     (financial_data_router.router, "financial_data", {"tags": ["financial-data"]}),
-    # 工作流（分析流，r9 自 Pro 划回社区版）：读取列表/详情、执行配置好的流程是社区分析
-    # 基础功能（单股/通用研究/复盘/持仓分析页面共用）；创建/编辑/删除端点带 require_pro
-    # 门控，社区版无编辑 UI（views/pro/workflow 已剔除），API 直调经 stub 放行
+    # Workflow (analysis flow, r9 moved back to community version from Pro): reading the list/details and executing the configured process is community analysis
+    # Basic functions (shared by single stock/general research/review/position analysis pages); create/edit/delete endpoint bands require_pro
+    # Gated, community version has no editing UI (views/pro/workflow has been removed), API is directly adjusted and released through stub
     (workflows_router.router, "workflows", {"tags": ["workflows"]}),
     (tags.router, "tags", {"prefix": "/api", "tags": ["tags"]}),
     (config.router, "config", {"prefix": "/api", "tags": ["config"]}),
@@ -136,7 +136,7 @@ COMMUNITY_ROUTERS = [
     (unified_tasks_router.router, "unified_tasks", {"tags": ["unified-task-center"]}),
     (capability_index_router.router, "capability_index", {"prefix": "/api", "tags": ["capability-index"]}),
     (quality_metrics_router.router, "quality_metrics", {}),
-    # --- Skill 中心（v3.6.0 起免费开放，随社区版开源）---
+    # --- Skill Center (free and open starting from v3.6.0, open source with the community version)---
     (skills_router.router, "skills", {"tags": ["skills"]}),
     (skill_generation_router.router, "skill_generation", {"tags": ["skill-generation"]}),
     (skill_gaps_router.router, "skill_gaps", {"tags": ["skill-gaps"]}),
@@ -144,31 +144,31 @@ COMMUNITY_ROUTERS = [
 ]
 
 # =============================================================================
-# Pro 专属路由（v3.6.0 社区版开源分离）
+# Pro Exclusive routing (v3.6.0 community version open source separation)
 # =============================================================================
-# Pro 路由集中定义于 app/pro_routers.py：社区版发布管道删除该文件后，
-# 此处 try-import 自动降级为空列表，router_registry 零行级改动。
+# Pro Routes are centrally defined in app/pro_routers.py: after the community version release pipeline deletes this file,
+# Here try-import is automatically downgraded to an empty list, and router_registry has zero row-level changes.
 try:
     from app.pro.pro_routers import PRO_ROUTERS
-except ImportError:  # 社区版：app/pro_routers.py 已被发布管道整体剔除
+except ImportError:  # Community version: app/pro_routers.py has been removed from the release pipeline as a whole
     PRO_ROUTERS = []
 
 
 def _register_router_with_log(app_instance, router, router_name: str, kwargs: dict) -> bool:
-    """注册路由并记录日志（自 app/main.py 原样搬迁）"""
+    """Register routes and record logs (relocated from app/main.py as is)"""
     try:
         app_instance.include_router(router, **kwargs)
-        logger.info(f"✅ 路由注册成功: {router_name}")
+        logger.info(f"✅ Route registration successful: {router_name}")
         return True
     except Exception as e:
-        logger.error(f"❌ 路由注册失败: {router_name} - {str(e)}", exc_info=True)
+        logger.error(f"❌ Route registration failed: {router_name} - {str(e)}", exc_info=True)
         return False
 
 
 def register_routers(app: FastAPI) -> None:
-    """注册全部路由：Pro 版 = 社区版路由 + Pro 专属路由"""
+    """Register all routes: Pro version = Community version routing + Pro Dedicated routing"""
     logger.info("=" * 70)
-    logger.info("🚀 开始注册路由...")
+    logger.info("🚀 Start registering routes...")
     logger.info("=" * 70)
 
     for router, name, kwargs in COMMUNITY_ROUTERS:
@@ -178,11 +178,11 @@ def register_routers(app: FastAPI) -> None:
         _register_router_with_log(app, router, name, kwargs)
 
     logger.info("=" * 70)
-    logger.info("✅ 路由注册完成")
+    logger.info("✅ Route registration completed")
     logger.info("=" * 70)
 
-    # 验证关键路由是否已注册
-    logger.info("🔍 验证关键路由注册状态:")
+    # Verify critical routes are registered
+    logger.info("🔍 Verify critical route registration status:")
     key_routes = [
         "/api/license/status",
         "/api/v2/tasks/list",
@@ -195,13 +195,13 @@ def register_routers(app: FastAPI) -> None:
         for route in app.routes:
             if not hasattr(route, 'path'):
                 continue
-            # FastAPI 路由路径可能包含前缀，直接用完整路径匹配
+            # FastAPI The routing path may contain a prefix, so match it directly with the full path
             if route.path == route_path:
                 methods = getattr(route, 'methods', set())
                 matching_routes.append((route.path, methods))
                 route_found = True
                 break
-            # 兼容子路由匹配：路径末尾匹配（处理 /api/license 前缀下的 /status 等）
+            # Compatible sub-route matching: matching at the end of the path (processing /status under the /api/license prefix, etc.)
             if route.path.endswith(route_path) or route_path.endswith(route.path):
                 methods = getattr(route, 'methods', set())
                 matching_routes.append((route.path, methods))
@@ -210,9 +210,9 @@ def register_routers(app: FastAPI) -> None:
 
         if route_found:
             for path, methods in matching_routes:
-                logger.info(f"  ✅ {route_path} -> {path} - 方法: {', '.join(methods)}")
+                logger.info(f"  ✅ {route_path} -> {path} - method: {', '.join(methods)}")
         else:
-            # 降级为 INFO：路由已注册但检查逻辑未匹配到完整路径，不代表路由缺失
-            logger.info(f"  ℹ️  {route_path} - 未在 app.routes 中精确匹配（可能因为 prefix 拆分），路由已通过 include_router 注册")
+            # Downgraded to INFO: The route is registered but the check logic does not match the full path, which does not mean that the route is missing.
+            logger.info(f"  ℹ️  {route_path} - No exact match in app.routes (probably because of prefix splitting), route already registered via include_router")
 
     logger.info("=" * 70)

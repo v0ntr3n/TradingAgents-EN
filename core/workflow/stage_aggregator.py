@@ -1,13 +1,13 @@
 """
-阶段报告聚合器
+Stage report aggregator
 
-在工作流执行过程中，自动将同一阶段的 Agent 输出聚合为统一的报告包，
-使下游 Agent 可以通过 {analyst_reports}、{research_reports}、{risk_reports}
-等聚合变量引用所有上游报告，无需硬编码 individual 字段名。
+During workflow execution, Agent output at the same stage is automatically aggregated into a unified report package.
+Allow downstream Agents to pass {analyst_reports}, {research_reports}, {risk_reports}
+Aggregate variables such as these reference all upstream reports without the need to hardcode individual field names.
 
-聚合来源：
-1. 代码注册的 AgentRegistry 元数据
-2. Agent 工坊发布到 MongoDB agent_configs 的动态 Agent
+Aggregation source:
+1. AgentRegistry metadata for code registration
+2. Agent Updates posted by the workshop to MongoDB agent_configs Agent
 """
 
 import logging
@@ -50,7 +50,7 @@ def _append_registry_reports(reports: List[Tuple[int, str, str]], seen_fields: s
         registry = get_registry()
         all_metas = registry.list_all() if hasattr(registry, "list_all") else []
     except Exception as e:
-        logger.debug(f"无法获取 AgentRegistry: {e}")
+        logger.debug(f"Unable to obtain AgentRegistry: {e}")
         return
 
     for meta in all_metas:
@@ -66,11 +66,11 @@ def _append_registry_reports(reports: List[Tuple[int, str, str]], seen_fields: s
                 meta.execution_order,
             )
         except Exception as e:
-            logger.debug(f"聚合注册 Agent 报告失败: {e}")
+            logger.debug(f"Aggregation registration Agent report failure: {e}")
 
 
 def _append_workshop_agent_reports(reports: List[Tuple[int, str, str]], seen_fields: set, state: Dict[str, Any], stage: str) -> None:
-    """从 agent_configs 聚合 Agent 工坊发布的动态 Agent 报告。"""
+    """Aggregate dynamic Agent reports published by Agent Workshop from agent_configs."""
     try:
         from pymongo import MongoClient
         from tradingagents.config.mongodb_utils import build_mongodb_connection_string, get_mongodb_database_name
@@ -89,7 +89,7 @@ def _append_workshop_agent_reports(reports: List[Tuple[int, str, str]], seen_fie
         }))
         client.close()
     except Exception as e:
-        logger.debug(f"聚合 Agent 工坊报告失败: {e}")
+        logger.debug(f"Aggregation of Agent workshop reports failed: {e}")
         return
 
     for doc in docs:
@@ -101,11 +101,11 @@ def _append_workshop_agent_reports(reports: List[Tuple[int, str, str]], seen_fie
 
 def aggregate_stage_reports(state: Dict[str, Any], stage: str) -> str:
     """
-    聚合指定阶段所有 Agent 的报告。
+    Aggregate reports from all Agents in the specified stage.
 
     Args:
-        state: 当前工作流状态
-        stage: 阶段名称（analyst/research/risk/manager/trader）
+        state: Current workflow status
+        stage: Stage name (analyst/research/risk/manager/trader)
     """
     reports: List[Tuple[int, str, str]] = []
     seen_fields = set()
@@ -122,7 +122,7 @@ def aggregate_stage_reports(state: Dict[str, Any], stage: str) -> str:
 
 def inject_stage_reports(state: Dict[str, Any], variables: Dict[str, Any]) -> None:
     """
-    将阶段聚合报告注入到模板变量字典中。自动生成：
+    Inject stage aggregation reports into the template variable dictionary. Automatically generated:
     - analyst_reports
     - research_reports
     - risk_reports

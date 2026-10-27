@@ -1,4 +1,4 @@
-"""core.embedded_nanobot 包。
+"""core.embedded_nanobot package.
 
-Nanobot Runtime 已移除，保留 workflows/（LangGraph 工作流）和 intent_context.py（意图上下文工具）。
+Nanobot Runtime Removed, leaving workflows/ (LangGraph workflows) and intent_context.py (intent context tools).
 """

@@ -56,10 +56,10 @@ def test_market_environment_uses_actual_trade_date_and_omits_pe_pb(monkeypatch) 
     assert "2026-04-10" in report
     assert "PE:" not in report
     assert "PB:" not in report
-    assert "20日年化波动率" in report
-    assert "中等风险" not in report
-    assert "高风险" not in report
-    assert "低风险" not in report
+    assert "20 daily annualized volatility" in report
+    assert "medium risk" not in report
+    assert "high risk" not in report
+    assert "low risk" not in report
 
 
 def test_market_breadth_omits_activity_labels(monkeypatch) -> None:
@@ -82,10 +82,10 @@ def test_market_breadth_omits_activity_labels(monkeypatch) -> None:
 
     report = asyncio.run(module.get_market_breadth("2026-04-11"))
 
-    assert "总成交额" in report
-    assert "平均每家上市公司成交额" in report
-    assert "市场活跃度" not in report
-    assert "极度活跃" not in report
+    assert "Total turnover" in report
+    assert "Average turnover per listed company" in report
+    assert "market activity" not in report
+    assert "Extremely active" not in report
 
 
 def test_identify_market_cycle_removes_operation_advice(monkeypatch) -> None:
@@ -104,12 +104,12 @@ def test_identify_market_cycle_removes_operation_advice(monkeypatch) -> None:
     report = asyncio.run(module.identify_market_cycle("2026-04-11"))
 
     assert "2026-04-10" in report
-    assert "操作建议" not in report
-    assert "不代表趋势确认" in report
-    assert "规则识别区间" in report
-    assert "牛市阶段" not in report
-    assert "熊市阶段" not in report
-    assert "调整阶段" not in report
+    assert "Operation suggestions" not in report
+    assert "Does not represent trend confirmation" in report
+    assert "Rule recognition interval" in report
+    assert "bull market stage" not in report
+    assert "bear market stage" not in report
+    assert "adjustment stage" not in report
 
 
 def test_north_flow_uses_actual_trade_date_in_report(monkeypatch) -> None:
@@ -132,10 +132,10 @@ def test_north_flow_uses_actual_trade_date_in_report(monkeypatch) -> None:
 
     report = asyncio.run(module.get_north_flow("2026-04-11", lookback_days=10))
 
-    assert "📅 日期: 2026-04-10" in report
-    assert "已切换到最近交易日 2026-04-10" in report
-    assert "【资金情绪】" not in report
-    assert "外资积极流入" not in report
+    assert "📅 Date: 2026-04-10" in report
+    assert "Switched to the most recent trading day 2026-04-10" in report
+    assert " [Fund sentiment]" not in report
+    assert "Active inflow of foreign capital" not in report
 
 
 def test_margin_trading_flags_anomalous_change_fields(monkeypatch) -> None:
@@ -171,13 +171,13 @@ def test_margin_trading_flags_anomalous_change_fields(monkeypatch) -> None:
 
     report = asyncio.run(module.get_margin_trading("2026-04-11", lookback_days=10))
 
-    assert "字段一致性检查" in report
-    assert "变化字段可能存在口径差异或异常值" in report
-    assert "暂不据此延伸解读杠杆方向" in report
-    assert "【余额水平信号】" not in report
-    assert "融资余额处于相对谨慎区间" not in report
-    assert "【使用限制】" in report
-    assert "当前仅可引用余额数值，不应依据异常变化字段判断资金方向" in report
+    assert "Field consistency check" in report
+    assert "Variable fields may have caliber differences or outliers" in report
+    assert "We will not extend our interpretation of the leverage direction based on this for now." in report
+    assert " [Balance level signal]" not in report
+    assert "Financing balance is in a relatively cautious range" not in report
+    assert " [Usage restrictions]" in report
+    assert "Currently, only the balance value can be quoted, and the direction of funds should not be judged based on the abnormal change field." in report
 
 
 def test_margin_trading_reports_missing_exchange_coverage(monkeypatch) -> None:
@@ -202,15 +202,15 @@ def test_margin_trading_reports_missing_exchange_coverage(monkeypatch) -> None:
 
     report = asyncio.run(module.get_margin_trading("2026-04-11", lookback_days=10))
 
-    assert "【数据完整性】" in report
-    assert "数据状态: 不完整" in report
-    assert "已返回交易所: SSE" in report
-    assert "缺失交易所: SZSE、BSE" in report
-    assert "当前数据仅覆盖部分交易所，不代表 A 股全市场两融口径" in report
-    assert "不应据此判断两融余额水平、单日变化或杠杆资金方向" in report
-    assert "融资异常" not in report
-    assert "【今日两融余额】" not in report
-    assert "【余额水平信号】" not in report
+    assert " [Data integrity]" in report
+    assert "Data status: incomplete" in report
+    assert "Returned to exchange: SSE" in report
+    assert "Missing exchange: SZSE, BSE" in report
+    assert "The current data only covers some exchanges and does not represent the coverage of the entire A-share market." in report
+    assert "This should not be used to judge the balance level, single-day changes or the direction of leveraged funds." in report
+    assert "Financing anomaly" not in report
+    assert " [Today s balance of financing and financing]" not in report
+    assert " [Balance level signal]" not in report
 
 
 def test_index_technical_returns_rule_tags_without_summary_judgment(monkeypatch) -> None:
@@ -228,20 +228,20 @@ def test_index_technical_returns_rule_tags_without_summary_judgment(monkeypatch)
 
     report = asyncio.run(module.get_index_technical("2026-04-11", lookback_days=60))
 
-    assert "【指标规则标签】" in report
-    assert "偏上规则标签数量" in report
-    assert "偏下规则标签数量" in report
-    assert "不等同于市场结论" in report
-    assert "【技术面综合】" not in report
-    assert "技术面偏多，偏多特征占优" not in report
-    assert "技术面偏空，偏弱特征占优" not in report
-    assert "技术面中性" not in report
-    assert "指标看多" not in report
-    assert "指标看空" not in report
-    assert "多方占优" not in report
-    assert "空方占优" not in report
-    assert "底部金叉形成" not in report
-    assert "高位金叉" not in report
+    assert " [Indicator rules label]" in report
+    assert "Number of upper-biased rule labels" in report
+    assert "Number of lower rule labels" in report
+    assert "Not equivalent to market conclusion" in report
+    assert " [Comprehensive technical aspects]" not in report
+    assert "More technical aspects, more characteristics are dominant" not in report
+    assert "The technical aspect is bearish, and weak features dominate" not in report
+    assert "Technically neutral" not in report
+    assert "Indicators are bullish" not in report
+    assert "Indicators are bearish" not in report
+    assert "Many parties have the upper hand" not in report
+    assert "Short side dominates" not in report
+    assert "The bottom golden cross is formed" not in report
+    assert "High golden cross" not in report
 
 
 def test_limit_stats_uses_neutral_distribution_wording(monkeypatch) -> None:
@@ -275,18 +275,18 @@ def test_limit_stats_uses_neutral_distribution_wording(monkeypatch) -> None:
 
     report = asyncio.run(module.get_limit_stats("2026-04-11"))
 
-    assert "涨幅居前个股数量明显多于跌幅居前个股" in report
-    assert "赚钱效应强" not in report
-    assert "【市场情绪】" not in report
-    assert "极度乐观" not in report
-    assert "偏向乐观" not in report
-    assert "偏向悲观" not in report
-    assert "【涨跌停统计】" in report
-    assert "  • 涨停: 59 家" in report
-    assert "  • 跌停: 8 家" in report
-    assert "  • 连板: 17 家" in report
-    assert "【涨跌停统计（汇总口径）】" not in report
-    assert "【涨跌停统计（明细口径）】" not in report
-    assert "【口径差异摘要】" not in report
-    assert "汇总口径" not in report
-    assert "其中涨停家数" not in report
+    assert "The number of stocks with the largest increase was significantly greater than the number of stocks with the largest decrease." in report
+    assert "Strong money-making effect" not in report
+    assert " [Market Sentiment]" not in report
+    assert "extremely optimistic" not in report
+    assert "Optimistic" not in report
+    assert "tend to be pessimistic" not in report
+    assert " [Price limit statistics]" in report
+    assert "  • daily limit: 59 home" in report
+    assert "  • Limit down: 8 home" in report
+    assert "  • Even board: 17 home" in report
+    assert " [Price limit statistics (summary caliber)]" not in report
+    assert " [Price limit statistics (detailed caliber)]" not in report
+    assert " [Summary of caliber differences]" not in report
+    assert "Summary caliber" not in report
+    assert "Among them, the number of companies with daily limit" not in report

@@ -20,8 +20,8 @@ class _FakeMemoryService:
 def test_build_skill_memory_metadata_filters_prefers_category_and_data_source() -> None:
     spec = SkillSpec(
         tool_id="get_stock_news",
-        display_name="个股新闻",
-        description="获取个股新闻列表",
+        display_name="individual stock news",
+        description="Get a list of individual stock news",
         category="news",
         data_source="eastmoney",
     )
@@ -35,8 +35,8 @@ def test_build_skill_memory_metadata_filters_prefers_category_and_data_source() 
 def test_build_skill_memory_metadata_filters_falls_back_to_tool_id() -> None:
     spec = SkillSpec(
         tool_id="get_custom_payload",
-        display_name="自定义载荷",
-        description="生成自定义载荷",
+        display_name="Custom payload",
+        description="Generate custom payload",
         category="",
         data_source="",
     )
@@ -49,8 +49,8 @@ async def test_recall_skill_lessons_passes_metadata_filters(monkeypatch):
     fake_memory_service = _FakeMemoryService("skill lessons")
     spec = SkillSpec(
         tool_id="get_stock_news",
-        display_name="个股新闻",
-        description="获取个股新闻列表",
+        display_name="individual stock news",
+        description="Get a list of individual stock news",
         category="news",
         data_source="eastmoney",
     )

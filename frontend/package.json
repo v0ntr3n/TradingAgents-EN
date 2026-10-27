@@ -1,7 +1,7 @@
 {
   "name": "tradingagents-cn-pro-frontend",
   "version": "3.0.0",
-  "description": "TradingAgents-CN Pro 现代化前端界面",
+  "description": "TradingAgents-CN Pro Modern front-end interface",
   "type": "module",
   "scripts": {
     "dev": "vite",

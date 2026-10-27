@@ -13,13 +13,13 @@ def test_generated_external_skill_uses_parameter_schema_for_dict_invoke():
 
     metadata = ToolMetadata(
         id=tool_id,
-        name="测试外部 Skill",
-        description="验证外部 Skill 的参数 schema",
+        name="test external Skill",
+        description="Validate parameters of external Skill schema",
         category=ToolCategory.EXTERNAL,
         source="generated",
         parameters=[
-            ToolParameter(name="symbol", type="string", description="股票代码", required=True),
-            ToolParameter(name="periods", type="integer", description="期数", required=False, default=8),
+            ToolParameter(name="symbol", type="string", description="Stock code", required=True),
+            ToolParameter(name="periods", type="integer", description="Period", required=False, default=8),
         ],
     )
 
@@ -27,9 +27,9 @@ def test_generated_external_skill_uses_parameter_schema_for_dict_invoke():
     registry.register_function(
         tool_id=tool_id,
         func=external_skill_wrapper,
-        name="测试外部 Skill",
+        name="test external Skill",
         category="external",
-        description="验证外部 Skill 的参数 schema",
+        description="Validate parameters of external Skill schema",
         override=True,
         parameters=metadata.parameters,
     )

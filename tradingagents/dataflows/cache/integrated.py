@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-集成缓存管理器
-结合原有缓存系统和新的自适应数据库支持
-提供向后兼容的接口
+Integrated cache manager
+Combines legacy caching system with new adaptive database support
+Provides a backward-compatible interface
 """
 
 import os
@@ -12,13 +12,13 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 import pandas as pd
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import setup_dataflow_logging
 
-# 导入原有缓存系统
+# Import the original cache system
 from .file_cache import StockDataCache
 
-# 导入自适应缓存系统
+# Import adaptive caching system
 try:
     from .adaptive import AdaptiveCacheSystem
     from tradingagents.config.database_manager import get_database_manager
@@ -29,15 +29,15 @@ except ImportError as e:
     logging.getLogger(__name__).debug(f"自适应缓存不可用: {e}")
 
 class IntegratedCacheManager:
-    """集成缓存管理器 - 智能选择缓存策略"""
+    """Integrated cache manager - intelligent selection of cache strategies"""
     
     def __init__(self, cache_dir: str = None):
         self.logger = setup_dataflow_logging()
         
-        # 初始化原有缓存系统（作为备用）
+        # Initialize the original cache system (as a backup)
         self.legacy_cache = StockDataCache(cache_dir)
         
-        # 尝试初始化自适应缓存系统
+        # Try to initialize the adaptive caching system
         self.adaptive_cache = None
         self.use_adaptive = False
         
@@ -48,12 +48,12 @@ class IntegratedCacheManager:
                 self.use_adaptive = True
                 self.logger.info("✅ 自适应缓存系统已启用")
             except Exception as e:
-                self.logger.warning(f"自适应缓存系统初始化失败，使用传统缓存: {e}")
+                self.logger.warning(f"Adaptive cache system initialization failed, using legacy cache: {e}")
                 self.use_adaptive = False
         else:
-            self.logger.info("自适应缓存系统不可用，使用传统文件缓存")
+            self.logger.info("Adaptive caching system is not available, use traditional file caching")
         
-        # 显示当前配置
+        # Show current configuration
         self._log_cache_status()
     
     def _log_cache_status(self):
@@ -65,8 +65,8 @@ class IntegratedCacheManager:
             
             self.logger.info(f"📊 缓存配置:")
             self.logger.info(f"  主要后端: {backend}")
-            self.logger.info(f"  MongoDB: {'✅ 可用' if mongodb_available else '❌ 不可用'}")
-            self.logger.info(f"  Redis: {'✅ 可用' if redis_available else '❌ 不可用'}")
+            self.logger.info(f"  MongoDB: {'✅ Available' if mongodb_available else '❌ Not available'}")
+            self.logger.info(f"  Redis: {'✅ Available' if redis_available else '❌ Not available'}")
             self.logger.info(f"  降级支持: {'✅ 启用' if self.adaptive_cache.fallback_enabled else '❌ 禁用'}")
         else:
             self.logger.info("📁 使用传统文件缓存系统")
@@ -74,20 +74,20 @@ class IntegratedCacheManager:
     def save_stock_data(self, symbol: str, data: Any, start_date: str = None, 
                        end_date: str = None, data_source: str = "default") -> str:
         """
-        保存股票数据到缓存
+        Save stock data to cache
         
         Args:
-            symbol: 股票代码
-            data: 股票数据
-            start_date: 开始日期
-            end_date: 结束日期
-            data_source: 数据源
+            symbol: Stock code
+            data: stock data
+            start_date: start date
+            end_date: end date
+            data_source: data source
             
         Returns:
-            缓存键
+            cache key
         """
         if self.use_adaptive:
-            # 使用自适应缓存系统
+            # Use an adaptive caching system
             return self.adaptive_cache.save_data(
                 symbol=symbol,
                 data=data,
@@ -97,7 +97,7 @@ class IntegratedCacheManager:
                 data_type="stock_data"
             )
         else:
-            # 使用传统缓存系统
+            # Use a traditional caching system
             return self.legacy_cache.save_stock_data(
                 symbol=symbol,
                 data=data,
@@ -108,39 +108,39 @@ class IntegratedCacheManager:
     
     def load_stock_data(self, cache_key: str) -> Optional[Any]:
         """
-        从缓存加载股票数据
+        Load stock data from cache
         
         Args:
-            cache_key: 缓存键
+            cache_key: cache key
             
         Returns:
-            股票数据或None
+            stock data or None
         """
         if self.use_adaptive:
-            # 使用自适应缓存系统
+            # Use an adaptive caching system
             return self.adaptive_cache.load_data(cache_key)
         else:
-            # 使用传统缓存系统
+            # Use a traditional caching system
             return self.legacy_cache.load_stock_data(cache_key)
     
     def find_cached_stock_data(self, symbol: str, start_date: str = None, 
                               end_date: str = None, data_source: str = "default",
                               max_age_hours: int = None) -> Optional[str]:
         """
-        查找缓存的股票数据
+        Find cached stock data
         
         Args:
-            symbol: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
-            data_source: 数据源
-            max_age_hours: 最大缓存时间（小时），None 时使用缓存系统默认 TTL
+            symbol: Stock code
+            start_date: start date
+            end_date: end date
+            data_source: data source
+            max_age_hours: Maximum cache time (hours), use the cache system default when None TTL
             
         Returns:
-            缓存键或None
+            cache key or None
         """
         if self.use_adaptive:
-            # 使用自适应缓存系统
+            # Use an adaptive caching system
             cache_key = self.adaptive_cache.find_cached_data(
                 symbol=symbol,
                 start_date=start_date or "",
@@ -153,12 +153,12 @@ class IntegratedCacheManager:
                 return None
 
             if max_age_hours is not None and not self._is_adaptive_cache_within_age(cache_key, max_age_hours):
-                self.logger.info(f"⌛ 自适应缓存超出 max_age_hours 限制: {symbol} -> {cache_key}")
+                self.logger.info(f"⌛ Adaptive cache exceeds max_age_hours limit: {symbol} -> {cache_key}")
                 return None
 
             return cache_key
         else:
-            # 使用传统缓存系统
+            # Use a traditional caching system
             return self.legacy_cache.find_cached_stock_data(
                 symbol=symbol,
                 start_date=start_date,
@@ -170,7 +170,7 @@ class IntegratedCacheManager:
     def find_cacched_stock_data(self, symbol: str, start_date: str = None,
                                end_date: str = None, data_source: str = "default",
                                max_age_hours: int = None) -> Optional[str]:
-        """兼容历史拼写错误的缓存查找接口。"""
+        """Cache lookup interface compatible with historical misspellings."""
         return self.find_cached_stock_data(
             symbol=symbol,
             start_date=start_date,
@@ -180,7 +180,7 @@ class IntegratedCacheManager:
         )
 
     def _load_adaptive_cache_entry(self, cache_key: str) -> Optional[Dict[str, Any]]:
-        """读取自适应缓存底层条目，用于附加 TTL 校验。"""
+        """Read the adaptive cache underlying entry for additional TTL checking."""
         loaders = []
 
         if self.adaptive_cache.primary_backend == "redis":
@@ -202,7 +202,7 @@ class IntegratedCacheManager:
             try:
                 cache_entry = loader(cache_key)
             except Exception as e:
-                self.logger.debug(f"⚠️ 读取自适应缓存元数据失败: {cache_key}, error={e}")
+                self.logger.debug(f"⚠️ Failed to read adaptive cache metadata: {cache_key}, error={e}")
                 continue
 
             if cache_entry:
@@ -211,7 +211,7 @@ class IntegratedCacheManager:
         return None
 
     def _is_adaptive_cache_within_age(self, cache_key: str, max_age_hours: int) -> bool:
-        """检查自适应缓存是否落在调用方要求的时间窗口内。"""
+        """Check whether the adaptive cache falls within the time window required by the caller."""
         cache_entry = self._load_adaptive_cache_entry(cache_key)
         if not cache_entry:
             return False
@@ -263,18 +263,18 @@ class IntegratedCacheManager:
     def find_cached_fundamentals_data(self, symbol: str, data_source: str = None,
                                      max_age_hours: int = None) -> Optional[str]:
         """
-        查找匹配的基本面缓存数据
+        Find matching fundamental cache data
 
         Args:
-            symbol: 股票代码
-            data_source: 数据源（如 "openai", "finnhub"）
-            max_age_hours: 最大缓存时间（小时），None时使用智能配置
+            symbol: Stock code
+            data_source: data source (e.g. "openai", "finnhub") 
+            max_age_hours: Maximum cache time (hours), use smart configuration when None
 
         Returns:
-            cache_key: 如果找到有效缓存则返回缓存键，否则返回None
+            cache_key: Returns the cache key if a valid cache is found, otherwise None
         """
         if self.use_adaptive:
-            # 自适应缓存暂不支持查找功能，降级到文件缓存
+            # Adaptive cache does not currently support search function and is downgraded to file cache.
             return self.legacy_cache.find_cached_fundamentals_data(symbol, data_source, max_age_hours)
         else:
             return self.legacy_cache.find_cached_fundamentals_data(symbol, data_source, max_age_hours)
@@ -282,54 +282,54 @@ class IntegratedCacheManager:
     def is_fundamentals_cache_valid(self, symbol: str, data_source: str = None,
                                    max_age_hours: int = None) -> bool:
         """
-        检查基本面缓存是否有效
+        Check if fundamental cache is valid
 
         Args:
-            symbol: 股票代码
-            data_source: 数据源
-            max_age_hours: 最大缓存时间（小时）
+            symbol: Stock code
+            data_source: data source
+            max_age_hours: Maximum cache time (hours)
 
         Returns:
-            bool: 缓存是否有效
+            bool: Is the cache valid?
         """
         cache_key = self.find_cached_fundamentals_data(symbol, data_source, max_age_hours)
         return cache_key is not None
 
-    # ========== 分析报告缓存 ==========
+    # ========== Analysis report cache ==========
 
     def save_analysis_report(self, report_type: str, report_data: str,
                             symbol: str = None, trade_date: str = None,
                             data_source: str = "llm") -> str:
         """
-        保存分析报告到缓存
+        Save analysis report to cache
 
         Args:
-            report_type: 报告类型（如 "sector_report", "index_report"）
-            report_data: 报告内容
-            symbol: 股票代码（大盘分析可以为空）
-            trade_date: 交易日期
-            data_source: 数据源（默认为 "llm"）
+            report_type: Report type (e.g. "sector_report", "index_report") 
+            report_data: Report content
+            symbol: Stock code (can be empty for market analysis)
+            trade_date: transaction date
+            data_source: data source (default is "llm") 
 
         Returns:
-            cache_key: 缓存键
+            cache_key: cache key
         """
-        # 构建缓存键：report_type_symbol_trade_date_data_source
+        # Build cache key:report_type_symbol_trade_date_data_source
         key_parts = [report_type]
         if symbol:
             key_parts.append(symbol)
         if trade_date:
-            # 确保 trade_date 是字符串格式
+            # Make sure trade_date is in string format
             if hasattr(trade_date, 'strftime'):
-                # datetime 对象
+                # datetime object
                 trade_date_str = trade_date.strftime("%Y%m%d")
             else:
-                # 字符串，移除分隔符
+                # String, remove delimiter
                 trade_date_str = str(trade_date).split()[0].replace("-", "")
             key_parts.append(trade_date_str)
         key_parts.append(data_source)
         cache_key = "_".join(key_parts)
 
-        # 确保日期是字符串格式（用于 adaptive_cache）
+        # Make sure the date is in string format (for adaptive_cache)
         if trade_date:
             if hasattr(trade_date, 'strftime'):
                 trade_date_str_for_cache = trade_date.strftime("%Y-%m-%d")
@@ -338,7 +338,7 @@ class IntegratedCacheManager:
         else:
             trade_date_str_for_cache = ""
 
-        # 🔍 调试日志：记录保存参数
+        # 🔍 Debug log: record and save parameters
         self.logger.debug(f"💾 [IntegratedCache] save_analysis_report: report_type={report_type}, "
                           f"symbol={symbol}, trade_date={trade_date}, use_adaptive={self.use_adaptive}")
 
@@ -352,7 +352,7 @@ class IntegratedCacheManager:
                 data_type=report_type
             )
         else:
-            # 使用文件缓存的通用保存方法
+            # Universal save method using file cache
             return self.legacy_cache.save_fundamentals_data(
                 symbol=cache_key,
                 fundamentals_data=report_data,
@@ -361,13 +361,13 @@ class IntegratedCacheManager:
 
     def load_analysis_report(self, cache_key: str) -> Optional[str]:
         """
-        从缓存加载分析报告
+        Load analysis reports from cache
 
         Args:
-            cache_key: 缓存键
+            cache_key: cache key
 
         Returns:
-            报告内容，如果缓存不存在或失效则返回 None
+            Report content, returned if cache does not exist or is invalid None
         """
         if self.use_adaptive:
             return self.adaptive_cache.load_data(cache_key)
@@ -378,27 +378,27 @@ class IntegratedCacheManager:
                                    trade_date: str = None, data_source: str = "llm",
                                    max_age_hours: int = 12) -> Optional[str]:
         """
-        查找缓存的分析报告
+        Find cached analytics reports
 
         Args:
-            report_type: 报告类型（如 "sector_report", "index_report"）
-            symbol: 股票代码（大盘分析可以为空）
-            trade_date: 交易日期
-            data_source: 数据源
-            max_age_hours: 最大缓存时间（小时），默认12小时
+            report_type: Report type (e.g. "sector_report", "index_report") 
+            symbol: Stock code (can be empty for market analysis)
+            trade_date: transaction date
+            data_source: data source
+            max_age_hours: Maximum cache time (hours), default 12 hours
 
         Returns:
-            cache_key: 如果找到有效缓存则返回缓存键，否则返回 None
+            cache_key: Returns the cache key if a valid cache is found, otherwise None
         """
         if self.use_adaptive:
-            # 使用自适应缓存的查找方法
-            # 参数匹配 save_analysis_report 的保存方式
+            # Lookup method using adaptive cache
+            # Parameters match the saving method of save_analysis_report
             cache_key = self.adaptive_cache.find_cached_data(
                 symbol=symbol or "market",
                 start_date=trade_date or "",
                 end_date=trade_date or "",
                 data_source=data_source,
-                data_type=report_type  # report_type 作为 data_type
+                data_type=report_type  # report_type as data_type
             )
             if cache_key:
                 self.logger.info(f"🎯 找到{report_type}缓存: {symbol or 'market'} @ {trade_date}")
@@ -407,7 +407,7 @@ class IntegratedCacheManager:
                 self.logger.info(f"📭 未找到{report_type}缓存: {symbol or 'market'} @ {trade_date}")
                 return None
         else:
-            # 对于文件缓存，构建缓存键并查找
+            # For file caching, build the cache key and lookup
             key_parts = [report_type]
             if symbol:
                 key_parts.append(symbol)
@@ -420,13 +420,13 @@ class IntegratedCacheManager:
     def get_cache_stats(self) -> Dict[str, Any]:
         """获取缓存统计信息"""
         if self.use_adaptive:
-            # 获取自适应缓存统计（已经是标准格式）
+            # Get adaptive cache statistics (already in standard format)
             stats = self.adaptive_cache.get_cache_stats()
 
-            # 添加缓存系统信息
+            # Add cache system information
             stats['cache_system'] = 'adaptive'
 
-            # 确保后端信息存在
+            # Make sure the backend information exists
             if 'backend_info' not in stats:
                 stats['backend_info'] = {}
 
@@ -436,13 +436,13 @@ class IntegratedCacheManager:
 
             return stats
         else:
-            # 返回传统缓存统计（已经是标准格式）
+            # Return traditional cache statistics (already in standard format)
             stats = self.legacy_cache.get_cache_stats()
 
-            # 添加缓存系统信息
+            # Add cache system information
             stats['cache_system'] = 'legacy'
 
-            # 确保后端信息存在
+            # Make sure the backend information exists
             if 'backend_info' not in stats:
                 stats['backend_info'] = {}
 
@@ -457,36 +457,36 @@ class IntegratedCacheManager:
         if self.use_adaptive:
             self.adaptive_cache.clear_expired_cache()
 
-        # 总是清理传统缓存
+        # Always clear legacy cache
         self.legacy_cache.clear_expired_cache()
 
     def clear_old_cache(self, max_age_days: int = 7):
         """
-        清理过期缓存（兼容旧接口）
+        Clean expired cache (compatible with old interface)
 
         Args:
-            max_age_days: 清理多少天前的缓存，0表示清理所有缓存
+            max_age_days: How many days ago to clear the cache, 0 means clear all caches
 
         Returns:
-            清理的记录数
+            Number of records cleared
         """
         cleared_count = 0
 
-        # 1. 清理 Redis 缓存
+        # 1. Clean Redis cache
         if self.use_adaptive and self.db_manager.is_redis_available():
             try:
                 redis_client = self.db_manager.get_redis_client()
                 if max_age_days == 0:
-                    # 清空所有缓存
+                    # Clear all cache
                     redis_client.flushdb()
-                    self.logger.info(f"🧹 Redis 缓存已全部清空")
+                    self.logger.info(f"🧹 Redis All caches have been cleared")
                 else:
-                    # Redis 会自动过期，这里只记录日志
-                    self.logger.info(f"🧹 Redis 缓存会自动过期（TTL机制）")
+                    # Redis It will expire automatically. Only logs will be recorded here.
+                    self.logger.info(f"🧹 Redis The cache will automatically expire (TTL mechanism)")
             except Exception as e:
-                self.logger.error(f"⚠️ Redis 缓存清理失败: {e}")
+                self.logger.error(f"⚠️ Redis Cache cleanup failed: {e}")
 
-        # 2. 清理 MongoDB 缓存
+        # 2. Clean MongoDB cache
         if self.use_adaptive and self.db_manager.is_mongodb_available():
             try:
                 from datetime import datetime, timedelta
@@ -496,30 +496,30 @@ class IntegratedCacheManager:
                 mongodb_db = self.db_manager.get_mongodb_db()
 
                 if max_age_days == 0:
-                    # 清空所有缓存集合
+                    # Clear all cache collections
                     for collection_name in ["stock_data", "news_data", "fundamentals_data"]:
                         result = mongodb_db[collection_name].delete_many({})
                         cleared_count += result.deleted_count
                         self.logger.info(f"🧹 MongoDB {collection_name} 清空了 {result.deleted_count} 条记录")
                 else:
-                    # 清理过期数据
+                    # Clean up expired data
                     cutoff_time = datetime.now(ZoneInfo(get_timezone_name())) - timedelta(days=max_age_days)
                     for collection_name in ["stock_data", "news_data", "fundamentals_data"]:
                         result = mongodb_db[collection_name].delete_many({"created_at": {"$lt": cutoff_time}})
                         cleared_count += result.deleted_count
                         self.logger.info(f"🧹 MongoDB {collection_name} 清理了 {result.deleted_count} 条记录")
             except Exception as e:
-                self.logger.error(f"⚠️ MongoDB 缓存清理失败: {e}")
+                self.logger.error(f"⚠️ MongoDB Cache cleanup failed: {e}")
 
-        # 3. 清理文件缓存
+        # 3. Clean file cache
         try:
             file_cleared = self.legacy_cache.clear_old_cache(max_age_days)
-            # 文件缓存可能返回 None，需要处理
+            # File cache may return None and needs to be processed
             if file_cleared is not None:
                 cleared_count += file_cleared
                 self.logger.info(f"🧹 文件缓存清理了 {file_cleared} 个文件")
             else:
-                self.logger.info(f"🧹 文件缓存清理完成（返回值为None）")
+                self.logger.info(f"🧹 File cache cleanup completed (return value is None)")
         except Exception as e:
             self.logger.error(f"⚠️ 文件缓存清理失败: {e}")
 
@@ -560,30 +560,30 @@ class IntegratedCacheManager:
         redis_available = self.db_manager.is_redis_available()
         
         if redis_available and mongodb_available:
-            return "高性能模式 (Redis + MongoDB + 文件)"
+            return "High performance mode (Redis + MongoDB + File)"
         elif redis_available:
-            return "快速模式 (Redis + 文件)"
+            return "Quick mode (Redis + File)"
         elif mongodb_available:
-            return "持久化模式 (MongoDB + 文件)"
+            return "persistence mode (MongoDB + File)"
         else:
-            return "标准模式 (智能文件缓存)"
+            return "Standard mode (Smart file caching)"
 
 
-# 全局集成缓存管理器实例
+# Global Integrated Cache Manager Example
 _integrated_cache = None
 
 def get_cache() -> IntegratedCacheManager:
-    """获取全局集成缓存管理器实例"""
+    """Get global integrated cache manager instance"""
     global _integrated_cache
     if _integrated_cache is None:
         _integrated_cache = IntegratedCacheManager()
     return _integrated_cache
 
-# 向后兼容的函数
+# backward compatible functions
 def get_stock_cache():
-    """向后兼容：获取股票缓存"""
+    """Backwards Compatibility: Get Stock Cache"""
     return get_cache()
 
 def create_cache_manager(cache_dir: str = None):
-    """向后兼容：创建缓存管理器"""
+    """Backwards Compatibility: Creating a Cache Manager"""
     return IntegratedCacheManager(cache_dir)

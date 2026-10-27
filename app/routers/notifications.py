@@ -1,5 +1,5 @@
 """
-通知 REST API
+Notification REST API
 """
 import logging
 from typing import Optional
@@ -16,8 +16,8 @@ logger = logging.getLogger("webapi.notifications")
 
 @router.get("/notifications")
 async def list_notifications(
-    status: Optional[str] = Query(None, description="状态: unread|read|all"),
-    type: Optional[str] = Query(None, description="类型: analysis|alert|system"),
+    status: Optional[str] = Query(None, description="Status: unread|read|all"),
+    type: Optional[str] = Query(None, description="Type: analysis|alert|system"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: dict = Depends(get_current_user)
@@ -54,12 +54,12 @@ async def mark_all_read(user: dict = Depends(get_current_user)):
 
 @router.get("/notifications/debug/redis_pool")
 async def debug_redis_pool(user: dict = Depends(get_current_user)):
-    """调试端点：查看 Redis 连接池状态"""
+    """Debug endpoint: View Redis connection pool status"""
     try:
         r = get_redis_client()
         pool = r.connection_pool
 
-        # 获取连接池信息
+        # Get connection pool information
         pool_info = {
             "max_connections": pool.max_connections,
             "connection_class": str(pool.connection_class),
@@ -67,7 +67,7 @@ async def debug_redis_pool(user: dict = Depends(get_current_user)):
             "in_use_connections": len(pool._in_use_connections) if hasattr(pool, '_in_use_connections') else "N/A",
         }
 
-        # 获取 Redis 服务器信息
+        # Get Redis server information
         info = await r.info("clients")
         redis_info = {
             "connected_clients": info.get("connected_clients", "N/A"),
@@ -76,7 +76,7 @@ async def debug_redis_pool(user: dict = Depends(get_current_user)):
             "blocked_clients": info.get("blocked_clients", "N/A"),
         }
 
-        # 🔥 新增：获取 PubSub 频道信息
+        # 🔥 New: Get PubSub channel information
         try:
             pubsub_info = await r.execute_command("PUBSUB", "CHANNELS", "notifications:*")
             pubsub_channels = {
@@ -84,7 +84,7 @@ async def debug_redis_pool(user: dict = Depends(get_current_user)):
                 "channels": pubsub_info if pubsub_info else []
             }
         except Exception as e:
-            logger.warning(f"获取 PubSub 频道信息失败: {e}")
+            logger.warning(f"Failed to obtain PubSub channel information: {e}")
             pubsub_channels = {"error": str(e)}
 
         return ok(data={
@@ -93,5 +93,5 @@ async def debug_redis_pool(user: dict = Depends(get_current_user)):
             "pubsub": pubsub_channels
         })
     except Exception as e:
-        logger.error(f"获取 Redis 连接池信息失败: {e}", exc_info=True)
+        logger.error(f"Failed to obtain Redis connection pool information: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))

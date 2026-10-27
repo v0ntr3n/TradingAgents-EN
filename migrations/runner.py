@@ -1,7 +1,7 @@
 """
-迁移执行器
+Migrate executor
 
-负责扫描迁移脚本、检查执行状态、按顺序执行待处理的迁移。
+Responsible for scanning migration scripts, checking execution status, and executing pending migrations in sequence.
 """
 
 import importlib
@@ -15,24 +15,24 @@ logger = logging.getLogger("migrations")
 
 
 class MigrationRunner:
-    """数据库迁移执行器"""
+    """Database migration executor"""
 
     HISTORY_COLLECTION = "migration_history"
 
     def __init__(self, db):
         """
         Args:
-            db: AsyncIOMotorDatabase 实例
+            db: AsyncIOMotorDatabase Example
         """
         self.db = db
         self._migrations: List[Dict[str, Any]] = []
 
     def discover_migrations(self) -> List[Dict[str, Any]]:
         """
-        扫描 migrations 包中所有 v*.py 迁移脚本
+        Scan all migrations packages v*.py Migration script
         
         Returns:
-            按版本号排序的迁移信息列表
+            List of migration information sorted by version number
         """
         import migrations as mig_pkg
 
@@ -50,7 +50,7 @@ class MigrationRunner:
 
                 if not version or not upgrade_fn:
                     logger.warning(
-                        f"⚠️ 跳过 {modname}: 缺少 VERSION 或 upgrade 函数"
+                        f"⚠️ skip {modname}: Missing VERSION or upgrade function"
                     )
                     continue
 
@@ -62,15 +62,15 @@ class MigrationRunner:
                     "downgrade": downgrade_fn,
                 })
             except Exception as e:
-                logger.error(f"❌ 加载迁移脚本 {modname} 失败: {e}")
+                logger.error(f"❌ Load migration script {modname} failed: {e}")
 
-        # 按版本号排序（将 "2.0.1" 转为可比较的元组）
+        # Sort by version number (replace "2.0.1" to a comparable tuple)
         found.sort(key=lambda m: self._version_key(m["version"]))
         self._migrations = found
         return found
 
     async def get_applied_versions(self) -> List[str]:
-        """获取已执行成功的迁移版本列表"""
+        """Get a list of successfully executed migration versions"""
         cursor = self.db[self.HISTORY_COLLECTION].find(
             {"status": "success"},
             {"version": 1, "_id": 0},
@@ -79,7 +79,7 @@ class MigrationRunner:
         return [d["version"] for d in docs]
 
     async def get_pending(self) -> List[Dict[str, Any]]:
-        """获取待执行的迁移列表"""
+        """Get the list of pending migrations"""
         if not self._migrations:
             self.discover_migrations()
         applied = set(await self.get_applied_versions())
@@ -87,17 +87,17 @@ class MigrationRunner:
 
     async def run_pending(self) -> List[Dict[str, Any]]:
         """
-        执行所有待处理的迁移
+        Execute all pending migrations
         
         Returns:
-            已执行的迁移结果列表
+            List of performed migration results
         """
         pending = await self.get_pending()
         if not pending:
-            logger.info("✅ 数据库已是最新版本，无需迁移")
+            logger.info("✅ The database is already the latest version and does not need to be migrated")
             return []
 
-        logger.info(f"📦 发现 {len(pending)} 个待执行迁移")
+        logger.info(f"📦 discover {len(pending)} pending migrations")
         results = []
 
         for mig in pending:
@@ -105,33 +105,33 @@ class MigrationRunner:
             results.append(result)
             if result["status"] == "failed":
                 logger.error(
-                    f"❌ 迁移 {mig['version']} 失败，停止后续迁移"
+                    f"❌ Migrate {mig['version']} Failure, stop subsequent migrations"
                 )
                 break
 
         return results
 
     async def run_one(self, version: str) -> Dict[str, Any]:
-        """执行指定版本的迁移"""
+        """Execute migration of specified version"""
         if not self._migrations:
             self.discover_migrations()
         target = next(
             (m for m in self._migrations if m["version"] == version), None
         )
         if not target:
-            raise ValueError(f"未找到版本 {version} 的迁移脚本")
+            raise ValueError(f"version not found {version} migration script")
 
         applied = set(await self.get_applied_versions())
         if version in applied:
-            logger.info(f"⏭️ 版本 {version} 已执行过，跳过")
+            logger.info(f"⏭️ version {version} Already executed, skip")
             return {"version": version, "status": "skipped"}
 
         return await self._execute_one(target)
 
     async def _execute_one(self, mig: Dict[str, Any]) -> Dict[str, Any]:
-        """执行单个迁移"""
+        """Perform a single migration"""
         version = mig["version"]
-        logger.info(f"🔄 执行迁移 {version}: {mig['description']}")
+        logger.info(f"🔄 Execute migration {version}: {mig['description']}")
 
         start = time.monotonic()
         try:
@@ -149,7 +149,7 @@ class MigrationRunner:
             }
             await self.db[self.HISTORY_COLLECTION].insert_one(record)
             logger.info(
-                f"✅ 迁移 {version} 完成 ({duration_ms}ms)"
+                f"✅ Migrate {version} Complete ({duration_ms}ms)"
             )
             return {"version": version, "status": "success",
                     "duration_ms": duration_ms}
@@ -166,12 +166,12 @@ class MigrationRunner:
                 "error": str(e),
             }
             await self.db[self.HISTORY_COLLECTION].insert_one(record)
-            logger.error(f"❌ 迁移 {version} 失败: {e}")
+            logger.error(f"❌ Migrate {version} failed: {e}")
             return {"version": version, "status": "failed",
                     "error": str(e), "duration_ms": duration_ms}
 
     async def get_status(self) -> Dict[str, Any]:
-        """获取迁移状态摘要"""
+        """Get a summary of migration status"""
         if not self._migrations:
             self.discover_migrations()
         applied = await self.get_applied_versions()
@@ -186,16 +186,16 @@ class MigrationRunner:
 
     @staticmethod
     def _version_key(version: str):
-        """将版本号字符串转为可排序的元组，如 '2.0.1' -> (2, 0, 1)。
-        非数字段（如 beta.4）保留为字符串，统一转 int 失败的 fallback 到 0。"""
+        """Convert the version number string into a sortable tuple, such as '2.0.1' -> (2, 0, 1). 
+        Non-numeric fields (such as beta.4) are retained as strings, and fallback to 0 if conversion to int fails."""
         parts = []
         for p in version.split("."):
-            # 去掉非数字前缀（如 'beta' → ''），但不丢失语义段
+            # Remove non-numeric prefixes (e.g. 'beta' → '') , but does not lose the semantic segment
             digits = "".join(ch for ch in p if ch.isdigit())
             if digits:
                 parts.append(int(digits))
             else:
-                # 纯非数字段赋一个大值使其排在末尾
+                # Assign a large value to a pure non-numeric field so that it ranks at the end
                 parts.append(9999)
         return tuple(parts)
 

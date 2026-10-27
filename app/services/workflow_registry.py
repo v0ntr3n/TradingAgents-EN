@@ -1,7 +1,7 @@
 """
-分析工作流注册表
+Analytics workflow registry
 
-提供统一的工作流配置管理和查询功能
+Provide unified workflow configuration management and query functions
 """
 
 from typing import Dict, List, Optional, Any
@@ -13,52 +13,52 @@ logger = logging.getLogger(__name__)
 
 
 class AnalysisWorkflowConfig(BaseModel):
-    """分析工作流配置
+    """Analysis workflow configuration
     
-    定义一个分析流程的完整配置信息
+    Define the complete configuration information of an analysis process
     """
     task_type: AnalysisTaskType = Field(..., description="任务类型")
     workflow_id: str = Field(..., description="工作流ID")
     name: str = Field(..., description="流程名称")
     description: str = Field(default="", description="流程描述")
     
-    # 引擎配置
-    default_engine: str = Field(default="workflow", description="默认引擎: workflow/legacy/llm")
+    # Engine configuration
+    default_engine: str = Field(default="workflow", description="Default engine: workflow/legacy/llm")
     supported_engines: List[str] = Field(
         default_factory=lambda: ["workflow", "legacy", "llm"],
         description="支持的引擎列表"
     )
     
-    # 参数配置
+    # Parameter configuration
     required_params: List[str] = Field(default_factory=list, description="必需参数列表")
     optional_params: Dict[str, Any] = Field(default_factory=dict, description="可选参数及默认值")
     
-    # 执行配置
+    # Execute configuration
     timeout: int = Field(default=300, description="超时时间（秒）")
     max_retries: int = Field(default=3, description="最大重试次数")
     
-    # 偏好支持
-    supports_preference: bool = Field(default=True, description="是否支持分析偏好（aggressive/neutral/conservative）")
+    # Preference support
+    supports_preference: bool = Field(default=True, description="Whether to support analysis preferences (aggressive/neutral/conservative)")
     
-    # 元数据
+    # metadata
     version: str = Field(default="1.0.0", description="版本号")
     tags: List[str] = Field(default_factory=list, description="标签")
     is_active: bool = Field(default=True, description="是否启用")
 
 
 class AnalysisWorkflowRegistry:
-    """分析工作流注册表
+    """Analytics workflow registry
     
-    单例模式，管理所有分析流程的配置
+    Singleton mode, manages the configuration of all analysis processes
     
-    使用示例:
-        # 注册流程
+    Usage example:
+        # Registration process
         AnalysisWorkflowRegistry.register(config)
         
-        # 获取流程配置
+        # Get process configuration
         config = AnalysisWorkflowRegistry.get_config(AnalysisTaskType.STOCK_ANALYSIS)
         
-        # 列出所有流程
+        # List all processes
         all_configs = AnalysisWorkflowRegistry.list_all()
     """
     
@@ -67,28 +67,28 @@ class AnalysisWorkflowRegistry:
     
     @classmethod
     def register(cls, config: AnalysisWorkflowConfig) -> None:
-        """注册工作流配置
+        """Register workflow configuration
         
         Args:
-            config: 工作流配置对象
+            config: Workflow configuration object
         """
         if config.task_type in cls._registry:
-            logger.warning(f"工作流配置已存在，将被覆盖: {config.task_type}")
+            logger.warning(f"The workflow configuration already exists and will be overwritten: {config.task_type}")
         
         cls._registry[config.task_type] = config
         logger.info(f"✅ 注册工作流: {config.task_type} -> {config.workflow_id}")
     
     @classmethod
     def get_config(cls, task_type: AnalysisTaskType) -> Optional[AnalysisWorkflowConfig]:
-        """获取工作流配置
+        """Get workflow configuration
         
         Args:
-            task_type: 任务类型（可以是枚举值或字符串）
+            task_type: Task type (can be an enum value or a string)
             
         Returns:
-            工作流配置对象，如果不存在则返回 None
+            Workflow configuration object, returned if it does not exist None
         """
-        # 如果 task_type 是字符串，尝试转换为枚举
+        # If task_type is a string, try converting to an enum
         if isinstance(task_type, str):
             try:
                 task_type = AnalysisTaskType(task_type)
@@ -100,13 +100,13 @@ class AnalysisWorkflowRegistry:
     
     @classmethod
     def list_all(cls, active_only: bool = True) -> List[AnalysisWorkflowConfig]:
-        """列出所有工作流配置
+        """List all workflow configurations
         
         Args:
-            active_only: 是否只返回启用的流程
+            active_only: Whether to return only enabled processes
             
         Returns:
-            工作流配置列表
+            Workflow configuration list
         """
         configs = list(cls._registry.values())
         if active_only:
@@ -115,28 +115,28 @@ class AnalysisWorkflowRegistry:
     
     @classmethod
     def list_by_tag(cls, tag: str) -> List[AnalysisWorkflowConfig]:
-        """根据标签筛选工作流
+        """Filter workflows based on tags
         
         Args:
-            tag: 标签名称
+            tag: Tag name
             
         Returns:
-            匹配的工作流配置列表
+            List of matching workflow configurations
         """
         return [c for c in cls._registry.values() if tag in c.tags and c.is_active]
     
     @classmethod
     def validate_params(cls, task_type: AnalysisTaskType, params: Dict[str, Any]) -> tuple[bool, Optional[str]]:
-        """验证任务参数
+        """Verify task parameters
         
         Args:
-            task_type: 任务类型（可以是枚举值或字符串）
-            params: 任务参数
+            task_type: Task type (can be an enum value or a string)
+            params: Task parameters
             
         Returns:
-            (是否有效, 错误信息)
+            (Is it valid?, error message)
         """
-        # 如果 task_type 是字符串，尝试转换为枚举
+        # If task_type is a string, try converting to an enum
         if isinstance(task_type, str):
             try:
                 task_type = AnalysisTaskType(task_type)
@@ -147,7 +147,7 @@ class AnalysisWorkflowRegistry:
         if not config:
             return False, f"未注册的任务类型: {task_type}"
         
-        # 检查必需参数
+        # Check required parameters
         for required_param in config.required_params:
             if required_param not in params:
                 return False, f"缺少必需参数: {required_param}"
@@ -156,15 +156,15 @@ class AnalysisWorkflowRegistry:
     
     @classmethod
     def get_default_params(cls, task_type: AnalysisTaskType) -> Dict[str, Any]:
-        """获取默认参数
+        """Get default parameters
         
         Args:
-            task_type: 任务类型（可以是枚举值或字符串）
+            task_type: Task type (can be an enum value or a string)
             
         Returns:
-            默认参数字典
+            Default parameter dictionary
         """
-        # 如果 task_type 是字符串，尝试转换为枚举
+        # If task_type is a string, try converting to an enum
         if isinstance(task_type, str):
             try:
                 task_type = AnalysisTaskType(task_type)
@@ -190,25 +190,25 @@ class AnalysisWorkflowRegistry:
 
 
 def initialize_builtin_workflows() -> None:
-    """初始化内置工作流配置
+    """Initialize built-in workflow configuration
 
-    注册系统内置的研究流程：
-    1. 股票分析（TradingAgents完整流程）
-    2. 持仓研究
-    3. 交易复盘
+    Research process built into the registration system:
+    1. Stock analysis (TradingAgents complete process)
+    2. Position research
+    3. Transaction review
     """
     if AnalysisWorkflowRegistry.is_initialized():
-        logger.info("⏭️  工作流注册表已初始化，跳过")
+        logger.info("⏭️  Workflow registry has been initialized, skipped")
         return
 
-    logger.info("🚀 开始初始化内置工作流配置...")
+    logger.info("🚀 Start initializing the built-in workflow configuration...")
 
-    # 1. 股票分析流程
+    # 1. Stock analysis process
     AnalysisWorkflowRegistry.register(AnalysisWorkflowConfig(
         task_type=AnalysisTaskType.STOCK_ANALYSIS,
         workflow_id="v2_stock_analysis",
         name="股票完整分析",
-        description="基于v2.0 Agent架构的完整多智能体协作分析流程。包含6个专业分析师并行分析，2个研究员多情景研究，研究整合员综合评估并汇总结论，风险评估师把控风险。",
+        description="A complete multi-agent collaborative analysis process based on v2.0 Agent architecture. It includes 6 professional analysts for parallel analysis, 2 researchers for multi-scenario research, research integrators to conduct comprehensive assessments and summarize conclusions, and risk assessors to control risks.",
         default_engine="workflow",
         supported_engines=["workflow", "legacy"],
         required_params=["symbol", "market_type"],
@@ -219,7 +219,7 @@ def initialize_builtin_workflows() -> None:
             "include_sentiment": True,
             "include_risk": True
         },
-        timeout=600,  # 10分钟
+        timeout=600,  # 10 minutes
         max_retries=3,
         supports_preference=True,
         version="2.0.0",
@@ -227,12 +227,12 @@ def initialize_builtin_workflows() -> None:
         is_active=True
     ))
 
-    # 2. 持仓研究流程
+    # 2. Position research process
     AnalysisWorkflowRegistry.register(AnalysisWorkflowConfig(
         task_type=AnalysisTaskType.POSITION_ANALYSIS,
         workflow_id="position_analysis_v2",
         name="持仓研究",
-        description="单股持仓研究流程。包含持仓技术研究、持仓基本面研究、持仓风险评估与持仓结论整合。",
+        description="Single stock position research process. It includes the integration of position technical research, position fundamental research, position risk assessment and position conclusion.",
         default_engine="workflow",
         supported_engines=["workflow", "llm"],
         required_params=["position_id"],
@@ -244,7 +244,7 @@ def initialize_builtin_workflows() -> None:
             "max_position_pct": 30.0,
             "max_loss_pct": 10.0
         },
-        timeout=300,  # 5分钟
+        timeout=300,  # 5 minutes
         max_retries=3,
         supports_preference=True,
         version="1.0.0",
@@ -252,12 +252,12 @@ def initialize_builtin_workflows() -> None:
         is_active=True
     ))
 
-    # 2.5 ETF 分析流程
+    # 2.5 ETF Analysis process
     AnalysisWorkflowRegistry.register(AnalysisWorkflowConfig(
         task_type=AnalysisTaskType.ETF_ANALYSIS,
         workflow_id="v2_etf_analysis",
         name="ETF 分析",
-        description="ETF 专用分析流程。包含 ETF 分析师、市场分析师、新闻分析师，无牛熊辩论。",
+        description="ETF Dedicated analysis process. Contains ETF analysts, market analysts, news analysts, no bull and bear debates.",
         default_engine="workflow",
         supported_engines=["workflow"],
         required_params=["symbol", "market_type"],
@@ -274,12 +274,12 @@ def initialize_builtin_workflows() -> None:
         is_active=True
     ))
 
-    # 3. 交易复盘流程
+    # 3. Transaction review process
     AnalysisWorkflowRegistry.register(AnalysisWorkflowConfig(
         task_type=AnalysisTaskType.TRADE_REVIEW,
         workflow_id="trade_review_v2",
         name="交易复盘",
-        description="交易复盘流程。包含时机复盘、仓位复盘、情绪与纪律复盘、归因复盘与复盘总结。",
+        description="Transaction review process. Including timing review, position review, emotion and discipline review, attribution review and review summary.",
         default_engine="workflow",
         supported_engines=["workflow", "llm"],
         required_params=["review_id"],
@@ -287,7 +287,7 @@ def initialize_builtin_workflows() -> None:
             "trading_system_id": None,
             "include_plan_analysis": True
         },
-        timeout=300,  # 5分钟
+        timeout=300,  # 5 minutes
         max_retries=3,
         supports_preference=True,
         version="2.0.0",
@@ -295,12 +295,12 @@ def initialize_builtin_workflows() -> None:
         is_active=True
     ))
 
-    # 4. 组合健康度分析流程（预留）
+    # 4. Combined health analysis process (reserved)
     AnalysisWorkflowRegistry.register(AnalysisWorkflowConfig(
         task_type=AnalysisTaskType.PORTFOLIO_HEALTH,
         workflow_id="portfolio_health",
         name="组合健康度分析",
-        description="投资组合健康度分析流程。评估组合的风险、收益、集中度等指标。",
+        description="Portfolio health analysis process. Evaluate the risk, return, concentration and other indicators of the portfolio.",
         default_engine="llm",
         supported_engines=["llm"],
         required_params=["user_id"],
@@ -308,7 +308,7 @@ def initialize_builtin_workflows() -> None:
             "include_paper": True,
             "research_depth": "标准"
         },
-        timeout=180,  # 3分钟
+        timeout=180,  # 3 minutes
         max_retries=3,
         supports_preference=True,
         version="1.0.0",

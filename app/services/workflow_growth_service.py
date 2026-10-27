@@ -1,7 +1,7 @@
 """
-工作流成长服务
+Workflow growth services
 
-负责在统一任务完成后提取候选记忆与成长建议，并提供审核查询能力。
+Responsible for extracting candidate memories and growth suggestions after the unified task is completed, and providing review and query capabilities.
 """
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ GROWTH_FIELD_TITLES: Dict[str, str] = {
 
 
 class WorkflowGrowthService:
-    """工作流成长服务。"""
+    """Workflow growth services."""
 
     def __init__(self):
         self.db = get_mongo_db()
@@ -80,7 +80,7 @@ class WorkflowGrowthService:
         formatted_result: Dict[str, Any],
         analysis_id: Optional[str] = None,
     ) -> TaskGrowthContext:
-        """从已完成任务中提取成长产物。"""
+        """Extract growth products from completed tasks."""
         existing = await self._get_task_growth_context(str(task.user_id), task.task_id)
         if existing and (existing.memory_items_count > 0 or existing.suggestions_count > 0):
             return existing
@@ -248,13 +248,13 @@ class WorkflowGrowthService:
         max_chars: int = 3000,
     ) -> str:
         """
-        为即将执行的工作流构建已批准记忆的召回上下文。
+        Build recall context of approved memories for upcoming workflows.
 
-        按优先级查询: object_tracking（与标的相关）> pattern >
-        research_asset，拼接为结构化文本注入工作流输入。
+        Query by priority: object_tracking (related to the subject matter)> pattern >
+        research_asset, Splicing injects workflow input into structured text.
 
         Returns:
-            可直接注入提示词的 Markdown 文本，无记忆时返回空字符串
+            The Markdown text of the prompt word can be directly injected, and an empty string will be returned if there is no memory.
         """
         query: Dict[str, Any] = {
             "user_id": user_id,
@@ -263,7 +263,7 @@ class WorkflowGrowthService:
 
         recall_items: List[Dict[str, Any]] = []
 
-        # 优先级 1: 与当前标的相关的 object_tracking 记忆
+        # priority 1: object_tracking memory associated with the current object
         if ticker:
             obj_query = {**query, "object_key": ticker}
             docs = await (
@@ -277,7 +277,7 @@ class WorkflowGrowthService:
 
         remaining = max_items - len(recall_items)
 
-        # 优先级 2: pattern 记忆
+        # priority 2: pattern memory
         if remaining > 0 and workflow_id:
             wf_query = {
                 **query,
@@ -298,7 +298,7 @@ class WorkflowGrowthService:
 
         remaining = max_items - len(recall_items)
 
-        # 优先级 3: research_asset 记忆
+        # priority 3: research_asset memory
         if remaining > 0:
             ra_query = {
                 **query,
@@ -319,8 +319,8 @@ class WorkflowGrowthService:
         if not recall_items:
             return ""
 
-        # 拼接为结构化文本
-        lines = ["## 历史研究记忆（已审核批准）\n"]
+        # Spliced into structured text
+        lines = ["## Historical research memory (reviewed and approved)\n"]
         total_chars = 0
         for item in recall_items:
             title = item.get("title", "")
@@ -479,7 +479,7 @@ class WorkflowGrowthService:
         if summary:
             content_parts.append(summary)
         if key_points:
-            content_parts.append("关键要点：\n- " + "\n- ".join(key_points[:5]))
+            content_parts.append("Key takeaways:\n- " + "\n- ".join(key_points[:5]))
 
         return self._make_memory_doc(
             task=task,
@@ -524,11 +524,11 @@ class WorkflowGrowthService:
         if review_summary:
             content_parts.append(review_summary)
         if strengths:
-            content_parts.append("保留做法：\n- " + "\n- ".join(strengths[:5]))
+            content_parts.append("Keep the method:\n- " + "\n- ".join(strengths[:5]))
         if weaknesses:
-            content_parts.append("高频偏差：\n- " + "\n- ".join(weaknesses[:5]))
+            content_parts.append("High frequency deviation:\n- " + "\n- ".join(weaknesses[:5]))
         if suggestions:
-            content_parts.append("改进建议：\n- " + "\n- ".join(suggestions[:5]))
+            content_parts.append("Improvement suggestions:\n- " + "\n- ".join(suggestions[:5]))
 
         return self._make_memory_doc(
             task=task,
@@ -627,7 +627,7 @@ class WorkflowGrowthService:
 
             return profiles
         except Exception as exc:
-            logger.warning(f"⚠️ 加载成长字段配置失败，将退回现有硬编码逻辑: {exc}")
+            logger.warning(f"⚠️ Failed to load growth field configuration, will fall back to existing hard-coded logic: {exc}")
             return {}
 
     def _coerce_memory_scope(self, value: Any) -> GrowthMemoryScope:
@@ -750,7 +750,7 @@ class WorkflowGrowthService:
                     object_type=object_type,
                     object_key=object_key,
                     suggestion_type=GrowthSuggestionType.WORKFLOW_OPTIMIZATION,
-                    title="建议为交易复盘流程补充纪律与偏差检查",
+                    title="It is recommended to supplement the transaction review process with discipline and deviation checks",
                     summary=self._summarize_text("；".join((weaknesses + suggestions_list)[:4])),
                     confidence=0.8,
                     source_refs=evidence_refs,
@@ -759,7 +759,7 @@ class WorkflowGrowthService:
                         "mode": "start_session",
                         "payload": {
                             "workflow_id": task.workflow_id,
-                            "description": "根据复盘偏差模式优化复盘流程，补充纪律与执行偏差检查节点",
+                            "description": "Optimize the review process based on the review deviation model, and supplement discipline and execution deviation inspection nodes",
                         },
                     },
                 )
@@ -1054,45 +1054,45 @@ class WorkflowGrowthService:
 
     @staticmethod
     def _strip_markdown(text: str) -> str:
-        """去除 Markdown 格式标记，保留纯文本内容。"""
+        """Remove Markdown formatting tags and retain plain text content."""
         import re
-        # 去除代码块
+        # Remove code blocks
         text = re.sub(r'```[\s\S]*?```', ' ', text)
-        # 去除行内代码
+        # Remove inline code
         text = re.sub(r'`[^`]+`', lambda m: m.group(0).strip('`'), text)
-        # 去除表格分隔行 |---|---|
+        # Remove table separator rows |---|---|
         text = re.sub(r'\|[\s\-:]+\|[\s\-:|]*', ' ', text)
-        # 去除表格行开头和结尾的 |
+        # Remove the beginning and end of table rows |
         text = re.sub(r'^\s*\||\|\s*$', ' ', text, flags=re.MULTILINE)
-        # 去除表格内部的 | 分隔符
+        # Remove the inside of the table | delimiter
         text = re.sub(r'\|', '，', text)
-        # 去除标题标记 ##
+        # Remove title tag ##
         text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
-        # 去除加粗 **text** 和 __text__
+        # Remove bold **text** and __text__
         text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
         text = re.sub(r'__(.+?)__', r'\1', text)
-        # 去除斜体 *text* 和 _text_（注意不要误伤下划线变量名）
+        # Remove italics *text* and _text_ (be careful not to accidentally damage underlined variable names)
         text = re.sub(r'(?<!\w)\*(.+?)\*(?!\w)', r'\1', text)
-        # 去除列表标记 - 和 *
+        # Remove list markers - and *
         text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)
-        # 去除有序列表标记 1.
+        # Remove ordered list markup 1.
         text = re.sub(r'^\s*\d+\.\s+', '', text, flags=re.MULTILINE)
-        # 去除 emoji
+        # remove emoji
         text = re.sub(r'[📊📈📉🔍✅❌⚠️💡🎯🔥📋🔑💰📌🏆🔧⬆⬇➡️▲▼●◆■□★☆]', '', text)
-        # 去除图片和链接语法
+        # Remove image and link syntax
         text = re.sub(r'!\[.*?\]\(.*?\)', '', text)
         text = re.sub(r'\[(.+?)\]\(.*?\)', r'\1', text)
-        # 压缩多余空白
+        # Compress extra white space
         text = re.sub(r'[ \t]+', ' ', text)
         text = re.sub(r'\n\s*\n', '\n', text)
         return text.strip()
 
     def _summarize_text(self, value: str, limit: int = 180) -> str:
         text = self._extract_text(value)
-        # 先去除 Markdown 格式标记，再做摘要截断
+        # First remove the Markdown format mark, and then truncate the summary
         text = self._strip_markdown(text)
         text = text.replace("\r", " ").replace("\n", " ").strip()
-        # 压缩连续空格
+        # Compress consecutive spaces
         import re
         text = re.sub(r' {2,}', ' ', text)
         if len(text) <= limit:
@@ -1149,7 +1149,7 @@ class WorkflowGrowthService:
                     "ai_message": session_result.get("ai_message"),
                 }
             except Exception as exc:
-                logger.warning(f"⚠️ 接受成长建议后触发工作流优化会话失败: {exc}")
+                logger.warning(f"⚠️ Triggering workflow optimization session after accepting growth suggestions fails: {exc}")
                 return {
                     "status": "failed",
                     "target": target,
@@ -1164,9 +1164,9 @@ class WorkflowGrowthService:
         }
 
     async def _sync_approved_memory_to_mem0(self, memory_doc: Dict[str, Any]) -> None:
-        """将已批准的成长记忆桥接到 mem0。
+        """Bridge approved growing memory to mem0.
 
-        该桥接采用 best-effort 策略：失败仅记录日志，不影响 Mongo 审批结果。
+        This bridge adopts the best-effort strategy: failures are only logged and do not affect the Mongo approval results.
         """
         try:
             from core.memory.service import get_memory_service
@@ -1189,21 +1189,21 @@ class WorkflowGrowthService:
 
             if not result.success:
                 logger.warning(
-                    "⚠️ 成长记忆桥接 mem0 失败: memory_id=%s error=%s",
+                    "⚠️ Growing memory bridge mem0 failed: memory_id=%s error=%s",
                     memory_doc.get("memory_id"),
                     result.error or "unknown",
                 )
                 return
 
             logger.info(
-                "✅ 成长记忆已桥接到 mem0: memory_id=%s scope=%s facts=%s",
+                "✅ Growing memories have been bridged to mem0: memory_id=%s scope=%s facts=%s",
                 memory_doc.get("memory_id"),
                 scope,
                 result.facts_extracted,
             )
         except Exception as exc:
             logger.warning(
-                "⚠️ 成长记忆桥接 mem0 异常: memory_id=%s error=%s",
+                "⚠️ Growth memory bridge mem0 exception: memory_id=%s error=%s",
                 memory_doc.get("memory_id"),
                 exc,
             )
@@ -1307,8 +1307,8 @@ def build_recall_context_sync(
     max_chars: int = 3000,
 ) -> str:
     """
-    同步版本的记忆召回，供同步工作流执行路径使用。
-    通过 pymongo 同步查询，避免在非 asyncio 线程中调用异步代码。
+    Synchronized version of memory recall for use by synchronized workflow execution paths.
+    Synchronize queries with pymongo to avoid calling asynchronous code in non-asyncio threads.
     """
     from app.core.database import get_mongo_db_sync
 
@@ -1363,7 +1363,7 @@ def build_recall_context_sync(
     if not recall_items:
         return ""
 
-    lines = ["## 历史研究记忆（已审核批准）\n"]
+    lines = ["## Historical research memory (reviewed and approved)\n"]
     total_chars = 0
     for item in recall_items:
         title = item.get("title", "")

@@ -1,5 +1,5 @@
-# 导入基础模块
-# Finnhub 工具（支持新旧路径）
+# Import basic modules
+# Finnhub Tools (supports old and new paths)
 try:
     from .providers.us import get_data_in_range
 except ImportError:
@@ -8,11 +8,11 @@ except ImportError:
     except ImportError:
         get_data_in_range = None
 
-# 导入新闻模块（新路径）
+# Import news module (new path)
 try:
     from .news import getNewsData, fetch_top_from_category
 except ImportError:
-    # 向后兼容：尝试从旧路径导入
+    # Backward compatibility: try importing from old path
     try:
         from .news.google_news import getNewsData
     except ImportError:
@@ -22,11 +22,11 @@ except ImportError:
     except ImportError:
         fetch_top_from_category = None
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 
-# 尝试导入yfinance相关模块（支持新旧路径）
+# Try to import yfinance related modules (supports old and new paths)
 try:
     from .providers.us import YFinanceUtils, YFINANCE_AVAILABLE
 except ImportError:
@@ -34,20 +34,20 @@ except ImportError:
         from .yfin_utils import YFinanceUtils
         YFINANCE_AVAILABLE = True
     except ImportError as e:
-        logger.warning(f"⚠️ yfinance模块不可用: {e}")
+        logger.warning(f"⚠️ yfinance Module not available: {e}")
         YFinanceUtils = None
         YFINANCE_AVAILABLE = False
 
-# 导入技术指标模块（新路径）
+# Import technical indicator module (new path)
 try:
     from .technical import StockstatsUtils, STOCKSTATS_AVAILABLE
 except ImportError as e:
-    # 向后兼容：尝试从旧路径导入
+    # Backward compatibility: try importing from old path
     try:
         from .technical.stockstats import StockstatsUtils
         STOCKSTATS_AVAILABLE = True
     except ImportError as e:
-        logger.warning(f"⚠️ stockstats模块不可用: {e}")
+        logger.warning(f"⚠️ stockstats Module not available: {e}")
         StockstatsUtils = None
         STOCKSTATS_AVAILABLE = False
 

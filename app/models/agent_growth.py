@@ -1,5 +1,5 @@
 """
-Agent 成长相关数据模型
+Agent Growth related data model
 """
 
 from datetime import datetime
@@ -14,7 +14,7 @@ from app.utils.timezone import now_tz
 
 
 class GrowthMemoryScope(str, Enum):
-    """长期成长记忆的边界分类"""
+    """Boundary classification of long-term growth memory"""
     TASK_TEMP = "task_temp"
     OBJECT_TRACKING = "object_tracking"
     USER_PREFERENCE = "user_preference"
@@ -23,7 +23,7 @@ class GrowthMemoryScope(str, Enum):
 
 
 class GrowthMemoryStatus(str, Enum):
-    """记忆条目状态"""
+    """Memory entry status"""
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -31,13 +31,13 @@ class GrowthMemoryStatus(str, Enum):
 
 
 class GrowthReviewLevel(str, Enum):
-    """审核等级"""
+    """Audit level"""
     AUTO_PENDING = "auto_pending"
     MANUAL_REQUIRED = "manual_required"
 
 
 class GrowthSuggestionStatus(str, Enum):
-    """建议状态"""
+    """Suggestion status"""
     PENDING = "pending"
     ACCEPTED = "accepted"
     DISMISSED = "dismissed"
@@ -45,7 +45,7 @@ class GrowthSuggestionStatus(str, Enum):
 
 
 class GrowthSuggestionType(str, Enum):
-    """成长建议类型"""
+    """Growth advice types"""
     MEMORY_PROMOTION = "memory_promotion"
     RESEARCH_ASSET_PROMOTION = "research_asset_promotion"
     WORKFLOW_OPTIMIZATION = "workflow_optimization"
@@ -53,14 +53,14 @@ class GrowthSuggestionType(str, Enum):
 
 
 class GrowthEvidenceRef(BaseModel):
-    """成长证据引用"""
+    """Growth Evidence Citations"""
     type: str
     id: str
     label: Optional[str] = None
 
 
 class AgentGrowthMemoryItem(BaseModel):
-    """成长记忆条目"""
+    """Growth memory items"""
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     memory_id: str
     user_id: str
@@ -100,7 +100,7 @@ class AgentGrowthMemoryItem(BaseModel):
 
 
 class AgentGrowthSuggestion(BaseModel):
-    """成长建议条目"""
+    """Growth advice items"""
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     suggestion_id: str
     user_id: str
@@ -136,7 +136,7 @@ class AgentGrowthSuggestion(BaseModel):
 
 
 class TaskGrowthContext(BaseModel):
-    """任务级成长提取摘要"""
+    """Task-level growth extraction summary"""
     memory_items_count: int = 0
     suggestions_count: int = 0
     memory_item_ids: List[str] = Field(default_factory=list)

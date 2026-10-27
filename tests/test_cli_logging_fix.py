@@ -1,68 +1,68 @@
 #!/usr/bin/env python3
 """
-测试CLI日志修复效果
-验证用户界面是否清爽，日志是否只写入文件
+Test the CLI log repair effect
+Verify that the user interface is clean and that logs are only written to files.
 """
 
 import os
 import sys
 import subprocess
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_cli_logging_setup():
-    """测试CLI日志设置"""
-    print("🔧 测试CLI日志设置")
+    """Test CLI log settings"""
+    print("🔧 Test CLI log settings")
     print("=" * 60)
     
     try:
-        # 导入CLI模块，触发日志设置
+        # Import the CLI module to trigger log settings
         from cli.main import setup_cli_logging, logger
         from tradingagents.utils.logging_manager import get_logger_manager
         
-        print("📊 测试前的日志处理器:")
+        print("📊 Log processor before testing:")
         logger_manager = get_logger_manager()
         handlers_before = len(logger_manager.root_logger.handlers)
         console_handlers_before = sum(1 for h in logger_manager.root_logger.handlers 
                                     if hasattr(h, 'stream') and h.stream.name == '<stderr>')
-        print(f"   总处理器数量: {handlers_before}")
-        print(f"   控制台处理器数量: {console_handlers_before}")
+        print(f"   Total number of processors: {handlers_before}")
+        print(f"   Number of console processors: {console_handlers_before}")
         
-        # 执行CLI日志设置
+        # Execute CLI log settings
         setup_cli_logging()
         
-        print("\n📊 测试后的日志处理器:")
+        print("\n📊 Log processor after testing:")
         handlers_after = len(logger_manager.root_logger.handlers)
         console_handlers_after = sum(1 for h in logger_manager.root_logger.handlers 
                                    if hasattr(h, 'stream') and h.stream.name == '<stderr>')
-        print(f"   总处理器数量: {handlers_after}")
-        print(f"   控制台处理器数量: {console_handlers_after}")
+        print(f"   Total number of processors: {handlers_after}")
+        print(f"   Number of console processors: {console_handlers_after}")
         
-        # 验证效果
+        # Verify effect
         if console_handlers_after < console_handlers_before:
-            print("✅ 控制台日志处理器已成功移除")
+            print("✅ Console log handler successfully removed")
         else:
-            print("⚠️ 控制台日志处理器未完全移除")
+            print("⚠️ Console log processor not completely removed")
         
-        # 测试日志输出
-        print("\n🧪 测试日志输出:")
-        print("   执行 logger.info('测试消息')...")
-        logger.info("这是一条测试日志消息，应该只写入文件，不在控制台显示")
-        print("   ✅ 如果上面没有显示时间戳和日志信息，说明修复成功")
+        # Test log output
+        print("\n🧪 Test log output:")
+        print("   execute logger.info('test message')...")
+        logger.info("This is a test log message and should only be written to the file and not displayed on the console")
+        print("   ✅ If the timestamp and log information are not displayed above, the repair is successful.")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_console_output():
-    """测试console输出"""
-    print("\n🎨 测试console输出")
+    """Test console output"""
+    print("\n🎨 Test console output")
     print("=" * 60)
     
     try:
@@ -70,65 +70,65 @@ def test_console_output():
         
         console = Console()
         
-        print("📊 测试Rich Console输出:")
-        console.print("[bold cyan]这是一条用户界面消息[/bold cyan]")
-        console.print("[green]✅ 这应该正常显示，没有时间戳[/green]")
-        console.print("[yellow]💡 这是用户友好的提示信息[/yellow]")
+        print("📊 Test Rich Console output:")
+        console.print("[bold cyan]This is a user interface message[/bold cyan]")
+        console.print("[green]✅ This should display normally without timestamp[/green]")
+        console.print("[yellow]💡 This is a user-friendly prompt message[/yellow]")
         
-        print("✅ Console输出正常，界面清爽")
+        print("✅ Console The output is normal and the interface is refreshing")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def test_log_file_writing():
-    """测试日志文件写入"""
-    print("\n📁 测试日志文件写入")
+    """Test log file writing"""
+    print("\n📁 Test log file writing")
     print("=" * 60)
     
     try:
         from cli.main import logger
         import glob
         
-        # 写入测试日志
-        test_message = "CLI日志修复测试消息 - 这应该只出现在日志文件中"
+        # Write test log
+        test_message = "CLI Log fix test message - this should only appear in the log file"
         logger.info(test_message)
         
-        # 查找日志文件
+        # Find log files
         log_files = glob.glob("data/logs/*.log") + glob.glob("logs/*.log") + glob.glob("*.log")
         
         if log_files:
-            print(f"📄 找到日志文件: {log_files}")
+            print(f"📄 log file found: {log_files}")
             
-            # 检查最新的日志文件
+            # Check latest log files
             latest_log = max(log_files, key=os.path.getmtime)
-            print(f"📄 检查最新日志文件: {latest_log}")
+            print(f"📄 Check latest log files: {latest_log}")
             
             try:
                 with open(latest_log, 'r', encoding='utf-8') as f:
                     content = f.read()
                     if test_message in content:
-                        print("✅ 测试消息已写入日志文件")
+                        print("✅ Test messages are written to the log file")
                         return True
                     else:
-                        print("⚠️ 测试消息未在日志文件中找到")
+                        print("⚠️ Test message not found in log file")
                         return False
             except Exception as e:
-                print(f"⚠️ 读取日志文件失败: {e}")
+                print(f"⚠️ Failed to read log file: {e}")
                 return False
         else:
-            print("⚠️ 未找到日志文件")
+            print("⚠️ Log file not found")
             return False
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def test_cli_interface_preview():
-    """预览CLI界面效果"""
-    print("\n👀 预览CLI界面效果")
+    """Preview CLI interface effect"""
+    print("\n👀 Preview CLI interface effect")
     print("=" * 60)
     
     try:
@@ -137,91 +137,91 @@ def test_cli_interface_preview():
         
         console = Console()
         
-        # 模拟修复后的CLI界面
-        print("🎭 模拟修复后的CLI界面:")
+        # Simulate the repaired CLI interface
+        print("🎭 Simulate the repaired CLI interface:")
         print("-" * 40)
         
-        # 标题
+        # Title
         title_panel = Panel(
-            "[bold blue]步骤 1: 选择市场 | Step 1: Select Market[/bold blue]\n"
-            "请选择要分析的股票市场 | Please select the stock market to analyze",
+            "[bold blue]steps 1: Choose a market | Step 1: Select Market[/bold blue]\n"
+            "Please select the stock market you want to analyze | Please select the stock market to analyze",
             box_style="cyan"
         )
         console.print(title_panel)
         
-        # 选项
-        console.print("\n[bold cyan]请选择股票市场 | Please select stock market:[/bold cyan]")
-        console.print("[cyan]1[/cyan]. 🌍 美股 | US Stock")
-        console.print("   示例 | Examples: SPY, AAPL, TSLA")
-        console.print("[cyan]2[/cyan]. 🌍 A股 | China A-Share")
-        console.print("   示例 | Examples: 000001 (平安银行), 600036 (招商银行)")
-        console.print("[cyan]3[/cyan]. 🌍 港股 | Hong Kong Stock")
-        console.print("   示例 | Examples: 0700.HK (腾讯), 09988.HK (阿里巴巴)")
+        # Options
+        console.print("\n[bold cyan]Please select a stock market | Please select stock market:[/bold cyan]")
+        console.print("[cyan]1[/cyan]. 🌍 US stocks | US Stock")
+        console.print("   Example | Examples: SPY, AAPL, TSLA")
+        console.print("[cyan]2[/cyan]. 🌍 A shares | China A-Share")
+        console.print("   Example | Examples: 000001 (Ping An Bank), 600036 (China Merchants Bank)")
+        console.print("[cyan]3[/cyan]. 🌍 Hong Kong stocks | Hong Kong Stock")
+        console.print("   Example | Examples: 0700.HK (Tencent), 09988.HK (Alibaba)")
         
         print("\n" + "-" * 40)
-        print("✅ 界面清爽，没有时间戳和技术日志信息")
+        print("✅ Clean interface, no time stamps and technical log information")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("🚀 开始测试CLI日志修复效果")
+    """Main test function"""
+    print("🚀 Start testing the CLI log repair effect")
     print("=" * 80)
     
     results = []
     
-    # 测试1: CLI日志设置
+    # test 1: CLI Log settings
     results.append(test_cli_logging_setup())
     
-    # 测试2: Console输出
+    # test 2: Console output
     results.append(test_console_output())
     
-    # 测试3: 日志文件写入
+    # test 3: Log file writing
     results.append(test_log_file_writing())
     
-    # 测试4: CLI界面预览
+    # test 4: CLI Interface preview
     results.append(test_cli_interface_preview())
     
-    # 总结结果
+    # Summary results
     print("\n" + "=" * 80)
-    print("📋 测试结果总结")
+    print("📋 Summary of test results")
     print("=" * 80)
     
     passed = sum(results)
     total = len(results)
     
     test_names = [
-        "CLI日志设置",
-        "Console输出测试",
-        "日志文件写入",
-        "CLI界面预览"
+        "CLI Log settings",
+        "Console Output test",
+        "Log file writing",
+        "CLI Interface preview"
     ]
     
     for i, (name, result) in enumerate(zip(test_names, results)):
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{i+1}. {name}: {status}")
     
-    print(f"\n📊 总体结果: {passed}/{total} 测试通过")
+    print(f"\n📊 Overall results: {passed}/{total} Test passed")
     
     if passed == total:
-        print("🎉 所有测试通过！CLI日志修复成功")
-        print("\n📋 修复效果:")
-        print("1. ✅ 控制台不再显示技术日志信息")
-        print("2. ✅ 用户界面清爽美观")
-        print("3. ✅ 系统日志正常写入文件")
-        print("4. ✅ 用户提示使用Rich Console显示")
+        print("🎉 All tests passed! CLI log repair successful")
+        print("\n📋 Repair effect:")
+        print("1. ✅ The console no longer displays technical log information")
+        print("2. ✅ Fresh and beautiful user interface")
+        print("3. ✅ System logs are written to files normally")
+        print("4. ✅ User prompts display using Rich Console")
         
-        print("\n🎯 用户体验改善:")
-        print("- 界面简洁，没有时间戳干扰")
-        print("- 彩色输出更加美观")
-        print("- 技术信息和用户信息分离")
-        print("- 调试信息仍然记录在日志文件中")
+        print("\n🎯 User experience improvement:")
+        print("- Simple interface, no time stamp interference")
+        print("- Color output is more beautiful")
+        print("- Separation of technical information and user information")
+        print("- Debug information is still logged in the log file")
     else:
-        print("⚠️ 部分测试失败，需要进一步优化")
+        print("⚠️ Some tests failed and need further optimization")
     
     return passed == total
 

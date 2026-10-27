@@ -1,11 +1,11 @@
 """
-需求分析器 — 多轮对话式需求沟通
+requirements analyzer — Multiple rounds of conversational demand communication
 
-核心能力：
-1. 清晰度评估 — 判断用户需求的明确程度 (HIGH/MEDIUM/LOW)
-2. 边界检测 — 检查需求是否超出单个 Skill 的范围
-3. 多轮对话 — 1-3 轮渐进式需求确认
-4. 规格生成 — 将确认的需求转化为结构化 SkillSpec
+Core competencies:
+1. Clarity Assessment — Determine the clarity of user needs (HIGH/MEDIUM/LOW)
+2. Boundary detection — Check whether requirements exceed the scope of a single Skill
+3. Multiple rounds of dialogue — 1-3 Round of progressive requirements confirmation
+4. Specification generation — Convert identified requirements into structured SkillSpec
 """
 
 import json
@@ -34,46 +34,46 @@ from .financial_schema_context import (
 from core.skill_runtime import build_factor_catalog_prompt_context, infer_recommended_factor_packs
 from .upgrade_patch import apply_upgrade_patch, build_upgrade_patch_prompt, parent_contract_to_json
 
-# standard_financial_apis 标准函数摘要 — 注入需求分析提示词，让 LLM 知道项目已内置哪些能力
+# standard_financial_apis Summary of standard functions — Inject requirements analysis prompt words to let LLM know what capabilities have been built into the project
 STANDARD_FINANCIAL_APIS_SUMMARY = (
-    "## 项目内置标准金融数据能力（standard_financial_apis）\n"
-    "项目通过 core.skill_runtime.standard_financial_apis 提供 32 个标准函数，"
-    "覆盖行情、财务、估值、风险、同行、质押等场景。这些函数**自动从项目配置的数据源获取数据**"
-    "（Tushare/akshare/local 等，优先级由数据库 datasource_groupings 集合统一配置），"
-    "**用户不需要、也不应该选择数据源**。\n"
-    "如果用户需求能被以下函数覆盖，应直接告知用户「项目已内置该能力」，不要引导用户选择数据源：\n"
-    "- get_pledge_risk_profile：股权质押风险画像（质押比例、未解押规模、前几大质押股东、风险等级）\n"
-    "- get_pledge_historical_series：股权质押历史趋势（支持自定义起止日期，按年/季/月统计质押比例、未解押股数，自动评估趋势方向）\n"
-    "- get_historical_financial_annual_series：历史年报财务序列（营收/净利/ROE/毛利率/现金流等）\n"
-    "- get_profitability_stability_metrics：盈利稳定性指标（均值/波动率/变异系数）\n"
-    "- get_cashflow_quality_trend：现金流质量趋势（OCF/净利、FCF/净利、margin 趋势）\n"
-    "- get_historical_valuation_percentile：历史估值分位（PE/PB/PS/PCF 分位）\n"
-    "- get_current_valuation_snapshot：当前估值快照\n"
-    "- get_debt_solvency_trend：偿债能力趋势\n"
-    "- get_margin_stability_metrics：利润稳定性指标\n"
-    "- get_capital_efficiency_trend：资本效率趋势\n"
-    "- get_growth_quality_metrics：成长质量指标\n"
-    "- get_single_stock_risk_profile：个股风险画像\n"
-    "- get_shareholder_return_metrics：股东回报指标（分红/股息率）\n"
-    "- get_risk_event_flags：风险事件标记\n"
-    "- get_company_event_timeline：公司公告监管事件时间线\n"
-    "- get_company_announcements：公司公告\n"
-    "- get_business_segment_trend：主营结构趋势\n"
-    "- get_peer_group：同行样本\n"
-    "- get_peer_relative_growth / get_peer_relative_valuation / get_peer_relative_quality：同行相对分析\n"
-    "- get_industry_market_performance：行业市场表现\n"
-    "- get_industry_fundamental_summary：行业基本面汇总\n"
-    "- get_capital_flow_series：资金流序列\n"
-    "- get_chip_distribution_context：筹码分布上下文\n"
-    "- get_security_master：证券主数据\n"
-    "- get_adjusted_price_series：复权价格序列\n"
-    "- get_return_series：收益序列\n"
-    "- get_technical_indicator_series：技术指标历史序列\n"
-    "- get_volatility_metrics：波动率指标\n"
-    "- get_drawdown_metrics：回撤指标\n"
-    "- get_portfolio_risk_profile：组合风险画像\n"
-    "只有当用户需求**不被以上函数覆盖**时，才考虑引导用户使用外部数据源（如 AKShare/Tushare），"
-    "但仍应优先通过 skill_runtime 公开接口访问，不要让用户直接选择数据源。"
+    "## The project has built-in standard financial data capabilities (standard_financial_apis)\n"
+    "The project provides 32 standard functions through core.skill_runtime.standard_financial_apis,"
+    "Covers market conditions, finance, valuation, risks, peers, pledges and other scenarios. These functions**Automatically obtain data from project-configured data sources**"
+    " (Tushare/akshare/local etc., the priority is configured uniformly by the database datasource_groupings collection),"
+    "**Users do not need to, and should not, select data sources**. \n"
+    "If the user s needs can be covered by the following functions, the user should be directly informed that the project has built-in this capability and do not guide the user to select a data source:\n"
+    "- get_pledge_risk_profile: Equity pledge risk profile (pledge ratio, unreleased size, top pledging shareholders, risk level)\n"
+    "- get_pledge_historical_series: Historical trend of equity pledge (supports customization of start and end dates, statistics of pledge ratio and number of unreleased shares by year/quarter/month, and automatic assessment of trend direction)\n"
+    "- get_historical_financial_annual_series: Historical annual report financial sequence (revenue/net profit/ROE/gross profit margin/cash flow, etc.)\n"
+    "- get_profitability_stability_metrics: Profitability stability indicator (mean/volatility/coefficient of variation)\n"
+    "- get_cashflow_quality_trend: Cash flow quality trend (OCF/net profit, FCF/net profit, margin trend)\n"
+    "- get_historical_valuation_percentile: Historical valuation quantile (PE/PB/PS/PCF quantile)\n"
+    "- get_current_valuation_snapshot: Current valuation snapshot\n"
+    "- get_debt_solvency_trend: Solvency Trends\n"
+    "- get_margin_stability_metrics: Profit Stability Index\n"
+    "- get_capital_efficiency_trend: Capital efficiency trends\n"
+    "- get_growth_quality_metrics: growth quality index\n"
+    "- get_single_stock_risk_profile: Individual stock risk portrait\n"
+    "- get_shareholder_return_metrics: Shareholder return indicator (dividend/dividend rate)\n"
+    "- get_risk_event_flags: Risk event flag\n"
+    "- get_company_event_timeline: Timeline of company announcements and regulatory events\n"
+    "- get_company_announcements: company announcement\n"
+    "- get_business_segment_trend: Main business structure trends\n"
+    "- get_peer_group: peer sample\n"
+    "- get_peer_relative_growth / get_peer_relative_valuation / get_peer_relative_quality: peer relative analysis\n"
+    "- get_industry_market_performance: Industry market performance\n"
+    "- get_industry_fundamental_summary: Summary of industry fundamentals\n"
+    "- get_capital_flow_series: Fund flow sequence\n"
+    "- get_chip_distribution_context: Chip distribution context\n"
+    "- get_security_master: Securities master data\n"
+    "- get_adjusted_price_series: weighted price series\n"
+    "- get_return_series: Return sequence\n"
+    "- get_technical_indicator_series: Technical indicator historical series\n"
+    "- get_volatility_metrics: volatility indicator\n"
+    "- get_drawdown_metrics: retracement indicator\n"
+    "- get_portfolio_risk_profile: Portfolio risk profile\n"
+    "Only when user needs**Not covered by the above functions**Only then will we consider guiding users to use external data sources (such as AKShare/Tushare)."
+    "However, priority should still be given to accessing it through the skill_runtime public interface instead of allowing users to directly select the data source."
 )
 
 from .skill_spec import (
@@ -95,27 +95,27 @@ ANALYZER_LLM_TIMEOUT_SECONDS = 180
 
 
 SKILL_SEMANTICS_GUIDANCE = (
-    "Skill 的语义：Skill 是一个可复用、可验证、边界清晰的功能实现单元，"
-    "不等于只能做数据获取。Skill 可以做数据获取、字段整理、格式转换、指标计算、规则判断、"
-    "轻量聚合、模板化说明生成等确定性能力。\n"
-    "Agent/Workflow 的语义：负责需求理解、任务规划、多 Skill 编排、开放式追问、主观综合判断、"
-    "研究结论整合、研究观察生成等高层决策与推理。\n"
-    "判断边界的核心标准不是“是否有计算”或“是否有解释”，而是该能力是否确定、可验证、可复用，"
-    "且是否仍然围绕单一明确目标。若解释文本完全基于固定规则和输入数据生成，也可以属于 Skill 输出的一部分。"
+    "Skill Semantics: Skill is a functional implementation unit that is reusable, verifiable, and has clear boundaries."
+    "It does not mean that it can only do data acquisition. Skill can do data acquisition, field sorting, format conversion, indicator calculation, rule judgment,"
+    "Deterministic capabilities such as lightweight aggregation and templated description generation.\n"
+    "Agent/Workflow Semantics: Responsible for demand understanding, task planning, multi-skill arrangement, open questioning, subjective comprehensive judgment,"
+    "High-level decision-making and reasoning such as integration of research conclusions and generation of research observations.\n"
+    "The core criterion for judging boundaries is not Is there any calculation or Is there an explanation , It s about whether the capability is certain, verifiable, and reusable."
+    "And whether it still revolves around a single clear goal. If the explanation text is generated entirely based on fixed rules and input data, it can also be part of the Skill output."
 )
 
 SKILL_BOUNDARY_EXAMPLES = (
-    "可视为单个 Skill 的例子：\n"
-    "- 根据历史 PB 分位数计算估值通道，并输出当前 PB、分位点、对应价格区间\n"
-    "- 获取财报后计算同比/环比增速并返回结构化结果\n"
-    "- 聚合同一目标所需的紧密相关数据并输出标准化摘要\n\n"
-    "应交给 Agent/Workflow 的例子：\n"
-    "- 结合宏观、行业、财报、新闻给出主观投资结论\n"
-    "- 调用多个彼此独立的 Skill 后生成完整研究报告\n"
-    "- 在多个候选方法之间做开放式策略选择并解释取舍\n"
+    "Examples that can be viewed as a single Skill:\n"
+    "- Calculate the valuation channel based on the historical PB quantile, and output the current PB, quantile point, and corresponding price range\n"
+    "- After obtaining the financial report, calculate the year-on-year/month-on-month growth rate and return structured results\n"
+    "- Aggregate closely related data required for the same goal and output standardized summaries\n\n"
+    "Examples that should be handed to Agent/Workflow:\n"
+    "- Provide subjective investment conclusions based on macro, industry, financial reports, and news\n"
+    "- Generate a complete research report after calling multiple independent Skills\n"
+    "- Make an open strategy choice between multiple candidate methods and explain trade-offs\n"
 )
 
-# 外部 HTTP API 集成的显式信号词（出现在描述/约束中）
+# Explicit signal word for external HTTP API integration (appears in description/constraints)
 EXTERNAL_API_SIGNAL_KEYWORDS = (
     "http://", "https://", "endpoint", "rest api", "open api",
     "公开接口", "公开http接口", "网页接口", "外部接口", "第三方接口", "爬取", "抓取",
@@ -123,14 +123,14 @@ EXTERNAL_API_SIGNAL_KEYWORDS = (
 
 
 def classify_requirement_mode(spec: Any) -> str:
-    """需求类型分流：external_api（外部 API 集成） / local_data（本地数据复用，默认）。
+    """Requirement type diversion: external_api (external API integration) / local_data (local data reuse, default).
 
-    判定信号（任一命中即 external_api）：
-    1. spec.data_source 明确指定了目录外数据源（如 dongchedi / 懂车帝）；
-    2. 描述或约束中出现外部接口集成信号词（URL、公开接口、爬取等）。
+    Determination signal (any hit is external_api):
+    1. spec.data_source Explicitly specify the data source outside the directory (such as dongchedi / understand the car emperor);
+    2. External interface integration signal words (URL, public interface, crawl, etc.) appear in the description or constraints.
 
-    external_api 模式下：不推荐本地股票集合、不把向量召回的本地工具当作
-    "数据源已覆盖"，策略改为直接集成外部接口，前端不展示本地/目录资产。
+    external_api Mode: Local stock collections are not recommended, and local tools for vector recall are not considered
+    "Data source has been covered", The strategy is changed to integrate external interfaces directly, and the front end does not display local/catalog assets.
     """
     from .external_data_source_catalog import is_known_external_source
 
@@ -151,9 +151,9 @@ def classify_requirement_mode(spec: Any) -> str:
 
 class RequirementAnalyzer:
     """
-    需求分析器
+    requirements analyzer
 
-    通过多轮对话将用户的自然语言需求转化为结构化 SkillSpec。
+    Convert users natural language needs into structured SkillSpecs through multiple rounds of dialogue.
     """
 
     def __init__(
@@ -166,8 +166,8 @@ class RequirementAnalyzer:
         self._client = llm_client
         self._provider = provider
         self._model = model
-        # 快速模型客户端：清晰度评估/边界检测/对话回复/规格生成等轻推理
-        # 环节优先使用；未配置时全部回退主模型，行为与旧版一致
+        # Fast model client: light reasoning such as clarity assessment/boundary detection/dialogue reply/specification generation
+        # Links are used first; if not configured, all will fall back to the main model, and the behavior will be consistent with the old version.
         self._quick_client = quick_llm_client
 
     def _get_client(self) -> UnifiedLLMClient:
@@ -185,11 +185,11 @@ class RequirementAnalyzer:
                 try:
                     adapter.initialize()
                 except Exception as e:
-                    logger.warning(f"更新需求分析 LLM 超时时间失败: {e}")
+                    logger.warning(f"Update requirements analysis LLM timeout failed: {e}")
         return self._client
 
     def _get_quick_client(self) -> Optional[UnifiedLLMClient]:
-        """轻量判断专用快速模型客户端；未配置时返回 None（调用方回退主模型）。"""
+        """A dedicated fast model client for lightweight judgment; returns None when not configured (the caller falls back to the main model)."""
         if self._quick_client is None:
             return None
         adapter = getattr(self._quick_client, "_adapter", None)
@@ -199,17 +199,17 @@ class RequirementAnalyzer:
             try:
                 adapter.initialize()
             except Exception as e:
-                logger.warning(f"更新快速模型超时时间失败: {e}")
+                logger.warning(f"Update fast model timeout failed: {e}")
         return self._quick_client
 
     def _chat_with_quick_fallback(
         self, messages: List[Message], *, stage: str
     ) -> str:
-        """轻推理调用（对话回复/规格生成）：优先快速模型，失败时回退主模型。
+        """Light inference calls (dialog reply/spec generation): Prioritize fast models, fallback to main model on failure.
 
-        需求对话（复述/澄清/确认引导）与规格生成（结构化转录）不需要深度
-        推理，快速非思考模型可将响应从分钟级降到秒级；快速模型不可用
-        （欠费/超时/空回复）时回退主模型，保障功能可用性。
+        Requirements dialogue (restatement/clarification/confirmation guidance) and specification generation (structured transcription) do not require depth
+        Inference, fast non-thinking model reduces response from minutes to seconds; fast model not available
+         (In case of arrears/timeout/empty reply), the main model will be rolled back to ensure the availability of functions.
         """
         quick = self._get_quick_client()
         if quick is not None:
@@ -218,44 +218,44 @@ class RequirementAnalyzer:
                 content = (response.content or "").strip()
                 if content:
                     return content
-                logger.warning(f"{stage}: 快速模型返回空内容，回退主模型")
+                logger.warning(f"{stage}: The quick model returns empty content and rolls back to the main model.")
             except Exception as exc:
-                logger.warning(f"{stage}: 快速模型调用失败，回退主模型: {exc}")
+                logger.warning(f"{stage}: The quick model call failed and the main model was rolled back.: {exc}")
         response = self._get_client().chat(messages)
         return (response.content or "").strip()
 
     @staticmethod
     def _raise_analysis_error(stage: str, error: Optional[Exception] = None) -> None:
         detail = str(error) if error else "LLM 未返回有效内容"
-        raise RuntimeError(f"{stage}失败：{detail}")
+        raise RuntimeError(f"{stage}Failure:{detail}")
 
-    # ==================== 健壮 JSON 解析 ====================
+    # ==================== Robust JSON parsing ====================
 
     @staticmethod
     def _parse_llm_json(raw: str) -> Optional[Dict[str, Any]]:
-        """从 LLM 输出中提取 JSON 对象，多策略容错。
+        """Extracting JSON objects from LLM output, multi-policy fault tolerance.
 
-        策略顺序：
-        1. 提取 ```json ... ``` Markdown 代码块
-        2. 用大括号深度匹配找到最外层 { ... }
-        3. 修复常见 LLM JSON 错误后重试（尾随逗号、单引号等）
+        Strategy sequence:
+        1. Extract ```json ... ``` Markdown code block
+        2. Find the outermost level using brace depth matching { ... }
+        3. Fix common LLM JSON errors and try again (trailing commas, single quotes, etc.)
 
         Returns:
-            解析成功返回 dict，全部策略失败返回 None。
+            If the parsing is successful, dict will be returned. If all strategies fail, None will be returned.
         """
         if not raw or not raw.strip():
             return None
 
         text = raw.strip()
 
-        # 策略 1: 提取 ```json ... ``` 代码块
+        # Strategy 1: Extract ```json ... ``` code block
         json_blocks = re.findall(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
         for block in json_blocks:
             result = RequirementAnalyzer._try_parse_json(block.strip())
             if result is not None:
                 return result
 
-        # 策略 2: 大括号深度匹配（比贪婪正则 `\{.*\}` 精准得多）
+        # Strategy 2: Braces depth matching (than greedy regular `\{.*\}` much more accurate)
         brace_start = text.find("{")
         if brace_start >= 0:
             depth = 0
@@ -268,11 +268,11 @@ class RequirementAnalyzer:
                         result = RequirementAnalyzer._try_parse_json(text[brace_start:i + 1])
                         if result is not None:
                             return result
-                        break  # 匹配到最外层但解析失败，进入修复策略
+                        break  # Matched to the outermost layer but failed to parse, enter the repair strategy
 
-        # 策略 3: 修复常见 LLM JSON 错误后重试
+        # Strategy 3: Fix common LLM JSON errors and try again
         if brace_start >= 0:
-            # 重新提取最外层
+            # Re-extract the outermost layer
             depth = 0
             end_idx = -1
             for i in range(brace_start, len(text)):
@@ -294,7 +294,7 @@ class RequirementAnalyzer:
 
     @staticmethod
     def _try_parse_json(text: str) -> Optional[Dict[str, Any]]:
-        """尝试解析 JSON，失败返回 None。"""
+        """Attempts to parse JSON, returns None on failure."""
         try:
             data = json.loads(text)
             if isinstance(data, dict):
@@ -305,14 +305,14 @@ class RequirementAnalyzer:
 
     @staticmethod
     def _fix_common_json_errors(text: str) -> str:
-        """修复 LLM 常见的 JSON 格式错误。"""
-        # 移除尾随逗号: ,} 和 ,]
+        """Fix common JSON format errors in LLM."""
+        # Remove trailing commas: ,} and ,]
         text = re.sub(r",\s*}", "}", text)
         text = re.sub(r",\s*]", "]", text)
-        # 替换单引号为双引号（简单场景）
-        # 仅在值不含单引号的情况下安全替换
-        # text = text.replace("'", '"')  # 不安全，先注释
-        # 修复 true/false 大小写问题
+        # Replace single quotes with double quotes (simple scenario)
+        # Safe replacement only if value does not contain single quotes
+        # text = text.replace("'", '"')  # Not safe, comment first
+        # Fix true/false case problem
         text = re.sub(r"\bTrue\b", "true", text)
         text = re.sub(r"\bFalse\b", "false", text)
         text = re.sub(r"\bNone\b", "null", text)
@@ -320,7 +320,7 @@ class RequirementAnalyzer:
 
     @staticmethod
     def _extract_tool_id_hint(text: str) -> str:
-        match = re.search(r"(?:skill|工具)[:：]\s*([a-zA-Z][a-zA-Z0-9_]*)", text or "", re.IGNORECASE)
+        match = re.search(r"(?:skill|Tools)[:: ]\s*([a-zA-Z][a-zA-Z0-9_]*)", text or "", re.IGNORECASE)
         if match:
             return match.group(1)
         if "pb" in (text or "").lower() or "市净率" in (text or ""):
@@ -340,12 +340,12 @@ class RequirementAnalyzer:
             return {
                 "tool_id": tool_id if tool_id != "new_skill" else "calculate_peg_valuation",
                 "display_name": "PEG估值计算",
-                "description": "根据股票代码获取PE(TTM)和盈利增长率，计算PEG指标并输出结构化估值结论。",
+                "description": "Get based on stock code PE(TTM)and earnings growth rate, calculate PEG indicators and output structured valuation conclusions.",
                 "category": "fundamentals",
                 "data_source": primary_source,
                 "parameters": [
                     {"name": "symbol", "type": "string", "description": "股票代码", "required": True},
-                    {"name": "growth_years", "type": "integer", "description": "增长口径参数，当前仅支持1，表示同口径同比，不代表连续年报年数", "required": False, "default": 1},
+                    {"name": "growth_years", "type": "integer", "description": "The growth caliber parameter currently only supports 1, which indicates the same caliber year-on-year, and does not represent the number of consecutive annual reports.", "required": False, "default": 1},
                 ],
                 "fields": [
                     "symbol", "name", "industry", "current_price", "pe_ttm",
@@ -353,10 +353,10 @@ class RequirementAnalyzer:
                     "assumptions", "failure_reason",
                 ],
                 "constraints": [
-                    "仅输出结构化、可验证的 PEG 结果，不生成开放式投资建议。",
-                    "输出字段名必须稳定，使用 earnings_growth_rate 和 peg_ratio，不要改写成 growth_rate 或 peg。",
-                    "growth_years 当前仅支持1，表示同口径同比；不得把 financial_indicators 的季度 end_date 序列误当作连续年报序列。",
-                    "若增长率缺失、非正或接近0，应返回失效原因，不允许伪造默认值继续估值。",
+                    "Only structured, verifiable PEG results are output, no open-ended investment recommendations are generated.",
+                    "The output field name must be stable, use earnings_growth_rate and peg_ratio, do not rewrite it as growth_rate or peg.",
+                    "growth_years Currently, only 1 is supported, indicating year-on-year reporting for the same caliber; the quarterly end_date sequence of financial_indicators must not be mistaken for a continuous annual report sequence.",
+                    "If the growth rate is missing, non-positive, or close to 0, the failure reason should be returned, and no forged default values ​​are allowed to continue the valuation.",
                 ],
                 "test_input": {
                     "symbol": "600519.SH",
@@ -369,14 +369,14 @@ class RequirementAnalyzer:
             return {
                 "tool_id": tool_id,
                 "display_name": "PB估值区间计算",
-                "description": "基于历史PB分位数及可选行业PB统计，输出股票估值区间与结构化依据。",
+                "description": "Based on historical PB quantiles and optional industry PB statistics, the stock valuation range and structural basis are output.",
                 "category": "fundamentals",
                 "data_source": primary_source,
                 "parameters": [
                     {"name": "symbol", "type": "string", "description": "股票代码", "required": True},
-                    {"name": "market", "type": "string", "description": "市场标识，如 CN/HK/US", "required": False, "default": "CN"},
+                    {"name": "market", "type": "string", "description": "Market identification, e.g. CN/HK/US", "required": False, "default": "CN"},
                     {"name": "lookback_years", "type": "integer", "description": "历史回溯年数", "required": False, "default": 5},
-                    {"name": "valuation_method", "type": "string", "description": "估值方法：historical_percentile 或 historical_plus_industry", "required": False, "default": "historical_percentile"},
+                    {"name": "valuation_method", "type": "string", "description": "Valuation method: historical_percentile or historical_plus_industry", "required": False, "default": "historical_percentile"},
                     {"name": "include_industry_comparison", "type": "boolean", "description": "是否输出行业PB统计", "required": False, "default": True},
                 ],
                 "fields": [
@@ -386,9 +386,9 @@ class RequirementAnalyzer:
                     "assumptions", "invalidation_conditions", "data_as_of",
                 ],
                 "constraints": [
-                    "仅输出结构化、可验证的估值结果，不生成开放式投资建议。",
-                    "估值区间必须基于固定算法，不允许临时主观设定。",
-                    "若存在行业对比，仅返回统计结果和样本规模，不展开长篇行业分析。",
+                    "Only structured, verifiable valuation results are output, and no open-ended investment recommendations are generated.",
+                    "The valuation interval must be based on a fixed algorithm and no temporary subjective setting is allowed.",
+                    "If there is an industry comparison, only the statistical results and sample size will be returned, and no long-form industry analysis will be carried out.",
                 ],
                 "test_input": {
                     "symbol": "600519.SH",
@@ -403,7 +403,7 @@ class RequirementAnalyzer:
         return {
             "tool_id": tool_id,
             "display_name": "新建功能 Skill",
-            "description": "围绕单一明确目标提供可复用、可验证的结构化能力。",
+            "description": "Provide reusable, verifiable structured capabilities around a single clear goal.",
             "category": category or "utility",
             "data_source": primary_source,
             "parameters": [
@@ -411,8 +411,8 @@ class RequirementAnalyzer:
             ],
             "fields": ["result", "data_as_of"],
             "constraints": [
-                "保持单一明确目标，避免扩展为开放式分析工作流。",
-                "输出需结构化且可验证。",
+                "Maintain a single clear goal and avoid expanding into open-ended analytical workflows.",
+                "The output needs to be structured and verifiable.",
             ],
             "test_input": {"symbol": "600519.SH"},
             "recommendations": recommendations,
@@ -425,22 +425,22 @@ class RequirementAnalyzer:
         external_sources = recommendations.get("external_sources") or []
         return (
             "当前需求分析模型响应超时，我先按系统规则给你一个可继续执行的收敛草案，避免会话直接失败。\n\n"
-            "## 初步理解\n"
-            f"- 候选 tool_id: {blueprint['tool_id']}\n"
-            f"- 功能定位: {blueprint['description']}\n"
-            f"- 分类: {blueprint['category']}\n"
-            f"- 主数据源: {blueprint['data_source']}\n"
-            f"- 推荐复用的本地集合: {'、'.join(stock_collections) if stock_collections else '待确认'}\n"
-            f"- 推荐外部来源: {'、'.join(external_sources) if external_sources else '待确认'}\n\n"
-            "## 我帮你先收敛的职责边界\n"
-            "- 这个 Skill 聚焦单一、确定性的估值/计算能力。\n"
-            "- 可以包含必要的数据获取、字段整理和固定算法计算。\n"
-            "- 不承担开放式研究报告、主观投资结论和多阶段编排。\n\n"
-            "## 请优先确认这 4 项\n"
-            "1. 估值方法是否固定为 historical_percentile，还是使用 historical_plus_industry？\n"
-            f"2. 主数据源是否使用 {blueprint['data_source']}？如果不是，请直接指定。\n"
-            "3. assumptions 和 invalidation_conditions 是否接受以结构化字段列表返回，而不是长文解释？\n"
-            "4. 行业背景是否仅限返回同行 PB 统计结果，而不展开长篇行业分析？"
+            "## preliminary understanding\n"
+            f"- candidate tool_id: {blueprint['tool_id']}\n"
+            f"- Functional positioning: {blueprint['description']}\n"
+            f"- Classification: {blueprint['category']}\n"
+            f"- master data source: {blueprint['data_source']}\n"
+            f"- Recommended local collections for reuse: {', '.join(stock_collections) if stock_collections else 'To be confirmed'}\n"
+            f"- Recommend external sources: {', '.join(external_sources) if external_sources else 'To be confirmed'}\n\n"
+            "## Let me help you tighten the boundaries of your responsibilities first\n"
+            "- This Skill focuses on a single, deterministic valuation/calculation capability.\n"
+            "- Can include necessary data acquisition, field sorting and fixed algorithm calculations.\n"
+            "- We are not responsible for open-ended research reports, subjective investment conclusions and multi-stage arrangements.\n\n"
+            "## Please confirm these 4 items first\n"
+            "1. Is the valuation method fixed at historical_percentile, or is historical_plus_industry used?\n"
+            f"2. Whether the main data source uses {blueprint['data_source']}? If not, please specify it directly.\n"
+            "3. assumptions and invalidation_conditions accept being returned as a structured list of fields instead of a long explanation?\n"
+            "4. Is the industry background limited to returning peer PB statistical results without conducting long-form industry analysis?"
         )
 
     def _build_fallback_round2_response(self, session: SkillCreationSession, user_message: str) -> str:
@@ -450,17 +450,17 @@ class RequirementAnalyzer:
         output_fields = "、".join(blueprint["fields"])
         return (
             "需求分析模型再次超时，我先基于当前对话把技术规格收敛到可确认状态。\n\n"
-            "## 当前收敛结果\n"
+            "## Current convergence results\n"
             f"- tool_id: {blueprint['tool_id']}\n"
             f"- description: {blueprint['description']}\n"
             f"- data_source: {blueprint['data_source']}\n"
-            f"- 参数建议: {parameter_names}\n"
-            f"- 输出字段建议: {output_fields}\n\n"
-            "## 待你拍板\n"
-            "1. valuation_method 用哪个固定枚举值作为默认值？\n"
-            "2. 是否保留 include_industry_comparison 参数？\n"
-            "3. 输出里是否需要 industry_pb_median、industry_pb_mean、peer_sample_size 这三项？\n"
-            "4. 如果数据不足，是返回部分结果并附错误字段，还是直接失败？"
+            f"- Parameter suggestions: {parameter_names}\n"
+            f"- Output field suggestions: {output_fields}\n\n"
+            "## Waiting for your decision\n"
+            "1. valuation_method Which fixed enumeration value should be used as the default value?\n"
+            "2. Do you want to keep the include_industry_comparison parameter?\n"
+            "3. Are industry_pb_median, industry_pb_mean, and peer_sample_size required in the output?\n"
+            "4. If there is insufficient data, should partial results be returned with an error field, or should it fail directly?"
         )
 
     def _build_fallback_spec_confirmation(self, history: str) -> str:
@@ -472,16 +472,16 @@ class RequirementAnalyzer:
         return (
             "## Skill 规格确认\n"
             f"- **tool_id**: {blueprint['tool_id']}\n"
-            f"- **名称**: {blueprint['display_name']}\n"
-            f"- **描述**: {blueprint['description']}\n"
-            f"- **分类**: {blueprint['category']}\n"
-            f"- **数据源**: {blueprint['data_source']}\n"
-            f"- **推荐复用的本地集合**: {'、'.join(recommendations.get('stock_collections') or []) or '无'}\n"
-            f"- **推荐外部来源**: {'、'.join(recommendations.get('external_sources') or []) or '无'}\n"
-            f"- **参数**: {parameters}\n"
-            f"- **返回字段**: {fields}\n"
-            f"- **约束**: {constraints}\n\n"
-            "以上规格由超时降级策略生成，用于保证流程可继续。以上规格是否正确？确认后将开始生成代码。"
+            f"- **Name**: {blueprint['display_name']}\n"
+            f"- **Description**: {blueprint['description']}\n"
+            f"- **Classification**: {blueprint['category']}\n"
+            f"- **data source**: {blueprint['data_source']}\n"
+            f"- **Recommended local collections for reuse**: {', '.join(recommendations.get('stock_collections') or []) or 'None'}\n"
+            f"- **Recommend external sources**: {', '.join(recommendations.get('external_sources') or []) or 'None'}\n"
+            f"- **parameters**: {parameters}\n"
+            f"- **Return field**: {fields}\n"
+            f"- **constraint**: {constraints}\n\n"
+            "The above specifications are generated by the timeout degradation policy to ensure that the process can continue. Are the above specifications correct? Code generation will begin upon confirmation."
         )
 
     def _generate_fallback_spec(self, conversation: str) -> Optional[SkillSpec]:
@@ -517,7 +517,7 @@ class RequirementAnalyzer:
                 test_input=blueprint["test_input"],
             )
         except Exception as e:
-            logger.error(f"启发式 SkillSpec 生成失败: {e}")
+            logger.error(f"Heuristic SkillSpec generation failed: {e}")
             return None
 
     @staticmethod
@@ -528,7 +528,7 @@ class RequirementAnalyzer:
         checks: list[dict[str, Any]] = [
             {
                 "name": "status_success",
-                "description": "输出状态必须为 success/ok，不能返回 error 或伪成功结果",
+                "description": "The output status must be success/ok, and error or pseudo-success results cannot be returned.",
                 "required": True,
                 "check_type": "status_success",
                 "rule_level": "output",
@@ -557,7 +557,7 @@ class RequirementAnalyzer:
             checks.append(
                 {
                     "name": "required_non_empty_payload",
-                    "description": "成功输出时必须返回非空 data 负载",
+                    "description": "A non-empty data payload must be returned on successful output.",
                     "required": True,
                     "check_type": "required_non_empty_payload",
                     "rule_level": "data",
@@ -572,7 +572,7 @@ class RequirementAnalyzer:
             checks.append(
                 {
                     "name": "data_payload_object",
-                    "description": "成功输出时 data 应为结构化对象或对象列表，不能只返回空文本说明",
+                    "description": "When output is successful, data should be a structured object or object list, and cannot just return an empty text description.",
                     "required": False,
                     "check_type": "required_non_empty_payload",
                     "rule_level": "data",
@@ -622,7 +622,7 @@ class RequirementAnalyzer:
             if normalized_type == "status_success":
                 normalized_check = ValidationCheck(
                     name=check.name or "status_success",
-                    description=check.description or "输出状态必须为 success/ok",
+                    description=check.description or "The output status must be success/ok",
                     required=True,
                     check_type="status_success",
                     rule_level="output",
@@ -633,7 +633,7 @@ class RequirementAnalyzer:
             elif normalized_type == "required_non_empty_payload":
                 normalized_check = ValidationCheck(
                     name=check.name or "required_non_empty_payload",
-                    description=check.description or "成功输出时必须返回非空 data 负载",
+                    description=check.description or "A non-empty data payload must be returned on successful output.",
                     required=check.required,
                     check_type="required_non_empty_payload",
                     rule_level="data",
@@ -644,7 +644,7 @@ class RequirementAnalyzer:
             elif normalized_type == "schema_condition":
                 normalized_check = ValidationCheck(
                     name=check.name or "schema_condition",
-                    description=check.description or "必须满足 schema 适用性规则",
+                    description=check.description or "Must satisfy schema applicability rules",
                     required=check.required,
                     check_type="schema_condition",
                     rule_level=check.rule_level or "method",
@@ -690,7 +690,7 @@ class RequirementAnalyzer:
             if (schema_context or {}).get("profile") == "peg":
                 spec.category = "valuation"
                 if not spec.expected_output.description:
-                    spec.expected_output.description = "返回 PEG 估值结果及关键依据"
+                    spec.expected_output.description = "Return to PEG valuation results and key basis"
             else:
                 spec.category = "fundamentals"
                 canonical_fields = [
@@ -723,7 +723,7 @@ class RequirementAnalyzer:
                 spec.expected_output.type = "dict"
                 spec.expected_output.fields = normalized_fields
                 if not spec.expected_output.description:
-                    spec.expected_output.description = "返回 PEG 估值结果及关键依据"
+                    spec.expected_output.description = "Return to PEG valuation results and key basis"
 
             has_growth_years = any(param.name == "growth_years" for param in spec.parameters)
             if not has_growth_years:
@@ -731,7 +731,7 @@ class RequirementAnalyzer:
                     SkillParameter(
                         name="growth_years",
                         type="integer",
-                        description="增长口径参数，当前仅支持1，表示同口径同比，不代表连续年报年数",
+                        description="The growth caliber parameter currently only supports 1, which indicates the same caliber year-on-year, and does not represent the number of consecutive annual reports.",
                         required=False,
                         default=1,
                     )
@@ -919,13 +919,13 @@ class RequirementAnalyzer:
             expected_fields = []
             parameter_names = []
 
-        # 当侦察层已找到推荐 helper 时，不再推荐本地集合和外部来源——
-        # helper 函数内部已封装数据访问，直接推荐集合/来源会让用户困惑该以哪个为准。
-        # category_hint / data_source_hint / recommended_factor_packs 等元信息仍然返回。
+        # Local collections and external sources are no longer recommended when the recommendation helper has been found by the recon layer——
+        # helper Data access has been encapsulated inside the function, and directly recommending collections/sources will make users confused about which one should be used.
+        # category_hint / data_source_hint / recommended_factor_packs Metadata is still returned.
         has_recon_helpers = bool(fact_report and getattr(fact_report, "available_helpers", None))
 
-        # ── 目录外数据源检测（改进点 2）：用户明确指定的来源不在已知目录时，
-        # 显式返回 unknown_data_source 且不 fallback 凑推荐外部源，避免误导 ──
+        # ── Detection of data sources outside the directory (improvement point 2): When the source explicitly specified by the user is not in a known directory,
+        # Explicitly return unknown_data_source without fallback to recommend external sources to avoid misleading ──
         from .external_data_source_catalog import is_known_external_source
         unknown_data_source = ""
         if spec is not None:
@@ -975,7 +975,7 @@ class RequirementAnalyzer:
             ),
         }
 
-    # ==================== 会话管理 ====================
+    # ==================== Session management ====================
 
     def create_session(
         self,
@@ -983,7 +983,7 @@ class RequirementAnalyzer:
         handoff_context: Optional[SkillHandoffContext] = None,
         iterate_skill_id: Optional[str] = None,
     ) -> SkillCreationSession:
-        """创建新的 Skill 创建会话"""
+        """Create a new SkillCreate session"""
         return SkillCreationSession(
             session_id=str(uuid.uuid4()),
             user_id=user_id,
@@ -1001,7 +1001,7 @@ class RequirementAnalyzer:
             return ""
 
         lines = [
-            "当前这次会话来自上游流程交接，不是凭空新建需求。",
+            "The current session comes from the handover of the upstream process and is not a new requirement out of thin air.",
             f"- 来源: {context.source or 'unknown'}",
         ]
         if context.source_name:
@@ -1013,36 +1013,36 @@ class RequirementAnalyzer:
         if context.handoff_intent:
             lines.append(f"- 上游交接意图: {context.handoff_intent}")
         if context.agent_goal:
-            lines.append(f"- 上游 Agent 目标: {context.agent_goal}")
+            lines.append(f"- Upstream Agent target: {context.agent_goal}")
         if context.gap_context:
             lines.append(f"- 当前缺口上下文: {context.gap_context[:800]}")
         if context.searched_capabilities:
-            lines.append("- 上游已检索/评估过的能力:")
+            lines.append("- Upstream retrieved/evaluated capabilities:")
             for item in context.searched_capabilities[:8]:
                 lines.append(f"  - {str(item)[:500]}")
         if context.confirmed_data_sources:
-            lines.append("- 上游已确认的数据源/helper:")
+            lines.append("- Upstream confirmed data source/helper:")
             for item in context.confirmed_data_sources[:8]:
                 lines.append(f"  - {str(item)[:500]}")
         if context.user_clarifications:
-            lines.append("- 用户已澄清的关键结论:")
+            lines.append("- Key conclusions clarified by users:")
             for item in context.user_clarifications[:8]:
                 lines.append(f"  - {str(item)[:500]}")
         if context.related_gaps:
-            lines.append("- 同一次任务中的相关能力缺口:")
+            lines.append("- Related capability gaps in the same task:")
             for item in context.related_gaps[:8]:
                 lines.append(f"  - {str(item)[:500]}")
         if context.known_failure_summaries:
-            lines.append("- 同一次补齐任务中已知失败摘要（避免重复踩坑）:")
+            lines.append("- Summary of known failures in the same completion task (to avoid repeated pitfalls):")
             for item in context.known_failure_summaries[:5]:
                 lines.append(f"  - {str(item)[:500]}")
         if context.known_verified_facts:
-            lines.append("- 同一次补齐任务中已验证环境事实:")
+            lines.append("- Environmental facts have been verified in the same completion task:")
             for item in context.known_verified_facts[:8]:
                 lines.append(f"  - {str(item)[:500]}")
         lines.extend([
-            "- 你要先判断现有工具或已有 Skill 是否可复用。",
-            "- 只有确实缺实现时，才把需求收敛成一个新增的最小能力单元。",
+            "- You need to first determine whether existing tools or skills can be reused.",
+            "- Only when there is a real lack of implementation can the requirements be converged into a new minimum capability unit.",
         ])
         return "\n".join(lines)
 
@@ -1053,15 +1053,15 @@ class RequirementAnalyzer:
             return ""
 
         target_capability = context.target_capability or "上游指定能力"
-        source_name = context.source_name or context.source or "上游 Agent 创建流程"
+        source_name = context.source_name or context.source or "Upstream Agent creation process"
         return (
-            "## 上游交接约束（必须遵守）\n"
-            f"- 这次需求来自 {source_name} 的能力缺口交接，不是普通的从零自由脑暴。\n"
-            f"- 你必须围绕上游指定的目标能力“{target_capability}”继续收敛，除非用户明确改题。\n"
-            "- 不要把上游已经确认的目标能力偷偷改写成另一个你更熟悉的实现，比如把“估值分析”擅自收缩成“PB估值区间计算”。\n"
-            "- 若同一次补齐任务已经记录了失败摘要或已验证事实，必须显式避开这些已知错误路径，不要重新采用已被证伪的数据源/字段假设。\n"
-            "- 若你判断完整目标更像 Agent/Workflow 而不是单个 Skill，要明确指出这是 Agent 级目标，并把当前 Skill 只定位为其中一个确定性的子能力；不要假装整个目标已经被一个 Skill 完整覆盖。\n"
-            "- 若存在可复用的现有 Skill，应优先指出复用方案；若不存在，再定义新增 Skill 的最小职责边界。\n"
+            "## Upstream handover constraints (must be adhered to)\n"
+            f"- This demand comes from {source_name} The handover of ability gaps is not an ordinary free brainstorming from scratch.\n"
+            f"- You have to target capabilities around the upstream specified {target_capability} Continue to converge unless the user explicitly changes the question.\n"
+            "- Do not secretly rewrite the target capabilities that have been confirmed by upstream into another implementation that you are more familiar with, such as Valuation analysis shrink into PB Valuation interval calculation . \n"
+            "- If failure summaries or verified facts have been recorded for the same completion task, these known error paths must be explicitly avoided, and falsified data source/field assumptions must not be re-adopted.\n"
+            "- If you judge that the complete goal is more like Agent/Workflow than a single Skill, clearly point out that this is an Agent-level goal, and position the current Skill as only one of the deterministic sub-abilities; do not pretend that the entire goal has been completely covered by a Skill.\n"
+            "- If there is an existing skill that can be reused, the reuse plan should be pointed out first; if it does not exist, the minimum responsibility boundary of the new skill should be defined.\n"
         )
 
     def process_user_input(
@@ -1071,27 +1071,27 @@ class RequirementAnalyzer:
         skill_context: Optional[str] = None,
     ) -> Tuple[SkillCreationSession, str]:
         """
-        处理用户输入，推进对话
+        Process user input and advance conversations
 
         Args:
-            session: 当前会话
-            user_message: 用户消息
-            skill_context: 迭代模式下已有 Skill 的上下文（JSON 字符串）
+            session: current session
+            user_message: User messages
+            skill_context: There is already a context for the Skill in iterative mode (JSON string)
 
         Returns:
-            (更新后的会话, AI 回复消息)
+            (Updated session, AI Reply to message)
         """
         session.updated_at = datetime.utcnow()
 
-        # 判断是否为迭代模式
+        # Determine whether it is iterative mode
         is_iteration = bool(session.iterate_skill_id)
 
-        # 如果是第一轮，先做清晰度评估和边界检测
+        # If it is the first round, do clarity assessment and boundary detection first
         if session.current_round == 0:
             try:
                 clarity = self._assess_clarity(user_message)
             except Exception as exc:
-                logger.error("清晰度评估失败，降级为 MEDIUM: %s", exc)
+                logger.error("Clarity evaluation failed, downgraded to MEDIUM: %s", exc)
                 clarity = ClarityLevel.MEDIUM
             session.clarity_level = clarity
 
@@ -1102,11 +1102,11 @@ class RequirementAnalyzer:
                     conversation_context=boundary_context or None,
                 )
             except Exception as exc:
-                logger.error("边界检测失败，降级为通过: %s", exc)
-                boundary = BoundaryCheck(within_boundary=True, reason="边界检测失败，默认通过")
+                logger.error("Boundary detection failed, downgraded to pass: %s", exc)
+                boundary = BoundaryCheck(within_boundary=True, reason="Boundary detection fails and passes by default")
             session.boundary_check = boundary
 
-            # 如果超出边界，返回拆分建议
+            # If out of bounds, return splitting suggestions
             if not boundary.within_boundary:
                 ai_msg = self._build_boundary_warning(boundary)
                 round_obj = ConversationRound(
@@ -1118,21 +1118,21 @@ class RequirementAnalyzer:
                 session.current_round = 1
                 return session, ai_msg
 
-        # 推进对话
+        # Advancing dialogue
         session.current_round += 1
         max_rounds = self._get_max_rounds(session.clarity_level)
 
-        # 第 2 轮及以后：根据用户最新反馈重新评估边界，复杂度提醒会随之更新
+        # Round 2 and beyond: Re-evaluate boundaries based on latest user feedback, complexity alerts will be updated accordingly
         if session.current_round >= 2:
             try:
                 conversation = self._collect_conversation(session, user_message)
                 boundary = self._check_boundary(user_message, conversation_context=conversation)
                 session.boundary_check = boundary
             except Exception as exc:
-                logger.error("第%d轮边界检测失败，跳过: %s", session.current_round, exc)
+                logger.error("The %dth round of boundary detection failed and was skipped.: %s", session.current_round, exc)
 
         if session.current_round >= max_rounds:
-            # 迭代模式：第 1 轮绝不能直接跳到最后轮，至少需要一次迭代引导
+            # Iterative mode: The first round must not jump directly to the last round, at least one iteration guidance is required
             if is_iteration and session.current_round == 1:
                 if skill_context:
                     try:
@@ -1140,43 +1140,43 @@ class RequirementAnalyzer:
                             session, user_message, skill_context
                         )
                     except Exception as exc:
-                        logger.error("迭代模式第1轮需求分析 LLM 调用失败，使用降级回复: %s", exc)
+                        logger.error("The first round of requirements analysis in iterative mode failed to call LLM and used a downgrade reply.: %s", exc)
                         ai_msg = self._build_fallback_round1_response(user_message)
                 else:
                     ai_msg = self._build_round1_response(session, user_message)
             else:
-                # 最后一轮：生成规格确认
+                # Final round: Generate specification confirmation
                 try:
                     ai_msg = self._build_spec_confirmation(session, user_message)
                 except Exception as exc:
-                    logger.error("最后一轮规格确认 LLM 调用失败，使用降级回复: %s", exc)
+                    logger.error("Last round of specification confirmation LLM call failed, using downgrade reply: %s", exc)
                     ai_msg = self._build_fallback_spec_confirmation(
                         self._collect_conversation(session, user_message)
                     )
         elif session.current_round == 1:
-            # 第 1 轮
+            # Round 1
             if is_iteration and skill_context:
-                # 迭代模式：使用迭代专用提示词
+                # Iteration mode: Use iteration-specific prompt words
                 try:
                     ai_msg = self._build_iteration_round1_response(
                         session, user_message, skill_context
                     )
                 except Exception as exc:
-                    logger.error("迭代模式第1轮需求分析 LLM 调用失败，使用降级回复: %s", exc)
+                    logger.error("The first round of requirements analysis in iterative mode failed to call LLM and used a downgrade reply.: %s", exc)
                     ai_msg = self._build_fallback_round1_response(user_message)
             else:
-                # 普通模式：初步理解 + 功能点拆解
+                # Normal mode: preliminary understanding + Disassembly of function points
                 try:
                     ai_msg = self._build_round1_response(session, user_message)
                 except Exception as exc:
-                    logger.error("第1轮需求分析 LLM 调用失败，使用降级回复: %s", exc)
+                    logger.error("The first round of requirements analysis LLM call failed, use downgrade reply: %s", exc)
                     ai_msg = self._build_fallback_round1_response(user_message)
         else:
-            # 第 2 轮：技术细化
+            # Round 2: Technology Refinement
             try:
                 ai_msg = self._build_round2_response(session, user_message)
             except Exception as exc:
-                logger.error("第2轮需求分析 LLM 调用失败，使用降级回复: %s", exc)
+                logger.error("The second round of requirements analysis LLM call failed, use downgrade reply: %s", exc)
                 ai_msg = self._build_fallback_round2_response(session, user_message)
 
         round_obj = ConversationRound(
@@ -1196,22 +1196,22 @@ class RequirementAnalyzer:
         parent_contract: Optional[Dict[str, Any]] = None,
     ) -> Tuple[SkillCreationSession, Optional[SkillSpec]]:
         """
-        用户确认规格后，生成 SkillSpec
+        After the user confirms the specifications, generate SkillSpec
 
         Args:
-            session: 当前会话
-            user_message: 用户的确认消息（"确认" / 补充修改）
-            fact_report: 侦察报告（侦察前置模式），用于增强 spec 生成
-            parent_contract: 迭代模式的父版本契约（含完整参数/约束/代码），
-                传入时走升级补丁模式：LLM 只输出 delta，父契约原样继承
+            session: current session
+            user_message: User s confirmation message ("Confirm" / Additional modifications)
+            fact_report: Recon report (recon pre-mode) for enhanced spec generation
+            parent_contract: The parent version contract of the iteration mode (including complete parameters/constraints/code),
+                When incoming, enter the upgrade patch mode: LLM only outputs delta, and the parent contract is inherited as it is.
 
         Returns:
-            (更新后的会话, 生成的 SkillSpec 或 None)
+            (Updated session, Generated SkillSpec or None)
         """
-        # 收集所有对话内容
+        # Collect all conversations
         conversation = self._collect_conversation(session, user_message)
 
-        # LLM 生成结构化 SkillSpec
+        # LLM Generate structured SkillSpec
         spec = self._generate_spec(
             conversation, fact_report=fact_report, session=session,
             parent_contract=parent_contract,
@@ -1233,10 +1233,10 @@ class RequirementAnalyzer:
         parent_contract: Optional[Dict[str, Any]] = None,
     ) -> Optional[SkillSpec]:
         """
-        仅生成 SkillSpec 预览，不修改会话状态。
-        用于规格确认步骤展示，用户确认后再调用 confirm_spec 执行管线。
+        Only a SkillSpec preview is generated, the session state is not modified.
+        Used to display the specification confirmation steps. After the user confirms, the confirm_spec execution pipeline is called.
 
-        parent_contract: 迭代模式的父版本契约，传入时走升级补丁模式
+        parent_contract: The parent version contract of iteration mode, when passed in, upgrade patch mode will be used.
         """
         conversation = self._collect_conversation(session, user_message)
         return self._generate_spec(
@@ -1244,18 +1244,18 @@ class RequirementAnalyzer:
             parent_contract=parent_contract,
         )
 
-    # ==================== 清晰度评估 ====================
+    # ==================== Clarity Assessment ====================
 
     def _assess_clarity(self, user_message: str) -> ClarityLevel:
         """评估需求清晰度"""
         client = self._get_quick_client() or self._get_client()
         prompt = (
-            "请评估以下用户需求的清晰度（1-5分）。\n"
-            "5分=非常清晰（明确了数据源、参数、输出），"
-            "3分=一般（有主题但缺细节），"
-            "1分=模糊（只有大方向）。\n\n"
-            f"用户需求: {user_message}\n\n"
-            "只回复一个数字（1-5），不要其他内容。"
+            "Please rate the clarity of the following user needs (1-5 points).\n"
+            "5 points=Very clear (clear data sources, parameters, output),"
+            "3 points=Average (has a theme but lacks details),"
+            "1 points=Blurred (only general direction).\n\n"
+            f"User needs: {user_message}\n\n"
+            "Reply only with a number (1-5) and nothing else."
         )
         try:
             response = client.chat([Message(role="user", content=prompt)])
@@ -1271,49 +1271,49 @@ class RequirementAnalyzer:
         else:
             return ClarityLevel.LOW
 
-    # ==================== 边界检测 ====================
+    # ==================== Boundary detection ====================
 
     def _check_boundary(
         self, user_message: str, conversation_context: Optional[str] = None
     ) -> BoundaryCheck:
-        """检测需求是否超出单个 Skill 范围。若有对话历史，基于最新共识重新评估。"""
+        """Detect whether requirements exceed the scope of a single Skill. If there is a history of dialogue, re-evaluate based on the latest consensus."""
         client = self._get_quick_client() or self._get_client()
         if conversation_context:
             prompt = (
-                "你是 Skill 边界检测专家。一个 Skill 应该聚焦一个明确、可复用的功能单元。"
-                "它可以包含必要的数据获取、清洗转换、格式整理、确定性计算、规则判断或轻量聚合；"
-                "但不应承载开放式研究、主观投资结论、跨多个独立目标的长链路编排。\n\n"
+                "You are a Skill boundary detection expert. A Skill should focus on a clear and reusable functional unit."
+                "It can include necessary data acquisition, cleaning and transformation, formatting, deterministic calculation, rule judgment or lightweight aggregation;"
+                "But it should not carry open-ended research, subjective investment conclusions, or orchestration of long links across multiple independent goals.\n\n"
                 f"{SKILL_SEMANTICS_GUIDANCE}\n\n"
                 f"{SKILL_BOUNDARY_EXAMPLES}\n"
-                "**重要**：用户经过多轮对话后，需求可能已显著调整，例如：\n"
-                "- 选择了某个子方案（如「方案A/B/C」）\n"
-                "- 改为通过 API 获取（而非 PDF 解析）\n"
-                "- 缩小了范围或简化了实现方式\n\n"
-                "你必须基于**用户最新一轮的明确选择**重新评估，而非沿用首轮的判断。"
-                "若用户已将需求收敛为单一明确能力，即使内部需要组合紧密相关的数据来源或做确定性计算，也不应机械判为越界。"
-                "只有当需求同时包含多个彼此独立的功能目标、开放式分析结论或多阶段工作流时，才建议拆分。"
-                "不要因为出现“计算”“估值区间”“解释假设”“行业背景”这些词就自动判定为 Agent 职责，必须结合其是否确定、可验证来判断。\n\n"
-                f"对话历史:\n{conversation_context}\n\n"
-                "若判定超出边界：concerns 必须聚焦真正的越界点，decomposition_suggestions 必须按功能边界拆分，"
-                "不要输出“Skill 只能取数”或“凡是解释都归 Agent”这类错误前提。\n\n"
-                "请用 JSON 回复（不要其他内容）：\n"
+                "**important**: After multiple rounds of dialogue, the user s needs may have been significantly adjusted, for example:\n"
+                "- A certain sub-plan is selected (such as Plan A/B/C )\n"
+                "- Get via API instead (instead of PDF parsing)\n"
+                "- Reduced scope or simplified implementation\n\n"
+                "you must base on**The latest round of clear choices for users**Re-evaluate rather than stick to your first-round judgment."
+                "If the user has converged the requirements into a single clear capability, even if there is an internal need to combine closely related data sources or do deterministic calculations, it should not be mechanically judged as out of bounds."
+                "Splitting is only recommended when the requirements simultaneously contain multiple independent functional goals, open analysis conclusions, or multi-stage workflows."
+                "Don t show up Calculate  Valuation range  explanatory hypothesis  Industry background These words are automatically judged as Agent responsibilities and must be judged based on whether they are certain and verifiable.\n\n"
+                f"Conversation history:\n{conversation_context}\n\n"
+                "If it is determined to be out of bounds: concerns must focus on the real out-of-bounds point, decomposition_suggestions must be split according to functional boundaries,"
+                "Do not output Skill Can only take numbers or All explanations belong to Agent This type of false premise.\n\n"
+                "Please reply in JSON (no other content):\n"
                 '{"within_boundary": true/false, "complexity_score": 1-5, '
-                '"concerns": ["问题1", ...], "decomposition_suggestions": ["建议1", ...]}'
+                '"concerns": ["question 1", ...], "decomposition_suggestions": ["Suggestions 1", ...]}'
             )
         else:
             prompt = (
-                "你是 Skill 边界检测专家。一个 Skill 应该聚焦一个明确、可复用的功能单元。"
-                "它可以包含必要的数据获取、清洗转换、格式整理、确定性计算、规则判断或轻量聚合；"
-                "但不应承载开放式研究、主观投资结论、跨多个独立目标的长链路编排。\n"
+                "You are a Skill boundary detection expert. A Skill should focus on a clear and reusable functional unit."
+                "It can include necessary data acquisition, cleaning and transformation, formatting, deterministic calculation, rule judgment or lightweight aggregation;"
+                "But it should not carry open-ended research, subjective investment conclusions, or orchestration of long links across multiple independent goals.\n"
                 f"{SKILL_SEMANTICS_GUIDANCE}\n\n"
                 f"{SKILL_BOUNDARY_EXAMPLES}\n"
-                "以下需求是否超出了单个 Skill 的范围？\n\n"
-                f"需求: {user_message}\n\n"
-                "若判定超出边界：concerns 必须聚焦真正的越界点，decomposition_suggestions 必须按功能边界拆分，"
-                "不要输出“Skill 只能取数”或“凡是解释都归 Agent”这类错误前提。\n\n"
-                "请用 JSON 回复（不要其他内容）：\n"
+                "Are the following requirements beyond the scope of a single Skill?\n\n"
+                f"demand: {user_message}\n\n"
+                "If it is determined to be out of bounds: concerns must focus on the real out-of-bounds point, decomposition_suggestions must be split according to functional boundaries,"
+                "Do not output Skill Can only take numbers or All explanations belong to Agent This type of false premise.\n\n"
+                "Please reply in JSON (no other content):\n"
                 '{"within_boundary": true/false, "complexity_score": 1-5, '
-                '"concerns": ["问题1", ...], "decomposition_suggestions": ["建议1", ...]}'
+                '"concerns": ["question 1", ...], "decomposition_suggestions": ["Suggestions 1", ...]}'
             )
         try:
             response = client.chat([Message(role="user", content=prompt)])
@@ -1327,7 +1327,7 @@ class RequirementAnalyzer:
 
         return BoundaryCheck()
 
-    # ==================== 对话构建 ====================
+    # ==================== Conversation building ====================
 
     @staticmethod
     def _get_max_rounds(clarity: Optional[ClarityLevel]) -> int:
@@ -1339,35 +1339,35 @@ class RequirementAnalyzer:
         return 3
 
     def _build_round1_response(self, session: SkillCreationSession, user_message: str) -> str:
-        """第 1 轮：初步理解 + 功能点拆解 + 数据源引导"""
+        """Round 1: Initial Understanding + Disassembly of function points + Data source guidance"""
         catalog_context = self._build_catalog_context(user_message)
         handoff_context = self._build_handoff_context_text(session)
         handoff_guardrails = self._build_handoff_guardrails(session)
         prompt = (
             "你是 Skill 需求分析专家，不仅理解用户需求，更要主动给出专业建议。\n\n"
-            "## 项目背景\n"
-            "你所在的是 **TradingAgents-CN**：面向中文用户的多智能体股票分析学习平台。"
-            "平台专注 A股/港股/美股 的合规研究与策略实验，使用 AI Agent 调用各类可复用 Skill 完成分析。"
-            "用户正在创建的 Skill 将作为 Agent 可调用的可复用功能工具，可用于数据获取、清洗转换、指标计算、规则判断、结构化汇总等明确且可验证的能力。"
-            "Skill 不等于只能取数，但应避免把开放式研究、主观投资结论或完整多阶段工作流塞进单个 Skill。\n\n"
+            "## Project background\n"
+            "where you are **TradingAgents-CN**: A multi-agent stock analysis learning platform for Chinese users."
+            "The platform focuses on compliance research and strategy experiments on A-shares/Hong Kong stocks/US stocks, and uses AI Agent to call various reusable Skills to complete analysis."
+            "The Skill being created by the user will serve as a reusable functional tool that can be called by the Agent and can be used for clear and verifiable capabilities such as data acquisition, cleaning and transformation, indicator calculation, rule judgment, and structured summary."
+            "Skill It doesn t mean you can only take numbers, but you should avoid cramming open-ended research, subjective investment conclusions, or complete multi-stage workflows into a single skill.\n\n"
             f"{SKILL_SEMANTICS_GUIDANCE}\n\n"
             f"{STANDARD_FINANCIAL_APIS_SUMMARY}\n\n"
-            "## 你的任务\n"
-            "1. 复述你的理解\n"
-            "2. 用表格列出功能点（目标市场、输入参数、返回字段、调用方式）\n"
-            "3. **主动建议**：根据用户需求给出专业建议（如更合适的实现方式、常见坑、最佳实践）\n"
-            "4. **实现路径引导（重要）**：\n"
-            "   - **首先检查**：用户需求是否已被上方「项目内置标准金融数据能力」中的函数覆盖？\n"
-            "   - 如果已覆盖：直接告知用户「项目已内置该能力（XXX 函数），无需选择数据源，数据源由项目统一配置」，"
-            "并说明该函数的返回内容和适用场景，不需要再问数据源。\n"
-            "   - 如果未覆盖：简要说明项目暂无直接覆盖的标准函数，可建议通过 skill_runtime 公开接口组合实现，"
-            "或提及可能相关的外部数据源方向，但**不要让用户选择数据源**——数据源由项目统一配置和管理。\n"
-            "   - **绝对不要**问用户「您偏好 AKShare 还是 Tushare」之类的问题，这不是用户应该关心的事。\n\n"
-            "5. 提出其他需要确认的问题（如返回格式、风险判断规则、批量需求等）\n\n"
+            "## your task\n"
+            "1. restate your understanding\n"
+            "2. Use a table to list function points (target market, input parameters, return fields, calling methods)\n"
+            "3. **Unsolicited suggestions**: Provide professional suggestions based on user needs (such as more suitable implementation methods, common pitfalls, best practices)\n"
+            "4. **Implement path guidance (important)**: \n"
+            "   - **first check**: Have the user requirements been covered by the functions in the Project built-in standard financial data capabilities above?\n"
+            "   - If it has been covered: directly inform the user that the project has built-in this capability (XXX function), there is no need to select a data source, the data source is configured uniformly by the project ,"
+            "And explain the return content and applicable scenarios of the function, without asking the data source.\n"
+            "   - If not covered: Briefly explain that the project currently has no standard functions that are directly covered. It is recommended to implement it through the skill_runtime public interface combination."
+            "or mention directions to external data sources that may be relevant, but**Don t let users choose data sources**——Data sources are configured and managed uniformly by the project.\n"
+            "   - **Absolutely not**Asking users questions such as Do you prefer AKShare or Tushare? This is not something users should care about.\n\n"
+            "5. Raise other issues that need to be confirmed (such as return format, risk judgment rules, batch requirements, etc.)\n\n"
             f"{handoff_guardrails}\n"
-            f"上游交接上下文:\n{handoff_context or '无'}\n\n"
-            f"当前按需求命中的数据上下文:\n{catalog_context}\n\n"
-            f"用户描述: {user_message}"
+            f"Upstream handover context:\n{handoff_context or 'None'}\n\n"
+            f"Data context currently hit on demand:\n{catalog_context}\n\n"
+            f"User description: {user_message}"
         )
         try:
             content = self._chat_with_quick_fallback(
@@ -1386,23 +1386,23 @@ class RequirementAnalyzer:
         user_message: str,
         skill_context: str,
     ) -> str:
-        """迭代模式第 1 轮：展示现有 Skill 现状，引导用户描述需要调整的内容"""
+        """Iterative mode round 1: Show the current status of existing skills and guide users to describe what needs to be adjusted"""
         prompt = (
-            "你是 Skill 迭代优化专家。用户正在优化一个已有的 Skill，以下是当前 Skill 的信息：\n\n"
+            "You are a Skill iterative optimization expert. The user is optimizing an existing Skill. The following is the current Skill information:\n\n"
             f"```json\n{skill_context}\n```\n\n"
-            "## 你的任务\n"
-            "请用**极简**的方式回复，不要生成规格书、不要列功能表格、不要分析数据源：\n\n"
-            "**第一步：一句话介绍当前 Skill**\n"
-            "用大白话告诉用户：这个 Skill 做了什么、输入什么、输出什么。最多 3 行。\n\n"
-            "**第二步：理解用户的改进意图并引导**\n"
-            "用户说：" + user_message + "\n"
-            "请基于用户的描述，判断他的意图属于哪一类（Bug 修复 / 功能增强 / 结果优化 / 其他），"
-            "然后**只问 1-2 个最关键的确认问题**，引导用户说出更具体的改进方向。\n\n"
-            "**约束：**\n"
-            "- 不要生成工具规格确认（tool_id/参数/返回字段/数据源等），那些留给后面的流程处理\n"
-            "- 不要问数据源选择、不要列本地集合、不要提 AKShare/Tushare\n"
-            "- 本次回复的核心目的：让用户确认你的理解，然后说出更多改进细节\n"
-            "- 如果用户的想法跟当前 Skill 实现完全冲突，温和建议重新创建"
+            "## your task\n"
+            "Please use**minimalist**Reply in the following way, do not generate specifications, do not list function tables, and do not analyze data sources:\n\n"
+            "**Step 1: Introduce the current situation in one sentence Skill**\n"
+            "Tell users in plain language: what this Skill does, what it inputs, and what it outputs. Maximum 3 lines.\n\n"
+            "**Step 2: Understand the user s improvement intentions and guide them**\n"
+            "User said:" + user_message + "\n"
+            "Based on the user s description, please determine which category his intention falls into (Bug fix/Function enhancement/Result optimization/Others),"
+            "then**Ask only the 1-2 most critical confirmation questions**, Guide users to provide more specific directions for improvement.\n\n"
+            "**Constraints:**\n"
+            "- Do not generate tool specification confirmation (tool_id/parameters/return fields/data sources, etc.), leave those for later processes.\n"
+            "- Don t ask about data source selection, don t list local collections, don t mention AKShare/Tushare\n"
+            "- The core purpose of this reply: let the user confirm your understanding, and then provide more improvement details\n"
+            "- If the user s idea completely conflicts with the current Skill implementation, we gently recommend re-creating it."
         )
         try:
             content = self._chat_with_quick_fallback(
@@ -1412,33 +1412,33 @@ class RequirementAnalyzer:
                 return content
             self._raise_analysis_error("迭代模式第1轮需求分析")
         except Exception as e:
-            logger.error(f"迭代模式第1轮需求分析失败: {e}")
+            logger.error(f"The first round of requirements analysis in iterative mode failed: {e}")
             self._raise_analysis_error("迭代模式第1轮需求分析", e)
 
     def _build_round2_response(
         self, session: SkillCreationSession, user_message: str
     ) -> str:
-        """第 2 轮：技术细化"""
+        """Round 2: Technology Refinement"""
         history = self._collect_conversation(session, user_message)
         catalog_context = self._build_catalog_context(history)
         handoff_context = self._build_handoff_context_text(session)
         handoff_guardrails = self._build_handoff_guardrails(session)
         prompt = (
             "你是 Skill 需求分析专家，所在项目是 **TradingAgents-CN**（A股/港股/美股多智能体股票分析平台）。"
-            "正在进行第 2 轮技术细化。\n\n"
+            "Round 2 of technical refinement is underway.\n\n"
             f"{STANDARD_FINANCIAL_APIS_SUMMARY}\n\n"
-            "请根据之前的对话和用户新的反馈：\n"
-            "1. 确认技术方案（返回格式、风险判断规则等）\n"
-            "2. **主动建议**：根据用户需求给出技术方案建议（如推荐实现方式、边界情况处理）\n"
-            "3. **实现路径确认**：确认用户需求是否已被项目内置标准函数覆盖。"
-            "如果已覆盖，说明将复用哪个函数；如果未覆盖，说明将通过 skill_runtime 公开接口组合实现。"
-            "**不要问用户选择数据源**——数据源由项目统一配置。\n"
-            "4. 给出推荐方案让用户选择（而不是问开放性问题）\n"
-            "5. 列出最终的参数和返回字段清单\n\n"
+            "Please draw on previous conversations and new user feedback:\n"
+            "1. Confirm technical solutions (return format, risk judgment rules, etc.)\n"
+            "2. **Unsolicited suggestions**: Provide technical solution suggestions based on user needs (such as recommended implementation methods, boundary case handling)\n"
+            "3. **Implement path confirmation**: Confirm whether user requirements are covered by the project s built-in standard functions."
+            "If it has been covered, it indicates which function will be reused; if it is not covered, it indicates that it will be implemented through the skill_runtime public interface combination."
+            "**Don t ask the user to select a data source**——Data sources are configured uniformly by the project.\n"
+            "4. Give recommendations and let users choose (instead of asking open-ended questions)\n"
+            "5. List the final list of parameters and return fields\n\n"
             f"{handoff_guardrails}\n"
-            f"上游交接上下文:\n{handoff_context or '无'}\n\n"
-            f"当前按需求命中的数据上下文:\n{catalog_context}\n\n"
-            f"对话历史:\n{history}"
+            f"Upstream handover context:\n{handoff_context or 'None'}\n\n"
+            f"Data context currently hit on demand:\n{catalog_context}\n\n"
+            f"Conversation history:\n{history}"
         )
         try:
             content = self._chat_with_quick_fallback(
@@ -1454,31 +1454,31 @@ class RequirementAnalyzer:
     def _build_spec_confirmation(
         self, session: SkillCreationSession, user_message: str
     ) -> str:
-        """最后一轮：生成规格确认摘要"""
+        """Final round: Generate specification validation summary"""
         history = self._collect_conversation(session, user_message)
         catalog_context = self._build_catalog_context(history)
         handoff_context = self._build_handoff_context_text(session)
         handoff_guardrails = self._build_handoff_guardrails(session)
         prompt = (
             "你是 Skill 需求分析专家，请根据所有对话内容生成最终的规格确认摘要。\n"
-            "用以下格式输出：\n"
-            "## Skill 规格确认\n"
+            "Output in the following format:\n"
+            "## Skill Specification confirmation\n"
             "- **tool_id**: xxx\n"
-            "- **名称**: xxx\n"
-            "- **描述**: xxx\n"
-            "- **分类**: xxx\n"
-            "- **数据源**: xxx\n"
-            "- **推荐复用的本地集合**: 列表\n"
-            "- **推荐外部来源**: 列表（若本地即可满足，可写无或仅作为降级来源）\n"
-            "- **参数**: 列表\n"
-            "- **返回字段**: 列表\n"
-            "- **约束**: 列表\n\n"
-            "要求：推荐复用项必须优先引用当前系统已命中的集合与外部来源，不要编造系统里没有整理过的数据源。\n\n"
-            "最后问用户: '以上规格是否正确？确认后将开始生成代码。'\n\n"
+            "- **Name**: xxx\n"
+            "- **Description**: xxx\n"
+            "- **Classification**: xxx\n"
+            "- **data source**: xxx\n"
+            "- **Recommended local collections for reuse**: list\n"
+            "- **Recommend external sources**: List (if local is sufficient, it can be written as None or only as a source of downgrade)\n"
+            "- **parameters**: list\n"
+            "- **Return field**: list\n"
+            "- **constraint**: list\n\n"
+            "Requirements: Recommended reuse items must first reference collections and external sources that have been hit by the current system, and do not make up data sources that have not been sorted out in the system.\n\n"
+            "Finally ask the user: 'Are the above specifications correct? Code generation will begin upon confirmation.'\n\n"
             f"{handoff_guardrails}\n"
-            f"上游交接上下文:\n{handoff_context or '无'}\n\n"
-            f"当前按需求命中的数据上下文:\n{catalog_context}\n\n"
-            f"对话历史:\n{history}"
+            f"Upstream handover context:\n{handoff_context or 'None'}\n\n"
+            f"Data context currently hit on demand:\n{catalog_context}\n\n"
+            f"Conversation history:\n{history}"
         )
         try:
             content = self._chat_with_quick_fallback(
@@ -1499,22 +1499,22 @@ class RequirementAnalyzer:
             f"  {i+1}. {s}" for i, s in enumerate(check.decomposition_suggestions)
         )
         return (
-            "⚠️ 你的需求包含了多个功能层级，建议拆分：\n\n"
-            f"**关注点：**\n{concerns}\n\n"
-            f"**建议拆分为：**\n{suggestions}\n\n"
-            "每个 Skill 应聚焦一个明确功能，可以包含必要的数据获取与确定性处理；"
-            "开放式分析、投资结论和多阶段编排由 Agent/Workflow 完成。\n"
-            "若你的目标本身是一个可验证的确定性功能，也可以继续收敛为单个 Skill，而不是被迫拆成“纯取数层”。\n"
-            "请选择一个明确的能力单元开始创建，或者告诉我你想先落哪一段功能。"
+            "⚠️ Your requirements include multiple functional levels. It is recommended to split them into:\n\n"
+            f"**Focus:**\n{concerns}\n\n"
+            f"**It is recommended to split it into:**\n{suggestions}\n\n"
+            "Each Skill should focus on a clear function and can include necessary data acquisition and deterministic processing;"
+            "Open analysis, investment conclusions and multi-stage orchestration are completed by Agent/Workflow.\n"
+            "If your goal itself is a verifiable deterministic function, you can continue to converge into a single Skill instead of being forced to split it into Pure number layer . \n"
+            "Please choose a clear unit of capability to start creating, or tell me which function you want to build first."
         )
 
-    # ==================== 对话收集 & 规格生成 ====================
+    # ==================== conversation collection & Specification generation ====================
 
     @staticmethod
     def _collect_conversation(
         session: SkillCreationSession, current_message: str = ""
     ) -> str:
-        """收集所有对话历史为格式化字符串"""
+        """Collect all conversation history into formatted string"""
         parts = []
         handoff_context = RequirementAnalyzer._build_handoff_context_text(session)
         if handoff_context:
@@ -1533,134 +1533,134 @@ class RequirementAnalyzer:
         session: Optional[SkillCreationSession] = None,
         parent_contract: Optional[Dict[str, Any]] = None,
     ) -> Optional[SkillSpec]:
-        """通过 LLM 将对话转化为结构化 SkillSpec
+        """Transform conversations into structures with LLM SkillSpec
 
         Args:
-            conversation: 收集的对话内容
-            fact_report: 侦察报告（侦察前置模式），包含真实字段可用性
-            session: 当前会话（用于迭代模式识别，传入时会保留原 tool_id 等版本关系）
-            parent_contract: 父版本契约（服务层加载，含完整参数/约束/代码）。
-                传入时优先走升级补丁模式（LLM 只输出 delta，父契约确定性继承），
-                补丁生成失败时降级为旧版全量生成（prompt 中注入父契约约束）。
+            conversation: Collected conversations
+            fact_report: Recon report (recon-front mode) with true field availability
+            session: Current session (used for iterative pattern recognition, the original tool_id and other version relationships will be retained when passed in)
+            parent_contract: Parent version contract (service layer loading, including complete parameters/constraints/code).
+                When passing in, priority is given to the upgrade patch mode (LLM only outputs delta, and the parent contract is deterministically inherited).
+                When patch generation fails, it will be downgraded to full generation of the old version (parent contract constraints are injected into the prompt).
         """
-        # 升级补丁模式：父契约 + delta，未提及的字段没有输出通道，
-        # 结构上杜绝「重新发明参数定义/接口约束」（曾把 int=11 重写成
-        # 字符串「月度销量榜」导致接口静默回退热度榜，死循环 4 次尝试）
+        # Upgrade Patch Mode: Parent Contract + delta, Fields not mentioned have no output channels,
+        # Structurally put an end to "reinventing parameter definitions/interface constraints" (it was once considered int=11 Rewritten as
+        # The string "monthly sales list" causes the interface to silently fall back to the popular list, causing an endless loop of 4 attempts)
         if parent_contract:
             spec = self._generate_upgrade_spec(conversation, parent_contract)
             if spec:
                 return spec
             logger.warning(
-                "[UpgradePatch] 补丁生成失败，降级为全量规格生成（注入父契约上下文）"
+                "[UpgradePatch] Patch generation failed and was downgraded to full specification generation (parent contract context injected)"
             )
 
-        # 规格生成本质是结构化转录（对话已把参数/字段确认清楚），
-        # 优先走快速模型，失败回退主模型
+        # The essence of specification generation is structured transcription (the parameters/fields have been clearly confirmed in the dialogue),
+        # Give priority to the fast model, and fall back to the main model if it fails.
         catalog_context = self._build_catalog_context(conversation)
         handoff_guardrails = ""
         if "[系统交接上下文]:" in conversation:
             handoff_guardrails = (
-                "6. 这次会话带有上游交接上下文，必须保留上游指定能力，不要把它改写成另一个更窄、更偷懒的实现。\n"
-                "7. 若原目标显然是 Agent/Workflow 级目标，当前 SkillSpec 只能定义为其中一个确定性的子能力，并在 description/constraints 中明确这一点。\n"
-                "8. 禁止把“估值分析”“研究分析”“多维判断”这类目标直接偷换成单一 PB/PE 指标计算器，除非用户明确只要这个子功能。\n\n"
+                "6. This session has an upstream handover context, and the upstream specification capabilities must be retained and not rewritten into another narrower, lazier implementation.\n"
+                "7. If the original goal is obviously an Agent/Workflow level goal, the current SkillSpec can only be defined as one of the deterministic sub-abilities, and this should be made clear in description/constraints.\n"
+                "8. It is forbidden to Valuation analysis  research analysis  multidimensional judgment This type of goal is directly replaced by a single PB/PE indicator calculator, unless the user explicitly only wants this sub-function.\n\n"
             )
 
-        # 🔧 迭代模式约束：新版本用 _v{N} 后缀，体现版本关系
+        # 🔧 Iteration mode constraints: for new versions _v{N} Suffix, reflecting version relationship
         iteration_guardrails = ""
         is_iteration = bool(session and session.iterate_skill_id)
         if is_iteration:
             original_tool_id = session.iterate_skill_id or ""
             iteration_guardrails = (
-                f"9. **迭代模式约束（必须遵守）**：本次是迭代优化已有 Skill，原 Skill 的 tool_id 是 `{original_tool_id}`。\n"
-                f"   - 生成的 spec.tool_id **必须以 `_v2`、`_v3` 等版本后缀结尾**（首次迭代用 `_v2`，二次迭代用 `_v3`，以此类推）。\n"
-                f"   - **禁止沿用原 tool_id**（会覆盖原 Skill，影响已绑定到 Agent 的旧版本）。\n"
-                f"   - 命名格式：`{{原tool_id}}_v{{新版本号}}`，如 `{original_tool_id}_v2`。\n"
-                f"   - display_name 必须以 ` v{{新版本号}}` 结尾，可附加简短说明，如 `xxx v2`。\n"
-                f"   - 这是对原 Skill 的升级，不是创建全新 Skill；功能要在原 Skill 基础上改进，不要完全推翻重写。\n"
-                f"   - 在 constraints 中追加一条：`本 Skill 是 {original_tool_id} 的迭代优化版本`。\n\n"
+                f"9. **Iteration mode constraints (must be adhered to)**: This time it is iterative optimization of the existing Skill. The tool_id of the original Skill is `{original_tool_id}`. \n"
+                f"   - generated spec.tool_id **Must be `_v2`, `_v3` End with version suffix** (For first iteration `_v2`, For second iteration `_v3`, and so on).\n"
+                f"   - **It is prohibited to use the original tool_id** (It will overwrite the original Skill and affect the old version bound to the Agent).\n"
+                f"   - Naming format:`{{Original tool_id}}_v{{new version number}}`, Such as `{original_tool_id}_v2`. \n"
+                f"   - display_name Must be ` v{{new version number}}` At the end, you can add a brief explanation, such as `xxx v2`. \n"
+                f"   - This is an upgrade of the original Skill, not the creation of a new Skill; the functions should be improved on the basis of the original Skill, not completely overturned and rewritten.\n"
+                f"   - Add one to constraints:`This Skill is {original_tool_id} iteratively optimized version of`. \n\n"
             )
-            # 降级路径的父契约注入：即使全量生成，参数定义/接口约束也必须以
-            # 父版本多轮验证的事实为准，不得重新发明
+            # Parent contract injection for downgrade paths: Even if fully generated, parameter definitions/interface constraints must be
+            # The facts of multiple rounds of verification of the parent version shall prevail and shall not be reinvented.
             if parent_contract:
                 iteration_guardrails += (
-                    "10. **父版本契约（多轮实测验证的事实，必须原样继承）**：\n"
+                    "10. **Parent version contract (a fact verified by multiple rounds of actual testing and must be inherited as is)**: \n"
                     f"```json\n{parent_contract_to_json(parent_contract)}\n```\n"
-                    "    - 同名参数的名称/类型/默认值/取值语义、接口约束（URL/请求头/取值要求）"
-                    "必须与父版本完全一致，除非升级需求明确要求修改\n"
-                    "    - 父版本已有的参数和输出字段不得丢失\n\n"
+                    "    - Name/type/default value/value semantics and interface constraints of parameters with the same name (URL/request header/value requirements)"
+                    "Must be exactly the same as the parent version, unless upgrade requirements explicitly require modification\n"
+                    "    - Existing parameters and output fields of the parent version must not be lost\n\n"
                 )
 
-        # 侦察事实注入：将真实的字段可用性、Helper 函数信息注入 prompt
+        # Reconnaissance fact injection: Inject real field availability and Helper function information prompt
         recon_context = ""
         if fact_report:
             recon_context = self._build_recon_context_for_spec(fact_report)
 
         prompt = (
-            "你是 Skill 规格生成器。请根据以下对话内容，"
-            "提取出一个结构化的 Skill 规格（JSON 格式）。\n\n"
-            "**重要**：\n"
-            "1. 若对话中有「[用户 - 最新]」或用户明确选择方案（如选 A/B/C），必须严格按用户选择生成，不可忽略。\n"
-            "2. Skill 可以是明确的功能实现，不局限于纯数据查询；允许必要的确定性计算、格式整理和轻量聚合。\n"
-            "3. data_source 填写对话中确定的主数据源标识；若实现会组合紧密相关的数据来源，则填写主数据源，并在 constraints 中说明附加来源或降级策略。\n"
-            "4. 不要写「需通过参数传入」等模糊描述。\n\n"
-            "5. 优先让 spec 与当前系统可复用的本地集合、外部来源保持一致；若本地可满足，不要强行指定外部源。\n\n"
-            "5.1 如果这是估值类或方法型 Skill，expected_output.fields 必须优先贴近系统已有 schema 契约，不要自造一套字段名。\n"
-            "5.2 constraints 应明确写出方法适用边界、禁止模式和必要叙述要求，而不是泛泛地写'返回估值结果'。\n\n"
-            "6. **命名规则（关键）**：tool_id 必须使用 snake_case，且 **禁止与引用的底层 Python 函数名相同**。\n"
-            "   例如：如果实现要调用 get_stock_news 函数，tool_id 应命名为 get_unified_news 或 fetch_news_by_ticker，\n"
-            "   而不能也叫 get_stock_news。命名冲突会导致 Skill 执行时进入无限递归。\n"
-            "   建议命名格式：get_<数据源>_<功能>（如 get_eastmoney_news、fetch_tushare_financials）。\n\n"
+            "You are the Skill Spec Generator. Please follow the dialogue below,"
+            "Extract a structured Skill specification (JSON format).\n\n"
+            "**important**: \n"
+            "1. If there is [User - Latest]] Or the user clearly chooses the plan (such as choosing A/B/C), which must be generated strictly according to the user s choice and cannot be ignored.\n"
+            "2. Skill Can be an explicit functional implementation, not limited to pure data query; allow necessary deterministic calculations, formatting and lightweight aggregation.\n"
+            "3. data_source Fill in the primary data source ID identified in the dialog; if the implementation will combine closely related data sources, fill in the primary data source, and describe the additional source or downgrade strategy in constraints.\n"
+            "4. Don t write vague descriptions such as needs to be passed in through parameters .\n\n"
+            "5. Prioritize the spec to be consistent with the local collection and external sources that can be reused by the current system; if the local one can be satisfied, do not forcefully specify external sources.\n\n"
+            "5.1 If this is a valuation class or method type Skill, expected_output.fields must first be close to the existing schema contract of the system, and do not create a set of field names.\n"
+            "5.2 constraints The applicable boundaries, prohibited modes and necessary narrative requirements of the method should be clearly written rather than written in general terms.'Return valuation results'. \n\n"
+            "6. **Naming rules (key)**: tool_id snake_case must be used, and **The same name as the underlying Python function referenced is prohibited**. \n"
+            "   For example: if the implementation calls the get_stock_news function, the tool_id should be named get_unified_news or fetch_news_by_ticker,\n"
+            "   It cannot also be called get_stock_news. Naming conflicts will cause infinite recursion during Skill execution.\n"
+            "   Recommended naming format:get_<data source>_<Function> (Such as get_eastmoney_news, fetch_tushare_financials).\n\n"
             f"{handoff_guardrails}"
             f"{iteration_guardrails}"
             f"{SKILL_SEMANTICS_GUIDANCE}\n\n"
-            f"当前按需求命中的数据上下文:\n{catalog_context}\n\n"
+            f"Data context currently hit on demand:\n{catalog_context}\n\n"
         )
 
-        # 插入侦察事实上下文
+        # Insert recon fact context
         if recon_context:
             prompt += (
-                f"### 侦察层发现的实现事实（真实数据源探测结果）\n"
+                f"### Implementation facts discovered by the reconnaissance layer (real data source detection results)\n"
                 f"{recon_context}\n\n"
-                "**基于侦察事实的约束**：\n"
-                "- expected_output.fields 只能包含侦察证实可获取的字段，不要凭想象添加数据源中不存在的字段。\n"
-                "- 如果侦察上下文已经提供金融 schema 方法/契约/规则，expected_output.fields 与 constraints 必须优先对齐这些 schema 对象。\n"
-                "- 若某字段覆盖率低或不可用，应在 constraints 中注明降级策略，而非标记为必填。\n"
-                "- 优先使用侦察发现的 Helper 函数，而非猜测 API 调用方式。\n\n"
+                "**Constraints based on reconnaissance facts**: \n"
+                "- expected_output.fields Only include fields that are available through reconnaissance, and do not add fields based on your imagination that do not exist in the data source.\n"
+                "- If the scouting context has provided financial schema methods/contracts/rules, expected_output.fields and constraints must be aligned with those schema objects in preference.\n"
+                "- If a field has low coverage or is unavailable, the downgrade strategy should be noted in the constraints instead of being marked as required.\n"
+                "- Prefer using helper functions discovered through reconnaissance rather than guessing at how API calls are made.\n\n"
             )
 
         prompt += f"对话内容:\n{conversation}\n\n"
         prompt += (
-            "请严格用以下 JSON 格式输出（不要其他内容）：\n"
-            "参数命名规则（必须遵守）：\n"
-            "- parameters 中的 name 必须是合法 Python 标识符（snake_case，如 month、rank_data_type）\n"
-            "- HTTP 请求头（User-Agent/Referer/Token 等）、认证密钥、接口 URL 是实现细节，"
-            "写入 constraints（如\"请求需携带 User-Agent 和 Referer 请求头\"），严禁列为函数参数\n"
-            "- parameters 只收录调用方需要传入的业务参数（如月份、代码、类型），"
-            "函数内部写死的常量不收录\n\n"
+            "Please strictly use the following JSON format for output (no other content):\n"
+            "Parameter naming rules (must be followed):\n"
+            "- parameters name in must be a legal Python identifier (snake_case, such as month, rank_data_type)\n"
+            "- HTTP Request headers (User-Agent/Referer/Token, etc.), authentication keys, and interface URLs are implementation details."
+            "Write constraints (such as\"The request must carry User-Agent and Referer request headers\") , Strictly prohibited as a function parameter\n"
+            "- parameters Only the business parameters that the caller needs to pass in (such as month, code, type) are included."
+            "Hard-coded constants inside functions are not included\n\n"
             "{\n"
             '  "tool_id": "snake_case_id",\n'
-            '  "display_name": "中文显示名称",\n'
-            '  "description": "功能描述",\n'
+            '  "display_name": "Chinese display name",\n'
+            '  "description": "Function description",\n'
             '  "category": "news|market|fundamentals|social|technical|utility|valuation",\n'
-            '  "data_source": "对话中确定的数据源标识",\n'
+            '  "data_source": "The data source identifier determined in the conversation",\n'
             '  "parameters": [\n'
-            '    {"name": "param1", "type": "string", "description": "说明", '
+            '    {"name": "param1", "type": "string", "description": "Description", '
             '"required": true}\n'
             "  ],\n"
             '  "expected_output": {\n'
             '    "type": "list[dict]",\n'
             '    "fields": ["field1", "field2"],\n'
-            '    "description": "输出描述"\n'
+            '    "description": "Output description"\n'
             "  },\n"
             '  "validation_checks": [\n'
-            '    {"name": "status_success", "description": "输出状态必须成功", "required": true, "check_type": "status_success", "rule_level": "output", "blocking": true, "value_path": "output", "forbid_null": false},\n'
-            '    {"name": "required_field:field1", "description": "成功输出时 field1 不可缺失", "required": true, "check_type": "required_field", "rule_level": "data", "blocking": true, "field": "field1", "value_path": "data", "forbid_null": true}\n'
+            '    {"name": "status_success", "description": "Output status must be successful", "required": true, "check_type": "status_success", "rule_level": "output", "blocking": true, "value_path": "output", "forbid_null": false},\n'
+            '    {"name": "required_field:field1", "description": "Field1 cannot be missing when output is successful.", "required": true, "check_type": "required_field", "rule_level": "data", "blocking": true, "field": "field1", "value_path": "data", "forbid_null": true}\n'
             "  ],\n"
-            '  "constraints": ["约束1"],\n'
-            '  "test_input": {"param1": "测试值"}\n'
+            '  "constraints": ["constraint 1"],\n'
+            '  "test_input": {"param1": "Test value"}\n'
             "}"
         )
-        # 带 1 次重试的 JSON 解析
+        # JSON parsing with 1 retry
         max_attempts = 2
         last_raw = ""
         last_error: Optional[Exception] = None
@@ -1672,12 +1672,12 @@ class RequirementAnalyzer:
                         [Message(role="user", content=prompt)], stage="规格生成"
                     )
                 else:
-                    # 第 2 次：将上次失败的输出反馈给 LLM，要求修正
+                    # The 2nd time: Feed back the last failed output to LLM and ask for correction.
                     retry_prompt = (
                         f"你上次的输出无法被解析为合法 JSON，请修正后重新输出。\n"
-                        f"上次输出:\n{last_raw[:8000]}\n\n"
-                        f"错误: {last_error}\n\n"
-                        "请只输出纯 JSON，不要包含任何 Markdown 标记或解释文字。"
+                        f"Last output:\n{last_raw[:8000]}\n\n"
+                        f"Error: {last_error}\n\n"
+                        "Please output only plain JSON, without any Markdown markup or explanatory text."
                     )
                     last_raw = self._chat_with_quick_fallback(
                         [
@@ -1695,29 +1695,29 @@ class RequirementAnalyzer:
                     self._ensure_interface_spec_constraints(data, conversation)
                     return self._ensure_spec_validation_checks(SkillSpec(**data))
 
-                last_error = ValueError("LLM 未返回合法 JSON")
-                logger.warning(f"SkillSpec JSON 解析失败 (attempt {attempt + 1}/{max_attempts}): {last_error}")
+                last_error = ValueError("LLM Not returned legal JSON")
+                logger.warning(f"SkillSpec JSON Parsing failed (attempt {attempt + 1}/{max_attempts}): {last_error}")
 
             except Exception as e:
                 last_error = e
-                logger.warning(f"SkillSpec 生成异常 (attempt {attempt + 1}/{max_attempts}): {e}")
+                logger.warning(f"SkillSpec generate exception (attempt {attempt + 1}/{max_attempts}): {e}")
 
-        logger.error(f"SkillSpec 生成最终失败: {last_error}")
+        logger.error(f"SkillSpec Build ultimately fails: {last_error}")
         self._raise_analysis_error("SkillSpec 生成", last_error)
         return None
 
     def _generate_upgrade_spec(
         self, conversation: str, parent_contract: Dict[str, Any]
     ) -> Optional[SkillSpec]:
-        """升级补丁模式：LLM 读父契约 + 父代码后只输出 delta，确定性套用成新 spec。
+        """Upgrade patch mode: LLM read parent contract + Only delta is output after the parent code, and it is deterministically applied to the new spec.
 
-        与全量规格生成的本质区别（对齐编程 agent 的 edit-apply）：
-        - LLM 的输出通道只有「变更清单」，未提及的参数/约束/字段
-          由 apply_upgrade_patch 从父版本原样继承——想重写都没有通道
-        - 父代码完整注入（不截断），满足「先读懂原代码再读新需求」
+        The essential difference from full specification generation (aligned programming agent s edit-apply):
+        - LLM The output channel only has change list and no parameters/constraints/fields mentioned
+          Inherited unchanged from parent version by apply_upgrade_patch——There is no way to rewrite it
+        - The parent code is fully injected (without truncation) to meet the understand the original code first and then read the new requirements 
 
         Returns:
-            套用补丁后的 SkillSpec；补丁生成/套用失败返回 None（调用方降级）
+            SkillSpec after applying the patch; failure to patch generation/application returns None (caller downgraded)
         """
         prompt = build_upgrade_patch_prompt(parent_contract, conversation)
         last_raw = ""
@@ -1732,9 +1732,9 @@ class RequirementAnalyzer:
                 else:
                     retry_prompt = (
                         f"你上次的输出无法解析为补丁 JSON，请修正后重新输出。\n"
-                        f"上次输出:\n{last_raw[:6000]}\n\n"
-                        f"错误: {last_error}\n\n"
-                        "请只输出纯 JSON，不要包含任何 Markdown 标记或解释文字。"
+                        f"Last output:\n{last_raw[:6000]}\n\n"
+                        f"Error: {last_error}\n\n"
+                        "Please output only plain JSON, without any Markdown markup or explanatory text."
                     )
                     last_raw = self._chat_with_quick_fallback(
                         [
@@ -1747,14 +1747,14 @@ class RequirementAnalyzer:
 
                 logger.info(
                     f"[UpgradePatch] 补丁 LLM 原始返回 (attempt {attempt + 1}/2, "
-                    f"{len(last_raw)} 字符):\n{last_raw}"
+                    f"{len(last_raw)} character):\n{last_raw}"
                 )
                 patch = self._parse_llm_json(last_raw)
                 if not isinstance(patch, dict):
-                    raise ValueError("补丁必须是 JSON 对象")
+                    raise ValueError("Patches must be JSON objects")
                 spec = apply_upgrade_patch(parent_contract, patch)
                 logger.info(
-                    "[UpgradePatch] 补丁套用成功: tool_id=%s 变更点=%s",
+                    "[UpgradePatch] Patch applied successfully: tool_id=%s change point=%s",
                     spec.tool_id,
                     spec.metadata.get("upgrade_change_points"),
                 )
@@ -1763,16 +1763,16 @@ class RequirementAnalyzer:
                 last_error = e
                 logger.warning(f"[UpgradePatch] 第 {attempt + 1}/2 次失败: {e}")
 
-        logger.error(f"[UpgradePatch] 补丁生成最终失败: {last_error}")
+        logger.error(f"[UpgradePatch] Patch generation ultimately fails: {last_error}")
         return None
 
     @staticmethod
     def _sanitize_spec_params(data: Dict[str, Any]) -> None:
-        """清洗 spec 参数：剔除非法 Python 标识符参数（如 headers.User-Agent）。
+        """Clean spec parameters: Remove illegal Python identifier parameters (such as headers.User-Agent).
 
-        LLM 可能把 HTTP 请求头误收录为函数参数；这类名字不可能出现在函数
-        签名中，会直接导致静态校验死循环。剔除后把头部要求补进 constraints，
-        保证实现信息不丢失。
+        LLM HTTP request headers may be mistakenly included as function parameters; such names cannot appear in functions
+        Signing will directly lead to an infinite loop of static verification. After elimination, add the header requirements into constraints.
+        Ensure that implementation information is not lost.
         """
         import keyword as _keyword
         import re as _re
@@ -1796,29 +1796,29 @@ class RequirementAnalyzer:
             if not isinstance(constraints, list):
                 constraints = []
             constraints.append(
-                f"请求所需的 HTTP 头/认证等实现细节（原参数: {', '.join(dropped)}）"
-                "应在函数内部写死，不作为函数参数暴露"
+                f"Implementation details such as HTTP headers/authentication required for the request (original parameters: {', '.join(dropped)}) "
+                "It should be hard-coded inside the function and not exposed as function parameters."
             )
             data["constraints"] = constraints
-            logger.warning(f"[RequirementAnalyzer] 已剔除非法标识符参数: {dropped}")
+            logger.warning(f"[RequirementAnalyzer] Illegal identifier parameters have been removed: {dropped}")
 
     @staticmethod
     def _ensure_interface_spec_constraints(data: Dict[str, Any], conversation: str) -> None:
-        """从对话原文提取接口规格（URL/方法/请求头），兜底写回 constraints。
+        """Extract interface specifications (URL/methods/request headers) from the original conversation text and write back the constraints in full.
 
-        背景：用户在外部接口需求中给出的 URL、请求头、参数说明是接口契约的
-        唯一事实源，但规格生成 LLM 可能将其摘要丢失（constraints 为空），
-        导致代码生成阶段臆造 URL（如把 rank_data 写成 rank/data → 404）。
+        Background: The URL, request header, and parameter description given by the user in the external interface requirement are part of the interface contract.
+        sole source of truth, but specification generation LLM may have its summary missing (constraints is empty),
+        Causes the code generation phase to invent URLs (such as writing rank_data as rank/data → 404) . 
         """
         import re as _re
 
         if not conversation:
             return
-        # 提取对话中出现的 http(s) URL；查询串是示例参数（应以函数参数实现），
-        # 只保留基础 URL 作为逐字契约，避免诱导 LLM 硬编码示例参数。
-        # 查询串单独作为「文档化查询参数」约束保留——它是接口预检差分测试
-        # 区分「接口真实参数」与「业务过滤参数」（如 brand_name）的依据。
-        # URL 匹配仅限 ASCII URL 字符：中文紧贴 URL 时（如「rank_data发起」）必须截断
+        # Extract the words that appear in the conversation http(s) URL; The query string is an example parameter (should be implemented as a function parameter),
+        # Only keep the base URL as a verbatim contract to avoid inducing LLM to hardcode example parameters.
+        # The query string is retained solely as a "documented query parameter" constraint——It is interface preflight differential test
+        # The basis for distinguishing "interface real parameters" and "business filtering parameters" (such as brand_name).
+        # URL Matching is limited to ASCII URL characters: Chinese characters must be truncated when closely following the URL (such as "rank_data initiated")
         urls: list[str] = []
         url_queries: dict[str, str] = {}
         for m in _re.finditer(r"https?://[A-Za-z0-9\-._~:/?#\[\]@!$&'()*+,;=%]+", conversation):
@@ -1843,25 +1843,25 @@ class RequirementAnalyzer:
                 continue
             constraints.insert(
                 0,
-                f"【接口规格 — 必须原样使用】接口 URL: {base_url}（来自用户需求，路径/参数名严禁改写，"
-                "如 rank_data 不得写成 rank/data；URL 中的查询参数仅是示例，实现时以函数参数传参）",
+                f" [Interface specifications — The interface must be used as is URL: {base_url} (Based on user requirements, the path/parameter name is strictly prohibited to be rewritten."
+                "For example, rank_data must not be written as rank/data; the query parameters in the URL are only examples, and the parameters are passed as function parameters during implementation)",
             )
             added.append(base_url)
 
-        # 文档化查询参数：用户 URL 原文查询串（幂等：已存在则不重复写）
+        # Documented query parameters: user URL original query string (idempotent: if it already exists, it will not be written repeatedly)
         query_added = 0
         for base_url, query in url_queries.items():
             if query in existing:
                 continue
             constraints.insert(
                 1,
-                f"【接口规格】接口查询参数（用户 URL 原文查询串）: {query}"
-                "——仅这些参数名为接口真实查询参数，可拼装进 URL 请求；"
-                "其余业务过滤条件（如品牌/厂商）接口不支持，必须拉取数据后按返回字段本地过滤",
+                f" [Interface specifications] Interface query parameters (user URL original query string): {query}"
+                "——Only these parameters are the real query parameters of the interface and can be assembled into URL requests;"
+                "Other business filtering conditions (such as brand/manufacturer) are not supported by the interface. The data must be pulled and filtered locally based on the return field.",
             )
             query_added += 1
 
-        # 请求头要求
+        # Request header requirements
         header_kws = ["User-Agent", "Referer", "Authorization", "Content-Type", "Token", "请求头"]
         mentioned_headers = [kw for kw in header_kws if kw in conversation]
         if mentioned_headers and "请求头" not in existing and "User-Agent" not in existing:
@@ -1873,13 +1873,13 @@ class RequirementAnalyzer:
         if added or query_added or mentioned_headers:
             data["constraints"] = constraints
             logger.warning(
-                f"[RequirementAnalyzer] 对话中检测到接口规格，已兜底写入 constraints: urls={added}, "
+                f"[RequirementAnalyzer] The interface specification was detected in the conversation and has been written down in detail. constraints: urls={added}, "
                 f"queries={query_added}, headers={mentioned_headers[:4]}"
             )
 
     @staticmethod
     def _build_recon_context_for_spec(report: ImplementationFactReport) -> str:
-        """将侦察报告转化为 spec 生成 prompt 可消费的文本上下文。"""
+        """Convert recon report to spec to generate prompt consumable text context."""
         parts = []
 
         if report.recommended_strategy:
@@ -1888,7 +1888,7 @@ class RequirementAnalyzer:
         if report.confidence:
             parts.append(f"- 侦察置信度: {report.confidence:.0%}")
 
-        # 可用 Helper 函数
+        # Available Helper functions
         if report.available_helpers:
             helper_lines = []
             helper_field_names: set[str] = set()
@@ -1899,27 +1899,27 @@ class RequirementAnalyzer:
                 if h.description:
                     sig += f" — {h.description}"
                 helper_lines.append(sig)
-                # 🔧 从 helper 的 Returns 文档中提取字段名，用于约束 LLM 输出字段命名
+                # 🔧 Extract field names from the helper's Returns document, used to constrain LLM output field naming
                 if h.description:
                     field_names = RequirementAnalyzer._extract_return_field_names(h.description)
                     helper_field_names.update(field_names)
             parts.append(
-                "- 可用 Helper 函数 (数据源: self_contained=自包含; local_only=仅本地MongoDB; partial=部分覆盖):\n"
+                "- Available Helper functions (data source: self_contained=self contained; local_only=local only MongoDB; partial=partial coverage):\n"
                 + "\n".join(helper_lines)
             )
-            # 🔧 注入 helper 实际返回的字段名，防止 LLM 自创字段名
+            # 🔧 Inject the field name actually returned by the helper to prevent LLM from creating its own field name
             if helper_field_names:
                 sorted_fields = sorted(helper_field_names)
                 parts.append(
-                    f"- 🚨 Helper 实际返回的字段名（expected_output.fields 必须优先使用这些字段名，禁止自创）: "
+                    f"- 🚨 Helper The actual returned field names (expected_output.fields must give priority to using these field names, no own creation is allowed): "
                     f"{', '.join(sorted_fields[:30])}"
                 )
 
-        # 数据库字段实况
+        # Database field live
         if report.schema_facts:
             fact_lines = []
             for f in report.schema_facts:
-                # field/description 为新增可选字段，回退到 fact
+                # field/description To add optional fields, fall back to fact
                 label = f.field if f.field else f.fact
                 desc = f.description if f.description else ""
                 line = f"  • [{f.source}] {label}"
@@ -1930,7 +1930,7 @@ class RequirementAnalyzer:
                 fact_lines.append(line)
             parts.append("- 数据库字段实况:\n" + "\n".join(fact_lines))
 
-        # 样本字段
+        # sample field
         if report.sample_fields:
             for collection, fields in report.sample_fields.items():
                 parts.append(f"- {collection} 的实际字段: {', '.join(fields[:20])}")
@@ -1968,14 +1968,14 @@ class RequirementAnalyzer:
         if verifier_rule and verifier_rule.get("failure_message"):
             schema_lines.append(f"  • 验收失败语义: {verifier_rule.get('failure_message')}")
         if schema_lines:
-            parts.append("- 金融 schema 指南:\n" + "\n".join(schema_lines))
+            parts.append("- Financial schema guide:\n" + "\n".join(schema_lines))
 
-        # 受阻路径
+        # blocked path
         if report.blocked_paths:
             block_lines = [f"  ⚠️ [{b.severity}] {b.path}: {b.reason}" for b in report.blocked_paths]
             parts.append("- 受阻路径（不可用）:\n" + "\n".join(block_lines))
 
-        # 运行时缺口
+        # runtime gap
         if report.runtime_gaps:
             gap_lines = [f"  ⚠️ [{g.severity}] {g.path}: {g.reason}" for g in report.runtime_gaps]
             parts.append("- 运行时缺口:\n" + "\n".join(gap_lines))
@@ -1987,31 +1987,31 @@ class RequirementAnalyzer:
 
     @staticmethod
     def _extract_return_field_names(description: str) -> list[str]:
-        """从 helper 的 docstring 描述中提取 Returns 区块列出的字段名。
+        """Extract the field names listed in the Returns block from the helper s docstring description.
 
-        Helper 的 docstring 通常包含这样的 Returns 段落:
+        Helper The docstring usually contains a Returns paragraph like this:
             Returns:
-                dict: 字段说明（代码中使用 .get() 或 [] 访问这些 key）——
-                    status: 状态: "success" | "no_pledge" | ...
-                    symbol: 标准化后的 6 位股票代码
-                    metrics: 聚合指标 — ...
-                    top_pledgers: 前几大未解押股东列表
+                dict: Field description (used in code .get() or [] access these keys)——
+                    status: Status: "success" | "no_pledge" | ...
+                    symbol: Standardized 6-digit stock code
+                    metrics: aggregated metrics — ...
+                    top_pledgers: List of top undeposited shareholders
                     ...
 
-        本方法解析出 status / symbol / metrics / top_pledgers 等字段名,
-        用于约束 spec 生成阶段不要自创字段名。
+        This method parses out field names such as status / symbol / metrics / top_pledgers,
+        Used to constrain the spec generation phase not to create your own field names.
         """
         if not description:
             return []
         text = str(description)
 
-        # 定位 Returns 区块
+        # Locate the Returns block
         returns_idx = text.find("Returns:")
         if returns_idx < 0:
             return []
         returns_block = text[returns_idx:]
 
-        # 截到下一个段落标记（Args/Examples/Note 等）或文档末尾
+        # Cut to next paragraph mark (Args/Examples/Note, etc.) or end of document
         for marker in ("\nArgs:", "\nExamples:", "\nNote:", "\nRaises:"):
             marker_idx = returns_block.find(marker)
             if marker_idx > 0:
@@ -2020,12 +2020,12 @@ class RequirementAnalyzer:
 
         field_names: list[str] = []
         seen: set[str] = set()
-        # 匹配 "            field_name: 描述" 这种行
-        # 字段名通常由字母/数字/下划线组成，冒号前
+        # match "            field_name: Description" This kind of business
+        # Field names usually consist of letters/numbers/underscores, preceded by a colon
         import re
         for match in re.finditer(r"^\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*:", returns_block, re.MULTILINE):
             name = match.group(1)
-            # 过滤掉明显的非字段名（如 "dict"、"list"、"str"、"Returns" 等）
+            # Filter out obvious non-field names (such as "dict", "list", "str", "Returns" etc.)
             if name.lower() in {"dict", "list", "str", "int", "float", "bool", "returns", "args", "examples", "note"}:
                 continue
             if name in seen:

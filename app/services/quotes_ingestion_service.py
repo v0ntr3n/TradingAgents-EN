@@ -19,40 +19,40 @@ REALTIME_QUOTES_FETCH_TIMEOUT_SECONDS = 8
 
 class QuotesIngestionService:
     """
-    定时从数据源适配层获取全市场近实时行情，入库到 MongoDB 集合 `market_quotes`。
+    Regularly obtain near-real-time market information from the data source adaptation layer and store it in a MongoDB collection `market_quotes`. 
 
-    核心特性：
-    - 调度频率：由 settings.QUOTES_INGEST_INTERVAL_SECONDS 控制（默认360秒=6分钟）
-    - 接口轮换：Tushare → AKShare东方财富 → AKShare新浪财经（避免单一接口被限流）
-    - 智能限流：Tushare免费用户每小时最多2次，付费用户自动切换到高频模式（5秒）
-    - 休市时间：跳过任务，保持上次收盘数据；必要时执行一次性兜底补数
-    - 字段：code(6位)、close、pct_chg、amount、open、high、low、pre_close、trade_date、updated_at
+    Core features:
+    - Scheduling frequency: controlled by settings.QUOTES_INGEST_INTERVAL_SECONDS (default 360 seconds=6 minutes)
+    - Interface rotation:Tushare → AKShare Oriental Fortune → AKShare Sina Finance (to avoid a single interface being restricted)
+    - Intelligent current limit: Tushare free users can use up to 2 times per hour, and paid users automatically switch to high-frequency mode (5 seconds)
+    - Close time: Skip the task and keep the last closing data; perform a one-time bottom-up if necessary
+    - Fields:code(6 Bit), close, pct_chg, amount, open, high, low, pre_close, trade_date, updated_at
     """
 
     def __init__(self, collection_name: str = "market_quotes") -> None:
         from collections import deque
 
         self.collection_name = collection_name
-        self.status_collection_name = "quotes_ingestion_status"  # 状态记录集合
+        self.status_collection_name = "quotes_ingestion_status"  # Status record collection
         self.tz = ZoneInfo(settings.TIMEZONE)
 
-        # Tushare 权限检测相关属性
-        self._tushare_permission_checked = False  # 是否已检测过权限
-        self._tushare_has_premium = False  # 是否有付费权限
-        self._tushare_last_call_time = None  # 上次调用时间（用于免费用户限流）
-        self._tushare_hourly_limit = 2  # 免费用户每小时最多调用次数
-        self._tushare_call_count = 0  # 当前小时内调用次数
-        self._tushare_call_times = deque()  # 记录调用时间的队列（用于限流）
+        # Tushare Permission detection related attributes
+        self._tushare_permission_checked = False  # Have permissions been checked?
+        self._tushare_has_premium = False  # Is there paid permission?
+        self._tushare_last_call_time = None  # Last call time (for free user current limit)
+        self._tushare_hourly_limit = 2  # Maximum number of calls per hour for free users
+        self._tushare_call_count = 0  # Number of calls in the current hour
+        self._tushare_call_times = deque()  # Queue that records call time (used for current limiting)
 
-        # 接口轮换相关属性
+        # Interface rotation related properties
         self._rotation_sources = ["tushare", "akshare_eastmoney", "akshare_sina"]
-        self._rotation_index = 0  # 当前轮换索引
+        self._rotation_index = 0  # Current rotation index
 
-        # 缓存 DataSourceManager 实例（懒加载，整个服务生命周期复用，避免每次重建）
+        # Caching DataSourceManager instances (lazy loading, reuse throughout the service life cycle, avoiding rebuilding each time)
         self._dsm: Optional[DataSourceManager] = None
 
     def _get_dsm(self) -> DataSourceManager:
-        """返回缓存的 DataSourceManager 实例（懒加载）"""
+        """Return cached DataSourceManager instance (lazy loading)"""
         if self._dsm is None:
             self._dsm = DataSourceManager()
         return self._dsm
@@ -60,41 +60,41 @@ class QuotesIngestionService:
     @staticmethod
     def _normalize_stock_code(code: str) -> str:
         """
-        标准化股票代码为6位数字
+        Standardized stock code is 6 digits
 
-        处理以下情况：
+        Handle the following situations:
         - sz000001 -> 000001
         - sh600036 -> 600036
         - 000001 -> 000001
         - 1 -> 000001
 
         Args:
-            code: 原始股票代码
+            code: Original stock symbol
 
         Returns:
-            str: 标准化后的6位股票代码
+            str: Standardized 6-digit stock code
         """
         if not code:
             return ""
 
         code_str = str(code).strip()
 
-        # 如果代码长度超过6位，去掉前面的交易所前缀（如 sz, sh）
+        # If the code length exceeds 6 characters, remove the previous exchange prefix (such as sz, sh) 
         if len(code_str) > 6:
-            # 提取所有数字字符
+            # Extract all numeric characters
             code_str = ''.join(filter(str.isdigit, code_str))
 
-        # 如果是纯数字，补齐到6位
+        # If it is a pure number, complete it to 6 digits
         if code_str.isdigit():
-            code_clean = code_str.lstrip('0') or '0'  # 移除前导0，如果全是0则保留一个0
-            return code_clean.zfill(6)  # 补齐到6位
+            code_clean = code_str.lstrip('0') or '0'  # Remove leading 0s, if all 0s, keep one 0
+            return code_clean.zfill(6)  # Complete to 6 digits
 
-        # 如果不是纯数字，尝试提取数字部分
+        # If it's not purely numeric, try to extract the numeric part
         code_digits = ''.join(filter(str.isdigit, code_str))
         if code_digits:
             return code_digits.zfill(6)
 
-        # 无法提取有效代码，返回空字符串
+        # Unable to extract valid code, returns empty string
         return ""
 
     async def ensure_indexes(self) -> None:
@@ -104,7 +104,7 @@ class QuotesIngestionService:
             await coll.create_index("code", unique=True)
             await coll.create_index("updated_at")
         except Exception as e:
-            logger.warning(f"创建行情表索引失败（忽略）: {e}")
+            logger.warning(f"Failed to create market index (ignored): {e}")
 
     async def _record_sync_status(
         self,
@@ -114,13 +114,13 @@ class QuotesIngestionService:
         error_msg: Optional[str] = None
     ) -> None:
         """
-        记录同步状态
+        Record sync status
 
         Args:
-            success: 是否成功
-            source: 数据源名称
-            records_count: 记录数量
-            error_msg: 错误信息
+            success: Is it successful?
+            source: Data source name
+            records_count: Record quantity
+            error_msg: error message
         """
         try:
             db = get_mongo_db()
@@ -147,11 +147,11 @@ class QuotesIngestionService:
             )
 
         except Exception as e:
-            logger.warning(f"记录同步状态失败（忽略）: {e}")
+            logger.warning(f"Logging sync status failed (ignored): {e}")
 
     async def get_sync_status(self) -> Dict[str, any]:
         """
-        获取同步状态
+        Get sync status
 
         Returns:
             {
@@ -183,22 +183,22 @@ class QuotesIngestionService:
                     "error_message": "尚未执行过同步"
                 }
 
-            # 移除 _id 字段
+            # Remove _id field
             doc.pop("_id", None)
             doc.pop("job", None)
 
-            # 添加分钟数
+            # Add minutes
             doc["interval_minutes"] = doc.get("interval_seconds", 0) / 60
 
-            # 🔥 格式化时间（确保转换为本地时区）
+            # 🔥 Format time (make sure to convert to local time zone)
             if "last_sync_time" in doc and doc["last_sync_time"]:
                 dt = doc["last_sync_time"]
-                # MongoDB 返回的是 UTC 时间的 datetime 对象（aware 或 naive）
-                # 如果是 naive，添加 UTC 时区；如果是 aware，转换为本地时区
+                # MongoDB Returns a datetime object in UTC time (aware or naive)
+                # If it is naive, add UTC time zone; if it is aware, convert to local time zone
                 if dt.tzinfo is None:
-                    # naive datetime，假设是 UTC
+                    # naive datetime, Assume that UTC
                     dt = dt.replace(tzinfo=ZoneInfo("UTC"))
-                # 转换为本地时区
+                # Convert to local time zone
                 dt_local = dt.astimezone(self.tz)
                 doc["last_sync_time"] = dt_local.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -219,11 +219,11 @@ class QuotesIngestionService:
 
     def _check_tushare_permission(self) -> bool:
         """
-        检测 Tushare rt_k 接口权限
+        Detect Tushare rt_k interface permissions
 
         Returns:
-            True: 有付费权限（可高频调用）
-            False: 免费用户（每小时最多2次）
+            True: There is paid permission (can be called frequently)
+            False: Free users (max 2 times per hour)
         """
         if self._tushare_permission_checked:
             return self._tushare_has_premium or False
@@ -233,34 +233,34 @@ class QuotesIngestionService:
             adapter = TushareAdapter()
 
             if not adapter.is_available():
-                logger.info("Tushare 不可用，跳过权限检测")
+                logger.info("Tushare Not available, skip permission check")
                 self._tushare_has_premium = False
                 self._tushare_permission_checked = True
                 return False
 
-            # 尝试调用 rt_k 接口测试权限
+            # Try calling the rt_k interface to test permissions
             try:
                 df = adapter._provider.api.rt_k(ts_code='000001.SZ')
                 if df is not None and not getattr(df, 'empty', True):
-                    logger.info("✅ 检测到 Tushare rt_k 接口权限（付费用户）")
+                    logger.info("✅ Tushare rt_k interface permission detected (paid users)")
                     self._tushare_has_premium = True
                 else:
-                    logger.info("⚠️ Tushare rt_k 接口返回空数据（可能是免费用户或接口限制）")
+                    logger.info("⚠️ Tushare rt_k The interface returns empty data (maybe free users or interface restrictions)")
                     self._tushare_has_premium = False
             except Exception as e:
                 error_msg = str(e).lower()
                 if "权限" in error_msg or "permission" in error_msg or "没有访问" in error_msg:
-                    logger.info("⚠️ Tushare rt_k 接口无权限（免费用户）")
+                    logger.info("⚠️ Tushare rt_k The interface has no permissions (free users)")
                     self._tushare_has_premium = False
                 else:
-                    logger.warning(f"⚠️ Tushare rt_k 接口测试失败: {e}")
+                    logger.warning(f"⚠️ Tushare rt_k Interface test failed: {e}")
                     self._tushare_has_premium = False
 
             self._tushare_permission_checked = True
             return self._tushare_has_premium or False
 
         except Exception as e:
-            logger.warning(f"Tushare 权限检测失败: {e}")
+            logger.warning(f"Tushare Permission check failed: {e}")
             self._tushare_has_premium = False
             self._tushare_permission_checked = True
             return False
@@ -283,55 +283,55 @@ class QuotesIngestionService:
 
     def _can_call_tushare(self) -> bool:
         """
-        判断是否可以调用 Tushare rt_k 接口
+        Determine whether the Tushare rt_k interface can be called
 
         Returns:
-            True: 可以调用
-            False: 超过限制，不能调用
+            True: Can be called
+            False: Exceeds the limit and cannot be called
         """
-        # 如果是付费用户，不限制调用次数
+        # If you are a paid user, there is no limit on the number of calls
         if self._tushare_has_premium:
             return True
 
-        # 免费用户：检查每小时调用次数
+        # Free users: Check the number of calls per hour
         now = datetime.now(self.tz)
         one_hour_ago = now - timedelta(hours=1)
 
-        # 清理1小时前的记录
+        # Clear records from 1 hour ago
         while self._tushare_call_times and self._tushare_call_times[0] < one_hour_ago:
             self._tushare_call_times.popleft()
 
-        # 检查是否超过限制
+        # Check if limit is exceeded
         if len(self._tushare_call_times) >= self._tushare_hourly_limit:
             logger.warning(
-                f"⚠️ Tushare rt_k 接口已达到每小时调用限制 ({self._tushare_hourly_limit}次)，"
-                f"跳过本次调用，使用 AKShare 备用接口"
+                f"⚠️ Tushare rt_k The interface has reached the hourly call limit ({self._tushare_hourly_limit}times), "
+                f"Skip this call and use the AKShare alternative interface"
             )
             return False
 
         return True
 
     def _record_tushare_call(self) -> None:
-        """记录 Tushare 调用时间"""
+        """Record Tushare call time"""
         self._tushare_call_times.append(datetime.now(self.tz))
 
     def _get_next_source(self) -> Tuple[str, Optional[str]]:
         """
-        获取下一个数据源（轮换机制）
+        Get the next data source (rotation mechanism)
 
         Returns:
             (source_type, akshare_api):
                 - source_type: "tushare" | "akshare"
-                - akshare_api: "eastmoney" | "sina" (仅当 source_type="akshare" 时有效)
+                - akshare_api: "eastmoney" | "sina" (only if source_type="akshare" valid when)
         """
         if not settings.QUOTES_ROTATION_ENABLED:
-            # 未启用轮换，使用默认优先级（AKShare东方财富）
+            # Rotation is not enabled, using default priority (AKShare Eastern Fortune)
             return "akshare", "eastmoney"
 
-        # 轮换逻辑：AKShare东方财富 ↔ AKShare新浪财经（已移除 Tushare）
+        # Rotation logic: AKShare Oriental Fortune ↔ AKShare Sina Finance (Tushare has been removed)
         current_source = self._rotation_sources[self._rotation_index]
 
-        # 更新轮换索引（下次使用下一个接口）
+        # Update rotation index (use next interface next time)
         self._rotation_index = (self._rotation_index + 1) % len(self._rotation_sources)
 
         if current_source == "akshare_eastmoney":
@@ -341,28 +341,28 @@ class QuotesIngestionService:
 
     def _is_trading_time(self, now: Optional[datetime] = None) -> bool:
         """
-        判断是否在交易时间或收盘后缓冲期
+        Determine whether it is during trading hours or post-closing buffer period
 
-        交易时间：
-        - 上午：9:30-11:30
-        - 下午：13:00-15:00
-        - 收盘后缓冲期：15:00-15:30（确保获取到收盘价）
+        Trading hours:
+        - Morning:9:30-11:30
+        - Afternoon:13:00-15:00
+        - Post-closing buffer period:15:00-15:30 (Make sure to get the closing price)
 
-        收盘后缓冲期说明：
-        - 交易时间结束后继续获取30分钟
-        - 假设6分钟一次，可以增加3次同步机会（15:06, 15:12, 15:18）
-        - 大大降低错过收盘价的风险
+        Description of the post-closing buffer period:
+        - Continue to obtain for 30 minutes after the trading time ends
+        - Assuming once every 6 minutes, 3 more synchronization opportunities can be added (15:06, 15:12, 15:18) 
+        - Greatly reduces the risk of missing the closing price
         """
         now = now or datetime.now(self.tz)
-        # 工作日 Mon-Fri
+        # working day Mon-Fri
         if now.weekday() > 4:
             return False
         t = now.time()
-        # 上交所/深交所常规交易时段
+        # Shanghai Stock Exchange/Shenzhen Stock Exchange regular trading hours
         morning = dtime(9, 30)
         noon = dtime(11, 30)
         afternoon_start = dtime(13, 0)
-        # 收盘后缓冲期（延长30分钟到15:30）
+        # Post-closing buffer period (extended by 30 minutes to 15:30) 
         buffer_end = dtime(15, 30)
 
         return (morning <= t <= noon) or (afternoon_start <= t <= buffer_end)
@@ -399,22 +399,22 @@ class QuotesIngestionService:
         for code, q in quotes_map.items():
             if not code:
                 continue
-            # 使用标准化方法处理股票代码（去掉交易所前缀，如 sz000001 -> 000001）
+            # Use a standardized approach to stock symbols (removing the exchange prefix, e.g. sz000001 -> 000001) 
             code6 = self._normalize_stock_code(code)
             if not code6:
                 continue
 
-            # 🔥 日志：记录写入的成交量值
+            # 🔥 Log: record the written volume value
             volume = q.get("volume")
-            if code6 in ["300750", "000001", "600000"]:  # 只记录几个示例股票
-                logger.info(f"📊 [写入market_quotes] {code6} - volume={volume}, amount={q.get('amount')}, source={source}")
+            if code6 in ["300750", "000001", "600000"]:  # Only record a few example stocks
+                logger.info(f"📊 [write market_quotes] {code6} - volume={volume}, amount={q.get('amount')}, source={source}")
 
             ops.append(
                 UpdateOne(
                     {"code": code6},
                     {"$set": {
                         "code": code6,
-                        "symbol": code6,  # 添加 symbol 字段，与 code 保持一致
+                        "symbol": code6,  # Add symbol field to be consistent with code
                         "close": q.get("close"),
                         "pct_chg": q.get("pct_chg"),
                         "amount": q.get("amount"),
@@ -430,47 +430,47 @@ class QuotesIngestionService:
                 )
             )
         if not ops:
-            logger.info("无可写入的数据，跳过")
+            logger.info("No data to write, skip")
             return
         result = await coll.bulk_write(ops, ordered=False)
         logger.info(
-            f"✅ 行情入库完成 source={source}, matched={result.matched_count}, upserted={len(result.upserted_ids) if result.upserted_ids else 0}, modified={result.modified_count}"
+            f"✅ Quotation storage completed source={source}, matched={result.matched_count}, upserted={len(result.upserted_ids) if result.upserted_ids else 0}, modified={result.modified_count}"
         )
 
     async def backfill_from_historical_data(self) -> None:
         """
-        从历史数据集合导入前一天的收盘数据到 market_quotes
-        - 如果 market_quotes 集合为空，导入所有数据
-        - 如果 market_quotes 集合不为空，检查并修复缺失的成交量字段
+        Import the previous day s closing data from the historical data collection to market_quotes
+        - If the market_quotes collection is empty, import all data
+        - If market_quotes collection is not empty, check and fix missing volume field
         """
         try:
-            # 检查 market_quotes 是否为空
+            # Check if market_quotes is empty
             is_empty = await self._collection_empty()
 
             if not is_empty:
-                # 集合不为空，检查是否有成交量缺失的记录
-                logger.info("✅ market_quotes 集合不为空，检查是否需要修复成交量...")
+                # The collection is not empty, check whether there are records with missing trading volume
+                logger.info("✅ market_quotes The collection is not empty, check if the volume needs to be fixed...")
                 await self._fix_missing_volume()
                 return
 
-            logger.info("📊 market_quotes 集合为空，开始从历史数据导入")
+            logger.info("📊 market_quotes The collection is empty, start importing from historical data")
 
             db = get_mongo_db()
             manager = self._get_dsm()
 
-            # 获取最新交易日
+            # Get the latest trading day
             try:
                 latest_trade_date = await self._find_latest_trade_date_async(manager)
                 if not latest_trade_date:
-                    logger.warning("⚠️ 无法获取最新交易日，跳过历史数据导入")
+                    logger.warning("⚠️ Unable to obtain the latest trading day, skipping historical data import")
                     return
             except Exception as e:
-                logger.warning(f"⚠️ 获取最新交易日失败: {e}，跳过历史数据导入")
+                logger.warning(f"⚠️ Failed to get latest trading day: {e}, Skip historical data import")
                 return
 
             logger.info(f"📊 从历史数据集合导入 {latest_trade_date} 的收盘数据到 market_quotes")
 
-            # 从 stock_daily_quotes 集合查询最新交易日的数据
+            # Query the latest trading day data from the stock_daily_quotes collection
             daily_quotes_collection = db["stock_daily_quotes"]
             cursor = daily_quotes_collection.find({
                 "trade_date": latest_trade_date,
@@ -481,12 +481,12 @@ class QuotesIngestionService:
 
             if not docs:
                 logger.warning(f"⚠️ 历史数据集合中未找到 {latest_trade_date} 的数据")
-                logger.warning("⚠️ market_quotes 和历史数据集合都为空，请先同步历史数据或实时行情")
+                logger.warning("⚠️ market_quotes and historical data collections are empty, please synchronize historical data or real-time quotes first")
                 return
 
             logger.info(f"✅ 从历史数据集合找到 {len(docs)} 条记录")
 
-            # 转换为 quotes_map 格式
+            # Convert to quotes_map format
             quotes_map = {}
             for doc in docs:
                 code = doc.get("symbol") or doc.get("code")
@@ -494,12 +494,12 @@ class QuotesIngestionService:
                     continue
                 code6 = str(code).zfill(6)
 
-                # 🔥 获取成交量，优先使用 volume 字段
+                # 🔥 To get the trading volume, use the volume field first
                 volume_value = doc.get("volume") or doc.get("vol")
                 data_source = doc.get("data_source", "")
 
-                # 🔥 日志：记录原始成交量值
-                if code6 in ["300750", "000001", "600000"]:  # 只记录几个示例股票
+                # 🔥 Log: record the original volume value
+                if code6 in ["300750", "000001", "600000"]:  # Only record a few example stocks
                     logger.info(f"📊 [回填] {code6} - volume={doc.get('volume')}, vol={doc.get('vol')}, data_source={data_source}")
 
                 quotes_map[code6] = {
@@ -517,7 +517,7 @@ class QuotesIngestionService:
                 await self._bulk_upsert(quotes_map, latest_trade_date, "historical_data")
                 logger.info(f"✅ 成功从历史数据导入 {len(quotes_map)} 条收盘数据到 market_quotes")
             else:
-                logger.warning("⚠️ 历史数据转换后为空，无法导入")
+                logger.warning("⚠️ Historical data is empty after conversion and cannot be imported.")
 
         except Exception as e:
             logger.error(f"❌ 从历史数据导入失败: {e}")
@@ -525,13 +525,13 @@ class QuotesIngestionService:
             logger.error(f"堆栈跟踪:\n{traceback.format_exc()}")
 
     async def backfill_last_close_snapshot(self) -> None:
-        """一次性补齐上一笔收盘快照（用于冷启动或数据陈旧）。允许在休市期调用。"""
+        """Complement the last closing snapshot at once (for cold start or data staleness). Calls are allowed during the off-market period."""
         try:
             manager = self._get_dsm()
-            # 使用近实时快照作为兜底，休市期返回的即为最后收盘数据
+            # Use near-real-time snapshots as a back-up, and the last closing data returned during the off-market period is
             quotes_map, source = await self._get_realtime_quotes_with_fallback_async(manager)
             if not quotes_map:
-                logger.warning("backfill: 未获取到行情数据，跳过")
+                logger.warning("backfill: Market data not obtained, skip")
                 return
             try:
                 trade_date = await self._find_latest_trade_date_async(manager) or datetime.now(self.tz).strftime("%Y%m%d")
@@ -539,44 +539,44 @@ class QuotesIngestionService:
                 trade_date = datetime.now(self.tz).strftime("%Y%m%d")
             await self._bulk_upsert(quotes_map, trade_date, source)
         except Exception as e:
-            logger.error(f"❌ backfill 行情补数失败: {e}")
+            logger.error(f"❌ backfill Quotation replenishment failed: {e}")
 
     async def backfill_last_close_snapshot_if_needed(self) -> None:
-        """若集合为空或 trade_date 落后于最新交易日，则执行一次 backfill"""
+        """If the set is empty or trade_date lags behind the latest trading day, execute once backfill"""
         try:
             is_empty = await self._collection_empty()
 
-            # 如果集合为空，优先从历史数据导入
+            # If the collection is empty, priority is given to importing from historical data.
             if is_empty:
-                logger.info("🔁 market_quotes 集合为空，尝试从历史数据导入")
+                logger.info("🔁 market_quotes The collection is empty, try to import from historical data")
                 await self.backfill_from_historical_data()
                 return
 
-            # 如果集合不为空但数据陈旧，使用实时接口更新
+            # If the collection is not empty but the data is stale, use the real-time interface to update
             manager = self._get_dsm()
             latest_td = await self._find_latest_trade_date_async(manager)
             if await self._collection_stale(latest_td):
-                logger.info("🔁 触发休市期/启动期 backfill 以填充最新收盘数据")
+                logger.info("🔁 Trigger off/start period backfill to populate latest closing data")
                 await self.backfill_last_close_snapshot()
         except Exception as e:
-            logger.warning(f"backfill 触发检查失败（忽略）: {e}")
+            logger.warning(f"backfill Trigger check failed (ignored): {e}")
 
     def _fetch_quotes_from_source(self, source_type: str, akshare_api: Optional[str] = None) -> Tuple[Optional[Dict], Optional[str]]:
         """
-        从指定数据源获取行情
+        Get quotes from specified data source
 
         Args:
             source_type: "tushare" | "akshare"
-            akshare_api: "eastmoney" | "sina" (仅当 source_type="akshare" 时有效)
+            akshare_api: "eastmoney" | "sina" (only if source_type="akshare" valid when)
 
         Returns:
             (quotes_map, source_name)
         """
         try:
             if source_type == "tushare":
-                # 🔥 已禁用 Tushare 实时行情接口调用，统一由定时任务 run_tushare_realtime_quotes_hourly 管理
-                # 避免与每小时31分的定时任务冲突（免费用户每小时只能调用一次）
-                logger.info("⏸️ Tushare 实时行情接口已禁用，跳过调用（由定时任务统一管理）")
+                # 🔥 The Tushare real-time market interface call has been disabled and is managed by the scheduled task run_tushare_realtime_quotes_hourly
+                # Avoid conflict with the scheduled task of 31 minutes per hour (free users can only call it once per hour)
+                logger.info("⏸️ Tushare The real-time market interface has been disabled and the call is skipped (managed by scheduled tasks)")
                 return None, None
 
             elif source_type == "akshare":
@@ -607,41 +607,41 @@ class QuotesIngestionService:
 
     async def run_once(self) -> None:
         """
-        执行一次采集与入库
+        Execute one collection and storage
 
-        核心逻辑：
-        1. 检测 Tushare 权限（首次运行）
-        2. 按轮换顺序尝试获取行情：Tushare → AKShare东方财富 → AKShare新浪财经
-        3. 任意一个接口成功即入库，失败则跳过本次采集
+        Core logic:
+        1. Detecting Tushare permissions (first run)
+        2. Try to get quotes in rotating order:Tushare → AKShare Oriental Fortune → AKShare Sina Finance
+        3. If any interface succeeds, it will be included in the database. If it fails, the collection will be skipped.
         """
-        # 非交易时段处理
+        # Processing during non-trading hours
         if not self._is_trading_time():
             if settings.QUOTES_BACKFILL_ON_OFFHOURS:
                 await self.backfill_last_close_snapshot_if_needed()
             else:
-                logger.info("⏭️ 非交易时段，跳过行情采集")
+                logger.info("⏭️ During non-trading hours, skip market collection")
             return
 
         try:
-            # 首次运行：检测 Tushare 权限
+            # First run: Detecting Tushare permissions
             if settings.QUOTES_AUTO_DETECT_TUSHARE_PERMISSION and not self._tushare_permission_checked:
-                logger.info("🔍 首次运行，检测 Tushare rt_k 接口权限...")
+                logger.info("🔍 First run, check Tushare rt_k interface permissions...")
                 has_premium = await self._check_tushare_permission_async()
 
                 if has_premium:
                     logger.info(
-                        "✅ 检测到 Tushare 付费权限！建议将 QUOTES_INGEST_INTERVAL_SECONDS 设置为 5-60 秒以充分利用权限"
+                        "✅ Tushare paid permission detected! It is recommended to set QUOTES_INGEST_INTERVAL_SECONDS to 5-60 seconds to fully utilize the permissions"
                     )
                 else:
                     logger.info(
                         f"ℹ️ Tushare 免费用户，每小时最多调用 {self._tushare_hourly_limit} 次 rt_k 接口。"
-                        f"当前采集间隔: {settings.QUOTES_INGEST_INTERVAL_SECONDS} 秒"
+                        f"Current collection interval: {settings.QUOTES_INGEST_INTERVAL_SECONDS} seconds"
                     )
 
-            # 获取下一个数据源
+            # Get next data source
             source_type, akshare_api = self._get_next_source()
 
-            # 同步第三方行情接口可能长时间阻塞；放到线程中并加超时，避免卡住整个事件循环。
+            # Synchronizing the third-party market interface may block for a long time; put it in a thread and add a timeout to avoid blocking the entire event loop.
             try:
                 quotes_map, source_name = await asyncio.wait_for(
                     asyncio.to_thread(self._fetch_quotes_from_source, source_type, akshare_api),
@@ -650,7 +650,7 @@ class QuotesIngestionService:
             except asyncio.TimeoutError:
                 source_hint = source_type if source_type != "akshare" else f"akshare_{akshare_api or 'eastmoney'}"
                 logger.error(
-                    "❌ 获取实时行情超时: source=%s, timeout=%ss",
+                    "❌ Timeout for obtaining real-time quotes: source=%s, timeout=%ss",
                     source_hint,
                     REALTIME_QUOTES_FETCH_TIMEOUT_SECONDS,
                 )
@@ -663,8 +663,8 @@ class QuotesIngestionService:
                 return
 
             if not quotes_map:
-                logger.warning(f"⚠️ {source_name or source_type} 未获取到行情数据，跳过本次入库")
-                # 记录失败状态
+                logger.warning(f"⚠️ {source_name or source_type} No market data was obtained, skip this warehousing.")
+                # Logging failure status
                 await self._record_sync_status(
                     success=False,
                     source=source_name or source_type,
@@ -673,17 +673,17 @@ class QuotesIngestionService:
                 )
                 return
 
-            # 获取交易日
+            # Get trading day
             try:
                 manager = self._get_dsm()
                 trade_date = await self._find_latest_trade_date_async(manager) or datetime.now(self.tz).strftime("%Y%m%d")
             except Exception:
                 trade_date = datetime.now(self.tz).strftime("%Y%m%d")
 
-            # 入库
+            # Warehouse
             await self._bulk_upsert(quotes_map, trade_date, source_name)
 
-            # 记录成功状态
+            # Record success status
             await self._record_sync_status(
                 success=True,
                 source=source_name,
@@ -693,7 +693,7 @@ class QuotesIngestionService:
 
         except Exception as e:
             logger.error(f"❌ 行情入库失败: {e}")
-            # 记录失败状态
+            # Logging failure status
             await self._record_sync_status(
                 success=False,
                 source=None,

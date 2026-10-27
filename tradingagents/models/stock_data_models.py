@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-股票数据模型定义
-定义标准化的股票数据结构，用于MongoDB存储和数据交换
+Stock data model definition
+Define standardized stock data structures for MongoDB storage and data exchange
 """
 
 from typing import Dict, List, Optional, Any, Union
@@ -11,52 +11,52 @@ from decimal import Decimal
 from pydantic import BaseModel, Field, validator
 from enum import Enum
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 
 
 class MarketType(str, Enum):
-    """市场类型枚举"""
-    CN = "CN"  # 中国A股
-    HK = "HK"  # 港股
-    US = "US"  # 美股
+    """Market type enum"""
+    CN = "CN"  # China A shares
+    HK = "HK"  # Hong Kong stocks
+    US = "US"  # US stocks
 
 
 class StockStatus(str, Enum):
-    """股票状态枚举"""
-    LISTED = "L"      # 上市
-    DELISTED = "D"    # 退市
-    SUSPENDED = "P"   # 暂停上市
+    """Stock Status Enum"""
+    LISTED = "L"      # Listed
+    DELISTED = "D"    # delisting
+    SUSPENDED = "P"   # Suspended from listing
 
 
 class ReportType(str, Enum):
-    """报告类型枚举"""
-    ANNUAL = "annual"      # 年报
-    QUARTERLY = "quarterly" # 季报
+    """report type enum"""
+    ANNUAL = "annual"      # annual report
+    QUARTERLY = "quarterly" # quarterly report
 
 
 class NewsCategory(str, Enum):
-    """新闻类别枚举"""
-    COMPANY_ANNOUNCEMENT = "company_announcement"  # 公司公告
-    INDUSTRY_NEWS = "industry_news"               # 行业新闻
-    MARKET_NEWS = "market_news"                   # 市场新闻
-    RESEARCH_REPORT = "research_report"           # 研究报告
+    """News category enum"""
+    COMPANY_ANNOUNCEMENT = "company_announcement"  # company announcement
+    INDUSTRY_NEWS = "industry_news"               # Industry news
+    MARKET_NEWS = "market_news"                   # market news
+    RESEARCH_REPORT = "research_report"           # research report
 
 
 class SentimentType(str, Enum):
-    """情绪类型枚举"""
+    """Emotion type enum"""
     POSITIVE = "positive"
     NEGATIVE = "negative"
     NEUTRAL = "neutral"
 
 
 class BaseStockModel(BaseModel):
-    """股票数据基础模型"""
+    """Stock data basic model"""
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    data_source: str = Field(..., description="数据来源")
-    version: int = Field(default=1, description="数据版本")
+    data_source: str = Field(..., description="Data source")
+    version: int = Field(default=1, description="Data version")
 
     class Config:
         use_enum_values = True
@@ -68,230 +68,230 @@ class BaseStockModel(BaseModel):
 
 
 class StockBasicInfo(BaseStockModel):
-    """股票基础信息模型"""
-    symbol: str = Field(..., description="标准化股票代码", regex=r"^\d{6}$")
-    exchange_symbol: str = Field(..., description="交易所完整代码")
-    name: str = Field(..., description="股票名称")
-    name_en: Optional[str] = Field(None, description="英文名称")
-    market: str = Field(..., description="交易所")
-    board: str = Field(..., description="板块")
-    industry: str = Field(..., description="行业")
-    industry_code: Optional[str] = Field(None, description="行业代码")
-    sector: str = Field(..., description="所属板块")
-    list_date: date = Field(..., description="上市日期")
-    delist_date: Optional[date] = Field(None, description="退市日期")
-    area: str = Field(..., description="所在地区")
-    market_cap: Optional[float] = Field(None, description="总市值")
-    float_cap: Optional[float] = Field(None, description="流通市值")
-    total_shares: Optional[float] = Field(None, description="总股本")
-    float_shares: Optional[float] = Field(None, description="流通股本")
-    currency: str = Field(default="CNY", description="交易货币")
-    status: StockStatus = Field(default=StockStatus.LISTED, description="上市状态")
-    is_hs: bool = Field(default=False, description="是否沪深港通标的")
+    """Stock basic information model"""
+    symbol: str = Field(..., description="Standardized stock code", regex=r"^\d{6}$")
+    exchange_symbol: str = Field(..., description="Exchange complete code")
+    name: str = Field(..., description="Stock name")
+    name_en: Optional[str] = Field(None, description="English name")
+    market: str = Field(..., description="exchange")
+    board: str = Field(..., description="plate")
+    industry: str = Field(..., description="Industry")
+    industry_code: Optional[str] = Field(None, description="Industry code")
+    sector: str = Field(..., description="Sector")
+    list_date: date = Field(..., description="Listing date")
+    delist_date: Optional[date] = Field(None, description="Delisting date")
+    area: str = Field(..., description="area")
+    market_cap: Optional[float] = Field(None, description="Total market capitalization")
+    float_cap: Optional[float] = Field(None, description="Circulation market value")
+    total_shares: Optional[float] = Field(None, description="total share capital")
+    float_shares: Optional[float] = Field(None, description="circulating capital")
+    currency: str = Field(default="CNY", description="trading currency")
+    status: StockStatus = Field(default=StockStatus.LISTED, description="Listing status")
+    is_hs: bool = Field(default=False, description="Is it subject to Shanghai-Shenzhen-Hong Kong Stock Connect?")
 
     @validator('symbol')
     def validate_symbol(cls, v):
         if not v.isdigit() or len(v) != 6:
-            raise ValueError('股票代码必须是6位数字')
+            raise ValueError('Stock code must be 6 digits')
         return v
 
 
 class StockDailyQuote(BaseStockModel):
-    """股票日线行情模型"""
-    symbol: str = Field(..., description="股票代码")
-    trade_date: date = Field(..., description="交易日期")
-    open: float = Field(..., description="开盘价")
-    high: float = Field(..., description="最高价")
-    low: float = Field(..., description="最低价")
-    close: float = Field(..., description="收盘价")
-    pre_close: float = Field(..., description="前收盘价")
-    change: float = Field(..., description="涨跌额")
-    pct_chg: float = Field(..., description="涨跌幅(%)")
-    volume: float = Field(..., description="成交量(股)")
-    amount: float = Field(..., description="成交额(元)")
-    turnover_rate: Optional[float] = Field(None, description="换手率(%)")
-    volume_ratio: Optional[float] = Field(None, description="量比")
-    pe: Optional[float] = Field(None, description="市盈率")
-    pb: Optional[float] = Field(None, description="市净率")
-    ps: Optional[float] = Field(None, description="市销率")
-    dv_ratio: Optional[float] = Field(None, description="股息率")
-    dv_ttm: Optional[float] = Field(None, description="滚动股息率")
-    total_mv: Optional[float] = Field(None, description="总市值")
-    circ_mv: Optional[float] = Field(None, description="流通市值")
-    adj_factor: float = Field(default=1.0, description="复权因子")
+    """Stock daily market model"""
+    symbol: str = Field(..., description="Stock code")
+    trade_date: date = Field(..., description="transaction date")
+    open: float = Field(..., description="opening price")
+    high: float = Field(..., description="highest price")
+    low: float = Field(..., description="lowest price")
+    close: float = Field(..., description="closing price")
+    pre_close: float = Field(..., description="previous closing price")
+    change: float = Field(..., description="Changes")
+    pct_chg: float = Field(..., description="Increase or decrease(%)")
+    volume: float = Field(..., description="Volume(shares)")
+    amount: float = Field(..., description="Turnover(Yuan)")
+    turnover_rate: Optional[float] = Field(None, description="turnover rate(%)")
+    volume_ratio: Optional[float] = Field(None, description="Quantity ratio")
+    pe: Optional[float] = Field(None, description="P/E ratio")
+    pb: Optional[float] = Field(None, description="price to book ratio")
+    ps: Optional[float] = Field(None, description="price to sales ratio")
+    dv_ratio: Optional[float] = Field(None, description="dividend yield")
+    dv_ttm: Optional[float] = Field(None, description="rolling dividend rate")
+    total_mv: Optional[float] = Field(None, description="Total market capitalization")
+    circ_mv: Optional[float] = Field(None, description="Circulation market value")
+    adj_factor: float = Field(default=1.0, description="Reweighting factor")
 
 
 class StockRealtimeQuote(BaseStockModel):
-    """股票实时行情模型"""
-    symbol: str = Field(..., description="股票代码")
-    name: str = Field(..., description="股票名称")
-    current_price: float = Field(..., description="当前价格")
-    pre_close: float = Field(..., description="前收盘价")
-    open: float = Field(..., description="今开")
-    high: float = Field(..., description="今高")
-    low: float = Field(..., description="今低")
-    change: float = Field(..., description="涨跌额")
-    pct_chg: float = Field(..., description="涨跌幅")
-    volume: float = Field(..., description="成交量")
-    amount: float = Field(..., description="成交额")
-    turnover_rate: Optional[float] = Field(None, description="换手率")
-    bid_prices: List[float] = Field(default_factory=list, description="买1-5价")
-    bid_volumes: List[float] = Field(default_factory=list, description="买1-5量")
-    ask_prices: List[float] = Field(default_factory=list, description="卖1-5价")
-    ask_volumes: List[float] = Field(default_factory=list, description="卖1-5量")
-    timestamp: datetime = Field(..., description="行情时间")
+    """Stock real-time market model"""
+    symbol: str = Field(..., description="Stock code")
+    name: str = Field(..., description="Stock name")
+    current_price: float = Field(..., description="current price")
+    pre_close: float = Field(..., description="previous closing price")
+    open: float = Field(..., description="Open today")
+    high: float = Field(..., description="Jin Gao")
+    low: float = Field(..., description="Low today")
+    change: float = Field(..., description="Changes")
+    pct_chg: float = Field(..., description="Increase or decrease")
+    volume: float = Field(..., description="Volume")
+    amount: float = Field(..., description="Turnover")
+    turnover_rate: Optional[float] = Field(None, description="turnover rate")
+    bid_prices: List[float] = Field(default_factory=list, description="Buy price 1-5")
+    bid_volumes: List[float] = Field(default_factory=list, description="Buy 1-5 quantities")
+    ask_prices: List[float] = Field(default_factory=list, description="Sell 1-5 price")
+    ask_volumes: List[float] = Field(default_factory=list, description="Sell 1-5 quantities")
+    timestamp: datetime = Field(..., description="Quote time")
 
 
 class BalanceSheetData(BaseModel):
-    """资产负债表数据"""
-    total_assets: Optional[float] = Field(None, description="资产总计")
-    total_liab: Optional[float] = Field(None, description="负债合计")
-    total_hldr_eqy_exc_min_int: Optional[float] = Field(None, description="股东权益合计")
-    total_cur_assets: Optional[float] = Field(None, description="流动资产合计")
-    total_nca: Optional[float] = Field(None, description="非流动资产合计")
-    total_cur_liab: Optional[float] = Field(None, description="流动负债合计")
-    total_ncl: Optional[float] = Field(None, description="非流动负债合计")
-    cash_and_equivalents: Optional[float] = Field(None, description="货币资金")
-    goodwill: Optional[float] = Field(None, description="商誉（并购形成的溢价资产，Q4年报完整披露，季报可能为空）")
+    """Balance sheet data"""
+    total_assets: Optional[float] = Field(None, description="Total assets")
+    total_liab: Optional[float] = Field(None, description="Total liabilities")
+    total_hldr_eqy_exc_min_int: Optional[float] = Field(None, description="Total shareholders equity")
+    total_cur_assets: Optional[float] = Field(None, description="Total current assets")
+    total_nca: Optional[float] = Field(None, description="Total non-current assets")
+    total_cur_liab: Optional[float] = Field(None, description="Total current liabilities")
+    total_ncl: Optional[float] = Field(None, description="Total non-current liabilities")
+    cash_and_equivalents: Optional[float] = Field(None, description="Monetary funds")
+    goodwill: Optional[float] = Field(None, description="Goodwill (premium assets formed by mergers and acquisitions, fully disclosed in the Q4 annual report, the quarterly report may be empty)")
 
 
 class IncomeStatementData(BaseModel):
-    """利润表数据"""
-    total_revenue: Optional[float] = Field(None, description="营业总收入")
-    revenue: Optional[float] = Field(None, description="营业收入")
-    oper_cost: Optional[float] = Field(None, description="营业总成本")
-    gross_profit: Optional[float] = Field(None, description="毛利润")
-    oper_profit: Optional[float] = Field(None, description="营业利润")
-    total_profit: Optional[float] = Field(None, description="利润总额")
-    n_income: Optional[float] = Field(None, description="净利润")
-    n_income_attr_p: Optional[float] = Field(None, description="归母净利润")
-    basic_eps: Optional[float] = Field(None, description="基本每股收益")
-    diluted_eps: Optional[float] = Field(None, description="稀释每股收益")
+    """Income statement data"""
+    total_revenue: Optional[float] = Field(None, description="total operating income")
+    revenue: Optional[float] = Field(None, description="operating income")
+    oper_cost: Optional[float] = Field(None, description="total operating cost")
+    gross_profit: Optional[float] = Field(None, description="gross profit")
+    oper_profit: Optional[float] = Field(None, description="operating profit")
+    total_profit: Optional[float] = Field(None, description="total profit")
+    n_income: Optional[float] = Field(None, description="net profit")
+    n_income_attr_p: Optional[float] = Field(None, description="Net profit attributable to parent company")
+    basic_eps: Optional[float] = Field(None, description="basic earnings per share")
+    diluted_eps: Optional[float] = Field(None, description="diluted earnings per share")
 
 
 class CashflowStatementData(BaseModel):
-    """现金流量表数据"""
-    n_cashflow_act: Optional[float] = Field(None, description="经营活动现金流量净额")
-    n_cashflow_inv_act: Optional[float] = Field(None, description="投资活动现金流量净额")
-    n_cashflow_fin_act: Optional[float] = Field(None, description="筹资活动现金流量净额")
-    c_cash_equ_end_period: Optional[float] = Field(None, description="期末现金及现金等价物余额")
-    c_cash_equ_beg_period: Optional[float] = Field(None, description="期初现金及现金等价物余额")
+    """Cash flow statement data"""
+    n_cashflow_act: Optional[float] = Field(None, description="Net cash flow from operating activities")
+    n_cashflow_inv_act: Optional[float] = Field(None, description="Net cash flow from investing activities")
+    n_cashflow_fin_act: Optional[float] = Field(None, description="Net cash flow from financing activities")
+    c_cash_equ_end_period: Optional[float] = Field(None, description="Closing cash and cash equivalents balance")
+    c_cash_equ_beg_period: Optional[float] = Field(None, description="Opening cash and cash equivalents balance")
 
 
 class FinancialIndicators(BaseModel):
-    """财务指标数据"""
-    roe: Optional[float] = Field(None, description="净资产收益率")
-    roa: Optional[float] = Field(None, description="总资产收益率")
-    gross_margin: Optional[float] = Field(None, description="毛利率")
-    net_margin: Optional[float] = Field(None, description="净利率")
-    debt_to_assets: Optional[float] = Field(None, description="资产负债率")
-    current_ratio: Optional[float] = Field(None, description="流动比率")
-    quick_ratio: Optional[float] = Field(None, description="速动比率")
-    eps: Optional[float] = Field(None, description="每股收益")
-    bvps: Optional[float] = Field(None, description="每股净资产")
-    pe: Optional[float] = Field(None, description="市盈率")
-    pb: Optional[float] = Field(None, description="市净率")
-    dividend_yield: Optional[float] = Field(None, description="股息率")
+    """financial indicator data"""
+    roe: Optional[float] = Field(None, description="ROE")
+    roa: Optional[float] = Field(None, description="return on total assets")
+    gross_margin: Optional[float] = Field(None, description="Gross profit margin")
+    net_margin: Optional[float] = Field(None, description="net profit margin")
+    debt_to_assets: Optional[float] = Field(None, description="Asset-liability ratio")
+    current_ratio: Optional[float] = Field(None, description="current ratio")
+    quick_ratio: Optional[float] = Field(None, description="quick ratio")
+    eps: Optional[float] = Field(None, description="earnings per share")
+    bvps: Optional[float] = Field(None, description="Net assets per share")
+    pe: Optional[float] = Field(None, description="P/E ratio")
+    pb: Optional[float] = Field(None, description="price to book ratio")
+    dividend_yield: Optional[float] = Field(None, description="dividend yield")
 
 
 class StockFinancialData(BaseStockModel):
-    """股票财务数据模型"""
-    symbol: str = Field(..., description="股票代码")
-    report_period: str = Field(..., description="报告期", regex=r"^\d{8}$")
-    report_type: ReportType = Field(..., description="报告类型")
-    ann_date: date = Field(..., description="公告日期")
-    f_ann_date: Optional[date] = Field(None, description="实际公告日期")
-    balance_sheet: Optional[BalanceSheetData] = Field(None, description="资产负债表数据")
-    income_statement: Optional[IncomeStatementData] = Field(None, description="利润表数据")
-    cashflow_statement: Optional[CashflowStatementData] = Field(None, description="现金流量表数据")
-    financial_indicators: Optional[FinancialIndicators] = Field(None, description="财务指标")
+    """Stock financial data model"""
+    symbol: str = Field(..., description="Stock code")
+    report_period: str = Field(..., description="reporting period", regex=r"^\d{8}$")
+    report_type: ReportType = Field(..., description="report type")
+    ann_date: date = Field(..., description="Announcement date")
+    f_ann_date: Optional[date] = Field(None, description="actual announcement date")
+    balance_sheet: Optional[BalanceSheetData] = Field(None, description="Balance sheet data")
+    income_statement: Optional[IncomeStatementData] = Field(None, description="Income statement data")
+    cashflow_statement: Optional[CashflowStatementData] = Field(None, description="Cash flow statement data")
+    financial_indicators: Optional[FinancialIndicators] = Field(None, description="financial indicators")
 
 
 class StockNews(BaseStockModel):
-    """股票新闻模型"""
-    symbol: Optional[str] = Field(None, description="相关股票代码")
-    symbols: List[str] = Field(default_factory=list, description="相关股票列表")
-    title: str = Field(..., description="新闻标题")
-    content: Optional[str] = Field(None, description="新闻内容")
-    summary: Optional[str] = Field(None, description="新闻摘要")
-    url: str = Field(..., description="新闻链接")
-    source: str = Field(..., description="新闻来源")
-    author: Optional[str] = Field(None, description="作者")
-    publish_time: datetime = Field(..., description="发布时间")
-    category: NewsCategory = Field(..., description="新闻类别")
-    sentiment: Optional[SentimentType] = Field(None, description="情绪分析")
-    sentiment_score: Optional[float] = Field(None, description="情绪得分", ge=-1, le=1)
-    keywords: List[str] = Field(default_factory=list, description="关键词")
-    importance: str = Field(default="medium", description="重要性")
-    language: str = Field(default="zh-CN", description="语言")
+    """stock news model"""
+    symbol: Optional[str] = Field(None, description="Related stock codes")
+    symbols: List[str] = Field(default_factory=list, description="Related stock list")
+    title: str = Field(..., description="News headline")
+    content: Optional[str] = Field(None, description="News content")
+    summary: Optional[str] = Field(None, description="news summary")
+    url: str = Field(..., description="News link")
+    source: str = Field(..., description="news source")
+    author: Optional[str] = Field(None, description="Author")
+    publish_time: datetime = Field(..., description="Release time")
+    category: NewsCategory = Field(..., description="News category")
+    sentiment: Optional[SentimentType] = Field(None, description="sentiment analysis")
+    sentiment_score: Optional[float] = Field(None, description="sentiment score", ge=-1, le=1)
+    keywords: List[str] = Field(default_factory=list, description="keywords")
+    importance: str = Field(default="medium", description="importance")
+    language: str = Field(default="zh-CN", description="language")
 
 
 class MovingAverages(BaseModel):
-    """移动平均线数据"""
-    ma5: Optional[float] = Field(None, description="5日均线")
-    ma10: Optional[float] = Field(None, description="10日均线")
-    ma20: Optional[float] = Field(None, description="20日均线")
-    ma60: Optional[float] = Field(None, description="60日均线")
+    """moving average data"""
+    ma5: Optional[float] = Field(None, description="5 daily moving average")
+    ma10: Optional[float] = Field(None, description="10 daily moving average")
+    ma20: Optional[float] = Field(None, description="20 daily moving average")
+    ma60: Optional[float] = Field(None, description="60 daily moving average")
 
 
 class TechnicalIndicatorsData(BaseModel):
-    """技术指标数据"""
-    rsi: Optional[float] = Field(None, description="RSI相对强弱指标")
+    """Technical indicator data"""
+    rsi: Optional[float] = Field(None, description="RSI relative strength indicator")
     macd: Optional[float] = Field(None, description="MACD")
-    macd_signal: Optional[float] = Field(None, description="MACD信号线")
-    macd_hist: Optional[float] = Field(None, description="MACD柱状图")
-    kdj_k: Optional[float] = Field(None, description="KDJ-K值")
-    kdj_d: Optional[float] = Field(None, description="KDJ-D值")
-    kdj_j: Optional[float] = Field(None, description="KDJ-J值")
-    boll_upper: Optional[float] = Field(None, description="布林带上轨")
-    boll_mid: Optional[float] = Field(None, description="布林带中轨")
-    boll_lower: Optional[float] = Field(None, description="布林带下轨")
-    cci: Optional[float] = Field(None, description="CCI顺势指标")
-    williams_r: Optional[float] = Field(None, description="威廉指标")
-    bias: Optional[float] = Field(None, description="乖离率")
-    roc: Optional[float] = Field(None, description="变动率指标")
-    emt: Optional[float] = Field(None, description="简易波动指标")
+    macd_signal: Optional[float] = Field(None, description="MACD signal line")
+    macd_hist: Optional[float] = Field(None, description="MACD bar chart")
+    kdj_k: Optional[float] = Field(None, description="KDJ-K value")
+    kdj_d: Optional[float] = Field(None, description="KDJ-D value")
+    kdj_j: Optional[float] = Field(None, description="KDJ-J value")
+    boll_upper: Optional[float] = Field(None, description="Bollinger Bands track")
+    boll_mid: Optional[float] = Field(None, description="Bollinger Bands Middle Track")
+    boll_lower: Optional[float] = Field(None, description="Bollinger Bands Lower Track")
+    cci: Optional[float] = Field(None, description="CCI trend indicator")
+    williams_r: Optional[float] = Field(None, description="William indicator")
+    bias: Optional[float] = Field(None, description="deviation rate")
+    roc: Optional[float] = Field(None, description="rate of change indicator")
+    emt: Optional[float] = Field(None, description="Simple volatility indicator")
 
 
 class StockTechnicalIndicators(BaseStockModel):
-    """股票技术指标模型"""
-    symbol: str = Field(..., description="股票代码")
-    trade_date: date = Field(..., description="交易日期")
-    period: str = Field(default="daily", description="周期")
-    ma: Optional[MovingAverages] = Field(None, description="移动平均线")
-    indicators: Optional[TechnicalIndicatorsData] = Field(None, description="技术指标")
+    """Stock Technical Indicator Model"""
+    symbol: str = Field(..., description="Stock code")
+    trade_date: date = Field(..., description="transaction date")
+    period: str = Field(default="daily", description="cycle")
+    ma: Optional[MovingAverages] = Field(None, description="moving average")
+    indicators: Optional[TechnicalIndicatorsData] = Field(None, description="Technical indicators")
 
 
 class DataSourceConfig(BaseStockModel):
-    """数据源配置模型"""
-    source_name: str = Field(..., description="数据源名称")
-    source_type: str = Field(..., description="数据源类型")
-    priority: int = Field(..., description="优先级")
-    status: str = Field(default="active", description="状态")
-    config: Dict[str, Any] = Field(default_factory=dict, description="配置信息")
-    supported_data_types: List[str] = Field(default_factory=list, description="支持的数据类型")
-    supported_markets: List[MarketType] = Field(default_factory=list, description="支持的市场")
-    last_sync_time: Optional[datetime] = Field(None, description="最后同步时间")
+    """Data source configuration model"""
+    source_name: str = Field(..., description="Data source name")
+    source_type: str = Field(..., description="Data source type")
+    priority: int = Field(..., description="priority")
+    status: str = Field(default="active", description="Status")
+    config: Dict[str, Any] = Field(default_factory=dict, description="Configuration information")
+    supported_data_types: List[str] = Field(default_factory=list, description="Supported data types")
+    supported_markets: List[MarketType] = Field(default_factory=list, description="supported markets")
+    last_sync_time: Optional[datetime] = Field(None, description="Last sync time")
 
 
 class DataSyncLog(BaseStockModel):
-    """数据同步日志模型"""
-    task_id: str = Field(..., description="任务ID")
-    data_type: str = Field(..., description="数据类型")
-    data_source: str = Field(..., description="数据源")
-    symbols: List[str] = Field(default_factory=list, description="同步的股票列表")
-    sync_date: date = Field(..., description="同步日期")
-    start_time: datetime = Field(..., description="开始时间")
-    end_time: Optional[datetime] = Field(None, description="结束时间")
-    status: str = Field(default="pending", description="状态")
-    total_records: int = Field(default=0, description="总记录数")
-    success_records: int = Field(default=0, description="成功记录数")
-    failed_records: int = Field(default=0, description="失败记录数")
-    error_message: Optional[str] = Field(None, description="错误信息")
-    performance: Dict[str, Any] = Field(default_factory=dict, description="性能指标")
+    """Data synchronization log model"""
+    task_id: str = Field(..., description="Task ID")
+    data_type: str = Field(..., description="data type")
+    data_source: str = Field(..., description="data source")
+    symbols: List[str] = Field(default_factory=list, description="Synchronized stock list")
+    sync_date: date = Field(..., description="Sync date")
+    start_time: datetime = Field(..., description="start time")
+    end_time: Optional[datetime] = Field(None, description="end time")
+    status: str = Field(default="pending", description="Status")
+    total_records: int = Field(default=0, description="Total number of records")
+    success_records: int = Field(default=0, description="Number of successful records")
+    failed_records: int = Field(default=0, description="Number of failed records")
+    error_message: Optional[str] = Field(None, description="error message")
+    performance: Dict[str, Any] = Field(default_factory=dict, description="Performance indicators")
 
 
-# 导出所有模型
+# Export all models
 __all__ = [
     'MarketType', 'StockStatus', 'ReportType', 'NewsCategory', 'SentimentType',
     'BaseStockModel', 'StockBasicInfo', 'StockDailyQuote', 'StockRealtimeQuote',

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试财务指标修复效果
-验证是否使用真实财务数据而不是分类估算
+Test the repair effect of financial indicators
+Verify that real financial data is used rather than categorical estimates
 """
 
 import sys
@@ -12,47 +12,47 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from tradingagents.dataflows.optimized_china_data import OptimizedChinaDataProvider
 import logging
 
-# 设置日志级别
+# Set log level
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def test_financial_metrics():
-    """测试财务指标获取"""
-    print("🔧 测试财务指标修复效果")
+    """Test financial indicator acquisition"""
+    print("🔧 Test the repair effect of financial indicators")
     print("=" * 80)
     
-    # 测试股票列表
+    # Test stock list
     test_symbols = [
-        "000001",  # 平安银行
-        "000002",  # 万科A
-        "300001",  # 特锐德（创业板）
-        "600036",  # 招商银行
-        "600519",  # 贵州茅台
+        "000001",  # Ping An Bank
+        "000002",  # Vanke A
+        "300001",  # Tered (GEM)
+        "600036",  # China Merchants Bank
+        "600519",  # Kweichow Moutai
     ]
     
     provider = OptimizedChinaDataProvider()
     
     for symbol in test_symbols:
-        print(f"\n📊 测试股票: {symbol}")
+        print(f"\n📊 test stocks: {symbol}")
         print("-" * 50)
         
         try:
-            # 获取基本面数据
+            # Get fundamental data
             fundamentals = provider.get_fundamentals_data(symbol, force_refresh=True)
             
-            # 检查是否包含数据来源说明
-            if "✅ **数据说明**: 财务指标基于Tushare真实财务数据计算" in fundamentals:
-                print(f"✅ {symbol}: 使用真实财务数据")
-            elif "⚠️ **数据说明**: 部分财务指标为估算值" in fundamentals:
-                print(f"⚠️ {symbol}: 使用估算财务数据")
+            # Check whether a data source description is included
+            if "✅ **Data description**: Financial indicators are calculated based on Tushare s real financial data" in fundamentals:
+                print(f"✅ {symbol}: Use real financial data")
+            elif "⚠️ **Data description**: Some financial indicators are estimates." in fundamentals:
+                print(f"⚠️ {symbol}: Use estimated financial data")
             else:
-                print(f"❓ {symbol}: 数据来源不明确")
+                print(f"❓ {symbol}: Data source is unclear")
             
-            # 提取关键财务指标
+            # Extract key financial indicators
             lines = fundamentals.split('\n')
-            pe_line = next((line for line in lines if "市盈率(PE)" in line), None)
-            pb_line = next((line for line in lines if "市净率(PB)" in line), None)
-            roe_line = next((line for line in lines if "净资产收益率(ROE)" in line), None)
+            pe_line = next((line for line in lines if "P/E ratio(PE)" in line), None)
+            pb_line = next((line for line in lines if "price to book ratio(PB)" in line), None)
+            roe_line = next((line for line in lines if "ROE(ROE)" in line), None)
             
             if pe_line:
                 print(f"  PE: {pe_line.split(':')[1].strip()}")
@@ -62,11 +62,11 @@ def test_financial_metrics():
                 print(f"  ROE: {roe_line.split(':')[1].strip()}")
                 
         except Exception as e:
-            print(f"❌ {symbol}: 测试失败 - {e}")
+            print(f"❌ {symbol}: test failed - {e}")
 
 def test_tushare_connection():
-    """测试Tushare连接"""
-    print("\n🔧 测试Tushare连接")
+    """Test Tushare connection"""
+    print("\n🔧 Test Tushare connection")
     print("=" * 80)
     
     try:
@@ -74,42 +74,42 @@ def test_tushare_connection():
         
         provider = get_tushare_provider()
         if provider.connected:
-            print("✅ Tushare连接成功")
+            print("✅ Tushare Connection successful")
             
-            # 测试获取财务数据
+            # Test to obtain financial data
             test_symbol = "000001"
             financial_data = provider.get_financial_data(test_symbol)
             
             if financial_data:
-                print(f"✅ 成功获取{test_symbol}财务数据")
-                print(f"  资产负债表: {len(financial_data.get('balance_sheet', []))}条记录")
-                print(f"  利润表: {len(financial_data.get('income_statement', []))}条记录")
-                print(f"  现金流量表: {len(financial_data.get('cash_flow', []))}条记录")
+                print(f"✅ successfully obtained{test_symbol}financial data")
+                print(f"  balance sheet: {len(financial_data.get('balance_sheet', []))}records")
+                print(f"  income statement: {len(financial_data.get('income_statement', []))}records")
+                print(f"  cash flow statement: {len(financial_data.get('cash_flow', []))}records")
             else:
-                print(f"⚠️ 未获取到{test_symbol}财务数据")
+                print(f"⚠️ Not obtained{test_symbol}financial data")
         else:
-            print("❌ Tushare连接失败")
+            print("❌ Tushare Connection failed")
             
     except Exception as e:
-        print(f"❌ Tushare测试失败: {e}")
+        print(f"❌ Tushare test failed: {e}")
 
 def main():
-    """主函数"""
-    print("🚀 开始测试财务指标修复效果")
+    """main function"""
+    print("🚀 Start testing the financial indicator repair effect")
     print("=" * 80)
     
-    # 测试Tushare连接
+    # Test Tushare connection
     test_tushare_connection()
     
-    # 测试财务指标
+    # Test financial metrics
     test_financial_metrics()
     
-    print("\n✅ 测试完成")
+    print("\n✅ Test completed")
     print("=" * 80)
-    print("说明:")
-    print("- ✅ 表示使用真实财务数据")
-    print("- ⚠️ 表示使用估算数据（Tushare不可用时的备用方案）")
-    print("- ❌ 表示测试失败")
+    print("Description:")
+    print("- ✅ Represents the use of real financial data")
+    print("- ⚠️ Indicates using estimated data (fallback option if Tushare is unavailable)")
+    print("- ❌ Indicates test failure")
 
 if __name__ == "__main__":
     main()

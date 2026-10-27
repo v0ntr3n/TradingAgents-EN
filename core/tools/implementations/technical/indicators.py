@@ -24,50 +24,50 @@ def _require_cols(df: pd.DataFrame, cols: Iterable[str]):
 
 def ma(close: pd.Series, n: int, min_periods: int = None) -> pd.Series:
     """
-    计算移动平均线（Moving Average）
+    Calculate Moving Average
 
     Args:
-        close: 收盘价序列
-        n: 周期
-        min_periods: 最小周期数，默认为1（允许前期数据不足时也计算）
+        close: closing price sequence
+        n: cycle
+        min_periods: The minimum number of periods, the default is 1 (it is also allowed to be calculated when there is insufficient data in the previous period)
 
     Returns:
-        移动平均线序列
+        moving average series
     """
     if min_periods is None:
-        min_periods = 1  # 默认为1，与现有代码保持一致
+        min_periods = 1  # Defaults to 1, consistent with existing code
     return close.rolling(window=int(n), min_periods=min_periods).mean()
 
 
 def ema(close: pd.Series, n: int) -> pd.Series:
     """
-    计算指数移动平均线（Exponential Moving Average）
+    Calculate Exponential Moving Average
 
     Args:
-        close: 收盘价序列
-        n: 周期
+        close: closing price sequence
+        n: cycle
 
     Returns:
-        指数移动平均线序列
+        exponential moving average series
     """
     return close.ewm(span=int(n), adjust=False).mean()
 
 
 def macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> pd.DataFrame:
     """
-    计算MACD指标（Moving Average Convergence Divergence）
+    Calculate MACD indicator (Moving Average Convergence Divergence)
 
     Args:
-        close: 收盘价序列
-        fast: 快线周期，默认12
-        slow: 慢线周期，默认26
-        signal: 信号线周期，默认9
+        close: closing price sequence
+        fast: Fast line cycle, default 12
+        slow: Slow line period, default 26
+        signal: Signal line period, default 9
 
     Returns:
-        包含 dif, dea, macd_hist 的 DataFrame
-        - dif: 快线与慢线的差值（DIF）
-        - dea: DIF的信号线（DEA）
-        - macd_hist: MACD柱状图（DIF - DEA）
+        contains dif, dea, macd_hist of DataFrame
+        - dif: Difference between fast line and slow line (DIF)
+        - dea: DIF signal line (DEA)
+        - macd_hist: MACD Histogram (DIF - DEA)
     """
     dif = ema(close, fast) - ema(close, slow)
     dea = dif.ewm(span=int(signal), adjust=False).mean()
@@ -77,40 +77,40 @@ def macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> p
 
 def rsi(close: pd.Series, n: int = 14, method: str = 'ema') -> pd.Series:
     """
-    计算RSI指标（Relative Strength Index）
+    Calculate RSI indicator (Relative Strength Index)
 
     Args:
-        close: 收盘价序列
-        n: 周期，默认14
-        method: 计算方法
-            - 'ema': 指数移动平均（国际标准，Wilder's方法）
-            - 'sma': 简单移动平均
-            - 'china': 中国式SMA（同花顺/通达信风格）
+        close: closing price sequence
+        n: Period, default 14
+        method: Calculation method
+            - 'ema': Exponential moving average (international standard,Wilder's method)
+            - 'sma': simple moving average
+            - 'china': Chinese style SMA (flush/tongda letter style)
 
     Returns:
-        RSI序列（0-100）
+        RSI Sequence (0-100)
 
-    说明：
-        - 'ema': 使用 ewm(alpha=1/n, adjust=False)，适用于国际市场
-        - 'sma': 使用 rolling(window=n).mean()，简单移动平均
-        - 'china': 使用 ewm(com=n-1, adjust=True)，与同花顺/通达信一致
+    Description:
+        - 'ema': Use ewm(alpha=1/n, adjust=False), Suitable for international market
+        - 'sma': Use rolling(window=n).mean(), simple moving average
+        - 'china': Use ewm(com=n-1, adjust=True), Consistent with Flush/Tongdaxin
     """
     delta = close.diff()
     gain = delta.where(delta > 0, 0)
     loss = -delta.where(delta < 0, 0)
 
     if method == 'ema':
-        # 国际标准：Wilder's指数移动平均
+        # International standards:Wilder's exponential moving average
         avg_gain = gain.ewm(alpha=1 / float(n), adjust=False).mean()
         avg_loss = loss.ewm(alpha=1 / float(n), adjust=False).mean()
     elif method == 'sma':
-        # 简单移动平均
+        # simple moving average
         avg_gain = gain.rolling(window=int(n), min_periods=1).mean()
         avg_loss = loss.rolling(window=int(n), min_periods=1).mean()
     elif method == 'china':
-        # 中国式SMA：同花顺/通达信风格
+        # Chinese SMA: Flush/Tongdaxin style
         # SMA(X, N, 1) = ewm(com=N-1, adjust=True).mean()
-        # 参考：https://blog.csdn.net/u011218867/article/details/117427927
+        # Reference:https://blog.csdn.net/u011218867/article/details/117427927
         avg_gain = gain.ewm(com=int(n) - 1, adjust=True).mean()
         avg_loss = loss.ewm(com=int(n) - 1, adjust=True).mean()
     else:
@@ -123,22 +123,22 @@ def rsi(close: pd.Series, n: int = 14, method: str = 'ema') -> pd.Series:
 
 def boll(close: pd.Series, n: int = 20, k: float = 2.0, min_periods: int = None) -> pd.DataFrame:
     """
-    计算布林带指标（Bollinger Bands）
+    Calculate Bollinger Bands indicator
 
     Args:
-        close: 收盘价序列
-        n: 周期，默认20
-        k: 标准差倍数，默认2.0
-        min_periods: 最小周期数，默认为1（允许前期数据不足时也计算）
+        close: closing price sequence
+        n: Period, default 20
+        k: Standard deviation multiple, default 2.0
+        min_periods: The minimum number of periods, the default is 1 (it is also allowed to be calculated when there is insufficient data in the previous period)
 
     Returns:
-        包含 boll_mid, boll_upper, boll_lower 的 DataFrame
-        - boll_mid: 中轨（n日移动平均）
-        - boll_upper: 上轨（中轨 + k倍标准差）
-        - boll_lower: 下轨（中轨 - k倍标准差）
+        contains boll_mid, boll_upper, boll_lower of DataFrame
+        - boll_mid: Medium track (n-day moving average)
+        - boll_upper: Upper rail (middle rail) + k times the standard deviation)
+        - boll_lower: Lower rail (middle rail - k times standard deviation)
     """
     if min_periods is None:
-        min_periods = 1  # 默认为1，与现有代码保持一致
+        min_periods = 1  # Defaults to 1, consistent with existing code
     mid = close.rolling(window=int(n), min_periods=min_periods).mean()
     std = close.rolling(window=int(n), min_periods=min_periods).std()
     upper = mid + k * std
@@ -147,16 +147,16 @@ def boll(close: pd.Series, n: int = 20, k: float = 2.0, min_periods: int = None)
 
 
 def atr(high: pd.Series, low: pd.Series, close: pd.Series, n: int = 14) -> pd.Series:
-    """计算 ATR（Average True Range，真实波动幅度均值）指标，衡量价格波动率。
+    """Calculate the ATR (Average True Range, average true range) indicator to measure price volatility.
 
     Args:
-        high: 最高价序列
-        low: 最低价序列
-        close: 收盘价序列
-        n: 计算周期，默认 14
+        high: highest price sequence
+        low: lowest price sequence
+        close: closing price sequence
+        n: Calculation period, default 14
 
     Returns:
-        pd.Series: ATR 序列（真实波动幅度的 n 日移动平均），前 n-1 个值为 NaN
+        pd.Series: ATR Series (n-day moving average of true volatility), the first n-1 values are NaN
     """
     prev_close = close.shift(1)
     tr = pd.concat([
@@ -168,29 +168,29 @@ def atr(high: pd.Series, low: pd.Series, close: pd.Series, n: int = 14) -> pd.Se
 
 
 def kdj(high: pd.Series, low: pd.Series, close: pd.Series, n: int = 9, m1: int = 3, m2: int = 3) -> pd.DataFrame:
-    """计算 KDJ 随机指标，用于判断超买超卖和短期买卖信号。
+    """Calculate the KDJ stochastic indicator for determining overbought, oversold and short-term buy and sell signals.
 
     Args:
-        high: 最高价序列
-        low: 最低价序列
-        close: 收盘价序列
-        n: RSV 计算周期，默认 9
-        m1: K 值平滑系数，默认 3
-        m2: D 值平滑系数，默认 3
+        high: highest price sequence
+        low: lowest price sequence
+        close: closing price sequence
+        n: RSV Calculation period, default 9
+        m1: K Value smoothing coefficient, default 3
+        m2: D Value smoothing coefficient, default 3
 
     Returns:
-        pd.DataFrame: 包含 KDJ 三条线的 DataFrame，列说明 —
-            kdj_k: K 值（RSV 的 m1 日平滑）
-            kdj_d: D 值（K 值的 m2 日平滑）
-            kdj_j: J 值（3*K - 2*D，灵敏度最高）
+        pd.DataFrame: DataFrame containing three lines of KDJ, column descriptions —
+            kdj_k: K Value (m1 daily smoothing of RSV)
+            kdj_d: D value (m2 daily smoothing of K values)
+            kdj_j: J value(3*K - 2*D, highest sensitivity)
     """
     lowest_low = low.rolling(window=int(n), min_periods=int(n)).min()
     highest_high = high.rolling(window=int(n), min_periods=int(n)).max()
     rsv = (close - lowest_low) / (highest_high - lowest_low) * 100
-    # 处理除零与起始NaN
+    # Handle division by zero and start NaN
     rsv = rsv.replace([np.inf, -np.inf], np.nan)
 
-    # 按经典公式递推（初始化 50）
+    # Recurse according to the classical formula (initialization 50)
     k = pd.Series(np.nan, index=close.index)
     d = pd.Series(np.nan, index=close.index)
     alpha_k = 1 / float(m1)
@@ -213,32 +213,32 @@ def kdj(high: pd.Series, low: pd.Series, close: pd.Series, n: int = 9, m1: int =
 
 
 def compute_indicator(df: pd.DataFrame, spec: IndicatorSpec) -> pd.DataFrame:
-    """根据 IndicatorSpec 在 DataFrame 上计算单个技术指标并追加结果列。
+    """Calculate a single technical indicator on a DataFrame based on the IndicatorSpec and append the result column.
 
-    支持的指标名称：ma、ema、macd、rsi、boll、atr、kdj。
+    Supported indicator names: ma, ema, macd, rsi, boll, atr, kdj.
 
     Args:
-        df: 包含价格数据的 DataFrame（需含所需列，如 close、high、low）
-        spec: IndicatorSpec 对象，name 为指标名，params 为参数字典
-            ma/ema: n 或 period（默认 20）
-            macd: fast/slow/signal（默认 12/26/9）
-            rsi: n 或 period（默认 14）
-            boll: n（默认 20）、k（默认 2.0）
-            atr: n（默认 14）
-            kdj: n（默认 9）、m1（默认 3）、m2（默认 3）
+        df: DataFrame containing price data (required columns, such as close, high, low)
+        spec: IndicatorSpec Object, name is the indicator name, params is the parameter dictionary
+            ma/ema: n or period (default 20)
+            macd: fast/slow/signal (Default 12/26/9)
+            rsi: n or period (default 14)
+            boll: n (Default 20), k (default 2.0)
+            atr: n (Default 14)
+            kdj: n (Default 9), m1 (default 3), m2 (default 3)
 
     Returns:
-        pd.DataFrame: 原始 DataFrame 的副本，追加指标结果列，列名规则 —
-            ma{N}: 移动平均线
-            ema{N}: 指数移动平均线
-            dif, dea, macd_hist: MACD 指标
-            rsi{N}: RSI 指标
-            boll_mid, boll_upper, boll_lower: 布林带
-            atr{N}: ATR 指标
-            kdj_k, kdj_d, kdj_j: KDJ 指标
+        pd.DataFrame: Copy of original DataFrame, appended indicator result columns, column naming rules —
+            ma{N}: moving average
+            ema{N}: exponential moving average
+            dif, dea, macd_hist: MACD indicator
+            rsi{N}: RSI indicator
+            boll_mid, boll_upper, boll_lower: Bollinger Bands
+            atr{N}: ATR indicator
+            kdj_k, kdj_d, kdj_j: KDJ indicator
 
     Raises:
-        ValueError: 指标名不支持或缺少必要列时抛出
+        ValueError: Thrown when the indicator name is not supported or a required column is missing
     """
     name = spec.name.lower()
     params = spec.params or {}
@@ -301,19 +301,19 @@ def compute_indicator(df: pd.DataFrame, spec: IndicatorSpec) -> pd.DataFrame:
 
 
 def compute_many(df: pd.DataFrame, specs: List[IndicatorSpec]) -> pd.DataFrame:
-    """批量计算多个技术指标，按 (name, params) 去重后依次合并结果列。
+    """Calculate multiple technical indicators in batches, press (name, params) After deduplication, the result columns are merged in sequence.
 
     Args:
-        df: 包含价格数据的 DataFrame（需含所需列，如 close、high、low）
-        specs: IndicatorSpec 列表，每个元素描述一个待计算的指标
+        df: DataFrame containing price data (required columns, such as close, high, low)
+        specs: IndicatorSpec List, each element describes an indicator to be calculated
 
     Returns:
-        pd.DataFrame: 原始 DataFrame 的副本，追加所有去重后的指标结果列；
-            若 specs 为空则返回原始 DataFrame 的副本
+        pd.DataFrame: A copy of the original DataFrame, appended with all deduplicated indicator result columns;
+            If specs is empty, returns a copy of the original DataFrame
     """
     if not specs:
         return df.copy()
-    # 粗略去重（按 name+sorted(params)）
+    # Rough deduplication (press name+sorted(params)) 
     def key(s: IndicatorSpec):
         p = s.params or {}
         items = tuple(sorted(p.items()))
@@ -334,15 +334,15 @@ def compute_many(df: pd.DataFrame, specs: List[IndicatorSpec]) -> pd.DataFrame:
 
 
 def last_values(df: pd.DataFrame, columns: List[str]) -> Dict[str, Any]:
-    """提取 DataFrame 中指定列的最后一行（最新）值，缺失或 NaN 时返回 None。
+    """Extracts the last row (latest) value of the specified column in the DataFrame, returning None if missing or NaN.
 
     Args:
-        df: 数据 DataFrame
-        columns: 需要提取的列名列表
+        df: data DataFrame
+        columns: List of column names to be extracted
 
     Returns:
-        Dict[str, Any]: 字典，key 为列名，value 为该列最后一行的值；
-            若 df 为空、列不存在或值为 NaN，则对应 value 为 None
+        Dict[str, Any]: Dictionary, key is the column name, value is the value of the last row of the column;
+            If df is empty, the column does not exist or the value is NaN, the corresponding value is None
     """
     if df.empty:
         return {c: None for c in columns}
@@ -354,70 +354,70 @@ def add_all_indicators(df: pd.DataFrame, close_col: str = 'close',
                        high_col: str = 'high', low_col: str = 'low',
                        rsi_style: str = 'international') -> pd.DataFrame:
     """
-    为DataFrame添加所有常用技术指标
+    Add all common technical indicators to DataFrame
 
-    这是一个统一的技术指标计算函数，用于替代各个数据源模块中重复的计算代码。
+    This is a unified technical indicator calculation function used to replace repeated calculation codes in each data source module.
 
     Args:
-        df: 包含价格数据的DataFrame
-        close_col: 收盘价列名，默认'close'
-        high_col: 最高价列名，默认'high'（预留，暂未使用）
-        low_col: 最低价列名，默认'low'（预留，暂未使用）
-        rsi_style: RSI计算风格
-            - 'international': 国际标准（RSI14，使用EMA）
-            - 'china': 中国风格（RSI6/12/24 + RSI14，使用中国式SMA）
+        df: Contains price data DataFrame
+        close_col: Closing price column name, default'close'
+        high_col: Highest price column name, default'high' (Reserved, not used yet)
+        low_col: Lowest price column name, default'low' (Reserved, not used yet)
+        rsi_style: RSI computational style
+            - 'international': International standard (RSI14, using EMA)
+            - 'china': Chinese style (RSI6/12/24 + RSI14, Using Chinese SMA)
 
     Returns:
-        添加了技术指标列的DataFrame（原地修改）
+        DataFrame with technical indicator column added (modified in place)
 
-    添加的指标列：
-        - ma5, ma10, ma20, ma60: 移动平均线
-        - rsi: RSI指标（14日，国际标准）
-        - rsi6, rsi12, rsi24: RSI指标（中国风格，仅当 rsi_style='china' 时）
-        - rsi14: RSI指标（14日，简单移动平均，仅当 rsi_style='china' 时）
-        - macd_dif, macd_dea, macd: MACD指标
-        - boll_mid, boll_upper, boll_lower: 布林带
+    Added metric columns:
+        - ma5, ma10, ma20, ma60: moving average
+        - rsi: RSI Indicator (14th, international standard)
+        - rsi6, rsi12, rsi24: RSI indicator (Chinese style, only if rsi_style='china' time)
+        - rsi14: RSI Indicator (14-day, simple moving average, only if rsi_style='china' time)
+        - macd_dif, macd_dea, macd: MACD indicator
+        - boll_mid, boll_upper, boll_lower: Bollinger Bands
 
-    示例：
+    Example:
         >>> df = pd.DataFrame({'close': [100, 101, 102, 103, 104]})
         >>> df = add_all_indicators(df)
         >>> print(df[['close', 'ma5', 'rsi']].tail())
         >>>
-        >>> # 中国风格
+        >>> # Chinese style
         >>> df = add_all_indicators(df, rsi_style='china')
         >>> print(df[['close', 'rsi6', 'rsi12', 'rsi24']].tail())
     """
-    # 检查必要的列
+    # Check necessary columns
     if close_col not in df.columns:
-        raise ValueError(f"DataFrame缺少收盘价列: {close_col}")
+        raise ValueError(f"DataFrame Missing closing price column: {close_col}")
 
-    # 计算移动平均线（MA5, MA10, MA20, MA60）
+    # Calculate the moving average (MA5, MA10, MA20, MA60) 
     df['ma5'] = ma(df[close_col], 5, min_periods=1)
     df['ma10'] = ma(df[close_col], 10, min_periods=1)
     df['ma20'] = ma(df[close_col], 20, min_periods=1)
     df['ma60'] = ma(df[close_col], 60, min_periods=1)
 
-    # 计算RSI指标
+    # Calculate RSI indicator
     if rsi_style == 'china':
-        # 中国风格：RSI6, RSI12, RSI24（使用中国式SMA）
+        # Chinese style:RSI6, RSI12, RSI24 (Using Chinese SMA)
         df['rsi6'] = rsi(df[close_col], 6, method='china')
         df['rsi12'] = rsi(df[close_col], 12, method='china')
         df['rsi24'] = rsi(df[close_col], 24, method='china')
-        # 保留RSI14作为国际标准参考（使用简单移动平均）
+        # Keep RSI14 as international standard reference (using simple moving average)
         df['rsi14'] = rsi(df[close_col], 14, method='sma')
-        # 为了兼容性，也添加 'rsi' 列（指向 rsi12）
+        # For compatibility, also add 'rsi' column (points to rsi12)
         df['rsi'] = df['rsi12']
     else:
-        # 国际标准：RSI14（使用EMA）
+        # International Standard: RSI14 (using EMA)
         df['rsi'] = rsi(df[close_col], 14, method='ema')
 
-    # 计算MACD
+    # Calculate MACD
     macd_df = macd(df[close_col], fast=12, slow=26, signal=9)
     df['macd_dif'] = macd_df['dif']
     df['macd_dea'] = macd_df['dea']
-    df['macd'] = macd_df['macd_hist'] * 2  # 注意：这里乘以2是为了与通达信/同花顺保持一致
+    df['macd'] = macd_df['macd_hist'] * 2  # Note: This is multiplied by 2 to be consistent with Tong Da Xin/Flush
 
-    # 计算布林带（20日，2倍标准差）
+    # Calculate Bollinger Bands (20th day, 2 times standard deviation)
     boll_df = boll(df[close_col], n=20, k=2.0, min_periods=1)
     df['boll_mid'] = boll_df['boll_mid']
     df['boll_upper'] = boll_df['boll_upper']

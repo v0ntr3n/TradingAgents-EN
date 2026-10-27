@@ -1,16 +1,16 @@
 """
-分析规划器
+Analysis Planner
 
-实现三级保障机制的规划逻辑：
-1. LLM 语义匹配种子流程（最可靠）
-2. LLM 基于工具列表自主规划（较可靠）
-3. 规划失败时标记回退到 ReAct（保底）
+The planning logic to realize the three-level guarantee mechanism:
+1. LLM Semantic matching seed process (most reliable)
+2. LLM Autonomous planning based on tool list (more reliable)
+3. Mark fallback to ReAct (guaranteed) when planning fails
 
-依赖：
-- core/agents/seed_flows.py — 种子流程定义
-- core/agents/planner_models.py — 数据模型
-- core/llm/unified_client.py — LLM 调用
-- core/tools/registry.py — 工具注册表
+Dependencies:
+- core/agents/seed_flows.py — Seed process definition
+- core/agents/planner_models.py — data model
+- core/llm/unified_client.py — LLM call
+- core/tools/registry.py — Tool registry
 """
 
 import json
@@ -29,23 +29,23 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-# Prompt 模板
+# Prompt Template
 # ============================================================
 
 def _build_seed_match_prompt(question: str, seed_flows: List[SeedFlow]) -> str:
-    """构建种子流程语义匹配 prompt"""
+    """Build seed process semantic matching prompt"""
     flow_list = "\n".join(
         f"{i + 1}. {sf.id}: {sf.description}"
         for i, sf in enumerate(seed_flows)
     )
-    return f"""你是股票分析规划器。以下是可用的分析模板：
+    return f"""You are a stock analysis planner. The following are the available analysis templates:
 
 {flow_list}
 
-用户问题：{question}
+User questions:{question}
 
-请选择最匹配的模板编号（1-{len(seed_flows)}），如果都不匹配返回 "none"。
-只返回编号或 "none"，不要解释。"""
+Please select the template number that best matches (1-{len(seed_flows)}) , If none of them match, return "none". 
+Return only the number or "none", Don t explain."""
 
 
 def _build_plan_prompt(
@@ -55,118 +55,118 @@ def _build_plan_prompt(
     trade_date: str,
     knowledge_snippets: str = "",
 ) -> str:
-    """构建 LLM 自主规划 prompt
+    """Build LLM autonomous planning prompt
 
     Args:
-        knowledge_snippets: RAG 检索到的动态知识片段
+        knowledge_snippets: RAG Retrieved dynamic knowledge fragments
     """
-    # 构建可选的动态知识段落
+    # Build optional dynamic knowledge paragraphs
     knowledge_section = f"\n{knowledge_snippets}\n" if knowledge_snippets else ""
 
-    return f"""你是股票分析规划器。根据用户问题，制定一个精确的分析计划。
+    return f"""You are a stock analysis planner. Develop a precise analysis plan based on user issues.
 
-## 可用工具
+## Available tools
 
 {tool_descriptions}
 
-## 当前日期信息
-- 当前日期: {curr_date}
-- 最近交易日: {trade_date}
+## Current date information
+- current date: {curr_date}
+- Last trading day: {trade_date}
 
-## 用户问题
+## User issues
 {question}
 {knowledge_section}
-## 重要说明
-- 本系统仅支持 **A股（沪深两市）** 的个股和板块分析
-- **不支持**: ETF、基金、港股、美股等品种
+## Important note
+- This system only supports **A Stocks (Shanghai and Shenzhen Stock Exchanges)** Analysis of individual stocks and sectors
+- **Not supported**: ETF, Funds, Hong Kong stocks, US stocks, etc.
 
-## 金融知识 - 问题分类与推荐工具组合
+## Financial Literacy - Question Classification and Recommended Tool Packages
 
-**A. 板块/行业/概念类**（用户问"XX板块"、"XX概念股"、"XX行业前景"）：
-- 核心工具: analyze_sector_by_name（一站式板块综合分析，参数 sector_name=板块关键词）
-- 补充工具: get_sector_constituents（查成分股龙头）、get_sector_daily（查板块走势）、search_sector（搜索板块）
-- 注意: "XX概念股"指同花顺概念板块(S类型)的成分股，用板块工具查询，不需要 ticker
+**A. Section/Industry/Concept Category** (User asked"XX plate", "XX concept stocks", "XX Industry prospects") : 
+- core tools: analyze_sector_by_name (One-stop comprehensive sector analysis, parameters sector_name=Sector keywords)
+- Supplementary tools: get_sector_constituents (Check the leading constituent stocks), get_sector_daily (check the sector trend), search_sector (search the sector)
+- Note: "XX concept stocks"Refers to the Flush concept section(S Type)Component stocks, use the sector tool to query, no need ticker
 
-**B. 个股分析类**（用户问"XX股票怎么样"、"帮我分析XX"）：
-- 基本面: get_stock_fundamentals_unified（PE/PB/ROE/财务数据）
-- 行情: get_stock_market_data_unified（价格走势/成交量）
-- 技术面: get_technical_indicators（MACD/RSI/KDJ/BOLL）
-- 消息面: get_stock_news_unified（新闻动态）
-- 建议并行获取基本面+行情+技术面+新闻
+**B. Individual stock analysis** (User asked"XX How is the stock?", "Help me analyze XX") : 
+- Fundamentals: get_stock_fundamentals_unified (PE/PB/ROE/financial data)
+- Quotes: get_stock_market_data_unified (price movement/volume)
+- technical aspect: get_technical_indicators (MACD/RSI/KDJ/BOLL) 
+- news side: get_stock_news_unified (News)
+- It is recommended to obtain fundamentals in parallel+Quotes+technical aspect+News
 
-**C. 宏观/大盘类**（用户问"大盘怎么样"、"市场环境"）：
-- 快速概览: get_china_market_overview 或 get_market_overview
-- 深度分析: get_index_data + get_market_breadth + get_limit_stats
-- 资金面: get_north_flow（北向资金）、get_margin_trading（两融）、get_fund_flow_data（板块资金流向）
+**C. Macro/Large Cap Category** (User asked"How is the market?", "market environment") : 
+- Quick overview: get_china_market_overview or get_market_overview
+- In-depth analysis: get_index_data + get_market_breadth + get_limit_stats
+- Funding: get_north_flow (Northbound funds), get_margin_trading (two financings), get_fund_flow_data (sector fund flow)
 
-**D. 对比类**（用户问"XX和YY哪个好"、"同行业对比"）：
-- 核心工具: get_peer_comparison（同业对比）
-- 补充: get_stock_fundamentals_unified（各公司基本面详情）
+**D. Contrast category** (User asked"XX Which one is better with YY?", "Comparison with the same industry") : 
+- core tools: get_peer_comparison (Comparison with peers)
+- supplement: get_stock_fundamentals_unified (Details of each company s fundamentals)
 
-## 要求
-1. 生成一个 JSON 格式的分析计划
-2. 每个步骤必须指定具体的 tool（工具 ID）和 args（参数）
-3. **args 中只能使用上面工具定义中列出的参数名，不能自创参数**
-4. 使用 depends_on 标记步骤间的依赖关系（无依赖的步骤可并行执行）
-5. intent 字段简要说明该步骤的目的
-6. 步骤数量控制在 2-5 个
-7. 所有需要日期的参数使用当前日期 {curr_date} 或交易日 {trade_date}
-8. **板块/行业/概念类问题优先使用板块级别工具**（analyze_sector_by_name 等），它们接受 sector_name（板块名称关键词），无需 ticker
-9. 只有涉及具体个股时才使用需要 ticker 参数的工具，ticker 必须是 6 位数字的股票代码（如 601012）
-10. 先判断问题属于上述 A/B/C/D 哪一类，再选择对应的推荐工具组合
+## request
+1. Generate an analysis plan in JSON format
+2. Each step must specify a specific tool (tool ID) and args (arguments)
+3. **args Only the parameter names listed in the tool definition above can be used, and you cannot create your own parameters.**
+4. Use depends_on to mark dependencies between steps (steps without dependencies can be executed in parallel)
+5. intent Field briefly describes the purpose of this step
+6. Keep the number of steps to 2-5
+7. All parameters that require a date use the current date {curr_date} or trading day {trade_date}
+8. **For sector/industry/conceptual questions, sector-level tools are preferred.** (analyze_sector_by_name etc.), they accept sector_name (sector name keyword) without ticker
+9. Only use tools that require the ticker parameter when referring to specific stocks. The ticker must be a 6-digit stock code (such as 601012)
+10. First determine which category of the above A/B/C/D the problem belongs to, and then select the corresponding recommended tool combination
 
-## 输出格式（严格 JSON）
+## Output format (strictly JSON)
 ```json
 {{
   "steps": [
     {{
       "id": 1,
-      "tool": "工具ID",
-      "args": {{"参数名": "参数值"}},
-      "intent": "步骤意图",
+      "tool": "Tools ID",
+      "args": {{"Parameter name": "Parameter value"}},
+      "intent": "step intention",
       "depends_on": []
     }}
   ]
 }}
 ```
 
-只返回 JSON，不要其他文字。"""
+Return only JSON, no other text."""
 
 
 def _build_tool_descriptions(tool_ids: Set[str]) -> str:
-    """构建工具描述列表（用于规划 prompt）"""
+    """Build tool description list (used for planning prompts)"""
     registry = get_tool_registry()
     lines = []
     for meta in registry.list_all():
         if meta.id not in tool_ids:
             continue
         params = ", ".join(
-            f"{p.name}({'必需' if p.required else '可选'}): {p.description}"
+            f"{p.name}({'required' if p.required else 'Optional'}): {p.description}"
             for p in meta.parameters
         )
         line = f"- **{meta.id}**: {meta.description}"
         if meta.when_to_use:
-            line += f"\n  何时使用: {meta.when_to_use}"
+            line += f"\n  When to use: {meta.when_to_use}"
         if params:
-            line += f"\n  参数: {params}"
+            line += f"\n  parameters: {params}"
         lines.append(line)
     return "\n".join(lines)
 
 
 def _build_simplified_tool_descriptions(tool_ids: Set[str]) -> str:
-    """构建简化版工具描述（仅 ID + 描述，用于修正重试 prompt）
+    """Build a simplified tool description (only ID + Description, used to fix the retry prompt)
 
-    修正重试场景下，过详细的参数描述可能让 LLM 再次陷入"参数选择困难"，
-    因此只暴露工具 ID 和一句话描述，让 LLM 先把"用哪些工具"这一层选对。
+    Fixed the problem that in the retry scenario, too detailed parameter description may cause LLM to fall into the trap again."Difficulty in parameter selection", 
+    Therefore, only the tool ID and one-sentence description are exposed, allowing LLM to first"what tools to use"Choose the right layer.
     """
     registry = get_tool_registry()
     lines = []
     for meta in registry.list_all():
         if meta.id not in tool_ids:
             continue
-        # 只保留参数名列表（不展开描述），降低 prompt 复杂度
-        param_names = ", ".join(p.name for p in meta.parameters) if meta.parameters else "无"
-        lines.append(f"- {meta.id}: {meta.description}（参数: {param_names}）")
+        # Only keep the parameter name list (do not expand the description) to reduce prompt complexity
+        param_names = ", ".join(p.name for p in meta.parameters) if meta.parameters else "None"
+        lines.append(f"- {meta.id}: {meta.description} (parameters: {param_names}) ")
     return "\n".join(lines)
 
 
@@ -177,69 +177,69 @@ def _build_correction_plan_prompt(
     trade_date: str,
     failure_hint: str = "",
 ) -> str:
-    """构建修正重试 prompt（v3.6.0 项7）
+    """Build fix retry prompt (v3.6.0 item 7)
 
-    与 _build_plan_prompt 的差异：
-    1. 步骤数量限制从 2-5 收紧到 1-3（降低复杂度）
-    2. 去掉金融知识段落（避免 LLM 在分类上浪费 token）
-    3. 显式提示"上一次规划失败"，鼓励 LLM 用最简单方式重新规划
-    4. 工具描述使用简化版（仅 ID + 描述 + 参数名）
+    Difference from _build_plan_prompt:
+    1. Number of steps limit tightened from 2-5 to 1-3 (reduced complexity)
+    2. Remove the financial knowledge paragraph (to avoid LLM wasting tokens on classification)
+    3. explicit prompt"The last planning failed", Encourage LLM to re-plan in the simplest way
+    4. The tool description uses a simplified version (only ID + Description + parameter name)
     """
-    hint_section = f"\n## 上次失败原因\n{failure_hint}\n" if failure_hint else ""
+    hint_section = f"\n## Reason for last failure\n{failure_hint}\n" if failure_hint else ""
 
-    return f"""上一次规划失败，请用更简单的方式重新规划。{hint_section}
-## 可用工具（简化版）
+    return f"""The last planning failed, please try again in a simpler way.{hint_section}
+## Available tools (simplified version)
 
 {simplified_tool_desc}
 
-## 当前日期信息
-- 当前日期: {curr_date}
-- 最近交易日: {trade_date}
+## Current date information
+- current date: {curr_date}
+- Last trading day: {trade_date}
 
-## 用户问题
+## User issues
 {question}
 
-## 要求
-1. 生成一个 JSON 格式的分析计划
-2. 步骤数量控制在 **1-3 个**（最多 3 个，越简单越好）
-3. 优先使用最常见的工具组合：基本面/行情/技术面/新闻
-4. 每个步骤必须指定具体的 tool（工具 ID）和 args（参数）
-5. args 中只能使用上面工具定义中列出的参数名
-6. 使用 depends_on 标记步骤间的依赖关系（无依赖的步骤可并行执行）
-7. intent 字段简要说明该步骤的目的
-8. 所有需要日期的参数使用当前日期 {curr_date} 或交易日 {trade_date}
-9. ticker 必须是 6 位数字的股票代码（如 601012）
+## request
+1. Generate an analysis plan in JSON format
+2. The number of steps is controlled at **1-3 a** (Up to 3, simpler the better)
+3. Prioritize the use of the most common tool combinations: fundamentals/markets/technical/news
+4. Each step must specify a specific tool (tool ID) and args (arguments)
+5. args Only the parameter names listed in the tool definition above can be used in
+6. Use depends_on to mark dependencies between steps (steps without dependencies can be executed in parallel)
+7. intent Field briefly describes the purpose of this step
+8. All parameters that require a date use the current date {curr_date} or trading day {trade_date}
+9. ticker Must be a 6-digit stock code (e.g. 601012)
 
-## 输出格式（严格 JSON）
+## Output format (strictly JSON)
 ```json
 {{
   "steps": [
     {{
       "id": 1,
-      "tool": "工具ID",
-      "args": {{"参数名": "参数值"}},
-      "intent": "步骤意图",
+      "tool": "Tools ID",
+      "args": {{"Parameter name": "Parameter value"}},
+      "intent": "step intention",
       "depends_on": []
     }}
   ]
 }}
 ```
 
-只返回 JSON，不要其他文字。"""
+Return only JSON, no other text."""
 
 
 # ============================================================
-# Planner 类
+# Planner class
 # ============================================================
 
 class Planner:
     """
-    分析规划器
+    Analysis Planner
 
-    实现三级保障规划逻辑：
-      1. 种子流程语义匹配
-      2. LLM 自主规划
-      3. 标记 ReAct 回退
+    Implement three-level assurance planning logic:
+      1. Seed process semantic matching
+      2. LLM independent planning
+      3. Flag ReAct fallback
     """
 
     def __init__(
@@ -252,7 +252,7 @@ class Planner:
         self._curr_date = curr_date
         self._trade_date = trade_date
 
-        # 收集可用工具 ID（仅 fc_enabled 且有参数的）
+        # Collect available tool IDs (only fc_enabled with parameters)
         registry = get_tool_registry()
         self._valid_tool_ids: Set[str] = {
             m.id for m in registry.list_all()
@@ -260,7 +260,7 @@ class Planner:
         }
 
     # ----------------------------------------------------------
-    # 公共接口
+    # public interface
     # ----------------------------------------------------------
 
     async def plan(
@@ -270,35 +270,35 @@ class Planner:
         knowledge_snippets: str = "",
     ) -> AnalysisPlan:
         """
-        生成分析计划。
+        Generate analysis plan.
 
         Args:
-            knowledge_snippets: RAG 检索到的动态知识片段
+            knowledge_snippets: RAG Retrieved dynamic knowledge fragments
 
         Returns:
-            AnalysisPlan — 若 source == REACT_FALLBACK 表示规划失败，应回退 ReAct
+            AnalysisPlan — If source == REACT_FALLBACK Indicates that planning failed and should be rolled back ReAct
         """
-        # 第一级：种子流程语义匹配
+        # First level: Seed process semantic matching
         seed_plan = await self._try_seed_match(question, context_messages)
         if seed_plan is not None:
-            logger.info(f"[Planner] 种子流程匹配成功: {seed_plan.template_id}")
+            logger.info(f"[Planner] Seed process matching successful: {seed_plan.template_id}")
             return seed_plan
 
-        # 第二级：LLM 自主规划
+        # Level 2: LLM independent planning
         llm_plan = await self._try_llm_plan(question, context_messages, knowledge_snippets)
         if llm_plan is not None:
-            logger.info(f"[Planner] LLM 自主规划成功，{len(llm_plan.steps)} 个步骤")
+            logger.info(f"[Planner] LLM Independent planning is successful,{len(llm_plan.steps)} steps")
             return llm_plan
 
-        # 第二级补丁：规划失败修正重试1次（v3.6.0 项7）
-        # 用更简单的 prompt 重新尝试生成有效计划，避免直接降级 ReAct
+        # Second level patch: planning failure fix retry 1 time (v3.6.0 item 7)
+        # Retry generating a valid plan with a simpler prompt to avoid direct downgrade ReAct
         corrected_plan = await self._try_llm_plan_with_correction(question, context_messages)
         if corrected_plan is not None:
-            logger.info(f"[Planner] 修正重试规划成功，{len(corrected_plan.steps)} 个步骤")
+            logger.info(f"[Planner] Fixed retry planning success,{len(corrected_plan.steps)} steps")
             return corrected_plan
 
-        # 第三级：标记 ReAct 回退
-        logger.warning("[Planner] 规划失败（含修正重试），标记 ReAct 回退")
+        # Level 3: Mark ReAct fallback
+        logger.warning("[Planner] Planning failed (including corrective retry), marked ReAct rollback")
         return AnalysisPlan(
             question=question,
             source=PlanSource.REACT_FALLBACK,
@@ -306,7 +306,7 @@ class Planner:
         )
 
     # ----------------------------------------------------------
-    # 第一级：种子流程语义匹配
+    # First level: Seed process semantic matching
     # ----------------------------------------------------------
 
     async def _try_seed_match(
@@ -314,7 +314,7 @@ class Planner:
         question: str,
         context_messages: Optional[List[Message]] = None,
     ) -> Optional[AnalysisPlan]:
-        """用 LLM 语义匹配种子流程，匹配成功则填充模板参数"""
+        """Use LLM semantics to match the seed process, and fill in the template parameters if the match is successful."""
         seed_flows = list_seed_flows()
         if not seed_flows:
             return None
@@ -328,13 +328,13 @@ class Planner:
         try:
             resp = await self._llm.achat(messages)
             answer = (resp.content or "").strip().lower()
-            logger.info(f"[Planner] 种子匹配 LLM 返回: {answer}")
+            logger.info(f"[Planner] Seed match LLM return: {answer}")
 
-            # 解析返回值
+            # parse return value
             if answer == "none" or not answer:
                 return None
 
-            # 提取数字
+            # Extract numbers
             match = re.search(r"(\d+)", answer)
             if not match:
                 return None
@@ -347,11 +347,11 @@ class Planner:
             return await self._fill_seed_flow_async(question, selected)
 
         except Exception as e:
-            logger.warning(f"[Planner] 种子匹配失败: {e}")
+            logger.warning(f"[Planner] Seed matching failed: {e}")
             return None
 
     def _fill_seed_flow(self, question: str, flow: SeedFlow) -> AnalysisPlan:
-        """将种子流程模板填充为具体的 AnalysisPlan"""
+        """Populate the seed process template with specific AnalysisPlan"""
         ticker = self._extract_ticker(question)
         sector_name = self._extract_sector_name(question)
 
@@ -365,7 +365,7 @@ class Planner:
                     .replace("{trade_date}", self._trade_date)
                     .replace("{sector_name}", sector_name)
                 )
-            # depends_on 从 0-based 转为 1-based step id
+            # depends_on Convert from 0-based to 1-based step id
             deps = [d + 1 for d in seed_step.depends_on]
             steps.append(PlanStep(
                 id=i + 1,
@@ -383,17 +383,17 @@ class Planner:
         )
 
     async def _fill_seed_flow_async(self, question: str, flow: SeedFlow) -> AnalysisPlan:
-        """将种子流程模板填充为具体的 AnalysisPlan（异步版，支持 LLM 提取 ticker 和板块名）"""
+        """Fill the seed process template with a specific AnalysisPlan (asynchronous version, supports LLM to extract ticker and section name)"""
         ticker = self._extract_ticker(question)
 
-        # 如果简单提取失败，用 LLM 提取
+        # If simple extraction fails, use LLM extraction
         if not ticker:
             ticker = await self._extract_ticker_by_llm(question)
-            logger.info(f"[Planner] LLM 提取 ticker: '{ticker}'")
+            logger.info(f"[Planner] LLM Extract ticker: '{ticker}'")
 
-        # 提取板块名称（用于 {sector_name} 占位符）
+        # Extract section name (for {sector_name} placeholder)
         sector_name = self._extract_sector_name(question)
-        logger.info(f"[Planner] 提取 sector_name: '{sector_name}'")
+        logger.info(f"[Planner] Extract sector_name: '{sector_name}'")
 
         steps: List[PlanStep] = []
         for i, seed_step in enumerate(flow.steps):
@@ -424,44 +424,44 @@ class Planner:
     @staticmethod
     def _extract_sector_name(question: str) -> str:
         """
-        从问题中提取板块/行业名称。
-        规则：
-        - 匹配 "XX板块"、"XX行业"、"XX概念"、"XX产业" 中的 XX
-        - 也匹配常见板块关键词
+        Extract the sector/industry name from the question.
+        Rules:
+        - match "XX plate", "XX Industry", "XX concept", "XX Industry" in XX
+        - Also matches common sector keywords
         """
-        # 先尝试匹配已知板块关键词 + 后缀模式（更精准）
+        # First try to match known sector keywords + Suffix mode (more precise)
         known_sectors = [
-            "光伏", "太阳能", "新能源", "锂电", "锂电池", "储能",
-            "半导体", "芯片", "集成电路", "消费电子",
-            "白酒", "食品饮料", "医药", "生物医药", "中药",
-            "人工智能", "AI", "大模型", "算力", "数据中心",
-            "新能源汽车", "智能驾驶", "汽车零部件",
-            "房地产", "建筑", "建材", "钢铁", "煤炭", "有色",
-            "银行", "证券", "保险", "金融",
-            "军工", "国防", "航天", "船舶",
-            "农业", "养殖", "种业",
-            "5G", "通信", "物联网",
-            "机器人", "工业母机", "高端装备",
+            "photovoltaic", "solar energy", "new energy", "Lithium battery", "Lithium battery", "energy storage",
+            "Semiconductor", "chip", "integrated circuit", "consumer electronics",
+            "Liquor", "food and beverage", "Medicine", "biomedicine", "Chinese medicine",
+            "artificial intelligence", "AI", "large model", "Computing power", "data center",
+            "New energy vehicles", "Intelligent driving", "Auto parts",
+            "real estate", "architecture", "Building materials", "steel", "Coal", "colored",
+            "bank", "securities", "insurance", "Finance",
+            "Military industry", "national defense", "aerospace", "ship",
+            "Agriculture", "Breeding", "Seed industry",
+            "5G", "communication", "Internet of Things",
+            "robot", "Industrial mother machine", "High-end equipment",
         ]
-        # 优先匹配已知板块名（从长到短，避免短名误匹配）
+        # Prioritize matching of known section names (from long to short to avoid mismatching short names)
         for sector in sorted(known_sectors, key=len, reverse=True):
             if sector in question:
                 return sector
 
-        # 匹配 "XX板块"、"XX行业"、"XX概念"、"XX产业" 模式
-        # 使用 {1,6} 限制长度，避免贪婪匹配太多中文字
+        # match "XX plate", "XX Industry", "XX concept", "XX Industry" mode
+        # Use {1,6} Limit the length to avoid greedy matching of too many Chinese characters
         patterns = [
-            r"([\u4e00-\u9fa5A-Za-z0-9]{1,6})\s*(?:板块|行业|概念|产业|赛道|领域)",
-            r"(?:板块|行业|概念|产业|赛道|领域)\s*([\u4e00-\u9fa5A-Za-z0-9]{1,6})",
+            r"([\u4e00-\u9fa5A-Za-z0-9]{1,6})\s*(?:plate|Industry|concept|Industry|track|field)",
+            r"(?:plate|Industry|concept|Industry|track|field)\s*([\u4e00-\u9fa5A-Za-z0-9]{1,6})",
         ]
         for p in patterns:
             m = re.search(p, question)
             if m:
                 return m.group(1).strip()
 
-        # 如果都没匹配到，用整个问题的核心关键词
-        # 去掉常见疑问词和修饰词
-        q = re.sub(r"(帮我|分析|看看|有哪些|怎么样|如何|最近|投资|机会|值得|关注|推荐|什么|哪些|请问)", "", question)
+        # If there is no match, use the core keywords of the entire question
+        # Remove common question words and modifiers
+        q = re.sub(r"(help me|analysis|take a look|What are there|How is it|how|Recently|investment|opportunity|Worth it|Follow|Recommended|what|Which|Excuse me)", "", question)
         q = q.strip()
         if 2 <= len(q) <= 8:
             return q
@@ -471,57 +471,57 @@ class Planner:
     @staticmethod
     def _extract_ticker(question: str) -> str:
         """
-        从问题中提取股票代码。
-        简单规则：匹配 6 位数字。未匹配到则返回空字符串。
+        Extract the stock symbol from the question.
+        Simple rule: match 6 digits. If no match is found, an empty string is returned.
         """
         match = re.search(r"\b(\d{6})\b", question)
         return match.group(1) if match else ""
 
     async def _extract_ticker_by_llm(self, question: str) -> str:
         """
-        用 LLM 从问题中提取或推断股票代码。
-        支持：
-        - 中文股票名 → 代码（如"茅台" → "600519"）
-        - 板块/行业名 → 龙头股代码（如"光伏板块" → "601012"）
+        Extract or infer stock symbols from problems using LLM.
+        Support:
+        - Chinese stock name → code (such as"Moutai" → "600519") 
+        - Sector/industry name → Leading stock code (such as"Photovoltaic sector" → "601012") 
         """
-        prompt = f"""从以下用户问题中提取一个最相关的A股股票代码（6位数字）。
+        prompt = f"""Extract the most relevant A-share stock code (6 digits) from the following user questions.
 
-规则：
-- 如果问题提到具体股票名称（如"茅台"、"比亚迪"），返回该股票代码
-- 如果问题提到板块或行业（如"光伏板块"、"半导体"、"新能源"），返回该板块最具代表性的龙头股代码
-- 如果无法确定，返回 "000001"（平安银行，作为默认值）
+Rules:
+- If the question mentions a specific stock name (e.g."Moutai", "BYD") , Return the stock code
+- If the question mentions a sector or industry (e.g."Photovoltaic sector", "Semiconductor", "new energy") , Returns the most representative leading stock code in the sector
+- If unsure, return "000001" (Ping An Bank, as default)
 
-常见板块龙头参考：
-- 光伏/太阳能: 601012（隆基绿能）
-- 新能源汽车: 002594（比亚迪）
-- 白酒: 600519（贵州茅台）
-- 半导体/芯片: 002371（北方华创）
-- 人工智能/AI: 002230（科大讯飞）
-- 锂电池: 300750（宁德时代）
-- 医药: 600276（恒瑞医药）
-- 银行: 601398（工商银行）
-- 房地产: 001979（招商蛇口）
-- 券商: 601211（国泰君安）
+References to common sector leaders:
+- Photovoltaic/Solar: 601012 (Longi Green Energy)
+- New energy vehicles: 002594 (BYD)
+- Liquor: 600519 (Kweichow Moutai)
+- Semiconductor/chip: 002371 (Northern Huachuang)
+- artificial intelligence/AI: 002230 (iFlytek)
+- Lithium battery: 300750 (Ningde era)
+- Medicine: 600276 (Hengrui Medicine)
+- bank: 601398 (Industrial and Commercial Bank of China)
+- real estate: 001979 (China Merchants Shekou)
+- Brokerage firm: 601211 (Guotai Junan)
 
-用户问题：{question}
+User questions:{question}
 
-只返回6位数字的股票代码，不要其他文字。"""
+Only return the 6-digit stock code, no other text."""
 
         try:
             messages = [Message(role=MessageRole.USER, content=prompt)]
             resp = await self._llm.achat(messages)
             raw = (resp.content or "").strip()
-            # 提取6位数字
+            # Extract 6 digits
             match = re.search(r"(\d{6})", raw)
             if match:
                 return match.group(1)
         except Exception as e:
-            logger.warning(f"[Planner] LLM 提取 ticker 失败: {e}")
+            logger.warning(f"[Planner] LLM Failed to extract ticker: {e}")
 
-        return "000001"  # 默认值
+        return "000001"  # Default value
 
     # ----------------------------------------------------------
-    # 第二级：LLM 自主规划
+    # Level 2: LLM independent planning
     # ----------------------------------------------------------
 
     async def _try_llm_plan(
@@ -530,7 +530,7 @@ class Planner:
         context_messages: Optional[List[Message]] = None,
         knowledge_snippets: str = "",
     ) -> Optional[AnalysisPlan]:
-        """让 LLM 基于工具列表生成完整计划"""
+        """Let LLM generate a complete plan based on the tool list"""
         tool_desc = _build_tool_descriptions(self._valid_tool_ids)
         prompt = _build_plan_prompt(
             question=question,
@@ -541,7 +541,7 @@ class Planner:
         )
 
         messages: List[Message] = [
-            Message(role=MessageRole.SYSTEM, content="你是一个专业的股票分析规划器，只输出 JSON。"),
+            Message(role=MessageRole.SYSTEM, content="You are a professional stock analysis planner that only outputs JSON."),
         ]
         if context_messages:
             messages.extend(context_messages)
@@ -566,7 +566,7 @@ class Planner:
             )
 
         except Exception as e:
-            logger.warning(f"[Planner] LLM 规划失败: {e}")
+            logger.warning(f"[Planner] LLM Planning failed: {e}")
             return None
 
     async def _try_llm_plan_with_correction(
@@ -575,14 +575,14 @@ class Planner:
         context_messages: Optional[List[Message]] = None,
         failure_hint: str = "",
     ) -> Optional[AnalysisPlan]:
-        """修正重试规划（v3.6.0 项7）
+        """Fix retry planning (v3.6.0 item 7)
 
-        在 _try_llm_plan 返回 None 后调用，使用更简单的 prompt 再试一次：
-        - 步骤数限制 1-3 个
-        - 工具描述只保留 ID + 描述 + 参数名
-        - 显式提示"上一次规划失败"
+        Called after _try_llm_plan returns None, try again using a simpler prompt:
+        - The number of steps is limited to 1-3
+        - Tool description only retains ID + Description + Parameter name
+        - explicit prompt"The last planning failed"
 
-        失败 hint 可选，用于帮助 LLM 理解上次为何失败（如"未返回有效 JSON"、"步骤为空"）。
+        Failure hint is optional and is used to help LLM understand why it failed last time (e.g."Not returned valid JSON", "Step is empty") . 
         """
         simplified_tool_desc = _build_simplified_tool_descriptions(self._valid_tool_ids)
         prompt = _build_correction_plan_prompt(
@@ -596,7 +596,7 @@ class Planner:
         messages: List[Message] = [
             Message(
                 role=MessageRole.SYSTEM,
-                content="你是股票分析规划器，上一次规划失败，请用最简单的方式重新规划，只输出 JSON。",
+                content="You are a stock analysis planner. The last planning failed. Please use the simplest way to plan again and only output JSON.",
             ),
         ]
         if context_messages:
@@ -608,15 +608,15 @@ class Planner:
             raw = resp.content or ""
             plan_data = self._parse_plan_json(raw)
             if plan_data is None:
-                # _parse_plan_json 已记录具体原因（未找到JSON/JSON解析异常/结构无效）
+                # _parse_plan_json Specific reasons have been documented (JSON not found/JSON parsing exception/invalid structure)
                 return None
 
             steps = self._validate_steps(plan_data.get("steps", []))
             if not steps:
-                logger.warning("[Planner] 修正重试：步骤为空或全部无效")
+                logger.warning("[Planner] Fixed retry: steps are empty or all invalid")
                 return None
 
-            # 标记来源为 LLM_PLAN（修正重试成功的计划与正常 LLM 规划等价对待）
+            # The tag source is LLM_PLAN (fixed retry success plans are treated the same as normal LLM plans)
             return AnalysisPlan(
                 question=question,
                 template_id=None,
@@ -625,36 +625,36 @@ class Planner:
             )
 
         except Exception as e:
-            logger.warning(f"[Planner] 修正重试规划失败: {e}")
+            logger.warning(f"[Planner] Fixed retry planning failure: {e}")
             return None
 
     @staticmethod
     def _parse_plan_json(raw: str) -> Optional[Dict[str, Any]]:
-        """从 LLM 输出中解析 JSON"""
-        # 尝试提取 ```json ... ``` 块
+        """Parse from LLM output JSON"""
+        # Try to extract ```json ... ``` block
         json_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", raw)
         text = json_match.group(1).strip() if json_match else raw.strip()
 
-        # 尝试找到 JSON 对象
+        # Try to find the JSON object
         start = text.find("{")
         end = text.rfind("}")
         if start == -1 or end == -1:
-            logger.warning("[Planner] 未找到 JSON 对象")
+            logger.warning("[Planner] JSON object not found")
             return None
 
         try:
             return json.loads(text[start:end + 1])
         except json.JSONDecodeError as e:
-            logger.warning(f"[Planner] JSON 解析失败: {e}")
+            logger.warning(f"[Planner] JSON Parsing failed: {e}")
             return None
 
     def _validate_steps(self, raw_steps: List[Dict[str, Any]]) -> List[PlanStep]:
-        """验证并转换步骤列表，过滤掉不合法的步骤"""
+        """Verify and convert the step list to filter out illegal steps"""
         valid: List[PlanStep] = []
         for s in raw_steps:
             tool_id = s.get("tool", "")
             if tool_id not in self._valid_tool_ids:
-                logger.warning(f"[Planner] 工具 '{tool_id}' 不在注册表中，跳过")
+                logger.warning(f"[Planner] Tools '{tool_id}' Not in the registry, skip")
                 continue
             try:
                 step = PlanStep(
@@ -666,6 +666,6 @@ class Planner:
                 )
                 valid.append(step)
             except Exception as e:
-                logger.warning(f"[Planner] 步骤验证失败: {e}")
+                logger.warning(f"[Planner] Step verification failed: {e}")
         return valid
 

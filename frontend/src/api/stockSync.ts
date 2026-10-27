@@ -1,5 +1,5 @@
 /**
- * 股票数据同步 API
+ * Stock data synchronization API
  */
 
 import { ApiClient } from './request'
@@ -106,32 +106,32 @@ export interface StockSyncTaskStatus {
 
 export const stockSyncApi = {
   /**
-   * 同步单个股票数据
+   * Synchronize individual stock data
    */
   syncSingle(request: SingleStockSyncRequest) {
     return ApiClient.post<StockSyncTaskSubmission>('/api/stock-sync/single', request, {
-      timeout: 15000 // 后端改为提交任务后立即返回
+      timeout: 15000 // The backend changes to returning immediately after submitting the task.
     })
   },
 
   /**
-   * 批量同步股票数据
+   * Batch sync stock data
    */
   syncBatch(request: BatchStockSyncRequest) {
     return ApiClient.post<StockSyncTaskSubmission>('/api/stock-sync/batch', request, {
-      timeout: 15000 // 后端改为提交任务后立即返回
+      timeout: 15000 // The backend changes to returning immediately after submitting the task.
     })
   },
 
   /**
-   * 获取同步任务状态
+   * Get synchronization task status
    */
   getTaskStatus(taskId: string) {
     return ApiClient.get<StockSyncTaskStatus>(`/api/stock-sync/tasks/${taskId}`)
   },
 
   /**
-   * 获取股票同步状态
+   * Get stock sync status
    */
   getStatus(symbol: string) {
     return ApiClient.get<StockSyncStatus>(`/api/stock-sync/status/${symbol}`)

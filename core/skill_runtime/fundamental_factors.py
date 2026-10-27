@@ -1,4 +1,4 @@
-"""Skill 运行时基本面因子标准实现。"""
+"""Skill Runtime fundamental factor standard implementation."""
 
 from __future__ import annotations
 
@@ -837,7 +837,7 @@ def _build_beneish_m_score_diagnostic(context: Dict[str, Any], factor_value: Num
         return {
             **base_diagnostic,
             "data_quality_state": "missing_comparison_period",
-            "unavailable_reason": "缺少用于同比比较的上一年同季或上一期财务记录，无法构造 Beneish M-Score 所需的双期输入。",
+            "unavailable_reason": "Lacking financial records for the same quarter or period the previous year for year-over-year comparisons, the dual-period inputs required for the Beneish M-Score cannot be constructed.",
         }
 
     sales_current = _extract_period_metric(latest_record, "revenue")
@@ -897,7 +897,7 @@ def _build_beneish_m_score_diagnostic(context: Dict[str, Any], factor_value: Num
         return {
             **base_diagnostic,
             "data_quality_state": "missing_required_inputs",
-            "unavailable_reason": "缺少 Beneish M-Score 所需的关键输入字段，当前仓库最常见的是折旧摊销类原始字段在最新期或对比期缺失。",
+            "unavailable_reason": "The key input fields required by Beneish M-Score are missing. The most common thing in the current warehouse is that the original depreciation and amortization fields are missing in the latest period or comparison period.",
             "missing_inputs": missing_inputs,
         }
 
@@ -929,14 +929,14 @@ def _build_beneish_m_score_diagnostic(context: Dict[str, Any], factor_value: Num
         return {
             **base_diagnostic,
             "data_quality_state": "invalid_denominator",
-            "unavailable_reason": "Beneish M-Score 计算过程中存在 0 分母或无效比例项，按当前保守实现直接返回空值。",
+            "unavailable_reason": "Beneish M-Score If there is a 0 denominator or invalid proportional term during the calculation, a null value will be returned directly according to the current conservative implementation.",
             "missing_inputs": zero_denominator_inputs,
         }
 
     return {
         **base_diagnostic,
         "data_quality_state": "calculation_blocked",
-        "unavailable_reason": "Beneish M-Score 未能完成计算，但未命中已知的缺期、缺字段或 0 分母规则。",
+        "unavailable_reason": "Beneish M-Score The calculation failed to complete without hitting a known missing period, missing field, or 0 denominator rule.",
     }
 
 
@@ -962,7 +962,7 @@ def _build_piotroski_f_score_diagnostic(context: Dict[str, Any], factor_value: N
         return {
             **base_diagnostic,
             "data_quality_state": "missing_comparison_period",
-            "unavailable_reason": "缺少近两期对比财务记录，无法计算 Piotroski F-Score 的 9 项双期信号。",
+            "unavailable_reason": "The Piotroski F-Score s 9 two-period signals cannot be calculated without comparative financial records for the last two periods.",
         }
 
     current_roa = _estimate_roa(latest_record)
@@ -1002,14 +1002,14 @@ def _build_piotroski_f_score_diagnostic(context: Dict[str, Any], factor_value: N
         return {
             **base_diagnostic,
             "data_quality_state": "missing_required_inputs",
-            "unavailable_reason": "缺少 Piotroski F-Score 所需的关键双期输入字段，无法完成 9 项财务信号评分。",
+            "unavailable_reason": "The 9-item financial signal score cannot be completed without the key dual-period input fields required by the Piotroski F-Score.",
             "missing_inputs": missing_inputs,
         }
 
     return {
         **base_diagnostic,
         "data_quality_state": "calculation_blocked",
-        "unavailable_reason": "Piotroski F-Score 未能完成计算，但未命中已知的缺期或缺字段规则。",
+        "unavailable_reason": "Piotroski F-Score The calculation could not be completed but a known missing or missing field rule was not hit.",
     }
 
 
@@ -1064,7 +1064,7 @@ def _build_altman_z_score_diagnostic(context: Dict[str, Any], factor_value: Nume
         return {
             **base_diagnostic,
             "data_quality_state": "missing_required_inputs",
-            "unavailable_reason": "缺少 Altman Z-Score 所需的关键输入字段，当前实现无法构造 5 个分量。",
+            "unavailable_reason": "The current implementation is unable to construct 5 components without a critical input field required by the Altman Z-Score.",
             "missing_inputs": missing_inputs,
         }
 
@@ -1077,14 +1077,14 @@ def _build_altman_z_score_diagnostic(context: Dict[str, Any], factor_value: Nume
         return {
             **base_diagnostic,
             "data_quality_state": "invalid_denominator",
-            "unavailable_reason": "Altman Z-Score 的关键分母为 0，按当前保守实现返回空值。",
+            "unavailable_reason": "Altman Z-Score The key denominator of is 0, which returns NULL as currently conservatively implemented.",
             "missing_inputs": zero_denominator_inputs,
         }
 
     return {
         **base_diagnostic,
         "data_quality_state": "calculation_blocked",
-        "unavailable_reason": "Altman Z-Score 未能完成计算，但未命中已知的缺字段或 0 分母规则。",
+        "unavailable_reason": "Altman Z-Score The calculation could not be completed without hitting a known missing field or the 0 denominator rule.",
     }
 
 
@@ -1113,33 +1113,33 @@ def _build_factor_diagnostics(context: Dict[str, Any], factors: Dict[str, Any]) 
 
 
 def get_value_factor_bundle(symbol: str, allow_remote_fetch: bool = True) -> Dict[str, Any]:
-    """获取股票的价值因子 bundle（value_core）。
+    """Get the stock s value factor bundle (value_core).
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀）
-        allow_remote_fetch: 透传给 get_shareholder_return_metrics；
-            交互式接口（因子预览）应传 False 避免现场拉取 Tushare 分红数据
+        symbol: A Stock code (6 digits or including exchange suffix and suffix)
+        allow_remote_fetch: Transparently passed to get_shareholder_return_metrics;
+            The interactive interface (factor preview) should pass False to avoid pulling Tushare dividend data on the spot.
 
     Returns:
-        dict: 字段说明（合并 _base_snapshot 后还包括 symbol/name/industry/current_price/
+        dict: Field description (also included after merging _base_snapshot symbol/name/industry/current_price/
             report_period/data_source）——
-            bundle: 固定值 "value_core"
-            factors: 价值因子字典，子字段：
-                — pe: 市盈率（静态）
-                — pe_ttm: TTM 市盈率
-                — pb: 市净率
-                — pb_mrq: 最近报告期市净率
-                — ps_ttm: TTM 市销率
-                — dividend_yield: 股息率（百分比，已与 shareholder return 口径对齐）
-                — peg: PEG = pe_ttm / net_profit_yoy（增长率非正或缺失时为 None）
-                — industry_pe_median: 行业 PE 中位数
-                — industry_pb_median: 行业 PB 中位数
-            factor_warnings: 该 bundle 的告警字典
-            industry_samples: 行业样本统计
-                — pe_count: PE 行业样本数
-                — pb_count: PB 行业样本数
-            calculation_notes: list[str]，计算口径说明
-            missing_factors: list[str]，缺失的关键因子名列表
+            bundle: fixed value "value_core"
+            factors: Dictionary of value factors, subfields:
+                — pe: P/E ratio (static)
+                — pe_ttm: TTM P/E ratio
+                — pb: price to book ratio
+                — pb_mrq: Price to Book Ratio for the Most Recent Reporting Period
+                — ps_ttm: TTM price to sales ratio
+                — dividend_yield: Dividend rate (percentage, aligned with shareholder return)
+                — peg: PEG = pe_ttm / net_profit_yoy (None if the growth rate is non-positive or missing)
+                — industry_pe_median: Industry PE median
+                — industry_pb_median: Industry Median PB
+            factor_warnings: Alert dictionary for this bundle
+            industry_samples: Industry sample statistics
+                — pe_count: PE Number of industry samples
+                — pb_count: PB Number of industry samples
+            calculation_notes: list[str], Calculation Caliber Instructions
+            missing_factors: list[str], List of missing key factor names
     """
     context = _build_context(symbol)
     basic_info = context["basic_info"]
@@ -1161,8 +1161,8 @@ def get_value_factor_bundle(symbol: str, allow_remote_fetch: bool = True) -> Dic
     ))
     dividend_yield = raw_dividend_yield
     try:
-        # 与 get_current_valuation_snapshot_tool / get_dividend_valuation_context 对齐：
-        # 使用已实施分红 / 当前价格的可追溯口径，避免同一报告里股息率出现 0.09pct 左右差异。
+        # Aligned with get_current_valuation_snapshot_tool / get_dividend_valuation_context:
+        # Use the traceability method of implemented dividends/current price to avoid differences of around 0.09pct in dividend rates in the same report.
         from core.skill_runtime.standard_financial_apis import get_shareholder_return_metrics
         shareholder = get_shareholder_return_metrics(context["symbol"], years=5, allow_remote_fetch=allow_remote_fetch)
         canonical_pct = _to_float((shareholder.get("metrics") or {}).get("latest_dividend_yield_pct"))
@@ -1194,8 +1194,8 @@ def get_value_factor_bundle(symbol: str, allow_remote_fetch: bool = True) -> Dic
             "pb_count": industry_pb_stats.get("count"),
         },
         "calculation_notes": [
-            "peg 使用 pe_ttm / net_profit_yoy，增长率按同季同比百分比口径计算。",
-            "dividend_yield 使用已实施现金分红 / 当前价格口径，与股息率估值增强和当前估值快照保持一致；basic_info.daily_basic 股息率作为回退口径。",
+            "peg Using pe_ttm / net_profit_yoy, the growth rate is calculated as a year-on-year percentage in the same quarter.",
+            "dividend_yield Use the implemented cash dividend/current price caliber, consistent with the dividend yield valuation enhancement and current valuation snapshot; basic_info.daily_basic dividend rate as the fallback caliber.",
         ],
         "missing_factors": _find_missing(
             factors,
@@ -1205,41 +1205,41 @@ def get_value_factor_bundle(symbol: str, allow_remote_fetch: bool = True) -> Dic
 
 
 def get_quality_factor_bundle(symbol: str) -> Dict[str, Any]:
-    """获取股票的质量因子 bundle（quality_core）。
+    """Get the stock s quality factor bundle(quality_core).
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀）
+        symbol: A Stock code (6 digits or including exchange suffix and suffix)
 
     Returns:
-        dict: 字段说明（合并 _base_snapshot 后还包括 symbol/name/industry/current_price/
+        dict: Field description (also included after merging _base_snapshot symbol/name/industry/current_price/
             report_period/data_source）——
-            bundle: 固定值 "quality_core"
-            factors: 质量因子字典，子字段：
-                — roe: 净资产收益率
-                — roa: 总资产收益率
-                — gross_margin: 毛利率
-                — netprofit_margin: 净利率
-                — debt_to_assets: 资产负债率
-                — assets_to_eqt: 权益乘数
-                — current_ratio: 流动比率
-                — quick_ratio: 速动比率
-                — cash_ratio: 现金比率
-                — roic: 投入资本回报率（保守代理口径）
-                — cash_conversion: 经营现金流/净利润
-                — accrual_ratio: 应计比率（百分比）
-                — asset_turnover: 资产周转率
-                — gross_profit_to_assets: 毛利/总资产（百分比）
-                — interest_coverage: 利息保障倍数
-                — inventory_turnover: 存货周转率
-                — receivable_turnover: 应收账款周转率
-                — net_cash_position: 净现金比率（保守代理）
-                — piotroski_f_score: Piotroski F 评分
-                — altman_z_score: Altman Z 评分
-                — beneish_m_score: Beneish M 评分
-            factor_diagnostics: dict，因子的诊断信息（按字段名展开，含 data_quality_tier 等）
-            factor_warnings: 该 bundle 的告警字典
-            calculation_notes: list[str]，计算口径说明
-            missing_factors: list[str]，缺失的关键因子名列表
+            bundle: fixed value "quality_core"
+            factors: Quality factor dictionary, subfields:
+                — roe: ROE
+                — roa: return on total assets
+                — gross_margin: Gross profit margin
+                — netprofit_margin: net profit margin
+                — debt_to_assets: Asset-liability ratio
+                — assets_to_eqt: equity multiplier
+                — current_ratio: current ratio
+                — quick_ratio: quick ratio
+                — cash_ratio: cash ratio
+                — roic: Return on invested capital (conservative agency caliber)
+                — cash_conversion: Operating cash flow/net profit
+                — accrual_ratio: Accrual Ratio (Percent)
+                — asset_turnover: asset turnover rate
+                — gross_profit_to_assets: Gross profit/total assets (percentage)
+                — interest_coverage: interest coverage ratio
+                — inventory_turnover: Inventory turnover
+                — receivable_turnover: Accounts receivable turnover ratio
+                — net_cash_position: Net cash ratio (conservative proxy)
+                — piotroski_f_score: Piotroski F Rating
+                — altman_z_score: Altman Z Rating
+                — beneish_m_score: Beneish M Rating
+            factor_diagnostics: dict, Diagnostic information of factors (expanded by field name, including data_quality_tier, etc.)
+            factor_warnings: Alert dictionary for this bundle
+            calculation_notes: list[str], Calculation Caliber Instructions
+            missing_factors: list[str], List of missing key factor names
     """
     context = _build_context(symbol)
     latest_financial = context["latest_financial"]
@@ -1381,15 +1381,15 @@ def get_quality_factor_bundle(symbol: str) -> Dict[str, Any]:
         "factor_diagnostics": factor_diagnostics,
         "factor_warnings": factor_warnings,
         "calculation_notes": [
-            "roic 使用营业利润近似 EBIT，投入资本使用 total_equity + total_liab - money_cap 的保守代理口径。",
-            "cash_conversion 使用经营现金流/净利润，accrual_ratio 使用 (净利润-经营现金流)/总资产，并以百分比输出。",
-            "asset_turnover 与 gross_profit_to_assets 使用最新总资产作为保守代理，而非平均总资产。",
-            "interest_coverage 优先使用 ebit / fin_exp，若净财务费用 <= 0 则回退到原始报表中的 int_exp/fin_exp_int_exp。",
-            "inventory_turnover 与 receivable_turnover 当前使用最新存货/应收账款作为保守代理，而非平均余额。",
-            "net_cash_position 当前使用 (money_cap - total_ncl) / total_assets 的保守代理；缺少 total_ncl 时回退为 total_liab - total_cur_liab。",
-            "piotroski_f_score 使用近两期可得财务记录计算 9 项信号，缺少对比期或关键字段时返回空。",
-            "altman_z_score 使用原始报表中的 undistr_porfit 与 ebit 字段；缺少任一关键分量时返回空。",
-            "beneish_m_score 使用原始报表中的折旧摊销与费用字段计算 8 指标模型，缺少同比基准期时返回空。",
+            "roic Use operating profit to approximate EBIT, invested capital employed total_equity + total_liab - money_cap conservative agency caliber.",
+            "cash_conversion Using operating cash flow/net profit, accrual_ratio is used (Net Profit - Operating Cash Flow)/Total assets and output as a percentage.",
+            "asset_turnover With gross_profit_to_assets uses the latest total assets as a conservative proxy, rather than the average total assets.",
+            "interest_coverage Prefer ebit/fin_exp if net finance expense <= 0 then fall back to int_exp/fin_exp_int_exp in the original report.",
+            "inventory_turnover with receivable_turnover currently uses the latest inventory/receivables as a conservative proxy, rather than the average balance.",
+            "net_cash_position currently in use (money_cap - total_ncl) / total_assets Conservative proxy for ; fallback to total_liab - total_cur_liab when total_ncl is missing.",
+            "piotroski_f_score Calculates 9 signals using the most recent two periods of available financial records, returning null if the comparison period or key field is missing.",
+            "altman_z_score Uses the undistr_porfit and ebit fields from the original report; returns null if either key component is missing.",
+            "beneish_m_score The 8-metric model is calculated using the depreciation, amortization and expense fields in the original report, and returns null when the year-over-year base period is missing.",
         ],
         "missing_factors": _find_missing(
             factors,
@@ -1420,35 +1420,35 @@ def get_quality_factor_bundle(symbol: str) -> Dict[str, Any]:
 
 
 def get_growth_cashflow_factor_bundle(symbol: str) -> Dict[str, Any]:
-    """获取股票的成长与现金流因子 bundle（growth_cashflow_core）。
+    """Get the stock s growth and cash flow factor bundle (growth_cashflow_core).
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀）
+        symbol: A Stock code (6 digits or including exchange suffix and suffix)
 
     Returns:
-        dict: 字段说明（合并 _base_snapshot 后还包括 symbol/name/industry/current_price/
+        dict: Field description (also included after merging _base_snapshot symbol/name/industry/current_price/
             report_period/data_source）——
-            bundle: 固定值 "growth_cashflow_core"
-            factors: 成长与现金流因子字典，子字段：
-                — revenue_yoy: 营收同比增速
-                — net_profit_yoy: 净利润同比增速
-                — oper_profit_yoy: 营业利润同比增速
-                — revenue_cagr_3y: 营收 3 年复合增速
-                — profit_cagr_3y: 净利润 3 年复合增速
-                — revenue_ttm: TTM 营收
-                — net_profit_ttm: TTM 净利润
-                — n_cashflow_act: 经营活动现金流
-                — fcf: 自由现金流（保守代理）
-                — fcf_yield: 自由现金流收益率（百分比）
-                — fcf_margin: 自由现金流利润率（百分比）
-                — ocf_yield: 经营现金流收益率（百分比）
-                — total_cur_assets: 流动资产
-                — total_cur_liab: 流动负债
-                — net_working_capital: 净营运资本
-                — working_capital_change: 净营运资本变动额
-            factor_warnings: 该 bundle 的告警字典
-            calculation_notes: list[str]，计算口径说明
-            missing_factors: list[str]，缺失的关键因子名列表
+            bundle: fixed value "growth_cashflow_core"
+            factors: Growth and cash flow factors dictionary, subfields:
+                — revenue_yoy: Year-on-year revenue growth
+                — net_profit_yoy: Net profit year-on-year growth rate
+                — oper_profit_yoy: Operating profit year-on-year growth rate
+                — revenue_cagr_3y: Revenue 3-year compound growth rate
+                — profit_cagr_3y: Net profit 3-year compound growth rate
+                — revenue_ttm: TTM Revenue
+                — net_profit_ttm: TTM net profit
+                — n_cashflow_act: cash flow from operating activities
+                — fcf: Free cash flow (conservative proxy)
+                — fcf_yield: Free cash flow yield (percent)
+                — fcf_margin: Free cash flow margin (percentage)
+                — ocf_yield: Operating cash flow yield (percentage)
+                — total_cur_assets: current assets
+                — total_cur_liab: current liabilities
+                — net_working_capital: net working capital
+                — working_capital_change: Changes in net working capital
+            factor_warnings: Alert dictionary for this bundle
+            calculation_notes: list[str], Calculation Caliber Instructions
+            missing_factors: list[str], List of missing key factor names
     """
     context = _build_context(symbol)
     latest_financial = context["latest_financial"]
@@ -1524,10 +1524,10 @@ def get_growth_cashflow_factor_bundle(symbol: str) -> Dict[str, Any]:
         "factors": factors,
         "factor_warnings": factor_warnings,
         "calculation_notes": [
-            "同比增速按最新报告期对上年同季报告期计算。",
-            "fcf 暂按 n_cashflow_act + n_cashflow_inv_act 作为保守代理，fcf_yield 基于市值字段 total_mv 的亿元口径换算。",
-            "fcf_margin 使用自由现金流/营收基础口径，working_capital_change 使用最近两期净营运资本差额。",
-            "CAGR 使用同季三年前报告期做复合增速计算，缺少对应历史期时返回空。",
+            "The year-on-year growth rate is calculated based on the latest reporting period to the same quarter reporting period of the previous year.",
+            "fcf Press temporarily n_cashflow_act + n_cashflow_inv_act As a conservative proxy, fcf_yield is based on the billion-yuan conversion of the market value field total_mv.",
+            "fcf_margin Using the free cash flow/revenue basis, working_capital_change uses the net working capital difference between the last two periods.",
+            "CAGR Use the reporting period three years ago in the same quarter to calculate the compound growth rate. If there is no corresponding historical period, it will return empty.",
         ],
         "missing_factors": _find_missing(
             factors,
@@ -1550,29 +1550,29 @@ def get_growth_cashflow_factor_bundle(symbol: str) -> Dict[str, Any]:
 
 
 def get_fundamental_factor_snapshot(symbol: str, allow_remote_fetch: bool = True) -> Dict[str, Any]:
-    """聚合价值/质量/成长三个 bundle，返回基本面因子综合快照。
+    """Aggregate the three bundles of value/quality/growth to return a comprehensive snapshot of fundamental factors.
 
     Args:
-        symbol: A 股股票代码（6 位数字或含交易所前后缀）
-        allow_remote_fetch: 透传给价值 bundle 的股东回报指标；
-            交互式接口（因子预览/财务明细页）应传 False，禁止现场拉取 Tushare
+        symbol: A Stock code (6 digits or including exchange suffix and suffix)
+        allow_remote_fetch: Shareholder return metrics passed through to value bundles;
+            The interactive interface (factor preview/financial details page) should pass False to prohibit on-site pulling. Tushare
 
     Returns:
-        dict: 字段说明——
-            symbol: 标准化后的股票代码
-            name: 股票名称
-            industry: 所属行业
-            current_price: 当前价格
-            report_period: 报告期（优先 growth，其次 quality，最后 value）
-            data_source: 数据源（优先级同 report_period）
-            factors: dict，三个 bundle 因子的合并字典
-            factor_diagnostics: dict，三个 bundle 因子诊断信息的合并字典
-            factor_warnings: dict，三个 bundle 告警的合并字典
-            missing_factors: list[str]，三个 bundle 缺失因子的去重升序列表
-            bundles: 各 bundle 完整结果
-                — value_core: dict，价值 bundle 完整结果
-                — quality_core: dict，质量 bundle 完整结果
-                — growth_cashflow_core: dict，成长与现金流 bundle 完整结果
+        dict: Field description——
+            symbol: Standardized stock code
+            name: Stock name
+            industry: Industry
+            current_price: current price
+            report_period: Reporting period (priority is growth, followed by quality, and finally value)
+            data_source: Data source (same priority as report_period)
+            factors: dict, Merged dictionary of three bundle factors
+            factor_diagnostics: dict, A merged dictionary of diagnostic information for three bundle factors
+            factor_warnings: dict, Merged dictionary of three bundle alerts
+            missing_factors: list[str], Deduplicated ascending list of missing factors for three bundles
+            bundles: Complete results for each bundle
+                — value_core: dict, value bundle full result
+                — quality_core: dict, Quality bundle complete results
+                — growth_cashflow_core: dict, Growth and cash flow bundle full results
     """
     value_bundle = get_value_factor_bundle(symbol, allow_remote_fetch=allow_remote_fetch)
     quality_bundle = get_quality_factor_bundle(symbol)

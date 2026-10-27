@@ -1,5 +1,5 @@
 """
-用户服务 - 基于数据库的用户管理
+User Services - Database-based user management
 """
 
 import atexit
@@ -15,11 +15,11 @@ from bson import ObjectId
 from app.core.config import settings
 from app.models.user import User, UserCreate, UserUpdate, UserResponse
 
-# 尝试导入日志管理器
+# Try importing log manager
 try:
     from tradingagents.utils.logging_manager import get_logger
 except ImportError:
-    # 如果导入失败，使用标准日志
+    # If the import fails, use standard logging
     import logging
     def get_logger(name: str) -> logging.Logger:
         return logging.getLogger(name)
@@ -27,8 +27,8 @@ except ImportError:
 logger = get_logger('user_service')
 
 
-# 旧版 SHA-256 哈希前缀，用于识别需要升级的存量密码
-# SHA-256 输出为 64 位十六进制字符串；bcrypt 哈希以 $2 开头
+# Legacy SHA-256 hash prefix used to identify existing passwords that need to be upgraded
+# SHA-256 Output is a 64-bit hexadecimal string; the bcrypt hash begins with $2 Beginning
 _LEGACY_SHA256_PREFIX = "sha256:"
 _BCRYPT_PREFIX = "$2"
 
@@ -63,14 +63,14 @@ class UserService:
                 pass
 
     def _close_at_exit(self):
-        """解释器正常退出时关闭连接，不写日志。"""
+        """When the interpreter exits normally, the connection is closed and no log is written."""
         try:
             self.close(log=False)
         except Exception:
             pass
 
     def __del__(self):
-        """析构函数，确保连接被关闭且不在解释器关闭阶段写日志。"""
+        """Destructor, ensuring that the connection is closed and no logs are written during the interpreter shutdown phase."""
         try:
             self.close(log=False)
         except Exception:
@@ -78,34 +78,34 @@ class UserService:
     
     @staticmethod
     def hash_password(password: str) -> str:
-        """密码哈希（使用 bcrypt + 自动加盐）
+        """Password hash (using bcrypt + Automatically add salt)
 
-        返回值以 `$2` 开头，可通过 `bcrypt.checkpw` 验证。
-        兼容旧版 SHA-256 哈希（验证时自动识别并升级）。
+        The return value is `$2` At the beginning, you can pass `bcrypt.checkpw` verify.
+        Compatible with legacy SHA-256 hashes (automatically recognized and upgraded upon verification).
         """
-        # bcrypt 自带盐，相同密码每次哈希结果不同，防止彩虹表攻击
-        # rounds=12 是 OWASP 2023 推荐值（约 250ms / hash）
+        # bcrypt With built-in salt, the hash result of the same password is different every time, preventing rainbow table attacks.
+        # rounds=12 Is the OWASP 2023 recommended value (about 250ms/hash)
         rounds = getattr(settings, "BCRYPT_ROUNDS", 12)
         salt = bcrypt.gensalt(rounds=rounds)
         return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
     @staticmethod
     def _hash_legacy_sha256(password: str) -> str:
-        """旧版 SHA-256 哈希（无盐，仅用于验证存量密码）"""
+        """Legacy SHA-256 hash (no salt, only used to verify existing passwords)"""
         return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
     @staticmethod
     def _is_bcrypt_hash(hashed: str) -> bool:
-        """判断是否为 bcrypt 哈希（以 $2 开头）"""
+        """Determine whether it is a bcrypt hash (with $2 beginning)"""
         return bool(hashed) and hashed.startswith(_BCRYPT_PREFIX)
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
-        """验证密码
+        """Verify password
 
-        自动识别 bcrypt 哈希和旧版 SHA-256 哈希：
-        - bcrypt 哈希：使用 bcrypt.checkpw 验证
-        - 旧版 SHA-256 哈希：用 SHA-256 比对（验证成功后调用方应负责升级）
+        Automatically recognizes bcrypt hashes and legacy SHA-256 hashes:
+        - bcrypt Hash: Verify using bcrypt.checkpw
+        - Legacy SHA-256 hash: Use SHA-256 comparison (caller is responsible for upgrading after successful verification)
         """
         if not hashed_password:
             return False
@@ -117,25 +117,25 @@ class UserService:
                 )
             except (ValueError, TypeError):
                 return False
-        # 旧版 SHA-256（无盐）兼容路径
+        # Legacy SHA-256 (unsalted) compatible paths
         return UserService._hash_legacy_sha256(plain_password) == hashed_password
     
     async def create_user(self, user_data: UserCreate) -> Optional[User]:
         """创建用户"""
         try:
-            # 检查用户名是否已存在
+            # Check if username already exists
             existing_user = self.users_collection.find_one({"username": user_data.username})
             if existing_user:
                 logger.warning(f"用户名已存在: {user_data.username}")
                 return None
             
-            # 检查邮箱是否已存在
+            # Check if the mailbox already exists
             existing_email = self.users_collection.find_one({"email": user_data.email})
             if existing_email:
                 logger.warning(f"邮箱已存在: {user_data.email}")
                 return None
             
-            # 创建用户文档
+            # Create user documentation
             user_doc = {
                 "username": user_data.username,
                 "email": user_data.email,
@@ -147,18 +147,18 @@ class UserService:
                 "updated_at": datetime.utcnow(),
                 "last_login": None,
                 "preferences": {
-                    # 分析偏好
+                    # Analyze preferences
                     "default_market": "A股",
-                    "default_depth": "3",  # 1-5级，3级为标准分析（推荐）
+                    "default_depth": "3",  # 1-5 level, level 3 is standard analysis (recommended)
                     "default_analysts": ["市场分析师", "基本面分析师"],
                     "auto_refresh": True,
                     "refresh_interval": 30,
-                    # 外观设置
+                    # Appearance settings
                     "ui_theme": "light",
                     "sidebar_width": 240,
-                    # 语言和地区
+                    # language and region
                     "language": "zh-CN",
-                    # 通知设置
+                    # Notification settings
                     "notifications_enabled": True,
                     "email_notifications": False,
                     "desktop_notifications": True,
@@ -186,28 +186,28 @@ class UserService:
     async def authenticate_user(self, username: str, password: str) -> Optional[User]:
         """用户认证"""
         try:
-            logger.info(f"🔍 [authenticate_user] 开始认证用户: {username}")
+            logger.info(f"🔍 [authenticate_user] Start authenticating users: {username}")
 
-            # 查找用户
+            # Find users
             user_doc = self.users_collection.find_one({"username": username})
-            logger.info(f"🔍 [authenticate_user] 数据库查询结果: {'找到用户' if user_doc else '用户不存在'}")
+            logger.info(f"🔍 [authenticate_user] Database query results: {'Find user' if user_doc else 'User does not exist'}")
 
             if not user_doc:
-                logger.warning(f"❌ [authenticate_user] 用户不存在: {username}")
+                logger.warning(f"❌ [authenticate_user] User does not exist: {username}")
                 return None
 
-            logger.info(f"🔍 [authenticate_user] 用户信息: username={user_doc.get('username')}, email={user_doc.get('email')}, is_active={user_doc.get('is_active')}")
+            logger.info(f"🔍 [authenticate_user] User information: username={user_doc.get('username')}, email={user_doc.get('email')}, is_active={user_doc.get('is_active')}")
 
-            # 验证密码（自动识别 bcrypt / 旧版 SHA-256）
+            # Verify password (automatically recognizes bcrypt / legacy SHA-256)
             stored_hash = user_doc.get("hashed_password", "")
-            # ⚠️ 安全：禁止在日志中输出任何密码哈希内容（即使是前缀）
-            logger.info(f"🔍 [authenticate_user] 存储密码哈希类型: {'bcrypt' if self._is_bcrypt_hash(stored_hash) else 'legacy_sha256' if stored_hash else 'empty'}")
+            # ⚠️ Security: Do not log any password hashes (even prefixes)
+            logger.info(f"🔍 [authenticate_user] Store password hash type: {'bcrypt' if self._is_bcrypt_hash(stored_hash) else 'legacy_sha256' if stored_hash else 'empty'}")
 
             if not self.verify_password(password, stored_hash):
-                logger.warning(f"❌ [authenticate_user] 密码错误: {username}")
+                logger.warning(f"❌ [authenticate_user] Wrong password: {username}")
                 return None
 
-            # 🔐 旧版 SHA-256 哈希自动升级到 bcrypt（透明升级，用户无感知）
+            # 🔐 Older SHA-256 hashes are automatically upgraded to bcrypt (transparent upgrade, no user awareness)
             if not self._is_bcrypt_hash(stored_hash):
                 try:
                     new_bcrypt_hash = self.hash_password(password)
@@ -219,23 +219,23 @@ class UserService:
                             "password_hash_algo": "bcrypt",
                         }}
                     )
-                    logger.info(f"🔐 [authenticate_user] 旧版 SHA-256 密码已自动升级到 bcrypt: {username}")
+                    logger.info(f"🔐 [authenticate_user] Legacy SHA-256 ciphers have been automatically upgraded to bcrypt: {username}")
                 except Exception as upgrade_err:
-                    # 升级失败不影响登录，但需记录告警
-                    logger.warning(f"⚠️ [authenticate_user] 密码哈希升级失败（登录继续）: {username} error={upgrade_err}")
+                    # Failure to upgrade does not affect login, but alarms need to be logged.
+                    logger.warning(f"⚠️ [authenticate_user] Password hash upgrade failed (login continues): {username} error={upgrade_err}")
 
-            # 检查用户是否激活
+            # Check if user is activated
             if not user_doc.get("is_active", True):
-                logger.warning(f"❌ [authenticate_user] 用户已禁用: {username}")
+                logger.warning(f"❌ [authenticate_user] User disabled: {username}")
                 return None
 
-            # 更新最后登录时间
+            # Update last login time
             self.users_collection.update_one(
                 {"_id": user_doc["_id"]},
                 {"$set": {"last_login": datetime.utcnow()}}
             )
 
-            logger.info(f"✅ [authenticate_user] 用户认证成功: {username}")
+            logger.info(f"✅ [authenticate_user] User authentication successful: {username}")
             return User(**user_doc)
 
         except Exception as e:
@@ -272,9 +272,9 @@ class UserService:
         try:
             update_data = {"updated_at": datetime.utcnow()}
             
-            # 只更新提供的字段
+            # Only update provided fields
             if user_data.email:
-                # 检查邮箱是否已被其他用户使用
+                # Check if the mailbox is already used by another user
                 existing_email = self.users_collection.find_one({
                     "email": user_data.email,
                     "username": {"$ne": username}
@@ -312,13 +312,13 @@ class UserService:
     async def change_password(self, username: str, old_password: str, new_password: str) -> bool:
         """修改密码"""
         try:
-            # 验证旧密码
+            # Verify old password
             user = await self.authenticate_user(username, old_password)
             if not user:
                 logger.warning(f"旧密码验证失败: {username}")
                 return False
             
-            # 更新密码
+            # Update password
             new_hashed_password = self.hash_password(new_password)
             result = self.users_collection.update_one(
                 {"username": username},
@@ -369,41 +369,41 @@ class UserService:
     async def create_admin_user(
         self,
         username: str = "admin",
-        password: Optional[str] = None,  # 🔥 改为可选，必须通过环境变量或参数指定
+        password: Optional[str] = None,  # 🔥 Changed to optional and must be specified via environment variables or parameters
         email: str = "admin@tradingagents.cn"
     ) -> Optional[User]:
-        """创建管理员用户
+        """Create admin user
         
-        ⚠️ 安全警告：不再使用硬编码默认密码。
-        必须通过以下方式之一指定密码：
-        1. 通过参数 password 指定
-        2. 通过环境变量 ADMIN_DEFAULT_PASSWORD 指定
+        ⚠️ Security warning: No more hard-coded default passwords.
+        The password must be specified in one of the following ways:
+        1. Specified by parameter password
+        2. Specified through the environment variable ADMIN_DEFAULT_PASSWORD
         
-        如果两者都未指定，将抛出 ValueError。
+        If neither is specified, ValueError will be thrown.
         """
-        # 🔥 从环境变量或参数获取密码，不再使用硬编码默认值
+        # 🔥 Get passwords from environment variables or parameters, no longer using hardcoded defaults
         if password is None:
             import os
             password = os.getenv("ADMIN_DEFAULT_PASSWORD")
         
         if password is None:
             raise ValueError(
-                "创建管理员用户必须指定密码。请设置环境变量 ADMIN_DEFAULT_PASSWORD "
-                "或在调用 create_admin_user() 时传入 password 参数。"
+                "Creating an administrator user must specify a password. Please set environment variables ADMIN_DEFAULT_PASSWORD "
+                "or calling create_admin_user() Pass in the password parameter."
             )
         
-        # 检查密码强度（至少 8 位）
+        # Check password strength (at least 8 characters)
         if len(password) < 8:
-            logger.warning(f"⚠️ 管理员密码长度不足（{len(password)} 位），建议至少 8 位")
+            logger.warning(f"⚠️ The administrator password is not long enough ({len(password)} bits), at least 8 bits recommended")
         
         try:
-            # 检查是否已存在管理员
+            # Check if an administrator already exists
             existing_admin = self.users_collection.find_one({"username": username})
             if existing_admin:
                 logger.info(f"管理员用户已存在: {username}")
                 return User(**existing_admin)
             
-            # 创建管理员用户文档
+            # Create administrator user document
             admin_doc = {
                 "username": username,
                 "email": email,
@@ -422,7 +422,7 @@ class UserService:
                     "notifications_enabled": True,
                     "email_notifications": False
                 },
-                "daily_quota": 10000,  # 管理员更高配额
+                "daily_quota": 10000,  # Higher quota for administrators
                 "concurrent_limit": 10,
                 "total_analyses": 0,
                 "successful_analyses": 0,
@@ -434,9 +434,9 @@ class UserService:
             admin_doc["_id"] = result.inserted_id
 
             logger.info(f"✅ 管理员用户创建成功: {username}")
-            # ⚠️ 安全：禁止在日志中输出明文密码；密码已通过环境变量传入，请用户自行记录
-            logger.info("   🔐 密码已使用 bcrypt 加密存储，请妥善保管您设置的管理员密码")
-            logger.info("   ⚠️  建议首次登录后立即修改密码！")
+            # ⚠️ Security: It is forbidden to output clear text passwords in the log; the password has been passed in through the environment variable, please record it yourself.
+            logger.info("   🔐 The password has been encrypted and stored using bcrypt. Please keep the administrator password you set properly.")
+            logger.info("   ⚠️  It is recommended to change your password immediately after logging in for the first time!")
 
             return User(**admin_doc)
             
@@ -523,32 +523,32 @@ class UserService:
             return False
 
     # =========================================================================
-    # 京东云 Basic Auth 用户 — 自动建档 + 老用户返回
+    # JD Cloud Basic Auth User — Automatically create files + Old users return
     # =========================================================================
 
     async def get_or_create_jdyun_user(self, jdyun_username: str, is_admin: bool = True) -> Optional[User]:
         """
-        京东云合作版：获取或创建京东云用户记录。
+        JD Cloud Cooperation Edition: Obtain or create JD Cloud user records.
 
-        背景：
-          - 京东云网关代理的每个请求都会带 Authorization: Basic base64(username:token)
-          - username 是京东云平台分配的用户唯一标识（如 jcloud-ugidvcp / jdcloud-pid-test）
-          - token 是京东云平台为该用户生成的访问令牌（不是登录密码，与用户密码解耦）
-          - 我们需要在 users 集合中维护一条对应记录，以便任务/报告/权限等业务功能正常工作
-            （因为 30+ 处代码需要把 user["id"] 转成 MongoDB ObjectId）
+        Background:
+          - Each request of JD Cloud Gateway proxy will bring Authorization: Basic base64(username:token)
+          - username It is the unique user identification assigned by JD Cloud platform (such as jcloud-ugidvcp / jdcloud-pid-test)
+          - token It is the access token generated by the JD Cloud platform for the user (not the login password, which is decoupled from the user password)
+          - We need to maintain a corresponding record in the users collection so that business functions such as tasks/reports/permissions can work properly
+             (because 30+ The code needs to be user["id"] Convert to MongoDB ObjectId)
 
-        逻辑：
-          1. 按 username 在 users 集合查找
-          2. 找到（老用户）：更新 last_login → 返回该用户（真实 ObjectId）
-          3. 未找到（新用户）：insert 一条新记录（is_admin=true，密码哈希占位，provider=jdyun）
-                      → 返回刚创建的用户（真实 ObjectId）
+        Logic:
+          1. Find in the users collection by username
+          2. Found (old users): Update last_login → Return the user (real ObjectId)
+          3. Not found (new user): insert a new record (is_admin=true, password hash placeholder,provider=jdyun) 
+                      → Returns the user just created (real ObjectId)
 
         Args:
-            jdyun_username: 京东云平台 Basic Auth 解码后的 username
-            is_admin: 京东云用户默认视为管理员（默认 True）
+            jdyun_username: JD Cloud Platform Basic Auth decoded username
+            is_admin: JD Cloud users are regarded as administrators by default (default True)
 
         Returns:
-            User 模型实例（id 为合法 MongoDB ObjectId），失败返回 None
+            User Model instance (id is a legal MongoDB ObjectId), returned on failure None
         """
         if not jdyun_username or not jdyun_username.strip():
             return None
@@ -556,22 +556,22 @@ class UserService:
         try:
             existing = self.users_collection.find_one({"username": username})
             if existing:
-                # ===== 老用户：刷新 last_login =====
+                # ===== Old users: Refresh last_login =====
                 self.users_collection.update_one(
                     {"_id": existing["_id"]},
                     {"$set": {"last_login": datetime.utcnow(), "updated_at": datetime.utcnow()}},
                 )
                 existing["last_login"] = datetime.utcnow()
-                logger.info(f"✅ [京东云] 老用户登录: {username} (id={existing['_id']})")
+                logger.info(f"✅ [JD Cloud] Old user login: {username} (id={existing['_id']})")
                 return User(**existing)
 
-            # ===== 新用户：自动建档 =====
-            # 密码哈希占位：真实访问令牌由京东云网关保管验证，我们不需要存储
-            # 使用 bcrypt 哈希一个随机串作为占位（防暴力，也保证 User 模型 hashed_password 字段非空）
-            placeholder_password = f"__jdyun__{ObjectId()}__"  # 随机且每次不同
+            # ===== New users: automatic profile creation =====
+            # Password hash placeholder: The real access token is kept and verified by JD Cloud Gateway, we do not need to store it
+            # Use bcrypt to hash a random string as a placeholder (anti-violence, also ensure that the User model hashed_password field is not empty)
+            placeholder_password = f"__jdyun__{ObjectId()}__"  # Random and different every time
             hashed_placeholder = self.hash_password(placeholder_password)
 
-            # 邮箱采用 username@jdyun.local（保证 email 格式合法且唯一）
+            # Email adopts username@jdyun.local (Ensure that the email format is legal and unique)
             safe_email = f"{username.replace('@', '_at_')}@jdyun.local"
 
             new_user_doc = {
@@ -580,9 +580,9 @@ class UserService:
                 "hashed_password": hashed_placeholder,
                 "password_hash_algo": "bcrypt",
                 "is_active": True,
-                "is_verified": True,          # 京东云平台认证过的，视为已验证
+                "is_verified": True,          # Those certified by JD Cloud Platform are deemed to have been verified.
                 "is_admin": is_admin,
-                "provider": "jdyun",          # 来源标识：京东云合作版
+                "provider": "jdyun",          # Source identification: JD Cloud Cooperation Edition
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow(),
                 "last_login": datetime.utcnow(),
@@ -613,28 +613,28 @@ class UserService:
             result = self.users_collection.insert_one(new_user_doc)
             new_user_doc["_id"] = result.inserted_id
             logger.info(
-                f"✅ [京东云] 新用户自动建档成功: {username} "
+                f"✅ [JD Cloud] New user automatically created profile successfully: {username} "
                 f"(id={result.inserted_id}, admin={is_admin})"
             )
             return User(**new_user_doc)
 
         except Exception as e:
-            logger.error(f"❌ [京东云] 用户建档失败 username={username}: {e}", exc_info=True)
+            logger.error(f"❌ [JD Cloud] User profile failed username={username}: {e}", exc_info=True)
             return None
 
     def is_existing_jdyun_user(self, jdyun_username: str) -> bool:
         """
-        检查是否已建档的京东云用户（老用户）。
+        Check whether you are a registered JD Cloud user (old user).
 
-        用于 Basic Auth 分级校验：
-          - 已建档（老用户）→ 只校验 username，不校验 token（token 可变）
-          - 未建档（新用户）→ 必须严格校验 username + token（防伪造）
+        For Basic Auth hierarchical verification:
+          - Already created (old user)→ Only verify username, not token (token is variable)
+          - Not created (new user)→ Must be strictly verified username + token (Anti-counterfeiting)
 
         Args:
-            jdyun_username: 京东云平台 Basic Auth 解码后的 username
+            jdyun_username: JD Cloud Platform Basic Auth decoded username
 
         Returns:
-            已建档返回 True，否则 False
+            Returns True if archived, otherwise False
         """
         if not jdyun_username or not jdyun_username.strip():
             return False
@@ -645,16 +645,16 @@ class UserService:
             })
             return doc is not None
         except Exception as e:
-            logger.error(f"❌ [京东云] 查询用户失败 username={jdyun_username}: {e}")
+            logger.error(f"❌ [JD Cloud] Failed to query user username={jdyun_username}: {e}")
             return False
 
 
 async def bootstrap_first_admin() -> bool:
-    """首次启动引导：users 集合为空时，依据 ADMIN_DEFAULT_PASSWORD 创建初始管理员。
+    """First boot boot: When the users collection is empty, create an initial administrator based on ADMIN_DEFAULT_PASSWORD.
 
-    社区版没有开放注册，首个登录账号由该引导创建（密码来自 .env 的
-    ADMIN_DEFAULT_PASSWORD，与 .env.example 注释对应）。仅在空库时触发，
-    不会覆盖或改动任何既有账号。
+    The community version is not open for registration. The first login account is created by this guide (the password comes from .env
+    ADMIN_DEFAULT_PASSWORD, Corresponds to the .env.example annotation). Only triggered when the library is empty,
+    No existing accounts will be overwritten or modified.
     """
     try:
         if user_service.users_collection.count_documents({}) > 0:
@@ -664,14 +664,14 @@ async def bootstrap_first_admin() -> bool:
         password = os.getenv("ADMIN_DEFAULT_PASSWORD")
         if not password:
             logger.warning(
-                "⚠️ 用户集合为空且未设置 ADMIN_DEFAULT_PASSWORD，跳过初始管理员创建。"
-                "请在 .env 中设置 ADMIN_DEFAULT_PASSWORD（至少 8 位）后重启后端完成初始化。"
+                "⚠️ The user collection is empty and ADMIN_DEFAULT_PASSWORD is not set, skipping initial administrator creation."
+                "Please set ADMIN_DEFAULT_PASSWORD (at least 8 bits) in .env and then restart the backend to complete the initialization."
             )
             return False
 
         admin = await user_service.create_admin_user(password=password)
         if admin:
-            logger.info("✅ 已创建初始管理员账号: admin，请首次登录后立即修改密码")
+            logger.info("✅ Initial administrator account has been created: admin, Please change your password immediately after logging in for the first time")
             return True
         return False
     except Exception as e:
@@ -679,5 +679,5 @@ async def bootstrap_first_admin() -> bool:
         return False
 
 
-# 全局用户服务实例
+# Global user service instance
 user_service = UserService()

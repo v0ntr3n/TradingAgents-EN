@@ -1,8 +1,8 @@
 """
-数据目录配置工具
+Data directory configuration tool
 Data Directory Configuration Utilities
 
-为项目中的其他模块提供统一的数据目录访问接口
+Provide a unified data directory access interface for other modules in the project
 """
 
 import os
@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from typing import Optional, Union
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
@@ -18,12 +18,12 @@ if str(project_root) not in sys.path:
 try:
     from scripts.unified_data_manager import get_data_manager, get_data_path
 except ImportError:
-    # 如果无法导入，提供基本的实现
+    # If it cannot be imported, provide a basic implementation
     def get_data_path(key: str, create: bool = True) -> Path:
-        """基本的数据路径获取函数"""
+        """Basic data path acquisition function"""
         project_root = Path(__file__).parent.parent
         
-        # 基本路径映射
+        # Basic path mapping
         path_mapping = {
             'data_root': 'data',
             'cache': 'data/cache',
@@ -43,17 +43,17 @@ except ImportError:
         return path
 
 
-# 便捷函数
+# Convenience function
 def get_cache_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
     """
-    获取缓存目录
+    Get cache directory
     
     Args:
-        subdir: 子目录名称
-        create: 是否自动创建目录
+        subdir: Subdirectory name
+        create: Whether to automatically create directories
         
     Returns:
-        Path: 缓存目录路径
+        Path: Cache directory path
     """
     if subdir:
         cache_path = get_data_path('cache', create=create) / subdir
@@ -65,14 +65,14 @@ def get_cache_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
 
 def get_results_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
     """
-    获取分析结果目录
+    Get analysis results directory
     
     Args:
-        subdir: 子目录名称
-        create: 是否自动创建目录
+        subdir: Subdirectory name
+        create: Whether to automatically create directories
         
     Returns:
-        Path: 结果目录路径
+        Path: Result directory path
     """
     if subdir:
         results_path = get_data_path('analysis_results', create=create) / subdir
@@ -84,14 +84,14 @@ def get_results_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
 
 def get_sessions_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
     """
-    获取会话数据目录
+    Get session data directory
     
     Args:
-        subdir: 子目录名称
-        create: 是否自动创建目录
+        subdir: Subdirectory name
+        create: Whether to automatically create directories
         
     Returns:
-        Path: 会话目录路径
+        Path: session directory path
     """
     if subdir:
         sessions_path = get_data_path('sessions', create=create) / subdir
@@ -103,14 +103,14 @@ def get_sessions_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
 
 def get_logs_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
     """
-    获取日志目录
+    Get log directory
     
     Args:
-        subdir: 子目录名称
-        create: 是否自动创建目录
+        subdir: Subdirectory name
+        create: Whether to automatically create directories
         
     Returns:
-        Path: 日志目录路径
+        Path: Log directory path
     """
     if subdir:
         logs_path = get_data_path('logs', create=create) / subdir
@@ -122,14 +122,14 @@ def get_logs_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
 
 def get_config_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
     """
-    获取配置目录
+    Get configuration directory
     
     Args:
-        subdir: 子目录名称
-        create: 是否自动创建目录
+        subdir: Subdirectory name
+        create: Whether to automatically create directories
         
     Returns:
-        Path: 配置目录路径
+        Path: Configuration directory path
     """
     if subdir:
         config_path = get_data_path('config', create=create) / subdir
@@ -141,14 +141,14 @@ def get_config_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
 
 def get_temp_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
     """
-    获取临时文件目录
+    Get temporary file directory
     
     Args:
-        subdir: 子目录名称
-        create: 是否自动创建目录
+        subdir: Subdirectory name
+        create: Whether to automatically create directories
         
     Returns:
-        Path: 临时目录路径
+        Path: Temporary directory path
     """
     if subdir:
         temp_path = get_data_path('temp', create=create) / subdir
@@ -158,64 +158,64 @@ def get_temp_dir(subdir: Optional[str] = None, create: bool = True) -> Path:
     return get_data_path('temp', create=create)
 
 
-# 兼容性函数 - 为现有代码提供向后兼容
+# Compatibility functions - provide backward compatibility for existing code
 def get_analysis_results_dir() -> Path:
-    """获取分析结果目录 (兼容性函数)"""
+    """Get analysis results directory (Compatibility function)"""
     return get_results_dir()
 
 
 def get_stock_data_cache_dir() -> Path:
-    """获取股票数据缓存目录"""
+    """Get stock data cache directory"""
     return get_cache_dir('stock_data')
 
 
 def get_news_data_cache_dir() -> Path:
-    """获取新闻数据缓存目录"""
+    """Get the news data cache directory"""
     return get_cache_dir('news_data')
 
 
 def get_fundamentals_cache_dir() -> Path:
-    """获取基本面数据缓存目录"""
+    """Get the fundamental data cache directory"""
     return get_cache_dir('fundamentals')
 
 
 def get_metadata_cache_dir() -> Path:
-    """获取元数据缓存目录"""
+    """Get metadata cache directory"""
     return get_cache_dir('metadata')
 
 
 def get_web_sessions_dir() -> Path:
-    """获取Web会话目录"""
+    """Get web session directory"""
     return get_sessions_dir('web_sessions')
 
 
 def get_cli_sessions_dir() -> Path:
-    """获取CLI会话目录"""
+    """Get CLI session directory"""
     return get_sessions_dir('cli_sessions')
 
 
 def get_application_logs_dir() -> Path:
-    """获取应用程序日志目录"""
+    """Get application log directory"""
     return get_logs_dir('application')
 
 
 def get_operations_logs_dir() -> Path:
-    """获取操作日志目录"""
+    """Get the operation log directory"""
     return get_logs_dir('operations')
 
 
 def get_user_activities_logs_dir() -> Path:
-    """获取用户活动日志目录"""
+    """Get user activity log directory"""
     return get_logs_dir('user_activities')
 
 
-# 环境变量检查函数
+# Environment variable check function
 def check_data_directory_config() -> dict:
     """
-    检查数据目录配置状态
+    Check data directory configuration status
     
     Returns:
-        dict: 配置状态信息
+        dict: Configuration status information
     """
     env_vars = [
         'TRADINGAGENTS_DATA_DIR',
@@ -240,8 +240,8 @@ def check_data_directory_config() -> dict:
 
 
 def print_data_directory_status():
-    """打印数据目录配置状态"""
-    print("📁 数据目录配置状态:")
+    """Print data directory configuration status"""
+    print("📁 Data directory configuration status:")
     print("=" * 50)
     
     status = check_data_directory_config()
@@ -252,10 +252,10 @@ def print_data_directory_status():
         
         print(f"{status_icon} {var}")
         if info['set']:
-            print(f"   值: {info['value']}")
-            print(f"   {exists_icon} 目录存在: {'是' if info['exists'] else '否'}")
+            print(f"   value: {info['value']}")
+            print(f"   {exists_icon} Directory exists: {'Yes' if info['exists'] else 'No'}")
         else:
-            print("   未设置")
+            print("   not set")
         print()
 
 

@@ -1,20 +1,20 @@
 <template>
   <div class="floating-chat-container">
-    <!-- 浮窗按钮 -->
+    <!-- floating button -->
     <div
       v-if="!visible"
       class="chat-fab"
       @click="openChat"
-      title="使用问答助手"
+      title="Use the Q&A Assistant"
     >
       <el-icon class="fab-icon"><ChatDotRound /></el-icon>
-      <span class="fab-label">使用问答</span>
+      <span class="fab-label">Use Q&A</span>
     </div>
 
-    <!-- 聊天抽屉 -->
+    <!-- chat drawer -->
     <el-drawer
       v-model="visible"
-      title="使用问答助手"
+      title="Use the Q&A Assistant"
       direction="rtl"
       size="440px"
       :with-header="true"
@@ -23,13 +23,13 @@
       :before-close="handleClose"
     >
       <div class="chat-body">
-        <!-- 顶部说明 -->
+        <!-- top description -->
         <div class="chat-intro">
           <div class="chat-intro-text">
             <el-icon color="var(--el-color-primary)"><InfoFilled /></el-icon>
-            <span>问我任何关于系统使用的问题，我能查到你的真实状态再回答</span>
+            <span>Ask me any questions about using the system, and I can check your true status before answering.</span>
           </div>
-          <el-tooltip content="重建用户手册向量索引（语义检索不可用时手动补救，无需重启后端）" placement="top">
+          <el-tooltip content="Rebuild user manual vector index (manual remedy when semantic retrieval is unavailable, no need to restart the backend)" placement="top">
             <el-button
               text
               size="small"
@@ -38,12 +38,12 @@
               @click="rebuildManualIndex"
             >
               <el-icon><RefreshRight /></el-icon>
-              重建手册索引
+              Rebuild manual index
             </el-button>
           </el-tooltip>
         </div>
 
-        <!-- 消息列表 -->
+        <!-- Message list -->
         <div class="messages" ref="messagesRef">
           <div
             v-for="(msg, i) in messages"
@@ -67,7 +67,7 @@
             </div>
           </div>
 
-          <!-- 工具调用进度提示 -->
+          <!-- Tool call progress prompt -->
           <div v-if="toolInProgress" class="message assistant">
             <div class="bubble tool-progress">
               <el-icon class="loading-icon"><Loading /></el-icon>
@@ -75,18 +75,18 @@
             </div>
           </div>
 
-          <!-- 思考中占位 -->
+          <!-- Taking up space in thinking -->
           <div v-if="loading && !streamingMessage && !toolInProgress" class="message assistant">
             <div class="bubble">
               <el-icon class="loading-icon"><Loading /></el-icon>
-              <span>正在思考...</span>
+              <span>thinking...</span>
             </div>
           </div>
         </div>
 
-        <!-- 快捷问题 -->
+        <!-- quick questions -->
         <div v-if="messages.length === 0 && !loading" class="quick-questions">
-          <div class="quick-title">💡 你可以问我:</div>
+          <div class="quick-title">💡 you can ask me:</div>
           <div class="quick-buttons">
             <el-button
               v-for="q in quickQuestions"
@@ -100,14 +100,14 @@
           </div>
         </div>
 
-        <!-- 输入区 -->
+        <!-- input area -->
         <div class="input-area">
           <el-input
             v-model="inputText"
             type="textarea"
             :rows="2"
             resize="none"
-            placeholder="问任何关于系统使用的问题，Ctrl+Enter 发送..."
+            placeholder="Ask any questions about using the system,Ctrl+Enter send..."
             :disabled="loading"
             @keydown.ctrl.enter="sendMessage()"
             @keydown.meta.enter="sendMessage()"
@@ -120,7 +120,7 @@
               :disabled="loading || messages.length === 0"
             >
               <el-icon><Delete /></el-icon>
-              清空
+              Clear
             </el-button>
             <el-button
               type="primary"
@@ -128,7 +128,7 @@
               :disabled="!inputText.trim()"
               @click="sendMessage()"
             >
-              {{ loading ? '发送中' : '发送' }}
+              {{ loading ? 'Sending' : 'send' }}
             </el-button>
           </div>
         </div>
@@ -171,38 +171,38 @@ const route = useRoute()
 const conversationId = ref<string | undefined>(undefined)
 let abortController: AbortController | null = null
 
-/** 重建用户手册向量索引：启动时未配置 Embedding Key 导致语义检索不可用时的手动补救 */
+/** Rebuilding the user manual vector index: Manual remediation when the Embedding Key is not configured at startup causing semantic retrieval to be unavailable */
 const rebuildManualIndex = async () => {
   if (rebuildingIndex.value) return
   rebuildingIndex.value = true
   try {
     const res = await assistantApi.rebuildUserManualIndex()
     ElMessage.success(
-      `用户手册索引已重建：${res.sections_count ?? 0} 个切片（${res.manuals_count ?? 0} 份手册）`
+      `User manual index has been rebuilt:${res.sections_count ?? 0} slices (${res.manuals_count ?? 0} manual)`
     )
   } catch (e: any) {
     ElMessage.error(
-      e?.response?.data?.detail || e?.message || '用户手册索引重建失败，请检查 Embedding 配置'
+      e?.response?.data?.detail || e?.message || 'User Manual Index rebuild failed, please check Embedding configuration'
     )
   } finally {
     rebuildingIndex.value = false
   }
 }
 
-// 最近浏览器报错收集
+// Collection of recent browser errors
 const recentErrors: string[] = []
 const MAX_ERRORS = 3
 
 const quickQuestions = [
-  '今日任务为什么是 0?',
-  '怎么加入关注列表?',
-  'License 怎么激活?',
-  '我能在哪里看研究报告?',
-  '怎么配置定时分析?',
-  '我现在是什么版本?',
+  'Why is today s task 0?',
+  'How to join the watchlist?',
+  'License How to activate?',
+  'Where can I read research reports??',
+  'How to configure scheduled analysis?',
+  'What version am I in now??',
 ]
 
-// 收集 window.onerror
+// collect window.onerror
 const errorHandler = (event: ErrorEvent) => {
   const msg = event.message || 'Unknown error'
   const filename = event.filename || ''
@@ -211,7 +211,7 @@ const errorHandler = (event: ErrorEvent) => {
   if (recentErrors.length > MAX_ERRORS) recentErrors.shift()
 }
 
-// 收集未捕获的 Promise rejection
+// collect uncaught Promise rejection
 const rejectionHandler = (event: PromiseRejectionEvent) => {
   const reason = event.reason
   const msg = typeof reason === 'string' ? reason : (reason?.message || JSON.stringify(reason))
@@ -239,7 +239,7 @@ const openChat = () => {
 
 const handleClose = (done: () => void) => {
   if (loading.value) {
-    ElMessage.warning('对话正在进行中，请稍候')
+    ElMessage.warning('The conversation is in progress, please wait.')
     return
   }
   done()
@@ -266,7 +266,7 @@ const sendMessage = async (text?: string) => {
   const content = (text || inputText.value).trim()
   if (!content || loading.value) return
 
-  // 取消上一次未完成的请求
+  // Cancel the last outstanding request
   if (abortController) {
     abortController.abort()
     abortController = null
@@ -283,12 +283,12 @@ const sendMessage = async (text?: string) => {
   abortController = assistantApi.chatStream(
     content,
     conversationId.value,
-    undefined, // model: 让后端选
+    undefined, // model: Let the backend choose
     undefined, // model_config_id
     {
       onToken: (token: string) => {
         if (!streamingMessage.value) {
-          // 第一个 token 到来时，新建一条助手消息
+          // When the first token arrives, create a new assistant message
           messages.value.push({ role: 'assistant', content: '' })
           toolInProgress.value = ''
         }
@@ -302,26 +302,26 @@ const sendMessage = async (text?: string) => {
       onToolEvent: (event: any) => {
         const eventType = event?.event
         if (eventType === 'tool_started') {
-          const toolName = event?.tool || event?.tool_name || '工具'
-          toolInProgress.value = `正在调用工具: ${toolName}...`
+          const toolName = event?.tool || event?.tool_name || 'Tools'
+          toolInProgress.value = `Calling tool: ${toolName}...`
         } else if (eventType === 'tool_completed') {
           toolInProgress.value = ''
         } else if (eventType === 'tool_round_started') {
-          toolInProgress.value = `工具调用第 ${event?.round || '?'} 轮...`
+          toolInProgress.value = `Tool call No. ${event?.round || '?'} wheel...`
         } else if (eventType === 'llm_thinking') {
-          toolInProgress.value = event?.message || '正在思考…'
+          toolInProgress.value = event?.message || 'thinking…'
         }
       },
       onDone: (data: any) => {
         if (data.conversation_id) {
           conversationId.value = data.conversation_id
         }
-        // 更新最后一条助手消息的工具调用记录
+        // Update the tool call record for the last assistant message
         const lastMsg = messages.value[messages.value.length - 1]
         if (lastMsg && lastMsg.role === 'assistant' && data.tools_used?.length) {
           lastMsg.tools_used = data.tools_used
         }
-        // 如果没有收到任何 token（可能直接走工具路径），用 done 的 reply 兜底
+        // If you don t receive any token (you may go directly to the tool path), use the done reply to find out.
         if (!streamingMessage.value && data.reply) {
           messages.value.push({ role: 'assistant', content: data.reply, tools_used: data.tools_used })
         }
@@ -336,12 +336,12 @@ const sendMessage = async (text?: string) => {
         streamingMessage.value = ''
         toolInProgress.value = ''
         abortController = null
-        // 如果流式过程中已经产生部分回复，追加错误信息；否则单独加一条错误消息
+        // If a partial reply has been generated during the streaming process, add an error message; otherwise, add a separate error message
         const lastMsg = messages.value[messages.value.length - 1]
         if (lastMsg && lastMsg.role === 'assistant' && lastMsg.content) {
-          lastMsg.content += `\n\n❌ **错误**: ${msg}`
+          lastMsg.content += `\n\n❌ **Error**: ${msg}`
         } else {
-          messages.value.push({ role: 'assistant', content: `❌ **错误**: ${msg}\n\n请稍后重试，或刷新页面后再试。` })
+          messages.value.push({ role: 'assistant', content: `❌ **Error**: ${msg}\n\n Please try again later or refresh the page and try again.` })
         }
         nextTick(() => scrollToBottom())
       },
@@ -359,7 +359,7 @@ const scrollToBottom = () => {
   }
 }
 
-// 抽屉打开时滚动到底部
+// Scroll to bottom when drawer is open
 watch(visible, (v) => {
   if (v) {
     nextTick(() => scrollToBottom())
@@ -601,7 +601,7 @@ watch(visible, (v) => {
 </style>
 
 <style lang="scss">
-/* 京东云版浮窗抽屉全局样式（非 scoped，调整 el-drawer 内部样式） */
+/* Jingdong cloud version floating window drawer global style (non-scoped, adjust el-drawer internal style) */
 .usage-helper-drawer {
   pointer-events: auto;
 

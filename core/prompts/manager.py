@@ -1,7 +1,7 @@
 """
-提示词管理器
+prompt word manager
 
-统一管理提示词的加载、缓存和渲染
+Unified management of loading, caching and rendering of prompt words
 """
 
 import os
@@ -14,15 +14,15 @@ from .loader import PromptLoader
 
 class PromptManager:
     """
-    提示词管理器 (单例模式)
+    prompt word manager (Singleton pattern)
     
-    用法:
+    Usage:
         manager = PromptManager()
         
-        # 获取提示词
+        # Get prompt word
         prompt = manager.get("market_analyst", category="analysts")
         
-        # 渲染提示词
+        # rendering prompt word
         text = manager.render(
             "market_analyst",
             category="analysts",
@@ -30,7 +30,7 @@ class PromptManager:
             date="2024-01-15"
         )
         
-        # 切换语言
+        # switch language
         manager.set_language("en")
     """
     
@@ -54,11 +54,11 @@ class PromptManager:
     
     @property
     def language(self) -> str:
-        """当前语言"""
+        """Current language"""
         return self._language
     
     def set_language(self, language: str) -> None:
-        """设置语言"""
+        """Set language"""
         self._language = language
         self._loader.clear_cache()
     
@@ -69,24 +69,24 @@ class PromptManager:
         language: Optional[str] = None
     ) -> Optional[PromptTemplate]:
         """
-        获取提示词模板
+        Get prompt word template
         
         Args:
-            name: 模板名称
-            category: 类别
-            language: 语言 (默认使用当前语言)
+            name: Template name
+            category: Category
+            language: language (Use current language by default)
             
         Returns:
-            提示词模板
+            prompt word template
         """
         lang = language or self._language
         
-        # 先检查自定义模板
+        # Check custom templates first
         custom_key = f"{lang}/{category}/{name}" if category else f"{lang}/{name}"
         if custom_key in self._custom_templates:
             return self._custom_templates[custom_key]
         
-        # 从文件加载
+        # Load from file
         return self._loader.load(name, lang, category)
     
     def render(
@@ -97,21 +97,21 @@ class PromptManager:
         **variables
     ) -> str:
         """
-        渲染提示词
+        rendering prompt word
         
         Args:
-            name: 模板名称
-            category: 类别
-            language: 语言
-            **variables: 模板变量
+            name: Template name
+            category: Category
+            language: language
+            **variables: Template variables
             
         Returns:
-            渲染后的文本
+            Rendered text
         """
         template = self.get(name, category, language)
         
         if template is None:
-            return f"[提示词 '{name}' 未找到]"
+            return f"[prompt word '{name}' not found]"
         
         return template.render(**variables)
     
@@ -123,16 +123,16 @@ class PromptManager:
         language: Optional[str] = None
     ) -> PromptTemplate:
         """
-        注册自定义提示词模板
+        Register a custom prompt word template
         
         Args:
-            name: 模板名称
-            template: 模板内容
-            category: 类别
-            language: 语言
+            name: Template name
+            template: Template content
+            category: Category
+            language: language
             
         Returns:
-            创建的模板对象
+            Created template object
         """
         lang = language or self._language
         key = f"{lang}/{category}/{name}" if category else f"{lang}/{name}"
@@ -151,7 +151,7 @@ class PromptManager:
         category: Optional[str] = None,
         language: Optional[str] = None
     ) -> Dict[str, PromptTemplate]:
-        """列出可用的提示词"""
+        """List available prompt words"""
         lang = language or self._language
         return self._loader.load_all(lang, category)
     
@@ -161,28 +161,28 @@ class PromptManager:
         category: Optional[str] = None,
         language: Optional[str] = None
     ) -> bool:
-        """检查提示词是否存在"""
+        """Check if the prompt word exists"""
         lang = language or self._language
         
-        # 检查自定义模板
+        # Check custom templates
         custom_key = f"{lang}/{category}/{name}" if category else f"{lang}/{name}"
         if custom_key in self._custom_templates:
             return True
         
-        # 检查文件
+        # Check files
         return self._loader.exists(name, lang, category)
 
 
-# 便捷函数
+# Convenience function
 def get_prompt(
     name: str,
     category: Optional[str] = None,
     **variables
 ) -> str:
     """
-    便捷函数: 获取并渲染提示词
+    Convenience function: Get and render the prompt word
     
-    用法:
+    Usage:
         from core.prompts import get_prompt
         
         prompt = get_prompt("market_analyst", category="analysts", ticker="AAPL")

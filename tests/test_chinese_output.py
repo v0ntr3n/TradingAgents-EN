@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试中文输出功能
+Test Chinese output function
 """
 
 import os
@@ -8,134 +8,134 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv(project_root / ".env", override=True)
 
 def test_dashscope_chinese():
-    """测试阿里百炼模型的中文输出"""
+    """Test the Chinese output of Alibaba Bailian model"""
     try:
         from tradingagents.llm_adapters import ChatDashScope
         
-        print("🧪 测试阿里百炼模型中文输出")
+        print("🧪 Test the Chinese output of Alibaba Bailian model")
         print("=" * 50)
         
-        # 创建模型实例
+        # Create model instance
         llm = ChatDashScope(
             model="qwen-plus",
             temperature=0.1,
             max_tokens=500
         )
         
-        # 测试中文提示词
-        test_prompt = """你是一位专业的股票分析师。请用中文分析苹果公司(AAPL)的投资前景。
+        # Test Chinese Prompt Words
+        test_prompt = """You are a professional stock analyst. Please analyze Apple in Chinese(AAPL)investment prospects.
         
-请重点关注：
-1. 公司的竞争优势
-2. 市场前景
-3. 投资建议
+Please focus on:
+1. The company s competitive advantage
+2. Market prospects
+3. investment advice
 
-请确保回答使用中文。"""
+Please make sure to answer in Chinese."""
         
-        print("发送测试提示词...")
+        print("Send test prompt word...")
         response = llm.invoke(test_prompt)
         
-        print("✅ 模型响应成功")
-        print(f"响应内容: {response.content[:200]}...")
+        print("✅ The model responded successfully")
+        print(f"Response content: {response.content[:200]}...")
         
-        # 检查是否包含中文
+        # Check if it contains Chinese
         chinese_chars = sum(1 for char in response.content if '\u4e00' <= char <= '\u9fff')
         total_chars = len(response.content)
         chinese_ratio = chinese_chars / total_chars if total_chars > 0 else 0
         
-        print(f"中文字符比例: {chinese_ratio:.2%}")
+        print(f"Chinese character ratio: {chinese_ratio:.2%}")
         
         if chinese_ratio > 0.3:
-            print("✅ 模型正确输出中文内容")
+            print("✅ The model correctly outputs Chinese content")
             return True
         else:
-            print("❌ 模型输出中文比例较低")
+            print("❌ The proportion of Chinese output in the model is low")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def test_signal_processor_chinese():
-    """测试信号处理器的中文输出"""
+    """Test the Chinese output of the signal processor"""
     try:
         from tradingagents.graph.signal_processing import SignalProcessor
         from tradingagents.llm_adapters import ChatDashScope
         
-        print("\n🧪 测试信号处理器中文输出")
+        print("\n🧪 Test signal processor Chinese output")
         print("=" * 50)
         
-        # 创建模型实例
+        # Create model instance
         llm = ChatDashScope(
             model="qwen-plus",
             temperature=0.1,
             max_tokens=100
         )
         
-        # 创建信号处理器
+        # Create signal handler
         processor = SignalProcessor(llm)
         
-        # 测试信号
-        test_signal = """基于技术分析和基本面分析，苹果公司显示出强劲的增长潜力。
-        建议买入该股票，目标价位200美元。"""
+        # test signal
+        test_signal = """Based on technical and fundamental analysis, Apple shows strong growth potential.
+        It is recommended to buy the stock with a target price of $200."""
         
-        print("处理测试信号...")
+        print("Process test signals...")
         decision = processor.process_signal(test_signal, "AAPL")
         
-        print(f"✅ 信号处理成功")
-        print(f"决策结果: {decision}")
+        print(f"✅ Signal processing successful")
+        print(f"decision result: {decision}")
         
-        # 检查决策是否为中文
-        if any(word in decision for word in ['买入', '卖出', '持有']):
-            print("✅ 信号处理器输出中文决策")
+        # Check if the decision is in Chinese
+        if any(word in decision for word in ['buy', 'sell', 'hold']):
+            print("✅ Signal processor outputs Chinese decision-making")
             return True
         elif any(word in decision.upper() for word in ['BUY', 'SELL', 'HOLD']):
-            print("⚠️ 信号处理器输出英文决策")
+            print("⚠️ Signal processor output English decision")
             return False
         else:
-            print(f"❓ 未识别的决策格式: {decision}")
+            print(f"❓ Unrecognized decision format: {decision}")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         print(traceback.format_exc())
         return False
 
 def main():
-    """主测试函数"""
-    print("🧪 中文输出功能测试")
+    """Main test function"""
+    print("🧪 Chinese output function test")
     print("=" * 60)
     
-    # 检查环境变量
+    # Check environment variables
     if not os.getenv("DASHSCOPE_API_KEY"):
-        print("❌ DASHSCOPE_API_KEY 环境变量未设置")
+        print("❌ DASHSCOPE_API_KEY Environment variable not set")
         return
     
-    # 测试基本中文输出
+    # Test basic Chinese output
     success1 = test_dashscope_chinese()
     
-    # 测试信号处理器
+    # Test signal processor
     success2 = test_signal_processor_chinese()
     
-    print(f"\n📊 测试结果:")
-    print(f"  基本中文输出: {'✅ 通过' if success1 else '❌ 失败'}")
-    print(f"  信号处理器: {'✅ 通过' if success2 else '❌ 失败'}")
+    print(f"\n📊 Test results:")
+    print(f"  Basic Chinese output: {'✅ Pass' if success1 else '❌ failed'}")
+    print(f"  signal processor: {'✅ Pass' if success2 else '❌ failed'}")
     
     if success1 and success2:
-        print("\n🎉 所有测试通过！中文输出功能正常")
+        print("\n🎉 All tests passed! Chinese output function is normal")
     else:
-        print("\n⚠️ 部分测试失败，可能需要进一步调整")
+        print("\n⚠️ Some tests failed and may require further adjustments")
 
 if __name__ == "__main__":
     main()

@@ -1,10 +1,10 @@
 /**
- * 操作日志API接口
+ * Operation log API interface
  */
 
 import { ApiClient } from './request'
 
-// 操作日志数据类型
+// Operation log data type
 export interface OperationLog {
   id: string
   user_id: string
@@ -22,7 +22,7 @@ export interface OperationLog {
   created_at: string
 }
 
-// 操作日志查询参数
+// Operation log query parameters
 export interface OperationLogQuery {
   page?: number
   page_size?: number
@@ -33,7 +33,7 @@ export interface OperationLogQuery {
   keyword?: string
 }
 
-// 操作日志列表响应
+// Operation log list response
 export interface OperationLogListResponse {
   success: boolean
   data: {
@@ -46,7 +46,7 @@ export interface OperationLogListResponse {
   message: string
 }
 
-// 操作日志统计
+// Operation log statistics
 export interface OperationLogStats {
   total_logs: number
   success_logs: number
@@ -59,14 +59,14 @@ export interface OperationLogStats {
   }>
 }
 
-// 操作日志统计响应
+// Operation log statistics response
 export interface OperationLogStatsResponse {
   success: boolean
   data: OperationLogStats
   message: string
 }
 
-// 创建操作日志请求
+// Create operation log request
 export interface CreateOperationLogRequest {
   action_type: string
   action: string
@@ -77,13 +77,13 @@ export interface CreateOperationLogRequest {
   session_id?: string
 }
 
-// 清空日志请求
+// Clear log request
 export interface ClearLogsRequest {
   days?: number
   action_type?: string
 }
 
-// 清空日志响应
+// Clear log response
 export interface ClearLogsResponse {
   success: boolean
   data: {
@@ -93,10 +93,10 @@ export interface ClearLogsResponse {
   message: string
 }
 
-// 操作日志API类
+// Operation log API class
 export class OperationLogsApi {
   /**
-   * 获取操作日志列表
+   * Get operation log list
    */
   static getOperationLogs(params: OperationLogQuery = {}): Promise<OperationLogListResponse> {
     const queryParams = new URLSearchParams()
@@ -114,14 +114,14 @@ export class OperationLogsApi {
   }
 
   /**
-   * 获取操作日志统计
+   * Get operation log statistics
    */
   static getOperationLogStats(days: number = 30): Promise<OperationLogStatsResponse> {
     return ApiClient.get(`/api/system/logs/stats?days=${days}`)
   }
 
   /**
-   * 获取操作日志详情
+   * Get operation log details
    */
   static getOperationLogDetail(logId: string): Promise<{
     success: boolean
@@ -132,7 +132,7 @@ export class OperationLogsApi {
   }
 
   /**
-   * 创建操作日志
+   * Create operation log
    */
   static createOperationLog(data: CreateOperationLogRequest): Promise<{
     success: boolean
@@ -143,14 +143,14 @@ export class OperationLogsApi {
   }
 
   /**
-   * 清空操作日志
+   * Clear operation log
    */
   static clearOperationLogs(data: ClearLogsRequest = {}): Promise<ClearLogsResponse> {
     return ApiClient.post('/api/system/logs/clear', data)
   }
 
   /**
-   * 导出操作日志为CSV
+   * The export operation log is CSV
    */
   static exportOperationLogsCSV(params: {
     start_date?: string
@@ -168,7 +168,7 @@ export class OperationLogsApi {
   }
 }
 
-// 操作类型常量
+// Operation type constant
 export const ActionTypes = {
   STOCK_ANALYSIS: 'stock_analysis',
   CONFIG_MANAGEMENT: 'config_management',
@@ -178,29 +178,29 @@ export const ActionTypes = {
   SYSTEM_SETTINGS: 'system_settings',
   USER_LOGIN: 'user_login',
   USER_LOGOUT: 'user_logout',
-  USER_MANAGEMENT: 'user_management',  // 🔧 添加用户管理操作类型
+  USER_MANAGEMENT: 'user_management',  // 🔧 Add user management operation type
   DATABASE_OPERATION: 'database_operation',
   SCREENING: 'screening',
   REPORT_GENERATION: 'report_generation'
 } as const
 
-// 操作类型名称映射
+// Operation type name mapping
 export const ActionTypeNames = {
-  [ActionTypes.STOCK_ANALYSIS]: '股票分析',
-  [ActionTypes.CONFIG_MANAGEMENT]: '配置管理',
-  [ActionTypes.CACHE_OPERATION]: '缓存操作',
-  [ActionTypes.DATA_IMPORT]: '数据导入',
-  [ActionTypes.DATA_EXPORT]: '数据导出',
-  [ActionTypes.SYSTEM_SETTINGS]: '系统设置',
-  [ActionTypes.USER_LOGIN]: '用户登录',
-  [ActionTypes.USER_LOGOUT]: '用户登出',
-  [ActionTypes.USER_MANAGEMENT]: '用户管理',  // 🔧 添加用户管理操作类型名称
-  [ActionTypes.DATABASE_OPERATION]: '数据库操作',
-  [ActionTypes.SCREENING]: '股票筛选',
-  [ActionTypes.REPORT_GENERATION]: '报告生成'
+  [ActionTypes.STOCK_ANALYSIS]: 'stock analysis',
+  [ActionTypes.CONFIG_MANAGEMENT]: 'Configuration management',
+  [ActionTypes.CACHE_OPERATION]: 'Caching operations',
+  [ActionTypes.DATA_IMPORT]: 'Data import',
+  [ActionTypes.DATA_EXPORT]: 'Data export',
+  [ActionTypes.SYSTEM_SETTINGS]: 'System settings',
+  [ActionTypes.USER_LOGIN]: 'User login',
+  [ActionTypes.USER_LOGOUT]: 'User logout',
+  [ActionTypes.USER_MANAGEMENT]: 'User management',  // 🔧 Add user management operation type name
+  [ActionTypes.DATABASE_OPERATION]: 'Database operations',
+  [ActionTypes.SCREENING]: 'stock screen',
+  [ActionTypes.REPORT_GENERATION]: 'Report generation'
 } as const
 
-// 操作类型标签颜色映射
+// Operation type label color mapping
 export const ActionTypeTagColors = {
   [ActionTypes.STOCK_ANALYSIS]: 'primary',
   [ActionTypes.CONFIG_MANAGEMENT]: 'success',
@@ -210,13 +210,13 @@ export const ActionTypeTagColors = {
   [ActionTypes.SYSTEM_SETTINGS]: 'danger',
   [ActionTypes.USER_LOGIN]: 'success',
   [ActionTypes.USER_LOGOUT]: 'warning',
-  [ActionTypes.USER_MANAGEMENT]: 'warning',  // 🔧 添加用户管理操作类型颜色
+  [ActionTypes.USER_MANAGEMENT]: 'warning',  // 🔧 Add user management operation type color
   [ActionTypes.DATABASE_OPERATION]: 'primary',
   [ActionTypes.SCREENING]: 'info',
   [ActionTypes.REPORT_GENERATION]: 'primary'
 } as const
 
-// 便捷函数
+// Convenience function
 export const getActionTypeName = (actionType: string): string => {
   return ActionTypeNames[actionType as keyof typeof ActionTypeNames] || actionType
 }
@@ -225,12 +225,12 @@ export const getActionTypeTagColor = (actionType: string): string => {
   return ActionTypeTagColors[actionType as keyof typeof ActionTypeTagColors] || 'info'
 }
 
-// 格式化时间（导入统一的时间格式化工具）
+// Format time (import unified time formatting tool)
 import { formatDateTime as formatDateTimeUtil } from '@/utils/datetime'
 
 export const formatDateTime = (timestamp: string | number): string => {
   return formatDateTimeUtil(timestamp)
 }
 
-// 默认导出
+// Default export
 export default OperationLogsApi

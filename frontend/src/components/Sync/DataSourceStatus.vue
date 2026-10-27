@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <el-icon class="header-icon"><Connection /></el-icon>
-          <span class="header-title">数据源状态</span>
+          <span class="header-title">Data source status</span>
           <el-button 
             type="primary" 
             size="small" 
@@ -12,7 +12,7 @@
             @click="refreshStatus"
           >
             <el-icon><Refresh /></el-icon>
-            刷新
+            Refresh
           </el-button>
         </div>
       </template>
@@ -41,11 +41,11 @@
                   size="small"
                   class="status-tag"
                 >
-                  {{ source.available ? '可用' : '不可用' }}
+                  {{ source.available ? 'Available' : 'Not available' }}
                 </el-tag>
                 <span class="source-name">{{ source.name.toUpperCase() }}</span>
                 <el-tag size="small" type="info" class="priority-tag">
-                  优先级: {{ source.priority }}
+                  priority: {{ source.priority }}
                 </el-tag>
               </div>
               <div class="source-actions">
@@ -57,7 +57,7 @@
                   :loading="testingSource === source.name"
                 >
                   <el-icon><Operation /></el-icon>
-                  测试
+                  test
                 </el-button>
               </div>
             </div>
@@ -65,10 +65,10 @@
               {{ source.description }}
             </div>
             
-            <!-- 测试结果展示 -->
+            <!-- Test result display -->
             <div v-if="testResults[source.name]" class="test-results">
               <el-divider content-position="left">
-                <span class="divider-text">最后测试结果</span>
+                <span class="divider-text">final test results</span>
               </el-divider>
               <div class="test-result-message">
                 <el-alert
@@ -83,7 +83,7 @@
         </div>
 
         <div v-else class="empty-state">
-          <el-empty description="暂无数据源信息" />
+          <el-empty description="No data source information yet" />
         </div>
       </div>
     </el-card>
@@ -98,7 +98,7 @@ import { getDataSourcesStatus, testDataSources, type DataSourceStatus, type Data
 import { testApiConnection } from '@/api/request'
 import { isJdyunMode } from '@/utils/config'
 
-// 响应式数据
+// Responsive data
 const loading = ref(false)
 const refreshing = ref(false)
 const error = ref('')
@@ -106,7 +106,7 @@ const dataSources = ref<DataSourceStatus[]>([])
 const testResults = ref<Record<string, DataSourceTestResult>>({})
 const testingSource = ref('')
 
-// 京东云版只展示 Tushare 和 AKShare
+// JD Cloud version only displays Tushare and AKShare
 const JDYUN_ALLOWED_SOURCES = new Set(['tushare', 'akshare'])
 const displayDataSources = computed(() => {
   if (!isJdyunMode()) {
@@ -117,82 +117,82 @@ const displayDataSources = computed(() => {
   )
 })
 
-// 获取数据源状态
+// Get data source status
 const fetchDataSourcesStatus = async () => {
   try {
-    console.log('🔍 [DataSourceStatus] 开始获取数据源状态')
+    console.log('🔍 [DataSourceStatus] Start getting data source status')
     loading.value = true
     error.value = ''
 
-    // 先测试API连接
-    console.log('🔍 [DataSourceStatus] 先测试API连接')
+    // Test the API connection first
+    console.log('🔍 [DataSourceStatus] Test the API connection first')
     const connectionOk = await testApiConnection()
-    console.log('🔍 [DataSourceStatus] API连接测试结果:', connectionOk)
+    console.log('🔍 [DataSourceStatus] API Connection test results:', connectionOk)
 
     if (!connectionOk) {
-      console.error('🔍 [DataSourceStatus] API连接测试失败，停止后续操作')
-      error.value = '无法连接到后端服务，请确保后端服务正在 http://localhost:8000 运行'
+      console.error('🔍 [DataSourceStatus] API The connection test failed and subsequent operations are stopped.')
+      error.value = 'Unable to connect to the backend service, please make sure the backend service is http://localhost:8000 run'
       return
     }
 
-    console.log('🔍 [DataSourceStatus] API连接测试成功，继续获取数据源状态')
+    console.log('🔍 [DataSourceStatus] API The connection test is successful, continue to obtain the data source status')
 
-    console.log('🔍 [DataSourceStatus] API连接正常，调用 getDataSourcesStatus')
+    console.log('🔍 [DataSourceStatus] API The connection is normal, call getDataSourcesStatus')
     const response = await getDataSourcesStatus()
-    console.log('🔍 [DataSourceStatus] API响应:', response)
+    console.log('🔍 [DataSourceStatus] API response:', response)
 
     if (response.success) {
-      console.log('🔍 [DataSourceStatus] API调用成功，数据源数量:', response.data?.length || 0)
-      console.log('🔍 [DataSourceStatus] 数据源详情:', response.data)
-      dataSources.value = response.data.sort((a, b) => b.priority - a.priority) // 倒序：优先级高的在前
-      console.log('🔍 [DataSourceStatus] 排序后的数据源:', dataSources.value)
+      console.log('🔍 [DataSourceStatus] API The call is successful, the number of data sources:', response.data?.length || 0)
+      console.log('🔍 [DataSourceStatus] Data source details:', response.data)
+      dataSources.value = response.data.sort((a, b) => b.priority - a.priority) // Reverse order: highest priority first
+      console.log('🔍 [DataSourceStatus] Sorted data source:', dataSources.value)
     } else {
-      console.error('🔍 [DataSourceStatus] API调用失败')
-      console.error('🔍 [DataSourceStatus] 完整响应对象:', response)
-      console.error('🔍 [DataSourceStatus] 响应success字段:', response.success)
-      console.error('🔍 [DataSourceStatus] 响应message字段:', response.message)
-      console.error('🔍 [DataSourceStatus] 响应data字段:', response.data)
-      console.error('🔍 [DataSourceStatus] 响应的所有属性:', Object.keys(response))
-      error.value = response.message || '获取数据源状态失败'
+      console.error('🔍 [DataSourceStatus] API call failed')
+      console.error('🔍 [DataSourceStatus] full response object:', response)
+      console.error('🔍 [DataSourceStatus] Response success field:', response.success)
+      console.error('🔍 [DataSourceStatus] Response message field:', response.message)
+      console.error('🔍 [DataSourceStatus] response data field:', response.data)
+      console.error('🔍 [DataSourceStatus] All properties of the response:', Object.keys(response))
+      error.value = response.message || 'Failed to get data source status'
     }
   } catch (err: any) {
-    console.error('🔍 [DataSourceStatus] 捕获异常:', err)
-    console.error('🔍 [DataSourceStatus] 异常类型:', err.constructor.name)
-    console.error('🔍 [DataSourceStatus] 异常消息:', err.message)
-    console.error('🔍 [DataSourceStatus] 异常堆栈:', err.stack)
+    console.error('🔍 [DataSourceStatus] catch exception:', err)
+    console.error('🔍 [DataSourceStatus] Exception type:', err.constructor.name)
+    console.error('🔍 [DataSourceStatus] Exception message:', err.message)
+    console.error('🔍 [DataSourceStatus] exception stack:', err.stack)
 
-    // 检查是否是网络错误
+    // Check if it is a network error
     if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-      console.error('🔍 [DataSourceStatus] 这是一个网络连接错误')
-      error.value = '网络连接失败，请检查服务器是否正常运行'
+      console.error('🔍 [DataSourceStatus] This is a network connection error')
+      error.value = 'Network connection failed, please check whether the server is running normally'
     } else if (err.message.includes('HTTP')) {
-      console.error('🔍 [DataSourceStatus] 这是一个HTTP状态错误')
-      error.value = `服务器错误: ${err.message}`
+      console.error('🔍 [DataSourceStatus] This is an HTTP status error')
+      error.value = `Server error: ${err.message}`
     } else {
-      console.error('🔍 [DataSourceStatus] 这是一个其他类型的错误')
-      error.value = err.message || '网络请求失败'
+      console.error('🔍 [DataSourceStatus] This is a different type of error')
+      error.value = err.message || 'Network request failed'
     }
   } finally {
     loading.value = false
-    console.log('🔍 [DataSourceStatus] 获取数据源状态完成')
+    console.log('🔍 [DataSourceStatus] Get data source status completed')
   }
 }
 
-// 刷新状态
+// refresh status
 const refreshStatus = async () => {
   refreshing.value = true
   await fetchDataSourcesStatus()
   refreshing.value = false
-  ElMessage.success('数据源状态已刷新')
+  ElMessage.success('Data source status refreshed')
 }
 
-// 测试单个数据源
+// Test a single data source
 const testSingleSource = async (sourceName: string) => {
   try {
     testingSource.value = sourceName
-    ElMessage.info(`正在测试 ${sourceName.toUpperCase()}，请稍候...`)
+    ElMessage.info(`Testing ${sourceName.toUpperCase()}, please wait...`)
 
-    // 传递数据源名称，只测试该数据源
+    // Pass a data source name to test only that data source
     const response = await testDataSources(sourceName)
     if (response.success) {
       const results = response.data.test_results
@@ -200,27 +200,27 @@ const testSingleSource = async (sourceName: string) => {
       if (sourceResult) {
         testResults.value[sourceName] = sourceResult
         if (sourceResult.available) {
-          ElMessage.success(`✅ ${sourceName.toUpperCase()} 连接成功`)
+          ElMessage.success(`✅ ${sourceName.toUpperCase()} Connection successful`)
         } else {
-          ElMessage.warning(`⚠️ ${sourceName.toUpperCase()} 连接失败: ${sourceResult.message}`)
+          ElMessage.warning(`⚠️ ${sourceName.toUpperCase()} Connection failed: ${sourceResult.message}`)
         }
       }
     } else {
-      ElMessage.error(`测试失败: ${response.message}`)
+      ElMessage.error(`test failed: ${response.message}`)
     }
   } catch (err: any) {
-    console.error('测试数据源失败:', err)
+    console.error('Test data source failed:', err)
     if (err.code === 'ECONNABORTED') {
-      ElMessage.error(`测试超时: ${sourceName.toUpperCase()} 测试时间过长，请稍后重试`)
+      ElMessage.error(`test timeout: ${sourceName.toUpperCase()} The test took too long, please try again later`)
     } else {
-      ElMessage.error(`测试失败: ${err.message}`)
+      ElMessage.error(`test failed: ${err.message}`)
     }
   } finally {
     testingSource.value = ''
   }
 }
 
-// 组件挂载时获取数据
+// Get data when component is mounted
 onMounted(() => {
   fetchDataSourcesStatus()
 })

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-测试脚本：验证 MARKET_ANALYST_LOOKBACK_DAYS 配置是否生效
+Test script: Verify whether the MARKET_ANALYST_LOOKBACK_DAYS configuration takes effect
 
-功能：
-1. 读取配置文件中的 MARKET_ANALYST_LOOKBACK_DAYS 值
-2. 模拟市场分析师调用数据接口
-3. 验证实际获取的数据天数是否符合配置
-4. 输出详细的验证报告
+Function:
+1. Read the MARKET_ANALYST_LOOKBACK_DAYS value in the configuration file
+2. Simulated market analysts call data interface
+3. Verify whether the actual number of days of data obtained matches the configuration
+4. Output detailed verification report
 
-使用方法：
+How to use:
     python scripts/validation/test_market_analyst_lookback.py
 """
 
@@ -16,7 +16,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
 sys.path.insert(0, project_root)
 
@@ -26,9 +26,9 @@ logger = get_logger('test')
 
 
 def test_config_loading():
-    """测试1：验证配置加载"""
+    """Test 1: Verify configuration loading"""
     print("\n" + "=" * 80)
-    print("测试1：验证配置加载")
+    print("Test 1: Verify configuration loading")
     print("=" * 80)
     
     try:
@@ -36,135 +36,135 @@ def test_config_loading():
         settings = get_settings()
         lookback_days = settings.MARKET_ANALYST_LOOKBACK_DAYS
         
-        print(f"✅ 配置加载成功")
-        print(f"📅 MARKET_ANALYST_LOOKBACK_DAYS = {lookback_days}天")
+        print(f"✅ Configuration loaded successfully")
+        print(f"📅 MARKET_ANALYST_LOOKBACK_DAYS = {lookback_days}day")
         
-        # 验证配置值
+        # Verify configuration values
         if lookback_days == 250:
-            print(f"✅ 配置值正确：250天（专业配置）")
+            print(f"✅ The configuration value is correct: 250 days (professional configuration)")
         elif lookback_days == 120:
-            print(f"⚠️  配置值：120天（标准配置）")
+            print(f"⚠️  Configuration value: 120 days (standard configuration)")
         elif lookback_days == 60:
-            print(f"⚠️  配置值：60天（最小配置）")
+            print(f"⚠️  Configuration value: 60 days (minimum configuration)")
         else:
-            print(f"⚠️  配置值：{lookback_days}天（自定义配置）")
+            print(f"⚠️  Configuration value:{lookback_days}days (custom configuration)")
         
         return lookback_days
     except Exception as e:
-        print(f"❌ 配置加载失败: {e}")
+        print(f"❌ Configuration load failed: {e}")
         return None
 
 
 def test_date_range_calculation(lookback_days):
-    """测试2：验证日期范围计算"""
+    """Test 2: Validate date range calculation"""
     print("\n" + "=" * 80)
-    print("测试2：验证日期范围计算")
+    print("Test 2: Validate date range calculation")
     print("=" * 80)
     
     try:
         from tradingagents.utils.dataflow_utils import get_trading_date_range
         
-        # 使用今天作为目标日期
+        # Use today as target date
         target_date = datetime.now().strftime("%Y-%m-%d")
         start_date, end_date = get_trading_date_range(target_date, lookback_days=lookback_days)
         
-        # 计算实际天数
+        # Calculate actual number of days
         start_dt = datetime.strptime(start_date, "%Y-%m-%d")
         end_dt = datetime.strptime(end_date, "%Y-%m-%d")
         actual_days = (end_dt - start_dt).days
         
-        print(f"✅ 日期范围计算成功")
-        print(f"📅 目标日期: {target_date}")
-        print(f"📅 配置回溯: {lookback_days}天")
-        print(f"📅 开始日期: {start_date}")
-        print(f"📅 结束日期: {end_date}")
-        print(f"📅 实际天数: {actual_days}天")
+        print(f"✅ Date range calculated successfully")
+        print(f"📅 target date: {target_date}")
+        print(f"📅 Configure traceback: {lookback_days}day")
+        print(f"📅 start date: {start_date}")
+        print(f"📅 end date: {end_date}")
+        print(f"📅 Actual number of days: {actual_days}day")
         
-        # 验证实际天数是否符合预期
+        # Verify that the actual number of days is as expected
         if actual_days >= lookback_days:
-            print(f"✅ 实际天数 ({actual_days}) >= 配置天数 ({lookback_days})")
+            print(f"✅ Actual number of days ({actual_days}) >= Configure the number of days ({lookback_days})")
         else:
-            print(f"⚠️  实际天数 ({actual_days}) < 配置天数 ({lookback_days})")
+            print(f"⚠️  Actual number of days ({actual_days}) < Configure the number of days ({lookback_days})")
         
         return start_date, end_date, actual_days
     except Exception as e:
-        print(f"❌ 日期范围计算失败: {e}")
+        print(f"❌ Date range calculation failed: {e}")
         import traceback
         traceback.print_exc()
         return None, None, None
 
 
 def test_data_fetching(start_date, end_date):
-    """测试3：验证数据获取"""
+    """Test 3: Verify data acquisition"""
     print("\n" + "=" * 80)
-    print("测试3：验证数据获取（模拟市场分析师调用）")
+    print("Test 3: Verify data acquisition (simulate market analyst call)")
     print("=" * 80)
     
     try:
         from tradingagents.dataflows.interface import get_china_stock_data_unified
         
-        # 使用一个常见的A股股票代码进行测试
-        test_ticker = "300750"  # 平安银行
+        # Use a common A-share stock code for testing
+        test_ticker = "300750"  # Ping An Bank
         
-        print(f"📊 测试股票: {test_ticker}")
-        print(f"📅 日期范围: {start_date} 至 {end_date}")
-        print(f"⏳ 正在获取数据...")
+        print(f"📊 test stocks: {test_ticker}")
+        print(f"📅 date range: {start_date} to {end_date}")
+        print(f"⏳ Getting data...")
         
-        # 调用统一接口获取数据
+        # Call the unified interface to obtain data
         result = get_china_stock_data_unified(
             ticker=test_ticker,
             start_date=start_date,
             end_date=end_date
         )
         
-        # 检查结果
+        # Check results
         if result and not result.startswith("❌"):
-            print(f"✅ 数据获取成功")
-            print(f"📊 返回数据长度: {len(result)} 字符")
+            print(f"✅ Data acquisition successful")
+            print(f"📊 Return data length: {len(result)} character")
             
-            # 检查是否包含技术指标
+            # Check if technical indicators are included
             indicators = ["MA5", "MA10", "MA20", "MA60", "MACD", "RSI", "BOLL"]
             found_indicators = [ind for ind in indicators if ind in result]
             
-            print(f"📈 包含技术指标: {', '.join(found_indicators)}")
+            print(f"📈 Contains technical indicators: {', '.join(found_indicators)}")
             
             if len(found_indicators) == len(indicators):
-                print(f"✅ 所有技术指标都已计算")
+                print(f"✅ All technical indicators have been calculated")
             else:
                 missing = set(indicators) - set(found_indicators)
-                print(f"⚠️  缺少技术指标: {', '.join(missing)}")
+                print(f"⚠️  Missing technical indicators: {', '.join(missing)}")
             
-            # 显示部分结果（前1000字符）
-            print(f"\n📄 数据预览（前1000字符）:")
+            # Show partial results (first 1000 characters)
+            print(f"\n📄 Data preview (first 1000 characters):")
             print("-" * 80)
             print(result[:1000])
             print("-" * 80)
 
-            # 显示最后500字符
-            print(f"\n📄 数据预览（最后500字符）:")
+            # Show last 500 characters
+            print(f"\n📄 Data preview (last 500 characters):")
             print("-" * 80)
             print(result[-500:])
             print("-" * 80)
             
             return True
         else:
-            print(f"❌ 数据获取失败")
-            print(f"错误信息: {result}")
+            print(f"❌ Data acquisition failed")
+            print(f"error message: {result}")
             return False
     except Exception as e:
-        print(f"❌ 数据获取异常: {e}")
+        print(f"❌ Data acquisition exception: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_technical_indicators_accuracy(lookback_days):
-    """测试4：验证技术指标准确性要求"""
+    """Test 4: Verify the accuracy requirements of technical indicators"""
     print("\n" + "=" * 80)
-    print("测试4：验证技术指标准确性要求")
+    print("Test 4: Verify the accuracy requirements of technical indicators")
     print("=" * 80)
     
-    # 技术指标数据要求
+    # Technical indicator data requirements
     requirements = {
         "MA5": {"min": 5, "recommended": 10},
         "MA10": {"min": 10, "recommended": 15},
@@ -175,8 +175,8 @@ def test_technical_indicators_accuracy(lookback_days):
         "BOLL": {"min": 20, "recommended": 60},
     }
     
-    print(f"📊 当前配置: {lookback_days}天")
-    print(f"\n技术指标数据要求检查:")
+    print(f"📊 Current configuration: {lookback_days}day")
+    print(f"\n Technical indicator data requirements inspection:")
     print("-" * 80)
     
     all_passed = True
@@ -186,72 +186,72 @@ def test_technical_indicators_accuracy(lookback_days):
         pro_days = req.get("professional", rec_days)
         
         if lookback_days >= pro_days:
-            status = "✅ 专业级"
+            status = "✅ Professional grade"
             level = "professional"
         elif lookback_days >= rec_days:
-            status = "✅ 推荐级"
+            status = "✅ Recommended level"
             level = "recommended"
         elif lookback_days >= min_days:
-            status = "⚠️  最小级"
+            status = "⚠️  smallest level"
             level = "minimum"
             all_passed = False
         else:
-            status = "❌ 不足"
+            status = "❌ Insufficient"
             level = "insufficient"
             all_passed = False
         
-        print(f"{indicator:8s} | 最小:{min_days:3d}天 | 推荐:{rec_days:3d}天 | 专业:{pro_days:3d}天 | {status}")
+        print(f"{indicator:8s} | smallest:{min_days:3d}day | Recommended:{rec_days:3d}day | Professional:{pro_days:3d}day | {status}")
     
     print("-" * 80)
     
     if all_passed:
-        print(f"✅ 所有技术指标都满足推荐或专业级要求")
+        print(f"✅ All technical specifications meet recommended or professional grade requirements")
     else:
-        print(f"⚠️  部分技术指标未达到推荐级要求")
+        print(f"⚠️  Some technical indicators do not meet the recommended level requirements")
     
     return all_passed
 
 
 def main():
-    """主测试流程"""
+    """Main test process"""
     print("\n" + "=" * 80)
-    print("🔍 MARKET_ANALYST_LOOKBACK_DAYS 配置验证测试")
+    print("🔍 MARKET_ANALYST_LOOKBACK_DAYS Configuration verification test")
     print("=" * 80)
-    print(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Test time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    # 测试1：配置加载
+    # Test 1: Configuration loading
     lookback_days = test_config_loading()
     if lookback_days is None:
-        print("\n❌ 配置加载失败，终止测试")
+        print("\n❌ Configuration loading failed, test terminated")
         return
     
-    # 测试2：日期范围计算
+    # Test 2: Date range calculation
     start_date, end_date, actual_days = test_date_range_calculation(lookback_days)
     if start_date is None:
-        print("\n❌ 日期范围计算失败，终止测试")
+        print("\n❌ Date range calculation failed, test terminated")
         return
     
-    # 测试3：数据获取
+    # Test 3: Data acquisition
     data_success = test_data_fetching(start_date, end_date)
     
-    # 测试4：技术指标准确性
+    # Test 4: Technical indicator accuracy
     indicators_ok = test_technical_indicators_accuracy(lookback_days)
     
-    # 总结
+    # Summary
     print("\n" + "=" * 80)
-    print("📊 测试总结")
+    print("📊 Test summary")
     print("=" * 80)
-    print(f"✅ 配置加载: 成功 ({lookback_days}天)")
-    print(f"✅ 日期计算: 成功 ({actual_days}天)")
-    print(f"{'✅' if data_success else '❌'} 数据获取: {'成功' if data_success else '失败'}")
-    print(f"{'✅' if indicators_ok else '⚠️ '} 技术指标: {'满足要求' if indicators_ok else '部分不足'}")
+    print(f"✅ Configuration loading: success ({lookback_days}day)")
+    print(f"✅ date calculation: success ({actual_days}day)")
+    print(f"{'✅' if data_success else '❌'} data acquisition: {'success' if data_success else 'failed'}")
+    print(f"{'✅' if indicators_ok else '⚠️ '} Technical indicators: {'Meet the requirements' if indicators_ok else 'Partially insufficient'}")
     
     if lookback_days == 250 and data_success and indicators_ok:
-        print(f"\n🎉 完美！配置已设置为250天（专业级），所有测试通过！")
+        print(f"\n🎉 Perfect! Configuration has been set to 250 days (Professional level) and all tests passed!")
     elif data_success:
-        print(f"\n✅ 配置生效，数据获取正常")
+        print(f"\n✅ The configuration takes effect and data acquisition is normal.")
     else:
-        print(f"\n⚠️  存在问题，请检查日志")
+        print(f"\n⚠️  There is a problem, please check the logs")
     
     print("=" * 80)
 

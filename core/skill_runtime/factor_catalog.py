@@ -1,11 +1,11 @@
-"""Skill 运行时因子目录。
+"""Skill Runtime factor directory.
 
-把当前仓库内“已有数据 + 已有 helper + 已有指标实现”能够稳定支撑的常用因子
-整理成结构化目录，供以下场景复用：
+Put the current warehouse Already have data + Already helper + Indicators have been achieved Common factors that can stabilize support
+Organized into a structured directory for reuse in the following scenarios:
 
-1. 手工实现 Skill 时快速选型
-2. 生成式 Skill 的白名单约束
-3. 工作流/Agent 需要能力缺口分析时，优先复用现成因子
+1. Quick selection when implementing skills manually
+2. Whitelist constraints for generative skills
+3. When workflow/Agent requires capability gap analysis, give priority to reusing ready-made factors
 """
 
 from __future__ import annotations
@@ -138,101 +138,101 @@ def _missing_text_fragments(notes: List[str], expected_fragments: List[str]) -> 
 COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     "pe": FactorDefinition(
         factor_id="pe",
-        display_name="市盈率",
+        display_name="P/E ratio",
         category="valuation",
-        description="静态市盈率，适合做横向估值比较。",
+        description="Static P/E ratio is suitable for horizontal valuation comparisons.",
         implementation_level="ready",
         primary_sources=["stock_basic_info", "market_quotes"],
         helper_functions=["get_stock_basic_info", "get_market_quotes"],
         required_fields=["pe"],
-        fallback_rules=["若 basic_info.pe 缺失，可尝试 market_quotes.pe"],
+        fallback_rules=["If basic_info.pe is missing, try market_quotes.pe"],
     ),
     "pe_ttm": FactorDefinition(
         factor_id="pe_ttm",
-        display_name="滚动市盈率",
+        display_name="rolling price to earnings ratio",
         category="valuation",
-        description="优先使用的 PE 估值主字段。",
+        description="Preferred PE valuation master field.",
         implementation_level="ready",
         primary_sources=["stock_basic_info", "market_quotes"],
         helper_functions=["get_stock_valuation_context", "get_stock_basic_info"],
         required_fields=["pe_ttm"],
-        fallback_rules=["缺失时回退到 pe"],
+        fallback_rules=["Fallback to when missing pe"],
     ),
     "pb": FactorDefinition(
         factor_id="pb",
-        display_name="市净率",
+        display_name="price to book ratio",
         category="valuation",
-        description="适合金融、周期、重资产行业的估值比较。",
+        description="Suitable for valuation comparison in financial, cyclical, and asset-heavy industries.",
         implementation_level="ready",
         primary_sources=["stock_basic_info"],
         helper_functions=["get_stock_valuation_context", "get_stock_basic_info"],
         required_fields=["pb"],
-        fallback_rules=["缺失时回退到 pb_mrq"],
+        fallback_rules=["Fallback to when missing pb_mrq"],
     ),
     "pb_mrq": FactorDefinition(
         factor_id="pb_mrq",
-        display_name="最新市净率",
+        display_name="Latest price-to-book ratio",
         category="valuation",
-        description="最新口径 PB，可作为 PB 的回退字段。",
+        description="The latest caliber PB can be used as the fallback field of PB.",
         implementation_level="ready",
         primary_sources=["stock_basic_info", "stock_financial_periods", "market_quotes"],
         helper_functions=["get_stock_basic_info", "get_stock_financial_periods", "get_market_quotes"],
         required_fields=["pb_mrq|total_mv", "total_equity"],
-        fallback_rules=["若 basic_info.pb_mrq 缺失，则回退为 total_mv / total_equity 的最新期保守估算。"],
-        warnings=["当走 total_mv / total_equity 回补时，属于最新期保守估算口径。"],
+        fallback_rules=["If basic_info.pb_mrq is missing, fallback to the latest conservative estimate of total_mv / total_equity."],
+        warnings=["When using total_mv / total_equity backfill, it is a conservative estimate in the latest period."],
     ),
     "ps_ttm": FactorDefinition(
         factor_id="ps_ttm",
-        display_name="滚动市销率",
+        display_name="rolling price-to-sales ratio",
         category="valuation",
-        description="适合利润不稳定但营收可比的公司。",
+        description="Suitable for companies with unstable profits but comparable revenue.",
         implementation_level="ready",
         primary_sources=["stock_basic_info"],
         helper_functions=["get_stock_valuation_context", "get_stock_basic_info"],
         required_fields=["ps_ttm"],
-        fallback_rules=["缺失时回退到 ps"],
+        fallback_rules=["Fallback to when missing ps"],
     ),
     "dividend_yield": FactorDefinition(
         factor_id="dividend_yield",
-        display_name="股息率",
+        display_name="dividend yield",
         category="valuation",
-        description="适合高分红、防御型资产筛选。",
+        description="Suitable for screening high-dividend, defensive assets.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["dividend_yield|financial_indicators.dividend_yield"],
-        fallback_rules=["优先使用 basic_info.dividend_yield，缺失时回退到最新财务期 financial_indicators.dividend_yield 或 period 顶层 dividend_yield。"],
+        fallback_rules=["Basic_info.dividend_yield is used first. If missing, it falls back to the latest financial period financial_indicators.dividend_yield or period top-level dividend_yield."],
     ),
     "peg": FactorDefinition(
         factor_id="peg",
         display_name="PEG",
         category="valuation",
-        description="PE TTM 与净利润同比增速的比值。",
+        description="PE TTM The ratio to the year-on-year growth rate of net profit.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods", "stock_basic_info", "market_quotes"],
         helper_functions=["get_stock_financial_periods", "get_stock_basic_info", "get_market_quotes"],
         required_fields=["pe_ttm|pe", "net_profit_yoy"],
         formula="pe_ttm / net_profit_yoy",
-        fallback_rules=["pe_ttm 缺失时回退到 pe。"],
-        warnings=["仅在净利润同比为正且非 0 时计算，其他情况返回空值。"],
+        fallback_rules=["pe_ttm Fallback to pe when missing."],
+        warnings=["It is only calculated when the year-on-year net profit is positive and non-zero, otherwise it returns a null value."],
     ),
     "industry_pe_median": FactorDefinition(
         factor_id="industry_pe_median",
-        display_name="行业 PE 中位数",
+        display_name="Industry PE median",
         category="valuation",
-        description="用于横向行业比较的基准估值。",
+        description="Benchmark valuations used for cross-industry comparisons.",
         implementation_level="derived",
         primary_sources=["stock_basic_info"],
         helper_functions=["summarize_industry_valuation", "get_stock_basic_info"],
         required_fields=["industry", "pe_ttm|pe"],
         formula="summarize_industry_valuation(industry, metric='pe')['median']",
-        warnings=["行业样本数建议 >= 5，过小样本只做参考"],
+        warnings=["Industry sample number recommendations >= 5, The sample is too small for reference only"],
     ),
     "industry_pb_median": FactorDefinition(
         factor_id="industry_pb_median",
-        display_name="行业 PB 中位数",
+        display_name="Industry Median PB",
         category="valuation",
-        description="用于重资产行业的横向比较。",
+        description="Used for horizontal comparison in asset-heavy industries.",
         implementation_level="derived",
         primary_sources=["stock_basic_info"],
         helper_functions=["summarize_industry_valuation", "get_stock_basic_info"],
@@ -241,9 +241,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "roe": FactorDefinition(
         factor_id="roe",
-        display_name="净资产收益率",
+        display_name="ROE",
         category="quality",
-        description="核心盈利质量指标。",
+        description="Core earnings quality indicators.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -251,9 +251,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "roa": FactorDefinition(
         factor_id="roa",
-        display_name="总资产收益率",
+        display_name="return on total assets",
         category="quality",
-        description="衡量资产效率。",
+        description="Measure asset efficiency.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -261,9 +261,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "gross_margin": FactorDefinition(
         factor_id="gross_margin",
-        display_name="毛利率",
+        display_name="Gross profit margin",
         category="quality",
-        description="衡量产品/业务议价能力。",
+        description="Measure product/business bargaining power.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -271,9 +271,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "netprofit_margin": FactorDefinition(
         factor_id="netprofit_margin",
-        display_name="净利率",
+        display_name="net profit margin",
         category="quality",
-        description="衡量收入转利润的能力。",
+        description="Measures the ability to convert revenue into profit.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -281,9 +281,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "debt_to_assets": FactorDefinition(
         factor_id="debt_to_assets",
-        display_name="资产负债率",
+        display_name="Asset-liability ratio",
         category="risk",
-        description="财务杠杆与偿债压力指标。",
+        description="Financial leverage and debt repayment pressure indicators.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -291,9 +291,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "assets_to_eqt": FactorDefinition(
         factor_id="assets_to_eqt",
-        display_name="权益乘数",
+        display_name="equity multiplier",
         category="risk",
-        description="总资产相对股东权益的杠杆倍数。",
+        description="The leverage ratio of total assets to shareholders equity.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -301,9 +301,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "current_ratio": FactorDefinition(
         factor_id="current_ratio",
-        display_name="流动比率",
+        display_name="current ratio",
         category="risk",
-        description="短期偿债能力指标。",
+        description="Short-term solvency indicator.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -311,9 +311,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "quick_ratio": FactorDefinition(
         factor_id="quick_ratio",
-        display_name="速动比率",
+        display_name="quick ratio",
         category="risk",
-        description="剔除存货后的短期偿债能力。",
+        description="Short-term solvency after excluding inventories.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -321,9 +321,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "cash_ratio": FactorDefinition(
         factor_id="cash_ratio",
-        display_name="现金比率",
+        display_name="cash ratio",
         category="risk",
-        description="最保守的短期偿债能力。",
+        description="The most conservative short-term solvency.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -331,9 +331,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "net_working_capital": FactorDefinition(
         factor_id="net_working_capital",
-        display_name="净营运资本",
+        display_name="net working capital",
         category="cashflow",
-        description="流动资产减流动负债，衡量营运缓冲。",
+        description="Current assets less current liabilities measure operating buffers.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -342,9 +342,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "revenue_ttm": FactorDefinition(
         factor_id="revenue_ttm",
-        display_name="滚动营收",
+        display_name="rolling revenue",
         category="growth",
-        description="适合作为成长规模基线。",
+        description="Suitable as a baseline for growth scale.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -352,53 +352,53 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "net_profit_ttm": FactorDefinition(
         factor_id="net_profit_ttm",
-        display_name="滚动净利润",
+        display_name="rolling net profit",
         category="growth",
-        description="成长股利润规模基线。",
+        description="Growth stock profit scale baseline.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["net_profit_ttm|net_profit|net_income"],
-        fallback_rules=["优先使用 net_profit_ttm，缺失时回退到 net_profit 或 net_income。"],
+        fallback_rules=["Use net_profit_ttm in preference, falling back to net_profit or net_income if missing."],
     ),
     "piotroski_f_score": FactorDefinition(
         factor_id="piotroski_f_score",
         display_name="Piotroski F-Score",
         category="quality",
-        description="基于近两期财务信号的 9 分制质量评分。",
+        description="Quality score based on 9-point financial signals from the last two periods.",
         implementation_level="cautious",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["roa", "n_cashflow_act", "current_ratio", "gross_margin", "asset_turnover"],
-        warnings=["依赖近两期可比财务记录；缺少对比期或关键字段时应视为 cautious 输出。"],
+        warnings=["Rely on comparable financial records in the last two periods; missing comparison periods or key fields should be considered cautious output."],
     ),
     "altman_z_score": FactorDefinition(
         factor_id="altman_z_score",
         display_name="Altman Z-Score",
         category="risk",
-        description="财务困境风险评分。",
+        description="Financial Distress Risk Score.",
         implementation_level="cautious",
         primary_sources=["stock_financial_periods", "stock_basic_info", "market_quotes"],
         helper_functions=["get_stock_financial_periods", "get_stock_basic_info", "get_market_quotes"],
         required_fields=["total_assets", "total_liab", "total_cur_assets", "total_cur_liab", "ebit", "revenue"],
-        warnings=["依赖留存收益、EBIT 与市值口径，缺少关键分量或分母异常时应返回空值并附诊断。"],
+        warnings=["Depending on the caliber of retained earnings, EBIT and market capitalization, if a key component is missing or the denominator is abnormal, a null value should be returned with a diagnosis."],
     ),
     "beneish_m_score": FactorDefinition(
         factor_id="beneish_m_score",
         display_name="Beneish M-Score",
         category="risk",
-        description="盈余操纵风险识别评分。",
+        description="Earnings manipulation risk identification score.",
         implementation_level="cautious",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["revenue", "accounts_receiv", "oper_cost", "total_assets", "total_cur_assets", "fix_assets", "n_cashflow_act"],
-        warnings=["强依赖近两期原始折旧摊销和费用字段，当前真实覆盖率可能受 raw_data 完整性影响。"],
+        warnings=["Strongly dependent on the original depreciation, amortization and expense fields of the last two periods, the current true coverage may be affected by the completeness of raw_data."],
     ),
     "n_cashflow_act": FactorDefinition(
         factor_id="n_cashflow_act",
-        display_name="经营现金流净额",
+        display_name="Net operating cash flow",
         category="cashflow",
-        description="现金流质量核心指标。",
+        description="Core indicators of cash flow quality.",
         implementation_level="ready",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
@@ -406,241 +406,241 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "revenue_yoy": FactorDefinition(
         factor_id="revenue_yoy",
-        display_name="营收同比",
+        display_name="Year-on-year revenue",
         category="growth",
-        description="最新报告期相对上年同季的营收同比增速。",
+        description="The latest reporting period shows year-on-year revenue growth compared to the same quarter last year.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
-        required_fields=["revenue|oper_rev", "上年同季报告期"],
-        formula="(本期营收 - 上年同季营收) / 上年同季营收",
-        warnings=["缺少上年同季报告期或基期为 0 时返回空值。"],
+        required_fields=["revenue|oper_rev", "Same quarter reporting period last year"],
+        formula="(Revenue for the current period - revenue for the same quarter last year) / Revenue in the same quarter last year",
+        warnings=["Returns NULL if the reporting period for the same quarter of the previous year is missing or the base period is 0."],
     ),
     "net_profit_yoy": FactorDefinition(
         factor_id="net_profit_yoy",
-        display_name="净利润同比",
+        display_name="Net profit year-on-year",
         category="growth",
-        description="最新报告期相对上年同季的净利润同比增速。",
+        description="The latest reporting period shows a year-on-year growth rate of net profit compared to the same quarter last year.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
-        required_fields=["net_profit|net_income", "上年同季报告期"],
-        formula="(本期净利润 - 上年同季净利润) / 上年同季净利润",
-        warnings=["缺少上年同季报告期或基期为 0 时返回空值。"],
+        required_fields=["net_profit|net_income", "Same quarter reporting period last year"],
+        formula="(Net profit for the current period - net profit for the same quarter last year) / Net profit in the same quarter last year",
+        warnings=["Returns NULL if the reporting period for the same quarter of the previous year is missing or the base period is 0."],
     ),
     "oper_profit_yoy": FactorDefinition(
         factor_id="oper_profit_yoy",
-        display_name="营业利润同比",
+        display_name="Operating profit year-on-year",
         category="growth",
-        description="最新报告期相对上年同季的营业利润同比增速。",
+        description="The year-on-year growth rate of operating profit in the latest reporting period compared to the same quarter last year.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
-        required_fields=["oper_profit|operating_profit|ebit", "上年同季报告期"],
-        formula="(本期营业利润 - 上年同季营业利润) / 上年同季营业利润",
-        warnings=["缺少上年同季报告期或基期为 0 时返回空值。"],
+        required_fields=["oper_profit|operating_profit|ebit", "Same quarter reporting period last year"],
+        formula="(Operating profit for the current period - operating profit for the same quarter last year) / Operating profit in the same quarter last year",
+        warnings=["Returns NULL if the reporting period for the same quarter of the previous year is missing or the base period is 0."],
     ),
     "revenue_cagr_3y": FactorDefinition(
         factor_id="revenue_cagr_3y",
-        display_name="营收三年复合增速",
+        display_name="Three-year compound growth rate of revenue",
         category="growth",
-        description="同季三年前对比的三年营收 CAGR。",
+        description="Three-year revenue CAGR compared to same quarter three years ago.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
-        required_fields=["revenue_ttm|revenue|oper_rev", "同季三年前报告期"],
-        formula="(营收_t / 营收_t-3)^(1/3) - 1",
-        warnings=["缺少同季三年前报告期、基期非正或当前值非正时返回空值。"],
+        required_fields=["revenue_ttm|revenue|oper_rev", "Reporting period three years ago in the same quarter"],
+        formula="(Revenue_t/Revenue_t-3)^(1/3) - 1",
+        warnings=["A null value is returned if the reporting period three years ago in the same quarter is missing, the base period is non-positive, or the current value is non-positive."],
     ),
     "profit_cagr_3y": FactorDefinition(
         factor_id="profit_cagr_3y",
-        display_name="净利润三年复合增速",
+        display_name="Three-year compound growth rate of net profit",
         category="growth",
-        description="同季三年前对比的三年净利润 CAGR。",
+        description="Three-year net profit CAGR in the same quarter compared to three years ago.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
-        required_fields=["net_profit_ttm|net_profit|net_income", "同季三年前报告期"],
-        formula="(净利润_t / 净利润_t-3)^(1/3) - 1",
-        warnings=["缺少同季三年前报告期、基期非正或当前值非正时返回空值。"],
+        required_fields=["net_profit_ttm|net_profit|net_income", "Reporting period three years ago in the same quarter"],
+        formula="(Net profit_t / net profit_t-3)^(1/3) - 1",
+        warnings=["A null value is returned if the reporting period three years ago in the same quarter is missing, the base period is non-positive, or the current value is non-positive."],
     ),
     "roic": FactorDefinition(
         factor_id="roic",
-        display_name="投入资本回报率",
+        display_name="return on invested capital",
         category="quality",
-        description="营业利润近似 EBIT 的保守代理口径 ROIC。",
+        description="Operating profit approximates ROIC, a conservative proxy for EBIT.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["ebit|oper_profit|operating_profit", "total_equity", "total_liab"],
         formula="NOPAT / (total_equity + total_liab - money_cap)",
-        fallback_rules=["税率优先按 total_profit 与 net_profit 估算，缺失时使用 25% 默认税率。", "money_cap 缺失时按 0 处理。"],
-        warnings=["当前实现使用最新期口径和保守代理，不是严格的平均投入资本 ROIC。"],
+        fallback_rules=["The tax rate is first estimated based on total_profit and net_profit. If missing, the default tax rate of 25% is used.", "money_cap If missing, treat it as 0."],
+        warnings=["The current implementation uses the latest period caliber and a conservative proxy, not strictly average invested capital ROIC."],
     ),
     "cash_conversion": FactorDefinition(
         factor_id="cash_conversion",
-        display_name="利润现金转换率",
+        display_name="Profit to cash conversion rate",
         category="cashflow",
-        description="经营现金流相对净利润的转换能力。",
+        description="The conversion ability of operating cash flow relative to net profit.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["n_cashflow_act", "net_profit|net_income"],
         formula="n_cashflow_act / net_profit",
-        warnings=["净利润缺失或为 0 时返回空值。"],
+        warnings=["Returns null if net profit is missing or 0."],
     ),
     "accrual_ratio": FactorDefinition(
         factor_id="accrual_ratio",
-        display_name="应计利润比率",
+        display_name="accruals ratio",
         category="quality",
-        description="净利润与经营现金流偏离度。",
+        description="Deviation between net profit and operating cash flow.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["net_profit|net_income", "n_cashflow_act", "total_assets"],
         formula="(net_profit - n_cashflow_act) / total_assets",
-        warnings=["当前以最新总资产为分母并输出百分比，不是平均总资产口径。"],
+        warnings=["Currently, the latest total assets are used as the denominator and the percentage is output, not the average total assets."],
     ),
     "asset_turnover": FactorDefinition(
         factor_id="asset_turnover",
-        display_name="资产周转率",
+        display_name="asset turnover rate",
         category="quality",
-        description="营业收入相对总资产的周转效率。",
+        description="The turnover efficiency of operating income relative to total assets.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["revenue_ttm|revenue|oper_rev", "total_assets"],
         formula="revenue_base / total_assets",
-        warnings=["当前以最新总资产为分母，不是平均总资产口径。"],
+        warnings=["Currently, the latest total assets are used as the denominator, not the average total assets."],
     ),
     "gross_profit_to_assets": FactorDefinition(
         factor_id="gross_profit_to_assets",
-        display_name="毛利资产比",
+        display_name="gross profit to assets ratio",
         category="quality",
-        description="毛利润相对总资产的效率指标。",
+        description="Efficiency indicator of gross profit relative to total assets.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["revenue_ttm|revenue|oper_rev", "gross_margin", "total_assets"],
         formula="revenue_base * gross_margin / total_assets",
-        warnings=["当前以最新总资产为分母并输出百分比，不是平均总资产口径。"],
+        warnings=["Currently, the latest total assets are used as the denominator and the percentage is output, not the average total assets."],
     ),
     "interest_coverage": FactorDefinition(
         factor_id="interest_coverage",
-        display_name="利息保障倍数",
+        display_name="interest coverage ratio",
         category="risk",
-        description="EBIT 对利息费用的覆盖能力。",
+        description="EBIT Coverage of interest charges.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["ebit|oper_profit|operating_profit", "fin_exp|raw_data.income_statement.int_exp"],
         formula="ebit / interest_expense",
-        fallback_rules=["优先使用 ebit / fin_exp。", "当 fin_exp <= 0 时，回退到 raw income 中的 int_exp 或 fin_exp_int_exp。"],
-        warnings=["当利息费用缺失、非正或无法从 raw_data 回补时返回空值。"],
+        fallback_rules=["Prefer ebit/fin_exp.", "When fin_exp <= 0 fallback to int_exp or fin_exp_int_exp in raw income."],
+        warnings=["Returns NULL when the interest charge is missing, non-positive, or cannot be backfilled from raw_data."],
     ),
     "inventory_turnover": FactorDefinition(
         factor_id="inventory_turnover",
-        display_name="存货周转率",
+        display_name="Inventory turnover",
         category="quality",
-        description="营业成本相对存货余额的周转效率。",
+        description="Turnover efficiency of operating costs relative to inventory balance.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["oper_cost|revenue_ttm|revenue|oper_rev", "inventories"],
         formula="cost_base / inventories",
-        fallback_rules=["oper_cost 缺失时，允许用 revenue_base 与 gross_margin 反推成本代理。"],
-        warnings=["当前使用最新存货余额而不是平均存货余额。"],
+        fallback_rules=["oper_cost When missing, allows revenue_base and gross_margin to be used to infer cost proxies."],
+        warnings=["Currently the latest inventory balance is used instead of the average inventory balance."],
     ),
     "receivable_turnover": FactorDefinition(
         factor_id="receivable_turnover",
-        display_name="应收账款周转率",
+        display_name="Accounts receivable turnover ratio",
         category="quality",
-        description="营业收入相对最新应收账款余额的周转效率。",
+        description="The turnover efficiency of operating income relative to the latest accounts receivable balance.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["revenue_ttm|revenue|oper_rev", "accounts_receiv"],
         formula="revenue_base / accounts_receiv",
-        warnings=["当前使用最新应收账款余额而不是平均应收余额。"],
+        warnings=["Currently the latest receivable balance is used instead of the average receivable balance."],
     ),
     "net_cash_position": FactorDefinition(
         factor_id="net_cash_position",
-        display_name="净现金头寸",
+        display_name="net cash position",
         category="risk",
-        description="货币资金相对债务代理和总资产的保守净现金指标。",
+        description="A conservative net cash measure of monetary funds relative to a proxy for debt and total assets.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["money_cap", "total_assets", "total_ncl|total_liab|total_cur_liab"],
         formula="(money_cap - debt_proxy) / total_assets",
-        fallback_rules=["优先使用 total_ncl。", "缺少 total_ncl 时，回退为 total_liab - total_cur_liab。"],
-        warnings=["当前输出为保守代理口径百分比。"],
+        fallback_rules=["Use total_ncl in preference.", "When total_ncl is missing, the fallback is total_liab - total_cur_liab."],
+        warnings=["The current output is the conservative agent caliber percentage."],
     ),
     "fcf": FactorDefinition(
         factor_id="fcf",
-        display_name="自由现金流",
+        display_name="free cash flow",
         category="cashflow",
-        description="自由现金流的保守代理口径。",
+        description="Conservative proxy measure of free cash flow.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["n_cashflow_act", "n_cashflow_inv_act"],
         formula="n_cashflow_act + n_cashflow_inv_act",
-        warnings=["当前不是严格资本开支口径，而是 n_cashflow_act + n_cashflow_inv_act 的保守代理。"],
+        warnings=["At present, it is not strictly a matter of capital expenditure; n_cashflow_act + n_cashflow_inv_act conservative agent."],
     ),
     "fcf_yield": FactorDefinition(
         factor_id="fcf_yield",
-        display_name="自由现金流收益率",
+        display_name="free cash flow yield",
         category="valuation",
-        description="自由现金流相对总市值的收益率。",
+        description="The rate of return on free cash flow relative to total market capitalization.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods", "stock_basic_info", "market_quotes"],
         helper_functions=["get_stock_financial_periods", "get_stock_basic_info", "get_market_quotes"],
         required_fields=["fcf", "total_mv|market_cap"],
         formula="fcf / total_mv",
-        warnings=["市值字段当前按亿元口径换算，自由现金流按元口径计算。"],
+        warnings=["The market capitalization field is currently converted on a billion-yuan basis, and free cash flow is calculated on a yuan basis."],
     ),
     "fcf_margin": FactorDefinition(
         factor_id="fcf_margin",
-        display_name="自由现金流率",
+        display_name="free cash flow rate",
         category="cashflow",
-        description="自由现金流相对营收的比率。",
+        description="The ratio of free cash flow to revenue.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
         required_fields=["fcf", "revenue_ttm|revenue|oper_rev"],
         formula="fcf / revenue_base",
-        fallback_rules=["当前营收优先使用 revenue_ttm，缺失时回退到单期 revenue/oper_rev。"],
+        fallback_rules=["The current revenue will be given priority using revenue_ttm, and if it is missing, it will fall back to single-period revenue/oper_rev."],
     ),
     "ocf_yield": FactorDefinition(
         factor_id="ocf_yield",
-        display_name="经营现金流收益率",
+        display_name="operating cash flow yield",
         category="valuation",
-        description="经营现金流相对总市值的收益率。",
+        description="The return rate of operating cash flow relative to total market capitalization.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods", "stock_basic_info", "market_quotes"],
         helper_functions=["get_stock_financial_periods", "get_stock_basic_info", "get_market_quotes"],
         required_fields=["n_cashflow_act", "total_mv|market_cap"],
         formula="n_cashflow_act / total_mv",
-        warnings=["市值字段当前按亿元口径换算。"],
+        warnings=["The market capitalization field is currently converted based on the caliber of 100 million yuan."],
     ),
     "working_capital_change": FactorDefinition(
         factor_id="working_capital_change",
-        display_name="营运资本变动",
+        display_name="working capital changes",
         category="cashflow",
-        description="最近两期净营运资本差额。",
+        description="The difference in net working capital between the two most recent periods.",
         implementation_level="derived",
         primary_sources=["stock_financial_periods"],
         helper_functions=["get_stock_financial_periods"],
-        required_fields=["最近两期 total_cur_assets", "最近两期 total_cur_liab"],
+        required_fields=["The last two issues total_cur_assets", "The last two issues total_cur_liab"],
         formula="net_working_capital_t - net_working_capital_t-1",
-        warnings=["缺少最近两期任一期流动资产/流动负债时返回空值。"],
+        warnings=["A null value is returned if any of the most recent two periods of current assets/current liabilities is missing."],
     ),
     "pct_chg": FactorDefinition(
         factor_id="pct_chg",
-        display_name="涨跌幅",
+        display_name="Increase or decrease",
         category="momentum",
-        description="最新日涨跌幅。",
+        description="Latest daily rise and fall.",
         implementation_level="ready",
         primary_sources=["market_quotes", "stock_daily_quotes"],
         helper_functions=["get_market_quotes", "get_stock_daily_quotes"],
@@ -648,9 +648,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "turnover_rate": FactorDefinition(
         factor_id="turnover_rate",
-        display_name="换手率",
+        display_name="turnover rate",
         category="trading",
-        description="交投活跃度指标。",
+        description="Trading activity indicator.",
         implementation_level="ready",
         primary_sources=["stock_basic_info", "market_quotes"],
         helper_functions=["get_stock_basic_info", "get_market_quotes"],
@@ -658,9 +658,9 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "volume_ratio": FactorDefinition(
         factor_id="volume_ratio",
-        display_name="量比",
+        display_name="Quantity ratio",
         category="trading",
-        description="短期放量/缩量强度。",
+        description="Short-term volume increase/reduction intensity.",
         implementation_level="ready",
         primary_sources=["stock_basic_info", "market_quotes"],
         helper_functions=["get_stock_basic_info", "get_market_quotes"],
@@ -668,111 +668,111 @@ COMMON_FACTOR_CATALOG: Dict[str, FactorDefinition] = {
     ),
     "ma20": FactorDefinition(
         factor_id="ma20",
-        display_name="20 日均线",
+        display_name="20 daily moving average",
         category="technical",
-        description="中短期趋势基线。",
+        description="Short to medium term trend baseline.",
         implementation_level="time_series",
         primary_sources=["stock_daily_quotes"],
         helper_functions=["get_stock_daily_quotes", "compute_many"],
         required_fields=["close"],
         formula="MA(close, 20)",
-        warnings=["至少 20 个交易日历史行情。"],
+        warnings=["At least 20 trading days of historical market conditions."],
     ),
     "ma60": FactorDefinition(
         factor_id="ma60",
-        display_name="60 日均线",
+        display_name="60 daily moving average",
         category="technical",
-        description="中期趋势基线。",
+        description="Mid-term trend baseline.",
         implementation_level="time_series",
         primary_sources=["stock_daily_quotes"],
         helper_functions=["get_stock_daily_quotes", "compute_many"],
         required_fields=["close"],
         formula="MA(close, 60)",
-        warnings=["至少 60 个交易日历史行情。"],
+        warnings=["At least 60 trading days of historical market conditions."],
     ),
     "rsi14": FactorDefinition(
         factor_id="rsi14",
         display_name="RSI14",
         category="technical",
-        description="常用超买超卖指标。",
+        description="Commonly used overbought and oversold indicators.",
         implementation_level="time_series",
         primary_sources=["stock_daily_quotes"],
         helper_functions=["get_stock_daily_quotes", "compute_many"],
         required_fields=["close"],
         formula="RSI(close, 14)",
-        warnings=["至少 14 个交易日历史行情。"],
+        warnings=["At least 14 trading days of historical market conditions."],
     ),
     "kdj_k": FactorDefinition(
         factor_id="kdj_k",
         display_name="KDJ-K",
         category="technical",
-        description="KDJ 随机指标 K 值。",
+        description="KDJ Stochastic indicator K value.",
         implementation_level="time_series",
         primary_sources=["stock_daily_quotes"],
         helper_functions=["get_stock_daily_quotes", "compute_many"],
         required_fields=["high", "low", "close"],
         formula="KDJ(high, low, close).k",
-        warnings=["至少 9 个交易日高低收序列。"],
+        warnings=["At least 9 trading days of high and low closing sequences."],
     ),
     "kdj_d": FactorDefinition(
         factor_id="kdj_d",
         display_name="KDJ-D",
         category="technical",
-        description="KDJ 随机指标 D 值。",
+        description="KDJ Stochastic indicator D value.",
         implementation_level="time_series",
         primary_sources=["stock_daily_quotes"],
         helper_functions=["get_stock_daily_quotes", "compute_many"],
         required_fields=["high", "low", "close"],
         formula="KDJ(high, low, close).d",
-        warnings=["至少 9 个交易日高低收序列。"],
+        warnings=["At least 9 trading days of high and low closing sequences."],
     ),
     "kdj_j": FactorDefinition(
         factor_id="kdj_j",
         display_name="KDJ-J",
         category="technical",
-        description="KDJ 随机指标 J 值。",
+        description="KDJ Stochastic J value.",
         implementation_level="time_series",
         primary_sources=["stock_daily_quotes"],
         helper_functions=["get_stock_daily_quotes", "compute_many"],
         required_fields=["high", "low", "close"],
         formula="KDJ(high, low, close).j",
-        warnings=["至少 9 个交易日高低收序列。"],
+        warnings=["At least 9 trading days of high and low closing sequences."],
     ),
     "dif": FactorDefinition(
         factor_id="dif",
         display_name="MACD-DIF",
         category="technical",
-        description="MACD 快慢线差值。",
+        description="MACD The difference between fast and slow lines.",
         implementation_level="time_series",
         primary_sources=["stock_daily_quotes"],
         helper_functions=["get_stock_daily_quotes", "compute_many"],
         required_fields=["close"],
         formula="MACD(close).dif",
-        warnings=["至少 26 个交易日历史行情。"],
+        warnings=["At least 26 trading days of historical market conditions."],
     ),
     "dea": FactorDefinition(
         factor_id="dea",
         display_name="MACD-DEA",
         category="technical",
-        description="MACD 信号线。",
+        description="MACD signal line.",
         implementation_level="time_series",
         primary_sources=["stock_daily_quotes"],
         helper_functions=["get_stock_daily_quotes", "compute_many"],
         required_fields=["close"],
         formula="MACD(close).dea",
-        warnings=["至少 26 个交易日历史行情。"],
+        warnings=["At least 26 trading days of historical market conditions."],
     ),
     "macd_hist": FactorDefinition(
         factor_id="macd_hist",
-        display_name="MACD 柱状图",
+        display_name="MACD bar chart",
         category="technical",
-        description="MACD 动量扩散程度。",
+        description="MACD The degree of momentum diffusion.",
         implementation_level="time_series",
         primary_sources=["stock_daily_quotes"],
         helper_functions=["get_stock_daily_quotes", "compute_many"],
         required_fields=["close"],
         formula="MACD(close).hist",
-        warnings=["至少 26 个交易日历史行情。"],
+        warnings=["At least 26 trading days of historical market conditions."],
     ),
 }
 
@@ -814,7 +814,7 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
         direct_fields=["pb_mrq|total_mv", "total_equity"],
         source_priority=["basic_info.pb_mrq", "market_quotes.total_mv|basic_info.total_mv|basic_info.market_cap", "latest_financial.total_equity"],
         fallback_chain=["total_mv / total_equity"],
-        conservative_proxies=["保守估算"],
+        conservative_proxies=["Conservative estimate"],
         minimum_input_groups=[["pb_mrq"], ["total_mv|market_cap", "total_equity"]],
         minimum_computable_conditions=[COND_TOTAL_EQUITY_NON_ZERO],
         warning_conditions=[WARN_PB_MRQ_ESTIMATED_FROM_MARKET_CAP_AND_EQUITY],
@@ -827,7 +827,7 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
         fallback_chain=[
             "basic_info.dividend_yield",
             "financial_indicators.dividend_yield",
-            "period 顶层 dividend_yield",
+            "period top layer dividend_yield",
         ],
         minimum_input_groups=[["dividend_yield"], ["financial_indicators.dividend_yield"]],
         warning_conditions=[WARN_DIVIDEND_YIELD_FALLBACK_TO_FINANCIAL_FIELD],
@@ -835,14 +835,14 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
     ),
     "peg": RuntimeSemanticContract(
         direct_fields=["pe_ttm|pe", "net_profit_yoy"],
-        fallback_chain=["pe_ttm 缺失时回退到 pe"],
-        availability_constraints=["净利润同比为正且非 0"],
+        fallback_chain=["pe_ttm Fallback to when missing pe"],
+        availability_constraints=["Net profit is positive year-on-year and not 0"],
         minimum_input_groups=[["pe_ttm", "net_profit_yoy"], ["pe", "net_profit_yoy"]],
         minimum_computable_conditions=[COND_NET_PROFIT_YOY_POSITIVE, COND_NET_PROFIT_YOY_NON_ZERO],
     ),
     "industry_pe_median": RuntimeSemanticContract(
         direct_fields=["industry", "pe_ttm|pe"],
-        availability_constraints=["行业样本数建议 >= 5"],
+        availability_constraints=["Industry sample number recommendations >= 5"],
         minimum_input_groups=[["industry", "pe_ttm"], ["industry", "pe"]],
         warning_conditions=[WARN_INDUSTRY_PEER_SAMPLE_COUNT_LT_5],
         warning_categories=["low_sample_size"],
@@ -871,15 +871,15 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
     "altman_z_score": RuntimeSemanticContract(direct_fields=["total_assets", "total_liab", "total_cur_assets", "total_cur_liab", "ebit", "revenue"], minimum_input_groups=[["total_assets", "total_liab", "total_cur_assets", "total_cur_liab", "ebit", "revenue", "market_value_proxy", "undistr_porfit"]], minimum_computable_conditions=[COND_TOTAL_ASSETS_NON_ZERO, COND_TOTAL_LIAB_NON_ZERO]),
     "beneish_m_score": RuntimeSemanticContract(direct_fields=["revenue", "accounts_receiv", "oper_cost", "total_assets", "total_cur_assets", "fix_assets", "n_cashflow_act"], minimum_input_groups=[["latest_period", "comparison_period", "revenue", "accounts_receiv", "oper_cost", "total_assets", "total_cur_assets", "fix_assets", "n_cashflow_act", "depreciation_current", "depreciation_previous"]], minimum_computable_conditions=[COND_COMPARISON_PERIOD_AVAILABLE, COND_SALES_CURRENT_NON_ZERO, COND_SALES_PREVIOUS_NON_ZERO, COND_TOTAL_ASSETS_CURRENT_NON_ZERO, COND_TOTAL_ASSETS_PREVIOUS_NON_ZERO, COND_TOTAL_LIAB_PREVIOUS_NON_ZERO, COND_DEPRECIATION_PLUS_FIXED_ASSETS_CURRENT_NON_ZERO, COND_DEPRECIATION_PLUS_FIXED_ASSETS_PREVIOUS_NON_ZERO, COND_SGA_PREVIOUS_NON_ZERO, COND_GROSS_MARGIN_CURRENT_NON_ZERO, COND_ASSET_QUALITY_PREVIOUS_NON_ZERO]),
     "n_cashflow_act": RuntimeSemanticContract(direct_fields=["n_cashflow_act"], period_selection_strategy="current_period_only", minimum_input_groups=[["n_cashflow_act"]]),
-    "revenue_yoy": RuntimeSemanticContract(direct_fields=["revenue|oper_rev", "上年同季报告期"], period_selection_strategy="same_period_last_year", minimum_input_groups=[["latest_period.revenue|oper_rev", "prior_same_period.revenue|oper_rev"]], minimum_computable_conditions=[COND_COMPARISON_PERIOD_AVAILABLE, COND_PRIOR_PERIOD_METRIC_NON_ZERO]),
-    "net_profit_yoy": RuntimeSemanticContract(direct_fields=["net_profit|net_income", "上年同季报告期"], period_selection_strategy="same_period_last_year", minimum_input_groups=[["latest_period.net_profit|net_income", "prior_same_period.net_profit|net_income"]], minimum_computable_conditions=[COND_COMPARISON_PERIOD_AVAILABLE, COND_PRIOR_PERIOD_METRIC_NON_ZERO]),
-    "oper_profit_yoy": RuntimeSemanticContract(direct_fields=["oper_profit|operating_profit|ebit", "上年同季报告期"], period_selection_strategy="same_period_last_year", minimum_input_groups=[["latest_period.oper_profit|operating_profit|ebit", "prior_same_period.oper_profit|operating_profit|ebit"]], minimum_computable_conditions=[COND_COMPARISON_PERIOD_AVAILABLE, COND_PRIOR_PERIOD_METRIC_NON_ZERO]),
-    "revenue_cagr_3y": RuntimeSemanticContract(direct_fields=["revenue_ttm|revenue|oper_rev", "同季三年前报告期"], period_selection_strategy="same_period_n_years_3", minimum_input_groups=[["latest_period.revenue_ttm|revenue|oper_rev", "base_3y_period.revenue_ttm|revenue|oper_rev"]], minimum_computable_conditions=[COND_BASE_PERIOD_AVAILABLE, COND_CURRENT_VALUE_POSITIVE, COND_BASE_VALUE_POSITIVE]),
-    "profit_cagr_3y": RuntimeSemanticContract(direct_fields=["net_profit_ttm|net_profit|net_income", "同季三年前报告期"], period_selection_strategy="same_period_n_years_3", minimum_input_groups=[["latest_period.net_profit_ttm|net_profit|net_income", "base_3y_period.net_profit_ttm|net_profit|net_income"]], minimum_computable_conditions=[COND_BASE_PERIOD_AVAILABLE, COND_CURRENT_VALUE_POSITIVE, COND_BASE_VALUE_POSITIVE]),
+    "revenue_yoy": RuntimeSemanticContract(direct_fields=["revenue|oper_rev", "Same quarter reporting period last year"], period_selection_strategy="same_period_last_year", minimum_input_groups=[["latest_period.revenue|oper_rev", "prior_same_period.revenue|oper_rev"]], minimum_computable_conditions=[COND_COMPARISON_PERIOD_AVAILABLE, COND_PRIOR_PERIOD_METRIC_NON_ZERO]),
+    "net_profit_yoy": RuntimeSemanticContract(direct_fields=["net_profit|net_income", "Same quarter reporting period last year"], period_selection_strategy="same_period_last_year", minimum_input_groups=[["latest_period.net_profit|net_income", "prior_same_period.net_profit|net_income"]], minimum_computable_conditions=[COND_COMPARISON_PERIOD_AVAILABLE, COND_PRIOR_PERIOD_METRIC_NON_ZERO]),
+    "oper_profit_yoy": RuntimeSemanticContract(direct_fields=["oper_profit|operating_profit|ebit", "Same quarter reporting period last year"], period_selection_strategy="same_period_last_year", minimum_input_groups=[["latest_period.oper_profit|operating_profit|ebit", "prior_same_period.oper_profit|operating_profit|ebit"]], minimum_computable_conditions=[COND_COMPARISON_PERIOD_AVAILABLE, COND_PRIOR_PERIOD_METRIC_NON_ZERO]),
+    "revenue_cagr_3y": RuntimeSemanticContract(direct_fields=["revenue_ttm|revenue|oper_rev", "Reporting period three years ago in the same quarter"], period_selection_strategy="same_period_n_years_3", minimum_input_groups=[["latest_period.revenue_ttm|revenue|oper_rev", "base_3y_period.revenue_ttm|revenue|oper_rev"]], minimum_computable_conditions=[COND_BASE_PERIOD_AVAILABLE, COND_CURRENT_VALUE_POSITIVE, COND_BASE_VALUE_POSITIVE]),
+    "profit_cagr_3y": RuntimeSemanticContract(direct_fields=["net_profit_ttm|net_profit|net_income", "Reporting period three years ago in the same quarter"], period_selection_strategy="same_period_n_years_3", minimum_input_groups=[["latest_period.net_profit_ttm|net_profit|net_income", "base_3y_period.net_profit_ttm|net_profit|net_income"]], minimum_computable_conditions=[COND_BASE_PERIOD_AVAILABLE, COND_CURRENT_VALUE_POSITIVE, COND_BASE_VALUE_POSITIVE]),
     "roic": RuntimeSemanticContract(
         direct_fields=["ebit|oper_profit|operating_profit", "total_equity", "total_liab"],
-        fallback_chain=["total_profit 与 net_profit 估算", "25% 默认税率", "money_cap 缺失时按 0 处理"],
-        conservative_proxies=["平均投入资本"],
+        fallback_chain=["total_profit Estimate with net_profit", "25% Default tax rate", "money_cap If missing, treat it as 0"],
+        conservative_proxies=["Average invested capital"],
         tax_estimation_strategy="profit_based_clamped_0_35_else_fixed_25",
         minimum_input_groups=[["ebit|oper_profit|operating_profit", "total_equity", "total_liab"]],
         minimum_computable_conditions=[COND_INVESTED_CAPITAL_POSITIVE],
@@ -888,34 +888,34 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
     ),
     "cash_conversion": RuntimeSemanticContract(
         direct_fields=["n_cashflow_act", "net_profit|net_income"],
-        availability_constraints=["净利润缺失或为 0 时返回空值"],
+        availability_constraints=["If the net profit is missing or 0, a null value is returned."],
         minimum_input_groups=[["n_cashflow_act", "net_profit|net_income"]],
         minimum_computable_conditions=[COND_NET_PROFIT_NON_ZERO],
     ),
     "accrual_ratio": RuntimeSemanticContract(
         direct_fields=["net_profit|net_income", "n_cashflow_act", "total_assets"],
-        denominator_guards=["最新总资产为分母"],
-        unit_conversions=["百分比"],
+        denominator_guards=["Latest total assets as denominator"],
+        unit_conversions=["Percentage"],
         minimum_input_groups=[["net_profit|net_income", "n_cashflow_act", "total_assets"]],
         minimum_computable_conditions=[COND_TOTAL_ASSETS_NON_ZERO],
     ),
     "asset_turnover": RuntimeSemanticContract(
         direct_fields=["revenue_ttm|revenue|oper_rev", "total_assets"],
-        denominator_guards=["最新总资产为分母", "不是平均总资产口径"],
+        denominator_guards=["Latest total assets as denominator", "Not average total assets"],
         minimum_input_groups=[["revenue_ttm|revenue|oper_rev", "total_assets"]],
         minimum_computable_conditions=[COND_TOTAL_ASSETS_NON_ZERO],
     ),
     "gross_profit_to_assets": RuntimeSemanticContract(
         direct_fields=["revenue_ttm|revenue|oper_rev", "gross_margin", "total_assets"],
-        denominator_guards=["最新总资产为分母"],
-        unit_conversions=["百分比"],
+        denominator_guards=["Latest total assets as denominator"],
+        unit_conversions=["Percentage"],
         minimum_input_groups=[["revenue_ttm|revenue|oper_rev", "gross_margin", "total_assets"]],
         minimum_computable_conditions=[COND_TOTAL_ASSETS_NON_ZERO],
     ),
     "interest_coverage": RuntimeSemanticContract(
         direct_fields=["ebit|oper_profit|operating_profit", "fin_exp|raw_data.income_statement.int_exp"],
         fallback_chain=["ebit / fin_exp", "fin_exp <= 0", "int_exp", "fin_exp_int_exp"],
-        availability_constraints=["利息费用缺失", "非正", "raw_data"],
+        availability_constraints=["Missing interest charges", "Incorrect", "raw_data"],
         minimum_input_groups=[["ebit|oper_profit|operating_profit", "fin_exp"], ["ebit|oper_profit|operating_profit", "raw_data.income_statement.int_exp|fin_exp_int_exp"]],
         minimum_computable_conditions=[COND_INTEREST_EXPENSE_POSITIVE],
         warning_conditions=[WARN_INTEREST_COVERAGE_FALLBACK_TO_RAW_INTEREST_EXPENSE],
@@ -923,8 +923,8 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
     ),
     "inventory_turnover": RuntimeSemanticContract(
         direct_fields=["oper_cost|revenue_ttm|revenue|oper_rev", "inventories"],
-        fallback_chain=["oper_cost 缺失时", "gross_margin"],
-        denominator_guards=["最新存货余额", "不是平均存货余额"],
+        fallback_chain=["oper_cost When missing", "gross_margin"],
+        denominator_guards=["Latest inventory balance", "Not the average inventory balance"],
         minimum_input_groups=[["oper_cost", "inventories"], ["revenue_ttm|revenue|oper_rev", "gross_margin", "inventories"]],
         minimum_computable_conditions=[COND_INVENTORIES_NON_ZERO],
         warning_conditions=[WARN_INVENTORY_TURNOVER_COST_PROXY_USED],
@@ -932,14 +932,14 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
     ),
     "receivable_turnover": RuntimeSemanticContract(
         direct_fields=["revenue_ttm|revenue|oper_rev", "accounts_receiv"],
-        denominator_guards=["最新应收账款余额", "不是平均应收余额"],
+        denominator_guards=["Latest accounts receivable balance", "Not the average balance receivable"],
         minimum_input_groups=[["revenue_ttm|revenue|oper_rev", "accounts_receiv"]],
         minimum_computable_conditions=[COND_ACCOUNTS_RECEIV_NON_ZERO],
     ),
     "net_cash_position": RuntimeSemanticContract(
         direct_fields=["money_cap", "total_assets", "total_ncl|total_liab|total_cur_liab"],
         fallback_chain=["total_ncl", "total_liab - total_cur_liab"],
-        conservative_proxies=["保守代理口径百分比"],
+        conservative_proxies=["Conservative agent caliber percentage"],
         minimum_input_groups=[["money_cap", "total_ncl", "total_assets"], ["money_cap", "total_liab", "total_cur_liab", "total_assets"]],
         minimum_computable_conditions=[COND_TOTAL_ASSETS_NON_ZERO],
         warning_conditions=[WARN_NET_CASH_POSITION_PROXY_TOTAL_NCL_USED],
@@ -947,7 +947,7 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
     ),
     "fcf": RuntimeSemanticContract(
         direct_fields=["n_cashflow_act", "n_cashflow_inv_act"],
-        conservative_proxies=["n_cashflow_act + n_cashflow_inv_act", "保守代理"],
+        conservative_proxies=["n_cashflow_act + n_cashflow_inv_act", "conservative agent"],
         minimum_input_groups=[["n_cashflow_act", "n_cashflow_inv_act"]],
         warning_conditions=[WARN_FCF_CONSERVATIVE_PROXY_USED],
         warning_categories=["proxy_used"],
@@ -955,7 +955,7 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
     "fcf_yield": RuntimeSemanticContract(
         direct_fields=["fcf", "total_mv|market_cap"],
         source_priority=["market_quotes.total_mv", "basic_info.total_mv", "basic_info.market_cap"],
-        unit_conversions=["亿元口径换算", "元口径"],
+        unit_conversions=["Billion dollar caliber conversion", "yuan caliber"],
         minimum_input_groups=[["fcf", "total_mv|market_cap"]],
         minimum_computable_conditions=[COND_MARKET_CAP_NON_ZERO],
     ),
@@ -968,26 +968,26 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS: Dict[str, RuntimeSemanticContract] = {
     "ocf_yield": RuntimeSemanticContract(
         direct_fields=["n_cashflow_act", "total_mv|market_cap"],
         source_priority=["market_quotes.total_mv", "basic_info.total_mv", "basic_info.market_cap"],
-        unit_conversions=["亿元口径换算"],
+        unit_conversions=["Billion dollar caliber conversion"],
         minimum_input_groups=[["n_cashflow_act", "total_mv|market_cap"]],
         minimum_computable_conditions=[COND_MARKET_CAP_NON_ZERO],
     ),
     "working_capital_change": RuntimeSemanticContract(
-        direct_fields=["最近两期 total_cur_assets", "最近两期 total_cur_liab"],
-        availability_constraints=["最近两期", "流动资产/流动负债"],
+        direct_fields=["The last two issues total_cur_assets", "The last two issues total_cur_liab"],
+        availability_constraints=["The last two issues", "Current assets/current liabilities"],
         period_selection_strategy="previous_available_period",
         minimum_input_groups=[["latest_period.total_cur_assets", "latest_period.total_cur_liab", "previous_period.total_cur_assets", "previous_period.total_cur_liab"]],
         minimum_computable_conditions=[COND_PREVIOUS_PERIOD_AVAILABLE],
     ),
-    "ma20": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.ma20", "stock_daily_quotes.close"], availability_constraints=["至少 20 个交易日历史行情"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
-    "ma60": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_daily_quotes.close"], availability_constraints=["至少 60 个交易日历史行情"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
-    "rsi14": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.rsi14", "stock_daily_quotes.close"], availability_constraints=["至少 14 个交易日历史行情"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
-    "kdj_k": RuntimeSemanticContract(direct_fields=["high", "low", "close"], source_priority=["stock_technical_indicators.kdj_k", "stock_daily_quotes.high|low|close"], availability_constraints=["至少 9 个交易日高低收序列"], minimum_input_groups=[["high", "low", "close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
-    "kdj_d": RuntimeSemanticContract(direct_fields=["high", "low", "close"], source_priority=["stock_technical_indicators.kdj_d", "stock_daily_quotes.high|low|close"], availability_constraints=["至少 9 个交易日高低收序列"], minimum_input_groups=[["high", "low", "close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
-    "kdj_j": RuntimeSemanticContract(direct_fields=["high", "low", "close"], source_priority=["stock_technical_indicators.kdj_j", "stock_daily_quotes.high|low|close"], availability_constraints=["至少 9 个交易日高低收序列"], minimum_input_groups=[["high", "low", "close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
-    "dif": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.dif", "stock_daily_quotes.close"], availability_constraints=["至少 26 个交易日历史行情"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
-    "dea": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.dea", "stock_daily_quotes.close"], availability_constraints=["至少 26 个交易日历史行情"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
-    "macd_hist": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.macd_hist", "stock_daily_quotes.close"], availability_constraints=["至少 26 个交易日历史行情"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
+    "ma20": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.ma20", "stock_daily_quotes.close"], availability_constraints=["At least 20 trading days of historical market conditions"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
+    "ma60": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_daily_quotes.close"], availability_constraints=["At least 60 trading days of historical market conditions"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
+    "rsi14": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.rsi14", "stock_daily_quotes.close"], availability_constraints=["At least 14 trading days of historical market conditions"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
+    "kdj_k": RuntimeSemanticContract(direct_fields=["high", "low", "close"], source_priority=["stock_technical_indicators.kdj_k", "stock_daily_quotes.high|low|close"], availability_constraints=["At least 9 trading days of high and low closing sequences"], minimum_input_groups=[["high", "low", "close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
+    "kdj_d": RuntimeSemanticContract(direct_fields=["high", "low", "close"], source_priority=["stock_technical_indicators.kdj_d", "stock_daily_quotes.high|low|close"], availability_constraints=["At least 9 trading days of high and low closing sequences"], minimum_input_groups=[["high", "low", "close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
+    "kdj_j": RuntimeSemanticContract(direct_fields=["high", "low", "close"], source_priority=["stock_technical_indicators.kdj_j", "stock_daily_quotes.high|low|close"], availability_constraints=["At least 9 trading days of high and low closing sequences"], minimum_input_groups=[["high", "low", "close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
+    "dif": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.dif", "stock_daily_quotes.close"], availability_constraints=["At least 26 trading days of historical market conditions"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
+    "dea": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.dea", "stock_daily_quotes.close"], availability_constraints=["At least 26 trading days of historical market conditions"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
+    "macd_hist": RuntimeSemanticContract(direct_fields=["close"], source_priority=["stock_technical_indicators.macd_hist", "stock_daily_quotes.close"], availability_constraints=["At least 26 trading days of historical market conditions"], minimum_input_groups=[["close"]], minimum_computable_conditions=[COND_TECHNICAL_LOOKBACK_WINDOW_AVAILABLE]),
 }
 
 FACTOR_RUNTIME_SEMANTIC_CONTRACTS = {
@@ -997,26 +997,26 @@ FACTOR_RUNTIME_SEMANTIC_CONTRACTS = {
 
 
 def get_factor_definition(factor_id: str) -> Optional[FactorDefinition]:
-    """按 factor_id 查询通用因子目录中的因子定义。
+    """Query the factor definitions in the universal factor catalog by factor_id.
 
     Args:
-        factor_id: 因子标识（如 "pe_ttm" / "roe"），内部会去除首尾空白
+        factor_id: factor identifier (e.g. "pe_ttm" / "roe") , Leading and trailing whitespace will be removed internally
 
     Returns:
-        Optional[FactorDefinition]: 命中的因子定义对象；未登记时返回 None
+        Optional[FactorDefinition]: Hit factor definition object; returned if not registered None
     """
     return COMMON_FACTOR_CATALOG.get(str(factor_id).strip())
 
 
 def list_factor_definitions(category: Optional[FactorCategory] = None) -> List[Dict[str, object]]:
-    """列出通用因子目录中的因子定义（按 category 与 factor_id 排序）。
+    """Lists factor definitions in the common factors catalog (sorted by category and factor_id).
 
     Args:
-        category: 可选的因子类别过滤，默认为 None（不过滤）
+        category: Optional factor category filtering, default is None (no filtering)
 
     Returns:
-        list[dict]: 因子定义 dict 列表，元素结构由 FactorDefinition.to_dict() 决定，按
-            (category, factor_id) 升序排序
+        list[dict]: Factor definition dict list, element structure is given by FactorDefinition.to_dict() decide, press
+            (category, factor_id) Sort in ascending order
     """
     items = list(COMMON_FACTOR_CATALOG.values())
     if category:
@@ -1025,15 +1025,15 @@ def list_factor_definitions(category: Optional[FactorCategory] = None) -> List[D
 
 
 def get_factor_pack(pack_id: str) -> List[Dict[str, object]]:
-    """按 pack_id 获取推荐因子包内的因子定义列表。
+    """Get a list of factor definitions within a recommended factor pack by pack_id.
 
     Args:
-        pack_id: 因子包标识（如 "value_core" / "quality_core" / "growth_cashflow_core" /
-            "technical_core" / "liquidity_core"），内部会去除首尾空白
+        pack_id: factor package identifier (e.g. "value_core" / "quality_core" / "growth_cashflow_core" /
+            "technical_core" / "liquidity_core") , Leading and trailing whitespace will be removed internally
 
     Returns:
-        list[dict]: 该 pack 中所有已登记因子的 to_dict() 结果列表；
-            未配置或因子均未登记时返回空列表
+        list[dict]: of all registered factors in this pack to_dict() Result list;
+            If it is not configured or none of the factors are registered, an empty list will be returned.
     """
     factor_ids = RECOMMENDED_FACTOR_PACKS.get(str(pack_id).strip(), [])
     return [COMMON_FACTOR_CATALOG[factor_id].to_dict() for factor_id in factor_ids if factor_id in COMMON_FACTOR_CATALOG]
@@ -1045,17 +1045,17 @@ def infer_recommended_factor_packs(
     category: str = "",
     expected_fields: Optional[List[str]] = None,
 ) -> List[str]:
-    """根据自然语言文本、类别或期望字段推断推荐的 factor pack 列表。
+    """Infer a list of recommended factor packs based on natural language text, categories, or desired fields.
 
     Args:
-        text: 自然语言需求描述，默认为 ""
-        category: 类别关键词，默认为 ""
-        expected_fields: 期望因子字段名列表，默认为 None
+        text: Natural language requirement description, default is ""
+        category: Category keyword, default is ""
+        expected_fields: List of expected factor field names, default is None
 
     Returns:
-        list[str]: 推荐 pack_id 列表，元素可能值：
+        list[str]: Recommended pack_id list, possible element values:
             "value_core" / "quality_core" / "growth_cashflow_core" /
-            "technical_core" / "liquidity_core"；按命中顺序去重
+            "technical_core" / "liquidity_core"; Remove duplicates in hit order
     """
     normalized = " ".join([
         str(text or "").lower(),
@@ -1065,17 +1065,17 @@ def infer_recommended_factor_packs(
 
     pack_ids: List[str] = []
 
-    if any(keyword in normalized for keyword in ["估值", "valuation", "pe", "pb", "ps", "peg", "股息率", "同行", "peer"]):
+    if any(keyword in normalized for keyword in ["Valuation", "valuation", "pe", "pb", "ps", "peg", "dividend yield", "peers", "peer"]):
         pack_ids.append("value_core")
-    if any(keyword in normalized for keyword in ["peg", "净利润增长", "profit growth", "earnings growth"]):
+    if any(keyword in normalized for keyword in ["peg", "Net profit growth", "profit growth", "earnings growth"]):
         pack_ids.append("growth_cashflow_core")
-    if any(keyword in normalized for keyword in ["质量", "quality", "roe", "roa", "毛利率", "净利率", "负债率", "流动比率", "财务健康"]):
+    if any(keyword in normalized for keyword in ["quality", "quality", "roe", "roa", "Gross profit margin", "net profit margin", "Debt ratio", "current ratio", "financial health"]):
         pack_ids.append("quality_core")
-    if any(keyword in normalized for keyword in ["增长", "growth", "现金流", "cashflow", "营收", "净利润", "fcf", "ttm", "同比", "cagr"]):
+    if any(keyword in normalized for keyword in ["growth", "growth", "cash flow", "cashflow", "Revenue", "net profit", "fcf", "ttm", "Year-on-year", "cagr"]):
         pack_ids.append("growth_cashflow_core")
-    if any(keyword in normalized for keyword in ["技术", "technical", "ma", "均线", "rsi", "kdj", "macd", "动量", "momentum"]):
+    if any(keyword in normalized for keyword in ["technology", "technical", "ma", "moving average", "rsi", "kdj", "macd", "momentum", "momentum"]):
         pack_ids.append("technical_core")
-    if any(keyword in normalized for keyword in ["换手率", "量比", "涨跌幅", "成交活跃", "流动性", "liquidity", "turnover", "volume_ratio", "pct_chg"]):
+    if any(keyword in normalized for keyword in ["turnover rate", "Quantity ratio", "Increase or decrease", "Active trading", "Liquidity", "liquidity", "turnover", "volume_ratio", "pct_chg"]):
         pack_ids.append("liquidity_core")
 
     for field_name in expected_fields or []:
@@ -1096,18 +1096,18 @@ def select_relevant_factor_definitions(
     expected_fields: Optional[List[str]] = None,
     max_items: int = 16,
 ) -> List[Dict[str, object]]:
-    """根据需求文本/类别/期望字段挑选相关因子定义，最多返回 max_items 条。
+    """Select relevant factor definitions based on requirement text/category/expect fields, returning at most max_items items.
 
     Args:
-        text: 自然语言需求描述，默认为 ""
-        category: 类别关键词，默认为 ""
-        expected_fields: 期望因子字段名列表，默认为 None
-        max_items: 最多返回条目数，默认为 16
+        text: Natural language requirement description, default is ""
+        category: Category keyword, default is ""
+        expected_fields: List of expected factor field names, default is None
+        max_items: Maximum number of entries returned, default is 16
 
     Returns:
-        list[dict]: 选中因子的 to_dict() 结果，元素结构由 FactorDefinition.to_dict() 决定；
-            选取顺序：先 expected_fields 命中字段，再 infer_recommended_factor_packs 命中字段，
-            最后按 fallback category 兜底；总数不超过 max_items
+        list[dict]: selected factor to_dict() As a result, the element structure is given by FactorDefinition.to_dict() decide;
+            Selection order: first expected_fields hits the field, then infer_recommended_factor_packs hits the field,
+            Finally, press fallback category to save; the total number does not exceed max_items
     """
     selected_ids: List[str] = []
 
@@ -1124,15 +1124,15 @@ def select_relevant_factor_definitions(
     if not selected_ids:
         normalized = f"{text} {category}".lower()
         fallback_categories: List[str] = []
-        if any(keyword in normalized for keyword in ["估值", "valuation", "pe", "pb", "peg", "ps"]):
+        if any(keyword in normalized for keyword in ["Valuation", "valuation", "pe", "pb", "peg", "ps"]):
             fallback_categories.append("valuation")
-        if any(keyword in normalized for keyword in ["质量", "quality", "roe", "roa", "毛利率", "净利率"]):
+        if any(keyword in normalized for keyword in ["quality", "quality", "roe", "roa", "Gross profit margin", "net profit margin"]):
             fallback_categories.append("quality")
-        if any(keyword in normalized for keyword in ["技术", "technical", "rsi", "macd", "kdj", "ma"]):
+        if any(keyword in normalized for keyword in ["technology", "technical", "rsi", "macd", "kdj", "ma"]):
             fallback_categories.append("technical")
-        if any(keyword in normalized for keyword in ["增长", "growth", "现金流", "cashflow", "同比", "fcf"]):
+        if any(keyword in normalized for keyword in ["growth", "growth", "cash flow", "cashflow", "Year-on-year", "fcf"]):
             fallback_categories.extend(["growth", "cashflow"])
-        if any(keyword in normalized for keyword in ["换手率", "量比", "涨跌幅", "liquidity", "turnover"]):
+        if any(keyword in normalized for keyword in ["turnover rate", "Quantity ratio", "Increase or decrease", "liquidity", "turnover"]):
             fallback_categories.append("trading")
 
         for item in list_factor_definitions():
@@ -1151,17 +1151,17 @@ def build_factor_catalog_prompt_context(
     expected_fields: Optional[List[str]] = None,
     max_items: int = 16,
 ) -> str:
-    """构建用于 Skill 生成提示的因子目录上下文文本。
+    """Constructs factor catalog context text for skill generation prompts.
 
     Args:
-        text: 自然语言需求描述，默认为 ""
-        category: 类别关键词，默认为 ""
-        expected_fields: 期望因子字段名列表，默认为 None
-        max_items: 选取因子上限，默认为 16
+        text: Natural language requirement description, default is ""
+        category: Category keyword, default is ""
+        expected_fields: List of expected factor field names, default is None
+        max_items: Select the factor upper limit, the default is 16
 
     Returns:
-        str: 多行 prompt 文本；包含推荐 pack、helper/bundle 提示、可用因子列表与生成约束；
-            若未命中任何因子且无 pack，返回空字符串 ""
+        str: Multi-line prompt text; contains recommended pack, helper/bundle prompts, available factor list, and generation constraints;
+            If no factors are hit and there is no pack, an empty string is returned ""
     """
     factor_items = select_relevant_factor_definitions(
         text,
@@ -1179,11 +1179,11 @@ def build_factor_catalog_prompt_context(
         return ""
 
     lines: List[str] = [
-        "当前需求命中的常用分析因子白名单：",
-        "- 这些因子已经在 runtime catalog 中登记，生成 Skill 时优先复用，不要自造近义字段或另起一套口径。",
+        "Common analysis factor whitelist for current demand hits:",
+        "- These factors have been registered in the runtime catalog and should be reused first when generating Skills. Do not create your own synonymous fields or create a new set of calibers.",
     ]
     if pack_ids:
-        lines.append(f"- 推荐 factor packs: {', '.join(pack_ids)}")
+        lines.append(f"- Recommended factor packs: {', '.join(pack_ids)}")
 
     helper_hints: List[str] = []
     if "value_core" in pack_ids:
@@ -1195,9 +1195,9 @@ def build_factor_catalog_prompt_context(
     if "technical_core" in pack_ids:
         helper_hints.extend(["get_stock_daily_quotes", "compute_many"])
     if helper_hints:
-        lines.append(f"- 优先 helper/bundle: {', '.join(list(dict.fromkeys(helper_hints)))}")
+        lines.append(f"- Priority helper/bundle: {', '.join(list(dict.fromkeys(helper_hints)))}")
 
-    lines.append("- 可用因子: ")
+    lines.append("- Available factors: ")
     for item in factor_items:
         factor_id = str(item.get("factor_id") or "").strip()
         display_name = str(item.get("display_name") or factor_id).strip()
@@ -1215,25 +1215,25 @@ def build_factor_catalog_prompt_context(
         lines.append(line)
 
     lines.extend([
-        "- 如果需求只是这些白名单因子的读取、组合或固定公式计算，优先实现成确定性 Skill，不要发明新的底层因子。",
-        "- 若 expected_output.fields 涉及因子字段，优先使用 catalog 中已有 factor_id 作为输出字段名。",
+        "- If the requirement is only the reading, combination or fixed formula calculation of these whitelist factors, it is priority to implement it as a deterministic skill instead of inventing new underlying factors.",
+        "- If expected_output.fields involves factor fields, the factor_id already in the catalog is preferred as the output field name.",
     ])
     return "\n".join(lines)
 
 
 def build_factor_implementation_outline(factor_ids: List[str]) -> Dict[str, object]:
-    """基于一组 factor_id 构建实现轮廓摘要。
+    """Build an implementation profile summary based on a set of factor_ids.
 
     Args:
-        factor_ids: 因子标识列表；未在 COMMON_FACTOR_CATALOG 中登记的会被忽略
+        factor_ids: List of factor identifiers; those not registered in COMMON_FACTOR_CATALOG will be ignored
 
     Returns:
-        dict: 字段说明——
-            factor_ids: list[str]，命中并展开后的 factor_id 列表
-            collections: list[str]，涉及的数据集合名（去重升序）
-            helpers: list[str]，涉及的 helper 函数名（去重升序）
-            implementation_levels: list[str]，涉及的实现级别（去重升序）
-            warnings: list[str]，所有因子的告警文案（保留重复顺序）
+        dict: Field description——
+            factor_ids: list[str], Hit and expanded factor_id list
+            collections: list[str], Name of the data set involved (in ascending order with deduplication)
+            helpers: list[str], Involved helper function names (in ascending order without duplicates)
+            implementation_levels: list[str], Implementation levels involved (ascending order with deduplication)
+            warnings: list[str], Alarm text for all factors (retaining repeat order)
     """
     selected: List[FactorDefinition] = []
     for factor_id in factor_ids:
@@ -1251,22 +1251,22 @@ def build_factor_implementation_outline(factor_ids: List[str]) -> Dict[str, obje
 
 
 def validate_factor_catalog_schema_alignment() -> Dict[str, List[Dict[str, str]]]:
-    """校验 P0 factor schema 与 COMMON_FACTOR_CATALOG 的一致性。
+    """Verify the consistency of P0 factor schema and COMMON_FACTOR_CATALOG.
 
     Returns:
-        dict: 字段说明——
-            mismatches: list[dict]，schema 与 catalog 的 data_quality_tier / implementation_level
-                不一致条目，每个元素字段：
-                — field: 字段名
-                — catalog_implementation_level: catalog 中登记的 implementation_level
-                — schema_data_quality_tier: schema 中登记的 data_quality_tier
-            missing_catalog_entries: list[dict]，schema 已登记但 catalog 未登记的字段
-                — field: 字段名
-                — reason: 缺失原因说明
-            missing_cautious_catalog_entries: list[dict]，schema 标记为 cautious 但 catalog 未登记的字段
-                — field: 字段名
-                — expected_implementation_level: 期望级别（"cautious"）
-                — reason: 缺失原因说明
+        dict: Field description——
+            mismatches: list[dict], schema with catalog data_quality_tier / implementation_level
+                Inconsistent entries, per element field:
+                — field: Field name
+                — catalog_implementation_level: catalog registered in implementation_level
+                — schema_data_quality_tier: schema registered in data_quality_tier
+            missing_catalog_entries: list[dict], schema Fields that are registered but not registered in catalog
+                — field: Field name
+                — reason: Missing explanation
+            missing_cautious_catalog_entries: list[dict], schema Fields marked as cautious but not registered in catalog
+                — field: Field name
+                — expected_implementation_level: Expectation Level ("cautious") 
+                — reason: Missing explanation
     """
     mismatches: List[Dict[str, str]] = []
     missing_catalog_entries: List[Dict[str, str]] = []
@@ -1278,7 +1278,7 @@ def validate_factor_catalog_schema_alignment() -> Dict[str, List[Dict[str, str]]
             missing_catalog_entries.append(
                 {
                     "field": field_name,
-                    "reason": "schema 已登记该字段，但 factor_catalog 尚未登记。",
+                    "reason": "schema The field has been registered, but factor_catalog has not.",
                 }
             )
             if schema.data_quality_tier == "cautious":
@@ -1286,7 +1286,7 @@ def validate_factor_catalog_schema_alignment() -> Dict[str, List[Dict[str, str]]
                     {
                         "field": field_name,
                         "expected_implementation_level": "cautious",
-                        "reason": "schema 标记为 cautious，但 factor_catalog 尚未登记该字段。",
+                        "reason": "schema Marked as cautious, but factor_catalog has not yet registered this field.",
                     }
                 )
             continue
@@ -1309,17 +1309,17 @@ def validate_factor_catalog_schema_alignment() -> Dict[str, List[Dict[str, str]]
 
 
 def validate_technical_factor_catalog_schema_alignment() -> Dict[str, List[Dict[str, str]]]:
-    """校验技术因子 schema 与 COMMON_FACTOR_CATALOG 的一致性。
+    """Verify the consistency of the technical factor schema with COMMON_FACTOR_CATALOG.
 
     Returns:
-        dict: 字段说明——
-            mismatches: list[dict]，catalog 类别与期望 technical 不一致条目，每个元素字段：
-                — field: 字段名
-                — catalog_category: catalog 中登记的类别
-                — expected_category: 期望类别（"technical"）
-            missing_catalog_entries: list[dict]，technical schema 已登记但 catalog 未登记的字段
-                — field: 字段名
-                — reason: 缺失原因说明
+        dict: Field description——
+            mismatches: list[dict], catalog Categories inconsistent with expected technical entries, per element field:
+                — field: Field name
+                — catalog_category: catalog Category registered in
+                — expected_category: Expected Category ("technical") 
+            missing_catalog_entries: list[dict], technical schema Fields that are registered but not registered in catalog
+                — field: Field name
+                — reason: Missing explanation
     """
     mismatches: List[Dict[str, str]] = []
     missing_catalog_entries: List[Dict[str, str]] = []
@@ -1330,7 +1330,7 @@ def validate_technical_factor_catalog_schema_alignment() -> Dict[str, List[Dict[
             missing_catalog_entries.append(
                 {
                     "field": field_name,
-                    "reason": "technical schema 已登记该字段，但 factor_catalog 尚未登记。",
+                    "reason": "technical schema The field has been registered, but factor_catalog has not.",
                 }
             )
             continue
@@ -1351,17 +1351,17 @@ def validate_technical_factor_catalog_schema_alignment() -> Dict[str, List[Dict[
 
 
 def validate_factor_pack_schema_alignment() -> Dict[str, List[Dict[str, object]]]:
-    """校验 RECOMMENDED_FACTOR_PACKS 与 schema bundle 字段集是否对齐。
+    """Verify that RECOMMENDED_FACTOR_PACKS is aligned with the schema bundle field set.
 
     Returns:
-        dict: 字段说明——
-            mismatches: list[dict]，pack 字段集与 schema bundle 不一致条目，每个元素字段：
-                — pack_id: pack 标识（"value_core" / "quality_core" /
+        dict: Field description——
+            mismatches: list[dict], pack The fieldset is inconsistent with the schema bundle entry, per element field:
+                — pack_id: pack logo("value_core" / "quality_core" /
                     "growth_cashflow_core" / "growth_core"）
-                — expected_fields: list[str]，期望的字段名列表
-                — actual_fields: list[str]，实际登记的字段名列表
-                — missing_fields: list[str]，缺失字段名
-                — extra_fields: list[str]，多余字段名
+                — expected_fields: list[str], List of expected field names
+                — actual_fields: list[str], List of actual registered field names
+                — missing_fields: list[str], Missing field name
+                — extra_fields: list[str], redundant field name
     """
     mismatches: List[Dict[str, object]] = []
     expected_packs = {
@@ -1388,14 +1388,14 @@ def validate_factor_pack_schema_alignment() -> Dict[str, List[Dict[str, object]]
 
 
 def validate_factor_catalog_source_alignment() -> Dict[str, List[Dict[str, object]]]:
-    """校验 catalog 中是否仍引用 legacy 数据源（stock_financial_data / get_stock_financial_data）。
+    """Verify that the legacy data source (stock_financial_data / get_stock_financial_data) is still referenced in the catalog.
 
     Returns:
-        dict: 字段说明——
-            legacy_source_refs: list[dict]，仍引用 legacy 数据源的字段条目，每个元素字段：
-                — field: 字段名
-                — legacy_sources: list[str]，命中的 legacy 数据源名（"stock_financial_data"）
-                — legacy_helpers: list[str]，命中的 legacy helper 名（"get_stock_financial_data"）
+        dict: Field description——
+            legacy_source_refs: list[dict], Still referencing the field entries of the legacy data source, per element field:
+                — field: Field name
+                — legacy_sources: list[str], Hit legacy data source name ("stock_financial_data") 
+                — legacy_helpers: list[str], hit legacy helper name ("get_stock_financial_data") 
     """
     legacy_source_refs: List[Dict[str, object]] = []
 
@@ -1423,22 +1423,22 @@ def validate_factor_catalog_source_alignment() -> Dict[str, List[Dict[str, objec
 
 
 def validate_factor_catalog_runtime_semantic_alignment() -> Dict[str, List[Dict[str, object]]]:
-    """校验 P0 schema 字段与 runtime semantic contract / catalog 的一致性。
+    """Verify the consistency of the P0 schema field with the runtime semantic contract / catalog.
 
     Returns:
-        dict: 字段说明——
-            missing_contract_entries: list[dict]，schema 已登记但 runtime semantic contract
-                未登记的字段，元素字段：
-                — field: 字段名
-                — reason: 缺失原因说明
-            mismatches: list[dict]，contract 文本片段在 catalog 中缺失的条目，元素字段：
-                — field: 字段名
-                — missing_direct_fields: list[str]，catalog.required_fields 中缺失的 contract.direct_fields 片段
-                — missing_fallback_chain: list[str]，catalog.fallback_rules 中缺失的 contract.fallback_chain 片段
-                — missing_denominator_guards: list[str]，catalog.warnings 中缺失的 contract.denominator_guards 片段
-                — missing_unit_conversions: list[str]，catalog.warnings 中缺失的 contract.unit_conversions 片段
-                — missing_conservative_proxies: list[str]，catalog.warnings 中缺失的 contract.conservative_proxies 片段
-                — missing_availability_constraints: list[str]，catalog.warnings 中缺失的 contract.availability_constraints 片段
+        dict: Field description——
+            missing_contract_entries: list[dict], schema Registered but runtime semantic contract
+                Unregistered fields, element fields:
+                — field: Field name
+                — reason: Missing explanation
+            mismatches: list[dict], contract Text fragment missing entry in catalog, element field:
+                — field: Field name
+                — missing_direct_fields: list[str], catalog.required_fields Missing contract.direct_fields fragment in
+                — missing_fallback_chain: list[str], catalog.fallback_rules Missing contract.fallback_chain fragment in
+                — missing_denominator_guards: list[str], catalog.warnings Missing contract.denominator_guards fragment in
+                — missing_unit_conversions: list[str], catalog.warnings Missing contract.unit_conversions fragment in
+                — missing_conservative_proxies: list[str], catalog.warnings Missing contract.conservative_proxies fragment in
+                — missing_availability_constraints: list[str], catalog.warnings Missing contract.availability_constraints fragment in
     """
     missing_contract_entries: List[Dict[str, object]] = []
     mismatches: List[Dict[str, object]] = []
@@ -1448,7 +1448,7 @@ def validate_factor_catalog_runtime_semantic_alignment() -> Dict[str, List[Dict[
             missing_contract_entries.append(
                 {
                     "field": field_name,
-                    "reason": "schema 已登记该字段，但 runtime semantic contract 尚未登记。",
+                    "reason": "schema The field has been registered, but the runtime semantic contract has not.",
                 }
             )
 
@@ -1500,17 +1500,17 @@ def validate_factor_catalog_runtime_semantic_alignment() -> Dict[str, List[Dict[
 
 
 def validate_technical_factor_catalog_runtime_semantic_alignment() -> Dict[str, List[Dict[str, object]]]:
-    """校验技术因子 schema 字段与 runtime semantic contract / catalog 的一致性。
+    """Verify the consistency of the technical factor schema field with the runtime semantic contract / catalog.
 
     Returns:
-        dict: 字段说明——
-            missing_contract_entries: list[dict]，technical schema 已登记但 contract 未登记的字段，元素字段：
-                — field: 字段名
-                — reason: 缺失原因说明
-            mismatches: list[dict]，contract 文本片段在 catalog 中缺失的条目，元素字段：
-                — field: 字段名
-                — missing_direct_fields: list[str]，catalog.required_fields 中缺失的 contract.direct_fields 片段
-                — missing_availability_constraints: list[str]，catalog.warnings 中缺失的 contract.availability_constraints 片段
+        dict: Field description——
+            missing_contract_entries: list[dict], technical schema Registered but contract unregistered fields, element fields:
+                — field: Field name
+                — reason: Missing explanation
+            mismatches: list[dict], contract Text fragment missing entry in catalog, element field:
+                — field: Field name
+                — missing_direct_fields: list[str], catalog.required_fields Missing contract.direct_fields fragment in
+                — missing_availability_constraints: list[str], catalog.warnings Missing contract.availability_constraints fragment in
     """
     missing_contract_entries: List[Dict[str, object]] = []
     mismatches: List[Dict[str, object]] = []
@@ -1520,7 +1520,7 @@ def validate_technical_factor_catalog_runtime_semantic_alignment() -> Dict[str, 
             missing_contract_entries.append(
                 {
                     "field": field_name,
-                    "reason": "technical schema 已登记该字段，但 runtime semantic contract 尚未登记。",
+                    "reason": "technical schema The field has been registered, but the runtime semantic contract has not.",
                 }
             )
 
@@ -1548,37 +1548,37 @@ def validate_technical_factor_catalog_runtime_semantic_alignment() -> Dict[str, 
 
 
 def validate_factor_schema_semantic_alignment() -> Dict[str, List[Dict[str, object]]]:
-    """校验 P0 factor schema 与 runtime semantic contract 在 source_priority /
-    minimum_input_groups / minimum_computable_conditions / warning 等维度的一致性。
+    """Verify P0 factor schema and runtime semantic contract in source_priority /
+    minimum_input_groups / minimum_computable_conditions / warning Equal-dimensional consistency.
 
     Returns:
-        dict: 字段说明——
-            missing_schema_fields: list[dict]，contract 已登记但 schema 未登记的字段，元素字段：
-                — field: 字段名
-                — reason: 缺失原因说明
-            missing_source_priority_entries: list[dict]，任一侧 source_priority 缺失的字段，元素字段：
-                — field: 字段名
+        dict: Field description——
+            missing_schema_fields: list[dict], contract Fields registered but not registered in schema, element fields:
+                — field: Field name
+                — reason: Missing explanation
+            missing_source_priority_entries: list[dict], Missing fields on either side of source_priority, element fields:
+                — field: Field name
                 — schema_source_priority: list[str]
                 — contract_source_priority: list[str]
-            missing_minimum_input_group_entries: list[dict]，任一侧 minimum_input_groups 缺失的字段，元素字段：
-                — field: 字段名
+            missing_minimum_input_group_entries: list[dict], Missing fields on either side of minimum_input_groups, element fields:
+                — field: Field name
                 — schema_minimum_input_groups: list[list[str]]
                 — contract_minimum_input_groups: list[list[str]]
-            missing_minimum_computable_condition_entries: list[dict]，需要可计算条件但任一侧缺失的字段，元素字段：
-                — field: 字段名
+            missing_minimum_computable_condition_entries: list[dict], Fields that require a computable condition but are missing on either side, element fields:
+                — field: Field name
                 — schema_minimum_computable_conditions: list[str]
                 — contract_minimum_computable_conditions: list[str]
-            missing_warning_condition_entries: list[dict]，需要 warning 条件但任一侧缺失的字段，元素字段：
-                — field: 字段名
+            missing_warning_condition_entries: list[dict], Fields that require a warning condition but are missing on either side, element fields:
+                — field: Field name
                 — schema_warning_conditions: list[str]
                 — contract_warning_conditions: list[str]
-            missing_warning_category_entries: list[dict]，需要 warning 类别但任一侧缺失的字段，元素字段：
-                — field: 字段名
+            missing_warning_category_entries: list[dict], Fields that require the warning category but are missing on either side, element fields:
+                — field: Field name
                 — schema_warning_categories: list[str]
                 — contract_warning_categories: list[str]
-            mismatches: list[dict]，schema 与 contract 各维度不一致条目，元素字段：
-                — field: 字段名
-                — missing_semantic_tags: list[str]，缺失的语义标签
+            mismatches: list[dict], schema Items inconsistent with contract dimensions, element fields:
+                — field: Field name
+                — missing_semantic_tags: list[str], missing semantic tags
                 — schema_source_priority / contract_source_priority: list[str]
                 — source_priority_mismatch: bool
                 — schema_tax_estimation_strategy / contract_tax_estimation_strategy: str
@@ -1594,7 +1594,7 @@ def validate_factor_schema_semantic_alignment() -> Dict[str, List[Dict[str, obje
                 — schema_warning_categories / contract_warning_categories: list[str]
                 — warning_categories_mismatch: bool
                 — schema_calculation_mode: str
-                — requires_non_direct_mode: bool，是否要求非 direct 计算模式
+                — requires_non_direct_mode: bool, Whether to require non-direct computing mode
     """
     missing_schema_fields: List[Dict[str, object]] = []
     missing_source_priority_entries: List[Dict[str, object]] = []
@@ -1613,7 +1613,7 @@ def validate_factor_schema_semantic_alignment() -> Dict[str, List[Dict[str, obje
             missing_schema_fields.append(
                 {
                     "field": field_name,
-                    "reason": "runtime semantic contract 已登记，但 factor_schema 尚无该字段。",
+                    "reason": "runtime semantic contract Registered, but factor_schema does not yet have this field.",
                 }
             )
             continue
@@ -1778,28 +1778,28 @@ def validate_factor_schema_semantic_alignment() -> Dict[str, List[Dict[str, obje
 
 
 def validate_technical_factor_schema_semantic_alignment() -> Dict[str, List[Dict[str, object]]]:
-    """校验技术因子 schema 与 runtime semantic contract 在 source_priority /
-    minimum_input_groups / minimum_computable_conditions 维度的一致性。
+    """Check technology factor schema and runtime semantic contract in source_priority /
+    minimum_input_groups / minimum_computable_conditions Dimensional consistency.
 
     Returns:
-        dict: 字段说明——
-            missing_schema_fields: list[dict]，technical schema 字段未登记 contract 的条目，元素字段：
-                — field: 字段名
-                — reason: 缺失原因说明
-            missing_source_priority_entries: list[dict]，任一侧 source_priority 缺失的字段，元素字段：
-                — field: 字段名
+        dict: Field description——
+            missing_schema_fields: list[dict], technical schema The field is not registered with the entry of contract, element field:
+                — field: Field name
+                — reason: Missing explanation
+            missing_source_priority_entries: list[dict], Missing fields on either side of source_priority, element fields:
+                — field: Field name
                 — schema_source_priority: list[str]
                 — contract_source_priority: list[str]
-            missing_minimum_input_group_entries: list[dict]，任一侧 minimum_input_groups 缺失的字段，元素字段：
-                — field: 字段名
+            missing_minimum_input_group_entries: list[dict], Missing fields on either side of minimum_input_groups, element fields:
+                — field: Field name
                 — schema_minimum_input_groups: list[list[str]]
                 — contract_minimum_input_groups: list[list[str]]
-            missing_minimum_computable_condition_entries: list[dict]，任一侧 minimum_computable_conditions 缺失的字段，元素字段：
-                — field: 字段名
+            missing_minimum_computable_condition_entries: list[dict], Missing fields on either side of minimum_computable_conditions, element fields:
+                — field: Field name
                 — schema_minimum_computable_conditions: list[str]
                 — contract_minimum_computable_conditions: list[str]
-            mismatches: list[dict]，schema 与 contract 不一致条目，元素字段：
-                — field: 字段名
+            mismatches: list[dict], schema Inconsistent entry with contract, element field:
+                — field: Field name
                 — schema_source_priority: list[str]
                 — contract_source_priority: list[str]
                 — schema_minimum_input_groups: list[list[str]]
@@ -1819,7 +1819,7 @@ def validate_technical_factor_schema_semantic_alignment() -> Dict[str, List[Dict
             missing_schema_fields.append(
                 {
                     "field": field_name,
-                    "reason": "technical runtime semantic contract 尚未登记。",
+                    "reason": "technical runtime semantic contract Not registered yet.",
                 }
             )
             continue

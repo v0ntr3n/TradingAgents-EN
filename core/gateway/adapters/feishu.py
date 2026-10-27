@@ -1,21 +1,21 @@
 """
-飞书 Bot 适配器
+Feishu Bot Adapter
 
-基于飞书开放平台事件订阅（HTTP 回调）模式实现，支持：
-- 私聊消息
-- 群聊 @Bot 消息
-- URL Challenge 验证
-- 签名验证（Verification Token / Encrypt Key）
-- Tenant Access Token 自动管理
+Implemented based on Feishu open platform event subscription (HTTP callback) model, supporting:
+- private message
+- group chat @Bot news
+- URL Challenge Verify
+- Signature verification (Verification Token / Encrypt Key)
+- Tenant Access Token Automatic management
 
-飞书开放平台文档: https://open.feishu.cn/document/server-docs/getting-started
+Feishu Open Platform Documentation: https://open.feishu.cn/document/server-docs/getting-started
 
-配置项（存储在 system_configs, config_key="gateway_feishu"）:
+Configuration items (stored in system_configs, config_key="gateway_feishu") :
 {
     "app_id": "cli_xxx",
     "app_secret": "xxx",
-    "verification_token": "xxx",    # 事件订阅验证 token
-    "encrypt_key": "",              # 可选，事件加密密钥
+    "verification_token": "xxx",    # Event subscription verification token
+    "encrypt_key": "",              # Optional, event encryption key
     "enabled": true
 }
 """
@@ -44,7 +44,7 @@ FEISHU_TOKEN_URL = f"{FEISHU_API_BASE}/auth/v3/tenant_access_token/internal"
 
 
 class FeishuAdapter(BaseGatewayAdapter):
-    """飞书 Bot 适配器"""
+    """Feishu Bot Adapter"""
 
     channel_type = ChannelType.FEISHU
 
@@ -54,7 +54,7 @@ class FeishuAdapter(BaseGatewayAdapter):
         self._token_expires_at: float = 0.0
 
     # ------------------------------------------------------------------ #
-    # Tenant Access Token 管理
+    # Tenant Access Token management
     # ------------------------------------------------------------------ #
 
     async def _ensure_tenant_token(self) -> str:
@@ -71,11 +71,11 @@ class FeishuAdapter(BaseGatewayAdapter):
             data = resp.json()
 
         if data.get("code") != 0:
-            raise RuntimeError(f"飞书 Token 获取失败: {data.get('msg')}")
+            raise RuntimeError(f"Feishu Token acquisition failed: {data.get('msg')}")
 
         self._tenant_token = data["tenant_access_token"]
         self._token_expires_at = now + int(data.get("expire", 7200))
-        logger.info("[FeishuAdapter] Tenant Access Token 已刷新")
+        logger.info("[FeishuAdapter] Tenant Access Token Refreshed")
         return self._tenant_token
 
     def _get_auth_headers(self, token: str) -> Dict[str, str]:
@@ -85,7 +85,7 @@ class FeishuAdapter(BaseGatewayAdapter):
         }
 
     # ------------------------------------------------------------------ #
-    # Webhook 验证
+    # Webhook Verify
     # ------------------------------------------------------------------ #
 
     async def verify_request(
@@ -96,16 +96,16 @@ class FeishuAdapter(BaseGatewayAdapter):
         except (json.JSONDecodeError, UnicodeDecodeError):
             return False, None
 
-        # URL Challenge 验证（首次配置事件订阅时飞书发送）
+        # URL Challenge Verification (sent by Feishu when event subscription is configured for the first time)
         if "challenge" in payload:
             token = payload.get("token", "")
             vt = self.config.get("verification_token", "")
             if vt and token != vt:
-                logger.warning("[FeishuAdapter] Challenge token 不匹配")
+                logger.warning("[FeishuAdapter] Challenge token no match")
                 return False, None
             return True, {"challenge": payload["challenge"]}
 
-        # v2 事件格式验证
+        # v2 Event format validation
         schema = payload.get("schema")
         if schema == "2.0":
             header = payload.get("header", {})
@@ -115,13 +115,13 @@ class FeishuAdapter(BaseGatewayAdapter):
 
         vt = self.config.get("verification_token", "")
         if vt and token != vt:
-            logger.warning("[FeishuAdapter] Verification token 不匹配")
+            logger.warning("[FeishuAdapter] Verification token no match")
             return False, None
 
         return True, None
 
     # ------------------------------------------------------------------ #
-    # 消息解析
+    # Message parsing
     # ------------------------------------------------------------------ #
 
     async def parse_message(
@@ -132,15 +132,15 @@ class FeishuAdapter(BaseGatewayAdapter):
         except (json.JSONDecodeError, UnicodeDecodeError):
             return None
 
-        # 跳过 challenge 请求
+        # Skip challenge request
         if "challenge" in payload:
             return None
 
-        # v2 格式
+        # v2 Format
         if payload.get("schema") == "2.0":
             return self._parse_v2_event(payload)
 
-        # v1 格式（兼容）
+        # v1 Format (compatible)
         event = payload.get("event", {})
         if not event:
             return None
@@ -151,7 +151,7 @@ class FeishuAdapter(BaseGatewayAdapter):
         event_type = header.get("event_type", "")
 
         if event_type != "im.message.receive_v1":
-            logger.debug("[FeishuAdapter] 忽略事件类型: %s", event_type)
+            logger.debug("[FeishuAdapter] Ignore event type: %s", event_type)
             return None
 
         event = payload.get("event", {})
@@ -172,7 +172,7 @@ class FeishuAdapter(BaseGatewayAdapter):
 
         text = content_obj.get("text", "").strip()
 
-        # 群聊中去掉 @Bot 的部分
+        # Remove from group chat @Bot part of
         if chat_type == "group" and message.get("mentions"):
             for m in message["mentions"]:
                 at_key = m.get("key", "")
@@ -206,7 +206,7 @@ class FeishuAdapter(BaseGatewayAdapter):
         )
 
     def _parse_v1_event(self, event: Dict[str, Any]) -> Optional[GatewayMessage]:
-        """兼容 v1 事件格式"""
+        """Compatible with v1 event format"""
         msg_type = event.get("msg_type", "")
         if msg_type != "text":
             return None
@@ -241,7 +241,7 @@ class FeishuAdapter(BaseGatewayAdapter):
         )
 
     # ------------------------------------------------------------------ #
-    # 消息发送
+    # message sending
     # ------------------------------------------------------------------ #
 
     async def send_response(self, response: GatewayResponse) -> bool:
@@ -254,10 +254,10 @@ class FeishuAdapter(BaseGatewayAdapter):
             receive_id = channel_id[6:]
             receive_id_type = "chat_id"
         else:
-            logger.warning("[FeishuAdapter] 未知 channel_id 格式: %s", channel_id)
+            logger.warning("[FeishuAdapter] Unknown channel_id format: %s", channel_id)
             return False
 
-        # 如果有 message_id 且为被动回复场景，使用 reply API
+        # If there is message_id and it is a passive reply scenario, use reply API
         message_id = (response.metadata or {}).get("message_id")
         if message_id:
             return await self._reply_message(message_id, response)
@@ -291,7 +291,7 @@ class FeishuAdapter(BaseGatewayAdapter):
 
     def _build_feishu_content(self, response: GatewayResponse) -> Tuple[str, str]:
         """
-        构造飞书消息内容。
+        Construct Feishu message content.
 
         Returns:
             (content_json_str, msg_type)
@@ -306,13 +306,13 @@ class FeishuAdapter(BaseGatewayAdapter):
     def format_report_as_response(
         self, report_text: str, channel_id: str
     ) -> GatewayResponse:
-        """将分析报告格式化为飞书交互卡片"""
+        """Format analysis reports into Feishu interactive cards"""
         truncated = self.truncate_for_platform(report_text, max_length=3500)
 
         card = {
             "config": {"wide_screen_mode": True},
             "header": {
-                "title": {"tag": "plain_text", "content": "📊 分析报告"},
+                "title": {"tag": "plain_text", "content": "📊 analysis report"},
                 "template": "blue",
             },
             "elements": [
@@ -338,14 +338,14 @@ class FeishuAdapter(BaseGatewayAdapter):
                 )
             data = resp.json()
             if data.get("code") == 0:
-                logger.info("[FeishuAdapter] 消息发送成功")
+                logger.info("[FeishuAdapter] Message sent successfully")
                 return True
             else:
                 logger.warning(
-                    "[FeishuAdapter] 消息发送失败: code=%s, msg=%s",
+                    "[FeishuAdapter] Message sending failed: code=%s, msg=%s",
                     data.get("code"), data.get("msg"),
                 )
                 return False
         except Exception as e:
-            logger.exception("[FeishuAdapter] 消息发送异常: %s", e)
+            logger.exception("[FeishuAdapter] Message sending exception: %s", e)
             return False

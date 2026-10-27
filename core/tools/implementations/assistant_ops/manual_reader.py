@@ -1,10 +1,10 @@
-"""使用问答机器人工具：按章节名读取用户手册。
+"""Use the Q&A bot tool: Read the user manual by chapter name.
 
-让使用问答助手能"查"用户手册的具体章节内容，避免把 139KB 全部塞入系统提示词。
-按二级标题切片，按章节名模糊匹配返回。
+Allows using Q&A Assistant to"Check"Specific chapter content of the user manual to avoid cramming all 139KB into system prompt words.
+Slice by secondary title and return by fuzzy matching of chapter name.
 
-京东云版（JDYUN_MODE=true）会自动切换到 jdyun-user-manual-v3.0.md，
-内容专门面向京东云版用户（部署、限速、卷名问题等）。
+Jingdong cloud version (JDYUN_MODE=true) It will automatically switch to jdyun-user-manual-v3.0.md,
+The content is specifically for JD Cloud Edition users (deployment, speed limit, volume name issues, etc.).
 """
 
 import logging
@@ -25,19 +25,19 @@ def _is_jdyun_mode() -> bool:
 
 
 def _resolve_manual_path() -> str:
-    """定位当前应该使用的用户手册。
+    """Locate the current user manual that should be used.
 
-    京东云版（JDYUN_MODE=true）→ 优先使用 jdyun-user-manual-v3.0.md
-    标准版 → 优先使用 user-manual-v3.0.md
-    找不到对应版本时回退到标准版，避免手册完全不可用。
+    Jingdong cloud version (JDYUN_MODE=true) → priority use jdyun-user-manual-v3.0.md
+    Standard Edition → priority use user-manual-v3.0.md
+    When the corresponding version cannot be found, fall back to the standard version to avoid the manual becoming completely unusable.
     """
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    # core/tools/implementations/assistant_ops/manual_reader.py -> 项目根目录
+    # core/tools/implementations/assistant_ops/manual_reader.py -> Project root directory
     project_root = os.path.abspath(os.path.join(current_dir, "..", "..", "..", ".."))
     user_guide_dir = os.path.join(project_root, "docs", "02-user-guide")
 
     if _is_jdyun_mode():
-        # 京东云版优先查找 jdyun-user-manual-v3.0.md，回退到主手册
+        # JD Cloud version searches jdyun-user-manual-v3.0.md first and returns to the main manual.
         candidates = [
             os.path.join(user_guide_dir, "jdyun-user-manual-v3.0.md"),
             os.path.join(user_guide_dir, "user-manual-v3.0.md"),
@@ -56,11 +56,11 @@ def _resolve_manual_path() -> str:
 
 
 def _resolve_all_manual_paths() -> List[Tuple[str, str]]:
-    """列出所有可用的用户手册（按优先级顺序），用于多手册搜索。
+    """Lists all available user manuals (in order of priority) for multi-manual searches.
 
-    返回 [(手册路径, 手册类型), ...]
-    手册类型: "jdyun" | "standard"
-    京东云版时把京东云手册放前面，标准版时把主手册放前面。
+    Return [(manual path, Manual type), ...]
+    Manual type: "jdyun" | "standard"
+    For the JD Cloud version, put the JD Cloud manual first, and for the standard version, put the main manual first.
     """
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(current_dir, "..", "..", "..", ".."))
@@ -84,13 +84,13 @@ def _resolve_all_manual_paths() -> List[Tuple[str, str]]:
 
 
 def _split_sections(content: str) -> List[Tuple[str, str, int]]:
-    """按 markdown 标题切片。
+    """Slice by markdown header.
 
-    返回 [(title, body, level), ...]
-    level 是 # 的数量（1-4）
+    Return [(title, body, level), ...]
+    level Yes # quantity (1-4)
     """
     sections: List[Tuple[str, str, int]] = []
-    # 匹配行首的 1-4 个 # 后跟空格和标题
+    # Matches 1-4 at the beginning of the line # followed by space and title
     parts = re.split(r'\n(?=#{1,4}\s+[^\n]+)', content)
     for part in parts:
         match = re.match(r'^(#{1,4})\s+([^\n]+)\n(.*)', part, re.DOTALL)
@@ -103,7 +103,7 @@ def _split_sections(content: str) -> List[Tuple[str, str, int]]:
 
 
 def _truncate_to_next_level(body: str, current_level: int) -> str:
-    """截取到下一个同级或更高级标题"""
+    """Cut to the next sibling or higher heading"""
     pattern = re.compile(rf'\n#{{1,{current_level}}}\s+')
     match = pattern.search(body)
     if match:
@@ -112,14 +112,14 @@ def _truncate_to_next_level(body: str, current_level: int) -> str:
 
 
 def _extract_keyword_fragments(keyword: str, min_len: int = 2) -> List[str]:
-    """从关键词中提取可用于模糊匹配的所有连续子片段。
+    """Extract all contiguous subsegments from the keyword that can be used for fuzzy matching.
 
-    解决"单容器数据丢失"无法匹配"Q5：单容器重启后数据丢失"的问题。
-    提取所有长度 >= min_len 的连续子串，按长度倒序排列（优先匹配长片段）。
+    solve"Single container data loss"Unable to match"Q5: Data is lost after a single container is restarted"problem.
+    Extract all lengths >= min_len Continuous substrings of , arranged in reverse order of length (long segments are matched first).
 
-    示例:
-        "单容器数据丢失" → ["单容器", "数据", "丢失", "容器数据", "据丢失", ...]
-        "数据丢失" → ["数据", "丢失", "据丢失"]
+    Example:
+        "Single container data loss" → ["single container", "data", "lost", "Container data", "data lost", ...]
+        "data loss" → ["data", "lost", "data lost"]
     """
     if not keyword or len(keyword) < min_len:
         return []
@@ -130,19 +130,19 @@ def _extract_keyword_fragments(keyword: str, min_len: int = 2) -> List[str]:
             frag = keyword[i:i + length]
             if len(frag) >= min_len:
                 fragments.add(frag)
-    # 按长度倒序（优先用更长的片段，更精确）
+    # Sort by length in descending order (longer fragments preferred, more accurate)
     return sorted(fragments, key=len, reverse=True)
 
 
 def _extract_two_char_fragments(keyword: str) -> List[str]:
-    """提取关键词中所有 2 字连续片段（去重，按出现顺序）。
+    """Extract all 2-word consecutive fragments in the keyword (duplication removed, in order of appearance).
 
-    用于"多数命中"模糊匹配：只要标题中包含其中 60% 的片段，就算匹配。
-    解决"单容器数据丢失" vs "Q5：单容器重启后数据丢失" 这类长句重组问题。
+    used for"Most hits"Fuzzy match: A match is considered as long as 60% of the fragments are included in the title.
+    solve"Single container data loss" vs "Q5: Data is lost after a single container is restarted" This type of long sentence reorganization problem.
 
-    示例:
-        "单容器数据丢失" → ["单容器", "容器数", "据丢", "丢失"]  (实际是"单容器","容器","据","丢失"等)
-        实际上取固定 2 字窗口："单容","容器","数据","丢失"
+    Example:
+        "Single container data loss" → ["single container", "Number of containers", "lost", "lost"]  (Actually"single container","container","According to","lost"Wait)
+        Actually take a fixed 2-word window:"Single capacity","container","data","lost"
     """
     if not keyword or len(keyword) < 2:
         return []
@@ -160,7 +160,7 @@ def _extract_two_char_fragments(keyword: str) -> List[str]:
 @register_tool(
     tool_id="read_user_manual_section",
     name="读取用户手册章节",
-    description="按章节名读取用户手册内容。支持模糊匹配，如输入'安装'可匹配'安装部署'章节。当用户问'怎么配置 Token''模拟交易怎么开通''怎么加自选股''429 限速怎么办''单容器数据丢失'等操作流程问题时使用。京东云版用户会自动读取京东云版专用手册（包含部署、限速、数据卷等京东云特有问题的解答）。",
+    description="Read the contents of the user manual by chapter name. Support fuzzy matching, such as input'Installation'Can match'Installation and deployment'chapter. When the user asks'How to configure Token''How to activate simulated trading''How to add discretionary stocks''429 What to do about speed limit''Single container data loss'Used when there are operational process issues. JD Cloud Edition users will automatically read the JD Cloud Edition special manual (including answers to JD Cloud-specific questions such as deployment, speed limits, data volumes, etc.).",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
@@ -170,24 +170,24 @@ def _extract_two_char_fragments(keyword: str) -> List[str]:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["怎么配置 Token", "模拟交易怎么开通", "怎么加自选股", "License 怎么激活", "429 限速", "单容器数据丢失", "操作流程", "京东云部署"],
-    when_to_use="当用户问到具体操作流程、功能配置步骤或系统使用方法时使用，应优先调用本工具查文档而非凭记忆回答。",
-    returns="返回文本格式的用户手册章节内容。如未匹配，返回可选章节列表。",
+    when_to_use="When users ask about specific operating procedures, function configuration steps, or how to use the system, they should give priority to calling this tool to check the documentation instead of answering from memory.",
+    returns="Returns the user manual chapter content in text format. If there is no match, return the list of optional chapters.",
 )
 async def read_user_manual_section(
-    section_name: Annotated[str, "章节名或关键字，如'安装部署'、'数据源配置'、'模拟交易'、'License'、'定时分析'、'股票关注列表'、'429 限速'、'单容器数据丢失'"],
+    section_name: Annotated[str, "Chapter name or keyword, such as'Installation and deployment', 'Data source configuration', 'simulated trading', 'License', 'timing analysis', 'Stock Watchlist', '429 speed limit', 'Single container data loss'"],
 ) -> str:
-    """按章节名读取用户手册内容。"""
+    """Read the contents of the user manual by chapter name."""
     manual_paths = _resolve_all_manual_paths()
     if not manual_paths:
-        return "❌ 用户手册文件不存在。请检查 docs/02-user-guide/ 目录下是否有 user-manual-v3.0.md 文件。"
+        return "❌ User manual file does not exist. Please check if there is user-manual-v3.0.md file in the docs/02-user-guide/ directory."
 
     keyword = (section_name or "").strip().lower()
     is_jdyun = _is_jdyun_mode()
     current_manual_label = "京东云版专用手册" if is_jdyun else "标准版主手册"
 
-    # 1) 列出所有手册的章节概览
+    # 1) List of chapter overviews for all manuals
     if not keyword:
-        # 收集所有手册的章节
+        # Collect all manual chapters
         overview_lines = [f"📖 当前模式: {current_manual_label}", ""]
         for path, manual_type in manual_paths:
             label = "京东云版专用手册" if manual_type == "jdyun" else "标准版主手册"
@@ -199,19 +199,19 @@ async def read_user_manual_section(
                     continue
                 overview_lines.append(f"━━━ {label} ({os.path.basename(path)}) ━━━")
                 for title, body, level in sections:
-                    if level <= 2:  # 只列出一级和二级标题
+                    if level <= 2:  # List only first- and second-level headings
                         prefix = "  " * (level - 1) + "-"
                         overview_lines.append(f"{prefix} {title}")
                 overview_lines.append("")
             except Exception as exc:
-                logger.warning("[read_user_manual_section] 概览读取失败 %s: %s", path, exc)
-        overview_lines.append("💡 请提供具体章节名或关键字（如 '安装部署'、'429 限速'、'单容器数据丢失'）")
+                logger.warning("[read_user_manual_section] Overview read failed %s: %s", path, exc)
+        overview_lines.append("💡 Please provide specific chapter names or keywords (such as 'Installation and deployment', '429 speed limit', 'Single container data loss') ")
         return "\n".join(overview_lines)
 
-    # 2) 关键字搜索：先搜京东云版(若存在)，再搜标准版，合并去重
-    all_matches = []  # [(手册类型, 手册名, title, body, level)]
+    # 2) Keyword search: Search JD Cloud version first(if exists), Search the standard version again, merge and remove duplicates
+    all_matches = []  # [(Manual type, Manual name, title, body, level)]
     primary_label = manual_paths[0][1] if manual_paths else "standard"
-    seen_titles = set()  # 用于去重
+    seen_titles = set()  # Used to remove duplicates
 
     for path, manual_type in manual_paths:
         try:
@@ -219,10 +219,10 @@ async def read_user_manual_section(
                 content = f.read()
             sections = _split_sections(content)
         except Exception as exc:
-            logger.warning("[read_user_manual_section] 读取手册失败 %s: %s", path, exc)
+            logger.warning("[read_user_manual_section] Failed to read manual %s: %s", path, exc)
             continue
 
-        # 主匹配：标题完全包含关键字
+        # Primary match: The title contains exactly the keyword
         primary_hits = 0
         for title, body, level in sections:
             if keyword in title.lower():
@@ -232,14 +232,14 @@ async def read_user_manual_section(
                     all_matches.append((manual_type, path, title, body, level))
                     primary_hits += 1
 
-        # 模糊匹配：仅在当前手册没有主匹配结果时尝试（避免污染主匹配）
+        # Fuzzy matching: only tried if there is no main matching result in the current manual (to avoid polluting the main match)
         if primary_hits == 0:
-            # 方案 1：用关键字的最长 2 字片段(取前 2-3 个)做"多数命中"判断
-            # 解决"单容器数据丢失"匹配不到"Q5：单容器重启后数据丢失"的问题
-            # 两者共有片段: "单容器" / "数据" / "丢失" - 3 个 2 字片段
+            # Option 1: Use the longest 2-word fragment of the keyword(Take the first 2-3)do"Most hits"judge
+            # solve"Single container data loss"No match found"Q5: Data is lost after a single container is restarted"question
+            # Both share fragments: "single container" / "data" / "lost" - 3 2-word fragments
             two_char_frags = _extract_two_char_fragments(keyword)
             if two_char_frags:
-                # 至少命中 60% 的 2 字片段才算匹配
+                # A match must hit at least 60% of 2-word fragments
                 threshold = max(1, int(len(two_char_frags) * 0.6))
                 for title, body, level in sections:
                     title_lower = title.lower()
@@ -250,7 +250,7 @@ async def read_user_manual_section(
                             seen_titles.add(dedup_key)
                             all_matches.append((manual_type, path, title, body, level))
 
-    # 如果主匹配没结果，尝试按单词拆分匹配
+    # If the main match has no results, try splitting the match by word
     if not all_matches:
         keywords = [k for k in keyword.split() if len(k) >= 2]
         if keywords:
@@ -269,7 +269,7 @@ async def read_user_manual_section(
                             all_matches.append((manual_type, path, title, body, level))
 
     if not all_matches:
-        # 收集所有手册的一级和二级标题作为可选列表
+        # Collect the first and second level titles of all manuals as an optional list
         all_titles = []
         for path, manual_type in manual_paths:
             try:
@@ -285,11 +285,11 @@ async def read_user_manual_section(
         titles_text = "\n".join(f"  - [{label}] {t}" for label, t in all_titles[:40])
         return f"❌ 未找到章节 '{section_name}'。\n\n📖 可选章节:\n{titles_text}"
 
-    # 3) 拼接匹配结果，控制总长度
+    # 3) Splice matching results and control the total length
     parts = []
     total_len = 0
-    max_len = 6000  # 截断防止超长
-    matches_to_show = all_matches[:3]  # 最多返回 3 个匹配章节
+    max_len = 6000  # Truncate to prevent overlength
+    matches_to_show = all_matches[:3]  # Returns up to 3 matching chapters
 
     for manual_type, path, title, body, level in matches_to_show:
         truncated = _truncate_to_next_level(body, level)
@@ -299,7 +299,7 @@ async def read_user_manual_section(
         if total_len + len(section_text) > max_len:
             remaining = max_len - total_len
             if remaining > 200:
-                section_text = section_text[:remaining] + "\n\n...(内容已截断，如需完整内容请提供更精确的章节名)"
+                section_text = section_text[:remaining] + "\n\n...(The content has been truncated. If you need the complete content, please provide a more precise chapter name.)"
                 parts.append(section_text)
                 total_len = max_len
             break
@@ -311,7 +311,7 @@ async def read_user_manual_section(
 
 
 # ============================================================
-# 向量检索工具：基于语义匹配，解决自然语言问题匹配不到章节的问题
+# Vector retrieval tool: Based on semantic matching, it solves the problem that natural language problems cannot match chapters.
 # ============================================================
 
 
@@ -320,11 +320,11 @@ async def read_user_manual_section(
     tool_id="search_user_manual",
     name="语义搜索用户手册",
     description=(
-        "基于向量语义检索用户手册，用自然语言查找相关章节。"
-        "当用户用自然语言提问（如'怎么做分析''怎么研究一只股票''持仓分析怎么用''如何配置 Token'）时使用本工具，"
-        "它会返回语义最相关的 Top-5 章节。"
-        "本工具比 read_user_manual_section 更适合处理用户的自然语言提问，"
-        "建议优先使用本工具检索，再用 read_user_manual_section 按精确章节名读取完整内容。"
+        "Retrieve user manuals based on vector semantics and find relevant chapters in natural language."
+        "When a user asks a question in natural language (e.g.'How to do analysis''How to research a stock''How to use position analysis''How to configure Token') When using this tool,"
+        "It returns the top-5 semantically most relevant chapters."
+        "This tool is more suitable for handling users natural language questions than read_user_manual_section."
+        "It is recommended to use this tool to search first, and then use read_user_manual_section to read the complete content according to the precise chapter name."
     ),
     category="assistant_ops",
     is_online=False,
@@ -340,71 +340,71 @@ async def read_user_manual_section(
         "持仓分析", "选股助手怎么用", "怎么配置 Token", "怎么加自选",
     ],
     when_to_use=(
-        "当用户用自然语言询问系统使用方法、功能流程、操作步骤时优先使用本工具。"
-        "本工具基于向量语义匹配，能理解'怎么做分析'等自然语言提问并召回相关章节。"
+        "This tool is used first when users use natural language to ask about system usage, functional processes, and operating steps."
+        "This tool is based on vector semantic matching and can understand'How to do analysis'Wait for natural language questions and recall relevant chapters."
     ),
-    returns="返回 Top-5 相关章节的标题和内容片段，按相似度降序排列。",
+    returns="Returns the titles and content fragments of the Top-5 relevant chapters, sorted in descending order of similarity.",
 )
 async def search_user_manual(
     query: Annotated[
         str,
-        "用户的自然语言问题，如'怎么做分析''怎么研究一只股票''持仓分析怎么用''如何配置 Token''429 限速怎么办'",
+        "User s natural language questions such as'How to do analysis''How to research a stock''How to use position analysis''How to configure Token''429 What to do about speed limit'",
     ],
 ) -> str:
-    """基于向量语义检索用户手册，用自然语言查找相关章节。"""
+    """Retrieve user manuals based on vector semantics and find relevant chapters in natural language."""
     try:
         from core.knowledge.user_manual_manager import UserManualManager
 
         manager = UserManualManager()
 
-        # 检查向量库是否可用；不可用时尝试重新初始化
-        # （用户可能已配置好 Embedding Key，reinit 会重新读取配置，无需重启后端）
+        # Check if the vector library is available; try to reinitialize if not
+        #  (The user may have configured the Embedding Key, reinit will re-read the configuration without restarting the backend)
         if not manager.available:
             try:
                 if manager.reinit() and manager.available:
-                    logger.info("[search_user_manual] 向量检索重新初始化成功，继续语义检索")
+                    logger.info("[search_user_manual] Vector retrieval is reinitialized successfully and semantic retrieval continues.")
                 else:
                     raise RuntimeError("reinit 失败")
             except Exception as e:
-                # 优雅降级：回退到 read_user_manual_section 的关键字匹配
+                # Graceful degradation: fallback to read_user_manual_section keyword matching
                 logger.warning(
-                    "[search_user_manual] 向量检索不可用（%s），回退到关键字匹配。"
-                    "建议检查 Embedding 配置（系统设置 -> LLM/Embedding）或重启后端。",
+                    "[search_user_manual] Vector search is not available (%s), fallback to keyword matching."
+                    "It is recommended to check the Embedding configuration (system settings -> LLM/Embedding) Or restart the backend.",
                     e,
                 )
                 return (
-                    "⚠️ 向量检索当前不可用（Embedding 或向量数据库未就绪），已回退到关键字匹配模式。\n\n"
-                    "请尝试用更精确的章节名调用 read_user_manual_section 工具，"
-                    "如 '单股研究'、'数据源配置'、'模拟交易' 等。"
+                    "⚠️ Vector retrieval is currently unavailable (Embedding or vector database is not ready) and has fallen back to keyword matching mode.\n\n"
+                    "Please try calling the read_user_manual_section tool with a more precise section name,"
+                    "Such as 'single stock research', 'Data source configuration', 'simulated trading' wait."
                 )
 
-        # 检查索引是否已构建
+        # Check if the index has been built
         count = manager.get_count()
         if count == 0:
-            logger.warning("[search_user_manual] 手册索引为空，尝试触发重建")
-            # 同步触发一次重建（不阻塞太久，失败就降级）
+            logger.warning("[search_user_manual] Manual index is empty, try to trigger a rebuild")
+            # Trigger a rebuild synchronously (do not block for too long, or downgrade if failed)
             try:
                 manager.ensure_indexed(force=False)
             except Exception as e:
-                logger.error(f"[search_user_manual] 触发重建失败: {e}")
+                logger.error(f"[search_user_manual] Trigger rebuild failed: {e}")
 
             count = manager.get_count()
             if count == 0:
                 return (
-                    "⚠️ 用户手册索引尚未构建完成，向量检索暂不可用。\n"
-                    "可改用 read_user_manual_section 工具按章节名精确读取。"
+                    "⚠️ The user manual index has not been built yet, and vector search is not available yet.\n"
+                    "You can instead use the read_user_manual_section tool to read accurately by chapter name."
                 )
 
-        # 执行语义检索
+        # Perform semantic searches
         results = manager.search(query, top_k=5)
 
         if not results:
             return (
                 f"❌ 未找到与 '{query}' 语义相关的手册章节。\n"
-                "可尝试用更具体的关键字调用 read_user_manual_section 工具。"
+                "Try calling the read_user_manual_section tool with more specific keywords."
             )
 
-        # 格式化输出
+        # Formatted output
         import os
         is_jdyun = _is_jdyun_mode()
         current_label = "京东云版专用手册" if is_jdyun else "标准版主手册"
@@ -418,12 +418,12 @@ async def search_user_manual(
         for i, r in enumerate(results, 1):
             manual_label = "📕 京东云版" if r.manual_type == "jdyun" else "📘 标准版"
             sim_pct = f"{r.similarity * 100:.0f}%"
-            parent_hint = f"（所属：{r.parent_title}）" if r.parent_title else ""
+            parent_hint = f" (Belongs to:{r.parent_title}) " if r.parent_title else ""
 
-            # 控制单个结果长度，避免总输出过长
+            # Control the length of individual results to avoid the total output being too long
             content_display = r.content
             if len(content_display) > 800:
-                content_display = content_display[:800] + "\n...(内容已截断，如需完整内容请用 read_user_manual_section 按标题读取)"
+                content_display = content_display[:800] + "\n...(The content has been truncated. If you need the complete content, please use read_user_manual_section to read by title.)"
 
             lines.append(f"━━━ #{i} {manual_label} | 相似度 {sim_pct} ━━━")
             lines.append(f"📌 标题: {r.title}{parent_hint}")
@@ -432,15 +432,15 @@ async def search_user_manual(
             lines.append("")
 
         lines.append(
-            "💡 如需查看某个章节的完整内容，可用 read_user_manual_section 工具按上述标题精确读取。"
+            "💡 If you want to view the complete content of a section, you can use the read_user_manual_section tool to read it exactly by the above title."
         )
 
         return "\n".join(lines)
 
     except ImportError:
-        logger.error("[search_user_manual] UserManualManager 模块未找到")
-        return "❌ 向量检索模块未安装。请改用 read_user_manual_section 工具。"
+        logger.error("[search_user_manual] UserManualManager Module not found")
+        return "❌ The vector retrieval module is not installed. Please use the read_user_manual_section tool instead."
     except Exception as e:
-        logger.error(f"[search_user_manual] 检索异常: {e}", exc_info=True)
+        logger.error(f"[search_user_manual] Retrieval exception: {e}", exc_info=True)
         return f"❌ 检索失败: {e}\n请改用 read_user_manual_section 工具按章节名精确读取。"
 

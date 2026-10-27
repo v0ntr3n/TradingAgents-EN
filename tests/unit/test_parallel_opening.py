@@ -1,10 +1,10 @@
-"""A3 投资辩论并行开局单元测试
+"""A3 Investment debate parallel opening unit test
 
-覆盖：
-- _merge_debate_states：辩论状态合并规则（history 拼接顺序 / 非空值优先）
-- _create_parallel_opening_node_func：并行执行、独立字段合并、
-  共享 debate_state 深合并、count 增量
-- WorkflowAPI._prepare_inputs：并行开局开关注入（默认 / env 回退 / 输入覆盖）
+Coverage:
+- _merge_debate_states: Debate status merging rules (history splicing order / non-null values first)
+- _create_parallel_opening_node_func: Parallel execution, independent field merging,
+  Share debate_state deep merge, count increment
+- WorkflowAPI._prepare_inputs: Parallel deployment switch injection (default/env fallback/input override)
 """
 
 import os
@@ -26,30 +26,30 @@ class TestMergeDebateStates:
 
     def test_history_concat_in_speaker_order(self):
         old = {
-            "history": "Bull Analyst: 观点A",
-            "bull_history": "Bull Analyst: 观点A",
-            "current_response": "Bull Analyst: 观点A",
+            "history": "Bull Analyst: point of view A",
+            "bull_history": "Bull Analyst: point of view A",
+            "current_response": "Bull Analyst: point of view A",
         }
         new = {
-            "history": "Bear Analyst: 观点B",
-            "bear_history": "Bear Analyst: 观点B",
-            "current_response": "Bear Analyst: 观点B",
+            "history": "Bear Analyst: point of view B",
+            "bear_history": "Bear Analyst: point of view B",
+            "current_response": "Bear Analyst: point of view B",
         }
         merged = WorkflowBuilder._merge_debate_states(old, new)
-        assert merged["history"] == "Bull Analyst: 观点A\nBear Analyst: 观点B"
-        assert merged["bull_history"] == "Bull Analyst: 观点A"
-        assert merged["bear_history"] == "Bear Analyst: 观点B"
-        # 最新发言取后发言者
-        assert merged["current_response"] == "Bear Analyst: 观点B"
+        assert merged["history"] == "Bull Analyst: point of view A\nBear Analyst: point of view B"
+        assert merged["bull_history"] == "Bull Analyst: point of view A"
+        assert merged["bear_history"] == "Bear Analyst: point of view B"
+        # The latest speaker is the speaker
+        assert merged["current_response"] == "Bear Analyst: point of view B"
 
     def test_nonempty_wins_over_empty(self):
-        """并行双方基于同一初始 state 拷贝，bear 结果里 bull_history 为空，
-        不能覆盖已合并的非空 bull_history"""
+        """Both parallel parties are based on the same initial state copy, and the bull_history in the bear result is empty.
+        Cannot overwrite merged non-null bull_history"""
         old = {"history": "Bull Analyst: A", "bull_history": "Bull Analyst: A"}
         new = {
             "history": "Bear Analyst: B",
             "bear_history": "Bear Analyst: B",
-            "bull_history": "",  # bear 拷贝自初始 state，bull_history 为空
+            "bull_history": "",  # bear Copied from initial state, bull_history is empty
         }
         merged = WorkflowBuilder._merge_debate_states(old, new)
         assert merged["bull_history"] == "Bull Analyst: A"
@@ -59,7 +59,7 @@ class TestMergeDebateStates:
 # ==================== _create_parallel_opening_node_func ====================
 
 def _make_builder_with_stubs(stub_results):
-    """构造跳过 __init__ 的 WorkflowBuilder，stub 掉 _create_node_function"""
+    """Construct a WorkflowBuilder that skips __init__ and stubs it out _create_node_function"""
     builder = object.__new__(WorkflowBuilder)
     calls = []
 
@@ -78,19 +78,19 @@ def _make_builder_with_stubs(stub_results):
 
 class TestParallelOpeningNode:
     BULL_RESULT = {
-        "bull_report": "乐观简报",
+        "bull_report": "optimistic briefing",
         "investment_debate_state": {
-            "history": "Bull Analyst: 观点A",
-            "bull_history": "Bull Analyst: 观点A",
-            "current_response": "Bull Analyst: 观点A",
+            "history": "Bull Analyst: point of view A",
+            "bull_history": "Bull Analyst: point of view A",
+            "current_response": "Bull Analyst: point of view A",
         },
     }
     BEAR_RESULT = {
-        "bear_report": "审慎简报",
+        "bear_report": "Prudential Briefing",
         "investment_debate_state": {
-            "history": "Bear Analyst: 观点B",
-            "bear_history": "Bear Analyst: 观点B",
-            "current_response": "Bear Analyst: 观点B",
+            "history": "Bear Analyst: point of view B",
+            "bear_history": "Bear Analyst: point of view B",
+            "current_response": "Bear Analyst: point of view B",
         },
     }
 
@@ -122,16 +122,16 @@ class TestParallelOpeningNode:
     def test_independent_fields_merged(self):
         node_func, _ = self._build_node_func()
         result = node_func({"investment_debate_state": {"history": "", "count": 0}})
-        assert result["bull_report"] == "乐观简报"
-        assert result["bear_report"] == "审慎简报"
+        assert result["bull_report"] == "optimistic briefing"
+        assert result["bear_report"] == "Prudential Briefing"
 
     def test_debate_state_deep_merged(self):
         node_func, _ = self._build_node_func()
         result = node_func({"investment_debate_state": {"history": "", "count": 0}})
         ds = result["investment_debate_state"]
-        assert ds["history"] == "Bull Analyst: 观点A\nBear Analyst: 观点B"
-        assert ds["bull_history"] == "Bull Analyst: 观点A"
-        assert ds["bear_history"] == "Bear Analyst: 观点B"
+        assert ds["history"] == "Bull Analyst: point of view A\nBear Analyst: point of view B"
+        assert ds["bull_history"] == "Bull Analyst: point of view A"
+        assert ds["bear_history"] == "Bear Analyst: point of view B"
 
     def test_count_increment_equals_participants(self):
         node_func, _ = self._build_node_func()
@@ -139,7 +139,7 @@ class TestParallelOpeningNode:
         assert result["_debate_debate_count"] == 2
 
     def test_missing_debate_state_falls_back_to_input(self):
-        """参与者都没返回 debate_state 时，沿用输入的初始 state"""
+        """When none of the participants returns debate_state, the initial value of the input is used. state"""
         stub_results = {
             "bull_researcher": {"bull_report": "x"},
             "bear_researcher": {"bear_report": "y"},
@@ -161,7 +161,7 @@ class TestParallelOpeningNode:
         assert result["_debate_debate_count"] == 2
 
 
-# ==================== 开关注入（workflow_api._prepare_inputs） ====================
+# ==================== Switch injection (workflow_api._prepare_inputs) ====================
 
 class TestParallelOpeningSwitch:
     def _prepare(self, inputs=None, monkeypatch=None):
@@ -170,7 +170,7 @@ class TestParallelOpeningSwitch:
         api = object.__new__(WorkflowAPI)
         if monkeypatch is not None:
             monkeypatch.delenv("RESEARCH_PARALLEL_OPENING", raising=False)
-        return api._prepare_inputs(inputs or {"research_depth": "深度"})
+        return api._prepare_inputs(inputs or {"research_depth": "Depth"})
 
     def test_default_on(self, monkeypatch):
         prepared = self._prepare(monkeypatch=monkeypatch)
@@ -183,17 +183,17 @@ class TestParallelOpeningSwitch:
 
     def test_env_on_overrides_explicit_input(self, monkeypatch):
         monkeypatch.setenv("RESEARCH_PARALLEL_OPENING", "on")
-        prepared = self._prepare({"research_depth": "快速", "parallel_opening": False})
+        prepared = self._prepare({"research_depth": "fast", "parallel_opening": False})
         assert prepared["_parallel_opening"] is True
 
     def test_input_override_when_env_auto(self, monkeypatch):
         monkeypatch.delenv("RESEARCH_PARALLEL_OPENING", raising=False)
-        prepared = self._prepare({"research_depth": "标准", "parallel_opening": False})
+        prepared = self._prepare({"research_depth": "Standard", "parallel_opening": False})
         assert prepared["_parallel_opening"] is False
 
     def test_all_depths_default_on(self, monkeypatch):
-        for depth in ("快速", "基础", "标准", "深度", "全面"):
+        for depth in ("fast", "Basics", "Standard", "Depth", "Comprehensive"):
             prepared = self._prepare(
                 {"research_depth": depth}, monkeypatch=monkeypatch
             )
-            assert prepared["_parallel_opening"] is True, f"{depth} 档应默认启用"
+            assert prepared["_parallel_opening"] is True, f"{depth} files should be enabled by default"

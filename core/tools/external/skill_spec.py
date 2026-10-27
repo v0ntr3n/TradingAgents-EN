@@ -1,8 +1,8 @@
 """
-Skill 生成系统 — 核心数据模型
+Skill Build system — core data model
 
-定义 SkillSpec（需求规格书）、GeneratedCode（生成结果）、
-SkillCreationSession（创建会话）等数据模型。
+Define SkillSpec (requirement specification), GeneratedCode (generated result),
+SkillCreationSession (Create session) and other data models.
 """
 
 from enum import Enum
@@ -11,40 +11,40 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 
-# ==================== 枚举类型 ====================
+# ==================== enumeration type ====================
 
 class ClarityLevel(str, Enum):
     """需求清晰度等级"""
-    HIGH = "high"        # 4-5/5 — 1 轮即可
-    MEDIUM = "medium"    # 3/5 — 需要 2 轮
-    LOW = "low"          # 1-2/5 — 需要 3 轮
+    HIGH = "high"        # 4-5/5 — 1 Just turn
+    MEDIUM = "medium"    # 3/5 — Requires 2 rounds
+    LOW = "low"          # 1-2/5 — Requires 3 rounds
 
 
 class SessionStatus(str, Enum):
     """创建会话状态"""
-    GATHERING = "gathering"      # 需求收集中
-    CONFIRMED = "confirmed"      # 规格已确认
-    GENERATING = "generating"    # 代码生成中
-    COMPLETED = "completed"      # 创建完成
-    FAILED = "failed"            # 创建失败
+    GATHERING = "gathering"      # Requirements are being collected
+    CONFIRMED = "confirmed"      # Specifications confirmed
+    GENERATING = "generating"    # Code generation in progress
+    COMPLETED = "completed"      # Creation completed
+    FAILED = "failed"            # Creation failed
 
 
 class SkillStatus(str, Enum):
     """Skill 状态"""
-    ACTIVE = "active"            # 已上线，可使用
-    DISABLED = "disabled"        # 已禁用
-    DRAFT = "draft"              # 草稿（未通过验证）
-    ARCHIVED = "archived"        # 已归档
+    ACTIVE = "active"            # Already online and available for use
+    DISABLED = "disabled"        # Disabled
+    DRAFT = "draft"              # Draft (not verified)
+    ARCHIVED = "archived"        # Archived
 
 
 class SkillSource(str, Enum):
     """Skill 来源"""
-    GENERATED = "generated"      # 本系统自动生成
-    CLAWHUB = "clawhub"          # 从 ClawHub 导入
-    MANUAL = "manual"            # 手动创建
+    GENERATED = "generated"      # This system automatically generates
+    CLAWHUB = "clawhub"          # Import from ClawHub
+    MANUAL = "manual"            # Create manually
 
 
-# ==================== 核心数据模型 ====================
+# ==================== core data model ====================
 
 class SkillParameter(BaseModel):
     """Skill 参数定义"""
@@ -58,38 +58,38 @@ class SkillParameter(BaseModel):
 
 class ExpectedOutput(BaseModel):
     """期望输出定义"""
-    type: str = "list[dict]"     # 返回值类型
-    fields: List[str] = Field(default_factory=list)  # 期望字段列表
+    type: str = "list[dict]"     # Return value type
+    fields: List[str] = Field(default_factory=list)  # Expected field list
     description: str = ""
 
 
 class SkillSpec(BaseModel):
     """
-    Skill 规格书 — 需求沟通阶段的最终产出
+    Skill Specifications — The final output of the requirements communication stage
 
-    从用户自然语言需求经过多轮对话后锁定的结构化规格，
-    是代码生成阶段的唯一输入。
+    Structural specifications locked from the user s natural language needs after multiple rounds of dialogue,
+    is the only input to the code generation phase.
 
-    Skill 表示一个可复用、可验证、边界清晰的功能实现单元，
-    不局限于纯数据查询，也可以包含必要的数据整理、确定性计算、
-    规则判断、轻量聚合或模板化说明生成。
+    Skill Represents a functional implementation unit that is reusable, verifiable, and has clear boundaries.
+    It is not limited to pure data query, but can also include necessary data sorting, deterministic calculation,
+    Rule judgment, lightweight aggregation or templated description generation.
     """
-    tool_id: str                           # 如 "get_eastmoney_news"
-    display_name: str                      # 如 "东方财富个股新闻"
-    description: str                       # 功能描述（单一明确功能）
-    category: str = "utility"              # 分类: news, market, fundamentals 等
-    data_source: str = ""                  # 主数据源标识；若有附加来源应在 constraints 中说明
+    tool_id: str                           # Such as "get_eastmoney_news"
+    display_name: str                      # Such as "Oriental Fortune Stock News"
+    description: str                       # Functional description (single clear function)
+    category: str = "utility"              # Classification: news, market, fundamentals Wait
+    data_source: str = ""                  # Primary data source identifier; if there are additional sources, they should be stated in constraints
     parameters: List[SkillParameter] = Field(default_factory=list)
     expected_output: ExpectedOutput = Field(default_factory=ExpectedOutput)
     validation_checks: List["ValidationCheck"] = Field(default_factory=list)
-    constraints: List[str] = Field(default_factory=list)    # 行为约束
-    test_input: Dict[str, Any] = Field(default_factory=dict)  # 测试输入
-    test_expected: Dict[str, Any] = Field(default_factory=dict)  # 测试期望
-    metadata: Dict[str, Any] = Field(default_factory=dict)       # 生成期附加上下文，不属于最终输出契约
-    # 🔧 版本管理字段（迭代模式下写入）
-    parent_skill_id: str = ""              # 根 Skill 的 tool_id（首次创建为空，迭代产生的新版本指向原 Skill）
-    version: int = 1                       # 版本号（首次创建为 1，迭代递增）
-    version_note: str = ""                 # 本次迭代说明（来自用户反馈摘要）
+    constraints: List[str] = Field(default_factory=list)    # behavioral constraints
+    test_input: Dict[str, Any] = Field(default_factory=dict)  # test input
+    test_expected: Dict[str, Any] = Field(default_factory=dict)  # Test expectations
+    metadata: Dict[str, Any] = Field(default_factory=dict)       # Additional context during generation, not part of the final output contract
+    # 🔧 Version management field (written in iteration mode)
+    parent_skill_id: str = ""              # The tool_id of the root Skill (empty when first created, the new version generated by iteration points to the original Skill)
+    version: int = 1                       # Version number (1 when first created, incremented by iterations)
+    version_note: str = ""                 # Description of this iteration (from user feedback summary)
 
 
 class TestCase(BaseModel):
@@ -101,11 +101,11 @@ class TestCase(BaseModel):
 
 class GeneratedCode(BaseModel):
     """代码生成结果"""
-    code: str                              # Python 函数代码
-    metadata: Dict[str, Any] = Field(default_factory=dict)  # ToolMetadata 格式
+    code: str                              # Python function code
+    metadata: Dict[str, Any] = Field(default_factory=dict)  # ToolMetadata Format
     test_cases: List[TestCase] = Field(default_factory=list)
-    generation_model: str = ""             # 生成使用的 LLM 模型
-    generation_time: float = 0.0           # 生成耗时（秒）
+    generation_model: str = ""             # Generate the LLM model used
+    generation_time: float = 0.0           # Generation time (seconds)
 
 
 class ValidationResult(BaseModel):
@@ -117,21 +117,21 @@ class ValidationResult(BaseModel):
 
 
 class ImplementationHelper(BaseModel):
-    """侦察阶段确认可复用的运行时 helper。"""
+    """The recon phase identifies reusable runtime helpers."""
     module: str = ""
     name: str = ""
     signature: str = ""
     description: str = ""
     reason: str = ""
-    # 数据源处理方式标签：
-    #   "self_contained" - helper 自包含，内部已封装数据源调用（直接调 Tushare/AKShare 或本地优先+外部兜底），LLM 直接调用即可
-    #   "local_only"     - helper 只查本地 MongoDB，若本地无数据 LLM 可能需要自己调外部数据源补充
-    #   "partial"        - helper 覆盖部分需求，LLM 可能需要补充其它数据源或计算
+    # Data source processing method tag:
+    #   "self_contained" - helper Self-contained, internally encapsulated data source calls (directly call Tushare/AKShare or local priority+External cover), LLM can be called directly
+    #   "local_only"     - helper Only local MongoDB is checked. If there is no data locally, LLM may need to adjust external data sources to supplement it.
+    #   "partial"        - helper To cover some requirements, LLM may need to supplement other data sources or calculations
     data_source_handling: str = "self_contained"
 
 
 class ImplementationFact(BaseModel):
-    """侦察阶段确认的结构化事实。"""
+    """Structured facts confirmed during the reconnaissance phase."""
     source: str = ""
     fact: str = ""
     evidence: str = ""
@@ -141,14 +141,14 @@ class ImplementationFact(BaseModel):
 
 
 class ImplementationIssue(BaseModel):
-    """实现阶段的限制、禁止路径或运行时缺口。"""
+    """Implementation phase limitations, forbidden paths, or runtime gaps."""
     path: str = ""
     reason: str = ""
     severity: str = "info"  # info, warning, error
 
 
 class ReconToolTrace(BaseModel):
-    """侦察阶段的工具调用轨迹。"""
+    """Tool call trajectories during the reconnaissance phase."""
     tool_name: str = ""
     arguments: Dict[str, Any] = Field(default_factory=dict)
     success: bool = True
@@ -159,7 +159,7 @@ class ReconToolTrace(BaseModel):
 
 
 class ValidationCheck(BaseModel):
-    """业务验收或生成前侦察建议的检查项。"""
+    """Recommended inspection items for business acceptance or pre-production reconnaissance."""
     name: str = ""
     description: str = ""
     required: bool = True
@@ -173,7 +173,7 @@ class ValidationCheck(BaseModel):
 
 
 class ImplementationFactReport(BaseModel):
-    """前置侦察层输出的结构化实现事实报告。"""
+    """Structured implementation fact reporting of front-end reconnaissance layer output."""
     task_summary: str = ""
     recommended_strategy: str = ""
     schema_bundle_context: Dict[str, Any] = Field(default_factory=dict)
@@ -189,10 +189,10 @@ class ImplementationFactReport(BaseModel):
 
     @property
     def has_spec_grounding_facts(self) -> bool:
-        """是否包含可落进 spec 的字段级实证事实（helper / 库字段实况 / 样本字段 / schema 契约）。
+        """Whether to include field-level empirical facts that can fall into the spec (helper/library field facts/sample fields/schema contracts).
 
-        用于判断「基于侦察事实二次生成 spec」是否有增量价值：
-        无实证事实时二次生成的输入与草稿无实质差异，应跳过以节省一次 LLM 调用。
+        Used to determine whether secondary generation of spec based on reconnaissance facts has incremental value:
+        No empirical fact-based second generation input is not materially different from the draft and should be skipped to save an LLM call.
         """
         return bool(
             self.available_helpers
@@ -204,12 +204,12 @@ class ImplementationFactReport(BaseModel):
 
 class EvalScore(BaseModel):
     """评估打分"""
-    executability: float = 0.0      # 可执行性 (0-10)
-    authenticity: float = 0.0       # 真实性 (0-10)
-    completeness: float = 0.0       # 完整性 (0-10)
-    relevance: float = 0.0          # 相关性 (0-10)
-    format_quality: float = 0.0     # 格式质量 (0-10)
-    expert_comment: str = ""        # Judge 专家一句话评语（实时展示给用户）
+    executability: float = 0.0      # Enforceability (0-10)
+    authenticity: float = 0.0       # authenticity (0-10)
+    completeness: float = 0.0       # integrity (0-10)
+    relevance: float = 0.0          # Relevance (0-10)
+    format_quality: float = 0.0     # Format quality (0-10)
+    expert_comment: str = ""        # Judge One-sentence comments from experts (displayed to users in real time)
 
     @property
     def total(self) -> float:
@@ -226,15 +226,15 @@ class EvalScore(BaseModel):
 class SandboxResult(BaseModel):
     """沙箱执行结果"""
     success: bool = False
-    output: Any = None                     # 函数返回值
+    output: Any = None                     # function return value
     stdout: str = ""
     stderr: str = ""
-    execution_time: float = 0.0            # 秒
+    execution_time: float = 0.0            # seconds
     error: Optional[str] = None
 
 
 class ReflectionResult(BaseModel):
-    """LLM 反思分析结果 — 在迭代失败时对根因进行深度分析"""
+    """LLM Reflect on the analysis results — Perform in-depth root cause analysis when iterations fail"""
     root_cause: str = ""
     fix_plan: List[str] = Field(default_factory=list)
     should_retry: bool = True
@@ -242,14 +242,14 @@ class ReflectionResult(BaseModel):
 
 
 class BusinessRuleFailure(BaseModel):
-    """业务验收失败项。"""
+    """Business acceptance failure item."""
     rule_id: str = ""
     message: str = ""
     severity: str = "error"  # warning, error
 
 
 class BusinessVerificationResult(BaseModel):
-    """业务验收结果。"""
+    """Business acceptance results."""
     passed: bool = True
     business_score: float = 0.0
     failures: List[BusinessRuleFailure] = Field(default_factory=list)
@@ -266,7 +266,7 @@ class IterationRound(BaseModel):
     eval_score: Optional[EvalScore] = None
     business_verification: Optional[BusinessVerificationResult] = None
     reflection: Optional[ReflectionResult] = None
-    feedback: str = ""                     # 给下一轮的反馈
+    feedback: str = ""                     # Give feedback for next round
     decision: str = ""                     # PASS / RETRY / FAIL
 
 
@@ -293,37 +293,37 @@ class BoundaryCheck(BaseModel):
 class ConversationRound(BaseModel):
     """对话轮次"""
     round_number: int
-    ai_message: str = ""                   # AI 回复（功能点确认 / 技术方案 / 规格确认）
-    user_message: str = ""                 # 用户回复
+    ai_message: str = ""                   # AI Reply (function point confirmation/technical solution/specification confirmation)
+    user_message: str = ""                 # User reply
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
 class SkillHandoffContext(BaseModel):
-    """来自上游工坊或流程的交接上下文。"""
+    """Handover context from upstream workshops or processes."""
     source: str = ""
     source_spec_id: str = ""
     source_name: str = ""
     target_capability: str = ""
     handoff_intent: str = ""
-    # Agent Studio 缺口补齐的反向追溯字段（Phase 2）
-    user_id: str = ""                # 发起补齐的真实用户，决定 Skill 归属与权限
-    workshop_session_id: str = ""    # 来源 Agent 工坊会话
-    spec_id: str = ""                # 来源 Agent 规格
-    version_id: str = ""             # 来源 Agent 版本（如已生成）
-    gap_id: str = ""                 # 来源能力缺口标识
-    agent_name: str = ""             # 来源 Agent 名称
-    agent_goal: str = ""             # 来源 Agent 主要目标
-    searched_capabilities: List[str] = Field(default_factory=list)      # 上游已检索/评估过的能力
-    confirmed_data_sources: List[str] = Field(default_factory=list)     # 上游已确认可用的数据源或 helper
-    user_clarifications: List[str] = Field(default_factory=list)        # 用户在上游澄清过的关键结论
-    gap_context: str = ""                                           # 当前 gap 的上下文摘要
-    related_gaps: List[str] = Field(default_factory=list)              # 同一次补齐任务中的相关 gap
-    known_failure_summaries: List[str] = Field(default_factory=list)  # 同一次 job 内已知失败摘要
-    known_verified_facts: List[str] = Field(default_factory=list)      # 同一次 job 内已验证环境事实
+    # Agent Studio Gap-filled reverse traceback fields (Phase 2)
+    user_id: str = ""                # The real user who initiates the completion determines Skill ownership and permissions
+    workshop_session_id: str = ""    # Source Agent Workshop Session
+    spec_id: str = ""                # Source Agent Specifications
+    version_id: str = ""             # Source Agent version (if generated)
+    gap_id: str = ""                 # Source capability gap identification
+    agent_name: str = ""             # Source Agent Name
+    agent_goal: str = ""             # Source Agent Primary Goal
+    searched_capabilities: List[str] = Field(default_factory=list)      # Upstream retrieved/evaluated capabilities
+    confirmed_data_sources: List[str] = Field(default_factory=list)     # A data source that has been confirmed available by upstream or helper
+    user_clarifications: List[str] = Field(default_factory=list)        # Key conclusions clarified by users upstream
+    gap_context: str = ""                                           # Contextual summary of the current gap
+    related_gaps: List[str] = Field(default_factory=list)              # Related in the same completion task gap
+    known_failure_summaries: List[str] = Field(default_factory=list)  # Summary of known failures within the same job
+    known_verified_facts: List[str] = Field(default_factory=list)      # Environmental facts have been verified within the same job
 
 
 class PipelineProgressEvent(BaseModel):
-    """生成管线进度事件。"""
+    """Generate pipeline progress events."""
     stage: str = ""
     message: str = ""
     iteration: int = 0
@@ -333,27 +333,27 @@ class PipelineProgressEvent(BaseModel):
 
 class SkillCreationSession(BaseModel):
     """
-    Skill 创建会话 — 对应 MongoDB skill_creation_sessions 集合
+    Skill Create session — Corresponds to the MongoDB skill_creation_sessions collection
 
-    记录从需求沟通到创建完成的完整过程。
+    Record the complete process from communication of requirements to completion of creation.
     """
     session_id: str                        # UUID
     user_id: str = ""
     status: SessionStatus = SessionStatus.GATHERING
-    # 需求沟通
+    # Requirements communication
     rounds: List[ConversationRound] = Field(default_factory=list)
     current_round: int = 0
     clarity_level: Optional[ClarityLevel] = None
     boundary_check: Optional[BoundaryCheck] = None
     handoff_context: Optional[SkillHandoffContext] = None
-    # 迭代模式：记录正在迭代的 Skill 的 tool_id
+    # Iteration mode: records the skill of the skill being iterated tool_id
     iterate_skill_id: Optional[str] = None
-    # 规格
+    # Specifications
     spec: Optional[SkillSpec] = None
     spec_confirmed: bool = False
-    # 侦察报告（侦察前置模式缓存）
+    # Reconnaissance report (reconnaissance pre-mode cache)
     fact_report: Optional[ImplementationFactReport] = None
-    # 生成结果
+    # Generate results
     pipeline_result: Optional[PipelineResult] = None
     pipeline_history: List[PipelineResult] = Field(default_factory=list)
     pipeline_stage: str = ""
@@ -361,7 +361,7 @@ class SkillCreationSession(BaseModel):
     pipeline_iteration: int = 0
     pipeline_progress: float = 0.0
     pipeline_details: List[PipelineProgressEvent] = Field(default_factory=list)
-    # 时间
+    # time
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

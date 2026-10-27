@@ -26,21 +26,21 @@
 </head>
 <body>
   <div class="container">
-    <!-- 头部 -->
+    <!-- head -->
     <div class="header">
       <div class="stock-code">{{ stock_code }}</div>
       <div class="stock-name">{{ stock_name }}</div>
-      <div class="analysis-time">分析时间: {{ analysis_time }}</div>
+      <div class="analysis-time">Analysis time: {{ analysis_time }}</div>
     </div>
     
-    <!-- 投资建议 -->
+    <!-- investment advice -->
     <div class="recommendation {{ recommendation_class }}">
       {{ recommendation }}
     </div>
     
-    <!-- 核心观点 -->
+    <!-- core ideas -->
     <div class="section">
-      <div class="section-title">📌 核心观点</div>
+      <div class="section-title">📌 core ideas</div>
       <ul class="key-points">
         {% for point in key_points %}
         <li>{{ point }}</li>
@@ -48,10 +48,10 @@
       </ul>
     </div>
     
-    <!-- 风险提示 -->
+    <!-- Risk warning -->
     {% if risks %}
     <div class="section">
-      <div class="section-title">⚠️ 风险提示</div>
+      <div class="section-title">⚠️ Risk warning</div>
       <ul class="key-points risks">
         {% for risk in risks %}
         <li>{{ risk }}</li>
@@ -60,19 +60,19 @@
     </div>
     {% endif %}
     
-    <!-- 查看详情按钮 -->
+    <!-- View details button -->
     {% if detail_url %}
     <div class="cta">
-      <a href="{{ detail_url }}" class="btn">查看完整分析报告</a>
+      <a href="{{ detail_url }}" class="btn">View full analysis report</a>
     </div>
     {% endif %}
     
-    <!-- 页脚 -->
+    <!-- footer -->
     <div class="footer">
-      <p>此邮件由 TradingAgents-CN 自动发送</p>
-      <p>如需退订，请在应用设置中关闭邮件通知</p>
+      <p>This email is automatically sent by TradingAgents-CN</p>
+      <p>To unsubscribe, please turn off email notifications in the app settings</p>
       <p class="disclaimer">
-        ⚠️ 免责声明：以上分析仅供参考，不构成投资建议。投资有风险，决策需谨慎。
+        ⚠️ Disclaimer: The above analysis is for reference only and does not constitute investment advice. Investment is risky and decisions need to be made with caution.
       </p>
     </div>
   </div>

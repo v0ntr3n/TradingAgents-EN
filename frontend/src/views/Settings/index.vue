@@ -1,6 +1,6 @@
 <template>
   <div class="settings">
-    <!-- 页面标题 -->
+    <!-- Page title -->
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><Setting /></el-icon>
@@ -12,7 +12,7 @@
     </div>
 
     <el-row :gutter="24">
-      <!-- 左侧：设置菜单 -->
+      <!-- Left: Settings menu -->
       <el-col :span="6">
         <el-card class="settings-menu" shadow="never">
           <el-menu
@@ -20,146 +20,146 @@
             @select="handleMenuSelect"
             class="settings-nav"
           >
-            <!-- 个人设置菜单 -->
+            <!-- Personal settings menu -->
             <template v-if="currentSection === 'personal'">
               <el-menu-item index="general">
                 <el-icon><User /></el-icon>
-                <span>通用设置</span>
+                <span>General settings</span>
               </el-menu-item>
               <el-menu-item index="appearance">
                 <el-icon><Brush /></el-icon>
-                <span>外观设置</span>
+                <span>Appearance settings</span>
               </el-menu-item>
               <el-menu-item index="analysis">
                 <el-icon><TrendCharts /></el-icon>
-                <span>分析偏好</span>
+                <span>Analyze preferences</span>
               </el-menu-item>
               <el-menu-item index="notifications">
                 <el-icon><Bell /></el-icon>
-                <span>通知设置</span>
+                <span>Notification settings</span>
               </el-menu-item>
               <el-menu-item index="security">
                 <el-icon><Lock /></el-icon>
-                <span>安全设置</span>
+                <span>Security settings</span>
               </el-menu-item>
               <el-menu-item index="assistant">
                 <el-icon><ChatDotRound /></el-icon>
-                <span>助理设置</span>
+                <span>Assistant settings</span>
               </el-menu-item>
               <el-menu-item index="commission">
                 <el-icon><Coin /></el-icon>
-                <span>交易费率</span>
+                <span>Transaction rate</span>
               </el-menu-item>
 
             </template>
 
-            <!-- 系统配置菜单 -->
+            <!-- System configuration menu -->
             <template v-else-if="currentSection === 'config'">
-              <!-- 京东云模式：显示系统配置（只读状态页）+ 数据源配置 -->
+              <!-- JD Cloud Mode: Display system configuration (read-only status page)+ Data source configuration -->
               <template v-if="isJdyunMode()">
                 <el-menu-item index="jdyun-config">
                   <el-icon><Tools /></el-icon>
-                  <span>系统配置</span>
+                  <span>System configuration</span>
                 </el-menu-item>
                 <el-menu-item index="datasource-config">
                   <el-icon><DataBoard /></el-icon>
-                  <span>数据源配置</span>
+                  <span>Data source configuration</span>
                 </el-menu-item>
               </template>
-              <!-- 非京东云模式：显示完整的配置管理 -->
+              <!-- Non-JD Cloud mode: display complete configuration management -->
               <el-menu-item v-else index="config">
                 <el-icon><Tools /></el-icon>
-                <span>配置管理</span>
+                <span>Configuration management</span>
               </el-menu-item>
               <el-menu-item index="usage">
                 <el-icon><DataAnalysis /></el-icon>
-                <span>使用统计</span>
+                <span>usage statistics</span>
               </el-menu-item>
               <el-menu-item index="cache">
                 <el-icon><Coin /></el-icon>
-                <span>缓存管理</span>
+                <span>Cache management</span>
               </el-menu-item>
             </template>
 
-            <!-- 系统管理菜单 -->
+            <!-- System management menu -->
             <template v-else-if="currentSection === 'admin'">
               <el-menu-item index="database">
                 <el-icon><Monitor /></el-icon>
-                <span>数据库管理</span>
+                <span>Database management</span>
               </el-menu-item>
               <el-menu-item index="logs">
                 <el-icon><Document /></el-icon>
-                <span>操作日志</span>
+                <span>Operation log</span>
               </el-menu-item>
               <el-menu-item index="sync">
                 <el-icon><Refresh /></el-icon>
-                <span>多数据源同步</span>
+                <span>Synchronization of multiple data sources</span>
               </el-menu-item>
               <el-menu-item index="capability-index">
                 <el-icon><Collection /></el-icon>
-                <span>工具能力索引</span>
+                <span>Tool capability index</span>
               </el-menu-item>
             </template>
           </el-menu>
         </el-card>
       </el-col>
 
-      <!-- 右侧：设置内容 -->
+      <!-- Right: Setting content -->
       <el-col :span="18">
-        <!-- 通用设置 -->
+        <!-- General settings -->
         <el-card v-show="activeTab === 'general'" class="settings-content" shadow="never">
           <template #header>
-            <h3>通用设置</h3>
+            <h3>General settings</h3>
           </template>
           
           <el-form :model="generalSettings" label-width="120px">
-            <el-form-item label="用户名">
+            <el-form-item label="Username">
               <el-input v-model="generalSettings.username" disabled />
             </el-form-item>
             
-            <el-form-item label="邮箱">
+            <el-form-item label="Email">
               <el-input v-model="generalSettings.email" />
             </el-form-item>
             
-            <el-form-item label="语言">
+            <el-form-item label="language">
               <el-select v-model="generalSettings.language">
-                <el-option label="简体中文" value="zh-CN" />
+                <el-option label="Simplified Chinese" value="zh-CN" />
                 <el-option label="English" value="en-US" />
               </el-select>
             </el-form-item>
             
-            <el-form-item label="时区">
+            <el-form-item label="time zone">
               <el-select v-model="generalSettings.timezone">
-                <el-option label="北京时间 (UTC+8)" value="Asia/Shanghai" />
-                <el-option label="纽约时间 (UTC-5)" value="America/New_York" />
-                <el-option label="伦敦时间 (UTC+0)" value="Europe/London" />
+                <el-option label="Beijing time (UTC+8)" value="Asia/Shanghai" />
+                <el-option label="new york time (UTC-5)" value="America/New_York" />
+                <el-option label="london time (UTC+0)" value="Europe/London" />
               </el-select>
             </el-form-item>
             
             <el-form-item>
               <el-button type="primary" @click="saveGeneralSettings">
-                保存设置
+                Save settings
               </el-button>
             </el-form-item>
           </el-form>
         </el-card>
 
-        <!-- 外观设置 -->
+        <!-- Appearance settings -->
         <el-card v-show="activeTab === 'appearance'" class="settings-content" shadow="never">
           <template #header>
-            <h3>外观设置</h3>
+            <h3>Appearance settings</h3>
           </template>
           
           <el-form :model="appearanceSettings" label-width="120px">
-            <el-form-item label="主题模式">
+            <el-form-item label="theme mode">
               <el-radio-group v-model="appearanceSettings.theme" @change="handleThemeChange">
-                <el-radio label="light">浅色主题</el-radio>
-                <el-radio label="dark">深色主题</el-radio>
-                <el-radio label="auto">跟随系统</el-radio>
+                <el-radio label="light">light theme</el-radio>
+                <el-radio label="dark">dark theme</el-radio>
+                <el-radio label="auto">Follow the system</el-radio>
               </el-radio-group>
             </el-form-item>
 
-            <el-form-item label="侧边栏宽度">
+            <el-form-item label="sidebar width">
               <el-slider
                 v-model="appearanceSettings.sidebarWidth"
                 :min="200"
@@ -171,63 +171,63 @@
 
             <el-form-item>
               <el-button type="primary" @click="saveAppearanceSettings">
-                保存设置
+                Save settings
               </el-button>
             </el-form-item>
           </el-form>
         </el-card>
 
-        <!-- 分析偏好 -->
+        <!-- Analyze preferences -->
         <el-card v-show="activeTab === 'analysis'" class="settings-content" shadow="never">
           <template #header>
-            <h3>分析偏好</h3>
+            <h3>Analyze preferences</h3>
           </template>
           
           <el-form :model="analysisSettings" label-width="120px">
-            <el-form-item label="默认市场">
+            <el-form-item label="Default market">
               <el-select v-model="analysisSettings.defaultMarket">
-                <el-option label="A股" value="A股" />
+                <el-option label="A shares" value="A shares" />
               </el-select>
             </el-form-item>
             
-            <el-form-item label="默认分析深度">
+            <el-form-item label="Default analysis depth">
               <el-select v-model="analysisSettings.defaultDepth">
-                <el-option label="1级 - 快速分析" value="1" />
-                <el-option label="2级 - 基础分析" value="2" />
-                <el-option label="3级 - 标准分析（推荐）" value="3" />
-                <el-option label="4级 - 深度分析" value="4" />
-                <el-option label="5级 - 全面分析" value="5" />
+                <el-option label="1 Level - Quick Analysis" value="1" />
+                <el-option label="2 Level - Basic Analysis" value="2" />
+                <el-option label="3 Level - Standard Analysis (recommended)" value="3" />
+                <el-option label="4 Level - In-Depth Analysis" value="4" />
+                <el-option label="5 Level - Comprehensive Analysis" value="5" />
               </el-select>
             </el-form-item>
 
-            <el-form-item label="默认分析师">
+            <el-form-item label="Default analyst">
               <el-checkbox-group v-model="analysisSettings.defaultAnalysts">
-                <el-checkbox label="大盘分析师">🌐 大盘分析师</el-checkbox>
-                <el-checkbox label="板块分析师">🏭 板块分析师</el-checkbox>
-                <el-checkbox label="市场分析师">📈 市场分析师</el-checkbox>
-                <el-checkbox label="基本面分析师">📊 基本面分析师</el-checkbox>
-                <el-checkbox label="新闻分析师">📰 新闻分析师</el-checkbox>
-                <el-checkbox label="社媒分析师">💬 社媒分析师</el-checkbox>
+                <el-checkbox label="Market Analyst">🌐 Market Analyst</el-checkbox>
+                <el-checkbox label="Sector Analyst">🏭 Sector Analyst</el-checkbox>
+                <el-checkbox label="market analyst">📈 market analyst</el-checkbox>
+                <el-checkbox label="fundamental analyst">📊 fundamental analyst</el-checkbox>
+                <el-checkbox label="news analyst">📰 news analyst</el-checkbox>
+                <el-checkbox label="social media analyst">💬 social media analyst</el-checkbox>
               </el-checkbox-group>
             </el-form-item>
 
-            <el-form-item label="风险偏好">
+            <el-form-item label="risk appetite">
               <el-radio-group v-model="analysisSettings.riskPreference">
-                <el-radio label="conservative">保守</el-radio>
-                <el-radio label="neutral">中性</el-radio>
-                <el-radio label="aggressive">激进</el-radio>
+                <el-radio label="conservative">conservative</el-radio>
+                <el-radio label="neutral">Neutral</el-radio>
+                <el-radio label="aggressive">Radical</el-radio>
               </el-radio-group>
               <div class="setting-description">
-                选择您的风险偏好，系统将根据您的选择调整分析建议的风格
+                Select your risk preference and the system will adjust the style of analysis recommendations based on your selections
               </div>
             </el-form-item>
 
-            <el-form-item label="自动刷新">
+            <el-form-item label="Auto refresh">
               <el-switch v-model="analysisSettings.autoRefresh" />
-              <span class="setting-description">自动刷新分析结果</span>
+              <span class="setting-description">Automatically refresh analysis results</span>
             </el-form-item>
             
-            <el-form-item label="刷新间隔">
+            <el-form-item label="refresh interval">
               <el-input-number
                 v-model="analysisSettings.refreshInterval"
                 :min="10"
@@ -235,65 +235,65 @@
                 :step="10"
                 :disabled="!analysisSettings.autoRefresh"
               />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
             
             <el-form-item>
               <el-button type="primary" @click="saveAnalysisSettings">
-                保存设置
+                Save settings
               </el-button>
             </el-form-item>
           </el-form>
         </el-card>
 
-        <!-- 通知设置 -->
+        <!-- Notification settings -->
         <el-card v-show="activeTab === 'notifications'" class="settings-content" shadow="never">
           <template #header>
-            <h3>通知设置</h3>
+            <h3>Notification settings</h3>
           </template>
           
           <el-form :model="notificationSettings" label-width="120px">
-            <el-form-item label="桌面通知">
+            <el-form-item label="Desktop notifications">
               <el-switch v-model="notificationSettings.desktop" />
-              <span class="setting-description">显示桌面通知</span>
+              <span class="setting-description">Show desktop notifications</span>
             </el-form-item>
 
-            <el-form-item label="研究完成通知">
+            <el-form-item label="Research completion notice">
               <el-switch v-model="notificationSettings.analysisComplete" />
             </el-form-item>
 
-            <el-form-item label="系统维护通知">
+            <el-form-item label="System maintenance notification">
               <el-switch v-model="notificationSettings.systemMaintenance" />
             </el-form-item>
 
             <el-form-item>
               <el-button type="primary" @click="saveNotificationSettings">
-                保存设置
+                Save settings
               </el-button>
             </el-form-item>
           </el-form>
         </el-card>
 
-        <!-- 安全设置 -->
+        <!-- Security settings -->
         <el-card v-show="activeTab === 'security'" class="settings-content" shadow="never">
           <template #header>
-            <h3>安全设置</h3>
+            <h3>Security settings</h3>
           </template>
 
           <el-form label-width="120px">
-            <!-- 🔧 京东云模式：密码由京东云平台统一管理，本应用不支持修改密码 -->
-            <el-form-item v-if="!isJdyunMode()" label="修改密码">
+            <!-- 🔧 JD Cloud mode: Passwords are managed uniformly by the JD Cloud platform. This application does not support changing passwords. -->
+            <el-form-item v-if="!isJdyunMode()" label="Change password">
               <el-button type="primary" @click="changePasswordDialogVisible = true">
-                修改密码
+                Change password
               </el-button>
             </el-form-item>
-            <el-form-item v-else label="账号安全">
+            <el-form-item v-else label="Account security">
               <el-alert
                 type="info"
                 :closable="false"
                 show-icon
-                title="账号由京东云平台统一管理"
-                description="您的访问凭证由京东云平台分配与管理，与本应用解耦。如需修改账号或凭证，请前往京东云平台控制台完成。"
+                title="Accounts are managed uniformly by the JD Cloud platform"
+                description="Your access credentials are assigned and managed by the JD Cloud platform and are decoupled from this application. If you need to modify your account or credentials, please go to the JD Cloud platform console to complete."
               />
             </el-form-item>
           </el-form>
@@ -301,55 +301,55 @@
 
 
 
-        <!-- 助理设置 -->
+        <!-- Assistant settings -->
         <el-card v-show="activeTab === 'assistant'" class="settings-content" shadow="never">
           <template #header>
-            <h3>助理设置</h3>
+            <h3>Assistant settings</h3>
           </template>
 
           <el-form :model="assistantSettings" label-width="120px">
-            <el-form-item label="助理名字">
-              <el-input v-model="assistantSettings.name" placeholder="如：小财、投研助手" maxlength="20" show-word-limit style="max-width: 300px;" />
-              <div class="setting-description">你可以在对话中直接叫这个名字</div>
+            <el-form-item label="Assistant name">
+              <el-input v-model="assistantSettings.name" placeholder="Such as: small fortune, investment research assistant" maxlength="20" show-word-limit style="max-width: 300px;" />
+              <div class="setting-description">You can call this name directly in the conversation</div>
             </el-form-item>
 
-            <el-form-item label="语气风格">
+            <el-form-item label="tone style">
               <el-radio-group v-model="assistantSettings.tone">
-                <el-radio label="professional">专业严谨</el-radio>
-                <el-radio label="friendly">轻松友好</el-radio>
-                <el-radio label="concise">简洁高效</el-radio>
+                <el-radio label="professional">Professional and rigorous</el-radio>
+                <el-radio label="friendly">Relaxed and friendly</el-radio>
+                <el-radio label="concise">Simple and efficient</el-radio>
               </el-radio-group>
             </el-form-item>
 
-            <el-form-item label="自定义指令">
+            <el-form-item label="Custom instructions">
               <el-input
                 v-model="assistantSettings.customInstructions"
                 type="textarea"
                 :rows="3"
-                placeholder="如：回答尽量简短、多用表格、回复时带上数据来源"
+                placeholder="For example: keep answers as short as possible, use tables, and bring data sources when replying."
                 maxlength="500"
                 show-word-limit
               />
-              <div class="setting-description">助理会参考这些指令调整回答风格</div>
+              <div class="setting-description">The assistant will refer to these instructions to adjust the answering style</div>
             </el-form-item>
 
             <el-form-item>
               <el-button type="primary" @click="saveAssistantSettings">
-                保存设置
+                Save settings
               </el-button>
             </el-form-item>
           </el-form>
         </el-card>
 
-        <!-- 交易费率设置 -->
+        <!-- Transaction rate settings -->
         <el-card v-show="activeTab === 'commission'" class="settings-content" shadow="never">
           <template #header>
-            <h3>交易费率设置</h3>
+            <h3>Transaction rate settings</h3>
           </template>
 
           <el-alert
-            title="交易费率用于计算持仓的真实成本和盈亏"
-            description="买入时扣除佣金+过户费，卖出时扣除佣金+印花税+过户费。费率配置同时适用于真实持仓和模拟交易。"
+            title="Transaction rates are used to calculate the true cost and profit and loss of holding a position"
+            description="Commission deducted when buying+Transfer fee, commission deducted when selling+stamp duty+Transfer fee. Rate configuration applies to both real positions and simulated transactions."
             type="info"
             :closable="false"
             show-icon
@@ -357,7 +357,7 @@
           />
 
           <el-form :model="commissionCN" label-width="120px">
-                <el-form-item label="佣金费率">
+                <el-form-item label="Commission rate">
                   <el-input-number
                     v-model="commissionCN.rate"
                     :min="0"
@@ -367,14 +367,14 @@
                     controls-position="right"
                   />
                   <span class="setting-description" style="margin-left: 8px;">
-                    {{ commissionCN.rate > 0 ? `万${(commissionCN.rate * 10000).toFixed(1)}` : '免佣金' }}
+                    {{ commissionCN.rate > 0 ? `million${(commissionCN.rate * 10000).toFixed(1)}` : 'Commission free' }}
                   </span>
                 </el-form-item>
-                <el-form-item label="最低佣金">
+                <el-form-item label="Minimum commission">
                   <el-input-number v-model="commissionCN.min" :min="0" :step="0.5" :precision="2" controls-position="right" />
-                  <span class="setting-description" style="margin-left: 8px;">元</span>
+                  <span class="setting-description" style="margin-left: 8px;">Yuan</span>
                 </el-form-item>
-                <el-form-item label="印花税">
+                <el-form-item label="stamp duty">
                   <el-input-number
                     v-model="commissionCN.stampDutyRate"
                     :min="0"
@@ -384,10 +384,10 @@
                     controls-position="right"
                   />
                   <span class="setting-description" style="margin-left: 8px;">
-                    {{ commissionCN.stampDutyRate > 0 ? `千${(commissionCN.stampDutyRate * 1000).toFixed(1)}（仅卖出）` : '无' }}
+                    {{ commissionCN.stampDutyRate > 0 ? `Thousand${(commissionCN.stampDutyRate * 1000).toFixed(1)} (Sell only)` : 'None' }}
                   </span>
                 </el-form-item>
-                <el-form-item label="过户费">
+                <el-form-item label="Transfer fee">
                   <el-input-number
                     v-model="commissionCN.transferFeeRate"
                     :min="0"
@@ -397,7 +397,7 @@
                     controls-position="right"
                   />
                   <span class="setting-description" style="margin-left: 8px;">
-                    {{ commissionCN.transferFeeRate > 0 ? `万${(commissionCN.transferFeeRate * 10000).toFixed(2)}` : '无' }}
+                    {{ commissionCN.transferFeeRate > 0 ? `million${(commissionCN.transferFeeRate * 10000).toFixed(2)}` : 'None' }}
                   </span>
                 </el-form-item>
               </el-form>
@@ -405,10 +405,10 @@
           <el-form label-width="120px" style="margin-top: 16px;">
             <el-form-item>
               <el-button type="primary" @click="saveCommissionSettings" :loading="commissionSaving">
-                保存费率设置
+                Save rate settings
               </el-button>
               <el-button @click="() => loadCommissionSettings(true)">
-                恢复默认
+                Restore default
               </el-button>
             </el-form-item>
           </el-form>
@@ -417,170 +417,170 @@
 
 
 
-        <!-- 配置管理（非京东云模式） -->
+        <!-- Configuration management (non-JD Cloud model) -->
         <el-card v-if="!isJdyunMode()" v-show="activeTab === 'config'" class="settings-content" shadow="never">
           <template #header>
-            <h3>配置管理</h3>
+            <h3>Configuration management</h3>
           </template>
 
           <div class="config-content">
             <el-alert
-              title="配置管理"
+              title="Configuration management"
               type="info"
-              description="管理 LLM 配置、数据源配置和市场分类配置"
+              description="Manage LLM configuration, data source configuration, and market classification configuration"
               :closable="false"
               style="margin-bottom: 20px;"
             />
             <el-button type="primary" @click="goToConfigManagement">
-              进入配置管理
+              Enter configuration management
             </el-button>
           </div>
         </el-card>
 
-        <!-- 系统配置（京东云模式：只读状态页） -->
+        <!-- System configuration (JD Cloud mode: read-only status page) -->
         <el-card v-if="isJdyunMode()" v-show="activeTab === 'jdyun-config'" class="settings-content" shadow="never">
           <template #header>
-            <h3>系统配置</h3>
+            <h3>System configuration</h3>
           </template>
 
           <div class="config-content">
             <el-alert
-              title="京东云合作版"
+              title="JD Cloud Cooperation Edition"
               type="info"
-              description="本版本通过环境变量注入大模型和数据源配置，无需手动配置。如需修改，请联系管理员更新环境变量。"
+              description="This version injects large models and data source configurations through environment variables, eliminating the need for manual configuration. If you need to modify it, please contact the administrator to update the environment variables."
               :closable="false"
               style="margin-bottom: 20px;"
             />
             <el-button type="primary" @click="goToJdyunConfig">
-              查看配置状态
+              View configuration status
             </el-button>
           </div>
         </el-card>
 
-        <!-- 数据源配置（京东云模式） -->
+        <!-- Data source configuration (JD Cloud mode) -->
         <el-card v-if="isJdyunMode()" v-show="activeTab === 'datasource-config'" class="settings-content" shadow="never">
           <template #header>
-            <h3>数据源配置</h3>
+            <h3>Data source configuration</h3>
           </template>
 
           <div class="config-content">
             <el-alert
-              title="京东云版数据源"
+              title="JD Cloud version data source"
               type="info"
-              description="京东云合作版仅支持 Tushare 和 AKShare 数据源。如需修改，请在数据源管理页面操作。"
+              description="JD Cloud Cooperation Edition only supports Tushare and AKShare data sources. If you need to modify it, please operate on the data source management page."
               :closable="false"
               style="margin-bottom: 20px;"
             />
             <el-button type="primary" @click="goToDataSourceConfig">
-              管理数据源
+              Manage data sources
             </el-button>
           </div>
         </el-card>
 
-        <!-- 使用统计 -->
+        <!-- usage statistics -->
         <el-card v-show="activeTab === 'usage'" class="settings-content" shadow="never">
           <template #header>
-            <h3>使用统计</h3>
+            <h3>usage statistics</h3>
           </template>
 
           <div class="cache-content">
             <el-alert
-              title="使用统计与计费"
+              title="Usage statistics and billing"
               type="info"
-              description="查看模型使用情况、Token 消耗和成本统计"
+              description="View model usage, token consumption and cost statistics"
               :closable="false"
               style="margin-bottom: 20px;"
             />
             <el-button type="primary" @click="goToUsageStatistics">
-              查看使用统计
+              View usage statistics
             </el-button>
           </div>
         </el-card>
 
-        <!-- 缓存管理 -->
+        <!-- Cache management -->
         <el-card v-show="activeTab === 'cache'" class="settings-content" shadow="never">
           <template #header>
-            <h3>缓存管理</h3>
+            <h3>Cache management</h3>
           </template>
 
           <div class="settings-section">
             <el-alert
-              title="缓存管理"
+              title="Cache management"
               type="info"
-              description="管理系统缓存，清理过期数据"
+              description="Manage system cache and clean up expired data"
               :closable="false"
               style="margin-bottom: 20px;"
             />
             <el-button type="primary" @click="goToCacheManagement">
-              进入缓存管理
+              Enter cache management
             </el-button>
           </div>
         </el-card>
 
-        <!-- 数据库管理 -->
+        <!-- Database management -->
         <el-card v-show="activeTab === 'database'" class="settings-content" shadow="never">
           <template #header>
-            <h3>数据库管理</h3>
+            <h3>Database management</h3>
           </template>
 
           <div class="database-content">
             <el-alert
-              title="数据库管理"
+              title="Database management"
               type="info"
-              description="管理数据库连接、备份和恢复"
+              description="Manage database connections, backup and recovery"
               :closable="false"
               style="margin-bottom: 20px;"
             />
             <el-button type="primary" @click="goToDatabaseManagement">
-              进入数据库管理
+              Enter database management
             </el-button>
           </div>
         </el-card>
 
-        <!-- 操作日志 -->
+        <!-- Operation log -->
         <el-card v-show="activeTab === 'logs'" class="settings-content" shadow="never">
           <template #header>
-            <h3>操作日志</h3>
+            <h3>Operation log</h3>
           </template>
 
           <div class="logs-content">
             <el-alert
-              title="操作日志"
+              title="Operation log"
               type="info"
-              description="查看系统操作日志和审计记录"
+              description="View system operation logs and audit records"
               :closable="false"
               style="margin-bottom: 20px;"
             />
             <el-button type="primary" @click="goToOperationLogs">
-              查看操作日志
+              View operation log
             </el-button>
           </div>
         </el-card>
 
-        <!-- 多数据源同步 -->
+        <!-- Synchronization of multiple data sources -->
         <el-card v-show="activeTab === 'sync'" class="settings-content" shadow="never">
           <template #header>
-            <h3>多数据源同步</h3>
+            <h3>Synchronization of multiple data sources</h3>
           </template>
 
           <div class="sync-content">
             <el-alert
-              title="多数据源同步"
+              title="Synchronization of multiple data sources"
               type="info"
-              description="管理多个数据源的同步配置和状态"
+              description="Manage synchronization configuration and status of multiple data sources"
               :closable="false"
               style="margin-bottom: 20px;"
             />
             <el-button type="primary" @click="goToMultiSourceSync">
-              进入同步管理
+              Enter synchronization management
             </el-button>
           </div>
         </el-card>
 
-        <!-- 工具能力索引 -->
+        <!-- Tool capability index -->
         <el-card v-show="activeTab === 'capability-index'" class="settings-content" shadow="never">
           <template #header>
-            <h3>工具能力索引</h3>
+            <h3>Tool capability index</h3>
           </template>
 
           <div class="capability-index-content">
@@ -590,21 +590,21 @@
               style="margin-bottom: 20px;"
             >
               <template #title>
-                工具能力索引用于语义搜索匹配工具和技能。系统启动时如果 Embedding API 不可用，会跳过索引构建（使用关键词匹配回退）。
+                Tool Competencies Index is used for semantic search matching tools and skills. If the Embedding API is not available at system startup, index building will be skipped (using keyword matching fallback).
               </template>
             </el-alert>
 
             <el-descriptions :column="2" border style="margin-bottom: 20px;" v-loading="indexLoading">
-              <el-descriptions-item label="同步模式">
+              <el-descriptions-item label="synchronous mode">
                 <el-tag :type="indexStateTagType">{{ indexStateText }}</el-tag>
               </el-descriptions-item>
-              <el-descriptions-item label="向量后端">
+              <el-descriptions-item label="vector backend">
                 {{ indexState.vector_backend || '-' }}
               </el-descriptions-item>
-              <el-descriptions-item label="已索引工具">
+              <el-descriptions-item label="Indexed tools">
                 {{ indexState.indexed_documents ?? 0 }} / {{ indexState.total_documents ?? 0 }}
               </el-descriptions-item>
-              <el-descriptions-item label="跳过数量">
+              <el-descriptions-item label="skip quantity">
                 {{ indexState.skipped_documents ?? 0 }}
               </el-descriptions-item>
             </el-descriptions>
@@ -614,7 +614,7 @@
               :loading="rebuildLoading"
               @click="handleRebuild"
             >
-              重建索引
+              Rebuild index
             </el-button>
           </div>
         </el-card>
@@ -622,10 +622,10 @@
       </el-col>
     </el-row>
 
-    <!-- 修改密码对话框 -->
+    <!-- Change password dialog box -->
     <el-dialog
       v-model="changePasswordDialogVisible"
-      title="修改密码"
+      title="Change password"
       width="500px"
       :close-on-click-modal="false"
     >
@@ -635,38 +635,38 @@
         :rules="changePasswordRules"
         label-width="100px"
       >
-        <el-form-item label="当前密码" prop="oldPassword">
+        <el-form-item label="current password" prop="oldPassword">
           <el-input
             v-model="changePasswordForm.oldPassword"
             type="password"
-            placeholder="请输入当前密码"
+            placeholder="Please enter current password"
             show-password
           />
         </el-form-item>
 
-        <el-form-item label="新密码" prop="newPassword">
+        <el-form-item label="new password" prop="newPassword">
           <el-input
             v-model="changePasswordForm.newPassword"
             type="password"
-            placeholder="请输入新密码（至少6位）"
+            placeholder="Please enter a new password (at least 6 digits)"
             show-password
           />
         </el-form-item>
 
-        <el-form-item label="确认密码" prop="confirmPassword">
+        <el-form-item label="Confirm password" prop="confirmPassword">
           <el-input
             v-model="changePasswordForm.confirmPassword"
             type="password"
-            placeholder="请再次输入新密码"
+            placeholder="Please enter new password again"
             show-password
           />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="changePasswordDialogVisible = false">取消</el-button>
+        <el-button @click="changePasswordDialogVisible = false">Cancel</el-button>
         <el-button type="primary" :loading="changePasswordLoading" @click="handleChangePassword">
-          确认修改
+          Confirm changes
         </el-button>
       </template>
     </el-dialog>
@@ -706,48 +706,48 @@ const route = useRoute()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 
-// 当前分组：personal（个人设置）、config（系统配置）、admin（系统管理）
+// Current grouping: personal (personal settings), config (system configuration), admin (system management)
 const currentSection = ref('personal')
 
-// 页面标题和描述
+// Page title and description
 const pageTitle = computed(() => {
   switch (currentSection.value) {
     case 'personal':
-      return '个人设置'
+      return 'personal settings'
     case 'config':
-      return '系统配置'
+      return 'System configuration'
     case 'admin':
-      return '系统管理'
+      return 'System management'
     default:
-      return '设置'
+      return 'settings'
   }
 })
 
 const pageDescription = computed(() => {
   switch (currentSection.value) {
     case 'personal':
-      return '个性化配置和偏好设置'
+      return 'Personalization and preferences'
     case 'config':
-      return 'LLM、数据源、使用统计和缓存配置'
+      return 'LLM, Data sources, usage statistics and cache configuration'
     case 'admin':
-      return '数据库、日志和同步管理'
+      return 'Database, log and sync management'
     default:
-      return '个性化配置和系统管理'
+      return 'Personalized configuration and system management'
   }
 })
 
-// 响应式数据
+// Responsive data
 const activeTab = ref('general')
 
-// 根据路由路径和 query 参数确定当前分组和默认激活的标签
+// Determine the current grouping and default activated tags based on the routing path and query parameters
 const updateSectionFromRoute = () => {
   const path = route.path
   const tab = route.query.tab as string
 
   if (path === '/settings') {
-    // 个人设置页面
+    // Personal settings page
     currentSection.value = 'personal'
-    // 根据 tab 参数切换标签
+    // Switch tabs based on tab parameter
     if (tab) {
       activeTab.value = tab
     } else {
@@ -765,10 +765,10 @@ const updateSectionFromRoute = () => {
   }
 }
 
-// 监听路由变化（包括 query 参数）
+// Monitor routing changes (including query parameters)
 watch(() => [route.path, route.query.tab], updateSectionFromRoute, { immediate: true })
 
-// 从 authStore 获取用户信息（使用 computed 实现响应式）
+// Get user information from authStore (use computed to implement responsiveness)
 const generalSettings = ref({
   username: authStore.user?.username || 'admin',
   email: authStore.user?.email || 'admin@example.com',
@@ -782,9 +782,9 @@ const appearanceSettings = ref({
 })
 
 const analysisSettings = ref({
-  defaultMarket: authStore.user?.preferences?.default_market || 'A股',
+  defaultMarket: authStore.user?.preferences?.default_market || 'A shares',
   defaultDepth: authStore.user?.preferences?.default_depth || '3',
-  defaultAnalysts: authStore.user?.preferences?.default_analysts || ['市场分析师', '基本面分析师'],
+  defaultAnalysts: authStore.user?.preferences?.default_analysts || ['market analyst', 'fundamental analyst'],
   autoRefresh: authStore.user?.preferences?.auto_refresh ?? true,
   refreshInterval: authStore.user?.preferences?.refresh_interval || 30,
   riskPreference: authStore.user?.preferences?.risk_preference || 'neutral'
@@ -796,14 +796,14 @@ const notificationSettings = ref({
   systemMaintenance: authStore.user?.preferences?.system_maintenance_notification ?? true
 })
 
-// 助理设置
+// Assistant settings
 const assistantSettings = ref({
-  name: authStore.user?.preferences?.assistant_settings?.name || '分析助理',
+  name: authStore.user?.preferences?.assistant_settings?.name || 'Analysis Assistant',
   tone: authStore.user?.preferences?.assistant_settings?.tone || 'professional',
   customInstructions: authStore.user?.preferences?.assistant_settings?.custom_instructions || ''
 })
 
-// 交易费率设置（仅A股）
+// Transaction fee setting (A shares only)
 const commissionSaving = ref(false)
 
 const defaultCommissionCN = { rate: 0.0003, min: 5.0, stampDutyRate: 0.001, transferFeeRate: 0.00002 }
@@ -811,52 +811,52 @@ const defaultCommissionCN = { rate: 0.0003, min: 5.0, stampDutyRate: 0.001, tran
 const commissionCN = ref({ ...defaultCommissionCN })
 
 
-// 监听用户信息变化，同步更新设置
+// Monitor user information changes and update settings synchronously
 watch(() => authStore.user, (newUser) => {
   if (newUser) {
-    // 更新通用设置
+    // Update common settings
     generalSettings.value.username = newUser.username || 'admin'
     generalSettings.value.email = newUser.email || 'admin@example.com'
     generalSettings.value.language = newUser.preferences?.language || 'zh-CN'
 
-    // 更新外观设置
+    // Update appearance settings
     appearanceSettings.value.theme = newUser.preferences?.ui_theme || 'light'
     appearanceSettings.value.sidebarWidth = newUser.preferences?.sidebar_width || 240
 
-    // 更新分析偏好
-    analysisSettings.value.defaultMarket = newUser.preferences?.default_market || 'A股'
+    // Update analysis preferences
+    analysisSettings.value.defaultMarket = newUser.preferences?.default_market || 'A shares'
     analysisSettings.value.defaultDepth = newUser.preferences?.default_depth || '3'
-    analysisSettings.value.defaultAnalysts = newUser.preferences?.default_analysts || ['市场分析师', '基本面分析师']
+    analysisSettings.value.defaultAnalysts = newUser.preferences?.default_analysts || ['market analyst', 'fundamental analyst']
     analysisSettings.value.autoRefresh = newUser.preferences?.auto_refresh ?? true
     analysisSettings.value.refreshInterval = newUser.preferences?.refresh_interval || 30
     analysisSettings.value.riskPreference = newUser.preferences?.risk_preference || 'neutral'
 
-    // 更新通知设置
+    // Update notification settings
     notificationSettings.value.desktop = newUser.preferences?.desktop_notifications ?? true
     notificationSettings.value.analysisComplete = newUser.preferences?.analysis_complete_notification ?? true
     notificationSettings.value.systemMaintenance = newUser.preferences?.system_maintenance_notification ?? true
 
-    // 更新助理设置
+    // Update assistant settings
     const ast = newUser.preferences?.assistant_settings
-    assistantSettings.value.name = ast?.name || '分析助理'
+    assistantSettings.value.name = ast?.name || 'Analysis Assistant'
     assistantSettings.value.tone = ast?.tone || 'professional'
     assistantSettings.value.customInstructions = ast?.custom_instructions || ''
   }
 }, { deep: true })
 
-// 方法
+// method
 const handleMenuSelect = (index: string) => {
-  // 京东云模式：点击"系统配置"菜单项时跳转到独立的京东云配置页
+  // JD Cloud Mode: Click"System configuration"Menu item jumps to the independent JD Cloud configuration page
   if (index === 'jdyun-config') {
     router.push('/settings/jdyun-config')
     return
   }
-  // 京东云模式：点击"数据源配置"菜单项时跳转到配置管理页（数据源标签页）
+  // JD Cloud Mode: Click"Data source configuration"Menu item jumps to the configuration management page (data source tab page)
   if (index === 'datasource-config') {
     router.push('/settings/config?tab=datasource')
     return
   }
-  // 直接跳转到独立页面，避免显示中间页
+  // Jump directly to an independent page to avoid displaying intermediate pages
   if (index === 'database') {
     router.push('/settings/database')
     return
@@ -892,7 +892,7 @@ const handleThemeChange = (theme: string | number | boolean | undefined) => {
 
 const saveGeneralSettings = async () => {
   try {
-    // 调用 authStore 更新用户信息
+    // Call authStore to update user information
     const success = await authStore.updateUserInfo({
       email: generalSettings.value.email,
       preferences: {
@@ -901,21 +901,21 @@ const saveGeneralSettings = async () => {
     })
 
     if (success) {
-      ElMessage.success('通用设置已保存')
+      ElMessage.success('General settings saved')
     }
   } catch (error) {
-    console.error('保存通用设置失败:', error)
-    ElMessage.error('保存通用设置失败')
+    console.error('Failed to save common settings:', error)
+    ElMessage.error('Failed to save common settings')
   }
 }
 
 const saveAppearanceSettings = async () => {
   try {
-    // 更新本地 store（立即生效）
+    // Update local store (effective immediately)
     appStore.setSidebarWidth(appearanceSettings.value.sidebarWidth)
     appStore.setTheme(appearanceSettings.value.theme as any)
 
-    // 保存到后端
+    // Save to backend
     const success = await authStore.updateUserInfo({
       preferences: {
         ui_theme: appearanceSettings.value.theme,
@@ -924,17 +924,17 @@ const saveAppearanceSettings = async () => {
     })
 
     if (success) {
-      ElMessage.success('外观设置已保存')
+      ElMessage.success('Appearance settings saved')
     }
   } catch (error) {
-    console.error('保存外观设置失败:', error)
-    ElMessage.error('保存外观设置失败')
+    console.error('Failed to save appearance settings:', error)
+    ElMessage.error('Failed to save appearance settings')
   }
 }
 
 const saveAnalysisSettings = async () => {
   try {
-    // 更新本地 store（立即生效）
+    // Update local store (effective immediately)
     appStore.updatePreferences({
       defaultMarket: analysisSettings.value.defaultMarket as any,
       defaultDepth: analysisSettings.value.defaultDepth as any,
@@ -942,7 +942,7 @@ const saveAnalysisSettings = async () => {
       refreshInterval: analysisSettings.value.refreshInterval
     })
 
-    // 保存到后端
+    // Save to backend
     const success = await authStore.updateUserInfo({
       preferences: {
         default_market: analysisSettings.value.defaultMarket,
@@ -955,17 +955,17 @@ const saveAnalysisSettings = async () => {
     })
 
     if (success) {
-      ElMessage.success('分析偏好已保存')
+      ElMessage.success('Analysis preferences saved')
     }
   } catch (error) {
-    console.error('保存分析偏好失败:', error)
-    ElMessage.error('保存分析偏好失败')
+    console.error('Failed to save analysis preferences:', error)
+    ElMessage.error('Failed to save analysis preferences')
   }
 }
 
 const saveNotificationSettings = async () => {
   try {
-    // 保存到后端
+    // Save to backend
     const success = await authStore.updateUserInfo({
       preferences: {
         desktop_notifications: notificationSettings.value.desktop,
@@ -976,36 +976,36 @@ const saveNotificationSettings = async () => {
     })
 
     if (success) {
-      ElMessage.success('通知设置已保存')
+      ElMessage.success('Notification settings saved')
     }
   } catch (error) {
-    console.error('保存通知设置失败:', error)
-    ElMessage.error('保存通知设置失败')
+    console.error('Failed to save notification settings:', error)
+    ElMessage.error('Failed to save notification settings')
   }
 }
 
-// 助理设置
+// Assistant settings
 const saveAssistantSettings = async () => {
   try {
     const success = await authStore.updateUserInfo({
       preferences: {
         assistant_settings: {
-          name: assistantSettings.value.name || '分析助理',
+          name: assistantSettings.value.name || 'Analysis Assistant',
           tone: assistantSettings.value.tone || 'professional',
           custom_instructions: assistantSettings.value.customInstructions || ''
         }
       }
     })
     if (success) {
-      ElMessage.success('助理设置已保存')
+      ElMessage.success('Assistant settings saved')
     }
   } catch (error) {
-    console.error('保存助理设置失败:', error)
-    ElMessage.error('保存助理设置失败')
+    console.error('Failed to save assistant settings:', error)
+    ElMessage.error('Failed to save assistant settings')
   }
 }
 
-// 加载交易费率设置（仅A股）
+// Load transaction rate settings (A shares only)
 const loadCommissionSettings = async (useDefaults = false) => {
   if (useDefaults) {
     commissionCN.value = { ...defaultCommissionCN }
@@ -1027,11 +1027,11 @@ const loadCommissionSettings = async (useDefaults = false) => {
       }
     }
   } catch (e) {
-    console.warn('加载费率设置失败，使用默认值:', e)
+    console.warn('Failed to load rate settings, using default values:', e)
   }
 }
 
-// 保存交易费率设置（仅A股）
+// Save transaction rate settings (A shares only)
 const saveCommissionSettings = async () => {
   commissionSaving.value = true
   try {
@@ -1047,19 +1047,19 @@ const saveCommissionSettings = async () => {
       }
     ]
     await request.post('/api/paper/market-rules/commission', { rules })
-    ElMessage.success('交易费率设置已保存')
+    ElMessage.success('Transaction rate settings saved')
   } catch (e) {
-    console.error('保存费率设置失败:', e)
-    ElMessage.error('保存费率设置失败')
+    console.error('Failed to save rate settings:', e)
+    ElMessage.error('Failed to save rate settings')
   } finally {
     commissionSaving.value = false
   }
 }
 
-// 页面加载时获取费率（在主 onMounted 中调用）
+// Get rates when page loads (called in main onMounted)
 
 
-// 导航函数
+// Navigation function
 const goToConfigManagement = () => {
   router.push('/settings/config')
 }
@@ -1092,20 +1092,20 @@ const goToMultiSourceSync = () => {
   router.push('/settings/sync')
 }
 
-// ========== 工具能力索引 ==========
+// ========== Tool capability index ==========
 const indexLoading = ref(false)
 const rebuildLoading = ref(false)
 const indexState = ref<CapabilityIndexState>({})
 
 const indexStateText = computed(() => {
   const mode = indexState.value.sync_mode
-  if (!mode) return '未初始化'
+  if (!mode) return 'not initialized'
   const map: Record<string, string> = {
-    'full_rebuild': '全量重建',
-    'incremental_sync': '增量同步',
-    'no_change': '无变化',
-    'skipped_no_embedding': '跳过（未配置 Embedding）',
-    'skipped_embedding_unavailable': '跳过（Embedding API 不可用）',
+    'full_rebuild': 'Full reconstruction',
+    'incremental_sync': 'Incremental synchronization',
+    'no_change': 'No change',
+    'skipped_no_embedding': 'Skip (Embedding not configured)',
+    'skipped_embedding_unavailable': 'Skip (Embedding API is not available)',
   }
   return map[mode] || mode
 })
@@ -1135,19 +1135,19 @@ const handleRebuild = async () => {
     const res = await rebuildCapabilityIndex()
     const data = (res as any)?.data || {}
     if (data.indexed_documents > 0) {
-      ElMessage.success(`索引重建完成：${data.indexed_documents}/${data.total_documents} 个工具已索引`)
+      ElMessage.success(`Index rebuild completed:${data.indexed_documents}/${data.total_documents} tools indexed`)
     } else {
-      ElMessage.warning('索引跳过：Embedding API 不可用，请先在配置管理中设置有效的 API Key')
+      ElMessage.warning('Index skipping: Embedding API is not available, please set a valid one in configuration management first. API Key')
     }
     await loadIndexState()
   } catch {
-    ElMessage.error('索引重建失败')
+    ElMessage.error('Index rebuild failed')
   } finally {
     rebuildLoading.value = false
   }
 }
 
-// 修改密码相关
+// Password modification related
 const changePasswordDialogVisible = ref(false)
 const changePasswordLoading = ref(false)
 const changePasswordFormRef = ref()
@@ -1159,11 +1159,11 @@ const changePasswordForm = ref({
 
 const validateConfirmPassword = (_rule: any, value: string, callback: (error?: string | Error) => void) => {
   if (value === '') {
-    callback(new Error('请再次输入新密码'))
+    callback(new Error('Please enter new password again'))
     return
   }
   if (value !== changePasswordForm.value.newPassword) {
-    callback(new Error('两次输入的密码不一致'))
+    callback(new Error('The passwords entered twice are inconsistent'))
     return
   }
   callback()
@@ -1171,11 +1171,11 @@ const validateConfirmPassword = (_rule: any, value: string, callback: (error?: s
 
 const changePasswordRules: FormRules = {
   oldPassword: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' }
+    { required: true, message: 'Please enter current password', trigger: 'blur' }
   ],
   newPassword: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为6位', trigger: 'blur' }
+    { required: true, message: 'Please enter new password', trigger: 'blur' },
+    { min: 6, message: 'Password length must be at least 6 characters', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, validator: validateConfirmPassword, trigger: 'blur' }
@@ -1195,21 +1195,21 @@ const handleChangePassword = async () => {
         )
 
         if (success) {
-          ElMessage.success('密码修改成功，请重新登录')
+          ElMessage.success('Password changed successfully, please log in again')
           changePasswordDialogVisible.value = false
           changePasswordForm.value = {
             oldPassword: '',
             newPassword: '',
             confirmPassword: ''
           }
-          // 延迟跳转到登录页
+          // Delay jump to login page
           setTimeout(() => {
             authStore.logout()
             router.push('/login')
           }, 1500)
         }
       } catch (error: any) {
-        ElMessage.error(error.message || '密码修改失败')
+        ElMessage.error(error.message || 'Password change failed')
       } finally {
         changePasswordLoading.value = false
       }
@@ -1219,9 +1219,9 @@ const handleChangePassword = async () => {
 
 
 
-// 生命周期
+// life cycle
 onMounted(() => {
-  // 从store加载设置
+  // Load settings from store
   appearanceSettings.value.theme = appStore.theme
   appearanceSettings.value.sidebarWidth = appStore.sidebarWidth
 
@@ -1230,10 +1230,10 @@ onMounted(() => {
   analysisSettings.value.autoRefresh = appStore.preferences.autoRefresh
   analysisSettings.value.refreshInterval = appStore.preferences.refreshInterval
 
-  // 加载能力索引状态
+  // Load capability index status
   loadIndexState()
 
-  // 加载交易费率设置
+  // Load transaction rate settings
   loadCommissionSettings()
 })
 </script>

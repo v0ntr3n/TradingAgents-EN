@@ -1,10 +1,10 @@
-"""价值筛选工具集。
+"""Value filtering toolset.
 
-提供 4 个策略筛选工具：
-1. get_graham_screen - 格雷厄姆式筛选（低估值、低负债、正利润）
-2. get_growth_stock_screen - 成长股筛选（高增长、高 ROE）
-3. get_dividend_stock_screen - 红利股筛选（高股息、稳定分红）
-4. get_turnaround_screen - 困境反转筛选
+Provides 4 policy filtering tools:
+1. get_graham_screen - Graham filter (low valuation, low debt, positive profits)
+2. get_growth_stock_screen - Growth stock screening (high growth, high ROE)
+3. get_dividend_stock_screen - Dividend stock screening (high dividends, stable dividends)
+4. get_turnaround_screen - Dilemma reversal filter
 """
 
 import json
@@ -25,13 +25,13 @@ from core.tools.implementations.risk.extended_risk_models import (
 
 logger = logging.getLogger(__name__)
 
-# 候选池上限
+# Candidate pool upper limit
 MAX_CANDIDATES = 500
 DEFAULT_LIMIT = 30
 
 
 def _get_db():
-    """获取同步 MongoDB 连接。"""
+    """Get a synchronous MongoDB connection."""
     from app.core.database import get_mongo_db_sync
     return get_mongo_db_sync()
 
@@ -60,7 +60,7 @@ def _safe_float(value: Any) -> Optional[float]:
 
 
 def _get_field(record: Dict[str, Any], *field_names: str) -> Optional[float]:
-    """从记录中按优先级尝试获取字段值。"""
+    """Attempts to get field values from records in order of priority."""
     for field_name in field_names:
         value = _safe_float(record.get(field_name))
         if value is not None:
@@ -69,7 +69,7 @@ def _get_field(record: Dict[str, Any], *field_names: str) -> Optional[float]:
 
 
 def _fetch_candidate_universe(extra_fields: Optional[List[str]] = None) -> List[Dict[str, Any]]:
-    """从 stock_basic_info 获取候选股票池（取市值前 N 且 PE>0）。"""
+    """Get the candidate stock pool from stock_basic_info (take the top N by market capitalization and PE>0) . """
     db = _get_db()
     col = db["stock_basic_info"]
 
@@ -105,7 +105,7 @@ def _enrich_with_financials(
     stocks: List[Dict[str, Any]],
     extra_fields: Optional[List[str]] = None,
 ) -> Dict[str, Dict[str, Any]]:
-    """为每只股票补充最近的财务指标。"""
+    """Supplement the most recent financial metrics for each stock."""
     enriched: Dict[str, Dict[str, Any]] = {}
     for stock in stocks:
         symbol = str(stock.get("symbol") or "").strip().zfill(6)
@@ -161,7 +161,7 @@ def _enrich_with_financials(
                 if gross_margin is not None:
                     record["gross_margin"] = gross_margin
 
-                # 多期数据用于增长计算
+                # Multi-period data used for growth calculations
                 if len(periods) >= 2:
                     rev_growth = _calc_growth(periods, "revenue", "total_revenue", "oper_rev")
                     if rev_growth is not None:
@@ -171,23 +171,23 @@ def _enrich_with_financials(
                     if np_growth is not None:
                         record["net_profit_growth"] = np_growth
 
-                # 尝试计算 3 年增长（需要多期数据）
+                # Try calculating 3-year growth (requires multiple periods of data)
                 if len(periods) >= 4:
                     rev_growth_3y = _calc_cagr_3y(periods, "revenue", "total_revenue", "oper_rev")
                     if rev_growth_3y is not None:
                         record["revenue_growth_3y"] = rev_growth_3y
 
         except Exception:
-            pass  # 财务数据缺失不阻塞筛选
+            pass  # Missing financial data does not block screening
 
     return enriched
 
 
 def _calc_growth(periods: List[Dict[str, Any]], *fields: str) -> Optional[float]:
-    """计算最新两期之间的同比增长率，自动处理口径差异。
+    """Calculate the year-on-year growth rate between the latest two periods and automatically handle caliber differences.
 
-    如果两期口径不一致（如一季报 vs 年报），先对非年报期做年化后再比较。
-    仅在口径完全不同（如年报 vs 一季报无法简单年化对比）时跳过。
+    If the caliber of the two periods is inconsistent (such as a quarterly report vs an annual report), first annualize the non-annual report period and then compare.
+    Only skip if the calibers are completely different (for example, annual report vs. quarterly report cannot be compared on a simple annualized basis).
     """
     if len(periods) < 2:
         return None
@@ -200,12 +200,12 @@ def _calc_growth(periods: List[Dict[str, Any]], *fields: str) -> Optional[float]
     if current is None or previous is None or previous == 0:
         return None
 
-    # 🔑 口径一致时直接比较
+    # 🔑 Compare directly when calibers are the same
     if cur_type == prev_type:
         return (current - previous) / abs(previous)
 
-    # 🔑 口径不一致时，年化后再比较（利润表科目需要年化）
-    # 仅对可能是利润表累计值的科目做年化（revenue / net_profit 等）
+    # 🔑 When the calibers are inconsistent, compare after annualization (income statement accounts need to be annualized)
+    # Only annualize accounts that may be the cumulative value of the income statement (revenue / net_profit, etc.)
     cur_annualized = current * _annualize_factor(cur_type)
     prev_annualized = previous * _annualize_factor(prev_type)
     if prev_annualized == 0:
@@ -214,10 +214,10 @@ def _calc_growth(periods: List[Dict[str, Any]], *fields: str) -> Optional[float]
 
 
 def _calc_cagr_3y(periods: List[Dict[str, Any]], *fields: str) -> Optional[float]:
-    """计算约 3 年的 CAGR。取最新期和最早期（约 3 年前）的数据。
+    """Calculate CAGR over approximately 3 years. Take the latest and oldest data (about 3 years ago).
 
-    periods 按报告期倒序排列，取第 0 期（最新）和第 min(3, len-1) 期。
-    仅在两期口径一致（都是年报或同一季报类型）时才计算，否则返回 None。
+    periods Arrange in reverse order of reporting period, taking issue 0 (latest) and min(3, len-1) period.
+    It is only calculated when the caliber of the two periods is the same (both are annual reports or the same quarterly report type), otherwise None is returned.
     """
     if len(periods) < 4:
         return None
@@ -230,7 +230,7 @@ def _calc_cagr_3y(periods: List[Dict[str, Any]], *fields: str) -> Optional[float
     if current is None or older is None or older <= 0 or current <= 0:
         return None
 
-    # 🔑 CAGR 要求口径一致，否则跨年比较无意义
+    # 🔑 CAGR The caliber must be consistent, otherwise it will be meaningless to compare New Year's Eve.
     if cur_type != older_type:
         return None
 
@@ -243,17 +243,17 @@ def _calc_cagr_3y(periods: List[Dict[str, Any]], *fields: str) -> Optional[float
 def _score_item(
     score_components: List[Tuple[Optional[float], float, float]],
 ) -> float:
-    """计算加权综合得分。
+    """Calculate a weighted composite score.
 
     Args:
-        score_components: [(值, 权重, 最大值归一化), ...]
-            如果值为 None，跳过该组件。
+        score_components: [(value, weight, Maximum normalization), ...]
+            If the value is None, the component is skipped.
     """
     total_weight = 0.0
     weighted_sum = 0.0
     for value, weight, max_norm in score_components:
         if value is not None:
-            # 归一化到 0-100
+            # normalized to 0-100
             normalized = min(100.0, max(0.0, value / max_norm * 100)) if max_norm > 0 else 50.0
             weighted_sum += normalized * weight
             total_weight += weight
@@ -261,7 +261,7 @@ def _score_item(
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 7: 格雷厄姆式筛选
+# Tool 7: Graham filter
 # ────────────────────────────────────────────────────────────────
 
 
@@ -270,9 +270,9 @@ def _score_item(
     tool_id="get_graham_screen",
     name="格雷厄姆式筛选",
     description=(
-        "按照本杰明·格雷厄姆的价值投资标准筛选 A 股。"
-        "条件：PE < 15、PB < 1.5、负债权益比 < 1.0、净利润为正。"
-        "按格雷厄姆数（√(22.5 × EPS × BVPS)） upside 排序。"
+        "Follow Benjamin·Graham s value investing criteria screen for A-shares."
+        "Conditions:PE < 15, PB < 1.5, debt-to-equity ratio < 1.0, Net profit is positive."
+        "According to Graham s number (√(22.5 × EPS × BVPS))  upside Sort."
     ),
     category="fundamentals",
     is_online=False,
@@ -283,16 +283,16 @@ def _score_item(
     output_shape="structured_json",
     preferred_for=["价值投资选股", "格雷厄姆策略", "低估股票筛选"],
     when_to_use=(
-        "当用户想要寻找低估值的价值股、按照格雷厄姆的安全边际原则选股、"
-        "或需要一份低估值的股票清单时使用。"
+        "When users want to find value stocks with low valuations and select stocks according to Graham s margin of safety principle,"
+        "Or when you need a list of stocks with low valuations."
     ),
     when_not_to_use=(
-        "不适合成长股、亏损企业筛选；"
-        "不适合需要技术指标或行业主题筛选的场景。"
+        "Not suitable for screening growth stocks and loss-making companies;"
+        "Not suitable for scenarios that require filtering of technical indicators or industry themes."
     ),
     returns=(
-        "返回 JSON 字符串，包含 criteria_applied、total_screened、"
-        "passed、results（按格雷厄姆数 upside 排序）。"
+        "Returns a JSON string containing criteria_applied, total_screened,"
+        "passed, results (Sort by Graham number upside)."
     ),
     example="get_graham_screen(limit=30)",
     related_tools=[
@@ -302,34 +302,34 @@ def _score_item(
     ],
 )
 def get_graham_screen(
-    limit: Annotated[int, "返回前 N 只股票，默认 30"] = 30,
+    limit: Annotated[int, "Returns the top N stocks, default 30"] = 30,
 ) -> str:
-    """格雷厄姆式价值筛选。
+    """Graham value filter.
 
     Args:
-        limit: 返回前 N 只股票，默认 30，自动夹钳到 [1, 100]
+        limit: Return the first N stocks, default 30, automatically clamp to [1, 100]
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
+            message: Error description
 
-        成功情形返回 dict，字段：
-            criteria_applied: 筛选条件 dict —
+        In case of success, return dict, fields:
+            criteria_applied: Filter criteria dict —
                 pe_ttm: dict — max: 15
                 pb: dict — max: 1.5
                 debt_to_equity: dict — max: 1.0
                 net_profit: dict — min: 0
-            total_screened: 候选池总数
-            passed: 通过筛选的股票数
-            returned: 实际返回数量
-            results: 排序后的股票列表 [{"rank": 序号, "symbol": 代码, "name": 名称, "industry": 行业, "score": 综合得分, "pe_ttm": 市盈率, "pb": 市净率, "debt_to_equity": 债务股权比, "graham_number": 格雷厄姆数, "graham_upside_pct": 格雷厄姆数 upside 百分比}, ...]
-            data_quality: 数据质量 dict —
-                note: 候选池与方法说明文本
+            total_screened: Total number of candidate pools
+            passed: Number of stocks that passed screening
+            returned: actual returned quantity
+            results: Sorted stock list [{"rank": serial number, "symbol": code, "name": Name, "industry": Industry, "score": Comprehensive score, "pe_ttm": P/E ratio, "pb": price to book ratio, "debt_to_equity": debt to equity ratio, "graham_number": Graham number, "graham_upside_pct": Graham s number upside percentage}, ...]
+            data_quality: Data quality dict —
+                note: Candidate pool and method description text
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         limit = max(1, min(int(limit), 100))
@@ -369,18 +369,18 @@ def get_graham_screen(
                 continue
             if net_profit is not None and net_profit <= 0:
                 continue
-            # 如果 net_profit 缺失，尝试其他利润字段
+            # If net_profit is missing, try other profit fields
             if net_profit is None:
                 continue
 
-            # 格雷厄姆数 = √(22.5 × EPS × BVPS)
+            # Graham number = √(22.5 × EPS × BVPS)
             # EPS ≈ net_profit / shares, BVPS ≈ equity / shares
             # Graham Number ≈ √(22.5 × NetProfit × Equity) / shares
-            # 简化：格雷厄姆数 upside = (graham_price - current_price) / current_price
+            # Simplification: Graham numbers upside = (graham_price - current_price) / current_price
             total_equity = data.get("total_mv") / pb if pb and pb > 0 and data.get("total_mv") else None
             if total_equity and data.get("total_mv"):
                 # graham_number = sqrt(22.5 * net_profit * total_equity) / (total_mv / price)
-                # 简化计算 upside
+                # Simplify calculations upside
                 eps = net_profit / (data["total_mv"] / pe) if pe and pe > 0 else None
                 bvps = total_equity / (data["total_mv"] / pe) if pe and pe > 0 else None
 
@@ -399,7 +399,7 @@ def get_graham_screen(
                 (pe, 1.0, 15.0) if pe else (None, 0, 1),
                 (pb, 1.0, 1.5) if pb else (None, 0, 1),
             ]
-            # 倒转 PE 和 PB 得分（越低越好）
+            # Invert PE and PB scores (lower is better)
             pe_score = max(0, 100 - (pe / 15 * 100)) if pe else 0
             pb_score = max(0, 100 - (pb / 1.5 * 100)) if pb else 0
             total_score = round((pe_score + pb_score) / 2, 1)
@@ -417,7 +417,7 @@ def get_graham_screen(
                 "score": total_score,
             })
 
-        # 按 upside 降序
+        # Sort by upside descending
         passed_results.sort(key=lambda x: x.get("graham_upside_pct") or -9999, reverse=True)
         top_results = passed_results[:limit]
 
@@ -444,9 +444,9 @@ def get_graham_screen(
             "results": ranked,
             "data_quality": {
                 "note": (
-                    "候选池为按总市值排序的前 500 只 A 股（pe_ttm>0 且 total_mv>0）。"
-                    "格雷厄姆数 = √(22.5 × EPS × BVPS)。"
-                    "debt_to_equity 从最近一期财报计算，缺失时不排除。"
+                    "The candidate pool is the top 500 A-shares sorted by total market capitalization (pe_ttm>0 and total_mv>0) . "
+                    "Graham number = √(22.5 × EPS × BVPS). "
+                    "debt_to_equity Calculated from the latest financial report, missing information will not be excluded."
                 ),
             },
         }
@@ -454,7 +454,7 @@ def get_graham_screen(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("格雷厄姆式筛选失败: %s", exc, exc_info=True)
+        logger.error("Graham filter failed: %s", exc, exc_info=True)
         return json.dumps(
             {"status": "error", "message": str(exc)},
             ensure_ascii=False, indent=2, default=str,
@@ -462,7 +462,7 @@ def get_graham_screen(
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 8: 成长股筛选
+# Tool 8: Growth Stock Screening
 # ────────────────────────────────────────────────────────────────
 
 
@@ -471,9 +471,9 @@ def get_graham_screen(
     tool_id="get_growth_stock_screen",
     name="成长股筛选",
     description=(
-        "按照成长投资标准筛选 A 股。"
-        "条件：近 3 年营收增长率 > 20%、ROE > 15%、PE < 50。"
-        "按 PEG 比率（PE / 增长率）评分排序。"
+        "Screen A shares according to growth investment criteria."
+        "Conditions: Revenue growth rate in the past three years > 20%, ROE > 15%, PE < 50. "
+        "Sort by PEG ratio (PE/Growth) score."
     ),
     category="fundamentals",
     is_online=False,
@@ -484,16 +484,16 @@ def get_graham_screen(
     output_shape="structured_json",
     preferred_for=["成长股筛选", "高增长策略", "PEG 选股"],
     when_to_use=(
-        "当用户想要寻找高成长性的股票、按照 PEG 标准选股、"
-        "或需要筛选营收和 ROE 双双优秀的公司时使用。"
+        "When users want to find high-growth stocks and select stocks based on PEG standards,"
+        "Or use it when you need to screen companies with excellent revenue and ROE."
     ),
     when_not_to_use=(
-        "不适合价值股、亏损企业、金融类企业筛选；"
-        "数据不足时（财务数据少于 2 期）无法计算增长率。"
+        "Not suitable for screening value stocks, loss-making companies, and financial companies;"
+        "Growth rate cannot be calculated when there is insufficient data (financial data for less than 2 periods)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 criteria_applied、total_screened、"
-        "passed、results（按 PEG 升序排列）。"
+        "Returns a JSON string containing criteria_applied, total_screened,"
+        "passed, results (Sorted in ascending order by PEG)."
     ),
     example="get_growth_stock_screen(limit=30)",
     related_tools=[
@@ -503,33 +503,33 @@ def get_graham_screen(
     ],
 )
 def get_growth_stock_screen(
-    limit: Annotated[int, "返回前 N 只股票，默认 30"] = 30,
+    limit: Annotated[int, "Returns the top N stocks, default 30"] = 30,
 ) -> str:
-    """成长股筛选。
+    """Growth stock screening.
 
     Args:
-        limit: 返回前 N 只股票，默认 30，自动夹钳到 [1, 100]
+        limit: Return the first N stocks, default 30, automatically clamp to [1, 100]
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
+            message: Error description
 
-        成功情形返回 dict，字段：
-            criteria_applied: 筛选条件 dict —
+        In case of success, return dict, fields:
+            criteria_applied: Filter criteria dict —
                 revenue_growth_3y: dict — min: 20
                 roe: dict — min: 15
                 pe_ttm: dict — max: 50
-            total_screened: 候选池总数
-            passed: 通过筛选的股票数
-            returned: 实际返回数量
-            results: 按 PEG 升序排列的股票列表 [{"rank": 序号, "symbol": 代码, "name": 名称, "industry": 行业, "score": 综合得分, "revenue_growth_3y_pct": 3 年营收 CAGR 百分比, "roe": ROE, "pe_ttm": 市盈率, "peg": PEG 比率}, ...]
-            data_quality: 数据质量 dict —
-                note: 候选池与方法说明文本
+            total_screened: Total number of candidate pools
+            passed: Number of stocks that passed screening
+            returned: actual returned quantity
+            results: List of stocks in ascending order by PEG [{"rank": serial number, "symbol": code, "name": Name, "industry": Industry, "score": Comprehensive score, "revenue_growth_3y_pct": 3 Annual revenue CAGR percentage, "roe": ROE, "pe_ttm": P/E ratio, "peg": PEG Ratio}, ...]
+            data_quality: Data quality dict —
+                note: Candidate pool and method description text
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         limit = max(1, min(int(limit), 100))
@@ -566,10 +566,10 @@ def get_growth_stock_screen(
             if pe <= 0 or pe >= 50:
                 continue
 
-            # PEG = PE / (增长率 × 100)
+            # PEG = PE / (growth rate × 100)
             peg = pe / (growth_3y * 100) if growth_3y > 0 else 999
 
-            # 得分：PEG 越低越好
+            # Score: The lower the PEG, the better
             peg_score = max(0, 100 - peg * 20) if peg < 5 else max(0, 100 - peg * 10)
             roe_score = min(100, roe / 15 * 100)
             total_score = round((peg_score + roe_score) / 2, 1)
@@ -585,7 +585,7 @@ def get_growth_stock_screen(
                 "score": total_score,
             })
 
-        # 按 PEG 升序
+        # Sort by PEG ascending
         passed_results.sort(key=lambda x: x.get("peg") or 9999)
         top_results = passed_results[:limit]
 
@@ -611,9 +611,9 @@ def get_growth_stock_screen(
             "results": ranked,
             "data_quality": {
                 "note": (
-                    "候选池为按总市值排序的前 500 只 A 股（pe_ttm>0 且 total_mv>0）。"
-                    "revenue_growth_3y 为近 3 年营收 CAGR，从最近 3-4 期财务数据计算。"
-                    "ROE 为最近一期报告期值。PEG = PE / (营收增长率×100)。"
+                    "The candidate pool is the top 500 A-shares sorted by total market capitalization (pe_ttm>0 and total_mv>0) . "
+                    "revenue_growth_3y It is the revenue CAGR in the past 3 years, calculated from the latest 3-4 periods of financial data."
+                    "ROE It is the latest reporting period value.PEG = PE / (revenue growth rate×100). "
                 ),
             },
         }
@@ -629,7 +629,7 @@ def get_growth_stock_screen(
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 9: 红利股筛选
+# Tool 9: Bonus stock screening
 # ────────────────────────────────────────────────────────────────
 
 
@@ -638,9 +638,9 @@ def get_growth_stock_screen(
     tool_id="get_dividend_stock_screen",
     name="红利股筛选",
     description=(
-        "按照红利投资标准筛选 A 股。"
-        "条件：股息率 > 3%、连续分红 >= 3 年、分红率 20%-80%。"
-        "综合股息率和财务健康度评分排序。"
+        "Screen A shares according to dividend investment criteria."
+        "Condition: Dividend rate > 3%, Continuous dividends >= 3 Annual dividend rate is 20%-80%."
+        "Comprehensive dividend yield and financial health score ranking."
     ),
     category="fundamentals",
     is_online=False,
@@ -651,16 +651,16 @@ def get_growth_stock_screen(
     output_shape="structured_json",
     preferred_for=["红利股筛选", "高股息策略", "分红选股"],
     when_to_use=(
-        "当用户想要寻找高股息率的股票、构建红利投资组合、"
-        "或筛选分红稳定且可持续的公司时使用。"
+        "When users want to find stocks with high dividend yields and build dividend investment portfolios,"
+        "Or use it when screening companies with stable and sustainable dividends."
     ),
     when_not_to_use=(
-        "不适合成长股、亏损企业筛选；"
-        "股息率数据可能缺失（需 basic_info 中有 dividend_yield 字段）。"
+        "Not suitable for screening growth stocks and loss-making companies;"
+        "Dividend yield data may be missing (requires dividend_yield field in basic_info)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 criteria_applied、total_screened、"
-        "passed、results（按综合得分排序）。"
+        "Returns a JSON string containing criteria_applied, total_screened,"
+        "passed, results (Sorted by overall score)."
     ),
     example="get_dividend_stock_screen(limit=30)",
     related_tools=[
@@ -670,33 +670,33 @@ def get_growth_stock_screen(
     ],
 )
 def get_dividend_stock_screen(
-    limit: Annotated[int, "返回前 N 只股票，默认 30"] = 30,
+    limit: Annotated[int, "Returns the top N stocks, default 30"] = 30,
 ) -> str:
-    """红利股筛选。
+    """Bonus stock screening.
 
     Args:
-        limit: 返回前 N 只股票，默认 30，自动夹钳到 [1, 100]
+        limit: Return the first N stocks, default 30, automatically clamp to [1, 100]
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
+            message: Error description
 
-        成功情形返回 dict，字段：
-            criteria_applied: 筛选条件 dict —
+        In case of success, return dict, fields:
+            criteria_applied: Filter criteria dict —
                 dividend_yield: dict — min: 3
                 payout_ratio: dict — min: 0.2, max: 0.8
                 consecutive_dividend_years: dict — min: 3
-            total_screened: 候选池总数
-            passed: 通过筛选的股票数
-            returned: 实际返回数量
-            results: 按股息率降序排列的股票列表 [{"rank": 序号, "symbol": 代码, "name": 名称, "industry": 行业, "score": 综合得分, "dividend_yield_pct": 股息率百分比, "pe_ttm": 市盈率, "payout_ratio": 分红率}, ...]
-            data_quality: 数据质量 dict —
-                note: 候选池与方法说明文本
+            total_screened: Total number of candidate pools
+            passed: Number of stocks that passed screening
+            returned: actual returned quantity
+            results: List of stocks in descending order by dividend yield [{"rank": serial number, "symbol": code, "name": Name, "industry": Industry, "score": Comprehensive score, "dividend_yield_pct": Dividend Yield Percent, "pe_ttm": P/E ratio, "payout_ratio": dividend rate}, ...]
+            data_quality: Data quality dict —
+                note: Candidate pool and method description text
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         limit = max(1, min(int(limit), 100))
@@ -725,8 +725,8 @@ def get_dividend_stock_screen(
 
             if div_yield is None:
                 continue
-            # dividend_yield 可能以小数形式（如 0.03 = 3%）或以百分比形式（如 3.0）
-            # 尝试判断：如果值 < 1，视为小数，否则视为百分比
+            # dividend_yield May be in decimal form (e.g. 0.03 = 3%) or as a percentage (such as 3.0)
+            # Try to judge: if value < 1, Treat as a decimal, otherwise as a percentage
             if div_yield < 1:
                 div_yield_pct = div_yield * 100
             else:
@@ -735,7 +735,7 @@ def get_dividend_stock_screen(
             if div_yield_pct < 3.0:
                 continue
 
-            # 分红率 = 股息率 × PE（简化估算）
+            # dividend rate = dividend yield × PE (simplified estimation)
             payout_ratio = None
             if pe is not None and pe > 0:
                 payout_ratio = div_yield_pct * pe / 100
@@ -743,12 +743,12 @@ def get_dividend_stock_screen(
             if payout_ratio is not None and (payout_ratio < 0.2 or payout_ratio > 0.8):
                 continue
 
-            # 连续分红年数（简化：从财务数据判断 >= 3 期正利润）
+            # Number of consecutive dividend years (simplified: judged from financial data >= 3 period positive profit)
             net_profit = data.get("net_profit")
             if net_profit is None or net_profit <= 0:
                 continue
 
-            # 得分
+            # score
             div_score = min(100, div_yield_pct / 3 * 100)
             pe_score = max(0, 100 - (pe / 50 * 100)) if pe else 50
             total_score = round((div_score + pe_score) / 2, 1)
@@ -764,7 +764,7 @@ def get_dividend_stock_screen(
                 "score": total_score,
             })
 
-        # 按股息率降序
+        # Sort descending by dividend yield
         passed_results.sort(key=lambda x: x.get("dividend_yield_pct") or 0, reverse=True)
         top_results = passed_results[:limit]
 
@@ -789,10 +789,10 @@ def get_dividend_stock_screen(
             "results": ranked,
             "data_quality": {
                 "note": (
-                    "候选池为按总市值排序的前 500 只 A 股。"
-                    "股息率来自 stock_basic_info 的 dividend_yield 字段。"
-                    "分红率 = 股息率 × PE，为简化估算值。"
-                    "连续分红年数基于净利润是否连续多期为正判断。"
+                    "The candidate pool is the top 500 A-shares sorted by total market capitalization."
+                    "The dividend yield comes from the dividend_yield field of stock_basic_info."
+                    "dividend rate = dividend yield × PE, To simplify the estimates."
+                    "The number of consecutive dividend years is determined based on whether the net profit has been positive for multiple consecutive periods."
                 ),
             },
         }
@@ -808,7 +808,7 @@ def get_dividend_stock_screen(
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 10: 困境反转筛选
+# Tool 10: Dilemma reversal filter
 # ────────────────────────────────────────────────────────────────
 
 
@@ -817,9 +817,9 @@ def get_dividend_stock_screen(
     tool_id="get_turnaround_screen",
     name="困境反转筛选",
     description=(
-        "筛选可能处于困境反转阶段的股票。"
-        "条件：PE < 20、营收增长率从负转正改善、经营现金流为正。"
-        "寻找近期亏损但改善趋势明显的公司。"
+        "Screen for stocks that may be in the reversal stage of distress."
+        "Conditions:PE < 20, Revenue growth rate improved from negative to positive, and operating cash flow became positive."
+        "Look for companies that have recently lost money but have a clear trend of improvement."
     ),
     category="fundamentals",
     is_online=False,
@@ -830,16 +830,16 @@ def get_dividend_stock_screen(
     output_shape="structured_json",
     preferred_for=["困境反转策略", "逆境反转选股", "拐点型投资"],
     when_to_use=(
-        "当用户想要寻找处于困境但正在改善的股票、"
-        "挖掘业绩拐点型投资机会、或筛选低估值的反转候选股时使用。"
+        "When users want to find stocks that are struggling but improving,"
+        "Use it when mining for performance turning point investment opportunities or screening low-valuation reversal candidate stocks."
     ),
     when_not_to_use=(
-        "不适合稳定增长型企业筛选；"
-        "需要多期财务数据判断趋势，数据不足时将给出不完整结果。"
+        "Not suitable for screening stable growth companies;"
+        "Multi-period financial data are needed to determine trends, and incomplete results will be given when the data is insufficient."
     ),
     returns=(
-        "返回 JSON 字符串，包含 criteria_applied、total_screened、"
-        "passed、results（按改善幅度排序）。"
+        "Returns a JSON string containing criteria_applied, total_screened,"
+        "passed, results (Sort by improvement)."
     ),
     example="get_turnaround_screen(limit=30)",
     related_tools=[
@@ -849,33 +849,33 @@ def get_dividend_stock_screen(
     ],
 )
 def get_turnaround_screen(
-    limit: Annotated[int, "返回前 N 只股票，默认 30"] = 30,
+    limit: Annotated[int, "Returns the top N stocks, default 30"] = 30,
 ) -> str:
-    """困境反转筛选。
+    """Dilemma reversal screening.
 
     Args:
-        limit: 返回前 N 只股票，默认 30，自动夹钳到 [1, 100]
+        limit: Return the first N stocks, default 30, automatically clamp to [1, 100]
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
+            message: Error description
 
-        成功情形返回 dict，字段：
-            criteria_applied: 筛选条件 dict —
+        In case of success, return dict, fields:
+            criteria_applied: Filter criteria dict —
                 pe_ttm: dict — max: 20
-                revenue_growth_improving: 改善判断说明文本
+                revenue_growth_improving: Improve judgment description text
                 n_cashflow_act: dict — min: 0
-            total_screened: 候选池总数
-            passed: 通过筛选的股票数
-            returned: 实际返回数量
-            results: 按改善分数降序排列的股票列表 [{"rank": 序号, "symbol": 代码, "name": 名称, "industry": 行业, "pe_ttm": 市盈率, "revenue_growth_pct": 营收增长率百分比, "operating_cashflow": 经营现金流, "net_profit": 净利润, "roe": ROE, "improvement_score": 改善评分}, ...]
-            data_quality: 数据质量 dict —
-                note: 候选池与方法说明文本
+            total_screened: Total number of candidate pools
+            passed: Number of stocks that passed screening
+            returned: actual returned quantity
+            results: List of stocks in descending order of improvement scores [{"rank": serial number, "symbol": code, "name": Name, "industry": Industry, "pe_ttm": P/E ratio, "revenue_growth_pct": revenue growth percentage, "operating_cashflow": operating cash flow, "net_profit": net profit, "roe": ROE, "improvement_score": Improve rating}, ...]
+            data_quality: Data quality dict —
+                note: Candidate pool and method description text
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         limit = max(1, min(int(limit), 100))
@@ -893,8 +893,8 @@ def get_turnaround_screen(
 
         criteria = {
             "pe_ttm": {"max": 20},
-            "revenue_growth_improving": "近两期营收增长率改善（负→正或收窄）",
-            "n_cashflow_act": {"min": 0},  # 经营现金流为正
+            "revenue_growth_improving": "The revenue growth rate has improved in the past two periods (negative→Positive or narrowing)",
+            "n_cashflow_act": {"min": 0},  # Operating cash flow is positive
         }
 
         passed_results: List[Dict[str, Any]] = []
@@ -911,29 +911,29 @@ def get_turnaround_screen(
             if n_cashflow_act is None or n_cashflow_act <= 0:
                 continue
 
-            # 判断改善趋势：营收增长从负转正或亏损收窄
+            # Determine improvement trends: revenue growth turns from negative to positive or losses narrow
             improving = False
             improvement_score = 0
 
             if revenue_growth is not None:
-                # 营收增速改善：负值但正在提升
-                if revenue_growth > -0.1:  # 亏损收窄到 -10% 以内
+                # Revenue growth improvement: negative but improving
+                if revenue_growth > -0.1:  # Losses narrowed to within -10%
                     improving = True
                     improvement_score += 50
-                if revenue_growth > 0:  # 已转正
+                if revenue_growth > 0:  # Has become a regular
                     improving = True
                     improvement_score += 100
 
-            # 有正的经营现金流说明造血能力在恢复
+            # Positive operating cash flow indicates that hematopoietic ability is recovering
             if n_cashflow_act > 0:
                 improvement_score += 30
 
-            # 如果最近一期仍有净亏损但经营现金流转正，分数更高
+            # If there is still a net loss in the most recent period but operating cash flow turns positive, the score will be higher
             if net_profit is not None and net_profit < 0 and n_cashflow_act > 0:
-                improvement_score += 40  # 现金流转正是更强信号
+                improvement_score += 40  # Cash flow is a stronger signal
 
             if not improving and (net_profit is None or net_profit < 0):
-                # 至少要有一种改善信号
+                # There must be at least one signal of improvement
                 if net_profit is None:
                     continue
 
@@ -951,7 +951,7 @@ def get_turnaround_screen(
                 "improvement_score": total_score,
             })
 
-        # 按改善分数降序
+        # Sort descending by improvement score
         passed_results.sort(key=lambda x: x.get("improvement_score") or 0, reverse=True)
         top_results = passed_results[:limit]
 
@@ -978,9 +978,9 @@ def get_turnaround_screen(
             "results": ranked,
             "data_quality": {
                 "note": (
-                    "候选池为按总市值排序的前 500 只 A 股（pe_ttm>0 且 total_mv>0）。"
-                    "改善判断基于最新两期财务数据的营收同比增长。"
-                    "经营现金流为正说明公司造血能力恢复。"
+                    "The candidate pool is the top 500 A-shares sorted by total market capitalization (pe_ttm>0 and total_mv>0) . "
+                    "Improvement judgment is based on the year-on-year revenue growth of the latest two periods of financial data."
+                    "Positive operating cash flow indicates that the company s hematopoietic ability has recovered."
                 ),
             },
         }

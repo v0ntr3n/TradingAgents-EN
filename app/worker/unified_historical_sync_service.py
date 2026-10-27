@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-统一历史数据同步服务
-支持并行执行多个数据源的历史数据同步任务
+Unified historical data synchronization service
+Supports parallel execution of historical data synchronization tasks from multiple data sources
 """
 import asyncio
 import logging
@@ -21,28 +21,28 @@ async def run_unified_historical_sync(
     **kwargs
 ) -> Dict[str, Any]:
     """
-    统一历史数据同步任务：并行执行多个数据源的历史数据同步
+    Unified historical data synchronization task: perform historical data synchronization of multiple data sources in parallel
     
     Args:
-        data_sources: 要同步的数据源列表，如 ["tushare", "akshare", "baostock"]
-                     如果为 None，则同步所有启用的数据源
-        incremental: 是否增量同步
-        **kwargs: 其他参数（传递给各个数据源的同步函数）
+        data_sources: List of data sources to be synchronized, such as ["tushare", "akshare", "baostock"]
+                     If None, synchronizes all enabled data sources
+        incremental: Whether to incrementally synchronize
+        **kwargs: Other parameters (passed to the synchronization function of each data source)
     
     Returns:
-        同步结果统计
+        Synchronization result statistics
     """
-    # 默认同步所有数据源
+    # Synchronize all data sources by default
     if data_sources is None:
         data_sources = ["tushare", "akshare", "baostock"]
     
-    logger.info(f"🚀 开始统一历史数据同步: 数据源={data_sources}, 增量同步={incremental}")
+    logger.info(f"🚀 Start unified historical data synchronization: data source={data_sources}, Incremental synchronization={incremental}")
     
-    # 准备任务列表
+    # Prepare task list
     tasks = []
     task_info = []
     
-    # 🔥 为每个数据源创建并行任务
+    # 🔥 Create parallel tasks for each data source
     for data_source in data_sources:
         if data_source == "tushare":
             task = _run_tushare_historical_sync_task(incremental, **kwargs)
@@ -57,45 +57,45 @@ async def run_unified_historical_sync(
             tasks.append(task)
             task_info.append("baostock")
         else:
-            logger.warning(f"⚠️ 不支持的数据源: {data_source}，跳过")
+            logger.warning(f"⚠️ Unsupported data source: {data_source}, skip")
     
     if not tasks:
-        logger.warning("⚠️ 没有可用的数据源进行历史数据同步")
+        logger.warning("⚠️ No data source available for historical data synchronization")
         return {
             "success": False,
-            "message": "没有可用的数据源",
+            "message": "No data source available",
             "results": {}
         }
     
-    # 🔥 并行执行所有数据源的同步任务
-    logger.info(f"🚀 开始并行同步 {len(tasks)} 个数据源的历史数据: {task_info}")
+    # 🔥 Execute synchronization tasks for all data sources in parallel
+    logger.info(f"🚀 Start parallel synchronization {len(tasks)} historical data from data sources: {task_info}")
     
     try:
-        # 使用 asyncio.gather 并行执行
+        # Parallel execution using asyncio.gather
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
-        # 处理结果
+        # Processing results
         final_results = {}
         success_count = 0
         error_count = 0
         
         for i, (data_source, result) in enumerate(zip(task_info, results)):
             if isinstance(result, Exception):
-                logger.error(f"❌ {data_source} 历史数据同步失败: {result}", exc_info=True)
+                logger.error(f"❌ {data_source} Historical data synchronization failed: {result}", exc_info=True)
                 final_results[data_source] = {
                     "success": False,
                     "error": str(result)
                 }
                 error_count += 1
             else:
-                logger.info(f"✅ {data_source} 历史数据同步完成: {result}")
+                logger.info(f"✅ {data_source} Historical data synchronization completed: {result}")
                 final_results[data_source] = {
                     "success": True,
                     "result": result
                 }
                 success_count += 1
         
-        logger.info(f"🎉 统一历史数据同步完成: 成功 {success_count}/{len(tasks)}, 失败 {error_count}/{len(tasks)}")
+        logger.info(f"🎉 Unified historical data synchronization completed: success {success_count}/{len(tasks)}, failed {error_count}/{len(tasks)}")
         
         return {
             "success": error_count == 0,
@@ -106,7 +106,7 @@ async def run_unified_historical_sync(
         }
         
     except Exception as e:
-        logger.error(f"❌ 统一历史数据同步失败: {e}", exc_info=True)
+        logger.error(f"❌ Unified historical data synchronization failed: {e}", exc_info=True)
         return {
             "success": False,
             "error": str(e),
@@ -115,39 +115,39 @@ async def run_unified_historical_sync(
 
 
 async def _run_tushare_historical_sync_task(incremental: bool, **kwargs):
-    """运行 Tushare 历史数据同步任务"""
+    """Run Tushare historical data synchronization task"""
     try:
         from app.worker.tushare_sync_service import run_tushare_historical_sync
-        # 设置手动触发标记，允许并行执行
+        # Set manual trigger flag to allow parallel execution
         kwargs["_manual_trigger"] = True
         result = await run_tushare_historical_sync(incremental=incremental, **kwargs)
         return result
     except Exception as e:
-        logger.error(f"❌ Tushare 历史数据同步任务失败: {e}", exc_info=True)
+        logger.error(f"❌ Tushare Historical data synchronization task failed: {e}", exc_info=True)
         raise
 
 
 async def _run_akshare_historical_sync_task(incremental: bool, **kwargs):
-    """运行 AKShare 历史数据同步任务"""
+    """Run AKShare historical data synchronization task"""
     try:
         from app.worker.akshare_sync_service import run_akshare_historical_sync
-        # 设置手动触发标记，允许并行执行
+        # Set manual trigger flag to allow parallel execution
         kwargs["_manual_trigger"] = True
         result = await run_akshare_historical_sync(incremental=incremental, **kwargs)
         return result
     except Exception as e:
-        logger.error(f"❌ AKShare 历史数据同步任务失败: {e}", exc_info=True)
+        logger.error(f"❌ AKShare Historical data synchronization task failed: {e}", exc_info=True)
         raise
 
 
 async def _run_baostock_historical_sync_task(**kwargs):
-    """运行 BaoStock 历史数据同步任务"""
+    """Run the BaoStock historical data synchronization task"""
     try:
         from app.worker.baostock_sync_service import run_baostock_historical_sync
-        # 设置手动触发标记，允许并行执行
+        # Set manual trigger flag to allow parallel execution
         kwargs["_manual_trigger"] = True
         result = await run_baostock_historical_sync(**kwargs)
         return result
     except Exception as e:
-        logger.error(f"❌ BaoStock 历史数据同步任务失败: {e}", exc_info=True)
+        logger.error(f"❌ BaoStock Historical data synchronization task failed: {e}", exc_info=True)
         raise

@@ -1,28 +1,28 @@
-# TradingAgents-CN 日志配置文件
-# 支持不同环境的日志配置
+# TradingAgents-CN Log configuration file
+# Support log configuration for different environments
 
 [logging]
-# 全局日志级别：DEBUG, INFO, WARNING, ERROR, CRITICAL
+# Global log level:DEBUG, INFO, WARNING, ERROR, CRITICAL
 level = "INFO"
 
-# 日志格式配置
+# Log format configuration
 [logging.format]
 console = "%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s"
 file = "%(asctime)s | %(name)-20s | %(levelname)-8s | %(module)s:%(funcName)s:%(lineno)d | %(message)s"
 structured = "json"
-file_json = true  # 启用文件日志 JSON 输出（webapi.log 与 worker.log）
+file_json = true  # Enable file log JSON output (webapi.log and worker.log)
 
 
-# 处理器配置
+# Processor configuration
 [logging.handlers]
 
-# 控制台处理器
+# console processor
 [logging.handlers.console]
 enabled = true
-colored = true  # 是否启用彩色输出
+colored = true  # Whether to enable color output
 level = "INFO"
 
-# 文件处理器
+# file processor
 [logging.handlers.file]
 enabled = true
 level = "DEBUG"
@@ -30,54 +30,54 @@ max_size = "10MB"
 backup_count = 5
 directory = "./logs"
 
-# 错误日志处理器（只记录WARNING及以上级别）
+# Error log processor (only records WARNING and above levels)
 [logging.handlers.error]
 enabled = true
-level = "WARNING"  # 只记录WARNING, ERROR, CRITICAL
+level = "WARNING"  # record only WARNING, ERROR, CRITICAL
 max_size = "10MB"
 backup_count = 5
 directory = "./logs"
 filename = "error.log"
 
-# Skill工坊日志处理器（单独记录skill生成过程，方便排查）
+# Skill Workshop log processor (separately records the skill generation process to facilitate troubleshooting)
 [logging.handlers.skill]
 enabled = true
-level = "DEBUG"  # skill生成过程需要详细日志
+level = "DEBUG"  # skill The generation process requires detailed logs
 max_size = "20MB"
 backup_count = 10
 directory = "./logs"
 filename = "skill_workshop.log"
 
-# 结构化日志处理器（JSON格式）
+# Structured log processor (JSON format)
 [logging.handlers.structured]
-enabled = false  # 默认关闭，生产环境可启用
+enabled = false  # Off by default, can be enabled in production environment
 level = "INFO"
 directory = "./logs"
 
-# 特定日志器配置
+# Specific logger configuration
 [logging.loggers]
 
-# 主应用日志
+# Main application log
 [logging.loggers.tradingagents]
 level = "INFO"
 
-# Web界面日志
+# Web Interface log
 [logging.loggers.web]
 level = "INFO"
 
-# 数据流日志
+# Data flow log
 [logging.loggers.dataflows]
 level = "INFO"
 
-# LLM适配器日志
+# LLM Adapter log
 [logging.loggers.llm_adapters]
 level = "INFO"
 
-# Skill工坊日志（单独输出到 skill_workshop.log）
+# Skill Workshop log (output separately to skill_workshop.log)
 [logging.loggers.skill_workshop]
 level = "DEBUG"
 
-# 第三方库日志（通常设置为WARNING减少噪音）
+# Third-party library logs (usually set to WARNING to reduce noise)
 [logging.loggers.streamlit]
 level = "WARNING"
 
@@ -99,42 +99,42 @@ level = "WARNING"
 [logging.loggers.pandas]
 level = "WARNING"
 
-# Docker环境配置
+# Docker Environment configuration
 [logging.docker]
-enabled = false  # 自动检测Docker环境
-stdout_only = true  # Docker环境只输出到stdout
-disable_file_logging = true  # Docker环境禁用文件日志
+enabled = false  # Automatically detect Docker environments
+stdout_only = true  # Docker The environment only outputs to stdout
+disable_file_logging = true  # Docker Environment disabling file logging
 
-# 开发环境配置
+# Development environment configuration
 [logging.development]
-enabled = false  # 开发模式
-debug_modules = ["tradingagents.graph", "tradingagents.llm_adapters"]  # 开发时详细日志的模块
-save_debug_files = true  # 保存调试文件
+enabled = false  # development mode
+debug_modules = ["tradingagents.graph", "tradingagents.llm_adapters"]  # Module for detailed logging during development
+save_debug_files = true  # Save debug file
 
-# 生产环境配置
+# Production environment configuration
 [logging.production]
-enabled = false  # 生产模式
-structured_only = true  # 只使用结构化日志
-error_notification = true  # 错误通知
-max_log_size = "100MB"  # 生产环境更大的日志文件
+enabled = false  # production mode
+structured_only = true  # Only use structured logging
+error_notification = true  # Error notification
+max_log_size = "100MB"  # Larger log files for production environments
 
-# 性能监控日志
+# Performance monitoring log
 [logging.performance]
 enabled = true
 log_slow_operations = true
-slow_threshold_seconds = 5.0  # 超过5秒的操作记录为慢操作
-log_memory_usage = false  # 是否记录内存使用
+slow_threshold_seconds = 5.0  # Operations longer than 5 seconds are recorded as slow operations
+log_memory_usage = false  # Whether to log memory usage
 
-# 安全日志
+# security log
 [logging.security]
 enabled = true
-log_api_calls = true  # 记录API调用
-log_token_usage = true  # 记录Token使用
-mask_sensitive_data = true  # 屏蔽敏感数据
+log_api_calls = true  # Logging API calls
+log_token_usage = true  # Record Token usage
+mask_sensitive_data = true  # Block sensitive data
 
-# 业务日志
+# Business log
 [logging.business]
 enabled = true
-log_analysis_events = true  # 记录分析事件
-log_user_actions = true  # 记录用户操作
-log_export_events = true  # 记录导出事件
+log_analysis_events = true  # Log analysis events
+log_user_actions = true  # Record user actions
+log_export_events = true  # Log export events

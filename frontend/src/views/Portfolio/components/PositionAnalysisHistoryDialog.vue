@@ -1,42 +1,42 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="`${position?.name || position?.code || ''} - 分析历史`"
+    :title="`${position?.name || position?.code || ''} - Analyze history`"
     width="1000px"
     :close-on-click-modal="false"
     @close="handleClose"
   >
     <el-alert type="info" :closable="false" show-icon style="margin-bottom: 16px">
-      {{ isEtfPosition ? '查看该ETF的所有分析报告历史记录' : '查看该股票的所有分析报告历史记录' }}
+      {{ isEtfPosition ? 'View all analysis report history for this ETF' : 'View all analysis report history for this stock' }}
     </el-alert>
 
-    <!-- 数据表格 -->
+    <!-- data table -->
     <el-table :data="historyList" v-loading="loading" stripe>
-      <el-table-column label="分析时间" width="160">
+      <el-table-column label="Analysis time" width="160">
         <template #default="{ row }">
           {{ formatTime(row.created_at) }}
         </template>
       </el-table-column>
 
-      <el-table-column label="持仓数量" width="100" align="right">
+      <el-table-column label="Position quantity" width="100" align="right">
         <template #default="{ row }">
-          {{ row.position_snapshot?.quantity || 0 }} 股
+          {{ row.position_snapshot?.quantity || 0 }} shares
         </template>
       </el-table-column>
 
-      <el-table-column label="成本价" width="100" align="right">
+      <el-table-column label="cost price" width="100" align="right">
         <template #default="{ row }">
           ¥{{ (row.position_snapshot?.cost_price || 0).toFixed(2) }}
         </template>
       </el-table-column>
 
-      <el-table-column label="当前价" width="100" align="right">
+      <el-table-column label="current price" width="100" align="right">
         <template #default="{ row }">
           ¥{{ (row.position_snapshot?.current_price || 0).toFixed(2) }}
         </template>
       </el-table-column>
 
-      <el-table-column label="浮动盈亏" width="140" align="right">
+      <el-table-column label="floating profit and loss" width="140" align="right">
         <template #default="{ row }">
           <span :class="pnlClass(row.position_snapshot?.unrealized_pnl || 0)">
             {{ formatPnl(row.position_snapshot?.unrealized_pnl || 0) }}
@@ -45,7 +45,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="分析观点" width="100" align="center">
+      <el-table-column label="analysis point of view" width="100" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.action" :type="getActionType(row.action)" size="small">
             {{ getActionText(row.action) }}
@@ -54,24 +54,24 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="一句话结论" min-width="260">
+      <el-table-column label="One sentence conclusion" min-width="260">
         <template #default="{ row }">
           <span class="conclusion-preview">{{ row.user_view?.conclusion || row.action_reason || '-' }}</span>
         </template>
       </el-table-column>
 
-      <el-table-column label="持仓类型" width="100" align="center">
+      <el-table-column label="Position type" width="100" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.position_type === 'simulated' || (position?.source === 'paper')" type="warning" size="small">
-            模拟持仓
+            Simulated position
           </el-tag>
           <el-tag v-else type="success" size="small">
-            用户持仓
+            User positions
           </el-tag>
         </template>
       </el-table-column>
 
-      <el-table-column label="状态" width="100" align="center">
+      <el-table-column label="Status" width="100" align="center">
         <template #default="{ row }">
           <el-tag :type="getStatusType(row.status)">
             {{ getStatusText(row.status) }}
@@ -79,7 +79,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="180" align="center" fixed="right">
+      <el-table-column label="Operation" width="180" align="center" fixed="right">
         <template #default="{ row }">
           <el-button
             type="primary"
@@ -88,7 +88,7 @@
             @click="viewDetail(row)"
             :disabled="row.status !== 'completed'"
           >
-            查看详情
+            View details
           </el-button>
           <el-button
             type="danger"
@@ -96,13 +96,13 @@
             link
             @click="handleDelete(row)"
           >
-            删除
+            Delete
           </el-button>
         </template>
       </el-table-column>
     </el-table>
 
-    <!-- 分页 -->
+    <!-- Pagination -->
     <div style="margin-top: 16px; text-align: right">
       <el-pagination
         v-model:current-page="currentPage"
@@ -115,7 +115,7 @@
       />
     </div>
 
-    <!-- 详情对话框 -->
+    <!-- Details dialog -->
     <PositionAnalysisDetailDialog
       v-model="showDetailDialog"
       :report="selectedReport"
@@ -171,13 +171,13 @@ const loadData = async () => {
 
   loading.value = true
   try {
-    // 🔥 根据持仓来源传递 source 参数：模拟持仓 -> paper，用户持仓 -> real
+    // 🔥 Pass the source parameter according to the position source: simulate a position -> paper, User positions -> real
     const source = props.position?.source === 'paper' ? 'paper' : 'real'
     const res = await portfolioApi.getPositionAnalysisHistory(positionId.value, currentPage.value, pageSize.value, source)
     historyList.value = res.data?.items || []
     total.value = res.data?.total || 0
   } catch (e: any) {
-    ElMessage.error(e.message || '加载分析历史失败')
+    ElMessage.error(e.message || 'Failed to load analysis history')
   } finally {
     loading.value = false
   }
@@ -190,41 +190,41 @@ const viewDetail = (row: PositionAnalysisResult) => {
   showDetailDialog.value = true
 }
 
-// 删除分析记录
+// Delete analysis records
 const handleDelete = async (row: PositionAnalysisResult) => {
   if (!row.analysis_id) {
-    ElMessage.warning('无法获取分析ID，无法删除')
+    ElMessage.warning('Unable to get analysis ID and cannot delete')
     return
   }
 
   try {
     await ElMessageBox.confirm(
-      `确定要删除这条分析记录吗？\n分析时间: ${formatTime(row.created_at)}`,
-      '确认删除',
+      `Are you sure you want to delete this analysis record?\n Analysis time: ${formatTime(row.created_at)}`,
+      'Confirm deletion',
       {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
 
-    // 调用删除接口
+    // Call the delete interface
     const res = await portfolioApi.deletePositionAnalysis(row.analysis_id)
     if (res.success) {
-      ElMessage.success('删除成功')
-      // 重新加载数据
+      ElMessage.success('Delete successfully')
+      // Reload data
       await loadData()
     } else {
-      ElMessage.error(res.message || '删除失败')
+      ElMessage.error(res.message || 'Delete failed')
     }
   } catch (e: any) {
     if (e !== 'cancel') {
-      ElMessage.error(e.message || '删除失败')
+      ElMessage.error(e.message || 'Delete failed')
     }
   }
 }
 
-// 格式化时间
+// Format time
 const formatTime = (time: string) => {
   if (!time) return '-'
   const date = new Date(time)
@@ -237,59 +237,59 @@ const formatTime = (time: string) => {
   })
 }
 
-// 格式化盈亏
+// Format profit and loss
 const formatPnl = (pnl: number) => {
   if (pnl === undefined || pnl === null) return '¥0.00'
   const prefix = pnl >= 0 ? '+' : ''
   return `${prefix}¥${Math.abs(pnl).toFixed(2)}`
 }
 
-// 格式化百分比
+// Format percentage
 const formatPct = (pct: number) => {
   if (pct === undefined || pct === null) return '0.00%'
   const prefix = pct >= 0 ? '+' : ''
   return `${prefix}${pct.toFixed(2)}%`
 }
 
-// 盈亏样式
+// profit and loss pattern
 const pnlClass = (pnl: number) => {
   if (pnl > 0) return 'text-success'
   if (pnl < 0) return 'text-danger'
   return ''
 }
 
-// 分析观点类型（收敛为 乐观/审慎/中性 三种合规标签）
+// Analyze view types (converged into three compliance labels: optimistic/cautious/neutral)
 const getActionType = (action: string) => {
-  if (action === 'buy' || action === 'add' || action === '乐观') return 'success'
-  if (action === 'sell' || action === 'reduce' || action === 'clear' || action === '审慎') return 'danger'
+  if (action === 'buy' || action === 'add' || action === 'optimistic') return 'success'
+  if (action === 'sell' || action === 'reduce' || action === 'clear' || action === 'Prudence') return 'danger'
   return 'info'
 }
 
-// 分析观点文本（统一收敛为 乐观/审慎/中性 三种合规标签）
+// Analyze opinion text (unified into three compliance labels: optimistic/cautious/neutral)
 const getActionText = (action: string) => {
   const map: Record<string, string> = {
-    // 旧交易指令/市场观点术语 → 三种合规标签
-    buy: '乐观',
-    add: '乐观',
-    hold: '中性',
-    reduce: '审慎',
-    sell: '审慎',
-    clear: '审慎',
-    // 旧市场观点术语
-    '看涨': '乐观',
-    '看跌': '审慎',
-    '增持观点': '乐观',
-    '减持观点': '审慎',
-    '观望观点': '中性',
-    // 新合规术语
-    '乐观': '乐观',
-    '审慎': '审慎',
-    '中性': '中性'
+    // Old Trading Order/Market View Terms → Three compliance labels
+    buy: 'optimistic',
+    add: 'optimistic',
+    hold: 'Neutral',
+    reduce: 'Prudence',
+    sell: 'Prudence',
+    clear: 'Prudence',
+    // old market view terminology
+    'bullish': 'optimistic',
+    'Bearish': 'Prudence',
+    'Overweight view': 'optimistic',
+    'Underweight view': 'Prudence',
+    'wait and see view': 'Neutral',
+    // New Compliance Terminology
+    'optimistic': 'optimistic',
+    'Prudence': 'Prudence',
+    'Neutral': 'Neutral'
   }
   return map[action] || action
 }
 
-// 状态类型
+// status type
 const getStatusType = (status: string) => {
   if (status === 'completed') return 'success'
   if (status === 'processing') return 'warning'
@@ -297,13 +297,13 @@ const getStatusType = (status: string) => {
   return 'info'
 }
 
-// 状态文本
+// status text
 const getStatusText = (status: string) => {
   const map: Record<string, string> = {
-    pending: '等待中',
-    processing: '分析中',
-    completed: '已完成',
-    failed: '失败'
+    pending: 'Waiting',
+    processing: 'Analyzing',
+    completed: 'Completed',
+    failed: 'failed'
   }
   return map[status] || status
 }

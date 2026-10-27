@@ -1,14 +1,14 @@
 /**
- * 暗色主题优化样式
- * 修复暗色模式下按钮和文本对比度不足的问题
+ * Dark theme optimized style
+ * Fixed issue with insufficient contrast between buttons and text in dark mode
  */
 
-// 暗色主题下的全局样式优化
+// Global style optimization under dark theme
 html.dark {
-  // 全局背景设为纯黑
+  // Set the global background to solid black
   background-color: #000000 !important;
 
-  // 优化标题文字
+  // Optimize title text
   h1, h2, h3, h4, h5, h6 {
     color: #ffffff !important;
     font-weight: 600 !important;
@@ -30,7 +30,7 @@ html.dark {
     font-size: 18px !important;
   }
 
-  // 优化卡片标题
+  // Optimize card titles
   .el-card__header {
     h1, h2, h3, h4, h5, h6 {
       color: #ffffff !important;
@@ -38,7 +38,7 @@ html.dark {
     }
   }
 
-  // 优化页面标题
+  // Optimize page title
   .page-title,
   .section-title,
   .card-title {
@@ -46,9 +46,9 @@ html.dark {
     font-weight: 600 !important;
   }
   
-  // 优化按钮样式
+  // Optimize button style
   .el-button {
-    // 主要按钮
+    // main button
     &.el-button--primary {
       --el-button-text-color: #ffffff;
       --el-button-bg-color: var(--el-color-primary);
@@ -71,7 +71,7 @@ html.dark {
       }
     }
     
-    // 成功按钮
+    // success button
     &.el-button--success {
       --el-button-text-color: #ffffff;
       color: #ffffff !important;
@@ -82,7 +82,7 @@ html.dark {
       }
     }
     
-    // 警告按钮
+    // warning button
     &.el-button--warning {
       --el-button-text-color: #ffffff;
       color: #ffffff !important;
@@ -93,7 +93,7 @@ html.dark {
       }
     }
     
-    // 危险按钮
+    // danger button
     &.el-button--danger {
       --el-button-text-color: #ffffff;
       color: #ffffff !important;
@@ -104,7 +104,7 @@ html.dark {
       }
     }
     
-    // 信息按钮
+    // information button
     &.el-button--info {
       --el-button-text-color: #ffffff;
       color: #ffffff !important;
@@ -115,7 +115,7 @@ html.dark {
       }
     }
     
-    // 默认按钮（白色背景）
+    // Default button (white background)
     &.el-button--default {
       --el-button-text-color: var(--el-text-color-primary);
       --el-button-bg-color: var(--el-fill-color-blank);
@@ -128,7 +128,7 @@ html.dark {
       }
     }
     
-    // 文本按钮
+    // text button
     &.el-button--text {
       --el-button-text-color: var(--el-text-color-primary);
       color: var(--el-text-color-primary) !important;
@@ -139,7 +139,7 @@ html.dark {
     }
   }
   
-  // 优化单选按钮组
+  // Optimize radio button groups
   .el-radio-group {
     .el-radio {
       --el-radio-text-color: var(--el-text-color-primary);
@@ -155,7 +155,7 @@ html.dark {
       }
     }
     
-    // 按钮样式的单选框
+    // button style radio button
     .el-radio-button {
       .el-radio-button__inner {
         color: var(--el-text-color-primary) !important;
@@ -179,7 +179,7 @@ html.dark {
     }
   }
   
-  // 优化复选框
+  // Optimize checkbox
   .el-checkbox {
     --el-checkbox-text-color: var(--el-text-color-primary);
     
@@ -194,12 +194,12 @@ html.dark {
     }
   }
   
-  // 优化表单标签
+  // Optimize form tags
   .el-form-item__label {
     color: var(--el-text-color-primary) !important;
   }
   
-  // 优化卡片
+  // Optimize cards
   .el-card {
     --el-card-bg-color: var(--el-bg-color);
     background-color: var(--el-bg-color);
@@ -211,7 +211,7 @@ html.dark {
       color: #ffffff !important;
       font-weight: 600;
 
-      // 卡片标题
+      // card title
       h1, h2, h3, h4, h5, h6,
       .card-title,
       .el-card__title {
@@ -225,7 +225,7 @@ html.dark {
     }
   }
   
-  // 优化菜单
+  // Optimize menu
   .el-menu {
     background-color: var(--el-bg-color);
     border-color: var(--el-border-color-light);
@@ -246,7 +246,7 @@ html.dark {
     }
   }
   
-  // 优化输入框
+  // Optimize input box
   .el-input {
     .el-input__wrapper {
       background-color: var(--el-fill-color-blank);
@@ -272,14 +272,14 @@ html.dark {
     }
   }
   
-  // 优化选择器
+  // Optimize selector
   .el-select {
     .el-input__wrapper {
       background-color: var(--el-fill-color-blank);
     }
   }
   
-  // 优化下拉菜单
+  // Optimize drop-down menu
   .el-dropdown-menu {
     background-color: var(--el-bg-color-overlay);
     border-color: var(--el-border-color-light);
@@ -294,7 +294,7 @@ html.dark {
     }
   }
   
-  // 优化表格
+  // Optimize table
   .el-table {
     --el-table-bg-color: var(--el-bg-color);
     --el-table-tr-bg-color: var(--el-bg-color);
@@ -315,7 +315,7 @@ html.dark {
     }
   }
   
-  // 优化标签页
+  // Optimize tabs
   .el-tabs {
     .el-tabs__item {
       color: var(--el-text-color-regular);
@@ -330,7 +330,7 @@ html.dark {
     }
   }
   
-  // 优化滑块
+  // Optimize slider
   .el-slider {
     .el-slider__runway {
       background-color: var(--el-border-color-lighter);
@@ -341,7 +341,7 @@ html.dark {
     }
   }
   
-  // 优化开关
+  // Optimization switch
   .el-switch {
     &.is-checked {
       .el-switch__core {
@@ -350,7 +350,7 @@ html.dark {
     }
   }
   
-  // 优化对话框
+  // Optimize dialog box
   .el-dialog {
     background-color: var(--el-bg-color);
     border: 1px solid var(--el-border-color-light);
@@ -373,7 +373,7 @@ html.dark {
     }
   }
   
-  // 优化抽屉
+  // Optimize drawers
   .el-drawer {
     background-color: var(--el-bg-color);
 
@@ -398,7 +398,7 @@ html.dark {
     }
   }
 
-  // 优化描述列表
+  // Optimize description list
   .el-descriptions {
     .el-descriptions__header {
       .el-descriptions__title {
@@ -416,7 +416,7 @@ html.dark {
     }
   }
 
-  // 优化折叠面板
+  // Optimize folding panel
   .el-collapse {
     border-color: var(--el-border-color-light);
 
@@ -432,7 +432,7 @@ html.dark {
     }
   }
 
-  // 优化步骤条
+  // Optimization step bar
   .el-steps {
     .el-step__title {
       color: var(--el-text-color-primary) !important;
@@ -449,7 +449,7 @@ html.dark {
     }
   }
 
-  // 优化时间线
+  // Optimize timeline
   .el-timeline {
     .el-timeline-item__timestamp {
       color: var(--el-text-color-secondary) !important;
@@ -465,7 +465,7 @@ html.dark {
     }
   }
 
-  // 优化结果组件
+  // Optimize results component
   .el-result {
     .el-result__title {
       color: #ffffff !important;
@@ -477,14 +477,14 @@ html.dark {
     }
   }
 
-  // 优化空状态
+  // Optimize empty state
   .el-empty {
     .el-empty__description {
       color: var(--el-text-color-regular) !important;
     }
   }
 
-  // 优化分析页面标题
+  // Optimize analysis page title
   .analysis-page {
     .title-section {
       .page-title {
@@ -523,7 +523,7 @@ html.dark {
     }
   }
 
-  // 优化设置页面标题
+  // Optimize setting page title
   .settings-page {
     .page-title {
       color: #ffffff !important;
@@ -534,7 +534,7 @@ html.dark {
     }
   }
 
-  // 优化仪表盘页面标题
+  // Optimize dashboard page title
   .dashboard-page {
     .page-title {
       color: #ffffff !important;
@@ -545,7 +545,7 @@ html.dark {
     }
   }
 
-  // 优化通用页面标题样式
+  // Optimize common page title styles
   .page-container,
   .view-container {
     .page-title,
@@ -561,7 +561,7 @@ html.dark {
     }
   }
 
-  // 优化所有硬编码的深色文字
+  // Optimize all hardcoded dark text
   .title-section,
   .header-section,
   .content-header {
@@ -572,7 +572,7 @@ html.dark {
     }
   }
 
-  // 优化关于页面的白色卡片内的文字
+  // Optimize the text in the white card on the About page
   .about {
     .feature-card,
     .tech-category,
@@ -594,7 +594,7 @@ html.dark {
       }
     }
 
-    // 优化 Hero 区域的按钮
+    // Optimize buttons in Hero area
     .hero-section {
       .hero-actions {
         .el-button {
@@ -629,7 +629,7 @@ html.dark {
       }
     }
 
-    // 优化 Hero 区域的统计卡片文字
+    // Optimize the stat card text in the Hero area
     .hero-visual {
       .stat-item {
         .stat-number,
@@ -640,7 +640,7 @@ html.dark {
     }
   }
 
-  // 优化报告详情页面的关键指标卡片
+  // Optimize the key indicator card on the report details page
   .report-detail {
     .metrics-content {
       .metric-item {
@@ -664,7 +664,7 @@ html.dark {
         }
 
         .risk-label {
-          // 保持原有的风险颜色，不覆盖
+          // Keep original risk color without overwriting
         }
 
         .risk-description {
@@ -684,7 +684,7 @@ html.dark {
     }
   }
 
-  // 优化单股研究页面的页面头部
+  // Optimize the page header of the single stock research page
   .single-analysis {
     .page-header {
       .header-content {
@@ -702,7 +702,7 @@ html.dark {
     }
   }
 
-  // 优化批量分析页面的页面头部
+  // Optimize the page header of the batch analysis page
   .batch-analysis {
     .page-header {
       .header-content {

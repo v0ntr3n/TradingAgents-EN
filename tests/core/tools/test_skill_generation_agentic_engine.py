@@ -110,26 +110,26 @@ def test_apply_handoff_context_to_spec_preserves_full_summary():
     context = SkillHandoffContext(
         source="agent_studio_gap",
         source_spec_id="spec_001",
-        source_name="估值 Agent",
-        target_capability="行业对比",
-        agent_goal="输出基本面分析",
-        gap_context="缺少行业横向比较",
-        searched_capabilities=["查过估值 Skill"],
+        source_name="Valuation Agent",
+        target_capability="Industry comparison",
+        agent_goal="Output fundamental analysis",
+        gap_context="Lack of industry horizontal comparison",
+        searched_capabilities=["Checked the valuation Skill"],
         confirmed_data_sources=["external_sources.get_external_historical_data"],
-        user_clarifications=["只需要客观数据，不输出建议"],
-        related_gaps=["估值分位"],
-        known_failure_summaries=["pe_ttm 字段不存在"],
-        known_verified_facts=["helper 返回 OHLCV"],
+        user_clarifications=["Only objective data is required, no suggestions are output"],
+        related_gaps=["Valuation quantile"],
+        known_failure_summaries=["pe_ttm Field does not exist"],
+        known_verified_facts=["helper Return OHLCV"],
     )
 
     SkillGenerationService._apply_handoff_context_to_spec(spec, context)
 
     summary = spec.metadata["handoff_context_summary"]
-    assert summary["target_capability"] == "行业对比"
-    assert summary["searched_capabilities"] == ["查过估值 Skill"]
+    assert summary["target_capability"] == "Industry comparison"
+    assert summary["searched_capabilities"] == ["Checked the valuation Skill"]
     assert summary["confirmed_data_sources"] == ["external_sources.get_external_historical_data"]
-    assert spec.metadata["known_failure_summaries"] == ["pe_ttm 字段不存在"]
-    assert spec.metadata["known_verified_facts"] == ["helper 返回 OHLCV"]
+    assert spec.metadata["known_failure_summaries"] == ["pe_ttm Field does not exist"]
+    assert spec.metadata["known_verified_facts"] == ["helper Return OHLCV"]
 
 
 @pytest.mark.asyncio
@@ -157,10 +157,10 @@ async def test_store_skill_lessons_persists_agentic_failure_and_facts(monkeypatc
     result = PipelineResult(
         success=False,
         tool_id="demo_skill",
-        error="字段 pe_ttm 不存在",
+        error="Field pe_ttm does not exist",
         final_metadata={
             "generation_engine": "agentic_loop",
-            "verified_facts": ["valuation helper 返回 pb_mrq"],
+            "verified_facts": ["valuation helper Return pb_mrq"],
         },
         total_rounds=1,
     )
@@ -171,21 +171,21 @@ async def test_store_skill_lessons_persists_agentic_failure_and_facts(monkeypatc
     assert stored["scope"] == "skill_lesson"
     assert stored["metadata"]["generation_engine"] == "agentic_loop"
     assert stored["metadata"]["verified_fact_count"] == 1
-    assert "字段 pe_ttm 不存在" in stored["messages"][0]["content"]
-    assert "valuation helper 返回 pb_mrq" in stored["messages"][0]["content"]
+    assert "Field pe_ttm does not exist" in stored["messages"][0]["content"]
+    assert "valuation helper Return pb_mrq" in stored["messages"][0]["content"]
 
 
 def test_skill_generation_infers_role_metadata_for_gap_skill():
     spec = SkillSpec(
         tool_id="get_financial_cashflow_quality_trend",
-        display_name="现金流质量趋势",
-        description="计算经营现金流/净利润、自由现金流率等现金流质量指标趋势",
+        display_name="Cash flow quality trends",
+        description="Calculate trends in cash flow quality indicators such as operating cash flow/net profit, free cash flow rate, etc.",
         category="fundamentals",
         data_source="tushare",
         expected_output=ExpectedOutput(
             type="dict",
             fields=["ocf_to_net_profit", "fcf_margin", "quality_score"],
-            description="返回结构化现金流质量指标",
+            description="Returns structured cash flow quality indicators",
         ),
     )
     session = SkillCreationSession(
@@ -193,7 +193,7 @@ def test_skill_generation_infers_role_metadata_for_gap_skill():
         user_id="u1",
         handoff_context=SkillHandoffContext(
             source="agent_studio_gap",
-            target_capability="缺少现金流质量指标自动计算能力",
+            target_capability="Lack of automatic calculation capabilities for cash flow quality indicators",
         ),
     )
 
@@ -208,10 +208,10 @@ def test_skill_generation_infers_role_metadata_for_gap_skill():
 def test_skill_generation_infers_supporting_role_for_report_skill():
     spec = SkillSpec(
         tool_id="generate_financial_summary_report",
-        display_name="财务摘要报告",
-        description="生成 Markdown 财务摘要报告",
+        display_name="financial summary report",
+        description="Generate Markdown financial summary report",
         category="fundamentals",
-        expected_output=ExpectedOutput(type="string", fields=[], description="Markdown 报告"),
+        expected_output=ExpectedOutput(type="string", fields=[], description="Markdown report"),
     )
     session = SkillCreationSession(session_id="skill_session_002", user_id="u1")
 

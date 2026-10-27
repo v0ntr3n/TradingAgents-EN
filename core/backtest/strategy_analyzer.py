@@ -1,6 +1,6 @@
 """
-LLM 策略可行性分析
-用户用自然语言描述策略想法 → AI 分析可行性
+LLM Strategic feasibility analysis
+Users describe strategy ideas in natural language → AI Analyze feasibility
 """
 import json
 import logging
@@ -11,17 +11,17 @@ from core.llm.models import Message, MessageRole
 
 logger = logging.getLogger(__name__)
 
-ANALYZE_SYSTEM = """你是一位专业的量化回测分析师。用户会描述一个投资策略想法，你需要分析其可行性。
+ANALYZE_SYSTEM = """You are a professional quantitative backtesting analyst. The user will describe an investment strategy idea, and you need to analyze its feasibility.
 
-【分析维度】
-1. 策略逻辑是否清晰、可回测
-2. 数据可得性（A股日线、财务指标等）
-3. 风险点（过拟合、幸存者偏差等）
-4. 回测可实施性（能否转化为规则化策略）
+ [Analysis Dimensions]
+1. Is the strategy logic clear and back-testable?
+2. Data availability (A-share daily line, financial indicators, etc.)
+3. Risk points (overfitting, survivor bias, etc.)
+4. Implementability of backtesting (can it be converted into a regularized strategy)
 
-【输出】
-用简洁的中文回答，包含：可行性结论、主要风险、建议的回测参数范围（如回测区间、持仓数量等）。
-无需输出 JSON，自然语言即可。"""
+ [Output]
+Answer in concise Chinese, including: feasibility conclusion, main risks, recommended backtest parameter range (such as backtest interval, number of positions, etc.).
+No need to output JSON, natural language will do."""
 
 
 async def analyze_strategy_feasibility(
@@ -29,12 +29,12 @@ async def analyze_strategy_feasibility(
     llm_client: Optional[UnifiedLLMClient] = None,
 ) -> str:
     """
-    分析策略可行性
+    Analyze strategy feasibility
     Args:
-        user_description: 用户自然语言描述
-        llm_client: LLM 客户端，若不传则从数据库配置创建
+        user_description: User natural language description
+        llm_client: LLM Client, if not passed, it will be created from the database configuration.
     Returns:
-        可行性分析文本
+        feasibility analysis text
     """
     client = llm_client
     if not client:
@@ -42,7 +42,7 @@ async def analyze_strategy_feasibility(
 
         cfg = await get_coding_llm_config()
         if not cfg:
-            return "当前未配置 LLM，无法进行策略分析。请在系统设置中配置模型。"
+            return "LLM is not currently configured and policy analysis is not possible. Please configure the model in system settings."
         client = UnifiedLLMClient.from_config(cfg)
 
     messages = [
@@ -53,5 +53,5 @@ async def analyze_strategy_feasibility(
         response = await client.achat(messages)
         return response.content or ""
     except Exception as e:
-        logger.exception("策略分析失败")
-        return f"分析出错: {e}"
+        logger.exception("Strategy analysis failed")
+        return f"Analysis error: {e}"

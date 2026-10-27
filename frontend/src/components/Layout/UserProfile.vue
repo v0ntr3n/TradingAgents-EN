@@ -1,6 +1,6 @@
 <template>
   <div class="user-profile" :class="{ collapsed: appStore.sidebarCollapsed }">
-    <!-- 学员等级显示 -->
+    <!-- Student level display -->
     <div v-if="!appStore.sidebarCollapsed" class="license-badge" @click="goToLicense">
       <el-tag
         :type="licenseTagType"
@@ -12,7 +12,7 @@
         {{ licenseLabel }}
       </el-tag>
       <span v-if="licenseStore.daysRemaining !== null && licenseStore.daysRemaining > 0" class="expire-hint">
-        {{ licenseStore.daysRemaining }}天后到期
+        {{ licenseStore.daysRemaining }}Expires after days
       </span>
     </div>
     <div v-else class="license-badge-mini" @click="goToLicense">
@@ -21,7 +21,7 @@
       </el-tooltip>
     </div>
 
-    <!-- 用户信息 -->
+    <!-- User information -->
     <el-dropdown trigger="click" @command="handleCommand">
       <div class="profile-info">
         <el-avatar :size="32" :src="userAvatar">
@@ -37,11 +37,11 @@
         <el-dropdown-menu>
           <el-dropdown-item command="settings">
             <el-icon><Setting /></el-icon>
-            设置
+            settings
           </el-dropdown-item>
           <el-dropdown-item divided command="logout">
             <el-icon><SwitchButton /></el-icon>
-            退出登录
+            Log out
           </el-dropdown-item>
         </el-dropdown-menu>
       </template>
@@ -58,7 +58,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useLicenseStore } from '@/stores/license'
 import { User, Setting, SwitchButton, Star, UserFilled } from '@element-plus/icons-vue'
 
-// 🔧 京东云模式
+// 🔧 Jingdong cloud model
 const isJdyunMode = import.meta.env.VITE_JDYUN_MODE === 'true'
 
 const router = useRouter()
@@ -66,27 +66,27 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const licenseStore = useLicenseStore()
 
-// 用户头像：优先使用用户设置的头像，否则返回 undefined 使用 el-avatar 的默认图标
+// User avatar: Give priority to the avatar set by the user, otherwise return undefined and use the default icon of el-avatar.
 const userAvatar = computed(() => authStore.user?.avatar || undefined)
-const userDisplayName = computed(() => authStore.user?.username || '未登录')
+const userDisplayName = computed(() => authStore.user?.username || 'Not logged in')
 const userRole = computed(() => {
-  if (!authStore.user) return '未登录'
-  return '用户'
+  if (!authStore.user) return 'Not logged in'
+  return 'User'
 })
 
-// 学员等级相关
+// Related to student level
 const licenseLabel = computed(() => {
-  // 🔧 京东云模式：显示"京东云版"
-  if (isJdyunMode) return '京东云版'
+  // 🔧 JD Cloud Mode: Display"Jingdong cloud version"
+  if (isJdyunMode) return 'Jingdong cloud version'
   const plan = licenseStore.plan
-  if (plan === 'enterprise') return '终身高级学员'
-  if (plan === 'pro') return '高级学员'
-  if (plan === 'trial') return '体验高级学员'
-  return '初级学员'
+  if (plan === 'enterprise') return 'lifelong senior student'
+  if (plan === 'pro') return 'Senior student'
+  if (plan === 'trial') return 'Experience senior students'
+  return 'junior student'
 })
 
 const licenseTagType = computed(() => {
-  // 🔧 京东云模式：使用 primary 样式
+  // 🔧 JD Cloud mode: use primary style
   if (isJdyunMode) return 'primary'
   const plan = licenseStore.plan
   if (['enterprise', 'pro'].includes(plan)) return 'success'
@@ -95,7 +95,7 @@ const licenseTagType = computed(() => {
 })
 
 const licenseIconColor = computed(() => {
-  // 🔧 京东云模式：使用蓝色
+  // 🔧 JD Cloud Mode: Use Blue
   if (isJdyunMode) return '#409eff'
   const plan = licenseStore.plan
   if (['enterprise', 'pro'].includes(plan)) return '#67c23a'
@@ -104,7 +104,7 @@ const licenseIconColor = computed(() => {
 })
 
 const goToLicense = () => {
-  // 🔧 京东云模式：不跳转授权页
+  // 🔧 JD Cloud Mode: Do not jump to the authorization page
   if (isJdyunMode) return
   router.push('/settings/license')
 }
@@ -116,13 +116,13 @@ const handleCommand = async (command: string) => {
       break
     case 'logout':
       if (isJdyunMode) {
-        // 京东云模式：跳转到网关 /logout 清除 jdyun_session cookie
-        // 网关清除 cookie 后会 302 跳转到 /login，用户下次需重新登录
+        // JD Cloud mode: jump to gateway /logout clear jdyun_session cookie
+        // After the gateway clears cookies, it will jump to /login with a 302 error. The user needs to log in again next time.
         authStore.clearAuthInfo()
         window.location.href = '/logout'
       } else {
         await authStore.logout()
-        ElMessage.success('已退出登录')
+        ElMessage.success('Logged out')
         router.push('/login')
       }
       break

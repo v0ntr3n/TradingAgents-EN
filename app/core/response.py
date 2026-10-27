@@ -1,5 +1,5 @@
 """
-统一API响应格式工具
+Unified API response format tool
 """
 from datetime import datetime
 from typing import Any, Dict
@@ -11,7 +11,7 @@ from app.utils.timezone import now_tz
 
 
 def _serialize_response_data(data: Any) -> Any:
-    """将常见 Mongo/Pydantic 对象转换为 JSON 安全结构。"""
+    """Convert common Mongo/Pydantic objects to JSON-safe structures."""
     if data is None or isinstance(data, (str, int, float, bool)):
         return data
 
@@ -38,8 +38,8 @@ def _serialize_response_data(data: Any) -> Any:
 
 
 def ok(data: Any = None, message: str = "ok") -> Dict[str, Any]:
-    """标准成功响应
-    返回结构：{"success": True, "data": data, "message": message, "timestamp": ...}
+    """Standard success response
+    Return structure:{"success": True, "data": data, "message": message, "timestamp": ...}
     """
     return {
         "success": True,
@@ -50,7 +50,7 @@ def ok(data: Any = None, message: str = "ok") -> Dict[str, Any]:
 
 
 def fail(message: str = "error", code: int = 500, data: Any = None) -> Dict[str, Any]:
-    """标准失败响应（一般错误仍建议用 HTTPException 抛出，此函数用于业务失败场景）"""
+    """Standard failure response (general errors are still recommended to be thrown with HTTPException, this function is used in business failure scenarios)"""
     return {
         "success": False,
         "data": _serialize_response_data(data),

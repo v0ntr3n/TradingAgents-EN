@@ -1,12 +1,12 @@
 """
-报告导出工具 - 支持 Markdown、Word、PDF 格式
+Report export tool - supports Markdown, Word, PDF formats
 
-依赖安装:
+Depends on installation:
     pip install pypandoc markdown
 
-PDF 导出需要额外工具:
-    - wkhtmltopdf (推荐): https://wkhtmltopdf.org/downloads.html
-    - 或 LaTeX: https://www.latex-project.org/get/
+PDF Export requires additional tools:
+    - wkhtmltopdf (Recommended): https://wkhtmltopdf.org/downloads.html
+    - or LaTeX: https://www.latex-project.org/get/
 """
 
 import logging
@@ -20,58 +20,58 @@ from app.utils.compliance import RESEARCH_ONLY_DISCLAIMER, sanitize_display_repo
 
 logger = logging.getLogger(__name__)
 
-# 分析师英文 ID 到中文名称映射（报告展示用）
+# Analyst English ID to Chinese name mapping (for report display)
 ANALYST_ID_TO_CHINESE: dict = {
-    # 宏观分析师
-    "index_analyst": "大盘环境分析师",
-    "index_analyst_v2": "大盘环境分析师",
-    "sector_analyst": "行业板块研究分析师",
-    "sector_analyst_v2": "行业板块研究分析师",
-    # 分析师团队
-    "market_analyst": "市场技术分析师",
-    "market_analyst_v2": "市场技术分析师",
-    "sentiment_analyst": "情绪研究分析师",
-    "emotion_analyst": "情绪研究分析师",
-    "emotion_analyst_v2": "情绪研究分析师",
-    "news_analyst": "新闻研究分析师",
-    "news_analyst_v2": "新闻研究分析师",
-    "fundamentals_analyst": "基本面分析师",
-    "fundamentals_analyst_v2": "基本面分析师",
-    "social_media_analyst": "社交媒体研究分析师",
-    "social_analyst_v2": "社交媒体研究分析师",
-    # 研究团队
-    "bull_researcher": "乐观情景论证",
-    "bull_researcher_v2": "乐观情景论证",
-    "bear_researcher": "审慎情景论证",
-    "bear_researcher_v2": "审慎情景论证",
-    "research_manager": "研究结论汇总",
-    "research_manager_v2": "研究结论汇总",
-    # 风险管理团队
-    "risky_analyst": "高弹性情景评估",
-    "risky_analyst_v2": "高弹性情景评估",
-    "safe_analyst": "防御情景评估",
-    "safe_analyst_v2": "防御情景评估",
-    "neutral_analyst": "基准情景评估",
-    "neutral_analyst_v2": "基准情景评估",
-    "risk_manager": "风险审阅汇总",
-    "risk_manager_v2": "风险审阅汇总",
-    # 研究整合与复盘
-    "trader": "用户版研究简报",
-    "trader_v2": "用户版研究简报",
-    "timing_analyst": "时机分析师",
-    "timing_analyst_v2": "时机分析师",
-    "position_analyst": "仓位分析师",
-    "position_analyst_v2": "仓位分析师",
-    "attribution_analyst": "归因分析师",
-    "attribution_analyst_v2": "归因分析师",
-    "review_manager": "复盘总结师",
-    "review_manager_v2": "复盘总结师",
-    # 持仓研究
-    "position_advisor": "仓位顾问",
-    "pa_technical": "技术研究师",
-    "pa_fundamental": "基本面研究师",
-    "pa_risk": "风险评估师",
-    "pa_advisor": "结论整合师",
+    # Macro Analyst
+    "index_analyst": "Market environment analyst",
+    "index_analyst_v2": "Market environment analyst",
+    "sector_analyst": "Industry sector research analyst",
+    "sector_analyst_v2": "Industry sector research analyst",
+    # Analyst Team
+    "market_analyst": "Market Technical Analyst",
+    "market_analyst_v2": "Market Technical Analyst",
+    "sentiment_analyst": "Sentiment Research Analyst",
+    "emotion_analyst": "Sentiment Research Analyst",
+    "emotion_analyst_v2": "Sentiment Research Analyst",
+    "news_analyst": "News Research Analyst",
+    "news_analyst_v2": "News Research Analyst",
+    "fundamentals_analyst": "fundamental analyst",
+    "fundamentals_analyst_v2": "fundamental analyst",
+    "social_media_analyst": "social media research analyst",
+    "social_analyst_v2": "social media research analyst",
+    # research team
+    "bull_researcher": "optimistic scenario argument",
+    "bull_researcher_v2": "optimistic scenario argument",
+    "bear_researcher": "Prudential Scenario Argument",
+    "bear_researcher_v2": "Prudential Scenario Argument",
+    "research_manager": "Summary of research conclusions",
+    "research_manager_v2": "Summary of research conclusions",
+    # risk management team
+    "risky_analyst": "Highly resilient scenario assessment",
+    "risky_analyst_v2": "Highly resilient scenario assessment",
+    "safe_analyst": "Defense Scenario Assessment",
+    "safe_analyst_v2": "Defense Scenario Assessment",
+    "neutral_analyst": "Baseline Scenario Assessment",
+    "neutral_analyst_v2": "Baseline Scenario Assessment",
+    "risk_manager": "Risk review summary",
+    "risk_manager_v2": "Risk review summary",
+    # Research integration and review
+    "trader": "User version research briefing",
+    "trader_v2": "User version research briefing",
+    "timing_analyst": "timing analyst",
+    "timing_analyst_v2": "timing analyst",
+    "position_analyst": "Position Analyst",
+    "position_analyst_v2": "Position Analyst",
+    "attribution_analyst": "attribution analyst",
+    "attribution_analyst_v2": "attribution analyst",
+    "review_manager": "Review summary expert",
+    "review_manager_v2": "Review summary expert",
+    # Position research
+    "position_advisor": "Position consultant",
+    "pa_technical": "technical researcher",
+    "pa_fundamental": "Fundamental Researcher",
+    "pa_risk": "risk assessor",
+    "pa_advisor": "conclusion integrator",
 }
 
 EXPORT_SANITIZED_MODULE_KEYS = {
@@ -93,69 +93,69 @@ EXPORT_SANITIZED_MODULE_KEYS = {
 }
 
 MARKDOWN_HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.*)$")
-CHINESE_SECTION_PREFIX_PATTERN = re.compile(r"^[一二三四五六七八九十百]+[、\.]\s*")
+CHINESE_SECTION_PREFIX_PATTERN = re.compile(r"^[One, two, three, four, five, six, seven, eight, nine hundred]+[, \.]\s*")
 
-# 检查依赖是否可用
+# Check if dependencies are available
 try:
     import markdown
     import pypandoc
 
-    # 检查 pandoc 是否可用
+    # Check if pandoc is available
     try:
         pypandoc.get_pandoc_version()
         PANDOC_AVAILABLE = True
-        logger.info("✅ Pandoc 可用")
+        logger.info("✅ Pandoc Available")
     except OSError:
         PANDOC_AVAILABLE = False
-        logger.warning("⚠️ Pandoc 不可用，Word 和 PDF 导出功能将不可用")
+        logger.warning("⚠️ Pandoc Not available, Word and PDF export functionality will not be available")
 
     EXPORT_AVAILABLE = True
 except ImportError as e:
     EXPORT_AVAILABLE = False
     PANDOC_AVAILABLE = False
-    logger.warning(f"⚠️ 导出功能依赖包缺失: {e}")
-    logger.info("💡 请安装: pip install pypandoc markdown")
+    logger.warning(f"⚠️ Export function dependency package is missing: {e}")
+    logger.info("💡 Please install: pip install pypandoc markdown")
 
-# 检查 WeasyPrint（推荐，纯 Python，无需外部工具）
+# Check out WeasyPrint (recommended, pure Python, no external tools required)
 WEASYPRINT_AVAILABLE = False
 WEASYPRINT_ERROR = None
 
 try:
     import weasyprint
     WEASYPRINT_AVAILABLE = True
-    logger.info("✅ WeasyPrint 可用（PDF 生成工具，推荐）")
+    logger.info("✅ WeasyPrint Available (PDF generation tool, recommended)")
 except ImportError:
-    logger.warning("⚠️ WeasyPrint 未安装，PDF 导出功能将使用 pdfkit")
-    logger.info("💡 安装方法: pip install weasyprint")
+    logger.warning("⚠️ WeasyPrint Not installed, PDF export functionality will use pdfkit")
+    logger.info("💡 Installation method: pip install weasyprint")
 except Exception as e:
     WEASYPRINT_ERROR = str(e)
-    logger.warning(f"⚠️ WeasyPrint 检测失败: {e}")
+    logger.warning(f"⚠️ WeasyPrint Detection failed: {e}")
 
-# 检查 pdfkit（备选方案，需要 wkhtmltopdf）
+# Check pdfkit (alternative, requires wkhtmltopdf)
 PDFKIT_AVAILABLE = False
 PDFKIT_ERROR = None
 
 try:
     import pdfkit
-    # 检查 wkhtmltopdf 是否安装
+    # Check if wkhtmltopdf is installed
     try:
         pdfkit.configuration()
         PDFKIT_AVAILABLE = True
-        logger.info("✅ pdfkit + wkhtmltopdf 可用（PDF 生成工具，备选）")
+        logger.info("✅ pdfkit + wkhtmltopdf Available (PDF generation tool, optional)")
     except Exception as e:
         PDFKIT_ERROR = str(e)
-        logger.warning("⚠️ wkhtmltopdf 未安装，pdfkit 不可用")
-        logger.info("💡 安装方法: https://wkhtmltopdf.org/downloads.html")
+        logger.warning("⚠️ wkhtmltopdf Not installed, pdfkit is not available")
+        logger.info("💡 Installation method: https://wkhtmltopdf.org/downloads.html")
 except ImportError:
-    logger.warning("⚠️ pdfkit 未安装")
-    logger.info("💡 安装方法: pip install pdfkit")
+    logger.warning("⚠️ pdfkit Not installed")
+    logger.info("💡 Installation method: pip install pdfkit")
 except Exception as e:
     PDFKIT_ERROR = str(e)
-    logger.warning(f"⚠️ pdfkit 检测失败: {e}")
+    logger.warning(f"⚠️ pdfkit Detection failed: {e}")
 
 
 class ReportExporter:
-    """报告导出器 - 支持 Markdown、Word、PDF 格式"""
+    """Report exporter - supports Markdown, Word, PDF formats"""
 
     def __init__(self):
         self.export_available = EXPORT_AVAILABLE
@@ -163,7 +163,7 @@ class ReportExporter:
         self.weasyprint_available = WEASYPRINT_AVAILABLE
         self.pdfkit_available = PDFKIT_AVAILABLE
 
-        logger.info("📋 ReportExporter 初始化:")
+        logger.info("📋 ReportExporter initialization:")
         logger.info(f"  - export_available: {self.export_available}")
         logger.info(f"  - pandoc_available: {self.pandoc_available}")
         logger.info(f"  - pdfkit_available: {self.pdfkit_available}")
@@ -269,8 +269,8 @@ class ReportExporter:
     @staticmethod
     def _normalize_disclaimer(content: str) -> str:
         return re.sub(
-            r"(?is)(?:\*\*)?免责声明(?:\*\*)?[：:].*?(?:独立做出投资决策。|必要时请咨询专业顾问。)",
-            f"**免责声明**：{RESEARCH_ONLY_DISCLAIMER}",
+            r"(?is)(?:\*\*)?Disclaimer(?:\*\*)?[: :].*?(?:Make investment decisions independently.|Please consult professional advisors if necessary.)",
+            f"**Disclaimer**: {RESEARCH_ONLY_DISCLAIMER}",
             content,
         )
 
@@ -280,7 +280,7 @@ class ReportExporter:
             normalized_content = sanitize_display_report_text(normalized_content, fallback=normalized_content)
 
         if not normalized_content and module_key == "news_report":
-            normalized_content = "工具结果未成功展开为新闻报告，当前新闻结论仍待验证。"
+            normalized_content = "The tool results were not successfully expanded into news reports, and the current news conclusions still need to be verified."
 
         normalized_content = self._normalize_intra_module_headings(normalized_content)
         normalized_content = self._normalize_disclaimer(normalized_content)
@@ -289,8 +289,8 @@ class ReportExporter:
         return normalized_content.strip()
     
     def generate_markdown_report(self, report_doc: Dict[str, Any]) -> str:
-        """生成 Markdown 格式报告"""
-        logger.info("📝 生成 Markdown 报告...")
+        """Generate Markdown format report"""
+        logger.info("📝 Generate Markdown report...")
         
         stock_symbol = report_doc.get("stock_symbol", "unknown")
         analysis_date = report_doc.get("analysis_date", "")
@@ -301,40 +301,40 @@ class ReportExporter:
         
         content_parts = []
         
-        # 标题和元信息
-        content_parts.append(f"# {stock_symbol} 股票研究报告")
+        # Title and meta information
+        content_parts.append(f"# {stock_symbol} Stock research reports")
         content_parts.append("")
-        content_parts.append(f"**研究日期**: {analysis_date}")
+        content_parts.append(f"**Study date**: {analysis_date}")
         if analysts:
             analyst_names = [
                 ANALYST_ID_TO_CHINESE.get(a, a) for a in analysts
             ]
-            content_parts.append(f"**分析师**: {', '.join(analyst_names)}")
-        content_parts.append(f"**研究深度**: {research_depth}")
+            content_parts.append(f"**analyst**: {', '.join(analyst_names)}")
+        content_parts.append(f"**Research depth**: {research_depth}")
         content_parts.append("")
         content_parts.append("---")
         content_parts.append("")
         
-        # 研究摘要
+        # Research summary
         if summary:
-            content_parts.append("## 📊 研究摘要")
+            content_parts.append("## 📊 Research summary")
             content_parts.append("")
             content_parts.append(summary)
             content_parts.append("")
             content_parts.append("---")
             content_parts.append("")
         
-        # 各模块内容（按展示顺序）
+        # Contents of each module (in order of presentation)
         module_order = [
-            # 最终用户输出
+            # end user output
             "trader_investment_plan",
             "final_trade_decision",
 
-            # 宏观分析（优先展示）
+            # Macro analysis (priority for display)
             "index_report",
             "sector_report",
 
-            # 基础分析模块
+            # Basic analysis module
             "company_overview",
             "financial_analysis",
             "technical_analysis",
@@ -343,74 +343,74 @@ class ReportExporter:
             "valuation_analysis",
             "investment_recommendation",
 
-            # 个股分析报告
+            # individual stock analysis report
             "market_report",
             "fundamentals_report",
             "sentiment_report",
             "news_report",
 
-            # 研究团队结论
+            # Research team conclusion
             "bull_researcher",
             "bear_researcher",
             "neutral_analyst",
             "research_team_decision",
 
-            # 风险团队分析
+            # Risk team analysis
             "risky_analyst",
             "safe_analyst",
             "risk_management_decision",
 
-            # 决策报告
+            # decision report
         ]
         
         module_titles = {
-            # 基础分析模块
-            "company_overview": "🏢 公司概况",
-            "financial_analysis": "💰 财务分析",
-            "technical_analysis": "📈 技术分析",
-            "market_analysis": "🌍 市场分析",
-            "risk_analysis": "⚠️ 风险分析",
-            "valuation_analysis": "💎 估值分析",
-            "investment_recommendation": "🎯 研究结论摘要",
+            # Basic analysis module
+            "company_overview": "🏢 Company Profile",
+            "financial_analysis": "💰 financial analysis",
+            "technical_analysis": "📈 technical analysis",
+            "market_analysis": "🌍 market analysis",
+            "risk_analysis": "⚠️ risk analysis",
+            "valuation_analysis": "💎 Valuation analysis",
+            "investment_recommendation": "🎯 Summary of research conclusions",
 
-            # 决策报告
-            "final_trade_decision": "📝 综合研究结论",
-            "investment_plan": "📋 研究经理简报",
-            "trader_investment_plan": "🧩 用户版研究简报",
-            "research_team_decision": "🤝 研究结论汇总",
-            "risk_management_decision": "🛡️ 风险审阅结论",
+            # decision report
+            "final_trade_decision": "📝 Comprehensive research conclusion",
+            "investment_plan": "📋 Research Manager Briefing",
+            "trader_investment_plan": "🧩 User version research briefing",
+            "research_team_decision": "🤝 Summary of research conclusions",
+            "risk_management_decision": "🛡️ Risk review conclusion",
 
-            # 研究团队研究员
-            "bull_researcher": "🌤️ 乐观情景论证",
-            "bear_researcher": "🌧️ 审慎情景论证",
+            # research team researcher
+            "bull_researcher": "🌤️ optimistic scenario argument",
+            "bear_researcher": "🌧️ Prudential Scenario Argument",
 
-            # 风险团队分析师
-            "risky_analyst": "⚡ 高弹性情景评估",
-            "safe_analyst": "🛡️ 防御情景评估",
-            "neutral_analyst": "⚖️ 基准情景评估",
+            # Risk Team Analyst
+            "risky_analyst": "⚡ Highly resilient scenario assessment",
+            "safe_analyst": "🛡️ Defense Scenario Assessment",
+            "neutral_analyst": "⚖️ Baseline Scenario Assessment",
 
-            # 个股分析报告
-            "market_report": "📈 市场技术研究报告",
-            "fundamentals_report": "💰 基本面研究报告",
-            "sentiment_report": "💭 情绪研究报告",
-            "news_report": "📰 新闻研究报告",
+            # individual stock analysis report
+            "market_report": "📈 Market Technology Research Report",
+            "fundamentals_report": "💰 Fundamental Research Report",
+            "sentiment_report": "💭 Emotion research report",
+            "news_report": "📰 news research report",
 
-            # 宏观分析报告
-            "sector_report": "🏭 行业板块研究报告",
-            "index_report": "📊 大盘环境研究报告",
+            # Macro analysis report
+            "sector_report": "🏭 Industry sector research report",
+            "index_report": "📊 Market Environment Research Report",
         }
         
-        # 按顺序添加模块
+        # Add modules in order
         for module_key in module_order:
             if module_key in reports:
                 module_content = reports[module_key]
-                # 🔥 处理字典格式的内容（如 final_trade_decision 可能是字典）
+                # 🔥 Handle content in dictionary format (e.g. final_trade_decision may be a dictionary)
                 if isinstance(module_content, dict):
-                    # 如果有 content 字段，使用它
+                    # If there is a content field, use it
                     if "content" in module_content:
                         module_content = module_content["content"]
                     else:
-                        # 否则转换为格式化的字符串
+                        # Otherwise convert to formatted string
                         import json
                         module_content = json.dumps(module_content, ensure_ascii=False, indent=2)
                 
@@ -424,15 +424,15 @@ class ReportExporter:
                     content_parts.append("---")
                     content_parts.append("")
         
-        # 添加其他未列出的模块
-        # 🔥 黑名单：明确排除的字段（避免与其他字段混淆）
+        # Add other modules not listed
+        # 🔥 Blacklist: Explicitly excluded fields (to avoid confusion with other fields)
         excluded_fields = {
-            "investment_plan",  # 已被 trader_investment_plan 替代
+            "investment_plan",  # Replaced by trader_investment_plan
         }
 
         for module_key, module_content in reports.items():
             if module_key not in module_order and module_key not in excluded_fields:
-                # 🔥 处理字典格式的内容
+                # 🔥 Processing content in dictionary format
                 if isinstance(module_content, dict):
                     if "content" in module_content:
                         module_content = module_content["content"]
@@ -441,7 +441,7 @@ class ReportExporter:
                         module_content = json.dumps(module_content, ensure_ascii=False, indent=2)
 
                 if isinstance(module_content, str) and module_content.strip():
-                    # 🔥 使用友好的标题（如果存在）
+                    # 🔥 Use a friendly title if one exists
                     title = module_titles.get(module_key, module_key.replace("_", " ").title())
                     module_content = self._normalize_module_content(module_key, title, module_content)
                     content_parts.append(f"## {title}")
@@ -451,55 +451,55 @@ class ReportExporter:
                     content_parts.append("---")
                     content_parts.append("")
         
-        # 页脚
+        # footer
         content_parts.append("")
         content_parts.append("---")
         content_parts.append("")
-        content_parts.append("*本报告由 TradingAgents-CN 自动生成*")
+        content_parts.append("*This report is automatically generated by TradingAgents-CN*")
         content_parts.append("")
         
         markdown_content = "\n".join(content_parts)
-        logger.info(f"✅ Markdown 报告生成完成，长度: {len(markdown_content)} 字符")
+        logger.info(f"✅ Markdown Report generation completed, length: {len(markdown_content)} character")
         
         return markdown_content
     
     def _clean_markdown_for_pandoc(self, md_content: str) -> str:
-        """清理 Markdown 内容，避免 pandoc 解析问题"""
+        """Clean up Markdown content to avoid pandoc parsing issues"""
         import re
 
-        # 移除可能导致 YAML 解析问题的内容
-        # 如果开头有 "---"，在前面添加空行
+        # Remove content that may cause YAML parsing issues
+        # If there is at the beginning "---", Add a blank line in front
         if md_content.strip().startswith("---"):
             md_content = "\n" + md_content
 
-        # 🔥 移除可能导致竖排的 HTML 标签和样式
-        # 移除 writing-mode 相关的样式
+        # 🔥 Remove HTML tags and styles that may cause vertical alignment
+        # Remove writing-mode related styles
         md_content = re.sub(r'<[^>]*writing-mode[^>]*>', '', md_content, flags=re.IGNORECASE)
         md_content = re.sub(r'<[^>]*text-orientation[^>]*>', '', md_content, flags=re.IGNORECASE)
 
-        # 移除 <div> 标签中的 style 属性（可能包含竖排样式）
+        # Remove <div> The style attribute in the tag (may include vertical style)
         md_content = re.sub(r'<div\s+style="[^"]*">', '<div>', md_content, flags=re.IGNORECASE)
         md_content = re.sub(r'<span\s+style="[^"]*">', '<span>', md_content, flags=re.IGNORECASE)
 
-        # 🔥 移除可能导致问题的 HTML 标签
-        # 保留基本的 Markdown 格式，移除复杂的 HTML
+        # 🔥 Remove HTML tags that may be causing problems
+        # Keep the basic Markdown format and remove complex HTML
         md_content = re.sub(r'<style[^>]*>.*?</style>', '', md_content, flags=re.DOTALL | re.IGNORECASE)
 
-        # 🔥 确保所有段落都是正常的横排文本
-        # 在每个段落前后添加明确的换行，避免 Pandoc 误判
+        # 🔥 Make sure all paragraphs are normal horizontal text
+        # Add clear line breaks before and after each paragraph to avoid Pandoc misjudgments
         lines = md_content.split('\n')
         cleaned_lines = []
         for line in lines:
-            # 跳过空行
+            # Skip empty lines
             if not line.strip():
                 cleaned_lines.append(line)
                 continue
 
-            # 如果是标题、列表、表格等 Markdown 语法，保持原样
+            # If it is Markdown syntax such as titles, lists, tables, etc., keep it as is
             if line.strip().startswith(('#', '-', '*', '|', '>', '```', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.')):
                 cleaned_lines.append(line)
             else:
-                # 普通段落：确保没有特殊字符导致竖排
+                # Ordinary paragraphs: Make sure there are no special characters that cause vertical alignment
                 cleaned_lines.append(line)
 
         md_content = '\n'.join(cleaned_lines)
@@ -507,10 +507,10 @@ class ReportExporter:
         return md_content
 
     def _create_pdf_css(self) -> str:
-        """创建 PDF 样式表，控制表格分页和文本方向"""
+        """Create PDF stylesheets to control table pagination and text direction"""
         return """
 <style>
-/* 🔥 强制所有文本横排显示（修复中文竖排问题） */
+/* 🔥 Force all text to be displayed horizontally (fix Chinese vertical display problem) */
 * {
     writing-mode: horizontal-tb !important;
     text-orientation: mixed !important;
@@ -521,13 +521,13 @@ body {
     direction: ltr !important;
 }
 
-/* 段落和文本 */
+/* paragraphs and text */
 p, div, span, td, th, li {
     writing-mode: horizontal-tb !important;
     text-orientation: mixed !important;
 }
 
-/* 表格样式 - 允许跨页 */
+/* Table style - allow cross-page */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -535,18 +535,18 @@ table {
     writing-mode: horizontal-tb !important;
 }
 
-/* 表格行 - 避免在行中间分页 */
+/* Table rows - avoid page breaks in the middle of rows */
 tr {
     page-break-inside: avoid;
     page-break-after: auto;
 }
 
-/* 表头 - 在每页重复显示 */
+/* Header - Repeat on every page */
 thead {
     display: table-header-group;
 }
 
-/* 表格单元格 */
+/* table cell */
 td, th {
     padding: 8px;
     border: 1px solid #ddd;
@@ -554,24 +554,24 @@ td, th {
     text-orientation: mixed !important;
 }
 
-/* 表头样式 */
+/* Header style */
 th {
     background-color: #f2f2f2;
     font-weight: bold;
 }
 
-/* 避免标题后立即分页 */
+/* Avoid pagination immediately after title */
 h1, h2, h3, h4, h5, h6 {
     page-break-after: avoid;
     writing-mode: horizontal-tb !important;
 }
 
-/* 避免在列表项中间分页 */
+/* Avoid pagination in the middle of list items */
 li {
     page-break-inside: avoid;
 }
 
-/* 代码块 */
+/* code block */
 pre, code {
     writing-mode: horizontal-tb !important;
     white-space: pre-wrap;
@@ -581,38 +581,38 @@ pre, code {
 """
     
     def generate_docx_report(self, report_doc: Dict[str, Any]) -> bytes:
-        """生成 Word 文档格式报告"""
-        logger.info("📄 开始生成 Word 文档...")
+        """Generate reports in Word document format"""
+        logger.info("📄 Start generating a Word document...")
 
         if not self.pandoc_available:
-            raise Exception("Pandoc 不可用，无法生成 Word 文档。请安装 pandoc 或使用 Markdown 格式导出。")
+            raise Exception("Pandoc Unavailable, unable to generate Word document. Please install pandoc or use Markdown format to export.")
 
-        # 生成 Markdown 内容
+        # Generate Markdown content
         md_content = self.generate_markdown_report(report_doc)
-        # 替换 emoji 为纯文本，避免 Word 中显示为方块（兼容旧版/跨平台）
+        # Replace emoji with plain text to avoid appearing as squares in Word (compatible with older versions/cross-platform)
         md_content = self._replace_emoji_for_pdf(md_content)
 
         try:
-            # 创建临时文件
+            # Create temporary files
             with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
                 output_file = tmp_file.name
 
-            logger.info(f"📁 临时文件路径: {output_file}")
+            logger.info(f"📁 Temporary file path: {output_file}")
 
-            # Pandoc 参数
+            # Pandoc parameters
             extra_args = [
-                '--from=markdown-yaml_metadata_block',  # 禁用 YAML 元数据块解析
-                '--standalone',  # 生成独立文档
-                '--wrap=preserve',  # 保留换行
-                '--columns=120',  # 设置列宽
-                '-M', 'lang=zh-CN',  # 🔥 明确指定语言为简体中文
-                '-M', 'dir=ltr',  # 🔥 明确指定文本方向为从左到右
+                '--from=markdown-yaml_metadata_block',  # Disable YAML metadata block parsing
+                '--standalone',  # Generate standalone documentation
+                '--wrap=preserve',  # Keep line breaks
+                '--columns=120',  # Set column width
+                '-M', 'lang=zh-CN',  # 🔥 Explicitly specify the language as Simplified Chinese
+                '-M', 'dir=ltr',  # 🔥 Explicitly specify text direction as left to right
             ]
 
-            # 清理内容
+            # Clean content
             cleaned_content = self._clean_markdown_for_pandoc(md_content)
 
-            # 转换为 Word
+            # Convert to Word
             pypandoc.convert_text(
                 cleaned_content,
                 'docx',
@@ -621,23 +621,23 @@ pre, code {
                 extra_args=extra_args
             )
 
-            logger.info("✅ pypandoc 转换完成")
+            logger.info("✅ pypandoc Conversion completed")
 
-            # 🔥 后处理：修复 Word 文档中的文本方向
+            # 🔥 Post-processing: Fix text orientation in Word documents
             try:
                 from docx import Document
                 doc = Document(output_file)
 
-                # 修复所有段落的文本方向
+                # Fix text direction for all paragraphs
                 for paragraph in doc.paragraphs:
-                    # 设置段落为从左到右
+                    # Set paragraphs from left to right
                     if paragraph._element.pPr is not None:
-                        # 移除可能的竖排设置
+                        # Remove possible vertical setting
                         for child in list(paragraph._element.pPr):
                             if 'textDirection' in child.tag or 'bidi' in child.tag:
                                 paragraph._element.pPr.remove(child)
 
-                # 修复表格中的文本方向
+                # Fix text direction in tables
                 for table in doc.tables:
                     for row in table.rows:
                         for cell in row.cells:
@@ -647,48 +647,48 @@ pre, code {
                                         if 'textDirection' in child.tag or 'bidi' in child.tag:
                                             paragraph._element.pPr.remove(child)
 
-                # 保存修复后的文档
+                # Save the repaired document
                 doc.save(output_file)
-                logger.info("✅ Word 文档文本方向修复完成")
+                logger.info("✅ Word Document text direction repair completed")
             except ImportError:
-                logger.warning("⚠️ python-docx 未安装，跳过文本方向修复")
+                logger.warning("⚠️ python-docx Not installed, skipping text orientation fix")
             except Exception as e:
-                logger.warning(f"⚠️ Word 文档文本方向修复失败: {e}")
+                logger.warning(f"⚠️ Word Document text orientation fix failed: {e}")
 
-            # 读取生成的文件
+            # Read the generated file
             with open(output_file, 'rb') as f:
                 docx_content = f.read()
 
-            logger.info(f"✅ Word 文档生成成功，大小: {len(docx_content)} 字节")
+            logger.info(f"✅ Word Document generation successful, size: {len(docx_content)} Bytes")
 
-            # 清理临时文件
+            # Clean temporary files
             os.unlink(output_file)
 
             return docx_content
             
         except Exception as e:
-            logger.error(f"❌ Word 文档生成失败: {e}", exc_info=True)
-            # 清理临时文件
+            logger.error(f"❌ Word Document generation failed: {e}", exc_info=True)
+            # Clean temporary files
             try:
                 if 'output_file' in locals() and os.path.exists(output_file):
                     os.unlink(output_file)
             except:
                 pass
-            raise Exception(f"生成 Word 文档失败: {e}")
+            raise Exception(f"Failed to generate Word document: {e}")
     
     def _replace_emoji_for_pdf(self, text: str) -> str:
         """
-        将 emoji 替换为 PDF 友好的纯文本，避免生成 PDF 时显示为方块。
-        PDF 引擎（WeasyPrint/pdfkit）默认字体通常不支持 emoji 字符。
+        Replace emojis with PDF-friendly plain text to avoid appearing as squares when generating PDFs.
+        PDF Engine (WeasyPrint/pdfkit) default fonts usually do not support emoji characters.
         """
         import re
-        # 风险等级/操作图标 -> 文本标记
+        # Risk level/action icon -> text markup
         replacements = [
-            ("🟢", "[低]"),
-            ("🟡", "[中]"),
-            ("🔴", "[高]"),
+            ("🟢", "[low]"),
+            ("🟡", "[in]"),
+            ("🔴", "[high]"),
             ("⚪", "[ ]"),
-            # 常见 emoji 直接移除（标题已有文字说明）
+            # Common emoji are removed directly (the title already has a text description)
             ("📊", ""),
             ("⚠️", ""),
             ("⚠", ""),
@@ -715,45 +715,45 @@ pre, code {
         result = text
         for emoji, replacement in replacements:
             result = result.replace(emoji, replacement)
-        # 移除零宽字符和常见不可见字符
+        # Remove zero-width characters and common invisible characters
         result = re.sub(r"[\u200b-\u200d\ufeff]", "", result)
-        # 🔥 修复：只压缩标题中的多余空格，不影响表格格式
-        # 只处理 Markdown 标题行（以 # 开头）中的多余空格
+        # 🔥 Fix: Only compress the extra spaces in the title, without affecting the table format
+        # Only handles Markdown header lines (starting with # extra spaces at the beginning)
         lines = result.split('\n')
         processed_lines = []
         for line in lines:
-            # 只对标题行（以 # 开头）压缩多余空格
+            # Only the title row (starting with # beginning) to compress excess spaces
             if line.strip().startswith('#'):
-                # 压缩标题中的多余空格（如 "##  风险评估" -> "## 风险评估"）
+                # Compress extra spaces in titles (e.g. "##  risk assessment" -> "## risk assessment") 
                 line = re.sub(r'(#{1,6})\s{2,}', r'\1 ', line)
             processed_lines.append(line)
         result = '\n'.join(processed_lines)
         return result
 
     def _markdown_to_html(self, md_content: str) -> str:
-        """将 Markdown 转换为 HTML"""
+        """Convert Markdown to HTML"""
         import markdown
 
-        # 配置 Markdown 扩展
+        # Configure Markdown extension
         extensions = [
-            'markdown.extensions.tables',  # 表格支持
-            'markdown.extensions.fenced_code',  # 代码块支持
-            'markdown.extensions.nl2br',  # 换行支持
+            'markdown.extensions.tables',  # Table support
+            'markdown.extensions.fenced_code',  # Code block support
+            'markdown.extensions.nl2br',  # Newline support
         ]
 
-        # 转换为 HTML
+        # Convert to HTML
         html_content = markdown.markdown(md_content, extensions=extensions)
 
-        # 添加 HTML 模板和样式
-        # WeasyPrint 优化的 CSS（移除不支持的属性）
+        # Add HTML templates and styles
+        # WeasyPrint Optimized CSS (removes unsupported properties)
         html_template = f"""
 <!DOCTYPE html>
 <html lang="zh-CN" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <title>研究报告</title>
+    <title>research report</title>
     <style>
-        /* 基础样式 - 确保文本方向正确 */
+        /* Basic styling - ensuring text is oriented correctly */
         html {{
             direction: ltr;
         }}
@@ -768,7 +768,7 @@ pre, code {
             direction: ltr;
         }}
 
-        /* 标题样式 */
+        /* Title style */
         h1, h2, h3, h4, h5, h6 {{
             color: #2c3e50;
             margin-top: 1.5em;
@@ -800,14 +800,14 @@ pre, code {
             color: #34495e;
         }}
 
-        /* 段落样式 */
+        /* paragraph style */
         p {{
             margin: 0.8em 0;
             text-align: left;
             direction: ltr;
         }}
 
-        /* 表格样式 - 优化分页 */
+        /* Table style - optimized paging */
         table {{
             width: 100%;
             border-collapse: collapse;
@@ -816,7 +816,7 @@ pre, code {
             direction: ltr;
         }}
 
-        /* 表头在每页重复 */
+        /* Header repeats on every page */
         thead {{
             display: table-header-group;
         }}
@@ -825,7 +825,7 @@ pre, code {
             display: table-row-group;
         }}
 
-        /* 表格行避免跨页断开 */
+        /* Table rows avoid breaking across pages */
         tr {{
             page-break-inside: avoid;
         }}
@@ -851,7 +851,7 @@ pre, code {
             background-color: #e9ecef;
         }}
 
-        /* 代码块样式 */
+        /* code block style */
         code {{
             background-color: #f4f4f4;
             padding: 2px 6px;
@@ -875,7 +875,7 @@ pre, code {
             padding: 0;
         }}
 
-        /* 列表样式 */
+        /* list style */
         ul, ol {{
             margin: 0.8em 0;
             padding-left: 2em;
@@ -887,7 +887,7 @@ pre, code {
             direction: ltr;
         }}
 
-        /* 强调文本 */
+        /* emphasize text */
         strong, b {{
             font-weight: 700;
             color: #2c3e50;
@@ -898,14 +898,14 @@ pre, code {
             color: #555;
         }}
 
-        /* 水平线 */
+        /* horizontal line */
         hr {{
             border: none;
             border-top: 2px solid #ecf0f1;
             margin: 2em 0;
         }}
 
-        /* 链接样式 */
+        /* link style */
         a {{
             color: #3498db;
             text-decoration: none;
@@ -915,38 +915,38 @@ pre, code {
             text-decoration: underline;
         }}
 
-        /* 分页控制 */
+        /* Paging control */
         @page {{
             size: A4;
             margin: 20mm;
 
             @top-center {{
-                content: "研究报告";
+                content: "research report";
                 font-size: 10pt;
                 color: #999;
             }}
 
             @bottom-right {{
-                content: "第 " counter(page) " 页";
+                content: "No. " counter(page) " page";
                 font-size: 10pt;
                 color: #999;
             }}
         }}
 
-        /* 避免孤行和寡行 */
+        /* Avoid being alone and alone */
         p, li {{
             orphans: 3;
             widows: 3;
         }}
 
-        /* 图片样式 */
+        /* Picture style */
         img {{
             max-width: 100%;
             height: auto;
             page-break-inside: avoid;
         }}
 
-        /* 引用块样式 */
+        /* quote block style */
         blockquote {{
             margin: 1em 0;
             padding: 0.5em 1em;
@@ -965,12 +965,12 @@ pre, code {
         return html_template
 
     def _generate_pdf_with_pdfkit(self, html_content: str) -> bytes:
-        """使用 pdfkit 生成 PDF"""
+        """Generated using pdfkit PDF"""
         import pdfkit
 
-        logger.info("🔧 使用 pdfkit + wkhtmltopdf 生成 PDF...")
+        logger.info("🔧 Use pdfkit + wkhtmltopdf generate PDF...")
 
-        # 配置选项
+        # Configuration options
         options = {
             'encoding': 'UTF-8',
             'enable-local-file-access': None,
@@ -981,68 +981,68 @@ pre, code {
             'margin-left': '20mm',
         }
 
-        # 生成 PDF
+        # generate PDF
         pdf_bytes = pdfkit.from_string(html_content, False, options=options)
 
-        logger.info(f"✅ pdfkit PDF 生成成功，大小: {len(pdf_bytes)} 字节")
+        logger.info(f"✅ pdfkit PDF Generated successfully, size: {len(pdf_bytes)} Bytes")
         return pdf_bytes
 
     def _generate_pdf_with_weasyprint(self, html_content: str) -> bytes:
-        """使用 WeasyPrint 生成 PDF（推荐，纯 Python，无需外部工具）"""
+        """Generate PDF using WeasyPrint (recommended, pure Python, no external tools required)"""
         import weasyprint
         
-        logger.info("🔧 使用 WeasyPrint 生成 PDF...")
+        logger.info("🔧 Generate using WeasyPrint PDF...")
         
-        # 生成 PDF
+        # generate PDF
         pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
         
-        logger.info(f"✅ PDF 生成成功，大小: {len(pdf_bytes)} 字节")
+        logger.info(f"✅ PDF Generated successfully, size: {len(pdf_bytes)} Bytes")
         return pdf_bytes
 
     def generate_pdf_report(self, report_doc: Dict[str, Any]) -> bytes:
-        """生成 PDF 格式报告（优先使用 WeasyPrint，否则使用 pdfkit）"""
-        logger.info("📊 开始生成 PDF 文档...")
+        """Generate reports in PDF format (preferably use WeasyPrint, otherwise use pdfkit)"""
+        logger.info("📊 Start generating PDF documents...")
 
-        # 生成 Markdown 内容
+        # Generate Markdown content
         md_content = self.generate_markdown_report(report_doc)
-        # 替换 emoji 为 PDF 友好文本，避免导出时显示为方块
+        # Replace emoji with PDF-friendly text to avoid appearing as squares when exporting
         md_content = self._replace_emoji_for_pdf(md_content)
         html_content = self._markdown_to_html(md_content)
 
-        # 优先使用 WeasyPrint（推荐，纯 Python，无需外部工具）
+        # Prefer using WeasyPrint (recommended, pure Python, no external tools required)
         if self.weasyprint_available:
             try:
-                logger.info("🎯 使用 WeasyPrint 生成 PDF（推荐）")
+                logger.info("🎯 Use WeasyPrint to generate PDF (recommended)")
                 return self._generate_pdf_with_weasyprint(html_content)
             except Exception as e:
-                logger.warning(f"⚠️ WeasyPrint 生成失败: {e}，尝试使用 pdfkit...")
-                # 如果 WeasyPrint 失败，尝试 pdfkit
+                logger.warning(f"⚠️ WeasyPrint Build failed: {e}, Try using pdfkit...")
+                # If WeasyPrint fails, try pdfkit
 
-        # 备选方案：使用 pdfkit
+        # Alternative: Use pdfkit
         if self.pdfkit_available:
             try:
-                logger.info("🎯 使用 pdfkit + wkhtmltopdf 生成 PDF（备选）")
+                logger.info("🎯 Use pdfkit + wkhtmltopdf Generate PDF (optional)")
                 return self._generate_pdf_with_pdfkit(html_content)
             except Exception as e:
-                logger.error(f"❌ pdfkit 生成失败: {e}")
-                raise Exception(f"PDF 生成失败: {e}")
+                logger.error(f"❌ pdfkit Build failed: {e}")
+                raise Exception(f"PDF Build failed: {e}")
 
-        # 如果都不可用，抛出错误
+        # If neither is available, throw an error
         error_msg = (
-            "PDF 生成工具不可用，无法生成 PDF。\n\n"
-            "推荐安装方法（任选其一）:\n"
-            "1. WeasyPrint（推荐，纯 Python，无需外部工具）: pip install weasyprint\n"
-            "2. pdfkit + wkhtmltopdf: pip install pdfkit，然后安装 https://wkhtmltopdf.org/downloads.html\n"
+            "PDF The generation tool is unavailable and cannot generate the PDF.\n\n"
+            "Recommended installation method (choose one):\n"
+            "1. WeasyPrint (Recommended, pure Python, no external tools required): pip install weasyprint\n"
+            "2. pdfkit + wkhtmltopdf: pip install pdfkit, then install https://wkhtmltopdf.org/downloads.html\n"
         )
         if WEASYPRINT_ERROR:
-            error_msg += f"\nWeasyPrint 错误: {WEASYPRINT_ERROR}\n"
+            error_msg += f"\nWeasyPrint Error: {WEASYPRINT_ERROR}\n"
         if PDFKIT_ERROR:
-            error_msg += f"\npdfkit 错误: {PDFKIT_ERROR}"
+            error_msg += f"\npdfkit Error: {PDFKIT_ERROR}"
 
         logger.error(f"❌ {error_msg}")
         raise Exception(error_msg)
 
 
-# 创建全局导出器实例
+# Create a global exporter instance
 report_exporter = ReportExporter()
 

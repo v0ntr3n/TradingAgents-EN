@@ -1,7 +1,7 @@
 """
-市场分析师智能体
+market analyst agent
 
-基于 BaseAgent 的市场分析师实现
+Market analyst implementation based on BaseAgent
 """
 
 from typing import Any, Dict, Optional
@@ -14,9 +14,9 @@ from ..registry import register_agent
 @register_agent
 class MarketAnalystAgent(BaseAgent):
     """
-    市场分析师智能体
+    market analyst agent
     
-    分析股票的市场数据、价格走势、技术指标等
+    Analyze market data, price trends, technical indicators, etc. for stocks
     """
     
     metadata = BUILTIN_AGENTS["market_analyst"]
@@ -29,42 +29,42 @@ class MarketAnalystAgent(BaseAgent):
     
     def set_dependencies(self, llm: Any, toolkit: Any) -> "MarketAnalystAgent":
         """
-        设置依赖项
+        Set dependencies
         
         Args:
-            llm: LLM 实例
-            toolkit: 工具包实例
+            llm: LLM Example
+            toolkit: Toolkit Example
             
         Returns:
-            self (支持链式调用)
+            self (Support chain calls)
         """
         self._llm = llm
         self._toolkit = toolkit
         return self
     
     def initialize(self) -> None:
-        """初始化智能体"""
+        """Initialize the agent"""
         if self._llm is None or self._toolkit is None:
-            raise ValueError("必须先调用 set_dependencies() 设置 LLM 和 toolkit")
+            raise ValueError("must be called first set_dependencies() Set up LLM and toolkit")
         
-        # 导入并创建遗留节点函数
+        # Import and create legacy node functions
         from tradingagents.agents.analysts.market_analyst import create_market_analyst
         self._legacy_node = create_market_analyst(self._llm, self._toolkit)
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行市场分析
+        Perform market analysis
         
         Args:
-            state: 包含以下键的状态字典:
-                - company_of_interest: 股票代码
-                - trade_date: 交易日期
-                - messages: 消息历史
+            state: A status dictionary containing the following keys:
+                - company_of_interest: Stock code
+                - trade_date: transaction date
+                - messages: Message history
                 
         Returns:
-            更新后的状态，包含:
-                - market_report: 市场分析报告
-                - messages: 更新的消息历史
+            The updated status includes:
+                - market_report: Market analysis report
+                - messages: Updated message history
         """
         if self._legacy_node is None:
             self.initialize()

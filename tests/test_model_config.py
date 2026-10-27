@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-测试模型配置功能
-验证模型能力字段的保存和读取
+Test model configuration function
+Verify saving and reading of model capability fields
 """
 
 import asyncio
@@ -11,13 +11,13 @@ from typing import Dict, Any, Optional
 
 BASE_URL = "http://localhost:8001"
 
-# 全局访问令牌
+# global access token
 access_token: Optional[str] = None
 
 async def login():
-    """登录获取访问令牌"""
+    """Log in to get access token"""
     global access_token
-    print("🔐 正在登录...")
+    print("🔐 logging in...")
     
     login_data = {
         "username": "admin",
@@ -35,21 +35,21 @@ async def login():
                     result = await response.json()
                     if result.get("success"):
                         access_token = result["data"]["access_token"]
-                        print(f"✅ 登录成功，获取访问令牌")
+                        print(f"✅ Log in successfully and obtain access token")
                         return True
                     else:
-                        print(f"❌ 登录失败: {result.get('message', '未知错误')}")
+                        print(f"❌ Login failed: {result.get('message', 'unknown error')}")
                         return False
                 else:
                     error_text = await response.text()
-                    print(f"❌ 登录失败 ({response.status}): {error_text}")
+                    print(f"❌ Login failed ({response.status}): {error_text}")
                     return False
         except Exception as e:
-            print(f"❌ 登录请求异常: {e}")
+            print(f"❌ Login request exception: {e}")
             return False
 
 def get_auth_headers():
-    """获取认证头"""
+    """Get authentication header"""
     if access_token:
         return {
             "Authorization": f"Bearer {access_token}",
@@ -58,25 +58,25 @@ def get_auth_headers():
     return {"Content-Type": "application/json"}
 
 async def test_add_llm_config():
-    """测试添加LLM配置"""
-    print("🧪 测试添加LLM配置...")
+    """Test adding LLM configuration"""
+    print("🧪 Test adding LLM configuration...")
     
-    # 测试配置数据
+    # Test configuration data
     config_data = {
         "provider": "qwen",
         "model_name": "qwen-test-model",
-        "model_display_name": "Qwen测试模型",
+        "model_display_name": "Qwen test model",
         "api_key": "",
         "max_tokens": 4000,
         "temperature": 0.7,
         "enabled": True,
-        "description": "用于测试的模型配置",
+        "description": "Model configuration for testing",
         
-        # 模型能力字段
+        # Model capability fields
         "capability_level": 3,
         "suitable_roles": ["both"],
         "features": ["tool_calling", "reasoning"],
-        "recommended_depths": ["基础", "标准", "深度"],
+        "recommended_depths": ["Basics", "Standard", "Depth"],
         "performance_metrics": {
             "speed": 4,
             "cost": 3,
@@ -86,7 +86,7 @@ async def test_add_llm_config():
     
     async with aiohttp.ClientSession() as session:
         try:
-            # 添加配置
+            # Add configuration
             async with session.post(
                 f"{BASE_URL}/api/config/llm",
                 json=config_data,
@@ -94,19 +94,19 @@ async def test_add_llm_config():
             ) as response:
                 if response.status == 200:
                     result = await response.json()
-                    print(f"✅ 添加配置成功: {result}")
+                    print(f"✅ Added configuration successfully: {result}")
                     return True
                 else:
                     error_text = await response.text()
-                    print(f"❌ 添加配置失败 ({response.status}): {error_text}")
+                    print(f"❌ Failed to add configuration ({response.status}): {error_text}")
                     return False
         except Exception as e:
-            print(f"❌ 请求异常: {e}")
+            print(f"❌ Request exception: {e}")
             return False
 
 async def test_get_llm_configs():
-    """测试获取LLM配置"""
-    print("🧪 测试获取LLM配置...")
+    """Test to obtain LLM configuration"""
+    print("🧪 Test to obtain LLM configuration...")
     
     async with aiohttp.ClientSession() as session:
         try:
@@ -116,9 +116,9 @@ async def test_get_llm_configs():
             ) as response:
                 if response.status == 200:
                     configs = await response.json()
-                    print(f"✅ 获取配置成功，共 {len(configs)} 个配置")
+                    print(f"✅ Obtained configuration successfully, total {len(configs)} configuration")
                     
-                    # 查找测试模型
+                    # Find a test model
                     test_model = None
                     for config in configs:
                         if config.get("model_name") == "qwen-test-model":
@@ -126,56 +126,56 @@ async def test_get_llm_configs():
                             break
                     
                     if test_model:
-                        print("✅ 找到测试模型配置:")
-                        print(f"   - 模型名称: {test_model.get('model_name')}")
-                        print(f"   - 显示名称: {test_model.get('model_display_name')}")
-                        print(f"   - 能力等级: {test_model.get('capability_level')}")
-                        print(f"   - 适用角色: {test_model.get('suitable_roles')}")
-                        print(f"   - 特性: {test_model.get('features')}")
-                        print(f"   - 推荐深度: {test_model.get('recommended_depths')}")
-                        print(f"   - 性能指标: {test_model.get('performance_metrics')}")
+                        print("✅ Find the test model configuration:")
+                        print(f"   - Model name: {test_model.get('model_name')}")
+                        print(f"   - display name: {test_model.get('model_display_name')}")
+                        print(f"   - Ability level: {test_model.get('capability_level')}")
+                        print(f"   - Applicable roles: {test_model.get('suitable_roles')}")
+                        print(f"   - Features: {test_model.get('features')}")
+                        print(f"   - Recommended depth: {test_model.get('recommended_depths')}")
+                        print(f"   - Performance indicators: {test_model.get('performance_metrics')}")
                         return True
                     else:
-                        print("❌ 未找到测试模型配置")
+                        print("❌ Test model configuration not found")
                         return False
                 else:
                     error_text = await response.text()
-                    print(f"❌ 获取配置失败 ({response.status}): {error_text}")
+                    print(f"❌ Failed to get configuration ({response.status}): {error_text}")
                     return False
         except Exception as e:
-            print(f"❌ 请求异常: {e}")
+            print(f"❌ Request exception: {e}")
             return False
 
 async def test_model_capability_service():
-    """测试模型能力服务"""
-    print("🧪 测试模型能力服务...")
+    """Test model capability service"""
+    print("🧪 Test model capability service...")
     
     async with aiohttp.ClientSession() as session:
         try:
-            # 测试推荐模型
+            # Test recommendation model
             async with session.post(
                 f"{BASE_URL}/api/model-capabilities/recommend",
-                json={"research_depth": "标准"},
+                json={"research_depth": "Standard"},
                 headers={"Content-Type": "application/json"}
             ) as response:
                 if response.status == 200:
                     result = await response.json()
-                    print(f"✅ 模型推荐成功:")
-                    print(f"   - 快速模型: {result.get('data', {}).get('quick_model')}")
-                    print(f"   - 深度模型: {result.get('data', {}).get('deep_model')}")
-                    print(f"   - 推荐理由: {result.get('data', {}).get('reason')}")
+                    print(f"✅ Model recommendation successful:")
+                    print(f"   - quick model: {result.get('data', {}).get('quick_model')}")
+                    print(f"   - deep model: {result.get('data', {}).get('deep_model')}")
+                    print(f"   - Reasons for recommendation: {result.get('data', {}).get('reason')}")
                     return True
                 else:
                     error_text = await response.text()
-                    print(f"❌ 模型推荐失败 ({response.status}): {error_text}")
+                    print(f"❌ Model recommendation failed ({response.status}): {error_text}")
                     return False
         except Exception as e:
-            print(f"❌ 请求异常: {e}")
+            print(f"❌ Request exception: {e}")
             return False
 
 async def test_delete_test_config():
-    """删除测试配置"""
-    print("🧪 清理测试配置...")
+    """Delete test configuration"""
+    print("🧪 Clean test configuration...")
     
     async with aiohttp.ClientSession() as session:
         try:
@@ -185,32 +185,32 @@ async def test_delete_test_config():
             ) as response:
                 if response.status == 200:
                     result = await response.json()
-                    print(f"✅ 删除测试配置成功: {result}")
+                    print(f"✅ Deletion of test configuration successful: {result}")
                     return True
                 else:
                     error_text = await response.text()
-                    print(f"⚠️ 删除测试配置失败 ({response.status}): {error_text}")
+                    print(f"⚠️ Deletion of test configuration failed ({response.status}): {error_text}")
                     return False
         except Exception as e:
-            print(f"⚠️ 删除请求异常: {e}")
+            print(f"⚠️ Delete request exception: {e}")
             return False
 
 async def main():
-    """主测试函数"""
-    print("🚀 开始测试模型配置功能...")
+    """Main test function"""
+    print("🚀 Start testing the model configuration function...")
     print("=" * 50)
     
-    # 首先登录
+    # Log in first
     if not await login():
-        print("❌ 登录失败，无法继续测试")
+        print("❌ Login failed and cannot continue testing")
         return
     
-    # 测试步骤
+    # Test steps
     tests = [
-        ("添加LLM配置", test_add_llm_config),
-        ("获取LLM配置", test_get_llm_configs),
-        ("模型能力服务", test_model_capability_service),
-        ("清理测试配置", test_delete_test_config),
+        ("Add LLM configuration", test_add_llm_config),
+        ("Get LLM configuration", test_get_llm_configs),
+        ("Model capability service", test_model_capability_service),
+        ("Clean test configuration", test_delete_test_config),
     ]
     
     results = []
@@ -221,22 +221,22 @@ async def main():
         results.append((test_name, success))
         print()
     
-    # 总结
+    # Summary
     print("=" * 50)
-    print("📊 测试结果总结:")
+    print("📊 Summary of test results:")
     passed = 0
     for test_name, success in results:
-        status = "✅ 通过" if success else "❌ 失败"
+        status = "✅ Pass" if success else "❌ failed"
         print(f"   {test_name}: {status}")
         if success:
             passed += 1
     
-    print(f"\n🎯 总计: {passed}/{len(results)} 个测试通过")
+    print(f"\n🎯 total: {passed}/{len(results)} tests passed")
     
     if passed == len(results):
-        print("🎉 所有测试通过！配置功能正常工作。")
+        print("🎉 All tests passed! The configuration function works fine.")
     else:
-        print("⚠️ 部分测试失败，请检查配置。")
+        print("⚠️ Some tests failed, please check the configuration.")
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -11,11 +11,11 @@ import os
 
 from tradingagents.utils.dataflow_utils import save_output, SavePathType, decorate_all_methods
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 logger = get_logger('agents')
 
-# 导入缓存管理器（延迟导入，避免循环依赖）
+# Import cache manager (lazy import, avoid circular dependencies)
 _cache_module = None
 CACHE_AVAILABLE = True
 
@@ -29,7 +29,7 @@ def get_cache():
             CACHE_AVAILABLE = True
         except ImportError as e:
             CACHE_AVAILABLE = False
-            logger.debug(f"缓存管理器不可用（使用直接API调用）: {e}")
+            logger.debug(f"Cache manager is not available (using direct API call): {e}")
             return None
     return _cache_module() if _cache_module else None
 
@@ -142,7 +142,7 @@ class YFinanceUtils:
         return majority_voting_result[0], max_votes
 
 
-# ==================== 技术指标相关函数 ====================
+# ==================== Technical indicator related functions ====================
 
 def get_stock_data_with_indicators(
     symbol: Annotated[str, "ticker symbol of the company"],
@@ -150,39 +150,39 @@ def get_stock_data_with_indicators(
     end_date: Annotated[str, "End date in yyyy-mm-dd format"],
 ) -> str:
     """
-    获取股票数据（OHLCV）并返回 CSV 格式字符串
+    Gets stock data (OHLCV) and returns a CSV format string
 
-    参考原版 TradingAgents 的 get_YFin_data_online 实现
+    Refer to the get_YFin_data_online implementation of the original TradingAgents
     """
     try:
-        # 验证日期格式
+        # Validate date format
         datetime.strptime(start_date, "%Y-%m-%d")
         datetime.strptime(end_date, "%Y-%m-%d")
 
-        # 创建 ticker 对象
+        # Create ticker object
         ticker = yf.Ticker(symbol.upper())
 
-        # 获取历史数据
+        # Get historical data
         data = ticker.history(start=start_date, end=end_date)
 
-        # 检查数据是否为空
+        # Check if the data is empty
         if data.empty:
             return f"No data found for symbol '{symbol}' between {start_date} and {end_date}"
 
-        # 移除时区信息
+        # Remove time zone information
         if data.index.tz is not None:
             data.index = data.index.tz_localize(None)
 
-        # 数值列保留2位小数
+        # Numeric columns retain 2 decimal places
         numeric_columns = ["Open", "High", "Low", "Close", "Adj Close"]
         for col in numeric_columns:
             if col in data.columns:
                 data[col] = data[col].round(2)
 
-        # 转换为 CSV 字符串
+        # Convert to CSV string
         csv_string = data.to_csv()
 
-        # 添加头部信息
+        # Add header information
         header = f"# Stock data for {symbol.upper()} from {start_date} to {end_date}\n"
         header += f"# Total records: {len(data)}\n"
         header += f"# Data retrieved on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
@@ -190,7 +190,7 @@ def get_stock_data_with_indicators(
         return header + csv_string
 
     except Exception as e:
-        logger.error(f"❌ [yfinance] 获取股票数据失败 {symbol}: {e}")
+        logger.error(f"❌ [yfinance] Failed to get stock data {symbol}: {e}")
         return f"Error retrieving stock data for {symbol}: {str(e)}"
 
 
@@ -201,94 +201,94 @@ def get_technical_indicator(
     look_back_days: Annotated[int, "how many days to look back"] = 60,
 ) -> str:
     """
-    获取技术指标数据（使用 stockstats 库计算）
+    Get technical indicator data (calculated using stockstats library)
 
-    参考原版 TradingAgents 的 get_stock_stats_indicators_window 实现
+    Refer to the get_stock_stats_indicators_window implementation of the original TradingAgents
 
-    支持的指标：
-    - close_50_sma: 50日简单移动平均
-    - close_200_sma: 200日简单移动平均
-    - close_10_ema: 10日指数移动平均
-    - macd: MACD指标
-    - macds: MACD信号线
-    - macdh: MACD柱状图
-    - rsi: 相对强弱指标
-    - boll: 布林带中轨
-    - boll_ub: 布林带上轨
-    - boll_lb: 布林带下轨
-    - atr: 平均真实波幅
-    - vwma: 成交量加权移动平均
-    - mfi: 资金流量指标
+    Supported indicators:
+    - close_50_sma: 50 daily simple moving average
+    - close_200_sma: 200 daily simple moving average
+    - close_10_ema: 10 daily exponential moving average
+    - macd: MACD indicator
+    - macds: MACD signal line
+    - macdh: MACD bar chart
+    - rsi: relative strength indicator
+    - boll: Bollinger Bands Middle Track
+    - boll_ub: Bollinger Bands track
+    - boll_lb: Bollinger Bands Lower Track
+    - atr: average true volatility
+    - vwma: Volume Weighted Moving Average
+    - mfi: money flow indicator
     """
     try:
         from stockstats import wrap
 
-        # 指标说明
+        # Indicator description
         indicator_descriptions = {
             "close_50_sma": (
-                "50 SMA: 中期趋势指标。"
-                "用途：识别趋势方向，作为动态支撑/阻力位。"
-                "提示：滞后于价格，建议结合快速指标使用。"
+                "50 SMA: Medium-term trend indicator."
+                "Purpose: Identify trend direction as dynamic support/resistance levels."
+                "Tip: lags the price and is recommended to be used in conjunction with fast indicators."
             ),
             "close_200_sma": (
-                "200 SMA: 长期趋势基准。"
-                "用途：确认整体市场趋势，识别金叉/死叉。"
-                "提示：反应缓慢，适合战略性趋势确认。"
+                "200 SMA: Long term trend benchmark."
+                "Purpose: Confirm the overall market trend and identify golden cross/death cross."
+                "Tip: Slow response, suitable for strategic trend confirmation."
             ),
             "close_10_ema": (
-                "10 EMA: 短期响应平均线。"
-                "用途：捕捉快速动量变化和潜在入场点。"
-                "提示：在震荡市场中容易产生噪音。"
+                "10 EMA: Short-term response average."
+                "Purpose: Capture rapid momentum changes and potential entry points."
+                "Tip: Noise is easily generated in volatile markets."
             ),
             "macd": (
-                "MACD: 通过EMA差值计算动量。"
-                "用途：寻找交叉和背离作为趋势变化信号。"
-                "提示：在低波动或横盘市场中需要其他指标确认。"
+                "MACD: Momentum is calculated from the EMA difference."
+                "Purpose: Look for crossovers and divergences as trend change signals."
+                "Tip: Confirmation from other indicators is needed in low volatility or sideways markets."
             ),
             "macds": (
-                "MACD信号线: MACD线的EMA平滑。"
-                "用途：与MACD线交叉触发交易信号。"
-                "提示：应作为更广泛策略的一部分。"
+                "MACD signal line: MACD The line s EMA is smoothed."
+                "Purpose: Crossing with the MACD line triggers a trading signal."
+                "Tip: Should be used as part of a broader strategy."
             ),
             "macdh": (
-                "MACD柱状图: MACD线与信号线的差值。"
-                "用途：可视化动量强度，早期发现背离。"
-                "提示：可能波动较大，在快速市场中需要额外过滤。"
+                "MACD bar chart: MACD The difference between the line and the signal line."
+                "Use: Visualize momentum strength and detect divergences early."
+                "Tip: Can be volatile and require additional filtering in fast markets."
             ),
             "rsi": (
-                "RSI: 测量动量以标记超买/超卖状态。"
-                "用途：应用70/30阈值，观察背离以信号反转。"
-                "提示：在强趋势中RSI可能保持极端值，需结合趋势分析。"
+                "RSI: Momentum is measured to mark overbought/oversold conditions."
+                "Purpose: Apply 70/30 threshold and observe divergence for signal reversal."
+                "Tip: In a strong trend, RSI may maintain extreme values and needs to be combined with trend analysis."
             ),
             "boll": (
-                "布林带中轨: 20日SMA作为布林带基准。"
-                "用途：作为价格运动的动态基准。"
-                "提示：结合上下轨有效发现突破或反转。"
+                "Bollinger Bands Middle Track: 20 The Japanese SMA serves as the Bollinger Band benchmark."
+                "Purpose: As a dynamic benchmark for price movements."
+                "Tip: Combine the upper and lower rails to effectively find breakthroughs or reversals."
             ),
             "boll_ub": (
-                "布林带上轨: 通常为中轨上方2个标准差。"
-                "用途：信号潜在超买状态和突破区域。"
-                "提示：需其他工具确认，强趋势中价格可能沿轨道运行。"
+                "Bollinger Bands track: Typically 2 standard deviations above the mid-rail."
+                "Purpose: Signals potential overbought conditions and breakout areas."
+                "Tip: Other tools are needed to confirm that prices may move along a track in a strong trend."
             ),
             "boll_lb": (
-                "布林带下轨: 通常为中轨下方2个标准差。"
-                "用途：指示潜在超卖状态。"
-                "提示：使用额外分析避免虚假反转信号。"
+                "Bollinger Bands Lower Track: Typically 2 standard deviations below the mid-rail."
+                "Purpose: Indicates potential oversold conditions."
+                "Tip: Use additional analysis to avoid false reversal signals."
             ),
             "atr": (
-                "ATR: 平均真实波幅测量波动性。"
-                "用途：设置止损位，根据当前市场波动调整仓位大小。"
-                "提示：这是反应性指标，应作为更广泛风险管理策略的一部分。"
+                "ATR: Average true amplitude measures volatility."
+                "Purpose: Set stop loss level and adjust position size according to current market fluctuations."
+                "Tip: This is a reactive indicator and should be used as part of a broader risk management strategy."
             ),
             "vwma": (
-                "VWMA: 成交量加权移动平均。"
-                "用途：通过整合价格和成交量数据确认趋势。"
-                "提示：注意成交量激增导致的偏差，结合其他成交量分析使用。"
+                "VWMA: Volume weighted moving average."
+                "Purpose: Confirm trends by integrating price and volume data."
+                "Tip: Pay attention to the deviation caused by the surge in trading volume and use it in conjunction with other trading volume analysis."
             ),
             "mfi": (
-                "MFI: 资金流量指标，使用价格和成交量测量买卖压力。"
-                "用途：识别超买(>80)或超卖(<20)状态，确认趋势或反转强度。"
-                "提示：与RSI或MACD结合使用确认信号，价格与MFI背离可能预示反转。"
+                "MFI: A money flow indicator that uses price and volume to measure buying and selling pressure."
+                "Purpose: Identify overbought(>80)or oversold(<20)status, confirming trend or reversal strength."
+                "Tip: Used in conjunction with RSI or MACD as a confirmation signal, price divergence from the MFI may signal a reversal."
             ),
         }
 
@@ -296,12 +296,12 @@ def get_technical_indicator(
             supported = ", ".join(indicator_descriptions.keys())
             return f"❌ 不支持的指标 '{indicator}'。支持的指标: {supported}"
 
-        # 计算日期范围
+        # Calculate date range
         curr_date_dt = datetime.strptime(curr_date, "%Y-%m-%d")
-        start_date_dt = curr_date_dt - relativedelta(days=look_back_days + 365)  # 多获取一年数据用于计算
+        start_date_dt = curr_date_dt - relativedelta(days=look_back_days + 365)  # Obtain one more year of data for calculation
         start_date = start_date_dt.strftime("%Y-%m-%d")
 
-        # 获取股票数据
+        # Get stock data
         logger.info(f"📊 [yfinance] 获取 {symbol} 技术指标 {indicator}，日期范围: {start_date} 至 {curr_date}")
         ticker = yf.Ticker(symbol.upper())
         data = ticker.history(start=start_date, end=curr_date)
@@ -309,15 +309,15 @@ def get_technical_indicator(
         if data.empty:
             return f"❌ 未找到 {symbol} 的数据"
 
-        # 重置索引，将日期作为列
+        # Reset index with date as column
         data = data.reset_index()
         data['Date'] = pd.to_datetime(data['Date']).dt.strftime('%Y-%m-%d')
 
-        # 使用 stockstats 计算指标
+        # Calculate metrics using stockstats
         df = wrap(data)
-        df[indicator]  # 触发计算
+        df[indicator]  # Trigger calculation
 
-        # 生成指定日期范围的结果
+        # Generate results for a specified date range
         result_lines = []
         check_date = curr_date_dt
         end_date = curr_date_dt - relativedelta(days=look_back_days)
@@ -325,7 +325,7 @@ def get_technical_indicator(
         while check_date >= end_date:
             date_str = check_date.strftime('%Y-%m-%d')
 
-            # 查找该日期的指标值
+            # Find the metric value for this date
             matching_rows = df[df['Date'] == date_str]
 
             if not matching_rows.empty:
@@ -339,7 +339,7 @@ def get_technical_indicator(
 
             check_date = check_date - relativedelta(days=1)
 
-        # 构建结果字符串
+        # Build result string
         result = f"## {indicator} values from {end_date.strftime('%Y-%m-%d')} to {curr_date}:\n\n"
         result += "\n".join(result_lines)
         result += "\n\n" + indicator_descriptions[indicator]
@@ -347,7 +347,7 @@ def get_technical_indicator(
         return result
 
     except ImportError:
-        return "❌ 需要安装 stockstats 库: pip install stockstats"
+        return "❌ Requires the stockstats library to be installed: pip install stockstats"
     except Exception as e:
-        logger.error(f"❌ [yfinance] 计算技术指标失败 {symbol}/{indicator}: {e}")
+        logger.error(f"❌ [yfinance] Failed to calculate technical indicators {symbol}/{indicator}: {e}")
         return f"Error calculating indicator {indicator} for {symbol}: {str(e)}"

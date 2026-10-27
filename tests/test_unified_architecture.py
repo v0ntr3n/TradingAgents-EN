@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 """
-测试统一工具架构
-验证所有分析师都使用统一工具方案
+Test unified tool architecture
+Verify that all analysts are using a unified tool scheme
 """
 
 import os
 import sys
 
 def test_unified_tools_availability():
-    """测试统一工具的可用性"""
-    print("🔧 测试统一工具可用性...")
+    """Test the usability of unified tools"""
+    print("🔧 Test unified tool usability...")
     
     try:
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建工具包
+        # Create toolkit
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         toolkit = Toolkit(config)
         
-        # 检查统一工具是否存在
+        # Check if the unified tool exists
         unified_tools = [
             'get_stock_fundamentals_unified',
             'get_stock_market_data_unified',
@@ -31,149 +31,149 @@ def test_unified_tools_availability():
         for tool_name in unified_tools:
             if hasattr(toolkit, tool_name):
                 tool = getattr(toolkit, tool_name)
-                print(f"  ✅ {tool_name}: 可用")
-                print(f"    工具描述: {getattr(tool, 'description', 'N/A')[:100]}...")
+                print(f"  ✅ {tool_name}: Available")
+                print(f"    Tool description: {getattr(tool, 'description', 'N/A')[:100]}...")
             else:
-                print(f"  ❌ {tool_name}: 不可用")
+                print(f"  ❌ {tool_name}: Not available")
                 return False
         
-        print("✅ 统一工具可用性测试通过")
+        print("✅ Unified tool usability test passed")
         return True
         
     except Exception as e:
-        print(f"❌ 统一工具可用性测试失败: {e}")
+        print(f"❌ Unified Tool Usability Test Failed: {e}")
         return False
 
 
 def test_market_analyst_unified():
-    """测试市场分析师使用统一工具"""
-    print("\n🔧 测试市场分析师统一工具...")
+    """Test market analysts use unified tools"""
+    print("\n🔧 Test Market Analyst Unified Tool...")
     
     try:
         from tradingagents.agents.analysts.market_analyst import create_market_analyst
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         
-        # 创建工具包
+        # Create toolkit
         toolkit = Toolkit(config)
         
-        # 创建模拟LLM
+        # Create simulation LLM
         class MockLLM:
             def bind_tools(self, tools):
-                print(f"🔧 [MockLLM] 市场分析师绑定工具: {[tool.name for tool in tools]}")
+                print(f"🔧 [MockLLM] Market Analyst Binding Tool: {[tool.name for tool in tools]}")
                 
-                # 检查是否只绑定了统一工具
+                # Check if only unified tools are bound
                 if len(tools) == 1 and tools[0].name == 'get_stock_market_data_unified':
-                    print(f"  ✅ 正确绑定统一市场数据工具")
+                    print(f"  ✅ Correctly bind unified market data tools")
                     return self
                 else:
-                    print(f"  ❌ 绑定了错误的工具: {[tool.name for tool in tools]}")
+                    print(f"  ❌ Wrong tool bound: {[tool.name for tool in tools]}")
                     return self
             
             def invoke(self, messages):
                 class MockResult:
                     def __init__(self):
                         self.tool_calls = []
-                        self.content = "模拟市场分析结果"
+                        self.content = "Simulated market analysis results"
                 return MockResult()
         
         llm = MockLLM()
         
-        # 创建市场分析师
+        # Create a market analyst
         analyst = create_market_analyst(llm, toolkit)
         
-        # 模拟状态
+        # simulation state
         state = {
             "trade_date": "2025-07-14",
             "company_of_interest": "0700.HK",
             "messages": []
         }
         
-        print(f"  测试港股市场分析: {state['company_of_interest']}")
+        print(f"  Test Hong Kong stock market analysis: {state['company_of_interest']}")
         
-        # 调用分析师（这会触发工具选择逻辑）
+        # Call the analyst (this triggers the tool selection logic)
         result = analyst(state)
         
-        print(f"  ✅ 市场分析师调用完成")
+        print(f"  ✅ Market analyst call completed")
         return True
         
     except Exception as e:
-        print(f"❌ 市场分析师统一工具测试失败: {e}")
+        print(f"❌ Market Analyst Unified Tool Test Fails: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_fundamentals_analyst_unified():
-    """测试基本面分析师使用统一工具"""
-    print("\n🔧 测试基本面分析师统一工具...")
+    """Test fundamental analysts using unified tools"""
+    print("\n🔧 Testing Unified Tools for Fundamental Analysts...")
     
     try:
         from tradingagents.agents.analysts.fundamentals_analyst import create_fundamentals_analyst
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.default_config import DEFAULT_CONFIG
         
-        # 创建配置
+        # Create configuration
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         
-        # 创建工具包
+        # Create toolkit
         toolkit = Toolkit(config)
         
-        # 创建模拟LLM
+        # Create simulation LLM
         class MockLLM:
             def bind_tools(self, tools):
-                print(f"🔧 [MockLLM] 基本面分析师绑定工具: {[tool.name for tool in tools]}")
+                print(f"🔧 [MockLLM] Fundamental Analyst Binding Tool: {[tool.name for tool in tools]}")
                 
-                # 检查是否只绑定了统一工具
+                # Check if only unified tools are bound
                 if len(tools) == 1 and tools[0].name == 'get_stock_fundamentals_unified':
-                    print(f"  ✅ 正确绑定统一基本面分析工具")
+                    print(f"  ✅ Correctly bind unified fundamental analysis tools")
                     return self
                 else:
-                    print(f"  ❌ 绑定了错误的工具: {[tool.name for tool in tools]}")
+                    print(f"  ❌ Wrong tool bound: {[tool.name for tool in tools]}")
                     return self
             
             def invoke(self, messages):
                 class MockResult:
                     def __init__(self):
                         self.tool_calls = []
-                        self.content = "模拟基本面分析结果"
+                        self.content = "Simulate fundamental analysis results"
                 return MockResult()
         
         llm = MockLLM()
         
-        # 创建基本面分析师
+        # Create a fundamental analyst
         analyst = create_fundamentals_analyst(llm, toolkit)
         
-        # 模拟状态
+        # simulation state
         state = {
             "trade_date": "2025-07-14",
             "company_of_interest": "0700.HK",
             "messages": []
         }
         
-        print(f"  测试港股基本面分析: {state['company_of_interest']}")
+        print(f"  Test fundamental analysis of Hong Kong stocks: {state['company_of_interest']}")
         
-        # 调用分析师（这会触发工具选择逻辑）
+        # Call the analyst (this triggers the tool selection logic)
         result = analyst(state)
         
-        print(f"  ✅ 基本面分析师调用完成")
+        print(f"  ✅ Fundamental analyst call completed")
         return True
         
     except Exception as e:
-        print(f"❌ 基本面分析师统一工具测试失败: {e}")
+        print(f"❌ Fundamental Analyst Unified Tool Test Fails: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def test_stock_type_routing():
-    """测试股票类型路由"""
-    print("\n🔧 测试股票类型路由...")
+    """Test stock type routing"""
+    print("\n🔧 Test stock type routing...")
     
     try:
         from tradingagents.agents.utils.agent_utils import Toolkit
@@ -184,17 +184,17 @@ def test_stock_type_routing():
         toolkit = Toolkit(config)
         
         test_cases = [
-            ("0700.HK", "港股", "HK$"),
-            ("9988.HK", "港股", "HK$"),
-            ("000001", "中国A股", "¥"),
-            ("600036", "中国A股", "¥"),
-            ("AAPL", "美股", "$"),
+            ("0700.HK", "Hong Kong stocks", "HK$"),
+            ("9988.HK", "Hong Kong stocks", "HK$"),
+            ("000001", "China A shares", "¥"),
+            ("600036", "China A shares", "¥"),
+            ("AAPL", "US stocks", "$"),
         ]
         
         for ticker, expected_market, expected_currency in test_cases:
-            print(f"\n📊 测试 {ticker}:")
+            print(f"\n📊 test {ticker}:")
             
-            # 测试基本面分析工具
+            # Test fundamental analysis tools
             try:
                 result = toolkit.get_stock_fundamentals_unified.invoke({
                     'ticker': ticker,
@@ -204,15 +204,15 @@ def test_stock_type_routing():
                 })
                 
                 if expected_market in result and expected_currency in result:
-                    print(f"  ✅ 基本面工具路由正确")
+                    print(f"  ✅ Fundamentals tools are routed correctly")
                 else:
-                    print(f"  ⚠️ 基本面工具路由可能有问题")
+                    print(f"  ⚠️ There may be a problem with fundamental tool routing")
                     
             except Exception as e:
-                print(f"  ❌ 基本面工具调用失败: {e}")
+                print(f"  ❌ Fundamental tool call failed: {e}")
                 return False
             
-            # 测试市场数据工具
+            # Test market data tools
             try:
                 result = toolkit.get_stock_market_data_unified.invoke({
                     'ticker': ticker,
@@ -221,25 +221,25 @@ def test_stock_type_routing():
                 })
                 
                 if expected_market in result and expected_currency in result:
-                    print(f"  ✅ 市场数据工具路由正确")
+                    print(f"  ✅ Market data tools are routed correctly")
                 else:
-                    print(f"  ⚠️ 市场数据工具路由可能有问题")
+                    print(f"  ⚠️ There may be an issue with market data tool routing")
                     
             except Exception as e:
-                print(f"  ❌ 市场数据工具调用失败: {e}")
+                print(f"  ❌ Market data tool call failed: {e}")
                 return False
         
-        print("✅ 股票类型路由测试通过")
+        print("✅ Stock type routing test passed")
         return True
         
     except Exception as e:
-        print(f"❌ 股票类型路由测试失败: {e}")
+        print(f"❌ Stock type routing test failed: {e}")
         return False
 
 
 def main():
-    """主测试函数"""
-    print("🔧 统一工具架构测试")
+    """Main test function"""
+    print("🔧 Unified tool architecture testing")
     print("=" * 60)
     
     tests = [
@@ -257,25 +257,25 @@ def main():
             if test():
                 passed += 1
             else:
-                print(f"❌ 测试失败: {test.__name__}")
+                print(f"❌ test failed: {test.__name__}")
         except Exception as e:
-            print(f"❌ 测试异常: {test.__name__} - {e}")
+            print(f"❌ Test exception: {test.__name__} - {e}")
     
     print("\n" + "=" * 60)
-    print(f"📊 测试结果: {passed}/{total} 通过")
+    print(f"📊 Test results: {passed}/{total} Pass")
     
     if passed == total:
-        print("🎉 所有测试通过！统一工具架构成功")
-        print("\n📋 架构优势:")
-        print("✅ 所有分析师使用统一工具")
-        print("✅ 工具内部自动识别股票类型")
-        print("✅ 避免了LLM工具调用混乱")
-        print("✅ 简化了系统提示和处理流程")
-        print("✅ 更容易维护和扩展")
-        print("✅ 统一的错误处理和日志记录")
+        print("🎉 All tests passed! Unified tool architecture successful")
+        print("\n📋 Architectural advantages:")
+        print("✅ All analysts use unified tools")
+        print("✅ Automatically identify stock types within the tool")
+        print("✅ Avoids LLM tool calling confusion")
+        print("✅ Simplified system prompts and processing procedures")
+        print("✅ Easier to maintain and extend")
+        print("✅ Unified error handling and logging")
         return True
     else:
-        print("⚠️ 部分测试失败，需要进一步检查")
+        print("⚠️ Some tests failed and require further inspection")
         return False
 
 

@@ -1,8 +1,8 @@
 """
-统一重试工具
+Unified retry tool
 
-提供可重试异常判断与同步/异步指数退避重试函数，
-供 UnifiedLLMClient、AgentBase 等模块共享。
+Provides retryable exception judgment and synchronous/asynchronous exponential backoff retry functions.
+For sharing by UnifiedLLMClient, AgentBase and other modules.
 """
 
 import asyncio
@@ -18,8 +18,8 @@ T = TypeVar("T")
 RETRYABLE_KEYWORDS = (
     "choices", "null value", "connection", "timeout", "timed out",
     "rate limit", "too many requests", "server error", "500", "502", "503", "529",
-    # 京东云等国内网关的限流提示
-    "429", "rate_limit", "tokens limit", "rate_limited", "访问限制", "RATE_LIMIT",
+    # Current limiting tips for domestic gateways such as JD Cloud
+    "429", "rate_limit", "tokens limit", "rate_limited", "Access restrictions", "RATE_LIMIT",
 )
 
 
@@ -37,29 +37,29 @@ def retry_sync(
     retryable: Optional[Callable[[Exception], bool]] = None,
     **kwargs: Any,
 ) -> T:
-    """同步指数退避重试。
+    """Synchronous exponential backoff retries.
 
     Args:
-        fn: 要重试的可调用对象
-        max_retries: 最大重试次数（不含首次调用）
-        max_wait: 退避上限秒数
-        label: 日志标签
-        retryable: 自定义可重试判断函数，默认使用 is_retryable
+        fn: The callable to retry
+        max_retries: Maximum number of retries (excluding first call)
+        max_wait: Backoff upper limit seconds
+        label: log tag
+        retryable: Customized retryable judgment function, used by default is_retryable
     """
     _retryable = retryable or is_retryable
     last_err: Optional[Exception] = None
     for attempt in range(max_retries + 1):
         try:
             if attempt > 0:
-                # 指数退避 + 随机抖动，避免多请求同步重试形成风暴（如 429 限流场景）
+                # exponential backoff + Random jitter to avoid multiple requests synchronously retrying to form a storm (such as 429 current limiting scenario)
                 wait = min(2 ** attempt, max_wait) + random.uniform(0, 1)
-                logger.info("[%s] 等待 %.1fs 后重试（%d/%d）...", label, wait, attempt, max_retries)
+                logger.info("[%s] Wait for %.1fs and try again (%d/%d)...", label, wait, attempt, max_retries)
                 time.sleep(wait)
             return fn(*args, **kwargs)
         except Exception as e:
             last_err = e
             if _retryable(e) and attempt < max_retries:
-                logger.warning("[%s] 调用失败（可重试）: %s", label, e)
+                logger.warning("[%s] The call failed (can be retried): %s", label, e)
                 continue
             raise
     raise last_err  # type: ignore[misc]  # pragma: no cover
@@ -74,21 +74,21 @@ async def retry_async(
     retryable: Optional[Callable[[Exception], bool]] = None,
     **kwargs: Any,
 ) -> T:
-    """异步指数退避重试。"""
+    """Asynchronous exponential backoff retries."""
     _retryable = retryable or is_retryable
     last_err: Optional[Exception] = None
     for attempt in range(max_retries + 1):
         try:
             if attempt > 0:
-                # 指数退避 + 随机抖动，避免多请求同步重试形成风暴（如 429 限流场景）
+                # exponential backoff + Random jitter to avoid multiple requests synchronously retrying to form a storm (such as 429 current limiting scenario)
                 wait = min(2 ** attempt, max_wait) + random.uniform(0, 1)
-                logger.info("[%s] 等待 %.1fs 后重试（%d/%d）...", label, wait, attempt, max_retries)
+                logger.info("[%s] Wait for %.1fs and try again (%d/%d)...", label, wait, attempt, max_retries)
                 await asyncio.sleep(wait)
             return await fn(*args, **kwargs)
         except Exception as e:
             last_err = e
             if _retryable(e) and attempt < max_retries:
-                logger.warning("[%s] 调用失败（可重试）: %s", label, e)
+                logger.warning("[%s] The call failed (can be retried): %s", label, e)
                 continue
             raise
     raise last_err  # type: ignore[misc]  # pragma: no cover

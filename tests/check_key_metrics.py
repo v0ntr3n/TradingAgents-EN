@@ -1,89 +1,89 @@
 #!/usr/bin/env python3
 """
-专门查看AKShare财务数据中的PE、PB、ROE指标
+Specifically view the PE, PB, and ROE indicators in AKShare financial data
 """
 
 import sys
 import os
 import logging
 
-# 设置日志级别
+# Set log level
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s | %(levelname)-8s | %(message)s')
 
-# 添加项目路径
+# Add project path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from tradingagents.dataflows.akshare_utils import AKShareProvider
 
 def check_key_metrics():
-    """检查关键财务指标"""
+    """Check key financial indicators"""
     print("=" * 60)
-    print("🔍 检查AKShare关键财务指标")
+    print("🔍 Check AKShare Key Financial Metrics")
     print("=" * 60)
     
     provider = AKShareProvider()
     if not provider.connected:
-        print("❌ AKShare未连接")
+        print("❌ AKShare Not connected")
         return
     
     symbol = "600519"
     financial_data = provider.get_financial_data(symbol)
     
     if not financial_data:
-        print("❌ 未获取到财务数据")
+        print("❌ No financial data was obtained")
         return
     
     main_indicators = financial_data.get('main_indicators')
     if main_indicators is None:
-        print("❌ 未获取到主要财务指标")
+        print("❌ No major financial indicators were obtained")
         return
     
-    # 获取最新数据列
-    latest_col = main_indicators.columns[2]  # 第3列是最新数据
-    print(f"📅 最新数据期间: {latest_col}")
+    # Get the latest data column
+    latest_col = main_indicators.columns[2]  # Column 3 is the latest data
+    print(f"📅 latest data period: {latest_col}")
     
-    # 查找ROE
-    roe_row = main_indicators[main_indicators['指标'] == '净资产收益率(ROE)']
+    # Find ROE
+    roe_row = main_indicators[main_indicators['indicator'] == 'ROE(ROE)']
     if not roe_row.empty:
         roe_value = roe_row.iloc[0][latest_col]
-        print(f"📈 净资产收益率(ROE): {roe_value}")
+        print(f"📈 ROE(ROE): {roe_value}")
     else:
-        print("❌ 未找到ROE指标")
+        print("❌ ROE indicator not found")
     
-    # 查找每股收益（用于计算PE）
-    eps_row = main_indicators[main_indicators['指标'] == '每股收益']
+    # Find earnings per share (used to calculate PE)
+    eps_row = main_indicators[main_indicators['indicator'] == 'earnings per share']
     if not eps_row.empty:
         eps_value = eps_row.iloc[0][latest_col]
-        print(f"💰 每股收益(EPS): {eps_value}")
+        print(f"💰 earnings per share(EPS): {eps_value}")
     else:
-        print("❌ 未找到每股收益指标")
+        print("❌ Earnings per share metric not found")
     
-    # 查找每股净资产（用于计算PB）
-    bps_row = main_indicators[main_indicators['指标'] == '每股净资产_最新股数']
+    # Find net assets per share (used to calculate PB)
+    bps_row = main_indicators[main_indicators['indicator'] == 'Net assets per share_latest number of shares']
     if not bps_row.empty:
         bps_value = bps_row.iloc[0][latest_col]
-        print(f"📊 每股净资产(BPS): {bps_value}")
+        print(f"📊 Net assets per share(BPS): {bps_value}")
     else:
-        print("❌ 未找到每股净资产指标")
+        print("❌ Net assets per share indicator not found")
     
-    # 显示所有包含"每股"的指标
-    print(f"\n📋 所有每股相关指标:")
-    eps_indicators = main_indicators[main_indicators['指标'].str.contains('每股', na=False)]
+    # show all contains"per share"indicators
+    print(f"\n📋 All per share related indicators:")
+    eps_indicators = main_indicators[main_indicators['indicator'].str.contains('per share', na=False)]
     for _, row in eps_indicators.iterrows():
-        indicator_name = row['指标']
+        indicator_name = row['indicator']
         value = row[latest_col]
         print(f"   {indicator_name}: {value}")
     
-    # 显示所有包含"收益率"的指标
-    print(f"\n📋 所有收益率相关指标:")
-    roe_indicators = main_indicators[main_indicators['指标'].str.contains('收益率', na=False)]
+    # show all contains"Yield"indicators
+    print(f"\n📋 All yield related indicators:")
+    roe_indicators = main_indicators[main_indicators['indicator'].str.contains('Yield', na=False)]
     for _, row in roe_indicators.iterrows():
-        indicator_name = row['指标']
+        indicator_name = row['indicator']
         value = row[latest_col]
         print(f"   {indicator_name}: {value}")
     
     print("\n" + "=" * 60)
-    print("✅ 关键指标检查完成")
+    print("✅ Key indicator check completed")
     print("=" * 60)
 
 if __name__ == "__main__":

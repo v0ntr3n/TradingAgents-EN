@@ -1,7 +1,7 @@
 """
-交易复盘工具集
+Trading review tool set
 
-提供交易复盘所需的数据获取和处理工具
+Provide data acquisition and processing tools required for transaction review
 """
 
 from .trade_records import get_trade_records

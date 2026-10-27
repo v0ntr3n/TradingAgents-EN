@@ -1,8 +1,8 @@
 """
-报告生成器 v2.0
+report generator v2.0
 
-智能报告生成 Agent，通过 LLM 理解分析结果并生成格式化的综合报告
-支持多种报告样式和格式，可通过提示词模板自定义
+Intelligent report generation Agent understands the analysis results and generates a formatted comprehensive report through LLM
+Supports a variety of report styles and formats, which can be customized through prompt word templates
 """
 
 import logging
@@ -20,24 +20,24 @@ logger = logging.getLogger(__name__)
 @register_agent
 class ReportGeneratorV2(AnalystAgent):
     """
-    报告生成器 v2.0 - 智能报告生成 Agent
+    Report Generator v2.0 - Intelligent Report Generation Agent
 
-    功能：
-    - 🤖 调用 LLM 理解分析结果
-    - 📝 生成格式化的综合分析报告
-    - 🎨 支持多种报告样式（简洁版、详细版、投资者版等）
-    - 🔧 通过提示词模板自定义报告格式
-    - 📊 智能提取关键信息和数据
-    - 🔗 整合所有分析师的输出
+    Function:
+    - 🤖 Call LLM to understand analysis results
+    - 📝 Generate formatted comprehensive analysis reports
+    - 🎨 Supports multiple report styles (concise version, detailed version, investor version, etc.)
+    - 🔧 Customize report formats with prompt word templates
+    - 📊 Intelligent extraction of key information and data
+    - 🔗 Integrate output from all analysts
 
-    工作流程：
-    1. 读取所有分析师报告（market_report, fundamentals_report等）
-    2. LLM 理解报告内容和关键信息
-    3. 根据提示词模板生成格式化报告
-    4. 输出结构化的综合报告
-    5. 存储在 reports 字段中
+    Workflow:
+    1. Read all analyst reports (market_report, fundamentals_report etc.)
+    2. LLM Understand report content and key messages
+    3. Generate formatted reports based on prompt word templates
+    4. Output structured comprehensive reports
+    5. stored in reports field
 
-    示例:
+    Example:
         from core.agents import create_agent
         from core.llm import UnifiedLLMClient
 
@@ -54,58 +54,58 @@ class ReportGeneratorV2(AnalystAgent):
             "investment_plan": {...}
         })
 
-        # result 包含:
-        # - reports: 生成的报告字典
-        # - report_summary: 报告摘要
-        # - report_style: 使用的报告样式
+        # result contains:
+        # - reports: generated report dictionary
+        # - report_summary: Report Summary
+        # - report_style: Report style to use
     """
 
     metadata = AgentMetadata(
         id="report_generator_v2",
-        name="报告生成器 v2",
-        description="智能报告生成 Agent，通过 LLM 理解分析结果并生成格式化的综合报告",
-        category=AgentCategory.ANALYST,  # 改为 ANALYST 类别（因为调用 LLM）
+        name="report generator v2",
+        description="Intelligent report generation Agent understands the analysis results and generates a formatted comprehensive report through LLM",
+        category=AgentCategory.ANALYST,  # Changed to ANALYST category (because of calling LLM)
         version="2.0.0",
         license_tier=LicenseTier.FREE,
-        default_tools=[],  # 不需要工具，只处理已有数据
+        default_tools=[],  # No tools required, just process existing data
         icon="📝",
         color="#9b59b6",
-        tags=["报告", "生成", "汇总", "智能", "v2.0"],
+        tags=["report", "generate", "Summary", "Smart", "v2.0"],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码", required=False),
-            AgentInput(name="analysis_date", type="string", description="分析日期", required=False),
-            AgentInput(name="report_style", type="string", description="报告样式（简洁/详细/投资者）", required=False),
+            AgentInput(name="ticker", type="string", description="Stock code", required=False),
+            AgentInput(name="analysis_date", type="string", description="Analysis date", required=False),
+            AgentInput(name="report_style", type="string", description="Report style (concise/detailed/investor)", required=False),
         ],
         outputs=[
-            AgentOutput(name="reports", type="dict", description="生成的报告字典"),
-            AgentOutput(name="report_summary", type="string", description="报告摘要"),
+            AgentOutput(name="reports", type="dict", description="generated report dictionary"),
+            AgentOutput(name="report_summary", type="string", description="Report Summary"),
         ],
     )
 
-    # 分析师类型
+    # Analyst type
     analyst_type = "report_generator"
 
-    # 输出字段名
+    # Output field name
     output_field = "reports"
     
-    # 需要提取的报告字段
+    # Report fields that need to be extracted
     REPORT_FIELDS = [
-        # 宏观分析
+        # macro analysis
         'index_report',
         'sector_report',
-        # 个股分析
+        # individual stock analysis
         'market_report',
         'sentiment_report',
         'news_report',
         'fundamentals_report',
-        # 研究员报告
+        # Researcher Report
         'bull_report',
         'bear_report',
-        # 投资计划
+        # investment plan
         'investment_plan',
         'trader_investment_plan',
         'final_trade_decision',
-        # 风险评估
+        # risk assessment
         'risk_assessment',
     ]
 
@@ -117,29 +117,29 @@ class ReportGeneratorV2(AnalystAgent):
         **kwargs
     ):
         """
-        初始化报告生成器
+        Initialize report generator
 
         Args:
-            config: Agent配置
-            llm: LLM实例
-            tool_ids: 工具ID列表（报告生成器不需要工具）
-            **kwargs: 其他参数
+            config: Agent Configuration
+            llm: LLM Example
+            tool_ids: List of tool IDs (tools are not required for the report generator)
+            **kwargs: Other parameters
         """
         super().__init__(config=config, llm=llm, tool_ids=tool_ids, **kwargs)
 
-        logger.debug(f"ReportGeneratorV2 初始化完成")
+        logger.debug(f"ReportGeneratorV2 Initialization completed")
     
     def _build_system_prompt(self, state: Dict[str, Any]) -> str:
         """
-        构建系统提示词
+        Build system prompt words
 
         Args:
-            state: 工作流状态
+            state: Workflow status
 
         Returns:
-            系统提示词
+            System prompt word
         """
-        # 尝试从模板系统获取提示词
+        # Try to get the prompt word from the template system
         prompt = self._get_prompt_from_template(
             agent_type="post_processors_v2",
             agent_name="report_generator_v2",
@@ -153,51 +153,51 @@ class ReportGeneratorV2(AnalystAgent):
         if prompt:
             return prompt
 
-        # 默认提示词
-        return """你是一位专业的报告生成器，负责将多个分析师的输出整合为结构化的综合分析报告。
+        # Default prompt word
+        return """You are a professional report generator responsible for integrating the output of multiple analysts into structured comprehensive analysis reports.
 
-## 核心职责
-1. 汇总各分析师的报告和观点
-2. 提取关键信息和数据
-3. 根据报告样式生成格式化输出
-4. 确保报告内容客观、完整、有条理
+## Core responsibilities
+1. Summarize analysts reports and opinions
+2. Extract key information and data
+3. Generate formatted output based on report style
+4. Ensure that the report content is objective, complete and organized
 
-## 工作原则
-- 保持客观中立，如实呈现各方观点
-- 不添加主观判断或新的分析内容
-- 按照报告样式要求的格式输出
-- 突出关键数据和重要结论
+## Working principles
+- Remain objective and neutral and truthfully present the views of all parties
+- No subjective judgment or new analysis content added
+- Output in the format required by the report style
+- Highlight key data and important conclusions
 
-## 输出要求
-- 结构清晰，层次分明
-- 数据准确，引用明确
-- 语言简洁，重点突出
-- 使用 Markdown 格式组织内容
+## Output requirements
+- Clear structure and distinct layers
+- Data is accurate and cited clearly
+- The language is concise and the key points are highlighted.
+- Organize content using Markdown format
 
-## 报告样式
-- **简洁版**: 只包含核心结论和关键数据
-- **详细版**: 包含完整的分析过程和详细数据
-- **投资者版**: 面向投资者的专业报告，突出研究观察汇总和风险提示
+## report style
+- **Simple version**: Only include core conclusions and key data
+- **Detailed version**: Contains complete analysis process and detailed data
+- **Investor Edition**: Professional reports for investors, highlighting summary of research observations and risk warnings
 """
 
     def _build_user_prompt(self, state: Dict[str, Any]) -> str:
         """
-        构建用户提示词
+        Build user prompt words
 
         Args:
-            state: 工作流状态
+            state: Workflow status
 
         Returns:
-            用户提示词
+            User prompt words
         """
         ticker = state.get("ticker") or state.get("stock_code", "")
         analysis_date = state.get("analysis_date") or datetime.now().strftime("%Y-%m-%d")
-        report_style = state.get("report_style", "详细版")
+        report_style = state.get("report_style", "Detailed version")
 
-        # 提取所有可用的报告
+        # Extract all available reports
         available_reports = self._extract_reports(state)
 
-        # 尝试从模板系统获取提示词
+        # Try to get the prompt word from the template system
         prompt = self._get_prompt_from_template(
             agent_type="post_processors_v2",
             agent_name="report_generator_v2",
@@ -216,81 +216,81 @@ class ReportGeneratorV2(AnalystAgent):
         if prompt:
             return prompt
 
-        # 默认提示词
+        # Default prompt word
         reports_summary = "\n".join([
-            f"- **{field}**: {len(content)} 字符"
+            f"- **{field}**: {len(content)} character"
             for field, content in available_reports.items()
         ])
 
-        return f"""请为股票 {ticker} 生成综合分析报告（分析日期：{analysis_date}）
+        return f"""please for stock {ticker} Generate comprehensive analysis report (analysis date:{analysis_date}) 
 
-## 报告样式
+## report style
 {report_style}
 
-## 可用的分析报告
+## Available analysis reports
 {reports_summary}
 
-## 任务要求
-1. 整合所有分析师的报告
-2. 提取关键信息和数据
-3. 生成结构化的综合报告
-4. 使用 Markdown 格式输出
+## Mission requirements
+1. Consolidate reports from all analysts
+2. Extract key information and data
+3. Generate structured comprehensive reports
+4. Output using Markdown format
 
-## 报告结构（建议）
-1. **执行摘要** - 一句话总结
-2. **市场分析** - 市场行情和技术面
-3. **基本面分析** - 财务数据和估值
-4. **新闻和情绪** - 新闻资讯和市场情绪
-5. **研究观察汇总** - 综合研究观察和风险提示
-6. **关键数据** - 重要指标和数据
+## Report structure (recommended)
+1. **executive summary** - One sentence summary
+2. **market analysis** - Market conditions and technical aspects
+3. **fundamental analysis** - Financial data and valuations
+4. **news and sentiment** - News and market sentiment
+5. **Summary of research observations** - Comprehensive research observations and risk warnings
+6. **key data** - Important indicators and data
 
-请开始生成报告。
+Please start generating the report.
 """
 
     def _extract_reports(self, state: Dict[str, Any]) -> Dict[str, str]:
         """
-        从状态中提取所有报告
+        Pull all reports from status
 
         Args:
-            state: 工作流状态
+            state: Workflow status
 
         Returns:
-            报告字典 {field_name: report_content}
+            report dictionary {field_name: report_content}
         """
         reports = {}
 
         for field in self.REPORT_FIELDS:
             content = state.get(field)
             if content:
-                # 提取文本内容
+                # Extract text content
                 text = self._extract_text(content)
                 if text and len(text.strip()) > 5:
                     reports[field] = text.strip()
-                    logger.debug(f"📄 [ReportGeneratorV2] 提取报告: {field} ({len(text)} 字符)")
+                    logger.debug(f"📄 [ReportGeneratorV2] Extract report: {field} ({len(text)} character)")
 
         return reports
 
     def _extract_text(self, value: Any) -> str:
         """
-        从各种格式中提取文本内容
+        Extract text content from various formats
 
         Args:
-            value: 可能是字符串、字典或其他类型
+            value: May be a string, dictionary or other type
 
         Returns:
-            提取的文本内容
+            Extracted text content
         """
         if isinstance(value, str):
             return value
 
         if isinstance(value, dict):
-            # 尝试从字典中提取文本字段
+            # Try to extract text field from dictionary
             for key in ("content", "markdown", "text", "message", "report", "summary"):
                 text = value.get(key)
                 if isinstance(text, str) and text.strip():
                     return text
 
-            # 如果是结构化数据，转换为JSON
+            # If it is structured data, convert it to JSON
             try:
                 return json.dumps(value, ensure_ascii=False, indent=2)
             except:
@@ -300,64 +300,64 @@ class ReportGeneratorV2(AnalystAgent):
 
     def _parse_response(self, response: str, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        解析 LLM 响应
+        Parse LLM response
 
         Args:
-            response: LLM 响应文本
-            state: 工作流状态
+            response: LLM response text
+            state: Workflow status
 
         Returns:
-            解析后的结果字典
+            parsed result dictionary
         """
-        # 将 LLM 生成的报告存储到 reports 字段
+        # Store reports generated by LLM into the reports field
         result = {
             **state,
             "reports": {
-                "综合报告": response
+                "integrated reporting": response
             },
             "report_summary": self._extract_summary(response),
-            "report_style": state.get("report_style", "详细版"),
+            "report_style": state.get("report_style", "Detailed version"),
         }
 
-        logger.info(f"✅ [ReportGeneratorV2] 报告生成完成，长度: {len(response)} 字符")
+        logger.info(f"✅ [ReportGeneratorV2] Report generation completed, length: {len(response)} character")
         return result
 
     def _extract_summary(self, report: str) -> str:
         """
-        从报告中提取摘要
+        Extract summary from report
 
         Args:
-            report: 完整报告
+            report: full report
 
         Returns:
-            摘要文本
+            summary text
         """
-        # 尝试提取第一段或前200字符作为摘要
+        # Try to extract the first paragraph or first 200 characters as summary
         lines = report.strip().split("\n")
         for line in lines:
             line = line.strip()
             if line and not line.startswith("#") and len(line) > 20:
                 return line[:200] + "..." if len(line) > 200 else line
 
-        # 如果没有找到合适的摘要，返回前200字符
+        # If no suitable summary is found, return the first 200 characters
         return report[:200] + "..." if len(report) > 200 else report
 
-    # ========== 辅助方法 ==========
+    # ========== Helper methods ==========
 
     def _generate_structured_reports(self, reports: Dict[str, str]) -> Dict[str, Dict[str, Any]]:
         """
-        生成结构化报告（保留用于向后兼容）
+        Generate structured reports (reserved for backward compatibility)
 
         Args:
-            reports: 原始报告字典
+            reports: Original report dictionary
 
         Returns:
-            结构化报告字典
+            Structured reporting dictionary
         """
         structured = {}
 
         for field, content in reports.items():
-            # 尝试解析JSON格式的报告
+            # Try to parse a report in JSON format
             try:
                 if content.strip().startswith("{"):
                     data = json.loads(content)
@@ -383,30 +383,30 @@ class ReportGeneratorV2(AnalystAgent):
 
     def _json_to_markdown(self, data: Dict[str, Any], field_name: str) -> str:
         """
-        将JSON数据转换为Markdown格式
+        Convert JSON data to Markdown format
 
         Args:
-            data: JSON数据
-            field_name: 字段名称
+            data: JSON data
+            field_name: Field name
 
         Returns:
-            Markdown格式的文本
+            Markdown formatted text
         """
         lines = []
 
-        # 添加标题
+        # Add title
         title_map = {
-            "market_report": "市场分析",
-            "fundamentals_report": "基本面分析",
-            "bull_report": "积极证据研究观察",
-            "bear_report": "谨慎证据研究观察",
-            "investment_plan": "综合研究结论",
-            "risk_assessment": "风险审阅",
+            "market_report": "market analysis",
+            "fundamentals_report": "fundamental analysis",
+            "bull_report": "positive evidence research observation",
+            "bear_report": "Cautious Evidence Research and Observation",
+            "investment_plan": "Comprehensive research conclusion",
+            "risk_assessment": "risk review",
         }
         title = title_map.get(field_name, field_name.replace("_", " ").title())
         lines.append(f"## {title}\n")
 
-        # 提取关键字段
+        # Extract key fields
         for key, value in data.items():
             if isinstance(value, (str, int, float, bool)):
                 lines.append(f"**{key}**: {value}")

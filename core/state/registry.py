@@ -1,7 +1,7 @@
 """
-状态注册表
+status registry
 
-管理工作流状态 Schema 的缓存和查询
+Manage caching and querying of workflow state schemas
 """
 
 import logging
@@ -16,20 +16,20 @@ logger = logging.getLogger(__name__)
 
 class StateRegistry:
     """
-    状态注册表（单例模式）
+    State registry (singleton mode)
     
-    缓存和管理工作流状态 Schema
+    Caching and managing workflow state Schema
     
-    用法:
+    Usage:
         registry = StateRegistry()
         
-        # 获取或构建状态 Schema
+        # Get or build status Schema
         schema = registry.get_or_build(
             workflow_id="position_analysis",
             agent_ids=["pa_technical", "pa_fundamental", "pa_risk", "pa_advisor"]
         )
         
-        # 获取 TypedDict 类
+        # Get the TypedDict class
         state_class = registry.get_state_class("position_analysis")
     """
     
@@ -59,15 +59,15 @@ class StateRegistry:
         internal_state_fields: Optional[Dict[str, Any]] = None,
     ) -> WorkflowStateSchema:
         """
-        获取或构建工作流状态 Schema
+        Get or build workflow status Schema
         
         Args:
-            workflow_id: 工作流 ID
-            agent_ids: Agent ID 列表
-            force_rebuild: 是否强制重建
+            workflow_id: Workflow ID
+            agent_ids: Agent ID list
+            force_rebuild: Whether to force rebuild
             
         Returns:
-            WorkflowStateSchema 实例
+            WorkflowStateSchema Example
         """
         if workflow_id in self._schemas and not force_rebuild:
             schema = self._schemas[workflow_id]
@@ -80,7 +80,7 @@ class StateRegistry:
             if not missing_internal_fields:
                 return schema
             logger.info(
-                f"状态 Schema 缺少内部字段，重新生成: {workflow_id}, missing={missing_internal_fields}"
+                f"Status Schema is missing internal fields, regenerate: {workflow_id}, missing={missing_internal_fields}"
             )
         
         schema = self._builder.build_from_agents(
@@ -90,26 +90,26 @@ class StateRegistry:
         )
         self._schemas[workflow_id] = schema
         
-        # 同时生成 TypedDict 类
+        # Also generate TypedDict class
         self._state_classes[workflow_id] = self._builder.generate_typed_dict(schema)
         
         return schema
     
     def get_schema(self, workflow_id: str) -> Optional[WorkflowStateSchema]:
-        """获取已缓存的状态 Schema"""
+        """Get cached status Schema"""
         return self._schemas.get(workflow_id)
     
     def get_state_class(self, workflow_id: str) -> Optional[Type]:
-        """获取工作流的 TypedDict 状态类"""
+        """Get the TypedDict status class of the workflow"""
         return self._state_classes.get(workflow_id)
     
     def register_schema(self, schema: WorkflowStateSchema) -> None:
-        """手动注册状态 Schema"""
+        """Manual registration status Schema"""
         self._schemas[schema.workflow_id] = schema
         self._state_classes[schema.workflow_id] = self._builder.generate_typed_dict(schema)
     
     def clear(self, workflow_id: Optional[str] = None) -> None:
-        """清除缓存"""
+        """clear cache"""
         if workflow_id:
             self._schemas.pop(workflow_id, None)
             self._state_classes.pop(workflow_id, None)
@@ -118,23 +118,23 @@ class StateRegistry:
             self._state_classes.clear()
     
     def list_workflows(self) -> List[str]:
-        """列出所有已注册的工作流 ID"""
+        """List all registered workflows ID"""
         return list(self._schemas.keys())
     
     def get_field_source(self, workflow_id: str, field_name: str) -> Optional[str]:
-        """获取字段的来源 Agent"""
+        """Get the source of the field Agent"""
         schema = self._schemas.get(workflow_id)
         if schema and field_name in schema.fields:
             return schema.fields[field_name].source_agent
         return None
 
 
-# 全局注册表实例
+# Global registry instance
 _global_registry: Optional[StateRegistry] = None
 
 
 def get_state_registry() -> StateRegistry:
-    """获取全局状态注册表"""
+    """Get the global status registry"""
     global _global_registry
     if _global_registry is None:
         _global_registry = StateRegistry()

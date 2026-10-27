@@ -1,4 +1,4 @@
-"""WACC 加权平均资本成本计算器"""
+"""WACC Weighted average cost of capital calculator"""
 
 import json
 import logging
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 @register_tool(
     tool_id="get_wacc_calculation",
     name="WACC 计算器",
-    description="计算 A 股公司加权平均资本成本 WACC，返回股权权重、债权权重、股权成本、债权成本、税率和 WACC 明细，为 DCF 估值提供折现率",
+    description="Calculate the weighted average cost of capital WACC for A-share companies, return equity weight, debt weight, equity cost, debt cost, tax rate and WACC details, and provide a discount rate for DCF valuation",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -25,64 +25,64 @@ logger = logging.getLogger(__name__)
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["discount_rate_estimation", "cost_of_capital_calculation"],
-    when_to_use="当需要计算折现率、估算资本成本、为 DCF 或绝对估值提供 WACC 参数时使用。",
-    when_not_to_use="不适合直接用于估值结论（仅提供参数）。不适合无财务数据的标的。",
-    returns="返回 JSON 字符串，包含资本结构、股权成本、债权成本、WACC 及数据质量说明。",
+    when_to_use="Used when you need to calculate discount rates, estimate cost of capital, provide WACC parameters for DCF or absolute valuation.",
+    when_not_to_use="Not suitable for direct use in valuation conclusions (only parameters are provided). Not suitable for targets without financial data.",
+    returns="Returns a JSON string containing capital structure, cost of equity, cost of debt, WACC, and data quality description.",
     example="get_wacc_calculation(symbol='600519')",
     related_tools=["get_dcf_valuation", "get_dcf_three_stage_valuation", "get_capm_cost_of_equity"],
 )
 def get_wacc_calculation(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    risk_free_rate: Annotated[Optional[float], "无风险利率，默认 2.5%"] = 0.025,
-    equity_risk_premium: Annotated[Optional[float], "股权风险溢价，默认 6%"] = 0.06,
-    tax_rate: Annotated[Optional[float], "企业所得税率，默认 25%"] = 0.25,
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    risk_free_rate: Annotated[Optional[float], "Risk-free rate, default 2.5%"] = 0.025,
+    equity_risk_premium: Annotated[Optional[float], "Equity risk premium, default 6%"] = 0.06,
+    tax_rate: Annotated[Optional[float], "Corporate income tax rate, default 25%"] = 0.25,
 ) -> str:
-    """WACC 加权平均资本成本计算
+    """WACC Weighted average cost of capital calculation
 
     Args:
-        symbol: A 股股票代码，如 600519
-        risk_free_rate: 无风险利率（小数形式，如 0.025 表示 2.5%），默认 0.025
-        equity_risk_premium: 股权风险溢价（小数形式），默认 0.06
-        tax_rate: 企业所得税率（小数形式），默认 0.25
+        symbol: A stock stock code, such as 600519
+        risk_free_rate: Risk-free interest rate (in decimal form, such as 0.025 for 2.5%), default 0.025
+        equity_risk_premium: Equity risk premium (decimal form), default 0.06
+        tax_rate: Corporate income tax rate (decimal form), default 0.25
 
     Returns:
-        str: JSON 字符串，包含以下可能结构——
+        str: JSON A string containing the following possible structures——
 
-        错误情形返回 dict，字段：
+        Error case returns dict, fields:
             status: "error"
-            message: 错误描述
-            symbol: 股票代码
+            message: Error description
+            symbol: Stock code
 
-        成功情形返回 dict，字段：
-            symbol: 股票代码
-            parameters: 输入参数 dict —
-                risk_free_rate: 无风险利率（小数）
-                equity_risk_premium: 股权风险溢价（小数）
-                tax_rate: 所得税率（小数）
-            capital_structure: 资本结构 dict —
-                market_cap: 市值
-                total_debt: 总债务
-                total_capital: 总资本
-                equity_weight: 股权权重（小数）
-                debt_weight: 债务权重（小数）
-                debt_to_equity: 债务股权比（小数，缺失时为 None）
-            cost_of_equity: 股权成本 dict —
-                beta: Beta 系数
-                risk_free_rate: 无风险利率（小数）
-                equity_risk_premium: 股权风险溢价（小数）
-                cost_of_equity: 股权成本（小数）
-            cost_of_debt: 债权成本 dict —
-                interest_expense: 利息费用
-                total_debt: 总债务
-                pre_tax_cost: 税前债权成本（小数）
-                after_tax_cost: 税后债权成本（小数）
-            wacc: 加权平均资本成本（小数）
-            data_quality: 数据质量 dict —
-                beta_source: Beta 来源："default" | "price_returns_estimated"
-                debt_cost_source: 债权成本来源："financial_expense_based" | "default_proxy"
-                warnings: 警告信息列表
+        In case of success, return dict, fields:
+            symbol: Stock code
+            parameters: input parameters dict —
+                risk_free_rate: Risk-free interest rate (decimal)
+                equity_risk_premium: Equity risk premium (decimal)
+                tax_rate: Income tax rate (decimal)
+            capital_structure: capital structure dict —
+                market_cap: Market value
+                total_debt: total debt
+                total_capital: total capital
+                equity_weight: Equity weight (decimal)
+                debt_weight: Debt weight (decimal)
+                debt_to_equity: Debt to equity ratio (decimal, None if missing)
+            cost_of_equity: cost of equity dict —
+                beta: Beta coefficient
+                risk_free_rate: Risk-free interest rate (decimal)
+                equity_risk_premium: Equity risk premium (decimal)
+                cost_of_equity: Cost of equity (decimal)
+            cost_of_debt: cost of debt dict —
+                interest_expense: interest expense
+                total_debt: total debt
+                pre_tax_cost: Cost of debt before tax (decimal)
+                after_tax_cost: After-tax debt cost (decimal)
+            wacc: Weighted average cost of capital (decimal)
+            data_quality: Data quality dict —
+                beta_source: Beta Source:"default" | "price_returns_estimated"
+                debt_cost_source: Source of debt cost:"financial_expense_based" | "default_proxy"
+                warnings: Warning message list
 
-        异常时返回 dict：{"status": "error", "message": ...}
+        Return dict on exception:{"status": "error", "message": ...}
     """
     try:
         from core.skill_runtime.data_access import get_stock_financial_periods, get_stock_daily_quotes
@@ -92,7 +92,7 @@ def get_wacc_calculation(
         warnings: list = []
         beta_source = "default"
 
-        # 1. 获取市值
+        # 1. Get market capitalization
         master = get_security_master(symbol)
         market_cap = master.get("market_cap")
         if market_cap is None or market_cap <= 0:
@@ -101,21 +101,21 @@ def get_wacc_calculation(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 2. 获取最新财务数据
+        # 2. Get the latest financial data
         periods = get_stock_financial_periods(symbol, limit=1)
         if not periods:
-            # 回退到 get_security_master 中可能带有的财务信息
+            # Fallback to get_security_master with possible financial information
             total_liab = 0.0
             total_equity = (master.get("total_equity") or 0.0)
             fin_exp = 0.0
-            warnings.append("未获取到财务期间数据，债务和利息费用采用默认值。")
+            warnings.append("No financial period data is obtained, and default values are used for debt and interest expenses.")
         else:
             latest_fin = periods[0]
             total_liab = latest_fin.get("total_liab") or 0.0
             total_equity = latest_fin.get("total_equity") or 0.0
             fin_exp = latest_fin.get("fin_exp") or 0.0
 
-            # 🔑 检测报告期口径，对利润表累计值做年化
+            # 🔑 Test the reporting period caliber and annualize the cumulative value of the income statement
             from core.tools.implementations.risk.extended_risk_models import (
                 _detect_period_type, _annualize_factor, _PERIOD_LABELS,
             )
@@ -125,11 +125,11 @@ def get_wacc_calculation(
                 fin_exp_annualized = fin_exp * factor
                 warnings.append(
                     f"当期为{_PERIOD_LABELS.get(cur_period, cur_period)}数据，"
-                    f"财务费用已年化处理（{fin_exp:.2f}→{fin_exp_annualized:.2f}）"
+                    f"Financial expenses have been annualized ({fin_exp:.2f}→{fin_exp_annualized:.2f}) "
                 )
                 fin_exp = fin_exp_annualized
 
-        # 3. 计算 Beta（简化：从日线收益计算，或默认 1.0）
+        # 3. Calculate Beta (simplified: calculated from daily returns, or default 1.0)
         beta = 1.0
         try:
             end = datetime.date.today().isoformat()
@@ -149,23 +149,23 @@ def get_wacc_calculation(
                     if len(returns) >= 60:
                         var_ret = np.var(returns)
                         if var_ret > 0:
-                            # 用自身方差近似，假设市场波动率约 0.015 daily
+                            # Using its own variance approximation, it is assumed that the market volatility is approximately 0.015 daily
                             market_var_proxy = 0.015 ** 2
                             cov_proxy = np.mean(returns) * np.mean(returns) if np.mean(returns) > 0 else 0
-                            # 简化：beta = 自身波动率 / 市场波动率
+                            # Simplify:beta = Own volatility/market volatility
                             beta = max(0.2, min(2.5, np.sqrt(var_ret) / 0.015))
                             beta_source = "price_returns_estimated"
         except Exception as e:
-            warnings.append(f"Beta 计算失败，使用默认值 1.0: {e}")
+            warnings.append(f"Beta Calculation failed, default value used 1.0: {e}")
 
-        # 4. 成本计算
+        # 4. cost calculation
         rf = risk_free_rate if risk_free_rate is not None else 0.025
         erp = equity_risk_premium if equity_risk_premium is not None else 0.06
         tax = tax_rate if tax_rate is not None else 0.25
 
         cost_of_equity = rf + beta * erp
 
-        # 债权成本
+        # cost of debt
         if total_liab > 0 and fin_exp > 0:
             pre_tax_cost_of_debt = fin_exp / total_liab
             pre_tax_cost_of_debt = max(0.01, min(0.15, pre_tax_cost_of_debt))
@@ -174,13 +174,13 @@ def get_wacc_calculation(
             pre_tax_cost_of_debt = 0.04
             debt_cost_source = "default_proxy"
             if total_liab == 0:
-                warnings.append("总负债为 0，债权成本采用默认 4%。")
+                warnings.append("Total debt is 0, and the default cost of debt is 4%.")
             if fin_exp == 0:
-                warnings.append("财务费用为 0 或缺失，债权成本采用默认 4%。")
+                warnings.append("The finance charge is 0 or missing and the debt cost uses the default 4%.")
 
         after_tax_cost_of_debt = pre_tax_cost_of_debt * (1 - tax)
 
-        # 5. 资本结构
+        # 5. capital structure
         total_capital = market_cap + total_liab
         equity_weight = market_cap / total_capital if total_capital > 0 else 0.5
         debt_weight = total_liab / total_capital if total_capital > 0 else 0.5

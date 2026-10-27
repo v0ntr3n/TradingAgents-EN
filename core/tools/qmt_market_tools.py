@@ -1,4 +1,4 @@
-"""QMT 驱动的大盘与板块分析辅助函数。"""
+"""QMT Driven market and sector analysis auxiliary functions."""
 
 from __future__ import annotations
 
@@ -88,7 +88,7 @@ def _get_qmt_adapter() -> Optional[QMTAdapter]:
 def get_market_overview_qmt_sync(trade_date: str, lookback_days: int = 60) -> str:
     adapter = _get_qmt_adapter()
     if adapter is None:
-        return "❌ QMT 不可用，无法执行 QMT 大盘分析。"
+        return "❌ QMT Unavailable to perform QMT broad market analysis."
 
     normalized_trade_date = _normalize_trade_date(trade_date)
     latest_trade_date = adapter.find_latest_trade_date() or _compact_trade_date(normalized_trade_date)
@@ -98,8 +98,8 @@ def get_market_overview_qmt_sync(trade_date: str, lookback_days: int = 60) -> st
         "# QMT 大盘分析概览",
         f"- 请求日期: {normalized_trade_date}",
         f"- QMT 最近交易日: {latest_trade_date_display}",
-        "- 分析口径: 基于 QMT 指数行情、全市场快照与成交活跃度代理指标",
-        "- 缺失口径: 北向资金、两融、指数估值快照",
+        "- Analysis caliber: Based on QMT index prices, market-wide snapshots and transaction activity proxy indicators",
+        "- missing caliber: Snapshot of northbound capital, financing and index valuation",
         "",
         "## 主要指数趋势",
     ]
@@ -154,16 +154,16 @@ def get_market_overview_qmt_sync(trade_date: str, lookback_days: int = 60) -> st
             f"- 上涨家数代理: {up_count}",
             f"- 下跌家数代理: {down_count}",
             f"- 平盘家数代理: {flat_count}",
-            f"- 强势股占比代理(>=3%): {strong_count}/{len(pct_values)}",
-            f"- 弱势股占比代理(<=-3%): {weak_count}/{len(pct_values)}",
+            f"- Strong stock proportion agency(>=3%): {strong_count}/{len(pct_values)}",
+            f"- Weak stock proportion proxy(<=-3%): {weak_count}/{len(pct_values)}",
             f"- 涨跌幅中位数代理: {_format_pct(median_pct)}",
-            f"- 全市场成交额代理: {total_amount / 100000000:.2f} 亿元" if total_amount else "- 全市场成交额代理: 0.00 亿元",
+            f"- 全市场成交额代理: {total_amount / 100000000:.2f} 亿元" if total_amount else "- Whole market turnover agency: 0.00 billion",
         ])
     else:
-        report_lines.append("- 当前无法从 QMT 获取有效全市场快照，市场扩散度代理指标缺失")
+        report_lines.append("- It is currently impossible to obtain a valid market-wide snapshot from QMT, and the market diffusion proxy indicator is missing.")
 
     report_lines.append("")
-    report_lines.append("## 涨跌停统计（QMT 快照代理）")
+    report_lines.append("## Price limit statistics (QMT snapshot proxy)")
     limit_stats = adapter.get_limit_stats(trade_date=normalized_trade_date)
     if limit_stats:
         source_tag = "实时快照" if limit_stats.get("source") == "realtime" else "历史日线回算"
@@ -182,7 +182,7 @@ def get_market_overview_qmt_sync(trade_date: str, lookback_days: int = 60) -> st
         report_lines.append("- 暂无涨跌停统计数据")
 
     report_lines.append("")
-    report_lines.append("## 成交额排名（QMT 快照代理）")
+    report_lines.append("## Transaction volume ranking (QMT snapshot agent)")
     amount_ranking = adapter.get_amount_ranking(10, trade_date=normalized_trade_date)
     if amount_ranking:
         for i, row in enumerate(amount_ranking, 1):
@@ -203,24 +203,24 @@ def get_market_overview_qmt_sync(trade_date: str, lookback_days: int = 60) -> st
         elif hs300_20d > zz500_20d:
             report_lines.append(f"- 大盘核心资产相对占优: 沪深300 20日 {_format_pct(hs300_20d)} 强于中证500 20日 {_format_pct(zz500_20d)}")
         else:
-            report_lines.append("- 大小盘风格接近，暂未出现明显切换")
+            report_lines.append("- The styles of large and small caps are similar, and there is no obvious switch yet.")
     if cyb_20d is not None and hs300_20d is not None:
         if cyb_20d > hs300_20d:
             report_lines.append(f"- 成长风格活跃: 创业板 20日 {_format_pct(cyb_20d)} 强于沪深300 {_format_pct(hs300_20d)}")
         else:
-            report_lines.append(f"- 成长风格未显著占优: 创业板 20日 {_format_pct(cyb_20d)}，沪深300 {_format_pct(hs300_20d)}")
+            report_lines.append(f"- Growth style is not significantly dominant: GEM 20th {_format_pct(cyb_20d)}, Shanghai and Shenzhen 300 {_format_pct(hs300_20d)}")
 
     report_lines.append("")
     report_lines.append("## 使用建议")
-    report_lines.append("- 本报告适合用于趋势、扩散、活跃度与风格切换判断，不适合替代北向资金或两融等官方统计口径。")
-    report_lines.append("- 当 Tushare 不可用但 QMT 可用时，应优先依据该报告进行交易盘面型大盘分析。")
+    report_lines.append("- This report is suitable for judging trends, diffusion, activity and style switching. It is not suitable to replace official statistical calibers such as northbound funds or financing.")
+    report_lines.append("- When Tushare is unavailable but QMT is available, priority should be given to conducting market analysis based on this report.")
     return "\n".join(report_lines)
 
 
 def get_sector_analysis_qmt_sync(ticker: str, trade_date: str, lookback_days: int = 20, top_n: int = 10) -> str:
     adapter = _get_qmt_adapter()
     if adapter is None:
-        return "❌ QMT 不可用，无法执行 QMT 板块分析。"
+        return "❌ QMT Unavailable to perform QMT sector analysis."
 
     code = "".join(ch for ch in str(ticker) if ch.isdigit()).zfill(6)
     if len(code) != 6:
@@ -228,7 +228,7 @@ def get_sector_analysis_qmt_sync(ticker: str, trade_date: str, lookback_days: in
 
     db = get_mongo_db_sync()
     if db is None:
-        return "❌ 无法连接数据库，无法获取行业映射。"
+        return "❌ Unable to connect to the database and obtain industry mapping."
 
     target_doc = db.stock_basic_info.find_one(
         {"code": code},
@@ -240,7 +240,7 @@ def get_sector_analysis_qmt_sync(ticker: str, trade_date: str, lookback_days: in
     industry = target_doc.get("industry") or ""
     target_name = target_doc.get("name") or code
     if not industry or industry == "未知":
-        return f"❌ {code} 缺少可用行业映射，当前 QMT 板块分析依赖本地 stock_basic_info 的行业字段。"
+        return f"❌ {code} There is a lack of industry mapping available and current QMT sector analysis relies on the industry field of the local stock_basic_info."
 
     peer_cursor = db.stock_basic_info.find(
         {"industry": industry, "code": {"$exists": True}},
@@ -305,15 +305,15 @@ def get_sector_analysis_qmt_sync(ticker: str, trade_date: str, lookback_days: in
         f"- 目标股票: {target_name}({code})",
         f"- 行业映射: {industry}",
         f"- 分析日期: {_normalize_trade_date(trade_date)}",
-        "- 行情口径: QMT K线 + QMT 实时快照",
-        "- 行业口径: 本地 stock_basic_info 行业字段",
-        "- 缺失口径: 同花顺板块资金流、概念板块官方排名",
+        "- Quotation caliber: QMT K line + QMT Live snapshot",
+        "- Industry caliber: Local stock_basic_info industry field",
+        "- missing caliber: Flush sector capital flow, concept sector official ranking",
         "",
         "## 板块整体强弱",
         f"- 可分析成分股数: {len(rows)}",
-        f"- 上涨成分占比(周期口径): {rising_count}/{len(valid_period)}" if valid_period else "- 上涨成分占比: 数据不足",
-        f"- 周期平均涨跌幅: {_format_pct(avg_period)}" if avg_period is not None else "- 周期平均涨跌幅: 数据不足",
-        f"- 周期中位涨跌幅: {_format_pct(median_period)}" if median_period is not None else "- 周期中位涨跌幅: 数据不足",
+        f"- Proportion of rising components(Cycle caliber): {rising_count}/{len(valid_period)}" if valid_period else "- Proportion of rising components: Not enough data",
+        f"- 周期平均涨跌幅: {_format_pct(avg_period)}" if avg_period is not None else "- Cycle average rise and fall: Not enough data",
+        f"- 周期中位涨跌幅: {_format_pct(median_period)}" if median_period is not None else "- Mid-cycle increase and decrease: Not enough data",
         "",
         "## 龙头与扩散",
     ]
@@ -335,22 +335,22 @@ def get_sector_analysis_qmt_sync(ticker: str, trade_date: str, lookback_days: in
                 f"- {row['name']}({row['code']}): 成交额代理 {amount_text} | 当日涨跌 {_format_pct(row['intraday_pct'])}"
             )
     else:
-        report_lines.append("- 暂无可用成交活跃度快照")
+        report_lines.append("- No transaction activity snapshot is available yet")
 
     report_lines.append("")
     report_lines.append("## 解释口径")
-    report_lines.append("- 该分析适合判断行业内部强弱分层、龙头带动和扩散程度。")
-    report_lines.append("- 该分析不等价于同花顺板块资金流统计，不能直接替代 Tushare 的板块资金工具。")
+    report_lines.append("- This analysis is suitable for judging the strength and weakness within the industry, as well as the degree of leading and diffusion.")
+    report_lines.append("- This analysis is not equivalent to Flush Sector Fund Flow Statistics and cannot directly replace Tushare s sector funding tools.")
     return "\n".join(report_lines)
 
 
-# ==================== 增强版板块分析 ====================
+# ==================== Enhanced version of sector analysis ====================
 
 def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days: int = 20, top_n: int = 10) -> str:
-    """QMT 增强版板块分析：增加板块资金流向代理、板块强弱对比、技术指标。"""
+    """QMT Enhanced version of sector analysis: Added sector capital flow agents, sector strength comparison, and technical indicators."""
     adapter = _get_qmt_adapter()
     if adapter is None:
-        return "❌ QMT 不可用，无法执行 QMT 板块分析。"
+        return "❌ QMT Unavailable to perform QMT sector analysis."
 
     code = "".join(ch for ch in str(ticker) if ch.isdigit()).zfill(6)
     if len(code) != 6:
@@ -358,7 +358,7 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
 
     db = get_mongo_db_sync()
     if db is None:
-        return "❌ 无法连接数据库，无法获取行业映射。"
+        return "❌ Unable to connect to the database and obtain industry mapping."
 
     target_doc = db.stock_basic_info.find_one(
         {"code": code},
@@ -370,7 +370,7 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
     industry = target_doc.get("industry") or ""
     target_name = target_doc.get("name") or code
     if not industry or industry == "未知":
-        return f"❌ {code} 缺少可用行业映射，当前 QMT 板块分析依赖本地 stock_basic_info 的行业字段。"
+        return f"❌ {code} There is a lack of industry mapping available and current QMT sector analysis relies on the industry field of the local stock_basic_info."
 
     peer_cursor = db.stock_basic_info.find(
         {"industry": industry, "code": {"$exists": True}},
@@ -405,7 +405,7 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
         intraday_pct = _safe_float(quote.get("pct_chg"))
         turnover = _safe_float(quote.get("turnover"))
 
-        # 计算 RSI
+        # Calculate RSI
         rsi = None
         if len(closes) >= 15:
             gains, losses = [], []
@@ -417,10 +417,10 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
             avg_loss = sum(losses) / 14
             rsi = 100 - (100 / (1 + avg_gain / avg_loss)) if avg_loss > 0 else 100
 
-        # 计算 MACD
+        # Calculate MACD
         macd_r = _compute_macd(closes)
 
-        # 计算量比（今日成交额 / 近5日均量）
+        # Calculate volume ratio (today's turnover / average volume in the past 5 days)
         vol_ratio = None
         if amount and len(items) >= 5:
             recent_amounts = []
@@ -465,12 +465,12 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
         reverse=True,
     )[:min(5, len(rows))]
 
-    # === 板块资金流向代理 ===
+    # === Sector fund flow agent ===
     total_amount = sum(row["amount"] for row in rows if row["amount"] is not None)
     rising_amount = sum(row["amount"] for row in rows if row["amount"] is not None and (row["intraday_pct"] or 0) > 0)
     falling_amount = sum(row["amount"] for row in rows if row["amount"] is not None and (row["intraday_pct"] or 0) < 0)
 
-    # === 板块强弱对比（与大盘对比） ===
+    # === Sector strength comparison (compared with the broader market) ===
     sh_items = adapter.get_kline("000001.SH", period="day", limit=max(lookback_days, 20) + 5)
     sh_pct = None
     if sh_items:
@@ -479,22 +479,22 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
             sh_pct = _compute_period_pct(sh_closes, lookback_days)
 
     report_lines = [
-        "# QMT 板块分析概览（增强版）",
+        "# QMT Sector Analysis Overview (Enhanced Version)",
         f"- 目标股票: {target_name}({code})",
         f"- 行业映射: {industry}",
         f"- 分析日期: {_normalize_trade_date(trade_date)}",
-        "- 行情口径: QMT K线 + QMT 实时快照",
-        "- 行业口径: 本地 stock_basic_info 行业字段",
-        "- 缺失口径: 同花顺板块资金流、概念板块官方排名",
+        "- Quotation caliber: QMT K line + QMT Live snapshot",
+        "- Industry caliber: Local stock_basic_info industry field",
+        "- missing caliber: Flush sector capital flow, concept sector official ranking",
         "",
         "## 板块整体强弱",
         f"- 可分析成分股数: {len(rows)}",
-        f"- 上涨成分占比(周期口径): {rising_count}/{len(valid_period)}" if valid_period else "- 上涨成分占比: 数据不足",
-        f"- 周期平均涨跌幅: {_format_pct(avg_period)}" if avg_period is not None else "- 周期平均涨跌幅: 数据不足",
-        f"- 周期中位涨跌幅: {_format_pct(median_period)}" if median_period is not None else "- 周期中位涨跌幅: 数据不足",
+        f"- Proportion of rising components(Cycle caliber): {rising_count}/{len(valid_period)}" if valid_period else "- Proportion of rising components: Not enough data",
+        f"- 周期平均涨跌幅: {_format_pct(avg_period)}" if avg_period is not None else "- Cycle average rise and fall: Not enough data",
+        f"- 周期中位涨跌幅: {_format_pct(median_period)}" if median_period is not None else "- Mid-cycle increase and decrease: Not enough data",
     ]
 
-    # 板块 vs 大盘
+    # Sector vs. Market
     if avg_period is not None and sh_pct is not None:
         excess = avg_period - sh_pct
         if excess > 2:
@@ -512,14 +512,14 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
     if leaders:
         for row in leaders[:top_n]:
             rsi_str = f"RSI={row['rsi']:.0f}" if row["rsi"] else ""
-            macd_str = f"MACD={'多' if (row['macd_hist'] or 0) > 0 else '空'}" if row["macd_hist"] is not None else ""
+            macd_str = f"MACD={'Much' if (row['macd_hist'] or 0) > 0 else 'empty'}" if row["macd_hist"] is not None else ""
             report_lines.append(
                 f"- {row['name']}({row['code']}): 周期 {_format_pct(row['period_pct'])} | 最新价 {row['close']:.2f} {rsi_str} {macd_str}"
             )
     else:
         report_lines.append("- 暂无可用龙头强度数据")
 
-    # === 板块资金流向代理 ===
+    # === Sector fund flow agent ===
     report_lines.append("")
     report_lines.append("## 板块资金流向代理")
     if total_amount > 0:
@@ -532,13 +532,13 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
             f"- 资金流向代理: {flow_label} ({_format_pct(net_flow_pct)})",
         ])
         if net_flow_pct > 10:
-            report_lines.append("- 资金明显流入该板块，市场关注度较高")
+            report_lines.append("- Funds have obviously flowed into this sector, and market attention has been high")
         elif net_flow_pct < -10:
-            report_lines.append("- 资金明显流出该板块，需警惕风险")
+            report_lines.append("- Funds have obviously flowed out of this sector, so we need to be alert to risks.")
     else:
         report_lines.append("- 暂无可用成交额数据")
 
-    # === 活跃度代理（增强：量比） ===
+    # === Activity proxy (enhancement: volume ratio) ===
     report_lines.append("")
     report_lines.append("## 活跃度代理")
     if active_names:
@@ -549,9 +549,9 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
                 f"- {row['name']}({row['code']}): 成交额 {amount_text} | 当日涨跌 {_format_pct(row['intraday_pct'])} {vol_ratio_text}"
             )
     else:
-        report_lines.append("- 暂无可用成交活跃度快照")
+        report_lines.append("- No transaction activity snapshot is available yet")
 
-    # === 技术指标汇总 ===
+    # === Summary of technical indicators ===
     report_lines.append("")
     report_lines.append("## 板块技术指标汇总")
     rsi_values = [row["rsi"] for row in rows if row["rsi"] is not None]
@@ -561,7 +561,7 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
         avg_rsi = sum(rsi_values) / len(rsi_values)
         rsi_label = "超买" if avg_rsi > 70 else "偏强" if avg_rsi > 55 else "中性" if avg_rsi > 45 else "偏弱" if avg_rsi > 30 else "超卖"
         report_lines.extend([
-            f"- 板块平均 RSI(14): {avg_rsi:.1f} ({rsi_label})",
+            f"- sector average RSI(14): {avg_rsi:.1f} ({rsi_label})",
             f"- MACD 多头: {macd_bull} | MACD 空头: {macd_bear}",
         ])
     else:
@@ -569,27 +569,27 @@ def get_sector_analysis_qmt_enhanced(ticker: str, trade_date: str, lookback_days
 
     report_lines.append("")
     report_lines.append("## 解释口径")
-    report_lines.append("- 该分析适合判断行业内部强弱分层、龙头带动、资金流向和扩散程度。")
-    report_lines.append("- 资金流向代理基于上涨/下跌股的成交额拆分，不等价于同花顺板块资金流统计。")
-    report_lines.append("- 量比基于今日成交额与近5日均量的比值，>1.5 为放量，<0.7 为缩量。")
+    report_lines.append("- This analysis is suitable for judging the strength stratification, leading role, capital flow and degree of diffusion within the industry.")
+    report_lines.append("- The capital flow proxy is based on the trading volume split of rising/falling stocks, and is not equivalent to the capital flow statistics of the Flush sector.")
+    report_lines.append("- The volume ratio is based on the ratio of today s transaction volume to the average volume of the past 5 days.>1.5 To increase the volume,<0.7 for shrinkage.")
     return "\n".join(report_lines)
 
 
-# ==================== 涨跌停统计（QMT 降级） ====================
+# ==================== Price limit statistics (QMT downgrade) ====================
 
 def get_limit_stats_qmt_sync(trade_date: str) -> str:
-    """QMT 降级：统计涨跌停和涨跌家数（盘中用实时快照，盘后用历史日线）。"""
+    """QMT Downgrade: Count the price limit and the number of price increases and decreases (use real-time snapshots during the market and historical daily lines after the market)."""
     adapter = _get_qmt_adapter()
     if adapter is None:
-        return "❌ QMT 不可用，无法获取涨跌停统计。"
+        return "❌ QMT Unavailable, unable to obtain price limit statistics."
 
     stats = adapter.get_limit_stats(trade_date=trade_date)
     if stats is None:
-        return "⚠️ QMT 未返回涨跌停统计数据。"
+        return "⚠️ QMT No price limit statistics were returned."
 
     source_tag = "实时快照" if stats.get("source") == "realtime" else "历史日线回算"
     lines = [
-        f"📊 涨跌停与涨跌家数统计（基于 QMT {source_tag}，Tushare 不可用时的降级数据）",
+        f"📊 Statistics on price limit and number of companies rising and falling (based on QMT {source_tag}, Tushare Degraded data when unavailable)",
         "",
         f"- 涨停: {stats['up_limit']} 家",
         f"- 跌停: {stats['down_limit']} 家",
@@ -613,26 +613,26 @@ def get_limit_stats_qmt_sync(trade_date: str) -> str:
         lines.append("")
 
     lines.append("## 口径说明")
-    lines.append("- 涨跌停判断基于 QMT 行情数据，盘中用实时快照涨跌停价，盘后用历史日线回算，非交易所官方统计。")
-    lines.append("- 科创板/创业板涨跌幅阈值 20%，北交所 30%，主板 10%。")
+    lines.append("- The price limit is determined based on QMT market data. Real-time snapshots of the price limit are used during the day, and historical daily lines are used to calculate the price after the market. It is not the official statistics of the exchange.")
+    lines.append("- The rise and fall thresholds are 20% for the Science and Technology Innovation Board/GEM, 30% for the Beijing Stock Exchange, and 10% for the main board.")
 
     return "\n".join(lines)
 
 
-# ==================== 成交额排名（QMT 降级） ====================
+# ==================== Turnover ranking (QMT downgrade) ====================
 
 def get_amount_ranking_qmt_sync(top_n: int = 20, trade_date: Optional[str] = None) -> str:
-    """QMT 降级：成交额排名（盘中用实时快照，盘后用历史日线）。"""
+    """QMT Downgrade: Trading volume ranking (real-time snapshots are used during the day, and historical daily lines are used after the market)."""
     adapter = _get_qmt_adapter()
     if adapter is None:
-        return "❌ QMT 不可用，无法获取成交额排名。"
+        return "❌ QMT Unavailable, unable to obtain transaction volume ranking."
 
     ranking = adapter.get_amount_ranking(top_n, trade_date=trade_date)
     if ranking is None:
-        return "⚠️ QMT 未返回成交额排名数据。"
+        return "⚠️ QMT No transaction volume ranking data was returned."
 
     lines = [
-        "📊 成交额排名（基于 QMT 行情数据，Tushare 不可用时的降级数据）",
+        "📊 Transaction volume ranking (based on QMT market data, downgraded data when Tushare is unavailable)",
         "",
     ]
 
@@ -643,12 +643,12 @@ def get_amount_ranking_qmt_sync(top_n: int = 20, trade_date: Optional[str] = Non
 
     lines.append("")
     lines.append("## 口径说明")
-    lines.append("- 成交额基于 QMT 行情数据，盘中为实时快照，盘后为历史日线。")
+    lines.append("- The trading volume is based on QMT market data, which is a real-time snapshot during the day and the historical daily line after the market.")
 
     return "\n".join(lines)
 
 
-# ==================== MACD / KDJ 计算 ====================
+# ==================== MACD / KDJ Calculate ====================
 
 def _compute_macd(
     closes: List[float],
@@ -656,7 +656,7 @@ def _compute_macd(
     slow: int = 26,
     signal: int = 9,
 ) -> Dict[str, Optional[float]]:
-    """计算 MACD 指标。
+    """Calculate the MACD indicator.
 
     Returns:
         {"macd": float, "signal": float, "histogram": float}
@@ -664,7 +664,7 @@ def _compute_macd(
     if len(closes) < slow + signal:
         return {"macd": None, "signal": None, "histogram": None}
 
-    # EMA 计算
+    # EMA Calculate
     def ema(data: List[float], period: int) -> List[float]:
         k = 2 / (period + 1)
         result = [data[0]]
@@ -689,10 +689,10 @@ def _compute_kdj(
     items: List[Dict[str, Any]],
     n: int = 9,
 ) -> Dict[str, Optional[float]]:
-    """计算 KDJ 指标。
+    """Calculate the KDJ indicator.
 
     Args:
-        items: K线数据列表，需包含 high/low/close 字段
+        items: K Line data list, needs to include high/low/close fields
 
     Returns:
         {"k": float, "d": float, "j": float}
@@ -726,29 +726,29 @@ def _compute_kdj(
     }
 
 
-# ==================== 增强版大盘分析 ====================
+# ==================== Enhanced version of market analysis ====================
 
 def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -> str:
-    """QMT 增强版大盘分析：在原有基础上增加 MACD/KDJ、市场周期识别、涨跌幅分档统计。"""
+    """QMT Enhanced version of market analysis: On the original basis, MACD/KDJ, market cycle identification, and rise and fall statistics are added."""
     adapter = _get_qmt_adapter()
     if adapter is None:
-        return "❌ QMT 不可用，无法执行 QMT 大盘分析。"
+        return "❌ QMT Unavailable to perform QMT broad market analysis."
 
     normalized_trade_date = _normalize_trade_date(trade_date)
     latest_trade_date = adapter.find_latest_trade_date() or _compact_trade_date(normalized_trade_date)
     latest_trade_date_display = _normalize_trade_date(latest_trade_date)
 
     report_lines = [
-        "# QMT 大盘分析概览（增强版）",
+        "# QMT Market Analysis Overview (Enhanced Version)",
         f"- 请求日期: {normalized_trade_date}",
         f"- QMT 最近交易日: {latest_trade_date_display}",
-        "- 分析口径: 基于 QMT 指数行情、全市场快照与技术指标计算",
-        "- 缺失口径: 北向资金、两融、指数估值快照",
+        "- Analysis caliber: Calculated based on QMT index trends, market-wide snapshots and technical indicators",
+        "- missing caliber: Snapshot of northbound capital, financing and index valuation",
         "",
     ]
 
-    # === 1. 主要指数趋势 + 技术指标 ===
-    report_lines.append("## 主要指数趋势与技术指标")
+    # === 1. Major Index Trends + Technical indicators ===
+    report_lines.append("## Major Index Trends and Technical Indicators")
     style_reference: Dict[str, Optional[float]] = {}
     for code, name in _INDEX_LABELS.items():
         items = adapter.get_kline(code, period="day", limit=max(lookback_days, 60) + 5)
@@ -798,9 +798,9 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
             f"  {macd_str} | {kdj_str} | {rsi_str}"
         )
 
-    # === 2. 市场宽度（增强：涨跌幅分档统计） ===
+    # === 2. Market breadth (enhanced: rise and fall binning statistics) ===
     report_lines.append("")
-    report_lines.append("## 市场宽度与涨跌幅分布")
+    report_lines.append("## Market width and rise and fall distribution")
 
     quotes = adapter.get_realtime_quotes() or {}
     pct_values = [
@@ -821,7 +821,7 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
         median_pct = median(pct_values)
         total_amount = sum(v for v in amount_values if v is not None)
 
-        # 涨跌幅分档
+        # Increase and decrease levels
         buckets = {
             "涨停(≥9.9%)": 0,
             "大涨(5%~9.9%)": 0,
@@ -829,7 +829,7 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
             "微涨(0%~2%)": 0,
             "微跌(0%~-2%)": 0,
             "下跌(-2%~-5%)": 0,
-            "大跌(-5%~-9.9%)": 0,
+            "Big drop(-5%~-9.9%)": 0,
             "跌停(≤-9.9%)": 0,
         }
         for v in pct_values:
@@ -853,7 +853,7 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
         report_lines.extend([
             f"- 上涨: {up_count} | 下跌: {down_count} | 平盘: {flat_count}",
             f"- 涨跌幅中位数: {_format_pct(median_pct)}",
-            f"- 全市场成交额: {total_amount / 100000000:.2f} 亿元" if total_amount else "- 全市场成交额: 0.00 亿元",
+            f"- 全市场成交额: {total_amount / 100000000:.2f} 亿元" if total_amount else "- Total market turnover: 0.00 billion",
             "",
             "### 涨跌幅分档分布",
         ])
@@ -862,7 +862,7 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
             bar = "█" * int(pct_of_total / 2)
             report_lines.append(f"- {label}: {count} 家 ({pct_of_total:.1f}%) {bar}")
 
-        # 市场宽度指标
+        # market breadth indicator
         advance_decline_ratio = up_count / down_count if down_count > 0 else float("inf")
         breadth_pct = up_count / len(pct_values) * 100 if pct_values else 0
         report_lines.extend([
@@ -873,11 +873,11 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
             f"- 市场宽度评估: {'广谱上涨' if breadth_pct > 65 else '分化行情' if breadth_pct > 40 else '普跌格局'}",
         ])
     else:
-        report_lines.append("- 当前无法从 QMT 获取有效全市场快照，市场宽度数据缺失")
+        report_lines.append("- A valid market-wide snapshot is currently unavailable from QMT, market breadth data is missing")
 
-    # === 3. 涨跌停统计 ===
+    # === 3. Price limit statistics ===
     report_lines.append("")
-    report_lines.append("## 涨跌停统计（QMT 快照代理）")
+    report_lines.append("## Price limit statistics (QMT snapshot proxy)")
     limit_stats = adapter.get_limit_stats(trade_date=normalized_trade_date)
     if limit_stats:
         source_tag = "实时快照" if limit_stats.get("source") == "realtime" else "历史日线回算"
@@ -895,9 +895,9 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
     else:
         report_lines.append("- 暂无涨跌停统计数据")
 
-    # === 4. 成交额排名 ===
+    # === 4. Turnover ranking ===
     report_lines.append("")
-    report_lines.append("## 成交额排名（QMT 快照代理）")
+    report_lines.append("## Transaction volume ranking (QMT snapshot agent)")
     amount_ranking = adapter.get_amount_ranking(10, trade_date=normalized_trade_date)
     if amount_ranking:
         for i, row in enumerate(amount_ranking, 1):
@@ -907,7 +907,7 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
     else:
         report_lines.append("- 暂无成交额排名数据")
 
-    # === 5. 风格与结构判断 ===
+    # === 5. Style and structure judgment ===
     report_lines.append("")
     report_lines.append("## 风格与结构判断")
     hs300_20d = style_reference.get("000300.SH")
@@ -919,18 +919,18 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
         elif hs300_20d > zz500_20d:
             report_lines.append(f"- 大盘核心资产相对占优: 沪深300 20日 {_format_pct(hs300_20d)} 强于中证500 20日 {_format_pct(zz500_20d)}")
         else:
-            report_lines.append("- 大小盘风格接近，暂未出现明显切换")
+            report_lines.append("- The styles of large and small caps are similar, and there is no obvious switch yet.")
     if cyb_20d is not None and hs300_20d is not None:
         if cyb_20d > hs300_20d:
             report_lines.append(f"- 成长风格活跃: 创业板 20日 {_format_pct(cyb_20d)} 强于沪深300 {_format_pct(hs300_20d)}")
         else:
-            report_lines.append(f"- 成长风格未显著占优: 创业板 20日 {_format_pct(cyb_20d)}，沪深300 {_format_pct(hs300_20d)}")
+            report_lines.append(f"- Growth style is not significantly dominant: GEM 20th {_format_pct(cyb_20d)}, Shanghai and Shenzhen 300 {_format_pct(hs300_20d)}")
 
-    # === 6. 市场周期识别（新增） ===
+    # === 6. Market cycle identification (new) ===
     report_lines.append("")
     report_lines.append("## 市场周期识别")
 
-    # 基于上证指数判断周期
+    # Judgment cycle based on Shanghai Composite Index
     sh_items = adapter.get_kline("000001.SH", period="day", limit=max(lookback_days, 120) + 5)
     if sh_items:
         sh_closes = [_safe_float(item.get("close")) for item in sh_items if _safe_float(item.get("close")) is not None]
@@ -940,46 +940,46 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
             ma60_val = _compute_ma(sh_closes, 60)
             ma120_val = _compute_ma(sh_closes, 120) if len(sh_closes) >= 120 else None
 
-            # 计算 20 日新高/新低
+            # Calculate 20-day new high/low
             high_20 = max(sh_closes[-20:])
             low_20 = min(sh_closes[-20:])
             near_high = latest >= high_20 * 0.98
             near_low = latest <= low_20 * 1.02
 
-            # 趋势强度
+            # trend strength
             pct_20 = _compute_period_pct(sh_closes, 20)
             pct_60 = _compute_period_pct(sh_closes, 60)
 
-            # MACD 趋势
+            # MACD Trend
             macd_r = _compute_macd(sh_closes)
 
             cycle_signals = []
             if ma20_val and ma60_val and ma120_val:
                 if latest > ma20_val > ma60_val > ma120_val:
-                    cycle_signals.append("均线多头排列 → 牛市特征")
+                    cycle_signals.append("moving average long arrangement → Bull market characteristics")
                 elif latest < ma20_val < ma60_val < ma120_val:
-                    cycle_signals.append("均线空头排列 → 熊市特征")
+                    cycle_signals.append("moving average short position arrangement → Bear market characteristics")
                 else:
                     cycle_signals.append("均线交织 → 震荡市特征")
 
             if pct_20 is not None and pct_60 is not None:
                 if pct_20 > 5 and pct_60 > 10:
-                    cycle_signals.append("中短期强势上涨 → 牛市信号")
+                    cycle_signals.append("Strong rise in short to medium term → bull signal")
                 elif pct_20 < -5 and pct_60 < -10:
-                    cycle_signals.append("中短期持续下跌 → 熊市信号")
+                    cycle_signals.append("Continued decline in the short to medium term → bear market signal")
 
             if near_high:
-                cycle_signals.append("接近20日新高 → 多头动能")
+                cycle_signals.append("Close to 20-day high → Bullish Momentum")
             elif near_low:
-                cycle_signals.append("接近20日新低 → 空头主导")
+                cycle_signals.append("Close to a new low on the 20th → Shorts dominate")
 
             if macd_r["histogram"] is not None:
                 if macd_r["histogram"] > 0:
-                    cycle_signals.append("MACD柱状线为正 → 多头动能")
+                    cycle_signals.append("MACD The column line is positive → Bullish Momentum")
                 else:
-                    cycle_signals.append("MACD柱状线为负 → 空头动能")
+                    cycle_signals.append("MACD Bar line is negative → Short Momentum")
 
-            # 综合判断
+            # Comprehensive judgment
             bull_count = sum(1 for s in cycle_signals if "牛" in s or "多" in s or "强" in s)
             bear_count = sum(1 for s in cycle_signals if "熊" in s or "空" in s)
 
@@ -1001,14 +1001,14 @@ def get_market_overview_qmt_enhanced(trade_date: str, lookback_days: int = 60) -
             for s in cycle_signals:
                 report_lines.append(f"  - {s}")
         else:
-            report_lines.append("- 数据不足（需至少60根K线），无法判断市场周期")
+            report_lines.append("- Insufficient data (need at least 60 K lines), unable to judge the market cycle")
     else:
-        report_lines.append("- 未获取到上证指数数据，无法判断市场周期")
+        report_lines.append("- The Shanghai Composite Index data has not been obtained and the market cycle cannot be judged.")
 
-    # === 7. 使用建议 ===
+    # === 7. Usage suggestions ===
     report_lines.append("")
     report_lines.append("## 使用建议")
-    report_lines.append("- 本报告适合用于趋势、扩散、活跃度、风格切换与周期判断。")
-    report_lines.append("- 北向资金和两融数据仅 Tushare 提供，QMT 不支持此维度。")
-    report_lines.append("- 当 Tushare 不可用但 QMT 可用时，应优先依据该报告进行大盘分析。")
+    report_lines.append("- This report is suitable for trend, diffusion, activity, style switching and cycle judgment.")
+    report_lines.append("- Northbound capital and financing data are only provided by Tushare, and QMT does not support this dimension.")
+    report_lines.append("- When Tushare is unavailable but QMT is available, this report should be used first for broad market analysis.")
     return "\n".join(report_lines)

@@ -1,9 +1,9 @@
 """
-Gateway 适配器包
+Gateway adapter pack
 
-每个 IM 平台实现一个适配器子类，负责：
-1. 验证 Webhook 签名
-2. 解析平台消息为 GatewayMessage
-3. 将 GatewayResponse 发送到平台
+Each IM platform implements an adapter subclass responsible for:
+1. Verify webhook signature
+2. Parse the platform message as GatewayMessage
+3. Send GatewayResponse to platform
 """
 

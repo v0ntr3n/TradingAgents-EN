@@ -1,7 +1,7 @@
 """
-遗留智能体适配器
+Legacy agent adapter
 
-将现有的函数式智能体包装为 BaseAgent 子类
+Wrap an existing functional agent into a BaseAgent subclass
 """
 
 from typing import Any, Callable, Dict, Optional
@@ -12,11 +12,11 @@ from ..config import AgentMetadata, AgentConfig
 
 class LegacyAgentAdapter(BaseAgent):
     """
-    遗留智能体适配器
+    Legacy agent adapter
     
-    将现有的函数式智能体（如 create_market_analyst）包装为 BaseAgent 子类
+    Wrap existing functional agents (such as create_market_analyst) as BaseAgent subclasses
     
-    用法:
+    Usage:
         from tradingagents.agents.analysts.market_analyst import create_market_analyst
         
         adapter = LegacyAgentAdapter(
@@ -38,14 +38,14 @@ class LegacyAgentAdapter(BaseAgent):
         config: Optional[AgentConfig] = None
     ):
         """
-        初始化适配器
+        Initialize adapter
         
         Args:
-            metadata: 智能体元数据
-            factory_func: 原始工厂函数 (如 create_market_analyst)
-            llm: LLM 实例
-            toolkit: 工具包实例
-            config: 智能体配置
+            metadata: Agent metadata
+            factory_func: original factory function (Such as create_market_analyst)
+            llm: LLM Example
+            toolkit: Toolkit Example
+            config: Agent configuration
         """
         super().__init__(config)
         self._metadata = metadata
@@ -56,27 +56,27 @@ class LegacyAgentAdapter(BaseAgent):
     
     @classmethod
     def get_metadata(cls) -> AgentMetadata:
-        """获取元数据 - 由实例提供"""
-        raise NotImplementedError("LegacyAgentAdapter 的元数据由实例提供")
+        """Get metadata - provided by the instance"""
+        raise NotImplementedError("LegacyAgentAdapter The metadata for is provided by the instance")
     
     def get_instance_metadata(self) -> AgentMetadata:
-        """获取实例的元数据"""
+        """Get instance metadata"""
         return self._metadata
     
     def initialize(self) -> None:
-        """初始化适配器"""
-        # 调用原始工厂函数创建节点函数
+        """Initialize adapter"""
+        # Call the original factory function to create the node function
         self._node_func = self._factory_func(self._llm, self._toolkit)
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行智能体逻辑
+        Execute agent logic
         
         Args:
-            state: 当前状态字典
+            state: current state dictionary
             
         Returns:
-            更新后的状态字典
+            Updated status dictionary
         """
         if self._node_func is None:
             self.initialize()
@@ -85,12 +85,12 @@ class LegacyAgentAdapter(BaseAgent):
     
     @property
     def agent_id(self) -> str:
-        """智能体 ID"""
+        """agent ID"""
         return self._metadata.id
     
     @property
     def agent_name(self) -> str:
-        """智能体名称"""
+        """Agent name"""
         return self._metadata.name
 
 
@@ -101,28 +101,28 @@ def create_legacy_adapter(
     config: Optional[AgentConfig] = None
 ) -> LegacyAgentAdapter:
     """
-    便捷函数: 创建遗留智能体适配器
+    Convenience function: Create a legacy agent adapter
     
     Args:
-        agent_id: 智能体 ID (如 "market_analyst")
-        llm: LLM 实例
-        toolkit: 工具包实例
-        config: 智能体配置
+        agent_id: agent ID (Such as "market_analyst")
+        llm: LLM Example
+        toolkit: Toolkit Example
+        config: Agent configuration
         
     Returns:
-        配置好的适配器实例
+        Configured adapter instance
     """
     from ..config import BUILTIN_AGENTS
     
-    # 获取元数据
+    # Get metadata
     metadata = BUILTIN_AGENTS.get(agent_id)
     if metadata is None:
-        raise ValueError(f"未知的智能体 ID: {agent_id}")
+        raise ValueError(f"unknown agent ID: {agent_id}")
     
-    # 获取工厂函数
+    # Get factory function
     factory_func = _get_factory_func(agent_id)
     
-    # 创建适配器
+    # Create adapter
     adapter = LegacyAgentAdapter(
         metadata=metadata,
         factory_func=factory_func,
@@ -136,7 +136,7 @@ def create_legacy_adapter(
 
 
 def _get_factory_func(agent_id: str) -> Callable:
-    """获取智能体的工厂函数"""
+    """Get the factory function of the agent"""
     factory_map = {
         "market_analyst": "tradingagents.agents.analysts.market_analyst:create_market_analyst",
         "news_analyst": "tradingagents.agents.analysts.news_analyst:create_news_analyst",
@@ -150,7 +150,7 @@ def _get_factory_func(agent_id: str) -> Callable:
     }
     
     if agent_id not in factory_map:
-        raise ValueError(f"未找到智能体 '{agent_id}' 的工厂函数")
+        raise ValueError(f"Agent not found '{agent_id}' factory function")
     
     module_path, func_name = factory_map[agent_id].rsplit(":", 1)
     

@@ -16,7 +16,7 @@ def test_resolve_china_actual_data_date_rolls_back_before_open():
     assert effective_end_date == "2026-04-10"
     assert actual_data_date == "2026-04-10"
     assert note is not None
-    assert "盘前时段" in note
+    assert "Pre-market session" in note
     assert "2026-04-10" in note
 
 
@@ -32,8 +32,8 @@ def test_unified_market_tool_emits_actual_data_date_context(monkeypatch):
                 "is_china": True,
                 "is_hk": False,
                 "is_us": False,
-                "market_name": "中国A股",
-                "currency_name": "人民币",
+                "market_name": "China A shares",
+                "currency_name": "RMB",
                 "currency_symbol": "¥",
             }
 
@@ -52,7 +52,7 @@ def test_unified_market_tool_emits_actual_data_date_context(monkeypatch):
         lambda ticker, requested_end_date, now=None, db_latest_trade_date=None: (
             "2026-04-10",
             "2026-04-10",
-            "请求分析日期为 2026-04-13，但当前处于盘前时段，尚未形成当日日线数据；以下价格与技术指标以最近已完成交易日 2026-04-10 为准。",
+            "The requested analysis date is 2026-04-13, but it is currently in the pre-market period and daily data for the day has not yet been formed; the following prices and technical indicators are based on the most recently completed trading day, 2026-04-10.",
         ),
     )
 
@@ -65,9 +65,9 @@ def test_unified_market_tool_emits_actual_data_date_context(monkeypatch):
     )
 
     assert captured["args"] == ("600519", "2026-04-10", "2026-04-10")
-    assert "**请求分析日期**: 2026-04-13" in result
-    assert "**实际数据日期**: 2026-04-10" in result
-    assert "盘前时段" in result
+    assert "**Request analysis date**: 2026-04-13" in result
+    assert "**actual data date**: 2026-04-10" in result
+    assert "Pre-market session" in result
 
 
 def test_format_stock_data_response_includes_actual_data_date_note():
@@ -97,11 +97,11 @@ def test_format_stock_data_response_includes_actual_data_date_note():
     result = manager._format_stock_data_response(
         data,
         symbol="600519",
-        stock_name="贵州茅台",
+        stock_name="Kweichow Moutai",
         start_date="2026-04-13",
         end_date="2026-04-13",
     )
 
-    assert "请求分析日期: 2026-04-13" in result
-    assert "实际数据日期: 2026-04-10" in result
-    assert "日期说明: 请求分析日期 2026-04-13 暂无完整日线数据" in result
+    assert "Request analysis date: 2026-04-13" in result
+    assert "actual data date: 2026-04-10" in result
+    assert "date description: Requested analysis date 2026-04-13 No complete daily data yet" in result

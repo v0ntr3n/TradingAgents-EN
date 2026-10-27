@@ -1,9 +1,9 @@
 /**
- * 系统更新 API
+ * System update API
  */
 import request from '@/api/request'
 
-/** 构建信息 */
+/** Build information */
 export interface BuildInfo {
   build_type?: string
   version?: string
@@ -12,18 +12,18 @@ export interface BuildInfo {
   full_version?: string
 }
 
-/** 版本信息 */
+/** Version information */
 export interface VersionInfo {
   current_version: string
   build_info: BuildInfo
   update_channel?: string
-  /** Docker 环境 */
+  /** Docker environment */
   is_docker?: boolean
-  /** 是否支持应用内更新（Windows 便携版/安装版） */
+  /** Whether to support in-app updates (Windows portable version/installation version) */
   supports_in_app_update?: boolean
 }
 
-/** 更新信息 */
+/** Update information */
 export interface UpdateInfo {
   has_update: boolean
   latest_version: string
@@ -35,13 +35,13 @@ export interface UpdateInfo {
   release_date: string
   is_mandatory: boolean
   min_version: string
-  /** 检查失败（如服务器连接不上） */
+  /** The check failed (for example, the server cannot be connected) */
   check_failed?: boolean
-  /** 错误提示信息 */
+  /** Error message */
   error_message?: string
 }
 
-/** 下载进度 */
+/** Download progress */
 export interface DownloadProgress {
   status: string       // idle | downloading | completed | failed | verify_failed
   version?: string
@@ -50,7 +50,7 @@ export interface DownloadProgress {
   percent?: number
 }
 
-/** 获取当前版本信息 */
+/** Get current version information */
 export function getVersionInfo() {
   return request<VersionInfo>({
     url: '/api/system/update/info',
@@ -58,7 +58,7 @@ export function getVersionInfo() {
   })
 }
 
-/** 检查更新 */
+/** Check for updates */
 export function checkUpdate() {
   return request<UpdateInfo>({
     url: '/api/system/update/check',
@@ -66,7 +66,7 @@ export function checkUpdate() {
   })
 }
 
-/** 获取下载进度 */
+/** Get download progress */
 export function getDownloadProgress() {
   return request<DownloadProgress>({
     url: '/api/system/update/progress',
@@ -74,7 +74,7 @@ export function getDownloadProgress() {
   })
 }
 
-/** 开始下载更新包 */
+/** Start downloading update package */
 export function downloadUpdate() {
   return request({
     url: '/api/system/update/download',
@@ -82,7 +82,7 @@ export function downloadUpdate() {
   })
 }
 
-/** 应用更新（服务将重启） */
+/** Apply updates (service will restart) */
 export function applyUpdate() {
   return request({
     url: '/api/system/update/apply',

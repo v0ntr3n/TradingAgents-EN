@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-测试交易时间判断逻辑（包含收盘后30分钟缓冲期）
+Test the trading time judgment logic (including the 30-minute buffer period after closing)
 
-这个测试不需要数据库连接，只测试核心逻辑
+This test does not require a database connection, only the core logic is tested
 """
 
 import sys
@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.services.quotes_ingestion_service import QuotesIngestionService
@@ -18,64 +18,64 @@ from app.core.config import settings
 
 
 def test_trading_time_logic():
-    """测试交易时间判断逻辑"""
+    """Test transaction time judgment logic"""
     print("\n" + "=" * 80)
-    print("测试: 交易时间判断逻辑（包含收盘后30分钟缓冲期）")
+    print("test: Trading time judgment logic (including 30-minute buffer period after closing)")
     print("=" * 80)
     
     service = QuotesIngestionService()
     tz = ZoneInfo(settings.TIMEZONE)
     
-    # 测试用例
+    # test case
     test_cases = [
-        ("09:00", False, "开盘前"),
-        ("09:29", False, "开盘前1分钟"),
-        ("09:30", True, "上午开盘"),
-        ("10:00", True, "上午交易中"),
-        ("11:30", True, "上午收盘"),
-        ("11:31", False, "午休开始"),
-        ("12:00", False, "午休时间"),
-        ("12:59", False, "午休结束前"),
-        ("13:00", True, "下午开盘"),
-        ("14:00", True, "下午交易中"),
-        ("14:55", True, "收盘前5分钟"),
-        ("15:00", True, "收盘时刻（缓冲期开始）✨"),
-        ("15:06", True, "收盘后6分钟（第1次同步机会）✨"),
-        ("15:12", True, "收盘后12分钟（第2次同步机会）✨"),
-        ("15:18", True, "收盘后18分钟（第3次同步机会）✨"),
-        ("15:24", True, "收盘后24分钟（第4次同步机会）✨"),
-        ("15:30", True, "收盘后30分钟（缓冲期结束）✨"),
-        ("15:31", False, "收盘后31分钟（缓冲期外）"),
-        ("16:00", False, "收盘后1小时"),
+        ("09:00", False, "before opening"),
+        ("09:29", False, "1 minute before opening"),
+        ("09:30", True, "Open in the morning"),
+        ("10:00", True, "Trading in the morning"),
+        ("11:30", True, "Morning close"),
+        ("11:31", False, "Lunch break begins"),
+        ("12:00", False, "lunch break"),
+        ("12:59", False, "before lunch break ends"),
+        ("13:00", True, "Open in the afternoon"),
+        ("14:00", True, "Trading in the afternoon"),
+        ("14:55", True, "5 minutes before closing"),
+        ("15:00", True, "Closing time (beginning of buffer period)✨"),
+        ("15:06", True, "6 minutes after market close (1st synchronization opportunity)✨"),
+        ("15:12", True, "12 minutes after market close (2nd synchronization opportunity)✨"),
+        ("15:18", True, "18 minutes after the close (3rd synchronization opportunity)✨"),
+        ("15:24", True, "24 minutes after market close (4th synchronization opportunity)✨"),
+        ("15:30", True, "30 minutes after the market closes (end of buffer period)✨"),
+        ("15:31", False, "31 minutes after the market closes (outside the buffer period)"),
+        ("16:00", False, "1 hour after market close"),
     ]
     
-    print("\n测试结果：")
+    print("\n Test results:")
     print("-" * 80)
-    print(f"{'时间':^8} | {'预期':^6} | {'实际':^6} | {'状态':^8} | {'说明'}")
+    print(f"{'time':^8} | {'expected':^6} | {'actual':^6} | {'Status':^8} | {'Description'}")
     print("-" * 80)
     
     all_passed = True
     buffer_period_tests = []
     
     for time_str, expected, description in test_cases:
-        # 创建测试时间（使用今天的日期 + 指定时间）
+        # Create test time (using today's date + specified time)
         now = datetime.now(tz)
         hour, minute = map(int, time_str.split(":"))
         test_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
         
-        # 确保是工作日（周一到周五）
+        # Make sure it is a working day (Monday to Friday)
         if test_time.weekday() >= 5:
-            # 如果是周末，调整到周一
+            # If it is a weekend, adjust to Monday
             days_to_monday = 7 - test_time.weekday()
             test_time = test_time.replace(day=test_time.day + days_to_monday)
         
         result = service._is_trading_time(test_time)
-        status = "✅ 通过" if result == expected else "❌ 失败"
+        status = "✅ Pass" if result == expected else "❌ failed"
         
         if result != expected:
             all_passed = False
         
-        # 标记缓冲期测试
+        # Mark buffer period test
         if "✨" in description:
             buffer_period_tests.append((time_str, result, expected))
         
@@ -83,31 +83,31 @@ def test_trading_time_logic():
     
     print("-" * 80)
     
-    # 总结
+    # Summary
     if all_passed:
-        print("\n✅ 所有测试用例通过！")
+        print("\n✅ All test cases pass!")
     else:
-        print("\n❌ 部分测试用例失败")
+        print("\n❌ Some test cases failed")
     
-    # 缓冲期测试总结
+    # Buffer period test summary
     print("\n" + "=" * 80)
-    print("收盘后缓冲期测试总结")
+    print("Summary of post-closing buffer period testing")
     print("=" * 80)
-    print(f"\n配置的同步间隔: {settings.QUOTES_INGEST_INTERVAL_SECONDS} 秒 ({settings.QUOTES_INGEST_INTERVAL_SECONDS / 60} 分钟)")
-    print(f"缓冲期时长: 30 分钟 (15:00-15:30)")
-    print(f"理论同步次数: {30 * 60 // settings.QUOTES_INGEST_INTERVAL_SECONDS} 次")
+    print(f"\n Configured sync interval: {settings.QUOTES_INGEST_INTERVAL_SECONDS} seconds ({settings.QUOTES_INGEST_INTERVAL_SECONDS / 60} minutes)")
+    print(f"Buffer period length: 30 minutes (15:00-15:30)")
+    print(f"Theoretical synchronization times: {30 * 60 // settings.QUOTES_INGEST_INTERVAL_SECONDS} times")
     
-    print("\n缓冲期内的同步机会：")
+    print("\n Synchronization opportunities during the buffer period:")
     for i, (time_str, result, expected) in enumerate(buffer_period_tests, 1):
         status = "✅" if result == expected else "❌"
-        print(f"  {status} 第{i}次机会: {time_str} - {'可以同步' if result else '不能同步'}")
+        print(f"  {status} No.{i}opportunity: {time_str} - {'Can be synchronized' if result else 'Can t sync'}")
     
-    print("\n💡 说明：")
-    print("  - 收盘时间是 15:00")
-    print("  - 缓冲期延长到 15:30，增加 30 分钟")
-    print(f"  - 假设同步间隔为 {settings.QUOTES_INGEST_INTERVAL_SECONDS / 60} 分钟")
-    print(f"  - 在缓冲期内可以进行 {30 * 60 // settings.QUOTES_INGEST_INTERVAL_SECONDS} 次同步")
-    print("  - 大大降低了错过收盘价的风险！")
+    print("\n💡 Description:")
+    print("  - The closing time is 15:00")
+    print("  - The buffer period is extended to 15:30, add 30 minutes")
+    print(f"  - Assume that the synchronization interval is {settings.QUOTES_INGEST_INTERVAL_SECONDS / 60} minutes")
+    print(f"  - Can be carried out during the buffer period {30 * 60 // settings.QUOTES_INGEST_INTERVAL_SECONDS} sub-sync")
+    print("  - Greatly reduces the risk of missing the closing price!")
     
     return all_passed
 

@@ -1,8 +1,8 @@
 """
-系统行业映射服务
+System industry mapping services
 
-系统内置一份股票代码 -> 行业 的映射集合，所有读取方统一从该集合取数。
-未来可由官网接口供数；当前在未配置官网接口时，临时使用 Tushare 作为供数来源。
+The system has a built-in stock code -> A mapping collection of industries. All readers draw data from this collection uniformly.
+In the future, data can be supplied through the official website interface; currently, when the official website interface is not configured, Tushare is temporarily used as the data supply source.
 """
 import logging
 from datetime import datetime, timedelta
@@ -73,7 +73,7 @@ def _invalidate_cache() -> None:
 
 
 def get_official_industry_url() -> Optional[str]:
-    """从配置获取官网行业数据 URL。"""
+    """Obtain the official website industry data URL from the configuration."""
     try:
         from app.core.config import settings
         url = getattr(settings, "OFFICIAL_INDUSTRY_DATA_URL", None)
@@ -103,7 +103,7 @@ async def _load_mapping_from_collection() -> Dict[str, str]:
 
 
 async def upsert_industry_mapping(mapping: Dict[str, str], provider: str) -> Dict[str, Any]:
-    """批量写入系统行业映射集合。"""
+    """Batch write system industry mapping collection."""
     if not mapping:
         return {"provider": provider, "total": 0, "upserted": 0, "modified": 0}
 
@@ -135,7 +135,7 @@ async def upsert_industry_mapping(mapping: Dict[str, str], provider: str) -> Dic
 
     result = await collection.bulk_write(operations, ordered=False)
     _invalidate_cache()
-    logger.info(f"✅ 行业映射集合更新完成: provider={provider}, total={len(operations)}, modified={result.modified_count}, upserted={result.upserted_count}")
+    logger.info(f"✅ Industry mapping collection update completed: provider={provider}, total={len(operations)}, modified={result.modified_count}, upserted={result.upserted_count}")
     return {
         "provider": provider,
         "total": len(operations),
@@ -145,7 +145,7 @@ async def upsert_industry_mapping(mapping: Dict[str, str], provider: str) -> Dic
 
 
 async def upsert_industry_mapping_from_records(records: Iterable[Any], provider: str = "tushare_fallback") -> Dict[str, Any]:
-    """从股票列表记录中提取行业并写入系统行业映射集合。"""
+    """Extract industries from stock list records and write to the system industry map collection."""
     mapping = _normalize_mapping_payload(list(records))
     return await upsert_industry_mapping(mapping, provider=provider)
 
@@ -177,7 +177,7 @@ async def _fetch_mapping_from_tushare() -> Dict[str, str]:
         provider = TushareProvider()
         connected = await provider.connect()
         if not connected:
-            logger.warning("Tushare 连接失败，无法刷新行业映射集合")
+            logger.warning("Tushare Connection failed, unable to refresh industry mapping collection")
             return {}
 
         stock_list = await provider.get_stock_list(market="CN")
@@ -186,12 +186,12 @@ async def _fetch_mapping_from_tushare() -> Dict[str, str]:
             logger.info(f"✅ 从 Tushare 临时供数获取行业映射成功: {len(mapping)} 只股票")
         return mapping
     except Exception as e:
-        logger.warning(f"从 Tushare 获取行业映射失败: {e}")
+        logger.warning(f"Failed to get industry mapping from Tushare: {e}")
         return {}
 
 
 async def refresh_industry_mapping(prefer_official: bool = True) -> Dict[str, Any]:
-    """刷新系统行业映射集合。优先官网接口，未配置时回退到 Tushare。"""
+    """Refresh the system industry mapping collection. Prioritize the official website interface and fall back to Tushare if it is not configured."""
     mapping: Dict[str, str] = {}
     provider = "none"
 
@@ -206,14 +206,14 @@ async def refresh_industry_mapping(prefer_official: bool = True) -> Dict[str, An
             provider = "tushare_fallback"
 
     if not mapping:
-        logger.warning("⚠️ 未获取到任何行业映射数据，系统行业映射集合保持不变")
+        logger.warning("⚠️ No industry mapping data was obtained, and the system industry mapping collection remains unchanged.")
         return {"provider": provider, "total": 0, "upserted": 0, "modified": 0}
 
     return await upsert_industry_mapping(mapping, provider=provider)
 
 
 async def fetch_industry_mapping(refresh_if_empty: bool = True) -> Dict[str, str]:
-    """读取系统行业映射集合，必要时自动刷新。"""
+    """Read the system industry mapping collection and automatically refresh it when necessary."""
     global _industry_cache, _cache_time
 
     if _industry_cache is not None and _cache_time is not None:
@@ -231,7 +231,7 @@ async def fetch_industry_mapping(refresh_if_empty: bool = True) -> Dict[str, str
 
 
 def get_industry_sync(code: str) -> Optional[str]:
-    """同步读取内存缓存中的单只股票行业。"""
+    """Synchronously read individual stock sectors from memory cache."""
     global _industry_cache
     if not _industry_cache:
         return None
@@ -239,13 +239,13 @@ def get_industry_sync(code: str) -> Optional[str]:
 
 
 async def get_industry(code: str) -> Optional[str]:
-    """异步读取单只股票行业。"""
+    """Asynchronously read a single stock industry."""
     mapping = await fetch_industry_mapping(refresh_if_empty=True)
     return mapping.get(_normalize_code(code))
 
 
 async def sync_industry_to_stock_basic_info(db=None) -> Dict[str, int]:
-    """将系统行业映射集合批量回填到 stock_basic_info。"""
+    """Batch backfill the system industry mapping collection into stock_basic_info."""
     if db is None:
         db = get_mongo_db()
 

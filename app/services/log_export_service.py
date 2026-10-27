@@ -1,6 +1,6 @@
 """
-日志导出服务
-提供日志文件的查询、过滤和导出功能
+Log export service
+Provides log file query, filtering and export functions
 """
 
 import logging
@@ -20,65 +20,65 @@ class LogExportService:
 
     def __init__(self, log_dir: str = "./logs"):
         """
-        初始化日志导出服务
+        Initialize log export service
 
         Args:
-            log_dir: 日志文件目录
+            log_dir: Log file directory
         """
         self.log_dir = Path(log_dir)
-        logger.info(f"🔍 [LogExportService] 初始化日志导出服务")
-        logger.info(f"🔍 [LogExportService] 配置的日志目录: {log_dir}")
-        logger.info(f"🔍 [LogExportService] 解析后的日志目录: {self.log_dir}")
-        logger.info(f"🔍 [LogExportService] 绝对路径: {self.log_dir.absolute()}")
-        logger.info(f"🔍 [LogExportService] 目录是否存在: {self.log_dir.exists()}")
+        logger.info(f"🔍 [LogExportService] Initialize log export service")
+        logger.info(f"🔍 [LogExportService] Configured log directory: {log_dir}")
+        logger.info(f"🔍 [LogExportService] Parsed log directory: {self.log_dir}")
+        logger.info(f"🔍 [LogExportService] absolute path: {self.log_dir.absolute()}")
+        logger.info(f"🔍 [LogExportService] Does the directory exist?: {self.log_dir.exists()}")
 
         if not self.log_dir.exists():
-            logger.warning(f"⚠️ [LogExportService] 日志目录不存在: {self.log_dir}")
+            logger.warning(f"⚠️ [LogExportService] Log directory does not exist: {self.log_dir}")
             try:
                 self.log_dir.mkdir(parents=True, exist_ok=True)
-                logger.info(f"✅ [LogExportService] 已创建日志目录: {self.log_dir}")
+                logger.info(f"✅ [LogExportService] Log directory created: {self.log_dir}")
             except Exception as e:
-                logger.error(f"❌ [LogExportService] 创建日志目录失败: {e}")
+                logger.error(f"❌ [LogExportService] Failed to create log directory: {e}")
         else:
-            logger.info(f"✅ [LogExportService] 日志目录存在")
+            logger.info(f"✅ [LogExportService] Log directory exists")
 
     def list_log_files(self) -> List[Dict[str, Any]]:
         """
-        列出所有日志文件
+        List all log files
 
         Returns:
-            日志文件列表，包含文件名、大小、修改时间等信息
+            Log file list, including file name, size, modification time and other information
         """
         log_files = []
 
         try:
-            logger.info(f"🔍 [list_log_files] 开始列出日志文件")
-            logger.info(f"🔍 [list_log_files] 搜索目录: {self.log_dir}")
-            logger.info(f"🔍 [list_log_files] 绝对路径: {self.log_dir.absolute()}")
-            logger.info(f"🔍 [list_log_files] 目录是否存在: {self.log_dir.exists()}")
-            logger.info(f"🔍 [list_log_files] 是否为目录: {self.log_dir.is_dir()}")
+            logger.info(f"🔍 [list_log_files] Start listing log files")
+            logger.info(f"🔍 [list_log_files] Search catalog: {self.log_dir}")
+            logger.info(f"🔍 [list_log_files] absolute path: {self.log_dir.absolute()}")
+            logger.info(f"🔍 [list_log_files] Does the directory exist?: {self.log_dir.exists()}")
+            logger.info(f"🔍 [list_log_files] Is it a directory?: {self.log_dir.is_dir()}")
 
             if not self.log_dir.exists():
-                logger.error(f"❌ [list_log_files] 日志目录不存在: {self.log_dir}")
+                logger.error(f"❌ [list_log_files] Log directory does not exist: {self.log_dir}")
                 return []
 
             if not self.log_dir.is_dir():
-                logger.error(f"❌ [list_log_files] 路径不是目录: {self.log_dir}")
+                logger.error(f"❌ [list_log_files] path is not a directory: {self.log_dir}")
                 return []
 
-            # 列出目录中的所有文件（调试用）
+            # List all files in a directory (for debugging)
             try:
                 all_items = list(self.log_dir.iterdir())
                 logger.info(f"🔍 [list_log_files] 目录中共有 {len(all_items)} 个项目")
-                for item in all_items[:10]:  # 只显示前10个
+                for item in all_items[:10]:  # Only show the first 10
                     logger.info(f"🔍 [list_log_files]   - {item.name} (is_file: {item.is_file()})")
             except Exception as e:
-                logger.error(f"❌ [list_log_files] 列出目录内容失败: {e}")
+                logger.error(f"❌ [list_log_files] Failed to list directory contents: {e}")
 
-            # 搜索日志文件
-            logger.info(f"🔍 [list_log_files] 搜索模式: *.log*")
+            # Search log files
+            logger.info(f"🔍 [list_log_files] Search mode: *.log*")
             for file_path in self.log_dir.glob("*.log*"):
-                logger.info(f"🔍 [list_log_files] 找到文件: {file_path.name}")
+                logger.info(f"🔍 [list_log_files] find file: {file_path.name}")
                 if file_path.is_file():
                     stat = file_path.stat()
                     log_file_info = {
@@ -90,29 +90,29 @@ class LogExportService:
                         "type": self._get_log_type(file_path.name)
                     }
                     log_files.append(log_file_info)
-                    logger.info(f"✅ [list_log_files] 添加日志文件: {file_path.name} ({log_file_info['size_mb']} MB)")
+                    logger.info(f"✅ [list_log_files] Add log file: {file_path.name} ({log_file_info['size_mb']} MB)")
                 else:
-                    logger.warning(f"⚠️ [list_log_files] 跳过非文件项: {file_path.name}")
+                    logger.warning(f"⚠️ [list_log_files] Skip non-file items: {file_path.name}")
 
-            # 按修改时间倒序排序
+            # Sort by modification time in descending order
             log_files.sort(key=lambda x: x["modified_at"], reverse=True)
 
             logger.info(f"📋 [list_log_files] 最终找到 {len(log_files)} 个日志文件")
             return log_files
 
         except Exception as e:
-            logger.error(f"❌ [list_log_files] 列出日志文件失败: {e}", exc_info=True)
+            logger.error(f"❌ [list_log_files] Failed to list log files: {e}", exc_info=True)
             return []
 
     def _get_log_type(self, filename: str) -> str:
         """
-        根据文件名判断日志类型
+        Determine log type based on file name
         
         Args:
-            filename: 文件名
+            filename: file name
             
         Returns:
-            日志类型
+            Log type
         """
         if "error" in filename.lower():
             return "error"
@@ -135,18 +135,18 @@ class LogExportService:
         end_time: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        读取日志文件内容（支持过滤）
+        Read log file content (supports filtering)
         
         Args:
-            filename: 日志文件名
-            lines: 读取的行数（从末尾开始）
-            level: 日志级别过滤（ERROR, WARNING, INFO, DEBUG）
-            keyword: 关键词过滤
-            start_time: 开始时间（ISO格式）
-            end_time: 结束时间（ISO格式）
+            filename: Log file name
+            lines: Number of lines read (starting from the end)
+            level: Log level filtering (ERROR, WARNING, INFO, DEBUG) 
+            keyword: keyword filter
+            start_time: Start time (ISO format)
+            end_time: End time (ISO format)
             
         Returns:
-            日志内容和统计信息
+            Log content and statistics
         """
         file_path = self.log_dir / filename
         
@@ -154,14 +154,14 @@ class LogExportService:
             raise FileNotFoundError(f"日志文件不存在: {filename}")
         
         try:
-            # 读取文件内容
+            # Read file contents
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 all_lines = f.readlines()
             
-            # 从末尾开始读取指定行数
+            # Read the specified number of lines starting from the end
             recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
             
-            # 应用过滤器
+            # Apply filter
             filtered_lines = []
             stats = {
                 "total_lines": len(all_lines),
@@ -173,7 +173,7 @@ class LogExportService:
             }
             
             for line in recent_lines:
-                # 统计日志级别
+                # Statistics log level
                 if "ERROR" in line:
                     stats["error_count"] += 1
                 elif "WARNING" in line:
@@ -183,14 +183,14 @@ class LogExportService:
                 elif "DEBUG" in line:
                     stats["debug_count"] += 1
                 
-                # 应用过滤条件
+                # Apply filters
                 if level and level.upper() not in line:
                     continue
                 
                 if keyword and keyword.lower() not in line.lower():
                     continue
                 
-                # 时间过滤（简单实现，假设日志格式为 YYYY-MM-DD HH:MM:SS）
+                # Time filtering (simple implementation, assuming the log format is YYYY-MM-DD HH:MM:SS) 
                 if start_time or end_time:
                     time_match = re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', line)
                     if time_match:
@@ -223,20 +223,20 @@ class LogExportService:
         format: str = "zip"
     ) -> str:
         """
-        导出日志文件
+        Export log file
         
         Args:
-            filenames: 要导出的日志文件名列表（None表示导出所有）
-            level: 日志级别过滤
-            start_time: 开始时间
-            end_time: 结束时间
-            format: 导出格式（zip, txt）
+            filenames: List of log file names to be exported (None means exporting all)
+            level: Log level filtering
+            start_time: start time
+            end_time: end time
+            format: Export format (zip, txt) 
             
         Returns:
-            导出文件的路径
+            Path to exported file
         """
         try:
-            # 确定要导出的文件
+            # Determine which files to export
             if filenames:
                 files_to_export = [self.log_dir / f for f in filenames if (self.log_dir / f).exists()]
             else:
@@ -245,34 +245,34 @@ class LogExportService:
             if not files_to_export:
                 raise ValueError("没有找到要导出的日志文件")
             
-            # 创建导出目录
+            # Create export directory
             export_dir = Path("./exports/logs")
             export_dir.mkdir(parents=True, exist_ok=True)
             
-            # 生成导出文件名
+            # Generate export file name
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             
             if format == "zip":
                 export_path = export_dir / f"logs_export_{timestamp}.zip"
                 
-                # 创建ZIP文件
+                # Create ZIP file
                 with zipfile.ZipFile(export_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                     for file_path in files_to_export:
-                        # 如果有过滤条件，先过滤再添加
+                        # If there are filter conditions, filter first and then add
                         if level or start_time or end_time:
                             filtered_data = self.read_log_file(
                                 file_path.name,
-                                lines=999999,  # 读取所有行
+                                lines=999999,  # read all lines
                                 level=level,
                                 start_time=start_time,
                                 end_time=end_time
                             )
-                            # 将过滤后的内容写入临时文件
+                            # Write filtered content to temporary file
                             temp_file = export_dir / f"temp_{file_path.name}"
                             with open(temp_file, 'w', encoding='utf-8') as f:
                                 f.write('\n'.join(filtered_data['lines']))
                             zipf.write(temp_file, file_path.name)
-                            temp_file.unlink()  # 删除临时文件
+                            temp_file.unlink()  # Delete temporary files
                         else:
                             zipf.write(file_path, file_path.name)
                 
@@ -282,7 +282,7 @@ class LogExportService:
             elif format == "txt":
                 export_path = export_dir / f"logs_export_{timestamp}.txt"
                 
-                # 合并所有日志到一个文本文件
+                # Merge all logs into one text file
                 with open(export_path, 'w', encoding='utf-8') as outf:
                     for file_path in files_to_export:
                         outf.write(f"\n{'='*80}\n")
@@ -316,13 +316,13 @@ class LogExportService:
 
     def get_log_statistics(self, days: int = 7) -> Dict[str, Any]:
         """
-        获取日志统计信息
+        Get log statistics
         
         Args:
-            days: 统计最近几天的日志
+            days: Statistics of logs in recent days
             
         Returns:
-            日志统计信息
+            Log statistics
         """
         try:
             cutoff_time = datetime.now() - timedelta(days=days)
@@ -351,10 +351,10 @@ class LogExportService:
                 log_type = self._get_log_type(file_path.name)
                 stats["log_types"][log_type] = stats["log_types"].get(log_type, 0) + 1
                 
-                # 统计错误日志
+                # Statistics error log
                 if log_type == "error":
                     stats["error_files"] += 1
-                    # 读取最近的错误
+                    # Read recent errors
                     try:
                         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                             lines = f.readlines()
@@ -372,7 +372,7 @@ class LogExportService:
             return {}
 
 
-# 全局服务实例
+# Global service instance
 _log_export_service: Optional[LogExportService] = None
 
 
@@ -381,7 +381,7 @@ def get_log_export_service() -> LogExportService:
     global _log_export_service
 
     if _log_export_service is None:
-        # 从日志配置中获取日志目录
+        # Get the log directory from the log configuration
         log_dir = _get_log_directory()
         _log_export_service = LogExportService(log_dir=log_dir)
 
@@ -390,89 +390,89 @@ def get_log_export_service() -> LogExportService:
 
 def _get_log_directory() -> str:
     """
-    获取日志目录路径
-    优先级：
-    1. 从日志配置文件读取（支持Docker环境）
-    2. 从settings配置读取
-    3. 使用默认值 ./logs
+    Get log directory path
+    Priority:
+    1. Read from the log configuration file (supports Docker environment)
+    2. Read from settings configuration
+    3. Use default value ./logs
     """
     import os
     from pathlib import Path
 
     try:
-        logger.info(f"🔍 [_get_log_directory] 开始获取日志目录")
+        logger.info(f"🔍 [_get_log_directory] Start getting the log directory")
 
-        # 检查是否是Docker环境
+        # Check if it is a Docker environment
         docker_env = os.environ.get("DOCKER", "")
         dockerenv_exists = Path("/.dockerenv").exists()
         is_docker = docker_env.lower() in {"1", "true", "yes"} or dockerenv_exists
 
-        logger.info(f"🔍 [_get_log_directory] DOCKER环境变量: {docker_env}")
-        logger.info(f"🔍 [_get_log_directory] /.dockerenv存在: {dockerenv_exists}")
-        logger.info(f"🔍 [_get_log_directory] 判定为Docker环境: {is_docker}")
+        logger.info(f"🔍 [_get_log_directory] DOCKER environment variables: {docker_env}")
+        logger.info(f"🔍 [_get_log_directory] /.dockerenv exist: {dockerenv_exists}")
+        logger.info(f"🔍 [_get_log_directory] Determined to be a Docker environment: {is_docker}")
 
-        # 尝试从日志配置文件读取
+        # Try reading from log configuration file
         try:
             import tomllib as toml_loader
-            logger.info(f"🔍 [_get_log_directory] 使用 tomllib 加载TOML")
+            logger.info(f"🔍 [_get_log_directory] Load using tomllib TOML")
         except ImportError:
             try:
                 import tomli as toml_loader
-                logger.info(f"🔍 [_get_log_directory] 使用 tomli 加载TOML")
+                logger.info(f"🔍 [_get_log_directory] Load using tomli TOML")
             except ImportError:
                 toml_loader = None
-                logger.warning(f"⚠️ [_get_log_directory] 无法导入TOML加载器")
+                logger.warning(f"⚠️ [_get_log_directory] Unable to import TOML loader")
 
         if toml_loader:
-            # 根据环境选择配置文件
+            # Choose a configuration file based on your environment
             profile = os.environ.get("LOGGING_PROFILE", "")
             logger.info(f"🔍 [_get_log_directory] LOGGING_PROFILE: {profile}")
 
             cfg_path = Path("config/logging_docker.toml") if profile.lower() == "docker" or is_docker else Path("config/logging.toml")
-            logger.info(f"🔍 [_get_log_directory] 选择配置文件: {cfg_path}")
-            logger.info(f"🔍 [_get_log_directory] 配置文件存在: {cfg_path.exists()}")
+            logger.info(f"🔍 [_get_log_directory] Select profile: {cfg_path}")
+            logger.info(f"🔍 [_get_log_directory] Configuration file exists: {cfg_path.exists()}")
 
             if cfg_path.exists():
                 try:
                     with cfg_path.open("rb") as f:
                         toml_data = toml_loader.load(f)
 
-                    logger.info(f"🔍 [_get_log_directory] 成功加载配置文件")
+                    logger.info(f"🔍 [_get_log_directory] Configuration file loaded successfully")
 
-                    # 从配置文件读取日志目录
+                    # Read log directory from configuration file
                     handlers_cfg = toml_data.get("logging", {}).get("handlers", {})
                     file_handler_cfg = handlers_cfg.get("file", {})
                     log_dir = file_handler_cfg.get("directory")
 
-                    logger.info(f"🔍 [_get_log_directory] 配置文件中的日志目录: {log_dir}")
+                    logger.info(f"🔍 [_get_log_directory] Log directory in configuration file: {log_dir}")
 
                     if log_dir:
-                        logger.info(f"✅ [_get_log_directory] 从日志配置文件读取日志目录: {log_dir}")
+                        logger.info(f"✅ [_get_log_directory] Read the log directory from the log configuration file: {log_dir}")
                         return log_dir
                 except Exception as e:
-                    logger.warning(f"⚠️ [_get_log_directory] 读取日志配置文件失败: {e}", exc_info=True)
+                    logger.warning(f"⚠️ [_get_log_directory] Failed to read log configuration file: {e}", exc_info=True)
 
-        # 回退到settings配置
+        # Fall back to settings configuration
         try:
             from app.core.config import settings
             log_dir = settings.log_dir
             logger.info(f"🔍 [_get_log_directory] settings.log_dir: {log_dir}")
             if log_dir:
-                logger.info(f"✅ [_get_log_directory] 从settings读取日志目录: {log_dir}")
+                logger.info(f"✅ [_get_log_directory] Read the log directory from settings: {log_dir}")
                 return log_dir
         except Exception as e:
-            logger.warning(f"⚠️ [_get_log_directory] 从settings读取日志目录失败: {e}", exc_info=True)
+            logger.warning(f"⚠️ [_get_log_directory] Failed to read log directory from settings: {e}", exc_info=True)
 
-        # Docker环境默认使用 /app/logs
+        # Docker The environment uses by default /app/logs
         if is_docker:
-            logger.info("✅ [_get_log_directory] Docker环境，使用默认日志目录: /app/logs")
+            logger.info("✅ [_get_log_directory] Docker environment, use the default log directory: /app/logs")
             return "/app/logs"
 
-        # 非Docker环境默认使用 ./logs
-        logger.info("✅ [_get_log_directory] 使用默认日志目录: ./logs")
+        # Used by default in non-Docker environments ./logs
+        logger.info("✅ [_get_log_directory] Use default log directory: ./logs")
         return "./logs"
 
     except Exception as e:
-        logger.error(f"❌ [_get_log_directory] 获取日志目录失败: {e}，使用默认值 ./logs", exc_info=True)
+        logger.error(f"❌ [_get_log_directory] Failed to obtain log directory: {e}, Use default value ./logs", exc_info=True)
         return "./logs"
 

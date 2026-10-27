@@ -3,10 +3,10 @@ import aiohttp
 import json
 
 async def test_login_api():
-    """测试登录API是否正常工作"""
+    """Test whether the login API is working properly"""
     url = "http://localhost:8001/api/auth/login"
     
-    # 测试数据
+    # test data
     login_data = {
         "username": "admin",
         "password": "admin123"
@@ -15,31 +15,31 @@ async def test_login_api():
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=login_data) as response:
-                print(f"状态码: {response.status}")
-                print(f"响应头: {dict(response.headers)}")
+                print(f"status code: {response.status}")
+                print(f"response header: {dict(response.headers)}")
                 
                 if response.status == 200:
                     result = await response.json()
-                    print(f"登录成功!")
-                    print(f"完整响应: {json.dumps(result, indent=2, ensure_ascii=False)}")
-                    print(f"访问令牌: {result.get('access_token', 'N/A')[:50]}...")
-                    print(f"刷新令牌: {result.get('refresh_token', 'N/A')[:50]}...")
-                    print(f"过期时间: {result.get('expires_in', 'N/A')} 秒")
-                    print(f"用户信息: {result.get('user', 'N/A')}")
+                    print(f"Login successful!")
+                    print(f"full response: {json.dumps(result, indent=2, ensure_ascii=False)}")
+                    print(f"access token: {result.get('access_token', 'N/A')[:50]}...")
+                    print(f"refresh token: {result.get('refresh_token', 'N/A')[:50]}...")
+                    print(f"Expiration time: {result.get('expires_in', 'N/A')} seconds")
+                    print(f"User information: {result.get('user', 'N/A')}")
                     return True
                 else:
                     error_text = await response.text()
-                    print(f"登录失败: {error_text}")
+                    print(f"Login failed: {error_text}")
                     return False
                     
     except Exception as e:
-        print(f"请求异常: {e}")
+        print(f"Request exception: {e}")
         return False
 
 if __name__ == "__main__":
-    print("🔐 测试登录API...")
+    print("🔐 Test login API...")
     success = asyncio.run(test_login_api())
     if success:
-        print("✅ 登录API测试成功")
+        print("✅ Login API test successful")
     else:
-        print("❌ 登录API测试失败")
+        print("❌ Login API test failed")

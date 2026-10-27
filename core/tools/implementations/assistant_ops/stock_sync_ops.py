@@ -1,4 +1,4 @@
-"""单股数据同步工具。"""
+"""Single stock data synchronization tool."""
 
 import logging
 from typing import Annotated
@@ -39,7 +39,7 @@ def _format_sync_section(title: str, payload: dict | None) -> str:
 @register_tool(
     tool_id="sync_single_stock_data",
     name="同步单股数据",
-    description="同步单只股票的数据到本地数据库，支持历史行情和财务数据，也可选补充基础数据。适合用户明确要求‘同步某只股票数据’‘更新某股历史/财务数据’的场景。",
+    description="Synchronize the data of a single stock to the local database, support historical market prices and financial data, and optionally supplement basic data. Suitable for users clear requirements Synchronize data of a certain stock  Update historical/financial data for a certain stock scene.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -49,31 +49,31 @@ def _format_sync_section(title: str, payload: dict | None) -> str:
     tool_role_hint="specialized",
     output_shape="text",
     preferred_for=["同步单只股票数据", "更新股票历史行情", "更新股票财务数据", "补充股票基础数据"],
-    when_to_use="当用户明确要求同步某只股票的历史行情、财务数据，或更新某只股票的本地数据时使用。",
-    returns="返回文本格式的同步结果，包含历史数据、财务数据、基础数据的同步状态和记录数。",
+    when_to_use="It is used when the user explicitly requests to synchronize the historical quotes and financial data of a certain stock, or update the local data of a certain stock.",
+    returns="Returns the synchronization result in text format, including the synchronization status and record number of historical data, financial data, and basic data.",
 )
 async def sync_single_stock_data(
-    symbol: Annotated[str, "股票代码，支持 6 位数字或带交易所后缀，如 000001、600519.SH"],
-    data_source: Annotated[str, "数据源，支持 tushare 或 akshare，默认 tushare"] = "tushare",
-    days: Annotated[int, "历史数据同步天数，默认 365"] = 365,
-    sync_historical: Annotated[bool, "是否同步历史行情，默认 true"] = True,
-    sync_financial: Annotated[bool, "是否同步财务数据，默认 true"] = True,
-    sync_basic: Annotated[bool, "是否补充基础数据，默认 false"] = False,
+    symbol: Annotated[str, "Stock code, supports 6 digits or exchange suffix, such as 000001,600519.SH"],
+    data_source: Annotated[str, "Data source, supports tushare or akshare, default tushare"] = "tushare",
+    days: Annotated[int, "Number of days for historical data synchronization, default 365"] = 365,
+    sync_historical: Annotated[bool, "Whether to synchronize historical quotes, default true"] = True,
+    sync_financial: Annotated[bool, "Whether to synchronize financial data, default true"] = True,
+    sync_basic: Annotated[bool, "Whether to supplement basic data, default false"] = False,
 ) -> str:
-    """同步单只股票的历史数据和财务数据。"""
+    """Synchronize historical and financial data for individual stocks."""
     from app.routers.stock_sync import SingleStockSyncRequest, run_single_stock_sync
 
     require_current_user_id()
 
     normalized_symbol = _normalize_cn_symbol(symbol)
     if not (len(normalized_symbol) == 6 and normalized_symbol.isdigit()):
-        return f"❌ 股票代码格式不正确：{symbol}。请输入 6 位数字代码，如 000001 或 600519。"
+        return f"❌ The stock symbol format is incorrect:{symbol}. Please enter a 6-digit code such as 000001 or 600519."
 
     if data_source not in {"tushare", "akshare"}:
-        return f"❌ 暂仅支持 tushare 或 akshare 数据源，当前为：{data_source}。"
+        return f"❌ Currently only tushare or akshare data sources are supported, currently:{data_source}. "
 
     if not sync_historical and not sync_financial and not sync_basic:
-        return "❌ 请至少选择一种同步内容：历史数据、财务数据或基础数据。"
+        return "❌ Please select at least one type of synchronization: historical data, financial data, or basic data."
 
     try:
         result = await run_single_stock_sync(
@@ -88,8 +88,8 @@ async def sync_single_stock_data(
             )
         )
     except Exception as exc:
-        logger.exception("[sync_single_stock_data] 单股数据同步失败: %s", exc)
-        return f"❌ 单股数据同步失败：{exc}"
+        logger.exception("[sync_single_stock_data] Single stock data synchronization failed: %s", exc)
+        return f"❌ Single stock data synchronization failed:{exc}"
 
     lines = [
         f"{'✅' if result.get('overall_success') else '⚠️'} 单股数据同步完成",
@@ -103,8 +103,8 @@ async def sync_single_stock_data(
         lines.append(_format_sync_section("基础数据", result.get("basic_sync")))
 
     if result.get("overall_success"):
-        lines.append("- 结果: 本次请求的同步项已成功完成，可继续查询最新数据或发起分析。")
+        lines.append("- result: The synchronization item requested this time has been successfully completed. You can continue to query the latest data or initiate analysis.")
     else:
-        lines.append("- 结果: 存在失败项，请根据上面的失败原因决定是否更换数据源或稍后重试。")
+        lines.append("- result: There are failed items. Please decide whether to change the data source or try again later based on the above failure reasons.")
 
     return "\n".join(lines)

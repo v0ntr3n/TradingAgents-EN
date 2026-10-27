@@ -1,18 +1,18 @@
 import time
 import json
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
-# 导入模板客户端
+# Import template client
 from tradingagents.utils.template_client import get_agent_prompt
 from tradingagents.agents.utils.compliance_prompting import apply_compliance_guardrails, build_research_only_closing
 
 
 def _get_extension_reports(state: dict) -> dict:
     """
-    动态获取扩展分析报告（板块、大盘等）
+    Dynamically obtain extended analysis reports (sectors, market, etc.)
     """
     try:
         from core.utils.report_aggregator import get_all_reports
@@ -27,46 +27,46 @@ def _get_extension_reports(state: dict) -> dict:
 
 def create_research_manager(llm, memory):
     def research_manager_node(state) -> dict:
-        # 使用 .get() 安全访问辩论状态
+        # Use .get() Secure access to debate status
         investment_debate_state = state.get("investment_debate_state", {})
         history = investment_debate_state.get("history", "")
 
-        # 获取核心分析报告
+        # Get core analysis report
         market_research_report = state.get("market_report", "")
         sentiment_report = state.get("sentiment_report", "")
         news_report = state.get("news_report", "")
         fundamentals_report = state.get("fundamentals_report", "")
 
-        # 动态获取扩展分析报告
+        # Dynamically obtain extended analysis reports
         extension_reports = _get_extension_reports(state)
         index_report = extension_reports.get("index_report", "")
         sector_report = extension_reports.get("sector_report", "")
 
         investment_debate_state = state["investment_debate_state"]
 
-        # 整合所有分析报告（核心报告 + 扩展报告）
+        # Integrate all analytical reports (core reports + Extended reporting)
         curr_situation_parts = []
         if index_report:
-            curr_situation_parts.append(f"【宏观大盘分析】\n{index_report}")
+            curr_situation_parts.append(f" [Macro market analysis]\n{index_report}")
         if sector_report:
-            curr_situation_parts.append(f"【行业板块分析】\n{sector_report}")
+            curr_situation_parts.append(f" [Industry sector analysis]\n{sector_report}")
         curr_situation_parts.extend([market_research_report, sentiment_report, news_report, fundamentals_report])
         curr_situation = "\n\n".join([p for p in curr_situation_parts if p])
 
-        # 安全检查：确保memory不为None
+        # Security check: Make sure memory is not None
         if memory is not None:
             past_memories = memory.get_memories(curr_situation, n_matches=2)
         else:
-            logger.warning(f"⚠️ [DEBUG] memory为None，跳过历史记忆检索")
+            logger.warning(f"⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
             past_memories = []
 
         past_memory_str = ""
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        # 🆕 使用模板系统获取提示词
+        # 🆕 Use template system to get prompt words
         try:
-            # 准备模板变量
+            # Prepare template variables
             template_variables = {
                 "ticker": state.get("company_of_interest", ""),
                 "company_name": state.get("company_of_interest", ""),
@@ -88,9 +88,9 @@ def create_research_manager(llm, memory):
                 context=None
             )
             if tpl_info:
-                logger.info(f"📚 [模板选择] source={tpl_info.get('source')} id={tpl_info.get('template_id')} version={tpl_info.get('version')} agent=managers/research_manager")
+                logger.info(f"📚 [Template selection] source={tpl_info.get('source')} id={tpl_info.get('template_id')} version={tpl_info.get('version')} agent=managers/research_manager")
 
-            # 从模板系统获取提示词
+            # Get prompt words from template system
             system_prompt = get_agent_prompt(
                 agent_type="managers",
                 agent_name="research_manager",
@@ -100,72 +100,72 @@ def create_research_manager(llm, memory):
             )
 
             system_prompt = apply_compliance_guardrails(system_prompt, "research_manager")
-            logger.info(f"✅ [研究经理] 成功从模板系统获取提示词 (长度: {len(system_prompt)})")
+            logger.info(f"✅ [research manager] Successfully obtained the prompt word from the template system (length: {len(system_prompt)})")
 
         except Exception as e:
-            logger.error(f"❌ [研究经理] 从模板系统获取提示词失败: {e}")
-            # 降级：使用硬编码提示词
-            system_prompt = """作为研究经理和辩论主持人，您的职责是批判性地评估这轮辩论并形成研究结论。
+            logger.error(f"❌ [research manager] Failed to obtain prompt word from template system: {e}")
+            # Downgrade: Use hardcoded prompt words
+            system_prompt = """As the research manager and debate moderator, your role is to critically evaluate the debate and formulate research conclusions.
 
-简洁地总结双方的关键观点，重点关注最有说服力的证据或推理。
+Concisely summarize the key arguments from both sides, focusing on the most convincing evidence or reasoning.
 
-请用中文撰写所有分析内容。"""
+Please write all analysis content in Chinese."""
             system_prompt = apply_compliance_guardrails(system_prompt, "research_manager")
-            logger.warning(f"⚠️ [研究经理] 使用降级提示词 (长度: {len(system_prompt)})")
+            logger.warning(f"⚠️ [research manager] Use demotion prompts (length: {len(system_prompt)})")
 
-        # 🆕 构建宏观分析部分
+        # 🆕 Build a macro analysis section
         macro_section = ""
         if index_report:
-            macro_section += f"\n【宏观大盘分析】\n{index_report}\n"
+            macro_section += f"\n [Macro market analysis]\n{index_report}\n"
         if sector_report:
-            macro_section += f"\n【行业板块分析】\n{sector_report}\n"
+            macro_section += f"\n [Industry sector analysis]\n{sector_report}\n"
 
-        # 构建完整提示词
+        # Build a complete prompt word
         prompt = f"""{system_prompt}
 
-过去的反思和经验教训：
+Past reflections and lessons learned:
 {past_memory_str}
 
-综合分析报告：
+Comprehensive analysis report:
 {macro_section}
-市场研究：{market_research_report}
-情绪分析：{sentiment_report}
-新闻分析：{news_report}
-基本面分析：{fundamentals_report}
+Market research:{market_research_report}
+Sentiment analysis:{sentiment_report}
+News analysis:{news_report}
+Fundamental analysis:{fundamentals_report}
 
-辩论历史：
+Debate history:
 {history}
 
-⚠️ 在做出投资决策时，请综合考虑：
-1. 大盘环境是否有利（牛市/熊市/震荡）
-2. 所属板块是否处于轮动热点
-3. 个股基本面和技术面信号
+⚠️ When making investment decisions, please consider:
+1. Is the market environment favorable (bull market/bear market/concussive)?
+2. Is the sector to which it belongs in a rotation hotspot?
+3. Fundamental and technical signals for individual stocks
 
-{build_research_only_closing(["请基于以上信息形成研究结论、核心分歧、主要风险和后续观察点。"])}"""
+{build_research_only_closing(["Please formulate research conclusions, core differences, main risks and follow-up observation points based on the above information."])}"""
 
-        # 📊 统计 prompt 大小
+        # 📊 Statistics prompt size
         prompt_length = len(prompt)
         estimated_tokens = int(prompt_length / 1.8)
 
-        logger.info(f"📊 [Research Manager] Prompt 统计:")
-        logger.info(f"   - 辩论历史长度: {len(history)} 字符")
-        logger.info(f"   - 总 Prompt 长度: {prompt_length} 字符")
-        logger.info(f"   - 估算输入 Token: ~{estimated_tokens} tokens")
+        logger.info(f"📊 [Research Manager] Prompt statistics:")
+        logger.info(f"   - Debate history length: {len(history)} character")
+        logger.info(f"   - Total prompt length: {prompt_length} character")
+        logger.info(f"   - Estimate input Token: ~{estimated_tokens} tokens")
 
-        # ⏱️ 记录开始时间
+        # ⏱️ Recording start time
         start_time = time.time()
 
         response = llm.invoke(prompt)
 
-        # ⏱️ 记录结束时间
+        # ⏱️ Record end time
         elapsed_time = time.time() - start_time
 
-        # 📊 统计响应信息
+        # 📊 Statistical response information
         response_length = len(response.content) if response and hasattr(response, 'content') else 0
         estimated_output_tokens = int(response_length / 1.8)
 
-        logger.info(f"⏱️ [Research Manager] LLM调用耗时: {elapsed_time:.2f}秒")
-        logger.info(f"📊 [Research Manager] 响应统计: {response_length} 字符, 估算~{estimated_output_tokens} tokens")
+        logger.info(f"⏱️ [Research Manager] LLM The call takes time: {elapsed_time:.2f}seconds")
+        logger.info(f"📊 [Research Manager] response statistics: {response_length} character, Estimate~{estimated_output_tokens} tokens")
 
         new_investment_debate_state = {
             "judge_decision": response.content,

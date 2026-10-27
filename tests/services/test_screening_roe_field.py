@@ -51,8 +51,8 @@ def test_database_screening_formats_roe_in_result(monkeypatch):
             return self._coll
 
     docs = [
-        {"code": "000001", "name": "平安银行", "roe": 12.3},
-        {"code": "600000", "name": "浦发银行", "roe": 8.9},
+        {"code": "000001", "name": "Ping An Bank", "roe": 12.3},
+        {"code": "600000", "name": "Shanghai Pudong Development Bank", "roe": 8.9},
     ]
 
     def _fake_get_db():

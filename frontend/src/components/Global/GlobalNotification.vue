@@ -1,15 +1,15 @@
 <template>
   <div class="global-notification">
-    <!-- 全局通知组件 -->
+    <!-- Global notification component -->
   </div>
 </template>
 
 <script setup lang="ts">
-// 全局通知组件逻辑
+// Global notification component logic
 </script>
 
 <style lang="scss" scoped>
 .global-notification {
-  // 样式
+  // style
 }
 </style>

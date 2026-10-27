@@ -1,11 +1,11 @@
-"""使用问答机器人工具：查询 Token 用量统计。
+"""Use the Q&A robot tool: Query Token usage statistics.
 
-让使用问答助手能"看到"用户当前的 Token 用量、配额使用情况，
-让京东云版用户能实时了解配额消耗速度，避免超额。
+Allows using Q&A Assistant to"see"The user s current Token usage and quota usage,
+This allows JD Cloud users to understand the rate of quota consumption in real time and avoid exceeding the quota.
 
-数据来源：
-- 直接复用 UsageStatisticsService.get_usage_statistics() 拿详细统计
-- 从环境变量 JDYUN_TOKEN_QUOTA 读取配额上限（仅京东云版有效）
+Data source:
+- Direct reuse UsageStatisticsService.get_usage_statistics() Get detailed statistics
+- Read the quota upper limit from the environment variable JDYUN_TOKEN_QUOTA (valid only for JD Cloud version)
 """
 
 import logging
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _format_tokens(value: Optional[int]) -> str:
-    """格式化 token 数为人类可读字符串。"""
+    """Format the token number as a human-readable string."""
     if value is None:
         return "未知"
     try:
@@ -37,7 +37,7 @@ def _format_tokens(value: Optional[int]) -> str:
 
 
 def _resolve_token_quota() -> int:
-    """读取 Token 配额上限（仅京东云版有效）。"""
+    """Read the Token quota limit (valid only for JD Cloud version)."""
     if os.getenv("JDYUN_MODE", "").strip().lower() in ("true", "1", "yes"):
         return int(os.getenv("JDYUN_TOKEN_QUOTA", "0") or "0")
     return 0
@@ -46,8 +46,8 @@ def _resolve_token_quota() -> int:
 @tool
 @register_tool(
     tool_id="get_token_usage",
-    name="查询 Token 用量统计",
-    description="查询 Token 用量统计：今日/本周/本月的已用 Token 数、配额上限、剩余配额、按模型分组的消耗、按任务分组的消耗。当用户问'今天用了多少 token''还剩多少配额''哪个模型消耗最多''Token 用量趋势'时使用。",
+    name="Query Token usage statistics",
+    description="Query token usage statistics: number of used tokens today/this week/month, quota limit, remaining quota, consumption grouped by model, consumption grouped by task. When the user asks'How much did you use today? token''How much quota is left?''Which model consumes the most''Token Usage trends'when used.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
@@ -66,23 +66,23 @@ def _resolve_token_quota() -> int:
         "配额什么时候重置",
         "还能用多少次分析",
     ],
-    when_to_use="当用户问到 Token 用量、配额使用情况、模型消耗、API 调用成本时使用。支持 days 参数指定统计周期（默认 7 天）。",
-    returns="返回文本格式的 Token 用量摘要，包含已用/配额/剩余/百分比/按模型分组消耗/按日期趋势。",
+    when_to_use="Used when users ask about token usage, quota usage, model consumption, and API call costs. Supports days parameter to specify statistical period (default 7 days).",
+    returns="Returns a Token usage summary in text format, including used/quota/remaining/percentage/consumption grouped by model/trend by date.",
 )
 async def get_token_usage(
     days: Annotated[
         Optional[int],
-        "统计周期天数（默认 7 天，可选 1/7/30，1=今日，7=本周，30=本月）。京东云版建议传 1 或 7。"
+        "Number of days in the statistical period (default 7 days, optional 1/7/30,1=Today,7=This week,30=this month). JD Cloud version recommends passing 1 or 7."
     ] = 7,
 ) -> str:
-    """查询 Token 用量统计。"""
+    """Query Token usage statistics."""
     from app.core.database import get_mongo_db
     from app.services.usage_statistics_service import usage_statistics_service
 
-    # 触发用户上下文（虽然服务侧按全局统计，但保持一致性）
+    # Trigger user context (although the service side presses global statistics, maintain consistency)
     require_current_user_id()
 
-    # 规范化 days
+    # Standardize days
     try:
         days_int = int(days) if days else 7
     except (TypeError, ValueError):
@@ -95,17 +95,17 @@ async def get_token_usage(
     db = get_mongo_db()
     is_jdyun = os.getenv("JDYUN_MODE", "").strip().lower() in ("true", "1", "yes")
 
-    # 复用现有 service 拿详细统计
+    # Reuse existing services to get detailed statistics
     try:
         stats = await usage_statistics_service.get_usage_statistics(days=days_int)
     except Exception as exc:
-        logger.warning("[get_token_usage] 查询统计失败: %s", exc)
+        logger.warning("[get_token_usage] Failed to query statistics: %s", exc)
         return (
-            "📊 Token 用量统计\n"
+            "📊 Token Usage statistics\n"
             "\n"
-            f"❌ 查询失败: {exc}\n"
+            f"❌ Query failed: {exc}\n"
             "\n"
-            "请稍后重试，或检查后端日志。"
+            "Please try again later, or check the backend logs."
         )
 
     used_tokens = (stats.total_input_tokens or 0) + (stats.total_output_tokens or 0)
@@ -116,14 +116,14 @@ async def get_token_usage(
     percentage = round((used_tokens / quota_tokens) * 100, 2) if quota_tokens > 0 else 0.0
     remaining_tokens = max(0, quota_tokens - used_tokens) if quota_tokens > 0 else 0
 
-    # 配额重置时间
+    # Quota reset time
     reset_at = (datetime.utcnow() + timedelta(days=days_int)).strftime("%Y-%m-%d %H:%M UTC")
 
-    # 按模型分组消耗（stats.by_model 是 dict: {model_name: {requests, input_tokens, output_tokens, cost, ...}}）
+    # Group consumption by model (stats.by_model is dict: {model_name: {requests, input_tokens, output_tokens, cost, ...}}) 
     by_model_dict = getattr(stats, "by_model", None) or {}
-    # 按供应商分组消耗（stats.by_provider 是 dict）
+    # Group consumption by provider (stats.by_provider is a dict)
     by_provider_dict = getattr(stats, "by_provider", None) or {}
-    # 按日期趋势（stats.by_date 是 dict: {date_str: {...}}）
+    # Trend by date (stats.by_date is dict: {date_str: {...}}) 
     by_date_dict = getattr(stats, "by_date", None) or {}
 
     lines = ["📊 Token 用量统计"]
@@ -131,7 +131,7 @@ async def get_token_usage(
     lines.append(f"- 统计周期: {period_label}（{days_int} 天）")
     lines.append("")
 
-    # 1) 总览
+    # 1) Overview
     lines.append("【1】用量总览")
     lines.append(f"- 已用 Token: {_format_tokens(used_tokens)}（输入 {_format_tokens(input_tokens)} + 输出 {_format_tokens(output_tokens)}）")
     lines.append(f"- 总请求数: {total_requests}")
@@ -142,23 +142,23 @@ async def get_token_usage(
         lines.append(f"- 使用率: {percentage}%")
         lines.append(f"- 配额重置时间: {reset_at}")
 
-        # 配额预警
+        # Quota warning
         if percentage >= 90:
-            lines.append("- 🔴 配额即将用尽，建议减少分析任务或等待重置")
+            lines.append("- 🔴 The quota is about to be exhausted. It is recommended to reduce the analysis tasks or wait for reset.")
         elif percentage >= 70:
-            lines.append("- 🟡 配额消耗较快，建议关注用量")
+            lines.append("- 🟡 The quota is consumed quickly, so it is recommended to pay attention to the usage.")
         elif percentage >= 50:
-            lines.append("- 🟢 配额使用过半，正常")
+            lines.append("- 🟢 More than half of the quota is used, which is normal.")
         else:
             lines.append("- 🟢 配额充足")
     else:
-        lines.append("- 配额上限: 不限额（标准版默认）")
+        lines.append("- Quota cap: Unlimited (standard version default)")
 
-    # 2) 按模型分组消耗
+    # 2) Consumption grouped by model
     lines.append("")
     lines.append("【2】按模型分组消耗")
     if by_model_dict:
-        # 按 total_tokens 降序排序，取 TOP 5
+        # Sort by total_tokens in descending order, take TOP 5
         sorted_models = sorted(
             by_model_dict.items(),
             key=lambda kv: (kv[1].get("input_tokens", 0) + kv[1].get("output_tokens", 0)),
@@ -173,7 +173,7 @@ async def get_token_usage(
     else:
         lines.append("  - 无数据")
 
-    # 3) 按供应商分组消耗
+    # 3) Consumption grouped by supplier
     lines.append("")
     lines.append("【3】按供应商分组消耗")
     if by_provider_dict:
@@ -188,11 +188,11 @@ async def get_token_usage(
     else:
         lines.append("  - 无数据")
 
-    # 4) 按日期趋势
+    # 4) Trend by date
     lines.append("")
     lines.append("【4】每日用量趋势")
     if by_date_dict:
-        # 按日期升序排序，取最近 7 天
+        # Sort by date in ascending order, take the last 7 days
         sorted_dates = sorted(by_date_dict.items(), key=lambda kv: kv[0], reverse=False)
         recent_dates = sorted_dates[-7:] if len(sorted_dates) > 7 else sorted_dates
         for date_str, d_data in recent_dates:
@@ -201,7 +201,7 @@ async def get_token_usage(
     else:
         lines.append("  - 无数据")
 
-    # 5) 综合判断
+    # 5) Comprehensive judgment
     lines.append("")
     lines.append("💡 综合判断")
     if total_requests == 0:
@@ -211,15 +211,15 @@ async def get_token_usage(
         lines.append(f"- 平均每次请求消耗 {_format_tokens(avg_per_request)} Token")
 
         if is_jdyun:
-            # 京东云版：估算还能跑多少次分析
-            avg_analysis_cost = 50_000  # 单次单股分析约 5 万 token
+            # JD Cloud Edition: Estimate how many more analyzes can be run
+            avg_analysis_cost = 50_000  # A single single stock analysis is about 50,000 token
             if quota_tokens > 0:
                 remaining_analyses = remaining_tokens // avg_analysis_cost
                 lines.append(f"- 按单次分析约 5 万 Token 估算，剩余可执行约 {remaining_analyses} 次单股分析")
             else:
-                lines.append("- 京东云版未配置配额上限，请关注控制台用量告警")
+                lines.append("- JD Cloud version has no quota limit configured, please pay attention to the console usage alarm.")
 
-        # 按日期趋势观察
+        # Trend observation by date
         if by_date_dict:
             sorted_dates = sorted(by_date_dict.items(), key=lambda kv: kv[0], reverse=False)
             if len(sorted_dates) >= 2:
@@ -234,6 +234,6 @@ async def get_token_usage(
 
     if is_jdyun:
         lines.append("")
-        lines.append("📌 说明：京东云版仅支持 GLM 系列模型，强制单并发，单次单股分析约消耗 5-10 万 Token")
+        lines.append("📌 Note: JD Cloud version only supports GLM series models, forcing single concurrency, and a single single stock analysis consumes about 50,000-100,000 Token")
 
     return "\n".join(lines)

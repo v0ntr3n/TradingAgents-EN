@@ -2,9 +2,9 @@ import type { App } from 'vue'
 import MarketSelector from './Global/MarketSelector.vue'
 import MultiMarketStockSearch from './Global/MultiMarketStockSearch.vue'
 
-// 全局组件注册
+// Global component registration
 export function setupGlobalComponents(app: App) {
-  // 注册多市场相关组件
+  // Register multi-market related components
   app.component('MarketSelector', MarketSelector)
   app.component('MultiMarketStockSearch', MultiMarketStockSearch)
 }

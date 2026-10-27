@@ -1,7 +1,7 @@
 """
-测试任务取消功能
+Test task cancellation function
 
-验证任务在执行过程中可以被取消
+Verification tasks can be canceled during execution
 """
 
 import asyncio
@@ -12,70 +12,70 @@ from app.models.user import PyObjectId
 
 
 async def test_task_cancellation():
-    """测试任务取消"""
+    """Test task canceled"""
     print("=" * 60)
-    print("🧪 测试任务取消功能")
+    print("🧪 Test task cancellation function")
     print("=" * 60)
     
-    # 初始化数据库
+    # Initialize database
     await init_database()
     
-    # 获取服务
+    # Get services
     task_service = get_task_analysis_service()
     
-    # 创建测试任务
-    print("\n1️⃣ 创建测试任务...")
+    # Create test tasks
+    print("\n1️⃣ Create test tasks...")
     task = await task_service.create_task(
-        user_id=PyObjectId("507f1f77bcf86cd799439011"),  # 测试用户ID
+        user_id=PyObjectId("507f1f77bcf86cd799439011"),  # test user ID
         task_type=AnalysisTaskType.STOCK_ANALYSIS,
         task_params={
             "symbol": "000001",
             "market_type": "cn",
-            "research_depth": "标准"
+            "research_depth": "Standard"
         },
         engine_type="workflow",
         preference_type="neutral"
     )
     
-    print(f"✅ 任务已创建: {task.task_id}")
-    print(f"   状态: {task.status}")
+    print(f"✅ Task has been created: {task.task_id}")
+    print(f"   Status: {task.status}")
     
-    # 异步执行任务（不等待完成）
-    print("\n2️⃣ 开始执行任务...")
+    # Execute tasks asynchronously (without waiting for completion)
+    print("\n2️⃣ Start task...")
     task_future = asyncio.create_task(task_service.execute_task(task))
     
-    # 等待3秒后取消任务
-    print("\n3️⃣ 等待3秒后取消任务...")
+    # Wait 3 seconds before canceling the task
+    print("\n3️⃣ Wait 3 seconds before canceling the task...")
     await asyncio.sleep(3)
     
-    print("\n4️⃣ 取消任务...")
+    print("\n4️⃣ Cancel task...")
     success = await task_service.cancel_task(task.task_id)
     
     if success:
-        print(f"✅ 任务取消请求已发送")
+        print(f"✅ Task cancellation request sent")
     else:
-        print(f"❌ 任务取消失败（可能已完成）")
+        print(f"❌ Task cancellation failed (may have been completed)")
     
-    # 等待任务执行完成（应该会抛出 TaskCancelledException）
-    print("\n5️⃣ 等待任务执行完成...")
+    # Wait for task execution to complete (TaskCancelledException should be thrown)
+    print("\n5️⃣ Wait for task execution to complete...")
     try:
         result_task = await task_future
-        print(f"📊 任务最终状态: {result_task.status}")
-        print(f"   错误信息: {result_task.error_message}")
+        print(f"📊 task final status: {result_task.status}")
+        print(f"   error message: {result_task.error_message}")
     except Exception as e:
-        print(f"⚠️ 任务执行异常: {e}")
+        print(f"⚠️ Task execution exception: {e}")
     
-    # 查询任务状态
-    print("\n6️⃣ 查询任务最终状态...")
+    # Query task status
+    print("\n6️⃣ Query the final status of the task...")
     final_task = await task_service.get_task(task.task_id)
     if final_task:
-        print(f"📊 最终状态: {final_task.status}")
-        print(f"   进度: {final_task.progress}%")
-        print(f"   错误信息: {final_task.error_message}")
-        print(f"   执行时间: {final_task.execution_time:.2f}s")
+        print(f"📊 final state: {final_task.status}")
+        print(f"   Progress: {final_task.progress}%")
+        print(f"   error message: {final_task.error_message}")
+        print(f"   Execution time: {final_task.execution_time:.2f}s")
     
     print("\n" + "=" * 60)
-    print("✅ 测试完成")
+    print("✅ Test completed")
     print("=" * 60)
 
 

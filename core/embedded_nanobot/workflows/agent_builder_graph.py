@@ -1,13 +1,13 @@
 """
-Agent Builder LangGraph 工作流定义
+Agent Builder LangGraph Workflow definition
 
-定义 Agent Builder 创建流程的有向图。
+A directed graph that defines the Agent Builder creation process.
 
-原理：
-- 节点是构建阶段（需求探索、确认、能力盘点、方案、生成、测试）
-- 边是条件分支（用户确认、修改、取消、选择方案 A/B/C）
-- 状态由 MongoDB checkpoint 持久化
-- LLM 只在节点内负责沟通和工具调用
+Principle:
+- The node is the construction phase (requirements exploration, confirmation, capability inventory, solution, generation, testing)
+- The edges are conditional branches (user confirms, modifies, cancels, chooses plan A/B/C)
+- State is persisted by MongoDB checkpoints
+- LLM Only responsible for communication and tool invocation within the node
 """
 
 from __future__ import annotations
@@ -27,52 +27,52 @@ logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────────────────────
-# 图构建
+# Graph construction
 # ──────────────────────────────────────────────────────────────
 
 def build_agent_builder_graph() -> StateGraph:
-    """构建 Agent Builder 工作流图。
+    """Build an Agent Builder workflow diagram.
 
-    返回一个编译好的 StateGraph，可直接调用 ainvoke()。
+    Returns a compiled StateGraph, which can be called directly ainvoke(). 
     """
     graph = StateGraph(AgentBuilderState)
 
-    # ── 注册节点 ──
-    # LLM 意图分类（从 wait 节点恢复时先跑这个）
+    # ── Register node ──
+    # LLM Intent classification (run this first when recovering from the wait node)
     graph.add_node("classify_intent", _make_node_wrapper(nodes.node_classify_user_intent))
 
-    # 需求阶段
+    # demand stage
     graph.add_node("requirement_intake", _make_node_wrapper(nodes.node_requirement_intake))
     graph.add_node("wait_intake_confirmation", _make_node_wrapper(nodes.node_wait_intake_confirmation))
     graph.add_node("requirement_confirmation", _make_node_wrapper(nodes.node_requirement_confirmation))
     graph.add_node("wait_requirement_confirmation", _make_node_wrapper(nodes.node_wait_requirement_confirmation))
 
-    # 缺口分析阶段
+    # gap analysis stage
     graph.add_node("gap_analysis", _make_node_wrapper(nodes.node_gap_analysis))
 
-    # 方案阶段
+    # planning stage
     graph.add_node("plan_generation", _make_node_wrapper(nodes.node_plan_generation))
     graph.add_node("wait_plan_selection", _make_node_wrapper(nodes.node_wait_plan_selection))
 
-    # 生成阶段
+    # generation phase
     graph.add_node("generate_candidate_agent", _make_node_wrapper(nodes.node_generate_candidate_agent))
     graph.add_node("build_or_ready", _make_node_wrapper(nodes.node_build_or_ready))
 
-    # 测试阶段
+    # testing phase
     graph.add_node("wait_test_request", _make_node_wrapper(nodes.node_wait_test_request))
     graph.add_node("real_data_test", _make_node_wrapper(nodes.node_real_data_test))
 
-    # 评估 / 发布（测试后等待用户决策）
+    # Evaluate/Release (wait for user decision after testing)
     graph.add_node("wait_evaluation", _make_node_wrapper(nodes.node_wait_evaluation))
     graph.add_node("evaluate_or_publish", _make_node_wrapper(nodes.node_evaluate_or_publish))
     graph.add_node("iterate_agent_version", _make_node_wrapper(nodes.node_iterate_agent_version))
 
-    # 错误恢复
+    # error recovery
     graph.add_node("error_recovery", _make_node_wrapper(nodes.node_error_recovery))
 
-    # ── 注册边 ──
+    # ── Register side ──
 
-    # START → 根据 current_node 决定是新会话还是恢复
+    # START → Determine whether it is a new session or recovery based on current_node
     graph.add_conditional_edges(
         START,
         conditions.route_start,
@@ -97,7 +97,7 @@ def build_agent_builder_graph() -> StateGraph:
         },
     )
 
-    # classify_intent → 根据 LLM 意图分类结果路由
+    # classify_intent → Routing results based on LLM intent classification
     graph.add_conditional_edges(
         "classify_intent",
         conditions.route_after_classify,
@@ -121,7 +121,7 @@ def build_agent_builder_graph() -> StateGraph:
         },
     )
 
-    # 需求探索后
+    # After requirement exploration
     graph.add_conditional_edges(
         "requirement_intake",
         conditions.route_after_intake,
@@ -132,25 +132,25 @@ def build_agent_builder_graph() -> StateGraph:
         },
     )
 
-    # 等待需求确认 → 终端
+    # Waiting for confirmation of demand → terminal
     graph.add_edge("wait_intake_confirmation", END)
 
-    # 需求确认后
+    # After confirmation of demand
     graph.add_edge("requirement_confirmation", "wait_requirement_confirmation")
 
-    # 等待需求边界确认 → 终端
+    # Waiting for confirmation of demand boundaries → terminal
     graph.add_edge("wait_requirement_confirmation", END)
 
-    # gap 分析 → 方案生成
+    # gap analysis → Solution generation
     graph.add_edge("gap_analysis", "plan_generation")
 
-    # 方案生成 → 等待选择
+    # Solution generation → Waiting for selection
     graph.add_edge("plan_generation", "wait_plan_selection")
 
-    # 等待方案选择 → 终端
+    # Waiting for plan selection → terminal
     graph.add_edge("wait_plan_selection", END)
 
-    # 生成 Agent 后
+    # After generating Agent
     graph.add_conditional_edges(
         "generate_candidate_agent",
         conditions.route_after_generate,
@@ -161,7 +161,7 @@ def build_agent_builder_graph() -> StateGraph:
         },
     )
 
-    # 构建后
+    # After building
     graph.add_conditional_edges(
         "build_or_ready",
         conditions.route_after_build,
@@ -171,10 +171,10 @@ def build_agent_builder_graph() -> StateGraph:
         },
     )
 
-    # 等待测试请求 → 终端
+    # Waiting for test request → terminal
     graph.add_edge("wait_test_request", END)
 
-    # 测试后 → 等待用户决策（不再自动发布）
+    # After test → Wait for user decision (no longer publish automatically)
     graph.add_conditional_edges(
         "real_data_test",
         conditions.route_after_test,
@@ -184,31 +184,31 @@ def build_agent_builder_graph() -> StateGraph:
         },
     )
 
-    # 等待评估决策 → 终端
+    # Waiting for evaluation decision → terminal
     graph.add_edge("wait_evaluation", END)
 
-    # 版本迭代创建后 → 终端，等待用户继续补充/确认升级需求
+    # After version iteration is created → Terminal, waiting for the user to continue to supplement/confirm the upgrade requirements
     graph.add_edge("iterate_agent_version", END)
 
-    # 评估/发布后 → 终端
+    # After evaluation/release → terminal
     graph.add_edge("evaluate_or_publish", END)
 
-    # 错误恢复 → 终端
+    # error recovery → terminal
     graph.add_edge("error_recovery", END)
 
     return graph.compile()
 
 
 # ──────────────────────────────────────────────────────────────
-# 节点包装器
+# node wrapper
 # ──────────────────────────────────────────────────────────────
 
 def _make_node_wrapper(node_func):
-    """将节点函数包装为 LangGraph 节点。
+    """Wrap node functions as LangGraph nodes.
 
-    根据节点函数签名动态注入参数。
-    - action 节点：注入 tool_registry, llm_client, event_callback, on_stream
-    - wait 节点：只注入 event_callback, on_stream
+    Dynamically inject parameters based on node function signature.
+    - action node:inject tool_registry, llm_client, event_callback, on_stream
+    - wait node:inject only event_callback, on_stream
     """
     import inspect
     sig = inspect.signature(node_func)
@@ -244,7 +244,7 @@ def _make_node_wrapper(node_func):
 
 
 # ──────────────────────────────────────────────────────────────
-# 图执行器
+# graph executor
 # ──────────────────────────────────────────────────────────────
 
 async def execute_graph(
@@ -256,14 +256,14 @@ async def execute_graph(
     on_stream: Optional[Callable] = None,
     max_steps: int = 10,
 ) -> AgentBuilderState:
-    """执行 Agent Builder 图。
+    """Execute the Agent Builder graph.
 
-    在 state 中注入运行时依赖，然后执行图。
-    遇到 wait_* 节点时暂停，保存 checkpoint。
+    Inject runtime dependencies into state and then execute the graph.
+    encounter wait_* Pause when the node is running and save the checkpoint.
 
-    返回最终 state。
+    Return the final state.
     """
-    # 注入运行时依赖
+    # Inject runtime dependencies
     state["_tool_registry"] = tool_registry
     state["_llm_client"] = llm_client
     state["_event_callback"] = event_callback
@@ -276,8 +276,8 @@ async def execute_graph(
         state.get("awaiting_user", False),
     )
 
-    # 图执行：START → route_start → ... → wait_* → END
-    # 不需要循环，图一次性跑完
+    # Figure execution:START → route_start → ... → wait_* → END
+    # No need to loop, the graph is completed in one go
     result = await graph.ainvoke(
         state,
         config={"recursion_limit": 50},

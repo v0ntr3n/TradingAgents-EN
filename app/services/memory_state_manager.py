@@ -1,6 +1,6 @@
 """
-内存状态管理器
-类似于 analysis-engine 的实现，提供快速的状态读写
+memory state manager
+Similar to the implementation of analysis-engine, providing fast status reading and writing
 """
 
 import asyncio
@@ -31,64 +31,64 @@ class TaskState:
     stock_name: Optional[str] = None
     progress: int = 0
     message: str = ""
-    current_step: str = ""  # 当前步骤（兼容旧版，可以是索引或名称）
-    current_step_name: str = ""  # 🔑 新增：当前步骤名称（简短，如 "市场分析师"）
-    current_step_description: str = ""  # 🔑 新增：当前步骤描述（详细，如 "📈 市场分析师正在分析..."）
+    current_step: str = ""  # Current step (compatible with older versions, can be index or name)
+    current_step_name: str = ""  # 🔑 New: Current step name (short, like "market analyst") 
+    current_step_description: str = ""  # 🔑 New: current step description (detailed, such as "📈 Market analysts are analyzing...") 
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     result_data: Optional[Dict[str, Any]] = None
     error_message: Optional[str] = None
 
-    # 分析参数
+    # Analysis parameters
     parameters: Optional[Dict[str, Any]] = None
 
-    # 性能指标
+    # Performance indicators
     execution_time: Optional[float] = None
     tokens_used: Optional[int] = None
-    estimated_duration: Optional[float] = None  # 预估总时长（秒）
+    estimated_duration: Optional[float] = None  # Estimated total duration (seconds)
     
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典格式"""
         data = asdict(self)
-        # 处理枚举类型
+        # Handling enumeration types
         data['status'] = self.status.value
-        # 处理时间格式
+        # processing time format
         if self.start_time:
             data['start_time'] = self.start_time.isoformat()
         if self.end_time:
             data['end_time'] = self.end_time.isoformat()
 
-        # 添加实时计算的时间信息
+        # Add real-time calculated time information
         if self.start_time:
             if self.end_time:
-                # 任务已完成，使用最终执行时间
+                # Task completed, using final execution time
                 data['elapsed_time'] = self.execution_time or (self.end_time - self.start_time).total_seconds()
                 data['remaining_time'] = 0
                 data['estimated_total_time'] = data['elapsed_time']
             else:
-                # 任务进行中，实时计算已用时间
+                # The task is in progress and the elapsed time is calculated in real time.
                 from datetime import datetime
                 elapsed_time = (datetime.now() - self.start_time).total_seconds()
                 data['elapsed_time'] = elapsed_time
 
-                # 计算预计剩余时间和总时长
+                # Calculate estimated remaining time and total duration
                 progress = self.progress / 100 if self.progress > 0 else 0
 
-                # 使用任务创建时预估的总时长，如果没有则使用默认值（5分钟）
+                # Use the total duration estimated when the task was created, or use the default value (5 minutes) if not available
                 estimated_total = self.estimated_duration if self.estimated_duration else 300
 
                 if progress >= 1.0:
-                    # 任务已完成
+                    # Task completed
                     data['remaining_time'] = 0
                     data['estimated_total_time'] = elapsed_time
                 else:
-                    # 使用预估的总时长（固定值）
+                    # Estimated total duration of use (fixed value)
                     data['estimated_total_time'] = estimated_total
-                    # 预计剩余 = 预估总时长 - 已用时间
+                    # Estimated remaining = Estimated total time - elapsed time
                     data['remaining_time'] = max(0, estimated_total - elapsed_time)
         else:
             data['elapsed_time'] = 0
-            data['remaining_time'] = 300  # 默认5分钟
+            data['remaining_time'] = 300  # Default 5 minutes
             data['estimated_total_time'] = 300
 
         return data
@@ -98,14 +98,14 @@ class MemoryStateManager:
 
     def __init__(self):
         self._tasks: Dict[str, TaskState] = {}
-        # 🔧 使用 threading.Lock 代替 asyncio.Lock，避免事件循环冲突
-        # 当在线程池中执行分析时，会创建新的事件循环，asyncio.Lock 会导致
-        # "is bound to a different event loop" 错误
+        # 🔧 Use threading.Lock instead of asyncio.Lock to avoid event loop conflicts
+        # When performing analysis in the thread pool, a new event loop is created and asyncio.Lock causes
+        # "is bound to a different event loop" Error
         self._lock = threading.Lock()
         self._websocket_manager = None
 
     def set_websocket_manager(self, websocket_manager):
-        """设置 WebSocket 管理器"""
+        """Set up the WebSocket manager"""
         self._websocket_manager = websocket_manager
         
     async def create_task(
@@ -118,7 +118,7 @@ class MemoryStateManager:
     ) -> TaskState:
         """创建新任务"""
         with self._lock:
-            # 计算预估总时长
+            # Calculate estimated total duration
             estimated_duration = self._calculate_estimated_duration(parameters or {})
 
             task_state = TaskState(
@@ -130,7 +130,7 @@ class MemoryStateManager:
                 start_time=datetime.now(),
                 parameters=parameters or {},
                 estimated_duration=estimated_duration,
-                message="任务已创建，等待执行..."
+                message="The task has been created and is waiting to be executed..."
             )
             self._tasks[task_id] = task_state
             logger.info(f"📝 创建任务状态: {task_id}")
@@ -140,40 +140,40 @@ class MemoryStateManager:
             return task_state
 
     def _calculate_estimated_duration(self, parameters: Dict[str, Any]) -> float:
-        """根据分析参数计算预估总时长（秒）"""
-        # 基础时间（秒）- 环境准备、配置等
+        """Calculate estimated total duration (seconds) based on analysis parameters"""
+        # Basic time (seconds) - environment preparation, configuration, etc.
         base_time = 60
 
-        # 获取分析参数
+        # Get analysis parameters
         research_depth = parameters.get('research_depth', '标准')
         selected_analysts = parameters.get('selected_analysts') or []
         llm_provider = parameters.get('llm_provider', 'dashscope')
 
-        # 研究深度映射
+        # Study depth mapping
         depth_map = {"快速": 1, "标准": 2, "深度": 3}
         d = depth_map.get(research_depth, 2)
 
-        # 每个分析师的基础耗时（基于真实测试数据）
+        # Basic time spent by each analyst (based on real test data)
         analyst_base_time = {
-            1: 180,  # 快速分析：每个分析师约3分钟
-            2: 360,  # 标准分析：每个分析师约6分钟
-            3: 600   # 深度分析：每个分析师约10分钟
+            1: 180,  # Quick analysis: about 3 minutes per analyst
+            2: 360,  # Standard analysis: approximately 6 minutes per analyst
+            3: 600   # In-depth analysis: approximately 10 minutes per analyst
         }.get(d, 360)
 
         analyst_time = len(selected_analysts) * analyst_base_time
 
-        # 模型速度影响（基于实际测试）
+        # Model speed impact (based on actual testing)
         model_multiplier = {
-            'dashscope': 1.0,  # 阿里百炼速度适中
-            'deepseek': 0.7,   # DeepSeek较快
-            'google': 1.3      # Google较慢
+            'dashscope': 1.0,  # Ali Bailian speed is moderate
+            'deepseek': 0.7,   # DeepSeek faster
+            'google': 1.3      # Google slower
         }.get(llm_provider, 1.0)
 
-        # 研究深度额外影响（工具调用复杂度）
+        # Additional impact of research depth (tool call complexity)
         depth_multiplier = {
-            1: 0.8,  # 快速分析，较少工具调用
-            2: 1.0,  # 标准分析，标准工具调用
-            3: 1.3   # 深度分析，更多工具调用和推理
+            1: 0.8,  # Fast analysis with fewer tool calls
+            2: 1.0,  # Standard analysis, standard tool calls
+            3: 1.3   # Deep analysis, more tool calls and reasoning
         }.get(d, 1.0)
 
         total_time = (base_time + analyst_time) * model_multiplier * depth_multiplier
@@ -186,8 +186,8 @@ class MemoryStateManager:
         progress: Optional[int] = None,
         message: Optional[str] = None,
         current_step: Optional[str] = None,
-        current_step_name: Optional[str] = None,  # 🔑 新增参数
-        current_step_description: Optional[str] = None,  # 🔑 新增参数
+        current_step_name: Optional[str] = None,  # 🔑 New parameters
+        current_step_description: Optional[str] = None,  # 🔑 New parameters
         result_data: Optional[Dict[str, Any]] = None,
         error_message: Optional[str] = None
     ) -> bool:
@@ -206,32 +206,32 @@ class MemoryStateManager:
                 task.message = message
             if current_step is not None:
                 task.current_step = current_step
-            if current_step_name is not None:  # 🔑 更新步骤名称
+            if current_step_name is not None:  # 🔑 Update step name
                 task.current_step_name = current_step_name
-            if current_step_description is not None:  # 🔑 更新步骤描述
+            if current_step_description is not None:  # 🔑 Update step description
                 task.current_step_description = current_step_description
             if result_data is not None:
-                # 🔍 调试：检查保存到内存的result_data
-                logger.info(f"🔍 [MEMORY] 保存result_data到内存: {task_id}")
-                logger.info(f"🔍 [MEMORY] result_data键: {list(result_data.keys()) if result_data else '无'}")
-                logger.info(f"🔍 [MEMORY] result_data中有decision: {bool(result_data.get('decision')) if result_data else False}")
+                # 🔍 Debugging: Check the saved to memory result_data
+                logger.info(f"🔍 [MEMORY] Save result_data to memory: {task_id}")
+                logger.info(f"🔍 [MEMORY] result_data key: {list(result_data.keys()) if result_data else 'None'}")
+                logger.info(f"🔍 [MEMORY] result_data There is decision: {bool(result_data.get('decision')) if result_data else False}")
                 if result_data and result_data.get('decision'):
-                    logger.info(f"🔍 [MEMORY] decision内容: {result_data['decision']}")
+                    logger.info(f"🔍 [MEMORY] decision content: {result_data['decision']}")
 
                 task.result_data = result_data
             if error_message is not None:
                 task.error_message = error_message
                 
-            # 如果任务完成或失败，设置结束时间
+            # Set end time if task completes or fails
             if status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
                 task.end_time = datetime.now()
                 if task.start_time:
                     task.execution_time = (task.end_time - task.start_time).total_seconds()
             
-            # 🔥 使用 task.progress 而不是参数 progress（因为 progress 可能是 None）
+            # 🔥 Use task.progress instead of parameter progress (because progress may be None)
             logger.info(f"📊 更新任务状态: {task_id} -> {status.value} ({task.progress}%)")
 
-            # 推送状态更新到 WebSocket
+            # Push status updates to WebSocket
             if self._websocket_manager:
                 try:
                     progress_update = {
@@ -241,16 +241,16 @@ class MemoryStateManager:
                         "progress": task.progress,
                         "message": task.message,
                         "current_step": task.current_step,
-                        "current_step_name": task.current_step_name,  # 🔑 新增字段
-                        "current_step_description": task.current_step_description,  # 🔑 新增字段
+                        "current_step_name": task.current_step_name,  # 🔑 Add new field
+                        "current_step_description": task.current_step_description,  # 🔑 Add new field
                         "timestamp": datetime.now().isoformat()
                     }
-                    # 异步推送，不等待完成
+                    # Asynchronous push, no waiting for completion
                     asyncio.create_task(
                         self._websocket_manager.send_progress_update(task_id, progress_update)
                     )
                 except Exception as e:
-                    logger.warning(f"⚠️ WebSocket 推送失败: {e}")
+                    logger.warning(f"⚠️ WebSocket Push failed: {e}")
 
             return True
     
@@ -259,7 +259,7 @@ class MemoryStateManager:
         with self._lock:
             logger.debug(f"🔍 查询任务: {task_id}")
             logger.debug(f"📊 当前内存中任务数量: {len(self._tasks)}")
-            logger.debug(f"🔑 内存中的任务ID列表: {list(self._tasks.keys())}")
+            logger.debug(f"🔑 List of task IDs in memory: {list(self._tasks.keys())}")
             task = self._tasks.get(task_id)
             if task:
                 logger.debug(f"✅ 找到任务: {task_id}")
@@ -278,21 +278,21 @@ class MemoryStateManager:
         limit: int = 20,
         offset: int = 0
     ) -> List[Dict[str, Any]]:
-        """获取所有任务列表（不限用户）"""
+        """Get all task lists (not limited to users)"""
         with self._lock:
             tasks = []
             for task in self._tasks.values():
                 if status is None or task.status == status:
                     item = task.to_dict()
-                    # 兼容前端字段
+                    # Compatible with front-end fields
                     if 'stock_name' not in item or not item.get('stock_name'):
                         item['stock_name'] = None
                     tasks.append(item)
 
-            # 按开始时间倒序排列
+            # Sort by start time in descending order
             tasks.sort(key=lambda x: x.get('start_time', ''), reverse=True)
 
-            # 分页
+            # Pagination
             return tasks[offset:offset + limit]
 
     async def list_user_tasks(
@@ -309,15 +309,15 @@ class MemoryStateManager:
                 if task.user_id == user_id:
                     if status is None or task.status == status:
                         item = task.to_dict()
-                        # 兼容前端字段
+                        # Compatible with front-end fields
                         if 'stock_name' not in item or not item.get('stock_name'):
                             item['stock_name'] = None
                         tasks.append(item)
 
-            # 按开始时间倒序排列
+            # Sort by start time in descending order
             tasks.sort(key=lambda x: x.get('start_time', ''), reverse=True)
 
-            # 分页
+            # Pagination
             return tasks[offset:offset + limit]
     
     async def delete_task(self, task_id: str) -> bool:
@@ -365,31 +365,31 @@ class MemoryStateManager:
             return len(tasks_to_remove)
 
     async def cleanup_zombie_tasks(self, max_running_hours: int = 2) -> int:
-        """清理僵尸任务（长时间处于 running 状态的任务）
+        """Clean up zombie tasks (tasks that have been running for a long time)
 
         Args:
-            max_running_hours: 最大运行时长（小时），超过此时长的 running 任务将被标记为失败
+            max_running_hours: Maximum running time (hours), running tasks exceeding this time will be marked as failed
 
         Returns:
-            清理的任务数量
+            Number of tasks cleaned
         """
         with self._lock:
             cutoff_time = datetime.now().timestamp() - (max_running_hours * 3600)
             zombie_tasks = []
 
             for task_id, task in self._tasks.items():
-                # 检查是否是长时间运行的任务
+                # Check if it is a long running task
                 if task.status in [TaskStatus.RUNNING, TaskStatus.PENDING]:
                     if task.start_time and task.start_time.timestamp() < cutoff_time:
                         zombie_tasks.append(task_id)
 
-            # 将僵尸任务标记为失败
+            # Mark zombie task as failed
             for task_id in zombie_tasks:
                 task = self._tasks[task_id]
                 task.status = TaskStatus.FAILED
                 task.end_time = datetime.now()
                 task.error_message = f"任务超时（运行时间超过 {max_running_hours} 小时）"
-                task.message = "任务已超时，自动标记为失败"
+                task.message = "The task has timed out and is automatically marked as failed."
                 task.progress = 0
 
                 if task.start_time:
@@ -403,24 +403,24 @@ class MemoryStateManager:
             return len(zombie_tasks)
 
     async def remove_task(self, task_id: str) -> bool:
-        """从内存中删除任务
+        """Remove tasks from memory
 
         Args:
-            task_id: 任务ID
+            task_id: Task ID
 
         Returns:
-            是否成功删除
+            Deleted successfully or not
         """
         with self._lock:
             if task_id in self._tasks:
                 del self._tasks[task_id]
-                logger.info(f"🗑️ 任务已从内存中删除: {task_id}")
+                logger.info(f"🗑️ Task has been removed from memory: {task_id}")
                 return True
             else:
-                logger.warning(f"⚠️ 任务不存在于内存中: {task_id}")
+                logger.warning(f"⚠️ Task does not exist in memory: {task_id}")
                 return False
 
-# 全局实例
+# global instance
 _memory_state_manager = None
 
 def get_memory_state_manager() -> MemoryStateManager:

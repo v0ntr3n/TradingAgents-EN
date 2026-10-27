@@ -1,16 +1,16 @@
 """
-报告聚合器
+Report aggregator
 
-动态获取所有分析报告，替代硬编码字段获取
+Dynamically obtain all analysis reports instead of hard-coded field acquisition
 
-用法:
+Usage:
     from core.utils.report_aggregator import ReportAggregator, get_all_reports
     
-    # 方式1：使用便捷函数
+    # Method 1: Use convenience functions
     reports = get_all_reports(state)
     curr_situation = reports.to_text()
     
-    # 方式2：使用类
+    # Way 2: Use classes
     aggregator = ReportAggregator()
     reports = aggregator.aggregate(state)
 """
@@ -21,33 +21,33 @@ from dataclasses import dataclass, field
 from ..agents.analyst_registry import get_analyst_registry
 from ..agents.config import AgentMetadata, BUILTIN_AGENTS
 
-# 导入日志
+# Import logs
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
 
 @dataclass
 class AggregatedReports:
-    """聚合后的报告集合"""
+    """Aggregated report collection"""
     
     reports: Dict[str, str] = field(default_factory=dict)  # {field_name: content}
     labels: Dict[str, str] = field(default_factory=dict)   # {field_name: label}
-    order: List[str] = field(default_factory=list)         # 按执行顺序排列的字段名
+    order: List[str] = field(default_factory=list)         # Field names in order of execution
     
     def get(self, field_name: str, default: str = "") -> str:
-        """获取指定报告"""
+        """Get specified report"""
         return self.reports.get(field_name, default)
     
     def to_dict(self) -> Dict[str, str]:
-        """转换为字典"""
+        """Convert to dictionary"""
         return self.reports.copy()
     
     def to_text(self, separator: str = "\n\n") -> str:
         """
-        转换为文本（按执行顺序，带标签）
+        Convert to text (in order of execution, with labels)
         
         Returns:
-            格式化的报告文本
+            Formatted report text
         """
         parts = []
         for field_name in self.order:
@@ -62,7 +62,7 @@ class AggregatedReports:
     
     def to_text_simple(self, separator: str = "\n\n") -> str:
         """
-        转换为文本（不带标签，用于向后兼容）
+        Convert to text (without tags, for backward compatibility)
         """
         parts = []
         for field_name in self.order:
@@ -77,39 +77,39 @@ class AggregatedReports:
 
 class ReportAggregator:
     """
-    报告聚合器
+    Report aggregator
     
-    从 state 中动态获取所有分析报告
+    Dynamically obtain all analysis reports from state
     """
     
-    # 默认的报告字段（向后兼容）
+    # Default reporting fields (backwards compatible)
     DEFAULT_FIELDS = [
-        ("index_report", "【宏观大盘分析】", 1),
-        ("sector_report", "【行业板块分析】", 5),
-        ("market_report", "【技术分析】", 10),
-        ("sentiment_report", "【舆情分析】", 20),
-        ("news_report", "【新闻分析】", 30),
-        ("fundamentals_report", "【基本面分析】", 40),
+        ("index_report", " [Macro market analysis]", 1),
+        ("sector_report", " [Industry sector analysis]", 5),
+        ("market_report", " [Technical analysis]", 10),
+        ("sentiment_report", " [Public opinion analysis]", 20),
+        ("news_report", " [News Analysis]", 30),
+        ("fundamentals_report", " [Fundamental Analysis]", 40),
     ]
     
     def __init__(self, use_registry: bool = True):
         """
-        初始化聚合器
+        Initialize aggregator
         
         Args:
-            use_registry: 是否使用注册表获取字段（False 则使用默认字段）
+            use_registry: Whether to use the registry to obtain fields (False uses the default fields)
         """
         self.use_registry = use_registry
         self._field_config: Optional[List[tuple]] = None
     
     def _get_field_config(self) -> List[tuple]:
-        """获取字段配置 [(field_name, label, order), ...]"""
+        """Get field configuration [(field_name, label, order), ...]"""
         if self._field_config is not None:
             return self._field_config
         
         if self.use_registry:
             config = []
-            # 从内置 Agent 元数据获取
+            # Obtained from built-in Agent metadata
             for agent_id, metadata in BUILTIN_AGENTS.items():
                 if metadata.output_field:
                     config.append((
@@ -118,12 +118,12 @@ class ReportAggregator:
                         metadata.execution_order
                     ))
             
-            # 从注册表获取额外的（如果有）
+            # Get additional ones from the registry (if any)
             registry = get_analyst_registry()
             for analyst_id in registry.list_all():
                 meta = registry.get_analyst_metadata(analyst_id)
                 if meta and meta.output_field:
-                    # 避免重复
+                    # avoid duplication
                     if not any(f[0] == meta.output_field for f in config):
                         config.append((
                             meta.output_field,
@@ -131,7 +131,7 @@ class ReportAggregator:
                             meta.execution_order
                         ))
             
-            # 按执行顺序排序
+            # Sort by execution order
             self._field_config = sorted(config, key=lambda x: x[2])
         else:
             self._field_config = self.DEFAULT_FIELDS
@@ -140,13 +140,13 @@ class ReportAggregator:
     
     def aggregate(self, state: Dict[str, Any]) -> AggregatedReports:
         """
-        从 state 聚合所有报告
+        Aggregate all reports from state
         
         Args:
-            state: 工作流状态字典
+            state: Workflow status dictionary
             
         Returns:
-            AggregatedReports 实例
+            AggregatedReports Example
         """
         result = AggregatedReports()
         
@@ -157,20 +157,20 @@ class ReportAggregator:
                 result.labels[field_name] = label
                 result.order.append(field_name)
         
-        logger.debug(f"📊 [报告聚合] 获取到 {len(result)} 份报告")
+        logger.debug(f"📊 [Report aggregation] Get {len(result)} report")
         return result
     
     def get_report_fields(self) -> List[str]:
-        """获取所有报告字段名"""
+        """Get all report field names"""
         return [f[0] for f in self._get_field_config()]
 
 
-# 全局实例
+# global instance
 _aggregator: Optional[ReportAggregator] = None
 
 
 def get_aggregator() -> ReportAggregator:
-    """获取全局聚合器实例"""
+    """Get global aggregator instance"""
     global _aggregator
     if _aggregator is None:
         _aggregator = ReportAggregator()
@@ -179,9 +179,9 @@ def get_aggregator() -> ReportAggregator:
 
 def get_all_reports(state: Dict[str, Any]) -> AggregatedReports:
     """
-    便捷函数：从 state 获取所有报告
+    Convenience function: get all reports from state
     
-    用法:
+    Usage:
         reports = get_all_reports(state)
         curr_situation = reports.to_text()
     """

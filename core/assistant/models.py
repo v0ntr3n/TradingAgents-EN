@@ -1,57 +1,57 @@
-"""智能助手质量架构（A11）—— 数据契约。
+"""Intelligent Assistant Quality Architecture (A11)—— Data Contract.
 
-核心概念见设计文档 §3.2：
-- Evidence：一条回复生成所依据的原文（证据集一等公民）
-- ReplyCandidate：策略产出的候选回复，携带证据 + 路径类型契约
-- GateResult：质量关卡的裁决
+See the design document for core concepts §3.2: 
+- Evidence: The original text from which a reply was generated (Evidence Collection First Class Citizen)
+- ReplyCandidate: Candidate responses produced by the strategy, carrying evidence + path type contract
+- GateResult: Judgment on quality level
 
-路径类型契约（治 B 类"裸透传"的根本手段）：
-- answer：面向用户问题的回答，契约上必须经 LLM 处理（llm_processed=True），
-  并过全套 A 类溯源检查；
-- passthrough_allowed：登记过的系统直出（HITL 回执/数据同步提示/降级回退等），
-  route_id 必须在 REGISTERED_PASSTHROUGH 白名单内。
+Path type contract (for class B"Nude transmission"fundamental means):
+- answer: Answers to user questions must be contractually processed by LLM (llm_processed=True) , 
+  And passed a full set of Class A traceability inspections;
+- passthrough_allowed: The registered system will exit directly (HITL receipt/data synchronization prompt/downgrade rollback, etc.),
+  route_id Must be in the REGISTERED_PASSTHROUGH whitelist.
 """
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-# 路径类型
+# path type
 ROUTE_TYPE_ANSWER = "answer"
 ROUTE_TYPE_PASSTHROUGH = "passthrough_allowed"
 
-# 证据来源类型
+# Evidence source type
 EVIDENCE_TOOL = "tool"
 EVIDENCE_SEARCH = "search"
 EVIDENCE_USER_MESSAGE = "user_message"
 EVIDENCE_HISTORY_TOOL = "history_tool"
 EVIDENCE_MEMORY = "memory"
 
-# 可作为"数据源引用"展示给前端的证据类型
+# available as"Data source reference"The type of evidence shown to the front end
 _PRESENTABLE_SOURCE_TYPES = frozenset({EVIDENCE_TOOL, EVIDENCE_SEARCH})
 
-# 登记过的系统直出路径白名单（新增需评审，见设计文档 §3.3 / 风险表）
+# Registered system direct exit path whitelist (new additions require review, see design document §3.3 / risk table)
 REGISTERED_PASSTHROUGH = frozenset(
     {
-        "hitl",               # HITL 确认/拒绝操作回执
-        "unsupported_asset",  # 不支持品种的系统提示
-        "data_precheck",      # 数据同步引导提示
-        "llm_unavailable",    # LLM 客户端不可用提示
-        "timeout",            # 超时提示
-        "error",              # 异常兜底提示
-        "fallback_evidence",  # 关卡降级：局限说明 + 证据原文
+        "hitl",               # HITL Confirm/deny operation receipt
+        "unsupported_asset",  # System prompt that the variety is not supported
+        "data_precheck",      # Data synchronization guidance tips
+        "llm_unavailable",    # LLM Client unavailable prompt
+        "timeout",            # Timeout prompt
+        "error",              # Abnormal tips
+        "fallback_evidence",  # Level Downgrade: Limitations Explained + Evidence text
     }
 )
 
 
 @dataclass
 class Evidence:
-    """一条证据原文。
+    """An original piece of evidence.
 
     Attributes:
-        source_type: EVIDENCE_* 常量
-        source_id:   工具名 / "searxng" / "mem0" 等
-        content:     原文（数字溯源可信候选集的来源）
-        locator:     可选的数据源定位（报告ID/文件路径等），供前端回链
+        source_type: EVIDENCE_* constant
+        source_id:   Tool name / "searxng" / "mem0" Wait
+        content:     Original text (The source of digital provenance trusted candidate set)
+        locator:     Optional data source positioning (report ID/file path, etc.) for front-end backlinking
     """
 
     source_type: str
@@ -62,12 +62,12 @@ class Evidence:
 
 @dataclass
 class ReplyCandidate:
-    """策略产出的候选回复。
+    """Candidate responses produced by the policy.
 
-    优先使用工厂方法构造：
-    - ReplyCandidate.answer(..., llm_processed=True)：answer 型，llm_processed
-      为必传关键字参数，强制调用方显式声明确实经过 LLM；
-    - ReplyCandidate.passthrough(...)：登记白名单内的系统直出。
+    Prefer to use factory method construction:
+    - ReplyCandidate.answer(..., llm_processed=True): answer type,llm_processed
+      As keyword parameters are required, the caller is forced to explicitly declare that it has gone through LLM;
+    - ReplyCandidate.passthrough(...): Register the system in the whitelist directly.
     """
 
     reply: str
@@ -89,7 +89,7 @@ class ReplyCandidate:
         evidence: Optional[List[Evidence]] = None,
         meta: Optional[Dict[str, Any]] = None,
     ) -> "ReplyCandidate":
-        """构造 answer 型候选。llm_processed 必传——禁止默认当作"已过 LLM"。"""
+        """Construct answer candidates. llm_processed required——Prohibited as default"Passed LLM". """
         return cls(
             reply=reply,
             route_id=route_id,
@@ -110,7 +110,7 @@ class ReplyCandidate:
         evidence: Optional[List[Evidence]] = None,
         meta: Optional[Dict[str, Any]] = None,
     ) -> "ReplyCandidate":
-        """构造 passthrough_allowed 型候选（route_id 由 gate 校验白名单）。"""
+        """Construct passthrough_allowed type candidates (route_id is whitelisted by gate verification)."""
         return cls(
             reply=reply,
             route_id=route_id,
@@ -124,7 +124,7 @@ class ReplyCandidate:
 
 @dataclass
 class CheckFailure:
-    """单条质量检查失败。"""
+    """A single quality check failed."""
 
     check: str
     reason: str
@@ -132,7 +132,7 @@ class CheckFailure:
 
 @dataclass
 class GateResult:
-    """质量关卡裁决。"""
+    """Quality gate ruling."""
 
     passed: bool
     failures: List[CheckFailure] = field(default_factory=list)
@@ -143,10 +143,10 @@ class GateResult:
 
 
 def extract_data_refs(evidence: Optional[List[Evidence]]) -> List[Dict[str, Any]]:
-    """从证据集提取前端可展示的数据引用（data_refs 真实现）。
+    """Extract front-end displayable data references from the evidence set (data_refs true implementation).
 
-    仅 tool/search 类证据生成引用；按 (类型,来源,定位) 去重。
-    user_message/history/memory 不作为"外部数据源链接"展示。
+    Only tool/search type evidence generates references; press (Type,Source,Positioning) Remove weight.
+    user_message/history/memory inaction"External data source link"display.
     """
     refs: List[Dict[str, Any]] = []
     seen = set()

@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-美股数据服务（按需获取+缓存模式）
+U.S. stock data service (available on demand+cache mode)
 
-功能：
-1. 按需从数据源获取美股信息（yfinance/finnhub）
-2. 自动缓存到 MongoDB，避免重复请求
-3. 支持多数据源：同一股票可有多个数据源记录
-4. 使用 (code, source) 联合查询进行 upsert 操作
+Function:
+1. Obtain US stock information from data sources on demand (yfinance/finnhub)
+2. Automatically cache to MongoDB to avoid repeated requests
+3. Support multiple data sources: the same stock can have multiple data source records
+4. Use (code, source) Union query performs upsert operation
 
-设计说明：
-- 采用按需获取+缓存模式，避免批量同步触发速率限制
-- 参考A股数据源管理方式（Tushare/AKShare/BaoStock）
-- 缓存时长可配置（默认24小时）
+Design description:
+- Get on demand+Cache mode to avoid batch sync triggering rate limiting
+- Refer to the A-share data source management method (Tushare/AKShare/BaoStock)
+- Cache duration is configurable (default 24 hours)
 """
 
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Any
 
-# 导入美股数据提供器
+# Import US stock data provider
 import sys
 from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
@@ -33,25 +33,25 @@ logger = logging.getLogger(__name__)
 
 
 class USDataService:
-    """美股数据服务（按需获取+缓存模式）"""
+    """U.S. stock data service (available on demand+cache mode)"""
 
     def __init__(self):
         self.db = get_mongo_db()
         self.settings = settings
 
-        # 数据提供器映射
+        # Data provider mapping
         self.providers = {
             "yfinance": OptimizedUSDataProvider(),
-            # 可以添加更多数据源，如 finnhub
+            # More data sources can be added, such as finnhub
         }
         
-        # 缓存配置
+        # Cache configuration
         self.cache_hours = getattr(settings, 'US_DATA_CACHE_HOURS', 24)
         self.default_source = getattr(settings, 'US_DEFAULT_DATA_SOURCE', 'yfinance')
 
     async def initialize(self):
-        """初始化数据服务"""
-        logger.info("✅ 美股数据服务初始化完成")
+        """Initialize data service"""
+        logger.info("✅ US stock data service initialization completed")
     
     async def get_stock_info(
         self, 
@@ -60,45 +60,45 @@ class USDataService:
         force_refresh: bool = False
     ) -> Optional[Dict[str, Any]]:
         """
-        获取美股基础信息（按需获取+缓存）
+        Obtain basic information on U.S. stocks (obtain on demand+cache)
         
         Args:
-            stock_code: 股票代码（如 "AAPL"）
-            source: 数据源（yfinance/finnhub），None 则使用默认数据源
-            force_refresh: 是否强制刷新（忽略缓存）
+            stock_code: Stock code (e.g. "AAPL") 
+            source: Data source (yfinance/finnhub), None uses the default data source
+            force_refresh: Whether to force refresh (ignore cache)
         
         Returns:
-            股票信息字典，失败返回 None
+            Stock information dictionary, returned on failure None
         """
         try:
-            # 使用默认数据源
+            # Use default data source
             if source is None:
                 source = self.default_source
             
-            # 标准化股票代码（美股代码通常大写）
+            # Standardized stock code (U.S. stock codes are usually capitalized)
             normalized_code = stock_code.upper()
             
-            # 检查缓存
+            # Check cache
             if not force_refresh:
                 cached_info = await self._get_cached_info(normalized_code, source)
                 if cached_info:
-                    logger.debug(f"✅ 使用缓存数据: {normalized_code} ({source})")
+                    logger.debug(f"✅ Use cached data: {normalized_code} ({source})")
                     return cached_info
             
-            # 从数据源获取
+            # Get from data source
             provider = self.providers.get(source)
             if not provider:
-                logger.error(f"❌ 不支持的数据源: {source}")
+                logger.error(f"❌ Unsupported data source: {source}")
                 return None
             
-            logger.info(f"🔄 从 {source} 获取美股信息: {stock_code}")
+            logger.info(f"🔄 from {source} Get US stock information: {stock_code}")
             stock_info = provider.get_stock_info(stock_code)
             
             if not stock_info or not stock_info.get('name'):
-                logger.warning(f"⚠️ 获取失败或数据无效: {stock_code} ({source})")
+                logger.warning(f"⚠️ Failed to obtain or the data is invalid: {stock_code} ({source})")
                 return None
             
-            # 标准化并保存到缓存
+            # Normalize and save to cache
             normalized_info = self._normalize_stock_info(stock_info, source)
             normalized_info["code"] = normalized_code
             normalized_info["source"] = source
@@ -106,15 +106,15 @@ class USDataService:
             
             await self._save_to_cache(normalized_info)
             
-            logger.info(f"✅ 获取成功: {normalized_code} - {stock_info.get('name')} ({source})")
+            logger.info(f"✅ get success: {normalized_code} - {stock_info.get('name')} ({source})")
             return normalized_info
             
         except Exception as e:
-            logger.error(f"❌ 获取美股信息失败: {stock_code} ({source}): {e}")
+            logger.error(f"❌ Failed to obtain US stock information: {stock_code} ({source}): {e}")
             return None
     
     async def _get_cached_info(self, code: str, source: str) -> Optional[Dict[str, Any]]:
-        """从缓存获取股票信息"""
+        """Get stock information from cache"""
         try:
             cache_expire_time = datetime.now() - timedelta(hours=self.cache_hours)
             
@@ -127,11 +127,11 @@ class USDataService:
             return cached
             
         except Exception as e:
-            logger.error(f"❌ 读取缓存失败: {code} ({source}): {e}")
+            logger.error(f"❌ Failed to read cache: {code} ({source}): {e}")
             return None
     
     async def _save_to_cache(self, stock_info: Dict[str, Any]) -> bool:
-        """保存股票信息到缓存"""
+        """Save stock information to cache"""
         try:
             await self.db.stock_basic_info_us.update_one(
                 {"code": stock_info["code"], "source": stock_info["source"]},
@@ -141,29 +141,29 @@ class USDataService:
             return True
             
         except Exception as e:
-            logger.error(f"❌ 保存缓存失败: {stock_info.get('code')} ({stock_info.get('source')}): {e}")
+            logger.error(f"❌ Failed to save cache: {stock_info.get('code')} ({stock_info.get('source')}): {e}")
             return False
     
     def _normalize_stock_info(self, stock_info: Dict, source: str) -> Dict:
         """
-        标准化股票信息格式
+        Standardized stock information format
         
         Args:
-            stock_info: 原始股票信息
-            source: 数据源
+            stock_info: Original stock information
+            source: data source
         
         Returns:
-            标准化后的股票信息
+            Standardized stock information
         """
         normalized = {
             "name": stock_info.get("name", ""),
             "currency": stock_info.get("currency", "USD"),
             "exchange": stock_info.get("exchange", "NASDAQ"),
-            "market": stock_info.get("market", "美国市场"),
-            "area": stock_info.get("area", "美国"),
+            "market": stock_info.get("market", "US market"),
+            "area": stock_info.get("area", "USA"),
         }
         
-        # 可选字段
+        # optional fields
         optional_fields = [
             "industry", "sector", "list_date", "total_mv", "circ_mv",
             "pe", "pb", "ps", "pcf", "market_cap", "shares_outstanding",
@@ -177,13 +177,13 @@ class USDataService:
         return normalized
 
 
-# ==================== 全局实例管理 ====================
+# ==================== Global instance management ====================
 
 _us_data_service = None
 
 
 async def get_us_data_service() -> USDataService:
-    """获取美股数据服务实例（单例模式）"""
+    """Obtain US stock data service instance (single case mode)"""
     global _us_data_service
     if _us_data_service is None:
         _us_data_service = USDataService()

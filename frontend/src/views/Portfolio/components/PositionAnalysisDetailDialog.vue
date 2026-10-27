@@ -1,13 +1,13 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="分析报告详情"
+    title="Analysis report details"
     width="900px"
     :close-on-click-modal="false"
     @close="handleClose"
   >
     <div v-if="report" class="analysis-detail">
-      <!-- 风险提示 -->
+      <!-- Risk warning -->
       <div class="risk-disclaimer">
         <el-alert
           type="warning"
@@ -16,23 +16,23 @@
         >
           <template #title>
             <span style="font-size: 14px;">
-              <strong>⚠️ 重要提示：</strong>本次分析所有分析结论用于学习和验证AI证券分析技术，不作为真实交易操盘指导。
+              <strong>⚠️ IMPORTANT NOTE:</strong>All analysis conclusions in this analysis are used to learn and verify AI securities analysis technology and are not used as real trading guidance.
             </span>
           </template>
         </el-alert>
       </div>
 
-      <!-- 持仓快照 -->
+      <!-- Position snapshot -->
       <div class="section">
-        <h3>📊 持仓快照</h3>
+        <h3>📊 Position snapshot</h3>
         <el-descriptions :column="2" border size="small">
           <el-descriptions-item :label="securityCodeLabel">{{ report.position_snapshot?.code || '-' }}</el-descriptions-item>
           <el-descriptions-item :label="securityNameLabel">{{ report.position_snapshot?.name || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="持仓数量">{{ report.position_snapshot?.quantity || 0 }} 股</el-descriptions-item>
-          <el-descriptions-item label="成本价">¥{{ (report.position_snapshot?.cost_price || 0).toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="当前价">¥{{ (report.position_snapshot?.current_price || 0).toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="持仓市值">¥{{ (report.position_snapshot?.market_value || 0).toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="浮动盈亏">
+          <el-descriptions-item label="Position quantity">{{ report.position_snapshot?.quantity || 0 }} shares</el-descriptions-item>
+          <el-descriptions-item label="cost price">¥{{ (report.position_snapshot?.cost_price || 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="current price">¥{{ (report.position_snapshot?.current_price || 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="Position market value">¥{{ (report.position_snapshot?.market_value || 0).toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="floating profit and loss">
             <span :class="pnlClass(report.position_snapshot?.unrealized_pnl || 0)">
               {{ formatPnl(report.position_snapshot?.unrealized_pnl || 0) }}
               ({{ formatPct(report.position_snapshot?.unrealized_pnl_pct || 0) }})
@@ -42,20 +42,20 @@
         </el-descriptions>
       </div>
 
-      <!-- 当前结论 -->
+      <!-- current conclusion -->
       <div class="section">
-        <h3>💡 当前结论</h3>
-        <div class="summary-panel markdown-content" v-html="renderMarkdown(view.conclusion || report.action_reason || '暂无')"></div>
+        <h3>💡 current conclusion</h3>
+        <div class="summary-panel markdown-content" v-html="renderMarkdown(view.conclusion || report.action_reason || 'None yet')"></div>
 
         <div class="uncertainty-box" v-if="view.uncertainty_note">
-          <h4>不确定性说明</h4>
+          <h4>uncertainty statement</h4>
           <p>{{ view.uncertainty_note }}</p>
         </div>
       </div>
 
-      <!-- 研究附录 -->
+      <!-- Research Addendum -->
       <div class="section" v-if="appendixSections.length > 0 || report.detailed_analysis">
-        <h3>📝 研究附录</h3>
+        <h3>📝 Research Addendum</h3>
         <template v-if="appendixSections.length > 0">
           <div
             v-for="section in appendixSections"
@@ -73,17 +73,17 @@
         <TaskGrowthPanel :task-id="growthTaskId" />
       </div>
 
-      <!-- 分析时间 -->
+      <!-- Analysis time -->
       <div class="section">
         <el-descriptions :column="2" border size="small">
-          <el-descriptions-item label="分析时间">{{ formatTime(report.created_at) }}</el-descriptions-item>
-          <el-descriptions-item label="执行时长">{{ report.execution_time || 0 }} 秒</el-descriptions-item>
+          <el-descriptions-item label="Analysis time">{{ formatTime(report.created_at) }}</el-descriptions-item>
+          <el-descriptions-item label="Execution time">{{ report.execution_time || 0 }} seconds</el-descriptions-item>
         </el-descriptions>
       </div>
     </div>
 
     <template #footer>
-      <el-button @click="handleClose">关闭</el-button>
+      <el-button @click="handleClose">close</el-button>
     </template>
   </el-dialog>
 </template>
@@ -107,8 +107,8 @@ type PositionSnapshot = {
   industry?: string
 }
 
-// 配置marked选项
-// marked 配置已由 @/utils/markdown 统一管理
+// Configure marked options
+// marked The configuration has been @/utils/markdown Unified management
 const props = defineProps<{
   modelValue: boolean
   report: (PositionAnalysisResult & { position_snapshot?: PositionSnapshot }) | null
@@ -121,7 +121,7 @@ const emit = defineEmits<{
 const visible = ref(false)
 const growthTaskId = computed(() => props.report?.task_id || props.report?.analysis_id || null)
 
-// 用户版展示内容（合规化后统一展示 user_view 字段）
+// User version display content (unified display of user_view field after compliance)
 const view = computed(() => props.report?.user_view || {
   conclusion: props.report?.action_reason || '',
   position_context: '',
@@ -131,7 +131,7 @@ const view = computed(() => props.report?.user_view || {
   uncertainty_note: ''
 })
 
-// 研究附录（仅展示有内容的分节）
+// Research appendix (only sections with content are displayed)
 const appendixSections = computed(() =>
   (props.report?.appendix_sections || []).filter(section => section?.content)
 )
@@ -140,12 +140,12 @@ const isEtfReport = computed(() => {
   const code = props.report?.position_snapshot?.code
   return !!code && getMarketByStockCode(code) === 'ETF'
 })
-const securityCodeLabel = computed(() => isEtfReport.value ? 'ETF代码' : '股票代码')
-const securityNameLabel = computed(() => isEtfReport.value ? 'ETF名称' : '股票名称')
-const industryLabel = computed(() => isEtfReport.value ? '产品分类' : '所属行业')
+const securityCodeLabel = computed(() => isEtfReport.value ? 'ETF code' : 'Stock code')
+const securityNameLabel = computed(() => isEtfReport.value ? 'ETF Name' : 'Stock name')
+const industryLabel = computed(() => isEtfReport.value ? 'Product classification' : 'Industry')
 const industryValue = computed(() => {
-  if (isEtfReport.value) return 'ETF/基金'
-  return props.report?.position_snapshot?.industry || '未知'
+  if (isEtfReport.value) return 'ETF/fund'
+  return props.report?.position_snapshot?.industry || 'unknown'
 })
 
 watch(() => props.modelValue, (val) => {
@@ -156,7 +156,7 @@ watch(visible, (val) => emit('update:modelValue', val))
 
 const handleClose = () => emit('update:modelValue', false)
 
-// Markdown渲染
+// Markdown rendering
 const renderMarkdown = (content: string) => {
   if (!content) return ''
   try {
@@ -166,28 +166,28 @@ const renderMarkdown = (content: string) => {
   }
 }
 
-// 格式化时间
+// Format time
 const formatTime = (time: string) => {
   if (!time) return '-'
   const date = new Date(time)
   return date.toLocaleString('zh-CN')
 }
 
-// 格式化盈亏
+// Format profit and loss
 const formatPnl = (pnl: number) => {
   if (pnl === undefined || pnl === null) return '¥0.00'
   const prefix = pnl >= 0 ? '+' : ''
   return `${prefix}¥${Math.abs(pnl).toFixed(2)}`
 }
 
-// 格式化百分比
+// Format percentage
 const formatPct = (pct: number) => {
   if (pct === undefined || pct === null) return '0.00%'
   const prefix = pct >= 0 ? '+' : ''
   return `${prefix}${pct.toFixed(2)}%`
 }
 
-// 盈亏样式
+// profit and loss pattern
 const pnlClass = (pnl: number) => {
   if (pnl > 0) return 'text-success'
   if (pnl < 0) return 'text-danger'

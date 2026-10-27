@@ -1,8 +1,8 @@
 """
-Skill 缺口感知 API 路由
+Skill Gap-aware API routing
 
-提供缺口报告的列表、详情、忽略、解决等操作接口。
-端点前缀: /api/skill-gaps
+Provides operation interfaces such as list, details, ignore, and resolution of gap reports.
+endpoint prefix: /api/skill-gaps
 """
 
 import logging
@@ -20,95 +20,95 @@ router = APIRouter(prefix="/api/skill-gaps", tags=["skill-gaps"])
 
 
 # =============================================================================
-# 请求模型
+# request model
 # =============================================================================
 
 
 class DismissRequest(BaseModel):
-    """忽略缺口请求"""
+    """Ignore gap requests"""
     pass
 
 
 class ResolveRequest(BaseModel):
-    """标记已解决请求"""
+    """Mark request resolved"""
     skill_id: str = ""
 
 
 # =============================================================================
-# 端点
+# endpoint
 # =============================================================================
 
 
-@router.get("", summary="获取缺口报告列表")
+@router.get("", summary="Get a list of gap reports")
 async def list_gaps(
     status: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,
     user: dict = Depends(get_current_user),
 ):
-    """分页获取当前用户的工具缺口报告列表"""
+    """Get the tool gap report list of the current user in pagination"""
     svc = get_skill_gap_service()
     return await svc.list_gaps(user["id"], status, page, page_size)
 
 
-@router.get("/stats", summary="缺口统计")
+@router.get("/stats", summary="gap statistics")
 async def get_stats(user: dict = Depends(get_current_user)):
-    """获取当前用户缺口报告的统计数据（按状态/类型分组）"""
+    """Get statistics for the current user gap report (grouped by status/type)"""
     svc = get_skill_gap_service()
     return await svc.get_stats(user["id"])
 
 
-@router.get("/{report_id}", summary="获取单个缺口报告")
+@router.get("/{report_id}", summary="Get a single gap report")
 async def get_gap(report_id: str, user: dict = Depends(get_current_user)):
-    """获取指定缺口报告的详细信息"""
+    """Get details of a specified gap report"""
     svc = get_skill_gap_service()
     doc = await svc.get_gap(report_id)
     if not doc:
-        raise HTTPException(status_code=404, detail="缺口报告不存在")
+        raise HTTPException(status_code=404, detail="Gap report does not exist")
     if doc.get("user_id") != user["id"]:
-        raise HTTPException(status_code=403, detail="无权访问该报告")
+        raise HTTPException(status_code=403, detail="Don t have permission to access this report")
     return doc
 
 
-@router.post("/{report_id}/dismiss", summary="忽略缺口")
+@router.post("/{report_id}/dismiss", summary="ignore notch")
 async def dismiss_gap(report_id: str, user: dict = Depends(get_current_user)):
-    """将缺口报告标记为已忽略，30天内不再重复上报同名工具"""
+    """Mark the gap report as ignored and will not report it to the tool with the same name again within 30 days"""
     svc = get_skill_gap_service()
     ok = await svc.dismiss_gap(report_id, user["id"])
     if not ok:
-        raise HTTPException(status_code=404, detail="缺口报告不存在或无权操作")
-    return {"success": True, "message": "已忽略"}
+        raise HTTPException(status_code=404, detail="The gap report does not exist or does not have permission to operate")
+    return {"success": True, "message": "Ignored"}
 
 
-@router.post("/{report_id}/resolve", summary="标记已解决")
+@router.post("/{report_id}/resolve", summary="Flag resolved")
 async def resolve_gap(
     report_id: str,
     body: ResolveRequest,
     user: dict = Depends(get_current_user),
 ):
-    """将缺口报告标记为已解决，可关联创建的 Skill ID"""
+    """Mark the gap report as resolved to associate the created Skill ID"""
     svc = get_skill_gap_service()
     ok = await svc.resolve_gap(report_id, user["id"], body.skill_id)
     if not ok:
-        raise HTTPException(status_code=404, detail="缺口报告不存在或无权操作")
-    return {"success": True, "message": "已标记为解决"}
+        raise HTTPException(status_code=404, detail="The gap report does not exist or does not have permission to operate")
+    return {"success": True, "message": "Marked as resolved"}
 
 
-@router.get("/{report_id}/create-skill-params", summary="获取创建 Skill 预填参数")
+@router.get("/{report_id}/create-skill-params", summary="Get the pre-filled parameters for creating Skill")
 async def get_create_skill_params(
     report_id: str,
     user: dict = Depends(get_current_user),
 ):
     """
-    根据缺口报告生成 Skill 工坊的预填参数，
-    前端可直接跳转到 /workflow/skill-generation/create 并传入这些参数。
+    Generate pre-filled parameters for the Skill Workshop based on the gap report,
+    The front end can jump directly to /workflow/skill-generation/create and pass in these parameters.
     """
     svc = get_skill_gap_service()
     doc = await svc.get_gap(report_id)
     if not doc:
-        raise HTTPException(status_code=404, detail="缺口报告不存在")
+        raise HTTPException(status_code=404, detail="Gap report does not exist")
     if doc.get("user_id") != user["id"]:
-        raise HTTPException(status_code=403, detail="无权访问该报告")
+        raise HTTPException(status_code=403, detail="Don t have permission to access this report")
 
     gap = doc.get("gap", {})
     tool_name = gap.get("tool_name", "")
@@ -116,10 +116,10 @@ async def get_create_skill_params(
     error_msg = gap.get("error_message", "")
     source = doc.get("source", {})
 
-    # 构造预填参数
-    description = f"为 Agent [{source.get('agent_id', '')}] 提供工具 `{tool_name}` 的功能。"
+    # Construct prefilled parameters
+    description = f"for Agent [{source.get('agent_id', '')}] Provide tools `{tool_name}` function."
     if gap_type == "tool_execution_error" and error_msg:
-        description += f"\n\n原始错误: {error_msg}"
+        description += f"\n\n original error: {error_msg}"
 
     return {
         "prefill": {

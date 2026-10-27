@@ -1,4 +1,4 @@
-"""Python 运行时解析工具。"""
+"""Python Runtime parsing tools."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def resolve_python_executable(
     *,
     env_var_names: Optional[Iterable[str]] = None,
 ) -> str:
-    """解析项目应使用的 Python 可执行文件。"""
+    """Parse the Python executable that the project should use."""
     root = Path(project_root)
 
     for env_name in env_var_names or DEFAULT_ENV_VAR_NAMES:

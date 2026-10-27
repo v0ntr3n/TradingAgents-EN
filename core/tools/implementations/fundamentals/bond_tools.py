@@ -1,4 +1,4 @@
-"""债券分析工具：收益率计算、信用利差分析、久期与凸性计算。"""
+"""Bond analysis tools: yield calculation, credit spread analysis, duration and convexity calculation."""
 
 import datetime
 import json
@@ -18,7 +18,7 @@ _TENORS = ["3月", "6月", "1年", "3年", "5年", "7年", "10年", "30年"]
 
 
 def _fetch_china_yield_curve() -> dict:
-    """通过 AKShare 获取中国国债收益率曲线最新数据。"""
+    """Get the latest data on China s government bond yield curve via AKShare."""
     try:
         import akshare as ak
         df = ak.bond_china_yield()
@@ -40,12 +40,12 @@ def _fetch_china_yield_curve() -> dict:
             "yields": yields,
         }
     except Exception as e:
-        logger.warning("AKShare 国债收益率获取失败: %s", e)
+        logger.warning("AKShare Failed to obtain treasury bond yield: %s", e)
         return {"status": "error", "message": str(e)}
 
 
 def _fetch_china_multi_curve() -> dict:
-    """通过 AKShare 获取多条收益率曲线（国债、AAA中短期票据、AAA银行普通债）。"""
+    """Obtain multiple yield curves (treasury bonds, AAA short-term and medium-term notes, AAA bank ordinary bonds) through AKShare."""
     try:
         import akshare as ak
         df = ak.bond_china_yield()
@@ -54,8 +54,8 @@ def _fetch_china_multi_curve() -> dict:
         latest_dates = {}
         for curve_name in [
             "中债国债收益率曲线",
-            "中债中短期票据收益率曲线(AAA)",
-            "中债商业银行普通债收益率曲线(AAA)",
+            "ChinaBond short- and medium-term bill yield curve(AAA)",
+            "ChinaBond Commercial Bank ordinary bond yield curve(AAA)",
         ]:
             subset = df[df["曲线名称"] == curve_name]
             if subset.empty:
@@ -75,7 +75,7 @@ def _fetch_china_multi_curve() -> dict:
                 "date": str(latest["日期"].date()),
                 "yields": yields,
             }
-        # 整体最新日期
+        # Overall latest date
         all_dates = set(v["date"] for v in curves_found.values() if v.get("status") == "ok" and v.get("date"))
         return {
             "status": "ok",
@@ -83,12 +83,12 @@ def _fetch_china_multi_curve() -> dict:
             "curves": curves_found,
         }
     except Exception as e:
-        logger.warning("AKShare 多曲线获取失败: %s", e)
+        logger.warning("AKShare Failed to obtain multiple curves: %s", e)
         return {"status": "error", "message": str(e)}
 
 
 def _fetch_zh_us_rate() -> dict:
-    """通过 AKShare 获取中美收益率对比最新数据。"""
+    """Get the latest data comparing U.S. and Chinese yields with AKShare."""
     try:
         import akshare as ak
         df = ak.bond_zh_us_rate()
@@ -113,25 +113,25 @@ def _fetch_zh_us_rate() -> dict:
                 result["us"][name] = round(float(v), 4)
         return result
     except Exception as e:
-        logger.warning("AKShare 中美收益率获取失败: %s", e)
+        logger.warning("AKShare Failed to obtain Sino-US yield: %s", e)
         return {"status": "error", "message": str(e)}
 
 
 def _classify_curve_shape(yields: dict) -> str:
-    """根据收益率数据判断曲线形态。"""
+    """Determine the shape of the curve based on yield data."""
     y1 = yields.get("1年")
     y10 = yields.get("10年")
     y3m = yields.get("3月")
     if y10 is not None and y1 is not None:
         if y10 > y1 + 0.5:
-            return "正常向上倾斜（Normal Upward Sloping）"
+            return "Normal Upward Sloping"
         elif y10 < y1 - 0.1:
             return "倒挂（Inverted）"
         else:
             return "平坦（Flat）"
     if y10 is not None and y3m is not None:
         if y10 > y3m + 0.5:
-            return "正常向上倾斜（Normal Upward Sloping）"
+            return "Normal Upward Sloping"
         elif y10 < y3m - 0.1:
             return "倒挂（Inverted）"
         else:
@@ -140,39 +140,39 @@ def _classify_curve_shape(yields: dict) -> str:
 
 
 def _generate_yield_commentary(yields: dict, date: str) -> str:
-    """生成收益率水平评论。"""
+    """Generate yield level comments."""
     y10 = yields.get("10年")
     y2 = yields.get("1年")
     if y10 is None:
-        return "收益率数据不足，无法生成解读。"
+        return "There is insufficient yield data to generate an interpretation."
     parts = [f"截至 {date}，中国10年期国债收益率为 {y10}%。"]
     if y10 < 1.5:
-        parts.append("10Y收益率处于历史低位区间，反映市场对经济前景偏谨慎及宽松货币预期。")
+        parts.append("10Y Yields are at historically low levels, reflecting the market s cautious outlook on the economy and expectations of loose money.")
     elif y10 < 2.5:
-        parts.append("10Y收益率处于偏低水平，债券定价偏贵，资本利得空间有限。")
+        parts.append("10Y Yields are on the low side, bonds are priced on the expensive side, and the scope for capital gains is limited.")
     elif y10 < 3.5:
-        parts.append("10Y收益率处于中等偏低区间，债券估值中性偏贵。")
+        parts.append("10Y Yields are in a moderate to low range, and bond valuations are neutral to expensive.")
     elif y10 < 4.5:
-        parts.append("10Y收益率处于中等偏高区间，配置价值逐步显现。")
+        parts.append("10Y The yield is in a medium to high range, and the allocation value is gradually emerging.")
     else:
-        parts.append("10Y收益率处于高位区间，债券具备较好的配置价值。")
+        parts.append("10Y The yield is in a high range, and bonds have good allocation value.")
     if y2 is not None and y10 is not None:
         spread = y10 - y2
         if spread > 1.0:
-            parts.append(f"期限利差（10Y-1Y）为 {spread:.2f}%，曲线陡峭，长端风险溢价较高。")
+            parts.append(f"The term spread (10Y-1Y) is {spread:.2f}%, The curve is steep and the risk premium is higher at the long end.")
         elif spread > 0.3:
-            parts.append(f"期限利差（10Y-1Y）为 {spread:.2f}%，曲线形态正常。")
+            parts.append(f"The term spread (10Y-1Y) is {spread:.2f}%, The curve shape is normal.")
         elif spread > 0:
-            parts.append(f"期限利差（10Y-1Y）为 {spread:.2f}%，曲线平坦化。")
+            parts.append(f"The term spread (10Y-1Y) is {spread:.2f}%, Curve flattening.")
         else:
-            parts.append(f"期限利差（10Y-1Y）为 {spread:.2f}%，曲线倒挂，需关注衰退风险。")
+            parts.append(f"The term spread (10Y-1Y) is {spread:.2f}%, The curve is inverted, and we need to pay attention to the risk of recession.")
     return " ".join(parts)
 
 
 def _generate_spread_commentary(spreads: dict, date: str) -> str:
-    """生成信用利差评论。"""
+    """Generate credit spread reviews."""
     if not spreads:
-        return "信用利差数据不足，无法生成解读。"
+        return "There is insufficient credit spread data to generate an interpretation."
     parts = [f"截至 {date}，信用利差分析如下："]
     avg_spreads = [v for v in spreads.values() if v is not None]
     if avg_spreads:
@@ -180,19 +180,19 @@ def _generate_spread_commentary(spreads: dict, date: str) -> str:
         if avg > 2.0:
             parts.append(
                 f"平均信用利差约 {avg:.2f}%，处于偏高水平，"
-                "反映市场风险偏好较低或信用环境偏紧。"
+                "Reflecting lower market risk appetite or tight credit environment."
             )
         elif avg > 1.0:
             parts.append(
                 f"平均信用利差约 {avg:.2f}%，处于中等水平，"
-                "信用定价合理，市场风险偏好中性。"
+                "Credit pricing is reasonable and market risk appetite is neutral."
             )
         else:
             parts.append(
                 f"平均信用利差约 {avg:.2f}%，处于偏低水平，"
-                "反映市场风险偏好较高或流动性充裕。"
+                "Reflecting higher market risk appetite or ample liquidity."
             )
-    # 期限结构判断
+    # Term structure judgment
     short_tenors = ["1年", "3年"]
     long_tenors = ["5年", "7年", "10年"]
     short_vals = [spreads.get(t) for t in short_tenors if spreads.get(t) is not None]
@@ -201,11 +201,11 @@ def _generate_spread_commentary(spreads: dict, date: str) -> str:
         short_avg = sum(short_vals) / len(short_vals)
         long_avg = sum(long_vals) / len(long_vals)
         if long_avg > short_avg + 0.3:
-            parts.append("信用利差期限结构向上倾斜，长端信用风险溢价显著。")
+            parts.append("The term structure of credit spreads is upward sloping, and the long-term credit risk premium is significant.")
         elif long_avg < short_avg - 0.2:
-            parts.append("信用利差期限结构倒挂，短端信用风险溢价更高。")
+            parts.append("The term structure of credit spreads is inverted, and short-term credit risk premiums are higher.")
         else:
-            parts.append("信用利差期限结构平坦。")
+            parts.append("The term structure of credit spreads is flat.")
     return " ".join(parts)
 
 
@@ -215,44 +215,44 @@ def _calculate_duration_convexity(
     yield_to_maturity: float,
     frequency: int,
 ) -> dict:
-    """计算 Macaulay 久期、修正久期和凸性。
+    """Calculate Macaulay duration, modified duration, and convexity.
 
     Args:
-        coupon_rate: 票面利率（小数形式，如 0.03 表示 3%）
-        years_to_maturity: 剩余期限（年）
-        yield_to_maturity: 到期收益率（小数形式，如 0.03 表示 3%）
-        frequency: 年付息频率（1=年付, 2=半年付）
+        coupon_rate: Coupon interest rate (in decimal form, such as 0.03 means 3%)
+        years_to_maturity: Remaining term (years)
+        yield_to_maturity: Yield to maturity (in decimal form, such as 0.03 means 3%)
+        frequency: Annual interest payment frequency (1=Annual payment, 2=Paid half yearly)
 
     Returns:
-        包含 macaulay_duration, modified_duration, convexity, price, cash_flows 的字典
+        contains macaulay_duration, modified_duration, convexity, price, cash_flows dictionary
     """
     face_value = 100.0
     coupon = coupon_rate * face_value / frequency
     n_periods = int(years_to_maturity * frequency)
     ytm_per_period = yield_to_maturity / frequency
 
-    # 计算各期现金流
+    # Calculate cash flow for each period
     cf_times = []
     cf_amounts = []
     for i in range(1, n_periods + 1):
-        t = i  # 期数
+        t = i  # Period
         if i == n_periods:
-            cf = coupon + face_value  # 最后一期包含本金
+            cf = coupon + face_value  # The last period includes the principal
         else:
             cf = coupon
         cf_times.append(t)
         cf_amounts.append(cf)
 
-    # 计算现值
+    # Calculate present value
     pv_factors = [cf / ((1 + ytm_per_period) ** t) for t, cf in zip(cf_times, cf_amounts)]
     price = sum(pv_factors)
 
     if price <= 0:
-        return {"error": "债券价格为负或零，无法计算久期和凸性"}
+        return {"error": "Bond price is negative or zero, duration and convexity cannot be calculated"}
 
-    # Macaulay Duration（单位：期数）
+    # Macaulay Duration (Unit: number of periods)
     macaulay_periods = sum(t * pv for t, pv in zip(cf_times, pv_factors)) / price
-    # Macaulay Duration（单位：年）
+    # Macaulay Duration (Unit: year)
     macaulay_duration_years = macaulay_periods / frequency
 
     # Modified Duration
@@ -260,18 +260,18 @@ def _calculate_duration_convexity(
 
     # Convexity
     # Convexity = Σ [t * (t + 1/frequency) * PV_CF_t] / (Price * (1 + ytm/f)^2)
-    # 其中 t 为期数，frequency 为年付息次数
+    # where t is the period and frequency is the number of annual interest payments.
     convexity_numerator = sum(
         t * (t + 1.0 / frequency) * pv
         for t, pv in zip(cf_times, pv_factors)
     )
     convexity = convexity_numerator / (price * (1 + ytm_per_period) ** 2)
 
-    # 价格变化估计（收益率上升 1% = 100bp = 0.01）
+    # Estimates of price changes (rising yields 1% = 100bp = 0.01) 
     delta_y = 0.01
     price_change_pct = -modified_duration * delta_y + 0.5 * convexity * (delta_y ** 2)
 
-    # 生成现金流明细
+    # Generate cash flow details
     cash_flow_details = []
     for i, (t, cf, pv) in enumerate(zip(cf_times, cf_amounts, pv_factors)):
         cash_flow_details.append({
@@ -288,7 +288,7 @@ def _calculate_duration_convexity(
         "convexity": round(convexity, 6),
         "price_change_1pct": {
             "yield_increase_1pct": round(price_change_pct * 100, 4),
-            "explanation": "收益率上升1个百分点（100bp）时债券价格的近似变动百分比",
+            "explanation": "The approximate percentage change in bond prices when yields rise by 1 percentage point (100bp)",
         },
         "cash_flows_summary": {
             "total_periods": n_periods,
@@ -298,17 +298,17 @@ def _calculate_duration_convexity(
     }
 
 
-# ── Tool 1: 债券收益率计算 ─────────────────────────────────────────
+# ── Tool 1: bond yield calculation ─────────────────────────────────────────
 
 @tool
 @register_tool(
     tool_id="get_bond_yield_calculation",
     name="国债收益率曲线",
     description=(
-        "通过 akshare 实时获取中国国债收益率曲线及美国国债收益率数据，"
-        "返回市场收益率水平而非个券 YTM。"
-        "与 get_yield_curve_analysis 的区别：本工具侧重中美对比和收益水平分析，"
-        "get_yield_curve_analysis 侧重曲线形态和利差分析。"
+        "Obtain real-time data on China s government bond yield curve and U.S. government bond yield through akshare."
+        "Returns the market rate of return rather than individual bond YTM."
+        "The difference from get_yield_curve_analysis: This tool focuses on comparison between China and the United States and analysis of income levels."
+        "get_yield_curve_analysis Focus on curve shape and spread analysis."
     ),
     category="fundamentals",
     is_online=True,
@@ -319,48 +319,48 @@ def _calculate_duration_convexity(
     output_shape="structured_json",
     preferred_for=["查询中国国债各期限收益率", "中美收益率曲线对比", "收益率水平市场解读"],
     when_to_use=(
-        "当用户询问当前债券市场收益率水平、各期限国债收益率、"
-        "中美收益率曲线对比、收益率曲线形态判断及市场含义解读时使用。"
+        "When a user asks about the current bond market yield level, Treasury bond yields of various maturities,"
+        "Used when comparing the yield curves of China and the United States, judging the shape of the yield curve, and interpreting market implications."
     ),
     when_not_to_use=(
-        "不适合计算单只个券的到期收益率（YTM）；"
-        "不适合债券久期和凸性计算（请使用 get_bond_duration_convexity）；"
-        "不适合信用利差分析（请使用 get_credit_spread_analysis）。"
+        "Not suitable for calculating the yield to maturity (YTM) of a single bond;"
+        "Not suitable for bond duration and convexity calculations (please use get_bond_duration_convexity);"
+        "Not suitable for credit spread analysis (use get_credit_spread_analysis)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 date（数据日期）、yields_by_tenor（各期限收益率表）、"
-        "yield_curve_shape_china（中国曲线形态）、yield_curve_shape_us（美国曲线形态）、"
-        "commentary_with_key_levels（市场解读）。"
+        "Returns a JSON string, including date (data date), yields_by_tenor (yield table for each term),"
+        "yield_curve_shape_china (China curve shape), yield_curve_shape_us (US curve shape),"
+        "commentary_with_key_levels (market interpretation)."
     ),
     example="get_bond_yield_calculation()",
     related_tools=["get_yield_curve_analysis", "get_credit_spread_analysis", "get_bond_duration_convexity"],
 )
 def get_bond_yield_calculation() -> str:
-    """获取中国国债收益率曲线与美国国债收益率对比，并提供市场解读。
+    """Get a comparison of the Chinese government bond yield curve and the U.S. Treasury bond yield, and provide market interpretation.
 
-    使用 AKShare 的 bond_china_yield() 和 bond_zh_us_rate() 接口，
-    返回最新各期限收益率及曲线形态判断。
+    Using AKShare bond_china_yield() and bond_zh_us_rate() interface,
+    Return to the latest yield and curve shape judgment for each period.
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            date: 数据日期（YYYY-MM-DD）
-            data_source: 数据源说明
-            data_note: 数据注释（强调返回即期收益率曲线而非个券YTM）
-            yields_by_tenor: list[dict] 各期限收益率表，元素结构——
-                — tenor: 期限（如 "1年"、"10年"）
-                — china_yield_pct: 中国该期限国债收益率（%）
-            yield_curve_shape_china: 中国收益率曲线形态判断
-            yield_curve_shape_us: 美国收益率曲线形态判断
-            china_us_comparison: dict 中美利差对比（数据不可用时为 {"status": "unavailable"}）——
-                — china_10y: 中国10年期收益率
-                — us_10y: 美国10年期收益率
-                — china_2y: 中国2年期收益率（实际取1年）
-                — us_2y: 美国2年期收益率
-                — cn_us_10y_spread: 中美10年期利差（百分点）
-            commentary_with_key_levels: 市场解读文本（含关键水平）
-            message: 错误信息（仅 status="error" 时存在）
-            suggestion: 建议（仅部分错误场景存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            date: Data date (YYYY-MM-DD)
+            data_source: Data source description
+            data_note: Data annotation (emphasis on returning the spot yield curve rather than individual bond YTM)
+            yields_by_tenor: list[dict] Yield table for each term, element structure——
+                — tenor: deadline (e.g. "1 year", "10 year") 
+                — china_yield_pct: China s government bond yield of this term (%)
+            yield_curve_shape_china: Determining the shape of China s yield curve
+            yield_curve_shape_us: Determining the shape of the U.S. yield curve
+            china_us_comparison: dict Comparison of interest rate spreads between China and the United States (when data are not available) {"status": "unavailable"}) ——
+                — china_10y: China 10-year yield
+                — us_10y: US 10-year yield
+                — china_2y: China s 2-year yield (actually 1 year)
+                — us_2y: U.S. 2-year yield
+                — cn_us_10y_spread: China-US 10-year interest rate spread (percentage points)
+            commentary_with_key_levels: Market interpretation text (including key levels)
+            message: Error message (only status="error" exist)
+            suggestion: Suggestions (only some error scenarios exist)
     """
     try:
         curve = _fetch_china_yield_curve()
@@ -370,20 +370,20 @@ def get_bond_yield_calculation() -> str:
             return json.dumps({
                 "status": "error",
                 "message": f"国债收益率数据获取失败: {curve.get('message')}",
-                "suggestion": "可通过 akshare.bond_china_yield() 直接获取",
+                "suggestion": "Passable akshare.bond_china_yield() Get it directly",
             }, ensure_ascii=False, indent=2, default=str)
 
         yields = curve.get("yields", {})
         date = curve.get("date", "未知")
 
-        # 曲线形态
+        # curve shape
         china_shape = _classify_curve_shape(yields)
 
         us_shape = "数据不足"
         if "status" not in zh_us and zh_us.get("us"):
             us_shape = _classify_curve_shape(zh_us["us"])
 
-        # 中美利差
+        # Interest rate spread between China and the United States
         cn_10y = yields.get("10年")
         us_10y = zh_us.get("us", {}).get("10年") if "status" not in zh_us else None
         cn_2y = yields.get("1年")
@@ -393,10 +393,10 @@ def get_bond_yield_calculation() -> str:
         if cn_10y is not None and us_10y is not None:
             spread_cn_us = round(cn_10y - us_10y, 4)
 
-        # 评论
+        # Comment
         commentary = _generate_yield_commentary(yields, date)
 
-        # 构建收益率表
+        # Build a rate of return table
         yields_table = []
         for tenor in _TENORS:
             cn_val = yields.get(tenor)
@@ -409,7 +409,7 @@ def get_bond_yield_calculation() -> str:
             "status": "ok",
             "date": date,
             "data_source": "akshare.bond_china_yield() / bond_zh_us_rate()",
-            "data_note": "本工具返回市场收益率水平（即期收益率曲线），非个券到期收益率计算。如需个券YTM计算，请使用债券定价模型。",
+            "data_note": "This tool returns the market yield level (spot yield curve), not the yield to maturity calculation of individual bonds. If you need to calculate individual bond YTM, please use the bond pricing model.",
             "yields_by_tenor": yields_table,
             "yield_curve_shape_china": china_shape,
             "yield_curve_shape_us": us_shape,
@@ -426,21 +426,21 @@ def get_bond_yield_calculation() -> str:
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("债券收益率计算失败: %s", exc, exc_info=True)
+        logger.error("Bond yield calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
-# ── Tool 2: 信用利差分析 ───────────────────────────────────────────
+# ── Tool 2: Credit Spread Analysis ───────────────────────────────────────────
 
 @tool
 @register_tool(
     tool_id="get_credit_spread_analysis",
     name="信用利差分析",
     description=(
-        "通过 akshare 实时获取中国债券市场多条收益率曲线，"
-        "计算信用利差（AAA中短期票据/AAA银行普通债收益率 - 同期限国债收益率）。"
-        "信用利差扩大反映市场风险偏好下降（避险情绪升温），"
-        "信用利差收窄反映市场风险偏好上升（风险 appetite 增强）。"
+        "Obtain multiple yield curves of the Chinese bond market in real time through akshare,"
+        "Calculate the credit spread (AAA short-term and medium-term bills/AAA bank ordinary bond yield - Treasury bond yield of the same maturity)."
+        "The widening of credit spreads reflects the decline in market risk appetite (rising risk aversion),"
+        "The narrowing of credit spreads reflects the increase in market risk appetite (increased risk appetite)."
     ),
     category="fundamentals",
     is_online=True,
@@ -451,47 +451,47 @@ def get_bond_yield_calculation() -> str:
     output_shape="structured_json",
     preferred_for=["查询信用利差水平", "分析市场风险偏好", "债券信用定价分析"],
     when_to_use=(
-        "当用户询问信用利差水平、AAA级债券与国债利差、"
-        "市场风险偏好变化、信用债定价合理性时使用。"
+        "When a user asks about the level of credit spreads, the spread between AAA-rated bonds and Treasury bonds,"
+        "Used when market risk preferences change and credit bond pricing is reasonable."
     ),
     when_not_to_use=(
-        "不适合单只信用债的个券信用评级分析；"
-        "不适合计算个券到期收益率（YTM）；"
-        "不适合查询国债收益率曲线本身（请使用 get_bond_yield_calculation）。"
+        "Not suitable for individual bond credit rating analysis of a single credit bond;"
+        "Not suitable for calculating the yield to maturity (YTM) of individual bonds;"
+        "Not suitable for querying the Treasury yield curve itself (use get_bond_yield_calculation)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 date（数据日期）、credit_spreads_by_tenor（各期限信用利差表）、"
-        "interpretation（市场解读）、warning_if_data_stale（数据时效警告）。"
+        "Returns a JSON string, including date (data date), credit_spreads_by_tenor (credit spread table for each term),"
+        "interpretation (Market interpretation), warning_if_data_stale (data aging warning)."
     ),
     example="get_credit_spread_analysis()",
     related_tools=["get_bond_yield_calculation", "get_bond_duration_convexity"],
 )
 def get_credit_spread_analysis() -> str:
-    """获取中国债券市场信用利差分析。
+    """Get credit spread analysis of China s bond market.
 
-    利用 AKShare 获取多条收益率曲线，计算 AAA 中短期票据、
-    AAA 银行普通债与同期限国债之间的信用利差。
+    Use AKShare to obtain multiple yield curves and calculate AAA short- and medium-term bills,
+    AAA The credit spread between ordinary bank bonds and government bonds of the same maturity.
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            date: 数据日期（YYYY-MM-DD）
-            data_source: 数据源说明
-            data_note: 数据注释（信用利差定义与解读说明）
-            curves_available: dict 各曲线可用日期——
-                — treasury: 国债收益率曲线数据日期
-                — aaa_corporate_note: AAA中短期票据曲线日期
-                — aaa_bank_note: AAA银行普通债曲线日期
-            credit_spreads_by_tenor: list[dict] 各期限信用利差表，元素结构——
-                — tenor: 期限
-                — treasury_yield_%: 国债收益率（%）
-                — aaa_corporate_spread_%: AAA企业债信用利差（%）
-                — aaa_bank_spread_%: AAA银行债信用利差（%）
-            key_tenor_spreads: dict 关键期限（1/3/5/7/10年）利差汇总——
-                — <tenor>: 该期限下 aaa_corporate_spread / aaa_bank_spread
-            interpretation: 市场解读文本
-            warning_if_data_stale: 数据时效警告（数据较旧时返回字符串，否则为 None）
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            date: Data date (YYYY-MM-DD)
+            data_source: Data source description
+            data_note: Data Notes (Definition and Interpretation of Credit Spreads)
+            curves_available: dict Available dates for each curve——
+                — treasury: Treasury yield curve data dates
+                — aaa_corporate_note: AAA Short and medium term bill curve dates
+                — aaa_bank_note: AAA Bank ordinary bond curve date
+            credit_spreads_by_tenor: list[dict] Credit spread table for each term, element structure——
+                — tenor: term
+                — treasury_yield_%: Treasury bond yield (%)
+                — aaa_corporate_spread_%: AAA Corporate bond credit spread (%)
+                — aaa_bank_spread_%: AAA Bank bond credit spread (%)
+            key_tenor_spreads: dict Key period (1/3/5/7/10 years) spread summary——
+                — <tenor>: within this period aaa_corporate_spread / aaa_bank_spread
+            interpretation: Market interpretation text
+            warning_if_data_stale: Data age warning (returns a string if the data is older, None otherwise)
+            message: Error message (only status="error" exist)
     """
     try:
         multi = _fetch_china_multi_curve()
@@ -513,7 +513,7 @@ def get_credit_spread_analysis() -> str:
         corporate_yields = corporate.get("yields", {}) if corporate.get("status") == "ok" else {}
         bank_yields = bank.get("yields", {}) if bank.get("status") == "ok" else {}
 
-        # 计算信用利差
+        # Calculate credit spread
         credit_spreads = {}
         for tenor in _TENORS:
             rf = treasury_yields.get(tenor)
@@ -530,7 +530,7 @@ def get_credit_spread_analysis() -> str:
                 entry["treasury_yield"] = rf
             credit_spreads[tenor] = entry
 
-        # 关键期限利差汇总
+        # Summary of key term spreads
         key_spreads = {}
         for tenor in ["1年", "3年", "5年", "7年", "10年"]:
             entry = credit_spreads.get(tenor, {})
@@ -542,7 +542,7 @@ def get_credit_spread_analysis() -> str:
             if key:
                 key_spreads[tenor] = key
 
-        # 生成解读
+        # Generate interpretation
         spread_values = {}
         for t in _TENORS:
             entry = credit_spreads.get(t, {})
@@ -553,7 +553,7 @@ def get_credit_spread_analysis() -> str:
 
         interpretation = _generate_spread_commentary(spread_values, date)
 
-        # 数据时效检查
+        # Data aging check
         warning = None
         if date and date != "未知":
             try:
@@ -567,7 +567,7 @@ def get_credit_spread_analysis() -> str:
             except (ValueError, TypeError):
                 pass
 
-        # 整理为表格格式输出
+        # Organize output into table format
         spreads_table = []
         for tenor in _TENORS:
             entry = credit_spreads.get(tenor, {})
@@ -585,8 +585,8 @@ def get_credit_spread_analysis() -> str:
             "date": date,
             "data_source": "akshare.bond_china_yield()",
             "data_note": (
-                "信用利差 = 信用债收益率 - 同期限国债收益率。"
-                "利差扩大 = 风险偏好下降（避险），利差收窄 = 风险偏好上升（逐险）。"
+                "credit spread = Credit bond yield - Treasury bond yield of the same maturity."
+                "Spreads widen = Risk appetite declines (risk aversion), spreads narrow = Risk appetite rises (risk-on-risk)."
             ),
             "curves_available": {
                 "treasury": treasury.get("date"),
@@ -606,16 +606,16 @@ def get_credit_spread_analysis() -> str:
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
-# ── Tool 3: 债券久期与凸性 ─────────────────────────────────────────
+# ── Tool 3: Bond duration and convexity ─────────────────────────────────────────
 
 @tool
 @register_tool(
     tool_id="get_bond_duration_convexity",
     name="债券久期与凸性",
     description=(
-        "计算固定利率债券的 Macaulay 久期、修正久期和凸性，"
-        "并估算收益率变动对债券价格的影响。"
-        "若不提供到期收益率，将自动获取当前10年期国债收益率作为参考。"
+        "Calculate Macaulay duration, modified duration, and convexity for a fixed-rate bond,"
+        "and estimate the impact of changes in yields on bond prices."
+        "If the yield to maturity is not provided, the current 10-year Treasury bond yield will be automatically obtained as a reference."
     ),
     category="fundamentals",
     is_online=True,
@@ -624,73 +624,73 @@ def get_credit_spread_analysis() -> str:
     capability_tags=["bond", "duration", "convexity", "fixed_income"],
     tool_role_hint="specialized",
     output_shape="structured_json",
-    preferred_for=["计算债券久期", "计算债券凸性", "估算利率变动对债券价格的影响"],
+    preferred_for=["计算债券久期", "计算债券凸性", "Estimate the impact of changes in interest rates on bond prices"],
     when_to_use=(
-        "当用户需要计算固定利率债券的 Macaulay 久期、修正久期、凸性，"
-        "或估算收益率变动对债券价格的近似影响时使用。"
-        "适用于标准化债券的久期凸性分析。"
+        "When the user needs to calculate the Macaulay duration, modified duration, and convexity of a fixed-rate bond,"
+        "or used when estimating the approximate impact of changes in yields on bond prices."
+        "Duration convexity analysis applied to standardized bonds."
     ),
     when_not_to_use=(
-        "不适合浮动利率债券（久期计算方式不同）；"
-        "不适合含权债券（如可赎回/可回售债券，需使用有效久期）；"
-        "不适合查询市场收益率曲线（请使用 get_bond_yield_calculation）。"
+        "Not suitable for floating rate bonds (duration is calculated differently);"
+        "Not suitable for equity-containing bonds (such as callable/putable bonds, effective duration needs to be used);"
+        "Not suitable for querying the market yield curve (please use get_bond_yield_calculation)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 macaulay_duration（Macaulay久期年）、"
-        "modified_duration（修正久期）、convexity（凸性）、"
-        "price_change_1pct（收益率升1%的价格变动估算）、"
-        "parameters_used（使用的参数）、methodology（计算方法说明）。"
+        "Returns a JSON string, including macaulay_duration (Macaulay duration year),"
+        "modified_duration (Modified duration), convexity (convexity),"
+        "price_change_1pct (Estimated price change if yield rises by 1%),"
+        "parameters_used (Parameters used), methodology (description of calculation method)."
     ),
     example="get_bond_duration_convexity(coupon_rate=0.03, years_to_maturity=10, frequency=2)",
     related_tools=["get_bond_yield_calculation", "get_credit_spread_analysis"],
 )
 def get_bond_duration_convexity(
-    coupon_rate: Annotated[float, "票面利率，如 0.03 表示 3%"] = 0.03,
+    coupon_rate: Annotated[float, "Coupon interest rate, such as 0.03 3%"] = 0.03,
     years_to_maturity: Annotated[float, "剩余期限（年）"] = 10.0,
-    yield_to_maturity: Annotated[Optional[float], "到期收益率，不提供则自动获取当前10Y国债收益率"] = None,
-    frequency: Annotated[int, "年付息频率，1=年付，2=半年付"] = 2,
+    yield_to_maturity: Annotated[Optional[float], "Yield to maturity, if not provided, the current 10Y Treasury bond yield will be automatically obtained."] = None,
+    frequency: Annotated[int, "Annual interest payment frequency,1=Annual payment,2=Paid half yearly"] = 2,
 ) -> str:
-    """计算固定利率债券的 Macaulay 久期、修正久期和凸性。
+    """Calculate the Macaulay duration, modified duration, and convexity for a fixed-rate bond.
 
-    若不提供 yield_to_maturity，将通过 akshare 获取当前10年期国债收益率。
+    If yield_to_maturity is not provided, the current 10-year Treasury bond yield will be obtained through akshare.
 
     Args:
-        coupon_rate: 票面利率（小数，如 0.03 表示 3%），默认 0.03
-        years_to_maturity: 剩余期限（年），默认 10.0
-        yield_to_maturity: 到期收益率（小数），为 None 时自动获取当前10年期国债收益率，默认 None
-        frequency: 年付息频率，可选 1（年付）/ 2（半年付）/ 4（季付）/ 12（月付），默认 2
+        coupon_rate: Coupon rate (decimal, such as 0.03 means 3%), default 0.03
+        years_to_maturity: Remaining term (years), default 10.0
+        yield_to_maturity: Yield to maturity (decimal), automatically obtains the current 10-year Treasury bond yield when it is None, default None
+        frequency: Annual interest payment frequency, optional 1 (annual payment) / 2 (semi-annual payment) / 4 (quarterly payment) / 12 (monthly payment), default 2
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            macaulay_duration: dict Macaulay 久期——
-                — years: 久期年数
-                — description: 含义说明
-            modified_duration: dict 修正久期——
-                — value: 修正久期数值
-                — description: 含义说明
-            convexity: dict 凸性——
-                — value: 凸性数值
-                — description: 含义说明
-            price_change_1pct: dict 收益率上升1%时的价格变动估算——
-                — yield_increase_1pct_pct_change: 价格变动百分比
-                — explanation: 解释文本
-                — formula: 使用的公式
-                — linear_estimate_only_mod_duration: 仅久期线性估算的百分比
-                — with_convexity_adjustment: 含凸性调整后的百分比
-            bond_price: dict 债券价格——
-                — current_price: 当前价格
-                — face_value: 面值（100.0）
-            parameters_used: dict 实际使用的参数——
-                — coupon_rate: 票面利率（小数）
-                — coupon_rate_pct: 票面利率（%）
-                — years_to_maturity: 剩余期限
-                — yield_to_maturity: 到期收益率（小数）
-                — yield_to_maturity_pct: 到期收益率（%）
-                — frequency: 付息频率文本说明
-                — payment_periods: 总付息期数
-            methodology: dict 各指标计算方法说明（macaulay_duration/modified_duration/convexity/price_change）
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            macaulay_duration: dict Macaulay Duration——
+                — years: Duration years
+                — description: Explanation of meaning
+            modified_duration: dict modified duration——
+                — value: Modified duration value
+                — description: Explanation of meaning
+            convexity: dict Convexity——
+                — value: convexity value
+                — description: Explanation of meaning
+            price_change_1pct: dict Estimated price change when yield rises by 1%——
+                — yield_increase_1pct_pct_change: Price change percentage
+                — explanation: Explanation text
+                — formula: formula used
+                — linear_estimate_only_mod_duration: Percentage of duration linear estimate only
+                — with_convexity_adjustment: Convexity-adjusted percentage
+            bond_price: dict bond price——
+                — current_price: current price
+                — face_value: Face value (100.0)
+            parameters_used: dict actual parameters used——
+                — coupon_rate: Coupon rate (decimal)
+                — coupon_rate_pct: Coupon interest rate (%)
+                — years_to_maturity: remaining term
+                — yield_to_maturity: Yield to maturity (decimal)
+                — yield_to_maturity_pct: Yield to maturity (%)
+                — frequency: Interest payment frequency text description
+                — payment_periods: Total number of interest payment periods
+            methodology: dict Description of calculation methods for each indicator (macaulay_duration/modified_duration/convexity/price_change)
+            message: Error message (only status="error" exist)
     """
     try:
         if yield_to_maturity is None:
@@ -698,11 +698,11 @@ def get_bond_duration_convexity(
             if curve.get("status") == "ok":
                 y10 = curve.get("yields", {}).get("10年")
                 if y10 is not None:
-                    yield_to_maturity = y10 / 100.0  # 转为小数
+                    yield_to_maturity = y10 / 100.0  # Convert to decimal
                 else:
                     return json.dumps({
                         "status": "error",
-                        "message": "无法获取当前10年期国债收益率，请手动提供 yield_to_maturity 参数",
+                        "message": "Unable to obtain the current 10-year Treasury bond yield, please provide the yield_to_maturity parameter manually.",
                     }, ensure_ascii=False, indent=2, default=str)
             else:
                 return json.dumps({
@@ -713,25 +713,25 @@ def get_bond_duration_convexity(
         if coupon_rate < 0 or coupon_rate > 1:
             return json.dumps({
                 "status": "error",
-                "message": "票面利率 coupon_rate 应在 0~1 范围内（如 0.03 表示 3%）",
+                "message": "The coupon rate coupon_rate should be in 0~1 Within the range (e.g. 0.03 means 3%)",
             }, ensure_ascii=False, indent=2, default=str)
 
         if yield_to_maturity < 0 or yield_to_maturity > 1:
             return json.dumps({
                 "status": "error",
-                "message": "到期收益率 yield_to_maturity 应在 0~1 范围内（如 0.03 表示 3%）",
+                "message": "Yield to maturity yield_to_maturity should be in 0~1 Within the range (e.g. 0.03 means 3%)",
             }, ensure_ascii=False, indent=2, default=str)
 
         if years_to_maturity <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "剩余期限 years_to_maturity 必须大于 0",
+                "message": "Remaining maturity years_to_maturity must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
         if frequency not in (1, 2, 4, 12):
             return json.dumps({
                 "status": "error",
-                "message": "付息频率 frequency 仅支持 1（年付）、2（半年付）、4（季付）、12（月付）",
+                "message": "Interest payment frequency frequency only supports 1 (annual payment), 2 (semi-annual payment), 4 (quarterly payment), and 12 (monthly payment)",
             }, ensure_ascii=False, indent=2, default=str)
 
         result = _calculate_duration_convexity(
@@ -751,15 +751,15 @@ def get_bond_duration_convexity(
             "status": "ok",
             "macaulay_duration": {
                 "years": result["macaulay_duration_years"],
-                "description": "Macaulay 久期 = Σ(t × PV_CF_t) / 债券价格，表示回收投资本息的平均时间（年）",
+                "description": "Macaulay Duration = Σ(t × PV_CF_t) / Bond price, which represents the average time (years) it takes to recover investment principal and interest.",
             },
             "modified_duration": {
                 "value": result["modified_duration"],
-                "description": "修正久期 = Macaulay 久期 / (1 + YTM/付息频率)，表示收益率变动 1% 时价格的近似变动百分比",
+                "description": "modified duration = Macaulay Duration / (1 + YTM/Interest payment frequency), Represents the approximate percentage change in price when yields change by 1%",
             },
             "convexity": {
                 "value": result["convexity"],
-                "description": "凸性 = Σ[t × (t+1/f) × PV_CF_t] / (价格 × (1+YTM/f)²)，衡量久期对收益率变化的敏感度",
+                "description": "Convexity = Σ[t × (t+1/f) × PV_CF_t] / (price × (1+YTM/f)²), Measures the sensitivity of duration to changes in yields",
             },
             "price_change_1pct": {
                 "yield_increase_1pct_pct_change": result["price_change_1pct"]["yield_increase_1pct"],
@@ -783,7 +783,7 @@ def get_bond_duration_convexity(
                 "payment_periods": int(years_to_maturity * frequency),
             },
             "methodology": {
-                "macaulay_duration": "Macaulay Duration = Σ(t × PV_CF_t) / Σ(PV_CF_t)，其中 t 为现金流时间（年），PV_CF_t 为各期现金流现值",
+                "macaulay_duration": "Macaulay Duration = Σ(t × PV_CF_t) / Σ(PV_CF_t), Among them, t is the cash flow time (year), and PV_CF_t is the present value of cash flow in each period.",
                 "modified_duration": "Modified Duration = Macaulay Duration / (1 + YTM / frequency)",
                 "convexity": "Convexity = Σ[t × (t + 1/frequency) × PV_CF_t] / (Price × (1 + YTM/frequency)²)",
                 "price_change": "ΔP/P ≈ -MD × Δy + 0.5 × Convexity × (Δy)²",
@@ -793,7 +793,7 @@ def get_bond_duration_convexity(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("债券久期与凸性计算失败: %s", exc, exc_info=True)
+        logger.error("Bond duration and convexity calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 

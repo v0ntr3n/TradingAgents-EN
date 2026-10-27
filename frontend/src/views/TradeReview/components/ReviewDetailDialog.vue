@@ -1,158 +1,158 @@
-﻿<template>
+<template>
   <el-dialog
     v-model="visible"
-    :title="`复盘详情 - ${report?.trade_info?.code || ''}`"
+    :title="`Review details - ${report?.trade_info?.code || ''}`"
     width="900px"
     :close-on-click-modal="false"
   >
     <div v-loading="loading" class="review-detail">
-      <!-- 🔄 进度显示界面（任务进行中） -->
+      <!-- 🔄 Progress display interface (task in progress) -->
       <template v-if="report && (report.status === 'pending' || report.status === 'processing')">
         <div class="progress-container">
-          <!-- 顶部状态卡片 -->
+          <!-- top status card -->
           <div class="status-card">
             <div class="status-icon">
               <el-icon class="rotating" :size="48" color="#409EFF"><Loading /></el-icon>
             </div>
             <div class="status-content">
-              <h2 class="status-title">正在分析交易复盘</h2>
+              <h2 class="status-title">Analyzing transaction review</h2>
               <div class="stock-info">
                 <span class="stock-code">{{ report.trade_info?.code || '000000' }}</span>
-                <span class="stock-name">{{ report.trade_info?.name || '加载中...' }}</span>
+                <span class="stock-name">{{ report.trade_info?.name || 'Loading...' }}</span>
               </div>
               <el-tag
                 :type="report.status === 'processing' ? 'primary' : 'info'"
                 size="large"
                 effect="light"
               >
-                {{ report.status === 'processing' ? '🔄 分析中' : '⏳ 等待中' }}
+                {{ report.status === 'processing' ? '🔄 Analyzing' : '⏳ Waiting' }}
               </el-tag>
             </div>
           </div>
 
-          <!-- 分析步骤说明 -->
+          <!-- Analysis step description -->
           <div class="analysis-steps">
             <div class="steps-title">
               <el-icon><InfoFilled /></el-icon>
-              <span>AI 正在从多个维度分析您的交易</span>
+              <span>AI Your transaction is being analyzed from multiple dimensions</span>
             </div>
             <div class="steps-grid">
               <div class="step-item">
                 <div class="step-icon">📊</div>
-                <div class="step-text">市场环境分析</div>
+                <div class="step-text">Market environment analysis</div>
               </div>
               <div class="step-item">
                 <div class="step-icon">⏰</div>
-                <div class="step-text">买卖时机评估</div>
+                <div class="step-text">Evaluation of buying and selling opportunities</div>
               </div>
               <div class="step-item">
                 <div class="step-icon">💰</div>
-                <div class="step-text">仓位与风险复核</div>
+                <div class="step-text">Position and risk review</div>
               </div>
               <div class="step-item">
                 <div class="step-icon">🧠</div>
-                <div class="step-text">交易心理分析</div>
+                <div class="step-text">Trading psychology analysis</div>
               </div>
               <div class="step-item">
                 <div class="step-icon">📈</div>
-                <div class="step-text">收益归因分析</div>
+                <div class="step-text">Revenue attribution analysis</div>
               </div>
             </div>
           </div>
 
-          <!-- 预计时间提示 -->
+          <!-- Estimated time reminder -->
           <div class="time-estimate">
             <el-icon><Clock /></el-icon>
-            <span>预计需要 2-5 分钟，请耐心等待...</span>
+            <span>Estimated to take 2-5 minutes, please be patient...</span>
           </div>
 
-          <!-- 底部操作按钮 -->
+          <!-- Bottom operation button -->
           <div class="progress-actions">
-            <el-button size="large" @click="visible = false">关闭</el-button>
+            <el-button size="large" @click="visible = false">close</el-button>
             <el-button size="large" type="primary" @click="loadReport" :loading="loading">
-              刷新状态
+              refresh status
             </el-button>
           </div>
         </div>
       </template>
 
-      <!-- ✅ 完整结果显示界面（任务完成） -->
+      <!-- ✅ Complete results display interface (task completed) -->
       <template v-else-if="report && report.status === 'completed'">
-        <!-- 交易摘要 -->
-        <el-descriptions title="交易摘要" :column="3" border size="small" class="section">
-          <el-descriptions-item label="股票代码">{{ report.trade_info?.code }}</el-descriptions-item>
-          <el-descriptions-item label="持仓天数">{{ report.trade_info?.holding_days }}天</el-descriptions-item>
-          <el-descriptions-item label="盈亏金额">
+        <!-- Transaction Summary -->
+        <el-descriptions title="Transaction Summary" :column="3" border size="small" class="section">
+          <el-descriptions-item label="Stock code">{{ report.trade_info?.code }}</el-descriptions-item>
+          <el-descriptions-item label="Position holding days">{{ report.trade_info?.holding_days }}day</el-descriptions-item>
+          <el-descriptions-item label="Profit and loss amount">
             <span :class="getTotalPnl() >= 0 ? 'positive' : 'negative'">
-              {{ formatPnl(getTotalPnl()) }}元
+              {{ formatPnl(getTotalPnl()) }}Yuan
             </span>
             <span v-if="report.trade_info?.is_holding && report.trade_info?.unrealized_pnl" class="unrealized-hint">
-              (已实现: {{ formatPnl(report.trade_info.realized_pnl) }}, 浮动: {{ formatPnl(report.trade_info.unrealized_pnl) }})
+              (Realized: {{ formatPnl(report.trade_info.realized_pnl) }}, float: {{ formatPnl(report.trade_info.unrealized_pnl) }})
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="买入均价">{{ report.trade_info?.avg_buy_price?.toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="卖出均价">{{ report.trade_info?.avg_sell_price?.toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="收益率">
+          <el-descriptions-item label="average buying price">{{ report.trade_info?.avg_buy_price?.toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="average selling price">{{ report.trade_info?.avg_sell_price?.toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="Yield">
             <span :class="getTotalPnlPct() >= 0 ? 'positive' : 'negative'">
               {{ formatPct(getTotalPnlPct()) }}
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="手续费" :span="3">{{ report.trade_info?.total_commission?.toFixed(2) }}元</el-descriptions-item>
+          <el-descriptions-item label="handling fee" :span="3">{{ report.trade_info?.total_commission?.toFixed(2) }}Yuan</el-descriptions-item>
         </el-descriptions>
 
-        <!-- 关联交易计划 (如果有) -->
+        <!-- Related party transaction plan (if there is) -->
         <div v-if="report.trading_system_name" class="section trading-plan-section">
-          <h4><el-icon><Document /></el-icon> 关联交易计划</h4>
+          <h4><el-icon><Document /></el-icon> Related party transaction plan</h4>
           <div class="trading-plan-info">
             <el-tag type="primary" size="large">{{ report.trading_system_name }}</el-tag>
             <p class="plan-note">
-              本次交易已关联交易计划，AI 分析已结合计划规则进行评估。
-              详细的计划执行情况分析请查看下方的"AI分析总结"和"详细分析"部分。
+              This transaction has been linked to the trading plan, and AI analysis has been evaluated in conjunction with the plan rules.
+              For a detailed analysis of plan execution, please see below"AI Analysis and summary"and"Detailed analysis"part.
             </p>
           </div>
 
-          <!-- 交易计划执行情况 -->
+          <!-- Trading plan execution status -->
           <el-row :gutter="16" class="plan-execution-row" v-if="report.ai_review?.plan_adherence || report.ai_review?.plan_deviation">
             <el-col :span="12" v-if="report.ai_review?.plan_adherence">
               <div class="analysis-card plan-adherence">
-                <h4><el-icon><CircleCheck /></el-icon> 计划执行良好</h4>
+                <h4><el-icon><CircleCheck /></el-icon> Plan executed well</h4>
                 <div class="markdown-content" v-html="renderMarkdown(report.ai_review.plan_adherence)"></div>
               </div>
             </el-col>
             <el-col :span="12" v-if="report.ai_review?.plan_deviation">
               <div class="analysis-card plan-deviation">
-                <h4><el-icon><Warning /></el-icon> 偏离计划之处</h4>
+                <h4><el-icon><Warning /></el-icon> deviation from plan</h4>
                 <div class="markdown-content" v-html="renderMarkdown(report.ai_review.plan_deviation)"></div>
               </div>
             </el-col>
           </el-row>
         </div>
 
-        <!-- AI分析 -->
+        <!-- AI analysis -->
         <div class="section">
-          <h4>复盘结论</h4>
+          <h4>Review conclusion</h4>
           <div class="summary markdown-content" v-html="renderMarkdown(report.ai_review?.summary)"></div>
         </div>
 
-        <!-- 优缺点 -->
+        <!-- Advantages and Disadvantages -->
         <el-row :gutter="16" class="section">
           <el-col :span="12">
             <div class="analysis-card strengths">
-              <h4><el-icon><CircleCheck /></el-icon> 做得好的地方</h4>
+              <h4><el-icon><CircleCheck /></el-icon> Things done well</h4>
               <div class="markdown-content" v-html="renderMarkdown((report.ai_review?.strengths || []).join('\n\n'))"></div>
             </div>
           </el-col>
           <el-col :span="12">
             <div class="analysis-card weaknesses">
-              <h4><el-icon><Warning /></el-icon> 暴露的问题</h4>
+              <h4><el-icon><Warning /></el-icon> exposed issues</h4>
               <div class="markdown-content" v-html="renderMarkdown((report.ai_review?.weaknesses || []).join('\n\n'))"></div>
             </div>
           </el-col>
         </el-row>
 
-        <!-- 复盘改进项 -->
+        <!-- Review improvements -->
         <div class="section" v-if="report.ai_review?.suggestions?.length">
-          <h4><el-icon><Pointer /></el-icon> 后续改进重点</h4>
+          <h4><el-icon><Pointer /></el-icon> Key points for subsequent improvements</h4>
           <div class="suggestions markdown-content" v-html="renderMarkdown((report.ai_review?.suggestions || []).join('\n\n'))"></div>
         </div>
 
@@ -160,55 +160,55 @@
           <TaskGrowthPanel :task-id="growthTaskId" />
         </div>
 
-        <!-- 详细分析 -->
+        <!-- Detailed analysis -->
         <el-collapse class="section">
-          <el-collapse-item title="时机复盘" name="timing" v-if="report.ai_review?.timing_analysis">
+          <el-collapse-item title="Time to review" name="timing" v-if="report.ai_review?.timing_analysis">
             <div class="markdown-content" v-html="renderMarkdown(report.ai_review?.timing_analysis)"></div>
           </el-collapse-item>
-          <el-collapse-item title="仓位复盘" name="position" v-if="report.ai_review?.position_analysis">
+          <el-collapse-item title="Position review" name="position" v-if="report.ai_review?.position_analysis">
             <div class="markdown-content" v-html="renderMarkdown(report.ai_review?.position_analysis)"></div>
           </el-collapse-item>
-          <el-collapse-item title="情绪复盘" name="emotion" v-if="report.ai_review?.emotion_analysis">
+          <el-collapse-item title="Emotional review" name="emotion" v-if="report.ai_review?.emotion_analysis">
             <div class="markdown-content" v-html="renderMarkdown(report.ai_review?.emotion_analysis)"></div>
           </el-collapse-item>
-          <el-collapse-item title="归因复盘" name="attribution" v-if="report.ai_review?.attribution_analysis">
+          <el-collapse-item title="Attribution review" name="attribution" v-if="report.ai_review?.attribution_analysis">
             <div class="markdown-content" v-html="renderMarkdown(report.ai_review?.attribution_analysis)"></div>
           </el-collapse-item>
         </el-collapse>
       </template>
 
-      <!-- ❌ 失败状态显示界面 -->
+      <!-- ❌ Failure status display interface -->
       <template v-else-if="report && report.status === 'failed'">
         <div class="error-container">
           <el-result
             icon="error"
-            title="复盘失败"
-            :sub-title="report.error_message || '未知错误'"
+            title="Review failed"
+            :sub-title="report.error_message || 'unknown error'"
           >
             <template #extra>
-              <el-button type="primary" @click="visible = false">关闭</el-button>
+              <el-button type="primary" @click="visible = false">close</el-button>
             </template>
           </el-result>
         </div>
       </template>
 
-      <!-- ⚠️ 无数据状态 -->
+      <!-- ⚠️ No data status -->
       <template v-else-if="!report && !loading">
-        <el-empty description="暂无数据" />
+        <el-empty description="No data yet" />
       </template>
     </div>
 
     <template #footer>
       <span v-if="report && report.status === 'completed'">
-        <el-button @click="visible = false">关闭</el-button>
+        <el-button @click="visible = false">close</el-button>
         <el-button v-if="!report.is_case_study" type="primary" @click="showSaveCaseDialog">
-          保存到案例库
+          Save to case library
         </el-button>
       </span>
     </template>
   </el-dialog>
 
-  <!-- 保存为案例对话框 -->
+  <!-- Save as case dialog box -->
   <SaveAsCaseDialog
     v-model="saveCaseDialogVisible"
     :review-id="props.reviewId"
@@ -227,8 +227,8 @@ import { renderMarkdown as safeMarkdown } from '@/utils/markdown'
 import TaskGrowthPanel from '@/components/growth/TaskGrowthPanel.vue'
 import SaveAsCaseDialog from './SaveAsCaseDialog.vue'
 
-// 配置 marked 选项
-// marked 配置已由 @/utils/markdown 统一管理
+// Configure marked options
+// marked The configuration has been @/utils/markdown Unified management
 const props = defineProps<{
   modelValue: boolean
   reviewId: string
@@ -256,39 +256,39 @@ const loadReport = async () => {
     const res = await reviewApi.getReviewDetail(props.reviewId)
     if (res.success) {
       report.value = res.data || null
-      // 🔍 调试日志
-      console.log('📊 [复盘详情] API 返回数据:', res.data)
-      console.log('📊 [复盘详情] trading_system_id:', res.data?.trading_system_id)
-      console.log('📊 [复盘详情] trading_system_name:', res.data?.trading_system_name)
+      // 🔍 debug log
+      console.log('📊 [Review details] API Return data:', res.data)
+      console.log('📊 [Review details] trading_system_id:', res.data?.trading_system_id)
+      console.log('📊 [Review details] trading_system_name:', res.data?.trading_system_name)
 
-      // 🔄 如果状态是 pending 或 processing，启动轮询
+      // 🔄 If status is pending or processing, start polling
       if (report.value && (report.value.status === 'pending' || report.value.status === 'processing')) {
-        console.log('🔄 [复盘详情] 任务进行中，启动轮询...')
+        console.log('🔄 [Review details] The task is in progress, start polling...')
         startPolling()
       }
     }
   } catch (e: any) {
-    // 如果是 404 错误，可能是任务还在创建中，尝试轮询
-    if (e.message?.includes('404') || e.message?.includes('不存在')) {
-      console.log('🔄 [复盘详情] 数据未找到，可能任务还在创建中，启动轮询...')
-      ElMessage.info('复盘任务正在执行中，请稍候...')
+    // If it is a 404 error, it may be that the task is still being created, try polling
+    if (e.message?.includes('404') || e.message?.includes('does not exist')) {
+      console.log('🔄 [Review details] Data not found, maybe the task is still being created, start polling...')
+      ElMessage.info('The review task is being executed, please wait....')
       startPolling()
     } else {
-      ElMessage.error(e.message || '加载复盘详情失败')
+      ElMessage.error(e.message || 'Failed to load review details')
     }
   } finally {
     loading.value = false
   }
 }
 
-// 轮询相关
+// Polling related
 let pollingTimer: number | null = null
-const POLLING_INTERVAL = 10000 // 轮询间隔：10秒
-const maxPollingAttempts = 60 // 最多轮询60次（10分钟）
+const POLLING_INTERVAL = 10000 // Polling interval: 10 seconds
+const maxPollingAttempts = 60 // Poll up to 60 times (10 minutes)
 let pollingAttempts = 0
 
 const startPolling = () => {
-  // 清除之前的定时器
+  // Clear previous timer
   if (pollingTimer) {
     clearInterval(pollingTimer)
   }
@@ -298,36 +298,36 @@ const startPolling = () => {
   pollingTimer = window.setInterval(async () => {
     pollingAttempts++
 
-    console.log(`🔄 [复盘详情] 轮询第 ${pollingAttempts} 次...`)
+    console.log(`🔄 [Review details] Polling ${pollingAttempts} times...`)
 
     try {
       const res = await reviewApi.getReviewDetail(props.reviewId)
       if (res.success && res.data) {
         report.value = res.data
 
-        // 如果任务完成或失败，停止轮询
+        // Stop polling if task completes or fails
         if (res.data.status === 'completed' || res.data.status === 'failed') {
-          console.log(`✅ [复盘详情] 任务${res.data.status === 'completed' ? '完成' : '失败'}，停止轮询`)
+          console.log(`✅ [Review details] Task${res.data.status === 'completed' ? 'Complete' : 'failed'}, Stop polling`)
           stopPolling()
 
           if (res.data.status === 'completed') {
-            ElMessage.success('复盘完成')
+            ElMessage.success('Review completed')
           } else {
-            ElMessage.error(res.data.error_message || '复盘失败')
+            ElMessage.error(res.data.error_message || 'Review failed')
           }
         }
       }
     } catch (e) {
-      console.log('🔄 [复盘详情] 轮询失败，继续等待...')
+      console.log('🔄 [Review details] Polling failed, continue to wait...')
     }
 
-    // 超过最大轮询次数，停止轮询
+    // If the maximum number of polling times is exceeded, polling will be stopped.
     if (pollingAttempts >= maxPollingAttempts) {
-      console.log('⏱️ [复盘详情] 轮询超时，停止轮询')
+      console.log('⏱️ [Review details] Polling timeout, stop polling')
       stopPolling()
-      ElMessage.warning('复盘任务执行时间较长，请稍后刷新查看')
+      ElMessage.warning('The review task takes a long time to execute, please refresh and view later.')
     }
-  }, POLLING_INTERVAL) // 每10秒轮询一次
+  }, POLLING_INTERVAL) // Poll every 10 seconds
 }
 
 const stopPolling = () => {
@@ -350,19 +350,19 @@ const formatPct = (value?: number) => {
   return prefix + value.toFixed(2) + '%'
 }
 
-// 🆕 计算总盈亏（已实现 + 浮动盈亏）
+// 🆕 Calculate total profit and loss (realized + floating profit and loss)
 const getTotalPnl = () => {
   if (!report.value?.trade_info) return 0
   const tradeInfo = report.value.trade_info
   const realized = tradeInfo.realized_pnl || 0
-  // 如果还在持仓中，加上浮动盈亏
+  // If the position is still open, add floating profit and loss
   if (tradeInfo.is_holding && tradeInfo.unrealized_pnl !== undefined) {
     return realized + tradeInfo.unrealized_pnl
   }
   return realized
 }
 
-// 🆕 计算总收益率
+// 🆕 Calculate total return
 const getTotalPnlPct = () => {
   if (!report.value?.trade_info) return 0
   const tradeInfo = report.value.trade_info
@@ -406,7 +406,7 @@ watch(() => [props.modelValue, props.reviewId], ([show, id]) => {
 }, { immediate: true })
 
 onBeforeUnmount(() => {
-  console.log('🧹 [复盘详情] 组件卸载，清理轮询资源...')
+  console.log('🧹 [Review details] Uninstall components and clean up polling resources...')
   stopPolling()
 })
 </script>

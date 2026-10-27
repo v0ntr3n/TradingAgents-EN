@@ -11,8 +11,8 @@ class DummyNoMatchClient:
     async def achat(self, *args, **kwargs):
         return SimpleNamespace(
             content=(
-                "### 工具调用\n"
-                "**步骤 1**：调用 `screen_stocks_by_criteria`\n"
+                "### Tool call\n"
+                "**steps 1**: call `screen_stocks_by_criteria`\n"
                 "- `conditions`: `[{\"field\": \"dividend_yield\", \"operator\": \">=\", \"value\": 5}]`\n"
                 "- `limit`: 10\n"
                 '- `order_by_field`: "dividend_yield"\n'
@@ -35,11 +35,11 @@ def test_run_direct_screening_returns_hard_timeout_without_fallback(monkeypatch)
     service._llm_client = DummyTimeoutClient()
     service._result_openai_tools = []
 
-    result = asyncio.run(service.run_direct_screening("user-1", "高分红低估值", max_stocks=5))
+    result = asyncio.run(service.run_direct_screening("user-1", "High dividend, low valuation", max_stocks=5))
 
     assert result["stocks"] == []
-    assert "超时" in result["reply"]
-    assert "不会改为推荐其它不符合原筛选条件的股票" in result["reply"]
+    assert "timeout" in result["reply"]
+    assert "We will not recommend other stocks that do not meet the original screening criteria." in result["reply"]
     assert result.get("is_fallback") is not True
 
 
@@ -52,7 +52,7 @@ def test_run_direct_screening_returns_hard_no_match_without_fallback(monkeypatch
     monkeypatch.setattr(service_module, "set_current_user_id", lambda user_id: None)
 
     async def fake_run_locked_result_execution(self, message, locked_plan, progress_callback=None):
-        return "本轮筛选未返回结构化股票结果。", ["screen_stocks_by_criteria"], []
+        return "This round of screening did not return structured equity results.", ["screen_stocks_by_criteria"], []
 
     service = service_module.IntelligentScreeningService(db=object())
     service._ensure_client = _ok
@@ -60,11 +60,11 @@ def test_run_direct_screening_returns_hard_no_match_without_fallback(monkeypatch
     service._result_openai_tools = []
     monkeypatch.setattr(service_module.IntelligentScreeningService, "_run_locked_result_execution", fake_run_locked_result_execution)
 
-    result = asyncio.run(service.run_direct_screening("user-1", "高分红低估值", max_stocks=5))
+    result = asyncio.run(service.run_direct_screening("user-1", "High dividend, low valuation", max_stocks=5))
 
     assert result["stocks"] == []
-    assert "未找到符合“高分红”条件的股票" in result["reply"]
-    assert "不推荐其它不符合条件的股票" in result["reply"]
+    assert "No match found High dividends condition stock" in result["reply"]
+    assert "Other stocks that do not meet the criteria are not recommended" in result["reply"]
     assert result.get("is_fallback") is not True
 
 
@@ -79,8 +79,8 @@ def test_run_direct_screening_builds_structured_stocks_via_locked_execution(monk
             assert tools is None
             return SimpleNamespace(
                 content=(
-                    "### 工具调用\n"
-                    "**步骤 1**：调用 `screen_stocks_by_criteria`\n"
+                    "### Tool call\n"
+                    "**steps 1**: call `screen_stocks_by_criteria`\n"
                     "- `conditions`: `[{\"field\": \"dividend_yield\", \"operator\": \">=\", \"value\": 5}, {\"field\": \"pe_ttm\", \"operator\": \"<=\", \"value\": 15}]`\n"
                     "- `limit`: 10\n"
                     '- `order_by_field`: "dividend_yield"\n'
@@ -91,22 +91,22 @@ def test_run_direct_screening_builds_structured_stocks_via_locked_execution(monk
     monkeypatch.setattr(service_module, "set_current_user_id", lambda user_id: None)
 
     async def fake_run_locked_result_execution(self, message, locked_plan, progress_callback=None):
-        assert message == "高分红低估值"
+        assert message == "High dividend, low valuation"
         assert locked_plan["screen"]["limit"] == 5
         return (
-            "已按批准的筛选方案执行完成。\n\n```json\n"
-            '{"stocks": [{"code": "002818", "name": "富森美", "pe": 11.36, "pe_display_label": "PE(TTM)", "pb": 1.51, "pb_display_label": "PB", "reason": "符合已批准条件"}]}'
+            "The approved screening plan has been implemented.\n\n```json\n"
+            '{"stocks": [{"code": "002818", "name": "Fusenmei", "pe": 11.36, "pe_display_label": "PE(TTM)", "pb": 1.51, "pb_display_label": "PB", "reason": "Meet approved conditions"}]}'
             "\n```",
             ["screen_stocks_by_criteria"],
             [{
                 "code": "002818",
-                "name": "富森美",
-                "industry": "商业贸易",
+                "name": "Fusenmei",
+                "industry": "commercial trade",
                 "pe": 11.36,
                 "pe_display_label": "PE(TTM)",
                 "pb": 1.51,
                 "pb_display_label": "PB",
-                "reason": "符合已批准条件",
+                "reason": "Meet approved conditions",
             }],
         )
 
@@ -116,7 +116,7 @@ def test_run_direct_screening_builds_structured_stocks_via_locked_execution(monk
     service._result_openai_tools = []
     monkeypatch.setattr(service_module.IntelligentScreeningService, "_run_locked_result_execution", fake_run_locked_result_execution)
 
-    result = asyncio.run(service.run_direct_screening("user-1", "高分红低估值", max_stocks=5))
+    result = asyncio.run(service.run_direct_screening("user-1", "High dividend, low valuation", max_stocks=5))
 
     assert result["phase"] == "result"
     assert result["stocks"][0]["code"] == "002818"

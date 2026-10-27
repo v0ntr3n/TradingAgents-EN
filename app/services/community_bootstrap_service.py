@@ -1,15 +1,15 @@
 """
-社区版首次启动自举服务
+Community Edition launches bootstrapping service for the first time
 
-背景：社区版不随包分发 install/ 与 scripts/（Pro 版由 docker-entrypoint.sh 调用
-scripts/import_config_and_create_user.py 完成建号与配置导入），因此社区版首次启动时
-空库无系统配置——模型目录、提示词模板、Agent 配置、工作流等全部缺失，登录后功能不可用。
+Background: The community version is not distributed with the package install/ and scripts/ (the Pro version is called by docker-entrypoint.sh
+scripts/import_config_and_create_user.py Complete account creation and configuration import), so when the community version is started for the first time
+Empty library has no system configuration——The model directory, prompt word template, Agent configuration, workflow, etc. are all missing, and the functions are unavailable after logging in.
 
-本模块在应用启动阶段导入最小系统配置，幂等：install/community_bootstrap.json 存在时，
-按"集合为空才导入"写入，Pro 版各集合非空时自动跳过，行为零影响。
+This module imports the minimum system configuration during the application startup phase. It is idempotent: when install/community_bootstrap.json exists,
+press"Import only if the collection is empty"Writing, Pro version automatically skips each collection when it is not empty, with zero impact on behavior.
 
-建号不在此处：由 app/services/user_service.py::bootstrap_first_admin 负责（社区版无注册
-接口，空库时依据 ADMIN_DEFAULT_PASSWORD 创建 admin）。
+The account is not created here: by app/services/user_service.py::bootstrap_first_admin Responsible (no registration for community version)
+interface, create admin based on ADMIN_DEFAULT_PASSWORD when the library is empty).
 """
 
 import json
@@ -22,11 +22,11 @@ from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
-# 启动自举配置包（社区版快照内置：install/community_bootstrap.json）
+# Start the bootstrap configuration package (built-in community version snapshot: install/community_bootstrap.json)
 BOOTSTRAP_FILENAME = "community_bootstrap.json"
 INSTALL_DIRNAME = "install"
 
-# 敏感字段模式：导入前二次脱敏，防止配置包携带密钥
+# Sensitive field mode: Secondary desensitization before import to prevent the configuration package from carrying keys
 _SECRET_KEY_PATTERNS = (
     "api_key", "apikey", "api_secret", "secret",
     "password", "access_token", "refresh_token",
@@ -35,12 +35,12 @@ _SECRET_KEY_SKIP = ("has_api_key", "has_api_secret", "max_tokens")
 
 
 def _project_root() -> Path:
-    """项目根目录（app/services/xxx.py → 上溯三级）"""
+    """Project root directory (app/services/xxx.py → Go up three levels)"""
     return Path(__file__).resolve().parents[2]
 
 
 def _sanitize(node: Any) -> Any:
-    """递归清空敏感字段值（保留字段名），防止配置包意外携带密钥"""
+    """Recursively clear sensitive field values (retain field names) to prevent configuration packages from accidentally carrying keys"""
     if isinstance(node, dict):
         out: Dict[str, Any] = {}
         for key, value in node.items():
@@ -59,7 +59,7 @@ def _sanitize(node: Any) -> Any:
 
 
 def _convert_to_bson(data: Any) -> Any:
-    """JSON → BSON：还原 ObjectId 与 datetime（与 Pro 版导入脚本口径一致）"""
+    """JSON → BSON: Restore ObjectId and datetime (same caliber as the Pro version import script)"""
     if isinstance(data, dict):
         result: Dict[str, Any] = {}
         for key, value in data.items():
@@ -85,10 +85,10 @@ def _convert_to_bson(data: Any) -> Any:
 
 
 async def import_bootstrap_config() -> int:
-    """导入社区版最小系统配置（仅导入空集合，幂等）
+    """Import the minimum system configuration of the community version (only import empty collections, idempotent)
 
     Returns:
-        本次导入的文档总数
+        The total number of documents imported this time
     """
     from app.core.database import get_mongo_db
 
@@ -105,7 +105,7 @@ async def import_bootstrap_config() -> int:
 
     data = payload.get("data") or {}
     if not isinstance(data, dict):
-        logger.error(f"❌ 启动配置包格式不正确（缺少 data 段）: {bootstrap_file}")
+        logger.error(f"❌ The startup configuration package format is incorrect (missing data section): {bootstrap_file}")
         return 0
 
     db = get_mongo_db()
@@ -127,5 +127,5 @@ async def import_bootstrap_config() -> int:
 
     if total_inserted:
         logger.info(f"✅ 启动配置导入完成: {total_inserted} 个文档 → {', '.join(imported_collections)}")
-        logger.info("📋 系统配置已就绪，首次登录后请在「系统设置」中配置 LLM 与数据源密钥")
+        logger.info("📋 The system configuration is ready. After logging in for the first time, please configure the LLM and data source keys in System Settings ")
     return total_inserted

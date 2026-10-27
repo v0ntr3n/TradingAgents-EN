@@ -1,5 +1,5 @@
 """
-标签管理 API
+tag management API
 """
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,7 +9,7 @@ from app.routers.auth_db import get_current_user
 from app.core.response import ok
 from app.services.tags_service import tags_service
 
-router = APIRouter(prefix="/tags", tags=["标签管理"], redirect_slashes=False)
+router = APIRouter(prefix="/tags", tags=["tag management"], redirect_slashes=False)
 
 
 class TagCreate(BaseModel):
@@ -39,7 +39,7 @@ async def list_tags(current_user: dict = Depends(get_current_user)):
         tags = await tags_service.list_tags(current_user["id"])
         return ok(tags)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"获取标签失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to get tags: {e}")
 
 
 @router.post("", response_model=dict)
@@ -51,10 +51,10 @@ async def create_tag(payload: TagCreate, current_user: dict = Depends(get_curren
             color=payload.color,
             sort_order=payload.sort_order,
         )
-        return ok(tag, "创建成功")
+        return ok(tag, "Created successfully")
     except Exception as e:
-        # 可能违反唯一索引（同名），返回400
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"创建标签失败: {e}")
+        # Possible violation of unique index (same name), return 400
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to create label: {e}")
 
 
 @router.put("/{tag_id}", response_model=dict)
@@ -68,12 +68,12 @@ async def update_tag(tag_id: str, payload: TagUpdate, current_user: dict = Depen
             sort_order=payload.sort_order,
         )
         if not success:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="标签不存在")
-        return ok({"id": tag_id}, "更新成功")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag does not exist")
+        return ok({"id": tag_id}, "Update successful")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"更新标签失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to update label: {e}")
 
 
 @router.delete("/{tag_id}", response_model=dict)
@@ -81,10 +81,10 @@ async def delete_tag(tag_id: str, current_user: dict = Depends(get_current_user)
     try:
         success = await tags_service.delete_tag(current_user["id"], tag_id)
         if not success:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="标签不存在")
-        return ok({"id": tag_id}, "删除成功")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag does not exist")
+        return ok({"id": tag_id}, "Delete successfully")
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"删除标签失败: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to delete tag: {e}")
 

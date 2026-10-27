@@ -1,7 +1,7 @@
 """
-单智能体工作流模板
+Single agent workflow template
 
-用于调试或执行单个 Agent 的工作流
+Workflow for debugging or executing a single Agent
 """
 
 from typing import Any, Dict, Optional
@@ -20,18 +20,18 @@ def SingleAgentWorkflow(
     config: Optional[Dict[str, Any]] = None
 ) -> WorkflowDefinition:
     """
-    创建单智能体工作流模板
+    Create a single-agent workflow template
     
     Args:
-        agent_id: 智能体 ID
-        config: 工作流配置
+        agent_id: agent ID
+        config: Workflow configuration
         
     Returns:
-        WorkflowDefinition: 工作流定义
+        WorkflowDefinition: Workflow definition
     """
     config = config or {}
     
-    # 提取 Agent 名称作为工作流名称的一部分
+    # Extract the Agent name as part of the workflow name
     agent_name = agent_id.replace("_", " ").title()
     
     return WorkflowDefinition(
@@ -44,29 +44,29 @@ def SingleAgentWorkflow(
         config=config,
         
         nodes=[
-            # 开始节点
+            # start node
             NodeDefinition(
                 id="start",
                 type=NodeType.START,
-                label="开始",
+                label="start",
                 position=Position(x=0, y=0),
             ),
             
-            # Agent 节点
+            # Agent node
             NodeDefinition(
                 id=agent_id,
-                type=NodeType.ANALYST,  # 假设都是分析师，如果不是可能需要调整
+                type=NodeType.ANALYST,  # Assume they are all analysts, if not it may need to be adjusted
                 agent_id=agent_id,
                 label=agent_name,
                 position=Position(x=200, y=0),
                 config=config.get("agent_config", {})
             ),
             
-            # 结束节点
+            # end node
             NodeDefinition(
                 id="end",
                 type=NodeType.END,
-                label="结束",
+                label="end",
                 position=Position(x=400, y=0),
             )
         ],

@@ -1,26 +1,26 @@
 <template>
   <div class="config-management">
-    <!-- 页面标题 -->
+    <!-- Page title -->
     <div class="page-header">
       <div class="header-left">
         <h1 class="page-title">
           <el-icon><Setting /></el-icon>
-          配置管理
+          Configuration management
         </h1>
         <p class="page-description">
-          管理系统配置、大模型、数据源等设置
+          Manage system configuration, large models, data sources and other settings
         </p>
       </div>
       <div class="header-right">
         <el-button v-if="!isJdyunMode()" type="success" @click="handleReloadConfig" :loading="reloadLoading">
           <el-icon><Refresh /></el-icon>
-          重载配置
+          Overload configuration
         </el-button>
       </div>
     </div>
 
     <el-row :gutter="24">
-      <!-- 左侧：配置菜单 -->
+      <!-- Left: Configuration menu -->
       <el-col :span="4">
         <el-card class="config-menu" shadow="never">
           <el-menu
@@ -28,247 +28,247 @@
             @select="handleMenuSelect"
             class="config-nav"
           >
-            <!-- 京东云模式：只显示数据源配置 -->
+            <!-- JD Cloud mode: only display data source configuration -->
             <template v-if="isJdyunMode()">
               <el-menu-item index="datasource">
                 <el-icon><DataBoard /></el-icon>
-                <span>数据源配置</span>
+                <span>Data source configuration</span>
               </el-menu-item>
             </template>
-            <!-- 非京东云模式：显示全部菜单 -->
+            <!-- Non-JD Cloud mode: Show all menus -->
             <template v-else>
               <el-menu-item index="providers">
                 <el-icon><OfficeBuilding /></el-icon>
-                <span>厂家管理</span>
+                <span>Factory management</span>
               </el-menu-item>
               <el-menu-item index="model-catalog">
                 <el-icon><Collection /></el-icon>
-                <span>模型目录</span>
+                <span>Model catalog</span>
               </el-menu-item>
               <el-menu-item index="llm">
                 <el-icon><Cpu /></el-icon>
-                <span>大模型配置</span>
+                <span>Large model configuration</span>
               </el-menu-item>
               <el-menu-item index="datasource">
                 <el-icon><DataBoard /></el-icon>
-                <span>数据源配置</span>
+                <span>Data source configuration</span>
               </el-menu-item>
               <el-menu-item index="database">
                 <el-icon><Coin /></el-icon>
-                <span>数据库配置</span>
+                <span>Database configuration</span>
               </el-menu-item>
               <el-menu-item index="system">
                 <el-icon><Tools /></el-icon>
-                <span>系统设置</span>
+                <span>System settings</span>
               </el-menu-item>
               <el-menu-item index="gateway">
                 <el-icon><Connection /></el-icon>
-                <span>Gateway 配置</span>
+                <span>Gateway Configuration</span>
               </el-menu-item>
               <el-menu-item index="validation">
                 <el-icon><CircleCheck /></el-icon>
-                <span>配置验证</span>
+                <span>Configuration verification</span>
               </el-menu-item>
-              <!-- 隐藏的菜单项 -->
+              <!-- hidden menu items -->
               <!-- <el-menu-item index="api-keys">
                 <el-icon><Key /></el-icon>
-                <span>API密钥状态</span>
+                <span>API Key status</span>
               </el-menu-item> -->
               <!-- <el-menu-item index="import-export">
                 <el-icon><Download /></el-icon>
-                <span>导入导出</span>
+                <span>Import and export</span>
               </el-menu-item> -->
             </template>
           </el-menu>
         </el-card>
       </el-col>
 
-      <!-- 右侧：配置内容 -->
+      <!-- Right: Configuration content -->
       <el-col :span="20">
-        <!-- Gateway 配置（京东云模式下隐藏） -->
+        <!-- Gateway Configuration (hidden in JD Cloud mode) -->
         <el-card v-if="!isJdyunMode()" v-show="activeTab === 'gateway'" class="config-content" shadow="never">
           <template #header>
             <div class="card-header">
-              <h3>Gateway IM 平台配置</h3>
+              <h3>Gateway IM Platform configuration</h3>
             </div>
           </template>
 
           <div v-loading="gatewayLoading">
             <el-alert
-              title="说明"
+              title="Description"
               type="info"
               :closable="false"
               show-icon
               style="margin-bottom: 20px"
             >
-              配置 IM 平台（QQ Bot / 飞书 / 钉钉）的接入凭据。配置保存后适配器将自动热重载，无需重启服务。
+              Configure access credentials for the IM platform (QQ Bot/Feishu/DingTalk). After the configuration is saved, the adapter will automatically hot-reload without restarting the service.
             </el-alert>
 
-            <!-- QQ Bot 配置 -->
+            <!-- QQ Bot Configuration -->
             <h4 style="margin-bottom: 16px;">QQ Bot</h4>
             <el-form :model="gatewayQQConfig" label-width="140px" style="max-width: 600px">
               <el-form-item label="AppID" required>
-                <el-input v-model="gatewayQQConfig.app_id" placeholder="在 QQ 机器人开发设置页获取" />
+                <el-input v-model="gatewayQQConfig.app_id" placeholder="Get it on the QQ robot development settings page" />
               </el-form-item>
               <el-form-item label="AppSecret" required>
                 <el-input
                   v-model="gatewayQQConfig.app_secret"
-                  placeholder="在 QQ 机器人开发设置页获取"
+                  placeholder="Get it on the QQ robot development settings page"
                   show-password
                 />
               </el-form-item>
-              <el-form-item label="连接模式" required>
+              <el-form-item label="connection mode" required>
                 <el-radio-group v-model="gatewayQQConfig.connection_mode">
-                  <el-radio value="websocket">WebSocket（推荐）</el-radio>
+                  <el-radio value="websocket">WebSocket (Recommended)</el-radio>
                   <el-radio value="webhook">Webhook</el-radio>
                 </el-radio-group>
                 <div class="form-tip">
                   <template v-if="gatewayQQConfig.connection_mode === 'websocket'">
-                    主动连接 QQ 网关接收消息，<strong>无需公网 IP</strong>，适合本地开发和内网部署
+                    Actively connect to QQ gateway to receive messages,<strong>No public network required IP</strong>, Suitable for local development and intranet deployment
                   </template>
                   <template v-else>
-                    QQ 平台推送消息到你的服务器，<strong>需要公网可达的回调地址</strong>
+                    QQ The platform pushes messages to your server,<strong>A callback address that is reachable by the public network is required.</strong>
                   </template>
                 </div>
               </el-form-item>
-              <el-form-item v-if="gatewayQQConfig.connection_mode === 'webhook'" label="Bot Secret（签名密钥）">
+              <el-form-item v-if="gatewayQQConfig.connection_mode === 'webhook'" label="Bot Secret (signing key)">
                 <el-input
                   v-model="gatewayQQConfig.bot_secret"
-                  placeholder="用于 Webhook 签名验证（Ed25519），可选"
+                  placeholder="For webhook signature verification (Ed25519), optional"
                   show-password
                 />
-                <div class="form-tip">用于 Webhook 回调地址验证，不填则跳过签名校验</div>
+                <div class="form-tip">Used for Webhook callback address verification. If not filled in, signature verification will be skipped.</div>
               </el-form-item>
-              <el-form-item label="启用">
+              <el-form-item label="enable">
                 <el-switch v-model="gatewayQQConfig.enabled" />
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" @click="handleSaveGatewayConfig('qq')" :loading="gatewaySaving">
-                  保存配置
+                  Save configuration
                 </el-button>
                 <el-button
                   @click="handleTestGatewayConnection('qq')"
                   :loading="gatewayTesting"
                   :disabled="!gatewayQQConfig.configured"
                 >
-                  测试连接
+                  test connection
                 </el-button>
-                <el-tag v-if="gatewayQQConfig.configured" type="success" style="margin-left: 12px">已配置</el-tag>
-                <el-tag v-else type="info" style="margin-left: 12px">未配置</el-tag>
+                <el-tag v-if="gatewayQQConfig.configured" type="success" style="margin-left: 12px">configured</el-tag>
+                <el-tag v-else type="info" style="margin-left: 12px">Not configured</el-tag>
               </el-form-item>
             </el-form>
 
             <el-divider />
 
-            <!-- 飞书 Bot 配置 -->
-            <h4 style="margin-bottom: 16px;">飞书 Bot</h4>
+            <!-- Feishu Bot configuration -->
+            <h4 style="margin-bottom: 16px;">Feishu Bot</h4>
             <el-form :model="gatewayFeishuConfig" label-width="160px" style="max-width: 600px">
               <el-form-item label="App ID" required>
-                <el-input v-model="gatewayFeishuConfig.app_id" placeholder="飞书开放平台应用的 App ID" />
+                <el-input v-model="gatewayFeishuConfig.app_id" placeholder="Feishu open platform application App ID" />
               </el-form-item>
               <el-form-item label="App Secret" required>
                 <el-input
                   v-model="gatewayFeishuConfig.app_secret"
-                  placeholder="飞书开放平台应用的 App Secret"
+                  placeholder="Feishu open platform application App Secret"
                   show-password
                 />
               </el-form-item>
               <el-form-item label="Verification Token">
-                <el-input v-model="gatewayFeishuConfig.verification_token" placeholder="事件订阅验证 Token（可选）" />
-                <div class="form-tip">飞书开放平台 → 应用 → 事件订阅 → Verification Token</div>
+                <el-input v-model="gatewayFeishuConfig.verification_token" placeholder="Event subscription verification token (optional)" />
+                <div class="form-tip">Feishu open platform → Application → event subscription → Verification Token</div>
               </el-form-item>
               <el-form-item label="Encrypt Key">
                 <el-input
                   v-model="gatewayFeishuConfig.encrypt_key"
-                  placeholder="事件加密密钥（可选）"
+                  placeholder="Event encryption key (optional)"
                   show-password
                 />
-                <div class="form-tip">启用后飞书事件推送会加密，需要在飞书后台同时配置</div>
+                <div class="form-tip">When enabled, Feishu event push will be encrypted and needs to be configured in the Feishu backend at the same time.</div>
               </el-form-item>
-              <el-form-item label="启用">
+              <el-form-item label="enable">
                 <el-switch v-model="gatewayFeishuConfig.enabled" />
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" @click="handleSaveGatewayConfig('feishu')" :loading="gatewaySaving">
-                  保存配置
+                  Save configuration
                 </el-button>
                 <el-button
                   @click="handleTestGatewayConnection('feishu')"
                   :loading="gatewayTesting"
                   :disabled="!gatewayFeishuConfig.configured"
                 >
-                  测试连接
+                  test connection
                 </el-button>
-                <el-tag v-if="gatewayFeishuConfig.configured" type="success" style="margin-left: 12px">已配置</el-tag>
-                <el-tag v-else type="info" style="margin-left: 12px">未配置</el-tag>
+                <el-tag v-if="gatewayFeishuConfig.configured" type="success" style="margin-left: 12px">configured</el-tag>
+                <el-tag v-else type="info" style="margin-left: 12px">Not configured</el-tag>
               </el-form-item>
             </el-form>
 
             <el-divider />
 
-            <!-- 钉钉 Bot 配置 -->
-            <h4 style="margin-bottom: 16px;">钉钉 Bot</h4>
+            <!-- DingTalk Bot configuration -->
+            <h4 style="margin-bottom: 16px;">DingTalk Bot</h4>
             <el-form :model="gatewayDingtalkConfig" label-width="160px" style="max-width: 600px">
               <el-form-item label="AppKey" required>
-                <el-input v-model="gatewayDingtalkConfig.app_key" placeholder="钉钉开放平台应用的 AppKey" />
+                <el-input v-model="gatewayDingtalkConfig.app_key" placeholder="DingTalk open platform application AppKey" />
               </el-form-item>
               <el-form-item label="AppSecret" required>
                 <el-input
                   v-model="gatewayDingtalkConfig.app_secret"
-                  placeholder="钉钉开放平台应用的 AppSecret"
+                  placeholder="DingTalk open platform application AppSecret"
                   show-password
                 />
               </el-form-item>
-              <el-form-item label="机器人编码 (Robot Code)">
-                <el-input v-model="gatewayDingtalkConfig.robot_code" placeholder="用于主动发消息（可选）" />
-                <div class="form-tip">钉钉开放平台 → 应用 → 机器人 → 机器人编码，主动发消息时必填</div>
+              <el-form-item label="Robot Coding (Robot Code)">
+                <el-input v-model="gatewayDingtalkConfig.robot_code" placeholder="Used to proactively send messages (optional)" />
+                <div class="form-tip">DingTalk Open Platform → Application → robot → Robot code, required when actively sending messages</div>
               </el-form-item>
-              <el-form-item label="启用">
+              <el-form-item label="enable">
                 <el-switch v-model="gatewayDingtalkConfig.enabled" />
               </el-form-item>
               <el-form-item>
                 <el-button type="primary" @click="handleSaveGatewayConfig('dingtalk')" :loading="gatewaySaving">
-                  保存配置
+                  Save configuration
                 </el-button>
                 <el-button
                   @click="handleTestGatewayConnection('dingtalk')"
                   :loading="gatewayTesting"
                   :disabled="!gatewayDingtalkConfig.configured"
                 >
-                  测试连接
+                  test connection
                 </el-button>
-                <el-tag v-if="gatewayDingtalkConfig.configured" type="success" style="margin-left: 12px">已配置</el-tag>
-                <el-tag v-else type="info" style="margin-left: 12px">未配置</el-tag>
+                <el-tag v-if="gatewayDingtalkConfig.configured" type="success" style="margin-left: 12px">configured</el-tag>
+                <el-tag v-else type="info" style="margin-left: 12px">Not configured</el-tag>
               </el-form-item>
             </el-form>
           </div>
         </el-card>
 
-        <!-- 配置验证（京东云模式下隐藏） -->
+        <!-- Configuration verification (hidden in JD Cloud mode) -->
         <div v-if="!isJdyunMode()" v-show="activeTab === 'validation'">
           <ConfigValidator />
         </div>
 
-        <!-- 模型目录管理（京东云模式下隐藏） -->
+        <!-- Model directory management (hidden in JD Cloud mode) -->
         <div v-if="!isJdyunMode()" v-show="activeTab === 'model-catalog'">
           <ModelCatalogManagement />
         </div>
 
-        <!-- 厂家管理（京东云模式下隐藏） -->
+        <!-- Manufacturer management (hidden in JD Cloud mode) -->
         <el-card v-if="!isJdyunMode()" v-show="activeTab === 'providers'" class="config-content" shadow="never">
           <template #header>
             <div class="card-header">
-              <h3>大模型厂家管理</h3>
+              <h3>Large model manufacturer management</h3>
               <el-button type="primary" @click="showAddProviderDialog">
                 <el-icon><Plus /></el-icon>
-                添加厂家
+                Add manufacturer
               </el-button>
             </div>
           </template>
 
           <div v-loading="providersLoading">
             <el-table :data="sortedProviders" style="width: 100%">
-              <el-table-column label="厂家信息" width="200">
+              <el-table-column label="Manufacturer information" width="200">
                 <template #default="{ row }">
                   <div class="provider-info">
                     <div class="provider-name">{{ row.display_name }}</div>
@@ -276,24 +276,24 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column label="API密钥" width="120">
+              <el-table-column label="API key" width="120">
                 <template #default="{ row }">
                   <div class="api-key-status">
                     <el-tag
                       :type="row.extra_config?.has_api_key ? 'success' : 'danger'"
                       size="small"
                     >
-                      {{ row.extra_config?.has_api_key ? '已配置' : '未配置' }}
+                      {{ row.extra_config?.has_api_key ? 'configured' : 'Not configured' }}
                     </el-tag>
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="description" label="描述" />
-              <el-table-column label="状态" width="120">
+              <el-table-column prop="description" label="Description" />
+              <el-table-column label="Status" width="120">
                 <template #default="{ row }">
                   <div class="status-column">
                     <el-tag :type="row.is_active ? 'success' : 'danger'" size="small">
-                      {{ row.is_active ? '启用' : '禁用' }}
+                      {{ row.is_active ? 'enable' : 'Disable' }}
                     </el-tag>
                     <el-tag
                       v-if="row.extra_config?.has_api_key"
@@ -306,7 +306,7 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column label="支持功能" width="200">
+              <el-table-column label="Support functions" width="200">
                 <template #default="{ row }">
                   <div class="features">
                     <el-tag
@@ -320,13 +320,13 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="280" fixed="right">
+              <el-table-column label="Operation" width="280" fixed="right">
                 <template #default="{ row }">
                   <el-button
                     size="small"
                     @click.stop="editProvider(row)"
                   >
-                    编辑
+                    Edit
                   </el-button>
                   <el-button
                     v-if="row.extra_config?.has_api_key"
@@ -335,21 +335,21 @@
                     @click.stop="testProviderAPI(row)"
                     :loading="testingProviders[row.id]"
                   >
-                    测试
+                    test
                   </el-button>
                   <el-button
                     size="small"
                     :type="row.is_active ? 'warning' : 'success'"
                     @click.stop="toggleProvider(row)"
                   >
-                    {{ row.is_active ? '禁用' : '启用' }}
+                    {{ row.is_active ? 'Disable' : 'enable' }}
                   </el-button>
                   <el-button
                     size="small"
                     type="danger"
                     @click.stop="deleteProvider(row)"
                   >
-                    删除
+                    Delete
                   </el-button>
                 </template>
               </el-table-column>
@@ -357,31 +357,31 @@
           </div>
         </el-card>
 
-        <!-- 大模型配置（京东云模式下隐藏） -->
+        <!-- Large model configuration (hidden in JD Cloud mode) -->
         <el-card v-if="!isJdyunMode()" v-show="activeTab === 'llm'" class="config-content" shadow="never">
           <template #header>
             <div class="card-header">
-              <h3>大模型配置</h3>
+              <h3>Large model configuration</h3>
               <div>
                 <el-button type="success" plain @click="handleBatchImport" :loading="batchImporting">
                   <el-icon><Download /></el-icon>
-                  一键导入
+                  One-click import
                 </el-button>
                 <el-button type="primary" @click="showAddLLMDialog">
                   <el-icon><Plus /></el-icon>
-                  添加模型
+                  Add model
                 </el-button>
               </div>
             </div>
           </template>
 
           <div v-loading="llmLoading">
-            <!-- 按厂家分组的卡片式布局 -->
+            <!-- Card layout grouped by manufacturer -->
             <div v-if="llmConfigGroups.length === 0" class="empty-state">
-              <el-empty description="暂无大模型配置">
+              <el-empty description="No large model configuration yet">
                 <el-button type="primary" @click="showAddLLMDialog">
                   <el-icon><Plus /></el-icon>
-                  添加第一个模型
+                  Add first model
                 </el-button>
               </el-empty>
             </div>
@@ -392,20 +392,20 @@
                 :key="group.provider"
                 class="provider-group"
               >
-                <!-- 厂家头部 -->
+                <!-- Manufacturer head -->
                 <div class="provider-header">
                   <div class="provider-info">
                     <el-tag :type="getProviderTagType(group.provider)" size="large" class="provider-tag">
                       <el-icon><OfficeBuilding /></el-icon>
                       {{ group.display_name }}
                     </el-tag>
-                    <span class="model-count">{{ group.models.length }} 个模型</span>
+                    <span class="model-count">{{ group.models.length }} models</span>
                     <el-tag
                       :type="group.is_active ? 'success' : 'danger'"
                       size="small"
                       class="status-tag"
                     >
-                      {{ group.is_active ? '已启用' : '已禁用' }}
+                      {{ group.is_active ? 'Enabled' : 'Disabled' }}
                     </el-tag>
                   </div>
                   <div class="provider-actions">
@@ -415,22 +415,22 @@
                       @click="addModelToProvider(group)"
                     >
                       <el-icon><Plus /></el-icon>
-                      添加模型
+                      Add model
                     </el-button>
                     <el-button
                       size="small"
                       :type="group.is_active ? 'warning' : 'success'"
                       @click="toggleProviderStatus(group)"
                     >
-                      {{ group.is_active ? '禁用' : '启用' }}
+                      {{ group.is_active ? 'Disable' : 'enable' }}
                     </el-button>
                   </div>
                 </div>
 
-                <!-- 模型列表 - 表格式布局 -->
+                <!-- Model List - Tabular Layout -->
                 <el-table :data="group.models" style="width: 100%" stripe>
-                  <!-- 模型名称 -->
-                  <el-table-column label="模型名称" width="200">
+                  <!-- Model name -->
+                  <el-table-column label="Model name" width="200">
                     <template #default="{ row }">
                       <div class="model-name-cell">
                         <div class="model-display-name">
@@ -441,48 +441,48 @@
                     </template>
                   </el-table-column>
 
-                  <!-- 状态 -->
-                  <el-table-column label="状态" width="80" align="center">
+                  <!-- Status -->
+                  <el-table-column label="Status" width="80" align="center">
                     <template #default="{ row }">
                       <el-tag :type="row.enabled ? 'success' : 'danger'" size="small">
-                        {{ row.enabled ? '启用' : '禁用' }}
+                        {{ row.enabled ? 'enable' : 'Disable' }}
                       </el-tag>
                     </template>
                   </el-table-column>
 
-                  <!-- 基础配置 -->
-                  <el-table-column label="基础配置" width="200">
+                  <!-- Basic configuration -->
+                  <el-table-column label="Basic configuration" width="200">
                     <template #default="{ row }">
                       <div class="config-cell">
                         <div>Token: {{ row.max_tokens }}</div>
-                        <div>温度: {{ row.temperature }} | 超时: {{ row.timeout }}s</div>
+                        <div>temperature: {{ row.temperature }} | timeout: {{ row.timeout }}s</div>
                       </div>
                     </template>
                   </el-table-column>
 
-                  <!-- 定价 -->
-                  <el-table-column label="定价" width="180">
+                  <!-- Pricing -->
+                  <el-table-column label="Pricing" width="180">
                     <template #default="{ row }">
                       <div v-if="row.input_price_per_1k || row.output_price_per_1k" class="pricing-cell">
-                        <div>输入: {{ formatPrice(row.input_price_per_1k) }} {{ row.currency || 'CNY' }}/1K</div>
-                        <div>输出: {{ formatPrice(row.output_price_per_1k) }} {{ row.currency || 'CNY' }}/1K</div>
+                        <div>input: {{ formatPrice(row.input_price_per_1k) }} {{ row.currency || 'CNY' }}/1K</div>
+                        <div>output: {{ formatPrice(row.output_price_per_1k) }} {{ row.currency || 'CNY' }}/1K</div>
                       </div>
                       <span v-else class="text-muted">-</span>
                     </template>
                   </el-table-column>
 
-                  <!-- 模型能力 -->
-                  <el-table-column label="模型能力" width="280">
+                  <!-- Model capabilities -->
+                  <el-table-column label="Model capabilities" width="280">
                     <template #default="{ row }">
                       <div class="capability-cell">
                         <div v-if="row.capability_level" class="capability-row-item">
-                          <span class="label">等级:</span>
+                          <span class="label">Level:</span>
                           <el-tag :type="getCapabilityLevelType(row.capability_level)" size="small">
                             {{ getCapabilityLevelText(row.capability_level) }}
                           </el-tag>
                         </div>
                         <div v-if="row.suitable_roles && row.suitable_roles.length > 0" class="capability-row-item">
-                          <span class="label">角色:</span>
+                          <span class="label">role:</span>
                           <el-tag
                             v-for="role in row.suitable_roles"
                             :key="role"
@@ -494,7 +494,7 @@
                           </el-tag>
                         </div>
                         <div v-if="row.recommended_depths && row.recommended_depths.length > 0" class="capability-row-item">
-                          <span class="label">深度:</span>
+                          <span class="label">Depth:</span>
                           <el-tag
                             v-for="depth in row.recommended_depths"
                             :key="depth"
@@ -509,32 +509,32 @@
                     </template>
                   </el-table-column>
 
-                  <!-- 操作 -->
-                  <el-table-column label="操作" width="260" fixed="right">
+                  <!-- Operation -->
+                  <el-table-column label="Operation" width="260" fixed="right">
                     <template #default="{ row }">
                       <el-button size="small" @click="editLLMConfig(row)">
-                        编辑
+                        Edit
                       </el-button>
                       <el-button
                         size="small"
                         type="primary"
                         @click="testLLMConfig(row)"
                       >
-                        测试
+                        test
                       </el-button>
                       <el-button
                         size="small"
                         :type="row.enabled ? 'warning' : 'success'"
                         @click="toggleLLMConfig(row)"
                       >
-                        {{ row.enabled ? '禁用' : '启用' }}
+                        {{ row.enabled ? 'Disable' : 'enable' }}
                       </el-button>
                       <el-button
                         size="small"
                         type="danger"
                         @click="deleteLLMConfig(row)"
                       >
-                        删除
+                        Delete
                       </el-button>
                     </template>
                   </el-table-column>
@@ -544,27 +544,27 @@
           </div>
         </el-card>
 
-        <!-- 数据源配置 -->
+        <!-- Data source configuration -->
         <el-card v-show="activeTab === 'datasource'" class="config-content" shadow="never">
           <template #header>
             <div class="card-header">
-              <h3>数据源配置</h3>
-              <!-- 京东云模式下隐藏添加和管理分类按钮 -->
+              <h3>Data source configuration</h3>
+              <!-- Hide adding and managing category buttons in JD Cloud mode -->
               <div class="header-actions">
                 <el-button v-if="!isJdyunMode()" @click="showMarketCategoryManagement">
                   <el-icon><Setting /></el-icon>
-                  管理分类
+                  Management classification
                 </el-button>
                 <el-button type="primary" @click="showAddDataSourceDialog">
                   <el-icon><Plus /></el-icon>
-                  添加数据源
+                  Add data source
                 </el-button>
               </div>
             </div>
           </template>
 
           <div v-loading="dataSourceLoading" class="datasource-content">
-            <!-- 数据源分组展示 -->
+            <!-- Data source group display -->
             <div v-if="dataSourceGroups.length > 0" class="datasource-groups">
               <SortableDataSourceList
                 v-for="group in dataSourceGroups"
@@ -581,13 +581,13 @@
               />
             </div>
 
-            <!-- 未分组的数据源 -->
+            <!-- Ungrouped data source -->
             <div v-if="ungroupedDataSources.length > 0" class="ungrouped-section">
               <el-card shadow="never">
                 <template #header>
                   <div class="section-header">
-                    <h4>未分组数据源</h4>
-                    <el-tag type="warning" size="small">{{ ungroupedDataSources.length }} 个</el-tag>
+                    <h4>Ungrouped data source</h4>
+                    <el-tag type="warning" size="small">{{ ungroupedDataSources.length }} a</el-tag>
                   </div>
                 </template>
 
@@ -600,22 +600,22 @@
                     <div class="item-info">
                       <span class="item-name">{{ dataSource.display_name || dataSource.name }}</span>
                       <el-tag :type="dataSource.enabled ? 'success' : 'danger'" size="small">
-                        {{ dataSource.enabled ? '启用' : '禁用' }}
+                        {{ dataSource.enabled ? 'enable' : 'Disable' }}
                       </el-tag>
                       <span class="item-type">{{ dataSource.type }}</span>
                     </div>
                     <div class="item-actions">
                       <el-button size="small" @click="editDataSourceConfig(dataSource)">
-                        编辑
+                        Edit
                       </el-button>
                       <el-button size="small" @click="showDataSourceGroupingDialog(dataSource.name)">
-                        分组
+                        Group
                       </el-button>
                       <el-button size="small" type="primary" @click="testDataSource(dataSource)">
-                        测试
+                        test
                       </el-button>
                       <el-button size="small" type="danger" @click="deleteDataSourceConfig(dataSource)">
-                        删除
+                        Delete
                       </el-button>
                     </div>
                   </div>
@@ -623,44 +623,44 @@
               </el-card>
             </div>
 
-            <!-- 空状态 -->
+            <!-- Empty state -->
             <div v-if="dataSourceConfigs.length === 0" class="empty-state">
-              <el-empty description="暂无数据源配置">
+              <el-empty description="No data source configuration yet">
                 <el-button type="primary" @click="showAddDataSourceDialog">
-                  添加第一个数据源
+                  Add first data source
                 </el-button>
               </el-empty>
             </div>
           </div>
         </el-card>
 
-        <!-- 数据库配置（京东云模式下隐藏） -->
+        <!-- Database configuration (hidden in JD Cloud mode) -->
         <el-card v-if="!isJdyunMode()" v-show="activeTab === 'database'" class="config-content" shadow="never">
           <template #header>
             <div class="card-header">
-              <h3>数据库配置</h3>
-              <el-text type="info" size="small">系统核心数据库配置，仅支持编辑和测试</el-text>
+              <h3>Database configuration</h3>
+              <el-text type="info" size="small">System core database configuration, only supports editing and testing</el-text>
             </div>
           </template>
 
           <div v-loading="databaseLoading">
             <el-table :data="databaseConfigs" style="width: 100%">
-              <el-table-column prop="name" label="名称" width="150" />
-              <el-table-column prop="type" label="类型" width="120" />
-              <el-table-column prop="host" label="主机" width="150" />
-              <el-table-column prop="port" label="端口" width="100" />
-              <el-table-column label="状态" width="100">
+              <el-table-column prop="name" label="Name" width="150" />
+              <el-table-column prop="type" label="Type" width="120" />
+              <el-table-column prop="host" label="Host" width="150" />
+              <el-table-column prop="port" label="port" width="100" />
+              <el-table-column label="Status" width="100">
                 <template #default="{ row }">
                   <el-tag :type="row.enabled ? 'success' : 'danger'">
-                    {{ row.enabled ? '启用' : '禁用' }}
+                    {{ row.enabled ? 'enable' : 'Disable' }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="200">
+              <el-table-column label="Operation" width="200">
                 <template #default="{ row }">
-                  <el-button size="small" @click="editDatabaseConfig(row)">编辑</el-button>
+                  <el-button size="small" @click="editDatabaseConfig(row)">Edit</el-button>
                   <el-button size="small" type="primary" @click="testDatabase(row)">
-                    测试连接
+                    test connection
                   </el-button>
                 </template>
               </el-table-column>
@@ -668,27 +668,27 @@
           </div>
         </el-card>
 
-        <!-- 系统设置（京东云模式下隐藏） -->
+        <!-- System settings (hidden in JD Cloud mode) -->
         <el-card v-if="!isJdyunMode()" v-show="activeTab === 'system'" class="config-content" shadow="never">
           <template #header>
-            <h3>系统设置</h3>
+            <h3>System settings</h3>
           </template>
 
           <el-alert type="info" show-icon :closable="false"
-            title="敏感/ENV来源项已锁定"
-            description="来自环境变量或标记为敏感的设置将以只读方式展示。保存时仅提交可编辑项。"
+            title="Sensitive/ENV source items are locked"
+            description="Settings from environment variables or marked as sensitive will be displayed read-only. Only editable items are submitted when saving."
             style="margin-bottom: 12px;"
           />
 
           <el-form :model="systemSettings" label-width="150px" v-loading="systemLoading">
-            <!-- 基础设置 -->
-            <el-divider content-position="left">基础设置</el-divider>
+            <!-- Basic settings -->
+            <el-divider content-position="left">Basic settings</el-divider>
 
-            <el-form-item label="快速分析模型">
+            <el-form-item label="Quickly analyze models">
               <el-select
                 v-model="systemSettings.quick_analysis_model_config_id"
                 :disabled="!isEditable('quick_analysis_model')"
-                placeholder="选择快速分析模型"
+                placeholder="Choose a quick analysis model"
                 filterable
               >
                 <el-option-group
@@ -709,14 +709,14 @@
                   </el-option>
                 </el-option-group>
               </el-select>
-              <div class="setting-description">用于市场分析、新闻分析、基本面分析、研究员等，响应速度快。可从所有已启用供应商的模型中选择</div>
+              <div class="setting-description">Used for market analysis, news analysis, fundamental analysis, researchers, etc., with fast response speed. Can choose from all vendor-enabled models</div>
             </el-form-item>
 
-            <el-form-item label="深度决策模型">
+            <el-form-item label="Deep decision-making model">
               <el-select
                 v-model="systemSettings.deep_analysis_model_config_id"
                 :disabled="!isEditable('deep_analysis_model')"
-                placeholder="选择深度决策模型"
+                placeholder="Choose a deep decision-making model"
                 filterable
               >
                 <el-option-group
@@ -737,14 +737,14 @@
                   </el-option>
                 </el-option-group>
               </el-select>
-              <div class="setting-description">用于研究整合员综合决策、风险评估师最终评估，推理能力强。可从所有已启用供应商的模型中选择</div>
+              <div class="setting-description">Used for comprehensive decision-making by research integrators and final assessment by risk assessors, with strong reasoning ability. Can choose from all vendor-enabled models</div>
             </el-form-item>
 
-            <el-form-item label="深度推理模型">
+            <el-form-item label="Deep inference model">
               <el-select
                 v-model="systemSettings.deep_reasoning_model_config_id"
                 :disabled="!isEditable('deep_reasoning_model')"
-                placeholder="可选，用于强推理场景"
+                placeholder="Optional, used in strong inference scenarios"
                 filterable
                 clearable
               >
@@ -766,14 +766,14 @@
                   </el-option>
                 </el-option-group>
               </el-select>
-              <div class="setting-description">用于智能助手规划、策略生成等强推理场景。未配置时使用深度决策模型，可从所有已启用供应商的模型中选择</div>
+              <div class="setting-description">Used for strong reasoning scenarios such as intelligent assistant planning and strategy generation. Uses deep decision models when not configured, selectable from all vendor-enabled models</div>
             </el-form-item>
 
-            <el-form-item label="编程模型">
+            <el-form-item label="programming model">
               <el-select
                 v-model="systemSettings.coding_model_config_id"
                 :disabled="!isEditable('coding_model')"
-                placeholder="可选，用于策略 DSL 生成"
+                placeholder="Optional, used for policy DSL generation"
                 filterable
                 clearable
               >
@@ -795,15 +795,15 @@
                   </el-option>
                 </el-option-group>
               </el-select>
-              <div class="setting-description">用于策略 DSL 生成，擅长 JSON 输出。未配置时使用深度推理/深度决策模型，可从所有已启用供应商的模型中选择</div>
+              <div class="setting-description">Used for policy DSL generation, specializing in JSON output. Uses deep inference/deep decision-making models when not configured, selectable from all vendor-enabled models</div>
             </el-form-item>
 
-            <!-- 🔥 新增：默认 Embedding 模型配置 -->
-            <el-form-item label="默认 Embedding 模型">
+            <!-- 🔥 New: Default Embedding model configuration -->
+            <el-form-item label="Default Embedding model">
               <el-select
                 v-model="systemSettings.default_embedding_model"
                 :disabled="!isEditable('default_embedding_model')"
-                placeholder="选择默认 Embedding 模型"
+                placeholder="Select the default Embedding model"
                 filterable
                 clearable
               >
@@ -826,8 +826,8 @@
                 </el-option-group>
               </el-select>
               <div class="setting-description">
-                用于文本向量化和记忆功能，从所有支持 embedding 的厂商中选择（格式：厂商:模型名，如：dashscope:text-embedding-v3）
-                <!-- 向量迁移功能已废弃：向量存储已从 Qdrant 迁移到 MongoDB，不再需要 Qdrant 迁移 -->
+                For text vectorization and memoization functions, choose from all vendors that support embedding (format: vendor:Model name, such as:dashscope:text-embedding-v3) 
+                <!-- Vector migration feature deprecated: Vector storage has been migrated from Qdrant to MongoDB, Qdrant migration is no longer required -->
                 <!--
                 <el-button
                   type="warning"
@@ -835,193 +835,193 @@
                   @click="openMigrationDialog"
                   style="margin-left: 12px;"
                 >
-                  迁移向量数据
+                  Migrate vector data
                 </el-button>
                 -->
               </div>
             </el-form-item>
 
-            <el-form-item label="启用成本跟踪">
+            <el-form-item label="Enable cost tracking">
               <el-switch v-model="systemSettings.enable_cost_tracking" :disabled="!isEditable('enable_cost_tracking')" />
             </el-form-item>
 
-            <el-form-item label="成本警告阈值">
+            <el-form-item label="Cost warning threshold">
               <el-input-number v-model="systemSettings.cost_alert_threshold" :min="0" :step="10" :disabled="!isEditable('cost_alert_threshold')" />
-              <span class="setting-description">元</span>
+              <span class="setting-description">Yuan</span>
             </el-form-item>
 
-            <el-form-item label="货币偏好">
+            <el-form-item label="currency preference">
               <el-select v-model="systemSettings.currency_preference" :disabled="!isEditable('currency_preference')">
-                <el-option label="人民币 (CNY)" value="CNY" />
-                <el-option label="美元 (USD)" value="USD" />
-                <el-option label="欧元 (EUR)" value="EUR" />
+                <el-option label="RMB (CNY)" value="CNY" />
+                <el-option label="US dollars (USD)" value="USD" />
+                <el-option label="Euro (EUR)" value="EUR" />
               </el-select>
             </el-form-item>
 
-            <el-form-item label="系统时区">
+            <el-form-item label="System time zone">
               <el-select v-model="systemSettings.app_timezone" :disabled="!isEditable('app_timezone')" filterable>
                 <el-option label="Asia/Shanghai (UTC+8)" value="Asia/Shanghai" />
                 <el-option label="UTC (UTC+0)" value="UTC" />
               </el-select>
-              <div class="setting-description">用于后端存储与展示的统一时区；修改后新写入的时间将按此时区保存与返回。</div>
+              <div class="setting-description">A unified time zone used for back-end storage and display; the newly written time after modification will be saved and returned according to this time zone.</div>
             </el-form-item>
 
 
-            <!-- 性能设置 -->
-            <el-divider content-position="left">性能设置</el-divider>
+            <!-- Performance settings -->
+            <el-divider content-position="left">Performance settings</el-divider>
 
-            <el-form-item label="分析超时时间">
+            <el-form-item label="Analysis timeout">
               <el-input-number v-model="systemSettings.default_analysis_timeout" :min="60" :max="1800" :disabled="!isEditable('default_analysis_timeout')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
-            <el-form-item label="启用缓存">
+            <el-form-item label="Enable caching">
               <el-switch v-model="systemSettings.enable_cache" :disabled="!isEditable('enable_cache')" />
             </el-form-item>
 
-            <el-form-item label="缓存TTL">
+            <el-form-item label="cache TTL">
               <el-input-number v-model="systemSettings.cache_ttl" :min="300" :max="86400" :disabled="!isEditable('cache_ttl')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
-            <!-- 回测 DSL 生成 -->
-            <el-divider content-position="left">回测策略生成</el-divider>
-            <el-form-item label="生成时校验 DSL">
+            <!-- Backtest DSL generation -->
+            <el-divider content-position="left">Backtest strategy generation</el-divider>
+            <el-form-item label="Verify when generating DSL">
               <el-switch v-model="systemSettings.dsl_validate_on_generate" :disabled="!isEditable('dsl_validate_on_generate')" />
-              <span class="setting-description">启用 L2 语义校验，失败时自动让 LLM 修正</span>
+              <span class="setting-description">Enable L2 semantic verification and automatically let LLM correct it when it fails</span>
             </el-form-item>
-            <el-form-item label="执行校验">
+            <el-form-item label="Perform verification">
               <el-switch v-model="systemSettings.dsl_run_execution_check" :disabled="!isEditable('dsl_run_execution_check')" />
-              <span class="setting-description">启用 L3 轻量回测校验（需回测服务已启动）</span>
+              <span class="setting-description">Enable L3 lightweight backtest verification (the backtest service needs to be started)</span>
             </el-form-item>
 
-            <!-- 队列与 Worker -->
-            <el-divider content-position="left">队列与 Worker</el-divider>
+            <!-- Queue vs. Worker -->
+            <el-divider content-position="left">Queue vs. Worker</el-divider>
 
-            <el-form-item label="Worker 心跳间隔">
+            <el-form-item label="Worker heartbeat interval">
               <el-input-number v-model="systemSettings.worker_heartbeat_interval_seconds" :min="1" :step="1" :disabled="!isEditable('worker_heartbeat_interval_seconds')" />
-              <span class="setting-description">秒</span>
-              <el-tooltip effect="dark" content="Worker 心跳上报周期；过小会增加负载，过大可能影响健康检查" placement="top">
+              <span class="setting-description">seconds</span>
+              <el-tooltip effect="dark" content="Worker Heartbeat reporting cycle; if it is too small, it will increase the load; if it is too large, it may affect the health check." placement="top">
                 <i class="el-icon-info" style="margin-left:8px; color:#909399;" />
               </el-tooltip>
             </el-form-item>
 
-            <el-form-item label="队列轮询间隔">
+            <el-form-item label="Queue polling interval">
               <el-input-number v-model="systemSettings.queue_poll_interval_seconds" :min="0.1" :step="0.1" :disabled="!isEditable('queue_poll_interval_seconds')" />
-              <span class="setting-description">秒</span>
-              <el-tooltip effect="dark" content="队列拉取任务的频率；过小增加Redis压力，过大影响任务延迟" placement="top">
+              <span class="setting-description">seconds</span>
+              <el-tooltip effect="dark" content="Frequency of queue pull tasks; too small will increase Redis pressure, too large will affect task delay" placement="top">
                 <i class="el-icon-info" style="margin-left:8px; color:#909399;" />
               </el-tooltip>
             </el-form-item>
 
-            <el-form-item label="队列清理间隔">
+            <el-form-item label="Queue cleaning interval">
               <el-input-number v-model="systemSettings.queue_cleanup_interval_seconds" :min="1" :step="1" :disabled="!isEditable('queue_cleanup_interval_seconds')" />
-              <span class="setting-description">秒</span>
-              <el-tooltip effect="dark" content="清理超时/失败任务的频率；建议≥60秒" placement="top">
+              <span class="setting-description">seconds</span>
+              <el-tooltip effect="dark" content="How often to clean up timed/failed tasks; recommended≥60 seconds" placement="top">
                 <i class="el-icon-info" style="margin-left:8px; color:#909399;" />
               </el-tooltip>
             </el-form-item>
 
-            <!-- SSE 设置 -->
+            <!-- SSE settings -->
             <el-divider content-position="left">SSE</el-divider>
 
-            <el-form-item label="SSE 轮询超时">
+            <el-form-item label="SSE Poll timeout">
               <el-input-number v-model="systemSettings.sse_poll_timeout_seconds" :min="0.1" :step="0.1" :disabled="!isEditable('sse_poll_timeout_seconds')" />
-              <span class="setting-description">秒</span>
-              <el-tooltip effect="dark" content="任务进度SSE每次等待超时时间；过小会产生更多请求" placement="top">
+              <span class="setting-description">seconds</span>
+              <el-tooltip effect="dark" content="Task progress SSE waits for each timeout; too small will generate more requests" placement="top">
                 <i class="el-icon-info" style="margin-left:8px; color:#909399;" />
               </el-tooltip>
             </el-form-item>
 
-            <el-form-item label="SSE 心跳间隔">
+            <el-form-item label="SSE heartbeat interval">
               <el-input-number v-model="systemSettings.sse_heartbeat_interval_seconds" :min="1" :step="1" :disabled="!isEditable('sse_heartbeat_interval_seconds')" />
-              <span class="setting-description">秒</span>
-              <el-tooltip effect="dark" content="SSE维持长连接的心跳事件发送周期" placement="top">
+              <span class="setting-description">seconds</span>
+              <el-tooltip effect="dark" content="SSE Maintain the heartbeat event sending cycle of a long connection" placement="top">
                 <i class="el-icon-info" style="margin-left:8px; color:#909399;" />
               </el-tooltip>
             </el-form-item>
 
-            <!-- TradingAgents（可选） -->
-            <el-divider content-position="left">TradingAgents（可选）</el-divider>
-            <el-form-item label="使用 App 缓存优先">
+            <!-- TradingAgents (optional) -->
+            <el-divider content-position="left">TradingAgents (optional)</el-divider>
+            <el-form-item label="Use app cache first">
               <el-switch v-model="systemSettings.ta_use_app_cache" :disabled="!isEditable('ta_use_app_cache')" />
-              <div class="setting-description">优先使用 App 缓存（stock_basic_info / market_quotes），未命中自动回退直连数据源</div>
+              <div class="setting-description">Prioritize the use of App cache (stock_basic_info / market_quotes), and automatically fall back to the direct data source if it is not hit.</div>
             </el-form-item>
 
 
-            <el-form-item label="港股最小请求间隔">
+            <el-form-item label="Minimum request interval for Hong Kong stocks">
               <el-input-number v-model="systemSettings.ta_hk_min_request_interval_seconds" :min="0.1" :step="0.1" :disabled="!isEditable('ta_hk_min_request_interval_seconds')" />
-              <span class="setting-description">秒</span>
-              <el-tooltip effect="dark" content="港股数据请求的最小间隔，用于节流" placement="top">
+              <span class="setting-description">seconds</span>
+              <el-tooltip effect="dark" content="The minimum interval for Hong Kong stock data requests, used for throttling" placement="top">
                 <i class="el-icon-info" style="margin-left:8px; color:#909399;" />
               </el-tooltip>
             </el-form-item>
 
-            <el-form-item label="港股请求超时">
+            <el-form-item label="Hong Kong stock request timed out">
               <el-input-number v-model="systemSettings.ta_hk_timeout_seconds" :min="1" :step="1" :disabled="!isEditable('ta_hk_timeout_seconds')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
-            <el-form-item label="港股最大重试">
+            <el-form-item label="The biggest retest of Hong Kong stocks">
               <el-input-number v-model="systemSettings.ta_hk_max_retries" :min="0" :step="1" :disabled="!isEditable('ta_hk_max_retries')" />
             </el-form-item>
 
-            <el-form-item label="港股限速等待">
+            <el-form-item label="Hong Kong stocks speed limit waiting">
               <el-input-number v-model="systemSettings.ta_hk_rate_limit_wait_seconds" :min="1" :step="1" :disabled="!isEditable('ta_hk_rate_limit_wait_seconds')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
-            <el-form-item label="港股缓存TTL">
+            <el-form-item label="Hong Kong stock cache TTL">
               <el-input-number v-model="systemSettings.ta_hk_cache_ttl_seconds" :min="10" :step="10" :disabled="!isEditable('ta_hk_cache_ttl_seconds')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
-            <el-form-item label="A股最小调用间隔">
+            <el-form-item label="A Minimum stock call interval">
               <el-input-number v-model="systemSettings.ta_china_min_api_interval_seconds" :min="0.1" :step="0.1" :disabled="!isEditable('ta_china_min_api_interval_seconds')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
-            <el-form-item label="美股最小调用间隔">
+            <el-form-item label="Minimum call interval for U.S. stocks">
               <el-input-number v-model="systemSettings.ta_us_min_api_interval_seconds" :min="0.1" :step="0.1" :disabled="!isEditable('ta_us_min_api_interval_seconds')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
-            <el-form-item label="GoogleNews最小延时">
+            <el-form-item label="GoogleNews Minimum delay">
               <el-input-number v-model="systemSettings.ta_google_news_sleep_min_seconds" :min="0.1" :step="0.1" :disabled="!isEditable('ta_google_news_sleep_min_seconds')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
-            <el-form-item label="GoogleNews最大延时">
+            <el-form-item label="GoogleNews maximum delay">
               <el-input-number v-model="systemSettings.ta_google_news_sleep_max_seconds" :min="0.1" :step="0.1" :disabled="!isEditable('ta_google_news_sleep_max_seconds')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
 
-            <el-form-item label="任务流最大空闲">
+            <el-form-item label="Task flow maximum idle">
               <el-input-number v-model="systemSettings.sse_task_max_idle_seconds" :min="10" :step="10" :disabled="!isEditable('sse_task_max_idle_seconds')" />
-              <span class="setting-description">秒</span>
+              <span class="setting-description">seconds</span>
             </el-form-item>
 
-            <el-form-item label="批次流轮询间隔">
+            <el-form-item label="Batch stream polling interval">
               <el-input-number v-model="systemSettings.sse_batch_poll_interval_seconds" :min="0.5" :step="0.5" :disabled="!isEditable('sse_batch_poll_interval_seconds')" />
-              <span class="setting-description">秒</span>
-              <el-tooltip effect="dark" content="批次进度刷新频率；过小将增加服务器负载" placement="top">
+              <span class="setting-description">seconds</span>
+              <el-tooltip effect="dark" content="Batch progress refresh frequency; too small will increase server load" placement="top">
                 <i class="el-icon-info" style="margin-left:8px; color:#909399;" />
               </el-tooltip>
             </el-form-item>
 
-            <el-form-item label="批次流最大空闲">
+            <el-form-item label="Batch stream maximum idle">
               <el-input-number v-model="systemSettings.sse_batch_max_idle_seconds" :min="10" :step="10" :disabled="!isEditable('sse_batch_max_idle_seconds')" />
-              <span class="setting-description">秒</span>
-              <el-tooltip effect="dark" content="批次流在无事件情况下允许的最长空闲时间，超时将关闭连接" placement="top">
+              <span class="setting-description">seconds</span>
+              <el-tooltip effect="dark" content="The maximum idle time allowed for the batch stream without events. Timeout will close the connection." placement="top">
                 <i class="el-icon-info" style="margin-left:8px; color:#909399;" />
               </el-tooltip>
             </el-form-item>
 
-            <!-- 日志和监控 -->
-            <el-divider content-position="left">日志和监控</el-divider>
+            <!-- Logging and monitoring -->
+            <el-divider content-position="left">Logging and monitoring</el-divider>
 
-            <el-form-item label="日志级别">
+            <el-form-item label="Log level">
               <el-select v-model="systemSettings.log_level" :disabled="!isEditable('log_level')">
                 <el-option label="DEBUG" value="DEBUG" />
                 <el-option label="INFO" value="INFO" />
@@ -1030,27 +1030,27 @@
               </el-select>
             </el-form-item>
 
-            <el-form-item label="启用监控">
+            <el-form-item label="Enable monitoring">
               <el-switch v-model="systemSettings.enable_monitoring" :disabled="!isEditable('enable_monitoring')" />
             </el-form-item>
 
-            <!-- 数据管理 -->
-            <el-divider content-position="left">数据管理</el-divider>
+            <!-- Data management -->
+            <el-divider content-position="left">Data management</el-divider>
 
-            <el-form-item label="自动保存使用记录">
+            <el-form-item label="Automatically save usage records">
               <el-switch v-model="systemSettings.auto_save_usage" :disabled="!isEditable('auto_save_usage')" />
             </el-form-item>
 
-            <el-form-item label="最大使用记录数">
+            <el-form-item label="Maximum number of usage records">
               <el-input-number v-model="systemSettings.max_usage_records" :min="1000" :max="100000" :step="1000" :disabled="!isEditable('max_usage_records')" />
             </el-form-item>
 
-            <el-form-item label="自动创建目录">
+            <el-form-item label="Automatically create directories">
               <el-switch v-model="systemSettings.auto_create_dirs" :disabled="!isEditable('auto_create_dirs')" />
             </el-form-item>
 
-            <!-- 代理配置 -->
-            <el-divider content-position="left">网络代理</el-divider>
+            <!-- Agent configuration -->
+            <el-divider content-position="left">network proxy</el-divider>
 
             <el-alert
               type="info"
@@ -1059,49 +1059,49 @@
               style="margin-bottom: 16px;"
             >
               <template #title>
-                <span>代理用于访问需要翻墙的数据源（如 Yahoo Finance、Google News 等）</span>
+                <span>Proxy is used to access data sources that need to bypass the firewall (such as Yahoo Finance, Google News, etc.)</span>
               </template>
               <template #default>
                 <div style="font-size: 12px; color: #909399;">
-                  国内数据源（东方财富、新浪、腾讯等）已自动加入 NO_PROXY 列表，无需代理。
-                  修改后需要<strong>重启后端服务</strong>才能生效。
+                  Domestic data sources (Oriental Fortune, Sina, Tencent, etc.) have automatically been added to the NO_PROXY list and no proxy is required.
+                  Needed after modification<strong>Restart the backend service</strong>to take effect.
                 </div>
               </template>
             </el-alert>
 
-            <el-form-item label="启用代理">
+            <el-form-item label="Enable proxy">
               <el-switch
                 v-model="systemSettings.proxy_enabled"
                 :disabled="!isEditable('proxy_enabled')"
-                active-text="开启"
-                inactive-text="关闭"
+                active-text="turn on"
+                inactive-text="close"
               />
               <div class="setting-description">
-                控制是否使用代理访问国外数据源。关闭后，所有请求将直连（可能无法访问 Yahoo Finance、Google News 等）
+                Control whether to use a proxy to access foreign data sources. When closed, all requests will be connected directly (you may not be able to access Yahoo Finance, Google News, etc.)
               </div>
             </el-form-item>
 
-            <el-form-item label="HTTP 代理">
+            <el-form-item label="HTTP agent">
               <el-input
                 v-model="systemSettings.http_proxy"
                 :disabled="!isEditable('http_proxy')"
-                placeholder="例如: 127.0.0.1:7890 或 http://127.0.0.1:7890"
+                placeholder="For example: 127.0.0.1:7890 or http://127.0.0.1:7890"
                 clearable
               />
-              <div class="setting-description">用于 HTTP 请求的代理服务器地址，可省略 http:// 前缀</div>
+              <div class="setting-description">Proxy server address used for HTTP requests, can be omitted http:// prefix</div>
             </el-form-item>
 
-            <el-form-item label="HTTPS 代理">
+            <el-form-item label="HTTPS agent">
               <el-input
                 v-model="systemSettings.https_proxy"
                 :disabled="!isEditable('https_proxy')"
-                placeholder="例如: 127.0.0.1:7890 或 http://127.0.0.1:7890"
+                placeholder="For example: 127.0.0.1:7890 or http://127.0.0.1:7890"
                 clearable
               />
-              <div class="setting-description">用于 HTTPS 请求的代理服务器地址（通常与 HTTP 代理相同），可省略 http:// 前缀</div>
+              <div class="setting-description">Proxy server address to use for HTTPS requests (usually the same as the HTTP proxy), can be omitted http:// prefix</div>
             </el-form-item>
 
-            <el-form-item label="不使用代理">
+            <el-form-item label="Not using a proxy">
               <el-input
                 v-model="systemSettings.no_proxy"
                 type="textarea"
@@ -1110,11 +1110,11 @@
                 placeholder="localhost,127.0.0.1,eastmoney.com,..."
               />
               <div class="setting-description">
-                不使用代理的域名列表，用逗号分隔。国内数据源已预设，可根据需要添加其他域名。
+                List of domain names that do not use proxies, separated by commas. Domestic data sources have been preset, and other domain names can be added as needed.
               </div>
             </el-form-item>
 
-            <el-form-item label="代理测试">
+            <el-form-item label="proxy test">
               <div style="display: flex; gap: 12px; align-items: center;">
                 <el-button
                   type="info"
@@ -1123,7 +1123,7 @@
                   :disabled="!systemSettings.http_proxy && !systemSettings.https_proxy"
                 >
                   <el-icon><Connection /></el-icon>
-                  测试代理连接
+                  Test proxy connection
                 </el-button>
                 <span v-if="proxyTestResult" :class="['proxy-test-result', proxyTestResult.success ? 'success' : 'error']">
                   {{ proxyTestResult.message }}
@@ -1133,20 +1133,20 @@
 
             <el-form-item>
               <el-button type="primary" @click="saveSystemSettings" :loading="systemSaving">
-                保存设置
+                Save settings
               </el-button>
             </el-form-item>
           </el-form>
         </el-card>
 
-        <!-- API密钥状态（京东云模式下隐藏） -->
+        <!-- API Key status (hidden in JD Cloud mode) -->
         <el-card v-if="!isJdyunMode()" v-show="activeTab === 'api-keys'" class="config-content" shadow="never">
           <template #header>
             <div class="card-header">
-              <h3>API密钥状态</h3>
+              <h3>API Key status</h3>
               <el-button @click="loadProviders" :loading="providersLoading">
                 <el-icon><Refresh /></el-icon>
-                刷新状态
+                refresh status
               </el-button>
             </div>
           </template>
@@ -1154,7 +1154,7 @@
           <div class="api-keys-content" v-loading="providersLoading">
             <el-row :gutter="24">
               <el-col :span="12">
-                <h4>🔑 AI厂家密钥状态</h4>
+                <h4>🔑 AI Manufacturer key status</h4>
                 <div
                   v-for="provider in providers"
                   :key="provider.id"
@@ -1175,37 +1175,37 @@
                     link
                     @click="editProvider(provider)"
                   >
-                    配置
+                    Configuration
                   </el-button>
                 </div>
 
                 <div v-if="providers.length === 0" class="empty-state">
-                  <el-empty description="暂无厂家配置">
+                  <el-empty description="No factory configuration yet">
                     <el-button type="primary" @click="activeTab = 'providers'">
-                      添加厂家
+                      Add manufacturer
                     </el-button>
                   </el-empty>
                 </div>
               </el-col>
 
               <el-col :span="12">
-                <h4>📊 配置统计</h4>
+                <h4>📊 Configuration statistics</h4>
                 <div class="stats-grid">
                   <div class="stat-item">
                     <div class="stat-number">{{ providers.length }}</div>
-                    <div class="stat-label">总厂家数</div>
+                    <div class="stat-label">Total number of manufacturers</div>
                   </div>
                   <div class="stat-item">
                     <div class="stat-number">{{ configuredProvidersCount }}</div>
-                    <div class="stat-label">已配置密钥</div>
+                    <div class="stat-label">Configured key</div>
                   </div>
                   <div class="stat-item">
                     <div class="stat-number">{{ activeProvidersCount }}</div>
-                    <div class="stat-label">启用厂家</div>
+                    <div class="stat-label">Enable manufacturer</div>
                   </div>
                   <div class="stat-item">
                     <div class="stat-number">{{ llmConfigs.length }}</div>
-                    <div class="stat-label">配置模型</div>
+                    <div class="stat-label">Configure model</div>
                   </div>
                 </div>
               </el-col>
@@ -1214,38 +1214,38 @@
             <el-divider />
 
             <div class="api-key-help">
-              <h4>💡 配置说明</h4>
+              <h4>💡 Configuration instructions</h4>
               <el-row :gutter="16">
                 <el-col :span="8">
                   <el-card shadow="never" class="help-card">
-                    <h5>如何配置API密钥？</h5>
+                    <h5>How to configure API key?</h5>
                     <ol>
-                      <li>在"厂家管理"中添加AI厂家</li>
-                      <li>编辑厂家信息，填入API密钥</li>
-                      <li>在"大模型配置"中选择厂家和模型</li>
-                      <li>系统自动使用厂家的API密钥</li>
+                      <li>in"Factory management"Add AI manufacturers to</li>
+                      <li>Edit the manufacturer information and fill in the API key</li>
+                      <li>in"Large model configuration"Select manufacturer and model</li>
+                      <li>The system automatically uses the manufacturer s API key</li>
                     </ol>
                   </el-card>
                 </el-col>
                 <el-col :span="8">
                   <el-card shadow="never" class="help-card">
-                    <h5>🔄 从环境变量迁移</h5>
-                    <p>如果你之前在 .env 文件中配置了API密钥，可以一键迁移到厂家管理：</p>
+                    <h5>🔄 Migrate from environment variables</h5>
+                    <p>If you have configured an API key in the .env file before, you can migrate to manufacturer management with one click:</p>
                     <el-button
                       type="primary"
                       @click="migrateFromEnv"
                       :loading="migrateLoading"
                       size="small"
                     >
-                      迁移环境变量
+                      Migrate environment variables
                     </el-button>
                   </el-card>
                 </el-col>
                 <el-col :span="8">
                   <el-alert
-                    title="🔒 安全提示"
+                    title="🔒 Safety tips"
                     type="warning"
-                    description="敏感密钥通过环境变量/运维配置注入，后端响应已统一脱敏；请勿在界面或导出文件中保存真实密钥。"
+                    description="Sensitive keys are injected through environment variables/operation and maintenance configurations, and backend responses have been uniformly desensitized; please do not save real keys in the interface or export file."
                     show-icon
                     :closable="false"
                   />
@@ -1255,26 +1255,26 @@
           </div>
         </el-card>
 
-        <!-- 导入导出（京东云模式下隐藏） -->
+        <!-- Import and export (hidden in JD Cloud mode) -->
         <el-card v-if="!isJdyunMode()" v-show="activeTab === 'import-export'" class="config-content" shadow="never">
           <template #header>
-            <h3>导入导出</h3>
+            <h3>Import and export</h3>
           </template>
 
           <div class="import-export-content">
             <el-row :gutter="24">
               <el-col :span="12">
-                <h4>导出配置</h4>
-                <p>将当前系统配置导出为JSON文件</p>
+                <h4>Export configuration</h4>
+                <p>Export current system configuration as JSON file</p>
                 <el-button type="primary" @click="exportConfig" :loading="exportLoading">
                   <el-icon><Download /></el-icon>
-                  导出配置
+                  Export configuration
                 </el-button>
               </el-col>
 
               <el-col :span="12">
-                <h4>导入配置</h4>
-                <p>从JSON文件导入配置（将覆盖现有配置）</p>
+                <h4>Import configuration</h4>
+                <p>Import configuration from JSON file (will overwrite existing configuration)</p>
                 <el-upload
                   :before-upload="handleImportConfig"
                   :show-file-list="false"
@@ -1282,7 +1282,7 @@
                 >
                   <el-button type="success" :loading="importLoading">
                     <el-icon><Upload /></el-icon>
-                    导入配置
+                    Import configuration
                   </el-button>
                 </el-upload>
               </el-col>
@@ -1291,11 +1291,11 @@
             <el-divider />
 
             <div class="legacy-migration">
-              <h4>传统配置迁移</h4>
-              <p>将旧版本的配置文件迁移到新系统</p>
+              <h4>Traditional configuration migration</h4>
+              <p>Migrate old version configuration files to new system</p>
               <el-button type="warning" @click="migrateLegacyConfig" :loading="migrateLoading">
                 <el-icon><Refresh /></el-icon>
-                迁移传统配置
+                Migrate legacy configuration
               </el-button>
             </div>
           </div>
@@ -1303,7 +1303,7 @@
       </el-col>
     </el-row>
 
-    <!-- 厂家管理对话框（京东云模式下隐藏） -->
+    <!-- Manufacturer management dialog box (hidden in JD Cloud mode) -->
     <ProviderDialog
       v-if="!isJdyunMode()"
       v-model:visible="providerDialogVisible"
@@ -1311,7 +1311,7 @@
       @success="handleProviderSuccess"
     />
 
-    <!-- 大模型配置对话框（京东云模式下隐藏） -->
+    <!-- Large model configuration dialog box (hidden in JD Cloud mode) -->
     <LLMConfigDialog
       v-if="!isJdyunMode()"
       v-model:visible="llmDialogVisible"
@@ -1319,84 +1319,84 @@
       @success="handleLLMConfigSuccess"
     />
 
-    <!-- 一键导入对话框 -->
-    <el-dialog v-model="batchImportDialogVisible" title="一键导入大模型配置" width="480px">
+    <!-- One-click import dialog box -->
+    <el-dialog v-model="batchImportDialogVisible" title="Import large model configurations with one click" width="480px">
       <p style="margin-bottom: 16px; color: var(--el-text-color-regular); font-size: 14px;">
-        选择要导入的厂家，系统将自动从模型目录中导入该厂家下所有模型配置。
+        Select the manufacturer to be imported, and the system will automatically import all model configurations of this manufacturer from the model directory.
       </p>
       <el-checkbox-group v-model="selectedImportProviders">
         <div v-for="p in importableProviders" :key="p.name" style="margin-bottom: 8px;">
           <el-checkbox :label="p.name" :value="p.name">
             {{ p.display_name }}
-            <el-tag v-if="p.extra_config?.has_api_key" size="small" type="success" style="margin-left: 4px;">已配置密钥</el-tag>
-            <el-tag v-else size="small" type="info" style="margin-left: 4px;">未配置密钥</el-tag>
+            <el-tag v-if="p.extra_config?.has_api_key" size="small" type="success" style="margin-left: 4px;">Configured key</el-tag>
+            <el-tag v-else size="small" type="info" style="margin-left: 4px;">No key configured</el-tag>
           </el-checkbox>
         </div>
       </el-checkbox-group>
       <div v-if="importableProviders.length === 0" style="text-align: center; padding: 20px; color: var(--el-text-color-secondary);">
-        暂无已启用的厂家
+        There are currently no enabled manufacturers
       </div>
       <template #footer>
-        <el-button @click="batchImportDialogVisible = false">取消</el-button>
+        <el-button @click="batchImportDialogVisible = false">Cancel</el-button>
         <el-button type="primary" :loading="batchImporting" :disabled="selectedImportProviders.length === 0" @click="confirmBatchImport">
-          导入选中厂家
+          Import selected manufacturers
         </el-button>
       </template>
     </el-dialog>
 
-    <!-- 数据源配置对话框 -->
+    <!-- Data source configuration dialog -->
     <DataSourceConfigDialog
       v-model:visible="dataSourceDialogVisible"
       :config="currentDataSourceConfig"
       @success="handleDataSourceConfigSuccess"
     />
 
-    <!-- 市场分类管理对话框（京东云模式下隐藏） -->
+    <!-- Market classification management dialog box (hidden in JD Cloud mode) -->
     <el-dialog
       v-if="!isJdyunMode()"
       v-model="marketCategoryManagementVisible"
-      title="市场分类管理"
+      title="Market classification management"
       width="80%"
       :close-on-click-modal="false"
     >
       <MarketCategoryManagement @success="handleMarketCategorySuccess" />
     </el-dialog>
 
-    <!-- 数据源分组对话框 -->
+    <!-- Data source grouping dialog box -->
     <DataSourceGroupingDialog
       v-model:visible="dataSourceGroupingDialogVisible"
       :data-source-name="currentDataSourceName"
       @success="handleDataSourceGroupingSuccess"
     />
 
-    <!-- 数据库配置对话框（京东云模式下隐藏） -->
+    <!-- Database configuration dialog box (hidden in JD Cloud mode) -->
     <el-dialog
       v-if="!isJdyunMode()"
       v-model="databaseDialogVisible"
-      title="编辑数据库配置"
+      title="Edit database configuration"
       width="600px"
       :close-on-click-modal="false"
     >
       <el-alert
-        title="提示"
+        title="Tips"
         type="info"
         :closable="false"
         style="margin-bottom: 20px"
       >
-        数据库配置是系统核心配置，配置名称和类型不可修改。如果配置中未填写用户名密码，系统将使用环境变量（.env文件）中的配置。
+        Database configuration is the core configuration of the system, and the configuration name and type cannot be modified. If the username and password are not filled in in the configuration, the system will use the configuration in the environment variable (.env file).
       </el-alert>
 
       <el-form :model="currentDatabaseConfig" label-width="120px">
-        <el-form-item label="配置名称" required>
+        <el-form-item label="Configuration name" required>
           <el-input
             v-model="currentDatabaseConfig.name"
-            placeholder="请输入配置名称"
+            placeholder="Please enter configuration name"
             disabled
           />
         </el-form-item>
 
-        <el-form-item label="数据库类型" required>
-          <el-select v-model="currentDatabaseConfig.type" placeholder="请选择数据库类型" disabled>
+        <el-form-item label="Database type" required>
+          <el-select v-model="currentDatabaseConfig.type" placeholder="Please select database type" disabled>
             <el-option label="MongoDB" value="mongodb" />
             <el-option label="Redis" value="redis" />
             <el-option label="MySQL" value="mysql" />
@@ -1405,76 +1405,76 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="主机地址" required>
-          <el-input v-model="currentDatabaseConfig.host" placeholder="例如: localhost" />
+        <el-form-item label="host address" required>
+          <el-input v-model="currentDatabaseConfig.host" placeholder="For example: localhost" />
         </el-form-item>
 
-        <el-form-item label="端口号" required>
+        <el-form-item label="port number" required>
           <el-input-number
             v-model="currentDatabaseConfig.port"
             :min="1"
             :max="65535"
-            placeholder="例如: 27017"
+            placeholder="For example: 27017"
           />
         </el-form-item>
 
-        <el-form-item label="用户名">
-          <el-input v-model="currentDatabaseConfig.username" placeholder="请输入用户名" />
+        <el-form-item label="Username">
+          <el-input v-model="currentDatabaseConfig.username" placeholder="Please enter username" />
         </el-form-item>
 
-        <el-form-item label="密码">
+        <el-form-item label="Password">
           <el-input
             v-model="currentDatabaseConfig.password"
             type="password"
-            placeholder="请输入密码"
+            placeholder="Please enter password"
             show-password
           />
         </el-form-item>
 
-        <el-form-item label="数据库名">
-          <el-input v-model="currentDatabaseConfig.database" placeholder="请输入数据库名" />
+        <el-form-item label="Database name">
+          <el-input v-model="currentDatabaseConfig.database" placeholder="Please enter database name" />
         </el-form-item>
 
-        <el-form-item label="连接池大小">
+        <el-form-item label="Connection pool size">
           <el-input-number v-model="currentDatabaseConfig.pool_size" :min="1" :max="100" />
         </el-form-item>
 
-        <el-form-item label="最大溢出连接">
+        <el-form-item label="Maximum overflow connection">
           <el-input-number v-model="currentDatabaseConfig.max_overflow" :min="0" :max="200" />
         </el-form-item>
 
-        <el-form-item label="启用状态">
+        <el-form-item label="Enabled status">
           <el-switch v-model="currentDatabaseConfig.enabled" />
         </el-form-item>
 
-        <el-form-item label="描述">
+        <el-form-item label="Description">
           <el-input
             v-model="currentDatabaseConfig.description"
             type="textarea"
             :rows="3"
-            placeholder="请输入配置描述"
+            placeholder="Please enter configuration description"
           />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="databaseDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveDatabaseConfig">保存</el-button>
+        <el-button @click="databaseDialogVisible = false">Cancel</el-button>
+        <el-button type="primary" @click="saveDatabaseConfig">save</el-button>
       </template>
     </el-dialog>
 
-    <!-- 向量迁移对话框已废弃：向量存储已从 Qdrant 迁移到 MongoDB -->
+    <!-- Vector migration dialog is deprecated: vector storage has been migrated from Qdrant to MongoDB -->
     <!--
     <el-dialog
       v-if="!isJdyunMode()"
       v-model="migrationDialogVisible"
-      title="迁移向量数据"
+      title="Migrate vector data"
       width="780px"
       :close-on-click-modal="false"
       @opened="loadMigrationData"
     >
       <el-alert
-        title="说明"
+        title="Description"
         type="info"
         :closable="false"
         show-icon
@@ -1482,10 +1482,10 @@
       >
         <template #default>
           <div>
-            更换 Embedding 模型（当前：<strong>{{ migrationCurrentModel }}</strong>）后，旧的向量数据需要用新模型重新生成。
-            状态标记：<el-tag type="warning" size="small">待迁移</el-tag> 从未迁移，
-            <el-tag type="success" size="small">已迁移</el-tag> 与当前模型一致，
-            <el-tag type="danger" size="small">已过期</el-tag> 迁移过但模型已变。
+            Change Embedding model (currently:<strong>{{ migrationCurrentModel }}</strong>) Finally, the old vector data needs to be regenerated with the new model.
+            Status tag:<el-tag type="warning" size="small">To be migrated</el-tag> never migrated,
+            <el-tag type="success" size="small">Migrated</el-tag> Consistent with the current model,
+            <el-tag type="danger" size="small">Expired</el-tag> Migrated but the model has changed.
           </div>
         </template>
       </el-alert>
@@ -1497,34 +1497,34 @@
           :loading="migrationLoading"
           @click="migrateAllPending"
         >
-          一键迁移全部（{{ pendingMigrations.length }} 个待迁移）
+          Migrate all with one click ({{ pendingMigrations.length }} (to be migrated)
         </el-button>
       </div>
 
       <el-table :data="allCollections" v-loading="migrationLoading" max-height="400px" size="small">
         <el-table-column prop="name" label="Collection" min-width="240" show-overflow-tooltip />
-        <el-table-column label="来源" width="80" align="center">
+        <el-table-column label="Source" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.source === 'main' ? 'primary' : 'info'" size="small">
-              {{ row.source === 'main' ? '主存储' : 'mem0' }}
+              {{ row.source === 'main' ? 'main storage' : 'mem0' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="数据" width="90" align="center">
+        <el-table-column label="data" width="90" align="center">
           <template #default="{ row }">
-            {{ row.point_count }} 条
+            {{ row.point_count }} Article
           </template>
         </el-table-column>
-        <el-table-column prop="dimensions" label="维度" width="70" align="center" />
-        <el-table-column label="迁移状态" width="100" align="center">
+        <el-table-column prop="dimensions" label="Dimensions" width="70" align="center" />
+        <el-table-column label="Migration status" width="100" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.migration_status === 'pending'" type="warning" size="small">待迁移</el-tag>
-            <el-tag v-else-if="row.migration_status === 'migrated'" type="success" size="small">已迁移</el-tag>
-            <el-tag v-else-if="row.migration_status === 'outdated'" type="danger" size="small">已过期</el-tag>
+            <el-tag v-if="row.migration_status === 'pending'" type="warning" size="small">To be migrated</el-tag>
+            <el-tag v-else-if="row.migration_status === 'migrated'" type="success" size="small">Migrated</el-tag>
+            <el-tag v-else-if="row.migration_status === 'outdated'" type="danger" size="small">Expired</el-tag>
             <span v-else style="color: #909399;">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" align="center">
+        <el-table-column label="Operation" width="120" align="center">
           <template #default="{ row }">
             <el-button
               v-if="row.point_count > 0 && row.migration_status !== 'migrated'"
@@ -1533,10 +1533,10 @@
               :loading="migratingCollections[row.name]"
               @click="migrateOne(row)"
             >
-              迁移
+              Migrate
             </el-button>
             <template v-else-if="row.point_count === 0">
-              <span style="color: #909399; font-size: 12px;">空数据</span>
+              <span style="color: #909399; font-size: 12px;">empty data</span>
               <el-button
                 size="small"
                 type="danger"
@@ -1544,10 +1544,10 @@
                 :loading="migratingCollections[row.name]"
                 @click="deleteCollection(row)"
               >
-                删除
+                Delete
               </el-button>
             </template>
-            <el-tag v-else type="success" size="small">已完成</el-tag>
+            <el-tag v-else type="success" size="small">Completed</el-tag>
           </template>
         </el-table-column>
       </el-table>
@@ -1562,18 +1562,18 @@
           style="margin-bottom: 8px;"
         >
           <el-descriptions-item label="Collection">{{ r.collection_name || r.source_collection }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item label="Status">
             <el-tag :type="r.success ? 'success' : 'danger'" size="small">
-              {{ r.success ? '成功' : '失败' }}
+              {{ r.success ? 'success' : 'failed' }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="处理">{{ r.total_seen }}</el-descriptions-item>
-          <el-descriptions-item label="迁移">{{ r.migrated }}</el-descriptions-item>
+          <el-descriptions-item label="Process">{{ r.total_seen }}</el-descriptions-item>
+          <el-descriptions-item label="Migrate">{{ r.migrated }}</el-descriptions-item>
         </el-descriptions>
       </div>
 
       <template #footer>
-        <el-button @click="migrationDialogVisible = false">关闭</el-button>
+        <el-button @click="migrationDialogVisible = false">close</el-button>
       </template>
     </el-dialog>
     -->
@@ -1623,7 +1623,7 @@ import MarketCategoryManagement from './components/MarketCategoryManagement.vue'
 import DataSourceGroupingDialog from './components/DataSourceGroupingDialog.vue'
 import SortableDataSourceList from './components/SortableDataSourceList.vue'
 
-// 响应式数据
+// Responsive data
 const router = useRouter()
 const activeTab = ref('providers')
 const providers = ref<LLMProvider[]>([])
@@ -1635,20 +1635,20 @@ const systemSettings = ref<Record<string, any>>({})
 const systemSettingsMeta = ref<Record<string, SettingMeta>>({})
 const defaultLLM = ref<string>('')
 
-// 🔥 新增：用于 Embedding 模型切换提醒
+// 🔥 New: Reminder for Embedding model switching
 const originalEmbeddingModel = ref<string>('')
 
-// 厂家信息映射
+// Manufacturer information mapping
 const providerInfoMap = ref<Record<string, any>>({})
 const defaultDataSource = ref<string>('')
 
-// 新增：数据源分组相关
+// New: Data source grouping related
 const marketCategories = ref<MarketCategory[]>([])
 const dataSourceGroupings = ref<DataSourceGrouping[]>([])
 const dataSourceGroups = ref<any[]>([])
 const ungroupedDataSources = ref<DataSourceConfig[]>([])
 
-// 加载状态
+// Loading status
 const providersLoading = ref(false)
 const llmLoading = ref(false)
 const dataSourceLoading = ref(false)
@@ -1662,18 +1662,18 @@ const reloadLoading = ref(false)
 const proxyTesting = ref(false)
 const proxyTestResult = ref<{ success: boolean; message: string } | null>(null)
 
-// 对话框状态
+// dialog state
 const providerDialogVisible = ref(false)
 const currentProvider = ref<Partial<LLMProvider>>({})
 
-// 新增：数据源相关对话框
+// New: Data source related dialog box
 const dataSourceDialogVisible = ref(false)
 const currentDataSourceConfig = ref<DataSourceConfig | null>(null)
 const marketCategoryManagementVisible = ref(false)
 const dataSourceGroupingDialogVisible = ref(false)
 const currentDataSourceName = ref<string>('')
 
-// 新增：数据库配置对话框
+// New: Database configuration dialog
 const databaseDialogVisible = ref(false)
 const databaseDialogMode = ref<'add' | 'edit'>('add')
 const currentDatabaseConfig = ref<Partial<DatabaseConfig>>({
@@ -1691,7 +1691,7 @@ const currentDatabaseConfig = ref<Partial<DatabaseConfig>>({
   description: ''
 })
 
-// Gateway 配置
+// Gateway Configuration
 const gatewayLoading = ref(false)
 const gatewaySaving = ref(false)
 const gatewayTesting = ref(false)
@@ -1727,10 +1727,10 @@ const gatewayDingtalkConfig = ref<GatewayConfig>({
   robot_code: '',
 })
 
-// 测试状态
+// test status
 const testingProviders = ref<Record<string, boolean>>({})
 
-// 方法
+// method
 const handleMenuSelect = (index: string) => {
   activeTab.value = index
   loadTabData(index)
@@ -1751,11 +1751,11 @@ const loadTabData = async (tab: string) => {
       await loadDatabaseConfigs()
       break
     case 'system':
-      // 系统设置需要加载厂家和大模型配置，用于模型选择下拉框
+      // System settings need to load the manufacturer and large model configuration, which is used in the model selection drop-down box.
       await loadProviders()
       await loadLLMConfigs()
       await loadSystemSettings()
-      await loadEmbeddingProviders()  // 🔥 新增：加载 Embedding 厂家列表
+      await loadEmbeddingProviders()  // 🔥 New: Load Embedding manufacturer list
       break
     case 'gateway':
       await Promise.all([
@@ -1771,13 +1771,13 @@ const loadTabData = async (tab: string) => {
   }
 }
 
-// 🔥 计算属性：按启用状态排序的厂家列表（启用的在上面，禁用的在下面）
+// 🔥 Computed properties: List of manufacturers sorted by enabled status (enabled at the top, disabled at the bottom)
 const sortedProviders = computed(() => {
   return [...providers.value].sort((a, b) => {
-    // 启用的排在前面（is_active=true 返回 -1）
+    // Enabled ones come first (is_active=true Return -1)
     if (a.is_active && !b.is_active) return -1
     if (!a.is_active && b.is_active) return 1
-    // 如果状态相同，按名称排序
+    // If the status is the same, sort by name
     return (a.display_name || a.name).localeCompare(b.display_name || b.name)
   })
 })
@@ -1899,45 +1899,45 @@ const syncModelSelectionSettings = () => {
   }
 }
 
-// 🔥 新增：支持 embedding 的厂家和模型列表（从后端获取）
+// 🔥 New: List of manufacturers and models that support embedding (obtained from the backend)
 const embeddingProviders = ref<Array<{
   name: string
   display_name: string
   models: string[]
 }>>([])
 
-// 🔥 新增：加载支持 embedding 的厂家和模型列表
+// 🔥 New: Load the list of manufacturers and models that support embedding
 const loadEmbeddingProviders = async () => {
   try {
     const data = await configApi.getEmbeddingProviders()
     embeddingProviders.value = data
-    console.log('✅ 加载 Embedding 厂家列表成功:', data)
+    console.log('✅ Loading Embedding manufacturer list successfully:', data)
   } catch (error) {
-    console.error('❌ 加载 Embedding 厂家列表失败:', error)
-    ElMessage.error('加载 Embedding 厂家列表失败')
-    // 失败时使用空数组
+    console.error('❌ Failed to load Embedding manufacturer list:', error)
+    ElMessage.error('Failed to load Embedding manufacturer list')
+    // Use empty array on failure
     embeddingProviders.value = []
   }
 }
 
-// 🔥 新增：获取指定厂商的 Embedding 模型列表
+// 🔥 New: Get the list of Embedding models from a specified manufacturer
 const getEmbeddingModelsForProvider = (providerName: string) => {
   const provider = embeddingProviders.value.find(p => p.name === providerName)
   return provider ? provider.models : []
 }
 
-// 加载厂家列表
+// Load manufacturer list
 const loadProviders = async () => {
   providersLoading.value = true
   try {
-    console.log('🔄 开始加载厂家列表...')
+    console.log('🔄 Start loading manufacturer list...')
     const providerList = await configApi.getLLMProviders()
-    console.log('📊 厂家列表响应:', providerList)
+    console.log('📊 Manufacturer list response:', providerList)
     providers.value = providerList
-    console.log('✅ 厂家列表加载成功，数量:', providerList.length)
+    console.log('✅ Manufacturer list loaded successfully, quantity:', providerList.length)
   } catch (error) {
-    console.error('❌ 加载厂家列表失败:', error)
-    ElMessage.error('加载厂家列表失败')
+    console.error('❌ Failed to load manufacturer list:', error)
+    ElMessage.error('Failed to load manufacturer list')
   } finally {
     providersLoading.value = false
   }
@@ -1946,30 +1946,30 @@ const loadProviders = async () => {
 const loadLLMConfigs = async () => {
   llmLoading.value = true
   try {
-    console.log('🔄 开始加载大模型配置...')
+    console.log('🔄 Start loading large model configuration...')
     const configs = await configApi.getLLMConfigs()
-    console.log('📊 大模型配置响应:', configs)
+    console.log('📊 Large model configuration response:', configs)
     llmConfigs.value = configs
-    console.log('✅ 大模型配置加载成功，数量:', configs.length)
+    console.log('✅ Large model configuration loaded successfully, quantity:', configs.length)
 
-    // 获取默认LLM
+    // Get default LLM
     const systemConfig = await configApi.getSystemConfig()
-    console.log('📊 系统配置响应:', systemConfig)
+    console.log('📊 System configuration response:', systemConfig)
     defaultLLM.value = systemConfig.default_llm || ''
 
-    // 构建分组数据
+    // Build grouped data
     buildLLMConfigGroups()
   } catch (error) {
-    console.error('❌ 加载大模型配置失败:', error)
-    ElMessage.error('加载大模型配置失败')
+    console.error('❌ Failed to load large model configuration:', error)
+    ElMessage.error('Failed to load large model configuration')
   } finally {
     llmLoading.value = false
   }
 }
 
-// 构建大模型配置分组数据
+// Build large models to configure grouped data
 const buildLLMConfigGroups = () => {
-  // 按厂家分组
+  // Group by manufacturer
   const providerGroups: Record<string, LLMConfig[]> = {}
 
   llmConfigs.value.forEach(config => {
@@ -1980,31 +1980,31 @@ const buildLLMConfigGroups = () => {
     providerGroups[provider].push(config)
   })
 
-  // 构建分组数据
+  // Build grouped data
   const groups: any[] = []
 
   Object.entries(providerGroups).forEach(([provider, models]) => {
-    // 获取厂家信息
+    // Get manufacturer information
     const providerInfo = providerInfoMap.value[provider] || {
       display_name: getProviderDisplayName(provider),
-      description: `${getProviderDisplayName(provider)} 大模型服务`,
+      description: `${getProviderDisplayName(provider)} Large model service`,
       is_active: true
     }
 
-    // 创建厂家分组
+    // Create manufacturer group
     const group = {
       provider: provider,
       display_name: providerInfo.display_name,
       description: providerInfo.description,
       is_active: providerInfo.is_active,
       models: models.sort((a, b) => {
-        // 默认模型排在前面
+        // Default model comes first
         if (a.model_name === defaultLLM.value) return -1
         if (b.model_name === defaultLLM.value) return 1
-        // 启用的模型排在前面
+        // Enabled models come first
         if (a.enabled && !b.enabled) return -1
         if (!a.enabled && b.enabled) return 1
-        // 按名称排序
+        // Sort by name
         return a.model_name.localeCompare(b.model_name)
       })
     }
@@ -2012,7 +2012,7 @@ const buildLLMConfigGroups = () => {
     groups.push(group)
   })
 
-  // 按厂家名称排序
+  // Sort by manufacturer name
   groups.sort((a, b) => a.display_name.localeCompare(b.display_name))
 
   llmConfigGroups.value = groups
@@ -2024,50 +2024,50 @@ const loadDataSourceConfigs = async () => {
     const configs = await configApi.getDataSourceConfigs()
     dataSourceConfigs.value = configs
 
-    // 获取默认数据源
+    // Get the default data source
     const systemConfig = await configApi.getSystemConfig()
     defaultDataSource.value = systemConfig.default_data_source || ''
 
-    // 加载分组相关数据
+    // Load group related data
     await loadMarketCategories()
     await loadDataSourceGroupings()
     buildDataSourceGroups()
   } catch (error) {
-    ElMessage.error('加载数据源配置失败')
+    ElMessage.error('Failed to load data source configuration')
   } finally {
     dataSourceLoading.value = false
   }
 }
 
-// 加载市场分类
+// Load market categories
 const loadMarketCategories = async () => {
   try {
     marketCategories.value = await configApi.getMarketCategories()
   } catch (error) {
-    console.error('加载市场分类失败:', error)
+    console.error('Failed to load market categories:', error)
   }
 }
 
-// 加载数据源分组关系
+// Load data source grouping relationship
 const loadDataSourceGroupings = async () => {
   try {
     dataSourceGroupings.value = await configApi.getDataSourceGroupings()
   } catch (error) {
-    console.error('加载数据源分组关系失败:', error)
+    console.error('Failed to load data source grouping relationship:', error)
   }
 }
 
-// 构建数据源分组
+// Build data source grouping
 const buildDataSourceGroups = () => {
   const groups: any[] = []
   const ungrouped: DataSourceConfig[] = []
 
-  // 京东云模式下：只显示 tushare 和 akshare 类型的数据源
+  // In JD Cloud mode: only tushare and akshare type data sources are displayed
   const filteredConfigs = isJdyunMode()
     ? dataSourceConfigs.value.filter(ds => ['tushare', 'akshare'].includes(ds.type?.toLowerCase() || ''))
     : dataSourceConfigs.value
 
-  // 按分类分组
+  // Group by category
   marketCategories.value.forEach(category => {
     const categoryGroupings = dataSourceGroupings.value.filter(
       g => g.market_category_id === category.id
@@ -2089,7 +2089,7 @@ const buildDataSourceGroups = () => {
           return null
         })
         .filter((item): item is DataSourceConfig & { priority: number; enabled: boolean } => item !== null)
-        .sort((a, b) => b.priority - a.priority) // 按优先级降序排列
+        .sort((a, b) => b.priority - a.priority) // Sort by priority in descending order
 
       groups.push({
         categoryId: category.id,
@@ -2099,7 +2099,7 @@ const buildDataSourceGroups = () => {
     }
   })
 
-  // 找出未分组的数据源
+  // Find ungrouped data sources
   const groupedDataSourceNames = new Set(
     dataSourceGroupings.value.map(g => g.data_source_name)
   )
@@ -2119,7 +2119,7 @@ const loadDatabaseConfigs = async () => {
   try {
     databaseConfigs.value = await configApi.getDatabaseConfigs()
   } catch (error) {
-    ElMessage.error('加载数据库配置失败')
+    ElMessage.error('Failed to load database configuration')
   } finally {
     databaseLoading.value = false
   }
@@ -2132,7 +2132,7 @@ const loadSystemSettings = async () => {
       configApi.getSystemSettings(),
       configApi.getSystemSettingsMeta()
     ])
-    // 确保有默认值
+    // Make sure there is a default value
     systemSettings.value = {
       quick_analysis_model: 'qwen-turbo',
       quick_analysis_model_config_id: '',
@@ -2142,23 +2142,23 @@ const loadSystemSettings = async () => {
       deep_reasoning_model_config_id: '',
       coding_model: '',
       coding_model_config_id: '',
-      default_embedding_model: '',  // 🔥 新增：默认 Embedding 模型
+      default_embedding_model: '',  // 🔥 New: Default Embedding model
       default_analysis_timeout: 300,
       enable_cache: true,
       cache_ttl: 3600,
       log_level: 'INFO',
       enable_monitoring: true,
-      // 队列与 Worker 默认
+      // Queue and Worker Default
       worker_heartbeat_interval_seconds: 30,
       queue_poll_interval_seconds: 1.0,
       queue_cleanup_interval_seconds: 60.0,
-      // SSE 默认
+      // SSE Default
       sse_poll_timeout_seconds: 1.0,
       sse_heartbeat_interval_seconds: 10,
       sse_task_max_idle_seconds: 300,
       sse_batch_poll_interval_seconds: 2.0,
       sse_batch_max_idle_seconds: 600,
-      // TradingAgents（可选）默认
+      // TradingAgents (optional) default
       ta_use_app_cache: false,
       ta_hk_min_request_interval_seconds: 2.0,
       ta_hk_timeout_seconds: 60,
@@ -2170,18 +2170,18 @@ const loadSystemSettings = async () => {
       ta_google_news_sleep_min_seconds: 2.0,
       ta_google_news_sleep_max_seconds: 6.0,
       app_timezone: 'Asia/Shanghai',
-      // 回测 DSL 生成校验
+      // Backtesting DSL generation verification
       dsl_validate_on_generate: true,
       dsl_run_execution_check: true,
-      // 代理配置
-      proxy_enabled: false,  // 默认关闭代理
+      // Agent configuration
+      proxy_enabled: false,  // Proxy is turned off by default
       http_proxy: '',
       https_proxy: '',
       no_proxy: 'localhost,127.0.0.1,eastmoney.com,push2.eastmoney.com,82.push2.eastmoney.com,82.push2delay.eastmoney.com,gtimg.cn,sinaimg.cn,api.tushare.pro,baostock.com',
 
       ...settings
     }
-    // 🔥 修复：后端返回的数值字段可能是字符串，el-input-number 要求 Number 类型
+    // 🔥 Fix: The numerical field returned by the backend may be a string, el-input-number requires Number type
     const numericKeys = [
       'cost_alert_threshold', 'default_analysis_timeout', 'cache_ttl',
       'worker_heartbeat_interval_seconds', 'queue_poll_interval_seconds',
@@ -2201,21 +2201,21 @@ const loadSystemSettings = async () => {
       }
     }
     syncModelSelectionSettings()
-    // 🔥 保存原始 Embedding 模型值（用于切换提醒）
+    // 🔥 Save original Embedding model values (used for toggling reminders)
     originalEmbeddingModel.value = systemSettings.value.default_embedding_model || ''
-    // 规整元数据为map
+    // The regular metadata is map
     const metaList = meta?.items || []
     systemSettingsMeta.value = Object.fromEntries(metaList.map((m: SettingMeta) => [m.key, m]))
-    // 清空代理测试结果
+    // Clear proxy test results
     proxyTestResult.value = null
   } catch (error) {
-    ElMessage.error('加载系统设置失败')
+    ElMessage.error('Failed to load system settings')
   } finally {
     systemLoading.value = false
   }
 }
 
-// 🔥 新增：监听 Embedding 模型变化，供应商切换时提醒
+// 🔥 New: Monitor Embedding model changes and be reminded when suppliers switch
 watch(() => systemSettings.value.default_embedding_model, (newValue, oldValue) => {
   const getProvider = (val: string | undefined) => {
     if (!val) return ''
@@ -2226,12 +2226,12 @@ watch(() => systemSettings.value.default_embedding_model, (newValue, oldValue) =
   const newProvider = getProvider(newValue)
   if (oldProvider && newProvider && oldProvider !== newProvider) {
     ElMessageBox.alert(
-      `<p>您正在从 <strong>${oldProvider}</strong> 切换到 <strong>${newProvider}</strong> 作为默认 Embedding 供应商。</p>
-       <p style="margin-top:10px; color:#f56c6c;"><strong>重要提示：</strong>不同 Embedding 模型生成的向量语义空间不同，即使维度相同，相似度搜索结果也会完全错误。</p>
-       <p style="margin-top:10px;">建议重新生成所有向量数据（如记忆功能、知识库等），以确保准确性。</p>`,
-      '切换 Embedding 供应商提醒',
+      `<p>You are switching from <strong>${oldProvider}</strong> switch to <strong>${newProvider}</strong> As the default Embedding provider.</p>
+       <p style="margin-top:10px; color:#f56c6c;"><strong>IMPORTANT NOTE:</strong>The semantic spaces of vectors generated by different embedding models are different. Even if the dimensions are the same, the similarity search results will be completely wrong.</p>
+       <p style="margin-top:10px;">It is recommended to regenerate all vector data (such as memory functions, knowledge bases, etc.) to ensure accuracy.</p>`,
+      'Switch Embedding Supplier Alerts',
       {
-        confirmButtonText: '我知道了',
+        confirmButtonText: 'I know',
         dangerouslyUseHTMLString: true,
         type: 'warning'
       }
@@ -2239,58 +2239,58 @@ watch(() => systemSettings.value.default_embedding_model, (newValue, oldValue) =
   }
 })
 
-// ========== 厂家管理操作 ==========
+// ========== Factory management operations ==========
 
-// 显示添加厂家对话框
+// Display the Add Manufacturer dialog box
 const showAddProviderDialog = () => {
   currentProvider.value = {}
   providerDialogVisible.value = true
 }
 
-// 编辑厂家
+// Edit manufacturer
 const editProvider = (provider: LLMProvider) => {
   currentProvider.value = { ...provider }
   providerDialogVisible.value = true
 }
 
-// 切换厂家状态
+// Switch manufacturer status
 const toggleProvider = async (provider: LLMProvider) => {
   try {
     await configApi.toggleLLMProvider(provider.id, !provider.is_active)
     await loadProviders()
-    ElMessage.success(`厂家已${provider.is_active ? '禁用' : '启用'}`)
+    ElMessage.success(`The manufacturer has${provider.is_active ? 'Disable' : 'enable'}`)
   } catch (error) {
-    ElMessage.error('切换厂家状态失败')
+    ElMessage.error('Failed to switch manufacturer status')
   }
 }
 
-// 删除厂家
+// Delete manufacturer
 const deleteProvider = async (provider: LLMProvider) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除厂家 ${provider.display_name} 吗？删除后该厂家下的所有模型配置也将被删除。`,
-      '确认删除',
+      `Confirm to delete the manufacturer ${provider.display_name} ? After deletion, all model configurations under the manufacturer will also be deleted.`,
+      'Confirm deletion',
       { type: 'warning' }
     )
 
     await configApi.deleteLLMProvider(provider.id)
     await loadProviders()
-    ElMessage.success('厂家删除成功')
+    ElMessage.success('Manufacturer deleted successfully')
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除厂家失败')
+      ElMessage.error('Failed to delete manufacturer')
     }
   }
 }
 
-// 厂家操作成功回调
+// Manufacturer operation successful callback
 const handleProviderSuccess = () => {
   loadProviders()
-  // 重新加载厂家信息到映射表
+  // Reload manufacturer information into the mapping table
   loadProviderInfoMap()
 }
 
-// 加载厂家信息到映射表
+// Load manufacturer information into the mapping table
 const loadProviderInfoMap = async () => {
   try {
     const providerList = await configApi.getLLMProviders()
@@ -2306,13 +2306,13 @@ const loadProviderInfoMap = async () => {
 
     providerInfoMap.value = map
   } catch (error) {
-    console.error('加载厂家信息映射失败:', error)
+    console.error('Failed to load manufacturer information mapping:', error)
   }
 }
 
 type TagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
 
-// 获取厂家标签类型
+// Get manufacturer label type
 const getProviderTagType = (provider: string): TagType => {
   const typeMap: Record<string, TagType> = {
     'openai': 'primary',
@@ -2327,19 +2327,19 @@ const getProviderTagType = (provider: string): TagType => {
   return typeMap[provider.toLowerCase()] || 'info'
 }
 
-// 🆕 获取能力等级文本
+// 🆕 Get ability level text
 const getCapabilityLevelText = (level: number) => {
   const levelMap: Record<number, string> = {
-    1: '1级-基础',
-    2: '2级-标准',
-    3: '3级-高级',
-    4: '4级-专业',
-    5: '5级-旗舰'
+    1: '1 Level-Basic',
+    2: '2 Level-Standard',
+    3: '3 Level-Advanced',
+    4: '4 Level-Professional',
+    5: '5 level-flagship'
   }
-  return levelMap[level] || `${level}级`
+  return levelMap[level] || `${level}level`
 }
 
-// 🆕 获取能力等级标签类型
+// 🆕 Get ability level label type
 const getCapabilityLevelType = (level: number): TagType => {
   const typeMap: Record<number, TagType> = {
     1: 'info',
@@ -2351,28 +2351,28 @@ const getCapabilityLevelType = (level: number): TagType => {
   return typeMap[level] || 'info'
 }
 
-// 🆕 获取角色文本
+// 🆕 Get character text
 const getRoleText = (role: string) => {
   const roleMap: Record<string, string> = {
-    'quick_analysis': '快速分析',
-    'deep_analysis': '深度分析',
-    'both': '全能型'
+    'quick_analysis': 'Quick analysis',
+    'deep_analysis': 'In-depth analysis',
+    'both': 'all-rounder'
   }
   return roleMap[role] || role
 }
 
-// 🆕 格式化价格显示（去除尾部多余的零）
+// 🆕 Format price display (remove extra trailing zeros)
 const formatPrice = (price: number | undefined | null) => {
   if (price === undefined || price === null) {
     return '0'
   }
-  // 转换为字符串并去除尾部多余的零
+  // Convert to string and remove extra trailing zeros
   return parseFloat(price.toFixed(6)).toString()
 }
 
-// 为厂家添加模型
+// Add model for manufacturer
 const addModelToProvider = (providerRow: any) => {
-  // 预设厂家信息
+  // Default manufacturer information
   currentLLMConfig.value = {
     provider: providerRow.provider,
     model_name: '',
@@ -2380,7 +2380,7 @@ const addModelToProvider = (providerRow: any) => {
     description: '',
     enabled: true,
     max_tokens: 4000,
-    temperature: 0.2,  // 股票分析推荐值：0.2-0.3（快速分析），0.1-0.2（深度分析）
+    temperature: 0.2,  // Recommended values for stock analysis: 0.2-0.3 (quick analysis), 0.1-0.2 (in-depth analysis)
     timeout: 60,
     retry_times: 3,
     priority: 0,
@@ -2394,69 +2394,69 @@ const addModelToProvider = (providerRow: any) => {
   isEditingLLM.value = false
 }
 
-// 切换厂家状态
+// Switch manufacturer status
 const toggleProviderStatus = async (providerRow: any) => {
   try {
     const newStatus = !providerRow.is_active
-    const action = newStatus ? '启用' : '禁用'
+    const action = newStatus ? 'enable' : 'Disable'
 
-    // 获取厂家ID
+    // Get manufacturer ID
     const provider = providers.value.find(p => p.name === providerRow.provider)
     if (!provider) {
-      ElMessage.error('找不到厂家信息')
+      ElMessage.error('Manufacturer information not found')
       return
     }
 
-    // 调用后端API切换厂家状态
+    // Call the backend API to switch manufacturer status
     await configApi.toggleLLMProvider(provider.id, newStatus)
 
-    // 重新加载数据
+    // Reload data
     await loadProviders()
     await loadLLMConfigs()
 
-    // 重新构建厂家信息映射和分组数据
+    // Reconstruct manufacturer information mapping and grouping data
     await loadProviderInfoMap()
     buildLLMConfigGroups()
 
-    ElMessage.success(`厂家已${action}`)
+    ElMessage.success(`The manufacturer has${action}`)
   } catch (error) {
-    console.error('切换厂家状态失败:', error)
-    ElMessage.error('切换厂家状态失败')
+    console.error('Failed to switch manufacturer status:', error)
+    ElMessage.error('Failed to switch manufacturer status')
   }
 }
 
-// 测试厂家API
+// Test manufacturer API
 const testProviderAPI = async (provider: LLMProvider) => {
   try {
-    console.log('🔍 测试厂家API:', provider)
-    console.log('📋 厂家ID:', provider.id)
-    console.log('📋 厂家名称:', provider.display_name)
+    console.log('🔍 Test manufacturer API:', provider)
+    console.log('📋 Manufacturer ID:', provider.id)
+    console.log('📋 Manufacturer name:', provider.display_name)
 
     testingProviders.value[provider.id] = true
 
-    // 调用测试API
+    // Call test API
     const result = await configApi.testProviderAPI(provider.id)
 
     if (result.success) {
-      ElMessage.success(`${provider.display_name} API测试成功`)
+      ElMessage.success(`${provider.display_name} API Test successful`)
     } else {
-      ElMessage.error(`${provider.display_name} API测试失败: ${result.message}`)
+      ElMessage.error(`${provider.display_name} API test failed: ${result.message}`)
     }
   } catch (error) {
-    console.error('API测试失败:', error)
-    ElMessage.error(`${provider.display_name} API测试失败`)
+    console.error('API test failed:', error)
+    ElMessage.error(`${provider.display_name} API test failed`)
   } finally {
     testingProviders.value[provider.id] = false
   }
 }
 
-// 获取厂家显示名称
+// Get manufacturer display name
 const getProviderDisplayName = (providerId: string) => {
   const provider = providers.value.find(p => p.name === providerId)
   return provider?.display_name || providerId
 }
 
-// API密钥状态相关计算属性
+// API Key status related computed properties
 const configuredProvidersCount = computed(() => {
   return providers.value.filter(p => p.extra_config?.has_api_key === true).length
 })
@@ -2465,7 +2465,7 @@ const activeProvidersCount = computed(() => {
   return providers.value.filter(p => p.is_active).length
 })
 
-// 获取密钥状态类型
+// Get key status type
 const getKeyStatusType = (provider: LLMProvider) => {
   if (!provider.extra_config?.has_api_key) {
     return 'info'
@@ -2473,28 +2473,28 @@ const getKeyStatusType = (provider: LLMProvider) => {
   return provider.is_active ? 'success' : 'warning'
 }
 
-// 获取密钥状态文本
+// Get key status text
 const getKeyStatusText = (provider: LLMProvider) => {
   if (!provider.extra_config?.has_api_key) {
-    return '未配置'
+    return 'Not configured'
   }
   if (!provider.is_active) {
-    return '已配置(禁用)'
+    return 'configured(Disable)'
   }
 
   if (provider.extra_config?.source === 'environment') {
-    return '已配置(环境变量)'
+    return 'configured(environment variables)'
   }
 
-  return '已配置'
+  return 'configured'
 }
 
-// 从环境变量迁移
+// Migrate from environment variables
 const migrateFromEnv = async () => {
   try {
     await ElMessageBox.confirm(
-      '此操作将从 .env 文件中读取API密钥并创建对应的厂家配置。已存在的厂家配置不会被覆盖。',
-      '确认迁移',
+      'This operation will read the API key from the .env file and create the corresponding factory configuration. Existing factory configurations will not be overwritten.',
+      'Confirm migration',
       { type: 'info' }
     )
 
@@ -2503,22 +2503,22 @@ const migrateFromEnv = async () => {
 
     ElMessage.success(result.message)
 
-    // 重新加载厂家列表
+    // Reload manufacturer list
     await loadProviders()
 
   } catch (error) {
     if (error !== 'cancel') {
-      console.error('迁移失败:', error)
-      ElMessage.error('迁移失败，请检查控制台错误信息')
+      console.error('Migration failed:', error)
+      ElMessage.error('Migration failed, please check the console for error messages')
     }
   } finally {
     migrateLoading.value = false
   }
 }
 
-// ========== 大模型配置操作 ==========
+// ========== Large model configuration operations ==========
 
-// 大模型配置对话框
+// Large model configuration dialog
 const llmDialogVisible = ref(false)
 const currentLLMConfig = ref<LLMConfig | null>(null)
 const isEditingLLM = ref(false)
@@ -2528,12 +2528,12 @@ const selectedImportProviders = ref<string[]>([])
 const importableProviders = ref<LLMProvider[]>([])
 
 const handleBatchImport = async () => {
-  // 加载厂家列表
+  // Load manufacturer list
   try {
     const providers = await configApi.getLLMProviders()
     importableProviders.value = providers.filter((p: LLMProvider) => p.is_active)
   } catch {
-    ElMessage.error('加载厂家列表失败')
+    ElMessage.error('Failed to load manufacturer list')
     return
   }
   selectedImportProviders.value = []
@@ -2554,8 +2554,8 @@ const confirmBatchImport = async () => {
       ElMessage.warning(result.message)
     }
   } catch (error) {
-    console.error('批量导入失败:', error)
-    ElMessage.error('批量导入失败')
+    console.error('Batch import failed:', error)
+    ElMessage.error('Batch import failed')
   } finally {
     batchImporting.value = false
   }
@@ -2577,41 +2577,41 @@ const handleLLMConfigSuccess = () => {
   loadLLMConfigs()
 }
 
-// 测试LLM配置
+// Test LLM configuration
 const testLLMConfig = async (config: LLMConfig) => {
   try {
-    console.log('🧪 测试LLM配置:', config)
-    console.log('📋 厂家:', config.provider)
-    console.log('📋 模型名称:', config.model_name)
-    console.log('📋 显示名称:', config.model_display_name)
-    console.log('📋 API基础URL:', config.api_base)
+    console.log('🧪 Test LLM configuration:', config)
+    console.log('📋 Manufacturer:', config.provider)
+    console.log('📋 Model name:', config.model_name)
+    console.log('📋 display name:', config.model_display_name)
+    console.log('📋 API Basics URL:', config.api_base)
 
     const result = await configApi.testConfig({
       config_type: 'llm',
       config_data: config
     })
 
-    console.log('✅ 测试结果:', result)
+    console.log('✅ Test results:', result)
 
     if (result.success) {
-      ElMessage.success(`测试成功: ${result.message}`)
+      ElMessage.success(`Test successful: ${result.message}`)
     } else {
-      ElMessage.error(`测试失败: ${result.message}`)
+      ElMessage.error(`test failed: ${result.message}`)
     }
   } catch (error: any) {
-    console.error('❌ 测试配置失败:', error)
-    console.error('❌ 错误详情:', error.response?.data)
-    ElMessage.error(error.response?.data?.detail || error.message || '测试配置失败')
+    console.error('❌ Test configuration failed:', error)
+    console.error('❌ Error details:', error.response?.data)
+    ElMessage.error(error.response?.data?.detail || error.message || 'Test configuration failed')
   }
 }
 
-// 切换LLM配置启用状态
+// Switch LLM configuration enabled state
 const toggleLLMConfig = async (config: LLMConfig) => {
   try {
     const newStatus = !config.enabled
-    const action = newStatus ? '启用' : '禁用'
+    const action = newStatus ? 'enable' : 'Disable'
 
-    // 更新配置
+    // Update configuration
     const updateData = {
       ...config,
       enabled: newStatus
@@ -2619,27 +2619,27 @@ const toggleLLMConfig = async (config: LLMConfig) => {
 
     await configApi.updateLLMConfig(updateData)
     await loadLLMConfigs()
-    ElMessage.success(`模型已${action}`)
+    ElMessage.success(`Model has${action}`)
   } catch (error) {
-    ElMessage.error('切换模型状态失败')
+    ElMessage.error('Failed to switch model status')
   }
 }
 
-// 删除LLM配置
+// Delete LLM configuration
 const deleteLLMConfig = async (config: LLMConfig) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除大模型配置 ${config.provider}/${config.model_name} 吗？`,
-      '确认删除',
+      `Are you sure you want to delete the large model configuration? ${config.provider}/${config.model_name} ?`,
+      'Confirm deletion',
       { type: 'warning' }
     )
 
     await configApi.deleteLLMConfig(config.provider, config.model_name)
     await loadLLMConfigs()
-    ElMessage.success('大模型配置删除成功')
+    ElMessage.success('Large model configuration deleted successfully')
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除大模型配置失败')
+      ElMessage.error('Failed to delete large model configuration')
     }
   }
 }
@@ -2648,7 +2648,7 @@ const deleteLLMConfig = async (config: LLMConfig) => {
 
 
 
-// 数据源相关操作
+// Data source related operations
 const showAddDataSourceDialog = () => {
   currentDataSourceConfig.value = null
   dataSourceDialogVisible.value = true
@@ -2659,61 +2659,61 @@ const editDataSourceConfig = (config: DataSourceConfig) => {
   dataSourceDialogVisible.value = true
 }
 
-// 显示市场分类管理
+// Show market category management
 const showMarketCategoryManagement = () => {
   marketCategoryManagementVisible.value = true
 }
 
-// 显示数据源分组对话框
+// Display the data source grouping dialog box
 const showDataSourceGroupingDialog = (dataSourceName: string) => {
   currentDataSourceName.value = dataSourceName
   dataSourceGroupingDialogVisible.value = true
 }
 
-// 处理数据源排序更新
+// Handling data source sort updates
 const handleUpdateDataSourceOrder = async (categoryId: string, orderedItems: Array<{name: string, priority: number}>) => {
   try {
     await configApi.updateCategoryDataSourceOrder(categoryId, orderedItems)
-    ElMessage.success('排序更新成功')
-    // 重新加载数据
+    ElMessage.success('Sorting update successful')
+    // Reload data
     await loadDataSourceGroupings()
     buildDataSourceGroups()
   } catch (error) {
-    console.error('更新排序失败:', error)
-    ElMessage.error('更新排序失败')
+    console.error('Update sort failed:', error)
+    ElMessage.error('Update sort failed')
   }
 }
 
-// 数据源配置成功回调
+// Data source configuration success callback
 const handleDataSourceConfigSuccess = async () => {
   await loadDataSourceConfigs()
 
-  // 🔥 数据源配置成功后，引导用户去同步数据
+  // 🔥 After the data source is successfully configured, guide the user to synchronize the data.
   try {
     await ElMessageBox.confirm(
-      '数据源已配置完成，建议立即同步股票基础数据，以便开始分析。',
-      '数据源配置成功',
+      'The data source has been configured. It is recommended to synchronize the basic stock data immediately to start analysis.',
+      'Data source configuration successful',
       {
-        confirmButtonText: '立即同步数据',
-        cancelButtonText: '稍后再说',
+        confirmButtonText: 'Sync data now',
+        cancelButtonText: 'Talk to you later',
         type: 'success',
         showClose: true,
       }
     )
-    // 用户点击"立即同步数据"，跳转到同步页面
+    // User clicks"Sync data now", Jump to synchronization page
     router.push('/settings/sync')
   } catch (action) {
-    // 用户点击"稍后再说"或关闭，不做任何操作
+    // User clicks"Talk to you later"or close and do nothing
   }
 }
 
-// 市场分类管理成功回调
+// Market classification management successfully called back
 const handleMarketCategorySuccess = () => {
   loadMarketCategories()
   buildDataSourceGroups()
 }
 
-// 数据源分组成功回调
+// Data source grouping success callback
 const handleDataSourceGroupingSuccess = () => {
   loadDataSourceGroupings()
   buildDataSourceGroups()
@@ -2727,41 +2727,41 @@ const testDataSource = async (config: DataSourceConfig) => {
     })
 
     if (result.success) {
-      ElMessage.success('数据源连接测试成功')
+      ElMessage.success('Data source connection test successful')
     } else {
-      ElMessage.error(`数据源连接测试失败: ${result.message}`)
+      ElMessage.error(`Data source connection test failed: ${result.message}`)
     }
   } catch (error) {
-    ElMessage.error('数据源连接测试失败')
+    ElMessage.error('Data source connection test failed')
   }
 }
 
-// 删除数据源配置
+// Delete data source configuration
 const deleteDataSourceConfig = async (config: DataSourceConfig) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除数据源 "${config.display_name || config.name}" 吗？此操作不可恢复。`,
-      '删除确认',
+      `Confirm you want to delete the data source "${config.display_name || config.name}" ? This operation is irreversible.`,
+      'Delete confirmation',
       {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
+        confirmButtonText: 'Confirm deletion',
+        cancelButtonText: 'Cancel',
         type: 'warning',
         confirmButtonClass: 'el-button--danger'
       }
     )
 
     await configApi.deleteDataSourceConfig(config.name)
-    ElMessage.success('数据源删除成功')
+    ElMessage.success('Data source deleted successfully')
     await loadDataSourceConfigs()
   } catch (error: any) {
     if (error !== 'cancel') {
-      console.error('删除数据源失败:', error)
-      ElMessage.error(error.message || '删除数据源失败')
+      console.error('Failed to delete data source:', error)
+      ElMessage.error(error.message || 'Failed to delete data source')
     }
   }
 }
 
-// 数据库相关操作
+// Database related operations
 const editDatabaseConfig = (config: DatabaseConfig) => {
   databaseDialogMode.value = 'edit'
   currentDatabaseConfig.value = { ...config }
@@ -2774,38 +2774,38 @@ const saveDatabaseConfig = async () => {
       currentDatabaseConfig.value.name!,
       currentDatabaseConfig.value
     )
-    ElMessage.success('数据库配置更新成功')
+    ElMessage.success('Database configuration updated successfully')
     databaseDialogVisible.value = false
     await loadDatabaseConfigs()
   } catch (error: any) {
-    ElMessage.error(error.message || '保存数据库配置失败')
+    ElMessage.error(error.message || 'Failed to save database configuration')
   }
 }
 
 const testDatabase = async (config: DatabaseConfig) => {
   try {
-    console.log('🧪 测试数据库配置:', config)
-    console.log('📋 配置名称:', config.name)
-    console.log('📋 配置类型:', config.type)
-    console.log('📋 主机地址:', config.host)
-    console.log('📋 端口:', config.port)
+    console.log('🧪 Test database configuration:', config)
+    console.log('📋 Configuration name:', config.name)
+    console.log('📋 Configuration type:', config.type)
+    console.log('📋 host address:', config.host)
+    console.log('📋 port:', config.port)
 
     const result = await configApi.testDatabaseConfig(config.name)
 
     if (result.success) {
-      ElMessage.success('数据库连接测试成功')
+      ElMessage.success('Database connection test successful')
     } else {
-      ElMessage.error(`数据库连接测试失败: ${result.message}`)
+      ElMessage.error(`Database connection test failed: ${result.message}`)
     }
   } catch (error: any) {
-    console.error('❌ 数据库测试失败:', error)
-    console.error('❌ 错误详情:', error.response?.data)
-    ElMessage.error(error.response?.data?.detail || error.message || '数据库连接测试失败')
+    console.error('❌ Database test failed:', error)
+    console.error('❌ Error details:', error.response?.data)
+    ElMessage.error(error.response?.data?.detail || error.message || 'Database connection test failed')
   }
 }
 
-// 配置重载
-// ========== Gateway 配置相关 ==========
+// Configuration reload
+// ========== Gateway Configuration related ==========
 
 const fetchGatewayConfig = async (platform: string) => {
   try {
@@ -2819,8 +2819,8 @@ const fetchGatewayConfig = async (platform: string) => {
       gatewayDingtalkConfig.value = data
     }
   } catch (error: any) {
-    console.error(`获取 Gateway ${platform} 配置失败:`, error)
-    ElMessage.error(`获取 Gateway ${platform} 配置失败`)
+    console.error(`get Gateway ${platform} Configuration failed:`, error)
+    ElMessage.error(`get Gateway ${platform} Configuration failed`)
   } finally {
     gatewayLoading.value = false
   }
@@ -2832,7 +2832,7 @@ const handleSaveGatewayConfig = async (platform: string) => {
   if (platform === 'qq') {
     const cfg = gatewayQQConfig.value
     if (!cfg.app_id || !cfg.app_secret) {
-      ElMessage.warning('AppID 和 AppSecret 不能为空')
+      ElMessage.warning('AppID and AppSecret cannot be empty')
       return
     }
     req = {
@@ -2845,7 +2845,7 @@ const handleSaveGatewayConfig = async (platform: string) => {
   } else if (platform === 'feishu') {
     const cfg = gatewayFeishuConfig.value
     if (!cfg.app_id || !cfg.app_secret) {
-      ElMessage.warning('App ID 和 App Secret 不能为空')
+      ElMessage.warning('App ID and App Secret cannot be empty')
       return
     }
     req = {
@@ -2858,7 +2858,7 @@ const handleSaveGatewayConfig = async (platform: string) => {
   } else if (platform === 'dingtalk') {
     const cfg = gatewayDingtalkConfig.value
     if (!cfg.app_key || !cfg.app_secret) {
-      ElMessage.warning('AppKey 和 AppSecret 不能为空')
+      ElMessage.warning('AppKey and AppSecret cannot be empty')
       return
     }
     req = {
@@ -2874,12 +2874,12 @@ const handleSaveGatewayConfig = async (platform: string) => {
   try {
     gatewaySaving.value = true
     await configApi.updateGatewayConfig(platform, req)
-    const labels: Record<string, string> = { qq: 'QQ', feishu: '飞书', dingtalk: '钉钉' }
-    ElMessage.success(`${labels[platform] || platform} Gateway 配置已保存`)
+    const labels: Record<string, string> = { qq: 'QQ', feishu: 'Feishu', dingtalk: 'DingTalk' }
+    ElMessage.success(`${labels[platform] || platform} Gateway Configuration saved`)
     await fetchGatewayConfig(platform)
   } catch (error: any) {
-    console.error(`保存 Gateway ${platform} 配置失败:`, error)
-    ElMessage.error(error.response?.data?.detail || `保存失败`)
+    console.error(`save Gateway ${platform} Configuration failed:`, error)
+    ElMessage.error(error.response?.data?.detail || `Save failed`)
   } finally {
     gatewaySaving.value = false
   }
@@ -2890,13 +2890,13 @@ const handleTestGatewayConnection = async (platform: string) => {
     gatewayTesting.value = true
     const res = await configApi.testGatewayConnection(platform)
     if (res.success) {
-      ElMessage.success(res.message || `Gateway ${platform.toUpperCase()} 连接成功`)
+      ElMessage.success(res.message || `Gateway ${platform.toUpperCase()} Connection successful`)
     } else {
-      ElMessage.error(res.message || `Gateway ${platform.toUpperCase()} 连接失败`)
+      ElMessage.error(res.message || `Gateway ${platform.toUpperCase()} Connection failed`)
     }
   } catch (error: any) {
-    console.error(`测试 Gateway ${platform} 连接失败:`, error)
-    ElMessage.error(error.response?.data?.message || error.response?.data?.detail || '测试连接失败')
+    console.error(`test Gateway ${platform} Connection failed:`, error)
+    ElMessage.error(error.response?.data?.message || error.response?.data?.detail || 'Test connection failed')
   } finally {
     gatewayTesting.value = false
   }
@@ -2909,19 +2909,19 @@ const handleReloadConfig = async () => {
 
     if (response.success) {
       ElMessage.success({
-        message: '配置重载成功！新配置已生效',
+        message: 'Configuration reload successful! The new configuration has taken effect',
         duration: 3000
       })
     } else {
       ElMessage.warning({
-        message: response.message || '配置重载失败',
+        message: response.message || 'Configuration reload failed',
         duration: 3000
       })
     }
   } catch (error: any) {
-    console.error('配置重载失败:', error)
+    console.error('Configuration reload failed:', error)
     ElMessage.error({
-      message: error.response?.data?.detail || '配置重载失败',
+      message: error.response?.data?.detail || 'Configuration reload failed',
       duration: 3000
     })
   } finally {
@@ -2929,7 +2929,7 @@ const handleReloadConfig = async () => {
   }
 }
 
-// 系统设置相关操作
+// System settings related operations
 const isEditable = (key: string): boolean => {
   const meta = systemSettingsMeta.value[key]
   if (!meta) return true
@@ -2940,7 +2940,7 @@ const saveSystemSettings = async () => {
   systemSaving.value = true
   try {
     syncModelSelectionSettings()
-    // 基本校验：这些数值需 > 0
+    // Basic verification: these values need to > 0
     const positiveKeys: Array<{key: string; min: number}> = [
       { key: 'worker_heartbeat_interval_seconds', min: 1 },
       { key: 'queue_poll_interval_seconds', min: 0.000001 },
@@ -2950,7 +2950,7 @@ const saveSystemSettings = async () => {
       { key: 'sse_task_max_idle_seconds', min: 1 },
       { key: 'sse_batch_poll_interval_seconds', min: 0.000001 },
       { key: 'sse_batch_max_idle_seconds', min: 1 },
-      // TradingAgents（可选）
+      // TradingAgents (optional)
       { key: 'ta_hk_min_request_interval_seconds', min: 0.000001 },
       { key: 'ta_hk_timeout_seconds', min: 1 },
       { key: 'ta_hk_max_retries', min: 0 },
@@ -2964,39 +2964,39 @@ const saveSystemSettings = async () => {
     for (const { key, min } of positiveKeys) {
       const v = (systemSettings.value as any)[key]
       if (v !== undefined && v !== null && Number(v) <= min - Number.EPSILON && isEditable(key)) {
-        ElMessage.error(`${key} 必须大于 ${min}`)
+        ElMessage.error(`${key} must be greater than ${min}`)
         systemSaving.value = false
         return
       }
     }
-    // 额外：Google News 最大延时应大于最小延时
+    // Extra: Google News maximum delay should be greater than minimum delay
     const gMin = Number((systemSettings.value as any)['ta_google_news_sleep_min_seconds'])
     const gMax = Number((systemSettings.value as any)['ta_google_news_sleep_max_seconds'])
     if (!Number.isNaN(gMin) && !Number.isNaN(gMax) && isEditable('ta_google_news_sleep_max_seconds')) {
       if (gMax <= gMin) {
-        ElMessage.error('ta_google_news_sleep_max_seconds 必须大于 ta_google_news_sleep_min_seconds')
+        ElMessage.error('ta_google_news_sleep_max_seconds must be greater than ta_google_news_sleep_min_seconds')
         systemSaving.value = false
         return
       }
     }
 
-    // 仅提交可编辑项
+    // Submit only editable items
     const entries = Object.entries(systemSettings.value).filter(([k]) => isEditable(k))
     const payload = Object.fromEntries(entries)
     await configApi.updateSystemSettings(payload)
-    ElMessage.success('系统设置保存成功')
-    // 如果修改了代理配置，提醒用户重启服务
+    ElMessage.success('System settings saved successfully')
+    // If the proxy configuration is modified, the user is reminded to restart the service.
     if ('http_proxy' in payload || 'https_proxy' in payload || 'no_proxy' in payload) {
-      ElMessage.warning('代理配置已保存，请重启后端服务使配置生效')
+      ElMessage.warning('The proxy configuration has been saved. Please restart the backend service to make the configuration take effect.')
     }
   } catch (error) {
-    ElMessage.error('系统设置保存失败')
+    ElMessage.error('System settings failed to save')
   } finally {
     systemSaving.value = false
   }
 }
 
-// 代理连接测试
+// Proxy connection test
 const testProxyConnection = async () => {
   proxyTesting.value = true
   proxyTestResult.value = null
@@ -3011,11 +3011,11 @@ const testProxyConnection = async () => {
     proxyTestResult.value = {
       success: result.success,
       message: result.success
-        ? `连接成功 (${responseTime?.toFixed(2)}s)`
-        : (result.message || '连接失败')
+        ? `Connection successful (${responseTime?.toFixed(2)}s)`
+        : (result.message || 'Connection failed')
     }
   } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : '测试失败'
+    const errMsg = error instanceof Error ? error.message : 'test failed'
     proxyTestResult.value = {
       success: false,
       message: errMsg
@@ -3025,13 +3025,13 @@ const testProxyConnection = async () => {
   }
 }
 
-// 导入导出相关操作
+// Import and export related operations
 const exportConfig = async () => {
   exportLoading.value = true
   try {
     const result = await configApi.exportConfig()
 
-    // 创建下载链接
+    // Create download link
     const blob = new Blob([JSON.stringify(result.data, null, 2)], {
       type: 'application/json'
     })
@@ -3042,9 +3042,9 @@ const exportConfig = async () => {
     link.click()
     URL.revokeObjectURL(url)
 
-    ElMessage.success('配置导出成功')
+    ElMessage.success('Configuration export successful')
   } catch (error) {
-    ElMessage.error('配置导出失败')
+    ElMessage.error('Configuration export failed')
   } finally {
     exportLoading.value = false
   }
@@ -3057,51 +3057,51 @@ const handleImportConfig = async (file: File) => {
     const configData = JSON.parse(text)
 
     await ElMessageBox.confirm(
-      '导入配置将覆盖现有配置，确定要继续吗？',
-      '确认导入',
+      'Importing the configuration will overwrite the existing configuration. Are you sure you want to continue?',
+      'Confirm import',
       { type: 'warning' }
     )
 
     await configApi.importConfig(configData)
-    ElMessage.success('配置导入成功')
+    ElMessage.success('Configuration imported successfully')
 
-    // 重新加载当前标签页数据
+    // Reload current tab data
     await loadTabData(activeTab.value)
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('配置导入失败')
+      ElMessage.error('Configuration import failed')
     }
   } finally {
     importLoading.value = false
   }
 
-  return false // 阻止自动上传
+  return false // Block automatic uploads
 }
 
 const migrateLegacyConfig = async () => {
   migrateLoading.value = true
   try {
     await ElMessageBox.confirm(
-      '迁移传统配置可能会覆盖现有配置，确定要继续吗？',
-      '确认迁移',
+      'Migrating legacy configurations may overwrite existing configurations. Are you sure you want to continue?',
+      'Confirm migration',
       { type: 'warning' }
     )
 
     await configApi.migrateLegacyConfig()
-    ElMessage.success('传统配置迁移成功')
+    ElMessage.success('Traditional configuration migration successful')
 
-    // 重新加载所有数据
+    // Reload all data
     await loadTabData(activeTab.value)
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('传统配置迁移失败')
+      ElMessage.error('Legacy configuration migration fails')
     }
   } finally {
     migrateLoading.value = false
   }
 }
 
-// 仅当模型本身不再可用时清空，默认供应商变化不应限制模型选择范围
+// Cleared only when the model itself is no longer available, default vendor changes should not limit model selection
 watch(
   allEnabledModels,
   (availableModels) => {
@@ -3127,15 +3127,15 @@ watch(
   }
 )
 
-// 生命周期
+// life cycle
 onMounted(async () => {
-  // 京东云模式下：只显示数据源配置标签页
+  // In JD Cloud mode: only the data source configuration tab page is displayed
   if (isJdyunMode()) {
     activeTab.value = 'datasource'
     await loadDataSourceConfigs()
     return
   }
-  // 先加载厂家信息，再加载其他数据
+  // Load manufacturer information first, then other data
   await loadProviders()
   await loadProviderInfoMap()
   loadTabData(activeTab.value)
@@ -3378,7 +3378,7 @@ onMounted(async () => {
     }
   }
 
-  // 厂家管理样式
+  // Manufacturer management style
   .provider-info {
     .provider-name {
       font-weight: 500;
@@ -3418,7 +3418,7 @@ onMounted(async () => {
     }
   }
 
-  // 卡片式布局样式
+  // Card layout style
   .empty-state {
     padding: 60px 20px;
     text-align: center;
@@ -3470,7 +3470,7 @@ onMounted(async () => {
     }
   }
 
-  // 表格式布局样式
+  // Table layout style
   .model-name-cell {
     .model-display-name {
       font-weight: 500;
@@ -3522,7 +3522,7 @@ onMounted(async () => {
     color: var(--el-text-color-placeholder);
   }
 
-  // 保留旧的卡片样式（如果其他地方还在使用）
+  // Keep the old card style (if still in use elsewhere)
   .model-header {
     display: flex;
     justify-content: space-between;
@@ -3620,7 +3620,7 @@ onMounted(async () => {
     }
   }
 
-  // 🆕 模型能力信息样式
+  // 🆕 Model capability information style
   .model-capability {
     margin-bottom: 12px;
     padding: 8px;
@@ -3675,7 +3675,7 @@ onMounted(async () => {
     }
   }
 
-  // 代理测试结果样式
+  // Agent test result style
   .proxy-test-result {
     font-size: 13px;
     padding: 4px 8px;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-调试DeepSeek成本计算问题
+Debugging DeepSeek costing issues
 """
 
 import os
@@ -8,100 +8,100 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def debug_config_manager():
-    """调试配置管理器"""
-    print("🔧 调试配置管理器")
+    """Debug Configuration Manager"""
+    print("🔧 Debug Configuration Manager")
     print("=" * 50)
     
     try:
         from tradingagents.config.config_manager import ConfigManager
         
-        # 创建配置管理器
+        # Create configuration manager
         config_manager = ConfigManager()
         
-        print(f"📁 配置目录: {config_manager.config_dir}")
-        print(f"📄 定价文件: {config_manager.pricing_file}")
-        print(f"📄 定价文件存在: {config_manager.pricing_file.exists()}")
+        print(f"📁 Configuration directory: {config_manager.config_dir}")
+        print(f"📄 pricing document: {config_manager.pricing_file}")
+        print(f"📄 Pricing file exists: {config_manager.pricing_file.exists()}")
         
-        # 加载定价配置
+        # Load pricing configuration
         pricing_configs = config_manager.load_pricing()
-        print(f"📊 加载的定价配置数量: {len(pricing_configs)}")
+        print(f"📊 Number of pricing configurations loaded: {len(pricing_configs)}")
         
-        # 查找DeepSeek配置
+        # Find DeepSeek configuration
         deepseek_configs = [p for p in pricing_configs if p.provider == "deepseek"]
-        print(f"📊 DeepSeek定价配置数量: {len(deepseek_configs)}")
+        print(f"📊 DeepSeek Pricing configuration quantity: {len(deepseek_configs)}")
         
         for config in deepseek_configs:
-            print(f"   - 提供商: {config.provider}")
-            print(f"   - 模型: {config.model_name}")
-            print(f"   - 输入价格: {config.input_price_per_1k}")
-            print(f"   - 输出价格: {config.output_price_per_1k}")
-            print(f"   - 货币: {config.currency}")
+            print(f"   - provider: {config.provider}")
+            print(f"   - model: {config.model_name}")
+            print(f"   - Enter price: {config.input_price_per_1k}")
+            print(f"   - output price: {config.output_price_per_1k}")
+            print(f"   - Currency: {config.currency}")
         
-        # 测试成本计算
-        print(f"\n💰 测试成本计算:")
+        # Test cost calculation
+        print(f"\n💰 Test cost calculation:")
         cost = config_manager.calculate_cost(
             provider="deepseek",
             model_name="deepseek-chat",
             input_tokens=2272,
             output_tokens=1215
         )
-        print(f"   计算结果: ¥{cost:.6f}")
+        print(f"   Calculation result: ¥{cost:.6f}")
         
         if cost == 0.0:
-            print(f"❌ 成本计算返回0，检查匹配逻辑...")
+            print(f"❌ Cost calculation returns 0, check matching logic...")
             
-            # 详细检查匹配逻辑
+            # Check the matching logic in detail
             for pricing in pricing_configs:
-                print(f"   检查配置: provider='{pricing.provider}', model='{pricing.model_name}'")
+                print(f"   Check configuration: provider='{pricing.provider}', model='{pricing.model_name}'")
                 if pricing.provider == "deepseek" and pricing.model_name == "deepseek-chat":
-                    print(f"   ✅ 找到匹配配置!")
+                    print(f"   ✅ Matching configuration found!")
                     input_cost = (2272 / 1000) * pricing.input_price_per_1k
                     output_cost = (1215 / 1000) * pricing.output_price_per_1k
                     total_cost = input_cost + output_cost
-                    print(f"   输入成本: {input_cost:.6f}")
-                    print(f"   输出成本: {output_cost:.6f}")
-                    print(f"   总成本: {total_cost:.6f}")
+                    print(f"   Enter cost: {input_cost:.6f}")
+                    print(f"   Output cost: {output_cost:.6f}")
+                    print(f"   total cost: {total_cost:.6f}")
                     break
             else:
-                print(f"   ❌ 未找到匹配的配置")
+                print(f"   ❌ No matching configuration found")
         
         return True
         
     except Exception as e:
-        print(f"❌ 配置管理器调试失败: {e}")
+        print(f"❌ Configuration manager debugging failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def debug_token_tracker():
-    """调试Token跟踪器"""
-    print("\n📊 调试Token跟踪器")
+    """Debugging the Token Tracker"""
+    print("\n📊 Debugging the Token Tracker")
     print("=" * 50)
     
     try:
         from tradingagents.config.config_manager import ConfigManager, TokenTracker
         
-        # 创建配置管理器和Token跟踪器
+        # Create configuration manager and token tracker
         config_manager = ConfigManager()
         token_tracker = TokenTracker(config_manager)
         
-        print(f"🔧 Token跟踪器创建成功")
+        print(f"🔧 Token Tracker created successfully")
         
-        # 检查设置
+        # Check settings
         settings = config_manager.load_settings()
         cost_tracking_enabled = settings.get("enable_cost_tracking", True)
-        print(f"📊 成本跟踪启用: {cost_tracking_enabled}")
+        print(f"📊 Cost tracking enabled: {cost_tracking_enabled}")
         
-        # 测试跟踪使用
-        print(f"💰 测试Token跟踪...")
+        # Test trace usage
+        print(f"💰 Test Token Tracking...")
         usage_record = token_tracker.track_usage(
             provider="deepseek",
             model_name="deepseek-chat",
@@ -112,107 +112,107 @@ def debug_token_tracker():
         )
         
         if usage_record:
-            print(f"✅ Token跟踪成功")
-            print(f"   提供商: {usage_record.provider}")
-            print(f"   模型: {usage_record.model_name}")
-            print(f"   输入tokens: {usage_record.input_tokens}")
-            print(f"   输出tokens: {usage_record.output_tokens}")
-            print(f"   成本: ¥{usage_record.cost:.6f}")
+            print(f"✅ Token Tracking successful")
+            print(f"   provider: {usage_record.provider}")
+            print(f"   model: {usage_record.model_name}")
+            print(f"   input tokens: {usage_record.input_tokens}")
+            print(f"   output tokens: {usage_record.output_tokens}")
+            print(f"   cost: ¥{usage_record.cost:.6f}")
             
             if usage_record.cost > 0:
-                print(f"✅ 成本计算正确")
+                print(f"✅ Cost calculation is correct")
                 return True
             else:
-                print(f"❌ 成本计算仍为0")
+                print(f"❌ The cost calculation is still 0")
                 return False
         else:
-            print(f"❌ Token跟踪失败")
+            print(f"❌ Token Tracking failed")
             return False
         
     except Exception as e:
-        print(f"❌ Token跟踪器调试失败: {e}")
+        print(f"❌ Token Tracker debugging failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def debug_deepseek_adapter():
-    """调试DeepSeek适配器"""
-    print("\n🤖 调试DeepSeek适配器")
+    """Debugging the DeepSeek adapter"""
+    print("\n🤖 Debugging the DeepSeek adapter")
     print("=" * 50)
     
-    # 检查API密钥
+    # Check API key
     if not os.getenv("DEEPSEEK_API_KEY"):
-        print("⚠️ 未找到DEEPSEEK_API_KEY，跳过适配器调试")
+        print("⚠️ DEEPSEEK_API_KEY not found, skipping adapter debugging")
         return True
     
     try:
         from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
         
-        print(f"🔧 创建DeepSeek适配器...")
+        print(f"🔧 Create DeepSeek adapter...")
         
-        # 创建DeepSeek实例
+        # Create DeepSeek instance
         deepseek_llm = ChatDeepSeek(
             model="deepseek-chat",
             temperature=0.1,
             max_tokens=100
         )
         
-        print(f"📊 模型名称: {deepseek_llm.model_name}")
+        print(f"📊 Model name: {deepseek_llm.model_name}")
         
-        # 检查TOKEN_TRACKING_ENABLED
+        # Check TOKEN_TRACKING_ENABLED
         from tradingagents.llm_adapters.deepseek_adapter import TOKEN_TRACKING_ENABLED
-        print(f"📊 Token跟踪启用: {TOKEN_TRACKING_ENABLED}")
+        print(f"📊 Token Tracking enabled: {TOKEN_TRACKING_ENABLED}")
         
-        # 测试调用
-        print(f"📤 发送测试请求...")
-        result = deepseek_llm.invoke("测试")
+        # test call
+        print(f"📤 Send test request...")
+        result = deepseek_llm.invoke("test")
         
-        print(f"📊 调用完成")
-        print(f"   响应长度: {len(result.content)}")
+        print(f"📊 Call completed")
+        print(f"   response length: {len(result.content)}")
         
         return True
         
     except Exception as e:
-        print(f"❌ DeepSeek适配器调试失败: {e}")
+        print(f"❌ DeepSeek Adapter debugging failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def debug_model_name_issue():
-    """调试模型名称匹配问题"""
-    print("\n🔍 调试模型名称匹配问题")
+    """Debugging model name matching issues"""
+    print("\n🔍 Debugging model name matching issues")
     print("=" * 50)
     
     try:
         from tradingagents.config.config_manager import ConfigManager
         from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
         
-        # 创建配置管理器
+        # Create configuration manager
         config_manager = ConfigManager()
         
-        # 创建DeepSeek实例
+        # Create DeepSeek instance
         deepseek_llm = ChatDeepSeek(model="deepseek-chat")
         
-        print(f"📊 适配器中的模型名称: '{deepseek_llm.model_name}'")
+        print(f"📊 model name in adapter: '{deepseek_llm.model_name}'")
         
-        # 加载定价配置
+        # Load pricing configuration
         pricing_configs = config_manager.load_pricing()
         
-        print(f"📊 定价配置中的DeepSeek模型:")
+        print(f"📊 DeepSeek model in pricing configuration:")
         for config in pricing_configs:
             if config.provider == "deepseek":
-                print(f"   - 模型名称: '{config.model_name}'")
-                print(f"   - 匹配检查: {config.model_name == deepseek_llm.model_name}")
+                print(f"   - Model name: '{config.model_name}'")
+                print(f"   - Match check: {config.model_name == deepseek_llm.model_name}")
         
-        # 手动测试匹配
-        print(f"\n💰 手动测试成本计算:")
+        # Manually test matches
+        print(f"\n💰 Manual test costing:")
         cost = config_manager.calculate_cost(
             provider="deepseek",
             model_name=deepseek_llm.model_name,
             input_tokens=100,
             output_tokens=50
         )
-        print(f"   使用适配器模型名称: ¥{cost:.6f}")
+        print(f"   Using adapter model name: ¥{cost:.6f}")
         
         cost2 = config_manager.calculate_cost(
             provider="deepseek",
@@ -220,55 +220,55 @@ def debug_model_name_issue():
             input_tokens=100,
             output_tokens=50
         )
-        print(f"   使用硬编码模型名称: ¥{cost2:.6f}")
+        print(f"   Use hardcoded model names: ¥{cost2:.6f}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 模型名称调试失败: {e}")
+        print(f"❌ Model name debugging failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主函数"""
-    print("🔬 DeepSeek成本计算问题深度调试")
+    """main function"""
+    print("🔬 DeepSeek In-depth debugging of cost calculation issues")
     print("=" * 80)
     
-    # 调试配置管理器
+    # Debug Configuration Manager
     config_success = debug_config_manager()
     
-    # 调试Token跟踪器
+    # Debugging the Token Tracker
     tracker_success = debug_token_tracker()
     
-    # 调试模型名称匹配
+    # Debug model name matching
     model_success = debug_model_name_issue()
     
-    # 调试适配器
+    # debug adapter
     adapter_success = debug_deepseek_adapter()
     
-    # 总结
-    print("\n📋 调试总结")
+    # Summary
+    print("\n📋 Debugging summary")
     print("=" * 60)
     
-    print(f"配置管理器: {'✅ 正常' if config_success else '❌ 有问题'}")
-    print(f"Token跟踪器: {'✅ 正常' if tracker_success else '❌ 有问题'}")
-    print(f"模型名称匹配: {'✅ 正常' if model_success else '❌ 有问题'}")
-    print(f"适配器调试: {'✅ 正常' if adapter_success else '❌ 有问题'}")
+    print(f"configuration manager: {'✅ normal' if config_success else '❌ There is a problem'}")
+    print(f"Token tracker: {'✅ normal' if tracker_success else '❌ There is a problem'}")
+    print(f"Model name match: {'✅ normal' if model_success else '❌ There is a problem'}")
+    print(f"Adapter debugging: {'✅ normal' if adapter_success else '❌ There is a problem'}")
     
     overall_success = config_success and tracker_success and model_success and adapter_success
     
     if overall_success:
-        print("\n🤔 所有组件都正常，但实际使用时成本为0...")
-        print("   可能的原因:")
-        print("   1. 在实际分析流程中使用了不同的配置目录")
-        print("   2. 某个地方覆盖了配置")
-        print("   3. 有缓存问题")
-        print("   4. 模型名称在某个地方被修改了")
+        print("\n🤔 All components are fine, but in actual use the cost is 0...")
+        print("   possible reasons:")
+        print("   1. Different configuration directories are used in the actual analysis process")
+        print("   2. Configuration is overridden somewhere")
+        print("   3. Have caching issues")
+        print("   4. The model name was modified somewhere")
     else:
-        print("\n❌ 发现问题，请检查上述失败的组件")
+        print("\n❌ Problem found, please check the failed component above")
     
-    print("\n🎯 调试完成！")
+    print("\n🎯 Debugging completed!")
     return overall_success
 
 if __name__ == "__main__":

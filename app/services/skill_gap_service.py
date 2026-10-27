@@ -1,10 +1,10 @@
 """
-Skill 缺口管理服务
+Skill Gap Management Services
 
-负责：
-- 将工具缺口报告持久化到 MongoDB skill_gap_reports 集合
-- 推送 WebSocket + 通知中心通知
-- 提供列表 / 详情 / 忽略 / 解决 CRUD
+Responsible for:
+- Persist tool gap reports to the MongoDB skill_gap_reports collection
+- push WebSocket + Notification center notification
+- Provide list/details/ignore/resolve CRUD
 """
 import logging
 import uuid
@@ -24,7 +24,7 @@ class SkillGapService:
     """Skill 缺口管理服务"""
 
     # ------------------------------------------------------------------
-    # 写操作
+    # write operation
     # ------------------------------------------------------------------
 
     async def create_report(
@@ -41,7 +41,7 @@ class SkillGapService:
         report_id = f"gap_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
         now = now_tz()
 
-        # 从 context 中提取工作流/任务信息
+        # Extract workflow/task information from context
         workflow_id = context.get("workflow_id", "") if context else ""
         workflow_name = context.get("workflow_name", "") if context else ""
         task_id = context.get("task_id", "") if context else ""
@@ -74,16 +74,16 @@ class SkillGapService:
         }
 
         await db[COLLECTION].insert_one(doc)
-        logger.info(f"[SkillGapService] 缺口报告已保存: {report_id}")
+        logger.info(f"[SkillGapService] Gap report saved: {report_id}")
 
-        # 推送通知
+        # push notification
         await self._send_notification(user_id, report_id, tool_name, agent_id, gap_type)
         return report_id
 
     async def _send_notification(
         self, user_id: str, report_id: str, tool_name: str, agent_id: str, gap_type: str
     ) -> None:
-        """通过 NotificationsService 推送通知"""
+        """Push notifications via NotificationsService"""
         try:
             from app.services.notifications_service import get_notifications_service
             svc = get_notifications_service()
@@ -101,10 +101,10 @@ class SkillGapService:
                 )
             )
         except Exception as e:
-            logger.warning(f"[SkillGapService] 推送通知失败（已忽略）: {e}")
+            logger.warning(f"[SkillGapService] Push notification failed (ignored): {e}")
 
     # ------------------------------------------------------------------
-    # 读操作
+    # Read operation
     # ------------------------------------------------------------------
 
     async def list_gaps(
@@ -139,7 +139,7 @@ class SkillGapService:
             {"$set": {"status": "dismissed", "updated_at": now}},
         )
         if res:
-            # 通知检测器记录忽略
+            # Notification detector records ignored
             tool_name = res.get("gap", {}).get("tool_name", "")
             if tool_name:
                 from core.tools.external.skill_gap_detector import SkillGapDetector

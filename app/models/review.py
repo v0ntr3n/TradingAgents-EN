@@ -1,5 +1,5 @@
 """
-交易复盘数据模型
+Transaction review data model
 """
 
 from datetime import datetime
@@ -28,14 +28,14 @@ class PyObjectId(ObjectId):
 
 
 class ReviewType(str, Enum):
-    """复盘类型"""
-    SINGLE_TRADE = "single_trade"      # 单笔交易复盘
-    COMPLETE_TRADE = "complete_trade"  # 完整交易复盘（买入到卖出）
-    PERIODIC = "periodic"              # 阶段性复盘
+    """Review type"""
+    SINGLE_TRADE = "single_trade"      # Single transaction review
+    COMPLETE_TRADE = "complete_trade"  # Complete transaction review (buy to sell)
+    PERIODIC = "periodic"              # Periodic review
 
 
 class PeriodType(str, Enum):
-    """阶段性复盘周期类型"""
+    """Periodic review cycle type"""
     WEEK = "week"
     MONTH = "month"
     QUARTER = "quarter"
@@ -43,17 +43,17 @@ class PeriodType(str, Enum):
 
 
 class ReviewStatus(str, Enum):
-    """复盘状态"""
+    """Review status"""
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
 
 
-# ==================== 交易信息相关模型 ====================
+# ==================== Transaction information related models ====================
 
 class TradeRecord(BaseModel):
-    """交易记录"""
+    """transaction history"""
     trade_id: Optional[str] = None
     side: str                           # buy/sell
     quantity: int
@@ -61,18 +61,18 @@ class TradeRecord(BaseModel):
     amount: float = 0.0
     commission: float = 0.0
     timestamp: str
-    pnl: float = 0.0                    # 实现盈亏（卖出时）
+    pnl: float = 0.0                    # Realized profit and loss (when selling)
 
 
 class TradeInfo(BaseModel):
-    """交易信息汇总"""
+    """Transaction information summary"""
     code: str
     name: Optional[str] = None
     market: str = "CN"
     currency: str = "CNY"
     trades: List[TradeRecord] = Field(default_factory=list)
     
-    # 汇总数据
+    # Aggregate data
     total_buy_quantity: int = 0
     total_buy_amount: float = 0.0
     avg_buy_price: float = 0.0
@@ -80,124 +80,124 @@ class TradeInfo(BaseModel):
     total_sell_amount: float = 0.0
     avg_sell_price: float = 0.0
     
-    # 盈亏
-    realized_pnl: float = 0.0           # 已实现盈亏（已卖出部分）
-    realized_pnl_pct: float = 0.0       # 已实现盈亏百分比
-    unrealized_pnl: float = 0.0         # 🆕 未实现盈亏（持仓部分）
-    unrealized_pnl_pct: float = 0.0     # 🆕 未实现盈亏百分比
+    # Profit and loss
+    realized_pnl: float = 0.0           # Realized profit and loss (part sold)
+    realized_pnl_pct: float = 0.0       # Realized profit and loss percentage
+    unrealized_pnl: float = 0.0         # 🆕 Unrealized profit and loss (position portion)
+    unrealized_pnl_pct: float = 0.0     # 🆕 Unrealized profit and loss percentage
     total_commission: float = 0.0
 
-    # 持仓状态
-    is_holding: bool = False            # 🆕 是否还在持仓中
-    current_price: Optional[float] = None  # 🆕 当前价格（持仓中时）
-    remaining_quantity: int = 0         # 🆕 剩余持仓数量
+    # Position status
+    is_holding: bool = False            # 🆕 Are you still holding a position?
+    current_price: Optional[float] = None  # 🆕 Current price (when the position is open)
+    remaining_quantity: int = 0         # 🆕 Remaining position quantity
 
-    # 持仓周期
+    # Position period
     first_buy_date: Optional[str] = None
     last_sell_date: Optional[str] = None
     holding_days: int = 0
 
 
 class MarketSnapshot(BaseModel):
-    """市场数据快照"""
-    # 买入时行情
+    """Market data snapshot"""
+    # Quotes at the time of purchase
     buy_date_open: Optional[float] = None
     buy_date_high: Optional[float] = None
     buy_date_low: Optional[float] = None
     buy_date_close: Optional[float] = None
     
-    # 卖出时行情
+    # Quotes when selling
     sell_date_open: Optional[float] = None
     sell_date_high: Optional[float] = None
     sell_date_low: Optional[float] = None
     sell_date_close: Optional[float] = None
     
-    # 持仓期间行情
+    # Quotes during the position period
     period_high: Optional[float] = None
     period_high_date: Optional[str] = None
     period_low: Optional[float] = None
     period_low_date: Optional[str] = None
     
-    # 最优买卖点
+    # Best buying and selling point
     optimal_buy_price: Optional[float] = None
     optimal_sell_price: Optional[float] = None
     
-    # K线数据（用于图表展示）
+    # K Line data (for chart display)
     kline_data: List[dict] = Field(default_factory=list)
 
 
-# ==================== AI分析结果模型 ====================
+# ==================== AI Analysis results model ====================
 
 class AITradeReview(BaseModel):
-    """AI交易复盘结果
+    """AI Transaction review results
 
-    评分体系说明：
-    - overall_score: 综合评分 = (timing_score + position_score + emotion_score + attribution_score) / 4
-    - timing_score: 时机评分（买卖时机选择）
-    - position_score: 仓位评分（仓位管理）
-    - emotion_score: 情绪与纪律评分（情绪控制 + 纪律执行）
-    - attribution_score: 归因评分（收益来源分析）
-    - discipline_score: 已废弃，保留仅为向后兼容（纪律评估已合并到 emotion_score）
+    Scoring system description:
+    - overall_score: Overall rating = (timing_score + position_score + emotion_score + attribution_score) / 4
+    - timing_score: Timing score (buy and sell timing)
+    - position_score: Position Rating (Position Management)
+    - emotion_score: Emotion and Discipline Score (Emotional Control + Discipline enforcement)
+    - attribution_score: Attribution scoring (revenue source analysis)
+    - discipline_score: Deprecated, retained for backwards compatibility only (discipline evaluation has been merged into emotion_score)
     """
-    overall_score: int = Field(0, ge=0, le=100, description="总评分")
-    timing_score: int = Field(0, ge=0, le=100, description="时机评分")
-    position_score: int = Field(0, ge=0, le=100, description="仓位评分")
-    emotion_score: int = Field(0, ge=0, le=100, description="情绪与纪律评分（情绪控制50% + 纪律执行50%）")
-    attribution_score: int = Field(0, ge=0, le=100, description="归因评分")
-    discipline_score: int = Field(0, ge=0, le=100, description="[已废弃] 纪律评分（已合并到emotion_score，保留仅为兼容性）")
+    overall_score: int = Field(0, ge=0, le=100, description="Overall rating")
+    timing_score: int = Field(0, ge=0, le=100, description="timing score")
+    position_score: int = Field(0, ge=0, le=100, description="Position score")
+    emotion_score: int = Field(0, ge=0, le=100, description="Emotion and Discipline Score (Emotional Control 50% + Discipline enforcement 50%)")
+    attribution_score: int = Field(0, ge=0, le=100, description="Attribution score")
+    discipline_score: int = Field(0, ge=0, le=100, description="[Deprecated] Discipline score (merged into emotion_score, retained for compatibility only)")
 
-    summary: str = ""                                # 总结
-    strengths: List[str] = Field(default_factory=list)  # 做得好的地方
-    weaknesses: List[str] = Field(default_factory=list) # 需要改进的地方
-    suggestions: List[str] = Field(default_factory=list) # 兼容旧字段名，实际语义为复盘改进项
+    summary: str = ""                                # Summary
+    strengths: List[str] = Field(default_factory=list)  # Things done well
+    weaknesses: List[str] = Field(default_factory=list) # areas for improvement
+    suggestions: List[str] = Field(default_factory=list) # Compatible with old field names, the actual semantics are review improvements
 
-    timing_analysis: str = ""                        # 时机分析详情
-    position_analysis: str = ""                      # 仓位分析详情
-    emotion_analysis: str = ""                       # 情绪分析详情
-    attribution_analysis: str = ""                   # 归因分析详情
+    timing_analysis: str = ""                        # Timing analysis details
+    position_analysis: str = ""                      # Position analysis details
+    emotion_analysis: str = ""                       # Sentiment analysis details
+    attribution_analysis: str = ""                   # Attribution analysis details
 
-    # 收益对比
-    actual_pnl: float = 0.0                          # 实际收益
-    optimal_pnl: float = 0.0                         # 理论最优收益
-    missed_profit: float = 0.0                       # 错失的收益
-    avoided_loss: float = 0.0                        # 避免的亏损
+    # Income comparison
+    actual_pnl: float = 0.0                          # Actual income
+    optimal_pnl: float = 0.0                         # Theoretical optimal return
+    missed_profit: float = 0.0                       # missed gains
+    avoided_loss: float = 0.0                        # Avoided losses
 
-    # 🆕 交易计划执行情况（当关联了交易计划时）
-    plan_adherence: Optional[str] = None             # 计划执行良好的地方
-    plan_deviation: Optional[str] = None             # 偏离计划的地方
+    # 🆕 Trading plan execution status (when a trading plan is associated)
+    plan_adherence: Optional[str] = None             # Where plans are executed well
+    plan_deviation: Optional[str] = None             # deviation from plan
 
 
-# ==================== 复盘报告模型 ====================
+# ==================== Review report model ====================
 
 class TradeReviewReport(BaseModel):
-    """交易复盘报告 (trade_reviews 集合)"""
+    """Transaction review report (trade_reviews collection)"""
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     review_id: str
     user_id: str
     review_type: ReviewType = ReviewType.COMPLETE_TRADE
     
-    # 交易信息
+    # transaction information
     trade_info: TradeInfo = Field(default_factory=TradeInfo)
     
-    # 市场数据快照
+    # Market data snapshot
     market_snapshot: MarketSnapshot = Field(default_factory=MarketSnapshot)
     
-    # AI分析结果
+    # AI Analyze results
     ai_review: AITradeReview = Field(default_factory=AITradeReview)
     
-    # 状态与元数据
+    # Status and metadata
     status: ReviewStatus = ReviewStatus.PENDING
     error_message: Optional[str] = None
     execution_time: float = 0.0
     
-    # 案例相关
+    # Case related
     is_case_study: bool = False
     tags: List[str] = Field(default_factory=list)
-    source: str = Field(default="paper", description="数据源: paper(模拟交易) 或 position(持仓操作)")
+    source: str = Field(default="paper", description="data source: paper(simulated trading) or position(Position operation)")
 
-    # 交易计划关联
-    trading_system_id: Optional[str] = Field(None, description="关联的交易计划ID")
-    trading_system_name: Optional[str] = Field(None, description="关联的交易计划名称")
+    # Trading plan association
+    trading_system_id: Optional[str] = Field(None, description="Associated trading plans ID")
+    trading_system_name: Optional[str] = Field(None, description="Associated trading plan name")
 
     created_at: datetime = Field(default_factory=now_tz)
     
@@ -208,44 +208,44 @@ class TradeReviewReport(BaseModel):
     )
 
 
-# ==================== 阶段性复盘模型 ====================
+# ==================== Staged review model ====================
 
 class TradingStatistics(BaseModel):
-    """交易统计"""
-    total_trades: int = 0                # 总交易次数
-    winning_trades: int = 0              # 盈利次数
-    losing_trades: int = 0               # 亏损次数
-    win_rate: float = 0.0                # 胜率
+    """Transaction statistics"""
+    total_trades: int = 0                # total number of transactions
+    winning_trades: int = 0              # Profit times
+    losing_trades: int = 0               # Number of losses
+    win_rate: float = 0.0                # winning rate
 
-    total_pnl: float = 0.0               # 总盈亏
-    avg_profit: float = 0.0              # 平均盈利
-    avg_loss: float = 0.0                # 平均亏损
-    profit_loss_ratio: float = 0.0       # 盈亏比
+    total_pnl: float = 0.0               # Total profit and loss
+    avg_profit: float = 0.0              # average profit
+    avg_loss: float = 0.0                # average loss
+    profit_loss_ratio: float = 0.0       # profit-loss ratio
 
-    max_single_profit: float = 0.0       # 最大单笔盈利
-    max_single_loss: float = 0.0         # 最大单笔亏损
-    max_drawdown: float = 0.0            # 最大回撤
+    max_single_profit: float = 0.0       # Maximum single profit
+    max_single_loss: float = 0.0         # Maximum single loss
+    max_drawdown: float = 0.0            # maximum drawdown
 
-    avg_holding_days: float = 0.0        # 平均持仓天数
-    total_commission: float = 0.0        # 总手续费
+    avg_holding_days: float = 0.0        # Average holding days
+    total_commission: float = 0.0        # total handling fee
 
 
 class AIPeriodicReview(BaseModel):
-    """AI阶段性复盘结果"""
+    """AI Phased review results"""
     overall_score: int = Field(0, ge=0, le=100)
     summary: str = ""
 
-    trading_style: str = ""              # 交易风格分析
-    common_mistakes: List[str] = Field(default_factory=list)   # 常见错误
-    improvement_areas: List[str] = Field(default_factory=list) # 复盘改进方向
-    action_plan: List[str] = Field(default_factory=list)       # 兼容旧字段名，实际语义为后续观察项
+    trading_style: str = ""              # Trading style analysis
+    common_mistakes: List[str] = Field(default_factory=list)   # Common mistakes
+    improvement_areas: List[str] = Field(default_factory=list) # Review and improvement directions
+    action_plan: List[str] = Field(default_factory=list)       # Compatible with old field names, the actual semantics are subsequent observations
 
-    best_trade: Optional[str] = None     # 最佳交易分析
-    worst_trade: Optional[str] = None    # 最差交易分析
+    best_trade: Optional[str] = None     # Best Trading Analysis
+    worst_trade: Optional[str] = None    # Worst trade analysis
 
 
 class TradeSummaryItem(BaseModel):
-    """交易摘要项"""
+    """transaction summary item"""
     code: str
     name: Optional[str] = None
     side: str
@@ -257,29 +257,29 @@ class TradeSummaryItem(BaseModel):
 
 
 class PeriodicReviewReport(BaseModel):
-    """阶段性复盘报告 (periodic_reviews 集合)"""
+    """Periodic review report (periodic_reviews collection)"""
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     review_id: str
     user_id: str
 
-    # 复盘周期
+    # Review cycle
     period_type: PeriodType = PeriodType.MONTH
     period_start: datetime
     period_end: datetime
 
-    # 数据源: paper(模拟交易) 或 position(持仓操作)
+    # data source: paper(simulated trading) or position(Position operation)
     source: str = "paper"
 
-    # 交易统计
+    # Transaction statistics
     statistics: TradingStatistics = Field(default_factory=TradingStatistics)
 
-    # 交易明细摘要
+    # Summary of transaction details
     trades_summary: List[TradeSummaryItem] = Field(default_factory=list)
 
-    # AI分析
+    # AI analysis
     ai_review: AIPeriodicReview = Field(default_factory=AIPeriodicReview)
 
-    # 状态与元数据
+    # Status and metadata
     status: ReviewStatus = ReviewStatus.PENDING
     error_message: Optional[str] = None
     execution_time: float = 0.0
@@ -293,36 +293,36 @@ class PeriodicReviewReport(BaseModel):
     )
 
 
-# ==================== API请求/响应模型 ====================
+# ==================== API request/response model ====================
 
 class CreateTradeReviewRequest(BaseModel):
-    """创建交易复盘请求"""
-    trade_ids: List[str] = Field(..., min_length=1, description="要复盘的交易ID列表")
+    """Create a transaction review request"""
+    trade_ids: List[str] = Field(..., min_length=1, description="List of transaction IDs to be reviewed")
     review_type: ReviewType = ReviewType.COMPLETE_TRADE
-    code: Optional[str] = Field(None, description="股票代码（如果不提供则从交易记录推断）")
-    source: str = Field("paper", description="数据源: paper(模拟交易) 或 position(持仓操作)")
-    trading_system_id: Optional[str] = Field(None, description="关联的交易计划ID，如果提供则按照交易计划规则进行检查")
-    use_workflow: Optional[bool] = Field(None, description="是否使用工作流引擎（v2.0）。None表示使用环境变量设置")
+    code: Optional[str] = Field(None, description="Stock symbol (inferred from transaction records if not provided)")
+    source: str = Field("paper", description="data source: paper(simulated trading) or position(Position operation)")
+    trading_system_id: Optional[str] = Field(None, description="The associated trading plan ID, if provided then checked against the trading plan rules")
+    use_workflow: Optional[bool] = Field(None, description="Whether to use workflow engine (v2.0). None means use environment variable settings")
 
 
 class CreatePeriodicReviewRequest(BaseModel):
-    """创建阶段性复盘请求"""
+    """Create a staged review request"""
     period_type: PeriodType = PeriodType.MONTH
-    start_date: str = Field(..., description="开始日期 YYYY-MM-DD")
-    end_date: str = Field(..., description="结束日期 YYYY-MM-DD")
-    source: str = Field("paper", description="数据源: paper(模拟交易) 或 position(持仓操作)")
+    start_date: str = Field(..., description="start date YYYY-MM-DD")
+    end_date: str = Field(..., description="end date YYYY-MM-DD")
+    source: str = Field("paper", description="data source: paper(simulated trading) or position(Position operation)")
 
 
 class SaveAsCaseRequest(BaseModel):
-    """保存为案例请求"""
+    """Save as case request"""
     review_id: str
     tags: List[str] = Field(default_factory=list)
     notes: Optional[str] = None
-    source: Optional[str] = Field(None, description="数据源: paper(模拟交易) 或 position(持仓操作)，如果不提供则从复盘报告中读取")
+    source: Optional[str] = Field(None, description="data source: paper(simulated trading) or position(Position operation), If not provided, it will be read from the review report.")
 
 
 class TradeReviewResponse(BaseModel):
-    """交易复盘响应"""
+    """Transaction review response"""
     review_id: str
     status: ReviewStatus
     trade_info: Optional[TradeInfo] = None
@@ -333,7 +333,7 @@ class TradeReviewResponse(BaseModel):
 
 
 class PeriodicReviewResponse(BaseModel):
-    """阶段性复盘响应"""
+    """Phased review response"""
     review_id: str
     status: ReviewStatus
     period_type: PeriodType
@@ -346,7 +346,7 @@ class PeriodicReviewResponse(BaseModel):
 
 
 class ReviewListItem(BaseModel):
-    """复盘列表项"""
+    """Review list items"""
     review_id: str
     review_type: str
     code: Optional[str] = None

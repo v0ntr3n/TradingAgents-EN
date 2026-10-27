@@ -1,7 +1,7 @@
 """
-进度跟踪器（过渡期）
-- 暂时从旧模块导入 RedisProgressTracker 类
-- 在本模块内提供 get_progress_by_id 的实现（与旧实现一致，修正 cls 引用）
+Progress Tracker (Transition Period)
+- Temporarily import the RedisProgressTracker class from the old module
+- Provide implementation of get_progress_by_id in this module (consistent with old implementation, correct cls reference)
 """
 from typing import Any, Dict, Optional, List
 import json
@@ -23,13 +23,13 @@ class AnalysisStep:
     name: str
     description: str
     status: str = "pending"  # pending, current, completed, failed
-    weight: float = 0.1  # 权重，用于计算进度
+    weight: float = 0.1  # Weight, used to calculate progress
     start_time: Optional[float] = None
     end_time: Optional[float] = None
 
 
 def safe_serialize(data):
-    """安全序列化，处理不可序列化的对象"""
+    """Safe serialization, handling non-serializable objects"""
     if isinstance(data, dict):
         return {k: safe_serialize(v) for k, v in data.items()}
     elif isinstance(data, list):
@@ -52,16 +52,16 @@ class RedisProgressTracker:
         self.research_depth = research_depth
         self.llm_provider = llm_provider
 
-        # Redis连接
+        # Redis connect
         self.redis_client = None
         self.use_redis = self._init_redis()
 
-        # 进度数据
+        # progress data
         self.progress_data = {
             'task_id': task_id,
             'status': 'running',
             'progress_percentage': 0.0,
-            'current_step': 0,  # 当前步骤索引（数字）
+            'current_step': 0,  # Current step index (number)
             'total_steps': 0,
             'current_step_name': '初始化',
             'current_step_description': '准备开始分析',
@@ -73,17 +73,17 @@ class RedisProgressTracker:
             'steps': []
         }
 
-        # 生成分析步骤
+        # Generate analysis steps
         self.analysis_steps = self._generate_dynamic_steps()
         self.progress_data['total_steps'] = len(self.analysis_steps)
         self.progress_data['steps'] = [asdict(step) for step in self.analysis_steps]
 
-        # 🔧 计算并设置预估总时长
+        # 🔧 Calculate and set estimated total duration
         base_total_time = self._get_base_total_time()
         self.progress_data['estimated_total_time'] = base_total_time
-        self.progress_data['remaining_time'] = base_total_time  # 初始时剩余时间 = 总时长
+        self.progress_data['remaining_time'] = base_total_time  # initial remaining time = total duration
 
-        # 保存初始状态
+        # Save initial state
         self._save_progress()
 
         logger.info(f"📊 [Redis进度] 初始化完成: {task_id}, 步骤数: {len(self.analysis_steps)}")
@@ -91,21 +91,21 @@ class RedisProgressTracker:
     def _init_redis(self) -> bool:
         """初始化Redis连接"""
         try:
-            # 检查REDIS_ENABLED环境变量
+            # Check the REDIS_ENABLED environment variable
             redis_enabled = os.getenv('REDIS_ENABLED', 'false').lower() == 'true'
             if not redis_enabled:
-                logger.info(f"📊 [Redis进度] Redis未启用，使用文件存储")
+                logger.info(f"📊 [Redis Progress] Redis Not enabled, uses file storage")
                 return False
 
             import redis
 
-            # 从环境变量获取Redis配置
+            # Get Redis configuration from environment variables
             redis_host = os.getenv('REDIS_HOST', 'localhost')
             redis_port = int(os.getenv('REDIS_PORT', 6379))
             redis_password = os.getenv('REDIS_PASSWORD', None)
             redis_db = int(os.getenv('REDIS_DB', 0))
 
-            # 创建Redis连接
+            # Create a Redis connection
             if redis_password:
                 self.redis_client = redis.Redis(
                     host=redis_host,
@@ -122,54 +122,54 @@ class RedisProgressTracker:
                     decode_responses=True
                 )
 
-            # 测试连接
+            # test connection
             self.redis_client.ping()
-            logger.info(f"📊 [Redis进度] Redis连接成功: {redis_host}:{redis_port}")
+            logger.info(f"📊 [Redis Progress] Redis Connection successful: {redis_host}:{redis_port}")
             return True
         except Exception as e:
-            logger.warning(f"📊 [Redis进度] Redis连接失败，使用文件存储: {e}")
+            logger.warning(f"📊 [Redis Progress] Redis Connection failed, using file storage: {e}")
             return False
 
     def _generate_dynamic_steps(self) -> List[AnalysisStep]:
-        """根据分析师数量和研究深度动态生成分析步骤"""
+        """Dynamically generate analysis steps based on number of analysts and depth of research"""
         steps: List[AnalysisStep] = []
-        # 1) 基础准备阶段 (10%)
+        # 1) Basic preparation stage (10%)
         steps.extend([
-            AnalysisStep("📋 准备阶段", "验证股票代码，检查数据源可用性", "pending", 0.03),
-            AnalysisStep("🔧 环境检查", "检查API密钥配置，确保数据获取正常", "pending", 0.02),
-            AnalysisStep("💰 成本估算", "根据分析深度预估API调用成本", "pending", 0.01),
-            AnalysisStep("⚙️ 参数设置", "配置分析参数和AI模型选择", "pending", 0.02),
-            AnalysisStep("🚀 启动引擎", "初始化AI分析引擎，准备开始分析", "pending", 0.02),
+            AnalysisStep("📋 准备阶段", "Verify stock ticker, check data source availability", "pending", 0.03),
+            AnalysisStep("🔧 环境检查", "Check the API key configuration to ensure data acquisition is normal", "pending", 0.02),
+            AnalysisStep("💰 成本估算", "Estimate API call costs based on depth of analysis", "pending", 0.01),
+            AnalysisStep("⚙️ 参数设置", "Configure analysis parameters and AI model selection", "pending", 0.02),
+            AnalysisStep("🚀 启动引擎", "Initialize the AI analysis engine and prepare to start analysis", "pending", 0.02),
         ])
-        # 2) 分析师团队阶段 (35%) - 并行
+        # 2) Analyst team stage (35%) - Parallel
         analyst_weight = 0.35 / max(len(self.analysts), 1)
         for analyst in self.analysts:
             info = self._get_analyst_step_info(analyst)
             steps.append(AnalysisStep(info["name"], info["description"], "pending", analyst_weight))
-        # 3) 研究团队辩论阶段 (25%)
+        # 3) Research team debate stage (25%)
         rounds = self._get_debate_rounds()
         debate_weight = 0.25 / (3 + rounds)
         steps.extend([
-            AnalysisStep("🐂 积极证据研究员", "基于分析师报告构建乐观解读的研究证据", "pending", debate_weight),
-            AnalysisStep("🐻 谨慎证据研究员", "基于分析师报告构建审慎解读的研究证据", "pending", debate_weight),
+            AnalysisStep("🐂 积极证据研究员", "Research evidence for constructing optimistic interpretations based on analyst reports", "pending", debate_weight),
+            AnalysisStep("🐻 谨慎证据研究员", "Research evidence for constructing cautious interpretations based on analyst reports", "pending", debate_weight),
         ])
         for i in range(rounds):
             steps.append(AnalysisStep(f"🎯 多情景研究 第{i+1}轮", "多情景研究视角深度对比", "pending", debate_weight))
-        steps.append(AnalysisStep("👔 研究整合员", "综合多情景研究，形成研究观察汇总", "pending", debate_weight))
-        # 4) 研究整合阶段 (8%)
-        steps.append(AnalysisStep("🧩 研究整合员汇总", "基于研究结果整理研究整合意见与观察清单", "pending", 0.08))
-        # 5) 风险管理团队阶段 (15%)
+        steps.append(AnalysisStep("👔 研究整合员", "Comprehensive multi-scenario research to form a summary of research observations", "pending", debate_weight))
+        # 4) Research integration stage (8%)
+        steps.append(AnalysisStep("🧩 研究整合员汇总", "Organize research integration opinions and observation lists based on research results", "pending", 0.08))
+        # 5) risk management team stage (15%)
         risk_weight = 0.15 / 4
         steps.extend([
-            AnalysisStep("🔥 高弹性情景研究", "从高弹性情景视角研究潜在收益空间", "pending", risk_weight),
-            AnalysisStep("🛡️ 防御情景研究", "从防御情景视角研究资本保护因素", "pending", risk_weight),
-            AnalysisStep("⚖️ 基准情景研究", "从基准情景视角平衡多种研究视角", "pending", risk_weight),
-            AnalysisStep("🎯 风险评估师", "综合风险研究观察，形成风险审阅结论", "pending", risk_weight),
+            AnalysisStep("🔥 高弹性情景研究", "Study the potential revenue space from the perspective of highly elastic scenarios", "pending", risk_weight),
+            AnalysisStep("🛡️ 防御情景研究", "Studying capital protection factors from the perspective of defense scenarios", "pending", risk_weight),
+            AnalysisStep("⚖️ 基准情景研究", "Balancing multiple research perspectives from a baseline scenario perspective", "pending", risk_weight),
+            AnalysisStep("🎯 风险评估师", "Comprehensive risk research and observation to form risk review conclusions", "pending", risk_weight),
         ])
-        # 6) 最终研究结论阶段 (7%)
+        # 6) Final research conclusion stage (7%)
         steps.extend([
-            AnalysisStep("📡 结果处理", "整理所有研究观察，生成研究报告", "pending", 0.04),
-            AnalysisStep("📊 生成报告", "整理分析结果，生成完整报告", "pending", 0.03),
+            AnalysisStep("📡 结果处理", "Collate all research observations and generate research reports", "pending", 0.04),
+            AnalysisStep("📊 生成报告", "Organize analysis results and generate complete reports", "pending", 0.03),
         ])
         return steps
 
@@ -182,12 +182,12 @@ class RedisProgressTracker:
         return 3
 
     def _get_analyst_step_info(self, analyst: str) -> Dict[str, str]:
-        """获取分析师步骤信息（名称与描述）"""
+        """Get analyst step information (name and description)"""
         mapping = {
-            'market': {"name": "📊 市场分析师", "description": "分析股价走势、成交量、技术指标等市场表现"},
-            'fundamentals': {"name": "💼 基本面分析师", "description": "分析公司财务状况、盈利能力、成长性等基本面"},
-            'news': {"name": "📰 新闻分析师", "description": "分析相关新闻、公告、行业动态对股价的影响"},
-            'social': {"name": "💬 社交媒体分析师", "description": "分析社交媒体讨论、网络热度、散户情绪等"},
+            'market': {"name": "📊 市场分析师", "description": "Analyze market performance such as stock price trends, trading volume, and technical indicators"},
+            'fundamentals': {"name": "💼 基本面分析师", "description": "Analyze the company s financial status, profitability, growth and other fundamentals"},
+            'news': {"name": "📰 新闻分析师", "description": "Analyze the impact of relevant news, announcements, and industry trends on stock prices"},
+            'social': {"name": "💬 社交媒体分析师", "description": "Analyze social media discussions, Internet popularity, retail investor sentiment, etc."},
         }
         return mapping.get(analyst, {"name": f"🔍 {analyst}分析师", "description": f"进行{analyst}相关的专业分析"})
 
@@ -197,64 +197,64 @@ class RedisProgressTracker:
 
     def _get_base_total_time(self) -> float:
         """
-        根据分析师数量、研究深度、模型类型预估总时长（秒）
+        Estimated total time (seconds) based on number of analysts, research depth, and model type
 
-        算法设计思路（基于实际测试数据）：
-        1. 实测：4级深度 + 3个分析师 = 11分钟（661秒）
-        2. 实测：1级快速 = 4-5分钟
-        3. 实测：2级基础 = 5-6分钟
-        4. 分析师之间有并行处理，不是线性叠加
+        Algorithm design ideas (based on actual test data):
+        1. Actual measurement: Level 4 depth + 3 analysts = 11 minutes (661 seconds)
+        2. Actual measurement: Level 1 fast = 4-5 minutes
+        3. Actual test: Level 2 basics = 5-6 minutes
+        4. There is parallel processing between analysts, not linear superposition
         """
 
-        # 🔧 支持5个级别的分析深度
+        # 🔧 Supports 5 levels of analysis depth
         depth_map = {
-            "快速": 1,  # 1级 - 快速分析
-            "基础": 2,  # 2级 - 基础分析
-            "标准": 3,  # 3级 - 标准分析（推荐）
-            "深度": 4,  # 4级 - 深度分析
-            "全面": 5   # 5级 - 全面分析
+            "快速": 1,  # 1 Level - Quick Analysis
+            "基础": 2,  # 2 Level - Basic Analysis
+            "标准": 3,  # 3 Level - Standard Analysis (recommended)
+            "深度": 4,  # 4 Level - In-Depth Analysis
+            "全面": 5   # 5 Level - Comprehensive Analysis
         }
-        d = depth_map.get(self.research_depth, 3)  # 默认标准分析
+        d = depth_map.get(self.research_depth, 3)  # Default standard analysis
 
-        # 📊 基于实际测试数据的基础时间（秒）
-        # 这是单个分析师的基础耗时
+        # 📊 Base time (seconds) based on actual test data
+        # This is the basic time spent by a single analyst
         base_time_per_depth = {
-            1: 150,  # 1级：2.5分钟（实测4-5分钟是多个分析师的情况）
-            2: 180,  # 2级：3分钟（实测5-6分钟是多个分析师的情况）
-            3: 240,  # 3级：4分钟（前端显示：6-10分钟）
-            4: 330,  # 4级：5.5分钟（实测：3个分析师11分钟，反推单个约5.5分钟）
-            5: 480   # 5级：8分钟（前端显示：15-25分钟）
+            1: 150,  # 1 Level: 2.5 minutes (the actual measurement is 4-5 minutes for multiple analysts)
+            2: 180,  # 2 Level: 3 minutes (the actual measurement is 5-6 minutes for multiple analysts)
+            3: 240,  # 3 Level: 4 minutes (front-end display: 6-10 minutes)
+            4: 330,  # 4 Level: 5.5 minutes (actual measurement: 11 minutes for 3 analysts, about 5.5 minutes for a single backend)
+            5: 480   # 5 Level: 8 minutes (front-end display: 15-25 minutes)
         }.get(d, 240)
 
-        # 📈 分析师数量影响系数（基于实际测试数据）
-        # 实测：4级 + 3个分析师 = 11分钟 = 660秒
-        # 反推：330秒 * multiplier = 660秒 => multiplier = 2.0
+        # 📈 Impact coefficient of number of analysts (based on actual test data)
+        # Actual measurement: Level 4 + 3 analysts = 11 minutes = 660 seconds
+        # Reverse push: 330 seconds * multiplier = 660 seconds => multiplier = 2.0
         analyst_count = len(self.analysts)
         if analyst_count == 1:
             analyst_multiplier = 1.0
         elif analyst_count == 2:
-            analyst_multiplier = 1.5  # 2个分析师约1.5倍时间
+            analyst_multiplier = 1.5  # 2 Analysts take about 1.5 times the time
         elif analyst_count == 3:
-            analyst_multiplier = 2.0  # 3个分析师约2倍时间（实测验证）
+            analyst_multiplier = 2.0  # 3 It takes about 2 times as long for an analyst (verified by actual measurement)
         elif analyst_count == 4:
-            analyst_multiplier = 2.4  # 4个分析师约2.4倍时间
+            analyst_multiplier = 2.4  # 4 Analysts spend about 2.4 times longer
         else:
-            analyst_multiplier = 2.4 + (analyst_count - 4) * 0.3  # 每增加1个分析师增加30%
+            analyst_multiplier = 2.4 + (analyst_count - 4) * 0.3  # Each additional analyst increases 30%
 
-        # 🚀 模型速度影响（基于实际测试）
+        # 🚀 Model speed impact (based on actual testing)
         model_mult = {
-            'dashscope': 1.0,  # 阿里百炼速度适中
-            'deepseek': 0.8,   # DeepSeek较快
-            'google': 1.2      # Google较慢
+            'dashscope': 1.0,  # Ali Bailian speed is moderate
+            'deepseek': 0.8,   # DeepSeek faster
+            'google': 1.2      # Google slower
         }.get(self.llm_provider, 1.0)
 
-        # 计算总时间
+        # Calculate total time
         total_time = base_time_per_depth * analyst_multiplier * model_mult
 
         return total_time
 
     def _calculate_time_estimates(self) -> tuple[float, float, float]:
-        """返回 (elapsed, remaining, estimated_total)"""
+        """Return (elapsed, remaining, estimated_total)"""
         now = time.time()
         start = self.progress_data.get('start_time', now)
         elapsed = now - start
@@ -262,20 +262,20 @@ class RedisProgressTracker:
         base_total = self._get_base_total_time()
 
         if pct >= 100:
-            # 任务已完成
+            # Task completed
             est_total = elapsed
             remaining = 0
         else:
-            # 使用预估的总时长（固定值）
+            # Estimated total duration of use (fixed value)
             est_total = base_total
-            # 预计剩余 = 预估总时长 - 已用时间
+            # Estimated remaining = Estimated total time - elapsed time
             remaining = max(0, est_total - elapsed)
 
         return elapsed, remaining, est_total
 
     @staticmethod
     def _calculate_static_time_estimates(progress_data: dict) -> dict:
-        """静态：为已有进度数据计算时间估算"""
+        """Static: Calculate time estimates for existing progress data"""
         if 'start_time' not in progress_data or not progress_data['start_time']:
             return progress_data
         now = time.time()
@@ -284,13 +284,13 @@ class RedisProgressTracker:
         pct = progress_data.get('progress_percentage', 0)
 
         if pct >= 100:
-            # 任务已完成
+            # Task completed
             est_total = elapsed
             remaining = 0
         else:
-            # 使用预估的总时长（固定值），如果没有则使用默认值
+            # Use estimated total duration (fixed value), or default if not available
             est_total = progress_data.get('estimated_total_time', 300)
-            # 预计剩余 = 预估总时长 - 已用时间
+            # Estimated remaining = Estimated total time - elapsed time
             remaining = max(0, est_total - elapsed)
 
         progress_data['estimated_total_time'] = est_total
@@ -313,16 +313,16 @@ class RedisProgressTracker:
                     self.progress_data['last_message'] = str(progress_update)
                     self.progress_data['last_update'] = time.time()
 
-            # 根据进度百分比自动更新步骤状态
+            # Automatically update step status based on progress percentage
             progress_pct = self.progress_data.get('progress_percentage', 0)
             self._update_steps_by_progress(progress_pct)
 
-            # 获取当前步骤索引
+            # Get current step index
             current_step_index = self._detect_current_step()
             self.progress_data['current_step'] = current_step_index
 
-            # 🔑 关键：只有在 progress_update 没有提供 current_step_name 时，才自动设置
-            # 这样可以让工作流引擎提供的步骤名称优先
+            # 🔑 Key: Automatically set only if progress_update does not provide current_step_name
+            # This allows the step names provided by the workflow engine to take precedence
             if isinstance(progress_update, dict):
                 has_step_name = 'current_step_name' in progress_update
                 has_step_desc = 'current_step_description' in progress_update
@@ -330,7 +330,7 @@ class RedisProgressTracker:
                 has_step_name = False
                 has_step_desc = False
 
-            # 更新当前步骤的名称和描述（如果没有手动提供）
+            # Update the name and description of the current step (if not provided manually)
             if 0 <= current_step_index < len(self.analysis_steps):
                 current_step_obj = self.analysis_steps[current_step_index]
                 if not has_step_name:
@@ -343,7 +343,7 @@ class RedisProgressTracker:
             self.progress_data['remaining_time'] = remaining
             self.progress_data['estimated_total_time'] = est_total
 
-            # 更新 progress_data 中的 steps
+            # Update progress_data in steps
             self.progress_data['steps'] = [asdict(step) for step in self.analysis_steps]
 
             self._save_progress()
@@ -354,7 +354,7 @@ class RedisProgressTracker:
             return self.progress_data
 
     def _update_steps_by_progress(self, progress_pct: float) -> None:
-        """根据进度百分比自动更新步骤状态"""
+        """Automatically update step status based on progress percentage"""
         try:
             cumulative_weight = 0.0
             current_time = time.time()
@@ -364,17 +364,17 @@ class RedisProgressTracker:
                 step_end_pct = cumulative_weight + (step.weight * 100)
 
                 if progress_pct >= step_end_pct:
-                    # 已完成的步骤
+                    # Completed steps
                     if step.status != 'completed':
                         step.status = 'completed'
                         step.end_time = current_time
                 elif progress_pct > step_start_pct:
-                    # 当前正在执行的步骤
+                    # Steps currently being performed
                     if step.status != 'current':
                         step.status = 'current'
                         step.start_time = current_time
                 else:
-                    # 未开始的步骤
+                    # steps not yet started
                     if step.status not in ('pending', 'failed'):
                         step.status = 'pending'
 
@@ -385,15 +385,15 @@ class RedisProgressTracker:
     def _detect_current_step(self) -> int:
         """detect current step index by status"""
         try:
-            # 优先查找状态为 'current' 的步骤
+            # The priority search status is 'current' steps
             for index, step in enumerate(self.analysis_steps):
                 if step.status == 'current':
                     return index
-            # 如果没有 'current'，查找第一个 'pending' 的步骤
+            # if not 'current', Find the first 'pending' steps
             for index, step in enumerate(self.analysis_steps):
                 if step.status == 'pending':
                     return index
-            # 如果都完成了，返回最后一个步骤的索引
+            # If all are completed, return the index of the last step
             for index, step in enumerate(reversed(self.analysis_steps)):
                 if step.status == 'completed':
                     return len(self.analysis_steps) - 1 - index
@@ -463,7 +463,7 @@ class RedisProgressTracker:
 
     def to_dict(self) -> Dict[str, Any]:
         try:
-            # 🔧 实时计算时间估算，确保返回最新的时间信息
+            # 🔧 Calculate time estimates in real time to ensure the latest time information is returned
             elapsed, remaining, est_total = self._calculate_time_estimates()
 
             return {
@@ -473,9 +473,9 @@ class RedisProgressTracker:
                 'llm_provider': self.llm_provider,
                 'steps': [asdict(step) for step in self.analysis_steps],
                 'start_time': self.progress_data.get('start_time'),
-                'elapsed_time': elapsed,  # 使用实时计算的值
-                'remaining_time': remaining,  # 使用实时计算的值
-                'estimated_total_time': est_total,  # 使用实时计算的值
+                'elapsed_time': elapsed,  # Use real-time calculated values
+                'remaining_time': remaining,  # Use real-time calculated values
+                'estimated_total_time': est_total,  # Use real-time calculated values
                 'progress_percentage': self.progress_data.get('progress_percentage', 0),
                 'status': self.progress_data.get('status', 'pending'),
                 'current_step': self.progress_data.get('current_step'),
@@ -493,23 +493,23 @@ class RedisProgressTracker:
 
 
 def get_progress_by_id(task_id: str) -> Optional[Dict[str, Any]]:
-    """根据任务ID获取进度（与旧实现一致，修正 cls 引用）"""
+    """Get progress based on task ID (consistent with old implementation, fix cls reference)"""
     try:
-        # 检查REDIS_ENABLED环境变量
+        # Check the REDIS_ENABLED environment variable
         redis_enabled = os.getenv('REDIS_ENABLED', 'false').lower() == 'true'
 
-        # 如果Redis启用，先尝试Redis
+        # If Redis is enabled, try first Redis
         if redis_enabled:
             try:
                 import redis
 
-                # 从环境变量获取Redis配置
+                # Get Redis configuration from environment variables
                 redis_host = os.getenv('REDIS_HOST', 'localhost')
                 redis_port = int(os.getenv('REDIS_PORT', 6379))
                 redis_password = os.getenv('REDIS_PASSWORD', None)
                 redis_db = int(os.getenv('REDIS_DB', 0))
 
-                # 创建Redis连接
+                # Create a Redis connection
                 if redis_password:
                     redis_client = redis.Redis(
                         host=redis_host,
@@ -533,9 +533,9 @@ def get_progress_by_id(task_id: str) -> Optional[Dict[str, Any]]:
                     progress_data = RedisProgressTracker._calculate_static_time_estimates(progress_data)
                     return progress_data
             except Exception as e:
-                logger.debug(f"📊 [Redis进度] Redis读取失败: {e}")
+                logger.debug(f"📊 [Redis Progress] Redis Read failed: {e}")
 
-        # 尝试从文件读取
+        # Try to read from file
         progress_file = f"./data/progress/{task_id}.json"
         if os.path.exists(progress_file):
             with open(progress_file, 'r', encoding='utf-8') as f:
@@ -543,7 +543,7 @@ def get_progress_by_id(task_id: str) -> Optional[Dict[str, Any]]:
                 progress_data = RedisProgressTracker._calculate_static_time_estimates(progress_data)
                 return progress_data
 
-        # 尝试备用文件位置
+        # Try alternate file locations
         backup_file = f"./data/progress_{task_id}.json"
         if os.path.exists(backup_file):
             with open(backup_file, 'r', encoding='utf-8') as f:
@@ -554,5 +554,5 @@ def get_progress_by_id(task_id: str) -> Optional[Dict[str, Any]]:
         return None
 
     except Exception as e:
-        logger.error(f"📊 [Redis进度] 获取进度失败: {task_id} - {e}")
+        logger.error(f"📊 [Redis Progress] Failed to get progress: {task_id} - {e}")
         return None

@@ -4,32 +4,32 @@
       <div class="header-left">
         <h1 class="page-title">
           <el-icon class="title-icon"><ChatDotRound /></el-icon>
-          智能助手
+          Smart Assistant
         </h1>
         <el-tag type="warning" size="small" effect="plain" class="risk-tag">
-          ⚠️ 分析结论用于学习验证，不构成投资建议
+          ⚠️ The analysis conclusion is used for learning verification and does not constitute investment advice.
         </el-tag>
       </div>
       <div class="header-right">
         <el-button size="small" @click="showThreadSidebar = !showThreadSidebar">
           <el-icon><Expand v-if="!showThreadSidebar" /><Fold v-else /></el-icon>
-          {{ showThreadSidebar ? '隐藏主题栏' : '显示主题栏' }}
+          {{ showThreadSidebar ? 'Hide subject bar' : 'Show subject bar' }}
         </el-button>
         <el-button size="small" @click="showSummarySidebar = !showSummarySidebar">
           <el-icon><Expand v-if="!showSummarySidebar" /><Fold v-else /></el-icon>
-          {{ showSummarySidebar ? '隐藏摘要栏' : '显示摘要栏' }}
+          {{ showSummarySidebar ? 'Hide summary column' : 'Show summary bar' }}
         </el-button>
         <el-button size="small" @click="settingsDialogVisible = true">
           <el-icon><Setting /></el-icon>
-          助手设置
+          Assistant settings
         </el-button>
         <el-button size="small" @click="handleCreateThread()">
           <el-icon><Plus /></el-icon>
-          新主题
+          new theme
         </el-button>
         <el-tag size="small" type="success" effect="plain">
           <el-icon style="vertical-align: -2px;"><ChatDotRound /></el-icon>
-          当前仅开放快速对话
+          Currently only open for quick chat
         </el-tag>
       </div>
     </div>
@@ -38,16 +38,16 @@
       <aside v-if="showThreadSidebar" class="thread-sidebar">
         <div class="sidebar-header">
           <div>
-            <div class="sidebar-title">研究主题</div>
-            <div class="sidebar-subtitle">支持主线拆解为行业 → 公司 → 子问题</div>
+            <div class="sidebar-title">research topic</div>
+            <div class="sidebar-subtitle">Support the dismantling of the main line into industries → company → subproblem</div>
           </div>
           <el-button size="small" text @click="handleCreateThread()">
             <el-icon><Plus /></el-icon>
-            根主题
+            root topic
           </el-button>
         </div>
         <div class="thread-list">
-          <el-empty v-if="!threads.length && !sidebarLoading" description="暂无主题" :image-size="56" />
+          <el-empty v-if="!threads.length && !sidebarLoading" description="No topic yet" :image-size="56" />
           <el-tree
             v-else
             :data="threadTree"
@@ -69,15 +69,15 @@
                         <Document v-else />
                       </el-icon>
                       <span class="thread-title">{{ data.title }}</span>
-                      <el-tag v-if="data.pinned" type="info" size="small" effect="plain">默认</el-tag>
+                      <el-tag v-if="data.pinned" type="info" size="small" effect="plain">Default</el-tag>
                     </div>
                     <div class="thread-actions" @click.stop>
-                      <el-tooltip content="新建子主题" placement="top">
+                      <el-tooltip content="Create new subtopic" placement="top">
                         <el-button type="primary" link size="small" @click.stop="handleCreateThread(data.thread_id)">
                           <el-icon><Plus /></el-icon>
                         </el-button>
                       </el-tooltip>
-                      <el-tooltip v-if="!data.pinned" content="删除主题树" placement="top">
+                      <el-tooltip v-if="!data.pinned" content="Delete topic tree" placement="top">
                         <el-button type="danger" link size="small" @click.stop="handleDeleteThread(data.thread_id)">
                           <el-icon><Delete /></el-icon>
                         </el-button>
@@ -95,14 +95,14 @@
         <div class="chat-panel-header">
           <div>
             <div v-if="currentThreadPath" class="current-thread-path">{{ currentThreadPath }}</div>
-            <div class="current-thread-title">{{ currentThread?.title || '默认主题' }}</div>
+            <div class="current-thread-title">{{ currentThread?.title || 'default theme' }}</div>
             <div class="current-thread-subtitle">
-              {{ currentThread?.current_summary?.abstract || '当前主题还没有摘要，先开始一轮研究。' }}
+              {{ currentThread?.current_summary?.abstract || 'There is no abstract for the current topic, so start a round of research first.' }}
             </div>
           </div>
           <div class="chat-panel-actions">
-            <el-tag v-if="loading" type="info" size="small">思考中...</el-tag>
-            <el-tag v-else-if="streaming" type="success" size="small">回复中...</el-tag>
+            <el-tag v-if="loading" type="info" size="small">Thinking...</el-tag>
+            <el-tag v-else-if="streaming" type="success" size="small">Replying...</el-tag>
             <el-button
               v-else-if="selectedThreadId"
               type="default"
@@ -110,7 +110,7 @@
               link
               @click="handleClear"
             >
-              清空当前主题
+              Clear current topic
             </el-button>
           </div>
         </div>
@@ -118,7 +118,7 @@
         <div ref="messagesContainer" class="messages-container">
           <el-empty
             v-if="messages.length === 0 && !loading"
-            description="输入问题开始对话，例如：宁德时代最近一周走势如何？动力电池行业景气度有什么变化？"
+            description="Enter a question to start a conversation, for example: How has CATL been trending in the past week? How has the prosperity of the power battery industry changed?"
             :image-size="80"
           />
           <div v-else class="messages-list">
@@ -145,10 +145,10 @@
                     <el-tag v-for="tool in msg.tools_used" :key="tool" size="small" type="info">{{ tool }}</el-tag>
                   </div>
                   <el-collapse v-if="msg.plan" class="step-results-collapse">
-                    <el-collapse-item :title="`查看分析计划 (${msg.plan.steps.length})`" name="plan">
+                    <el-collapse-item :title="`View analysis plan (${msg.plan.steps.length})`" name="plan">
                       <div v-for="step in msg.plan.steps" :key="step.id" class="step-item">
                         <div class="step-header">
-                          <span class="step-label">步骤 {{ step.id }}</span>
+                          <span class="step-label">steps {{ step.id }}</span>
                           <span class="step-intent">{{ step.intent }}</span>
                           <el-tag size="small" type="info">{{ step.tool }}</el-tag>
                         </div>
@@ -157,15 +157,15 @@
                   </el-collapse>
                   <div v-if="msg.source" class="message-plan-info">
                     <el-tag :type="msg.source === 'seed_flow' ? 'success' : msg.source === 'llm_plan' ? 'primary' : 'warning'" size="small" effect="plain">
-                      {{ msg.source === 'seed_flow' ? '🌱 种子流程' : msg.source === 'llm_plan' ? '🧠 LLM 规划' : '⚡ ReAct' }}
+                      {{ msg.source === 'seed_flow' ? '🌱 seed process' : msg.source === 'llm_plan' ? '🧠 LLM planning' : '⚡ ReAct' }}
                     </el-tag>
-                    <el-tag v-if="msg.supplemented" type="warning" size="small" effect="plain">📎 已补充</el-tag>
+                    <el-tag v-if="msg.supplemented" type="warning" size="small" effect="plain">📎 Supplemented</el-tag>
                   </div>
                   <el-collapse v-if="msg.step_results?.length" class="step-results-collapse">
-                    <el-collapse-item :title="`查看执行步骤 (${msg.step_results.length})`" name="steps">
+                    <el-collapse-item :title="`View execution steps (${msg.step_results.length})`" name="steps">
                       <div v-for="sr in msg.step_results" :key="sr.step_id" class="step-item">
                         <div class="step-header">
-                          <span class="step-label">步骤 {{ sr.step_id }}</span>
+                          <span class="step-label">steps {{ sr.step_id }}</span>
                           <span class="step-intent">{{ sr.intent }}</span>
                           <el-tag :type="sr.success ? 'success' : 'danger'" size="small">
                             {{ sr.success ? '✓' : '✗' }} {{ sr.duration_ms }}ms
@@ -190,7 +190,7 @@
                     <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
                   </span>
                 </div>
-                <div class="thinking-sub-row">已等待 {{ loadingSeconds }}s</div>
+                <div class="thinking-sub-row">Already waiting {{ loadingSeconds }}s</div>
               </div>
             </div>
           </div>
@@ -203,7 +203,7 @@
               type="textarea"
               :rows="2"
               :autosize="{ minRows: 2, maxRows: 5 }"
-              placeholder="输入您的问题，如：宁德时代估值和行业景气度是否背离？"
+              placeholder="Enter your question, such as: Do CATL s valuation and industry prosperity diverge?"
               :disabled="loading || streaming"
               @keydown.enter.ctrl="handleSend"
             />
@@ -214,30 +214,30 @@
               class="send-btn"
               @click="handleSend"
             >
-              发送
+              send
             </el-button>
           </div>
-          <span class="input-tip">Ctrl+Enter 发送</span>
+          <span class="input-tip">Ctrl+Enter send</span>
         </div>
       </section>
 
       <aside v-if="showSummarySidebar" class="summary-sidebar">
         <div class="summary-header">
           <div>
-            <div class="summary-title">研究摘要</div>
-            <div class="summary-subtitle">把当前主线、问题和下一步固定下来</div>
+            <div class="summary-title">Research summary</div>
+            <div class="summary-subtitle">Fix the current main line, questions and next steps</div>
           </div>
           <el-button size="small" text :disabled="!selectedThreadId || loading || summaryLoading" @click="handleSummarize">
-            {{ summaryLoading ? '总结中...' : '手动总结' }}
+            {{ summaryLoading ? 'In summary...' : 'Manual summary' }}
           </el-button>
         </div>
 
         <div class="summary-body">
           <div class="summary-card">
             <div class="summary-card-header">
-              <div class="summary-card-title">关联报告</div>
+              <div class="summary-card-title">Related reports</div>
               <el-button size="small" type="primary" plain :disabled="!selectedThreadId" @click="openAttachReportDialog">
-                搜索并关联
+                Search and connect
               </el-button>
             </div>
             <div v-if="currentReportRefs.length" class="report-ref-list">
@@ -256,52 +256,52 @@
                   <span v-if="report.symbol">{{ report.symbol }}</span>
                   <span>{{ formatTime(report.created_at || report.linked_at || undefined) }}</span>
                 </div>
-                <div class="report-ref-summary">{{ report.summary || '点击查看报告引用详情' }}</div>
+                <div class="report-ref-summary">{{ report.summary || 'Click to view report citation details' }}</div>
               </button>
             </div>
             <div v-else class="report-empty-state">
-              <div class="summary-empty">当前主题还没有关联报告。</div>
+              <div class="summary-empty">There are no reports associated with the current topic.</div>
               <el-button type="primary" size="small" :disabled="!selectedThreadId" @click="openAttachReportDialog">
-                关联历史报告
+                Association history report
               </el-button>
-              <div class="report-empty-tip">可搜索宁德时代、比亚迪、股票代码或报告关键词。</div>
+              <div class="report-empty-tip">You can search for CATL, BYD, stock codes or report keywords.</div>
             </div>
           </div>
 
           <div class="summary-card">
-            <div class="summary-card-title">当前摘要</div>
+            <div class="summary-card-title">Current summary</div>
             <div class="summary-card-text">
-              {{ currentSummary?.abstract || '当前主题还没有摘要，先进行一轮对话或点击手动总结。' }}
+              {{ currentSummary?.abstract || 'There is no summary for the current topic. Please have a conversation first or click to summarize manually.' }}
             </div>
             <div class="focus-line">
-              <span>聚焦度</span>
+              <span>Focus</span>
               <el-progress :percentage="focusPercent" :stroke-width="8" :show-text="false" />
               <span>{{ focusPercent }}%</span>
             </div>
           </div>
 
           <div class="summary-card">
-            <div class="summary-card-title">已确认事实</div>
+            <div class="summary-card-title">Confirmed facts</div>
             <ul v-if="currentSummary?.confirmed_facts?.length" class="summary-list">
               <li v-for="item in currentSummary.confirmed_facts" :key="item">{{ item }}</li>
             </ul>
-            <div v-else class="summary-empty">还没有提炼出已确认事实。</div>
+            <div v-else class="summary-empty">Confirmed facts have not yet been distilled.</div>
           </div>
 
           <div class="summary-card">
-            <div class="summary-card-title">待解决问题</div>
+            <div class="summary-card-title">Problems to be solved</div>
             <ul v-if="currentSummary?.open_questions?.length" class="summary-list">
               <li v-for="item in currentSummary.open_questions" :key="item">{{ item }}</li>
             </ul>
-            <div v-else class="summary-empty">当前没有明显待解决问题。</div>
+            <div v-else class="summary-empty">There are currently no obvious issues to be resolved.</div>
           </div>
 
           <div class="summary-card">
-            <div class="summary-card-title">建议下一步</div>
+            <div class="summary-card-title">Suggest next steps</div>
             <ul v-if="currentSummary?.next_actions?.length" class="summary-list">
               <li v-for="item in currentSummary.next_actions" :key="item">{{ item }}</li>
             </ul>
-            <div v-else class="summary-empty">继续追问来推进主题。</div>
+            <div v-else class="summary-empty">Continue to ask questions to advance the topic.</div>
           </div>
         </div>
       </aside>
@@ -310,17 +310,17 @@
     <el-dialog
       v-model="settingsDialogVisible"
       width="760px"
-      title="助手设置"
+      title="Assistant settings"
       destroy-on-close
     >
       <section class="assistant-llm-panel assistant-llm-panel-dialog">
         <div class="assistant-llm-header">
           <div>
-            <div class="assistant-llm-title">助手模型</div>
-            <div class="assistant-llm-subtitle">智能助手优先使用系统“深度推理模型”，以获得更强的推理与工具调用能力</div>
+            <div class="assistant-llm-title">helper model</div>
+            <div class="assistant-llm-subtitle">Intelligent assistants give priority to using the system Deep inference model , To obtain stronger reasoning and tool calling capabilities</div>
           </div>
           <el-tag size="small" type="success" effect="plain">
-            当前模式：快速对话 → 推理模型
+            Current mode: Quick conversation → inference model
           </el-tag>
           <el-tooltip :content="memoryStatusTip" placement="bottom">
             <el-tag
@@ -328,18 +328,18 @@
               :type="memoryStatus === 'ok' ? 'success' : memoryStatus === 'off' ? 'info' : 'danger'"
               effect="plain"
             >
-              {{ memoryStatus === 'ok' ? '🧠 记忆已启用' : memoryStatus === 'off' ? '🧠 记忆未启用' : '🧠 记忆不可用' }}
+              {{ memoryStatus === 'ok' ? '🧠 memory enabled' : memoryStatus === 'off' ? '🧠 Memory is not enabled' : '🧠 memory unavailable' }}
             </el-tag>
           </el-tooltip>
         </div>
         <div class="assistant-llm-grid">
           <div class="assistant-llm-item">
-            <div class="assistant-llm-label">助手推理模型</div>
+            <div class="assistant-llm-label">Assistant inference model</div>
             <el-select
               v-model="assistantModel"
               filterable
               clearable
-              placeholder="选择助手推理模型"
+              placeholder="Select Assistant Inference Model"
               :loading="modelsLoading"
             >
               <el-option
@@ -372,19 +372,19 @@
     <el-dialog
       v-model="reportDialogVisible"
       width="760px"
-      title="关联报告详情"
+      title="Related report details"
       destroy-on-close
     >
       <template v-if="activeReportRef">
         <div class="report-dialog-body">
           <div class="report-dialog-title">{{ activeReportRef.title }}</div>
           <div class="report-dialog-meta">
-            <span v-if="activeReportRef.symbol">股票: {{ activeReportRef.symbol }}</span>
-            <span v-if="activeReportDetail?.status || activeReportRef.status">状态: {{ formatReportStatus(activeReportDetail?.status || activeReportRef.status) }}</span>
-            <span v-if="activeReportRef.task_id">任务ID: {{ activeReportRef.task_id }}</span>
-            <span v-if="activeReportDetail?.analysis_id || activeReportRef.analysis_id">分析ID: {{ activeReportDetail?.analysis_id || activeReportRef.analysis_id }}</span>
-            <span>挂载时间: {{ formatTime(activeReportDetail?.linked_at || activeReportRef.linked_at || activeReportRef.created_at || undefined) }}</span>
-            <span v-if="activeReportDetail?.created_at">报告时间: {{ formatTime(activeReportDetail.created_at || undefined) }}</span>
+            <span v-if="activeReportRef.symbol">stocks: {{ activeReportRef.symbol }}</span>
+            <span v-if="activeReportDetail?.status || activeReportRef.status">Status: {{ formatReportStatus(activeReportDetail?.status || activeReportRef.status) }}</span>
+            <span v-if="activeReportRef.task_id">Task ID: {{ activeReportRef.task_id }}</span>
+            <span v-if="activeReportDetail?.analysis_id || activeReportRef.analysis_id">analysis ID: {{ activeReportDetail?.analysis_id || activeReportRef.analysis_id }}</span>
+            <span>Mount time: {{ formatTime(activeReportDetail?.linked_at || activeReportRef.linked_at || activeReportRef.created_at || undefined) }}</span>
+            <span v-if="activeReportDetail?.created_at">reporting time: {{ formatTime(activeReportDetail.created_at || undefined) }}</span>
           </div>
           <el-skeleton v-if="reportDetailLoading" :rows="8" animated />
           <el-alert
@@ -404,7 +404,7 @@
             class="report-dialog-content markdown-content"
             v-html="renderMarkdown(activeReportDetail.content)"
           ></div>
-          <div v-else-if="!activeReportTaskId" class="report-dialog-summary">{{ activeReportRef.summary || '当前仅记录了该报告的引用，尚未保存更多摘要内容。' }}</div>
+          <div v-else-if="!activeReportTaskId" class="report-dialog-summary">{{ activeReportRef.summary || 'Only citations to this report are currently recorded, and further abstracts have not yet been saved.' }}</div>
         </div>
       </template>
     </el-dialog>
@@ -412,23 +412,23 @@
     <el-dialog
       v-model="attachReportDialogVisible"
       width="720px"
-      title="关联旧报告"
+      title="Relate old reports"
       destroy-on-close
     >
       <div class="attach-report-toolbar">
         <el-radio-group v-model="attachReportType" size="small">
-          <el-radio-button value="stock_report">单股报告</el-radio-button>
-          <el-radio-button value="position_report">持仓报告</el-radio-button>
+          <el-radio-button value="stock_report">single stock report</el-radio-button>
+          <el-radio-button value="position_report">Position report</el-radio-button>
         </el-radio-group>
         <el-input
           v-model="attachReportKeyword"
           class="attach-report-search"
           clearable
-          placeholder="输入股票代码、公司名或报告关键词，如 宁德时代 / 比亚迪 / 300750"
+          placeholder="Enter stock code, company name or report keywords, such as CATL / BYD / 300750"
           @keyup.enter="searchAttachableReports"
         />
         <el-button :loading="attachReportLoading" type="primary" @click="searchAttachableReports">
-          搜索
+          Search
         </el-button>
       </div>
 
@@ -448,10 +448,10 @@
             <div class="report-ref-meta">
               <span v-if="report.symbol">{{ report.symbol }}</span>
               <span>{{ formatTime(report.created_at || undefined) }}</span>
-              <span v-if="report.analysis_id">分析ID: {{ report.analysis_id }}</span>
-              <span v-if="report.task_id">任务ID: {{ report.task_id }}</span>
+              <span v-if="report.analysis_id">analysis ID: {{ report.analysis_id }}</span>
+              <span v-if="report.task_id">Task ID: {{ report.task_id }}</span>
             </div>
-            <div class="report-ref-summary">{{ report.summary || '该报告暂未保存摘要。' }}</div>
+            <div class="report-ref-summary">{{ report.summary || 'No summary of this report has been saved yet.' }}</div>
           </div>
           <el-button
             type="primary"
@@ -459,13 +459,13 @@
             :loading="attachingReportKey === report.report_key"
             @click="attachExistingReport(report)"
           >
-            关联到当前主题
+            Related to current topic
           </el-button>
         </div>
       </div>
       <el-empty
         v-else-if="!attachReportLoading"
-        description="还没有搜索结果，先搜一下旧报告。"
+        description="There are no search results yet, so search for old reports first."
         :image-size="64"
       />
     </el-dialog>
@@ -493,7 +493,7 @@ import type {
 } from '@/api/assistant'
 import type { LLMConfig } from '@/api/config'
 
-// marked 配置已由 @/utils/markdown 统一管理
+// marked The configuration has been @/utils/markdown Unified management
 const renderMarkdown = (content: string): string => {
   if (!content?.trim()) return ''
   try {
@@ -595,7 +595,7 @@ const selectedAssistantModel = computed(() => {
 })
 
 const formatAssistantProviderLabel = (model: LLMConfig) => {
-  return model.provider_name || model.provider || '未知厂家'
+  return model.provider_name || model.provider || 'Unknown manufacturer'
 }
 
 const formatAssistantModelOptionLabel = (model: LLMConfig) => {
@@ -697,20 +697,20 @@ const currentThreadPath = computed(() => buildThreadPath(selectedThreadId.value)
 
 const loadingHint = computed(() => {
   if (streamingToolHint.value) return streamingToolHint.value
-  if (loadingSeconds.value < 4) return '正在理解问题并匹配工具'
-  if (loadingSeconds.value < 10) return '正在调用数据与分析工具'
-  return '正在整理答案'
+  if (loadingSeconds.value < 4) return 'Understanding the problem and matching tools'
+  if (loadingSeconds.value < 10) return 'Calling data and analysis tools'
+  return 'Compiling answers'
 })
 
 const getCapabilityText = (level: number): string => {
   const texts: Record<number, string> = {
-    1: '⚡基础',
-    2: '📊标准',
-    3: '🎯高级',
-    4: '🔥专业',
-    5: '👑旗舰'
+    1: '⚡Basics',
+    2: '📊Standard',
+    3: '🎯Advanced',
+    4: '🔥Professional',
+    5: '👑flagship'
   }
-  return texts[level] || '📊标准'
+  return texts[level] || '📊Standard'
 }
 
 const getCapabilityTagType = (level: number): 'success' | 'info' | 'warning' | 'danger' => {
@@ -752,7 +752,7 @@ const loadModels = async () => {
     availableModels.value = (llmConfigs || []).filter(item => item.enabled)
     await ensureAssistantModelSelections()
   } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : '加载可用模型失败'
+    const errMsg = error instanceof Error ? error.message : 'Failed to load available models'
     ElMessage.error(errMsg)
   } finally {
     modelsLoading.value = false
@@ -783,18 +783,18 @@ const scrollToBottom = () => {
 }
 
 const formatTime = (value?: string) => {
-  if (!value) return '刚刚'
+  if (!value) return 'just now'
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '刚刚'
+  if (Number.isNaN(date.getTime())) return 'just now'
   return `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
 const formatReportStatus = (status?: string | null) => {
-  if (!status) return '未知'
+  if (!status) return 'unknown'
   const normalized = status.toLowerCase()
-  if (normalized === 'completed') return '已完成'
-  if (normalized === 'running') return '进行中'
-  if (normalized === 'failed') return '失败'
+  if (normalized === 'completed') return 'Completed'
+  if (normalized === 'running') return 'In progress'
+  if (normalized === 'failed') return 'failed'
   return status
 }
 
@@ -813,7 +813,7 @@ const openReportRef = async (report: AssistantThreadReportRef) => {
     const res = await assistantApi.getThreadReportDetail(selectedThreadId.value, report.ref_type, report.report_key)
     activeReportDetail.value = res.detail
   } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : '加载关联报告详情失败'
+    const errMsg = error instanceof Error ? error.message : 'Failed to load correlation report details'
     reportDetailError.value = errMsg
   } finally {
     reportDetailLoading.value = false
@@ -834,10 +834,10 @@ const searchAttachableReports = async () => {
     )
     attachReportResults.value = res.items || []
     attachReportSearchHint.value = attachReportKeyword.value.trim()
-      ? `已搜索“${attachReportKeyword.value.trim()}”，找到 ${res.total} 条结果。`
-      : `已加载最近 ${res.total} 条可关联报告。`
+      ? `Searched ${attachReportKeyword.value.trim()} , found ${res.total} results.`
+      : `Loaded recently ${res.total} Reports can be associated.`
   } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : '搜索可关联报告失败'
+    const errMsg = error instanceof Error ? error.message : 'Search for relatable reports failed'
     attachReportResults.value = []
     attachReportSearchHint.value = errMsg
   } finally {
@@ -860,11 +860,11 @@ const attachExistingReport = async (report: AssistantThreadReportRef) => {
   attachingReportKey.value = report.report_key
   try {
     await assistantApi.attachThreadReport(selectedThreadId.value, report.ref_type, report.report_key)
-    ElMessage.success('旧报告已关联到当前主题')
+    ElMessage.success('The old report is already linked to the current topic')
     await loadThreads(selectedThreadId.value)
     attachReportResults.value = attachReportResults.value.filter(item => item.report_key !== report.report_key)
   } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : '关联旧报告失败'
+    const errMsg = error instanceof Error ? error.message : 'Failed to associate old reports'
     ElMessage.error(errMsg)
   } finally {
     attachingReportKey.value = ''
@@ -897,7 +897,7 @@ const loadThreads = async (preferredThreadId?: string) => {
       messages.value = []
     }
   } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : '加载主题失败'
+    const errMsg = error instanceof Error ? error.message : 'Failed to load theme'
     ElMessage.error(errMsg)
   } finally {
     sidebarLoading.value = false
@@ -924,7 +924,7 @@ const selectThread = async (threadId: string) => {
     }
     scrollToBottom()
   } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : '加载消息失败'
+    const errMsg = error instanceof Error ? error.message : 'Loading message failed'
     ElMessage.error(errMsg)
   }
 }
@@ -945,20 +945,20 @@ const handleCreateThread = async (parentThreadId?: string) => {
   const parent = parentThreadId ? threadLookup.value.get(parentThreadId) || null : null
   try {
     const { value } = await ElMessageBox.prompt(
-      parent ? `请输入「${parent.title}」下的子主题名称` : '请输入主题名称',
-      parent ? '新建子主题' : '新建主题',
+      parent ? `Please enter ${parent.title}] subtopic name under` : 'Please enter a topic name',
+      parent ? 'Create new subtopic' : 'Create new topic',
       {
-      confirmButtonText: '创建',
-      cancelButtonText: '取消',
-      inputPlaceholder: parent ? '如：宁德时代估值、同花顺竞争力、风险点' : '如：电池行业跟踪',
+      confirmButtonText: 'Create',
+      cancelButtonText: 'Cancel',
+      inputPlaceholder: parent ? 'Such as: CATL valuation, flush competitiveness, risk points' : 'Such as: battery industry tracking',
       inputPattern: /\S+/,
-      inputErrorMessage: '主题名称不能为空',
+      inputErrorMessage: 'Topic name cannot be empty',
     })
     const thread = await assistantApi.createThread(value, parentThreadId)
     await loadThreads(thread.thread_id)
-    ElMessage.success(parent ? '子主题已创建' : '主题已创建')
+    ElMessage.success(parent ? 'Subtopic created' : 'Topic created')
   } catch {
-    // 用户取消时忽略
+    // Ignore when user cancels
   }
 }
 
@@ -968,13 +968,13 @@ const handleDeleteThread = async (threadId: string) => {
 
   const descendantCount = getDescendantThreadIds(threadId).length
   const confirmText = descendantCount > 0
-    ? `确定删除「${thread.title}」及其下 ${descendantCount} 个子主题吗？相关对话和摘要会一起删除。`
-    : `确定删除「${thread.title}」吗？相关对话和摘要会一起删除。`
+    ? `Confirm to delete ${thread.title}] and below ${descendantCount} Subtopic? Related conversations and summaries will be deleted together.`
+    : `Confirm to delete ${thread.title}] ? Related conversations and summaries will be deleted together.`
 
   try {
-    await ElMessageBox.confirm(confirmText, '删除主题', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(confirmText, 'Delete topic', {
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
       type: 'warning',
       confirmButtonClass: 'el-button--danger',
     })
@@ -985,9 +985,9 @@ const handleDeleteThread = async (threadId: string) => {
       messages.value = []
     }
     await loadThreads()
-    ElMessage.success(descendantCount > 0 ? '主题树已删除' : '主题已删除')
+    ElMessage.success(descendantCount > 0 ? 'Topic tree deleted' : 'Topic deleted')
   } catch {
-    // 用户取消时忽略
+    // Ignore when user cancels
   }
 }
 
@@ -1003,9 +1003,9 @@ const handleSummarize = async () => {
         current_summary: res.summary,
       }
     }
-    ElMessage.success('已更新当前主题摘要')
+    ElMessage.success('Current topic summary updated')
   } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : '总结失败'
+    const errMsg = error instanceof Error ? error.message : 'Summary failed'
     ElMessage.error(errMsg)
   } finally {
     summaryLoading.value = false
@@ -1014,15 +1014,15 @@ const handleSummarize = async () => {
 
 const handleClear = async () => {
   if (!selectedThreadId.value) return
-  ElMessageBox.confirm('确定清空当前主题的所有对话吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
+  ElMessageBox.confirm('Are you sure you want to clear all conversations on the current topic?', 'Tips', {
+    confirmButtonText: 'OK',
+    cancelButtonText: 'Cancel',
     type: 'warning',
   }).then(async () => {
     await assistantApi.clearThreadMessages(selectedThreadId.value)
     messages.value = []
     await loadThreads(selectedThreadId.value)
-    ElMessage.success('已清空当前主题')
+    ElMessage.success('Current topic has been cleared')
   }).catch(() => {})
 }
 
@@ -1051,19 +1051,19 @@ const handleSendStream = (text: string) => {
       onToolEvent(event: Record<string, any>) {
         const eName = event.event || ''
         if (eName === 'tool_started') {
-          streamingToolHint.value = `正在调用 ${event.tool}...`
+          streamingToolHint.value = `Calling ${event.tool}...`
         } else if (eName === 'tool_completed') {
           const summary = event.summary ? ` (${JSON.stringify(event.summary)})` : ''
-          streamingToolHint.value = `${event.tool} 完成${summary}`
+          streamingToolHint.value = `${event.tool} Complete${summary}`
         } else if (eName === 'tool_round_started') {
-          streamingToolHint.value = `第 ${event.round} 轮工具调用（${event.tool_count} 个工具）`
+          streamingToolHint.value = `No. ${event.round} wheel tool call (${event.tool_count} tools)`
         } else if (eName === 'llm_thinking') {
-          streamingToolHint.value = event.message || '正在思考…'
+          streamingToolHint.value = event.message || 'thinking…'
         }
       },
       onDone(data) {
         if ((data as any).error) {
-          // error 事件已处理过 UI 状态，只做最终清理
+          // error The event has been handled by the UI state and only final cleanup is done
           loading.value = false
           streaming.value = false
           streamingToolHint.value = ''
@@ -1087,15 +1087,15 @@ const handleSendStream = (text: string) => {
         if (!firstTokenReceived) {
           messages.value.push({
             role: 'assistant',
-            content: `抱歉，处理您的请求时出错：${msg}`,
+            content: `Sorry, an error occurred while processing your request:${msg}`,
             tools_used: [],
           })
         } else if (streamMsgIdx >= 0) {
           const existing = messages.value[streamMsgIdx].content.trim()
           if (!existing) {
-            messages.value[streamMsgIdx].content = `抱歉，处理您的请求时出错：${msg}`
+            messages.value[streamMsgIdx].content = `Sorry, an error occurred while processing your request:${msg}`
           } else {
-            messages.value[streamMsgIdx].content += `\n\n---\n⚠️ 响应中断：${msg}`
+            messages.value[streamMsgIdx].content += `\n\n---\n⚠️ Response to interruption:${msg}`
           }
         }
         ElMessage.error(msg)
@@ -1124,9 +1124,9 @@ const handleSend = async () => {
   handleSendStream(text)
 }
 
-// ---- mem0 记忆状态 ----
+// ---- mem0 memory state ----
 const memoryStatus = ref<'ok' | 'off' | 'error'>('off')
-const memoryStatusTip = ref('正在检测记忆层...')
+const memoryStatusTip = ref('Detecting memory layer...')
 
 async function loadMemoryStatus() {
   try {
@@ -1134,14 +1134,14 @@ async function loadMemoryStatus() {
     const data = (res as any)?.data ?? res
     if (data?.ok) {
       memoryStatus.value = 'ok'
-      memoryStatusTip.value = `mem0 记忆层运行正常 (${data.mem0_version || 'unknown'})`
+      memoryStatusTip.value = `mem0 The memory layer is functioning normally (${data.mem0_version || 'unknown'})`
     } else {
-      memoryStatus.value = data?.error?.includes('禁用') ? 'off' : 'error'
-      memoryStatusTip.value = data?.error || '记忆层不可用'
+      memoryStatus.value = data?.error?.includes('Disable') ? 'off' : 'error'
+      memoryStatusTip.value = data?.error || 'Memory layer is not available'
     }
   } catch {
     memoryStatus.value = 'off'
-    memoryStatusTip.value = '记忆层未配置'
+    memoryStatusTip.value = 'Memory layer is not configured'
   }
 }
 

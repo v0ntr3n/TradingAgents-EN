@@ -1,125 +1,122 @@
 ---
-name: ❓ 问题咨询 / Question
-about: 使用问题或技术咨询 / Usage questions or technical consultation
+name: ❓ Question
+about: Usage questions or technical consultation
 title: '[QUESTION] '
 labels: ['question', 'help-wanted']
 assignees: ''
 ---
 
-## ❓ 问题描述 / Question Description
+## ❓ Question Description
 
-**您的问题 / Your Question:**
-清晰地描述您想要了解的问题。
+**Your Question:**
+Clearly describe the question you would like help with.
 
-**问题类型 / Question Type:**
-- [ ] 🚀 安装和配置 / Installation & Configuration
-- [ ] 🔧 使用方法 / Usage Instructions
-- [ ] 🤖 LLM配置 / LLM Configuration
-- [ ] 📊 数据源设置 / Data Source Setup
-- [ ] 🐳 Docker部署 / Docker Deployment
-- [ ] 🔍 功能理解 / Feature Understanding
-- [ ] 💡 最佳实践 / Best Practices
-- [ ] 🔄 故障排除 / Troubleshooting
-- [ ] 其他 / Other: ___________
+**Question Type:**
+- [ ] 🚀 Installation & Configuration
+- [ ] 🔧 Usage Instructions
+- [ ] 🤖 LLM Configuration
+- [ ] 📊 Data Source Setup
+- [ ] 🐳 Docker Deployment
+- [ ] 🔍 Feature Understanding
+- [ ] 💡 Best Practices
+- [ ] 🔄 Troubleshooting
+- [ ] Other: ___________
 
-## 🎯 具体场景 / Specific Scenario
+## 🎯 Specific Scenario
 
-**使用场景 / Use Case:**
-描述您想要实现的具体场景或目标。
+**Use Case:**
+Describe the specific scenario or goal you are trying to achieve.
 
-**当前状态 / Current Status:**
-描述您目前的进展和遇到的困难。
+**Current Status:**
+Describe your current progress and the difficulties you have encountered.
 
-## 🔧 环境信息 / Environment Info
+## 🔧 Environment Info
 
-**系统环境 / System:**
-- 操作系统 / OS: [Windows/macOS/Linux]
-- Python版本 / Python Version: 
-- 项目版本 / Project Version:
+**System:**
+- OS: [Windows/macOS/Linux]
+- Python Version: 
+- Project Version:
 
-**安装方式 / Installation:**
-- [ ] 本地安装 / Local Installation
-- [ ] Docker部署 / Docker Deployment
+**Installation:**
+- [ ] Local Installation
+- [ ] Docker Deployment
 
-**配置状态 / Configuration Status:**
-- [ ] 已配置API密钥 / API keys configured
-- [ ] 已配置数据库 / Database configured
-- [ ] 已测试基本功能 / Basic functions tested
+**Configuration Status:**
+- [ ] API keys configured
+- [ ] Database configured
+- [ ] Basic functions tested
 
-## 📝 已尝试的方法 / What You've Tried
+## 📝 What You've Tried
 
-**尝试过的解决方案 / Attempted Solutions:**
-请描述您已经尝试过的方法。
+**Attempted Solutions:**
+Please describe the approaches you have already tried.
 
-**参考的文档 / Referenced Documentation:**
+**Referenced Documentation:**
 - [ ] README.md
-- [ ] Docker部署指南 / Docker Guide
-- [ ] 项目文档 / Project Documentation
-- [ ] 其他资源 / Other resources: ___________
+- [ ] Docker Guide
+- [ ] Project Documentation
+- [ ] Other resources: ___________
 
-## 🔍 期望的帮助 / Expected Help
+## 🔍 Expected Help
 
-**希望得到的帮助 / What help you need:**
-- [ ] 📖 使用指导 / Usage guidance
-- [ ] 🔧 配置帮助 / Configuration help
-- [ ] 💡 解决方案建议 / Solution suggestions
-- [ ] 📚 相关文档推荐 / Documentation recommendations
-- [ ] 🎯 最佳实践分享 / Best practices sharing
-- [ ] 其他 / Other: ___________
+**What help you need:**
+- [ ] 📖 Usage guidance
+- [ ] 🔧 Configuration help
+- [ ] 💡 Solution suggestions
+- [ ] 📚 Documentation recommendations
+- [ ] 🎯 Best practices sharing
+- [ ] Other: ___________
 
-## 📊 相关信息 / Related Information
+## 📊 Related Information
 
-**错误信息 / Error Messages:**
-如果有错误信息，请粘贴完整内容。
+**Error Messages:**
+If there are any error messages, please paste the complete output below.
 ```
-错误信息粘贴在这里
-Error messages here
+Paste error messages here
 ```
 
-**配置文件 / Configuration:**
-如果相关，请分享您的配置（请隐藏敏感信息如API密钥）。
+**Configuration:**
+If relevant, please share your configuration (be sure to redact sensitive information such as API keys).
 ```bash
-# 示例配置（请隐藏敏感信息）
+# Example configuration (please redact sensitive info)
 TRADINGAGENTS_CHINA_DATA_SOURCE=tushare
 TRADINGAGENTS_US_DATA_SOURCE=finnhub
-# ... 其他配置
+# ... other settings
 ```
 
-## 📸 截图 / Screenshots
+## 📸 Screenshots
 
-如果有助于说明问题，请添加截图。
-If helpful, please add screenshots.
+If helpful, please attach screenshots to illustrate your question.
 
-## 🔗 相关链接 / Related Links
+## 🔗 Related Links
 
-**相关Issues / Related Issues:**
-如果有相关的issues，请链接。
+**Related Issues:**
+Please link any related issues if applicable.
 
-**参考资料 / References:**
-您查阅过的相关资料或文档。
+**References:**
+Any relevant materials or documentation you have consulted.
 
-## ✅ 检查清单 / Checklist
+## ✅ Checklist
 
-请确认您已经：
-- [ ] 查阅了项目文档和README
-- [ ] 搜索了现有的issues
-- [ ] 提供了足够的上下文信息
-- [ ] 描述了具体的使用场景
-- [ ] 说明了已尝试的解决方法
+Please confirm that you have:
+- [ ] Consulted the project documentation and README
+- [ ] Searched existing issues
+- [ ] Provided sufficient context
+- [ ] Described your specific use case
+- [ ] Explained the solutions you have already tried
 
 ---
 
-**我们会尽快回复您的问题！**
 **We will respond to your question as soon as possible!**
 
-## 💡 快速帮助 / Quick Help
+## 💡 Quick Help
 
-**常见问题 / FAQ:**
-- 📖 [项目文档](../docs/)
-- 🐳 [Docker部署指南](../docs/DOCKER_GUIDE.md)
-- 🚀 [快速开始指南](../README.md#🚀-启动应用)
-- ⚙️ [配置说明](../README.md#配置api密钥)
+**FAQ & Guides:**
+- 📖 [Project Documentation](../docs/)
+- 🐳 [Docker Deployment Guide](../docs/DOCKER_GUIDE.md)
+- 🚀 [Quick Start Guide](../README.md#quick-start)
+- ⚙️ [Configuration Guide](../README.md#first-login)
 
-**社区支持 / Community Support:**
+**Community Support:**
 - 💬 [GitHub Discussions](https://github.com/hsliuping/TradingAgents-CN/discussions)
-- 📧 邮箱: hsliup@163.com
+- 📧 Email: hsliup@163.com

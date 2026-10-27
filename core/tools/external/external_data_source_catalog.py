@@ -1,9 +1,9 @@
 """
-外部接口与数据源目录
+External interface and data source directory
 
-为 Skill 生成器提供一份可维护的外部数据源能力目录，
-用于按需求筛选 AKShare、Tushare、Google News、Finnhub 等来源，
-避免把所有外部接口说明一次性注入提示词。
+Provide the Skill Builder with a maintainable catalog of capabilities from external data sources,
+Used to filter sources such as AKShare, Tushare, Google News, Finnhub, etc. according to your needs,
+Avoid injecting all external interface descriptions into prompt words at once.
 """
 
 from __future__ import annotations
@@ -22,30 +22,30 @@ EXTERNAL_DATA_SOURCE_CATALOG: List[ExternalSourceCatalog] = [
         "markets": ["CN", "HK", "US", "ETF", "macro"],
         "categories": ["market", "technical", "fundamentals", "news", "etf"],
         "preferred_for": [
-            "A 股免费实时/历史行情补数",
-            "东方财富新闻、盘口、板块、ETF 等公开数据",
-            "没有稳定本地缓存时的在线降级",
+            "A Free real-time/historical stock price supplement",
+            "Oriental Fortune News, Handicaps, Sectors, ETFs and other public data",
+            "Online degradation without stable local cache",
         ],
         "interfaces": [
             "tradingagents.dataflows.providers.china.akshare.AKShareProvider",
             "provider.get_stock_news_sync(symbol)",
             "provider.get_historical_data(symbol, start_date, end_date)",
-            "直接 import akshare as ak 调公开接口",
+            "Directly import akshare as ak to adjust the public interface",
         ],
         "usage_examples": [
             "from tradingagents.dataflows.providers.china.akshare import get_akshare_provider",
             "provider = get_akshare_provider()",
             "news_df = provider.get_stock_news_sync(symbol, limit=10)",
-            "# 或者直接 import akshare as ak 调公开免费接口",
+            "# Or directly import akshare as ak to adjust the public free interface",
         ],
         "constraints": [
-            "字段名经常带中文列名，返回后要立刻标准化。",
-            "不同接口返回结构不完全一致，不能假设所有字段长期稳定。",
-            "适合做免费补数，但不适合把每个接口都当成严格契约。",
+            "Field names often have Chinese column names and must be standardized immediately after returning.",
+            "The return structures of different interfaces are not completely consistent, and it cannot be assumed that all fields are stable in the long term.",
+            "It is suitable for free complement, but it is not suitable for treating every interface as a strict contract.",
         ],
         "notes": [
-            "A 股在线降级首选。",
-            "若已有本地库缓存，优先读本地再补 AKShare。",
+            "A The first choice for stocks to be downgraded online.",
+            "If there is a local library cache, read the local library first and then fill in AKShare.",
         ],
     },
     {
@@ -55,9 +55,9 @@ EXTERNAL_DATA_SOURCE_CATALOG: List[ExternalSourceCatalog] = [
         "markets": ["CN", "fundamentals", "index", "ETF"],
         "categories": ["market", "fundamentals", "valuation", "dividend", "chip"],
         "preferred_for": [
-            "A 股财务报表、分红、主营构成等结构化基本面数据",
-            "需要较稳定字段口径的官方风格数据",
-            "需要 ts_code / report_period / ann_date 一类标准字段时",
+            "A Structured fundamental data such as stock financial statements, dividends, main business composition, etc.",
+            "Official style data that requires a more stable field caliber",
+            "When a standard field such as ts_code / report_period / ann_date is required",
         ],
         "interfaces": [
             "tradingagents.dataflows.providers.china.tushare.TushareProvider",
@@ -68,43 +68,43 @@ EXTERNAL_DATA_SOURCE_CATALOG: List[ExternalSourceCatalog] = [
         "usage_examples": [
             "from tradingagents.dataflows.providers.china.tushare import get_tushare_provider",
             "provider = get_tushare_provider()",
-            "# 优先先读本地缓存；确需在线补数时再调用 provider 的标准方法",
-            "# 生成同步 Skill 时，不要发明未文档化的 tushare 调用路径",
+            "# Read the local cache first; call the provider s standard method when online complement is really needed.",
+            "# When generating synchronization skills, do not invent undocumented tushare calling paths",
         ],
         "constraints": [
-            "部分接口需要 token、积分或更高权限。",
-            "若需求能由本地缓存满足，不要直接把 Skill 设计成每次都在线打 Tushare。",
-            "要注意 ts_code 与 6 位 symbol 的格式转换。",
+            "Some interfaces require token, points or higher permissions.",
+            "If the demand can be met by local cache, do not directly design the skill to run Tushare online every time.",
+            "Pay attention to the format conversion between ts_code and 6-bit symbol.",
         ],
         "notes": [
-            "A 股基本面和财务深度数据优先来源。",
-            "若涉及分红、主营业务、筹码等，先评估权限门槛。",
+            "A Preferred source of stock fundamentals and financial in-depth data.",
+            "If it involves dividends, main business, chips, etc., first evaluate the authority threshold.",
         ],
     },
     {
         "source_id": "eastmoney_via_akshare",
-        "display_name": "东方财富（经 AKShare）",
+        "display_name": "Oriental Fortune (via AKShare)",
         "source_type": "public_web_api",
         "markets": ["CN"],
         "categories": ["news", "market", "fund_flow", "sector"],
         "preferred_for": [
-            "A 股新闻、盘口、板块、资金流等公开网页数据",
-            "需要免费公开数据而不想直接解析网页时",
+            "A Public web page data such as stock news, quotations, sectors, capital flows, etc.",
+            "When you need free public data and don t want to parse web pages directly",
         ],
         "interfaces": [
             "AKShareProvider.get_stock_news_sync(symbol)",
-            "akshare 东方财富相关接口",
+            "akshare Oriental wealth related interfaces",
         ],
         "usage_examples": [
             "import akshare as ak",
-            "# 直接调用 AKShare 的东财公开接口后，立刻把中文列名标准化",
+            "# After directly calling the Dongcai public interface of AKShare, the Chinese listing will be standardized immediately.",
         ],
         "constraints": [
-            "本质上依赖公开网页接口，稳定性弱于数据库和正式 API。",
-            "适合做新闻/行情补充，不适合作为唯一高可靠源。",
+            "Essentially relying on public web interfaces, its stability is weaker than databases and formal APIs.",
+            "Suitable for news/market supplements, but not suitable as the only high-reliability source.",
         ],
         "notes": [
-            "新闻类 Skill 常见降级来源。",
+            "Common sources of downgrades for news skills.",
         ],
     },
     {
@@ -114,8 +114,8 @@ EXTERNAL_DATA_SOURCE_CATALOG: List[ExternalSourceCatalog] = [
         "markets": ["HK", "US", "global"],
         "categories": ["news", "event"],
         "preferred_for": [
-            "港股、美股、海外公司新闻补充",
-            "需要跨站点聚合新闻标题与摘要时",
+            "Hong Kong stocks, US stocks, overseas company news supplement",
+            "When you need to aggregate news titles and summaries across sites",
         ],
         "interfaces": [
             "tradingagents.dataflows.interface.get_google_news(query, date)",
@@ -125,12 +125,12 @@ EXTERNAL_DATA_SOURCE_CATALOG: List[ExternalSourceCatalog] = [
             "news = get_google_news(query, curr_date)",
         ],
         "constraints": [
-            "返回质量依赖搜索结果，必须设置超时保护。",
-            "结果更适合作为新闻补充，不适合做严格结构化财务数据来源。",
+            "To return quality-dependent search results, timeout protection must be set.",
+            "The results are more suitable as a news supplement than as a source of strictly structured financial data.",
         ],
         "notes": [
-            "港股/美股新闻常用补充源。",
-            "建议和 Finnhub 或本地新闻缓存组合使用。",
+            "Commonly used supplementary source of Hong Kong stock/US stock news.",
+            "Recommended to be used in combination with Finnhub or local news cache.",
         ],
     },
     {
@@ -140,8 +140,8 @@ EXTERNAL_DATA_SOURCE_CATALOG: List[ExternalSourceCatalog] = [
         "markets": ["US"],
         "categories": ["news", "market", "company"],
         "preferred_for": [
-            "美股公司新闻、事件驱动信息",
-            "需要美股相关新闻时间范围查询时",
+            "U.S. stock company news and event-driven information",
+            "When you need to query the time range of news related to US stocks",
         ],
         "interfaces": [
             "tradingagents.dataflows.interface.get_finnhub_news(symbol, start_date, end_date)",
@@ -151,11 +151,11 @@ EXTERNAL_DATA_SOURCE_CATALOG: List[ExternalSourceCatalog] = [
             "news = get_finnhub_news(symbol, curr_date, look_back_days)",
         ],
         "constraints": [
-            "通常依赖外部配置或配额，生成 Skill 时应保留失败降级路径。",
-            "更适合新闻/事件流，不适合替代财务和日线主数据。",
+            "Typically relying on external configuration or quotas, the failed downgrade path should be preserved when building skills.",
+            "More suitable for news/event streams, not suitable for replacing financial and daily master data.",
         ],
         "notes": [
-            "美股新闻优先源之一。",
+            "One of the top sources of US stock news.",
         ],
     },
 ]
@@ -171,10 +171,10 @@ SOURCE_CATEGORY_HINTS: Dict[str, Sequence[str]] = {
 
 
 def is_known_external_source(name: str) -> bool:
-    """判断给定来源名是否属于已知外部数据源目录（source_id / display_name / 关键词别名）。
+    """Determine whether the given source name belongs to a known external data source directory (source_id / display_name / keyword alias).
 
-    用于需求分流：用户指定的来源（如 "dongchedi"）若不在目录中，
-    调用方应显式标注"目录外数据源"而不是 fallback 凑推荐。
+    For demand offloading: user-specified sources (e.g. "dongchedi") If it is not in the directory,
+    The caller should explicitly annotate"Out-of-directory data sources"Recommended instead of fallback.
     """
     text = (name or "").strip().lower()
     if not text:
@@ -358,23 +358,23 @@ def render_external_data_source_doc(
     source_items = list(sources or EXTERNAL_DATA_SOURCE_CATALOG)
     header = [
         "【外部接口与数据源目录】",
-        "以下目录仅描述当前系统中优先支持、且适合 Skill 自动生成时复用的外部数据源。",
-        "优先顺序始终是：先本地库，再选择最匹配的外部来源，不要同时臆造多个不确定接口。",
-        "如果需求已经能被本地缓存满足，就不要把 Skill 设计成必须实时依赖外部 API。",
-        "外部数据源必须调用项目中已文档化的入口，不要发明未声明的 provider 方法或第三方返回字段。",
+        "The following directory only describes external data sources that are supported in the current system and are suitable for reuse when automatically generating Skills.",
+        "The order of priority is always: local library first, then choose the most suitable external source, do not invent multiple undefined interfaces at the same time.",
+        "If the requirements can already be met by the local cache, don t design the skill to have to rely on external APIs in real time.",
+        "External data sources must call documented entries in the project and do not invent undeclared provider methods or third-party return fields.",
         "",
     ]
     if focus_summary:
-        header.insert(1, f"本次按当前需求仅加载相关外部来源: {focus_summary}")
+        header.insert(1, f"This time only relevant external sources are loaded according to current needs.: {focus_summary}")
     body = ["\n\n".join(_render_source_block(item) for item in source_items)]
     footer = [
         "",
         "【使用原则】",
-        "1. A 股免费在线补数优先考虑 AKShare；A 股结构化财务优先考虑 Tushare 或其本地缓存。",
-        "2. 港股/美股新闻优先考虑 Google News 或 Finnhub，并保留超时与失败降级。",
-        "3. 需要精确字段契约时，优先使用 Provider 封装或已有接口函数，不要直接猜测原始网页字段。",
-        "4. 如果某来源有权限/积分门槛，Skill 中必须提供本地缓存或免费来源的备选路径。",
-        "5. 生成代码时优先照着上述 import 和调用示例写，不要自己杜撰 get_mongo_connection、provider.fetch_xxx 之类项目中不存在的方法。",
+        "1. A For free online replenishment of stocks, give priority to AKShare; for A-share structured finance, give priority to Tushare or its local cache.",
+        "2. For Hong Kong/US stock news, Google News or Finnhub will be given priority, and timeout and failure downgrades will be retained.",
+        "3. When precise field contracts are required, give priority to using Provider encapsulation or existing interface functions. Do not directly guess the original web page fields.",
+        "4. If a source has a permission/points threshold, an alternative path to a local cache or free source must be provided in the Skill.",
+        "5. When generating code, give priority to following the above import and call examples. Do not make up methods such as get_mongo_connection and provider.fetch_xxx that do not exist in the project.",
     ]
     return "\n".join(header + body + footer)
 

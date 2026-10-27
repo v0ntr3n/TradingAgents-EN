@@ -1,420 +1,420 @@
-# 提示词工程最佳实践
+# Prompt Word Engineering Best Practices
 
-**分类**: 提示词工程  
-**难度**: 进阶  
-**阅读时间**: 12分钟  
-**更新日期**: 2025-11-14
-
----
-
-## 📋 引言
-
-掌握提示词基础后，如何写出高质量的提示词？本文总结了提示词工程的最佳实践，帮助你充分发挥大语言模型的能力。
+**Classification**: prompt word project  
+**difficulty**: Advanced  
+**reading time**: 12 minutes  
+**Update date**: 2025-11-14
 
 ---
 
-## 🎯 核心原则
+## 📋 Introduction
 
-### 1. 清晰性原则（Clarity）
+After mastering the basics of prompt words, how to write high-quality prompt words? This article summarizes the best practices of prompt word engineering to help you give full play to the capabilities of large language models.
 
-**原则**：提示词要清晰明确，避免歧义。
+---
 
-❌ **不清晰**：
+## 🎯 core principles
+
+### 1. Clarity
+
+**principles**: Prompt words should be clear and unambiguous to avoid ambiguity.
+
+❌ **Not clear**: 
 ```
-分析这个
-```
-
-✅ **清晰**：
-```
-请分析股票代码000001（平安银行）2024年第三季度的财务报表，
-重点关注营收增长率、净利润率和ROE指标。
-```
-
-### 2. 具体性原则（Specificity）
-
-**原则**：提供具体的细节和要求。
-
-❌ **笼统**：
-```
-给我一些研究观察
+analyze this
 ```
 
-✅ **具体**：
+✅ **clear**: 
 ```
-我是一位风险偏好中等的长期投资者，资金规模100万元，
-请基于平安银行（000001）的基本面分析，
-给出是否适合作为核心关注标的的研究观察。
+Please analyze the financial statements of the third quarter of 2024 of stock code 000001 (Ping An Bank),
+Focus on revenue growth rate, net profit margin and ROE indicators.
 ```
 
-### 3. 结构化原则（Structure）
+### 2. Specificity
 
-**原则**：使用清晰的结构组织提示词。
+**principles**: Provide specific details and requirements.
 
-✅ **结构化示例**：
+❌ **general**: 
 ```
-# 角色
-你是一位专注于银行股的资深分析师
+Give me some research observations
+```
 
-# 任务
-分析平安银行（000001）的投资价值
+✅ **specific**: 
+```
+I am a long-term investor with medium risk appetite and a capital size of 1 million yuan.
+Please based on the fundamental analysis of Ping An Bank (000001),
+Give research observations on whether they are suitable as core concerns.
+```
 
-# 数据
-- 股价：12.50元
-- 市盈率：5.2
+### 3. Structure
+
+**principles**: Organize prompt words using a clear structure.
+
+✅ **Structured example**: 
+```
+# role
+You are a senior analyst focusing on banking stocks
+
+# Task
+Analyze the investment value of Ping An Bank (000001)
+
+# data
+- Stock price: 12.50 yuan
+- P/E ratio:5.2
 - ROE：10.5%
 
-# 要求
-1. 分析估值水平
-2. 评估盈利能力
-3. 给出研究观察
+# request
+1. Analyze valuation levels
+2. Assess profitability
+3. Give research observations
 
-# 输出格式
-使用Markdown，包含标题和列表
+# Output format
+Use Markdown, include titles and lists
 ```
 
-### 4. 迭代优化原则（Iteration）
+### 4. Iteration optimization principle (Iteration)
 
-**原则**：根据输出结果不断优化提示词。
+**principles**: Continuously optimize the prompt words based on the output results.
 
-**迭代流程**：
+**iterative process**: 
 ```
-初始提示词 → 查看输出 → 发现问题 → 优化提示词 → 再次测试
+initial prompt word → View output → Found problem → Optimization prompt words → Test again
 ```
 
 ---
 
-## 🛠️ 实用技巧
+## 🛠️ Practical Tips
 
-### 技巧1：使用分隔符
+### Tip 1: Use delimiters
 
-使用分隔符清晰地分隔不同部分。
+Use separators to clearly separate different sections.
 
-**示例**：
+**Example**: 
 ```
-请分析以下股票数据：
+Please analyze the following stock data:
 
----数据开始---
-股票代码：000001
-股票名称：平安银行
-当前股价：12.50元
-市盈率：5.2
----数据结束---
+---data start---
+Stock code:000001
+Stock name: Ping An Bank
+Current stock price: 12.50 yuan
+P/E ratio:5.2
+---end of data---
 
-请基于以上数据进行分析。
+Please conduct analysis based on the above data.
 ```
 
-**常用分隔符**：
+**Common delimiters**: 
 - `---`
 - `###`
-- `"""` (三引号)
-- `<data>...</data>` (XML标签)
+- `"""` (triple quotes)
+- `<data>...</data>` (XML label)
 
-### 技巧2：指定输出长度
+### Tip 2: Specify the output length
 
-明确指定回答的长度范围。
+Explicitly specify the length range for your responses.
 
-**示例**：
+**Example**: 
 ```
-请用100-150字简要分析平安银行的投资价值。
-```
-
-或者：
-```
-请详细分析平安银行的投资价值，回答长度约500-800字。
+Please use 100-150 words to briefly analyze the investment value of Ping An Bank.
 ```
 
-### 技巧3：要求逐步思考
-
-让AI展示思考过程，提高回答质量。
-
-**示例**：
+Or:
 ```
-请分析平安银行（000001）是否值得投资。
-
-要求：
-1. 先列出分析需要考虑的关键因素
-2. 逐一分析每个因素
-3. 最后给出综合结论
-
-请展示你的思考过程。
+Please analyze the investment value of Ping An Bank in detail. The length of your answer is about 500-800 words.
 ```
 
-### 技巧4：提供正反例
+### Tip 3: Ask for step-by-step thinking
 
-通过正反例说明你想要什么。
+Let AI demonstrate the thinking process and improve the quality of answers.
 
-**示例**：
+**Example**: 
 ```
-请分析平安银行的投资价值。
+Please analyze whether Ping An Bank (000001) is worth investing in.
 
-✅ 好的回答示例：
-"平安银行市盈率5.2，低于行业平均6.5，估值具有吸引力。
-但需注意不良贷款率1.2%，略高于同业..."
+Requirements:
+1. First list the key factors that need to be considered in the analysis
+2. Analyze each factor one by one
+3. Finally, a comprehensive conclusion is given
 
-❌ 不好的回答示例：
-"这只股票很好，建议买入。"（含交易指令，不符合研究辅助定位）
-
-请按照好的示例风格回答。
+Please show your thought process.
 ```
 
-### 技巧5：设定约束条件
+### Tip 4: Provide positive and negative examples
 
-明确告诉AI什么不能做。
+Explain what you want with positive and negative examples.
 
-**示例**：
+**Example**: 
 ```
-请分析平安银行的投资价值。
+Please analyze the investment value of Ping An Bank.
 
-约束条件：
-- 不要预测具体的股价涨跌
-- 不要给出"必涨"、"必跌"等绝对判断
-- 必须包含风险提示
-- 使用客观、理性的语言
-```
+✅ Examples of good answers:
+"Ping An Bank's price-to-earnings ratio is 5.2, lower than the industry average of 6.5, and its valuation is attractive.
+However, it should be noted that the non-performing loan ratio is 1.2%, which is slightly higher than that of peers...."
 
-### 技巧6：使用模板
+❌ Examples of bad answers:
+"This stock is great and I recommend buying it." (Contains trading instructions and does not comply with research-assisted positioning)
 
-为常见任务创建提示词模板。
-
-**股票分析模板**：
-```
-你是一位{专业领域}分析师。
-
-请分析股票{股票代码}（{股票名称}）的{分析维度}。
-
-当前数据：
-{数据列表}
-
-分析要求：
-{具体要求}
-
-输出格式：
-{格式说明}
+Please answer in the style of a good example.
 ```
 
-**使用示例**：
+### Tip 5: Set constraints
+
+Tell the AI explicitly what it cannot do.
+
+**Example**: 
 ```
-你是一位银行股分析师。
+Please analyze the investment value of Ping An Bank.
 
-请分析股票000001（平安银行）的估值水平和盈利能力。
+Constraints:
+- Don't predict specific stock price increases or decreases
+- don't give"Will rise", "Must fall"Waiting for absolute judgment
+- Risk warning must be included
+- Use objective, rational language
+```
 
-当前数据：
-- 市盈率：5.2
+### Tip 6: Use templates
+
+Create prompt word templates for common tasks.
+
+**Stock Analysis Template**: 
+```
+you are a{Professional fields}Analyst.
+
+Please analyze the stock{Stock code} ({Stock name}) of{Analysis Dimensions}. 
+
+Current data:
+{Data list}
+
+Analysis requirements:
+{Specific requirements}
+
+Output format:
+{Format description}
+```
+
+**Usage example**: 
+```
+You are a banking stock analyst.
+
+Please analyze the valuation level and profitability of stock 000001 (Ping An Bank).
+
+Current data:
+- P/E ratio:5.2
 - ROE：10.5%
-- 净利润增长率：8.5%
+- Net profit growth rate:8.5%
 
-分析要求：
-1. 与行业平均对比
-2. 与历史数据对比
-3. 给出评价（低估/合理/高估）
+Analysis requirements:
+1. Compared with industry average
+2. Compare with historical data
+3. Give an evaluation (underestimate/reasonable/overestimate)
 
-输出格式：
-使用Markdown，包含数据对比表格
+Output format:
+Use Markdown to include data comparison tables
 ```
 
 ---
 
-## 📊 针对股票分析的最佳实践
+## 📊 Best Practices for Stock Analysis
 
-### 1. 基本面分析提示词
+### 1. Fundamental analysis tips
 
-**模板**：
+**Template**: 
 ```
-你是一位专注于基本面分析的投资顾问。
+You are an investment advisor focused on fundamental analysis.
 
-请分析{股票代码}的基本面：
+Please analyze{Stock code}Fundamentals of:
 
-财务数据：
-- 市盈率：{PE}
-- 市净率：{PB}
+Financial data:
+- P/E ratio:{PE}
+- Price to Book Ratio:{PB}
 - ROE：{ROE}
-- 营收增长率：{revenue_growth}
-- 净利润增长率：{profit_growth}
-- 资产负债率：{debt_ratio}
+- Revenue growth rate:{revenue_growth}
+- Net profit growth rate:{profit_growth}
+- Asset-liability ratio:{debt_ratio}
 
-行业信息：
-- 所属行业：{industry}
-- 行业地位：{position}
+Industry information:
+- Industry:{industry}
+- Industry status:{position}
 
-请从以下角度分析：
-1. 估值水平（与行业对比）
-2. 盈利能力
-3. 成长性
-4. 财务健康度
+Please analyze from the following perspectives:
+1. Valuation level (compared to industry)
+2. Profitability
+3. Growth
+4. financial health
 
-最后给出综合评分（1-5星）和研究观察。
+Finally, a comprehensive rating (1-5 stars) and research observations are given.
 ```
 
-### 2. 技术面分析提示词
+### 2. Technical analysis tips
 
-**模板**：
+**Template**: 
 ```
-你是一位技术分析专家。
+You are an expert in technical analysis.
 
-请分析{股票代码}的技术面：
+Please analyze{Stock code}The technical side:
 
-价格数据：
-- 当前价格：{current_price}
-- 20日均线：{ma20}
-- 60日均线：{ma60}
-- 近期高点：{high}
-- 近期低点：{low}
+Price data:
+- Current price:{current_price}
+- 20 Daily moving average:{ma20}
+- 60 Daily moving average:{ma60}
+- Recent highs:{high}
+- Recent lows:{low}
 
-技术指标：
+Technical indicators:
 - MACD：{macd}
 - RSI：{rsi}
-- 成交量变化：{volume_change}
+- Volume changes:{volume_change}
 
-请分析：
-1. 趋势判断（上升/下降/震荡）
-2. 支撑位和压力位
-3. 技术指标信号
-4. 短期走势预判
+Please analyze:
+1. Trend judgment (up/down/oscillation)
+2. Support and pressure levels
+3. technical indicator signals
+4. Short-term trend prediction
 
-注意：技术分析仅供参考，不构成投资建议。
+Note: Technical analysis is for reference only and does not constitute investment advice.
 ```
 
-### 3. 多股对比提示词
+### 3. Multiple stock comparison prompt words
 
-**模板**：
+**Template**: 
 ```
-请对比分析以下{N}只{行业}股票：
+Please compare and analyze the following{N}only{Industry}Stocks:
 
-{股票列表及数据}
+{Stock List and Data}
 
-对比维度：
-1. 估值水平（PE、PB）
-2. 盈利能力（ROE、净利率）
-3. 成长性（营收增长、利润增长）
-4. 财务健康度（负债率、现金流）
+Comparative dimensions:
+1. Valuation level (PE, PB)
+2. Profitability (ROE, net profit margin)
+3. Growth (revenue growth, profit growth)
+4. Financial health (debt ratio, cash flow)
 
-请以表格形式展示对比结果，
-并说明各自的优势和劣势，
-最后推荐最适合{投资风格}投资者的股票。
-```
-
----
-
-## ⚠️ 常见陷阱
-
-### 陷阱1：过度依赖AI
-
-**问题**：
-```
-请告诉我明天应该买哪只股票
-```
-
-**为什么不好**：
-- AI无法预测市场
-- 投资决策需要综合考虑个人情况
-- 可能导致盲目跟从
-
-**正确做法**：
-```
-请分析以下3只股票的基本面，
-帮助我了解它们的投资价值，
-我会结合自己的风险偏好做出决策。
-```
-
-### 陷阱2：信息过载
-
-**问题**：
-```
-请分析这只股票的基本面技术面行业地位竞争优势财务状况
-历史表现未来前景管理层质量公司治理股东结构分红政策...
-```
-
-**为什么不好**：
-- 一次问太多问题
-- 回答可能不够深入
-- 难以聚焦重点
-
-**正确做法**：
-分多次提问，每次聚焦一个主题。
-
-### 陷阱3：缺乏验证
-
-**问题**：直接相信AI的所有输出
-
-**正确做法**：
-```
-请分析平安银行的财务数据，并注明数据来源。
-我会自行验证这些数据的准确性。
+Please present the comparison results in table form.
+and explain their respective advantages and disadvantages,
+The final recommendation is the most suitable{investment style}investor's stock.
 ```
 
 ---
 
-## 💡 高级技巧
+## ⚠️ Common pitfalls
 
-### 技巧1：链式提示（Chain of Prompts）
+### Trap 1: Over-reliance AI
 
-将复杂任务分解为多个步骤。
-
-**示例**：
+**question**: 
 ```
-第一步提示：
-"请列出分析银行股需要关注的10个关键指标"
-
-第二步提示：
-"基于你列出的指标，请分析平安银行的数据：
-{数据}"
-
-第三步提示：
-"基于以上分析，请给出研究观察"
+Please tell me which stock I should buy tomorrow
 ```
 
-### 技巧2：角色扮演
+**Why is it bad**: 
+- AI Unable to predict the market
+- Investment decisions need to take personal circumstances into consideration
+- May lead to blind following
 
-让AI扮演不同角色，获得多角度分析。
-
-**示例**：
+**Correct approach**: 
 ```
-场景1：你是一位保守的价值投资者
-请从价值投资的角度分析平安银行
-
-场景2：你是一位激进的成长投资者
-请从成长投资的角度分析平安银行
-
-场景3：你是一位风险管理专家
-请指出投资平安银行的主要风险
+Please analyze the fundamentals of the following 3 stocks,
+Help me understand their investment value,
+I make decisions based on my own risk appetite.
 ```
 
-### 技巧3：自我批评
+### Trap 2: Information overload
 
-让AI检查自己的回答。
-
-**示例**：
+**question**: 
 ```
-第一步：请分析平安银行的投资价值
+Please analyze the fundamentals, technical aspects, industry status, competitive advantages and financial status of this stock.
+Historical Performance Future Prospects Management Quality Corporate Governance Shareholder Structure Dividend Policy...
+```
 
-第二步：请检查你刚才的分析，指出可能存在的偏见或不足之处
+**Why is it bad**: 
+- Asking too many questions at once
+- The answer may not be in depth enough
+- Difficulty focusing
 
-第三步：基于自我批评，给出更全面的分析
+**Correct approach**: 
+Ask questions multiple times, focusing on one topic each time.
+
+### Trap 3: Lack of validation
+
+**question**: Directly trust all outputs of AI
+
+**Correct approach**: 
+```
+Please analyze Ping An Bank's financial data and indicate the source of the data.
+I will verify the accuracy of this data myself.
 ```
 
 ---
 
-## 📚 总结
+## 💡 Advanced techniques
 
-### 核心要点
+### Tip 1: Chain of Prompts
 
-1. **清晰、具体、结构化**是好提示词的基础
-2. **使用分隔符、模板、约束条件**提高效率
-3. **针对股票分析**有专门的提示词模式
-4. **避免陷阱**：过度依赖、信息过载、缺乏验证
-5. **高级技巧**：链式提示、角色扮演、自我批评
+Break down complex tasks into multiple steps.
 
-### 实践建议
+**Example**: 
+```
+Tips for the first step:
+"Please list 10 key indicators that need to be paid attention to when analyzing bank stocks."
 
-1. **建立自己的提示词库**：保存常用的提示词模板
-2. **持续优化**：根据效果不断改进提示词
-3. **分享交流**：与其他用户交流提示词经验
-4. **保持批判性思维**：验证AI的输出
+Tips for the second step:
+"Based on the indicators you listed, please analyze Ping An Bank's data:
+{data}"
+
+Tips for step three:
+"Based on the above analysis, please give research observations"
+```
+
+### Tip 2: Role Play
+
+Let AI play different roles and obtain multi-angle analysis.
+
+**Example**: 
+```
+Scenario 1: You are a conservative value investor
+Please analyze Ping An Bank from the perspective of value investment
+
+Scenario 2: You are an aggressive growth investor
+Please analyze Ping An Bank from the perspective of growth investment
+
+Scenario 3: You are a risk management expert
+Please indicate the main risks of investing in Ping An Bank
+```
+
+### Tip 3: Self-criticism
+
+Let the AI check its own answers.
+
+**Example**: 
+```
+Step 1: Please analyze the investment value of Ping An Bank
+
+Step 2: Please review your analysis and point out possible biases or deficiencies.
+
+Step 3: Give a more comprehensive analysis based on self-criticism
+```
 
 ---
 
-## 🔗 相关资源
+## 📚 Summary
 
-- 📖 [提示词基础](./prompt-basics.md)
+### core points
+
+1. **Clear, specific, structured**It is the basis of good prompt words
+2. **Use delimiters, templates, constraints**Improve efficiency
+3. **For stock analysis**There is a special prompt word mode
+4. **avoid pitfalls**: Over-reliance, information overload, lack of validation
+5. **Advanced techniques**: Chain prompts, role play, self-criticism
+
+### Practical suggestions
+
+1. **Build your own prompt vocabulary**: Save commonly used prompt word templates
+2. **Continuous optimization**: Continuously improve prompt words based on results
+3. **Share and communicate**: Share prompt word experiences with other users
+4. **keep thinking critically**: Verify the AI's output
+
+---
+
+## 🔗 Related resources
+
+- 📖 [Prompt word basics](./prompt-basics.md)
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试Finnhub基本面数据获取功能、OpenAI fallback机制和缓存功能
+Test Finnhub fundamental data acquisition function, OpenAI fallback mechanism and caching function
 """
 
 import os
@@ -8,123 +8,123 @@ import sys
 import time
 from datetime import datetime
 
-# 添加项目根目录到路径
+# Add project root directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 def test_finnhub_api_key():
-    """测试Finnhub API密钥配置"""
-    print("🔑 检查Finnhub API密钥...")
+    """Test Finnhub API key configuration"""
+    print("🔑 Check Finnhub API key...")
     
     api_key = os.getenv('FINNHUB_API_KEY')
     if api_key:
-        print(f"✅ Finnhub API密钥已配置: {api_key[:8]}...")
+        print(f"✅ Finnhub API Key configured: {api_key[:8]}...")
         return True
     else:
-        print("❌ 未配置FINNHUB_API_KEY环境变量")
+        print("❌ The FINNHUB_API_KEY environment variable is not configured")
         return False
 
 def test_finnhub_fundamentals_with_cache():
-    """测试Finnhub基本面数据获取和缓存功能"""
-    print("\n📊 测试Finnhub基本面数据获取和缓存功能...")
+    """Test Finnhub fundamental data acquisition and caching functions"""
+    print("\n📊 Test Finnhub fundamental data acquisition and caching functions...")
     
     try:
         from tradingagents.dataflows.interface import get_fundamentals_finnhub
         from tradingagents.dataflows.cache_manager import get_cache
         
-        # 清理可能存在的缓存
+        # Clean possible caches
         cache = get_cache()
         test_ticker = "AAPL"
         curr_date = datetime.now().strftime('%Y-%m-%d')
         
-        print(f"\n🔍 第一次获取 {test_ticker} 的基本面数据（从API获取）...")
+        print(f"\n🔍 Get it for the first time {test_ticker} Fundamental data (obtained from API)...")
         start_time = time.time()
         result1 = get_fundamentals_finnhub(test_ticker, curr_date)
         first_time = time.time() - start_time
         
         if result1 and len(result1) > 100:
-            print(f"✅ {test_ticker} 基本面数据获取成功，长度: {len(result1)}")
-            print(f"⏱️ 第一次获取耗时: {first_time:.2f}秒")
-            print(f"📄 数据预览: {result1[:200]}...")
+            print(f"✅ {test_ticker} Fundamental data is obtained successfully, length: {len(result1)}")
+            print(f"⏱️ First acquisition time: {first_time:.2f}seconds")
+            print(f"📄 Data preview: {result1[:200]}...")
             
-            # 第二次获取，应该从缓存读取
-            print(f"\n🔍 第二次获取 {test_ticker} 的基本面数据（从缓存获取）...")
+            # The second time you get it, it should be read from the cache
+            print(f"\n🔍 second acquisition {test_ticker} Fundamental data (obtained from cache)...")
             start_time = time.time()
             result2 = get_fundamentals_finnhub(test_ticker, curr_date)
             second_time = time.time() - start_time
             
-            print(f"⏱️ 第二次获取耗时: {second_time:.2f}秒")
+            print(f"⏱️ The second acquisition time: {second_time:.2f}seconds")
             
-            # 验证缓存效果
+            # Verify caching effect
             if second_time < first_time and result1 == result2:
-                print(f"✅ 缓存功能正常！速度提升了 {((first_time - second_time) / first_time * 100):.1f}%")
+                print(f"✅ The cache function is normal! Speed increased {((first_time - second_time) / first_time * 100):.1f}%")
                 return True
             else:
-                print(f"⚠️ 缓存可能未生效")
+                print(f"⚠️ Caching may not be effective")
                 return False
         else:
-            print(f"❌ {test_ticker} 基本面数据获取失败或数据过短")
-            print(f"📄 返回内容: {result1}")
+            print(f"❌ {test_ticker} Failed to obtain fundamental data or the data is too short")
+            print(f"📄 Return content: {result1}")
             return False
         
     except Exception as e:
-        print(f"❌ Finnhub基本面数据测试失败: {str(e)}")
+        print(f"❌ Finnhub Fundamental data test failed: {str(e)}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_openai_fallback_with_cache():
-    """测试OpenAI fallback机制和缓存功能"""
-    print("\n🔄 测试OpenAI fallback机制和缓存功能...")
+    """Test the OpenAI fallback mechanism and caching function"""
+    print("\n🔄 Test the OpenAI fallback mechanism and caching function...")
     
     try:
         from tradingagents.dataflows.interface import get_fundamentals_openai
         
-        # 临时移除OpenAI配置来测试fallback
+        # Temporarily remove OpenAI configuration for testing fallback
         original_backend_url = os.environ.get('BACKEND_URL')
         original_quick_think_llm = os.environ.get('QUICK_THINK_LLM')
         
-        # 清除OpenAI配置
+        # Clear OpenAI configuration
         if 'BACKEND_URL' in os.environ:
             del os.environ['BACKEND_URL']
         if 'QUICK_THINK_LLM' in os.environ:
             del os.environ['QUICK_THINK_LLM']
         
-        print("🚫 已临时移除OpenAI配置，测试fallback到Finnhub...")
+        print("🚫 The OpenAI configuration has been temporarily removed and the test fallback is Finnhub...")
         
         curr_date = datetime.now().strftime('%Y-%m-%d')
         test_ticker = "MSFT"
         
-        print(f"\n🔍 第一次通过OpenAI接口获取 {test_ticker} 数据（应fallback到Finnhub）...")
+        print(f"\n🔍 Obtained for the first time through the OpenAI interface {test_ticker} Data (should fallback to Finnhub)...")
         start_time = time.time()
         result1 = get_fundamentals_openai(test_ticker, curr_date)
         first_time = time.time() - start_time
         
         if result1 and "Finnhub" in result1:
-            print("✅ OpenAI fallback机制工作正常，成功回退到Finnhub API")
-            print(f"📄 数据长度: {len(result1)}")
-            print(f"⏱️ 第一次获取耗时: {first_time:.2f}秒")
+            print("✅ OpenAI fallback The mechanism works normally and successfully falls back to Finnhub API")
+            print(f"📄 Data length: {len(result1)}")
+            print(f"⏱️ First acquisition time: {first_time:.2f}seconds")
             
-            # 第二次获取，应该从缓存读取
-            print(f"\n🔍 第二次通过OpenAI接口获取 {test_ticker} 数据（应从缓存获取）...")
+            # The second time you get it, it should be read from the cache
+            print(f"\n🔍 Obtained through the OpenAI interface for the second time {test_ticker} Data (should be obtained from cache)...")
             start_time = time.time()
             result2 = get_fundamentals_openai(test_ticker, curr_date)
             second_time = time.time() - start_time
             
-            print(f"⏱️ 第二次获取耗时: {second_time:.2f}秒")
+            print(f"⏱️ The second acquisition time: {second_time:.2f}seconds")
             
-            # 验证缓存效果
+            # Verify caching effect
             if second_time < first_time and result1 == result2:
-                print(f"✅ fallback + 缓存功能正常！速度提升了 {((first_time - second_time) / first_time * 100):.1f}%")
+                print(f"✅ fallback + The cache function is normal! Speed increased {((first_time - second_time) / first_time * 100):.1f}%")
                 success = True
             else:
-                print(f"⚠️ 缓存可能未生效")
+                print(f"⚠️ Caching may not be effective")
                 success = False
         else:
-            print("❌ OpenAI fallback机制可能有问题")
-            print(f"📄 返回内容: {result1[:500]}...")
+            print("❌ OpenAI fallback There may be something wrong with the mechanism")
+            print(f"📄 Return content: {result1[:500]}...")
             success = False
         
-        # 恢复原始配置
+        # Restore original configuration
         if original_backend_url:
             os.environ['BACKEND_URL'] = original_backend_url
         if original_quick_think_llm:
@@ -133,53 +133,53 @@ def test_openai_fallback_with_cache():
         return success
         
     except Exception as e:
-        print(f"❌ OpenAI fallback测试失败: {str(e)}")
+        print(f"❌ OpenAI fallback test failed: {str(e)}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_cache_management():
-    """测试缓存管理功能"""
-    print("\n💾 测试缓存管理功能...")
+    """Test cache management functionality"""
+    print("\n💾 Test cache management functionality...")
     
     try:
         from tradingagents.dataflows.cache_manager import get_cache
         
         cache = get_cache()
         
-        # 获取缓存统计
+        # Get cache statistics
         stats = cache.get_cache_stats()
-        print(f"📊 当前缓存统计: {stats}")
+        print(f"📊 Current cache statistics: {stats}")
         
-        # 检查缓存配置
-        print(f"\n⚙️ 基本面数据缓存配置:")
+        # Check cache configuration
+        print(f"\n⚙️ Fundamental data cache configuration:")
         for cache_type, config in cache.cache_config.items():
             if 'fundamentals' in cache_type:
-                print(f"  - {cache_type}: TTL={config['ttl_hours']}小时, 最大文件数={config['max_files']}, 描述={config['description']}")
+                print(f"  - {cache_type}: TTL={config['ttl_hours']}hours, Maximum number of files={config['max_files']}, Description={config['description']}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 缓存管理测试失败: {str(e)}")
+        print(f"❌ Cache management test failed: {str(e)}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主测试函数"""
-    print("🚀 开始Finnhub基本面数据功能和缓存测试")
+    """Main test function"""
+    print("🚀 Start Finnhub fundamental data functionality and cache testing")
     print("=" * 60)
     
-    # 检查环境
-    print(f"📍 当前工作目录: {os.getcwd()}")
-    print(f"📍 Python路径: {sys.path[0]}")
+    # Check environment
+    print(f"📍 current working directory: {os.getcwd()}")
+    print(f"📍 Python path: {sys.path[0]}")
     
-    # 运行测试
+    # Run tests
     tests = [
-        ("Finnhub API密钥检查", test_finnhub_api_key),
-        ("Finnhub基本面数据获取和缓存", test_finnhub_fundamentals_with_cache),
-        ("OpenAI fallback机制和缓存", test_openai_fallback_with_cache),
-        ("缓存管理功能", test_cache_management),
+        ("Finnhub API Key check", test_finnhub_api_key),
+        ("Finnhub Fundamental data acquisition and caching", test_finnhub_fundamentals_with_cache),
+        ("OpenAI fallback Mechanisms and caching", test_openai_fallback_with_cache),
+        ("Cache management function", test_cache_management),
     ]
     
     results = []
@@ -189,30 +189,30 @@ def main():
             result = test_func()
             results.append((test_name, result))
         except Exception as e:
-            print(f"❌ 测试 '{test_name}' 执行失败: {str(e)}")
+            print(f"❌ test '{test_name}' Execution failed: {str(e)}")
             results.append((test_name, False))
     
-    # 输出测试结果
-    print(f"\n{'='*20} 测试结果汇总 {'='*20}")
+    # Output test results
+    print(f"\n{'='*20} Summary of test results {'='*20}")
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{status} {test_name}")
     
     passed = sum(1 for _, result in results if result)
     total = len(results)
-    print(f"\n📊 测试完成: {passed}/{total} 个测试通过")
+    print(f"\n📊 Test completed: {passed}/{total} tests passed")
     
     if passed == total:
-        print("🎉 所有测试都通过了！Finnhub基本面数据功能和缓存系统正常工作。")
-        print("\n💡 功能特性:")
-        print("1. ✅ 当OpenAI配置不可用时，系统会自动使用Finnhub API")
-        print("2. ✅ Finnhub提供官方财务数据，包括PE、PS、ROE等关键指标")
-        print("3. ✅ 数据来源于公司财报和SEC文件，具有较高的可靠性")
-        print("4. ✅ 支持智能缓存机制，美股基本面数据缓存24小时，A股缓存12小时")
-        print("5. ✅ 缓存按市场类型分类存储，提高查找效率")
-        print("6. ✅ 自动检测缓存有效性，过期数据会重新获取")
+        print("🎉 All tests passed! Finnhub fundamental data functionality and caching system are working properly.")
+        print("\n💡 Features:")
+        print("1. ✅ When the OpenAI configuration is unavailable, the system automatically uses Finnhub API")
+        print("2. ✅ Finnhub Provide official financial data, including key indicators such as PE, PS, ROE, etc.")
+        print("3. ✅ The data comes from company financial reports and SEC documents and has high reliability.")
+        print("4. ✅ Supports intelligent caching mechanism, caching US stock fundamental data for 24 hours and A-shares for 12 hours")
+        print("5. ✅ The cache is stored according to market types to improve search efficiency.")
+        print("6. ✅ Automatically detect cache validity and expired data will be retrieved again")
     else:
-        print("⚠️ 部分测试失败，请检查相关配置。")
+        print("⚠️ Some tests failed, please check the relevant configuration.")
 
 if __name__ == "__main__":
     main()

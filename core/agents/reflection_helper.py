@@ -1,16 +1,16 @@
 """
-反射节点统一 helper。
+Reflection node unity helper.
 
-所有反思节点遵循同一模式：
-1. 构建反思 prompt
-2. 调 LLM 提炼结构化 JSON
-3. 写入 mem0（infer=False，memory_kind=xxx_lesson）
-4. 失败时 fallback 到原文写入（即当前行为），不阻塞主流程
+All reflection nodes follow the same pattern:
+1. Build reflection prompt
+2. Adjust LLM to refine the structure JSON
+3. write to mem0(infer=False, memory_kind=xxx_lesson) 
+4. On failure, fallback to the original text (i.e. current behavior) without blocking the main process.
 
-三个场景共用此 helper：
-- 项2：复盘反思（trade_lesson）
-- 项3：研究员报告反思（analysis_lesson）
-- 项8：辩论反思（debate_lesson）
+Three scenarios share this helper:
+- Item 2: Review and Reflection (trade_lesson)
+- Item 3: Researcher Report Reflection (analysis_lesson)
+- Item 8: Debate reflection (debate_lesson)
 """
 
 import asyncio
@@ -25,66 +25,66 @@ from core.memory.service import get_memory_service
 
 logger = logging.getLogger(__name__)
 
-# 反思 LLM 调用超时（秒），超时即降级到原文写入
+# Reflect on the LLM call timeout (seconds), when the timeout expires, it will be downgraded to the original text writing
 _REFLECTION_LLM_TIMEOUT = 30
 
 
 def _resolve_reflection_llm_client(db) -> Optional[Any]:
-    """从系统配置解析反思用 LLM 客户端。
+    """Parse reflection from system configuration using LLM client.
 
-    不再硬编码 provider，而是按系统设置中的模型选择顺序
-    （quick_analysis_model → deep_analysis_model → 第一个启用的配置）
-    解析完整 LLMConfig 并构建 UnifiedLLMClient。反思是轻量提炼任务，
-    优先用 quick_analysis 模型以控制成本。
+    No more hard-coding providers, but in the order of model selection in system settings
+     (quick_analysis_model → deep_analysis_model → first enabled configuration)
+    Parse the complete LLMConfig and build the UnifiedLLMClient. Reflection is a lightweight refining task;
+    Prefer using the quick_analysis model to control costs.
 
-    db 类型兼容：
-    - 同步 PyMongo Database → 直接查询
-    - Motor AsyncIOMotorDatabase / 代理对象 → 自动回退到同步连接
-      （Motor 的 find_one 是 async 方法，同步调用只返回 coroutine 不会真正执行查询）
+    db Type compatible:
+    - sync PyMongo Database → direct inquiry
+    - Motor AsyncIOMotorDatabase / proxy object → Automatically fallback to sync connection
+       (Motor The find_one is an async method, the synchronous call only returns the coroutine and does not actually execute the query)
 
-    若数据库不可用或无可用配置，返回 None；调用方应据此跳过反思提炼，
-    降级到原文写入（infer=False），而不是用硬编码 provider 兜底——
-    如果系统未配置该 provider，兜底客户端同样无法工作。
+    If the database is unavailable or no configuration is available, None is returned; the caller should skip reflection refining accordingly.
+    Downgrade to original writing (infer=False) , Instead of using a hard-coded provider to cover the whole story——
+    If the system is not configured with this provider, the Doudi client will also not work.
     """
     try:
         from app.services.intelligent_assistant_service import (
             get_system_llm_config_from_config_doc,
         )
-        # 复用 mem0 配置层的 db 类型检测：Motor async client 会自动回退到同步连接
+        # Reuse db type detection of mem0 configuration layer: Motor async client will automatically fall back to synchronous connection
         from core.memory.config import _read_active_system_config
 
         config_doc = _read_active_system_config(db)
         if not config_doc:
-            logger.warning("[Reflection] 系统配置不存在或读取失败，反思 LLM 不可用")
+            logger.warning("[Reflection] The system configuration does not exist or fails to read, reflecting that LLM is unavailable.")
             return None
 
         llm_config = get_system_llm_config_from_config_doc(config_doc)
         if llm_config is None:
-            logger.warning("[Reflection] 系统配置中无可用 LLM 配置，反思 LLM 不可用")
+            logger.warning("[Reflection] No LLM configuration available in system configuration, reflection LLM is not available")
             return None
 
         from core.llm import UnifiedLLMClient
 
         logger.info(
-            "[Reflection] 从系统配置解析反思 LLM: provider=%s model=%s",
+            "[Reflection] Analysis and reflection from system configuration LLM: provider=%s model=%s",
             llm_config.provider,
             llm_config.model,
         )
         return UnifiedLLMClient.from_config(llm_config)
     except Exception as e:
-        logger.warning("[Reflection] 从系统配置解析 LLM 失败: %s", e)
+        logger.warning("[Reflection] Parsing LLM from system configuration failed: %s", e)
         return None
 
 
 def run_reflection_sync(**kwargs) -> bool:
-    """run_reflection 的同步包装器，供 sync 上下文（如 ResearcherAgent.execute）调用。
+    """run_reflection A synchronization wrapper for calls from sync contexts such as ResearcherAgent.execute.
 
-    自动处理两种场景：
-    1. 当前线程没有运行中的事件循环 → 直接 asyncio.run()
-    2. 当前线程有运行中的事件循环（如被 LangGraph 在 async 上下文中调用 sync 节点）
-       → 在新线程中创建独立事件循环运行
+    Automatically handles two scenarios:
+    1. The current thread has no running event loop → direct asyncio.run()
+    2. The current thread has a running event loop (such as a sync node called by LangGraph in an async context)
+       → Create an independent event loop to run in a new thread
 
-    所有异常都被捕获并降级返回 False，确保不阻塞主流程。
+    All exceptions are caught and downgraded to False to ensure they do not block the main process.
     """
     try:
         try:
@@ -94,10 +94,10 @@ def run_reflection_sync(**kwargs) -> bool:
             running_loop = False
 
         if not running_loop:
-            # 没有运行中的事件循环，直接用 asyncio.run
+            # There is no running event loop, just use asyncio.run
             return asyncio.run(run_reflection(**kwargs))
 
-        # 有运行中的事件循环，在新线程中运行
+        # There is a running event loop, running in a new thread
         result: Dict[str, Any] = {"success": False, "error": None}
 
         def _run_in_thread():
@@ -110,14 +110,14 @@ def run_reflection_sync(**kwargs) -> bool:
         t.start()
         t.join(timeout=_REFLECTION_LLM_TIMEOUT + 10)
         if t.is_alive():
-            logger.warning("[Reflection] sync 包装器线程超时，降级返回 False")
+            logger.warning("[Reflection] sync Wrapper thread times out, downgrade returns False")
             return False
         if result["error"]:
-            logger.warning("[Reflection] sync 包装器线程异常: %s", result["error"])
+            logger.warning("[Reflection] sync Wrapper thread exception: %s", result["error"])
             return False
         return result["success"]
     except Exception as e:
-        logger.warning("[Reflection] run_reflection_sync 异常: %s", e)
+        logger.warning("[Reflection] run_reflection_sync Abnormal: %s", e)
         return False
 
 
@@ -134,47 +134,47 @@ async def run_reflection(
     fallback_metadata: Dict[str, Any],
     llm_client: Any = None,
 ) -> bool:
-    """执行反思提炼节点，失败时降级。
+    """Execute reflection refinement nodes and downgrade them on failure.
 
-    流程：
-    1. 调 LLM 提炼结构化 JSON（超时 30s）
-    2. 成功 → 写入 mem0（infer=False，memory_kind=xxx_lesson，reflection_success=True）
-    3. 失败 → 降级写入 fallback_content 原文（memory_kind=xxx_lesson，reflection_success=False）
-    4. mem0 不可用 → 跳过，返回 False
+    Process:
+    1. Adjust LLM to extract structured JSON (timeout 30s)
+    2. success → write to mem0(infer=False, memory_kind=xxx_lesson, reflection_success=True) 
+    3. failed → Downgrade writes fallback_content original text (memory_kind=xxx_lesson, reflection_success=False) 
+    4. mem0 Not available → Skip, return False
 
     Args:
-        db: MongoDB 数据库句柄（用于获取 MemoryService）
-        user_id: 用户 ID
-        agent_id: Agent ID（用于 mem0 元数据）
-        scope: MemoryScope 枚举值
-        memory_kind: 教训类型（trade_lesson / analysis_lesson / debate_lesson）
-        system_prompt: 反思 system prompt
-        user_prompt: 反思 user prompt
-        fallback_content: 降级时写入的原文
-        fallback_metadata: 降级时的元数据（反思成功时也会用这些元数据作为基础）
-        llm_client: 可选的 UnifiedLLMClient 实例，若不传则用默认 provider 创建
+        db: MongoDB Database handle (used to obtain MemoryService)
+        user_id: User ID
+        agent_id: Agent ID (for mem0 metadata)
+        scope: MemoryScope enumeration value
+        memory_kind: Lesson type (trade_lesson/analysis_lesson/debate_lesson)
+        system_prompt: Reflection system prompt
+        user_prompt: Reflection user prompt
+        fallback_content: Original text written when downgrading
+        fallback_metadata: Metadata when downgrading (this metadata will also be used as a basis when reflecting on success)
+        llm_client: Optional UnifiedLLMClient instance, if not passed, it will be created with the default provider
 
     Returns:
-        True 表示反思成功写入结构化教训；False 表示降级到原文写入或彻底失败。
+        True Indicates that the reflection was successfully written into the structured lesson; False means that it was downgraded to the original text or failed completely.
     """
     svc = get_memory_service(db)
     if not svc.available:
-        logger.info("[Reflection] mem0 不可用，跳过反思节点（agent=%s scope=%s）", agent_id, scope)
+        logger.info("[Reflection] mem0 Not available, skip reflection node (agent=%s scope=%s) ", agent_id, scope)
         return False
 
-    # 1. 调 LLM 提炼
+    # 1. Adjust LLM extraction
     lessons_json: Optional[str] = None
     try:
         if llm_client is None:
-            # 从系统配置解析 LLM，不再硬编码 provider
+            # Parse LLM from system configuration, no longer hard-coded provider
             llm_client = _resolve_reflection_llm_client(db)
 
         if llm_client is None:
-            # 系统配置不可用 → 直接走降级原文写入（不调 LLM 提炼）
-            # 不再使用 deepseek 等硬编码 provider 兜底：若系统未配置该 provider，
-            # 兜底客户端同样无法工作，反而掩盖配置问题。
+            # System configuration is not available → Directly write the downgraded original text (without adjusting LLM extraction)
+            # No longer use hard-coded providers such as deepseek. If the provider is not configured in the system,
+            # The cover-up client also fails to work and instead masks configuration issues.
             logger.warning(
-                "[Reflection] 系统配置未解析到可用 LLM，跳过反思提炼，降级写入原文（agent=%s scope=%s）",
+                "[Reflection] The system configuration is not parsed into available LLM, reflection and refining are skipped, and the original text is downgraded (agent=%s scope=%s) ",
                 agent_id, scope,
             )
         else:
@@ -191,27 +191,27 @@ async def run_reflection(
             lessons_json = _extract_json(raw_content)
             if not lessons_json:
                 logger.warning(
-                    "[Reflection] LLM 未返回有效 JSON（agent=%s），降级到原文写入。原始输出前200字: %s",
+                    "[Reflection] LLM Valid JSON not returned (agent=%s) , Downgrade to original writing. First 200 words of raw output: %s",
                     agent_id,
                     raw_content[:200],
                 )
     except asyncio.TimeoutError:
-        logger.warning("[Reflection] LLM 调用超时（%ds，agent=%s），降级到原文写入", _REFLECTION_LLM_TIMEOUT, agent_id)
+        logger.warning("[Reflection] LLM Call timeout (%ds,agent=%s) , Downgrade to original writing", _REFLECTION_LLM_TIMEOUT, agent_id)
     except Exception as e:
-        logger.warning("[Reflection] LLM 调用失败（agent=%s）: %s，降级到原文写入", agent_id, e)
+        logger.warning("[Reflection] LLM The call failed (agent=%s) : %s, Downgrade to original writing", agent_id, e)
 
-    # 2. 写入 mem0
+    # 2. write mem0
     metadata = dict(fallback_metadata)
     metadata["memory_kind"] = memory_kind
     metadata["source"] = "reflection"
 
     try:
         if lessons_json:
-            # 反思成功：写入结构化教训
+            # Reflecting on Success: Writing Structured Lessons
             content = lessons_json
             metadata["reflection_success"] = True
         else:
-            # 降级：写入原文
+            # Downgrade: write original text
             content = fallback_content
             metadata["reflection_success"] = False
 
@@ -221,49 +221,49 @@ async def run_reflection(
             agent_id=agent_id,
             scope=scope,
             metadata=metadata,
-            infer=False,  # 已用 LLM 提炼，不再触发 mem0 二次提取
+            infer=False,  # It has been extracted with LLM and no longer triggers secondary extraction of mem0.
         )
         if result.success:
             if lessons_json:
                 logger.info(
-                    "[Reflection] 反思成功写入（agent=%s scope=%s kind=%s）",
+                    "[Reflection] Reflection successfully written (agent=%s scope=%s kind=%s) ",
                     agent_id, scope, memory_kind,
                 )
             else:
                 logger.info(
-                    "[Reflection] 降级写入原文（agent=%s scope=%s kind=%s）",
+                    "[Reflection] Downgraded to write original text (agent=%s scope=%s kind=%s) ",
                     agent_id, scope, memory_kind,
                 )
             return bool(lessons_json)
         else:
-            logger.warning("[Reflection] mem0 写入失败: %s", result.error)
+            logger.warning("[Reflection] mem0 Write failed: %s", result.error)
             return False
     except Exception as e:
-        logger.warning("[Reflection] 写入 mem0 异常（agent=%s）: %s", agent_id, e)
+        logger.warning("[Reflection] Exception writing to mem0 (agent=%s) : %s", agent_id, e)
         return False
 
 
 def _extract_json(text: str) -> Optional[str]:
-    """从 LLM 输出中提取 JSON 对象字符串。
+    """Extract JSON object strings from LLM output.
 
-    尝试两种方式：
-    1. 优先提取 ```json ... ``` 代码块
-    2. 回退到找第一个 { ... } 对
+    Try both ways:
+    1. Prioritize extraction ```json ... ``` code block
+    2. Go back to the first one { ... } Yes
 
     Args:
-        text: LLM 输出文本
+        text: LLM Output text
 
     Returns:
-        合法的 JSON 字符串，或 None（如果无法提取）
+        A valid JSON string, or None if it cannot be extracted
     """
     if not text or not text.strip():
         return None
 
-    # 方式1：提取 ```json ... ``` 代码块
+    # Method 1: Extraction ```json ... ``` code block
     m = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
     candidate = m.group(1).strip() if m else text.strip()
 
-    # 方式2：找第一个 { ... } 对
+    # Method 2: Find the first one { ... } Yes
     start = candidate.find("{")
     end = candidate.rfind("}")
     if start == -1 or end == -1 or end <= start:
@@ -271,7 +271,7 @@ def _extract_json(text: str) -> Optional[str]:
 
     json_str = candidate[start:end + 1]
 
-    # 验证是合法 JSON
+    # Verify it is legal JSON
     try:
         json.loads(json_str)
         return json_str
@@ -280,11 +280,11 @@ def _extract_json(text: str) -> Optional[str]:
 
 
 # ================================================================
-#  反思教训召回（闭环 L2/L3）
+#  Reflection and Lesson Recall (Closed Loop L2/L3)
 #
-# 写入闭环已在 run_reflection 中完成（写入 mem0）。
-# 召回闭环在此处实现：从 mem0 召回 memory_kind 含 _lesson 的结构化教训，
-# 注入到研究员/复盘/辩论节点的 prompt 中，让历史经验真正影响输出。
+# Writing to the loop is done in run_reflection (writing to mem0).
+# The recall closed loop is implemented here: recall the structured lesson of memory_kind containing _lesson from mem0,
+# Inject it into the prompt of the researcher/review/debate node, so that historical experience can truly affect the output.
 # ================================================================
 
 
@@ -297,21 +297,21 @@ def recall_lessons_sync(
     limit: int = 3,
     max_chars: int = 1500,
 ) -> str:
-    """从 mem0 召回反思教训（sync 包装器，供 LangGraph 节点调用）。
+    """Recall reflection lessons from mem0 (sync wrapper for LangGraph nodes to call).
 
-    优先返回 memory_kind 含 _lesson 的结构化教训。
-    失败时返回空字符串，不阻塞主流程。
+    Priority is given to returning memory_kind structured lessons containing _lesson.
+    Returns an empty string on failure and does not block the main process.
 
     Args:
-        db: MongoDB 数据库句柄
-        user_id: 用户 ID
-        query: 查询文本（通常是股票代码 + 关键信息）
-        agent_id: 限定 Agent
-        limit: 最大返回条数
-        max_chars: 最大返回字符数
+        db: MongoDB Database handle
+        user_id: User ID
+        query: Query text (usually a stock symbol + key information)
+        agent_id: limited Agent
+        limit: Maximum number of items returned
+        max_chars: Maximum number of characters returned
 
     Returns:
-        格式化的教训文本，或空字符串
+        Formatted lesson text, or empty string
     """
     try:
         try:
@@ -326,7 +326,7 @@ def recall_lessons_sync(
                 agent_id=agent_id, limit=limit, max_chars=max_chars,
             ))
 
-        # 有运行中的事件循环，在新线程中运行
+        # There is a running event loop, running in a new thread
         result_holder: Dict[str, Any] = {"text": ""}
 
         def _run_in_thread() -> None:
@@ -336,14 +336,14 @@ def recall_lessons_sync(
                     agent_id=agent_id, limit=limit, max_chars=max_chars,
                 ))
             except Exception as exc:
-                logger.warning("[Recall] sync 包装器线程异常: %s", exc)
+                logger.warning("[Recall] sync Wrapper thread exception: %s", exc)
 
         t = threading.Thread(target=_run_in_thread, daemon=True)
         t.start()
         t.join(timeout=15)
         return result_holder.get("text", "")
     except Exception as exc:
-        logger.warning("[Recall] recall_lessons_sync 异常: %s", exc)
+        logger.warning("[Recall] recall_lessons_sync Abnormal: %s", exc)
         return ""
 
 
@@ -356,13 +356,13 @@ async def _recall_lessons_async(
     limit: int = 3,
     max_chars: int = 1500,
 ) -> str:
-    """从 mem0 召回反思教训（async 实现）。"""
+    """Recall reflection lessons from mem0 (async implementation)."""
     try:
         svc = get_memory_service(db)
         if not svc.available:
             return ""
 
-        # 查询所有可能含教训的 scope
+        # Query all possible lessons scope
         items = await svc.recall(
             query=query,
             user_id=user_id,
@@ -372,12 +372,12 @@ async def _recall_lessons_async(
                 MemoryScope.TRADE_PATTERN.value,
                 MemoryScope.AGENT_EXPERIENCE.value,
             ],
-            limit=max(limit * 3, 9),  # 扩大候选集，客户端过滤教训
+            limit=max(limit * 3, 9),  # Expanding the candidate set, client filtering lessons
         )
         if not items:
             return ""
 
-        # 客户端过滤：只保留 memory_kind 含 _lesson 的教训
+        # Client filtering: only keep memory_kind containing _lesson lessons
         lessons = []
         for item in items:
             meta = getattr(item, "metadata", None) or {}
@@ -388,19 +388,19 @@ async def _recall_lessons_async(
         if not lessons:
             return ""
 
-        # 限制条数和字符数
+        # Limit the number of entries and characters
         lines = []
         total = 0
         for item in lessons[:limit]:
             content = getattr(item, "content", "") or ""
             kind = (getattr(item, "metadata", None) or {}).get("memory_kind", "")
             scope = getattr(item, "scope", "") or ""
-            # 标注教训类型
+            # Mark lesson type
             kind_label = {
-                "analysis_lesson": "分析教训",
-                "trade_lesson": "交易教训",
-                "debate_lesson": "辩论教训",
-            }.get(kind, "历史教训")
+                "analysis_lesson": "Analyze lessons",
+                "trade_lesson": "Trading Lessons",
+                "debate_lesson": "Debate Lessons",
+            }.get(kind, "Historical lessons")
             line = f"[{kind_label}] {content}"
             if total + len(line) > max_chars:
                 break
@@ -410,7 +410,7 @@ async def _recall_lessons_async(
         if not lines:
             return ""
 
-        return "【历史教训】（来自反思节点，优先参考）\n" + "\n".join(lines) + "\n"
+        return " [Historical lessons] (from reflection nodes, priority reference)\n" + "\n".join(lines) + "\n"
     except Exception as exc:
-        logger.warning("[Recall] _recall_lessons_async 异常: %s", exc)
+        logger.warning("[Recall] _recall_lessons_async Abnormal: %s", exc)
         return ""

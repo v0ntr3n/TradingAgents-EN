@@ -48,21 +48,21 @@ def _pct_change(current, previous) -> float | None:
 
 
 def _match_financial_period_by_year(fin_periods: list[dict], year: int) -> dict | None:
-    """按年份匹配财务期间数据，优先匹配年报（12-31 结束的报告期）。"""
-    # 第一轮：优先找年报（report_period 以 12-31 结尾）
+    """Match financial period data by year, giving priority to annual reports (reporting periods ending on December 31)."""
+    # First round: look for annual reports first (report_period ends with 12-31)
     for record in fin_periods:
         report_period = str(record.get("report_period") or record.get("report_date") or "")
         clean = report_period.replace("-", "").replace("/", "")
         if len(clean) >= 8 and clean[:4] == str(year) and clean[4:8] == "1231":
             return record
-    # 第二轮：检查 report_type 字段
+    # Round 2: Check the report_type field
     for record in fin_periods:
         report_period = str(record.get("report_period") or record.get("report_date") or "")
         clean = report_period.replace("-", "").replace("/", "")
         report_type = str(record.get("report_type") or record.get("statement_type") or "").lower()
         if len(clean) >= 8 and clean[:4] == str(year) and report_type in ("annual", "yearly", "年报"):
             return record
-    # 第三轮：退而求其次，找该年份任意报告期（但标注可能非年报）
+    # The third round: the next best thing is to find any reporting period in that year (but it may be marked as not an annual report)
     for record in fin_periods:
         report_period = str(record.get("report_period") or record.get("report_date") or "")
         clean = report_period.replace("-", "").replace("/", "")
@@ -75,7 +75,7 @@ def _match_financial_period_by_year(fin_periods: list[dict], year: int) -> dict 
 @register_tool(
     tool_id="get_financial_fraud_signals",
     name="财务造假信号检测",
-    description="从收入确认、利润质量、资产异常、关联交易、现金流、毛利率和费用资本化七个维度检测财务造假信号，综合评分0-100分。",
+    description="Detect financial fraud signals from seven dimensions: revenue recognition, profit quality, asset abnormalities, related transactions, cash flow, gross profit margin and expense capitalization, with a comprehensive score of 0-100 points.",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -84,50 +84,50 @@ def _match_financial_period_by_year(fin_periods: list[dict], year: int) -> dict 
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["financial_fraud_screening", "financial_risk_signal_detection", "cashflow_quality_analysis"],
-    when_to_use="当需要筛查财务造假风险、发现会计异常信号、识别现金流异常/恶化或评估财报可信度时使用。",
-    when_not_to_use="不适用于未披露完整年报的公司；评分基于公开财务数据，不能替代深度尽职调查。",
-    returns="返回JSON字符串，包含total_score、rating、categories分项评分与signals、data_quality。",
+    when_to_use="Use it when you need to screen for financial fraud risks, discover accounting abnormal signals, identify cash flow abnormalities/deterioration, or assess the credibility of financial reports.",
+    when_not_to_use="Not applicable to companies that do not disclose full annual reports; scoring is based on public financial data and is not a substitute for in-depth due diligence.",
+    returns="Returns a JSON string, including total_score, rating, categories sub-scores and signals, data_quality.",
     example="get_financial_fraud_signals(symbol='600519')",
     related_tools=["get_earnings_quality_score", "get_beneish_mscore"],
 )
-def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 600519、000001"]) -> str:
-    """检测财务造假信号。从收入确认、利润质量、资产异常、关联交易、现金流、毛利率和费用资本化七个维度综合评分。
+def get_financial_fraud_signals(symbol: Annotated[str, "A stock code, such as 600519,000001"]) -> str:
+    """Detecting signs of financial fraud. Comprehensive scoring from seven dimensions: revenue recognition, profit quality, asset abnormalities, related transactions, cash flow, gross profit margin and expense capitalization.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
+        symbol: A stock code, such as 600519,000001
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: "error" 时存在；成功时不包含该字段
-            symbol: 标的股票代码
-            total_score: 总分（满分 100，分数越高越可疑）
-            rating: 风险评级，"正常" | "需关注" | "可疑" | "高度可疑"
-            categories: dict，七个维度评分与信号——
-                — revenue_recognition: dict，收入确认异常（满分 20）——
-                    — score: 得分
-                    — max: 满分 20
-                    — signals: list[str]，信号描述
-                — earnings_quality: dict，利润质量异常（满分 20）——
+        str: JSON String, field description——
+            status: "error" exists; this field is not included when successful
+            symbol: Underlying stock code
+            total_score: Total score (out of 100, the higher the score, the more suspicious)
+            rating: risk rating,"normal" | "Need attention" | "suspicious" | "highly suspicious"
+            categories: dict, Seven Dimensions Scores and Signals——
+                — revenue_recognition: dict, Revenue recognition anomalies (out of 20 points)——
+                    — score: score
+                    — max: Full marks 20
+                    — signals: list[str], Signal description
+                — earnings_quality: dict, Abnormal profit quality (full score 20)——
                     — score / max / signals
-                — asset_irregularities: dict，资产异常（满分 15）——
+                — asset_irregularities: dict, Asset anomalies (out of 15 points)——
                     — score / max / signals
-                — related_party: dict，关联交易信号（满分 15）——
+                — related_party: dict, Related transaction signals (out of 15 points)——
                     — score / max / signals
-                — cash_flow: dict，现金流异常（满分 15）——
+                — cash_flow: dict, Cash flow anomalies (out of 15 points)——
                     — score / max / signals
-                — margin_anomalies: dict，毛利率异常（满分 10）——
+                — margin_anomalies: dict, Abnormal gross profit margin (out of 10)——
                     — score / max / signals
-                — capitalization: dict，费用资本化信号（满分 5）——
+                — capitalization: dict, Expense Capitalization Signal (out of 5)——
                     — score / max / signals
-            warnings: list[str]，过程中产生的告警信息
-            data_quality: dict，数据质量——
-                — years_available: 可用年报年数
-            message: 当 status 为 "error" 时的错误描述
+            warnings: list[str], Alarm information generated during the process
+            data_quality: dict, Data quality——
+                — years_available: Number of years of annual reports available
+            message: When status is "error" error description when
     """
     try:
         warnings: list[str] = []
 
-        # 获取年报序列（至少需要2年）
+        # Get annual report series (at least 2 years required)
         annual_data = get_historical_financial_annual_series(symbol, years=5)
         records = annual_data.get("records") or []
         warnings.extend(annual_data.get("warnings") or [])
@@ -136,16 +136,16 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
             return json.dumps(
                 {
                     "status": "error",
-                    "message": f"年报数据不足，仅获取到 {len(records)} 年数据，需要至少2年",
+                    "message": f"There is insufficient data in the annual report and only the {len(records)} Annual data, at least 2 years required",
                     "symbol": symbol,
                 },
                 ensure_ascii=False, indent=2, default=str,
             )
 
         if len(records) < 3:
-            warnings.append("仅2年报数据，部分同比指标无法计算，评分可靠性受限")
+            warnings.append("With only 2 annual report data, some year-on-year indicators cannot be calculated, and the reliability of the scores is limited.")
 
-        # 按年份升序便于计算
+        # Sort by year in ascending order for easy calculation
         sorted_records = sorted(records, key=lambda r: r.get("year") or 0)
         n = len(sorted_records)
         latest = sorted_records[-1]
@@ -153,15 +153,15 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         prior = sorted_records[-2] if n >= 2 else None
         prior_year = prior.get("year") if prior else None
 
-        # 获取财务期间数据（用于 accounts_receiv, inventories, total_cur_assets 等）
+        # Get financial period data (for accounts_receiv, inventories, total_cur_assets etc.)
         fin_periods = get_stock_financial_periods(symbol, limit=30)
         fin_cur = _match_financial_period_by_year(fin_periods, latest_year) if latest_year else None
         fin_prior = _match_financial_period_by_year(fin_periods, prior_year) if prior_year else None
 
-        # 🔑 检查匹配的期间是否为年报口径
+        # 🔑 Check whether the matching period is the annual report caliber
         def _is_annual_period(fin: dict | None) -> bool:
             if not fin:
-                return True  # 无数据时不告警
+                return True  # No alarm when there is no data
             rp = str(fin.get("report_period") or fin.get("report_date") or "")
             return rp[:10].endswith("12-31") or rp.replace("-", "").endswith("1231")
 
@@ -170,11 +170,11 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         if fin_prior and not _is_annual_period(fin_prior):
             warnings.append(f"上期({prior_year})匹配到非年报期间数据，同比比较可能存在口径偏差")
 
-        # 获取现金流质量趋势
+        # Get cash flow quality trends
         cf_trend_data = get_cashflow_quality_trend(symbol, years=5)
         cf_trend = cf_trend_data.get("trend") or []
 
-        # ===== 提取基础字段 =====
+        # ===== Extract basic fields =====
         rev_cur = _safe_float(latest.get("revenue"))
         rev_prior = _safe_float(prior.get("revenue")) if prior else None
         np_cur = _safe_float(latest.get("net_profit"))
@@ -189,7 +189,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         gm_prior = _safe_float(prior.get("gross_margin")) if prior else None
         npm_cur = _safe_float(latest.get("netprofit_margin"))
 
-        # 财务期间字段
+        # financial period fields
         ar_cur = _safe_float(fin_cur.get("accounts_receiv")) if fin_cur else None
         ar_prior = _safe_float(fin_prior.get("accounts_receiv")) if fin_prior else None
         inv_cur = _safe_float(fin_cur.get("inventories")) if fin_cur else None
@@ -200,7 +200,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         fe_cur = _safe_float(fin_cur.get("fin_exp")) if fin_cur else None
 
         # ======================================================================
-        # D1: 收入确认异常 (20pts)
+        # D1: Revenue recognition exception (20pts)
         # ======================================================================
         d1_score = 0.0
         d1_signals: list[str] = []
@@ -217,12 +217,12 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
                 d1_signals.append(f"营收增长({revenue_growth*100:.1f}%)远超经营现金流增长({ocf_growth*100:.1f}%)， divergence={divergence*100:.1f}%")
             elif divergence > 0.15:
                 d1_score += 5.0
-                d1_signals.append(f"营收与经营现金流增长差异偏大({divergence*100:.1f}%)")
+                d1_signals.append(f"The difference between revenue and operating cash flow growth is too large({divergence*100:.1f}%)")
             else:
-                d1_signals.append(f"营收与经营现金流增长基本匹配(divergence={divergence*100:.1f}%)")
+                d1_signals.append(f"Revenue and operating cash flow growth basically match(divergence={divergence*100:.1f}%)")
 
-        # 1b: DSO (Days Sales Outstanding) 变化
-        # 🔑 年化营收：季报营收为累计值，需年化后才能用于 DSO 计算
+        # 1b: DSO (Days Sales Outstanding) change
+        # 🔑 Annualized revenue: Quarterly reported revenue is a cumulative value, which needs to be annualized before it can be used for DSO calculations.
         cur_period = _detect_period_type(fin_cur) if fin_cur else "unknown"
         prev_period = _detect_period_type(fin_prior) if fin_prior else "unknown"
         cur_factor = _annualize_factor(cur_period)
@@ -251,12 +251,12 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         elif dso_cur is not None:
             d1_signals.append(f"当前 DSO={dso_cur:.1f}天（无上年可比）")
         else:
-            warnings.append("应收账款或营收数据缺失，DSO 信号跳过")
+            warnings.append("Accounts receivable or revenue data missing, DSO signal skipped")
 
         d1_score = min(d1_score, 20.0)
 
         # ======================================================================
-        # D2: 利润质量异常 (20pts)
+        # D2: Abnormal profit quality (20pts)
         # ======================================================================
         d2_score = 0.0
         d2_signals: list[str] = []
@@ -274,7 +274,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
                 d2_score += 4.0
                 d2_signals.append(f"净利润增长({np_growth*100:.1f}%)与现金流增长({ocf_growth*100:.1f}%)差距较大")
             else:
-                d2_signals.append(f"净利润与现金流增长趋势一致(gap={gap*100:.1f}%)")
+                d2_signals.append(f"Net profit and cash flow growth trends are consistent(gap={gap*100:.1f}%)")
 
         # 2b: Accruals ratio
         accrual_ratios = []
@@ -299,7 +299,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         d2_score = min(d2_score, 20.0)
 
         # ======================================================================
-        # D3: 资产异常 (15pts)
+        # D3: Abnormal assets (15pts)
         # ======================================================================
         d3_score = 0.0
         d3_signals: list[str] = []
@@ -316,7 +316,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
                 d3_score += 3.0
                 d3_signals.append(f"总资产增长({ta_growth*100:.1f}%)快于营收，资产效率下降")
             else:
-                d3_signals.append(f"总资产与营收增长匹配(gap={asset_rev_gap*100:.1f}%)")
+                d3_signals.append(f"Total assets match revenue growth(gap={asset_rev_gap*100:.1f}%)")
 
         # 3b: Receivables growing much faster than revenue
         ar_growth = _pct_change(ar_cur, ar_prior) if ar_cur is not None and ar_prior is not None else None
@@ -351,12 +351,12 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
                 else:
                     d3_signals.append(f"存货与营业成本增长匹配")
         else:
-            warnings.append("存货数据缺失，存货信号跳过")
+            warnings.append("Inventory data is missing and inventory signal is skipped")
 
         d3_score = min(d3_score, 15.0)
 
         # ======================================================================
-        # D4: 关联交易信号 (15pts)
+        # D4: Related trading signals (15pts)
         # ======================================================================
         d4_score = 0.0
         d4_signals: list[str] = []
@@ -378,7 +378,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
                 else:
                     d4_signals.append(f"其他应收类资产占比 {other_rec_ratio*100:.1f}%，正常")
         else:
-            warnings.append("流动资产数据不足，其他应收信号跳过")
+            warnings.append("Insufficient current asset data, other receivable signals are skipped")
 
         # 4b: Significant changes in non-current assets
         nca_cur = _safe_float(fin_cur.get("total_nca")) if fin_cur else None
@@ -400,7 +400,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         d4_score = min(d4_score, 15.0)
 
         # ======================================================================
-        # D5: 现金流异常 (15pts)
+        # D5: Abnormal cash flow (15pts)
         # ======================================================================
         d5_score = 0.0
         d5_signals: list[str] = []
@@ -408,9 +408,9 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         # 5a: Net profit positive but operating cashflow negative
         if np_cur is not None and np_cur > 0 and ocf_cur is not None and ocf_cur < 0:
             d5_score += 10.0
-            d5_signals.append("净利润为正但经营现金流为负，严重警示信号")
+            d5_signals.append("Net profit is positive but operating cash flow is negative, a serious warning sign")
         elif np_cur is not None and ocf_cur is not None and ocf_cur < 0:
-            d5_signals.append("经营现金流为负（净利润亦为负）")
+            d5_signals.append("Operating cash flow is negative (net profit is also negative)")
         elif np_cur is not None and ocf_cur is not None and ocf_cur / np_cur < 0.5:
             d5_score += 5.0
             d5_signals.append(f"经营现金流仅为净利润的 {ocf_cur/np_cur*100:.1f}%，含金量偏低")
@@ -423,7 +423,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
             ratio = ncf_fin_cur / abs(ocf_cur) if ocf_cur != 0 else 0
             if ratio > 0.50:
                 d5_score += 5.0
-                d5_signals.append(f"经营现金流为正的同时筹资现金流大幅流入(={ratio*100:.1f}% of OCF)，异常")
+                d5_signals.append(f"While operating cash flow is positive, financing cash flow inflows are substantial.(={ratio*100:.1f}% of OCF), Abnormal")
             else:
                 d5_signals.append("筹资与经营现金流关系正常")
         elif ncf_fin_cur is not None:
@@ -432,7 +432,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         d5_score = min(d5_score, 15.0)
 
         # ======================================================================
-        # D6: 毛利率异常 (10pts)
+        # D6: Abnormal gross profit margin (10pts)
         # ======================================================================
         d6_score = 0.0
         d6_signals: list[str] = []
@@ -467,7 +467,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         d6_score = min(d6_score, 10.0)
 
         # ======================================================================
-        # D7: 费用资本化信号 (5pts)
+        # D7: Expense Capitalization Signal (5pts)
         # ======================================================================
         d7_score = 0.0
         d7_signals: list[str] = []
@@ -500,7 +500,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         d7_score = min(d7_score, 5.0)
 
         # ======================================================================
-        # 总分与评级
+        # Overall score and rating
         # ======================================================================
         total_score = round(d1_score + d2_score + d3_score + d4_score + d5_score + d6_score + d7_score, 1)
 
@@ -513,8 +513,8 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         else:
             rating = "高度可疑"
 
-        # 附加备注
-        warnings.append("注：行业平均毛利率不可用，毛利率异常判断基于绝对阈值")
+        # Additional remarks
+        warnings.append("Note: The industry average gross profit margin is not available, and the abnormal gross profit margin judgment is based on the absolute threshold.")
 
         payload = {
             "symbol": symbol,
@@ -566,7 +566,7 @@ def get_financial_fraud_signals(symbol: Annotated[str, "A 股股票代码，如 
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("财务造假信号检测失败: %s", exc, exc_info=True)
+        logger.error("Financial fraud signal detection failed: %s", exc, exc_info=True)
         return json.dumps(
             {"status": "error", "message": str(exc)},
             ensure_ascii=False, indent=2, default=str,

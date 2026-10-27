@@ -1,5 +1,5 @@
 """
-通知服务：持久化 + 列表 + 已读 + SSE 发布
+Notification Service: Persistence + list + Read + SSE publish
 """
 import json
 import logging
@@ -60,20 +60,20 @@ class NotificationsService:
             "created_at": doc["created_at"].isoformat(),
         }
 
-        # 🔥 使用 WebSocket 发送通知
+        # 🔥 Send notifications using WebSocket
         try:
             from app.routers.websocket_notifications import send_notification_via_websocket
             await send_notification_via_websocket(payload.user_id, payload_to_publish)
-            logger.debug(f"✅ [WS] 通知已通过 WebSocket 发送: user={payload.user_id}")
+            logger.debug(f"✅ [WS] Notification sent via WebSocket: user={payload.user_id}")
         except Exception as e:
-            logger.warning(f"⚠️ [WS] WebSocket 发送失败: {e}")
+            logger.warning(f"⚠️ [WS] WebSocket Sending failed: {e}")
 
-        # 📣 渠道推送（飞书/钉钉/企微/邮件），fire-and-forget
+        # 📣 Channel push (Feishu/DingTalk/Qiwei/Email),fire-and-forget
         try:
             from app.services.channel_notifier import get_channel_notifier
             notifier = get_channel_notifier()
             event_type = payload.type or "system"
-            # 将 analysis/alert/skill_gap 映射到渠道事件类型
+            # Map analysis/alert/skill_gap to channel event types
             _type_map = {
                 "analysis": "analysis_complete",
                 "alert": "alert",
@@ -92,15 +92,15 @@ class NotificationsService:
                 )
             )
         except Exception as e:
-            logger.warning(f"⚠️ [Channel] 渠道推送调度失败(忽略): {e}")
+            logger.warning(f"⚠️ [Channel] Channel push scheduling failed(ignore): {e}")
 
-        # 清理策略：保留最近N天/最多M条
+        # Cleaning strategy: keep the last N days/up to M items
         try:
             await db[self.collection].delete_many({
                 "user_id": payload.user_id,
                 "created_at": {"$lt": now_tz() - timedelta(days=self.retain_days)}
             })
-            # 超过配额按时间删旧
+            # If quota is exceeded, old files will be deleted based on time.
             count = await db[self.collection].count_documents({"user_id": payload.user_id})
             if count > self.max_per_user:
                 skip = count - self.max_per_user

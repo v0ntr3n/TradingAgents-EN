@@ -1,12 +1,12 @@
 """
-交易复盘工作流模板 v2.0
+Transaction review workflow template v2.0
 
-多维度分析交易复盘，包含:
-1. 时机分析师 v2.0 - 复盘入场与退出依据
-2. 仓位分析师 v2.0 - 复盘仓位管理与风险暴露
-3. 情绪分析师 v2.0 - 复盘情绪控制与纪律执行
-4. 归因分析师 v2.0 - 分析收益来源与可复制性
-5. 复盘总结师 v2.0 - 综合总结复盘结论与改进方向
+Multi-dimensional analysis and transaction review, including:
+1. Timing Analyst v2.0 - Review entry and exit basis
+2. Position Analyst v2.0 - Review position management and risk exposure
+3. Emotional Analyst v2.0 - Review of emotional control and discipline execution
+4. Attribution Analyst v2.0 - Analyze revenue sources and replicability
+5. Review Summarizer v2.0 - Comprehensive summary of review conclusions and improvement directions
 """
 
 from ..models import (
@@ -21,100 +21,100 @@ from ..models import (
 
 TRADE_REVIEW_WORKFLOW_V2 = WorkflowDefinition(
     id="trade_review_v2",
-    name="交易复盘流程 v2.0",
-    description="基于 v2.0 Agent 架构的交易复盘流程。时机复盘、仓位复盘、情绪复盘与归因复盘并行执行，最后由复盘总结师汇总形成复盘结论与改进项。",
+    name="Transaction review process v2.0",
+    description="Transaction review process based on v2.0 Agent architecture. The timing review, position review, emotional review and attribution review are performed in parallel. Finally, the review summary expert summarizes the review conclusions and improvement items.",
     version="2.0.0",
     is_template=True,
-    tags=["v2.0", "复盘", "多维度", "并行复盘"],
+    tags=["v2.0", "Review", "multidimensional", "Parallel review"],
     config={
         "workflow_type": "trade_review",
         "parallel_analysts": True,
         "output_format": "structured_report",
     },
     nodes=[
-        # 开始节点
+        # start node
         NodeDefinition(
             id="start",
             type=NodeType.START,
-            label="开始",
+            label="start",
             position=Position(x=400, y=50),
         ),
-        # 并行开始节点
+        # parallel start node
         NodeDefinition(
             id="parallel_start",
             type=NodeType.PARALLEL,
-            label="并行分析开始",
+            label="Parallel analysis begins",
             position=Position(x=400, y=150),
         ),
-        # 时机分析师 v2.0
+        # timing analyst v2.0
         NodeDefinition(
             id="timing_analyst_v2",
             type=NodeType.ANALYST,
             agent_id="timing_analyst_v2",
-            label="时机分析师 v2.0",
+            label="timing analyst v2.0",
             position=Position(x=100, y=300),
             config={"output_field": "timing_analysis"},
         ),
-        # 仓位分析师 v2.0
+        # Position Analyst v2.0
         NodeDefinition(
             id="position_analyst_v2",
             type=NodeType.ANALYST,
             agent_id="position_analyst_v2",
-            label="仓位分析师 v2.0",
+            label="Position Analyst v2.0",
             position=Position(x=300, y=300),
             config={"output_field": "position_analysis"},
         ),
-        # 情绪分析师 v2.0
+        # sentiment analyst v2.0
         NodeDefinition(
             id="emotion_analyst_v2",
             type=NodeType.ANALYST,
             agent_id="emotion_analyst_v2",
-            label="情绪分析师 v2.0",
+            label="sentiment analyst v2.0",
             position=Position(x=500, y=300),
             config={"output_field": "emotion_analysis"},
         ),
-        # 归因分析师 v2.0
+        # attribution analyst v2.0
         NodeDefinition(
             id="attribution_analyst_v2",
             type=NodeType.ANALYST,
             agent_id="attribution_analyst_v2",
-            label="归因分析师 v2.0",
+            label="attribution analyst v2.0",
             position=Position(x=700, y=300),
             config={"output_field": "attribution_analysis"},
         ),
-        # 合并节点
+        # Merge nodes
         NodeDefinition(
             id="merge",
             type=NodeType.MERGE,
-            label="合并分析结果",
+            label="Combine analysis results",
             position=Position(x=400, y=450),
         ),
-        # 复盘总结师 v2.0
+        # Review summary expert v2.0
         NodeDefinition(
             id="review_manager_v2",
             type=NodeType.MANAGER,
             agent_id="review_manager_v2",
-            label="复盘总结师 v2.0",
+            label="Review summary expert v2.0",
             position=Position(x=400, y=550),
             config={"output_field": "review_summary"},
         ),
-        # 结束节点
+        # end node
         NodeDefinition(
             id="end",
             type=NodeType.END,
-            label="结束",
+            label="end",
             position=Position(x=400, y=650),
         ),
     ],
     edges=[
-        # 开始 -> 并行开始
+        # start -> Start in parallel
         EdgeDefinition(
             id="edge_start_parallel",
             source="start",
             target="parallel_start",
             type=EdgeType.NORMAL,
         ),
-        # 并行开始 -> 四个分析师
+        # Start in parallel -> four analysts
         EdgeDefinition(
             id="edge_parallel_timing",
             source="parallel_start",
@@ -139,7 +139,7 @@ TRADE_REVIEW_WORKFLOW_V2 = WorkflowDefinition(
             target="attribution_analyst_v2",
             type=EdgeType.NORMAL,
         ),
-        # 四个分析师 -> 合并
+        # four analysts -> merge
         EdgeDefinition(
             id="edge_timing_merge",
             source="timing_analyst_v2",
@@ -164,14 +164,14 @@ TRADE_REVIEW_WORKFLOW_V2 = WorkflowDefinition(
             target="merge",
             type=EdgeType.NORMAL,
         ),
-        # 合并 -> 复盘总结师
+        # merge -> Review summary expert
         EdgeDefinition(
             id="edge_merge_manager",
             source="merge",
             target="review_manager_v2",
             type=EdgeType.NORMAL,
         ),
-        # 复盘总结师 -> 结束
+        # Review summary expert -> end
         EdgeDefinition(
             id="edge_manager_end",
             source="review_manager_v2",

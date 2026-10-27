@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-测试基本面数据缓存功能
-验证OpenAI和Finnhub基本面数据的缓存机制
+Test fundamental data caching function
+Verify the caching mechanism of OpenAI and Finnhub fundamental data
 """
 
 import os
@@ -9,83 +9,83 @@ import sys
 import time
 from datetime import datetime
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, project_root)
 
 def test_cache_manager_fundamentals():
-    """测试缓存管理器的基本面数据功能"""
-    print("🧪 测试基本面数据缓存管理器...")
+    """Testing the cache manager s fundamental data functionality"""
+    print("🧪 Test Fundamentals Data Cache Manager...")
     
     try:
         from tradingagents.dataflows.cache_manager import get_cache
         
         cache = get_cache()
-        print(f"✅ 缓存管理器初始化成功")
-        print(f"📁 缓存目录: {cache.cache_dir}")
+        print(f"✅ Cache manager initialization successful")
+        print(f"📁 cache directory: {cache.cache_dir}")
         
-        # 测试保存基本面数据
+        # Test saving fundamental data
         test_symbol = "AAPL"
         test_data = f"""
-# {test_symbol} 基本面分析报告（测试数据）
+# {test_symbol} Fundamental analysis report (test data)
 
-**数据获取时间**: {datetime.now().strftime('%Y-%m-%d')}
-**数据来源**: 测试数据
+**Data acquisition time**: {datetime.now().strftime('%Y-%m-%d')}
+**Data source**: test data
 
-## 公司概况
-- **公司名称**: Apple Inc.
-- **行业**: 科技
-- **市值**: 3000000 百万美元
+## Company Profile
+- **Company name**: Apple Inc.
+- **Industry**: Technology
+- **Market value**: 3000000 million dollars
 
-## 关键财务指标
-| 指标 | 数值 |
+## key financial indicators
+| indicator | numerical value |
 |------|------|
-| 市盈率 (PE) | 25.50 |
-| 市销率 (PS) | 7.20 |
-| 净资产收益率 (ROE) | 15.30% |
+| P/E ratio (PE) | 25.50 |
+| price to sales ratio (PS) | 7.20 |
+| ROE (ROE) | 15.30% |
 
-## 数据说明
-- 这是测试数据，用于验证缓存功能
+## Data description
+- This is test data to verify caching functionality
 """
         
-        # 测试保存到缓存
-        print(f"\n💾 测试保存基本面数据到缓存...")
+        # Save test to cache
+        print(f"\n💾 Test saving fundamental data to cache...")
         cache_key = cache.save_fundamentals_data(test_symbol, test_data, data_source="test")
-        print(f"✅ 数据已保存，缓存键: {cache_key}")
+        print(f"✅ Data saved, cache key: {cache_key}")
         
-        # 测试从缓存加载
-        print(f"\n📖 测试从缓存加载基本面数据...")
+        # Test loading from cache
+        print(f"\n📖 Test loading fundamental data from cache...")
         loaded_data = cache.load_fundamentals_data(cache_key)
         if loaded_data:
-            print(f"✅ 数据加载成功，长度: {len(loaded_data)}")
-            print(f"📄 数据预览: {loaded_data[:200]}...")
+            print(f"✅ Data loaded successfully, length: {len(loaded_data)}")
+            print(f"📄 Data preview: {loaded_data[:200]}...")
         else:
-            print(f"❌ 数据加载失败")
+            print(f"❌ Data loading failed")
         
-        # 测试查找缓存
-        print(f"\n🔍 测试查找基本面缓存数据...")
+        # Test lookup cache
+        print(f"\n🔍 Test to find fundamental cache data...")
         found_key = cache.find_cached_fundamentals_data(test_symbol, data_source="test")
         if found_key:
-            print(f"✅ 找到缓存数据，缓存键: {found_key}")
+            print(f"✅ Find cache data, cache key: {found_key}")
         else:
-            print(f"❌ 未找到缓存数据")
+            print(f"❌ Cache data not found")
         
-        # 测试缓存统计
-        print(f"\n📊 测试缓存统计...")
+        # Test cache statistics
+        print(f"\n📊 Test cache statistics...")
         stats = cache.get_cache_stats()
-        print(f"缓存统计: {stats}")
+        print(f"cache statistics: {stats}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 缓存管理器测试失败: {str(e)}")
+        print(f"❌ Cache manager test failed: {str(e)}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_fundamentals_with_cache():
-    """测试基本面数据获取函数的缓存功能"""
-    print(f"\n🧪 测试基本面数据获取函数的缓存功能...")
+    """Test the caching function of the fundamental data acquisition function"""
+    print(f"\n🧪 Test the caching function of the fundamental data acquisition function...")
     
     try:
         from tradingagents.dataflows.interface import get_fundamentals_openai, get_fundamentals_finnhub
@@ -93,95 +93,95 @@ def test_fundamentals_with_cache():
         test_symbol = "MSFT"
         curr_date = datetime.now().strftime('%Y-%m-%d')
         
-        print(f"\n📊 第一次获取 {test_symbol} 基本面数据（应该从API获取）...")
+        print(f"\n📊 Get it for the first time {test_symbol} Fundamental data (should be obtained from API)...")
         start_time = time.time()
         result1 = get_fundamentals_finnhub(test_symbol, curr_date)
         first_time = time.time() - start_time
-        print(f"⏱️ 第一次获取耗时: {first_time:.2f}秒")
-        print(f"📄 数据长度: {len(result1)}")
+        print(f"⏱️ First acquisition time: {first_time:.2f}seconds")
+        print(f"📄 Data length: {len(result1)}")
         
-        print(f"\n📊 第二次获取 {test_symbol} 基本面数据（应该从缓存获取）...")
+        print(f"\n📊 second acquisition {test_symbol} Fundamental data (should be obtained from cache)...")
         start_time = time.time()
         result2 = get_fundamentals_finnhub(test_symbol, curr_date)
         second_time = time.time() - start_time
-        print(f"⏱️ 第二次获取耗时: {second_time:.2f}秒")
-        print(f"📄 数据长度: {len(result2)}")
+        print(f"⏱️ The second acquisition time: {second_time:.2f}seconds")
+        print(f"📄 Data length: {len(result2)}")
         
-        # 验证缓存效果
+        # Verify caching effect
         if second_time < first_time:
-            print(f"✅ 缓存生效！第二次获取速度提升了 {((first_time - second_time) / first_time * 100):.1f}%")
+            print(f"✅ Caching takes effect! The second acquisition speed has been improved {((first_time - second_time) / first_time * 100):.1f}%")
         else:
-            print(f"⚠️ 缓存可能未生效，或者数据来源有变化")
+            print(f"⚠️ The cache may not be effective, or the data source may have changed.")
         
-        # 验证数据一致性
+        # Verify data consistency
         if result1 == result2:
-            print(f"✅ 两次获取的数据完全一致")
+            print(f"✅ The data obtained twice are exactly the same")
         else:
-            print(f"⚠️ 两次获取的数据不一致，可能是缓存问题")
+            print(f"⚠️ The data obtained twice is inconsistent, which may be a caching issue.")
         
         return True
         
     except Exception as e:
-        print(f"❌ 基本面数据缓存测试失败: {str(e)}")
+        print(f"❌ Fundamental data cache test failed: {str(e)}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_cache_ttl():
-    """测试缓存TTL（生存时间）功能"""
-    print(f"\n🧪 测试缓存TTL功能...")
+    """Test cache TTL (time to live) functionality"""
+    print(f"\n🧪 Test cache TTL functionality...")
     
     try:
         from tradingagents.dataflows.cache_manager import get_cache
         
         cache = get_cache()
         
-        # 检查缓存配置
-        print(f"📋 缓存配置:")
+        # Check cache configuration
+        print(f"📋 Cache configuration:")
         for cache_type, config in cache.cache_config.items():
             if 'fundamentals' in cache_type:
-                print(f"  - {cache_type}: TTL={config['ttl_hours']}小时, 描述={config['description']}")
+                print(f"  - {cache_type}: TTL={config['ttl_hours']}hours, Description={config['description']}")
         
-        # 测试美股和A股的不同TTL设置
+        # Test different TTL settings for US stocks and A-shares
         us_symbol = "GOOGL"
-        china_symbol = "000001"  # 平安银行
+        china_symbol = "000001"  # Ping An Bank
         
-        print(f"\n🇺🇸 测试美股基本面缓存 ({us_symbol})...")
+        print(f"\n🇺🇸 Testing US Stock Fundamental Cache ({us_symbol})...")
         us_key = cache.find_cached_fundamentals_data(us_symbol, data_source="test")
         if us_key:
-            print(f"找到美股缓存: {us_key}")
+            print(f"Find US stock cache: {us_key}")
         else:
-            print(f"未找到美股缓存")
+            print(f"US stock cache not found")
         
-        print(f"\n🇨🇳 测试A股基本面缓存 ({china_symbol})...")
+        print(f"\n🇨🇳 Test A-share fundamental cache ({china_symbol})...")
         china_key = cache.find_cached_fundamentals_data(china_symbol, data_source="test")
         if china_key:
-            print(f"找到A股缓存: {china_key}")
+            print(f"Find A-share cache: {china_key}")
         else:
-            print(f"未找到A股缓存")
+            print(f"A-share cache not found")
         
         return True
         
     except Exception as e:
-        print(f"❌ 缓存TTL测试失败: {str(e)}")
+        print(f"❌ Cache TTL test failed: {str(e)}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主测试函数"""
-    print("🚀 开始基本面数据缓存功能测试")
+    """Main test function"""
+    print("🚀 Start fundamental data caching function test")
     print("=" * 50)
     
-    # 检查环境
-    print(f"📍 当前工作目录: {os.getcwd()}")
-    print(f"📍 Python路径: {sys.path[0]}")
+    # Check environment
+    print(f"📍 current working directory: {os.getcwd()}")
+    print(f"📍 Python path: {sys.path[0]}")
     
-    # 运行测试
+    # Run tests
     tests = [
-        ("缓存管理器基本功能", test_cache_manager_fundamentals),
-        ("基本面数据缓存功能", test_fundamentals_with_cache),
-        ("缓存TTL功能", test_cache_ttl),
+        ("Cache manager basic functions", test_cache_manager_fundamentals),
+        ("Fundamental data caching function", test_fundamentals_with_cache),
+        ("Cache TTL functionality", test_cache_ttl),
     ]
     
     results = []
@@ -191,23 +191,23 @@ def main():
             result = test_func()
             results.append((test_name, result))
         except Exception as e:
-            print(f"❌ 测试 '{test_name}' 执行失败: {str(e)}")
+            print(f"❌ test '{test_name}' Execution failed: {str(e)}")
             results.append((test_name, False))
     
-    # 输出测试结果
-    print(f"\n{'='*20} 测试结果汇总 {'='*20}")
+    # Output test results
+    print(f"\n{'='*20} Summary of test results {'='*20}")
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{status} {test_name}")
     
     passed = sum(1 for _, result in results if result)
     total = len(results)
-    print(f"\n📊 测试完成: {passed}/{total} 个测试通过")
+    print(f"\n📊 Test completed: {passed}/{total} tests passed")
     
     if passed == total:
-        print("🎉 所有测试都通过了！基本面数据缓存功能正常工作。")
+        print("🎉 All tests passed! Fundamental data caching functionality is working properly.")
     else:
-        print("⚠️ 部分测试失败，请检查相关功能。")
+        print("⚠️ Some tests failed, please check related functions.")
 
 if __name__ == "__main__":
     main()

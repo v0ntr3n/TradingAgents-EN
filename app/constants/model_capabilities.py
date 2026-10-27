@@ -1,13 +1,13 @@
 """
-模型能力分级系统
+Model Capability Grading System
 
-定义模型的能力等级、适用角色、特性标签等元数据，
-用于智能匹配分析深度和模型选择。
+Define the model s ability level, applicable roles, feature labels and other metadata,
+For intelligent matching of analysis depth and model selection.
 
-🆕 聚合渠道支持：
-- 支持 302.AI、OpenRouter、One API 等聚合渠道
-- 聚合渠道的模型名称格式：{provider}/{model}（如 openai/gpt-4）
-- 系统会自动映射到原厂模型的能力配置
+🆕 Aggregation channel support:
+- Support aggregation channels such as 302.AI, OpenRouter, One API, etc.
+- Model name format for aggregation channels:{provider}/{model} (Such as openai/gpt-4)
+- The system will automatically map to the capability configuration of the original model.
 """
 
 from enum import IntEnum, Enum
@@ -15,115 +15,115 @@ from typing import Dict, List, Any, Tuple
 
 
 class ModelCapabilityLevel(IntEnum):
-    """模型能力等级（1-5级）"""
-    BASIC = 1          # 基础：适合1-2级分析，轻量快速
-    STANDARD = 2       # 标准：适合1-3级分析，日常使用
-    ADVANCED = 3       # 高级：适合1-4级分析，复杂推理
-    PROFESSIONAL = 4   # 专业：适合1-5级分析，专业级分析
-    FLAGSHIP = 5       # 旗舰：适合所有级别，最强能力
+    """Model ability level (level 1-5)"""
+    BASIC = 1          # Basics: suitable for level 1-2 analysis, lightweight and fast
+    STANDARD = 2       # Standard: Suitable for level 1-3 analysis, daily use
+    ADVANCED = 3       # Advanced: Suitable for level 1-4 analysis and complex reasoning
+    PROFESSIONAL = 4   # Professional: Suitable for level 1-5 analysis, professional level analysis
+    FLAGSHIP = 5       # Flagship: Suitable for all levels, the strongest ability
 
 
 class ModelRole(str, Enum):
-    """模型角色类型"""
-    QUICK_ANALYSIS = "quick_analysis"  # 快速分析（数据收集、工具调用）
-    DEEP_ANALYSIS = "deep_analysis"    # 深度分析（推理、决策）
-    BOTH = "both"                      # 两者都适合
+    """Model role type"""
+    QUICK_ANALYSIS = "quick_analysis"  # Quick analysis (data collection, tool invocation)
+    DEEP_ANALYSIS = "deep_analysis"    # In-depth analysis (reasoning, decision-making)
+    BOTH = "both"                      # suitable for both
 
 
 class ModelFeature(str, Enum):
-    """模型特性标签"""
-    TOOL_CALLING = "tool_calling"      # 支持工具调用（必需）
-    LONG_CONTEXT = "long_context"      # 支持长上下文
-    REASONING = "reasoning"            # 强推理能力
-    VISION = "vision"                  # 支持视觉输入
-    FAST_RESPONSE = "fast_response"    # 快速响应
-    COST_EFFECTIVE = "cost_effective"  # 成本效益高
+    """Model property labels"""
+    TOOL_CALLING = "tool_calling"      # Support tool calling (required)
+    LONG_CONTEXT = "long_context"      # Support long context
+    REASONING = "reasoning"            # Strong reasoning ability
+    VISION = "vision"                  # Support visual input
+    FAST_RESPONSE = "fast_response"    # Quick response
+    COST_EFFECTIVE = "cost_effective"  # Cost effective
 
 
-# 能力等级描述
+# Description of ability level
 CAPABILITY_DESCRIPTIONS = {
-    1: "基础模型 - 适合快速分析和简单任务，响应快速，成本低",
-    2: "标准模型 - 适合日常分析和常规任务，平衡性能和成本",
-    3: "高级模型 - 适合深度分析和复杂推理，质量较高",
-    4: "专业模型 - 适合专业级分析和多轮辩论，高质量输出",
-    5: "旗舰模型 - 最强能力，适合全面分析和关键决策"
+    1: "Basic model - suitable for quick analysis and simple tasks, fast response and low cost",
+    2: "Standard model - suitable for daily analysis and routine tasks, balancing performance and cost",
+    3: "Advanced models - suitable for deep analysis and complex reasoning, with higher quality",
+    4: "Professional model - suitable for professional-level analysis and multi-round debates, high-quality output",
+    5: "Flagship model - the most capable, suitable for comprehensive analysis and critical decision-making"
 }
 
 
-# 分析深度要求的最低能力等级
+# Minimum competency level required for depth of analysis
 ANALYSIS_DEPTH_REQUIREMENTS = {
-    "快速": {
+    "fast": {
         "min_capability": 1,
         "quick_model_min": 1,
         "deep_model_min": 1,
         "required_features": [ModelFeature.TOOL_CALLING],
-        "description": "1级快速分析：任何模型都可以，优先选择快速响应的模型"
+        "description": "1 Level quick analysis: any model is acceptable, with quick response models preferred."
     },
-    "基础": {
+    "Basics": {
         "min_capability": 1,
         "quick_model_min": 1,
         "deep_model_min": 2,
         "required_features": [ModelFeature.TOOL_CALLING],
-        "description": "2级基础分析：快速模型可用基础级，深度模型建议标准级以上"
+        "description": "2 Level basic analysis: Basic level can be used for fast models, and standard level or above is recommended for deep models."
     },
-    "标准": {
+    "Standard": {
         "min_capability": 2,
         "quick_model_min": 1,
         "deep_model_min": 2,
         "required_features": [ModelFeature.TOOL_CALLING],
-        "description": "3级标准分析：快速模型可用基础级，深度模型需要标准级以上"
+        "description": "3 Level standard analysis: Basic level is available for fast models, and standard level or above is required for deep models."
     },
-    "深度": {
+    "Depth": {
         "min_capability": 3,
         "quick_model_min": 2,
         "deep_model_min": 3,
         "required_features": [ModelFeature.TOOL_CALLING, ModelFeature.REASONING],
-        "description": "4级深度分析：快速模型需标准级，深度模型需高级以上，需要推理能力"
+        "description": "4 Level depth analysis: Fast models require standard level, deep models require advanced level or above, and require reasoning capabilities."
     },
-    "全面": {
+    "Comprehensive": {
         "min_capability": 4,
         "quick_model_min": 2,
         "deep_model_min": 4,
         "required_features": [ModelFeature.TOOL_CALLING, ModelFeature.REASONING],
-        "description": "5级全面分析：快速模型需标准级，深度模型需专业级以上，强推理能力"
+        "description": "5 Comprehensive analysis of levels: fast models require standard level, deep models require professional level or above, and strong reasoning ability"
     }
 }
 
 
-# 常见模型的默认能力配置（用于初始化和参考）
+# Default capability configurations for common models (for initialization and reference)
 DEFAULT_MODEL_CAPABILITIES: Dict[str, Dict[str, Any]] = {
-    # ==================== 阿里百炼 (DashScope) ====================
+    # ==================== Ali Bailian (DashScope) ====================
     "qwen-turbo": {
         "capability_level": 1,
         "suitable_roles": [ModelRole.QUICK_ANALYSIS],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.FAST_RESPONSE, ModelFeature.COST_EFFECTIVE],
-        "recommended_depths": ["快速", "基础"],
+        "recommended_depths": ["fast", "Basics"],
         "performance_metrics": {"speed": 5, "cost": 5, "quality": 3},
-        "description": "通义千问轻量版，快速响应，适合数据收集"
+        "description": "Tongyi Qianwen lightweight version, fast response, suitable for data collection"
     },
     "qwen-plus": {
         "capability_level": 2,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT],
-        "recommended_depths": ["快速", "基础", "标准"],
+        "recommended_depths": ["fast", "Basics", "Standard"],
         "performance_metrics": {"speed": 4, "cost": 4, "quality": 4},
-        "description": "通义千问标准版，平衡性能和成本"
+        "description": "Tongyi Qianwen Standard Edition, balancing performance and cost"
     },
     "qwen-max": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.REASONING],
-        "recommended_depths": ["标准", "深度", "全面"],
+        "recommended_depths": ["Standard", "Depth", "Comprehensive"],
         "performance_metrics": {"speed": 3, "cost": 2, "quality": 5},
-        "description": "通义千问旗舰版，强大推理能力"
+        "description": "Tongyi Qianwen flagship version, powerful reasoning ability"
     },
     "qwen3-max": {
         "capability_level": 5,
         "suitable_roles": [ModelRole.DEEP_ANALYSIS],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.REASONING],
-        "recommended_depths": ["深度", "全面"],
+        "recommended_depths": ["Depth", "Comprehensive"],
         "performance_metrics": {"speed": 2, "cost": 1, "quality": 5},
-        "description": "通义千问长文本版，超长上下文"
+        "description": "Tongyi Qianwen long text version, super long context"
     },
     
     # ==================== OpenAI ====================
@@ -131,57 +131,57 @@ DEFAULT_MODEL_CAPABILITIES: Dict[str, Dict[str, Any]] = {
         "capability_level": 1,
         "suitable_roles": [ModelRole.QUICK_ANALYSIS],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.FAST_RESPONSE, ModelFeature.COST_EFFECTIVE],
-        "recommended_depths": ["快速", "基础"],
+        "recommended_depths": ["fast", "Basics"],
         "performance_metrics": {"speed": 5, "cost": 5, "quality": 3},
-        "description": "GPT-3.5 Turbo，快速且经济"
+        "description": "GPT-3.5 Turbo, Fast and economical"
     },
     "gpt-4": {
         "capability_level": 3,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.REASONING],
-        "recommended_depths": ["基础", "标准", "深度"],
+        "recommended_depths": ["Basics", "Standard", "Depth"],
         "performance_metrics": {"speed": 3, "cost": 3, "quality": 4},
-        "description": "GPT-4，强大的推理能力"
+        "description": "GPT-4, Strong reasoning skills"
     },
     "gpt-4-turbo": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.REASONING, ModelFeature.VISION],
-        "recommended_depths": ["标准", "深度", "全面"],
+        "recommended_depths": ["Standard", "Depth", "Comprehensive"],
         "performance_metrics": {"speed": 4, "cost": 2, "quality": 5},
-        "description": "GPT-4 Turbo，更快更强"
+        "description": "GPT-4 Turbo, Faster and stronger"
     },
     "gpt-4o-mini": {
         "capability_level": 2,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.FAST_RESPONSE, ModelFeature.COST_EFFECTIVE],
-        "recommended_depths": ["快速", "基础", "标准"],
+        "recommended_depths": ["fast", "Basics", "Standard"],
         "performance_metrics": {"speed": 5, "cost": 5, "quality": 3},
-        "description": "GPT-4o Mini，经济实惠"
+        "description": "GPT-4o Mini, Affordable"
     },
     "o1-mini": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.DEEP_ANALYSIS],
         "features": [ModelFeature.REASONING],
-        "recommended_depths": ["深度", "全面"],
+        "recommended_depths": ["Depth", "Comprehensive"],
         "performance_metrics": {"speed": 2, "cost": 3, "quality": 5},
-        "description": "O1 Mini，强推理模型"
+        "description": "O1 Mini, Strong inference model"
     },
     "o1": {
         "capability_level": 5,
         "suitable_roles": [ModelRole.DEEP_ANALYSIS],
         "features": [ModelFeature.REASONING],
-        "recommended_depths": ["全面"],
+        "recommended_depths": ["Comprehensive"],
         "performance_metrics": {"speed": 1, "cost": 1, "quality": 5},
-        "description": "O1，最强推理能力"
+        "description": "O1, Strongest reasoning ability"
     },
     "o4-mini": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.DEEP_ANALYSIS],
         "features": [ModelFeature.REASONING],
-        "recommended_depths": ["深度", "全面"],
+        "recommended_depths": ["Depth", "Comprehensive"],
         "performance_metrics": {"speed": 2, "cost": 3, "quality": 5},
-        "description": "O4 Mini，新一代推理模型"
+        "description": "O4 Mini, Next generation inference model"
     },
     
     # ==================== DeepSeek ====================
@@ -189,61 +189,61 @@ DEFAULT_MODEL_CAPABILITIES: Dict[str, Dict[str, Any]] = {
         "capability_level": 3,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.COST_EFFECTIVE],
-        "recommended_depths": ["基础", "标准", "深度"],
+        "recommended_depths": ["Basics", "Standard", "Depth"],
         "performance_metrics": {"speed": 4, "cost": 5, "quality": 4},
-        "description": "DeepSeek Chat，性价比高"
+        "description": "DeepSeek Chat, High cost performance"
     },
     
-    # ==================== 百度文心 (Qianfan) ====================
+    # ==================== Baidu Wenxin (Qianfan) ====================
     "ernie-3.5": {
         "capability_level": 2,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING],
-        "recommended_depths": ["快速", "基础", "标准"],
+        "recommended_depths": ["fast", "Basics", "Standard"],
         "performance_metrics": {"speed": 4, "cost": 4, "quality": 3},
-        "description": "文心一言3.5，标准版本"
+        "description": "Wen Xin Yi Yan 3.5, standard version"
     },
     "ernie-4.0": {
         "capability_level": 3,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.REASONING],
-        "recommended_depths": ["基础", "标准", "深度"],
+        "recommended_depths": ["Basics", "Standard", "Depth"],
         "performance_metrics": {"speed": 3, "cost": 3, "quality": 4},
-        "description": "文心一言4.0，高级版本"
+        "description": "Wen Xin Yi Yan 4.0, advanced version"
     },
     "ernie-4.0-turbo": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.REASONING, ModelFeature.FAST_RESPONSE],
-        "recommended_depths": ["标准", "深度", "全面"],
+        "recommended_depths": ["Standard", "Depth", "Comprehensive"],
         "performance_metrics": {"speed": 4, "cost": 2, "quality": 5},
-        "description": "文心一言4.0 Turbo，旗舰版本"
+        "description": "Wen Xin Yi Yan 4.0 Turbo, flagship version"
     },
     
-    # ==================== 智谱AI (GLM) ====================
+    # ==================== Wisdom spectrum AI (GLM) ====================
     "glm-3-turbo": {
         "capability_level": 1,
         "suitable_roles": [ModelRole.QUICK_ANALYSIS],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.FAST_RESPONSE, ModelFeature.COST_EFFECTIVE],
-        "recommended_depths": ["快速", "基础"],
+        "recommended_depths": ["fast", "Basics"],
         "performance_metrics": {"speed": 5, "cost": 5, "quality": 3},
-        "description": "智谱GLM-3 Turbo，快速版本"
+        "description": "GLM-3 Turbo, fast version"
     },
     "glm-4": {
         "capability_level": 3,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.REASONING],
-        "recommended_depths": ["基础", "标准", "深度"],
+        "recommended_depths": ["Basics", "Standard", "Depth"],
         "performance_metrics": {"speed": 3, "cost": 3, "quality": 4},
-        "description": "智谱GLM-4，标准版本"
+        "description": "GLM-4, standard version"
     },
     "glm-4-plus": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.REASONING],
-        "recommended_depths": ["标准", "深度", "全面"],
+        "recommended_depths": ["Standard", "Depth", "Comprehensive"],
         "performance_metrics": {"speed": 3, "cost": 2, "quality": 5},
-        "description": "智谱GLM-4 Plus，旗舰版本"
+        "description": "GLM-4 Plus, flagship version"
     },
     
     # ==================== Anthropic Claude ====================
@@ -251,33 +251,33 @@ DEFAULT_MODEL_CAPABILITIES: Dict[str, Dict[str, Any]] = {
         "capability_level": 2,
         "suitable_roles": [ModelRole.QUICK_ANALYSIS],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.FAST_RESPONSE],
-        "recommended_depths": ["快速", "基础", "标准"],
+        "recommended_depths": ["fast", "Basics", "Standard"],
         "performance_metrics": {"speed": 5, "cost": 4, "quality": 3},
-        "description": "Claude 3 Haiku，快速版本"
+        "description": "Claude 3 Haiku, express version"
     },
     "claude-3-sonnet": {
         "capability_level": 3,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.VISION],
-        "recommended_depths": ["基础", "标准", "深度"],
+        "recommended_depths": ["Basics", "Standard", "Depth"],
         "performance_metrics": {"speed": 4, "cost": 3, "quality": 4},
-        "description": "Claude 3 Sonnet，平衡版本"
+        "description": "Claude 3 Sonnet, balanced version"
     },
     "claude-3-opus": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.REASONING, ModelFeature.VISION],
-        "recommended_depths": ["标准", "深度", "全面"],
+        "recommended_depths": ["Standard", "Depth", "Comprehensive"],
         "performance_metrics": {"speed": 3, "cost": 2, "quality": 5},
-        "description": "Claude 3 Opus，旗舰版本"
+        "description": "Claude 3 Opus, flagship version"
     },
     "claude-3.5-sonnet": {
         "capability_level": 5,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.REASONING, ModelFeature.VISION],
-        "recommended_depths": ["标准", "深度", "全面"],
+        "recommended_depths": ["Standard", "Depth", "Comprehensive"],
         "performance_metrics": {"speed": 4, "cost": 2, "quality": 5},
-        "description": "Claude 3.5 Sonnet，最新旗舰"
+        "description": "Claude 3.5 Sonnet, latest flagship"
     },
 
     # ==================== Google Gemini ====================
@@ -285,122 +285,122 @@ DEFAULT_MODEL_CAPABILITIES: Dict[str, Dict[str, Any]] = {
         "capability_level": 3,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.REASONING],
-        "recommended_depths": ["基础", "标准", "深度"],
+        "recommended_depths": ["Basics", "Standard", "Depth"],
         "performance_metrics": {"speed": 4, "cost": 4, "quality": 4},
-        "description": "Gemini Pro，经典稳定版本"
+        "description": "Gemini Pro, Classic stable version"
     },
     "gemini-1.5-pro": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.REASONING, ModelFeature.VISION],
-        "recommended_depths": ["标准", "深度", "全面"],
+        "recommended_depths": ["Standard", "Depth", "Comprehensive"],
         "performance_metrics": {"speed": 4, "cost": 3, "quality": 5},
-        "description": "Gemini 1.5 Pro，长上下文旗舰"
+        "description": "Gemini 1.5 Pro, Long context flagship"
     },
     "gemini-1.5-flash": {
         "capability_level": 2,
         "suitable_roles": [ModelRole.QUICK_ANALYSIS],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.FAST_RESPONSE, ModelFeature.COST_EFFECTIVE],
-        "recommended_depths": ["快速", "基础", "标准"],
+        "recommended_depths": ["fast", "Basics", "Standard"],
         "performance_metrics": {"speed": 5, "cost": 5, "quality": 3},
-        "description": "Gemini 1.5 Flash，快速响应版本"
+        "description": "Gemini 1.5 Flash, Quick response version"
     },
     "gemini-2.0-flash": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.REASONING, ModelFeature.FAST_RESPONSE],
-        "recommended_depths": ["标准", "深度", "全面"],
+        "recommended_depths": ["Standard", "Depth", "Comprehensive"],
         "performance_metrics": {"speed": 5, "cost": 3, "quality": 5},
-        "description": "Gemini 2.0 Flash，新一代快速旗舰"
+        "description": "Gemini 2.0 Flash, A new generation of fast flagship"
     },
     "gemini-2.5-flash-lite-preview-06-17": {
         "capability_level": 2,
         "suitable_roles": [ModelRole.QUICK_ANALYSIS],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.FAST_RESPONSE, ModelFeature.COST_EFFECTIVE],
-        "recommended_depths": ["快速", "基础"],
+        "recommended_depths": ["fast", "Basics"],
         "performance_metrics": {"speed": 5, "cost": 5, "quality": 3},
-        "description": "Gemini 2.5 Flash Lite，轻量预览版"
+        "description": "Gemini 2.5 Flash Lite, Light preview version"
     },
 
-    # ==================== 月之暗面 (Moonshot) ====================
+    # ==================== dark side of the moon (Moonshot) ====================
     "moonshot-v1-8k": {
         "capability_level": 2,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING],
-        "recommended_depths": ["快速", "基础", "标准"],
+        "recommended_depths": ["fast", "Basics", "Standard"],
         "performance_metrics": {"speed": 4, "cost": 4, "quality": 3},
-        "description": "Moonshot V1 8K，标准版本"
+        "description": "Moonshot V1 8K, Standard version"
     },
     "moonshot-v1-32k": {
         "capability_level": 3,
         "suitable_roles": [ModelRole.BOTH],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT],
-        "recommended_depths": ["基础", "标准", "深度"],
+        "recommended_depths": ["Basics", "Standard", "Depth"],
         "performance_metrics": {"speed": 3, "cost": 3, "quality": 4},
-        "description": "Moonshot V1 32K，长上下文版本"
+        "description": "Moonshot V1 32K, long context version"
     },
     "moonshot-v1-128k": {
         "capability_level": 4,
         "suitable_roles": [ModelRole.DEEP_ANALYSIS],
         "features": [ModelFeature.TOOL_CALLING, ModelFeature.LONG_CONTEXT, ModelFeature.REASONING],
-        "recommended_depths": ["标准", "深度", "全面"],
+        "recommended_depths": ["Standard", "Depth", "Comprehensive"],
         "performance_metrics": {"speed": 2, "cost": 2, "quality": 5},
-        "description": "Moonshot V1 128K，超长上下文旗舰"
+        "description": "Moonshot V1 128K, Ultra long context flagship"
     },
 }
 
 
 def get_model_capability_badge(level: int) -> Dict[str, str]:
-    """获取能力等级徽章样式"""
+    """Get ability level badge style"""
     badges = {
-        1: {"text": "基础", "color": "#909399", "icon": "⚡"},
-        2: {"text": "标准", "color": "#409EFF", "icon": "📊"},
-        3: {"text": "高级", "color": "#67C23A", "icon": "🎯"},
-        4: {"text": "专业", "color": "#E6A23C", "icon": "🔥"},
-        5: {"text": "旗舰", "color": "#F56C6C", "icon": "👑"}
+        1: {"text": "Basics", "color": "#909399", "icon": "⚡"},
+        2: {"text": "Standard", "color": "#409EFF", "icon": "📊"},
+        3: {"text": "Advanced", "color": "#67C23A", "icon": "🎯"},
+        4: {"text": "Professional", "color": "#E6A23C", "icon": "🔥"},
+        5: {"text": "flagship", "color": "#F56C6C", "icon": "👑"}
     }
     return badges.get(level, badges[2])
 
 
 def get_role_badge(role: ModelRole) -> Dict[str, str]:
-    """获取角色徽章样式"""
+    """Get character badge style"""
     badges = {
-        ModelRole.QUICK_ANALYSIS: {"text": "快速分析", "color": "success", "icon": "⚡"},
-        ModelRole.DEEP_ANALYSIS: {"text": "深度推理", "color": "warning", "icon": "🧠"},
-        ModelRole.BOTH: {"text": "通用", "color": "primary", "icon": "🎯"}
+        ModelRole.QUICK_ANALYSIS: {"text": "Quick analysis", "color": "success", "icon": "⚡"},
+        ModelRole.DEEP_ANALYSIS: {"text": "deep reasoning", "color": "warning", "icon": "🧠"},
+        ModelRole.BOTH: {"text": "Universal", "color": "primary", "icon": "🎯"}
     }
     return badges.get(role, badges[ModelRole.BOTH])
 
 
 def get_feature_badge(feature: ModelFeature) -> Dict[str, str]:
-    """获取特性徽章样式"""
+    """Get feature badge style"""
     badges = {
-        ModelFeature.TOOL_CALLING: {"text": "工具调用", "color": "info", "icon": "🔧"},
-        ModelFeature.LONG_CONTEXT: {"text": "长上下文", "color": "success", "icon": "📚"},
-        ModelFeature.REASONING: {"text": "强推理", "color": "warning", "icon": "🧠"},
-        ModelFeature.VISION: {"text": "视觉", "color": "primary", "icon": "👁️"},
-        ModelFeature.FAST_RESPONSE: {"text": "快速", "color": "success", "icon": "⚡"},
-        ModelFeature.COST_EFFECTIVE: {"text": "经济", "color": "success", "icon": "💰"}
+        ModelFeature.TOOL_CALLING: {"text": "Tool call", "color": "info", "icon": "🔧"},
+        ModelFeature.LONG_CONTEXT: {"text": "long context", "color": "success", "icon": "📚"},
+        ModelFeature.REASONING: {"text": "strong reasoning", "color": "warning", "icon": "🧠"},
+        ModelFeature.VISION: {"text": "Vision", "color": "primary", "icon": "👁️"},
+        ModelFeature.FAST_RESPONSE: {"text": "fast", "color": "success", "icon": "⚡"},
+        ModelFeature.COST_EFFECTIVE: {"text": "economy", "color": "success", "icon": "💰"}
     }
     return badges.get(feature, {"text": str(feature), "color": "info", "icon": "✨"})
 
 
-# ==================== 聚合渠道配置 ====================
+# ==================== Aggregation channel configuration ====================
 
-# 聚合渠道的默认配置
+# Default configuration for aggregation channels
 AGGREGATOR_PROVIDERS = {
     "302ai": {
         "display_name": "302.AI",
-        "description": "302.AI 聚合平台，提供多厂商模型统一接口",
+        "description": "302.AI Aggregation platform provides unified interface for multi-vendor models",
         "website": "https://302.ai",
         "api_doc_url": "https://doc.302.ai",
         "default_base_url": "https://api.302.ai/v1",
-        "model_name_format": "{provider}/{model}",  # 如: openai/gpt-4
+        "model_name_format": "{provider}/{model}",  # Such as: openai/gpt-4
         "supported_providers": ["openai", "anthropic", "google", "deepseek", "qwen"]
     },
     "aihubmix": {
         "display_name": "AiHubMix",
-        "description": "AiHubMix 聚合平台，提供 OpenAI 兼容统一接口",
+        "description": "AiHubMix Aggregation platform, providing OpenAI compatible unified interface",
         "website": "https://aihubmix.com/?aff=2rIi",
         "api_doc_url": "https://docs.aihubmix.com/cn/quick-start",
         "default_base_url": "https://aihubmix.com/v1",
@@ -409,7 +409,7 @@ AGGREGATOR_PROVIDERS = {
     },
     "openrouter": {
         "display_name": "OpenRouter",
-        "description": "OpenRouter 聚合平台，支持多种 AI 模型",
+        "description": "OpenRouter Aggregation platform supports multiple AI models",
         "website": "https://openrouter.ai",
         "api_doc_url": "https://openrouter.ai/docs",
         "default_base_url": "https://openrouter.ai/api/v1",
@@ -418,16 +418,16 @@ AGGREGATOR_PROVIDERS = {
     },
     "oneapi": {
         "display_name": "One API",
-        "description": "One API 开源聚合平台",
+        "description": "One API Open source aggregation platform",
         "website": "https://github.com/songquanpeng/one-api",
         "api_doc_url": "https://github.com/songquanpeng/one-api",
-        "default_base_url": "http://localhost:3000/v1",  # 需要用户自行部署
-        "model_name_format": "{model}",  # One API 通常不需要前缀
+        "default_base_url": "http://localhost:3000/v1",  # Users need to deploy by themselves
+        "model_name_format": "{model}",  # One API Usually no prefix is needed
         "supported_providers": ["openai", "anthropic", "google", "azure", "claude"]
     },
     "newapi": {
         "display_name": "New API",
-        "description": "New API 聚合平台",
+        "description": "New API aggregation platform",
         "website": "https://github.com/Calcium-Ion/new-api",
         "api_doc_url": "https://github.com/Calcium-Ion/new-api",
         "default_base_url": "http://localhost:3000/v1",
@@ -439,26 +439,26 @@ AGGREGATOR_PROVIDERS = {
 
 def is_aggregator_model(model_name: str) -> bool:
     """
-    判断是否为聚合渠道模型名称
+    Determine whether it is an aggregation channel model name
 
     Args:
-        model_name: 模型名称
+        model_name: Model name
 
     Returns:
-        是否为聚合渠道模型
+        Whether it is an aggregate channel model
     """
     return "/" in model_name
 
 
 def parse_aggregator_model(model_name: str) -> Tuple[str, str]:
     """
-    解析聚合渠道模型名称
+    Parse the aggregation channel model name
 
     Args:
-        model_name: 模型名称（如 openai/gpt-4）
+        model_name: Model name (such as openai/gpt-4)
 
     Returns:
-        (provider, model) 元组
+        (provider, model) tuple
     """
     if "/" in model_name:
         parts = model_name.split("/", 1)

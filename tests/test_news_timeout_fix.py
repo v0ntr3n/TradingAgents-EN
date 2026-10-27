@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-测试新闻获取超时修复
+Test news retrieval timeout fix
 
-这个测试程序验证新闻获取超时修复的有效性，特别是在一个新闻源失败时能否正确轮询到下一个新闻源。
+This test program verifies the effectiveness of the news fetch timeout fix, specifically the ability to correctly poll to the next news source when one news source fails.
 """
 
 import sys
@@ -13,93 +13,93 @@ from unittest.mock import patch, MagicMock
 import pandas as pd
 from datetime import datetime
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# 导入需要测试的模块
+# Import the modules that need to be tested
 from tradingagents.dataflows.realtime_news_utils import get_realtime_stock_news
 from tradingagents.dataflows.googlenews_utils import getNewsData, make_request
 from tradingagents.dataflows.akshare_utils import get_stock_news_em
 
 
 class TestNewsTimeoutFix(unittest.TestCase):
-    """测试新闻获取超时修复"""
+    """Test news retrieval timeout fix"""
 
     def setUp(self):
-        """测试前的准备工作"""
-        self.ticker = "600036.SH"  # 招商银行
+        """Preparation before the test"""
+        self.ticker = "600036.SH"  # China Merchants Bank
         self.curr_date = datetime.now().strftime("%Y-%m-%d")
 
     def test_make_request_timeout(self):
-        """测试make_request函数的超时处理"""
-        # 模拟请求超时
+        """Test the timeout handling of the make_request function"""
+        # Simulate request timeout
         with patch('requests.get') as mock_get:
-            # 设置mock抛出超时异常
+            # Set mock to throw timeout exception
             import requests
             from tenacity import RetryError
             mock_get.side_effect = requests.exceptions.Timeout("Connection timed out")
             
-            # 测试make_request函数
+            # Test the make_request function
             with self.assertRaises(RetryError):
                 make_request("https://www.google.com", {})
                 
-            # 验证重试机制
-            self.assertEqual(mock_get.call_count, 5)  # 应该尝试5次
+            # Verification retry mechanism
+            self.assertEqual(mock_get.call_count, 5)  # Should try 5 times
 
     def test_news_source_fallback(self):
-        """测试新闻源轮询机制"""
-        # 模拟实时新闻聚合器失败
+        """Test the news source polling mechanism"""
+        # Simulating real-time news aggregator fails
         with patch('tradingagents.dataflows.realtime_news_utils.RealtimeNewsAggregator.get_realtime_stock_news') as mock_aggregator:
-            mock_aggregator.side_effect = Exception("模拟实时新闻聚合器失败")
+            mock_aggregator.side_effect = Exception("Simulating real-time news aggregator fails")
             
-            # 模拟Google新闻获取失败
+            # Simulate Google News acquisition failure
             with patch('tradingagents.dataflows.interface.get_google_news') as mock_google_news:
-                mock_google_news.side_effect = Exception("模拟Google新闻获取失败")
+                mock_google_news.side_effect = Exception("Simulate Google News acquisition failure")
                 
-                # 模拟东方财富新闻获取成功
+                # Simulate Oriental Fortune News to achieve success
                 with patch('tradingagents.dataflows.akshare_utils.get_stock_news_em') as mock_em_news:
-                    # 创建一个模拟的DataFrame作为返回值
+                    # Create a mock DataFrame as return value
                     mock_df = pd.DataFrame({
-                        '标题': ['测试新闻1', '测试新闻2'],
-                        '时间': ['2023-01-01 12:00:00', '2023-01-01 13:00:00'],
-                        '内容': ['测试内容1', '测试内容2'],
-                        '链接': ['http://example.com/1', 'http://example.com/2']
+                        'Title': ['test news 1', 'test news 2'],
+                        'time': ['2023-01-01 12:00:00', '2023-01-01 13:00:00'],
+                        'content': ['Test content 1', 'Test content 2'],
+                        'link': ['http://example.com/1', 'http://example.com/2']
                     })
                     mock_em_news.return_value = mock_df
                     
-                    # 调用测试函数
+                    # Call test function
                     result = get_realtime_stock_news(self.ticker, self.curr_date)
                     
-                    # 验证结果
-                    self.assertIn("东方财富新闻报告", result)
-                    self.assertIn("测试新闻1", result)
-                    self.assertIn("测试新闻2", result)
+                    # Verification results
+                    self.assertIn("Oriental Fortune News Report", result)
+                    self.assertIn("test news 1", result)
+                    self.assertIn("test news 2", result)
                     
-                    # 验证调用顺序
+                    # Verify calling sequence
                     mock_aggregator.assert_called_once()
                     mock_google_news.assert_called_once()
                     mock_em_news.assert_called_once()
 
     def test_all_news_sources_fail(self):
-        """测试所有新闻源都失败的情况"""
-        # 模拟所有新闻源都失败
+        """Testing the case where all news sources fail"""
+        # Simulating all news sources fails
         with patch('tradingagents.dataflows.realtime_news_utils.RealtimeNewsAggregator.get_realtime_stock_news') as mock_aggregator:
-            mock_aggregator.side_effect = Exception("模拟实时新闻聚合器失败")
+            mock_aggregator.side_effect = Exception("Simulating real-time news aggregator fails")
             
             with patch('tradingagents.dataflows.interface.get_google_news') as mock_google_news:
-                mock_google_news.side_effect = Exception("模拟Google新闻获取失败")
+                mock_google_news.side_effect = Exception("Simulate Google News acquisition failure")
                 
                 with patch('tradingagents.dataflows.akshare_utils.get_stock_news_em') as mock_em_news:
-                    mock_em_news.side_effect = Exception("模拟东方财富新闻获取失败")
+                    mock_em_news.side_effect = Exception("Failed to obtain simulated Oriental Fortune News")
                     
-                    # 调用测试函数
+                    # Call test function
                     result = get_realtime_stock_news(self.ticker, self.curr_date)
                     
-                    # 验证结果
-                    self.assertIn("实时新闻获取失败", result)
-                    self.assertIn("所有可用的新闻源都未能获取到相关新闻", result)
+                    # Verification results
+                    self.assertIn("Failed to obtain real-time news", result)
+                    self.assertIn("All available news sources failed to obtain relevant news", result)
                     
-                    # 验证调用顺序
+                    # Verify calling sequence
                     mock_aggregator.assert_called_once()
                     mock_google_news.assert_called_once()
                     mock_em_news.assert_called_once()

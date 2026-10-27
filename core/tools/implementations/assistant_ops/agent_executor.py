@@ -1,8 +1,8 @@
 """
-Agent 调用工具
+Agent Call tool
 
-让智能助手可以把已封装的 Agent 当作完整能力单元直接调用，
-而不是总是拆成多个底层工具重新编排。
+Allow the smart assistant to directly call the encapsulated Agent as a complete capability unit.
+Instead of always breaking it into multiple underlying tools and rearranging it.
 """
 
 import logging
@@ -68,7 +68,7 @@ def _is_orphaned_workshop_agent_config(doc: Dict[str, Any], db: Any) -> bool:
         if spec_id and db.agent_specs.find_one({"spec_id": spec_id}, {"_id": 1}):
             return False
     except Exception as exc:
-        logger.warning("[assistant agent executor] 检查工坊 Agent 关联资产失败: %s", exc)
+        logger.warning("[assistant agent executor] Failed to check workshop Agent associated assets: %s", exc)
         return False
 
     return bool(version_id or spec_id)
@@ -118,7 +118,7 @@ def _collect_callable_agents() -> List[Dict[str, Any]]:
                 ),
             }
     except Exception as exc:
-        logger.warning("[assistant agent executor] 加载 agent_configs 失败: %s", exc)
+        logger.warning("[assistant agent executor] Loading agent_configs failed: %s", exc)
 
     return list(entries.values())
 
@@ -146,7 +146,7 @@ def _resolve_callable_agent(agent_identifier: str) -> Dict[str, Any]:
     entries = _collect_callable_agents()
     normalized_identifier = _normalize_text(agent_identifier)
     if not normalized_identifier:
-        raise ValueError("agent_identifier 不能为空")
+        raise ValueError("agent_identifier cannot be empty")
 
     exact_matches = [
         item for item in entries
@@ -159,16 +159,16 @@ def _resolve_callable_agent(agent_identifier: str) -> Dict[str, Any]:
         return exact_matches[0]
     if len(exact_matches) > 1:
         names = "、".join(f"{item['name']}({item['agent_id']})" for item in exact_matches[:5])
-        raise ValueError(f"匹配到多个 Agent：{names}。请改用更精确的 agent_id。")
+        raise ValueError(f"Matched multiple Agents:{names}. Please use a more precise agent_id instead.")
 
     fuzzy_matches = _search_callable_agents(agent_identifier)
     if len(fuzzy_matches) == 1:
         return fuzzy_matches[0]
     if len(fuzzy_matches) > 1:
         names = "、".join(f"{item['name']}({item['agent_id']})" for item in fuzzy_matches[:5])
-        raise ValueError(f"找到多个可能的 Agent：{names}。请明确指定 agent_id。")
+        raise ValueError(f"Find multiple possible Agents:{names}. Please specify agent_id explicitly.")
 
-    raise ValueError(f"未找到可调用 Agent：{agent_identifier}")
+    raise ValueError(f"Callable Agent not found:{agent_identifier}")
 
 
 def _ensure_surface_access(agent_entry: Dict[str, Any], surface: str) -> None:
@@ -203,7 +203,7 @@ def _resolve_assistant_agent_llm(agent_id: str):
         or config_doc.get("default_llm")
     )
     if not target_model:
-        raise RuntimeError("系统未配置可用于 Agent 调用的模型")
+        raise RuntimeError("The system is not configured with a model available for Agent invocation")
 
     provider_info = get_provider_and_url_by_model_sync(target_model)
     if not provider_info:
@@ -251,7 +251,7 @@ def _extract_agent_report(result: Dict[str, Any], preferred_output_field: Option
     for value in result.values():
         if isinstance(value, str) and value.strip() and len(value.strip()) > 20:
             return value.strip()
-    return "未生成有效分析结果。"
+    return "No valid analysis results were generated."
 
 
 def _sanitize_structured_output(value: Any, max_text_length: int = 4000) -> Dict[str, Any]:
@@ -368,7 +368,7 @@ async def _write_invocation_ref_to_thread(
         ref_type="agent_invocation",
         artifact_key=request.invocation_id,
         source_collection="assistant_agent_invocations",
-        title=f"Agent调用：{agent_name}",
+        title=f"Agent Call:{agent_name}",
         symbol=(symbol or "").strip() or None,
         summary=(result.output_text or result.error_message or "")[:300],
         output_field=result.output_field,
@@ -391,7 +391,7 @@ async def _write_invocation_ref_to_thread(
 @register_tool(
     tool_id="list_callable_agents",
     name="列出可调用 Agent",
-    description="列出当前智能助手可直接调用的 Agent 完整能力，适用于先查看系统里有哪些可直接调用的估值、研究、风控、复盘类 Agent。",
+    description="Lists the complete capabilities of Agents that can be directly called by the current smart assistant. It is suitable to first check the valuation, research, risk control, and review Agents in the system that can be directly called.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -401,20 +401,20 @@ async def _write_invocation_ref_to_thread(
     tool_role_hint="supporting",
     output_shape="text",
     preferred_for=["查看可调用Agent", "Agent能力列表", "Agent搜索", "可用Agent查询"],
-    when_to_use="当用户想查看系统中有哪些可直接调用的 Agent、按关键词搜索可用 Agent 能力时使用，通常作为 execute_callable_agent 的前置查询。",
-    returns="返回文本列表，包含可调用 Agent 的名称、ID、类别、来源和说明。",
+    when_to_use="It is used when the user wants to see which agents in the system can be directly called and search for available Agent capabilities by keywords. It is usually used as a prequery for execute_callable_agent.",
+    returns="Returns a text list containing the name, ID, category, source, and description of the callable Agent.",
 )
 async def list_callable_agents(
-    keyword: Annotated[Optional[str], "按关键词筛选 Agent，可传估值、复盘、风险、ETF、情绪等；为空则列出全部常用 Agent"] = None,
-    max_results: Annotated[int, "最多返回多少个 Agent，默认 12"] = 12,
+    keyword: Annotated[Optional[str], "Filter Agents by keywords and can pass valuation, review, risk, ETF, sentiment, etc.; if empty, all commonly used ones will be listed. Agent"] = None,
+    max_results: Annotated[int, "The maximum number of Agents returned, default 12"] = 12,
 ) -> str:
-    """列出当前智能助手可直接调用的完整 Agent 能力。"""
+    """Lists the complete Agent capabilities that the current intelligent assistant can directly call."""
     matches = _search_callable_agents(keyword)
     limit = max(1, min(int(max_results or 12), 30))
     if not matches:
-        return "未找到匹配的可调用 Agent。"
+        return "No matching callable Agent found."
 
-    lines = [f"可直接调用的 Agent 共 {len(matches)} 个，以下展示前 {min(limit, len(matches))} 个："]
+    lines = [f"Agents that can be called directly {len(matches)} , before the following display {min(limit, len(matches))} of:"]
     for item in matches[:limit]:
         lines.append(
             f"- {item['name']} ({item['agent_id']}) | 类别: {item['category']} | 来源: {item['source']}"
@@ -427,8 +427,8 @@ async def list_callable_agents(
 @tool
 @register_tool(
     tool_id="execute_callable_agent",
-    name="调用 Agent 完整能力",
-    description="直接调用一个已注册或已配置的 Agent 来完成完整任务，适用于估值、研究、复盘、风控等已封装为 Agent 的能力，而不是重新拆成多个底层工具。",
+    name="Call Agent s complete capabilities",
+    description="Directly call a registered or configured Agent to complete a complete task, which is suitable for valuation, research, review, risk control and other capabilities that have been encapsulated as Agents, rather than being re-decomposed into multiple underlying tools.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -438,17 +438,17 @@ async def list_callable_agents(
     tool_role_hint="primary",
     output_shape="report",
     preferred_for=["调用Agent能力", "执行完整Agent", "估值分析Agent", "研究Agent调用", "风控Agent调用"],
-    when_to_use="当用户想直接调用一个已封装的 Agent 完成估值、研究、复盘、风控等完整任务、而非拆成多个底层工具时使用。",
-    returns="返回文本报告，包含调用的 Agent 名称、调用ID、分析对象、分析日期、任务目标和 Agent 生成的完整分析结果。",
+    when_to_use="It is used when the user wants to directly call an encapsulated Agent to complete complete tasks such as valuation, research, review, and risk control, rather than splitting it into multiple underlying tools.",
+    returns="Returns a text report containing the called Agent name, call ID, analysis object, analysis date, task goal and complete analysis results generated by the Agent.",
 )
 async def execute_callable_agent(
-    agent_identifier: Annotated[str, "Agent 的 ID 或名称，例如 valuation_analyst_v1、股票估值分析师"],
-    symbol: Annotated[Optional[str], "股票代码，如 600519、000001；某些 Agent 可为空，但个股类 Agent 建议必传"] = None,
-    task_description: Annotated[Optional[str], "本次调用的具体任务目标，例如请给出茅台的 PB/PE/DCF 综合估值结论"] = None,
-    analysis_date: Annotated[Optional[str], "分析日期，格式 YYYY-MM-DD；为空则自动使用最近交易日"] = None,
-    market_type: Annotated[Optional[str], "市场类型，例如 A股、港股、美股；为空默认 A股"] = None,
+    agent_identifier: Annotated[str, "Agent ID or name, such as valuation_analyst_v1, stock valuation analyst"],
+    symbol: Annotated[Optional[str], "Stock code, such as 600519, 000001; some Agents can be empty, but individual stock Agent recommendations must be passed"] = None,
+    task_description: Annotated[Optional[str], "The specific task objectives of this call, for example, please provide the comprehensive valuation conclusion of Moutai s PB/PE/DCF"] = None,
+    analysis_date: Annotated[Optional[str], "Analysis date, format YYYY-MM-DD; if empty, the latest trading day will be automatically used"] = None,
+    market_type: Annotated[Optional[str], "Market type, such as A-shares, Hong Kong stocks, and US stocks; if empty, the default is A-shares"] = None,
 ) -> str:
-    """直接执行一个已封装好的 Agent，让助手把它当作完整能力调用。"""
+    """Directly execute an encapsulated Agent and let the assistant call it as a complete capability."""
     from core.api.workflow_api import WorkflowAPI
     from core.config.agent_config_manager import AgentConfigManager
     from core.workflow.engine import WorkflowEngine
@@ -473,7 +473,7 @@ async def execute_callable_agent(
     started_at = datetime.utcnow()
 
     logger.info(
-        "[execute_callable_agent] 开始调用 Agent: agent=%s symbol=%s user_id=%s invocation_id=%s",
+        "[execute_callable_agent] Start calling Agent: agent=%s symbol=%s user_id=%s invocation_id=%s",
         resolved["agent_id"],
         symbol,
         user_id,
@@ -535,7 +535,7 @@ async def execute_callable_agent(
             system_vars = workflow_api._prepare_system_variables(stock_code=symbol, analysis_date=effective_date)
             inputs.update(system_vars)
         except Exception as exc:
-            logger.warning("[execute_callable_agent] 准备系统变量失败: %s", exc)
+            logger.warning("[execute_callable_agent] Failed to prepare system variables: %s", exc)
 
     try:
         result = await engine.execute_async(inputs)
@@ -561,7 +561,7 @@ async def execute_callable_agent(
                     ref_type="agent_invocation",
                     artifact_key=invocation_request.invocation_id,
                     source_collection="assistant_agent_invocations",
-                    title=f"Agent调用：{resolved['name']}",
+                    title=f"Agent Call:{resolved['name']}",
                     symbol=(symbol or "").strip() or None,
                     summary=report[:300],
                     output_field=preferred_output_field,
@@ -582,10 +582,10 @@ async def execute_callable_agent(
 
         return (
             f"已调用 Agent: {resolved['name']} ({resolved['agent_id']})\n"
-            f"调用ID: {invocation_request.invocation_id}\n"
-            f"分析对象: {symbol or '未指定'}\n"
-            f"分析日期: {effective_date}\n"
-            f"任务目标: {(task_description or '使用 Agent 默认职责执行').strip()}\n\n"
+            f"call ID: {invocation_request.invocation_id}\n"
+            f"Analysis object: {symbol or 'unspecified'}\n"
+            f"Analysis date: {effective_date}\n"
+            f"mission objectives: {(task_description or 'Execution using Agent default responsibilities').strip()}\n\n"
             f"{report}"
         )
     except Exception as exc:
@@ -604,7 +604,7 @@ async def execute_callable_agent(
         )
         await _persist_invocation_record(invocation_request, invocation_result)
         logger.exception(
-            "[execute_callable_agent] Agent 调用失败: agent=%s invocation_id=%s",
+            "[execute_callable_agent] Agent call failed: agent=%s invocation_id=%s",
             resolved["agent_id"],
             invocation_request.invocation_id,
         )

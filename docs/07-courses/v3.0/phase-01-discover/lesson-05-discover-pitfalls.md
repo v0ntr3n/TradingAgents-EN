@@ -1,211 +1,211 @@
-# 第 5 课:发现阶段的常见错误——从老股民的坑到 AI 时代的避雷指南
+# Lesson 5:Common mistakes in the discovery phase——From the pitfalls of veteran investors to a lightning protection guide in the AI era
 
-> **课时**: 25 分钟 | **难度**: ⭐ 入门 | **前置**: 第 1-4 课
+> **Class hours**: 25 minutes | **difficulty**: ⭐ Getting Started | **prefix**: Lessons 1-4
 
-> ⚠️ **风险提示**:本课程内容仅为平台功能教学,AI 输出的研究报告不构成投资建议,最终决策由你自己负责。
+> ⚠️ **Risk warning**:The content of this course is only for teaching platform functions.,AI The research report output does not constitute investment advice.,The final decision is yours.
 
-## 🎯 学完后能做什么
+## 🎯 What can you do after studying?
 
-- 识别**选股阶段**最常见的 7 个错误
-- 知道每个错误的**正确做法**
-- 形成 v3.0 平台下的**避雷清单**
+- identify**stock selection stage**The 7 most common mistakes
+- know every mistake**Correct approach**
+- Formed under the v3.0 platform**Lightning protection list**
 
-## ⚠️ 这课不教新功能,只教"不要怎么做"
+## ⚠️ This lesson does not teach new functions,Only teach"What not to do"
 
-前 4 课你学会了:
-- 第 1 课: 自然语言筛选 + 条件筛选
-- 第 2 课: 批量分析(单次 ≤ 10 只)
-- 第 3 课: 单股研究(5 级深度)
-- 第 4 课: 多角色辩论(所有深度都跑,区别在轮数)
+You learned the first 4 lessons.:
+- Lesson 1: Natural language filtering + Conditional filtering
+- Lesson 2: Batch analysis(Single ≤ 10 only)
+- Lesson 3: single stock research(5 level depth)
+- Lesson 4: multi-role debate(Run all depths,The difference lies in the number of rounds)
 
-这一课反过来讲:**新手最常犯的 7 个错误**,每个错误都基于真实使用场景。
+This lesson is taught in reverse:**7 common mistakes newbies make**,Each error is based on real usage scenarios.
 
-## 错误 1:看了 AI 报告就当成"买入信号"
+## Error 1:After reading the AI report, it is regarded as"buy signal"
 
-### 错误表现
+### Error performance
 
-> "AI 决策是'乐观'!明天开盘满仓干!"
+> "AI The decision is'optimistic'!The market will open tomorrow and the positions will be full.!"
 
-### 为什么错
+### Why is it wrong
 
-v3.0 系统输出是**研究参考**,**不是交易指令**。所有批量分析页都有顶部红色提示:
+v3.0 The system output is**Research reference**,**Not a trading order**. All batch analysis pages have a red tip at the top:
 
-> ⚠️ **重要提示**:本次分析仅用于学习、研究和公开信息整理,不提供个股交易指导。
+> ⚠️ **Important tips**:This analysis is only used for learning, research and public information compilation,No individual stock trading guidance is provided.
 
-### 正确做法
+### Correct approach
 
-把 AI 报告当成**第二意见**,结合:
-- 自己的风险承受能力
-- 当前市场环境(牛/熊/震荡)
-- 资金流动性需求
-- 已有持仓相关性
+Think of AI reporting as**second opinion**,combine:
+- own risk tolerance
+- Current market environment(Bull/Bear/Concussive)
+- liquidity needs
+- Already have a position correlation
 
-AI 决策"乐观"也不是 100% 就该买,**乐观只是"AI 相对有把握"**,不是"100% 对"。
+AI decision making"optimistic"It's not 100% that you should buy it.,**Optimism is just"AI relatively confident"**,No"100% Yes". 
 
-> 💡 实际看报告时,**重点看 3 个维度**而不是单一分数:
-> 1. **风险评分** (0-1 数字,越低越可控)
-> 2. **评估结论** 的论据是否充分(是否列举具体数据/对比)
-> 3. **核心风险** 列表(风险点多少、是否致命)
+> 💡 When actually looking at the report,**Focus on 3 dimensions**rather than a single score:
+> 1. **risk score** (0-1 numbers,The lower it is, the more controllable it is.)
+> 2. **Assessment conclusion** Are the arguments sufficient?(Whether to list specific data/comparison?)
+> 3. **core risk** list(How much is the risk and is it fatal?)
 
-## 错误 2:用同一只股票的不同深度报告"凑结论"
+## Error 2:Report with different depths for the same stock"Come to a conclusion"
 
-### 错误表现
+### Error performance
 
-> 1 级说"乐观",3 级说"中性",5 级说"乐观"——平均一下,买入!
+> 1 level theory"optimistic",3 level theory"Neutral",5 level theory"optimistic"——average,buy!
 
-### 为什么错
+### Why is it wrong
 
-不同深度的报告**结论可能不同**,这正是多深度的价值。**"凑"是错的**,应该看**最高级的结论**(信息最全)。
+Reports of varying depths**Conclusion may differ**,That's the value of having more depth.**"mingle"is wrong**,should watch**superlative conclusion**(The most complete information). 
 
-### 正确做法
+### Correct approach
 
-- 同一只股票,优先看**最近一次、深度最高**的报告
-- 5 级报告 > 4 级 > 3 级(信息密度递减)
-- 不要"凑"不同深度的结论
+- same stock,See first**The most recent and deepest**report
+- 5 level report > 4 level > 3 level(information density decreases)
+- Don't"mingle"Different depths of conclusions
 
-## 错误 3:不看"评估结论",只看"决策标签"
+## Error 3:Don't look"Assessment conclusion",Just watch"Decision label"
 
-### 错误表现
+### Error performance
 
-> 直接看到"决策标签 = 乐观"就买了,没看评估结论。
+> see directly"Decision label = optimistic"Just bought it,I didn't read the evaluation conclusion.
 
-### 为什么错
+### Why is it wrong
 
-报告"🧾 研究简报"卡片里的"评估结论"段落是 AI 的**推理过程**,告诉你**为什么**这么决策。如果论据是"短期超跌反弹",这和"长期价值投资"是完全不同的故事。
+report"🧾 research brief"in the card"Assessment conclusion"Paragraphs are AI**reasoning process**,tell you**why**Such a decision. If the argument is"Short-term oversold rebound",This and"long term value investment"It's a completely different story.
 
-### 正确做法
+### Correct approach
 
-1. 先看"🧾 研究简报"卡片里的 **决策标签** (乐观/审慎/中性)
-2. 再看 **评估结论** (为什么这么决策的论据)
-3. 最后看"⚠️ 风险审阅"里的 **风险等级/风险评分/核心风险**
+1. Look first"🧾 research brief"in the card **Decision label** (Optimistic/cautious/neutral)
+2. Look again **Assessment conclusion** (Arguments for why such a decision was made)
+3. last look"⚠️ risk review"inside **Risk level/risk score/core risk**
 
-"评估结论" 可能很长(几百字),但**这是 AI 推理的核心**。
+"Assessment conclusion" may be very long(several hundred words),But**This is the core of AI reasoning**. 
 
-## 错误 4:批量分析塞 50 只股票
+## Error 4:Batch analysis of 50 stocks
 
-### 错误表现
+### Error performance
 
-> 一次性把筛选的 50 只全提交批量分析,等 3 小时出结果。
+> Submit all 50 screened animals for batch analysis at one time,Wait 3 hours for results.
 
-### 为什么错
+### Why is it wrong
 
-- **后端硬限制:单次最多 10 只**
-- 京东云版**单并发**,10 只任务串行执行
-- 3 级深度,10 只 × 8 分钟 = **80 分钟**起步
+- **Backend hard limit:Maximum 10 at a time**
+- Jingdong cloud version**single concurrency**,10 Only tasks are executed serially
+- 3 level depth,10 only × 8 minutes = **80 minutes**Start
 
-### 正确做法
+### Correct approach
 
-- **分 5 批**提交(每批 10 只)
-- 京东云用户尤其注意,**避免 1 次塞满**
-- 如果是**预筛**(只要大致方向),选 1-2 级深度,2-5 分钟一只
-- 真正重要的股票,拿出来**单独做单股研究**(5 级)
+- **divided into 5 batches**Submit(10 pieces per batch)
+- JD Cloud users pay special attention to,**Avoid 1 stuffing**
+- if yes**Pre-screening**(Just the general direction),Choose level 1-2 depth,2-5 one per minute
+- stocks that really matter,take it out**Do individual stock research alone**(5 level)
 
-## 错误 5:依赖"自然语言筛选"做精确回测
+## Error 5:Depend on"Natural language filtering"Do accurate backtesting
 
-### 错误表现
+### Error performance
 
-> "用 AI 筛选 2024 年涨幅前 100 的科技股,看看现在表现如何。"
+> "Use AI to screen the top 100 technology stocks that will gain momentum in 2024,See how it's doing now."
 
-### 为什么错
+### Why is it wrong
 
-智能筛选(自然语言)是基于**当前 LLM 意图理解**,**不是回测工具**。每次输入同样的描述,AI 可能推断出略有不同的条件。此外,v3.0 当前**不提供回测模块**。
+Smart filtering(natural language)is based on**Current LLM intent understanding**,**Not a backtesting tool**. Enter the same description each time,AI Slightly different conditions may be inferred. In addition,v3.0 current**No backtest module is provided**. 
 
-### 正确做法
+### Correct approach
 
-- **当前选股** → 智能筛选(自然语言)
-- **精确条件筛选** → 高级模式(条件构建器)
-- **历史数据查询** → 使用历史数据查询功能
+- **Current stock picks** → Smart filtering(natural language)
+- **Filter by precise conditions** → Advanced mode(condition builder)
+- **Historical data query** → Use historical data query function
 
-## 错误 6:港美股入口找不到了,以为是系统 bug
+## Error 6:The entrance to Hong Kong and US stocks cannot be found.,Thought it was the system bug
 
-### 错误表现
+### Error performance
 
-> "系统怎么没有港股美股分析功能?以前的版本有啊!bug!"
+> "Why does the system not have the function of analyzing Hong Kong and US stocks??There was a previous version!bug!"
 
-### 为什么错
+### Why is it wrong
 
-**不是 bug**。v3.0 已**主动下线港美股**前端入口,目前**仅支持 A 股和 ETF 基金**。后端代码(`foreign_stock_service.py` 2402 行)虽然还在,但前端入口**全部移除**。
+**No bug**. v3.0 Already**Take the initiative to offline Hong Kong and US stocks**front-end entrance,Currently**Only supports A shares and ETF funds**. backend code(`foreign_stock_service.py` 2402 OK)Although still there,But the front-end entrance**Remove all**. 
 
-### 正确做法
+### Correct approach
 
-- 把研究范围切换到 **A 股**(主板/创业板/科创板/北交所)
-- 想要指数/行业敞口?用 **ETF 基金**(510050/159919 等)
-- 港美股需求暂不支持(等待后续版本)
+- Switch the research scope to **A shares**(Main Board/GEM/Science and Technology Innovation Board/Beijing Stock Exchange)
+- Want index/sector exposure?use **ETF fund**(510050/159919 Wait)
+- Demand for Hong Kong and US stocks is temporarily unsupported(Waiting for subsequent versions)
 
-## 错误 7:看到 "风险评分" 数字低就以为是"低风险"
+## Error 7:see "risk score" If the number is low, assume it is"low risk"
 
-### 错误表现
+### Error performance
 
-> "风险评分=0.3, 风险评分低,放心买。"
+> "risk score=0.3, Low risk score,Buy with confidence."
 
-### 为什么错
+### Why is it wrong
 
-"⚠️ 风险审阅" Tab 里的"**风险评分**"是 **0-1 的小数**,**越接近 1 越风险高**,**越接近 0 越风险低**。但**这只是 AI 的判断**,不是事实。
+"⚠️ risk review" Tab inside"**risk score**"Yes **0-1 decimal**,**The closer to 1, the higher the risk**,**The closer to 0, the lower the risk**. But**This is just the judgment of AI**,Not true.
 
-### 正确做法
+### Correct approach
 
-- 看"**风险等级**"标签(更直观:低/中/高)
-- 看"**评估结论**"段落里的风险论述
-- 看"**核心风险**"列表(具体风险点)
-- **最关键**:看 🐻 审慎情景研究员 列的**具体风险点**
+- look"**risk level**"label(More intuitive:low/medium/high)
+- look"**Assessment conclusion**"risk discussion in paragraph
+- look"**core risk**"list(Specific risk points)
+- **The most critical**:look 🐻 Prudential Scenario Researcher Listed**Specific risk points**
 
-"风险评分"低不代表没风险,可能只是"AI 认为风险可控"。
+"risk score"Low does not mean no risk,maybe just"AI Think risks are controllable". 
 
-## ⚠️ v3.0 重要变化(避雷相关)
+## ⚠️ v3.0 Important changes(Lightning protection related)
 
-- ✅ **合规术语**:不用"买入/卖出",用"乐观/审慎/中性"
-- ✅ **决策标签**(乐观/审慎/中性)是综合判断结果
-- ✅ **批量分析单次 ≤ 10 只**
-- ✅ **港美股不可用**(仅 A 股 + ETF)
-- ⚠️ 所有深度都跑辩论角色(1-3 级 1 轮、4 级 2 轮、5 级 3 轮)
+- ✅ **Compliance terminology**:No need"Buy/Sell",use"Optimistic/cautious/neutral"
+- ✅ **Decision label**(Optimistic/cautious/neutral)It is the result of comprehensive judgment
+- ✅ **Batch analysis single ≤ 10 only**
+- ✅ **Hong Kong and US stocks are not available**(A shares only + ETF)
+- ⚠️ All depths run debate roles(1-3 1 round for level 4, 2 rounds for level 4, 3 rounds for level 5)
 
-## 🛠️ 实操作业:做一份"避雷清单"
+## 🛠️ Practical operations:make one"Lightning protection list"
 
-把你**过去**在选股时犯过的错误列出来:
-1. 是哪个错误?
-2. 当时发生了什么?
-3. 这次在 v3.0 平台上**怎么避免**?
+put you**past**List the mistakes you made when picking stocks:
+1. Which error is it?
+2. what happened then?
+3. This time on the v3.0 platform**how to avoid**?
 
-把清单保存到「AI 记忆」里,以后每次选股前**先看一遍**。
+Save the list to "AI Memory",Before every stock selection in the future**Read it first**. 
 
 ## ❓ FAQ
 
-**Q:风险评分多大算"高风险"?**
-A: 经验值(看页面"风险等级"标签更直观):
-- 0.0-0.3:**低风险**(AI 较确信风险可控)
-- 0.3-0.5:**中风险**(需关注)
-- 0.5-0.8:**高风险**(谨慎)
-- 0.8+:**极高风险**(基本不参与)
+**Q:What is the risk score?"high risk"?**
+A: experience value(View page"risk level"Labels are more intuitive):
+- 0.0-0.3:**low risk**(AI More confident that risks are controllable)
+- 0.3-0.5:**medium risk**(Need attention)
+- 0.5-0.8:**high risk**(cautious)
+- 0.8+:**extremely high risk**(Basically not involved)
 
-**Q:5 级和 3 级都跑了,结论矛盾,信哪个?**
-A: 信**最高级**的(信息最全)。低级别报告只看"大方向",5 级看"细节推理"。
+**Q:5 Level 3 and Level 3 both ran away.,Contradictory conclusion,Which one do you believe??**
+A: letter**superlative**of(The most complete information). Low-level reports only view"general direction",5 level view"detailed reasoning". 
 
-**Q:智能筛选的"我理解你想要 X"和我说的不一样,怎么办?**
-A: 这是正常的,AI 在"复述澄清"。**不要直接点确认**,而是**在输入框补充纠正**:
-- "不是 X,我想要的是 Y"
-- "再补充一个条件 Z"
-AI 会基于上下文修正理解。
+**Q:Intelligent filtering"I understand you want X"It's different from what I said,what to do?**
+A: this is normal,AI in"Retell and clarify". **Do not click confirm directly**,Rather**Add corrections in the input box**:
+- "No X,what i want is Y"
+- "Add one more condition Z"
+AI Understanding will be revised based on context.
 
-**Q:批量分析任务卡在"分析中"很久,要不要取消重提?**
-A: **先别急**。在「任务中心」菜单看进度条:
-- 如果进度在动(比如从 30% 涨到 35%),正常
-- 如果进度 0% 卡了 > 30 分钟,可以取消重提
-取消用任务中心右侧"取消"按钮,不要"删除",删除会丢失历史记录。
+**Q:Batch analysis task stuck on"Analyzing"a long time,Do you want to cancel and resubmit??**
+A: **Don't worry yet**. Look at the progress bar in the "Task Center" menu:
+- If the progress is moving(For example, from 30% to 35%),normal
+- If the progress is stuck at 0% > 30 minutes,Can be canceled and resubmitted
+Cancel using the right side of the task center"Cancel"button,Don't"Delete",Deleting will lose the history.
 
-**Q:数据检验通过了,任务还是失败,为什么?**
-A: 数据检验只查"必备数据是否同步"。任务还可能因为:
-- LLM 调用超时(网络问题)
-- Token 配额耗尽(去「研究报告」菜单内的 Token 用量页看)
-- 模型临时不可用(切换备用模型)
-看错误提示,定位具体原因。
+**Q:Data verification passed,The mission still failed,why?**
+A: Data inspection only checks"Is the necessary data synchronized?". The task may also be due to:
+- LLM call timeout(network problems)
+- Token quota exhausted(Go to the Token usage page in the "Research Report" menu)
+- Model is temporarily unavailable(Switch alternate model)
+See error message,Locate specific reasons.
 
-**Q:研究简报里的要点很少,正常吗?**
-A: 正常。"🧾 研究简报" 卡片是 AI 总结的,1-5 条都可能。少于 2 条时**特别要看评估结论段落**。
+**Q:There are few key points in the research brief,Is it normal??**
+A: Normal."🧾 research brief" Cards are summarized by AI,1-5 All are possible. When there are less than 2 items**Look especially at the conclusion paragraph of the evaluation**. 
 
-## 📚 延伸阅读
+## 📚 Further reading
 
-- [第 1 课:股票筛选](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-01-stock-screening.md)
-- [第 2 课:批量分析](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-02-batch-analysis.md)
-- [第 3 课:单股研究入门](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-03-single-analysis-basic.md)
-- [第 4 课:多角色辩论](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-04-single-analysis-multi-scenario.md)
-- 阶段 1 完成!进入 [阶段 2:跟踪](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-02-track/README.md)
+- [Lesson 1:stock screen](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-01-stock-screening.md)
+- [Lesson 2:Batch analysis](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-02-batch-analysis.md)
+- [Lesson 3:An Introduction to Single Stock Research](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-03-single-analysis-basic.md)
+- [Lesson 4:multi-role debate](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-04-single-analysis-multi-scenario.md)
+- Phase 1 completed!enter [stage 2:Track](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-02-track/README.md)

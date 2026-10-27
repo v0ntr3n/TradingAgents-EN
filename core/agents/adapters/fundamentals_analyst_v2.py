@@ -1,7 +1,7 @@
 """
-基本面分析师智能体 v2.0
+Fundamental Analyst Agent v2.0
 
-基于 BaseAgent 的插件化架构实现
+Implementation of plug-in architecture based on BaseAgent
 """
 
 import logging
@@ -15,9 +15,9 @@ from ..base import BaseAgent
 from ..config import AgentConfig, AgentMetadata, AgentCategory, LicenseTier, AgentInput, AgentOutput
 from ..registry import register_agent
 
-# 不再需要直接导入 get_agent_prompt，使用基类的 _get_prompt_from_template 方法
+# It is no longer necessary to import get_agent_prompt directly, use the _get_prompt_from_template method of the base class
 
-# 导入股票工具类
+# Import stock tool class
 try:
     from tradingagents.utils.stock_utils import StockUtils
 except ImportError:
@@ -29,14 +29,14 @@ logger = logging.getLogger(__name__)
 @register_agent
 class FundamentalsAnalystAgentV2(BaseAgent):
     """
-    基本面分析师智能体 v2.0
+    Fundamental Analyst Agent v2.0
 
-    特性:
-    - 使用 LangChain LLM
-    - 动态工具绑定（从配置或数据库加载）
-    - 支持工具调用
+    Features:
+    - Use LangChain LLM
+    - Dynamic tool binding (loading from configuration or database)
+    - Support tool calling
 
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent_with_dynamic_tools
 
@@ -49,26 +49,26 @@ class FundamentalsAnalystAgentV2(BaseAgent):
         })
     """
 
-    # 创建 v2 专用的元数据（使用不同的 ID）
+    # Create v2-specific metadata (with different IDs)
     metadata = AgentMetadata(
         id="fundamentals_analyst_v2",
-        name="基本面分析师 v2.0",
-        description="分析公司财务数据、盈利能力、成长性和基本面指标，涵盖护城河/竞争优势评估和管理层质量分析",
+        name="fundamental analyst v2.0",
+        description="Analyze company financial data, profitability, growth and fundamental indicators, covering moat/competitive advantage assessment and management quality analysis",
         category=AgentCategory.ANALYST,
         license_tier=LicenseTier.FREE,
         default_tools=["get_stock_fundamentals_unified", "get_financial_statements", "get_cash_flow_statement", "get_peer_comparison"],
         max_tool_calls=4,
         version="2.0.0",
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="fundamentals_report", type="string", description="基本面分析报告"),
+            AgentOutput(name="fundamentals_report", type="string", description="Fundamental Analysis Report"),
         ],
         requires_tools=True,
         output_field="fundamentals_report",
-        report_label="【基本面分析 v2】",
+        report_label=" [Fundamental Analysis v2] ",
         workflow_stage="analyst",
         growth_role="extractor",
         growth_outputs=["fundamentals_report"],
@@ -77,7 +77,7 @@ class FundamentalsAnalystAgentV2(BaseAgent):
         growth_source_type="analysis_report",
     )
 
-    # 🔑 类级别属性（与其他适配器保持一致，供执行轨迹分类使用）
+    # 🔑 Class level attributes (consistent with other adapters for use by execution trace classification)
     analyst_type = "fundamentals"
     output_field = "fundamentals_report"
 
@@ -88,16 +88,16 @@ class FundamentalsAnalystAgentV2(BaseAgent):
         tool_ids: Optional[list] = None
     ):
         """
-        初始化基本面分析师
+        Initialize fundamental analyst
         
         Args:
-            config: Agent 配置（可选）
-            llm: LangChain LLM 实例
-            tool_ids: 工具 ID 列表（可选，如果不提供则从配置加载）
+            config: Agent Configuration (optional)
+            llm: LangChain LLM Example
+            tool_ids: List of tool IDs (optional, loaded from configuration if not provided)
         """
         super().__init__(config=config, llm=llm, tool_ids=tool_ids)
         
-        # 如果没有提供 tool_ids，从配置加载
+        # If tool_ids are not provided, load them from configuration
         if tool_ids is None and llm is not None:
             tool_ids = self.load_tools_from_config()
             if tool_ids:
@@ -105,21 +105,21 @@ class FundamentalsAnalystAgentV2(BaseAgent):
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行基本面分析（使用 BaseAgent 标准化工具调用循环）
+        Perform fundamental analysis (using BaseAgent standardized tool call loop)
 
         Args:
-            state: 包含以下键的状态字典:
-                - ticker: 股票代码
-                - trade_date: 交易日期
-                - messages: 消息历史（可选）
-                - prompt_overrides: 提示词覆盖（可选，用于调试）
+            state: A status dictionary containing the following keys:
+                - ticker: Stock code
+                - trade_date: transaction date
+                - messages: Message history (optional)
+                - prompt_overrides: Prompt word override (optional, for debugging)
 
         Returns:
-            更新后的状态，包含:
-                - fundamentals_report: 基本面分析报告
-                - messages: 更新的消息历史
+            The updated status includes:
+                - fundamentals_report: Fundamental Analysis Report
+                - messages: Updated message history
         """
-        # P1: 启动执行轨迹采集
+        # P1: Start execution trace collection
         from core.agents.execution_trace_recorder import (
             start_execution_trace, is_trace_enabled
         )
@@ -129,30 +129,30 @@ class FundamentalsAnalystAgentV2(BaseAgent):
                 recorder = start_execution_trace(self, state)
                 self._last_trace_id = recorder.trace_id
             except Exception as e:
-                logger.warning(f"⚠️ [{self.agent_id}] 启动轨迹采集失败（不影响 agent）: {e}")
+                logger.warning(f"⚠️ [{self.agent_id}] Failed to start trajectory collection (does not affect agent): {e}")
                 self._last_trace_id = None
 
         try:
             ticker, trade_date = self._extract_common_params(state)
             context = state.get("context")
 
-            # 支持提示词覆盖（用于调试）
+            # Support prompt word coverage (for debugging)
             overrides = state.get("prompt_overrides") or {}
             system_override = overrides.get("system")
             user_override = overrides.get("user")
             analysis_override = overrides.get("analysis")
 
             if not ticker:
-                raise ValueError("缺少必需参数: ticker 或 company_of_interest")
+                raise ValueError("Missing required parameter: ticker or company_of_interest")
 
-            logger.info(f"开始基本面分析: {ticker} (日期: {trade_date})")
+            logger.info(f"Start fundamental analysis: {ticker} (Date: {trade_date})")
 
-            # 构建系统提示词（优先级：覆盖 > 模板 > 默认）
+            # Build System Prompt Word (Priority: Override > Template > default)
             system_prompt = system_override
             if not system_prompt:
                 system_prompt = self._build_system_prompt(state)
 
-            # 构建用户提示词（优先级：覆盖 > 默认）
+            # Build user prompt words (Priority: Override > default)
             user_prompt = user_override
             if not user_prompt:
                 user_prompt = self._build_user_prompt(ticker, trade_date, state)
@@ -163,15 +163,15 @@ class FundamentalsAnalystAgentV2(BaseAgent):
                 HumanMessage(content=user_prompt)
             ]
 
-            # P1: 记录 Prompt
+            # P1: record Prompt
             if recorder:
                 try:
                     recorder.record_inputs({"ticker": ticker, "trade_date": trade_date})
                     recorder.record_prompts(system_prompt, user_prompt)
                 except Exception as e:
-                    logger.debug(f"[{self.agent_id}] 记录 Prompt 失败（不影响 agent）: {e}")
+                    logger.debug(f"[{self.agent_id}] Record Prompt failure (does not affect agent): {e}")
 
-            # 使用 BaseAgent 标准化的工具调用方法
+            # Standardized tool calling methods using BaseAgent
             if self._llm:
                 analysis_prompt = analysis_override or self._build_analysis_prompt(ticker)
                 prefetched_message, prefetched_tool_names = self._build_prefetched_tool_message(ticker, trade_date, state)
@@ -185,37 +185,37 @@ class FundamentalsAnalystAgentV2(BaseAgent):
                         if getattr(tool, "name", "") not in prefetched_tool_names
                     ]
 
-                # 使用默认提示词（模板中已包含详细的分析要求和输出格式）
-                # 除非用户通过 prompt_overrides 覆盖
+                # Use default prompt words (detailed analysis requirements and output formats are included in the template)
+                # Unless the user overrides via prompt_overrides
                 try:
                     analysis = self.invoke_with_tools(messages, analysis_prompt=analysis_prompt)
                 finally:
                     self._langchain_tools = original_tools
             else:
-                # 降级：没有 LLM 或工具
-                logger.warning("没有配置 LLM 或工具，返回模拟结果")
+                # Downgrade: No LLM or tools
+                logger.warning("Without LLM or tools configured, simulation results are returned")
                 analysis = self._generate_mock_report(ticker, trade_date)
 
-            # P1: 记录解析后的输出
+            # P1: Record parsed output
             if recorder:
                 try:
                     recorder.record_parsed_output({"report": analysis[:500] if isinstance(analysis, str) else str(analysis)[:500]})
                 except Exception as e:
-                    logger.debug(f"[{self.agent_id}] 记录解析输出失败（不影响 agent）: {e}")
+                    logger.debug(f"[{self.agent_id}] Record parsing output failure (does not affect agent): {e}")
 
-            logger.info(f"✅ 基本面分析完成，报告长度: {len(analysis)} 字符")
+            logger.info(f"✅ Fundamental analysis completed, report length: {len(analysis)} character")
 
-            # 只返回新增的字段，避免覆盖并行节点的更新
+            # Only the newly added fields are returned to avoid overwriting the updates of parallel nodes.
             result = {"fundamentals_report": analysis}
-            # 🆕 附带工具调用摘要
+            # 🆕 Comes with tool call summary
             tool_summary = self._format_tool_call_summary()
             if tool_summary:
                 result["tool_call_summaries"] = {self.agent_id: tool_summary}
             return result
 
         except Exception as e:
-            logger.error(f"基本面分析执行失败: {e}", exc_info=True)
-            # P1: 记录异常
+            logger.error(f"Fundamental analysis execution failed: {e}", exc_info=True)
+            # P1: Log exception
             if recorder:
                 try:
                     recorder.record_error(e)
@@ -223,7 +223,7 @@ class FundamentalsAnalystAgentV2(BaseAgent):
                     pass
             raise
         finally:
-            # P1: 完成轨迹采集并写入 MongoDB（非阻塞）
+            # P1: Complete trajectory collection and write to MongoDB (non-blocking)
             if recorder:
                 try:
                     recorder.finish()
@@ -232,33 +232,33 @@ class FundamentalsAnalystAgentV2(BaseAgent):
 
     def _build_system_prompt(self, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词（参考 research_manager_v2 的实现）
+        Build system prompt words (refer to the implementation of research_manager_v2)
 
         Args:
-            state: 工作流状态（用于提取模板变量）
+            state: Workflow status (used to extract template variables)
 
         Returns:
-            系统提示词
+            System prompt word
         """
-        logger.info("🔍 [FundamentalsAnalystV2] 开始构建系统提示词")
+        logger.info("🔍 [FundamentalsAnalystV2] Start building system prompt words")
         
         if state is None:
             state = {}
 
-        # 使用基类的通用方法从模板系统获取提示词（参考 research_manager_v2）
-        # 从 state 中提取必要的变量（如果系统提示词模板需要）
+        # Use the base class's general method to obtain prompt words from the template system (refer to research_manager_v2)
+        # Extract the necessary variables from state (if required by the system prompt word template)
         template_variables = {}
         if state:
-            # 提取 ticker 和 company_name
+            # Extract ticker and company_name
             if "ticker" in state:
                 template_variables["ticker"] = state["ticker"]
             if "company_name" in state:
                 template_variables["company_name"] = state["company_name"]
-            # 提取日期
+            # Extraction date
             if "analysis_date" in state or "trade_date" in state:
                 analysis_date = state.get("analysis_date") or state.get("trade_date")
                 if analysis_date:
-                    # 确保日期格式正确
+                    # Make sure the date is in the correct format
                     if isinstance(analysis_date, str) and len(analysis_date) > 10:
                         analysis_date = analysis_date.split()[0]
                     template_variables["current_date"] = analysis_date
@@ -267,220 +267,220 @@ class FundamentalsAnalystAgentV2(BaseAgent):
         prompt = self._get_prompt_from_template(
             agent_type="analysts_v2",
             agent_name="fundamentals_analyst_v2",
-            variables=template_variables,  # 传递必要的变量
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量（current_price, industry 等）
-            context=state.get("context") if state else None,  # 从 state 中获取 context
+            variables=template_variables,  # Pass necessary variables
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables (current_price, industry etc.)
+            context=state.get("context") if state else None,  # Get from state context
             fallback_prompt=None,
-            prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+            prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
         )
 
-        logger.info(f"📝 系统提示词长度: {len(prompt)} 字符")
+        logger.info(f"📝 System prompt word length: {len(prompt)} character")
         if prompt:
-            logger.info(f"📝 系统提示词前500字符:\n{prompt[:500]}...")
-            logger.info(f"✅ 从模板系统获取基本面分析师 v2.0 系统提示词")
+            logger.info(f"📝 The first 500 characters of the system prompt word:\n{prompt[:500]}...")
+            logger.info(f"✅ Obtain fundamental analyst v2.0 system prompt words from the template system")
             return prompt
         
-        # 降级：使用默认提示词
-        logger.warning("⚠️ 未从模板系统获取到系统提示词，使用默认提示词")
-        return """你是一位专业客观的股票基本面分析师，负责为研究流程提供可复核的财务与经营证据，并进行平衡的财务分析。
+        # Downgrade: Use default prompt word
+        logger.warning("⚠️ The system prompt word is not obtained from the template system, and the default prompt word is used.")
+        return """You are a professional and objective stock fundamental analyst responsible for providing reviewable financial and operating evidence to the research process and conducting balanced financial analysis.
 
-    你的任务是：
-    1. 使用工具获取公司的整体基本面、最近季度财报明细、现金流信息以及必要的同行估值对比
-    2. 结合行业特征分析财务健康度、盈利能力、经营弹性、经营质量与现金流匹配度
-    3. 评估估值所处背景，说明市场定价反映的预期以及这些因素对整体研究结论的支持或削弱作用
-    4. 平衡分析机会因素与风险因素，说明结论成立的关键前提并给出简短总结
+    Your task is:
+    1. Use tools to obtain a company s overall fundamentals, most recent quarterly earnings details, cash flow information, and necessary peer valuation comparisons
+    2. Analyze financial health, profitability, operating flexibility, operating quality and cash flow matching based on industry characteristics
+    3. The context in which the valuation is assessed, describing the expectations reflected in market pricing and how these factors support or undermine the overall research conclusion
+    4. Balance analysis of opportunity factors and risk factors, explain the key premises for establishing the conclusion and give a brief summary
 
-    要求：
-    - 必须基于真实数据进行分析，不得使用模型自身记忆、常识补全或未在工具结果中出现的数据做判断
-    - 如果工具缺少某项财务字段、估值字段或同行数据，必须明确写“工具结果未提供”或“该维度仍待验证”
-    - 基本面研究默认只使用历史财务、历史估值区间和已披露经营数据；即使工具返回当前股价、涨跌幅、成交量、当前总市值等日频快照，也不得把这些字段写入正文或作为结论依据
-    - 应结合行业特征和工具可得数据选择最有解释力的指标，不要求机械覆盖所有通用财务科目；若某类指标对当前行业不适用，不要把其缺失直接写成风险或数据缺口
-    - 只要正文引用 PE、PE(TTM)、PB、PS(TTM) 或其他估值快照，就必须同时说明该估值对应的快照日期；若不同指标日期不同，应分别写明，不能默认视为同一天
-    - 如果工具结果中的估值快照日期早于分析日期，必须使用工具返回的实际估值快照日期，不得写成“截至分析日期”或用分析日期替代估值日期
-    - 如果工具明确提示“当前尚无当日收盘后日频数据”或“已按前一可用交易日口径执行”，正文必须显式说明当日收盘数据尚未稳定，本次估值或同行分析按前一可用交易日数据完成，不能只改日期不解释原因
-    - 出现上述稳定数据回退提示时，必须在 `## 核心观察` 第一条或 `## 估值背景` 开头先写清这条日期口径说明，不能只在后文零散提及
-    - 如果 get_financial_statements 或 get_cash_flow_statement 已明确给出“单季度推导”字段，优先使用这些字段描述季度变化；“原始报告期累计/快照”字段主要用于核对口径
-    - 对 A 股季度财报中的营业收入、归母净利润、经营现金流等字段，默认按报告期累计口径理解，Q2/Q3/Q4 不是单季度值，不得直接相加或直接写成单季度逐季改善
-    - 对 ROE、净利率等指标，默认按报告期指标快照理解；若未明确推导，不要写成单季度指标
-    - 如需讨论估值，只能围绕工具明确提供的历史估值分位、历史区间或同行相对估值展开；不得把当前股价、当前总市值写进公司概况、核心观察或总结
-    - 估值背景尽量拆成绝对估值、相对估值、历史分位和市场已计入预期四层，不要只写“高估/低估”
-    - 说明估值溢价或折价时，优先解释其更可能对应盈利持续性、现金回收能力、竞争格局或景气位置
-    - 允许引用营收增速、毛利率、净利率、ROE、ROA、经营现金流、PE、PB、PEG 等真实数值说明事实，但不得改写成合理价位、目标价、安全边际或介入区间
-    - 可以写：“2025Q4 的营业收入和归母净利润属于全年累计口径，若要观察单季度变化，需要结合 Q3 累计值进一步推导。”
-    - 可以写：“当前 ROE 为报告期指标快照，不宜直接解释为单季度 ROE。”
-    - 可以写：“应结合行业特征选择适用指标；若某类传统周转或流动性指标不适用于当前行业，不必机械列为缺口。”
-    - 可以写：“当前 PE 与 PB 同时高于同行中位数，估值溢价更可能对应市场对盈利韧性和现金回收能力的定价。”
-    - 可以写：“若 PEG 明显高于可比公司，说明当前估值对增长兑现和景气延续的依赖更强。”
-    - 可以写：“经营现金流弱于净利润，利润兑现质量仍待验证。”
-    - 不得写：“单季度归母净利润从 Q1 的 140.96 亿元增长至 Q4 的 426.33 亿元。”
-    - 不得写：“由于缺少若干通用指标，因此当前行业经营质量偏弱。”
-    - 不得写：“全年累计约为四个季度净利润相加后的 1,199.38 亿元。”
-    - 不得写：“当前具备明显安全边际。”
-    - 不得写：“行业景气拐点临近，建议提前布局。”
-    - 不得写：“合理价格区间为 18-22 元。”
-    - 不得写：“若估值回落到某区间可逐步布局。”
-    - 优先输出研究观察、证据、风险提示和待验证事项
-    - 不得输出投资建议、目标价、价格区间、仓位建议或执行计划
-    - 使用中文撰写报告"""
+    Requirements:
+    - The analysis must be based on real data, and the model s own memory, common sense completion, or data that does not appear in the tool results must not be used to make judgments.
+    - If the tool is missing a financial field, valuation field or peer data, you must explicitly write Tool results not provided or This dimension still needs to be verified 
+    - By default, fundamental research only uses historical financials, historical valuation ranges and disclosed operating data; even if the tool returns daily snapshots of current stock price, rise and fall, trading volume, current total market capitalization, etc., these fields must not be written into the text or used as the basis for conclusions.
+    - The most explanatory indicators should be selected based on industry characteristics and data available from tools, and mechanical coverage of all common financial accounts is not required; if a certain type of indicator is not applicable to the current industry, do not directly write its lack as a risk or data gap
+    - As long as the text cites PE,PE(TTM), PB, PS(TTM) or other valuation snapshots, the snapshot date corresponding to the valuation must also be stated; if the dates of different indicators are different, they should be stated separately and cannot be regarded as the same day by default.
+    - If the valuation snapshot date in the tool results is earlier than the analysis date, the actual valuation snapshot date returned by the tool must be used and must not be written As of analysis date Or replace the valuation date with the analysis date
+    - If the tool explicitly prompts There is currently no daily frequency data after the close of the day. or Executed based on the caliber of the previous available trading day , The text must clearly state that the closing data of the day has not yet stabilized. This valuation or peer analysis is completed based on the data of the previous available trading day. You cannot just change the date without explaining the reason.
+    - When the above stable data rollback prompt appears, you must `## core observation` Article 1 or `## Valuation background` Write down this date and caliber description at the beginning, and don t just mention it sporadically later in the article.
+    - If get_financial_statements or get_cash_flow_statement is given explicitly Single quarter derivation Fields, use these fields first to describe quarterly changes; Original reporting period cumulative/snapshot The field is mainly used to check the caliber
+    - Fields such as operating income, net profit attributable to the parent company, and operating cash flow in the A-share quarterly financial report are understood by default based on the cumulative caliber of the reporting period. Q2/Q3/Q4 are not single-quarter values and cannot be directly added or directly written as quarter-by-quarter improvement in a single quarter.
+    - Indicators such as ROE and net interest rate are understood by default as snapshots of indicators during the reporting period; if they are not clearly deduced, do not write them as single-quarter indicators.
+    - If you need to discuss valuation, you can only focus on the historical valuation quantiles, historical ranges or peer relative valuations clearly provided by the tool; you are not allowed to write the current stock price and current total market capitalization into the company profile, core observations or summary.
+    - Try to break down the valuation background into four layers: absolute valuation, relative valuation, historical quantiles and market expectations. Don t just write Overestimation/Underestimation 
+    - When explaining valuation premium or discount, give priority to explaining that it is more likely to correspond to profitability sustainability, cash recovery ability, competitive landscape or prosperous position.
+    - It is allowed to quote real numerical values such as revenue growth, gross profit margin, net profit margin, ROE, ROA, operating cash flow, PE, PB, PEG, etc. to illustrate the facts, but it cannot be rewritten into a reasonable price, target price, safety margin or intervention range.
+    - You can write: 2025Q4 The operating income and net profit attributable to the parent company belong to the cumulative caliber for the whole year. If we want to observe the changes in a single quarter, we need to further deduce it based on the Q3 cumulative value. 
+    - You can write: The current ROE is a snapshot of the reporting period indicator and should not be directly interpreted as a single-quarter ROE. 
+    - You can write: Applicable indicators should be selected based on industry characteristics; if a certain type of traditional turnover or liquidity indicator is not suitable for the current industry, there is no need to mechanically list it as a gap. 
+    - You can write: The current PE and PB are both higher than the peer median, and the valuation premium is more likely to correspond to the market s pricing of earnings resilience and cash recovery capabilities. 
+    - You can write: If the PEG is significantly higher than that of comparable companies, it means that the current valuation is more dependent on growth realization and the continuation of the boom. 
+    - You can write: Operating cash flow is weaker than net profit, and the quality of profit realization still needs to be verified. 
+    - Do not write: Net profit attributable to the parent company in the single quarter increased from 14.096 billion yuan in Q1 to 42.633 billion yuan in Q4. 
+    - Do not write: Due to the lack of several common indicators, the current industry operating quality is weak. 
+    - Do not write: The cumulative total for the whole year is approximately 10% after adding the net profits of the four quarters. 1,199.38 billion. 
+    - Do not write: There is currently a clear margin of safety. 
+    - Do not write: The turning point of the industry s prosperity is approaching, so it is recommended to make arrangements in advance. 
+    - Do not write: The reasonable price range is 18-22 yuan. 
+    - Do not write: If the valuation falls back to a certain range, it can be gradually laid out. 
+    - Prioritize the output of research observations, evidence, risk warnings and matters to be verified
+    - Do not output investment recommendations, target prices, price ranges, position recommendations or execution plans
+    - Write reports in Chinese"""
 
     def _build_user_prompt(self, ticker: str, trade_date: str, state: Dict[str, Any] = None) -> str:
         """
-        构建用户提示词（参考 research_manager_v2 的实现）
+        Construct user prompt words (refer to the implementation of research_manager_v2)
         
         Args:
-            ticker: 股票代码
-            trade_date: 交易日期
-            state: 工作流状态（用于提取模板变量）
+            ticker: Stock code
+            trade_date: transaction date
+            state: Workflow status (used to extract template variables)
             
         Returns:
-            用户提示词
+            User prompt words
         """
-        logger.info("🔍 [FundamentalsAnalystV2] 开始构建用户提示词")
-        logger.info(f"📊 股票代码: {ticker}")
-        logger.info(f"📅 分析日期: {trade_date}")
+        logger.info("🔍 [FundamentalsAnalystV2] Start building user prompt words")
+        logger.info(f"📊 Stock code: {ticker}")
+        logger.info(f"📅 Analysis date: {trade_date}")
         
         if state is None:
             state = {}
         
-        # 获取市场信息和公司名称
-        market_name = "中国A股"
+        # Get market information and company name
+        market_name = "China A shares"
         company_name = str(
             state.get("company_name")
             or state.get("stock_name")
             or state.get("name")
             or ""
         )
-        currency_name = "人民币"
+        currency_name = "RMB"
         currency_symbol = "¥"
         
         if StockUtils and ticker:
             try:
                 market_info = StockUtils.get_market_info(ticker)
-                market_name = market_info.get("market_name", "中国A股")
-                currency_name = market_info.get("currency_name", "人民币")
+                market_name = market_info.get("market_name", "China A shares")
+                currency_name = market_info.get("currency_name", "RMB")
                 currency_symbol = market_info.get("currency_symbol", "¥")
                 market_company_name = market_info.get("company_name", "")
                 if market_company_name:
                     company_name = market_company_name
             except Exception as e:
-                logger.warning(f"获取市场信息失败: {e}")
+                logger.warning(f"Failed to obtain market information: {e}")
         
-        # 准备模板变量（参考 research_manager_v2 的实现）
+        # Prepare template variables (refer to the implementation of research_manager_v2)
         template_variables = {
             "ticker": ticker,
             "company_name": company_name,
             "market_name": market_name,
             "analysis_date": trade_date,
             "current_date": trade_date,
-            "start_date": "",  # 可以计算1年前的日期
+            "start_date": "",  # Can calculate the date 1 year ago
             "currency_name": currency_name,
             "currency_symbol": currency_symbol,
             "tool_names": ", ".join([t.name for t in self._langchain_tools]) if self._langchain_tools else ""
         }
         
-        # 使用基类的通用方法获取用户提示词（参考 research_manager_v2）
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
+        # Use the general method of the base class to obtain user prompt words (refer to research_manager_v2)
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
         prompt = self._get_prompt_from_template(
             agent_type="analysts_v2",
             agent_name="fundamentals_analyst_v2",
             variables=template_variables,
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=state.get("context"),  # 从 state 中获取 context
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=state.get("context"),  # Get from state context
             fallback_prompt=None,
-            prompt_type="user"  # 🔑 明确指定获取用户提示词
+            prompt_type="user"  # 🔑 Explicitly specify the user prompt word to obtain
         )
         
         if prompt:
-            logger.info(f"✅ 从模板系统获取基本面分析师 v2.0 用户提示词 (长度: {len(prompt)})")
-            logger.info(f"📝 用户提示词前500字符:\n{prompt[:500]}...")
+            logger.info(f"✅ Get fundamental analyst v2.0 user prompt words from the template system (length: {len(prompt)})")
+            logger.info(f"📝 The first 500 characters of the user prompt word:\n{prompt[:500]}...")
             return prompt
         
-        # 降级：使用默认提示词
-        logger.warning("⚠️ 未从模板系统获取到用户提示词，使用默认提示词")
-        return f"""请对股票 {ticker} 进行客观中立的基本面研究。
+        # Downgrade: Use default prompt word
+        logger.warning("⚠️ The user prompt word is not obtained from the template system, and the default prompt word is used.")
+        return f"""Please check the stock {ticker} Conduct objective and neutral fundamental research.
 
-分析日期：{trade_date}
-货币单位：{currency_name}（{currency_symbol}）
+Analysis date:{trade_date}
+Currency unit:{currency_name} ({currency_symbol}) 
 
-    请调用工具获取真实基本面数据，并按以下结构生成专业研究报告：
-    1. 核心观察
-    2. 公司概况
-    3. 财务与经营信号
-    4. 估值背景
-    5. 机会与风险平衡
-    6. 对整体研究结论的影响
-    7. 总结
+    Please call the tool to obtain real fundamental data and generate a professional research report according to the following structure:
+    1. core observation
+    2. Company Profile
+    3. Financial and operating signals
+    4. Valuation background
+    5. Balance of opportunities and risks
+    6. Impact on overall research conclusions
+    7. Summary
 
-    建议调用顺序：
-    - 先调用 get_stock_fundamentals_unified 获取整体基本面背景、历史估值区间和口径说明，不要把其中可能出现的实时快照字段写入正文
-    - 再调用 get_financial_statements 获取最近季度三表和盈利质量细节
-    - 再调用 get_cash_flow_statement 获取现金流与利润匹配情况
-    - 对 A 股，如需补充同业估值定位，可调用 get_peer_comparison(ticker='{ticker}', trade_date='{trade_date}', top_n=10)
+    Recommended calling sequence:
+    - First call get_stock_fundamentals_unified to obtain the overall fundamental background, historical valuation range and caliber description. Do not write the real-time snapshot fields that may appear in the text.
+    - Then call get_financial_statements to obtain the latest quarter s third statement and profit quality details
+    - Then call get_cash_flow_statement to obtain the matching between cash flow and profit.
+    - For A shares, if you need to supplement peer valuation positioning, you can call get_peer_comparison(ticker='{ticker}', trade_date='{trade_date}', top_n=10)
 
-    重点覆盖：
-    - 结合行业特征分析财务健康度、偿债能力、资本结构、流动性和现金流安全边际
-    - 优先覆盖当前行业适用且工具已提供的利润率、回报率、费用率、息差或其他盈利指标
-    - PE、PB、PEG 的历史区间和同行对比，并说明市场已计入了什么预期
-    - 成长性与稳定性的平衡，以及机会与风险的客观权衡
+    Key coverage:
+    - Analyze financial health, solvency, capital structure, liquidity and cash flow safety margin based on industry characteristics
+    - Prioritize coverage of profit margins, rates of return, expense ratios, interest spreads or other profitability indicators that are applicable to the current industry and provided by the tool
+    - PE, PB, PEG Compare the historical range with peers and explain what expectations the market has factored into
+    - The balance between growth and stability, and the objective weighing of opportunities and risks
 
-    如果工具没有返回某项财务字段、估值字段或同行数据，请明确写“工具结果未提供”或“该维度仍待验证”，不得使用 LLM 自身知识补数据。
-    基本面研究默认只使用历史财务、历史估值区间和已披露经营数据；即使工具返回当前股价、涨跌幅、成交量、当前总市值等日频快照，也不得写入正文或作为结论依据。
-    只要正文引用 PE、PE(TTM)、PB、PS(TTM) 或其他估值快照，就必须同时注明该指标对应的快照日期；若不同指标日期不同，应分别写明。
-    如果工具结果中的估值快照日期早于分析日期，必须使用工具返回的实际估值快照日期，不得写成“截至分析日期”或用分析日期替代估值日期。
-    如果工具明确提示“当前尚无当日收盘后日频数据”或“已按前一可用交易日口径执行”，必须在“核心观察”第一条或“估值背景”开头先写明：当前尚无分析日对应的稳定收盘后日频数据，因此本次历史估值分位与同行估值按前一可用交易日口径分析；不能只改日期不解释原因。
-    请根据行业特征和工具可得数据选择最有解释力的指标，不要求机械覆盖所有通用财务指标；若某类指标对当前行业不适用，不要把其缺失直接写成风险或数据缺口。
-    如果工具已明确给出“单季度推导”字段，优先使用这些字段描述季度变化；“原始报告期累计/快照”字段主要用于核对口径。
-    对 A 股季度财报中的营业收入、归母净利润、经营现金流等字段，默认按报告期累计口径解释，不得直接写成单季度逐季改善，也不得把 Q1-Q4 直接相加。
-    对 ROE、净利率等指标，默认按报告期指标快照解释；若未明确推导，不要写成单季度指标。
-    如需讨论估值，只能围绕工具提供的历史估值分位、历史区间或同行相对估值展开，不得把当前股价、当前总市值写进公司概况、核心观察或总结。
-    如存在仍待验证事项，可在对应段落顺带一句说明，不必单列“待验证问题”。
-    可以写：“应结合行业特征选择适用指标；若某类传统周转或流动性指标不适用于当前行业，不必机械列为缺口。”
-    可以写：“当前 ROE 回升，但经营现金流改善尚未同步，说明盈利修复质量仍需验证。”
-    可以写：“当前 PB 处于历史中枢偏上位置，反映市场对改善预期并不低。”
-    可以写：“当前 PE/PB 溢价反映市场对盈利持续性和现金流质量的更高要求。”
-    可以写：“若景气位置仍偏弱，当前高估值意味着后续兑现门槛更高。”
-    可以写：“若需要单季度利润判断，应基于相邻报告期累计值差额单独推导。”
-    不得写：“单季度收入和净利润连续四个季度逐季抬升。”
-    不得写：“由于缺少若干通用指标，因此当前行业经营质量偏弱。”
-    不得写：“当前存在明显安全边际。”
-    不得写：“行业景气拐点已近，可提前埋伏。”
-    不得写：“合理价格区间为 18-22 元。”
-    不得写：“若估值回落到某区间可布局。”
+    If the tool does not return a financial field, valuation field or peer data, please explicitly write Tool results not provided or This dimension still needs to be verified , LLM s own knowledge may not be used to supplement data.
+    By default, fundamental research only uses historical financials, historical valuation ranges and disclosed operating data; even if the tool returns daily snapshots of the current stock price, rise and fall, trading volume, current total market value, etc., it must not be written into the text or used as a basis for conclusions.
+    As long as the text cites PE,PE(TTM), PB, PS(TTM) or other valuation snapshots, the snapshot date corresponding to the indicator must also be indicated; if the dates of different indicators are different, they should be stated separately.
+    If the valuation snapshot date in the tool results is earlier than the analysis date, the actual valuation snapshot date returned by the tool must be used and must not be written As of analysis date Or replace the valuation date with the analysis date.
+    If the tool explicitly prompts There is currently no daily frequency data after the close of the day. or Executed based on the caliber of the previous available trading day , must be in core observation Article 1 or Valuation background Let me state it at the beginning: There is currently no stable post-closing daily frequency data corresponding to the analysis day, so this historical valuation quantile and peer valuation are analyzed based on the previous available trading day; you cannot just change the date without explaining the reason.
+    Please select the most explanatory indicators based on industry characteristics and data available from tools. It is not required to mechanically cover all common financial indicators. If a certain type of indicator is not applicable to the current industry, do not directly write its lack as a risk or data gap.
+    If the tool is explicitly given Single quarter derivation Fields, use these fields first to describe quarterly changes; Original reporting period cumulative/snapshot The field is mainly used to check the caliber.
+    Fields such as operating income, net profit attributable to parent companies, and operating cash flow in A-share quarterly financial reports are interpreted by default based on the cumulative caliber of the reporting period. They are not allowed to be directly written as quarter-by-quarter improvement in a single quarter, nor are Q1-Q4 directly added up.
+    For indicators such as ROE and net interest rate, the default interpretation is based on the snapshot of the indicator during the reporting period; if it is not clearly deduced, do not write it as a single-quarter indicator.
+    If you need to discuss valuation, you can only focus on the historical valuation quantiles, historical ranges or peer relative valuations provided by the tool. The current stock price and current total market capitalization are not allowed to be included in the company profile, core observations or summary.
+    If there are matters that still need to be verified, they can be explained in the corresponding paragraph in passing, and do not need to be listed separately. Questions to be verified . 
+    You can write: Applicable indicators should be selected based on industry characteristics; if a certain type of traditional turnover or liquidity indicator is not suitable for the current industry, there is no need to mechanically list it as a gap. 
+    You can write: ROE is currently recovering, but the improvement in operating cash flow has not yet been synchronized, indicating that the quality of earnings repair still needs to be verified. 
+    You can write: The current PB is at a position above the historical center, reflecting that the market s expectations for improvement are not low. 
+    You can write: The current PE/PB premium reflects the market s higher requirements for profitability sustainability and cash flow quality. 
+    You can write: If the prosperity position is still weak, the current high valuation means that the threshold for subsequent redemption will be higher. 
+    You can write: If a single-quarter profit judgment is required, it should be derived separately based on the difference in cumulative values between adjacent reporting periods. 
+    Do not write: Single-quarter revenue and net profit have increased quarter by quarter for four consecutive quarters. 
+    Do not write: Due to the lack of several common indicators, the current industry operating quality is weak. 
+    Do not write: There is currently a clear margin of safety. 
+    Do not write: The turning point of the industry s prosperity is approaching, and you can ambush in advance. 
+    Do not write: The reasonable price range is 18-22 yuan. 
+    Do not write: If the valuation falls back to a certain range, it can be laid out. 
 
-    不得给出交易建议、目标价、价格区间、仓位建议或交易触发条件。
-    不得添加任何署名、作者、分析师、日期或声明信息。"""
+    Do not give trading recommendations, price targets, price ranges, position recommendations or trade triggers.
+    No byline, author, analyst, date or claim information may be added."""
 
     def _build_analysis_prompt(self, ticker: str) -> str:
-        """构建分析提示词"""
-        return f"""基于获取的数据，请生成 {ticker} 的专业基本面研究报告，包括：
+        """Build analysis prompt words"""
+        return f"""Based on the obtained data, please generate {ticker} Professional fundamental research reports, including:
 
-    1. 核心观察
-    2. 公司概况与当前经营特征
-    3. 结合行业特征分析财务健康度、盈利能力、经营质量与现金流匹配度
-    4. 估值背景、历史区间与同行比较所反映的市场预期
-    5. 机会与风险的平衡评估
-    6. 对整体研究结论的支持或削弱作用
-    7. 总结
+    1. core observation
+    2. Company profile and current operating characteristics
+    3. Analyze financial health, profitability, operating quality and cash flow matching based on industry characteristics
+    4. Market expectations reflected in valuation background, historical range and comparison with peers
+    5. Balanced assessment of opportunities and risks
+    6. Support or weaken the overall research conclusion
+    7. Summary
 
-    如果某项数据缺失，请直接写“工具结果未提供”或“该维度仍待验证”，不要自行补全。
-    基本面研究默认只使用历史财务、历史估值区间和已披露经营数据；即使工具结果出现当前股价、涨跌幅、成交量、当前总市值等日频快照，也不要把这些字段写入正文或作为结论依据。
-    只要正文引用 PE、PE(TTM)、PB、PS(TTM) 或其他估值快照，就必须同时注明该指标对应的快照日期；若不同指标日期不同，应分别写明。
-    如果工具结果中的估值快照日期早于分析日期，必须使用工具返回的实际估值快照日期，不得写成“截至分析日期”或用分析日期替代估值日期。
-    如果工具明确提示“当前尚无当日收盘后日频数据”或“已按前一可用交易日口径执行”，必须在“核心观察”第一条或“估值背景”开头先写明：当前尚无分析日对应的稳定收盘后日频数据，因此本次历史估值分位与同行估值按前一可用交易日口径分析；不能只改日期不解释原因。
-    请根据行业特征和工具可得数据选择最有解释力的指标，不要求机械覆盖所有通用财务指标；若某类指标对当前行业不适用，不要把其缺失直接写成风险或数据缺口。
-    如果工具已明确给出“单季度推导”字段，优先使用这些字段描述季度变化；不要把“原始报告期累计/快照”字段误写成单季度变化。
-    如存在仍待验证事项，可在相关段落顺带一句说明，不必单列章节。
-    估值背景尽量拆成绝对估值、相对估值、历史分位和市场已计入预期。
-    如需讨论估值，只能围绕历史估值分位、历史区间或同行相对估值展开，不要写当前股价、当前总市值或其他实时快照字段。
-    允许引用真实数值做事实说明，但不要把数值写成合理价位、目标价、价格区间、安全边际、景气拐点布局或交易触发条件。
+    If a piece of data is missing, please write directly Tool results not provided or This dimension still needs to be verified , Don t complete it yourself.
+    By default, fundamental research only uses historical financials, historical valuation ranges, and disclosed operating data; even if the tool results include daily snapshots of current stock price, increase or decrease, trading volume, current total market value, etc., do not write these fields into the text or use them as the basis for conclusions.
+    As long as the text cites PE,PE(TTM), PB, PS(TTM) or other valuation snapshots, the snapshot date corresponding to the indicator must also be indicated; if the dates of different indicators are different, they should be stated separately.
+    If the valuation snapshot date in the tool results is earlier than the analysis date, the actual valuation snapshot date returned by the tool must be used and must not be written As of analysis date Or replace the valuation date with the analysis date.
+    If the tool explicitly prompts There is currently no daily frequency data after the close of the day. or Executed based on the caliber of the previous available trading day , must be in core observation Article 1 or Valuation background Let me state it at the beginning: There is currently no stable post-closing daily frequency data corresponding to the analysis day, so this historical valuation quantile and peer valuation are analyzed based on the previous available trading day; you cannot just change the date without explaining the reason.
+    Please select the most explanatory indicators based on industry characteristics and data available from tools. It is not required to mechanically cover all common financial indicators. If a certain type of indicator is not applicable to the current industry, do not directly write its lack as a risk or data gap.
+    If the tool is explicitly given Single quarter derivation fields, preferentially use these fields to describe quarterly changes; do not use Original reporting period cumulative/snapshot Field incorrectly written as single quarter change.
+    If there are matters that still need to be verified, they can be explained in the relevant paragraphs in passing, rather than in separate chapters.
+    The valuation background should be broken down into absolute valuation, relative valuation, historical quantiles and market expectations as much as possible.
+    If you need to discuss valuation, you can only focus on historical valuation quantiles, historical ranges, or relative valuations of peers. Do not write about the current stock price, current total market capitalization, or other real-time snapshot fields.
+    It is allowed to quote real numerical values for factual explanations, but do not write the numerical values as reasonable prices, target prices, price ranges, safety margins, business turning point layouts, or transaction trigger conditions.
 
-    不要输出价格区间、目标价、仓位或执行建议。
-    不得添加任何署名、作者、分析师、日期或声明信息。"""
+    Do not output price ranges, price targets, positions, or execution recommendations.
+    No byline, author, analyst, date or claim information may be added."""
 
     def _get_market_characteristics(self, ticker: str) -> Dict[str, Any]:
         default_market_info = {
             "is_china": True,
-            "market_name": "中国A股",
+            "market_name": "China A shares",
         }
 
         if not StockUtils or not ticker:
@@ -491,7 +491,7 @@ class FundamentalsAnalystAgentV2(BaseAgent):
             if isinstance(market_info, dict):
                 return {**default_market_info, **market_info}
         except Exception as exc:
-            logger.warning(f"获取股票市场信息失败，使用默认 A 股回退: {exc}")
+            logger.warning(f"Failed to obtain stock market information, fallback to default A shares: {exc}")
 
         return default_market_info
 
@@ -504,13 +504,13 @@ class FundamentalsAnalystAgentV2(BaseAgent):
     def _invoke_prefetch_tool(self, tool_name: str, tool_args: Dict[str, Any]) -> Optional[str]:
         tool = self._get_langchain_tool_by_name(tool_name)
         if tool is None:
-            logger.warning(f"预取工具未找到，跳过: {tool_name}")
+            logger.warning(f"Prefetch tool not found, skipped: {tool_name}")
             return None
 
         try:
             result = tool.invoke(tool_args)
         except Exception as exc:
-            logger.warning(f"预取工具执行失败 {tool_name}: {exc}")
+            logger.warning(f"Prefetch tool execution failed {tool_name}: {exc}")
             return None
 
         result_text = str(result or "").strip()
@@ -526,7 +526,7 @@ class FundamentalsAnalystAgentV2(BaseAgent):
             return None, []
 
         effective_trade_date = trade_date or (state or {}).get("analysis_date") or datetime.now().strftime("%Y-%m-%d")
-        # 🔧 确保 curr_date 类型为 str（state 中的 trade_date 可能是 datetime 对象）
+        # 🔧 Make sure curr_date is of type str (trade_date in state may be a datetime object)
         if isinstance(effective_trade_date, datetime):
             effective_trade_date = effective_trade_date.strftime("%Y-%m-%d")
         market_info = self._get_market_characteristics(ticker)
@@ -536,7 +536,7 @@ class FundamentalsAnalystAgentV2(BaseAgent):
             (
                 "get_stock_fundamentals_unified",
                 {"ticker": ticker, "curr_date": effective_trade_date},
-                "整体基本面背景",
+                "Overall fundamental background",
             ),
         ]
         if is_china:
@@ -545,12 +545,12 @@ class FundamentalsAnalystAgentV2(BaseAgent):
                     (
                         "get_financial_statements",
                         {"ticker": ticker, "limit": 4},
-                        "最近季度财报明细",
+                        "Recent quarterly financial report details",
                     ),
                     (
                         "get_cash_flow_statement",
                         {"ticker": ticker, "limit": 4},
-                        "最近季度现金流量表",
+                        "Cash flow statement for most recent quarter",
                     ),
                 ]
             )
@@ -569,21 +569,21 @@ class FundamentalsAnalystAgentV2(BaseAgent):
             return None, []
 
         content = (
-            "以下必需工具结果已预先获取。请优先基于这些结果完成分析，不要再重复调用同名工具；"
-            "若仍缺少同行估值或其他补充证据，再调用剩余可选工具。\n\n"
+            "The following required tool results are pre-fetched. Please give priority to completing the analysis based on these results, and do not call the tool with the same name repeatedly;"
+            "If peer valuations or other supplementary evidence are still lacking, then call the remaining optional instruments.\n\n"
             + "\n\n".join(sections)
         )
         return HumanMessage(content=content), consumed_tool_names
 
     def _generate_mock_report(self, ticker: str, trade_date: str) -> str:
-        """生成模拟报告（降级方案）"""
-        return f"""这是一个模拟的基本面分析报告。
+        """Generate simulation report (downgrade scenario)"""
+        return f"""This is a simulated fundamental analysis report.
 
-股票代码: {ticker}
-分析日期: {trade_date}
+Stock code: {ticker}
+Analysis date: {trade_date}
 
-财务状况：良好
-盈利能力：稳定
-估值水平：合理
-研究结论：请结合详细证据继续跟踪。"""
+Financial status: good
+Profitability: stable
+Valuation level: reasonable
+Research conclusion: Please continue to follow up with detailed evidence."""
 

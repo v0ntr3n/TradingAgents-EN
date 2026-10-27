@@ -1,11 +1,11 @@
 """
-MCP 数据源适配器
+MCP data source adapter
 
-将数据源类 MCP 工具返回的原始数据标准化后持久化到 MongoDB。
-支持三层数据处理策略：
-  1. 结构化 + 字段映射 → 写入现有/新集合
-  2. 无字段映射配置   → 原样写入目标集合（需 data_mapping 指定 target_collection）
-  3. 无 data_mapping  → 非结构化，写入 mcp_documents 集合
+Standardize the raw data returned by the data source class MCP tool and persist it to MongoDB.
+Supports three-tier data processing strategy:
+  1. structured + Field mapping → Write to existing/new collection
+  2. No field mapping configuration   → Write the target collection as is (requires data_mapping to specify target_collection)
+  3. None data_mapping  → Unstructured, written to the mcp_documents collection
 """
 
 import json
@@ -24,14 +24,14 @@ def _now_utc() -> datetime:
 
 class MCPDatasourceAdapter:
     """
-    MCP 数据源适配器
+    MCP data source adapter
 
-    负责将 MCP 工具原始响应（字符串）解析、字段映射、单位转换，
-    然后持久化到 MongoDB。
+    Responsible for parsing, field mapping, and unit conversion of the original response (string) of the MCP tool.
+    Then persist to MongoDB.
     """
 
     # ------------------------------------------------------------------
-    # 公开接口
+    # public interface
     # ------------------------------------------------------------------
 
     def adapt_and_persist(
@@ -42,35 +42,35 @@ class MCPDatasourceAdapter:
         server_name: str,
     ) -> Optional[str]:
         """
-        解析 raw_result，应用字段映射，写入 MongoDB。
+        Parse raw_result, apply field mapping, write to MongoDB.
 
         Args:
-            raw_result:   MCP call_tool 返回的原始字符串
-            tool_name:    工具名称（仅用于日志）
-            data_mapping: 来自 mcp_server_configs.data_mappings 中对应 tool_name 的条目
-            server_name:  MCP 服务器名称（写入 data_source 标识）
+            raw_result:   MCP call_tool The original string returned
+            tool_name:    Tool name (for logging only)
+            data_mapping: Entry from mcp_server_configs.data_mappings corresponding to tool_name
+            server_name:  MCP Server name (write data_source identifier)
 
         Returns:
-            写入的目标集合名，写入失败时返回 None
+            The name of the target collection to be written, returned when writing fails None
         """
         if data_mapping is None:
-            # 无映射配置 → 非结构化处理
+            # No mapping configuration → unstructured processing
             self.persist_unstructured(raw_result, tool_name, server_name)
             return MCP_DOCUMENTS_COLLECTION
 
         target_collection = data_mapping.get("target_collection")
         if not target_collection:
-            logger.warning(f"[MCP Adapter] data_mapping 缺少 target_collection，工具: {tool_name}")
+            logger.warning(f"[MCP Adapter] data_mapping Missing target_collection, tools: {tool_name}")
             self.persist_unstructured(raw_result, tool_name, server_name)
             return MCP_DOCUMENTS_COLLECTION
 
-        # 解析 JSON 数据
+        # Parse JSON data
         records = self._parse_result(raw_result)
         if not records:
-            logger.info(f"[MCP Adapter] {tool_name} 返回空数据，跳过持久化")
+            logger.info(f"[MCP Adapter] {tool_name} Return empty data and skip persistence")
             return target_collection
 
-        # 应用字段映射和单位转换（支持 field_mapping_list 数组格式，实现一源多目标）
+        # Apply field mapping and unit conversion (support field_mapping_list array format to achieve one source and multiple targets)
         field_mapping = data_mapping.get("field_mapping", {})
         field_mapping_list = data_mapping.get("field_mapping_list", [])
         if field_mapping_list:
@@ -87,7 +87,7 @@ class MCPDatasourceAdapter:
             for record in records
         ]
 
-        # 写入 MongoDB
+        # write MongoDB
         self._write_to_collection(target_collection, mapped_records)
         logger.info(f"[MCP Adapter] {tool_name} → {target_collection}: {len(mapped_records)} 条记录")
         return target_collection
@@ -100,13 +100,13 @@ class MCPDatasourceAdapter:
         meta: Optional[Dict] = None,
     ) -> None:
         """
-        将非结构化数据写入 mcp_documents 集合。
+        Write unstructured data to the mcp_documents collection.
 
         Args:
-            raw_result:  原始文本内容
-            tool_name:   工具名称
-            server_name: MCP 服务器名称
-            meta:        附加元数据（如 stock_code、doc_type 等）
+            raw_result:  Original text content
+            tool_name:   Tool name
+            server_name: MCP Server name
+            meta:        Additional metadata (such as stock_code, doc_type, etc.)
         """
         doc = {
             "server_name": server_name,
@@ -122,26 +122,26 @@ class MCPDatasourceAdapter:
             db = get_mongo_db_sync()
             if db is not None:
                 db[MCP_DOCUMENTS_COLLECTION].insert_one(doc)
-                logger.info(f"[MCP Adapter] 非结构化数据写入 mcp_documents ({tool_name})")
+                logger.info(f"[MCP Adapter] Unstructured data writing mcp_documents ({tool_name})")
         except Exception as e:
-            logger.warning(f"[MCP Adapter] 写入 mcp_documents 失败: {e}")
+            logger.warning(f"[MCP Adapter] Writing to mcp_documents failed: {e}")
 
     # ------------------------------------------------------------------
-    # 内部工具
+    # internal tools
     # ------------------------------------------------------------------
 
     def _parse_result(self, raw_result: str) -> List[Dict]:
-        """尝试将 raw_result 解析为记录列表"""
+        """Try parsing raw_result into a list of records"""
         try:
             data = json.loads(raw_result)
             if isinstance(data, list):
                 return data
             if isinstance(data, dict):
-                # 常见结构：{"data": [...]} 或 {"records": [...]} 或直接是单条记录
+                # Common structures:{"data": [...]} or {"records": [...]} Or directly a single record
                 for key in ("data", "records", "result", "rows"):
                     if isinstance(data.get(key), list):
                         return data[key]
-                return [data]  # 单条记录
+                return [data]  # single record
         except (json.JSONDecodeError, TypeError):
             pass
         return []
@@ -153,9 +153,9 @@ class MCPDatasourceAdapter:
         unit_conversion: Dict[str, Dict],
         server_name: str,
     ) -> Dict:
-        """将单条原始记录按映射规则转换。mapping_pairs 为 [(src, dst), ...]，支持一源多目标"""
+        """Convert a single original record according to mapping rules. mapping_pairs is [(src, dst), ...], Support one source and multiple targets"""
         if not mapping_pairs:
-            # 无映射规则，原样保留，只追加 data_source
+            # No mapping rules, keep as is, only append data_source
             record["data_source"] = f"mcp:{server_name}"
             return record
 
@@ -164,7 +164,7 @@ class MCPDatasourceAdapter:
         for src_field, dst_field in mapping_pairs:
             if src_field in record:
                 value = record[src_field]
-                # 单位转换
+                # Unit conversion
                 conv = unit_conversion.get(src_field)
                 if conv and isinstance(value, (int, float)):
                     factor = conv.get("factor", 1)
@@ -172,7 +172,7 @@ class MCPDatasourceAdapter:
                 mapped[dst_field] = value
                 mapped_src_keys.add(src_field)
 
-        # 保留未映射的字段（extra_fields: preserve 行为）
+        # Leave unmapped fields (extra_fields: preserve behavior)
         for k, v in record.items():
             if k not in mapped_src_keys:
                 mapped[k] = v
@@ -182,7 +182,7 @@ class MCPDatasourceAdapter:
         return mapped
 
     def _write_to_collection(self, collection_name: str, records: List[Dict]) -> None:
-        """批量写入 MongoDB 集合（upsert 需由调用方通过字段自行实现，此处为 insert_many）"""
+        """Batch writing to MongoDB collections (upsert needs to be implemented by the caller through fields, here is insert_many)"""
         try:
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
@@ -193,14 +193,14 @@ class MCPDatasourceAdapter:
 
 
 # ------------------------------------------------------------------
-# 全局单例
+# Global singleton
 # ------------------------------------------------------------------
 
 _adapter: Optional[MCPDatasourceAdapter] = None
 
 
 def get_mcp_datasource_adapter() -> MCPDatasourceAdapter:
-    """获取 MCPDatasourceAdapter 全局单例"""
+    """Get the MCPDatasourceAdapter global singleton"""
     global _adapter
     if _adapter is None:
         _adapter = MCPDatasourceAdapter()

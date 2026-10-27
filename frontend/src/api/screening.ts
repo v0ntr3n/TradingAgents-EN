@@ -69,7 +69,7 @@ export interface ScreeningRunItem {
 
 export interface ScreeningRunResp { total: number; items: ScreeningRunItem[] }
 
-// 筛选字段配置
+// Filter field configuration
 export interface FieldInfo {
   name: string
   display_name: string
@@ -138,81 +138,81 @@ export interface FactorRegistryResponse {
 const LEGACY_STATIC_FIELDS: Record<string, FieldInfo> = {
   keyword: {
     name: 'keyword',
-    display_name: '关键词',
+    display_name: 'keywords',
     field_type: 'basic',
     data_type: 'string',
-    description: '股票代码或名称',
+    description: 'Stock code or name',
     supported_operators: ['contains'],
   },
   symbol: {
     name: 'symbol',
-    display_name: '股票代码',
+    display_name: 'Stock code',
     field_type: 'basic',
     data_type: 'string',
-    description: '6位股票代码',
+    description: '6 stock code',
     supported_operators: ['==', '!=', 'in', 'not_in', 'contains'],
   },
   code: {
     name: 'code',
-    display_name: '股票代码(已废弃)',
+    display_name: 'Stock code(Deprecated)',
     field_type: 'basic',
     data_type: 'string',
-    description: '6位股票代码(已废弃,使用symbol)',
+    description: '6 stock code(Deprecated,Use symbol)',
     supported_operators: ['==', '!=', 'in', 'not_in', 'contains'],
   },
   name: {
     name: 'name',
-    display_name: '股票名称',
+    display_name: 'Stock name',
     field_type: 'basic',
     data_type: 'string',
-    description: '股票简称',
+    description: 'stock abbreviation',
     supported_operators: ['contains', '==', '!='],
   },
   industry: {
     name: 'industry',
-    display_name: '所属行业',
+    display_name: 'Industry',
     field_type: 'basic',
     data_type: 'string',
-    description: '申万行业分类',
+    description: 'Shenwan Industry Classification',
     supported_operators: ['==', '!=', 'in', 'not_in', 'contains'],
   },
   area: {
     name: 'area',
-    display_name: '所属地区',
+    display_name: 'Region',
     field_type: 'basic',
     data_type: 'string',
-    description: '公司注册地区',
+    description: 'Company registration area',
     supported_operators: ['==', '!=', 'in', 'not_in'],
   },
   market: {
     name: 'market',
-    display_name: '所属市场',
+    display_name: 'Market',
     field_type: 'basic',
     data_type: 'string',
-    description: '交易市场',
+    description: 'trading market',
     supported_operators: ['==', '!=', 'in', 'not_in'],
   },
   total_mv: {
     name: 'total_mv',
-    display_name: '总市值',
+    display_name: 'Total market capitalization',
     field_type: 'basic',
     data_type: 'number',
-    description: '公司总市值',
-    unit: '亿',
+    description: 'Total market capitalization of the company',
+    unit: 'billion',
     supported_operators: ['>', '<', '>=', '<=', 'between'],
   },
   circ_mv: {
     name: 'circ_mv',
-    display_name: '流通市值',
+    display_name: 'Circulation market value',
     field_type: 'basic',
     data_type: 'number',
-    description: '公司流通市值',
-    unit: '亿',
+    description: 'Company circulation market value',
+    unit: 'billion',
     supported_operators: ['>', '<', '>=', '<=', 'between'],
   },
   pe: {
     name: 'pe',
-    display_name: '市盈率',
+    display_name: 'P/E ratio',
     field_type: 'basic',
     data_type: 'number',
     description: 'Price to Earnings Ratio',
@@ -220,7 +220,7 @@ const LEGACY_STATIC_FIELDS: Record<string, FieldInfo> = {
   },
   pb: {
     name: 'pb',
-    display_name: '市净率',
+    display_name: 'price to book ratio',
     field_type: 'basic',
     data_type: 'number',
     description: 'Price to Book Ratio',
@@ -228,7 +228,7 @@ const LEGACY_STATIC_FIELDS: Record<string, FieldInfo> = {
   },
   roe: {
     name: 'roe',
-    display_name: '净资产收益率',
+    display_name: 'ROE',
     field_type: 'basic',
     data_type: 'number',
     description: 'Return on Equity',
@@ -237,42 +237,42 @@ const LEGACY_STATIC_FIELDS: Record<string, FieldInfo> = {
   },
   close: {
     name: 'close',
-    display_name: '当前价格',
+    display_name: 'current price',
     field_type: 'basic',
     data_type: 'number',
-    description: '最新收盘价',
+    description: 'latest closing price',
     supported_operators: ['>', '<', '>=', '<=', 'between'],
   },
   pct_chg: {
     name: 'pct_chg',
-    display_name: '涨跌幅',
+    display_name: 'Increase or decrease',
     field_type: 'basic',
     data_type: 'number',
-    description: '当日涨跌幅',
+    description: 'The day s increase or decrease',
     supported_operators: ['>', '<', '>=', '<=', 'between'],
   },
   amount: {
     name: 'amount',
-    display_name: '成交额',
+    display_name: 'Turnover',
     field_type: 'basic',
     data_type: 'number',
-    description: '当日成交额',
+    description: 'Trading volume of the day',
     supported_operators: ['>', '<', '>=', '<=', 'between'],
   },
   turnover_rate: {
     name: 'turnover_rate',
-    display_name: '换手率',
+    display_name: 'turnover rate',
     field_type: 'basic',
     data_type: 'number',
-    description: '换手率',
+    description: 'turnover rate',
     supported_operators: ['>', '<', '>=', '<=', 'between'],
   },
   volume_ratio: {
     name: 'volume_ratio',
-    display_name: '量比',
+    display_name: 'Quantity ratio',
     field_type: 'basic',
     data_type: 'number',
-    description: '量比',
+    description: 'Quantity ratio',
     supported_operators: ['>', '<', '>=', '<=', 'between'],
   },
 }
@@ -289,12 +289,12 @@ const LEGACY_CATEGORY_ORDER = {
 const LEGACY_UI_METADATA = {
   category_order: ['basic', 'market_value', 'financial', 'trading', 'price', 'technical'],
   category_labels: {
-    basic: '基础条件',
-    market_value: '市值规模',
-    financial: '财务因子',
-    trading: '交易活跃度',
-    price: '价格表现',
-    technical: '技术因子',
+    basic: 'basic conditions',
+    market_value: 'Market capitalization',
+    financial: 'financial factors',
+    trading: 'Trading activity',
+    price: 'price performance',
+    technical: 'technical factors',
   },
   hidden_fields: ['code', 'market'],
   visible_fields_by_category: {} as Record<string, string[]>,
@@ -376,7 +376,7 @@ const buildLegacyFieldConfigFromRegistry = (registry: FactorRegistryResponse): F
   }
 }
 
-// 行业列表响应
+// Industry List Response
 export interface IndustryOption {
   value: string
   label: string
@@ -388,7 +388,7 @@ export interface IndustriesResponse {
   total: number
 }
 
-// ---- 智能筛选相关接口 ----
+// ---- Intelligent filtering related interfaces ----
 
 export interface StockRecommendation {
   code: string
@@ -506,7 +506,7 @@ export const screeningApi = {
   deletePreset: (presetId: string) => ApiClient.delete<{ id: string; message: string }>(`/api/screening/presets/${encodeURIComponent(presetId)}`),
   getIndustries: () => ApiClient.get<IndustriesResponse>('/api/screening/industries'),
 
-  // 智能筛选
+  // Smart filtering
   intelligentChat: (message: string, conversation_id?: string) =>
     ApiClient.post<ScreeningChatResponse>('/api/screening/intelligent/chat', { message, conversation_id }, { timeout: 180000 }),
   getIntelligentChatWsUrl: (token?: string) => {

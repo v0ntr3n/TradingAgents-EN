@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-实时新闻工具兼容层
-为了保持向后兼容性，从 news.realtime_news 模块导出函数
+Real-time news tool compatibility layer
+To maintain backward compatibility, export functions from the news.realtime_news module
 """
 
 from tradingagents.dataflows.news.realtime_news import (

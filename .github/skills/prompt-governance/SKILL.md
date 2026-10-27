@@ -1,114 +1,114 @@
 ---
 name: prompt-governance
-description: "审计、修复并验证 TradingAgentsCN 中 agent 与提示词工作流。用于持仓分析、workflow prompt、MongoDB prompt_templates、adapter prompt assembly、合规修复、运行期模板与代码同步。触发词：修改 agent 提示词、提示词治理、DB 模板同步、workflow 提示词修复、持仓分析提示词排查、prompt compliance、runtime prompt audit。"
-argument-hint: "描述工作流、agent 名称、目标问题和是否允许直接修改。例如：修复 position_analysis_v2 的 pa_technical_v2 提示词日期漂移，并同步运行期模板与代码。"
+description: "Audit, fix, and verify agent and prompt workflows in TradingAgentsCN. Use for portfolio analysis, workflow prompts, MongoDB prompt_templates, adapter prompt assembly, compliance fixes, and synchronizing runtime templates with code. Triggers: modify agent prompt, prompt governance, DB template sync, workflow prompt fix, portfolio analysis prompt troubleshooting, prompt compliance, runtime prompt audit."
+argument-hint: "Describe the workflow, agent name, target issue, and whether direct modifications are allowed. E.g.: Fix date drift in the pa_technical_v2 prompt of position_analysis_v2, and synchronize runtime templates with code."
 user-invocable: true
 ---
 
 # Prompt Governance
 
-这个 skill 用来处理“agent 行为不对，既可能是提示词问题，也可能是代码装配、运行期模板或兼容解析路径问题”的场景。
+This skill handles scenarios where "agent behavior is wrong, and the root cause could be in the prompt itself, code assembly, runtime database templates, or legacy compatibility parsing paths."
 
-它不是普通的文案改写流程，而是一个运行期优先的治理流程：先确认真正控制行为的提示词和代码路径，再做最小修复，并把验证做完。
+It is not a simple copywriting workflow, but a runtime-first governance workflow: first identify the prompt and code paths that actually control runtime behavior, then apply minimal fixes and complete verification.
 
-## 何时使用
+## When to Use
 
-- 用户要求修改某个 workflow 或 agent 的提示词，但仓库文件改了以后运行结果仍不对。
-- 需要同时检查 repo fallback 提示词、MongoDB 中的 prompt_templates、adapter 的 _build_system_prompt / _build_user_prompt，以及 service 侧解析逻辑。
-- 需要做持仓分析、研究链路、合规改写、用户视图精简、触发语去除、DB 模板同步这类工作。
-- 日志里出现“运行期生成内容”和“仓库中的模板/代码理解”不一致。
+- A user asks to modify the prompt of a workflow or agent, but runtime results remain unchanged after editing repository files.
+- You need to simultaneously inspect repository fallback prompts, `prompt_templates` in MongoDB, `_build_system_prompt` / `_build_user_prompt` in the adapter, and parsing logic in the service layer.
+- You are working on portfolio analysis, research pipelines, compliance rewrites, user view streamlining, trigger phrase removal, or DB template synchronization.
+- Runtime generated content in the logs diverges from what is expected based on repository templates/code.
 
-## 不适用场景
+## When Not to Use
 
-- 只改一小段纯文案，且可以确定运行期不走数据库模板。
-- 单纯解释某个 agent 在做什么，而不是要修复。
-- 完全不涉及 prompt / workflow / adapter / DB 模板的普通后端 Bug。
+- Editing a small piece of static UI copy that is guaranteed not to use database templates at runtime.
+- Merely explaining what an agent does without fixing behavior.
+- Ordinary backend bugs that do not involve prompts, workflows, adapters, or DB templates at all.
 
-## 核心原则
+## Core Principles
 
-1. 先查运行期真实控制面，再改仓库文件。
-2. 先做最小可证伪假设，再做最小修复，不先大改模板。
-3. DB 模板和代码装配可能同时控制行为，不能假设只改一处就够。
-4. 任何改动后都要做窄验证，再做治理校验。
+1. Inspect the actual runtime control plane before modifying repository files.
+2. Formulate a minimal falsifiable hypothesis first, then apply a minimal fix rather than rewriting entire templates upfront.
+3. DB templates and code assembly may jointly control behavior; never assume changing only one place is sufficient.
+4. Always run narrow verification after any change, followed by governance validation.
 
-## 标准流程
+## Standard Workflow
 
-### 1. 锁定控制路径
+### 1. Pinpoint the Control Path
 
-- 先找 workflow_id、agent_name、触发日志、失败输出、相关测试。
-- 优先定位真正计算或拼装行为的地方，而不是只看注册层。
-- 如果是提示词类问题，先分清：
-  - 运行期 DB 模板
-  - repo fallback 模板
-  - adapter 追加/改写的提示词片段
-  - service 对输出的二次解析或清洗
+- Locate `workflow_id`, `agent_name`, trigger logs, failing outputs, and related tests first.
+- Prioritize finding where behavior is actually computed or assembled, rather than only looking at registration layers.
+- For prompt-related issues, distinguish between:
+  - Runtime DB templates
+  - Repository fallback templates
+  - Prompt fragments appended or rewritten by the adapter
+  - Secondary output parsing or sanitization in the service layer
 
-### 2. 先审运行期模板
+### 2. Audit Runtime Templates First
 
-- 优先查询 MongoDB `prompt_templates` 集合，不要先假设 repo 模板在生效。
-- 读取目标 `agent_type` + `agent_name` + `preference_type` + `status=active` 的模板。
-- 如果是 without_cache / with_cache 双分支，必须分别确认。
-- 如需修改 DB 模板，只改目标 active 文档，修改后立刻回读确认。
+- Query the MongoDB `prompt_templates` collection first; do not assume repository templates are active.
+- Read the template matching the target `agent_type` + `agent_name` + `preference_type` + `status=active`.
+- If there are dual `without_cache` / `with_cache` branches, verify both separately.
+- When modifying a DB template, only update the target active document and immediately read it back to confirm.
 
-### 3. 再审代码装配层
+### 3. Audit the Code Assembly Layer Next
 
-- 重点检查 adapter 中：
+- In the adapter, focus on checking:
   - `_build_system_prompt`
   - `_build_user_prompt`
-  - 无缓存 fallback 分支
-  - 上游报告摘要/净化逻辑
-- 重点检查 service / workflow 层：
-  - analysis_date、current_price、effective_data_date 的来源
-  - legacy action / price_targets / recommendation 提取逻辑
-  - 输出清洗是否会重新引入旧语义
+  - Cache-miss (`without_cache`) fallback branches
+  - Summarization and sanitization logic for upstream reports
+- In the service / workflow layer, focus on checking:
+  - Sources of `analysis_date`, `current_price`, and `effective_data_date`
+  - Legacy `action` / `price_targets` / `recommendation` extraction logic
+  - Whether output sanitization reintroduces legacy semantics
 
-### 4. 判断修复面
+### 4. Determine the Fix Scope
 
-- 只改 DB：运行期模板错误，代码装配正确。
-- 只改代码：运行期模板正确，但 adapter / service 在追加、污染或误解析。
-- 双改：运行期模板和代码装配都需要同步，否则后续还会漂移。
+- **DB only**: Runtime template is wrong, while code assembly is correct.
+- **Code only**: Runtime template is correct, but the adapter / service is appending, contaminating, or misparsing.
+- **Both**: Both runtime templates and code assembly need synchronization to prevent future drift.
 
-### 5. 实施修复
+### 5. Implement the Fix
 
-- 代码修改保持最小化，避免重写整个 prompt。
-- 对无缓存场景，优先补“显式参数约束”，避免 LLM 自行猜日期、ticker、价格口径。
-- 对上游污染，优先做摘要化和净化，而不是把原始长文本继续塞给下游 agent。
-- 对兼容出口，优先移除旧逻辑的自动提取，而不是在最终文案层硬洗。
+- Keep code changes minimal; avoid rewriting entire prompts.
+- For cache-miss scenarios, prioritize adding explicit parameter constraints so the LLM does not guess dates, tickers, or price bases.
+- For upstream contamination, prioritize summarization and sanitization rather than passing raw long-form text downstream.
+- For legacy compatibility exits, prioritize removing automatic extraction of legacy fields rather than hard-scrubbing at the final copy layer.
 
-### 6. 验证
+### 6. Verify
 
-- 先补或更新最窄的回归测试。
-- 第一轮验证只跑触达的测试切片。
-- 再跑治理校验任务。
-- 如果改了 DB 模板，必须做回读验证；如果改了运行期行为，优先重跑目标 workflow 并查日志。
+- Add or update the narrowest regression test first.
+- Run only the affected test slice in the first verification round.
+- Run the governance validation task next.
+- If DB templates were modified, perform a read-back check; if runtime behavior changed, re-run the target workflow and inspect the logs.
 
-### 7. 输出结果
+### 7. Report Results
 
-最终结论至少要包含：
+Your final conclusion must include at least:
 
-- 根因在 DB 模板、代码装配、service 解析、还是数据口径。
-- 实际改了哪些控制面。
-- 做了哪些验证，哪些已通过。
-- 是否还存在残余风险或下一步观察点。
+- Whether the root cause was in DB templates, code assembly, service parsing, or data basis.
+- Which control planes were actually modified.
+- Which verifications were performed and which passed.
+- Whether any residual risks or follow-up observation points remain.
 
-## 执行清单
+## Execution Checklist
 
-执行时按下面顺序走，不要跳步：
+Follow these steps in order without skipping:
 
-1. 查日志里的真实 workflow / agent / tool args。
-2. 查 MongoDB `prompt_templates` 中正在生效的文档。
-3. 查 adapter / service 的真实拼装路径。
-4. 选定最小修复面并实施。
-5. 跑窄测试。
-6. 跑治理校验。
-7. 如涉及 DB，再回读确认。
+1. Check actual `workflow` / `agent` / `tool args` in the logs.
+2. Check the active document in MongoDB `prompt_templates`.
+3. Check the actual assembly path in the adapter / service.
+4. Select and implement the minimal fix scope.
+5. Run narrow tests.
+6. Run governance validation.
+7. Read back from the DB to confirm if DB changes were made.
 
-## 常见坑
+## Common Pitfalls
 
-- 只改 repo 提示词，没有改运行期 DB 模板。
-- 只改 manager prompt，没有处理上游 analyst 原文污染。
-- 只洗最终输出，没有去掉 service 的 legacy 兼容提取。
-- 只看 analysis_date 变量，没有看 LLM 实际调用工具时传了什么参数。
-- 把 current_price 口径问题误判成提示词问题，而没去看日志和数据源。
+- Modifying only repository prompts without updating runtime DB templates.
+- Modifying only the manager prompt without addressing contamination from raw upstream analyst text.
+- Scrubbing only the final output without removing legacy compatibility extraction in the service layer.
+- Looking only at the `analysis_date` variable without checking what arguments the LLM actually passed during tool calls.
+- Misdiagnosing a `current_price` basis mismatch as a prompt issue without inspecting logs and data sources.
 
-详细检查点见 [治理检查清单](./references/checklist.md)。
+See the [Prompt Governance Checklist](./references/checklist.md) for detailed checkpoints.

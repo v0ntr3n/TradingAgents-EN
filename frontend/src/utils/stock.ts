@@ -1,46 +1,46 @@
 /**
- * 股票代码字段兼容性工具函数
+ * Stock symbol field compatibility tool function
  * 
- * 用于处理前后端字段标准化过程中的兼容性问题
+ * Used to deal with compatibility issues in the front-end and back-end field standardization process
  */
 
 /**
- * 从对象中获取股票代码（兼容新旧字段）
- * @param obj 包含股票代码的对象
- * @returns 股票代码（6位）
+ * Get the stock code from the object (compatible with old and new fields)
+ * @param obj Object containing a stock symbol
+ * @returns Stock code (6 digits)
  */
 export function getStockSymbol(obj: any): string {
   return obj?.symbol || obj?.stock_code || obj?.code || ''
 }
 
 /**
- * 从对象中获取完整股票代码（如 000001.SZ）
- * @param obj 包含股票代码的对象
- * @returns 完整股票代码
+ * Get the full stock code (e.g. 000001.SZ) from the object
+ * @param obj Object containing a stock symbol
+ * @returns Full ticker
  */
 export function getFullSymbol(obj: any): string {
   return obj?.full_symbol || obj?.symbol || obj?.stock_code || obj?.code || ''
 }
 
 /**
- * 创建包含兼容字段的股票代码对象
- * @param symbol 6位股票代码
- * @param fullSymbol 完整代码（可选）
- * @returns 包含新旧字段的对象
+ * Create a ticker object containing compatible fields
+ * @param symbol 6 stock code
+ * @param fullSymbol Full code (optional)
+ * @returns Object containing old and new fields
  */
 export function createSymbolObject(symbol: string, fullSymbol?: string) {
   return {
     symbol,
-    stock_code: symbol,  // 兼容字段
-    code: symbol,        // 兼容字段
+    stock_code: symbol,  // Compatible fields
+    code: symbol,        // Compatible fields
     ...(fullSymbol && { full_symbol: fullSymbol })
   }
 }
 
 /**
- * 标准化股票代码列表（去重、兼容新旧字段）
- * @param symbols 股票代码列表（可能包含新旧字段）
- * @returns 标准化后的代码列表
+ * Standardized stock code list (duplication removal, compatibility with old and new fields)
+ * @param symbols List of stock symbols (may contain old and new fields)
+ * @returns Standardized code list
  */
 export function normalizeSymbols(symbols: (string | { symbol?: string; stock_code?: string; code?: string })[]): string[] {
   const result = new Set<string>()
@@ -58,30 +58,30 @@ export function normalizeSymbols(symbols: (string | { symbol?: string; stock_cod
 }
 
 /**
- * 验证股票代码格式
- * @param symbol 股票代码
- * @param market 市场类型（可选）
- * @returns 是否有效
+ * Validate ticker format
+ * @param symbol Stock code
+ * @param market Market type (optional)
+ * @returns Is it valid?
  */
 export function validateSymbol(symbol: string, market?: string): boolean {
   if (!symbol) return false
   
   const trimmed = symbol.trim()
   
-  if (market === 'A股' || market === 'CN') {
-    // A股：6位数字
+  if (market === 'A shares' || market === 'CN') {
+    // A Share: 6 digits
     return /^\d{6}$/.test(trimmed)
   }
   
-  // 未指定市场时，尝试通用验证
-  return /^\d{6}$/.test(trimmed) // A股
+  // When no market is specified, universal validation is attempted
+  return /^\d{6}$/.test(trimmed) // A shares
 }
 
 /**
- * 格式化股票代码显示
- * @param symbol 股票代码
- * @param market 市场类型（可选）
- * @returns 格式化后的代码
+ * Formatting stock symbol display
+ * @param symbol Stock code
+ * @param market Market type (optional)
+ * @returns Formatted code
  */
 export function formatSymbol(symbol: string, _market?: string): string {
   if (!symbol) return ''
@@ -90,38 +90,38 @@ export function formatSymbol(symbol: string, _market?: string): string {
 }
 
 /**
- * 从完整代码中提取6位代码
- * @param fullSymbol 完整代码（如 000001.SZ）
- * @returns 6位代码
+ * Extract 6-digit code from complete code
+ * @param fullSymbol Complete code (such as 000001.SZ)
+ * @returns 6 bit code
  */
 export function extractSymbol(fullSymbol: string): string {
   if (!fullSymbol) return ''
   
-  // 移除市场后缀（.SZ, .SH, .BJ, .HK等）
+  // Remove market suffix (.SZ, .SH, .BJ, .HK etc.)
   return fullSymbol.split('.')[0]
 }
 
 /**
- * 从6位代码推断市场代码
- * @param symbol 6位股票代码
- * @returns 市场代码（SZ/SH/BJ）或 null
+ * Infer market code from 6-digit code
+ * @param symbol 6 stock code
+ * @returns Market code (SZ/SH/BJ) or null
  */
 export function inferMarketCode(symbol: string): string | null {
   if (!symbol || !/^\d{6}$/.test(symbol)) return null
   
   const code = symbol.substring(0, 3)
   
-  // 深圳市场
+  // Shenzhen market
   if (['000', '001', '002', '003', '300', '301'].includes(code)) {
     return 'SZ'
   }
   
-  // 上海市场
+  // Shanghai market
   if (['600', '601', '603', '605', '688', '689'].includes(code)) {
     return 'SH'
   }
   
-  // 北京市场
+  // beijing market
   if (['430', '830', '870'].includes(code)) {
     return 'BJ'
   }
@@ -130,10 +130,10 @@ export function inferMarketCode(symbol: string): string | null {
 }
 
 /**
- * 构建完整股票代码
- * @param symbol 6位股票代码
- * @param marketCode 市场代码（可选，如果不提供则自动推断）
- * @returns 完整代码（如 000001.SZ）
+ * Build a complete ticker
+ * @param symbol 6 stock code
+ * @param marketCode Market code (optional, automatically inferred if not provided)
+ * @returns Complete code (such as 000001.SZ)
  */
 export function buildFullSymbol(symbol: string, marketCode?: string): string {
   if (!symbol) return ''
@@ -148,9 +148,9 @@ export function buildFullSymbol(symbol: string, marketCode?: string): string {
 }
 
 /**
- * 批量转换对象中的股票代码字段
- * @param obj 包含股票代码的对象
- * @returns 转换后的对象（包含新旧字段）
+ * Batch convert ticker fields in objects
+ * @param obj Object containing a stock symbol
+ * @returns Converted object (contains old and new fields)
  */
 export function normalizeStockObject<T extends Record<string, any>>(obj: T): T {
   if (!obj) return obj
@@ -161,8 +161,8 @@ export function normalizeStockObject<T extends Record<string, any>>(obj: T): T {
     return {
       ...obj,
       symbol,
-      stock_code: symbol,  // 兼容字段
-      code: symbol         // 兼容字段
+      stock_code: symbol,  // Compatible fields
+      code: symbol         // Compatible fields
     }
   }
   
@@ -170,9 +170,9 @@ export function normalizeStockObject<T extends Record<string, any>>(obj: T): T {
 }
 
 /**
- * 批量转换对象数组中的股票代码字段
- * @param arr 对象数组
- * @returns 转换后的数组
+ * Batch convert stock code fields in object array
+ * @param arr object array
+ * @returns converted array
  */
 export function normalizeStockArray<T extends Record<string, any>>(arr: T[]): T[] {
   if (!Array.isArray(arr)) return arr

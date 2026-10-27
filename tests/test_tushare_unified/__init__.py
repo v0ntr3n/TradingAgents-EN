@@ -1,3 +1,3 @@
 """
-Tushare统一方案测试包
+Tushare Unified solution test package
 """

@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-美股数据同步服务（支持多数据源）
+U.S. stock data synchronization service (supports multiple data sources)
 
-功能：
-1. 从 yfinance 同步美股基础信息和行情
-2. 支持多数据源存储：同一股票可有多个数据源记录
-3. 使用 (code, source) 联合查询进行 upsert 操作
+Function:
+1. Synchronize basic information and market prices of US stocks from yfinance
+2. Supports multiple data source storage: the same stock can have multiple data source records
+3. Use (code, source) Union query performs upsert operation
 
-设计说明：
-- 参考A股多数据源同步服务设计（Tushare/AKShare/BaoStock）
-- 主要使用 yfinance 作为数据源
-- 批量更新操作提高性能
+Design description:
+- Refer to A-share multi-data source synchronization service design (Tushare/AKShare/BaoStock)
+- Mainly use yfinance as the data source
+- Batch update operations improve performance
 """
 
 import asyncio
@@ -20,7 +20,7 @@ from datetime import datetime
 from typing import List, Dict, Optional, Any
 from pymongo import UpdateOne
 
-# 导入美股数据提供器
+# Import US stock data provider
 import sys
 from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
@@ -34,29 +34,29 @@ logger = logging.getLogger(__name__)
 
 
 class USSyncService:
-    """美股数据同步服务（支持多数据源）"""
+    """U.S. stock data synchronization service (supports multiple data sources)"""
 
     def __init__(self):
         self.db = get_mongo_db()
         self.settings = settings
 
-        # 数据提供器
+        # data provider
         self.yfinance_provider = YFinanceUtils()
 
-        # 美股列表缓存（从 Finnhub 动态获取）
+        # US stock list cache (dynamically obtained from Finnhub)
         self.us_stock_list = []
         self._stock_list_cache_time = None
-        self._stock_list_cache_ttl = 3600 * 24  # 缓存24小时
+        self._stock_list_cache_ttl = 3600 * 24  # Cache for 24 hours
 
-        # Finnhub 客户端（延迟初始化）
+        # Finnhub Client (lazy initialization)
         self._finnhub_client = None
 
     async def initialize(self):
-        """初始化同步服务"""
-        logger.info("✅ 美股同步服务初始化完成")
+        """Initialize synchronization service"""
+        logger.info("✅ US stock synchronization service initialization completed")
 
     def _get_finnhub_client(self):
-        """获取 Finnhub 客户端（延迟初始化）"""
+        """Get Finnhub client (lazy initialization)"""
         if self._finnhub_client is None:
             try:
                 import finnhub
@@ -64,110 +64,110 @@ class USSyncService:
 
                 api_key = os.getenv('FINNHUB_API_KEY')
                 if not api_key:
-                    logger.warning("⚠️ 未配置 FINNHUB_API_KEY，无法使用 Finnhub 数据源")
+                    logger.warning("⚠️ FINNHUB_API_KEY is not configured and the Finnhub data source cannot be used")
                     return None
 
                 self._finnhub_client = finnhub.Client(api_key=api_key)
-                logger.info("✅ Finnhub 客户端初始化成功")
+                logger.info("✅ Finnhub Client initialization successful")
             except Exception as e:
-                logger.error(f"❌ Finnhub 客户端初始化失败: {e}")
+                logger.error(f"❌ Finnhub Client initialization failed: {e}")
                 return None
 
         return self._finnhub_client
 
     def _get_us_stock_list_from_finnhub(self) -> List[str]:
         """
-        从 Finnhub 获取所有美股列表
+        Get a list of all US stocks from Finnhub
 
         Returns:
-            List[str]: 美股代码列表
+            List[str]: US stock code list
         """
         try:
             from datetime import datetime, timedelta
 
-            # 检查缓存是否有效
+            # Check if cache is valid
             if (self.us_stock_list and self._stock_list_cache_time and
                 datetime.now() - self._stock_list_cache_time < timedelta(seconds=self._stock_list_cache_ttl)):
-                logger.debug(f"📦 使用缓存的美股列表: {len(self.us_stock_list)} 只")
+                logger.debug(f"📦 Use cached US stock list: {len(self.us_stock_list)} only")
                 return self.us_stock_list
 
-            logger.info("🔄 从 Finnhub 获取美股列表...")
+            logger.info("🔄 Get a list of US stocks from Finnhub...")
 
-            # 获取 Finnhub 客户端
+            # Get Finnhub client
             client = self._get_finnhub_client()
             if not client:
-                logger.warning("⚠️ Finnhub 客户端不可用，使用备用列表")
+                logger.warning("⚠️ Finnhub Client unavailable, use backup list")
                 return self._get_fallback_stock_list()
 
-            # 获取美股列表（US 交易所）
+            # Get the list of US stocks (US exchange)
             symbols = client.stock_symbols('US')
 
             if not symbols:
-                logger.warning("⚠️ Finnhub 返回空数据，使用备用列表")
+                logger.warning("⚠️ Finnhub Return empty data, use fallback list")
                 return self._get_fallback_stock_list()
 
-            # 提取股票代码列表（只保留普通股票，过滤掉 ETF、基金等）
+            # Extract a list of stock symbols (only keep common stocks, filter out ETFs, funds, etc.)
             stock_codes = []
             for symbol_info in symbols:
                 symbol = symbol_info.get('symbol', '')
                 symbol_type = symbol_info.get('type', '')
 
-                # 只保留普通股票（Common Stock）
+                # Only keep common stocks (Common Stock)
                 if symbol and symbol_type == 'Common Stock':
                     stock_codes.append(symbol)
 
-            logger.info(f"✅ 成功获取 {len(stock_codes)} 只美股（普通股）")
+            logger.info(f"✅ successfully obtained {len(stock_codes)} Only U.S. stocks (common stocks)")
 
-            # 更新缓存
+            # Update cache
             self.us_stock_list = stock_codes
             self._stock_list_cache_time = datetime.now()
 
             return stock_codes
 
         except Exception as e:
-            logger.error(f"❌ 从 Finnhub 获取美股列表失败: {e}")
-            logger.info("📋 使用备用美股列表")
+            logger.error(f"❌ Failed to obtain US stock list from Finnhub: {e}")
+            logger.info("📋 Use alternate US stock list")
             return self._get_fallback_stock_list()
 
     def _get_fallback_stock_list(self) -> List[str]:
         """
-        获取备用美股列表（主要美股标的）
+        Get the list of backup US stocks (main US stock targets)
 
         Returns:
-            List[str]: 美股代码列表
+            List[str]: US stock code list
         """
         return [
-            # 科技巨头
-            "AAPL",   # 苹果
-            "MSFT",   # 微软
-            "GOOGL",  # 谷歌
-            "AMZN",   # 亚马逊
+            # tech giants
+            "AAPL",   # apple
+            "MSFT",   # Microsoft
+            "GOOGL",  # Google
+            "AMZN",   # Amazon
             "META",   # Meta
-            "TSLA",   # 特斯拉
-            "NVDA",   # 英伟达
+            "TSLA",   # Tesla
+            "NVDA",   # NVIDIA
             "AMD",    # AMD
-            "INTC",   # 英特尔
-            "NFLX",   # 奈飞
-            # 金融
-            "JPM",    # 摩根大通
-            "BAC",    # 美国银行
-            "WFC",    # 富国银行
-            "GS",     # 高盛
-            "MS",     # 摩根士丹利
-            # 消费
-            "KO",     # 可口可乐
-            "PEP",    # 百事可乐
-            "WMT",    # 沃尔玛
-            "HD",     # 家得宝
-            "MCD",    # 麦当劳
-            # 医疗
-            "JNJ",    # 强生
-            "PFE",    # 辉瑞
-            "UNH",    # 联合健康
-            "ABBV",   # 艾伯维
-            # 能源
-            "XOM",    # 埃克森美孚
-            "CVX",    # 雪佛龙
+            "INTC",   # Intel
+            "NFLX",   # Netflix
+            # Finance
+            "JPM",    # JPMorgan Chase
+            "BAC",    # Bank of America
+            "WFC",    # Wells Fargo
+            "GS",     # Goldman Sachs
+            "MS",     # Morgan Stanley
+            # consumption
+            "KO",     # coca cola
+            "PEP",    # Pepsi
+            "WMT",    # Walmart
+            "HD",     # home depot
+            "MCD",    # McDonald's
+            # medical
+            "JNJ",    # Johnson & Johnson
+            "PFE",    # Pfizer
+            "UNH",    # UnitedHealth
+            "ABBV",   # AbbVie
+            # energy
+            "XOM",    # Exxon Mobil
+            "CVX",    # Chevron
         ]
 
     async def sync_basic_info_from_source(
@@ -176,69 +176,69 @@ class USSyncService:
         force_update: bool = False
     ) -> Dict[str, int]:
         """
-        从指定数据源同步美股基础信息
+        Synchronize basic U.S. stock information from specified data source
 
         Args:
-            source: 数据源名称 (默认 yfinance)
-            force_update: 是否强制更新（强制刷新股票列表）
+            source: Data source name (Default yfinance)
+            force_update: Whether to force update (forcibly refresh the stock list)
 
         Returns:
-            Dict: 同步统计信息 {updated: int, inserted: int, failed: int}
+            Dict: Sync statistics {updated: int, inserted: int, failed: int}
         """
         if source != "yfinance":
-            logger.error(f"❌ 不支持的数据源: {source}")
+            logger.error(f"❌ Unsupported data source: {source}")
             return {"updated": 0, "inserted": 0, "failed": 0}
 
-        # 如果强制更新，清除缓存
+        # If update is forced, clear cache
         if force_update:
             self._stock_list_cache_time = None
-            logger.info("🔄 强制刷新美股列表")
+            logger.info("🔄 Force refresh of US stock list")
 
-        # 获取美股列表（从 Finnhub 或缓存）
+        # Get US stock list (from Finnhub or cache)
         stock_list = self._get_us_stock_list_from_finnhub()
 
         if not stock_list:
-            logger.error("❌ 无法获取美股列表")
+            logger.error("❌ Unable to obtain US stock list")
             return {"updated": 0, "inserted": 0, "failed": 0}
 
-        logger.info(f"🇺🇸 开始同步美股基础信息 (数据源: {source})")
-        logger.info(f"📊 待同步股票数量: {len(stock_list)}")
+        logger.info(f"🇺🇸 Start synchronizing basic information of US stocks (data source: {source})")
+        logger.info(f"📊 Number of stocks to be synchronized: {len(stock_list)}")
 
         operations = []
         failed_count = 0
 
         for stock_code in stock_list:
             try:
-                # 从 yfinance 获取数据
+                # Get data from yfinance
                 stock_info = self.yfinance_provider.get_stock_info(stock_code)
                 
                 if not stock_info or not stock_info.get('shortName'):
-                    logger.warning(f"⚠️ 跳过无效数据: {stock_code}")
+                    logger.warning(f"⚠️ Skip invalid data: {stock_code}")
                     failed_count += 1
                     continue
                 
-                # 标准化数据格式
+                # standardized data format
                 normalized_info = self._normalize_stock_info(stock_info, source)
                 normalized_info["code"] = stock_code.upper()
                 normalized_info["source"] = source
                 normalized_info["updated_at"] = datetime.now()
                 
-                # 批量更新操作
+                # Batch update operation
                 operations.append(
                     UpdateOne(
-                        {"code": normalized_info["code"], "source": source},  # 🔥 联合查询条件
+                        {"code": normalized_info["code"], "source": source},  # 🔥 Union query conditions
                         {"$set": normalized_info},
                         upsert=True
                     )
                 )
                 
-                logger.debug(f"✅ 准备同步: {stock_code} ({stock_info.get('shortName')}) from {source}")
+                logger.debug(f"✅ Prepare to sync: {stock_code} ({stock_info.get('shortName')}) from {source}")
                 
             except Exception as e:
-                logger.error(f"❌ 同步失败: {stock_code} from {source}: {e}")
+                logger.error(f"❌ Sync failed: {stock_code} from {source}: {e}")
                 failed_count += 1
         
-        # 执行批量操作
+        # Perform batch operations
         result = {"updated": 0, "inserted": 0, "failed": failed_count}
         
         if operations:
@@ -248,29 +248,29 @@ class USSyncService:
                 result["inserted"] = bulk_result.upserted_count
                 
                 logger.info(
-                    f"✅ 美股基础信息同步完成 ({source}): "
-                    f"更新 {result['updated']} 条, "
-                    f"插入 {result['inserted']} 条, "
-                    f"失败 {result['failed']} 条"
+                    f"✅ Basic information on U.S. stocks is completed simultaneously ({source}): "
+                    f"update {result['updated']} Article, "
+                    f"Insert {result['inserted']} Article, "
+                    f"failed {result['failed']} Article"
                 )
             except Exception as e:
-                logger.error(f"❌ 批量写入失败: {e}")
+                logger.error(f"❌ Batch write failed: {e}")
                 result["failed"] += len(operations)
         
         return result
     
     def _normalize_stock_info(self, stock_info: Dict, source: str) -> Dict:
         """
-        标准化股票信息格式
+        Standardized stock information format
         
         Args:
-            stock_info: 原始股票信息
-            source: 数据源
+            stock_info: Original stock information
+            source: data source
         
         Returns:
-            Dict: 标准化后的股票信息
+            Dict: Standardized stock information
         """
-        # 提取通用字段
+        # Extract common fields
         normalized = {
             "name": stock_info.get("shortName", ""),
             "name_en": stock_info.get("longName", stock_info.get("shortName", "")),
@@ -280,9 +280,9 @@ class USSyncService:
             "area": stock_info.get("country", "US"),
         }
         
-        # 可选字段
+        # optional fields
         if "marketCap" in stock_info and stock_info["marketCap"]:
-            # 转换为亿美元
+            # Convert to billions of dollars
             normalized["total_mv"] = stock_info["marketCap"] / 100000000
         
         if "sector" in stock_info:
@@ -298,38 +298,38 @@ class USSyncService:
         source: str = "yfinance"
     ) -> Dict[str, int]:
         """
-        从指定数据源同步美股实时行情
+        Synchronize real-time quotes of U.S. stocks from designated data sources
         
         Args:
-            source: 数据源名称 (默认 yfinance)
+            source: Data source name (Default yfinance)
         
         Returns:
-            Dict: 同步统计信息
+            Dict: Sync statistics
         """
         if source != "yfinance":
-            logger.error(f"❌ 不支持的数据源: {source}")
+            logger.error(f"❌ Unsupported data source: {source}")
             return {"updated": 0, "inserted": 0, "failed": 0}
         
-        logger.info(f"🇺🇸 开始同步美股实时行情 (数据源: {source})")
+        logger.info(f"🇺🇸 Start synchronizing real-time quotes of US stocks (data source: {source})")
         
         operations = []
         failed_count = 0
         
         for stock_code in self.us_stock_list:
             try:
-                # 获取最近1天的数据作为实时行情
+                # Get the data of the last 1 day as real-time market price
                 import yfinance as yf
                 ticker = yf.Ticker(stock_code)
                 data = ticker.history(period="1d")
                 
                 if data.empty:
-                    logger.warning(f"⚠️ 跳过无效行情: {stock_code}")
+                    logger.warning(f"⚠️ Skip invalid quotes: {stock_code}")
                     failed_count += 1
                     continue
                 
                 latest = data.iloc[-1]
                 
-                # 标准化行情数据
+                # Standardized market data
                 normalized_quote = {
                     "code": stock_code.upper(),
                     "close": float(latest['Close']),
@@ -341,7 +341,7 @@ class USSyncService:
                     "updated_at": datetime.now()
                 }
                 
-                # 计算涨跌幅
+                # Calculate the increase or decrease
                 if normalized_quote["open"] > 0:
                     pct_chg = ((normalized_quote["close"] - normalized_quote["open"]) / normalized_quote["open"]) * 100
                     normalized_quote["pct_chg"] = round(pct_chg, 2)
@@ -354,13 +354,13 @@ class USSyncService:
                     )
                 )
                 
-                logger.debug(f"✅ 准备同步行情: {stock_code} (价格: {normalized_quote['close']} USD)")
+                logger.debug(f"✅ Prepare to sync the market: {stock_code} (price: {normalized_quote['close']} USD)")
                 
             except Exception as e:
-                logger.error(f"❌ 同步行情失败: {stock_code}: {e}")
+                logger.error(f"❌ Synchronized market failure: {stock_code}: {e}")
                 failed_count += 1
         
-        # 执行批量操作
+        # Perform batch operations
         result = {"updated": 0, "inserted": 0, "failed": failed_count}
         
         if operations:
@@ -370,24 +370,24 @@ class USSyncService:
                 result["inserted"] = bulk_result.upserted_count
                 
                 logger.info(
-                    f"✅ 美股行情同步完成: "
-                    f"更新 {result['updated']} 条, "
-                    f"插入 {result['inserted']} 条, "
-                    f"失败 {result['failed']} 条"
+                    f"✅ U.S. stock market trends completed simultaneously: "
+                    f"update {result['updated']} Article, "
+                    f"Insert {result['inserted']} Article, "
+                    f"failed {result['failed']} Article"
                 )
             except Exception as e:
-                logger.error(f"❌ 批量写入失败: {e}")
+                logger.error(f"❌ Batch write failed: {e}")
                 result["failed"] += len(operations)
         
         return result
 
 
-# ==================== 全局服务实例 ====================
+# ==================== Global service instance ====================
 
 _us_sync_service = None
 
 async def get_us_sync_service() -> USSyncService:
-    """获取美股同步服务实例"""
+    """Get an example of US stock synchronization service"""
     global _us_sync_service
     if _us_sync_service is None:
         _us_sync_service = USSyncService()
@@ -395,49 +395,49 @@ async def get_us_sync_service() -> USSyncService:
     return _us_sync_service
 
 
-# ==================== APScheduler 兼容的任务函数 ====================
+# ==================== APScheduler Compatible task functions ====================
 
 async def run_us_yfinance_basic_info_sync(force_update: bool = False):
-    """APScheduler任务：美股基础信息同步（yfinance）"""
+    """APScheduler Task: Synchronization of basic information on U.S. stocks (yfinance)"""
     try:
         service = await get_us_sync_service()
         result = await service.sync_basic_info_from_source("yfinance", force_update)
-        logger.info(f"✅ 美股基础信息同步完成 (yfinance): {result}")
+        logger.info(f"✅ Basic information on U.S. stocks is completed simultaneously (yfinance): {result}")
         return result
     except Exception as e:
-        logger.error(f"❌ 美股基础信息同步失败 (yfinance): {e}")
+        logger.error(f"❌ U.S. stock basic information synchronization failed (yfinance): {e}")
         raise
 
 
 async def run_us_yfinance_quotes_sync():
-    """APScheduler任务：美股实时行情同步（yfinance）"""
+    """APScheduler Task: Real-time market synchronization of U.S. stocks (yfinance)"""
     try:
         service = await get_us_sync_service()
         result = await service.sync_quotes_from_source("yfinance")
-        logger.info(f"✅ 美股实时行情同步完成: {result}")
+        logger.info(f"✅ U.S. stock real-time quotes are synchronized: {result}")
         return result
     except Exception as e:
-        logger.error(f"❌ 美股实时行情同步失败: {e}")
+        logger.error(f"❌ U.S. stock real-time quotation synchronization failed: {e}")
         raise
 
 
 async def run_us_status_check():
-    """APScheduler任务：美股数据源状态检查"""
+    """APScheduler Task: Check the status of US stock data source"""
     try:
         service = await get_us_sync_service()
-        # 刷新股票列表（如果缓存过期）
+        # Refresh the stock list (if cache expires)
         stock_list = service._get_us_stock_list_from_finnhub()
 
-        # 简单的状态检查：返回股票列表数量
+        # Simple status check: return stock list quantity
         result = {
             "status": "ok",
             "stock_count": len(stock_list),
             "data_source": "yfinance + finnhub",
             "timestamp": datetime.now().isoformat()
         }
-        logger.info(f"✅ 美股状态检查完成: {result}")
+        logger.info(f"✅ US stock status check completed: {result}")
         return result
     except Exception as e:
-        logger.error(f"❌ 美股状态检查失败: {e}")
+        logger.error(f"❌ US stock status check failed: {e}")
         return {"status": "error", "error": str(e)}
 

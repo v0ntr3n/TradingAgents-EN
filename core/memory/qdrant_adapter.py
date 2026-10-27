@@ -1,11 +1,11 @@
 """
-Qdrant 向量数据库适配器
+Qdrant Vector database adapter
 
-特性：
-- 完全线程安全（Rust 实现）
-- 支持本地模式（无需服务器）
-- 自动持久化
-- 支持元数据过滤
+Features:
+- Fully thread-safe (Rust implementation)
+- Supports local mode (no server required)
+- Automatic persistence
+- Supports metadata filtering
 """
 
 import logging
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class QdrantAdapter:
-    """Qdrant 向量数据库适配器"""
+    """Qdrant Vector database adapter"""
 
     _instance = None
     _initialized = False
@@ -39,59 +39,59 @@ class QdrantAdapter:
                 self.PointStruct = PointStruct
                 self.PointIdsList = PointIdsList
 
-                # 确定数据目录
+                # Determine data directory
                 data_dir = os.getenv("QDRANT_DATA_DIR", "./data/qdrant")
                 Path(data_dir).mkdir(parents=True, exist_ok=True)
 
-                # 创建本地客户端
+                # Create local client
                 self._client = QdrantClient(path=data_dir)
-                logger.info(f"✅ Qdrant 客户端初始化成功 (本地模式: {data_dir})")
+                logger.info(f"✅ Qdrant Client initialization successful (local mode: {data_dir})")
 
-                # 🔧 自动修复 meta.json：防止因并发写入或异常导致 collection 注册丢失
+                # 🔧 Automatically repair meta.json: prevent collection registration loss due to concurrent writing or exceptions
                 self._repair_meta_json(data_dir)
 
                 QdrantAdapter._initialized = True
 
             except ImportError:
-                logger.error("❌ Qdrant 未安装，请运行: pip install qdrant-client")
+                logger.error("❌ Qdrant Not installed, please run: pip install qdrant-client")
                 raise
             except Exception as e:
-                logger.error(f"❌ Qdrant 初始化失败: {e}")
+                logger.error(f"❌ Qdrant Initialization failed: {e}")
                 raise
 
     def get_or_create_collection(self, collection_name: str, vector_size: int = 1024):
         """
-        获取或创建集合
+        Get or create a collection
 
         Args:
-            collection_name: 集合名称
-            vector_size: 向量维度（默认 1024，兼容更多 embedding 模型）
+            collection_name: Collection name
+            vector_size: Vector dimension (default 1024, compatible with more embedding models)
 
         Returns:
-            QdrantCollection 实例
+            QdrantCollection Example
         """
         return QdrantCollection(self._client, collection_name, vector_size, self)
 
     def delete_collection(self, collection_name: str) -> bool:
         """
-        删除集合
+        Delete collection
 
         Args:
-            collection_name: 集合名称
+            collection_name: Collection name
 
         Returns:
-            是否成功
+            Is it successful?
         """
         try:
             self._client.delete_collection(collection_name)
-            logger.info(f"✅ Qdrant 集合已删除: {collection_name}")
+            logger.info(f"✅ Qdrant Collection deleted: {collection_name}")
             return True
         except Exception as e:
-            logger.error(f"❌ 删除 Qdrant 集合失败: {e}")
+            logger.error(f"❌ Deleting Qdrant collection failed: {e}")
             return False
 
     def list_collections(self) -> List[Dict[str, Any]]:
-        """列出所有 collection 及其信息（复用现有客户端，避免文件锁冲突）
+        """List all collections and their information (reuse existing clients to avoid file lock conflicts)
 
         Returns:
             [{name, point_count, dimensions}, ...]
@@ -107,20 +107,20 @@ class QdrantAdapter:
                         "dimensions": info.config.params.vectors.size if info.config.params.vectors else 0,
                     })
                 except Exception as e:
-                    logger.warning(f"⚠️ Qdrant 读取 collection {col.name} 信息失败: {e}")
+                    logger.warning(f"⚠️ Qdrant read collection {col.name} Message failed: {e}")
                     result.append({"name": col.name, "point_count": 0, "dimensions": 0})
         except Exception as e:
-            logger.error(f"❌ Qdrant 列出 collection 失败: {e}")
+            logger.error(f"❌ Qdrant Listing collection failed: {e}")
         return result
 
     def get_raw_client(self):
-        """获取底层 QdrantClient 实例（用于迁移等需要直接操作客户端的场景）"""
+        """Obtain the underlying QdrantClient instance (used for migration and other scenarios that require direct operation of the client)"""
         return self._client
 
     def _repair_meta_json(self, data_dir: str):
-        """自动修复 meta.json：将磁盘上存在但 meta.json 未注册的 collection 补回
+        """Automatically repair meta.json: Replace collections that exist on disk but are not registered in meta.json
         
-        防止因并发写入、进程异常退出或 Qdrant 版本升级导致 collection 注册信息丢失。
+        Prevent collection registration information from being lost due to concurrent writing, abnormal process exit, or Qdrant version upgrade.
         """
         import json, sqlite3, pickle
 
@@ -131,31 +131,31 @@ class QdrantAdapter:
             return
 
         try:
-            # 读取当前 meta.json
+            # Read current meta.json
             with open(meta_path, "r") as f:
                 meta = json.load(f)
 
             registered = set(meta.get("collections", {}).keys())
 
-            # 扫描磁盘上实际存在的 collection
+            # Scan the disk for actual collection
             on_disk = set()
             for name in os.listdir(collection_dir):
                 storage = os.path.join(collection_dir, name, "storage.sqlite")
                 if os.path.exists(storage):
                     on_disk.add(name)
 
-            # 找出孤儿 collection（磁盘存在但未注册）
+            # Find orphan collections (disks exist but are not registered)
             orphans = on_disk - registered
             if not orphans:
                 return
 
             logger.warning(
-                f"🔧 [Qdrant] 发现 {len(orphans)} 个孤儿 collection（磁盘存在但 meta.json 未注册），自动修复中..."
+                f"🔧 [Qdrant] discover {len(orphans)} Orphan collection (the disk exists but meta.json is not registered), which is being automatically repaired..."
             )
 
             for name in sorted(orphans):
                 storage = os.path.join(collection_dir, name, "storage.sqlite")
-                dims = 1024  # 默认维度
+                dims = 1024  # Default dimensions
                 try:
                     conn = sqlite3.connect(storage)
                     cur = conn.cursor()
@@ -184,19 +184,19 @@ class QdrantAdapter:
                     "quantization_config": None, "sparse_vectors": None,
                     "strict_mode_config": None, "metadata": None
                 }
-                logger.info(f"  ✅ 已修复: {name} ({dims}d)")
+                logger.info(f"  ✅ Fixed: {name} ({dims}d)")
 
-            # 写回 meta.json
+            # write back meta.json
             with open(meta_path, "w") as f:
                 json.dump(meta, f, indent=2)
-            logger.info(f"🔧 [Qdrant] meta.json 修复完成，恢复了 {len(orphans)} 个 collection")
+            logger.info(f"🔧 [Qdrant] meta.json Repair completed, restored {len(orphans)} a collection")
 
         except Exception as e:
-            logger.warning(f"⚠️ [Qdrant] meta.json 修复检查失败（忽略，不影响启动）: {e}")
+            logger.warning(f"⚠️ [Qdrant] meta.json Fix check failure (ignored, does not affect startup): {e}")
 
 
 class QdrantCollection:
-    """Qdrant 集合包装类，实现 VectorStoreInterface"""
+    """Qdrant Collection wrapper class, implementation VectorStoreInterface"""
 
     def __init__(self, client, collection_name: str, vector_size: int, adapter):
         self.client = client
@@ -204,7 +204,7 @@ class QdrantCollection:
         self.vector_size = vector_size
         self.adapter = adapter
 
-        # 检查集合是否存在
+        # Check if the collection exists
         collection_exists = False
         need_recreate = False
 
@@ -212,33 +212,33 @@ class QdrantCollection:
             collection_info = self.client.get_collection(collection_name)
             collection_exists = True
 
-            # 🔥 检查向量维度是否匹配
+            # 🔥 Check if vector dimensions match
             existing_vector_size = collection_info.config.params.vectors.size
             if existing_vector_size != vector_size:
                 logger.warning(
-                    f"⚠️ Qdrant 集合 {collection_name} 的向量维度不匹配！"
-                    f"现有: {existing_vector_size}, 需要: {vector_size}"
+                    f"⚠️ Qdrant collection {collection_name} The vector dimensions of do not match!"
+                    f"Existing: {existing_vector_size}, need: {vector_size}"
                 )
-                logger.info(f"🔄 将删除并重新创建集合...")
+                logger.info(f"🔄 The collection will be deleted and recreated...")
                 need_recreate = True
             else:
-                logger.debug(f"📂 Qdrant 集合已存在: {collection_name} (向量维度: {existing_vector_size})")
+                logger.debug(f"📂 Qdrant Collection already exists: {collection_name} (vector dimensions: {existing_vector_size})")
         except Exception as e:
-            # 集合不存在
-            logger.debug(f"📂 Qdrant 集合不存在: {collection_name}，将创建新集合")
+            # Collection does not exist
+            logger.debug(f"📂 Qdrant Collection does not exist: {collection_name}, New collection will be created")
 
-        # 如果需要重新创建，先删除旧集合
+        # If you need to recreate it, delete the old collection first
         if need_recreate:
             try:
                 self.client.delete_collection(collection_name)
-                logger.info(f"🗑️ 已删除旧集合: {collection_name} (维度: {existing_vector_size} -> {vector_size})")
+                logger.info(f"🗑️ Old collection deleted: {collection_name} (Dimensions: {existing_vector_size} -> {vector_size})")
                 collection_exists = False
             except Exception as e:
-                # 🔥 改进：即使删除失败，也尝试继续创建（可能会覆盖）
-                logger.warning(f"⚠️ 删除旧集合失败: {e}，将尝试直接创建新集合（可能会失败）")
-                # 不 raise，继续尝试创建
+                # 🔥 Improvement: try to continue creating even if deletion fails (possible overwriting)
+                logger.warning(f"⚠️ Failed to delete old collection: {e}, Will try to create the new collection directly (may fail)")
+                # Don't raise, keep trying to create
 
-        # 创建新集合（如果不存在）
+        # Create a new collection if it does not exist
         if not collection_exists or need_recreate:
             self.client.create_collection(
                 collection_name=collection_name,
@@ -247,7 +247,7 @@ class QdrantCollection:
                     distance=adapter.Distance.COSINE
                 )
             )
-            logger.info(f"✅ Qdrant 集合已创建: {collection_name} (向量维度: {vector_size})")
+            logger.info(f"✅ Qdrant Collection created: {collection_name} (vector dimensions: {vector_size})")
 
     def add(
         self,
@@ -256,14 +256,14 @@ class QdrantCollection:
         metadatas: List[Dict[str, Any]],
         ids: List[str]
     ) -> bool:
-        """添加文档"""
+        """Add document"""
         try:
-            logger.debug(f"🔒 [Qdrant] 准备添加文档 (collection={self.collection_name}, count={len(documents)})")
+            logger.debug(f"🔒 [Qdrant] Prepare to add documents (collection={self.collection_name}, count={len(documents)})")
 
-            # 构建 Qdrant 点
+            # Build Qdrant points
             points = []
             for i, (doc_id, embedding, metadata, document) in enumerate(zip(ids, embeddings, metadatas, documents)):
-                # 将文档内容也存入 payload
+                # Save the document content as well payload
                 payload = metadata.copy()
                 payload["document"] = document
 
@@ -274,54 +274,54 @@ class QdrantCollection:
                 )
                 points.append(point)
 
-            # 批量上传
+            # Bulk upload
             self.client.upsert(
                 collection_name=self.collection_name,
                 points=points
             )
 
-            logger.debug(f"✅ [Qdrant] 文档添加成功 (collection={self.collection_name}, count={len(documents)})")
+            logger.debug(f"✅ [Qdrant] Document added successfully (collection={self.collection_name}, count={len(documents)})")
             return True
 
         except Exception as e:
-            logger.error(f"❌ [Qdrant] 添加文档失败: {e}")
+            logger.error(f"❌ [Qdrant] Failed to add document: {e}")
             return False
 
     def delete_ids(self, ids: List[str]) -> bool:
-        """按文档 ID 删除点。"""
+        """Delete points by document ID."""
         if not ids:
             return True
         try:
-            logger.debug(f"🔒 [Qdrant] 准备按 ID 删除文档 (collection={self.collection_name}, count={len(ids)})")
+            logger.debug(f"🔒 [Qdrant] Prepare to delete documents by ID (collection={self.collection_name}, count={len(ids)})")
             self.client.delete(
                 collection_name=self.collection_name,
                 points_selector=self.adapter.PointIdsList(points=ids),
             )
-            logger.debug(f"✅ [Qdrant] 按 ID 删除文档成功 (collection={self.collection_name}, count={len(ids)})")
+            logger.debug(f"✅ [Qdrant] Delete document by ID successfully (collection={self.collection_name}, count={len(ids)})")
             return True
         except Exception as e:
-            logger.error(f"❌ [Qdrant] 按 ID 删除文档失败: {e}")
+            logger.error(f"❌ [Qdrant] Delete document by ID failed: {e}")
             return False
 
     def delete(self, ids: List[str]) -> bool:
-        """delete_ids 的别名（兼容 ChromaDB 风格的 delete 调用）。"""
+        """delete_ids Alias for (compatible with ChromaDB-style delete calls)."""
         return self.delete_ids(ids)
 
     def get(self, ids: List[str]) -> Dict[str, Any]:
-        """按 ID 批量检索点（ChromaDB 风格），用于读取签名 point 等元信息。
+        """Batch retrieval points by ID (ChromaDB style), used to read meta-information such as signature points.
 
-        返回格式与 query() 一致：
+        The return format is the same as query() Consistent:
             {
                 "documents": [...],
                 "metadatas": [...],
                 "ids": [...],
             }
-        不存在的 ID 会被跳过，返回结果只包含实际命中的点。
+        IDs that do not exist will be skipped, and the returned result will only contain the actual hit points.
         """
         if not ids:
             return {"documents": [], "metadatas": [], "ids": []}
         try:
-            # Qdrant 本地模式中 point ID 是 UUID 对象，需要转换字符串
+            # Qdrant In local mode, point ID is a UUID object and needs to be converted into a string.
             import uuid as uuid_module
             qdrant_ids = []
             for id_str in ids:
@@ -341,7 +341,7 @@ class QdrantCollection:
             result_ids = []
             for point in retrieved:
                 payload = point.payload or {}
-                # document 存在 payload["document"]，与 add() 一致
+                # document exist payload["document"], with add() consistent
                 document = payload.get("document", "")
                 metadata = {k: v for k, v in payload.items() if k != "document"}
                 documents.append(document)
@@ -353,7 +353,7 @@ class QdrantCollection:
                 "ids": result_ids,
             }
         except Exception as e:
-            logger.error(f"❌ [Qdrant] get 按 ID 检索失败 (collection={self.collection_name}): {e}")
+            logger.error(f"❌ [Qdrant] get Retrieval by ID failed (collection={self.collection_name}): {e}")
             return {"documents": [], "metadatas": [], "ids": []}
 
     def query(
@@ -362,23 +362,23 @@ class QdrantCollection:
         n_results: int = 5,
         where: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        """查询相似文档"""
+        """Query similar documents"""
         try:
-            logger.debug(f"🔒 [Qdrant] 准备查询 (collection={self.collection_name}, n_results={n_results})")
+            logger.debug(f"🔒 [Qdrant] Prepare query (collection={self.collection_name}, n_results={n_results})")
 
-            # Qdrant 只支持单个查询向量，取第一个
+            # Qdrant Only supports a single query vector, take the first one
             query_vector = query_embeddings[0] if query_embeddings else []
 
-            # 构建过滤条件
+            # Build filter conditions
             from qdrant_client.models import Filter, FieldCondition, MatchValue
 
             query_filter = None
             if where:
-                # 将 ChromaDB 风格的 where 转换为 Qdrant Filter
+                # Convert ChromaDB-style where to Qdrant Filter
                 conditions = []
                 for key, value in where.items():
                     if key == "$and":
-                        # 处理 $and 操作符
+                        # Process $and Operator
                         for condition in value:
                             for k, v in condition.items():
                                 conditions.append(
@@ -392,7 +392,7 @@ class QdrantCollection:
                 if conditions:
                     query_filter = Filter(must=conditions)
 
-            # 执行搜索（使用 query_points 方法，search 方法在 v1.16.0 中已被移除）
+            # Perform a search (using the query_points method, the search method was removed in v1.16.0)
             search_results = self.client.query_points(
                 collection_name=self.collection_name,
                 query=query_vector,
@@ -400,61 +400,61 @@ class QdrantCollection:
                 query_filter=query_filter
             )
 
-            logger.debug(f"✅ [Qdrant] 查询成功 (collection={self.collection_name}, results={len(search_results.points)})")
+            logger.debug(f"✅ [Qdrant] Query successful (collection={self.collection_name}, results={len(search_results.points)})")
 
-            # 转换为 ChromaDB 格式
+            # Convert to ChromaDB format
             documents = []
             metadatas = []
             distances = []
 
             for result in search_results.points:
-                # 提取文档内容
+                # Extract document content
                 document = result.payload.get("document", "")
                 documents.append(document)
 
-                # 提取元数据（移除 document 字段）
+                # Extract metadata (remove document field)
                 metadata = {k: v for k, v in result.payload.items() if k != "document"}
                 metadatas.append(metadata)
 
-                # Qdrant 返回的是相似度分数（越高越相似），转换为距离（越低越相似）
-                # 对于 COSINE 距离：distance = 1 - score
+                # Qdrant What is returned is the similarity score (the higher, the more similar), converted into distance (the lower, the more similar)
+                # For COSINE distance:distance = 1 - score
                 distance = 1.0 - result.score
                 distances.append(distance)
 
             return {
-                'documents': [documents],  # ChromaDB 格式是二维数组
+                'documents': [documents],  # ChromaDB The format is a two-dimensional array
                 'metadatas': [metadatas],
                 'distances': [distances]
             }
 
         except Exception as e:
-            logger.error(f"❌ [Qdrant] 查询失败: {e}")
+            logger.error(f"❌ [Qdrant] Query failed: {e}")
             return {'documents': [[]], 'metadatas': [[]], 'distances': [[]]}
 
     def count(self) -> int:
-        """获取文档数量"""
+        """Get the number of documents"""
         try:
-            logger.debug(f"🔒 [Qdrant] 准备获取文档数量 (collection={self.collection_name})")
+            logger.debug(f"🔒 [Qdrant] Prepare to obtain the number of documents (collection={self.collection_name})")
             collection_info = self.client.get_collection(self.collection_name)
             count = collection_info.points_count
-            logger.debug(f"✅ [Qdrant] 文档数量: {count}")
+            logger.debug(f"✅ [Qdrant] Number of documents: {count}")
             return count
         except Exception as e:
-            logger.error(f"❌ [Qdrant] 获取文档数量失败: {e}")
+            logger.error(f"❌ [Qdrant] Failed to get the number of documents: {e}")
             return 0
 
     def delete_collection(self) -> bool:
-        """删除集合"""
+        """Delete collection"""
         try:
-            logger.debug(f"🔒 [Qdrant] 准备删除集合 (collection={self.collection_name})")
+            logger.debug(f"🔒 [Qdrant] Prepare to delete collection (collection={self.collection_name})")
             self.client.delete_collection(self.collection_name)
-            logger.debug(f"✅ [Qdrant] 集合已删除 (collection={self.collection_name})")
+            logger.debug(f"✅ [Qdrant] Collection deleted (collection={self.collection_name})")
             return True
         except Exception as e:
-            logger.error(f"❌ [Qdrant] 删除集合失败: {e}")
+            logger.error(f"❌ [Qdrant] Failed to delete collection: {e}")
             return False
 
     def get_backend_name(self) -> str:
-        """获取后端名称"""
+        """Get backend name"""
         return "qdrant"
 

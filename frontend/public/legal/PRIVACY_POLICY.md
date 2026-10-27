@@ -1,178 +1,178 @@
-# TradingAgents-CN 隐私政策
+# TradingAgents-CN privacy policy
 
-**版本**: 1.0
-
----
-
-> ⚠️ **重要提示**: 本隐私政策为初稿，正式使用前请委托专业律师审核修订。
+**version**: 1.0
 
 ---
 
-## 一、引言
-
-TradingAgents-CN 平台（以下简称"本平台"）深知个人信息对用户的重要性，并会尽全力保护用户的个人信息安全。本《隐私政策》旨在向用户说明我们如何收集、使用、存储、共享和保护用户的个人信息。
-
-**请在使用本平台服务前，仔细阅读并充分理解本隐私政策。**
+> ⚠️ **Important tips**: This privacy policy is a preliminary draft. Please entrust a professional lawyer to review and revise it before official use.
 
 ---
 
-## 二、我们收集的信息
+## 1. Introduction
 
-### 2.1 用户主动提供的信息
+TradingAgents-CN Platform (hereinafter referred to as"This platform") We are fully aware of the importance of personal information to users and will do our best to protect the security of users' personal information. This Privacy Policy aims to explain to users how we collect, use, store, share and protect users' personal information.
 
-| 信息类型 | 具体内容 | 收集目的 |
+**Please read carefully and fully understand this Privacy Policy before using the services of this platform.**
+
+---
+
+## 2. Information we collect
+
+### 2.1 Information actively provided by users
+
+| Information type | Specific content | Collection purpose |
 |---------|---------|---------|
-| 注册信息 | 用户名、邮箱地址、密码 | 创建和管理账号 |
-| 付费信息 | 订单号、付费时间、订阅类型 | 处理付费和提供服务 |
-| 使用配置 | 自定义工作流、提示词模板、分析偏好 | 提供个性化服务 |
+| Registration information | Username, email address, password | Create and manage accounts |
+| Payment information | Order number, payment time, subscription type | Process payments and provide services |
+| Use configuration | Customized workflows, prompt word templates, and analysis preferences | Provide personalized service |
 
-### 2.2 自动收集的信息
+### 2.2 Information collected automatically
 
-| 信息类型 | 具体内容 | 收集目的 |
+| Information type | Specific content | Collection purpose |
 |---------|---------|---------|
-| 设备信息 | 操作系统类型、浏览器类型 | 优化产品兼容性 |
-| 使用日志 | 功能使用记录、分析任务记录 | 改进产品体验 |
-| 许可证信息 | 激活码状态、激活时间 | 许可证管理 |
+| Device information | Operating system type, browser type | Optimize product compatibility |
+| Usage log | Function usage records and analysis task records | Improve product experience |
+| License information | Activation code status, activation time | License management |
 
-### 2.3 我们不收集的信息
+### 2.3 Information we do not collect
 
-- ❌ 用户的投资账户信息
-- ❌ 用户的银行卡或支付密码
-- ❌ 用户的真实姓名和身份证号（除非法律要求）
-- ❌ 用户的精确地理位置
-- ❌ 用户设备上的其他应用信息
-
----
-
-## 三、信息的使用
-
-### 3.1 使用目的
-
-我们收集的信息仅用于以下目的：
-
-1. **提供服务** — 创建账号、处理分析请求、生成报告
-2. **改进产品** — 分析使用模式、优化功能体验
-3. **安全保障** — 防止欺诈、保护账号安全
-4. **客户支持** — 响应用户咨询和反馈
-5. **许可证管理** — 验证用户的订阅状态和功能权限
-6. **法律合规** — 遵守法律法规的要求
-
-### 3.2 使用原则
-
-- **最小必要原则** — 仅收集提供服务所必需的信息
-- **目的限制原则** — 不将信息用于收集时声明目的之外的用途
-- **公开透明原则** — 明确告知信息的收集和使用方式
+- ❌ User's investment account information
+- ❌ User's bank card or payment password
+- ❌ User's real name and ID number (unless required by law)
+- ❌ The user's precise geographical location
+- ❌ Other app information on the user's device
 
 ---
 
-## 四、信息的存储
+## 3. Use of information
 
-### 4.1 存储位置
+### 3.1 Purpose of use
 
-- **本地部署版本**：用户数据存储在用户自己的服务器或本地设备上，本平台不接触这些数据
-- **官网账号数据**：存储在本平台的服务器上，服务器位于中华人民共和国境内
+The information we collect is used only for the following purposes:
 
-### 4.2 存储期限
+1. **provide services** — Create accounts, handle analysis requests, and generate reports
+2. **Improve product** — Analyze usage patterns and optimize functional experience
+3. **Security** — Prevent fraud and protect account security
+4. **customer support** — Respond to user inquiries and feedback
+5. **License management** — Verify user's subscription status and feature permissions
+6. **Legal Compliance** — Comply with legal and regulatory requirements
 
-| 数据类型 | 存储期限 |
+### 3.2 Usage principles
+
+- **minimum necessary principle** — Only collect information necessary to provide the service
+- **purpose limitation principle** — Do not use information for purposes other than those stated at the time of collection
+- **openness and transparency** — Clearly inform how information is collected and used
+
+---
+
+## 4. Storage of information
+
+### 4.1 storage location
+
+- **Local deployment version**: User data is stored on the user's own server or local device, and the platform does not have access to this data
+- **Official website account data**: Stored on the server of this platform, the server is located in the People's Republic of China
+
+### 4.2 Storage period
+
+| data type | Storage period |
 |---------|---------|
-| 账号信息 | 账号存续期间及注销后 30 天 |
-| 使用日志 | 最长 12 个月 |
-| 付费记录 | 按照财务法规要求保存（通常 5 年） |
-| 分析报告 | 用户可自行删除，账号注销后 30 天内删除 |
+| Account information | Account duration and 30 days after cancellation |
+| Usage log | up to 12 months |
+| Payment record | Maintained as required by financial regulations (usually 5 years) |
+| analysis report | Users can delete it themselves, and the account will be deleted within 30 days after the account is canceled. |
 
-### 4.3 数据安全措施
+### 4.3 Data security measures
 
-我们采取以下措施保护用户数据：
+We take the following measures to protect user data:
 
-- 数据传输使用 HTTPS 加密
-- 密码使用 bcrypt 算法加密存储
-- 数据库访问需要认证授权
-- 定期进行安全审计和漏洞修复
-
----
-
-## 五、信息的共享
-
-### 5.1 我们不会共享的情况
-
-**我们不会将用户的个人信息出售、出租或交易给任何第三方。**
-
-### 5.2 可能共享的情况
-
-以下情况下，我们可能会共享用户信息：
-
-1. **获得用户明确同意后**
-2. **法律法规要求** — 根据法律法规、诉讼、政府主管部门的强制性要求
-3. **服务提供商** — 与协助我们提供服务的第三方共享必要信息（如支付处理），这些第三方受保密协议约束
+- Data transfer is encrypted using HTTPS
+- Passwords are encrypted and stored using the bcrypt algorithm
+- Database access requires authentication and authorization
+- Conduct regular security audits and vulnerability fixes
 
 ---
 
-## 六、用户权利
+## 5. Sharing of information
 
-### 6.1 用户享有以下权利
+### 5.1 What we don't share
 
-1. **查询权** — 查询我们持有的您的个人信息
-2. **更正权** — 更正不准确的个人信息
-3. **删除权** — 要求删除您的个人信息（法律要求保留的除外）
-4. **注销权** — 注销账号并删除相关数据
-5. **撤回同意权** — 撤回之前给予的同意（不影响撤回前的处理）
+**We will not sell, rent or trade our users' personal information to any third party.**
 
-### 6.2 行使权利的方式
+### 5.2 Possible sharing situations
 
-用户可通过以下方式行使上述权利：
+We may share user information under the following circumstances:
 
-- 在产品设置中自行操作
-- 发送邮件至 hsliup@163.com
-- 通过微信公众号联系客服
-
-我们将在收到请求后 **15 个工作日内** 处理并回复。
+1. **After obtaining the user's explicit consent**
+2. **Legal and regulatory requirements** — According to laws, regulations, litigation, and mandatory requirements of government authorities
+3. **service provider** — Sharing necessary information (such as payment processing) with third parties who assist us in providing our services and who are bound by confidentiality agreements
 
 ---
 
-## 七、未成年人保护
+## 6. User rights
 
-本平台的服务面向成年人。我们不会故意收集未满 18 周岁未成年人的个人信息。如果我们发现误收集了未成年人的信息，将立即删除。
+### 6.1 Users have the following rights
 
----
+1. **right of inquiry** — Inquire about the personal information we hold about you
+2. **Right of correction** — Correct inaccurate personal information
+3. **Right to erasure** — Request deletion of your personal information (unless required to be retained by law)
+4. **Right of cancellation** — Cancel account and delete related data
+5. **Right to withdraw consent** — Withdrawal of previously given consent (without affecting processing before withdrawal)
 
-## 八、Cookie 和类似技术
+### 6.2 Ways to exercise rights
 
-### 8.1 本地部署版本
+Users can exercise the above rights in the following ways:
 
-本地部署版本使用浏览器本地存储（localStorage）保存用户的登录状态和界面偏好设置，不使用第三方 Cookie。
+- Do it yourself in product settings
+- Send email to hsliup@163.com
+- Contact customer service through WeChat official account
 
-### 8.2 官网
-
-官网可能使用 Cookie 来：
-
-- 保持用户的登录状态
-- 记住用户的偏好设置
-- 进行基本的访问统计
-
-用户可以通过浏览器设置管理或删除 Cookie。
+After receiving the request we will **15 within working days** Process and reply.
 
 ---
 
-## 九、隐私政策的更新
+## 7. Protection of minors
 
-我们可能会不时更新本隐私政策。更新后的隐私政策将在本平台上公布，并通过适当方式通知用户。重大变更将通过邮件或站内通知的方式告知用户。
-
-用户在隐私政策更新后继续使用本平台服务的，视为接受更新后的隐私政策。
+The services of this platform are intended for adults. We do not knowingly collect personal information from minors under 18 years of age. If we discover that information from minors has been collected by mistake, it will be deleted immediately.
 
 ---
 
-## 十、联系我们
+## 8. Cookies and similar technologies
 
-如对本隐私政策有任何疑问、意见或建议，请通过以下方式联系我们：
+### 8.1 Local deployment version
 
-- **官网**: <https://www.tradingagentscn.com/>
-- **邮箱**: hsliup@163.com
-- **微信公众号**: TradingAgents-CN
+The local deployment version uses the browser's local storage (localStorage) to save the user's login status and interface preferences, and does not use third-party cookies.
+
+### 8.2 Official website
+
+The official website may use cookies to:
+
+- Keep user logged in
+- Remember user preferences
+- Perform basic access statistics
+
+Users can manage or delete cookies through browser settings.
+
+---
+
+## 9. Updates to Privacy Policy
+
+We may update this privacy policy from time to time. The updated privacy policy will be published on this platform and users will be notified through appropriate means. Major changes will be notified to users via email or on-site notifications.
+
+Users who continue to use the platform services after the privacy policy is updated will be deemed to have accepted the updated privacy policy.
+
+---
+
+## 10. Contact us
+
+If you have any questions, comments or suggestions about this privacy policy, please contact us through the following methods:
+
+- **Official website**: <https://www.tradingagentscn.com/>
+- **Email**: hsliup@163.com
+- **WeChat public account**: TradingAgents-CN
 - **GitHub**: <https://github.com/hsliuping/TradingAgents-CN>
 
-我们将在收到您的问题后尽快回复。
+We will respond as soon as possible after receiving your question.
 
 ---
 
-**TradingAgents-CN 运营团队**
+**TradingAgents-CN Operations team**

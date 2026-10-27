@@ -1,6 +1,6 @@
 /**
- * 多市场股票API
- * 支持A股的统一查询接口
+ * multi-market stocks API
+ * Supports unified query interface for A-shares
  */
 import request from './request'
 
@@ -56,7 +56,7 @@ export interface DailyQuote {
 }
 
 /**
- * 获取支持的市场列表
+ * Get a list of supported markets
  */
 export function getSupportedMarkets() {
   return request<{ markets: Market[] }>({
@@ -66,7 +66,7 @@ export function getSupportedMarkets() {
 }
 
 /**
- * 搜索股票（支持多市场）
+ * Search for stocks (multi-market supported)
  */
 export function searchStocks(market: string, query: string, limit: number = 20) {
   return request<{ stocks: StockInfo[]; total: number }>({
@@ -77,7 +77,7 @@ export function searchStocks(market: string, query: string, limit: number = 20) 
 }
 
 /**
- * 获取股票基础信息
+ * Get basic stock information
  */
 export function getStockInfo(market: string, code: string, source?: string) {
   return request<StockInfo>({
@@ -88,7 +88,7 @@ export function getStockInfo(market: string, code: string, source?: string) {
 }
 
 /**
- * 获取股票实时行情
+ * Get real-time stock quotes
  */
 export function getStockQuote(market: string, code: string) {
   return request<StockQuote>({
@@ -98,7 +98,7 @@ export function getStockQuote(market: string, code: string) {
 }
 
 /**
- * 获取股票历史K线数据
+ * Get stock historical K-line data
  */
 export function getStockDailyQuotes(
   market: string,

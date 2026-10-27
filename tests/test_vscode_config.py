@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-VSCode配置验证测试
-验证Python虚拟环境和项目配置是否正确
+VSCode Configuration verification test
+Verify that the Python virtual environment and project configuration are correct
 """
 
 import os
@@ -12,51 +12,51 @@ from pathlib import Path
 
 
 def test_python_environment():
-    """测试Python环境配置"""
-    print("🐍 Python环境验证")
+    """Test Python environment configuration"""
+    print("🐍 Python Environmental verification")
     print("=" * 50)
     
-    # 检查Python版本
-    print(f"Python版本: {sys.version}")
-    print(f"Python路径: {sys.executable}")
+    # Check Python version
+    print(f"Python version: {sys.version}")
+    print(f"Python path: {sys.executable}")
     
-    # 检查虚拟环境
+    # Check virtual environment
     venv_path = os.environ.get('VIRTUAL_ENV')
     if venv_path:
-        print(f"✅ 虚拟环境: {venv_path}")
+        print(f"✅ virtual environment: {venv_path}")
     else:
-        print("⚠️ 虚拟环境: 未激活")
+        print("⚠️ virtual environment: Not activated")
     
-    # 检查工作目录
-    print(f"工作目录: {os.getcwd()}")
+    # Check working directory
+    print(f"working directory: {os.getcwd()}")
     
-    # 检查是否在项目根目录
+    # Check if it is in the project root directory
     if os.path.exists('tradingagents') and os.path.exists('.env'):
-        print("✅ 在项目根目录")
+        print("✅ In the project root directory")
     else:
-        print("❌ 不在项目根目录")
+        print("❌ Not in the project root directory")
     
     return True
 
 
 def test_vscode_settings():
-    """测试VSCode设置文件"""
-    print("\n🔧 VSCode设置验证")
+    """Test VSCode settings file"""
+    print("\n🔧 VSCode Set up verification")
     print("=" * 50)
     
     settings_path = Path('.vscode/settings.json')
     
     if not settings_path.exists():
-        print("❌ .vscode/settings.json 不存在")
+        print("❌ .vscode/settings.json does not exist")
         return False
     
     try:
         with open(settings_path, 'r', encoding='utf-8') as f:
             settings = json.load(f)
         
-        print("✅ settings.json 格式正确")
+        print("✅ settings.json Correct format")
         
-        # 检查关键配置
+        # Check key configuration
         key_settings = {
             'python.defaultInterpreterPath': './env/Scripts/python.exe',
             'python.terminal.activateEnvironment': True,
@@ -69,54 +69,54 @@ def test_vscode_settings():
                 if actual == expected:
                     print(f"✅ {key}: {actual}")
                 else:
-                    print(f"⚠️ {key}: {actual} (期望: {expected})")
+                    print(f"⚠️ {key}: {actual} (Expectation: {expected})")
             else:
-                print(f"❌ 缺少配置: {key}")
+                print(f"❌ Missing configuration: {key}")
         
         return True
         
     except json.JSONDecodeError as e:
-        print(f"❌ settings.json 格式错误: {e}")
+        print(f"❌ settings.json Format error: {e}")
         return False
     except Exception as e:
-        print(f"❌ 读取settings.json失败: {e}")
+        print(f"❌ Failed to read settings.json: {e}")
         return False
 
 
 def test_virtual_env_path():
-    """测试虚拟环境路径"""
-    print("\n📁 虚拟环境路径验证")
+    """Test virtual environment path"""
+    print("\n📁 Virtual environment path verification")
     print("=" * 50)
     
-    # 检查虚拟环境目录
+    # Check the virtual environment directory
     env_dir = Path('env')
     if not env_dir.exists():
-        print("❌ env目录不存在")
+        print("❌ env Directory does not exist")
         return False
     
-    print("✅ env目录存在")
+    print("✅ env Directory exists")
     
-    # 检查Python可执行文件
+    # Check Python executable
     python_exe = env_dir / 'Scripts' / 'python.exe'
     if python_exe.exists():
-        print(f"✅ Python可执行文件: {python_exe}")
+        print(f"✅ Python executable file: {python_exe}")
     else:
-        print(f"❌ Python可执行文件不存在: {python_exe}")
+        print(f"❌ Python Executable file does not exist: {python_exe}")
         return False
     
-    # 检查pip
+    # Check pip
     pip_exe = env_dir / 'Scripts' / 'pip.exe'
     if pip_exe.exists():
-        print(f"✅ pip可执行文件: {pip_exe}")
+        print(f"✅ pip executable file: {pip_exe}")
     else:
-        print(f"❌ pip可执行文件不存在: {pip_exe}")
+        print(f"❌ pip Executable file does not exist: {pip_exe}")
     
     return True
 
 
 def test_package_imports():
-    """测试关键包导入"""
-    print("\n📦 关键包导入验证")
+    """Test key package import"""
+    print("\n📦 Key package import verification")
     print("=" * 50)
     
     packages = [
@@ -137,17 +137,17 @@ def test_package_imports():
             print(f"✅ {name}: v{version}")
             success_count += 1
         except ImportError:
-            print(f"❌ {name}: 未安装")
+            print(f"❌ {name}: Not installed")
         except Exception as e:
-            print(f"⚠️ {name}: 导入错误 - {e}")
+            print(f"⚠️ {name}: import error - {e}")
     
-    print(f"\n📊 包导入结果: {success_count}/{len(packages)} 成功")
-    return success_count >= len(packages) * 0.8  # 80%成功率
+    print(f"\n📊 Package import results: {success_count}/{len(packages)} success")
+    return success_count >= len(packages) * 0.8  # 80%success rate
 
 
 def test_project_structure():
-    """测试项目结构"""
-    print("\n📂 项目结构验证")
+    """Test project structure"""
+    print("\n📂 Project structure verification")
     print("=" * 50)
     
     required_dirs = [
@@ -165,37 +165,37 @@ def test_project_structure():
         '.gitignore'
     ]
     
-    # 检查目录
+    # Check directory
     for dir_name in required_dirs:
         if os.path.exists(dir_name):
-            print(f"✅ 目录: {dir_name}")
+            print(f"✅ Directory: {dir_name}")
         else:
-            print(f"❌ 目录: {dir_name}")
+            print(f"❌ Directory: {dir_name}")
     
-    # 检查文件
+    # Check files
     for file_name in required_files:
         if os.path.exists(file_name):
-            print(f"✅ 文件: {file_name}")
+            print(f"✅ File: {file_name}")
         else:
-            print(f"❌ 文件: {file_name}")
+            print(f"❌ File: {file_name}")
     
     return True
 
 
 def test_environment_variables():
-    """测试环境变量"""
-    print("\n🔑 环境变量验证")
+    """Test environment variables"""
+    print("\n🔑 Environment variable verification")
     print("=" * 50)
     
-    # 读取.env文件
+    # Read .env file
     env_file = Path('.env')
     if not env_file.exists():
-        print("❌ .env文件不存在")
+        print("❌ .env File does not exist")
         return False
     
-    print("✅ .env文件存在")
+    print("✅ .env File exists")
     
-    # 检查关键环境变量
+    # Check key environment variables
     key_vars = [
         'DASHSCOPE_API_KEY',
         'TUSHARE_TOKEN',
@@ -208,57 +208,57 @@ def test_environment_variables():
         if value:
             print(f"✅ {var}: {'*' * 10}{value[-4:] if len(value) > 4 else '****'}")
         else:
-            print(f"⚠️ {var}: 未设置")
+            print(f"⚠️ {var}: not set")
     
     return True
 
 
 def test_simple_functionality():
-    """测试基本功能"""
-    print("\n⚡ 基本功能验证")
+    """Test basic functionality"""
+    print("\n⚡ Basic functional verification")
     print("=" * 50)
     
     try:
-        # 测试TradingAgents导入
+        # Test TradingAgents import
         from tradingagents.llm_adapters import ChatDashScopeOpenAI
-        print("✅ TradingAgents LLM适配器导入成功")
+        print("✅ TradingAgents LLM Adapter imported successfully")
         
-        # 测试数据流导入
+        # Test data flow import
         from tradingagents.dataflows import get_china_stock_data_unified
-        print("✅ TradingAgents数据流导入成功")
+        print("✅ TradingAgents Data flow imported successfully")
         
-        # 测试图形导入
+        # Test graphic import
         from tradingagents.graph.trading_graph import TradingAgentsGraph
-        print("✅ TradingAgents图形导入成功")
+        print("✅ TradingAgents Graphics imported successfully")
         
         return True
         
     except Exception as e:
-        print(f"❌ 功能测试失败: {e}")
+        print(f"❌ Functional test failed: {e}")
         return False
 
 
 def main():
-    """主测试函数"""
-    print("🔬 VSCode配置验证测试")
+    """Main test function"""
+    print("🔬 VSCode Configuration verification test")
     print("=" * 70)
-    print("💡 验证目标:")
-    print("   - Python虚拟环境配置")
-    print("   - VSCode设置文件")
-    print("   - 项目结构完整性")
-    print("   - 关键包导入")
-    print("   - 环境变量配置")
+    print("💡 Verify target:")
+    print("   - Python Virtual environment configuration")
+    print("   - VSCode settings file")
+    print("   - Project structural integrity")
+    print("   - Key package import")
+    print("   - Environment variable configuration")
     print("=" * 70)
     
-    # 运行所有测试
+    # Run all tests
     tests = [
-        ("Python环境", test_python_environment),
-        ("VSCode设置", test_vscode_settings),
-        ("虚拟环境路径", test_virtual_env_path),
-        ("包导入", test_package_imports),
-        ("项目结构", test_project_structure),
-        ("环境变量", test_environment_variables),
-        ("基本功能", test_simple_functionality)
+        ("Python environment", test_python_environment),
+        ("VSCode settings", test_vscode_settings),
+        ("virtual environment path", test_virtual_env_path),
+        ("Package import", test_package_imports),
+        ("Project structure", test_project_structure),
+        ("environment variables", test_environment_variables),
+        ("Basic functions", test_simple_functionality)
     ]
     
     results = []
@@ -267,42 +267,42 @@ def main():
             result = test_func()
             results.append((test_name, result))
         except Exception as e:
-            print(f"❌ {test_name}测试异常: {e}")
+            print(f"❌ {test_name}Test exception: {e}")
             results.append((test_name, False))
     
-    # 总结
-    print("\n📋 VSCode配置验证总结")
+    # Summary
+    print("\n📋 VSCode Configuration verification summary")
     print("=" * 60)
     
     passed = 0
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{test_name}: {status}")
         if result:
             passed += 1
     
     total = len(results)
-    print(f"\n📊 测试结果: {passed}/{total} 通过")
+    print(f"\n📊 Test results: {passed}/{total} Pass")
     
     if passed == total:
-        print("\n🎉 VSCode配置完全正确！")
-        print("\n💡 现在您可以:")
-        print("   ✅ 在VSCode中正常开发和调试")
-        print("   ✅ 使用集成终端运行Python代码")
-        print("   ✅ 运行测试和格式化代码")
-        print("   ✅ 使用智能代码补全和错误检查")
+        print("\n🎉 VSCode The configuration is completely correct!")
+        print("\n💡 Now you can:")
+        print("   ✅ Develop and debug normally in VSCode")
+        print("   ✅ Run Python code using the integrated terminal")
+        print("   ✅ Run tests and format code")
+        print("   ✅ Use smart code completion and error checking")
     elif passed >= total * 0.8:
-        print("\n✅ VSCode配置基本正确！")
-        print("⚠️ 部分功能可能需要调整")
+        print("\n✅ VSCode The configuration is basically correct!")
+        print("⚠️ Some functions may need to be adjusted")
     else:
-        print("\n⚠️ VSCode配置需要修复")
-        print("请检查失败的项目并重新配置")
+        print("\n⚠️ VSCode Configuration needs fixing")
+        print("Please check the failed project and reconfigure")
     
-    print("\n🎯 使用建议:")
-    print("   1. 确保在VSCode中选择了正确的Python解释器")
-    print("   2. 重启VSCode以应用新的配置")
-    print("   3. 使用Ctrl+Shift+P -> 'Python: Select Interpreter'")
-    print("   4. 在集成终端中验证虚拟环境已激活")
+    print("\n🎯 Usage suggestions:")
+    print("   1. Make sure the correct Python interpreter is selected in VSCode")
+    print("   2. Restart VSCode to apply the new configuration")
+    print("   3. Use Ctrl+Shift+P -> 'Python: Select Interpreter'")
+    print("   4. Verify that the virtual environment is activated in the integrated terminal")
 
 
 if __name__ == "__main__":

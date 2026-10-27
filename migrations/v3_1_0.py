@@ -1,11 +1,11 @@
 """
-v3.1.0 migration - Agent 工坊运行时字段补齐
+v3.1.0 migration - Agent Field completion during workshop runtime
 
-迁移内容：
-1. agent_configs: 补齐 output_field / workflow_stage / report_label / show_in_reports / node_name / execution_order / callable_surfaces
-2. prompt_templates: 将 agent_type="custom_agent" 的工坊模板迁移为 agent_type="universal"
+Migrate content:
+1. agent_configs: complete output_field / workflow_stage / report_label / show_in_reports / node_name / execution_order / callable_surfaces
+2. prompt_templates: will agent_type="custom_agent" The workshop template is migrated to agent_type="universal"
 
-所有操作必须幂等（可安全多次运行）。
+All operations must be idempotent (safe to run multiple times).
 """
 
 import logging
@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 logger = logging.getLogger("migrations.v3_1_0")
 
 VERSION = "3.1.0"
-DESCRIPTION = "Agent 工坊运行时字段补齐：agent_configs 字段补全 + Prompt 模板 agent_type 迁移"
+DESCRIPTION = "Agent Field completion during workshop runtime: agent_configs field completion + Prompt Template agent_type migration"
 
 
 def _now_iso() -> str:
@@ -22,7 +22,7 @@ def _now_iso() -> str:
 
 
 async def _migrate_agent_configs(db):
-    """补齐 agent_configs 中缺失的运行时字段"""
+    """Complete missing runtime fields in agent_configs"""
     collection = db["agent_configs"]
     migrated = 0
 
@@ -30,12 +30,12 @@ async def _migrate_agent_configs(db):
         updates = {}
         unset_fields = {}
 
-        # 顶层字段补齐
-        # 🔥 output_field 必须唯一，否则多个工坊 Agent 共用 analysis_report
-        # 会导致运行时 state 互相覆盖 + 聚合器去重后只剩第一个
+        # Top-level field completion
+        # 🔥 output_field Must be unique, otherwise it will be shared by multiple workshop Agents analysis_report
+        # Will cause runtime state to overwrite each other + After the aggregator removes duplicates, only the first one remains
         if not doc.get("output_field"):
             agent_id = doc.get("agent_id", "")
-            # 从 agent_id 生成唯一字段名：取末尾段 + _report
+            # Generate unique field name from agent_id: take the last segment + _report
             if agent_id:
                 tail = agent_id.replace("_v1", "").replace("_v2", "").split("_")[-1]
                 default_output_field = f"{tail}_report"
@@ -56,7 +56,7 @@ async def _migrate_agent_configs(db):
         if not doc.get("callable_surfaces"):
             updates["callable_surfaces"] = ["assistant", "workflow", "agent_workshop"]
 
-        # metadata 字段补齐
+        # metadata Field completion
         meta = doc.get("metadata", {})
         meta_updates = {}
         if not meta.get("workflow_stage"):
@@ -84,26 +84,26 @@ async def _migrate_agent_configs(db):
             migrated += 1
 
     if migrated:
-        logger.info("v3.1.0 migration: agent_configs 补齐 %d 条记录", migrated)
+        logger.info("v3.1.0 migration: agent_configs Complete %d records", migrated)
     else:
-        logger.info("v3.1.0 migration: agent_configs 无需补齐")
+        logger.info("v3.1.0 migration: agent_configs No need to complete")
 
 
 async def _migrate_prompt_templates(db):
-    """将 agent_type="custom_agent" 的工坊模板迁移为 agent_type="universal"
+    """will agent_type="custom_agent" The workshop template is migrated to agent_type="universal"
 
-    同时确保 agent_name 与 version_id 一致（如果缺失则尝试从 remark 推断）。
+    Also make sure agent_name is consistent with version_id (try inferring from remark if missing).
     """
     collection = db["prompt_templates"]
     migrated = 0
 
-    # 查找 agent_type="custom_agent" 的模板
+    # Find agent_type="custom_agent" template
     async for doc in collection.find({"agent_type": "custom_agent"}):
         updates = {
             "agent_type": "universal",
             "updated_at": _now_iso(),
         }
-        # 如果 workflow_id 存在，清掉（UniversalAgent 查询时不带 workflow_id）
+        # If workflow_id exists, clear it (UniversalAgent does not include workflow_id when querying)
         if doc.get("workflow_id"):
             updates["workflow_id"] = None
         if doc.get("node_id"):
@@ -116,25 +116,25 @@ async def _migrate_prompt_templates(db):
         migrated += 1
 
     if migrated:
-        logger.info("v3.1.0 migration: prompt_templates 迁移 %d 条 custom_agent → universal", migrated)
+        logger.info("v3.1.0 migration: prompt_templates Migrate %d items custom_agent → universal", migrated)
     else:
-        logger.info("v3.1.0 migration: prompt_templates 无需迁移")
+        logger.info("v3.1.0 migration: prompt_templates No need to migrate")
 
 
 async def upgrade(db):
-    """执行 v3.1.0 迁移"""
-    logger.info("v3.1.0 migration: 开始 Agent 工坊运行时字段补齐")
+    """Perform v3.1.0 migration"""
+    logger.info("v3.1.0 migration: Start field completion when running Agent Workshop")
     await _migrate_agent_configs(db)
     await _migrate_prompt_templates(db)
-    logger.info("v3.1.0 migration: 完成")
+    logger.info("v3.1.0 migration: Complete")
 
 
 async def downgrade(db):
-    """回滚 v3.1.0 迁移（仅回滚 prompt_templates 的 agent_type）"""
-    logger.info("v3.1.0 migration: 开始回滚")
+    """Rollback v3.1.0 migration (rollback agent_type of prompt_templates only)"""
+    logger.info("v3.1.0 migration: Start rollback")
     collection = db["prompt_templates"]
     result = await collection.update_many(
-        {"agent_type": "universal", "remark": {"$regex": "Agent 工坊"}},
+        {"agent_type": "universal", "remark": {"$regex": "Agent workshop"}},
         {"$set": {"agent_type": "custom_agent", "updated_at": _now_iso()}},
     )
-    logger.info("v3.1.0 migration: 回滚 %d 条 prompt_templates", result.modified_count)
+    logger.info("v3.1.0 migration: Rollback %d items prompt_templates", result.modified_count)

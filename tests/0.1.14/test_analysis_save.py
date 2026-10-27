@@ -1,94 +1,94 @@
 #!/usr/bin/env python3
 """
-测试分析结果保存功能
-模拟分析完成后的保存过程
+Test analysis result saving function
+Saving process after simulation analysis is completed
 """
 
 import sys
 import os
 from datetime import datetime
 
-# 添加项目路径
+# Add project path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'web'))
 
 def create_mock_analysis_results():
-    """创建模拟的分析结果数据"""
+    """Create simulated analysis results data"""
     return {
         'stock_symbol': 'TEST123',
         'analysis_date': '2025-07-31',
         'analysts': ['market_analyst', 'fundamentals_analyst', 'trader_agent'],
         'research_depth': 3,
         'state': {
-            'market_report': """# TEST123 股票技术分析报告
+            'market_report': """# TEST123 Stock Technical Analysis Report
 
-## 📈 价格趋势分析
-当前股价呈现上涨趋势，技术指标向好。
+## 📈 Price trend analysis
+The current stock price is showing an upward trend and the technical indicators are improving.
 
-## 📊 技术指标
-- RSI: 65.2 (偏强)
-- MACD: 金叉向上
-- 成交量: 放量上涨
+## 📊 Technical indicators
+- RSI: 65.2 (Stronger)
+- MACD: golden cross upward
+- Volume: Rising on heavy volume
 
-## 🎯 操作建议
-建议在回调时买入，目标价位上涨15%。
+## 🎯 Operation suggestions
+It is recommended to buy on a pullback with a target price increase of 15%.
 """,
-            'fundamentals_report': """# TEST123 基本面分析报告
+            'fundamentals_report': """# TEST123 Fundamental Analysis Report
 
-## 💰 财务状况
-公司财务状况良好，盈利能力强。
+## 💰 financial condition
+The company s financial position is good and its profitability is strong.
 
-## 📊 关键指标
+## 📊 key indicators
 - ROE: 18.5%
-- PE: 15.2倍
-- 净利润增长: 15.2%
+- PE: 15.2 times
+- Net profit growth: 15.2%
 
-## 💡 投资价值
-估值合理，具有投资价值。
+## 💡 investment value
+The valuation is reasonable and has investment value.
 """,
-            'final_trade_decision': """# TEST123 最终分析结果
+            'final_trade_decision': """# TEST123 Final analysis results
 
-## 🎯 投资建议
-**行动**: 买入
-**置信度**: 85%
-**目标价格**: 上涨15-20%
+## 🎯 investment advice
+**action**: buy
+**Confidence**: 85%
+**target price**: rise 15-20%
 
-## 💡 决策依据
-基于技术面和基本面综合分析，建议买入。
+## 💡 Decision basis
+Based on comprehensive analysis of technical and fundamental aspects, it is recommended to buy.
 """
         },
         'decision': {
             'action': 'buy',
             'confidence': 0.85,
             'target_price': 'up 15-20%',
-            'reasoning': '技术面和基本面都支持买入决策'
+            'reasoning': 'Both technical and fundamental factors support a buying decision'
         },
-        'summary': 'TEST123股票综合分析显示具有良好投资潜力，建议买入。'
+        'summary': 'TEST123 Comprehensive analysis of the stock shows that it has good investment potential and it is recommended to buy.'
     }
 
 def test_save_analysis_result():
-    """测试保存分析结果"""
-    print("🧪 测试分析结果保存功能")
+    """Test save analysis results"""
+    print("🧪 Test analysis result saving function")
     print("=" * 40)
     
     try:
-        # 导入保存函数
+        # Import save function
         from web.components.analysis_results import save_analysis_result
         
-        # 创建模拟数据
+        # Create simulated data
         analysis_id = f"test_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         stock_symbol = "TEST123"
         analysts = ['market_analyst', 'fundamentals_analyst', 'trader_agent']
         research_depth = 3
         result_data = create_mock_analysis_results()
         
-        print(f"📝 测试数据:")
-        print(f"   分析ID: {analysis_id}")
-        print(f"   股票代码: {stock_symbol}")
-        print(f"   分析师: {analysts}")
-        print(f"   研究深度: {research_depth}")
+        print(f"📝 test data:")
+        print(f"   analysis ID: {analysis_id}")
+        print(f"   Stock code: {stock_symbol}")
+        print(f"   analyst: {analysts}")
+        print(f"   Research depth: {research_depth}")
         
-        # 执行保存
-        print(f"\n💾 开始保存分析结果...")
+        # Execute save
+        print(f"\n💾 Start saving analysis results...")
         success = save_analysis_result(
             analysis_id=analysis_id,
             stock_symbol=stock_symbol,
@@ -99,26 +99,26 @@ def test_save_analysis_result():
         )
         
         if success:
-            print("✅ 分析结果保存成功！")
+            print("✅ Analysis results saved successfully!")
             
-            # 检查文件是否创建
-            print(f"\n📁 检查保存的文件:")
+            # Check if file is created
+            print(f"\n📁 Check saved files:")
             
-            # 检查JSON文件
+            # Check JSON file
             from web.components.analysis_results import get_analysis_results_dir
             results_dir = get_analysis_results_dir()
             json_file = results_dir / f"analysis_{analysis_id}.json"
             
             if json_file.exists():
-                print(f"✅ JSON文件已创建: {json_file}")
+                print(f"✅ JSON File created: {json_file}")
             else:
-                print(f"❌ JSON文件未找到: {json_file}")
+                print(f"❌ JSON File not found: {json_file}")
             
-            # 检查详细报告目录
+            # Check detailed report table of contents
             import os
             from pathlib import Path
             
-            # 获取项目根目录
+            # Get the project root directory
             project_root = Path(__file__).parent
             results_dir_env = os.getenv("TRADINGAGENTS_RESULTS_DIR", "./data/analysis_results")
             
@@ -130,80 +130,80 @@ def test_save_analysis_result():
             analysis_date = datetime.now().strftime('%Y-%m-%d')
             reports_dir = detailed_results_dir / stock_symbol / analysis_date / "reports"
             
-            print(f"📂 详细报告目录: {reports_dir}")
+            print(f"📂 Detailed report directory: {reports_dir}")
             
             if reports_dir.exists():
-                print("✅ 详细报告目录已创建")
+                print("✅ Detailed report directory created")
                 
-                # 列出报告文件
+                # List report files
                 report_files = list(reports_dir.glob("*.md"))
                 if report_files:
-                    print(f"📄 报告文件 ({len(report_files)} 个):")
+                    print(f"📄 report file ({len(report_files)} a):")
                     for file in report_files:
                         print(f"   - {file.name}")
                 else:
-                    print("⚠️ 报告目录存在但无文件")
+                    print("⚠️ Report directory exists but no files")
             else:
-                print(f"❌ 详细报告目录未创建: {reports_dir}")
+                print(f"❌ Detailed report directory not created: {reports_dir}")
             
         else:
-            print("❌ 分析结果保存失败")
+            print("❌ Failed to save analysis results")
         
         return success
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_mongodb_save():
-    """测试MongoDB保存"""
-    print(f"\n🗄️ 测试MongoDB保存...")
+    """Test MongoDB save"""
+    print(f"\n🗄️ Test MongoDB save...")
     
     try:
         from web.utils.mongodb_report_manager import mongodb_report_manager
         
         if not mongodb_report_manager.connected:
-            print("❌ MongoDB未连接")
+            print("❌ MongoDB Not connected")
             return False
         
-        # 获取当前记录数
+        # Get the current number of records
         before_count = len(mongodb_report_manager.get_analysis_reports(limit=1000))
-        print(f"📊 保存前MongoDB记录数: {before_count}")
+        print(f"📊 Number of MongoDB records before saving: {before_count}")
         
-        # 执行测试保存
+        # Execute test save
         test_save_analysis_result()
         
-        # 获取保存后记录数
+        # Get the number of records after saving
         after_count = len(mongodb_report_manager.get_analysis_reports(limit=1000))
-        print(f"📊 保存后MongoDB记录数: {after_count}")
+        print(f"📊 Number of MongoDB records after saving: {after_count}")
         
         if after_count > before_count:
-            print("✅ MongoDB记录增加，保存成功")
+            print("✅ MongoDB The record is added and saved successfully")
             return True
         else:
-            print("⚠️ MongoDB记录数未增加")
+            print("⚠️ MongoDB The number of records has not increased")
             return False
             
     except Exception as e:
-        print(f"❌ MongoDB测试失败: {e}")
+        print(f"❌ MongoDB test failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("🧪 分析结果保存功能测试")
+    """Main test function"""
+    print("🧪 Analysis result saving function test")
     print("=" * 50)
     
-    # 测试基本保存功能
+    # Test basic save functionality
     save_success = test_save_analysis_result()
     
-    # 测试MongoDB保存
+    # Test MongoDB save
     mongodb_success = test_mongodb_save()
     
-    print(f"\n🎉 测试完成")
-    print(f"📄 文件保存: {'✅ 成功' if save_success else '❌ 失败'}")
-    print(f"🗄️ MongoDB保存: {'✅ 成功' if mongodb_success else '❌ 失败'}")
+    print(f"\n🎉 Test completed")
+    print(f"📄 File saving: {'✅ success' if save_success else '❌ failed'}")
+    print(f"🗄️ MongoDB save: {'✅ success' if mongodb_success else '❌ failed'}")
 
 if __name__ == "__main__":
     main()

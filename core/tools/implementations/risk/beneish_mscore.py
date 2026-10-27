@@ -1,4 +1,4 @@
-"""Beneish M-Score 盈余操纵概率评估工具"""
+"""Beneish M-Score Earnings Manipulation Probability Assessment Tool"""
 
 import json
 import logging
@@ -33,14 +33,14 @@ def _safe_div(numerator, denominator) -> float | None:
 def _match_financial_period_by_year(
     fin_periods: list[dict], year: int
 ) -> dict | None:
-    """从财务期间数据中匹配指定年份的年报记录"""
+    """Match annual report records for a specified year from financial period data"""
     for record in fin_periods:
         report_period = str(record.get("report_period") or record.get("report_date") or "")
         report_type = str(record.get("report_type") or "").lower()
-        # 年报类型过滤
+        # Annual report type filter
         if report_type and report_type not in ("annual", "yearly", "年报"):
             continue
-        # 从 report_period 提取年份（格式如 20231231）
+        # Extract the year from report_period (format such as 20231231)
         clean = report_period.replace("-", "").replace("/", "")
         if len(clean) >= 8 and clean[:4] == str(year):
             return record
@@ -50,8 +50,8 @@ def _match_financial_period_by_year(
 @tool
 @register_tool(
     tool_id="get_beneish_mscore",
-    name="Beneish M-Score 盈余操纵概率",
-    description="基于Beneish M-Score模型评估公司盈余操纵概率，通过8个财务比率的变化检测潜在盈余管理行为。",
+    name="Beneish M-Score Probability of earnings manipulation",
+    description="Evaluate the company s earnings manipulation probability based on the Beneish M-Score model, and detect potential earnings management behavior through changes in eight financial ratios.",
     category="fundamentals",
     is_online=False,
     auto_register=True,
@@ -60,45 +60,45 @@ def _match_financial_period_by_year(
     tool_role_hint="specialized",
     output_shape="structured_json",
     preferred_for=["accounting_fraud_detection"],
-    when_to_use="当需要评估公司盈余质量、识别潜在会计操纵或财务造假风险时使用。",
-    when_not_to_use="M-Score不能替代深度尽职调查；高分仅表示操纵概率较高，需结合其他信息综合判断。",
-    returns="返回JSON字符串，包含m_score、interpretation、threshold、components和data_quality。",
+    when_to_use="Used when it is necessary to evaluate the company s earnings quality and identify potential accounting manipulation or financial fraud risks.",
+    when_not_to_use="M-Score It cannot replace in-depth due diligence; a high score only indicates a higher probability of manipulation, which requires comprehensive judgment combined with other information.",
+    returns="Returns a JSON string, including m_score, interpretation, threshold, components and data_quality.",
     example="get_beneish_mscore(symbol='600519')",
     related_tools=["get_altman_zscore", "get_piotroski_fscore"],
 )
-def get_beneish_mscore(symbol: Annotated[str, "A 股股票代码，如 600519、000001"]) -> str:
-    """计算 Beneish M-Score 盈余操纵概率。通过8个财务比率变化检测潜在盈余管理行为。
+def get_beneish_mscore(symbol: Annotated[str, "A stock code, such as 600519,000001"]) -> str:
+    """Calculate the Beneish M-Score probability of earnings manipulation. Detect potential earnings management behavior through changes in 8 financial ratios.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
+        symbol: A stock code, such as 600519,000001
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: "error" 时存在；成功时不包含该字段
-            symbol: 标的股票代码
-            m_score: M-Score 评分（高于阈值 -1.78 表示操纵概率较高）
-            interpretation: 解读文案，"盈余操纵概率较高" | "盈余操纵概率较低"
-            threshold: 判定阈值（-1.78）
-            components: dict，8 个分量，每个分量为 {value, weight, contribution}——
-                — dsri: 应收账款周转天数指数
-                — gmi: 毛利率指数
-                — aqi: 资产质量指数
-                — sgi: 销售增长指数
-                — depi: 折旧指数（默认 1.0）
-                — sgai: 销售管理费用指数（默认 1.0）
-                — tata: 总应计项目 / 总资产
-                — lvgi: 杠杆指数
-            data_quality: dict，数据质量——
-                — years_available: 可用年报年数
-                — depi_defaulted: 折旧指数是否使用默认值
-                — sgai_defaulted: 销售管理费用指数是否使用默认值
-                — warnings: list[str]，告警信息
-            message: 当 status 为 "error" 时的错误描述
+        str: JSON String, field description——
+            status: "error" exists; this field is not included when successful
+            symbol: Underlying stock code
+            m_score: M-Score Score (above threshold -1.78 indicates higher probability of manipulation)
+            interpretation: Interpret the text,"The probability of earnings manipulation is high" | "The probability of earnings manipulation is low"
+            threshold: Decision threshold (-1.78)
+            components: dict, 8 components, each component is {value, weight, contribution}——
+                — dsri: Accounts receivable turnover days index
+                — gmi: gross profit index
+                — aqi: Asset Quality Index
+                — sgi: sales growth index
+                — depi: Depreciation index (default 1.0)
+                — sgai: Sales and administrative expense index (default 1.0)
+                — tata: Total accruals/total assets
+                — lvgi: Leverage Index
+            data_quality: dict, Data quality——
+                — years_available: Number of years of annual reports available
+                — depi_defaulted: Whether to use the default value for the depreciation index
+                — sgai_defaulted: Whether to use the default value for the sales and management expense index
+                — warnings: list[str], Alarm information
+            message: When status is "error" error description when
     """
     try:
         warnings: list[str] = []
 
-        # 获取年报序列（需要当前年 + 前一年）
+        # Get the annual report sequence (requires the current year + previous year)
         annual_data = get_historical_financial_annual_series(symbol, years=3)
         records = annual_data.get("records") or []
         warnings.extend(annual_data.get("warnings") or [])
@@ -107,7 +107,7 @@ def get_beneish_mscore(symbol: Annotated[str, "A 股股票代码，如 600519、
             return json.dumps(
                 {
                     "status": "error",
-                    "message": f"年报数据不足，仅获取到 {len(records)} 年数据，需要至少2年",
+                    "message": f"There is insufficient data in the annual report and only the {len(records)} Annual data, at least 2 years required",
                     "symbol": symbol,
                 },
                 ensure_ascii=False, indent=2, default=str,
@@ -119,13 +119,13 @@ def get_beneish_mscore(symbol: Annotated[str, "A 股股票代码，如 600519、
         current_year = current.get("year")
         prior_year = prior.get("year")
 
-        # 获取财务期间数据（用于 accounts_receiv 和 total_cur_assets）
+        # Get financial period data (for accounts_receiv and total_cur_assets)
         fin_periods = get_stock_financial_periods(symbol, limit=30)
 
         fin_cur = _match_financial_period_by_year(fin_periods, current_year) if current_year else None
         fin_prior = _match_financial_period_by_year(fin_periods, prior_year) if prior_year else None
 
-        # 从年报序列提取基础字段
+        # Extract basic fields from annual report sequence
         revenue_cur = _safe_float(current.get("revenue"))
         revenue_prior = _safe_float(prior.get("revenue"))
         net_profit_cur = _safe_float(current.get("net_profit"))
@@ -137,16 +137,16 @@ def get_beneish_mscore(symbol: Annotated[str, "A 股股票代码，如 600519、
         gm_cur = _safe_float(current.get("gross_margin"))
         gm_prior = _safe_float(prior.get("gross_margin"))
 
-        # 从财务期间数据提取 accounts_receiv 和 total_cur_assets
+        # Extract accounts_receiv and total_cur_assets
         ar_cur = _safe_float(fin_cur.get("accounts_receiv")) if fin_cur else None
         ar_prior = _safe_float(fin_prior.get("accounts_receiv")) if fin_prior else None
         tca_cur = _safe_float(fin_cur.get("total_cur_assets")) if fin_cur else None
         tca_prior = _safe_float(fin_prior.get("total_cur_assets")) if fin_prior else None
 
         if ar_cur is None or ar_prior is None:
-            warnings.append("应收账款数据缺失，DSRI使用默认值1.0")
+            warnings.append("Accounts receivable data is missing, DSRI uses default values 1.0")
         if tca_cur is None or tca_prior is None:
-            warnings.append("流动资产数据缺失，AQI使用默认值1.0")
+            warnings.append("Current asset data is missing and AQI uses default values.1.0")
 
         # ---- DSRI: Days Sales in Receivables Index ----
         dsri_ratio_cur = _safe_div(ar_cur, revenue_cur)
@@ -157,7 +157,7 @@ def get_beneish_mscore(symbol: Annotated[str, "A 股股票代码，如 600519、
         gmi = _safe_div(gm_prior, gm_cur) if gm_cur is not None and gm_prior is not None else 1.0
 
         # ---- AQI: Asset Quality Index ----
-        # 近似: (non_current / total_assets)_t / (non_current / total_assets)_t-1
+        # Approximately: (non_current / total_assets)_t / (non_current / total_assets)_t-1
         nc_ratio_cur = (
             _safe_div((ta_cur or 0) - (tca_cur or 0), ta_cur)
             if ta_cur is not None and tca_cur is not None
@@ -177,12 +177,12 @@ def get_beneish_mscore(symbol: Annotated[str, "A 股股票代码，如 600519、
         depi = 1.0
         depi_defaulted = True
         if depi_defaulted:
-            warnings.append("折旧指数(DEPI)使用默认值1.0，因缺乏折旧数据")
+            warnings.append("depreciation index(DEPI)Use the default value of 1.0 due to lack of depreciation data")
 
         # ---- SGAI: SG&A Index ----
-        # 缺乏 admin_exp 数据，默认1.0
+        # Lack of admin_exp data, default 1.0
         sgai = 1.0
-        warnings.append("销售管理费用指数(SGAI)使用默认值1.0，因缺乏管理费用数据")
+        warnings.append("Sales and administrative expense index(SGAI)Use the default value of 1.0 due to lack of overhead data")
 
         # ---- TATA: Total Accruals to Total Assets ----
         tata = _safe_div(
@@ -195,7 +195,7 @@ def get_beneish_mscore(symbol: Annotated[str, "A 股股票代码，如 600519、
         lvgi_ratio_prior = _safe_div(tl_prior, ta_prior)
         lvgi = _safe_div(lvgi_ratio_cur, lvgi_ratio_prior) if lvgi_ratio_cur is not None and lvgi_ratio_prior is not None else 1.0
 
-        # 8个变量与权重
+        # 8 variables and weights
         variables = {
             "dsri": {"value": dsri or 0.0, "weight": 0.92},
             "gmi": {"value": gmi or 0.0, "weight": 0.528},
@@ -207,7 +207,7 @@ def get_beneish_mscore(symbol: Annotated[str, "A 股股票代码，如 600519、
             "lvgi": {"value": lvgi or 0.0, "weight": -0.327},
         }
 
-        # 计算 M-Score
+        # Calculate M-Score
         m_score = -4.84
         components = {}
         for key, item in variables.items():
@@ -244,7 +244,7 @@ def get_beneish_mscore(symbol: Annotated[str, "A 股股票代码，如 600519、
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("Beneish M-Score计算失败: %s", exc, exc_info=True)
+        logger.error("Beneish M-Score Calculation failed: %s", exc, exc_info=True)
         return json.dumps(
             {"status": "error", "message": str(exc)},
             ensure_ascii=False, indent=2, default=str,

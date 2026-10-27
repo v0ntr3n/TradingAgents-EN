@@ -1,4 +1,4 @@
-"""基本面财报工具测试。"""
+"""Fundamental financial reporting tool testing."""
 
 import pandas as pd
 
@@ -12,7 +12,7 @@ def _mock_financial_payload() -> dict:
     return {
         "ticker": "000001",
         "market_info": {
-            "market_name": "中国A股",
+            "market_name": "China A shares",
             "is_china": True,
         },
         "data_source": "mock_cache",
@@ -127,11 +127,11 @@ class TestFinancialStatementTools:
             effective_analysis_date="2024-09-30",
         )
 
-        assert "样本窗口: 2021-10-01 至 2024-09-30" in result
-        assert "当前尚无 2024-10-01 的估值分析所需的当日收盘后日频数据，本次分析按前一可用交易日 2024-09-30 的口径执行。" in result
-        assert "PE(TTM): 当前 10.50 倍" in result
-        assert "PB: 当前 1.10 倍" in result
-        assert "PEG: 当前工具未提供稳定的日频 PEG 历史序列" in result
+        assert "sample window: 2021-10-01 to 2024-09-30" in result
+        assert "There is currently no post-closing daily frequency data required for the valuation analysis of 2024-10-01. This analysis is performed based on the caliber of the previous available trading day, 2024-09-30." in result
+        assert "PE(TTM): Current 10.50 times" in result
+        assert "PB: Current 1.10 times" in result
+        assert "PEG: The current tool does not provide stable daily PEG historical series" in result
 
     def test_load_recent_financial_data_prefers_db_cache(self, monkeypatch):
         db_payload = _mock_financial_payload()
@@ -143,11 +143,11 @@ class TestFinancialStatementTools:
 
         class ForbiddenTushareProvider:
             def get_financial_data(self, *args, **kwargs):
-                raise AssertionError("命中数据库后不应调用 Tushare")
+                raise AssertionError("should not be called after hitting the database Tushare")
 
         class ForbiddenAKShareProvider:
             def get_financial_data(self, *args, **kwargs):
-                raise AssertionError("命中数据库后不应调用 AKShare")
+                raise AssertionError("should not be called after hitting the database AKShare")
 
         monkeypatch.setattr(
             "tradingagents.dataflows.optimized_china_data.OptimizedChinaDataProvider",
@@ -174,7 +174,7 @@ class TestFinancialStatementTools:
             market_info = StockUtils.get_market_info(ticker)
 
             assert market_info["is_china"] is True
-            assert market_info["market_name"] == "中国A股"
+            assert market_info["market_name"] == "China A shares"
 
     def test_tools_registered(self):
         registry = ToolRegistry()
@@ -191,16 +191,16 @@ class TestFinancialStatementTools:
 
         result = fundamentals_tools.get_financial_statements.invoke({"ticker": "000001", "limit": 4})
 
-        assert "最近3个季度财报明细" in result
+        assert "Financial report details for the last three quarters" in result
         assert "2024-09-30" in result
-        assert "利润表（单季度推导）" in result
-        assert "利润表（原始报告期累计/快照）" in result
-        assert "资产负债表" in result
-        assert "核心财务指标" in result
-        assert "报告期净资产收益率 ROE" in result
-        assert "营业总收入（单季度推导）: 9.00亿元" in result
-        assert "归母净利润（单季度推导）: 1.80亿元" in result
-        assert "单季度净利率（推导）: 20.00%" in result
+        assert "Income statement (single quarter derivation)" in result
+        assert "Income Statement (original reporting period cumulative/snapshot)" in result
+        assert "balance sheet" in result
+        assert "core financial indicators" in result
+        assert "Return on net assets during the reporting period ROE" in result
+        assert "Total operating income (single quarter derivation): 9.00 billion" in result
+        assert "Net profit attributable to parent company (single quarter derivation): 1.80 billion" in result
+        assert "Single quarter net profit margin (derivation): 20.00%" in result
 
     def test_financial_statements_prefer_grossprofit_margin_over_raw_gross_margin(self, monkeypatch):
         monkeypatch.setattr(
@@ -211,7 +211,7 @@ class TestFinancialStatementTools:
 
         result = fundamentals_tools.get_financial_statements.invoke({"ticker": "000001", "limit": 4})
 
-        assert "报告期毛利率: 26.80%" in result
+        assert "Gross profit margin during the reporting period: 26.80%" in result
         assert "139609610.88%" not in result
 
     def test_financial_statement_tools_prefer_db_loaded_payload(self, monkeypatch):
@@ -229,8 +229,8 @@ class TestFinancialStatementTools:
         cash_flow_result = fundamentals_tools.get_cash_flow_statement.invoke({"ticker": "000001.SZ", "limit": 4})
 
         assert captured == [("000001.SZ", 5), ("000001.SZ", 5)]
-        assert "**数据来源**: optimized_cache" in financial_result
-        assert "**数据来源**: optimized_cache" in cash_flow_result
+        assert "**Data source**: optimized_cache" in financial_result
+        assert "**Data source**: optimized_cache" in cash_flow_result
 
     def test_cash_flow_output(self, monkeypatch):
         monkeypatch.setattr(
@@ -241,11 +241,11 @@ class TestFinancialStatementTools:
 
         result = fundamentals_tools.get_cash_flow_statement.invoke({"ticker": "000001", "limit": 4})
 
-        assert "现金流量表" in result
-        assert "经营活动现金流量净额（单季度推导）: 5.50亿元" in result
-        assert "投资活动现金流量净额（单季度推导）: -3.50亿元" in result
-        assert "单季度经营现金净额/归母净利润（推导）: 3.06 倍" in result
-        assert "报告期累计经营现金净额/归母净利润" in result
+        assert "cash flow statement" in result
+        assert "Net cash flow from operating activities (single quarter derivation): 5.50 billion" in result
+        assert "Net cash flow from investing activities (single quarter derivation): -3.50 billion" in result
+        assert "Net operating cash in a single quarter/net profit attributable to parent company (derivation): 3.06 times" in result
+        assert "Cumulative net operating cash/net profit attributable to parent company during the reporting period" in result
 
     def test_single_quarter_derivation_helpers(self):
         records_by_period = {
@@ -282,8 +282,8 @@ class TestFinancialStatementTools:
     def test_unified_fundamentals_unknown_market_does_not_fall_back_to_us(self):
         result = fundamentals_tools.get_stock_fundamentals_unified.invoke({"ticker": "INVALID.CODE"})
 
-        assert "未识别到受支持的股票市场" in result
-        assert "美股基本面数据" not in result
+        assert "No supported stock market recognized" in result
+        assert "U.S. stock fundamentals data" not in result
 
     def test_unified_fundamentals_prefers_db_snapshot_for_china(self, monkeypatch):
         captured = {}
@@ -293,16 +293,16 @@ class TestFinancialStatementTools:
                 captured["ticker"] = ticker
                 captured["stock_data"] = stock_data
                 captured["analysis_modules"] = analysis_modules
-                return "## 📊 股票基本信息\n- **股票代码**: 000001\n- **股票名称**: 平安银行\n- **当前股价**: 12.34\n- **总市值**: 1234亿元\n\nmock fundamentals"
+                return "## 📊 Basic stock information\n- **Stock code**: 000001\n- **Stock name**: Ping An Bank\n- **current stock price**: 12.34\n- **Total market capitalization**: 1234 billion\n\nmock fundamentals"
 
         monkeypatch.setattr(
             "tradingagents.dataflows.cache.app_adapter.get_basics_from_cache",
             lambda ticker: {
                 "code": ticker,
-                "name": "平安银行",
-                "area": "深圳",
-                "industry": "银行",
-                "market": "主板",
+                "name": "Ping An Bank",
+                "area": "Shenzhen",
+                "industry": "bank",
+                "market": "motherboard",
                 "list_date": "19910403",
             },
         )
@@ -314,7 +314,7 @@ class TestFinancialStatementTools:
         )
         monkeypatch.setattr(
             "tradingagents.dataflows.interface.get_china_stock_data_unified",
-            lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("不应回退到行情 provider")),
+            lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("Should not fall back to the market provider")),
         )
         monkeypatch.setattr(
             "tradingagents.dataflows.optimized_china_data.OptimizedChinaDataProvider",
@@ -324,27 +324,27 @@ class TestFinancialStatementTools:
             fundamentals_tools,
             "_get_historical_valuation_summary",
             lambda ticker, curr_date, lookback_years=3: (
-                "- 最近可用估值快照日期: 2026-04-20\n"
-                "- PE(TTM): 当前 12.30 倍（2026-04-20） | 历史中位数 10.00 倍 | 历史分位 70.0% | 历史位置: 历史中高位"
+                "- Last available valuation snapshot date: 2026-04-20\n"
+                "- PE(TTM): Current 12.30 times (2026-04-20) | Historical median 10.00 times | historical quantile 70.0% | historical location: High in history"
             ),
         )
 
         result = fundamentals_tools.get_stock_fundamentals_unified.invoke({"ticker": "000001.SZ"})
 
-        assert "平安银行" in result
-        assert "A股公司基础信息" in result
-        assert "A股基本面分析口径说明" in result
-        assert "当前价格: 12.34" not in result
-        assert "涨跌幅: +1.23%" not in result
-        assert "- **当前股价**:" not in result
-        assert "- **总市值**:" not in result
+        assert "Ping An Bank" in result
+        assert "A Basic company information" in result
+        assert "A Explanation of stock fundamental analysis caliber" in result
+        assert "current price: 12.34" not in result
+        assert "Increase or decrease: +1.23%" not in result
+        assert "- **current stock price**:" not in result
+        assert "- **Total market capitalization**:" not in result
         assert "mock fundamentals" in result
-        assert "A股历史估值分位" in result
-        assert "历史分位 70.0%" in result
-        assert "估值快照口径" in result
-        assert "本次采用的估值快照日期" in result
-        assert "最近可用估值快照日期" in result
+        assert "A Stock historical valuation quantile" in result
+        assert "historical quantile 70.0%" in result
+        assert "Valuation snapshot caliber" in result
+        assert "The valuation snapshot date adopted this time" in result
+        assert "Last available valuation snapshot date" in result
         assert captured["ticker"] == "000001"
-        assert "股票代码: 000001" in captured["stock_data"]
-        assert "当前价格" not in captured["stock_data"]
+        assert "Stock code: 000001" in captured["stock_data"]
+        assert "current price" not in captured["stock_data"]
         assert captured["analysis_modules"] == "standard"

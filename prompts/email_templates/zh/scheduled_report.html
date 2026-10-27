@@ -37,38 +37,38 @@
 </head>
 <body>
   <div class="container">
-    <!-- 头部 -->
+    <!-- head -->
     <div class="header">
-      <div class="title">📅 定时分析报告</div>
+      <div class="title">📅 Regular analysis report</div>
       <div class="subtitle">{{ task_name }} | {{ analysis_time }}</div>
     </div>
     
-    <!-- 任务信息 -->
+    <!-- Mission information -->
     <div class="task-info">
-      <p><strong>任务名称：</strong>{{ task_name }}</p>
-      <p><strong>分析股票数：</strong>{{ total_count }} 只</p>
-      <p><strong>执行时间：</strong>{{ analysis_time }}</p>
+      <p><strong>Task name:</strong>{{ task_name }}</p>
+      <p><strong>Number of stocks analyzed:</strong>{{ total_count }} only</p>
+      <p><strong>Execution time:</strong>{{ analysis_time }}</p>
     </div>
     
-    <!-- 汇总统计 -->
+    <!-- Summary statistics -->
     <div class="summary">
       <div class="stat buy">
         <div class="stat-value">{{ buy_count }}</div>
-        <div class="stat-label">建议买入</div>
+        <div class="stat-label">Recommended to buy</div>
       </div>
       <div class="stat hold">
         <div class="stat-value">{{ hold_count }}</div>
-        <div class="stat-label">建议持有</div>
+        <div class="stat-label">Recommended to hold</div>
       </div>
       <div class="stat sell">
         <div class="stat-value">{{ sell_count }}</div>
-        <div class="stat-label">建议卖出</div>
+        <div class="stat-label">Recommended to sell</div>
       </div>
     </div>
     
-    <!-- 股票列表 -->
+    <!-- stock list -->
     <div class="section">
-      <div class="section-title">分析结果</div>
+      <div class="section-title">Analyze results</div>
       <ul class="stock-list">
         {% for stock in stocks[:10] %}
         <li class="stock-item">
@@ -81,25 +81,25 @@
         {% endfor %}
         {% if stocks|length > 10 %}
         <li class="stock-item" style="justify-content: center; color: #999;">
-          还有 {{ stocks|length - 10 }} 只股票，点击下方按钮查看完整报告
+          Also {{ stocks|length - 10 }} stocks, click the button below to view the full report
         </li>
         {% endif %}
       </ul>
     </div>
     
-    <!-- 查看详情按钮 -->
+    <!-- View details button -->
     {% if detail_url %}
     <div class="cta">
-      <a href="{{ detail_url }}" class="btn">查看完整报告</a>
+      <a href="{{ detail_url }}" class="btn">View full report</a>
     </div>
     {% endif %}
     
-    <!-- 页脚 -->
+    <!-- footer -->
     <div class="footer">
-      <p>此邮件由 TradingAgents-CN 定时任务自动发送</p>
-      <p>如需退订，请在应用设置中关闭邮件通知</p>
+      <p>This email is automatically sent by TradingAgents-CN scheduled task</p>
+      <p>To unsubscribe, please turn off email notifications in the app settings</p>
       <p class="disclaimer">
-        ⚠️ 免责声明：以上分析仅供参考，不构成投资建议。投资有风险，决策需谨慎。
+        ⚠️ Disclaimer: The above analysis is for reference only and does not constitute investment advice. Investment is risky and decisions need to be made with caution.
       </p>
     </div>
   </div>

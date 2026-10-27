@@ -1,4 +1,4 @@
-"""L4 项目长期记忆服务。"""
+"""L4 Project long-term memory service."""
 
 from __future__ import annotations
 

@@ -2,54 +2,54 @@
   <div class="reviewable-trades-table">
     <el-empty
       v-if="!loading && stocks.length === 0"
-      description="暂无可复盘的交易。请先在模拟交易中进行买卖操作。"
+      description="There are currently no transactions to review. Please perform buying and selling operations in simulated trading first."
     >
-      <el-button type="primary" @click="goToPaperTrading">前往模拟交易</el-button>
+      <el-button type="primary" @click="goToPaperTrading">Go to simulated trading</el-button>
     </el-empty>
 
     <el-table v-else :data="stocks" v-loading="loading" stripe>
-      <el-table-column prop="code" label="股票代码" width="110">
+      <el-table-column prop="code" label="Stock code" width="110">
         <template #default="{ row }">
           <el-link type="primary" :href="`/stocks/${row.code}`" class="stock-link">
             {{ row.code }}
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column prop="name" label="股票名称" width="120" show-overflow-tooltip>
+      <el-table-column prop="name" label="Stock name" width="120" show-overflow-tooltip>
         <template #default="{ row }">
           <el-link type="primary" :href="`/stocks/${row.code}`" class="stock-link">
             {{ row.name || '-' }}
           </el-link>
         </template>
       </el-table-column>
-      <el-table-column prop="market" label="市场" width="70" align="center">
+      <el-table-column prop="market" label="market" width="70" align="center">
         <template #default="{ row }">
           <el-tag size="small" :type="getMarketType(row.market)">{{ row.market || 'CN' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="buy_count" label="买入" width="70" align="center" />
-      <el-table-column prop="sell_count" label="卖出" width="70" align="center" />
-      <el-table-column prop="total_pnl" label="累计盈亏" width="120" align="right">
+      <el-table-column prop="buy_count" label="buy" width="70" align="center" />
+      <el-table-column prop="sell_count" label="sell" width="70" align="center" />
+      <el-table-column prop="total_pnl" label="Cumulative profit and loss" width="120" align="right">
         <template #default="{ row }">
           <span :class="(row.total_pnl || 0) >= 0 ? 'positive' : 'negative'">
             {{ formatPnl(row.total_pnl) }}
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" width="100" align="center">
+      <el-table-column label="Status" width="100" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.status === 'completed' || row.sell_count >= row.buy_count" type="success" size="small">
-            已平仓
+            Position closed
           </el-tag>
           <el-tag v-else-if="row.sell_count > 0" type="warning" size="small">
-            部分持仓
+            partial position
           </el-tag>
           <el-tag v-else type="primary" size="small">
-            持仓中
+            In position
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="Operation" width="220" fixed="right">
         <template #default="{ row }">
           <el-button 
             type="primary" 
@@ -57,7 +57,7 @@
             size="small" 
             @click="handleStartReview(row.code)"
           >
-            发起复盘
+            Initiate review
           </el-button>
           <el-button 
             type="success" 
@@ -65,7 +65,7 @@
             size="small" 
             @click="handleViewReport(row)"
           >
-            查看报告
+            View report
           </el-button>
           <el-button 
             type="info" 
@@ -73,7 +73,7 @@
             size="small" 
             @click="handleViewHistory(row)"
           >
-            复盘历史
+            Review history
           </el-button>
         </template>
       </el-table-column>
@@ -82,13 +82,13 @@
     <div class="tips">
       <el-alert type="info" :closable="false" show-icon>
         <template #title>
-          <span>复盘提示</span>
+          <span>Review tips</span>
         </template>
         <template #default>
           <ul>
-            <li>复盘可以帮助你回顾交易依据、发现执行中的问题</li>
-            <li>可按已完成交易逐笔复盘，持续完善研究准备与执行纪律</li>
-            <li>持仓中的股票也可以复盘，重点回看当时的入场依据是否充分</li>
+            <li>Review can help you review the basis of the transaction and discover problems in execution</li>
+            <li>Completed transactions can be reviewed one by one to continuously improve research preparation and execution discipline.</li>
+            <li>Stocks in positions can also be reviewed, focusing on reviewing whether the basis for entry at the time was sufficient.</li>
           </ul>
         </template>
       </el-alert>
@@ -115,7 +115,7 @@ const emit = defineEmits<{
 
 const router = useRouter()
 
-// 处理发起复盘按钮点击
+// Processing the click of the initiate review button
 const handleStartReview = (code: string) => {
   emit('start-review', code)
 }
@@ -157,8 +157,8 @@ const goToPaperTrading = () => {
     }
   }
 
-  .positive { color: #f56c6c; }  // 中国习惯：红色表示盈利（正数）
-  .negative { color: #67c23a; }  // 中国习惯：绿色表示亏损（负数）
+  .positive { color: #f56c6c; }  // Chinese custom: red indicates profit (positive number)
+  .negative { color: #67c23a; }  // Chinese custom: green indicates loss (negative number)
   
   .tips {
     margin-top: 20px;

@@ -1,11 +1,11 @@
 """
-自动更新服务
+Automatic update service
 
-功能：
-1. 检查官网是否有新版本
-2. 下载更新包（带进度跟踪）
-3. 校验更新包（SHA256）
-4. 触发更新器脚本（独立进程）
+Function:
+1. Check the official website to see if there is a new version
+2. Download update package (with progress tracking)
+3. Verify update package (SHA256)
+4. Trigger updater script (standalone process)
 """
 import os
 import json
@@ -23,10 +23,10 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# 项目根目录
+# Project root directory
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 
-# 默认更新服务器地址（当配置为空时使用）
+# Default update server address (used when configured as empty)
 DEFAULT_UPDATE_BASE_URL = "https://www.tradingagentscn.com/api"
 
 
@@ -72,22 +72,22 @@ class UpdateInfo:
 class UpdateService:
     """自动更新服务"""
 
-    # 更新包下载目录
+    # Update package download directory
     UPDATES_DIR = PROJECT_ROOT / "runtime" / "updates"
 
-    # 备份目录
+    # Backup directory
     BACKUP_DIR = PROJECT_ROOT / "backup"
 
     def __init__(self):
-        # 从配置读取更新检查地址，支持 .env 中 UPDATE_CHECK_BASE_URL 覆盖（用于测试验证）
+        # Read update check address from configuration, support UPDATE_CHECK_BASE_URL coverage in .env (for test verification)
         url = (settings.UPDATE_CHECK_BASE_URL or "").strip()
         self.base_url = url if url else DEFAULT_UPDATE_BASE_URL
         self.channel = self._normalize_update_channel(settings.UPDATE_CHECK_CHANNEL)
         self._download_progress: Dict[str, Any] = {}
-        # 确保目录存在
+        # Make sure the directory exists
         self.UPDATES_DIR.mkdir(parents=True, exist_ok=True)
 
-    # ── 版本信息 ──────────────────────────────────────────
+    # ── Version information ──────────────────────────────────────────
 
     def get_current_version(self) -> str:
         """读取当前版本号"""
@@ -110,7 +110,7 @@ class UpdateService:
         """获取当前更新通道"""
         return self.channel
 
-    # ── 检查更新 ──────────────────────────────────────────
+    # ── Check for updates ──────────────────────────────────────────
 
     async def check_for_updates(self) -> UpdateInfo:
         """向官网查询是否有新版本"""
@@ -145,11 +145,11 @@ class UpdateService:
                             logger.info("✅ 已是最新版本")
                         return info
 
-                logger.warning(f"⚠️ 检查更新失败: HTTP {resp.status_code}")
+                logger.warning(f"⚠️ Check for updates failed: HTTP {resp.status_code}")
                 return UpdateInfo({
                     "has_update": False,
                     "check_failed": True,
-                    "error_message": f"更新服务器返回错误 (HTTP {resp.status_code})",
+                    "error_message": f"Update server returns error (HTTP {resp.status_code})",
                 })
 
         except httpx.ConnectError:
@@ -157,14 +157,14 @@ class UpdateService:
             return UpdateInfo({
                 "has_update": False,
                 "check_failed": True,
-                "error_message": "无法连接更新服务器，请检查网络或稍后重试",
+                "error_message": "Unable to connect to update server, please check the network or try again later",
             })
         except httpx.TimeoutException:
             logger.warning("⚠️ 连接更新服务器超时")
             return UpdateInfo({
                 "has_update": False,
                 "check_failed": True,
-                "error_message": "连接更新服务器超时，请稍后重试",
+                "error_message": "The connection to the update server timed out, please try again later.",
             })
         except Exception as e:
             logger.error(f"❌ 检查更新异常: {e}")
@@ -174,10 +174,10 @@ class UpdateService:
                 "error_message": f"检查更新失败: {str(e)}",
             })
 
-    # ── 下载更新包 ────────────────────────────────────────
+    # ── Download update package ────────────────────────────────────────
 
     async def download_update(self, update_info: UpdateInfo) -> Optional[Path]:
-        """下载更新包，返回本地文件路径"""
+        """Download the update package and return the local file path"""
         if not update_info.download_url:
             logger.error("❌ 下载地址为空")
             return None
@@ -186,10 +186,10 @@ class UpdateService:
         filename = self._build_download_filename(update_info)
         target_path = self.UPDATES_DIR / filename
 
-        # 如果已下载且校验通过，直接返回
+        # If it has been downloaded and verified, return directly.
         if target_path.exists() and update_info.sha256:
             if self._verify_sha256(target_path, update_info.sha256):
-                logger.info(f"✅ 更新包已存在且校验通过: {filename}")
+                logger.info(f"✅ The update package already exists and the verification passed.: {filename}")
                 return target_path
 
         logger.info(f"⬇️ 开始下载更新包: {update_info.download_url}")
@@ -223,10 +223,10 @@ class UpdateService:
                                     downloaded * 100 / total, 1
                                 )
 
-            # 校验
+            # Verification
             if update_info.sha256:
                 if not self._verify_sha256(target_path, update_info.sha256):
-                    logger.error("❌ 更新包校验失败，SHA256 不匹配")
+                    logger.error("❌ Update package verification failed, SHA256 does not match")
                     target_path.unlink(missing_ok=True)
                     self._download_progress["status"] = "verify_failed"
                     return None
@@ -250,22 +250,22 @@ class UpdateService:
         }
 
     def get_download_message(self, update_info: UpdateInfo) -> str:
-        """根据包类型生成下载提示。"""
+        """Generate download prompts based on package type."""
         if update_info.package_type == "installer":
             return f"发现 v{update_info.latest_version} 安装包，请下载安装后手动升级"
         return f"开始下载 v{update_info.latest_version} 更新包"
 
-    # ── 应用更新 ──────────────────────────────────────────
+    # ── Apply updates ──────────────────────────────────────────
 
     async def apply_update(self, update_file: Path, version: str) -> dict:
         """
-        启动独立更新器进程，然后通知调用方需要退出应用。
+        Starts a standalone updater process and then notifies the caller that the application needs to exit.
 
-        更新流程由 scripts/updater/apply_update.ps1 负责：
-        1. 等待后端进程退出
-        2. 备份当前版本
-        3. 解压更新包
-        4. 重启所有服务
+        The update process is handled by scripts/updater/apply_update.ps1:
+        1. Wait for the backend process to exit
+        2. Back up current version
+        3. Unzip the update package
+        4. Restart all services
         """
         if not update_file.exists():
             return {"success": False, "message": "更新包文件不存在"}
@@ -278,7 +278,7 @@ class UpdateService:
         logger.info(f"🚀 启动更新: {current_version} → {version}")
 
         try:
-            # 启动独立的 PowerShell 更新器进程
+            # Start a standalone PowerShell updater process
             cmd = [
                 "powershell.exe",
                 "-ExecutionPolicy", "Bypass",
@@ -289,7 +289,7 @@ class UpdateService:
                 "-ProjectRoot", str(PROJECT_ROOT),
             ]
 
-            # CREATE_NEW_PROCESS_GROUP + DETACHED_PROCESS 让更新器独立于后端进程
+            # CREATE_NEW_PROCESS_GROUP + DETACHED_PROCESS Make the updater independent of the backend process
             CREATE_NEW_PROCESS_GROUP = 0x00000200
             DETACHED_PROCESS = 0x00000008
 
@@ -302,7 +302,7 @@ class UpdateService:
                 stderr=subprocess.DEVNULL,
             )
 
-            logger.info("✅ 更新器进程已启动，后端即将退出...")
+            logger.info("✅ The updater process has been started and the backend is about to exit...")
             return {
                 "success": True,
                 "message": f"更新器已启动，正在从 {current_version} 更新到 {version}",
@@ -312,10 +312,10 @@ class UpdateService:
             logger.error(f"❌ 启动更新器失败: {e}")
             return {"success": False, "message": f"启动更新器失败: {e}"}
 
-    # ── 清理 ──────────────────────────────────────────────
+    # ── clean up ──────────────────────────────────────────────
 
     def cleanup_old_packages(self, keep_latest: int = 2):
-        """清理旧的更新包，保留最新的 N 个"""
+        """Clean up old update packages and keep the latest N ones"""
         if not self.UPDATES_DIR.exists():
             return
 
@@ -332,11 +332,11 @@ class UpdateService:
             except Exception as e:
                 logger.warning(f"⚠️ 清理失败: {f.name} - {e}")
 
-    # ── 内部方法 ──────────────────────────────────────────
+    # ── internal method ──────────────────────────────────────────
 
     @staticmethod
     def _build_download_filename(update_info: UpdateInfo) -> str:
-        """根据下载地址和包类型推断本地文件名。"""
+        """Infer local file names based on download address and package type."""
         parsed = httpx.URL(update_info.download_url)
         basename = Path(parsed.path).name.strip()
         if basename:
@@ -347,7 +347,7 @@ class UpdateService:
 
     @staticmethod
     def _normalize_update_channel(channel: Optional[str]) -> str:
-        """归一化更新通道，避免配置别名造成服务端分流不一致。"""
+        """Normalize the update channel to avoid server-side distribution inconsistency caused by alias configuration."""
         raw = (channel or "").strip().lower()
         alias_map = {
             "": "stable",
@@ -371,7 +371,7 @@ class UpdateService:
         if normalized:
             return normalized
 
-        logger.warning("⚠️ 未识别的更新通道配置 '%s'，已回退为 stable", channel)
+        logger.warning("⚠️ Unrecognized update channel configuration '%s', Reverted to stable", channel)
         return "stable"
 
     @staticmethod
@@ -388,12 +388,12 @@ class UpdateService:
         match = actual.lower() == expected_hash.lower()
         if not match:
             logger.warning(
-                f"SHA256 不匹配: expected={expected_hash[:16]}... actual={actual[:16]}..."
+                f"SHA256 no match: expected={expected_hash[:16]}... actual={actual[:16]}..."
             )
         return match
 
 
-# 单例
+# Singleton
 _update_service: Optional[UpdateService] = None
 
 

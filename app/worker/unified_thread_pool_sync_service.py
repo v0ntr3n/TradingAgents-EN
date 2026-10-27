@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-统一线程池同步服务
-可以执行任何同步方法，处理进度更新、取消、错误等通用逻辑
+Unified thread pool synchronization service
+Can execute any synchronization method and handle common logic such as progress updates, cancellations, errors, etc.
 """
 import asyncio
 import logging
@@ -14,13 +14,13 @@ from threading import local
 
 logger = logging.getLogger(__name__)
 
-# 🔥 线程本地存储：用于存储每个线程的数据库连接，避免与主事件循环冲突
+# 🔥 Thread local storage: used to store the database connection of each thread to avoid conflicts with the main event loop
 _thread_local = local()
 
 
 @dataclass
 class SyncTaskResult:
-    """同步任务结果"""
+    """Synchronize task results"""
     success: bool = False
     result: Any = None
     error: Optional[str] = None
@@ -31,16 +31,16 @@ class SyncTaskResult:
 
 class UnifiedThreadPoolSyncService:
     """
-    统一线程池同步服务
+    Unified thread pool synchronization service
     
-    可以执行任何同步方法，统一处理：
-    - 进度更新
-    - 任务取消
-    - 错误处理
-    - 断点恢复
-    - 速率限制
+    Any synchronization method can be executed and processed uniformly:
+    - progress update
+    - Task canceled
+    - Error handling
+    - Breakpoint recovery
+    - rate limit
     
-    使用方式：
+    How to use:
         service = UnifiedThreadPoolSyncService()
         result = await service.execute_sync_method(
             sync_method=akshare_service.sync_historical_data,
@@ -49,29 +49,29 @@ class UnifiedThreadPoolSyncService:
             progress_callback=update_progress_func
         )
     
-    并发安全性说明：
-    - 线程池中的任务在独立的线程和事件循环中执行
-    - 为了避免"attached to a different loop"错误，会在执行前临时替换服务实例的数据库连接
-    - 执行完成后会恢复原始连接，确保主事件循环中的操作不受影响
-    - 使用锁保护连接替换和恢复操作，避免并发冲突
-    - 注意：如果在同步任务执行期间，主事件循环中的其他操作使用同一个服务实例，
-      可能会遇到"attached to a different loop"错误。建议：
-      1. 避免在同步任务执行期间使用同一个服务实例
-      2. 或者为每个操作创建独立的服务实例
+    Concurrency safety notes:
+    - Tasks in the thread pool are executed in independent threads and event loops
+    - in order to avoid"attached to a different loop"Error, the database connection of the service instance will be temporarily replaced before execution.
+    - The original connection will be restored after the execution is completed, ensuring that operations in the main event loop are not affected
+    - Use locks to protect connection replacement and recovery operations to avoid concurrency conflicts
+    - Note: If during the execution of the synchronization task, other operations in the main event loop use the same service instance,
+      may encounter"attached to a different loop"mistake. Suggestions:
+      1. Avoid using the same service instance during synchronization task execution
+      2. Or create separate service instances for each operation
     """
     
     def __init__(self, max_workers: int = 10):
         """
         Args:
-            max_workers: 线程池最大工作线程数
+            max_workers: Maximum number of worker threads in the thread pool
         """
         self.max_workers = max_workers
-        # 🔥 全局线程池：用于执行同步任务
+        # 🔥 Global thread pool: used to perform synchronization tasks
         self._thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
-        self._shutdown_event = threading.Event()  # 🔥 用于通知线程退出
-        self._active_tasks = {}  # 🔥 跟踪活跃任务：{job_id: future}
-        # 🔥 服务实例连接修改锁：保护服务实例的数据库连接修改，避免与主事件循环冲突
-        self._service_connection_lock = threading.RLock()  # 使用可重入锁，支持嵌套调用
+        self._shutdown_event = threading.Event()  # 🔥 Used to notify the thread to exit
+        self._active_tasks = {}  # 🔥 Track active tasks:{job_id: future}
+        # 🔥 Service instance connection modification lock: protects the database connection modification of the service instance to avoid conflicts with the main event loop
+        self._service_connection_lock = threading.RLock()  # Use reentrant locks to support nested calls
         
     async def execute_sync_method(
         self,
@@ -83,37 +83,37 @@ class UnifiedThreadPoolSyncService:
         resume_from_index: int = None
     ) -> SyncTaskResult:
         """
-        在线程池中执行同步方法
+        Execute synchronized methods in thread pool
         
         Args:
-            sync_method: 要执行的同步方法（可以是同步或异步方法）
-            method_kwargs: 传递给同步方法的关键字参数
-            job_id: 任务ID，用于进度跟踪和取消
-            progress_callback: 进度回调函数（可选）
-            rate_limit_per_minute: 速率限制（每分钟最大调用次数）
-            resume_from_index: 恢复执行：从哪个位置继续（已处理的项数量）
+            sync_method: The synchronous method to execute (can be a synchronous or asynchronous method)
+            method_kwargs: Keyword arguments passed to synchronized methods
+            job_id: Task ID, used for progress tracking and cancellation
+            progress_callback: Progress callback function (optional)
+            rate_limit_per_minute: Rate limit (maximum calls per minute)
+            resume_from_index: Resume execution: where to continue (number of items processed)
             
         Returns:
-            同步任务结果
+            Synchronize task results
         """
         if method_kwargs is None:
             method_kwargs = {}
         
-        # 🔥 检查是否收到退出信号
+        # 🔥 Check if exit signal received
         if self._shutdown_event.is_set():
-            logger.warning(f"⚠️ 收到退出信号，任务 {job_id} 将不执行")
+            logger.warning(f"⚠️ Exit signal received, task {job_id} will not be executed")
             result = SyncTaskResult()
-            result.error = "服务正在关闭"
+            result.error = "Service is shutting down"
             return result
         
-        # 🔥 如果指定了恢复位置，添加到参数中
+        # 🔥 If a recovery location is specified, add it to the parameters
         if resume_from_index is not None:
             method_kwargs["resume_from_index"] = resume_from_index
         
         result = SyncTaskResult()
         result.start_time = datetime.now(timezone.utc)
         
-        # 🔥 异步方法必须留在当前应用事件循环执行，避免跨事件循环访问 Motor/服务单例
+        # 🔥 Asynchronous methods must be executed in the current application event loop to avoid cross-event loop access to Motor/service singletons
         if asyncio.iscoroutinefunction(sync_method):
             task_future = asyncio.create_task(
                 self._execute_async_method_with_cancellation(
@@ -126,7 +126,7 @@ class UnifiedThreadPoolSyncService:
         else:
             loop = asyncio.get_running_loop()
 
-            # 🔥 只有真正的同步阻塞方法才进入线程池
+            # 🔥 Only truly synchronous blocking methods enter the thread pool
             task_future = loop.run_in_executor(
                 self._thread_pool,
                 self._execute_sync_method_sync,
@@ -136,28 +136,28 @@ class UnifiedThreadPoolSyncService:
                 rate_limit_per_minute
             )
         
-        # 🔥 记录活跃任务
+        # 🔥 Record active tasks
         if job_id:
             self._active_tasks[job_id] = task_future
         
         try:
-            # 等待任务完成
+            # Wait for task to complete
             method_result = await task_future
             
             result.success = True
             result.result = method_result
             
         except Exception as e:
-            # 🔥 检查是否是任务取消异常
+            # 🔥 Check whether it is a task cancellation exception
             from app.services.scheduler_service import TaskCancelledException
-            if isinstance(e, TaskCancelledException) or "取消" in str(e) or "cancelled" in str(e).lower():
-                logger.warning(f"🛑 任务 {job_id} 已被取消: {e}")
-                result.error = f"任务已取消: {str(e)}"
+            if isinstance(e, TaskCancelledException) or "Cancel" in str(e) or "cancelled" in str(e).lower():
+                logger.warning(f"🛑 Task {job_id} has been cancelled: {e}")
+                result.error = f"Task canceled: {str(e)}"
             else:
-                logger.error(f"❌ 任务 {job_id} 执行失败: {e}", exc_info=True)
+                logger.error(f"❌ Task {job_id} Execution failed: {e}", exc_info=True)
                 result.error = str(e)
         finally:
-            # 任务完成后，从活跃任务列表中移除
+            # Once the task is completed, it is removed from the active task list
             if job_id:
                 self._active_tasks.pop(job_id, None)
             
@@ -175,30 +175,30 @@ class UnifiedThreadPoolSyncService:
         rate_limit_per_minute: int
     ) -> Any:
         """
-        在线程池的线程中执行同步方法（同步版本）
+        Execute a synchronized method in a thread of the thread pool (synchronized version)
         
-        注意：这个方法在线程池的线程中运行，需要创建新的事件循环（如果是异步方法）
+        Note: This method runs in a thread in the thread pool and needs to create a new event loop (if it is an asynchronous method)
         """
-        # 🔥 检查是否收到退出信号
+        # 🔥 Check if exit signal received
         if self._shutdown_event.is_set():
-            logger.warning(f"⚠️ 收到退出信号，任务 {job_id} 将不执行")
-            raise RuntimeError("服务正在关闭")
+            logger.warning(f"⚠️ Exit signal received, task {job_id} will not be executed")
+            raise RuntimeError("Service is shutting down")
         
-        # 🔥 检查是否是异步方法
+        # 🔥 Check if it is an asynchronous method
         if asyncio.iscoroutinefunction(sync_method):
-            # 异步方法：需要创建新的事件循环
+            # Asynchronous methods: need to create a new event loop
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_closed():
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
             except RuntimeError:
-                # 线程池的线程没有事件循环，创建新的
+                # The thread pool thread does not have an event loop, create a new
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
             
             try:
-                # 在新事件循环中运行异步方法
+                # Run an async method in a new event loop
                 result = loop.run_until_complete(
                     self._execute_async_method_with_cancellation(
                         sync_method,
@@ -208,49 +208,49 @@ class UnifiedThreadPoolSyncService:
                 )
                 return result
             except RuntimeError as e:
-                # 🔥 捕获事件循环相关的错误
+                # 🔥 Catching event loop related errors
                 if "shutdown" in str(e).lower() or "closed" in str(e).lower():
-                    logger.error(f"❌ 事件循环已关闭，无法继续执行: {e}")
-                    raise RuntimeError(f"事件循环已关闭: {e}")
+                    logger.error(f"❌ The event loop has been closed and execution cannot continue: {e}")
+                    raise RuntimeError(f"event loop closed: {e}")
                 raise
             finally:
-                # 🔥 确保所有任务都完成后再关闭事件循环
+                # 🔥 Make sure all tasks are completed before closing the event loop
                 try:
                     if not loop.is_closed():
-                        # 取消所有未完成的任务
+                        # Cancel all unfinished tasks
                         pending_tasks = [task for task in asyncio.all_tasks(loop) if not task.done()]
                         if pending_tasks:
-                            logger.warning(f"⚠️ 关闭事件循环前，还有 {len(pending_tasks)} 个未完成的任务")
+                            logger.warning(f"⚠️ Before closing the event loop, there is also {len(pending_tasks)} unfinished tasks")
                             for task in pending_tasks:
                                 task.cancel()
-                            # 等待任务取消完成（使用超时避免无限等待）
+                            # Wait for task cancellation to complete (use timeout to avoid infinite waiting)
                             try:
                                 loop.run_until_complete(asyncio.wait_for(
                                     asyncio.gather(*pending_tasks, return_exceptions=True),
                                     timeout=5.0
                                 ))
                             except asyncio.TimeoutError:
-                                logger.warning(f"⚠️ 等待任务取消超时，强制关闭事件循环")
+                                logger.warning(f"⚠️ Waiting for task cancellation timeout and forcing event loop to close")
                 except RuntimeError as cleanup_error:
-                    # 事件循环已关闭，忽略错误
+                    # Event loop closed, errors ignored
                     if "shutdown" not in str(cleanup_error).lower() and "closed" not in str(cleanup_error).lower():
-                        logger.warning(f"⚠️ 清理未完成任务时出错: {cleanup_error}")
+                        logger.warning(f"⚠️ An error occurred while cleaning up unfinished tasks: {cleanup_error}")
                 except Exception as cleanup_error:
-                    logger.warning(f"⚠️ 清理未完成任务时出错: {cleanup_error}")
+                    logger.warning(f"⚠️ An error occurred while cleaning up unfinished tasks: {cleanup_error}")
                 
-                # 关闭事件循环
+                # Close event loop
                 try:
                     if not loop.is_closed():
                         loop.close()
-                        logger.debug(f"✅ 事件循环已关闭")
+                        logger.debug(f"✅ event loop closed")
                 except RuntimeError as close_error:
-                    # 事件循环已关闭，忽略错误
+                    # Event loop closed, errors ignored
                     if "shutdown" not in str(close_error).lower() and "closed" not in str(close_error).lower():
-                        logger.warning(f"⚠️ 关闭事件循环时出错: {close_error}")
+                        logger.warning(f"⚠️ Error closing event loop: {close_error}")
                 except Exception as close_error:
-                    logger.warning(f"⚠️ 关闭事件循环时出错: {close_error}")
+                    logger.warning(f"⚠️ Error closing event loop: {close_error}")
         else:
-            # 同步方法：直接调用
+            # Synchronous method: direct call
             return sync_method(**method_kwargs)
     
     async def _execute_async_method_with_cancellation(
@@ -261,46 +261,46 @@ class UnifiedThreadPoolSyncService:
         use_thread_local_connections: bool = True,
     ) -> Any:
         """
-        执行异步方法，支持取消检查
+        Execute asynchronous methods and support cancellation checks
         
-        注意：当在线程池工作线程中执行时，需要确保数据库连接绑定到当前事件循环。
-        当前应用事件循环中执行时，不做额外连接替换。
+        Note: When executing in a thread pool worker thread, you need to ensure that the database connection is bound to the current event loop.
+        When executed in the current application event loop, no additional connection replacement is performed.
         """
-        # 🔥 检查是否收到退出信号
+        # 🔥 Check if exit signal received
         if self._shutdown_event.is_set():
-            raise RuntimeError("服务正在关闭")
+            raise RuntimeError("Service is shutting down")
         
-        # 🔥 检查任务是否应该停止（通过查询数据库）
+        # 🔥 Check if the task should be stopped (by querying the database)
         if job_id:
             should_stop = await self._should_stop(job_id)
             if should_stop:
                 from app.services.scheduler_service import TaskCancelledException
-                raise TaskCancelledException(f"任务 {job_id} 已被取消")
+                raise TaskCancelledException(f"Task {job_id} has been cancelled")
         
-        # 🔥 重新初始化数据库连接（如果方法需要）
-        # 检查方法是否是绑定方法（有self参数），如果是，重新初始化服务实例的数据库连接
-        # 🔥 为了避免与主事件循环冲突，我们使用锁保护 + 保存/恢复连接的方式
-        # 🔥 这样即使主事件循环同时使用服务实例，也不会受到影响
+        # 🔥 Reinitialize the database connection (if required by the method)
+        # Check whether the method is a bound method (with self parameter), if so, reinitialize the database connection of the service instance
+        # 🔥 To avoid conflicts with the main event loop, we use lock protection + How to save/restore connections
+        # 🔥 This way, even if the main event loop uses the service instance at the same time, it will not be affected.
         import inspect
         service_instance = None
-        original_connections = {}  # 保存原始连接，用于恢复
-        thread_local_connections = {}  # 线程本地连接（绑定到当前线程的事件循环）
+        original_connections = {}  # Save the original connection for recovery
+        thread_local_connections = {}  # Thread local connections (bound to the current thread's event loop)
         lock_acquired = False
         
         try:
             if use_thread_local_connections:
                 sig = inspect.signature(async_method)
                 if 'self' in sig.parameters:
-                    # 这是一个绑定方法，获取self对象
+                    # This is a binding method that gets the self object
                     if hasattr(async_method, '__self__'):
                         service_instance = async_method.__self__
                         
-                        # 🔥 获取锁，保护服务实例的连接修改
-                        # 🔥 这样可以防止主事件循环中的其他操作同时修改连接
+                        # 🔥 Obtain the lock to protect the connection modification of the service instance
+                        # 🔥 This prevents other operations in the main event loop from modifying the connection at the same time
                         self._service_connection_lock.acquire()
                         lock_acquired = True
                         
-                        # 🔥 保存原始连接（用于执行后恢复）
+                        # 🔥 Save the original connection (for post-execution recovery)
                         if hasattr(service_instance, 'db'):
                             original_connections['db'] = service_instance.db
                         if hasattr(service_instance, 'historical_service'):
@@ -308,12 +308,12 @@ class UnifiedThreadPoolSyncService:
                         if hasattr(service_instance, 'news_service'):
                             original_connections['news_service'] = service_instance.news_service
                         
-                        # 🔥 创建线程本地的数据库连接（绑定到当前线程的事件循环）
-                        # 🔥 这些连接只在线程池线程中使用，不会影响主事件循环
+                        # 🔥 Create a thread-local database connection (bound to the current thread's event loop)
+                        # 🔥 These connections are only used in thread pool threads and do not affect the main event loop
                         thread_local_connections = await self._create_thread_local_db_connections()
                         
-                        # 🔥 临时替换服务实例的连接（仅在线程池线程中有效）
-                        # 🔥 由于有锁保护，主事件循环中的操作会等待锁释放
+                        # 🔥 Temporarily replaces the connection of the service instance (only valid in thread pool threads)
+                        # 🔥 Due to lock protection, operations in the main event loop will wait for the lock to be released
                         if 'db' in thread_local_connections:
                             service_instance.db = thread_local_connections['db']
                         if 'historical_service' in thread_local_connections:
@@ -321,42 +321,42 @@ class UnifiedThreadPoolSyncService:
                         if 'news_service' in thread_local_connections:
                             service_instance.news_service = thread_local_connections['news_service']
                         
-                        logger.debug(f"🔄 已替换服务实例的数据库连接为线程本地连接: {type(service_instance).__name__}")
+                        logger.debug(f"🔄 Database connections for service instances have been replaced with thread-local connections: {type(service_instance).__name__}")
         except Exception as e:
-            logger.debug(f"检查服务实例数据库连接时出错（可忽略）: {e}")
+            logger.debug(f"An error occurred while checking the service instance database connection (ignorable): {e}")
         
         try:
-            # 🔥 在执行方法期间保持锁，确保主事件循环中的操作不会使用被替换的连接
-            # 🔥 这样可以避免"attached to a different loop"错误
-            # 🔥 注意：这可能会短暂阻塞主事件循环中的操作，但：
-            # 1. 连接替换操作很快（毫秒级）
-            # 2. 执行方法期间，主事件循环中的操作会等待锁释放
-            # 3. 如果等待时间过长，可以考虑使用超时机制
+            # 🔥 Hold the lock during method execution to ensure operations in the main event loop do not use the replaced connection
+            # 🔥 This can be avoided"attached to a different loop"Error
+            # 🔥 NOTE: This may briefly block operations in the main event loop, but:
+            # 1. Connection replacement operation is very fast (milliseconds)
+            # 2. During method execution, operations in the main event loop wait for the lock to be released
+            # 3. If the waiting time is too long, consider using a timeout mechanism
             # 
-            # 🔥 但是，为了更好的并发性能，我们在执行方法前释放锁
-            # 🔥 主事件循环中的操作如果遇到被替换的连接，会失败并重试
-            # 🔥 这是可以接受的，因为：
-            # 1. 同步任务执行时间较长（分钟级），保持锁会严重影响并发性能
-            # 2. 主事件循环中的操作（如分析服务的数据准备）可以重试或使用独立连接
-            # 3. MongoDB连接是线程安全的，多个连接可以并发使用
+            # 🔥 However, for better concurrency performance, we release the lock before executing the method
+            # 🔥 Operations in the main event loop will fail and retry if they encounter a replaced connection.
+            # 🔥 This is acceptable because:
+            # 1. Synchronization tasks take a long time to execute (minutes), and maintaining locks will seriously affect concurrency performance.
+            # 2. Operations in the main event loop (such as data preparation for Analysis Services) can be retried or used independent connections
+            # 3. MongoDB Connections are thread-safe and multiple connections can be used concurrently
             if lock_acquired:
                 self._service_connection_lock.release()
                 lock_acquired = False
             
-            # 🔥 执行异步方法，在方法执行过程中定期检查取消状态
-            # 注意：具体的取消检查应该在同步方法内部实现（通过update_job_progress等方法）
-            # 🔥 注意：在执行期间，服务实例的连接已被替换为线程本地连接
-            # 🔥 主事件循环中的操作如果使用服务实例，可能会遇到"attached to a different loop"错误
-            # 🔥 但这种情况很少发生，因为：
-            # 1. 同步任务执行时间较长，主事件循环中的操作通常不会同时使用同一个服务实例
-            # 2. 如果确实有冲突，主事件循环中的操作会失败，但不会影响同步任务的执行
-            # 3. 分析服务在数据准备时，如果遇到连接问题，可以重试或使用独立连接
+            # 🔥 Execute an asynchronous method and periodically check the cancellation status during method execution
+            # Note: The specific cancellation check should be implemented inside the synchronization method (through methods such as update_job_progress)
+            # 🔥 Note: During execution, the connection to the service instance has been replaced with a thread-local connection
+            # 🔥 If you use service instances for operations in the main event loop, you may encounter"attached to a different loop"Error
+            # 🔥 But this rarely happens because:
+            # 1. Synchronization tasks take a long time to execute, and operations in the main event loop usually do not use the same service instance at the same time.
+            # 2. If there is indeed a conflict, the operation in the main event loop will fail, but it will not affect the execution of the synchronization task.
+            # 3. If the analysis service encounters connection problems during data preparation, you can try again or use an independent connection.
             return await async_method(**method_kwargs)
         finally:
-            # 🔥 恢复原始连接，避免影响主事件循环和其他线程
+            # 🔥 Restore the original connection to avoid affecting the main event loop and other threads
             try:
                 if service_instance and original_connections:
-                    # 🔥 重新获取锁，保护连接恢复操作
+                    # 🔥 Reacquire the lock to protect the connection recovery operation
                     self._service_connection_lock.acquire()
                     try:
                         if 'db' in original_connections:
@@ -365,97 +365,97 @@ class UnifiedThreadPoolSyncService:
                             service_instance.historical_service = original_connections['historical_service']
                         if 'news_service' in original_connections:
                             service_instance.news_service = original_connections['news_service']
-                        logger.debug(f"🔄 已恢复服务实例的原始数据库连接: {type(service_instance).__name__}")
+                        logger.debug(f"🔄 The original database connection to the service instance has been restored: {type(service_instance).__name__}")
                     finally:
                         self._service_connection_lock.release()
                     
-                    # 🔥 清理线程本地连接（关闭客户端，释放资源）
+                    # 🔥 Clean up thread local connections (close client, release resources)
                     await self._cleanup_thread_local_connections(thread_local_connections)
             except Exception as e:
-                logger.warning(f"⚠️ 恢复服务实例数据库连接时出错: {e}")
+                logger.warning(f"⚠️ An error occurred while restoring the service instance database connection: {e}")
     
     async def _create_thread_local_db_connections(self) -> Dict[str, Any]:
         """
-        创建线程本地的数据库连接，绑定到当前线程的事件循环
+        Create a thread-local database connection and bind it to the current thread s event loop
         
         Returns:
-            包含数据库连接和服务实例的字典
+            A dictionary containing database connections and service instances
         """
         connections = {}
         try:
             from app.core.database import create_isolated_async_mongo_binding
 
-            # 🔥 创建线程本地的MongoDB客户端（绑定到当前线程的事件循环）
+            # 🔥 Create a thread-local MongoDB client (bound to the current thread's event loop)
             mongo_client, mongo_db = create_isolated_async_mongo_binding()
-            connections['mongo_client'] = mongo_client  # 保存客户端引用，用于后续关闭
+            connections['mongo_client'] = mongo_client  # Save client reference for subsequent shutdown
             connections['db'] = mongo_db
             
-            # 🔥 创建线程本地的历史数据服务
+            # 🔥 Create a thread-local historical data service
             try:
                 from app.services.historical_data_service import HistoricalDataService
                 historical_service = HistoricalDataService()
                 historical_service.db = connections['db']
                 historical_service.collection = historical_service.db.stock_daily_quotes
-                # 确保索引存在
+                # Make sure the index exists
                 await historical_service._ensure_indexes()
                 connections['historical_service'] = historical_service
-                logger.debug(f"🔄 创建线程本地的历史数据服务")
+                logger.debug(f"🔄 Create a thread-local historical data service")
             except Exception as e:
-                logger.warning(f"⚠️ 创建线程本地历史数据服务失败: {e}")
+                logger.warning(f"⚠️ Failed to create thread local historical data service: {e}")
             
-            # 🔥 创建线程本地的新闻数据服务
+            # 🔥 Create a thread-local news data service
             try:
                 from app.services.news_data_service import NewsDataService
                 news_service = NewsDataService()
                 news_service.db = connections['db']
                 connections['news_service'] = news_service
-                logger.debug(f"🔄 创建线程本地的新闻数据服务")
+                logger.debug(f"🔄 Create a thread-local news data service")
             except Exception as e:
-                logger.warning(f"⚠️ 创建线程本地新闻数据服务失败: {e}")
+                logger.warning(f"⚠️ Failed to create thread local news data service: {e}")
                 
         except Exception as e:
-            logger.warning(f"⚠️ 创建线程本地数据库连接时出错: {e}")
+            logger.warning(f"⚠️ Error while creating thread local database connection: {e}")
         
         return connections
     
     async def _cleanup_thread_local_connections(self, connections: Dict[str, Any]):
         """
-        清理线程本地的数据库连接，关闭客户端
+        Clean up the thread-local database connection and close the client
         
         Args:
-            connections: 线程本地连接字典
+            connections: Thread local connection dictionary
         """
         try:
-            # 🔥 关闭MongoDB客户端
+            # 🔥 Close the MongoDB client
             if 'mongo_client' in connections:
                 mongo_client = connections['mongo_client']
                 if mongo_client:
                     mongo_client.close()
-                    logger.debug(f"🔄 已关闭线程本地的MongoDB客户端")
+                    logger.debug(f"🔄 Thread-local MongoDB client closed")
         except Exception as e:
-            logger.warning(f"⚠️ 清理线程本地数据库连接时出错: {e}")
+            logger.warning(f"⚠️ Error cleaning thread local database connection: {e}")
     
     async def _should_stop(self, job_id: str) -> bool:
         """
-        检查任务是否应该停止
+        Check if the task should be stopped
         
         Args:
-            job_id: 任务ID
+            job_id: Task ID
             
         Returns:
-            是否应该停止
+            should it stop
         """
         try:
             from app.core.database import get_mongo_db_sync
             from app.core.config import settings
             from pymongo import MongoClient
             
-            # 🔥 使用同步客户端查询（避免事件循环冲突）
+            # 🔥 Use synchronous client queries (to avoid event loop conflicts)
             sync_client = MongoClient(settings.MONGO_URI)
             sync_db = sync_client[settings.MONGODB_DATABASE]
             
             try:
-                # 只检查当前运行中的执行记录，避免历史 suspended 记录误伤新任务。
+                # Only check the currently running execution records to avoid accidentally damaging new tasks due to historical suspended records.
                 execution = sync_db.scheduler_executions.find_one(
                     {"job_id": job_id, "status": "running"},
                     sort=[("timestamp", -1)]
@@ -465,12 +465,12 @@ class UnifiedThreadPoolSyncService:
                     return False
 
                 if execution.get("cancel_requested"):
-                    logger.info(f"🛑 任务 {job_id} 收到取消请求，应停止执行")
+                    logger.info(f"🛑 Task {job_id} Upon receipt of a cancellation request, execution should be stopped")
                     return True
 
                 status = execution.get("status")
                 if status in ["failed", "cancelled"]:
-                    logger.info(f"🛑 任务 {job_id} 状态为 {status}，应停止执行")
+                    logger.info(f"🛑 Task {job_id} The status is {status}, Execution should be stopped")
                     return True
 
                 return False
@@ -478,50 +478,50 @@ class UnifiedThreadPoolSyncService:
                 sync_client.close()
                 
         except Exception as e:
-            logger.error(f"❌ 检查任务停止标记失败: {e}")
+            logger.error(f"❌ Checking task stop flag failed: {e}")
             return False
     
     def shutdown(self, timeout: float = 30.0):
         """
-        优雅关闭线程池
+        Gracefully shut down the thread pool
 
         Args:
-            timeout: 等待线程完成的最大时间（秒）
+            timeout: Maximum time to wait for a thread to complete (seconds)
         """
-        logger.info("🛑 开始关闭统一线程池同步服务的线程池...")
+        logger.info("🛑 Start closing the thread pool of the unified thread pool synchronization service...")
 
-        # 🔥 设置退出信号
+        # 🔥 Set exit signal
         self._shutdown_event.set()
 
-        # 🔥 将所有活跃任务在数据库中标记为 suspended（挂起）
-        # 注意：标记为 suspended 而不是 cancelled，这样重启后可以恢复执行
+        # 🔥 Mark all active tasks as suspended in the database
+        # Note: Marked as suspended instead of canceled, so that execution can be resumed after restarting
         try:
             from pymongo import MongoClient
             from app.core.config import settings
             from app.services.scheduler_service import get_utc8_now
 
             if self._active_tasks:
-                logger.info(f"🔄 将 {len(self._active_tasks)} 个活跃任务标记为 suspended（挂起）...")
+                logger.info(f"🔄 will {len(self._active_tasks)} active tasks marked suspended...")
                 sync_client = MongoClient(settings.MONGO_URI)
                 sync_db = sync_client[settings.MONGODB_DATABASE]
 
                 for job_id in self._active_tasks.keys():
                     try:
-                        # 🔥 先查询当前任务的进度信息
+                        # 🔥 First query the progress information of the current task
                         current_task = sync_db.scheduler_executions.find_one(
                             {"job_id": job_id, "status": "running"},
                             sort=[("timestamp", -1)]
                         )
 
                         if current_task:
-                            # 🔥 更新任务状态为 suspended（挂起），保留进度信息
+                            # 🔥 Update task status to suspended and retain progress information
                             update_data = {
                                 "status": "suspended",
-                                "error_message": "服务正在关闭（Ctrl+C），任务已挂起，重启后可继续执行",
+                                "error_message": "The service is shutting down (Ctrl+C) , The task has been suspended and can be continued after restarting",
                                 "updated_at": get_utc8_now()
                             }
 
-                            # 🔥 尝试从Redis读取最新进度信息
+                            # 🔥 Try to read the latest progress information from Redis
                             try:
                                 from app.core.database import get_redis_sync_client
                                 from app.core.redis_client import RedisKeys
@@ -533,7 +533,7 @@ class UnifiedThreadPoolSyncService:
                                     progress_str = redis_sync.get(progress_key)
                                     if progress_str:
                                         progress_data = json.loads(progress_str)
-                                        # 保存进度信息到MongoDB
+                                        # Save progress information to MongoDB
                                         if "progress" in progress_data:
                                             update_data["progress"] = progress_data["progress"]
                                         if "processed_items" in progress_data:
@@ -542,9 +542,9 @@ class UnifiedThreadPoolSyncService:
                                             update_data["total_items"] = progress_data["total_items"]
                                         if "message" in progress_data:
                                             update_data["progress_message"] = progress_data["message"]
-                                        logger.info(f"📊 保存任务 {job_id} 的进度信息: {progress_data.get('progress', 0)}%, 已处理: {progress_data.get('processed_items', 0)}")
+                                        logger.info(f"📊 Save task {job_id} progress information: {progress_data.get('progress', 0)}%, Processed: {progress_data.get('processed_items', 0)}")
                             except Exception as redis_error:
-                                logger.warning(f"⚠️ 从Redis读取进度失败: {redis_error}")
+                                logger.warning(f"⚠️ Reading progress from Redis failed: {redis_error}")
 
                             result = sync_db.scheduler_executions.update_one(
                                 {"_id": current_task["_id"]},
@@ -552,37 +552,37 @@ class UnifiedThreadPoolSyncService:
                             )
 
                             if result.modified_count > 0:
-                                logger.info(f"✅ 已标记任务 {job_id} 为 suspended（挂起），重启后可继续执行")
+                                logger.info(f"✅ Task marked {job_id} It is suspended and can continue to execute after restarting.")
                             else:
-                                logger.warning(f"⚠️ 任务 {job_id} 状态未更新（可能已经不是running状态）")
+                                logger.warning(f"⚠️ Task {job_id} The status has not been updated (it may no longer be in the running status)")
                         else:
-                            logger.warning(f"⚠️ 未找到任务 {job_id} 的running记录")
+                            logger.warning(f"⚠️ Task not found {job_id} running record")
 
                     except Exception as e:
-                        logger.warning(f"⚠️ 标记任务 {job_id} 为 suspended 失败: {e}")
+                        logger.warning(f"⚠️ Mark tasks {job_id} failed for suspended: {e}")
 
                 sync_client.close()
         except Exception as e:
-            logger.warning(f"⚠️ 标记活跃任务为 suspended 失败: {e}")
+            logger.warning(f"⚠️ Marking active tasks as suspended failed: {e}")
 
-        # 🔥 直接强制关闭线程池（不等待）
-        # Ctrl+C 是异常退出，不需要等待任务完成
-        logger.info("🛑 强制关闭线程池（异常退出，不等待）...")
+        # 🔥 Force the thread pool to close directly (without waiting)
+        # Ctrl+C It exits abnormally and does not need to wait for the task to be completed.
+        logger.info("🛑 Forcefully close the thread pool (exit abnormally, do not wait)...")
         self._thread_pool.shutdown(wait=False)
 
         if self._active_tasks:
-            logger.info(f"⚠️ 已强制关闭线程池，{len(self._active_tasks)} 个任务已标记为 suspended，重启后可继续执行。")
-            self._active_tasks.clear()  # 清理活跃任务列表，防止引用泄漏
+            logger.info(f"⚠️ The thread pool has been forcibly closed,{len(self._active_tasks)} The task has been marked as suspended and can continue to be executed after restarting.")
+            self._active_tasks.clear()  # Clean up the active task list to prevent reference leaks
 
-        logger.info("✅ 统一线程池同步服务线程池已关闭")
+        logger.info("✅ The unified thread pool synchronization service thread pool has been closed")
 
 
-# 全局服务实例
+# Global service instance
 _unified_thread_pool_sync_service = None
 
 
 async def get_unified_thread_pool_sync_service() -> UnifiedThreadPoolSyncService:
-    """获取统一线程池同步服务实例（单例）"""
+    """Get the unified thread pool synchronization service instance (single case)"""
     global _unified_thread_pool_sync_service
     if _unified_thread_pool_sync_service is None:
         _unified_thread_pool_sync_service = UnifiedThreadPoolSyncService()

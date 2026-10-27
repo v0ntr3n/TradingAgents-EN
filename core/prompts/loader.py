@@ -1,7 +1,7 @@
 """
-提示词加载器
+prompt word loader
 
-从文件系统加载提示词模板
+Load prompt word template from file system
 """
 
 import os
@@ -13,11 +13,11 @@ from .template import PromptTemplate
 
 class PromptLoader:
     """
-    提示词加载器
+    prompt word loader
     
-    从 prompts/ 目录加载提示词模板
+    Load prompt word template from prompts/ directory
     
-    目录结构:
+    Directory structure:
         prompts/
         ├── en/
         │   ├── analysts/
@@ -46,31 +46,31 @@ class PromptLoader:
         category: Optional[str] = None
     ) -> Optional[PromptTemplate]:
         """
-        加载提示词模板
+        Load prompt word template
         
         Args:
-            name: 模板名称 (不含扩展名)
-            language: 语言 (zh/en)
-            category: 类别 (analysts/researchers/traders)
+            name: Template name (without extension)
+            language: language (zh/en)
+            category: Category (analysts/researchers/traders)
             
         Returns:
-            提示词模板，如果不存在返回 None
+            Prompt word template, if it does not exist, return None
         """
         cache_key = f"{language}/{category}/{name}" if category else f"{language}/{name}"
         
-        # 检查缓存
+        # Check cache
         if cache_key in self._cache:
             return self._cache[cache_key]
         
-        # 构建文件路径
+        # Build file path
         if category:
             file_path = self.prompts_dir / language / category / f"{name}.txt"
         else:
             file_path = self.prompts_dir / language / f"{name}.txt"
         
-        # 尝试加载
+        # try to load
         if not file_path.exists():
-            # 尝试 .md 扩展名
+            # Try .md extension
             file_path = file_path.with_suffix('.md')
             if not file_path.exists():
                 return None
@@ -89,7 +89,7 @@ class PromptLoader:
             return template
             
         except Exception as e:
-            print(f"加载提示词失败 {file_path}: {e}")
+            print(f"Failed to load prompt words {file_path}: {e}")
             return None
     
     def load_all(
@@ -98,14 +98,14 @@ class PromptLoader:
         category: Optional[str] = None
     ) -> Dict[str, PromptTemplate]:
         """
-        加载指定目录下的所有提示词
+        Load all prompt words in the specified directory
         
         Args:
-            language: 语言
-            category: 类别
+            language: language
+            category: Category
             
         Returns:
-            {name: template} 字典
+            {name: template} dictionary
         """
         templates = {}
         
@@ -138,7 +138,7 @@ class PromptLoader:
         language: str = "zh",
         category: Optional[str] = None
     ) -> bool:
-        """检查提示词是否存在"""
+        """Check if the prompt word exists"""
         if category:
             file_path = self.prompts_dir / language / category / f"{name}.txt"
         else:
@@ -147,6 +147,6 @@ class PromptLoader:
         return file_path.exists() or file_path.with_suffix('.md').exists()
     
     def clear_cache(self) -> None:
-        """清除缓存"""
+        """clear cache"""
         self._cache.clear()
 

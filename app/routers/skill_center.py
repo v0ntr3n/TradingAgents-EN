@@ -14,18 +14,18 @@ router = APIRouter(prefix="/api/skill-center", tags=["skill-center"])
 
 class SkillSummary(BaseModel):
     skill_id: str = Field(description="Skill ID")
-    display_name: str = Field(description="显示名称")
-    description: str = Field(description="描述")
-    source: str = Field(description="来源: system/imported/ai_generated/gap_generated")
-    type: str = Field(description="类型: knowledge/executable/api/mcp")
-    status: str = Field(description="状态: draft/testing/active/disabled/archived/failed")
-    bindable: bool = Field(description="是否可绑定")
-    tool_id: Optional[str] = Field(description="工具ID")
-    test_status: Optional[str] = Field(description="测试状态: passed/failed/unknown")
-    last_tested_at: Optional[str] = Field(description="最后测试时间")
-    bindings: Dict[str, List[str]] = Field(description="绑定关系")
-    created_at: Optional[str] = Field(description="创建时间")
-    updated_at: Optional[str] = Field(description="更新时间")
+    display_name: str = Field(description="display name")
+    description: str = Field(description="Description")
+    source: str = Field(description="Source: system/imported/ai_generated/gap_generated")
+    type: str = Field(description="Type: knowledge/executable/api/mcp")
+    status: str = Field(description="Status: draft/testing/active/disabled/archived/failed")
+    bindable: bool = Field(description="Whether it can be bound")
+    tool_id: Optional[str] = Field(description="Tools ID")
+    test_status: Optional[str] = Field(description="test status: passed/failed/unknown")
+    last_tested_at: Optional[str] = Field(description="Last test time")
+    bindings: Dict[str, List[str]] = Field(description="Binding relationship")
+    created_at: Optional[str] = Field(description="creation time")
+    updated_at: Optional[str] = Field(description="Update time")
 
     model_config = {
         "from_attributes": True,
@@ -86,8 +86,8 @@ async def _check_registry_status(tool_id: str) -> bool:
 @router.get("/skills", response_model=List[SkillSummary])
 async def list_all_skills(
     db = Depends(get_mongo_db),
-    status: Optional[str] = Query(None, description="按状态过滤"),
-    source: Optional[str] = Query(None, description="按来源过滤"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    source: Optional[str] = Query(None, description="Filter by source"),
     user = Depends(get_current_user)
 ):
     all_skills = []
@@ -182,7 +182,7 @@ async def bind_skill_to_agent(
     db = Depends(get_mongo_db),
     user = Depends(get_current_user)
 ):
-    """绑定 Skill 到 Agent"""
+    """Bind Skill to Agent"""
     from core.config.binding_manager import BindingManager
 
     binding_mgr = BindingManager()
@@ -190,7 +190,7 @@ async def bind_skill_to_agent(
 
     success = binding_mgr.bind_tool(agent_id, skill_id, priority=0)
     if not success:
-        raise HTTPException(status_code=500, detail="绑定失败")
+        raise HTTPException(status_code=500, detail="Binding failed")
 
     return {"success": True, "message": "Skill bound to agent"}
 
@@ -201,7 +201,7 @@ async def unbind_skill_from_agent(
     db = Depends(get_mongo_db),
     user = Depends(get_current_user)
 ):
-    """解绑 Skill 与 Agent"""
+    """Unbind Skill from Agent"""
     from core.config.binding_manager import BindingManager
 
     binding_mgr = BindingManager()
@@ -209,15 +209,15 @@ async def unbind_skill_from_agent(
 
     success = binding_mgr.unbind_tool(agent_id, skill_id)
     if not success:
-        raise HTTPException(status_code=500, detail="解绑失败")
+        raise HTTPException(status_code=500, detail="Unbinding failed")
 
     return {"success": True, "message": "Skill unbound from agent"}
 
 
 class BatchBindRequest(BaseModel):
-    """批量绑定请求"""
-    agent_ids: List[str] = Field(..., description="Agent ID 列表")
-    priority: int = Field(0, description="优先级（越大越优先）")
+    """Bulk bind requests"""
+    agent_ids: List[str] = Field(..., description="Agent ID list")
+    priority: int = Field(0, description="Priority (the bigger the priority)")
 
 
 @router.post("/skills/{skill_id}/bind-batch")
@@ -227,7 +227,7 @@ async def batch_bind_skill_to_agents(
     db = Depends(get_mongo_db),
     user = Depends(get_current_user)
 ):
-    """批量绑定 Skill 到多个 Agent"""
+    """Batch bind skills to multiple Agent"""
     from core.config.binding_manager import BindingManager
 
     binding_mgr = BindingManager()
@@ -243,14 +243,14 @@ async def batch_bind_skill_to_agents(
             else:
                 failed.append(agent_id)
         except Exception as e:
-            logger.error(f"绑定 {skill_id} -> {agent_id} 失败: {e}")
+            logger.error(f"binding {skill_id} -> {agent_id} failed: {e}")
             failed.append(agent_id)
 
     return {
         "success": len(failed) == 0,
         "bound": bound,
         "failed": failed,
-        "message": f"已绑定到 {len(bound)} 个 Agent" + (f"，{len(failed)} 个失败" if failed else "")
+        "message": f"is bound to {len(bound)} a Agent" + (f", {len(failed)} a failure" if failed else "")
     }
 
 
@@ -260,16 +260,16 @@ async def get_skill_bindings(
     db = Depends(get_mongo_db),
     user = Depends(get_current_user)
 ):
-    """获取 Skill 的所有绑定关系"""
+    """Get all binding relationships of Skill"""
     bindings = await db.tool_agent_bindings.find(
         {"tool_id": skill_id, "is_active": {"$ne": False}}
     ).to_list(100)
 
-    # 获取 Agent 详情
+    # Get Agent details
     agent_ids = [b["agent_id"] for b in bindings]
     agents = []
     for aid in agent_ids:
-        # 从 BUILTIN_AGENTS 查找
+        # Find from BUILTIN_AGENTS
         from core.agents.config import BUILTIN_AGENTS
         agent_meta = BUILTIN_AGENTS.get(aid)
         if agent_meta:
@@ -292,15 +292,15 @@ async def get_skill_bindings(
 
 @router.get("/tool-logs")
 async def get_tool_execution_logs(
-    tool_id: Optional[str] = Query(None, description="按工具 ID 过滤"),
-    agent_id: Optional[str] = Query(None, description="按 Agent ID 过滤"),
-    analysis_id: Optional[str] = Query(None, description="按分析任务 ID 过滤"),
-    success: Optional[bool] = Query(None, description="按成功/失败过滤"),
-    limit: int = Query(50, ge=1, le=200, description="返回数量"),
+    tool_id: Optional[str] = Query(None, description="Filter by tool ID"),
+    agent_id: Optional[str] = Query(None, description="Filter by Agent ID"),
+    analysis_id: Optional[str] = Query(None, description="Filter by analysis task ID"),
+    success: Optional[bool] = Query(None, description="Filter by success/failure"),
+    limit: int = Query(50, ge=1, le=200, description="Return quantity"),
     db = Depends(get_mongo_db),
     user = Depends(get_current_user)
 ):
-    """查询工具执行日志"""
+    """Query tool execution log"""
     query = {}
     if tool_id:
         query["tool_id"] = tool_id
@@ -313,7 +313,7 @@ async def get_tool_execution_logs(
 
     logs = await db["tool_execution_logs"].find(query).sort("created_at", -1).limit(limit).to_list(limit)
 
-    # 序列化
+    # serialization
     for log in logs:
         log["_id"] = str(log["_id"])
 
@@ -325,12 +325,12 @@ async def get_tool_log_stats(
     db = Depends(get_mongo_db),
     user = Depends(get_current_user)
 ):
-    """工具执行日志统计"""
+    """Tool execution log statistics"""
     total = await db["tool_execution_logs"].count_documents({})
     success_count = await db["tool_execution_logs"].count_documents({"success": True})
     fail_count = await db["tool_execution_logs"].count_documents({"success": False})
 
-    # 按工具统计
+    # Statistics by tool
     tool_pipeline = [
         {"$group": {"_id": "$tool_id", "count": {"$sum": 1}, "avg_ms": {"$avg": "$execution_time_ms"}}},
         {"$sort": {"count": -1}},
@@ -338,7 +338,7 @@ async def get_tool_log_stats(
     ]
     tool_stats = await db["tool_execution_logs"].aggregate(tool_pipeline).to_list(10)
 
-    # 按 Agent 统计
+    # Statistics by Agent
     agent_pipeline = [
         {"$group": {"_id": "$agent_id", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},

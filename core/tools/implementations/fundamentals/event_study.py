@@ -1,7 +1,7 @@
-"""事件研究法工具。
+"""Event study method tool.
 
-对指定股票在事件日前后的异常收益进行统计分析。
-使用均值调整收益模型（Mean-Adjusted Return Model）计算异常收益。
+Perform statistical analysis on the abnormal returns of specified stocks before and after the event date.
+Calculate abnormal returns using the Mean-Adjusted Return Model.
 """
 
 import datetime
@@ -39,7 +39,7 @@ def _to_float(value: Any) -> Optional[float]:
 
 
 def _parse_date(date_str: str) -> str:
-    """标准化日期为 YYYY-MM-DD 格式。"""
+    """Normalized dates are in YYYY-MM-DD format."""
     cleaned = "".join(ch for ch in date_str if ch.isdigit())[:8]
     if len(cleaned) == 8:
         return f"{cleaned[:4]}-{cleaned[4:6]}-{cleaned[6:]}"
@@ -47,7 +47,7 @@ def _parse_date(date_str: str) -> str:
 
 
 def _to_dash_date(date_str: str) -> str:
-    """将 YYYYMMDD 转为 YYYY-MM-DD，保持已有格式不变。"""
+    """Convert YYYYMMDD to YYYY-MM-DD, keeping the existing format unchanged."""
     if "-" in date_str:
         return date_str
     cleaned = "".join(ch for ch in date_str if ch.isdigit())[:8]
@@ -61,9 +61,9 @@ def _to_dash_date(date_str: str) -> str:
     tool_id="get_event_study",
     name="事件研究法",
     description=(
-        "对指定股票在事件日前后的异常收益进行统计分析。"
-        "使用均值调整收益模型（Mean-Adjusted Return Model）计算异常收益(AR)和累计异常收益(CAR)，"
-        "并计算 t 统计量检验显著性。"
+        "Perform statistical analysis on the abnormal returns of specified stocks before and after the event date."
+        "Calculate abnormal returns using the Mean-Adjusted Return Model(AR)and cumulative abnormal returns(CAR), "
+        "and calculate the t statistic to test significance."
     ),
     category="fundamentals",
     is_online=False,
@@ -74,17 +74,17 @@ def _to_dash_date(date_str: str) -> str:
     output_shape="structured_json",
     preferred_for=["事件驱动分析", "公告效应研究", "市场反应量化评估"],
     when_to_use=(
-        "当需要定量分析某个事件（如财报发布、重大公告、监管处罚、高管变更等）"
-        "对股票价格的影响时使用。适合事件驱动策略研究。"
+        "When it is necessary to quantitatively analyze an event (such as financial report release, major announcements, regulatory penalties, executive changes, etc.)"
+        "Used when affecting stock prices. Suitable for event-driven strategy research."
     ),
     when_not_to_use=(
-        "不适合获取股票历史行情本身（请用 get_stock_daily_quotes）；"
-        "不适合基本面因子分析。如果只需事件前后涨跌幅，可直接用行情查询。"
+        "Not suitable for obtaining historical stock quotes itself (please use get_stock_daily_quotes);"
+        "Not suitable for fundamental factor analysis. If you only need the rise and fall before and after the event, you can directly query the market price."
     ),
     returns=(
-        "返回 JSON 字符串，包含 symbol、event_date、method、"
-        "estimation（估计期统计量）、event_window（每日 AR/CAR 明细）、"
-        "summary（总 CAR、t 统计量、显著性判断）、data_quality（数据质量说明）。"
+        "Returns a JSON string, including symbol, event_date, method,"
+        "estimation (Estimated period statistics), event_window (daily AR/CAR details),"
+        "summary (Total CAR, t-statistic, significance judgment), data_quality (data quality description)."
     ),
     example="get_event_study(symbol='600519', event_date='20251201', window_before=30, window_after=30, estimation_window=120)",
     related_tools=[
@@ -94,28 +94,28 @@ def _to_dash_date(date_str: str) -> str:
     ],
 )
 def get_event_study(
-    symbol: Annotated[str, "A 股股票代码，6 位数字，如 600519"],
-    event_date: Annotated[str, "事件日期，格式为 YYYYMMDD 或 YYYY-MM-DD"],
-    window_before: Annotated[int, "事件窗口向前天数（事件前），默认 30"] = 30,
-    window_after: Annotated[int, "事件窗口向后天数（事件后），默认 30"] = 30,
-    estimation_window: Annotated[int, "估计期窗口天数，默认 120"] = 120,
+    symbol: Annotated[str, "A Stock stock code, 6 digits, such as 600519"],
+    event_date: Annotated[str, "Event date in the format YYYYMMDD or YYYY-MM-DD"],
+    window_before: Annotated[int, "The number of days forward in the event window (before the event), default 30"] = 30,
+    window_after: Annotated[int, "The number of days back the event window (after the event), default 30"] = 30,
+    estimation_window: Annotated[int, "Number of days in the estimation window, default 120"] = 120,
 ) -> str:
-    """事件研究法分析工具。
+    """Event study analysis tool.
 
-    使用均值调整收益模型（Mean-Adjusted Return Model）计算：
-    - 估计期：用于估计正常收益
-    - 事件窗口：计算异常收益(AR)和累计异常收益(CAR)
-    - 显著性检验：t 统计量
+    Calculated using the Mean-Adjusted Return Model:
+    - Estimation period: used to estimate normal income
+    - Event Window: Calculating Abnormal Returns(AR)and cumulative abnormal returns(CAR)
+    - Significance test: t statistic
 
     Args:
-        symbol: A 股股票代码
-        event_date: 事件日期
-        window_before: 事件窗口向前天数
-        window_after: 事件窗口向后天数
-        estimation_window: 估计期窗口天数
+        symbol: A stock ticker code
+        event_date: event date
+        window_before: Event window number of days forward
+        window_after: Event window number of days backward
+        estimation_window: Estimated window number of days
 
     Returns:
-        JSON 字符串格式的事件研究结果
+        JSON Event research results in string format
     """
     try:
         symbol = str(symbol).strip().zfill(6)
@@ -123,14 +123,14 @@ def get_event_study(
 
         event_dt = datetime.datetime.strptime(event, "%Y-%m-%d")
 
-        # 计算日期范围
+        # Calculate date range
         estimation_start = event_dt - datetime.timedelta(days=estimation_window + window_before + 10)
         event_end = event_dt + datetime.timedelta(days=window_after + 10)
 
         start_str = estimation_start.strftime("%Y%m%d")
         end_str = event_end.strftime("%Y%m%d")
 
-        # 获取日线数据
+        # Get daily data
         quotes = get_stock_daily_quotes(symbol, start_str, end_str, period="daily", limit=5000)
 
         if not quotes:
@@ -140,7 +140,7 @@ def get_event_study(
                 default=str,
             )
 
-        # 计算每日收益率
+        # Calculate daily return
         daily_returns: List[Dict[str, Any]] = []
         for q in quotes:
             trade_date = q.get("trade_date", "")
@@ -164,16 +164,16 @@ def get_event_study(
                 {
                     "status": "error",
                     "message": f"日线数据不足，仅获取到 {len(daily_returns)} 条有效交易记录，"
-                    f"估计期需要至少 {estimation_window // 2} 条",
+                    f"The estimation period needs to be at least {estimation_window // 2} Article",
                 },
                 ensure_ascii=False,
                 default=str,
             )
 
-        # 按日期排序
+        # Sort by date
         daily_returns.sort(key=lambda x: x["date"])
 
-        # 将日期转换为 datetime 用于比较
+        # Convert date to datetime for comparison
         def _date_key(d: str) -> datetime.datetime:
             try:
                 return datetime.datetime.strptime(d, "%Y-%m-%d")
@@ -182,7 +182,7 @@ def get_event_study(
 
         event_dt_compare = _date_key(event)
 
-        # 分离估计期和事件窗口
+        # Separate estimation periods and event windows
         estimation_returns: List[float] = []
         event_window_returns: List[Dict[str, Any]] = []
 
@@ -190,14 +190,14 @@ def get_event_study(
             item_date = _date_key(item["date"])
             days_diff = (item_date - event_dt_compare).days
 
-            # 估计期：[event_date - estimation_window - window_before, event_date - window_before)
+            # Estimated period:[event_date - estimation_window - window_before, event_date - window_before)
             est_start = -estimation_window - window_before
             est_end = -window_before
 
             if est_start <= days_diff < est_end:
                 estimation_returns.append(item["return"])
 
-            # 事件窗口：[event_date - window_before, event_date + window_after]
+            # Event window:[event_date - window_before, event_date + window_after]
             if -window_before <= days_diff <= window_after:
                 event_window_returns.append({
                     "date": item["date"],
@@ -215,11 +215,11 @@ def get_event_study(
                 default=str,
             )
 
-        # 均值调整收益模型
+        # mean adjusted return model
         mean_return = mean(estimation_returns)
         std_return = stdev(estimation_returns) if len(estimation_returns) > 1 else 0.0
 
-        # 计算事件窗口内的 AR 和 CAR
+        # Compute the AR sum within the event window CAR
         ar_values: List[float] = []
         car = 0.0
         event_results: List[Dict[str, Any]] = []
@@ -238,15 +238,15 @@ def get_event_study(
                 "car": round(car, 6),
             })
 
-        # t 统计量检验：H0: CAR = 0
+        # t Statistical test:H0: CAR = 0
         n = len(ar_values)
         if n > 1 and std_return > 0:
-            # 使用估计期的标准差近似
+            # Approximate using the standard deviation of the estimation period
             t_stat = car / (std_return * (n ** 0.5)) if n > 0 else 0.0
         else:
             t_stat = 0.0
 
-        # 临界值近似（双尾检验，5% 显著性水平）
+        # Critical value approximation (two-tailed test, 5% significance level)
         significant = abs(t_stat) > 1.96
 
         summary = {
@@ -254,7 +254,7 @@ def get_event_study(
             "t_stat": round(t_stat, 4),
             "significant": significant,
             "interpretation": (
-                "事件在统计上产生显著异常收益"
+                "Events generate statistically significant abnormal returns"
                 if significant
                 else "事件未产生显著异常收益"
             ),
@@ -282,7 +282,7 @@ def get_event_study(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("事件研究法分析失败: %s", exc, exc_info=True)
+        logger.error("Event study analysis failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 

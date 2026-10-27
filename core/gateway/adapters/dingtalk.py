@@ -1,19 +1,19 @@
 """
-钉钉 Bot 适配器
+DingTalk Bot Adapter
 
-基于钉钉机器人 Outgoing 回调模式实现，支持：
-- 单聊消息
-- 群聊 @Bot 消息
-- 签名验证（timestamp + sign）
-- Access Token 自动管理
+Implemented based on the Outgoing callback mode of DingTalk Robot, supporting:
+- Single chat message
+- group chat @Bot news
+- Signature Verification (timestamp + sign) 
+- Access Token Automatic management
 
-钉钉开放平台文档: https://open.dingtalk.com/document/orgapp/robot-overview
+DingTalk Open Platform Documentation: https://open.dingtalk.com/document/orgapp/robot-overview
 
-配置项（存储在 system_configs, config_key="gateway_dingtalk"）:
+Configuration items (stored in system_configs, config_key="gateway_dingtalk") :
 {
     "app_key": "xxx",              # AppKey
     "app_secret": "xxx",           # AppSecret
-    "robot_code": "xxx",           # 机器人编码（用于主动发消息）
+    "robot_code": "xxx",           # Robot coding (for proactive messaging)
     "enabled": true
 }
 """
@@ -45,7 +45,7 @@ DINGTALK_OLD_API = "https://oapi.dingtalk.com"
 
 
 class DingTalkAdapter(BaseGatewayAdapter):
-    """钉钉 Bot 适配器"""
+    """DingTalk Bot Adapter"""
 
     channel_type = ChannelType.DINGTALK
 
@@ -55,7 +55,7 @@ class DingTalkAdapter(BaseGatewayAdapter):
         self._token_expires_at: float = 0.0
 
     # ------------------------------------------------------------------ #
-    # Access Token 管理
+    # Access Token management
     # ------------------------------------------------------------------ #
 
     async def _ensure_access_token(self) -> str:
@@ -75,7 +75,7 @@ class DingTalkAdapter(BaseGatewayAdapter):
         self._access_token = data.get("accessToken")
         expire_in = data.get("expireIn", 7200)
         self._token_expires_at = now + expire_in
-        logger.info("[DingTalkAdapter] Access Token 已刷新，有效期 %ss", expire_in)
+        logger.info("[DingTalkAdapter] Access Token Refreshed, valid period %ss", expire_in)
         return self._access_token
 
     def _get_auth_headers(self, token: str) -> Dict[str, str]:
@@ -85,24 +85,24 @@ class DingTalkAdapter(BaseGatewayAdapter):
         }
 
     # ------------------------------------------------------------------ #
-    # Webhook 验证
+    # Webhook Verify
     # ------------------------------------------------------------------ #
 
     async def verify_request(
         self, headers: Dict[str, str], body: bytes
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
-        验证钉钉 Outgoing 机器人回调请求。
+        Verify DingTalk Outgoing robot callback request.
 
-        钉钉在 header 中传递 timestamp + sign，
-        用 AppSecret 对 timestamp + "\\n" + AppSecret 做 HMAC-SHA256 校验。
+        DingTalk is passed in the header timestamp + sign, 
+        Use AppSecret to timestamp + "\\n" + AppSecret Do HMAC-SHA256 verification.
         """
         timestamp = headers.get("timestamp", "")
         sign = headers.get("sign", "")
 
         if not timestamp or not sign:
-            # 新版钉钉某些模式可能不传签名，放行并在日志中提醒
-            logger.warning("[DingTalkAdapter] 缺少签名头，放行")
+            # In the new version of DingTalk, some modes may not transmit signatures, and will be released and reminded in the log.
+            logger.warning("[DingTalkAdapter] Missing signature header, released")
             return True, None
 
         app_secret = self.config.get("app_secret", "")
@@ -118,13 +118,13 @@ class DingTalkAdapter(BaseGatewayAdapter):
         expected_sign = quote_plus(base64.b64encode(hmac_code).decode("utf-8"))
 
         if sign != expected_sign:
-            logger.warning("[DingTalkAdapter] 签名验证失败")
+            logger.warning("[DingTalkAdapter] Signature verification failed")
             return False, None
 
         return True, None
 
     # ------------------------------------------------------------------ #
-    # 消息解析
+    # Message parsing
     # ------------------------------------------------------------------ #
 
     async def parse_message(
@@ -137,7 +137,7 @@ class DingTalkAdapter(BaseGatewayAdapter):
 
         msg_type = payload.get("msgtype", "")
         if msg_type != "text":
-            logger.debug("[DingTalkAdapter] 忽略消息类型: %s", msg_type)
+            logger.debug("[DingTalkAdapter] Ignore message type: %s", msg_type)
             return None
 
         text_content = payload.get("text", {}).get("content", "").strip()
@@ -148,7 +148,7 @@ class DingTalkAdapter(BaseGatewayAdapter):
         sender_nick = payload.get("senderNick", "")
         conversation_id = payload.get("conversationId", "")
         conversation_type = payload.get("conversationType", "")
-        # 1 = 单聊, 2 = 群聊
+        # 1 = Private chat, 2 = group chat
         is_group = str(conversation_type) == "2"
         msg_id = payload.get("msgId", "")
         chatbot_user_id = payload.get("chatbotUserId", "")
@@ -179,15 +179,15 @@ class DingTalkAdapter(BaseGatewayAdapter):
         )
 
     # ------------------------------------------------------------------ #
-    # 消息发送
+    # message sending
     # ------------------------------------------------------------------ #
 
     async def send_response(self, response: GatewayResponse) -> bool:
         """
-        发送消息到钉钉。
+        Send a message to DingTalk.
 
-        优先使用 sessionWebhook（Outgoing 场景下的回复 URL），
-        否则使用主动发消息 API。
+        Prioritize using sessionWebhook (reply URL in Outgoing scenario),
+        Otherwise use the active messaging API.
         """
         session_webhook = (response.metadata or {}).get("session_webhook")
         if session_webhook:
@@ -196,7 +196,7 @@ class DingTalkAdapter(BaseGatewayAdapter):
         return await self._send_via_api(response)
 
     async def _send_via_webhook(self, webhook_url: str, response: GatewayResponse) -> bool:
-        """通过 sessionWebhook 回复（最简方式）"""
+        """Reply via sessionWebhook (the simplest way)"""
         text = self.truncate_for_platform(response.content, max_length=4000)
         body = {
             "msgtype": "text",
@@ -208,24 +208,24 @@ class DingTalkAdapter(BaseGatewayAdapter):
                 resp = await client.post(webhook_url, json=body)
             data = resp.json()
             if data.get("errcode", 0) == 0:
-                logger.info("[DingTalkAdapter] Webhook 回复成功")
+                logger.info("[DingTalkAdapter] Webhook Reply successful")
                 return True
             else:
                 logger.warning(
-                    "[DingTalkAdapter] Webhook 回复失败: %s", data.get("errmsg")
+                    "[DingTalkAdapter] Webhook Reply failed: %s", data.get("errmsg")
                 )
                 return False
         except Exception as e:
-            logger.exception("[DingTalkAdapter] Webhook 回复异常: %s", e)
+            logger.exception("[DingTalkAdapter] Webhook Exception in reply: %s", e)
             return False
 
     async def _send_via_api(self, response: GatewayResponse) -> bool:
-        """通过钉钉开放 API 主动发消息"""
+        """Actively send messages through DingTalk s open API"""
         token = await self._ensure_access_token()
 
         robot_code = self.config.get("robot_code", "")
         if not robot_code:
-            logger.warning("[DingTalkAdapter] 缺少 robot_code，无法主动发消息")
+            logger.warning("[DingTalkAdapter] Missing robot_code, unable to actively send messages")
             return False
 
         channel_id = response.channel_id
@@ -250,7 +250,7 @@ class DingTalkAdapter(BaseGatewayAdapter):
                 "msgParam": json.dumps({"content": text}, ensure_ascii=False),
             }
         else:
-            logger.warning("[DingTalkAdapter] 未知 channel_id 格式: %s", channel_id)
+            logger.warning("[DingTalkAdapter] Unknown channel_id format: %s", channel_id)
             return False
 
         try:
@@ -260,22 +260,22 @@ class DingTalkAdapter(BaseGatewayAdapter):
                 )
             data = resp.json()
             if resp.status_code in (200, 201) and not data.get("code"):
-                logger.info("[DingTalkAdapter] API 消息发送成功")
+                logger.info("[DingTalkAdapter] API Message sent successfully")
                 return True
             else:
                 logger.warning(
-                    "[DingTalkAdapter] API 消息发送失败: %s",
+                    "[DingTalkAdapter] API Message sending failed: %s",
                     data.get("message") or data.get("errmsg"),
                 )
                 return False
         except Exception as e:
-            logger.exception("[DingTalkAdapter] API 消息发送异常: %s", e)
+            logger.exception("[DingTalkAdapter] API Message sending exception: %s", e)
             return False
 
     def format_report_as_response(
         self, report_text: str, channel_id: str
     ) -> GatewayResponse:
-        """将分析报告格式化为钉钉 Markdown 消息"""
+        """Format analysis reports as DingTalk Markdown messages"""
         truncated = self.truncate_for_platform(report_text, max_length=3500)
         return GatewayResponse(
             channel_type=self.channel_type.value,

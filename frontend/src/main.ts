@@ -18,97 +18,97 @@ import { useAppStore } from './stores/app'
 import './styles/index.scss'
 import './styles/dark-theme.scss'
 
-// 创建应用实例
+// Create application instance
 const app = createApp(App)
 
-// 注册Element Plus图标
+// Register Element Plus Icon
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
-// 使用插件
+// Use plugins
 const pinia = createPinia()
 app.use(pinia)
 app.use(router)
-// 设置全局中文 locale（Element Plus）
+// Set global Chinese locale (Element Plus)
 dayjs.locale('zh-cn')
 app.use(ElementPlus, {
   size: 'default',
   zIndex: 3000,
   locale: zhCn,
-  // 配置消息提示
+  // Configure message prompts
   message: {
-    max: 3, // 最多同时显示3个消息
-    grouping: true, // 启用消息分组，相同内容的消息不会重复显示
-    duration: 3000, // 默认显示时长3秒
+    max: 3, // Display up to 3 messages simultaneously
+    grouping: true, // Enable message grouping, messages with the same content will not be displayed repeatedly
+    duration: 3000, // The default display time is 3 seconds
   },
 })
 
-// 注册全局组件
+// Register global components
 setupGlobalComponents(app)
 
-// 智能助手交付物下载拦截（历史消息中的下载链接浏览器导航不带 JWT，全局委托改走 fetch+blob）
+// Intelligent assistant deliverable download interception (the browser navigation of the download link in the historical message does not have JWT, and the global delegation is changed) fetch+blob) 
 setupDeliverableDownloadInterceptor()
 
-// 全局错误处理
+// Global error handling
 app.config.errorHandler = (err, _vm, info) => {
-  console.error('全局错误:', err, info)
+  console.error('global error:', err, info)
 
-  // 检查是否是认证错误
+  // Check if it is an authentication error
   if (err && typeof err === 'object') {
     const error = err as any
-    // 检查错误消息或状态码
+    // Check the error message or status code
     if (
       !error.__skipGlobalAuthRedirect && (
-        error.message?.includes('认证失败') ||
-        error.message?.includes('登录已过期') ||
+        error.message?.includes('Authentication failed') ||
+        error.message?.includes('Login has expired') ||
         error.message?.includes('Token') ||
         error.response?.status === 401 ||
         error.code === 401
       )
     ) {
-      console.log('🔒 全局错误处理：检测到认证错误，跳转登录页')
+      console.log('🔒 Global error handling: Authentication error detected, jump to login page')
       const authStore = useAuthStore()
       authStore.clearAuthInfo()
       router.push('/login')
     }
   }
 
-  // 这里可以集成错误监控服务
+  // Error monitoring services can be integrated here
 }
 
-// 全局警告处理
+// Global warning handling
 app.config.warnHandler = (msg, _vm, trace) => {
-  console.warn('全局警告:', msg, trace)
+  console.warn('global warning:', msg, trace)
 }
 
-// 初始化认证状态
+// Initialize authentication status
 const initApp = async () => {
   try {
     const authStore = useAuthStore()
     const appStore = useAppStore()
 
-    console.log('🔄 初始化应用状态...')
+    console.log('🔄 Initialize application state...')
 
-    // 应用主题
+    // Apply theme
     appStore.applyTheme()
-    console.log('🎨 主题已应用:', appStore.theme)
+    console.log('🎨 Theme has been applied:', appStore.theme)
 
-    // 设置网络状态监听
+    // Set up network status monitoring
     window.addEventListener('online', () => {
-      console.log('🌐 网络已连接')
+      console.log('🌐 Network is connected')
       appStore.setOnlineStatus(true)
       appStore.checkApiConnection()
     })
 
     window.addEventListener('offline', () => {
-      console.log('📱 网络已断开')
+      console.log('📱 The network is disconnected')
       appStore.setOnlineStatus(false)
       appStore.setApiConnected(false)
     })
 
-    // 检查API连接状态
-    console.log('🔍 检查API连接状态...')
+    // Check API connection status
+    console.log('🔍 Check API connection status...')
     const apiConnected = await appStore.checkApiConnection()
 
     if (apiConnected) {
@@ -116,43 +116,43 @@ const initApp = async () => {
     }
 
     if (apiConnected) {
-      console.log('✅ API连接正常，检查认证状态...')
-      // 检查本地存储的认证信息（设置较短的超时时间）
+      console.log('✅ API The connection is normal, check the authentication status...')
+      // Check locally stored authentication information (set a short timeout)
       const checkPromise = authStore.checkAuthStatus()
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('认证检查超时')), 5000) // 5秒超时
+        setTimeout(() => reject(new Error('Authentication check timeout')), 5000) // 5 seconds timeout
       })
 
       await Promise.race([checkPromise, timeoutPromise])
-      console.log('✅ 认证状态初始化完成')
+      console.log('✅ Authentication status initialization completed')
 
-      // 如果用户已登录，启动 token 自动刷新定时器
+      // If the user is logged in, start the token automatic refresh timer
       if (authStore.isAuthenticated) {
         const { setupTokenRefreshTimer } = await import('./utils/auth')
         setupTokenRefreshTimer()
       }
     } else {
-      console.log('⚠️ API连接失败，跳过认证检查')
+      console.log('⚠️ API Connection failed, authentication check skipped')
     }
   } catch (error: unknown) {
-    console.warn('⚠️ 应用初始化失败，但应用将继续启动:', error)
-    // 如果是网络错误，不影响应用启动
+    console.warn('⚠️ App initialization failed, but the app will continue to launch:', error)
+    // If it is a network error, it will not affect application startup.
     if ((error as any)?.code === 'ECONNABORTED' || (error as any)?.message?.includes('timeout')) {
-      console.log('📱 离线模式：应用将在没有后端连接的情况下启动')
+      console.log('📱 Offline mode: App will launch without backend connection')
     }
   } finally {
-    // 无论认证状态如何，都挂载应用
+    // Mount the application regardless of authentication status
     app.mount('#app')
-    console.log('🚀 应用已挂载')
+    console.log('🚀 Application is mounted')
   }
 }
 
-// 启动应用
+// Start application
 initApp()
 
-// 开发环境下的调试信息
+// Debugging information in development environment
 if (import.meta.env.DEV) {
-  console.log('🚀 TradingAgents-CN v3.0.0 前端应用已启动')
-  console.log('📊 当前环境:', import.meta.env.MODE)
-  console.log('🔗 API地址:', import.meta.env.VITE_API_BASE_URL || '/api')
+  console.log('🚀 TradingAgents-CN v3.0.0 Front-end application started')
+  console.log('📊 current environment:', import.meta.env.MODE)
+  console.log('🔗 API address:', import.meta.env.VITE_API_BASE_URL || '/api')
 }

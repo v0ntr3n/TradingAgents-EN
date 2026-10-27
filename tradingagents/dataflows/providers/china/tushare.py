@@ -1,9 +1,9 @@
 """
-统一的Tushare数据提供器
-合并app层和tradingagents层的所有优势功能
+Unified Tushare data provider
+Merges all the advantages of app layer and tradingagents layer
 """
 import os
-# 🔧 避免 Tushare 写用户主目录 tk.csv 导致权限错误
+# 🔧 Avoid permission errors caused by Tushare writing user home directory tk.csv
 os.environ['TS_CACHE_DIR'] = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'data', 'tushare_cache')
 os.environ['TS_DATA_DIR'] = os.environ['TS_CACHE_DIR']
 os.environ['TEMP'] = os.environ['TS_CACHE_DIR']
@@ -17,11 +17,11 @@ import logging
 from ..base_provider import BaseStockDataProvider
 from tradingagents.config.providers_config import get_provider_config
 
-# 尝试导入tushare
+# try to import tushare
 try:
     import tushare as ts
     TUSHARE_AVAILABLE = True
-    # monkey patch upass 避免写 tk.csv
+    # monkey patch upass avoid writing tk.csv
     try:
         from tushare import upass
         _orig_set_token = upass.set_token
@@ -43,92 +43,92 @@ logger = logging.getLogger(__name__)
 
 class TushareProvider(BaseStockDataProvider):
     """
-    统一的Tushare数据提供器
-    合并app层和tradingagents层的所有优势功能
+    Unified Tushare data provider
+    Merges all the advantages of app layer and tradingagents layer
     """
     
     def __init__(self):
         super().__init__("Tushare")
         self.api = None
         self.config = get_provider_config("tushare")
-        self.token_source = None  # 记录 Token 来源: 'database' 或 'env'
-        self._event_loop_closed = False  # 🔥 标记事件循环是否已关闭
+        self.token_source = None  # Record Token source: 'database' or 'env'
+        self._event_loop_closed = False  # 🔥 Marks whether the event loop has been closed
 
         if not TUSHARE_AVAILABLE:
-            self.logger.error("❌ Tushare库未安装，请运行: pip install tushare")
+            self.logger.error("❌ Tushare The library is not installed, please run: pip install tushare")
 
     def is_event_loop_closed(self) -> bool:
         """
-        检查事件循环是否已关闭
+        Check if the event loop has been closed
 
         Returns:
-            True 如果事件循环已关闭，False 否则
+            True False if the event loop is closed otherwise
         """
         return self._event_loop_closed
 
     def _get_token_from_database(self) -> Optional[str]:
         """
-        从数据库读取 Tushare Token
+        Read from database Tushare Token
 
-        优先级：数据库配置 > 环境变量
-        这样用户在 Web 后台修改配置后可以立即生效
+        Priority: Database Configuration > environment variables
+        In this way, after users modify the configuration in the web background, it can take effect immediately.
         """
         try:
-            self.logger.info("🔍 [DB查询] 开始从数据库读取 Token...")
+            self.logger.info("🔍 [DB Query] Start reading from database Token...")
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
             config_collection = db.system_configs
 
-            # 获取最新的激活配置
-            self.logger.info("🔍 [DB查询] 查询 is_active=True 的配置...")
+            # Get the latest activation configuration
+            self.logger.info("🔍 [DB Query] Query is_active=True configuration...")
             config_data = config_collection.find_one(
                 {"is_active": True},
                 sort=[("version", -1)]
             )
 
             if config_data:
-                self.logger.info(f"✅ [DB查询] 找到激活配置，版本: {config_data.get('version')}")
+                self.logger.info(f"✅ [DB Query] Find activation configuration, version: {config_data.get('version')}")
                 if config_data.get('data_source_configs'):
                     self.logger.info(f"✅ [DB查询] 配置中有 {len(config_data['data_source_configs'])} 个数据源")
                     for ds_config in config_data['data_source_configs']:
                         ds_type = ds_config.get('type')
-                        self.logger.info(f"🔍 [DB查询] 检查数据源: {ds_type}")
+                        self.logger.info(f"🔍 [DB Query] Check data source: {ds_type}")
                         if ds_type == 'tushare':
                             api_key = ds_config.get('api_key')
-                            self.logger.info(f"✅ [DB查询] 找到 Tushare 配置，api_key 长度: {len(api_key) if api_key else 0}")
+                            self.logger.info(f"✅ [DB Query] Find Tushare configuration, api_key length: {len(api_key) if api_key else 0}")
                             if api_key and not api_key.startswith("your_"):
-                                self.logger.info(f"✅ [DB查询] Token 有效 (长度: {len(api_key)})")
+                                self.logger.info(f"✅ [DB Query] Token valid (length: {len(api_key)})")
                                 return api_key
                             else:
-                                self.logger.warning(f"⚠️ [DB查询] Token 无效或为占位符")
+                                self.logger.warning(f"⚠️ [DB Query] Token Invalid or a placeholder")
                 else:
-                    self.logger.warning("⚠️ [DB查询] 配置中没有 data_source_configs")
+                    self.logger.warning("⚠️ [DB Query] Not in configuration data_source_configs")
             else:
-                self.logger.warning("⚠️ [DB查询] 未找到激活的配置")
+                self.logger.warning("⚠️ [DB Query] Activated configuration not found")
 
-            self.logger.info("⚠️ [DB查询] 数据库中未找到有效的 Tushare Token")
+            self.logger.info("⚠️ [DB Query] No valid one found in database Tushare Token")
         except Exception as e:
-            self.logger.error(f"❌ [DB查询] 从数据库读取 Token 失败: {e}")
+            self.logger.error(f"❌ [DB Query] Failed to read Token from database: {e}")
             import traceback
-            self.logger.error(f"❌ [DB查询] 堆栈跟踪:\n{traceback.format_exc()}")
+            self.logger.error(f"❌ [DB Query] stack trace:\n{traceback.format_exc()}")
 
         return None
 
     def _ensure_api_client(self, validate: bool = False) -> bool:
-        """确保 Tushare API Client 已初始化。Tushare 是 HTTP API，不维护长连接。
+        """Make sure Tushare API Client is initialized. Tushare is an HTTP API and does not maintain long connections.
 
-        🔥 每次调用都会从数据库读取最新 Token（优先级：数据库 > 环境变量）；
-        若与当前 API Client 使用的 Token 不一致，则自动重新初始化，
-        保证用户在 Web 后台修改 Token 后立即生效，无需重启后端。
+        🔥 Each call will read the latest Token from the database (Priority: Database > environment variables);
+        If it is inconsistent with the Token used by the current API Client, it will be automatically reinitialized.
+        It is guaranteed that users modify the Token in the web background to take effect immediately without restarting the backend.
         """
         if not TUSHARE_AVAILABLE:
-            self.logger.error("❌ Tushare库不可用")
+            self.logger.error("❌ Tushare Library is not available")
             self.api = None
             self.connected = False
             return False
 
         try:
-            # 🔥 每次调用重新读取 Token，避免缓存旧 Token
+            # 🔥 Re-read the Token every time it is called to avoid caching old Token
             db_token = self._get_token_from_database()
             env_token = self.config.get('token') or os.getenv("TUSHARE_TOKEN", "")
             token_candidates = []
@@ -138,15 +138,15 @@ class TushareProvider(BaseStockDataProvider):
                 token_candidates.append(("env", env_token.strip()))
 
             if not token_candidates:
-                self.logger.error("❌ Tushare token未配置，请在 Web 后台或 .env 文件中配置 TUSHARE_TOKEN")
+                self.logger.error("❌ Tushare token Not configured, please configure it in the web backend or .env file TUSHARE_TOKEN")
                 self.api = None
                 self.connected = False
                 return False
 
-            # 当前应使用的 Token（数据库优先）
+            # The Token that should be used currently (database first)
             effective_token = token_candidates[0][1]
 
-            # 🔥 Token 未变化且 API Client 已就绪：直接复用，避免不必要的重建
+            # 🔥 Token Unchanged and API Client is ready: reuse directly to avoid unnecessary rebuilding
             if (
                 self.api is not None
                 and not validate
@@ -155,31 +155,31 @@ class TushareProvider(BaseStockDataProvider):
                 self.connected = True
                 return True
 
-            # 🔥 Token 已变化：废弃旧 API Client，重新初始化
+            # 🔥 Token Changed: Deprecated old API Client, reinitialized
             if self.api is not None:
-                self.logger.info("🔄 Tushare Token 已变更，重新初始化 API Client")
+                self.logger.info("🔄 Tushare Token Changed, reinitialized API Client")
 
             for source, token in token_candidates:
                 try:
-                    self.logger.info(f"🔄 初始化 Tushare API Client (Token来源: {source})")
-                    # 直接传入 token 给 pro_api，不调用 set_token 避免写 tk.csv 文件
-                    # ts.set_token(token) 会把 token 缓存到 ~/tk.csv，在沙箱等受限环境会 Permission denied
+                    self.logger.info(f"🔄 initialization Tushare API Client (Token Source: {source})")
+                    # Directly pass the token to pro_api without calling set_token to avoid writing the tk.csv file
+                    # ts.set_token(token) The token will be cached in ~/tk.csv, In restricted environments such as sandboxes, Permission denied
                     api = ts.pro_api(token)
 
                     if validate:
                         test_data = api.stock_basic(list_status='L', limit=1)
                         if test_data is None or test_data.empty:
-                            self.logger.warning(f"⚠️ Tushare Token 测试失败 (Token来源: {source})")
+                            self.logger.warning(f"⚠️ Tushare Token test failed (Token Source: {source})")
                             continue
 
                     self.api = api
                     self._current_token = token
                     self.connected = True
                     self.token_source = source
-                    self.logger.info(f"✅ Tushare API Client 已就绪 (Token来源: {source})")
+                    self.logger.info(f"✅ Tushare API Client Ready (Token Source: {source})")
                     return True
                 except Exception as e:
-                    self.logger.warning(f"⚠️ 初始化 Tushare API Client 失败 (Token来源: {source}): {e}")
+                    self.logger.warning(f"⚠️ Failed to initialize Tushare API Client (Token Source: {source}): {e}")
                     continue
 
             self.api = None
@@ -187,41 +187,41 @@ class TushareProvider(BaseStockDataProvider):
             return False
 
         except Exception as e:
-            self.logger.error(f"❌ 初始化 Tushare API Client 失败: {e}")
+            self.logger.error(f"❌ Failed to initialize Tushare API Client: {e}")
             self.api = None
             self.connected = False
             return False
 
     def connect_sync(self) -> bool:
-        """同步初始化 Tushare API Client（兼容旧接口）。"""
+        """Synchronously initialize Tushare API Client (compatible with old interface)."""
         return self._ensure_api_client(validate=True)
 
     async def connect(self) -> bool:
-        """异步初始化 Tushare API Client（兼容旧接口）。"""
+        """Asynchronous initialization of Tushare API Client (compatible with old interface)."""
         return await asyncio.to_thread(self.connect_sync)
     
     def is_available(self) -> bool:
-        """检查 Tushare API Client 是否可用。"""
+        """Check whether Tushare API Client is available."""
         return self._ensure_api_client(validate=False)
     
-    # ==================== 基础数据接口 ====================
+    # ==================== Basic data interface ====================
     
     def get_stock_list_sync(self, market: str = None) -> Optional[pd.DataFrame]:
-        """获取股票列表（同步版本），包含沪深+北交所"""
+        """Get the stock list (synchronized version), including Shanghai and Shenzhen+Beijing Exchange"""
         if not self.is_available():
             return None
 
         try:
             df = self.api.stock_basic(
                 list_status='L',
-                exchange='SSE,SZSE,BSE',  # 沪深 + 北交所（不传则默认可能不含北交所）
+                exchange='SSE,SZSE,BSE',  # Shanghai and Shenzhen + North Exchange (if not uploaded, North Exchange may not be included by default)
                 fields='ts_code,symbol,name,area,industry,market,exchange,list_date,is_hs'
             )
             if df is not None and not df.empty:
                 self.logger.info(f"✅ 成功获取 {len(df)} 条股票数据")
                 return df
             else:
-                self.logger.warning("⚠️ Tushare API 返回空数据")
+                self.logger.warning("⚠️ Tushare API Return empty data")
                 return None
         except Exception as e:
             self.logger.error(f"❌ 获取股票列表失败: {e}")
@@ -233,29 +233,29 @@ class TushareProvider(BaseStockDataProvider):
             return None
 
         try:
-            # 构建查询参数（默认包含沪深+北交所）
+            # Build query parameters (default includes Shanghai and Shenzhen+Beijing Exchange)
             params = {
-                'list_status': 'L',  # 只获取上市股票
-                'exchange': 'SSE,SZSE,BSE',  # 沪深 + 北交所
+                'list_status': 'L',  # Get only listed stocks
+                'exchange': 'SSE,SZSE,BSE',  # Shanghai and Shenzhen + Beijing Exchange
                 'fields': 'ts_code,symbol,name,area,industry,market,exchange,list_date,is_hs'
             }
             
             if market:
-                # 根据市场筛选
+                # Filter by market
                 if market == "CN":
-                    params['exchange'] = 'SSE,SZSE,BSE'  # 沪深 + 北交所
+                    params['exchange'] = 'SSE,SZSE,BSE'  # Shanghai and Shenzhen + Beijing Exchange
                 elif market == "HK":
-                    return None  # Tushare港股需要单独处理
+                    return None  # Tushare Hong Kong stocks need to be handled separately
                 elif market == "US":
-                    return None  # Tushare不支持美股
+                    return None  # Tushare Does not support US stocks
             
-            # 获取数据
+            # Get data
             df = await asyncio.to_thread(self.api.stock_basic, **params)
             
             if df is None or df.empty:
                 return None
             
-            # 转换为标准格式
+            # Convert to standard format
             stock_list = []
             for _, row in df.iterrows():
                 stock_info = self.standardize_basic_info(row.to_dict())
@@ -275,7 +275,7 @@ class TushareProvider(BaseStockDataProvider):
         
         try:
             if symbol:
-                # 获取单个股票信息
+                # Get individual stock information
                 ts_code = self._normalize_ts_code(symbol)
                 df = await asyncio.to_thread(
                     self.api.stock_basic,
@@ -288,22 +288,22 @@ class TushareProvider(BaseStockDataProvider):
                 
                 return self.standardize_basic_info(df.iloc[0].to_dict())
             else:
-                # 获取所有股票信息
+                # Get all stock information
                 return await self.get_stock_list()
                 
         except Exception as e:
-            self.logger.error(f"❌ 获取股票基础信息失败 symbol={symbol}: {e}")
+            self.logger.error(f"❌ Failed to obtain basic stock information symbol={symbol}: {e}")
             return None
     
     async def get_stock_quotes(self, symbol: str) -> Optional[Dict[str, Any]]:
         """
-        获取单只股票实时行情
+        Get real-time quotes for a single stock
 
-        🔥 策略：使用 daily 接口获取最新一天的数据（不使用 rt_k 批量接口）
-        - rt_k 接口是批量接口，单只股票调用浪费配额
-        - daily 接口可以获取单只股票的最新日线数据，包含更多指标
+        🔥 Strategy: Use the daily interface to obtain the latest day s data (do not use the rt_k batch interface)
+        - rt_k The interface is a batch interface, and calling a single stock wastes quota.
+        - daily The interface can obtain the latest daily data of a single stock, including more indicators
 
-        注意：此方法适合少量股票获取，大量股票建议使用 get_realtime_quotes_batch()
+        Note: This method is suitable for acquiring a small amount of stocks, but is recommended for large amounts of stocks. get_realtime_quotes_batch()
         """
         if not self.is_available():
             return None
@@ -311,10 +311,10 @@ class TushareProvider(BaseStockDataProvider):
         try:
             ts_code = self._normalize_ts_code(symbol)
 
-            # 🔥 使用 daily 接口获取最新一天的数据（更节省配额）
+            # 🔥 Use the daily interface to get the latest day's data (more quota savings)
             from datetime import datetime, timedelta
 
-            # 获取最近3天的数据（考虑周末和节假日）
+            # Get data for the last 3 days (taking into account weekends and holidays)
             end_date = datetime.now().strftime('%Y%m%d')
             start_date = (datetime.now() - timedelta(days=3)).strftime('%Y%m%d')
 
@@ -326,10 +326,10 @@ class TushareProvider(BaseStockDataProvider):
             )
 
             if df is not None and not df.empty:
-                # 取最新一天的数据
+                # Get the latest day's data
                 row = df.iloc[0].to_dict()
 
-                # 标准化字段
+                # Standardized fields
                 quote_data = {
                     'ts_code': row.get('ts_code'),
                     'symbol': symbol,
@@ -337,12 +337,12 @@ class TushareProvider(BaseStockDataProvider):
                     'open': row.get('open'),
                     'high': row.get('high'),
                     'low': row.get('low'),
-                    'close': row.get('close'),  # 收盘价
+                    'close': row.get('close'),  # closing price
                     'pre_close': row.get('pre_close'),
-                    'change': row.get('change'),  # 涨跌额
-                    'pct_chg': row.get('pct_chg'),  # 涨跌幅
-                    'volume': row.get('vol'),  # 成交量（手）
-                    'amount': row.get('amount'),  # 成交额（千元）
+                    'change': row.get('change'),  # Changes
+                    'pct_chg': row.get('pct_chg'),  # Increase or decrease
+                    'volume': row.get('vol'),  # Trading volume (lots)
+                    'amount': row.get('amount'),  # Turnover (thousand yuan)
                 }
 
                 return self.standardize_quotes(quote_data)
@@ -350,57 +350,57 @@ class TushareProvider(BaseStockDataProvider):
             return None
 
         except Exception as e:
-            # 检查是否为限流错误
+            # Check whether it is a current limiting error
             if self._is_rate_limit_error(str(e)):
-                self.logger.error(f"❌ 获取实时行情失败（限流） symbol={symbol}: {e}")
-                raise  # 抛出限流错误，让上层处理
+                self.logger.error(f"❌ Failed to obtain real-time quotes (current limit) symbol={symbol}: {e}")
+                raise  # Throw a current limiting error and let the upper layer handle it
 
-            self.logger.error(f"❌ 获取实时行情失败 symbol={symbol}: {e}")
+            self.logger.error(f"❌ Failed to obtain real-time quotes symbol={symbol}: {e}")
             return None
 
     async def get_realtime_quotes_batch(self) -> Optional[Dict[str, Dict[str, Any]]]:
         """
-        批量获取全市场实时行情
-        使用 rt_k 接口的通配符功能，一次性获取所有A股实时行情
+        Obtain real-time market information in batches
+        Use the wildcard function of the rt_k interface to obtain all A-share real-time quotes at once
 
         Returns:
             Dict[str, Dict]: {symbol: quote_data}
-            例如: {'000001': {'close': 10.5, 'pct_chg': 1.2, ...}, ...}
+            For example: {'000001': {'close': 10.5, 'pct_chg': 1.2, ...}, ...}
         """
         if not self.is_available():
             return None
 
         try:
-            # 使用通配符一次性获取全市场行情
-            # 3*.SZ: 创业板  6*.SH: 上交所  0*.SZ: 深交所主板  4*.BJ,8*.BJ,9*.BJ: 北交所
+            # Use wildcards to get all market quotes at once
+            # 3*.SZ: GEM  6*.SH: Shanghai Stock Exchange  0*.SZ: Shenzhen Stock Exchange Main Board  4*.BJ,8*.BJ,9*.BJ: Beijing Exchange
             df = await asyncio.to_thread(
                 self.api.rt_k,
                 ts_code='3*.SZ,6*.SH,0*.SZ,4*.BJ,8*.BJ,9*.BJ'
             )
 
             if df is None or df.empty:
-                self.logger.warning("⚠️ rt_k 接口返回空数据")
+                self.logger.warning("⚠️ rt_k The interface returns empty data")
                 return None
 
             self.logger.info(f"✅ 获取到 {len(df)} 只股票的实时行情")
 
-            # 🔥 获取当前日期（UTC+8）
+            # 🔥 Get the current date (UTC+8) 
             from datetime import datetime, timezone, timedelta
             cn_tz = timezone(timedelta(hours=8))
             now_cn = datetime.now(cn_tz)
-            trade_date = now_cn.strftime("%Y%m%d")  # 格式：20251114（与 Tushare 格式一致）
+            trade_date = now_cn.strftime("%Y%m%d")  # Format: 20251114 (consistent with Tushare format)
 
-            # 转换为字典格式
+            # Convert to dictionary format
             result = {}
             for _, row in df.iterrows():
                 ts_code = row.get('ts_code')
                 if not ts_code or '.' not in ts_code:
                     continue
 
-                # 提取6位代码
+                # Extract 6-digit code
                 symbol = ts_code.split('.')[0]
 
-                # 构建行情数据
+                # Build market data
                 quote_data = {
                     'ts_code': ts_code,
                     'symbol': symbol,
@@ -408,15 +408,15 @@ class TushareProvider(BaseStockDataProvider):
                     'open': row.get('open'),
                     'high': row.get('high'),
                     'low': row.get('low'),
-                    'close': row.get('close'),  # 当前价
+                    'close': row.get('close'),  # current price
                     'pre_close': row.get('pre_close'),
-                    'volume': row.get('vol'),  # 成交量（股）
-                    'amount': row.get('amount'),  # 成交额（元）
-                    'num': row.get('num'),  # 成交笔数
-                    'trade_date': trade_date,  # 🔥 添加交易日期字段
+                    'volume': row.get('vol'),  # Trading volume (shares)
+                    'amount': row.get('amount'),  # Turnover (yuan)
+                    'num': row.get('num'),  # Number of transactions
+                    'trade_date': trade_date,  # 🔥 Add transaction date field
                 }
 
-                # 计算涨跌幅
+                # Calculate the increase or decrease
                 if quote_data.get('close') and quote_data.get('pre_close'):
                     try:
                         close = float(quote_data['close'])
@@ -433,16 +433,16 @@ class TushareProvider(BaseStockDataProvider):
             return result
 
         except Exception as e:
-            # 检查是否为限流错误
+            # Check whether it is a current limiting error
             if self._is_rate_limit_error(str(e)):
-                self.logger.error(f"❌ 批量获取实时行情失败（限流）: {e}")
-                raise  # 抛出限流错误，让上层处理
+                self.logger.error(f"❌ Failed to obtain real-time market data in batches (current limit): {e}")
+                raise  # Throw a current limiting error and let the upper layer handle it
 
-            self.logger.error(f"❌ 批量获取实时行情失败: {e}")
+            self.logger.error(f"❌ Failed to obtain real-time quotes in batches: {e}")
             return None
 
     def _is_rate_limit_error(self, error_msg: str) -> bool:
-        """检测是否为 API 限流错误"""
+        """Detect whether it is an API current limiting error"""
         rate_limit_keywords = [
             "每分钟最多访问",
             "每分钟最多",
@@ -462,44 +462,44 @@ class TushareProvider(BaseStockDataProvider):
         period: str = "daily"
     ) -> Optional[pd.DataFrame]:
         """
-        获取历史数据
+        Get historical data
 
         Args:
-            symbol: 股票代码
-            start_date: 开始日期
-            end_date: 结束日期
-            period: 数据周期 (daily/weekly/monthly)
+            symbol: Stock code
+            start_date: start date
+            end_date: end date
+            period: data period (daily/weekly/monthly)
         """
         if not self.is_available():
             availability_issues = []
             if not TUSHARE_AVAILABLE:
                 availability_issues.append("Tushare库未安装")
             if self.api is None:
-                availability_issues.append("Tushare API Client 未初始化")
+                availability_issues.append("Tushare API Client not initialized")
             
             self.logger.warning(
                 f"⚠️ [Tushare API调用] 无法调用 get_historical_data，Tushare API Client 不可用\n"
-                f"   股票代码: {symbol}\n"
-                f"   开始日期: {start_date}\n"
-                f"   结束日期: {end_date}\n"
-                f"   周期: {period}\n"
-                f"   🔍 不可用原因: {', '.join(availability_issues) if availability_issues else '未知'}"
+                f"   Stock code: {symbol}\n"
+                f"   start date: {start_date}\n"
+                f"   end date: {end_date}\n"
+                f"   cycle: {period}\n"
+                f"   🔍 Unavailable reason: {', '.join(availability_issues) if availability_issues else 'unknown'}"
             )
             return None
 
         try:
             ts_code = self._normalize_ts_code(symbol)
 
-            # 格式化日期
+            # Format date
             start_str = self._format_date(start_date)
             end_str = self._format_date(end_date) if end_date else datetime.now().strftime('%Y%m%d')
 
-            # 🔧 使用 pro_bar 接口获取前复权数据（与同花顺一致）
-            # 注意：Tushare 的 daily/weekly/monthly 接口不支持复权
-            # 必须使用 ts.pro_bar() 函数并指定 adj='qfq' 参数
-            # ⚠️ ETF/基金（50/51/52/56/58/15/16 开头）pro_bar 不支持，需走 fund_daily 接口
+            # 🔧 Use the pro_bar interface to obtain the previous weight data (consistent with Flush)
+            # Note: Tushare's daily/weekly/monthly interface does not support restoration of rights
+            # Must use ts.pro_bar() function and specify adj='qfq' parameters
+            # ⚠️ ETF/Funds (starting with 50/51/52/56/58/15/16) are not supported by pro_bar and need to use the fund_daily interface
 
-            # 周期映射
+            # period mapping
             freq_map = {
                 "daily": "D",
                 "weekly": "W",
@@ -509,22 +509,22 @@ class TushareProvider(BaseStockDataProvider):
 
             is_etf = self._is_etf(ts_code)
 
-            # ⏱️ 记录实际 API 调用时间（使用高精度计时）
+            # ⏱️ Log actual API call times (using high-precision timing)
             import time
-            api_call_start = time.perf_counter()  # 使用 perf_counter 获得更高精度
+            api_call_start = time.perf_counter()  # Use perf_counter for higher precision
             
             try:
-                # 🔍 验证 API 对象是否有效
+                # 🔍 Verify that the API object is valid
                 if self.api is None:
-                    self.logger.error("❌ [Tushare API调用] API 对象为 None，无法调用 Tushare 接口")
+                    self.logger.error("❌ [Tushare API call] API The object is None and the Tushare interface cannot be called.")
                     return None
 
-                # 实际调用 Tushare API
+                # actual call Tushare API
                 try:
                     if is_etf:
-                        # ETF/基金走 fund_daily 接口（pro_bar 不支持 ETF）
+                        # ETF/The fund uses the fund_daily interface (pro_bar does not support ETF)
                         self.logger.info(
-                            f"📊 [Tushare API调用] 检测到ETF标的，使用 fund_daily 接口: {ts_code}"
+                            f"📊 [Tushare API call] To detect the ETF target, use the fund_daily interface: {ts_code}"
                         )
                         df = await asyncio.to_thread(
                             self.api.fund_daily,
@@ -533,67 +533,67 @@ class TushareProvider(BaseStockDataProvider):
                             end_date=end_str,
                         )
                     else:
-                        # 股票走 pro_bar 接口（支持复权）
+                        # Stocks use the pro_bar interface (supports restoration of rights)
                         df = await asyncio.to_thread(
                             ts.pro_bar,
                             ts_code=ts_code,
-                            api=self.api,  # 传入 api 对象
+                            api=self.api,  # Pass in api object
                             start_date=start_str,
                             end_date=end_str,
                             freq=freq,
-                            adj='qfq'  # 前复权（与同花顺一致）
+                            adj='qfq'  # Previous reinstatement (consistent with Flush)
                         )
                 except RuntimeError as runtime_error:
-                    # 🔥 捕获 "cannot schedule new futures after shutdown" 错误
+                    # 🔥 Capture "cannot schedule new futures after shutdown" Error
                     if "shutdown" in str(runtime_error).lower():
-                        self.logger.warning(f"⚠️ [Tushare API调用] 事件循环已关闭，停止获取数据: {symbol}")
-                        self._event_loop_closed = True  # 🔥 设置标志
+                        self.logger.warning(f"⚠️ [Tushare API call] The event loop has been closed and stopped getting data: {symbol}")
+                        self._event_loop_closed = True  # 🔥 set flag
                         return None
-                    raise  # 其他 RuntimeError 继续抛出
+                    raise  # Other RuntimeErrors continue to be thrown
                 api_call_duration = time.perf_counter() - api_call_start
                 
-                # 根据耗时判断是否真正执行了网络请求
-                if api_call_duration < 0.01:  # 小于10毫秒，可能是快速失败
+                # Determine whether the network request is actually executed based on the time taken
+                if api_call_duration < 0.01:  # Less than 10 milliseconds, probably a fast failure
                     self.logger.warning(
                         f"⚠️ [Tushare API调用] ts.pro_bar() 执行完成（疑似快速失败）\n"
-                        f"   耗时: {api_call_duration:.6f}秒（非常短，可能未执行网络请求）\n"
-                        f"   返回类型: {type(df).__name__ if df is not None else 'None'}\n"
-                        f"   返回数据: {'空DataFrame' if (df is not None and df.empty) else ('None' if df is None else f'{len(df)}行')}\n"
-                        f"   💡 可能原因: Tushare 内部参数验证失败或快速失败逻辑"
+                        f"   Time consuming: {api_call_duration:.6f}seconds (very short, network request may not be performed)\n"
+                        f"   Return type: {type(df).__name__ if df is not None else 'None'}\n"
+                        f"   Return data: {'empty DataFrame' if (df is not None and df.empty) else ('None' if df is None else f'{len(df)}OK')}\n"
+                        f"   💡 Possible reasons: Tushare Internal parameter validation failure or fail-fast logic"
                     )
                 else:
                     self.logger.info(
                         f"✅ [Tushare API调用] ts.pro_bar() 执行完成\n"
-                        f"   耗时: {api_call_duration:.6f}秒\n"
-                        f"   返回类型: {type(df).__name__ if df is not None else 'None'}\n"
-                        f"   返回数据: {'空DataFrame' if (df is not None and df.empty) else ('None' if df is None else f'{len(df)}行')}"
+                        f"   Time consuming: {api_call_duration:.6f}seconds\n"
+                        f"   Return type: {type(df).__name__ if df is not None else 'None'}\n"
+                        f"   Return data: {'empty DataFrame' if (df is not None and df.empty) else ('None' if df is None else f'{len(df)}OK')}"
                     )
             except Exception as api_exception:
                 api_call_duration = time.perf_counter() - api_call_start
                 self.logger.error(
                     f"❌ [Tushare API调用] ts.pro_bar() 抛出异常\n"
-                    f"   耗时: {api_call_duration:.6f}秒\n"
-                    f"   异常类型: {type(api_exception).__name__}\n"
-                    f"   异常信息: {str(api_exception)}\n"
-                    f"   调用参数: ts_code={ts_code}, start_date={start_str}, end_date={end_str}, freq={freq}, adj=qfq"
+                    f"   Time consuming: {api_call_duration:.6f}seconds\n"
+                    f"   Exception type: {type(api_exception).__name__}\n"
+                    f"   Exception information: {str(api_exception)}\n"
+                    f"   Call parameters: ts_code={ts_code}, start_date={start_str}, end_date={end_str}, freq={freq}, adj=qfq"
                 )
-                raise  # 重新抛出异常，让上层处理
+                raise  # Rethrow the exception and let the upper layer handle it
 
             if df is None or df.empty:
                 self.logger.warning(
-                    f"⚠️ Tushare API 返回空数据: symbol={symbol}, ts_code={ts_code}, "
+                    f"⚠️ Tushare API Return empty data: symbol={symbol}, ts_code={ts_code}, "
                     f"period={period}, start={start_str}, end={end_str}"
                 )
                 self.logger.warning(
-                    f"💡 可能原因: "
-                    f"1) 该股票在此期间无交易数据 "
-                    f"2) 日期范围不正确 "
-                    f"3) 股票代码格式错误 "
-                    f"4) Tushare API 限制或积分不足"
+                    f"💡 Possible reasons: "
+                    f"1) There was no trading data for this stock during this period "
+                    f"2) Incorrect date range "
+                    f"3) Stock code format error "
+                    f"4) Tushare API Limit or insufficient points"
                 )
                 return None
 
-            # 数据标准化
+            # Data normalization
             df = self._standardize_historical_data(df)
 
             self.logger.info(f"✅ 获取{period}历史数据: {symbol} {len(df)}条记录 (前复权 qfq)")
@@ -604,16 +604,16 @@ class TushareProvider(BaseStockDataProvider):
             error_details = traceback.format_exc()
             self.logger.error(
                 f"❌ 获取历史数据失败 symbol={symbol}, period={period}\n"
-                f"   参数: ts_code={ts_code if 'ts_code' in locals() else 'N/A'}, "
+                f"   parameters: ts_code={ts_code if 'ts_code' in locals() else 'N/A'}, "
                 f"start={start_str if 'start_str' in locals() else 'N/A'}, "
                 f"end={end_str if 'end_str' in locals() else 'N/A'}\n"
-                f"   错误类型: {type(e).__name__}\n"
-                f"   错误信息: {str(e)}\n"
-                f"   堆栈跟踪:\n{error_details}"
+                f"   Error type: {type(e).__name__}\n"
+                f"   error message: {str(e)}\n"
+                f"   stack trace:\n{error_details}"
             )
             return None
     
-    # ==================== 扩展接口 ====================
+    # ==================== Extended interface ====================
     
     async def get_daily_basic(self, trade_date: str) -> Optional[pd.DataFrame]:
         """获取每日基础财务数据"""
@@ -635,7 +635,7 @@ class TushareProvider(BaseStockDataProvider):
             return None
             
         except Exception as e:
-            self.logger.error(f"❌ 获取每日基础数据失败 trade_date={trade_date}: {e}")
+            self.logger.error(f"❌ Failed to obtain daily basic data trade_date={trade_date}: {e}")
             return None
 
     async def get_valuation_history(
@@ -644,10 +644,10 @@ class TushareProvider(BaseStockDataProvider):
         start_date: str,
         end_date: str,
     ) -> Dict[str, Any]:
-        """获取股票历史估值序列（PE_TTM、PB_MRQ、PS_TTM、PCF_TTM）。
+        """Get the stock historical valuation series (PE_TTM, PB_MRQ, PS_TTM, PCF_TTM).
 
-        使用 Tushare daily_basic 的日期范围查询，一次调用获取全量数据。
-        返回格式与 Baostock get_valuation_history 一致。
+        Use Tushare daily_basic s date range query to obtain the full amount of data in one call.
+        The return format is consistent with Baostock get_valuation_history.
         """
         if not self.is_available():
             return {"source": "tushare", "data": []}
@@ -664,7 +664,7 @@ class TushareProvider(BaseStockDataProvider):
                 fields='ts_code,trade_date,close,pe_ttm,pb,ps_ttm,pcf_ncf_ttm',
             )
             if df is None or df.empty:
-                self.logger.warning(f"⚠️ Tushare 估值历史为空: {code} {start_date}~{end_date}")
+                self.logger.warning(f"⚠️ Tushare Valuation history is empty: {code} {start_date}~{end_date}")
                 return {"source": "tushare", "data": []}
 
             records: List[Dict[str, Any]] = []
@@ -680,7 +680,7 @@ class TushareProvider(BaseStockDataProvider):
             self.logger.info(f"✅ Tushare 估值历史: {code} {start_date}~{end_date} → {len(records)}条")
             return {"source": "tushare", "data": records}
         except Exception as e:
-            self.logger.error(f"❌ Tushare 估值历史失败 {code}: {e}")
+            self.logger.error(f"❌ Tushare Valuation history failure {code}: {e}")
             return {"source": "tushare", "data": []}
     
     async def find_latest_trade_date(self) -> Optional[str]:
@@ -690,7 +690,7 @@ class TushareProvider(BaseStockDataProvider):
         
         try:
             today = datetime.now()
-            for delta in range(0, 10):  # 最多回溯10天
+            for delta in range(0, 10):  # Look back up to 10 days
                 check_date = (today - timedelta(days=delta)).strftime('%Y%m%d')
                 
                 try:
@@ -712,22 +712,22 @@ class TushareProvider(BaseStockDataProvider):
             return None
             
         except Exception as e:
-            self.logger.error(f"❌ 查找最新交易日期失败: {e}")
+            self.logger.error(f"❌ Failed to find latest transaction date: {e}")
             return None
     
     async def get_financial_data(self, symbol: str, report_type: str = "quarterly",
                                 period: str = None, limit: Optional[int] = None) -> Optional[Dict[str, Any]]:
         """
-        获取财务数据
+        Get financial data
 
         Args:
-            symbol: 股票代码
-            report_type: 报告类型 (quarterly/annual)
-            period: 指定报告期 (YYYYMMDD格式)，为空则获取最新数据
-            limit: 获取记录数量，None 表示拉取该股票可获取的全部报告期
+            symbol: Stock code
+            report_type: report type (quarterly/annual)
+            period: designated reporting period (YYYYMMDD Format), If empty, get the latest data
+            limit: Get the number of records, None means pulling all reporting periods that can be obtained for the stock
 
         Returns:
-            财务数据字典，包含利润表、资产负债表、现金流量表和财务指标
+            Financial data dictionary including income statement, balance sheet, cash flow statement and financial indicators
         """
         if not self.is_available():
             return None
@@ -736,7 +736,7 @@ class TushareProvider(BaseStockDataProvider):
             ts_code = self._normalize_ts_code(symbol)
             self.logger.debug(f"📊 获取Tushare财务数据: {ts_code}, 类型: {report_type}")
 
-            # 构建查询参数
+            # Build query parameters
             query_params = {
                 'ts_code': ts_code,
             }
@@ -744,13 +744,13 @@ class TushareProvider(BaseStockDataProvider):
             if limit is not None:
                 query_params['limit'] = limit
 
-            # 如果指定了报告期，添加期间参数
+            # If a reporting period is specified, add the period parameter
             if period:
                 query_params['period'] = period
 
             financial_data = {}
 
-            # 1. 获取利润表数据 (income statement)
+            # 1. Get income statement data (income statement)
             try:
                 income_df = await asyncio.to_thread(
                     self.api.income,
@@ -764,7 +764,7 @@ class TushareProvider(BaseStockDataProvider):
             except Exception as e:
                 self.logger.warning(f"❌ 获取{ts_code}利润表数据失败: {e}")
 
-            # 2. 获取资产负债表数据 (balance sheet)
+            # 2. Get balance sheet data (balance sheet)
             try:
                 balance_df = await asyncio.to_thread(
                     self.api.balancesheet,
@@ -778,7 +778,7 @@ class TushareProvider(BaseStockDataProvider):
             except Exception as e:
                 self.logger.warning(f"❌ 获取{ts_code}资产负债表数据失败: {e}")
 
-            # 3. 获取现金流量表数据 (cash flow statement)
+            # 3. Get cash flow statement data (cash flow statement)
             try:
                 cashflow_df = await asyncio.to_thread(
                     self.api.cashflow,
@@ -792,7 +792,7 @@ class TushareProvider(BaseStockDataProvider):
             except Exception as e:
                 self.logger.warning(f"❌ 获取{ts_code}现金流量表数据失败: {e}")
 
-            # 4. 获取财务指标数据 (financial indicators)
+            # 4. Get financial indicator data (financial indicators)
             try:
                 indicator_df = await asyncio.to_thread(
                     self.api.fina_indicator,
@@ -806,7 +806,7 @@ class TushareProvider(BaseStockDataProvider):
             except Exception as e:
                 self.logger.warning(f"❌ 获取{ts_code}财务指标数据失败: {e}")
 
-            # 5. 获取主营业务构成数据 (可选)
+            # 5. Obtain main business composition data (Optional)
             try:
                 mainbz_df = await asyncio.to_thread(
                     self.api.fina_mainbz,
@@ -818,40 +818,40 @@ class TushareProvider(BaseStockDataProvider):
                 else:
                     self.logger.debug(f"⚠️ {ts_code} 主营业务构成数据为空")
             except Exception as e:
-                self.logger.debug(f"获取{ts_code}主营业务构成数据失败: {e}")  # 主营业务数据不是必需的，保持debug级别
+                self.logger.debug(f"获取{ts_code}主营业务构成数据失败: {e}")  # Main business data is not required, keep the debug level
 
             if financial_data:
-                # 标准化财务数据
+                # Standardized financial data
                 standardized_data = self._standardize_tushare_financial_data(financial_data, ts_code)
                 self.logger.info(f"✅ {ts_code} Tushare财务数据获取完成: {len(financial_data)} 个数据集")
                 return standardized_data
             else:
-                self.logger.warning(f"⚠️ {ts_code} 未获取到任何Tushare财务数据")
+                self.logger.warning(f"⚠️ {ts_code} No Tushare financial data was obtained")
                 return None
 
         except Exception as e:
-            self.logger.error(f"❌ 获取Tushare财务数据失败 symbol={symbol}: {e}")
+            self.logger.error(f"❌ Failed to obtain Tushare financial data symbol={symbol}: {e}")
             return None
 
     async def get_dividend_data(self, symbol: str, limit: int = 10) -> Optional[List[Dict[str, Any]]]:
         """
-        获取分红送股数据
+        Get dividend and share data
 
         Args:
-            symbol: 股票代码
-            limit: 获取记录数量，默认10条
+            symbol: Stock code
+            limit: Get the number of records, default is 10
 
         Returns:
-            分红送股记录列表，每条包含 ts_code, end_date, ann_date, div_proc,
+            A list of dividend stock record records, each entry contains ts_code, end_date, ann_date, div_proc,
             stk_div, stk_bo_rate, stk_co_rate, cash_div, cash_div_tax,
-            record_date, ex_date, pay_date 等字段
+            record_date, ex_date, pay_date etc fields
         """
         if not self.is_available():
             return None
 
         try:
             ts_code = self._normalize_ts_code(symbol)
-            self.logger.debug(f"💰 获取Tushare分红送股数据: {ts_code}")
+            self.logger.debug(f"💰 Get Tushare dividend and share data: {ts_code}")
 
             dividend_df = await asyncio.to_thread(
                 self.api.dividend,
@@ -862,8 +862,8 @@ class TushareProvider(BaseStockDataProvider):
             )
 
             if dividend_df is not None and not dividend_df.empty:
-                # 只保留已实施的分红记录（排除预案等）
-                # 按分红年度倒序排列
+                # Only retained dividend records that have been implemented (exclusion plans, etc.)
+                # Arranged in descending order by dividend year
                 dividend_df = dividend_df.sort_values('end_date', ascending=False)
                 records = dividend_df.head(limit).to_dict('records')
                 self.logger.info(f"✅ {ts_code} 分红送股数据获取成功: {len(records)} 条记录")
@@ -873,22 +873,22 @@ class TushareProvider(BaseStockDataProvider):
                 return []
 
         except Exception as e:
-            self.logger.error(f"❌ 获取Tushare分红送股数据失败 symbol={symbol}: {e}")
+            self.logger.error(f"❌ Failed to obtain Tushare dividend and share data symbol={symbol}: {e}")
             return None
 
     async def get_stock_news(self, symbol: str = None, limit: int = 10,
                            hours_back: int = 24, src: str = None) -> Optional[List[Dict[str, Any]]]:
         """
-        获取股票新闻（需要Tushare新闻权限）
+        Get stock news (requires Tushare news permission)
 
         Args:
-            symbol: 股票代码，为None时获取市场新闻
-            limit: 返回数量限制
-            hours_back: 回溯小时数，默认24小时
-            src: 新闻源，默认自动选择
+            symbol: Stock code, get market news when None
+            limit: Return quantity limit
+            hours_back: Number of hours to look back, default is 24 hours
+            src: News source, automatically selected by default
 
         Returns:
-            新闻列表
+            News list
         """
         if not self.is_available():
             return None
@@ -896,7 +896,7 @@ class TushareProvider(BaseStockDataProvider):
         try:
             from datetime import datetime, timedelta
 
-            # 计算时间范围
+            # Calculation time range
             end_time = datetime.now()
             start_time = end_time - timedelta(hours=hours_back)
 
@@ -905,24 +905,24 @@ class TushareProvider(BaseStockDataProvider):
 
             self.logger.debug(f"📰 获取Tushare新闻: symbol={symbol}, 时间范围={start_date} 到 {end_date}")
 
-            # 支持的新闻源列表（按优先级排序）
+            # List of supported news sources (sorted by priority)
             news_sources = [
-                'sina',        # 新浪财经
-                'eastmoney',   # 东方财富
-                '10jqka',      # 同花顺
-                'wallstreetcn', # 华尔街见闻
-                'cls',         # 财联社
-                'yicai',       # 第一财经
-                'jinrongjie',  # 金融界
-                'yuncaijing',  # 云财经
-                'fenghuang'    # 凤凰新闻
+                'sina',        # Sina Finance
+                'eastmoney',   # Oriental Fortune
+                '10jqka',      # Flush
+                'wallstreetcn', # Wall Street Insights
+                'cls',         # Financial Associated Press
+                'yicai',       # China Business News
+                'jinrongjie',  # financial sector
+                'yuncaijing',  # Cloud Finance
+                'fenghuang'    # Phoenix News
             ]
 
-            # 如果指定了数据源，优先使用
+            # If a data source is specified, it will be used first
             if src and src in news_sources:
                 sources_to_try = [src]
             else:
-                sources_to_try = news_sources[:3]  # 默认尝试前3个源
+                sources_to_try = news_sources[:3]  # Try the first 3 sources by default
 
             all_news = []
 
@@ -930,7 +930,7 @@ class TushareProvider(BaseStockDataProvider):
                 try:
                     self.logger.debug(f"📰 尝试从 {source} 获取新闻...")
 
-                    # 获取新闻数据
+                    # Get news data
                     news_df = await asyncio.to_thread(
                         self.api.news,
                         src=source,
@@ -944,7 +944,7 @@ class TushareProvider(BaseStockDataProvider):
 
                         self.logger.info(f"✅ 从 {source} 获取到 {len(source_news)} 条新闻")
 
-                        # 如果已经获取足够的新闻，停止尝试其他源
+                        # If you've gotten enough news, stop trying other sources
                         if len(all_news) >= limit:
                             break
                     else:
@@ -954,48 +954,48 @@ class TushareProvider(BaseStockDataProvider):
                     self.logger.debug(f"从 {source} 获取新闻失败: {e}")
                     continue
 
-                # API限流
+                # API Current limiting
                 await asyncio.sleep(0.2)
 
-            # 去重和排序
+            # Deduplication and sorting
             if all_news:
-                # 按时间排序并去重
+                # Sort by time and remove duplicates
                 unique_news = self._deduplicate_news(all_news)
                 sorted_news = sorted(unique_news, key=lambda x: x.get('publish_time', datetime.min), reverse=True)
 
-                # 限制返回数量
+                # Limit the number of returns
                 final_news = sorted_news[:limit]
 
                 self.logger.info(f"✅ Tushare新闻获取成功: {len(final_news)} 条（去重后）")
                 return final_news
             else:
-                self.logger.warning("⚠️ 未获取到任何Tushare新闻数据")
+                self.logger.warning("⚠️ No Tushare news data was obtained")
                 return []
 
         except Exception as e:
-            # 如果是权限问题，给出明确提示
+            # If it is a permissions issue, give a clear prompt
             if any(keyword in str(e).lower() for keyword in ['权限', 'permission', 'unauthorized', 'access denied']):
-                self.logger.warning(f"⚠️ Tushare新闻接口需要单独开通权限（付费功能）: {e}")
+                self.logger.warning(f"⚠️ Tushare The news interface requires separate permissions (paid function): {e}")
             elif "积分" in str(e) or "point" in str(e).lower():
-                self.logger.warning(f"⚠️ Tushare积分不足，无法获取新闻数据: {e}")
+                self.logger.warning(f"⚠️ Tushare Insufficient points to obtain news data: {e}")
             else:
-                self.logger.error(f"❌ 获取Tushare新闻失败: {e}")
+                self.logger.error(f"❌ Failed to get Tushare news: {e}")
             return None
 
     def _process_tushare_news(self, news_df: pd.DataFrame, source: str,
                             symbol: str = None, limit: int = 10) -> List[Dict[str, Any]]:
-        """处理Tushare新闻数据"""
+        """Processing Tushare news data"""
         news_list = []
 
-        # 限制处理数量
-        df_limited = news_df.head(limit * 2)  # 多获取一些，用于过滤
+        # Limit the number of processes
+        df_limited = news_df.head(limit * 2)  # Get more for filtering
 
         for _, row in df_limited.iterrows():
             news_item = {
                 "title": str(row.get('title', '') or row.get('content', '')[:50] + '...'),
                 "content": str(row.get('content', '')),
                 "summary": self._generate_summary(row.get('content', '')),
-                "url": "",  # Tushare新闻接口不提供URL
+                "url": "",  # Tushare News interface is not provided URL
                 "source": self._get_source_name(source),
                 "author": "",
                 "publish_time": self._parse_tushare_news_time(row.get('datetime', '')),
@@ -1007,7 +1007,7 @@ class TushareProvider(BaseStockDataProvider):
                 "original_source": source
             }
 
-            # 如果指定了股票代码，过滤相关新闻
+            # If a stock code is specified, filter related news
             if symbol:
                 if self._is_news_relevant_to_symbol(news_item, symbol):
                     news_list.append(news_item)
@@ -1040,7 +1040,7 @@ class TushareProvider(BaseStockDataProvider):
         if len(content_str) <= 200:
             return content_str
 
-        # 简单的摘要生成：取前200个字符
+        # Simple summary generation: take the first 200 characters
         return content_str[:200] + "..."
 
     def _is_news_relevant_to_symbol(self, news_item: Dict[str, Any], symbol: str) -> bool:
@@ -1048,10 +1048,10 @@ class TushareProvider(BaseStockDataProvider):
         content = news_item.get("content", "").lower()
         title = news_item.get("title", "").lower()
 
-        # 标准化股票代码
+        # Standardized stock code
         symbol_clean = symbol.replace('.SH', '').replace('.SZ', '').zfill(6)
 
-        # 关键词匹配
+        # keyword matching
         return any([
             symbol_clean in content,
             symbol_clean in title,
@@ -1107,7 +1107,7 @@ class TushareProvider(BaseStockDataProvider):
         """提取关键词"""
         text = f"{title} {content}"
 
-        # 简单的关键词提取
+        # Simple keyword extraction
         keywords = []
         common_keywords = ['股票', '公司', '市场', '投资', '业绩', '财报', '政策', '行业', '分析', '预测']
 
@@ -1115,18 +1115,18 @@ class TushareProvider(BaseStockDataProvider):
             if keyword in text:
                 keywords.append(keyword)
 
-        return keywords[:5]  # 最多返回5个关键词
+        return keywords[:5]  # Return up to 5 keywords
 
     def _parse_tushare_news_time(self, time_str: str) -> Optional[datetime]:
-        """解析Tushare新闻时间"""
+        """Parsing Tushare news time"""
         if not time_str:
             return datetime.utcnow()
 
         try:
-            # Tushare时间格式: 2018-11-21 09:30:00
+            # Tushare time format: 2018-11-21 09:30:00
             return datetime.strptime(str(time_str), '%Y-%m-%d %H:%M:%S')
         except Exception as e:
-            self.logger.debug(f"解析Tushare新闻时间失败: {e}")
+            self.logger.debug(f"Failed to parse Tushare news time: {e}")
             return datetime.utcnow()
 
     def _classify_tushare_news(self, channels: str, content: str) -> str:
@@ -1134,7 +1134,7 @@ class TushareProvider(BaseStockDataProvider):
         channels = str(channels).lower()
         content = str(content).lower()
 
-        # 根据频道和内容关键词分类
+        # Classification based on channel and content keywords
         if any(keyword in channels or keyword in content for keyword in ['公告', '业绩', '财报']):
             return 'company_announcement'
         elif any(keyword in channels or keyword in content for keyword in ['政策', '监管', '央行']):
@@ -1149,25 +1149,25 @@ class TushareProvider(BaseStockDataProvider):
     async def get_financial_data_by_period(self, symbol: str, start_period: str = None,
                                          end_period: str = None, report_type: str = "quarterly") -> Optional[List[Dict[str, Any]]]:
         """
-        按时间范围获取财务数据
+        Get financial data by time range
 
         Args:
-            symbol: 股票代码
-            start_period: 开始报告期 (YYYYMMDD)
-            end_period: 结束报告期 (YYYYMMDD)
-            report_type: 报告类型 (quarterly/annual)
+            symbol: Stock code
+            start_period: Start reporting period (YYYYMMDD)
+            end_period: End reporting period (YYYYMMDD)
+            report_type: report type (quarterly/annual)
 
         Returns:
-            财务数据列表，按报告期倒序排列
+            List of financial data, arranged in reverse order by reporting period
         """
         if not self.is_available():
             return None
 
         try:
             ts_code = self._normalize_ts_code(symbol)
-            self.logger.debug(f"📊 按期间获取Tushare财务数据: {ts_code}, {start_period} - {end_period}")
+            self.logger.debug(f"📊 Get Tushare financial data by period: {ts_code}, {start_period} - {end_period}")
 
-            # 构建查询参数
+            # Build query parameters
             query_params = {'ts_code': ts_code}
 
             if start_period:
@@ -1175,7 +1175,7 @@ class TushareProvider(BaseStockDataProvider):
             if end_period:
                 query_params['end_date'] = end_period
 
-            # 获取利润表数据作为主要数据源
+            # Obtain income statement data as primary data source
             income_df = await asyncio.to_thread(
                 self.api.income,
                 **query_params
@@ -1185,13 +1185,13 @@ class TushareProvider(BaseStockDataProvider):
                 self.logger.warning(f"⚠️ {ts_code} 指定期间无财务数据")
                 return None
 
-            # 按报告期分组获取完整财务数据
+            # Get complete financial data grouped by reporting period
             financial_data_list = []
 
             for _, income_row in income_df.iterrows():
                 period = income_row['end_date']
 
-                # 获取该期间的完整财务数据
+                # Get complete financial data for the period
                 period_data = await self.get_financial_data(
                     symbol=symbol,
                     period=period,
@@ -1201,26 +1201,26 @@ class TushareProvider(BaseStockDataProvider):
                 if period_data:
                     financial_data_list.append(period_data)
 
-                # API限流
+                # API Current limiting
                 await asyncio.sleep(0.1)
 
             self.logger.info(f"✅ {ts_code} 按期间获取财务数据完成: {len(financial_data_list)} 个报告期")
             return financial_data_list
 
         except Exception as e:
-            self.logger.error(f"❌ 按期间获取Tushare财务数据失败 symbol={symbol}: {e}")
+            self.logger.error(f"❌ Failed to obtain Tushare financial data by period symbol={symbol}: {e}")
             return None
 
     async def get_financial_indicators_only(self, symbol: str, limit: int = 4) -> Optional[Dict[str, Any]]:
         """
-        仅获取财务指标数据（轻量级接口）
+        Get only financial indicator data (lightweight interface)
 
         Args:
-            symbol: 股票代码
-            limit: 获取记录数量
+            symbol: Stock code
+            limit: Get the number of records
 
         Returns:
-            财务指标数据
+            financial indicator data
         """
         if not self.is_available():
             return None
@@ -1228,7 +1228,7 @@ class TushareProvider(BaseStockDataProvider):
         try:
             ts_code = self._normalize_ts_code(symbol)
 
-            # 仅获取财务指标
+            # Get only financial metrics
             indicator_df = await asyncio.to_thread(
                 self.api.fina_indicator,
                 ts_code=ts_code,
@@ -1249,10 +1249,10 @@ class TushareProvider(BaseStockDataProvider):
             return None
 
         except Exception as e:
-            self.logger.error(f"❌ 获取Tushare财务指标失败 symbol={symbol}: {e}")
+            self.logger.error(f"❌ Failed to obtain Tushare financial indicators symbol={symbol}: {e}")
             return None
 
-    # ==================== 数据标准化方法 ====================
+    # ==================== Data normalization methods ====================
 
     def standardize_basic_info(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """标准化股票基础信息"""
@@ -1260,29 +1260,29 @@ class TushareProvider(BaseStockDataProvider):
         symbol = raw_data.get('symbol', ts_code.split('.')[0] if '.' in ts_code else ts_code)
 
         return {
-            # 基础字段
+            # Basic fields
             "code": symbol,
             "name": raw_data.get('name', ''),
             "symbol": symbol,
             "full_symbol": ts_code,
 
-            # 市场信息
+            # market information
             "market_info": self._determine_market_info_from_ts_code(ts_code),
 
-            # 业务信息
+            # business information
             "area": self._safe_str(raw_data.get('area')),
             "industry": self._safe_str(raw_data.get('industry')),
-            "market": raw_data.get('market'),  # 主板/创业板/科创板
+            "market": raw_data.get('market'),  # Main Board/GEM/Science and Technology Innovation Board
             "list_date": self._format_date_output(raw_data.get('list_date')),
 
-            # 港股通信息
+            # Hong Kong Stock Connect Information
             "is_hs": raw_data.get('is_hs'),
 
-            # 实控人信息
+            # Actual controller information
             "act_name": raw_data.get('act_name'),
             "act_ent_type": raw_data.get('act_ent_type'),
 
-            # 元数据
+            # metadata
             "data_source": "tushare",
             "data_version": 1,
             "updated_at": datetime.utcnow()
@@ -1294,13 +1294,13 @@ class TushareProvider(BaseStockDataProvider):
         symbol = ts_code.split('.')[0] if '.' in ts_code else ts_code
 
         return {
-            # 基础字段
+            # Basic fields
             "code": symbol,
             "symbol": symbol,
             "full_symbol": ts_code,
             "market": self._determine_market(ts_code),
 
-            # 价格数据
+            # price data
             "close": self._convert_to_float(raw_data.get('close')),
             "current_price": self._convert_to_float(raw_data.get('close')),
             "open": self._convert_to_float(raw_data.get('open')),
@@ -1308,61 +1308,61 @@ class TushareProvider(BaseStockDataProvider):
             "low": self._convert_to_float(raw_data.get('low')),
             "pre_close": self._convert_to_float(raw_data.get('pre_close')),
 
-            # 变动数据
+            # Change data
             "change": self._convert_to_float(raw_data.get('change')),
             "pct_chg": self._convert_to_float(raw_data.get('pct_chg')),
 
-            # 成交数据
-            # 🔥 成交量单位转换：Tushare 返回的是手，需要转换为股
+            # Transaction data
+            # 🔥 Trading volume unit conversion: Tushare returns lots, which need to be converted into shares
             "volume": self._convert_to_float(raw_data.get('vol')) * 100 if raw_data.get('vol') else None,
-            # 🔥 成交额单位转换：Tushare daily 接口返回的是千元，需要转换为元
+            # 🔥 Transaction volume unit conversion: The Tushare daily interface returns thousands of yuan, which needs to be converted into yuan.
             "amount": self._convert_to_float(raw_data.get('amount')) * 1000 if raw_data.get('amount') else None,
 
-            # 财务指标
+            # financial indicators
             "total_mv": self._convert_to_float(raw_data.get('total_mv')),
             "circ_mv": self._convert_to_float(raw_data.get('circ_mv')),
             "pe": self._convert_to_float(raw_data.get('pe')),
             "pb": self._convert_to_float(raw_data.get('pb')),
             "turnover_rate": self._convert_to_float(raw_data.get('turnover_rate')),
 
-            # 时间数据
+            # time data
             "trade_date": self._format_date_output(raw_data.get('trade_date')),
             "timestamp": datetime.utcnow(),
 
-            # 元数据
+            # metadata
             "data_source": "tushare",
             "data_version": 1,
             "updated_at": datetime.utcnow()
         }
 
-    # ==================== 辅助方法 ====================
+    # ==================== Helper methods ====================
 
     def _normalize_ts_code(self, symbol: str) -> str:
-        """标准化为Tushare的ts_code格式"""
+        """Standardized to Tushare s ts_code format"""
         if '.' in symbol:
-            return symbol  # 已经是ts_code格式
+            return symbol  # Already in ts_code format
 
-        # 6位数字代码，需要添加后缀
+        # 6 digit code, need to add suffix
         if symbol.isdigit() and len(symbol) == 6:
-            # 上交所：60/68（A股）、50/51/52/58/56（ETF/LOF等）、11（国债/可转债）、90（B股）
+            # Shanghai Stock Exchange: 60/68 (A shares), 50/51/52/58/56 (ETF/LOF, etc.), 11 (treasury bonds/convertible bonds), 90 (B shares)
             if symbol.startswith(('60', '68', '90', '50', '51', '52', '58', '56', '11')):
-                return f"{symbol}.SH"  # 上交所
-            # 深交所：00/30（A股）、15/16/12（ETF/LOF/可转债等）、20（B股）
+                return f"{symbol}.SH"  # Shanghai Stock Exchange
+            # Shenzhen Stock Exchange: 00/30 (A shares), 15/16/12 (ETF/LOF/convertible bonds, etc.), 20 (B shares)
             elif symbol.startswith(('00', '30', '20', '15', '16', '12')):
-                return f"{symbol}.SZ"  # 深交所
+                return f"{symbol}.SZ"  # Shenzhen Stock Exchange
             elif symbol.startswith(('8', '4', '92')):
-                return f"{symbol}.BJ"  # 北交所
+                return f"{symbol}.BJ"  # Beijing Exchange
             else:
-                return f"{symbol}.SZ"  # 默认深交所
+                return f"{symbol}.SZ"  # Default Shenzhen Stock Exchange
 
         return symbol
 
     @staticmethod
     def _is_etf(ts_code: str) -> bool:
-        """判断是否为ETF/基金类标的（pro_bar 不支持，需走 fund_daily）。
+        """Determine whether it is an ETF/fund type target (pro_bar does not support it, you need to go to fund_daily).
 
-        上交所ETF: 50/51/52/56/58 开头
-        深交所ETF: 15/16 开头
+        Shanghai Stock Exchange ETF: 50/51/52/56/58 Beginning
+        Shenzhen Stock Exchange ETF: 15/16 Beginning
         """
         code = ts_code.split('.')[0] if '.' in ts_code else ts_code
         if not code.isdigit() or len(code) != 6:
@@ -1370,7 +1370,7 @@ class TushareProvider(BaseStockDataProvider):
         return code.startswith(('50', '51', '52', '56', '58', '15', '16'))
 
     def _determine_market_info_from_ts_code(self, ts_code: str) -> Dict[str, Any]:
-        """根据ts_code确定市场信息"""
+        """Determine market information based on ts_code"""
         if '.SH' in ts_code:
             return {
                 "market": "CN",
@@ -1410,7 +1410,7 @@ class TushareProvider(BaseStockDataProvider):
         return market_info.get("market", "CN")
 
     def _format_date(self, date_value: Union[str, date]) -> str:
-        """格式化日期为Tushare格式 (YYYYMMDD)"""
+        """Format date to Tushare format (YYYYMMDD)"""
         if isinstance(date_value, str):
             return date_value.replace('-', '')
         elif isinstance(date_value, date):
@@ -1420,36 +1420,36 @@ class TushareProvider(BaseStockDataProvider):
 
     def _standardize_historical_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """标准化历史数据"""
-        # 重命名列
+        # Rename columns
         column_mapping = {
             'trade_date': 'date',
             'vol': 'volume'
         }
         df = df.rename(columns=column_mapping)
 
-        # 格式化日期
+        # Format date
         if 'date' in df.columns:
             df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
             df.set_index('date', inplace=True)
 
-        # 按日期排序
+        # Sort by date
         df = df.sort_index()
 
         return df
 
     def _standardize_tushare_financial_data(self, financial_data: Dict[str, Any], ts_code: str) -> Dict[str, Any]:
         """
-        标准化Tushare财务数据
+        Standardize Tushare financial data
 
         Args:
-            financial_data: 原始财务数据字典
-            ts_code: Tushare股票代码
+            financial_data: Raw financial data dictionary
+            ts_code: Tushare Stock code
 
         Returns:
-            标准化后的财务数据
+            Standardized financial data
         """
         try:
-            # 优先使用“已披露”的最新报告，避免未来预约披露期覆盖当前可用财报。
+            # priority use"Disclosed"latest reports to avoid future scheduled disclosure periods from covering currently available financial reports.
             income_statements = financial_data.get('income_statement', []) or []
             balance_statements = financial_data.get('balance_sheet', []) or []
             cashflow_statements = financial_data.get('cashflow_statement', []) or []
@@ -1484,85 +1484,85 @@ class TushareProvider(BaseStockDataProvider):
             latest_cashflow = latest_cashflow or {}
             latest_indicator = latest_indicator or {}
 
-            # 提取基础信息
+            # Extract basic information
             symbol = ts_code.split('.')[0] if '.' in ts_code else ts_code
             report_period = latest_income.get('end_date') or latest_balance.get('end_date') or latest_cashflow.get('end_date')
             ann_date = latest_income.get('ann_date') or latest_balance.get('ann_date') or latest_cashflow.get('ann_date')
 
-            # 计算 TTM 数据
+            # Calculate TTM data
             revenue_ttm = self._calculate_ttm_from_tushare(income_statements, 'revenue')
             net_profit_ttm = self._calculate_ttm_from_tushare(income_statements, 'n_income_attr_p')
 
             standardized_data = {
-                # 基础信息
+                # Basic information
                 "symbol": symbol,
                 "ts_code": ts_code,
                 "report_period": report_period,
                 "ann_date": ann_date,
                 "report_type": self._determine_report_type(report_period),
 
-                # 利润表核心指标
-                "revenue": self._safe_float(latest_income.get('revenue')),  # 营业收入（原始报告期口径，A股季报通常为年初累计）
-                "revenue_ttm": revenue_ttm,  # 营业收入（TTM）
-                "oper_rev": self._safe_float(latest_income.get('oper_rev')),  # 营业收入
-                "net_income": self._safe_float(latest_income.get('n_income')),  # 净利润（原始报告期口径，A股季报通常为年初累计）
-                "net_profit": self._safe_float(latest_income.get('n_income_attr_p')),  # 归属母公司净利润（原始报告期口径，A股季报通常为年初累计）
-                "net_profit_ttm": net_profit_ttm,  # 归属母公司净利润（TTM）
-                "oper_profit": self._safe_float(latest_income.get('operate_profit')),  # 营业利润
-                "total_profit": self._safe_float(latest_income.get('total_profit')),  # 利润总额
-                "oper_cost": self._safe_float(latest_income.get('oper_cost')),  # 营业成本
-                "oper_exp": self._safe_float(latest_income.get('oper_exp')),  # 营业费用
-                "admin_exp": self._safe_float(latest_income.get('admin_exp')),  # 管理费用
-                "fin_exp": self._safe_float(latest_income.get('fin_exp')),  # 财务费用
-                "rd_exp": self._safe_float(latest_income.get('rd_exp')),  # 研发费用
-                "credit_impa_loss": self._safe_float(latest_income.get('credit_impa_loss')),  # 信用减值损失（含坏账准备当期计提）
-                "assets_impair_loss": self._safe_float(latest_income.get('assets_impair_loss')),  # 资产减值损失
+                # Income statement core indicators
+                "revenue": self._safe_float(latest_income.get('revenue')),  # Operating income (based on the original reporting period, A-share quarterly reports are usually accumulated at the beginning of the year)
+                "revenue_ttm": revenue_ttm,  # Operating Revenue (TTM)
+                "oper_rev": self._safe_float(latest_income.get('oper_rev')),  # operating income
+                "net_income": self._safe_float(latest_income.get('n_income')),  # Net profit (based on the original reporting period, A-share quarterly reports are usually accumulated at the beginning of the year)
+                "net_profit": self._safe_float(latest_income.get('n_income_attr_p')),  # Net profit attributable to the parent company (original reporting period, A-share quarterly reports are usually accumulated at the beginning of the year)
+                "net_profit_ttm": net_profit_ttm,  # Net profit attributable to parent company (TTM)
+                "oper_profit": self._safe_float(latest_income.get('operate_profit')),  # operating profit
+                "total_profit": self._safe_float(latest_income.get('total_profit')),  # total profit
+                "oper_cost": self._safe_float(latest_income.get('oper_cost')),  # operating costs
+                "oper_exp": self._safe_float(latest_income.get('oper_exp')),  # operating expenses
+                "admin_exp": self._safe_float(latest_income.get('admin_exp')),  # overhead
+                "fin_exp": self._safe_float(latest_income.get('fin_exp')),  # financial charges
+                "rd_exp": self._safe_float(latest_income.get('rd_exp')),  # R&D expenses
+                "credit_impa_loss": self._safe_float(latest_income.get('credit_impa_loss')),  # Credit impairment losses (including bad debt provisions accrued in the current period)
+                "assets_impair_loss": self._safe_float(latest_income.get('assets_impair_loss')),  # Asset impairment losses
 
-                # 资产负债表核心指标
-                "total_assets": self._safe_float(latest_balance.get('total_assets')),  # 总资产
-                "total_liab": self._safe_float(latest_balance.get('total_liab')),  # 总负债
-                "total_equity": self._safe_float(latest_balance.get('total_hldr_eqy_exc_min_int')),  # 股东权益
-                "total_cur_assets": self._safe_float(latest_balance.get('total_cur_assets')),  # 流动资产
-                "total_nca": self._safe_float(latest_balance.get('total_nca')),  # 非流动资产
-                "total_cur_liab": self._safe_float(latest_balance.get('total_cur_liab')),  # 流动负债
-                "total_ncl": self._safe_float(latest_balance.get('total_ncl')),  # 非流动负债
-                "money_cap": self._safe_float(latest_balance.get('money_cap')),  # 货币资金
-                "accounts_receiv": self._safe_float(latest_balance.get('accounts_receiv')),  # 应收账款
-                "inventories": self._safe_float(latest_balance.get('inventories')),  # 存货
-                "fix_assets": self._safe_float(latest_balance.get('fix_assets')),  # 固定资产
-                "goodwill": self._safe_float(latest_balance.get('goodwill')),  # 商誉（并购溢价形成的无形资产，Q4年报通常才有完整数据）
+                # Balance sheet core indicators
+                "total_assets": self._safe_float(latest_balance.get('total_assets')),  # total assets
+                "total_liab": self._safe_float(latest_balance.get('total_liab')),  # total liabilities
+                "total_equity": self._safe_float(latest_balance.get('total_hldr_eqy_exc_min_int')),  # Shareholders' equity
+                "total_cur_assets": self._safe_float(latest_balance.get('total_cur_assets')),  # current assets
+                "total_nca": self._safe_float(latest_balance.get('total_nca')),  # non-current assets
+                "total_cur_liab": self._safe_float(latest_balance.get('total_cur_liab')),  # current liabilities
+                "total_ncl": self._safe_float(latest_balance.get('total_ncl')),  # non-current liabilities
+                "money_cap": self._safe_float(latest_balance.get('money_cap')),  # Monetary funds
+                "accounts_receiv": self._safe_float(latest_balance.get('accounts_receiv')),  # Accounts receivable
+                "inventories": self._safe_float(latest_balance.get('inventories')),  # Inventory
+                "fix_assets": self._safe_float(latest_balance.get('fix_assets')),  # fixed assets
+                "goodwill": self._safe_float(latest_balance.get('goodwill')),  # Goodwill (intangible assets formed from merger and acquisition premiums, complete data is usually available only in Q4 annual reports)
 
-                # 现金流量表核心指标
-                "n_cashflow_act": self._safe_float(latest_cashflow.get('n_cashflow_act')),  # 经营活动现金流
-                "n_cashflow_inv_act": self._safe_float(latest_cashflow.get('n_cashflow_inv_act')),  # 投资活动现金流
-                "n_cashflow_fin_act": self._safe_float(latest_cashflow.get('n_cashflow_fin_act')),  # 筹资活动现金流
-                "c_cash_equ_end_period": self._safe_float(latest_cashflow.get('c_cash_equ_end_period')),  # 期末现金
-                "c_cash_equ_beg_period": self._safe_float(latest_cashflow.get('c_cash_equ_beg_period')),  # 期初现金
+                # Core indicators of cash flow statement
+                "n_cashflow_act": self._safe_float(latest_cashflow.get('n_cashflow_act')),  # cash flow from operating activities
+                "n_cashflow_inv_act": self._safe_float(latest_cashflow.get('n_cashflow_inv_act')),  # cash flow from investing activities
+                "n_cashflow_fin_act": self._safe_float(latest_cashflow.get('n_cashflow_fin_act')),  # cash flow from financing activities
+                "c_cash_equ_end_period": self._safe_float(latest_cashflow.get('c_cash_equ_end_period')),  # Ending cash
+                "c_cash_equ_beg_period": self._safe_float(latest_cashflow.get('c_cash_equ_beg_period')),  # Opening cash
 
-                # 财务指标
-                "roe": self._safe_float(latest_indicator.get('roe')),  # 净资产收益率
-                "roa": self._safe_float(latest_indicator.get('roa')),  # 总资产收益率
-                "roe_waa": self._safe_float(latest_indicator.get('roe_waa')),  # 加权平均净资产收益率
-                "roe_dt": self._safe_float(latest_indicator.get('roe_dt')),  # 净资产收益率(扣除非经常损益)
-                "roa2": self._safe_float(latest_indicator.get('roa2')),  # 总资产收益率(扣除非经常损益)
-                "gross_margin": self._safe_float(latest_indicator.get('grossprofit_margin')),  # 🔥 修复：使用 grossprofit_margin（销售毛利率%）而不是 gross_margin（毛利绝对值）
-                "netprofit_margin": self._safe_float(latest_indicator.get('netprofit_margin')),  # 销售净利率
-                "cogs_of_sales": self._safe_float(latest_indicator.get('cogs_of_sales')),  # 销售成本率
-                "expense_of_sales": self._safe_float(latest_indicator.get('expense_of_sales')),  # 销售期间费用率
-                "profit_to_gr": self._safe_float(latest_indicator.get('profit_to_gr')),  # 净利润/营业总收入
-                "saleexp_to_gr": self._safe_float(latest_indicator.get('saleexp_to_gr')),  # 销售费用/营业总收入
-                "adminexp_of_gr": self._safe_float(latest_indicator.get('adminexp_of_gr')),  # 管理费用/营业总收入
-                "finaexp_of_gr": self._safe_float(latest_indicator.get('finaexp_of_gr')),  # 财务费用/营业总收入
-                "debt_to_assets": self._safe_float(latest_indicator.get('debt_to_assets')),  # 资产负债率
-                "assets_to_eqt": self._safe_float(latest_indicator.get('assets_to_eqt')),  # 权益乘数
-                "dp_assets_to_eqt": self._safe_float(latest_indicator.get('dp_assets_to_eqt')),  # 权益乘数(杜邦分析)
-                "ca_to_assets": self._safe_float(latest_indicator.get('ca_to_assets')),  # 流动资产/总资产
-                "nca_to_assets": self._safe_float(latest_indicator.get('nca_to_assets')),  # 非流动资产/总资产
-                "current_ratio": self._safe_float(latest_indicator.get('current_ratio')),  # 流动比率
-                "quick_ratio": self._safe_float(latest_indicator.get('quick_ratio')),  # 速动比率
-                "cash_ratio": self._safe_float(latest_indicator.get('cash_ratio')),  # 现金比率
+                # financial indicators
+                "roe": self._safe_float(latest_indicator.get('roe')),  # ROE
+                "roa": self._safe_float(latest_indicator.get('roa')),  # return on total assets
+                "roe_waa": self._safe_float(latest_indicator.get('roe_waa')),  # Weighted average return on equity
+                "roe_dt": self._safe_float(latest_indicator.get('roe_dt')),  # ROE(Deduct extraordinary gains and losses)
+                "roa2": self._safe_float(latest_indicator.get('roa2')),  # return on total assets(Deduct extraordinary gains and losses)
+                "gross_margin": self._safe_float(latest_indicator.get('grossprofit_margin')),  # 🔥 Fix: Use grossprofit_margin (sales gross profit margin %) instead of gross_margin (gross profit absolute value)
+                "netprofit_margin": self._safe_float(latest_indicator.get('netprofit_margin')),  # net sales profit margin
+                "cogs_of_sales": self._safe_float(latest_indicator.get('cogs_of_sales')),  # COGS
+                "expense_of_sales": self._safe_float(latest_indicator.get('expense_of_sales')),  # Sales period expense rate
+                "profit_to_gr": self._safe_float(latest_indicator.get('profit_to_gr')),  # Net profit/total operating income
+                "saleexp_to_gr": self._safe_float(latest_indicator.get('saleexp_to_gr')),  # Selling expenses/total operating income
+                "adminexp_of_gr": self._safe_float(latest_indicator.get('adminexp_of_gr')),  # Administrative expenses/total operating income
+                "finaexp_of_gr": self._safe_float(latest_indicator.get('finaexp_of_gr')),  # Financial expenses/total operating income
+                "debt_to_assets": self._safe_float(latest_indicator.get('debt_to_assets')),  # Asset-liability ratio
+                "assets_to_eqt": self._safe_float(latest_indicator.get('assets_to_eqt')),  # equity multiplier
+                "dp_assets_to_eqt": self._safe_float(latest_indicator.get('dp_assets_to_eqt')),  # equity multiplier(DuPont Analysis)
+                "ca_to_assets": self._safe_float(latest_indicator.get('ca_to_assets')),  # Current assets/total assets
+                "nca_to_assets": self._safe_float(latest_indicator.get('nca_to_assets')),  # Non-current assets/total assets
+                "current_ratio": self._safe_float(latest_indicator.get('current_ratio')),  # current ratio
+                "quick_ratio": self._safe_float(latest_indicator.get('quick_ratio')),  # quick ratio
+                "cash_ratio": self._safe_float(latest_indicator.get('cash_ratio')),  # cash ratio
 
-                # 原始数据保留（用于详细分析）
+                # Original data retained (for detailed analysis)
                 "raw_data": {
                     "income_statement": financial_data.get('income_statement', []),
                     "balance_sheet": financial_data.get('balance_sheet', []),
@@ -1571,7 +1571,7 @@ class TushareProvider(BaseStockDataProvider):
                     "main_business": financial_data.get('main_business', [])
                 },
 
-                # 元数据
+                # metadata
                 "data_source": "tushare",
                 "updated_at": datetime.utcnow()
             }
@@ -1579,7 +1579,7 @@ class TushareProvider(BaseStockDataProvider):
             return standardized_data
 
         except Exception as e:
-            self.logger.error(f"❌ 标准化Tushare财务数据失败: {e}")
+            self.logger.error(f"❌ Standardizing Tushare financial data fails: {e}")
             return {
                 "symbol": ts_code.split('.')[0] if '.' in ts_code else ts_code,
                 "data_source": "tushare",
@@ -1588,7 +1588,7 @@ class TushareProvider(BaseStockDataProvider):
             }
 
     def _pick_record_by_period(self, statements: List[Dict[str, Any]], period: str) -> Optional[Dict[str, Any]]:
-        """按报告期匹配记录。"""
+        """Match records by reporting period."""
         if not statements or not period:
             return None
         target = str(period)
@@ -1599,11 +1599,11 @@ class TushareProvider(BaseStockDataProvider):
 
     def _pick_latest_disclosed_record(self, statements: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """
-        选择已披露记录中报告期最新的一条。
+        Select the most recent record for the reporting period among the disclosed records.
 
-        规则：
-        1. 优先 ann_date/f_ann_date <= 今天 的记录
-        2. 在可用记录中按 end_date 倒序选择最新
+        Rules:
+        1. Priority ann_date/f_ann_date <= Today s record
+        2. Select the latest among available records in reverse order by end_date
         """
         if not statements:
             return None
@@ -1618,7 +1618,7 @@ class TushareProvider(BaseStockDataProvider):
             if not end_date:
                 continue
 
-            # ann_date 缺失时，默认保留该记录，避免误删历史数据。
+            # ann_date When missing, the record will be retained by default to avoid accidental deletion of historical data.
             if not ann_date or ann_date <= today:
                 disclosed.append(record)
 
@@ -1630,28 +1630,28 @@ class TushareProvider(BaseStockDataProvider):
 
     def _calculate_ttm_from_tushare(self, income_statements: list, field: str) -> Optional[float]:
         """
-        从 Tushare 利润表数据计算 TTM（最近12个月）
+        Calculate TTM (last 12 months) from Tushare income statement data
 
-        Tushare 利润表数据是累计值（从年初到报告期的累计）：
-        - 2025Q1 (20250331): 2025年1-3月累计
-        - 2025Q2 (20250630): 2025年1-6月累计
-        - 2025Q3 (20250930): 2025年1-9月累计
-        - 2025Q4 (20251231): 2025年1-12月累计（年报）
+        Tushare Income statement data are cumulative values (cumulative from the beginning of the year to the reporting period):
+        - 2025Q1 (20250331): 2025 Total from January to March of the year
+        - 2025Q2 (20250630): 2025 Total from January to June of the year
+        - 2025Q3 (20250930): 2025 Total from January to September of the year
+        - 2025Q4 (20251231): 2025 Total from January to December of the year (annual report)
 
-        TTM 计算公式：
-        TTM = 去年同期之后的最近年报 + (本期累计 - 去年同期累计)
+        TTM Calculation formula:
+        TTM = The most recent annual report after the same period last year + (Cumulative for the current period – Cumulative for the same period last year)
 
-        例如：2025Q2 TTM = 2024年报 + (2025Q2 - 2024Q2)
-                        = 2024年1-12月 + (2025年1-6月 - 2024年1-6月)
-                        = 2024年7-12月 + 2025年1-6月
-                        = 最近12个月
+        For example:2025Q2 TTM = 2024 annual report + (2025Q2 - 2024Q2)
+                        = 2024 January-December + (2025 January-June 2024 - January-June 2024)
+                        = 2024 July-December + 2025 January to June
+                        = Last 12 months
 
         Args:
-            income_statements: 利润表数据列表（按报告期倒序）
-            field: 字段名（'revenue' 或 'n_income_attr_p'）
+            income_statements: Income statement data list (in reverse order of reporting period)
+            field: Field name ('revenue' or 'n_income_attr_p') 
 
         Returns:
-            TTM 值，如果无法计算则返回 None
+            TTM value, returned if it cannot be calculated None
         """
         if not income_statements or len(income_statements) < 1:
             return None
@@ -1664,17 +1664,17 @@ class TushareProvider(BaseStockDataProvider):
             if not latest_period or latest_value is None:
                 return None
 
-            # 判断最新期的类型
+            # Determine the type of the latest issue
             month_day = latest_period[4:8]
 
-            # 如果最新期是年报（1231），直接使用
+            # If the latest issue is the annual report (1231), use it directly
             if month_day == '1231':
-                self.logger.debug(f"✅ TTM计算: 使用年报数据 {latest_period} = {latest_value:.2f}")
+                self.logger.debug(f"✅ TTM Calculate: Using annual report data {latest_period} = {latest_value:.2f}")
                 return latest_value
 
-            # 如果是季报/半年报，需要计算 TTM = 基准期 + (本期累计 - 去年同期累计)
+            # If it is a quarterly/semi-annual report, calculation is required TTM = base period + (Cumulative for the current period – Cumulative for the same period last year)
 
-            # 1. 查找去年同期
+            # 1. Find the same period last year
             latest_year = latest_period[:4]
             last_year = str(int(latest_year) - 1)
             last_year_same_period = last_year + latest_period[4:]
@@ -1686,37 +1686,37 @@ class TushareProvider(BaseStockDataProvider):
                     break
 
             if not last_year_same:
-                # 缺少去年同期数据，无法准确计算 TTM
-                self.logger.warning(f"⚠️ TTM计算失败: 缺少去年同期数据（需要: {last_year_same_period}，最新期: {latest_period}）")
+                # There is a lack of data for the same period last year and cannot be accurately calculated. TTM
+                self.logger.warning(f"⚠️ TTM Calculation failed: Missing data for the same period last year (requires: {last_year_same_period}, latest issue: {latest_period}) ")
                 return None
 
             last_year_value = self._safe_float(last_year_same.get(field))
             if last_year_value is None:
-                self.logger.warning(f"⚠️ TTM计算失败: 去年同期数据值为空（{last_year_same_period}）")
+                self.logger.warning(f"⚠️ TTM Calculation failed: The data value for the same period last year is empty ({last_year_same_period}) ")
                 return None
 
-            # 2. 查找"去年同期之后的最近年报"作为基准期
-            # 例如：如果最新期是 2025Q2，去年同期是 2024Q2，则查找 2024年报（20241231）
+            # 2. Find"The most recent annual report after the same period last year"as base period
+            # For example: If the latest period is 2025Q2 and the same period last year is 2024Q2, then search for the 2024 annual report (20241231)
             base_period = None
             for stmt in income_statements:
                 period = stmt.get('end_date')
-                # 必须满足：在去年同期之后 且 是年报（1231）
+                # Must meet: after the same period last year and is an annual report (1231)
                 if period and period > last_year_same_period and period[4:8] == '1231':
                     base_period = stmt
                     break
 
             if not base_period:
-                # 没有找到合适的年报，无法计算
-                # 这种情况通常发生在：最新期是 2025Q1，但 2024年报还没公布
-                self.logger.warning(f"⚠️ TTM计算失败: 缺少基准年报（需要在 {last_year_same_period} 之后的年报，最新期: {latest_period}）")
+                # No suitable annual report found, unable to calculate
+                # This situation usually occurs when: the latest period is 2025Q1, but the 2024 annual report has not been released yet
+                self.logger.warning(f"⚠️ TTM Calculation failed: Missing base annual report (needs in {last_year_same_period} Subsequent annual reports, latest issue: {latest_period}) ")
                 return None
 
             base_value = self._safe_float(base_period.get(field))
             if base_value is None:
-                self.logger.warning(f"⚠️ TTM计算失败: 基准年报数据值为空（{base_period.get('end_date')}）")
+                self.logger.warning(f"⚠️ TTM Calculation failed: The base annual report data value is empty ({base_period.get('end_date')}) ")
                 return None
 
-            # 3. 计算 TTM = 基准年报 + (本期累计 - 去年同期累计)
+            # 3. Calculate TTM = Baseline Annual Report + (Cumulative for the current period – Cumulative for the same period last year)
             ttm_value = base_value + (latest_value - last_year_value)
 
             self.logger.debug(
@@ -1736,37 +1736,37 @@ class TushareProvider(BaseStockDataProvider):
             return "quarterly"
 
         try:
-            # 报告期格式: YYYYMMDD
+            # Reporting period format: YYYYMMDD
             month_day = report_period[4:8]
             if month_day == "1231":
-                return "annual"  # 年报
+                return "annual"  # annual report
             else:
-                return "quarterly"  # 季报
+                return "quarterly"  # quarterly report
         except:
             return "quarterly"
 
     def _safe_float(self, value) -> Optional[float]:
-        """安全转换为浮点数，处理各种异常情况"""
+        """Safe conversion to floating point numbers, handling various exceptions"""
         if value is None:
             return None
 
         try:
-            # 处理字符串类型
+            # Handling string types
             if isinstance(value, str):
                 value = value.strip()
                 if not value or value.lower() in ['nan', 'null', 'none', '--', '']:
                     return None
-                # 移除可能的单位符号
+                # Remove possible unit symbols
                 value = value.replace(',', '').replace('万', '').replace('亿', '')
 
-            # 处理数值类型
+            # Handling numeric types
             if isinstance(value, (int, float)):
-                # 检查是否为NaN
-                if isinstance(value, float) and (value != value):  # NaN检查
+                # Check if it is NaN
+                if isinstance(value, float) and (value != value):  # NaN Check
                     return None
                 return float(value)
 
-            # 尝试转换
+            # try to convert
             return float(value)
 
         except (ValueError, TypeError, AttributeError):
@@ -1782,28 +1782,28 @@ class TushareProvider(BaseStockDataProvider):
         return None
 
     def _safe_str(self, value) -> Optional[str]:
-        """安全转换为字符串，处理NaN值"""
+        """Safe conversion to string, handling NaN values"""
         if value is None:
             return None
-        if isinstance(value, float) and (value != value):  # 检查NaN
+        if isinstance(value, float) and (value != value):  # Check NaN
             return None
         return str(value) if value else None
 
-    # ==================== 板块/行业数据接口 ====================
+    # ==================== Sector/industry data interface ====================
 
     async def get_ths_index_list(self, index_type: str = "N") -> Optional[pd.DataFrame]:
         """
-        获取同花顺板块列表
+        Get the list of Flush sectors
 
         Args:
-            index_type: 板块类型
-                - N: 行业板块
-                - S: 概念板块
-                - R: 地域板块
-                - I: 行业指数（需要6000积分）
+            index_type: Section type
+                - N: Industry sector
+                - S: Concept section
+                - R: Geographical sector
+                - I: Industry Index (requires 6,000 points)
 
         Returns:
-            板块列表 DataFrame，包含 ts_code, name, count, exchange, list_date, type
+            Section list DataFrame, containing ts_code, name, count, exchange, list_date, type
         """
         if not self.is_available():
             return None
@@ -1818,21 +1818,21 @@ class TushareProvider(BaseStockDataProvider):
                 return df
             return None
         except Exception as e:
-            self.logger.error(f"❌ 获取同花顺板块列表失败: {e}")
+            self.logger.error(f"❌ Failed to obtain the Flush section list: {e}")
             return None
 
     async def get_ths_daily(self, ts_code: str, start_date: str = None,
                            end_date: str = None) -> Optional[pd.DataFrame]:
         """
-        获取同花顺板块日线行情
+        Get the daily quotes of the Flush sector
 
         Args:
-            ts_code: 板块代码（如 885691.TI 表示酿酒行业）
-            start_date: 开始日期 YYYYMMDD
-            end_date: 结束日期 YYYYMMDD
+            ts_code: Sector code (e.g. 885691.TI represents the brewing industry)
+            start_date: start date YYYYMMDD
+            end_date: end date YYYYMMDD
 
         Returns:
-            板块日线数据 DataFrame，包含 ts_code, trade_date, open, close, high, low,
+            Sector daily data DataFrame, including ts_code, trade_date, open, close, high, low,
             avg_price, change, pct_change, vol, turnover_rate, total_mv, float_mv
         """
         if not self.is_available():
@@ -1854,20 +1854,20 @@ class TushareProvider(BaseStockDataProvider):
                 return df
             return None
         except Exception as e:
-            self.logger.error(f"❌ 获取板块日线数据失败: {e}")
+            self.logger.error(f"❌ Failed to obtain sector daily data: {e}")
             return None
 
     async def get_ths_member(self, ts_code: str = None,
                             con_code: str = None) -> Optional[pd.DataFrame]:
         """
-        获取同花顺板块成分股
+        Get Flush sector constituent stocks
 
         Args:
-            ts_code: 板块代码（正向查询：板块→成分股）
-            con_code: 股票代码（反向查询：个股→所属板块）
+            ts_code: Section code (forward query: Section→constituent stocks)
+            con_code: Stock code (reverse query: individual stocks→section)
 
         Returns:
-            DataFrame，包含 ts_code (板块代码), code (股票代码), name (股票名称)
+            DataFrame, contains ts_code (Section code), code (Stock code), name (Stock name)
         """
         if not self.is_available():
             return None
@@ -1880,7 +1880,7 @@ class TushareProvider(BaseStockDataProvider):
                 params['con_code'] = con_code
 
             if not params:
-                self.logger.warning("⚠️ get_ths_member 需要指定 ts_code 或 con_code")
+                self.logger.warning("⚠️ get_ths_member Need to specify ts_code or con_code")
                 return None
 
             df = await asyncio.to_thread(
@@ -1903,22 +1903,22 @@ class TushareProvider(BaseStockDataProvider):
                                start_date: str = None,
                                end_date: str = None) -> Optional[pd.DataFrame]:
         """
-        获取同花顺**个股**资金流向（注意：这是个股级别，不是板块级别）
+        Get a straight flush**individual stocks**Fund flow (note: this is the individual stock level, not the sector level)
 
         Args:
-            trade_date: 交易日期 YYYYMMDD
-            ts_code: 股票代码
-            start_date: 开始日期 YYYYMMDD
-            end_date: 结束日期 YYYYMMDD
+            trade_date: transaction date YYYYMMDD
+            ts_code: Stock code
+            start_date: start date YYYYMMDD
+            end_date: end date YYYYMMDD
 
         Returns:
-            DataFrame，包含个股资金流向数据
-            - net_amount: 净流入金额（万元）
-            - net_amount_rate: 净流入占比
-            - buy_elg_amount: 特大单买入金额
-            - buy_lg_amount: 大单买入金额
-            - buy_md_amount: 中单买入金额
-            - buy_sm_amount: 小单买入金额
+            DataFrame, Contains individual stock capital flow data
+            - net_amount: Net inflow amount (10,000 yuan)
+            - net_amount_rate: Net inflow ratio
+            - buy_elg_amount: Extra large order purchase amount
+            - buy_lg_amount: Large order purchase amount
+            - buy_md_amount: Mid order buying amount
+            - buy_sm_amount: Small order purchase amount
         """
         if not self.is_available():
             return None
@@ -1943,7 +1943,7 @@ class TushareProvider(BaseStockDataProvider):
                 return df
             return None
         except Exception as e:
-            self.logger.error(f"❌ 获取个股资金流向失败: {e}")
+            self.logger.error(f"❌ Failed to obtain the capital flow of individual stocks: {e}")
             return None
 
     async def get_moneyflow_ind_ths(self, trade_date: str = None,
@@ -1951,25 +1951,25 @@ class TushareProvider(BaseStockDataProvider):
                                     start_date: str = None,
                                     end_date: str = None) -> Optional[pd.DataFrame]:
         """
-        获取同花顺**行业板块**资金流向
+        Get a straight flush**Industry sector**Fund flow
 
         Args:
-            trade_date: 交易日期 YYYYMMDD（单日查询）
-            ts_code: 行业板块代码（如 881166.TI）
-            start_date: 开始日期 YYYYMMDD（范围查询）
-            end_date: 结束日期 YYYYMMDD（范围查询）
+            trade_date: Transaction date YYYYMMDD (single day query)
+            ts_code: Industry sector code (such as 881166.TI)
+            start_date: Start date YYYYMMDD (range query)
+            end_date: End date YYYYMMDD (range query)
 
         Returns:
-            DataFrame，包含行业板块资金流向数据
-            - ts_code: 板块代码
-            - industry: 行业名称
-            - lead_stock: 领涨股
-            - close: 板块指数收盘
-            - pct_change: 涨跌幅(%)
-            - net_amount: 净流入金额（亿元）
-            - net_buy_amount: 买入金额（亿元）
-            - net_sell_amount: 卖出金额（亿元）
-            - company_num: 成分股数量
+            DataFrame, Contains industry sector capital flow data
+            - ts_code: Section code
+            - industry: Industry name
+            - lead_stock: Leading stocks
+            - close: Sector index closing
+            - pct_change: Increase or decrease(%)
+            - net_amount: Net inflow amount (100 million yuan)
+            - net_buy_amount: Purchase amount (100 million yuan)
+            - net_sell_amount: Sales amount (100 million yuan)
+            - company_num: Number of constituent stocks
         """
         if not self.is_available():
             return None
@@ -1994,7 +1994,7 @@ class TushareProvider(BaseStockDataProvider):
                 return df
             return None
         except Exception as e:
-            self.logger.error(f"❌ 获取行业板块资金流向失败: {e}")
+            self.logger.error(f"❌ Failed to obtain the capital flow of the industry sector: {e}")
             return None
 
     async def get_moneyflow_cnt_ths(self, trade_date: str = None,
@@ -2002,28 +2002,28 @@ class TushareProvider(BaseStockDataProvider):
                                     start_date: str = None,
                                     end_date: str = None) -> Optional[pd.DataFrame]:
         """
-        获取同花顺**概念板块**资金流向
+        Get a straight flush**Concept section**Fund flow
 
-        注意：单次最大5000条。概念板块约387个，如日期范围超过12天，
-        会自动分段拉取后合并。
+        Note: The maximum number of entries per transaction is 5,000. There are about 387 concept sections. If the date range exceeds 12 days,
+        It will be automatically pulled in segments and then merged.
 
         Args:
-            trade_date: 交易日期 YYYYMMDD（单日查询）
-            ts_code: 概念板块代码（如 886034.TI）
-            start_date: 开始日期 YYYYMMDD（范围查询）
-            end_date: 结束日期 YYYYMMDD（范围查询）
+            trade_date: Transaction date YYYYMMDD (single day query)
+            ts_code: Concept section code (such as 886034.TI)
+            start_date: Start date YYYYMMDD (range query)
+            end_date: End date YYYYMMDD (range query)
 
         Returns:
-            DataFrame，包含概念板块资金流向数据
-            - ts_code: 板块代码
-            - name: 概念名称
-            - lead_stock: 领涨股
-            - close_price: 板块指数收盘
-            - pct_change: 涨跌幅(%)
-            - net_amount: 净流入金额（亿元）
-            - net_buy_amount: 买入金额（亿元）
-            - net_sell_amount: 卖出金额（亿元）
-            - company_num: 成分股数量
+            DataFrame, Contains data on capital flows in concept sectors
+            - ts_code: Section code
+            - name: concept name
+            - lead_stock: Leading stocks
+            - close_price: Sector index closing
+            - pct_change: Increase or decrease(%)
+            - net_amount: Net inflow amount (100 million yuan)
+            - net_buy_amount: Purchase amount (100 million yuan)
+            - net_sell_amount: Sales amount (100 million yuan)
+            - company_num: Number of constituent stocks
         """
         if not self.is_available():
             return None
@@ -2039,8 +2039,8 @@ class TushareProvider(BaseStockDataProvider):
             if end_date:
                 params['end_date'] = end_date.replace('-', '')
 
-            # 概念板块约387个/天，超12天（387*12=4644）接近5000限制
-            # 如果是日期范围查询且跨度大，分段拉取
+            # About 387 concept plates/day, more than 12 days (387*12=4644) Close to 5000 limit
+            # If it is a date range query and the span is large, pull it in segments
             need_split = (start_date and end_date and not trade_date and not ts_code)
             if need_split:
                 from datetime import datetime, timedelta
@@ -2048,7 +2048,7 @@ class TushareProvider(BaseStockDataProvider):
                 ed = datetime.strptime(params['end_date'], '%Y%m%d')
                 days_span = (ed - sd).days
                 if days_span > 12:
-                    # 分段拉取，每段 12 天
+                    # Pull in segments, 12 days each
                     dfs = []
                     seg_start = sd
                     while seg_start <= ed:
@@ -2078,26 +2078,26 @@ class TushareProvider(BaseStockDataProvider):
                 return df
             return None
         except Exception as e:
-            self.logger.error(f"❌ 获取概念板块资金流向失败: {e}")
+            self.logger.error(f"❌ Failed to obtain the capital flow of the concept sector: {e}")
             return None
 
     async def get_moneyflow_ind_ths(self, trade_date: str = None,
                                    ts_code: str = None) -> Optional[pd.DataFrame]:
         """
-        获取同花顺行业资金流向
+        Obtain the capital flow of the industry
 
         Args:
-            trade_date: 交易日期 YYYYMMDD
-            ts_code: 行业代码
+            trade_date: transaction date YYYYMMDD
+            ts_code: Industry code
 
         Returns:
-            DataFrame，包含行业资金流向数据
-            - industry: 行业名称
-            - pct_change: 行业指数涨跌幅
-            - company_num: 成分股数量
-            - net_buy_amount: 流入资金（亿元）
-            - net_sell_amount: 流出资金（亿元）
-            - net_amount: 净额（亿元）
+            DataFrame, Contains industry capital flow data
+            - industry: Industry name
+            - pct_change: Industry index rise and fall
+            - company_num: Number of constituent stocks
+            - net_buy_amount: Inflow of funds (100 million yuan)
+            - net_sell_amount: Outflow of funds (billion yuan)
+            - net_amount: Net amount (billion yuan)
         """
         if not self.is_available():
             return None
@@ -2118,18 +2118,18 @@ class TushareProvider(BaseStockDataProvider):
                 return df
             return None
         except Exception as e:
-            self.logger.error(f"❌ 获取行业资金流向失败: {e}")
+            self.logger.error(f"❌ Failed to obtain industry capital flows: {e}")
             return None
 
     def get_stock_industry_sync(self, ticker: str) -> Optional[str]:
         """
-        同步获取股票所属行业（从 stock_basic 提取）
+        Synchronously obtain the industry to which the stock belongs (extracted from stock_basic)
 
         Args:
-            ticker: 股票代码（如 000001 或 000001.SZ）
+            ticker: Stock code (such as 000001 or 000001.SZ)
 
         Returns:
-            行业名称，如 "银行"
+            Industry name, such as "bank"
         """
         if not self.is_available():
             return None
@@ -2156,19 +2156,19 @@ class TushareProvider(BaseStockDataProvider):
 
     async def get_industry_stocks(self, industry: str) -> Optional[pd.DataFrame]:
         """
-        获取某行业的所有股票（精确匹配）
+        Get all stocks in a certain industry (exact match)
 
         Args:
-            industry: 行业名称（如 "银行"、"全国地产"）
+            industry: Industry name (e.g. "bank", "Nationwide Real Estate") 
 
         Returns:
-            该行业所有股票的 DataFrame
+            of all stocks in the industry DataFrame
         """
         if not self.is_available():
             return None
 
         try:
-            # 获取所有股票，然后精确匹配行业
+            # Get all stocks and then match the industry exactly
             df = await asyncio.to_thread(
                 self.api.stock_basic,
                 list_status='L',
@@ -2178,7 +2178,7 @@ class TushareProvider(BaseStockDataProvider):
             if df is None or df.empty:
                 return None
 
-            # 精确匹配行业名称
+            # Exactly match industry names
             result_df = df[df['industry'] == industry].copy()
 
             if not result_df.empty:
@@ -2189,31 +2189,31 @@ class TushareProvider(BaseStockDataProvider):
                 return None
 
         except Exception as e:
-            self.logger.error(f"❌ 获取行业股票列表失败: {e}")
+            self.logger.error(f"❌ Failed to obtain industry stock list: {e}")
             return None
 
     async def get_sector_stocks_daily_basic(self, industry: str,
                                             trade_date: str) -> Optional[pd.DataFrame]:
         """
-        获取某行业所有股票的每日基础指标
+        Get daily fundamental indicators for all stocks in a certain industry
 
         Args:
-            industry: 行业名称
-            trade_date: 交易日期
+            industry: Industry name
+            trade_date: transaction date
 
         Returns:
-            包含 PE、PB、总市值等指标的 DataFrame
+            Including indicators such as PE, PB, total market capitalization, etc. DataFrame
         """
         if not self.is_available():
             return None
 
         try:
-            # 1. 获取行业股票列表
+            # 1. Get a list of industry stocks
             stocks_df = await self.get_industry_stocks(industry)
             if stocks_df is None or stocks_df.empty:
                 return None
 
-            # 2. 获取当日 daily_basic 数据
+            # 2. Get the daily_basic data of the current day
             date_str = trade_date.replace('-', '')
             daily_df = await asyncio.to_thread(
                 self.api.daily_basic,
@@ -2224,11 +2224,11 @@ class TushareProvider(BaseStockDataProvider):
             if daily_df is None or daily_df.empty:
                 return None
 
-            # 3. 筛选行业内股票
+            # 3. Screen stocks within the industry
             industry_codes = set(stocks_df['ts_code'].tolist())
             result_df = daily_df[daily_df['ts_code'].isin(industry_codes)].copy()
 
-            # 4. 合并股票名称
+            # 4. Consolidated stock name
             result_df = result_df.merge(
                 stocks_df[['ts_code', 'name']],
                 on='ts_code',
@@ -2239,10 +2239,10 @@ class TushareProvider(BaseStockDataProvider):
             return result_df
 
         except Exception as e:
-            self.logger.error(f"❌ 获取行业股票每日指标失败: {e}")
+            self.logger.error(f"❌ Failed to obtain industry stock daily indicators: {e}")
             return None
 
-    # ==================== 指数数据 API ====================
+    # ==================== index data API ====================
 
     async def get_index_basic(
         self,
@@ -2250,14 +2250,14 @@ class TushareProvider(BaseStockDataProvider):
         ts_code: str = None
     ) -> Optional[pd.DataFrame]:
         """
-        获取指数基本信息
+        Get basic information about the index
 
         Args:
-            market: 交易所 (SSE上交所/SZSE深交所/SW申万/MSCI/CSI中证)
-            ts_code: 指数代码
+            market: exchange (SSE Shanghai Stock Exchange/SZSE Shenzhen Stock Exchange/SW Shenwan/MSCI/CSI)
+            ts_code: index code
 
         Returns:
-            DataFrame 包含: ts_code, name, market, category, base_date, base_point
+            DataFrame contains: ts_code, name, market, category, base_date, base_point
         """
         if not self.is_available():
             return None
@@ -2273,7 +2273,7 @@ class TushareProvider(BaseStockDataProvider):
             self.logger.info(f"✅ 获取指数基本信息: {len(df)} 条")
             return df
         except Exception as e:
-            self.logger.error(f"❌ 获取指数基本信息失败: {e}")
+            self.logger.error(f"❌ Failed to obtain basic index information: {e}")
             return None
 
     async def get_index_daily(
@@ -2284,27 +2284,27 @@ class TushareProvider(BaseStockDataProvider):
         use_cache: bool = True
     ) -> Optional[pd.DataFrame]:
         """
-        获取指数日线行情（带缓存）
+        Get index daily quotes (with cache)
 
         Args:
-            ts_code: 指数代码 (如 000001.SH)
-            start_date: 开始日期 YYYYMMDD
-            end_date: 结束日期 YYYYMMDD
-            use_cache: 是否使用缓存（默认True）
+            ts_code: index code (Such as 000001.SH)
+            start_date: start date YYYYMMDD
+            end_date: end date YYYYMMDD
+            use_cache: Whether to use cache (default True)
 
         Returns:
-            DataFrame 包含: trade_date, open, high, low, close, vol, amount, pct_chg
+            DataFrame contains: trade_date, open, high, low, close, vol, amount, pct_chg
         """
         if not self.is_available():
             return None
 
-        # 尝试从缓存获取
+        # Try to get from cache
         cache_key = f"index_daily_{ts_code}_{start_date}_{end_date}"
         if use_cache:
             try:
                 from tradingagents.dataflows.cache import get_cache
                 cache = get_cache()
-                # 指数日线数据缓存24小时有效
+                # Index daily data cache is valid for 24 hours
                 cached_key = cache.find_cached_stock_data(
                     symbol=ts_code,
                     start_date=start_date,
@@ -2330,7 +2330,7 @@ class TushareProvider(BaseStockDataProvider):
             df = self.api.index_daily(**params)
             self.logger.info(f"✅ 获取指数 {ts_code} 日线: {len(df)} 条")
 
-            # 保存到缓存
+            # Save to cache
             if use_cache and df is not None and not df.empty:
                 try:
                     from tradingagents.dataflows.cache import get_cache
@@ -2358,21 +2358,21 @@ class TushareProvider(BaseStockDataProvider):
         use_cache: bool = True
     ) -> Optional[pd.DataFrame]:
         """
-        获取大盘指数每日指标（带缓存）
+        Get daily indicators of broad market index (with cache)
 
         Args:
-            ts_code: 指数代码
-            trade_date: 交易日期 YYYYMMDD
-            use_cache: 是否使用缓存（默认True）
+            ts_code: index code
+            trade_date: transaction date YYYYMMDD
+            use_cache: Whether to use cache (default True)
 
         Returns:
-            DataFrame 包含: ts_code, trade_date, pe, pe_ttm, pb,
+            DataFrame contains: ts_code, trade_date, pe, pe_ttm, pb,
                           turnover_rate, total_mv, float_mv
         """
         if not self.is_available():
             return None
 
-        # 尝试从缓存获取
+        # Try to get from cache
         cache_symbol = ts_code or f"all_{trade_date}"
         if use_cache:
             try:
@@ -2403,7 +2403,7 @@ class TushareProvider(BaseStockDataProvider):
             df = self.api.index_dailybasic(**params)
             self.logger.info(f"✅ 获取指数每日指标: {len(df)} 条")
 
-            # 保存到缓存
+            # Save to cache
             if use_cache and df is not None and not df.empty:
                 try:
                     from tradingagents.dataflows.cache import get_cache
@@ -2420,7 +2420,7 @@ class TushareProvider(BaseStockDataProvider):
 
             return df
         except Exception as e:
-            self.logger.error(f"❌ 获取指数每日指标失败: {e}")
+            self.logger.error(f"❌ Failed to get index daily indicator: {e}")
             return None
 
     async def get_daily_info(
@@ -2430,22 +2430,22 @@ class TushareProvider(BaseStockDataProvider):
         use_cache: bool = True
     ) -> Optional[pd.DataFrame]:
         """
-        获取每日市场交易统计（带缓存）
+        Get daily market transaction statistics (with caching)
 
         Args:
-            trade_date: 交易日期 YYYYMMDD
-            exchange: 交易所 (SSE/SZSE)
-            use_cache: 是否使用缓存（默认True）
+            trade_date: transaction date YYYYMMDD
+            exchange: exchange (SSE/SZSE)
+            use_cache: Whether to use cache (default True)
 
         Returns:
-            DataFrame 包含: trade_date, ts_code, ts_name, com_count,
+            DataFrame contains: trade_date, ts_code, ts_name, com_count,
                           total_share, float_share, total_mv, float_mv,
                           amount, vol, up_count, down_count, etc.
         """
         if not self.is_available():
             return None
 
-        # 尝试从缓存获取
+        # Try to get from cache
         cache_symbol = f"daily_info_{trade_date}_{exchange or 'all'}"
         if use_cache:
             try:
@@ -2474,7 +2474,7 @@ class TushareProvider(BaseStockDataProvider):
             df = self.api.daily_info(**params)
             self.logger.info(f"✅ 获取市场交易统计: {len(df)} 条")
 
-            # 保存到缓存
+            # Save to cache
             if use_cache and df is not None and not df.empty:
                 try:
                     from tradingagents.dataflows.cache import get_cache
@@ -2491,7 +2491,7 @@ class TushareProvider(BaseStockDataProvider):
 
             return df
         except Exception as e:
-            self.logger.error(f"❌ 获取市场交易统计失败: {e}")
+            self.logger.error(f"❌ Failed to obtain market transaction statistics: {e}")
             return None
 
     async def get_index_weight(
@@ -2500,14 +2500,14 @@ class TushareProvider(BaseStockDataProvider):
         trade_date: str = None
     ) -> Optional[pd.DataFrame]:
         """
-        获取指数成分和权重
+        Get index components and weights
 
         Args:
-            index_code: 指数代码 (如 000300.SH)
-            trade_date: 交易日期 YYYYMMDD
+            index_code: index code (Such as 000300.SH)
+            trade_date: transaction date YYYYMMDD
 
         Returns:
-            DataFrame 包含: index_code, con_code, trade_date, weight
+            DataFrame contains: index_code, con_code, trade_date, weight
         """
         if not self.is_available():
             return None
@@ -2521,10 +2521,10 @@ class TushareProvider(BaseStockDataProvider):
             self.logger.info(f"✅ 获取指数 {index_code} 成分权重: {len(df)} 条")
             return df
         except Exception as e:
-            self.logger.error(f"❌ 获取指数成分权重失败: {e}")
+            self.logger.error(f"❌ Failed to obtain index component weights: {e}")
             return None
 
-    # ==================== 大盘分析相关接口 ====================
+    # ==================== Market analysis related interfaces ====================
 
     async def get_hsgt_moneyflow(
         self,
@@ -2533,22 +2533,22 @@ class TushareProvider(BaseStockDataProvider):
         end_date: str = None
     ) -> Optional[pd.DataFrame]:
         """
-        获取沪深港通资金流向（北向资金）
+        Obtain the flow of funds from Shanghai-Shenzhen-Hong Kong Stock Connect (Northbound funds)
 
         Args:
-            trade_date: 交易日期 (YYYYMMDD)
-            start_date: 开始日期 (YYYYMMDD)
-            end_date: 结束日期 (YYYYMMDD)
+            trade_date: transaction date (YYYYMMDD)
+            start_date: start date (YYYYMMDD)
+            end_date: end date (YYYYMMDD)
 
         Returns:
-            DataFrame 包含:
-            - trade_date: 交易日期
-            - ggt_ss: 港股通（沪）净流入
-            - ggt_sz: 港股通（深）净流入
-            - hgt: 沪股通净流入
-            - sgt: 深股通净流入
-            - north_money: 北向资金净流入（hgt+sgt）
-            - south_money: 南向资金净流入（ggt_ss+ggt_sz）
+            DataFrame contains:
+            - trade_date: transaction date
+            - ggt_ss: Southbound Hong Kong (Shanghai) net inflow
+            - ggt_sz: Hong Kong Stock Connect (Shenzhen) net inflow
+            - hgt: Shanghai Stock Connect net inflows
+            - sgt: Shenzhen stock connect net inflow
+            - north_money: Net northbound capital inflow (hgt+sgt) 
+            - south_money: Net southbound capital inflow (ggt_ss+ggt_sz) 
         """
         if not self.is_available():
             return None
@@ -2567,9 +2567,9 @@ class TushareProvider(BaseStockDataProvider):
                 **params
             )
 
-            logger.info(f"获取到的原始北向资金流向数据: {df}")
+            logger.info(f"Obtained original northbound capital flow data: {df}")
             if df is not None and not df.empty:
-                # 计算北向和南向资金总量
+                # Calculate the total amount of northbound and southbound funds
                 df['north_money'] = df['hgt'].fillna(0) + df['sgt'].fillna(0)
                 df['south_money'] = df['ggt_ss'].fillna(0) + df['ggt_sz'].fillna(0)
                 self.logger.info(f"✅ 获取沪深港通资金流向: {len(df)} 条")
@@ -2577,7 +2577,7 @@ class TushareProvider(BaseStockDataProvider):
             return None
 
         except Exception as e:
-            self.logger.error(f"❌ 获取沪深港通资金流向失败: {e}")
+            self.logger.error(f"❌ Failed to obtain Shanghai-Shenzhen-Hong Kong Stock Connect fund flow: {e}")
             return None
 
     async def get_margin_detail(
@@ -2588,24 +2588,24 @@ class TushareProvider(BaseStockDataProvider):
         exchange_id: str = None
     ) -> Optional[pd.DataFrame]:
         """
-        获取融资融券交易汇总（两融余额）
+        Obtain summary of margin trading and securities lending transactions (balance of margin financing and securities lending)
 
         Args:
-            trade_date: 交易日期 (YYYYMMDD)
-            start_date: 开始日期 (YYYYMMDD)
-            end_date: 结束日期 (YYYYMMDD)
-            exchange_id: 交易所代码 (SSE上交所, SZSE深交所)
+            trade_date: transaction date (YYYYMMDD)
+            start_date: start date (YYYYMMDD)
+            end_date: end date (YYYYMMDD)
+            exchange_id: Exchange code (SSE Shanghai Stock Exchange, SZSE Shenzhen Stock Exchange)
 
         Returns:
-            DataFrame 包含:
-            - trade_date: 交易日期
-            - exchange_id: 交易所
-            - rzye: 融资余额（元）
-            - rzmre: 融资买入额（元）
-            - rzche: 融资偿还额（元）
-            - rqye: 融券余额（元）
-            - rqmcl: 融券卖出量
-            - rzrqye: 融资融券余额（元）
+            DataFrame contains:
+            - trade_date: transaction date
+            - exchange_id: exchange
+            - rzye: Financing balance (yuan)
+            - rzmre: Financing purchase amount (yuan)
+            - rzche: Financing repayment amount (yuan)
+            - rqye: Securities lending balance (yuan)
+            - rqmcl: Securities selling volume
+            - rzrqye: Balance of margin trading and securities lending (yuan)
         """
         if not self.is_available():
             return None
@@ -2632,7 +2632,7 @@ class TushareProvider(BaseStockDataProvider):
             return None
 
         except Exception as e:
-            self.logger.error(f"❌ 获取融资融券数据失败: {e}")
+            self.logger.error(f"❌ Failed to obtain margin trading data: {e}")
             return None
 
     async def get_limit_list(
@@ -2641,22 +2641,22 @@ class TushareProvider(BaseStockDataProvider):
         limit_type: str = None
     ) -> Optional[pd.DataFrame]:
         """
-        获取涨跌停统计
+        Get price limit statistics
 
         Args:
-            trade_date: 交易日期 (YYYYMMDD)
-            limit_type: 涨跌停类型 (U涨停, D跌停, Z炸板)
+            trade_date: transaction date (YYYYMMDD)
+            limit_type: Price limit type (U daily limit, D Limit down, Z Fried board)
 
         Returns:
-            DataFrame 包含:
-            - trade_date: 交易日期
-            - ts_code: 股票代码
-            - name: 股票名称
-            - limit: 涨跌停类型 (U/D/Z)
-            - pct_chg: 涨跌幅
-            - close: 收盘价
-            - open_times: 打开次数
-            - up_stat: 连板统计
+            DataFrame contains:
+            - trade_date: transaction date
+            - ts_code: Stock code
+            - name: Stock name
+            - limit: Price limit type (U/D/Z)
+            - pct_chg: Increase or decrease
+            - close: closing price
+            - open_times: Open times
+            - up_stat: Connected board statistics
         """
         if not self.is_available():
             return None
@@ -2687,13 +2687,13 @@ class TushareProvider(BaseStockDataProvider):
         trade_date: str
     ) -> Optional[pd.DataFrame]:
         """
-        获取每日涨跌停价格
+        Get daily price limit
 
         Args:
-            trade_date: 交易日期 (YYYYMMDD)
+            trade_date: transaction date (YYYYMMDD)
 
         Returns:
-            DataFrame 包含涨跌停价格信息
+            DataFrame Contains price limit information
         """
         if not self.is_available():
             return None
@@ -2718,15 +2718,15 @@ class TushareProvider(BaseStockDataProvider):
         trade_date: str
     ) -> Optional[Dict[str, Any]]:
         """
-        获取每日市场统计（涨跌家数与涨跌幅分布）
+        Obtain daily market statistics (number of rising and falling stocks and distribution of rising and falling prices)
 
-        通过 daily 接口聚合计算
+        Aggregation calculation through daily interface
 
         Args:
-            trade_date: 交易日期 (YYYYMMDD)
+            trade_date: transaction date (YYYYMMDD)
 
         Returns:
-            包含涨跌家数统计的字典
+            Dictionary containing statistics on the number of rising and falling stocks
         """
         if not self.is_available():
             return None
@@ -2734,7 +2734,7 @@ class TushareProvider(BaseStockDataProvider):
         try:
             trade_date_clean = trade_date.replace('-', '')
 
-            # 获取当日所有股票的涨跌幅
+            # Get the rise and fall of all stocks on the day
             df = await asyncio.to_thread(
                 self.api.daily,
                 trade_date=trade_date_clean
@@ -2743,13 +2743,13 @@ class TushareProvider(BaseStockDataProvider):
             if df is None or df.empty:
                 return None
 
-            # 统计涨跌家数
+            # Statistics on the number of stocks rising and falling
             total = len(df)
             up_count = len(df[df['pct_chg'] > 0])
             down_count = len(df[df['pct_chg'] < 0])
             flat_count = len(df[df['pct_chg'] == 0])
 
-            # 涨幅分布
+            # Increase distribution
             up_gt5 = len(df[df['pct_chg'] >= 5])
             up_3_5 = len(df[(df['pct_chg'] >= 3) & (df['pct_chg'] < 5)])
             down_gt5 = len(df[df['pct_chg'] <= -5])
@@ -2773,7 +2773,7 @@ class TushareProvider(BaseStockDataProvider):
             return stats
 
         except Exception as e:
-            self.logger.error(f"❌ 获取每日市场统计失败: {e}")
+            self.logger.error(f"❌ Failed to get daily market statistics: {e}")
             return None
 
     async def get_pledge_detail(
@@ -2784,30 +2784,30 @@ class TushareProvider(BaseStockDataProvider):
         end_date: str = None,
     ) -> Optional[pd.DataFrame]:
         """
-        获取股权质押明细
+        Obtain equity pledge details
 
         Args:
-            ts_code: 股票代码（TS格式，如 600519.SH）
-            ann_date: 公告日期 (YYYYMMDD)
-            start_date: 公告开始日期 (YYYYMMDD)
-            end_date: 公告结束日期 (YYYYMMDD)
+            ts_code: Stock code (TS format, such as 600519.SH)
+            ann_date: Announcement date (YYYYMMDD)
+            start_date: Announcement start date (YYYYMMDD)
+            end_date: Announcement end date (YYYYMMDD)
 
         Returns:
-            DataFrame 包含:
-            - ts_code: TS股票代码
-            - ann_date: 公告日期
-            - holder_name: 股东名称
-            - pledge_amount: 质押数量（万股）
-            - start_date: 质押开始日期
-            - end_date: 质押结束日期
-            - is_release: 是否已解押
-            - release_date: 解押日期
-            - pledgor: 质押方
-            - holding_amount: 持股总数（万股）
-            - pledged_amount: 质押总数（万股）
-            - p_total_ratio: 本次质押占总股本比例
-            - h_total_ratio: 持股总数占总股本比例
-            - is_buyback: 是否回购（0否 1是）
+            DataFrame contains:
+            - ts_code: TS Stock code
+            - ann_date: Announcement date
+            - holder_name: Shareholder name
+            - pledge_amount: Pledge quantity (10,000 shares)
+            - start_date: Staking start date
+            - end_date: Staking end date
+            - is_release: Has it been released?
+            - release_date: Release date
+            - pledgor: Pledger
+            - holding_amount: Total number of shares held (10,000 shares)
+            - pledged_amount: Total number of pledges (10,000 shares)
+            - p_total_ratio: The proportion of this pledge to the total equity
+            - h_total_ratio: Ratio of total shareholdings to total share capital
+            - is_buyback: Whether to repurchase (0 no 1 yes)
         """
         if not self.is_available():
             return None
@@ -2834,7 +2834,7 @@ class TushareProvider(BaseStockDataProvider):
             return None
 
         except Exception as e:
-            self.logger.error(f"❌ 获取股权质押明细失败: {e}")
+            self.logger.error(f"❌ Failed to obtain equity pledge details: {e}")
             return None
 
 
@@ -2847,24 +2847,24 @@ class TushareProvider(BaseStockDataProvider):
         period: str = None,
     ) -> Optional[pd.DataFrame]:
         """
-        获取A股公司审计意见（stk_audit）
+        Obtain audit opinions of A-share companies (stk_audit)
 
         Args:
-            ts_code: 股票代码（TS格式，如 600519.SH）
-            ann_date: 公告日期 (YYYYMMDD)
-            start_date: 公告开始日期 (YYYYMMDD)
-            end_date: 公告结束日期 (YYYYMMDD)
-            period: 报告期 (YYYYMMDD)
+            ts_code: Stock code (TS format, such as 600519.SH)
+            ann_date: Announcement date (YYYYMMDD)
+            start_date: Announcement start date (YYYYMMDD)
+            end_date: Announcement end date (YYYYMMDD)
+            period: reporting period (YYYYMMDD)
 
         Returns:
-            DataFrame 包含:
-            - ts_code: TS股票代码
-            - ann_date: 公告日期
-            - end_date: 报告期截止日
-            - audit_result: 审计结果
-            - audit_fees: 审计总费用（元）
-            - audit_sign: 审计师
-            - audit_company: 审计机构
+            DataFrame contains:
+            - ts_code: TS Stock code
+            - ann_date: Announcement date
+            - end_date: Reporting period end date
+            - audit_result: Audit results
+            - audit_fees: Total audit fees (yuan)
+            - audit_sign: auditor
+            - audit_company: Audit agency
         """
         if not self.is_available():
             return None
@@ -2902,17 +2902,17 @@ class TushareProvider(BaseStockDataProvider):
         end_date: str = None,
     ) -> Optional[pd.DataFrame]:
         """
-        获取交易所信息披露考评结果（disclosure_rating）
+        Obtain exchange information disclosure evaluation results (disclosure_rating)
 
         Args:
-            ts_code: 股票代码（TS格式，如 600519.SH）
-            end_date: 报告期 (YYYYMMDD)
+            ts_code: Stock code (TS format, such as 600519.SH)
+            end_date: reporting period (YYYYMMDD)
 
         Returns:
-            DataFrame 包含:
-            - ts_code: TS股票代码
-            - end_date: 考评年度
-            - disclosure_result: 考评结果（A/B/C/D）
+            DataFrame contains:
+            - ts_code: TS Stock code
+            - end_date: Assessment year
+            - disclosure_result: Assessment results (A/B/C/D)
         """
         if not self.is_available():
             return None
@@ -2935,7 +2935,7 @@ class TushareProvider(BaseStockDataProvider):
             return None
 
         except Exception as e:
-            self.logger.error(f"❌ 获取信息披露评级失败: {e}")
+            self.logger.error(f"❌ Failed to obtain disclosure rating: {e}")
             return None
 
     async def get_equity_incentive(
@@ -2946,24 +2946,24 @@ class TushareProvider(BaseStockDataProvider):
         end_date: str = None,
     ) -> Optional[pd.DataFrame]:
         """
-        获取股权激励计划明细（equity_incentive）
+        Get equity incentive plan details (equity_incentive)
 
         Args:
-            ts_code: 股票代码（TS格式，如 600519.SH）
-            ann_date: 公告日期 (YYYYMMDD)
-            start_date: 公告开始日期 (YYYYMMDD)
-            end_date: 公告结束日期 (YYYYMMDD)
+            ts_code: Stock code (TS format, such as 600519.SH)
+            ann_date: Announcement date (YYYYMMDD)
+            start_date: Announcement start date (YYYYMMDD)
+            end_date: Announcement end date (YYYYMMDD)
 
         Returns:
-            DataFrame 包含:
-            - ts_code: TS股票代码
-            - ann_date: 公告日期
-            - inc_plan: 激励方案
-            - grant_num: 授予数量（万股）
-            - grant_price: 授予价格
-            - inc_duration: 激励年限（年）
-            - inc_perf: 行权条件/业绩要求
-            - stockholder_rt: 总股本占比
+            DataFrame contains:
+            - ts_code: TS Stock code
+            - ann_date: Announcement date
+            - inc_plan: Incentive package
+            - grant_num: Number of shares granted (10,000 shares)
+            - grant_price: award price
+            - inc_duration: Incentive period (years)
+            - inc_perf: Exercise conditions/performance requirements
+            - stockholder_rt: Proportion of total equity
         """
         if not self.is_available():
             return None
@@ -3001,23 +3001,23 @@ class TushareProvider(BaseStockDataProvider):
         end_date: str = None,
     ) -> Optional[pd.DataFrame]:
         """
-        获取违规处罚记录（stk_penalty）
+        Get violation penalty records (stk_penalty)
 
         Args:
-            ts_code: 股票代码（TS格式，如 600519.SH）
-            ann_date: 公告日期 (YYYYMMDD)
-            start_date: 公告开始日期 (YYYYMMDD)
-            end_date: 公告结束日期 (YYYYMMDD)
+            ts_code: Stock code (TS format, such as 600519.SH)
+            ann_date: Announcement date (YYYYMMDD)
+            start_date: Announcement start date (YYYYMMDD)
+            end_date: Announcement end date (YYYYMMDD)
 
         Returns:
-            DataFrame 包含:
-            - ts_code: TS股票代码
-            - ann_date: 公告日期
-            - punish_type: 处罚类型（警告/罚款/市场禁入等）
-            - punish_object: 处罚对象（公司/个人）
-            - punish_amount: 处罚金额（万元）
-            - violat_type: 违规类型
-            - violate_content: 违规事由
+            DataFrame contains:
+            - ts_code: TS Stock code
+            - ann_date: Announcement date
+            - punish_type: Penalty type (warning/fine/market ban, etc.)
+            - punish_object: Punishment target (company/individual)
+            - punish_amount: Amount of penalty (10,000 yuan)
+            - violat_type: Violation type
+            - violate_content: Reason for violation
         """
         if not self.is_available():
             return None
@@ -3048,12 +3048,12 @@ class TushareProvider(BaseStockDataProvider):
             return None
 
 
-# 全局提供器实例
+# Global provider instance
 _tushare_provider = None
 _tushare_provider_initialized = False
 
 def get_tushare_provider() -> TushareProvider:
-    """获取全局 Tushare API Client 提供器实例。"""
+    """Get the global Tushare API Client provider instance."""
     global _tushare_provider, _tushare_provider_initialized
     if _tushare_provider is None:
         _tushare_provider = TushareProvider()

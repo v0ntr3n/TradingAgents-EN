@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-智能系统完整测试 - 验证自适应配置和缓存系统
+Intelligent System Complete Testing - Validating Adaptive Configuration and Caching Systems
 """
 
 import time
@@ -8,49 +8,49 @@ import sys
 from datetime import datetime
 
 def test_smart_config():
-    """测试智能配置系统"""
-    print("🔧 测试智能配置系统")
+    """Test the intelligent configuration system"""
+    print("🔧 Test the intelligent configuration system")
     print("-" * 30)
     
     try:
         from smart_config import get_smart_config, get_config
         
-        # 获取配置管理器
+        # Get configuration manager
         config_manager = get_smart_config()
         config_manager.print_status()
         
-        # 获取配置信息
+        # Get configuration information
         config = get_config()
-        print(f"\n✅ 配置获取成功")
-        print(f"主要缓存后端: {config['cache']['primary_backend']}")
+        print(f"\n✅ Configuration obtained successfully")
+        print(f"Main caching backend: {config['cache']['primary_backend']}")
         
         return True, config_manager
         
     except Exception as e:
-        print(f"❌ 智能配置测试失败: {e}")
+        print(f"❌ Smart configuration test failed: {e}")
         return False, None
 
 def test_adaptive_cache():
-    """测试自适应缓存系统"""
-    print("\n💾 测试自适应缓存系统")
+    """Test the adaptive caching system"""
+    print("\n💾 Test the adaptive caching system")
     print("-" * 30)
     
     try:
         from adaptive_cache_manager import get_cache
         
-        # 获取缓存管理器
+        # Get cache manager
         cache = get_cache()
         
-        # 显示缓存状态
+        # Show cache status
         stats = cache.get_cache_stats()
-        print("📊 缓存状态:")
+        print("📊 cache status:")
         for key, value in stats.items():
             print(f"  {key}: {value}")
         
-        # 测试基本功能
-        print("\n🧪 测试基本缓存功能...")
+        # Test basic functionality
+        print("\n🧪 Test basic caching functionality...")
         
-        test_data = f"测试数据 - {datetime.now()}"
+        test_data = f"test data - {datetime.now()}"
         cache_key = cache.save_stock_data(
             symbol="AAPL",
             data=test_data,
@@ -58,17 +58,17 @@ def test_adaptive_cache():
             end_date="2024-12-31",
             data_source="smart_test"
         )
-        print(f"✅ 数据保存成功: {cache_key}")
+        print(f"✅ Data saved successfully: {cache_key}")
         
-        # 测试加载
+        # Test loading
         loaded_data = cache.load_stock_data(cache_key)
         if loaded_data == test_data:
-            print("✅ 数据加载成功，内容匹配")
+            print("✅ The data is loaded successfully and the content matches")
         else:
-            print("❌ 数据加载失败或内容不匹配")
+            print("❌ Data loading failed or content does not match")
             return False
         
-        # 测试查找
+        # Test lookup
         found_key = cache.find_cached_stock_data(
             symbol="AAPL",
             start_date="2024-01-01",
@@ -77,22 +77,22 @@ def test_adaptive_cache():
         )
         
         if found_key:
-            print(f"✅ 缓存查找成功: {found_key}")
+            print(f"✅ Cache lookup successful: {found_key}")
         else:
-            print("❌ 缓存查找失败")
+            print("❌ Cache lookup failed")
             return False
         
         return True, cache
         
     except Exception as e:
-        print(f"❌ 自适应缓存测试失败: {e}")
+        print(f"❌ Adaptive cache test failed: {e}")
         import traceback
         traceback.print_exc()
         return False, None
 
 def test_performance():
-    """测试性能"""
-    print("\n⚡ 测试缓存性能")
+    """Test performance"""
+    print("\n⚡ Test cache performance")
     print("-" * 30)
     
     try:
@@ -100,18 +100,18 @@ def test_performance():
         
         cache = get_cache()
         
-        # 性能测试数据
+        # Performance test data
         symbols = ["AAPL", "MSFT", "GOOGL", "TSLA", "NVDA"]
         
-        print("📊 性能测试结果:")
+        print("📊 Performance test results:")
         
         total_save_time = 0
         total_load_time = 0
         
         for symbol in symbols:
-            test_data = f"性能测试数据 - {symbol}"
+            test_data = f"Performance test data - {symbol}"
             
-            # 测试保存性能
+            # Test save performance
             start_time = time.time()
             cache_key = cache.save_stock_data(
                 symbol=symbol,
@@ -123,44 +123,44 @@ def test_performance():
             save_time = time.time() - start_time
             total_save_time += save_time
             
-            # 测试加载性能
+            # Test loading performance
             start_time = time.time()
             loaded_data = cache.load_stock_data(cache_key)
             load_time = time.time() - start_time
             total_load_time += load_time
             
-            print(f"  {symbol}: 保存 {save_time:.4f}s, 加载 {load_time:.4f}s")
+            print(f"  {symbol}: save {save_time:.4f}s, Load {load_time:.4f}s")
         
         avg_save_time = total_save_time / len(symbols)
         avg_load_time = total_load_time / len(symbols)
         
-        print(f"\n📈 平均性能:")
-        print(f"  保存时间: {avg_save_time:.4f}秒")
-        print(f"  加载时间: {avg_load_time:.4f}秒")
+        print(f"\n📈 average performance:")
+        print(f"  save time: {avg_save_time:.4f}seconds")
+        print(f"  Loading time: {avg_load_time:.4f}seconds")
         
-        # 计算性能改进
-        api_simulation_time = 2.0  # 假设API调用需要2秒
+        # Compute performance improvements
+        api_simulation_time = 2.0  # Let's say the API call takes 2 seconds
         if avg_load_time < api_simulation_time:
             improvement = ((api_simulation_time - avg_load_time) / api_simulation_time) * 100
-            print(f"  性能改进: {improvement:.1f}%")
+            print(f"  Performance improvements: {improvement:.1f}%")
             
             if improvement > 90:
-                print("🚀 性能改进显著！")
+                print("🚀 Performance improvements are significant!")
                 return True
             else:
-                print("⚠️ 性能改进有限")
+                print("⚠️ Limited performance improvements")
                 return True
         else:
-            print("❌ 缓存性能不如预期")
+            print("❌ Cache performance is not as expected")
             return False
             
     except Exception as e:
-        print(f"❌ 性能测试失败: {e}")
+        print(f"❌ Performance test failed: {e}")
         return False
 
 def test_fallback_mechanism():
-    """测试降级机制"""
-    print("\n🔄 测试降级机制")
+    """Test the downgrade mechanism"""
+    print("\n🔄 Test the downgrade mechanism")
     print("-" * 30)
     
     try:
@@ -168,122 +168,122 @@ def test_fallback_mechanism():
         
         cache = get_cache()
         
-        # 检查降级配置
+        # Check downgrade configuration
         if cache.fallback_enabled:
-            print("✅ 降级机制已启用")
+            print("✅ Downgrade mechanism is enabled")
         else:
-            print("⚠️ 降级机制未启用")
+            print("⚠️ Downgrade mechanism is not enabled")
         
-        # 测试在主要后端不可用时的行为
-        print(f"主要后端: {cache.primary_backend}")
+        # Test behavior when primary backend is unavailable
+        print(f"Main backend: {cache.primary_backend}")
         
         if cache.primary_backend == "file":
-            print("✅ 使用文件缓存，无需降级")
+            print("✅ Use file caching without downgrading")
         elif cache.primary_backend == "redis" and not cache.redis_enabled:
-            print("✅ Redis不可用，已自动降级到文件缓存")
+            print("✅ Redis Unavailable, automatically downgraded to file cache")
         elif cache.primary_backend == "mongodb" and not cache.mongodb_enabled:
-            print("✅ MongoDB不可用，已自动降级到文件缓存")
+            print("✅ MongoDB Unavailable, automatically downgraded to file cache")
         else:
-            print(f"✅ {cache.primary_backend} 后端正常工作")
+            print(f"✅ {cache.primary_backend} backend works fine")
         
         return True
         
     except Exception as e:
-        print(f"❌ 降级机制测试失败: {e}")
+        print(f"❌ Downgrade mechanism test failed: {e}")
         return False
 
 def generate_test_report(results):
-    """生成测试报告"""
-    print("\n📋 测试报告")
+    """Generate test report"""
+    print("\n📋 test report")
     print("=" * 50)
     
     total_tests = len(results)
     passed_tests = sum(1 for result in results.values() if result)
     
-    print(f"总测试数: {total_tests}")
-    print(f"通过测试: {passed_tests}")
-    print(f"失败测试: {total_tests - passed_tests}")
-    print(f"通过率: {(passed_tests/total_tests)*100:.1f}%")
+    print(f"Total number of tests: {total_tests}")
+    print(f"Pass test: {passed_tests}")
+    print(f"failed test: {total_tests - passed_tests}")
+    print(f"pass rate: {(passed_tests/total_tests)*100:.1f}%")
     
-    print("\n详细结果:")
+    print("\n Detailed results:")
     for test_name, result in results.items():
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"  {test_name}: {status}")
     
-    # 生成建议
-    print("\n💡 建议:")
+    # Generate suggestions
+    print("\n💡 Suggestions:")
     
     if all(results.values()):
-        print("🎉 所有测试通过！系统可以正常运行")
-        print("✅ 可以开始准备上游贡献")
+        print("🎉 All tests passed! The system can run normally")
+        print("✅ You can start preparing for upstream contributions")
     else:
-        print("⚠️ 部分测试失败，需要检查以下问题:")
+        print("⚠️ Some tests failed and the following issues need to be checked:")
         
-        if not results.get("智能配置", True):
-            print("  - 检查智能配置系统")
-        if not results.get("自适应缓存", True):
-            print("  - 检查缓存系统配置")
-        if not results.get("性能测试", True):
-            print("  - 优化缓存性能")
-        if not results.get("降级机制", True):
-            print("  - 检查降级机制配置")
+        if not results.get("Intelligent configuration", True):
+            print("  - Check out the smart configuration system")
+        if not results.get("Adaptive caching", True):
+            print("  - Check cache system configuration")
+        if not results.get("Performance testing", True):
+            print("  - Optimize caching performance")
+        if not results.get("Downgrade mechanism", True):
+            print("  - Check the downgrade mechanism configuration")
 
 def main():
-    """主测试函数"""
-    print("🚀 TradingAgents 智能系统完整测试")
+    """Main test function"""
+    print("🚀 TradingAgents Complete testing of intelligent systems")
     print("=" * 50)
-    print(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Test time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    # 执行所有测试
+    # Execute all tests
     results = {}
     
-    # 测试1: 智能配置
+    # test 1: Intelligent configuration
     config_success, config_manager = test_smart_config()
-    results["智能配置"] = config_success
+    results["Intelligent configuration"] = config_success
     
-    # 测试2: 自适应缓存
+    # test 2: Adaptive caching
     cache_success, cache_manager = test_adaptive_cache()
-    results["自适应缓存"] = cache_success
+    results["Adaptive caching"] = cache_success
     
-    # 测试3: 性能测试
+    # test 3: Performance testing
     if cache_success:
         perf_success = test_performance()
-        results["性能测试"] = perf_success
+        results["Performance testing"] = perf_success
     else:
-        results["性能测试"] = False
+        results["Performance testing"] = False
     
-    # 测试4: 降级机制
+    # test 4: Downgrade mechanism
     if cache_success:
         fallback_success = test_fallback_mechanism()
-        results["降级机制"] = fallback_success
+        results["Downgrade mechanism"] = fallback_success
     else:
-        results["降级机制"] = False
+        results["Downgrade mechanism"] = False
     
-    # 生成报告
+    # Generate report
     generate_test_report(results)
     
-    # 保存配置（如果可用）
+    # Save configuration (if available)
     if config_manager:
         config_manager.save_config("test_config.json")
-        print(f"\n💾 测试配置已保存: test_config.json")
+        print(f"\n💾 Test configuration saved: test_config.json")
     
-    # 返回总体结果
+    # Return overall results
     return all(results.values())
 
 if __name__ == "__main__":
     success = main()
     
-    print(f"\n🎯 测试{'成功' if success else '失败'}!")
+    print(f"\n🎯 test{'success' if success else 'failed'}!")
     
     if success:
-        print("\n下一步:")
-        print("1. 清理中文内容")
-        print("2. 添加英文文档")
-        print("3. 准备上游贡献")
+        print("\n Next step:")
+        print("1. Clean up Chinese content")
+        print("2. Add English document")
+        print("3. Prepare for upstream contributions")
     else:
-        print("\n需要解决的问题:")
-        print("1. 检查依赖安装")
-        print("2. 修复配置问题")
-        print("3. 重新运行测试")
+        print("\n Problems that need to be solved:")
+        print("1. Check dependency installation")
+        print("2. Fix configuration issues")
+        print("3. Rerun test")
     
     sys.exit(0 if success else 1)

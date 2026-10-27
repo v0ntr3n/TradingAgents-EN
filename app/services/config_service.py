@@ -34,10 +34,10 @@ class ConfigService:
         """获取数据库连接"""
         if self.db is None:
             if self.db_manager and self.db_manager.mongo_db is not None:
-                # 如果有DatabaseManager实例，直接使用
+                # If there is a DatabaseManager instance, use it directly
                 self.db = self.db_manager.mongo_db
             else:
-                # 否则使用全局函数
+                # Otherwise use global function
                 self.db = get_mongo_db()
         return self.db
 
@@ -179,7 +179,7 @@ class ConfigService:
 
         return normalized_settings
 
-    # ==================== 市场分类管理 ====================
+    # ==================== Market classification management ====================
 
     async def get_market_categories(self) -> List[MarketCategory]:
         """获取所有市场分类"""
@@ -190,11 +190,11 @@ class ConfigService:
             categories_data = await categories_collection.find({}).to_list(length=None)
             categories = [MarketCategory(**data) for data in categories_data]
 
-            # 如果没有分类，创建默认分类
+            # If there is no category, create a default category
             if not categories:
                 categories = await self._create_default_market_categories()
 
-            # 按排序顺序排列
+            # Sort by sort order
             categories.sort(key=lambda x: x.sort_order)
             return categories
         except Exception as e:
@@ -246,7 +246,7 @@ class ConfigService:
             )
         ]
 
-        # 保存到数据库
+        # Save to database
         db = await self._get_db()
         categories_collection = db.market_categories
 
@@ -261,7 +261,7 @@ class ConfigService:
             db = await self._get_db()
             categories_collection = db.market_categories
 
-            # 检查ID是否已存在
+            # Check if the ID already exists
             existing = await categories_collection.find_one({"id": category.id})
             if existing:
                 return False
@@ -295,7 +295,7 @@ class ConfigService:
             categories_collection = db.market_categories
             groupings_collection = db.datasource_groupings
 
-            # 检查是否有数据源使用此分类
+            # Check if any data sources use this classification
             groupings_count = await groupings_collection.count_documents(
                 {"market_category_id": category_id}
             )
@@ -308,7 +308,7 @@ class ConfigService:
             print(f"❌ 删除市场分类失败: {e}")
             return False
 
-    # ==================== 数据源分组管理 ====================
+    # ==================== Data source group management ====================
 
     async def get_datasource_groupings(self) -> List[DataSourceGrouping]:
         """获取所有数据源分组关系"""
@@ -319,7 +319,7 @@ class ConfigService:
             groupings_data = await groupings_collection.find({}).to_list(length=None)
             return [DataSourceGrouping(**data) for data in groupings_data]
         except Exception as e:
-            print(f"❌ 获取数据源分组关系失败: {e}")
+            print(f"❌ Failed to obtain data source grouping relationship: {e}")
             return []
 
     async def add_datasource_to_category(self, grouping: DataSourceGrouping) -> bool:
@@ -328,7 +328,7 @@ class ConfigService:
             db = await self._get_db()
             groupings_collection = db.datasource_groupings
 
-            # 检查是否已存在
+            # Check if it already exists
             existing = await groupings_collection.find_one({
                 "data_source_name": grouping.data_source_name,
                 "market_category_id": grouping.market_category_id
@@ -339,7 +339,7 @@ class ConfigService:
             await groupings_collection.insert_one(grouping.model_dump())
             return True
         except Exception as e:
-            print(f"❌ 添加数据源到分类失败: {e}")
+            print(f"❌ Failed to add data source to classification: {e}")
             return False
 
     async def remove_datasource_from_category(self, data_source_name: str, category_id: str) -> bool:
@@ -354,22 +354,22 @@ class ConfigService:
             })
             return result.deleted_count > 0
         except Exception as e:
-            print(f"❌ 从分类中移除数据源失败: {e}")
+            print(f"❌ Removing data source from classification failed: {e}")
             return False
 
     async def update_datasource_grouping(self, data_source_name: str, category_id: str, updates: Dict[str, Any]) -> bool:
-        """更新数据源分组关系
+        """Update data source grouping relationship
 
-        🔥 重要：同时更新 datasource_groupings 和 system_configs 两个集合
-        - datasource_groupings: 用于前端展示和管理
-        - system_configs.data_source_configs: 用于实际数据获取时的优先级判断
+        🔥 Important: Update both datasource_groupings and system_configs collections at the same time
+        - datasource_groupings: Used for front-end display and management
+        - system_configs.data_source_configs: Used for priority judgment when obtaining actual data
         """
         try:
             db = await self._get_db()
             groupings_collection = db.datasource_groupings
             config_collection = db.system_configs
 
-            # 1. 更新 datasource_groupings 集合
+            # 1. Update the datasource_groupings collection
             updates["updated_at"] = now_tz()
             result = await groupings_collection.update_one(
                 {
@@ -379,9 +379,9 @@ class ConfigService:
                 {"$set": updates}
             )
 
-            # 2. 🔥 如果更新了优先级，同步更新 system_configs 集合
+            # 2. 🔥 If the priority is updated, update the system_configs collection synchronously
             if "priority" in updates and result.modified_count > 0:
-                # 获取当前激活的配置
+                # Get the currently active configuration
                 config_data = await config_collection.find_one(
                     {"is_active": True},
                     sort=[("version", -1)]
@@ -390,12 +390,12 @@ class ConfigService:
                 if config_data:
                     data_source_configs = config_data.get("data_source_configs", [])
 
-                    # 查找并更新对应的数据源配置
-                    # 注意：data_source_name 可能是 "AKShare"，而 config 中的 name 也是 "AKShare"
-                    # 但是 type 字段是小写的 "akshare"
+                    # Find and update the corresponding data source configuration
+                    # Note: data_source_name may be "AKShare", And the name in config is also "AKShare"
+                    # But the type field is lowercase "akshare"
                     updated = False
                     for ds_config in data_source_configs:
-                        # 尝试匹配 name 字段（优先）或 type 字段
+                        # Try to match the name field (which takes precedence) or the type field
                         if (ds_config.get("name") == data_source_name or
                             ds_config.get("type") == data_source_name.lower()):
                             ds_config["priority"] = updates["priority"]
@@ -404,7 +404,7 @@ class ConfigService:
                             break
 
                     if updated:
-                        # 更新配置版本
+                        # Update configuration version
                         version = config_data.get("version", 0)
                         await config_collection.update_one(
                             {"_id": config_data["_id"]},
@@ -416,28 +416,28 @@ class ConfigService:
                                 }
                             }
                         )
-                        logger.info(f"✅ [优先级同步] system_configs 版本更新: {version} -> {version + 1}")
+                        logger.info(f"✅ [Priority synchronization] system_configs Version update: {version} -> {version + 1}")
                     else:
-                        logger.warning(f"⚠️ [优先级同步] 未找到匹配的数据源配置: {data_source_name}")
+                        logger.warning(f"⚠️ [Priority synchronization] No matching data source configuration found: {data_source_name}")
 
             return result.modified_count > 0
         except Exception as e:
-            logger.error(f"❌ 更新数据源分组关系失败: {e}")
+            logger.error(f"❌ Failed to update data source grouping relationship: {e}")
             return False
 
     async def update_category_datasource_order(self, category_id: str, ordered_datasources: List[Dict[str, Any]]) -> bool:
-        """更新分类中数据源的排序
+        """Update the sorting of data sources in categories
 
-        🔥 重要：同时更新 datasource_groupings 和 system_configs 两个集合
-        - datasource_groupings: 用于前端展示和管理
-        - system_configs.data_source_configs: 用于实际数据获取时的优先级判断
+        🔥 Important: Update both datasource_groupings and system_configs collections at the same time
+        - datasource_groupings: Used for front-end display and management
+        - system_configs.data_source_configs: Used for priority judgment when obtaining actual data
         """
         try:
             db = await self._get_db()
             groupings_collection = db.datasource_groupings
             config_collection = db.system_configs
 
-            # 1. 批量更新 datasource_groupings 集合中的优先级
+            # 1. Batch update priorities in datasource_groupings collection
             for item in ordered_datasources:
                 await groupings_collection.update_one(
                     {
@@ -452,18 +452,18 @@ class ConfigService:
                     }
                 )
 
-            # 2. 🔥 同步更新 system_configs 集合中的 data_source_configs
-            # 获取当前激活的配置
+            # 2. 🔥 Synchronously update the system_configs collection data_source_configs
+            # Get the currently active configuration
             config_data = await config_collection.find_one(
                 {"is_active": True},
                 sort=[("version", -1)]
             )
 
             if config_data:
-                # 构建数据源名称到优先级的映射
+                # Build a mapping of data source names to priorities
                 priority_map = {item["name"]: item["priority"] for item in ordered_datasources}
 
-                # 更新 data_source_configs 中对应数据源的优先级
+                # Update the priority of the corresponding data source in data_source_configs
                 data_source_configs = config_data.get("data_source_configs", [])
                 updated = False
 
@@ -474,7 +474,7 @@ class ConfigService:
                         updated = True
                         print(f"📊 [优先级同步] 更新数据源 {ds_name} 的优先级为 {priority_map[ds_name]}")
 
-                # 如果有更新，保存回数据库
+                # If there are updates, save them back to the database
                 if updated:
                     await config_collection.update_one(
                         {"_id": config_data["_id"]},
@@ -486,23 +486,23 @@ class ConfigService:
                             }
                         }
                     )
-                    print(f"✅ [优先级同步] 已同步更新 system_configs 集合，新版本: {config_data.get('version', 0) + 1}")
+                    print(f"✅ [Priority synchronization] The system_configs collection has been synchronized and updated with a new version: {config_data.get('version', 0) + 1}")
                 else:
-                    print(f"⚠️ [优先级同步] 没有找到需要更新的数据源配置")
+                    print(f"⚠️ [Priority synchronization] No data source configuration that needs to be updated was found.")
             else:
-                print(f"⚠️ [优先级同步] 未找到激活的系统配置")
+                print(f"⚠️ [Priority synchronization] Activated system configuration not found")
 
             return True
         except Exception as e:
-            print(f"❌ 更新分类数据源排序失败: {e}")
+            print(f"❌ Failed to update classification data source sorting: {e}")
             import traceback
             traceback.print_exc()
             return False
 
     async def get_system_config(self) -> Optional[SystemConfig]:
-        """获取系统配置 - 优先从数据库获取最新数据"""
+        """Get system configuration - get latest data from database first"""
         try:
-            # 直接从数据库获取最新配置，避免缓存问题
+            # Get the latest configuration directly from the database to avoid caching issues
             db = await self._get_db()
             config_collection = db.system_configs
 
@@ -517,14 +517,14 @@ class ConfigService:
                 self._ensure_llm_config_ids(config.llm_configs)
                 return config
 
-            # 如果没有配置，创建默认配置
-            print("⚠️ 数据库中没有配置，创建默认配置")
+            # If there is no configuration, create a default configuration
+            print("⚠️ There is no configuration in the database, create a default configuration")
             return await self._create_default_config()
 
         except Exception as e:
-            print(f"❌ 从数据库获取配置失败: {e}")
+            print(f"❌ Failed to get configuration from database: {e}")
 
-            # 作为最后的回退，尝试从统一配置管理器获取
+            # As a final fallback, try getting the
             try:
                 unified_system_config = await unified_config.get_unified_system_config()
                 if unified_system_config:
@@ -549,7 +549,7 @@ class ConfigService:
                     max_tokens=4000,
                     temperature=0.7,
                     enabled=False,
-                    description="OpenAI GPT-3.5 Turbo模型"
+                    description="OpenAI GPT-3.5 Turbo model"
                 ),
                 LLMConfig(
                     provider=ModelProvider.ZHIPU,
@@ -559,7 +559,7 @@ class ConfigService:
                     max_tokens=4000,
                     temperature=0.7,
                     enabled=True,
-                    description="智谱AI GLM-4模型（推荐）"
+                    description="Zhipu AI GLM-4 model (recommended)"
                 ),
                 LLMConfig(
                     provider=ModelProvider.QWEN,
@@ -582,7 +582,7 @@ class ConfigService:
                     rate_limit=100,
                     enabled=True,
                     priority=1,
-                    description="AKShare开源金融数据接口"
+                    description="AKShare Open source financial data interface"
                 ),
                 DataSourceConfig(
                     name="Tushare",
@@ -593,7 +593,7 @@ class ConfigService:
                     rate_limit=200,
                     enabled=False,
                     priority=2,
-                    description="Tushare专业金融数据接口"
+                    description="Tushare Professional financial data interface"
                 ),
                 DataSourceConfig(
                     name="QMT",
@@ -657,8 +657,8 @@ class ConfigService:
                 "ta_hk_max_retries": 3,
                 "ta_hk_rate_limit_wait_seconds": 60,
                 "ta_hk_cache_ttl_seconds": 86400,
-                # 新增：TradingAgents 数据来源策略
-                # 是否优先从 app 缓存(Mongo 集合 stock_basic_info / market_quotes) 读取
+                # New: TradingAgents data source strategy
+                # Whether to cache from app first(Mongo collection stock_basic_info / market_quotes) read
                 "ta_use_app_cache": False,
                 "ta_china_min_api_interval_seconds": 0.5,
                 "ta_us_min_api_interval_seconds": 1.0,
@@ -668,57 +668,57 @@ class ConfigService:
             }
         )
         
-        # 保存到数据库
+        # Save to database
         await self.save_system_config(default_config)
         return default_config
     
     async def save_system_config(self, config: SystemConfig) -> bool:
         """保存系统配置到数据库"""
         try:
-            print(f"💾 开始保存配置，LLM配置数量: {len(config.llm_configs)}")
+            print(f"💾 Start saving configuration, LLM configuration quantity: {len(config.llm_configs)}")
             self._ensure_llm_config_ids(config.llm_configs)
 
-            # 保存到数据库
+            # Save to database
             db = await self._get_db()
             config_collection = db.system_configs
 
-            # 更新时间戳和版本
+            # Update timestamp and version
             config.updated_at = now_tz()
             config.version += 1
 
-            # 将当前激活的配置设为非激活
+            # Make the currently active configuration inactive
             update_result = await config_collection.update_many(
                 {"is_active": True},
                 {"$set": {"is_active": False}}
             )
             print(f"📝 禁用旧配置数量: {update_result.modified_count}")
 
-            # 插入新配置 - 移除_id字段让MongoDB自动生成新的
+            # Insert new configuration - remove the _id field and let MongoDB automatically generate a new one
             config_dict = config.model_dump(by_alias=True)
             if '_id' in config_dict:
-                del config_dict['_id']  # 移除旧的_id，让MongoDB生成新的
+                del config_dict['_id']  # Remove the old _id and let MongoDB generate the new one
 
-            # 打印即将保存的 system_settings
+            # Print to be saved system_settings
             system_settings = config_dict.get('system_settings', {})
             print(f"📝 即将保存的 system_settings 包含 {len(system_settings)} 项")
             if 'quick_analysis_model' in system_settings:
-                print(f"  ✓ 包含 quick_analysis_model: {system_settings['quick_analysis_model']}")
+                print(f"  ✓ contains quick_analysis_model: {system_settings['quick_analysis_model']}")
             else:
-                print(f"  ⚠️  不包含 quick_analysis_model")
+                print(f"  ⚠️  Not included quick_analysis_model")
             if 'deep_analysis_model' in system_settings:
-                print(f"  ✓ 包含 deep_analysis_model: {system_settings['deep_analysis_model']}")
+                print(f"  ✓ contains deep_analysis_model: {system_settings['deep_analysis_model']}")
             else:
-                print(f"  ⚠️  不包含 deep_analysis_model")
+                print(f"  ⚠️  Not included deep_analysis_model")
 
             insert_result = await config_collection.insert_one(config_dict)
             print(f"📝 新配置ID: {insert_result.inserted_id}")
 
-            # 验证保存结果
+            # Verify save results
             saved_config = await config_collection.find_one({"_id": insert_result.inserted_id})
             if saved_config:
-                print(f"✅ 配置保存成功，验证LLM配置数量: {len(saved_config.get('llm_configs', []))}")
+                print(f"✅ The configuration is saved successfully and the LLM configuration quantity is verified.: {len(saved_config.get('llm_configs', []))}")
 
-                # 暂时跳过统一配置同步，避免冲突
+                # Temporarily skip unified configuration synchronization to avoid conflicts
                 # unified_config.sync_to_legacy_format(config)
 
                 return True
@@ -735,7 +735,7 @@ class ConfigService:
     async def delete_llm_config(self, provider: str, model_name: str) -> bool:
         """删除大模型配置"""
         try:
-            print(f"🗑️ 删除大模型配置 - provider: {provider}, model_name: {model_name}")
+            print(f"🗑️ Delete large model configuration - provider: {provider}, model_name: {model_name}")
 
             config = await self.get_system_config()
             if not config:
@@ -744,16 +744,16 @@ class ConfigService:
 
             print(f"📊 当前大模型配置数量: {len(config.llm_configs)}")
 
-            # 打印所有现有配置
+            # Print all existing configurations
             for i, llm in enumerate(config.llm_configs):
-                # 🔥 修复：provider 是字符串，不是枚举
+                # 🔥 Fix: provider is a string, not an enumeration
                 provider_str = llm.provider if isinstance(llm.provider, str) else llm.provider.value
                 print(f"   {i+1}. provider: {provider_str}, model_name: {llm.model_name}")
 
-            # 查找并删除指定的LLM配置
+            # Find and delete the specified LLM configuration
             original_count = len(config.llm_configs)
 
-            # 使用更宽松的匹配条件
+            # Use looser matching criteria
             config.llm_configs = [
                 llm for llm in config.llm_configs
                 if not (
@@ -767,9 +767,9 @@ class ConfigService:
 
             if new_count == original_count:
                 print(f"❌ 没有找到匹配的配置: {provider}/{model_name}")
-                return False  # 没有找到要删除的配置
+                return False  # The configuration to be deleted was not found
 
-            # 保存更新后的配置
+            # Save updated configuration
             save_result = await self.save_system_config(config)
             print(f"💾 保存结果: {save_result}")
 
@@ -788,7 +788,7 @@ class ConfigService:
             if not config:
                 return False
 
-            # 检查指定的模型是否存在
+            # Checks whether the specified model exists
             model_exists = any(
                 llm.model_name == model_name for llm in config.llm_configs
             )
@@ -810,7 +810,7 @@ class ConfigService:
             if not config:
                 return False
 
-            # 检查指定的数据源是否存在
+            # Check whether the specified data source exists
             source_exists = any(
                 ds.name == data_source_name for ds in config.data_source_configs
             )
@@ -839,39 +839,39 @@ class ConfigService:
                 config.llm_configs,
             )
 
-            # 打印更新前的系统设置
+            # Print system settings before update
             print(f"📝 更新前 system_settings 包含 {len(config.system_settings)} 项")
             if 'quick_analysis_model' in config.system_settings:
-                print(f"  ✓ 更新前包含 quick_analysis_model: {config.system_settings['quick_analysis_model']}")
+                print(f"  ✓ Included before updating quick_analysis_model: {config.system_settings['quick_analysis_model']}")
             else:
-                print(f"  ⚠️  更新前不包含 quick_analysis_model")
+                print(f"  ⚠️  Not included before update quick_analysis_model")
 
-            # 更新系统设置
+            # Update system settings
             config.system_settings.update(settings)
 
-            # 打印更新后的系统设置
+            # Print updated system settings
             print(f"📝 更新后 system_settings 包含 {len(config.system_settings)} 项")
             if 'quick_analysis_model' in config.system_settings:
-                print(f"  ✓ 更新后包含 quick_analysis_model: {config.system_settings['quick_analysis_model']}")
+                print(f"  ✓ Updated to include quick_analysis_model: {config.system_settings['quick_analysis_model']}")
             else:
-                print(f"  ⚠️  更新后不包含 quick_analysis_model")
+                print(f"  ⚠️  Not included after update quick_analysis_model")
             if 'deep_analysis_model' in config.system_settings:
-                print(f"  ✓ 更新后包含 deep_analysis_model: {config.system_settings['deep_analysis_model']}")
+                print(f"  ✓ Updated to include deep_analysis_model: {config.system_settings['deep_analysis_model']}")
             else:
-                print(f"  ⚠️  更新后不包含 deep_analysis_model")
+                print(f"  ⚠️  Not included after update deep_analysis_model")
 
             result = await self.save_system_config(config)
 
-            # 同步到文件系统（供 unified_config 使用）
+            # Sync to file system (for use by unified_config)
             if result:
                 try:
                     from app.core.unified_config import unified_config
                     unified_config.sync_to_legacy_format(config)
-                    print(f"✅ 系统设置已同步到文件系统")
+                    print(f"✅ System settings synced to file system")
                 except Exception as e:
-                    print(f"⚠️  同步系统设置到文件系统失败: {e}")
+                    print(f"⚠️  Syncing system settings to file system failed: {e}")
 
-                # 同步代理配置到环境变量（需要重启才完全生效，但先设置环境变量）
+                # Synchronize agent configuration to environment variables (requires restart to take full effect, but set environment variables first)
                 import os
                 proxy_keys = ['http_proxy', 'https_proxy', 'no_proxy']
                 for key in proxy_keys:
@@ -909,13 +909,13 @@ class ConfigService:
             if not config:
                 return {}
 
-            # 转换为可序列化的字典格式
-            # 方案A：导出时对敏感字段脱敏/清空
+            # Convert to serializable dictionary format
+            # Solution A: Desensitize/clear sensitive fields when exporting
             def _llm_sanitize(x: LLMConfig):
                 d = x.model_dump()
                 d["api_key"] = ""
-                # 确保必填字段有默认值（防止导出 None 或空字符串）
-                # 注意：max_tokens 在 system_configs 中已经有正确的值，直接使用
+                # Ensure required fields have default values (prevent None or empty strings from being exported)
+                # Note: max_tokens already has the correct value in system_configs, use it directly
                 if not d.get("max_tokens") or d.get("max_tokens") == "":
                     d["max_tokens"] = 4000
                 if not d.get("temperature") and d.get("temperature") != 0:
@@ -942,7 +942,7 @@ class ConfigService:
                 "data_source_configs": [_ds_sanitize(ds) for ds in config.data_source_configs],
                 "default_data_source": config.default_data_source,
                 "database_configs": [_db_sanitize(db) for db in config.database_configs],
-                # 方案A：导出时对 system_settings 中的敏感键做脱敏
+                # Plan A: Desensitize sensitive keys in system_settings when exporting
                 "system_settings": {k: (None if any(p in k.lower() for p in ("key","secret","password","token","client_secret")) else v) for k, v in (config.system_settings or {}).items()},
                 "exported_at": now_tz().isoformat(),
                 "version": config.version
@@ -957,16 +957,16 @@ class ConfigService:
     async def import_config(self, config_data: Dict[str, Any]) -> bool:
         """导入配置"""
         try:
-            # 验证配置数据格式
+            # Verify configuration data format
             if not self._validate_config_data(config_data):
                 return False
 
-            # 创建新的系统配置（方案A：导入时忽略敏感字段）
+            # Create a new system configuration (Option A: Ignore sensitive fields when importing)
             def _llm_sanitize_in(llm: Dict[str, Any]):
                 d = dict(llm or {})
                 d.pop("api_key", None)
                 d["api_key"] = ""
-                # 清理空字符串，让 Pydantic 使用默认值
+                # Clean empty strings and let Pydantic use default values
                 if d.get("max_tokens") == "" or d.get("max_tokens") is None:
                     d.pop("max_tokens", None)
                 if d.get("temperature") == "" or d.get("temperature") is None:
@@ -1023,8 +1023,8 @@ class ConfigService:
     async def migrate_legacy_config(self) -> bool:
         """迁移传统配置"""
         try:
-            # 这里可以调用迁移脚本的逻辑
-            # 或者直接在这里实现迁移逻辑
+            # Here you can call the logic of the migration script
+            # Or implement the migration logic directly here
             from scripts.migrate_config_to_webapi import ConfigMigrator
 
             migrator = ConfigMigrator()
@@ -1054,12 +1054,12 @@ class ConfigService:
             if not llm_config.config_id:
                 llm_config.config_id = self._build_deterministic_llm_config_id(llm_config, len(config.llm_configs))
 
-            # 直接保存到统一配置管理器
+            # Save directly to Unified Configuration Manager
             success = unified_config.save_llm_config(llm_config)
             if not success:
                 return False
 
-            # 查找并更新对应的LLM配置
+            # Find and update the corresponding LLM configuration
             for i, existing_config in enumerate(config.llm_configs):
                 same_config_id = bool(llm_config.config_id) and existing_config.config_id == llm_config.config_id
                 same_provider_model = (
@@ -1072,7 +1072,7 @@ class ConfigService:
                     config.llm_configs[i] = llm_config
                     break
             else:
-                # 如果不存在，添加新配置
+                # If it does not exist, add a new configuration
                 config.llm_configs.append(llm_config)
 
             return await self.save_system_config(config)
@@ -1081,21 +1081,21 @@ class ConfigService:
             return False
 
     async def batch_import_llm_configs(self, selected_providers: List[str] = None) -> Dict[str, Any]:
-        """一键导入：从模型目录 + 厂家配置批量创建大模型配置
+        """One-click import: from model directory + Factory configuration to create large model configurations in batches
 
         Args:
-            selected_providers: 指定导入的厂家列表，为空则导入所有已配置API密钥的厂家
+            selected_providers: Specify the list of manufacturers to import. If it is empty, all manufacturers with configured API keys will be imported.
 
-        逻辑：
-        1. 获取所有已启用且有 API Key 的厂家（可按 selected_providers 过滤）
-        2. 获取这些厂家的模型目录
-        3. 对目录中每个模型，如果大模型配置中不存在则创建
-        4. 从 DEFAULT_MODEL_CAPABILITIES 获取能力分级等元数据
+        Logic:
+        1. Get all enabled manufacturers with API Key (can be filtered by selected_providers)
+        2. Get model catalogs from these manufacturers
+        3. For each model in the directory, create it if it does not exist in the large model configuration
+        4. Get metadata such as capability ratings from DEFAULT_MODEL_CAPABILITIES
         """
         from app.constants.model_capabilities import DEFAULT_MODEL_CAPABILITIES
 
         try:
-            # 1. 获取已启用的厂家（按 selected_providers 过滤）
+            # 1. Get enabled manufacturers (filtered by selected_providers)
             providers = await self.get_llm_providers()
             active_providers = {
                 p.name: p for p in providers
@@ -1107,29 +1107,29 @@ class ConfigService:
                     or p.extra_config.get("has_api_key", False)
                 )
             }
-            logger.info(f"📦 [batch_import] 活跃厂家: {list(active_providers.keys())}")
+            logger.info(f"📦 [batch_import] Active manufacturers: {list(active_providers.keys())}")
 
             if not active_providers:
                 return {
                     "success": False,
-                    "message": "没有已配置API密钥的厂家，请先在厂家管理中配置API密钥",
+                    "message": "If there is no manufacturer with an API key configured, please configure the API key in the manufacturer management first.",
                     "imported": 0,
                     "skipped": 0,
                     "errors": [],
                 }
 
-            # 2. 获取模型目录
+            # 2. Get model directory
             catalogs = await self.get_model_catalog()
             catalog_map = {c.provider: c for c in catalogs}
 
-            # 3. 获取现有大模型配置（用于去重）
+            # 3. Get existing large model configuration (for deduplication)
             config = await self.get_system_config()
             existing_keys = set()
             if config:
                 for llm in config.llm_configs:
                     existing_keys.add(f"{llm.provider}/{llm.model_name}")
 
-            # 4. 批量创建
+            # 4. Create in batches
             imported = 0
             skipped = 0
             errors = []
@@ -1150,14 +1150,14 @@ class ConfigService:
                         continue
 
                     try:
-                        # 从能力目录获取元数据
+                        # Get metadata from capability catalog
                         cap = DEFAULT_MODEL_CAPABILITIES.get(model.name, {})
 
                         llm_config = LLMConfig(
                             provider=provider_name,
                             model_name=model.name,
                             model_display_name=model.display_name,
-                            api_key="",  # 留空，运行时从厂家配置获取
+                            api_key="",  # Leave it blank and obtain it from the manufacturer configuration at runtime.
                             api_base=provider.default_base_url or "",
                             max_tokens=model.max_tokens or 8000,
                             temperature=0.2,
@@ -1179,20 +1179,20 @@ class ConfigService:
                             performance_metrics=cap.get("performance_metrics"),
                         )
 
-                        # 保存
+                        # save
                         success = await self.update_llm_config(llm_config)
                         if success:
                             new_configs.append(llm_config)
                             existing_keys.add(config_key)
                             imported += 1
-                            logger.info(f"✅ [batch_import] 导入: {config_key}")
+                            logger.info(f"✅ [batch_import] import: {config_key}")
                         else:
                             errors.append(f"{config_key}: 保存失败")
                     except Exception as e:
                         errors.append(f"{config_key}: {str(e)}")
-                        logger.warning(f"⚠️ [batch_import] 导入失败 {config_key}: {e}")
+                        logger.warning(f"⚠️ [batch_import] Import failed {config_key}: {e}")
 
-            # 同步定价
+            # synchronized pricing
             if imported > 0:
                 try:
                     from app.core.config_bridge import sync_pricing_config_now
@@ -1214,7 +1214,7 @@ class ConfigService:
                 "errors": errors,
             }
         except Exception as e:
-            logger.error(f"❌ [batch_import] 批量导入失败: {e}", exc_info=True)
+            logger.error(f"❌ [batch_import] Batch import failed: {e}", exc_info=True)
             return {
                 "success": False,
                 "message": f"批量导入失败: {str(e)}",
@@ -1224,75 +1224,75 @@ class ConfigService:
             }
 
     async def test_llm_config(self, llm_config: LLMConfig) -> Dict[str, Any]:
-        """测试大模型配置 - 真实调用API进行验证"""
+        """Test large model configuration - real call API for verification"""
         start_time = time.time()
         try:
             import requests
 
-            # 获取 provider 字符串值（兼容枚举和字符串）
+            # Get provider string value (compatible with enumeration and string)
             provider_str = llm_config.provider.value if hasattr(llm_config.provider, 'value') else str(llm_config.provider)
 
             logger.info(f"🧪 测试大模型配置: {provider_str} - {llm_config.model_name}")
-            logger.info(f"📍 API基础URL (模型配置): {llm_config.api_base}")
+            logger.info(f"📍 API Basics URL (Model configuration): {llm_config.api_base}")
 
-            # 获取厂家配置（用于获取 API Key 和 default_base_url）
+            # Get manufacturer configuration (used to get API Key and default_base_url)
             db = await self._get_db()
             providers_collection = db.llm_providers
             provider_data = await providers_collection.find_one({"name": provider_str})
 
-            # 1. 确定 API 基础 URL
+            # 1. Determine API Basics URL
             api_base = llm_config.api_base
             if not api_base:
-                # 如果模型配置没有 api_base，从厂家配置获取 default_base_url
+                # If the model configuration does not have api_base, obtain it from the manufacturer configuration. default_base_url
                 if provider_data and provider_data.get("default_base_url"):
                     api_base = provider_data["default_base_url"]
-                    logger.info(f"✅ 从厂家配置获取 API 基础 URL: {api_base}")
+                    logger.info(f"✅ Get API base from factory configuration URL: {api_base}")
                 else:
                     return {
                         "success": False,
-                        "message": f"模型配置和厂家配置都未设置 API 基础 URL",
+                        "message": f"Neither the model configuration nor the factory configuration has the API base set URL",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
 
-            # 🔥 本地模型列表（不需要 API Key）
+            # 🔥 Local model list (no API Key required)
             local_models = ["ollama", "localai"]
             is_local_model = provider_str.lower() in local_models
 
-            # 2. 验证 API Key（优先级：厂家配置 > 模型配置 > 环境变量）
-            # 🔥 本地模型不需要 API Key，跳过检查
+            # 2. Verify API Key (Priority: Factory Configuration > Model configuration > environment variables)
+            # 🔥 Local models do not require API Key, skip checking
             api_key = None
             api_key_source = None
 
             if is_local_model:
-                # 本地模型不需要 API Key，使用占位符
-                api_key = "ollama"  # 占位符，实际不会使用
-                api_key_source = "本地模型（不需要 API Key）"
+                # Local models do not require an API Key, use placeholders
+                api_key = "ollama"  # Placeholder, not actually used
+                api_key_source = "Local model (no API key required)"
                 logger.info(f"✅ 本地模型 {provider_str} 不需要 API Key")
             else:
-                # 云端模型需要 API Key
-                # 优先从厂家配置获取 API Key
+                # Cloud model requires API Key
+                # Prioritize obtaining configuration from manufacturer API Key
                 if provider_data and provider_data.get("api_key") and self._is_valid_api_key(provider_data.get("api_key")):
                     api_key = provider_data["api_key"]
                     api_key_source = "厂家配置（数据库）"
-                    logger.info(f"✅ 从厂家配置获取到API密钥")
-                # 其次从模型配置获取
+                    logger.info(f"✅ Obtain API key from manufacturer configuration")
+                # Secondly, get it from the model configuration
                 elif llm_config.api_key and self._is_valid_api_key(llm_config.api_key):
                     api_key = llm_config.api_key
                     api_key_source = "模型配置"
-                    logger.info(f"✅ 从模型配置获取到API密钥")
-                # 最后尝试从环境变量获取
+                    logger.info(f"✅ Get API key from model configuration")
+                # Finally try to get from environment variables
                 else:
                     api_key = self._get_env_api_key(provider_str)
                     if api_key:
                         api_key_source = "环境变量"
-                        logger.info(f"✅ 从环境变量获取到API密钥")
+                        logger.info(f"✅ Get API key from environment variable")
 
-                # 云端模型必须配置有效的 API Key
+                # The cloud model must be configured with a valid API Key
                 if not api_key or not self._is_valid_api_key(api_key):
                     return {
                         "success": False,
-                        "message": f"{provider_str} 未配置有效的API密钥（已检查：厂家配置、模型配置、环境变量）",
+                        "message": f"{provider_str} No valid API key is configured (checked: manufacturer configuration, model configuration, environment variables)",
                         "response_time": time.time() - start_time,
                         "details": {
                             "provider": provider_str,
@@ -1304,16 +1304,16 @@ class ConfigService:
 
             logger.info(f"🔑 使用API密钥来源: {api_key_source}")
 
-            # 3. 根据厂家类型选择测试方法
+            # 3. Select test method according to manufacturer type
             if provider_str == "google":
-                # Google AI 使用专门的测试方法
-                logger.info(f"🔍 使用 Google AI 专用测试方法")
+                # Google AI Use specialized testing methods
+                logger.info(f"🔍 Use Google AI-specific testing methods")
                 result = self._test_google_api(api_key, f"{provider_str} {llm_config.model_name}", api_base, llm_config.model_name)
                 result["response_time"] = time.time() - start_time
                 return result
             elif provider_str == "deepseek":
-                # DeepSeek 使用专门的测试方法
-                logger.info(f"🔍 使用 DeepSeek 专用测试方法")
+                # DeepSeek Use specialized testing methods
+                logger.info(f"🔍 Use DeepSeek dedicated testing methods")
                 result = self._test_deepseek_api(
                     api_key,
                     f"{provider_str} {llm_config.model_name}",
@@ -1325,61 +1325,61 @@ class ConfigService:
                 result["response_time"] = time.time() - start_time
                 return result
             elif provider_str == "dashscope":
-                # DashScope 使用专门的测试方法
-                logger.info(f"🔍 使用 DashScope 专用测试方法")
+                # DashScope Use specialized testing methods
+                logger.info(f"🔍 Using DashScope-specific test methods")
                 result = self._test_dashscope_api(api_key, f"{provider_str} {llm_config.model_name}", llm_config.model_name)
                 result["response_time"] = time.time() - start_time
                 return result
             else:
-                # 其他厂家使用 OpenAI 兼容的测试方法
-                logger.info(f"🔍 使用 OpenAI 兼容测试方法")
+                # Other manufacturers use OpenAI compatible test methods
+                logger.info(f"🔍 Use OpenAI compliant testing methods")
 
-                # 构建测试请求
+                # Build test request
                 api_base_normalized = api_base.rstrip("/")
 
-                # 🔥 Ollama 特殊处理：Ollama 的 OpenAI 兼容端点需要 /v1 前缀
-                # 如果 base_url 是 http://localhost:11434，需要添加 /v1
-                # 如果 base_url 已经是 http://localhost:11434/v1，则保持不变
+                # 🔥 Ollama Special handling: Ollama's OpenAI compatible endpoint requires the /v1 prefix
+                # if base_url is http://localhost:11434, Need to add /v1
+                # If base_url is already http://localhost:11434/v1, then remains unchanged
                 if is_local_model and provider_str.lower() == "ollama":
-                    # Ollama 的 OpenAI 兼容模式需要 /v1 前缀
+                    # Ollama OpenAI compatibility mode requires the /v1 prefix
                     if not api_base_normalized.endswith("/v1"):
                         api_base_normalized = api_base_normalized + "/v1"
-                        logger.info(f"   Ollama: 添加 /v1 版本号: {api_base_normalized}")
+                        logger.info(f"   Ollama: Add /v1 version number: {api_base_normalized}")
                     else:
-                        logger.info(f"   Ollama: 检测到已有版本号，保持原样: {api_base_normalized}")
+                        logger.info(f"   Ollama: An existing version number is detected, keep it as is: {api_base_normalized}")
                 else:
-                    # 🔧 智能版本号处理：只有在没有版本号的情况下才添加 /v1
-                    # 避免对已有版本号的URL（如智谱AI的 /v4）重复添加 /v1
+                    # 🔧 Intelligent version number processing: only add a version number if there is no version number /v1
+                    # Avoid adding URLs with existing version numbers (such as /v4 of Zhipu AI) repeatedly. /v1
                     import re
                     if not re.search(r'/v\d+$', api_base_normalized):
-                        # URL末尾没有版本号，添加 /v1（OpenAI标准）
+                        # URL There is no version number at the end, add /v1 (OpenAI standard)
                         api_base_normalized = api_base_normalized + "/v1"
                         logger.info(f"   添加 /v1 版本号: {api_base_normalized}")
                     else:
-                        # URL已包含版本号（如 /v4），不添加
-                        logger.info(f"   检测到已有版本号，保持原样: {api_base_normalized}")
+                        # URL Already contains the version number (such as /v4), do not add it
+                        logger.info(f"   An existing version number is detected, keep it as is: {api_base_normalized}")
 
                 url = f"{api_base_normalized}/chat/completions"
 
-                # 🔥 本地模型可以不设置 Authorization header，或者使用占位符
+                # 🔥 Local models can not set the Authorization header, or use placeholders
                 headers = {
                     "Content-Type": "application/json",
                 }
-                # 只有非本地模型才添加 Authorization header
+                # Only non-local models are added Authorization header
                 if not is_local_model:
                     headers["Authorization"] = f"Bearer {api_key}"
                 else:
-                    # 某些本地服务（如 Ollama）可能需要 Authorization header，但可以使用任意值
+                    # Some local services (such as Ollama) may require an Authorization header, but any value can be used
                     headers["Authorization"] = f"Bearer {api_key}"
 
-                # 🔥 Ollama 模型名称格式转换：横线转冒号
-                # Ollama 中模型名称使用冒号（如 qwen2.5:7b），但配置中可能使用横线（qwen2.5-7b）
+                # 🔥 Ollama Model name format conversion: convert dash to colon
+                # Ollama Use a colon in the model name (e.g. qwen2.5:7b) , But horizontal lines may be used in the configuration (qwen2.5-7b)
                 model_name_for_request = (llm_config.model_name or "").strip()
                 if is_local_model and provider_str.lower() == "ollama":
-                    # 将横线转换为冒号（Ollama 格式）
+                    # Convert dash to colon (Ollama format)
                     if "-" in model_name_for_request and ":" not in model_name_for_request:
                         model_name_for_request = model_name_for_request.replace("-", ":", 1)
-                        logger.info(f"   Ollama: 模型名称格式转换: {llm_config.model_name} -> {model_name_for_request}")
+                        logger.info(f"   Ollama: Model name format conversion: {llm_config.model_name} -> {model_name_for_request}")
                 
                 data = {
                     "model": model_name_for_request,
@@ -1393,18 +1393,18 @@ class ConfigService:
                 logger.info(f"🌐 发送测试请求到: {url}")
                 logger.info(f"📦 使用模型: {llm_config.model_name}")
                 logger.info(
-                    f"📦 使用测试参数: max_tokens={llm_config.max_tokens}, "
+                    f"📦 Use test parameters: max_tokens={llm_config.max_tokens}, "
                     f"temperature={llm_config.temperature}, timeout={llm_config.timeout}"
                 )
                 logger.info(f"📦 请求数据: {data}")
 
-                # 发送测试请求
+                # Send test request
                 response = requests.post(url, json=data, headers=headers, timeout=llm_config.timeout)
                 response_time = time.time() - start_time
 
                 logger.info(f"📡 收到响应: HTTP {response.status_code}")
 
-                # 处理响应（仅用于 OpenAI 兼容的厂家）
+                # Processing responses (only for OpenAI compatible vendors)
                 if response.status_code == 200:
                     try:
                         result = response.json()
@@ -1436,7 +1436,7 @@ class ConfigService:
                                     "details": None
                                 }
                         else:
-                            logger.warning(f"⚠️ API响应格式异常，缺少 choices 字段")
+                            logger.warning(f"⚠️ API The response format is abnormal and the choices field is missing")
                             logger.warning(f"   响应内容: {result}")
                             return {
                                 "success": False,
@@ -1457,36 +1457,36 @@ class ConfigService:
                     return {
                         "success": False,
                         "message": "API密钥无效或已过期",
-                        "message": "账号认证失败，请检查 API Key、账号状态和模型访问权限",
+                        "message": "Account authentication failed, please check API Key, account status and model access permissions",
                         "response_time": response_time,
                         "details": None
                     }
                 elif response.status_code == 402:
                     return {
                         "success": False,
-                        "message": "账号额度不足，请检查余额、套餐配额或模型付费权限",
+                        "message": "The account balance is insufficient, please check the balance, package quota or model payment permissions",
                         "response_time": response_time,
                         "details": None
                     }
                 elif response.status_code == 403:
                     return {
                         "success": False,
-                        "message": "账号权限不足，或当前模型配额已用完，请检查套餐和模型授权",
+                        "message": "The account has insufficient permissions, or the current model quota has been used up. Please check the package and model authorization.",
                         "response_time": response_time,
                         "details": None
                     }
                 elif response.status_code == 404:
-                    # 🔥 本地模型（Ollama）404 错误的特殊提示
+                    # 🔥 Special prompts for local model (Ollama) 404 errors
                     if is_local_model:
                         error_msg = (
-                            f"Ollama 服务返回 404，可能的原因：\n"
-                            f"1. Ollama 服务未启动（请运行 `ollama serve` 或启动 Ollama 应用）\n"
-                            f"2. 模型 '{llm_config.model_name}' 未下载（请运行 `ollama pull {llm_config.model_name}`）\n"
-                            f"3. API 端点不正确（当前: {url}）\n"
-                            f"4. Ollama 版本过低，不支持 OpenAI 兼容模式（需要 Ollama 0.1.0+）"
+                            f"Ollama The service returns 404, possible reasons:\n"
+                            f"1. Ollama The service is not started (please run `ollama serve` or launch the Ollama app)\n"
+                            f"2. model '{llm_config.model_name}' Not downloaded (please run `ollama pull {llm_config.model_name}`) \n"
+                            f"3. API Incorrect endpoint (currently: {url}) \n"
+                            f"4. Ollama The version is too low and does not support OpenAI compatibility mode (requires Ollama 0.1.0+) "
                         )
                     else:
-                        error_msg = f"API端点不存在，请检查API基础URL是否正确: {url}"
+                        error_msg = f"API The endpoint does not exist, please check if the API base URL is correct: {url}"
                     
                     return {
                         "success": False,
@@ -1512,7 +1512,7 @@ class ConfigService:
                     except:
                         return {
                         "success": False,
-                        "message": f"API测试失败: HTTP {response.status_code}",
+                        "message": f"API test failed: HTTP {response.status_code}",
                         "response_time": response_time,
                         "details": None
                     }
@@ -1521,7 +1521,7 @@ class ConfigService:
             response_time = time.time() - start_time
             return {
                 "success": False,
-                "message": "连接超时，请检查API基础URL是否正确或网络是否可达",
+                "message": "The connection timed out. Please check whether the API base URL is correct or whether the network is reachable.",
                 "response_time": response_time,
                 "details": None
             }
@@ -1529,7 +1529,7 @@ class ConfigService:
             response_time = time.time() - start_time
             return {
                 "success": False,
-                "message": f"连接失败，请检查API基础URL是否正确: {str(e)}",
+                "message": f"Connection failed, please check whether the API base URL is correct: {str(e)}",
                 "response_time": response_time,
                 "details": None
             }
@@ -1545,15 +1545,15 @@ class ConfigService:
     
     def _truncate_api_key(self, api_key: str, prefix_len: int = 6, suffix_len: int = 6) -> str:
         """
-        截断 API Key 用于显示
+        Truncate API Key for display
 
         Args:
-            api_key: 完整的 API Key
-            prefix_len: 保留前缀长度
-            suffix_len: 保留后缀长度
+            api_key: complete API Key
+            prefix_len: Preserve prefix length
+            suffix_len: Keep suffix length
 
         Returns:
-            截断后的 API Key，例如：0f229a...c550ec
+            Truncated API Key, for example:0f229a...c550ec
         """
         if not api_key or len(api_key) <= prefix_len + suffix_len:
             return api_key
@@ -1561,7 +1561,7 @@ class ConfigService:
         return f"{api_key[:prefix_len]}...{api_key[-suffix_len:]}"
 
     async def test_data_source_config(self, ds_config: DataSourceConfig) -> Dict[str, Any]:
-        """测试数据源配置 - 真实调用API进行验证"""
+        """Test data source configuration - real call API for verification"""
         start_time = time.time()
         try:
             import requests
@@ -1571,20 +1571,20 @@ class ConfigService:
 
             logger.info(f"🧪 [TEST] Testing data source config: {ds_config.name} ({ds_type})")
 
-            # 🔥 优先使用配置中的 API Key，如果没有或被截断，则从数据库获取
+            # 🔥 The API Key in the configuration is used first. If it is not available or truncated, it is obtained from the database.
             api_key = ds_config.api_key
             used_db_credentials = False
             used_env_credentials = False
 
             logger.info(f"🔍 [TEST] Received API Key from config: {repr(api_key)} (type: {type(api_key).__name__}, length: {len(api_key) if api_key else 0})")
 
-            # 根据不同的数据源类型进行测试
+            # Test against different data source types
             if ds_type == "tushare":
-                # 🔥 如果配置中的 API Key 包含 "..."（截断标记），需要验证是否是未修改的原值
+                # 🔥 If the API Key in the configuration contains "..." (truncation mark), need to verify whether it is the unmodified original value
                 if api_key and "..." in api_key:
                     logger.info(f"🔍 [TEST] API Key contains '...' (truncated), checking if it matches database value")
 
-                    # 从数据库中获取完整的 API Key
+                    # Get complete from database API Key
                     system_config = await self.get_system_config()
                     db_config = None
                     if system_config:
@@ -1594,23 +1594,23 @@ class ConfigService:
                                 break
 
                     if db_config and db_config.api_key:
-                        # 对数据库中的完整 API Key 进行相同的截断处理
+                        # Do the same truncation for the full API Key in the database
                         truncated_db_key = self._truncate_api_key(db_config.api_key)
                         logger.info(f"🔍 [TEST] Database API Key truncated: {truncated_db_key}")
                         logger.info(f"🔍 [TEST] Received API Key: {api_key}")
 
-                        # 比较截断后的值
+                        # Compare truncated values
                         if api_key == truncated_db_key:
-                            # 相同，说明用户没有修改，使用数据库中的完整值
+                            # Same, indicating that the user has not modified it and uses the complete value in the database.
                             api_key = db_config.api_key
                             used_db_credentials = True
                             logger.info(f"✅ [TEST] Truncated values match, using complete API Key from database (length: {len(api_key)})")
                         else:
-                            # 不同，说明用户修改了但修改得不完整
+                            # Different, indicating that the user has modified it but the modification is incomplete.
                             logger.error(f"❌ [TEST] Truncated API Key doesn't match database value, user may have modified it incorrectly")
                             return {
                                 "success": False,
-                                "message": "API Key 格式错误：检测到截断标记但与数据库中的值不匹配，请输入完整的 API Key",
+                                "message": "API Key Format error: Truncation token detected but does not match value in database, please enter complete API Key",
                                 "response_time": time.time() - start_time,
                                 "details": {
                                     "error": "truncated_key_mismatch",
@@ -1619,7 +1619,7 @@ class ConfigService:
                                 }
                             }
                     else:
-                        # 数据库中没有有效的 API Key，尝试从环境变量获取
+                        # There is no valid API Key in the database, try to get it from environment variables
                         logger.info(f"⚠️  [TEST] No valid API Key in database, trying environment variable")
                         env_token = os.getenv('TUSHARE_TOKEN')
                         if env_token:
@@ -1630,16 +1630,16 @@ class ConfigService:
                             logger.error(f"❌ [TEST] No valid API Key in database or environment")
                             return {
                                 "success": False,
-                                "message": "API Key 无效：数据库和环境变量中均未配置有效的 Token",
+                                "message": "API Key Invalid: There is no valid configuration in the database or environment variables. Token",
                                 "response_time": time.time() - start_time,
                                 "details": None
                             }
 
-                # 如果 API Key 为空，尝试从数据库或环境变量获取
+                # If the API Key is empty, try to get it from the database or environment variables
                 elif not api_key:
                     logger.info(f"⚠️  [TEST] API Key is empty, trying to get from database")
 
-                    # 从数据库中获取完整的 API Key
+                    # Get complete from database API Key
                     system_config = await self.get_system_config()
                     db_config = None
                     if system_config:
@@ -1653,7 +1653,7 @@ class ConfigService:
                         used_db_credentials = True
                         logger.info(f"🔑 [TEST] Using API Key from database (length: {len(api_key)})")
                     else:
-                        # 如果数据库中也没有，尝试从环境变量获取
+                        # If it is not in the database, try to get it from environment variables
                         logger.info(f"⚠️  [TEST] No valid API Key in database, trying environment variable")
                         env_token = os.getenv('TUSHARE_TOKEN')
                         if env_token:
@@ -1664,29 +1664,29 @@ class ConfigService:
                             logger.error(f"❌ [TEST] No valid API Key in config, database, or environment")
                             return {
                                 "success": False,
-                                "message": "API Key 无效：配置、数据库和环境变量中均未配置有效的 Token",
+                                "message": "API Key Invalid: There is no valid configuration in the configuration, database and environment variables. Token",
                                 "response_time": time.time() - start_time,
                                 "details": None
                             }
                 else:
-                    # API Key 是完整的，直接使用
+                    # API Key is complete and can be used directly
                     logger.info(f"✅ [TEST] Using complete API Key from config (length: {len(api_key)})")
 
-                # 测试 Tushare API
+                # test Tushare API
                 try:
                     logger.info(f"🔌 [TEST] Calling Tushare API with token (length: {len(api_key)})")
                     import tushare as ts
                     import os
 
-                    # 🔧 临时禁用代理（Tushare 是国内数据源，不需要代理）
-                    # 保存原始代理设置
+                    # 🔧 Temporarily disable the proxy (Tushare is a domestic data source and does not require a proxy)
+                    # Save original proxy settings
                     original_http_proxy = os.environ.get('HTTP_PROXY')
                     original_https_proxy = os.environ.get('HTTPS_PROXY')
                     original_http_proxy_lower = os.environ.get('http_proxy')
                     original_https_proxy_lower = os.environ.get('https_proxy')
 
                     try:
-                        # 临时清除代理
+                        # temporary clearing agent
                         if 'HTTP_PROXY' in os.environ:
                             del os.environ['HTTP_PROXY']
                         if 'HTTPS_PROXY' in os.environ:
@@ -1698,12 +1698,12 @@ class ConfigService:
 
                         logger.info(f"🌐 [TEST] Proxy disabled for Tushare API call (domestic data source)")
 
-                        # 直接传入 token 给 pro_api，不调用 set_token 避免写 tk.csv 文件
+                        # Directly pass the token to pro_api without calling set_token to avoid writing the tk.csv file
                         pro = ts.pro_api(api_key)
-                        # 获取交易日历（轻量级测试）
+                        # Get trading calendar (lightweight test)
                         df = pro.trade_cal(exchange='SSE', start_date='20240101', end_date='20240101')
                     finally:
-                        # 恢复原始代理设置
+                        # Restore original proxy settings
                         if original_http_proxy is not None:
                             os.environ['HTTP_PROXY'] = original_http_proxy
                         if original_https_proxy is not None:
@@ -1717,7 +1717,7 @@ class ConfigService:
                         response_time = time.time() - start_time
                         logger.info(f"✅ [TEST] Tushare API call successful (response time: {response_time:.2f}s)")
 
-                        # 构建消息，说明使用了哪个来源的凭证
+                        # Build a message stating which source of credentials was used
                         credential_source = "配置"
                         if used_db_credentials:
                             credential_source = "数据库"
@@ -1740,7 +1740,7 @@ class ConfigService:
                         logger.error(f"❌ [TEST] Tushare API returned empty data")
                         return {
                             "success": False,
-                            "message": "Tushare API 返回数据为空",
+                            "message": "Tushare API Return data is empty",
                             "response_time": time.time() - start_time,
                             "details": None
                         }
@@ -1748,7 +1748,7 @@ class ConfigService:
                     logger.error(f"❌ [TEST] Tushare library not installed")
                     return {
                         "success": False,
-                        "message": "Tushare 库未安装，请运行: pip install tushare",
+                        "message": "Tushare The library is not installed, please run: pip install tushare",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
@@ -1756,24 +1756,24 @@ class ConfigService:
                     logger.error(f"❌ [TEST] Tushare API call failed: {e}")
                     return {
                         "success": False,
-                        "message": f"Tushare API 调用失败: {str(e)}",
+                        "message": f"Tushare API call failed: {str(e)}",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
 
             elif ds_type == "akshare":
-                # AKShare 不需要 API Key，直接测试
+                # AKShare No API Key required, test directly
                 try:
                     import akshare as ak
-                    # 使用更轻量级的接口测试 - 获取交易日历
-                    # 这个接口数据量小，响应快，更适合测试连接
+                    # Test with a more lightweight interface - get trading calendar
+                    # This interface has small data volume and fast response, making it more suitable for testing connections.
                     df = ak.tool_trade_date_hist_sina()
 
                     if df is not None and len(df) > 0:
                         response_time = time.time() - start_time
                         return {
                             "success": True,
-                            "message": f"成功连接到 AKShare 数据源",
+                            "message": f"Successfully connected to AKShare data source",
                             "response_time": response_time,
                             "details": {
                                 "type": ds_type,
@@ -1783,21 +1783,21 @@ class ConfigService:
                     else:
                         return {
                             "success": False,
-                            "message": "AKShare API 返回数据为空",
+                            "message": "AKShare API Return data is empty",
                             "response_time": time.time() - start_time,
                             "details": None
                         }
                 except ImportError:
                     return {
                         "success": False,
-                        "message": "AKShare 库未安装，请运行: pip install akshare",
+                        "message": "AKShare The library is not installed, please run: pip install akshare",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
                 except Exception as e:
                     return {
                         "success": False,
-                        "message": f"AKShare API 调用失败: {str(e)}",
+                        "message": f"AKShare API call failed: {str(e)}",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
@@ -1842,7 +1842,7 @@ class ConfigService:
                     from app.services.data_sources.qmt_adapter import QMTAdapter
 
                     logger.info(
-                        "QMT 测试连接开始: data_dir=%s, init_markets=%s, start_local_service=%s",
+                        "QMT Test connection starts: data_dir=%s, init_markets=%s, start_local_service=%s",
                         temp_env.get("QMT_DATA_DIR", ""),
                         temp_env.get("QMT_INIT_MARKETS", ""),
                         temp_env.get("QMT_START_LOCAL_SERVICE", ""),
@@ -1854,10 +1854,10 @@ class ConfigService:
                         timeout=15.0,
                     )
                     if not available:
-                        logger.warning("QMT 测试连接失败: adapter.is_available() returned False")
+                        logger.warning("QMT Test connection failed: adapter.is_available() returned False")
                         return {
                             "success": False,
-                            "message": "QMT 不可用：请确认 xtquant 已安装、QMT 已启动，且本地行情连接参数正确",
+                            "message": "QMT Unavailable: Please confirm that xtquant has been installed, QMT has been started, and the local market connection parameters are correct",
                             "response_time": time.time() - start_time,
                             "details": {
                                 "type": ds_type,
@@ -1867,18 +1867,18 @@ class ConfigService:
 
                     return {
                         "success": True,
-                        "message": "成功连接到 QMT 数据源",
+                        "message": "Successfully connected to QMT data source",
                         "response_time": time.time() - start_time,
                         "details": {
                             "type": ds_type,
-                            "test_result": "QMT 可用，本地 QMT 连接检测通过",
+                            "test_result": "QMT Available, local QMT connection detection passed",
                         }
                     }
                 except asyncio.TimeoutError:
-                    logger.error("QMT 测试连接超时: adapter.is_available() exceeded 15 seconds")
+                    logger.error("QMT Test connection timeout: adapter.is_available() exceeded 15 seconds")
                     return {
                         "success": False,
-                        "message": "QMT 测试超时：本地连接检测超过 15 秒，请检查 QMT 当前状态后重试",
+                        "message": "QMT Test timeout: local connection detection exceeds 15 seconds, please check the current status of QMT and try again",
                         "response_time": time.time() - start_time,
                         "details": {
                             "type": ds_type,
@@ -1888,7 +1888,7 @@ class ConfigService:
                 except ImportError:
                     return {
                         "success": False,
-                        "message": "xtquant 库未安装，请先安装并确认运行环境支持 QMT",
+                        "message": "xtquant The library is not installed. Please install it first and confirm that the operating environment supports it. QMT",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
@@ -1907,18 +1907,18 @@ class ConfigService:
                             os.environ[env_key] = env_value
 
             elif ds_type == "local":
-                # 本地数据源 - 直接连接数据库检查是否有本地数据
+                # Local data source - directly connect to the database to check whether there is local data
                 try:
                     from app.core.database import get_mongo_db
                     db = get_mongo_db()
 
-                    # 检查是否有本地数据（data_source = "local"）
-                    # 检查多个集合
+                    # Check if there is local data (data_source = "local") 
+                    # Check multiple collections
                     collections_to_check = [
-                        ("stock_basic_info", "source"),  # 股票基本信息
-                        ("market_quotes", "data_source"),  # 实时行情
-                        ("stock_financial_data", "data_source"),  # 财务数据
-                        ("stock_news", "data_source")  # 新闻数据
+                        ("stock_basic_info", "source"),  # Basic stock information
+                        ("market_quotes", "data_source"),  # Real-time quotes
+                        ("stock_financial_data", "data_source"),  # financial data
+                        ("stock_news", "data_source")  # news data
                     ]
 
                     total_count = 0
@@ -1941,18 +1941,18 @@ class ConfigService:
                             "response_time": response_time,
                             "details": {
                                 "type": ds_type,
-                                "test_result": f"数据库连接成功，{stats_msg}",
+                                "test_result": f"The database connection is successful,{stats_msg}",
                                 "total_records": total_count
                             }
                         }
                     else:
                         return {
                             "success": True,
-                            "message": "成功连接到本地数据源，但暂无本地数据（可通过批量导入 API 接口导入数据）",
+                            "message": "Successfully connected to the local data source, but there is no local data yet (data can be imported through the batch import API interface)",
                             "response_time": response_time,
                             "details": {
                                 "type": ds_type,
-                                "test_result": "数据库连接成功，暂无本地数据",
+                                "test_result": "Database connection successful, no local data yet",
                                 "total_records": 0
                             }
                         }
@@ -1965,16 +1965,16 @@ class ConfigService:
                     }
 
             elif ds_type == "baostock":
-                # BaoStock 不需要 API Key，直接测试登录
+                # BaoStock No API Key is required, just test login directly
                 try:
                     import baostock as bs
-                    # 测试登录
+                    # Test login
                     lg = bs.login()
 
                     if lg.error_code == '0':
-                        # 登录成功，测试获取数据
+                        # Log in successfully, test to obtain data
                         try:
-                            # 获取交易日历（轻量级测试）
+                            # Get trading calendar (lightweight test)
                             rs = bs.query_trade_dates(start_date="2024-01-01", end_date="2024-01-01")
 
                             if rs.error_code == '0':
@@ -1982,18 +1982,18 @@ class ConfigService:
                                 bs.logout()
                                 return {
                                     "success": True,
-                                    "message": f"成功连接到 BaoStock 数据源",
+                                    "message": f"Successfully connected to BaoStock data source",
                                     "response_time": response_time,
                                     "details": {
                                         "type": ds_type,
-                                        "test_result": "登录成功，获取交易日历成功"
+                                        "test_result": "Login successful, obtain trading calendar successfully"
                                     }
                                 }
                             else:
                                 bs.logout()
                                 return {
                                     "success": False,
-                                    "message": f"BaoStock 数据获取失败: {rs.error_msg}",
+                                    "message": f"BaoStock Data acquisition failed: {rs.error_msg}",
                                     "response_time": time.time() - start_time,
                                     "details": None
                                 }
@@ -2001,39 +2001,39 @@ class ConfigService:
                             bs.logout()
                             return {
                                 "success": False,
-                                "message": f"BaoStock 数据获取异常: {str(e)}",
+                                "message": f"BaoStock Data acquisition exception: {str(e)}",
                                 "response_time": time.time() - start_time,
                                 "details": None
                             }
                     else:
                         return {
                             "success": False,
-                            "message": f"BaoStock 登录失败: {lg.error_msg}",
+                            "message": f"BaoStock Login failed: {lg.error_msg}",
                             "response_time": time.time() - start_time,
                             "details": None
                         }
                 except ImportError:
                     return {
                         "success": False,
-                        "message": "BaoStock 库未安装，请运行: pip install baostock",
+                        "message": "BaoStock The library is not installed, please run: pip install baostock",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
                 except Exception as e:
                     return {
                         "success": False,
-                        "message": f"BaoStock API 调用失败: {str(e)}",
+                        "message": f"BaoStock API call failed: {str(e)}",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
 
             elif ds_type == "yahoo_finance":
-                # Yahoo Finance 测试 - 需要代理访问
+                # Yahoo Finance Testing - Proxy access required
                 if not ds_config.endpoint:
                     ds_config.endpoint = "https://query1.finance.yahoo.com"
 
                 try:
-                    # 规范化代理地址，确保有协议前缀
+                    # Normalize the proxy address, ensuring there is a protocol prefix
                     def normalize_proxy(proxy: str) -> str:
                         if not proxy:
                             return proxy
@@ -2042,7 +2042,7 @@ class ConfigService:
                             proxy = f"http://{proxy}"
                         return proxy
 
-                    # 获取代理配置
+                    # Get proxy configuration
                     system_config = await self.get_system_config()
                     proxies = {}
                     proxy_used = False
@@ -2056,7 +2056,7 @@ class ConfigService:
                             proxies['https'] = normalize_proxy(https_proxy)
                             proxy_used = True
 
-                    # 也检查环境变量
+                    # Also check environment variables
                     if not proxies:
                         env_http = os.environ.get('HTTP_PROXY', '')
                         env_https = os.environ.get('HTTPS_PROXY', '')
@@ -2068,14 +2068,14 @@ class ConfigService:
                             proxy_used = True
 
                     if not proxy_used:
-                        logger.warning("⚠️ [TEST] Yahoo Finance 测试未配置代理，可能无法访问")
+                        logger.warning("⚠️ [TEST] Yahoo Finance The test does not configure a proxy and may not be accessible.")
                     else:
-                        logger.info(f"🔍 [TEST] Yahoo Finance 使用代理: {proxies}")
+                        logger.info(f"🔍 [TEST] Yahoo Finance Use a proxy: {proxies}")
 
                     url = f"{ds_config.endpoint}/v8/finance/chart/AAPL"
                     params = {"interval": "1d", "range": "1d"}
 
-                    # 添加浏览器 User-Agent，避免被 Yahoo Finance 拒绝
+                    # Add browser User-Agent to avoid being rejected by Yahoo Finance
                     headers = {
                         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                         "Accept": "application/json,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -2090,8 +2090,8 @@ class ConfigService:
                         proxies=proxies if proxies else None
                     )
 
-                    # 记录响应状态和头信息用于调试
-                    logger.info(f"🔍 [TEST] Yahoo Finance 响应: status={response.status_code}, headers={dict(response.headers)}")
+                    # Log response status and header information for debugging
+                    logger.info(f"🔍 [TEST] Yahoo Finance response: status={response.status_code}, headers={dict(response.headers)}")
 
                     if response.status_code == 200:
                         data = response.json()
@@ -2100,7 +2100,7 @@ class ConfigService:
                             proxy_msg = "（使用代理）" if proxy_used else "（直连）"
                             return {
                                 "success": True,
-                                "message": f"成功连接到 Yahoo Finance 数据源{proxy_msg}",
+                                "message": f"Successfully connected to Yahoo Finance data source{proxy_msg}",
                                 "response_time": response_time,
                                 "details": {
                                     "type": ds_type,
@@ -2113,20 +2113,20 @@ class ConfigService:
                             error_info = data["chart"]["error"]
                             return {
                                 "success": False,
-                                "message": f"Yahoo Finance API 错误: {error_info.get('description', str(error_info))}",
+                                "message": f"Yahoo Finance API Error: {error_info.get('description', str(error_info))}",
                                 "response_time": time.time() - start_time,
                                 "details": None
                             }
                         else:
-                            logger.warning(f"⚠️ [TEST] Yahoo Finance 返回未知格式: {data}")
+                            logger.warning(f"⚠️ [TEST] Yahoo Finance Return unknown format: {data}")
                             return {
                                 "success": False,
-                                "message": "Yahoo Finance API 返回未知格式",
+                                "message": "Yahoo Finance API Return unknown format",
                                 "response_time": time.time() - start_time,
                                 "details": {"raw_response": str(data)[:500]}
                             }
                     elif response.status_code == 429:
-                        # HTTP 429 说明代理连接成功，只是请求频率被限制
+                        # HTTP 429 It means that the proxy connection is successful, but the request frequency is limited.
                         proxy_msg = "（使用代理）" if proxy_used else "（直连）"
                         return {
                             "success": True,
@@ -2135,21 +2135,21 @@ class ConfigService:
                             "details": {
                                 "type": ds_type,
                                 "endpoint": ds_config.endpoint,
-                                "test_result": "代理连接成功，API 频率限制",
+                                "test_result": "Proxy connection successful, API frequency limit",
                                 "proxy_used": proxy_used,
-                                "note": "HTTP 429 表示请求过于频繁，稍后会自动恢复"
+                                "note": "HTTP 429 Indicates that the request is too frequent and will be automatically restored later."
                             }
                         }
                     else:
-                        # 记录响应体用于调试
+                        # Logging the response body for debugging
                         try:
                             response_body = response.text[:500]
                         except Exception:
                             response_body = "无法读取响应体"
-                        logger.warning(f"⚠️ [TEST] Yahoo Finance 错误响应: status={response.status_code}, body={response_body}")
+                        logger.warning(f"⚠️ [TEST] Yahoo Finance error response: status={response.status_code}, body={response_body}")
                         return {
                             "success": False,
-                            "message": f"Yahoo Finance API 返回错误: HTTP {response.status_code}",
+                            "message": f"Yahoo Finance API return error: HTTP {response.status_code}",
                             "response_time": time.time() - start_time,
                             "details": {
                                 "status_code": response.status_code,
@@ -2160,14 +2160,14 @@ class ConfigService:
                 except requests.exceptions.ProxyError as e:
                     return {
                         "success": False,
-                        "message": "代理连接失败，请检查代理配置",
+                        "message": "Proxy connection failed, please check proxy configuration",
                         "response_time": time.time() - start_time,
                         "details": {"error": str(e)}
                     }
                 except requests.exceptions.ConnectTimeout:
                     return {
                         "success": False,
-                        "message": "连接超时，请检查网络或代理配置",
+                        "message": "Connection timed out, please check network or proxy configuration",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
@@ -2182,17 +2182,17 @@ class ConfigService:
                         }
                     return {
                         "success": False,
-                        "message": f"Yahoo Finance API 调用失败: {error_msg}",
+                        "message": f"Yahoo Finance API call failed: {error_msg}",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
 
             elif ds_type == "alpha_vantage":
-                # 🔥 如果配置中的 API Key 包含 "..."（截断标记），需要验证是否是未修改的原值
+                # 🔥 If the API Key in the configuration contains "..." (truncation mark), need to verify whether it is the unmodified original value
                 if api_key and "..." in api_key:
                     logger.info(f"🔍 [TEST] API Key contains '...' (truncated), checking if it matches database value")
 
-                    # 从数据库中获取完整的 API Key
+                    # Get complete from database API Key
                     system_config = await self.get_system_config()
                     db_config = None
                     if system_config:
@@ -2202,23 +2202,23 @@ class ConfigService:
                                 break
 
                     if db_config and db_config.api_key:
-                        # 对数据库中的完整 API Key 进行相同的截断处理
+                        # Do the same truncation for the full API Key in the database
                         truncated_db_key = self._truncate_api_key(db_config.api_key)
                         logger.info(f"🔍 [TEST] Database API Key truncated: {truncated_db_key}")
                         logger.info(f"🔍 [TEST] Received API Key: {api_key}")
 
-                        # 比较截断后的值
+                        # Compare truncated values
                         if api_key == truncated_db_key:
-                            # 相同，说明用户没有修改，使用数据库中的完整值
+                            # Same, indicating that the user has not modified it and uses the complete value in the database.
                             api_key = db_config.api_key
                             used_db_credentials = True
                             logger.info(f"✅ [TEST] Truncated values match, using complete API Key from database (length: {len(api_key)})")
                         else:
-                            # 不同，说明用户修改了但修改得不完整
+                            # Different, indicating that the user has modified it but the modification is incomplete.
                             logger.error(f"❌ [TEST] Truncated API Key doesn't match database value")
                             return {
                                 "success": False,
-                                "message": "API Key 格式错误：检测到截断标记但与数据库中的值不匹配，请输入完整的 API Key",
+                                "message": "API Key Format error: Truncation token detected but does not match value in database, please enter complete API Key",
                                 "response_time": time.time() - start_time,
                                 "details": {
                                     "error": "truncated_key_mismatch",
@@ -2227,7 +2227,7 @@ class ConfigService:
                                 }
                             }
                     else:
-                        # 数据库中没有有效的 API Key，尝试从环境变量获取
+                        # There is no valid API Key in the database, try to get it from environment variables
                         logger.info(f"⚠️  [TEST] No valid API Key in database, trying environment variable")
                         env_key = os.getenv('ALPHA_VANTAGE_API_KEY')
                         if env_key:
@@ -2238,16 +2238,16 @@ class ConfigService:
                             logger.error(f"❌ [TEST] No valid API Key in database or environment")
                             return {
                                 "success": False,
-                                "message": "API Key 无效：数据库和环境变量中均未配置有效的 API Key",
+                                "message": "API Key Invalid: There is no valid configuration in the database or environment variables. API Key",
                                 "response_time": time.time() - start_time,
                                 "details": None
                             }
 
-                # 如果 API Key 为空，尝试从数据库或环境变量获取
+                # If the API Key is empty, try to get it from the database or environment variables
                 elif not api_key:
                     logger.info(f"⚠️  [TEST] API Key is empty, trying to get from database")
 
-                    # 从数据库中获取完整的 API Key
+                    # Get complete from database API Key
                     system_config = await self.get_system_config()
                     db_config = None
                     if system_config:
@@ -2261,7 +2261,7 @@ class ConfigService:
                         used_db_credentials = True
                         logger.info(f"🔑 [TEST] Using API Key from database (length: {len(api_key)})")
                     else:
-                        # 如果数据库中也没有，尝试从环境变量获取
+                        # If it is not in the database, try to get it from environment variables
                         logger.info(f"⚠️  [TEST] No valid API Key in database, trying environment variable")
                         env_key = os.getenv('ALPHA_VANTAGE_API_KEY')
                         if env_key:
@@ -2272,15 +2272,15 @@ class ConfigService:
                             logger.error(f"❌ [TEST] No valid API Key in config, database, or environment")
                             return {
                                 "success": False,
-                                "message": "API Key 无效：配置、数据库和环境变量中均未配置有效的 API Key",
+                                "message": "API Key Invalid: There is no valid configuration in the configuration, database and environment variables. API Key",
                                 "response_time": time.time() - start_time,
                                 "details": None
                             }
                 else:
-                    # API Key 是完整的，直接使用
+                    # API Key is complete and can be used directly
                     logger.info(f"✅ [TEST] Using complete API Key from config (length: {len(api_key)})")
 
-                # 测试 Alpha Vantage API
+                # test Alpha Vantage API
                 endpoint = ds_config.endpoint or "https://www.alphavantage.co"
                 url = f"{endpoint}/query"
                 params = {
@@ -2302,7 +2302,7 @@ class ConfigService:
                             response_time = time.time() - start_time
                             logger.info(f"✅ [TEST] Alpha Vantage API call successful (response time: {response_time:.2f}s)")
 
-                            # 构建消息，说明使用了哪个来源的凭证
+                            # Build a message stating which source of credentials was used
                             credential_source = "配置"
                             if used_db_credentials:
                                 credential_source = "数据库"
@@ -2325,7 +2325,7 @@ class ConfigService:
                         elif "Error Message" in data:
                             return {
                                 "success": False,
-                                "message": f"Alpha Vantage API 错误: {data['Error Message']}",
+                                "message": f"Alpha Vantage API Error: {data['Error Message']}",
                                 "response_time": time.time() - start_time,
                                 "details": None
                             }
@@ -2337,7 +2337,7 @@ class ConfigService:
                                 "details": None
                             }
                         elif "Information" in data:
-                            # Alpha Vantage 返回的 Information 字段通常包含 API 限制信息
+                            # Alpha Vantage The returned Information field usually contains API restriction information
                             info_msg = data["Information"]
                             if "premium" in info_msg.lower() or "limit" in info_msg.lower() or "call frequency" in info_msg.lower():
                                 return {
@@ -2349,37 +2349,37 @@ class ConfigService:
                             else:
                                 return {
                                     "success": False,
-                                    "message": f"Alpha Vantage API 信息: {info_msg}",
+                                    "message": f"Alpha Vantage API information: {info_msg}",
                                     "response_time": time.time() - start_time,
                                     "details": None
                                 }
                         else:
-                            # 未知响应格式，记录详情
-                            logger.warning(f"⚠️ [TEST] Alpha Vantage 返回未知格式: {data}")
+                            # Unknown response format, record details
+                            logger.warning(f"⚠️ [TEST] Alpha Vantage Return unknown format: {data}")
                             return {
                                 "success": False,
-                                "message": f"Alpha Vantage API 返回未知格式: {list(data.keys()) if isinstance(data, dict) else str(data)[:100]}",
+                                "message": f"Alpha Vantage API Return unknown format: {list(data.keys()) if isinstance(data, dict) else str(data)[:100]}",
                                 "response_time": time.time() - start_time,
                                 "details": {"raw_response": str(data)[:500]}
                             }
                     else:
                         return {
                             "success": False,
-                            "message": f"Alpha Vantage API 返回错误: HTTP {response.status_code}",
+                            "message": f"Alpha Vantage API return error: HTTP {response.status_code}",
                             "response_time": time.time() - start_time,
                             "details": None
                         }
                 except Exception as e:
                     return {
                         "success": False,
-                        "message": f"Alpha Vantage API 调用失败: {str(e)}",
+                        "message": f"Alpha Vantage API call failed: {str(e)}",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
 
             else:
-                # 其他数据源类型 - 尝试从环境变量获取 API Key（如果需要）
-                # 支持的环境变量映射
+                # Other data source types - try to get the API Key from environment variables (if needed)
+                # Supported environment variable mappings
                 env_key_map = {
                     "finnhub": "FINNHUB_API_KEY",
                     "polygon": "POLYGON_API_KEY",
@@ -2387,7 +2387,7 @@ class ConfigService:
                     "quandl": "QUANDL_API_KEY",
                 }
 
-                # 如果配置中没有 API Key，尝试从环境变量获取
+                # If there is no API Key in the configuration, try to get it from the environment variable
                 if ds_type in env_key_map and (not api_key or "..." in api_key):
                     env_var_name = env_key_map[ds_type]
                     env_key = os.getenv(env_var_name)
@@ -2396,15 +2396,15 @@ class ConfigService:
                         used_env_credentials = True
                         logger.info(f"🔑 使用环境变量中的 {ds_type.upper()} API Key ({env_var_name})")
 
-                # 基本的端点测试
+                # Basic endpoint testing
                 if ds_config.endpoint:
                     try:
-                        # 如果有 API Key，添加到请求中
+                        # If there is an API Key, add it to the request
                         headers = {}
                         params = {}
 
                         if api_key:
-                            # 根据不同数据源的认证方式添加 API Key
+                            # Add based on authentication methods of different data sources API Key
                             if ds_type == "finnhub":
                                 params["token"] = api_key
                             elif ds_type in ["polygon", "alpha_vantage"]:
@@ -2412,7 +2412,7 @@ class ConfigService:
                             elif ds_type == "iex":
                                 params["token"] = api_key
                             else:
-                                # 默认使用 header 认证
+                                # Use header authentication by default
                                 headers["Authorization"] = f"Bearer {api_key}"
 
                         response = requests.get(ds_config.endpoint, params=params, headers=headers, timeout=10)
@@ -2433,7 +2433,7 @@ class ConfigService:
                         else:
                             return {
                                 "success": False,
-                                "message": f"数据源返回服务器错误: HTTP {response.status_code}",
+                                "message": f"Data source returns server error: HTTP {response.status_code}",
                                 "response_time": response_time,
                                 "details": None
                             }
@@ -2463,7 +2463,7 @@ class ConfigService:
             }
     
     async def test_database_config(self, db_config: DatabaseConfig) -> Dict[str, Any]:
-        """测试数据库配置 - 真实连接测试"""
+        """Test database configuration - real connection test"""
         start_time = time.time()
         try:
             db_type = db_config.type.value if hasattr(db_config.type, 'value') else str(db_config.type)
@@ -2471,13 +2471,13 @@ class ConfigService:
             logger.info(f"🧪 测试数据库配置: {db_config.name} ({db_type})")
             logger.info(f"📍 连接地址: {db_config.host}:{db_config.port}")
 
-            # 根据不同的数据库类型进行测试
+            # Test against different database types
             if db_type == "mongodb":
                 try:
                     from motor.motor_asyncio import AsyncIOMotorClient
                     import os
 
-                    # 🔥 优先使用环境变量中的完整连接信息（包括host、用户名、密码）
+                    # 🔥 Prioritize using the complete connection information in the environment variable (including host, username, password)
                     host = db_config.host
                     port = db_config.port
                     username = db_config.username
@@ -2486,10 +2486,10 @@ class ConfigService:
                     auth_source = None
                     used_env_config = False
 
-                    # 检测是否在 Docker 环境中
+                    # Detect whether you are in a Docker environment
                     is_docker = os.path.exists('/.dockerenv') or os.getenv('DOCKER_CONTAINER') == 'true'
 
-                    # 如果配置中没有用户名密码，尝试从环境变量获取完整配置
+                    # If there is no username and password in the configuration, try to get the complete configuration from environment variables
                     if not username or not password:
                         env_host = os.getenv('MONGODB_HOST')
                         env_port = os.getenv('MONGODB_PORT')
@@ -2503,31 +2503,31 @@ class ConfigService:
                             auth_source = env_auth_source
                             used_env_config = True
 
-                            # 如果环境变量中有 host 配置，也使用它
+                            # If there is a host configuration in the environment variable, use it as well
                             if env_host:
                                 host = env_host
-                                # 🔥 Docker 环境下，将 localhost 替换为 mongodb
+                                # 🔥 Docker environment, replace localhost with mongodb
                                 if is_docker and host == 'localhost':
                                     host = 'mongodb'
-                                    logger.info(f"🐳 检测到 Docker 环境，将 host 从 localhost 改为 mongodb")
+                                    logger.info(f"🐳 Docker environment detected, change host from localhost to mongodb")
 
                             if env_port:
                                 port = int(env_port)
 
-                            logger.info(f"🔑 使用环境变量中的 MongoDB 配置 (host={host}, port={port}, authSource={auth_source})")
+                            logger.info(f"🔑 Using MongoDB configuration in environment variables (host={host}, port={port}, authSource={auth_source})")
 
-                    # 如果配置中没有数据库名，尝试从环境变量获取
+                    # If there is no database name in the configuration, try to get it from the environment variable
                     if not database:
                         env_database = os.getenv('MONGODB_DATABASE')
                         if env_database:
                             database = env_database
-                            logger.info(f"📦 使用环境变量中的数据库名: {database}")
+                            logger.info(f"📦 Use the database name from the environment variable: {database}")
 
-                    # 从连接参数中获取 authSource（如果有）
+                    # Get authSource from connection parameters (if any)
                     if not auth_source and db_config.connection_params:
                         auth_source = db_config.connection_params.get('authSource')
 
-                    # 构建连接字符串
+                    # Build connection string
                     if username and password:
                         connection_string = f"mongodb://{username}:{password}@{host}:{port}"
                     else:
@@ -2536,17 +2536,17 @@ class ConfigService:
                     if database:
                         connection_string += f"/{database}"
 
-                    # 添加连接参数
+                    # Add connection parameters
                     params_list = []
 
-                    # 如果有 authSource，添加到参数中
+                    # If there is authSource, add it to the parameters
                     if auth_source:
                         params_list.append(f"authSource={auth_source}")
 
-                    # 添加其他连接参数
+                    # Add additional connection parameters
                     if db_config.connection_params:
                         for k, v in db_config.connection_params.items():
-                            if k != 'authSource':  # authSource 已经添加过了
+                            if k != 'authSource':  # authSource Already added
                                 params_list.append(f"{k}={v}")
 
                     if params_list:
@@ -2554,32 +2554,32 @@ class ConfigService:
 
                     logger.info(f"🔗 连接字符串: {connection_string.replace(password or '', '***') if password else connection_string}")
 
-                    # 创建客户端并测试连接
+                    # Create client and test connection
                     client = AsyncIOMotorClient(
                         connection_string,
-                        serverSelectionTimeoutMS=5000  # 5秒超时
+                        serverSelectionTimeoutMS=5000  # 5 seconds timeout
                     )
 
-                    # 如果指定了数据库，测试该数据库的访问权限
+                    # If a database is specified, tests access to that database
                     if database:
-                        # 测试指定数据库的访问（不需要管理员权限）
+                        # Test access to the specified database (no administrator privileges required)
                         db = client[database]
-                        # 尝试列出集合（如果没有权限会报错）
+                        # Try to list the collection (will report an error if you don't have permission)
                         collections = await db.list_collection_names()
                         test_result = f"数据库 '{database}' 可访问，包含 {len(collections)} 个集合"
                     else:
-                        # 如果没有指定数据库，只执行 ping 命令
+                        # If no database is specified, just execute the ping command
                         await client.admin.command('ping')
                         test_result = "连接成功"
 
                     response_time = time.time() - start_time
 
-                    # 关闭连接
+                    # close connection
                     client.close()
 
                     return {
                         "success": True,
-                        "message": f"成功连接到 MongoDB 数据库",
+                        "message": f"Successfully connected to MongoDB database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -2594,26 +2594,26 @@ class ConfigService:
                 except ImportError:
                     return {
                         "success": False,
-                        "message": "Motor 库未安装，请运行: pip install motor",
+                        "message": "Motor The library is not installed, please run: pip install motor",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
                 except Exception as e:
                     error_msg = str(e)
-                    logger.error(f"❌ MongoDB 连接测试失败: {error_msg}")
+                    logger.error(f"❌ MongoDB Connection test failed: {error_msg}")
 
                     if "Authentication failed" in error_msg or "auth failed" in error_msg.lower():
-                        message = "认证失败，请检查用户名和密码"
+                        message = "Authentication failed, please check username and password"
                     elif "requires authentication" in error_msg.lower():
-                        message = "需要认证，请配置用户名和密码"
+                        message = "Authentication is required, please configure username and password"
                     elif "not authorized" in error_msg.lower():
-                        message = "权限不足，请检查用户权限配置"
+                        message = "Insufficient permissions, please check user permission configuration"
                     elif "Connection refused" in error_msg:
-                        message = "连接被拒绝，请检查主机地址和端口"
+                        message = "Connection refused, please check host address and port"
                     elif "timed out" in error_msg.lower():
-                        message = "连接超时，请检查网络和防火墙设置"
+                        message = "Connection timed out, please check network and firewall settings"
                     elif "No servers found" in error_msg:
-                        message = "找不到服务器，请检查主机地址和端口"
+                        message = "Server not found, please check host address and port"
                     else:
                         message = f"连接失败: {error_msg}"
 
@@ -2629,17 +2629,17 @@ class ConfigService:
                     import redis.asyncio as aioredis
                     import os
 
-                    # 🔥 优先使用环境变量中的完整 Redis 配置（包括host、密码）
+                    # 🔥 Prioritize using the complete Redis configuration in the environment variable (including host and password)
                     host = db_config.host
                     port = db_config.port
                     password = db_config.password
                     database = db_config.database
                     used_env_config = False
 
-                    # 检测是否在 Docker 环境中
+                    # Detect whether you are in a Docker environment
                     is_docker = os.path.exists('/.dockerenv') or os.getenv('DOCKER_CONTAINER') == 'true'
 
-                    # 如果配置中没有密码，尝试从环境变量获取完整配置
+                    # If there is no password in the configuration, try to get the full configuration from the environment variables
                     if not password:
                         env_host = os.getenv('REDIS_HOST')
                         env_port = os.getenv('REDIS_PORT')
@@ -2649,27 +2649,27 @@ class ConfigService:
                             password = env_password
                             used_env_config = True
 
-                            # 如果环境变量中有 host 配置，也使用它
+                            # If there is a host configuration in the environment variable, use it as well
                             if env_host:
                                 host = env_host
-                                # 🔥 Docker 环境下，将 localhost 替换为 redis
+                                # 🔥 Docker environment, replace localhost with redis
                                 if is_docker and host == 'localhost':
                                     host = 'redis'
-                                    logger.info(f"🐳 检测到 Docker 环境，将 Redis host 从 localhost 改为 redis")
+                                    logger.info(f"🐳 Docker environment detected, change Redis host from localhost to redis")
 
                             if env_port:
                                 port = int(env_port)
 
-                            logger.info(f"🔑 使用环境变量中的 Redis 配置 (host={host}, port={port})")
+                            logger.info(f"🔑 Using Redis configuration in environment variables (host={host}, port={port})")
 
-                    # 如果配置中没有数据库编号，尝试从环境变量获取
+                    # If there is no database number in the configuration, try to get it from the environment variable
                     if database is None:
                         env_db = os.getenv('REDIS_DB')
                         if env_db:
                             database = int(env_db)
-                            logger.info(f"📦 使用环境变量中的 Redis 数据库编号: {database}")
+                            logger.info(f"📦 Use the Redis database number from the environment variable: {database}")
 
-                    # 构建连接参数
+                    # Build connection parameters
                     redis_params = {
                         "host": host,
                         "port": port,
@@ -2683,26 +2683,26 @@ class ConfigService:
                     if database is not None:
                         redis_params["db"] = int(database)
 
-                    # 创建连接并测试
+                    # Create connection and test
                     redis_client = await aioredis.from_url(
                         f"redis://{host}:{port}",
                         **redis_params
                     )
 
-                    # 执行 PING 命令
+                    # Execute PING command
                     await redis_client.ping()
 
-                    # 获取服务器信息
+                    # Get server information
                     info = await redis_client.info("server")
 
                     response_time = time.time() - start_time
 
-                    # 关闭连接
+                    # close connection
                     await redis_client.close()
 
                     return {
                         "success": True,
-                        "message": f"成功连接到 Redis 数据库",
+                        "message": f"Successfully connected to Redis database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -2716,18 +2716,18 @@ class ConfigService:
                 except ImportError:
                     return {
                         "success": False,
-                        "message": "Redis 库未安装，请运行: pip install redis",
+                        "message": "Redis The library is not installed, please run: pip install redis",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
                 except Exception as e:
                     error_msg = str(e)
                     if "WRONGPASS" in error_msg or "Authentication" in error_msg:
-                        message = "认证失败，请检查密码"
+                        message = "Authentication failed, please check password"
                     elif "Connection refused" in error_msg:
-                        message = "连接被拒绝，请检查主机地址和端口"
+                        message = "Connection refused, please check host address and port"
                     elif "timed out" in error_msg.lower():
-                        message = "连接超时，请检查网络和防火墙设置"
+                        message = "Connection timed out, please check network and firewall settings"
                     else:
                         message = f"连接失败: {error_msg}"
 
@@ -2742,7 +2742,7 @@ class ConfigService:
                 try:
                     import aiomysql
 
-                    # 创建连接
+                    # Create connection
                     conn = await aiomysql.connect(
                         host=db_config.host,
                         port=db_config.port,
@@ -2752,19 +2752,19 @@ class ConfigService:
                         connect_timeout=5
                     )
 
-                    # 执行测试查询
+                    # Execute test query
                     async with conn.cursor() as cursor:
                         await cursor.execute("SELECT VERSION()")
                         version = await cursor.fetchone()
 
                     response_time = time.time() - start_time
 
-                    # 关闭连接
+                    # close connection
                     conn.close()
 
                     return {
                         "success": True,
-                        "message": f"成功连接到 MySQL 数据库",
+                        "message": f"Successfully connected to MySQL database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -2777,18 +2777,18 @@ class ConfigService:
                 except ImportError:
                     return {
                         "success": False,
-                        "message": "aiomysql 库未安装，请运行: pip install aiomysql",
+                        "message": "aiomysql The library is not installed, please run: pip install aiomysql",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
                 except Exception as e:
                     error_msg = str(e)
                     if "Access denied" in error_msg:
-                        message = "访问被拒绝，请检查用户名和密码"
+                        message = "Access Denied, please check username and password"
                     elif "Unknown database" in error_msg:
                         message = f"数据库 '{db_config.database}' 不存在"
                     elif "Can't connect" in error_msg:
-                        message = "无法连接，请检查主机地址和端口"
+                        message = "Unable to connect, please check host address and port"
                     else:
                         message = f"连接失败: {error_msg}"
 
@@ -2803,7 +2803,7 @@ class ConfigService:
                 try:
                     import asyncpg
 
-                    # 创建连接
+                    # Create connection
                     conn = await asyncpg.connect(
                         host=db_config.host,
                         port=db_config.port,
@@ -2813,17 +2813,17 @@ class ConfigService:
                         timeout=5
                     )
 
-                    # 执行测试查询
+                    # Execute test query
                     version = await conn.fetchval("SELECT version()")
 
                     response_time = time.time() - start_time
 
-                    # 关闭连接
+                    # close connection
                     await conn.close()
 
                     return {
                         "success": True,
-                        "message": f"成功连接到 PostgreSQL 数据库",
+                        "message": f"Successfully connected to PostgreSQL database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -2836,18 +2836,18 @@ class ConfigService:
                 except ImportError:
                     return {
                         "success": False,
-                        "message": "asyncpg 库未安装，请运行: pip install asyncpg",
+                        "message": "asyncpg The library is not installed, please run: pip install asyncpg",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
                 except Exception as e:
                     error_msg = str(e)
                     if "password authentication failed" in error_msg:
-                        message = "密码认证失败，请检查用户名和密码"
+                        message = "Password authentication failed, please check username and password"
                     elif "does not exist" in error_msg:
                         message = f"数据库 '{db_config.database}' 不存在"
                     elif "Connection refused" in error_msg:
-                        message = "连接被拒绝，请检查主机地址和端口"
+                        message = "Connection refused, please check host address and port"
                     else:
                         message = f"连接失败: {error_msg}"
 
@@ -2862,12 +2862,12 @@ class ConfigService:
                 try:
                     import aiosqlite
 
-                    # SQLite 使用文件路径，不需要 host/port
+                    # SQLite Use file path, no need host/port
                     db_path = db_config.database or db_config.host
 
-                    # 创建连接
+                    # Create connection
                     async with aiosqlite.connect(db_path, timeout=5) as conn:
-                        # 执行测试查询
+                        # Execute test query
                         async with conn.execute("SELECT sqlite_version()") as cursor:
                             version = await cursor.fetchone()
 
@@ -2875,7 +2875,7 @@ class ConfigService:
 
                     return {
                         "success": True,
-                        "message": f"成功连接到 SQLite 数据库",
+                        "message": f"Successfully connected to SQLite database",
                         "response_time": response_time,
                         "details": {
                             "type": db_type,
@@ -2886,7 +2886,7 @@ class ConfigService:
                 except ImportError:
                     return {
                         "success": False,
-                        "message": "aiosqlite 库未安装，请运行: pip install aiosqlite",
+                        "message": "aiosqlite The library is not installed, please run: pip install aiosqlite",
                         "response_time": time.time() - start_time,
                         "details": None
                     }
@@ -2916,7 +2916,7 @@ class ConfigService:
                 "details": None
             }
 
-    # ========== 数据库配置管理 ==========
+    # ========== Database configuration management ==========
 
     async def add_database_config(self, db_config: DatabaseConfig) -> bool:
         """添加数据库配置"""
@@ -2928,16 +2928,16 @@ class ConfigService:
                 logger.error("❌ 系统配置为空")
                 return False
 
-            # 检查是否已存在同名配置
+            # Check if a configuration with the same name already exists
             for existing_db in config.database_configs:
                 if existing_db.name == db_config.name:
                     logger.error(f"❌ 数据库配置 '{db_config.name}' 已存在")
                     return False
 
-            # 添加新配置
+            # Add new configuration
             config.database_configs.append(db_config)
 
-            # 保存配置
+            # Save configuration
             result = await self.save_system_config(config)
             if result:
                 logger.info(f"✅ 数据库配置 '{db_config.name}' 添加成功")
@@ -2962,7 +2962,7 @@ class ConfigService:
                 logger.error("❌ 系统配置为空")
                 return False
 
-            # 查找并更新配置
+            # Find and update configuration
             found = False
             for i, existing_db in enumerate(config.database_configs):
                 if existing_db.name == db_config.name:
@@ -2974,7 +2974,7 @@ class ConfigService:
                 logger.error(f"❌ 数据库配置 '{db_config.name}' 不存在")
                 return False
 
-            # 保存配置
+            # Save configuration
             result = await self.save_system_config(config)
             if result:
                 logger.info(f"✅ 数据库配置 '{db_config.name}' 更新成功")
@@ -2999,10 +2999,10 @@ class ConfigService:
                 logger.error("❌ 系统配置为空")
                 return False
 
-            # 记录原始数量
+            # record original quantity
             original_count = len(config.database_configs)
 
-            # 删除指定配置
+            # Delete specified configuration
             config.database_configs = [
                 db for db in config.database_configs
                 if db.name != db_name
@@ -3014,7 +3014,7 @@ class ConfigService:
                 logger.error(f"❌ 数据库配置 '{db_name}' 不存在")
                 return False
 
-            # 保存配置
+            # Save configuration
             result = await self.save_system_config(config)
             if result:
                 logger.info(f"✅ 数据库配置 '{db_name}' 删除成功")
@@ -3056,10 +3056,10 @@ class ConfigService:
             return config.database_configs
 
         except Exception as e:
-            logger.error(f"❌ 获取数据库配置列表失败: {e}")
+            logger.error(f"❌ Failed to obtain database configuration list: {e}")
             return []
 
-    # ========== 模型目录管理 ==========
+    # ========== Model catalog management ==========
 
     async def get_model_catalog(self) -> List[ModelCatalog]:
         """获取所有模型目录"""
@@ -3098,7 +3098,7 @@ class ConfigService:
 
             catalog.updated_at = now_tz()
 
-            # 更新或插入
+            # update or insert
             result = await catalog_collection.replace_one(
                 {"provider": catalog.provider},
                 catalog.model_dump(by_alias=True, exclude={"id"}),
@@ -3111,14 +3111,14 @@ class ConfigService:
             return False
 
     async def delete_model_catalog(self, provider: str, cleanup_configs: bool = True) -> bool:
-        """删除模型目录
+        """Delete model directory
 
         Args:
-            provider: 厂家名称
-            cleanup_configs: 是否同时清理引用该厂家模型的大模型配置（默认True）
+            provider: Manufacturer name
+            cleanup_configs: Whether to also clean up large model configurations that reference the manufacturer s model (default True)
 
         Returns:
-            bool: 是否删除成功
+            bool: Is deletion successful?
         """
         try:
             logger.info(f"🗑️ 删除模型目录: {provider}, cleanup_configs={cleanup_configs}")
@@ -3126,13 +3126,13 @@ class ConfigService:
             db = await self._get_db()
             catalog_collection = db.model_catalog
 
-            # 🔥 如果需要清理配置，先删除引用该厂家的所有大模型配置
+            # 🔥 If you need to clean up the configuration, first delete all large model configurations that reference the manufacturer.
             if cleanup_configs:
                 config = await self.get_system_config()
                 if config:
                     original_count = len(config.llm_configs)
 
-                    # 过滤掉该厂家的所有配置
+                    # Filter out all configurations of this manufacturer
                     config.llm_configs = [
                         llm for llm in config.llm_configs
                         if str(llm.provider.value if hasattr(llm.provider, 'value') else llm.provider).lower() != provider.lower()
@@ -3143,7 +3143,7 @@ class ConfigService:
                         logger.info(f"🧹 清理了 {removed_count} 个引用 {provider} 的大模型配置")
                         await self.save_system_config(config)
 
-            # 删除模型目录
+            # Delete model directory
             result = await catalog_collection.delete_one({"provider": provider})
 
             if result.deleted_count > 0:
@@ -3165,13 +3165,13 @@ class ConfigService:
             db = await self._get_db()
             catalog_collection = db.model_catalog
 
-            # 检查是否已有数据
+            # Check if data already exists
             count = await catalog_collection.count_documents({})
             if count > 0:
-                print("模型目录已存在，跳过初始化")
+                print("The model directory already exists, skip initialization")
                 return True
 
-            # 创建默认目录
+            # Create default directory
             default_catalogs = self._get_default_model_catalog()
 
             for catalog_data in default_catalogs:
@@ -3193,16 +3193,16 @@ class ConfigService:
                 "models": [
                     {
                         "name": "qwen-turbo",
-                        "display_name": "Qwen Turbo - 快速经济 (1M上下文)",
+                        "display_name": "Qwen Turbo - Fast and economical (1M context)",
                         "input_price_per_1k": 0.0003,
                         "output_price_per_1k": 0.0003,
                         "context_length": 1000000,
                         "currency": "CNY",
-                        "description": "Qwen2.5-Turbo，支持100万tokens超长上下文"
+                        "description": "Qwen2.5-Turbo, Supports 1 million tokens ultra-long context"
                     },
                     {
                         "name": "qwen-plus",
-                        "display_name": "Qwen Plus - 平衡推荐",
+                        "display_name": "Qwen Plus - Balanced recommendation",
                         "input_price_per_1k": 0.0008,
                         "output_price_per_1k": 0.002,
                         "context_length": 32768,
@@ -3210,7 +3210,7 @@ class ConfigService:
                     },
                     {
                         "name": "qwen-plus-latest",
-                        "display_name": "Qwen Plus Latest - 最新平衡",
+                        "display_name": "Qwen Plus Latest - latest balance",
                         "input_price_per_1k": 0.0008,
                         "output_price_per_1k": 0.002,
                         "context_length": 32768,
@@ -3218,7 +3218,7 @@ class ConfigService:
                     },
                     {
                         "name": "qwen-max",
-                        "display_name": "Qwen Max - 最强性能",
+                        "display_name": "Qwen Max - Maximum performance",
                         "input_price_per_1k": 0.02,
                         "output_price_per_1k": 0.06,
                         "context_length": 8192,
@@ -3226,7 +3226,7 @@ class ConfigService:
                     },
                     {
                         "name": "qwen-max-latest",
-                        "display_name": "Qwen Max Latest - 最新旗舰",
+                        "display_name": "Qwen Max Latest - latest flagship",
                         "input_price_per_1k": 0.02,
                         "output_price_per_1k": 0.06,
                         "context_length": 8192,
@@ -3234,7 +3234,7 @@ class ConfigService:
                     },
                     {
                         "name": "qwen-long",
-                        "display_name": "Qwen Long - 长文本",
+                        "display_name": "Qwen Long - long text",
                         "input_price_per_1k": 0.0005,
                         "output_price_per_1k": 0.002,
                         "context_length": 1000000,
@@ -3242,7 +3242,7 @@ class ConfigService:
                     },
                     {
                         "name": "qwen-vl-plus",
-                        "display_name": "Qwen VL Plus - 视觉理解",
+                        "display_name": "Qwen VL Plus - visual understanding",
                         "input_price_per_1k": 0.008,
                         "output_price_per_1k": 0.008,
                         "context_length": 8192,
@@ -3250,7 +3250,7 @@ class ConfigService:
                     },
                     {
                         "name": "qwen-vl-max",
-                        "display_name": "Qwen VL Max - 视觉旗舰",
+                        "display_name": "Qwen VL Max - Visual flagship",
                         "input_price_per_1k": 0.02,
                         "output_price_per_1k": 0.02,
                         "context_length": 8192,
@@ -3264,7 +3264,7 @@ class ConfigService:
                 "models": [
                     {
                         "name": "gpt-4o",
-                        "display_name": "GPT-4o - 最新旗舰",
+                        "display_name": "GPT-4o - latest flagship",
                         "input_price_per_1k": 0.005,
                         "output_price_per_1k": 0.015,
                         "context_length": 128000,
@@ -3272,7 +3272,7 @@ class ConfigService:
                     },
                     {
                         "name": "gpt-4o-mini",
-                        "display_name": "GPT-4o Mini - 轻量旗舰",
+                        "display_name": "GPT-4o Mini - lightweight flagship",
                         "input_price_per_1k": 0.00015,
                         "output_price_per_1k": 0.0006,
                         "context_length": 128000,
@@ -3280,7 +3280,7 @@ class ConfigService:
                     },
                     {
                         "name": "gpt-4-turbo",
-                        "display_name": "GPT-4 Turbo - 强化版",
+                        "display_name": "GPT-4 Turbo - Enhanced version",
                         "input_price_per_1k": 0.01,
                         "output_price_per_1k": 0.03,
                         "context_length": 128000,
@@ -3296,7 +3296,7 @@ class ConfigService:
                     },
                     {
                         "name": "gpt-3.5-turbo",
-                        "display_name": "GPT-3.5 Turbo - 经济版",
+                        "display_name": "GPT-3.5 Turbo - Economy version",
                         "input_price_per_1k": 0.0005,
                         "output_price_per_1k": 0.0015,
                         "context_length": 16385,
@@ -3310,7 +3310,7 @@ class ConfigService:
                 "models": [
                     {
                         "name": "gemini-2.5-pro",
-                        "display_name": "Gemini 2.5 Pro - 最新旗舰",
+                        "display_name": "Gemini 2.5 Pro - latest flagship",
                         "input_price_per_1k": 0.00125,
                         "output_price_per_1k": 0.005,
                         "context_length": 1000000,
@@ -3318,7 +3318,7 @@ class ConfigService:
                     },
                     {
                         "name": "gemini-2.5-flash",
-                        "display_name": "Gemini 2.5 Flash - 最新快速",
+                        "display_name": "Gemini 2.5 Flash - Latest and fast",
                         "input_price_per_1k": 0.000075,
                         "output_price_per_1k": 0.0003,
                         "context_length": 1000000,
@@ -3326,7 +3326,7 @@ class ConfigService:
                     },
                     {
                         "name": "gemini-1.5-pro",
-                        "display_name": "Gemini 1.5 Pro - 专业版",
+                        "display_name": "Gemini 1.5 Pro - Professional version",
                         "input_price_per_1k": 0.00125,
                         "output_price_per_1k": 0.005,
                         "context_length": 2000000,
@@ -3334,7 +3334,7 @@ class ConfigService:
                     },
                     {
                         "name": "gemini-1.5-flash",
-                        "display_name": "Gemini 1.5 Flash - 快速版",
+                        "display_name": "Gemini 1.5 Flash - Express version",
                         "input_price_per_1k": 0.000075,
                         "output_price_per_1k": 0.0003,
                         "context_length": 1000000,
@@ -3348,7 +3348,7 @@ class ConfigService:
                 "models": [
                     {
                         "name": "deepseek-chat",
-                        "display_name": "DeepSeek Chat - 通用对话",
+                        "display_name": "DeepSeek Chat - general conversation",
                         "input_price_per_1k": 0.0001,
                         "output_price_per_1k": 0.0002,
                         "context_length": 32768,
@@ -3356,7 +3356,7 @@ class ConfigService:
                     },
                     {
                         "name": "deepseek-coder",
-                        "display_name": "DeepSeek Coder - 代码专用",
+                        "display_name": "DeepSeek Coder - Code only",
                         "input_price_per_1k": 0.0001,
                         "output_price_per_1k": 0.0002,
                         "context_length": 16384,
@@ -3370,7 +3370,7 @@ class ConfigService:
                 "models": [
                     {
                         "name": "claude-3-5-sonnet-20241022",
-                        "display_name": "Claude 3.5 Sonnet - 当前旗舰",
+                        "display_name": "Claude 3.5 Sonnet - current flagship",
                         "input_price_per_1k": 0.003,
                         "output_price_per_1k": 0.015,
                         "context_length": 200000,
@@ -3378,7 +3378,7 @@ class ConfigService:
                     },
                     {
                         "name": "claude-3-5-sonnet-20240620",
-                        "display_name": "Claude 3.5 Sonnet (旧版)",
+                        "display_name": "Claude 3.5 Sonnet (Old version)",
                         "input_price_per_1k": 0.003,
                         "output_price_per_1k": 0.015,
                         "context_length": 200000,
@@ -3386,7 +3386,7 @@ class ConfigService:
                     },
                     {
                         "name": "claude-3-opus-20240229",
-                        "display_name": "Claude 3 Opus - 强大性能",
+                        "display_name": "Claude 3 Opus - Powerful performance",
                         "input_price_per_1k": 0.015,
                         "output_price_per_1k": 0.075,
                         "context_length": 200000,
@@ -3394,7 +3394,7 @@ class ConfigService:
                     },
                     {
                         "name": "claude-3-sonnet-20240229",
-                        "display_name": "Claude 3 Sonnet - 平衡版",
+                        "display_name": "Claude 3 Sonnet - Balanced version",
                         "input_price_per_1k": 0.003,
                         "output_price_per_1k": 0.015,
                         "context_length": 200000,
@@ -3402,7 +3402,7 @@ class ConfigService:
                     },
                     {
                         "name": "claude-3-haiku-20240307",
-                        "display_name": "Claude 3 Haiku - 快速版",
+                        "display_name": "Claude 3 Haiku - Express version",
                         "input_price_per_1k": 0.00025,
                         "output_price_per_1k": 0.00125,
                         "context_length": 200000,
@@ -3416,7 +3416,7 @@ class ConfigService:
                 "models": [
                     {
                         "name": "ernie-3.5-8k",
-                        "display_name": "ERNIE 3.5 8K - 快速高效",
+                        "display_name": "ERNIE 3.5 8K - Fast and efficient",
                         "input_price_per_1k": 0.0012,
                         "output_price_per_1k": 0.0012,
                         "context_length": 8192,
@@ -3424,7 +3424,7 @@ class ConfigService:
                     },
                     {
                         "name": "ernie-4.0-turbo-8k",
-                        "display_name": "ERNIE 4.0 Turbo 8K - 强大推理",
+                        "display_name": "ERNIE 4.0 Turbo 8K - Strong reasoning",
                         "input_price_per_1k": 0.03,
                         "output_price_per_1k": 0.09,
                         "context_length": 8192,
@@ -3432,7 +3432,7 @@ class ConfigService:
                     },
                     {
                         "name": "ERNIE-Speed-8K",
-                        "display_name": "ERNIE Speed 8K - 极速响应",
+                        "display_name": "ERNIE Speed 8K - Extremely fast response",
                         "input_price_per_1k": 0.0004,
                         "output_price_per_1k": 0.0004,
                         "context_length": 8192,
@@ -3440,7 +3440,7 @@ class ConfigService:
                     },
                     {
                         "name": "ERNIE-Lite-8K",
-                        "display_name": "ERNIE Lite 8K - 轻量经济",
+                        "display_name": "ERNIE Lite 8K - Lightweight and economical",
                         "input_price_per_1k": 0.0003,
                         "output_price_per_1k": 0.0006,
                         "context_length": 8192,
@@ -3462,7 +3462,7 @@ class ConfigService:
                     },
                     {
                         "name": "glm-4-plus",
-                        "display_name": "GLM-4 Plus - 增强版",
+                        "display_name": "GLM-4 Plus - Enhanced version",
                         "input_price_per_1k": 0.05,
                         "output_price_per_1k": 0.05,
                         "context_length": 128000,
@@ -3470,7 +3470,7 @@ class ConfigService:
                     },
                     {
                         "name": "glm-3-turbo",
-                        "display_name": "GLM-3 Turbo - 快速版",
+                        "display_name": "GLM-3 Turbo - Express version",
                         "input_price_per_1k": 0.001,
                         "output_price_per_1k": 0.001,
                         "context_length": 128000,
@@ -3481,17 +3481,17 @@ class ConfigService:
         ]
 
     async def get_available_models(self) -> List[Dict[str, Any]]:
-        """获取可用的模型列表（从数据库读取，如果为空则返回默认数据）"""
+        """Get the list of available models (read from database, return default data if empty)"""
         try:
             catalogs = await self.get_model_catalog()
 
-            # 如果数据库中没有数据，初始化默认目录
+            # If there is no data in the database, initialize the default directory
             if not catalogs:
-                print("📦 模型目录为空，初始化默认目录...")
+                print("📦 The model directory is empty, initialize the default directory...")
                 await self.init_default_model_catalog()
                 catalogs = await self.get_model_catalog()
 
-            # 转换为API响应格式
+            # Convert to API response format
             result = []
             for catalog in catalogs:
                 result.append({
@@ -3514,7 +3514,7 @@ class ConfigService:
             return result
         except Exception as e:
             print(f"获取模型列表失败: {e}")
-            # 失败时返回默认数据
+            # Returns default data on failure
             return self._get_default_model_catalog()
 
 
@@ -3525,7 +3525,7 @@ class ConfigService:
             if not config:
                 return False
 
-            # 检查模型是否存在
+            # Check if the model exists
             model_exists = any(
                 llm.model_name == model_name
                 for llm in config.llm_configs
@@ -3547,7 +3547,7 @@ class ConfigService:
             if not config:
                 return False
 
-            # 检查数据源是否存在
+            # Check if the data source exists
             source_exists = any(
                 ds.name == source_name
                 for ds in config.data_source_configs
@@ -3562,10 +3562,10 @@ class ConfigService:
             print(f"设置默认数据源失败: {e}")
             return False
 
-    # ========== 大模型厂家管理 ==========
+    # ========== Large model manufacturer management ==========
 
     async def get_llm_providers(self) -> List[LLMProvider]:
-        """获取所有大模型厂家（合并环境变量配置）"""
+        """Get all large model manufacturers (merge environment variable configuration)"""
         try:
             db = await self._get_db()
             providers_collection = db.llm_providers
@@ -3575,28 +3575,28 @@ class ConfigService:
 
             logger.info(f"🔍 [get_llm_providers] 从数据库获取到 {len(providers_data)} 个供应商")
 
-            # 🔥 本地模型列表（不需要 API Key）
+            # 🔥 Local model list (no API Key required)
             local_models = ["ollama", "localai"]
             
             for provider_data in providers_data:
                 provider = LLMProvider(**provider_data)
 
-                # 初始化 extra_config
+                # initialization extra_config
                 provider.extra_config = provider.extra_config or {}
 
-                # 🔥 本地模型不需要 API Key，跳过检查
+                # 🔥 Local models do not require API Key, skip checking
                 if provider.name.lower() in local_models:
                     provider.extra_config["has_api_key"] = True
                     provider.extra_config["source"] = "local_model"
                     provider.extra_config["api_key_required"] = False
                     logger.info(f"✅ [get_llm_providers] 本地模型 {provider.display_name} 不需要 API Key")
                 else:
-                    # 🔥 判断数据库中的 API Key 是否有效
+                    # 🔥 Determine whether the API Key in the database is valid
                     db_key_valid = self._is_valid_api_key(provider.api_key)
                     logger.info(f"🔍 [get_llm_providers] 供应商 {provider.display_name} ({provider.name}): 数据库密钥有效={db_key_valid}")
 
                     if not db_key_valid:
-                        # 数据库中的 Key 无效，尝试从环境变量获取
+                        # The Key in the database is invalid, try to get it from environment variables
                         logger.info(f"🔍 [get_llm_providers] 尝试从环境变量获取 {provider.name} 的 API 密钥...")
                         env_key = self._get_env_api_key(provider.name)
                         if env_key:
@@ -3606,9 +3606,9 @@ class ConfigService:
                             logger.info(f"✅ [get_llm_providers] 从环境变量为厂家 {provider.display_name} 获取API密钥")
                         else:
                             provider.extra_config["has_api_key"] = False
-                            logger.warning(f"⚠️ [get_llm_providers] 厂家 {provider.display_name} 的数据库配置和环境变量都未配置有效的API密钥")
+                            logger.warning(f"⚠️ [get_llm_providers] Manufacturer {provider.display_name} Neither the database configuration nor the environment variables are configured with a valid API key")
                     else:
-                        # 数据库中的 Key 有效，使用数据库配置
+                        # The Key in the database is valid, use database configuration
                         provider.extra_config["source"] = "database"
                         provider.extra_config["has_api_key"] = True
                         logger.info(f"✅ [get_llm_providers] 使用数据库配置的 {provider.display_name} API密钥")
@@ -3618,18 +3618,18 @@ class ConfigService:
             logger.info(f"🔍 [get_llm_providers] 返回 {len(providers)} 个供应商")
             return providers
         except Exception as e:
-            logger.error(f"❌ [get_llm_providers] 获取厂家列表失败: {e}", exc_info=True)
+            logger.error(f"❌ [get_llm_providers] Failed to obtain manufacturer list: {e}", exc_info=True)
             return []
 
     async def get_embedding_providers(self) -> List[Dict[str, Any]]:
-        """获取所有支持 embedding 的厂家和模型列表"""
+        """Get a list of all manufacturers and models that support embedding"""
         try:
             db = await self._get_db()
             providers_collection = db.llm_providers
             
-            # 查询支持 embedding 的厂商
+            # Check for vendors that support embedding
             providers_data = await providers_collection.find({
-                "supported_features": "embedding",  # 🔥 直接匹配，避免 $in 在某些 MongoDB 版本上返回空结果
+                "supported_features": "embedding",  # 🔥 direct match, avoid $in Returns empty results on some MongoDB versions
                 "is_active": True
             }).sort("priority", 1).to_list(length=None)
             
@@ -3639,11 +3639,11 @@ class ConfigService:
                 display_name = provider_data.get("display_name", provider_name)
                 embedding_model = provider_data.get("embedding_model", "")
                 
-                # 如果配置了 embedding_model，使用配置的模型
+                # If embedding_model is configured, use the configured model
                 if embedding_model:
                     models = [embedding_model]
                 else:
-                    # 否则使用默认模型列表
+                    # Otherwise use the default model list
                     default_models: Dict[str, List[str]] = {
                         "dashscope": ["text-embedding-v3", "text-embedding-v2"],
                         "openai": ["text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002"],
@@ -3653,7 +3653,7 @@ class ConfigService:
                     }
                     models = default_models.get(provider_name, [])
                 
-                # 只返回有模型的厂家
+                # Only manufacturers with models are returned
                 if models:
                     result.append({
                         "name": provider_name,
@@ -3661,18 +3661,18 @@ class ConfigService:
                         "models": models
                     })
 
-            logger.info(f"✅ [get_embedding_providers] 返回 {len(result)} 个支持 embedding 的厂家")
+            logger.info(f"✅ [get_embedding_providers] Return {len(result)} manufacturers that support embedding")
             return result
         except Exception as e:
-            logger.error(f"❌ [get_embedding_providers] 获取 Embedding 厂家列表失败: {e}", exc_info=True)
+            logger.error(f"❌ [get_embedding_providers] Failed to obtain Embedding manufacturer list: {e}", exc_info=True)
             return []
 
     async def _get_current_embedding_model(self) -> str:
-        """获取当前系统配置的 embedding 模型标识（如 dashscope:text-embedding-v4）"""
+        """Get the embedding model identifier of the current system configuration (such as dashscope:text-embedding-v4) """
         try:
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
-            # 优先获取激活的配置
+            # Get activated configurations first
             configs = list(db.system_configs.find(
                 {"config_type": "system", "is_active": True},
                 sort=[("version", -1)]
@@ -3684,7 +3684,7 @@ class ConfigService:
         return os.environ.get("DEFAULT_EMBEDDING_MODEL", "")
 
     async def _get_migration_records(self) -> Dict[str, Dict[str, Any]]:
-        """从 MongoDB 读取已迁移的 collection 记录
+        """Read migrated collection records from MongoDB
         
         Returns:
             {collection_name: {model_used: "dashscope:text-embedding-v4", migrated_at: "..."}}
@@ -3701,7 +3701,7 @@ class ConfigService:
             return {}
 
     async def _save_migration_record(self, collection_name: str, model_used: str):
-        """保存迁移记录到 MongoDB"""
+        """Save migration records to MongoDB"""
         try:
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
@@ -3722,13 +3722,13 @@ class ConfigService:
             logger.warning(f"⚠️ 保存迁移记录失败: {e}")
 
     async def get_qdrant_collections(self) -> Dict[str, List[Dict[str, Any]]]:
-        """获取 Qdrant 中所有 collection 信息（主存储 + mem0），用于迁移选择
+        """Get all collection information in Qdrant (main storage + mem0) , for migration selection
         
-        返回按存储区域分组的数据，包含迁移状态标记，无需初始化 embedder。
+        Returns data grouped by storage region, including migration status flags, without initializing the embedder.
         """
         result = {"main": [], "mem0": []}
         try:
-            # 获取当前 embedding 模型和迁移记录
+            # Get the current embedding model and migration records
             current_model = await self._get_current_embedding_model()
             migration_records = await self._get_migration_records()
 
@@ -3741,7 +3741,7 @@ class ConfigService:
                     return "migrated"
                 return "outdated"
 
-            # 1. 主存储 — 复用 QdrantAdapter 单例的已有客户端，避免锁冲突
+            # 1. main storage — Reuse the existing client of the QdrantAdapter singleton to avoid lock conflicts
             try:
                 from core.memory.qdrant_adapter import QdrantAdapter
                 adapter = QdrantAdapter()
@@ -3758,9 +3758,9 @@ class ConfigService:
                 result["main"] = sorted(result["main"], key=lambda x: x["name"])
                 logger.info(f"✅ [get_qdrant_collections] 主存储: {len(result['main'])} 个 collection")
             except Exception as e:
-                logger.warning(f"⚠️ [get_qdrant_collections] 主存储读取失败: {e}")
+                logger.warning(f"⚠️ [get_qdrant_collections] Main storage read failed: {e}")
 
-            # 2. mem0 存储
+            # 2. mem0 storage
             try:
                 from qdrant_client import QdrantClient
                 qdrant_base = os.environ.get("QDRANT_DATA_DIR", "./data/qdrant")
@@ -3784,28 +3784,28 @@ class ConfigService:
                     result["mem0"] = sorted(result["mem0"], key=lambda x: x["name"])
                     logger.info(f"✅ [get_qdrant_collections] mem0 存储: {len(result['mem0'])} 个 collection")
             except Exception as e:
-                logger.warning(f"⚠️ [get_qdrant_collections] mem0 存储读取失败: {e}")
+                logger.warning(f"⚠️ [get_qdrant_collections] mem0 Storage read failed: {e}")
 
             return result
         except Exception as e:
-            logger.error(f"❌ [get_qdrant_collections] 获取 collection 列表失败: {e}", exc_info=True)
+            logger.error(f"❌ [get_qdrant_collections] Failed to get collection list: {e}", exc_info=True)
             return {"main": [], "mem0": []}
 
     async def get_mem0_collections(self) -> List[Dict[str, Any]]:
-        """[兼容旧接口] 获取 Qdrant 中所有 mem0 相关 collection 信息"""
+        """[Compatible with old interfaces] Get all mem0 related collection information in Qdrant"""
         data = await self.get_qdrant_collections()
         return data.get("mem0", [])
 
     async def delete_qdrant_collection(self, collection_name: str, source: str = "main", force: bool = False) -> Dict[str, Any]:
-        """删除 Qdrant collection
+        """Delete Qdrant collection
         
         Args:
-            collection_name: collection 名称
-            source: "main" 或 "mem0"
-            force: 是否强制删除（跳过点数和安全性检查）
+            collection_name: collection Name
+            source: "main" or "mem0"
+            force: Whether to force deletion (skip points and security checks)
         """
         if not collection_name:
-            raise ValueError("collection 名称不能为空")
+            raise ValueError("collection Name cannot be empty")
 
         try:
             from qdrant_client import QdrantClient
@@ -3816,17 +3816,17 @@ class ConfigService:
             if source == "mem0":
                 client = QdrantClient(path=os.path.join(os.path.abspath(qdrant_base), "mem0"))
             else:
-                # 主存储，复用单例客户端
+                # Main storage, reuse singleton client
                 client = QdrantAdapter().get_raw_client()
 
-            # 检查是否存在
+            # Check if exists
             existing = {col.name for col in client.get_collections().collections}
             if collection_name not in existing:
                 if source == "mem0":
                     client.close()
-                raise RuntimeError(f"collection 不存在: {collection_name}")
+                raise RuntimeError(f"collection does not exist: {collection_name}")
 
-            # 安全校验：非强制模式下检查是否为空
+            # Security verification: Check whether it is empty in non-forced mode
             if not force:
                 info = client.get_collection(collection_name)
                 if (info.points_count or 0) > 0:
@@ -3834,51 +3834,51 @@ class ConfigService:
                         client.close()
                     raise RuntimeError(
                         f"collection {collection_name} 包含 {info.points_count} 条数据，"
-                        f"请先迁移或使用 force=true 强制删除"
+                        f"Please migrate or use first force=true force delete"
                     )
 
             client.delete_collection(collection_name)
             if source == "mem0":
                 client.close()
 
-            logger.info(f"🗑️ [delete_qdrant_collection] 已删除 collection: {collection_name} (source={source})")
+            logger.info(f"🗑️ [delete_qdrant_collection] Deleted collection: {collection_name} (source={source})")
             return {"success": True, "message": f"已删除 {collection_name}"}
         except Exception as e:
-            logger.error(f"❌ [delete_qdrant_collection] 删除失败: {e}", exc_info=True)
+            logger.error(f"❌ [delete_qdrant_collection] Delete failed: {e}", exc_info=True)
             raise
 
     async def migrate_qdrant_collection(self, collection_name: str, dry_run: bool = False) -> Dict[str, Any]:
-        """将主存储中的 collection 向量用当前 embedding 模型重新编码（原地迁移）
+        """Re-encode the collection vector in main storage using the current embedding model (migrate in place)
         
         Args:
-            collection_name: collection 名称（如 memory_bull_researcher_v2）
-            dry_run: 是否只预览不执行
+            collection_name: collection Name (such as memory_bull_researcher_v2)
+            dry_run: Whether to only preview and not execute
         """
         if not collection_name:
-            raise ValueError("collection 名称不能为空")
+            raise ValueError("collection Name cannot be empty")
 
         try:
             from qdrant_client.models import PointStruct
             from core.llm.embedding_manager import EmbeddingManager
             from core.memory.qdrant_adapter import QdrantAdapter
 
-            # 复用 QdrantAdapter 单例的已有客户端
+            # Reuse existing client of QdrantAdapter singleton
             adapter = QdrantAdapter()
             client = adapter.get_raw_client()
 
-            # 检查 collection 是否存在
+            # Check if collection exists
             existing = {col.name for col in client.get_collections().collections}
             if collection_name not in existing:
-                raise RuntimeError(f"collection 不存在: {collection_name}")
+                raise RuntimeError(f"collection does not exist: {collection_name}")
 
             info = client.get_collection(collection_name)
             target_dims = info.config.params.vectors.size if info.config.params.vectors else 0
 
-            # 获取当前 embedding manager
+            # Get current embedding manager
             embed_manager = EmbeddingManager()
 
             logger.info(
-                f"🔄 [主存储迁移] collection={collection_name} dims={target_dims} dry_run={dry_run}"
+                f"🔄 [Primary storage migration] collection={collection_name} dims={target_dims} dry_run={dry_run}"
             )
 
             batch_size = 10
@@ -3902,7 +3902,7 @@ class ConfigService:
                     to_upsert = []
                     for point in points:
                         payload = dict(point.payload or {})
-                        # 提取文本内容用于重新编码
+                        # Extract text content for recoding
                         text = str(payload.get("document") or payload.get("content") or "").strip()
                         if not text:
                             total_skipped += 1
@@ -3927,7 +3927,7 @@ class ConfigService:
                     if offset is None:
                         break
             else:
-                # dry_run: 只统计
+                # dry_run: Only statistics
                 offset = None
                 while True:
                     points, offset = client.scroll(
@@ -3959,30 +3959,30 @@ class ConfigService:
                 "dry_run": dry_run,
             }
 
-            # 迁移成功后记录状态
+            # Record status after successful migration
             if not dry_run and total_migrated > 0:
                 current_model = await self._get_current_embedding_model()
                 await self._save_migration_record(collection_name, current_model)
                 result["model_used"] = current_model
 
-            logger.info(f"✅ [主存储迁移] 完成: {result}")
+            logger.info(f"✅ [Primary storage migration] Complete: {result}")
             return result
         except Exception as e:
-            logger.error(f"❌ [主存储迁移] 失败: {e}", exc_info=True)
+            logger.error(f"❌ [Primary storage migration] failed: {e}", exc_info=True)
             raise
 
     async def migrate_mem0_collection(self, source_collection: str, dry_run: bool = False) -> Dict[str, Any]:
-        """将旧 Qdrant mem0 collection 的数据迁移到 MongoDB（向量存储已从 Qdrant 迁移到 MongoDB）
+        """Migrate data from the old Qdrant mem0 collection to MongoDB (vector storage has been migrated from Qdrant to MongoDB)
 
-        从 Qdrant 本地存储读取所有点（含 payload + vector），直接写入 MongoDB 同名 collection，
-        文档格式与 mongodb_vector_adapter.add() 一致。
+        Read all points (including payload + vector) , Write directly to the MongoDB collection with the same name,
+        Document format and mongodb_vector_adapter.add() consistent.
         """
         if not source_collection or not source_collection.startswith("mem0_memories"):
-            raise ValueError("源 collection 名称必须以 mem0_memories 开头")
+            raise ValueError("Source collection name must start with mem0_memories")
 
         try:
             import sys
-            # Qdrant pickle 反序列化需要 core 模块在 path 中
+            # Qdrant pickle Deserialization requires the core module in path
             project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             if project_root not in sys.path:
                 sys.path.insert(0, project_root)
@@ -3995,14 +3995,14 @@ class ConfigService:
             mem0_path = os.path.join(qdrant_base, "mem0")
             client = QdrantClient(path=mem0_path)
 
-            # 检查 Qdrant 源是否存在
+            # Check if Qdrant source exists
             qdrant_collections = {col.name for col in client.get_collections().collections}
             if source_collection not in qdrant_collections:
                 client.close()
-                raise RuntimeError(f"Qdrant 中不存在源 collection: {source_collection}")
+                raise RuntimeError(f"Qdrant source does not exist in collection: {source_collection}")
 
             source_count = client.count(source_collection).count
-            logger.info(f"🔄 Qdrant->MongoDB 迁移开始: {source_collection} ({source_count} points), dry_run={dry_run}")
+            logger.info(f"🔄 Qdrant->MongoDB Migration starts: {source_collection} ({source_count} points), dry_run={dry_run}")
 
             mongo_db = get_mongo_db_sync()
             mongo_col = mongo_db[source_collection]
@@ -4027,7 +4027,7 @@ class ConfigService:
                 for point in points:
                     doc_id = str(point.id)
                     vector = point.vector
-                    # 处理 named vector 的情况
+                    # Handling the case of named vector
                     if isinstance(vector, dict):
                         vector = list(vector.values())[0] if vector else []
                     elif not isinstance(vector, list):
@@ -4038,7 +4038,7 @@ class ConfigService:
                         "embedding": vector,
                         "document": payload.get("document", payload.get("page_content", payload.get("data", ""))),
                     }
-                    # 将 payload 字段平铺到文档顶层
+                    # Tile the payload field to the top of the document
                     for k, v in payload.items():
                         if k not in ("document", "page_content"):
                             doc[k] = v
@@ -4068,7 +4068,7 @@ class ConfigService:
 
             client.close()
 
-            # 验证
+            # Verify
             mongo_count = mongo_col.count_documents({}) if not dry_run else 0
 
             result = {
@@ -4081,7 +4081,7 @@ class ConfigService:
                 "mongo_count": mongo_count,
                 "dry_run": dry_run,
             }
-            logger.info(f"✅ Qdrant->MongoDB 迁移完成: {result}")
+            logger.info(f"✅ Qdrant->MongoDB Migration completed: {result}")
             return result
         except Exception as e:
             logger.error(f"❌ 迁移失败: {e}", exc_info=True)
@@ -4089,43 +4089,43 @@ class ConfigService:
 
     def _is_valid_api_key(self, api_key: Optional[str]) -> bool:
         """
-        判断 API Key 是否有效
+        Determine whether the API Key is valid
 
-        有效条件：
-        1. Key 不为空
-        2. Key 不是占位符（不以 'your_' 或 'your-' 开头，不以 '_here' 结尾）
-        3. Key 不是截断的密钥（不包含 '...'）
-        4. Key 长度 > 10（基本的格式验证）
+        Valid conditions:
+        1. Key Not empty
+        2. Key is not a placeholder (does not end with 'your_' or 'your-' does not begin with '_here' end)
+        3. Key is not a truncated key (does not contain '...') 
+        4. Key length > 10 (Basic format validation)
 
         Args:
-            api_key: 待验证的 API Key
+            api_key: To be verified API Key
 
         Returns:
-            bool: True 表示有效，False 表示无效
+            bool: True means valid, False means invalid
         """
         if not api_key:
             return False
 
-        # 去除首尾空格
+        # Remove leading and trailing spaces
         api_key = api_key.strip()
 
-        # 检查是否为空
+        # Check if it is empty
         if not api_key:
             return False
 
-        # 检查是否为占位符（前缀）
+        # Check if it is a placeholder (prefix)
         if api_key.startswith('your_') or api_key.startswith('your-'):
             return False
 
-        # 检查是否为占位符（后缀）
+        # Check if it is a placeholder (suffix)
         if api_key.endswith('_here') or api_key.endswith('-here'):
             return False
 
-        # 🔥 检查是否为截断的密钥（包含 '...'）
+        # 🔥 Check for truncated keys (containing '...') 
         if '...' in api_key:
             return False
 
-        # 检查长度（允许较短的测试 Key，但仍需排除明显无效值）
+        # Check length (allow shorter test keys, but still exclude obviously invalid values)
         if len(api_key) < 5:
             return False
 
@@ -4135,7 +4135,7 @@ class ConfigService:
         """从环境变量获取API密钥"""
         import os
 
-        # 环境变量映射表
+        # Environment variable mapping table
         env_key_mapping = {
             "openai": "OPENAI_API_KEY",
             "anthropic": "ANTHROPIC_API_KEY",
@@ -4147,7 +4147,7 @@ class ConfigService:
             "azure": "AZURE_OPENAI_API_KEY",
             "siliconflow": "SILICONFLOW_API_KEY",
             "openrouter": "OPENROUTER_API_KEY",
-            # 🆕 聚合渠道
+            # 🆕 aggregation channel
             "302ai": "AI302_API_KEY",
             "oneapi": "ONEAPI_API_KEY",
             "newapi": "NEWAPI_API_KEY",
@@ -4157,7 +4157,7 @@ class ConfigService:
         env_var = env_key_mapping.get(provider_name)
         if env_var:
             api_key = os.getenv(env_var)
-            # 使用统一的验证方法
+            # Use a unified verification method
             if self._is_valid_api_key(api_key):
                 return api_key
 
@@ -4169,7 +4169,7 @@ class ConfigService:
             db = await self._get_db()
             providers_collection = db.llm_providers
 
-            # 检查厂家名称是否已存在
+            # Check if the manufacturer name already exists
             existing = await providers_collection.find_one({"name": provider.name})
             if existing:
                 raise ValueError(f"厂家 {provider.name} 已存在")
@@ -4177,7 +4177,7 @@ class ConfigService:
             provider.created_at = now_tz()
             provider.updated_at = now_tz()
 
-            # 修复：删除 _id 字段，让 MongoDB 自动生成 ObjectId
+            # Fix: Remove _id field and let MongoDB automatically generate it ObjectId
             provider_data = provider.model_dump(by_alias=True, exclude_unset=True)
             if "_id" in provider_data:
                 del provider_data["_id"]
@@ -4196,31 +4196,31 @@ class ConfigService:
 
             update_data["updated_at"] = now_tz()
 
-            # 兼容处理：尝试 ObjectId 和字符串两种类型
-            # 原因：历史数据可能混用了 ObjectId 和字符串作为 _id
+            # Compatibility processing: try both ObjectId and string types
+            # Reason: Historical data may mix ObjectId and string as _id
             try:
-                # 先尝试作为 ObjectId 查询
+                # First try querying as ObjectId
                 result = await providers_collection.update_one(
                     {"_id": ObjectId(provider_id)},
                     {"$set": update_data}
                 )
 
-                # 如果没有匹配到，再尝试作为字符串查询
+                # If no match is found, try querying as a string again
                 if result.matched_count == 0:
                     result = await providers_collection.update_one(
                         {"_id": provider_id},
                         {"$set": update_data}
                     )
             except Exception:
-                # 如果 ObjectId 转换失败，直接用字符串查询
+                # If ObjectId conversion fails, query directly with string
                 result = await providers_collection.update_one(
                     {"_id": provider_id},
                     {"$set": update_data}
                 )
 
-            # 修复：matched_count > 0 表示找到了记录（即使没有修改）
-            # modified_count > 0 只有在实际修改了字段时才为真
-            # 如果记录存在但值相同，modified_count 为 0，但这不应该返回 404
+            # Fix:matched_count > 0 Indicates that the record was found (even if it was not modified)
+            # modified_count > 0 Only true if the field was actually modified
+            # If the record exists but has the same value, modified_count is 0, but this should not be returned 404
             return result.matched_count > 0
         except Exception as e:
             print(f"更新厂家失败: {e}")
@@ -4231,39 +4231,39 @@ class ConfigService:
     async def delete_llm_provider(self, provider_id: str) -> bool:
         """删除大模型厂家"""
         try:
-            print(f"🗑️ 删除厂家 - provider_id: {provider_id}")
-            print(f"🔍 ObjectId类型: {type(ObjectId(provider_id))}")
+            print(f"🗑️ Delete manufacturer - provider_id: {provider_id}")
+            print(f"🔍 ObjectId Type: {type(ObjectId(provider_id))}")
 
             db = await self._get_db()
             providers_collection = db.llm_providers
             print(f"📊 数据库: {db.name}, 集合: {providers_collection.name}")
 
-            # 先列出所有厂家的ID，看看格式
+            # First list the IDs of all manufacturers and look at the format.
             all_providers = await providers_collection.find({}, {"_id": 1, "display_name": 1}).to_list(length=None)
-            print(f"📋 数据库中所有厂家ID:")
+            print(f"📋 All manufacturers in the database ID:")
             for p in all_providers:
                 print(f"   - {p['_id']} ({type(p['_id'])}) - {p.get('display_name')}")
                 if str(p['_id']) == provider_id:
                     print(f"   ✅ 找到匹配的ID!")
 
-            # 尝试不同的查找方式
-            print(f"🔍 尝试用ObjectId查找...")
+            # Try different search methods
+            print(f"🔍 Try to find with ObjectId...")
             existing1 = await providers_collection.find_one({"_id": ObjectId(provider_id)})
 
-            print(f"🔍 尝试用字符串查找...")
+            print(f"🔍 Try to find with string...")
             existing2 = await providers_collection.find_one({"_id": provider_id})
 
-            print(f"🔍 ObjectId查找结果: {existing1 is not None}")
+            print(f"🔍 ObjectId Find results: {existing1 is not None}")
             print(f"🔍 字符串查找结果: {existing2 is not None}")
 
             existing = existing1 or existing2
             if not existing:
-                print(f"❌ 两种方式都找不到厂家: {provider_id}")
+                print(f"❌ Neither method can find the manufacturer: {provider_id}")
                 return False
 
             print(f"✅ 找到厂家: {existing.get('display_name')}")
 
-            # 使用找到的方式进行删除
+            # Delete using the method found
             if existing1:
                 result = await providers_collection.delete_one({"_id": ObjectId(provider_id)})
             else:
@@ -4286,22 +4286,22 @@ class ConfigService:
             db = await self._get_db()
             providers_collection = db.llm_providers
 
-            # 兼容处理：尝试 ObjectId 和字符串两种类型
+            # Compatibility processing: try both ObjectId and string types
             try:
-                # 先尝试作为 ObjectId 查询
+                # First try querying as ObjectId
                 result = await providers_collection.update_one(
                     {"_id": ObjectId(provider_id)},
                     {"$set": {"is_active": is_active, "updated_at": now_tz()}}
                 )
 
-                # 如果没有匹配到，再尝试作为字符串查询
+                # If no match is found, try querying as a string again
                 if result.matched_count == 0:
                     result = await providers_collection.update_one(
                         {"_id": provider_id},
                         {"$set": {"is_active": is_active, "updated_at": now_tz()}}
                     )
             except Exception:
-                # 如果 ObjectId 转换失败，直接用字符串查询
+                # If ObjectId conversion fails, query directly with string
                 result = await providers_collection.update_one(
                     {"_id": provider_id},
                     {"$set": {"is_active": is_active, "updated_at": now_tz()}}
@@ -4314,10 +4314,10 @@ class ConfigService:
 
     async def init_aggregator_providers(self) -> Dict[str, Any]:
         """
-        初始化聚合渠道厂家配置
+        Initialize aggregation channel manufacturer configuration
 
         Returns:
-            初始化结果统计
+            Initialization result statistics
         """
         from app.constants.model_capabilities import AGGREGATOR_PROVIDERS
 
@@ -4330,18 +4330,18 @@ class ConfigService:
             updated_count = 0
 
             for provider_name, config in AGGREGATOR_PROVIDERS.items():
-                # 从环境变量获取 API Key
+                # Get from environment variables API Key
                 api_key = self._get_env_api_key(provider_name)
 
-                # 检查是否已存在
+                # Check if it already exists
                 existing = await providers_collection.find_one({"name": provider_name})
 
                 if existing:
-                    # 如果已存在但没有 API Key，且环境变量中有，则更新
+                    # If it already exists but does not have an API Key, and it is in the environment variable, update
                     if not existing.get("api_key") and api_key:
                         update_data = {
                             "api_key": api_key,
-                            "is_active": True,  # 有 API Key 则自动启用
+                            "is_active": True,  # If there is an API Key, it will be automatically enabled.
                             "updated_at": now_tz()
                         }
                         await providers_collection.update_one(
@@ -4355,7 +4355,7 @@ class ConfigService:
                         print(f"⏭️ 聚合渠道 {config['display_name']} 已存在，跳过")
                     continue
 
-                # 创建聚合渠道厂家配置
+                # Create aggregation channel vendor configuration
                 provider_data = {
                     "name": provider_name,
                     "display_name": config["display_name"],
@@ -4363,14 +4363,14 @@ class ConfigService:
                     "website": config.get("website"),
                     "api_doc_url": config.get("api_doc_url"),
                     "default_base_url": config["default_base_url"],
-                    "is_active": bool(api_key),  # 有 API Key 则自动启用
+                    "is_active": bool(api_key),  # If there is an API Key, it will be automatically enabled.
                     "supported_features": ["chat", "completion", "function_calling", "streaming"],
                     "api_key": api_key or "",
                     "extra_config": {
                         "supported_providers": config.get("supported_providers", []),
                         "source": "environment" if api_key else "manual"
                     },
-                    # 🆕 聚合渠道标识
+                    # 🆕 Aggregation channel identifier
                     "is_aggregator": True,
                     "aggregator_type": "openai_compatible",
                     "model_name_format": config.get("model_name_format", "{provider}/{model}"),
@@ -4379,7 +4379,7 @@ class ConfigService:
                 }
 
                 provider = LLMProvider(**provider_data)
-                # 修复：删除 _id 字段，让 MongoDB 自动生成 ObjectId
+                # Fix: Remove _id field and let MongoDB automatically generate it ObjectId
                 insert_data = provider.model_dump(by_alias=True, exclude_unset=True)
                 if "_id" in insert_data:
                     del insert_data["_id"]
@@ -4418,19 +4418,19 @@ class ConfigService:
             }
 
     async def migrate_env_to_providers(self) -> Dict[str, Any]:
-        """将环境变量配置迁移到厂家管理"""
+        """Migrate environment variable configuration to manufacturer management"""
         import os
 
         try:
             db = await self._get_db()
             providers_collection = db.llm_providers
 
-            # 预设厂家配置
+            # Default factory configuration
             default_providers = [
                 {
                     "name": "openai",
                     "display_name": "OpenAI",
-                    "description": "OpenAI是人工智能领域的领先公司，提供GPT系列模型",
+                    "description": "OpenAI Is a leading company in the field of artificial intelligence, providing GPT series models",
                     "website": "https://openai.com",
                     "api_doc_url": "https://platform.openai.com/docs",
                     "default_base_url": "https://api.openai.com/v1",
@@ -4439,7 +4439,7 @@ class ConfigService:
                 {
                     "name": "anthropic",
                     "display_name": "Anthropic",
-                    "description": "Anthropic专注于AI安全研究，提供Claude系列模型",
+                    "description": "Anthropic Focus on AI security research and provide Claude series models",
                     "website": "https://anthropic.com",
                     "api_doc_url": "https://docs.anthropic.com",
                     "default_base_url": "https://api.anthropic.com",
@@ -4448,7 +4448,7 @@ class ConfigService:
                 {
                     "name": "dashscope",
                     "display_name": "阿里云百炼",
-                    "description": "阿里云百炼大模型服务平台，提供通义千问等模型",
+                    "description": "Alibaba Cloud Bailian large model service platform provides Tongyi Qianwen and other models",
                     "website": "https://bailian.console.aliyun.com",
                     "api_doc_url": "https://help.aliyun.com/zh/dashscope/",
                     "default_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
@@ -4457,7 +4457,7 @@ class ConfigService:
                 {
                     "name": "deepseek",
                     "display_name": "DeepSeek",
-                    "description": "DeepSeek提供高性能的AI推理服务",
+                    "description": "DeepSeek Provide high-performance AI inference services",
                     "website": "https://www.deepseek.com",
                     "api_doc_url": "https://platform.deepseek.com/api-docs",
                     "default_base_url": "https://api.deepseek.com",
@@ -4470,14 +4470,14 @@ class ConfigService:
             skipped_count = 0
 
             for provider_config in default_providers:
-                # 从环境变量获取API密钥
+                # Get API key from environment variable
                 api_key = self._get_env_api_key(provider_config["name"])
 
-                # 检查是否已存在
+                # Check if it already exists
                 existing = await providers_collection.find_one({"name": provider_config["name"]})
 
                 if existing:
-                    # 如果已存在但没有API密钥，且环境变量中有密钥，则更新
+                    # If an API key exists but no API key exists, and the key is in the environment variable, update
                     if not existing.get("api_key") and api_key:
                         update_data = {
                             "api_key": api_key,
@@ -4496,11 +4496,11 @@ class ConfigService:
                         print(f"⏭️ 跳过厂家 {provider_config['display_name']} (已有配置)")
                     continue
 
-                # 创建新厂家配置
+                # Create new factory configuration
                 provider_data = {
                     **provider_config,
                     "api_key": api_key,
-                    "is_active": bool(api_key),  # 有密钥的自动启用
+                    "is_active": bool(api_key),  # Automatic activation with key
                     "extra_config": {"migrated_from": "environment"} if api_key else {},
                     "created_at": now_tz(),
                     "updated_at": now_tz()
@@ -4520,9 +4520,9 @@ class ConfigService:
                 message_parts.append(f"跳过 {skipped_count} 个已配置的厂家")
 
             if total_changes > 0:
-                message = "迁移完成：" + "，".join(message_parts)
+                message = "Migration completed:" + "，".join(message_parts)
             else:
-                message = "所有厂家都已配置，无需迁移"
+                message = "All manufacturers have configured it, no need to migrate"
 
             return {
                 "success": True,
@@ -4543,21 +4543,21 @@ class ConfigService:
     async def test_provider_api(self, provider_id: str) -> dict:
         """测试厂家API密钥"""
         try:
-            print(f"🔍 测试厂家API - provider_id: {provider_id}")
+            print(f"🔍 Test manufacturer API - provider_id: {provider_id}")
 
             db = await self._get_db()
             providers_collection = db.llm_providers
 
-            # 兼容处理：尝试 ObjectId 和字符串两种类型
+            # Compatibility processing: try both ObjectId and string types
             from bson import ObjectId
             provider_data = None
             try:
-                # 先尝试作为 ObjectId 查询
+                # First try querying as ObjectId
                 provider_data = await providers_collection.find_one({"_id": ObjectId(provider_id)})
             except Exception:
                 pass
 
-            # 如果没有找到，再尝试作为字符串查询
+            # If not found, try querying as a string again
             if not provider_data:
                 provider_data = await providers_collection.find_one({"_id": provider_id})
 
@@ -4571,9 +4571,9 @@ class ConfigService:
             api_key = provider_data.get("api_key")
             display_name = provider_data.get("display_name", provider_name)
 
-            # 🔥 判断数据库中的 API Key 是否有效
+            # 🔥 Determine whether the API Key in the database is valid
             if not self._is_valid_api_key(api_key):
-                # 数据库中的 Key 无效，尝试从环境变量读取
+                # The Key in the database is invalid, try to read from environment variables
                 env_api_key = self._get_env_api_key(provider_name)
                 if env_api_key:
                     api_key = env_api_key
@@ -4581,12 +4581,12 @@ class ConfigService:
                 else:
                     return {
                         "success": False,
-                        "message": f"{display_name} 未配置有效的API密钥（数据库和环境变量中都未找到）"
+                        "message": f"{display_name} No valid API key configured (neither found in database nor environment variables)"
                     }
             else:
                 print(f"✅ 使用数据库配置的 {display_name} API密钥")
 
-            # 根据厂家类型调用相应的测试函数
+            # Call the corresponding test function according to the manufacturer type
             test_result = await self._test_provider_connection(provider_name, api_key, display_name)
 
             return test_result
@@ -4615,7 +4615,7 @@ class ConfigService:
             }
             return alias_groups.get(normalized, {normalized})
 
-        # 获取厂家的配置信息（包括 test_model）
+        # Obtain the manufacturer's configuration information (including test_model)
         db = await self._get_db()
         providers_collection = db.llm_providers
         provider_data = await providers_collection.find_one({"name": provider_name})
@@ -4663,7 +4663,7 @@ class ConfigService:
                 llm_max_tokens = matched_llm_config.max_tokens
                 llm_timeout = matched_llm_config.timeout
                 logger.info(
-                    f"🔧 [{display_name}] API测试使用配置参数: "
+                    f"🔧 [{display_name}] API Test using configuration parameters: "
                     f"model={matched_llm_config.model_name}, "
                     f"temperature={llm_temperature}, max_tokens={llm_max_tokens}, timeout={llm_timeout}"
                 )
@@ -4677,25 +4677,25 @@ class ConfigService:
                     for llm in candidate_configs
                 ]
                 logger.info(
-                    f"⚠️ [{display_name}] 未找到匹配的模型配置，使用测试默认值: "
+                    f"⚠️ [{display_name}] No matching model configuration found, using test defaults: "
                     f"temperature={llm_temperature}, max_tokens={llm_max_tokens}, timeout={llm_timeout}; "
                     f"provider_name={provider_name}, provider_aliases={sorted(provider_aliases)}, "
                     f"test_model={test_model}, candidate_configs={candidate_summary}"
                 )
         except Exception as config_error:
-            logger.warning(f"⚠️ [{display_name}] 读取模型测试配置失败，回退默认测试参数: {config_error}")
+            logger.warning(f"⚠️ [{display_name}] Failed to read model test configuration, fallback to default test parameters: {config_error}")
 
         try:
-            # 聚合渠道（使用 OpenAI 兼容 API）
+            # Aggregation channels (using OpenAI compatible API)
             if provider_name in ["302ai", "oneapi", "newapi", "custom_aggregator"]:
-                # 获取厂家的 base_url
+                # Get the manufacturer's base_url
                 base_url = provider_data.get("default_base_url") if provider_data else None
                 return await asyncio.get_event_loop().run_in_executor(
                     None, self._test_openai_compatible_api, api_key, display_name, base_url, provider_name, test_model,
                     llm_temperature, llm_max_tokens, llm_timeout
                 )
             elif provider_name == "google":
-                # 获取厂家的 base_url
+                # Get the manufacturer's base_url
                 base_url = provider_data.get("default_base_url") if provider_data else None
                 return await asyncio.get_event_loop().run_in_executor(None, self._test_google_api, api_key, display_name, base_url, test_model)
             elif provider_name == "deepseek":
@@ -4720,9 +4720,9 @@ class ConfigService:
             elif provider_name == "qianfan":
                 return await asyncio.get_event_loop().run_in_executor(None, self._test_qianfan_api, api_key, display_name, test_model)
             elif provider_name == "openai_compatible":
-                # 🔥 通用的 OpenAI 兼容 API 测试
-                logger.info(f"🔍 使用 OpenAI 兼容 API 测试通用兼容厂家: {provider_name}")
-                # 获取厂家的 base_url
+                # 🔥 Generic OpenAI Compatible API Testing
+                logger.info(f"🔍 Use OpenAI compatible API to test universally compatible manufacturers: {provider_name}")
+                # Get the manufacturer's base_url
                 base_url = provider_data.get("default_base_url") if provider_data else None
 
                 if not base_url:
@@ -4736,9 +4736,9 @@ class ConfigService:
                     llm_temperature, llm_max_tokens, llm_timeout
                 )
             else:
-                # 🔧 对于未知的自定义厂家，使用 OpenAI 兼容 API 测试
-                logger.info(f"🔍 使用 OpenAI 兼容 API 测试自定义厂家: {provider_name}")
-                # 获取厂家的 base_url
+                # 🔧 For unknown custom manufacturers, use OpenAI compatible API testing
+                logger.info(f"🔍 Test custom manufacturers using OpenAI compatible APIs: {provider_name}")
+                # Get the manufacturer's base_url
                 base_url = provider_data.get("default_base_url") if provider_data else None
 
                 if not base_url:
@@ -4758,48 +4758,48 @@ class ConfigService:
             }
 
     def _test_google_api(self, api_key: str, display_name: str, base_url: str = None, test_model: str = None) -> dict:
-        """测试Google AI API"""
+        """test Google AI API"""
         try:
             import requests
 
-            # 🔥 优先使用用户填写的测试模型，如果没有则使用默认模型
+            # 🔥 The test model filled in by the user will be used first, if not, the default model will be used.
             if test_model and test_model.strip():
                 model_name = test_model.strip()
-                logger.info(f"🔍 使用用户指定的测试模型: {model_name}")
+                logger.info(f"🔍 Use user-specified test model: {model_name}")
             else:
                 model_name = "gemini-2.0-flash-exp"
-                logger.info(f"⚠️ 未指定模型，使用默认模型: {model_name}")
+                logger.info(f"⚠️ No model specified, default model used: {model_name}")
 
-            logger.info(f"🔍 [Google AI 测试] 开始测试")
+            logger.info(f"🔍 [Google AI test] Start testing")
             logger.info(f"   display_name: {display_name}")
             logger.info(f"   model_name: {model_name}")
-            logger.info(f"   base_url (原始): {base_url}")
+            logger.info(f"   base_url (original): {base_url}")
             logger.info(f"   api_key 长度: {len(api_key) if api_key else 0}")
 
-            # 使用配置的 base_url 或默认值
+            # Use configured base_url or default
             if not base_url:
                 base_url = "https://generativelanguage.googleapis.com/v1beta"
-                logger.info(f"   ⚠️ base_url 为空，使用默认值: {base_url}")
+                logger.info(f"   ⚠️ base_url If empty, use default value: {base_url}")
 
-            # 移除末尾的斜杠
+            # Remove trailing slash
             base_url = base_url.rstrip('/')
-            logger.info(f"   base_url (去除斜杠): {base_url}")
+            logger.info(f"   base_url (remove slash): {base_url}")
 
-            # 如果 base_url 以 /v1 结尾，替换为 /v1beta（Google AI 的正确端点）
+            # If base_url ends with /v1, replace with /v1beta (the correct endpoint for Google AI)
             if base_url.endswith('/v1'):
                 base_url = base_url[:-3] + '/v1beta'
-                logger.info(f"   ✅ 将 /v1 替换为 /v1beta: {base_url}")
+                logger.info(f"   ✅ Replace /v1 with /v1beta: {base_url}")
 
-            # 构建完整的 API 端点（使用用户配置的模型）
+            # Build complete API endpoints (using user-configured models)
             url = f"{base_url}/models/{model_name}:generateContent?key={api_key}"
 
-            logger.info(f"🔗 [Google AI 测试] 最终请求 URL: {url.replace(api_key, '***')}")
+            logger.info(f"🔗 [Google AI test] final request URL: {url.replace(api_key, '***')}")
 
             headers = {
                 "Content-Type": "application/json"
             }
 
-            # 🔧 增加 token 限制到 2000，避免思考模式消耗导致无输出
+            # 🔧 Increase the token limit to 2000 to avoid thinking mode consumption resulting in no output
             data = {
                 "contents": [{
                     "parts": [{
@@ -4814,36 +4814,36 @@ class ConfigService:
 
             response = requests.post(url, json=data, headers=headers, timeout=15)
 
-            print(f"📥 [Google AI 测试] 响应状态码: {response.status_code}")
+            print(f"📥 [Google AI test] Response status code: {response.status_code}")
 
             if response.status_code == 200:
-                # 打印完整的响应内容用于调试
-                print(f"📥 [Google AI 测试] 响应内容（前1000字符）: {response.text[:1000]}")
+                # Print the complete response content for debugging
+                print(f"📥 [Google AI test] Response content (first 1000 characters): {response.text[:1000]}")
 
                 result = response.json()
-                print(f"📥 [Google AI 测试] 解析后的 JSON 结构:")
+                print(f"📥 [Google AI test] Parsed JSON structure:")
                 print(f"   - 顶层键: {list(result.keys())}")
-                print(f"   - 是否包含 'candidates': {'candidates' in result}")
+                print(f"   - Does it contain 'candidates': {'candidates' in result}")
                 if "candidates" in result:
-                    print(f"   - candidates 长度: {len(result['candidates'])}")
+                    print(f"   - candidates length: {len(result['candidates'])}")
                     if len(result['candidates']) > 0:
-                        print(f"   - candidates[0] 的键: {list(result['candidates'][0].keys())}")
+                        print(f"   - candidates[0] key: {list(result['candidates'][0].keys())}")
 
                 if "candidates" in result and len(result["candidates"]) > 0:
                     candidate = result["candidates"][0]
-                    print(f"📥 [Google AI 测试] candidate 结构: {candidate}")
+                    print(f"📥 [Google AI test] candidate structure: {candidate}")
 
-                    # 检查 finishReason
+                    # Check finishReason
                     finish_reason = candidate.get("finishReason", "")
-                    print(f"📥 [Google AI 测试] finishReason: {finish_reason}")
+                    print(f"📥 [Google AI test] finishReason: {finish_reason}")
 
                     if "content" in candidate:
                         content = candidate["content"]
 
-                        # 检查是否有 parts
+                        # Check if there is parts
                         if "parts" in content and len(content["parts"]) > 0:
                             text = content["parts"][0].get("text", "")
-                            print(f"📥 [Google AI 测试] 提取的文本: {text}")
+                            print(f"📥 [Google AI test] Extracted text: {text}")
 
                             if text and len(text.strip()) > 0:
                                 return {
@@ -4851,41 +4851,41 @@ class ConfigService:
                                     "message": f"{display_name} API连接测试成功"
                                 }
                             else:
-                                print(f"❌ [Google AI 测试] 文本为空")
+                                print(f"❌ [Google AI test] Text is empty")
                                 return {
                                     "success": False,
                                     "message": f"{display_name} API响应内容为空"
                                 }
                         else:
-                            # content 中没有 parts，可能是因为 MAX_TOKENS 或其他原因
-                            print(f"❌ [Google AI 测试] content 中没有 parts")
+                            # content There are no parts in , maybe because of MAX_TOKENS or other reasons
+                            print(f"❌ [Google AI test] content None parts")
                             print(f"   content 的键: {list(content.keys())}")
 
                             if finish_reason == "MAX_TOKENS":
                                 return {
                                     "success": False,
-                                    "message": f"{display_name} API响应被截断（MAX_TOKENS），请增加 maxOutputTokens 配置"
+                                    "message": f"{display_name} API The response was truncated (MAX_TOKENS), please increase the maxOutputTokens configuration"
                                 }
                             else:
                                 return {
                                     "success": False,
-                                    "message": f"{display_name} API响应格式异常（缺少 parts，finishReason: {finish_reason}）"
+                                    "message": f"{display_name} API Abnormal response format (missing parts,finishReason: {finish_reason}) "
                                 }
                     else:
-                        print(f"❌ [Google AI 测试] candidate 中缺少 'content'")
-                        print(f"   candidate 的键: {list(candidate.keys())}")
+                        print(f"❌ [Google AI test] candidate missing in 'content'")
+                        print(f"   candidate key: {list(candidate.keys())}")
                         return {
                             "success": False,
-                            "message": f"{display_name} API响应格式异常（缺少 content）"
+                            "message": f"{display_name} API Abnormal response format (missing content)"
                         }
                 else:
-                    print(f"❌ [Google AI 测试] 缺少 candidates 或 candidates 为空")
+                    print(f"❌ [Google AI test] candidates are missing or empty")
                     return {
                         "success": False,
                         "message": f"{display_name} API无有效候选响应"
                     }
             elif response.status_code == 400:
-                print(f"❌ [Google AI 测试] 400 错误，响应内容: {response.text[:500]}")
+                print(f"❌ [Google AI test] 400 Error, response content: {response.text[:500]}")
                 try:
                     error_detail = response.json()
                     error_msg = error_detail.get("error", {}).get("message", "未知错误")
@@ -4899,19 +4899,19 @@ class ConfigService:
                         "message": f"{display_name} API请求格式错误"
                     }
             elif response.status_code == 403:
-                print(f"❌ [Google AI 测试] 403 错误，响应内容: {response.text[:500]}")
+                print(f"❌ [Google AI test] 403 Error, response content: {response.text[:500]}")
                 return {
                     "success": False,
-                    "message": f"{display_name} 认证或权限异常，请检查账号、API Key 和模型访问权限"
+                    "message": f"{display_name} Authentication or permissions are abnormal, please check the account, API Key and model access permissions"
                 }
             elif response.status_code == 402:
-                print(f"❌ [Google AI 测试] 402 错误，响应内容: {response.text[:500]}")
+                print(f"❌ [Google AI test] 402 Error, response content: {response.text[:500]}")
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号额度不足，请检查余额、套餐或模型付费权限"
+                    "message": f"{display_name} The account balance is insufficient, please check the balance, package or model payment permissions"
                 }
             elif response.status_code == 503:
-                print(f"❌ [Google AI 测试] 503 错误，响应内容: {response.text[:500]}")
+                print(f"❌ [Google AI test] 503 Error, response content: {response.text[:500]}")
                 try:
                     error_detail = response.json()
                     error_code = error_detail.get("code", "")
@@ -4920,7 +4920,7 @@ class ConfigService:
                     if error_code == "NO_KEYS_AVAILABLE":
                         return {
                             "success": False,
-                            "message": f"{display_name} 中转服务暂时无可用密钥，请稍后重试或联系中转服务提供商"
+                            "message": f"{display_name} The transfer service has no available keys. Please try again later or contact the transfer service provider."
                         }
                     else:
                         return {
@@ -4930,13 +4930,13 @@ class ConfigService:
                 except:
                     return {
                         "success": False,
-                        "message": f"{display_name} 服务暂时不可用 (HTTP 503)"
+                        "message": f"{display_name} Service is temporarily unavailable (HTTP 503)"
                     }
             else:
-                print(f"❌ [Google AI 测试] {response.status_code} 错误，响应内容: {response.text[:500]}")
+                print(f"❌ [Google AI test] {response.status_code} Error, response content: {response.text[:500]}")
                 return {
                     "success": False,
-                    "message": f"{display_name} API测试失败: HTTP {response.status_code}"
+                    "message": f"{display_name} API test failed: HTTP {response.status_code}"
                 }
 
         except Exception as e:
@@ -4954,7 +4954,7 @@ class ConfigService:
         max_tokens: int = 200,
         timeout: int = 15,
     ) -> dict:
-        """测试DeepSeek API"""
+        """test DeepSeek API"""
         try:
             import requests
 
@@ -4975,15 +4975,15 @@ class ConfigService:
                     return "".join(text_parts).strip()
                 return str(value).strip()
 
-            # 🔥 优先使用用户填写的测试模型，如果没有则使用默认模型
+            # 🔥 The test model filled in by the user will be used first, if not, the default model will be used.
             if test_model and test_model.strip():
                 model_name = test_model.strip()
-                logger.info(f"🔍 使用用户指定的测试模型: {model_name}")
+                logger.info(f"🔍 Use user-specified test model: {model_name}")
             else:
                 model_name = "deepseek-chat"
-                logger.info(f"⚠️ 未指定模型，使用默认模型: {model_name}")
+                logger.info(f"⚠️ No model specified, default model used: {model_name}")
 
-            logger.info(f"🔍 [DeepSeek 测试] 使用模型: {model_name}")
+            logger.info(f"🔍 [DeepSeek test] Use model: {model_name}")
 
             url = "https://api.deepseek.com/chat/completions"
             effective_temperature = float(temperature if temperature is not None else 0.1)
@@ -4992,7 +4992,7 @@ class ConfigService:
             effective_max_tokens = max(requested_max_tokens, 256)
 
             logger.info(
-                f"🔧 [DeepSeek 测试] 使用测试参数: "
+                f"🔧 [DeepSeek test] Use test parameters: "
                 f"temperature={effective_temperature}, max_tokens={effective_max_tokens}, timeout={effective_timeout}"
             )
 
@@ -5004,7 +5004,7 @@ class ConfigService:
             data = {
                 "model": model_name,
                 "messages": [
-                    {"role": "user", "content": "你好，请简单介绍一下你自己。"}
+                    {"role": "user", "content": "Hello, please introduce yourself briefly."}
                 ],
                 "max_tokens": effective_max_tokens,
                 "temperature": effective_temperature
@@ -5028,7 +5028,7 @@ class ConfigService:
                         }
                     elif reasoning_content:
                         logger.info(
-                            f"✅ [{display_name}] DeepSeek 测试返回 reasoning_content，视为连接成功: "
+                            f"✅ [{display_name}] DeepSeek The test returns reasoning_content, which is considered a successful connection.: "
                             f"finish_reason={finish_reason or 'N/A'}"
                         )
                         return {
@@ -5037,16 +5037,16 @@ class ConfigService:
                         }
                     elif finish_reason in {"length", "max_tokens"}:
                         logger.info(
-                            f"✅ [{display_name}] DeepSeek 测试响应因 token 限制截断，视为连接成功: "
+                            f"✅ [{display_name}] DeepSeek The test response is truncated due to token restrictions and the connection is considered successful.: "
                             f"finish_reason={finish_reason}, max_tokens={effective_max_tokens}"
                         )
                         return {
                             "success": True,
-                            "message": f"{display_name} API连接测试成功（响应因 token 限制截断）"
+                            "message": f"{display_name} API Connection test successful (response truncated due to token limit)"
                         }
                     else:
                         logger.warning(
-                            f"⚠️ [{display_name}] DeepSeek 测试返回空内容: "
+                            f"⚠️ [{display_name}] DeepSeek Test returns empty content: "
                             f"finish_reason={finish_reason or 'N/A'}, has_reasoning={bool(reasoning_content)}, "
                             f"response_keys={list(result.keys())}"
                         )
@@ -5062,22 +5062,22 @@ class ConfigService:
             elif response.status_code == 401:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号认证失败，请检查 API Key、账号状态和模型访问权限"
+                    "message": f"{display_name} Account authentication failed, please check API Key, account status and model access permissions"
                 }
             elif response.status_code == 402:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号额度不足，请检查余额、套餐配额或模型付费权限"
+                    "message": f"{display_name} The account balance is insufficient, please check the balance, package quota or model payment permissions"
                 }
             elif response.status_code == 403:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号权限不足，或当前模型配额已用完，请检查套餐和模型授权"
+                    "message": f"{display_name} The account has insufficient permissions, or the current model quota has been used up. Please check the package and model authorization."
                 }
             else:
                 return {
                     "success": False,
-                    "message": f"{display_name} API测试失败: HTTP {response.status_code}"
+                    "message": f"{display_name} API test failed: HTTP {response.status_code}"
                 }
 
         except Exception as e:
@@ -5091,19 +5091,19 @@ class ConfigService:
         try:
             import requests
 
-            # 🔥 优先使用用户填写的测试模型，如果没有则使用默认模型
+            # 🔥 The test model filled in by the user will be used first, if not, the default model will be used.
             if test_model and test_model.strip():
                 model_name = test_model.strip()
-                logger.info(f"🔍 使用用户指定的测试模型: {model_name}")
+                logger.info(f"🔍 Use user-specified test model: {model_name}")
             else:
                 model_name = "qwen-turbo"
-                logger.info(f"⚠️ 未指定模型，使用默认模型: {model_name}")
+                logger.info(f"⚠️ No model specified, default model used: {model_name}")
 
-            logger.info(f"🔍 [DashScope 测试] 使用模型: {model_name}")
-            #logger.info(f"🔍 [DashScope 测试] API Key: 已配置（脱敏）")
-            logger.info(f"🔍 [DashScope 测试] API Key 长度: {len(api_key) if api_key else 0}")
+            logger.info(f"🔍 [DashScope test] Use model: {model_name}")
+            #logger.info(f"🔍 [DashScope test] API Key: Configured (desensitized)")
+            logger.info(f"🔍 [DashScope test] API Key length: {len(api_key) if api_key else 0}")
 
-            # 使用阿里云百炼的OpenAI兼容接口
+            # Use Alibaba Cloud Bailian's OpenAI compatible interface
             url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 
             headers = {
@@ -5114,7 +5114,7 @@ class ConfigService:
             data = {
                 "model": model_name,
                 "messages": [
-                    {"role": "user", "content": "你好，请简单介绍一下你自己。"}
+                    {"role": "user", "content": "Hello, please introduce yourself briefly."}
                 ],
                 "max_tokens": 50,
                 "temperature": 0.1
@@ -5144,7 +5144,7 @@ class ConfigService:
             else:
                 return {
                     "success": False,
-                    "message": f"{display_name} API测试失败: HTTP {response.status_code}"
+                    "message": f"{display_name} API test failed: HTTP {response.status_code}"
                 }
 
         except Exception as e:
@@ -5154,31 +5154,31 @@ class ConfigService:
             }
 
     def _test_openrouter_api(self, api_key: str, display_name: str, test_model: str = None) -> dict:
-        """测试OpenRouter API"""
+        """test OpenRouter API"""
         try:
             import requests
 
-            # 🔥 优先使用用户填写的测试模型，如果没有则使用默认模型
+            # 🔥 The test model filled in by the user will be used first, if not, the default model will be used.
             if test_model and test_model.strip():
                 model_name = test_model.strip()
-                logger.info(f"🔍 使用用户指定的测试模型: {model_name}")
+                logger.info(f"🔍 Use user-specified test model: {model_name}")
             else:
-                model_name = "meta-llama/llama-3.2-3b-instruct:free"  # 使用免费模型
-                logger.info(f"⚠️ 未指定模型，使用默认模型: {model_name}")
+                model_name = "meta-llama/llama-3.2-3b-instruct:free"  # Use free models
+                logger.info(f"⚠️ No model specified, default model used: {model_name}")
 
             url = "https://openrouter.ai/api/v1/chat/completions"
 
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}",
-                "HTTP-Referer": "https://tradingagents.cn",  # OpenRouter要求
+                "HTTP-Referer": "https://tradingagents.cn",  # OpenRouter request
                 "X-Title": "TradingAgents-CN"
             }
 
             data = {
                 "model": model_name,
                 "messages": [
-                    {"role": "user", "content": "你好，请简单介绍一下你自己。"}
+                    {"role": "user", "content": "Hello, please introduce yourself briefly."}
                 ],
                 "max_tokens": 50,
                 "temperature": 0.1
@@ -5208,7 +5208,7 @@ class ConfigService:
             else:
                 return {
                     "success": False,
-                    "message": f"{display_name} API测试失败: HTTP {response.status_code}"
+                    "message": f"{display_name} API test failed: HTTP {response.status_code}"
                 }
 
         except Exception as e:
@@ -5222,13 +5222,13 @@ class ConfigService:
         try:
             import requests
 
-            # 🔥 优先使用用户填写的测试模型，如果没有则使用默认模型
+            # 🔥 The test model filled in by the user will be used first, if not, the default model will be used.
             if test_model and test_model.strip():
                 model_name = test_model.strip()
-                logger.info(f"🔍 使用用户指定的测试模型: {model_name}")
+                logger.info(f"🔍 Use user-specified test model: {model_name}")
             else:
                 model_name = "gpt-3.5-turbo"
-                logger.info(f"⚠️ 未指定模型，使用默认模型: {model_name}")
+                logger.info(f"⚠️ No model specified, default model used: {model_name}")
 
             url = "https://api.openai.com/v1/chat/completions"
 
@@ -5240,7 +5240,7 @@ class ConfigService:
             data = {
                 "model": model_name,
                 "messages": [
-                    {"role": "user", "content": "你好，请简单介绍一下你自己。"}
+                    {"role": "user", "content": "Hello, please introduce yourself briefly."}
                 ],
                 "max_tokens": 50,
                 "temperature": 0.1
@@ -5270,7 +5270,7 @@ class ConfigService:
             else:
                 return {
                     "success": False,
-                    "message": f"{display_name} API测试失败: HTTP {response.status_code}"
+                    "message": f"{display_name} API test failed: HTTP {response.status_code}"
                 }
 
         except Exception as e:
@@ -5280,17 +5280,17 @@ class ConfigService:
             }
 
     def _test_anthropic_api(self, api_key: str, display_name: str, test_model: str = None) -> dict:
-        """测试Anthropic API"""
+        """test Anthropic API"""
         try:
             import requests
 
-            # 🔥 优先使用用户填写的测试模型，如果没有则使用默认模型
+            # 🔥 The test model filled in by the user will be used first, if not, the default model will be used.
             if test_model and test_model.strip():
                 model_name = test_model.strip()
-                logger.info(f"🔍 使用用户指定的测试模型: {model_name}")
+                logger.info(f"🔍 Use user-specified test model: {model_name}")
             else:
                 model_name = "claude-3-haiku-20240307"
-                logger.info(f"⚠️ 未指定模型，使用默认模型: {model_name}")
+                logger.info(f"⚠️ No model specified, default model used: {model_name}")
 
             url = "https://api.anthropic.com/v1/messages"
 
@@ -5304,7 +5304,7 @@ class ConfigService:
                 "model": model_name,
                 "max_tokens": 50,
                 "messages": [
-                    {"role": "user", "content": "你好，请简单介绍一下你自己。"}
+                    {"role": "user", "content": "Hello, please introduce yourself briefly."}
                 ]
             }
 
@@ -5332,7 +5332,7 @@ class ConfigService:
             else:
                 return {
                     "success": False,
-                    "message": f"{display_name} API测试失败: HTTP {response.status_code}"
+                    "message": f"{display_name} API test failed: HTTP {response.status_code}"
                 }
 
         except Exception as e:
@@ -5346,15 +5346,15 @@ class ConfigService:
         try:
             import requests
 
-            # 🔥 优先使用用户填写的测试模型，如果没有则使用默认模型
+            # 🔥 The test model filled in by the user will be used first, if not, the default model will be used.
             if test_model and test_model.strip():
                 model_name = test_model.strip()
-                logger.info(f"🔍 使用用户指定的测试模型: {model_name}")
+                logger.info(f"🔍 Use user-specified test model: {model_name}")
             else:
                 model_name = "ernie-3.5-8k"
-                logger.info(f"⚠️ 未指定模型，使用默认模型: {model_name}")
+                logger.info(f"⚠️ No model specified, default model used: {model_name}")
 
-            # 千帆新一代API使用OpenAI兼容接口
+            # Qianfan's new generation API uses OpenAI compatible interface
             url = "https://qianfan.baidubce.com/v2/chat/completions"
 
             headers = {
@@ -5365,7 +5365,7 @@ class ConfigService:
             data = {
                 "model": model_name,
                 "messages": [
-                    {"role": "user", "content": "你好，请简单介绍一下你自己。"}
+                    {"role": "user", "content": "Hello, please introduce yourself briefly."}
                 ],
                 "max_tokens": 50,
                 "temperature": 0.1
@@ -5395,17 +5395,17 @@ class ConfigService:
             elif response.status_code == 401:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号认证失败，请检查 API Key、账号状态和模型访问权限"
+                    "message": f"{display_name} Account authentication failed, please check API Key, account status and model access permissions"
                 }
             elif response.status_code == 402:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号额度不足，请检查余额、套餐配额或模型付费权限"
+                    "message": f"{display_name} The account balance is insufficient, please check the balance, package quota or model payment permissions"
                 }
             elif response.status_code == 403:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号权限不足，或当前模型配额已用完，请检查套餐和模型授权"
+                    "message": f"{display_name} The account has insufficient permissions, or the current model quota has been used up. Please check the package and model authorization."
                 }
             else:
                 try:
@@ -5418,7 +5418,7 @@ class ConfigService:
                 except:
                     return {
                         "success": False,
-                        "message": f"{display_name} API测试失败: HTTP {response.status_code}"
+                        "message": f"{display_name} API test failed: HTTP {response.status_code}"
                     }
 
         except Exception as e:
@@ -5428,20 +5428,20 @@ class ConfigService:
             }
 
     async def fetch_provider_models(self, provider_id: str, filters: Optional[Dict[str, Any]] = None) -> dict:
-        """从厂家 API 获取模型列表
+        """Get model list from manufacturer API
 
         Args:
-            provider_id: 厂家 ID
-            filters: 可选的筛选参数（前端拉取后在客户端筛选，服务端仅做兼容接收）
+            provider_id: Manufacturer ID
+            filters: Optional filtering parameters (filtered on the client after the front-end pulls it, the server only does compatible reception)
         """
         try:
             filters = filters or {}
-            print(f"🔍 获取厂家模型列表 - provider_id: {provider_id}, filters: {filters}")
+            print(f"🔍 Get manufacturer model list - provider_id: {provider_id}, filters: {filters}")
 
             db = await self._get_db()
             providers_collection = db.llm_providers
 
-            # 兼容处理：尝试 ObjectId 和字符串两种类型
+            # Compatibility processing: try both ObjectId and string types
             from bson import ObjectId
             provider_data = None
             try:
@@ -5463,7 +5463,7 @@ class ConfigService:
             base_url = provider_data.get("default_base_url")
             display_name = provider_data.get("display_name", provider_name)
 
-            # 火山方舟编程：直接返回硬编码的 11 个模型，不调 API
+            # Volcano Ark programming: directly returns the hard-coded 11 models without adjusting API
             if provider_name == "volcengine_coding":
                 coding_plan_models = [
                     {"id": "doubao-seed-2.0-code", "name": "Doubao-Seed-2.0-Code"},
@@ -5485,26 +5485,26 @@ class ConfigService:
                     "message": f"成功获取 {len(coding_plan_models)} 个预设模型"
                 }
 
-            # 🔥 判断数据库中的 API Key 是否有效
+            # 🔥 Determine whether the API Key in the database is valid
             if not self._is_valid_api_key(api_key):
-                # 数据库中的 Key 无效，尝试从环境变量读取
+                # The Key in the database is invalid, try to read from environment variables
                 env_api_key = self._get_env_api_key(provider_name)
                 if env_api_key:
                     api_key = env_api_key
                     print(f"✅ 数据库配置无效，从环境变量读取到 {display_name} 的 API Key")
                 else:
-                    # 某些聚合平台（如 OpenRouter）的 /models 端点不需要 API Key
-                    print(f"⚠️ {display_name} 未配置有效的API密钥，尝试无认证访问")
+                    # The /models endpoint is not required for some aggregation platforms (such as OpenRouter) API Key
+                    print(f"⚠️ {display_name} No valid API key is configured, trying to access without authentication")
             else:
                 print(f"✅ 使用数据库配置的 {display_name} API密钥")
 
             if not base_url:
                 return {
                     "success": False,
-                    "message": f"{display_name} 未配置 API 基础地址 (default_base_url)"
+                    "message": f"{display_name} API base address not configured (default_base_url)"
                 }
 
-            # 调用 OpenAI 兼容的 /v1/models 端点
+            # Call the OpenAI compatible /v1/models endpoint
             import asyncio
             result = await asyncio.get_event_loop().run_in_executor(
                 None, self._fetch_models_from_api, api_key, base_url, display_name, provider_name
@@ -5526,21 +5526,21 @@ class ConfigService:
         try:
             import requests
 
-            # 🔧 智能版本号处理：只有在没有版本号的情况下才添加 /v1
-            # 避免对已有版本号的URL（如智谱AI的 /v4）重复添加 /v1
+            # 🔧 Intelligent version number processing: only add a version number if there is no version number /v1
+            # Avoid adding URLs with existing version numbers (such as /v4 of Zhipu AI) repeatedly. /v1
             import re
             base_url = base_url.rstrip("/")
             if not re.search(r'/v\d+$', base_url):
-                # URL末尾没有版本号，添加 /v1（OpenAI标准）
+                # URL There is no version number at the end, add /v1 (OpenAI standard)
                 base_url = base_url + "/v1"
-                logger.info(f"   [获取模型列表] 添加 /v1 版本号: {base_url}")
+                logger.info(f"   [Get model list] Add /v1 version number: {base_url}")
             else:
-                # URL已包含版本号（如 /v4），不添加
-                logger.info(f"   [获取模型列表] 检测到已有版本号，保持原样: {base_url}")
+                # URL Already contains the version number (such as /v4), do not add it
+                logger.info(f"   [Get model list] An existing version number is detected, keep it as is: {base_url}")
 
             url = f"{base_url}/models"
 
-            # 构建请求头
+            # Build request headers
             headers = {}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
@@ -5555,30 +5555,30 @@ class ConfigService:
 
             if response.status_code == 200:
                 result = response.json()
-                print(f"📊 响应 JSON 结构: {list(result.keys())}")
+                print(f"📊 Response JSON structure: {list(result.keys())}")
 
                 if "data" in result and isinstance(result["data"], list):
                     all_models = result["data"]
                     print(f"📊 API 返回 {len(all_models)} 个模型")
 
-                    # 打印前几个模型的完整结构（用于调试价格字段）
+                    # Print the complete structure of the first few models (for debugging price fields)
                     if all_models:
-                        print(f"🔍 第一个模型的完整结构:")
+                        print(f"🔍 Complete structure of the first model:")
                         import json
                         print(json.dumps(all_models[0], indent=2, ensure_ascii=False))
 
-                    # 打印所有 Anthropic 模型（用于调试）
+                    # Print all Anthropic models (for debugging)
                     anthropic_models = [m for m in all_models if "anthropic" in m.get("id", "").lower()]
                     if anthropic_models:
                         print(f"🔍 Anthropic 模型列表 ({len(anthropic_models)} 个):")
-                        for m in anthropic_models[:20]:  # 只打印前 20 个
+                        for m in anthropic_models[:20]:  # Only print the first 20
                             print(f"   - {m.get('id')}")
 
-                    # 过滤：只保留主流大厂的常用模型
+                    # Filtering: Only retain commonly used models from mainstream manufacturers
                     filtered_models = self._filter_popular_models(all_models, provider_name)
                     print(f"✅ 过滤后保留 {len(filtered_models)} 个常用模型")
 
-                    # 转换模型格式，包含价格信息
+                    # Convert model format to include price information
                     formatted_models = self._format_models_with_pricing(filtered_models)
 
                     return {
@@ -5587,25 +5587,25 @@ class ConfigService:
                         "message": f"成功获取 {len(formatted_models)} 个常用模型（已过滤）"
                     }
                 else:
-                    print(f"❌ 响应格式异常，期望 'data' 字段为列表")
+                    print(f"❌ Response format exception, expected 'data' Field is a list")
                     return {
                         "success": False,
-                        "message": f"{display_name} API 响应格式异常（缺少 data 字段或格式不正确）"
+                        "message": f"{display_name} API Response format exception (data field is missing or incorrectly formatted)"
                     }
             elif response.status_code == 401:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号认证失败，请检查 API Key、账号状态和模型访问权限"
+                    "message": f"{display_name} Account authentication failed, please check API Key, account status and model access permissions"
                 }
             elif response.status_code == 402:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号额度不足，请检查余额、套餐配额或模型付费权限"
+                    "message": f"{display_name} The account balance is insufficient, please check the balance, package quota or model payment permissions"
                 }
             elif response.status_code == 403:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号权限不足，请检查套餐和模型授权"
+                    "message": f"{display_name} Insufficient account permissions, please check package and model authorization"
                 }
             else:
                 try:
@@ -5634,23 +5634,23 @@ class ConfigService:
 
     def _format_models_with_pricing(self, models: list) -> list:
         """
-        格式化模型列表，包含价格信息
+        Formatted model list with price information
 
-        支持多种价格格式：
+        Supports multiple price formats:
         1. OpenRouter: pricing.prompt/completion (USD per token)
-        2. 302.ai: price.prompt/completion 或 price.input/output
-        3. 其他: 可能没有价格信息
+        2. 302.ai: price.prompt/completion or price.input/output
+        3. Others: Price information may not be available
         """
         formatted = []
         for model in models:
             model_id = model.get("id", "")
             model_name = model.get("name", model_id)
 
-            # 尝试从多个字段获取价格信息
+            # Try to get price information from multiple fields
             input_price_per_1k = None
             output_price_per_1k = None
 
-            # 方式1：OpenRouter 格式 (pricing.prompt/completion)
+            # Method 1: OpenRouter format (pricing.prompt/completion)
             pricing = model.get("pricing", {})
             if pricing:
                 prompt_price = pricing.get("prompt", "0")  # USD per token
@@ -5664,35 +5664,35 @@ class ConfigService:
                 except (ValueError, TypeError):
                     pass
 
-            # 方式2：302.ai 格式 (price.prompt/completion 或 price.input/output)
+            # Method 2: 302.ai format (price.prompt/completion or price.input/output)
             if not input_price_per_1k and not output_price_per_1k:
                 price = model.get("price", {})
                 if price and isinstance(price, dict):
-                    # 尝试 prompt/completion 字段
+                    # Try the prompt/completion field
                     prompt_price = price.get("prompt") or price.get("input")
                     completion_price = price.get("completion") or price.get("output")
 
                     try:
                         if prompt_price and float(prompt_price) > 0:
-                            # 假设是 per token，转换为 per 1K tokens
+                            # Assuming per token, convert to per 1K tokens
                             input_price_per_1k = float(prompt_price) * 1000
                         if completion_price and float(completion_price) > 0:
                             output_price_per_1k = float(completion_price) * 1000
                     except (ValueError, TypeError):
                         pass
 
-            # 获取上下文长度
+            # Get context length
             context_length = model.get("context_length")
             if not context_length:
-                # 尝试从 top_provider 获取
+                # Try to get from top_provider
                 top_provider = model.get("top_provider", {})
                 context_length = top_provider.get("context_length")
 
-            # 如果还是没有，尝试从 max_completion_tokens 推断
+            # If still not, try inferring from max_completion_tokens
             if not context_length:
                 max_tokens = model.get("max_completion_tokens")
                 if max_tokens and max_tokens > 0:
-                    # 通常上下文长度是最大输出的 4-8 倍
+                    # Typically the context length is 4-8 times the maximum output
                     context_length = max_tokens * 4
 
             formatted_model = {
@@ -5705,41 +5705,41 @@ class ConfigService:
 
             formatted.append(formatted_model)
 
-            # 打印价格信息（用于调试）
+            # Print price information (for debugging)
             if input_price_per_1k or output_price_per_1k:
                 print(f"💰 {model_id}: 输入=${input_price_per_1k:.6f}/1K, 输出=${output_price_per_1k:.6f}/1K")
 
         return formatted
 
     def _filter_popular_models(self, models: list, provider_name: str = None) -> list:
-        """过滤模型列表，只保留主流大厂的常用模型"""
+        """Filter the model list to only retain commonly used models from major manufacturers"""
         import re
 
-        # 火山方舟编程：不过滤，返回所有模型（API 已按套餐权限返回对应的模型）
-        # 火山方舟（非编程）：不过滤，返回所有模型
+        # Volcano Ark Programming: No filtering, return all models (API has returned the corresponding models according to package permissions)
+        # Volcano Ark (non-programming): no filtering, returns all models
         if provider_name in ("volcengine_coding", "volcengine"):
             print(f"✅ [{provider_name}] 返回全部 {len(models)} 个模型（不过滤）")
             return models
 
-        # 只保留三大厂：OpenAI、Anthropic、Google
+        # Only three major companies are retained: OpenAI, Anthropic,Google
         popular_providers = [
             "openai",      # OpenAI
             "anthropic",   # Anthropic
             "google",      # Google
         ]
 
-        # 常见模型名称前缀（用于识别不带厂商前缀的模型）
+        # Common model name prefixes (used to identify models without vendor prefixes)
         model_prefixes = {
             "gpt-": "openai",           # gpt-3.5-turbo, gpt-4, gpt-4o
             "o1-": "openai",            # o1-preview, o1-mini
             "claude-": "anthropic",     # claude-3-opus, claude-3-sonnet
             "gemini-": "google",        # gemini-pro, gemini-1.5-pro
-            "gemini": "google",         # gemini (不带连字符)
-            "doubao-": "volcengine",    # 火山方舟豆包模型
-            "ep-": "volcengine",        # 火山方舟推理接入点 (Endpoint)
+            "gemini": "google",         # gemini (without hyphen)
+            "doubao-": "volcengine",    # Volcano Ark Bean Bag Model
+            "ep-": "volcengine",        # Volcano Ark Reasoning Access Point (Endpoint)
         }
 
-        # 排除的关键词
+        # Excluded keywords
         exclude_keywords = [
             "preview",
             "experimental",
@@ -5750,11 +5750,11 @@ class ConfigService:
             "nitro",
             ":free",
             ":extended",
-            "online",  # 排除带在线搜索的版本
-            "instruct",  # 排除 instruct 版本
+            "online",  # Exclude versions with online search
+            "instruct",  # Exclude instruct version
         ]
 
-        # 日期格式正则表达式（匹配 2024-05-13 这种格式）
+        # Date format regular expression (matches the format 2024-05-13)
         date_pattern = re.compile(r'\d{4}-\d{2}-\d{2}')
 
         filtered = []
@@ -5762,11 +5762,11 @@ class ConfigService:
             model_id = model.get("id", "").lower()
             model_name = model.get("name", "").lower()
 
-            # 检查是否属于三大厂
-            # 方式1：模型ID中包含厂商名称（如 openai/gpt-4）
+            # Check whether it belongs to the three major factories
+            # Method 1: The model ID contains the manufacturer name (such as openai/gpt-4)
             is_popular_provider = any(provider in model_id for provider in popular_providers)
 
-            # 方式2：模型ID以常见前缀开头（如 gpt-4, claude-3-sonnet）
+            # Method 2: Model ID starts with a common prefix (such as gpt-4, claude-3-sonnet) 
             if not is_popular_provider:
                 for prefix, provider in model_prefixes.items():
                     if model_id.startswith(prefix):
@@ -5777,19 +5777,19 @@ class ConfigService:
             if not is_popular_provider:
                 continue
 
-            # 检查是否包含日期（排除带日期的旧版本）
+            # Check if a date is included (exclude older versions with dates)
             if date_pattern.search(model_id):
-                print(f"⏭️ 跳过带日期的旧版本: {model_id}")
+                print(f"⏭️ Skip older versions with dates: {model_id}")
                 continue
 
-            # 检查是否包含排除关键词
+            # Check if negative keywords are included
             has_exclude_keyword = any(keyword in model_id or keyword in model_name for keyword in exclude_keywords)
 
             if has_exclude_keyword:
                 print(f"⏭️ 跳过排除关键词: {model_id}")
                 continue
 
-            # 保留该模型
+            # keep this model
             print(f"✅ 保留模型: {model_id}")
             filtered.append(model)
 
@@ -5806,61 +5806,61 @@ class ConfigService:
         max_tokens: int = 200,
         timeout: int = 15,
     ) -> dict:
-        """测试 OpenAI 兼容 API（用于聚合渠道和自定义厂家）"""
+        """Test OpenAI compatible API (for aggregation channels and custom manufacturers)"""
         try:
             import requests
 
-            # 如果没有提供 base_url，使用默认值
+            # If base_url is not provided, the default value is used
             if not base_url:
                 return {
                     "success": False,
-                    "message": f"{display_name} 未配置 API 基础地址 (default_base_url)"
+                    "message": f"{display_name} API base address not configured (default_base_url)"
                 }
 
-            # 🔧 智能版本号处理：只有在没有版本号的情况下才添加 /v1
-            # 避免对已有版本号的URL（如智谱AI的 /v4）重复添加 /v1
+            # 🔧 Intelligent version number processing: only add a version number if there is no version number /v1
+            # Avoid adding URLs with existing version numbers (such as /v4 of Zhipu AI) repeatedly. /v1
             import re
-            logger.info(f"   [测试API] 原始 base_url: {base_url}")
+            logger.info(f"   [test API] original base_url: {base_url}")
             base_url = base_url.rstrip("/")
-            logger.info(f"   [测试API] 去除斜杠后: {base_url}")
+            logger.info(f"   [test API] After removing the slash: {base_url}")
 
             if not re.search(r'/v\d+$', base_url):
-                # URL末尾没有版本号，添加 /v1（OpenAI标准）
+                # URL There is no version number at the end, add /v1 (OpenAI standard)
                 base_url = base_url + "/v1"
-                logger.info(f"   [测试API] 添加 /v1 版本号: {base_url}")
+                logger.info(f"   [test API] Add /v1 version number: {base_url}")
             else:
-                # URL已包含版本号（如 /v4），不添加
-                logger.info(f"   [测试API] 检测到已有版本号，保持原样: {base_url}")
+                # URL Already contains the version number (such as /v4), do not add it
+                logger.info(f"   [test API] An existing version number is detected, keep it as is: {base_url}")
 
             url = f"{base_url}/chat/completions"
-            logger.info(f"   [测试API] 最终请求URL: {url}")
+            logger.info(f"   [test API] final request URL: {url}")
 
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}"
             }
 
-            # 🔥 优先使用用户填写的测试模型，如果没有则根据厂家类型选择默认模型
+            # 🔥 Priority is given to using the test model filled in by the user. If not, the default model is selected based on the manufacturer type.
             if test_model and test_model.strip():
-                # 用户填写了测试模型，优先使用
+                # The user has filled in the test model and is given priority.
                 final_test_model = test_model.strip()
-                logger.info(f"🔍 使用用户指定的测试模型: {final_test_model}")
+                logger.info(f"🔍 Use user-specified test model: {final_test_model}")
             else:
-                # 用户未填写，使用系统默认值
-                final_test_model = "gpt-3.5-turbo"  # 默认模型
+                # If not filled in by the user, use the system default value.
+                final_test_model = "gpt-3.5-turbo"  # Default model
                 if provider_name == "siliconflow":
-                    # 硅基流动使用免费的 Qwen 模型进行测试
+                    # Silicon-based flow tested using free Qwen model
                     final_test_model = "Qwen/Qwen2.5-7B-Instruct"
-                    logger.info(f"🔍 硅基流动使用测试模型: {final_test_model}")
+                    logger.info(f"🔍 Silicon-based flow usage test model: {final_test_model}")
                 elif provider_name == "zhipu":
-                    # 智谱AI使用 glm-4 模型进行测试
+                    # Zhipu AI uses the glm-4 model for testing
                     final_test_model = "glm-4.5-flash"
-                    logger.info(f"🔍 智谱AI使用测试模型: {final_test_model}")
+                    logger.info(f"🔍 Zhipu AI uses test model: {final_test_model}")
                 else:
                     logger.info(f"🔍 使用默认测试模型: {final_test_model}")
 
-            # 使用一个通用的模型名称进行测试
-            # 聚合渠道通常支持多种模型，这里使用用户指定的或默认的测试模型
+            # Use a common model name for testing
+            # Aggregation channels usually support multiple models, here the user-specified or default test model is used
             data = {
                 "model": final_test_model,
                 "messages": [
@@ -5894,17 +5894,17 @@ class ConfigService:
             elif response.status_code == 401:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号认证失败，请检查 API Key、账号状态和模型访问权限"
+                    "message": f"{display_name} Account authentication failed, please check API Key, account status and model access permissions"
                 }
             elif response.status_code == 402:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号额度不足，请检查余额、套餐配额或模型付费权限"
+                    "message": f"{display_name} The account balance is insufficient, please check the balance, package quota or model payment permissions"
                 }
             elif response.status_code == 403:
                 return {
                     "success": False,
-                    "message": f"{display_name} 账号权限不足，或当前模型配额已用完，请检查套餐和模型授权"
+                    "message": f"{display_name} The account has insufficient permissions, or the current model quota has been used up. Please check the package and model authorization."
                 }
             else:
                 try:
@@ -5925,7 +5925,7 @@ class ConfigService:
                     logger.error(f"   响应内容: {response.text[:500]}")
                     return {
                         "success": False,
-                        "message": f"{display_name} API测试失败: HTTP {response.status_code}"
+                        "message": f"{display_name} API test failed: HTTP {response.status_code}"
                     }
 
         except Exception as e:
@@ -5935,5 +5935,5 @@ class ConfigService:
             }
 
 
-# 创建全局实例
+# Create a global instance
 config_service = ConfigService()

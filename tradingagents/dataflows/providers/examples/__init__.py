@@ -1,7 +1,7 @@
 """
-示例数据提供器
+Sample data provider
 
-展示如何创建新的数据源提供器
+Shows how to create a new data source provider
 """
 
 from .example_sdk import ExampleSDKProvider

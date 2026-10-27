@@ -1,7 +1,7 @@
 """
-持仓分析类工具
+Position analysis tools
 
-提供持仓列表查看、持仓分析报告查询、发起持仓分析功能。
+Provides the functions of viewing the position list, querying the position analysis report, and initiating the position analysis.
 """
 
 import asyncio
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 @register_tool(
     tool_id="list_positions",
     name="查看持仓列表",
-    description="列出用户当前持有的所有股票持仓，包括成本价、现价、盈亏等信息。支持按数据来源筛选（实盘/模拟）。",
+    description="Lists all stock positions currently held by the user, including cost price, current price, profit and loss and other information. Supports filtering by data source (real/simulated).",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -30,13 +30,13 @@ logger = logging.getLogger(__name__)
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["持仓列表查看", "持仓股票查询", "实盘持仓浏览", "模拟持仓查看", "持仓盈亏查询"],
-    when_to_use="当用户想查看当前持有的所有股票、了解持仓成本、现价和浮动盈亏时使用，支持按实盘/模拟筛选。",
-    returns="返回文本消息，包含持仓数量及每只股票的代码、名称、数量、成本价、现价、市值和浮动盈亏。",
+    when_to_use="It is used when the user wants to view all the stocks currently held and understand the holding cost, current price and floating profit and loss. Filtering by real offer/simulation is supported.",
+    returns="Returns a text message, including the position quantity and the code, name, quantity, cost price, current price, market value and floating profit and loss of each stock.",
 )
 async def list_positions(
-    source: Annotated[str, "数据来源：all=全部, real=实盘持仓, paper=模拟持仓"] = "all",
+    source: Annotated[str, "Data source:all=All, real=Firm position, paper=Simulated position"] = "all",
 ) -> str:
-    """列出用户当前所有持仓，返回每只股票的代码、名称、数量、成本价、现价、浮动盈亏等。"""
+    """List all current positions of the user and return the code, name, quantity, cost price, current price, floating profit and loss, etc. of each stock."""
     try:
         from app.services.portfolio_service import get_portfolio_service
 
@@ -61,12 +61,12 @@ async def list_positions(
             mv_str = f"{p.market_value:.2f}" if p.market_value is not None else "--"
             lines.append(
                 f"[{src_label}] {p.code} {p.name or ''} | "
-                f"数量: {p.quantity} | 成本: {p.cost_price:.2f} | {price_str} | "
-                f"市值: {mv_str}{pnl_str}"
+                f"Quantity: {p.quantity} | cost: {p.cost_price:.2f} | {price_str} | "
+                f"Market value: {mv_str}{pnl_str}"
             )
         return "\n".join(lines)
     except Exception as e:
-        logger.exception("[list_positions] 获取持仓列表失败: %s", e)
+        logger.exception("[list_positions] Failed to obtain position list: %s", e)
         return f"获取持仓列表时出错: {e}"
 
 
@@ -74,7 +74,7 @@ async def list_positions(
 @register_tool(
     tool_id="get_position_analysis",
     name="获取持仓分析报告",
-    description="获取某只持仓股票的最新 AI 研究分析报告，包含研究观察倾向、关键验证价位、风险审阅要点等。",
+    description="Get the latest AI research analysis report on a certain stock, including research observation tendencies, key verification prices, risk review points, etc.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -84,15 +84,15 @@ async def list_positions(
     tool_role_hint="primary",
     output_shape="report",
     preferred_for=["持仓分析报告查看", "研究观察查询", "关键价位确认", "持仓风险审阅"],
-    when_to_use="当用户想查看某只持仓股票的最新 AI 研究分析报告、获取研究观察与风险审阅参考时使用。",
-    returns="返回文本报告，包含研究观察倾向、置信度、持仓摘要、关键验证价位、风险关注价格和分析详情。",
+    when_to_use="It is used when the user wants to view the latest AI research analysis report of a certain stock, obtain research observations and risk review references.",
+    returns="Returns a text report, including research observation tendency, confidence level, position summary, key verification price, risk concern price and analysis details.",
 )
 async def get_position_analysis(
-    code: Annotated[str, "股票代码，如 600519、00700"],
-    market: Annotated[str, "市场代码：CN=A股, HK=港股, US=美股"] = "CN",
-    position_type: Annotated[str, "持仓类型：real=实盘, simulated=模拟"] = "real",
+    code: Annotated[str, "Stock code, such as 600519,00700"],
+    market: Annotated[str, "Market code:CN=A shares, HK=Hong Kong stocks, US=US stocks"] = "CN",
+    position_type: Annotated[str, "Position type:real=firm offer, simulated=Simulation"] = "real",
 ) -> str:
-    """获取指定股票持仓的最新 AI 分析报告。"""
+    """Get the latest AI analysis report on specified stock positions."""
     try:
         from app.services.portfolio_service import get_portfolio_service
         from app.services.intelligent_assistant_service import attach_report_ref_to_thread
@@ -105,7 +105,7 @@ async def get_position_analysis(
         if not report:
             return f"未找到 {code} 的持仓分析报告。可以先发起一次持仓分析。"
 
-        # 构建摘要
+        # Build summary
         lines = []
         name = report.get("name") or code
         action = report.get("action") or "未知"
@@ -116,7 +116,7 @@ async def get_position_analysis(
         lines.append(f"{name}({code}) 持仓分析报告")
         lines.append(f"状态: {status} | 研究观察: {action}" + (f" | 置信度: {confidence}%" if confidence else ""))
 
-        # 持仓摘要
+        # Position summary
         summary = report.get("summary") or {}
         if summary.get("quantity"):
             cost = summary.get("cost_price", 0)
@@ -127,14 +127,14 @@ async def get_position_analysis(
             if pnl is not None:
                 lines.append(f"浮动盈亏: {pnl:+.2f}" + (f" ({pnl_pct:+.2f}%)" if pnl_pct is not None else ""))
 
-        # 关键验证价位
+        # Key verification price
         pt = report.get("price_targets") or {}
         if pt.get("target_price") or pt.get("stop_loss"):
             tp = pt.get("target_price")
             sl = pt.get("stop_loss")
             lines.append(f"关键验证价位: {tp}" + (f" | 风险关注价格: {sl}" if sl else ""))
 
-        # 操作理由
+        # Reason for operation
         reason = report.get("action_reason")
         if reason:
             lines.append(f"\n分析详情:\n{reason}")
@@ -162,7 +162,7 @@ async def get_position_analysis(
 
         return "\n".join(lines)
     except Exception as e:
-        logger.exception("[get_position_analysis] 获取持仓分析报告失败: %s", e)
+        logger.exception("[get_position_analysis] Failed to obtain position analysis report: %s", e)
         return f"获取持仓分析报告时出错: {e}"
 
 
@@ -170,7 +170,7 @@ async def get_position_analysis(
 @register_tool(
     tool_id="trigger_position_analysis",
     name="发起持仓分析",
-    description="对某只持仓股票发起一次新的 AI 持仓研究分析任务，结合持仓成本、盈亏等信息生成研究观察、关键验证价位和风险审阅。任务在后台异步执行（约2-5分钟），返回任务ID。",
+    description="Initiate a new AI position research and analysis task for a certain stock position, and generate research observations, key verification prices and risk reviews based on information such as position costs, profits and losses, etc. The task is executed asynchronously in the background (about 2-5 minutes) and the task ID is returned.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -180,23 +180,23 @@ async def get_position_analysis(
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["持仓分析触发", "持仓 AI 分析发起", "研究观察生成", "持仓深度分析"],
-    when_to_use="当用户要求对某只持仓股票发起 AI 研究分析、生成研究观察与关键验证价位时使用，任务在后台异步执行（约2-5分钟）。",
-    returns="返回文本消息，包含任务ID、股票代码、市场、持仓类型、分析重点和预计完成时间。",
+    when_to_use="It is used when the user requests to initiate AI research analysis on a certain stock position, generate research observations and key verification prices, and the task is executed asynchronously in the background (about 2-5 minutes).",
+    returns="Returns a text message containing task ID, stock code, market, position type, analysis focus and estimated completion time.",
 )
 async def trigger_position_analysis(
-    code: Annotated[str, "股票代码，如 600519、00700"],
-    market: Annotated[str, "市场代码：CN=A股, HK=港股, US=美股"] = "CN",
-    position_type: Annotated[str, "持仓类型：real=实盘, simulated=模拟"] = "real",
-    analysis_focus: Annotated[str, "分析重点：technical=技术面, fundamental=基本面, comprehensive=综合"] = "comprehensive",
+    code: Annotated[str, "Stock code, such as 600519,00700"],
+    market: Annotated[str, "Market code:CN=A shares, HK=Hong Kong stocks, US=US stocks"] = "CN",
+    position_type: Annotated[str, "Position type:real=firm offer, simulated=Simulation"] = "real",
+    analysis_focus: Annotated[str, "Analysis focus:technical=technical aspect, fundamental=Fundamentals, comprehensive=Comprehensive"] = "comprehensive",
 ) -> str:
-    """对某只持仓股票发起一次新的 AI 分析，后台异步执行，返回任务ID。"""
+    """Initiate a new AI analysis on a certain held stock, execute it asynchronously in the background, and return the task ID."""
     try:
         from app.core.database import get_mongo_db
         from app.services.intelligent_assistant_service import attach_report_ref_to_thread
         from app.services.unified_analysis_service import get_unified_analysis_service
 
         user_id = require_current_user_id()
-        logger.info("[trigger_position_analysis] 开始创建持仓分析任务: code=%s, market=%s, user_id=%s", code, market, user_id)
+        logger.info("[trigger_position_analysis] Start creating a position analysis task: code=%s, market=%s, user_id=%s", code, market, user_id)
 
         unified_service = get_unified_analysis_service()
 
@@ -222,9 +222,9 @@ async def trigger_position_analysis(
             task_params=task_params,
         )
         task_id = result["task_id"]
-        logger.info("[trigger_position_analysis] ✅ 任务已创建: task_id=%s", task_id)
+        logger.info("[trigger_position_analysis] ✅ Task has been created: task_id=%s", task_id)
 
-        # 后台执行，不阻塞
+        # Background execution, no blocking
         bg_task = asyncio.create_task(
             unified_service.execute_position_analysis(
                 task_id=task_id,
@@ -235,7 +235,7 @@ async def trigger_position_analysis(
             )
         )
         bg_task.add_done_callback(
-            lambda t: logger.error("[trigger_position_analysis] ❌ 后台执行异常: %s", t.exception())
+            lambda t: logger.error("[trigger_position_analysis] ❌ Background execution exception: %s", t.exception())
             if not t.cancelled() and t.exception() else None
         )
 
@@ -257,13 +257,13 @@ async def trigger_position_analysis(
 
         return (
             f"✅ 持仓分析任务已创建\n"
-            f"- 任务ID: {task_id}\n"
-            f"- 股票: {code}（{market}）\n"
-            f"- 持仓类型: {'实盘' if position_type == 'real' else '模拟'}\n"
-            f"- 分析重点: {analysis_focus}\n"
-            f"- 预计 2-5 分钟完成，届时可用「获取持仓分析报告」查看结果。"
+            f"- Task ID: {task_id}\n"
+            f"- stocks: {code} ({market}) \n"
+            f"- Position type: {'firm offer' if position_type == 'real' else 'Simulation'}\n"
+            f"- Analysis focus: {analysis_focus}\n"
+            f"- It is expected to take 2-5 minutes to complete. At that time, you can use Get Position Analysis Report to view the results."
         )
     except Exception as e:
-        logger.exception("[trigger_position_analysis] ❌ 创建任务失败: %s", e)
-        return f"❌ 创建持仓分析任务失败: {e}"
+        logger.exception("[trigger_position_analysis] ❌ Failed to create task: %s", e)
+        return f"❌ Failed to create position analysis task: {e}"
 

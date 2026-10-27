@@ -1,136 +1,136 @@
 #!/usr/bin/env python3
 """
-完整基本面分析流程测试
+Complete fundamental analysis process test
 """
 
 import os
 import sys
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_full_fundamentals_flow():
-    """测试完整的基本面分析流程"""
-    print("\n🔍 完整基本面分析流程测试")
+    """Test the complete fundamental analysis process"""
+    print("\n🔍 Complete fundamental analysis process test")
     print("=" * 80)
     
-    # 测试分众传媒 002027
+    # Test Focus Media 002027
     test_ticker = "002027"
-    print(f"📊 测试股票代码: {test_ticker} (分众传媒)")
+    print(f"📊 Test ticker: {test_ticker} (focus media)")
     
     try:
-        # 设置日志级别
+        # Set log level
         from tradingagents.utils.logging_init import get_logger
         logger = get_logger("default")
         logger.setLevel("INFO")
         
-        print(f"\n🔧 步骤1: 初始化LLM和工具包...")
+        print(f"\n🔧 steps 1: Initialize LLM and toolkit...")
         
-        # 导入必要的模块
+        # Import necessary modules
         from tradingagents.agents.analysts.fundamentals_analyst import create_fundamentals_analyst
         from tradingagents.agents.utils.agent_utils import Toolkit
         from tradingagents.llm_adapters import get_llm
 
-        # 获取LLM实例
+        # Get LLM instance
         llm = get_llm()
-        print(f"✅ LLM初始化完成: {type(llm).__name__}")
+        print(f"✅ LLM Initialization completed: {type(llm).__name__}")
 
-        # 创建工具包
+        # Create toolkit
         toolkit = Toolkit()
-        print(f"✅ 工具包初始化完成")
+        print(f"✅ Toolkit initialization completed")
         
-        print(f"\n🔧 步骤2: 创建基本面分析师...")
+        print(f"\n🔧 steps 2: Create a fundamental analyst...")
         
-        # 创建基本面分析师
+        # Create a fundamental analyst
         fundamentals_analyst = create_fundamentals_analyst(llm, toolkit)
-        print(f"✅ 基本面分析师创建完成")
+        print(f"✅ Fundamental Analyst is created")
         
-        print(f"\n🔧 步骤3: 准备分析状态...")
+        print(f"\n🔧 steps 3: Ready to analyze status...")
         
-        # 创建分析状态
+        # Create analysis status
         state = {
             "company_of_interest": test_ticker,
             "trade_date": "2025-07-15",
             "messages": []
         }
         
-        print(f"✅ 分析状态准备完成")
-        print(f"   - 股票代码: {state['company_of_interest']}")
-        print(f"   - 交易日期: {state['trade_date']}")
-        print(f"   - 消息数量: {len(state['messages'])}")
+        print(f"✅ Analysis status ready")
+        print(f"   - Stock code: {state['company_of_interest']}")
+        print(f"   - transaction date: {state['trade_date']}")
+        print(f"   - Number of messages: {len(state['messages'])}")
         
-        print(f"\n🔧 步骤4: 执行基本面分析...")
+        print(f"\n🔧 steps 4: Perform fundamental analysis...")
         
-        # 执行基本面分析
+        # Perform fundamental analysis
         result = fundamentals_analyst(state)
         
-        print(f"\n✅ 基本面分析执行完成")
-        print(f"📊 返回结果类型: {type(result)}")
+        print(f"\n✅ Fundamental analysis execution completed")
+        print(f"📊 Return result type: {type(result)}")
         
-        # 检查返回结果
+        # Check the returned results
         if isinstance(result, dict):
             if 'fundamentals_report' in result:
                 report = result['fundamentals_report']
-                print(f"📄 基本面报告长度: {len(report) if report else 0}")
+                print(f"📄 Fundamental report length: {len(report) if report else 0}")
                 
-                # 检查报告中的股票代码
+                # Check the stock symbol in the report
                 if report:
-                    print(f"\n🔍 最终检查报告中的股票代码...")
+                    print(f"\n🔍 Stock code in final inspection report...")
                     if "002027" in report:
-                        print("✅ 报告中包含正确的股票代码 002027")
+                        print("✅ Reports contain correct ticker symbols 002027")
                         count_002027 = report.count("002027")
-                        print(f"   002027 出现次数: {count_002027}")
+                        print(f"   002027 Number of occurrences: {count_002027}")
                     else:
-                        print("❌ 报告中不包含正确的股票代码 002027")
+                        print("❌ Report does not contain correct ticker symbol 002027")
                         
                     if "002021" in report:
-                        print("⚠️ 报告中包含错误的股票代码 002021")
+                        print("⚠️ Report contains incorrect stock symbol 002021")
                         count_002021 = report.count("002021")
-                        print(f"   002021 出现次数: {count_002021}")
+                        print(f"   002021 Number of occurrences: {count_002021}")
                         
-                        # 找出错误代码的位置
+                        # Find the location of the error code
                         import re
                         positions = [m.start() for m in re.finditer("002021", report)]
-                        print(f"   002021 出现位置: {positions}")
+                        print(f"   002021 Appear location: {positions}")
                         
-                        # 显示错误代码周围的文本
-                        for pos in positions[:3]:  # 只显示前3个位置
+                        # Show text around error code
+                        for pos in positions[:3]:  # Only show first 3 positions
                             start = max(0, pos - 100)
                             end = min(len(report), pos + 100)
                             context = report[start:end]
-                            print(f"   位置 {pos} 周围文本: ...{context}...")
+                            print(f"   location {pos} surrounding text: ...{context}...")
                     else:
-                        print("✅ 报告中不包含错误的股票代码 002021")
+                        print("✅ Reports do not contain incorrect ticker symbols 002021")
                         
-                    # 显示报告的前1000字符
-                    print(f"\n📄 报告前1000字符:")
+                    # Display the first 1000 characters of the report
+                    print(f"\n📄 Report first 1000 characters:")
                     print("-" * 80)
                     print(report[:1000])
                     print("-" * 80)
             else:
-                print("❌ 返回结果中没有 fundamentals_report")
-                print(f"   返回结果键: {list(result.keys())}")
+                print("❌ There is no return result fundamentals_report")
+                print(f"   Return result key: {list(result.keys())}")
         else:
-            print(f"❌ 返回结果类型不正确: {type(result)}")
+            print(f"❌ The return result type is incorrect: {type(result)}")
             if hasattr(result, 'content'):
-                print(f"   内容: {result.content[:200]}...")
+                print(f"   content: {result.content[:200]}...")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 if __name__ == "__main__":
-    print("🚀 开始完整基本面分析流程测试")
+    print("🚀 Start testing the complete fundamental analysis process")
     
-    # 执行完整流程测试
+    # Perform complete process testing
     success = test_full_fundamentals_flow()
     
     if success:
-        print("\n✅ 测试完成")
+        print("\n✅ Test completed")
     else:
-        print("\n❌ 测试失败")
+        print("\n❌ test failed")

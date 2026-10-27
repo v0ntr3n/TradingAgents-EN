@@ -1,8 +1,8 @@
 # tradingagents/core/contracts/traders.py
 """
-交易员和风控数据契约定义
+Trader and Risk Control Data Contract Definition
 
-定义交易员和风险管理 Agent 的输入/输出字段和依赖关系
+Define input/output fields and dependencies for traders and risk management agents
 """
 
 from tradingagents.core.engine.data_contract import (
@@ -13,11 +13,11 @@ from tradingagents.core.engine.data_contract import (
 
 
 # =========================================
-# 交易员 (Trader)
+# trader (Trader)
 # =========================================
 TRADER_CONTRACT = AgentDataContract(
     agent_id="trader",
-    description="研究整合员 - 根据研究结论和风险评估生成研究整合意见",
+    description="Research Integrator - Generates research integration opinions based on study conclusions and risk assessments",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -46,11 +46,11 @@ TRADER_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 激进风控 (Risky Risk Manager)
+# Radical risk control (Risky Risk Manager)
 # =========================================
 RISKY_RISK_CONTRACT = AgentDataContract(
     agent_id="risky_risk",
-    description="激进风控 - 风险承受度高，倾向于更大的仓位和更激进的操作",
+    description="Aggressive risk control - high risk tolerance, inclined to larger positions and more aggressive operations",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -79,11 +79,11 @@ RISKY_RISK_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 稳健风控 (Safe Risk Manager)
+# Robust risk control (Safe Risk Manager)
 # =========================================
 SAFE_RISK_CONTRACT = AgentDataContract(
     agent_id="safe_risk",
-    description="稳健风控 - 风险承受度低，倾向于保守的仓位和谨慎的操作",
+    description="Robust risk control - low risk tolerance, leaning towards conservative positions and prudent operations",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -112,11 +112,11 @@ SAFE_RISK_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 中性风控 (Neutral Risk Manager)
+# Neutral risk control (Neutral Risk Manager)
 # =========================================
 NEUTRAL_RISK_CONTRACT = AgentDataContract(
     agent_id="neutral_risk",
-    description="中性风控 - 平衡风险和收益，倾向于适度的仓位",
+    description="Neutral risk control - balances risk and return, favoring moderate positions",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -145,11 +145,11 @@ NEUTRAL_RISK_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 风控经理 (Risk Manager)
+# Risk Control Manager (Risk Manager)
 # =========================================
 RISK_MANAGER_CONTRACT = AgentDataContract(
     agent_id="risk_manager",
-    description="风控经理 - 综合三种风控意见，形成最终风险评估",
+    description="Risk Control Manager - Comprehensive three risk control opinions to form the final risk assessment",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -178,7 +178,7 @@ RISK_MANAGER_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 交易员和风控契约汇总
+# Summary of traders and risk control contracts
 # =========================================
 TRADER_CONTRACTS = {
     "trader": TRADER_CONTRACT,

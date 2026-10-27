@@ -2,7 +2,7 @@
 港股数据提供器
 """
 
-# 导入改进的港股工具
+# Import improved Hong Kong stock tools
 try:
     from .improved_hk import (
         ImprovedHKStockProvider,
@@ -16,7 +16,7 @@ except ImportError:
     get_hk_stock_info_improved = None
     HK_PROVIDER_AVAILABLE = False
 
-# 导入港股数据工具
+# Import Hong Kong stock data tool
 try:
     from .hk_stock import HKStockProvider
     HK_STOCK_AVAILABLE = True

@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger("migrations.v2_1_0")
 
 VERSION = "2.1.0"
-DESCRIPTION = "补充 2.1.0 所需索引并保留幂等迁移入口"
+DESCRIPTION = "Supplement 2.1.0 required indexes and retain idempotent migration entry"
 
 
 async def _create_index_safely(collection, keys, *, name=None, unique=False):
@@ -59,5 +59,5 @@ async def upgrade(db):
 
 
 async def downgrade(db):
-    """回滚操作（可选）"""
+    """Rollback operation (optional)"""
     pass

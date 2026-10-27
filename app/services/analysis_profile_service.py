@@ -1,7 +1,7 @@
 """
-行业/个股分析配置服务
+Industry/stock analysis and allocation services
 
-提供 CRUD 操作、维度注入格式化功能、AI 生成行业配置
+Provide CRUD operations, dimension injection formatting functions, and AI generated industry configurations
 """
 
 import json
@@ -13,7 +13,7 @@ from app.utils.timezone import now_tz
 
 logger = logging.getLogger(__name__)
 
-# 集合名称
+# Collection name
 INDUSTRY_COLLECTION = "industry_analysis_profiles"
 STOCK_COLLECTION = "stock_analysis_profiles"
 
@@ -21,14 +21,14 @@ STOCK_COLLECTION = "stock_analysis_profiles"
 BUILTIN_SOURCE_DEFINITIONS = [
     {
         "key": "basic_info",
-        "label": "股票基础信息 / 行业归属",
-        "description": "来自 stock_basic_info 与统一股票信息接口，可支持行业归属、公司概况、部分估值和基础字段。",
+        "label": "Basic stock information/industry affiliation",
+        "description": "From stock_basic_info Interface to unified stock information, supporting industry affiliation, company profile, partial valuation and basic fields.",
         "keywords": ["行业", "公司", "主营", "市值", "估值", "pe", "pb", "市盈率", "市净率", "股票基础", "基本信息"],
     },
     {
         "key": "financials",
         "label": "财务报表 / 基本面",
-        "description": "来自 stock_financial_data、Tushare/AKShare/BaoStock 等统一数据能力，可支持营收、利润、现金流、ROE 等财务指标。",
+        "description": "Unified data capabilities from stock_financial_data, Tushare/AKShare/BaoStock, etc. can support financial indicators such as revenue, profit, cash flow, ROE, etc.",
         "keywords": [
             "营收", "收入", "净利润", "利润", "毛利率", "净利率", "现金流", "roe", "roa", "负债率", "周转", "应收", "存货",
             "资本开支", "capex", "分红", "eps", "每股收益", "经营活动现金流", "归母", "利润增长", "财务",
@@ -36,8 +36,8 @@ BUILTIN_SOURCE_DEFINITIONS = [
     },
     {
         "key": "market",
-        "label": "行情 / 量价 / 技术面",
-        "description": "来自 market_quotes、历史行情与技术指标能力，可支持价格趋势、成交量、波动率、换手率等量价指标。",
+        "label": "Market/Volume and Price/Technical",
+        "description": "Coming from market_quotes, historical market conditions and technical indicator capabilities, it can support price trends, trading volume, volatility, turnover rate and other volume and price indicators.",
         "keywords": [
             "股价", "价格", "成交量", "换手率", "波动率", "量价", "趋势", "技术", "均线", "macd", "rsi", "k线", "涨跌", "回撤",
         ],
@@ -45,7 +45,7 @@ BUILTIN_SOURCE_DEFINITIONS = [
     {
         "key": "news",
         "label": "新闻 / 事件 / 政策",
-        "description": "来自实时新闻聚合、公告与舆情能力，适合政策、监管、催化、风险事件等非结构化判断。",
+        "description": "It comes from real-time news aggregation, announcements and public opinion capabilities, and is suitable for unstructured judgments such as policy, supervision, catalysis, and risk events.",
         "keywords": [
             "政策", "监管", "舆情", "事件", "催化", "新闻", "公告", "情绪", "风险事件", "市场预期", "行业景气", "竞争格局",
         ],
@@ -72,7 +72,7 @@ STATUS_LABELS = {
 ACTION_LABELS = {
     "keep": "直接保留",
     "keep_with_review": "保留但建议复核",
-    "enhance_with_mcp_or_skill": "结合 MCP / Skill 补强",
+    "enhance_with_mcp_or_skill": "Combined with MCP/Skill reinforcement",
     "manual_import_or_external_source": "补充外部数据或手工导入",
     "remove_or_replace": "建议先删除或替换",
 }
@@ -81,7 +81,7 @@ ACTION_LABELS = {
 class AnalysisProfileService:
     """行业/个股分析配置服务"""
 
-    # ==================== 行业配置 ====================
+    # ==================== Industry configuration ====================
 
     async def get_industry_profiles(self, is_active: Optional[bool] = None) -> List[Dict]:
         """获取所有行业配置"""
@@ -147,7 +147,7 @@ class AnalysisProfileService:
         result = await db[INDUSTRY_COLLECTION].delete_one({"_id": ObjectId(profile_id)})
         return result.deleted_count > 0
 
-    # ==================== 个股配置 ====================
+    # ==================== Individual stock allocation ====================
 
     async def get_stock_profiles(self, industry: Optional[str] = None) -> List[Dict]:
         """获取个股配置列表"""
@@ -212,11 +212,11 @@ class AnalysisProfileService:
         result = await db[STOCK_COLLECTION].delete_one({"_id": ObjectId(profile_id)})
         return result.deleted_count > 0
 
-    # ==================== 维度注入（同步，供 _prepare_system_variables 使用） ====================
+    # ==================== Dimension injection (synchronous, for use by _prepare_system_variables) ====================
 
     @staticmethod
     def format_dimensions(dimensions: list) -> str:
-        """将分析维度列表格式化为提示词注入文本"""
+        """Format analysis dimension list as prompt word injection text"""
         if not dimensions:
             return ""
         lines = []
@@ -293,7 +293,7 @@ class AnalysisProfileService:
                     "summary_text": " ".join([part for part in summary_parts if part]),
                 })
         except Exception as e:
-            logger.warning(f"⚠️ 收集 MCP 能力快照失败: {e}")
+            logger.warning(f"⚠️ Failed to collect MCP capability snapshot: {e}")
 
         try:
             cursor = db["external_skills"].find({"status": "active"})
@@ -316,7 +316,7 @@ class AnalysisProfileService:
                     ),
                 })
         except Exception as e:
-            logger.warning(f"⚠️ 收集 external_skills 失败: {e}")
+            logger.warning(f"⚠️ Failed to collect external_skills: {e}")
 
         try:
             cursor = db["skills"].find({"enabled": True})
@@ -337,7 +337,7 @@ class AnalysisProfileService:
                     ),
                 })
         except Exception as e:
-            logger.warning(f"⚠️ 收集 skills 失败: {e}")
+            logger.warning(f"⚠️ Failed to collect skills: {e}")
 
         return {
             "builtin_sources": builtin_sources,
@@ -346,7 +346,7 @@ class AnalysisProfileService:
             "manual_import": {
                 "available": True,
                 "label": "手工导入 / 本地数据",
-                "description": "当前系统支持通过批量导入 API 或本地数据方式补充指标，导入后的数据源通常标记为 local / local_file。",
+                "description": "The current system supports supplementing indicators through batch import API or local data. The imported data source is usually marked as local / local_file.",
             },
             "counts": {
                 "builtin_sources": len(builtin_sources),
@@ -354,9 +354,9 @@ class AnalysisProfileService:
                 "active_skills": len(active_skills),
             },
             "notes": [
-                "内置数据更适合财务、行情、新闻与公告类指标。",
-                "MCP/Skill 能扩展数据覆盖，但是否真的可用仍取决于当前启用项和字段映射。",
-                "若系统内找不到对应数据，建议用户补充外部数据源或手工导入后再保留该维度/指标。",
+                "The built-in data is more suitable for financial, market, news and announcement indicators.",
+                "MCP/Skill Extended data coverage is possible, but whether it is actually available depends on the currently enabled items and field mappings.",
+                "If the corresponding data cannot be found in the system, it is recommended that the user supplement external data sources or manually import them before retaining the dimension/indicator.",
             ],
         }
 
@@ -416,37 +416,37 @@ class AnalysisProfileService:
         if has_financial or has_market or has_basic:
             status = "directly_usable"
             action = "keep"
-            user_note = "该项主要依赖系统当前已有的结构化数据能力，保存后可直接进入分析提示词。"
+            user_note = "This item mainly relies on the system s current structured data capabilities. After saving, you can directly enter the analysis prompt word."
         elif has_news:
             status = "partially_usable"
             action = "keep_with_review"
-            user_note = "系统可通过新闻/公告类数据辅助判断，但多为非结构化信息，建议分析结论时人工复核。"
+            user_note = "The system can assist in judgment through news/announcement data, but most of it is unstructured information. It is recommended to manually review the analysis conclusion."
         elif has_operational:
             matched_sources.append(self._source_ref("manual_import", "手工导入 / 外部数据", capability_snapshot["manual_import"]["description"]))
             if mcp_matches or skill_matches:
                 status = "partially_usable"
                 action = "enhance_with_mcp_or_skill"
-                user_note = "该项更像运营/行业外部指标，系统已有部分 MCP / Skill 可能可补强，但仍建议确认字段映射与可用性。"
+                user_note = "This item is more like an external indicator of operations/industry. Some MCP/Skills already in the system may be enhanced, but it is still recommended to confirm field mapping and availability."
             else:
                 status = "external_required"
                 action = "manual_import_or_external_source"
-                user_note = "当前内置数据通常不直接覆盖此类运营指标，建议接入外部数据源、启用匹配的 MCP/Skill，或手工导入后再保留。"
+                user_note = "The current built-in data usually does not directly cover such operational indicators. It is recommended to access external data sources, enable matching MCP/Skill, or manually import and retain them."
                 if has_any_mcp or has_any_skill:
-                    missing_requirements.append("当前虽有已启用 MCP / Skill，但未发现与该项直接匹配的能力描述，需人工确认。")
+                    missing_requirements.append("Although MCP/Skill is currently enabled, no ability description directly matching this item has been found, and manual confirmation is required.")
                 else:
-                    missing_requirements.append("当前未发现可直接支撑该项的 MCP / Skill，需要额外接入外部数据。")
+                    missing_requirements.append("Currently, no MCP/Skill has been found that can directly support this item, and additional external data is required.")
         elif has_qualitative:
             status = "review_recommended"
             action = "remove_or_replace"
-            user_note = "该项偏定性、抽象或难以结构化验证，建议用户确认是否有稳定数据来源；若没有，先删除或改成可验证指标。"
-            missing_requirements.append("建议替换为可验证的财务、行情、新闻或可导入指标。")
+            user_note = "This item is qualitative, abstract or difficult to verify in a structured way. It is recommended that users confirm whether there is a stable data source; if not, delete it or change it to a verifiable indicator."
+            missing_requirements.append("It is recommended to replace it with verifiable financial, market, news or importable indicators.")
         else:
             matched_sources.append(self._source_ref("manual_import", "手工导入 / 外部数据", capability_snapshot["manual_import"]["description"]))
             status = "review_recommended"
             action = "keep_with_review"
-            user_note = "系统暂未识别到明确的数据支撑方式，建议保存前由用户确认来源；若无法落实数据，建议删除。"
+            user_note = "The system has not yet identified a clear data support method. It is recommended that the user confirm the source before saving. If the data cannot be confirmed, it is recommended to delete it."
             if not matched_sources:
-                missing_requirements.append("未识别到明确数据来源。")
+                missing_requirements.append("No clear data source was identified.")
 
         return {
             "name": name,
@@ -493,13 +493,13 @@ class AnalysisProfileService:
 
         recommendations = []
         if dimension_counts["directly_usable"] or metric_counts["directly_usable"]:
-            recommendations.append("优先保留“可直接使用”的维度和指标，它们最容易被当前系统稳定支撑。")
+            recommendations.append("Priority reservation Can be used directly dimensions and indicators, which are most easily supported stably by the current system.")
         if total_external:
             recommendations.append(f"当前有 {total_external} 项被识别为“需外部数据”，建议在保存前确认 MCP / Skill / 手工导入方案。")
         if total_review:
             recommendations.append(f"当前有 {total_review} 项为“建议复核”，若无法确认数据来源，建议先删除或改写为可验证指标。")
         if capability_snapshot.get("counts", {}).get("enabled_mcp_servers", 0) == 0:
-            recommendations.append("当前没有已启用的 MCP 服务器，如需更多行业运营或另类数据，可考虑先接入 MCP。")
+            recommendations.append("There is currently no enabled MCP server. If you need more industry operations or alternative data, you may consider connecting to MCP first.")
 
         return {
             "overall_status": overall_status,
@@ -512,22 +512,22 @@ class AnalysisProfileService:
     @staticmethod
     def get_industry_dimensions_sync(industry: str) -> Dict[str, str]:
         """
-        同步获取行业分析维度（用于 _prepare_system_variables）
+        Synchronously obtain industry analysis dimensions (for _prepare_system_variables)
 
         Returns:
-            包含 industry_dimensions, industry_focus, industry_key_metrics 的字典
+            contains industry_dimensions, industry_focus, industry_key_metrics dictionary
         """
         result = {}
         try:
             from app.core.database import get_mongo_db_sync
             db = get_mongo_db_sync()
 
-            # 1. 精确匹配
+            # 1. exact match
             profile = db[INDUSTRY_COLLECTION].find_one(
                 {"industry": industry, "is_active": True}
             )
 
-            # 2. 模糊兜底：包含匹配（如 stock_basic_info 中的"银行" 匹配配置中的"银行"）
+            # 2. Fuzzy bottom line: Contains matches (such as in stock_basic_info"bank" match configuration"bank") 
             if not profile:
                 import re
                 escaped = re.escape(industry)
@@ -535,7 +535,7 @@ class AnalysisProfileService:
                     {"industry": {"$regex": escaped, "$options": "i"}, "is_active": True}
                 )
                 if not profile:
-                    # 反向：配置中的行业名包含在查询行业名中
+                    # Reverse: The industry name in the configuration is included in the query industry name
                     all_profiles = list(db[INDUSTRY_COLLECTION].find({"is_active": True}))
                     for p in all_profiles:
                         if p.get("industry") and p["industry"] in industry:
@@ -550,15 +550,15 @@ class AnalysisProfileService:
                 result["industry_comparable_companies"] = ", ".join(profile.get("comparable_companies", []))
                 logger.info(f"🏭 [行业维度注入] {industry}: {len(dimensions)} 个维度")
         except Exception as e:
-            logger.warning(f"⚠️ 获取行业分析维度失败: {e}")
+            logger.warning(f"⚠️ Failed to obtain industry analysis dimensions: {e}")
         return result
 
     @staticmethod
     def build_industry_prompt_block(industry: str) -> str:
         """
-        同步获取行业分析配置，格式化为可直接追加到 Prompt 的文本块。
+        Synchronously obtain industry analysis configuration, formatted as a text block that can be appended directly to Prompt.
 
-        返回空字符串表示该行业无配置或查询失败。
+        Returning an empty string indicates that the industry is not configured or the query failed.
         """
         try:
             from app.core.database import get_mongo_db_sync
@@ -575,19 +575,19 @@ class AnalysisProfileService:
 
             blocks = ["\n\n## 行业分析重点\n"]
 
-            # 分析维度
+            # Analysis Dimensions
             blocks.append("### 核心分析维度\n")
             for d in dimensions:
                 imp = d.get("importance", "high")
                 imp_label = {"critical": "★", "high": "▲", "medium": "●", "low": "○"}.get(imp, "")
                 blocks.append(f"- **{d.get('name', '')}** {imp_label}: {d.get('description', '')}")
 
-            # 分析重点
+            # Analysis focus
             focus = profile.get("analysis_focus", "")
             if focus:
                 blocks.append(f"\n### 行业分析总览\n{focus}")
 
-            # 关键指标
+            # key indicators
             key_metrics = profile.get("key_metrics", [])
             if key_metrics:
                 blocks.append(f"\n### 关键跟踪指标\n{', '.join(key_metrics)}")
@@ -596,16 +596,16 @@ class AnalysisProfileService:
             logger.info(f"🏭 [行业Prompt注入] {industry}: {len(dimensions)} 维度, 长度={len(result)}")
             return result
         except Exception as e:
-            logger.warning(f"⚠️ 构建行业Prompt块失败: {e}")
+            logger.warning(f"⚠️ Building industry prompt block failed: {e}")
             return ""
 
     @staticmethod
     def get_stock_dimensions_sync(stock_code: str) -> Dict[str, str]:
         """
-        同步获取个股分析维度（用于 _prepare_system_variables）
+        Synchronously obtain individual stock analysis dimensions (for _prepare_system_variables)
 
         Returns:
-            包含 stock_dimensions, stock_special_notes 的字典
+            contains stock_dimensions, stock_special_notes dictionary
         """
         result = {}
         try:
@@ -620,10 +620,10 @@ class AnalysisProfileService:
                 result["stock_special_notes"] = profile.get("special_notes", "")
                 logger.info(f"📊 [个股维度注入] {stock_code}: {len(dimensions)} 个维度")
         except Exception as e:
-            logger.warning(f"⚠️ 获取个股分析维度失败: {e}")
+            logger.warning(f"⚠️ Failed to obtain individual stock analysis dimensions: {e}")
         return result
 
-    # ==================== AI 生成行业配置 ====================
+    # ==================== AI Generate industry configuration ====================
 
     async def generate_industry_profile_with_ai(
         self,
@@ -632,15 +632,15 @@ class AnalysisProfileService:
         existing_profile: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        使用 LLM 自动生成行业分析配置
+        Automatically generate industry analysis configurations using LLM
 
         Args:
-            industry: 行业名称，如 "银行"、"新能源汽车"、"医疗器械"
-            user_request: 用户本轮补充要求或修订指令
-            existing_profile: 当前草案，用于多轮修订
+            industry: Industry name, such as "bank", "New energy vehicles", "medical device"
+            user_request: Users supplementary requirements or revised instructions for this round
+            existing_profile: Current draft, used for multiple rounds of revisions
 
         Returns:
-            生成的行业配置字典（未保存到数据库，需用户确认后再保存）
+            Generated industry configuration dictionary (not saved to the database, user confirmation is required before saving)
         """
         from app.services.intelligent_assistant_service import get_reasoning_llm_config
         from core.llm import UnifiedLLMClient, Message
@@ -648,46 +648,46 @@ class AnalysisProfileService:
         db = get_mongo_db()
         config = await get_reasoning_llm_config(db)
         if not config:
-            raise RuntimeError("未配置 LLM，请先在系统设置中配置大模型")
+            raise RuntimeError("LLM is not configured, please configure the large model in the system settings first")
 
         client = UnifiedLLMClient.from_config(config)
 
         prompt_parts = [
-            f'你是一位资深的 A 股行业研究专家。请为"{industry}"行业输出一份结构化的分析维度配置。',
+            f'You are a senior A-share industry research expert. please for"{industry}"The industry outputs a structured analysis dimension configuration.',
             "",
-            "要求：",
-            "1. 输出 5-8 个最关键的 analysis_dimensions，每个维度包含：name / description / importance / data_source",
-            "2. 输出一段 analysis_focus（2-3 句话）",
-            "3. 输出 5-8 个 key_metrics（关键财务/业务指标名称）",
-            "4. 输出 3-5 个 comparable_companies（A 股可比公司）",
-            "5. 若存在 existing_profile，则本轮任务是‘修订草案’，优先保留合理项，只根据用户要求增删改，不要无关发散",
-            "6. 对用户明确要求删除的项，不要重新加回去",
-            "7. 请保持输出为纯 JSON，不要包含 markdown 代码块或任何额外说明",
+            "Requirements:",
+            "1. Output the 5-8 most critical analysis_dimensions, each dimension containing:name / description / importance / data_source",
+            "2. Output a section of analysis_focus (2-3 sentences)",
+            "3. Output 5-8 key_metrics (names of key financial/business metrics)",
+            "4. Output 3-5 comparable_companies (A-share comparable companies)",
+            "5. If existing_profile exists, the task of this round is revised draft , Give priority to retaining reasonable items, and only add, delete or modify them according to user requirements, and do not make irrelevant items.",
+            "6. Do not add back items that the user explicitly requests to delete.",
+            "7. Please keep the output as pure JSON and do not include markdown code blocks or any additional instructions",
             "",
         ]
 
         if existing_profile:
             prompt_parts.extend([
-                "当前草案(existing_profile)：",
+                "current draft(existing_profile): ",
                 json.dumps(existing_profile, ensure_ascii=False, indent=2),
                 "",
             ])
 
         if user_request and user_request.strip():
             prompt_parts.extend([
-                "用户本轮要求：",
+                "User requirements for this round:",
                 user_request.strip(),
                 "",
             ])
         else:
             prompt_parts.extend([
-                "用户本轮要求：",
-                "请先给出一版适合作为行业分析模板的首版草案。",
+                "User requirements for this round:",
+                "Please provide a first draft that is suitable as an industry analysis template.",
                 "",
             ])
 
         prompt_parts.extend([
-            "请直接输出如下 JSON 结构：",
+            "Please directly output the following JSON structure:",
             "{",
             f'  "industry": "{industry}",',
             f'  "display_name": "{industry}行业",',
@@ -701,14 +701,14 @@ class AnalysisProfileService:
         prompt = "\n".join(prompt_parts)
 
         messages = [
-            Message(role="system", content="你是一位资深的 A 股行业研究分析师，擅长结构化金融分析。请仅输出纯 JSON，不要包含任何其他文字。"),
+            Message(role="system", content="You are a senior A-share industry research analyst, specializing in structured financial analysis. Please output only plain JSON, without any other text."),
             Message(role="user", content=prompt),
         ]
 
         response = await client.achat(messages)
         content = response.content.strip()
 
-        # 清理可能的 markdown 代码块标记
+        # Clean up possible markdown code block tags
         if content.startswith("```"):
             content = content.split("\n", 1)[1] if "\n" in content else content[3:]
         if content.endswith("```"):
@@ -719,9 +719,9 @@ class AnalysisProfileService:
             profile_data = json.loads(content)
         except json.JSONDecodeError as e:
             logger.error(f"❌ AI 生成的行业配置 JSON 解析失败: {e}\n原文: {content[:500]}")
-            raise ValueError(f"AI 生成的内容无法解析为有效 JSON: {e}")
+            raise ValueError(f"AI The generated content cannot be parsed as valid JSON: {e}")
 
-        # 确保必要字段存在
+        # Make sure required fields exist
         profile_data["industry"] = industry
         profile_data.setdefault("display_name", f"{industry}行业")
         profile_data.setdefault("is_active", True)
@@ -761,15 +761,15 @@ class AnalysisProfileService:
             "dimension_assessments": dimension_assessments,
             "metric_assessments": metric_assessments,
             "next_step_guidance": [
-                "先确认“可直接使用”和“部分可用”的项是否符合你的分析框架。",
-                "对“需外部数据”的项，决定是接入 MCP / Skill、手工导入，还是暂时删除。",
-                "对“建议复核”的项，若无法说明数据来源，建议先删掉再保存。",
+                "Confirm first Can be used directly and Partially available of items fit your analytical framework.",
+                "Yes external data required item, decide whether to access MCP/Skill, import manually, or delete it temporarily.",
+                "Yes Recommend review If the data source cannot be explained, it is recommended to delete it first and then save it.",
             ],
         }
 
         logger.info(
             f"🤖 [AI生成] 行业配置: {industry}, 维度数: {len(profile_data.get('analysis_dimensions', []))}, "
-            f"需外部数据项: {coverage_summary['dimension_counts']['external_required'] + coverage_summary['metric_counts']['external_required']}"
+            f"Requires external data items: {coverage_summary['dimension_counts']['external_required'] + coverage_summary['metric_counts']['external_required']}"
         )
         return preview
 

@@ -232,7 +232,7 @@ class EmbeddedNanobotService:
         }
         if clean_thread_context:
             updates["thread_context"] = clean_thread_context
-            # 🔍 MongoDB 写入前日志
+            # 🔍 MongoDB Log before writing
             logger.info(
                 "[EmbeddedNanobot][MongoWrite] thread_id=%s thread_context_keys=%s intent_stage=%s intent_action=%s",
                 clean_thread_id,
@@ -448,13 +448,13 @@ class EmbeddedNanobotService:
         return (str(self._workspace.resolve()), self._preferred_model)
 
     # ──────────────────────────────────────────────────────────────
-    # 简单对话模式（api channel）：直接用 UnifiedLLMClient，不走 Nanobot Runtime
+    # Simple conversation mode (api channel): Use UnifiedLLMClient directly without leaving Nanobot Runtime
     # ──────────────────────────────────────────────────────────────
 
     async def _get_simple_chat_client(self) -> tuple[Any, list, dict]:
-        """获取简单对话用的 LLM 客户端和工具（带缓存）。
+        """Get LLM clients and tools for simple conversations (with caching).
 
-        返回 (UnifiedLLMClient, openai_tool_schemas, tool_functions)。
+        Return (UnifiedLLMClient, openai_tool_schemas, tool_functions). 
         """
         cache_key = self._cache_key()
         cached = self._simple_chat_cache.get(cache_key)
@@ -471,7 +471,7 @@ class EmbeddedNanobotService:
             preferred_models={"model": self._preferred_model} if self._preferred_model else None,
         )
         if not config:
-            raise ValueError("数据库中没有可用的 LLM 配置")
+            raise ValueError("No LLM configuration available in database")
 
         client = UnifiedLLMClient.from_config(config)
         registry = get_tool_registry()
@@ -487,7 +487,7 @@ class EmbeddedNanobotService:
 
         client.inject_tools(tool_functions)
         logger.info(
-            "[EmbeddedNanobot][SimpleChat] 已加载 %d 个工具 (model=%s)",
+            "[EmbeddedNanobot][SimpleChat] %d tools loaded (model=%s)",
             len(openai_tools), config.model,
         )
 
@@ -506,18 +506,18 @@ class EmbeddedNanobotService:
         chat_id: str = "",
         channel: str = "api",
     ) -> dict[str, Any]:
-        """简单对话模式：UnifiedLLMClient.achat(auto_execute_tools=True)。
+        """Simple conversation mode:UnifiedLLMClient.achat(auto_execute_tools=True). 
 
-        用于 api channel（调试页），不经过 Nanobot Runtime。
+        Used for api channel (debug page), without going through Nanobot Runtime.
         """
         from core.llm.models import Message, MessageRole
 
         try:
             client, openai_tools, _ = await self._get_simple_chat_client()
         except Exception as e:
-            logger.error("[EmbeddedNanobot][SimpleChat] 获取客户端失败: %s", e, exc_info=True)
+            logger.error("[EmbeddedNanobot][SimpleChat] Failed to get client: %s", e, exc_info=True)
             return {
-                "content": f"抱歉，助手暂时不可用：{e}",
+                "content": f"Sorry, the assistant is temporarily unavailable:{e}",
                 "tools_used": [],
                 "messages": [],
                 "stop_reason": "error",
@@ -527,8 +527,8 @@ class EmbeddedNanobotService:
             Message(
                 role=MessageRole.SYSTEM,
                 content=(
-                    "你是 TradingAgentsCN 平台的智能助手。你可以使用工具获取实时数据。"
-                    "请基于工具返回的真实数据回答用户问题，不要编造数据。"
+                    "You are the intelligent assistant of the TradingAgentsCN platform. You can use tools to get real-time data."
+                    "Please answer user questions based on real data returned by the tool and do not make up data."
                 ),
             ),
             Message(role=MessageRole.USER, content=user_message),
@@ -544,13 +544,13 @@ class EmbeddedNanobotService:
                     await on_tool_event({
                         "name": tool_name,
                         "status": "running",
-                        "label": f"执行：{tool_name}",
+                        "label": f"Execution:{tool_name}",
                     })
                 if on_step_event:
                     await on_step_event({
                         "step": f"tool_{tool_name}",
                         "status": "running",
-                        "title": f"执行工具：{tool_name}",
+                        "title": f"Execution tools:{tool_name}",
                         "session_key": session_key,
                         "chat_id": chat_id,
                         "channel": channel,
@@ -563,13 +563,13 @@ class EmbeddedNanobotService:
                     await on_tool_event({
                         "name": tool_name,
                         "status": "error" if is_error else "completed",
-                        "label": f"{'失败' if is_error else '完成'}：{tool_name}",
+                        "label": f"{'failed' if is_error else 'Complete'}: {tool_name}",
                     })
                 if on_step_event:
                     await on_step_event({
                         "step": f"tool_{tool_name}",
                         "status": "completed",
-                        "title": f"工具完成：{tool_name}",
+                        "title": f"Tool completion:{tool_name}",
                         "session_key": session_key,
                         "chat_id": chat_id,
                         "channel": channel,
@@ -590,8 +590,8 @@ class EmbeddedNanobotService:
             )
             content = getattr(response, "content", "") or ""
         except Exception as e:
-            logger.error("[EmbeddedNanobot][SimpleChat] 调用失败: %s", e, exc_info=True)
-            content = f"抱歉，处理过程中出现了问题：{e}"
+            logger.error("[EmbeddedNanobot][SimpleChat] call failed: %s", e, exc_info=True)
+            content = f"Sorry, there was a problem during processing:{e}"
 
         if on_stream and content:
             chunk_size = 40
@@ -619,9 +619,9 @@ class EmbeddedNanobotService:
         current_thread_id: str | None,
         **kwargs: Any,
     ) -> dict[str, Any]:
-        """api channel 入口：走 UnifiedLLMClient，不经过 Nanobot Runtime。
+        """api channel Entrance: Take UnifiedLLMClient, do not go through Nanobot Runtime.
 
-        负责：提取 SSE 回调 → 设置 contextvar → 调用 _run_simple_chat → 持久化 → 返回。
+        Responsible for: Extracting SSE callbacks → settings contextvar → call _run_simple_chat → persistence → Return.
         """
         runtime_kwargs = dict(kwargs)
         thread_context = runtime_kwargs.pop("thread_context", None) or {}
@@ -669,7 +669,7 @@ class EmbeddedNanobotService:
                         thread_context=thread_context,
                     )
                 except Exception:
-                    logger.exception("[EmbeddedNanobot][SimpleChat] 写入数据库会话历史失败")
+                    logger.exception("[EmbeddedNanobot][SimpleChat] Failed to write database session history")
 
             result["thread_context"] = thread_context
             logger.info(
@@ -696,10 +696,10 @@ class EmbeddedNanobotService:
         current_thread_id: str | None,
         **kwargs: Any,
     ) -> dict[str, Any]:
-        """agent_workshop channel 入口：走 LangGraph 工作流 + UnifiedLLMClient，不经过 Nanobot Runtime。
+        """agent_workshop channel Entrance: Follow the LangGraph workflow + UnifiedLLMClient, Not going through Nanobot Runtime.
 
-        从 core.embedded_nanobot.runtime._run_agent_builder_graph 迁移而来。
-        负责：提取 SSE 回调 → 设置 contextvar → 执行 Graph → 持久化 → 返回。
+        Migrated from core.embedded_nanobot.runtime._run_agent_builder_graph.
+        Responsible for: Extracting SSE callbacks → settings contextvar → execute Graph → persistence → Return.
         """
         from core.embedded_nanobot.workflows import (
             AgentBuilderGraphStore,
@@ -718,7 +718,7 @@ class EmbeddedNanobotService:
         chat_id = runtime_kwargs.get("chat_id") or current_thread_id or session_key
         channel = "agent_workshop"
 
-        # 构建 thread_id
+        # build thread_id
         effective_thread_id = current_thread_id or chat_id or f"agent-studio-{int(datetime.now().timestamp() * 1000)}"
 
         logger.info(
@@ -726,7 +726,7 @@ class EmbeddedNanobotService:
             effective_thread_id, user_id, len(user_message),
         )
 
-        # ── SSE 事件落盘 ──
+        # ── SSE Event placement ──
         try:
             from app.routers.embedded_nanobot import _append_nanobot_event_log
         except ImportError:
@@ -747,7 +747,7 @@ class EmbeddedNanobotService:
         _log_event("started", {"message": "助手已开始处理请求", "session_key": session_key})
 
         async def event_callback(event_type: str, label: str, payload: Any = None):
-            """节点内事件 → SSE 流 + 落盘。"""
+            """Events within a node → SSE flow + Place the plate."""
             if event_type == "step" and on_step_event:
                 step_data = {
                     "step": label,
@@ -788,14 +788,14 @@ class EmbeddedNanobotService:
                 _log_event("tool_event", tool_data)
                 await on_tool_event(tool_data)
 
-        # 设置 contextvar（与 _chat_via_simple_chat 保持一致）
+        # Set contextvar (consistent with _chat_via_simple_chat)
         user_token = set_current_user_id(user_id) if user_id else None
         thread_token = set_current_assistant_thread_id(current_thread_id) if current_thread_id else None
         thread_context_token = set_current_assistant_thread_context(thread_context)
         try:
             store = AgentBuilderGraphStore(self._db)
 
-            # 尝试恢复已有状态
+            # Try to restore existing state
             state = await store.load_checkpoint(effective_thread_id)
             if state:
                 state["user_message"] = user_message
@@ -809,7 +809,7 @@ class EmbeddedNanobotService:
                     state.get("stage", "?"),
                 )
             else:
-                # 新会话
+                # new session
                 state = new_agent_builder_state(
                     thread_id=effective_thread_id,
                     user_id=user_id or "",
@@ -818,17 +818,17 @@ class EmbeddedNanobotService:
                     chat_id=chat_id,
                 )
 
-            # 构建图
+            # Build diagram
             graph = build_agent_builder_graph()
 
-            # 创建工具注册表适配器（替代 Nanobot ToolRegistry）
+            # Create tool registry adapter (replaces Nanobot ToolRegistry)
             tool_registry = StandardToolRegistryAdapter()
 
-            # 获取 UnifiedLLMClient（替代 self.provider.client）
+            # Get UnifiedLLMClient (replaces self.provider.client)
             client, _, _ = await self._get_simple_chat_client()
             llm_client = client
 
-            # 执行图
+            # Execution diagram
             try:
                 result = await execute_graph(
                     graph=graph,
@@ -842,13 +842,13 @@ class EmbeddedNanobotService:
             except Exception as e:
                 logger.error("[AgentBuilderGraph][Error] %s", e, exc_info=True)
                 return {
-                    "content": f"抱歉，处理过程中出现了问题：{e}",
+                    "content": f"Sorry, there was a problem during processing:{e}",
                     "tools_used": [],
                     "messages": [],
                     "stop_reason": "error",
                 }
 
-            # 判断是否需要暂停
+            # Determine whether a pause is needed
             if result.get("awaiting_user"):
                 await store.save_checkpoint(
                     effective_thread_id,
@@ -860,7 +860,7 @@ class EmbeddedNanobotService:
                     result.get("current_node"), result.get("stage"),
                 )
 
-            # 清理运行时注入字段
+            # Clean up runtime injected fields
             final_response = result.get("final_response", "")
             tool_events = result.get("tool_events", [])
             base_thread_context = dict(thread_context) if isinstance(thread_context, dict) else {}
@@ -899,7 +899,7 @@ class EmbeddedNanobotService:
                 "tool_events": tool_events,
             }
 
-            # 持久化会话历史
+            # Persistent session history
             if user_id:
                 try:
                     await self.persist_chat_turn(
@@ -917,7 +917,7 @@ class EmbeddedNanobotService:
                         thread_context=result_thread_context,
                     )
                 except Exception:
-                    logger.exception("[EmbeddedNanobot][Graph] 写入数据库会话历史失败")
+                    logger.exception("[EmbeddedNanobot][Graph] Failed to write database session history")
 
             result_dict["thread_context"] = thread_context
             logger.info(
@@ -945,7 +945,7 @@ class EmbeddedNanobotService:
     ) -> dict[str, Any]:
         channel = str(kwargs.get("channel") or "").strip()
 
-        # ── api / agent_workshop_evaluation channel：直接走 UnifiedLLMClient，不经过 Nanobot Runtime ──
+        # ── api / agent_workshop_evaluation channel: Go directly to UnifiedLLMClient without passing Nanobot Runtime ──
         if channel in {"api", "agent_workshop_evaluation"}:
             return await self._chat_via_simple_chat(
                 user_message=user_message,
@@ -956,7 +956,7 @@ class EmbeddedNanobotService:
                 **kwargs,
             )
 
-        # ── agent_workshop channel：走 LangGraph 工作流 + UnifiedLLMClient，不经过 Nanobot Runtime ──
+        # ── agent_workshop channel: Follow the LangGraph workflow + UnifiedLLMClient, not pass Nanobot Runtime ──
         if channel == "agent_workshop":
             return await self._chat_via_graph(
                 user_message=user_message,
@@ -967,14 +967,14 @@ class EmbeddedNanobotService:
                 **kwargs,
             )
 
-        # ── Nanobot Runtime 已移除：embedded channel（默认，无前端调用方）不再支持 ──
+        # ── Nanobot Runtime Removed: embedded channel (default, no frontend caller) is no longer supported ──
         logger.warning(
-            "[EmbeddedNanobot][Deprecated] runtime 路径已废弃，channel=%s 不再支持。"
-            "请使用 agent_workshop / api / agent_workshop_evaluation channel。",
+            "[EmbeddedNanobot][Deprecated] runtime The path is obsolete,channel=%s No longer supported."
+            "Please use the agent_workshop/api/agent_workshop_evaluation channel.",
             channel or "embedded",
         )
         return {
-            "content": "该通道已废弃，Agent 工坊 Runtime 已移除。请使用 agent_workshop / api / agent_workshop_evaluation 通道。",
+            "content": "This channel is deprecated and the Agent Workshop Runtime has been removed. Please use the agent_workshop/api/agent_workshop_evaluation channel.",
             "tools_used": [],
             "messages": [],
             "stop_reason": "deprecated_channel",
@@ -982,15 +982,15 @@ class EmbeddedNanobotService:
 
 
 def _extract_pending_from_response(assistant_content: str, user_message: str) -> dict:
-    """从 LLM 回复中提取待确认的问题和选项，作为 intent.pending 的兜底。"""
+    """Extract the questions and options to be confirmed from the LLM response as the basis for intent.pending."""
     if not assistant_content:
         return {}
 
     result = {}
-    # 查找问句（以 ? 或 ？结尾的行，或包含「你觉得呢」「你怎么看」等）
+    # Find a question (starting with ? or ? The ending line may include "What do you think", "What do you think", etc.)
     lines = assistant_content.strip().split("\n")
     question_lines = []
-    for line in lines[-10:]:  # 只看最后 10 行
+    for line in lines[-10:]:  # Only look at the last 10 lines
         stripped = line.strip()
         if stripped.endswith("?") or stripped.endswith("？"):
             question_lines.append(stripped)
@@ -998,9 +998,9 @@ def _extract_pending_from_response(assistant_content: str, user_message: str) ->
             question_lines.append(stripped)
 
     if question_lines:
-        result["pending_question"] = question_lines[-1]  # 取最后一个问句
+        result["pending_question"] = question_lines[-1]  # Take the last question
 
-    # 查找选项（A/B/C 或 选项A/选项B 模式）
+    # Find options (A/B/C or option A/option B mode)
     option_lines = []
     for line in lines:
         stripped = line.strip()

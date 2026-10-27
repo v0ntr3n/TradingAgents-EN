@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试DeepSeek成本计算详细调试
+Test DeepSeek cost calculation detailed debugging
 """
 
 import os
@@ -8,71 +8,71 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def test_deepseek_cost_debug():
-    """测试DeepSeek成本计算，观察详细日志"""
-    print("🔬 DeepSeek成本计算详细调试")
+    """Test DeepSeek cost calculation and observe detailed logs"""
+    print("🔬 DeepSeek Cost calculation detailed debugging")
     print("=" * 60)
     
-    # 检查API密钥
+    # Check API key
     if not os.getenv("DEEPSEEK_API_KEY"):
-        print("❌ 未找到DEEPSEEK_API_KEY，无法测试")
+        print("❌ DEEPSEEK_API_KEY not found, unable to test")
         return False
     
     try:
         from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
         
-        print("🔧 创建DeepSeek实例...")
+        print("🔧 Create DeepSeek instance...")
         
-        # 创建DeepSeek实例
+        # Create DeepSeek instance
         deepseek_llm = ChatDeepSeek(
             model="deepseek-chat",
             temperature=0.1,
-            max_tokens=50  # 限制token数量，减少输出
+            max_tokens=50  # Limit the number of tokens and reduce output
         )
         
-        print(f"📊 模型名称: {deepseek_llm.model_name}")
+        print(f"📊 Model name: {deepseek_llm.model_name}")
         print("\n" + "="*80)
-        print("开始调用DeepSeek，观察详细的成本计算日志：")
+        print("Start calling DeepSeek and observe the detailed cost calculation log:")
         print("="*80)
         
-        # 测试调用
-        result = deepseek_llm.invoke("你好")
+        # test call
+        result = deepseek_llm.invoke("hello")
         
         print("="*80)
-        print("调用完成！")
+        print("Call completed!")
         print("="*80)
         
-        print(f"📊 响应内容: {result.content}")
+        print(f"📊 Response content: {result.content}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主函数"""
-    print("🔬 DeepSeek成本计算详细调试测试")
+    """main function"""
+    print("🔬 DeepSeek Detailed commissioning and testing of cost calculations")
     print("=" * 80)
-    print("📝 这个测试将显示成本计算的每个步骤")
+    print("📝 This test will show each step of the cost calculation")
     print("=" * 80)
     
     success = test_deepseek_cost_debug()
     
     if success:
-        print("\n🎉 测试完成！")
-        print("请查看上面的详细日志，找出成本计算为0的原因。")
+        print("\n🎉 Test completed!")
+        print("Please check the detailed log above to find out why the cost calculation is 0.")
     else:
-        print("\n❌ 测试失败")
+        print("\n❌ test failed")
     
     return success
 

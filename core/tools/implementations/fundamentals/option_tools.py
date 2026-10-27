@@ -1,4 +1,4 @@
-"""期权与衍生品定价工具。"""
+"""Options and derivatives pricing tools."""
 
 import json
 import logging
@@ -18,7 +18,7 @@ try:
     from scipy import stats as _stats
 
     def _norm_cdf(x: float) -> float:
-        """标准正态分布 CDF，优先 scipy，回退 math.erf。"""
+        """Standard normal distribution CDF, scipy first, fallback math.erf."""
         return float(_stats.norm.cdf(x))
 
     _HAS_SCIPY = True
@@ -26,16 +26,16 @@ except ImportError:
     _HAS_SCIPY = False
 
     def _norm_cdf(x: float) -> float:
-        """标准正态分布 CDF —— math.erf 近似。"""
+        """standard normal distribution CDF —— math.erf Approximately."""
         return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
 
 
 def _norm_pdf(x: float) -> float:
-    """标准正态分布 PDF。"""
+    """Standard Normal Distribution PDF."""
     return math.exp(-0.5 * x * x) / math.sqrt(2.0 * math.pi)
 
 
-# ── Black-Scholes 内部计算 ─────────────────────────────────────────
+# ── Black-Scholes Internal calculation ─────────────────────────────────────────
 
 def _bs_d1(
     spot: float, strike: float, t: float, r: float, sigma: float
@@ -48,7 +48,7 @@ def _bs_d1(
 def _bs_price(
     spot: float, strike: float, t: float, r: float, sigma: float, opt_type: str
 ) -> dict:
-    """计算 Black-Scholes 价格及中间变量。
+    """Calculate Black-Scholes prices and intermediate variables.
 
     Returns
         dict with: price, d1, d2, delta, intrinsic_value, time_value
@@ -86,21 +86,21 @@ def _bs_price(
 def _bs_vega(
     spot: float, strike: float, t: float, r: float, sigma: float
 ) -> float:
-    """计算 Vega = S * N'(d1) * sqrt(T)"""
+    """Calculate Vega = S * N'(d1) * sqrt(T)"""
     d1 = _bs_d1(spot, strike, t, r, sigma)
     return spot * _norm_pdf(d1) * math.sqrt(t)
 
 
-# ── Tool 1: Black-Scholes 期权定价 ─────────────────────────────────
+# ── Tool 1: Black-Scholes option pricing ─────────────────────────────────
 
 @tool
 @register_tool(
     tool_id="get_black_scholes_price",
-    name="Black-Scholes 期权定价",
+    name="Black-Scholes option pricing",
     description=(
-        "基于 Black-Scholes 模型计算欧式期权的理论价格，同时返回 d1、d2、Delta、"
-        "内在价值和时间价值。使用 scipy.stats.norm.cdf 计算正态分布累积函数；"
-        "若 scipy 不可用则回退至 math.erf 近似。"
+        "Calculate the theoretical price of European options based on the Black-Scholes model, and return d1, d2, Delta,"
+        "Intrinsic value and time value. Use scipy.stats.norm.cdf to calculate the normal distribution cumulative function;"
+        "Fallback to math.erf approximation if scipy is not available."
     ),
     category="fundamentals",
     is_online=False,
@@ -109,20 +109,20 @@ def _bs_vega(
     capability_tags=["derivatives", "option_pricing", "black_scholes"],
     tool_role_hint="specialized",
     output_shape="structured_json",
-    preferred_for=["欧式期权理论定价", "Black-Scholes 模型计算"],
+    preferred_for=["欧式期权理论定价", "Black-Scholes Model calculation"],
     when_to_use=(
-        "当用户需要计算欧式期权的理论价格、d1/d2、Delta、内在价值或时间价值时使用。"
-        "适用于标准化的欧式看涨/看跌期权定价。"
+        "It is used when users need to calculate the theoretical price, d1/d2, Delta, intrinsic value or time value of European options."
+        "Suitable for standardized European call/put option pricing."
     ),
     when_not_to_use=(
-        "不适合美式期权（需考虑提前行权）；"
-        "不适合奇异期权（如障碍期权、亚式期权等）；"
-        "不适合隐含波动率计算（请使用 get_implied_volatility）。"
+        "Not suitable for American options (early exercise needs to be considered);"
+        "Not suitable for exotic options (such as barrier options, Asian options, etc.);"
+        "Not suitable for implied volatility calculations (use get_implied_volatility instead)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 option_price（期权价格）、d1、d2、delta、"
-        "intrinsic_value（内在价值）、time_value（时间价值）、parameters_used（使用参数）、"
-        "methodology（计算说明）。"
+        "Returns a JSON string containing option_price (option price), d1, d2, delta,"
+        "intrinsic_value (intrinsic value), time_value (time value), parameters_used (use parameters),"
+        "methodology (calculation instructions)."
     ),
     example="get_black_scholes_price(spot_price=100, strike_price=100, time_to_expiry=0.5)",
     related_tools=["get_implied_volatility", "get_option_greeks", "get_option_strategy_pnl"],
@@ -130,66 +130,66 @@ def _bs_vega(
 def get_black_scholes_price(
     spot_price: Annotated[float, "标的资产当前价格"],
     strike_price: Annotated[float, "行权价"],
-    time_to_expiry: Annotated[float, "到期时间（年），如 0.5 表示半年"],
+    time_to_expiry: Annotated[float, "Expiration time (year), for example, 0.5 means half a year"],
     risk_free_rate: Annotated[float, "无风险利率"] = 0.025,
     volatility: Annotated[float, "波动率（年化）"] = 0.25,
-    option_type: Annotated[str, "期权类型：call（看涨）或 put（看跌）"] = "call",
+    option_type: Annotated[str, "Option type: call or put"] = "call",
 ) -> str:
-    """计算欧式期权的 Black-Scholes 理论价格。
+    """Calculate the Black-Scholes theoretical price of a European option.
 
     Args:
-        spot_price: 标的资产当前价格
-        strike_price: 行权价
-        time_to_expiry: 到期时间（年），如 0.5 表示半年
-        risk_free_rate: 无风险利率（小数），默认 0.025
-        volatility: 波动率（年化小数），默认 0.25
-        option_type: 期权类型: "call"（看涨）或 "put"（看跌），默认 "call"
+        spot_price: Current price of the underlying asset
+        strike_price: exercise price
+        time_to_expiry: Expiration time (year), for example, 0.5 means half a year
+        risk_free_rate: Risk-free rate (decimal), default 0.025
+        volatility: Volatility (annualized decimal), default 0.25
+        option_type: Option type: "call" (bullish) or "put" (bearish), default "call"
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            option_type: 期权类型: "call" | "put"
-            option_price: 期权理论价格
-            d1: BS 公式中的 d1
-            d2: BS 公式中的 d2
-            delta: Delta 值
-            intrinsic_value: 内在价值
-            time_value: 时间价值
-            moneyness: 价内状态: "价内" | "价平或价外"
-            parameters_used: dict 使用的参数——
-                — spot_price: 标的价格
-                — strike_price: 行权价
-                — time_to_expiry_years: 到期时间（年）
-                — risk_free_rate: 无风险利率
-                — volatility: 波动率
-                — option_type: 期权类型
-            methodology: 计算方法说明
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            option_type: Option type: "call" | "put"
+            option_price: option theoretical price
+            d1: BS in the formula d1
+            d2: BS in the formula d2
+            delta: Delta value
+            intrinsic_value: intrinsic value
+            time_value: time value
+            moneyness: In-the-money status: "In price" | "At-the-money or out-of-the-money"
+            parameters_used: dict Parameters used——
+                — spot_price: target price
+                — strike_price: exercise price
+                — time_to_expiry_years: Expiration time (year)
+                — risk_free_rate: risk-free rate
+                — volatility: Volatility
+                — option_type: Option type
+            methodology: Calculation method description
+            message: Error message (only status="error" exist)
     """
     try:
         opt_type = option_type.lower()
         if opt_type not in ("call", "put"):
             return json.dumps({
                 "status": "error",
-                "message": "option_type 必须是 'call' 或 'put'",
+                "message": "option_type must be 'call' or 'put'",
             }, ensure_ascii=False, indent=2, default=str)
 
         if spot_price <= 0 or strike_price <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "spot_price 和 strike_price 必须大于 0",
+                "message": "spot_price and strike_price must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
         if time_to_expiry <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "time_to_expiry 必须大于 0",
+                "message": "time_to_expiry must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
         if volatility <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "volatility 必须大于 0",
+                "message": "volatility must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
         result = _bs_price(
@@ -220,32 +220,32 @@ def get_black_scholes_price(
                 "option_type": opt_type,
             },
             "methodology": (
-                "Black-Scholes 欧式期权定价模型："
+                "Black-Scholes European option pricing model:"
                 "d1 = [ln(S/K) + (r + σ²/2)T] / (σ√T)；"
                 "d2 = d1 - σ√T；"
                 "Call = S·N(d1) - K·e^(-rT)·N(d2)；"
                 "Put = K·e^(-rT)·N(-d2) - S·N(-d1)。"
-                f"{'使用 scipy.stats.norm.cdf 计算 N(·)。' if _HAS_SCIPY else '使用 math.erf 近似计算 N(·)（scipy 不可用）。'}"
+                f"{'Calculated using scipy.stats.norm.cdf N(·). ' if _HAS_SCIPY else 'Approximate calculations using math.erf N(·) (scipy Not available).'}"
             ),
         }
 
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("Black-Scholes 定价失败: %s", exc, exc_info=True)
+        logger.error("Black-Scholes Pricing failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
-# ── Tool 2: 隐含波动率 ─────────────────────────────────────────────
+# ── Tool 2: Implied volatility ─────────────────────────────────────────────
 
 @tool
 @register_tool(
     tool_id="get_implied_volatility",
     name="隐含波动率计算",
     description=(
-        "通过 Newton-Raphson 迭代法从期权市场价反推隐含波动率。"
-        "迭代公式：σ_new = σ - (BS(σ) - market_price) / vega(σ)，"
-        "最大迭代 100 次，收敛容差 0.0001。"
+        "Implied volatility is deduced from option market prices using the Newton-Raphson iteration method."
+        "Iteration formula:σ_new = σ - (BS(σ) - market_price) / vega(σ), "
+        "Maximum iterations 100, convergence tolerance 0.0001."
     ),
     category="fundamentals",
     is_online=False,
@@ -254,20 +254,20 @@ def get_black_scholes_price(
     capability_tags=["derivatives", "implied_volatility", "option_pricing"],
     tool_role_hint="specialized",
     output_shape="structured_json",
-    preferred_for=["从期权市场价反推隐含波动率"],
+    preferred_for=["Deducing implied volatility from option market prices"],
     when_to_use=(
-        "当用户已知期权市场价，需要反推出对应的隐含波动率时使用。"
-        "常用于波动率交易、期权定价校验。"
+        "It is used when the user knows the option market price and needs to derive the corresponding implied volatility."
+        "Commonly used in volatility trading and option pricing verification."
     ),
     when_not_to_use=(
-        "不适合理论定价（请使用 get_black_scholes_price）；"
-        "不适合历史波动率计算（请使用统计工具）；"
-        "不适合深度虚值期权（迭代可能不收敛）。"
+        "Not suitable for theoretical pricing (please use get_black_scholes_price);"
+        "Not suitable for historical volatility calculations (please use statistical tools);"
+        "Not suitable for deeply out-of-the-money options (iterations may not converge)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 implied_volatility（隐含波动率）、"
-        "iterations（迭代次数）、convergence_status（收敛状态）、"
-        "initial_guess（初始猜测值）、price_at_iv（IV对应的BS价格）。"
+        "Returns a JSON string containing implied_volatility,"
+        "iterations (number of iterations), convergence_status (convergence status),"
+        "initial_guess (Initial guess value), price_at_iv (BS price corresponding to IV)."
     ),
     example="get_implied_volatility(spot_price=100, strike_price=100, time_to_expiry=0.5, option_price=10)",
     related_tools=["get_black_scholes_price", "get_option_greeks", "get_option_strategy_pnl"],
@@ -278,77 +278,77 @@ def get_implied_volatility(
     time_to_expiry: Annotated[float, "到期时间（年）"],
     option_price: Annotated[float, "期权市场价"],
     risk_free_rate: Annotated[float, "无风险利率"] = 0.025,
-    option_type: Annotated[str, "期权类型：call 或 put"] = "call",
+    option_type: Annotated[str, "Option type: call or put"] = "call",
 ) -> str:
-    """通过 Newton-Raphson 迭代从市场价反推隐含波动率。
+    """Implied volatility is deduced from market prices via Newton-Raphson iterations.
 
     Args:
-        spot_price: 标的资产当前价格
-        strike_price: 行权价
-        time_to_expiry: 到期时间（年）
-        option_price: 期权市场价
-        risk_free_rate: 无风险利率（小数），默认 0.025
-        option_type: 期权类型: "call" 或 "put"，默认 "call"
+        spot_price: Current price of the underlying asset
+        strike_price: exercise price
+        time_to_expiry: Expiration time (year)
+        option_price: option market price
+        risk_free_rate: Risk-free rate (decimal), default 0.025
+        option_type: Option type: "call" or "put", Default "call"
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            implied_volatility: 隐含波动率（小数）
-            implied_volatility_pct: 隐含波动率（%）
-            iterations: 迭代次数
-            convergence_status: 收敛状态: "已收敛" | "未收敛"
-            initial_guess: 初始猜测值（0.3）
-            price_at_iv: IV 对应的 BS 价格（仅 status="ok" 时存在）
-            target_price: 目标期权市场价（仅 status="ok" 时存在）
-            price_error: 价格误差（仅 status="ok" 时存在）
-            parameters_used: dict 使用的参数（仅 status="ok" 时存在）——
-                — spot_price: 标的价格
-                — strike_price: 行权价
-                — time_to_expiry_years: 到期时间（年）
-                — risk_free_rate: 无风险利率
-                — option_price: 期权市场价
-                — option_type: 期权类型
-            methodology: 计算方法说明（仅 status="ok" 时存在）
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            implied_volatility: Implied volatility (decimal)
+            implied_volatility_pct: Implied volatility (%)
+            iterations: Number of iterations
+            convergence_status: convergence state: "Converged" | "Not converged"
+            initial_guess: Initial guess value (0.3)
+            price_at_iv: IV Corresponding BS price (only status="ok" exist)
+            target_price: Target option market price (only status="ok" exist)
+            price_error: Price error (only status="ok" exist)
+            parameters_used: dict Parameters used (only status="ok" exist)——
+                — spot_price: target price
+                — strike_price: exercise price
+                — time_to_expiry_years: Expiration time (year)
+                — risk_free_rate: risk-free rate
+                — option_price: option market price
+                — option_type: Option type
+            methodology: Description of calculation method (only status="ok" exist)
+            message: Error message (only status="error" exist)
     """
     try:
         opt_type = option_type.lower()
         if opt_type not in ("call", "put"):
             return json.dumps({
                 "status": "error",
-                "message": "option_type 必须是 'call' 或 'put'",
+                "message": "option_type must be 'call' or 'put'",
             }, ensure_ascii=False, indent=2, default=str)
 
         if spot_price <= 0 or strike_price <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "spot_price 和 strike_price 必须大于 0",
+                "message": "spot_price and strike_price must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
         if time_to_expiry <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "time_to_expiry 必须大于 0",
+                "message": "time_to_expiry must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
         if option_price <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "option_price 必须大于 0",
+                "message": "option_price must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
-        # 判断内在价值上限
+        # Determine the upper limit of intrinsic value
         intrinsic = max(spot_price - strike_price, 0.0) if opt_type == "call" else max(strike_price - spot_price, 0.0)
         if option_price < intrinsic:
             return json.dumps({
                 "status": "error",
                 "message": (
                     f"期权价格 {option_price} 低于内在价值 {intrinsic}，"
-                    "存在无风险套利机会，无法计算有意义的隐含波动率"
+                    "Risk-free arbitrage opportunities exist and meaningful implied volatility cannot be calculated"
                 ),
             }, ensure_ascii=False, indent=2, default=str)
 
-        sigma = 0.3  # 初始猜测
+        sigma = 0.3  # initial guess
         max_iter = 100
         tolerance = 0.0001
 
@@ -376,18 +376,18 @@ def get_implied_volatility(
                         "option_type": opt_type,
                     },
                     "methodology": (
-                        "Newton-Raphson 迭代法：σ_new = σ - (BS(σ) - market_price) / vega(σ)。"
-                        + ("使用 scipy.stats.norm 计算 N(·) 和 N'(·)。" if _HAS_SCIPY else "使用 math.erf 近似计算 N(·)（scipy 不可用）。")
+                        "Newton-Raphson Iterative method:σ_new = σ - (BS(σ) - market_price) / vega(σ). "
+                        + ("Calculated using scipy.stats.norm N(·) and N'(·). " if _HAS_SCIPY else "Approximate calculations using math.erf N(·) (scipy Not available).")
                     ),
                 }
                 return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
             vega = _bs_vega(spot_price, strike_price, time_to_expiry, risk_free_rate, sigma)
             if abs(vega) < 1e-12:
-                break  # vega 太小，无法继续迭代
+                break  # vega Too small to continue iterating
 
             sigma = sigma - price_diff / vega
-            sigma = max(sigma, 0.001)  # 波动率保底
+            sigma = max(sigma, 0.001)  # Volatility floor
 
         return json.dumps({
             "status": "error",
@@ -399,19 +399,19 @@ def get_implied_volatility(
         }, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("隐含波动率计算失败: %s", exc, exc_info=True)
+        logger.error("Implied volatility calculation failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
-# ── Tool 3: 希腊字母计算 ───────────────────────────────────────────
+# ── Tool 3: greek letter calculation ───────────────────────────────────────────
 
 @tool
 @register_tool(
     tool_id="get_option_greeks",
     name="期权希腊字母计算",
     description=(
-        "计算欧式期权的 Greeks（Delta、Gamma、Theta、Vega、Rho），"
-        "并给出每个希腊字母的释义。Gamma 和 Vega 对看涨/看跌期权相同。"
+        "Calculate Greeks (Delta, Gamma, Theta, Vega, Rho) for European options,"
+        "And give the meaning of each Greek letter. Gamma and Vega are the same for call/put options."
     ),
     category="fundamentals",
     is_online=False,
@@ -420,19 +420,19 @@ def get_implied_volatility(
     capability_tags=["derivatives", "option_greeks", "risk_management"],
     tool_role_hint="specialized",
     output_shape="structured_json",
-    preferred_for=["计算期权希腊字母（Delta、Gamma、Theta、Vega、Rho）"],
+    preferred_for=["Calculate option Greek letters (Delta, Gamma, Theta, Vega, Rho)"],
     when_to_use=(
-        "当用户需要计算欧式期权的风险指标（Delta/Gamma/Theta/Vega/Rho）时使用。"
-        "适用于风险管理、对冲策略分析。"
+        "Used when the user needs to calculate the risk indicators (Delta/Gamma/Theta/Vega/Rho) of European options."
+        "Suitable for risk management and hedging strategy analysis."
     ),
     when_not_to_use=(
-        "不适合美式期权希腊字母计算；"
-        "不适合奇异期权；"
-        "不适合期权定价本身（请使用 get_black_scholes_price）。"
+        "Not suitable for American options Greek letter calculation;"
+        "Not suitable for exotic options;"
+        "Not suitable for option pricing itself (use get_black_scholes_price)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 delta、gamma、theta（年化）、vega（1%波动率变动）、"
-        "rho（1%利率变动），以及每个希腊字母的释义。"
+        "Returns a JSON string, including delta, gamma, theta (annualized), vega (1% volatility change),"
+        "rho (1%interest rate changes), and the meaning of each Greek letter."
     ),
     example="get_option_greeks(spot_price=100, strike_price=100, time_to_expiry=0.5)",
     related_tools=["get_black_scholes_price", "get_implied_volatility", "get_option_strategy_pnl"],
@@ -443,71 +443,71 @@ def get_option_greeks(
     time_to_expiry: Annotated[float, "到期时间（年）"],
     risk_free_rate: Annotated[float, "无风险利率"] = 0.025,
     volatility: Annotated[float, "波动率（年化）"] = 0.25,
-    option_type: Annotated[str, "期权类型：call 或 put"] = "call",
+    option_type: Annotated[str, "Option type: call or put"] = "call",
 ) -> str:
-    """计算欧式期权的 Delta、Gamma、Theta、Vega、Rho。
+    """Calculate Delta, Gamma, Theta, Vega, Rho for European options.
 
     Args:
-        spot_price: 标的资产当前价格
-        strike_price: 行权价
-        time_to_expiry: 到期时间（年）
-        risk_free_rate: 无风险利率（小数），默认 0.025
-        volatility: 波动率（年化小数），默认 0.25
-        option_type: 期权类型: "call" 或 "put"，默认 "call"
+        spot_price: Current price of the underlying asset
+        strike_price: exercise price
+        time_to_expiry: Expiration time (year)
+        risk_free_rate: Risk-free rate (decimal), default 0.025
+        volatility: Volatility (annualized decimal), default 0.25
+        option_type: Option type: "call" or "put", Default "call"
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            option_type: 期权类型: "call" | "put"
-            spot_price_used: 使用的标的价格
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            option_type: Option type: "call" | "put"
+            spot_price_used: underlying price used
             delta: dict Delta——
-                — value: Delta 值
-                — description: 含义说明
-                — interpretation: 解释（方向性风险敞口）
+                — value: Delta value
+                — description: Explanation of meaning
+                — interpretation: Explanation (directional exposure)
             gamma: dict Gamma——
-                — value: Gamma 值
-                — description: 含义说明
-                — interpretation: 解释（Delta 的敏感度/凸性风险）
-            theta: dict Theta（年化）——
-                — value: Theta 值（年化）
-                — description: 含义说明（含日均 Theta）
-                — interpretation: 解释（时间衰减）
-            vega: dict Vega（每 1% 波动率变动）——
-                — value: Vega 值
-                — description: 含义说明
-                — interpretation: 解释（波动率风险敞口）
-            rho: dict Rho（每 1% 利率变动）——
-                — value: Rho 值
-                — description: 含义说明
-                — interpretation: 解释（利率风险敞口）
-            parameters_used: dict 使用的参数
-            methodology: 计算方法说明
-            message: 错误信息（仅 status="error" 时存在）
+                — value: Gamma value
+                — description: Explanation of meaning
+                — interpretation: Interpretation (Delta Sensitivity/Convexity Risk)
+            theta: dict Theta (annualized)——
+                — value: Theta Value (annualized)
+                — description: Meaning (including daily average Theta)
+                — interpretation: Interpretation (time decay)
+            vega: dict Vega (per 1% change in volatility)——
+                — value: Vega value
+                — description: Explanation of meaning
+                — interpretation: Explanation (Volatility Risk Exposure)
+            rho: dict Rho (per 1% interest rate change)——
+                — value: Rho value
+                — description: Explanation of meaning
+                — interpretation: Explanation (interest rate risk exposure)
+            parameters_used: dict Parameters used
+            methodology: Calculation method description
+            message: Error message (only status="error" exist)
     """
     try:
         opt_type = option_type.lower()
         if opt_type not in ("call", "put"):
             return json.dumps({
                 "status": "error",
-                "message": "option_type 必须是 'call' 或 'put'",
+                "message": "option_type must be 'call' or 'put'",
             }, ensure_ascii=False, indent=2, default=str)
 
         if spot_price <= 0 or strike_price <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "spot_price 和 strike_price 必须大于 0",
+                "message": "spot_price and strike_price must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
         if time_to_expiry <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "time_to_expiry 必须大于 0",
+                "message": "time_to_expiry must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
         if volatility <= 0:
             return json.dumps({
                 "status": "error",
-                "message": "volatility 必须大于 0",
+                "message": "volatility must be greater than 0",
             }, ensure_ascii=False, indent=2, default=str)
 
         d1 = _bs_d1(spot_price, strike_price, time_to_expiry, risk_free_rate, volatility)
@@ -525,17 +525,17 @@ def get_option_greeks(
         else:
             delta = n1 - 1.0
 
-        # Gamma（call/put 相同）
+        # Gamma (call/put same)
         gamma = nd1_pdf / (spot_price * volatility * sqrt_t)
 
-        # Theta（年化）
+        # Theta (annualized)
         theta_common = -(spot_price * nd1_pdf * volatility) / (2.0 * sqrt_t)
         if opt_type == "call":
             theta = theta_common - risk_free_rate * disc * _norm_cdf(d2)
         else:
             theta = theta_common + risk_free_rate * disc * _norm_cdf(-d2)
 
-        # Vega（call/put 相同）
+        # Vega (call/put same)
         vega = spot_price * nd1_pdf * sqrt_t
 
         # Rho
@@ -551,44 +551,44 @@ def get_option_greeks(
             "delta": {
                 "value": round(delta, 6),
                 "description": (
-                    "标的资产价格变化 $1 时期权价格的变化量。"
-                    f"看涨期权 Delta={round(delta, 4)}，"
-                    f"意味着标的价格上涨 $1，期权价格约变动 {round(delta, 4)}。"
+                    "Changes in underlying asset prices $1 The amount of change in the option price at that time."
+                    f"call option Delta={round(delta, 4)}, "
+                    f"It means that the underlying price increases $1, Approximate change in option price {round(delta, 4)}. "
                 ),
                 "interpretation": "方向性风险敞口" if opt_type == "call" else "方向性风险敞口（负值）",
             },
             "gamma": {
                 "value": round(gamma, 6),
                 "description": (
-                    f"标的资产价格变化 $1 时 Delta 的变化量。Gamma={round(gamma, 6)}，"
-                    "Gamma 越大，Delta 对价格变化越敏感。"
+                    f"Changes in underlying asset prices $1 The amount of change in Delta.Gamma={round(gamma, 6)}, "
+                    "Gamma The larger the delta is, the more sensitive it is to price changes."
                 ),
-                "interpretation": "Delta 的敏感度（凸性风险）",
+                "interpretation": "Delta sensitivity (convexity risk)",
             },
             "theta": {
                 "value": round(theta, 6),
                 "description": (
-                    f"时间每流逝一天（年化/365），期权价格的变化量。"
-                    f"Theta（年化）={round(theta, 6)}，"
-                    f"日均 Theta ≈ {round(theta / 365.0, 6)}。"
+                    f"The amount of change in the option price every time one day passes (annualized/365)."
+                    f"Theta (annualized)={round(theta, 6)}, "
+                    f"Daily average Theta ≈ {round(theta / 365.0, 6)}. "
                 ),
-                "interpretation": "时间衰减（Theta 通常为负，表示时间价值流失）",
+                "interpretation": "Time decay (Theta is usually negative, indicating loss of time value)",
             },
             "vega": {
                 "value": round(vega / 100.0, 6),
                 "description": (
-                    f"波动率每上升 1%（即 0.01），期权价格的变化量。"
-                    f"Vega（每 1% 波动率）≈ {round(vega / 100.0, 6)}。"
+                    f"The amount by which the option price changes for every 1% (or 0.01) increase in volatility."
+                    f"Vega (per 1% volatility)≈ {round(vega / 100.0, 6)}. "
                 ),
                 "interpretation": "波动率风险敞口",
             },
             "rho": {
                 "value": round(rho / 100.0, 6),
                 "description": (
-                    f"无风险利率每上升 1%（即 0.01），期权价格的变化量。"
-                    f"Rho（每 1% 利率变动）≈ {round(rho / 100.0, 6)}。"
+                    f"The amount by which the option price changes for every 1% (i.e., 0.01) increase in the risk-free interest rate."
+                    f"Rho (per 1% interest rate change)≈ {round(rho / 100.0, 6)}. "
                 ),
-                "interpretation": "利率风险敞口（对短期限期权通常影响较小）",
+                "interpretation": "Interest rate risk exposure (generally less impact on short-dated options)",
             },
             "parameters_used": {
                 "spot_price": spot_price,
@@ -599,12 +599,12 @@ def get_option_greeks(
                 "option_type": opt_type,
             },
             "methodology": (
-                "Delta = N(d1)（call）或 N(d1)-1（put）；"
+                "Delta = N(d1) (call) or N(d1)-1 (put) ; "
                 "Gamma = N'(d1) / (S·σ·√T)；"
                 "Theta(call) = -(S·N'(d1)·σ)/(2√T) - r·K·e^(-rT)·N(d2)；"
                 "Vega = S·N'(d1)·√T；"
                 "Rho(call) = K·T·e^(-rT)·N(d2)。"
-                + ("使用 scipy.stats.norm 计算 N(·) 和 N'(·)。" if _HAS_SCIPY else "使用 math.erf 近似计算 N(·)（scipy 不可用）。")
+                + ("Calculated using scipy.stats.norm N(·) and N'(·). " if _HAS_SCIPY else "Approximate calculations using math.erf N(·) (scipy Not available).")
             ),
         }
 
@@ -615,7 +615,7 @@ def get_option_greeks(
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 
-# ── Tool 4: 期权策略盈亏图 ─────────────────────────────────────────
+# ── Tool 4: Options Strategy Profit and Loss Chart ─────────────────────────────────────────
 
 def _covered_call_pnl(
     spot_range: np.ndarray, spot_0: float, k1: float, prem1: float
@@ -686,38 +686,38 @@ def _iron_condor_pnl(
 
 _STRATEGIES = {
     "covered_call": {
-        "label": "备兑开仓（Covered Call）",
-        "description": "持有标的资产 + 卖出看涨期权。适用于温和看涨或中性预期，通过权利金增厚收益。",
+        "label": "Covered Call",
+        "description": "Hold the underlying asset + Selling call options. Suitable for mildly bullish or neutral expectations to enhance returns through premiums.",
         "legs": 2,
     },
     "protective_put": {
-        "label": "保护性看跌（Protective Put）",
-        "description": "持有标的资产 + 买入看跌期权。适用于看涨但担心下行风险，相当于为持仓买保险。",
+        "label": "Protective Put",
+        "description": "Hold the underlying asset + Buy put options. It is suitable for those who are bullish but worried about the downside risk, which is equivalent to buying insurance for the position.",
         "legs": 2,
     },
     "straddle": {
-        "label": "跨式组合（Straddle）",
-        "description": "同时买入同价看涨和看跌期权。适用于预期标的将有大幅波动但方向不确定。",
+        "label": "Straddle",
+        "description": "Buy both call and put options at the same price. Applicable to situations where the underlying asset is expected to fluctuate significantly but the direction is uncertain.",
         "legs": 2,
     },
     "strangle": {
-        "label": "宽跨式组合（Strangle）",
-        "description": "买入虚值看跌（K1<S）和虚值看涨（K2>S）。适用于预期大幅波动，成本低于 straddle。",
+        "label": "Strangle combination",
+        "description": "Buy out-of-the-money put (K1<S) and out-of-the-money calls (K2>S) . Suitable for large swings expected and costs less than straddle.",
         "legs": 2,
     },
     "bull_spread": {
-        "label": "牛市价差（Bull Spread）",
-        "description": "买入低行权价看涨 + 卖出高行权价看涨。适用于温和看涨、降低成本。",
+        "label": "Bull Spread",
+        "description": "Buy low strike price call + Sell the high strike price to call. Suitable for mild bullishness and cost reduction.",
         "legs": 2,
     },
     "bear_spread": {
-        "label": "熊市价差（Bear Spread）",
-        "description": "买入高行权价看跌 + 卖出低行权价看跌。适用于温和看跌、降低成本。",
+        "label": "Bear Spread",
+        "description": "Buy high strike price put + Sell low strike price put. Suitable for mild bearish, cost reduction.",
         "legs": 2,
     },
     "iron_condor": {
-        "label": "铁鹰式（Iron Condor）",
-        "description": "熊市看跌价差 + 牛市看涨价差（共4腿）。适用于预期标的窄幅震荡。",
+        "label": "Iron Condor",
+        "description": "Bear Put Spread + Bullish Call Spread (4 legs total). It is suitable for the expected target to fluctuate within a narrow range.",
         "legs": 4,
     },
 }
@@ -728,11 +728,11 @@ _STRATEGIES = {
     tool_id="get_option_strategy_pnl",
     name="期权策略盈亏图",
     description=(
-        "计算常见期权策略在到期日的盈亏曲线，包括最大盈利、最大亏损、"
-        "盈亏平衡点，以及约 20 个价格点的盈亏明细表。"
-        "支持策略：covered_call（备兑开仓）、protective_put（保护性看跌）、"
-        "straddle（跨式）、strangle（宽跨式）、bull_spread（牛市价差）、"
-        "bear_spread（熊市价差）、iron_condor（铁鹰式）。"
+        "Calculate the profit and loss curves of common option strategies on the expiration date, including maximum profit, maximum loss,"
+        "break-even point, and a breakdown of the profit and loss for about 20 price points."
+        "Support strategies: covered_call (covered opening), protective_put (protective put),"
+        "straddle (straddle), strangle (wide straddle), bull_spread (bull spread),"
+        "bear_spread (Bear spread), iron_condor (Iron Eagle style)."
     ),
     category="fundamentals",
     is_online=False,
@@ -743,18 +743,18 @@ _STRATEGIES = {
     output_shape="structured_json",
     preferred_for=["期权策略盈亏分析", "策略对比", "盈亏平衡点计算"],
     when_to_use=(
-        "当用户需要分析期权组合策略在到期日的盈亏情况、计算最大盈利/亏损、"
-        "盈亏平衡点，或需要盈亏可视化数据时使用。"
+        "When users need to analyze the profit and loss of option portfolio strategies on the expiration date, calculate the maximum profit/loss,"
+        "Break-even point, or used when profit and loss visualization data is needed."
     ),
     when_not_to_use=(
-        "不适合单腿期权定价（请使用 get_black_scholes_price）；"
-        "不适合希腊字母计算（请使用 get_option_greeks）；"
-        "不适合隐含波动率计算（请使用 get_implied_volatility）。"
+        "Not suitable for single-leg option pricing (use get_black_scholes_price);"
+        "Not suitable for Greek letter calculations (please use get_option_greeks);"
+        "Not suitable for implied volatility calculations (use get_implied_volatility instead)."
     ),
     returns=(
-        "返回 JSON 字符串，包含 strategy（策略名称及描述）、max_profit（最大盈利）、"
-        "max_loss（最大亏损）、break_even_points（盈亏平衡点列表）、"
-        "pnl_table（价格-盈亏数组，约 20 个点）。"
+        "Returns a JSON string, including strategy (strategy name and description), max_profit (maximum profit),"
+        "max_loss (maximum loss), break_even_points (break-even point list),"
+        "pnl_table (Price-P&L array, about 20 points)."
     ),
     example="get_option_strategy_pnl(strategy_type='covered_call', spot_price=100, strike1=100)",
     related_tools=["get_black_scholes_price", "get_option_greeks", "get_implied_volatility"],
@@ -763,51 +763,51 @@ def get_option_strategy_pnl(
     strategy_type: Annotated[str, "策略类型"] = "covered_call",
     spot_price: Annotated[float, "标的当前价格"] = 100.0,
     strike1: Annotated[float, "主行权价（第一腿）"] = 100.0,
-    strike2: Annotated[Optional[float], "第二行权价（价差策略使用）"] = None,
+    strike2: Annotated[Optional[float], "Second strike price (used by spread strategy)"] = None,
     premium1: Annotated[float, "第一腿权利金（收/付）"] = 5.0,
     premium2: Annotated[Optional[float], "第二腿权利金（收/付）"] = None,
-    volatility: Annotated[float, "波动率（用于 ATM 期权参考）"] = 0.25,
+    volatility: Annotated[float, "Volatility (for ATM options reference)"] = 0.25,
     time_to_expiry: Annotated[float, "到期时间（年）"] = 0.25,
     risk_free_rate: Annotated[float, "无风险利率"] = 0.025,
 ) -> str:
-    """计算期权策略在到期日的盈亏分布。
+    """Calculate the profit and loss distribution of the option strategy on the expiration date.
 
     Args:
-        strategy_type: 策略类型，可选 "covered_call" / "protective_put" / "straddle" /
-            "strangle" / "bull_spread" / "bear_spread" / "iron_condor"，默认 "covered_call"
-        spot_price: 标的当前价格，默认 100.0
-        strike1: 主行权价（第一腿），默认 100.0
-        strike2: 第二行权价（价差策略使用），为 None 时按策略自动推算，默认 None
-        premium1: 第一腿权利金，默认 5.0
-        premium2: 第二腿权利金，为 None 时按策略自动推算，默认 None
-        volatility: 波动率（用于 ATM 期权参考），默认 0.25
-        time_to_expiry: 到期时间（年），默认 0.25
-        risk_free_rate: 无风险利率，默认 0.025
+        strategy_type: Policy type, optional "covered_call" / "protective_put" / "straddle" /
+            "strangle" / "bull_spread" / "bear_spread" / "iron_condor", Default "covered_call"
+        spot_price: Current price of the underlying, default 100.0
+        strike1: Main strike price (first leg), default 100.0
+        strike2: The second exercise price (used by spread strategy) is automatically calculated according to the strategy when it is None. The default is None
+        premium1: First leg royalty, default 5.0
+        premium2: The second leg premium is automatically calculated according to the strategy when it is None. The default value is None
+        volatility: Volatility (for ATM options reference), default 0.25
+        time_to_expiry: Expiration time (year), default 0.25
+        risk_free_rate: Risk-free rate, default 0.025
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态: "ok" | "error"
-            strategy: 策略中文名称
-            strategy_description: 策略描述
-            legs: 各腿组合说明文本
-            max_profit: 最大盈利（数值或 "无穷（理论上限）"）
-            max_loss: 最大亏损（数值或 "无穷（理论下限）"）
-            break_even_points: list[float] 盈亏平衡点列表
-            pnl_table: list[dict] 盈亏明细表（约 21 个点），元素结构——
-                — spot_price_at_expiry: 到期标的价格
-                — pnl: 该价格下的盈亏
-            visualization_note: 可视化说明
-            parameters_used: dict 使用的参数——
-                — strategy_type: 策略类型
-                — spot_price: 标的价格
-                — strike1: 主行权价
-                — strike2: 第二行权价
-                — premium1: 第一腿权利金
-                — premium2: 第二腿权利金
-                — time_to_expiry_years: 到期时间（年）
-                — volatility: 波动率
-            methodology: 计算方法说明
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: Status: "ok" | "error"
+            strategy: Strategy Chinese name
+            strategy_description: Strategy description
+            legs: Description text for each leg combination
+            max_profit: Maximum profit (numeric value or "Infinity (theoretical upper limit)") 
+            max_loss: Maximum loss (numeric value or "Infinity (theoretical lower limit)") 
+            break_even_points: list[float] Break-even point list
+            pnl_table: list[dict] Profit and loss statement (approx. 21 points), element structure——
+                — spot_price_at_expiry: Expiration price
+                — pnl: Profit and loss at this price
+            visualization_note: Visual illustration
+            parameters_used: dict Parameters used——
+                — strategy_type: Strategy type
+                — spot_price: target price
+                — strike1: Main strike price
+                — strike2: Second exercise price
+                — premium1: first leg royalty
+                — premium2: second leg royalty
+                — time_to_expiry_years: Expiration time (year)
+                — volatility: Volatility
+            methodology: Calculation method description
+            message: Error message (only status="error" exist)
     """
     try:
         strategy = strategy_type.lower()
@@ -816,18 +816,18 @@ def get_option_strategy_pnl(
                 "status": "error",
                 "message": (
                     f"不支持的策略类型 '{strategy_type}'。"
-                    f"支持：{', '.join(_STRATEGIES.keys())}"
+                    f"Support:{', '.join(_STRATEGIES.keys())}"
                 ),
             }, ensure_ascii=False, indent=2, default=str)
 
         s0 = spot_price
         k1 = strike1
 
-        # 生成价格范围：0 ~ 2*s0，约 20 个点
+        # Generate price range:0 ~ 2*s0, about 20 points
         price_points = 21
         spot_range = np.linspace(0.0, 2.0 * s0, price_points)
 
-        # 根据策略类型计算盈亏
+        # Calculate profit and loss based on strategy type
         strategy_info = _STRATEGIES[strategy]
 
         if strategy == "covered_call":
@@ -941,7 +941,7 @@ def get_option_strategy_pnl(
             width = min(width_put, width_call)
             max_loss = width - net_prem if net_prem < width else 0.0
 
-        # 构建 PnL 表
+        # Build PnL table
         pnl_list = []
         for i in range(len(spot_range)):
             pnl_list.append({
@@ -949,7 +949,7 @@ def get_option_strategy_pnl(
                 "pnl": round(float(pnl[i]), 4),
             })
 
-        # 盈亏平衡点过滤（确保在价格范围内且合理）
+        # Break-even point filter (make sure it's within price range and reasonable)
         be_points = [p for p in be_points if 0 <= p <= 2 * s0]
 
         payload = {
@@ -962,8 +962,8 @@ def get_option_strategy_pnl(
             "break_even_points": be_points,
             "pnl_table": pnl_list,
             "visualization_note": (
-                "以上盈亏为到期日损益（不考虑时间价值）。"
-                "PnL 表可导入 Excel / matplotlib 进行可视化。"
+                "The above profit and loss are the profit and loss on the maturity date (time value is not considered)."
+                "PnL Tables can be imported into Excel/matplotlib for visualization."
             ),
             "parameters_used": {
                 "strategy_type": strategy,
@@ -976,21 +976,21 @@ def get_option_strategy_pnl(
                 "volatility": volatility,
             },
             "methodology": (
-                "到期日盈亏计算：PnL = 各腿内在价值之和 - 净权利金支出（+ 净权利金收入）。"
+                "Calculation of profit and loss on maturity date:PnL = Sum of intrinsic value of each leg – net royalty payout (+ net royalty income)."
                 "covered_call: PnL = (S_T - S_0) + premium - max(S_T - K, 0)；"
                 "protective_put: PnL = (S_T - S_0) - premium + max(K - S_T, 0)；"
                 "straddle: PnL = |S_T - K| - 2×premium；"
                 "strangle: PnL = max(K1 - S_T, 0) + max(S_T - K2, 0) - (prem1 + prem2)；"
                 "bull_spread: PnL = max(S_T-K1,0) - max(S_T-K2,0) - prem1 + prem2；"
                 "bear_spread: PnL = max(K1-S_T,0) - max(K2-S_T,0) - prem1 + prem2；"
-                "iron_condor: 4腿组合 = bear put spread + bull call spread。"
+                "iron_condor: 4 Leg combination = bear put spread + bull call spread. "
             ),
         }
 
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("期权策略盈亏分析失败: %s", exc, exc_info=True)
+        logger.error("Option strategy profit and loss analysis failed: %s", exc, exc_info=True)
         return json.dumps({"status": "error", "message": str(exc)}, ensure_ascii=False, indent=2, default=str)
 
 

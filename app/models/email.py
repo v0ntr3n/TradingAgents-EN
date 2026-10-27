@@ -1,5 +1,5 @@
 """
-邮件通知相关数据模型
+Email notification related data model
 """
 
 from enum import Enum
@@ -11,77 +11,77 @@ from app.utils.timezone import now_tz
 
 
 class EmailStatus(str, Enum):
-    """邮件发送状态"""
-    PENDING = "pending"      # 待发送
-    SENDING = "sending"      # 发送中
-    SENT = "sent"           # 已发送
-    FAILED = "failed"       # 发送失败
-    CANCELLED = "cancelled" # 已取消
+    """Email sending status"""
+    PENDING = "pending"      # To be sent
+    SENDING = "sending"      # Sending
+    SENT = "sent"           # Sent
+    FAILED = "failed"       # Sending failed
+    CANCELLED = "cancelled" # Canceled
 
 
 class EmailType(str, Enum):
-    """邮件类型"""
-    SINGLE_ANALYSIS = "single_analysis"      # 单股分析结果
-    BATCH_ANALYSIS = "batch_analysis"        # 批量分析汇总
-    SCHEDULED_ANALYSIS = "scheduled_analysis" # 定时分析报告
-    IMPORTANT_SIGNAL = "important_signal"    # 重要信号预警
-    SYSTEM_NOTIFICATION = "system_notification" # 系统通知
-    TEST_EMAIL = "test_email"                # 测试邮件
+    """Email type"""
+    SINGLE_ANALYSIS = "single_analysis"      # Single stock analysis results
+    BATCH_ANALYSIS = "batch_analysis"        # Batch analysis summary
+    SCHEDULED_ANALYSIS = "scheduled_analysis" # Regular analysis report
+    IMPORTANT_SIGNAL = "important_signal"    # Important signal warning
+    SYSTEM_NOTIFICATION = "system_notification" # System notification
+    TEST_EMAIL = "test_email"                # test email
 
 
 class EmailNotificationSettings(BaseModel):
-    """邮件通知设置"""
-    enabled: bool = False                    # 总开关
-    email_address: Optional[str] = None      # 接收邮箱（可与注册邮箱不同）
+    """Email notification settings"""
+    enabled: bool = False                    # main switch
+    email_address: Optional[str] = None      # Receiving email address (can be different from the registered email address)
     
-    # 通知类型开关
-    single_analysis: bool = True             # 单股分析结果
-    batch_analysis: bool = True              # 批量分析汇总
-    scheduled_analysis: bool = True          # 定时分析报告
-    important_signals: bool = True           # 重要信号预警
-    system_notifications: bool = False       # 系统通知
+    # Notification type switch
+    single_analysis: bool = True             # Single stock analysis results
+    batch_analysis: bool = True              # Batch analysis summary
+    scheduled_analysis: bool = True          # Regular analysis report
+    important_signals: bool = True           # Important signal warning
+    system_notifications: bool = False       # System notification
     
-    # 发送时间偏好
-    quiet_hours_enabled: bool = False        # 是否启用免打扰时段
-    quiet_hours_start: str = "22:00"         # 免打扰开始时间
-    quiet_hours_end: str = "08:00"           # 免打扰结束时间
+    # Send time preference
+    quiet_hours_enabled: bool = False        # Whether to enable do not disturb period
+    quiet_hours_start: str = "22:00"         # Do not disturb start time
+    quiet_hours_end: str = "08:00"           # Do not disturb end time
     
-    # 邮件格式偏好
+    # Email format preferences
     format: str = "html"                     # html / text
-    include_charts: bool = False             # 是否包含图表（暂不支持）
-    language: str = "zh"                     # 邮件语言
+    include_charts: bool = False             # Whether to include charts (not supported yet)
+    language: str = "zh"                     # Email language
 
 
 class EmailRecord(BaseModel):
-    """邮件发送记录"""
+    """Email sending record"""
     id: Optional[str] = Field(default=None, alias="_id")
     
-    # 基本信息
+    # Basic information
     user_id: str
     to_email: str
     subject: str
     template_name: str
     
-    # 邮件类型
+    # Email type
     email_type: EmailType
     
-    # 关联数据
-    reference_id: Optional[str] = None   # 关联的分析报告ID等
-    reference_type: Optional[str] = None # analysis_report/scheduled_task等
+    # Linked data
+    reference_id: Optional[str] = None   # Associated analysis report ID, etc.
+    reference_type: Optional[str] = None # analysis_report/scheduled_task Wait
     
-    # 发送状态
+    # Send status
     status: EmailStatus = EmailStatus.PENDING
     retry_count: int = 0
     max_retries: int = 3
     
-    # 时间戳
+    # Timestamp
     created_at: datetime = Field(default_factory=now_tz)
     sent_at: Optional[datetime] = None
     
-    # 错误信息
+    # error message
     error_message: Optional[str] = None
     
-    # 元数据
+    # metadata
     metadata: Dict[str, Any] = Field(default_factory=dict)
     
     class Config:
@@ -89,7 +89,7 @@ class EmailRecord(BaseModel):
 
 
 class EmailRecordCreate(BaseModel):
-    """创建邮件记录请求"""
+    """Create mail record request"""
     user_id: str
     to_email: str
     subject: str
@@ -101,7 +101,7 @@ class EmailRecordCreate(BaseModel):
 
 
 class EmailSettingsUpdate(BaseModel):
-    """更新邮件设置请求"""
+    """Update mail settings request"""
     enabled: Optional[bool] = None
     email_address: Optional[str] = None
     single_analysis: Optional[bool] = None
@@ -117,7 +117,7 @@ class EmailSettingsUpdate(BaseModel):
 
 
 class SMTPConfig(BaseModel):
-    """SMTP配置"""
+    """SMTP Configuration"""
     host: str
     port: int = 587
     username: str

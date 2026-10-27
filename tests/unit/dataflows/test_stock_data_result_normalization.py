@@ -9,27 +9,27 @@ def test_get_stock_data_normalizes_tuple_fallback_result(monkeypatch):
     monkeypatch.setattr(
         manager,
         "_get_tushare_data",
-        lambda symbol, start_date, end_date, period="daily": "❌ 当前数据源失败",
+        lambda symbol, start_date, end_date, period="daily": "❌ Current data source failed",
     )
     monkeypatch.setattr(
         manager,
         "_try_fallback_sources",
-        lambda symbol, start_date, end_date, period="daily": ("股票代码: 000001\n股票名称: 平安银行", "mongodb"),
+        lambda symbol, start_date, end_date, period="daily": ("Stock code: 000001\n Stock name: Ping An Bank", "mongodb"),
     )
 
     result = manager.get_stock_data("000001", "2026-04-08", "2026-04-10")
 
     assert isinstance(result, str)
-    assert "股票名称: 平安银行" in result
+    assert "Stock name: Ping An Bank" in result
 
 
 def test_coerce_stock_info_text_accepts_tuple_payload():
     stock_info = (
         {
-            "name": "平安银行",
-            "area": "深圳",
-            "industry": "银行",
-            "market": "主板",
+            "name": "Ping An Bank",
+            "area": "Shenzhen",
+            "industry": "bank",
+            "market": "motherboard",
             "list_date": "19910403",
             "current_price": 12.34,
             "change_pct": 1.23,
@@ -40,7 +40,7 @@ def test_coerce_stock_info_text_accepts_tuple_payload():
 
     text = _coerce_stock_info_text(stock_info, "000001")
 
-    assert "股票代码: 000001" in text
-    assert "股票名称: 平安银行" in text
-    assert "当前价格: 12.34" in text
-    assert "涨跌幅: +1.23%" in text
+    assert "Stock code: 000001" in text
+    assert "Stock name: Ping An Bank" in text
+    assert "current price: 12.34" in text
+    assert "Increase or decrease: +1.23%" in text

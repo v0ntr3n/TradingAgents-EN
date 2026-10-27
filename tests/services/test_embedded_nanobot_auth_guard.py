@@ -13,7 +13,7 @@ def test_embedded_nanobot_response_schema_accepts_datetime_timestamps() -> None:
     response = EmbeddedNanobotThreadMessagesResponse(
         thread={
             "thread_id": "thread-001",
-            "title": "Nanobot 会话",
+            "title": "Nanobot session",
             "session_key": "embedded:test",
             "created_at": now,
             "updated_at": now,

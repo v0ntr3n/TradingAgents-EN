@@ -1,12 +1,12 @@
 """
-渠道推送调度器 (ChannelNotifier)
+Channel push scheduler (ChannelNotifier)
 
-核心职责：
-1. 读取用户在 MongoDB `user_channel_configs` 中配置的渠道列表
-2. 过滤：只推送启用的渠道 + 该渠道订阅了此 event_type 的渠道
-3. 并发 fire-and-forget 发送，不阻塞调用方
+Core Responsibilities:
+1. Read user in MongoDB `user_channel_configs` Channel list configured in
+2. Filter: push only enabled channels + This channel is subscribed to channels of this event_type
+3. Concurrent fire-and-forget sending without blocking the caller
 
-集成点：NotificationsService.create_and_publish() 末尾调用 dispatch()
+Integration points:NotificationsService.create_and_publish() Call at the end dispatch()
 """
 import asyncio
 import logging
@@ -23,7 +23,7 @@ COLLECTION = "user_channel_configs"
 
 
 class ChannelNotifier:
-    """统一渠道推送调度器（单例）"""
+    """Unified channel push scheduler (single case)"""
 
     # -------------------------------------------------------------------------
     # MongoDB CRUD helpers
@@ -38,7 +38,7 @@ class ChannelNotifier:
         return [ChannelConfig(**ch) for ch in doc.get("channels", [])]
 
     async def save_channels(self, user_id: str, channels: List[ChannelConfig]) -> None:
-        """保存用户渠道配置（覆盖写）"""
+        """Save user channel configuration (overwrite)"""
         db = get_mongo_db()
         await db[COLLECTION].update_one(
             {"user_id": user_id},
@@ -82,7 +82,7 @@ class ChannelNotifier:
         return True
 
     # -------------------------------------------------------------------------
-    # 核心推送逻辑
+    # Core push logic
     # -------------------------------------------------------------------------
 
     async def dispatch(
@@ -94,30 +94,30 @@ class ChannelNotifier:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
-        调度推送到用户的所有匹配渠道（fire-and-forget）
+        Scheduling pushes to all matching channels for users (fire-and-forget)
 
         Args:
-            user_id:    用户 ID
-            title:      通知标题
-            content:    通知内容
-            event_type: 事件类型，见 channel_config.EVENT_TYPES
-            metadata:   扩展元数据。若包含 _im_channel，则自动推送 QQ IM 通知
+            user_id:    User ID
+            title:      Notification title
+            content:    Notification content
+            event_type: event type, see channel_config.EVENT_TYPES
+            metadata:   Extended metadata. If _im_channel is included, QQ IM notifications will be automatically pushed
         """
         metadata = metadata or {}
 
-        # ① QQ IM 自动回调渠道（由触发来源决定，无需用户手动配置）
+        # ① QQ IM Automatic callback channel (determined by the trigger source, no manual configuration required by the user)
         im_channel = metadata.get("_im_channel")
         if im_channel:
             asyncio.ensure_future(self._send_im_notification(im_channel, title, content))
 
-        # ② 用户配置的外部渠道（飞书/钉钉/企微/邮件）
+        # ② External channels configured by users (Feishu/DingTalk/Qiwei/Email)
         try:
             channels = await self.get_channels(user_id)
         except Exception as e:
-            logger.warning(f"获取渠道配置失败(忽略): {e}")
+            logger.warning(f"Failed to obtain channel configuration(ignore): {e}")
             return
 
-        # 过滤：启用 + 订阅了该事件类型
+        # Filtering: enabled + Subscribed to this event type
         matched = [
             ch for ch in channels
             if ch.enabled and event_type in ch.events
@@ -126,12 +126,12 @@ class ChannelNotifier:
         if not matched:
             return
 
-        # 并发发送，错误不传播
+        # Send concurrently, errors are not propagated
         tasks = [self._send_one(ch, title, content) for ch in matched]
         await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _send_one(self, channel: ChannelConfig, title: str, content: str) -> None:
-        """向单个渠道发送，异常自动捕获"""
+        """Send to a single channel and automatically catch exceptions"""
         try:
             if channel.type in (
                 ChannelType.FEISHU, ChannelType.DINGTALK, ChannelType.WECHATWORK
@@ -148,28 +148,28 @@ class ChannelNotifier:
     async def _send_im_notification(
         self, im_channel: Dict[str, Any], title: str, content: str
     ) -> None:
-        """通过 GatewayRouter 向 IM 频道主动推送通知（QQ / 飞书 Bot 等）"""
+        """Actively push notifications to IM channels through GatewayRouter (QQ / Feishu Bot, etc.)"""
         try:
             from core.gateway.router import get_gateway_router
             gateway_router = get_gateway_router()
             if gateway_router is None:
-                logger.warning("[ChannelNotifier] GatewayRouter 未初始化，跳过 IM 推送")
+                logger.warning("[ChannelNotifier] GatewayRouter Not initialized, skip IM push")
                 return
 
             channel_type = im_channel.get("channel_type", "")
             channel_id = im_channel.get("channel_id", "")
             if not channel_type or not channel_id:
-                logger.warning("[ChannelNotifier] _im_channel 格式不完整: %s", im_channel)
+                logger.warning("[ChannelNotifier] _im_channel Incomplete format: %s", im_channel)
                 return
 
             text = f"{title}\n{content}" if content else title
-            logger.info("[ChannelNotifier] 推送 IM 通知: %s/%s", channel_type, channel_id)
+            logger.info("[ChannelNotifier] Push IM notifications: %s/%s", channel_type, channel_id)
             await gateway_router.send_im_notification(channel_type, channel_id, text)
         except Exception as e:
-            logger.error("[ChannelNotifier] IM 推送失败: %s", e)
+            logger.error("[ChannelNotifier] IM Push failed: %s", e)
 
     async def _send_email(self, channel: ChannelConfig, title: str, content: str) -> None:
-        """通过现有 EmailService 发送邮件渠道通知"""
+        """Send email channel notifications through existing EmailService"""
         if not channel.email_address:
             logger.warning(f"邮件渠道 [{channel.name}] 未配置邮箱地址，跳过")
             return
@@ -180,7 +180,7 @@ class ChannelNotifier:
         email_service = get_email_service()
         smtp_config = await email_service.get_smtp_config()
         if not smtp_config:
-            logger.debug("SMTP 未配置，跳过邮件渠道推送")
+            logger.debug("SMTP Not configured, skip email channel push")
             return
 
         await email_service._send_smtp(
@@ -190,11 +190,11 @@ class ChannelNotifier:
             text_content=content,
             smtp_config=smtp_config,
         )
-        logger.info(f"✅ 邮件渠道推送成功: [{channel.name}] -> {channel.email_address}")
+        logger.info(f"✅ Email channel push successful: [{channel.name}] -> {channel.email_address}")
 
 
 # ---------------------------------------------------------------------------
-# 单例
+# Singleton
 # ---------------------------------------------------------------------------
 _channel_notifier: Optional[ChannelNotifier] = None
 

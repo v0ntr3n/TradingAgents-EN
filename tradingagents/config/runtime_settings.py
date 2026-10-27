@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-TradingAgents 运行时配置适配器（弱依赖）
+TradingAgents Runtime configuration adapter (weak dependency)
 
-- 优先尝试从后端 app.services.config_provider 读取动态 system_settings（若可用）
-- 若不可用或在异步事件循环中无法同步等待，则回退到环境变量与默认值
-- 保持 TradingAgents 包独立性：不可用时静默回退，不引入硬依赖
+- Prioritizes trying to read dynamic system_settings from backend app.services.config_provider if available
+- If unavailable or unable to wait synchronously in an asynchronous event loop, fallback to environment variables and default values
+- Maintain the independence of the TradingAgents package: silently fall back when unavailable, without introducing hard dependencies
 """
 
 from __future__ import annotations
@@ -18,58 +18,58 @@ _logger = logging.getLogger("tradingagents.config")
 
 
 def _get_event_loop_running() -> bool:
-    """检测是否有事件循环正在运行"""
+    """Detect if there is an event loop running"""
     try:
-        # get_running_loop 在无事件循环时会抛 RuntimeError（更安静，不触发警告）
+        # get_running_loop A RuntimeError will be thrown when there is no event loop (quieter, no warnings will be triggered)
         loop = asyncio.get_running_loop()
         return loop is not None and loop.is_running()
     except RuntimeError:
         return False
     except Exception:
-        # 其他异常也认为没有事件循环
+        # Other exceptions also think there is no event loop
         return False
 
 
 def _get_system_settings_sync() -> dict:
-    """最佳努力获取后端动态 system_settings。
-    - 若后端不可用/未安装，返回空 dict
-    - 若当前有事件循环在运行，为避免死锁/嵌套，直接返回空 dict
+    """Best effort to get backend dynamic system_settings.
+    - If the backend is unavailable/not installed, return empty dict
+    - If there is currently an event loop running, to avoid deadlock/nesting, return empty directly. dict
 
-    注意：为了避免事件循环冲突，当前实现总是返回空字典，
-    依赖环境变量和默认值进行配置。
+    NOTE: To avoid event loop conflicts, the current implementation always returns an empty dictionary,
+    Rely on environment variables and default values for configuration.
     """
-    # 临时解决方案：完全禁用动态配置获取，避免事件循环冲突
-    # TODO: 未来可以考虑使用线程池或其他方式来安全获取动态配置
-    _logger.debug("动态配置获取已禁用，使用环境变量和默认值")
+    # Temporary solution: Disable dynamic configuration retrieval completely to avoid event loop conflicts
+    # TODO: In the future, you can consider using thread pools or other methods to safely obtain dynamic configurations.
+    _logger.debug("Dynamic configuration fetching is disabled, use environment variables and default values")
     return {}
 
-    # 以下代码暂时注释，避免事件循环冲突
-    # # 第一次检查
+    # The following code is temporarily commented to avoid event loop conflicts
+    # # first inspection
     # if _get_event_loop_running():
-    #     _logger.debug("事件循环正在运行，跳过动态配置获取")
+    #     _logger.debug("Event loop is running, skipping dynamic configuration acquisition")
     #     return {}
 
     # try:
-    #     # 延迟导入，避免硬依赖
+    #     # Delay import to avoid hard dependencies
     #     from app.services.config_provider import provider as config_provider  # type: ignore
 
-    #     # 第二次检查：确保导入过程中没有启动事件循环
+    #     # Second check: Make sure the event loop is not started during the import process
     #     if _get_event_loop_running():
-    #         _logger.debug("导入后检测到事件循环，跳过动态配置获取")
+    #         _logger.debug("Event loop detected after import, skipping dynamic configuration acquisition")
     #         return {}
 
-    #     # 第三次检查：在调用asyncio.run之前再次确认
+    #     # Third check: Confirm again before calling asyncio.run
     #     try:
-    #         # 尝试获取当前事件循环，如果成功说明有循环在运行
+    #         # Try to get the current event loop. If successful, it means there is a loop running.
     #         current_loop = asyncio.get_running_loop()
     #         if current_loop and current_loop.is_running():
-    #             _logger.debug("asyncio.run调用前检测到运行中的事件循环，跳过")
+    #             _logger.debug("asyncio.run A running event loop is detected before calling and skipped")
     #             return {}
     #     except RuntimeError:
-    #         # 没有运行中的事件循环，可以安全调用asyncio.run
+    #         # There is no running event loop and it is safe to call asyncio.run
     #         pass
 
-    #     # 使用 asyncio.run 进行一次性同步调用
+    #     # Use asyncio.run to make one-time synchronous calls
     #     return asyncio.run(config_provider.get_effective_system_settings()) or {}
 
     # except RuntimeError as e:
@@ -79,12 +79,12 @@ def _get_system_settings_sync() -> dict:
     #         "got future attached to a different loop",
     #         "task was destroyed but it is pending"
     #     ]):
-    #         _logger.debug(f"检测到事件循环冲突，跳过动态配置获取: {e}")
+    #         _logger.debug(f"Event loop conflict detected, skipping dynamic configuration fetch: {e}")
     #         return {}
-    #     _logger.debug(f"获取动态配置失败（RuntimeError）: {e}")
+    #     _logger.debug(f"Failed to obtain dynamic configuration (RuntimeError): {e}")
     #     return {}
     # except Exception as e:
-    #     _logger.debug(f"获取动态配置失败: {e}")
+    #     _logger.debug(f"Failed to obtain dynamic configuration: {e}")
     #     return {}
 
 
@@ -98,24 +98,24 @@ def _coerce(value: Any, caster: Callable[[Any], Any], default: Any) -> Any:
 
 
 def get_number(env_var: str, system_key: Optional[str], default: float | int, caster: Callable[[Any], Any]) -> float | int:
-    """按优先级获取数值配置：DB(system_settings) > ENV > default
-    - env_var: 环境变量名，例如 "TA_US_MIN_API_INTERVAL_SECONDS"
-    - system_key: 动态系统设置键名，例如 "ta_us_min_api_interval_seconds"（可为 None）
-    - default: 默认值
-    - caster: 类型转换函数，如 float 或 int
+    """Get numerical configuration by priority:DB(system_settings) > ENV > default
+    - env_var: Environment variable name, for example "TA_US_MIN_API_INTERVAL_SECONDS"
+    - system_key: Dynamic system setting key name, for example "ta_us_min_api_interval_seconds" (Can be None)
+    - default: Default value
+    - caster: Type conversion functions such as float or int
     """
-    # 1) DB 动态设置
+    # 1) DB Dynamic settings
     if system_key:
         eff = _get_system_settings_sync()
         if isinstance(eff, dict) and system_key in eff:
             return _coerce(eff.get(system_key), caster, default)
 
-    # 2) 环境变量
+    # 2) environment variables
     env_val = os.getenv(env_var)
     if env_val is not None and str(env_val).strip() != "":
         return _coerce(env_val, caster, default)
 
-    # 3) 代码默认
+    # 3) Code default
     return default
 
 
@@ -130,8 +130,8 @@ def get_int(env_var: str, system_key: Optional[str], default: int) -> int:
 # --- Boolean access helper ---------------------------------------------------
 
 def get_bool(env_var: str, system_key: Optional[str], default: bool) -> bool:
-    """按优先级获取布尔配置：DB(system_settings) > ENV > default"""
-    # 1) DB 动态设置
+    """Get boolean configuration by priority:DB(system_settings) > ENV > default"""
+    # 1) DB Dynamic settings
     if system_key:
         eff = _get_system_settings_sync()
         if isinstance(eff, dict) and system_key in eff:
@@ -142,19 +142,19 @@ def get_bool(env_var: str, system_key: Optional[str], default: bool) -> bool:
                 return bool(v)
             if isinstance(v, str):
                 return str(v).strip().lower() in ("1", "true", "yes", "on")
-    # 2) 环境变量
+    # 2) environment variables
     env_val = os.getenv(env_var)
     if env_val is not None and str(env_val).strip() != "":
         return str(env_val).strip().lower() in ("1", "true", "yes", "on")
-    # 3) 代码默认
+    # 3) Code default
     return default
 
 
 def use_app_cache_enabled(default: bool = False) -> bool:
-    """是否启用从 app 缓存（Mongo 集合）优先读取。ENV: TA_USE_APP_CACHE; DB: ta_use_app_cache
-    会记录一次评估日志，包含来源与原始ENV值，便于排查生效路径。
+    """Whether to enable preferential reading from the app cache (Mongo collection).ENV: TA_USE_APP_CACHE; DB: ta_use_app_cache
+    An evaluation log will be recorded, including the source and original ENV value, to facilitate troubleshooting the effective path.
     """
-    # 推断来源（DB/ENV/DEFAULT）
+    # Inferred source (DB/ENV/DEFAULT)
     src = "default"
     env_val = os.getenv("TA_USE_APP_CACHE")
     try:
@@ -166,7 +166,7 @@ def use_app_cache_enabled(default: bool = False) -> bool:
     elif env_val is not None and str(env_val).strip() != "":
         src = "env"
 
-    # 最终值（遵循 DB > ENV > DEFAULT）
+    # final value (following DB > ENV > DEFAULT) 
     val = get_bool("TA_USE_APP_CACHE", "ta_use_app_cache", default)
 
     try:

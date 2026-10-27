@@ -7,11 +7,11 @@ import { ElMessage } from 'element-plus'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { isJdyunMode } from '@/utils/config'
-// Pro 专属路由（v3.6.0 社区版开源分离 M1）：集中定义于 pro.routes.ts，
-// 社区版发布时整文件替换为空导出，本文件无需修改
+// Pro-exclusive routes (v3.6.0 Community Edition open-source separation M1): centralized in pro.routes.ts,
+// replaced with empty exports in Community Edition releases without modifying this file
 import { proWorkflowRoutes, proTradingSystemRoutes, proAnalysisChildren, proSettingsChildren, proLearningChildren } from './pro.routes'
 
-// 配置NProgress
+// Configure NProgress
 NProgress.configure({
   showSpinner: false,
   minimum: 0.2,
@@ -19,25 +19,25 @@ NProgress.configure({
   speed: 500
 })
 
-// 路由配置
+// Route configuration
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     redirect: '/dashboard'
   },
-  // 兼容文档链接：将 /paper/<name>.md 重定向到学习中心文章路由
+  // Legacy doc link compatibility: redirect /paper/<name>.md to Learning Center article route
   {
     path: '/paper/:name.md',
     name: 'PaperMdRedirect',
     redirect: (to) => `/learning/article/${to.params.name as string}`,
-    meta: { title: '文档跳转', hideInMenu: true, requiresAuth: false }
+    meta: { title: 'Document Redirect', hideInMenu: true, requiresAuth: false }
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '仪表板',
+      title: 'Dashboard',
       icon: 'Dashboard',
       requiresAuth: true,
       transition: 'fade'
@@ -48,7 +48,7 @@ const routes: RouteRecordRaw[] = [
         name: 'DashboardHome',
         component: () => import('@/views/Dashboard/index.vue'),
         meta: {
-          title: '仪表板',
+          title: 'Dashboard',
           requiresAuth: true
         }
       }
@@ -59,7 +59,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Help',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '使用手册',
+      title: 'User Manual',
       icon: 'QuestionFilled',
       requiresAuth: true,
       hideInMenu: true,
@@ -71,7 +71,7 @@ const routes: RouteRecordRaw[] = [
         name: 'HelpHome',
         component: () => import('@/views/Help/index.vue'),
         meta: {
-          title: '使用手册',
+          title: 'User Manual',
           requiresAuth: true
         }
       }
@@ -82,7 +82,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Guide',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '使用指南',
+      title: 'User Guide',
       icon: 'Document',
       requiresAuth: true,
       transition: 'fade'
@@ -93,7 +93,7 @@ const routes: RouteRecordRaw[] = [
         name: 'GuideHome',
         component: () => import('@/views/Guide/index.vue'),
         meta: {
-          title: '使用指南',
+          title: 'User Guide',
           requiresAuth: true
         }
       }
@@ -110,7 +110,7 @@ const routes: RouteRecordRaw[] = [
         name: 'SingleAnalysis',
         component: () => import('@/views/Analysis/SingleAnalysis.vue')
       },
-      // 批量分析（Pro）→ pro.routes.ts
+      // Batch analysis (Pro) → pro.routes.ts
       ...proAnalysisChildren,
       {
         path: 'general',
@@ -125,7 +125,7 @@ const routes: RouteRecordRaw[] = [
     name: 'StockScreening',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '股票筛选',
+      title: 'Stock Screener',
       icon: 'Search',
       requiresAuth: true,
       transition: 'slide-up'
@@ -136,7 +136,7 @@ const routes: RouteRecordRaw[] = [
         name: 'StockScreeningHome',
         component: () => import('@/views/Screening/index.vue'),
         meta: {
-          title: '股票筛选',
+          title: 'Stock Screener',
           requiresAuth: true
         }
       }
@@ -148,7 +148,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Favorites',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '股票关注列表',
+      title: 'Watchlist',
       icon: 'Star',
       requiresAuth: true,
       transition: 'slide-up'
@@ -159,7 +159,7 @@ const routes: RouteRecordRaw[] = [
         name: 'FavoritesHome',
         component: () => import('@/views/Favorites/index.vue'),
         meta: {
-          title: '股票关注列表',
+          title: 'Watchlist',
           requiresAuth: true
         }
       }
@@ -170,7 +170,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Learning',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '学习中心',
+      title: 'Learning Center',
       icon: 'Reading',
       requiresAuth: false,
       transition: 'fade'
@@ -181,7 +181,7 @@ const routes: RouteRecordRaw[] = [
         name: 'LearningHome',
         component: () => import('@/views/Learning/index.vue'),
         meta: {
-          title: '学习中心',
+          title: 'Learning Center',
           requiresAuth: false
         }
       },
@@ -190,7 +190,7 @@ const routes: RouteRecordRaw[] = [
         name: 'LearningCategory',
         component: () => import('@/views/Learning/Category.vue'),
         meta: {
-          title: '学习分类',
+          title: 'Learning Category',
           requiresAuth: false
         }
       },
@@ -199,7 +199,7 @@ const routes: RouteRecordRaw[] = [
         name: 'LearningArticle',
         component: () => import('@/views/Learning/Article.vue'),
         meta: {
-          title: '文章详情',
+          title: 'Article Detail',
           requiresAuth: false
         }
       },
@@ -208,18 +208,18 @@ const routes: RouteRecordRaw[] = [
         name: 'AdvancedCourses',
         component: () => import('@/views/Learning/Advanced.vue'),
         meta: {
-          title: '从散户到系统交易者：AI赋能的可进化投资法',
+          title: 'From Retail to Systematic Trader: AI-Powered Evolvable Investing',
           requiresAuth: false
         }
       },
-      // 高级课程示例报告（Pro，付费课程样本）→ pro.routes.ts
+      // Advanced course sample reports (Pro, paid course samples) → pro.routes.ts
       ...proLearningChildren,
       {
         path: 'advanced/:category/:lesson',
         name: 'AdvancedLesson',
         component: () => import('@/views/Learning/AdvancedLesson.vue'),
         meta: {
-          title: '从散户到系统交易者：AI赋能的可进化投资法',
+          title: 'From Retail to Systematic Trader: AI-Powered Evolvable Investing',
           requiresAuth: false
         }
       }
@@ -230,7 +230,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Stocks',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '股票详情',
+      title: 'Stock Detail',
       icon: 'TrendCharts',
       requiresAuth: true,
       hideInMenu: true,
@@ -242,7 +242,7 @@ const routes: RouteRecordRaw[] = [
         name: 'StockDetail',
         component: () => import('@/views/Stocks/Detail.vue'),
         meta: {
-          title: '股票详情',
+          title: 'Stock Detail',
           requiresAuth: true,
           hideInMenu: true,
           transition: 'fade'
@@ -258,7 +258,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/BasicLayout.vue'),
     redirect: '/tasks/unified',
     meta: {
-      title: '任务中心',
+      title: 'Task Center',
       icon: 'List',
       requiresAuth: true,
       transition: 'slide-up'
@@ -268,16 +268,16 @@ const routes: RouteRecordRaw[] = [
         path: 'unified',
         name: 'UnifiedTaskCenter',
         component: () => import('@/views/Tasks/UnifiedTaskCenter.vue'),
-        meta: { title: '任务中心', requiresAuth: true }
+        meta: { title: 'Task Center', requiresAuth: true }
       }
     ]
   },
-  // 保留旧版路由但重定向（以防有直接访问的链接）
+  // Retain legacy route with redirect (in case of direct links)
   {
     path: '/tasks/old',
     name: 'TaskCenterHome',
     redirect: '/tasks/unified',
-    meta: { title: '任务中心（旧版）', requiresAuth: true }
+    meta: { title: 'Task Center (Legacy)', requiresAuth: true }
   },
   { path: '/queue', redirect: '/tasks/unified' },
   { path: '/analysis/history', redirect: '/tasks/unified' },
@@ -286,7 +286,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Assistant',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '智能助手',
+      title: 'AI Assistant',
       icon: 'ChatDotRound',
       requiresAuth: true,
       transition: 'fade'
@@ -297,7 +297,7 @@ const routes: RouteRecordRaw[] = [
         name: 'AssistantHome',
         component: () => import('@/views/Assistant/index.vue'),
         meta: {
-          title: '智能助手',
+          title: 'AI Assistant',
           requiresAuth: true
         }
       }
@@ -308,7 +308,7 @@ const routes: RouteRecordRaw[] = [
     name: 'EmbeddedNanobotDebug',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '助手调试',
+      title: 'Assistant Debug',
       hideInMenu: true,
       requiresAuth: true,
       transition: 'fade'
@@ -319,7 +319,7 @@ const routes: RouteRecordRaw[] = [
         name: 'EmbeddedNanobotDebugHome',
         component: () => import('@/views/Debug/EmbeddedNanobot.vue'),
         meta: {
-          title: '助手调试',
+          title: 'Assistant Debug',
           hideInMenu: true,
           requiresAuth: true
         }
@@ -331,7 +331,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Memory',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '对象记忆',
+      title: 'Object Memory',
       icon: 'Coin',
       requiresAuth: true,
       transition: 'fade'
@@ -342,19 +342,19 @@ const routes: RouteRecordRaw[] = [
         name: 'MemoryHome',
         component: () => import('@/views/Memory/index.vue'),
         meta: {
-          title: '股票对象记忆',
+          title: 'Stock Object Memory',
           requiresAuth: true
         }
       }
     ]
   },
   {
-    // Skill 中心（v3.6.0 起免费开放，随社区版开源）
+    // Skill Center (free and open-source since v3.6.0 in Community Edition)
     path: '/skills',
     name: 'SkillCenter',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: 'Skill 中心',
+      title: 'Skill Center',
       icon: 'MagicStick',
       requiresAuth: true,
       transition: 'fade'
@@ -365,7 +365,7 @@ const routes: RouteRecordRaw[] = [
         name: 'SkillCenterHome',
         component: () => import('@/views/Skills/SkillCenter.vue'),
         meta: {
-          title: 'Skill 中心',
+          title: 'Skill Center',
           requiresAuth: true
         }
       },
@@ -374,7 +374,7 @@ const routes: RouteRecordRaw[] = [
         name: 'SkillGenerationCreate',
         component: () => import('@/views/Skills/SkillGenerationCreate.vue'),
         meta: {
-          title: '创建 Skill',
+          title: 'Create Skill',
           requiresAuth: true,
           hideInMenu: true
         }
@@ -386,7 +386,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Reports',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '分析报告',
+      title: 'Analysis Reports',
       icon: 'Document',
       requiresAuth: true,
       transition: 'fade'
@@ -397,7 +397,7 @@ const routes: RouteRecordRaw[] = [
         name: 'ReportsHome',
         component: () => import('@/views/Reports/index.vue'),
         meta: {
-          title: '分析报告',
+          title: 'Analysis Reports',
           requiresAuth: true
         }
       },
@@ -406,7 +406,7 @@ const routes: RouteRecordRaw[] = [
         name: 'ReportDetail',
         component: () => import('@/views/Reports/ReportDetail.vue'),
         meta: {
-          title: '报告详情',
+          title: 'Report Detail',
           requiresAuth: true
         }
       },
@@ -415,7 +415,7 @@ const routes: RouteRecordRaw[] = [
         name: 'TokenStatistics',
         component: () => import('@/views/Reports/TokenStatistics.vue'),
         meta: {
-          title: 'Token统计',
+          title: 'Token Statistics',
           requiresAuth: true
         }
       }
@@ -426,7 +426,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Settings',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '设置',
+      title: 'Settings',
       icon: 'Setting',
       requiresAuth: true,
       transition: 'slide-left'
@@ -437,7 +437,7 @@ const routes: RouteRecordRaw[] = [
         name: 'SettingsHome',
         component: () => import('@/views/Settings/index.vue'),
         meta: {
-          title: '设置',
+          title: 'Settings',
           requiresAuth: true
         }
       },
@@ -446,7 +446,7 @@ const routes: RouteRecordRaw[] = [
         name: 'ConfigManagement',
         component: () => import('@/views/Settings/ConfigManagement.vue'),
         meta: {
-          title: '配置管理',
+          title: 'Configuration Management',
           requiresAuth: true
         }
       },
@@ -455,7 +455,7 @@ const routes: RouteRecordRaw[] = [
         name: 'DatabaseManagement',
         component: () => import('@/views/System/DatabaseManagement.vue'),
         meta: {
-          title: '数据库管理',
+          title: 'Database Management',
           requiresAuth: true
         }
       },
@@ -464,7 +464,7 @@ const routes: RouteRecordRaw[] = [
         name: 'OperationLogs',
         component: () => import('@/views/System/OperationLogs.vue'),
         meta: {
-          title: '操作日志',
+          title: 'Operation Logs',
           requiresAuth: true
         }
       },
@@ -473,7 +473,7 @@ const routes: RouteRecordRaw[] = [
         name: 'LogManagement',
         component: () => import('@/views/System/LogManagement.vue'),
         meta: {
-          title: '系统日志',
+          title: 'System Logs',
           requiresAuth: true
         }
       },
@@ -482,7 +482,7 @@ const routes: RouteRecordRaw[] = [
         name: 'MultiSourceSync',
         component: () => import('@/views/System/MultiSourceSync.vue'),
         meta: {
-          title: '多数据源同步',
+          title: 'Multi-Source Sync',
           requiresAuth: true
         }
       },
@@ -491,7 +491,7 @@ const routes: RouteRecordRaw[] = [
         name: 'CapabilityIndex',
         component: () => import('@/views/Settings/index.vue'),
         meta: {
-          title: '工具能力索引',
+          title: 'Tool Capability Index',
           requiresAuth: true
         }
       },
@@ -500,7 +500,7 @@ const routes: RouteRecordRaw[] = [
         name: 'CacheManagement',
         component: () => import('@/views/Settings/CacheManagement.vue'),
         meta: {
-          title: '缓存管理',
+          title: 'Cache Management',
           requiresAuth: true
         }
       },
@@ -509,7 +509,7 @@ const routes: RouteRecordRaw[] = [
         name: 'UsageStatistics',
         component: () => import('@/views/Settings/UsageStatistics.vue'),
         meta: {
-          title: '使用统计',
+          title: 'Usage Statistics',
           requiresAuth: true
         }
       },
@@ -518,17 +518,17 @@ const routes: RouteRecordRaw[] = [
         name: 'SchedulerManagement',
         component: () => import('@/views/System/SchedulerManagement.vue'),
         meta: {
-            title: '定时任务',
+            title: 'Scheduled Tasks',
             requiresAuth: true
         }
       },
-        // 社媒消息管理（Pro 数据保存）→ pro.routes.ts
+        // Social media message management (Pro data persistence) → pro.routes.ts
         {
           path: 'data-import',
           name: 'DataImport',
           component: () => import('@/views/System/DataImport.vue'),
           meta: {
-            title: '数据导入管理',
+            title: 'Data Import Management',
             requiresAuth: true
           }
         },
@@ -537,23 +537,23 @@ const routes: RouteRecordRaw[] = [
           name: 'UpdateManagement',
           component: () => import('@/views/System/UpdateManagement.vue'),
           meta: {
-            title: '系统更新',
+            title: 'System Update',
             requiresAuth: true
           }
         },
-      // Pro 页面子路由（模板三件套/Prompt 三件套/推送/分组/定时分析/授权管理/社媒消息管理/数据API指南）→ pro.routes.ts
+      // Pro child routes (Templates/Prompts/Push/Groups/Scheduled Analysis/License/Social Media Messages/Data API Guide) → pro.routes.ts
       ...proSettingsChildren,
       {
         path: 'analysis-profiles',
         name: 'AnalysisProfiles',
         component: () => import('@/views/Settings/AnalysisProfiles.vue'),
-        meta: { title: '行业/个股配置', requiresAuth: true }
+        meta: { title: 'Sector/Stock Profiles', requiresAuth: true }
       },
       {
         path: 'jdyun-config',
         name: 'JdyunConfig',
         component: () => import('@/views/Settings/JdyunConfig.vue'),
-        meta: { title: '系统配置', requiresAuth: true }
+        meta: { title: 'System Configuration', requiresAuth: true }
       }
     ]
   },
@@ -563,7 +563,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Login',
     component: () => import('@/views/Auth/Login.vue'),
     meta: {
-      title: '登录',
+      title: 'Login',
       hideInMenu: true,
       transition: 'fade'
     }
@@ -574,9 +574,9 @@ const routes: RouteRecordRaw[] = [
     name: 'About',
     component: () => import('@/views/About/index.vue'),
     meta: {
-      title: '关于',
+      title: 'About',
       icon: 'InfoFilled',
-      requiresAuth: false, // 关于页面不需要认证
+      requiresAuth: false, // About page does not require authentication
       transition: 'fade'
     }
   },
@@ -585,7 +585,7 @@ const routes: RouteRecordRaw[] = [
     name: 'PaperTrading',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '模拟交易',
+      title: 'Paper Trading',
       icon: 'CreditCard',
       requiresAuth: true,
       transition: 'slide-up'
@@ -596,7 +596,7 @@ const routes: RouteRecordRaw[] = [
         name: 'PaperTradingHome',
         component: () => import('@/views/PaperTrading/index.vue'),
         meta: {
-          title: '模拟交易',
+          title: 'Paper Trading',
           requiresAuth: true
         }
       }
@@ -607,7 +607,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Portfolio',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '持仓分析',
+      title: 'Portfolio Analysis',
       icon: 'PieChart',
       requiresAuth: true,
       transition: 'slide-up'
@@ -618,7 +618,7 @@ const routes: RouteRecordRaw[] = [
         name: 'PortfolioHome',
         component: () => import('@/views/Portfolio/index.vue'),
         meta: {
-          title: '持仓分析',
+          title: 'Portfolio Analysis',
           requiresAuth: true
         }
       }
@@ -629,7 +629,7 @@ const routes: RouteRecordRaw[] = [
     name: 'TradeReview',
     component: () => import('@/layouts/BasicLayout.vue'),
     meta: {
-      title: '操作复盘',
+      title: 'Trade Review',
       icon: 'TrendCharts',
       requiresAuth: true,
       transition: 'slide-up'
@@ -640,15 +640,15 @@ const routes: RouteRecordRaw[] = [
         name: 'TradeReviewHome',
         component: () => import('@/views/TradeReview/index.vue'),
         meta: {
-          title: '操作复盘',
+          title: 'Trade Review',
           requiresAuth: true
         }
       }
     ]
   },
-  // 分析流模块（Pro）→ pro.routes.ts
+  // Analysis Workflow module (Pro) → pro.routes.ts
   ...proWorkflowRoutes,
-  // 交易计划（Pro，trading_plan_check 付费功能）→ pro.routes.ts
+  // Trading Plan (Pro, trading_plan_check paid feature) → pro.routes.ts
   ...proTradingSystemRoutes,
 
   {
@@ -656,14 +656,14 @@ const routes: RouteRecordRaw[] = [
     name: 'NotFound',
     component: () => import('@/views/Error/404.vue'),
     meta: {
-      title: '页面不存在',
+      title: 'Page Not Found',
       hideInMenu: true,
       requiresAuth: true
     }
   }
 ]
 
-// 创建路由实例
+// Create router instance
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
@@ -676,30 +676,30 @@ const router = createRouter({
   }
 })
 
-// 全局前置守卫
+// Global before guard
 router.beforeEach(async (to, _from, next) => {
-  // 开始进度条
+  // Start progress bar
   NProgress.start()
 
   const authStore = useAuthStore()
   const appStore = useAppStore()
 
-  // 等待认证初始化完成，避免初始化期间跳转出现竞态
+  // Wait for auth initialization to complete to avoid race conditions during navigation
   if (!authStore.authInitialized) {
     try {
       await authStore.checkAuthStatus()
     } catch {
-      // 初始化失败时继续走原有判断逻辑
+      // Continue with standard check logic if initialization fails
     }
   }
 
-  // 设置页面标题
+  // Set page title
   const title = to.meta.title as string
   if (title) {
     document.title = `${title} - TradingAgents-CN`
   }
 
-  console.log('🚦 路由守卫检查:', {
+  console.log('🚦 Route guard check:', {
     path: to.fullPath,
     name: to.name,
     requiresAuth: to.meta.requiresAuth,
@@ -708,38 +708,38 @@ router.beforeEach(async (to, _from, next) => {
     hasToken: !!authStore.token
   })
 
-  // 检查是否需要高级学员权限
+  // Check if Pro license permission is required
   if (to.meta.requiresPro) {
     try {
       const { useLicenseStore } = await import('@/stores/license')
       const licenseStore = useLicenseStore()
       
-      // 如果License状态未加载，先验证
+      // Verify license first if status is not loaded
       if (!licenseStore.licenseInfo) {
         await licenseStore.verifyLicense()
       }
       
       if (!licenseStore.isPro) {
-        ElMessage.warning('此功能需要高级学员权限，请先认证')
+        ElMessage.warning('This feature requires Pro membership. Please activate your license first.')
         NProgress.done()
         next('/settings/license')
         return
       }
     } catch (error) {
-      console.error('检查License权限失败:', error)
-      // 如果检查失败，允许访问（开发环境可能未配置）
+      console.error('Failed to check license permission:', error)
+      // Allow access if check fails (may not be configured in dev environment)
     }
   }
 
-  // 检查是否需要认证
+  // Check if authentication is required
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    console.log('🔒 需要认证但用户未登录:', {
+    console.log('🔒 Authentication required but user is not logged in:', {
       path: to.fullPath,
       requiresAuth: to.meta.requiresAuth,
       isAuthenticated: authStore.isAuthenticated,
-      token: authStore.token ? '存在' : '不存在'
+      token: authStore.token ? 'present' : 'absent'
     })
-    // 保存原始路径，登录后跳转
+    // Save original path for redirect after login
     authStore.setRedirectPath(to.fullPath)
     next('/login')
     return
@@ -747,13 +747,13 @@ router.beforeEach(async (to, _from, next) => {
 
 
 
-  // 如果已登录且访问登录页，重定向到仪表板
+  // Redirect to dashboard if already authenticated and visiting login page
   if (authStore.isAuthenticated && to.name === 'Login') {
     next('/dashboard')
     return
   }
 
-  // 京东云版首次登录引导：未完成引导且访问仪表板时跳转到 /guide
+  // JD Cloud edition first-login onboarding: redirect to /guide when visiting dashboard before completing guide
   if (authStore.isAuthenticated && isJdyunMode()) {
     const guideCompleted = (() => {
       try {
@@ -763,7 +763,7 @@ router.beforeEach(async (to, _from, next) => {
       }
     })()
 
-    // 用户主动点击"查看引导"或已经在 /guide 页面，不拦截
+    // Do not intercept if user actively clicked "View Guide" or is already on /guide
     const goingToGuide = to.path === '/guide'
 
     if (!guideCompleted && to.path === '/dashboard' && !goingToGuide) {
@@ -772,61 +772,61 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
-  // PRO 功能路由检查
+  // PRO feature route check
   const proRoutes = [
     '/settings/email',
     '/settings/channel-configs',
     '/settings/watchlist-groups',
     '/settings/scheduled-analysis',
-    '/settings/templates',  // 🔥 提示词模板需要高级学员权限
-    '/workflow'  // 分析流功能需要高级学员权限
+    '/settings/templates',  // 🔥 Prompt templates require Pro permission
+    '/workflow'  // Analysis workflow requires Pro permission
   ]
 
-  // 检查是否是 PRO 路由
+  // Check if current route is a PRO route
   const isProRoute = proRoutes.some(route => to.path.startsWith(route))
   if (isProRoute && authStore.isAuthenticated) {
-    // 延迟导入 license store 避免循环依赖
+    // Lazy-import license store to avoid circular dependency
     const { useLicenseStore } = await import('@/stores/license')
     const licenseStore = useLicenseStore()
 
-    // 确保已验证授权状态
+    // Ensure license status has been verified
     if (!licenseStore.licenseInfo) {
       await licenseStore.verifyLicense()
     }
 
-    // 如果不是高级学员，显示提示并重定向到授权管理页面
+    // If not Pro, show warning and redirect to license management page
     if (!licenseStore.isPro) {
-      ElMessage.warning('此功能为高级学员专属，请先升级学员等级')
+      ElMessage.warning('This feature is exclusive to Pro members. Please upgrade your membership first.')
       next('/settings/license')
       return
     }
   }
 
-  // 更新当前路由信息
+  // Update current route info
   appStore.setCurrentRoute(to)
 
   next()
 })
 
-// 全局后置守卫
+// Global after hook
 router.afterEach((_to, _from) => {
-  // 结束进度条
+  // Finish progress bar
   NProgress.done()
 
-  // 页面切换后的处理
+  // Post-navigation handling
   nextTick(() => {
-    // 可以在这里添加页面分析、埋点等逻辑
+    // Page analytics or tracking logic can be added here
   })
 })
 
-// 路由错误处理
+// Router error handler
 router.onError((error) => {
-  console.error('路由错误:', error)
+  console.error('Router error:', error)
   NProgress.done()
-  ElMessage.error('页面加载失败，请重试')
+  ElMessage.error('Failed to load page, please try again')
 })
 
 export default router
 
-// 导出路由配置供其他地方使用
+// Export routes configuration for external use
 export { routes }

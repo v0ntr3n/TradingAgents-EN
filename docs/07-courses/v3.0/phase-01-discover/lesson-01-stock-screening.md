@@ -1,322 +1,322 @@
-# 第 1 课:股票筛选——从 6000 只股票里找到值得研究的
+# Lesson 1:stock screen——Find the ones worth researching from 6,000 stocks
 
-> **课时**: 20 分钟 | **难度**: ⭐ 入门 | **前置**: 无
+> **Class hours**: 20 minutes | **difficulty**: ⭐ Getting Started | **prefix**: None
 
-> ⚠️ **风险提示**:本课程内容仅为平台功能教学,AI 输出的研究报告不构成投资建议,最终决策由你自己负责。
+> ⚠️ **Risk warning**:The content of this course is only for teaching platform functions.,AI The research report output does not constitute investment advice.,The final decision is yours.
 
-> ⚠️ **风险提示**:本文为系统功能使用教程,**不构成任何投资建议**。AI 输出结果(决策标签、风险评分、评估结论)仅供研究参考,所有投资决策由用户自行判断,盈亏自负。
+> ⚠️ **Risk warning**:This article is a tutorial on how to use the system functions,**Does not constitute any investment advice**. AI Output results(Decision labels, risk scores, assessment conclusions)For research reference only,All investment decisions are made by users themselves,You are responsible for your profits and losses.
 
-## 🎯 学完后能做什么
+## 🎯 What can you do after studying?
 
-- 用**一句大白话**告诉 AI"我要什么股票",AI 自动筛选
-- 用"**高级模式**"做精细筛选(包含"常用条件"和"高级字段"两层)
-- 把筛选结果**一键送进批量分析**
+- use**a common saying**tell AI"What stocks do I want?",AI Automatic filtering
+- use"**Advanced mode**"Do fine screening(contains"Common conditions"and"Advanced fields"two floors)
+- filter results**Send batch analysis with one click**
 
-## 🤔 为什么需要筛选?不筛选会怎样?
+## 🤔 Why screening is needed?What will happen if you don't filter??
 
-A 股市场有 **5000+ 只股票**(还在不断增加),你不可能一只只看。**直接搜代码或听别人推荐**的痛点:
+A The stock market has **5000+ only stocks**(Still increasing),You can't just look at them.**Search for codes directly or listen to recommendations from others**pain points:
 
-| 方式 | 问题 |
+| way | question |
 |------|------|
-| 全市场 5000 只全研究 | 时间精力根本不够,1 只深度研究要 10-20 分钟 |
-| 听"热门股"推荐 | 别人推荐的"热点"常常是**已经涨了很多**的,追高风险大 |
-| 看排行榜 | 排行榜是**历史表现**,未来不一定继续 |
-| 拍脑袋选 | 没有系统方法,完全凭感觉,**长期必亏** |
+| 5000 full market research | There is simply not enough time and energy,1 Only in-depth research takes 10-20 minutes |
+| listen"Hot stocks"Recommended | Recommended by others"Hotspot"often**It has risen a lot**of,Chasing high is risky |
+| Look at the rankings | The ranking is**historical performance**,The future may not necessarily continue |
+| Pick your brain | no systematic approach,Completely based on feeling,**Will lose money in the long run** |
 
-**筛选的本质**:用**一套规则**把 5000 只缩小到你**能研究过来**的规模(50-100 只),再深度研究。
+**The nature of screening**:use**set of rules**Narrow down 5000 to just you.**Can study it**scale(50-100 only),Research further.
 
-> 💡 **漏斗思路**:5000 只 → 智能筛选缩到 100-500 只 → 高级模式精修到 50-100 只 → 批量分析研究 → 最终选 5-10 只
+> 💡 **funnel idea**:5000 only → Intelligent screening reduces the number to 100-500 → Advanced mode refined to 50-100 pieces → Batch analysis studies → Finally choose 5-10
 
-## ⚠️ v3.0 重要变化
+## ⚠️ v3.0 Important changes
 
-- ✅ **新增**:**智能筛选(自然语言对话式)是 v3.0 的核心功能**,v2.x 时代只有"高级模式"条件表单
-- ✅ **默认 Tab 切换**:进入筛选页默认显示"智能筛选"(自然语言),不再是"高级模式"
-- ✅ **支持多轮对话**:AI 会主动复述你的需求,你可以追问"再加个条件"
-- ⚠️ **平台范围**:仅支持 **A 股和 ETF 基金**,港股、美股的前端入口已下线
+- ✅ **New**:**Smart filtering(natural language conversational)It is the core function of v3.0**,v2.x The times are only"Advanced mode"conditional form
+- ✅ **Default tab switching**:Enter the filter page and display it by default"Smart filtering"(natural language),no longer"Advanced mode"
+- ✅ **Support multiple rounds of dialogue**:AI Will proactively state your needs,You can ask"Add another condition"
+- ⚠️ **Platform scope**:Only supports **A Stocks and ETFs**,The front-end entrance to Hong Kong and US stocks has been offline
 
-## 📍 入口(找不到?这样进)
+## 📍 entrance(not found?Proceed this way)
 
-| 进法 | 怎么操作 |
+| advance method | How to operate |
 |------|---------|
-| 侧边栏 | 页面最左侧导航栏,找"股票分析"→"股票筛选" |
-| 首页 | 在首页的卡片区找"选股助手"卡片(卡片右上角带"v3.0"小标签) |
+| sidebar | The navigation bar on the far left of the page,Find"stock analysis"→"stock screen" |
+| Home page | Find it in the card area on the homepage"Stock Picking Assistant"card(Card upper right corner with"v3.0"small label) |
 
-> 💡 **还是找不到?** 打开 AI 助手,问"怎么进入股票筛选?",助手会一步步引导你。
+> 💡 **Still can't find it?** Open AI Assistant,ask"How to enter stock screening?",The assistant will guide you step by step.
 
-## 🖱️ 操作步骤(跟着点 5 步)
+## 🖱️ Operation steps(Follow the 5 steps)
 
-### 步骤 1:进入筛选器
+### steps 1:Enter filters
 
-1. 用上面任一方式进入「股票筛选」页面
-2. 进入后,你会看到**两个 Tab**:左边是"**智能筛选**",右边是"**高级模式**"
-3. 系统默认就在"智能筛选" Tab,直接用就行
+1. Use any of the above methods to enter the "Stock Screening" page
+2. After entering,you will see**two Tab**:On the left is"**Smart filtering**",On the right is"**Advanced mode**"
+3. The system default is at"Smart filtering" Tab,Just use it directly
 
-> 页面布局:左侧是"筛选历史"栏,中间偏右是对话输入框。
+> Page layout:On the left is"Filter history"column,To the right of the center is the dialog input box.
 
-> ⏱️ **耗时预期**:
-> - 加载筛选页:1-2 秒
-> - AI 复述你的需求:5-10 秒
-> - 出结果卡片:1-3 秒
-> - 整个流程通常 30 秒内完成
+> ⏱️ **Elapsed time expected**:
+> - Load filter page:1-2 seconds
+> - AI Restate your needs:5-10 seconds
+> - Result card:1-3 seconds
+> - The entire process is usually completed within 30 seconds
 
-### 步骤 2:用大白话告诉 AI 你要什么
+### steps 2:Tell the AI what you want in plain English
 
-在对话框里**直接说人话**,比如:
+in dialog box**Speak directly**,For example:
 
-| 你说的话 | AI 实际会筛选什么(自动推断) |
+| what you said | AI What will actually be screened?(automatic inference) |
 |---------|------------------------|
-| "低估值高股息的银行股" | 银行行业 + **PE 小于 10** + **股息率大于 4%** |
-| "新能源行业市值大于 500 亿的龙头" | 新能源行业 + **总市值 > 500 亿** + 行业龙头股 |
-| "近期涨得猛的科技股" | 科技行业 + **近 20 日涨幅排行前列** |
-| "市值 100-500 亿、ROE 大于 15% 的成长股" | **中盘** 市值 + **ROE > 15%** |
-| "机构重仓的医药白马" | 医药行业 + **机构持仓比例高** 的龙头 |
+| "Bank stocks with low valuations and high dividends" | banking industry + **PE less than 10** + **The dividend yield is greater than 4%** |
+| "A leader in the new energy industry with a market value greater than 50 billion" | New energy industry + **Total market capitalization > 500 billion** + Industry leading stocks |
+| "Technology stocks that have surged recently" | technology industry + **Top gainers in the past 20 days** |
+| "Growth stocks with market capitalization of RMB 10-50 billion and ROE greater than 15%" | **Mid game** Market value + **ROE > 15%** |
+| "The pharmaceutical white horse heavily stocked by institutions" | Pharmaceutical industry + **Institutional holdings are high** The faucet |
 
-> 💡 **看不懂表格里的 PE、ROE、股息率?** 别担心,这些都是 AI 帮你"翻译"的,你**只用说大白话**。
-> 💡 **口语化表达 AI 能理解吗?** 能。AI 会智能推断你的意思(比如"涨得猛"= 近 20 日涨幅前列,"白马"= 行业龙头 + 基本面好)。如果推断有偏差,下一步可以纠正。
+> 💡 **I can't understand the PE, ROE, and dividend yield in the table?** don't worry,These are all AI helps you"Translation"of,you**Just speak plainly**. 
+> 💡 **Can spoken expressions be understood by AI??** Can. AI will intelligently infer what you mean(For example"Rising sharply"= Top gainers in the past 20 days,"white horse"= Industry leader + Good fundamentals). If the inference is biased,The next step can be corrected.
 
-发送方法:输入完按 `Ctrl+Enter`,或**直接点输入框右边的"发送"按钮**(纸飞机图标,一般在右下角)。
+Send method:Press after inputting `Ctrl+Enter`,or**Just click on the right side of the input box"send"button**(Paper airplane icon,Usually in the lower right corner). 
 
-### 步骤 3:AI 复述 + 你确认(很关键!)
+### steps 3:AI retell + you confirm(Very critical!)
 
-AI 收到你的需求后,会**先复述一遍**让你确认:
+AI After receiving your request,Will**Let me repeat it first**Let you confirm:
 
-> **AI**: "我理解你想筛选:**银行行业、PE<10、股息率>4%**。这样大约会筛出 X 只股票。是否继续?"
+> **AI**: "I understand you want to filter:**banking industry,PE<10, dividend yield>4%**. This will filter out approximately X stocks. Do you want to continue??"
 
-这时**屏幕中央会有两个按钮**:
-- **"确认筛选"** 按钮(蓝色主按钮,在 AI 回复下方):满意就点这个,AI 开始出结果
-- **"修改需求"** 按钮(灰色次按钮,旁边):想调整就点这个,在输入框补充,比如"再加个总市值大于 1000 亿"
+At this time**There will be two buttons in the center of the screen**:
+- **"Confirm filter"** button(blue home button,Below the AI reply):Click this if you are satisfied,AI Start getting results
+- **"Modify requirements"** button(Gray secondary button,next to):If you want to adjust, click this,Add in input box,For example"Add another one with a total market value greater than 100 billion"
 
-> ⚠️ **如果 AI 复述得不对,千万别点"确认"!** 在输入框直接补充或纠正,比如"不是 X,我想要的是 Y",AI 会基于上下文修正理解。
+> ⚠️ **If the AI retells it incorrectly,Don't order it"Confirm"!** Supplement or correct directly in the input box,For example"No X,what i want is Y",AI Understanding will be revised based on context.
 
-### 步骤 4:查看股票卡片(结果)
+### steps 4:View stock cards(result)
 
-确认后,AI 会出**股票卡片列表**(竖排,每行 1 张卡片),每张卡片显示:
+After confirmation,AI Will come out**Stock card list**(Vertical,1 card per row),Each card shows:
 
 ```
 ┌─────────────────────────────┐
-│ ☑ 600519 贵州茅台            │
-│ 当前价: 1680.50  +1.2%      │
-│ PE: 28  PB: 9.5  股息率: 1.5%│
-│ 总市值: 2.1 万亿             │
-│ 所属行业: 白酒                │
+│ ☑ 600519 Kweichow Moutai            │
+│ current price: 1680.50  +1.2%      │
+│ PE: 28  PB: 9.5  dividend yield: 1.5%│
+│ Total market capitalization: 2.1 trillions             │
+│ Industry: Liquor                │
 └─────────────────────────────┘
 ```
 
-每张卡片的关键信息:
-- **股票代码 + 名称**(顶部)
-- **当前价格 + 涨跌幅**(🔴 红色表示上涨,🟢 绿色表示下跌,这是 A 股市场的颜色习惯)
-- **关键指标**:PE、PB、股息率、总市值
-- **所属行业**
+Key information for each card:
+- **Stock code + Name**(top)
+- **current price + Increase or decrease**(🔴 Red means rising,🟢 Green means down,This is the color habit of the A-share market)
+- **key indicators**:PE, PB, Dividend yield, total market capitalization
+- **Industry**
 
-**勾选卡片右上角的复选框**(☐)加入"待批量分析列表",被选中的卡片边框会变蓝。
+**Check the box in the upper right corner of the card**(☐)Join"List to be analyzed in batches",The selected card border will turn blue.
 
-> 💡 **这些数字怎么读?**(对小白用户)
+> 💡 **How to read these numbers?**(For novice users)
 >
-> | 指标 | 含义 | 大致参考 |
+> | indicator | meaning | rough reference |
 > |------|------|---------|
-> | **PE**(市盈率) | 投资回本年限(理论值),PE=股价/年盈利 | <15 偏低估,15-30 合理,>30 偏贵 |
-> | **PB**(市净率) | 股价相对每股净资产的倍数 | <1 破净,1-3 合理,>5 偏贵 |
-> | **股息率** | 每年分红占股价比例 | >3% 高股息,1-3% 中等,<1% 较低 |
-> | **总市值** | 公司总价值 | >1000 亿大盘股,200-1000 亿中盘,<200 亿小盘 |
+> | **PE**(P/E ratio) | Investment return period(Theoretical value),PE=Stock price/annual profit | <15 Underestimating,15-30 reasonable,>30 Expensive |
+> | **PB**(price to book ratio) | The multiple of stock price to net assets per share | <1 Break the net,1-3 reasonable,>5 Expensive |
+> | **dividend yield** | Annual dividends as a percentage of stock price | >3% high dividends,1-3% medium,<1% lower |
+> | **Total market capitalization** | total company value | >1000 100 million large-cap stocks,200-1000 100 million mid-cap,<200 100 million small cap |
 >
-> ⚠️ **注意**:这些数字**单独看意义不大**,要**结合行业**和**其他指标**综合判断。比如银行股 PE=6 是常态,科技股 PE=30 可能算便宜。
+> ⚠️ **Note**:these numbers**It doesn't make much sense when viewed alone.**,want**Combine industries**and**Other indicators**Comprehensive judgment. Such as bank stocks PE=6 is the norm,technology stocks PE=30 Probably cheap.
 
-### 步骤 5:一键送进批量分析
+### steps 5:Send batch analysis with one click
 
-- 在结果区**上方**(页面顶部)找"**批量分析(N)**"按钮(N 是你勾选的数量)
-- 点击后,系统**自动跳转到**「批量分析」页面,股票代码已经填好
-- 在批量分析页设置参数:
-  - **分析深度**(顶部下拉):推荐选"**🎯 3级 - 标准分析**"(6-10 分钟/只,平衡速度和质量)
-  - **分析师团队**(下方复选框):**保持默认勾选**即可,系统已选 2 个核心分析师:
-    - 📈 **市场分析师**:技术面、价格走势、均线/MACD/RSI
-    - 💰 **基本面分析师**:财务数据、估值、业务模式
-  - **提交任务**:页面最底部的"**提交分析**"按钮(蓝色大按钮,左下角)
-- 提交后系统**自动跳转到**「任务中心」等结果
-  - 💡 **任务中心位置**:侧边栏"我的任务"→"任务中心"
-  - 任务完成会有 **站内通知**(右上角铃铛)+ 邮件通知(如果设置了)
+- in the results area**above**(Top of page)Find"**Batch analysis(N)**"button(N It's the number you checked)
+- after click,system**Automatically jump to**"Batch Analysis page,The stock code has been filled in
+- Set parameters on the batch analysis page:
+  - **Analysis depth**(Top drop down):Recommended"**🎯 3 Level - Standard Analysis**"(6-10 minutes/only,Balance speed and quality)
+  - **Analyst Team**(checkbox below):**Keep default checked**That's it,The system has selected 2 core analysts:
+    - 📈 **market analyst**:Technical aspects, price trends, moving averages/MACD/RSI
+    - 💰 **fundamental analyst**:Financial data, valuations, business models
+  - **Submit task**:at the bottom of the page"**Submit analysis**"button(big blue button,lower left corner)
+- post-submission system**Automatically jump to**""Task Center" and other results
+  - 💡 **mission center location**:sidebar"my task"→"mission center"
+  - When the task is completed there will be **Site notification**(Bell in the upper right corner)+ Email notification(If set)
 
-## 🆚 "智能筛选" vs "高级模式" 怎么选
+## 🆚 "Smart filtering" vs "Advanced mode" How to choose
 
-如果自然语言筛选**精度不够**或你想做精细化筛选,可以切换到"高级模式":
+If natural language filtering**Not accurate enough**Or you want to do refined screening,can switch to"Advanced mode":
 
-| 维度 | 智能筛选(自然语言) | 高级模式(条件表单) |
+| Dimensions | Smart filtering(natural language) | Advanced mode(conditional form) |
 |------|------------------|------------------|
-| 入口 | 默认 Tab | 需手动切换 |
-| 操作方式 | 一句话对话 | 表单填条件 |
-| 适合谁 | **新手 / 不知道字段名** | 熟手 / 想精确控制 |
-| 速度 | AI 需 5-10 秒理解 | **即时** |
-| 精度 | 中等(AI 推断) | **高**(精确字段) |
-| 复杂条件 | 难表达 | **支持嵌套 AND/OR** |
+| entrance | Default Tab | Need to switch manually |
+| Operation mode | one sentence conversation | Form filling conditions |
+| Suitable for whom | **Newbie/don't know the field name** | Experienced/want precise control |
+| speed | AI Takes 5-10 seconds to understand | **Instant** |
+| Accuracy | medium(AI inference) | **high**(exact field) |
+| complex conditions | difficult to express | **Support nesting AND/OR** |
 
-**实战建议**:
-- **首次使用 / 不知道字段名** → 用智能筛选
-- **明确知道要 PE<15 + PB<2 +股息率>3%** → 用高级模式更直接
-- **两者可结合**:先用智能筛选缩小范围,再用高级模式精修
+**Practical suggestions**:
+- **First time use / don't know the field name** → Use smart filtering
+- **clearly know to PE<15 + PB<2 +dividend yield>3%** → Use advanced mode to be more direct
+- **Both can be combined**:Use smart filtering to narrow down the scope first,Then use advanced mode to refine
 
-> 💡 **高级模式的两层结构**:
-> - **常用条件**:页面默认显示的 8 个常用字段(股票代码/名称、行业分类、市场类型、市值范围、市盈率(PE)、市净率(PB)、涨跌幅、成交量),覆盖 80% 场景
-> - **高级字段**:默认不显示,需从"添加字段"下拉主动勾选(适用于"想加更细的条件",如 ROE、股息率、营收增速、毛利率等)
+> 💡 **Two-tier structure of advanced mode**:
+> - **Common conditions**:8 common fields displayed by default on the page(Stock code/name, industry classification, market type, market capitalization range, price-earnings ratio(PE), price to book ratio(PB), Price rise and fall, trading volume),Covers 80% of scenes
+> - **Advanced fields**:Not shown by default,Need from"Add field"Pull down to automatically check(Applicable to"I want to add more detailed conditions",Such as ROE, dividend rate, revenue growth, gross profit margin, etc.)
 >
-> 📌 **高级模式的具体操作**详见 [第 2 课:批量分析](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-02-batch-analysis.md) 的"高级模式"章节。
+> 📌 **Specific operations of advanced mode**See details [Lesson 2:Batch analysis](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-02-batch-analysis.md) of"Advanced mode"Chapter.
 
-## 📊 对话历史:随时回到之前的筛选
+## 📊 Conversation history:Go back to previous filters at any time
 
-左侧"筛选历史"面板记录你所有的筛选会话,不会丢失:
+left side"Filter history"Panel records all your screening sessions,will not be lost:
 
-- **继续对话**:点击历史中的某条会话,可以重新查看/继续对话
-- **新建会话**:点"新建"按钮(一般在历史列表顶部)开启新会话
-- **删除单条**:鼠标悬停在某条历史上,右侧出现"删除"图标
-- **清空当前会话**:在**当前会话窗口右上角**有"清空"按钮(垃圾桶图标)
+- **continue the conversation**:Click on a conversation in history,Can review/continue conversation
+- **New session**:point"New"button(Usually at the top of the history list)Start a new session
+- **Delete a single item**:Hover the mouse over a piece of history,Appears on the right"Delete"icon
+- **Clear current session**:in**The upper right corner of the current session window**Yes"Clear"button(trash can icon)
 
-## 💬 多轮对话:像聊天一样追问
+## 💬 Multiple rounds of dialogue:Ask questions like chatting
 
-智能筛选支持**多轮对话**,不用每次重新描述:
+Smart filtering support**Multiple rounds of dialogue**,No need to re-describe each time:
 
 ```
-第 1 轮:
-你: 银行股
-AI: 复述 → 银行行业,大约 30 只
+Round 1:
+you: bank stocks
+AI: retell → banking industry,about 30
 
-第 2 轮:
-你: 再加个 ROE>15%
-AI: 复述 → 银行行业 + ROE>15%,大约 12 只
+Round 2:
+you: Add one more ROE>15%
+AI: retell → banking industry + ROE>15%,about 12
 
-第 3 轮:
-你: 排除掉次新银行
-AI: 复述 → 银行行业 + ROE>15% + 上市 > 3 年,大约 8 只
+Round 3:
+you: Exclude sub-prime banks
+AI: retell → banking industry + ROE>15% + Listed > 3 year,about 8
 ```
 
-AI 会基于**上下文连续追问**,你只用说增量条件,不用重复。
+AI will be based on**contextual questioning**,You just need to say the increment condition,No need to repeat.
 
-> ⚠️ **什么时候需要新建会话?**
-> - 切换**完全不同的需求**(比如"银行股" → "新能源股")时,建议新建会话,避免上下文干扰
-> - 同一个筛选条件**追问超过 10 轮**时,建议新建会话(AI 可能"忘记"早期条件)
+> ⚠️ **When do you need to create a new session??**
+> - switch**completely different needs**(For example"bank stocks" → "New energy stocks")time,It is recommended to create a new session,Avoid contextual distractions
+> - same filter**More than 10 rounds of questioning**time,It is recommended to create a new session(AI possible"forget"early conditions)
 
-## ⚠️ 异常情况怎么办?
+## ⚠️ What to do in case of abnormal situation?
 
-### 情况 1:筛出 0 只股票
+### situation 1:Filter out 0 stocks
 
-- **原因**:条件太严了,比如同时要求"PE<5 + 银行股 + 总市值>1 万亿"
-- **解决**:
-  1. 在输入框说"放宽 PE 限制到 10"
-  2. 或"市值放宽到 5000 亿"
-  3. AI 会基于上下文调整
+- **Reason**:The conditions are too strict,For example, requesting at the same time"PE<5 + bank stocks + Total market capitalization>1 trillions"
+- **solve**:
+  1. Say in the input box"Relax PE restrictions to 10"
+  2. or"Market capitalization relaxed to 500 billion"
+  3. AI Will adjust based on context
 
-### 情况 2:筛出 1000+ 只股票
+### situation 2:Sieve out 1000+ only stocks
 
-- **原因**:条件太宽,比如"科技股"(行业太大)
-- **解决**:
-  1. 加更细的条件:"细分到半导体""市值 200-1000 亿""ROE>10%"
-  2. 或切到"高级模式"用精确字段精修
-- **不建议**直接送批量分析(超过 1000 只分析会很慢)
+- **Reason**:Condition is too broad,For example"technology stocks"(The industry is too big)
+- **solve**:
+  1. Add more detailed conditions:"Subdivided into semiconductors""Market value 20-100 billion""ROE>10%"
+  2. or cut to"Advanced mode"Refine with exact fields
+- **Not recommended**Send batch analysis directly(Over 1000 the analysis will be very slow)
 
-### 情况 3:AI 复述错了
+### situation 3:AI Wrong retelling
 
-- **不要点"确认筛选"**
-- 在输入框纠正:"不是 X,我想要的是 Y"
-- AI 会基于上下文修正,不用重新开始
+- **Don't click"Confirm filter"**
+- Correct in input box:"No X,what i want is Y"
+- AI Will be corrected based on context,No need to start over
 
-### 情况 4:页面加载慢 / 转圈很久
+### situation 4:Page loads slowly/turns around for a long time
 
-- 智能筛选首次加载需 1-2 秒(正常)
-- 如果**超过 30 秒**还在转圈,刷新页面(F5)重试
-- 还是不行,看浏览器右上角有没有"网络错误"提示
+- Smart filtering takes 1-2 seconds to load for the first time(normal)
+- if**more than 30 seconds**Still spinning,refresh page(F5)Try again
+- Still not working,Check the upper right corner of the browser to see if there is"network error"Tips
 
-## 📌 筛选结果可以做什么?(全景)
+## 📌 What you can do with filter results?(Panorama)
 
-筛选出股票后,你可以:
+After screening out stocks,you can:
 
-| 用途 | 怎么操作 | 适用场景 |
+| Purpose | How to operate | Applicable scenarios |
 |------|---------|---------|
-| **批量分析** | 点"批量分析(N)"按钮 | 5-10 只股票,需要深度研究 |
-| **加入关注列表** | 卡片右上角⭐图标 | 长期跟踪,不急研究 |
-| **加入自选股** | 卡片右键→"加入自选" | 常用股,方便快速查看 |
-| **查看个股详情** | 点卡片股票名称 | 快速看 K 线、新闻、公告 |
-| **导出 Excel** | 结果区右上角"导出"按钮 | 线下分析、做笔记 |
-| **写筛选笔记** | 历史会话→点"备注"图标 | 记录筛选逻辑,以后复用 |
+| **Batch analysis** | point"Batch analysis(N)"button | 5-10 only stocks,Need in-depth research |
+| **Add to watchlist** | upper right corner of card⭐icon | Long term tracking,No rush to study |
+| **Add optional stocks** | Right click on card→"Add to your choice" | Common stocks,Convenient and quick viewing |
+| **View individual stock details** | Click card stock name | Quickly view K-line, news, announcements |
+| **Export Excel** | Upper right corner of results area"Export"button | Offline analysis and note-taking |
+| **Write screening notes** | History session→point"Remarks"icon | Record filtering logic,Reuse later |
 
-> 💡 **初学者建议**:前 3 个用途(批量分析/关注/自选)就够用了,其他的高级用法等熟练了再说。
+> 💡 **Beginner advice**:Top 3 uses(Batch analysis/focus/select)That's enough,Other advanced usages will be discussed after you become proficient.
 
-## 🛠️ 实操作业(跟着做,做完就掌握)
+## 🛠️ Practical operations(Follow along,Once done, master it)
 
-**目标**:用智能筛选找出 3-5 只值得研究的新能源股
+**target**:Use smart screening to find 3-5 new energy stocks worth researching
 
-1. 点侧边栏「股票筛选」菜单,默认进入"智能筛选" Tab
-2. 输入:**"新能源行业,总市值大于 500 亿,ROE 大于 10%,近 1 年涨幅低于 20%"**
-   - 💡 解释:`总市值 > 500 亿` 排除小公司;`ROE > 10%` 选盈利能力强的;`近 1 年涨幅 < 20%` 排除已经涨得很高的(追高风险大)
-3. AI 复述需求,确认后查看结果(应该会筛出 10-30 只)
-4. 切换到"高级模式" Tab,看"常用条件"区被自动填上了哪些条件;也可以点"添加字段"补充"股息率"等高级条件
-5. 勾选 3-5 只,点页面顶部的"**批量分析(N)**"按钮
-6. 在批量分析页:
-   - **分析深度** 设为"**🎯 3级 - 标准分析**"
-   - **分析师团队** 保持默认(系统会自动勾选基本面 + 市场)
-   - 点击页面左下角"**提交分析**"按钮
-7. 系统自动跳转到「任务中心」,等任务完成(站内通知 + 邮件提醒)
+1. Click the "Stock Screening" menu on the sidebar,Enter by default"Smart filtering" Tab
+2. input:**"New energy industry,The total market value is greater than 50 billion,ROE greater than 10%,The increase in the past year was lower than 20%"**
+   - 💡 explain:`Total market capitalization > 500 billion` Exclude small companies;`ROE > 10%` Choose one with strong profitability;`Increase in the past year < 20%` Exclude those that have risen very high(Chasing high is risky)
+3. AI Restatement needs,View results after confirmation(You should sift out 10-30)
+4. switch to"Advanced mode" Tab,look"Common conditions"What conditions are automatically filled in for the district?;You can also order"Add field"supplement"dividend yield"and other advanced conditions
+5. Check 3-5 items,Click at the top of the page"**Batch analysis(N)**"button
+6. On the batch analysis page:
+   - **Analysis depth** set to"**🎯 3 Level - Standard Analysis**"
+   - **Analyst Team** keep default(The system will automatically select the fundamentals + market)
+   - Click on the lower left corner of the page"**Submit analysis**"button
+7. The system automatically jumps to "Task Center",Wait for the task to be completed(Site notification + Email reminder)
 
-**做完这次作业**,你就掌握了 v3.0 最核心的"自然语言→股票池→批量研究"全链路。
+**Finish this assignment**,You have mastered the core of v3.0"natural language→stock pool→Batch research"Full link.
 
-## ✅ 完成检查清单
+## ✅ Complete checklist
 
-做完实操后,对照检查:
+After completing the practical exercise,Control check:
 
-- [ ] 能从侧边栏进入「股票筛选」页面
-- [ ] 知道默认在"智能筛选" Tab
-- [ ] 能用大白话输入筛选需求
-- [ ] 看到 AI 复述并理解
-- [ ] 会点"确认筛选"出结果
-- [ ] 看到股票卡片并能勾选
-- [ ] 能点"批量分析(N)"跳转到批量分析页
-- [ ] 在批量分析页能选"🎯 3级 - 标准分析"
-- [ ] 知道"分析师团队"默认包含基本面 + 市场
-- [ ] 能提交任务并跳转到任务中心
+- [ ] Ability to enter the "Stock Screening" page from the sidebar
+- [ ] Know that the default is"Smart filtering" Tab
+- [ ] Able to enter screening requirements in plain English
+- [ ] See AI retell and understand
+- [ ] meeting point"Confirm filter"Out the results
+- [ ] See stock cards and be able to check them
+- [ ] Can order"Batch analysis(N)"Jump to batch analysis page
+- [ ] Can be selected on the batch analysis page"🎯 3 Level - Standard Analysis"
+- [ ] know"Analyst Team"Fundamentals included by default + market
+- [ ] Able to submit tasks and jump to the task center
 
-**全部打勾?** 恭喜,你已经掌握了 v3.0 筛选功能的核心用法!
+**Tick them all?** Congratulations,You have mastered the core usage of v3.0 filtering function!
 
 ## ❓ FAQ
 
-**Q:我没学过股票术语,能直接用吗?**
-A: 完全可以。**智能筛选就是为不懂术语的人设计的**。你只说"低估值高股息的银行股",AI 会帮你翻译成 PE、股息率等专业条件。如果你想学,所有"AI 实际会筛选什么"那一列都会显示专业术语,看得多了自然就懂。
+**Q:I never learned stock terminology,Can it be used directly??**
+A: Absolutely.**Smart filtering is designed for people who don't understand terminology**. you just say"Bank stocks with low valuations and high dividends",AI We will help you translate it into professional conditions such as PE and dividend rate. if you want to learn,all"AI What will actually be screened?"That column will display professional terms,The more you read, the more you will understand.
 
-**Q:AI 复述得不对,怎么纠正?**
-A: **不要点"确认筛选"!** 在输入框直接补充或纠正,比如"我说的不是 X,我想要的是 Y"或"再加个 ROE>15%"。AI 会基于上下文修正理解,不用重新开始。
+**Q:AI Wrong retelling,How to correct?**
+A: **Don't click"Confirm filter"!** Supplement or correct directly in the input box,For example"What I said is not X,what i want is Y"or"Add one more ROE>15%". AI Will revise understanding based on context,No need to start over.
 
-**Q:支持哪些条件?**
-A: A 股常见财务指标(PE/PB/ROE/股息率/营收增速/毛利率等)、技术指标、行业、市值范围、涨跌幅等约 100+ 个字段。具体字段在"高级模式 → 添加字段"下拉里能看到。**新手用户一般用不到这些**,智能筛选的 5 大类(行业/估值/市值/涨跌幅/财务)已经够用。
+**Q:What conditions are supported??**
+A: A Common financial indicators for stocks(PE/PB/ROE/Dividend rate/revenue growth rate/gross profit margin, etc.), Technical indicators, industries, market value ranges, price increases and decreases, etc. 100+ fields. The specific fields are in"Advanced mode → Add field"You can see it below.**Novice users generally don't need these**,5 categories of smart filtering(Industry/Valuation/Market Capitalization/Rise and Fall/Finance)It's enough.
 
-**Q:一次能筛多少只股票?**
-A: 没有硬限制,但**建议先用智能筛选缩到 100-500 只**,再用"高级模式"精修到 50-100 只,再送批量分析。**超过 1000 只批量分析会很慢**,而且你也没那么多精力看那么多报告。
+**Q:How many stocks can be screened at one time??**
+A: no hard limit,But**It is recommended to use smart screening to narrow down to 100-500 animals first.**,reuse"Advanced mode"Refinement to 50-100 pieces,Send for batch analysis.**Batch analysis of more than 1000 items will be slow**,And you don't have that much energy to read so many reports.
 
-**Q:"涨得猛"、"白马"这种口语化词 AI 真能理解?**
-A: 能,但有一定主观性。AI 会根据常见理解推断:
-- "涨得猛" → 近 20 日涨幅前列(前 10%)
-- "白马" → 行业龙头 + 基本面好(高 ROE、稳定增长)
-- "冷门" → 关注度低、机构持仓少
-- "妖股" → 短期暴涨、波动巨大
+**Q:"Rising sharply", "white horse"AI can really understand this colloquial word?**
+A: can,But there is a certain degree of subjectivity. AI infers based on common understanding:
+- "Rising sharply" → Top gainers in the past 20 days(before 10%)
+- "white horse" → Industry leader + Good fundamentals(High ROE, stable growth)
+- "Unpopular" → Low attention and few institutional holdings
+- "Monster stocks" → Short-term surges and huge fluctuations
 
-如果推断有偏差,**在 AI 复述时纠正**就行。
+If the inference is biased,**Corrected during AI retelling**That's it.
 
-**Q:筛选结果保存多久?会不会丢?**
-A: 智能筛选的对话历史保存在你的账号下,不会丢失(除非你手动删除)。高级模式的条件**不自动保存**,需要你点"保存"才能保留(在下一次进入时可以选择加载)。
+**Q:How long are filter results saved??Will it be lost??**
+A: Smart filtered conversation history is saved under your account,will not be lost(Unless you delete it manually). Advanced mode conditions**Do not save automatically**,I need some from you"save"to retain(You can choose to load it the next time you enter). 
 
-**Q:"高级模式"和"智能筛选"能同时用吗?**
-A: 可以!常见用法:
-1. 先用智能筛选描述大方向(比如"低估值银行")
-2. 切到高级模式,看到 AI 帮你填的"常用条件"区
-3. 手动微调某些值(比如把 PE<10 改成 PE<15)
-4. 点"添加字段",补充"股息率>3%"等高级条件
-5. 点"开始筛选",出结果
+**Q:"Advanced mode"and"Smart filtering"Can they be used at the same time??**
+A: OK!Common usage:
+1. First use intelligent filtering to describe the general direction(For example"low valuation bank")
+2. Switch to advanced mode,I saw AI fill it in for you."Common conditions"District
+3. Manually fine-tune some values(For example, put PE<10 Change to PE<15)
+4. point"Add field",supplement"dividend yield>3%"and other advanced conditions
+5. point"Start filtering",Out the results
 
-这样既有 AI 的智能推断,又有你的精确控制。
+In this way, there is intelligent inference of AI,Again you have precise control.
 
-**Q:筛选结果和实际市场行情有差异,正常吗?**
-A: 正常。筛选是基于**历史财务数据**和**最新行情**(T-1 日收盘)的,实时行情有变化是正常的。如果你需要最新数据,可以在筛选前点"刷新数据"按钮。
+**Q:There is a difference between the screening results and the actual market conditions.,Is it normal??**
+A: normal. Filtering is based on**historical financial data**and**Latest Quotes**(T-1 daily close)of,It is normal for real-time market conditions to change. If you need the latest data,You can click before filtering"Refresh data"button.
 
-**Q:能筛选 ETF 基金吗?**
-A: 可以。智能筛选时直接说"低费率 ETF""沪深 300ETF""行业 ETF"等,AI 会切换到 ETF 池。高级模式里"市场类型"下拉选"ETF"即可。
+**Q:Can I filter ETF funds??**
+A: Yes. Say it directly when filtering intelligently"low rates ETF""Shanghai and Shenzhen 300ETF""Industry ETF"Wait,AI Will switch to ETF pool. In advanced mode"market type"Drop down selection"ETF"That's it.
 
-## 📚 延伸阅读
+## 📚 Further reading
 
-- [第 2 课:批量分析——从 500 只缩到 50 只](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-02-batch-analysis.md)
-- [第 3 课:单股研究入门——50 只里挑 5 只](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-03-single-analysis-basic.md)
+- [Lesson 2:Batch analysis——Shrunk from 500 to 50](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-02-batch-analysis.md)
+- [Lesson 3:An Introduction to Single Stock Research——50 Just pick 5](file:///c:/TradingAgentsCN/docs/07-courses/v3.0/phase-01-discover/lesson-03-single-analysis-basic.md)
 
 

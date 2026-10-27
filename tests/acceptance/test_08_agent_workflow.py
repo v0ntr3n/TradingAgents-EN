@@ -1,72 +1,72 @@
 """
-Agent 工坊与工作流 API 验收测试
+Agent Workshop and Workflow API Acceptance Testing
 
-覆盖:
-- GET  /api/agents                 Agent列表
-- GET  /api/tools                  工具列表
-- GET  /api/workflows              工作流列表
-- GET  /api/agent-workshop/specs   Agent工坊规格列表
-- POST /api/agent-workshop/specs/{id}/rollback Agent版本回滚
+Cover:
+- GET  /api/agents                 Agent list
+- GET  /api/tools                  Tool list
+- GET  /api/workflows              Workflow list
+- GET  /api/agent-workshop/specs   Agent Workshop specification list
+- POST /api/agent-workshop/specs/{id}/rollback Agent Version rollback
 """
 import pytest
 
 
 class TestAgents:
-    """Agent 测试。"""
+    """Agent test."""
 
     def test_get_agents(self, api_client):
-        """获取 Agent 列表。"""
+        """Get the Agent list."""
         resp = api_client.get("/api/agents")
-        assert resp.status_code == 200, f"获取Agent列表失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain Agent list: {resp.text}"
 
     def test_get_available_agents(self, api_client):
-        """获取可用 Agent 列表。"""
+        """Get the list of available Agents."""
         resp = api_client.get("/api/agents/available")
-        assert resp.status_code == 200, f"获取可用Agent列表失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain available Agent list: {resp.text}"
 
     def test_get_agent_categories(self, api_client):
-        """获取 Agent 分类。"""
+        """Get the Agent classification."""
         resp = api_client.get("/api/agents/categories")
-        assert resp.status_code == 200, f"获取Agent分类失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain Agent classification: {resp.text}"
 
 
 class TestTools:
-    """工具测试。"""
+    """Tool testing."""
 
     def test_get_tools(self, api_client):
-        """获取工具列表。"""
+        """Get a list of tools."""
         resp = api_client.get("/api/tools")
-        assert resp.status_code == 200, f"获取工具列表失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to get tool list: {resp.text}"
 
     def test_get_tool_categories(self, api_client):
-        """获取工具分类。"""
+        """Get the tool category."""
         resp = api_client.get("/api/tools/categories")
-        assert resp.status_code == 200, f"获取工具分类失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain tool classification: {resp.text}"
 
 
 class TestWorkflows:
-    """工作流测试。"""
+    """Workflow testing."""
 
     def test_get_workflows(self, api_client):
-        """获取工作流列表。"""
+        """Get the workflow list."""
         resp = api_client.get("/api/workflows")
-        assert resp.status_code == 200, f"获取工作流列表失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to get workflow list: {resp.text}"
 
     def test_get_workflow_templates(self, api_client):
-        """获取工作流模板。"""
+        """Get the workflow template."""
         resp = api_client.get("/api/workflows/templates")
-        assert resp.status_code == 200, f"获取工作流模板失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain workflow template: {resp.text}"
 
 
 class TestAgentWorkshop:
-    """Agent 工坊测试。"""
+    """Agent Workshop testing."""
 
     def test_get_specs(self, api_client):
-        """获取 Agent 工坊规格列表。"""
+        """Get the Agent Workshop specs list."""
         resp = api_client.get("/api/agent-workshop/specs")
-        assert resp.status_code in (200, 404), f"获取Agent规格列表异常: {resp.status_code} {resp.text}"
+        assert resp.status_code in (200, 404), f"Exception in obtaining Agent specification list: {resp.status_code} {resp.text}"
 
     def test_rollback_spec(self, api_client):
-        """版本回滚接口可用性测试（使用不存在的ID）。"""
+        """Version rollback interface usability testing (using non-existent ID)."""
         resp = api_client.post("/api/agent-workshop/specs/nonexistent_spec_id/rollback")
-        assert resp.status_code in (200, 404, 400), f"版本回滚接口异常: {resp.status_code} {resp.text}"
+        assert resp.status_code in (200, 404, 400), f"Version rollback interface exception: {resp.status_code} {resp.text}"

@@ -1,4 +1,4 @@
-"""报告质量指标 API 路由（v3.6.0 项5）。"""
+"""Report quality metrics API routing (v3.6.0 item 5)."""
 
 from __future__ import annotations
 
@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 async def get_quality_summary(
     current_user=Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
-    start_date: Optional[str] = Query(None, description="开始日期 YYYY-MM-DD"),
-    end_date: Optional[str] = Query(None, description="结束日期 YYYY-MM-DD"),
+    start_date: Optional[str] = Query(None, description="start date YYYY-MM-DD"),
+    end_date: Optional[str] = Query(None, description="end date YYYY-MM-DD"),
 ):
-    """获取质量汇总统计（仪表盘顶部数字用）。"""
+    """Get quality summary statistics (for the numbers at the top of the dashboard)."""
     user_id = str(current_user.id) if hasattr(current_user, "id") else str(current_user.get("_id", ""))
     svc = get_quality_metrics_service(db)
     summary = await svc.get_quality_summary(
@@ -46,7 +46,7 @@ async def list_quality_records(
     only_low_quality: bool = Query(False),
     limit: int = Query(100, ge=1, le=500),
 ):
-    """查询质量指标记录列表。"""
+    """Query the quality index record list."""
     user_id = str(current_user.id) if hasattr(current_user, "id") else str(current_user.get("_id", ""))
     svc = get_quality_metrics_service(db)
     records = await svc.query_metrics(
@@ -68,7 +68,7 @@ async def record_metric(
     current_user=Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """手动写入一条质量指标记录（通常由工作流自动调用，此接口供调试用）。"""
+    """Manually write a quality indicator record (usually automatically called by the workflow, this interface is for debugging)."""
     user_id = str(current_user.id) if hasattr(current_user, "id") else str(current_user.get("_id", ""))
     svc = get_quality_metrics_service(db)
     record_id = await svc.record_analysis_metrics(
@@ -91,5 +91,5 @@ async def record_metric(
         extra=payload.get("extra"),
     )
     if not record_id:
-        raise HTTPException(status_code=500, detail="写入失败")
+        raise HTTPException(status_code=500, detail="Write failed")
     return {"success": True, "record_id": record_id}

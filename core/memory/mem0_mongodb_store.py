@@ -1,23 +1,23 @@
 """
-mem0 自定义 MongoDB 向量存储（客户端 cosine 相似度）
+mem0 Custom MongoDB vector storage (client-side cosine similarity)
 
-替代 mem0 官方的 mem0.vector_stores.mongodb.MongoDB（依赖 Atlas $vectorSearch）。
-使用 MongoDB Community Edition 存储向量，Python 端用 numpy 计算 cosine 相似度。
+Replace mem0 official mem0.vector_stores.mongodb.MongoDB (depends on Atlas $vectorSearch) . 
+MongoDB Community Edition is used to store vectors, and numpy is used on the Python side to calculate cosine similarity.
 
-注册方式：在 mem0 初始化前，将 VectorStoreFactory.provider_to_class["mongodb"]
-指向本模块的 MongoDBClientCosine 类。
+Registration method: Before mem0 is initialized, the VectorStoreFactory.provider_to_class["mongodb"]
+Pointer to the MongoDBClientCosine class of this module.
 
-文档结构（与官方 mem0 MongoDB 一致，保证未来可切回 Atlas）：
+Document structure (consistent with the official mem0 MongoDB, ensuring that you can switch back to Atlas in the future):
 {
     "_id": "uuid-string",
     "embedding": [0.1, 0.2, ...],
     "payload": {
-        "data": "原始文本",
-        "memory": "提取后记忆",
+        "data": "original text",
+        "memory": "post-retrieval memory",
         "user_id": "...",
         "agent_id": "...",
         "scope": "...",
-        ...其他 metadata
+        ...Others metadata
     }
 }
 """
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 class OutputData(BaseModel):
-    """与 mem0 官方 OutputData 完全一致的数据模型"""
+    """A data model that is completely consistent with mem0 official OutputData"""
     id: Optional[str] = None
     score: Optional[float] = None
     payload: Optional[dict] = None
@@ -42,9 +42,9 @@ class OutputData(BaseModel):
 
 class MongoDBClientCosine:
     """
-    mem0 VectorStoreBase 兼容的 MongoDB 向量存储（客户端 cosine）。
+    mem0 VectorStoreBase Compatible MongoDB vector storage (client cosine).
 
-    构造函数签名与 mem0 官方 MongoDB 类一致，便于无缝替换：
+    The constructor signature is consistent with the mem0 official MongoDB class, allowing for seamless replacement:
         MongoDBClientCosine(db_name, collection_name, embedding_model_dims, mongo_uri)
     """
 
@@ -68,39 +68,39 @@ class MongoDBClientCosine:
         self.collection = self._get_or_create_collection()
 
     def _get_or_create_collection(self):
-        """获取或创建 collection（幂等，不依赖 Atlas Search Index）"""
+        """Get or create a collection (idempotent, does not rely on Atlas Search Index)"""
         database = self.client[self.db_name]
         collection_names = database.list_collection_names(authorizedCollections=True)
         if self.collection_name not in collection_names:
             logger.info(
-                "[mem0-mongodb] Collection '%s' 不存在，自动创建",
+                "[mem0-mongodb] Collection '%s' Does not exist, automatically created",
                 self.collection_name,
             )
             collection = database[self.collection_name]
-            # 插入并删除占位文档以创建 collection
+            # Insert and delete placeholder documents to create collection
             collection.insert_one({"_id": "placeholder", "placeholder": True})
             collection.delete_one({"_id": "placeholder"})
         else:
             collection = database[self.collection_name]
 
-        # 创建常用字段索引（加速 metadata 过滤）
+        # Create common field indexes (accelerate metadata filtering)
         try:
             collection.create_index("payload.user_id")
             collection.create_index("payload.agent_id")
             collection.create_index("payload.scope")
             collection.create_index("payload.run_id")
         except Exception as e:
-            logger.debug("[mem0-mongodb] 创建索引跳过: %s", e)
+            logger.debug("[mem0-mongodb] Create index skip: %s", e)
 
         return collection
 
     # ------------------------------------------------------------------
-    # VectorStoreBase 接口实现
+    # VectorStoreBase Interface implementation
     # ------------------------------------------------------------------
 
     def create_col(self, name=None, vector_size=None, distance=None):
-        """创建 collection（mem0 调用，但我们在 __init__ 已创建）"""
-        # 如果 name 与当前不同，切换 collection
+        """Create collection (mem0 called, but we created it in __init__)"""
+        # If name is different from current, switch collection
         if name and name != self.collection_name:
             self.collection_name = name
             self.collection = self._get_or_create_collection()
@@ -112,7 +112,7 @@ class MongoDBClientCosine:
         payloads: Optional[List[Dict]] = None,
         ids: Optional[List[str]] = None,
     ) -> None:
-        """插入向量（upsert 语义）"""
+        """Insert vector (upsert semantics)"""
         operations = []
         for vector, payload, _id in zip(
             vectors,
@@ -137,12 +137,12 @@ class MongoDBClientCosine:
             try:
                 self.collection.bulk_write(operations, ordered=False)
                 logger.debug(
-                    "[mem0-mongodb] 插入 %d 条 (collection=%s)",
+                    "[mem0-mongodb] Insert %d items (collection=%s)",
                     len(operations),
                     self.collection_name,
                 )
             except Exception as e:
-                logger.error("[mem0-mongodb] 插入失败: %s", e)
+                logger.error("[mem0-mongodb] Insertion failed: %s", e)
 
     def search(
         self,
@@ -151,9 +151,9 @@ class MongoDBClientCosine:
         top_k: int = 5,
         filters: Optional[Dict] = None,
     ) -> List[OutputData]:
-        """向量相似度搜索（客户端 cosine）
+        """Vector similarity search (client cosine)
 
-        返回 List[OutputData]，score 为相似度（越大越相似，范围 [0, 1]）。
+        Return List[OutputData], score is the similarity (the larger the more similar, the range [0, 1]) . 
         """
         try:
             if not vectors:
@@ -164,10 +164,10 @@ class MongoDBClientCosine:
             if query_norm == 0:
                 return []
 
-            # 构建 MongoDB 查询过滤器（基于 payload 子文档）
+            # Build MongoDB query filter (based on payload subdocument)
             mongo_filter = self._build_mongo_filter(filters)
 
-            # 读取所有文档（含 embedding）
+            # Read all documents (including embedding)
             cursor = self.collection.find(
                 mongo_filter,
                 {"_id": 1, "embedding": 1, "payload": 1},
@@ -177,14 +177,14 @@ class MongoDBClientCosine:
             if not docs:
                 return []
 
-            # 构建向量矩阵，计算 cosine 相似度
+            # Construct a vector matrix and calculate cosine similarity
             valid_docs = []
             vectors_list = []
             for doc in docs:
                 emb = doc.get("embedding")
                 if not emb or not isinstance(emb, list):
                     continue
-                # 跳过零向量（签名 point 等）
+                # Skip zero vectors (signature point, etc.)
                 if all(v == 0.0 for v in emb):
                     continue
                 vectors_list.append(emb)
@@ -196,7 +196,7 @@ class MongoDBClientCosine:
             matrix = np.array(vectors_list, dtype=np.float32)
             matrix_norms = np.linalg.norm(matrix, axis=1)
 
-            # 过滤零范数行
+            # Filter zero norm rows
             valid_mask = matrix_norms > 0
             if not np.any(valid_mask):
                 return []
@@ -223,26 +223,26 @@ class MongoDBClientCosine:
                 )
 
             logger.debug(
-                "[mem0-mongodb] 搜索完成 query='%s...' found=%d",
+                "[mem0-mongodb] Search completed query='%s...' found=%d",
                 str(query)[:30],
                 len(results),
             )
             return results
 
         except Exception as e:
-            logger.error("[mem0-mongodb] 搜索失败 query=%s: %s", query, e)
+            logger.error("[mem0-mongodb] Search failed query=%s: %s", query, e)
             return []
 
     def delete(self, vector_id: str) -> None:
-        """按 ID 删除"""
+        """Delete by ID"""
         try:
             result = self.collection.delete_one({"_id": vector_id})
             if result.deleted_count > 0:
-                logger.debug("[mem0-mongodb] 删除成功 id=%s", vector_id)
+                logger.debug("[mem0-mongodb] Delete successfully id=%s", vector_id)
             else:
-                logger.warning("[mem0-mongodb] 未找到要删除的 id=%s", vector_id)
+                logger.warning("[mem0-mongodb] Not found to delete id=%s", vector_id)
         except Exception as e:
-            logger.error("[mem0-mongodb] 删除失败: %s", e)
+            logger.error("[mem0-mongodb] Delete failed: %s", e)
 
     def update(
         self,
@@ -250,7 +250,7 @@ class MongoDBClientCosine:
         vector: Optional[List[float]] = None,
         payload: Optional[Dict] = None,
     ) -> None:
-        """更新向量和 payload"""
+        """Update vector sum payload"""
         update_fields = {}
         if vector is not None:
             update_fields["embedding"] = vector
@@ -263,14 +263,14 @@ class MongoDBClientCosine:
                     {"_id": vector_id}, {"$set": update_fields}
                 )
                 if result.matched_count > 0:
-                    logger.debug("[mem0-mongodb] 更新成功 id=%s", vector_id)
+                    logger.debug("[mem0-mongodb] Update successful id=%s", vector_id)
                 else:
-                    logger.warning("[mem0-mongodb] 未找到要更新的 id=%s", vector_id)
+                    logger.warning("[mem0-mongodb] Not found to update id=%s", vector_id)
             except Exception as e:
-                logger.error("[mem0-mongodb] 更新失败: %s", e)
+                logger.error("[mem0-mongodb] Update failed: %s", e)
 
     def get(self, vector_id: str) -> Optional[OutputData]:
-        """按 ID 检索"""
+        """Search by ID"""
         try:
             doc = self.collection.find_one({"_id": vector_id})
             if doc:
@@ -281,27 +281,27 @@ class MongoDBClientCosine:
                 )
             return None
         except Exception as e:
-            logger.error("[mem0-mongodb] get 失败: %s", e)
+            logger.error("[mem0-mongodb] get failed: %s", e)
             return None
 
     def list_cols(self) -> List[str]:
-        """列出所有 collection"""
+        """list all collection"""
         try:
             return self.db.list_collection_names(authorizedCollections=True)
         except Exception as e:
-            logger.error("[mem0-mongodb] list_cols 失败: %s", e)
+            logger.error("[mem0-mongodb] list_cols failed: %s", e)
             return []
 
     def delete_col(self) -> None:
-        """删除 collection"""
+        """Delete collection"""
         try:
             self.collection.drop()
-            logger.info("[mem0-mongodb] 删除 collection '%s'", self.collection_name)
+            logger.info("[mem0-mongodb] Delete collection '%s'", self.collection_name)
         except Exception as e:
-            logger.error("[mem0-mongodb] delete_col 失败: %s", e)
+            logger.error("[mem0-mongodb] delete_col failed: %s", e)
 
     def col_info(self) -> Dict[str, Any]:
-        """获取 collection 信息"""
+        """Get collection information"""
         try:
             stats = self.db.command("collstats", self.collection_name)
             return {
@@ -310,11 +310,11 @@ class MongoDBClientCosine:
                 "size": stats.get("size", 0),
             }
         except Exception as e:
-            logger.error("[mem0-mongodb] col_info 失败: %s", e)
+            logger.error("[mem0-mongodb] col_info failed: %s", e)
             return {}
 
     def list(self, filters: Optional[Dict] = None, top_k: int = 100) -> List[OutputData]:
-        """列出向量（可选过滤）"""
+        """List vectors (optional filtering)"""
         try:
             mongo_filter = self._build_mongo_filter(filters)
             cursor = self.collection.find(mongo_filter).limit(top_k)
@@ -324,12 +324,12 @@ class MongoDBClientCosine:
             ]
             return [results]
         except Exception as e:
-            logger.error("[mem0-mongodb] list 失败: %s", e)
+            logger.error("[mem0-mongodb] list failed: %s", e)
             return [[]]
 
     def reset(self) -> None:
-        """重置 collection（删除并重建）"""
-        logger.warning("[mem0-mongodb] 重置 collection '%s'", self.collection_name)
+        """Reset collection (delete and recreate)"""
+        logger.warning("[mem0-mongodb] reset collection '%s'", self.collection_name)
         self.delete_col()
         self.collection = self._get_or_create_collection()
 
@@ -341,12 +341,12 @@ class MongoDBClientCosine:
             pass
 
     # ------------------------------------------------------------------
-    # 内部工具
+    # internal tools
     # ------------------------------------------------------------------
 
     @staticmethod
     def _validate_filter_value(key: str, value: Any) -> None:
-        """防止 MongoDB 注入"""
+        """Prevent MongoDB injection"""
         if isinstance(value, dict):
             raise ValueError(
                 f"Filter value for {key!r} must be a scalar, not a dict."
@@ -359,10 +359,10 @@ class MongoDBClientCosine:
                     )
 
     def _build_mongo_filter(self, filters: Optional[Dict]) -> Dict[str, Any]:
-        """将 mem0 风格的 filters 转换为 MongoDB 查询。
+        """Convert mem0-style filters into MongoDB queries.
 
-        mem0 filters 是扁平的 key-value dict，存储在 payload 子文档中，
-        所以过滤条件需要加 payload. 前缀。
+        mem0 filters is a flat key-value dict, stored in the payload subdocument,
+        Therefore, the filter conditions need to be prefixed with payload.
         """
         if not filters:
             return {}
@@ -380,10 +380,10 @@ class MongoDBClientCosine:
 
 
 def register_mem0_mongodb_provider():
-    """将自定义 MongoDB 客户端 cosine 向量存储注册到 mem0 的 VectorStoreFactory。
+    """Register the custom MongoDB client cosine vector store to mem0 s VectorStoreFactory.
 
-    在 mem0 初始化前调用（如 service.py 的 _ensure_init 中）。
-    替换官方 MongoDB provider（依赖 Atlas $vectorSearch）为客户端 cosine 版本。
+    Called before mem0 is initialized (such as _ensure_init in service.py).
+    Replace the official MongoDB provider (depends on Atlas $vectorSearch) is the client cosine version.
     """
     try:
         from mem0.utils.factory import VectorStoreFactory
@@ -391,8 +391,8 @@ def register_mem0_mongodb_provider():
         provider_path = "core.memory.mem0_mongodb_store.MongoDBClientCosine"
         VectorStoreFactory.provider_to_class["mongodb"] = provider_path
         logger.info(
-            "✅ [mem0-mongodb] 已注册自定义 MongoDB 向量存储 provider (客户端 cosine)"
+            "✅ [mem0-mongodb] Custom MongoDB vector store registered provider (client cosine)"
         )
     except Exception as e:
-        logger.error("❌ [mem0-mongodb] 注册 provider 失败: %s", e)
+        logger.error("❌ [mem0-mongodb] Failed to register provider: %s", e)
         raise

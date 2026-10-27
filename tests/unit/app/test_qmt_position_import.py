@@ -68,7 +68,7 @@ def test_qmt_query_account_positions_builds_import_rows(monkeypatch):
     monkeypatch.setitem(sys.modules, "xtquant", fake_xtquant)
     monkeypatch.setitem(sys.modules, "xtquant.xttype", fake_xttype)
     monkeypatch.setattr(qmt_module, "_get_xttrader", lambda: fake_xttrader, raising=True)
-    monkeypatch.setattr(qmt_module, "_get_xtdata", lambda: SimpleNamespace(get_instrument_detail=lambda _xt_code: {"InstrumentName": "浦发银行"}), raising=True)
+    monkeypatch.setattr(qmt_module, "_get_xtdata", lambda: SimpleNamespace(get_instrument_detail=lambda _xt_code: {"InstrumentName": "Shanghai Pudong Development Bank"}), raising=True)
     monkeypatch.setattr(qmt_module.QMTAdapter, "_resolve_qmt_userdata_dir", lambda self: r"D:\gjzq\userdata", raising=True)
 
     adapter = qmt_module.QMTAdapter()
@@ -78,12 +78,12 @@ def test_qmt_query_account_positions_builds_import_rows(monkeypatch):
     assert len(df) == 1
     row = df.iloc[0]
     assert row["code"] == "600000"
-    assert row["name"] == "浦发银行"
+    assert row["name"] == "Shanghai Pudong Development Bank"
     assert row["market"] == "CN"
     assert row["currency"] == "CNY"
     assert row["quantity"] == 100
     assert row["cost_price"] == 10.25
-    assert "QMT 持仓导入" in row["notes"]
+    assert "QMT Position import" in row["notes"]
     assert fake_trader.started is True
     assert fake_trader.stopped is True
 
@@ -103,7 +103,7 @@ def test_import_positions_marks_source_as_import(monkeypatch):
     positions = [
         PositionCreate(
             code="600000",
-            name="浦发银行",
+            name="Shanghai Pudong Development Bank",
             market="CN",
             quantity=100,
             cost_price=10.25,
@@ -136,7 +136,7 @@ def test_import_positions_replace_existing_clears_current_positions(monkeypatch)
     positions = [
         PositionCreate(
             code="600000",
-            name="浦发银行",
+            name="Shanghai Pudong Development Bank",
             market="CN",
             quantity=100,
             cost_price=10.25,
@@ -180,13 +180,13 @@ def test_preview_qmt_position_import_builds_summary(monkeypatch):
                 "positions_df": pd.DataFrame([
                     {
                         "code": "600000",
-                        "name": "浦发银行",
+                        "name": "Shanghai Pudong Development Bank",
                         "market": "CN",
                         "currency": "CNY",
                         "quantity": 100,
                         "cost_price": 10.25,
                         "buy_date": None,
-                        "notes": "QMT 持仓导入 | 账户 123456",
+                        "notes": "QMT Position import | Account 123456",
                     }
                 ]),
                 "asset": {"cash": 1000.0, "market_value": 1025.0, "total_asset": 2025.0},
@@ -217,13 +217,13 @@ def test_import_positions_from_qmt_converts_rows(monkeypatch):
     fake_df = pd.DataFrame([
         {
             "code": "600000",
-            "name": "浦发银行",
+            "name": "Shanghai Pudong Development Bank",
             "market": "CN",
             "currency": "CNY",
             "quantity": 100,
             "cost_price": 10.25,
             "buy_date": None,
-            "notes": "QMT 持仓导入 | 账户 123456",
+            "notes": "QMT Position import | Account 123456",
         }
     ])
 

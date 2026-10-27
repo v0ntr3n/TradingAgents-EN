@@ -1,12 +1,12 @@
 """
-OpenAI 兼容 API 适配器
+OpenAI Compatible with API adapters
 
-支持所有兼容 OpenAI API 格式的提供商:
+Supports all providers compatible with the OpenAI API format:
 - OpenAI
 - DeepSeek
-- 通义千问 (DashScope)
-- 智谱AI
-- 硅基流动
+- Tongyi Qianwen (DashScope)
+- Wisdom spectrum AI
+- silicon based flow
 - Ollama
 - OpenRouter
 """
@@ -31,9 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAICompatAdapter(BaseAdapter):
-    """OpenAI 兼容 API 适配器"""
+    """OpenAI Compatible with API adapters"""
     
-    # 支持的提供商列表
+    # List of supported providers
     SUPPORTED_PROVIDERS = [
         LLMProvider.OPENAI,
         LLMProvider.DEEPSEEK,
@@ -50,16 +50,16 @@ class OpenAICompatAdapter(BaseAdapter):
         self._async_client: Optional[AsyncOpenAI] = None
     
     def initialize(self) -> None:
-        """初始化 OpenAI 客户端"""
-        # 🔥 检查 API key 是否存在
+        """Initialize the OpenAI client"""
+        # 🔥 Check if API key exists
         api_key = self.config.api_key
         
-        # 🔥 本地模型（Ollama）不需要 API Key，使用占位符
+        # 🔥 Local model (Ollama) does not require API Key, use placeholder
         if not api_key and self.config.provider == LLMProvider.OLLAMA:
-            api_key = "ollama"  # 本地模型使用占位符，实际不会验证
+            api_key = "ollama"  # The local model uses placeholders and is not actually verified.
         
         if not api_key:
-            # 根据 provider 确定应该使用的环境变量名
+            # Determine the environment variable name that should be used based on provider
             provider_env_map = {
                 LLMProvider.OPENAI: "OPENAI_API_KEY",
                 LLMProvider.DEEPSEEK: "DEEPSEEK_API_KEY",
@@ -69,7 +69,7 @@ class OpenAICompatAdapter(BaseAdapter):
                 LLMProvider.OLLAMA: "OLLAMA_API_KEY",
                 LLMProvider.OPENROUTER: "OPENROUTER_API_KEY",
             }
-            # 兼容 use_enum_values=True：config.provider 可能是字符串
+            # Compatible use_enum_values=True: config.provider may be a string
             provider_val = self.config.provider
             provider_key = provider_val.value if hasattr(provider_val, "value") else provider_val
             expected_env_key = provider_env_map.get(provider_key, "API_KEY")
@@ -82,9 +82,9 @@ class OpenAICompatAdapter(BaseAdapter):
         client_kwargs = {
             "api_key": api_key,
             "timeout": self.config.timeout,
-            # 关闭 SDK 自带重试：重试统一由应用层 retry_sync/retry_async 控制。
-            # 否则 SDK(默认2次) x 应用层(3次) 双层叠加，单次调用最坏可达
-            # 十几分钟级等待，且 timeout 语义变得不可预期。
+            # Turn off SDK's built-in retry: Retry is uniformly controlled by the application layer retry_sync/retry_async.
+            # Otherwise SDK(Default 2 times) x Application layer(3 times) Double layer superposition, the worst-case scenario can be reached in a single call
+            # Wait for more than ten minutes, and the timeout semantics become unpredictable.
             "max_retries": 0,
         }
         
@@ -95,13 +95,13 @@ class OpenAICompatAdapter(BaseAdapter):
         self._async_client = AsyncOpenAI(**client_kwargs)
     
     def _convert_messages(self, messages: List[Message]) -> List[Dict[str, Any]]:
-        """转换消息格式为 OpenAI 格式"""
+        """Convert message format to OpenAI format"""
         result = []
         for msg in messages:
             converted = {"role": msg.role, "content": msg.content or ""}
 
-            # 推理模型（如 Qwen thinking / DeepSeek reasoning）在工具回合中
-            # 需要回传上一轮 assistant 的 reasoning_content，否则 provider 会拒绝请求。
+            # Reasoning models (such as Qwen thinking / DeepSeek reasoning) in tool rounds
+            # The reasoning_content of the previous round of assistant needs to be returned, otherwise the provider will reject the request.
             if getattr(msg, 'reasoning_content', None):
                 converted["reasoning_content"] = msg.reasoning_content
             
@@ -134,10 +134,10 @@ class OpenAICompatAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> Dict[str, Any]:
-        """构建请求参数
+        """Build request parameters
 
-        支持通过 kwargs 覆盖 temperature / max_tokens 等参数，
-        优先级：kwargs > self.config。
+        Supports overriding parameters such as temperature / max_tokens through kwargs,
+        Priority:kwargs > self.config. 
         """
         request_kwargs = {
             "model": self.config.model,
@@ -145,17 +145,17 @@ class OpenAICompatAdapter(BaseAdapter):
             "temperature": kwargs.pop("temperature", self.config.temperature),
         }
 
-        # max_tokens: kwargs 优先，其次 config
+        # max_tokens: kwargs first, second config
         max_tokens = kwargs.pop("max_tokens", None) or self.config.max_tokens
         if max_tokens:
             request_kwargs["max_tokens"] = max_tokens
 
-        # response_format: 支持 json_object / json_schema 等（OpenAI 兼容协议）
+        # response_format: Support json_object / json_schema, etc. (OpenAI compatible protocol)
         response_format = kwargs.pop("response_format", self.config.response_format if hasattr(self.config, "response_format") else None)
         if response_format:
             request_kwargs["response_format"] = response_format
 
-        # 其余 kwargs 透传（如 top_p、seed 等）
+        # The remaining kwargs are transparently transmitted (such as top_p, seed, etc.)
         request_kwargs.update(kwargs)
 
         if tools:
@@ -171,7 +171,7 @@ class OpenAICompatAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> LLMResponse:
-        """同步聊天"""
+        """synchronous chat"""
         if not self._sync_client:
             self.initialize()
         
@@ -186,7 +186,7 @@ class OpenAICompatAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> LLMResponse:
-        """异步聊天"""
+        """Asynchronous chat"""
         if not self._async_client:
             self.initialize()
         
@@ -201,7 +201,7 @@ class OpenAICompatAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ) -> AsyncIterator[str]:
-        """异步流式输出"""
+        """Asynchronous streaming output"""
         if not self._async_client:
             self.initialize()
         
@@ -209,7 +209,7 @@ class OpenAICompatAdapter(BaseAdapter):
         request_kwargs["stream"] = True
         
         async for chunk in await self._async_client.chat.completions.create(**request_kwargs):
-            # 安全访问 delta：推理模型流式时可能先输出 reasoning_content 再输出 content
+            # Safe access to delta: reasoning_content may be output first and then output when the reasoning model is streaming content
             if chunk.choices:
                 delta = getattr(chunk.choices[0], 'delta', None)
                 if delta and getattr(delta, 'content', None):
@@ -221,14 +221,14 @@ class OpenAICompatAdapter(BaseAdapter):
         tools: Optional[List[Dict[str, Any]]] = None,
         **kwargs
     ):
-        """同步流式调用，逐段产出增量字典。
+        """Synchronous streaming calls produce incremental dictionaries piece by piece.
 
-        每个增量形如 {"type": "reasoning"|"content", "text": str}：
-        - reasoning: 思考模型的 reasoning_content 增量（如 DeepSeek R1）
-        - content: 正文增量
+        Each increment is of the form {"type": "reasoning"|"content", "text": str}: 
+        - reasoning: reasoning_content delta for thinking models (like DeepSeek R1)
+        - content: Text increment
 
-        仅适用于无工具调用的单轮场景（如 Skill 代码生成）。
-        调用方负责拼接 content 得到完整回复。
+        Only applicable to single-round scenarios without tool invocation (such as Skill code generation).
+        The caller is responsible for splicing content to get a complete response.
         """
         if not self._sync_client:
             self.initialize()
@@ -250,33 +250,33 @@ class OpenAICompatAdapter(BaseAdapter):
                 yield {"type": "content", "text": delta.content}
 
     def _parse_response(self, response) -> LLMResponse:
-        """解析响应"""
-        # 🔥 检查 choices 字段是否存在且不为空
+        """Parse response"""
+        # 🔥 Check if the choices field exists and is not empty
         if not hasattr(response, 'choices') or response.choices is None:
-            error_msg = f"LLM API 返回的响应中 choices 字段为 null。响应类型: {type(response).__name__}"
+            error_msg = f"LLM API The choices field in the returned response is null. response type: {type(response).__name__}"
             if hasattr(response, 'model'):
-                error_msg += f", 模型: {response.model}"
+                error_msg += f", model: {response.model}"
             if hasattr(response, 'id'):
-                error_msg += f", 响应ID: {response.id}"
+                error_msg += f", response ID: {response.id}"
             logger.error(error_msg)
             raise ValueError(error_msg)
         
         if not response.choices or len(response.choices) == 0:
-            error_msg = f"LLM API 返回的响应中 choices 字段为空列表。响应类型: {type(response).__name__}"
+            error_msg = f"LLM API The choices field in the returned response is an empty list. response type: {type(response).__name__}"
             if hasattr(response, 'model'):
-                error_msg += f", 模型: {response.model}"
+                error_msg += f", model: {response.model}"
             if hasattr(response, 'id'):
-                error_msg += f", 响应ID: {response.id}"
+                error_msg += f", response ID: {response.id}"
             logger.error(error_msg)
             raise ValueError(error_msg)
         
         choice = response.choices[0]
         
-        # 🔥 检查 choice 是否有 message 属性
+        # 🔥 Check if choice has message attribute
         if not hasattr(choice, 'message') or choice.message is None:
-            error_msg = f"LLM API 返回的 choice 中 message 字段为 null。响应类型: {type(response).__name__}"
+            error_msg = f"LLM API The message field in the returned choice is null. response type: {type(response).__name__}"
             if hasattr(response, 'model'):
-                error_msg += f", 模型: {response.model}"
+                error_msg += f", model: {response.model}"
             logger.error(error_msg)
             raise ValueError(error_msg)
         
@@ -285,26 +285,26 @@ class OpenAICompatAdapter(BaseAdapter):
         tool_calls = []
         if hasattr(message, 'tool_calls') and message.tool_calls:
             for tc in message.tool_calls:
-                # 🔥 修复：处理不同类型的 tool_call 对象
+                # 🔥 Fix: Handling tool_call objects of different types
                 if isinstance(tc, dict):
-                    # 已经是字典，直接使用
+                    # It is already a dictionary, use it directly
                     tool_calls.append(ToolCall.from_openai_format(tc))
                 elif isinstance(tc, str):
-                    # 字符串类型，跳过（不应该出现，但做容错处理）
+                    # String type, skipped (should not appear, but does fault tolerance)
                     continue
                 elif hasattr(tc, 'model_dump'):
-                    # Pydantic 模型，调用 model_dump()
+                    # Pydantic model, call model_dump()
                     tool_calls.append(ToolCall.from_openai_format(tc.model_dump()))
                 else:
-                    # 其他类型，尝试转换为字典
+                    # Other types, try converting to dictionary
                     try:
                         tool_calls.append(ToolCall.from_openai_format(dict(tc)))
                     except Exception:
-                        # 转换失败，跳过
+                        # Conversion failed, skipped
                         continue
 
-        # 推理模型（DeepSeek R1、o1 等）可能返回 reasoning_content，content 为主答案
-        # 当 content 为空时用 reasoning_content 作为 fallback，避免下游解析失败
+        # Reasoning models (DeepSeek R1, o1, etc.) may return reasoning_content, content is the main answer
+        # When content is empty, use reasoning_content as fallback to avoid downstream parsing failure.
         raw_content = message.content if hasattr(message, 'content') else None
         if raw_content is None or (isinstance(raw_content, str) and not raw_content.strip()):
             raw_content = getattr(message, 'reasoning_content', None)

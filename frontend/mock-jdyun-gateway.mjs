@@ -1,60 +1,60 @@
 #!/usr/bin/env node
 /**
- * mock-jdyun-gateway.mjs — 京东云网关本地模拟器（含登录页）
+ * mock-jdyun-gateway.mjs — JD Cloud Gateway local simulator (including login page)
  *
- * 完整模拟京东云登录链路:
- *   1. 用户打开 http://localhost:3100 → 未登录，重定向到 /login
- *   2. /login 显示登录页面（模拟京东云平台登录）
- *   3. 用户输入用户名密码 → 网关验证凭据
- *   4. 验证通过 → 设置 session cookie，重定向到首页
- *   5. 后续所有请求自动携带 cookie → 网关从 cookie 提取凭据注入 Basic Auth
- *   6. 用户无需二次登录，直接使用系统
+ * Complete simulation of JD Cloud login link:
+ *   1. User opens http://localhost:3100 → Not logged in, redirected to /login
+ *   2. /login Display the login page (simulating JD Cloud platform login)
+ *   3. User enters username and password → Gateway verification credentials
+ *   4. Verification passed → Set session cookie and redirect to home page
+ *   5. All subsequent requests will be automatically carried cookie → Gateway extracts credentials from cookie for injection Basic Auth
+ *   6. Users do not need to log in twice and can use the system directly.
  *
- * 真实京东云链路对照:
- *   京东云登录页        → 本网关 /login 页面
- *   京东云平台认证       → 本网关验证用户名密码
- *   京东云网关注入Header → 本网关从 cookie 提取凭据注入 Authorization: Basic
- *   我们的容器          → 前端 3003 / 后端 8002
+ * Real JD Cloud link comparison:
+ *   JD Cloud login page        → This gateway /login page
+ *   JD Cloud Platform Certification       → This gateway verifies user name and password
+ *   JD Cloud Gateway Injection Header → This gateway extracts credentials from cookies for injection Authorization: Basic
+ *   our container          → Frontend 3003 / Backend 8002
  *
- * 启动方式:
+ * Start mode:
  *   $env:JDYUN_AUTH_USER = "testuser"
  *   $env:JDYUN_AUTH_PASS = "Test@123456"
  *   node frontend/mock-jdyun-gateway.mjs
- *   浏览器打开 http://localhost:3100
+ *   Browser opens http://localhost:3100
  *
- * 环境变量:
- *   JDYUN_GATEWAY_PORT      网关监听端口（默认 3100）
- *   JDYUN_TARGET            目标地址（默认 http://127.0.0.1:8082）
- *   JDYUN_AUTH_USER         登录用户名（默认 testuser）
- *   JDYUN_AUTH_PASS         登录密码（必填）
+ * environment variables:
+ *   JDYUN_GATEWAY_PORT      Gateway listening port (default 3100)
+ *   JDYUN_TARGET            Destination address (default http://127.0.0.1:8082) 
+ *   JDYUN_AUTH_USER         Login username (default testuser)
+ *   JDYUN_AUTH_PASS         Login password (required)
  */
 
 import http from 'node:http'
 import { URL } from 'node:url'
 
-// ===== 配置 =====
-// 单容器镜像：前端+后端+Nginx 统一在 8082 端口
-// 模拟网关只需把所有请求转发到 8082，Nginx 内部自动区分前端/后端
+// ===== Configuration =====
+// Single container image: front end+backend+Nginx Unified on port 8082
+// The simulated gateway only needs to forward all requests to 8082, and Nginx automatically distinguishes front-end/back-end internally.
 const GATEWAY_PORT = parseInt(process.env.JDYUN_GATEWAY_PORT || '3100', 10)
 const TARGET = process.env.JDYUN_TARGET || 'http://127.0.0.1:8082'
 
-// 登录页凭据（模拟京东云平台账号，用户在登录页输入）
-// 开发测试用，直接写死，无需配置环境变量
+// Login page credentials (simulated JD Cloud platform account, user input on the login page)
+// Used for development and testing, written directly, no need to configure environment variables
 const AUTH_USER = 'testuser'
 const AUTH_PASS = 'Test@123456'
 
-// 注入后端的 Basic Auth 凭据（对应后端 JDYUN_BASIC_AUTH_USERS 配置）
-// 默认用 .env.docker.jdyun 中的 jcloud-ugidvcp 凭据
+// Basic Auth credentials injected into the backend (corresponding to the backend JDYUN_BASIC_AUTH_USERS configuration)
+// By default, jcloud-ugidvcp credentials in .env.docker.jdyun are used
 const INJECT_AUTH = process.env.JDYUN_INJECT_AUTH || 'jcloud-ugidvcp:8437F13DABE87D0BC1D4DCCD4739C5A7'
 
-// Cookie 中存储的凭据（就是注入后端的 Basic Auth 的 base64 值）
+// Cookie Credentials stored in (that is, the base64 value of Basic Auth injected into the backend)
 const CREDENTIAL_B64 = Buffer.from(INJECT_AUTH, 'utf-8').toString('base64')
 const SESSION_COOKIE_NAME = 'jdyun_session'
 
-// 后端路径前缀
+// Backend path prefix
 const BACKEND_PREFIXES = ['/api', '/docs', '/openapi.json', '/redoc']
 
-// 不需要登录即可访问的路径（静态资源等）
+// Paths that can be accessed without logging in (static resources, etc.)
 const PUBLIC_PATHS = ['/login', '/favicon.ico', '/logo.svg', '/manifest.json']
 const PUBLIC_EXTENSIONS = ['.js', '.css', '.ico', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.woff', '.woff2', '.ttf', '.map']
 
@@ -89,17 +89,17 @@ function isValidSession(cookieHeader) {
   return cookies[SESSION_COOKIE_NAME] === CREDENTIAL_B64
 }
 
-// ===== 登录页面 HTML =====
+// ===== Login page HTML =====
 function renderLoginPage(errorMsg) {
   const errorBlock = errorMsg
     ? `<div class="error">${errorMsg}</div>`
-    : `<div class="hint">京东云合作版 — 请输入您的京东云账号密码</div>`
+    : `<div class="hint">JD Cloud Cooperation Edition — Please enter your JD Cloud account password</div>`
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>京东云 - 登录</title>
+  <title>JD Cloud - Login</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -151,28 +151,28 @@ function renderLoginPage(errorMsg) {
 <body>
   <div class="login-card">
     <div class="logo">
-      <div class="logo-text">☁️ 京东云</div>
-      <div class="logo-sub">TradingAgents-CN 合作版</div>
+      <div class="logo-text">☁️ JD Cloud</div>
+      <div class="logo-sub">TradingAgents-CN Cooperation version</div>
     </div>
     ${errorBlock}
     <form method="POST" action="/login">
       <div class="form-group">
-        <label>用户名</label>
-        <input type="text" name="username" placeholder="请输入用户名" autocomplete="username" required />
+        <label>Username</label>
+        <input type="text" name="username" placeholder="Please enter username" autocomplete="username" required />
       </div>
       <div class="form-group">
-        <label>密码</label>
-        <input type="password" name="password" placeholder="请输入密码" autocomplete="current-password" required />
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Please enter password" autocomplete="current-password" required />
       </div>
-      <button type="submit" class="btn-login">登 录</button>
+      <button type="submit" class="btn-login">Login</button>
     </form>
-    <div class="footer">© 京东云合作版 · 本地模拟网关</div>
+    <div class="footer">© JD Cloud Cooperation Edition · local analog gateway</div>
   </div>
 </body>
 </html>`
 }
 
-// ===== 请求体解析 =====
+// ===== Request body parsing =====
 function readBody(req) {
   return new Promise((resolve) => {
     let data = ''
@@ -190,7 +190,7 @@ function parseUrlEncoded(body) {
   return params
 }
 
-// ===== HTTP 转发 =====
+// ===== HTTP forward =====
 function forward(req, res, target, injectAuth) {
   const t = parseTarget(target)
   const headers = { ...req.headers, host: t.host }
@@ -204,20 +204,20 @@ function forward(req, res, target, injectAuth) {
     }
   )
   proxyReq.on('error', (err) => {
-    console.error(`❌ 转发失败 ${req.method} ${req.url} → ${err.message}`)
+    console.error(`❌ Forwarding failed ${req.method} ${req.url} → ${err.message}`)
     if (!res.headersSent) res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' })
-    res.end(`网关转发失败: ${err.message}`)
+    res.end(`Gateway forwarding failed: ${err.message}`)
   })
   req.pipe(proxyReq)
 }
 
-// ===== WebSocket 转发 =====
+// ===== WebSocket forward =====
 function forwardUpgrade(req, socket, head) {
   const pathname = (req.url || '/').split('?')[0]
   const isBackend = isBackendPath(pathname)
   const target = TARGET
   const t = parseTarget(target)
-  // 复制原始头，覆盖 host，显式设置升级头（避免 Node.js http 客户端覆盖 Connection）
+  // Copy the original header, overwrite host, and explicitly set the upgrade header (to avoid Node.js http client overwriting Connection)
   const headers = { ...req.headers, host: t.host }
   if (isBackend) headers.authorization = `Basic ${CREDENTIAL_B64}`
   headers.connection = 'Upgrade'
@@ -230,21 +230,21 @@ function forwardUpgrade(req, socket, head) {
     method: req.method || 'GET', path: req.url, headers,
   })
 
-  // 后端返回 101 Switching Protocols → 转发升级响应
+  // Backend returns 101 Switching Protocols → Forward upgrade response
   proxyReq.on('upgrade', (proxyRes, proxySocket, proxyHead) => {
     const rawHeaders = Object.entries(proxyRes.headers)
       .map(([k, v]) => (Array.isArray(v) ? v.map((x) => `${k}: ${x}`).join('\r\n') : `${k}: ${v}`))
       .join('\r\n')
-    // 注意：头结束后需要 \r\n\r\n（空行表示头结束）
+    // NOTE: Required after header end \r\n\r\n (A blank line indicates the end of the header)
     socket.write('HTTP/1.1 101 Switching Protocols\r\n' + rawHeaders + '\r\n\r\n')
     if (proxyHead && proxyHead.length) socket.write(proxyHead)
     if (head && head.length) proxySocket.write(head)
     proxySocket.pipe(socket)
     socket.pipe(proxySocket)
-    console.log(`✅ [WS] 升级成功: ${req.url}`)
+    console.log(`✅ [WS] Upgrade successful: ${req.url}`)
   })
 
-  // 后端返回普通 HTTP 响应（如 403/401 拒绝升级）→ 转发给客户端
+  // The backend returns a normal HTTP response (e.g. 403/401 Upgrade Denied)→ forward to client
   proxyReq.on('response', (proxyRes) => {
     const chunks = []
     proxyRes.on('data', (chunk) => chunks.push(chunk))
@@ -257,23 +257,23 @@ function forwardUpgrade(req, socket, head) {
       socket.write(statusLine + rawHeaders + '\r\n\r\n')
       if (body.length) socket.write(body)
       socket.end()
-      console.log(`⚠️ [WS] 后端拒绝升级 (HTTP ${proxyRes.statusCode}): ${req.url}`)
+      console.log(`⚠️ [WS] Backend refuses to upgrade (HTTP ${proxyRes.statusCode}): ${req.url}`)
     })
   })
 
   proxyReq.on('error', (err) => {
-    console.error(`❌ WS 转发失败 ${req.url} → ${err.message}`)
+    console.error(`❌ WS Forwarding failed ${req.url} → ${err.message}`)
     socket.destroy()
   })
 
   proxyReq.end()
 }
 
-// ===== HTTP 请求处理 =====
+// ===== HTTP Request processing =====
 async function handleHttp(req, res) {
   const pathname = (req.url || '/').split('?')[0]
 
-  // --- 登录页 ---
+  // --- Login page ---
   if (pathname === '/login') {
     if (req.method === 'GET') {
       return res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(renderLoginPage())
@@ -282,19 +282,19 @@ async function handleHttp(req, res) {
       const body = await readBody(req)
       const { username, password } = parseUrlEncoded(body)
       if (username === AUTH_USER && password === AUTH_PASS) {
-        console.log(`✅ 登录成功: ${username}`)
+        console.log(`✅ Login successful: ${username}`)
         res.writeHead(302, {
           'Set-Cookie': `${SESSION_COOKIE_NAME}=${CREDENTIAL_B64}; HttpOnly; Path=/; Max-Age=86400; SameSite=Lax`,
           'Location': '/',
         })
         return res.end()
       }
-      console.log(`❌ 登录失败: ${username}`)
-      return res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(renderLoginPage('用户名或密码错误'))
+      console.log(`❌ Login failed: ${username}`)
+      return res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }).end(renderLoginPage('Wrong username or password'))
     }
   }
 
-  // --- 登出 ---
+  // --- Log out ---
   if (pathname === '/logout') {
     res.writeHead(302, {
       'Set-Cookie': `${SESSION_COOKIE_NAME}=; HttpOnly; Path=/; Max-Age=0`,
@@ -303,38 +303,38 @@ async function handleHttp(req, res) {
     return res.end()
   }
 
-  // --- 检查登录状态 ---
+  // --- Check login status ---
   const loggedIn = isValidSession(req.headers.cookie)
 
-  // API 请求：未登录返回 401
+  // API Request: Return without logging in 401
   if (isBackendPath(pathname)) {
     if (!loggedIn) {
-      return res.writeHead(401, { 'Content-Type': 'application/json' }).end(JSON.stringify({ success: false, message: '未登录' }))
+      return res.writeHead(401, { 'Content-Type': 'application/json' }).end(JSON.stringify({ success: false, message: 'Not logged in' }))
     }
-    console.log(`🔐 [API] ${req.method} ${pathname} -> 后端`)
+    console.log(`🔐 [API] ${req.method} ${pathname} -> backend`)
     return forward(req, res, TARGET, true)
   }
 
-  // 公开资源（静态文件等）：直接转发到前端
+  // Public resources (static files, etc.): forwarded directly to the front end
   if (isPublicPath(pathname)) {
     return forward(req, res, TARGET, false)
   }
 
-  // 页面请求：未登录重定向到登录页
+  // Page request: Not logged in redirect to login page
   if (!loggedIn) {
     res.writeHead(302, { 'Location': '/login' })
     return res.end()
   }
 
-  // 已登录：转发到前端
-  console.log(`🌐 [页面] ${req.method} ${pathname} -> 前端`)
+  // Logged in: forwarded to the front end
+  console.log(`🌐 [Page] ${req.method} ${pathname} -> front end`)
   return forward(req, res, TARGET, false)
 }
 
-// ===== 启动 =====
+// ===== start =====
 const server = http.createServer((req, res) => {
   handleHttp(req, res).catch((err) => {
-    console.error('❌ 处理请求异常:', err)
+    console.error('❌ Handling request exceptions:', err)
     if (!res.headersSent) res.writeHead(500).end('Internal Server Error')
   })
 })
@@ -342,13 +342,13 @@ server.on('upgrade', forwardUpgrade)
 
 server.listen(GATEWAY_PORT, '0.0.0.0', () => {
   console.log('==========================================================')
-  console.log('  京东云网关本地模拟器（含登录页）')
+  console.log('  JD Cloud Gateway local simulator (including login page)')
   console.log('==========================================================')
-  console.log(`  网关地址:  http://localhost:${GATEWAY_PORT}`)
-  console.log(`  登录页:    http://localhost:${GATEWAY_PORT}/login`)
-  console.log(`  目标地址:  ${TARGET}`)
-  console.log(`  登录凭据:  ${AUTH_USER} / ${AUTH_PASS}`)
+  console.log(`  Gateway address:  http://localhost:${GATEWAY_PORT}`)
+  console.log(`  Login page:    http://localhost:${GATEWAY_PORT}/login`)
+  console.log(`  destination address:  ${TARGET}`)
+  console.log(`  Login credentials:  ${AUTH_USER} / ${AUTH_PASS}`)
   console.log('==========================================================')
-  console.log('  流程: 打开网关地址 → 登录页 → 输入凭据 → 跳转系统')
+  console.log('  process: Open gateway address → Login page → Enter credentials → Jump system')
   console.log('==========================================================')
 })

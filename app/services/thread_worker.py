@@ -1,6 +1,6 @@
 """
-线程池任务处理器
-使用 ThreadPoolExecutor 在 Backend 进程内处理队列任务
+Thread pool task processor
+Use ThreadPoolExecutor to process queue tasks within the Backend process
 """
 
 import asyncio
@@ -25,10 +25,10 @@ class ThreadWorker:
     
     def __init__(self, max_workers: int = 3):
         """
-        初始化线程池 Worker
+        Initialize thread pool Worker
         
         Args:
-            max_workers: 最大并发线程数（默认 3）
+            max_workers: Maximum number of concurrent threads (default 3)
         """
         self.max_workers = max_workers
         self.executor: Optional[ThreadPoolExecutor] = None
@@ -40,56 +40,56 @@ class ThreadWorker:
         self._gap_resolution_poll_interval_seconds = 2.0
         self._gap_resolution_last_poll_at = 0.0
         
-        logger.info(f"🔧 ThreadWorker 初始化: max_workers={max_workers}")
+        logger.info(f"🔧 ThreadWorker initialization: max_workers={max_workers}")
     
     async def start(self):
         """启动线程池 Worker"""
         if self.running:
-            logger.warning("ThreadWorker 已经在运行")
+            logger.warning("ThreadWorker Already running")
             return
         
         logger.info("=" * 60)
-        logger.info("🚀 启动线程池 Worker...")
+        logger.info("🚀 Start thread pool Worker...")
         logger.info(f"   最大并发数: {self.max_workers}")
         logger.info(f"   Worker ID: {self.worker_id}")
         logger.info("=" * 60)
         
-        # 初始化服务
-        logger.info("⏳ [ThreadWorker] 初始化 Redis 客户端代理")
+        # Initialize service
+        logger.info("⏳ [ThreadWorker] Initialize the Redis client agent")
         redis = get_redis_client()
-        logger.info("✅ [ThreadWorker] Redis 客户端代理初始化完成")
-        logger.info("⏳ [ThreadWorker] 初始化 QueueService")
+        logger.info("✅ [ThreadWorker] Redis Client agent initialization completed")
+        logger.info("⏳ [ThreadWorker] initialization QueueService")
         self.queue_service = QueueService(redis)
-        logger.info("✅ [ThreadWorker] QueueService 初始化完成")
-        logger.info("⏳ [ThreadWorker] 初始化 TaskAnalysisService")
+        logger.info("✅ [ThreadWorker] QueueService Initialization completed")
+        logger.info("⏳ [ThreadWorker] initialization TaskAnalysisService")
         self.task_service = TaskAnalysisService()
-        logger.info("✅ [ThreadWorker] TaskAnalysisService 初始化完成")
+        logger.info("✅ [ThreadWorker] TaskAnalysisService Initialization completed")
         
-        # 创建线程池
-        logger.info("⏳ [ThreadWorker] 创建线程池执行器")
+        # Create thread pool
+        logger.info("⏳ [ThreadWorker] Create a thread pool executor")
         self.executor = ThreadPoolExecutor(
             max_workers=self.max_workers,
             thread_name_prefix="analysis-worker"
         )
-        logger.info("✅ [ThreadWorker] 线程池执行器创建完成")
+        logger.info("✅ [ThreadWorker] The thread pool executor is created")
         
         self.running = True
         
-        # 启动队列监听循环
-        logger.info("⏳ [ThreadWorker] 启动队列监听循环")
+        # Start queue listening loop
+        logger.info("⏳ [ThreadWorker] Start queue listening loop")
         self._loop_task = asyncio.create_task(self._queue_loop())
         
-        logger.info("✅ 线程池 Worker 启动成功")
+        logger.info("✅ Thread pool Worker started successfully")
     
     async def stop(self):
         """停止线程池 Worker"""
         if not self.running:
             return
         
-        logger.info("🛑 停止线程池 Worker...")
+        logger.info("🛑 Stop thread pool Worker...")
         self.running = False
         
-        # 取消队列循环
+        # Cancel queue loop
         if self._loop_task:
             self._loop_task.cancel()
             try:
@@ -97,13 +97,13 @@ class ThreadWorker:
             except asyncio.CancelledError:
                 pass
         
-        # 关闭线程池
+        # Close thread pool
         if self.executor:
             logger.info("   等待线程池任务完成...")
             self.executor.shutdown(wait=True, cancel_futures=False)
             logger.info("   线程池已关闭")
         
-        logger.info("✅ 线程池 Worker 已停止")
+        logger.info("✅ Thread pool worker stopped")
     
     async def _queue_loop(self):
         """队列监听循环"""
@@ -116,20 +116,20 @@ class ThreadWorker:
                     await self._tick_gap_resolution_jobs()
                     self._gap_resolution_last_poll_at = now_ts
 
-                # 从队列获取任务
+                # Get tasks from queue
                 task_data = await self.queue_service.dequeue_task(self.worker_id)
 
                 if not task_data:
-                    # 队列为空，等待一会儿
+                    # The queue is empty, please wait for a while
                     await asyncio.sleep(1)
                     continue
 
-                # 提交任务到线程池（不等待完成）
+                # Submit tasks to the thread pool (without waiting for completion)
                 task_id = task_data.get("id")
                 logger.info(f"📊 收到任务: {task_id}, 提交到线程池...")
 
-                # 🔥 直接在当前事件循环中处理任务（不使用线程池）
-                # 因为任务本身是 I/O 密集型，asyncio 已经提供了并发能力
+                # 🔥 Process tasks directly in the current event loop (without using the thread pool)
+                # Because the task itself is I/O intensive, asyncio already provides concurrency capabilities
                 asyncio.create_task(self._process_task_async(task_data))
 
             except asyncio.CancelledError:
@@ -142,18 +142,18 @@ class ThreadWorker:
         logger.info("📡 队列监听循环结束")
 
     async def _tick_gap_resolution_jobs(self):
-        """轮询并推进 Agent 工坊缺口补齐异步 job。"""
+        """Poll and advance the Agent workshop gap filling asynchronous job."""
         try:
             from core.tools.implementations.agent_builder.nanobot_agent_builder_tools import (
                 process_agent_workshop_gap_resolution_jobs_once,
             )
         except ImportError:
-            # 社区版无 Agent 工坊模块（manifest 剔除 app/models/agent_workshop 等），
-            # 一次性提示后静默停用轮询，避免每 tick 刷 WARNING。
+            # The community version does not have the Agent workshop module (manifest excludes app/models/agent_workshop, etc.).
+            # Silently disable polling after a one-time prompt to avoid WARNINGs every tick.
             if not getattr(type(self), "_gap_job_unavailable_logged", False):
                 type(self)._gap_job_unavailable_logged = True
                 logger.info(
-                    "[GapJob] Agent 工坊模块不可用（社区版），缺口补齐轮询已停用"
+                    "[GapJob] Agent Workshop module is unavailable (community edition), gap filling polling is disabled"
                 )
             return
 
@@ -188,10 +188,10 @@ class ThreadWorker:
 
     async def _process_task_async(self, task_data: Dict[str, Any]):
         """
-        异步处理任务
+        Asynchronous processing tasks
 
         Args:
-            task_data: 任务数据
+            task_data: mission data
         """
         task_id = task_data.get("id")
         stock_code = task_data.get("symbol")
@@ -202,20 +202,20 @@ class ThreadWorker:
         success = False
 
         try:
-            # 解析任务参数
-            # 🔥 修复：queue_service.get_task() 将 params 解析后存储到 parameters 字段
+            # Parse task parameters
+            # 🔥 Fix:queue_service.get_task() Parse params and store them in the parameters field
             parameters_dict = task_data.get("parameters", {})
             if not parameters_dict:
-                # 兼容旧版本：如果 parameters 不存在，尝试从 params 读取
+                # Compatible with older versions: if parameters does not exist, try to read from params
                 parameters_dict = task_data.get("params", {})
                 if isinstance(parameters_dict, str):
                     import json
                     parameters_dict = json.loads(parameters_dict)
 
-            # 🔍 调试：打印参数内容
-            logger.info(f"🔍 [DEBUG] 任务参数: {parameters_dict}")
+            # 🔍 Debugging: Print parameter content
+            logger.info(f"🔍 [DEBUG] Task parameters: {parameters_dict}")
 
-            # 检查引擎类型（默认使用 v2 引擎）
+            # Check engine type (default uses v2 engine)
             engine_type = parameters_dict.get("engine", "v2")
 
             existing_task = None
@@ -241,7 +241,7 @@ class ThreadWorker:
                         existing_task.started_at = now_tz()
                     existing_task.progress = max(existing_task.progress or 0, 1)
                     existing_task.current_step = "数据准备"
-                    existing_task.message = "正在准备分析所需数据..."
+                    existing_task.message = "Preparing data for analysis..."
                     await self.task_service._update_task(existing_task)
 
                     await memory_manager.update_task_status(
@@ -254,40 +254,40 @@ class ThreadWorker:
                         current_step_description=existing_task.message
                     )
 
-            # 📡 JIT 数据同步：分析前主动拉取最新行情，确保不使用陈旧数据
+            # 📡 JIT Data synchronization: proactively pull the latest market data before analysis to ensure that stale data is not used
             try:
                 from app.worker.analysis_worker import jit_sync_stock_data
                 jit_result = await jit_sync_stock_data(stock_code, parameters_dict)
                 if not jit_result.is_valid:
-                    logger.error(f"❌ [ThreadWorker] JIT 数据同步失败: {jit_result.message}")
+                    logger.error(f"❌ [ThreadWorker] JIT Data synchronization failed: {jit_result.message}")
                     raise ValueError(f"数据准备失败: {jit_result.message}")
-                logger.info(f"✅ [ThreadWorker] JIT 数据同步完成: {jit_result.message}")
+                logger.info(f"✅ [ThreadWorker] JIT Data synchronization completed: {jit_result.message}")
             except ValueError:
                 raise
             except Exception as jit_err:
-                logger.warning(f"⚠️ [ThreadWorker] JIT 数据同步异常（继续分析）: {jit_err}")
+                logger.warning(f"⚠️ [ThreadWorker] JIT Data synchronization exception (continue analysis): {jit_err}")
 
             logger.info(f"🔧 使用 {engine_type} 引擎执行任务: {task_id}")
 
             if engine_type == "v2":
-                # 使用 v2.0 统一任务引擎
+                # Using v2.0 Unified Task Engine
                 from bson import ObjectId
 
                 if existing_task:
-                    # 任务已存在，直接执行
-                    logger.info(f"📋 任务已存在，直接执行: {task_id} (task_type={existing_task.task_type})")
+                    # The task already exists, execute it directly
+                    logger.info(f"📋 The task already exists, execute it directly: {task_id} (task_type={existing_task.task_type})")
                     await self.task_service.execute_task(existing_task)
                 else:
-                    # 任务不存在，创建并执行
+                    # The task does not exist, create and execute
                     sec_type = StockUtils.identify_security_type(stock_code)
                     requested_market = parameters_dict.get("market_type")
                     if requested_market == "ETF" or sec_type == SecurityType.FUND:
                         inferred_task_type = AnalysisTaskType.ETF_ANALYSIS
                         parameters_dict.setdefault("selected_analysts", ["etf", "market", "news"])
-                        logger.info(f"📋 任务不存在，按 ETF 流程重建任务: {task_id}")
+                        logger.info(f"📋 The task does not exist. Rebuild the task according to the ETF process.: {task_id}")
                     else:
                         inferred_task_type = AnalysisTaskType.STOCK_ANALYSIS
-                        logger.info(f"📋 任务不存在，按股票流程重建任务: {task_id}")
+                        logger.info(f"📋 The task does not exist. Rebuild the task according to the stock process.: {task_id}")
 
                     await self.task_service.create_and_execute_task(
                         user_id=ObjectId(user_id) if user_id else ObjectId(),
@@ -298,13 +298,13 @@ class ThreadWorker:
                             **parameters_dict
                         },
                         engine_type="v2",
-                        task_id=task_id  # 🔥 直接传递 task_id 参数
+                        task_id=task_id  # 🔥 Pass the task_id parameter directly
                     )
 
-                logger.info(f"✅ [v2引擎] 任务完成: {task_id}")
+                logger.info(f"✅ [v2 engine] Mission accomplished: {task_id}")
 
             elif engine_type == "unified":
-                # 使用统一分析服务
+                # Use unified analytics services
                 from app.services.unified_analysis_service import UnifiedAnalysisService
 
                 unified_service = UnifiedAnalysisService()
@@ -314,27 +314,27 @@ class ThreadWorker:
                     task_id=task_id,
                     **parameters_dict
                 )
-                logger.info(f"✅ [unified引擎] 任务完成: {task_id}")
+                logger.info(f"✅ [unified engine] Mission accomplished: {task_id}")
 
             else:
-                # 旧版 legacy 引擎已停用 — 拒绝执行
+                # The legacy engine has been retired — Refusal to execute
                 logger.error(
-                    f"❌ [ThreadWorker] 拒绝执行 legacy 引擎任务: task_id={task_id}, engine={engine_type}"
+                    f"❌ [ThreadWorker] Refuse to execute legacy engine tasks: task_id={task_id}, engine={engine_type}"
                 )
                 raise RuntimeError(
-                    "[已停用] thread_worker 拒绝 engine=%s 的任务，"
-                    "请将队列参数 engine 改为 'v2'。"
-                    "详见 docs/99-archive/deprecated-features/legacy-agents-deprecation.md" % engine_type
+                    "[Deactivated] thread_worker reject engine=%s task,"
+                    "Please change the queue parameter engine to 'v2'. "
+                    "See details docs/99-archive/deprecated-features/legacy-agents-deprecation.md" % engine_type
                 )
-                # pragma: no cover - 以下原代码保留但不执行，为 v4.0 删除做准备
-                # 使用 legacy 引擎
+                # pragma: no cover - The following original code is retained but not executed in preparation for v4.0 deletion
+                # Use legacy engine
                 from app.services.simple_analysis_service import SimpleAnalysisService
                 from app.models.analysis import SingleAnalysisRequest, AnalysisParameters
 
-                # 🔥 从参数字典构造 AnalysisParameters 对象
+                # 🔥 Constructs an AnalysisParameters object from a dictionary of parameters
                 params = AnalysisParameters(**parameters_dict) if parameters_dict else AnalysisParameters()
 
-                # 🔥 构造 SingleAnalysisRequest 对象
+                # 🔥 Construct a SingleAnalysisRequest object
                 request = SingleAnalysisRequest(
                     symbol=stock_code,
                     stock_code=stock_code,
@@ -347,7 +347,7 @@ class ThreadWorker:
                     user_id=user_id,
                     request=request
                 )
-                logger.info(f"✅ [legacy引擎] 任务完成: {task_id}")
+                logger.info(f"✅ [legacy engine] Mission accomplished: {task_id}")
 
             success = True
 
@@ -356,7 +356,7 @@ class ThreadWorker:
             success = False
 
         finally:
-            # 确认任务完成（无论成功或失败）
+            # Confirm task completion (either success or failure)
             try:
                 await self.queue_service.ack_task(task_id, success)
                 logger.info(f"✅ 任务已确认: {task_id} (成功: {success})")
@@ -364,16 +364,16 @@ class ThreadWorker:
                 logger.error(f"❌ 确认任务失败: {task_id} - {e}")
 
 
-# 全局 ThreadWorker 实例
+# Global ThreadWorker instance
 _thread_worker: Optional[ThreadWorker] = None
 
 
 async def start_thread_worker(max_workers: int = 3):
-    """启动全局线程池 Worker"""
+    """Start global thread pool Worker"""
     global _thread_worker
 
     if _thread_worker is not None:
-        logger.warning("ThreadWorker 已经启动")
+        logger.warning("ThreadWorker Already started")
         return
 
     _thread_worker = ThreadWorker(max_workers=max_workers)
@@ -381,7 +381,7 @@ async def start_thread_worker(max_workers: int = 3):
 
 
 async def stop_thread_worker():
-    """停止全局线程池 Worker"""
+    """Stop the global thread pool Worker"""
     global _thread_worker
 
     if _thread_worker is None:
@@ -392,6 +392,6 @@ async def stop_thread_worker():
 
 
 def get_thread_worker() -> Optional[ThreadWorker]:
-    """获取全局线程池 Worker 实例"""
+    """Get the global thread pool Worker instance"""
     return _thread_worker
 

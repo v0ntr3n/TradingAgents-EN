@@ -1,18 +1,18 @@
 import time
 import json
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
-# 导入模板客户端
+# Import template client
 from tradingagents.utils.template_client import get_agent_prompt
 from tradingagents.agents.utils.compliance_prompting import apply_compliance_guardrails, build_research_only_closing
 
 
 def create_risky_debator(llm):
     def risky_node(state) -> dict:
-        # 使用 .get() 安全访问辩论状态
+        # Use .get() Secure access to debate status
         risk_debate_state = state.get("risk_debate_state", {})
         history = risk_debate_state.get("history", "")
         risky_history = risk_debate_state.get("risky_history", "")
@@ -20,7 +20,7 @@ def create_risky_debator(llm):
         current_safe_response = risk_debate_state.get("current_safe_response", "")
         current_neutral_response = risk_debate_state.get("current_neutral_response", "")
 
-        # 使用 .get() 安全访问，支持用户只选择部分分析师的情况
+        # Use .get() Secure access, supporting the situation where users only select some analysts
         market_research_report = state.get("market_report", "")
         sentiment_report = state.get("sentiment_report", "")
         news_report = state.get("news_report", "")
@@ -28,23 +28,23 @@ def create_risky_debator(llm):
 
         trader_decision = state.get("trader_investment_plan", "")
 
-        # 📊 记录输入数据长度
-        logger.info(f"📊 [Risky Analyst] 输入数据长度统计:")
-        logger.info(f"  - market_report: {len(market_research_report):,} 字符")
-        logger.info(f"  - sentiment_report: {len(sentiment_report):,} 字符")
-        logger.info(f"  - news_report: {len(news_report):,} 字符")
-        logger.info(f"  - fundamentals_report: {len(fundamentals_report):,} 字符")
-        logger.info(f"  - trader_decision: {len(trader_decision):,} 字符")
-        logger.info(f"  - history: {len(history):,} 字符")
+        # 📊 Record input data length
+        logger.info(f"📊 [Risky Analyst] Input data length statistics:")
+        logger.info(f"  - market_report: {len(market_research_report):,} character")
+        logger.info(f"  - sentiment_report: {len(sentiment_report):,} character")
+        logger.info(f"  - news_report: {len(news_report):,} character")
+        logger.info(f"  - fundamentals_report: {len(fundamentals_report):,} character")
+        logger.info(f"  - trader_decision: {len(trader_decision):,} character")
+        logger.info(f"  - history: {len(history):,} character")
         total_length = (len(market_research_report) + len(sentiment_report) +
                        len(news_report) + len(fundamentals_report) +
                        len(trader_decision) + len(history) +
                        len(current_safe_response) + len(current_neutral_response))
-        logger.info(f"  - 总Prompt长度: {total_length:,} 字符 (~{total_length//4:,} tokens)")
+        logger.info(f"  - Total prompt length: {total_length:,} character (~{total_length//4:,} tokens)")
 
-        # 🆕 使用模板系统获取提示词
+        # 🆕 Use template system to get prompt words
         try:
-            # 准备模板变量
+            # Prepare template variables
             template_variables = {
                 "ticker": state.get("company_of_interest", ""),
                 "company_name": state.get("company_of_interest", ""),
@@ -66,9 +66,9 @@ def create_risky_debator(llm):
                 context=None
             )
             if tpl_info:
-                logger.info(f"📚 [模板选择] source={tpl_info.get('source')} id={tpl_info.get('template_id')} version={tpl_info.get('version')} agent=debators/aggressive_debator")
+                logger.info(f"📚 [Template selection] source={tpl_info.get('source')} id={tpl_info.get('template_id')} version={tpl_info.get('version')} agent=debators/aggressive_debator")
 
-            # 从模板系统获取提示词
+            # Get prompt words from template system
             system_prompt = get_agent_prompt(
                 agent_type="debators",
                 agent_name="aggressive_debator",
@@ -78,54 +78,54 @@ def create_risky_debator(llm):
             )
 
             system_prompt = apply_compliance_guardrails(system_prompt, "aggressive_debator")
-            logger.info(f"✅ [激进风险分析师] 成功从模板系统获取提示词 (长度: {len(system_prompt)})")
+            logger.info(f"✅ [activist risk analyst] Successfully obtained the prompt word from the template system (length: {len(system_prompt)})")
 
         except Exception as e:
-            logger.error(f"❌ [激进风险分析师] 从模板系统获取提示词失败: {e}")
-            # 降级：使用硬编码提示词
-            system_prompt = """作为激进风险分析师，您的职责是积极倡导高回报、高风险的投资机会，强调大胆策略和竞争优势。
+            logger.error(f"❌ [activist risk analyst] Failed to obtain prompt word from template system: {e}")
+            # Downgrade: Use hardcoded prompt words
+            system_prompt = """As an Activist Risk Analyst, your role will be to proactively advocate for high-reward, high-risk investment opportunities that emphasize bold strategies and competitive advantage.
 
-在评估交易员的决策或计划时，请重点关注潜在的上涨空间、增长潜力和创新收益——即使这些伴随着较高的风险。
+When evaluating a trader s decision or plan, focus on potential upside, growth potential, and innovative benefits——Even these come with higher risks.
 
-具体来说，请直接回应保守和中性分析师提出的每个观点，用数据驱动的反驳和有说服力的推理进行反击。
+Specifically, respond directly to every point made by conservative and neutral analysts, countering with data-driven rebuttals and persuasive reasoning.
 
-积极参与，解决提出的任何具体担忧，反驳他们逻辑中的弱点，并断言承担风险的好处。
+Engage actively, address any specific concerns raised, refute weaknesses in their logic, and assert the benefits of taking risks.
 
-请用中文以对话方式输出。"""
+Please output in conversational mode in Chinese."""
             system_prompt = apply_compliance_guardrails(system_prompt, "aggressive_debator")
-            logger.warning(f"⚠️ [激进风险分析师] 使用降级提示词 (长度: {len(system_prompt)})")
+            logger.warning(f"⚠️ [activist risk analyst] Use demotion prompts (length: {len(system_prompt)})")
 
-        # 构建完整提示词
+        # Build a complete prompt word
         prompt = f"""{system_prompt}
 
-以下是交易员的决策：
+Here are the traders decisions:
 {trader_decision}
 
-将以下来源的见解纳入您的论点：
-市场研究报告：{market_research_report}
-社交媒体情绪报告：{sentiment_report}
-最新世界事务报告：{news_report}
-公司基本面报告：{fundamentals_report}
+Incorporate insights from the following sources into your argument:
+Market research report:{market_research_report}
+Social Media Sentiment Report:{sentiment_report}
+Latest World Affairs Report:{news_report}
+Company fundamentals report:{fundamentals_report}
 
-当前对话历史：{history}
-保守分析师的最后论点：{current_safe_response}
-中性分析师的最后论点：{current_neutral_response}
+Current conversation history:{history}
+Conservative analysts final argument:{current_safe_response}
+Neutral Analyst s Final Argument:{current_neutral_response}
 
-{build_research_only_closing(["请提出您的激进研究观点，强调上行弹性与潜在催化，但不要形成交易方案。"])}"""
+{build_research_only_closing(["Please present your aggressive research ideas, highlighting upside resilience and potential catalysts, but do not formulate a trade proposal."])}"""
 
-        logger.info(f"⏱️ [Risky Analyst] 开始调用LLM...")
+        logger.info(f"⏱️ [Risky Analyst] Start calling LLM...")
         import time
         llm_start_time = time.time()
 
         response = llm.invoke(prompt)
 
         llm_elapsed = time.time() - llm_start_time
-        logger.info(f"⏱️ [Risky Analyst] LLM调用完成，耗时: {llm_elapsed:.2f}秒")
+        logger.info(f"⏱️ [Risky Analyst] LLM The call is completed and takes time: {llm_elapsed:.2f}seconds")
 
         argument = f"Risky Analyst: {response.content}"
 
         new_count = risk_debate_state["count"] + 1
-        logger.info(f"🔥 [激进风险分析师] 发言完成，计数: {risk_debate_state['count']} -> {new_count}")
+        logger.info(f"🔥 [activist risk analyst] Finished speaking, counting: {risk_debate_state['count']} -> {new_count}")
 
         new_risk_debate_state = {
             "history": history + "\n" + argument,

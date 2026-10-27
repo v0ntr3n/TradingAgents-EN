@@ -1,10 +1,10 @@
 # ============================================================================
 # Create BAT files for installer
 # ============================================================================
-# 为安装程序创建.bat启动文件
+# Create a .bat startup file for the installer
 # ============================================================================
 
-# UTF-8编码设置
+# UTF-8 encoding settings
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::InputEncoding = [System.Text.Encoding]::UTF8
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
@@ -23,30 +23,30 @@ Write-Host ""
 $startBat = @'
 @echo off
 chcp 65001 >nul
-title TradingAgents-CN - 启动中...
+title TradingAgents-CN - Starting...
 
 echo ============================================================================
-echo   TradingAgents-CN Pro - 便携版启动器
+echo   TradingAgents-CN Pro - Portable launcher
 echo ============================================================================
 echo.
 
 cd /d "%~dp0"
 
-echo 正在启动所有服务...
+echo Starting all services...
 echo.
-echo 提示: 本脚本会调用 PowerShell 脚本来启动服务
+echo Tips: This script will call the PowerShell script to start the service
 echo.
 
-REM 调用 PowerShell 启动脚本
+REM Call the PowerShell startup script
 powershell.exe -ExecutionPolicy Bypass -File "%~dp0start_all.ps1"
 
 if errorlevel 1 (
     echo.
     echo ============================================================================
-    echo   启动失败
+    echo   Startup failed
     echo ============================================================================
     echo.
-    echo 请检查错误信息，或尝试直接运行 start_all.ps1
+    echo Please check the error message or try running directly start_all.ps1
     echo.
     pause
     exit /b 1
@@ -54,11 +54,11 @@ if errorlevel 1 (
 
 echo.
 echo ============================================================================
-echo   所有服务已启动！
+echo   All services have been started!
 echo ============================================================================
 echo.
-echo   访问地址: http://localhost
-echo   默认账号: admin / admin123
+echo   Access address: http://localhost
+echo   Default account: admin / admin123
 echo.
 pause
 
@@ -76,25 +76,25 @@ Write-Host "  ✅ Created: start_all.bat" -ForegroundColor Green
 $stopBat = @'
 @echo off
 chcp 65001 >nul
-title TradingAgents-CN - 停止中...
+title TradingAgents-CN - Stopping...
 
 echo ============================================================================
-echo   TradingAgents-CN Pro - 停止所有服务
+echo   TradingAgents-CN Pro - Stop all services
 echo ============================================================================
 echo.
 
 cd /d "%~dp0"
 
-echo [1/2] 停止应用服务...
+echo [1/2] Stop application service...
 taskkill /FI "WINDOWTITLE eq TradingAgents*" /F >nul 2>&1
 
 echo.
-echo [2/2] 停止数据库服务...
+echo [2/2] Stop database service...
 call scripts\stop_databases.bat
 
 echo.
 echo ============================================================================
-echo   所有服务已停止！
+echo   All services have been stopped!
 echo ============================================================================
 echo.
 pause

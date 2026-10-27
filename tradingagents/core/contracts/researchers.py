@@ -1,9 +1,9 @@
 # tradingagents/core/contracts/researchers.py
 """
-研究员数据契约定义
+Researcher Data Contract Definition
 
-定义研究员 Agent 的输入/输出字段和依赖关系
-研究员需要读取所有分析师报告进行综合研判
+Define the input/output fields and dependencies of the researcher agent
+Researchers need to read all analyst reports for comprehensive analysis and judgment
 """
 
 from tradingagents.core.engine.data_contract import (
@@ -14,18 +14,18 @@ from tradingagents.core.engine.data_contract import (
 
 
 # =========================================
-# 看多研究员 (Bull Researcher)
+# See more researchers (Bull Researcher)
 # =========================================
 BULL_RESEARCHER_CONTRACT = AgentDataContract(
     agent_id="bull_researcher",
-    description="看多研究员 - 从乐观角度综合分析报告，寻找买入理由",
+    description="Be bullish on researchers - comprehensively analyze reports from an optimistic perspective and find reasons to buy",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
             fields=["ticker", "company_name", "trade_date"],
             required=True
         ),
-        # 读取所有分析师报告
+        # Read all analyst reports
         DataAccess(
             layer=DataLayer.REPORTS,
             fields=[
@@ -36,9 +36,9 @@ BULL_RESEARCHER_CONTRACT = AgentDataContract(
                 "sector_report",
                 "index_report",
             ],
-            required=False  # 部分报告可能不存在
+            required=False  # Some reports may not exist
         ),
-        # 读取结构化分析数据
+        # Read structured analysis data
         DataAccess(
             layer=DataLayer.ANALYSIS_DATA,
             fields=["technical", "valuation", "sentiment"],
@@ -61,11 +61,11 @@ BULL_RESEARCHER_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 看空研究员 (Bear Researcher)
+# bearish researcher (Bear Researcher)
 # =========================================
 BEAR_RESEARCHER_CONTRACT = AgentDataContract(
     agent_id="bear_researcher",
-    description="看空研究员 - 从谨慎角度综合分析报告，识别风险因素",
+    description="Bearish researcher - Comprehensive analysis report from a cautious perspective to identify risk factors",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -106,11 +106,11 @@ BEAR_RESEARCHER_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 研究经理 (Research Manager)
+# research manager (Research Manager)
 # =========================================
 RESEARCH_MANAGER_CONTRACT = AgentDataContract(
     agent_id="research_manager",
-    description="研究经理 - 主持多空辩论，综合研判，形成投资建议",
+    description="Research Manager - Host long-short debates, conduct comprehensive research and judgment, and formulate investment recommendations",
     inputs=[
         DataAccess(
             layer=DataLayer.CONTEXT,
@@ -134,7 +134,7 @@ RESEARCH_MANAGER_CONTRACT = AgentDataContract(
 
 
 # =========================================
-# 研究员契约汇总
+# Researcher Contract Summary
 # =========================================
 RESEARCHER_CONTRACTS = {
     "bull_researcher": BULL_RESEARCHER_CONTRACT,

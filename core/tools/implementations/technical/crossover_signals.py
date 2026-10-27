@@ -1,13 +1,13 @@
 """
-技术指标交叉信号检测工具
+Technical Indicator Cross Signal Detection Tool
 
-检测以下交叉信号：
-1. 均线金叉/死叉（MA5/10/20/60 组合）
-2. MACD 金叉/死叉 + 零轴穿越
-3. KDJ 金叉/死叉 + 超买超卖区
-4. 价格-均线交叉（突破/跌破）
+Detects the following crossing signals:
+1. Moving average golden cross/dead cross (MA5/10/20/60 combination)
+2. MACD Golden Cross/Dead Cross + zero axis crossing
+3. KDJ Golden Cross/Dead Cross + Overbought and oversold zone
+4. Price-moving average crossover (breakout/breakthrough)
 
-所有信号基于纯数学计算，无需 LLM 参与。
+All signals are based on pure mathematical calculations without LLM involvement.
 """
 
 import datetime
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-#  辅助函数
+#  Helper function
 # ============================================================
 
 def _ma(close: pd.Series, n: int) -> pd.Series:
@@ -37,17 +37,17 @@ def _ema(close: pd.Series, n: int) -> pd.Series:
 
 
 def _cross_above(series_a: pd.Series, series_b: pd.Series) -> pd.Series:
-    """series_a 上穿 series_b"""
+    """series_a Wear it on top series_b"""
     return (series_a > series_b) & (series_a.shift(1) <= series_b.shift(1))
 
 
 def _cross_below(series_a: pd.Series, series_b: pd.Series) -> pd.Series:
-    """series_a 下穿 series_b"""
+    """series_a Wear underneath series_b"""
     return (series_a < series_b) & (series_a.shift(1) >= series_b.shift(1))
 
 
 # ============================================================
-#  MACD 计算
+#  MACD Calculate
 # ============================================================
 
 def _macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
@@ -58,7 +58,7 @@ def _macd(close: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9):
 
 
 # ============================================================
-#  KDJ 计算
+#  KDJ Calculate
 # ============================================================
 
 def _kdj(high: pd.Series, low: pd.Series, close: pd.Series, n: int = 9):
@@ -84,7 +84,7 @@ def _kdj(high: pd.Series, low: pd.Series, close: pd.Series, n: int = 9):
 
 
 # ============================================================
-#  信号检测
+#  Signal detection
 # ============================================================
 
 def _detect_ma_crossovers(df: pd.DataFrame) -> list[dict]:
@@ -100,7 +100,7 @@ def _detect_ma_crossovers(df: pd.DataFrame) -> list[dict]:
     ]
     close = df["close"]
 
-    # 预计算所有均线
+    # Precalculate all moving averages
     ma_cache = {}
     for _, n, _, _ in ma_pairs:
         if n not in ma_cache:
@@ -144,12 +144,12 @@ def _detect_ma_crossovers(df: pd.DataFrame) -> list[dict]:
 
 
 def _detect_macd_crossovers(df: pd.DataFrame) -> list[dict]:
-    """检测 MACD 金叉/死叉 + 零轴穿越"""
+    """Detect MACD Golden Cross/Dead Cross + zero axis crossing"""
     close = df["close"]
     dif, dea, hist = _macd(close)
     signals = []
 
-    # MACD 金叉/死叉（DIF 与 DEA 交叉）
+    # MACD Golden Cross/Dead Cross (cross of DIF and DEA)
     golden = _cross_above(dif, dea)
     death = _cross_below(dif, dea)
 
@@ -184,7 +184,7 @@ def _detect_macd_crossovers(df: pd.DataFrame) -> list[dict]:
             "strength": _calc_strength(df, i, 20),
         })
 
-    # DIF 零轴穿越
+    # DIF zero axis crossing
     zero_up = _cross_above(dif, pd.Series(0, index=dif.index))
     zero_down = _cross_below(dif, pd.Series(0, index=dif.index))
     for idx in zero_up[zero_up].index:
@@ -213,7 +213,7 @@ def _detect_macd_crossovers(df: pd.DataFrame) -> list[dict]:
 
 
 def _detect_kdj_crossovers(df: pd.DataFrame) -> list[dict]:
-    """检测 KDJ 金叉/死叉 + 超买超卖区"""
+    """Detect KDJ golden cross/dead cross + Overbought and oversold zone"""
     k, d, j = _kdj(df["high"], df["low"], df["close"])
     close = df["close"]
     signals = []
@@ -305,7 +305,7 @@ def _detect_ma_alignment(df: pd.DataFrame) -> dict:
     if pd.isna(ma60):
         return {"status": "insufficient_data"}
 
-    # 上行排列：短期 MA > 长期 MA
+    # Upward ranking: short term MA > long term MA
     if ma5 > ma10 > ma20 > ma60:
         return {
             "status": "上行排列",
@@ -313,7 +313,7 @@ def _detect_ma_alignment(df: pd.DataFrame) -> dict:
             "mas": {"MA5": round(float(ma5), 2), "MA10": round(float(ma10), 2),
                     "MA20": round(float(ma20), 2), "MA60": round(float(ma60), 2)},
         }
-    # 下行排列：短期 MA < 长期 MA
+    # Downward ranking: short term MA < long term MA
     elif ma5 < ma10 < ma20 < ma60:
         return {
             "status": "下行排列",
@@ -322,18 +322,18 @@ def _detect_ma_alignment(df: pd.DataFrame) -> dict:
                     "MA20": round(float(ma20), 2), "MA60": round(float(ma60), 2)},
         }
     else:
-        # 粘合/交织
+        # bonding/interweaving
         return {
             "status": "均线交织",
             "direction": "neutral",
             "mas": {"MA5": round(float(ma5), 2), "MA10": round(float(ma10), 2),
                     "MA20": round(float(ma20), 2), "MA60": round(float(ma60), 2)},
-            "note": "均线未形成统一排列，可能处于震荡或趋势转换期",
+            "note": "The moving averages do not form a unified arrangement and may be in a period of shock or trend transition.",
         }
 
 
 # ============================================================
-#  辅助函数
+#  Helper function
 # ============================================================
 
 def _get_date(df: pd.DataFrame, idx: int) -> str:
@@ -346,11 +346,11 @@ def _get_date(df: pd.DataFrame, idx: int) -> str:
 
 
 def _calc_strength(df: pd.DataFrame, idx: int, window: int = 20) -> str:
-    """计算交叉信号所处的趋势强度（基于后续价格变化）"""
+    """Calculate the trend strength of the crossover signal (based on subsequent price changes)"""
     close = df["close"]
     if idx >= len(close) - 3:
         return "unknown"
-    # 交叉后 3 天涨跌
+    # Prices rise and fall 3 days after the crossover
     future_return = (close.iloc[min(idx + 3, len(close) - 1)] / close.iloc[idx] - 1) * 100
     if abs(future_return) > 3:
         return "strong" if future_return > 0 else "strong_reverse"
@@ -360,7 +360,7 @@ def _calc_strength(df: pd.DataFrame, idx: int, window: int = 20) -> str:
 
 
 # ============================================================
-#  工具注册与主函数
+#  Tool registration and main function
 # ============================================================
 
 @tool
@@ -368,10 +368,10 @@ def _calc_strength(df: pd.DataFrame, idx: int, window: int = 20) -> str:
     tool_id="get_crossover_signals",
     name="技术指标交叉信号检测",
     description=(
-        "检测均线、MACD、KDJ 等常用技术指标的金叉/死叉信号。"
-        "覆盖 12 种均线配对交叉、MACD 金叉死叉+零轴穿越、KDJ 金叉死叉+超买超卖区。"
-        "输出结构化 JSON，包含信号类型、方向、强度和发生日期。"
-        "这里的“信号”指价格/指标交叉产生的技术交易信号，不是财务造假信号、风险事件信号、情绪信号或 Agent 能力缺口。"
+        "Detect the golden cross/dead cross signals of common technical indicators such as moving average, MACD, KDJ and so on."
+        "Covers 12 types of moving average pair crossovers, MACD golden crosses and dead crosses+Zero axis crossing, KDJ golden cross and dead cross+Overbought and oversold zones."
+        "Outputs structured JSON containing signal type, direction, strength, and date of occurrence."
+        "Here s signal It refers to technical trading signals generated by price/indicator intersections, not financial fraud signals, risk event signals, emotional signals or Agent capability gaps."
     ),
     category="technical",
     is_online=False,
@@ -382,18 +382,18 @@ def _calc_strength(df: pd.DataFrame, idx: int, window: int = 20) -> str:
     output_shape="structured_json",
     preferred_for=["金叉信号检测", "死叉信号检测", "趋势信号检测"],
     when_to_use=(
-        "当需要识别金叉/死叉信号、均线突破/跌破、MACD/KDJ 交叉信号时使用。"
-        "适用于趋势确认、买卖信号辅助、均线排列判断。"
+        "Use it when you need to identify golden cross/death cross signals, moving average breakthrough/breakdown, and MACD/KDJ crossover signals."
+        "Suitable for trend confirmation, buying and selling signal assistance, and moving average arrangement judgment."
     ),
     when_not_to_use=(
-        "不适合单独作为交易决策依据（应结合其他工具）。"
-        "不适合识别 K 线形态（应使用 get_candlestick_patterns）。"
-        "不用于财务报表异常、现金流风险、公告事件风险、市场情绪或 Agent 能力缺口分析。"
-        "不适合基本面分析。"
+        "Not suitable as a basis for trading decisions alone (should be combined with other tools)."
+        "Not suitable for identifying candlestick patterns (get_candlestick_patterns should be used)."
+        "Not used for financial statement anomalies, cash flow risk, announcement event risk, market sentiment or Agent capability gap analysis."
+        "Not suitable for fundamental analysis."
     ),
     returns=(
-        "返回 JSON 字符串，包含 signals 数组、ma_alignment、summary。"
-        "每个 signal 包含 date、type、direction、price、strength 等。"
+        "Returns a JSON string, including the signals array, ma_alignment, and summary."
+        "Each signal contains date, type, direction, price, strength, etc."
     ),
     example="get_crossover_signals(symbol='600519', lookback_days=120)",
     related_tools=[
@@ -405,45 +405,45 @@ def _calc_strength(df: pd.DataFrame, idx: int, window: int = 20) -> str:
     ],
 )
 def get_crossover_signals(
-    symbol: Annotated[str, "A 股股票代码，如 600519、000001"],
-    lookback_days: Annotated[int, "回溯天数，默认 120"] = 120,
-    signal_types: Annotated[str, "信号类型，逗号分隔，默认 all。可选: ma, macd, kdj, price_ma"] = "all",
+    symbol: Annotated[str, "A stock code, such as 600519,000001"],
+    lookback_days: Annotated[int, "Number of days to look back, default 120"] = 120,
+    signal_types: Annotated[str, "Signal types, comma separated, default all. Optional: ma, macd, kdj, price_ma"] = "all",
 ) -> str:
-    """检测技术指标交叉信号，覆盖均线金叉/死叉、MACD 金叉/死叉+零轴穿越、KDJ 金叉/死叉+超买超卖区、价格/均线穿越。
+    """Detect technical indicator cross signals, covering moving average golden cross/dead cross, MACD golden cross/dead cross+Zero axis crossing, KDJ golden fork/death fork+Overbought and oversold zones, price/moving average crossing.
 
     Args:
-        symbol: A 股股票代码，如 600519、000001
-        lookback_days: 回溯天数，默认 120
-        signal_types: 信号类型筛选，逗号分隔，取值 "ma" | "macd" | "kdj" | "price_ma" | "all"，默认 "all"
+        symbol: A stock code, such as 600519,000001
+        lookback_days: Number of days to look back, default 120
+        signal_types: Signal type filtering, comma separated, value "ma" | "macd" | "kdj" | "price_ma" | "all", Default "all"
 
     Returns:
-        str: JSON 字符串，正常返回字段说明——
-            symbol: 股票代码
-            data_info: 数据信息，子字段 —
-                total_bars: K 线总数
-                date_range: 日期范围，子字段 —
-                    start: 起始日期
-                    end: 结束日期
-            signals_found: 检测到的信号总数
-            summary: 汇总统计，子字段 —
-                bullish: 上行信号数量
-                bearish: 下行信号数量
-            ma_alignment: 均线排列状态，子字段 —
-                status: 排列状态，取值 "上行排列" | "下行排列" | "均线交织" | "insufficient_data"
-                direction: 方向，取值 "bullish" | "bearish" | "neutral"（数据不足时无此字段）
-                mas: 各均线值，子字段 — MA5、MA10、MA20、MA60
-                note: 可选，状态说明文本（仅 "均线交织" 时存在）
-            latest_signals: 最近 20 条信号列表，每个元素结构 —
-                date: 信号发生日期
-                type: 信号类型，取值如 "MA金叉" | "MA死叉" | "MACD金叉(零轴上)" | "MACD金叉(零轴下)" | "MACD死叉(零轴上)" | "MACD死叉(零轴下)" | "DIF零轴穿越(上穿)" | "DIF零轴穿越(下穿)" | "KDJ金叉" | "KDJ死叉" | "价格上穿MA{N}" | "价格下穿MA{N}"
-                pair: 信号配对标识，如 "MA5↗MA10"、"DIF↗DEA"、"K↗D"、"DIF↗0"
-                direction: 方向，取值 "bullish" | "bearish"
-                price: 信号发生时收盘价
-                strength: 信号强度（0-1）
-                （附加字段因信号类型而异：short_ma、long_ma、dif、dea、hist、zero_position、k、d、j、ma_value、zone）
-        异常时返回字段 —
+        str: JSON String, returns field description normally——
+            symbol: Stock code
+            data_info: Data information, subfield —
+                total_bars: K Total number of lines
+                date_range: date range, subfield —
+                    start: start date
+                    end: end date
+            signals_found: Total number of signals detected
+            summary: Summary statistics, subfields —
+                bullish: Number of uplink signals
+                bearish: Number of downlink signals
+            ma_alignment: Moving average arrangement status, subfield —
+                status: Arrangement status, value "Arrange in ascending order" | "descending order" | "Moving average crossover" | "insufficient_data"
+                direction: direction, value "bullish" | "bearish" | "neutral" (This field is not available when there is insufficient data)
+                mas: Each moving average value, subfield — MA5, MA10, MA20, MA60
+                note: Optional, status description text (only "Moving average crossover" exist)
+            latest_signals: List of the last 20 signals, each element structure —
+                date: Signal occurrence date
+                type: Signal type, with values such as "MA golden fork" | "MA Sicha" | "MACD golden fork(on zero axis)" | "MACD golden fork(below zero axis)" | "MACD Sicha(on zero axis)" | "MACD Sicha(below zero axis)" | "DIF zero axis crossing(Wear it on top)" | "DIF zero axis crossing(Wear underneath)" | "KDJ golden fork" | "KDJ Sicha" | "The price is high MA{N}" | "Price drops MA{N}"
+                pair: Signal pairing identifier, such as "MA5↗MA10", "DIF↗DEA", "K↗D", "DIF↗0"
+                direction: direction, value "bullish" | "bearish"
+                price: The closing price when the signal occurs
+                strength: Signal strength (0-1)
+                 (Additional fields vary by signal type: short_ma, long_ma, dif, dea, hist, zero_position, k, d, j, ma_value, zone)
+        Field returned on exception —
             status: "no_data" | "error"
-            message: 错误信息
+            message: error message
     """
     try:
         from core.skill_runtime.data_access import get_stock_daily_quotes
@@ -488,7 +488,7 @@ def get_crossover_signals(
             df = df.sort_values("date").reset_index(drop=True)
         df = df.tail(lookback_days).copy()
 
-        # 选择信号类型
+        # Select signal type
         types = [t.strip().lower() for t in signal_types.split(",")]
         detect_all = "all" in types
 
@@ -502,10 +502,10 @@ def get_crossover_signals(
         if detect_all or "price_ma" in types:
             signals.extend(_detect_price_ma_crossovers(df))
 
-        # 按日期排序（最新在前）
+        # Sort by date (newest first)
         signals.sort(key=lambda s: s["date"], reverse=True)
 
-        # 均线排列
+        # moving average arrangement
         ma_alignment = _detect_ma_alignment(df)
 
         bullish = sum(1 for s in signals if s["direction"] == "bullish")
@@ -526,7 +526,7 @@ def get_crossover_signals(
                 "bearish": bearish,
             },
             "ma_alignment": ma_alignment,
-            "latest_signals": signals[:20],  # 最近 20 条
+            "latest_signals": signals[:20],  # Last 20
         }
 
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)

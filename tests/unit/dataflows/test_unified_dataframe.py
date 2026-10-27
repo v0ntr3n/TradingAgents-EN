@@ -5,7 +5,7 @@ from tradingagents.dataflows.unified_dataframe import get_china_daily_df_unified
 
 
 def test_unified_dataframe_prefers_tushare_then_akshare_then_baostock():
-    # 模拟三个来源：tushare成功，后两个不应被调用
+    # Simulate three sources: tushare succeeds, last two should not be called
     with mock.patch('tradingagents.dataflows.unified_dataframe.get_tushare_adapter') as m_ts, \
          mock.patch('tradingagents.dataflows.unified_dataframe.get_akshare_provider') as m_ak, \
          mock.patch('tradingagents.dataflows.unified_dataframe.get_baostock_provider') as m_bs, \
@@ -18,13 +18,13 @@ def test_unified_dataframe_prefers_tushare_then_akshare_then_baostock():
         m_ak.return_value.get_stock_data.return_value = pd.DataFrame()
         m_bs.return_value.get_stock_data.return_value = pd.DataFrame()
 
-        # 当前源为 tushare
+        # The current source is tushare
         m_dsm.return_value.current_source.value = 'tushare'
         m_dsm.return_value.available_sources = []
 
         df = get_china_daily_df_unified('000001', '2024-01-01', '2024-01-31')
         assert not df.empty
-        assert 'close' in df.columns  # 已标准化
+        assert 'close' in df.columns  # Standardized
         assert df.shape[0] == 2
 
 

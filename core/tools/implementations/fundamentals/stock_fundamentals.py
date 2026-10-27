@@ -1,7 +1,7 @@
 """
-统一股票基本面数据工具
+Unified Stock Fundamental Data Tool
 
-自动识别股票类型（A股、港股、美股）并调用相应的数据源
+Automatically identify stock types (A shares, Hong Kong stocks, US stocks) and call the corresponding data sources
 """
 
 import asyncio
@@ -21,12 +21,12 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_china_ticker(ticker: str) -> str:
-    """标准化 A 股代码，兼容带交易所后缀的输入。"""
+    """Standardized A-share ticker, compatible with inputs with exchange suffixes."""
     return re.sub(r'\.(SZ|SH|BJ|sz|sh|bj)$', '', str(ticker).strip())
 
 
 def _run_async_in_sync(coro):
-    """在同步工具中安全运行异步 provider。"""
+    """Safely run asynchronous providers in sync tools."""
     try:
         asyncio.get_running_loop()
     except RuntimeError:
@@ -59,7 +59,7 @@ def _coerce_records(value: Any) -> List[Dict[str, Any]]:
 
 
 def _normalize_financial_payload(raw_data: Optional[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
-    """统一不同缓存/provider 的财务字段结构。"""
+    """Unify financial field structure across different caches/providers."""
     normalized = {
         'income_statement': [],
         'balance_sheet': [],
@@ -108,7 +108,7 @@ def _sort_and_trim_records(records: List[Dict[str, Any]], limit: int) -> List[Di
 
 
 def _load_recent_financial_data(ticker: str, limit: int = 4) -> Dict[str, Any]:
-    """优先走缓存/持久化数据，缺失时再降级到在线 provider。"""
+    """Give priority to cached/persistent data, and then downgrade to the online provider if missing."""
     from tradingagents.utils.stock_utils import StockUtils
 
     normalized_ticker = _normalize_china_ticker(ticker)
@@ -139,7 +139,7 @@ def _load_recent_financial_data(ticker: str, limit: int = 4) -> Dict[str, Any]:
             if any(payload.values()):
                 data_source = 'tushare'
         except Exception as exc:
-            logger.warning(f"⚠️ Tushare 财务数据获取失败: {exc}")
+            logger.warning(f"⚠️ Tushare Failed to obtain financial data: {exc}")
 
     if not payload or not any(payload.values()):
         try:
@@ -151,7 +151,7 @@ def _load_recent_financial_data(ticker: str, limit: int = 4) -> Dict[str, Any]:
             if any(payload.values()):
                 data_source = 'akshare'
         except Exception as exc:
-            logger.warning(f"⚠️ AKShare 财务数据获取失败: {exc}")
+            logger.warning(f"⚠️ AKShare Failed to obtain financial data: {exc}")
 
     payload = payload or _normalize_financial_payload(None)
     for key, records in payload.items():
@@ -177,7 +177,7 @@ def _format_pct_change(value: Any) -> str:
 
 
 def _build_china_company_profile(ticker: str) -> Optional[str]:
-    """构造不含实时价格字段的 A 股公司基础信息。"""
+    """Construct basic information of A-share companies without real-time price fields."""
     normalized_ticker = _normalize_china_ticker(ticker)
 
     try:
@@ -198,15 +198,15 @@ def _build_china_company_profile(ticker: str) -> Optional[str]:
             f"上市市场: {_snapshot_value((basics_doc or {}).get('market'), '未知')}",
             f"上市日期: {_snapshot_value((basics_doc or {}).get('list_date'), '未知')}",
         ]
-        logger.info(f"📊 [统一基本面工具] 使用数据库静态信息构造 A 股公司概况: {normalized_ticker}")
+        logger.info(f"📊 [Unified fundamental tools] Constructing A-share company profiles using database static information: {normalized_ticker}")
         return "\n".join(lines)
     except Exception as exc:
-        logger.warning(f"⚠️ A股静态公司信息读取失败: {exc}")
+        logger.warning(f"⚠️ A Failed to read static company information: {exc}")
         return None
 
 
 def _build_china_snapshot_from_cache(ticker: str) -> Optional[str]:
-    """优先从 app MongoDB 快照构造当前价格信息，避免为基本面工具拉取历史行情。"""
+    """Prioritize constructing current price information from app MongoDB snapshots to avoid pulling historical quotes for fundamental tools."""
     normalized_ticker = _normalize_china_ticker(ticker)
 
     try:
@@ -243,10 +243,10 @@ def _build_china_snapshot_from_cache(ticker: str) -> Optional[str]:
             f"涨跌幅: {change_pct}",
             f"成交量: {volume}",
         ])
-        logger.info(f"📊 [统一基本面工具] 使用数据库快照构造 A 股价格信息: {normalized_ticker}")
+        logger.info(f"📊 [Unified fundamental tools] Use database snapshot to construct A-share price information: {normalized_ticker}")
         return "\n".join(lines)
     except Exception as exc:
-        logger.warning(f"⚠️ A股数据库快照读取失败: {exc}")
+        logger.warning(f"⚠️ A Stock database snapshot read failed: {exc}")
         return None
 
 
@@ -263,7 +263,7 @@ def _is_placeholder_china_snapshot(snapshot: Optional[str]) -> bool:
 
 
 def _get_china_price_snapshot(ticker: str, curr_date: str) -> str:
-    """为统一基本面工具构造 A 股价格快照，优先读库，最后才降级到行情 provider。"""
+    """Construct A-share price snapshots for unified fundamental tools, read the library first, and then downgrade to the market provider."""
     normalized_ticker = _normalize_china_ticker(ticker)
 
     cached_snapshot = _build_china_snapshot_from_cache(normalized_ticker)
@@ -276,21 +276,21 @@ def _get_china_price_snapshot(ticker: str, curr_date: str) -> str:
         analyzer = OptimizedChinaDataProvider()
         snapshot = analyzer._get_stock_basic_info_only(normalized_ticker)
         if not _is_placeholder_china_snapshot(snapshot):
-            logger.info(f"📊 [统一基本面工具] 使用基础信息接口构造 A 股价格信息: {normalized_ticker}")
+            logger.info(f"📊 [Unified fundamental tools] Use the basic information interface to construct A-share price information: {normalized_ticker}")
             return snapshot
     except Exception as exc:
-        logger.warning(f"⚠️ A股基础信息获取失败: {exc}")
+        logger.warning(f"⚠️ A Failed to obtain basic stock information: {exc}")
 
     recent_end_date = curr_date
     recent_start_date = (datetime.strptime(curr_date, '%Y-%m-%d') - timedelta(days=2)).strftime('%Y-%m-%d')
     from tradingagents.dataflows.interface import get_china_stock_data_unified
 
-    logger.warning(f"⚠️ A股数据库快照不可用，降级到行情接口: {normalized_ticker}")
+    logger.warning(f"⚠️ A The stock database snapshot is unavailable and is downgraded to the market interface.: {normalized_ticker}")
     return get_china_stock_data_unified(normalized_ticker, recent_start_date, recent_end_date)
 
 
 def _strip_realtime_snapshot_fields(text: Optional[str]) -> str:
-    """移除基本面研究中不应使用的实时快照字段。"""
+    """Removed live snapshot fields that should not be used in fundamental research."""
     if not text:
         return ""
 
@@ -304,7 +304,7 @@ def _strip_realtime_snapshot_fields(text: Optional[str]) -> str:
         '流通市值',
         '基本价格信息',
         '市盈率(PE)',
-        '市盈率TTM(PE_TTM)',
+        'P/E ratio TTM(PE_TTM)',
         '市净率(PB)',
         '市销率(PS)',
         '股息收益率',
@@ -457,7 +457,7 @@ def _single_quarter_metric_line(
         return f"- {label}: {_format_value(value, style)}"
 
     if status in {'missing-prev-period', 'missing-prev-value'}:
-        return f"- {label}: N/A（缺少上期累计值，暂无法推导单季度）"
+        return f"- {label}: N/A (Lacking the cumulative value of the previous period, it is temporarily impossible to derive a single quarter)"
 
     return None
 
@@ -494,11 +494,11 @@ def _build_historical_valuation_section_from_frame(
     effective_analysis_date: Optional[str] = None,
 ) -> str:
     if valuation_df is None or valuation_df.empty:
-        return "工具结果未提供历史估值分位数据。"
+        return "The tool results do not provide historical valuation quantile data."
 
     working_df = valuation_df.copy()
     if 'trade_date' not in working_df.columns:
-        return "工具结果未提供历史估值分位数据。"
+        return "The tool results do not provide historical valuation quantile data."
 
     working_df['trade_date'] = working_df['trade_date'].astype(str)
     working_df = working_df.sort_values('trade_date', ascending=False)
@@ -507,15 +507,15 @@ def _build_historical_valuation_section_from_frame(
     lines = [
         f"- 样本窗口: {window_start} 至 {window_end}",
         f"- 有效交易日样本: {len(working_df)}",
-        f"- 最近可用估值快照日期: {latest_available_trade_date}",
-        "- 估值快照口径: 下文如写“当前 PE/PB/PS(TTM)”等，均指该指标历史序列中最近可得且有效的交易日快照，而非实时盘口价格。",
-        "- 日期说明: 每个指标后括号中的日期即该指标本次采用的估值快照日期；若不同指标可用样本不同，不默认视为同一交易日。不得用分析日期替代该快照日期。",
+        f"- Last available valuation snapshot date: {latest_available_trade_date}",
+        "- Valuation snapshot caliber: The following is as written current PE/PB/PS(TTM) etc., all refer to the latest available and valid trading day snapshot in the historical sequence of the indicator, rather than the real-time market price.",
+        "- date description: The date in parentheses after each indicator is the valuation snapshot date adopted by the indicator this time; if the available samples for different indicators are different, they will not be regarded as the same trading day by default. The snapshot date must not be replaced with the analysis date.",
     ]
 
     cutoff_note = build_stable_data_cutoff_note(
         requested_analysis_date or "",
         effective_analysis_date or "",
-        subject="估值分析所需的当日收盘后日频数据",
+        subject="Daily frequency data after the close of the day required for valuation analysis",
     )
     if cutoff_note:
         lines.append(f"- 稳定数据说明: {cutoff_note}")
@@ -530,7 +530,7 @@ def _build_historical_valuation_section_from_frame(
     any_metric = False
     for column, label in metric_specs:
         if column not in working_df.columns:
-            lines.append(f"- {label}: 工具结果未提供历史序列，历史分位暂无法计算。")
+            lines.append(f"- {label}: The tool results do not provide historical series, and historical quantiles cannot be calculated yet.")
             continue
 
         numeric_series = pd.to_numeric(working_df[column], errors='coerce')
@@ -539,7 +539,7 @@ def _build_historical_valuation_section_from_frame(
         valid_df = valid_df[valid_df[column] > 0]
 
         if len(valid_df) < 60:
-            lines.append(f"- {label}: 工具结果未提供足够历史样本，历史分位暂无法计算。")
+            lines.append(f"- {label}: The tool results do not provide enough historical samples, and the historical quantiles cannot be calculated at the moment.")
             continue
 
         latest_row = valid_df.iloc[0]
@@ -555,10 +555,10 @@ def _build_historical_valuation_section_from_frame(
         )
         any_metric = True
 
-    lines.append("- PEG: 当前工具未提供稳定的日频 PEG 历史序列，历史分位暂无法计算。")
+    lines.append("- PEG: The current tool does not provide a stable daily PEG historical sequence, and the historical quantiles cannot be calculated yet.")
 
     if not any_metric:
-        return "工具结果未提供可用于计算历史估值分位的有效估值序列。"
+        return "The tool results do not provide a valid valuation series that can be used to calculate historical valuation quantiles."
 
     return "\n".join(lines)
 
@@ -575,7 +575,7 @@ def _get_historical_valuation_summary(
     stable_curr_date = apply_stable_data_cutoff(curr_date)
     if stable_curr_date != curr_date:
         logger.info(
-            f"🕖 基本面历史估值输入日期 {requested_curr_date} 尚未达到稳定数据时点，按业务口径回退到 {stable_curr_date}"
+            f"🕖 Fundamental historical valuation input date {requested_curr_date} When stable data has not been reached, fall back to {stable_curr_date}"
         )
         curr_date = stable_curr_date
     try:
@@ -592,7 +592,7 @@ def _get_historical_valuation_summary(
         if not provider.is_available():
             provider.connect_sync()
         if not provider.is_available() or provider.api is None:
-            return "工具结果未提供历史估值分位数据。"
+            return "The tool results do not provide historical valuation quantile data."
 
         ts_code = provider._normalize_ts_code(normalized_ticker)
         valuation_df = provider.api.daily_basic(
@@ -610,61 +610,61 @@ def _get_historical_valuation_summary(
             effective_analysis_date=curr_date,
         )
     except Exception as exc:
-        logger.warning(f"⚠️ 历史估值分位计算失败: {exc}")
-        return "工具结果未提供历史估值分位数据。"
+        logger.warning(f"⚠️ Historical valuation quantile calculation failed: {exc}")
+        return "The tool results do not provide historical valuation quantile data."
 
 
 @tool
 @register_tool(
     tool_id="get_stock_fundamentals_unified",
     name="统一股票基本面数据",
-    description="获取A股公司完整基本面数据：营收、净利润、ROE、ROIC、毛利率、净利率、资产负债率、每股收益等核心财务指标",
+    description="Obtain complete fundamental data of A-share companies: revenue, net profit, ROE, ROIC, gross profit margin, net profit margin, asset-liability ratio, earnings per share and other core financial indicators",
     category="fundamentals",
     is_online=True,
     auto_register=True,
     capability_tags=["基本面", "财务数据", "营收", "净利润", "ROE", "ROIC", "毛利率", "净利率", "每股收益", "资产负债率", "利润表", "资产负债表", "A股"],
-    when_to_use="需要获取A股股票的营收、利润率、ROE/ROIC、资产负债等基本面财务数据时使用",
+    when_to_use="Use it when you need to obtain fundamental financial data such as revenue, profit margin, ROE/ROIC, assets and liabilities of A-share stocks.",
     tool_role_hint="primary",
     output_shape="structured_metrics",
 )
 def get_stock_fundamentals_unified(
-    ticker: Annotated[str, "股票代码（支持A股、港股、美股）"],
-    start_date: Annotated[Optional[str], "开始日期，格式：YYYY-MM-DD"] = None,
-    end_date: Annotated[Optional[str], "结束日期，格式：YYYY-MM-DD"] = None,
-    curr_date: Annotated[Optional[str], "当前日期，格式：YYYY-MM-DD"] = None
+    ticker: Annotated[str, "Stock code (supports A shares, Hong Kong stocks, and US stocks)"],
+    start_date: Annotated[Optional[str], "Start date, format:YYYY-MM-DD"] = None,
+    end_date: Annotated[Optional[str], "End date, format:YYYY-MM-DD"] = None,
+    curr_date: Annotated[Optional[str], "Current date, format:YYYY-MM-DD"] = None
 ) -> str:
     """
-    统一的股票基本面分析工具
-    自动识别股票类型（A股、港股、美股）并调用相应的数据源
-    支持基于分析级别的数据获取策略
+    Unified stock fundamental analysis tool
+    Automatically identify stock types (A shares, Hong Kong stocks, US stocks) and call the corresponding data sources
+    Support data acquisition strategies based on analysis level
 
     Args:
-        ticker: 股票代码（如：000001、0700.HK、AAPL）
-        start_date: 开始日期（可选，格式：YYYY-MM-DD）
-        end_date: 结束日期（可选，格式：YYYY-MM-DD）
-        curr_date: 当前日期（可选，格式：YYYY-MM-DD）
+        ticker: Stock code (such as: 000001, 0700.HK, AAPL)
+        start_date: Start date (optional, format: YYYY-MM-DD)
+        end_date: End date (optional, format: YYYY-MM-DD)
+        curr_date: Current date (optional, format: YYYY-MM-DD)
 
     Returns:
-        str: 基本面分析数据和报告
+        str: Fundamental Analysis Data and Reports
     """
-    logger.info(f"📊 [统一基本面工具] 分析股票: {ticker}")
+    logger.info(f"📊 [Unified fundamental tools] Analyze stocks: {ticker}")
 
     try:
         from tradingagents.utils.stock_utils import StockUtils
 
-        # 自动识别股票类型
+        # Automatically identify stock types
         market_info = StockUtils.get_market_info(ticker)
         is_china = market_info['is_china']
         is_hk = market_info['is_hk']
         is_us = market_info['is_us']
 
-        logger.info(f"📊 [统一基本面工具] 股票类型: {market_info['market_name']}")
+        logger.info(f"📊 [Unified fundamental tools] Stock type: {market_info['market_name']}")
 
-        # 设置默认日期
+        # Set default date
         if not curr_date:
             curr_date = datetime.now().strftime('%Y-%m-%d')
 
-        # 基本面分析只需要最近的数据
+        # Fundamental analysis requires only recent data
         days_to_fetch = 10
         if not start_date:
             start_date = (datetime.now() - timedelta(days=days_to_fetch)).strftime('%Y-%m-%d')
@@ -674,8 +674,8 @@ def get_stock_fundamentals_unified(
         result_data = []
 
         if is_china:
-            # 中国A股
-            logger.info(f"🇨🇳 [统一基本面工具] 处理A股数据...")
+            # China A shares
+            logger.info(f"🇨🇳 [Unified fundamental tools] Process A-share data...")
             normalized_ticker = _normalize_china_ticker(ticker)
             company_profile_data = ""
 
@@ -692,48 +692,48 @@ def get_stock_fundamentals_unified(
                 if company_profile_data:
                     result_data.append(f"## A股公司基础信息\n{company_profile_data}")
             except Exception as e:
-                logger.error(f"❌ A股静态公司信息获取失败: {e}")
+                logger.error(f"❌ A Failed to obtain static company information: {e}")
 
             result_data.append(
-                "## A股基本面分析口径说明\n"
-                "- 本工具面向历史财务、历史估值区间和已披露经营数据分析。\n"
-                "- 不提供当前股价、涨跌幅、成交量、当前总市值等实时快照字段，也不应将这些字段作为基本面结论依据。"
+                "## A Explanation of stock fundamental analysis caliber\n"
+                "- This tool is designed for analysis of historical financials, historical valuation ranges and disclosed operating data.\n"
+                "- Real-time snapshot fields such as current stock price, rise and fall, trading volume, and current total market capitalization are not provided, and these fields should not be used as the basis for fundamental conclusions."
             )
             result_data.append(
-                "## A股估值快照日期说明\n"
-                "- 估值快照口径: PE、PE(TTM)、PB、PS(TTM) 等估值指标如被表述为“当前值”，均指对应指标最近可得且有效的交易日快照，而非实时盘口价格。\n"
-                "- 历史估值分位部分如已在指标后附带日期，该日期就是该指标本次采用的估值快照日期；若不同指标日期不同，不默认视为同一交易日。"
+                "## A Stock Valuation Snapshot Date Description\n"
+                "- Valuation snapshot caliber: PE, PE(TTM), PB, PS(TTM) If the valuation indicator is expressed as current value , All refer to the latest available and valid trading day snapshot of the corresponding indicator, rather than the real-time market price.\n"
+                "- If the historical valuation quantile part has a date attached to the indicator, that date will be the valuation snapshot date adopted by the indicator this time; if the dates of different indicators are different, they will not be regarded as the same trading day by default."
             )
             stable_curr_date = apply_stable_data_cutoff(curr_date)
             stable_note = build_stable_data_cutoff_note(
                 curr_date,
                 stable_curr_date,
-                subject="估值分析所需的当日收盘后日频数据",
+                subject="Daily frequency data after the close of the day required for valuation analysis",
             )
             if stable_note:
-                result_data.append(f"## A股数据日期说明\n- {stable_note}")
+                result_data.append(f"## A Stock data date description\n- {stable_note}")
 
             try:
-                # 获取基本面财务数据
+                # Get fundamental financial data
                 from tradingagents.dataflows.optimized_china_data import OptimizedChinaDataProvider
                 analyzer = OptimizedChinaDataProvider()
                 fundamentals_data = analyzer._generate_fundamentals_report(normalized_ticker, company_profile_data, "standard")
                 fundamentals_data = _strip_realtime_snapshot_fields(fundamentals_data)
                 result_data.append(f"## A股基本面财务数据\n{fundamentals_data}")
             except Exception as e:
-                logger.error(f"❌ A股基本面数据获取失败: {e}")
-                result_data.append(f"## A股基本面财务数据\n获取失败: {e}")
+                logger.error(f"❌ A Failed to obtain stock fundamental data: {e}")
+                result_data.append(f"## A Stock Fundamentals Financial Data\n Failed to obtain: {e}")
 
             try:
                 historical_valuation = _get_historical_valuation_summary(normalized_ticker, curr_date)
                 result_data.append(f"## A股历史估值分位\n{historical_valuation}")
             except Exception as e:
-                logger.error(f"❌ A股历史估值分位获取失败: {e}")
-                result_data.append("## A股历史估值分位\n工具结果未提供历史估值分位数据。")
+                logger.error(f"❌ A Failed to obtain stock historical valuation quantile: {e}")
+                result_data.append("## A Stock historical valuation quantile\n The tool results do not provide historical valuation quantile data.")
 
         elif is_hk:
-            # 港股
-            logger.info(f"🇭🇰 [统一基本面工具] 处理港股数据...")
+            # Hong Kong stocks
+            logger.info(f"🇭🇰 [Unified fundamental tools] Processing Hong Kong stock data...")
 
             try:
                 from tradingagents.dataflows.interface import get_hk_stock_data_unified
@@ -745,11 +745,11 @@ def get_stock_fundamentals_unified(
                     raise ValueError("港股数据质量不佳")
             except Exception as e:
                 logger.error(f"❌ 港股数据获取失败: {e}")
-                result_data.append(f"## 港股数据\n获取失败: {e}")
+                result_data.append(f"## Hong Kong stock data\n Failed to obtain: {e}")
 
         elif is_us:
-            # 美股
-            logger.info(f"🇺🇸 [统一基本面工具] 处理美股数据...")
+            # US stocks
+            logger.info(f"🇺🇸 [Unified fundamental tools] Processing US stock data...")
 
             try:
                 from tradingagents.dataflows.interface import get_fundamentals_openai
@@ -757,15 +757,15 @@ def get_stock_fundamentals_unified(
                 result_data.append(f"## 美股基本面数据\n{us_data}")
             except Exception as e:
                 logger.error(f"❌ 美股数据获取失败: {e}")
-                result_data.append(f"## 美股基本面数据\n获取失败: {e}")
+                result_data.append(f"## U.S. stock fundamentals data\n Failed to obtain: {e}")
 
         else:
-            logger.warning(f"⚠️ [统一基本面工具] 未识别的股票市场: {ticker} -> {market_info['market_name']}")
+            logger.warning(f"⚠️ [Unified fundamental tools] Unidentified stock market: {ticker} -> {market_info['market_name']}")
             result_data.append(
                 f"## 市场识别结果\n{ticker} 未识别到受支持的股票市场，当前识别结果为 {market_info['market_name']}。"
             )
 
-        # 组合所有数据
+        # Combine all data
         combined_result = f"""# {ticker} 基本面分析数据
 
 **股票类型**: {market_info['market_name']}
@@ -778,11 +778,11 @@ def get_stock_fundamentals_unified(
 *数据来源: 根据股票类型自动选择最适合的数据源*
 """
 
-        logger.info(f"📊 [统一基本面工具] 数据获取完成，总长度: {len(combined_result)}")
+        logger.info(f"📊 [Unified fundamental tools] Data acquisition completed, total length: {len(combined_result)}")
         return combined_result
 
     except Exception as e:
-        error_msg = f"统一基本面分析工具执行失败: {str(e)}"
+        error_msg = f"Unified fundamental analysis tool execution failed: {str(e)}"
         logger.error(f"❌ [统一基本面工具] {error_msg}")
         return error_msg
 
@@ -791,40 +791,40 @@ def get_stock_fundamentals_unified(
 @register_tool(
     tool_id="get_financial_statements",
     name="最近季度财报明细",
-    description="获取A股最近几个季度的利润表（营业收入、营业成本、净利润等）、资产负债表和核心财务指标明细，并对主要利润表字段推导单季度口径",
+    description="Obtain the income statement (operating income, operating costs, net profit, etc.), balance sheet and core financial indicator details of A-shares in recent quarters, and derive a single-quarter caliber for the main income statement fields.",
     category="fundamentals",
     is_online=True,
     auto_register=True,
     capability_tags=["利润表", "资产负债表", "财务报表", "净利润", "营收", "营业收入", "营业成本", "A股", "财报"],
-    when_to_use="需要获取A股公司的最新季度财务报表，包括利润表和资产负债表时使用",
+    when_to_use="Use it when you need to obtain the latest quarterly financial statements of A-share companies, including income statements and balance sheets.",
     tool_role_hint="primary",
     output_shape="structured_metrics",
 )
 def get_financial_statements(
-    ticker: Annotated[str, "A股股票代码，支持 000001 或 000001.SZ 形式"],
-    limit: Annotated[int, "返回最近几个季度，默认 4"] = 4
+    ticker: Annotated[str, "A Stock code, supports 000001 or 000001.SZ format"],
+    limit: Annotated[int, "Returns the most recent quarters, default 4"] = 4
 ) -> str:
-    """获取最近季度财报明细。
+    """Get the latest quarterly financial report details.
 
     Args:
-        ticker: A股股票代码，支持 "000001" 或 "000001.SZ" 形式
-        limit: 返回最近几个季度（自动截断到 1-8），默认 4
+        ticker: A stock ticker code, support "000001" or "000001.SZ" form
+        limit: Returns the most recent quarters (automatically truncated to 1-8), default 4
 
     Returns:
-        str: Markdown 格式字符串，包含以下章节——
-            标题: "{ticker} 最近{N}个季度财报明细"
-            股票类型: 市场名称
-            数据来源: 数据来源说明
-            口径说明: 关于累计值与单季度口径的说明
-            各报告期章节（按 ## 报告期 分组），每个报告期下包含——
-                - 利润表（单季度推导）: 营业总收入/营业利润/归母净利润/净利润的单季度推导值
-                - 利润表（原始报告期累计/快照）: 营业总收入/营业利润/归母净利润/净利润/基本每股收益
-                - 资产负债表: 资产总计/负债合计/股东权益合计/流动资产合计/流动负债合计/货币资金
-                - 核心财务指标: ROE/ROA/毛利率/净利率/资产负债率/流动比率/单季度净利率（推导）
+        str: Markdown Format string containing the following sections——
+            Title: "{ticker} Recently{N}Quarterly financial report details"
+            Stock type: Market name
+            Data source: Data source description
+            Caliber description: Explanation on cumulative value and single-quarter caliber
+            Chapters for each reporting period (by ## reporting period grouping), each reporting period contains——
+                - Income statement (single quarter derivation): Single-quarter derived value of total operating income/operating profit/net profit attributable to parent company/net profit
+                - Income Statement (original reporting period cumulative/snapshot): Total operating income/operating profit/net profit attributable to parent company/net profit/basic earnings per share
+                - balance sheet: Total assets/total liabilities/total shareholders equity/total current assets/total current liabilities/monetary funds
+                - core financial indicators: ROE/ROA/Gross profit margin/net profit margin/asset-liability ratio/current ratio/single-quarter net profit margin (derivation)
 
-            若非 A 股市场返回提示字符串；
-            若无数据返回 "{ticker} 暂未获取到最近季度财报明细。"；
-            若异常返回 "获取 {ticker} 最近季度财报明细失败: ..." 字符串。
+            If it is not the A-share market, a prompt string will be returned;
+            If no data is returned "{ticker} Details of the latest quarterly financial report are not yet available."; 
+            If exception returns "get {ticker} Recent quarterly financial report details failed: ..." string.
     """
     try:
         limit = max(1, min(int(limit), 8))
@@ -833,7 +833,7 @@ def get_financial_statements(
         market_info = financial_data['market_info']
 
         if not market_info.get('is_china'):
-            return f"{ticker} 当前仅支持中国A股财报明细查询，暂不支持 {market_info.get('market_name', '该市场')}。"
+            return f"{ticker} Currently, only China A-share financial report detailed inquiry is supported, which is not supported at the moment. {market_info.get('market_name', 'the market')}. "
 
         income_records = financial_data['income_statement']
         balance_records = financial_data['balance_sheet']
@@ -841,7 +841,7 @@ def get_financial_statements(
         periods = _merge_recent_periods(income_records, balance_records, indicator_records, limit=limit)
 
         if not periods:
-            return f"{financial_data['ticker']} 暂未获取到最近季度财报明细。"
+            return f"{financial_data['ticker']} Details of the latest quarterly financial report are not yet available."
 
         income_by_period = _index_by_period(income_records)
         balance_by_period = _index_by_period(balance_records)
@@ -852,7 +852,7 @@ def get_financial_statements(
             "",
             f"**股票类型**: {market_info['market_name']}",
             f"**数据来源**: {financial_data['data_source']}",
-            "**口径说明**: A股利润表中的营业收入、归母净利润等字段通常为年初至报告期累计值，Q2/Q3/Q4 不是单季度值，不能直接相加或直接写成单季度逐季改善；如需估算单季度，通常应使用本期累计减上期累计（Q1 可近似视为单季度）。ROE、净利率等财务指标当前展示为对应报告期指标快照，未做单季度还原。",
+            "**Caliber description**: A Fields such as operating income and net profit attributable to shareholders in the stock income statement are usually cumulative values from the beginning of the year to the reporting period. Q2/Q3/Q4 are not single-quarter values and cannot be directly added or directly written as a quarter-by-quarter improvement. If a single quarter needs to be estimated, the current period s cumulative minus the previous period s cumulative should usually be used (Q1 can be approximately regarded as a single quarter). Financial indicators such as ROE and net interest rate are currently displayed as snapshots of indicators for the corresponding reporting period and have not been restored to a single quarter.",
             "",
         ]
 
@@ -868,12 +868,12 @@ def get_financial_statements(
                     _single_quarter_metric_line(period, income_by_period, '净利润（单季度推导）', ['n_income']),
                 ]
                 if any(single_quarter_lines):
-                    result_lines.append("### 利润表（单季度推导）")
+                    result_lines.append("### Income statement (single quarter derivation)")
                     for line in single_quarter_lines:
                         if line:
                             result_lines.append(line)
 
-                result_lines.append("### 利润表（原始报告期累计/快照）")
+                result_lines.append("### Income Statement (original reporting period cumulative/snapshot)")
                 for line in [
                     _metric_line(income, '营业总收入（原始累计）', ['total_revenue', 'revenue']),
                     _metric_line(income, '营业利润（原始累计）', ['operate_profit', 'oper_profit']),
@@ -904,8 +904,8 @@ def get_financial_statements(
                 single_quarter_revenue, _ = _derive_single_quarter_value(period, income_by_period, ['total_revenue', 'revenue'])
                 single_quarter_profit, _ = _derive_single_quarter_value(period, income_by_period, ['n_income_attr_p', 'net_profit'])
                 for line in [
-                    _metric_line(indicators, '报告期净资产收益率 ROE', ['roe', 'roe_dt'], 'percent'),
-                    _metric_line(indicators, '报告期总资产收益率 ROA', ['roa'], 'percent'),
+                    _metric_line(indicators, 'Return on net assets during the reporting period ROE', ['roe', 'roe_dt'], 'percent'),
+                    _metric_line(indicators, 'Return on total assets during the reporting period ROA', ['roa'], 'percent'),
                     _metric_line(indicators, '报告期毛利率', ['grossprofit_margin', 'gross_margin'], 'percent'),
                     _metric_line(indicators, '报告期净利率', ['netprofit_margin', 'net_margin'], 'percent'),
                     _metric_line(indicators, '资产负债率', ['debt_to_assets', 'debt_to_asset'], 'percent'),
@@ -916,7 +916,7 @@ def get_financial_statements(
 
                 if single_quarter_revenue not in (None, 0) and single_quarter_profit is not None:
                     result_lines.append(
-                        f"- 单季度净利率（推导）: {single_quarter_profit / single_quarter_revenue * 100:.2f}%"
+                        f"- Single quarter net profit margin (derivation): {single_quarter_profit / single_quarter_revenue * 100:.2f}%"
                     )
 
             result_lines.append("")
@@ -924,7 +924,7 @@ def get_financial_statements(
         return "\n".join(result_lines).strip()
 
     except Exception as exc:
-        logger.error(f"❌ [财报明细工具] 执行失败: {exc}", exc_info=True)
+        logger.error(f"❌ [Financial Report Detail Tool] Execution failed: {exc}", exc_info=True)
         return f"获取 {ticker} 最近季度财报明细失败: {exc}"
 
 
@@ -932,41 +932,41 @@ def get_financial_statements(
 @register_tool(
     tool_id="get_cash_flow_statement",
     name="最近季度现金流量表",
-    description="获取A股最近几个季度的现金流量表（经营现金流、投资现金流、筹资现金流、自由现金流），并对主要现金流字段推导单季度口径",
+    description="Obtain the cash flow statements of A-shares in recent quarters (operating cash flow, investment cash flow, financing cash flow, free cash flow), and derive a single-quarter caliber for the main cash flow fields.",
     category="fundamentals",
     is_online=True,
     auto_register=True,
     capability_tags=["现金流", "现金流量表", "经营现金流", "自由现金流", "FCF", "资本支出", "CAPEX", "折旧", "A股"],
-    when_to_use="需要获取A股公司现金流量表，包括经营/投资/筹资现金流、自由现金流、资本支出等数据时使用",
+    when_to_use="Use it when you need to obtain the cash flow statement of A-share companies, including operating/investing/financing cash flow, free cash flow, capital expenditure and other data",
     tool_role_hint="primary",
     output_shape="structured_metrics",
 )
 def get_cash_flow_statement(
-    ticker: Annotated[str, "A股股票代码，支持 000001 或 000001.SZ 形式"],
-    limit: Annotated[int, "返回最近几个季度，默认 4"] = 4
+    ticker: Annotated[str, "A Stock code, supports 000001 or 000001.SZ format"],
+    limit: Annotated[int, "Returns the most recent quarters, default 4"] = 4
 ) -> str:
-    """获取最近季度现金流量表。
+    """Obtain the most recent quarterly cash flow statement.
 
     Args:
-        ticker: A股股票代码，支持 "000001" 或 "000001.SZ" 形式
-        limit: 返回最近几个季度（自动截断到 1-8），默认 4
+        ticker: A stock ticker code, support "000001" or "000001.SZ" form
+        limit: Returns the most recent quarters (automatically truncated to 1-8), default 4
 
     Returns:
-        str: Markdown 格式字符串，包含以下章节——
-            标题: "{ticker} 最近{N}个季度现金流量表"
-            股票类型: 市场名称
-            数据来源: 数据来源说明
-            口径说明: 关于现金流累计值与单季度口径的说明
-            各报告期章节（按 ## 报告期 分组），每个报告期下包含——
-                - 现金流量表（单季度推导）: 经营/投资/筹资活动现金流量净额的单季度推导值
-                - 现金流量表（原始报告期累计/快照）: 经营/投资/筹资活动现金流量净额、
-                  期初/期末现金及现金等价物余额
-                - 单季度经营现金净额/归母净利润（推导）: 比值
-                - 报告期累计经营现金净额/归母净利润: 比值
+        str: Markdown Format string containing the following sections——
+            Title: "{ticker} Recently{N}quarterly cash flow statement"
+            Stock type: Market name
+            Data source: Data source description
+            Caliber description: Explanation on cumulative cash flow value and single-quarter caliber
+            Chapters for each reporting period (by ## reporting period grouping), each reporting period contains——
+                - Cash flow statement (single quarter derivation): Single-quarter derived value of net cash flow from operating/investing/financing activities
+                - Cash Flow Statement (Original Reporting Period Cumulative/Snapshot): Net cash flow from operating/investing/financing activities,
+                  Opening/ending cash and cash equivalents balance
+                - Net operating cash in a single quarter/net profit attributable to parent company (derivation): Ratio
+                - Cumulative net operating cash/net profit attributable to parent company during the reporting period: Ratio
 
-            若非 A 股市场返回提示字符串；
-            若无数据返回 "{ticker} 暂未获取到最近季度现金流量表数据。"；
-            若异常返回 "获取 {ticker} 最近季度现金流量表失败: ..." 字符串。
+            If it is not the A-share market, a prompt string will be returned;
+            If no data is returned "{ticker} The most recent quarterly cash flow statement data is not yet available."; 
+            If exception returns "get {ticker} Most recent quarterly cash flow statement failed: ..." string.
     """
     try:
         limit = max(1, min(int(limit), 8))
@@ -975,13 +975,13 @@ def get_cash_flow_statement(
         market_info = financial_data['market_info']
 
         if not market_info.get('is_china'):
-            return f"{ticker} 当前仅支持中国A股现金流量表查询，暂不支持 {market_info.get('market_name', '该市场')}。"
+            return f"{ticker} Currently, only China A-share cash flow statement query is supported, which is not currently supported. {market_info.get('market_name', 'the market')}. "
 
         cash_flow_records = financial_data['cash_flow']
         income_by_period = _index_by_period(financial_data['income_statement'])
 
         if not cash_flow_records:
-            return f"{financial_data['ticker']} 暂未获取到最近季度现金流量表数据。"
+            return f"{financial_data['ticker']} The most recent quarterly cash flow statement data is not yet available."
 
         display_cash_flows = cash_flow_records[:limit]
 
@@ -990,7 +990,7 @@ def get_cash_flow_statement(
             "",
             f"**股票类型**: {market_info['market_name']}",
             f"**数据来源**: {financial_data['data_source']}",
-            "**口径说明**: A股现金流量表中的经营活动现金流量净额等字段通常为年初至报告期累计值，Q2/Q3/Q4 不是单季度值，不能直接相加或直接写成单季度逐季改善；如需估算单季度，通常应使用本期累计减上期累计（Q1 可近似视为单季度）。",
+            "**Caliber description**: A Fields such as net cash flow from operating activities in the stock cash flow statement are usually cumulative values from the beginning of the year to the reporting period. Q2/Q3/Q4 are not single-quarter values and cannot be directly added or directly written as quarter-by-quarter improvements in a single quarter. If a single quarter needs to be estimated, the current period s accumulation minus the previous period s accumulation should usually be used (Q1 can be approximately regarded as a single quarter).",
             "",
         ]
 
@@ -1001,22 +1001,22 @@ def get_cash_flow_statement(
             result_lines.append(f"## 报告期 {_display_period(period)}")
 
             single_quarter_cash_lines = [
-                _single_quarter_metric_line(period, cash_flow_by_period, '经营活动现金流量净额（单季度推导）', ['n_cashflow_act']),
-                _single_quarter_metric_line(period, cash_flow_by_period, '投资活动现金流量净额（单季度推导）', ['n_cashflow_inv_act']),
-                _single_quarter_metric_line(period, cash_flow_by_period, '筹资活动现金流量净额（单季度推导）', ['n_cash_flows_fnc_act', 'n_cashflow_fin_act']),
+                _single_quarter_metric_line(period, cash_flow_by_period, 'Net cash flow from operating activities (single quarter derivation)', ['n_cashflow_act']),
+                _single_quarter_metric_line(period, cash_flow_by_period, 'Net cash flow from investing activities (single quarter derivation)', ['n_cashflow_inv_act']),
+                _single_quarter_metric_line(period, cash_flow_by_period, 'Net cash flow from financing activities (single quarter derivation)', ['n_cash_flows_fnc_act', 'n_cashflow_fin_act']),
             ]
             if any(single_quarter_cash_lines):
-                result_lines.append("### 现金流量表（单季度推导）")
+                result_lines.append("### Cash flow statement (single quarter derivation)")
                 for line in single_quarter_cash_lines:
                     if line:
                         result_lines.append(line)
 
-            result_lines.append("### 现金流量表（原始报告期累计/快照）")
+            result_lines.append("### Cash Flow Statement (Original Reporting Period Cumulative/Snapshot)")
 
             for line in [
-                _metric_line(cash_flow, '经营活动现金流量净额（原始累计）', ['n_cashflow_act']),
-                _metric_line(cash_flow, '投资活动现金流量净额（原始累计）', ['n_cashflow_inv_act']),
-                _metric_line(cash_flow, '筹资活动现金流量净额（原始累计）', ['n_cash_flows_fnc_act', 'n_cashflow_fin_act']),
+                _metric_line(cash_flow, 'Net cash flow from operating activities (original cumulative)', ['n_cashflow_act']),
+                _metric_line(cash_flow, 'Net cash flow from investing activities (original cumulative)', ['n_cashflow_inv_act']),
+                _metric_line(cash_flow, 'Net cash flow from financing activities (original cumulative)', ['n_cash_flows_fnc_act', 'n_cashflow_fin_act']),
                 _metric_line(cash_flow, '期初现金及现金等价物余额', ['c_cash_equ_beg_period']),
                 _metric_line(cash_flow, '期末现金及现金等价物余额', ['c_cash_equ_end_period']),
             ]:
@@ -1045,6 +1045,6 @@ def get_cash_flow_statement(
         return "\n".join(result_lines).strip()
 
     except Exception as exc:
-        logger.error(f"❌ [现金流工具] 执行失败: {exc}", exc_info=True)
+        logger.error(f"❌ [cash flow tools] Execution failed: {exc}", exc_info=True)
         return f"获取 {ticker} 最近季度现金流量表失败: {exc}"
 

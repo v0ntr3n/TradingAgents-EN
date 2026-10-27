@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-BaoStock数据同步服务
-提供BaoStock数据的批量同步功能，集成到APScheduler调度系统
+BaoStock Data synchronization service
+Provides batch synchronization function of BaoStock data and integrates into APScheduler scheduling system
 """
 import asyncio
 import logging
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class BaoStockSyncStats:
-    """BaoStock同步统计"""
+    """BaoStock Synchronization statistics"""
     basic_info_count: int = 0
     quotes_count: int = 0
     historical_records: int = 0
@@ -32,67 +32,67 @@ class BaoStockSyncStats:
 
 
 class BaoStockSyncService:
-    """BaoStock数据同步服务"""
+    """BaoStock Data synchronization service"""
 
     def __init__(self):
         """
-        初始化同步服务
+        Initialize synchronization service
 
-        注意：数据库连接在 initialize() 方法中异步初始化
+        Note: The database connection is in initialize() Asynchronous initialization in method
         """
         try:
             self.settings = get_settings()
             self.provider = BaoStockProvider()
-            self.historical_service = None  # 延迟初始化
-            self.db = None  # 🔥 延迟初始化，在 initialize() 中设置
-            self._current_job_id = None  # 🔥 当前任务ID，用于进度跟踪和停止检查
+            self.historical_service = None  # Lazy initialization
+            self.db = None  # 🔥 Lazy initialization, in initialize() Medium settings
+            self._current_job_id = None  # 🔥 Current task ID, used for progress tracking and stop checking
 
-            logger.info("✅ BaoStock同步服务初始化成功")
+            logger.info("✅ BaoStock Synchronization service initialization successful")
         except Exception as e:
-            logger.error(f"❌ BaoStock同步服务初始化失败: {e}")
+            logger.error(f"❌ BaoStock Sync service initialization failed: {e}")
             raise
 
     async def initialize(self):
-        """异步初始化服务"""
+        """Asynchronous initialization service"""
         try:
-            # 🔥 初始化数据库连接（必须在异步上下文中）
+            # 🔥 Initialize database connection (must be in an asynchronous context)
             from app.core.database import get_mongo_db
             self.db = get_mongo_db()
 
-            # 初始化历史数据服务
+            # Initialize historical data service
             if self.historical_service is None:
                 from app.services.historical_data_service import get_historical_data_service
                 self.historical_service = await get_historical_data_service()
 
-            logger.info("✅ BaoStock同步服务异步初始化完成")
+            logger.info("✅ BaoStock The asynchronous initialization of the synchronization service is completed")
         except Exception as e:
-            logger.error(f"❌ BaoStock同步服务异步初始化失败: {e}")
+            logger.error(f"❌ BaoStock Asynchronous initialization of sync service failed: {e}")
             raise
     
     async def sync_stock_basic_info(self, batch_size: int = 100) -> BaoStockSyncStats:
         """
-        同步股票基础信息
+        Synchronize basic stock information
         
         Args:
-            batch_size: 批处理大小
+            batch_size: batch size
             
         Returns:
-            同步统计信息
+            Sync statistics
         """
         stats = BaoStockSyncStats()
         
         try:
-            logger.info("🔄 开始BaoStock股票基础信息同步...")
+            logger.info("🔄 Start BaoStock stock basic information synchronization...")
             
-            # 获取股票列表
+            # Get a list of stocks
             stock_list = await self.provider.get_stock_list()
             if not stock_list:
-                logger.warning("⚠️ BaoStock股票列表为空")
+                logger.warning("⚠️ BaoStock Stock list is empty")
                 return stats
             
-            logger.info(f"📋 获取到{len(stock_list)}只股票，开始批量同步...")
+            logger.info(f"📋 Get{len(stock_list)}Only stocks, start batch synchronization...")
             
-            # 批量处理
+            # Batch processing
             for i in range(0, len(stock_list), batch_size):
                 batch = stock_list[i:i + batch_size]
                 batch_stats = await self._sync_basic_info_batch(batch)
@@ -100,21 +100,21 @@ class BaoStockSyncService:
                 stats.basic_info_count += batch_stats.basic_info_count
                 stats.errors.extend(batch_stats.errors)
                 
-                logger.info(f"📊 批次进度: {i + len(batch)}/{len(stock_list)}, "
-                          f"成功: {batch_stats.basic_info_count}, "
-                          f"错误: {len(batch_stats.errors)}")
+                logger.info(f"📊 batch progress: {i + len(batch)}/{len(stock_list)}, "
+                          f"success: {batch_stats.basic_info_count}, "
+                          f"Error: {len(batch_stats.errors)}")
                 
-                # 避免API限制
+                # Avoid API restrictions
                 await asyncio.sleep(0.1)
             
-            logger.info(f"✅ BaoStock基础信息同步完成: {stats.basic_info_count}条记录")
+            logger.info(f"✅ BaoStock Basic information synchronization completed: {stats.basic_info_count}records")
             
-            # 🔥 更新任务状态为已完成
+            # 🔥 Update task status to Completed
             job_id = getattr(self, '_current_job_id', None) or "baostock_basic_info_sync"
             if job_id:
                 try:
                     from app.services.scheduler_service import mark_job_completed
-                    # 转换 BaoStockSyncStats 为字典格式
+                    # Convert BaoStockSyncStats to dictionary format
                     stats_dict = {
                         "total_processed": stats.basic_info_count,
                         "success_count": stats.basic_info_count,
@@ -123,111 +123,111 @@ class BaoStockSyncService:
                     }
                     await mark_job_completed(job_id, stats_dict)
                 except Exception as e:
-                    logger.warning(f"⚠️ 更新任务完成状态失败: {e}")
+                    logger.warning(f"⚠️ Failed to update task completion status: {e}")
             
             return stats
             
         except Exception as e:
-            logger.error(f"❌ BaoStock基础信息同步失败: {e}")
+            logger.error(f"❌ BaoStock Basic information synchronization failed: {e}")
             stats.errors.append(str(e))
             
-            # 🔥 更新任务状态为失败
+            # 🔥 Update task status is failed
             job_id = getattr(self, '_current_job_id', None) or "baostock_basic_info_sync"
             if job_id:
                 try:
                     from app.services.scheduler_service import mark_job_completed
                     await mark_job_completed(job_id, None, str(e))
                 except Exception as update_error:
-                    logger.warning(f"⚠️ 更新任务失败状态时出错: {update_error}")
+                    logger.warning(f"⚠️ An error occurred while updating task failure status: {update_error}")
             
             return stats
     
     async def _sync_basic_info_batch(self, stock_batch: List[Dict[str, Any]]) -> BaoStockSyncStats:
-        """同步基础信息批次（包含估值数据和总市值）"""
+        """Synchronize basic information batches (including valuation data and total market capitalization)"""
         stats = BaoStockSyncStats()
 
         for stock in stock_batch:
             try:
                 code = stock['code']
 
-                # 1. 获取基础信息
+                # 1. Get basic information
                 basic_info = await self.provider.get_stock_basic_info(code)
 
                 if not basic_info:
-                    stats.errors.append(f"获取{code}基础信息失败")
+                    stats.errors.append(f"get{code}Basic information failed")
                     continue
 
-                # 2. 获取估值数据（PE、PB、PS、PCF等）
+                # 2. Get valuation data (PE, PB, PS, PCF, etc.)
                 try:
                     valuation_data = await self.provider.get_valuation_data(code)
                     if valuation_data:
-                        # 合并估值数据到基础信息
-                        basic_info['pe'] = valuation_data.get('pe_ttm')  # 市盈率（TTM）
-                        basic_info['pb'] = valuation_data.get('pb_mrq')  # 市净率（MRQ）
+                        # Merge valuation data into basic information
+                        basic_info['pe'] = valuation_data.get('pe_ttm')  # Price to Earnings Ratio (TTM)
+                        basic_info['pb'] = valuation_data.get('pb_mrq')  # Price to Book Ratio (MRQ)
                         basic_info['pe_ttm'] = valuation_data.get('pe_ttm')
                         basic_info['pb_mrq'] = valuation_data.get('pb_mrq')
-                        basic_info['ps'] = valuation_data.get('ps_ttm')  # 市销率
-                        basic_info['pcf'] = valuation_data.get('pcf_ttm')  # 市现率
-                        basic_info['close'] = valuation_data.get('close')  # 最新价格
+                        basic_info['ps'] = valuation_data.get('ps_ttm')  # price to sales ratio
+                        basic_info['pcf'] = valuation_data.get('pcf_ttm')  # price to cash ratio
+                        basic_info['close'] = valuation_data.get('close')  # latest price
 
-                        # 3. 计算总市值（需要获取总股本）
+                        # 3. Calculate total market capitalization (need to obtain total share capital)
                         close_price = valuation_data.get('close')
                         if close_price and close_price > 0:
-                            # 尝试从财务数据获取总股本
+                            # Try to get total share capital from financial data
                             total_shares_wan = await self._get_total_shares(code)
                             if total_shares_wan and total_shares_wan > 0:
-                                # 总市值（亿元）= 股价（元）× 总股本（万股）/ 10000
+                                # Total market value (100 million yuan)= Stock price (yuan)× Total share capital (10,000 shares)/ 10000
                                 total_mv_yi = (close_price * total_shares_wan) / 10000
                                 basic_info['total_mv'] = total_mv_yi
-                                logger.debug(f"✅ {code} 总市值计算: {close_price}元 × {total_shares_wan}万股 / 10000 = {total_mv_yi:.2f}亿元")
+                                logger.debug(f"✅ {code} Total market capitalization calculation: {close_price}Yuan × {total_shares_wan}10,000 shares / 10000 = {total_mv_yi:.2f}billion")
                             else:
-                                logger.debug(f"⚠️ {code} 无法获取总股本，跳过市值计算")
+                                logger.debug(f"⚠️ {code} Unable to obtain total share capital, skip market capitalization calculation")
 
-                        logger.debug(f"✅ {code} 估值数据: PE={basic_info.get('pe')}, PB={basic_info.get('pb')}, 市值={basic_info.get('total_mv')}")
+                        logger.debug(f"✅ {code} Valuation data: PE={basic_info.get('pe')}, PB={basic_info.get('pb')}, Market value={basic_info.get('total_mv')}")
                 except Exception as e:
-                    logger.warning(f"⚠️ 获取{code}估值数据失败: {e}")
-                    # 估值数据获取失败不影响基础信息同步
+                    logger.warning(f"⚠️ get{code}Valuation data failed: {e}")
+                    # Failure to obtain valuation data does not affect basic information synchronization
 
-                # 4. 更新数据库
+                # 4. Update database
                 await self._update_stock_basic_info(basic_info)
                 stats.basic_info_count += 1
 
             except Exception as e:
-                stats.errors.append(f"处理{stock.get('code', 'unknown')}失败: {e}")
+                stats.errors.append(f"Process{stock.get('code', 'unknown')}failed: {e}")
 
         return stats
     
     async def _get_total_shares(self, code: str) -> Optional[float]:
         """
-        获取股票总股本（万股）
+        Get the total share capital of stocks (10,000 shares)
 
         Args:
-            code: 股票代码
+            code: Stock code
 
         Returns:
-            总股本（万股），如果获取失败返回 None
+            Total share capital (10,000 shares), returned if acquisition fails None
         """
         try:
-            # 尝试从财务数据获取总股本
+            # Try to get total share capital from financial data
             financial_data = await self.provider.get_financial_data(code)
 
             if financial_data:
-                # BaoStock 财务数据中的总股本字段
-                # 盈利能力数据中有 totalShare（总股本，单位：万股）
+                # BaoStock Total Equity Field in Financial Data
+                # Profitability data includes totalShare (total share capital, unit: 10,000 shares)
                 profit_data = financial_data.get('profit_data', {})
                 if profit_data:
                     total_shares = profit_data.get('totalShare')
                     if total_shares:
                         return self._safe_float(total_shares)
 
-                # 成长能力数据中也可能有总股本
+                # Growth capacity data may also include total equity
                 growth_data = financial_data.get('growth_data', {})
                 if growth_data:
                     total_shares = growth_data.get('totalShare')
                     if total_shares:
                         return self._safe_float(total_shares)
 
-            # 如果财务数据中没有，尝试从数据库中已有的数据获取
+            # If there is no financial data, try to get it from the data already in the database
             collection = self.db.stock_financial_data
             doc = await collection.find_one(
                 {"code": code},
@@ -243,11 +243,11 @@ class BaoStockSyncService:
             return None
 
         except Exception as e:
-            logger.debug(f"获取{code}总股本失败: {e}")
+            logger.debug(f"get{code}total equity failed: {e}")
             return None
 
     def _safe_float(self, value) -> Optional[float]:
-        """安全转换为浮点数"""
+        """safe conversion to floating point"""
         try:
             if value is None or value == '' or value == 'None':
                 return None
@@ -256,19 +256,19 @@ class BaoStockSyncService:
             return None
 
     async def _update_stock_basic_info(self, basic_info: Dict[str, Any]):
-        """更新股票基础信息到数据库"""
+        """Update basic stock information to the database"""
         try:
             collection = self.db.stock_basic_info
 
-            # 确保 symbol 字段存在（标准化字段）
+            # Make sure the symbol field exists (normalized field)
             if "symbol" not in basic_info and "code" in basic_info:
                 basic_info["symbol"] = basic_info["code"]
 
-            # 🔥 确保 source 字段存在
+            # 🔥 Make sure the source field exists
             if "source" not in basic_info:
                 basic_info["source"] = "baostock"
 
-            # 🔥 使用 (code, source) 联合查询条件
+            # 🔥 Use (code, source) Union query conditions
             await collection.update_one(
                 {"code": basic_info["code"], "source": "baostock"},
                 {"$set": basic_info},
@@ -276,39 +276,39 @@ class BaoStockSyncService:
             )
 
         except Exception as e:
-            logger.error(f"❌ 更新基础信息到数据库失败: {e}")
+            logger.error(f"❌ Failed to update basic information to database: {e}")
             raise
     
     async def sync_daily_quotes(self, batch_size: int = 50) -> BaoStockSyncStats:
         """
-        同步日K线数据（最新交易日）
+        Synchronized daily K-line data (latest trading day)
 
-        注意：BaoStock不支持实时行情，此方法获取最新交易日的日K线数据
+        Note: BaoStock does not support real-time market conditions. This method obtains the daily K-line data of the latest trading day.
 
         Args:
-            batch_size: 批处理大小
+            batch_size: batch size
 
         Returns:
-            同步统计信息
+            Sync statistics
         """
         stats = BaoStockSyncStats()
 
         try:
-            logger.info("🔄 开始BaoStock日K线同步（最新交易日）...")
-            logger.info("ℹ️ 注意：BaoStock不支持实时行情，此任务同步最新交易日的日K线数据")
+            logger.info("🔄 Start BaoStock daily K-line synchronization (latest trading day)...")
+            logger.info("ℹ️ Note: BaoStock does not support real-time market conditions. This task synchronizes the daily K-line data of the latest trading day.")
 
-            # 从数据库获取股票列表
+            # Get stock list from database
             collection = self.db.stock_basic_info
             cursor = collection.find({"source": "baostock"}, {"code": 1})
             stock_codes = [doc["code"] async for doc in cursor]
 
             if not stock_codes:
-                logger.warning("⚠️ 数据库中没有BaoStock股票数据")
+                logger.warning("⚠️ There is no BaoStock stock data in the database")
                 return stats
 
-            logger.info(f"📈 开始同步{len(stock_codes)}只股票的日K线数据...")
+            logger.info(f"📈 Start syncing{len(stock_codes)}Daily K-line data of only stocks...")
 
-            # 批量处理
+            # Batch processing
             for i in range(0, len(stock_codes), batch_size):
                 batch = stock_codes[i:i + batch_size]
                 batch_stats = await self._sync_quotes_batch(batch)
@@ -316,21 +316,21 @@ class BaoStockSyncService:
                 stats.quotes_count += batch_stats.quotes_count
                 stats.errors.extend(batch_stats.errors)
 
-                logger.info(f"📊 批次进度: {i + len(batch)}/{len(stock_codes)}, "
-                          f"成功: {batch_stats.quotes_count}, "
-                          f"错误: {len(batch_stats.errors)}")
+                logger.info(f"📊 batch progress: {i + len(batch)}/{len(stock_codes)}, "
+                          f"success: {batch_stats.quotes_count}, "
+                          f"Error: {len(batch_stats.errors)}")
 
-                # 避免API限制
+                # Avoid API restrictions
                 await asyncio.sleep(0.2)
 
-            logger.info(f"✅ BaoStock日K线同步完成: {stats.quotes_count}条记录")
+            logger.info(f"✅ BaoStock Daily K-line synchronization completed: {stats.quotes_count}records")
             
-            # 🔥 更新任务状态为已完成
+            # 🔥 Update task status to Completed
             job_id = getattr(self, '_current_job_id', None) or "baostock_daily_quotes_sync"
             if job_id:
                 try:
                     from app.services.scheduler_service import mark_job_completed
-                    # 转换 BaoStockSyncStats 为字典格式
+                    # Convert BaoStockSyncStats to dictionary format
                     stats_dict = {
                         "total_processed": len(stock_codes),
                         "success_count": stats.quotes_count,
@@ -339,57 +339,57 @@ class BaoStockSyncService:
                     }
                     await mark_job_completed(job_id, stats_dict)
                 except Exception as e:
-                    logger.warning(f"⚠️ 更新任务完成状态失败: {e}")
+                    logger.warning(f"⚠️ Failed to update task completion status: {e}")
             
             return stats
 
         except Exception as e:
-            logger.error(f"❌ BaoStock日K线同步失败: {e}")
+            logger.error(f"❌ BaoStock Daily K line synchronization failed: {e}")
             stats.errors.append(str(e))
             
-            # 🔥 更新任务状态为失败
+            # 🔥 Update task status is failed
             job_id = getattr(self, '_current_job_id', None) or "baostock_daily_quotes_sync"
             if job_id:
                 try:
                     from app.services.scheduler_service import mark_job_completed
                     await mark_job_completed(job_id, None, str(e))
                 except Exception as update_error:
-                    logger.warning(f"⚠️ 更新任务失败状态时出错: {update_error}")
+                    logger.warning(f"⚠️ An error occurred while updating task failure status: {update_error}")
             
             return stats
     
     async def _sync_quotes_batch(self, code_batch: List[str]) -> BaoStockSyncStats:
-        """同步日K线批次"""
+        """Synchronous daily K-line batches"""
         stats = BaoStockSyncStats()
 
         for code in code_batch:
             try:
-                # 注意：get_stock_quotes 实际返回的是最新日K线数据，不是实时行情
+                # Note: get_stock_quotes actually returns the latest daily K-line data, not real-time quotes.
                 quotes = await self.provider.get_stock_quotes(code)
 
                 if quotes:
-                    # 更新数据库
+                    # Update database
                     await self._update_stock_quotes(quotes)
                     stats.quotes_count += 1
                 else:
-                    stats.errors.append(f"获取{code}日K线失败")
+                    stats.errors.append(f"get{code}Daily K line failed")
 
             except Exception as e:
-                stats.errors.append(f"处理{code}日K线失败: {e}")
+                stats.errors.append(f"Process{code}Daily K line failed: {e}")
 
         return stats
 
     async def _update_stock_quotes(self, quotes: Dict[str, Any]):
-        """更新股票日K线到数据库"""
+        """Update the stock daily K-line to the database"""
         try:
             collection = self.db.market_quotes
 
-            # 确保 symbol 字段存在
+            # Make sure the symbol field exists
             code = quotes.get("code", "")
             if code and "symbol" not in quotes:
                 quotes["symbol"] = code
 
-            # 使用upsert更新或插入
+            # Update or insert using upsert
             await collection.update_one(
                 {"code": code},
                 {"$set": quotes},
@@ -397,76 +397,76 @@ class BaoStockSyncService:
             )
 
         except Exception as e:
-            logger.error(f"❌ 更新日K线到数据库失败: {e}")
+            logger.error(f"❌ Failed to update daily K-line to database: {e}")
             raise
     
     async def sync_historical_data(self, days: int = 30, batch_size: int = 20, period: str = "daily", incremental: bool = True, symbols: List[str] = None) -> BaoStockSyncStats:
         """
-        同步历史数据
+        Synchronize historical data
 
         Args:
-            days: 同步天数（如果>=3650则同步全历史，如果<0则使用增量模式）
-            batch_size: 批处理大小
-            period: 数据周期 (daily/weekly/monthly)
-            incremental: 是否增量同步（每只股票从自己的最后日期开始）
+            days: Number of days to sync (if>=3650 Then synchronize the entire history, if<0 then use incremental mode)
+            batch_size: batch size
+            period: data period (daily/weekly/monthly)
+            incremental: Whether to sync incrementally (each stock starts from its own last date)
 
         Returns:
-            同步统计信息
+            Sync statistics
         """
         stats = BaoStockSyncStats()
 
         try:
-            # 🔥 在线程池的线程中执行时，需要重新初始化数据库连接
+            # 🔥 When executing in a thread in the thread pool, the database connection needs to be reinitialized.
             from app.core.database import bind_loop_safe_mongo_db
             self.db = bind_loop_safe_mongo_db(self)
             
-            period_name = {"daily": "日线", "weekly": "周线", "monthly": "月线"}.get(period, "日线")
+            period_name = {"daily": "daily line", "weekly": "perimeter", "monthly": "monthly line"}.get(period, "daily line")
 
-            # 计算日期范围
+            # Calculate date range
             end_date = datetime.now().strftime('%Y-%m-%d')
 
-            # 确定同步模式
+            # Determine synchronization mode
             use_incremental = incremental or days < 0
 
-            # 🔥 增量同步时间检查：如果增量同步且结束日期是今天，且当前时间在18:00之前，则跳过同步
+            # 🔥 Incremental synchronization time check: If incremental synchronization and the end date is today, and the current time is 18:00 before, skip synchronization
             if use_incremental and end_date == datetime.now().strftime('%Y-%m-%d'):
                 current_time = datetime.now()
                 cutoff_time = current_time.replace(hour=18, minute=0, second=0, microsecond=0)
                 
                 if current_time < cutoff_time:
                     skip_message = (
-                        f"⏰ 增量同步跳过：当前时间 {current_time.strftime('%H:%M:%S')} 早于 18:00，"
-                        f"数据源可能还没有当天的数据。建议在 18:00 之后执行增量同步。"
+                        f"⏰ Incremental sync skip: current time {current_time.strftime('%H:%M:%S')} earlier than 18:00, "
+                        f"The data source may not yet have data for the current day. It is recommended to 18:00 Then perform incremental synchronization."
                     )
                     logger.info(skip_message)
                     stats.errors.append(skip_message)
                     return stats
 
-            # 从数据库获取股票列表
+            # Get stock list from database
             collection = self.db.stock_basic_info
-            logger.info(f"🔍 [BaoStock] 查询数据库中的股票列表 (source=baostock)...")
+            logger.info(f"🔍 [BaoStock] Query the stock list in the database (source=baostock)...")
             try:
                 cursor = collection.find({"source": "baostock"}, {"code": 1})
                 stock_codes = [doc["code"] async for doc in cursor]
-                logger.info(f"📊 [BaoStock] 查询结果: 找到 {len(stock_codes)} 只股票")
+                logger.info(f"📊 [BaoStock] Query results: found {len(stock_codes)} only stocks")
             except RuntimeError as loop_error:
-                # 🔥 如果发生事件循环冲突错误，重新创建数据库连接
+                # 🔥 If an event loop conflict error occurs, re-create the database connection
                 if "attached to a different loop" in str(loop_error) or "different loop" in str(loop_error):
-                    logger.warning(f"⚠️ [BaoStock] 检测到事件循环冲突，重新绑定数据库代理: {loop_error}")
+                    logger.warning(f"⚠️ [BaoStock] Event loop conflict detected, rebind database agent: {loop_error}")
                     self.db = bind_loop_safe_mongo_db(self)
-                    # 重试查询
+                    # Retry query
                     collection = self.db.stock_basic_info
                     cursor = collection.find({"source": "baostock"}, {"code": 1})
                     stock_codes = [doc["code"] async for doc in cursor]
-                    logger.info(f"📊 [BaoStock] 查询结果: 找到 {len(stock_codes)} 只股票（已重新创建连接）")
+                    logger.info(f"📊 [BaoStock] Query results: found {len(stock_codes)} Stock only (connection re-created)")
                 else:
                     raise
 
             if not stock_codes:
-                error_msg = "数据库中没有BaoStock股票数据，请先执行 BaoStock 基础信息同步任务"
+                error_msg = "There is no BaoStock stock data in the database. Please perform the BaoStock basic information synchronization task first."
                 logger.error(f"❌ {error_msg} (source=baostock)")
                 
-                # 🔥 标记任务为失败
+                # 🔥 Mark task as failed
                 job_id = getattr(self, '_current_job_id', None) or "baostock_historical_sync"
                 if job_id:
                     try:
@@ -476,78 +476,78 @@ class BaoStockSyncService:
                             error_message=error_msg
                         )
                     except Exception as e:
-                        logger.warning(f"⚠️ 更新任务失败状态失败: {e}")
+                        logger.warning(f"⚠️ Update task failed status failed: {e}")
                 
-                # 🔥 抛出异常，确保任务被标记为失败
+                # 🔥 Throw an exception to ensure the task is marked as failed
                 raise ValueError(error_msg)
 
             if use_incremental:
-                logger.info(f"🔄 开始BaoStock{period_name}历史数据同步 (增量模式: 各股票从最后日期到{end_date})...")
+                logger.info(f"🔄 start BaoStock{period_name}Historical data synchronization (incremental mode: Each stock from the last date to{end_date})...")
             elif days >= 3650:
-                logger.info(f"🔄 开始BaoStock{period_name}历史数据同步 (全历史: 1990-01-01到{end_date})...")
+                logger.info(f"🔄 start BaoStock{period_name}Historical data synchronization (whole history: 1990-01-01 Arrive{end_date})...")
             else:
-                logger.info(f"🔄 开始BaoStock{period_name}历史数据同步 (最近{days}天到{end_date})...")
+                logger.info(f"🔄 start BaoStock{period_name}Historical data synchronization (Recently{days}The day has come{end_date})...")
 
-            logger.info(f"📊 开始同步{len(stock_codes)}只股票的历史数据...")
+            logger.info(f"📊 Start syncing{len(stock_codes)}Historical data for only stocks...")
 
-            # 批量处理
+            # Batch processing
             job_id = getattr(self, '_current_job_id', None) or "baostock_historical_sync"
             total_batches = (len(stock_codes) + batch_size - 1) // batch_size
-            processed_count = 0  # 🔥 已处理数量（每个股票处理完立即加1）
+            processed_count = 0  # 🔥 Processed quantity (add 1 immediately after each stock is processed)
             
-            was_cancelled = False  # 🔥 标记是否因取消而停止
+            was_cancelled = False  # 🔥 Whether marking is stopped due to cancellation
             
             for i in range(0, len(stock_codes), batch_size):
-                # 🔥 检查任务是否应该停止
+                # 🔥 Check if the task should be stopped
                 if job_id and await self._should_stop(job_id):
-                    logger.warning(f"⚠️ 任务 {job_id} 收到停止信号，正在退出...")
+                    logger.warning(f"⚠️ Task {job_id} Stop signal received, exiting...")
                     stats.stopped = True
                     was_cancelled = True
                     break
 
                 batch = stock_codes[i:i + batch_size]
                 batch_num = i // batch_size + 1
-                logger.info(f"🔄 [BaoStock] 处理批次 {batch_num}/{total_batches}: {len(batch)} 只股票")
+                logger.info(f"🔄 [BaoStock] process batch {batch_num}/{total_batches}: {len(batch)} only stocks")
                 
-                # 🔥 传递 processed_count 和 total_stocks，让批次处理函数可以实时更新进度
+                # 🔥 Pass processed_count and total_stocks so that the batch processing function can update the progress in real time
                 batch_stats_dict = await self._sync_historical_batch(
                     batch, days, end_date, period, use_incremental, job_id,
-                    processed_count=processed_count,  # 🔥 传递当前已处理数量
-                    total_stocks=len(stock_codes)  # 🔥 传递总数量
+                    processed_count=processed_count,  # 🔥 Pass the current processed quantity
+                    total_stocks=len(stock_codes)  # 🔥 total quantity delivered
                 )
                 
-                # 🔥 更新统计信息
+                # 🔥 Update statistics
                 batch_records = batch_stats_dict.get("historical_records", 0)
                 batch_errors = batch_stats_dict.get("errors", [])
                 stats.historical_records += batch_records
                 stats.errors.extend(batch_errors)
                 
-                # 🔥 更新已处理数量（批次处理函数会返回实际处理的股票数量）
+                # 🔥 Update the processed quantity (the batch processing function returns the actual number of stocks processed)
                 processed_count = batch_stats_dict.get("processed_count", processed_count + len(batch))
                 
-                # 🔥 检查是否被停止
+                # 🔥 Check if stopped
                 if batch_stats_dict.get("stopped", False):
                     stats.stopped = True
                     break
                 
-                logger.info(f"📊 [BaoStock] 批次进度: {processed_count}/{len(stock_codes)}, "
-                          f"记录: {batch_records}, "
-                          f"错误: {len(batch_errors)}")
+                logger.info(f"📊 [BaoStock] batch progress: {processed_count}/{len(stock_codes)}, "
+                          f"record: {batch_records}, "
+                          f"Error: {len(batch_errors)}")
                 
-                # 避免API限制
+                # Avoid API restrictions
                 await asyncio.sleep(0.5)
             
-            # 🔥 如果任务被取消，更新状态为取消
+            # 🔥 If the task is canceled, the update status is canceled
             if was_cancelled:
-                logger.warning(f"🛑 任务 {job_id} 已被取消，更新状态...")
+                logger.warning(f"🛑 Task {job_id} Canceled, update status...")
                 try:
                     from app.services.scheduler_service import update_job_progress
                     from app.core.database import get_mongo_db_sync, get_redis_sync_client
                     from app.core.redis_client import RedisKeys
                     
-                    # 更新MongoDB状态
+                    # Update MongoDB status
                     db = get_mongo_db_sync()
-                    # 🔥 先查找最新的running记录，然后使用_id更新
+                    # 🔥 First find the latest running record, and then update it using _id
                     from pymongo import DESCENDING
                     latest_execution = db.scheduler_executions.find_one(
                         {"job_id": job_id, "status": "running"},
@@ -560,7 +560,7 @@ class BaoStockSyncService:
                                 "$set": {
                                     "status": "cancelled",
                                     "updated_at": datetime.utcnow(),
-                                    "message": f"任务已取消（已处理 {processed_count}/{len(stock_codes)}）",
+                                    "message": f"Task canceled (processed {processed_count}/{len(stock_codes)}) ",
                                     "progress": int((processed_count / len(stock_codes)) * 100) if len(stock_codes) > 0 else 0,
                                     "processed_items": processed_count,
                                     "total_items": len(stock_codes)
@@ -568,7 +568,7 @@ class BaoStockSyncService:
                             }
                         )
                     else:
-                        # 如果没有找到running记录，尝试查找并更新任何状态的记录
+                        # If no running record is found, try to find and update records with any status
                         any_execution = db.scheduler_executions.find_one(
                             {"job_id": job_id},
                             sort=[("timestamp", DESCENDING)]
@@ -580,7 +580,7 @@ class BaoStockSyncService:
                                     "$set": {
                                         "status": "cancelled",
                                         "updated_at": datetime.utcnow(),
-                                        "message": f"任务已取消（已处理 {processed_count}/{len(stock_codes)}）",
+                                        "message": f"Task canceled (processed {processed_count}/{len(stock_codes)}) ",
                                         "progress": int((processed_count / len(stock_codes)) * 100) if len(stock_codes) > 0 else 0,
                                         "processed_items": processed_count,
                                         "total_items": len(stock_codes)
@@ -588,13 +588,13 @@ class BaoStockSyncService:
                                 }
                             )
                     
-                    # 🔥 更新Redis进度缓存，将状态设置为"cancelled"，保留当前进度信息
+                    # 🔥 Update the Redis progress cache and set the status to"cancelled", Keep current progress information
                     redis_client = get_redis_sync_client()
                     if redis_client:
                         redis_key = RedisKeys.SCHEDULER_JOB_PROGRESS.format(job_id=job_id)
                         import json
                         
-                        # 🔥 读取当前的进度数据（如果存在）
+                        # 🔥 Read the current progress data (if it exists)
                         existing_progress_str = redis_client.get(redis_key)
                         if existing_progress_str:
                             try:
@@ -604,68 +604,68 @@ class BaoStockSyncService:
                         else:
                             progress_data = {}
                         
-                        # 🔥 更新状态为"cancelled"，并保留当前进度信息
+                        # 🔥 The update status is"cancelled", and retain current progress information
                         progress_percent = int((processed_count / len(stock_codes)) * 100) if len(stock_codes) > 0 else 0
                         progress_data.update({
                             "status": "cancelled",
                             "progress": progress_percent,
-                            "message": f"任务已取消（已处理 {processed_count}/{len(stock_codes)}）",
+                            "message": f"Task canceled (processed {processed_count}/{len(stock_codes)}) ",
                             "processed_items": processed_count,
                             "total_items": len(stock_codes),
                             "updated_at": datetime.utcnow().isoformat()
                         })
                         
-                        # 🔥 保存到Redis
+                        # 🔥 save to Redis
                         redis_client.setex(
                             redis_key,
-                            3600,  # 1小时TTL
+                            3600,  # 1 hours TTL
                             json.dumps(progress_data, ensure_ascii=False, default=str)
                         )
-                        logger.info(f"✅ 已更新Redis缓存，任务状态为cancelled: job_id={job_id}, progress={progress_percent}%")
+                        logger.info(f"✅ The Redis cache has been updated and the task status is cancelled: job_id={job_id}, progress={progress_percent}%")
                     
-                    logger.info(f"✅ 任务 {job_id} 状态已更新为取消")
+                    logger.info(f"✅ Task {job_id} Status updated to Canceled")
                 except Exception as cancel_error:
-                    logger.error(f"❌ 更新任务取消状态失败: {cancel_error}")
+                    logger.error(f"❌ Failed to update task cancellation status: {cancel_error}")
                 
                 return stats
             
-            logger.info(f"✅ BaoStock历史数据同步完成: {stats.historical_records}条记录")
+            logger.info(f"✅ BaoStock Historical data synchronization completed: {stats.historical_records}records")
             
-            # 🔥 更新任务状态为已完成
+            # 🔥 Update task status to Completed
             job_id = getattr(self, '_current_job_id', None) or "baostock_historical_sync"
             if job_id:
                 try:
                     from app.services.scheduler_service import mark_job_completed
-                    # 转换 BaoStockSyncStats 为字典格式
+                    # Convert BaoStockSyncStats to dictionary format
                     stats_dict = {
-                        "total_processed": len(stats.errors) + stats.historical_records,  # 估算总数
+                        "total_processed": len(stats.errors) + stats.historical_records,  # Estimated total
                         "success_count": stats.historical_records,
                         "error_count": len(stats.errors),
                         "errors": [{"error": e} if isinstance(e, str) else e for e in stats.errors]
                     }
                     await mark_job_completed(job_id, stats_dict)
                 except Exception as e:
-                    logger.warning(f"⚠️ 更新任务完成状态失败: {e}")
+                    logger.warning(f"⚠️ Failed to update task completion status: {e}")
             
             return stats
             
         except Exception as e:
-            # 🔥 检查是否是任务取消异常
+            # 🔥 Check whether it is a task cancellation exception
             from app.services.scheduler_service import TaskCancelledException
-            if isinstance(e, TaskCancelledException) or "取消" in str(e) or "cancelled" in str(e).lower():
-                logger.warning(f"🛑 BaoStock历史数据同步任务已被取消: {e}")
+            if isinstance(e, TaskCancelledException) or "Cancel" in str(e) or "cancelled" in str(e).lower():
+                logger.warning(f"🛑 BaoStock The historical data synchronization task has been cancelled.: {e}")
                 stats.stopped = True
                 
-                # 更新状态为取消
+                # Update status is canceled
                 job_id = getattr(self, '_current_job_id', None) or "baostock_historical_sync"
                 if job_id:
                     try:
                         from app.core.database import get_mongo_db_sync, get_redis_sync_client
                         from app.core.redis_client import RedisKeys
                         
-                        # 更新MongoDB状态
+                        # Update MongoDB status
                         db = get_mongo_db_sync()
-                        # 🔥 获取当前进度信息（如果存在）
+                        # 🔥 Get current progress information (if it exists)
                         from pymongo import DESCENDING
                         current_execution = db.scheduler_executions.find_one(
                             {"job_id": job_id, "status": "running"},
@@ -674,7 +674,7 @@ class BaoStockSyncService:
                         processed_count = current_execution.get("processed_items", 0) if current_execution else 0
                         total_items = current_execution.get("total_items", 0) if current_execution else 0
                         
-                        # 🔥 使用找到的记录_id来更新
+                        # 🔥 Update using the found record_id
                         if current_execution:
                             db.scheduler_executions.update_one(
                                 {"_id": current_execution["_id"]},
@@ -682,7 +682,7 @@ class BaoStockSyncService:
                                     "$set": {
                                         "status": "cancelled",
                                         "updated_at": datetime.utcnow(),
-                                        "message": f"任务已取消: {str(e)}",
+                                        "message": f"Task canceled: {str(e)}",
                                         "progress": int((processed_count / total_items) * 100) if total_items > 0 else 0,
                                         "processed_items": processed_count,
                                         "total_items": total_items
@@ -690,7 +690,7 @@ class BaoStockSyncService:
                                 }
                             )
                         else:
-                            # 如果没有找到running记录，尝试查找并更新任何状态的记录
+                            # If no running record is found, try to find and update records with any status
                             any_execution = db.scheduler_executions.find_one(
                                 {"job_id": job_id},
                                 sort=[("timestamp", DESCENDING)]
@@ -702,7 +702,7 @@ class BaoStockSyncService:
                                         "$set": {
                                             "status": "cancelled",
                                             "updated_at": datetime.utcnow(),
-                                            "message": f"任务已取消: {str(e)}",
+                                            "message": f"Task canceled: {str(e)}",
                                             "progress": int((processed_count / total_items) * 100) if total_items > 0 else 0,
                                             "processed_items": processed_count,
                                             "total_items": total_items
@@ -710,7 +710,7 @@ class BaoStockSyncService:
                                     }
                                 )
                         
-                        # 🔥 更新Redis进度缓存
+                        # 🔥 Update Redis progress cache
                         redis_client = get_redis_sync_client()
                         if redis_client:
                             redis_key = RedisKeys.SCHEDULER_JOB_PROGRESS.format(job_id=job_id)
@@ -720,7 +720,7 @@ class BaoStockSyncService:
                             progress_data = {
                                 "status": "cancelled",
                                 "progress": progress_percent,
-                                "message": f"任务已取消: {str(e)}",
+                                "message": f"Task canceled: {str(e)}",
                                 "processed_items": processed_count,
                                 "total_items": total_items,
                                 "updated_at": datetime.utcnow().isoformat()
@@ -728,29 +728,29 @@ class BaoStockSyncService:
                             
                             redis_client.setex(
                                 redis_key,
-                                3600,  # 1小时TTL
+                                3600,  # 1 hours TTL
                                 json.dumps(progress_data, ensure_ascii=False, default=str)
                             )
-                            logger.info(f"✅ 已更新Redis缓存，任务状态为cancelled: job_id={job_id}, progress={progress_percent}%")
+                            logger.info(f"✅ The Redis cache has been updated and the task status is cancelled: job_id={job_id}, progress={progress_percent}%")
                         
-                        logger.info(f"✅ 任务 {job_id} 状态已更新为取消")
+                        logger.info(f"✅ Task {job_id} Status updated to Canceled")
                     except Exception as cancel_error:
-                        logger.error(f"❌ 更新任务取消状态失败: {cancel_error}")
+                        logger.error(f"❌ Failed to update task cancellation status: {cancel_error}")
                 
                 return stats
             
-            # 其他异常才记录为错误
-            logger.error(f"❌ BaoStock历史数据同步失败: {e}")
+            # Other exceptions are recorded as errors
+            logger.error(f"❌ BaoStock Historical data synchronization failed: {e}")
             stats.errors.append(str(e))
             
-            # 🔥 更新任务状态为失败
+            # 🔥 Update task status is failed
             job_id = getattr(self, '_current_job_id', None) or "baostock_historical_sync"
             if job_id:
                 try:
                     from app.services.scheduler_service import mark_job_completed
                     await mark_job_completed(job_id, None, str(e))
                 except Exception as update_error:
-                    logger.warning(f"⚠️ 更新任务失败状态时出错: {update_error}")
+                    logger.warning(f"⚠️ An error occurred while updating task failure status: {update_error}")
             
             return stats
     
@@ -762,97 +762,97 @@ class BaoStockSyncService:
         period: str = "daily",
         incremental: bool = False,
         job_id: str = None,
-        processed_count: int = 0,  # 🔥 当前已处理数量
-        total_stocks: int = 0  # 🔥 总股票数量
+        processed_count: int = 0,  # 🔥 Quantity currently processed
+        total_stocks: int = 0  # 🔥 Total number of shares
     ) -> Dict[str, Any]:
-        """同步历史数据批次"""
+        """Synchronize historical data batches"""
         stats = BaoStockSyncStats()
         stats_dict = {
             "historical_records": 0,
             "errors": [],
-            "processed_count": processed_count  # 🔥 保存当前已处理数量
+            "processed_count": processed_count  # 🔥 Save the current processed quantity
         }
 
         for idx, code in enumerate(code_batch):
-            # 🔥 检查任务是否应该停止
+            # 🔥 Check if the task should be stopped
             if job_id and await self._should_stop(job_id):
-                logger.warning(f"⚠️ 任务 {job_id} 收到停止信号，正在退出批次处理...")
+                logger.warning(f"⚠️ Task {job_id} Stop signal received, exiting batch processing...")
                 stats.stopped = True
                 stats_dict["stopped"] = True
                 break
             
-            # 🔥 每处理一个股票，立即更新已处理数量（无论成功还是失败）
+            # 🔥 Each time a stock is processed, the processed quantity is immediately updated (regardless of success or failure)
             processed_count += 1
             stats_dict["processed_count"] = processed_count
             
             try:
-                # 确定该股票的起始日期
+                # Determine the start date of the stock
                 if incremental:
-                    # 增量同步：获取该股票的最后日期
+                    # Incremental synchronization: Get the last date of the stock
                     start_date = await self._get_last_sync_date(code)
-                    logger.debug(f"📅 {code}: 从 {start_date} 开始同步")
+                    logger.debug(f"📅 {code}: from {start_date} Start syncing")
                 elif days >= 3650:
-                    # 全历史同步
+                    # Full history synchronized
                     start_date = "1990-01-01"
                 else:
-                    # 固定天数同步
+                    # Fixed number of days synchronization
                     start_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
 
-                logger.debug(f"🔄 [BaoStock] 获取 {code} 历史数据: {start_date} 到 {end_date}")
+                logger.debug(f"🔄 [BaoStock] get {code} historical data: {start_date} Arrive {end_date}")
                 hist_data = await self.provider.get_historical_data(code, start_date, end_date, period)
 
                 if hist_data is not None and not hist_data.empty:
-                    logger.info(f"✅ [BaoStock] {code} 获取到 {len(hist_data)} 条历史数据，开始保存...")
-                    # 更新数据库
+                    logger.info(f"✅ [BaoStock] {code} Get {len(hist_data)} historical data, start saving...")
+                    # Update database
                     records_count = await self._update_historical_data(code, hist_data, period)
                     stats.historical_records += records_count
                     stats_dict["historical_records"] = stats.historical_records
-                    logger.info(f"✅ [BaoStock] {code} 保存成功: {records_count} 条记录")
+                    logger.info(f"✅ [BaoStock] {code} Saved successfully: {records_count} records")
                 else:
-                    logger.warning(f"⚠️ [BaoStock] {code} 未获取到历史数据")
-                    error_msg = f"获取{code}历史数据失败"
+                    logger.warning(f"⚠️ [BaoStock] {code} No historical data was obtained")
+                    error_msg = f"get{code}Historical data failed"
                     stats.errors.append(error_msg)
                     stats_dict["errors"].append(error_msg)
 
             except Exception as e:
-                logger.error(f"❌ [BaoStock] {code} 历史数据同步失败: {e}", exc_info=True)
-                error_msg = f"处理{code}历史数据失败: {e}"
+                logger.error(f"❌ [BaoStock] {code} Historical data synchronization failed: {e}", exc_info=True)
+                error_msg = f"Process{code}Historical data failed: {e}"
                 stats.errors.append(error_msg)
                 stats_dict["errors"].append(error_msg)
             
-            # 🔥 每处理完一个股票（无论成功还是失败），立即更新进度
+            # 🔥 Every time a stock is processed (regardless of success or failure), the progress is updated immediately
             if job_id and total_stocks > 0:
                 try:
                     from app.services.scheduler_service import update_job_progress, TaskCancelledException
                     
-                    # 🔥 计算进度百分比
+                    # 🔥 Calculate progress percentage
                     progress_percent = int((processed_count / total_stocks) * 100) if total_stocks > 0 else 0
                     
-                    # 🔥 构建进度消息
-                    progress_message = f"正在同步 BaoStock 历史数据 ({processed_count}/{total_stocks})"
+                    # 🔥 Build progress messages
+                    progress_message = f"Synchronizing BaoStock historical data ({processed_count}/{total_stocks})"
                     
-                    # 🔥 如果有错误，在消息中包含错误信息
+                    # 🔥 If there is an error, include error information in the message
                     if len(stats_dict.get("errors", [])) > 0:
-                        recent_errors = stats_dict.get("errors", [])[-3:]  # 只取最近3个错误
+                        recent_errors = stats_dict.get("errors", [])[-3:]  # Only take the last 3 errors
                         if recent_errors:
                             error_summary = []
                             for error in recent_errors:
                                 error_str = error if isinstance(error, str) else str(error)
                                 if error_str:
-                                    # 提取关键错误信息
-                                    if "历史数据为空" in error_str or "未获取到" in error_str:
-                                        error_summary.append("数据为空")
-                                    elif "网络" in error_str or "连接" in error_str:
-                                        error_summary.append("网络问题")
+                                    # Extract key error information
+                                    if "Historical data is empty" in error_str or "Not obtained" in error_str:
+                                        error_summary.append("Data is empty")
+                                    elif "network" in error_str or "connect" in error_str:
+                                        error_summary.append("network problems")
                                     else:
-                                        # 截取前30个字符
+                                        # Truncate the first 30 characters
                                         short_error = error_str[:30] + "..." if len(error_str) > 30 else error_str
                                         error_summary.append(short_error)
                             
                             if error_summary:
-                                # 去重并只显示前2个不同的错误类型
+                                # Remove duplicates and show only the first 2 different error types
                                 unique_errors = list(set(error_summary))[:2]
-                                progress_message += f" | 遇到错误: {', '.join(unique_errors)}"
+                                progress_message += f" | Encountered an error: {', '.join(unique_errors)}"
                     
                     await update_job_progress(
                         job_id=job_id,
@@ -862,15 +862,15 @@ class BaoStockSyncService:
                         processed_items=processed_count
                     )
                 except TaskCancelledException:
-                    logger.warning(f"⚠️ BaoStock历史数据同步任务被用户取消 (已处理 {processed_count}/{total_stocks})")
+                    logger.warning(f"⚠️ BaoStock The historical data synchronization task was canceled by the user (Processed {processed_count}/{total_stocks})")
                     stats.stopped = True
                     stats_dict["stopped"] = True
                     break
                 except Exception as progress_error:
-                    # 🔥 进度更新失败不应该影响任务执行
-                    logger.debug(f"⚠️ 更新进度失败（继续执行）: {progress_error}")
+                    # 🔥 Failure in progress update should not affect task execution
+                    logger.debug(f"⚠️ Update progress failed (execution continues): {progress_error}")
 
-        # 🔥 返回字典格式，包含 processed_count
+        # 🔥 Returns dictionary format, containing processed_count
         stats_dict.update({
             "historical_records": stats.historical_records,
             "errors": stats.errors,
@@ -880,17 +880,17 @@ class BaoStockSyncService:
 
     async def _should_stop(self, job_id: str) -> bool:
         """
-        检查任务是否应该停止
+        Check if the task should be stopped
 
         Args:
-            job_id: 任务ID
+            job_id: Task ID
 
         Returns:
-            是否应该停止
+            should it stop
         """
         try:
-            # 🔥 查询执行记录，检查 cancel_requested 标记和任务状态
-            # 不仅检查 running 状态，也检查 failed/cancelled/suspended 状态
+            # 🔥 Query execution records, check cancel_requested flag and task status
+            # Not only checks the running status, but also checks the failed/cancelled/suspended status
             execution = await self.db.scheduler_executions.find_one(
                 {"job_id": job_id},
                 sort=[("timestamp", -1)]
@@ -899,42 +899,42 @@ class BaoStockSyncService:
             if not execution:
                 return False
 
-            # 检查取消请求标记
+            # Check the cancellation request flag
             if execution.get("cancel_requested"):
-                logger.info(f"🛑 任务 {job_id} 收到取消请求，应停止执行")
+                logger.info(f"🛑 Task {job_id} Upon receipt of a cancellation request, execution should be stopped")
                 return True
 
-            # 🔥 检查任务状态：如果任务已被标记为失败、取消或挂起，也应该停止
+            # 🔥 Check task status: if the task has been marked as failed, canceled or pending, it should also be stopped
             status = execution.get("status")
             if status in ["failed", "cancelled", "suspended"]:
-                logger.info(f"🛑 任务 {job_id} 状态为 {status}，应停止执行")
+                logger.info(f"🛑 Task {job_id} The status is {status}, Execution should be stopped")
                 return True
 
             return False
 
         except Exception as e:
-            logger.error(f"❌ 检查任务停止标记失败: {e}")
+            logger.error(f"❌ Checking task stop flag failed: {e}")
             return False
 
     async def _update_historical_data(self, code: str, hist_data, period: str = "daily") -> int:
-        """更新历史数据到数据库"""
+        """Update historical data to database"""
         try:
             if hist_data is None or hist_data.empty:
-                logger.warning(f"⚠️ {code} 历史数据为空，跳过保存")
+                logger.warning(f"⚠️ {code} Historical data is empty, skip saving")
                 return 0
 
-            # 🔥 确保 historical_service 已初始化（如果为 None，使用当前 db 连接创建）
+            # 🔥 Ensure historical_service is initialized (if None, created with current db connection)
             if self.historical_service is None:
                 from app.services.historical_data_service import get_historical_data_service
                 self.historical_service = await get_historical_data_service()
             
-            # 🔥 确保 historical_service 使用正确的数据库连接（在线程池中执行时很重要）
+            # 🔥 Make sure historical_service uses the correct database connection (important when executing in a thread pool)
             if self.db is not None:
                 self.historical_service.db = self.db
                 self.historical_service.collection = self.db.stock_daily_quotes
 
-            # 保存到统一历史数据集合
-            logger.info(f"💾 [BaoStock] 保存 {code} 历史数据到数据库 ({len(hist_data)} 条记录)...")
+            # Save to unified historical data collection
+            logger.info(f"💾 [BaoStock] save {code} Historical data to database ({len(hist_data)} records)...")
             saved_count = await self.historical_service.save_historical_data(
                 symbol=code,
                 data=hist_data,
@@ -942,9 +942,9 @@ class BaoStockSyncService:
                 market="CN",
                 period=period
             )
-            logger.info(f"✅ [BaoStock] {code} 数据保存完成: {saved_count} 条记录")
+            logger.info(f"✅ [BaoStock] {code} Data saving completed: {saved_count} records")
 
-            # 同时更新market_quotes集合的元信息（保持兼容性）
+            # Also update the meta information of the market_quotes collection (to maintain compatibility)
             if self.db is not None:
                 collection = self.db.market_quotes
                 latest_record = hist_data.iloc[-1] if not hist_data.empty else None
@@ -962,53 +962,53 @@ class BaoStockSyncService:
             return saved_count
 
         except Exception as e:
-            logger.error(f"❌ 更新历史数据到数据库失败: {e}")
+            logger.error(f"❌ Failed to update historical data to database: {e}")
             return 0
     
     async def _get_last_sync_date(self, symbol: str = None) -> str:
         """
-        获取最后同步日期
+        Get last sync date
 
         Args:
-            symbol: 股票代码，如果提供则返回该股票的最后日期+1天
+            symbol: Stock symbol, if provided returns the last date for this stock+1 day
 
         Returns:
-            日期字符串 (YYYY-MM-DD)
+            date string (YYYY-MM-DD)
         """
         try:
-            # 🔥 确保 historical_service 已初始化（如果为 None，使用当前 db 连接创建）
+            # 🔥 Ensure historical_service is initialized (if None, created with current db connection)
             if self.historical_service is None:
                 from app.services.historical_data_service import get_historical_data_service
                 self.historical_service = await get_historical_data_service()
             
-            # 🔥 确保 historical_service 使用正确的数据库连接（在线程池中执行时很重要）
+            # 🔥 Make sure historical_service uses the correct database connection (important when executing in a thread pool)
             if self.db is not None:
                 self.historical_service.db = self.db
                 self.historical_service.collection = self.db.stock_daily_quotes
 
             if symbol:
-                # 获取特定股票的最新日期
+                # Get the latest date for a specific stock
                 latest_date = await self.historical_service.get_latest_date(symbol, "baostock")
                 if latest_date:
-                    # 返回最后日期的下一天（避免重复同步）
+                    # Returns the day after the last date (to avoid repeated synchronization)
                     try:
                         last_date_obj = datetime.strptime(latest_date, '%Y-%m-%d')
                         next_date = last_date_obj + timedelta(days=1)
                         next_date_str = next_date.strftime('%Y-%m-%d')
                         
-                        # 🔥 检查：如果 next_date 大于今天，说明数据已经是最新的，不需要同步
-                        # 返回今天的日期（这样 start_date == end_date，BaoStock会返回空数据但不会报错）
+                        # 🔥 Check: If next_date is greater than today, it means that the data is already the latest and no synchronization is required.
+                        # Returns today's date (like this start_date == end_date, BaoStock Empty data will be returned but no error will be reported)
                         today_str = datetime.now().strftime('%Y-%m-%d')
                         if next_date_str > today_str:
-                            logger.debug(f"📅 {symbol}: 最后日期 {latest_date} 的下一天 {next_date_str} 大于今天 {today_str}，数据已是最新，返回今天日期")
+                            logger.debug(f"📅 {symbol}: last date {latest_date} the next day {next_date_str} greater than today {today_str}, The data is the latest, return today s date")
                             return today_str
                         
                         return next_date_str
                     except ValueError:
-                        # 如果日期格式不对，直接返回
+                        # If the date format is incorrect, return directly
                         return latest_date
                 else:
-                    # 🔥 没有历史数据时，从上市日期开始全量同步（而不是只同步30天）
+                    # 🔥 When there is no historical data, synchronize all data starting from the launch date (instead of only synchronizing for 30 days)
                     if self.db is not None:
                         stock_info = await self.db.stock_basic_info.find_one(
                             {"code": symbol, "source": "baostock"},
@@ -1016,15 +1016,15 @@ class BaoStockSyncService:
                         )
                         if stock_info and stock_info.get("list_date"):
                             list_date = stock_info["list_date"]
-                            # 处理不同的日期格式
+                            # Handle different date formats
                             if isinstance(list_date, str):
-                                # 尝试解析日期字符串
+                                # Trying to parse a date string
                                 try:
-                                    # 尝试 YYYY-MM-DD 格式
+                                    # Try YYYY-MM-DD format
                                     if len(list_date) >= 10:
                                         parsed_date = datetime.strptime(list_date[:10], '%Y-%m-%d')
                                         return parsed_date.strftime('%Y-%m-%d')
-                                    # 尝试 YYYYMMDD 格式
+                                    # Try YYYYMMDD format
                                     elif len(list_date) == 8:
                                         parsed_date = datetime.strptime(list_date, '%Y%m%d')
                                         return parsed_date.strftime('%Y-%m-%d')
@@ -1033,42 +1033,42 @@ class BaoStockSyncService:
                             elif isinstance(list_date, datetime):
                                 return list_date.strftime('%Y-%m-%d')
                     
-                    # 🔥 如果无法获取上市日期，返回1990-01-01（全历史同步）
-                    logger.info(f"📅 {symbol}: 未找到历史数据和上市日期，从1990-01-01开始全量同步")
+                    # 🔥 If the listing date cannot be obtained, return to 1990-01-01 (full history synchronization)
+                    logger.info(f"📅 {symbol}: No historical data and listing date found, full synchronization started from 1990-01-01")
                     return "1990-01-01"
 
-            # 默认返回1990-01-01（全历史同步，而不是30天前）
+            # By default, 1990-01-01 is returned (full history synchronization, not 30 days ago)
             return "1990-01-01"
 
         except Exception as e:
-            logger.error(f"❌ 获取最后同步日期失败 {symbol}: {e}")
-            # 🔥 出错时返回1990-01-01（全历史同步），确保不漏数据
+            logger.error(f"❌ Failed to get last sync date {symbol}: {e}")
+            # 🔥 When an error occurs, 1990-01-01 is returned (full history synchronization) to ensure no data leakage.
             return "1990-01-01"
 
     async def check_service_status(self) -> Dict[str, Any]:
-        """检查服务状态"""
+        """Check service status"""
         try:
-            # 🔥 关键修复：每次使用时都重新获取数据库连接，确保使用正确的事件循环
-            # 🔥 这样可以避免在定时任务中执行时的事件循环冲突
+            # 🔥 Critical fix: reacquire database connection on every use, ensure correct event loop is used
+            # 🔥 This can avoid event loop conflicts when executing in scheduled tasks
             from app.core.database import get_mongo_db
             db = get_mongo_db()
             
-            # 测试BaoStock连接
+            # Test BaoStock connection
             connection_ok = await self.provider.test_connection()
             
-            # 检查数据库连接
+            # Check database connection
             db_ok = True
             try:
                 await db.stock_basic_info.count_documents({})
             except Exception:
                 db_ok = False
             
-            # 统计数据
+            # Statistics
             basic_info_count = await db.stock_basic_info.count_documents({"source": "baostock"})
             quotes_count = await db.market_quotes.count_documents({"source": "baostock"})
             
             return {
-                "service": "BaoStock同步服务",
+                "service": "BaoStock Synchronization service",
                 "baostock_connection": connection_ok,
                 "database_connection": db_ok,
                 "basic_info_count": basic_info_count,
@@ -1078,25 +1078,25 @@ class BaoStockSyncService:
             }
             
         except Exception as e:
-            logger.error(f"❌ BaoStock服务状态检查失败: {e}", exc_info=True)
+            logger.error(f"❌ BaoStock Service status check failed: {e}", exc_info=True)
             return {
-                "service": "BaoStock同步服务",
+                "service": "BaoStock Synchronization service",
                 "status": "error",
                 "error": str(e),
                 "last_check": datetime.now().isoformat()
             }
 
 
-# APScheduler兼容的任务函数
+# APScheduler Compatible task functions
 async def _check_task_running(job_id: str) -> Tuple[bool, Optional[str]]:
     """
-    检查任务是否已有实例在运行
+    Check if an instance of the task is already running
     
     Args:
-        job_id: 任务ID
+        job_id: Task ID
         
     Returns:
-        (is_running, running_instance_id): 是否在运行，运行实例的ID
+        (is_running, running_instance_id): Whether it is running, the running instance ID
     """
     try:
         from pymongo import MongoClient
@@ -1107,22 +1107,22 @@ async def _check_task_running(job_id: str) -> Tuple[bool, Optional[str]]:
         sync_client = MongoClient(settings.MONGO_URI)
         sync_db = sync_client[settings.MONGODB_DATABASE]
         
-        # 🔥 查找是否有正在运行的实例（排除超时的任务）
-        # 如果任务运行超过30分钟，认为是僵尸任务，不阻止新任务执行
+        # 🔥 Find if there are any running instances (excluding tasks that have timed out)
+        # If a task runs for more than 30 minutes, it is considered a zombie task and new tasks are not blocked from execution.
         threshold_time = get_utc8_now() - timedelta(minutes=30)
         
         running_instance = sync_db.scheduler_executions.find_one(
             {
                 "job_id": job_id, 
                 "status": "running",
-                "timestamp": {"$gte": threshold_time}  # 只考虑最近30分钟内的running任务
+                "timestamp": {"$gte": threshold_time}  # Only consider running tasks within the last 30 minutes
             },
             sort=[("timestamp", -1)]
         )
         
-        # 🔥 如果找到超时的running任务，自动标记为失败
+        # 🔥 If a running task that times out is found, it is automatically marked as failed.
         if not running_instance:
-            # 检查是否有超时的running任务
+            # Check if there are any running tasks that have timed out
             zombie_instance = sync_db.scheduler_executions.find_one(
                 {
                     "job_id": job_id,
@@ -1133,18 +1133,18 @@ async def _check_task_running(job_id: str) -> Tuple[bool, Optional[str]]:
             )
             
             if zombie_instance:
-                # 自动标记为失败
+                # Automatically marked as failed
                 sync_db.scheduler_executions.update_one(
                     {"_id": zombie_instance["_id"]},
                     {
                         "$set": {
                             "status": "failed",
-                            "error_message": "任务执行超时或进程异常终止（自动检测）",
+                            "error_message": "Task execution times out or process terminates abnormally (automatic detection)",
                             "updated_at": get_utc8_now()
                         }
                     }
                 )
-                logger.warning(f"⚠️ 检测到超时任务并自动标记为失败: {job_id} (开始时间: {zombie_instance.get('timestamp')})")
+                logger.warning(f"⚠️ Timeout tasks are detected and automatically marked as failed: {job_id} (start time: {zombie_instance.get('timestamp')})")
         
         sync_client.close()
         
@@ -1152,42 +1152,42 @@ async def _check_task_running(job_id: str) -> Tuple[bool, Optional[str]]:
             return True, str(running_instance["_id"])
         return False, None
     except Exception as e:
-        logger.warning(f"⚠️ 检查任务运行状态失败: {e}")
+        logger.warning(f"⚠️ Failed to check task running status: {e}")
         return False, None
 
 
 async def run_baostock_basic_info_sync(**kwargs):
     """
-    运行BaoStock基础信息同步任务
+    Run BaoStock basic information synchronization task
 
-    🔥 使用统一线程池服务执行，避免阻塞主事件循环，保证 API 响应
+    🔥 Use unified thread pool service execution to avoid blocking the main event loop and ensure API response
     """
     job_id = "baostock_basic_info_sync"
     
-    # 🔥 手动触发或强制执行时允许执行（即使有running记录）
+    # 🔥 Allow execution when manually triggered or forced (even if there is a running record)
     manual_trigger = kwargs.get("_manual_trigger", False)
     force_execute = kwargs.get("_force_execute", False)
     if not manual_trigger and not force_execute:
-        # 🔥 检查是否已有实例在运行（非手动触发且非强制执行时才检查）
+        # 🔥 Check whether there is already an instance running (check only if it is not triggered manually and is not forced to execute)
         is_running, instance_id = await _check_task_running(job_id)
         if is_running:
-            logger.warning(f"⚠️ 任务 {job_id} 已有实例在运行（_id={instance_id}），跳过本次执行")
+            logger.warning(f"⚠️ Task {job_id} There is already an instance running (_id={instance_id}) , Skip this execution")
             return {
                 "skipped": True,
-                "reason": "已有实例在运行",
+                "reason": "There is already an instance running",
                 "running_instance_id": instance_id
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] 手动触发执行，允许执行（即使有running记录）")
+            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] 强制执行，跳过并发检查")
+            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         from app.worker.unified_thread_pool_sync_service import get_unified_thread_pool_sync_service
         unified_service = await get_unified_thread_pool_sync_service()
         service = BaoStockSyncService()
-        await service.initialize()  # 🔥 必须先初始化
+        await service.initialize()  # 🔥 Must be initialized first
         service._current_job_id = job_id
         sync_result = await unified_service.execute_sync_method(
             sync_method=service.sync_stock_basic_info,
@@ -1197,54 +1197,54 @@ async def run_baostock_basic_info_sync(**kwargs):
         )
         if sync_result.success:
             stats = sync_result.result
-            logger.info(f"🎯 BaoStock基础信息同步完成: {stats.basic_info_count}条记录, {len(stats.errors)}个错误")
+            logger.info(f"🎯 BaoStock Basic information synchronization completed: {stats.basic_info_count}records, {len(stats.errors)}errors")
             return stats
-        elif sync_result.error and ("取消" in sync_result.error or "cancelled" in sync_result.error.lower()):
-            logger.info(f"ℹ️ BaoStock基础信息同步任务已被用户取消")
+        elif sync_result.error and ("Cancel" in sync_result.error or "cancelled" in sync_result.error.lower()):
+            logger.info(f"ℹ️ BaoStock The basic information synchronization task has been canceled by the user")
             return {"cancelled": True, "message": sync_result.error}
         else:
-            raise RuntimeError(sync_result.error or "同步失败")
+            raise RuntimeError(sync_result.error or "Sync failed")
     except Exception as e:
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ BaoStock基础信息同步任务已被用户取消")
+            logger.info(f"ℹ️ BaoStock The basic information synchronization task has been canceled by the user")
             return {"cancelled": True, "message": str(e)}
-        logger.error(f"❌ BaoStock基础信息同步任务失败: {e}")
+        logger.error(f"❌ BaoStock Basic information synchronization task failed: {e}")
         raise
 
 
 async def run_baostock_daily_quotes_sync(**kwargs):
     """
-    运行BaoStock日K线同步任务（最新交易日）
+    Run BaoStock daily K-line synchronization task (latest trading day)
 
-    🔥 使用统一线程池服务执行，避免阻塞主事件循环，保证 API 响应
+    🔥 Use unified thread pool service execution to avoid blocking the main event loop and ensure API response
     """
     job_id = "baostock_daily_quotes_sync"
     
-    # 🔥 手动触发或强制执行时允许执行（即使有running记录）
+    # 🔥 Allow execution when manually triggered or forced (even if there is a running record)
     manual_trigger = kwargs.get("_manual_trigger", False)
     force_execute = kwargs.get("_force_execute", False)
     if not manual_trigger and not force_execute:
-        # 🔥 检查是否已有实例在运行（非手动触发且非强制执行时才检查）
+        # 🔥 Check whether there is already an instance running (check only if it is not triggered manually and is not forced to execute)
         is_running, instance_id = await _check_task_running(job_id)
         if is_running:
-            logger.warning(f"⚠️ 任务 {job_id} 已有实例在运行（_id={instance_id}），跳过本次执行")
+            logger.warning(f"⚠️ Task {job_id} There is already an instance running (_id={instance_id}) , Skip this execution")
             return {
                 "skipped": True,
-                "reason": "已有实例在运行",
+                "reason": "There is already an instance running",
                 "running_instance_id": instance_id
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] 手动触发执行，允许执行（即使有running记录）")
+            logger.info(f"🔧 [APScheduler] Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] 强制执行，跳过并发检查")
+            logger.info(f"🔧 [APScheduler] Force execution, skip concurrency checks")
     
     try:
         from app.worker.unified_thread_pool_sync_service import get_unified_thread_pool_sync_service
         unified_service = await get_unified_thread_pool_sync_service()
         service = BaoStockSyncService()
-        await service.initialize()  # 🔥 必须先初始化
+        await service.initialize()  # 🔥 Must be initialized first
         service._current_job_id = job_id
         sync_result = await unified_service.execute_sync_method(
             sync_method=service.sync_daily_quotes,
@@ -1254,72 +1254,72 @@ async def run_baostock_daily_quotes_sync(**kwargs):
         )
         if sync_result.success:
             stats = sync_result.result
-            logger.info(f"🎯 BaoStock日K线同步完成: {stats.quotes_count}条记录, {len(stats.errors)}个错误")
+            logger.info(f"🎯 BaoStock Daily K-line synchronization completed: {stats.quotes_count}records, {len(stats.errors)}errors")
             return stats
-        elif sync_result.error and ("取消" in sync_result.error or "cancelled" in sync_result.error.lower()):
-            logger.info(f"ℹ️ BaoStock日K线同步任务已被用户取消")
+        elif sync_result.error and ("Cancel" in sync_result.error or "cancelled" in sync_result.error.lower()):
+            logger.info(f"ℹ️ BaoStock The daily K-line synchronization task has been canceled by the user")
             return {"cancelled": True, "message": sync_result.error}
         else:
-            raise RuntimeError(sync_result.error or "同步失败")
+            raise RuntimeError(sync_result.error or "Sync failed")
     except Exception as e:
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ BaoStock日K线同步任务已被用户取消")
+            logger.info(f"ℹ️ BaoStock The daily K-line synchronization task has been canceled by the user")
             return {"cancelled": True, "message": str(e)}
-        logger.error(f"❌ BaoStock日K线同步任务失败: {e}")
+        logger.error(f"❌ BaoStock Daily K-line synchronization task failed: {e}")
         raise
 
 
 async def run_baostock_historical_sync(**kwargs):
-    """运行BaoStock历史数据同步任务"""
+    """Run BaoStock historical data synchronization task"""
     job_id = "baostock_historical_sync"
     
-    logger.info(f"🚀 [BaoStock] 开始执行历史数据同步任务 (job_id={job_id}, kwargs={kwargs})")
+    logger.info(f"🚀 [BaoStock] Start performing historical data synchronization task (job_id={job_id}, kwargs={kwargs})")
     
-    # 🔥 手动触发或强制执行时允许执行（即使有running记录）
+    # 🔥 Allow execution when manually triggered or forced (even if there is a running record)
     manual_trigger = kwargs.get("_manual_trigger", False)
     force_execute = kwargs.get("_force_execute", False)
     
-    logger.info(f"🔍 [BaoStock] 检查任务状态: manual_trigger={manual_trigger}, force_execute={force_execute}")
+    logger.info(f"🔍 [BaoStock] Check task status: manual_trigger={manual_trigger}, force_execute={force_execute}")
     
     if not manual_trigger and not force_execute:
-        # 🔥 检查是否已有实例在运行（非手动触发且非强制执行时才检查）
+        # 🔥 Check whether there is already an instance running (check only if it is not triggered manually and is not forced to execute)
         is_running, instance_id = await _check_task_running(job_id)
-        logger.info(f"🔍 [BaoStock] 任务运行状态检查: is_running={is_running}, instance_id={instance_id}")
+        logger.info(f"🔍 [BaoStock] Task running status check: is_running={is_running}, instance_id={instance_id}")
         if is_running:
-            logger.warning(f"⚠️ 任务 {job_id} 已有实例在运行（_id={instance_id}），跳过本次执行")
+            logger.warning(f"⚠️ Task {job_id} There is already an instance running (_id={instance_id}) , Skip this execution")
             return {
                 "skipped": True,
-                "reason": "已有实例在运行",
+                "reason": "There is already an instance running",
                 "running_instance_id": instance_id
             }
     else:
         if manual_trigger:
-            logger.info(f"🔧 [APScheduler] BaoStock手动触发执行，允许执行（即使有running记录）")
+            logger.info(f"🔧 [APScheduler] BaoStock Manually trigger execution and allow execution (even if there is a running record)")
         if force_execute:
-            logger.info(f"🔧 [APScheduler] BaoStock强制执行，跳过并发检查")
+            logger.info(f"🔧 [APScheduler] BaoStock Force execution, skip concurrency checks")
     
     try:
-        # 🔥 使用统一的线程池同步服务
+        # 🔥 Use unified thread pool synchronization service
         from app.worker.unified_thread_pool_sync_service import get_unified_thread_pool_sync_service
         
         unified_service = await get_unified_thread_pool_sync_service()
         
-        # 🔥 获取BaoStock数据源服务实例
-        logger.info(f"🔄 [BaoStock] 初始化同步服务...")
+        # 🔥 Get BaoStock data source service instance
+        logger.info(f"🔄 [BaoStock] Initialize synchronization service...")
         service = BaoStockSyncService()
-        await service.initialize()  # 🔥 必须先初始化
-        logger.info(f"✅ [BaoStock] 同步服务初始化完成")
+        await service.initialize()  # 🔥 Must be initialized first
+        logger.info(f"✅ [BaoStock] Synchronization service initialization completed")
         
-        # 🔥 设置正确的 job_id，确保进度更新和状态标记使用正确的任务ID
+        # 🔥 Set the correct job_id to ensure progress updates and status markers use the correct task ID
         service._current_job_id = job_id
         
-        # 🔥 检查是否是恢复执行，从kwargs中读取恢复位置
+        # 🔥 Check whether it is a resume execution and read the resume location from kwargs
         resume_from_index = kwargs.get("_resume_from_index")
         if resume_from_index is not None:
-            logger.info(f"🔄 [恢复执行] 将从第 {resume_from_index} 个股票位置继续同步")
+            logger.info(f"🔄 [Resume execution] will be from {resume_from_index} Stock positions continue to be synchronized")
         
-        # 🔥 在线程池中执行同步方法
+        # 🔥 Execute synchronized methods in thread pool
         sync_result = await unified_service.execute_sync_method(
             sync_method=service.sync_historical_data,
             method_kwargs={
@@ -1330,32 +1330,32 @@ async def run_baostock_historical_sync(**kwargs):
                 "symbols": kwargs.get("symbols")
             },
             job_id=job_id,
-            rate_limit_per_minute=kwargs.get("rate_limit_per_minute", 200),  # BaoStock速率限制
+            rate_limit_per_minute=kwargs.get("rate_limit_per_minute", 200),  # BaoStock rate limit
             resume_from_index=resume_from_index
         )
         
         if sync_result.success:
             stats = sync_result.result
-            logger.info(f"🎯 BaoStock历史数据同步完成: {stats.historical_records}条记录, {len(stats.errors)}个错误")
+            logger.info(f"🎯 BaoStock Historical data synchronization completed: {stats.historical_records}records, {len(stats.errors)}errors")
             return stats
         else:
-            # 🔥 检查是否是任务取消
-            if "取消" in sync_result.error or "cancelled" in sync_result.error.lower():
-                logger.info(f"ℹ️ BaoStock历史数据同步任务已被用户取消")
+            # 🔥 Check if the task is canceled
+            if "Cancel" in sync_result.error or "cancelled" in sync_result.error.lower():
+                logger.info(f"ℹ️ BaoStock The historical data synchronization task has been canceled by the user")
                 return {"cancelled": True, "message": sync_result.error}
             else:
-                logger.error(f"❌ BaoStock历史数据同步失败: {sync_result.error}")
+                logger.error(f"❌ BaoStock Historical data synchronization failed: {sync_result.error}")
                 raise RuntimeError(sync_result.error)
                 
     except Exception as e:
-        # 检查是否是任务取消异常（用户主动取消，不应该记录为错误）
+        # Check whether it is a task cancellation exception (the user actively cancels and should not be recorded as an error)
         from app.services.scheduler_service import TaskCancelledException
         if isinstance(e, TaskCancelledException):
-            logger.info(f"ℹ️ BaoStock历史数据同步任务已被用户取消")
-            return {"cancelled": True, "message": "任务已被用户取消"}
-        # 其他异常才记录为错误
-        logger.error(f"❌ BaoStock历史数据同步任务失败: {e}", exc_info=True)
-        raise  # 🔥 重新抛出异常，确保错误能被上层捕获
+            logger.info(f"ℹ️ BaoStock The historical data synchronization task has been canceled by the user")
+            return {"cancelled": True, "message": "The task has been canceled by the user"}
+        # Other exceptions are recorded as errors
+        logger.error(f"❌ BaoStock Historical data synchronization task failed: {e}", exc_info=True)
+        raise  # 🔥 Rethrow the exception to ensure that the error can be caught by the upper layer
 
 
     async def retry_failed_symbols(
@@ -1367,42 +1367,42 @@ async def run_baostock_historical_sync(**kwargs):
         _is_retry: bool = False
     ) -> Dict[str, Any]:
         """
-        重试失败的股票（只重试可重试的错误，跳过无数据的错误）
+        Retry failed stocks (retry only retryable errors, skip errors with no data)
         
         Args:
-            errors: 错误列表（从之前的同步结果中获取）
-            days: 同步天数（BaoStock使用days参数）
-            period: 数据周期 (daily/weekly/monthly)
-            job_id: 任务ID（用于进度跟踪）
-            _is_retry: 内部标记，表示这是重试任务，避免再次自动重试
+            errors: Error list (obtained from previous sync results)
+            days: Number of days to synchronize (BaoStock uses the days parameter)
+            period: data period (daily/weekly/monthly)
+            job_id: Task ID (for progress tracking)
+            _is_retry: Internal mark indicating that this is a retry task to avoid automatic retries again
             
         Returns:
-            重试结果统计
+            Retry result statistics
         """
-        period_name = {"daily": "日线", "weekly": "周线", "monthly": "月线"}.get(period, period)
+        period_name = {"daily": "daily line", "weekly": "perimeter", "monthly": "monthly line"}.get(period, period)
         
-        # 🔥 BaoStock的错误格式可能是字符串或字典，需要统一处理
+        # 🔥 BaoStock The error format may be a string or a dictionary, which needs to be processed uniformly
         retryable_errors = []
         no_data_errors = []
         
         for error in errors:
-            # 处理字符串格式的错误
+            # Handling string format errors
             if isinstance(error, str):
-                # 字符串错误通常表示可重试的错误（网络错误等）
+                # String errors usually represent retryable errors (network errors, etc.)
                 retryable_errors.append({"error": error, "error_category": "retryable_error"})
-            # 处理字典格式的错误
+            # Handling dictionary formatting errors
             elif isinstance(error, dict):
                 if error.get("error_category") == "retryable_error" or error.get("is_retryable", False):
                     retryable_errors.append(error)
                 else:
                     no_data_errors.append(error)
         
-        logger.info(f"🔄 开始重试失败的股票...")
-        logger.info(f"   可重试的错误: {len(retryable_errors)} 个")
-        logger.info(f"   无数据的错误（跳过）: {len(no_data_errors)} 个")
+        logger.info(f"🔄 Start retrying failed stocks...")
+        logger.info(f"   Retryable errors: {len(retryable_errors)} a")
+        logger.info(f"   No data error (skip): {len(no_data_errors)} a")
         
         if not retryable_errors:
-            logger.info("✅ 没有可重试的错误，所有失败都是无数据的情况")
+            logger.info("✅ There are no retryable errors, all failures are no-data cases")
             return {
                 "total_retried": 0,
                 "success_count": 0,
@@ -1411,20 +1411,20 @@ async def run_baostock_historical_sync(**kwargs):
                 "errors": []
             }
         
-        # 提取可重试的股票代码（从错误信息中提取）
+        # Extract retryable ticker (extracted from error message)
         retry_symbols = []
         for error in retryable_errors:
             if isinstance(error, dict) and error.get("code"):
                 retry_symbols.append(error["code"])
             elif isinstance(error, str):
-                # 从字符串错误中提取股票代码（格式：处理{code}历史数据失败）
+                # Extract ticker from string error (format: handle{code}Historical data failed)
                 import re
-                match = re.search(r'处理(\d{6})', error)
+                match = re.search(r'Process(\d{6})', error)
                 if match:
                     retry_symbols.append(match.group(1))
         
         if not retry_symbols:
-            logger.warning("⚠️ 无法从错误列表中提取股票代码")
+            logger.warning("⚠️ Unable to extract ticker from error list")
             return {
                 "total_retried": 0,
                 "success_count": 0,
@@ -1433,20 +1433,20 @@ async def run_baostock_historical_sync(**kwargs):
                 "errors": retryable_errors
             }
         
-        logger.info(f"📋 将重试以下 {len(retry_symbols)} 只股票: {', '.join(retry_symbols[:10])}{'...' if len(retry_symbols) > 10 else ''}")
+        logger.info(f"📋 Will retry following {len(retry_symbols)} only stocks: {', '.join(retry_symbols[:10])}{'...' if len(retry_symbols) > 10 else ''}")
         
-        # 调用同步方法，只同步这些失败的股票
+        # Call the synchronization method to synchronize only these failed stocks
         retry_result_stats = await self.sync_historical_data(
             days=days,
             period=period,
-            incremental=False,  # 重试时使用全量同步
-            symbols=retry_symbols  # 🔥 只同步失败的股票
+            incremental=False,  # Use full sync when retrying
+            symbols=retry_symbols  # 🔥 Only sync failed stocks
         )
         
-        # 转换为统一格式
+        # Convert to unified format
         retry_result = {
             "total_retried": len(retry_symbols),
-            "success_count": retry_result_stats.historical_records,  # BaoStock使用historical_records表示成功数
+            "success_count": retry_result_stats.historical_records,  # BaoStock Use historical_records to represent the number of successes
             "error_count": len(retry_result_stats.errors),
             "total_records": retry_result_stats.historical_records,
             "no_data_count": len(no_data_errors),
@@ -1454,17 +1454,17 @@ async def run_baostock_historical_sync(**kwargs):
             "errors": retry_result_stats.errors
         }
         
-        logger.info(f"✅ 重试完成: 成功 {retry_result['success_count']}/{retry_result['total_retried']}, "
-                   f"失败 {retry_result['error_count']}, 无数据 {retry_result['no_data_count']}（已跳过）")
+        logger.info(f"✅ Retry complete: success {retry_result['success_count']}/{retry_result['total_retried']}, "
+                   f"failed {retry_result['error_count']}, No data {retry_result['no_data_count']} (skipped)")
         
         return retry_result
 
 
-# 全局同步服务实例
+# Global synchronization service instance
 _baostock_sync_service = None
 
 async def get_baostock_sync_service() -> BaoStockSyncService:
-    """获取BaoStock同步服务实例"""
+    """Get BaoStock synchronization service instance"""
     global _baostock_sync_service
     if _baostock_sync_service is None:
         _baostock_sync_service = BaoStockSyncService()
@@ -1473,11 +1473,11 @@ async def get_baostock_sync_service() -> BaoStockSyncService:
 
 
 async def run_baostock_status_check():
-    """运行BaoStock状态检查任务"""
+    """Run the BaoStock status check task"""
     try:
         service = BaoStockSyncService()
-        await service.initialize()  # 🔥 必须先初始化
+        await service.initialize()  # 🔥 Must be initialized first
         status = await service.check_service_status()
-        logger.info(f"🔍 BaoStock服务状态: {status['status']}")
+        logger.info(f"🔍 BaoStock Service status: {status['status']}")
     except Exception as e:
-        logger.error(f"❌ BaoStock状态检查任务失败: {e}")
+        logger.error(f"❌ BaoStock Status check task failed: {e}")

@@ -1,13 +1,13 @@
 <template>
   <div class="learning-article-wrapper">
-    <!-- 页面头部 -->
+    <!-- Page header -->
     <el-page-header @back="goBack" :content="article.title">
       <template #extra>
-        <el-button type="primary" :icon="Download" @click="downloadArticle">下载</el-button>
+        <el-button type="primary" :icon="Download" @click="downloadArticle">Download</el-button>
       </template>
     </el-page-header>
 
-    <!-- 主容器：文章 + 侧边栏 -->
+    <!-- Main container: articles + sidebar -->
     <div class="learning-article">
       <div class="article-container">
         <div class="article-meta">
@@ -20,7 +20,7 @@
             <el-icon><View /></el-icon>
             {{ article.views }}
           </span>
-          <span class="update-time">更新于 {{ article.updateTime }}</span>
+          <span class="update-time">updated on {{ article.updateTime }}</span>
         </div>
 
         <div class="article-content" v-html="article.content"></div>
@@ -30,19 +30,19 @@
           <div class="navigation">
             <el-button v-if="prevArticle" @click="navigateToArticle(prevArticle.id)">
               <el-icon><ArrowLeft /></el-icon>
-              上一篇：{{ prevArticle.title }}
+              Previous article:{{ prevArticle.title }}
             </el-button>
             <el-button v-if="nextArticle" @click="navigateToArticle(nextArticle.id)">
-              下一篇：{{ nextArticle.title }}
+              Next article:{{ nextArticle.title }}
               <el-icon><ArrowRight /></el-icon>
             </el-button>
           </div>
         </div>
       </div>
 
-      <!-- 侧边栏目录 -->
+      <!-- Sidebar table of contents -->
       <div class="article-toc">
-        <div class="toc-title">目录</div>
+        <div class="toc-title">Directory</div>
         <ul class="toc-list">
           <li v-for="heading in tableOfContents" :key="heading.id"
               :class="['toc-item', `toc-level-${heading.level}`]"
@@ -69,9 +69,9 @@ const router = useRouter()
 
 const articleId = computed(() => route.params.id as string)
 
-// 回退：不集成 Mermaid
+// Fallback: No integration Mermaid
 
-// 文章注册表：支持本地 Markdown 或外链（externalUrl）
+// Article registration form: supports local Markdown or external links (externalUrl)
 type ArticleInfo = {
   title: string
   category: string
@@ -82,23 +82,23 @@ type ArticleInfo = {
 }
 
 const registry: Record<string, ArticleInfo> = {
-  'what-is-llm': { title: '什么是大语言模型（LLM）？', loader: () => import('../../../../docs/02-user-guide/learning-01-ai-basics/what-is-llm.md?raw'), category: 'AI基础知识', categoryType: 'primary', readTime: '10分钟' },
-  'prompt-basics': { title: '提示词基础', loader: () => import('../../../../docs/02-user-guide/learning-02-prompt-engineering/prompt-basics.md?raw'), category: '提示词工程', categoryType: 'success', readTime: '10分钟' },
-  'best-practices': { title: '提示词工程最佳实践', loader: () => import('../../../../docs/02-user-guide/learning-02-prompt-engineering/best-practices.md?raw'), category: '提示词工程', categoryType: 'success', readTime: '12分钟' },
-  'model-comparison': { title: '大语言模型对比与选择', loader: () => import('../../../../docs/02-user-guide/learning-03-model-selection/model-comparison.md?raw'), category: '模型选择指南', categoryType: 'warning', readTime: '15分钟' },
-  'multi-agent-system': { title: '多智能体系统详解', loader: () => import('../../../../docs/02-user-guide/learning-04-analysis-principles/multi-agent-system.md?raw'), category: 'AI分析原理', categoryType: 'info', readTime: '15分钟' },
-  'risk-warnings': { title: 'AI股票分析的风险与局限性', loader: () => import('../../../../docs/02-user-guide/learning-05-risks-limitations/risk-warnings.md?raw'), category: '风险与局限性', categoryType: 'danger', readTime: '12分钟' },
-  'tradingagents-intro': { title: 'TradingAgents项目介绍', loader: () => import('../../../../docs/02-user-guide/learning-06-resources/tradingagents-intro.md?raw'), category: '源项目与论文', categoryType: 'primary', readTime: '15分钟' },
-  'paper-guide': { title: 'TradingAgents论文解读', loader: () => import('../../../../docs/02-user-guide/learning-06-resources/paper-guide.md?raw'), category: '源项目与论文', categoryType: 'primary', readTime: '20分钟' },
-  'TradingAgents_论文中文版': { title: 'TradingAgents 论文中文版', loader: () => import('../../../../docs/02-user-guide/learning-06-resources/paper-TradingAgents_论文中文版.md?raw'), category: '源项目与论文', categoryType: 'primary', readTime: '40分钟' },
-  // 快速入门改为外链，点击后直接跳转到微信文章
-  'getting-started': { title: '快速入门教程（外链）', externalUrl: 'https://mp.weixin.qq.com/s/uAk4RevdJHMuMvlqpdGUEw', category: '实战教程', categoryType: 'success', readTime: '10分钟' },
-  // 使用指南（试用版）外链
-  'usage-guide-preview': { title: '使用指南（试用版）', externalUrl: 'https://mp.weixin.qq.com/s/ppsYiBncynxlsfKFG8uEbw', category: '实战教程', categoryType: 'success', readTime: '15分钟' },
-  'general-questions': { title: '常见问题解答', loader: () => import('../../../../docs/02-user-guide/learning-08-faq/general-questions.md?raw'), category: '常见问题', categoryType: 'info', readTime: '15分钟' }
+  'what-is-llm': { title: 'What is a large language model (LLM)?', loader: () => import('../../../../docs/02-user-guide/learning-01-ai-basics/what-is-llm.md?raw'), category: 'AI basic knowledge', categoryType: 'primary', readTime: '10 minutes' },
+  'prompt-basics': { title: 'Prompt word basics', loader: () => import('../../../../docs/02-user-guide/learning-02-prompt-engineering/prompt-basics.md?raw'), category: 'prompt word project', categoryType: 'success', readTime: '10 minutes' },
+  'best-practices': { title: 'Prompt Word Engineering Best Practices', loader: () => import('../../../../docs/02-user-guide/learning-02-prompt-engineering/best-practices.md?raw'), category: 'prompt word project', categoryType: 'success', readTime: '12 minutes' },
+  'model-comparison': { title: 'Comparison and selection of large language models', loader: () => import('../../../../docs/02-user-guide/learning-03-model-selection/model-comparison.md?raw'), category: 'Model Selection Guide', categoryType: 'warning', readTime: '15 minutes' },
+  'multi-agent-system': { title: 'Detailed explanation of multi-agent systems', loader: () => import('../../../../docs/02-user-guide/learning-04-analysis-principles/multi-agent-system.md?raw'), category: 'AI Analysis principle', categoryType: 'info', readTime: '15 minutes' },
+  'risk-warnings': { title: 'AI Risks and Limitations of Stock Analysis', loader: () => import('../../../../docs/02-user-guide/learning-05-risks-limitations/risk-warnings.md?raw'), category: 'Risks and Limitations', categoryType: 'danger', readTime: '12 minutes' },
+  'tradingagents-intro': { title: 'TradingAgents Project introduction', loader: () => import('../../../../docs/02-user-guide/learning-06-resources/tradingagents-intro.md?raw'), category: 'Source projects and papers', categoryType: 'primary', readTime: '15 minutes' },
+  'paper-guide': { title: 'TradingAgents Paper interpretation', loader: () => import('../../../../docs/02-user-guide/learning-06-resources/paper-guide.md?raw'), category: 'Source projects and papers', categoryType: 'primary', readTime: '20 minutes' },
+  'TradingAgents_Chinese version of the paper': { title: 'TradingAgents Chinese version of the paper', loader: () => import('../../../../docs/02-user-guide/learning-06-resources/paper-TradingAgents_Chinese version of the paper.md?raw'), category: 'Source projects and papers', categoryType: 'primary', readTime: '40 minutes' },
+  // The quick start is changed to an external link. Click to jump directly to the WeChat article.
+  'getting-started': { title: 'Quick start tutorial (external link)', externalUrl: 'https://mp.weixin.qq.com/s/uAk4RevdJHMuMvlqpdGUEw', category: 'Practical tutorial', categoryType: 'success', readTime: '10 minutes' },
+  // User guide (trial version) external link
+  'usage-guide-preview': { title: 'User Guide (Trial Version)', externalUrl: 'https://mp.weixin.qq.com/s/ppsYiBncynxlsfKFG8uEbw', category: 'Practical tutorial', categoryType: 'success', readTime: '15 minutes' },
+  'general-questions': { title: 'FAQ', loader: () => import('../../../../docs/02-user-guide/learning-08-faq/general-questions.md?raw'), category: 'FAQ', categoryType: 'info', readTime: '15 minutes' }
 }
 
-// 文章顺序用于上一页/下一页
+// Article order is used for previous page/next page
 const articleOrder = [
   'what-is-llm',
   'prompt-basics',
@@ -108,13 +108,13 @@ const articleOrder = [
   'risk-warnings',
   'tradingagents-intro',
   'paper-guide',
-  'TradingAgents_论文中文版',
+  'TradingAgents_Chinese version of the paper',
   'getting-started',
   'usage-guide-preview',
   'general-questions'
 ]
 
-// 当前文章数据
+// Current article data
 const article = ref({
   id: '',
   title: '',
@@ -126,7 +126,7 @@ const article = ref({
   content: ''
 })
 
-// 目录
+// Directory
 const tableOfContents = ref<{ id: string; text: string; level: number }[]>([])
 
 const prevArticle = ref<{ id: string; title: string } | null>(null)
@@ -140,10 +140,10 @@ const downloadArticle = async () => {
   if (!article.value.id) return
   const info = registry[article.value.id]
   if (!info) {
-    ElMessage.warning('未找到文章资源')
+    ElMessage.warning('Article resource not found')
     return
   }
-  // 外链文章：下载按钮直接在新标签页打开
+  // External link articles: The download button opens directly in a new tab
   if (info.externalUrl) {
     window.open(info.externalUrl, '_blank')
     return
@@ -162,7 +162,7 @@ const downloadArticle = async () => {
     URL.revokeObjectURL(url)
   } catch (e) {
     console.error(e)
-    ElMessage.error('下载失败')
+    ElMessage.error('Download failed')
   }
 }
 
@@ -177,29 +177,29 @@ const scrollToHeading = (id: string) => {
   }
 }
 
-// 将 markdown 中的本地链接转换为应用内路由链接
+// Convert local links in markdown to in-app routed links
 function convertLocalLinks(html: string): string {
   const div = document.createElement('div')
   div.innerHTML = html
 
-  // 处理所有链接
+  // handle all links
   const links = div.querySelectorAll('a')
   for (const link of links) {
     const href = link.getAttribute('href')
     if (href && href.endsWith('.md')) {
-      // 提取文件名（不含扩展名）
+      // Extract file name (without extension)
       const fileName = href.split('/').pop()?.replace('.md', '')
       if (fileName && registry[fileName]) {
-        // 转换为应用内路由链接
+        // Convert to in-app routing link
         link.setAttribute('href', `/learning/article/${fileName}`)
         link.setAttribute('data-internal', 'true')
       }
     }
-    // 将 PDF 链接重写为静态资源路径，并在新标签打开
+    // Rewrite the PDF link as a static resource path and open it in a new tab
     else if (href && href.endsWith('.pdf')) {
       const fileName = href.split('/').pop() || ''
       if (fileName) {
-        // 如果原始链接在 docs 中指向 paper/，则优先映射到 /paper/
+        // If the original link points to paper/ in docs, it will be mapped to /paper/
         const target = href.includes('/paper/') ? `/paper/${fileName}` : `/assets/${fileName}`
         link.setAttribute('href', target)
         link.setAttribute('target', '_blank')
@@ -211,13 +211,13 @@ function convertLocalLinks(html: string): string {
   return div.innerHTML
 }
 
-// 将 Markdown 中的图片路径重写为打包后的资源 URL（适配仓库根目录下的 assets/）
+// Rewrite the image path in Markdown into the packaged resource URL (adapt to assets/ in the root directory of the warehouse)
 function rewriteImageSrc(html: string): string {
   const div = document.createElement('div')
   div.innerHTML = html
 
   const assetMap: Record<string, string> = {
-    // 统一映射到前端 public 静态资源目录，避免 Vite 对跨根目录 new URL 的构建警告
+    // Unified mapping to the front-end public static resource directory to avoid Vite s construction warning for cross-root directory new URLs
     'assets/schema.png': '/assets/schema.png',
     'assets/analyst.png': '/assets/analyst.png',
     'assets/researcher.png': '/assets/researcher.png',
@@ -228,7 +228,7 @@ function rewriteImageSrc(html: string): string {
   const imgs = div.querySelectorAll('img')
   for (const img of imgs) {
     const src = img.getAttribute('src') || ''
-    // 对以 / 开头的绝对路径（如 /assets/...）不做改写，交给 public 静态资源处理
+    // Absolute paths starting with / (such as /assets/...) will not be rewritten and will be handled by public static resources.
     if (src.startsWith('/')) continue
     for (const key in assetMap) {
       if (src.endsWith(key)) {
@@ -241,18 +241,18 @@ function rewriteImageSrc(html: string): string {
   return div.innerHTML
 }
 
-// 回退：保留原始 markdown 代码块，不转换为 Mermaid 容器
+// Fallback: Keep original markdown code blocks without converting to Mermaid containers
 
-// 已移除 Mermaid 渲染，保留普通代码块
+// Mermaid rendering removed, normal code blocks retained
 
-// 从 markdown 加载文章
+// Load articles from markdown
 async function loadArticle(id: string) {
   const info = registry[id]
   if (!info) {
-    ElMessage.error('未找到文章')
+    ElMessage.error('No article found')
     return
   }
-  // 外链文章：自动在新标签页打开，当前页保留在系统内
+  // External link articles: automatically open in a new tab, and the current page remains in the system
   if (info.externalUrl) {
     window.open(info.externalUrl, '_blank')
     article.value = {
@@ -265,7 +265,7 @@ async function loadArticle(id: string) {
       updateTime: new Date().toISOString().slice(0, 10),
       content: ''
     }
-    ElMessage.info('已在新标签页打开外部页面')
+    ElMessage.info('External page opened in new tab')
     return
   }
   article.value = {
@@ -282,7 +282,7 @@ async function loadArticle(id: string) {
   try {
     const mod = info.loader ? await info.loader() : ''
     const md: string = typeof mod === 'string' ? mod : (mod.default || '')
-    // 解析 markdown -> html，并开启标题锚点（兼容中文）
+    // parse markdown -> html, And turn on the title anchor (compatible with Chinese)
     const renderer = new marked.Renderer()
     renderer.heading = function ({ tokens, depth, text }: any) {
       let htmlText = ''
@@ -291,7 +291,7 @@ async function loadArticle(id: string) {
       } else if (typeof text === 'string') {
         htmlText = marked.parseInline(text) as string
       }
-      // 🔐 安全：净化 heading 内的 HTML，防止 XSS
+      // 🔐 Security: sanitize HTML within heading to prevent XSS
       htmlText = DOMPurify.sanitize(htmlText) as string
       const plain = (htmlText || '').replace(/<[^>]+>/g, '')
       const id = plain
@@ -300,21 +300,21 @@ async function loadArticle(id: string) {
         .replace(/^-+|-+$/g, '')
       return `<h${depth} class="article-heading" id="${id}">${htmlText}</h${depth}>`
     }
-    // 🔐 安全：使用 renderMarkdown 统一渲染（含 DOMPurify 净化）
+    // 🔐 Security: Use renderMarkdown to render uniformly (including DOMPurify sanitization)
     let html = renderMarkdown(md)
-    // 转换本地文章链接
+    // Convert local article links
     html = convertLocalLinks(html)
-    // 重写图片资源路径，确保从仓库根目录的 assets/ 正确加载
+    // Rewrite the image resource path to ensure correct loading from assets/ in the root directory of the warehouse
     html = rewriteImageSrc(html)
     article.value.content = html
     await nextTick()
     buildTOCFromHTML(html)
     buildPrevNext(id)
-    // 在 DOM 更新后设置内部链接处理
+    // Set up internal link handling after DOM update
     setupInternalLinks()
   } catch (e) {
     console.error(e)
-    ElMessage.error('加载文章失败：无法访问文档资源')
+    ElMessage.error('Failed to load article: Document resource cannot be accessed')
   }
 }
 
@@ -329,7 +329,7 @@ function buildTOCFromHTML(html: string) {
   }))
 }
 
-// 在 DOM 更新后处理内部链接
+// Handle internal links after DOM update
 function setupInternalLinks() {
   nextTick(() => {
     const container = document.querySelector('.article-content')
@@ -376,7 +376,7 @@ watch(articleId, (id) => {
     flex-shrink: 0;
   }
 
-  /* PageHeader 标题颜色提高对比度 */
+  /* PageHeader Title color improves contrast */
   :deep(.el-page-header__content),
   :deep(.el-page-header__title) {
     color: var(--el-text-color-primary);
@@ -506,7 +506,7 @@ watch(articleId, (id) => {
           border-radius: 4px;
         }
 
-        // 图片自适应容器宽度，避免过小或溢出
+        // The image adapts to the width of the container to avoid being too small or overflowing
         :deep(img) {
           max-width: 100%;
           height: auto;
@@ -581,7 +581,7 @@ watch(articleId, (id) => {
   }
 }
 
-// 暗黑模式样式
+// dark mode style
 :global(html.dark) {
   .learning-article-wrapper {
     background: #000000 !important;

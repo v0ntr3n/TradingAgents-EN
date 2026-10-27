@@ -1,117 +1,117 @@
-# 贡献指南（CONTRIBUTING）
+# Contributing Guide (CONTRIBUTING)
 
-感谢你对 TradingAgents-CN 社区版的关注！本项目采用**社区共建**模式持续演进，欢迎任何形式的贡献。
+Thank you for your interest in TradingAgents-CN Community Edition! This project evolves continuously through a **community co-building** model, and contributions of all forms are welcome.
 
-## 贡献方式
+## Ways to Contribute
 
-| 类型 | 示例 |
+| Type | Examples |
 |------|------|
-| Bug 修复 | 修复数据获取失败、界面异常、分析流程报错 |
-| 文档完善 | 补充/修正用户手册、学习指南、代码注释 |
-| 数据源适配 | 接入新的行情/财务公开数据接口，或修复现有接口变更 |
-| 功能讨论 | 在 Issue 中提出需求建议与使用反馈 |
+| Bug Fixes | Fixing data fetching failures, UI glitches, or analysis pipeline errors |
+| Documentation Improvements | Adding/correcting user manuals, study guides, or code comments |
+| Data Source Adaptation | Integrating new public market/financial data APIs, or fixing upstream API changes |
+| Feature Discussions | Proposing feature suggestions and usage feedback in Issues |
 
-## 从哪里开始
+## Where to Start
 
-不确定从哪入手？按这个顺序找机会：
+Not sure where to begin? Look for opportunities in this order:
 
-1. **浏览带 `good first issue` 标签的 Issue**——是专门为新人准备的上手任务
-2. **数据源接口失效类 Bug**——范围小、易验证，适合作为第一个 PR
-3. **发邮件问我们**：hsliup@163.com，说明你的技能与兴趣方向，我们会给出建议
+1. **Browse Issues labeled `good first issue`** — these are starter tasks specially prepared for newcomers
+2. **Broken data source API bugs** — small in scope and easy to verify, ideal for a first PR
+3. **Email us**: hsliup@163.com, describing your skills and areas of interest, and we will suggest suitable tasks
 
-## PR 是唯一的考察方式
+## PRs Are the Only Evaluation Criterion
 
-我们**不看简历、不面试**——Pull Request 是考察贡献者的唯一方式。
+We **do not review resumes or conduct interviews** — Pull Requests are the only way we evaluate contributors.
 
-一个高质量的 PR 通常具备三个特征：
+A high-quality PR typically has three characteristics:
 
-1. **解决真问题**：修复实际存在的 Bug 或补齐真实缺口，而非为改而改
-2. **说明修改原因**：PR 描述讲清楚"为什么改"，而不只是"改了什么"
-3. **响应 review 意见**：积极回应维护者的评审意见并跟进修改
+1. **Solves a real problem**: Fixes an actual bug or fills a genuine gap, rather than making changes for the sake of changing
+2. **Explains the rationale**: The PR description clearly explains "why the change was made", not just "what was changed"
+3. **Responds to review feedback**: Actively addresses maintainers' review comments and follows up with revisions
 
-持续贡献高质量 PR（考察期约 3 个月）的贡献者，有机会成为**核心协作者**，参与版本规划与关键模块开发。核心协作者的投入预期为**每周 1-2 小时异步沟通**（无需固定在线），我们理解大家有自己的本职工作。
+Contributors who consistently submit high-quality PRs (over an evaluation period of ~3 months) have the opportunity to become **Core Collaborators**, participating in release planning and key module development. The expected time commitment for Core Collaborators is **1–2 hours of asynchronous communication per week** (no fixed online hours required), as we understand everyone has their own day job.
 
-## 贡献者的回报
+## What Contributors Get
 
-当前项目有少量收入（用户捐款获取积分的付费模式），但**尚不足以覆盖服务器与开发 token 成本**，因此暂时无法向贡献者支付报酬，当前回报包括：
+The project currently generates a small amount of revenue (via user donations for points), which is **not yet sufficient to cover server and development token costs**. Therefore, we cannot pay financial compensation to contributors at this stage. Current rewards include:
 
-- **公开署名与流量**：版本发布、公众号文章中点名致谢
-- **稀缺经验**：深入参与多智能体系统（Agent 编排、辩论协作、能力扩展）的工程实战
-- **未来商业化优先权**：项目商业化时优先考虑核心贡献者
+- **Public Attribution & Visibility**: Named acknowledgments in release notes and official articles
+- **Rare Engineering Experience**: Deep hands-on experience building production multi-agent systems (Agent orchestration, debate collaboration, capability extension)
+- **Future Commercialization Priority**: Core contributors receive priority consideration when the project commercializes
 
-### 收入分配框架
+### Revenue-Sharing Framework
 
-我们把"收入覆盖成本之后怎么分"的原则提前写清楚，让你在选择投入前看到预期：
+We outline the principles of "how revenue will be shared once costs are covered" upfront so you know what to expect before investing your time:
 
-| 阶段 | 收入状态 | 贡献者回报 |
+| Stage | Revenue Status | Contributor Rewards |
 |------|---------|-----------|
-| 当前 | 少量收入，尚不足以覆盖服务器与 token 成本 | 署名 + 经验 + 商业化优先权 |
-| 成本覆盖 | 收入覆盖基础成本并有盈余 | 启动**社区贡献基金**，年度评估分配：核心协作者可获顾问费 / 项目奖金 |
-| 持续盈余 | 稳定商业化 | 按贡献评估的利润分成或正式雇佣机会 |
+| Current | Modest revenue, not yet covering server and token costs | Attribution + Experience + Commercialization Priority |
+| Cost Coverage | Revenue covers base costs with a surplus | Launch of a **Community Contribution Fund**, evaluated and distributed annually: Core Collaborators may receive consulting fees / project bonuses |
+| Sustained Surplus | Stable commercialization | Contribution-based profit sharing or formal employment opportunities |
 
-三条原则：
+Three guiding principles:
 
-1. **不承诺股权或固定分成比例**——项目未成立公司实体，早期承诺股权是法律风险
-2. **贡献量化由维护者综合评估**——看 PR 质量、影响力、持续度，不设机械公式（代码行数 / PR 数量都不是好指标）
-3. **以上是目标原则而非法律承诺**——会随实际收入情况调整；进入"成本覆盖"阶段时会正式公布具体分配方案
+1. **No promises of equity or fixed revenue-sharing percentages** — the project has not incorporated as a legal entity, and promising early equity carries legal risks
+2. **Contributions are evaluated holistically by maintainers** — based on PR quality, impact, and consistency rather than mechanical formulas (lines of code or PR counts are poor metrics)
+3. **The above are target principles rather than binding legal commitments** — they will be adjusted according to actual revenue; specific distribution plans will be formally announced upon entering the "Cost Coverage" stage
 
-我们不承诺早期股权或分成。
+We do not promise early equity or fixed revenue shares.
 
-## 贡献者许可协议（CLA）
+## Contributor License Agreement (CLA)
 
-提交首个 PR 后，维护者会向你发送贡献者许可协议（CLA）供签署。签署 CLA 是合并的前提。
+After you submit your first PR, the maintainer will send you a Contributor License Agreement (CLA) to sign. Signing the CLA is a prerequisite for merging.
 
-### 合并后代码的所有权
+### Code Ownership After Merging
 
-这是贡献者最关心的问题，规则如下：
+This is the question contributors care about most. The rules are as follows:
 
-1. **版权仍归你**：你提交的代码，版权始终属于你本人，git 提交历史即原始记录；你仍有权在其他场合使用自己写的代码
-2. **项目获得持久授权**：通过 CLA，你授予本项目一项永久、全球范围、免版税的许可——将你的贡献纳入本项目，按项目授权体系（含专有部分的商业许可）使用、修改、再许可与商业分发
-3. **对外授权跟随项目**：合并后的代码作为项目整体的一部分对外授权（Apache-2.0 组件或专有 source-available 组件），不再单独按贡献者个人设置许可；你的署名保留在提交历史与致谢名单中
+1. **You retain copyright**: The copyright of the code you submit always belongs to you, with the git commit history serving as the original record; you retain the right to use code you wrote in other contexts
+2. **The project receives a perpetual license**: Through the CLA, you grant this project a perpetual, worldwide, royalty-free license to incorporate your contribution into the project and to use, modify, sublicense, and commercially distribute it under the project's licensing framework (including commercial licenses for proprietary components)
+3. **Outbound licensing follows the project**: Merged code is licensed externally as part of the project as a whole (either under Apache-2.0 components or proprietary source-available components) rather than under individual contributor licenses; your attribution is preserved in the commit history and acknowledgments list
 
-**为什么需要 CLA**：本项目采用混合授权（部分开源 + 部分专有商业化）。没有 CLA，贡献者合并进专有部分的代码会成为商业化的权利障碍；有了 CLA，项目可以合规地持续商业化，反哺开源与社区。
+**Why a CLA is needed**: This project uses a hybrid license (partially open-source + partially proprietary/commercial). Without a CLA, contributor code merged into proprietary components would create legal obstacles to commercialization; with a CLA, the project can commercialize compliantly and sustainably to give back to the open-source community.
 
-> 模式说明：版权完全转让（Assignment）对贡献者过于激进；DCO（Signed-off-by）不给项目商业授权。本项目采用业界主流的 CLA 模式（Apache 基金会、Google 均采用类似模式）。
+> Model note: Full copyright assignment is too aggressive toward contributors, while DCO (Signed-off-by) does not grant commercial licensing rights to the project. This project adopts the industry-standard CLA model (similar to the Apache Software Foundation and Google).
 
-## PR 提交流程
+## PR Submission Workflow
 
-1. **Fork 并克隆**：Fork 本仓库到你的账号，`git clone <你的fork>`
-2. **建分支**：从主分支新建工作分支，命名建议 `fix/简短描述` 或 `feat/简短描述`
-3. **小步提交**：提交信息遵循 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/)（`fix: 修复xxx` / `feat: 新增xxx` / `docs: 文档xxx`）
-4. **本地验证**：跑完下方验证清单
-5. **发起 PR**：PR 标题同样遵循 Conventional Commits，模板会自动加载；描述中重点说明"为什么改"和验证方式
-6. **响应 review**：维护者会尽快评审，按意见跟进修改——响应质量是考察的一部分
+1. **Fork and clone**: Fork this repository to your account and run `git clone <your_fork>`
+2. **Create a branch**: Create a working branch from the main branch, named `fix/short-description` or `feat/short-description`
+3. **Commit in small steps**: Follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages (`fix: fix xxx` / `feat: add xxx` / `docs: document xxx`)
+4. **Verify locally**: Run through the verification checklist below
+5. **Open a PR**: Follow Conventional Commits for the PR title as well; the PR template will load automatically. Focus on explaining "why the change was made" and how it was verified in the description
+6. **Respond to reviews**: Maintainers will review as soon as possible. Follow up with revisions based on feedback — response quality is part of the evaluation
 
-## 开发环境
+## Development Environment
 
-- Python 3.11（后端依赖见 `requirements.txt`）
-- Node.js 18+（前端依赖见 `frontend/package.json`）
-- MongoDB 与 Redis（本地或 Docker）
-- 提交信息遵循 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/)（`feat:` / `fix:` / `docs:` / `refactor:` / `chore:`）
+- Python 3.11 (see `requirements.txt` for backend dependencies)
+- Node.js 18+ (see `frontend/package.json` for frontend dependencies)
+- MongoDB and Redis (local or Docker)
+- Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:` / `fix:` / `docs:` / `refactor:` / `chore:`)
 
-PR 提交前请确保：
+Before submitting a PR, please ensure:
 
-- [ ] 后端改动：`python -m py_compile <改动文件>` 通过，`import app.main` 正常
-- [ ] 前端改动：`npx vue-tsc --noEmit` 与 `npm run build` 通过
-- [ ] 不引入新的付费服务依赖或密钥硬编码
+- [ ] Backend changes: `python -m py_compile <changed_files>` passes and `import app.main` succeeds
+- [ ] Frontend changes: `npx vue-tsc --noEmit` and `npm run build` pass
+- [ ] No new paid service dependencies or hardcoded secrets are introduced
 
-## 合规红线
+## Compliance Red Lines
 
-本项目定位为**研究辅助工具**，请确保你的贡献：
+This project is positioned as a **research assistance tool**. Please ensure your contribution:
 
-- 不引入目标价、止损止盈、买卖时机等交易指令类功能
-- 不移除或弱化"不构成投资建议"等合规声明
-- 不抓取需要登录/付费的数据源，不绕过平台反爬限制
-- 不引入 GPL / AGPL 等强传染性许可证的第三方依赖——本项目含专有组件，仅接受 MIT / Apache-2.0 / BSD 等宽松许可证依赖
+- Does not introduce trading instruction features such as target prices, stop-loss/take-profit levels, or buy/sell timing
+- Does not remove or weaken compliance disclaimers such as "does not constitute investment advice"
+- Does not scrape data sources that require login or payment, and does not bypass platform anti-scraping restrictions
+- Does not introduce third-party dependencies under strong copyleft licenses such as GPL / AGPL — this project contains proprietary components and only accepts permissive dependencies (MIT / Apache-2.0 / BSD, etc.)
 
-不符合合规红线的 PR 将不会被合并。
+PRs that violate compliance red lines will not be merged.
 
-## 行为准则
+## Code of Conduct
 
-在 Issue、PR 与讨论中保持友好与尊重；对事不对人；帮助新成员是加分项。
+Be friendly and respectful in Issues, PRs, and discussions; focus on the issue rather than the person; helping newcomers is a plus.
 
-## 沟通方式
+## Communication Channels
 
-- **初始沟通走邮件**：hsliup@163.com（合作意向、PR 之外的讨论、商业咨询）
-- **具体技术问题**：优先在 GitHub Issue / PR 中公开讨论，方便沉淀，也方便后来的贡献者
-- **深入协作**：合作顺畅后，我们会邀请你加入项目**微信群**与**知识星球**，参与日常讨论与版本规划
+- **Initial communication via email**: hsliup@163.com (collaboration intent, discussions outside PRs, commercial inquiries)
+- **Specific technical issues**: Prefer public discussions in GitHub Issues / PRs so knowledge is preserved and accessible to future contributors
+- **Deep collaboration**: Once collaboration goes smoothly, we will invite you to join the project **WeChat group** and **Knowledge Planet (Zsxq)** to participate in daily discussions and release planning

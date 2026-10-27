@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试数据库管理API
+Test database management API
 """
 
 import asyncio
@@ -11,42 +11,42 @@ sys.path.append('.')
 from app.services.database_service import DatabaseService
 
 async def test_database_service():
-    """测试数据库服务"""
-    print('🧪 测试数据库管理服务')
+    """Test database service"""
+    print('🧪 Test database management services')
     print('=' * 50)
     
     try:
         service = DatabaseService()
         
-        # 测试获取数据库状态
-        print('📊 测试获取数据库状态...')
+        # Test to get database status
+        print('📊 Test to get database status...')
         status = await service.get_database_status()
-        print(f'✅ MongoDB连接: {status["mongodb"]["connected"]}')
-        print(f'✅ Redis连接: {status["redis"]["connected"]}')
+        print(f'✅ MongoDB connect: {status["mongodb"]["connected"]}')
+        print(f'✅ Redis connect: {status["redis"]["connected"]}')
         
-        # 测试获取数据库统计
-        print('\n📈 测试获取数据库统计...')
+        # Test to obtain database statistics
+        print('\n📈 Test to obtain database statistics...')
         stats = await service.get_database_stats()
-        print(f'📋 集合数量: {stats["total_collections"]}')
-        print(f'📄 文档数量: {stats["total_documents"]}')
-        print(f'💾 存储大小: {stats["total_size"]} bytes')
+        print(f'📋 Collection quantity: {stats["total_collections"]}')
+        print(f'📄 Number of documents: {stats["total_documents"]}')
+        print(f'💾 Storage size: {stats["total_size"]} bytes')
         
-        # 测试连接测试
-        print('\n🔗 测试数据库连接...')
+        # test connection test
+        print('\n🔗 Test database connection...')
         test_results = await service.test_connections()
-        print(f'✅ MongoDB测试: {test_results["mongodb"]["success"]}')
-        print(f'✅ Redis测试: {test_results["redis"]["success"]}')
-        print(f'✅ 整体测试: {test_results["overall"]}')
+        print(f'✅ MongoDB test: {test_results["mongodb"]["success"]}')
+        print(f'✅ Redis test: {test_results["redis"]["success"]}')
+        print(f'✅ overall test: {test_results["overall"]}')
         
-        # 测试备份列表
-        print('\n📋 测试获取备份列表...')
+        # Test backup list
+        print('\n📋 Test to get backup list...')
         backups = await service.list_backups()
-        print(f'📦 备份数量: {len(backups)}')
+        print(f'📦 Number of backups: {len(backups)}')
         
-        print('\n🎉 所有测试通过！')
+        print('\n🎉 All tests passed!')
         
     except Exception as e:
-        print(f'❌ 测试失败: {e}')
+        print(f'❌ test failed: {e}')
         import traceback
         traceback.print_exc()
 

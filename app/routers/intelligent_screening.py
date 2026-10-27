@@ -1,7 +1,7 @@
 """
-智能筛选 API 路由
+Smart filtering API routing
 
-复用 ChatRequest schema，新增筛选专用的响应模型。
+Reuse the ChatRequest schema and add a filter-specific response model.
 """
 
 import json
@@ -30,20 +30,20 @@ from app.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 
-# 配置：是否使用V2版本
+# Configuration: whether to use V2 version
 USE_V2 = os.environ.get("SCREENING_USE_V2", "true").lower() in ("true", "1", "yes")
 
-# 延迟导入V2服务（避免循环依赖）
+# Delayed import of V2 services (avoiding circular dependencies)
 def get_screening_service(db: AsyncIOMotorDatabase):
     if USE_V2:
         try:
             from app.services.intelligent_screening_v2 import IntelligentScreeningServiceV2
-            logger.info("[智能筛选] 使用V2版本（基于意图理解）")
+            logger.info("[Smart filtering] Use V2 version (based on intent understanding)")
             return IntelligentScreeningServiceV2(db)
         except Exception as e:
-            logger.warning(f"[智能筛选] V2版本加载失败: {e}，回退到V1")
+            logger.warning(f"[Smart filtering] V2 Version loading failed: {e}, Fallback to V1")
 
-    logger.info("[智能筛选] 使用V1版本（关键词匹配）")
+    logger.info("[Smart filtering] Use V1 version (keyword matching)")
     return IntelligentScreeningService(db)
 
 
@@ -51,17 +51,17 @@ router = APIRouter(prefix="/api/screening/intelligent")
 user_service = UserService()
 
 
-@router.post("/chat", response_model=ScreeningChatResponse, summary="智能筛选对话")
+@router.post("/chat", response_model=ScreeningChatResponse, summary="Intelligent filtering of conversations")
 async def chat(
     req: ChatRequest,
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
     """
-    处理用户的选股对话请求。
+    Handle the user s stock picking dialogue request.
 
-    - 新需求：返回 phase="confirmation"，包含需求分析和改进建议
-    - 确认/追问：返回 phase="result"，包含推荐股票
+    - New requirement: return phase="confirmation", Contains needs analysis and improvement suggestions
+    - Confirm/Question: Return phase="result", Contains recommended stocks
     """
     user_id = str(user.get("_id", user.get("id", "")))
     service = get_screening_service(db)
@@ -74,11 +74,11 @@ async def websocket_chat(
     websocket: WebSocket,
     token: Optional[str] = Query(None),
 ):
-    """智能筛选 WebSocket 端点，按阶段与工具调用实时推送进度。
+    """Intelligent filtering of WebSocket endpoints, real-time push progress by stage and tool call.
 
-    认证方式：
-    - JWT 模式: ws://.../ws?token=<jwt_token>
-    - 京东云模式: ws://.../ws （无需 token，由网关注入 Basic Auth）
+    Authentication method:
+    - JWT mode: ws://.../ws?token=<jwt_token>
+    - Jingdong cloud model: ws://.../ws  (No token required, Basic Auth injected by gateway)
     """
     user_id = await _authenticate_websocket(websocket, token)
     if not user_id:
@@ -93,7 +93,7 @@ async def websocket_chat(
         "data": {
             "user_id": user_id,
             "timestamp": datetime.utcnow().isoformat(),
-            "message": "智能筛选流式连接已建立",
+            "message": "Intelligent filtering streaming connection established",
         },
     })
 
@@ -105,7 +105,7 @@ async def websocket_chat(
             except json.JSONDecodeError:
                 await websocket.send_json({
                     "type": "error",
-                    "data": {"message": "消息格式错误，需为 JSON"},
+                    "data": {"message": "Message format error, needs to be JSON"},
                 })
                 continue
 
@@ -120,7 +120,7 @@ async def websocket_chat(
             if msg_type != "chat":
                 await websocket.send_json({
                     "type": "error",
-                    "data": {"message": "不支持的消息类型"},
+                    "data": {"message": "Unsupported message type"},
                 })
                 continue
 
@@ -129,7 +129,7 @@ async def websocket_chat(
             if not message:
                 await websocket.send_json({
                     "type": "error",
-                    "data": {"message": "消息不能为空"},
+                    "data": {"message": "Message cannot be empty"},
                 })
                 continue
 
@@ -141,7 +141,7 @@ async def websocket_chat(
             await websocket.send_json({
                 "type": "started",
                 "data": {
-                    "message": "已收到筛选请求，开始处理",
+                    "message": "Screening request received and processing started",
                     "timestamp": datetime.utcnow().isoformat(),
                 },
             })
@@ -155,25 +155,25 @@ async def websocket_chat(
                 )
                 await websocket.send_json({"type": "final", "data": result})
             except Exception as e:
-                logger.exception("[智能筛选WS] 处理失败")
+                logger.exception("[Smart filtering WS] Processing failed")
                 await websocket.send_json({
                     "type": "error",
                     "data": {
-                        "message": f"处理失败：{str(e)}",
+                        "message": f"Processing failed:{str(e)}",
                         "timestamp": datetime.utcnow().isoformat(),
                     },
                 })
     except WebSocketDisconnect:
-        logger.info("[智能筛选WS] 客户端断开: user=%s", user_id)
+        logger.info("[Smart filtering WS] Client disconnected: user=%s", user_id)
 
 
-@router.get("/conversation", response_model=ScreeningConversationResponse, summary="获取筛选对话历史")
+@router.get("/conversation", response_model=ScreeningConversationResponse, summary="Get filtered conversation history")
 async def get_conversation(
     conversation_id: str | None = Query(None),
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """获取当前用户的智能筛选对话历史"""
+    """Get the current user s smart filter conversation history"""
     user_id = str(user.get("_id", user.get("id", "")))
     service = get_screening_service(db)
     resolved_conversation_id, messages = await service.get_conversation(user_id, conversation_id)
@@ -190,12 +190,12 @@ async def get_conversation(
     return ScreeningConversationResponse(conversation_id=resolved_conversation_id, messages=items)
 
 
-@router.get("/conversations", response_model=ScreeningConversationListResponse, summary="获取筛选历史会话列表")
+@router.get("/conversations", response_model=ScreeningConversationListResponse, summary="Get filtered history conversation list")
 async def list_conversations(
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """获取当前用户的智能筛选历史会话列表"""
+    """Get the current user s smart filter history session list"""
     user_id = str(user.get("_id", user.get("id", "")))
     service = get_screening_service(db)
     conversations = await service.list_conversations(user_id)
@@ -203,15 +203,15 @@ async def list_conversations(
     return ScreeningConversationListResponse(items=items)
 
 
-@router.delete("/conversation", summary="清空筛选对话历史")
+@router.delete("/conversation", summary="Clear filtered conversation history")
 async def clear_conversation(
     conversation_id: str | None = Query(None),
     user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_mongo_db),
 ):
-    """清空当前用户的智能筛选对话历史"""
+    """Clear the current user s smart filter conversation history"""
     user_id = str(user.get("_id", user.get("id", "")))
     service = get_screening_service(db)
     await service.clear_conversation(user_id, conversation_id)
-    return {"message": "已清空智能筛选对话"}
+    return {"message": "Smart filter conversation cleared"}
 

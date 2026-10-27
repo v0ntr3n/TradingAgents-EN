@@ -1,12 +1,12 @@
-"""使用问答机器人工具：查询模拟交易账户状态。
+"""Use the Q&A robot tool: Check the status of your demo trading account.
 
-让使用问答助手能"看到"用户当前的模拟交易账户状态，包含：
-- 总资产、可用资金、持仓市值
-- 已实现盈亏、浮动盈亏
-- 持仓股票数、盈利/亏损股票数
-- 持仓明细（最多 10 只）
+Allows using Q&A Assistant to"see"The user s current simulated trading account status, including:
+- Total assets, available funds, position market value
+- Realized profit and loss, floating profit and loss
+- Number of stocks held, number of profitable/losing stocks
+- Position details (up to 10 stocks)
 
-避免机器人凭 FAQ 猜答案，遇到模拟交易相关问题直接调工具看真实状态。
+Avoid robots guessing answers based on FAQs, and when encountering problems related to simulated trading, directly adjust the tool to see the real status.
 """
 
 import logging
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def _format_money(value: Optional[float]) -> str:
-    """格式化金额为中文可读字符串。"""
+    """Format the amount as a Chinese readable string."""
     if value is None:
         return "未知"
     try:
@@ -37,7 +37,7 @@ def _format_money(value: Optional[float]) -> str:
 
 
 def _format_pnl(value: Optional[float]) -> str:
-    """格式化盈亏金额（带正负号）。"""
+    """Format profit and loss amount (with sign)."""
     if value is None:
         return "未知"
     try:
@@ -49,9 +49,9 @@ def _format_pnl(value: Optional[float]) -> str:
 
 
 async def _get_paper_account(db, user_id: str) -> Optional[Dict[str, Any]]:
-    """获取或创建模拟交易账户。"""
+    """Get or create a paper trading account."""
     try:
-        # 兼容 user_id 为 ObjectId 或字符串
+        # Compatible user_id is ObjectId or string
         from bson import ObjectId
         uid = user_id
         try:
@@ -61,19 +61,19 @@ async def _get_paper_account(db, user_id: str) -> Optional[Dict[str, Any]]:
 
         acc = await db["paper_accounts"].find_one({"user_id": uid})
         if not acc:
-            # 尝试字符串形式
+            # Try the string form
             acc = await db["paper_accounts"].find_one({"user_id": user_id})
         if not acc:
-            # 检查是否已有初始化的账户
+            # Check whether there is an initialized account
             acc = await db["paper_accounts"].find_one({"user_id": uid, "status": "active"})
         return acc
     except Exception as exc:
-        logger.warning("[get_paper_trading_status] 查询模拟账户失败: %s", exc)
+        logger.warning("[get_paper_trading_status] Failed to query demo account: %s", exc)
         return None
 
 
 async def _get_paper_positions(db, user_id: str) -> List[Dict[str, Any]]:
-    """获取持仓列表。"""
+    """Get the list of positions."""
     try:
         from bson import ObjectId
         uid = user_id
@@ -88,30 +88,30 @@ async def _get_paper_positions(db, user_id: str) -> List[Dict[str, Any]]:
             docs = await db["paper_positions"].find({"user_id": user_id}).to_list(length=50)
         return docs or []
     except Exception as exc:
-        logger.warning("[get_paper_trading_status] 查询持仓失败: %s", exc)
+        logger.warning("[get_paper_trading_status] Failed to query position: %s", exc)
         return []
 
 
 async def _get_latest_prices(db, codes: List[str]) -> Dict[str, Optional[float]]:
-    """批量获取最新价（从 market_quotes 或 historical_data 集合）。"""
+    """Get the latest prices in batches (from the market_quotes or historical_data collection)."""
     prices: Dict[str, Optional[float]] = {}
     if not codes:
         return prices
     try:
         for code in codes:
-            # 优先从 market_quotes 集合取
+            # Take priority from the market_quotes collection
             quote = await db["market_quotes"].find_one({"code": code}, sort=[("updated_at", -1)])
             if quote and quote.get("last_price"):
                 prices[code] = float(quote["last_price"])
                 continue
-            # 回退到 historical_data 取最新一条
+            # Go back to historical_data and get the latest one
             hist = await db["historical_data"].find_one({"symbol": code}, sort=[("date", -1)])
             if hist and hist.get("close"):
                 prices[code] = float(hist["close"])
             else:
                 prices[code] = None
     except Exception as exc:
-        logger.warning("[get_paper_trading_status] 获取最新价失败: %s", exc)
+        logger.warning("[get_paper_trading_status] Failed to get latest price: %s", exc)
     return prices
 
 
@@ -119,7 +119,7 @@ async def _get_latest_prices(db, codes: List[str]) -> Dict[str, Optional[float]]
 @register_tool(
     tool_id="get_paper_trading_status",
     name="查询模拟交易账户状态",
-    description="查询当前用户的模拟交易账户状态：总资产、可用资金、持仓市值、已实现盈亏、浮动盈亏、持仓股票数、盈利亏损股票数。当用户问'模拟账户多少钱''今天盈亏多少''还剩多少资金''持仓几只股票''哪只亏得最多'时使用。",
+    description="Query the current user s simulated trading account status: total assets, available funds, market value of positions, realized profit and loss, floating profit and loss, number of stocks held, and number of stocks with profits and losses. When the user asks'How much does a demo account cost?''What s the profit and loss today?''How much money is left''How many stocks are held?''Which one loses the most?'when used.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
@@ -138,11 +138,11 @@ async def _get_latest_prices(db, codes: List[str]) -> Dict[str, Optional[float]]
         "持仓股票盈亏情况",
         "模拟交易账户状态",
     ],
-    when_to_use="当用户问到模拟交易账户余额、可用资金、持仓数、盈亏情况时使用。",
-    returns="返回文本格式的模拟交易账户摘要，包含总资产、可用资金、持仓市值、盈亏、持仓股票列表。",
+    when_to_use="It is used when the user asks about the simulated trading account balance, available funds, number of positions, and profit and loss.",
+    returns="Returns a simulated trading account summary in text format, including total assets, available funds, market value of positions, profit and loss, and list of stocks held.",
 )
 async def get_paper_trading_status() -> str:
-    """查询模拟交易账户状态。"""
+    """Check the status of simulated trading account."""
     from app.core.database import get_mongo_db
 
     user_id = require_current_user_id()
@@ -151,31 +151,31 @@ async def get_paper_trading_status() -> str:
     acc = await _get_paper_account(db, user_id)
     if not acc:
         return (
-            "📊 模拟交易账户状态\n"
+            "📊 Demo trading account status\n"
             "\n"
-            "❌ 您还没有开通模拟交易账户\n"
+            "❌ You have not opened a demo trading account yet\n"
             "\n"
-            "💡 提示：可以到仪表板点击「模拟交易总资产」卡片，或在侧边栏选择「模拟交易」菜单，"
-            "首次进入会自动为您开通虚拟账户（初始资金 100 万）。"
+            "💡 Tip: You can go to the dashboard and click the Simulated Trading Total Assets card, or select the Simulated Trading menu in the sidebar."
+            "When you enter for the first time, a virtual account will be automatically opened for you (initial capital is 1 million)."
         )
 
     positions = await _get_paper_positions(db, user_id)
 
-    # 解析资金信息（多货币格式）
+    # Parse funds information (multi-currency format)
     cash_dict = acc.get("cash", {})
     realized_pnl_dict = acc.get("realized_pnl", {})
 
-    # 兼容旧格式（单一现金）
+    # Compatible with old formats (single cash)
     if not isinstance(cash_dict, dict):
         cash_dict = {"CNY": float(cash_dict or 0)}
     if not isinstance(realized_pnl_dict, dict):
         realized_pnl_dict = {"CNY": float(realized_pnl_dict or 0)}
 
-    # 获取持仓股票的最新价
+    # Get the latest price of the held stock
     codes = [p.get("code") for p in positions if p.get("code")]
     prices = await _get_latest_prices(db, codes)
 
-    # 计算持仓市值（按 CNY 简化）
+    # Calculate the market value of positions (simplified in CNY)
     positions_value_cny = 0.0
     floating_pnl_cny = 0.0
     enriched_positions: List[Dict[str, Any]] = []
@@ -212,12 +212,12 @@ async def get_paper_trading_status() -> str:
     total_assets = cash_cny + positions_value_cny
     total_pnl = realized_pnl_cny + floating_pnl_cny
 
-    # 持仓股票盈亏统计
+    # Profit and loss statistics of held stocks
     profit_count = sum(1 for p in enriched_positions if (p.get("floating_pnl") or 0) > 0)
     loss_count = sum(1 for p in enriched_positions if (p.get("floating_pnl") or 0) < 0)
     flat_count = sum(1 for p in enriched_positions if (p.get("floating_pnl") or 0) == 0)
 
-    # 找出亏损最多和盈利最多的股票
+    # Find the stocks with the most losses and profits
     worst_position = None
     best_position = None
     if enriched_positions:
@@ -226,7 +226,7 @@ async def get_paper_trading_status() -> str:
             worst_position = min(with_pnl, key=lambda x: x["floating_pnl"])
             best_position = max(with_pnl, key=lambda x: x["floating_pnl"])
 
-    # 格式化输出
+    # Formatted output
     lines = ["📊 模拟交易账户状态"]
     lines.append("")
     lines.append("【1】资产概览")
@@ -235,7 +235,7 @@ async def get_paper_trading_status() -> str:
     lines.append(f"- 持仓市值: {_format_money(positions_value_cny)}")
     lines.append("")
     lines.append("【2】盈亏情况")
-    lines.append(f"- 总盈亏(已实现+浮动): {_format_pnl(total_pnl)}")
+    lines.append(f"- Total profit and loss(Realized+float): {_format_pnl(total_pnl)}")
     lines.append(f"- 已实现盈亏: {_format_pnl(realized_pnl_cny)}")
     lines.append(f"- 浮动盈亏: {_format_pnl(floating_pnl_cny)}")
     lines.append("")
@@ -256,10 +256,10 @@ async def get_paper_trading_status() -> str:
             f"({worst_position.get('floating_pnl_pct', 0):+}%)"
         )
 
-    # 持仓明细（最多 10 只）
+    # Position details (up to 10 stocks)
     if enriched_positions:
         lines.append("")
-        lines.append("【4】持仓明细（最多 10 只）")
+        lines.append(" [4] Position details (up to 10 stocks)")
         sorted_positions = sorted(
             enriched_positions,
             key=lambda x: abs(x.get("market_value") or 0),
@@ -273,11 +273,11 @@ async def get_paper_trading_status() -> str:
             last_price_str = f"{p['last_price']:.2f}" if p.get("last_price") is not None else "无"
             lines.append(
                 f"  • {p['name']}({p['code']}) 数量 {p['quantity']} | "
-                f"成本 {p['avg_cost']:.2f} | 最新价 {last_price_str} | "
-                f"市值 {_format_money(p['market_value'])} | 浮动 {pnl_str}"
+                f"cost {p['avg_cost']:.2f} | latest price {last_price_str} | "
+                f"Market value {_format_money(p['market_value'])} | float {pnl_str}"
             )
 
-    # 账户更新时间
+    # Account update time
     updated_at = acc.get("updated_at") or acc.get("created_at")
     if updated_at:
         if isinstance(updated_at, datetime):
@@ -287,11 +287,11 @@ async def get_paper_trading_status() -> str:
         lines.append("")
         lines.append(f"📌 账户最近更新: {updated_str}")
 
-    # 综合建议
+    # Comprehensive suggestions
     lines.append("")
     lines.append("💡 综合判断")
     if not enriched_positions:
-        lines.append("- 当前空仓，可用资金充足。可以到「模拟交易」页面进行虚拟操作练习")
+        lines.append("- Currently short position, sufficient funds available. You can go to the Simulated Trading page to practice virtual operations")
     else:
         if floating_pnl_cny > 0:
             lines.append(f"- 当前持仓整体浮盈 {_format_pnl(floating_pnl_cny)}，可关注收益关注价位")
@@ -301,8 +301,8 @@ async def get_paper_trading_status() -> str:
             lines.append("- 当前持仓整体持平")
 
         if cash_cny / max(total_assets, 1) < 0.1:
-            lines.append("- ⚠️ 可用资金占比 < 10%，资金利用率高，注意风险")
+            lines.append("- ⚠️ Percentage of available funds < 10%, High capital utilization rate, pay attention to risks")
         elif cash_cny / max(total_assets, 1) > 0.9 and positions_value_cny > 0:
-            lines.append("- 可用资金占比 > 90%，资金利用率低")
+            lines.append("- Percentage of available funds > 90%, Low capital utilization rate")
 
     return "\n".join(lines)

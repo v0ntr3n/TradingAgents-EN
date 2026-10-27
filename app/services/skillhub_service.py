@@ -1,18 +1,18 @@
 """
-SkillHub Skill 搜索与安装服务
+SkillHub Skill Search and installation services
 
-通过 skillhub CLI (npm 包) 搜索和安装 Skill。
-Skill 实际存储在 GitHub 仓库中，CLI 负责从 GitHub 下载和解压。
-有些 Skill 是 SkillHub 特有的，不在 ClawHub 上，所以需要用 CLI。
+Pass skillhub CLI (npm package) Search and install skills.
+Skill The actual storage is in the GitHub repository, and the CLI is responsible for downloading and decompressing it from GitHub.
+Some skills are specific to SkillHub and are not on ClawHub, so you need to use the CLI.
 
-首次使用时自动检测并安装 skillhub CLI (npm install -g skillhub)。
+Automatically detect and install on first use skillhub CLI (npm install -g skillhub). 
 
-CLI 命令：
+CLI Command:
 - skillhub search "<query>" --json --limit <n>
 - skillhub install <skill-id> --project --force
 
-安装后 Skill 位于 .claude/skills/<name>/，需要移动到 skills/<name>/
-然后复用 _import_local_skill_to_db 导入到 MongoDB。
+After installation the Skill is located in .claude/skills/<name>/, need to move to skills/<name>/
+Then reuse _import_local_skill_to_db to import into MongoDB.
 """
 
 import asyncio
@@ -28,27 +28,27 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SKILLS_DIR = PROJECT_ROOT / "skills"
 CLAUDE_SKILLS_DIR = PROJECT_ROOT / ".claude" / "skills"
 
-# CLI 自动安装锁（防止并发请求重复安装）
+# CLI Automatic installation lock (prevents concurrent requests for repeated installations)
 _cli_install_lock = asyncio.Lock()
-_cli_checked = False  # 进程级缓存：已确认 CLI 可用
+_cli_checked = False  # Process Level Cache: CLI confirmed to be available
 
 
 class SkillHubService:
-    """SkillHub Skill 搜索与安装服务（通过 CLI 子进程）"""
+    """SkillHub Skill Search and install services (via CLI child process)"""
 
-    CLI_TIMEOUT = 60  # 搜索/安装超时秒数
-    INSTALL_TIMEOUT = 120  # 安装 Skill 包超时秒数
+    CLI_TIMEOUT = 60  # Search/install timeout seconds
+    INSTALL_TIMEOUT = 120  # Install Skill package timeout seconds
 
     # =============================================================
-    # CLI 自动安装
+    # CLI Automatic installation
     # =============================================================
 
     @classmethod
     async def _ensure_cli(cls) -> bool:
-        """确保 skillhub CLI 可用，不可用则自动安装
+        """Make sure skillhub CLI is available, if not it will be installed automatically
 
         Returns:
-            True 如果 CLI 可用，False 如果安装失败
+            True False if the CLI is available, False if the installation fails
         """
         global _cli_checked
         if _cli_checked:
@@ -59,24 +59,24 @@ class SkillHubService:
             if _cli_checked:
                 return True
 
-            # 1. 检查是否已安装
+            # 1. Check if it is installed
             if await cls._is_cli_available():
                 _cli_checked = True
                 return True
 
-            # 2. 自动安装
-            logger.info("📦 skillhub CLI 未安装，正在自动安装 (npm install -g skillhub)...")
+            # 2. Automatic installation
+            logger.info("📦 skillhub CLI Not installed, installing automatically (npm install -g skillhub)...")
             ok = await cls._install_cli()
             if ok:
                 _cli_checked = True
-                logger.info("✅ skillhub CLI 安装成功")
+                logger.info("✅ skillhub CLI Installation successful")
             else:
-                logger.error("❌ skillhub CLI 自动安装失败")
+                logger.error("❌ skillhub CLI Automatic installation failed")
             return ok
 
     @staticmethod
     async def _is_cli_available() -> bool:
-        """检查 skillhub CLI 是否可用"""
+        """Check if skillhub CLI is available"""
         try:
             proc = await asyncio.create_subprocess_shell(
                 "skillhub --version",
@@ -92,7 +92,7 @@ class SkillHubService:
 
     @staticmethod
     async def _install_cli() -> bool:
-        """通过 npm 全局安装 skillhub CLI"""
+        """Install globally via npm skillhub CLI"""
         try:
             proc = await asyncio.create_subprocess_shell(
                 "npm install -g skillhub",
@@ -103,32 +103,32 @@ class SkillHubService:
             if proc.returncode == 0:
                 return True
             err = stderr.decode("utf-8", errors="replace") if stderr else ""
-            logger.error(f"npm install -g skillhub 失败: {err[:300]}")
+            logger.error(f"npm install -g skillhub failed: {err[:300]}")
             return False
         except Exception as e:
-            logger.error(f"npm install -g skillhub 异常: {e}")
+            logger.error(f"npm install -g skillhub Abnormal: {e}")
             return False
 
     # =============================================================
-    # 公开方法
+    # public method
     # =============================================================
 
     @classmethod
     async def search_skills(cls, query: str, limit: int = 20) -> List[Dict[str, Any]]:
-        """搜索 SkillHub 上的 Skill
+        """Search on SkillHub Skill
 
-        调用: skillhub search "<query>" --json --limit <n>
+        call: skillhub search "<query>" --json --limit <n>
         """
         if not query.strip():
             return []
 
-        # 确保 CLI 可用
+        # Make sure the CLI is available
         if not await cls._ensure_cli():
-            logger.error("skillhub CLI 不可用，无法搜索")
+            logger.error("skillhub CLI Unavailable, unable to search")
             return []
 
         try:
-            # 用 shell 方式调用（Windows 上 skillhub 是 .cmd 文件）
+            # Called in shell mode (skillhub on Windows is a .cmd file)
             cmd = f'skillhub search "{query}" --json --limit {limit}'
             proc = await asyncio.create_subprocess_shell(
                 cmd,
@@ -140,13 +140,13 @@ class SkillHubService:
 
             if proc.returncode != 0:
                 err = stderr.decode("utf-8", errors="replace") if stderr else ""
-                logger.warning(f"skillhub search 失败 (exit={proc.returncode}): {err[:200]}")
+                logger.warning(f"skillhub search failed (exit={proc.returncode}): {err[:200]}")
                 return []
 
             data = json.loads(stdout.decode("utf-8"))
             raw_skills = data.get("skills", []) if isinstance(data, dict) else []
 
-            # 标准化字段
+            # Standardized fields
             normalized = []
             for item in raw_skills:
                 if not isinstance(item, dict):
@@ -175,42 +175,42 @@ class SkillHubService:
                     "canonical_url": f"https://skillhub.cn/skills/{slug}",
                 })
 
-            # 按下载量倒序排列（CLI 不支持 --sort 参数，在 Python 端排序）
+            # Sort by download volume in descending order (CLI does not support --sort parameter, sort on Python side)
             normalized.sort(key=lambda x: x.get("download_count", 0), reverse=True)
-            logger.info(f"📊 SkillHub 搜索结果已按下载量倒序排列 (top: {normalized[0]['download_count'] if normalized else 0})")
+            logger.info(f"📊 SkillHub Search results have been sorted in descending order by download volume (top: {normalized[0]['download_count'] if normalized else 0})")
 
             return normalized
 
         except asyncio.TimeoutError:
-            logger.warning("skillhub search 超时")
+            logger.warning("skillhub search timeout")
             return []
         except Exception as e:
-            logger.warning(f"skillhub search 异常: {e}")
+            logger.warning(f"skillhub search Abnormal: {e}")
             return []
 
     @classmethod
     async def install_skill(cls, skill_id: str) -> Dict[str, Any]:
-        """从 SkillHub 安装 Skill 到本地目录
+        """Install Skill from SkillHub to local directory
 
-        流程：
-        1. 调用 skillhub install <id> --project --force
-        2. 安装到 .claude/skills/<name>/
-        3. 移动到 skills/<name>/
-        4. 校验 SKILL.md 和 scripts/ 存在
+        Process:
+        1. call skillhub install <id> --project --force
+        2. install to .claude/skills/<name>/
+        3. move to skills/<name>/
+        4. Verify that SKILL.md and scripts/ exist
         """
         skill_id = skill_id.strip()
         if not skill_id:
-            return {"success": False, "message": "skill_id 不能为空"}
+            return {"success": False, "message": "skill_id cannot be empty"}
 
-        # 确保 CLI 可用
+        # Make sure the CLI is available
         if not await cls._ensure_cli():
-            return {"success": False, "message": "skillhub CLI 自动安装失败，请手动运行: npm install -g skillhub"}
+            return {"success": False, "message": "skillhub CLI Automatic installation failed, please run manually: npm install -g skillhub"}
 
-        # skill_id 格式: "owner/repo/skill-name"，取最后一段作为 slug
+        # skill_id Format: "owner/repo/skill-name", Take the last paragraph as slug
         parts = skill_id.split("/")
         slug = parts[-1] if parts else skill_id
 
-        # 1. 调用 CLI 安装
+        # 1. Invoke CLI installation
         try:
             cmd = f'skillhub install "{skill_id}" --project --force'
             proc = await asyncio.create_subprocess_shell(
@@ -223,15 +223,15 @@ class SkillHubService:
 
             if proc.returncode != 0:
                 err = stderr.decode("utf-8", errors="replace") if stderr else ""
-                return {"success": False, "message": f"skillhub install 失败: {err[:300]}"}
+                return {"success": False, "message": f"skillhub install failed: {err[:300]}"}
 
-            logger.info(f"✅ skillhub install 成功: {skill_id}")
+            logger.info(f"✅ skillhub install success: {skill_id}")
         except asyncio.TimeoutError:
             return {"success": False, "message": f"安装超时（{cls.INSTALL_TIMEOUT}s）"}
         except Exception as e:
             return {"success": False, "message": f"安装异常: {e}"}
 
-        # 2. 定位安装目录（.claude/skills/<slug>/）
+        # 2. Locate the installation directory (.claude/skills/<slug>/) 
         installed_dir = CLAUDE_SKILLS_DIR / slug
         if not installed_dir.exists():
             installed_dir = cls._find_installed_skill(slug)
@@ -241,7 +241,7 @@ class SkillHubService:
                     "message": f"CLI 安装完成但未在 {CLAUDE_SKILLS_DIR} 找到 Skill 目录",
                 }
 
-        # 3. 移动到 skills/<slug>/
+        # 3. move to skills/<slug>/
         target_dir = SKILLS_DIR / slug
         if target_dir.exists():
             shutil.rmtree(target_dir, ignore_errors=True)
@@ -250,17 +250,17 @@ class SkillHubService:
         try:
             shutil.move(str(installed_dir), str(target_dir))
         except Exception as e:
-            return {"success": False, "message": f"移动 Skill 目录失败: {e}"}
+            return {"success": False, "message": f"Failed to move skill directory: {e}"}
 
-        # 4. 校验 SKILL.md
+        # 4. Verification SKILL.md
         if not (target_dir / "SKILL.md").exists():
             shutil.rmtree(target_dir, ignore_errors=True)
-            return {"success": False, "message": "Skill 包中未找到 SKILL.md"}
+            return {"success": False, "message": "Skill Not found in package SKILL.md"}
 
-        # 5. 校验 scripts/ 或根目录 .py 文件
-        # SkillHub 包结构可能有两种：
-        #   A) scripts/*.py（ClawHub 标准）
-        #   B) 根目录 *.py（如 stock-monitor/data_source.py, monitor.py 等）
+        # 5. Verify scripts/ or root directory .py file
+        # SkillHub There are two possible package structures:
+        #   A) scripts/*.py (ClawHub standard)
+        #   B) root directory *.py (Such as stock-monitor/data_source.py, monitor.py etc.)
         scripts_dir = target_dir / "scripts"
         has_scripts = False
         script_count = 0
@@ -269,18 +269,18 @@ class SkillHubService:
             has_scripts = True
             script_count = len([f for f in scripts_dir.iterdir() if f.suffix == ".py"])
         else:
-            # 检查根目录是否有 .py 文件
+            # Check if there is a .py file in the root directory
             root_py_files = [f for f in target_dir.iterdir()
                              if f.is_file() and f.suffix == ".py" and f.name != "__init__.py"]
             if root_py_files:
                 has_scripts = True
                 script_count = len(root_py_files)
-                logger.info(f"📦 Skill '{slug}' 检测到根目录 Python 脚本: {[f.name for f in root_py_files]}")
+                logger.info(f"📦 Skill '{slug}' Root Python script detected: {[f.name for f in root_py_files]}")
 
         if not has_scripts:
-            logger.info(f"📚 Skill '{slug}' 是知识型（无 Python 脚本），仍保留但标记为知识型")
+            logger.info(f"📚 Skill '{slug}' is knowledge-based (no Python scripts), remains but marked as knowledge-based")
 
-        # 6. 写入来源信息
+        # 6. Write source information
         origin_dir = target_dir / ".skillhub"
         origin_dir.mkdir(exist_ok=True)
         origin_info = {
@@ -306,19 +306,19 @@ class SkillHubService:
         }
 
     # =============================================================
-    # 内部方法
+    # internal method
     # =============================================================
 
     @staticmethod
     def _find_installed_skill(slug: str) -> Optional[Path]:
-        """在 .claude/skills/ 下查找已安装的 Skill 目录"""
+        """Find the installed Skill directory under .claude/skills/"""
         if not CLAUDE_SKILLS_DIR.exists():
             return None
         for item in CLAUDE_SKILLS_DIR.iterdir():
             if item.is_dir() and (item / "SKILL.md").exists():
                 if item.name == slug or slug in item.name or item.name in slug:
                     return item
-        # 如果没找到精确匹配，返回第一个有 SKILL.md 的目录
+        # If no exact match is found, return to the first directory with SKILL.md
         for item in CLAUDE_SKILLS_DIR.iterdir():
             if item.is_dir() and (item / "SKILL.md").exists():
                 return item

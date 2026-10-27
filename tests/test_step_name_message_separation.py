@@ -1,22 +1,22 @@
-"""测试步骤名称和消息的分离
+"""Separation of test step names and messages
 
-验证：
-1. current_step_name 应该是简短的中文名称（如 "市场分析师"）
-2. message 应该是详细的描述（如 "📈 市场分析师正在分析技术指标和市场趋势..."）
-3. current_step_description 应该与 message 相同
+Verify:
+1. current_step_name Should be a short Chinese name (such as "market analyst") 
+2. message should be a detailed description (e.g. "📈 Market analysts are analyzing technical indicators and market trends...") 
+3. current_step_description Should be the same as message
 """
 
 import pytest
 
 
 def test_node_mapping_returns_three_values():
-    """测试节点映射返回三个值：进度、消息、步骤名称"""
+    """The test node mapping returns three values: progress, message, step name"""
     from core.workflow.engine import WorkflowEngine
     
-    # 创建引擎实例
+    # Create engine instance
     engine = WorkflowEngine()
     
-    # 测试几个关键节点
+    # Test several key nodes
     test_nodes = [
         "market_analyst_v2",
         "fundamentals_analyst_v2",
@@ -28,39 +28,39 @@ def test_node_mapping_returns_three_values():
     for node_name in test_nodes:
         progress, message, step_name = engine._get_node_progress_info(node_name)
         
-        print(f"\n节点: {node_name}")
-        print(f"  进度: {progress}%")
-        print(f"  步骤名称: {step_name}")
-        print(f"  消息: {message}")
+        print(f"\n node: {node_name}")
+        print(f"  Progress: {progress}%")
+        print(f"  step name: {step_name}")
+        print(f"  news: {message}")
         
-        # 验证返回值
-        assert progress is not None, f"{node_name} 的进度不应为 None"
-        assert isinstance(progress, (int, float)), f"{node_name} 的进度应该是数字"
-        assert message is not None, f"{node_name} 的消息不应为 None"
-        assert step_name is not None, f"{node_name} 的步骤名称不应为 None"
+        # Verify return value
+        assert progress is not None, f"{node_name} The progress of should not be None"
+        assert isinstance(progress, (int, float)), f"{node_name} The progress should be a number"
+        assert message is not None, f"{node_name} The message should not be None"
+        assert step_name is not None, f"{node_name} The step name should not be None"
         
-        # 验证步骤名称和消息不同
-        assert step_name != message, f"{node_name} 的步骤名称和消息应该不同"
+        # Verification step name and message are different
+        assert step_name != message, f"{node_name} The step name and message should be different"
         
-        # 验证步骤名称是简短的（不包含 emoji 和详细描述）
-        assert len(step_name) < len(message), f"{node_name} 的步骤名称应该比消息短"
+        # Verification step names are short (without emojis and detailed descriptions)
+        assert len(step_name) < len(message), f"{node_name} The step name should be shorter than the message"
         
-        # 验证消息包含 emoji 或详细描述
-        assert len(message) > 10, f"{node_name} 的消息应该是详细的描述"
+        # Verification message contains emoji or detailed description
+        assert len(message) > 10, f"{node_name} The message should be a detailed description"
 
 
 def test_progress_callback_parameters():
-    """测试进度回调接收正确的参数"""
+    """Test progress callback receives correct parameters"""
     from core.workflow.engine import WorkflowEngine
     
-    # 创建引擎实例
+    # Create engine instance
     engine = WorkflowEngine()
     
-    # 记录回调参数
+    # Record callback parameters
     callback_params = []
     
     def test_callback(progress: float, message: str, **kwargs):
-        """测试回调函数"""
+        """Test callback function"""
         callback_params.append({
             "progress": progress,
             "message": message,
@@ -68,63 +68,63 @@ def test_progress_callback_parameters():
             "kwargs": kwargs
         })
     
-    # 设置回调
+    # Set callback
     engine.set_progress_callback(test_callback)
     
-    # 模拟进度报告
+    # Simulation progress report
     engine._report_progress(
         progress=50,
-        message="📈 市场分析师正在分析技术指标和市场趋势...",
-        step_name="市场分析师"
+        message="📈 Market analysts are analyzing technical indicators and market trends...",
+        step_name="market analyst"
     )
     
-    # 验证回调参数
-    assert len(callback_params) == 1, "应该调用一次回调"
+    # Validate callback parameters
+    assert len(callback_params) == 1, "The callback should be called once"
     
     params = callback_params[0]
-    assert params["progress"] == 50, "进度应该是 50"
-    assert params["message"] == "📈 市场分析师正在分析技术指标和市场趋势...", "消息应该是详细描述"
-    assert params["step_name"] == "市场分析师", "步骤名称应该是简短名称"
+    assert params["progress"] == 50, "The progress should be 50"
+    assert params["message"] == "📈 Market analysts are analyzing technical indicators and market trends...", "The message should be detailed"
+    assert params["step_name"] == "market analyst", "Step names should be short names"
     
-    print("\n✅ 进度回调参数验证通过:")
-    print(f"  进度: {params['progress']}%")
-    print(f"  步骤名称: {params['step_name']}")
-    print(f"  消息: {params['message']}")
+    print("\n✅ Progress callback parameter verification passed:")
+    print(f"  Progress: {params['progress']}%")
+    print(f"  step name: {params['step_name']}")
+    print(f"  news: {params['message']}")
 
 
 def test_redis_progress_tracker_fields():
-    """测试 RedisProgressTracker 的字段"""
+    """Test the fields of RedisProgressTracker"""
     from app.services.progress.tracker import RedisProgressTracker
     
-    # 创建 tracker
+    # Create tracker
     tracker = RedisProgressTracker(
         task_id="test_task",
         analysts=["market", "fundamentals"],
-        research_depth="标准",
+        research_depth="Standard",
         llm_provider="dashscope"
     )
     
-    # 更新进度（模拟工作流引擎的回调）
+    # Update progress (simulated workflow engine callback)
     tracker.update_progress({
         "progress_percentage": 50,
-        "last_message": "📈 市场分析师正在分析技术指标和市场趋势...",
-        "current_step_name": "市场分析师",
-        "current_step_description": "📈 市场分析师正在分析技术指标和市场趋势...",
+        "last_message": "📈 Market analysts are analyzing technical indicators and market trends...",
+        "current_step_name": "market analyst",
+        "current_step_description": "📈 Market analysts are analyzing technical indicators and market trends...",
     })
     
-    # 获取字典
+    # Get dictionary
     data = tracker.to_dict()
     
-    print("\n✅ RedisProgressTracker 字段验证:")
+    print("\n✅ RedisProgressTracker Field validation:")
     print(f"  current_step_name: {data.get('current_step_name')}")
     print(f"  current_step_description: {data.get('current_step_description')}")
     print(f"  last_message: {data.get('last_message')}")
     
-    # 验证字段
-    assert "current_step_name" in data, "应该包含 current_step_name 字段"
-    assert "current_step_description" in data, "应该包含 current_step_description 字段"
-    assert data["current_step_name"] == "市场分析师", "步骤名称应该是简短名称"
-    assert data["current_step_description"] == "📈 市场分析师正在分析技术指标和市场趋势...", "描述应该是详细描述"
+    # Validate fields
+    assert "current_step_name" in data, "Should contain current_step_name field"
+    assert "current_step_description" in data, "Should contain current_step_description field"
+    assert data["current_step_name"] == "market analyst", "Step names should be short names"
+    assert data["current_step_description"] == "📈 Market analysts are analyzing technical indicators and market trends...", "The description should be a detailed description"
 
 
 if __name__ == "__main__":

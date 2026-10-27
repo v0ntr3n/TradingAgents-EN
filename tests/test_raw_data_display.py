@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-原始数据显示测试脚本
-直接调用底层数据接口，显示原始的财务数据
+Raw data display test script
+Directly call the underlying data interface to display original financial data
 """
 
 import sys
@@ -10,146 +10,146 @@ import os
 import json
 from datetime import datetime, timedelta
 
-# 添加项目根目录到路径
+# Add project root directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 def test_raw_data_display():
-    """测试并显示原始的基本面数据"""
+    """Test and display raw fundamental data"""
     
     print("=" * 80)
-    print("📊 原始基本面数据显示测试")
+    print("📊 Raw fundamental data display test")
     print("=" * 80)
     
-    # 测试参数
-    ticker = "000001"  # 平安银行
+    # Test parameters
+    ticker = "000001"  # Ping An Bank
     curr_date = datetime.now()
-    start_date = curr_date - timedelta(days=2)  # 优化后只获取2天数据
+    start_date = curr_date - timedelta(days=2)  # After optimization, only 2 days of data are obtained
     end_date = curr_date
     
-    print(f"🎯 测试股票: {ticker}")
-    print(f"📅 数据范围: {start_date.strftime('%Y-%m-%d')} 到 {end_date.strftime('%Y-%m-%d')}")
-    print(f"⏰ 当前时间: {curr_date.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🎯 test stocks: {ticker}")
+    print(f"📅 data range: {start_date.strftime('%Y-%m-%d')} Arrive {end_date.strftime('%Y-%m-%d')}")
+    print(f"⏰ current time: {curr_date.strftime('%Y-%m-%d %H:%M:%S')}")
     print()
     
     try:
-        # 直接调用底层数据接口
+        # Directly call the underlying data interface
         from tradingagents.dataflows.interface import get_china_stock_data_unified
         
-        print("🔄 正在获取原始股票数据...")
+        print("🔄 Retrieving raw stock data...")
         print("-" * 60)
         
-        # 调用底层数据接口
+        # Call the underlying data interface
         raw_data = get_china_stock_data_unified(
             ticker,
             start_date.strftime('%Y-%m-%d'),
             end_date.strftime('%Y-%m-%d')
         )
         
-        print("✅ 原始数据获取成功！")
+        print("✅ Original data obtained successfully!")
         print()
         
-        # 显示原始数据的基本信息
-        print("📋 原始数据基本信息:")
-        print(f"   - 数据类型: {type(raw_data)}")
-        print(f"   - 数据长度: {len(str(raw_data))} 字符")
+        # Display basic information of raw data
+        print("📋 Basic information of original data:")
+        print(f"   - data type: {type(raw_data)}")
+        print(f"   - Data length: {len(str(raw_data))} character")
         print()
         
-        # 完整显示原始数据内容
-        print("📄 完整原始数据内容:")
+        # Full display of original data content
+        print("📄 Complete raw data content:")
         print("=" * 80)
         
         if isinstance(raw_data, str):
-            print("🔤 字符串格式原始数据:")
+            print("🔤 String format raw data:")
             print(raw_data)
         elif isinstance(raw_data, dict):
-            print("📚 字典格式原始数据:")
+            print("📚 Dictionary format raw data:")
             print(json.dumps(raw_data, ensure_ascii=False, indent=2))
         elif isinstance(raw_data, list):
-            print("📝 列表格式原始数据:")
+            print("📝 Raw data in list format:")
             for i, item in enumerate(raw_data):
-                print(f"📌 项目 {i+1}:")
+                print(f"📌 Project {i+1}:")
                 if isinstance(item, (dict, list)):
                     print(json.dumps(item, ensure_ascii=False, indent=2))
                 else:
                     print(f"   {item}")
                 print("-" * 40)
         else:
-            print("🔍 其他格式原始数据:")
+            print("🔍 Raw data in other formats:")
             print(repr(raw_data))
         
         print("=" * 80)
         
-        # 数据统计信息
-        print("\n📊 原始数据统计:")
-        print(f"   - 总字符数: {len(str(raw_data))}")
+        # Data statistics
+        print("\n📊 Raw data statistics:")
+        print(f"   - Total characters: {len(str(raw_data))}")
         
-        # 如果是字符串，显示详细信息
+        # If it is a string, display detailed information
         if isinstance(raw_data, str):
             lines = raw_data.split('\n')
-            print(f"   - 总行数: {len(lines)}")
-            print(f"   - 首行: {lines[0]}")
+            print(f"   - Total number of rows: {len(lines)}")
+            print(f"   - First line: {lines[0]}")
             if len(lines) > 1:
-                print(f"   - 末行: {lines[-1]}")
+                print(f"   - last line: {lines[-1]}")
             
-            # 查找关键信息
-            if "股票代码" in raw_data:
-                print("   ✅ 包含股票代码信息")
-            if "股票名称" in raw_data:
-                print("   ✅ 包含股票名称信息")
-            if "当前价格" in raw_data:
-                print("   ✅ 包含当前价格信息")
-            if "财务指标" in raw_data:
-                print("   ✅ 包含财务指标信息")
-            if "历史价格" in raw_data:
-                print("   ✅ 包含历史价格信息")
+            # Find key information
+            if "Stock code" in raw_data:
+                print("   ✅ Contains stock code information")
+            if "Stock name" in raw_data:
+                print("   ✅ Contains stock name information")
+            if "current price" in raw_data:
+                print("   ✅ Contains current price information")
+            if "financial indicators" in raw_data:
+                print("   ✅ Contains financial indicator information")
+            if "historical price" in raw_data:
+                print("   ✅ Contains historical price information")
         
-        print("\n🎉 原始数据显示完成！")
+        print("\n🎉 Raw data display completed!")
         
-        # 测试获取财务数据
+        # Test to obtain financial data
         print("\n" + "=" * 80)
-        print("📊 测试获取财务基本面数据")
+        print("📊 Test to obtain financial fundamental data")
         print("=" * 80)
         
         try:
             from tradingagents.dataflows.interface import get_china_stock_fundamentals_tushare
             
-            print("🔄 正在获取财务基本面数据...")
+            print("🔄 Retrieving financial fundamentals data...")
             
             fundamentals_data = get_china_stock_fundamentals_tushare(ticker)
             
-            print("✅ 财务基本面数据获取成功！")
+            print("✅ Financial fundamental data was obtained successfully!")
             print()
             
-            print("📋 财务基本面数据基本信息:")
-            print(f"   - 数据类型: {type(fundamentals_data)}")
-            print(f"   - 数据长度: {len(str(fundamentals_data))} 字符")
+            print("📋 Basic information on financial fundamentals:")
+            print(f"   - data type: {type(fundamentals_data)}")
+            print(f"   - Data length: {len(str(fundamentals_data))} character")
             print()
             
-            print("📄 完整财务基本面数据内容:")
+            print("📄 Complete financial fundamental data content:")
             print("=" * 80)
             
             if isinstance(fundamentals_data, str):
-                print("🔤 字符串格式财务数据:")
+                print("🔤 Financial data in string format:")
                 print(fundamentals_data)
             elif isinstance(fundamentals_data, dict):
-                print("📚 字典格式财务数据:")
+                print("📚 Dictionary format financial data:")
                 print(json.dumps(fundamentals_data, ensure_ascii=False, indent=2))
             else:
-                print("🔍 其他格式财务数据:")
+                print("🔍 Financial data in other formats:")
                 print(repr(fundamentals_data))
             
             print("=" * 80)
             
         except Exception as e:
-            print(f"❌ 财务基本面数据获取失败: {str(e)}")
+            print(f"❌ Failed to obtain financial fundamental data: {str(e)}")
             import traceback
-            print("🔍 详细错误信息:")
+            print("🔍 Detailed error message:")
             traceback.print_exc()
         
     except Exception as e:
-        print(f"❌ 测试失败: {str(e)}")
+        print(f"❌ test failed: {str(e)}")
         import traceback
-        print("🔍 详细错误信息:")
+        print("🔍 Detailed error message:")
         traceback.print_exc()
 
 if __name__ == "__main__":

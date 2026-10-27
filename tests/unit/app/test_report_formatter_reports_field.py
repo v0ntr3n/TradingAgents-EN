@@ -5,10 +5,10 @@ def test_extract_reports_from_state_prefers_nested_reports_mapping():
     state = {
         "analysis_id": "demo-analysis",
         "reports": {
-            "fundamentals_report": "# 基本面分析\n\n公司盈利能力改善，现金流表现稳定。",
-            "neutral_analyst": "# 平安银行（000001）情景平衡与证据权重审阅报告\n\n## 一、核心情景判断\n\n当前更接近基准情景。",
+            "fundamentals_report": "# fundamental analysis\n\n The company s profitability has improved and its cash flow performance has been stable.",
+            "neutral_analyst": "# Ping An Bank (000001) Scenario Balancing and Weight of Evidence Review Report\n\n## 1. Core Situation Judgment\n\n The current situation is closer to the baseline scenario.",
             "risk_management_decision": {
-                "content": "# 风险治理摘要\n\n## 核心风险\n\n需继续跟踪资产质量变化。"
+                "content": "# Risk Governance Summary\n\n## core risk\n\n It is necessary to continue to track changes in asset quality."
             },
         },
     }
@@ -18,23 +18,23 @@ def test_extract_reports_from_state_prefers_nested_reports_mapping():
     assert "fundamentals_report" in reports
     assert "neutral_analyst" in reports
     assert "risk_management_decision" in reports
-    assert "盈利能力改善" in reports["fundamentals_report"]
-    assert "核心情景判断" in reports["neutral_analyst"]
-    assert "核心风险" in reports["risk_management_decision"]
+    assert "Improved profitability" in reports["fundamentals_report"]
+    assert "core situational judgment" in reports["neutral_analyst"]
+    assert "core risk" in reports["risk_management_decision"]
 
 
 def test_generate_summary_recommendation_prefers_trader_brief_over_final_decision():
     reports = {
-        "final_trade_decision": "# 综合研究结论\n\n这是内部综合结论，应该作为次级回退使用。" * 4,
-        "trader_investment_plan": "# 用户版研究简报\n\n一句话结论：当前更接近中性偏谨慎判断，后续重点观察资产质量与成交修复是否延续。\n\n为什么这么看：估值不高，但催化和验证数据还不够扎实。",
+        "final_trade_decision": "# Comprehensive research conclusion\n\n This is an internal synthesis conclusion and should be used as a secondary fallback." * 4,
+        "trader_investment_plan": "# User version research briefing\n\n One-sentence conclusion: The current situation is closer to neutral and more cautious. The follow-up focus will be on whether asset quality and transaction recovery continue.\n\n Why we think so: The valuation is not high, but the catalytic and verification data are not solid enough.",
     }
 
     summary, recommendation = generate_summary_recommendation(
         reports,
-        {"action": "中性", "reasoning": "等待更多验证数据。"},
+        {"action": "Neutral", "reasoning": "Waiting for more verification data."},
         "000001",
     )
 
-    assert "一句话结论" in summary
-    assert "内部综合结论" not in summary
-    assert "研究观点：中性" in recommendation
+    assert "One sentence conclusion" in summary
+    assert "internal comprehensive conclusion" not in summary
+    assert "Research opinion: Neutral" in recommendation

@@ -1,11 +1,11 @@
-# Logger位置修复报告
+# Logger Location fix report
 # Logger Position Fix Report
 
-生成时间: 2025-07-16 11:26:54.513993
+Generation time: 2025-07-16 11:26:54.513993
 
-## 修复统计 | Fix Statistics
+## Fix statistics | Fix Statistics
 
-- 修复文件数: 0
-- 跳过文件数: 320
-- 错误文件数: 0
+- Number of files repaired: 0
+- Number of skipped files: 320
+- Number of error files: 0
 

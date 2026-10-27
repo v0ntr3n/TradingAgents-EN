@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试Google工具调用处理器修复效果
+Test the Google tool call processor repair effect
 """
 
 import sys
@@ -11,94 +11,94 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from tradingagents.agents.utils.google_tool_handler import GoogleToolCallHandler
 import logging
 
-# 设置日志
+# Setup log
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def test_tool_call_validation():
-    """测试工具调用验证功能"""
+    """Test tool calls verification function"""
     print("=" * 60)
-    print("🧪 测试工具调用验证功能")
+    print("🧪 Test tool calls verification function")
     print("=" * 60)
     
-    # 测试有效的工具调用
+    # Test valid tool calls
     valid_tool_call = {
         'name': 'get_stock_market_data_unified',
         'args': {'symbol': 'AAPL', 'period': '1d'},
         'id': 'call_12345'
     }
     
-    result = GoogleToolCallHandler._validate_tool_call(valid_tool_call, 0, "测试分析师")
-    print(f"✅ 有效工具调用验证结果: {result}")
-    assert result == True, "有效工具调用应该通过验证"
+    result = GoogleToolCallHandler._validate_tool_call(valid_tool_call, 0, "test analyst")
+    print(f"✅ Valid tool call verification results: {result}")
+    assert result == True, "Valid tool calls should pass validation"
     
-    # 测试无效的工具调用 - 缺少字段
+    # Testing invalid tool call - missing field
     invalid_tool_call_1 = {
         'name': 'get_stock_market_data_unified',
         'args': {'symbol': 'AAPL'}
-        # 缺少 'id' 字段
+        # missing 'id' Field
     }
     
-    result = GoogleToolCallHandler._validate_tool_call(invalid_tool_call_1, 1, "测试分析师")
-    print(f"❌ 无效工具调用1验证结果: {result}")
-    assert result == False, "缺少字段的工具调用应该验证失败"
+    result = GoogleToolCallHandler._validate_tool_call(invalid_tool_call_1, 1, "test analyst")
+    print(f"❌ Invalid tool call 1 verification result: {result}")
+    assert result == False, "Tool calls with missing fields should fail validation"
     
-    # 测试无效的工具调用 - 错误类型
+    # Testing invalid tool call - error type
     invalid_tool_call_2 = {
-        'name': '',  # 空字符串
-        'args': 'not_a_dict',  # 不是字典
-        'id': 123  # 不是字符串
+        'name': '',  # empty string
+        'args': 'not_a_dict',  # not a dictionary
+        'id': 123  # not a string
     }
     
-    result = GoogleToolCallHandler._validate_tool_call(invalid_tool_call_2, 2, "测试分析师")
-    print(f"❌ 无效工具调用2验证结果: {result}")
-    assert result == False, "错误类型的工具调用应该验证失败"
+    result = GoogleToolCallHandler._validate_tool_call(invalid_tool_call_2, 2, "test analyst")
+    print(f"❌ Invalid tool call 2 verification result: {result}")
+    assert result == False, "Tool calls of the wrong type should fail validation"
     
-    print("✅ 工具调用验证功能测试通过")
+    print("✅ Tool call verification function test passed")
 
 def test_tool_call_fixing():
-    """测试工具调用修复功能"""
+    """Test tool calls repair function"""
     print("\n" + "=" * 60)
-    print("🔧 测试工具调用修复功能")
+    print("🔧 Test tool calls repair function")
     print("=" * 60)
     
-    # 测试OpenAI格式的工具调用修复
+    # Tool call fix for testing OpenAI format
     openai_format_tool_call = {
         'function': {
             'name': 'get_stock_market_data_unified',
             'arguments': '{"symbol": "AAPL", "period": "1d"}'
         }
-        # 缺少 'id' 字段
+        # missing 'id' Field
     }
     
-    fixed_tool_call = GoogleToolCallHandler._fix_tool_call(openai_format_tool_call, 0, "测试分析师")
-    print(f"🔧 修复后的工具调用: {fixed_tool_call}")
+    fixed_tool_call = GoogleToolCallHandler._fix_tool_call(openai_format_tool_call, 0, "test analyst")
+    print(f"🔧 Fixed tool calls: {fixed_tool_call}")
     
     if fixed_tool_call:
-        assert 'name' in fixed_tool_call, "修复后应该包含name字段"
-        assert 'args' in fixed_tool_call, "修复后应该包含args字段"
-        assert 'id' in fixed_tool_call, "修复后应该包含id字段"
-        assert isinstance(fixed_tool_call['args'], dict), "args应该是字典类型"
-        print("✅ OpenAI格式工具调用修复成功")
+        assert 'name' in fixed_tool_call, "The name field should be included after repair"
+        assert 'args' in fixed_tool_call, "The args field should be included after the fix"
+        assert 'id' in fixed_tool_call, "After repair it should contain the id field"
+        assert isinstance(fixed_tool_call['args'], dict), "args Should be a dictionary type"
+        print("✅ OpenAI Format tool call repair successful")
     else:
-        print("❌ OpenAI格式工具调用修复失败")
+        print("❌ OpenAI Format tool call repair failed")
     
-    # 测试无法修复的工具调用
+    # Test unfixable tool calls
     unfixable_tool_call = "not_a_dict"
     
-    fixed_tool_call = GoogleToolCallHandler._fix_tool_call(unfixable_tool_call, 1, "测试分析师")
-    print(f"❌ 无法修复的工具调用结果: {fixed_tool_call}")
-    assert fixed_tool_call is None, "无法修复的工具调用应该返回None"
+    fixed_tool_call = GoogleToolCallHandler._fix_tool_call(unfixable_tool_call, 1, "test analyst")
+    print(f"❌ Unrepairable tool call results: {fixed_tool_call}")
+    assert fixed_tool_call is None, "Unrepairable tool calls should return None"
     
-    print("✅ 工具调用修复功能测试通过")
+    print("✅ The tool call repair function test passed")
 
 def test_duplicate_prevention():
-    """测试重复调用防护功能"""
+    """Test the repeated call protection function"""
     print("\n" + "=" * 60)
-    print("🛡️ 测试重复调用防护功能")
+    print("🛡️ Test the repeated call protection function")
     print("=" * 60)
     
-    # 模拟重复的工具调用
+    # Simulate repeated tool calls
     tool_calls = [
         {
             'name': 'get_stock_market_data_unified',
@@ -107,12 +107,12 @@ def test_duplicate_prevention():
         },
         {
             'name': 'get_stock_market_data_unified',
-            'args': {'symbol': 'AAPL', 'period': '1d'},  # 相同参数
+            'args': {'symbol': 'AAPL', 'period': '1d'},  # Same parameters
             'id': 'call_2'
         },
         {
             'name': 'get_stock_market_data_unified',
-            'args': {'symbol': 'TSLA', 'period': '1d'},  # 不同参数
+            'args': {'symbol': 'TSLA', 'period': '1d'},  # different parameters
             'id': 'call_3'
         }
     ]
@@ -126,21 +126,21 @@ def test_duplicate_prevention():
         tool_signature = f"{tool_name}_{hash(str(tool_args))}"
         
         if tool_signature in executed_tools:
-            print(f"⚠️ 跳过重复工具调用 {i}: {tool_name} with {tool_args}")
+            print(f"⚠️ Skip duplicate tool calls {i}: {tool_name} with {tool_args}")
         else:
             executed_tools.add(tool_signature)
             unique_calls.append(tool_call)
-            print(f"✅ 执行工具调用 {i}: {tool_name} with {tool_args}")
+            print(f"✅ Execute tool call {i}: {tool_name} with {tool_args}")
     
-    print(f"📊 原始工具调用数量: {len(tool_calls)}")
-    print(f"📊 去重后工具调用数量: {len(unique_calls)}")
+    print(f"📊 Number of raw tool calls: {len(tool_calls)}")
+    print(f"📊 Number of tool calls after deduplication: {len(unique_calls)}")
     
-    assert len(unique_calls) == 2, "应该有2个唯一的工具调用"
-    print("✅ 重复调用防护功能测试通过")
+    assert len(unique_calls) == 2, "There should be 2 unique tool calls"
+    print("✅ Repeated call protection function test passed")
 
 def main():
-    """主测试函数"""
-    print("🚀 开始测试Google工具调用处理器修复效果")
+    """Main test function"""
+    print("🚀 Start testing the Google tool call processor repair effect")
     
     try:
         test_tool_call_validation()
@@ -148,23 +148,23 @@ def main():
         test_duplicate_prevention()
         
         print("\n" + "=" * 60)
-        print("🎉 所有测试通过！Google工具调用处理器修复成功")
+        print("🎉 All tests passed! Google tool call processor repair successful")
         print("=" * 60)
         
-        print("\n📋 修复总结:")
-        print("1. ✅ 添加了工具调用格式验证")
-        print("2. ✅ 实现了工具调用自动修复（支持OpenAI格式转换）")
-        print("3. ✅ 添加了重复调用防护机制")
-        print("4. ✅ 改进了错误处理和日志记录")
+        print("\n📋 Repair summary:")
+        print("1. ✅ Added tool call format validation")
+        print("2. ✅ Implemented automatic repair of tool calls (supports OpenAI format conversion)")
+        print("3. ✅ Added duplicate call protection mechanism")
+        print("4. ✅ Improved error handling and logging")
         
-        print("\n🔧 主要改进:")
-        print("- 防止重复调用统一市场数据工具")
-        print("- 自动验证和修复Google模型的错误工具调用")
-        print("- 支持OpenAI格式到标准格式的自动转换")
-        print("- 增强的错误处理和调试信息")
+        print("\n🔧 Major improvements:")
+        print("- Prevent repeated calls to unified market data tools")
+        print("- Automatically validate and fix bad tool calls for Google models")
+        print("- Support automatic conversion from OpenAI format to standard format")
+        print("- Enhanced error handling and debugging information")
         
     except Exception as e:
-        print(f"\n❌ 测试失败: {e}")
+        print(f"\n❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False

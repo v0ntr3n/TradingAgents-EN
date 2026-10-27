@@ -1,7 +1,7 @@
 """
-统一任务中心 API
+unified mission center API
 
-提供统一的任务查询接口，支持所有类型的分析任务
+Provides a unified task query interface to support all types of analysis tasks
 """
 
 from typing import List, Optional
@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v2/tasks", tags=["unified-task-center"])
 
 
-# ==================== 响应模型 ====================
+# ==================== response model ====================
 
 class TaskListItem(BaseModel):
-    """任务列表项"""
+    """task list item"""
     task_id: str
     task_type: str
     status: str
@@ -33,14 +33,14 @@ class TaskListItem(BaseModel):
     execution_time: float = 0.0
     error_message: Optional[str] = None
     
-    # 任务参数（用于显示）
+    # Task parameters (for display)
     symbol: Optional[str] = None
     code: Optional[str] = None
     market: Optional[str] = None
 
 
 class TaskStatistics(BaseModel):
-    """任务统计"""
+    """Task statistics"""
     total: int
     pending: int
     processing: int
@@ -49,34 +49,34 @@ class TaskStatistics(BaseModel):
     cancelled: int
 
 
-# ==================== API 端点 ====================
+# ==================== API endpoint ====================
 
-@router.get("/list", summary="获取任务列表")
+@router.get("/list", summary="Get task list")
 async def get_task_list(
-    task_type: Optional[AnalysisTaskType] = Query(None, description="任务类型过滤"),
-    status: Optional[AnalysisStatus] = Query(None, description="状态过滤"),
-    symbol: Optional[str] = Query(None, description="股票代码过滤（匹配 task_params 中的 symbol/code/stock_code）"),
-    limit: Optional[int] = Query(None, description="返回数量（可选，不设置则返回所有）"),
-    skip: int = Query(0, ge=0, description="跳过数量"),
+    task_type: Optional[AnalysisTaskType] = Query(None, description="Task type filter"),
+    status: Optional[AnalysisStatus] = Query(None, description="Status filtering"),
+    symbol: Optional[str] = Query(None, description="Stock code filtering (matches symbol/code/stock_code in task_params)"),
+    limit: Optional[int] = Query(None, description="Return quantity (optional, if not set, all will be returned)"),
+    skip: int = Query(0, ge=0, description="skip quantity"),
     user: dict = Depends(get_current_user)
 ):
-    """获取用户的任务列表
+    """Get the user s task list
 
-    支持按任务类型和状态过滤
+    Supports filtering by task type and status
 
-    注意：如果不指定 limit，将返回所有记录，由前端处理分页
+    Note: If limit is not specified, all records will be returned and paging will be handled by the front end.
     """
     try:
-        logger.info(f"🎯 [统一任务中心] 获取任务列表请求")
-        logger.info(f"👤 用户信息: {user}")
-        logger.info(f"📊 查询参数: task_type={task_type}, status={status}, limit={limit}, skip={skip}")
+        logger.info(f"🎯 [unified mission center] Get task list request")
+        logger.info(f"👤 User information: {user}")
+        logger.info(f"📊 query parameters: task_type={task_type}, status={status}, limit={limit}, skip={skip}")
 
         user_id = PyObjectId(user["id"])
-        logger.info(f"🔄 转换后的user_id: {user_id} (类型: {type(user_id)})")
+        logger.info(f"🔄 converted user_id: {user_id} (Type: {type(user_id)})")
 
         service = get_task_analysis_service()
 
-        # 如果没有指定 limit，则返回所有记录
+        # If limit is not specified, all records are returned
         actual_limit = limit if limit is not None else 999999
 
         tasks = await service.list_user_tasks(
@@ -88,10 +88,10 @@ async def get_task_list(
             skip=skip
         )
         
-        # 转换为列表项格式
+        # Convert to list item format
         items = []
         for task in tasks:
-            # 从任务参数中提取显示信息
+            # Extract display information from task parameters
             symbol = task.task_params.get("symbol")
             code = task.task_params.get("code")
             market = task.task_params.get("market") or task.task_params.get("market_type")
@@ -123,26 +123,26 @@ async def get_task_list(
         }
         
     except Exception as e:
-        logger.error(f"获取任务列表失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取任务列表失败: {str(e)}")
+        logger.error(f"Failed to get task list: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get task list: {str(e)}")
 
 
-@router.get("/statistics", summary="获取任务统计")
+@router.get("/statistics", summary="Get task statistics")
 async def get_task_statistics(
     user: dict = Depends(get_current_user)
 ):
-    """获取用户的任务统计信息"""
+    """Get user s task statistics"""
     try:
-        logger.info(f"🎯 [统一任务中心] 获取任务统计请求")
-        logger.info(f"👤 用户信息: {user}")
+        logger.info(f"🎯 [unified mission center] Get task statistics request")
+        logger.info(f"👤 User information: {user}")
 
         user_id = PyObjectId(user["id"])
-        logger.info(f"🔄 转换后的user_id: {user_id} (类型: {type(user_id)})")
+        logger.info(f"🔄 converted user_id: {user_id} (Type: {type(user_id)})")
 
         service = get_task_analysis_service()
 
         stats = await service.get_task_statistics(user_id)
-        logger.info(f"📊 统计结果: {stats}")
+        logger.info(f"📊 Statistical results: {stats}")
         
         return {
             "success": True,
@@ -151,27 +151,27 @@ async def get_task_statistics(
         }
         
     except Exception as e:
-        logger.error(f"获取任务统计失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取任务统计失败: {str(e)}")
+        logger.error(f"Failed to obtain task statistics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to obtain task statistics: {str(e)}")
 
 
-@router.get("/{task_id}", summary="获取任务详情")
+@router.get("/{task_id}", summary="Get task details")
 async def get_task_detail(
     task_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """获取任务详情"""
+    """Get task details"""
     try:
         user_id = PyObjectId(user["id"])
         service = get_task_analysis_service()
 
         task = await service.get_task(task_id)
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task does not exist")
 
-        # 验证权限
+        # Verify permissions
         if task.user_id != user_id:
-            raise HTTPException(status_code=403, detail="无权访问此任务")
+            raise HTTPException(status_code=403, detail="Don t have permission to access this task")
         
         return {
             "success": True,
@@ -182,109 +182,109 @@ async def get_task_detail(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"获取任务详情失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取任务详情失败: {str(e)}")
+        logger.error(f"Failed to get task details: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get task details: {str(e)}")
 
 
-@router.delete("/{task_id}", summary="取消任务")
+@router.delete("/{task_id}", summary="Cancel task")
 async def cancel_task(
     task_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """取消任务"""
+    """Cancel task"""
     try:
         user_id = PyObjectId(user["id"])
         service = get_task_analysis_service()
 
-        # 验证任务存在和权限
+        # Verify task existence and permissions
         task = await service.get_task(task_id)
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task does not exist")
 
         if task.user_id != user_id:
-            raise HTTPException(status_code=403, detail="无权访问此任务")
+            raise HTTPException(status_code=403, detail="Don t have permission to access this task")
 
-        # 取消任务
+        # Cancel task
         success = await service.cancel_task(task_id)
 
         if success:
             return {
                 "success": True,
-                "message": "任务已取消"
+                "message": "Task canceled"
             }
         else:
             return {
                 "success": False,
-                "message": "任务无法取消（可能已完成或失败）"
+                "message": "Task cannot be canceled (may have completed or failed)"
             }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"取消任务失败: {e}")
-        raise HTTPException(status_code=500, detail=f"取消任务失败: {str(e)}")
+        logger.error(f"Failed to cancel task: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to cancel task: {str(e)}")
 
 
-@router.post("/{task_id}/resume", summary="恢复挂起的任务")
+@router.post("/{task_id}/resume", summary="Resume a suspended task")
 async def resume_task(
     task_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """恢复挂起的任务，将任务重新加入队列"""
+    """Resume a suspended task and re-enqueue the task"""
     try:
         user_id = PyObjectId(user["id"])
         service = get_task_analysis_service()
 
-        # 验证任务存在和权限
+        # Verify task existence and permissions
         task = await service.get_task(task_id)
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task does not exist")
 
         if task.user_id != user_id:
-            raise HTTPException(status_code=403, detail="无权访问此任务")
+            raise HTTPException(status_code=403, detail="Don t have permission to access this task")
 
-        # 检查任务状态
+        # Check task status
         if task.status != AnalysisStatus.SUSPENDED:
-            raise HTTPException(status_code=400, detail=f"只能恢复挂起状态的任务，当前状态: {task.status}")
+            raise HTTPException(status_code=400, detail=f"Only tasks in suspended state can be resumed, the current state: {task.status}")
 
-        # 恢复任务
+        # recovery task
         success = await service.resume_task(task_id)
 
         if success:
             return {
                 "success": True,
-                "message": "任务已恢复，正在重新排队..."
+                "message": "Task has been resumed and is being requeued..."
             }
         else:
             return {
                 "success": False,
-                "message": "恢复任务失败"
+                "message": "Recovery task failed"
             }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"恢复任务失败: {e}")
-        raise HTTPException(status_code=500, detail=f"恢复任务失败: {str(e)}")
+        logger.error(f"Recovery task failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Recovery task failed: {str(e)}")
 
 
-# ==================== 通用研究任务专用查询 ====================
+# ==================== General research task-specific queries ====================
 
-@router.get("/general/list", summary="获取通用研究任务列表")
+@router.get("/general/list", summary="Get a list of general research tasks")
 async def get_general_task_list(
-    workflow_id: Optional[str] = Query(None, description="按工作流ID筛选"),
-    date_start: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
-    date_end: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
-    keyword: Optional[str] = Query(None, description="关键字搜索（匹配分析目标）"),
-    status: Optional[AnalysisStatus] = Query(None, description="状态过滤"),
-    limit: int = Query(50, ge=1, le=500, description="返回数量"),
-    skip: int = Query(0, ge=0, description="跳过数量"),
+    workflow_id: Optional[str] = Query(None, description="Filter by workflow ID"),
+    date_start: Optional[str] = Query(None, description="start date (YYYY-MM-DD)"),
+    date_end: Optional[str] = Query(None, description="end date (YYYY-MM-DD)"),
+    keyword: Optional[str] = Query(None, description="Keyword search (match analysis target)"),
+    status: Optional[AnalysisStatus] = Query(None, description="Status filtering"),
+    limit: int = Query(50, ge=1, le=500, description="Return quantity"),
+    skip: int = Query(0, ge=0, description="skip quantity"),
     user: dict = Depends(get_current_user)
 ):
-    """获取通用研究任务列表
+    """Get a list of general research tasks
 
-    专门查询 task_params.task_category == "general" 的任务，
-    支持按工作流、时间范围、关键字筛选。
+    Special inquiry task_params.task_category == "general" task,
+    Supports filtering by workflow, time range, and keywords.
     """
     try:
         from datetime import datetime, timedelta
@@ -292,27 +292,27 @@ async def get_general_task_list(
         from bson import ObjectId
 
         user_id = user["id"]
-        # user_id 可能是字符串或 ObjectId，统一处理
+        # user_id May be a string or ObjectId, processed uniformly
         try:
             user_oid = ObjectId(user_id) if isinstance(user_id, str) else user_id
         except Exception:
             user_oid = user_id
 
-        # 构建查询条件
+        # Build query conditions
         query = {
             "user_id": user_oid,
             "task_params.task_category": "general",
         }
 
-        # 按工作流筛选
+        # Filter by workflow
         if workflow_id:
             query["workflow_id"] = workflow_id
 
-        # 按状态筛选
+        # Filter by status
         if status:
             query["status"] = status
 
-        # 按时间范围筛选
+        # Filter by time range
         if date_start or date_end:
             time_query = {}
             if date_start:
@@ -320,33 +320,33 @@ async def get_general_task_list(
                     start_dt = datetime.strptime(date_start, "%Y-%m-%d")
                     time_query["$gte"] = start_dt
                 except ValueError:
-                    raise HTTPException(status_code=400, detail="date_start 格式应为 YYYY-MM-DD")
+                    raise HTTPException(status_code=400, detail="date_start The format should be YYYY-MM-DD")
             if date_end:
                 try:
                     end_dt = datetime.strptime(date_end, "%Y-%m-%d") + timedelta(days=1)
                     time_query["$lt"] = end_dt
                 except ValueError:
-                    raise HTTPException(status_code=400, detail="date_end 格式应为 YYYY-MM-DD")
+                    raise HTTPException(status_code=400, detail="date_end The format should be YYYY-MM-DD")
             if time_query:
                 query["created_at"] = time_query
 
-        # 关键字搜索（匹配 task_params.symbol / stock_code）
+        # Keyword search (match task_params.symbol/stock_code)
         if keyword and keyword.strip():
             kw = keyword.strip()
-            # 使用正则匹配分析目标
+            # Use regular matching to analyze targets
             query["$or"] = [
                 {"task_params.symbol": {"$regex": kw, "$options": "i"}},
                 {"task_params.stock_code": {"$regex": kw, "$options": "i"}},
             ]
 
-        logger.info(f"🎯 [通用研究任务列表] 查询条件: {query}")
+        logger.info(f"🎯 [General Research Task List] Query conditions: {query}")
 
         db = get_mongo_db()
         cursor = db.unified_analysis_tasks.find(query).sort("created_at", -1).skip(skip).limit(limit)
         docs = await cursor.to_list(length=limit)
         total = await db.unified_analysis_tasks.count_documents(query)
 
-        # 构建响应
+        # Build response
         items = []
         for doc in docs:
             task_params = doc.get("task_params", {}) or {}
@@ -380,15 +380,15 @@ async def get_general_task_list(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"获取通用研究任务列表失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"获取通用研究任务列表失败: {str(e)}")
+        logger.error(f"Failed to get general research task list: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to get general research task list: {str(e)}")
 
 
-@router.get("/general/statistics", summary="获取通用研究任务统计")
+@router.get("/general/statistics", summary="Get general research task statistics")
 async def get_general_task_statistics(
     user: dict = Depends(get_current_user)
 ):
-    """获取通用研究任务的统计信息"""
+    """Get statistics for common research tasks"""
     try:
         from app.core.database import get_mongo_db
         from bson import ObjectId
@@ -424,6 +424,6 @@ async def get_general_task_statistics(
         }
 
     except Exception as e:
-        logger.error(f"获取通用研究任务统计失败: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"获取通用研究任务统计失败: {str(e)}")
+        logger.error(f"Failed to obtain general research task statistics: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to obtain general research task statistics: {str(e)}")
 

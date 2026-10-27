@@ -1,10 +1,10 @@
 """
-mem0 统一记忆层 — 配置加载
+mem0 unified memory layer — Configuration loading
 
-直接复用系统已有的 LLM / Embedding 配置（数据库 system_configs + llm_providers），
-不额外维护一套独立配置。
+Directly reuse the existing LLM/Embedding configuration of the system (database system_configs + llm_providers) , 
+No additional independent configuration is maintained.
 
-配置优先级：MongoDB system_configs > .env > 代码默认值
+Configure priority:MongoDB system_configs > .env > Code defaults
 """
 
 import logging
@@ -69,9 +69,9 @@ def _build_mem0_collection_name(embedder: Optional[Dict[str, Any]]) -> str:
 
 
 def _backup_collection_payload(client, collection_name: str, base_path: str) -> Optional[str]:
-    """[已废弃] MongoDB 迁移后不再需要 Qdrant 备份逻辑。
+    """[Deprecated] MongoDB Qdrant backup logic is no longer required after migration.
 
-    保留此函数以备未来回退到 Qdrant 时使用。
+    This function is retained for future use when falling back to Qdrant.
     """
     import json
     from datetime import datetime
@@ -108,9 +108,9 @@ def _backup_collection_payload(client, collection_name: str, base_path: str) -> 
 
 def _ensure_qdrant_collection_dimension(vector_store_cfg: Dict[str, Any], expected_dims: int) -> None:
     """
-    [已废弃] MongoDB 迁移后不再调用此函数。
+    [Deprecated] MongoDB This function is no longer called after migration.
 
-    保留以备未来回退到 Qdrant 时使用。
+    Reserved for future fallback to Qdrant.
     """
     from qdrant_client import QdrantClient
 
@@ -124,54 +124,54 @@ def _ensure_qdrant_collection_dimension(vector_store_cfg: Dict[str, Any], expect
         try:
             collections = client.get_collections().collections
 
-            # 问题 5：扫描遗留的旧命名 collection，提示用户迁移
+            # Question 5: Scan the legacy old named collection and prompt the user to migrate
             for col in collections:
                 name = col.name
                 if name == collection_name or not name.startswith(_MEM0_COLLECTION_PREFIX):
                     continue
                 logger.info(
-                    "mem0 config: 检测到历史 collection '%s'（当前使用 '%s'）。"
-                    "如需迁移数据，请执行：python app/scripts/migrate_mem0_collection.py --source %s",
+                    "mem0 config: History detected collection '%s' (currently in use '%s') . "
+                    "To migrate data, please execute:python app/scripts/migrate_mem0_collection.py --source %s",
                     name, collection_name, name,
                 )
 
-            # 检查当前 collection 维度
+            # Check the current collection dimensions
             if not any(col.name == collection_name for col in collections):
-                return  # collection 不存在，mem0 会自动创建
+                return  # collection does not exist, mem0 will be created automatically
 
             info = client.get_collection(collection_name)
             actual_dims = int(info.config.params.vectors.size)
             if actual_dims == expected_dims:
-                return  # 维度匹配，无需处理
+                return  # Dimension matching, no processing required
 
-            # 问题 3：维度不匹配 → 先备份 payload，再删除
+            # Issue 3: Dimension mismatch → Back up the payload first, then delete it
             logger.warning(
-                "mem0 config: Qdrant collection %s 维度不匹配 (实际 %d, 期望 %d)，"
-                "先备份 payload 再删除旧集合并重建",
+                "mem0 config: Qdrant collection %s Dimensions do not match (actual %d, Expectation %d), "
+                "Back up the payload first, then delete the old collection and rebuild it",
                 collection_name, actual_dims, expected_dims,
             )
             backup_path = _backup_collection_payload(client, collection_name, path)
             if backup_path:
                 logger.warning(
-                    "mem0 config: 旧 collection payload 已备份到 %s",
+                    "mem0 config: Old collection payload has been backed up to %s",
                     backup_path,
                 )
             else:
                 logger.error(
-                    "mem0 config: 备份失败，拒绝删除 collection %s。"
-                    "请手动迁移后重启服务。",
+                    "mem0 config: Backup failed, refusing to delete collection %s."
+                    "Please restart the service after manual migration.",
                     collection_name,
                 )
-                return  # 备份失败就不删除
+                return  # If the backup fails, it will not be deleted.
 
             client.delete_collection(collection_name)
-            # mem0 初始化时会按 expected_dims 自动创建新集合
+            # mem0 A new collection will be automatically created according to expected_dims during initialization
         finally:
             client.close()
     except Exception as e:
-        # 文件锁冲突（AlreadyLocked）说明 mem0 已初始化并在用此 collection，
-        # 维度必然匹配（否则写入早就报错），可安全忽略。
-        logger.debug("mem0 config: 检查/重建 Qdrant collection 时出错（已忽略）: %s", e)
+        # File lock conflict (AlreadyLocked) indicates that mem0 has been initialized and is using this collection.
+        # The dimensions must match (otherwise a write error would have been reported) and can be safely ignored.
+        logger.debug("mem0 config: Error checking/rebuilding Qdrant collection (ignored): %s", e)
 
 
 def _env(key: str, default: str = "") -> str:
@@ -179,22 +179,22 @@ def _env(key: str, default: str = "") -> str:
 
 
 def _get_mongo_connection_info() -> Tuple[str, str]:
-    """获取 MongoDB 连接 URI 和数据库名（用于 mem0 向量存储）。
+    """Get the MongoDB connection URI and database name (for mem0 vector storage).
 
-    优先从 app.core.config.settings 读取，回退到环境变量。
+    Read from app.core.config.settings first and fall back to environment variables.
     """
     try:
         from app.core.config import settings
         return settings.MONGO_URI, settings.MONGO_DB
     except Exception:
-        # 回退：从环境变量构建
+        # Fallback: Build from environment variables
         host = _env("MONGODB_HOST", "localhost")
         port = _env("MONGODB_PORT", "27017")
         db_name = _env("MONGODB_DATABASE", "tradingagents")
         username = _env("MONGODB_USERNAME", "")
         password = _env("MONGODB_PASSWORD", "")
         auth_source = _env("MONGODB_AUTH_SOURCE", "admin")
-        # 也支持直接传入完整连接串
+        # It also supports directly passing in the complete connection string.
         conn_str = _env("MONGODB_CONNECTION_STRING", "") or _env("MONGODB_URL", "")
         if conn_str:
             return conn_str, db_name
@@ -207,7 +207,7 @@ def _get_mongo_connection_info() -> Tuple[str, str]:
 
 
 def _get_sync_db():
-    """获取同步 MongoDB 连接"""
+    """Get a synchronous MongoDB connection"""
     try:
         from app.core.database import get_mongo_db_sync
         return get_mongo_db_sync()
@@ -216,7 +216,7 @@ def _get_sync_db():
 
 
 def _read_active_system_config(db=None) -> Dict[str, Any]:
-    """读取当前生效的 system_configs 文档。"""
+    """Read the currently effective system_configs document."""
     sync_db = None
     try:
         if db is not None:
@@ -236,7 +236,7 @@ def _read_active_system_config(db=None) -> Dict[str, Any]:
             {"is_active": True}, sort=[("version", -1)]
         )
         if inspect.isawaitable(doc):
-            logger.warning("mem0 config: 检测到异步数据库代理，自动回退到同步配置读取")
+            logger.warning("mem0 config: Asynchronous database agent detected, automatic fallback to synchronous configuration reading")
             fallback_db = _get_sync_db()
             if fallback_db is None:
                 return {}
@@ -245,12 +245,12 @@ def _read_active_system_config(db=None) -> Dict[str, Any]:
             )
         return doc or {}
     except Exception as e:
-        logger.debug("mem0 config: 无法从数据库读取配置: %s", e)
+        logger.debug("mem0 config: Unable to read configuration from database: %s", e)
         return {}
 
 
 def _read_system_settings(db=None) -> Tuple[dict, list]:
-    """从 system_configs 读取 system_settings 和 llm_configs"""
+    """Read system_settings and llm_configs"""
     doc = _read_active_system_config(db)
     return doc.get("system_settings") or {}, doc.get("llm_configs") or []
 
@@ -264,9 +264,9 @@ def _get_embedding_dimension(model_name: str) -> int:
         if dims is not None:
             return int(dims)
         logger.warning(
-            "mem0 config: Embedding 模型 '%s' 不在维度表中，默认使用 1024 维。"
-            "若实际维度不符（写入时报 ValueError: shapes not aligned），"
-            "请在 core/llm/embedding_manager.py 的 EMBEDDING_DIMENSIONS 中补充该模型的维度。",
+            "mem0 config: Embedding model '%s' Not in a dimension table, defaults to 1024 dimensions."
+            "If the actual dimensions do not match (write to the Times ValueError: shapes not aligned) , "
+            "Please supplement the dimensions of the model in EMBEDDING_DIMENSIONS in core/llm/embedding_manager.py.",
             model_key,
         )
         return int(EMBEDDING_DIMENSIONS.get("default", 1024))
@@ -295,13 +295,13 @@ def _get_embedding_provider_candidates(sync_db) -> list:
     try:
         cursor = sync_db.llm_providers.find(
             {
-                "supported_features": "embedding",  # 🔥 直接匹配，避免 $in 在某些 MongoDB 版本上返回空结果
+                "supported_features": "embedding",  # 🔥 direct match, avoid $in Returns empty results on some MongoDB versions
                 "is_active": True,
             }
         ).sort("created_at", 1)
         return list(cursor)
     except Exception as e:
-        logger.debug("mem0 config: 无法读取 embedding provider 列表: %s", e)
+        logger.debug("mem0 config: Unable to read embedding provider list: %s", e)
         return []
 
 
@@ -353,7 +353,7 @@ def _build_embedder_config_from_provider_doc(provider_doc: dict, model_name: str
 
 
 def _build_mem0_llm_config_from_unified_config(llm_config: Any) -> dict:
-    """将统一 LLMConfig 转换为 mem0 所需的 LLM 配置。"""
+    """Convert unified LLMConfig to the LLM configuration required for mem0."""
     provider_name = str(getattr(llm_config, "provider", "") or "").strip().lower()
     model_name = str(getattr(llm_config, "model", "") or "").strip() or "deepseek-chat"
     api_key = str(getattr(llm_config, "api_key", "") or "").strip()
@@ -389,7 +389,7 @@ def _build_mem0_llm_config_from_unified_config(llm_config: Any) -> dict:
 
 
 def _resolve_embedding_from_db(db_settings: dict) -> dict:
-    """从数据库 default_embedding_model 解析 embedding 配置"""
+    """Parse embedding configuration from database default_embedding_model"""
     preferred_provider_name, preferred_model_name = _parse_default_embedding_model(db_settings)
 
     sync_db = _get_sync_db()
@@ -414,7 +414,7 @@ def _resolve_embedding_from_db(db_settings: dict) -> dict:
             if embedder:
                 return embedder
             logger.warning(
-                "mem0 config: 默认 Embedding 模型 %s:%s 不兼容 mem0 或缺少凭证，尝试回退到其他可用 provider",
+                "mem0 config: Default Embedding model %s:%s Incompatible with mem0 or missing credentials, try fallback to other available provider",
                 preferred_provider_name,
                 preferred_model_name,
             )
@@ -425,23 +425,23 @@ def _resolve_embedding_from_db(db_settings: dict) -> dict:
                 continue
             embedder = _build_embedder_config_from_provider_doc(provider_doc, "")
             if embedder:
-                logger.info("mem0 config: Embedding provider 回退到 %s", provider_name)
+                logger.info("mem0 config: Embedding provider Fallback to %s", provider_name)
                 return embedder
 
         return {}
     except Exception as e:
-        logger.debug("mem0 config: embedding 解析失败: %s", e)
+        logger.debug("mem0 config: embedding Parsing failed: %s", e)
         return {}
 
 
 def build_mem0_config(db=None) -> Dict[str, Any]:
     """
-    构建 mem0 Memory.from_config() 所需的完整 config dict。
+    build mem0 Memory.from_config() The complete config dict required.
 
-    LLM / Embedding 配置直接从数据库 system_configs + llm_providers 读取，
-    与分析流程使用相同的模型和凭证。
+    LLM / Embedding Configure directly from database system_configs + llm_providers read,
+    Use the same models and credentials as the analysis process.
     """
-    # 🔧 京东云模式：使用环境变量配置，跳过数据库查询
+    # 🔧 JD Cloud Mode: Use environment variable configuration and skip database query
     from app.core.jdyun import (
         is_jdyun_mode, get_jdyun_api_base, get_jdyun_api_key,
         get_jdyun_embedding_model, get_jdyun_default_model,
@@ -454,11 +454,11 @@ def build_mem0_config(db=None) -> Dict[str, Any]:
         jdyun_chat_model = get_jdyun_default_model()
 
         logger.info(
-            "mem0 config: 京东云模式 — embedding=%s, chat=%s, api_base=%s",
+            "mem0 config: Jingdong cloud model — embedding=%s, chat=%s, api_base=%s",
             jdyun_embedding_model, jdyun_chat_model, jdyun_api_base,
         )
 
-        # Embedder: 使用京东云 OpenAI 兼容接口
+        # Embedder: Use JD Cloud OpenAI compatible interface
         embedder = {
             "provider": "openai",
             "config": {
@@ -470,7 +470,7 @@ def build_mem0_config(db=None) -> Dict[str, Any]:
         }
         collection_name = _build_mem0_collection_name(embedder)
 
-        # Vector Store: MongoDB（与业务数据统一存储，客户端 cosine 相似度）
+        # Vector Store: MongoDB (Unified storage with business data, client cosine similarity)
         mongo_uri, mongo_db_name = _get_mongo_connection_info()
         vector_store = {
             "provider": "mongodb",
@@ -482,7 +482,7 @@ def build_mem0_config(db=None) -> Dict[str, Any]:
             },
         }
 
-        # LLM: 使用京东云 OpenAI 兼容接口
+        # LLM: Use JD Cloud OpenAI compatible interface
         llm = {
             "provider": "openai",
             "config": {
@@ -504,18 +504,18 @@ def build_mem0_config(db=None) -> Dict[str, Any]:
             "version": "v1.1",
         }
 
-    # ===== 非京东云模式：原有逻辑 =====
+    # ===== Non-JD Cloud Model: Original Logic =====
     config_doc = _read_active_system_config(db)
     db_settings = config_doc.get("system_settings") or {}
     llm_configs = config_doc.get("llm_configs") or []
 
-    # --- Embedder: 复用系统 default_embedding_model ---
+    # --- Embedder: Reuse system default_embedding_model ---
     embedder = _resolve_embedding_from_db(db_settings)
     collection_name = _build_mem0_collection_name(embedder)
 
-    # --- Vector Store: MongoDB（与业务数据统一存储，客户端 cosine 相似度）---
-    # 不再使用 Qdrant，向量和业务数据统一存储在 MongoDB 中。
-    # 维度不匹配时由客户端 cosine 自动处理（跳过维度不兼容的向量）。
+    # --- Vector Store: MongoDB (Unified storage with business data, client cosine similarity)---
+    # Qdrant is no longer used, vectors and business data are stored uniformly in MongoDB.
+    # Dimension mismatches are automatically handled by client cosine (vectors with incompatible dimensions are skipped).
     embedding_dims = 1024
     if embedder:
         embedding_dims = int(embedder.get("config", {}).get("embedding_dims") or embedding_dims)
@@ -531,7 +531,7 @@ def build_mem0_config(db=None) -> Dict[str, Any]:
         },
     }
 
-    # --- LLM: 复用统一的系统模型选择与凭证解析逻辑 ---
+    # --- LLM: Reuse unified system model selection and credential parsing logic ---
     llm = None
     try:
         from app.services.intelligent_assistant_service import get_system_llm_config_from_config_doc
@@ -543,7 +543,7 @@ def build_mem0_config(db=None) -> Dict[str, Any]:
         if resolved_llm_config is not None:
             llm = _build_mem0_llm_config_from_unified_config(resolved_llm_config)
     except Exception as e:
-        logger.debug("mem0 config: 统一 LLM 解析失败: %s", e)
+        logger.debug("mem0 config: Unified LLM parsing failed: %s", e)
 
     if llm is None:
         target_model = (
@@ -566,7 +566,7 @@ def build_mem0_config(db=None) -> Dict[str, Any]:
             },
         }
 
-    # --- 组装 ---
+    # --- Assemble ---
     from .prompts import FINANCIAL_FACT_EXTRACTION_PROMPT
 
     config: Dict[str, Any] = {
@@ -582,7 +582,7 @@ def build_mem0_config(db=None) -> Dict[str, Any]:
 
 
 def summarize_mem0_config(config: Dict[str, Any]) -> Dict[str, Any]:
-    """返回 mem0 配置的安全摘要，不包含明文密钥。"""
+    """Returns the security digest of the mem0 configuration, excluding the plaintext key."""
     vector_store = config.get("vector_store") or {}
     vector_store_cfg = vector_store.get("config") or {}
 
@@ -616,5 +616,5 @@ def summarize_mem0_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def describe_mem0_config(db=None) -> Dict[str, Any]:
-    """返回 mem0 当前解析配置的安全摘要，不包含明文密钥。"""
+    """Returns the security digest of the currently parsed configuration of mem0, excluding the cleartext key."""
     return summarize_mem0_config(build_mem0_config(db))

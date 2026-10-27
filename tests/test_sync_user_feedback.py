@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-测试同步用户反馈功能
-模拟同步过程中的状态变化，验证用户反馈机制
+Test synchronized user feedback functionality
+Simulate state changes during synchronization and verify user feedback mechanism
 """
 import sys
 import os
@@ -11,54 +11,54 @@ import asyncio
 import logging
 from datetime import datetime
 
-# 设置日志
+# Setup log
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)-8s | %(message)s'
 )
 
 async def simulate_sync_with_feedback():
-    """模拟同步过程，测试用户反馈"""
+    """Simulate the synchronization process and test user feedback"""
     print("=" * 60)
-    print("🎭 模拟同步过程 - 测试用户反馈")
+    print("🎭 Simulating the synchronization process - test user feedback")
     print("=" * 60)
     
     try:
         from app.services.multi_source_basics_sync_service import get_multi_source_sync_service
         from app.core.database import init_db, get_mongo_db
         
-        # 初始化数据库
+        # Initialize database
         await init_db()
         service = get_multi_source_sync_service()
         db = get_mongo_db()
         
-        print("✅ 服务初始化成功")
+        print("✅ Service initialization successful")
         
-        # 1. 清空之前的状态
-        print("\n1. 🧹 清空之前的状态...")
+        # 1. Clear previous status
+        print("\n1. 🧹 Clear previous status...")
         await db.sync_status.delete_many({"job": "stock_basics_multi_source"})
         service._running = False
-        print("   ✅ 状态已清空")
+        print("   ✅ Status cleared")
         
-        # 2. 检查初始状态
-        print("\n2. 📊 检查初始状态...")
+        # 2. Check initial state
+        print("\n2. 📊 Check initial state...")
         initial_status = await service.get_status()
-        print(f"   📋 初始状态: {initial_status.get('status', 'unknown')}")
+        print(f"   📋 initial state: {initial_status.get('status', 'unknown')}")
         
-        # 3. 启动同步并监控状态变化
-        print("\n3. 🚀 启动同步并监控状态变化...")
+        # 3. Start synchronization and monitor status changes
+        print("\n3. 🚀 Start synchronization and monitor status changes...")
         
-        # 启动同步任务
+        # Start synchronization task
         sync_task = asyncio.create_task(service.run_full_sync(force=True))
-        print("   🔄 同步任务已启动")
+        print("   🔄 Synchronization task started")
         
-        # 监控状态变化
+        # Monitor status changes
         previous_status = None
         previous_progress = 0
         monitor_count = 0
         
-        while not sync_task.done() and monitor_count < 30:  # 最多监控30次
-            await asyncio.sleep(2)  # 每2秒检查一次
+        while not sync_task.done() and monitor_count < 30:  # Monitor up to 30 times
+            await asyncio.sleep(2)  # Check every 2 seconds
             monitor_count += 1
             
             current_status = await service.get_status()
@@ -67,30 +67,30 @@ async def simulate_sync_with_feedback():
             processed = current_status.get('inserted', 0) + current_status.get('updated', 0)
             progress = round((processed / total * 100) if total > 0 else 0, 1)
             
-            # 检查状态变化
+            # Check status changes
             if status != previous_status:
-                print(f"   📈 状态变化: {previous_status} -> {status}")
+                print(f"   📈 status change: {previous_status} -> {status}")
                 previous_status = status
             
-            # 检查进度变化
+            # Check progress changes
             if progress != previous_progress and progress > 0:
-                print(f"   📊 进度更新: {progress}% ({processed}/{total})")
+                print(f"   📊 progress update: {progress}% ({processed}/{total})")
                 previous_progress = progress
             
-            # 如果同步完成，退出监控
+            # If synchronization is completed, exit monitoring
             if status in ['success', 'success_with_errors', 'failed']:
-                print(f"   🎯 同步完成: {status}")
+                print(f"   🎯 Synchronization completed: {status}")
                 break
         
-        # 等待同步任务完成
+        # Wait for the sync task to complete
         try:
             await asyncio.wait_for(sync_task, timeout=5)
         except asyncio.TimeoutError:
-            print("   ⏰ 同步任务仍在运行，继续等待...")
+            print("   ⏰ The synchronization task is still running, continue to wait...")
             await sync_task
         
-        # 4. 检查最终状态
-        print("\n4. 📋 检查最终状态...")
+        # 4. Check final status
+        print("\n4. 📋 Check final status...")
         final_status = await service.get_status()
         
         status = final_status.get('status', 'unknown')
@@ -102,44 +102,44 @@ async def simulate_sync_with_feedback():
         started_at = final_status.get('started_at', '')
         finished_at = final_status.get('finished_at', '')
         
-        print(f"   📊 最终状态: {status}")
-        print(f"   📈 处理统计: 总数={total}, 新增={inserted}, 更新={updated}, 错误={errors}")
-        print(f"   🔗 数据源: {', '.join(sources) if sources else '无'}")
-        print(f"   🕐 开始时间: {started_at}")
-        print(f"   🕑 结束时间: {finished_at}")
+        print(f"   📊 final state: {status}")
+        print(f"   📈 Process statistics: total={total}, New={inserted}, update={updated}, Error={errors}")
+        print(f"   🔗 data source: {', '.join(sources) if sources else 'None'}")
+        print(f"   🕐 start time: {started_at}")
+        print(f"   🕑 end time: {finished_at}")
         
-        # 5. 模拟前端用户反馈
-        print("\n5. 🎭 模拟前端用户反馈...")
+        # 5. Simulate front-end user feedback
+        print("\n5. 🎭 Simulate front-end user feedback...")
         
         if status == 'success':
-            feedback_message = f"🎉 同步完成！处理了 {total} 条记录，新增 {inserted} 条，更新 {updated} 条"
-            feedback_type = "成功通知"
+            feedback_message = f"🎉 Synchronization completed! Processed {total} records, new {inserted} article, update {updated} Article"
+            feedback_type = "Success notification"
         elif status == 'success_with_errors':
-            feedback_message = f"⚠️ 同步完成但有错误！处理了 {total} 条记录，新增 {inserted} 条，更新 {updated} 条，错误 {errors} 条"
-            feedback_type = "警告通知"
+            feedback_message = f"⚠️ Sync completed with errors! Processed {total} records, new {inserted} article, update {updated} bar, error {errors} Article"
+            feedback_type = "warning notification"
         elif status == 'failed':
-            feedback_message = f"❌ 同步失败！{final_status.get('message', '未知错误')}"
-            feedback_type = "错误通知"
+            feedback_message = f"❌ Synchronization failed!{final_status.get('message', 'unknown error')}"
+            feedback_type = "Error notification"
         else:
-            feedback_message = f"ℹ️ 同步状态: {status}"
-            feedback_type = "信息通知"
+            feedback_message = f"ℹ️ Sync status: {status}"
+            feedback_type = "Information notification"
         
         print(f"   📢 {feedback_type}: {feedback_message}")
         
         if sources:
-            print(f"   📡 数据源通知: 使用的数据源: {', '.join(sources)}")
+            print(f"   📡 Data source notification: Data source used: {', '.join(sources)}")
         
-        # 6. 计算同步耗时
+        # 6. Calculate synchronization time
         if started_at and finished_at:
             try:
                 start_time = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
                 end_time = datetime.fromisoformat(finished_at.replace('Z', '+00:00'))
                 duration = (end_time - start_time).total_seconds()
-                print(f"   ⏱️ 同步耗时: {duration:.1f} 秒")
+                print(f"   ⏱️ Synchronization takes time: {duration:.1f} seconds")
             except Exception as e:
-                print(f"   ⏱️ 无法计算耗时: {e}")
+                print(f"   ⏱️ Unable to calculate time taken: {e}")
         
-        print(f"\n🎉 用户反馈测试完成")
+        print(f"\n🎉 User feedback testing completed")
         
         return {
             'status': status,
@@ -153,15 +153,15 @@ async def simulate_sync_with_feedback():
         }
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return None
 
 async def test_status_polling_simulation():
-    """模拟前端状态轮询"""
+    """Simulate frontend status polling"""
     print("\n" + "=" * 60)
-    print("🔄 模拟前端状态轮询")
+    print("🔄 Simulate frontend status polling")
     print("=" * 60)
     
     try:
@@ -169,9 +169,9 @@ async def test_status_polling_simulation():
         
         service = get_multi_source_sync_service()
         
-        print("📊 模拟前端每5秒轮询状态...")
+        print("📊 The simulated frontend polls for status every 5 seconds...")
         
-        # 模拟轮询10次
+        # Simulate polling 10 times
         for i in range(10):
             status = await service.get_status()
             
@@ -180,26 +180,26 @@ async def test_status_polling_simulation():
             processed = status.get('inserted', 0) + status.get('updated', 0)
             progress = round((processed / total * 100) if total > 0 else 0, 1)
             
-            print(f"   轮询 #{i+1}: 状态={current_status}, 进度={progress}% ({processed}/{total})")
+            print(f"   polling #{i+1}: Status={current_status}, Progress={progress}% ({processed}/{total})")
             
-            # 如果不是运行状态，停止轮询
+            # If it is not running, stop polling
             if current_status != 'running':
-                print(f"   🛑 检测到非运行状态，停止轮询")
+                print(f"   🛑 Non-running status detected, stop polling")
                 break
             
-            await asyncio.sleep(1)  # 模拟轮询间隔
+            await asyncio.sleep(1)  # Analog polling interval
         
-        print("🎯 状态轮询模拟完成")
+        print("🎯 Status polling simulation completed")
         
     except Exception as e:
-        print(f"❌ 轮询模拟失败: {e}")
+        print(f"❌ Poll simulation failed: {e}")
 
 if __name__ == "__main__":
     result = asyncio.run(simulate_sync_with_feedback())
     if result:
-        print(f"\n📊 测试结果摘要:")
-        print(f"   状态: {result['status']}")
-        print(f"   处理: {result['total']} 条记录")
-        print(f"   反馈: {result['feedback_message']}")
+        print(f"\n📊 Summary of test results:")
+        print(f"   Status: {result['status']}")
+        print(f"   Process: {result['total']} records")
+        print(f"   feedback: {result['feedback_message']}")
     
     asyncio.run(test_status_polling_simulation())

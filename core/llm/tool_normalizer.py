@@ -1,7 +1,7 @@
 """
-工具调用标准化器
+Tool call normalizer
 
-处理不同 LLM 提供商之间工具调用格式的差异
+Handle differences in tool call formats between different LLM providers
 """
 
 import json
@@ -16,20 +16,20 @@ logger = logging.getLogger(__name__)
 
 def normalize_ticker_for_engine(ticker: str) -> str:
     """
-    将 LLM 传入的股票代码规范化为分析引擎期望的格式。
-    分析引擎与数据源（MongoDB、AKShare 等）统一使用无后缀格式。
+    Normalizes the ticker symbol passed in by LLM into the format expected by the analytics engine.
+    The analysis engine and data sources (MongoDB, AKShare, etc.) use the unsuffixed format uniformly.
 
-    - A股: 002594.SZ / 600519.SH → 002594 / 600519（6 位纯数字）
-    - 港股: 0700.HK / 09988.HK → 0700 / 09988（去掉 .HK）
-    - 美股: AAPL → AAPL（不变）
+    - A shares: 002594.SZ / 600519.SH → 002594 / 600519 (6 bit pure number)
+    - Hong Kong stocks: 0700.HK / 09988.HK → 0700 / 09988 (Remove .HK)
+    - US stocks: AAPL → AAPL (unchanged)
     """
     if not ticker or not isinstance(ticker, str):
         return ticker
     s = ticker.strip().upper()
-    # A股：6位数字 + 交易所后缀 → 去掉后缀
+    # A Share: 6 digits + Exchange suffix → remove suffix
     if re.match(r'^\d{6}\.(SZ|SH|SS|XSHE|XSHG)$', s):
         return s.split('.')[0]
-    # 港股：4-5位数字.HK → 去掉后缀
+    # Hong Kong stocks: 4-5 digits.HK → remove suffix
     if re.match(r'^\d{4,5}\.HK$', s):
         return s.split('.')[0]
     return ticker
@@ -37,12 +37,12 @@ def normalize_ticker_for_engine(ticker: str) -> str:
 
 class ToolCallNormalizer:
     """
-    工具调用标准化器
+    Tool call normalizer
     
-    统一处理:
-    1. 工具定义格式转换
-    2. 工具调用结果转换
-    3. 工具执行和结果包装
+    Unified processing:
+    1. Tool definition format conversion
+    2. Tool call result conversion
+    3. Tool execution and result packaging
     """
     
     @staticmethod
@@ -52,22 +52,22 @@ class ToolCallNormalizer:
         description: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        从函数创建标准化的工具定义
+        Create standardized tool definitions from functions
         
         Args:
-            func: 工具函数
-            name: 工具名称 (默认使用函数名)
-            description: 工具描述 (默认使用函数文档字符串)
+            func: Utility function
+            name: Tool name (Use function name by default)
+            description: Tool description (Use function docstrings by default)
             
         Returns:
-            OpenAI 格式的工具定义
+            OpenAI Format tool definition
         """
         import inspect
         
         tool_name = name or func.__name__
         tool_desc = description or func.__doc__ or ""
         
-        # 从类型注解推断参数
+        # Infer parameters from type annotations
         sig = inspect.signature(func)
         hints = func.__annotations__ if hasattr(func, '__annotations__') else {}
         
@@ -83,7 +83,7 @@ class ToolCallNormalizer:
             
             properties[param_name] = {
                 "type": json_type,
-                "description": f"参数 {param_name}"
+                "description": f"parameters {param_name}"
             }
             
             if param.default == inspect.Parameter.empty:
@@ -104,7 +104,7 @@ class ToolCallNormalizer:
     
     @staticmethod
     def _python_type_to_json(python_type) -> str:
-        """Python 类型转 JSON Schema 类型"""
+        """Python Type conversion to JSON Schema type"""
         type_map = {
             str: "string",
             int: "integer",
@@ -117,7 +117,7 @@ class ToolCallNormalizer:
 
     @staticmethod
     def _merge_tool_arguments(arguments: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
-        """兼容历史/异常工具调用格式，自动解包 kwargs。"""
+        """Compatible with history/exception tool calling format, automatically unpacking kwargs."""
         merged = {**(arguments or {}), **context}
         nested_kwargs = merged.get("kwargs")
         if isinstance(nested_kwargs, dict):
@@ -135,15 +135,15 @@ class ToolCallNormalizer:
         **context
     ) -> ToolResult:
         """
-        执行工具调用（同步版本，仅适用于同步工具函数）
+        Execute tool call (synchronous version, only available for synchronous tool functions)
 
         Args:
-            tool_call: 工具调用对象
-            tools: 可用工具字典 {name: callable}
-            **context: 传递给工具的上下文参数
+            tool_call: Tool call object
+            tools: Dictionary of available tools {name: callable}
+            **context: Context parameters passed to the tool
 
         Returns:
-            工具执行结果
+            Tool execution results
         """
         import inspect
 
@@ -151,27 +151,27 @@ class ToolCallNormalizer:
             return ToolResult(
                 tool_call_id=tool_call.id,
                 name=tool_call.name,
-                content=f"错误: 未找到工具 '{tool_call.name}'",
+                content=f"Error: Tool not found '{tool_call.name}'",
                 is_error=True
             )
 
         try:
             func = tools[tool_call.name]
-            # 合并参数
+            # Merge parameters
             kwargs = ToolCallNormalizer._merge_tool_arguments(tool_call.arguments, context)
-            # 规范化股票代码：分析引擎统一使用无后缀格式（002594 而非 002594.SZ）
+            # Normalized ticker: The analysis engine uses the unsuffixed format (002594 instead of 002594.SZ)
             for key in ('ticker', 'symbol'):
                 if key in kwargs and kwargs[key]:
                     kwargs[key] = normalize_ticker_for_engine(str(kwargs[key]))
 
-            # 若是异步函数，在新事件循环中执行（兼容同步调用场景）
+            # If it is an asynchronous function, it will be executed in the new event loop (compatible with synchronous calling scenarios)
             if inspect.iscoroutinefunction(func):
                 import asyncio
                 result = asyncio.get_event_loop().run_until_complete(func(**kwargs))
             else:
                 result = func(**kwargs)
 
-            # 确保结果是字符串
+            # Make sure the result is a string
             if not isinstance(result, str):
                 result = json.dumps(result, ensure_ascii=False, default=str)
 
@@ -182,17 +182,17 @@ class ToolCallNormalizer:
                 is_error=False
             )
         except Exception as e:
-            logger.exception("[ToolNormalizer] 工具 %s 同步执行异常: %s", tool_call.name, e)
+            logger.exception("[ToolNormalizer] Tool %s synchronization execution exception: %s", tool_call.name, e)
             return ToolResult(
                 tool_call_id=tool_call.id,
                 name=tool_call.name,
-                content=f"工具执行错误: {str(e)}",
+                content=f"Tool execution error: {str(e)}",
                 is_error=True
             )
 
     @staticmethod
     def _get_tool_timeout(tool_name: str) -> int:
-        """根据工具注册表中的 timeout_tier 返回超时秒数"""
+        """Returns the timeout in seconds based on timeout_tier in the tool registry"""
         try:
             from core.tools import get_tool_registry, TOOL_TIMEOUT_SECONDS
             from core.tools.config import ToolTimeoutTier
@@ -202,7 +202,7 @@ class ToolCallNormalizer:
                 return TOOL_TIMEOUT_SECONDS.get(tier, TOOL_TIMEOUT_SECONDS[ToolTimeoutTier.MEDIUM])
         except Exception:
             pass
-        return 45  # 默认 medium
+        return 45  # Default medium
 
     @staticmethod
     async def aexecute_tool_call(
@@ -211,32 +211,32 @@ class ToolCallNormalizer:
         **context
     ) -> ToolResult:
         """
-        异步执行工具调用，正确处理异步和同步工具函数，并按分层超时保护。
+        Executes tool calls asynchronously, correctly handles asynchronous and synchronous tool functions, and protects against layered timeouts.
 
-        - 异步工具：直接 await 调用
-        - 同步工具：在线程池中运行，避免阻塞事件循环
-        - 超时保护：根据工具 timeout_tier（light=15s, medium=45s, heavy=180s）
+        - Asynchronous tools: direct await calls
+        - Synchronization tools: run in a thread pool to avoid blocking the event loop
+        - Timeout protection: according to tool timeout_tier(light=15s, medium=45s, heavy=180s) 
 
         Args:
-            tool_call: 工具调用对象
-            tools: 可用工具字典 {name: callable}
-            **context: 传递给工具的上下文参数
+            tool_call: Tool call object
+            tools: Dictionary of available tools {name: callable}
+            **context: Context parameters passed to the tool
 
         Returns:
-            工具执行结果
+            Tool execution results
         """
         import asyncio
         import inspect
 
         if tool_call.name not in tools:
-            # 上报能力缺口：LLM 调用了不存在的工具
+            # Reporting capability gaps: LLM calls a tool that does not exist
             try:
                 from core.tools.external.skill_gap_detector import SkillGapDetector
                 SkillGapDetector.report_gap(
                     gap_type="tool_not_found",
                     tool_name=tool_call.name,
                     agent_id="intelligent_assistant",
-                    error="工具不存在于当前注册表",
+                    error="Tool does not exist in the current registry",
                     context={
                         "tool_call_args": tool_call.arguments,
                         "available_tools_sample": list(tools.keys())[:20],
@@ -245,7 +245,7 @@ class ToolCallNormalizer:
             except Exception:
                 pass
 
-            # 记录到执行日志
+            # Record to execution log
             try:
                 from core.tools.execution_logger import get_tool_execution_logger
                 get_tool_execution_logger().log(
@@ -263,7 +263,7 @@ class ToolCallNormalizer:
             return ToolResult(
                 tool_call_id=tool_call.id,
                 name=tool_call.name,
-                content=f"错误: 未找到工具 '{tool_call.name}'",
+                content=f"Error: Tool not found '{tool_call.name}'",
                 is_error=True
             )
 
@@ -313,18 +313,18 @@ class ToolCallNormalizer:
             )
         except asyncio.TimeoutError:
             logger.warning(
-                "[ToolNormalizer] 工具 %s 执行超时（%ds），已中断",
+                "[ToolNormalizer] Tool %s execution timed out (%ds) and was interrupted",
                 tool_call.name, timeout_seconds,
             )
             _log_exec(success=False, error_str=f"timeout {timeout_seconds}s")
-            # 上报执行超时为能力缺口（间接说明工具效率不达预期）
+            # Report execution timeout as a capability gap (indirectly indicating that the tool efficiency is not up to expectations)
             try:
                 from core.tools.external.skill_gap_detector import SkillGapDetector
                 SkillGapDetector.report_gap(
                     gap_type="tool_execution_error",
                     tool_name=tool_call.name,
                     agent_id="intelligent_assistant",
-                    error=f"工具执行超时（{timeout_seconds}秒）",
+                    error=f"Tool execution timeout ({timeout_seconds}seconds)",
                     context={"tool_call_args": tool_call.arguments},
                 )
             except Exception:
@@ -332,13 +332,13 @@ class ToolCallNormalizer:
             return ToolResult(
                 tool_call_id=tool_call.id,
                 name=tool_call.name,
-                content=f"工具执行超时（已超过 {timeout_seconds} 秒限制），请尝试简化参数或稍后重试。",
+                content=f"Tool execution timeout (exceeded {timeout_seconds} seconds limit), try simplifying the parameters or try again later.",
                 is_error=True
             )
         except Exception as e:
-            logger.exception("[ToolNormalizer] 工具 %s 异步执行异常: %s", tool_call.name, e)
+            logger.exception("[ToolNormalizer] Tool %s asynchronous execution exception: %s", tool_call.name, e)
             _log_exec(success=False, error_str=str(e))
-            # 上报执行错误为能力缺口
+            # Report execution errors as capability gaps
             try:
                 from core.tools.external.skill_gap_detector import SkillGapDetector
                 SkillGapDetector.report_gap(
@@ -353,7 +353,7 @@ class ToolCallNormalizer:
             return ToolResult(
                 tool_call_id=tool_call.id,
                 name=tool_call.name,
-                content=f"工具执行错误: {str(e)}",
+                content=f"Tool execution error: {str(e)}",
                 is_error=True
             )
 
@@ -363,14 +363,14 @@ class ToolCallNormalizer:
         provider: LLMProvider
     ) -> Dict[str, Any]:
         """
-        将工具结果转换为消息格式
+        Convert tool results to message format
         
         Args:
-            result: 工具执行结果
-            provider: LLM 提供商
+            result: Tool execution results
+            provider: LLM provider
             
         Returns:
-            提供商特定的消息格式
+            Provider-specific message format
         """
         if provider == LLMProvider.GOOGLE:
             return {
@@ -383,7 +383,7 @@ class ToolCallNormalizer:
                 }]
             }
         else:
-            # OpenAI 兼容格式
+            # OpenAI Compatible formats
             return {
                 "role": "tool",
                 "tool_call_id": result.tool_call_id,

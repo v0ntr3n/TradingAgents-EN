@@ -1,5 +1,5 @@
 """
-分析偏好数据模型
+Analyze Preference Data Model
 """
 
 from datetime import datetime
@@ -10,7 +10,7 @@ from app.utils.timezone import now_tz
 
 
 def validate_object_id(v: Any) -> ObjectId:
-    """验证ObjectId"""
+    """Verify ObjectId"""
     if isinstance(v, ObjectId):
         return v
     if isinstance(v, str):
@@ -20,11 +20,11 @@ def validate_object_id(v: Any) -> ObjectId:
 
 
 def serialize_object_id(v: ObjectId) -> str:
-    """序列化ObjectId为字符串"""
+    """Serialize ObjectId to string"""
     return str(v)
 
 
-# 创建自定义ObjectId类型
+# Create custom ObjectId type
 PyObjectId = Annotated[
     ObjectId,
     BeforeValidator(validate_object_id),
@@ -33,23 +33,23 @@ PyObjectId = Annotated[
 
 
 class AnalysisPreference(BaseModel):
-    """分析偏好模型"""
+    """Analytical preference model"""
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
-    user_id: PyObjectId = Field(..., description="用户ID")
-    preference_type: str = Field(..., description="偏好类型: aggressive, neutral, conservative")
-    risk_level: float = Field(default=0.5, ge=0.0, le=1.0, description="风险等级 0.0-1.0")
-    confidence_threshold: float = Field(default=0.7, ge=0.0, le=1.0, description="置信度阈值 0.0-1.0")
-    position_size_multiplier: float = Field(default=1.0, ge=0.5, le=2.0, description="仓位倍数 0.5-2.0")
-    decision_speed: str = Field(default="normal", description="决策速度: fast, normal, slow")
-    is_default: bool = Field(default=False, description="是否为默认偏好")
-    created_at: datetime = Field(default_factory=now_tz, description="创建时间")
-    updated_at: datetime = Field(default_factory=now_tz, description="更新时间")
+    user_id: PyObjectId = Field(..., description="User ID")
+    preference_type: str = Field(..., description="Preference type: aggressive, neutral, conservative")
+    risk_level: float = Field(default=0.5, ge=0.0, le=1.0, description="risk level 0.0-1.0")
+    confidence_threshold: float = Field(default=0.7, ge=0.0, le=1.0, description="confidence threshold 0.0-1.0")
+    position_size_multiplier: float = Field(default=1.0, ge=0.5, le=2.0, description="Position multiple 0.5-2.0")
+    decision_speed: str = Field(default="normal", description="decision speed: fast, normal, slow")
+    is_default: bool = Field(default=False, description="Is it the default preference?")
+    created_at: datetime = Field(default_factory=now_tz, description="creation time")
+    updated_at: datetime = Field(default_factory=now_tz, description="Update time")
     
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
 
 class AnalysisPreferenceCreate(BaseModel):
-    """创建偏好请求"""
+    """Create preference request"""
     preference_type: str
     risk_level: float = 0.5
     confidence_threshold: float = 0.7
@@ -59,7 +59,7 @@ class AnalysisPreferenceCreate(BaseModel):
 
 
 class AnalysisPreferenceUpdate(BaseModel):
-    """更新偏好请求"""
+    """Update preference request"""
     risk_level: Optional[float] = None
     confidence_threshold: Optional[float] = None
     position_size_multiplier: Optional[float] = None
@@ -68,7 +68,7 @@ class AnalysisPreferenceUpdate(BaseModel):
 
 
 class AnalysisPreferenceResponse(BaseModel):
-    """偏好响应"""
+    """preferred response"""
     id: str
     user_id: str
     preference_type: str

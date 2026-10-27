@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试使用.env配置的数据库管理器
+Test the database manager configured using .env
 """
 
 import sys
@@ -8,82 +8,82 @@ import os
 from pathlib import Path
 
 def test_env_config():
-    """测试.env配置"""
-    print("🔧 测试使用.env配置的数据库管理器")
+    """Test .env configuration"""
+    print("🔧 Test the database manager configured using .env")
     print("=" * 50)
     
-    # 1. 检查.env文件
-    print("\n📁 检查.env文件...")
+    # 1. Check .env file
+    print("\n📁 Check .env file...")
     env_file = Path(".env")
     if env_file.exists():
-        print(f"✅ .env文件存在: {env_file}")
+        print(f"✅ .env File exists: {env_file}")
         
-        # 读取并显示相关配置
+        # Read and display relevant configuration
         with open(env_file, 'r', encoding='utf-8') as f:
             lines = f.readlines()
         
-        print("📊 数据库相关配置:")
+        print("📊 Database related configuration:")
         for line in lines:
             line = line.strip()
             if line and not line.startswith('#'):
                 if any(keyword in line.upper() for keyword in ['MONGODB', 'REDIS']):
-                    # 隐藏密码
+                    # Hide password
                     if 'PASSWORD' in line.upper():
                         key, value = line.split('=', 1)
                         print(f"  {key}=***")
                     else:
                         print(f"  {line}")
     else:
-        print(f"❌ .env文件不存在: {env_file}")
+        print(f"❌ .env File does not exist: {env_file}")
         return False
     
-    # 2. 测试数据库管理器
-    print("\n🔧 测试数据库管理器...")
+    # 2. Test database manager
+    print("\n🔧 Test database manager...")
     try:
         from tradingagents.config.database_manager import get_database_manager
         
         db_manager = get_database_manager()
-        print("✅ 数据库管理器创建成功")
+        print("✅ Database manager created successfully")
         
-        # 获取状态报告
+        # Get status report
         status = db_manager.get_status_report()
         
-        print("📊 数据库状态:")
-        print(f"  数据库可用: {'✅ 是' if status['database_available'] else '❌ 否'}")
+        print("📊 Database status:")
+        print(f"  Database available: {'✅ Yes' if status['database_available'] else '❌ No'}")
         
         mongodb_info = status['mongodb']
-        print(f"  MongoDB: {'✅ 可用' if mongodb_info['available'] else '❌ 不可用'}")
-        print(f"    地址: {mongodb_info['host']}:{mongodb_info['port']}")
+        print(f"  MongoDB: {'✅ Available' if mongodb_info['available'] else '❌ Not available'}")
+        print(f"    address: {mongodb_info['host']}:{mongodb_info['port']}")
         
         redis_info = status['redis']
-        print(f"  Redis: {'✅ 可用' if redis_info['available'] else '❌ 不可用'}")
-        print(f"    地址: {redis_info['host']}:{redis_info['port']}")
+        print(f"  Redis: {'✅ Available' if redis_info['available'] else '❌ Not available'}")
+        print(f"    address: {redis_info['host']}:{redis_info['port']}")
         
-        print(f"  缓存后端: {status['cache_backend']}")
-        print(f"  降级支持: {'✅ 启用' if status['fallback_enabled'] else '❌ 禁用'}")
+        print(f"  Caching backend: {status['cache_backend']}")
+        print(f"  Downgrade support: {'✅ enable' if status['fallback_enabled'] else '❌ Disable'}")
         
     except Exception as e:
-        print(f"❌ 数据库管理器测试失败: {e}")
+        print(f"❌ Database manager test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
     
-    # 3. 测试缓存系统
-    print("\n💾 测试缓存系统...")
+    # 3. Test caching system
+    print("\n💾 Test caching system...")
     try:
         from tradingagents.dataflows.integrated_cache import get_cache
         
         cache = get_cache()
-        print("✅ 缓存系统创建成功")
+        print("✅ Cache system created successfully")
         
-        # 获取后端信息
+        # Get backend information
         backend_info = cache.get_cache_backend_info()
-        print(f"  缓存系统: {backend_info['system']}")
-        print(f"  主要后端: {backend_info['primary_backend']}")
-        print(f"  性能模式: {cache.get_performance_mode()}")
+        print(f"  caching system: {backend_info['system']}")
+        print(f"  Main backend: {backend_info['primary_backend']}")
+        print(f"  Performance mode: {cache.get_performance_mode()}")
         
-        # 测试基本功能
-        test_data = "测试数据 - 使用.env配置"
+        # Test basic functionality
+        test_data = "Test data - using .env configuration"
         cache_key = cache.save_stock_data(
             symbol="TEST_ENV",
             data=test_data,
@@ -91,24 +91,24 @@ def test_env_config():
             end_date="2024-12-31",
             data_source="env_test"
         )
-        print(f"✅ 数据保存成功: {cache_key}")
+        print(f"✅ Data saved successfully: {cache_key}")
         
-        # 加载数据
+        # Load data
         loaded_data = cache.load_stock_data(cache_key)
         if loaded_data == test_data:
-            print("✅ 数据加载成功，内容匹配")
+            print("✅ The data is loaded successfully and the content matches")
         else:
-            print("❌ 数据加载失败或内容不匹配")
+            print("❌ Data loading failed or content does not match")
             return False
         
     except Exception as e:
-        print(f"❌ 缓存系统测试失败: {e}")
+        print(f"❌ Cache system test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
     
-    # 4. 显示环境变量
-    print("\n🔍 检查环境变量...")
+    # 4. Show environment variables
+    print("\n🔍 Check environment variables...")
     env_vars = [
         "MONGODB_HOST", "MONGODB_PORT", "MONGODB_USERNAME", "MONGODB_PASSWORD",
         "MONGODB_DATABASE", "MONGODB_AUTH_SOURCE",
@@ -123,43 +123,43 @@ def test_env_config():
             else:
                 print(f"  {var}={value}")
         else:
-            print(f"  {var}=未设置")
+            print(f"  {var}=not set")
     
-    # 5. 总结
-    print("\n📊 测试总结:")
-    print("✅ 系统已正确使用.env配置文件")
-    print("✅ 数据库管理器正常工作")
-    print("✅ 缓存系统正常工作")
-    print("✅ 支持MongoDB和Redis的完整配置")
-    print("✅ 在数据库不可用时自动降级到文件缓存")
+    # 5. Summary
+    print("\n📊 Test summary:")
+    print("✅ The system has correctly used the .env configuration file")
+    print("✅ Database manager works fine")
+    print("✅ Caching system works properly")
+    print("✅ Supports full configuration of MongoDB and Redis")
+    print("✅ Automatically downgrade to file cache when database becomes unavailable")
     
-    print("\n💡 配置说明:")
-    print("1. 系统读取.env文件中的数据库配置")
-    print("2. 自动检测MongoDB和Redis是否可用")
-    print("3. 根据可用性选择最佳缓存后端")
-    print("4. 支持用户名密码认证")
-    print("5. 在数据库不可用时自动使用文件缓存")
+    print("\n💡 Configuration instructions:")
+    print("1. The system reads the database configuration in the .env file")
+    print("2. Automatically detect whether MongoDB and Redis are available")
+    print("3. Choose the best cache backend based on availability")
+    print("4. Support username and password authentication")
+    print("5. Automatically use file cache when database is unavailable")
     
     return True
 
 def main():
-    """主函数"""
+    """main function"""
     try:
         success = test_env_config()
         
         if success:
-            print("\n🎉 .env配置测试完成!")
-            print("\n🎯 系统特性:")
-            print("✅ 使用项目现有的.env配置")
-            print("✅ 默认不依赖数据库，可以纯文件缓存运行")
-            print("✅ 自动检测和使用可用的数据库")
-            print("✅ 支持完整的MongoDB和Redis配置")
-            print("✅ 智能降级，确保系统稳定性")
+            print("\n🎉 .env Configuration test completed!")
+            print("\n🎯 System characteristics:")
+            print("✅ Use the project s existing .env configuration")
+            print("✅ By default, it does not rely on the database and can be run as a pure file cache.")
+            print("✅ Automatically detect and use available databases")
+            print("✅ Supports full MongoDB and Redis configuration")
+            print("✅ Intelligent downgrade to ensure system stability")
         
         return success
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False

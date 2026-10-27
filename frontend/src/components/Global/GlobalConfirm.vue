@@ -1,15 +1,15 @@
 <template>
   <div class="global-confirm">
-    <!-- 全局确认对话框组件 -->
+    <!-- Global confirmation dialog component -->
   </div>
 </template>
 
 <script setup lang="ts">
-// 全局确认对话框组件逻辑
+// Global confirmation dialog component logic
 </script>
 
 <style lang="scss" scoped>
 .global-confirm {
-  // 样式
+  // style
 }
 </style>

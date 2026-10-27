@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-测试条件逻辑修复 - 防止分析师节点无限循环
+Test conditional logic fix - prevent analyst node from infinite looping
 
-测试场景：
-1. 报告未生成时，有 tool_calls 应该继续执行工具
-2. 报告已生成时，即使有 tool_calls 也应该停止循环
-3. 报告长度不足时，应该继续执行
-4. 报告长度足够时，应该停止循环
+Test scenario:
+1. There are tool_calls that should continue tool execution when the report is not generated
+2. The loop should stop when the report has been generated even if there are tool_calls
+3. When the report length is insufficient, execution should continue
+4. When the report length is sufficient, the loop should be stopped
 """
 
 from unittest.mock import Mock
 
 
 def create_mock_message(has_tool_calls=False):
-    """创建模拟消息"""
+    """Create a mock message"""
     message = Mock()
     if has_tool_calls:
         message.tool_calls = [{"name": "test_tool", "args": {}}]
@@ -23,7 +23,7 @@ def create_mock_message(has_tool_calls=False):
 
 
 def test_fundamentals_no_report_with_tool_calls():
-    """测试：基本面分析 - 没有报告，有 tool_calls -> 应该继续执行工具"""
+    """Test: Fundamental Analysis - No Reports, Yes tool_calls -> Tool execution should continue"""
     from tradingagents.graph.conditional_logic import ConditionalLogic
     
     logic = ConditionalLogic()
@@ -33,34 +33,34 @@ def test_fundamentals_no_report_with_tool_calls():
     }
     
     result = logic.should_continue_fundamentals(state)
-    assert result == "tools_fundamentals", "没有报告时应该执行工具"
-    print("✅ 测试通过：没有报告时继续执行工具")
+    assert result == "tools_fundamentals", "Tool should be executed when there is no report"
+    print("✅ Test Passed: Tool execution continues without reports")
 
 
 def test_fundamentals_has_report_with_tool_calls():
-    """测试：基本面分析 - 有报告，有 tool_calls -> 应该停止循环"""
+    """Test: Fundamental Analysis - There are reports, there are tool_calls -> The cycle should be stopped"""
     from tradingagents.graph.conditional_logic import ConditionalLogic
     
     logic = ConditionalLogic()
     state = {
         "messages": [create_mock_message(has_tool_calls=True)],
-        "fundamentals_report": "这是一个完整的基本面分析报告" * 10  # 长度 > 100
+        "fundamentals_report": "This is a complete fundamental analysis report" * 10  # length > 100
     }
     
     result = logic.should_continue_fundamentals(state)
-    assert result == "Msg Clear Fundamentals", "有报告时应该停止循环"
-    print("✅ 测试通过：有报告时停止循环")
+    assert result == "Msg Clear Fundamentals", "The loop should be stopped when there is a report"
+    print("✅ Test passed: Stop the loop when there is a report")
 
 
 def test_all_analysts():
-    """测试：所有分析师的行为一致性"""
+    """Test: Consistency of behavior among all analysts"""
     from tradingagents.graph.conditional_logic import ConditionalLogic
     
     logic = ConditionalLogic()
     message = create_mock_message(has_tool_calls=True)
-    long_report = "完整的分析报告" * 20
+    long_report = "Complete analysis report" * 20
     
-    # 测试所有分析师
+    # Test all analysts
     analysts = [
         ("market", "market_report", logic.should_continue_market, "Msg Clear Market", "tools_market"),
         ("social", "sentiment_report", logic.should_continue_social, "Msg Clear Social", "tools_social"),
@@ -69,49 +69,49 @@ def test_all_analysts():
     ]
     
     for analyst_name, report_field, check_func, expected_clear, expected_tools in analysts:
-        # 有报告时应该停止
+        # Stop when reported
         state = {
             "messages": [message],
             report_field: long_report
         }
         result = check_func(state)
-        assert result == expected_clear, f"{analyst_name} 分析师有报告时应该停止循环"
+        assert result == expected_clear, f"{analyst_name} The cycle should be stopped when an analyst has a report"
         
-        # 没有报告时应该继续
+        # Should continue when there are no reports
         state[report_field] = ""
         result = check_func(state)
-        assert result == expected_tools, f"{analyst_name} 分析师没有报告时应该执行工具"
+        assert result == expected_tools, f"{analyst_name} Analysts should execute tools when they have no reports"
     
-    print("✅ 测试通过：所有分析师行为一致")
+    print("✅ Test passes: all analysts behave consistently")
 
 
 def test_conditional_logic_fix():
-    """主测试函数 - 运行所有测试"""
-    print("🔧 测试条件逻辑修复 - 防止分析师节点无限循环\n")
+    """Main test function - runs all tests"""
+    print("🔧 Test conditional logic fix - prevent analyst node from infinite looping\n")
     
     try:
         test_fundamentals_no_report_with_tool_calls()
         test_fundamentals_has_report_with_tool_calls()
         test_all_analysts()
         
-        print("\n🎉 所有测试通过！")
-        print("\n📋 修复内容:")
-        print("✅ 添加了报告完成检查")
-        print("✅ 防止了无限循环")
-        print("✅ 所有分析师节点都已修复")
+        print("\n🎉 All tests passed!")
+        print("\n📋 Fix content:")
+        print("✅ Added report completion check")
+        print("✅ Prevented infinite loop")
+        print("✅ All analyst nodes have been fixed")
         return True
     except AssertionError as e:
-        print(f"\n❌ 测试失败: {e}")
+        print(f"\n❌ test failed: {e}")
         return False
     except Exception as e:
-        print(f"\n❌ 测试错误: {e}")
+        print(f"\n❌ test error: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 if __name__ == "__main__":
-    # 运行测试
+    # Run tests
     success = test_conditional_logic_fix()
     exit(0 if success else 1)
 

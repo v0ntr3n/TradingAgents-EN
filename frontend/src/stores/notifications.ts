@@ -39,10 +39,10 @@ export const useNotificationStore = defineStore('notifications', () => {
   const loading = ref(false)
   const drawerVisible = ref(false)
 
-  // 🔥 WebSocket 连接状态
+  // 🔥 WebSocket connection status
   const ws = ref<WebSocket | null>(null)
   const wsConnected = ref(false)
-  const maxReconnectAttempts = 10  // 增加重连次数
+  const maxReconnectAttempts = 10  // Increase the number of reconnections
 
   const syncSocketRefs = () => {
     const state = getGlobalSocketState()
@@ -58,7 +58,7 @@ export const useNotificationStore = defineStore('notifications', () => {
     }
   }
 
-  // 连接状态
+  // connection status
   const connected = computed(() => wsConnected.value)
 
   const hasUnread = computed(() => unreadCount.value > 0)
@@ -114,17 +114,17 @@ export const useNotificationStore = defineStore('notifications', () => {
     if (item.status === 'unread') unreadCount.value += 1
   }
 
-  // 🔥 连接 WebSocket（优先）
+  // 🔥 Connect to WebSocket (preferred)
   function connectWebSocket() {
     try {
       const authStore = useAuthStore()
       const token = authStore.token || localStorage.getItem('auth-token') || ''
       const jdyun = isJdyunMode()
 
-      // 京东云模式：无 JWT token 也可连接，由网关注入 Basic Auth 认证
-      // 非京东云模式：必须有 JWT token
+      // JD Cloud mode: You can connect without JWT token, Basic Auth authentication is injected by the gateway
+      // Non-JD Cloud mode: required JWT token
       if (!token && !jdyun) {
-        console.warn('[WS] 未找到 token，无法连接 WebSocket')
+        console.warn('[WS] Token not found, unable to connect WebSocket')
         disconnectWebSocket()
         return
       }
@@ -133,18 +133,18 @@ export const useNotificationStore = defineStore('notifications', () => {
       state.shouldReconnect = true
 
       if (state.isConnecting) {
-        console.debug('[WS] 已在连接中，跳过重复连接请求')
+        console.debug('[WS] Already connected, skip repeated connection requests')
         return
       }
 
-      // 京东云模式下 token 为空时用占位符标识，保证 currentToken 比较逻辑一致
+      // In JD Cloud mode, when the token is empty, it is marked with a placeholder to ensure that the currentToken is logically consistent.
       const connKey = token || (jdyun ? '__jdyun_basic_auth__' : '')
       if (
         state.socket
         && (state.socket.readyState === WebSocket.OPEN || state.socket.readyState === WebSocket.CONNECTING)
         && state.currentToken === connKey
       ) {
-        console.debug('[WS] 复用现有通知连接')
+        console.debug('[WS] Reuse existing notification connection')
         syncSocketRefs()
         return
       }
@@ -155,22 +155,22 @@ export const useNotificationStore = defineStore('notifications', () => {
         try {
           state.socket.close()
         } catch (error) {
-          console.debug('[WS] 关闭旧连接失败:', error)
+          console.debug('[WS] Failed to close old connection:', error)
         } finally {
           state.socket = null
         }
       }
 
-      // WebSocket 连接地址
-      // 🔥 统一使用当前访问的服务器地址（开发环境通过 Vite 代理，生产环境通过 Nginx 代理）
-      // 京东云模式无 token 时不传 token 参数，由网关注入的 Basic Auth 头认证
+      // WebSocket connection address
+      // 🔥 Uniformly use the currently accessed server address (the development environment uses the Vite proxy, and the production environment uses the Nginx proxy)
+      // When there is no token in JD Cloud mode, the token parameter is not passed, and the Basic Auth header is authenticated by the gateway.
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
       const host = window.location.host
       const wsUrl = token
         ? `${wsProtocol}//${host}/api/ws/notifications?token=${encodeURIComponent(token)}`
         : `${wsProtocol}//${host}/api/ws/notifications`
 
-      console.log('[WS] 连接到:', wsUrl, jdyun && !token ? '(京东云 Basic Auth)' : '')
+      console.log('[WS] Connect to:', wsUrl, jdyun && !token ? '(JD Cloud Basic Auth)' : '')
 
       const socket = new WebSocket(wsUrl)
       state.socket = socket
@@ -179,7 +179,7 @@ export const useNotificationStore = defineStore('notifications', () => {
       syncSocketRefs()
 
       socket.onopen = () => {
-        console.log('[WS] 连接成功')
+        console.log('[WS] Connection successful')
         state.isConnecting = false
         wsConnected.value = true
         state.reconnectAttempts = 0
@@ -187,7 +187,7 @@ export const useNotificationStore = defineStore('notifications', () => {
       }
 
       socket.onclose = (event) => {
-        console.log('[WS] 连接关闭:', event.code, event.reason)
+        console.log('[WS] connection closed:', event.code, event.reason)
         state.isConnecting = false
         wsConnected.value = false
         if (state.socket === socket) {
@@ -195,10 +195,10 @@ export const useNotificationStore = defineStore('notifications', () => {
         }
         syncSocketRefs()
 
-        // 自动重连
+        // Automatically reconnect
         if (state.shouldReconnect && state.reconnectAttempts < maxReconnectAttempts) {
           const delay = Math.min(1000 * Math.pow(2, state.reconnectAttempts), 30000)
-          console.log(`[WS] ${delay}ms 后重连 (尝试 ${state.reconnectAttempts + 1}/${maxReconnectAttempts})`)
+          console.log(`[WS] ${delay}ms Reconnect later (try ${state.reconnectAttempts + 1}/${maxReconnectAttempts})`)
 
           state.reconnectTimer = setTimeout(() => {
             state.reconnectAttempts++
@@ -206,13 +206,13 @@ export const useNotificationStore = defineStore('notifications', () => {
           }, delay)
         } else {
           if (state.shouldReconnect) {
-            console.error('[WS] 达到最大重连次数，停止重连')
+            console.error('[WS] Reached the maximum number of reconnections and stopped reconnecting.')
           }
         }
       }
 
       socket.onerror = (error) => {
-        console.error('[WS] 连接错误:', error)
+        console.error('[WS] Connection error:', error)
         state.isConnecting = false
         wsConnected.value = false
       }
@@ -222,28 +222,28 @@ export const useNotificationStore = defineStore('notifications', () => {
           const message = JSON.parse(event.data)
           handleWebSocketMessage(message)
         } catch (error) {
-          console.error('[WS] 解析消息失败:', error)
+          console.error('[WS] Failed to parse message:', error)
         }
       }
     } catch (error) {
       const state = getGlobalSocketState()
       state.isConnecting = false
-      console.error('[WS] 连接失败:', error)
+      console.error('[WS] Connection failed:', error)
       wsConnected.value = false
     }
   }
 
-  // 处理 WebSocket 消息
+  // Handling WebSocket messages
   function handleWebSocketMessage(message: any) {
-    console.log('[WS] 收到消息:', message)
+    console.log('[WS] message received:', message)
 
     switch (message.type) {
       case 'connected':
-        console.log('[WS] 连接确认:', message.data)
+        console.log('[WS] Connection confirmation:', message.data)
         break
 
       case 'notification':
-        // 处理通知
+        // Handle notifications
         if (message.data && message.data.title && message.data.type) {
           addNotification({
             id: message.data.id,
@@ -259,15 +259,15 @@ export const useNotificationStore = defineStore('notifications', () => {
         break
 
       case 'heartbeat':
-        // 心跳消息，无需处理
+        // Heartbeat message, no need to process
         break
 
       default:
-        console.warn('[WS] 未知消息类型:', message.type)
+        console.warn('[WS] Unknown message type:', message.type)
     }
   }
 
-  // 断开 WebSocket
+  // Disconnect WebSocket
   function disconnectWebSocket() {
     const state = getGlobalSocketState()
     state.shouldReconnect = false
@@ -279,7 +279,7 @@ export const useNotificationStore = defineStore('notifications', () => {
       try {
         state.socket.close()
       } catch (error) {
-        console.debug('[WS] 断开连接时关闭失败:', error)
+        console.debug('[WS] Close failed on disconnect:', error)
       }
       state.socket = null
     }
@@ -289,15 +289,15 @@ export const useNotificationStore = defineStore('notifications', () => {
     syncSocketRefs()
   }
 
-  // 🔥 连接 WebSocket
+  // 🔥 connect WebSocket
   function connect() {
-    console.log('[Notifications] 开始连接...')
+    console.log('[Notifications] Start connecting...')
     connectWebSocket()
   }
 
-  // 🔥 断开 WebSocket
+  // 🔥 Disconnect WebSocket
   function disconnect() {
-    console.log('[Notifications] 断开连接...')
+    console.log('[Notifications] Disconnect...')
     disconnectWebSocket()
   }
 

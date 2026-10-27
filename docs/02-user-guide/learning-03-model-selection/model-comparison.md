@@ -1,155 +1,155 @@
-# 大语言模型对比与选择（TradingAgents‑CN 适配版）
+# Comparison and selection of large language models (TradingAgents‑CN Adapted version)
 
-**分类**: 模型选择指南  
-**难度**: 进阶  
-**阅读时间**: 30 分钟  
-**更新日期**: 2025-11-15  
-
----
-
-## 0. 总览
-
-- **项目主力**：DeepSeek、阿里云百炼（DashScope，Qwen 系列）——国内网络友好、已全链路适配。  
-- **国际模型**：GPT‑5.0、Claude 4.5、Gemini 2.0 仅一句话速览，不展开。  
-- **选型三问**：①推理够不够 ②速度/成本能不能接受 ③Function Calling 稳不稳。  
+**Classification**: Model Selection Guide  
+**difficulty**: Advanced  
+**reading time**: 30 minutes  
+**Update date**: 2025-11-15  
 
 ---
 
-## 1. 国产模型全家福（2025-11 月最新）
+## 0. Overview
 
-| 厂商 | 模型（官方 ID） | 参数量级 | 上下文 | 工具调用 | 百万 token 价（输入/输出） | 项目已适配 |
+- **Project main force**: DeepSeek, Alibaba Cloud Bailian (DashScope, Qwen series)——The domestic network is friendly and has been adapted to all links.  
+- **international model**: GPT‑5.0, Claude 4.5, Gemini 2.0 Just a quick overview, no expansion.  
+- **Three questions when selecting a model**: ① Is the reasoning enough? ② Is the speed/cost acceptable? ③Function Calling Stable or not.  
+
+---
+
+## 1. Domestic model family portrait (latest from 2025 to November)
+
+| Manufacturer | Model (official ID) | Parameter magnitude | context | Tool call | Million token price (input/output) | The project has been adapted |
 |------|----------------|----------|--------|----------|-----------------------------|------------|
-| DeepSeek | deepseek-chat | 67 B MoE | 32 k | ✅ 稳定 | 0.8 / 1.6 元 | ✅ |
-| DeepSeek | deepseek-reasoner | 67 B MoE + RL | 32 k | ✅ 稳定 | 1.2 / 2.4 元 | ✅ |
-| 百炼 | qwen-turbo-2025-11 | ≈ 7 B | 32 k | ✅ 稳定 | 0.3 / 0.9 元 | ✅ |
-| 百炼 | qwen-plus-2025-11 | ≈ 14 B | 128 k | ✅ 稳定 | 1.2 / 3.6 元 | ✅ |
-| 百炼 | qwen-max-2025-11 | ≈ 70 B MoE | 32 k | ✅ 稳定 | 6.0 / 18.0 元 | ✅ |
-| 百炼 | qwen-long-2025-11 | ≈ 14 B | 1 M | ✅ 稳定 | 1.5 / 4.5 元 | ✅ |
+| DeepSeek | deepseek-chat | 67 B MoE | 32 k | ✅ stable | 0.8 / 1.6 Yuan | ✅ |
+| DeepSeek | deepseek-reasoner | 67 B MoE + RL | 32 k | ✅ stable | 1.2 / 2.4 Yuan | ✅ |
+| Bailian | qwen-turbo-2025-11 | ≈ 7 B | 32 k | ✅ stable | 0.3 / 0.9 Yuan | ✅ |
+| Bailian | qwen-plus-2025-11 | ≈ 14 B | 128 k | ✅ stable | 1.2 / 3.6 Yuan | ✅ |
+| Bailian | qwen-max-2025-11 | ≈ 70 B MoE | 32 k | ✅ stable | 6.0 / 18.0 Yuan | ✅ |
+| Bailian | qwen-long-2025-11 | ≈ 14 B | 1 M | ✅ stable | 1.5 / 4.5 Yuan | ✅ |
 
-> 注：①“参数量级”为官方披露或社区反推，仅作能力参考；②价格单位 = 人民币；③项目已适配 = 配置模板 + 错误重试 + token 统计已合并到 main 分支。
+> Note:①"Parameter magnitude"It is for official disclosure or community inference, and is only for capability reference;② price unit = RMB;③ The project has been adapted = Configuration template + Retry on error + token Statistics have been merged into the main branch.
 
 ---
 
-## 2. 参数规模 → 股票分析能力曲线（仅供参考）
+## 2. Parameter scale → Stock analysis ability curve (for reference only)
 
-我们在 50 只 A 股（2025-Q3 财报季）上做固定任务：  
-“请综合最新年报、近 3 个月公告、近 1 周新闻，给出估值结论与风险清单。”  
+We do fixed tasks on 50 A-shares (2025-Q3 financial reporting season):  
+"Please provide a valuation conclusion and risk list based on the latest annual report, announcements in the past three months, and news in the past week."  
 
-| 参数量 | 正确提取财务指标 | 跨源一致性 | 反事实检查（假消息过滤） | 平均耗时 | 平均成本 |
+| Parameter quantity | Extract financial indicators correctly | Cross-source consistency | Counterfactual checking (fake news filtering) | Average time taken | average cost |
 |--------|------------------|------------|--------------------------|----------|----------|
-| 7 B    | 82 %             | 73 %       | 65 %                     | 2.1 s    | 0.3 元   |
-| 14 B   | 90 %             | 84 %       | 78 %                     | 3.4 s    | 1.2 元   |
-| 70 B   | 96 %             | 92 %       | 89 %                     | 5.8 s    | 6.0 元   |
+| 7 B    | 82 %             | 73 %       | 65 %                     | 2.1 s    | 0.3 Yuan   |
+| 14 B   | 90 %             | 84 %       | 78 %                     | 3.4 s    | 1.2 Yuan   |
+| 70 B   | 96 %             | 92 %       | 89 %                     | 5.8 s    | 6.0 Yuan   |
 
-结论：  
-- 70 B 以上在做“跨报表勾稽”和“假消息过滤”时明显更稳，适合用于股票分析。
+Conclusion:  
+- 70 B Doing the above"cross-report reporting"and"Fake news filtering"It is obviously more stable and suitable for stock analysis.
 
 ---
 
-## 3. 核心参数对股票分析的“微观”影响
+## 3. Core parameters for stock analysis"microscopic"influence
 
-| 参数 | 取值区间 | 对股票任务的影响 | 推荐值（快速） | 推荐值（深度） |
+| parameters | Value range | Impact on stock mandates | Recommended value (fast) | Recommended value (depth) |
 |------|----------|------------------|----------------|----------------|
-| temperature | 0 ~ 1 | 越高越发散，易“ hallucinate ”数字 | 0.2 ~ 0.3 | 0.1 ~ 0.2 |
-| top_p | 0 ~ 1 | 核采样，与 temp 联动，<0.7 会丢稀有概念 | 0.9 | 0.85 |
-| max_tokens | 256 ~ 128 k | 决定返回长度，年报总结建议 ≥2 k | 800 ~ 1 200 | 3 000 ~ 6 000 |
-| presence_penalty | -2 ~ 2 | >0 会抑制重复，但可能省略重要风险 | 0 | 0 |
+| temperature | 0 ~ 1 | The higher it is, the more divergent it is." hallucinate "numbers | 0.2 ~ 0.3 | 0.1 ~ 0.2 |
+| top_p | 0 ~ 1 | Kernel sampling, linked to temp,<0.7 Will lose rare concepts | 0.9 | 0.85 |
+| max_tokens | 256 ~ 128 k | Determining return length, annual report summary recommendations ≥2 k | 800 ~ 1 200 | 3 000 ~ 6 000 |
+| presence_penalty | -2 ~ 2 | >0 Will suppress duplication, but may omit important risks | 0 | 0 |
 
-经验：  
-- 做“估值”时，temp>0.4 会把 PE 算成负数；  
-- 做“风险清单”时，top_p<0.8 容易漏掉“股权质押”这类低频关键词；  
-- 做“长公告总结”时，max_tokens<1500 会中途截断，导致“结论缺失”。
+Experience:  
+- do"Valuation"when,temp>0.4 PE will be calculated as a negative number;  
+- do"risk list"when,top_p<0.8 easy to miss"Equity pledge"Such low-frequency keywords;  
+- do"Long announcement summary"when,max_tokens<1500 will be truncated midway, resulting in"Conclusion missing". 
 
 ---
 
-## 4. 快速分析 vs 深度分析——官方定义
+## 4. Quick analysis vs in-depth analysis——official definition
 
-### 4.1 快速分析模型（Quick-Thinking LLM）
-**使用场景**：单一职责 Agent，只处理“局部”任务，无需多步推理。  
-**典型 Agent**（源码级映射）：  
-- `Market Analyst` – 纯技术/趋势一句话总结  
-- `Fundamentals Analyst` – 只拉三张表，输出 5 个核心指标  
-- `Technical Analyst` – 仅计算均线/形态  
-- `News Analyst` – 摘要当日 20 条新闻，给出情绪分值  
-- `Bull/Bear Researcher` – 各找 3 条看多/看空理由  
-- `Trader` – 根据现成结论直接生成订单草案  
+### 4.1 Quick Analysis Model (Quick-Thinking LLM)
+**Usage scenarios**: Single responsibility Agent, only processes"local"tasks without the need for multi-step reasoning.  
+**typical Agent** (Source level mapping):  
+- `Market Analyst` – A one-sentence summary of pure technology/trends  
+- `Fundamentals Analyst` – Pull only three tables and output 5 core indicators  
+- `Technical Analyst` – Calculate moving average/pattern only  
+- `News Analyst` – Summarize 20 news items of the day and give sentiment scores  
+- `Bull/Bear Researcher` – Find 3 bullish/short reasons each  
+- `Trader` – Directly generate order draft based on ready-made conclusions  
 
-**模型能力要求**：  
-- 函数调用一次到位，不依赖多轮对话  
-- 快速分析模型即可胜任，temperature 0.2–0.3 保证稳定  
-- 成本优先，支持高并发（≥100 只/小时）  
+**Model capability requirements**:   
+- The function is called once and does not rely on multiple rounds of dialogue.  
+- A quick analysis of the model will do the job.temperature 0.2–0.3 Guaranteed stability  
+- Cost priority, support high concurrency (≥100 only/hour)  
 
-**官方配置片段**：  
+**Official configuration snippet**:   
 ```yaml
 # tradingagents/config/templates/quick.yaml
 provider: deepseek
-model: deepseek-chat   # 67 B MoE，但只跑单轮，速度仍 <1 s
+model: deepseek-chat   # 67 B MoE, But only running a single wheel, the speed is still <1 s
 temperature: 0.2
-max_tokens: 4000        # 足够输出“结论+理由”
-functions: []          # 由框架自动注入单工具，如 get_price
+max_tokens: 4000        # enough output"Conclusion+Reason"
+functions: []          # Single tools are automatically injected by the framework, such as get_price
 ```
 
-### 4.2 深度分析模型（Deep-Thinking LLM）
-**使用场景**：需要“跨报告综合 + 多轮辩论”的管理层 Agent。  
-**典型 Agent**：  
-- `Research Manager` – 读 5 份分析师报告，做多情景研究审阅，输出最终研究结论  
-- `Risk Manager` – 综合防御/基准/高弹性三方观点，给出风险审阅结论  
+### 4.2 Deep-Thinking LLM
+**Usage scenarios**: need"Integrated across reports + Multiple rounds of debate"Management Agent.  
+**typical Agent**:   
+- `Research Manager` – Read 5 analyst reports, conduct multi-scenario research reviews, and output final research conclusions  
+- `Risk Manager` – Comprehensive defense/baseline/high-resilience tripartite perspectives to provide risk review conclusions  
 
-**模型能力要求**：  
-- 128 k+ 上下文，能把 5 份报告 + 3 方辩论历史一次性读全  
-- 强指令跟随，确保“判决格式”不跑偏  
-- 参数规模 70 B 级或 MoE-32B 以上，temperature 0.1–0.2  
+**Model capability requirements**:   
+- 128 k+ Context, can put 5 reports + 3 Read the entire history of Fang Debate in one go  
+- Follow strong instructions to ensure"Judgment format"Don't go astray  
+- Parameter scale 70 B level or MoE-32B or above,temperature 0.1–0.2  
 
-**官方配置片段**：  
+**Official configuration snippet**:   
 ```yaml
 # tradingagents/config/templates/deep.yaml
 provider: dashscope
-model: qwen-max-2025-11   # 70 B MoE，128 k 上下文
+model: qwen-max-2025-11   # 70 B MoE, 128 k context
 temperature: 0.1
 max_tokens: 8000
-functions: []              # 框架注入多工具链，如 get_balance_sheet + get_sector_index
+functions: []              # Framework injects multiple toolchains such as get_balance_sheet + get_sector_index
 ```
 
-### 4.3 一句话总结
-- **快速模型** =“单工具 + 单轮输出” → 给普通 Analyst 用，省钱。  
-- **深度模型** =“多报告 + 多轮辩论” → 给 Manager 用，求准。  
+### 4.3 One sentence summary
+- **quick model** ="single tool + Single wheel output" → Use it for ordinary Analysts and save money.  
+- **deep model** ="multiple reports + Multiple rounds of debate" → For Manager use, please be sure.  
 
-> 两套模板已内置在 `tradingagents/config/templates/`，框架会根据 Agent 角色自动选择，无需手动切换。
+> Two sets of templates are built into the `tradingagents/config/templates/`, The framework is automatically selected based on the Agent role, so there is no need to switch manually.
 
 ---
 
-## 5. Function Calling 九条军规（踩坑大全）
+## 5. Function Calling Catch-9 (A Complete Collection of Traps)
 
-| 坑号 | 现象 | 根因 | 最稳模型 | 项目兜底代码 |
+| Pit number | phenomenon | root cause | The most stable model | Project code |
 |------|------|------|----------|--------------|
-| 1 | 字段缺失 | 7 B 模型易偷懒 | qwen-plus | schema 加 required + retry 3 次 |
-| 2 | 数组越界 | 模型把“前 5 大”写成 6 条 | qwen-max | 下游断言 len<=5 |
-| 3 | 并发冲突 | 并行 5 个工具，返回顺序乱 | deepseek-reasoner | 用 session_id 重排序 |
-| 4 | 中文枚举 | “行业”写“白酒/酿酒”混用 | qwen-long | 标准化映射表 post_process |
-| 5 | 日期格式 | 2025-11-15 vs 2025/11/15 | 全系列 | 统一正则清洗 |
-| 6 | 精度截断 | PE 算成 12.3→12 | 7 B 系列 | 强制两位小数 Decimal |
-| 7 | 空值含义 | “N/A” vs null | 全系列 | 全转 None，下游一致 |
-| 8 | 超长 context | 1 M token 输入截断 | qwen-long | 分段摘要再合并 |
-| 9 | 工具超时 | akshare 接口 30 s 无返回 | 全系列 | 异步 + 回调，超时重试 |
+| 1 | Field missing | 7 B Models are prone to laziness | qwen-plus | schema add required + retry 3 times |
+| 2 | Array out of bounds | Model handle"Top 5"Write 6 items | qwen-max | downstream assertion len<=5 |
+| 3 | Concurrency conflict | 5 tools in parallel, the return order is out of order | deepseek-reasoner | Reorder with session_id |
+| 4 | Chinese enumeration | "Industry"write"Liquor/Winemaking"Mix | qwen-long | Standardized mapping table post_process |
+| 5 | date format | 2025-11-15 vs 2025/11/15 | full range | Unified regular cleaning |
+| 6 | precision truncation | PE count 12.3→12 | 7 B Series | Force two decimal places Decimal |
+| 7 | Null value meaning | "N/A" vs null | full range | All transfer None, consistent downstream |
+| 8 | extra long context | 1 M token input truncation | qwen-long | Segment summary and merge |
+| 9 | Tool timeout | akshare Interface 30 s no return | full range | asynchronous + Callback, timeout and retry |
 
-结论：工具密集型任务优先 qwen-plus 及以上；成本敏感场景可用 deepseek-chat，但务必把 schema 的 required 字段写全，并打开项目自带的 `retry_if_schema_invalid=true`。
-
----
-
-
-## 6. 国际模型一句话速览（非重点）
-
-- **GPT-5.0**：推理再升级，但国内需科学上网，且账号风控趋严，项目仅保留 openai 适配器，不主动维护。  
-- **Claude-4.5**：长上下文 200 k，擅长跨文档，但同样网络&合规门槛高，建议仅作备用。  
-- **Gemini-2.0**：多模态原生，支持图片/PDF，可惜国内无官方入口，价格也不友好。
+Conclusion: For tool-intensive tasks, qwen-plus and above are preferred; deepseek-chat can be used for cost-sensitive scenarios, but be sure to write all the required fields in the schema and open the project's own `retry_if_schema_invalid=true`. 
 
 ---
 
-## 7. 结论（速记版）
 
-1. 快问快答/批量扫描 → deepseek-chat 或 qwen-flash，温度 0.2，token 800-1200。  
-2. 单股深度/行业横向 → qwen-plus 或 qwen-max，温度 0.1，token 3000-6000。  
-3. 长文公告/尽调报告 → qwen-long，温度 0.2，token 3000-4000。  
-4. 工具调用密集型 → 优先 qwen-plus 及以上，deepseek 系列。  
+## 6. A quick overview of international models in one sentence (not important)
+
+- **GPT-5.0**: The reasoning will be upgraded again, but in China, scientific access to the Internet is required, and account risk control is becoming stricter. The project only retains the openai adapter and does not actively maintain it.  
+- **Claude-4.5**: Long context 200k, good across documents, but equally networked&The compliance threshold is high and it is recommended to be used only as a backup.  
+- **Gemini-2.0**: Multi-modal native, supports images/PDF, but unfortunately there is no official entrance in China, and the price is not friendly.
+
+---
+
+## 7. Conclusion (shorthand version)
+
+1. Quick questions/answers/batch scan → deepseek-chat Or qwen-flash, temperature 0.2, token 800-1200.  
+2. Single stock depth/industry horizontal → qwen-plus Or qwen-max, temperature 0.1, token 3000-6000.  
+3. Long announcement/due diligence report → qwen-long, Temperature 0.2, token 3000-4000.  
+4. Tool call intensive → Priority is given to qwen-plus and above, deepseek series.  
 
 ---

@@ -1,94 +1,94 @@
 #!/usr/bin/env python3
 """
-测试新闻分析师工具调用参数修复
-验证强制调用和备用工具调用是否正确传递了所需参数
+Test news analyst tool call parameter fix
+Verify that forced and alternative tool calls are correctly passed the required parameters
 """
 
 import sys
 import os
 from datetime import datetime
 
-# 添加项目路径
+# Add project path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from tradingagents.agents.utils.agent_utils import Toolkit
 
 def test_tool_parameters():
-    """测试工具参数是否正确"""
-    print("🔧 测试新闻分析师工具调用参数修复")
+    """Check whether the test tool parameters are correct"""
+    print("🔧 Test news analyst tool call parameter fix")
     print("=" * 50)
     
-    # 初始化工具包
+    # Initialization kit
     toolkit = Toolkit()
     
-    # 测试参数
+    # Test parameters
     ticker = "600036"
     curr_date = "2025-07-28"
     
-    print(f"📊 测试参数:")
+    print(f"📊 Test parameters:")
     print(f"   - ticker: {ticker}")
     print(f"   - curr_date: {curr_date}")
     print()
     
-    # 测试 get_realtime_stock_news 工具
-    print("🔍 测试 get_realtime_stock_news 工具调用...")
+    # Testing the get_realtime_stock_news tool
+    print("🔍 Test the get_realtime_stock_news tool call...")
     try:
-        # 模拟修复后的调用方式
+        # Simulate the calling method after repair
         params = {"ticker": ticker, "curr_date": curr_date}
-        print(f"   参数: {params}")
+        print(f"   parameters: {params}")
         
-        # 检查工具是否接受这些参数
+        # Check if the tool accepts these parameters
         result = toolkit.get_realtime_stock_news.invoke(params)
-        print(f"   ✅ get_realtime_stock_news 调用成功")
-        print(f"   📝 返回数据长度: {len(result) if result else 0} 字符")
+        print(f"   ✅ get_realtime_stock_news Call successful")
+        print(f"   📝 Return data length: {len(result) if result else 0} character")
         
     except Exception as e:
-        print(f"   ❌ get_realtime_stock_news 调用失败: {e}")
+        print(f"   ❌ get_realtime_stock_news call failed: {e}")
     
     print()
     
-    # 测试 get_google_news 工具
-    print("🔍 测试 get_google_news 工具调用...")
+    # Testing the get_google_news tool
+    print("🔍 Test the get_google_news tool call...")
     try:
-        # 模拟修复后的调用方式
-        params = {"query": f"{ticker} 股票 新闻", "curr_date": curr_date}
-        print(f"   参数: {params}")
+        # Simulate the calling method after repair
+        params = {"query": f"{ticker} Stock News", "curr_date": curr_date}
+        print(f"   parameters: {params}")
         
-        # 检查工具是否接受这些参数
+        # Check if the tool accepts these parameters
         result = toolkit.get_google_news.invoke(params)
-        print(f"   ✅ get_google_news 调用成功")
-        print(f"   📝 返回数据长度: {len(result) if result else 0} 字符")
+        print(f"   ✅ get_google_news Call successful")
+        print(f"   📝 Return data length: {len(result) if result else 0} character")
         
     except Exception as e:
-        print(f"   ❌ get_google_news 调用失败: {e}")
+        print(f"   ❌ get_google_news call failed: {e}")
     
     print()
     
-    # 测试修复前的错误调用方式（应该失败）
-    print("🚫 测试修复前的错误调用方式（应该失败）...")
+    # Test how the error was called before fixing it (should fail)
+    print("🚫 Test how the error was called before fixing it (should fail)...")
     
-    print("   测试 get_realtime_stock_news 缺少 curr_date:")
+    print("   Test get_realtime_stock_news missing curr_date:")
     try:
-        params = {"ticker": ticker}  # 缺少 curr_date
+        params = {"ticker": ticker}  # missing curr_date
         result = toolkit.get_realtime_stock_news.invoke(params)
-        print(f"   ⚠️ 意外成功（可能有默认值处理）")
+        print(f"   ⚠️ Unexpected success (may have default value handling)")
     except Exception as e:
-        print(f"   ✅ 正确失败: {e}")
+        print(f"   ✅ Correctly failed: {e}")
     
-    print("   测试 get_google_news 缺少 query 和 curr_date:")
+    print("   Testing get_google_news is missing query and curr_date:")
     try:
-        params = {"ticker": ticker}  # 缺少 query 和 curr_date
+        params = {"ticker": ticker}  # Missing query and curr_date
         result = toolkit.get_google_news.invoke(params)
-        print(f"   ⚠️ 意外成功（可能有默认值处理）")
+        print(f"   ⚠️ Unexpected success (may have default value handling)")
     except Exception as e:
-        print(f"   ✅ 正确失败: {e}")
+        print(f"   ✅ Correctly failed: {e}")
     
     print()
-    print("🎯 修复总结:")
-    print("   1. ✅ get_realtime_stock_news 现在正确传递 ticker 和 curr_date")
-    print("   2. ✅ get_google_news 现在正确传递 query 和 curr_date")
-    print("   3. ✅ 修复了 Pydantic 验证错误")
-    print("   4. ✅ 新闻分析师应该能够正常获取新闻数据")
+    print("🎯 Repair summary:")
+    print("   1. ✅ get_realtime_stock_news Now correctly passing ticker and curr_date")
+    print("   2. ✅ get_google_news Now correctly passing query and curr_date")
+    print("   3. ✅ Fixed Pydantic validation error")
+    print("   4. ✅ News analysts should be able to obtain news data normally")
 
 if __name__ == "__main__":
     test_tool_parameters()

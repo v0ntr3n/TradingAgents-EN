@@ -1,7 +1,7 @@
 """
-MCP Server 端到端测试脚本
+MCP Server End-to-end test script
 
-用法: python tests/test_mcp_endpoint.py
+Usage: python tests/test_mcp_endpoint.py
 """
 
 import json
@@ -15,7 +15,7 @@ HEADERS = {
 
 
 def mcp_post(payload: dict, session_id: str | None = None) -> tuple[int, dict | str, str | None]:
-    """发送 MCP JSON-RPC 请求，返回 (status, body, session_id)"""
+    """Send MCP JSON-RPC request and return (status, body, session_id)"""
     hdrs = {**HEADERS}
     if session_id:
         hdrs["Mcp-Session-Id"] = session_id
@@ -23,7 +23,7 @@ def mcp_post(payload: dict, session_id: str | None = None) -> tuple[int, dict | 
     sid = resp.headers.get("Mcp-Session-Id") or session_id
     ct = resp.headers.get("content-type", "")
     if "text/event-stream" in ct:
-        # 解析 SSE 事件
+        # Parse SSE events
         body = parse_sse(resp.text)
     else:
         try:
@@ -34,7 +34,7 @@ def mcp_post(payload: dict, session_id: str | None = None) -> tuple[int, dict | 
 
 
 def parse_sse(text: str) -> dict | str:
-    """从 SSE 流中提取最后一个 JSON-RPC 响应"""
+    """Extract the last JSON-RPC response from the SSE stream"""
     last_data = None
     for line in text.split("\n"):
         if line.startswith("data: "):
@@ -49,7 +49,7 @@ def parse_sse(text: str) -> dict | str:
 
 def test_initialize_and_list_tools():
     print("=" * 60)
-    print("🧪 MCP 端到端测试")
+    print("🧪 MCP End-to-end testing")
     print("=" * 60)
 
     # Step 1: initialize
@@ -74,8 +74,8 @@ def test_initialize_and_list_tools():
         print(f"   Capabilities: {list(caps.keys())}")
     else:
         print(f"   Body: {str(body)[:200]}")
-    assert status == 200, f"❌ initialize 失败: {status}"
-    print("   ✅ initialize 成功")
+    assert status == 200, f"❌ initialize failed: {status}"
+    print("   ✅ initialize success")
 
     # Step 1.5: initialized notification
     print("\n📤 Step 1.5: notifications/initialized ...")
@@ -98,18 +98,18 @@ def test_initialize_and_list_tools():
     print(f"   Status: {status}")
     if isinstance(body, dict):
         tools = body.get("result", {}).get("tools", [])
-        print(f"   工具数量: {len(tools)}")
+        print(f"   Number of tools: {len(tools)}")
         for t in tools:
             desc = (t.get("description") or "")[:50]
             print(f"   📦 {t['name']}: {desc}...")
     else:
         print(f"   Body: {str(body)[:300]}")
-    assert status == 200, f"❌ tools/list 失败: {status}"
-    print("   ✅ tools/list 成功")
+    assert status == 200, f"❌ tools/list failed: {status}"
+    print("   ✅ tools/list success")
 
     print("\n" + "=" * 60)
-    print("🎉 所有测试通过！MCP Server 工作正常。")
-    print(f"   端点: {BASE}")
+    print("🎉 All tests passed! MCP Server is working fine.")
+    print(f"   endpoint: {BASE}")
     print(f"   Session ID: {sid}")
     print("=" * 60)
 

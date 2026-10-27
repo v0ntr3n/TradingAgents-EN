@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-MongoDB存储适配器
-用于将token使用记录存储到MongoDB数据库
+MongoDB storage adapter
+Used to store token usage records in the MongoDB database
 """
 
 import os
@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Any
 from dataclasses import asdict
 from .usage_models import UsageRecord
 
-# 导入日志模块
+# Import log module
 from tradingagents.utils.logging_manager import get_logger
 from tradingagents.config.runtime_settings import get_timezone_name
 logger = get_logger('agents')
@@ -26,13 +26,13 @@ except ImportError:
 
 
 class MongoDBStorage:
-    """MongoDB存储适配器"""
+    """MongoDB storage adapter"""
     
     def __init__(self, connection_string: str = None, database_name: str = None):
         if not MONGODB_AVAILABLE:
             raise ImportError("pymongo is not installed. Please install it with: pip install pymongo")
 
-        # 使用统一的工具函数构建连接字符串
+        # Build connection strings using unified utility functions
         from .mongodb_utils import build_mongodb_connection_string, get_mongodb_database_name
 
         self.connection_string = connection_string or build_mongodb_connection_string()
@@ -44,13 +44,13 @@ class MongoDBStorage:
         self.collection = None
         self._connected = False
         
-        # 尝试连接
+        # try to connect
         self._connect()
     
     def _connect(self):
-        """连接到MongoDB"""
+        """Connect to MongoDB"""
         try:
-            # 从环境变量读取超时配置，使用合理的默认值
+            # Read timeout configuration from environment variables, using sensible defaults
             import os
             connect_timeout = int(os.getenv("MONGO_CONNECT_TIMEOUT_MS", "30000"))
             socket_timeout = int(os.getenv("MONGO_SOCKET_TIMEOUT_MS", "60000"))
@@ -62,120 +62,120 @@ class MongoDBStorage:
                 connectTimeoutMS=connect_timeout,
                 socketTimeoutMS=socket_timeout
             )
-            # 测试连接
+            # test connection
             self.client.admin.command('ping')
             
             self.db = self.client[self.database_name]
             self.collection = self.db[self.collection_name]
             
-            # 创建索引以提高查询性能
+            # Create indexes to improve query performance
             self._create_indexes()
             
             self._connected = True
-            logger.info(f"✅ MongoDB连接成功: {self.database_name}.{self.collection_name}")
+            logger.info(f"✅ MongoDB Connection successful: {self.database_name}.{self.collection_name}")
             
         except (ConnectionFailure, ServerSelectionTimeoutError) as e:
-            logger.error(f"❌ MongoDB连接失败: {e}")
-            logger.info(f"将使用本地JSON文件存储")
+            logger.error(f"❌ MongoDB Connection failed: {e}")
+            logger.info(f"Will use local JSON file storage")
             self._connected = False
         except Exception as e:
-            logger.error(f"❌ MongoDB初始化失败: {e}")
+            logger.error(f"❌ MongoDB Initialization failed: {e}")
             self._connected = False
     
     def _create_indexes(self):
-        """创建数据库索引"""
+        """Create database index"""
         try:
-            # 创建复合索引
+            # Create composite index
             self.collection.create_index([
-                ("timestamp", -1),  # 按时间倒序
+                ("timestamp", -1),  # in reverse chronological order
                 ("provider", 1),
                 ("model_name", 1)
             ])
             
-            # 创建会话ID索引
+            # Create session ID index
             self.collection.create_index("session_id")
             
-            # 创建分析类型索引
+            # Create analysis type index
             self.collection.create_index("analysis_type")
             
         except Exception as e:
-            logger.error(f"创建MongoDB索引失败: {e}")
+            logger.error(f"Creating MongoDB index failed: {e}")
     
     def is_connected(self) -> bool:
-        """检查是否连接到MongoDB"""
+        """Check if connected to MongoDB"""
         return self._connected
     
     def save_usage_record(self, record: UsageRecord) -> bool:
-        """保存单个使用记录到MongoDB"""
+        """Save individual usage records to MongoDB"""
         if not self._connected:
-            logger.warning(f"⚠️ [MongoDB存储] 未连接，无法保存记录")
+            logger.warning(f"⚠️ [MongoDB storage] Not connected, unable to save record")
             return False
 
         try:
-            # 转换为字典格式
+            # Convert to dictionary format
             record_dict = asdict(record)
 
-            # 添加MongoDB特有的字段
+            # Add MongoDB-specific fields
             record_dict['_created_at'] = datetime.now(ZoneInfo(get_timezone_name()))
 
-            # 🔍 详细日志
-            logger.debug(f"📊 [MongoDB存储] 准备插入记录: {record.provider}/{record.model_name}, session={record.session_id}")
-            logger.debug(f"   数据库: {self.database_name}, 集合: {self.collection_name}")
+            # 🔍 Detailed log
+            logger.debug(f"📊 [MongoDB storage] Prepare to insert records: {record.provider}/{record.model_name}, session={record.session_id}")
+            logger.debug(f"   database: {self.database_name}, collection: {self.collection_name}")
 
-            # 插入记录
+            # Insert record
             result = self.collection.insert_one(record_dict)
 
             if result.inserted_id:
-                logger.info(f"✅ [MongoDB存储] 记录已保存: ID={result.inserted_id}, {record.provider}/{record.model_name}, ¥{record.cost:.4f}")
+                logger.info(f"✅ [MongoDB storage] Record saved: ID={result.inserted_id}, {record.provider}/{record.model_name}, ¥{record.cost:.4f}")
                 return True
             else:
-                logger.error(f"❌ [MongoDB存储] 插入失败：未返回插入ID")
+                logger.error(f"❌ [MongoDB storage] Insert failed: Insert not returned ID")
                 return False
 
         except Exception as e:
-            logger.error(f"❌ [MongoDB存储] 保存记录失败: {e}")
+            logger.error(f"❌ [MongoDB storage] Failed to save record: {e}")
             import traceback
-            logger.error(f"   堆栈: {traceback.format_exc()}")
+            logger.error(f"   stack: {traceback.format_exc()}")
             return False
     
     def load_usage_records(self, limit: int = 10000, days: int = None) -> List[UsageRecord]:
-        """从MongoDB加载使用记录"""
+        """Load usage records from MongoDB"""
         if not self._connected:
             return []
         
         try:
-            # 构建查询条件
+            # Build query conditions
             query = {}
             if days:
                 from datetime import timedelta
                 cutoff_date = datetime.now(ZoneInfo(get_timezone_name())) - timedelta(days=days)
                 query['timestamp'] = {'$gte': cutoff_date.isoformat()}
             
-            # 查询记录，按时间倒序
+            # Query records in reverse chronological order
             cursor = self.collection.find(query).sort('timestamp', -1).limit(limit)
             
             records = []
             for doc in cursor:
-                # 移除MongoDB特有的字段
+                # Remove MongoDB-specific fields
                 doc.pop('_id', None)
                 doc.pop('_created_at', None)
                 
-                # 转换为UsageRecord对象
+                # Convert to UsageRecord object
                 try:
                     record = UsageRecord(**doc)
                     records.append(record)
                 except Exception as e:
-                    logger.error(f"解析记录失败: {e}, 记录: {doc}")
+                    logger.error(f"Failed to parse record: {e}, record: {doc}")
                     continue
             
             return records
             
         except Exception as e:
-            logger.error(f"从MongoDB加载记录失败: {e}")
+            logger.error(f"Loading records from MongoDB failed: {e}")
             return []
     
     def get_usage_statistics(self, days: int = 30) -> Dict[str, Any]:
-        """从MongoDB获取使用统计"""
+        """Get usage statistics from MongoDB"""
         if not self._connected:
             return {}
         
@@ -183,7 +183,7 @@ class MongoDBStorage:
             from datetime import timedelta
             cutoff_date = datetime.now() - timedelta(days=days)
             
-            # 聚合查询
+            # Aggregation query
             pipeline = [
                 {
                     '$match': {
@@ -222,11 +222,11 @@ class MongoDBStorage:
                 }
                 
         except Exception as e:
-            logger.error(f"获取MongoDB统计失败: {e}")
+            logger.error(f"Failed to obtain MongoDB statistics: {e}")
             return {}
     
     def get_provider_statistics(self, days: int = 30) -> Dict[str, Dict[str, Any]]:
-        """按供应商获取统计信息"""
+        """Get statistics by vendor"""
         if not self._connected:
             return {}
         
@@ -234,7 +234,7 @@ class MongoDBStorage:
             from datetime import timedelta
             cutoff_date = datetime.now() - timedelta(days=days)
             
-            # 按供应商聚合
+            # Aggregate by supplier
             pipeline = [
                 {
                     '$match': {
@@ -267,11 +267,11 @@ class MongoDBStorage:
             return provider_stats
             
         except Exception as e:
-            logger.error(f"获取供应商统计失败: {e}")
+            logger.error(f"Failed to obtain supplier statistics: {e}")
             return {}
     
     def cleanup_old_records(self, days: int = 90) -> int:
-        """清理旧记录"""
+        """Clean up old records"""
         if not self._connected:
             return 0
         
@@ -286,17 +286,17 @@ class MongoDBStorage:
             
             deleted_count = result.deleted_count
             if deleted_count > 0:
-                logger.info(f"清理了 {deleted_count} 条超过 {days} 天的记录")
+                logger.info(f"Cleaned up {deleted_count} more than {days} record of days")
             
             return deleted_count
             
         except Exception as e:
-            logger.error(f"清理旧记录失败: {e}")
+            logger.error(f"Cleaning old records failed: {e}")
             return 0
     
     def close(self):
-        """关闭MongoDB连接"""
+        """Close MongoDB connection"""
         if self.client:
             self.client.close()
             self._connected = False
-            logger.info(f"MongoDB连接已关闭")
+            logger.info(f"MongoDB connection closed")

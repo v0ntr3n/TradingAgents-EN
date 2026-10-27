@@ -1,8 +1,8 @@
 """
-Webhook 推送发送器
+Webhook push sender
 
-支持飞书、钉钉、企业微信三种 Webhook 机器人格式，
-协议一致，只有 JSON body 格式略有差异。
+Supports three webhook robot formats: Feishu, DingTalk, and WeChat Enterprise.
+The protocol is the same, only the JSON body format is slightly different.
 """
 import asyncio
 import logging
@@ -14,13 +14,13 @@ from app.models.channel_config import ChannelConfig, ChannelType
 
 logger = logging.getLogger("webapi.channel_senders.webhook")
 
-# HTTP 请求超时（秒）
+# HTTP Request timeout (seconds)
 WEBHOOK_TIMEOUT = 10
 
 
 def _build_feishu_payload(title: str, content: str) -> Dict[str, Any]:
     """
-    飞书自定义机器人消息格式
+    Feishu custom robot message format
     https://open.feishu.cn/document/client-docs/bot-v3/add-custom-bot
     """
     return {
@@ -33,7 +33,7 @@ def _build_feishu_payload(title: str, content: str) -> Dict[str, Any]:
 
 def _build_dingtalk_payload(title: str, content: str) -> Dict[str, Any]:
     """
-    钉钉自定义机器人消息格式
+    DingTalk custom robot message format
     https://open.dingtalk.com/document/robots/custom-robot-access
     """
     return {
@@ -46,7 +46,7 @@ def _build_dingtalk_payload(title: str, content: str) -> Dict[str, Any]:
 
 def _build_wechatwork_payload(title: str, content: str) -> Dict[str, Any]:
     """
-    企业微信自定义机器人消息格式
+    Enterprise WeChat custom robot message format
     https://developer.work.weixin.qq.com/document/path/91770
     """
     return {
@@ -70,11 +70,11 @@ async def send_webhook(
     content: str,
 ) -> bool:
     """
-    发送 Webhook 通知
+    Send webhook notification
 
     Returns:
-        True  — 发送成功
-        False — 发送失败
+        True  — Sent successfully
+        False — Sending failed
     """
     if not channel.webhook_url:
         logger.warning(f"渠道 [{channel.name}] 未配置 Webhook URL，跳过")
@@ -97,22 +97,22 @@ async def send_webhook(
             resp.raise_for_status()
             result = resp.json()
 
-            # 各平台成功标志不同，但 HTTP 2xx 已足够判断
+            # The success signs of each platform are different, but HTTP 2xx is enough to judge
             logger.info(
-                f"✅ Webhook 推送成功: [{channel.name}({channel.type})] "
+                f"✅ Webhook Push successful: [{channel.name}({channel.type})] "
                 f"status={resp.status_code}"
             )
             return True
 
     except httpx.TimeoutException:
-        logger.warning(f"⚠️ Webhook 超时: [{channel.name}] url={channel.webhook_url}")
+        logger.warning(f"⚠️ Webhook timeout: [{channel.name}] url={channel.webhook_url}")
     except httpx.HTTPStatusError as e:
         logger.warning(
-            f"⚠️ Webhook HTTP 错误: [{channel.name}] status={e.response.status_code} "
+            f"⚠️ Webhook HTTP Error: [{channel.name}] status={e.response.status_code} "
             f"body={e.response.text[:200]}"
         )
     except Exception as e:
-        logger.error(f"❌ Webhook 推送失败: [{channel.name}] {e}")
+        logger.error(f"❌ Webhook Push failed: [{channel.name}] {e}")
 
     return False
 

@@ -1,27 +1,27 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Playwright E2E 测试配置
+ * Playwright E2E Test configuration
  *
- * 前置条件:
- * 1. 后端服务运行在 http://localhost:8000
- * 2. 前端 dev server 运行在 http://localhost:3000
+ * Preconditions:
+ * 1. The backend service runs on http://localhost:8000
+ * 2. The front-end dev server runs on http://localhost:3000
  *
- * 运行: npx playwright test
- * 运行UI模式: npx playwright test --ui
- * 查看报告: npx playwright show-report
+ * run: npx playwright test
+ * Run UI mode: npx playwright test --ui
+ * View report: npx playwright show-report
  */
 export default defineConfig({
   testDir: './e2e',
-  fullyParallel: false, // 串行执行，避免测试数据冲突
+  fullyParallel: false, // Serial execution to avoid test data conflicts
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: 1, // 单worker，避免并发问题
+  workers: 1, // Single worker to avoid concurrency issues
   reporter: [
     ['html', { outputFolder: 'e2e-reports/html' }],
     ['list'],
   ],
-  timeout: 60000, // 60秒超时
+  timeout: 60000, // 60 seconds timeout
   expect: {
     timeout: 10000,
   },

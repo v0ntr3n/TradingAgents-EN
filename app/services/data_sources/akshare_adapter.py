@@ -12,20 +12,20 @@ logger = logging.getLogger(__name__)
 
 
 class AKShareAdapter(DataSourceAdapter):
-    """AKShare数据源适配器"""
+    """AKShare data source adapter"""
 
     def __init__(self):
-        super().__init__()  # 调用父类初始化
+        super().__init__()  # Call parent class initialization
 
     @property
     def name(self) -> str:
         return "akshare"
 
     def _get_default_priority(self) -> int:
-        return 2  # 数字越大优先级越高
+        return 2  # The larger the number, the higher the priority.
 
     def is_available(self) -> bool:
-        """检查AKShare是否可用"""
+        """Check if AKShare is available"""
         try:
             import akshare as ak  # noqa: F401
             return True
@@ -34,14 +34,14 @@ class AKShareAdapter(DataSourceAdapter):
 
     @staticmethod
     def _generate_ts_code(code: str) -> str:
-        """根据股票代码生成 ts_code。"""
+        """Generate ts_code based on the stock code."""
         if not code:
             return ""
         code = str(code).zfill(6)
-        # 上交所：60/68（A股）、50/51/52/58/56（ETF/LOF等）、11（国债/可转债）、90（B股）
+        # Shanghai Stock Exchange: 60/68 (A shares), 50/51/52/58/56 (ETF/LOF, etc.), 11 (treasury bonds/convertible bonds), 90 (B shares)
         if code.startswith(("60", "68", "90", "50", "51", "52", "58", "56", "11")):
             return f"{code}.SH"
-        # 深交所：00/30（A股）、15/16/12（ETF/LOF/可转债等）、20（B股）
+        # Shenzhen Stock Exchange: 00/30 (A shares), 15/16/12 (ETF/LOF/convertible bonds, etc.), 20 (B shares)
         if code.startswith(("00", "30", "20", "15", "16", "12")):
             return f"{code}.SZ"
         if code.startswith(("8", "4", "92")):
@@ -50,7 +50,7 @@ class AKShareAdapter(DataSourceAdapter):
 
     @staticmethod
     def _get_market(code: str) -> str:
-        """根据股票代码判断市场。"""
+        """Judge the market based on stock symbols."""
         if not code:
             return ""
         code = str(code).zfill(6)
@@ -71,7 +71,7 @@ class AKShareAdapter(DataSourceAdapter):
         return "未知"
 
     def _normalize_stock_list(self, df: pd.DataFrame) -> Optional[pd.DataFrame]:
-        """标准化 AKShare 股票列表结构。"""
+        """Standardized AKShare stock list structure."""
         if df is None or df.empty:
             return None
 
@@ -103,7 +103,7 @@ class AKShareAdapter(DataSourceAdapter):
         return normalized[["symbol", "name", "ts_code", "area", "industry", "market", "list_date"]]
 
     def get_stock_list(self) -> Optional[pd.DataFrame]:
-        """获取股票列表，优先使用 stock_info_a_code_name，失败时回退到东方财富实时列表。"""
+        """To obtain the stock list, use stock_info_a_code_name first. If failed, fall back to the Oriental Fortune real-time list."""
         if not self.is_available():
             return None
         import akshare as ak
@@ -133,7 +133,7 @@ class AKShareAdapter(DataSourceAdapter):
         return None
 
     def get_daily_basic(self, trade_date: str) -> Optional[pd.DataFrame]:
-        """获取每日基础财务数据（快速版）"""
+        """Get daily basic financial data (quick version)"""
         if not self.is_available():
             return None
         try:
@@ -172,15 +172,15 @@ class AKShareAdapter(DataSourceAdapter):
                             value = row.get('value', '')
                             info_dict[item] = value
                         latest_price = self._safe_float(info_dict.get('最新', 0))
-                        # 🔥 AKShare 的"总市值"单位是万元，需要转换为亿元（与 Tushare 一致）
-                        total_mv_wan = self._safe_float(info_dict.get('总市值', 0))  # 万元
-                        total_mv_yi = total_mv_wan / 10000 if total_mv_wan else None  # 转换为亿元
+                        # 🔥 AKShare of"Total market capitalization"The unit is 10,000 yuan, which needs to be converted into 100 million yuan (consistent with Tushare)
+                        total_mv_wan = self._safe_float(info_dict.get('总市值', 0))  # Ten thousand yuan
+                        total_mv_yi = total_mv_wan / 10000 if total_mv_wan else None  # Convert to 100 million yuan
                         basic_data.append({
                             'ts_code': ts_code,
                             'trade_date': trade_date,
                             'name': name,
                             'close': latest_price,
-                            'total_mv': total_mv_yi,  # 亿元（与 Tushare 一致）
+                            'total_mv': total_mv_yi,  # 100 million yuan (consistent with Tushare)
                             'turnover_rate': None,
                             'pe': None,
                             'pb': None,
@@ -314,10 +314,10 @@ class AKShareAdapter(DataSourceAdapter):
 
     def get_realtime_quotes(self, source: str = "eastmoney"):
         """
-        获取全市场实时快照，返回以6位代码为键的字典
+        Get a real-time snapshot of the entire market and return a dictionary with 6-digit codes as keys
 
         Args:
-            source: 数据源选择，"eastmoney"（东方财富）或 "sina"（新浪财经）
+            source: data source selection,"eastmoney" (Oriental Fortune) or "sina" (Sina Finance)
 
         Returns:
             Dict[str, Dict]: {code: {close, pct_chg, amount, ...}}
@@ -328,19 +328,19 @@ class AKShareAdapter(DataSourceAdapter):
         try:
             import akshare as ak  # type: ignore
 
-            # 根据 source 参数选择接口
+            # Select the interface based on the source parameter
             if source == "sina":
-                df = ak.stock_zh_a_spot()  # 新浪财经接口
-                logger.info("使用 AKShare 新浪财经接口获取实时行情")
-            else:  # 默认使用东方财富
-                df = ak.stock_zh_a_spot_em()  # 东方财富接口
-                logger.info("使用 AKShare 东方财富接口获取实时行情")
+                df = ak.stock_zh_a_spot()  # Sina Finance Interface
+                logger.info("Use AKShare Sina Finance interface to obtain real-time quotes")
+            else:  # Use Oriental Fortune by default
+                df = ak.stock_zh_a_spot_em()  # Oriental Wealth Interface
+                logger.info("Use AKShare Oriental Wealth Interface to obtain real-time quotes")
 
             if df is None or getattr(df, "empty", True):
                 logger.warning(f"AKShare {source} 返回空数据")
                 return None
 
-            # 列名兼容（两个接口的列名可能不同）
+            # Column names are compatible (the column names of the two interfaces may be different)
             code_col = next((c for c in ["代码", "code", "symbol", "股票代码"] if c in df.columns), None)
             price_col = next((c for c in ["最新价", "现价", "最新价(元)", "price", "最新", "trade"] if c in df.columns), None)
             pct_col = next((c for c in ["涨跌幅", "涨跌幅(%)", "涨幅", "pct_chg", "changepercent"] if c in df.columns), None)
@@ -360,25 +360,25 @@ class AKShareAdapter(DataSourceAdapter):
                 code_raw = row.get(code_col)
                 if not code_raw:
                     continue
-                # 标准化股票代码：处理交易所前缀（如 sz000001, sh600036）
+                # Standardized ticker: handles exchange prefixes (e.g. sz000001, sh600036) 
                 code_str = str(code_raw).strip()
 
-                # 如果代码长度超过6位，去掉前面的交易所前缀（如 sz, sh）
+                # If the code length exceeds 6 characters, remove the previous exchange prefix (such as sz, sh) 
                 if len(code_str) > 6:
-                    # 去掉前面的非数字字符（通常是2个字符的交易所代码）
+                    # Remove leading non-numeric characters (usually the 2-character exchange code)
                     code_str = ''.join(filter(str.isdigit, code_str))
 
-                # 如果是纯数字，移除前导0后补齐到6位
+                # If it is a pure number, remove the leading 0 and pad it to 6 digits.
                 if code_str.isdigit():
-                    code_clean = code_str.lstrip('0') or '0'  # 移除前导0，如果全是0则保留一个0
-                    code = code_clean.zfill(6)  # 补齐到6位
+                    code_clean = code_str.lstrip('0') or '0'  # Remove leading 0s, if all 0s, keep one 0
+                    code = code_clean.zfill(6)  # Complete to 6 digits
                 else:
-                    # 如果不是纯数字，尝试提取数字部分
+                    # If it's not purely numeric, try to extract the numeric part
                     code_digits = ''.join(filter(str.isdigit, code_str))
                     if code_digits:
                         code = code_digits.zfill(6)
                     else:
-                        # 无法提取有效代码，跳过
+                        # Unable to extract valid code, skip
                         continue
 
                 close = self._safe_float(row.get(price_col))
@@ -390,9 +390,9 @@ class AKShareAdapter(DataSourceAdapter):
                 pre = self._safe_float(row.get(pre_close_col)) if pre_close_col else None
                 vol = self._safe_float(row.get(volume_col)) if volume_col else None
 
-                # 🔥 日志：记录AKShare返回的成交量
-                if code in ["300750", "000001", "600000"]:  # 只记录几个示例股票
-                    logger.info(f"📊 [AKShare实时] {code} - volume_col={volume_col}, vol={vol}, amount={amt}")
+                # 🔥 Log: Record the trading volume returned by AKShare
+                if code in ["300750", "000001", "600000"]:  # Only record a few example stocks
+                    logger.info(f"📊 [AKShare real time] {code} - volume_col={volume_col}, vol={vol}, amount={amt}")
 
                 result[code] = {
                     "close": close,
@@ -500,7 +500,7 @@ class AKShareAdapter(DataSourceAdapter):
                 if dfn is not None and not dfn.empty:
                     for _, row in dfn.head(limit).iterrows():
                         items.append({
-                            # AkShare 将字段标准化为中文列名：新闻标题 / 文章来源 / 发布时间 / 新闻链接
+                            # AkShare Standardize fields to Chinese column names: news title/article source/release time/news link
                             "title": str(row.get('新闻标题') or row.get('标题') or row.get('title') or ''),
                             "source": str(row.get('文章来源') or row.get('来源') or row.get('source') or 'akshare'),
                             "time": str(row.get('发布时间') or row.get('time') or ''),
@@ -530,11 +530,11 @@ class AKShareAdapter(DataSourceAdapter):
             return None
 
     def find_latest_trade_date(self) -> Optional[str]:
-        """通过交易日历API查找最新交易日期（带缓存）"""
+        """Find latest trading date via Trading Calendar API (with caching)"""
         if not self.is_available():
             return None
         
-        # 先尝试从缓存获取
+        # Try to get it from cache first
         try:
             from app.services.trade_date_cache_service import get_trade_date_cache_service
             
@@ -546,35 +546,35 @@ class AKShareAdapter(DataSourceAdapter):
         except Exception as e:
             logger.debug(f"AKShare: Cache check failed: {e}, will fetch from API")
         
-        # 缓存不存在或已过期，调用API获取
+        # The cache does not exist or has expired. Call the API to obtain it.
         try:
             import akshare as ak
             
-            # 调用 tool_trade_date_hist_sina() 获取交易日历
-            # 返回格式：DataFrame，包含一个列 'trade_date'，格式为 'YYYY-MM-DD'
+            # call tool_trade_date_hist_sina() Get trading calendar
+            # Return format: DataFrame, containing one column 'trade_date', The format is 'YYYY-MM-DD'
             df = ak.tool_trade_date_hist_sina()
             
             if df is not None and not df.empty:
-                # 获取今天向前1个月的数据
+                # Get data 1 month ahead of today
                 today = datetime.now()
                 one_month_ago = today - timedelta(days=30)
                 
-                # tool_trade_date_hist_sina() 返回的列名是 'trade_date'
+                # tool_trade_date_hist_sina() The column names returned are 'trade_date'
                 if 'trade_date' in df.columns:
-                    # 转换日期列为datetime类型
+                    # Convert date column to datetime type
                     df['trade_date'] = pd.to_datetime(df['trade_date'], errors='coerce')
                     
-                    # 筛选最近1个月的交易日
+                    # Filter the trading days of the last month
                     mask = (df['trade_date'] >= one_month_ago) & (df['trade_date'] <= today)
                     recent_trading_days = df[mask]
                     
                     latest_date_str = None
                     if not recent_trading_days.empty:
-                        # 按日期排序，取最后一个（最新的交易日）
+                        # Sort by date, take the last one (latest trading day)
                         recent_trading_days = recent_trading_days.sort_values('trade_date', ascending=False)
                         latest_date = recent_trading_days.iloc[0]['trade_date']
                         
-                        # 转换为 YYYYMMDD 格式
+                        # Convert to YYYYMMDD format
                         if isinstance(latest_date, pd.Timestamp):
                             latest_date_str = latest_date.strftime("%Y%m%d")
                         else:
@@ -582,7 +582,7 @@ class AKShareAdapter(DataSourceAdapter):
                         
                         logger.info(f"AKShare: Found latest trade date from calendar: {latest_date_str}")
                     else:
-                        # 如果最近1个月没有交易日，取整个DataFrame的最后一行（最新的交易日）
+                        # If there is no trading day in the last month, take the last row of the entire DataFrame (the latest trading day)
                         df_sorted = df.sort_values('trade_date', ascending=False)
                         latest_date = df_sorted.iloc[0]['trade_date']
                         if isinstance(latest_date, pd.Timestamp):
@@ -592,7 +592,7 @@ class AKShareAdapter(DataSourceAdapter):
                         logger.info(f"AKShare: Found latest trade date from calendar (all data): {latest_date_str}")
                     
                     if latest_date_str:
-                        # 保存到缓存
+                        # Save to cache
                         try:
                             from app.services.trade_date_cache_service import get_trade_date_cache_service
                             cache_service = get_trade_date_cache_service()
@@ -602,11 +602,11 @@ class AKShareAdapter(DataSourceAdapter):
                         
                         return latest_date_str
             
-            # 如果交易日历API失败，回退到昨天
+            # If trading calendar API fails, fall back to yesterday
             logger.warning("AKShare: Trade calendar API failed, using yesterday")
             yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
             
-            # 保存到缓存（与成功分支一致，使用同步方法避免在事件循环中调用 asyncio.run）
+            # Save to cache (consistent with success branch, use synchronized method to avoid calling asyncio.run in event loop)
             try:
                 from app.services.trade_date_cache_service import get_trade_date_cache_service
                 cache_service = get_trade_date_cache_service()
@@ -617,7 +617,7 @@ class AKShareAdapter(DataSourceAdapter):
             return yesterday
         except Exception as e:
             logger.error(f"AKShare: Failed to find latest trade date: {e}")
-            # 回退到昨天
+            # Go back to yesterday
             yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
             return yesterday
 

@@ -1,6 +1,6 @@
 """
-AKShare数据初始化API路由
-提供Web接口进行AKShare数据初始化和管理
+AKShare Data initialization API routing
+Provides a web interface for AKShare data initialization and management
 """
 import asyncio
 import logging
@@ -18,9 +18,9 @@ from app.utils.timezone import now_tz
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/akshare-init", tags=["AKShare初始化"])
+router = APIRouter(prefix="/api/akshare-init", tags=["AKShare initialization"])
 
-# 全局任务状态存储
+# Global task state storage
 _initialization_status = {
     "is_running": False,
     "current_task": None,
@@ -31,48 +31,48 @@ _initialization_status = {
 
 
 class InitializationRequest(BaseModel):
-    """初始化请求模型"""
-    historical_days: int = Field(default=365, ge=1, le=3650, description="历史数据天数")
-    force: bool = Field(default=False, description="是否强制重新初始化")
-    skip_if_exists: bool = Field(default=True, description="如果数据存在是否跳过")
+    """Initialize request model"""
+    historical_days: int = Field(default=365, ge=1, le=3650, description="Historical data days")
+    force: bool = Field(default=False, description="Whether to force reinitialization")
+    skip_if_exists: bool = Field(default=True, description="Whether to skip if data exists")
 
 
 class SyncRequest(BaseModel):
-    """同步请求模型"""
-    force_update: bool = Field(default=False, description="是否强制更新")
-    symbols: Optional[list] = Field(default=None, description="指定股票代码列表")
+    """Synchronous request model"""
+    force_update: bool = Field(default=False, description="Whether to force update")
+    symbols: Optional[list] = Field(default=None, description="Specify stock code list")
 
 
 @router.get("/status")
 async def get_database_status():
     """
-    获取数据库状态
+    Get database status
     
     Returns:
-        数据库状态信息
+        Database status information
     """
     try:
         db = get_mongo_db()
         
-        # 检查基础信息
+        # Check basic information
         basic_count = await db.stock_basic_info.count_documents({})
         extended_count = await db.stock_basic_info.count_documents({
             "full_symbol": {"$exists": True},
             "market_info": {"$exists": True}
         })
         
-        # 获取最新更新时间
+        # Get the latest update time
         latest_basic = await db.stock_basic_info.find_one(
             {}, sort=[("updated_at", -1)]
         )
         
-        # 检查行情数据
+        # Check market data
         quotes_count = await db.market_quotes.count_documents({})
         latest_quotes = await db.market_quotes.find_one(
             {}, sort=[("updated_at", -1)]
         )
         
-        # 数据质量评估
+        # Data quality assessment
         data_quality = "excellent"
         if basic_count == 0:
             data_quality = "empty"
@@ -97,21 +97,21 @@ async def get_database_status():
                 "data_quality": data_quality,
                 "check_time": now_tz()
             },
-            "message": "数据库状态检查完成"
+            "message": "Database status check completed"
         }
         
     except Exception as e:
-        logger.error(f"获取数据库状态失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取数据库状态失败: {str(e)}")
+        logger.error(f"Failed to get database status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get database status: {str(e)}")
 
 
 @router.get("/connection-test")
 async def test_akshare_connection():
     """
-    测试AKShare连接状态
+    Test AKShare connection status
     
     Returns:
-        连接测试结果
+        Connection test results
     """
     try:
         service = await get_akshare_sync_service()
@@ -123,7 +123,7 @@ async def test_akshare_connection():
         }
         
         if connected:
-            # 测试获取股票列表
+            # Test to get the stock list
             try:
                 stock_list = await service.provider.get_stock_list()
                 result["stock_count"] = len(stock_list) if stock_list else 0
@@ -134,12 +134,12 @@ async def test_akshare_connection():
         return {
             "success": True,
             "data": result,
-            "message": "AKShare连接测试完成"
+            "message": "AKShare Connection test completed"
         }
         
     except Exception as e:
-        logger.error(f"AKShare连接测试失败: {e}")
-        raise HTTPException(status_code=500, detail=f"连接测试失败: {str(e)}")
+        logger.error(f"AKShare Connection test failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Connection test failed: {str(e)}")
 
 
 @router.post("/start-full")
@@ -149,32 +149,32 @@ async def start_full_initialization(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    启动完整的数据初始化
+    Start full data initialization
     
     Args:
-        request: 初始化请求参数
-        background_tasks: 后台任务管理器
-        current_user: 当前用户信息
+        request: Initialize request parameters
+        background_tasks: Background task manager
+        current_user: Current user information
         
     Returns:
-        初始化启动结果
+        Initialization startup results
     """
     global _initialization_status
     
     if _initialization_status["is_running"]:
-        raise HTTPException(status_code=400, detail="初始化任务正在运行中")
+        raise HTTPException(status_code=400, detail="Initialization task is running")
     
     try:
-        # 设置任务状态
+        # Set task status
         _initialization_status.update({
             "is_running": True,
             "current_task": "full_initialization",
             "start_time": now_tz(),
-            "progress": {"current_step": "准备中", "completed_steps": 0, "total_steps": 6},
+            "progress": {"current_step": "In preparation", "completed_steps": 0, "total_steps": 6},
             "result": None
         })
         
-        # 启动后台任务
+        # Start background task
         background_tasks.add_task(
             _run_full_initialization_background,
             request.historical_days,
@@ -191,13 +191,13 @@ async def start_full_initialization(
                     "force": not request.skip_if_exists
                 }
             },
-            "message": "完整初始化任务已启动，请使用 /initialization-status 查看进度"
+            "message": "The full initialization task has been started, please use /initialization-status to view the progress"
         }
         
     except Exception as e:
         _initialization_status["is_running"] = False
-        logger.error(f"启动完整初始化失败: {e}")
-        raise HTTPException(status_code=500, detail=f"启动初始化失败: {str(e)}")
+        logger.error(f"Start full initialization failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Startup initialization failed: {str(e)}")
 
 
 @router.post("/start-basic-sync")
@@ -207,32 +207,32 @@ async def start_basic_sync(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    启动基础信息同步
+    Start basic information synchronization
     
     Args:
-        request: 同步请求参数
-        background_tasks: 后台任务管理器
-        current_user: 当前用户信息
+        request: Synchronous request parameters
+        background_tasks: Background task manager
+        current_user: Current user information
         
     Returns:
-        同步启动结果
+        Synchronous startup results
     """
     global _initialization_status
     
     if _initialization_status["is_running"]:
-        raise HTTPException(status_code=400, detail="同步任务正在运行中")
+        raise HTTPException(status_code=400, detail="Sync task is running")
     
     try:
-        # 设置任务状态
+        # Set task status
         _initialization_status.update({
             "is_running": True,
             "current_task": "basic_sync",
             "start_time": now_tz(),
-            "progress": {"current_step": "同步基础信息", "completed_steps": 0, "total_steps": 1},
+            "progress": {"current_step": "Synchronize basic information", "completed_steps": 0, "total_steps": 1},
             "result": None
         })
         
-        # 启动后台任务
+        # Start background task
         background_tasks.add_task(
             _run_basic_sync_background,
             request.force_update
@@ -247,22 +247,22 @@ async def start_basic_sync(
                     "force_update": request.force_update
                 }
             },
-            "message": "基础信息同步任务已启动"
+            "message": "Basic information synchronization task has been started"
         }
         
     except Exception as e:
         _initialization_status["is_running"] = False
-        logger.error(f"启动基础信息同步失败: {e}")
-        raise HTTPException(status_code=500, detail=f"启动同步失败: {str(e)}")
+        logger.error(f"Failed to start basic information synchronization: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start sync: {str(e)}")
 
 
 @router.get("/initialization-status")
 async def get_initialization_status():
     """
-    获取初始化任务状态
+    Get initialization task status
     
     Returns:
-        当前任务状态
+        Current task status
     """
     global _initialization_status
     
@@ -279,28 +279,28 @@ async def get_initialization_status():
                 if _initialization_status["start_time"] else 0
             )
         },
-        "message": "任务状态获取成功"
+        "message": "Task status obtained successfully"
     }
 
 
 @router.post("/stop")
 async def stop_initialization(current_user: dict = Depends(get_current_user)):
     """
-    停止当前初始化任务
+    Stop the current initialization task
     
     Args:
-        current_user: 当前用户信息
+        current_user: Current user information
         
     Returns:
-        停止结果
+        Stop results
     """
     global _initialization_status
     
     if not _initialization_status["is_running"]:
-        raise HTTPException(status_code=400, detail="没有正在运行的任务")
+        raise HTTPException(status_code=400, detail="No tasks running")
     
     try:
-        # 重置任务状态
+        # Reset task status
         _initialization_status.update({
             "is_running": False,
             "current_task": None,
@@ -315,16 +315,16 @@ async def stop_initialization(current_user: dict = Depends(get_current_user)):
                 "stopped": True,
                 "stop_time": datetime.utcnow()
             },
-            "message": "初始化任务已停止"
+            "message": "The initialization task has stopped"
         }
         
     except Exception as e:
-        logger.error(f"停止初始化任务失败: {e}")
-        raise HTTPException(status_code=500, detail=f"停止任务失败: {str(e)}")
+        logger.error(f"Stop initialization task failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Stop task failed: {str(e)}")
 
 
 async def _run_full_initialization_background(historical_days: int, force: bool):
-    """后台运行完整初始化"""
+    """Run full initialization in the background"""
     global _initialization_status
     
     try:
@@ -339,25 +339,25 @@ async def _run_full_initialization_background(historical_days: int, force: bool)
             "result": result
         })
         
-        logger.info(f"完整初始化后台任务完成: {result}")
+        logger.info(f"Complete initialization background task completed: {result}")
         
     except Exception as e:
         _initialization_status.update({
             "is_running": False,
             "result": {"success": False, "error": str(e)}
         })
-        logger.error(f"完整初始化后台任务失败: {e}")
+        logger.error(f"Complete initialization of background task failed: {e}")
 
 
 async def _run_basic_sync_background(force_update: bool):
-    """后台运行基础信息同步"""
+    """Basic information synchronization running in the background"""
     global _initialization_status
     
     try:
         service = await get_akshare_sync_service()
         result = await service.sync_stock_basic_info(
             force_update=force_update,
-            manual_mode=True  # 手动初始化不应继承调度任务取消状态
+            manual_mode=True  # Manual initialization should not inherit scheduled task cancellation status
         )
         
         _initialization_status.update({
@@ -365,11 +365,11 @@ async def _run_basic_sync_background(force_update: bool):
             "result": result
         })
         
-        logger.info(f"基础信息同步后台任务完成: {result}")
+        logger.info(f"Basic information synchronization background task completed: {result}")
         
     except Exception as e:
         _initialization_status.update({
             "is_running": False,
             "result": {"success": False, "error": str(e)}
         })
-        logger.error(f"基础信息同步后台任务失败: {e}")
+        logger.error(f"Basic information synchronization background task failed: {e}")

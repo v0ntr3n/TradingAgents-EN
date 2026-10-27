@@ -28,7 +28,7 @@ class _Mem0StyleMemory:
 
     def search_memories(self, query, n_results=5, filter_metadata=None):
         self.search_calls.append({"query": query, "n_results": n_results, "filter_metadata": filter_metadata})
-        return [{"content": "历史研究经验 A", "similarity": 0.95, "metadata": {"ticker": "300750"}}]
+        return [{"content": "Historical research experience A", "similarity": 0.95, "metadata": {"ticker": "300750"}}]
 
     def add_memory(self, content, metadata=None, memory_id=None):
         self.add_calls.append({"content": content, "metadata": metadata, "memory_id": memory_id})
@@ -43,17 +43,17 @@ def test_researcher_agent_reads_history_from_mem0_style_memory():
     memory = _Mem0StyleMemory()
     agent = _TestResearcherAgent(memory=memory)
 
-    context = agent._get_memory_context("300750", {"market_report": "当前报告"})
+    context = agent._get_memory_context("300750", {"market_report": "current report"})
 
-    assert "【历史经验】" in context
-    assert "历史研究经验 A" in context
+    assert " [Historical experience]" in context
+    assert "Historical research experience A" in context
     assert memory.search_calls
 
 
 def test_researcher_agent_skips_history_when_memory_lacks_search_interface():
     agent = _TestResearcherAgent(memory=_LegacyStyleMemory())
 
-    context = agent._get_memory_context("300750", {"market_report": "当前报告"})
+    context = agent._get_memory_context("300750", {"market_report": "current report"})
 
     assert context == ""
 
@@ -62,7 +62,7 @@ def test_researcher_agent_saves_to_mem0_style_memory():
     memory = _Mem0StyleMemory()
     agent = _TestResearcherAgent(memory=memory)
 
-    agent._save_to_memory("300750", {"content": "新的研究报告"})
+    agent._save_to_memory("300750", {"content": "new research report"})
 
     assert len(memory.add_calls) == 1
     assert memory.add_calls[0]["metadata"]["ticker"] == "300750"
@@ -72,4 +72,4 @@ def test_researcher_agent_saves_to_mem0_style_memory():
 def test_researcher_agent_skips_save_when_memory_lacks_add_interface():
     agent = _TestResearcherAgent(memory=_LegacyStyleMemory())
 
-    agent._save_to_memory("300750", {"content": "新的研究报告"})
+    agent._save_to_memory("300750", {"content": "new research report"})

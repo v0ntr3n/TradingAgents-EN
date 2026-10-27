@@ -2,12 +2,12 @@
   <div class="embedded-nanobot-page">
     <div class="page-header">
       <div>
-        <h1>Embedded Nanobot 调试页</h1>
-        <p>这个页面直接调用项目内嵌的 nanobot runtime，用于验证数据库模型配置、会话键、工具调用和返回内容。</p>
+        <h1>Embedded Nanobot Debug page</h1>
+        <p>This page directly calls the nanobot runtime embedded in the project to verify the database model configuration, session keys, tool calls and returned content.</p>
       </div>
       <div class="header-actions">
-        <el-button @click="loadStatus" :loading="loadingStatus">刷新状态</el-button>
-        <el-button @click="clearMessages" plain>清空本地记录</el-button>
+        <el-button @click="loadStatus" :loading="loadingStatus">refresh status</el-button>
+        <el-button @click="clearMessages" plain>Clear local records</el-button>
       </div>
     </div>
 
@@ -15,56 +15,56 @@
       <el-card class="config-card" shadow="never">
         <template #header>
           <div class="card-header">
-            <span>运行配置</span>
+            <span>Run configuration</span>
           </div>
         </template>
 
         <div class="status-block">
-          <el-tag :type="statusInfo?.enabled ? 'success' : 'danger'">{{ statusInfo?.enabled ? '已启用' : '不可用' }}</el-tag>
-          <div class="status-line" v-if="statusInfo?.user_id">用户：{{ statusInfo.user_id }}</div>
-          <div class="status-line" v-if="statusInfo?.workspace">工作区：{{ statusInfo.workspace }}</div>
+          <el-tag :type="statusInfo?.enabled ? 'success' : 'danger'">{{ statusInfo?.enabled ? 'Enabled' : 'Not available' }}</el-tag>
+          <div class="status-line" v-if="statusInfo?.user_id">User:{{ statusInfo.user_id }}</div>
+          <div class="status-line" v-if="statusInfo?.workspace">Workspace:{{ statusInfo.workspace }}</div>
         </div>
 
         <el-form label-position="top">
-          <el-form-item label="会话键">
+          <el-form-item label="session key">
             <div class="session-key-row">
-              <el-input v-model="form.sessionKey" placeholder="例如：embedded:user:debug" />
-              <el-button plain :disabled="streaming || sending" @click="createNewSession">新建会话</el-button>
+              <el-input v-model="form.sessionKey" placeholder="For example:embedded:user:debug" />
+              <el-button plain :disabled="streaming || sending" @click="createNewSession">New session</el-button>
             </div>
           </el-form-item>
-          <el-form-item label="模型名称">
-            <el-input v-model="form.model" placeholder="留空则按数据库默认配置" />
+          <el-form-item label="Model name">
+            <el-input v-model="form.model" placeholder="Leave blank to use database default configuration" />
           </el-form-item>
-          <el-form-item label="渠道">
+          <el-form-item label="channel">
             <el-input v-model="form.channel" placeholder="api" />
           </el-form-item>
-          <el-form-item label="聊天标识">
-            <el-input v-model="form.chatId" placeholder="留空则沿用会话键" />
+          <el-form-item label="Chat ID">
+            <el-input v-model="form.chatId" placeholder="Leave blank to inherit the session key" />
           </el-form-item>
-          <el-form-item label="技能列表">
+          <el-form-item label="Skill list">
             <el-input
               v-model="form.skillNamesText"
               type="textarea"
               :rows="3"
               resize="none"
-              placeholder="一行一个 skill 名称；不填则不显式启用 skill"
+              placeholder="One skill name per line; if left blank, it will not be explicitly enabled. skill"
             />
           </el-form-item>
         </el-form>
 
         <div class="history-block">
           <div class="card-header">
-            <span>数据库会话</span>
-            <el-button size="small" text @click="loadThreads" :loading="loadingThreads">刷新</el-button>
+            <span>database session</span>
+            <el-button size="small" text @click="loadThreads" :loading="loadingThreads">Refresh</el-button>
           </div>
           <div class="thread-filter-grid">
-            <el-select v-model="selectedThreadScope" size="small" placeholder="活动会话" @change="loadThreads">
-              <el-option label="活动会话" value="active" />
-              <el-option label="已归档会话" value="archived" />
+            <el-select v-model="selectedThreadScope" size="small" placeholder="active session" @change="loadThreads">
+              <el-option label="active session" value="active" />
+              <el-option label="Archived conversation" value="archived" />
             </el-select>
-            <el-input v-model="threadSearchText" size="small" clearable placeholder="搜索标题、摘要、最近问题" />
-            <el-select v-model="selectedThreadAgentFilter" size="small" placeholder="全部 Agent">
-              <el-option label="全部 Agent" value="all" />
+            <el-input v-model="threadSearchText" size="small" clearable placeholder="Search titles, abstracts, recent issues" />
+            <el-select v-model="selectedThreadAgentFilter" size="small" placeholder="All Agent">
+              <el-option label="All Agent" value="all" />
               <el-option
                 v-for="option in nanobotThreadAgentOptions"
                 :key="option.value"
@@ -72,17 +72,17 @@
                 :value="option.value"
               />
             </el-select>
-            <el-select v-model="selectedThreadTimeFilter" size="small" placeholder="全部时间">
-              <el-option label="全部时间" value="all" />
-              <el-option label="最近 24 小时" value="24h" />
-              <el-option label="最近 7 天" value="7d" />
-              <el-option label="最近 30 天" value="30d" />
+            <el-select v-model="selectedThreadTimeFilter" size="small" placeholder="all time">
+              <el-option label="all time" value="all" />
+              <el-option label="last 24 hours" value="24h" />
+              <el-option label="last 7 days" value="7d" />
+              <el-option label="Last 30 days" value="30d" />
             </el-select>
           </div>
-          <el-empty v-if="!loadingThreads && !threadItems.length" :description="selectedThreadScope === 'archived' ? '暂无已归档会话' : '暂无数据库会话'" :image-size="56" />
+          <el-empty v-if="!loadingThreads && !threadItems.length" :description="selectedThreadScope === 'archived' ? 'No archived conversations yet' : 'No database session yet'" :image-size="56" />
           <div v-else class="thread-list">
-            <div v-if="loadingThreads" class="status-line">正在加载数据库会话...</div>
-            <div v-else-if="!filteredThreadItems.length" class="status-line">{{ selectedThreadScope === 'archived' ? '没有符合筛选条件的已归档会话' : '没有符合筛选条件的会话' }}</div>
+            <div v-if="loadingThreads" class="status-line">Loading database session...</div>
+            <div v-else-if="!filteredThreadItems.length" class="status-line">{{ selectedThreadScope === 'archived' ? 'There are no archived conversations matching the filter criteria' : 'No sessions matching filter criteria' }}</div>
             <div
               v-for="thread in filteredThreadItems"
               :key="thread.thread_id"
@@ -94,14 +94,14 @@
                 @click="loadThreadMessages(thread.thread_id)"
               >
                 <div class="thread-title-row">
-                  <strong>{{ thread.title || 'Nanobot 会话' }}</strong>
+                  <strong>{{ thread.title || 'Nanobot session' }}</strong>
                   <el-tag size="small" effect="plain">{{ thread.message_count }}</el-tag>
                 </div>
-                <div class="thread-desc">{{ thread.last_user_message || thread.summary || '暂无摘要' }}</div>
+                <div class="thread-desc">{{ thread.last_user_message || thread.summary || 'No abstract yet' }}</div>
                 <div class="thread-meta-row">
                   <div class="thread-meta">{{ formatThreadMeta(thread) }}</div>
                   <div class="thread-meta-badges">
-                    <el-tag v-if="thread.archived" size="small" type="info" effect="plain">已归档</el-tag>
+                    <el-tag v-if="thread.archived" size="small" type="info" effect="plain">Archived</el-tag>
                     <div v-if="thread.thread_context?.spec_name" class="thread-agent">{{ thread.thread_context.spec_name }}</div>
                   </div>
                 </div>
@@ -112,14 +112,14 @@
                 link
                 class="thread-delete-btn"
                 @click.stop="handleRestoreThread(thread)"
-              >恢复</el-button>
+              >restore</el-button>
               <el-button
                 v-else
                 type="danger"
                 link
                 class="thread-delete-btn"
                 @click.stop="handleDeleteThread(thread)"
-              >归档</el-button>
+              >Archive</el-button>
             </div>
           </div>
         </div>
@@ -128,9 +128,9 @@
       <el-card class="chat-card" shadow="never">
         <template #header>
           <div class="card-header">
-            <span>对话调试</span>
+            <span>Dialog debugging</span>
             <div class="header-tags">
-              <el-tag v-if="streaming" type="success" effect="plain">执行中</el-tag>
+              <el-tag v-if="streaming" type="success" effect="plain">Executing</el-tag>
               <el-tag v-if="lastUsageText" type="info" effect="plain">{{ lastUsageText }}</el-tag>
             </div>
           </div>
@@ -142,15 +142,15 @@
             :key="`${item.role}-${index}`"
             :class="['message-item', item.role]"
           >
-            <div class="message-role">{{ item.role === 'user' ? '你' : 'Nanobot' }}</div>
+            <div class="message-role">{{ item.role === 'user' ? 'you' : 'Nanobot' }}</div>
             <div class="message-content">{{ item.content }}</div>
             <div class="message-meta" v-if="item.toolsUsed?.length || item.stopReason">
-              <span v-if="item.stopReason">结束原因：{{ item.stopReason }}</span>
-              <span v-if="item.toolsUsed?.length">工具：{{ item.toolsUsed.join('、') }}</span>
+              <span v-if="item.stopReason">Ending reason:{{ item.stopReason }}</span>
+              <span v-if="item.toolsUsed?.length">Tools:{{ item.toolsUsed.join(', ') }}</span>
             </div>
           </div>
         </div>
-        <el-empty v-else description="还没有发送消息" :image-size="80" />
+        <el-empty v-else description="No message sent yet" :image-size="80" />
 
         <div v-if="currentProgressHint" class="streaming-hint">{{ currentProgressHint }}</div>
 
@@ -160,12 +160,12 @@
             type="textarea"
             :rows="4"
             resize="vertical"
-            placeholder="例如：列出当前工作区的顶层目录，并说明你准备如何探索这个项目。"
+            placeholder="For example: List the top-level directories of the current workspace and describe how you plan to explore the project."
             @keydown.enter.ctrl.prevent="handleSend"
           />
           <div class="composer-actions">
-            <div class="composer-hint">Ctrl + Enter 发送</div>
-            <el-button type="primary" :loading="sending" :disabled="!draftMessage.trim()" @click="handleSend">发送</el-button>
+            <div class="composer-hint">Ctrl + Enter send</div>
+            <el-button type="primary" :loading="sending" :disabled="!draftMessage.trim()" @click="handleSend">send</el-button>
           </div>
         </div>
       </el-card>
@@ -175,10 +175,10 @@
       <el-card shadow="never">
         <template #header>
           <div class="card-header">
-            <span>实时执行轨迹</span>
+            <span>real-time execution trace</span>
           </div>
         </template>
-        <el-empty v-if="!traceEvents.length" description="暂无执行轨迹" :image-size="60" />
+        <el-empty v-if="!traceEvents.length" description="No execution track yet" :image-size="60" />
         <div v-else class="trace-list">
           <div v-for="(item, index) in traceEvents" :key="`${item.kind}-${index}`" class="trace-item">
             <div class="trace-kind">{{ item.kind }}</div>
@@ -190,20 +190,20 @@
       <el-card shadow="never">
         <template #header>
           <div class="card-header">
-            <span>最近一次工具事件</span>
+            <span>Last tool event</span>
           </div>
         </template>
-        <el-empty v-if="!lastToolEventsText" description="暂无工具事件" :image-size="60" />
+        <el-empty v-if="!lastToolEventsText" description="No tool events yet" :image-size="60" />
         <pre v-else class="json-block">{{ lastToolEventsText }}</pre>
       </el-card>
 
       <el-card shadow="never">
         <template #header>
           <div class="card-header">
-            <span>最近一次 usage</span>
+            <span>most recent usage</span>
           </div>
         </template>
-        <el-empty v-if="!lastUsageJson" description="暂无 usage" :image-size="60" />
+        <el-empty v-if="!lastUsageJson" description="None yet usage" :image-size="60" />
         <pre v-else class="json-block">{{ lastUsageJson }}</pre>
       </el-card>
     </div>
@@ -234,10 +234,10 @@ type TraceItem = {
 }
 
 const TOOL_STATUS_LABELS: Record<string, string> = {
-  started: '开始',
-  ok: '完成',
-  completed: '完成',
-  error: '失败',
+  started: 'start',
+  ok: 'Complete',
+  completed: 'Complete',
+  error: 'failed',
 }
 
 const loadingStatus = ref(false)
@@ -376,7 +376,7 @@ const loadStatus = async () => {
   try {
     statusInfo.value = await embeddedNanobotApi.getStatus()
   } catch (error: any) {
-    ElMessage.error(error?.message || '读取 embedded nanobot 状态失败')
+    ElMessage.error(error?.message || 'Failed to read embedded nanobot status')
   } finally {
     loadingStatus.value = false
   }
@@ -389,7 +389,7 @@ const loadThreads = async () => {
     threadItems.value = result.items || []
   } catch (error: any) {
     threadItems.value = []
-    ElMessage.error(error?.message || '读取数据库会话失败')
+    ElMessage.error(error?.message || 'Failed to read database session')
   } finally {
     loadingThreads.value = false
   }
@@ -397,7 +397,7 @@ const loadThreads = async () => {
 
 const formatThreadMeta = (thread: EmbeddedNanobotThreadItem) => {
   const raw = String(thread.updated_at || thread.created_at || '').trim()
-  if (!raw) return '未知时间'
+  if (!raw) return 'unknown time'
   const date = new Date(raw)
   if (Number.isNaN(date.getTime())) return raw
   return date.toLocaleString('zh-CN', { hour12: false })
@@ -424,17 +424,17 @@ const loadThreadMessages = async (threadId: string, silent = false) => {
     currentProgressHint.value = ''
   } catch (error: any) {
     if (!silent) {
-      ElMessage.error(error?.message || '加载会话消息失败')
+      ElMessage.error(error?.message || 'Failed to load session messages')
     }
   }
 }
 
 const handleDeleteThread = async (thread: EmbeddedNanobotThreadItem) => {
   try {
-    await ElMessageBox.confirm(`归档会话「${thread.title || thread.thread_id}」后，它会从活动列表隐藏，但历史消息仍会保留。是否继续？`, '归档会话', {
+    await ElMessageBox.confirm(`Archive conversation${thread.title || thread.thread_id}] Afterwards, it will be hidden from the active list, but historical messages will still remain. Continue?`, 'Archive session', {
       type: 'warning',
-      confirmButtonText: '归档',
-      cancelButtonText: '取消',
+      confirmButtonText: 'Archive',
+      cancelButtonText: 'Cancel',
       confirmButtonClass: 'el-button--danger',
     })
     await embeddedNanobotApi.deleteThread(thread.thread_id)
@@ -445,10 +445,10 @@ const handleDeleteThread = async (thread: EmbeddedNanobotThreadItem) => {
       clearMessages()
     }
     await loadThreads()
-    ElMessage.success('会话已归档')
+    ElMessage.success('Conversation archived')
   } catch (error: any) {
     if (error === 'cancel' || error === 'close' || error?.action === 'cancel' || error?.action === 'close') return
-    ElMessage.error(error?.message || '归档会话失败')
+    ElMessage.error(error?.message || 'Archive session failed')
   }
 }
 
@@ -456,9 +456,9 @@ const handleRestoreThread = async (thread: EmbeddedNanobotThreadItem) => {
   try {
     await embeddedNanobotApi.restoreThread(thread.thread_id)
     await loadThreads()
-    ElMessage.success('会话已恢复到活动列表')
+    ElMessage.success('Session restored to active list')
   } catch (error: any) {
-    ElMessage.error(error?.message || '恢复会话失败')
+    ElMessage.error(error?.message || 'Failed to restore session')
   }
 }
 
@@ -475,7 +475,7 @@ const createNewSession = () => {
   form.value.chatId = ''
   selectedThreadId.value = ''
   clearMessages()
-  ElMessage.success('已切换到新的调试会话')
+  ElMessage.success('Switched to new debugging session')
 }
 
 const pushTrace = (kind: string, message: string) => {
@@ -490,7 +490,7 @@ const handleSend = async () => {
 
   sending.value = true
   streaming.value = true
-  currentProgressHint.value = '正在发送请求'
+  currentProgressHint.value = 'Sending request'
   messages.value.push({ role: 'user', content: message })
   messages.value.push({ role: 'assistant', content: '' })
   const assistantIndex = messages.value.length - 1
@@ -507,11 +507,11 @@ const handleSend = async () => {
     await new Promise<void>((resolve, reject) => {
       const callbacks: EmbeddedNanobotStreamCallbacks = {
         onStarted(data) {
-          currentProgressHint.value = data.message || 'Nanobot 已开始处理请求'
+          currentProgressHint.value = data.message || 'Nanobot Processing of request has started'
           pushTrace('started', currentProgressHint.value)
         },
         onProgress(data) {
-          const msg = data.message || '正在执行'
+          const msg = data.message || 'Executing'
           currentProgressHint.value = msg
           pushTrace('progress', msg)
         },
@@ -524,18 +524,18 @@ const handleSend = async () => {
           const detail = event.detail ? `：${event.detail}` : ''
           const statusLabel = TOOL_STATUS_LABELS[status] || status
           currentProgressHint.value = status === 'started'
-            ? `正在执行工具 ${toolName}`
-            : `工具 ${toolName}${statusLabel === '完成' ? ' 已完成' : ` ${statusLabel}`}`
+            ? `Executing tool ${toolName}`
+            : `Tools ${toolName}${statusLabel === 'Complete' ? ' Completed' : ` ${statusLabel}`}`
           pushTrace('tool', `${toolName}（${statusLabel}）${detail}`)
         },
         onStepEvent(event) {
-          const stepTitle = event.title || event.step || '步骤'
+          const stepTitle = event.title || event.step || 'steps'
           const status = event.status || 'started'
           const detail = event.detail ? `：${event.detail}` : ''
-          const statusLabel = TOOL_STATUS_LABELS[status] || (status === 'completed' ? '完成' : status)
+          const statusLabel = TOOL_STATUS_LABELS[status] || (status === 'completed' ? 'Complete' : status)
           currentProgressHint.value = status === 'started'
-            ? (event.detail || `正在执行 ${stepTitle}`)
-            : (event.detail || `${stepTitle} 已完成`)
+            ? (event.detail || `Executing ${stepTitle}`)
+            : (event.detail || `${stepTitle} Completed`)
           pushTrace('step', `${stepTitle}（${statusLabel}）${detail}`)
         },
         onDone(data) {
@@ -543,14 +543,14 @@ const handleSend = async () => {
           messages.value[assistantIndex].content = data.content || messages.value[assistantIndex].content
           messages.value[assistantIndex].toolsUsed = data.tools_used || []
           messages.value[assistantIndex].stopReason = data.stop_reason
-          currentProgressHint.value = '本轮回复已返回；如果后台日志仍在更新，通常是在做会话归档等收尾动作。'
-          pushTrace('done', 'Nanobot 已完成本轮回复；后台可能仍有非阻塞收尾日志。')
+          currentProgressHint.value = 'This round of replies has been returned; if the background log is still being updated, it is usually due to finishing actions such as session archiving.'
+          pushTrace('done', 'Nanobot This round of reply has been completed; there may still be non-blocking closing logs in the background.')
           resolve()
         },
         onError(messageText) {
-          messages.value[assistantIndex].content = `请求失败：${messageText || '未知错误'}`
+          messages.value[assistantIndex].content = `Request failed:${messageText || 'unknown error'}`
           currentProgressHint.value = ''
-          reject(new Error(messageText || '未知错误'))
+          reject(new Error(messageText || 'unknown error'))
         },
       }
       activeStreamController?.abort()
@@ -562,7 +562,7 @@ const handleSend = async () => {
       await loadThreadMessages(lastResponse.value.thread_id, true)
     }
   } catch (error: any) {
-    ElMessage.error(error?.message || 'Embedded Nanobot 请求失败')
+    ElMessage.error(error?.message || 'Embedded Nanobot Request failed')
   } finally {
     activeStreamController = null
     streaming.value = false

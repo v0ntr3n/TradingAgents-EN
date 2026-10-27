@@ -9,19 +9,19 @@ import hashlib
 import warnings
 from typing import Dict, Optional
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("agents.utils.memory")
 
 
 class ChromaDBManager:
-    """单例ChromaDB管理器，避免并发创建集合的冲突"""
+    """Singleton ChromaDB manager to avoid conflicts in concurrent collection creation"""
 
     _instance = None
     _lock = threading.Lock()
     _collections: Dict[str, any] = {}
     _client = None
-    _chroma_operation_lock = threading.Lock()  # 🔒 ChromaDB 操作锁（保护 Rust 扩展）
+    _chroma_operation_lock = threading.Lock()  # 🔒 ChromaDB Operation locks (protecting Rust extensions)
 
     def __new__(cls):
         if cls._instance is None:
@@ -34,74 +34,74 @@ class ChromaDBManager:
     def __init__(self):
         if not self._initialized:
             try:
-                # v3.6.0：添加环境变量开关，当 MEM0 启用时跳过 ChromaDB 初始化
-                # mem0 已迁移至 Qdrant，Chromadb 仅用于遗留代码路径
+                # v3.6.0: Add environment variable switch to skip ChromaDB initialization when MEM0 is enabled
+                # mem0 Migrated to Qdrant, Chromadb only for legacy code paths
                 if os.environ.get("MEM0_ENABLED", "").lower() == "true":
-                    logger.info("[ChromaDB] MEM0 已启用，跳过 ChromaDB 初始化（使用 Qdrant）")
+                    logger.info("[ChromaDB] MEM0 Enabled, skip ChromaDB initialization (use Qdrant)")
                     self._client = None
                     self._initialized = True
                     return
 
-                # 使用统一的配置模块
+                # Use a unified configuration module
                 from .chromadb_config import get_optimal_chromadb_client, is_windows_11
                 import platform
 
                 self._client = get_optimal_chromadb_client()
 
-                # 记录初始化信息
+                # Record initialization information
                 system = platform.system()
                 if system == "Windows":
                     if is_windows_11():
-                        logger.info(f"📚 [ChromaDB] Windows 11优化配置初始化完成 (构建号: {platform.version()})")
+                        logger.info(f"📚 [ChromaDB] Windows 11 Optimization configuration initialization completed (Build number: {platform.version()})")
                     else:
-                        logger.info(f"📚 [ChromaDB] Windows 10兼容配置初始化完成")
+                        logger.info(f"📚 [ChromaDB] Windows 10 Compatible configuration initialization completed")
                 else:
                     logger.info(f"📚 [ChromaDB] {system}标准配置初始化完成")
 
                 self._initialized = True
             except Exception as e:
-                logger.error(f"❌ [ChromaDB] 初始化失败: {e}")
-                # 使用最简单的配置作为备用
+                logger.error(f"❌ [ChromaDB] Initialization failed: {e}")
+                # Use the simplest configuration as a fallback
                 try:
                     settings = Settings(
                         allow_reset=True,
-                        anonymized_telemetry=False,  # 关键：禁用遥测
+                        anonymized_telemetry=False,  # Key: Disable telemetry
                         is_persistent=False
                     )
                     self._client = chromadb.Client(settings)
-                    logger.info(f"📚 [ChromaDB] 使用备用配置初始化完成")
+                    logger.info(f"📚 [ChromaDB] Initialization complete with alternate configuration")
                 except Exception as backup_error:
-                    # 最后的备用方案
+                    # Last resort
                     self._client = chromadb.Client()
-                    logger.warning(f"⚠️ [ChromaDB] 使用最简配置初始化: {backup_error}")
+                    logger.warning(f"⚠️ [ChromaDB] Initialize with minimal configuration: {backup_error}")
                 self._initialized = True
 
     def get_or_create_collection(self, name: str):
         """线程安全地获取或创建集合"""
         with self._lock:
             if name in self._collections:
-                logger.info(f"📚 [ChromaDB] 使用缓存集合: {name}")
+                logger.info(f"📚 [ChromaDB] Use cached collections: {name}")
                 return self._collections[name]
 
             try:
-                # 尝试获取现有集合
+                # Try to get an existing collection
                 collection = self._client.get_collection(name=name)
-                logger.info(f"📚 [ChromaDB] 获取现有集合: {name}")
+                logger.info(f"📚 [ChromaDB] Get existing collection: {name}")
             except Exception:
                 try:
-                    # 创建新集合
+                    # Create new collection
                     collection = self._client.create_collection(name=name)
-                    logger.info(f"📚 [ChromaDB] 创建新集合: {name}")
+                    logger.info(f"📚 [ChromaDB] Create new collection: {name}")
                 except Exception as e:
-                    # 可能是并发创建，再次尝试获取
+                    # It may be created concurrently, try to get it again
                     try:
                         collection = self._client.get_collection(name=name)
-                        logger.info(f"📚 [ChromaDB] 并发创建后获取集合: {name}")
+                        logger.info(f"📚 [ChromaDB] Get collection after concurrent creation: {name}")
                     except Exception as final_error:
                         logger.error(f"❌ [ChromaDB] 集合操作失败: {name}, 错误: {final_error}")
                         raise final_error
 
-            # 缓存集合
+            # cache collection
             self._collections[name] = collection
             return collection
 
@@ -109,75 +109,75 @@ class ChromaDBManager:
 class FinancialSituationMemory:
     def __init__(self, name, config):
         warnings.warn(
-            "FinancialSituationMemory 已进入 legacy-only 兼容模式，主路径请改用 mem0 MemoryProvider/MemoryManager。",
+            "FinancialSituationMemory It has entered legacy-only compatibility mode. Please use mem0 MemoryProvider/MemoryManager for the main path instead.",
             DeprecationWarning,
             stacklevel=2,
         )
         self.config = config
         self.llm_provider = config.get("llm_provider", "openai").lower()
 
-        # 配置向量缓存的长度限制（向量缓存默认启用长度检查）
-        self.max_embedding_length = int(os.getenv('MAX_EMBEDDING_CONTENT_LENGTH', '50000'))  # 默认50K字符
-        self.enable_embedding_length_check = os.getenv('ENABLE_EMBEDDING_LENGTH_CHECK', 'true').lower() == 'true'  # 向量缓存默认启用
+        # Configure the length limit of the vector cache (the vector cache enables length checking by default)
+        self.max_embedding_length = int(os.getenv('MAX_EMBEDDING_CONTENT_LENGTH', '50000'))  # Default 50K characters
+        self.enable_embedding_length_check = os.getenv('ENABLE_EMBEDDING_LENGTH_CHECK', 'true').lower() == 'true'  # Vector caching is enabled by default
 
-        # 根据LLM提供商选择嵌入模型和客户端
-        # 初始化降级选项标志
+        # Select embedding model and client based on LLM provider
+        # Initialize downgrade option flags
         self.fallback_available = False
 
-        # 🔥 优先从数据库配置获取可用的 embedding 服务
+        # 🔥 Prioritize obtaining available embedding services from database configuration
         if self._init_from_database_config():
-            # 从数据库初始化成功，跳过传统初始化逻辑
+            # Successful initialization from database, skipping traditional initialization logic
             pass
         elif self.llm_provider == "dashscope" or self.llm_provider == "alibaba":
             self.embedding = "text-embedding-v3"
-            self.client = None  # DashScope不需要OpenAI客户端
+            self.client = None  # DashScope No OpenAI client required
 
-            # 设置DashScope API密钥
+            # Set DashScope API key
             dashscope_key = os.getenv('DASHSCOPE_API_KEY')
             if dashscope_key:
                 try:
-                    # 尝试导入和初始化DashScope
+                    # Try importing and initializing DashScope
                     import dashscope
                     from dashscope import TextEmbedding
 
                     dashscope.api_key = dashscope_key
-                    logger.info(f"✅ DashScope API密钥已配置，启用记忆功能")
+                    logger.info(f"✅ DashScope API Key configured, memory function enabled")
 
-                    # 可选：测试API连接（简单验证）
-                    # 这里不做实际调用，只验证导入和密钥设置
+                    # Optional: Test API connection (simple verification)
+                    # No actual calls are made here, only the import and key settings are verified
 
                 except ImportError as e:
-                    # DashScope包未安装
-                    logger.error(f"❌ DashScope包未安装: {e}")
+                    # DashScope Package not installed
+                    logger.error(f"❌ DashScope Package not installed: {e}")
                     self.client = "DISABLED"
                     logger.warning(f"⚠️ 记忆功能已禁用")
 
                 except Exception as e:
-                    # 其他初始化错误
-                    logger.error(f"❌ DashScope初始化失败: {e}")
+                    # Other initialization errors
+                    logger.error(f"❌ DashScope Initialization failed: {e}")
                     self.client = "DISABLED"
                     logger.warning(f"⚠️ 记忆功能已禁用")
             else:
-                # 没有DashScope密钥，禁用记忆功能
+                # Without DashScope key, memory function is disabled
                 self.client = "DISABLED"
-                logger.warning(f"⚠️ 未找到DASHSCOPE_API_KEY，记忆功能已禁用")
-                logger.info(f"💡 系统将继续运行，但不会保存或检索历史记忆")
+                logger.warning(f"⚠️ DASHSCOPE_API_KEY not found, memory function disabled")
+                logger.info(f"💡 The system will continue to operate but historical memory will not be saved or retrieved")
         elif self.llm_provider == "qianfan":
-            # 千帆（文心一言）embedding配置
-            # 千帆目前没有独立的embedding API，使用阿里百炼作为降级选项
+            # Qianfan (Wen Xinyiyan) embedding configuration
+            # Qianfan currently does not have an independent embedding API and uses Alibaba Bailian as a downgrade option.
             dashscope_key = os.getenv('DASHSCOPE_API_KEY')
             if dashscope_key:
                 try:
-                    # 使用阿里百炼嵌入服务作为千帆的embedding解决方案
+                    # Use Alibaba Bailian embedding service as Qianfan's embedding solution
                     import dashscope
                     from dashscope import TextEmbedding
 
                     dashscope.api_key = dashscope_key
                     self.embedding = "text-embedding-v3"
                     self.client = None
-                    logger.info(f"💡 千帆使用阿里百炼嵌入服务")
+                    logger.info(f"💡 Qianfan uses Alibaba Bailian embedded service")
                 except ImportError as e:
-                    logger.error(f"❌ DashScope包未安装: {e}")
+                    logger.error(f"❌ DashScope Package not installed: {e}")
                     self.client = "DISABLED"
                     logger.warning(f"⚠️ 千帆记忆功能已禁用")
                 except Exception as e:
@@ -185,39 +185,39 @@ class FinancialSituationMemory:
                     self.client = "DISABLED"
                     logger.warning(f"⚠️ 千帆记忆功能已禁用")
             else:
-                # 没有DashScope密钥，禁用记忆功能
+                # Without DashScope key, memory function is disabled
                 self.client = "DISABLED"
-                logger.warning(f"⚠️ 千帆未找到DASHSCOPE_API_KEY，记忆功能已禁用")
-                logger.info(f"💡 系统将继续运行，但不会保存或检索历史记忆")
+                logger.warning(f"⚠️ Qianfan did not find DASHSCOPE_API_KEY, the memory function is disabled")
+                logger.info(f"💡 The system will continue to operate but historical memory will not be saved or retrieved")
         elif self.llm_provider == "deepseek":
-            # 检查是否强制使用OpenAI嵌入
+            # Check if OpenAI embedding is forced
             force_openai = os.getenv('FORCE_OPENAI_EMBEDDING', 'false').lower() == 'true'
 
             if not force_openai:
-                # 尝试使用阿里百炼嵌入
+                # Try using Alibaba Bailian embed
                 dashscope_key = os.getenv('DASHSCOPE_API_KEY')
                 if dashscope_key:
                     try:
-                        # 测试阿里百炼是否可用
+                        # Test whether Ali Bailian is available
                         import dashscope
                         from dashscope import TextEmbedding
 
                         dashscope.api_key = dashscope_key
-                        # 验证TextEmbedding可用性（不需要实际调用）
+                        # Verify TextEmbedding availability (no actual call required)
                         self.embedding = "text-embedding-v3"
                         self.client = None
-                        logger.info(f"💡 DeepSeek使用阿里百炼嵌入服务")
+                        logger.info(f"💡 DeepSeek Use Alibaba Bailian embedded service")
                     except ImportError as e:
-                        logger.error(f"⚠️ DashScope包未安装: {e}")
-                        dashscope_key = None  # 强制降级
+                        logger.error(f"⚠️ DashScope Package not installed: {e}")
+                        dashscope_key = None  # forced downgrade
                     except Exception as e:
-                        logger.error(f"⚠️ 阿里百炼嵌入初始化失败: {e}")
-                        dashscope_key = None  # 强制降级
+                        logger.error(f"⚠️ Alibaba Bailian embedding initialization failed: {e}")
+                        dashscope_key = None  # forced downgrade
             else:
-                dashscope_key = None  # 跳过阿里百炼
+                dashscope_key = None  # Skip Ali Bailian
 
             if not dashscope_key or force_openai:
-                # 降级到OpenAI嵌入
+                # Downgrade to OpenAI embedding
                 self.embedding = "text-embedding-3-small"
                 openai_key = os.getenv('OPENAI_API_KEY')
                 if openai_key:
@@ -225,9 +225,9 @@ class FinancialSituationMemory:
                         api_key=openai_key,
                         base_url=config.get("backend_url", "https://api.openai.com/v1")
                     )
-                    logger.warning(f"⚠️ DeepSeek回退到OpenAI嵌入服务")
+                    logger.warning(f"⚠️ DeepSeek Fallback to OpenAI embedding service")
                 else:
-                    # 最后尝试DeepSeek自己的嵌入
+                    # Finally try DeepSeek's own embedding
                     deepseek_key = os.getenv('DEEPSEEK_API_KEY')
                     if deepseek_key:
                         try:
@@ -235,24 +235,24 @@ class FinancialSituationMemory:
                                 api_key=deepseek_key,
                                 base_url="https://api.deepseek.com"
                             )
-                            logger.info(f"💡 DeepSeek使用自己的嵌入服务")
+                            logger.info(f"💡 DeepSeek Use your own embed service")
                         except Exception as e:
-                            logger.error(f"❌ DeepSeek嵌入服务不可用: {e}")
-                            # 禁用内存功能
+                            logger.error(f"❌ DeepSeek Embed service is not available: {e}")
+                            # Disable memory function
                             self.client = "DISABLED"
-                            logger.info(f"🚨 内存功能已禁用，系统将继续运行但不保存历史记忆")
+                            logger.info(f"🚨 The memory function is disabled, the system will continue to operate without saving historical memory")
                     else:
-                        # 禁用内存功能而不是抛出异常
+                        # Disable memory features instead of throwing exceptions
                         self.client = "DISABLED"
-                        logger.info(f"🚨 未找到可用的嵌入服务，内存功能已禁用")
+                        logger.info(f"🚨 No available embedding service found, memory functionality disabled")
         elif self.llm_provider == "google":
-            # Google AI使用阿里百炼嵌入（如果可用），否则禁用记忆功能
+            # Google AI Use Ali Bailian embedding if available, otherwise disable memory function
             dashscope_key = os.getenv('DASHSCOPE_API_KEY')
             openai_key = os.getenv('OPENAI_API_KEY')
             
             if dashscope_key:
                 try:
-                    # 尝试初始化DashScope
+                    # Try to initialize DashScope
                     import dashscope
                     from dashscope import TextEmbedding
 
@@ -260,37 +260,37 @@ class FinancialSituationMemory:
                     self.client = None
                     dashscope.api_key = dashscope_key
                     
-                    # 检查是否有OpenAI密钥作为降级选项
+                    # Check if OpenAI key is available as downgrade option
                     if openai_key:
-                        logger.info(f"💡 Google AI使用阿里百炼嵌入服务（OpenAI作为降级选项）")
+                        logger.info(f"💡 Google AI Use Alibaba Bailian embedding service (OpenAI as downgrade option)")
                         self.fallback_available = True
                         self.fallback_client = OpenAI(api_key=openai_key, base_url=config["backend_url"])
                         self.fallback_embedding = "text-embedding-3-small"
                     else:
-                        logger.info(f"💡 Google AI使用阿里百炼嵌入服务（无降级选项）")
+                        logger.info(f"💡 Google AI Use Alibaba Bailian embedded service (no downgrade option)")
                         self.fallback_available = False
                         
                 except ImportError as e:
-                    logger.error(f"❌ DashScope包未安装: {e}")
+                    logger.error(f"❌ DashScope Package not installed: {e}")
                     self.client = "DISABLED"
-                    logger.warning(f"⚠️ Google AI记忆功能已禁用")
+                    logger.warning(f"⚠️ Google AI Memory function disabled")
                 except Exception as e:
-                    logger.error(f"❌ DashScope初始化失败: {e}")
+                    logger.error(f"❌ DashScope Initialization failed: {e}")
                     self.client = "DISABLED"
-                    logger.warning(f"⚠️ Google AI记忆功能已禁用")
+                    logger.warning(f"⚠️ Google AI Memory function disabled")
             else:
-                # 没有DashScope密钥，禁用记忆功能
+                # Without DashScope key, memory function is disabled
                 self.client = "DISABLED"
                 self.fallback_available = False
-                logger.warning(f"⚠️ Google AI未找到DASHSCOPE_API_KEY，记忆功能已禁用")
-                logger.info(f"💡 系统将继续运行，但不会保存或检索历史记忆")
+                logger.warning(f"⚠️ Google AI DASHSCOPE_API_KEY not found, memory function disabled")
+                logger.info(f"💡 The system will continue to operate but historical memory will not be saved or retrieved")
         elif self.llm_provider in {"openrouter", "aihubmix"}:
-            # OpenAI 兼容聚合渠道支持：优先使用阿里百炼嵌入，否则禁用记忆功能
+            # OpenAI Compatible with aggregation channel support: priority is given to using Alibaba Bailian embedding, otherwise the memory function is disabled
             provider_label = "AIHubMix" if self.llm_provider == "aihubmix" else "OpenRouter"
             dashscope_key = os.getenv('DASHSCOPE_API_KEY')
             if dashscope_key:
                 try:
-                    # 尝试使用阿里百炼嵌入
+                    # Try using Alibaba Bailian embed
                     import dashscope
                     from dashscope import TextEmbedding
 
@@ -299,18 +299,18 @@ class FinancialSituationMemory:
                     dashscope.api_key = dashscope_key
                     logger.info(f"💡 {provider_label}使用阿里百炼嵌入服务")
                 except ImportError as e:
-                    logger.error(f"❌ DashScope包未安装: {e}")
+                    logger.error(f"❌ DashScope Package not installed: {e}")
                     self.client = "DISABLED"
                     logger.warning(f"⚠️ {provider_label}记忆功能已禁用")
                 except Exception as e:
-                    logger.error(f"❌ DashScope初始化失败: {e}")
+                    logger.error(f"❌ DashScope Initialization failed: {e}")
                     self.client = "DISABLED"
                     logger.warning(f"⚠️ {provider_label}记忆功能已禁用")
             else:
-                # 没有DashScope密钥，禁用记忆功能
+                # Without DashScope key, memory function is disabled
                 self.client = "DISABLED"
-                logger.warning(f"⚠️ {provider_label}未找到DASHSCOPE_API_KEY，记忆功能已禁用")
-                logger.info(f"💡 系统将继续运行，但不会保存或检索历史记忆")
+                logger.warning(f"⚠️ {provider_label}DASHSCOPE_API_KEY not found, memory function disabled")
+                logger.info(f"💡 The system will continue to operate but historical memory will not be saved or retrieved")
         elif config["backend_url"] == "http://localhost:11434/v1":
             self.embedding = "nomic-embed-text"
             self.client = OpenAI(base_url=config["backend_url"])
@@ -324,31 +324,31 @@ class FinancialSituationMemory:
                 )
             else:
                 self.client = "DISABLED"
-                logger.warning(f"⚠️ 未找到OPENAI_API_KEY，记忆功能已禁用")
+                logger.warning(f"⚠️ OPENAI_API_KEY not found, memory function disabled")
 
-        # 使用单例ChromaDB管理器
+        # Using the singleton ChromaDB manager
         self.chroma_manager = ChromaDBManager()
         self.situation_collection = self.chroma_manager.get_or_create_collection(name)
 
     def _smart_text_truncation(self, text, max_length=8192):
-        """智能文本截断，保持语义完整性和缓存兼容性"""
+        """Intelligent text truncation to maintain semantic integrity and cache compatibility"""
         if len(text) <= max_length:
-            return text, False  # 返回原文本和是否截断的标志
+            return text, False  # Returns the original text and a flag indicating whether to truncate
         
-        # 尝试在句子边界截断
+        # Try truncation at sentence boundaries
         sentences = text.split('。')
         if len(sentences) > 1:
             truncated = ""
             for sentence in sentences:
-                if len(truncated + sentence + '。') <= max_length - 50:  # 留50字符余量
+                if len(truncated + sentence + '。') <= max_length - 50:  # Leave 50 characters margin
                     truncated += sentence + '。'
                 else:
                     break
-            if len(truncated) > max_length // 2:  # 至少保留一半内容
+            if len(truncated) > max_length // 2:  # Keep at least half of the content
                 logger.info(f"📝 智能截断：在句子边界截断，保留{len(truncated)}/{len(text)}字符")
                 return truncated, True
         
-        # 尝试在段落边界截断
+        # Try truncation at paragraph boundary
         paragraphs = text.split('\n')
         if len(paragraphs) > 1:
             truncated = ""
@@ -361,21 +361,21 @@ class FinancialSituationMemory:
                 logger.info(f"📝 智能截断：在段落边界截断，保留{len(truncated)}/{len(text)}字符")
                 return truncated, True
         
-        # 最后选择：保留前半部分和后半部分的关键信息
+        # Final choice: Keep key information from the first and second halves
         front_part = text[:max_length//2]
-        back_part = text[-(max_length//2-100):]  # 留100字符给连接符
+        back_part = text[-(max_length//2-100):]  # Leave 100 characters for connectors
         truncated = front_part + "\n...[内容截断]...\n" + back_part
         logger.warning(f"⚠️ 强制截断：保留首尾关键信息，{len(text)}字符截断为{len(truncated)}字符")
         return truncated, True
 
     def _init_from_database_config(self) -> bool:
         """
-        从数据库配置初始化 embedding 服务
+        Initialize embedding service from database configuration
 
-        优先从数据库获取支持 embedding 且已启用的厂商，按优先级选择
+        Prioritize the vendors that support embedding and are enabled from the database, and select them according to priority.
 
         Returns:
-            True 如果初始化成功，False 如果需要回退到传统初始化
+            True If initialization is successful, False if you need to fall back to traditional initialization
         """
         try:
             from .embedding_provider import get_embedding_manager, EmbeddingProviderConfig
@@ -384,36 +384,36 @@ class FinancialSituationMemory:
             providers = manager.get_available_providers()
 
             if not providers:
-                logger.debug("📋 数据库中没有可用的 embedding 提供者，使用传统初始化")
+                logger.debug("📋 No embedding provider available in database, use legacy initialization")
                 return False
 
-            # 选择优先级最高的提供者
+            # Choose the highest priority provider
             primary_provider = providers[0]
-            logger.info(f"✅ 从数据库获取 embedding 配置: {primary_provider.display_name} ({primary_provider.name})")
+            logger.info(f"✅ Get embedding configuration from database: {primary_provider.display_name} ({primary_provider.name})")
 
-            # 配置 embedding 参数
+            # Configure embedding parameters
             self.embedding = primary_provider.model
             self.embedding_provider_name = primary_provider.name
             self._embedding_provider_config = primary_provider
             self._embedding_manager = manager
 
-            # 根据提供者类型设置客户端
+            # Set up client based on provider type
             if primary_provider.name in ("dashscope", "alibaba"):
-                # DashScope 使用自己的 SDK，不需要 OpenAI 客户端
+                # DashScope Uses own SDK, no OpenAI client required
                 try:
                     import dashscope
                     dashscope.api_key = primary_provider.api_key
                     self.client = None
                     logger.info(f"✅ 使用 {primary_provider.display_name} embedding 服务（SDK模式）")
                 except ImportError:
-                    logger.warning("⚠️ DashScope 包未安装，尝试使用 OpenAI 兼容模式")
+                    logger.warning("⚠️ DashScope Package not installed, try using OpenAI compatibility mode")
                     self.client = OpenAI(
                         api_key=primary_provider.api_key,
                         base_url=primary_provider.base_url,
                         timeout=30.0
                     )
             else:
-                # 其他提供者使用 OpenAI 兼容客户端
+                # Other providers use OpenAI compatible clients
                 self.client = OpenAI(
                     api_key=primary_provider.api_key,
                     base_url=primary_provider.base_url,
@@ -421,46 +421,46 @@ class FinancialSituationMemory:
                 )
                 logger.info(f"✅ 使用 {primary_provider.display_name} embedding 服务（OpenAI兼容模式）")
 
-            # 如果有其他提供者，标记降级可用
+            # If there are other providers, tag downgrade is available
             if len(providers) > 1:
                 self.fallback_available = True
                 logger.info(f"💡 降级选项可用: {[p.name for p in providers[1:]]}")
 
-            # 更新 llm_provider 以反映实际使用的提供者
+            # Update llm_provider to reflect the actual provider used
             self.llm_provider = primary_provider.name
 
             return True
 
         except ImportError as e:
-            logger.debug(f"📋 EmbeddingProviderManager 不可用: {e}，使用传统初始化")
+            logger.debug(f"📋 EmbeddingProviderManager Not available: {e}, Use traditional initialization")
             return False
         except Exception as e:
-            logger.warning(f"⚠️ 从数据库初始化 embedding 失败: {e}，使用传统初始化")
+            logger.warning(f"⚠️ Initializing embedding from database failed: {e}, Use traditional initialization")
             return False
 
     def get_embedding(self, text):
         """Get embedding for a text using the configured provider"""
 
-        # 检查记忆功能是否被禁用
+        # Check if the memory function is disabled
         if self.client == "DISABLED":
-            # 内存功能已禁用，返回空向量
-            logger.debug(f"⚠️ 记忆功能已禁用，返回空向量")
-            return [0.0] * 1024  # 返回1024维的零向量
+            # Memory feature disabled, returns empty vector
+            logger.debug(f"⚠️ Memorization is disabled, returning an empty vector")
+            return [0.0] * 1024  # Returns a 1024-dimensional zero vector
 
-        # 验证输入文本
+        # Validate input text
         if not text or not isinstance(text, str):
-            logger.warning(f"⚠️ 输入文本为空或无效，返回空向量")
+            logger.warning(f"⚠️ If the input text is empty or invalid, an empty vector is returned.")
             return [0.0] * 1024
 
         text_length = len(text)
         if text_length == 0:
-            logger.warning(f"⚠️ 输入文本长度为0，返回空向量")
+            logger.warning(f"⚠️ The input text length is 0 and an empty vector is returned.")
             return [0.0] * 1024
         
-        # 检查是否启用长度限制
+        # Check if length limit is enabled
         if self.enable_embedding_length_check and text_length > self.max_embedding_length:
             logger.warning(f"⚠️ 文本过长({text_length:,}字符 > {self.max_embedding_length:,}字符)，跳过向量化")
-            # 存储跳过信息
+            # Store skip information
             self._last_text_info = {
                 'original_length': text_length,
                 'processed_length': 0,
@@ -472,21 +472,21 @@ class FinancialSituationMemory:
             }
             return [0.0] * 1024
         
-        # 记录文本信息（不进行任何截断）
+        # Record text information (without any truncation)
         if text_length > 8192:
             logger.info(f"📝 处理长文本: {text_length}字符，提供商: {self.llm_provider}")
         
-        # 存储文本处理信息
+        # Store text processing information
         self._last_text_info = {
             'original_length': text_length,
-            'processed_length': text_length,  # 不截断，保持原长度
-            'was_truncated': False,  # 永不截断
+            'processed_length': text_length,  # No truncation, keep original length
+            'was_truncated': False,  # never truncate
             'was_skipped': False,
             'provider': self.llm_provider,
-            'strategy': 'no_truncation_with_fallback'  # 标记策略
+            'strategy': 'no_truncation_with_fallback'  # Marking strategy
         }
 
-        # 🔥 优先使用数据库配置的 embedding 管理器
+        # 🔥 Prefer using database-configured embedding managers
         if hasattr(self, '_embedding_manager') and self._embedding_manager is not None:
             try:
                 embedding, provider_name = self._embedding_manager.get_embedding(text)
@@ -494,10 +494,10 @@ class FinancialSituationMemory:
                     logger.debug(f"✅ 使用 {provider_name} 获取 embedding，维度: {len(embedding)}")
                     return embedding
                 else:
-                    logger.warning(f"⚠️ EmbeddingManager 获取失败: {provider_name}，返回空向量")
+                    logger.warning(f"⚠️ EmbeddingManager Failed to obtain: {provider_name}, Returns an empty vector")
                     return [0.0] * 1024
             except Exception as e:
-                logger.warning(f"⚠️ EmbeddingManager 异常: {e}，返回空向量")
+                logger.warning(f"⚠️ EmbeddingManager Abnormal: {e}, Returns an empty vector")
                 return [0.0] * 1024
 
         if (self.llm_provider == "dashscope" or
@@ -506,100 +506,100 @@ class FinancialSituationMemory:
             (self.llm_provider == "google" and self.client is None) or
             (self.llm_provider == "deepseek" and self.client is None) or
             (self.llm_provider in {"openrouter", "aihubmix"} and self.client is None)):
-            # 使用阿里百炼的嵌入模型
+            # Using Alibaba Bailian's embedding model
             try:
-                # 导入DashScope模块
+                # Import DashScope module
                 import dashscope
                 from dashscope import TextEmbedding
 
-                # 检查DashScope API密钥是否可用
+                # Check if DashScope API key is available
                 if not hasattr(dashscope, 'api_key') or not dashscope.api_key:
-                    logger.warning(f"⚠️ DashScope API密钥未设置，记忆功能降级")
-                    return [0.0] * 1024  # 返回空向量
+                    logger.warning(f"⚠️ DashScope API The key is not set and the memory function is degraded")
+                    return [0.0] * 1024  # Returns an empty vector
 
-                # 尝试调用DashScope API
+                # Try calling DashScope API
                 response = TextEmbedding.call(
                     model=self.embedding,
                     input=text
                 )
 
-                # 检查响应状态
+                # Check response status
                 if response.status_code == 200:
-                    # 成功获取embedding
+                    # successfully obtained embedding
                     embedding = response.output['embeddings'][0]['embedding']
-                    logger.debug(f"✅ DashScope embedding成功，维度: {len(embedding)}")
+                    logger.debug(f"✅ DashScope embedding success, dimensions: {len(embedding)}")
                     return embedding
                 else:
-                    # API返回错误状态码
+                    # API Return error status code
                     error_msg = f"{response.code} - {response.message}"
                     
-                    # 检查是否为长度限制错误
+                    # Check for length limit errors
                     if any(keyword in error_msg.lower() for keyword in ['length', 'token', 'limit', 'exceed']):
-                        logger.warning(f"⚠️ DashScope长度限制: {error_msg}")
+                        logger.warning(f"⚠️ DashScope length limit: {error_msg}")
                         
-                        # 检查是否有降级选项
+                        # Check if there is a downgrade option
                         if hasattr(self, 'fallback_available') and self.fallback_available:
-                            logger.info(f"💡 尝试使用OpenAI降级处理长文本")
+                            logger.info(f"💡 Try using OpenAI downgrade to handle long text")
                             try:
                                 response = self.fallback_client.embeddings.create(
                                     model=self.fallback_embedding,
                                     input=text
                                 )
                                 embedding = response.data[0].embedding
-                                logger.info(f"✅ OpenAI降级成功，维度: {len(embedding)}")
+                                logger.info(f"✅ OpenAI Downgrade successful, dimension: {len(embedding)}")
                                 return embedding
                             except Exception as fallback_error:
-                                logger.error(f"❌ OpenAI降级失败: {str(fallback_error)}")
-                                logger.info(f"💡 所有降级选项失败，记忆功能降级")
+                                logger.error(f"❌ OpenAI Downgrade failed: {str(fallback_error)}")
+                                logger.info(f"💡 All downgrade options failed, memory function downgraded")
                                 return [0.0] * 1024
                         else:
-                            logger.info(f"💡 无可用降级选项，记忆功能降级")
+                            logger.info(f"💡 No downgrade option available, memory function downgraded")
                             return [0.0] * 1024
                     else:
-                        logger.error(f"❌ DashScope API错误: {error_msg}")
-                        return [0.0] * 1024  # 返回空向量而不是抛出异常
+                        logger.error(f"❌ DashScope API Error: {error_msg}")
+                        return [0.0] * 1024  # Return an empty vector instead of throwing an exception
 
             except Exception as e:
                 error_str = str(e).lower()
                 
-                # 检查是否为长度限制错误
+                # Check for length limit errors
                 if any(keyword in error_str for keyword in ['length', 'token', 'limit', 'exceed', 'too long']):
-                    logger.warning(f"⚠️ DashScope长度限制异常: {str(e)}")
+                    logger.warning(f"⚠️ DashScope Length limit exception: {str(e)}")
                     
-                    # 检查是否有降级选项
+                    # Check if there is a downgrade option
                     if hasattr(self, 'fallback_available') and self.fallback_available:
-                        logger.info(f"💡 尝试使用OpenAI降级处理长文本")
+                        logger.info(f"💡 Try using OpenAI downgrade to handle long text")
                         try:
                             response = self.fallback_client.embeddings.create(
                                 model=self.fallback_embedding,
                                 input=text
                             )
                             embedding = response.data[0].embedding
-                            logger.info(f"✅ OpenAI降级成功，维度: {len(embedding)}")
+                            logger.info(f"✅ OpenAI Downgrade successful, dimension: {len(embedding)}")
                             return embedding
                         except Exception as fallback_error:
-                            logger.error(f"❌ OpenAI降级失败: {str(fallback_error)}")
-                            logger.info(f"💡 所有降级选项失败，记忆功能降级")
+                            logger.error(f"❌ OpenAI Downgrade failed: {str(fallback_error)}")
+                            logger.info(f"💡 All downgrade options failed, memory function downgraded")
                             return [0.0] * 1024
                     else:
-                        logger.info(f"💡 无可用降级选项，记忆功能降级")
+                        logger.info(f"💡 No downgrade option available, memory function downgraded")
                         return [0.0] * 1024
                 elif 'import' in error_str:
-                    logger.error(f"❌ DashScope包未安装: {str(e)}")
+                    logger.error(f"❌ DashScope Package not installed: {str(e)}")
                 else:
-                    # 检查是否为网络错误，尝试使用其他可用服务降级
+                    # Check if it is a network error and try to downgrade using other available services
                     is_network_error = any(keyword in error_str for keyword in [
                         'timeout', 'timed out', 'connection', 'network', 'refused'
                     ])
 
                     if is_network_error:
-                        logger.warning(f"⚠️ DashScope 网络错误: {str(e)}")
-                        # 尝试使用配置的其他 embedding 服务降级（排除当前 dashscope）
+                        logger.warning(f"⚠️ DashScope network error: {str(e)}")
+                        # Try downgrading using other configured embedding services (excluding current dashscope)
                         try:
                             from .embedding_provider import get_embedding_manager
                             manager = get_embedding_manager()
                             providers = manager.get_available_providers()
-                            # 过滤掉 dashscope，尝试其他服务
+                            # Filter out dashscope and try other services
                             for provider in providers:
                                 if provider.name not in ('dashscope', 'alibaba'):
                                     try:
@@ -612,46 +612,46 @@ class FinancialSituationMemory:
                         except Exception as fallback_e:
                             logger.debug(f"⚠️ 降级尝试失败: {fallback_e}")
                     else:
-                        logger.error(f"❌ DashScope embedding异常: {str(e)}")
+                        logger.error(f"❌ DashScope embedding Abnormal: {str(e)}")
 
-                logger.warning(f"⚠️ 记忆功能降级，返回空向量")
+                logger.warning(f"⚠️ The memory function is degraded and an empty vector is returned.")
                 return [0.0] * 1024
         else:
-            # 使用OpenAI兼容的嵌入模型
+            # Use OpenAI compatible embedding models
             if self.client is None:
-                logger.warning(f"⚠️ 嵌入客户端未初始化，返回空向量")
-                return [0.0] * 1024  # 返回空向量
+                logger.warning(f"⚠️ Embed client is not initialized, returns empty vector")
+                return [0.0] * 1024  # Returns an empty vector
             elif self.client == "DISABLED":
-                # 内存功能已禁用，返回空向量
-                logger.debug(f"⚠️ 内存功能已禁用，返回空向量")
-                return [0.0] * 1024  # 返回1024维的零向量
+                # Memory feature disabled, returns empty vector
+                logger.debug(f"⚠️ Memory feature disabled, returns empty vector")
+                return [0.0] * 1024  # Returns a 1024-dimensional zero vector
 
-            # 尝试调用OpenAI兼容的embedding API
+            # Try calling OpenAI compatible embedding API
             try:
                 response = self.client.embeddings.create(
                     model=self.embedding,
                     input=text
                 )
                 embedding = response.data[0].embedding
-                logger.debug(f"✅ {self.llm_provider} embedding成功，维度: {len(embedding)}")
+                logger.debug(f"✅ {self.llm_provider} embedding success, dimensions: {len(embedding)}")
                 return embedding
 
             except Exception as e:
                 error_str = str(e).lower()
 
-                # 检查是否为超时或网络错误，尝试使用阿里百练降级
+                # Check whether it is a timeout or network error, and try to use Alibaba Bailian to downgrade.
                 is_network_error = any(keyword in error_str for keyword in [
                     'timeout', 'timed out', 'connection', 'network', 'refused'
                 ])
 
                 if is_network_error:
-                    logger.warning(f"⚠️ {self.llm_provider} embedding 网络错误: {str(e)}")
-                    # 尝试使用配置的 embedding 服务降级（按优先级）
+                    logger.warning(f"⚠️ {self.llm_provider} embedding network error: {str(e)}")
+                    # Attempt to downgrade (by priority) using the configured embedding service
                     fallback_result = self._try_embedding_fallback(text)
                     if fallback_result is not None:
                         return fallback_result
 
-                # 检查是否为长度限制错误
+                # Check for length limit errors
                 length_error_keywords = [
                     'token', 'length', 'too long', 'exceed', 'maximum', 'limit',
                     'context', 'input too large', 'request too large'
@@ -660,11 +660,11 @@ class FinancialSituationMemory:
                 is_length_error = any(keyword in error_str for keyword in length_error_keywords)
 
                 if is_length_error:
-                    # 长度限制错误：直接降级，不截断重试
+                    # Length limit error: downgrade directly, try again without truncation
                     logger.warning(f"⚠️ {self.llm_provider}长度限制: {str(e)}")
-                    logger.info(f"💡 为保证分析准确性，不截断文本，记忆功能降级")
+                    logger.info(f"💡 In order to ensure the accuracy of analysis, the text is not truncated and the memory function is downgraded.")
                 else:
-                    # 其他类型的错误
+                    # Other types of errors
                     if 'attributeerror' in error_str:
                         logger.error(f"❌ {self.llm_provider} API调用错误: {str(e)}")
                     elif 'connectionerror' in error_str or 'connection' in error_str:
@@ -676,38 +676,38 @@ class FinancialSituationMemory:
                     else:
                         logger.error(f"❌ {self.llm_provider} embedding异常: {str(e)}")
 
-                logger.warning(f"⚠️ 记忆功能降级，返回空向量")
+                logger.warning(f"⚠️ The memory function is degraded and an empty vector is returned.")
                 return [0.0] * 1024
 
     def _try_dashscope_fallback(self, text):
         """
-        尝试使用阿里百练（DashScope）作为 embedding 降级选项
+        Try using Ali Bailian (DashScope) as embedding downgrade option
 
-        当主要的 embedding 服务（如 OpenAI）不可用时调用此方法
+        This method is called when the main embedding service (such as OpenAI) is unavailable
 
         Args:
-            text: 要生成 embedding 的文本
+            text: Text to generate embedding
 
         Returns:
-            embedding 向量，或 None（如果降级也失败）
+            embedding vector, or None if downgrade also fails
         """
-        # 检查是否有 DashScope API 密钥
+        # Check for DashScope API key
         dashscope_key = os.getenv('DASHSCOPE_API_KEY')
         if not dashscope_key:
-            logger.debug("⚠️ 未配置 DASHSCOPE_API_KEY，无法使用阿里百练降级")
+            logger.debug("⚠️ DASHSCOPE_API_KEY is not configured, and Alibaba Bailian cannot be used to downgrade.")
             return None
 
         try:
             import dashscope
             from dashscope import TextEmbedding
 
-            # 确保 API 密钥已设置
+            # Make sure the API key is set
             if not hasattr(dashscope, 'api_key') or not dashscope.api_key:
                 dashscope.api_key = dashscope_key
 
-            logger.info("💡 尝试使用阿里百练 embedding 降级...")
+            logger.info("💡 Try to use Alibaba Bailian embedding to downgrade...")
 
-            # 调用 DashScope API
+            # call DashScope API
             response = TextEmbedding.call(
                 model="text-embedding-v3",
                 input=text
@@ -715,14 +715,14 @@ class FinancialSituationMemory:
 
             if response.status_code == 200:
                 embedding = response.output['embeddings'][0]['embedding']
-                logger.info(f"✅ 阿里百练降级成功，维度: {len(embedding)}")
+                logger.info(f"✅ Alibaba Bailian was relegated successfully, Dimension: {len(embedding)}")
                 return embedding
             else:
                 logger.warning(f"⚠️ 阿里百练降级失败: {response.code} - {response.message}")
                 return None
 
         except ImportError:
-            logger.debug("⚠️ DashScope 包未安装，无法使用阿里百练降级")
+            logger.debug("⚠️ DashScope The package is not installed and cannot be downgraded using Alibaba Bailian.")
             return None
         except Exception as e:
             logger.warning(f"⚠️ 阿里百练降级异常: {str(e)}")
@@ -730,40 +730,40 @@ class FinancialSituationMemory:
 
     def _try_embedding_fallback(self, text):
         """
-        使用 EmbeddingProviderManager 尝试所有可用的 embedding 服务
+        Use EmbeddingProviderManager to try all available embedding services
 
-        从数据库配置中获取支持 embedding 的厂商，按优先级尝试
+        Obtain the vendors that support embedding from the database configuration and try according to priority.
 
         Args:
-            text: 要生成 embedding 的文本
+            text: Text to generate embedding
 
         Returns:
-            embedding 向量，或 None（如果所有服务都失败）
+            embedding vector, or None if all services failed
         """
         try:
             from .embedding_provider import get_embedding_with_fallback
 
-            logger.info("💡 尝试使用可用的 embedding 服务降级...")
+            logger.info("💡 Try downgrading using an available embedding service...")
 
-            # 排除当前已经失败的提供者
+            # Exclude providers that are currently failing
             embedding, provider_name = get_embedding_with_fallback(
                 text,
-                preferred_provider=None  # 让管理器按优先级选择
+                preferred_provider=None  # Let managers choose by priority
             )
 
             if embedding:
                 logger.info(f"✅ 使用 {provider_name} embedding 降级成功，维度: {len(embedding)}")
                 return embedding
             else:
-                logger.warning(f"⚠️ 所有 embedding 服务都失败: {provider_name}")
+                logger.warning(f"⚠️ All embedding services failed: {provider_name}")
                 return None
 
         except ImportError as e:
-            logger.debug(f"⚠️ EmbeddingProviderManager 不可用: {e}")
-            # 回退到原来的 DashScope 降级
+            logger.debug(f"⚠️ EmbeddingProviderManager Not available: {e}")
+            # Fallback to original DashScope downgrade
             return self._try_dashscope_fallback(text)
         except Exception as e:
-            logger.warning(f"⚠️ embedding 降级异常: {str(e)}")
+            logger.warning(f"⚠️ embedding Downgrade exception: {str(e)}")
             return None
 
     def get_embedding_config_status(self):
@@ -788,13 +788,13 @@ class FinancialSituationMemory:
         ids = []
         embeddings = []
 
-        # 🔒 使用线程锁保护 ChromaDB 操作（Rust 扩展不是线程安全的）
-        logger.debug(f"🔒 [ChromaDB] 准备获取锁 - add_memories count (v1.x)")
+        # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
+        logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - add_memories count (v1.x)")
         with ChromaDBManager._chroma_operation_lock:
-            logger.debug(f"🔓 [ChromaDB] 已获取锁 - add_memories count (v1.x)")
+            logger.debug(f"🔓 [ChromaDB] Lock acquired - add_memories count (v1.x)")
             offset = self.situation_collection.count()
-            logger.debug(f"✅ [ChromaDB] count 操作完成 (v1.x, offset={offset})")
-        logger.debug(f"🔓 [ChromaDB] 已释放锁 - add_memories count (v1.x)")
+            logger.debug(f"✅ [ChromaDB] count Operation completed (v1.x, offset={offset})")
+        logger.debug(f"🔓 [ChromaDB] Lock released - add_memories count (v1.x)")
 
         for i, (situation, recommendation) in enumerate(situations_and_advice):
             situations.append(situation)
@@ -802,60 +802,60 @@ class FinancialSituationMemory:
             ids.append(str(offset + i))
             embeddings.append(self.get_embedding(situation))
 
-        # 🔒 使用线程锁保护 ChromaDB 操作（Rust 扩展不是线程安全的）
-        logger.debug(f"🔒 [ChromaDB] 准备获取锁 - add_memories add (v1.x, count={len(situations)})")
+        # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
+        logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - add_memories add (v1.x, count={len(situations)})")
         with ChromaDBManager._chroma_operation_lock:
-            logger.debug(f"🔓 [ChromaDB] 已获取锁 - add_memories add (v1.x)")
+            logger.debug(f"🔓 [ChromaDB] Lock acquired - add_memories add (v1.x)")
             self.situation_collection.add(
                 documents=situations,
                 metadatas=[{"recommendation": rec} for rec in advice],
                 embeddings=embeddings,
                 ids=ids,
             )
-            logger.debug(f"✅ [ChromaDB] add 操作完成 (v1.x, count={len(situations)})")
-        logger.debug(f"🔓 [ChromaDB] 已释放锁 - add_memories add (v1.x)")
+            logger.debug(f"✅ [ChromaDB] add Operation completed (v1.x, count={len(situations)})")
+        logger.debug(f"🔓 [ChromaDB] Lock released - add_memories add (v1.x)")
 
     def get_memories(self, current_situation, n_matches=1):
         """Find matching recommendations using embeddings with smart truncation handling"""
         
-        # 获取当前情况的embedding
+        # Get the current situation embedding
         query_embedding = self.get_embedding(current_situation)
         
-        # 检查是否为空向量（记忆功能被禁用或出错）
+        # Check for empty vector (memory disabled or error)
         if all(x == 0.0 for x in query_embedding):
-            logger.debug(f"⚠️ 查询embedding为空向量，返回空结果")
+            logger.debug(f"⚠️ Query embedding as an empty vector and return empty results")
             return []
 
-        # 🔒 使用线程锁保护 ChromaDB 操作（Rust 扩展不是线程安全的）
-        logger.debug(f"🔒 [ChromaDB] 准备获取锁 - get_memories count (v1.x)")
+        # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
+        logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - get_memories count (v1.x)")
         with ChromaDBManager._chroma_operation_lock:
-            logger.debug(f"🔓 [ChromaDB] 已获取锁 - get_memories count (v1.x)")
-            # 检查是否有足够的数据进行查询
+            logger.debug(f"🔓 [ChromaDB] Lock acquired - get_memories count (v1.x)")
+            # Check if there is enough data for query
             collection_count = self.situation_collection.count()
-            logger.debug(f"✅ [ChromaDB] count 操作完成 (v1.x, count={collection_count})")
+            logger.debug(f"✅ [ChromaDB] count Operation completed (v1.x, count={collection_count})")
             if collection_count == 0:
-                logger.debug(f"📭 记忆库为空，返回空结果")
-                logger.debug(f"🔓 [ChromaDB] 已释放锁 - get_memories count (v1.x)")
+                logger.debug(f"📭 The memory bank is empty and returns empty results.")
+                logger.debug(f"🔓 [ChromaDB] Lock released - get_memories count (v1.x)")
                 return []
 
-            # 调整查询数量，不能超过集合中的文档数量
+            # Adjust the number of queries to not exceed the number of documents in the collection
             actual_n_matches = min(n_matches, collection_count)
-        logger.debug(f"🔓 [ChromaDB] 已释放锁 - get_memories count (v1.x)")
+        logger.debug(f"🔓 [ChromaDB] Lock released - get_memories count (v1.x)")
 
         try:
-            # 🔒 使用线程锁保护 ChromaDB 操作（Rust 扩展不是线程安全的）
-            logger.debug(f"🔒 [ChromaDB] 准备获取锁 - get_memories query (v1.x, n_results={actual_n_matches})")
+            # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
+            logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - get_memories query (v1.x, n_results={actual_n_matches})")
             with ChromaDBManager._chroma_operation_lock:
-                logger.debug(f"🔓 [ChromaDB] 已获取锁 - get_memories query (v1.x)")
-                # 执行相似度查询
+                logger.debug(f"🔓 [ChromaDB] Lock acquired - get_memories query (v1.x)")
+                # Perform similarity query
                 results = self.situation_collection.query(
                     query_embeddings=[query_embedding],
                     n_results=actual_n_matches
                 )
-                logger.debug(f"✅ [ChromaDB] query 操作完成 (v1.x)")
-            logger.debug(f"🔓 [ChromaDB] 已释放锁 - get_memories query (v1.x)")
+                logger.debug(f"✅ [ChromaDB] query Operation completed (v1.x)")
+            logger.debug(f"🔓 [ChromaDB] Lock released - get_memories query (v1.x)")
             
-            # 处理查询结果
+            # Process query results
             memories = []
             if results and 'documents' in results and results['documents']:
                 documents = results['documents'][0]
@@ -869,16 +869,16 @@ class FinancialSituationMemory:
                     memory_item = {
                         'situation': doc,
                         'recommendation': metadata.get('recommendation', ''),
-                        'similarity': 1.0 - distance,  # 转换为相似度分数
+                        'similarity': 1.0 - distance,  # Convert to similarity score
                         'distance': distance
                     }
                     memories.append(memory_item)
                 
-                # 记录查询信息
+                # Record query information
                 if hasattr(self, '_last_text_info') and self._last_text_info.get('was_truncated'):
                     logger.info(f"🔍 截断文本查询完成，找到{len(memories)}个相关记忆")
                     logger.debug(f"📊 原文长度: {self._last_text_info['original_length']}, "
-                               f"处理后长度: {self._last_text_info['processed_length']}")
+                               f"length after processing: {self._last_text_info['processed_length']}")
                 else:
                     logger.debug(f"🔍 记忆查询完成，找到{len(memories)}个相关记忆")
             
@@ -889,14 +889,14 @@ class FinancialSituationMemory:
             return []
 
     def get_cache_info(self):
-        """获取缓存相关信息，用于调试和监控"""
-        # 🔒 使用线程锁保护 ChromaDB 操作（Rust 扩展不是线程安全的）
-        logger.debug(f"🔒 [ChromaDB] 准备获取锁 - get_cache_info (v1.x)")
+        """Obtain cache-related information for debugging and monitoring"""
+        # 🔒 Protect ChromaDB operations with thread locks (Rust extensions are not thread-safe)
+        logger.debug(f"🔒 [ChromaDB] Prepare to acquire lock - get_cache_info (v1.x)")
         with ChromaDBManager._chroma_operation_lock:
-            logger.debug(f"🔓 [ChromaDB] 已获取锁 - get_cache_info (v1.x)")
+            logger.debug(f"🔓 [ChromaDB] Lock acquired - get_cache_info (v1.x)")
             collection_count = self.situation_collection.count()
-            logger.debug(f"✅ [ChromaDB] count 操作完成 (v1.x, count={collection_count})")
-        logger.debug(f"🔓 [ChromaDB] 已释放锁 - get_cache_info (v1.x)")
+            logger.debug(f"✅ [ChromaDB] count Operation completed (v1.x, count={collection_count})")
+        logger.debug(f"🔓 [ChromaDB] Lock released - get_cache_info (v1.x)")
 
         info = {
             'collection_count': collection_count,
@@ -905,7 +905,7 @@ class FinancialSituationMemory:
             'provider': self.llm_provider
         }
         
-        # 添加最后一次文本处理信息
+        # Add last text processing information
         if hasattr(self, '_last_text_info'):
             info['last_text_processing'] = self._last_text_info
             

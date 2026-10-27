@@ -1,7 +1,7 @@
 """
-用户会话管理服务
+User session management service
 
-提供会话的创建、验证、撤销等功能，解决 JWT Token 无法撤销的问题
+Provides session creation, verification, revocation and other functions to solve the problem that JWT Token cannot be revoked
 """
 
 import logging
@@ -21,27 +21,27 @@ class SessionService:
         self.db = db
         self.sessions_collection = db.user_sessions
         
-        # 创建索引
+        # Create index
         self._create_indexes()
     
     def _create_indexes(self):
         """创建索引"""
         try:
-            # session_id 唯一索引
+            # session_id unique index
             self.sessions_collection.create_index("session_id", unique=True)
             
-            # user_id 索引（用于查询用户的所有会话）
+            # user_id Index (used to query all sessions of a user)
             self.sessions_collection.create_index("user_id")
             
-            # expires_at 索引（用于自动清理过期会话）
+            # expires_at Index (for automatic cleaning of expired sessions)
             self.sessions_collection.create_index("expires_at", expireAfterSeconds=0)
             
-            logger.debug("✅ Session 索引创建成功")
+            logger.debug("✅ Session Index created successfully")
         except Exception as e:
-            logger.warning(f"⚠️ Session 索引创建失败: {e}")
+            logger.warning(f"⚠️ Session Index creation failed: {e}")
 
     def _get_session_ttl_seconds(self, session_doc: dict) -> int:
-        """从会话文档中恢复原始 TTL，用于活跃续期。"""
+        """Restore original TTL from session document for active renewal."""
         ttl_seconds = session_doc.get("session_ttl_seconds")
         if isinstance(ttl_seconds, (int, float)) and ttl_seconds > 0:
             return int(ttl_seconds)
@@ -60,26 +60,26 @@ class SessionService:
         user_id: str,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
-        expires_in_seconds: int = 3600  # 默认 1 小时
+        expires_in_seconds: int = 3600  # Default 1 hour
     ) -> str:
         """
-        创建新会话
+        Create new session
         
         Args:
-            user_id: 用户ID
-            ip_address: IP地址
+            user_id: User ID
+            ip_address: IP address
             user_agent: User-Agent
-            expires_in_seconds: 过期时间（秒）
+            expires_in_seconds: Expiration time (seconds)
             
         Returns:
-            session_id: 会话ID
+            session_id: session ID
         """
         try:
-            # 生成唯一的 session_id
+            # generate unique session_id
             session_id = secrets.token_urlsafe(32)
 
-            # 🔥 使用 UTC 时间（naive datetime）存储到 MongoDB
-            # 这样可以避免时区比较问题
+            # 🔥 Use UTC time (naive datetime) to store MongoDB
+            # This avoids time zone comparison issues
             now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
             expires_at_utc = now_utc + timedelta(seconds=expires_in_seconds)
 
@@ -96,7 +96,7 @@ class SessionService:
 
             self.sessions_collection.insert_one(session_doc)
             
-            logger.info(f"✅ 创建会话: user_id={user_id}, session_id={session_id[:16]}..., expires_at={expires_at_utc} UTC")
+            logger.info(f"✅ Create session: user_id={user_id}, session_id={session_id[:16]}..., expires_at={expires_at_utc} UTC")
             return session_id
             
         except Exception as e:
@@ -105,14 +105,14 @@ class SessionService:
     
     def verify_session(self, session_id: str, update_activity: bool = True) -> Optional[UserSession]:
         """
-        验证会话是否有效
+        Verify session is valid
         
         Args:
-            session_id: 会话ID
-            update_activity: 是否更新最后活动时间
+            session_id: session ID
+            update_activity: Whether to update the last activity time
             
         Returns:
-            UserSession: 会话信息，如果无效则返回 None
+            UserSession: Session information, returned if invalid None
         """
         try:
             session_doc = self.sessions_collection.find_one({"session_id": session_id})
@@ -121,17 +121,17 @@ class SessionService:
                 logger.debug(f"❌ 会话不存在: {session_id[:16]}...")
                 return None
 
-            # 检查是否过期（使用 UTC 时间）
+            # Check for expiration (using UTC time)
             now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
             expires_at = session_doc["expires_at"]
 
             if expires_at < now_utc:
                 logger.debug(f"⏰ 会话已过期: {session_id[:16]}...")
-                # 删除过期会话
+                # Delete expired session
                 self.sessions_collection.delete_one({"session_id": session_id})
                 return None
 
-            # 更新最后活动时间
+            # Update last activity time
             if update_activity:
                 renewed_expires_at = now_utc + timedelta(seconds=self._get_session_ttl_seconds(session_doc))
                 self.sessions_collection.update_one(
@@ -141,7 +141,7 @@ class SessionService:
                 session_doc["last_activity"] = now_utc
                 session_doc["expires_at"] = renewed_expires_at
             
-            logger.debug(f"✅ 会话有效: user_id={session_doc['user_id']}, session_id={session_id[:16]}...")
+            logger.debug(f"✅ Session is valid: user_id={session_doc['user_id']}, session_id={session_id[:16]}...")
             return UserSession(**session_doc)
             
         except Exception as e:
@@ -150,13 +150,13 @@ class SessionService:
     
     def revoke_session(self, session_id: str) -> bool:
         """
-        撤销会话（退出登录）
+        Revoke session (log out)
 
         Args:
-            session_id: 会话ID
+            session_id: session ID
 
         Returns:
-            bool: 是否成功
+            bool: Is it successful?
         """
         try:
             result = self.sessions_collection.delete_one({"session_id": session_id})
@@ -174,37 +174,37 @@ class SessionService:
 
     def revoke_all_user_sessions(self, user_id: str) -> int:
         """
-        撤销用户的所有会话（修改密码、强制登出等场景）
+        Revoke all user sessions (change password, force logout, etc.)
 
         Args:
-            user_id: 用户ID
+            user_id: User ID
 
         Returns:
-            int: 撤销的会话数量
+            int: Number of sessions revoked
         """
         try:
             result = self.sessions_collection.delete_many({"user_id": user_id})
             count = result.deleted_count
 
-            logger.info(f"✅ 撤销用户所有会话: user_id={user_id}, count={count}")
+            logger.info(f"✅ Revoke all user sessions: user_id={user_id}, count={count}")
             return count
 
         except Exception as e:
-            logger.error(f"❌ 撤销用户所有会话失败: {e}")
+            logger.error(f"❌ Failed to revoke all user sessions: {e}")
             return 0
 
     def get_user_sessions(self, user_id: str) -> list[UserSession]:
         """
-        获取用户的所有活跃会话
+        Get all active sessions of a user
 
         Args:
-            user_id: 用户ID
+            user_id: User ID
 
         Returns:
-            list[UserSession]: 会话列表
+            list[UserSession]: Conversation list
         """
         try:
-            # 🔥 使用 UTC 时间查询（与存储时保持一致）
+            # 🔥 Query using UTC time (consistent with storage)
             now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
 
             sessions = self.sessions_collection.find({
@@ -220,20 +220,20 @@ class SessionService:
 
     def cleanup_expired_sessions(self) -> int:
         """
-        清理过期会话（定时任务）
+        Clean up expired sessions (scheduled tasks)
 
         Returns:
-            int: 清理的会话数量
+            int: Number of sessions cleaned
         """
         try:
-            # 🔥 使用 UTC 时间查询
+            # 🔥 Query using UTC time
             now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
 
             result = self.sessions_collection.delete_many({"expires_at": {"$lt": now_utc}})
             count = result.deleted_count
 
             if count > 0:
-                logger.info(f"🧹 清理过期会话: count={count}")
+                logger.info(f"🧹 Clean up expired sessions: count={count}")
 
             return count
 
@@ -242,23 +242,23 @@ class SessionService:
             return 0
 
 
-# 全局 SessionService 实例
+# Global SessionService instance
 _session_service: Optional[SessionService] = None
 
 
 def get_session_service(db: Optional[Database] = None) -> SessionService:
     """
-    获取 SessionService 单例
+    Get SessionService singleton
 
-    注意：SessionService 使用同步的 MongoDB 操作，
-    因此需要使用 get_mongo_db_sync() 而不是 get_mongo_db()
+    Note: SessionService uses synchronous MongoDB operations,
+    Therefore it is necessary to use get_mongo_db_sync() instead of get_mongo_db()
     """
     global _session_service
 
     if _session_service is None:
         if db is None:
             from app.core.database import get_mongo_db_sync
-            db = get_mongo_db_sync()  # 🔥 使用同步的数据库连接
+            db = get_mongo_db_sync()  # 🔥 Use a synchronized database connection
 
         _session_service = SessionService(db)
 

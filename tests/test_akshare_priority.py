@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试AKShare数据源优先级和财务指标修复效果
+Test the repair effect of AKShare data source priority and financial indicators
 """
 
 import sys
@@ -13,31 +13,31 @@ from tradingagents.dataflows.akshare_utils import get_akshare_provider
 from tradingagents.dataflows.tushare_utils import get_tushare_provider
 
 def test_data_source_connection():
-    """测试数据源连接状态"""
+    """Test data source connection status"""
     print("=" * 60)
-    print("📡 测试数据源连接状态")
+    print("📡 Test data source connection status")
     print("=" * 60)
     
-    # 测试AKShare连接
+    # Test AKShare connection
     try:
         akshare_provider = get_akshare_provider()
-        print(f"🔗 AKShare连接状态: {'✅ 已连接' if akshare_provider.connected else '❌ 未连接'}")
+        print(f"🔗 AKShare connection status: {'✅ Connected' if akshare_provider.connected else '❌ Not connected'}")
     except Exception as e:
-        print(f"❌ AKShare连接失败: {e}")
+        print(f"❌ AKShare Connection failed: {e}")
     
-    # 测试Tushare连接
+    # Test Tushare connection
     try:
         tushare_provider = get_tushare_provider()
-        print(f"🔗 Tushare连接状态: {'✅ 已连接' if tushare_provider.connected else '❌ 未连接'}")
+        print(f"🔗 Tushare connection status: {'✅ Connected' if tushare_provider.connected else '❌ Not connected'}")
     except Exception as e:
-        print(f"❌ Tushare连接失败: {e}")
+        print(f"❌ Tushare Connection failed: {e}")
     
     print()
 
 def test_akshare_financial_data():
-    """测试AKShare财务数据获取"""
+    """Test AKShare financial data acquisition"""
     print("=" * 60)
-    print("📊 测试AKShare财务数据获取")
+    print("📊 Test AKShare financial data acquisition")
     print("=" * 60)
     
     test_symbols = ['000001', '000002', '600519']
@@ -45,39 +45,39 @@ def test_akshare_financial_data():
     try:
         akshare_provider = get_akshare_provider()
         if not akshare_provider.connected:
-            print("❌ AKShare未连接，跳过测试")
+            print("❌ AKShare Not connected, skip test")
             return
         
         for symbol in test_symbols:
-            print(f"\n🔍 测试股票: {symbol}")
+            print(f"\n🔍 test stocks: {symbol}")
             try:
                 financial_data = akshare_provider.get_financial_data(symbol)
                 if financial_data:
-                    print(f"✅ {symbol}: AKShare财务数据获取成功")
+                    print(f"✅ {symbol}: AKShare Financial data obtained successfully")
                     
-                    # 检查主要财务指标
+                    # Check key financial indicators
                     main_indicators = financial_data.get('main_indicators', {})
                     if main_indicators:
-                        pe = main_indicators.get('市盈率', main_indicators.get('PE', 'N/A'))
-                        pb = main_indicators.get('市净率', main_indicators.get('PB', 'N/A'))
-                        roe = main_indicators.get('净资产收益率', main_indicators.get('ROE', 'N/A'))
+                        pe = main_indicators.get('P/E ratio', main_indicators.get('PE', 'N/A'))
+                        pb = main_indicators.get('price to book ratio', main_indicators.get('PB', 'N/A'))
+                        roe = main_indicators.get('ROE', main_indicators.get('ROE', 'N/A'))
                         print(f"   📈 PE: {pe}, PB: {pb}, ROE: {roe}")
                     else:
-                        print(f"   ⚠️ 主要财务指标为空")
+                        print(f"   ⚠️ Key financial indicators are empty")
                 else:
-                    print(f"❌ {symbol}: AKShare财务数据获取失败")
+                    print(f"❌ {symbol}: AKShare Failed to obtain financial data")
             except Exception as e:
-                print(f"❌ {symbol}: AKShare财务数据获取异常: {e}")
+                print(f"❌ {symbol}: AKShare Abnormal acquisition of financial data: {e}")
     
     except Exception as e:
-        print(f"❌ AKShare财务数据测试失败: {e}")
+        print(f"❌ AKShare Financial data test failed: {e}")
     
     print()
 
 def test_financial_metrics_with_data_source():
-    """测试财务指标计算和数据源标识"""
+    """Test financial metric calculations and data source identification"""
     print("=" * 60)
-    print("🧮 测试财务指标计算和数据源标识")
+    print("🧮 Test financial metric calculations and data source identification")
     print("=" * 60)
     
     test_symbols = ['000001', '000002', '600519']
@@ -85,26 +85,26 @@ def test_financial_metrics_with_data_source():
     provider = get_optimized_china_data_provider()
     
     for symbol in test_symbols:
-        print(f"\n🔍 测试股票: {symbol}")
+        print(f"\n🔍 test stocks: {symbol}")
         try:
-            # 获取基本面数据
+            # Get fundamental data
             fundamentals = provider.get_fundamentals_data(symbol, force_refresh=True)
             
-            # 检查数据来源标识
+            # Check data source identification
             if "AKShare" in fundamentals:
                 data_source = "AKShare"
             elif "Tushare" in fundamentals:
                 data_source = "Tushare"
             else:
-                data_source = "未知"
+                data_source = "unknown"
             
-            print(f"📊 数据来源: {data_source}")
+            print(f"📊 Data source: {data_source}")
             
-            # 提取PE、PB、ROE信息
+            # Extract PE, PB, ROE information
             lines = fundamentals.split('\n')
-            pe_line = next((line for line in lines if '市盈率(PE)' in line), None)
-            pb_line = next((line for line in lines if '市净率(PB)' in line), None)
-            roe_line = next((line for line in lines if '净资产收益率(ROE)' in line), None)
+            pe_line = next((line for line in lines if 'P/E ratio(PE)' in line), None)
+            pb_line = next((line for line in lines if 'price to book ratio(PB)' in line), None)
+            roe_line = next((line for line in lines if 'ROE(ROE)' in line), None)
             
             if pe_line:
                 pe_value = pe_line.split('**')[2].strip() if '**' in pe_line else pe_line.split(':')[1].strip()
@@ -118,75 +118,75 @@ def test_financial_metrics_with_data_source():
                 roe_value = roe_line.split('**')[2].strip() if '**' in roe_line else roe_line.split(':')[1].strip()
                 print(f"📈 ROE: {roe_value}")
             
-            # 检查是否有0倍的异常值
-            if pe_line and ('0.0倍' in pe_line or '0倍' in pe_line):
-                print(f"⚠️ 发现PE异常值: {pe_value}")
+            # Check if there is an outlier of 0 times
+            if pe_line and ('0.0 times' in pe_line or '0 times' in pe_line):
+                print(f"⚠️ PE outliers found: {pe_value}")
             
-            if pb_line and ('0.00倍' in pb_line or '0倍' in pb_line):
-                print(f"⚠️ 发现PB异常值: {pb_value}")
+            if pb_line and ('0.00 times' in pb_line or '0 times' in pb_line):
+                print(f"⚠️ PB outliers found: {pb_value}")
                 
         except Exception as e:
-            print(f"❌ {symbol}: 财务指标测试失败: {e}")
+            print(f"❌ {symbol}: Financial indicator test failed: {e}")
     
     print()
 
 def test_data_source_priority():
-    """测试数据源优先级"""
+    """Test data source priority"""
     print("=" * 60)
-    print("🔄 测试数据源优先级")
+    print("🔄 Test data source priority")
     print("=" * 60)
     
     provider = get_optimized_china_data_provider()
     
-    # 测试一个股票的财务指标获取过程
+    # Test the process of obtaining financial indicators for a stock
     symbol = '000001'
-    print(f"🔍 测试股票: {symbol}")
+    print(f"🔍 test stocks: {symbol}")
     
     try:
-        # 直接调用内部方法测试
+        # Directly call internal method test
         real_metrics = provider._get_real_financial_metrics(symbol, 10.0)
         
         if real_metrics:
-            data_source = real_metrics.get('data_source', '未知')
-            print(f"✅ 财务数据获取成功")
-            print(f"📊 数据来源: {data_source}")
+            data_source = real_metrics.get('data_source', 'unknown')
+            print(f"✅ Financial data obtained successfully")
+            print(f"📊 Data source: {data_source}")
             print(f"📈 PE: {real_metrics.get('pe', 'N/A')}")
             print(f"📈 PB: {real_metrics.get('pb', 'N/A')}")
             print(f"📈 ROE: {real_metrics.get('roe', 'N/A')}")
             
             if data_source == 'AKShare':
-                print("✅ 优先使用AKShare数据源成功")
+                print("✅ Prioritize using AKShare data source successfully")
             elif data_source == 'Tushare':
-                print("⚠️ 使用Tushare备用数据源")
+                print("⚠️ Use Tushare alternative data source")
             else:
-                print("❓ 数据源不明确")
+                print("❓ Data source is unclear")
         else:
-            print("❌ 财务数据获取失败")
+            print("❌ Failed to obtain financial data")
             
     except Exception as e:
-        print(f"❌ 数据源优先级测试失败: {e}")
+        print(f"❌ Data source priority test failed: {e}")
     
     print()
 
 def main():
-    """主测试函数"""
-    print("🚀 开始AKShare数据源优先级和财务指标修复测试")
+    """Main test function"""
+    print("🚀 Start AKShare data source priority and financial indicator repair testing")
     print()
     
-    # 1. 测试数据源连接
+    # 1. Test data source connection
     test_data_source_connection()
     
-    # 2. 测试AKShare财务数据获取
+    # 2. Test AKShare financial data acquisition
     test_akshare_financial_data()
     
-    # 3. 测试数据源优先级
+    # 3. Test data source priority
     test_data_source_priority()
     
-    # 4. 测试财务指标和数据源标识
+    # 4. Test financial metrics and data source identification
     test_financial_metrics_with_data_source()
     
     print("=" * 60)
-    print("✅ 测试完成")
+    print("✅ Test completed")
     print("=" * 60)
 
 if __name__ == "__main__":

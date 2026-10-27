@@ -1,17 +1,17 @@
-"""报告质量指标采集与查询服务（v3.6.0 项5）。
+"""Report quality indicator collection and query service (v3.6.0 item 5).
 
-依赖阶段一项1（quality_gate）产出的 quality_flags 数据，自动统计：
-- 报告长度（按 Agent 类型）
-- 数据引用情况
-- LLM 调用耗时和成本
-- 兜底文案命中率
-- low_quality 标记比例
+Depends on the quality_flags data output by phase 1 (quality_gate), automatic statistics:
+- Report length by Agent type
+- Data references
+- LLM Call time and cost
+- Covered copywriting hit rate
+- low_quality mark ratio
 
-写入 MongoDB analysis_quality_metrics 集合，供仪表盘 API 查询。
+Writes to the MongoDB analysis_quality_metrics collection for querying by the dashboard API.
 
-使用方式：
-1. 分析完成后调用 record_analysis_metrics() 写入指标
-2. 仪表盘调用 query_metrics() 按日期/股票/Agent 类型查询
+How to use:
+1. Called after analysis is complete record_analysis_metrics() Write indicator
+2. Dashboard call query_metrics() Query by date/stock/Agent type
 """
 
 from __future__ import annotations
@@ -53,29 +53,29 @@ class QualityMetricsService:
         workflow_id: str = "",
         extra: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """记录一次分析的质量指标。
+        """Record the quality indicators of an analysis.
 
         Args:
-            user_id: 用户 ID
-            ticker: 股票代码
+            user_id: User ID
+            ticker: Stock code
             agent_id: Agent ID
-            agent_type: Agent 类型（analyst/researcher/manager 等）
-            report_content: 报告内容（用于事后审计，可选）
-            report_length: 报告字符数
-            is_low_quality: 是否被标记为低质量
-            quality_flags: 质量门禁标记列表
-            hit_fallback: 是否命中兜底文案
-            fallback_pattern: 命中的兜底文案
-            llm_elapsed_seconds: LLM 调用耗时（秒）
-            llm_tokens_used: LLM token 使用量
-            llm_cost_estimate: LLM 成本估算（元）
-            retry_count: 重试次数
-            analysis_date: 分析日期
-            workflow_id: 工作流 ID
-            extra: 额外指标
+            agent_type: Agent Type (analyst/researcher/manager, etc.)
+            report_content: Report content (for post-audit, optional)
+            report_length: Report character count
+            is_low_quality: Whether to be marked as low quality
+            quality_flags: Quality gate mark list
+            hit_fallback: Whether it hits the bottom line
+            fallback_pattern: A hit-and-miss copywriting
+            llm_elapsed_seconds: LLM Calling time (seconds)
+            llm_tokens_used: LLM token Usage
+            llm_cost_estimate: LLM Cost estimate (yuan)
+            retry_count: Number of retries
+            analysis_date: Analysis date
+            workflow_id: Workflow ID
+            extra: additional indicators
 
         Returns:
-            写入的记录 ID
+            records written ID
         """
         now = datetime.now(timezone.utc).isoformat()
         doc = {
@@ -102,19 +102,19 @@ class QualityMetricsService:
         try:
             result = await self._collection.insert_one(doc)
             logger.info(
-                "[QualityMetrics] 已记录指标: user=%s ticker=%s agent=%s low_quality=%s",
+                "[QualityMetrics] Metrics logged: user=%s ticker=%s agent=%s low_quality=%s",
                 user_id, ticker, agent_id, is_low_quality,
             )
             return str(result.inserted_id)
         except Exception as e:
-            logger.warning("[QualityMetrics] 写入失败: %s", e)
+            logger.warning("[QualityMetrics] Write failed: %s", e)
             return ""
 
     def record_analysis_metrics_sync(self, **kwargs) -> str:
-        """record_analysis_metrics 的同步包装器（供 LangGraph 节点调用）。
+        """record_analysis_metrics A synchronization wrapper (called by LangGraph nodes).
 
-        在新线程中运行 async 版本，避免阻塞事件循环。
-        失败时返回空字符串，不阻塞主流程。
+        Run the async version in a new thread to avoid blocking the event loop.
+        Returns an empty string on failure and does not block the main process.
         """
         import asyncio
         import threading
@@ -129,21 +129,21 @@ class QualityMetricsService:
             if not running_loop:
                 return asyncio.run(self.record_analysis_metrics(**kwargs))
 
-            # 有运行中的事件循环，在新线程中运行
+            # There is a running event loop, running in a new thread
             result_holder: Dict[str, Any] = {"id": ""}
 
             def _run_in_thread() -> None:
                 try:
                     result_holder["id"] = asyncio.run(self.record_analysis_metrics(**kwargs))
                 except Exception as exc:
-                    logger.warning("[QualityMetrics] sync 包装器线程异常: %s", exc)
+                    logger.warning("[QualityMetrics] sync Wrapper thread exception: %s", exc)
 
             t = threading.Thread(target=_run_in_thread, daemon=True)
             t.start()
             t.join(timeout=10)
             return result_holder.get("id", "")
         except Exception as exc:
-            logger.warning("[QualityMetrics] record_analysis_metrics_sync 异常: %s", exc)
+            logger.warning("[QualityMetrics] record_analysis_metrics_sync Abnormal: %s", exc)
             return ""
 
     async def query_metrics(
@@ -158,9 +158,9 @@ class QualityMetricsService:
         only_low_quality: bool = False,
         limit: int = 100,
     ) -> List[Dict[str, Any]]:
-        """查询质量指标（仪表盘用）。
+        """Query quality indicators (for dashboard use).
 
-        支持按用户/股票/Agent/日期范围筛选。
+        Supports filtering by user/stock/Agent/date range.
         """
         query: Dict[str, Any] = {}
         if user_id:
@@ -174,7 +174,7 @@ class QualityMetricsService:
         if only_low_quality:
             query["is_low_quality"] = True
 
-        # 日期范围（按 analysis_date 字符串比较）
+        # Date range (compare by analysis_date string)
         date_range: Dict[str, Any] = {}
         if start_date:
             date_range["$gte"] = start_date
@@ -185,7 +185,7 @@ class QualityMetricsService:
 
         cursor = self._collection.find(query).sort("recorded_at", -1).limit(limit)
         docs = await cursor.to_list(length=limit)
-        # 过滤 _id（不可序列化）
+        # Filter on _id (not serializable)
         return [{k: v for k, v in doc.items() if k != "_id"} for doc in docs]
 
     async def get_quality_summary(
@@ -195,18 +195,18 @@ class QualityMetricsService:
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """获取质量汇总统计（仪表盘顶部数字用）。
+        """Get quality summary statistics (for the numbers at the top of the dashboard).
 
         Returns:
             {
-                "total_reports": 总报告数,
-                "low_quality_count": 低质量报告数,
-                "low_quality_rate": 低质量比例,
-                "fallback_hit_count": 兜底文案命中数,
-                "fallback_hit_rate": 兜底命中率,
-                "avg_report_length": 平均报告长度,
-                "avg_llm_elapsed_seconds": 平均 LLM 耗时,
-                "total_llm_cost": 总 LLM 成本,
+                "total_reports": Total number of reports,
+                "low_quality_count": Number of low quality reports,
+                "low_quality_rate": low mass ratio,
+                "fallback_hit_count": The number of hits of cover copywriting,
+                "fallback_hit_rate": pocket hit rate,
+                "avg_report_length": average report length,
+                "avg_llm_elapsed_seconds": Average LLM time,
+                "total_llm_cost": Total LLM Cost,
                 "by_agent_type": {agent_type: {count, low_quality_count, ...}},
             }
         """
@@ -244,7 +244,7 @@ class QualityMetricsService:
         total_elapsed = sum(d.get("llm_elapsed_seconds", 0) for d in docs)
         total_cost = sum(d.get("llm_cost_estimate", 0) for d in docs)
 
-        # 按 agent_type 聚合
+        # Aggregate by agent_type
         by_type: Dict[str, Dict[str, Any]] = {}
         for d in docs:
             at = d.get("agent_type", "unknown")
@@ -262,7 +262,7 @@ class QualityMetricsService:
                 by_type[at]["fallback_hit_count"] += 1
             by_type[at]["total_length"] += d.get("report_length", 0)
 
-        # 计算每个类型的平均值
+        # Calculate the average of each type
         for at, stats in by_type.items():
             count = stats["count"]
             stats["avg_length"] = stats["total_length"] / count if count > 0 else 0
@@ -281,7 +281,7 @@ class QualityMetricsService:
         }
 
 
-# 模块级工厂方法
+# Module level factory method
 def get_quality_metrics_service(db: Any) -> QualityMetricsService:
-    """获取 QualityMetricsService 实例"""
+    """Get QualityMetricsService instance"""
     return QualityMetricsService(db)

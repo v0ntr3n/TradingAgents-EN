@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
-"""通用表格 Excel 导出工具。
+"""Universal table Excel export tool.
 
-背景：Excel 生成能力曾被绑死在估值工具（generate_valuation_excel_tool）里，
-那是一条「数据装配 → LLM 生成规格（最多3次尝试）→ 渲染」的重型管线
-（heavy 层级 180 秒，实测 2-6 分钟）。用户把对话中已经算好的模型
-（销量/营收预测等）导出 Excel 时被错误路由到估值工具，重新生成模型
-导致 420 秒超时。
+Background: Excel generation capabilities were once tied to the valuation tool (generate_valuation_excel_tool).
+That is a data assembly  → LLM Generate specs (max 3 attempts)→ Rendering s heavy-duty pipeline
+ (heavy Level 180 seconds, actual measurement 2-6 minutes). The user puts the model that has been calculated in the conversation
+ (Sales/revenue forecast, etc.) was incorrectly routed to the valuation tool when exporting to Excel and the model was regenerated.
+Resulting in a 420 second timeout.
 
-本工具与估值工具的分工：
-- 本工具：**确定性导出**——LLM 把对话中已产生的 Markdown 表格原样透传，
-  纯 openpyxl 渲染，零 LLM 调用，秒级完成。任何「把刚才的数据/表格
-  做成 Excel」的需求都应走这里。
-- 估值工具：从本地年报数据**自建**估值模型（盈利推演公式 + PE 情景），
-  仅当用户明确要求"估值测算表/估值模型"时使用。
+The division of labor between this tool and valuation tools:
+- This tool:**Deterministic export**——LLM Transmit the Markdown table generated in the conversation as it is.
+  Pure openpyxl rendering, zero LLM calls, completed in seconds. Any put the data/table just now
+  All your needs for making it into Excel should go here.
+- Valuation tool: data from local annual reports**Self-built**Valuation model (profit deduction formula + PE scenario),
+  Only if explicitly requested by the user"Valuation Calculation Sheet/Valuation Model"when used.
 
-参数设计（Markdown 透传而非结构化 JSON）：
-LLM 上下文里已有现成的 Markdown 表格（回复里展示过的），直接贴原文即可。
-结构化 JSON 参数（sheets/columns/rows 嵌套）反而给 LLM 提供了臆造/改写
-数字的机会——透传原文是对"数据不可篡改"铁律的遵守。
+Parameter design (Markdown transparent transmission instead of structured JSON):
+LLM There is already a ready-made Markdown table in the context (shown in the reply), you can just paste the original text.
+Structured JSON parameters (nested sheets/columns/rows) instead provide LLM with contrivance/rewriting
+digital opportunities——Transparent transmission of the original text is correct"Data cannot be tampered with"The observance of ironclad rules.
 """
 
 import logging
@@ -38,9 +38,9 @@ logger = logging.getLogger(__name__)
 
 _OUTPUT_DIR = "data/deliverables"
 
-# Markdown 表格分隔行（|---|---:| 等）
+# Markdown Table separated rows (|---|---:| etc.)
 _TABLE_SEP_RE = re.compile(r"^\s*\|?[\s:|-]+\|?\s*$")
-# 单元格文本 → 数值
+# cell text → numerical value
 _INT_RE = re.compile(r"^[+-]?\d+$")
 _THOUSANDS_RE = re.compile(r"^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$")
 _NUMBER_RE = re.compile(r"^[+-]?\d+(\.\d+)?$")
@@ -48,11 +48,11 @@ _PERCENT_RE = re.compile(r"^([+-]?\d+(?:\.\d+)?)\s*%$")
 
 
 def _parse_cell(text: str) -> Tuple[object, Optional[str]]:
-    """单元格文本 → (值, 数字格式)。无法解析为数值时返回 (原文本, None)。"""
+    """cell text → (value, Number format). Returned when it cannot be parsed as a numeric value (original text, None). """
     s = (text or "").strip()
     if not s:
         return "", None
-    # 千分位数字：1,234 / 12,345.67
+    # Thousandths:1,234 / 12,345.67
     if _THOUSANDS_RE.match(s):
         return float(s.replace(",", "")), "#,##0.##"
     if _INT_RE.match(s):
@@ -66,7 +66,7 @@ def _parse_cell(text: str) -> Tuple[object, Optional[str]]:
 
 
 def _split_row(line: str) -> List[str]:
-    """Markdown 表格行 → 单元格列表（容忍首尾竖线的任意变体）。"""
+    """Markdown table row → List of cells (tolerating any variation of leading and trailing vertical bars)."""
     s = line.strip()
     if s.startswith("|"):
         s = s[1:]
@@ -82,12 +82,12 @@ def _is_table_row(line: str) -> bool:
 def _parse_markdown_tables(
     markdown: str,
 ) -> List[Tuple[str, List[List[str]]]]:
-    """解析 Markdown 文本 → [(sheet名, 表格行列表), ...]。
+    """Parse Markdown text → [(sheet name, Table row list), ...]. 
 
-    多个 sheet 用 `## 标题` 分隔；无标题时全部进单个 sheet。
-    每段允许多张连续表格（自动首尾拼接为一张，列数以表头为准）。
+    For multiple sheets `## Title` Separate; if there is no title, all go into a single sheet.
+    Each paragraph allows multiple consecutive tables (the beginning and the end are automatically spliced into one, and the number of columns is based on the table header).
     """
-    # 按 ## 标题分段
+    # press ## title section
     segments: List[Tuple[str, List[str]]] = []
     current_title = ""
     current_lines: List[str] = []
@@ -118,12 +118,12 @@ def _parse_markdown_tables(
 
 
 def _display_width(text: str) -> float:
-    """估算显示宽度：中文/全角字符按 2 计。"""
+    """Estimated display width: 2 for Chinese/full-width characters."""
     return sum(2 if ord(ch) > 0x2E80 else 1 for ch in str(text))
 
 
 def _sanitize_sheet_name(name: str, used: set) -> str:
-    """清洗 sheet 名（Excel 限制：≤31 字符、禁用 :\\/?*[]）。"""
+    """Clean sheet names (Excel limitations:≤31 characters, disabled :\\/?*[]) . """
     clean = re.sub(r"[:\\/?*\[\]]", "_", (name or "").strip())[:31] or "Sheet"
     base, i = clean, 2
     while clean in used:
@@ -135,10 +135,10 @@ def _sanitize_sheet_name(name: str, used: set) -> str:
 
 
 def _sanitize_filename_part(title: str) -> str:
-    """标题 → 文件名安全片段（保留中文，剔除非法字符）。
+    """Title → File name security fragment (retain Chinese characters, remove illegal characters).
 
-    半角括号 () 必须换成全角：markdown 链接目标中的未转义半角括号
-    会按 CommonMark 规则截断 URL，导致下载链接不完整。
+    half-angle brackets () Must be replaced with full-width: unescaped half-width brackets in markdown link target
+    The URL will be truncated according to CommonMark rules, resulting in incomplete download links.
     """
     slug = re.sub(r"[\\/:*?\"<>|\s]+", "_", (title or "").strip())
     slug = slug.replace("(", "（").replace(")", "）")
@@ -151,11 +151,11 @@ def _sanitize_filename_part(title: str) -> str:
     tool_id="export_table_excel_tool",
     name="表格Excel导出",
     description=(
-        "把对话中已经产生的数据表格（Markdown 表格原文）导出为 Excel 文件（xlsx），"
-        "支持多个表格分 Sheet。纯确定性渲染，不重新生成或修改任何数据，秒级完成。"
-        "凡是要导出的数字已经在对话里出现过（预测结果、测算表、对比表等），"
-        "无论用户说'做成Excel''生成数据表''做成模型表格'还是'导出'，都应调用本工具，"
-        "严禁为此重新建模或改走其他建模工具。"
+        "Export the data table (original Markdown table) generated in the conversation to an Excel file (xlsx),"
+        "Supports multiple tables divided into Sheets. Pure deterministic rendering, no data is regenerated or modified, and it is completed in seconds."
+        "All numbers to be exported have already appeared in the conversation (forecast results, calculation tables, comparison tables, etc.),"
+        "No matter what the user says'made Excel''Generate data table''Make a model table'Still'Export', This tool should be called"
+        "Remodeling or switching to other modeling tools for this purpose is strictly prohibited."
     ),
     category="utility",
     is_online=False,
@@ -168,52 +168,52 @@ def _sanitize_filename_part(title: str) -> str:
     tool_role_hint="specialized",
     output_shape="structured_markdown",
     when_to_use=(
-        "要导出的数据/表格/预测结果已经在当前对话中生成过（LLM 回复里出现过 Markdown 表格），"
-        "用户现在要求把它们做成 Excel/数据表文件时调用——把表格原文逐字透传即可，"
-        "多张表用 '## 表名' 分隔。用户的说法可能是'做成模型''生成数据表''导出'等，"
-        "只要数据来自对话上下文而非需要重新计算，就用本工具。"
+        "The data/table/prediction results to be exported have been generated in the current conversation (the Markdown table has appeared in the LLM reply),"
+        "Called when the user now requires them to be made into Excel/datasheet files——Just transmit the original text of the form verbatim."
+        "For multiple tables '## table name' Separate. The user s statement may be'Make a model''Generate data table''Export'Wait,"
+        "Use this tool whenever the data comes from conversational context and does not require recalculation."
     ),
     when_not_to_use=(
-        "用户明确要求'估值测算表/估值模型/盈利推演/PE 情景'（需要公式联动的"
-        "财务模型）时不要调用，使用 generate_valuation_excel_tool。"
+        "User explicit request'Valuation calculation sheet/valuation model/profit deduction/PE scenario' (Requires formula linkage"
+        "financial model), use generate_valuation_excel_tool."
     ),
     returns=(
-        "Markdown 文本：导出结果、各 Sheet 行列数摘要、文件下载链接；"
-        "无可解析表格时返回明确的失败说明。"
+        "Markdown Text: export results, summary of rows and columns of each Sheet, file download link;"
+        "Return an explicit failure description when there is no parsable table."
     ),
     example=(
-        "export_table_excel_tool(title='赛力斯营收预测', "
-        "markdown_tables='## 月度销量预测\\n| 月份 | M9 | M7 |\\n|---|---:|---:|\\n| 2026-09 | 10500 | 8000 |')"
+        "export_table_excel_tool(title='Cyrus revenue forecast', "
+        "markdown_tables='## Monthly Sales Forecast\\n| month | M9 | M7 |\\n|---|---:|---:|\\n| 2026-09 | 10500 | 8000 |')"
     ),
     related_tools=["generate_valuation_excel_tool"],
 )
 def export_table_excel_tool(
-    title: Annotated[str, "表格主题（用于文件名与文档标题），如'赛力斯营收预测'"],
+    title: Annotated[str, "Table theme (for file names and document titles), such as'Cyrus revenue forecast'"],
     markdown_tables: Annotated[
         str,
-        "Markdown 表格原文（直接透传对话中已生成的表格，逐字复制，严禁改写任何数字）。"
-        "多个表格用 '## 表名' 标题行分隔，每个标题成为 Excel 的一个 Sheet。",
+        "Markdown The original text of the form (directly pass through the form generated in the conversation, copy it verbatim, and it is strictly prohibited to rewrite any numbers)."
+        "For multiple forms '## table name' Header rows are separated, and each header becomes a Sheet in Excel.",
     ],
-    notes: Annotated[str, "可选：附加说明（数据来源、口径、假设等），写入表格底部"] = "",
+    notes: Annotated[str, "Optional: Additional explanation (data source, caliber, assumptions, etc.), written at the bottom of the table"] = "",
 ) -> str:
-    """把对话中的 Markdown 表格导出为 Excel 文件。
+    """Export the Markdown table in the conversation to an Excel file.
 
     Args:
-        title: 表格主题（文件名）
-        markdown_tables: Markdown 表格原文，多 sheet 用 ## 标题分隔
-        notes: 可选脚注
+        title: Table theme (file name)
+        markdown_tables: Markdown Original form text, used for multiple sheets ## title separator
+        notes: Optional footnote
 
     Returns:
-        Markdown 文本（结果摘要 + 下载链接，或失败说明）
+        Markdown text(result summary + Download link, or failure instructions)
     """
     t0 = time.time()
     try:
         parsed = _parse_markdown_tables(markdown_tables or "")
         if not parsed:
             return (
-                "### 表格导出失败\n\n"
-                "未在传入内容中解析到 Markdown 表格（需含 `|` 分隔的表头行与数据行）。\n\n"
-                "*请确认要导出的表格内容后重试。*"
+                "### Table export failed\n\n"
+                "The Markdown table was not parsed in the incoming content (required `|` Separated header rows and data rows).\n\n"
+                "*Please confirm the table contents to be exported and try again.*"
             )
 
         wb = Workbook()
@@ -227,10 +227,10 @@ def export_table_excel_tool(
 
         for sheet_title, rows in parsed:
             ws = wb.create_sheet(title=_sanitize_sheet_name(sheet_title, used_names))
-            # 表头 = 第一行（紧随其后的分隔行已在解析时跳过）
+            # Header = First line (the following delimited lines have been skipped during parsing)
             header = rows[0]
             data_rows = rows[1:]
-            # 过滤空行
+            # Filter empty lines
             data_rows = [r for r in data_rows if any(c for c in r)]
 
             for col_idx, cell_text in enumerate(header, start=1):
@@ -257,12 +257,12 @@ def export_table_excel_tool(
             for col_idx, width in enumerate(col_widths, start=1):
                 ws.column_dimensions[get_column_letter(col_idx)].width = min(width, 50)
 
-            # 脚注：notes + AI 生成声明（合规要求）
+            # Footnotes:notes + AI Generate Statement (Compliance Requirements)
             foot_row = len(data_rows) + 3
             footnotes = []
             if notes:
-                footnotes.append(f"说明：{notes}")
-            footnotes.append("本表格由 AI 生成，仅作研究参考，不构成投资建议。")
+                footnotes.append(f"Description:{notes}")
+            footnotes.append("This table is generated by AI and is for research reference only and does not constitute investment advice.")
             for i, note in enumerate(footnotes):
                 c = ws.cell(row=foot_row + i, column=1, value=note)
                 c.font = Font(size=9, color="808080")
@@ -277,7 +277,7 @@ def export_table_excel_tool(
         output_path = output_dir / filename
         wb.save(str(output_path))
 
-        # 签名下载链接：浏览器直接点击不带 JWT 头，必须用 presigned URL 鉴权
+        # Signed download link: The browser clicks directly without JWT header and must use presigned URL for authentication.
         from urllib.parse import quote
 
         from core.deliverables.download_links import sign_deliverable_query
@@ -290,14 +290,14 @@ def export_table_excel_tool(
         elapsed = time.time() - t0
         return (
             f"### Excel 表格已导出 ✅\n\n"
-            f"**{title}** · {len(parsed)} 个 Sheet · 生成耗时 {elapsed:.1f} 秒\n\n"
+            f"**{title}** · {len(parsed)} a Sheet · Time consuming to generate {elapsed:.1f} seconds\n\n"
             + "\n".join(sheet_summaries)
             + f"\n\n"
-            f"📎 [下载 Excel 表格]({download_url})\n\n"
-            f"表格数据逐字来自对话中已生成的模型结果，未做任何修改。"
-            f"{'说明：' + notes if notes else ''}\n\n"
-            f"*本表格由 AI 生成，仅作研究参考，不构成投资建议。*"
+            f"📎 [Download Excel sheet]({download_url})\n\n"
+            f"The tabular data comes verbatim from the model results generated in the conversation without any modifications."
+            f"{'Description:' + notes if notes else ''}\n\n"
+            f"*This table is generated by AI and is for research reference only and does not constitute investment advice.*"
         )
     except Exception as exc:  # noqa: BLE001
-        logger.error("[ExportTableExcelTool] 导出失败: %s", exc, exc_info=True)
-        return f"### 表格导出失败\n\n**执行异常**：{exc}\n\n*请重试或简化表格内容。*"
+        logger.error("[ExportTableExcelTool] Export failed: %s", exc, exc_info=True)
+        return f"### Table export failed\n\n**Execution exception**: {exc}\n\n*Please try again or simplify the table content.*"

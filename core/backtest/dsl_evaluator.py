@@ -1,7 +1,7 @@
 """
-策略评估器
-- DSL 评估：L2（语义）→ L3（执行）
-- Python+config 评估：L2（config 校验）→ L3（/run_python 执行）
+Strategy Evaluator
+- DSL Assessment: L2 (Semantic)→ L3 (execution)
+- Python+config Evaluation: L2 (config check)→ L3 (/run_python execution)
 """
 import copy
 import logging
@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 def validate_config_semantics(config: Dict[str, Any]) -> List[str]:
     """
-    L2 语义校验：校验 config（symbols 非空、日期合理等）
+    L2 Semantic verification: Verify config (symbols are not empty, dates are reasonable, etc.)
     Returns:
-        错误列表，空表示通过
+        Error list, empty means pass
     """
     errors: List[str] = []
     symbols = config.get("symbols")
@@ -25,7 +25,7 @@ def validate_config_semantics(config: Dict[str, Any]) -> List[str]:
         uni = config.get("universe") or {}
         symbols = uni.get("symbols", []) if isinstance(uni, dict) else []
     if not symbols:
-        errors.append("股票池 symbols 不能为空")
+        errors.append("Stock pool symbols cannot be empty")
 
     start_year = config.get("start_year")
     end_year = config.get("end_year")
@@ -33,19 +33,19 @@ def validate_config_semantics(config: Dict[str, Any]) -> List[str]:
         try:
             sy, ey = int(start_year), int(end_year)
             if sy >= ey:
-                errors.append(f"回测区间 start_year({sy}) 应小于 end_year({ey})")
+                errors.append(f"Backtest interval start_year({sy}) should be less than end_year({ey})")
         except (TypeError, ValueError):
             pass
 
     max_pos = config.get("max_positions", 10)
     if symbols and max_pos is not None and int(max_pos) < 1:
-        errors.append("max_positions 至少为 1")
+        errors.append("max_positions at least for 1")
     return errors
 
 
 def _make_lightweight_config(config: Dict[str, Any]) -> Dict[str, Any]:
     """
-    生成轻量 config，用于 L3 执行校验（缩短区间、单标的）
+    Generate lightweight config for L3 execution verification (shortened interval, single standard)
     """
     lightweight = copy.deepcopy(config)
     symbols = lightweight.get("symbols")
@@ -68,7 +68,7 @@ async def validate_execution_python(
     code: str, config: Dict[str, Any]
 ) -> Tuple[bool, Optional[str]]:
     """
-    L3 执行校验：对 Python 策略做轻量回测，验证能否跑通
+    L3 Execution verification: do a lightweight backtest on the Python strategy to verify whether it can run through
     Returns:
         (success, error_message)
     """
@@ -78,9 +78,9 @@ async def validate_execution_python(
         resp = await client.run_python(code, lightweight)
         if resp.get("success"):
             return True, None
-        return False, resp.get("error", "回测执行失败")
+        return False, resp.get("error", "Backtest execution failed")
     except Exception as e:
-        logger.warning("L3 执行校验异常: %s", e)
+        logger.warning("L3 Execution check exception: %s", e)
         return False, str(e)
 
 
@@ -90,7 +90,7 @@ async def evaluate_strategy_python_full(
     run_execution_check: bool = True,
 ) -> Tuple[bool, List[str]]:
     """
-    完整评估：L2 config 校验 + L3 执行（可选）
+    Full evaluation: L2 config verification + L3 Execute (optional)
     Returns:
         (passed, errors)
     """
@@ -100,15 +100,15 @@ async def evaluate_strategy_python_full(
     if run_execution_check:
         ok, exec_err = await validate_execution_python(code, config)
         if not ok and exec_err:
-            errors.append(f"执行校验失败: {exec_err}")
+            errors.append(f"Failed to perform verification: {exec_err}")
             return False, errors
     return True, []
 
 
 def _make_lightweight_dsl(dsl: Dict[str, Any]) -> Dict[str, Any]:
     """
-    生成轻量 DSL，用于 L3 执行校验（缩短区间、单标的）
-    仅验证能否跑通，不关心收益
+    Generate lightweight DSL for L3 execution verification (shortened interval, single standard)
+    Only verify whether it can run through, don t care about the income
     """
     lightweight = copy.deepcopy(dsl)
     cfg = lightweight.setdefault("config", {})
@@ -126,7 +126,7 @@ def _make_lightweight_dsl(dsl: Dict[str, Any]) -> Dict[str, Any]:
 
 async def validate_execution(dsl: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
     """
-    L3 执行校验：对 DSL 做轻量回测，验证能否跑通
+    L3 Execute verification: do a lightweight backtest on the DSL to verify whether it can run through
     Returns:
         (success, error_message)
     """
@@ -136,17 +136,17 @@ async def validate_execution(dsl: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
         resp = await client.run(lightweight)
         if resp.get("success"):
             return True, None
-        return False, resp.get("error", "回测执行失败")
+        return False, resp.get("error", "Backtest execution failed")
     except Exception as e:
-        logger.warning("L3 执行校验异常: %s", e)
+        logger.warning("L3 Execution check exception: %s", e)
         return False, str(e)
 
 
 def evaluate_dsl(dsl: Dict[str, Any]) -> List[str]:
     """
-    L2 语义校验
+    L2 Semantic check
     Returns:
-        错误列表，空表示通过
+        Error list, empty means pass
     """
     return validate_dsl_semantics(dsl)
 
@@ -156,7 +156,7 @@ async def evaluate_dsl_full(
     run_execution_check: bool = True,
 ) -> Tuple[bool, List[str]]:
     """
-    完整评估：L2 语义 + L3 执行（可选）
+    Full assessment: L2 semantics + L3 Execute (optional)
     Returns:
         (passed, errors)
     """
@@ -166,6 +166,6 @@ async def evaluate_dsl_full(
     if run_execution_check:
         ok, exec_err = await validate_execution(dsl)
         if not ok and exec_err:
-            errors.append(f"执行校验失败: {exec_err}")
+            errors.append(f"Failed to perform verification: {exec_err}")
             return False, errors
     return True, []

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试API分析功能的脚本
+Script to test API analysis function
 """
 
 import requests
@@ -8,32 +8,32 @@ import time
 import json
 
 def test_api_analysis():
-    """测试API分析功能"""
-    print("🔍 测试API分析功能")
+    """Test API analysis function"""
+    print("🔍 Test API analysis function")
     print("=" * 60)
     
-    # API基础URL
+    # API Basics URL
     base_url = "http://localhost:8000"
     
     try:
-        # 1. 检查API健康状态
-        print("1. 检查API健康状态...")
+        # 1. Check API health status
+        print("1. Check API health status...")
         health_response = requests.get(f"{base_url}/api/health")
         if health_response.status_code == 200:
-            print("✅ API服务正常运行")
+            print("✅ API Service is running normally")
         else:
-            print(f"❌ API服务异常: {health_response.status_code}")
+            print(f"❌ API Service exception: {health_response.status_code}")
             return False
         
-        # 2. 提交分析请求
-        print("\n2. 提交分析请求...")
+        # 2. Submit an analysis request
+        print("\n2. Submit an analysis request...")
         analysis_request = {
             "stock_code": "000002",
             "parameters": {
-                "market_type": "A股",
+                "market_type": "A shares",
                 "analysis_date": "2025-08-20",
-                "research_depth": "快速",
-                "selected_analysts": ["market"],  # 只使用市场分析师进行快速测试
+                "research_depth": "fast",
+                "selected_analysts": ["market"],  # Use only market analysts for quick testing
                 "include_sentiment": False,
                 "include_risk": False,
                 "language": "zh-CN",
@@ -42,10 +42,10 @@ def test_api_analysis():
             }
         }
         
-        # 添加认证头（如果需要）
+        # Add authentication header (if needed)
         headers = {
             "Content-Type": "application/json",
-            "Authorization": "Bearer admin_token"  # 使用管理员token
+            "Authorization": "Bearer admin_token"  # Use administrator token
         }
         
         response = requests.post(
@@ -57,15 +57,15 @@ def test_api_analysis():
         if response.status_code == 200:
             result = response.json()
             task_id = result.get("task_id")
-            print(f"✅ 分析任务已提交: {task_id}")
+            print(f"✅ Analysis task has been submitted: {task_id}")
         else:
-            print(f"❌ 提交分析请求失败: {response.status_code}")
-            print(f"   响应: {response.text}")
+            print(f"❌ Failed to submit analysis request: {response.status_code}")
+            print(f"   response: {response.text}")
             return False
         
-        # 3. 监控任务状态
-        print(f"\n3. 监控任务状态...")
-        max_wait_time = 300  # 最多等待5分钟
+        # 3. Monitor task status
+        print(f"\n3. Monitor task status...")
+        max_wait_time = 300  # Wait up to 5 minutes
         start_time = time.time()
         
         while time.time() - start_time < max_wait_time:
@@ -80,12 +80,12 @@ def test_api_analysis():
                 progress = status_data.get("progress", 0)
                 message = status_data.get("message", "")
                 
-                print(f"   状态: {status}, 进度: {progress}%, 消息: {message}")
+                print(f"   Status: {status}, Progress: {progress}%, news: {message}")
                 
                 if status == "completed":
-                    print("✅ 分析任务完成!")
+                    print("✅ Analysis task completed!")
                     
-                    # 获取分析结果
+                    # Get analysis results
                     result_response = requests.get(
                         f"{base_url}/api/analysis/tasks/{task_id}/result",
                         headers=headers
@@ -93,44 +93,44 @@ def test_api_analysis():
                     
                     if result_response.status_code == 200:
                         result_data = result_response.json()
-                        print(f"\n📊 分析结果:")
-                        print(f"   股票代码: {result_data.get('stock_code')}")
-                        print(f"   分析日期: {result_data.get('analysis_date')}")
+                        print(f"\n📊 Analyze results:")
+                        print(f"   Stock code: {result_data.get('stock_code')}")
+                        print(f"   Analysis date: {result_data.get('analysis_date')}")
                         
-                        # 检查报告内容
+                        # Check report content
                         reports = result_data.get('reports', {})
                         for report_type, content in reports.items():
                             if isinstance(content, str) and len(content) > 0:
-                                print(f"   {report_type}: 有内容 (长度: {len(content)})")
+                                print(f"   {report_type}: There is content (length: {len(content)})")
                             else:
-                                print(f"   {report_type}: 无内容或为空")
+                                print(f"   {report_type}: No content or empty")
                         
                         return True
                     else:
-                        print(f"❌ 获取分析结果失败: {result_response.status_code}")
+                        print(f"❌ Failed to obtain analysis results: {result_response.status_code}")
                         return False
                         
                 elif status == "failed":
-                    print(f"❌ 分析任务失败: {message}")
+                    print(f"❌ Analysis task failed: {message}")
                     return False
                     
             else:
-                print(f"❌ 查询任务状态失败: {status_response.status_code}")
+                print(f"❌ Failed to query task status: {status_response.status_code}")
                 return False
             
-            # 等待5秒后再次查询
+            # Query again after waiting 5 seconds
             time.sleep(5)
         
-        print(f"⏰ 任务执行超时 (超过{max_wait_time}秒)")
+        print(f"⏰ Task execution timeout (exceed{max_wait_time}seconds)")
         return False
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 if __name__ == "__main__":
     success = test_api_analysis()
     if success:
-        print("\n🎉 API分析功能测试成功!")
+        print("\n🎉 API Analysis function test successful!")
     else:
-        print("\n💥 API分析功能测试失败!")
+        print("\n💥 API Analysis function test failed!")

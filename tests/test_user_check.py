@@ -1,59 +1,59 @@
-"""检查用户数据库"""
+"""Check user database"""
 from pymongo import MongoClient
 
-# 直接连接 MongoDB
+# Direct connection MongoDB
 mongo_uri = "mongodb://admin:tradingagents123@localhost:27017/"
 client = MongoClient(mongo_uri)
 
 print(f"🔍 MongoDB URI: {mongo_uri}")
 print()
 
-# 列出所有数据库
-print("📊 所有数据库:")
+# List all databases
+print("📊 All databases:")
 for db_name in client.list_database_names():
     print(f"  - {db_name}")
 print()
 
-# 检查两个可能的数据库
+# Check two possible databases
 for db_name in ["tradingagents"]:
     print(f"=" * 60)
-    print(f"🔍 检查数据库: {db_name}")
+    print(f"🔍 Check database: {db_name}")
     print(f"=" * 60)
 
     db = client[db_name]
 
-    # 列出所有集合
+    # list all collections
     collections = db.list_collection_names()
-    print(f"📁 集合列表: {collections}")
+    print(f"📁 Collection list: {collections}")
     print()
 
     if "users" in collections:
-        # 查询所有用户
+        # Query all users
         users = list(db.users.find({}))
-        print(f"📊 找到 {len(users)} 个用户:")
+        print(f"📊 found {len(users)} users:")
         print()
 
         for user in users:
-            print(f"用户名: {user.get('username')}")
+            print(f"Username: {user.get('username')}")
             print(f"  - ID: {user.get('_id')}")
             print(f"  - Email: {user.get('email')}")
-            print(f"  - 激活状态: {user.get('is_active')}")
-            print(f"  - 管理员: {user.get('is_admin')}")
-            print(f"  - 密码哈希: {user.get('hashed_password', '')[:20]}...")
+            print(f"  - active state: {user.get('is_active')}")
+            print(f"  - Administrator: {user.get('is_admin')}")
+            print(f"  - Password hash: {user.get('hashed_password', '')[:20]}...")
             print()
 
-        # 测试查询 admin 用户
-        print("🔍 测试查询 admin 用户:")
+        # Test query admin user
+        print("🔍 Test query admin user:")
         admin_user = db.users.find_one({"username": "admin"})
         if admin_user:
-            print(f"✅ 找到 admin 用户:")
+            print(f"✅ Find the admin user:")
             print(f"  - ID: {admin_user.get('_id')}")
             print(f"  - Email: {admin_user.get('email')}")
-            print(f"  - 激活状态: {admin_user.get('is_active')}")
+            print(f"  - active state: {admin_user.get('is_active')}")
         else:
-            print("❌ 未找到 admin 用户")
+            print("❌ admin user not found")
     else:
-        print("⚠️ 没有 users 集合")
+        print("⚠️ There is no users collection")
 
     print()
 

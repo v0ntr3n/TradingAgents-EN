@@ -26,94 +26,94 @@ def test_research_brief_index_and_sector_builders_keep_explicit_tool_workflow() 
     assert "get_market_overview" in index_content["tool_guidance"]
     assert "get_china_market_overview" in index_content["tool_guidance"]
     assert "get_index_data" in index_content["tool_guidance"]
-    assert "必须使用上述参数值" in index_content["tool_guidance"]
-    assert "不要使用其他日期" in index_content["tool_guidance"]
-    assert "研究口径" in index_content["system_prompt"]
-    assert "研究口径" in index_content["user_prompt"]
-    assert "中性视角解释市场状态" in index_content["user_prompt"]
-    assert "趋势、资金、情绪、周期和正反证据的事实平衡" in index_content["user_prompt"]
-    assert "数据冲突、异常、缺失或证据不足" in index_content["analysis_requirements"]
-    assert "不要单独设“数据缺口声明”章节" in index_content["analysis_requirements"]
-    assert "证据不足，只能降低结论强度" in index_content["analysis_requirements"]
-    assert "市场周期与正反证据评估只引用工具直接返回和可回溯指标" in index_content["analysis_requirements"]
-    assert "两融变化字段与当前余额明显不匹配" in index_content["analysis_requirements"]
-    assert "只能留在数据说明中" in index_content["analysis_requirements"]
-    assert "不得外推为“均线下行态势”" in index_content["analysis_requirements"]
-    assert "技术标签或规则识别区间都只是规则描述，不等同于市场结论" in index_content["analysis_requirements"]
-    assert "成交额、换手率、涨跌家数等事实指标由模型自行归纳" in index_content["analysis_requirements"]
-    assert "允许写法示例" in index_content["analysis_requirements"]
-    assert "过线写法示例" in index_content["analysis_requirements"]
-    assert "短期数据表现偏强" in index_content["analysis_requirements"]
-    assert "情绪修复完成" in index_content["analysis_requirements"]
-    assert "总成交额为 23246.35 亿元，上海/深圳市场成交额占比分别为 41.2% 和 58.8%" in index_content["analysis_requirements"]
-    assert "两融数据若不完整，应明确说明不纳入资金面综合评估" in index_content["analysis_requirements"]
-    assert "技术指标整体偏多，但高位指标提示短期仍需关注波动" in index_content["analysis_requirements"]
-    assert "涨跌停明细名单显示涨停 59 家、跌停 8 家，连板 17 家" in index_content["analysis_requirements"]
-    assert "成交活跃度显著提升" in index_content["analysis_requirements"]
-    assert "无法确认杠杆资金态度" in index_content["analysis_requirements"]
-    assert "三个指标均显示看多信号" in index_content["analysis_requirements"]
-    assert "融资余额处于谨慎水平" in index_content["analysis_requirements"]
-    assert "涨停 81 家（其中涨停家数 59 家）" in index_content["analysis_requirements"]
-    assert "不要使用“空间”“站稳”“突破”" in index_content["analysis_requirements"]
-    assert "不要写 PE/PB、股息率、估值分位" in index_content["analysis_requirements"]
-    assert "只能作为数据说明" in index_content["user_prompt"]
-    assert "不要自行延伸成均线斜率、风格切换或高位调整叙事" in index_content["user_prompt"]
-    assert "工具返回的技术标签或规则区间只可作为描述线索，不要直接改写成市场定性结论" in index_content["user_prompt"]
-    assert "用‘短期数据表现偏强’替代‘情绪修复完成’" in index_content["user_prompt"]
-    assert "用‘总成交额、平均每家上市公司成交额和换手率的事实数据’替代‘成交活跃度显著提升’" in index_content["user_prompt"]
-    assert "用‘无法确认杠杆资金方向’替代‘无法确认杠杆资金态度’" in index_content["user_prompt"]
-    assert "用‘技术指标整体偏多’替代‘三个指标均显示看多信号’" in index_content["user_prompt"]
-    assert "两融完整时只引用余额与变化数值；若数据不完整，直接说明不纳入综合评估" in index_content["user_prompt"]
-    assert "涨跌停家数统一采用涨跌停明细名单口径，不要混用 `pct_chg` 阈值近似结果" in index_content["user_prompt"]
-    assert "数据缺口声明" not in index_content["system_prompt"]
+    assert "The above parameter values must be used" in index_content["tool_guidance"]
+    assert "Do not use other dates" in index_content["tool_guidance"]
+    assert "Research caliber" in index_content["system_prompt"]
+    assert "Research caliber" in index_content["user_prompt"]
+    assert "A neutral perspective explains market status" in index_content["user_prompt"]
+    assert "A factual balance of trends, funds, sentiment, cycles and evidence for and against" in index_content["user_prompt"]
+    assert "Data conflicts, anomalies, missing or insufficient evidence" in index_content["analysis_requirements"]
+    assert "Do not set it up separately Data gap statement Chapter" in index_content["analysis_requirements"]
+    assert "Insufficient evidence can only reduce the strength of the conclusion" in index_content["analysis_requirements"]
+    assert "Market cycles and positive and negative evidence assessments only cite direct return and traceable indicators of tools" in index_content["analysis_requirements"]
+    assert "There is an obvious mismatch between the two financing change fields and the current balance." in index_content["analysis_requirements"]
+    assert "can only be left in the data description" in index_content["analysis_requirements"]
+    assert "Not to be extrapolated to Moving average downward trend " in index_content["analysis_requirements"]
+    assert "Technical labels or rule identification intervals are only rule descriptions and are not equivalent to market conclusions." in index_content["analysis_requirements"]
+    assert "Factual indicators such as transaction volume, turnover rate, and the number of rising and falling companies are summarized by the model." in index_content["analysis_requirements"]
+    assert "Allowed writing examples" in index_content["analysis_requirements"]
+    assert "Example of writing across the line" in index_content["analysis_requirements"]
+    assert "Short-term data performance is strong" in index_content["analysis_requirements"]
+    assert "Emotional repair completed" in index_content["analysis_requirements"]
+    assert "The total transaction volume was 2,324.635 billion yuan, with the Shanghai/Shenzhen market accounting for 41.2% and 41.2% respectively. 58.8%" in index_content["analysis_requirements"]
+    assert "If the data on financing and financing are incomplete, it should be clearly stated that they will not be included in the comprehensive assessment of funding." in index_content["analysis_requirements"]
+    assert "Technical indicators are generally bullish, but high indicators suggest that we still need to pay attention to fluctuations in the short term." in index_content["analysis_requirements"]
+    assert "The detailed list of daily limit and daily limit shows 59 companies at the daily limit, 8 companies at the daily limit, and 17 companies at the continuous limit." in index_content["analysis_requirements"]
+    assert "Transaction activity increased significantly" in index_content["analysis_requirements"]
+    assert "Unable to confirm leveraged fund attitude" in index_content["analysis_requirements"]
+    assert "All three indicators show bullish signals" in index_content["analysis_requirements"]
+    assert "Financing balances at cautious levels" in index_content["analysis_requirements"]
+    assert "81 companies reached daily limit (including 59 companies with daily limit)" in index_content["analysis_requirements"]
+    assert "Do not use space  stand firm  breakthrough " in index_content["analysis_requirements"]
+    assert "Do not write PE/PB, dividend yield, valuation quantile" in index_content["analysis_requirements"]
+    assert "Can only be used as data description" in index_content["user_prompt"]
+    assert "Do not extend yourself into a moving average slope, style switch or high-level adjustment narrative" in index_content["user_prompt"]
+    assert "The technical labels or rule intervals returned by the tool can only be used as descriptive clues and should not be directly rewritten into qualitative market conclusions." in index_content["user_prompt"]
+    assert "use Short-term data performance is strong substitute Emotional repair completed " in index_content["user_prompt"]
+    assert "use Factual data on total turnover, average turnover per listed company and turnover rate substitute Transaction activity increased significantly " in index_content["user_prompt"]
+    assert "use Unable to confirm the direction of leverage funds substitute Unable to confirm leveraged fund attitude " in index_content["user_prompt"]
+    assert "use Technical indicators are overall bullish substitute All three indicators show bullish signals " in index_content["user_prompt"]
+    assert "When the two integrations are complete, only the balance and change values will be quoted; if the data is incomplete, it will be directly stated that it will not be included in the comprehensive assessment." in index_content["user_prompt"]
+    assert "The number of companies with daily price limit and price limit should be consistent with the detailed list of price limit and price limit, do not mix them. `pct_chg` Threshold approximation results" in index_content["user_prompt"]
+    assert "Data gap statement" not in index_content["system_prompt"]
     assert "PE、PB" not in index_content["system_prompt"]
-    assert "数据缺口声明" not in index_content["user_prompt"]
+    assert "Data gap statement" not in index_content["user_prompt"]
     assert "PE/PB" not in index_content["user_prompt"]
-    assert "实际数据日期" not in index_content["system_prompt"]
+    assert "actual data date" not in index_content["system_prompt"]
 
     assert "get_sector_data" in sector_content["tool_guidance"]
     assert "get_peer_comparison" in sector_content["tool_guidance"]
     assert "get_fund_flow_data" in sector_content["tool_guidance"]
-    assert "必须使用上述参数值" in sector_content["tool_guidance"]
-    assert "不要使用其他股票代码或日期" in sector_content["tool_guidance"]
-    assert "研究口径" in sector_content["system_prompt"]
-    assert "坚持研究口径" in sector_content["system_prompt"]
-    assert "趋势判断要说明原因" in sector_content["system_prompt"]
-    assert "异常字段不得进入综合判断" in sector_content["system_prompt"]
-    assert "行业标签必须分层处理" in sector_content["system_prompt"]
-    assert "唯一锚点" in sector_content["system_prompt"]
-    assert "股票基础行业字段（单值 industry）" in sector_content["system_prompt"]
-    assert "有限行业常识只能作背景说明" in sector_content["system_prompt"]
-    assert "更贴近主业的细分行业标签" in sector_content["tool_guidance"]
-    assert "唯一主行业锚点" in sector_content["tool_guidance"]
-    assert "如果引用少量行业通识" in sector_content["tool_guidance"]
-    assert "主力资金显著配置" in sector_content["tool_guidance"]
-    assert "个股资金流回退数据" in sector_content["tool_guidance"]
-    assert "研究口径" in sector_content["user_prompt"]
-    assert "唯一主行业锚点" in sector_content["user_prompt"]
-    assert "允许少量行业通识作为背景说明" in sector_content["user_prompt"]
-    assert "更贴近主业的行业口径" in sector_content["user_prompt"]
-    assert "未进入当日行业资金净流入前列" in sector_content["user_prompt"]
-    assert "个股资金流回退数据" in sector_content["user_prompt"]
-    assert "未进入当日个股资金净流入前列" in sector_content["user_prompt"]
-    assert "利率、监管、资产质量、息差、不良率、拨备覆盖率" in sector_content["user_prompt"]
-    assert "安全边际、修复窗口或板块机会叙事" in sector_content["user_prompt"]
-    assert "成熟阶段、增长空间有限" in sector_content["user_prompt"]
-    assert "资产质量担忧/息差收窄压力" in sector_content["user_prompt"]
-    assert "资金流向与市场热度" in sector_content["analysis_requirements"]
-    assert "风险与结构性特征的事实型平衡评估" in sector_content["analysis_requirements"]
-    assert "趋势、景气、竞争、轮动、估值分化和资金流向判断" in sector_content["analysis_requirements"]
-    assert "不要单独设“数据缺口声明”章节" in sector_content["analysis_requirements"]
-    assert "对所有 A 股个股，正文只能保留一个主行业归属" in sector_content["analysis_requirements"]
-    assert "如果同一股票命中多个行业类指数" in sector_content["analysis_requirements"]
-    assert "银行个股同时命中“金融(A股)”" in sector_content["analysis_requirements"]
-    assert "允许少量行业通识作为背景说明" in sector_content["analysis_requirements"]
-    assert "未进入当日行业资金净流入前列" in sector_content["analysis_requirements"]
-    assert "个股资金流回退数据" in sector_content["analysis_requirements"]
-    assert "安全边际" in sector_content["analysis_requirements"]
-    assert "成熟发展阶段，行业增长空间有限" in sector_content["analysis_requirements"]
-    assert "资产质量担忧和息差收窄压力" in sector_content["analysis_requirements"]
-    assert "行业机会与风险" not in sector_content["user_prompt"]
+    assert "The above parameter values must be used" in sector_content["tool_guidance"]
+    assert "Do not use another stock symbol or date" in sector_content["tool_guidance"]
+    assert "Research caliber" in sector_content["system_prompt"]
+    assert "Adhere to the research caliber" in sector_content["system_prompt"]
+    assert "Reasons should be explained for trend judgment" in sector_content["system_prompt"]
+    assert "Exception fields are not allowed to enter the comprehensive judgment" in sector_content["system_prompt"]
+    assert "Industry labels must be processed in layers" in sector_content["system_prompt"]
+    assert "only anchor point" in sector_content["system_prompt"]
+    assert "Stock basic industry field (single value industry)" in sector_content["system_prompt"]
+    assert "Limited industry knowledge can only be used as background explanation." in sector_content["system_prompt"]
+    assert "Segmented industry labels that are closer to the main business" in sector_content["tool_guidance"]
+    assert "The only main industry anchor" in sector_content["tool_guidance"]
+    assert "If you cite a small amount of industry knowledge" in sector_content["tool_guidance"]
+    assert "Significant allocation of main funds" in sector_content["tool_guidance"]
+    assert "Individual stock capital flow return data" in sector_content["tool_guidance"]
+    assert "Research caliber" in sector_content["user_prompt"]
+    assert "The only main industry anchor" in sector_content["user_prompt"]
+    assert "Allow a small amount of industry knowledge as background" in sector_content["user_prompt"]
+    assert "Closer to the industry caliber of the main business" in sector_content["user_prompt"]
+    assert "Did not enter the forefront of industry net capital inflows on the day" in sector_content["user_prompt"]
+    assert "Individual stock capital flow return data" in sector_content["user_prompt"]
+    assert "Not among the top net inflows of individual stocks on the day" in sector_content["user_prompt"]
+    assert "Interest rates, regulation, asset quality, interest spreads, NPL ratio, provision coverage ratio" in sector_content["user_prompt"]
+    assert "Margin of safety, recovery window or sector opportunity narrative" in sector_content["user_prompt"]
+    assert "Mature stage, limited room for growth" in sector_content["user_prompt"]
+    assert "Asset quality concerns/pressure from narrowing interest rate spreads" in sector_content["user_prompt"]
+    assert "Capital flow and market popularity" in sector_content["analysis_requirements"]
+    assert "Fact-based balanced assessment of risks and structural characteristics" in sector_content["analysis_requirements"]
+    assert "Trend, prosperity, competition, rotation, valuation differentiation and capital flow judgment" in sector_content["analysis_requirements"]
+    assert "Do not set it up separately Data gap statement Chapter" in sector_content["analysis_requirements"]
+    assert "For all A-share stocks, the text can only retain one main industry affiliation." in sector_content["analysis_requirements"]
+    assert "If the same stock hits multiple industry indexes" in sector_content["analysis_requirements"]
+    assert "Bank stocks hit simultaneously Finance(A shares) " in sector_content["analysis_requirements"]
+    assert "Allow a small amount of industry knowledge as background" in sector_content["analysis_requirements"]
+    assert "Did not enter the forefront of industry net capital inflows on the day" in sector_content["analysis_requirements"]
+    assert "Individual stock capital flow return data" in sector_content["analysis_requirements"]
+    assert "margin of safety" in sector_content["analysis_requirements"]
+    assert "Mature development stage, industry growth space is limited" in sector_content["analysis_requirements"]
+    assert "Asset quality concerns and pressure from narrowing interest rate margins" in sector_content["analysis_requirements"]
+    assert "Industry opportunities and risks" not in sector_content["user_prompt"]
 
 
 def test_research_mode_migration_preserves_index_and_sector_tool_instructions() -> None:
@@ -134,85 +134,85 @@ def test_research_mode_migration_preserves_index_and_sector_tool_instructions() 
 
     assert "get_market_overview" in index_guidance
     assert "get_index_data" in index_guidance
-    assert "必须先调用工具获取数据" in index_guidance
-    assert "研究口径" in index_system_prompt
-    assert "坚持研究口径" in index_system_prompt
-    assert "判断原因" in index_system_prompt
-    assert "数据缺口声明" not in index_system_prompt
+    assert "You must first call the tool to obtain the data" in index_guidance
+    assert "Research caliber" in index_system_prompt
+    assert "Adhere to the research caliber" in index_system_prompt
+    assert "Determine the cause" in index_system_prompt
+    assert "Data gap statement" not in index_system_prompt
     assert "PE、PB" not in index_system_prompt
     assert "PE/PB" not in index_guidance
     index_requirements = module.get_field_override("index_analyst", "analysis_requirements")
     assert index_requirements is not None
-    assert "大盘趋势和技术形态" in index_requirements
-    assert "资金流向（北向、两融）" in index_requirements
-    assert "趋势判断必须同时说明对应的数据依据和形成原因" in index_requirements
-    assert "数据冲突、异常、缺失或证据不足" in index_requirements
-    assert "不要单独设“数据缺口声明”章节" in index_requirements
-    assert "市场周期与正反证据评估只引用工具直接返回和可回溯指标" in index_requirements
-    assert "两融变化字段与当前余额明显不匹配" in index_requirements
-    assert "只能留在数据说明中" in index_requirements
-    assert "不得外推为“均线下行态势”" in index_requirements
-    assert "技术标签或规则识别区间都只是规则描述，不等同于市场结论" in index_requirements
-    assert "成交额、换手率、涨跌家数等事实指标由模型自行归纳" in index_requirements
-    assert "允许写法示例" in index_requirements
-    assert "过线写法示例" in index_requirements
-    assert "总成交额为 23246.35 亿元，上海/深圳市场成交额占比分别为 41.2% 和 58.8%" in index_requirements
-    assert "两融数据若不完整，应明确说明不纳入资金面综合评估" in index_requirements
-    assert "技术指标整体偏多，但高位指标提示短期仍需关注波动" in index_requirements
-    assert "涨跌停明细名单显示涨停 59 家、跌停 8 家，连板 17 家" in index_requirements
-    assert "不要使用“空间”“站稳”“突破”" in index_requirements
-    assert "不要写 PE/PB、股息率、估值分位" in index_requirements
+    assert "Market trends and technical patterns" in index_requirements
+    assert "Fund flow direction (northbound, financing and financing)" in index_requirements
+    assert "Trend judgment must also explain the corresponding data basis and the reasons for the formation." in index_requirements
+    assert "Data conflicts, anomalies, missing or insufficient evidence" in index_requirements
+    assert "Do not set it up separately Data gap statement Chapter" in index_requirements
+    assert "Market cycles and positive and negative evidence assessments only cite direct return and traceable indicators of tools" in index_requirements
+    assert "There is an obvious mismatch between the two financing change fields and the current balance." in index_requirements
+    assert "can only be left in the data description" in index_requirements
+    assert "Not to be extrapolated to Moving average downward trend " in index_requirements
+    assert "Technical labels or rule identification intervals are only rule descriptions and are not equivalent to market conclusions." in index_requirements
+    assert "Factual indicators such as transaction volume, turnover rate, and the number of rising and falling companies are summarized by the model." in index_requirements
+    assert "Allowed writing examples" in index_requirements
+    assert "Example of writing across the line" in index_requirements
+    assert "The total transaction volume was 2,324.635 billion yuan, with the Shanghai/Shenzhen market accounting for 41.2% and 41.2% respectively. 58.8%" in index_requirements
+    assert "If the data on financing and financing are incomplete, it should be clearly stated that they will not be included in the comprehensive assessment of funding." in index_requirements
+    assert "Technical indicators are generally bullish, but high indicators suggest that we still need to pay attention to fluctuations in the short term." in index_requirements
+    assert "The detailed list of daily limit and daily limit shows 59 companies at the daily limit, 8 companies at the daily limit, and 17 companies at the continuous limit." in index_requirements
+    assert "Do not use space  stand firm  breakthrough " in index_requirements
+    assert "Do not write PE/PB, dividend yield, valuation quantile" in index_requirements
 
     assert "get_sector_data" in sector_guidance
     assert "get_peer_comparison" in sector_guidance
-    assert "必须先调用工具获取数据" in sector_guidance
-    assert "唯一主行业锚点" in sector_guidance
-    assert "研究口径" in sector_system_prompt
-    assert "判断原因" in sector_system_prompt
-    assert "层级标签" in sector_system_prompt
-    assert "股票基础行业字段（单值 industry）" in sector_system_prompt
-    assert "允许少量行业通识作为背景说明" in sector_system_prompt
-    assert "实际数据日期" not in sector_system_prompt
-    assert "个股资金流回退数据" in sector_guidance
-    assert "如果引用少量行业通识" in sector_guidance
+    assert "You must first call the tool to obtain the data" in sector_guidance
+    assert "The only main industry anchor" in sector_guidance
+    assert "Research caliber" in sector_system_prompt
+    assert "Determine the cause" in sector_system_prompt
+    assert "Hierarchy label" in sector_system_prompt
+    assert "Stock basic industry field (single value industry)" in sector_system_prompt
+    assert "Allow a small amount of industry knowledge as background" in sector_system_prompt
+    assert "actual data date" not in sector_system_prompt
+    assert "Individual stock capital flow return data" in sector_guidance
+    assert "If you cite a small amount of industry knowledge" in sector_guidance
     sector_requirements = module.get_field_override("sector_analyst", "analysis_requirements")
     assert sector_requirements is not None
-    assert "资金流向与市场热度" in sector_requirements
-    assert "事实型平衡评估" in sector_requirements
-    assert "趋势、景气、竞争、轮动、估值分化和资金流向判断" in sector_requirements
-    assert "不要单独设“数据缺口声明”章节" in sector_requirements
-    assert "对所有 A 股个股，正文只能保留一个主行业归属" in sector_requirements
-    assert "如果同一股票命中多个行业类指数" in sector_requirements
-    assert "更贴近主业的行业口径" in sector_requirements
-    assert "允许少量行业通识作为背景说明" in sector_requirements
-    assert "未进入当日行业资金净流入前列" in sector_requirements
-    assert "未进入当日个股资金净流入前列" in sector_requirements
+    assert "Capital flow and market popularity" in sector_requirements
+    assert "factual balanced assessment" in sector_requirements
+    assert "Trend, prosperity, competition, rotation, valuation differentiation and capital flow judgment" in sector_requirements
+    assert "Do not set it up separately Data gap statement Chapter" in sector_requirements
+    assert "For all A-share stocks, the text can only retain one main industry affiliation." in sector_requirements
+    assert "If the same stock hits multiple industry indexes" in sector_requirements
+    assert "Closer to the industry caliber of the main business" in sector_requirements
+    assert "Allow a small amount of industry knowledge as background" in sector_requirements
+    assert "Did not enter the forefront of industry net capital inflows on the day" in sector_requirements
+    assert "Not among the top net inflows of individual stocks on the day" in sector_requirements
 
 
 def test_runtime_analyst_prompt_avoids_missing_dimension_sections() -> None:
     source = (ROOT / "core/agents/analyst.py").read_text(encoding="utf-8")
 
-    assert "不要单独列出“未获取的数据维度”" in source
-    assert "本报告未获取以下维度数据，不作相关分析" in source
-    assert "KOL 观点、散户情绪、机构持仓、行业资金流向" in source
-    assert "如果工具返回“汇总口径/明细口径”" in source
-    assert "必须同时保留两套数值，并明确写出“存在口径差异”" in source
-    assert "该维度数据缺失，暂不分析" not in source
+    assert "Do not list it separately Unobtained data dimensions " in source
+    assert "This report did not obtain the following dimension data and does not conduct relevant analysis." in source
+    assert "KOL Opinions, retail investor sentiment, institutional positions, industry capital flows" in source
+    assert "If the tool returns Summary caliber/detailed caliber " in source
+    assert "Both sets of values must be retained and clearly written out There is a caliber difference " in source
+    assert "The data in this dimension is missing and will not be analyzed for the time being." not in source
 
 
 def test_index_fallback_prompts_drop_information_gap_wording() -> None:
     source = (ROOT / "core/agents/adapters/index_analyst_v2.py").read_text(encoding="utf-8")
 
-    assert "关键观察信号与后续验证事项" in source
-    assert "关键宏观信号与后续观察事项" in source
-    assert "5. 关键观察信号、信息缺口与后续验证事项" not in source
-    assert "3. 关键宏观信号、信息缺口与后续观察事项" not in source
+    assert "Key observation signals and subsequent verification matters" in source
+    assert "Key macro signals and follow-up observations" in source
+    assert "5. Key observation signals, information gaps and follow-up verification matters" not in source
+    assert "3. Key macro signals, information gaps and follow-up observations" not in source
 
 
 def test_sector_fallback_prompt_limits_background_industry_inference() -> None:
     source = (ROOT / "core/agents/adapters/sector_analyst_v2.py").read_text(encoding="utf-8")
 
-    assert "允许少量行业通识作为背景说明" in source
-    assert "显式标注为背景" in source
-    assert "行业处于成熟阶段、增长空间有限" in source
-    assert "估值折价反映资产质量担忧、息差收窄压力" in source
+    assert "Allow a small amount of industry knowledge as background" in source
+    assert "Explicitly marked as background" in source
+    assert "The industry is in a mature stage and has limited room for growth." in source
+    assert "Valuation discount reflects concerns about asset quality and pressure to narrow interest margins" in source

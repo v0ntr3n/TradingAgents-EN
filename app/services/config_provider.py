@@ -98,7 +98,7 @@ class ConfigProvider:
             return None
 
         sens_patterns = ("key", "secret", "password", "token", "client_secret")
-        # 🔧 代理配置允许在 Web 界面编辑（即使来自环境变量）
+        # 🔧 Agent configuration allows editing in the web interface (even from environment variables)
         proxy_keys = ("http_proxy", "https_proxy", "no_proxy", "proxy_enabled")
 
         meta: Dict[str, Dict[str, Any]] = {}
@@ -107,9 +107,9 @@ class ConfigProvider:
             source = "environment" if env_v is not None else ("database" if v is not None else "default")
             sensitive = isinstance(k, str) and any(p in k.lower() for p in sens_patterns)
 
-            # 🔧 代理配置特殊处理：允许编辑（即使来自环境变量）
+            # 🔧 Agent configuration special handling: allow editing (even from environment variables)
             if k in proxy_keys:
-                editable = True  # 代理配置始终可编辑
+                editable = True  # Agent configuration is always editable
             else:
                 editable = not sensitive and source != "environment"
 

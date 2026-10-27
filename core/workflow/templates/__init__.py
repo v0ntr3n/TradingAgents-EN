@@ -1,5 +1,5 @@
 """
-预定义工作流模板（只保留 v2 版本）
+Predefined workflow templates (v2 version only)
 """
 
 from .blank_workflow import BLANK_WORKFLOW

@@ -1,4 +1,4 @@
-# TradingAgents-CN 社区版（Community Edition）
+# TradingAgents-EN (Community Edition)
 
 **English**: TradingAgents-CN Community Edition is a hybrid-licensed (Apache-2.0 core engine + proprietary source-available application layer) multi-agent stock research assistant for the Chinese A-share market. It orchestrates LLM-based analyst agents for debate-style research, natural-language stock screening, paper trading and study courses. For learning and research only — **not investment advice**.
 
@@ -6,169 +6,169 @@
 [![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
 [![Vue](https://img.shields.io/badge/Vue-3-brightgreen.svg)](https://vuejs.org/)
 
-基于多智能体协作的 A 股研究辅助系统。由多个扮演不同角色（大盘/板块/市场/基本面/新闻分析师，乐观/审慎研究员等）的 AI 智能体协作完成研究流程，帮助你系统化学习多智能体框架与 AI 大模型在股票研究中的应用。
+A multi-agent collaborative stock research assistant system for the Chinese A-share market. Multiple AI agents playing distinct roles (macro/sector/market/fundamental/news analysts, bullish/bearish researchers, etc.) collaborate throughout the research workflow to help you systematically learn multi-agent frameworks and the application of large language models in equity research.
 
-> 本项目是研究辅助工具，所有 AI 生成内容仅供学习参考，**不构成投资建议**。
+> This project is a research assistance tool. All AI-generated content is for learning and reference only and **does not constitute investment advice**.
 
-## 核心功能
+## Core Features
 
-- **单股研究**：多智能体辩论式分析（5 级深度），多情景观点呈现
-- **通用研究**：自然语言提问，研究任意市场主题
-- **股票筛选**：自然语言 + 条件筛选，从 6000+ 只股票中发现标的
-- **选股助手**：按研究需求描述匹配候选股票池
-- **智能助手**：联网搜索 + 工具调用 + 事实记忆
-- **AI 记忆**：项目级记忆与事实沉淀
-- **Skill 中心**：创建和管理自定义数据获取技能
-- **学习中心**：免费系统课程（发现阶段 5 课）+ 8 篇学习指南
-- **模拟交易**：纸面交易与复盘
+- **Single-Stock Research**: Multi-agent debate-style analysis (5 depth levels) with multi-scenario perspective presentation
+- **General Research**: Ask questions in natural language to research any market topic
+- **Stock Screening**: Natural language + conditional filtering to discover targets across 6,000+ stocks
+- **Stock Selection Assistant**: Match candidate stock pools based on research requirement descriptions
+- **Smart Assistant**: Web search + tool calling + fact memory
+- **AI Memory**: Project-level memory and fact retention
+- **Skill Center**: Create and manage custom data acquisition skills
+- **Learning Center**: Free systematic courses (5 lessons in the Discovery Phase) + 8 study guides
+- **Paper Trading**: Simulated trading and post-trade review
 
-## 版本演进
+## Version Evolution
 
-| 版本 | 定位 | 核心变化 |
+| Version | Positioning | Core Changes |
 |------|------|---------|
-| v1.0 | 多智能体分析工具 | 单股研究 + 批量分析，多个分析师智能体协作完成 A 股研究流程 |
-| v2.0 | 分析融入研究闭环 | 统一分析引擎 + 可视化工作流，新增持仓分析、操作复盘与阶段性复盘 |
-| v2.1 | 研究辅助合规化 | 报告表达、提示词模板、界面文案全面对齐"研究辅助"定位；新模型接入与稳定性提升 |
-| v3.0 | 从分析工具到 AI 助手 | 统一 AI 助手入口、自然语言选股、Agent 自主规划分析、Skill 能力扩展；架构升级为 FastAPI + Vue 3 + MongoDB/Redis |
+| v1.0 | Multi-Agent Analysis Tool | Single-stock research + batch analysis; multiple analyst agents collaborating to complete the A-share research workflow |
+| v2.0 | Integrating Analysis into a Research Loop | Unified analysis engine + visual workflow; added portfolio analysis, trade review, and periodic review |
+| v2.1 | Research Assistance Compliance | Report phrasing, prompt templates, and UI copy fully aligned with the "research assistant" positioning; new model integrations and stability improvements |
+| v3.0 | From Analysis Tool to AI Assistant | Unified AI assistant entry point, natural-language stock screening, autonomous Agent planning and analysis, Skill capability expansion; architecture upgraded to FastAPI + Vue 3 + MongoDB/Redis |
 
-## 社区版与 Pro 版的差异
+## Community Edition vs. Pro Edition
 
-| 能力 | 社区版 | Pro 版 |
+| Capability | Community Edition | Pro Edition |
 |------|:------:|:------:|
-| 单股研究 / 通用研究 / 股票筛选 | ✅ | ✅ |
-| 学习中心（免费课程） / 模拟交易 / Skill 中心 | ✅ | ✅ |
-| Agent 工作坊（创建、发布、管理自定义 Agent） | — | ✅ |
-| 交易系统（策略创建 / 优化 / 模板调试） | — | ✅ |
-| 定时分析 / 批量分析 | — | ✅ |
-| 专业报告导出（Word / PDF 多格式） | — | ✅ |
-| 高级课程（进阶 8 阶段） | — | ✅ |
-| 许可 | 混合授权（核心引擎开源 + 应用层专有） | 商业许可 |
+| Single-Stock Research / General Research / Stock Screening | ✅ | ✅ |
+| Learning Center (Free Courses) / Paper Trading / Skill Center | ✅ | ✅ |
+| Agent Workshop (Create, publish, and manage custom Agents) | — | ✅ |
+| Trading System (Strategy creation / optimization / template debugging) | — | ✅ |
+| Scheduled Analysis / Batch Analysis | — | ✅ |
+| Professional Report Export (Word / PDF multi-format) | — | ✅ |
+| Advanced Courses (8 Advanced Phases) | — | ✅ |
+| License | Hybrid License (Open-source core engine + Proprietary application layer) | Commercial License |
 
-Pro 版面向有更高阶研究工作流需求的用户，获取方式见项目主页或联系作者。
+The Pro Edition is designed for users who require advanced research workflows. Visit the project homepage or contact the author for access.
 
-## 快速开始
+## Quick Start
 
-### 环境要求
+### Prerequisites
 
 - Python 3.11
 - Node.js 18+
-- MongoDB 7.0+（推荐 8.0）与 Redis 6+（推荐 7）—— 需自行安装，见下方「安装 MongoDB / Redis」
+- MongoDB 7.0+ (8.0 recommended) and Redis 6+ (7 recommended) — must be installed separately; see "Installing MongoDB / Redis" below
 
-### 安装 MongoDB / Redis
+### Installing MongoDB / Redis
 
-本项目不自带数据库，请先自行安装并启动 MongoDB 与 Redis（版本要求见上）。任意一种安装方式都可以，只要**账号密码与端口和下一步的 `.env` 保持一致**。
+This project does not bundle databases. Please install and start MongoDB and Redis first (see version requirements above). Any installation method works as long as the **credentials and ports match the `.env` file in the next step**.
 
-| 系统 | MongoDB | Redis |
+| OS | MongoDB | Redis |
 |------|---------|-------|
-| Windows | 官网安装包 https://www.mongodb.com/try/download/community （安装后作为服务自启） | WSL 里运行 `redis-server`，或使用 Memurai 等兼容实现 |
+| Windows | Official installer https://www.mongodb.com/try/download/community (starts automatically as a service after installation) | Run `redis-server` in WSL, or use a compatible implementation such as Memurai |
 | macOS | `brew tap mongodb/brew && brew install mongodb-community && brew services start mongodb-community` | `brew install redis && brew services start redis` |
-| Ubuntu / Debian | 参考 https://www.mongodb.com/docs/manual/installation/ | `sudo apt install redis-server && sudo systemctl enable --now redis-server` |
+| Ubuntu / Debian | Refer to https://www.mongodb.com/docs/manual/installation/ | `sudo apt install redis-server && sudo systemctl enable --now redis-server` |
 
-也可以用 Docker 只跑这两个数据库（需要本机已装 Docker）：
+Alternatively, you can run just these two databases using Docker (requires Docker installed locally):
 
 ```bash
 docker run -d --name ta-mongo -p 27017:27017 \
-  -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=<你的密码> mongo:8.0
+  -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=<your_password> mongo:8.0
 docker run -d --name ta-redis -p 6379:6379 \
-  redis:7-alpine redis-server --requirepass <你的密码>
+  redis:7-alpine redis-server --requirepass <your_password>
 ```
 
-MongoDB 需开启认证（`authSource=admin`），并自行创建管理员账号；把用户名/密码、主机与端口写入下一步的 `.env`（本地默认 `localhost:27017` / `localhost:6379`）。
+MongoDB requires authentication enabled (`authSource=admin`) and an administrator account created manually. Put the username/password, host, and port into `.env` in the next step (local defaults are `localhost:27017` / `localhost:6379`).
 
-### 启动步骤
+### Startup Steps
 
 ```bash
-# 1. 克隆
-git clone <本仓库地址>
+# 1. Clone the repository
+git clone <repository_url>
 cd TradingAgents-CN
 
-# 2. 后端环境（Python 3.11）
+# 2. Backend environment (Python 3.11)
 python -m venv env
 env\Scripts\activate            # Windows
 source env/bin/activate         # Linux / macOS
 pip install -r requirements.txt
 
-# 3. 配置（必填 MongoDB / Redis / JWT_SECRET，详见 .env.example 注释）
+# 3. Configuration (MongoDB / Redis / JWT_SECRET are required; see comments in .env.example for details)
 copy .env.example .env          # Windows
 cp .env.example .env            # Linux / macOS
 
-# 4. 启动已安装好的 MongoDB / Redis（账号密码与 .env 保持一致）
+# 4. Start your installed MongoDB / Redis (ensure credentials match .env)
 
-# 5. 启动后端（默认 8000 端口，与前端默认代理一致）
+# 5. Start the backend (defaults to port 8000, matching the frontend's default proxy)
 uvicorn app.main:app
 
-# 6. 启动前端
+# 6. Start the frontend
 cd frontend
 npm install
-npm run dev                     # 默认 http://localhost:3000
+npm run dev                     # Defaults to http://localhost:3000
 ```
 
-### 首次登录
+### First Login
 
-后端首次启动时会自动完成初始化（无需手动执行任何导入脚本）：
+On its first startup, the backend automatically completes initialization (no need to run any import scripts manually):
 
-1. 导入系统级配置（模型目录、提示词模板、Agent 配置、工作流等）
-2. 用户表为空时，用 `.env` 中的 `ADMIN_DEFAULT_PASSWORD` 创建管理员账号 `admin`
+1. Imports system-level configurations (model catalog, prompt templates, Agent configurations, workflows, etc.)
+2. When the user table is empty, creates the administrator account `admin` using `ADMIN_DEFAULT_PASSWORD` from `.env`
 
-| 账号 | 密码 |
+| Account | Password |
 |------|------|
-| `admin` | `.env` 中的 `ADMIN_DEFAULT_PASSWORD` |
+| `admin` | `ADMIN_DEFAULT_PASSWORD` in `.env` |
 
-登录后请先在系统设置中配置大模型 API Key（OpenAI / DeepSeek / 通义千问等），并按需配置行情数据 Token。
+After logging in, please configure your LLM API Keys (OpenAI / DeepSeek / Qwen, etc.) in System Settings first, and configure market data tokens as needed.
 
-## 文档
+## Documentation
 
-- 用户手册：[docs/02-user-guide/user-manual-v3.0.md](docs/02-user-guide/user-manual-v3.0.md)
-- 学习指南：[docs/02-user-guide/](docs/02-user-guide/)（learning-01 ~ 08）
-- 免费课程：[docs/07-courses/v3.0/phase-01-discover/](docs/07-courses/v3.0/phase-01-discover/)
+- User Manual: [docs/02-user-guide/user-manual-v3.0.md](docs/02-user-guide/user-manual-v3.0.md)
+- Study Guides: [docs/02-user-guide/](docs/02-user-guide/) (learning-01 ~ 08)
+- Free Courses: [docs/07-courses/v3.0/phase-01-discover/](docs/07-courses/v3.0/phase-01-discover/)
 
-## 数据来源
+## Data Sources
 
-行情与财务数据来自 [Tushare](https://tushare.pro/) / [AKShare](https://github.com/akfamily/akshare) / [BaoStock](https://www.baostock.com/) 等公开接口，需自行注册获取 token。
+Market and financial data are sourced from public APIs including [Tushare](https://tushare.pro/) / [AKShare](https://github.com/akfamily/akshare) / [BaoStock](https://www.baostock.com/). You will need to register and obtain tokens on your own where required.
 
-## 参与共建（招募中）
+## Contributing (Recruiting)
 
-我们正在寻找**志同道合的开源人才**，一起把 TradingAgents-CN 做得更好。
+We are looking for **like-minded open-source contributors** to build TradingAgents-CN together.
 
-**怎么加入**：直接提交 Pull Request。不看简历、不面试——**PR 是唯一的考察方式**，我们根据 PR 质量判断是否合适：
+**How to join**: Submit a Pull Request directly. No resumes, no interviews — **PRs are the only evaluation criterion**. We assess fit based on PR quality:
 
-1. **解决真问题**：修复实际存在的 Bug 或补齐真实缺口，而非为改而改
-2. **说明修改原因**：讲清楚"为什么改"，而不只是"改了什么"
-3. **响应 review 意见**：积极回应评审意见并跟进修改
+1. **Solve real problems**: Fix actual bugs or fill genuine gaps rather than making changes for the sake of changing
+2. **Explain the rationale**: Clearly state "why the change was made", not just "what was changed"
+3. **Respond to review feedback**: Actively address review comments and follow up with revisions
 
-持续贡献高质量 PR 的伙伴将参与版本规划与关键模块开发。
+Contributors who consistently submit high-quality PRs will be invited to participate in release planning and core module development.
 
-**当前欢迎的方向**：
+**Currently welcomed areas**:
 
-- 数据源适配：行情/财务公开接口的接入与维护
-- 前端开发：Vue 3 + TypeScript 功能开发与体验优化
-- Agent 编排与提示词工程：分析链路优化
-- 文档与课程：用户手册、学习课程建设
+- Data source adaptation: Integrating and maintaining public market/financial data APIs
+- Frontend development: Vue 3 + TypeScript feature development and UX optimization
+- Agent orchestration & prompt engineering: Analysis pipeline optimization
+- Documentation & courses: User manuals and learning course development
 
-**你能得到**：公开署名与流量（版本发布/公众号点名致谢）、多智能体系统的工程实战经验、项目商业化优先权。项目目前收入尚不足以覆盖基础成本，暂为志愿参与；收入覆盖成本后的分配原则（社区贡献基金 / 顾问费 / 分成路径）已提前写明。
+**What you get**: Public attribution and visibility (shout-outs in release notes and official articles), hands-on engineering experience with multi-agent systems, and priority in future project commercialization. Project revenue does not yet cover basic infrastructure costs, so participation is currently voluntary; revenue-sharing principles once costs are covered (community contribution fund / consulting fees / profit-sharing paths) are documented upfront.
 
-**怎么联系**：初始沟通请发邮件至 hsliup@163.com；具体技术问题建议直接提 Issue / PR 公开讨论；协作顺畅后会邀请加入项目微信群与知识星球。
+**How to contact**: For initial communication, please email hsliup@163.com; for specific technical issues, we recommend opening an Issue or PR for public discussion; after smooth collaboration, you will be invited to join the project WeChat group and knowledge community.
 
-提交流程、分配框架与贡献者协议（CLA）详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+See [CONTRIBUTING.md](CONTRIBUTING.md) for submission workflows, revenue-sharing framework, and Contributor License Agreement (CLA).
 
-## 免责声明
+## Disclaimer
 
-- 本系统仅支持 A 股市场研究，输出为 AI 生成的研究参考，不构成投资建议
-- 不提供目标价、止损止盈、买卖时机等交易指令
-- 投资有风险，决策需独立判断
+- This system supports A-share market research only. Outputs are AI-generated research references and do not constitute investment advice
+- Does not provide trading instructions such as target prices, stop-loss/take-profit levels, or buy/sell timing
+- Investing involves risks; decisions require independent judgment
 
 ## License
 
-本项目采用**混合授权**，详见 [LICENSE](LICENSE)：
+This project uses a **hybrid license**. See [LICENSE](LICENSE) for details:
 
-- **Apache-2.0 开源组件**：`tradingagents/`（交易智能体库）、`cli/`、`docs/`、`tests/` 等——可自由使用、修改、分发
-- **专有组件（Source Available）**：`app/`（后端应用）、`frontend/`（前端应用）、`core/`（核心功能层）——源码可见，允许个人使用、评估与教育用途，**禁止再分发与商业使用**（商业许可请联系作者）
+- **Apache-2.0 Open-Source Components**: `tradingagents/` (trading agents library), `cli/`, `docs/`, `tests/`, etc. — free to use, modify, and distribute
+- **Proprietary Components (Source Available)**: `app/` (backend application), `frontend/` (frontend application), `core/` (core functional layer) — source code is viewable and permitted for personal use, evaluation, and educational purposes; **redistribution and commercial use are prohibited** (contact the author for a commercial license)
 
-提交贡献即表示同意签署[贡献者许可协议（CLA）](CONTRIBUTING.md)。
+Submitting a contribution indicates your agreement to sign the [Contributor License Agreement (CLA)](CONTRIBUTING.md).
 
-## 致谢
+## Acknowledgments
 
-- [Tauric Research / TradingAgents](https://github.com/TauricResearch/TradingAgents) — 多智能体交易框架原版项目
-- 所有通过 PR 参与共建的贡献者
+- [Tauric Research / TradingAgents](https://github.com/TauricResearch/TradingAgents) — Original multi-agent trading framework project
+- All contributors who have participated in building the project via PRs
 
-完整致谢（含授权说明与数据源致谢）见 [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md)。
+For full acknowledgments (including licensing details and data source credits), see [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).

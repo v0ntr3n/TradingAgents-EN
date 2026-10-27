@@ -53,13 +53,13 @@ def test_kline_invalid_period_returns_400(client):
     assert resp.status_code == 400
     j = resp.json()
     # FastAPI default error format
-    assert j["detail"].startswith("不支持的period")
+    assert j["detail"].startswith("Not supported period")
 
 
 def test_news_ok_with_announcements_and_source(client):
     items = [
-        {"title": "公告样例", "source": "tushare", "time": "2024-09-02", "url": "http://x", "type": "announcement"},
-        {"title": "新闻样例", "source": "tushare", "time": "2024-09-02 10:00:00", "url": "http://y", "type": "news"},
+        {"title": "Announcement sample", "source": "tushare", "time": "2024-09-02", "url": "http://x", "type": "announcement"},
+        {"title": "news sample", "source": "tushare", "time": "2024-09-02 10:00:00", "url": "http://y", "type": "news"},
     ]
     with patch("app.services.data_sources.manager.DataSourceManager.get_news_with_fallback", return_value=(items, "tushare")):
         resp = client.get("/api/stocks/000001/news", params={"days": 2, "limit": 2, "include_announcements": True})

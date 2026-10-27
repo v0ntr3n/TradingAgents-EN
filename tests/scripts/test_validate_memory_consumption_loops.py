@@ -15,7 +15,7 @@ spec.loader.exec_module(module)
 def test_assistant_memory_block_reaches_prompt():
     result = asyncio.run(module._run_assistant_consumption_smoke())
 
-    assert result["memory_block"].startswith("【历史偏好】")
+    assert result["memory_block"].startswith(" [Historical preferences]")
     assert result["prompt_contains_memory"] is True
     assert result["prompt_contains_topic"] is True
 
@@ -25,8 +25,8 @@ def test_analysis_memory_block_reaches_workflow_inputs():
 
     assert result["injected_growth_memory"] is True
     assert result["injected_mem0_memory"] is True
-    assert "【成长记忆】" in result["combined_block"]
-    assert "【历史分析】" in result["combined_block"]
+    assert " [Growth memory]" in result["combined_block"]
+    assert " [Historical analysis]" in result["combined_block"]
 
 
 def test_growth_approved_memory_reaches_recall_context():
@@ -45,8 +45,8 @@ def test_skill_lessons_reach_initial_feedback():
 
     assert result["feedback_contains_mem0_lessons"] is True
     assert result["feedback_contains_original_feedback"] is True
-    assert "【历史教训】" in result["final_initial_feedback"]
-    assert "【用户反馈】" in result["final_initial_feedback"]
+    assert " [Historical Lessons]" in result["final_initial_feedback"]
+    assert " [User feedback]" in result["final_initial_feedback"]
 
 
 def test_validate_all_passes():

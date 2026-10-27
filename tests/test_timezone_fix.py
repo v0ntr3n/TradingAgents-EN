@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试时区修复
+Test time zone fix
 """
 
 import asyncio
@@ -8,7 +8,7 @@ import sys
 import os
 import datetime
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.core.database import init_db, get_mongo_db
@@ -16,28 +16,28 @@ from app.services.operation_log_service import log_operation
 from app.models.operation_log import ActionType
 
 async def test_timezone_fix():
-    """测试时区修复"""
-    print("🕐 测试时区修复...")
+    """Test time zone fix"""
+    print("🕐 Test time zone fix...")
     
     try:
-        # 初始化数据库
+        # Initialize database
         await init_db()
-        print("✅ 数据库初始化成功")
+        print("✅ Database initialization successful")
         
-        # 显示当前时间信息
+        # Display current time information
         now_local = datetime.datetime.now()
         now_utc = datetime.datetime.utcnow()
-        print(f"📅 当前本地时间: {now_local}")
-        print(f"📅 当前UTC时间: {now_utc}")
-        print(f"📅 时差: {now_local - now_utc}")
+        print(f"📅 current local time: {now_local}")
+        print(f"📅 Current UTC time: {now_utc}")
+        print(f"📅 time difference: {now_local - now_utc}")
         
-        # 创建一个测试日志
-        print("\n📝 创建测试日志...")
+        # Create a test log
+        print("\n📝 Create test log...")
         log_id = await log_operation(
             user_id="admin",
             username="admin",
             action_type=ActionType.SYSTEM_SETTINGS,
-            action="时区测试",
+            action="time zone test",
             details={
                 "test_type": "timezone_fix",
                 "local_time": now_local.isoformat(),
@@ -48,39 +48,39 @@ async def test_timezone_fix():
             ip_address="127.0.0.1",
             user_agent="Timezone Test"
         )
-        print(f"✅ 创建日志成功，ID: {log_id}")
+        print(f"✅ Log created successfully,ID: {log_id}")
         
-        # 直接从数据库查询这条记录
-        print("\n🔍 从数据库查询记录...")
+        # Query this record directly from the database
+        print("\n🔍 Query records from database...")
         db = get_mongo_db()
         from bson import ObjectId
         
         doc = await db.operation_logs.find_one({"_id": ObjectId(log_id)})
         if doc:
-            print(f"📄 数据库中存储的时间:")
+            print(f"📄 time stored in database:")
             print(f"  timestamp: {doc['timestamp']}")
             print(f"  created_at: {doc['created_at']}")
             print(f"  action: {doc['action']}")
             
-            # 比较时间
+            # compare time
             stored_time = doc['timestamp']
-            print(f"\n⏰ 时间比较:")
-            print(f"  存储时间: {stored_time}")
-            print(f"  本地时间: {now_local}")
-            print(f"  UTC时间: {now_utc}")
+            print(f"\n⏰ time comparison:")
+            print(f"  storage time: {stored_time}")
+            print(f"  local time: {now_local}")
+            print(f"  UTC time: {now_utc}")
             
-            # 判断存储的是哪种时间
+            # Determine what time is stored
             if abs((stored_time - now_local).total_seconds()) < 60:
-                print("✅ 存储的是本地时间")
+                print("✅ Stored is local time")
             elif abs((stored_time - now_utc).total_seconds()) < 60:
-                print("⚠️ 存储的是UTC时间")
+                print("⚠️ The UTC time is stored")
             else:
-                print("❓ 存储的时间不明确")
+                print("❓ Storage time is unclear")
         else:
-            print("❌ 未找到记录")
+            print("❌ No record found")
         
-        # 测试API返回的时间格式
-        print("\n🌐 测试API返回格式...")
+        # Test the time format returned by the API
+        print("\n🌐 Test API return format...")
         from app.services.operation_log_service import get_operation_log_service
         from app.models.operation_log import OperationLogQuery
         
@@ -90,21 +90,21 @@ async def test_timezone_fix():
         
         if logs:
             log = logs[0]
-            print(f"📋 API返回的时间: {log.timestamp}")
-            print(f"📋 时间类型: {type(log.timestamp)}")
+            print(f"📋 API return time: {log.timestamp}")
+            print(f"📋 time type: {type(log.timestamp)}")
             
-            # 如果是字符串，尝试解析
+            # If it is a string, try to parse
             if isinstance(log.timestamp, str):
                 try:
                     parsed_time = datetime.datetime.fromisoformat(log.timestamp.replace('Z', ''))
-                    print(f"📋 解析后的时间: {parsed_time}")
+                    print(f"📋 time after parsing: {parsed_time}")
                 except:
-                    print("❌ 时间字符串解析失败")
+                    print("❌ Time string parsing failed")
         
-        print("\n🎉 时区测试完成！")
+        print("\n🎉 Time zone test completed!")
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
 

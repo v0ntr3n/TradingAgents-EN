@@ -1,12 +1,12 @@
 """
-自动更新 API 路由
+Automatically update API routes
 
-端点：
-- GET  /api/system/update/check     检查更新
-- GET  /api/system/update/progress   获取下载进度
-- POST /api/system/update/download   下载更新包
-- POST /api/system/update/apply      应用更新
-- GET  /api/system/update/info       获取当前版本信息
+Endpoint:
+- GET  /api/system/update/check     Check for updates
+- GET  /api/system/update/progress   Get download progress
+- POST /api/system/update/download   Download update package
+- POST /api/system/update/apply      Apply updates
+- GET  /api/system/update/info       Get current version information
 """
 import os
 import sys
@@ -44,7 +44,7 @@ def _supports_in_app_update(build_type: str) -> bool:
 
 @router.get("/info")
 async def get_version_info():
-    """获取当前版本和构建信息"""
+    """Get current version and build information"""
     svc = get_update_service()
     build_info = svc.get_build_info()
     # Prefer version from BUILD_INFO (build-time source of truth), fallback to VERSION file
@@ -67,19 +67,19 @@ async def get_version_info():
 
 @router.get("/check")
 async def check_update():
-    """检查是否有新版本"""
+    """Check if there is a new version"""
     svc = get_update_service()
     info = await svc.check_for_updates()
     return {
         "success": True,
         "data": info.to_dict(),
-        "message": "发现新版本" if info.has_update else "已是最新版本",
+        "message": "new version found" if info.has_update else "Already the latest version",
     }
 
 
 @router.get("/progress")
 async def get_download_progress():
-    """获取下载进度"""
+    """Get download progress"""
     svc = get_update_service()
     return {
         "success": True,
@@ -88,13 +88,13 @@ async def get_download_progress():
     }
 
 
-# 缓存最近一次 check 结果，避免 download 时重复请求
+# Cache the latest check result to avoid repeated requests during download
 _last_update_info = None
 
 
 @router.post("/download")
 async def download_update():
-    """下载更新包（仅 Windows 便携版/安装版支持）"""
+    """Download the update package (only supported by Windows portable/installation version)"""
     global _last_update_info
 
     svc = get_update_service()
@@ -104,21 +104,21 @@ async def download_update():
             return {
                 "success": False,
                 "data": None,
-                "message": "Docker 部署不支持应用内更新，请使用 docker pull 获取最新镜像",
+                "message": "Docker Deployment does not support in-app updates, please use docker pull to obtain the latest image",
             }
         return {
             "success": False,
             "data": None,
-            "message": "当前构建类型不支持应用内更新",
+            "message": "In-app updates are not supported for the current build type",
         }
 
-    # 先检查更新
+    # Check for updates first
     info = await svc.check_for_updates()
     if not info.has_update:
         return {
             "success": False,
             "data": None,
-            "message": "没有可用的更新",
+            "message": "No updates available",
         }
 
     _last_update_info = info
@@ -135,7 +135,7 @@ async def download_update():
             "message": svc.get_download_message(info),
         }
 
-    # 后台下载（不阻塞响应）
+    # Background download (no blocking response)
     asyncio.create_task(_do_download(svc, info))
 
     return {
@@ -151,20 +151,20 @@ async def download_update():
 
 
 async def _do_download(svc: UpdateService, info):
-    """后台执行下载"""
+    """Download in the background"""
     try:
         result = await svc.download_update(info)
         if result:
-            logger.info(f"✅ 更新包下载完成: {result}")
+            logger.info(f"✅ Update package download completed: {result}")
         else:
-            logger.error("❌ 更新包下载失败")
+            logger.error("❌ Update package download failed")
     except Exception as e:
-        logger.error(f"❌ 下载异常: {e}")
+        logger.error(f"❌ Download exception: {e}")
 
 
 @router.post("/apply")
 async def apply_update():
-    """应用更新（启动更新器，然后退出后端；仅 Windows 便携版/安装版支持）"""
+    """Apply updates (launch updater, then exit backend; supported on Windows Portable/Installed editions only)"""
     global _last_update_info
 
     svc = get_update_service()
@@ -174,12 +174,12 @@ async def apply_update():
             return {
                 "success": False,
                 "data": None,
-                "message": "Docker 部署不支持应用内更新，请使用 docker pull 获取最新镜像",
+                "message": "Docker Deployment does not support in-app updates, please use docker pull to obtain the latest image",
             }
         return {
             "success": False,
             "data": None,
-            "message": "当前构建类型不支持应用内更新",
+            "message": "In-app updates are not supported for the current build type",
         }
     progress = svc.get_download_progress()
 
@@ -187,15 +187,15 @@ async def apply_update():
         return {
             "success": False,
             "data": None,
-            "message": "请先下载更新包",
+            "message": "Please download the update package first",
         }
 
-    # 找到已下载的更新包
+    # Find the downloaded update package
     if not _last_update_info:
         return {
             "success": False,
             "data": None,
-            "message": "更新信息丢失，请重新检查更新",
+            "message": "Update information is lost, please check for updates again",
         }
 
     version = _last_update_info.latest_version
@@ -203,7 +203,7 @@ async def apply_update():
         return {
             "success": False,
             "data": None,
-            "message": "当前版本提供的是安装包，请下载安装包后手动完成升级",
+            "message": "The current version provides an installation package. Please download the installation package and complete the upgrade manually.",
         }
 
     update_file = svc.UPDATES_DIR / svc._build_download_filename(_last_update_info)
@@ -212,14 +212,14 @@ async def apply_update():
         return {
             "success": False,
             "data": None,
-            "message": "更新包文件不存在，请重新下载",
+            "message": "The update package file does not exist, please download it again",
         }
 
-    # 启动更新器
+    # Start the updater
     result = await svc.apply_update(update_file, version)
 
     if result["success"]:
-        # 给前端一个响应后，延迟退出后端进程
+        # After giving the front-end a response, delay exiting the back-end process
         asyncio.get_event_loop().call_later(3, _shutdown)
 
     return {
@@ -230,7 +230,7 @@ async def apply_update():
 
 
 def _shutdown():
-    """优雅退出后端进程"""
-    logger.info("🛑 后端进程即将退出，等待更新器接管...")
+    """Gracefully exit the backend process"""
+    logger.info("🛑 The backend process is about to exit, waiting for the updater to take over...")
     os._exit(0)
 

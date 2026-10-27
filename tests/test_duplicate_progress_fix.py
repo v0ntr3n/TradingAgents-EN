@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-测试重复进度提示修复效果
-验证分析师完成提示不会重复显示
+Test the repair effect of repeated progress prompts
+Verification analyst completion prompts will not be displayed repeatedly
 """
 
 import os
 import sys
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_duplicate_prevention():
-    """测试重复提示防止机制"""
-    print("🔧 测试重复提示防止机制")
+    """Test duplicate prompt prevention mechanism"""
+    print("🔧 Test duplicate prompt prevention mechanism")
     print("=" * 60)
     
     try:
@@ -21,52 +21,52 @@ def test_duplicate_prevention():
         
         ui = CLIUserInterface()
         
-        # 模拟重复的分析师完成事件
+        # Simulate repeated analyst completion events
         completed_analysts = set()
         
-        print("📊 模拟重复的市场分析完成事件:")
+        print("📊 Simulate repeated market analysis completion events:")
         print("-" * 40)
         
-        # 模拟多次市场分析完成
+        # Simulation of multiple market analyzes completed
         for i in range(4):
-            print(f"第{i+1}次 market_report 事件:")
+            print(f"No.{i+1}market_report events:")
             
-            # 检查是否已经完成过
+            # Check if it has been completed
             if "market_report" not in completed_analysts:
-                ui.show_success("📈 市场分析完成")
+                ui.show_success("📈 Market analysis completed")
                 completed_analysts.add("market_report")
-                print("   ✅ 显示完成提示")
+                print("   ✅ Show completion prompt")
             else:
-                print("   🔇 跳过重复提示（已完成）")
+                print("   🔇 Skip duplicate prompts (completed)")
         
-        print(f"\n📊 模拟重复的基本面分析完成事件:")
+        print(f"\n📊 Simulate repeated fundamental analysis completion events:")
         print("-" * 40)
         
-        # 模拟多次基本面分析完成
+        # Simulation of multiple fundamental analysis is completed
         for i in range(3):
-            print(f"第{i+1}次 fundamentals_report 事件:")
+            print(f"No.{i+1}fundamentals_report events:")
             
             if "fundamentals_report" not in completed_analysts:
-                ui.show_success("📊 基本面分析完成")
+                ui.show_success("📊 Fundamental analysis completed")
                 completed_analysts.add("fundamentals_report")
-                print("   ✅ 显示完成提示")
+                print("   ✅ Show completion prompt")
             else:
-                print("   🔇 跳过重复提示（已完成）")
+                print("   🔇 Skip duplicate prompts (completed)")
         
-        print(f"\n✅ 重复提示防止机制测试完成")
-        print(f"📋 结果: 每个分析师只显示一次完成提示")
+        print(f"\n✅ Duplicate prompt prevention mechanism test completed")
+        print(f"📋 result: Completion prompts are only shown once per analyst")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_stream_chunk_simulation():
-    """模拟流式处理中的chunk重复"""
-    print("\n🌊 模拟流式处理chunk重复场景")
+    """Simulate chunk duplication in streaming"""
+    print("\n🌊 Simulate streaming chunk repetition scenario")
     print("=" * 60)
     
     try:
@@ -75,51 +75,51 @@ def test_stream_chunk_simulation():
         ui = CLIUserInterface()
         completed_analysts = set()
         
-        # 模拟LangGraph流式输出的多个chunk
+        # Simulate multiple LangGraph streaming outputs chunk
         mock_chunks = [
-            {"market_report": "市场分析第1部分..."},
-            {"market_report": "市场分析第1部分...市场分析第2部分..."},
-            {"market_report": "市场分析完整报告..."},
-            {"fundamentals_report": "基本面分析第1部分..."},
-            {"market_report": "市场分析完整报告...", "fundamentals_report": "基本面分析完整报告..."},
+            {"market_report": "Market Analysis Part 1..."},
+            {"market_report": "Market Analysis Part 1...Market Analysis Part 2..."},
+            {"market_report": "Market Analysis Complete Report..."},
+            {"fundamentals_report": "Fundamental Analysis Part 1..."},
+            {"market_report": "Market Analysis Complete Report...", "fundamentals_report": "Fundamental Analysis Complete Report..."},
         ]
         
-        print("📊 处理模拟的流式chunk:")
+        print("📊 Handle simulated streaming chunk:")
         print("-" * 40)
         
         for i, chunk in enumerate(mock_chunks):
-            print(f"\n处理 Chunk {i+1}: {list(chunk.keys())}")
+            print(f"\n Process Chunk {i+1}: {list(chunk.keys())}")
             
-            # 处理市场分析报告
+            # Process market analysis reports
             if "market_report" in chunk and chunk["market_report"]:
                 if "market_report" not in completed_analysts:
-                    ui.show_success("📈 市场分析完成")
+                    ui.show_success("📈 Market analysis completed")
                     completed_analysts.add("market_report")
-                    print("   ✅ 首次显示市场分析完成")
+                    print("   ✅ First display market analysis completed")
                 else:
-                    print("   🔇 跳过重复的市场分析完成提示")
+                    print("   🔇 Skip repetitive market analysis completion tips")
             
-            # 处理基本面分析报告
+            # Process fundamental analysis reports
             if "fundamentals_report" in chunk and chunk["fundamentals_report"]:
                 if "fundamentals_report" not in completed_analysts:
-                    ui.show_success("📊 基本面分析完成")
+                    ui.show_success("📊 Fundamental analysis completed")
                     completed_analysts.add("fundamentals_report")
-                    print("   ✅ 首次显示基本面分析完成")
+                    print("   ✅ First display of fundamental analysis completed")
                 else:
-                    print("   🔇 跳过重复的基本面分析完成提示")
+                    print("   🔇 Skip repeated fundamental analysis completion tips")
         
-        print(f"\n✅ 流式处理重复防止测试完成")
-        print(f"📋 结果: 即使多个chunk包含相同报告，也只显示一次完成提示")
+        print(f"\n✅ Streaming duplication prevents test completion")
+        print(f"📋 result: Even if multiple chunks contain the same report, only one completion prompt is displayed.")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def test_analyst_completion_order():
-    """测试分析师完成顺序"""
-    print("\n📈 测试分析师完成顺序")
+    """Test analyst completion sequence"""
+    print("\n📈 Test analyst completion sequence")
     print("=" * 60)
     
     try:
@@ -128,53 +128,53 @@ def test_analyst_completion_order():
         ui = CLIUserInterface()
         completed_analysts = set()
         
-        # 模拟分析师按顺序完成
+        # Simulation analysts complete in sequence
         analysts = [
-            ("market_report", "📈 市场分析完成"),
-            ("fundamentals_report", "📊 基本面分析完成"),
-            ("technical_report", "🔍 技术分析完成"),
-            ("sentiment_report", "💭 情感分析完成")
+            ("market_report", "📈 Market analysis completed"),
+            ("fundamentals_report", "📊 Fundamental analysis completed"),
+            ("technical_report", "🔍 Technical analysis completed"),
+            ("sentiment_report", "💭 Sentiment analysis completed")
         ]
         
-        print("📊 模拟分析师按顺序完成:")
+        print("📊 Simulation analysts complete in sequence:")
         print("-" * 40)
         
         for analyst_key, message in analysts:
-            print(f"\n{analyst_key} 完成:")
+            print(f"\n{analyst_key} Complete:")
             
             if analyst_key not in completed_analysts:
                 ui.show_success(message)
                 completed_analysts.add(analyst_key)
-                print("   ✅ 显示完成提示")
+                print("   ✅ Show completion prompt")
             else:
-                print("   🔇 已完成，跳过")
+                print("   🔇 Completed, skip")
         
-        print(f"\n📊 模拟重复完成事件:")
+        print(f"\n📊 Simulate repeated completion events:")
         print("-" * 40)
         
-        # 模拟某些分析师重复完成
-        for analyst_key, message in analysts[:2]:  # 只测试前两个
-            print(f"\n{analyst_key} 重复完成:")
+        # Simulate certain analysts to complete repeatedly
+        for analyst_key, message in analysts[:2]:  # Only test the first two
+            print(f"\n{analyst_key} Repeat to complete:")
             
             if analyst_key not in completed_analysts:
                 ui.show_success(message)
                 completed_analysts.add(analyst_key)
-                print("   ✅ 显示完成提示")
+                print("   ✅ Show completion prompt")
             else:
-                print("   🔇 已完成，跳过重复提示")
+                print("   🔇 Completed, skip repeat prompts")
         
-        print(f"\n✅ 分析师完成顺序测试完成")
-        print(f"📋 已完成的分析师: {completed_analysts}")
+        print(f"\n✅ Analyst completes sequence testing completed")
+        print(f"📋 Completed Analyst: {completed_analysts}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def test_real_scenario_simulation():
-    """模拟真实场景"""
-    print("\n🎭 模拟真实分析场景")
+    """Simulate real scenarios"""
+    print("\n🎭 Simulate real analysis scenarios")
     print("=" * 60)
     
     try:
@@ -183,119 +183,119 @@ def test_real_scenario_simulation():
         ui = CLIUserInterface()
         completed_analysts = set()
         
-        print("🚀 模拟600036股票分析过程:")
+        print("🚀 Simulate the 600036 stock analysis process:")
         print("-" * 40)
         
-        # 模拟真实的分析流程
-        ui.show_step_header(3, "智能分析阶段 | AI Analysis Phase")
-        ui.show_progress("启动分析师团队...")
+        # Simulate real analysis process
+        ui.show_step_header(3, "Intelligent analysis stage | AI Analysis Phase")
+        ui.show_progress("Start an analyst team...")
         
-        # 模拟市场分析师的多次输出（这是导致重复的原因）
-        print("\n📈 市场分析师工作过程:")
+        # Simulate multiple outputs from market analysts (this is what causes duplication)
+        print("\n📈 Market Analyst Work Process:")
         market_outputs = [
-            "获取市场数据...",
-            "分析价格趋势...", 
-            "计算技术指标...",
-            "生成市场报告..."
+            "Get market data...",
+            "Analyze price trends...", 
+            "Calculate technical indicators...",
+            "Generate market reports..."
         ]
         
         for i, output in enumerate(market_outputs):
-            print(f"   市场分析步骤 {i+1}: {output}")
+            print(f"   Market analysis steps {i+1}: {output}")
             
-            # 每个步骤都可能触发report更新
-            if i == len(market_outputs) - 1:  # 最后一步才算真正完成
+            # Each step may trigger report updates
+            if i == len(market_outputs) - 1:  # The last step is the real completion
                 if "market_report" not in completed_analysts:
-                    ui.show_success("📈 市场分析完成")
+                    ui.show_success("📈 Market analysis completed")
                     completed_analysts.add("market_report")
                 else:
-                    print("   🔇 跳过重复提示")
+                    print("   🔇 Skip repeat prompts")
         
-        # 模拟基本面分析师
-        print("\n📊 基本面分析师工作过程:")
+        # Simulated fundamental analyst
+        print("\n📊 The working process of a fundamental analyst:")
         fundamentals_outputs = [
-            "获取财务数据...",
-            "分析财务指标...",
-            "评估公司价值..."
+            "Get financial data...",
+            "Analyze financial metrics...",
+            "Assess company value..."
         ]
         
         for i, output in enumerate(fundamentals_outputs):
-            print(f"   基本面分析步骤 {i+1}: {output}")
+            print(f"   Fundamental analysis steps {i+1}: {output}")
             
             if i == len(fundamentals_outputs) - 1:
                 if "fundamentals_report" not in completed_analysts:
-                    ui.show_success("📊 基本面分析完成")
+                    ui.show_success("📊 Fundamental analysis completed")
                     completed_analysts.add("fundamentals_report")
                 else:
-                    print("   🔇 跳过重复提示")
+                    print("   🔇 Skip repeat prompts")
         
-        print(f"\n✅ 真实场景模拟完成")
-        print(f"📋 结果: 每个分析师只显示一次完成提示，避免了重复")
+        print(f"\n✅ Real scene simulation completed")
+        print(f"📋 result: Completion prompts are shown only once per analyst, avoiding duplication")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 def main():
-    """主测试函数"""
-    print("🚀 开始测试重复进度提示修复效果")
+    """Main test function"""
+    print("🚀 Start testing the repair effect of repeated progress prompts")
     print("=" * 80)
     
     results = []
     
-    # 测试1: 重复提示防止机制
+    # test 1: Duplicate prompt prevention mechanism
     results.append(test_duplicate_prevention())
     
-    # 测试2: 流式处理chunk重复
+    # test 2: Streaming chunk duplication
     results.append(test_stream_chunk_simulation())
     
-    # 测试3: 分析师完成顺序
+    # test 3: Analyst completion order
     results.append(test_analyst_completion_order())
     
-    # 测试4: 真实场景模拟
+    # test 4: Real scene simulation
     results.append(test_real_scenario_simulation())
     
-    # 总结结果
+    # Summary results
     print("\n" + "=" * 80)
-    print("📋 测试结果总结")
+    print("📋 Summary of test results")
     print("=" * 80)
     
     passed = sum(results)
     total = len(results)
     
     test_names = [
-        "重复提示防止机制",
-        "流式处理chunk重复",
-        "分析师完成顺序",
-        "真实场景模拟"
+        "Duplicate prompt prevention mechanism",
+        "Streaming chunk duplication",
+        "Analyst completion order",
+        "Real scene simulation"
     ]
     
     for i, (name, result) in enumerate(zip(test_names, results)):
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{i+1}. {name}: {status}")
     
-    print(f"\n📊 总体结果: {passed}/{total} 测试通过")
+    print(f"\n📊 Overall results: {passed}/{total} Test passed")
     
     if passed == total:
-        print("🎉 所有测试通过！重复进度提示问题已修复")
-        print("\n📋 修复效果:")
-        print("1. ✅ 每个分析师只显示一次完成提示")
-        print("2. ✅ 流式处理中的重复chunk被正确处理")
-        print("3. ✅ 分析师完成状态正确跟踪")
-        print("4. ✅ 用户界面清爽，没有重复信息")
+        print("🎉 All tests passed! Repeated progress prompt issue has been fixed")
+        print("\n📋 Repair effect:")
+        print("1. ✅ Completion prompts are only shown once per analyst")
+        print("2. ✅ Duplicate chunks in streaming are handled correctly")
+        print("3. ✅ Analyst completion status correctly tracked")
+        print("4. ✅ The user interface is clean and there is no duplicate information")
         
-        print("\n🔧 技术实现:")
-        print("- 使用completed_analysts集合跟踪已完成的分析师")
-        print("- 在显示完成提示前检查是否已经完成")
-        print("- 避免LangGraph流式输出导致的重复触发")
+        print("\n🔧 Technical implementation:")
+        print("- Track completed analysts using the completed_analysts collection")
+        print("- Check if completion is complete before displaying completion prompt")
+        print("- Avoid repeated triggering caused by LangGraph streaming output")
         
-        print("\n🎯 用户体验改善:")
-        print("- 清晰的进度指示，不会有重复干扰")
-        print("- 每个分析师完成时只有一次明确提示")
-        print("- 整体分析流程更加专业和可信")
+        print("\n🎯 User experience improvement:")
+        print("- Clear progress indication, no repetitive interference")
+        print("- Only one explicit prompt per analyst when completed")
+        print("- The overall analysis process is more professional and credible")
     else:
-        print("⚠️ 部分测试失败，需要进一步优化")
+        print("⚠️ Some tests failed and need further optimization")
     
     return passed == total
 

@@ -47,11 +47,11 @@ def test_basics_prefers_app_cache_when_enabled(monkeypatch):
     called = {"api": False}
 
     def fake_from_mongo(stock_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        return {"code": stock_code or "000001", "name": "平安银行", "source": "mongo"}
+        return {"code": stock_code or "000001", "name": "Ping An Bank", "source": "mongo"}
 
     def fake_from_api(stock_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
         called["api"] = True
-        return {"code": stock_code or "000001", "name": "平安银行", "source": "api"}
+        return {"code": stock_code or "000001", "name": "Ping An Bank", "source": "api"}
 
     monkeypatch.setattr(svc, "_get_from_mongodb", fake_from_mongo)
     monkeypatch.setattr(svc, "_get_from_tdx_api", fake_from_api)
@@ -81,7 +81,7 @@ def test_basics_fallback_to_api_when_cache_miss(monkeypatch):
 
     def fake_from_api(stock_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
         called["api"] = True
-        return {"code": stock_code or "000001", "name": "平安银行", "source": "api"}
+        return {"code": stock_code or "000001", "name": "Ping An Bank", "source": "api"}
 
     monkeypatch.setattr(svc, "_get_from_mongodb", miss_from_mongo)
     monkeypatch.setattr(svc, "_get_from_tdx_api", fake_from_api)
@@ -110,11 +110,11 @@ def test_basics_direct_first_when_disabled(monkeypatch):
 
     def fake_from_api(stock_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
         order.append("api")
-        return {"code": stock_code or "000001", "name": "平安银行", "source": "api"}
+        return {"code": stock_code or "000001", "name": "Ping An Bank", "source": "api"}
 
     def fake_from_mongo(stock_code: Optional[str] = None) -> Optional[Dict[str, Any]]:
         order.append("mongo")
-        return {"code": stock_code or "000001", "name": "平安银行", "source": "mongo"}
+        return {"code": stock_code or "000001", "name": "Ping An Bank", "source": "mongo"}
 
     monkeypatch.setattr(svc, "_get_from_tdx_api", fake_from_api)
     monkeypatch.setattr(svc, "_get_from_mongodb", fake_from_mongo)

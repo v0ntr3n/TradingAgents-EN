@@ -1,7 +1,7 @@
 """
-mem0 统一记忆层 — 数据模型
+mem0 unified memory layer — data model
 
-定义 MemoryService 对外暴露的数据结构，与 mem0 内部实现解耦。
+Define the externally exposed data structure of MemoryService and decouple it from the internal implementation of mem0.
 """
 
 from datetime import datetime
@@ -19,7 +19,7 @@ def _compact_text(text: str, max_chars: int = 220) -> str:
 
 
 class MemoryScope(str, Enum):
-    """记忆 scope — 通过 mem0 metadata 实现分类过滤"""
+    """memory scope — Implement classification filtering through mem0 metadata"""
 
     CONVERSATION = "conversation"
     USER_PREFERENCE = "user_preference"
@@ -31,13 +31,13 @@ class MemoryScope(str, Enum):
 
 
 class MemoryObjectType(str, Enum):
-    """长期记忆的对象类型"""
+    """Types of objects in long-term memory"""
 
     STOCK = "stock"
 
 
 class StockAnalysisMemory(BaseModel):
-    """对象化股票分析记忆"""
+    """Objectized stock analysis memory"""
 
     object_type: str = MemoryObjectType.STOCK
     memory_kind: str = "stock_analysis"
@@ -84,18 +84,18 @@ class StockAnalysisMemory(BaseModel):
         return metadata
 
     def to_memory_text(self) -> str:
-        parts = [f"对象={self.object_key()}"]
+        parts = [f"object={self.object_key()}"]
         if self.analysis_date:
-            parts.append(f"日期={self.analysis_date}")
+            parts.append(f"Date={self.analysis_date}")
         if self.summary:
-            parts.append(f"结论={_compact_text(self.summary, 220)}")
+            parts.append(f"Conclusion={_compact_text(self.summary, 220)}")
         if self.recommendation:
-            parts.append(f"建议={_compact_text(self.recommendation, 160)}")
+            parts.append(f"Suggestions={_compact_text(self.recommendation, 160)}")
         return "；".join(parts)
 
 
 class MemoryItem(BaseModel):
-    """mem0 返回的单条记忆（已归一化）"""
+    """mem0 Single memory returned (normalized)"""
 
     id: str = ""
     memory: str = ""
@@ -114,7 +114,7 @@ class MemoryItem(BaseModel):
 
     @classmethod
     def from_mem0(cls, raw: dict, default_scope: str = "") -> "MemoryItem":
-        """将 mem0 SDK 返回的 dict 归一化为 MemoryItem"""
+        """Normalize the dict returned by mem0 SDK to MemoryItem"""
         meta = raw.get("metadata") or {}
         return cls(
             id=str(raw.get("id") or ""),
@@ -135,7 +135,7 @@ class MemoryItem(BaseModel):
 
 
 class StoreResult(BaseModel):
-    """MemoryService.store 的返回值"""
+    """MemoryService.store return value"""
 
     memory_ids: List[str] = Field(default_factory=list)
     facts_extracted: int = 0

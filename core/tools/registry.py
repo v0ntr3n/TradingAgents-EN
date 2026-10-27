@@ -1,7 +1,7 @@
 """
-工具注册表
+Tool registry
 
-管理所有可用工具的元数据和发现
+Manage metadata and discovery for all available tools
 """
 
 import logging
@@ -25,18 +25,18 @@ _PARAMETER_TYPE_MAP: Dict[str, Tuple[type, Any]] = {
 
 class ToolRegistry:
     """
-    工具注册表（单例模式）
+    Tool registry (singleton mode)
     
-    用法:
+    Usage:
         registry = ToolRegistry()
         
-        # 获取所有工具
+        # Get all the tools
         all_tools = registry.list_all()
         
-        # 获取特定类别工具
+        # Get category-specific tools
         market_tools = registry.get_by_category("market")
         
-        # 获取某个 Agent 的可用工具
+        # Get the tools available for an Agent
         tools = registry.get_tools_for_agent("market_analyst")
     """
     
@@ -54,14 +54,14 @@ class ToolRegistry:
     def __init__(self):
         if not self._initialized:
             self._tools: Dict[str, ToolMetadata] = {}
-            self._functions: Dict[str, Callable] = {}  # 存储实际函数实现
+            self._functions: Dict[str, Callable] = {}  # Store actual function implementation
             self._load_builtin_tools()
-            # ⚠️ 先标记已初始化，再加载工具模块。
-            # 否则 load_all() 导入模块时，模块的 @register_tool 装饰器会触发
-            # ToolRegistry() → __init__ → _initialized 还是 False → 重新进入
-            # load_all() → 无界递归（RecursionError）。
+            # ⚠️ First mark it as initialized and then load the tool module.
+            # Otherwise load_all() When importing a module, the module's @register_tool The decorator will trigger
+            # ToolRegistry() → __init__ → _initialized Still False → re-enter
+            # load_all() → Unbounded recursion (RecursionError).
             self._initialized = True
-            self._load_tool_implementations()  # 自动加载工具实现
+            self._load_tool_implementations()  # Automatic loading tool implementation
 
     def _load_builtin_tools(self) -> None:
         """加载内置工具元数据"""
@@ -76,7 +76,7 @@ class ToolRegistry:
             count = loader.load_all()
             logger.info(f"✅ 自动加载了 {count} 个工具模块")
         except Exception as e:
-            logger.warning(f"⚠️ 自动加载工具模块失败: {e}")
+            logger.warning(f"⚠️ Failed to automatically load tool module: {e}")
     
     def register(self, metadata: ToolMetadata, override: bool = False) -> None:
         """注册工具"""
@@ -98,7 +98,7 @@ class ToolRegistry:
         return tool_id in self._tools
 
     def get_tool(self, tool_id: str) -> Optional[ToolMetadata]:
-        """获取工具元数据（别名方法）"""
+        """Get tool metadata (alias method)"""
         return self.get(tool_id)
 
     def get_all_tools(self) -> List[ToolMetadata]:
@@ -125,7 +125,7 @@ class ToolRegistry:
         """获取所有离线工具"""
         return [t for t in self._tools.values() if not t.is_online]
 
-    # ==================== 函数注册（新增） ====================
+    # ==================== Function registration (new) ====================
 
     def register_function(
         self,
@@ -142,25 +142,25 @@ class ToolRegistry:
         **kwargs
     ) -> None:
         """
-        注册一个函数作为工具
+        Register a function as a tool
 
         Args:
-            tool_id: 工具唯一ID
-            func: 实际的函数实现
-            name: 工具显示名称
-            category: 工具分类
-            description: 工具描述
-            is_online: 是否需要在线
-            is_legacy: 是否为旧工具适配
-            override: 是否覆盖已有工具
-            parameters: 参数定义列表（可选，如果提供则覆盖元数据中的参数）
-            timeout_tier: 超时分层 light/medium/heavy
+            tool_id: Tool only ID
+            func: Actual function implementation
+            name: Tool display name
+            category: Tool classification
+            description: Tool description
+            is_online: Do you need to be online?
+            is_legacy: Whether to adapt to old tools
+            override: Whether to overwrite existing tools
+            parameters: List of parameter definitions (optional, overrides parameters in metadata if provided)
+            timeout_tier: Timeout tiering light/medium/heavy
         """
-        # 防御性：tool_id 必须符合 OpenAI 工具名规范（^[a-zA-Z0-9_-]+$）
+        # Defensive: tool_id must comply with the OpenAI tool name specification (^[a-zA-Z0-9_-]+$) 
         from .fc_converter import sanitize_function_name
         sanitized = sanitize_function_name(tool_id)
         if sanitized != tool_id:
-            logger.warning(f"⚠️ tool_id '{tool_id}' 含非法字符，已规范化为 '{sanitized}'")
+            logger.warning(f"⚠️ tool_id '{tool_id}' Contains illegal characters and has been normalized to '{sanitized}'")
             tool_id = sanitized
 
         if tool_id in self._tools:
@@ -174,7 +174,7 @@ class ToolRegistry:
                 for key, value in kwargs.items():
                     if key in metadata_fields:
                         setattr(self._tools[tool_id], key, value)
-                logger.debug(f"为已注册工具添加函数实现: {tool_id}")
+                logger.debug(f"Add function implementation for registered tools: {tool_id}")
                 return
             elif not override:
                 logger.warning(f"工具 '{tool_id}' 已注册，跳过")
@@ -211,7 +211,7 @@ class ToolRegistry:
         return self._functions.get(tool_id)
 
     def _build_langchain_args_schema(self, metadata: ToolMetadata) -> Optional[Type]:
-        """基于工具元数据构建 LangChain/Pydantic 参数模型。"""
+        """Build LangChain/Pydantic parametric models based on tool metadata."""
         if not metadata.parameters:
             return None
 
@@ -235,10 +235,10 @@ class ToolRegistry:
 
     def get_langchain_tool(self, tool_id: str):
         """
-        获取 LangChain 格式的工具
+        Tools for obtaining LangChain format
 
         Returns:
-            LangChain Tool 对象，如果工具未注册或无函数实现则返回 None
+            LangChain Tool Object, returned if the tool is not registered or has no function implementation None
         """
         if tool_id not in self._tools:
             return None
@@ -247,11 +247,11 @@ class ToolRegistry:
         if func is None:
             return None
 
-        # 如果已经是 LangChain tool，直接返回
+        # If it is already LangChain tool, return directly
         if hasattr(func, 'invoke') or hasattr(func, 'run'):
             return func
 
-        # 🔥 检查函数是否为异步函数，若是则自动包装为同步函数
+        # 🔥 Check whether the function is an asynchronous function, if so, it will be automatically packaged as a synchronous function
         import asyncio
         import inspect
         import functools
@@ -274,7 +274,7 @@ class ToolRegistry:
                 f"✅ 工具 {tool_id} 的异步函数已自动包装为同步函数，LangChain 可正常调用。"
             )
         
-        # 否则包装为 LangChain tool
+        # Otherwise the package is LangChain tool
         from langchain_core.tools import StructuredTool
 
         metadata = self._tools[tool_id]
@@ -283,8 +283,8 @@ class ToolRegistry:
         if metadata.source == "generated" and metadata.parameters:
             args_schema = self._build_langchain_args_schema(metadata)
 
-        # 使用 StructuredTool.from_function 来创建工具
-        # 这样可以显式指定 name、description 和 args_schema
+        # Use StructuredTool.from_function to create tools
+        # This allows you to explicitly specify name, description, and args_schema
         lc_tool = StructuredTool.from_function(
             func=func,
             name=tool_id,
@@ -295,7 +295,7 @@ class ToolRegistry:
         return lc_tool
 
     def get_langchain_tools(self, tool_ids: List[str]) -> List:
-        """批量获取 LangChain 格式的工具"""
+        """Tool for obtaining LangChain format in batches"""
         tools = []
         for tool_id in tool_ids:
             tool = self.get_langchain_tool(tool_id)
@@ -314,9 +314,9 @@ class ToolRegistry:
         **metadata_kwargs: Any,
     ) -> None:
         """
-        注册 AI 生成的外部 Skill 到工具注册表。
+        Register AI-generated external skills to the tool registry.
 
-        生成的 Skill 通过沙箱包装后注册为可被 Agent 调用的工具。
+        The generated Skill is sandboxed and registered as a tool that can be called by the Agent.
         """
         self.register_function(
             tool_id=tool_id,
@@ -334,11 +334,11 @@ class ToolRegistry:
         logger.info(f"注册外部 Skill: {tool_id}")
 
     def get_external_skills(self) -> List:
-        """获取所有 AI 生成的外部 Skill"""
+        """Get all AI generated external Skill"""
         return [t for t in self._tools.values() if getattr(t, 'source', '') == 'generated']
 
 
-# 全局注册表实例
+# Global registry instance
 _global_registry: Optional[ToolRegistry] = None
 
 

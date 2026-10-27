@@ -1,135 +1,135 @@
 """
-测试FINNHUB港股支持
+Test FINNHUB Hong Kong stock support
 """
 
 import sys
 import os
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_finnhub_connection():
-    """测试FINNHUB连接"""
-    print("🧪 测试FINNHUB连接...")
+    """Test FINNHUB connection"""
+    print("🧪 Test FINNHUB connection...")
     
     try:
         import finnhub
         
         api_key = os.getenv('FINNHUB_API_KEY')
         if not api_key:
-            print("❌ 未配置FINNHUB_API_KEY环境变量")
+            print("❌ The FINNHUB_API_KEY environment variable is not configured")
             return False
         
         client = finnhub.Client(api_key=api_key)
         
-        # 测试美股连接
-        print("  测试美股连接 (AAPL)...")
+        # Test US stock connection
+        print("  Test US stock connection (AAPL)...")
         quote = client.quote('AAPL')
         if quote and 'c' in quote:
-            print(f"    ✅ 美股连接成功: AAPL = ${quote['c']:.2f}")
+            print(f"    ✅ US stock connection successful: AAPL = ${quote['c']:.2f}")
         else:
-            print("    ❌ 美股连接失败")
+            print("    ❌ US stock connection failed")
             return False
         
-        print("✅ FINNHUB连接测试通过")
+        print("✅ FINNHUB Connection test passed")
         return True
         
     except Exception as e:
-        print(f"❌ FINNHUB连接测试失败: {e}")
+        print(f"❌ FINNHUB Connection test failed: {e}")
         return False
 
 def test_finnhub_hk_symbols():
-    """测试FINNHUB港股代码格式"""
-    print("\n🧪 测试FINNHUB港股代码格式...")
+    """Test FINNHUB Hong Kong stock code format"""
+    print("\n🧪 Test FINNHUB Hong Kong stock code format...")
     
     try:
         import finnhub
         
         api_key = os.getenv('FINNHUB_API_KEY')
         if not api_key:
-            print("❌ 未配置FINNHUB_API_KEY环境变量")
+            print("❌ The FINNHUB_API_KEY environment variable is not configured")
             return False
         
         client = finnhub.Client(api_key=api_key)
         
-        # 测试不同的港股代码格式
+        # Test different Hong Kong stock code formats
         hk_symbols = [
-            "0700.HK",  # 腾讯
-            "9988.HK",  # 阿里巴巴
-            "3690.HK",  # 美团
-            "1810.HK",  # 小米
+            "0700.HK",  # Tencent
+            "9988.HK",  # Alibaba
+            "3690.HK",  # Meituan
+            "1810.HK",  # Xiaomi
         ]
         
         success_count = 0
         
         for symbol in hk_symbols:
             try:
-                print(f"  测试港股: {symbol}...")
+                print(f"  Test Hong Kong stocks: {symbol}...")
                 quote = client.quote(symbol)
                 
                 if quote and 'c' in quote and quote['c'] > 0:
                     print(f"    ✅ {symbol} = HK${quote['c']:.2f}")
                     success_count += 1
                 else:
-                    print(f"    ❌ {symbol} 无数据或价格为0")
+                    print(f"    ❌ {symbol} No data or price is 0")
                     
             except Exception as e:
-                print(f"    ❌ {symbol} 获取失败: {e}")
+                print(f"    ❌ {symbol} Failed to obtain: {e}")
         
         if success_count > 0:
-            print(f"✅ FINNHUB港股支持测试通过 ({success_count}/{len(hk_symbols)} 成功)")
+            print(f"✅ FINNHUB Hong Kong stock support test passed ({success_count}/{len(hk_symbols)} success)")
             return True
         else:
-            print("❌ FINNHUB港股支持测试失败 - 所有港股代码都无法获取数据")
+            print("❌ FINNHUB Hong Kong stock support test failed - data cannot be obtained for all Hong Kong stock symbols")
             return False
         
     except Exception as e:
-        print(f"❌ FINNHUB港股支持测试失败: {e}")
+        print(f"❌ FINNHUB Hong Kong stock support test failed: {e}")
         return False
 
 def test_finnhub_hk_company_info():
-    """测试FINNHUB港股公司信息"""
-    print("\n🧪 测试FINNHUB港股公司信息...")
+    """Test FINNHUB Hong Kong stock company information"""
+    print("\n🧪 Test FINNHUB Hong Kong stock company information...")
     
     try:
         import finnhub
         
         api_key = os.getenv('FINNHUB_API_KEY')
         if not api_key:
-            print("❌ 未配置FINNHUB_API_KEY环境变量")
+            print("❌ The FINNHUB_API_KEY environment variable is not configured")
             return False
         
         client = finnhub.Client(api_key=api_key)
         
-        symbol = "0700.HK"  # 腾讯
-        print(f"  获取 {symbol} 公司信息...")
+        symbol = "0700.HK"  # Tencent
+        print(f"  get {symbol} Company information...")
         
         try:
             profile = client.company_profile2(symbol=symbol)
             
             if profile and 'name' in profile:
-                print(f"    ✅ 公司名称: {profile['name']}")
-                print(f"    ✅ 国家: {profile.get('country', 'N/A')}")
-                print(f"    ✅ 货币: {profile.get('currency', 'N/A')}")
-                print(f"    ✅ 交易所: {profile.get('exchange', 'N/A')}")
-                print(f"    ✅ 行业: {profile.get('finnhubIndustry', 'N/A')}")
+                print(f"    ✅ Company name: {profile['name']}")
+                print(f"    ✅ country: {profile.get('country', 'N/A')}")
+                print(f"    ✅ Currency: {profile.get('currency', 'N/A')}")
+                print(f"    ✅ exchange: {profile.get('exchange', 'N/A')}")
+                print(f"    ✅ Industry: {profile.get('finnhubIndustry', 'N/A')}")
                 return True
             else:
-                print(f"    ❌ {symbol} 公司信息为空")
+                print(f"    ❌ {symbol} Company information is empty")
                 return False
                 
         except Exception as e:
-            print(f"    ❌ {symbol} 公司信息获取失败: {e}")
+            print(f"    ❌ {symbol} Failed to obtain company information: {e}")
             return False
         
     except Exception as e:
-        print(f"❌ FINNHUB港股公司信息测试失败: {e}")
+        print(f"❌ FINNHUB Hong Kong stock company information test failed: {e}")
         return False
 
 def test_optimized_us_data_finnhub_hk():
-    """测试优化数据模块的FINNHUB港股支持"""
-    print("\n🧪 测试优化数据模块的FINNHUB港股支持...")
+    """FINNHUB Hong Kong stock support for testing optimized data module"""
+    print("\n🧪 FINNHUB Hong Kong stock support for testing optimized data module...")
     
     try:
         from tradingagents.dataflows.optimized_us_data import get_us_stock_data_cached
@@ -138,42 +138,42 @@ def test_optimized_us_data_finnhub_hk():
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
         
-        symbol = "0700.HK"  # 腾讯
-        print(f"  通过优化模块获取 {symbol} 数据...")
+        symbol = "0700.HK"  # Tencent
+        print(f"  Obtained through optimization module {symbol} data...")
         
         data = get_us_stock_data_cached(symbol, start_date, end_date, force_refresh=True)
         
         if data and len(data) > 100:
-            print("    ✅ 数据获取成功")
+            print("    ✅ Data acquisition successful")
             
-            # 检查关键信息
+            # Check key information
             checks = [
-                ("港股", "识别为港股"),
-                ("HK$", "使用港币符号"),
-                ("FINNHUB", "使用FINNHUB数据源"),
-                (symbol, "包含股票代码")
+                ("Hong Kong stocks", "Identified as Hong Kong stocks"),
+                ("HK$", "Use Hong Kong dollar symbol"),
+                ("FINNHUB", "Using the FINNHUB data source"),
+                (symbol, "Contains ticker symbol")
             ]
             
             for check_text, description in checks:
                 if check_text in data:
                     print(f"      ✅ {description}")
                 else:
-                    print(f"      ⚠️ 缺少{description}")
+                    print(f"      ⚠️ missing{description}")
             
-            print("✅ 优化数据模块FINNHUB港股支持测试通过")
+            print("✅ Optimized data module FINNHUB Hong Kong stock support test passed")
             return True
         else:
-            print("❌ 优化数据模块FINNHUB港股支持测试失败")
-            print(f"返回数据: {data[:200]}...")
+            print("❌ Optimized data module FINNHUB Hong Kong stock support test failed")
+            print(f"Return data: {data[:200]}...")
             return False
             
     except Exception as e:
-        print(f"❌ 优化数据模块FINNHUB港股支持测试失败: {e}")
+        print(f"❌ Optimized data module FINNHUB Hong Kong stock support test failed: {e}")
         return False
 
 def test_unified_interface_finnhub_priority():
-    """测试统一接口的FINNHUB优先级"""
-    print("\n🧪 测试统一接口的FINNHUB优先级...")
+    """Test FINNHUB priority for unified interface"""
+    print("\n🧪 Test FINNHUB priority for unified interface...")
     
     try:
         from tradingagents.dataflows.interface import get_hk_stock_data_unified
@@ -183,36 +183,36 @@ def test_unified_interface_finnhub_priority():
         start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
         
         symbol = "0700.HK"
-        print(f"  通过统一接口获取 {symbol} 数据...")
+        print(f"  Obtained through unified interface {symbol} data...")
         
         data = get_hk_stock_data_unified(symbol, start_date, end_date)
         
         if data and len(data) > 50:
-            print("    ✅ 统一接口数据获取成功")
+            print("    ✅ Unified interface data is obtained successfully")
             
-            # 检查数据源优先级
+            # Check data source priority
             if "FINNHUB" in data:
-                print("    ✅ 优先使用FINNHUB数据源")
+                print("    ✅ Prioritize using FINNHUB data source")
             elif "Yahoo Finance" in data:
-                print("    ✅ 使用Yahoo Finance备用数据源")
+                print("    ✅ Use Yahoo Finance alternative data sources")
             elif "AKShare" in data:
-                print("    ✅ 使用AKShare备用数据源")
+                print("    ✅ Use AKShare alternative data source")
             else:
-                print("    ⚠️ 未识别数据源")
+                print("    ⚠️ Data source not recognized")
             
-            print("✅ 统一接口FINNHUB优先级测试通过")
+            print("✅ Unified interface FINNHUB priority test passed")
             return True
         else:
-            print("❌ 统一接口FINNHUB优先级测试失败")
+            print("❌ Unified interface FINNHUB priority test failed")
             return False
         
     except Exception as e:
-        print(f"❌ 统一接口FINNHUB优先级测试失败: {e}")
+        print(f"❌ Unified interface FINNHUB priority test failed: {e}")
         return False
 
 def main():
-    """运行所有FINNHUB港股测试"""
-    print("🇭🇰 开始FINNHUB港股支持测试")
+    """Run all FINNHUB Hong Kong stock tests"""
+    print("🇭🇰 Start FINNHUB Hong Kong stock support test")
     print("=" * 50)
     
     tests = [
@@ -231,21 +231,21 @@ def main():
             if test_func():
                 passed += 1
         except Exception as e:
-            print(f"❌ 测试 {test_func.__name__} 异常: {e}")
+            print(f"❌ test {test_func.__name__} Abnormal: {e}")
     
     print("\n" + "=" * 50)
-    print(f"🇭🇰 FINNHUB港股支持测试完成: {passed}/{total} 通过")
+    print(f"🇭🇰 FINNHUB Hong Kong stock support test completed: {passed}/{total} Pass")
     
-    if passed >= 2:  # 至少连接和基本功能正常
-        print("🎉 FINNHUB港股支持基本正常！")
-        print("\n✅ FINNHUB港股功能特点:")
-        print("  - 支持港股实时报价")
-        print("  - 支持港股公司信息")
-        print("  - 作为港股数据的首选数据源")
-        print("  - 自动货币符号识别 (HK$)")
-        print("  - 集成到统一数据接口")
+    if passed >= 2:  # At least connectivity and basic functionality works
+        print("🎉 FINNHUB Hong Kong stock support is basically normal!")
+        print("\n✅ FINNHUB Functional features of Hong Kong stocks:")
+        print("  - Support real-time quotation of Hong Kong stocks")
+        print("  - Support Hong Kong stock company information")
+        print("  - As the preferred data source for Hong Kong stock data")
+        print("  - Automatic currency symbol recognition (HK$)")
+        print("  - Integrated into Unified Data Interface")
     else:
-        print("⚠️ FINNHUB港股支持可能有问题，请检查API配置")
+        print("⚠️ FINNHUB There may be a problem with Hong Kong stock support, please check the API configuration")
 
 if __name__ == "__main__":
     main()

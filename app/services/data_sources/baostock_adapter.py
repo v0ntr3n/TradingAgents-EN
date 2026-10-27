@@ -15,14 +15,14 @@ class BaoStockAdapter(DataSourceAdapter):
     """BaoStockdata source adapter"""
 
     def __init__(self):
-        super().__init__()  # 调用父类初始化
+        super().__init__()  # Call parent class initialization
 
     @property
     def name(self) -> str:
         return "baostock"
 
     def _get_default_priority(self) -> int:
-        return 1  # lowest priority (数字越大优先级越高)
+        return 1  # lowest priority (The larger the number, the higher the priority.)
 
     def is_available(self) -> bool:
         try:
@@ -61,7 +61,7 @@ class BaoStockAdapter(DataSourceAdapter):
                 df['name'] = df['code_name']
                 df['area'] = ''
 
-                # 获取行业信息
+                # Get industry information
                 logger.info("BaoStock: Querying stock industry info...")
                 industry_rs = bs.query_stock_industry()
                 if industry_rs.error_code == '0':
@@ -71,20 +71,20 @@ class BaoStockAdapter(DataSourceAdapter):
                     if industry_list:
                         industry_df = pd.DataFrame(industry_list, columns=industry_rs.fields)
 
-                        # 去掉行业编码前缀（如 "I65软件和信息技术服务业" -> "软件和信息技术服务业"）
+                        # Remove the industry coding prefix (e.g. "I65 Software and information technology services industry" -> "Software and information technology services industry") 
                         def clean_industry_name(industry_str):
                             if not industry_str or pd.isna(industry_str):
                                 return ''
-                            # 使用正则表达式去掉前面的字母和数字编码（如 I65、C31 等）
+                            # Use regular expressions to remove the preceding letter and number codes (such as I65, C31, etc.)
                             import re
                             cleaned = re.sub(r'^[A-Z]\d+', '', str(industry_str))
                             return cleaned.strip()
 
                         industry_df['industry_clean'] = industry_df['industry'].apply(clean_industry_name)
 
-                        # 创建行业映射字典 {code: industry_clean}
+                        # Create an industry mapping dictionary {code: industry_clean}
                         industry_map = dict(zip(industry_df['code'], industry_df['industry_clean']))
-                        # 将行业信息合并到主DataFrame
+                        # Merge industry information into main DataFrame
                         df['industry'] = df['code'].map(industry_map).fillna('')
                         logger.info(f"BaoStock: Successfully mapped industry info for {len(industry_map)} stocks")
                     else:
@@ -106,11 +106,11 @@ class BaoStockAdapter(DataSourceAdapter):
 
     def get_daily_basic(self, trade_date: str, max_stocks: int = None) -> Optional[pd.DataFrame]:
         """
-        获取每日基础数据（包含PE、PB、总市值等）
+        Get daily basic data (including PE, PB, total market capitalization, etc.)
 
         Args:
-            trade_date: 交易日期 (YYYYMMDD)
-            max_stocks: 最大处理股票数量，None表示处理所有股票
+            trade_date: transaction date (YYYYMMDD)
+            max_stocks: Maximum number of stocks processed, None means processing all stocks
         """
         if not self.is_available():
             return None
@@ -135,7 +135,7 @@ class BaoStockAdapter(DataSourceAdapter):
                     return None
 
                 total_stocks = len([s for s in stock_list if len(s) > 5 and s[4] == '1' and s[5] == '1'])
-                logger.info(f"📊 BaoStock: 找到 {total_stocks} 只活跃股票，开始处理{'全部' if max_stocks is None else f'前 {max_stocks} 只'}...")
+                logger.info(f"📊 BaoStock: found {total_stocks} Only active stocks, start processing{'All' if max_stocks is None else f'before {max_stocks} only'}...")
 
                 basic_data = []
                 processed_count = 0
@@ -150,7 +150,7 @@ class BaoStockAdapter(DataSourceAdapter):
                     if stock_type == '1' and status == '1':
                         try:
                             formatted_date = f"{trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:8]}"
-                            # 🔥 获取估值数据和总股本
+                            # 🔥 Get valuation data and total equity
                             rs_valuation = bs.query_history_k_data_plus(
                                 code,
                                 "date,code,close,peTTM,pbMRQ,psTTM,pcfNcfTTM,isST",
@@ -173,26 +173,26 @@ class BaoStockAdapter(DataSourceAdapter):
                                     pcf_ttm = self._safe_float(row[6]) if len(row) > 6 else None
                                     close_price = self._safe_float(row[2]) if len(row) > 2 else None
 
-                                    # 🔥 BaoStock 不直接提供总市值和总股本
-                                    # 为了避免同步超时，这里不调用额外的 API 获取总股本
-                                    # total_mv 留空，后续可以通过其他数据源补充
+                                    # 🔥 BaoStock Do not directly provide total market capitalization and total share capital
+                                    # In order to avoid synchronization timeout, no additional API is called here to obtain the total equity
+                                    # total_mv Leave it blank, you can add it later through other data sources.
                                     total_mv = None
 
                                     basic_data.append({
                                         'ts_code': ts_code,
                                         'trade_date': trade_date,
                                         'name': name,
-                                        'pe': pe_ttm,  # 🔥 市盈率（TTM）
-                                        'pb': pb_mrq,  # 🔥 市净率（MRQ）
-                                        'ps': ps_ttm,  # 市销率
-                                        'pcf': pcf_ttm,  # 市现率
+                                        'pe': pe_ttm,  # 🔥 Price to Earnings Ratio (TTM)
+                                        'pb': pb_mrq,  # 🔥 Price to Book Ratio (MRQ)
+                                        'ps': ps_ttm,  # price to sales ratio
+                                        'pcf': pcf_ttm,  # price to cash ratio
                                         'close': close_price,
-                                        'total_mv': total_mv,  # ⚠️ BaoStock 不提供，留空
-                                        'turnover_rate': None,  # ⚠️ BaoStock 不提供
+                                        'total_mv': total_mv,  # ⚠️ BaoStock Not provided, leave blank
+                                        'turnover_rate': None,  # ⚠️ BaoStock Not available
                                     })
                                     processed_count += 1
 
-                                    # 🔥 每处理50只股票输出一次进度日志
+                                    # 🔥 Output a progress log every time 50 stocks are processed
                                     if processed_count % 50 == 0:
                                         progress_pct = (processed_count / total_stocks) * 100
                                         logger.info(f"📈 BaoStock 同步进度: {processed_count}/{total_stocks} ({progress_pct:.1f}%) - 最新: {name}({ts_code})")
@@ -208,7 +208,7 @@ class BaoStockAdapter(DataSourceAdapter):
                             continue
                 if basic_data:
                     df = pd.DataFrame(basic_data)
-                    logger.info(f"✅ BaoStock 同步完成: 成功 {len(df)} 只，失败 {failed_count} 只，日期 {trade_date}")
+                    logger.info(f"✅ BaoStock Synchronization completed: success {len(df)} Only, failed {failed_count} only, date {trade_date}")
                     return df
                 else:
                     logger.warning(f"⚠️ BaoStock: 未获取到任何估值数据（失败 {failed_count} 只）")
@@ -253,11 +253,11 @@ class BaoStockAdapter(DataSourceAdapter):
         """
 
     def find_latest_trade_date(self) -> Optional[str]:
-        """通过交易日历API查找最新交易日期（带缓存）"""
+        """Find latest trading date via Trading Calendar API (with caching)"""
         if not self.is_available():
             return None
         
-        # 先尝试从缓存获取
+        # Try to get it from cache first
         try:
             from app.services.trade_date_cache_service import get_trade_date_cache_service
             
@@ -269,11 +269,11 @@ class BaoStockAdapter(DataSourceAdapter):
         except Exception as e:
             logger.debug(f"BaoStock: Cache check failed: {e}, will fetch from API")
         
-        # 缓存不存在或已过期，调用API获取
+        # The cache does not exist or has expired. Call the API to obtain it.
         try:
             import baostock as bs
             
-            # 登录BaoStock
+            # Login BaoStock
             lg = bs.login()
             if lg.error_code != '0':
                 logger.error(f"BaoStock: Login failed: {lg.error_msg}")
@@ -281,37 +281,37 @@ class BaoStockAdapter(DataSourceAdapter):
                 return None
             
             try:
-                # 从今天向前1个月，获取交易日历
+                # Get a trading calendar 1 month ahead from today
                 today = datetime.now()
                 end_date = today.strftime("%Y-%m-%d")
                 start_date = (today - timedelta(days=30)).strftime("%Y-%m-%d")
                 
-                # 调用 query_trade_dates API 获取交易日历
+                # Call query_trade_dates API to get the trading calendar
                 rs = bs.query_trade_dates(start_date=start_date, end_date=end_date)
                 
                 if rs.error_code == '0':
-                    # 将结果转换为DataFrame
+                    # Convert the result to DataFrame
                     data_list = []
                     while (rs.error_code == '0') & rs.next():
                         data_list.append(rs.get_row_data())
                     
                     if data_list:
-                        # 创建DataFrame
+                        # Create DataFrame
                         df = pd.DataFrame(data_list, columns=rs.fields)
                         
-                        # 筛选出交易日（is_trading_day == '1'）
+                        # Filter out trading days (is_trading_day == '1') 
                         trading_days = df[df['is_trading_day'] == '1']
                         
                         if not trading_days.empty:
-                            # 按日期排序，取最后一个（最新的交易日）
+                            # Sort by date, take the last one (latest trading day)
                             trading_days = trading_days.sort_values('calendar_date', ascending=False)
                             latest_date_str = trading_days.iloc[0]['calendar_date']
                             
-                            # 转换为 YYYYMMDD 格式
+                            # Convert to YYYYMMDD format
                             latest_date = latest_date_str.replace('-', '')
                             logger.info(f"BaoStock: Found latest trade date from calendar: {latest_date}")
                             
-                            # 保存到缓存
+                            # Save to cache
                             try:
                                 from app.services.trade_date_cache_service import get_trade_date_cache_service
                                 cache_service = get_trade_date_cache_service()
@@ -321,11 +321,11 @@ class BaoStockAdapter(DataSourceAdapter):
                             
                             return latest_date
                 
-                # 如果交易日历API失败，回退到昨天
+                # If trading calendar API fails, fall back to yesterday
                 logger.warning(f"BaoStock: Trade calendar API failed: {rs.error_msg}")
                 yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
                 
-                # 保存到缓存
+                # Save to cache
                 try:
                     import asyncio
                     from app.services.trade_date_cache_service import get_trade_date_cache_service
@@ -339,7 +339,7 @@ class BaoStockAdapter(DataSourceAdapter):
                 bs.logout()
         except Exception as e:
             logger.error(f"BaoStock: Failed to find latest trade date: {e}")
-            # 回退到昨天
+            # Go back to yesterday
             yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y%m%d")
             return yesterday
 

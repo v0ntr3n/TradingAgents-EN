@@ -1,4 +1,4 @@
-"""Skill 运行时异步桥接与结果标准化。"""
+"""Skill Runtime asynchronous bridging and result normalization."""
 
 from __future__ import annotations
 
@@ -8,14 +8,14 @@ from typing import Any, Dict
 
 
 def run_async_in_sync(coro: Any) -> Any:
-    """在同步上下文中安全执行协程。
+    """Safely execute coroutines in a synchronized context.
 
     Args:
-        coro: 待执行的协程对象（coroutine）
+        coro: Coroutine object to be executed (coroutine)
 
     Returns:
-        Any: 协程执行结果；若当前已存在运行中的事件循环，则在独立 daemon 线程中执行协程并返回结果，
-            子线程内的异常会被重新抛出到调用方
+        Any: Coroutine execution result; if there is currently a running event loop, the coroutine will be executed in an independent daemon thread and the result will be returned.
+            Exceptions in the child thread will be re-thrown to the caller
     """
     try:
         asyncio.get_running_loop()
@@ -39,18 +39,18 @@ def run_async_in_sync(coro: Any) -> Any:
 
 
 def normalize_tabular_result(data: Any) -> Any:
-    """将 DataFrame 等表格对象标准化为可序列化结果。
+    """Normalize tabular objects such as DataFrame into serializable results.
 
     Args:
-        data: 任意输入数据，可能是 None / pandas.DataFrame / 或其他对象
+        data: Arbitrary input data, may be None / pandas.DataFrame / or other objects
 
     Returns:
-        Any: 标准化后的结果，规则——
-            - 输入为 None 时返回 None
-            - 输入为带 to_dict 的表格对象时：
-                - 若索引非默认 RangeIndex 或具名，先 reset_index 再 to_dict("records")，返回 list[dict]
-                - 若 to_dict("records") 失败回退到 to_dict()，返回 dict
-            - 其他输入原样返回
+        Any: Standardized results, rules——
+            - Returns when input is None None
+            - When the input is a table object with to_dict:
+                - If the index is not the default RangeIndex or named, reset_index first and then to_dict("records"), Return list[dict]
+                - If to_dict("records") Fallback on failure to_dict(), Return dict
+            - Other inputs are returned unchanged
     """
     if data is None:
         return None

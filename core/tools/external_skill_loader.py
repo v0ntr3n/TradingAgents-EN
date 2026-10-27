@@ -1,8 +1,8 @@
 """
-外部 Skill 加载器
+External Skill Loader
 
-从 MongoDB external_skills 集合加载 AI 生成的 Skill，
-通过沙箱包装注册到 ToolRegistry，使 Agent 可在运行时调用。
+Load AI-generated Skills from the MongoDB external_skills collection,
+Register with ToolRegistry through sandbox packaging to make the Agent callable at runtime.
 """
 
 import json
@@ -48,10 +48,10 @@ def _strip_decorators(code: str) -> str:
 
 def _build_sandbox_wrapper(code: str, func_name: str, timeout: int = 30) -> Callable:
     """
-    构建沙箱包装函数。
+    Build sandbox wrapper functions.
 
-    返回一个同步可调用对象，内部通过子进程执行生成的代码，
-    隔离主进程并捕获结果。
+    Returns a synchronous callable object that internally executes the generated code through the child process.
+    Isolate the main process and capture the results.
     """
     clean_code = _strip_decorators(code)
 
@@ -83,7 +83,7 @@ if __name__ == "__main__":
                     func = obj
                     break
         if func is None:
-            print(json.dumps({{"error": "函数未找到"}}))
+            print(json.dumps({{"error": "function not found"}}))
             sys.exit(1)
         result = func(**test_args)
         print("__SANDBOX_OUTPUT_START__")
@@ -138,12 +138,12 @@ if __name__ == "__main__":
             Path(temp_path).unlink(missing_ok=True)
 
     wrapper.__name__ = func_name
-    wrapper.__doc__ = f"AI 生成的外部 Skill: {func_name}"
+    wrapper.__doc__ = f"AI generated external Skill: {func_name}"
     return wrapper
 
 
 def _build_tool_parameters(param_docs: List[Dict[str, Any]]) -> List:
-    """将 external_skills 的 parameters 文档转为 ToolParameter 列表"""
+    """Convert the parameters document of external_skills to a ToolParameter list"""
     from core.tools.config import ToolParameter
 
     result = []
@@ -160,11 +160,11 @@ def _build_tool_parameters(param_docs: List[Dict[str, Any]]) -> List:
 
 async def load_external_skills_to_registry(db, registry) -> int:
     """
-    从 MongoDB external_skills 集合加载所有 active 的 AI 生成 Skill
-    并注册到 ToolRegistry。
+    Load all active AI builds from the MongoDB external_skills collection Skill
+    and registered to ToolRegistry.
 
     Returns:
-        成功注册的 Skill 数量
+        Number of skills successfully registered
     """
     count = 0
     cursor = db.external_skills.find({"status": "active"})
@@ -180,7 +180,7 @@ async def load_external_skills_to_registry(db, registry) -> int:
             tool_params = _build_tool_parameters(params)
 
             category = doc.get("category", "external")
-            # 确保 category 值合法，回退到 external
+            # Make sure the category value is legal and fall back to external
             from core.tools.config import ToolCategory
             valid_categories = {c.value for c in ToolCategory}
             if category not in valid_categories:
@@ -201,23 +201,23 @@ async def load_external_skills_to_registry(db, registry) -> int:
                 not_replacement_for=doc.get("not_replacement_for") or skill_metadata.get("not_replacement_for") or [],
             )
             count += 1
-            logger.info(f"✅ 加载外部 Skill: {tool_id}")
+            logger.info(f"✅ load external Skill: {tool_id}")
         except Exception as e:
-            logger.error(f"❌ 加载外部 Skill 失败 {doc.get('tool_id')}: {e}")
+            logger.error(f"❌ Failed to load external skill {doc.get('tool_id')}: {e}")
     return count
 
 
 def register_single_external_skill(db_sync, registry, skill_doc: Dict[str, Any]) -> bool:
     """
-    热注册单个外部 Skill（在 Skill 生成成功后立即调用）。
+    Hot-register a single external Skill (called immediately after the Skill is successfully generated).
 
     Args:
-        db_sync: 同步 MongoDB 客户端（不需要，skill_doc 已是完整文档）
-        registry: ToolRegistry 实例
-        skill_doc: external_skills 集合的文档
+        db_sync: Synchronize MongoDB client (not required, skill_doc is fully documented)
+        registry: ToolRegistry Example
+        skill_doc: external_skills Collection of documents
 
     Returns:
-        是否注册成功
+        Is the registration successful?
     """
     try:
         tool_id = skill_doc.get("tool_id")
@@ -249,8 +249,8 @@ def register_single_external_skill(db_sync, registry, skill_doc: Dict[str, Any])
             preferred_for=skill_doc.get("preferred_for") or skill_metadata.get("preferred_for") or [],
             not_replacement_for=skill_doc.get("not_replacement_for") or skill_metadata.get("not_replacement_for") or [],
         )
-        logger.info(f"✅ 热注册外部 Skill: {tool_id}")
+        logger.info(f"✅ Hot registration external Skill: {tool_id}")
         return True
     except Exception as e:
-        logger.error(f"❌ 热注册外部 Skill 失败: {e}")
+        logger.error(f"❌ Hot registration of external skill failed: {e}")
         return False

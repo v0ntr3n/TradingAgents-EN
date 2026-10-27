@@ -22,7 +22,7 @@ def test_build_analysis_result_record_parses_python_literal_markdown(tmp_path):
     )
     report_path.parent.mkdir(parents=True)
     report_path.write_text(
-        "{'judge_decision': '### 投资组合决策：万科A（000002）建议持有', 'history': '...'}",
+        "{'judge_decision': '### Portfolio decision: Vanke A (000002) recommended to hold', 'history': '...'}",
         encoding="utf-8",
     )
 
@@ -33,7 +33,7 @@ def test_build_analysis_result_record_parses_python_literal_markdown(tmp_path):
     assert record.source_kind == REPORT_SOURCE_ANALYSIS_RESULTS
     assert record.ticker == "000002"
     assert record.analysis_date == "2025-08-20"
-    assert record.content == "### 投资组合决策：万科A（000002）建议持有"
+    assert record.content == "### Portfolio decision: Vanke A (000002) recommended to hold"
     assert record.legacy_doc_id.endswith("data/analysis_results/UNKNOWN/2025-08-20/reports/research_team_decision.md")
 
 
@@ -43,8 +43,8 @@ def test_build_progress_records_extracts_both_manager_decisions(tmp_path):
     payload = {
         "company_of_interest": "000002",
         "trade_date": "2025-08-01",
-        "investment_debate_state": {"judge_decision": "研究经理最终判断：持有"},
-        "risk_debate_state": {"judge_decision": "风险经理最终判断：卖出"},
+        "investment_debate_state": {"judge_decision": "Research Manager Final Judgment: Hold"},
+        "risk_debate_state": {"judge_decision": "Risk manager s final judgment: Sell"},
     }
     progress_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
@@ -68,7 +68,7 @@ def test_build_store_metadata_adds_mem0_filters_and_source_details(tmp_path):
         / "risk_management_decision.md"
     )
     report_path.parent.mkdir(parents=True)
-    report_path.write_text("{'judge_decision': '风险管理委员会主席建议卖出'}", encoding="utf-8")
+    report_path.write_text("{'judge_decision': 'Risk Management Committee Chairman Recommends Sell'}", encoding="utf-8")
 
     record = _build_analysis_result_record(report_path)
     metadata = _build_store_metadata(record)

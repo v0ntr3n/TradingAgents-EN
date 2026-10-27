@@ -1,12 +1,12 @@
 """
-GatewayRouter — 路由分发与消息处理
+GatewayRouter — Route distribution and message processing
 
-职责：
-1. 注册和管理各平台适配器
-2. 接收原始 Webhook / WebSocket 事件，委托适配器解析为 GatewayMessage
-3. 执行用户身份映射（IM user → system user）
-4. 调用 IntelligentAssistantService 处理消息
-5. 将助理回复格式化为 GatewayResponse，委托适配器发送
+Responsibilities:
+1. Register and manage adapters for each platform
+2. Receive raw Webhook / WebSocket events, delegate adapter resolves to GatewayMessage
+3. Perform user identity mapping (IM user → system user) 
+4. Call IntelligentAssistantService to process the message
+5. Format assistant response as GatewayResponse, sent by delegate adapter
 """
 
 import asyncio
@@ -26,22 +26,22 @@ logger = logging.getLogger(__name__)
 
 
 class GatewayRouter:
-    """Gateway 路由分发器（单例）"""
+    """Gateway Route distributor (singleton)"""
 
     def __init__(self):
         self._adapters: Dict[str, BaseGatewayAdapter] = {}
-        self._ws_client = None          # QQWebSocketClient 实例
-        self._ws_task: Optional[asyncio.Task] = None  # WebSocket 后台任务
+        self._ws_client = None          # QQWebSocketClient Example
+        self._ws_task: Optional[asyncio.Task] = None  # WebSocket Background tasks
 
     # ------------------------------------------------------------------ #
-    # 适配器管理
+    # Adapter management
     # ------------------------------------------------------------------ #
 
     def register_adapter(self, adapter: BaseGatewayAdapter) -> None:
-        """注册一个平台适配器"""
+        """Register a platform adapter"""
         key = adapter.channel_type.value if hasattr(adapter.channel_type, "value") else str(adapter.channel_type)
         self._adapters[key] = adapter
-        logger.info("[Gateway] 已注册适配器: %s", key)
+        logger.info("[Gateway] Registered adapter: %s", key)
 
     def get_adapter(self, platform: str) -> Optional[BaseGatewayAdapter]:
         return self._adapters.get(platform)
@@ -51,7 +51,7 @@ class GatewayRouter:
         return list(self._adapters.keys())
 
     # ------------------------------------------------------------------ #
-    # 核心处理流程
+    # core processing flow
     # ------------------------------------------------------------------ #
 
     async def handle_webhook(
@@ -62,73 +62,73 @@ class GatewayRouter:
         db,
     ) -> Tuple[Optional[Dict[str, Any]], int]:
         """
-        处理来自 IM 平台的 Webhook 请求。
+        Handle webhook requests from the IM platform.
 
         Returns:
             (response_json, http_status_code)
-            - response_json: 需要立即返回给平台的 JSON（Challenge 或 ack）
-            - http_status_code: HTTP 状态码
+            - response_json: JSON (Challenge or ack) that needs to be returned to the platform immediately
+            - http_status_code: HTTP status code
         """
         adapter = self.get_adapter(platform)
         if not adapter:
-            logger.warning("[Gateway] 未知平台: %s", platform)
+            logger.warning("[Gateway] Unknown platform: %s", platform)
             return {"error": f"Unsupported platform: {platform}"}, 400
 
-        # 1. 验证签名 / Challenge
+        # 1. Verify signature / Challenge
         is_valid, challenge_resp = await adapter.verify_request(headers, body)
         if challenge_resp is not None:
-            # 飞书等平台的 URL 验证请求，直接返回
+            # URL verification requests from Feishu and other platforms will be returned directly.
             return challenge_resp, 200
         if not is_valid:
-            logger.warning("[Gateway] 签名验证失败: platform=%s", platform)
+            logger.warning("[Gateway] Signature verification failed: platform=%s", platform)
             return {"error": "Invalid signature"}, 403
 
-        # 2. 解析消息
+        # 2. Parse the message
         message = await adapter.parse_message(headers, body)
         if message is None:
-            # 不需要处理的事件类型（如消息撤回、用户进群等）
+            # Event types that do not need to be processed (such as message withdrawal, user joining the group, etc.)
             return self._ack_response(platform), 200
 
-        # 3. 处理 /command 类型消息
+        # 3. Handle /command type messages
         if message.message_type == MessageType.COMMAND:
             cmd_result = await self._handle_command(message, adapter, db, platform)
-            # 如果不是 pass_through（未知命令当普通消息处理），直接返回
+            # If it is not pass_through (unknown commands are processed as ordinary messages), return directly
             if message.message_type == MessageType.COMMAND:
                 return cmd_result
 
-        # 4. 单用户模式：自动关联系统第一个用户
+        # 4. Single user mode: automatically associate with the first user of the system
         system_user_id = await self._resolve_user(db)
         if not system_user_id:
-            logger.error("[Gateway] 系统中没有用户，无法处理消息")
+            logger.error("[Gateway] There is no user in the system and the message cannot be processed")
             return self._ack_response(platform), 200
 
-        # 5. 调用助理
+        # 5. Call Assistant
         response = await self._invoke_assistant(
             message, system_user_id, db
         )
 
-        # 6. 回复到平台（异步，不阻塞 Webhook 响应）
+        # 6. Reply to the platform (asynchronous, not blocking webhook responses)
         try:
             await adapter.send_response(response)
         except Exception as e:
-            logger.exception("[Gateway] 发送回复失败: %s", e)
+            logger.exception("[Gateway] Failed to send reply: %s", e)
 
         return self._ack_response(platform), 200
 
     @staticmethod
     def _ack_response(platform: str) -> Dict[str, Any]:
-        """生成平台对应的 ACK 响应"""
+        """Generate platform-specific ACK response"""
         if platform == "qq":
-            # QQ 要求返回 op=12 表示收到事件
+            # QQ request return op=12 Indicates event received
             return {"op": 12}
         return {"status": "ok"}
 
     # ------------------------------------------------------------------ #
-    # 内部方法
+    # internal method
     # ------------------------------------------------------------------ #
 
     async def _resolve_user(self, db) -> Optional[str]:
-        """单用户模式：返回系统中第一个活跃用户的 ID"""
+        """Single user mode: Returns the first active user in the system ID"""
         user = await db.users.find_one(
             {"is_active": {"$ne": False}},
             {"_id": 1},
@@ -144,7 +144,7 @@ class GatewayRouter:
         user_id: str,
         db,
     ) -> GatewayResponse:
-        """调用 IntelligentAssistantService 处理消息"""
+        """Call IntelligentAssistantService to process the message"""
         from app.services.intelligent_assistant_service import chat_with_assistant
         from core.gateway.session import SessionManager, build_session_key
         from core.tools.context import set_current_im_channel
@@ -159,8 +159,8 @@ class GatewayRouter:
         session = await session_manager.get_or_create(user_id, channel_type_str, message.channel_id)
         current_topic_id = ((session.get("context") or {}).get("current_topic_id") or "").strip() or None
 
-        # 设置 IM 渠道上下文，供 assistant_ops 工具（如 trigger_stock_analysis）在
-        # 创建后台任务时保存回调渠道信息，任务完成后可主动推送通知到此渠道
+        # Sets the IM channel context for assistant_ops tools such as trigger_stock_analysis to
+        # Save the callback channel information when creating a background task. After the task is completed, you can actively push notifications to this channel.
         set_current_im_channel(channel_type_str, message.channel_id)
 
         result = await chat_with_assistant(
@@ -169,16 +169,16 @@ class GatewayRouter:
             user_id=user_id,
             conversation_id=session_key,
             current_thread_id=current_topic_id,
-            is_im=True,  # IM 渠道：注入移动端格式规范，LLM 避免输出表格和 Markdown
+            is_im=True,  # IM Channel: Inject mobile format specifications, LLM avoids outputting tables and Markdown
         )
 
-        reply_text = result.get("reply", "抱歉，处理消息时出现问题。")
+        reply_text = result.get("reply", "Sorry, there was a problem processing the message.")
         return GatewayResponse(
             channel_type=message.channel_type,
             channel_id=message.channel_id,
             response_type=ResponseType.MARKDOWN,
             content=reply_text,
-            metadata=message.metadata,  # 透传平台元数据（如 msg_id）
+            metadata=message.metadata,  # Transparently transmit platform metadata (such as msg_id)
         )
 
     async def _handle_command(
@@ -188,19 +188,19 @@ class GatewayRouter:
         db,
         platform: str = "",
     ) -> Tuple[Optional[Dict[str, Any]], int]:
-        """处理斜杠命令（/help 等）"""
+        """Handle slash commands (/help etc.)"""
         cmd = message.content.strip().lower()
 
         if cmd == "/help":
             help_text = (
-                "📋 可用命令：\n"
-                "/help — 显示帮助\n\n"
-                "直接发送文字即可与分析助理对话，例如：\n"
-                "• 分析贵州茅台\n"
-                "• 上周分析过哪些股票\n"
-                "• 查看我的股票关注列表\n"
-                "• 当前主题是什么\n"
-                "• 切换到新能源车研究"
+                "📋 Available commands:\n"
+                "/help — show help\n\n"
+                "Send text directly to chat with the Analytics Assistant, for example:\n"
+                "• Analysis of Kweichow Moutai\n"
+                "• Which stocks were analyzed last week?\n"
+                "• View my stock watchlist\n"
+                "• What is the current topic\n"
+                "• Switch to new energy vehicle research"
             )
             resp = GatewayResponse(
                 channel_type=message.channel_type,
@@ -212,30 +212,30 @@ class GatewayRouter:
             await adapter.send_response(resp)
             return self._ack_response(platform), 200
 
-        # 未知命令，当普通消息处理
+        # Unknown command, when normal message processing
         message.message_type = MessageType.TEXT
         return self._ack_response(platform), 200
 
     # ------------------------------------------------------------------ #
-    # 主动推送（分析完成等事件通知）
+    # Active push (notification of events such as analysis completion)
     # ------------------------------------------------------------------ #
 
     async def send_im_notification(
         self, channel_type: str, channel_id: str, text: str
     ) -> bool:
-        """主动向 IM 渠道推送文本消息（无需 msg_id，不依赖用户消息触发）
+        """Actively push text messages to IM channels (no msg_id required, does not rely on user message triggering)
 
         Args:
-            channel_type: 平台类型，如 "qq"、"feishu"
-            channel_id:   平台侧会话 ID，如 "c2c:openid"、"group:group_openid"
-            text:         纯文本内容
+            channel_type: Platform type, such as "qq", "feishu"
+            channel_id:   Platform side session ID, such as "c2c:openid", "group:group_openid"
+            text:         Plain text content
 
         Returns:
-            True 表示发送成功，False 表示失败
+            True Indicates successful transmission, False indicates failure.
         """
         adapter = self.get_adapter(channel_type)
         if not adapter:
-            logger.warning("[Gateway] 平台 %s 没有注册适配器，无法发送 IM 通知", channel_type)
+            logger.warning("[Gateway] Platform %s has no registered adapter and cannot send IM notifications", channel_type)
             return False
 
         response = GatewayResponse(
@@ -243,31 +243,31 @@ class GatewayRouter:
             channel_id=channel_id,
             response_type=ResponseType.TEXT,
             content=text,
-            metadata={},  # 不带 msg_id → 主动推送
+            metadata={},  # Without msg_id → Active push
         )
         try:
             result = await adapter.send_response(response)
             if result:
-                logger.info("[Gateway] ✅ IM 通知发送成功: %s/%s", channel_type, channel_id)
+                logger.info("[Gateway] ✅ IM Notification sent successfully: %s/%s", channel_type, channel_id)
             else:
-                logger.warning("[Gateway] IM 通知发送失败: %s/%s", channel_type, channel_id)
+                logger.warning("[Gateway] IM Notification failed to send: %s/%s", channel_type, channel_id)
             return result
         except Exception as e:
-            logger.exception("[Gateway] IM 通知发送异常: %s", e)
+            logger.exception("[Gateway] IM Notification sending exception: %s", e)
             return False
 
     # ------------------------------------------------------------------ #
-    # WebSocket 模式管理
+    # WebSocket Schema management
     # ------------------------------------------------------------------ #
 
     async def start_ws_client(self, config: Dict[str, Any], db):
-        """启动 QQ WebSocket 客户端后台任务"""
-        await self.stop_ws_client()  # 先停掉已有的
+        """Start the QQ WebSocket client background task"""
+        await self.stop_ws_client()  # Stop existing ones first
 
         from core.gateway.adapters.qq_ws import QQWebSocketClient
         from core.gateway.adapters.qq import QQAdapter
 
-        # 确保 QQ 适配器已注册（用于发送回复）
+        # Make sure the QQ adapter is registered (for sending replies)
         if "qq" not in self._adapters:
             adapter = QQAdapter(config=config)
             self.register_adapter(adapter)
@@ -281,10 +281,10 @@ class GatewayRouter:
             sandbox=config.get("sandbox", False),
         )
         self._ws_task = asyncio.create_task(self._ws_client.start())
-        logger.info("[Gateway] QQ WebSocket 后台任务已启动")
+        logger.info("[Gateway] QQ WebSocket Background task started")
 
     async def stop_ws_client(self):
-        """停止 QQ WebSocket 客户端"""
+        """Stop QQ WebSocket client"""
         if self._ws_client:
             await self._ws_client.stop()
             self._ws_client = None
@@ -295,7 +295,7 @@ class GatewayRouter:
             except asyncio.CancelledError:
                 pass
             self._ws_task = None
-            logger.info("[Gateway] QQ WebSocket 后台任务已停止")
+            logger.info("[Gateway] QQ WebSocket Background task stopped")
 
     @property
     def ws_running(self) -> bool:
@@ -304,46 +304,46 @@ class GatewayRouter:
     async def _handle_ws_event(
         self, event_type: str, data: dict, raw: dict, db
     ):
-        """处理从 WebSocket 收到的 Dispatch 事件"""
+        """Handle Dispatch events received from WebSocket"""
         adapter = self.get_adapter("qq")
         if not adapter:
-            logger.warning("[Gateway] QQ 适配器未注册，无法处理 WS 事件")
+            logger.warning("[Gateway] QQ Adapter is not registered and cannot handle WS events")
             return
 
-        # 复用 QQAdapter 的消息解析逻辑
-        # 构造一个与 Webhook 相同格式的 payload 以复用 parse_message
+        # Reuse QQAdapter's message parsing logic
+        # Construct a payload in the same format as the Webhook for reuse parse_message
         fake_body = json.dumps(raw).encode("utf-8")
         message = await adapter.parse_message({}, fake_body)
         if message is None:
             return
 
-        # 命令处理
+        # command processing
         if message.message_type == MessageType.COMMAND:
             await self._handle_command(message, adapter, db, "qq")
             if message.message_type == MessageType.COMMAND:
-                return  # 命令已处理
+                return  # command processed
 
-        # 用户解析
+        # User analysis
         system_user_id = await self._resolve_user(db)
         if not system_user_id:
-            logger.error("[Gateway] 系统中没有用户，无法处理 WS 消息")
+            logger.error("[Gateway] There is no user in the system and the WS message cannot be processed")
             return
 
-        # 调用助理
+        # Call Assistant
         response = await self._invoke_assistant(message, system_user_id, db)
 
-        # 发送回复
+        # Send reply
         try:
             await adapter.send_response(response)
         except Exception as e:
-            logger.exception("[Gateway] WS 消息回复失败: %s", e)
+            logger.exception("[Gateway] WS Message reply failed: %s", e)
 
 
-# 全局单例
+# Global singleton
 gateway_router = GatewayRouter()
 
 
 def get_gateway_router() -> GatewayRouter:
-    """获取 GatewayRouter 全局单例"""
+    """Get the GatewayRouter global singleton"""
     return gateway_router
 

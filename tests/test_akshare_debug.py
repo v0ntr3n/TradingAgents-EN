@@ -1,75 +1,75 @@
 #!/usr/bin/env python3
 """
-AKShare财务数据获取调试脚本
+AKShare Financial data acquisition debugging script
 """
 
 import sys
 import os
 import logging
 
-# 设置日志级别为DEBUG以查看详细信息
+# Set the log level to DEBUG to view detailed information
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s')
 
-# 添加项目路径
+# Add project path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from tradingagents.dataflows.akshare_utils import AKShareProvider
 
 def test_akshare_financial_data():
-    """测试AKShare财务数据获取"""
+    """Test AKShare financial data acquisition"""
     print("=" * 60)
-    print("🔍 AKShare财务数据获取调试测试")
+    print("🔍 AKShare Financial data acquisition debugging test")
     print("=" * 60)
     
-    # 1. 获取AKShare提供者
-    print("\n1. 获取AKShare提供者...")
+    # 1. Get AKShare provider
+    print("\n1. Get AKShare provider...")
     provider = AKShareProvider()
-    print(f"   连接状态: {provider.connected}")
+    print(f"   connection status: {provider.connected}")
     
     if not provider.connected:
-        print("❌ AKShare未连接，无法继续测试")
+        print("❌ AKShare Not connected, unable to continue testing")
         return
     
-    # 2. 直接调用get_financial_data方法
-    print("\n2. 直接调用get_financial_data方法...")
+    # 2. Directly call the get_financial_data method
+    print("\n2. Directly call the get_financial_data method...")
     symbol = "600519"
     
     try:
         financial_data = provider.get_financial_data(symbol)
-        print(f"   返回结果类型: {type(financial_data)}")
-        print(f"   返回结果: {financial_data}")
+        print(f"   Return result type: {type(financial_data)}")
+        print(f"   Return results: {financial_data}")
         
         if financial_data:
-            print("✅ 成功获取财务数据")
+            print("✅ Successfully obtained financial data")
             for key, value in financial_data.items():
                 if hasattr(value, '__len__'):
-                    print(f"   - {key}: {len(value)}条记录")
+                    print(f"   - {key}: {len(value)}records")
                 else:
                     print(f"   - {key}: {type(value)}")
         else:
-            print("❌ 未获取到财务数据")
+            print("❌ No financial data was obtained")
             
     except Exception as e:
-        print(f"❌ 调用get_financial_data失败: {e}")
+        print(f"❌ Failed to call get_financial_data: {e}")
         import traceback
         traceback.print_exc()
     
-    # 3. 测试条件判断
-    print("\n3. 测试条件判断...")
+    # 3. Test condition judgment
+    print("\n3. Test condition judgment...")
     test_data = {}
-    print(f"   空字典 any(test_data.values()): {any(test_data.values())}")
+    print(f"   empty dictionary any(test_data.values()): {any(test_data.values())}")
     
     test_data = {'main_indicators': None}
-    print(f"   包含None any(test_data.values()): {any(test_data.values())}")
+    print(f"   contains None any(test_data.values()): {any(test_data.values())}")
     
     test_data = {'main_indicators': {}}
-    print(f"   包含空字典 any(test_data.values()): {any(test_data.values())}")
+    print(f"   Contains an empty dictionary any(test_data.values()): {any(test_data.values())}")
     
     test_data = {'main_indicators': {'pe': 18.5}}
-    print(f"   包含数据 any(test_data.values()): {any(test_data.values())}")
+    print(f"   Contains data any(test_data.values()): {any(test_data.values())}")
     
     print("\n" + "=" * 60)
-    print("✅ 调试测试完成")
+    print("✅ Debugging test completed")
     print("=" * 60)
 
 if __name__ == "__main__":

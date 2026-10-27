@@ -1,270 +1,270 @@
-# TradingAgents项目介绍
+# TradingAgents Project introduction
 
-**分类**: 源项目与论文
-**难度**: 进阶
-**阅读时间**: 15分钟
-**更新日期**: 2025-11-15
-
----
-
-## 📋 引言
-
-TradingAgents-CN是基于**TradingAgents**项目开发的中文本地化版本。TradingAgents是一个开源的AI驱动的多智能体股票分析平台，由Tauric Research团队开发。本文将介绍TradingAgents项目的背景、核心理念和技术架构。
+**Classification**: Source projects and papers
+**difficulty**: Advanced
+**reading time**: 15 minutes
+**Update date**: 2025-11-15
 
 ---
 
-## 🎯 项目背景
+## 📋 Introduction
 
-### TradingAgents的诞生
+TradingAgents-CN is based on**TradingAgents**Chinese localized version of project development. TradingAgents is an open source AI-driven multi-agent stock analysis platform developed by the Tauric Research team. This article will introduce the background, core concepts and technical architecture of the TradingAgents project.
 
-TradingAgents项目起源于学术研究，旨在探索如何利用大语言模型（LLM）和多智能体系统来提升股票分析的质量和效率。
+---
 
-**研究团队**：
-- Tauric Research团队
-- 多位AI和金融科技领域的专家
+## 🎯 Project background
 
-**发表论文**：
-- 📄 论文标题：*"TradingAgents: TradingAgents: Multi-Agents LLM Financial Trading
+### TradingAgents the birth of
+
+TradingAgents The project originated from academic research and aims to explore how to use large language models (LLM) and multi-agent systems to improve the quality and efficiency of stock analysis.
+
+**research team**: 
+- Tauric Research team
+- Several experts in AI and financial technology fields
+
+**Publish a paper**: 
+- 📄 Paper title:*"TradingAgents: TradingAgents: Multi-Agents LLM Financial Trading
 Framework"*
-- 📅 发表时间：2024年
-- 🔗 论文链接：[arXiv](https://arxiv.org/pdf/2412.20138)
+- 📅 Publication date: 2024
+- 🔗 Paper link:[arXiv](https://arxiv.org/pdf/2412.20138)
 
 ---
 
-## 🏗️ 核心架构
+## 🏗️ core architecture
 
-### 1. 多层架构设计
+### 1. Multi-layer architecture design
 
-TradingAgents采用分层架构，将复杂的股票分析任务分解为多个层次：
+TradingAgents Using a layered architecture, complex stock analysis tasks are decomposed into multiple levels:
 
 ```
 ┌─────────────────────────────────────────┐
-│         应用层（Application Layer）        │
-│  股票研究分析、持仓跟踪、风险审阅等          │
+│         Application Layer        │
+│  Stock research analysis, position tracking, risk review, etc.          │
 └─────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────┐
-│         智能体层（Agent Layer）            │
-│  分析师、研究员、研究整合员等多个智能体          │
+│         Agent Layer            │
+│  Multiple agents such as analysts, researchers, and research integrators          │
 └─────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────┐
-│         工具层（Tool Layer）               │
-│  数据获取、技术分析、基本面分析等工具        │
+│         Tool Layer               │
+│  Data acquisition, technical analysis, fundamental analysis and other tools        │
 └─────────────────────────────────────────┘
                     ↓
 ┌─────────────────────────────────────────┐
-│         数据层（Data Layer）               │
-│  市场数据、财务数据、新闻数据等             │
+│         Data Layer               │
+│  Market data, financial data, news data, etc.             │
 └─────────────────────────────────────────┘
 ```
 
-### 2. 多智能体协作机制
+### 2. Multi-agent collaboration mechanism
 
-TradingAgents的核心创新是**多智能体辩论机制**：
+TradingAgents The core innovation is**Multi-agent debate mechanism**: 
 
-**智能体角色**：
-- 🔍 **研究员（Researcher）**：收集和整理信息
-- 📊 **分析师（Analyst）**：进行深度分析
-- 💼 **研究整合员（Research Integrator）**：汇总研究结论
-- 🎯 **风险评估师（Risk Assessor）**：评估风险
-- 👨‍💼 **研究审阅员（Research Reviewer）**：综合审阅研究结论
+**agent role**: 
+- 🔍 **Researcher**: Collect and organize information
+- 📊 **Analyst**: Conduct in-depth analysis
+- 💼 **Research Integrator**: Summary of research conclusions
+- 🎯 **Risk Assessor**: Assess risks
+- 👨‍💼 **Research Reviewer**: Comprehensive review of research conclusions
 
-**协作流程**：
-1. 研究员收集数据和信息
-2. 分析师从不同角度分析
-3. 智能体之间进行辩论
-4. 达成共识或保留分歧
-5. 生成综合分析报告
+**Collaboration process**: 
+1. Researchers collect data and information
+2. Analysts analyze from different angles
+3. Debate among agents
+4. reach consensus or remain divided
+5. Generate comprehensive analysis reports
 
 ---
 
-## 🔬 核心技术
+## 🔬 core technology
 
-### 1. LLM集成
+### 1. LLM Integrate
 
-TradingAgents支持多种大语言模型：
+TradingAgents Supports multiple large language models:
 
-- **OpenAI系列**：GPT-3.5、GPT-4、GPT-4-Turbo
-- **开源模型**：LLaMA、Mistral、Qwen等
-- **API服务**：支持自定义LLM API
+- **OpenAI Series**: GPT-3.5, GPT-4, GPT-4-Turbo
+- **Open source model**: LLaMA, Mistral, Qwen Wait
+- **API service**: Support customization LLM API
 
-### 2. 工具系统
+### 2. Tool system
 
-TradingAgents提供丰富的股票分析工具：
+TradingAgents Provides a wealth of stock analysis tools:
 
-**数据获取工具**：
+**data acquisition tool**: 
 - Yahoo Finance API
 - Alpha Vantage API
 - Finnhub API
-- 自定义数据源
+- Custom data source
 
-**分析工具**：
-- 技术指标计算（MA、MACD、RSI等）
-- 基本面分析（PE、PB、ROE等）
-- 情感分析（新闻、社交媒体）
-- 风险评估（VaR、夏普比率等）
+**Analysis tools**: 
+- Technical indicator calculation (MA, MACD, RSI, etc.)
+- Fundamental analysis (PE, PB, ROE, etc.)
+- Sentiment analysis (news, social media)
+- Risk assessment (VaR, Sharpe ratio, etc.)
 
-### 3. 提示词工程
+### 3. prompt word project
 
-TradingAgents使用精心设计的提示词模板：
+TradingAgents Use a well-designed prompt word template:
 
 ```python
-# 分析师提示词示例
+# Analyst Prompt Word Examples
 ANALYST_PROMPT = """
-你是一位资深的股票分析师，擅长从多个维度分析股票。
+You are a senior stock analyst who is good at analyzing stocks from multiple dimensions.
 
-任务：分析以下股票的投资价值
+Task: Analyze the investment value of the following stocks
 
-股票信息：
+Stock information:
 {stock_info}
 
-市场数据：
+Market data:
 {market_data}
 
-请从以下角度进行分析：
-1. 基本面分析
-2. 技术面分析
-3. 行业地位
-4. 风险因素
+Please analyze it from the following perspectives:
+1. fundamental analysis
+2. Technical analysis
+3. Industry status
+4. risk factors
 
-最后给出研究结论倾向（乐观/审慎/中性）和理由，不输出买入/卖出等交易指令。本系统定位为研究辅助工具，所有输出仅供研究参考，不构成投资建议。
+Finally, the research conclusion tendency (optimistic/cautious/neutral) and reasons are given, and no trading instructions such as buy/sell are output. This system is positioned as a research aid, and all output is for research reference only and does not constitute investment advice.
 """
 ```
 
 ---
 
-## 🌟 核心特性
+## 🌟 Core features
 
-### 1. 开源与可扩展
+### 1. Open source and extensible
 
-- ✅ 开源核心组件（Apache License 2.0）
-- 🔒 专有组件遵循项目根目录许可证说明（见 LICENSE 与 LICENSING.md）
-- ✅ 模块化设计，易于扩展
-- ✅ 支持自定义智能体和工具
-- ✅ 活跃的社区支持
+- ✅ Open source core components (Apache License 2.0)
+- 🔒 Proprietary components follow the project root license instructions (see LICENSE and LICENSING.md)
+- ✅ Modular design, easy to expand
+- ✅ Support custom agents and tools
+- ✅ Active community support
 
-### 2. 多市场支持
+### 2. Multiple market support
 
-- 🇺🇸 美股市场
-- 🇨🇳 A股市场（TradingAgents-CN增强）
-- 🇭🇰 港股市场
+- 🇺🇸 US stock market
+- 🇨🇳 A Stock market (TradingAgents-CN enhanced)
+- 🇭🇰 Hong Kong stock market
 
-### 3. 灵活的部署方式
+### 3. Flexible deployment methods
 
-- 💻 本地部署
-- ☁️ 云端部署
-- 🐳 Docker容器化
-- 🌐 Web界面
-
----
-
-## 📊 TradingAgents-CN的改进
-
-TradingAgents-CN在TradingAgents的基础上进行了大量本地化改进：
-
-### 1. 中国市场适配
-
-- ✅ 支持A股、港股数据源
-- ✅ 集成Tushare、AKShare等国内数据接口
-- ✅ 适配中国市场交易规则
-- ✅ 中文提示词优化
-
-### 2. 用户体验优化
-
-- ✅ 现代化的Web界面
-- ✅ 实时数据同步
-- ✅ 模拟交易功能
-- ✅ 股票筛选工具
-
-### 3. 部署简化
-
-- ✅ 一键安装脚本
-- ✅ 绿色版（Windows便携版）
-- ✅ Docker镜像
-- ✅ 详细的中文文档
-
-### 4. 功能增强
-
-- ✅ 多数据源支持
-- ✅ 定时任务调度
-- ✅ 缓存优化
-- ✅ 日志管理
-- ✅ 用户权限系统
+- 💻 local deployment
+- ☁️ Cloud deployment
+- 🐳 Docker Containerization
+- 🌐 Web interface
 
 ---
 
-## 📖 学术论文
+## 📊 TradingAgents-CN improvements
 
-### 论文摘要
+TradingAgents-CN A large number of localization improvements have been made based on TradingAgents:
 
-TradingAgents论文提出了一个开源的AI智能体平台，用于股票分析和交易。该平台利用大语言模型的能力，通过多智能体协作机制，实现了高质量的股票分析。
+### 1. Chinese market adaptation
 
-**主要贡献**：
+- ✅ Supports A-share and Hong Kong stock data sources
+- ✅ Integrate domestic data interfaces such as Tushare and AKShare
+- ✅ Adapt to Chinese market trading rules
+- ✅ Chinese prompt word optimization
 
-1. **多智能体框架**：提出了基于角色的多智能体协作框架
-2. **工具系统**：设计了可扩展的股票分析工具系统
-3. **实验验证**：通过实验证明了多智能体辩论的有效性
-4. **开源平台**：提供了完整的开源实现
+### 2. User experience optimization
 
-### 论文下载
+- ✅ Modern web interface
+- ✅ Real-time data synchronization
+- ✅ Simulated trading function
+- ✅ Stock Screening Tool
 
-- 📄 [英文原版PDF](/research-papers/TradingAgents_paper.pdf)
-- 📄 [中文翻译版](../../paper/TradingAgents_论文中文版.md)
-- 📄 [arXiv在线版](https://arxiv.org/pdf/2412.20138)
-- 📄 [论文解读](./paper-guide.md)
+### 3. Deployment simplified
 
----
+- ✅ One-click installation script
+- ✅ Green version (Windows portable version)
+- ✅ Docker mirror
+- ✅ Detailed Chinese documentation
 
-## 🔗 相关资源
+### 4. Function enhancement
 
-### 官方资源
-
-- 🌐 [TradingAgents（源项目）](https://github.com/TauricResearch/TradingAgents)
-- 📚 [TradingAgents文档](https://github.com/TauricResearch/TradingAgents)
-
-### TradingAgents-CN资源
-
-- 🌐 [GitHub仓库](https://github.com/hsliuping/TradingAgents-CN)
-- 📚 [中文文档](../../README.md)
-- 💬 [问题反馈](https://github.com/hsliuping/TradingAgents-CN/issues)
-
-### 学习资源
-
-- 📖 [多智能体系统详解](../04-analysis-principles/multi-agent-system.md)
+- ✅ Multiple data sources support
+- ✅ Scheduled tasks
+- ✅ Cache optimization
+- ✅ Log management
+- ✅ User permission system
 
 ---
 
-## 💡 总结
+## 📖 academic papers
 
-TradingAgents是一个创新的开源股票分析平台，通过多智能体协作和大语言模型，为股票分析提供了新的解决方案。TradingAgents-CN在此基础上进行了深度本地化，使其更适合中国市场和中文用户。
+### Paper abstract
 
-**核心价值**：
-- 🎯 学术研究与实际应用的结合
-- 🎯 开源社区的力量
-- 🎯 AI技术在股票分析领域的创新应用
-- 🎯 降低股票分析的门槛
+TradingAgents The paper proposes an open source AI agent platform for stock analysis and trading. The platform leverages the capabilities of large language models to achieve high-quality stock analysis through a multi-agent collaboration mechanism.
 
----
+**Main contributions**: 
 
-## ❓ 常见问题
+1. **multi-agent framework**: Proposed a role-based multi-agent collaboration framework
+2. **Tool system**: Designed a scalable stock analysis tool system
+3. **Experimental verification**: Experimentally proven effectiveness of multi-agent debate
+4. **Open source platform**: Provides a complete open source implementation
 
-**Q: TradingAgents和TradingAgents-CN有什么区别？**
+### Paper download
 
-A: TradingAgents-CN是TradingAgents的中文本地化版本，增加了对中国市场的支持，优化了用户体验，并提供了更完善的中文文档。
-
-**Q: 可以商业使用吗？**
-
-A: 可以。TradingAgents和TradingAgents-CN都采用开源许可证，允许商业使用。但请注意遵守相关金融法规。
-
-**Q: 如何贡献代码？**
-
-A: 欢迎贡献！请访问GitHub仓库，提交Pull Request或Issue。
+- 📄 [English original PDF](/research-papers/TradingAgents_paper.pdf)
+- 📄 [Chinese translation version](../../paper/TradingAgents_Chinese version of the paper.md)
+- 📄 [arXiv Online version](https://arxiv.org/pdf/2412.20138)
+- 📄 [Paper interpretation](./paper-guide.md)
 
 ---
 
-**下一步阅读**：
-- 📖 [论文中文版](../../paper/TradingAgents_论文中文版.md)
-- 📖 [多智能体系统](../04-analysis-principles/multi-agent-system.md)
-- 📖 [快速开始](../07-tutorials/getting-started.md)
+## 🔗 Related resources
+
+### official resources
+
+- 🌐 [TradingAgents (source project)](https://github.com/TauricResearch/TradingAgents)
+- 📚 [TradingAgents Documentation](https://github.com/TauricResearch/TradingAgents)
+
+### TradingAgents-CN Resources
+
+- 🌐 [GitHub warehouse](https://github.com/hsliuping/TradingAgents-CN)
+- 📚 [Chinese documentation](../../README.md)
+- 💬 [Problem feedback](https://github.com/hsliuping/TradingAgents-CN/issues)
+
+### learning resources
+
+- 📖 [Detailed explanation of multi-agent systems](../04-analysis-principles/multi-agent-system.md)
+
+---
+
+## 💡 Summary
+
+TradingAgents It is an innovative open source stock analysis platform that provides new solutions for stock analysis through multi-agent collaboration and large language models. TradingAgents-CN has carried out in-depth localization on this basis, making it more suitable for the Chinese market and Chinese users.
+
+**core value**: 
+- 🎯 Combination of academic research and practical application
+- 🎯 The power of open source communities
+- 🎯 AI Innovative application of technology in stock analysis
+- 🎯 Lower the threshold for stock analysis
+
+---
+
+## ❓ FAQ
+
+**Q: TradingAgents What is the difference between it and TradingAgents-CN?**
+
+A: TradingAgents-CN It is the Chinese localized version of TradingAgents, which adds support for the Chinese market, optimizes the user experience, and provides more complete Chinese documentation.
+
+**Q: Can it be used commercially?**
+
+A: Can. Both TradingAgents and TradingAgents-CN adopt open source licenses, allowing commercial use. But please pay attention to comply with relevant financial regulations.
+
+**Q: How to contribute code?**
+
+A: Contributions welcome! Please visit the GitHub repository and submit a Pull Request or Issue.
+
+---
+
+**Read next**: 
+- 📖 [Chinese version of the paper](../../paper/TradingAgents_Chinese version of the paper.md)
+- 📖 [multi-agent system](../04-analysis-principles/multi-agent-system.md)
+- 📖 [quick start](../07-tutorials/getting-started.md)
 

@@ -1,5 +1,5 @@
 """
-用户数据模型
+User data model
 """
 
 from datetime import datetime, timezone
@@ -12,7 +12,7 @@ from bson import ObjectId
 
 
 def validate_object_id(v: Any) -> ObjectId:
-    """验证ObjectId"""
+    """Verify ObjectId"""
     if isinstance(v, ObjectId):
         return v
     if isinstance(v, str):
@@ -22,11 +22,11 @@ def validate_object_id(v: Any) -> ObjectId:
 
 
 def serialize_object_id(v: ObjectId) -> str:
-    """序列化ObjectId为字符串"""
+    """Serialize ObjectId to string"""
     return str(v)
 
 
-# 创建自定义ObjectId类型
+# Create custom ObjectId type
 PyObjectId = Annotated[
     ObjectId,
     BeforeValidator(validate_object_id),
@@ -35,54 +35,54 @@ PyObjectId = Annotated[
 
 
 class AssistantSettings(BaseModel):
-    """助理个性化设置"""
-    name: str = Field(default="分析助理", description="助理名字")
-    tone: str = Field(default="professional", description="语气风格: professional/friendly/concise")
-    custom_instructions: str = Field(default="", description="用户自定义指令", max_length=500)
+    """Assistant personalization"""
+    name: str = Field(default="Analysis Assistant", description="Assistant name")
+    tone: str = Field(default="professional", description="tone style: professional/friendly/concise")
+    custom_instructions: str = Field(default="", description="User-defined instructions", max_length=500)
 
 
 class UserPreferences(BaseModel):
-    """用户偏好设置"""
-    # 助理个性化
+    """User preferences"""
+    # Assistant personalization
     assistant_settings: AssistantSettings = Field(default_factory=AssistantSettings)
 
-    # 分析偏好
-    default_market: str = "A股"
-    default_depth: str = "3"  # 1-5级，3级为标准分析（推荐）
-    default_analysts: List[str] = Field(default_factory=lambda: ["市场分析师", "基本面分析师"])
+    # Analyze preferences
+    default_market: str = "A shares"
+    default_depth: str = "3"  # 1-5 level, level 3 is standard analysis (recommended)
+    default_analysts: List[str] = Field(default_factory=lambda: ["market analyst", "fundamental analyst"])
     auto_refresh: bool = True
-    refresh_interval: int = 30  # 秒
-    risk_preference: str = "neutral"  # 风险偏好：conservative(保守) / neutral(中性) / aggressive(激进)
+    refresh_interval: int = 30  # seconds
+    risk_preference: str = "neutral"  # Risk Appetite:conservative(conservative) / neutral(Neutral) / aggressive(Radical)
 
-    # 外观设置
+    # Appearance settings
     ui_theme: str = "light"
     sidebar_width: int = 240
 
-    # 语言和地区
+    # language and region
     language: str = "zh-CN"
 
-    # 通知设置
+    # Notification settings
     notifications_enabled: bool = True
-    email_notifications: Union[bool, Dict[str, Any]] = False  # 兼容旧的布尔值和新的字典格式
+    email_notifications: Union[bool, Dict[str, Any]] = False  # Compatible with old boolean and new dictionary formats
     desktop_notifications: bool = True
     analysis_complete_notification: bool = True
     system_maintenance_notification: bool = True
 
 
 class FavoriteStock(BaseModel):
-    """股票关注列表信息"""
-    stock_code: str = Field(..., description="股票代码")
-    stock_name: str = Field(..., description="股票名称")
-    market: str = Field(..., description="市场类型")
-    added_at: datetime = Field(default_factory=now_tz, description="添加时间")
-    tags: List[str] = Field(default_factory=list, description="用户标签")
-    notes: str = Field(default="", description="用户备注")
-    alert_price_high: Optional[float] = Field(None, description="价格上限提醒")
-    alert_price_low: Optional[float] = Field(None, description="价格下限提醒")
+    """Stock watch list information"""
+    stock_code: str = Field(..., description="Stock code")
+    stock_name: str = Field(..., description="Stock name")
+    market: str = Field(..., description="market type")
+    added_at: datetime = Field(default_factory=now_tz, description="Add time")
+    tags: List[str] = Field(default_factory=list, description="User tag")
+    notes: str = Field(default="", description="User remarks")
+    alert_price_high: Optional[float] = Field(None, description="price cap reminder")
+    alert_price_low: Optional[float] = Field(None, description="Price lower limit reminder")
 
 
 class User(BaseModel):
-    """用户模型"""
+    """user model"""
     id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
     username: str = Field(..., min_length=3, max_length=50)
     email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
@@ -95,30 +95,30 @@ class User(BaseModel):
     last_login: Optional[datetime] = None
     preferences: UserPreferences = Field(default_factory=UserPreferences)
     
-    # 配额和限制
+    # Quotas and limits
     daily_quota: int = 1000
     concurrent_limit: int = 3
     
-    # 统计信息
+    # Statistics
     total_analyses: int = 0
     successful_analyses: int = 0
     failed_analyses: int = 0
 
-    # 股票关注列表
-    favorite_stocks: List[FavoriteStock] = Field(default_factory=list, description="用户股票关注列表列表")
+    # Stock Watchlist
+    favorite_stocks: List[FavoriteStock] = Field(default_factory=list, description="User stock watch list list")
     
     model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
 
 
 class UserCreate(BaseModel):
-    """创建用户请求模型"""
+    """Create user request model"""
     username: str = Field(..., min_length=3, max_length=50)
     email: str = Field(..., pattern=r'^[^@]+@[^@]+\.[^@]+$')
     password: str = Field(..., min_length=6, max_length=100)
 
 
 class UserUpdate(BaseModel):
-    """更新用户请求模型"""
+    """Update user request model"""
     email: Optional[str] = Field(None, pattern=r'^[^@]+@[^@]+\.[^@]+$')
     preferences: Optional[UserPreferences] = None
     daily_quota: Optional[int] = None
@@ -126,7 +126,7 @@ class UserUpdate(BaseModel):
 
 
 class UserResponse(BaseModel):
-    """用户响应模型"""
+    """User response model"""
     id: str
     username: str
     email: str
@@ -143,20 +143,20 @@ class UserResponse(BaseModel):
 
     @field_serializer('created_at', 'last_login')
     def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
-        """序列化 datetime 为 ISO 8601 格式，保留时区信息"""
+        """Serialize datetime to ISO 8601 format, preserving time zone information"""
         if dt:
             return dt.isoformat()
         return None
 
 
 class UserLogin(BaseModel):
-    """用户登录请求模型"""
+    """User login request model"""
     username: str
     password: str
 
 
 class UserSession(BaseModel):
-    """用户会话模型"""
+    """User session model"""
     session_id: str
     user_id: str
     created_at: datetime
@@ -167,14 +167,14 @@ class UserSession(BaseModel):
 
     @field_serializer('created_at', 'expires_at', 'last_activity')
     def serialize_datetime(self, dt: Optional[datetime], _info) -> Optional[str]:
-        """序列化 datetime 为 ISO 8601 格式，保留时区信息"""
+        """Serialize datetime to ISO 8601 format, preserving time zone information"""
         if dt:
             return dt.isoformat()
         return None
 
 
 class TokenResponse(BaseModel):
-    """Token响应模型"""
+    """Token response model"""
     access_token: str
     token_type: str = "bearer"
     expires_in: int

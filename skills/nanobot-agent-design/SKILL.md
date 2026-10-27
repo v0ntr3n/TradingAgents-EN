@@ -51,9 +51,9 @@ This applies to:
 When a gap is discovered for a required calculation:
 
 1. Nanobot must **not** suggest that the LLM can compute the value itself.
-2. Nanobot must **not** accept "LLM 自己算也可以接受" as a valid fallback.
+2. Nanobot must **not** accept "LLM It's acceptable if you calculate it yourself." as a valid fallback.
 3. Nanobot must treat the missing calculation capability as a **blocking gap** and trigger Skill/tool creation to fill it.
-4. If the user asks "是否需要 Skill 还是 LLM 自己算", Nanobot must answer: **必须通过 Skill 或工具计算，不能由 LLM 自己算。**
+4. If the user asks "Whether you need Skill or LLM is up to you.", Nanobot must answer: **It must be calculated by Skill or tool and cannot be calculated by LLM itself.**
 
 This rule is non-negotiable and applies to all agents generated through this system.
 
@@ -64,7 +64,7 @@ All Skills and agents must prioritize system-provided data sources. Any external
 System-provided data sources include:
 - tushare
 - akshare
-- QMT (迅投)
+- QMT (XunTou)
 - Other data sources already registered in the project's tool registry
 
 When creating or reviewing a Skill:
@@ -141,14 +141,14 @@ Required tool preference:
 Required behavior:
 
 1. do not infer the effective template from `agent_name` alone when debug mode, workflow context, node context, user preference, or explicit debug-template override may change the result
-2. if the user asks “当前生效模板”, “现在用的是哪份模板”, “调试态命中的是哪份模板”, or any equivalent wording, prefer `get_current_thread_effective_prompt_template` first rather than browsing the template library
+2. if the user asks "Currently effective template", "Which template are you using now?", "Which template is hit in the debugging state?", or any equivalent wording, prefer `get_current_thread_effective_prompt_template` first rather than browsing the template library
 3. if the user asks why a specific template was selected, first resolve the effective template, then explain the result as a priority-resolution outcome rather than as a guess
 4. if context such as `workflow_id`, `node_id`, `debug_template_id`, `preference_id`, or `user_id` is already available from the current session or thread context, Nanobot should pass that context into `get_effective_prompt_template`
 5. if that context is missing, Nanobot may use the best currently available context, but it must say which resolution inputs were actually used and must not present the answer as stronger than the available context supports
 
 Disallowed behavior:
 
-1. answering “当前模板是 X” only because a template exists for the same `agent_name`
+1. answering "The current template is X" only because a template exists for the same `agent_name`
 2. using `inspect_prompt_templates` as a substitute for effective-template resolution when the user is asking about the template that is active right now
 3. claiming a debug template is active without passing or verifying debug-mode context
 
@@ -201,7 +201,7 @@ Required behavior:
 2. If `critical_questions` is non-empty (typically 0-2 items), ask only those questions. For each question, **explain the background, trade-offs, and recommend a direction with reasons** — don't just throw questions at the user.
 3. Multi-round conversations are fine. The key is that **every round should have substance**: explain distinctions, present options with pros/cons, give your expert recommendation.
 4. Follow `nanobot_guidance` from the tool output — it contains the exact conversational strategy.
-5. If `can_proceed_to_confirmation=true`, move directly to confirmation. The user only needs to say "可以" or "没问题" to proceed.
+5. If `can_proceed_to_confirmation=true`, move directly to confirmation. The user only needs to say "OK" or "No problem" to proceed.
 6. Do not present 5-8 decision points. The user is talking to an expert who should design the solution; the user's role is lightweight confirmation, not specification writing.
 
 The core principle: **Nanobot educates, proposes, and the user confirms.** Smart defaults cover 90%+ of dimensions. Nanobot explains the remaining 10% with domain expertise.
@@ -319,7 +319,7 @@ Nanobot must interpret the return fields of `run_agent_workshop_real_data_test` 
 1. `status="ok"` or `test_chain_status="ok"` only means the debug + evaluate chain executed successfully
 2. official acceptance is determined only by `official_acceptance_decision` or `official_acceptance_passed`
 3. if `official_acceptance_decision` is `revise` or `reject`, Nanobot must explicitly say the test did not pass, even if the tool call itself succeeded
-4. Nanobot must never infer “测试已通过” from report richness, report length, risk level, or successful tool execution alone
+4. Nanobot must never infer "Test passed" from report richness, report length, risk level, or successful tool execution alone
 
 If a Workshop-backed real-data test fails, Nanobot must stay on the Workshop testing path rather than switching mental models.
 
@@ -342,12 +342,12 @@ Those methods may be used only as debugging fallbacks when the official chain is
 
 For Workshop-backed agents, Nanobot must never claim any of the following unless the real state already proves it:
 
-1. "已完成测试验收" unless the version is in `active`, or the version is in `testing` and the latest evaluation decision is `pass`
-2. "可以正式发布" unless the version is in `testing` and the latest evaluation decision is `pass`
-3. "已正式发布" unless the version is in `active`
+1. "Test acceptance completed" unless the version is in `active`, or the version is in `testing` and the latest evaluation decision is `pass`
+2. "Can be officially released" unless the version is in `testing` and the latest evaluation decision is `pass`
+3. "Officially released" unless the version is in `active`
 
 If the current version is still `draft`, Nanobot must explicitly say that generation is finished but acceptance is not, and the next required step is to create the testing version and run a real-data test.
-If the current version is already `testing`, Nanobot must explicitly distinguish between "已进入真数据测试阶段" and "最近一次真数据测试已通过".
+If the current version is already `testing`, Nanobot must explicitly distinguish between "Has entered the real data testing stage" and "The most recent real data test passed".
 
 ## Explicit State Machine
 
@@ -451,14 +451,14 @@ Condition: `publish_agent_workshop_version` succeeds and the version becomes `ac
 
 Nanobot should communicate state precisely:
 
-1. say "已进入 testing" when a version exists and can be tested, not when it has already passed
-2. say "最近一次评估已通过" only when the latest official evaluation decision is `pass`
-3. say "可以发布" only in `publish-ready`
-4. say "已发布" only in `published`
+1. say "Already entered testing" when a version exists and can be tested, not when it has already passed
+2. say "The most recent assessment passed" only when the latest official evaluation decision is `pass`
+3. say "can be published" only in `publish-ready`
+4. say "Published" only in `published`
 
 ## Contextual Intent Resolution
 
-When the user replies with a very short follow-up such as `1`, `2`, `A`, `B`, `第一项`, `就这个`, or another terse selector right after Nanobot presented options or asked a multiple-choice next-step question, Nanobot must treat that reply as context-dependent rather than as a fresh ambiguous request.
+When the user replies with a very short follow-up such as `1`, `2`, `A`, `B`, `first item`, `That's it`, or another terse selector right after Nanobot presented options or asked a multiple-choice next-step question, Nanobot must treat that reply as context-dependent rather than as a fresh ambiguous request.
 
 Required behavior:
 
@@ -471,13 +471,13 @@ Disallowed behavior:
 
 1. repeating the same menu back to the user after the user already selected one option
 2. treating `1` or `A` as meaningless input when the immediately previous assistant message already defined what those selectors refer to
-3. asking "你是指 A/B/C 吗" when the preceding options already make the intent clear enough to proceed
+3. asking "Do you mean A/B/C?" when the preceding options already make the intent clear enough to proceed
 
 ## Confirmation Gate
 
 Before the confirmation gate, Nanobot should check whether a requirement-intake gate is needed.
 
-Use `prepare_agent_requirement_intake` when the user only gives a high-level idea such as “帮我做一个估值 agent” and the actual intended shape is still unclear.
+Use `prepare_agent_requirement_intake` when the user only gives a high-level idea such as "Help me make a valuation agent" and the actual intended shape is still unclear.
 
 The minimum intake dimensions are:
 
@@ -487,7 +487,7 @@ The minimum intake dimensions are:
 4. required or preferred tools
 5. new creation vs overwrite/iteration
 
-If the user asks a follow-up such as “报告会是什么样子”, “给我看报告样式”, “输出结构是什么”, or any similar style/format question before generation, Nanobot must treat that as output-shape clarification rather than as a request for a filled report.
+If the user asks a follow-up such as "What the report will look like", "show me report style", "What is the output structure?", or any similar style/format question before generation, Nanobot must treat that as output-shape clarification rather than as a request for a filled report.
 
 For that case, the intake must also clarify:
 
@@ -540,7 +540,7 @@ Even if the user explicitly allows a real-ticker sample, Nanobot must still keep
 1. a real-ticker sample is only runtime diagnostics or output preview
 2. when that sample is being used as the official Workshop evaluation input, Nanobot must say the acceptance result comes from the recorded evaluation decision rather than from the raw sample output itself
 3. if no Workshop version exists yet, Nanobot must say the sample does not mean the Draft has passed formal testing
-4. after `generate_confirmed_candidate_agent`, Nanobot must not imply "已经可以正式测试验收" just because config/template/bindings/dry-run succeeded
+4. after `generate_confirmed_candidate_agent`, Nanobot must not imply "It's ready for formal testing and acceptance" just because config/template/bindings/dry-run succeeded
 
 Nanobot must never ask the user whether trading advice is allowed, because that policy is already fixed: it is not allowed.
 
@@ -560,21 +560,21 @@ Context:
 
 1. The proposed agent responsibility is valuation analysis only.
 2. The proposed output_field is `valuation_report`.
-3. The user asks: “这个 agent 生成的报告会是什么样子？”
+3. The user asks: "What will the reports generated by this agent look like?"
 
 Good answer shape:
 
 ```text
-可以先把 valuation_report 设计成下面这种结构骨架：
+You can first design valuation_report into the following structural skeleton:
 
-- 标的基本信息
-- 估值方法说明
-- 核心估值指标摘要
-- 同行业可比结果
-- 估值结论摘要
-- 主要风险提示
+- Basic information of the target
+- Valuation method description
+- Summary of Core Valuation Metrics
+- Comparable results in the same industry
+- Summary of Valuation Conclusions
+- Main risk warning
 
-说明：这里只展示报告结构，不填充真实内容，也不扩展到技术分析、交易计划或多空辩论。
+Note: Only the report structure is shown here, it is not populated with real content, and does not extend to technical analysis, trading plans, or long-short debates.
 ```
 
 Why this is correct:
@@ -593,16 +593,16 @@ Context:
 Good answer shape:
 
 ```text
-可以，下面给你看一个占位符版本的样式预览：
+Okay, here's a placeholder version of the style preview:
 
-- 标的：某A股公司
-- 估值方法：PE / PB / PEG 相对估值
-- 当前估值判断：[占位符]
-- 同行业对比摘要：[占位符]
-- 估值偏高/偏低的依据：[占位符]
-- 风险提示：[占位符]
+- Target: An A-share company
+- Valuation method: PE / PB / PEG relative valuation
+- Current valuation judgment:[placeholder]
+- Summary of comparison with the same industry:[placeholder]
+- Basis for high/low valuation:[placeholder]
+- Risk warning:[placeholder]
 
-说明：这是样式预览，不代表真实研究结果，不包含交易建议或操作性结论。
+Note: This is a style preview and does not represent actual research results and does not contain trading recommendations or operational conclusions.
 ```
 
 Why this is correct:
@@ -616,12 +616,12 @@ Why this is correct:
 If the current conversation is only about a valuation-agent style preview, Nanobot must not answer with content like this:
 
 ```text
-- 投资观点：建议买入
-- 目标价区间：...
-- 技术面结论：...
-- 交易计划：...
-- Bull / Bear 情景推演：...
-- 置信度：...
+- Investment perspective: Recommended to buy
+- Target price range:...
+- Technical conclusion:...
+- Trading plan:...
+- Bull / Bear Scenario deduction:...
+- Confidence:...
 ```
 
 Why this is wrong:
@@ -639,7 +639,7 @@ Default rule:
 
 ## Report Contract Confirmation Flow
 
-If the intended output is a report-like artifact, Nanobot should not ask for final creation confirmation with only a vague phrase such as “结构化报告” or “输出报告”.
+If the intended output is a report-like artifact, Nanobot should not ask for final creation confirmation with only a vague phrase such as "Structured reporting" or "Output report".
 
 Before asking the user for the final yes/no confirmation, the confirmation payload should include a compact report contract with both content scope and style scope.
 
@@ -665,7 +665,7 @@ For valuation agents, the default report contract should be conservative:
 2. style mode defaults to structure skeleton only
 3. technical analysis, trading plans, multi-role debate synthesis, and other non-valuation modules are excluded unless the user explicitly adds them
 
-Nanobot should present this report contract during confirmation so the user can verify both “报告写什么” and “报告长什么样” before any database artifacts are written.
+Nanobot should present this report contract during confirmation so the user can verify both "What to write in the report" and "What does the report look like?" before any database artifacts are written.
 
 ## Thin Decision Protocol
 
@@ -865,12 +865,12 @@ If the runtime can surface progress to the user, Nanobot should expose visible s
 
 Preferred visible stages:
 
-1. 正在确认目标职责
-2. 正在判断是否可直接生成
-3. 正在检索可复用能力
-4. 正在检查现有配置式 Agent
-5. 正在判断生成结果是否贴合目标
-6. 正在整理最终方案
+1. Confirming target responsibilities
+2. Determining whether it can be generated directly
+3. Retrieving reusability capabilities
+4. Checking existing profiles Agent
+5. Determining whether the generated results meet the target
+6. The final plan is being compiled
 
 These are not a heavy state machine.
 They are only user-visible progress hints so the process does not feel like a black box.

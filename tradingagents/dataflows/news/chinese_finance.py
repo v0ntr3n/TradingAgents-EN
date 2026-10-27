@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-中国财经数据聚合工具
-由于微博API申请困难且功能受限，采用多源数据聚合的方式
+China financial data aggregation tool
+Since it is difficult to apply for Weibo API and its functions are limited, multi-source data aggregation is adopted.
 """
 
 import requests
@@ -27,20 +27,20 @@ class ChineseFinanceDataAggregator:
     
     def get_stock_sentiment_summary(self, ticker: str, days: int = 7) -> Dict:
         """
-        获取股票情绪分析汇总
-        整合多个可获取的中国财经数据源
+        Get a summary of stock sentiment analysis
+        Integrate multiple available Chinese financial data sources
         """
         try:
-            # 1. 获取财经新闻情绪
+            # 1. Get financial news sentiment
             news_sentiment = self._get_finance_news_sentiment(ticker, days)
             
-            # 2. 获取股吧讨论热度 (如果可以获取)
+            # 2. Get the discussion popularity of stock bar (if available)
             forum_sentiment = self._get_stock_forum_sentiment(ticker, days)
             
-            # 3. 获取财经媒体报道
+            # 3. Get financial media coverage
             media_sentiment = self._get_media_coverage_sentiment(ticker, days)
             
-            # 4. 综合分析
+            # 4. comprehensive analysis
             overall_sentiment = self._calculate_overall_sentiment(
                 news_sentiment, forum_sentiment, media_sentiment
             )
@@ -60,24 +60,24 @@ class ChineseFinanceDataAggregator:
             return {
                 'ticker': ticker,
                 'error': f'数据获取失败: {str(e)}',
-                'fallback_message': '由于中国社交媒体API限制，建议使用财经新闻和基本面分析作为主要参考',
+                'fallback_message': 'Due to Chinese social media API restrictions, it is recommended to use financial news and fundamental analysis as the main reference',
                 'timestamp': datetime.now().isoformat()
             }
     
     def _get_finance_news_sentiment(self, ticker: str, days: int) -> Dict:
         """获取财经新闻情绪分析"""
         try:
-            # 搜索相关新闻标题和内容
+            # Search for relevant news titles and content
             company_name = self._get_company_chinese_name(ticker)
             search_terms = [ticker, company_name] if company_name else [ticker]
             
             news_items = []
             for term in search_terms:
-                # 这里可以集成多个新闻源
+                # Multiple news sources can be integrated here
                 items = self._search_finance_news(term, days)
                 news_items.extend(items)
             
-            # 简单的情绪分析
+            # Simple sentiment analysis
             positive_count = 0
             negative_count = 0
             neutral_count = 0
@@ -103,35 +103,35 @@ class ChineseFinanceDataAggregator:
                 'negative_ratio': negative_count / total,
                 'neutral_ratio': neutral_count / total,
                 'news_count': total,
-                'confidence': min(total / 10, 1.0)  # 新闻数量越多，置信度越高
+                'confidence': min(total / 10, 1.0)  # The greater the number of news items, the higher the confidence level.
             }
             
         except Exception as e:
             return {'error': str(e), 'sentiment_score': 0, 'confidence': 0}
     
     def _get_stock_forum_sentiment(self, ticker: str, days: int) -> Dict:
-        """获取股票论坛讨论情绪 (模拟数据，实际需要爬虫)"""
-        # 由于东方财富股吧等平台的反爬虫机制，这里返回模拟数据
-        # 实际实现需要更复杂的爬虫技术
+        """Get stock forum discussion sentiment (Simulate data, actually need crawler)"""
+        # Due to the anti-crawler mechanism of platforms such as Oriental Fortune Stock Bar, simulated data is returned here.
+        # Actual implementation requires more complex crawler technology
         
         return {
             'sentiment_score': 0,
             'discussion_count': 0,
             'hot_topics': [],
-            'note': '股票论坛数据获取受限，建议关注官方财经新闻',
+            'note': 'Access to stock forum data is limited, it is recommended to pay attention to official financial news',
             'confidence': 0
         }
     
     def _get_media_coverage_sentiment(self, ticker: str, days: int) -> Dict:
         """获取媒体报道情绪"""
         try:
-            # 可以集成RSS源或公开的财经API
+            # Can integrate RSS feeds or public finance API
             coverage_items = self._get_media_coverage(ticker, days)
             
             if not coverage_items:
                 return {'sentiment_score': 0, 'coverage_count': 0, 'confidence': 0}
             
-            # 分析媒体报道的情绪倾向
+            # Analyze the emotional tendencies of media reports
             sentiment_scores = []
             for item in coverage_items:
                 score = self._analyze_text_sentiment(item.get('title', '') + ' ' + item.get('summary', ''))
@@ -149,11 +149,11 @@ class ChineseFinanceDataAggregator:
             return {'error': str(e), 'sentiment_score': 0, 'confidence': 0}
     
     def _search_finance_news(self, search_term: str, days: int) -> List[Dict]:
-        """搜索财经新闻 (示例实现)"""
-        # 这里可以集成多个新闻源的API或RSS
-        # 例如：财联社、新浪财经、东方财富等
+        """Search financial news (Example implementation)"""
+        # Here you can integrate APIs from multiple news sources or RSS
+        # For example: Financial Associated Press, Sina Finance, Oriental Fortune, etc.
         
-        # 模拟返回数据结构
+        # Simulate return data structure
         return [
             {
                 'title': f'{search_term}相关财经新闻标题',
@@ -165,8 +165,8 @@ class ChineseFinanceDataAggregator:
         ]
     
     def _get_media_coverage(self, ticker: str, days: int) -> List[Dict]:
-        """获取媒体报道 (示例实现)"""
-        # 可以集成Google News API或其他新闻聚合服务
+        """Get media coverage (Example implementation)"""
+        # Can integrate Google News API or other news aggregation services
         return []
     
     def _analyze_text_sentiment(self, text: str) -> float:
@@ -174,7 +174,7 @@ class ChineseFinanceDataAggregator:
         if not text:
             return 0
         
-        # 简单的关键词情绪分析
+        # Simple keyword sentiment analysis
         positive_words = ['上涨', '增长', '利好', '看好', '买入', '推荐', '强势', '突破', '创新高']
         negative_words = ['下跌', '下降', '利空', '看空', '卖出', '风险', '跌破', '创新低', '亏损']
         
@@ -188,7 +188,7 @@ class ChineseFinanceDataAggregator:
     
     def _get_company_chinese_name(self, ticker: str) -> Optional[str]:
         """获取公司中文名称"""
-        # 简单的映射表，实际可以从数据库或API获取
+        # Simple mapping table, which can actually be obtained from the database or API
         name_mapping = {
             'AAPL': '苹果',
             'TSLA': '特斯拉',
@@ -201,7 +201,7 @@ class ChineseFinanceDataAggregator:
     
     def _calculate_overall_sentiment(self, news_sentiment: Dict, forum_sentiment: Dict, media_sentiment: Dict) -> Dict:
         """计算综合情绪分析"""
-        # 根据各数据源的置信度加权计算
+        # Calculated based on confidence weighting for each data source
         news_weight = news_sentiment.get('confidence', 0)
         forum_weight = forum_sentiment.get('confidence', 0)
         media_weight = media_sentiment.get('confidence', 0)
@@ -217,7 +217,7 @@ class ChineseFinanceDataAggregator:
             media_sentiment.get('sentiment_score', 0) * media_weight
         ) / total_weight
         
-        # 确定情绪等级
+        # Determine emotion level
         if weighted_sentiment > 0.3:
             level = 'very_positive'
         elif weighted_sentiment > 0.1:
@@ -231,7 +231,7 @@ class ChineseFinanceDataAggregator:
         
         return {
             'sentiment_score': weighted_sentiment,
-            'confidence': total_weight / 3,  # 平均置信度
+            'confidence': total_weight / 3,  # average confidence
             'level': level
         }
     
@@ -257,15 +257,15 @@ class ChineseFinanceDataAggregator:
 
 def get_chinese_social_sentiment(ticker: str, curr_date: str) -> str:
     """
-    获取中国社交媒体情绪分析的主要接口函数
+    Get the main interface functions for Chinese social media sentiment analysis
     """
     aggregator = ChineseFinanceDataAggregator()
     
     try:
-        # 获取情绪分析数据
+        # Get sentiment analysis data
         sentiment_data = aggregator.get_stock_sentiment_summary(ticker, days=7)
         
-        # 格式化输出
+        # Formatted output
         if 'error' in sentiment_data:
             return f"""
 中国市场情绪分析报告 - {ticker}

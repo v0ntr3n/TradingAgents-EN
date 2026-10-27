@@ -20,7 +20,7 @@ class _StubRegistry:
 def test_list_available_for_tier_excludes_unmaintained_agents() -> None:
     legacy_agent = AgentMetadata(
         id="market_analyst",
-        name="市场分析师",
+        name="market analyst",
         description="legacy",
         category=AgentCategory.ANALYST,
         version="1.0.0",
@@ -28,7 +28,7 @@ def test_list_available_for_tier_excludes_unmaintained_agents() -> None:
     )
     free_v2_agent = AgentMetadata(
         id="market_analyst_v2",
-        name="市场分析师 v2.0",
+        name="market analyst v2.0",
         description="maintained free",
         category=AgentCategory.ANALYST,
         version="2.0.0",
@@ -36,7 +36,7 @@ def test_list_available_for_tier_excludes_unmaintained_agents() -> None:
     )
     pro_v2_agent = AgentMetadata(
         id="sector_analyst_v2",
-        name="板块分析师 v2.0",
+        name="Sector Analyst v2.0",
         description="maintained pro",
         category=AgentCategory.ANALYST,
         version="2.0.0",
@@ -58,13 +58,13 @@ def test_list_available_for_tier_excludes_unmaintained_agents() -> None:
     assert free_agent["is_available"] is True
     assert "locked_reason" not in free_agent
     assert pro_agent["is_available"] is False
-    assert pro_agent["locked_reason"] == "需要高级学员权限"
+    assert pro_agent["locked_reason"] == "Requires advanced student permissions"
 
 
 def test_get_categories_counts_only_maintained_agents() -> None:
     legacy_agent = AgentMetadata(
         id="market_analyst",
-        name="市场分析师",
+        name="market analyst",
         description="legacy",
         category=AgentCategory.ANALYST,
         version="1.0.0",
@@ -72,7 +72,7 @@ def test_get_categories_counts_only_maintained_agents() -> None:
     )
     maintained_analyst = AgentMetadata(
         id="market_analyst_v2",
-        name="市场分析师 v2.0",
+        name="market analyst v2.0",
         description="maintained",
         category=AgentCategory.ANALYST,
         version="2.0.0",
@@ -80,7 +80,7 @@ def test_get_categories_counts_only_maintained_agents() -> None:
     )
     maintained_manager = AgentMetadata(
         id="research_manager_v2",
-        name="研究经理 v2.0",
+        name="research manager v2.0",
         description="maintained",
         category=AgentCategory.MANAGER,
         version="2.0.0",

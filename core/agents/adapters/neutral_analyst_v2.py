@@ -1,9 +1,9 @@
 """
-基准情景分析师 v2.0
+Baseline Scenario Analyst v2.0
 
-基于 ResearcherAgent 基类的基准情景分析师实现。
-从中性角度审阅综合研究结论，比较证据质量、判断边界与基准情景。
-支持多轮辩论和缓存系统。
+Baseline scenario analyst implementation based on the ResearcherAgent base class.
+Review comprehensive research conclusions from a neutral perspective and compare evidence quality, judgment boundaries and baseline scenarios.
+Supports multi-round debate and caching system.
 """
 
 import logging
@@ -16,37 +16,37 @@ from ..config import AgentMetadata, AgentCategory, LicenseTier, AgentInput, Agen
 
 logger = logging.getLogger(__name__)
 
-# 尝试导入模板系统
+# Try importing the template system
 try:
     from tradingagents.utils.template_client import get_agent_prompt
 except (ImportError, KeyError):
-    logger.warning("无法导入get_agent_prompt，将使用默认提示词")
+    logger.warning("Unable to import get_agent_prompt, default prompt word will be used")
     get_agent_prompt = None
 
-# 不再需要直接导入 get_agent_prompt，使用基类的 _get_prompt_from_template 方法
+# It is no longer necessary to import get_agent_prompt directly, use the _get_prompt_from_template method of the base class
 
 
 @register_agent
 class NeutralAnalystV2(ResearcherAgent):
     """
-    基准情景分析师 v2.0
+    Baseline Scenario Analyst v2.0
 
-    功能：
-    - 从中性角度审阅综合研究结论
-    - 比较高弹性与防御情景观点依赖的证据质量
-    - 提炼当前最稳妥的基准情景
-    - 指出信息缺口与待验证事项
-    - 支持多轮讨论（与高弹性、防御情景研究员讨论）
-    - 支持缓存系统（避免重复分析）
+    Function:
+    - Review comprehensive research conclusions from a neutral perspective
+    - Comparing the quality of evidence relied upon by the highly resilient versus defensive scenario views
+    - Refining the most reliable current baseline scenario
+    - Point out information gaps and matters to be verified
+    - Supports multiple rounds of discussions (discussions with highly resilient, defensive scenario researchers)
+    - Supports caching system (avoids repeated analysis)
 
-    工作流程：
-    1. 读取综合研究结论和市场分析
-    2. 读取辩论历史和对手观点
-    3. 使用LLM从中性角度审阅基准情景并平衡双方观点
-    4. 生成基准情景观点
-    5. 更新辩论状态
+    Workflow:
+    1. Read comprehensive research conclusions and market analysis
+    2. Read debate history and opponents views
+    3. Use LLM to review baseline scenarios from a neutral perspective and balance both perspectives
+    4. Generate a baseline scenario perspective
+    5. Update debate status
 
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent
 
@@ -69,38 +69,38 @@ class NeutralAnalystV2(ResearcherAgent):
         })
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="neutral_analyst_v2",
-        name="基准情景分析师 v2.0",
-        description="平衡乐观与审慎材料，判断当前最稳妥的基准情景，识别共识、冲突点与信息缺口",
+        name="Baseline Scenario Analyst v2.0",
+        description="Balance optimistic and cautious materials, determine the most stable baseline scenario at present, and identify consensus, conflict points and information gaps",
         category=AgentCategory.RISK,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
-        default_tools=[],  # 风险分析师不需要工具
+        default_tools=[],  # Risk analysts don't need tools
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
-            AgentInput(name="investment_plan", type="string", description="综合研究结论", source="state", state_field="investment_plan", source_state_fields=["trader_investment_plan"], producer_hint="research_manager_v2"),
-            AgentInput(name="bull_opinion", type="string", description="乐观情景观点", required=False, source="state", state_field="bull_report", producer_hint="bull_researcher_v2"),
-            AgentInput(name="bear_opinion", type="string", description="审慎情景观点", required=False, source="state", state_field="bear_report", producer_hint="bear_researcher_v2"),
-            AgentInput(name="risky_opinion", type="string", description="高弹性情景观点", required=False, source="state", state_field="risky_opinion", producer_hint="risky_analyst_v2"),
-            AgentInput(name="safe_opinion", type="string", description="防御情景观点", required=False, source="state", state_field="safe_opinion", producer_hint="safe_analyst_v2"),
-            AgentInput(name="risk_debate_state", type="dict", description="辩论状态", required=False, source="state", state_field="risk_debate_state", producer_hint="risk_manager_v2"),
-            AgentInput(name="market_report", type="string", description="市场分析报告", required=False, source="state", state_field="market_report", producer_hint="market_analyst_v2"),
-            AgentInput(name="fundamentals_report", type="string", description="基本面分析报告", required=False, source="state", state_field="fundamentals_report", producer_hint="fundamentals_analyst_v2"),
-            AgentInput(name="news_report", type="string", description="新闻分析报告", required=False, source="state", state_field="news_report", producer_hint="news_analyst_v2"),
-            AgentInput(name="sentiment_report", type="string", description="情绪分析报告", required=False, source="state", state_field="sentiment_report", producer_hint="social_analyst_v2"),
-            AgentInput(name="index_report", type="string", description="大盘分析报告", required=False, source="state", state_field="index_report", producer_hint="index_analyst_v2"),
-            AgentInput(name="sector_report", type="string", description="板块分析报告", required=False, source="state", state_field="sector_report", producer_hint="sector_analyst_v2"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
+            AgentInput(name="investment_plan", type="string", description="Comprehensive research conclusion", source="state", state_field="investment_plan", source_state_fields=["trader_investment_plan"], producer_hint="research_manager_v2"),
+            AgentInput(name="bull_opinion", type="string", description="optimistic scenario view", required=False, source="state", state_field="bull_report", producer_hint="bull_researcher_v2"),
+            AgentInput(name="bear_opinion", type="string", description="prudent situational view", required=False, source="state", state_field="bear_report", producer_hint="bear_researcher_v2"),
+            AgentInput(name="risky_opinion", type="string", description="Highly resilient scenario perspective", required=False, source="state", state_field="risky_opinion", producer_hint="risky_analyst_v2"),
+            AgentInput(name="safe_opinion", type="string", description="defensive situational view", required=False, source="state", state_field="safe_opinion", producer_hint="safe_analyst_v2"),
+            AgentInput(name="risk_debate_state", type="dict", description="debate status", required=False, source="state", state_field="risk_debate_state", producer_hint="risk_manager_v2"),
+            AgentInput(name="market_report", type="string", description="Market analysis report", required=False, source="state", state_field="market_report", producer_hint="market_analyst_v2"),
+            AgentInput(name="fundamentals_report", type="string", description="Fundamental Analysis Report", required=False, source="state", state_field="fundamentals_report", producer_hint="fundamentals_analyst_v2"),
+            AgentInput(name="news_report", type="string", description="News analysis report", required=False, source="state", state_field="news_report", producer_hint="news_analyst_v2"),
+            AgentInput(name="sentiment_report", type="string", description="Sentiment Analysis Report", required=False, source="state", state_field="sentiment_report", producer_hint="social_analyst_v2"),
+            AgentInput(name="index_report", type="string", description="Market analysis report", required=False, source="state", state_field="index_report", producer_hint="index_analyst_v2"),
+            AgentInput(name="sector_report", type="string", description="Sector analysis report", required=False, source="state", state_field="sector_report", producer_hint="sector_analyst_v2"),
         ],
         outputs=[
-            AgentOutput(name="neutral_opinion", type="string", description="基准情景观点"),
-            AgentOutput(name="risk_debate_state", type="dict", description="更新后的辩论状态"),
+            AgentOutput(name="neutral_opinion", type="string", description="base case view"),
+            AgentOutput(name="risk_debate_state", type="dict", description="Updated debate status"),
         ],
         requires_tools=False,
         output_field="neutral_opinion",
-        report_label="【中性风险评估】",
+        report_label=" [Neutral risk assessment]",
         workflow_stage="risk",
         growth_role="reviewer",
         growth_outputs=["neutral_opinion"],
@@ -113,81 +113,81 @@ class NeutralAnalystV2(ResearcherAgent):
         callable_surfaces=["assistant", "workflow", "agent"],
     )
 
-    # 研究立场（风险分析师使用 "neutral"）
+    # research stance (used by risk analysts "neutral") 
     stance = "neutral"
 
-    # 输出字段名
+    # Output field name
     output_field = "neutral_opinion"
 
-    # 🆕 辩论历史字段（用于多轮辩论）
+    # 🆕 Debate history field (for multi-round debates)
     history_field = "neutral_history"
     opponent_history_fields = ["risky_history", "safe_history"]
     
     def _build_system_prompt(self, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词
+        Build system prompt words
 
         Args:
-            state: 工作流状态（可选，用于提取变量如 company_name, ticker 等）
+            state: Workflow status (optional, used to extract variables such as company_name, ticker etc.)
 
         Returns:
-            系统提示词
+            System prompt word
         """
-        # 风险分析师不需要模板变量（不依赖股票信息）
-        # 使用基类的通用方法从模板系统获取提示词（参考 research_manager_v2）
-        logger.info("🔍 [NeutralAnalystV2] 开始构建系统提示词")
+        # Risk analysts do not need template variables (do not rely on stock information)
+        # Use the base class's general method to obtain prompt words from the template system (refer to research_manager_v2)
+        logger.info("🔍 [NeutralAnalystV2] Start building system prompt words")
         
         prompt = self._get_prompt_from_template(
             agent_type="debators_v2",
             agent_name="neutral_analyst_v2",
-            variables={},  # 系统提示词不需要变量（参考 research_manager_v2）
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=state.get("context") if state else None,  # 从 state 中获取 context
+            variables={},  # System prompt words do not require variables (refer to research_manager_v2)
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=state.get("context") if state else None,  # Get from state context
             fallback_prompt=None,
-            prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+            prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
         )
         
-        logger.info(f"📝 系统提示词长度: {len(prompt)} 字符")
+        logger.info(f"📝 System prompt word length: {len(prompt)} character")
         if prompt:
-            logger.debug("✅ 从模板系统获取基准情景分析师系统提示词")
+            logger.debug("✅ Get the baseline scenario analyst system prompt words from the template system")
             return prompt
 
-        # 降级：使用默认提示词
-        return """你是一位基准情景分析师。
+        # Downgrade: Use default prompt word
+        return """You are a baseline scenario analyst.
 
-你的角色特点：
-    - ⚖️ 客观中立，比较证据质量与判断边界
-    - 📊 数据驱动，重视信息缺口与前提完整性
-    - 🎯 以当前最稳妥的基准情景为中心组织分析
-    - 🔍 全面考虑强化条件、脆弱点与未验证部分
+Your character features:
+    - ⚖️ Be objective and neutral, compare the quality of evidence and the boundaries of judgment
+    - 📊 Data-driven, focusing on information gaps and premise integrity
+    - 🎯 Organize analysis around the most secure current baseline scenario
+    - 🔍 Comprehensively consider strengthening conditions, vulnerabilities, and unverified parts
 
-你的任务是：
-    1. 从中性角度审阅当前研究结论的基准情景。
-    2. 比较高弹性与防御情景观点各自依赖的证据质量。
-    3. 指出当前最稳妥的判断、主要信息缺口与待验证事项。
-    4. 不输出仓位、价格区间、风险收益比或交易建议。
+Your task is:
+    1. Baseline scenarios that review the current study s conclusions from a neutral perspective.
+    2. Compare the quality of evidence on which the highly resilient and defensive scenario views each rely.
+    3. Point out the most reliable judgment at present, the main information gaps and matters to be verified.
+    4. Does not output positions, price ranges, risk-to-benefit ratios, or trading recommendations.
 
-评估要点：
-    - 证据质量与结论稳健性
-    - 当前最可信的基准情景
-    - 仍待补足的信息与验证路径
-    - 不同观点分歧背后的关键前提
+Assessment points:
+    - Quality of evidence and robustness of conclusions
+    - The most credible current baseline scenario
+    - Information and verification paths that still need to be completed
+    - The key premise behind the divergence of views
 
-要求：
-    - 保持客观中立
-    - 用数据和逻辑支持你的观点
-    - 综合考虑多方面因素
-    - 使用中文撰写报告"""
+Requirements:
+    - remain objective and neutral
+    - Support your opinions with data and logic
+    - Taking multiple factors into consideration
+    - Write reports in Chinese"""
 
     def _build_user_prompt(self, ticker: str, analysis_date: str, state: Dict[str, Any]) -> str:
-        """构建用户提示词（从模板系统获取并渲染）"""
-        # 🆕 获取辩论状态
+        """Construct user prompt words (obtained from template system and rendered)"""
+        # 🆕 Get debate status
         risk_debate_state = state.get("risk_debate_state", {})
         history = risk_debate_state.get("history", "")
         current_risky_response = risk_debate_state.get("current_risky_response", "")
         current_safe_response = risk_debate_state.get("current_safe_response", "")
 
-        # 准备模板变量（从 state 中提取所有数据）
+        # Prepare template variables (extract all data from state)
         template_variables = {
             "ticker": ticker,
             "analysis_date": analysis_date,
@@ -202,113 +202,113 @@ class NeutralAnalystV2(ResearcherAgent):
             "sentiment_report": state.get("sentiment_report", ""),
             "index_report": state.get("index_report", ""),
             "sector_report": state.get("sector_report", ""),
-            # 🆕 辩论相关变量
+            # 🆕 debate related variables
             "history": history,
             "current_risky_response": current_risky_response,
             "current_safe_response": current_safe_response,
         }
 
-        # 📊 记录输入数据长度
-        logger.info(f"📊 [Neutral Analyst] 输入数据长度统计:")
-        logger.info(f"  - market_report: {len(template_variables['market_report']):,} 字符")
-        logger.info(f"  - sentiment_report: {len(template_variables['sentiment_report']):,} 字符")
-        logger.info(f"  - news_report: {len(template_variables['news_report']):,} 字符")
-        logger.info(f"  - fundamentals_report: {len(template_variables['fundamentals_report']):,} 字符")
-        logger.info(f"  - investment_plan: {len(template_variables['investment_plan']):,} 字符")
-        logger.info(f"  - history: {len(history):,} 字符")
+        # 📊 Record input data length
+        logger.info(f"📊 [Neutral Analyst] Input data length statistics:")
+        logger.info(f"  - market_report: {len(template_variables['market_report']):,} character")
+        logger.info(f"  - sentiment_report: {len(template_variables['sentiment_report']):,} character")
+        logger.info(f"  - news_report: {len(template_variables['news_report']):,} character")
+        logger.info(f"  - fundamentals_report: {len(template_variables['fundamentals_report']):,} character")
+        logger.info(f"  - investment_plan: {len(template_variables['investment_plan']):,} character")
+        logger.info(f"  - history: {len(history):,} character")
         total_length = (len(template_variables['market_report']) + len(template_variables['sentiment_report']) +
                        len(template_variables['news_report']) + len(template_variables['fundamentals_report']) +
                        len(template_variables['investment_plan']) + len(history) +
                        len(current_risky_response) + len(current_safe_response))
-        logger.info(f"  - 总Prompt长度: {total_length:,} 字符 (~{total_length//4:,} tokens)")
+        logger.info(f"  - Total prompt length: {total_length:,} character (~{total_length//4:,} tokens)")
 
-        # 降级提示词（如果模板系统不可用）
-        fallback_prompt = f"""请从基准情景分析师的视角审阅以下综合研究结论，并提炼当前最稳妥的基准情景：
+        # Downgrade prompt word (if template system is not available)
+        fallback_prompt = f"""Please review the following comprehensive research conclusions from the perspective of a baseline scenario analyst and refine the current most reliable baseline scenario:
 
-    【综合研究结论】
-    {template_variables['investment_plan'] or '无综合研究结论'}
+     [Comprehensive research conclusion]
+    {template_variables['investment_plan'] or 'No comprehensive research conclusion'}
 
-    【乐观情景观点】
-    {template_variables['bull_opinion'] or '无乐观情景观点'}
+     [Optimistic Scenario View]
+    {template_variables['bull_opinion'] or 'No optimistic scenario view'}
 
-    【审慎情景观点】
-    {template_variables['bear_opinion'] or '无审慎情景观点'}
+     [Prudent Scenario Perspective]
+    {template_variables['bear_opinion'] or 'no prudence scenario view'}
 
-    【高弹性情景观点】
-    {template_variables['risky_opinion'] or '无高弹性情景观点'}
+     [Highly elastic scenario perspective]
+    {template_variables['risky_opinion'] or 'No highly elastic scenario view'}
 
-    【防御情景观点】
-    {template_variables['safe_opinion'] or '无防御情景观点'}
+     [Defense Scenario Perspective]
+    {template_variables['safe_opinion'] or 'defenseless situation perspective'}
 
-    【市场分析报告】
-    {template_variables['market_report'] or '无市场分析报告'}
+     [Market analysis report]
+    {template_variables['market_report'] or 'No market analysis report'}
 
-    【社交媒体情绪报告】
-    {template_variables['sentiment_report'] or '无情绪分析报告'}
+     [Social Media Sentiment Report]
+    {template_variables['sentiment_report'] or 'No sentiment analysis report'}
 
-    【新闻分析报告】
-    {template_variables['news_report'] or '无新闻分析报告'}
+     [News analysis report]
+    {template_variables['news_report'] or 'No news analysis report'}
 
-    【基本面分析报告】
-    {template_variables['fundamentals_report'] or '无基本面分析报告'}
+     [Fundamental analysis report]
+    {template_variables['fundamentals_report'] or 'No fundamental analysis report'}
 
-    【当前辩论历史】
-    {history or '无辩论历史'}
+     [Current Debate History]
+    {history or 'No debate history'}
 
-    【高弹性情景分析师最新回应】
-    {current_risky_response or '无'}
+     [Latest response from highly elastic scenario analysts] 
+    {current_risky_response or 'None'}
 
-    【防御情景分析师最新回应】
-    {current_safe_response or '无'}
+     [Latest response from defense scenario analysts]
+    {current_safe_response or 'None'}
 
-    请输出你的基准情景观点，重点说明：
-    1. 当前最可信的基准情景是什么。
-    2. 高弹性与防御情景观点分别依赖哪些关键前提。
-    3. 还缺少哪些验证信息。
-    4. 不要输出仓位、价格区间、风险收益比或交易建议。"""
+    Please output your views on the baseline scenario, focusing on:
+    1. What is the most credible current baseline scenario?
+    2. What key premises do the highly resilient and defensive scenario perspectives respectively rely on?
+    3. What verification information is missing?
+    4. Do not output positions, price ranges, risk-reward ratios, or trading recommendations."""
 
 
-        # 打印模板变量（调试用）
-        logger.info(f"📊 [基准情景分析师] 模板变量:")
+        # Print template variables (for debugging)
+        logger.info(f"📊 [Baseline Scenario Analyst] Template variables:")
         for key, value in template_variables.items():
             if isinstance(value, str) and len(value) > 100:
                 logger.info(f"  - {key}: {value[:100]}...")
             else:
                 logger.info(f"  - {key}: {value}")
 
-        # 使用基类的通用方法获取用户提示词（会从 context/state 中提取 preference_id）
+        # Use the general method of the base class to obtain the user prompt word (preference_id will be extracted from context/state)
         prompt = self._get_prompt_from_template(
             agent_type="debators_v2",
             agent_name="neutral_analyst_v2",
             variables=template_variables,
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=state.get("context") if isinstance(state, dict) else state,  # 从 state 中获取 context
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=state.get("context") if isinstance(state, dict) else state,  # Get from state context
             fallback_prompt=fallback_prompt,
-            prompt_type="user"  # 🔑 明确指定获取用户提示词
+            prompt_type="user"  # 🔑 Explicitly specify the user prompt word to obtain
         )
         if prompt:
-            logger.info(f"✅ 从模板系统获取基准情景分析师用户提示词 (长度: {len(prompt)})")
+            logger.info(f"✅ Get the baseline scenario analyst user prompt words from the template system (length: {len(prompt)})")
             return prompt
 
-        # 降级：使用硬编码提示词
-        logger.info(f"📝 [基准情景分析师] 使用降级提示词 (长度: {len(fallback_prompt)})")
+        # Downgrade: Use hardcoded prompt words
+        logger.info(f"📝 [Baseline Scenario Analyst] Use demotion prompts (length: {len(fallback_prompt)})")
         return fallback_prompt
 
     def _get_required_reports(self) -> list:
         """
-        获取需要的报告列表
+        Get a list of required reports
 
         Returns:
-            报告字段名列表
+            Report field name list
         """
         return [
-            # 必需的报告
+            # Required reports
             "investment_plan",
             "bull_opinion",
             "bear_opinion",
             "risky_opinion",
             "safe_opinion",
-            # 🆕 可选的分析报告（提供更多上下文）
+            # 🆕 Optional analysis report (provides more context)
             "market_report",
             "fundamentals_report",
             "news_report",
@@ -319,50 +319,50 @@ class NeutralAnalystV2(ResearcherAgent):
 
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行中性风险审阅（支持多轮辩论）
+        Perform risk-neutral reviews (supports multiple rounds of debate)
 
         Args:
-            state: 包含以下键的状态字典:
-                - ticker: 股票代码
-                - analysis_date: 分析日期
-                - investment_plan: 综合研究结论
-                - bull_opinion: 乐观情景观点（可选）
-                - bear_opinion: 审慎情景观点（可选）
-                - risky_opinion: 高弹性情景观点（可选）
-                - safe_opinion: 防御情景观点（可选）
-                - risk_debate_state: 辩论状态（可选）
+            state: A status dictionary containing the following keys:
+                - ticker: Stock code
+                - analysis_date: Analysis date
+                - investment_plan: Comprehensive research conclusion
+                - bull_opinion: Optimistic Scenario View (optional)
+                - bear_opinion: Prudential scenario perspective (optional)
+                - risky_opinion: Highly resilient scenario perspective (optional)
+                - safe_opinion: Defense scenario perspective (optional)
+                - risk_debate_state: Debate status (optional)
 
         Returns:
-            更新后的状态，包含:
-                - neutral_opinion: 基准情景观点
-                - risk_debate_state: 更新后的辩论状态
+            The updated status includes:
+                - neutral_opinion: base case view
+                - risk_debate_state: Updated debate status
         """
         ticker = state.get("ticker", "") or state.get("company_of_interest", "")
         analysis_date = state.get("analysis_date", "") or state.get("trade_date", "")
 
-        logger.info(f"⚖️ 基准情景分析师开始评估 {ticker} @ {analysis_date}")
+        logger.info(f"⚖️ Baseline scenario analysts begin their assessment {ticker} @ {analysis_date}")
 
-        # 🆕 获取辩论状态
+        # 🆕 Get debate status
         risk_debate_state = state.get("risk_debate_state", {})
         history = risk_debate_state.get("history", "")
         neutral_history = risk_debate_state.get("neutral_history", "")
 
         try:
-            # 构建提示词
+            # Build prompt words
             system_prompt = self._build_system_prompt(state)
             user_prompt = self._build_user_prompt(ticker, analysis_date, state)
 
-            # 调用LLM
+            # call LLM
             system_prompt = self._apply_global_trading_advice_guard(system_prompt)
             messages = [
                 SystemMessage(content=system_prompt),
                 HumanMessage(content=user_prompt)
             ]
 
-            logger.info(f"系统提示词: {system_prompt}")
-            logger.info(f"用户提示词: {user_prompt}")
+            logger.info(f"System prompt word: {system_prompt}")
+            logger.info(f"User prompt words: {user_prompt}")
 
-            logger.info(f"⏱️ [Neutral Analyst] 开始调用LLM...")
+            logger.info(f"⏱️ [Neutral Analyst] Start calling LLM...")
             import time
             llm_start_time = time.time()
 
@@ -373,15 +373,15 @@ class NeutralAnalystV2(ResearcherAgent):
                 raise ValueError("LLM not initialized")
 
             llm_elapsed = time.time() - llm_start_time
-            logger.info(f"⏱️ [Neutral Analyst] LLM调用完成，耗时: {llm_elapsed:.2f}秒")
-            logger.info(f"📝 [Neutral Analyst] 响应长度: {len(opinion):,} 字符")
+            logger.info(f"⏱️ [Neutral Analyst] LLM The call is completed and takes time: {llm_elapsed:.2f}seconds")
+            logger.info(f"📝 [Neutral Analyst] response length: {len(opinion):,} character")
 
-            # 🆕 格式化论点（参考旧版）
+            # 🆕 Formatting arguments (refer to the old version)
             argument = f"Neutral Analyst: {opinion}"
 
-            # 🆕 更新辩论状态
+            # 🆕 Update debate status
             new_count = risk_debate_state.get("count", 0) + 1
-            logger.info(f"⚖️ [基准情景分析师] 发言完成，计数: {risk_debate_state.get('count', 0)} -> {new_count}")
+            logger.info(f"⚖️ [Baseline Scenario Analyst] Finished speaking, counting: {risk_debate_state.get('count', 0)} -> {new_count}")
 
             new_risk_debate_state = {
                 "history": history + "\n" + argument,
@@ -395,18 +395,18 @@ class NeutralAnalystV2(ResearcherAgent):
                 "count": new_count,
             }
 
-            logger.info(f"✅ 中性风险分析完成")
+            logger.info(f"✅ Neutral risk analysis completed")
 
-            # 返回新增字段和更新后的辩论状态
+            # Return the newly added fields and updated debate status
             return {
                 "neutral_opinion": opinion,
                 "risk_debate_state": new_risk_debate_state
             }
 
         except Exception as e:
-            logger.error(f"❌ 中性风险分析失败: {e}", exc_info=True)
+            logger.error(f"❌ Neutral risk analysis failed: {e}", exc_info=True)
             return {
-                "neutral_opinion": f"中性风险分析失败: {str(e)}",
-                "risk_debate_state": risk_debate_state  # 保持原状态
+                "neutral_opinion": f"Neutral risk analysis failed: {str(e)}",
+                "risk_debate_state": risk_debate_state  # Keep it as it is
             }
 

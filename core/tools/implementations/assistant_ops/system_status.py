@@ -1,7 +1,7 @@
-"""使用问答机器人工具：查询系统状态。
+"""Use the Q&A bot tool: Query system status.
 
-提供查询系统模式（标准/京东云）、当前默认模型、数据源启用状态、版本号等能力，
-让使用问答助手能"看到"系统当前真实状态。
+Provides the ability to query system mode (standard/JD Cloud), current default model, data source activation status, version number, etc.
+Allows using Q&A Assistant to"see"The current real state of the system.
 """
 
 import logging
@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_version() -> str:
-    """读取 VERSION 文件"""
+    """Read VERSION file"""
     try:
-        # 工具文件路径: core/tools/implementations/assistant_ops/system_status.py
-        # 项目根目录: 上四级
+        # Tool file path: core/tools/implementations/assistant_ops/system_status.py
+        # Project root directory: Go to Level 4
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.abspath(os.path.join(current_dir, "..", "..", "..", ".."))
         version_path = os.path.join(project_root, "VERSION")
@@ -27,7 +27,7 @@ def _resolve_version() -> str:
             with open(version_path, encoding="utf-8") as f:
                 return f.read().strip()
     except Exception as exc:
-        logger.warning("[get_system_status] 读取 VERSION 文件失败: %s", exc)
+        logger.warning("[get_system_status] Failed to read VERSION file: %s", exc)
     return "未知"
 
 
@@ -40,7 +40,7 @@ def _is_jdyun_mode() -> bool:
 @register_tool(
     tool_id="get_system_status",
     name="获取系统状态",
-    description="查询系统当前的运行模式（标准版/京东云版）、默认大模型、数据源启用状态和版本号。当用户问'这是什么版本''当前用什么模型''数据源有哪些'等问题时使用。",
+    description="Query the current operating mode of the system (standard version/JD Cloud version), default large model, data source activation status and version number. When the user asks'what version is this''What model are you currently using?''What are the data sources?'Use it when you have questions.",
     category="assistant_ops",
     is_online=False,
     auto_register=True,
@@ -50,33 +50,33 @@ def _is_jdyun_mode() -> bool:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["当前是什么版本", "京东云版还是标准版", "当前用什么大模型", "数据源有哪些"],
-    when_to_use="当用户问到系统配置、模式、版本、当前模型或数据源状态时使用。",
-    returns="返回文本格式的系统状态摘要，包含运行模式、默认模型、数据源列表和版本号。",
+    when_to_use="Used when the user asks about system configuration, schema, version, current model or data source status.",
+    returns="Returns a system status summary in text format, including the operating mode, default model, data source list, and version number.",
 )
 async def get_system_status() -> str:
-    """获取系统当前运行状态。"""
+    """Get the current running status of the system."""
     from app.core.database import get_mongo_db
 
     db = get_mongo_db()
     jdyun = _is_jdyun_mode()
     version = _resolve_version()
 
-    # 当前默认模型
+    # Current default model
     default_model = "未配置"
     default_provider = "未配置"
     try:
-        # 从 llm_configs 集合读取启用的模型
+        # Read enabled models from the llm_configs collection
         cursor = db.llm_configs.find({"enabled": True}, {"model_name": 1, "provider": 1, "is_default": 1}).limit(10)
         docs = await cursor.to_list(length=10)
         if docs:
-            # 优先取 is_default
+            # Take priority is_default
             default_doc = next((d for d in docs if d.get("is_default")), docs[0])
             default_model = default_doc.get("model_name", "未知")
             default_provider = default_doc.get("provider", "未知")
     except Exception as exc:
-        logger.warning("[get_system_status] 查询默认模型失败: %s", exc)
+        logger.warning("[get_system_status] Querying default model failed: %s", exc)
 
-    # 数据源启用状态
+    # Data source enable status
     data_sources_lines = []
     try:
         cursor = db.data_sources.find({}, {"name": 1, "type": 1, "enabled": 1}).limit(20)
@@ -86,14 +86,14 @@ async def get_system_status() -> str:
                 name = ds.get("name") or ds.get("type") or "?"
                 ds_type = ds.get("type") or "?"
                 enabled = "启用" if ds.get("enabled") else "禁用"
-                # 京东云版隐藏非支持的数据源
+                # JD Cloud version hides unsupported data sources
                 if jdyun and ds_type.lower() not in {"tushare", "akshare"}:
                     continue
                 data_sources_lines.append(f"  - {name}({ds_type}): {enabled}")
         else:
-            data_sources_lines.append("  - (数据库中未配置数据源)")
+            data_sources_lines.append("  - (The data source is not configured in the database)")
     except Exception as exc:
-        logger.warning("[get_system_status] 查询数据源失败: %s", exc)
+        logger.warning("[get_system_status] Querying data source failed: %s", exc)
         data_sources_lines.append(f"  - 查询失败: {exc}")
 
     lines = [
@@ -106,6 +106,6 @@ async def get_system_status() -> str:
     lines.extend(data_sources_lines or ["  - 无"])
 
     if jdyun:
-        lines.append("- 京东云版说明: 全功能开放，无需激活 License；大模型和数据源由平台统一配置")
+        lines.append("- JD Cloud Version Instructions: Fully functional and open, no license required; large models and data sources are configured uniformly by the platform")
 
     return "\n".join(lines)

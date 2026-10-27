@@ -1,7 +1,7 @@
 """
-Agent Builder Graph 工作流模块
+Agent Builder Graph Workflow module
 
-提供 Agent Builder 的 LangGraph 工作流实现。
+Provides LangGraph workflow implementation for Agent Builder.
 """
 
 from core.embedded_nanobot.workflows.agent_builder_state import (

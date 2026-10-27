@@ -1,8 +1,8 @@
 """
-止损提醒服务
+Stop loss reminder service
 
-周期扫描用户设置的止损提醒（alert_price_low），
-当价格接近或跌破阈值时创建通知。
+Periodically scan the stop loss reminder (alert_price_low) set by the user,
+Create notifications when price approaches or falls below a threshold.
 """
 
 import logging
@@ -27,15 +27,15 @@ class StopLossAlertService:
             await self.db[self.state_collection].create_index([("key", 1)], unique=True)
             await self.db[self.state_collection].create_index([("updated_at", -1)])
         except Exception as e:
-            logger.warning("创建止损提醒索引失败(忽略): %s", e)
+            logger.warning("Failed to create stop loss reminder index(ignore): %s", e)
 
     async def run_once(self, near_pct: float = 0.02, cooldown_minutes: int = 180) -> None:
-        """执行一次止损提醒扫描。"""
+        """Perform a stop loss alert scan."""
         await self.ensure_indexes()
 
         watch_items = await self._load_watch_items()
         if not watch_items:
-            logger.info("[止损提醒] 无已配置止损提醒")
+            logger.info("[Stop loss reminder] No stop loss reminder configured")
             return
 
         quotes = await self._load_quotes(watch_items)
@@ -72,17 +72,17 @@ class StopLossAlertService:
                     should_notify = True
 
             if should_notify:
-                title = f"止损提醒：{stock_name}({code})"
+                title = f"Stop loss reminder:{stock_name}({code})"
                 if state == "below":
                     content = (
                         f"当前价 {current_price:.2f} 已跌破止损线 {threshold:.2f}，"
-                        "建议立即检查仓位与风险控制。"
+                        "It is recommended to check the position and risk control immediately."
                     )
                     severity = "error"
                 else:
                     content = (
                         f"当前价 {current_price:.2f} 接近止损线 {threshold:.2f}，"
-                        "请关注价格波动。"
+                        "Please monitor price fluctuations."
                     )
                     severity = "warning"
 
@@ -129,20 +129,20 @@ class StopLossAlertService:
             )
 
         if notified:
-            logger.info("[价格下限提醒] 本轮发送 %s 条提醒", notified)
+            logger.info("[Price lower limit reminder] Send %s reminders this round", notified)
         else:
-            logger.info("[价格下限提醒] 本轮无触发提醒")
+            logger.info("[Price lower limit reminder] No trigger reminder this round")
 
     async def _load_watch_items(self) -> List[Dict[str, Any]]:
-        """加载提醒监控项。
+        """Load reminder monitoring items.
 
-        优先级：
-        1) 用户手动设置的 alert_price_low（favorites）
-        2) 持仓分析最新报告里的风险关注价格（position_analysis_reports）
+        Priority:
+        1) alert_price_low (favorites) manually set by the user
+        2) Risk focus prices in the latest position analysis report (position_analysis_reports)
         """
         items: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
 
-        # 新结构：users.favorite_stocks
+        # New structure:users.favorite_stocks
         cursor_users = self.db.users.find(
             {"favorite_stocks.alert_price_low": {"$ne": None}},
             {"_id": 1, "favorite_stocks": 1},
@@ -164,7 +164,7 @@ class StopLossAlertService:
                     "alert_price_low": float(low),
                 }
 
-        # 旧结构：user_favorites.favorites
+        # Old structure:user_favorites.favorites
         cursor_old = self.db.user_favorites.find(
             {"favorites.alert_price_low": {"$ne": None}},
             {"user_id": 1, "favorites": 1},
@@ -189,7 +189,7 @@ class StopLossAlertService:
                         "alert_price_low": float(low),
                     }
 
-        # 对未手动设置提醒的持仓股票：使用最新持仓分析报告里的风险关注价格
+        # For stocks that have not manually set alerts: use the risk-focused prices in the latest position analysis report
         manual_keys = set(items.keys())
         pipeline = [
             {
@@ -240,7 +240,7 @@ class StopLossAlertService:
 
     @staticmethod
     def _extract_stop_loss(price_targets: Dict[str, Any]) -> float | None:
-        """兼容多种字段名提取风险关注价格。"""
+        """Compatible with multiple field names to extract risk and focus prices."""
         candidates = [
             price_targets.get("stop_loss"),
             price_targets.get("stop_loss_price"),

@@ -1,70 +1,70 @@
 <template>
-  <el-dialog v-model="visible" :title="`${position?.code} - ${position?.name} 持仓明细`" width="800px">
+  <el-dialog v-model="visible" :title="`${position?.code} - ${position?.name} Position details`" width="800px">
     <div v-if="position" class="position-details">
-      <!-- 汇总信息 -->
+      <!-- Aggregated information -->
       <el-card class="summary-card" shadow="hover">
         <template #header>
           <div class="card-header">
-            <span>汇总信息</span>
+            <span>Aggregated information</span>
             <div class="action-buttons">
-              <el-button type="primary" size="small" @click="handleAddOperation">增仓</el-button>
-              <el-button type="warning" size="small" @click="handleReduceOperation">减仓</el-button>
-              <el-button type="info" size="small" @click="handleOtherOperation">其他操作</el-button>
+              <el-button type="primary" size="small" @click="handleAddOperation">Increase positions</el-button>
+              <el-button type="warning" size="small" @click="handleReduceOperation">Reduce positions</el-button>
+              <el-button type="info" size="small" @click="handleOtherOperation">Other operations</el-button>
             </div>
           </div>
         </template>
         <el-row :gutter="20">
           <el-col :span="6">
             <div class="summary-item">
-              <div class="label">总数量</div>
+              <div class="label">total quantity</div>
               <div class="value">{{ position.quantity }}</div>
             </div>
           </el-col>
           <el-col :span="6">
             <div class="summary-item">
-              <div class="label">平均成本价</div>
+              <div class="label">average cost price</div>
               <div class="value">{{ position.cost_price?.toFixed(2) }}</div>
             </div>
           </el-col>
           <el-col :span="6">
             <div class="summary-item">
-              <div class="label">总成本</div>
+              <div class="label">total cost</div>
               <div class="value">{{ formatNumber(position.quantity * position.cost_price) }}</div>
             </div>
           </el-col>
           <el-col :span="6">
             <div class="summary-item">
-              <div class="label">建仓次数</div>
+              <div class="label">Number of positions opened</div>
               <div class="value">{{ position.position_count }}</div>
             </div>
           </el-col>
         </el-row>
       </el-card>
 
-      <!-- 明细表格 -->
+      <!-- Detailed table -->
       <el-table :data="position.positions" stripe style="margin-top: 16px">
-        <el-table-column prop="quantity" label="数量" width="80" align="right" />
-        <el-table-column prop="cost_price" label="成本价" width="100" align="right">
+        <el-table-column prop="quantity" label="Quantity" width="80" align="right" />
+        <el-table-column prop="cost_price" label="cost price" width="100" align="right">
           <template #default="{ row }">{{ row.cost_price?.toFixed(2) }}</template>
         </el-table-column>
-        <el-table-column label="成本金额" width="120" align="right">
+        <el-table-column label="cost amount" width="120" align="right">
           <template #default="{ row }">{{ formatNumber(row.quantity * row.cost_price) }}</template>
         </el-table-column>
-        <el-table-column prop="current_price" label="现价" width="80" align="right">
+        <el-table-column prop="current_price" label="Current price" width="80" align="right">
           <template #default="{ row }">{{ row.current_price?.toFixed(2) || '-' }}</template>
         </el-table-column>
-        <el-table-column label="盈亏" width="100" align="right">
+        <el-table-column label="Profit and loss" width="100" align="right">
           <template #default="{ row }">
             <span :class="pnlClass(row.unrealized_pnl)">{{ formatPnl(row.unrealized_pnl) }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="buy_date" label="建仓日期" width="110">
+        <el-table-column prop="buy_date" label="Opening date" width="110">
           <template #default="{ row }">{{ formatDate(row.buy_date) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="Operation" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" size="small" @click="handleEdit(row)">Edit</el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">Delete</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -121,49 +121,49 @@ const formatDate = (date?: string) => {
   return new Date(date).toLocaleDateString('zh-CN')
 }
 
-// 编辑单条持仓
+// Edit a single position
 const handleEdit = (row: PositionItem) => {
   visible.value = false
   emit('edit', row)
 }
 
-// 删除单条持仓
+// Delete a single position
 const handleDelete = async (row: PositionItem) => {
   try {
     await ElMessageBox.confirm(
-      `确定删除这条建仓记录吗？（数量: ${row.quantity}，成本价: ${row.cost_price?.toFixed(2)}）`,
-      '确认删除',
+      `Are you sure you want to delete this position record? (Quantity: ${row.quantity}, cost price: ${row.cost_price?.toFixed(2)}) `,
+      'Confirm deletion',
       { type: 'warning' }
     )
     await portfolioApi.deletePosition(row.id)
-    ElMessage.success('删除成功')
+    ElMessage.success('Delete successfully')
     emit('refresh')
-    // 如果只剩一条记录，关闭对话框
+    // If there is only one record left, close the dialog box
     if (props.position && props.position.positions.length <= 1) {
       visible.value = false
     }
   } catch (e: any) {
     if (e !== 'cancel') {
-      ElMessage.error(e.message || '删除失败')
+      ElMessage.error(e.message || 'Delete failed')
     }
   }
 }
 
-// 增仓操作
+// Increase position operation
 const handleAddOperation = () => {
   if (props.position) {
     emit('operation', { type: 'add', position: props.position })
   }
 }
 
-// 减仓操作
+// Position reduction operation
 const handleReduceOperation = () => {
   if (props.position) {
     emit('operation', { type: 'reduce', position: props.position })
   }
 }
 
-// 其他操作（分红、拆股等）
+// Other operations (dividends, stock splits, etc.)
 const handleOtherOperation = () => {
   if (props.position) {
     emit('operation', { type: 'other', position: props.position })
@@ -209,11 +209,11 @@ const handleOtherOperation = () => {
 }
 
 .profit {
-  color: #F56C6C; /* 红色表示盈利（中国股市规范） */
+  color: #F56C6C; /* Red indicates profit (Chinese stock market norm) */
 }
 
 .loss {
-  color: #67C23A; /* 绿色表示亏损（中国股市规范） */
+  color: #67C23A; /* Green indicates loss (Chinese stock market norm) */
 }
 </style>
 

@@ -1,14 +1,14 @@
-"""测试振幅 API"""
+"""Test amplitude API"""
 import requests
 import json
 
-# API 配置
+# API Configuration
 BASE_URL = "http://localhost:8000"
 USERNAME = "admin"
 PASSWORD = "admin123"
 
 def login():
-    """登录获取 token"""
+    """Log in to get token"""
     url = f"{BASE_URL}/api/auth/login"
     data = {
         "username": USERNAME,
@@ -19,12 +19,12 @@ def login():
         result = response.json()
         return result.get("data", {}).get("access_token")
     else:
-        print(f"❌ 登录失败: {response.status_code}")
+        print(f"❌ Login failed: {response.status_code}")
         print(response.text)
         return None
 
 def get_quote(token, code):
-    """获取股票行情"""
+    """Get stock quotes"""
     url = f"{BASE_URL}/api/stocks/{code}/quote"
     headers = {
         "Authorization": f"Bearer {token}"
@@ -33,48 +33,48 @@ def get_quote(token, code):
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"❌ 获取行情失败: {response.status_code}")
+        print(f"❌ Failed to get quotes: {response.status_code}")
         print(response.text)
         return None
 
 def main():
     print("=" * 60)
-    print("🧪 测试振幅 API")
+    print("🧪 Test amplitude API")
     print("=" * 60)
     
-    # 1. 登录
-    print("\n1️⃣ 登录...")
+    # 1. Login
+    print("\n1️⃣ Login...")
     token = login()
     if not token:
         return
-    print(f"✅ 登录成功")
+    print(f"✅ Login successful")
     
-    # 2. 获取 300750 行情
-    print("\n2️⃣ 获取 300750 行情...")
+    # 2. Get 300750 Quotes
+    print("\n2️⃣ Get 300750 Quotes...")
     result = get_quote(token, "300750")
     if not result:
         return
     
-    print(f"✅ 获取成功")
-    print(f"\n📊 行情数据:")
+    print(f"✅ get success")
+    print(f"\n📊 Market data:")
     data = result.get("data", {})
     
-    # 打印关键字段
+    # Print key fields
     fields = [
-        ("代码", "code"),
-        ("名称", "name"),
-        ("价格", "price"),
-        ("涨跌幅", "change_percent"),
-        ("开盘", "open"),
-        ("最高", "high"),
-        ("最低", "low"),
-        ("昨收", "prev_close"),
-        ("成交量", "volume"),
-        ("成交额", "amount"),
-        ("换手率", "turnover_rate"),
-        ("振幅", "amplitude"),  # 🔥 新增
-        ("换手率日期", "turnover_rate_date"),
-        ("振幅日期", "amplitude_date"),  # 🔥 新增
+        ("code", "code"),
+        ("Name", "name"),
+        ("price", "price"),
+        ("Increase or decrease", "change_percent"),
+        ("Open", "open"),
+        ("highest", "high"),
+        ("lowest", "low"),
+        ("Collected yesterday", "prev_close"),
+        ("Volume", "volume"),
+        ("Turnover", "amount"),
+        ("turnover rate", "turnover_rate"),
+        ("Amplitude", "amplitude"),  # 🔥 New
+        ("Turnover date", "turnover_rate_date"),
+        ("amplitude date", "amplitude_date"),  # 🔥 New
     ]
     
     for label, key in fields:
@@ -91,8 +91,8 @@ def main():
         else:
             print(f"  {label}: -")
     
-    # 验证振幅计算
-    print("\n3️⃣ 验证振幅计算...")
+    # Verify amplitude calculation
+    print("\n3️⃣ Verify amplitude calculation...")
     high = data.get("high")
     low = data.get("low")
     prev_close = data.get("prev_close")
@@ -100,18 +100,18 @@ def main():
     
     if high and low and prev_close:
         expected_amplitude = round((high - low) / prev_close * 100, 2)
-        print(f"  高: {high}")
-        print(f"  低: {low}")
-        print(f"  昨收: {prev_close}")
-        print(f"  期望振幅: {expected_amplitude}%")
-        print(f"  实际振幅: {amplitude}%")
+        print(f"  high: {high}")
+        print(f"  low: {low}")
+        print(f"  Collected yesterday: {prev_close}")
+        print(f"  expected amplitude: {expected_amplitude}%")
+        print(f"  actual amplitude: {amplitude}%")
         
         if abs(expected_amplitude - amplitude) < 0.01:
-            print(f"  ✅ 振幅计算正确！")
+            print(f"  ✅ The amplitude calculation is correct!")
         else:
-            print(f"  ❌ 振幅计算错误！")
+            print(f"  ❌ Amplitude calculation error!")
     else:
-        print(f"  ⚠️ 数据不完整，无法验证")
+        print(f"  ⚠️ Data is incomplete and cannot be verified")
 
 if __name__ == "__main__":
     main()

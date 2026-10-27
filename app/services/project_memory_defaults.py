@@ -1,4 +1,4 @@
-"""L4 项目长期记忆默认种子。"""
+"""L4 Project long-term memory default seed."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def get_default_project_memory_items() -> List[Dict[str, Any]]:
             "project_id": DEFAULT_PROJECT_MEMORY_PROJECT_ID,
             "memory_key": "global-no-trading-advice",
             "title": "禁止直接投资建议",
-            "content": "所有分析只提供研究与学习参考，不给买入、卖出、持有、目标价、仓位或具体时点等直接交易建议。",
+            "content": "All analysis only provides research and learning reference, and does not provide direct trading advice on buying, selling, holding, target price, position or specific time point.",
             "category": ProjectMemoryCategory.PROJECT_RULE.value,
             "priority": 10,
             "tags": ["compliance", "assistant", "global"],
@@ -31,7 +31,7 @@ def get_default_project_memory_items() -> List[Dict[str, Any]]:
             "project_id": DEFAULT_PROJECT_MEMORY_PROJECT_ID,
             "memory_key": "financial-domain-boundary",
             "title": "服务边界限定在金融领域",
-            "content": "非金融话题只做简短拒绝，并引导回股票、基金、宏观、行业、持仓、复盘或交易计划等金融场景。",
+            "content": "Only briefly reject non-financial topics, and lead back to financial scenarios such as stocks, funds, macro, industries, positions, review or trading plans.",
             "category": ProjectMemoryCategory.PROJECT_RULE.value,
             "priority": 20,
             "tags": ["assistant", "boundary"],
@@ -41,7 +41,7 @@ def get_default_project_memory_items() -> List[Dict[str, Any]]:
             "project_id": DEFAULT_PROJECT_MEMORY_PROJECT_ID,
             "memory_key": "confirm-side-effect-operations",
             "title": "复杂副作用操作先确认",
-            "content": "创建定时分析、删除或移除对象、复杂多步任务以及意图不明确的分析请求，必须先说明方案或确认参数，再执行。",
+            "content": "To create scheduled analysis, delete or remove objects, complex multi-step tasks, and analysis requests with unclear intentions, you must first explain the plan or confirm parameters before executing.",
             "category": ProjectMemoryCategory.GOVERNANCE_CONSTRAINT.value,
             "priority": 30,
             "tags": ["governance", "assistant_ops"],
@@ -51,7 +51,7 @@ def get_default_project_memory_items() -> List[Dict[str, Any]]:
             "project_id": DEFAULT_PROJECT_MEMORY_PROJECT_ID,
             "memory_key": "realtime-data-first",
             "title": "实时数据问题必须先取数",
-            "content": "涉及行情、指数点位、财报数字、技术指标、近期公告或最新进展的问题，必须先调用工具获取数据，不能用训练记忆补答案。",
+            "content": "For questions involving market conditions, index points, financial report figures, technical indicators, recent announcements or the latest developments, you must first call the tool to obtain the data, and you cannot use training memory to fill in the answers.",
             "category": ProjectMemoryCategory.GOVERNANCE_CONSTRAINT.value,
             "priority": 40,
             "tags": ["data", "realtime", "governance"],
@@ -61,7 +61,7 @@ def get_default_project_memory_items() -> List[Dict[str, Any]]:
             "project_id": DEFAULT_PROJECT_MEMORY_PROJECT_ID,
             "memory_key": "answer-structure-conclusion-first",
             "title": "回答结构先结论后展开",
-            "content": "默认先给结论，再给证据、风险和不确定性；如果工具数据不是当前口径，必须明确标注数据日期。",
+            "content": "By default, conclusions are given first, and then evidence, risks and uncertainties are given; if the tool data is not of the current caliber, the date of the data must be clearly marked.",
             "category": ProjectMemoryCategory.ANALYSIS_OUTPUT_CONSTRAINT.value,
             "priority": 50,
             "tags": ["output", "assistant", "analysis"],
@@ -71,7 +71,7 @@ def get_default_project_memory_items() -> List[Dict[str, Any]]:
             "project_id": DEFAULT_PROJECT_MEMORY_PROJECT_ID,
             "memory_key": "stock-analysis-template",
             "title": "个股分析默认结构",
-            "content": "个股分析默认按结论、核心驱动、关键风险、待验证点组织；缺少实时数据时先说明信息缺口，再继续分析。",
+            "content": "By default, individual stock analysis is organized by conclusion, core drivers, key risks, and points to be verified; when there is a lack of real-time data, the information gap will be explained before continuing the analysis.",
             "category": ProjectMemoryCategory.RESEARCH_TEMPLATE.value,
             "priority": 60,
             "tags": ["template", "stock_analysis"],

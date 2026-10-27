@@ -1,7 +1,7 @@
 <template>
   <div class="stock-detail-redesign">
 
-    <!-- ════════ 1. 顶部：股票概览 + 操作入口 ════════ -->
+    <!-- ════════ 1. Top: Stock Overview + Operation entrance ════════ -->
     <StockOverview
       :code="code"
       :stock-name="stockName"
@@ -27,7 +27,7 @@
       @go-api-guide="goToApiGuide"
     />
 
-    <!-- ════════ 2. 智能助手主入口（紧接顶部，突出显示） ════════ -->
+    <!-- ════════ 2. Smart Assistant main entrance (immediately at the top, highlighted) ════════ -->
     <AssistantHero
       :code="code"
       :stock-name="stockName"
@@ -39,14 +39,14 @@
       @ask="handleAssistantHeroAsk"
     />
 
-    <!-- ════════ 3. 研究路径（sticky 导航） ════════ -->
+    <!-- ════════ 3. Research path (sticky navigation) ════════ -->
     <ResearchFlow
       :steps="researchFlowSteps"
       :active-key="activeFlowKey"
       @step-click="handleFlowStepClick"
     />
 
-    <!-- ════════ 4. K线 + 核心指标 ════════ -->
+    <!-- ════════ 4. K line + core indicators ════════ -->
     <div class="main-grid" id="kline-section">
       <KlineChart
         :title="klineCardTitle"
@@ -68,7 +68,7 @@
       />
     </div>
 
-    <!-- ════════ 5. 单股分析结果 ════════ -->
+    <!-- ════════ 5. Single stock analysis results ════════ -->
     <AnalysisResultCard
       :analysis-status="analysisStatus"
       :analysis-progress="analysisProgress"
@@ -84,7 +84,7 @@
       @view-history="goToAnalysisHistory"
     />
 
-    <!-- ════════ 6. 持仓分析 + 交易复盘（标签页切换） ════════ -->
+    <!-- ════════ 6. Position analysis + Transaction review (tab switching) ════════ -->
     <PositionReviewTabs
       :position-summary="positionSummary"
       :review-summary="reviewSummary"
@@ -100,7 +100,7 @@
       @select-review-item="selectReviewItem"
     />
 
-    <!-- ════════ 7. 智能助手对话区 ════════ -->
+    <!-- ════════ 7. Intelligent assistant dialogue area ════════ -->
     <AssistantChat
       ref="assistantChatRef"
       v-model:messages="assistantMessages"
@@ -109,11 +109,11 @@
       :loaded-modules="assistantLoadedModules"
       :initial-prompt="assistantInitialPrompt"
       :loading="assistantLoading"
-      input-placeholder="输入问题，例如：结合分析和持仓，我下一步应该重点跟踪什么？"
+      input-placeholder="Enter a question, such as: Combining analysis and holdings, what should I focus on tracking next?"
       @ask="handleAssistantAsk"
     />
 
-    <!-- ════════ 8. 基本面 + 新闻 ════════ -->
+    <!-- ════════ 8. Fundamentals + News ════════ -->
     <BottomSection
       :is-etf="isEtf"
       :basics="basics"
@@ -127,22 +127,22 @@
       @news-filter-change="(v: string) => newsFilter = v"
     />
 
-    <!-- 回到顶部 -->
+    <!-- back to top -->
     <BackToTop :show-after="600" />
 
-    <!-- 添加持仓对话框 -->
+    <!-- Add position dialog -->
     <AddPositionDialog
       v-model:visible="addPositionDialogVisible"
       :initial-data="addPositionInitialData"
       @success="onAddPositionSuccess"
     />
 
-    <!-- ════════ 对话框（保留原有逻辑） ════════ -->
+    <!-- ════════ Dialog box (retain original logic) ════════ -->
 
-    <!-- 详细报告对话框 -->
+    <!-- Detailed Report Dialog -->
     <el-dialog
       v-model="showReportsDialog"
-      title="📊 详细分析报告"
+      title="📊 Detailed analysis report"
       width="80%"
       :close-on-click-modal="false"
       class="reports-dialog"
@@ -163,12 +163,12 @@
       </el-tabs>
 
       <template #footer>
-        <el-button @click="showReportsDialog = false">关闭</el-button>
-        <el-button type="primary" @click="exportReport">导出报告</el-button>
+        <el-button @click="showReportsDialog = false">close</el-button>
+        <el-button type="primary" @click="exportReport">Export report</el-button>
       </template>
     </el-dialog>
 
-    <!-- 数据同步对话框 -->
+    <!-- Data synchronization dialog box -->
     <el-dialog
       v-model="syncDialogVisible"
       :title="syncDialogTitle"
@@ -178,118 +178,118 @@
         <el-form-item :label="securityCodeLabel">
           <el-input v-model="code" disabled />
         </el-form-item>
-        <el-form-item :label="isEtf ? 'ETF名称' : '股票名称'">
+        <el-form-item :label="isEtf ? 'ETF Name' : 'Stock name'">
           <el-input v-model="stockName" disabled />
         </el-form-item>
-        <el-form-item label="同步内容">
+        <el-form-item label="Sync content">
           <el-checkbox-group v-model="syncForm.syncTypes">
-            <el-checkbox label="realtime">实时行情</el-checkbox>
-            <el-checkbox label="historical">历史行情数据</el-checkbox>
-            <el-checkbox v-if="!isEtf" label="financial">财务数据</el-checkbox>
-            <el-checkbox label="basic">基础数据</el-checkbox>
+            <el-checkbox label="realtime">Real-time quotes</el-checkbox>
+            <el-checkbox label="historical">Historical market data</el-checkbox>
+            <el-checkbox v-if="!isEtf" label="financial">financial data</el-checkbox>
+            <el-checkbox label="basic">Basic data</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
-        <el-form-item label="数据源">
+        <el-form-item label="data source">
           <el-radio-group v-model="syncForm.dataSource">
             <el-radio label="tushare" :disabled="!availableSyncSources.tushare">Tushare</el-radio>
             <el-radio label="akshare" :disabled="!availableSyncSources.akshare">AKShare</el-radio>
             <el-radio v-if="!isJdyunMode()" label="qmt" :disabled="!availableSyncSources.qmt">QMT</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="历史数据天数" v-if="syncForm.syncTypes.includes('historical')">
+        <el-form-item label="Historical data days" v-if="syncForm.syncTypes.includes('historical')">
           <el-input-number v-model="syncForm.days" :min="1" :max="3650" />
           <span style="margin-left: 10px; color: #909399; font-size: 12px;">
-            (最多3650天，约10年)
+            (Up to 3650 days, about 10 years)
           </span>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="syncDialogVisible = false">取消</el-button>
+        <el-button @click="syncDialogVisible = false">Cancel</el-button>
         <el-button type="primary" @click="handleSync" :loading="syncLoading">
-          开始同步
+          Start syncing
         </el-button>
       </template>
     </el-dialog>
 
-    <!-- 复盘详情对话框 -->
+    <!-- Review details dialog box -->
     <el-dialog
       v-model="reviewDetailVisible"
-      title="复盘详情"
+      title="Review details"
       width="800px"
       :close-on-click-modal="false"
       destroy-on-close
     >
       <div v-if="reviewDetailLoading" class="detail-loading">
         <el-icon class="is-loading"><Loading /></el-icon>
-        <span>加载中...</span>
+        <span>Loading...</span>
       </div>
       <div v-else-if="currentReviewDetail" class="review-detail-content">
-        <!-- 交易摘要 -->
-        <el-descriptions title="交易摘要" :column="3" border size="small" class="section">
-          <el-descriptions-item label="股票代码">{{ currentReviewDetail.trade_info?.code }}</el-descriptions-item>
-          <el-descriptions-item label="持仓天数">{{ currentReviewDetail.trade_info?.holding_days }}天</el-descriptions-item>
-          <el-descriptions-item label="盈亏金额">
+        <!-- Transaction Summary -->
+        <el-descriptions title="Transaction Summary" :column="3" border size="small" class="section">
+          <el-descriptions-item label="Stock code">{{ currentReviewDetail.trade_info?.code }}</el-descriptions-item>
+          <el-descriptions-item label="Position holding days">{{ currentReviewDetail.trade_info?.holding_days }}day</el-descriptions-item>
+          <el-descriptions-item label="Profit and loss amount">
             <span :class="getTotalPnl() >= 0 ? 'positive' : 'negative'">
               {{ formatPnlValue(getTotalPnl()) }}
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="买入均价">{{ currentReviewDetail.trade_info?.avg_buy_price?.toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="卖出均价">{{ currentReviewDetail.trade_info?.avg_sell_price?.toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="收益率">
+          <el-descriptions-item label="average buying price">{{ currentReviewDetail.trade_info?.avg_buy_price?.toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="average selling price">{{ currentReviewDetail.trade_info?.avg_sell_price?.toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="Yield">
             <span :class="getTotalPnlPct() >= 0 ? 'positive' : 'negative'">
               {{ formatPct(getTotalPnlPct()) }}
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="手续费" :span="3">{{ currentReviewDetail.trade_info?.total_commission?.toFixed(2) }}元</el-descriptions-item>
+          <el-descriptions-item label="handling fee" :span="3">{{ currentReviewDetail.trade_info?.total_commission?.toFixed(2) }}Yuan</el-descriptions-item>
         </el-descriptions>
 
-        <!-- 复盘结论 -->
+        <!-- Review conclusion -->
         <div class="section">
-          <h4 class="section-title">复盘结论</h4>
+          <h4 class="section-title">Review conclusion</h4>
           <div class="summary markdown-content" v-html="renderMarkdown(currentReviewDetail.ai_review?.summary)"></div>
         </div>
 
-        <!-- 优缺点 -->
+        <!-- Advantages and Disadvantages -->
         <el-row :gutter="16" class="section">
           <el-col :span="12">
             <div class="analysis-card strengths">
-              <h4><el-icon><CircleCheck /></el-icon> 做得好的地方</h4>
+              <h4><el-icon><CircleCheck /></el-icon> Things done well</h4>
               <div class="markdown-content" v-html="renderMarkdown((currentReviewDetail.ai_review?.strengths || []).join('\n\n'))"></div>
             </div>
           </el-col>
           <el-col :span="12">
             <div class="analysis-card weaknesses">
-              <h4><el-icon><Warning /></el-icon> 暴露的问题</h4>
+              <h4><el-icon><Warning /></el-icon> exposed issues</h4>
               <div class="markdown-content" v-html="renderMarkdown((currentReviewDetail.ai_review?.weaknesses || []).join('\n\n'))"></div>
             </div>
           </el-col>
         </el-row>
 
-        <!-- 复盘改进项 -->
+        <!-- Review improvements -->
         <div class="section" v-if="currentReviewDetail.ai_review?.suggestions?.length">
-          <h4 class="section-title"><el-icon><Pointer /></el-icon> 后续改进重点</h4>
+          <h4 class="section-title"><el-icon><Pointer /></el-icon> Key points for subsequent improvements</h4>
           <div class="suggestions markdown-content" v-html="renderMarkdown((currentReviewDetail.ai_review?.suggestions || []).join('\n\n'))"></div>
         </div>
 
-        <!-- 详细分析 -->
+        <!-- Detailed analysis -->
         <el-collapse class="section">
-          <el-collapse-item title="时机复盘" name="timing" v-if="currentReviewDetail.ai_review?.timing_analysis">
+          <el-collapse-item title="Time to review" name="timing" v-if="currentReviewDetail.ai_review?.timing_analysis">
             <div class="markdown-content" v-html="renderMarkdown(currentReviewDetail.ai_review?.timing_analysis)"></div>
           </el-collapse-item>
-          <el-collapse-item title="仓位复盘" name="position" v-if="currentReviewDetail.ai_review?.position_analysis">
+          <el-collapse-item title="Position review" name="position" v-if="currentReviewDetail.ai_review?.position_analysis">
             <div class="markdown-content" v-html="renderMarkdown(currentReviewDetail.ai_review?.position_analysis)"></div>
           </el-collapse-item>
-          <el-collapse-item title="情绪复盘" name="emotion" v-if="currentReviewDetail.ai_review?.emotion_analysis">
+          <el-collapse-item title="Emotional review" name="emotion" v-if="currentReviewDetail.ai_review?.emotion_analysis">
             <div class="markdown-content" v-html="renderMarkdown(currentReviewDetail.ai_review?.emotion_analysis)"></div>
           </el-collapse-item>
-          <el-collapse-item title="归因复盘" name="attribution" v-if="currentReviewDetail.ai_review?.attribution_analysis">
+          <el-collapse-item title="Attribution review" name="attribution" v-if="currentReviewDetail.ai_review?.attribution_analysis">
             <div class="markdown-content" v-html="renderMarkdown(currentReviewDetail.ai_review?.attribution_analysis)"></div>
           </el-collapse-item>
         </el-collapse>
       </div>
       <template #footer>
-        <el-button @click="reviewDetailVisible = false">关闭</el-button>
+        <el-button @click="reviewDetailVisible = false">close</el-button>
       </template>
     </el-dialog>
 
@@ -329,7 +329,7 @@ import { getTaskList, getTaskDetail, TaskType, TaskStatus } from '@/api/unifiedT
 import { reviewApi } from '@/api/review'
 import { portfolioApi } from '@/api/portfolio'
 
-// 新版股票详情页子组件
+// New version of stock details page sub-component
 import StockOverview from './components/StockOverview.vue'
 import AssistantHero from './components/AssistantHero.vue'
 import ResearchFlow from './components/ResearchFlow.vue'
@@ -353,39 +353,39 @@ const STOCK_SYNC_POLL_MAX_ATTEMPTS = 300
 let stockDetailDisposed = false
 
 
-// 分析状态
+// analysis status
 const analysisStatus = ref<'idle' | 'running' | 'completed' | 'failed'>('idle')
 const analysisProgress = ref(0)
 const analysisMessage = ref('')
 const lastAnalysis = ref<any | null>(null)
-const lastTaskInfo = ref<any | null>(null) // 保存任务信息（包含 end_time 等）
+const lastTaskInfo = ref<any | null>(null) // Save task information (including end_time, etc.)
 
-// 报告对话框
+// Report dialog box
 const showReportsDialog = ref(false)
 const activeReportTab = ref('')
 
 const reportKeys = computed(() => Object.keys(lastAnalysis.value?.reports || {}))
 const oneSentenceConclusion = computed(() => {
   const traderPlan = getReportContent(lastAnalysis.value?.reports?.trader_investment_plan)
-  const conclusion = extractMarkdownSection(traderPlan, '一句话结论')
+  const conclusion = extractMarkdownSection(traderPlan, 'One sentence conclusion')
   return conclusion || lastAnalysis.value?.summary || '-'
 })
 
-// 股票代码（从路由参数获取）
+// Stock code (obtained from route parameters)
 watch(
   () => route.params.code,
   (value) => {
     if (String(value || '').trim()) {
       return
     }
-    ElMessage.error('股票代码不能为空')
+    ElMessage.error('Stock code cannot be empty')
     router.push({ name: 'Dashboard' })
   },
   { immediate: true }
 )
 
 const code = computed(() => String(route.params.code || '').toUpperCase())
-const symbol = computed(() => code.value.split('.')[0])  // 提取6位代码
+const symbol = computed(() => code.value.split('.')[0])  // Extract 6-digit code
 const stockName = ref('')
 const market = ref('')
 const isFav = ref(false)
@@ -399,12 +399,12 @@ function isLikelyEtfCode(value: string): boolean {
 
 const isEtf = computed(() => market.value === 'ETF' || isLikelyEtfCode(symbol.value))
 const marketLabel = computed(() => isEtf.value ? 'ETF' : (market.value || '-'))
-const securityName = computed(() => isEtf.value ? 'ETF' : '股票')
-const securityCodeLabel = computed(() => `${securityName.value}代码`)
-const syncDialogTitle = computed(() => `同步${securityName.value}数据`)
-const klineCardTitle = computed(() => isEtf.value ? 'ETF价格走势' : '价格K线')
+const securityName = computed(() => isEtf.value ? 'ETF' : 'stocks')
+const securityCodeLabel = computed(() => `${securityName.value}code`)
+const syncDialogTitle = computed(() => `sync${securityName.value}data`)
+const klineCardTitle = computed(() => isEtf.value ? 'ETF price trend' : 'Price K line')
 
-// ECharts K线配置
+// ECharts K line configuration
 const kOption = ref<EChartsOption>({
   grid: { left: 40, right: 20, top: 20, bottom: 40 },
   tooltip: {
@@ -428,7 +428,7 @@ const kOption = ref<EChartsOption>({
   series: [
     {
       type: 'candlestick',
-      name: 'K线',
+      name: 'K line',
       data: [],
       itemStyle: {
         color: '#ef4444',
@@ -443,7 +443,7 @@ const kOption = ref<EChartsOption>({
 const lastKTime = ref<string | null>(null)
 const lastKClose = ref<number | null>(null)
 
-// 报价（初始化）
+// Quotation (initialization)
 const quote = reactive({
   price: NaN,
   changePercent: NaN,
@@ -462,16 +462,16 @@ const quote = reactive({
 })
 
 const lastRefreshAt = ref<Date | null>(null)
-const refreshText = computed(() => lastRefreshAt.value ? `已刷新 ${lastRefreshAt.value.toLocaleTimeString()}` : '未刷新')
+const refreshText = computed(() => lastRefreshAt.value ? `Refreshed ${lastRefreshAt.value.toLocaleTimeString()}` : 'Not refreshed')
 
-// 同步状态
+// Sync status
 const syncStatus = ref<any>(null)
 
-// 数据同步对话框
+// Data synchronization dialog box
 const syncDialogVisible = ref(false)
 const syncLoading = ref(false)
 
-// 添加持仓对话框
+// Add position dialog
 const addPositionDialogVisible = ref(false)
 const addPositionInitialData = computed(() => ({
   code: code.value,
@@ -485,7 +485,7 @@ const availableSyncSources = reactive<Record<ManualSyncDataSource, boolean>>({
   qmt: true
 })
 const syncForm = reactive({
-  syncTypes: ['realtime'],  // 默认选中实时行情
+  syncTypes: ['realtime'],  // Real-time quotes are selected by default
   dataSource: 'tushare' as ManualSyncDataSource,
   days: 365
 })
@@ -496,22 +496,22 @@ watch(isEtf, (value) => {
   }
 }, { immediate: true })
 
-// 清除缓存
+// clear cache
 const clearCacheLoading = ref(false)
 
-// 显示同步对话框
+// Show sync dialog
 function showSyncDialog() {
   syncDialogVisible.value = true
 }
 
-// 显示添加持仓对话框
+// Display the Add Position dialog box
 function showAddPositionDialog() {
   addPositionDialogVisible.value = true
 }
 
 function onAddPositionSuccess() {
   addPositionDialogVisible.value = false
-  // 刷新持仓相关数据
+  // Refresh position related data
   fetchPositionAnalysisSummary()
   fetchPositionData()
 }
@@ -524,7 +524,7 @@ async function loadPreferredSyncDataSource() {
     availableSyncSources.qmt = isJdyunMode() ? false : sourceState.availableSources.qmt
 
     if (sourceState.preferredSource) {
-      // 京东云模式下，若首选是 qmt 则回退
+      // In JD Cloud mode, if the first choice is qmt, it will fall back
       if (isJdyunMode() && sourceState.preferredSource === 'qmt') {
         // fall through to default selection
       } else {
@@ -541,7 +541,7 @@ async function loadPreferredSyncDataSource() {
       syncForm.dataSource = 'tushare'
     }
   } catch (error) {
-    console.warn('加载同步数据源优先级失败，保留当前默认值', error)
+    console.warn('Failed to load synchronization data source priority, retain the current default value', error)
   }
 }
 
@@ -554,32 +554,32 @@ const isTerminalStockSyncStatus = (status?: string): boolean => {
 const buildSingleSyncTaskMessage = (task: StockSyncTaskStatus, symbol: string): string => {
   const result = task.result as SingleStockSyncResponse | null | undefined
   if (!result) {
-    return task.error || task.message || `股票 ${symbol} 同步失败`
+    return task.error || task.message || `stocks ${symbol} Sync failed`
   }
 
-  const parts = [`股票 ${symbol} 数据同步完成`]
+  const parts = [`stocks ${symbol} Data synchronization completed`]
 
   if (result.realtime_sync) {
     if (result.realtime_sync.success) {
       const dataSourceUsed = (result.realtime_sync as any).data_source_used
       if (dataSourceUsed && dataSourceUsed !== syncForm.dataSource) {
-        parts.push(`实时行情同步成功（已自动切换到 ${String(dataSourceUsed).toUpperCase()} 数据源）`)
+        parts.push(`Real-time market synchronization was successful (automatically switched to ${String(dataSourceUsed).toUpperCase()} data source)`)
       } else {
-        parts.push('实时行情同步成功')
+        parts.push('Real-time market synchronization successful')
       }
     } else {
-      parts.push(`实时行情同步失败: ${result.realtime_sync.error || '未知错误'}`)
+      parts.push(`Real-time market synchronization failed: ${result.realtime_sync.error || 'unknown error'}`)
     }
   }
 
   if (result.historical_sync) {
-    parts.push(result.historical_sync.success ? `历史数据 ${result.historical_sync.records || 0} 条` : `历史数据同步失败: ${result.historical_sync.error || '未知错误'}`)
+    parts.push(result.historical_sync.success ? `historical data ${result.historical_sync.records || 0} Article` : `Historical data synchronization failed: ${result.historical_sync.error || 'unknown error'}`)
   }
   if (result.financial_sync) {
-    parts.push(result.financial_sync.success ? '财务数据同步成功' : `财务数据同步失败: ${result.financial_sync.error || '未知错误'}`)
+    parts.push(result.financial_sync.success ? 'Financial data synchronization successful' : `Financial data synchronization failed: ${result.financial_sync.error || 'unknown error'}`)
   }
   if (result.basic_sync) {
-    parts.push(result.basic_sync.success ? '基础数据同步成功' : `基础数据同步失败: ${result.basic_sync.error || '未知错误'}`)
+    parts.push(result.basic_sync.success ? 'Basic data synchronization successful' : `Basic data synchronization failed: ${result.basic_sync.error || 'unknown error'}`)
   }
 
   return parts.join('；')
@@ -588,7 +588,7 @@ const buildSingleSyncTaskMessage = (task: StockSyncTaskStatus, symbol: string): 
 const waitForStockSyncTask = async (taskId: string): Promise<StockSyncTaskStatus> => {
   for (let attempt = 0; attempt < STOCK_SYNC_POLL_MAX_ATTEMPTS; attempt += 1) {
     if (stockDetailDisposed) {
-      throw new Error('页面已离开，停止等待同步结果')
+      throw new Error('The page has been left, stop waiting for synchronization results')
     }
 
     const res = await stockSyncApi.getTaskStatus(taskId)
@@ -599,7 +599,7 @@ const waitForStockSyncTask = async (taskId: string): Promise<StockSyncTaskStatus
     await sleep(STOCK_SYNC_POLL_INTERVAL_MS)
   }
 
-  throw new Error('同步任务执行超时，请稍后刷新页面查看结果')
+  throw new Error('The synchronization task execution timed out, please refresh the page later to view the results.')
 }
 
 const monitorSingleSyncTask = async (taskId: string, symbol: string) => {
@@ -624,15 +624,15 @@ const monitorSingleSyncTask = async (taskId: string, symbol: string) => {
       fetchSyncStatus(),
     ])
   } catch (error: any) {
-    if (!stockDetailDisposed && error?.message !== '页面已离开，停止等待同步结果') {
-      ElMessage.error(error?.message || '同步结果查询失败，请稍后刷新页面查看')
+    if (!stockDetailDisposed && error?.message !== 'The page has been left, stop waiting for synchronization results') {
+      ElMessage.error(error?.message || 'Synchronization result query failed, please refresh the page later to view')
     }
   }
 }
-// 执行同步
+// Perform synchronization
 async function handleSync() {
   if (syncForm.syncTypes.length === 0) {
-    ElMessage.warning('请至少选择一种同步内容')
+    ElMessage.warning('Please select at least one sync content')
     return
   }
 
@@ -649,43 +649,43 @@ async function handleSync() {
     })
 
     if (res.success) {
-      ElMessage.success(`股票 ${code.value} 同步任务已提交，后台执行中`)
+      ElMessage.success(`stocks ${code.value} The synchronization task has been submitted and is being executed in the background`)
       syncDialogVisible.value = false
       void monitorSingleSyncTask(res.data.task_id, code.value)
     } else {
-      ElMessage.error(res.message || '同步失败')
+      ElMessage.error(res.message || 'Sync failed')
     }
   } catch (error: any) {
-    console.error('同步失败:', error)
-    ElMessage.error(error.message || '同步失败，请稍后重试')
+    console.error('Sync failed:', error)
+    ElMessage.error(error.message || 'Synchronization failed, please try again later')
   } finally {
     syncLoading.value = false
   }
 }
 
 async function refreshMockQuote() {
-  // 改为调用后端接口获取真实数据
+  // Instead, call the backend interface to obtain real data.
   await fetchQuote()
 }
 
-// 清除缓存
+// clear cache
 async function clearCache() {
   try {
     await ElMessageBox.confirm(
-      '确定要清除所有缓存吗？清除后需要重新从数据源获取数据。',
-      '清除缓存',
+      'Are you sure you want to clear all caches? After clearing, you need to re-obtain the data from the data source.',
+      'clear cache',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
 
     clearCacheLoading.value = true
     await clearAllCache()
-    ElMessage.success('缓存已清除，正在刷新数据...')
+    ElMessage.success('Cache cleared, data is being refreshed...')
 
-    // 刷新当前页面数据
+    // Refresh current page data
     await Promise.all([
       fetchQuote(),
       fetchFundamentals(),
@@ -694,11 +694,11 @@ async function clearCache() {
       fetchNews()
     ])
 
-    ElMessage.success('数据已刷新')
+    ElMessage.success('Data has been refreshed')
   } catch (error: any) {
     if (error !== 'cancel') {
-      console.error('清除缓存失败:', error)
-      ElMessage.error(error.message || '清除缓存失败')
+      console.error('Clear cache failed:', error)
+      ElMessage.error(error.message || 'Clear cache failed')
     }
   } finally {
     clearCacheLoading.value = false
@@ -706,16 +706,16 @@ async function clearCache() {
 }
 
 async function fetchQuote() {
-  // 🔥 参数验证：确保股票代码不为空
+  // 🔥 Parameter validation: Make sure the ticker is not empty
   if (!code.value) {
-    console.warn('股票代码为空，跳过获取报价')
+    console.warn('The stock code is empty, skip getting quotes')
     return
   }
 
   try {
     const res = await stocksApi.getQuote(code.value)
     const d: any = (res as any)?.data || {}
-    // 后端为 snake_case，前端状态为 camelCase，这里进行映射
+    // The backend is snake_case, the frontend status is camelCase, and the mapping is done here
     quote.price = Number(d.price ?? d.close ?? quote.price)
     quote.changePercent = Number(d.change_percent ?? quote.changePercent)
     quote.open = Number(d.open ?? quote.open)
@@ -727,17 +727,17 @@ async function fetchQuote() {
     quote.turnover = Number.isFinite(d.turnover_rate) ? Number(d.turnover_rate) : quote.turnover
     quote.amplitude = Number.isFinite(d.amplitude) ? Number(d.amplitude) : quote.amplitude
 
-    // 🔥 获取数据日期（用于标注非当天数据）
-    quote.tradeDate = d.trade_date || null  // 交易日期（用于成交量、成交额）
+    // 🔥 Get data date (used to mark non-today data)
+    quote.tradeDate = d.trade_date || null  // Transaction date (for volume and value)
     quote.turnoverDate = d.turnover_rate_date || d.trade_date || null
     quote.amplitudeDate = d.amplitude_date || d.trade_date || null
-    quote.updatedAt = d.updated_at || null  // 🔥 数据更新时间
+    quote.updatedAt = d.updated_at || null  // 🔥 Data update time
 
     if (d.name) stockName.value = d.name
     market.value = d.market || (isLikelyEtfCode(symbol.value) ? 'ETF' : market.value)
     lastRefreshAt.value = new Date()
   } catch (e) {
-    console.error('获取报价失败', e)
+    console.error('Failed to get quote', e)
   }
 }
 
@@ -766,7 +766,7 @@ async function fetchFundamentals() {
   try {
     const res = await stocksApi.getFundamentals(code.value)
     const f: any = (res as any)?.data || {}
-    // 基本面快照映射（以后台为准）
+    // Fundamental snapshot mapping (subject to the background)
     if (f.name) stockName.value = f.name
     market.value = f.market || (isLikelyEtfCode(symbol.value) ? 'ETF' : market.value)
 
@@ -796,15 +796,15 @@ async function fetchFundamentals() {
 
     basics.industry = f.industry || basics.industry
     basics.sector = f.sector || basics.sector || '—'
-    // 后端 total_mv 单位：亿元，这里转为元以便与金额格式化函数配合
+    // Backend total_mv unit: 100 million yuan, converted here to yuan to coordinate with the amount formatting function
     basics.marketCap = Number.isFinite(f.total_mv) ? Number(f.total_mv) * 1e8 : basics.marketCap
-    // 优先使用 pe_ttm，其次 pe
+    // Use pe_ttm first, then pe
     basics.pe = Number.isFinite(f.pe_ttm) ? Number(f.pe_ttm) : (Number.isFinite(f.pe) ? Number(f.pe) : basics.pe)
-    // 🔥 新增：PB（市净率）
+    // 🔥 Newly added: PB (price to book ratio)
     basics.pb = Number.isFinite(f.pb) ? Number(f.pb) : basics.pb
-    // 🔥 新增：PS（市销率）- 优先使用 ps_ttm，其次 ps
+    // 🔥 New: PS (price-to-sales ratio) - use ps_ttm first, then ps
     basics.ps = Number.isFinite(f.ps_ttm) ? Number(f.ps_ttm) : (Number.isFinite(f.ps) ? Number(f.ps) : basics.ps)
-    // ROE 和负债率
+    // ROE and debt ratio
     basics.roe = Number.isFinite(f.roe) ? Number(f.roe) : basics.roe
     const ff: any = f
     basics.debtRatio = Number.isFinite(ff.debt_ratio) ? Number(ff.debt_ratio) : basics.debtRatio
@@ -814,12 +814,12 @@ async function fetchFundamentals() {
     detailFactorDiagnostics.value = f.factor_diagnostics || {}
     detailFactorWarnings.value = f.factor_warnings || {}
 
-    // 获取PE/PB的实时标识
+    // Get the real-time identification of PE/PB
     basics.peIsRealtime = ff.pe_is_realtime || false
     basics.peSource = ff.pe_source || ''
     basics.peUpdatedAt = ff.pe_updated_at || null
   } catch (e) {
-    console.error('获取基本面失败', e)
+    console.error('Failed to get fundamentals', e)
   }
 }
 
@@ -868,9 +868,9 @@ async function fetchFinancials() {
     const detail = e?.response?.data?.detail
     const msg = typeof detail === 'object' ? detail?.message : detail
     if (msg) {
-      ElMessage.warning(`${msg}，请点击「同步数据」获取`)
+      ElMessage.warning(`${msg}, Please click Sync Data to obtain`)
     } else {
-      console.error('获取财务明细失败', e)
+      console.error('Failed to get financial details', e)
     }
   }
 }
@@ -881,7 +881,7 @@ async function fetchSyncStatus() {
     const d: any = (res as any)?.data || {}
     syncStatus.value = d
   } catch (e) {
-    console.warn('获取同步状态失败', e)
+    console.warn('Failed to get sync status', e)
   }
 }
 
@@ -912,7 +912,7 @@ async function ensureAuthReady() {
       try {
         await authStore.checkAuthStatus()
       } catch (error) {
-        console.warn('详情页认证状态恢复失败:', error)
+        console.warn('Detail page authentication status recovery failed:', error)
       }
     }
   })()
@@ -930,7 +930,7 @@ async function checkFavorite() {
     const d: any = (res as any)?.data || {}
     isFav.value = !!d.is_favorite
   } catch (e) {
-    console.warn('检查关注失败', e)
+    console.warn('Check following failed', e)
   }
 }
 onMounted(async () => {
@@ -938,7 +938,7 @@ onMounted(async () => {
   await ensureAuthReady()
   await loadPreferredSyncDataSource()
 
-  // 首次加载：打通后端（并行）
+  // First load: open the backend (parallel)
   await Promise.all([
     fetchQuote(),
     fetchFundamentals(),
@@ -946,18 +946,18 @@ onMounted(async () => {
     fetchKline(),
     fetchNews(),
     checkFavorite(),
-    fetchLatestAnalysis(),  // 获取最新的历史分析报告
-    fetchSyncStatus(),  // 获取同步状态
-    fetchPositionAnalysisSummary(),  // 获取持仓分析摘要
-    fetchTradeReviewSummary(),  // 获取交易复盘摘要
-    fetchReviewHistory(),  // 获取复盘历史列表
-    fetchPositionData()  // 获取持仓数据
+    fetchLatestAnalysis(),  // Get the latest historical analysis report
+    fetchSyncStatus(),  // Get sync status
+    fetchPositionAnalysisSummary(),  // Get a summary of position analysis
+    fetchTradeReviewSummary(),  // Get transaction review summary
+    fetchReviewHistory(),  // Get review history list
+    fetchPositionData()  // Get position data
   ])
-  // 每30秒刷新一次报价
+  // Refresh quotes every 30 seconds
   timer = setInterval(fetchQuote, 30000)
 
-  // 初始化股票主题（依赖上面的报告数据，放在 Promise.all 之后）
-  // 异步执行不阻塞页面渲染；失败时降级为默认主题
+  // Initialize the stock topic (depending on the report data above, placed after Promise.all)
+  // Asynchronous execution does not block page rendering; downgrades to default theme on failure
   void initStockAssistantThread()
 })
 onUnmounted(() => {
@@ -967,12 +967,12 @@ onUnmounted(() => {
 
 
 
-// K线占位相关
-const periodOptions = ['日K','周K','月K']
-const period = ref('日K')
+// K Line occupancy related
+const periodOptions = ['day K','week K','month K']
+const period = ref('day K')
 
 const klineSource = ref<string | undefined>(undefined)
-// 🔥 K线原始数据（供新版 KlineChart 组件使用，含 MA5/MA20 + 成交量）
+// 🔥 K Line raw data (for use by the new version of KlineChart component, including MA5/MA20 + trading volume)
 const klineCategory = ref<string[]>([])
 const klineValues = ref<number[][]>([])   // [open, close, low, high]
 const klineVolumes = ref<number[]>([])
@@ -981,13 +981,13 @@ function periodLabelToParam(p: string): string {
   if (p.includes('5')) return '5m'
   if (p.includes('15')) return '15m'
   if (p.includes('60')) return '60m'
-  if (p.includes('日')) return 'day'
-  if (p.includes('周')) return 'week'
-  if (p.includes('月')) return 'month'
+  if (p.includes('day')) return 'day'
+  if (p.includes('week')) return 'week'
+  if (p.includes('month')) return 'month'
   return '5m'
 }
 
-// 当周期切换时刷新K线
+// Refresh the K line when the cycle switches
 watch(period, () => { fetchKline() })
 
 async function fetchKline() {
@@ -1019,7 +1019,7 @@ async function fetchKline() {
       lastKClose.value = values[values.length - 1][1]
     }
 
-    // 🔥 填充新版 KlineChart 组件所需原始数据（含成交量）
+    // 🔥 Raw data required to populate the new KlineChart component (including trading volume)
     klineCategory.value = category
     klineValues.value = values
     klineVolumes.value = items
@@ -1032,7 +1032,7 @@ async function fetchKline() {
       series: [
         {
           type: 'candlestick',
-          name: 'K线',
+          name: 'K line',
           data: values,
           itemStyle: {
             color: '#ef4444',
@@ -1044,12 +1044,12 @@ async function fetchKline() {
       ]
     }
   } catch (e) {
-    console.error('获取K线失败', e)
+    console.error('Failed to obtain K line', e)
   }
 }
 
 
-// 新闻
+// News
 const newsFilter = ref('all')
 const newsItems = ref<any[]>([])
 const newsLoading = ref(true)
@@ -1076,28 +1076,28 @@ async function fetchNews() {
     })
     newsSource.value = d.source
   } catch (e) {
-    console.error('获取新闻失败', e)
+    console.error('Failed to get news', e)
   } finally {
     newsLoading.value = false
   }
 }
 
-// 基本面（mock）
+// Fundamentals (mock)
 const basics = reactive({
   industry: '-',
   sector: '-',
   marketCap: NaN,
   pe: NaN,
-  pb: NaN,              // 🔥 新增：市净率
-  ps: NaN,              // 🔥 新增：市销率
+  pb: NaN,              // 🔥 New: Price to Book Ratio
+  ps: NaN,              // 🔥 New: price-to-sales ratio
   roe: NaN,
   debtRatio: NaN,
   dividendYield: NaN,
   currentRatio: NaN,
   reportPeriod: '',
-  peIsRealtime: false,  // PE是否为实时数据
-  peSource: '',         // PE数据来源
-  peUpdatedAt: null     // PE更新时间
+  peIsRealtime: false,  // PE Is it real-time data?
+  peSource: '',         // PE Data source
+  peUpdatedAt: null     // PE Update time
 })
 
 const financialSnapshot = reactive({
@@ -1117,11 +1117,11 @@ const detailFactorDiagnostics = ref<StockInfo['factor_diagnostics']>({})
 const detailFactorWarnings = ref<StockInfo['factor_warnings']>({})
 
 const financialRawLabels: Record<string, string> = {
-  income_statement: '利润表',
-  balance_sheet: '资产负债表',
-  cashflow_statement: '现金流量表',
-  financial_indicators: '财务指标',
-  main_business: '主营业务',
+  income_statement: 'income statement',
+  balance_sheet: 'balance sheet',
+  cashflow_statement: 'cash flow statement',
+  financial_indicators: 'financial indicators',
+  main_business: 'Main business',
 }
 
 const detailFactorRow = computed<StockInfo>(() => ({
@@ -1135,7 +1135,7 @@ const detailFactorRow = computed<StockInfo>(() => ({
 const detailFactorWarningEntries = computed(() => getFactorWarningEntries(detailFactorRow.value))
 const detailFactorDiagnosticEntries = computed(() => getFactorDiagnosticEntries(detailFactorRow.value))
 
-// 操作
+// Operation
 function onAnalyze() {
   router.push({ name: 'SingleAnalysis', query: { stock: code.value } })
 }
@@ -1144,21 +1144,21 @@ async function onToggleFavorite() {
     if (!isFav.value) {
       const payload = {
         symbol: symbol.value,
-        stock_code: symbol.value,  // 兼容字段
+        stock_code: symbol.value,  // Compatible fields
         stock_name: stockName.value,
         market: market.value
       }
       await favoritesApi.add(payload)
       isFav.value = true
-      ElMessage.success('已加入关注列表')
+      ElMessage.success('Already added to watchlist')
     } else {
       await favoritesApi.remove(code.value)
       isFav.value = false
-      ElMessage.success('已移出关注')
+      ElMessage.success('Removed from following')
     }
   } catch (e: any) {
-    console.error('关注操作失败', e)
-    ElMessage.error(e?.message || '关注操作失败')
+    console.error('Follow operation failed', e)
+    ElMessage.error(e?.message || 'Follow operation failed')
   }
 }
 
@@ -1166,7 +1166,7 @@ function goPaperTrading() {
   router.push({ name: 'PaperTradingHome', query: { code: code.value, market: market.value } })
 }
 
-// 获取最新的历史分析报告
+// Get the latest historical analysis report
 async function fetchLatestAnalysis() {
   try {
     const resp = await getTaskList({
@@ -1181,10 +1181,10 @@ async function fetchLatestAnalysis() {
     if (tasks && tasks.length > 0) {
       const latestTask = tasks[0]
 
-      // 保存任务信息
+      // Save task information
       lastTaskInfo.value = latestTask
 
-      // 通过 task_id 获取完整结果
+      // Get full results by task_id
       if (latestTask.task_id) {
         try {
           const detailResp = await getTaskDetail(latestTask.task_id)
@@ -1194,19 +1194,19 @@ async function fetchLatestAnalysis() {
             analysisStatus.value = 'completed'
           }
         } catch (e) {
-          console.warn('⚠️ 获取任务结果失败:', e)
+          console.warn('⚠️ Failed to obtain task results:', e)
         }
       }
     }
   } catch (e) {
-    console.warn('⚠️ 获取历史分析报告失败:', e)
+    console.warn('⚠️ Failed to obtain historical analysis report:', e)
   }
 }
 
 // ============================================================================
-// 持仓分析摘要 & 交易复盘摘要
-// 在详情页展示与当前股票相关的最新持仓分析和交易复盘结论
-// 数据来源：/api/v2/tasks/list（按 task_type 过滤）+ /api/v2/tasks/{task_id}（拿 result）
+// Position analysis summary & Transaction review summary
+// Display the latest position analysis and transaction review conclusions related to the current stock on the details page
+// Data source: /api/v2/tasks/list (filtered by task_type)+ /api/v2/tasks/{task_id} (get result)
 // ============================================================================
 
 interface PositionSnapshot {
@@ -1263,7 +1263,7 @@ const reviewSummary = reactive<ReviewSummaryState>({
   tradeCount: null
 })
 
-// 复盘历史列表状态
+// Review history list status
 const reviewHistory = reactive<{
   loading: boolean
   items: any[]
@@ -1276,20 +1276,20 @@ const reviewHistory = reactive<{
   selectedIndex: 0
 })
 
-// 复盘详情弹窗状态
+// Review details pop-up window status
 const reviewDetailVisible = ref(false)
 const reviewDetailLoading = ref(false)
 const currentReviewDetail = ref<any>(null)
 
-// 判断任务是否属于当前股票（先从 task 顶层 symbol/code 匹配，再从 task_params 匹配）
+// Determine whether the task belongs to the current stock (first match from the top-level symbol/code of the task, and then match from task_params)
 function taskMatchesCurrentStock(task: any): boolean {
-  const targetCode = symbol.value  // 6位代码（已去掉后缀）
-  const targetCodeUpper = code.value  // 完整代码（可能含后缀如 SH）
+  const targetCode = symbol.value  // 6 Bit code (suffix removed)
+  const targetCodeUpper = code.value  // Complete code (may include suffix such as SH)
   const params = task?.task_params || task?.params || {}
   const candidates = [
-    task.symbol,        // 从列表 API 的顶层字段匹配
+    task.symbol,        // Top-level field matching from list API
     task.code,
-    params.symbol,      // 从 task_params 匹配
+    params.symbol,      // Match from task_params
     params.code,
     params.stock_code,
     params.symbol_code
@@ -1305,7 +1305,7 @@ async function fetchPositionAnalysisSummary() {
       limit: 50
     })
     const tasks = resp?.data?.tasks || resp?.tasks || []
-    // 过滤出与当前股票相关的任务，并按完成时间倒序
+    // Filter out tasks related to the current stock and sort them in descending order of completion time
     const matched = tasks
       .filter((t: any) => taskMatchesCurrentStock(t))
       .sort((a: any, b: any) => {
@@ -1323,7 +1323,7 @@ async function fetchPositionAnalysisSummary() {
     positionSummary.taskId = latest.task_id
     positionSummary.completedAt = latest.completed_at || latest.created_at
 
-    // 拉取任务详情拿 result
+    // Get task details result
     try {
       const detail: any = await getTaskDetail(latest.task_id)
       const result = detail?.data?.result || detail?.result || {}
@@ -1345,12 +1345,12 @@ async function fetchPositionAnalysisSummary() {
       positionSummary.conclusion = userView.conclusion || ai.action_reason || ''
       positionSummary.keyPoints = Array.isArray(userView.key_points) ? userView.key_points : []
     } catch (e) {
-      console.warn('⚠️ 获取持仓分析详情失败:', e)
+      console.warn('⚠️ Failed to obtain position analysis details:', e)
     }
 
     positionSummary.has = true
   } catch (e) {
-    console.warn('⚠️ 获取持仓分析摘要失败:', e)
+    console.warn('⚠️ Failed to obtain position analysis summary:', e)
     positionSummary.has = false
   }
 }
@@ -1372,12 +1372,12 @@ async function fetchTradeReviewSummary() {
     reviewSummary.tradeCount = data.trade_count ?? null
     reviewSummary.has = true
   } catch (e) {
-    console.warn('⚠️ 获取交易复盘摘要失败:', e)
+    console.warn('⚠️ Failed to obtain transaction review summary:', e)
     reviewSummary.has = false
   }
 }
 
-// 获取当前股票的复盘历史列表
+// Get the review history list of the current stock
 async function fetchReviewHistory() {
   reviewHistory.loading = true
   try {
@@ -1390,7 +1390,7 @@ async function fetchReviewHistory() {
     reviewHistory.total = resp?.data?.total || 0
     reviewHistory.selectedIndex = 0
   } catch (e) {
-    console.warn('⚠️ 获取复盘历史失败:', e)
+    console.warn('⚠️ Failed to obtain review history:', e)
     reviewHistory.items = []
     reviewHistory.total = 0
   } finally {
@@ -1398,7 +1398,7 @@ async function fetchReviewHistory() {
   }
 }
 
-// 持仓数据状态
+// Position data status
 const positionData = reactive<{
   loading: boolean
   real: {
@@ -1425,17 +1425,17 @@ const positionData = reactive<{
   paper: { has: false, quantity: 0, cost_price: 0, current_price: 0, market_value: 0, unrealized_pnl: 0, unrealized_pnl_pct: 0 }
 })
 
-// 获取当前股票的持仓信息
+// Get current stock position information
 async function fetchPositionData() {
   positionData.loading = true
   try {
-    // 并行获取实盘和模拟持仓
+    // Obtain real and simulated positions in parallel
     const [realRes, paperRes] = await Promise.all([
       portfolioApi.getPositions('real').catch(() => ({ success: false, data: { items: [] } })),
       portfolioApi.getPositions('paper').catch(() => ({ success: false, data: { items: [] } }))
     ])
 
-    // 查找当前股票的实盘持仓
+    // Find the current firm position of a stock
     const realPositions = realRes?.data?.items || []
     const realMatch = realPositions.find((p: any) => p.code === symbol.value || p.code === code.value)
     if (realMatch) {
@@ -1450,7 +1450,7 @@ async function fetchPositionData() {
       }
     }
 
-    // 查找当前股票的模拟持仓
+    // Find simulated positions for the current stock
     const paperPositions = paperRes?.data?.items || []
     const paperMatch = paperPositions.find((p: any) => p.code === symbol.value || p.code === code.value)
     if (paperMatch) {
@@ -1465,13 +1465,13 @@ async function fetchPositionData() {
       }
     }
   } catch (e) {
-    console.warn('⚠️ 获取持仓数据失败:', e)
+    console.warn('⚠️ Failed to obtain position data:', e)
   } finally {
     positionData.loading = false
   }
 }
 
-// 选择复盘历史项
+// Select review history items
 function selectReviewItem(index: number) {
   reviewHistory.selectedIndex = index
   const item = reviewHistory.items[index]
@@ -1487,11 +1487,11 @@ function selectReviewItem(index: number) {
   }
 }
 
-// 查看复盘详情（弹窗展示）
+// View review details (pop-up window display)
 async function viewReviewDetail(reviewId?: string) {
   const targetId = reviewId || reviewSummary.taskId
   if (!targetId) {
-    ElMessage.warning('暂无复盘详情')
+    ElMessage.warning('No review details yet')
     return
   }
   
@@ -1503,14 +1503,14 @@ async function viewReviewDetail(reviewId?: string) {
     const resp: any = await reviewApi.getReviewDetail(targetId)
     currentReviewDetail.value = resp?.data || resp
   } catch (e) {
-    console.warn('⚠️ 获取复盘详情失败:', e)
-    ElMessage.error('获取复盘详情失败')
+    console.warn('⚠️ Failed to obtain review details:', e)
+    ElMessage.error('Failed to obtain review details')
   } finally {
     reviewDetailLoading.value = false
   }
 }
 
-// 跳转到持仓分析页面（通过 query 预填股票代码）
+// Jump to the position analysis page (prefill the stock code through query)
 function goToPositionAnalysis() {
   router.push({
     path: '/portfolio',
@@ -1521,7 +1521,7 @@ function goToPositionAnalysis() {
   })
 }
 
-// 跳转到交易复盘页面
+// Jump to the transaction review page
 function goToTradeReview() {
   router.push({
     path: '/review',
@@ -1532,7 +1532,7 @@ function goToTradeReview() {
   })
 }
 
-// 查看持仓分析任务详情（跳转到任务中心）
+// View position analysis task details (jump to task center)
 function viewPositionTaskDetail() {
   if (positionSummary.taskId) {
     router.push({ path: '/tasks/unified', query: { task_id: positionSummary.taskId } })
@@ -1540,13 +1540,13 @@ function viewPositionTaskDetail() {
 }
 
 function viewReviewTaskDetail() {
-  // 改为本页弹窗展示，不跳转到任务中心
+  // Change to a pop-up window display on this page instead of jumping to the task center
   viewReviewDetail()
 }
 
-// 持仓分析相关格式化函数（仅保留对话框所需）
+// Formatting functions related to position analysis (only required for the dialog box)
 
-// 格式化盈亏数值
+// Format profit and loss values
 function formatPnlValue(pnl: any): string {
   const n = Number(pnl)
   if (!Number.isFinite(n)) return '-'
@@ -1554,21 +1554,21 @@ function formatPnlValue(pnl: any): string {
   return `${sign}¥${n.toFixed(2)}`
 }
 
-// 获取总盈亏
+// Get total profit and loss
 function getTotalPnl(): number {
   if (!currentReviewDetail.value?.trade_info) return 0
   const info = currentReviewDetail.value.trade_info
   return (info.realized_pnl || 0) + (info.unrealized_pnl || 0)
 }
 
-// 获取总收益率
+// Get the total return
 function getTotalPnlPct(): number {
   if (!currentReviewDetail.value?.trade_info) return 0
   const info = currentReviewDetail.value.trade_info
   return info.total_pnl_pct || 0
 }
 
-// 格式化百分比
+// Format percentage
 function formatPct(pct: any): string {
   const n = Number(pct)
   if (!Number.isFinite(n)) return '-'
@@ -1576,9 +1576,9 @@ function formatPct(pct: any): string {
   return `${sign}${(n * 100).toFixed(2)}%`
 }
 
-// fmtConf 已移除：合规要求不展示信心度
+// fmtConf Removed: Compliance requirements do not demonstrate confidence
 
-// 格式化报告名称
+// Format report name
 function formatReportName(key: string): string {
   const isEtfAnalysis = Array.isArray(lastAnalysis.value?.analysts) && lastAnalysis.value.analysts.includes('etf_analyst')
   return getReportName(key, isEtfAnalysis)
@@ -1595,16 +1595,16 @@ function extractMarkdownSection(content: string, heading: string): string {
   return match?.[1]?.trim() || ''
 }
 
-// 🔥 提取报告内容（支持对象中的 content 字段）
+// 🔥 Extract report content (supports the content field in the object)
 function getReportContent(reportData: any): string {
   if (!reportData) return ''
   
-  // 如果是字符串，直接返回
+  // If it is a string, return it directly
   if (typeof reportData === 'string') {
     return reportData
   }
   
-  // 如果是对象，优先提取 content 字段
+  // If it is an object, the content field is extracted first.
   if (typeof reportData === 'object') {
     if (reportData.content && typeof reportData.content === 'string') {
       return reportData.content
@@ -1620,23 +1620,23 @@ function getReportContent(reportData: any): string {
   return String(reportData)
 }
 
-// 打开指定报告
+// Open the specified report
 function openReport(reportKey: string) {
   showReportsDialog.value = true
   activeReportTab.value = reportKey
 }
 
-// 导出报告
+// Export report
 function exportReport() {
   if (!lastAnalysis.value?.reports) {
-    ElMessage.warning('暂无报告可导出')
+    ElMessage.warning('No reports can be exported yet')
     return
   }
 
-  // 生成Markdown格式的完整报告
-  let fullReport = `# ${code.value} 股票分析报告\n\n`
+  // Generate complete report in Markdown format
+  let fullReport = `# ${code.value} Stock analysis report\n\n`
 
-  // 格式化分析时间用于报告（兼容 completed_at / created_at / end_time）
+  // Format analysis time for reporting (compatible with completed_at / created_at / end_time)
   const reportTimeSrc = lastTaskInfo.value?.completed_at || lastTaskInfo.value?.created_at || lastTaskInfo.value?.end_time
   const reportTime = reportTimeSrc
     ? new Date(reportTimeSrc).toLocaleString('zh-CN', {
@@ -1650,8 +1650,8 @@ function exportReport() {
       })
     : lastAnalysis.value?.analysis_date
 
-  fullReport += `**分析时间**: ${reportTime}\n`
-  fullReport += `**研究观察**: ${lastAnalysis.value.recommendation}\n\n`
+  fullReport += `**Analysis time**: ${reportTime}\n`
+  fullReport += `**research observation**: ${lastAnalysis.value.recommendation}\n\n`
   fullReport += `---\n\n`
 
   for (const [key, content] of Object.entries(lastAnalysis.value.reports)) {
@@ -1660,64 +1660,64 @@ function exportReport() {
     fullReport += `---\n\n`
   }
 
-  // 创建下载链接
+  // Create download link
   const blob = new Blob([fullReport], { type: 'text/markdown;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
 
-  // 使用分析日期作为文件名（简化格式）
+  // Use analysis date as file name (simplified format)
   const fileDate = lastAnalysis.value.analysis_date || new Date().toISOString().slice(0, 10)
-  link.download = `${code.value}_分析报告_${fileDate}.md`
+  link.download = `${code.value}_analysis report_${fileDate}.md`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 
-  ElMessage.success('报告已导出')
+  ElMessage.success('Report exported')
 }
 
 // ============================================================================
-// 新版详情页：研究路径 / 智能助手 / 历史导航
+// New version details page: Research Path/Intelligent Assistant/Historical Navigation
 // ============================================================================
 
-// 研究路径步骤（根据已加载数据动态计算状态）
+// Study path steps (dynamically calculate status based on loaded data)
 const researchFlowSteps = computed<{ key: string; title: string; desc: string; status: 'done' | 'active' | 'pending' }[]>(() => {
   return [
     {
       key: 'kline',
-      title: '行情走势',
-      desc: 'K线 + 核心指标',
+      title: 'Market trend',
+      desc: 'K line + core indicators',
       status: klineValues.value.length > 0 ? 'done' : 'pending',
     },
     {
       key: 'analysis',
-      title: '单股分析',
-      desc: 'AI 研究报告',
+      title: 'single stock analysis',
+      desc: 'AI research report',
       status: lastAnalysis.value ? 'done' : (analysisStatus.value === 'running' ? 'active' : 'pending'),
     },
     {
       key: 'position-review',
-      title: '持仓与复盘',
-      desc: '持仓状态 + 交易回顾',
+      title: 'Position holding and review',
+      desc: 'Position status + Transaction Review',
       status: (positionSummary.has || reviewSummary.has) ? 'done' : 'pending',
     },
     {
       key: 'fundamentals',
-      title: '基本面',
-      desc: '财务数据 + 新闻',
+      title: 'Fundamentals',
+      desc: 'financial data + News',
       status: Number.isFinite(basics.pe) || Number.isFinite(financialSnapshot.revenue) ? 'done' : 'pending',
     },
     {
       key: 'assistant',
-      title: '智能助手解读',
-      desc: '全景涵盖以上所有模块',
+      title: 'Intelligent Assistant Interpretation',
+      desc: 'Panorama covers all the above modules',
       status: 'active',
     },
   ]
 })
 
-// 研究路径当前激活步骤（用于 ResearchFlow 高亮）
+// Research path currently active step (for ResearchFlow highlighting)
 const activeFlowKey = ref<string>('')
 
 function handleFlowStepClick(key: string) {
@@ -1738,66 +1738,66 @@ function handleFlowStepClick(key: string) {
   }
 }
 
-// 智能助手聊天状态
+// Smart assistant chat status
 const assistantMessages = ref<Array<{ role: 'user' | 'bot'; content: string }>>([])
 const assistantLoading = ref(false)
 const assistantInitialPrompt = ref('')
 const assistantChatRef = ref<any>(null)
 
-// 股票主题（thread）状态
+// Stock thread status
 const stockAssistantThreadId = ref<string>('')
 const stockAssistantThreadReady = ref(false)
 const stockAssistantStreamController = ref<AbortController | null>(null)
 
-// 已加载模块（用于助手头部展示）
+// Loaded module (for assistant header display)
 const assistantLoadedModules = computed(() => {
   const mods: string[] = []
-  if (klineValues.value.length) mods.push('K线')
-  if (lastAnalysis.value) mods.push('单股分析')
-  if (positionSummary.has) mods.push('持仓')
-  if (reviewSummary.has) mods.push('复盘')
-  if (Number.isFinite(basics.pe) || Number.isFinite(financialSnapshot.revenue)) mods.push('基本面')
+  if (klineValues.value.length) mods.push('K line')
+  if (lastAnalysis.value) mods.push('single stock analysis')
+  if (positionSummary.has) mods.push('Position')
+  if (reviewSummary.has) mods.push('Review')
+  if (Number.isFinite(basics.pe) || Number.isFinite(financialSnapshot.revenue)) mods.push('Fundamentals')
   return mods
 })
 
-// 助手是否已加载各模块（用于 AssistantHero 展示）
+// Whether the assistant has loaded each module (for AssistantHero display)
 const assistantHasAnalysis = computed(() => !!lastAnalysis.value)
 const assistantHasPosition = computed(() => positionSummary.has)
 const assistantHasReview = computed(() => reviewSummary.has)
 const assistantHasFundamentals = computed(() => Number.isFinite(basics.pe) || Number.isFinite(financialSnapshot.revenue))
 const assistantHasKline = computed(() => klineValues.value.length > 0)
 
-// 处理助手快捷问题（来自 AssistantHero）
+// Handling Assistant Shortcut Issues (from AssistantHero)
 function handleAssistantHeroAsk(prompt: string) {
   assistantInitialPrompt.value = prompt
 }
 
-// ════════ 股票主题初始化（对接现有智能助手模块） ════════
+// ════════ Stock theme initialization (docking with existing smart assistant module) ════════
 
 const STALE_THRESHOLD_HOURS = 24
 
-// 单股分析报告可用模块目录（用于注入 stock_scope，供 LLM 按需调工具获取完整内容）
-// 与后端 core/tools/implementations/assistant_ops/report_query.py 的 _ANALYST_LABELS 保持一致
+// Directory of available modules for single stock analysis reports (used to inject stock_scope for LLM on-demand adjustment tool to obtain complete content)
+// Consistent with _ANALYST_LABELS in backend core/tools/implementations/assistant_ops/report_query.py
 const STOCK_REPORT_MODULES = [
-  { key: 'market_report', title: '市场技术分析', desc: 'K线形态、技术指标、支撑压力位' },
-  { key: 'fundamentals_report', title: '基本面研究', desc: '财务数据、估值、行业地位' },
-  { key: 'news_report', title: '新闻研究', desc: '近期公告、行业新闻、事件驱动' },
-  { key: 'sentiment_report', title: '情绪分析', desc: '社交媒体舆情、机构观点' },
-  { key: 'trader_investment_plan', title: '研究整合意见', desc: '多情景研究结论 + 研究观察' },
-  { key: 'research_team_decision', title: '研究团队结论', desc: '多情景研究后的团队研究观察汇总' },
-  { key: 'risk_management_decision', title: '风险审阅结论', desc: '风险边界 + 后续观察' },
-  { key: 'final_trade_decision', title: '综合研究结论', desc: '最终研究观察汇总' },
+  { key: 'market_report', title: 'Market technical analysis', desc: 'K Line shape, technical indicators, support and pressure levels' },
+  { key: 'fundamentals_report', title: 'fundamental research', desc: 'Financial data, valuation, industry position' },
+  { key: 'news_report', title: 'Journalism Research', desc: 'Recent announcements, industry news, event driven' },
+  { key: 'sentiment_report', title: 'sentiment analysis', desc: 'Social media public opinion, institutional views' },
+  { key: 'trader_investment_plan', title: 'Research and integrate opinions', desc: 'Conclusions of multi-scenario research + research observation' },
+  { key: 'research_team_decision', title: 'Research team conclusion', desc: 'Summary of team research observations after multi-scenario research' },
+  { key: 'risk_management_decision', title: 'Risk review conclusion', desc: 'risk boundary + Follow-up observations' },
+  { key: 'final_trade_decision', title: 'Comprehensive research conclusion', desc: 'Summary of final research observations' },
 ]
 
-/** 初始化股票主题：创建/获取主题 + 加载历史消息 + 自动关联报告 */
+/** Initialize stock theme: create/get theme + Load historical messages + Automatically correlate reports */
 async function initStockAssistantThread() {
   if (!code.value) return
   try {
-    const title = `股票研究 · ${code.value} ${stockName.value || ''}`.trim()
+    const title = `Equity research · ${code.value} ${stockName.value || ''}`.trim()
     const thread = await assistantApi.createThread(title)
     stockAssistantThreadId.value = thread.thread_id
 
-    // 加载历史消息（若之前已有对话）
+    // Load historical messages (if there has been a previous conversation)
     const historyRes = await assistantApi.getThreadMessages(thread.thread_id)
     const hasHistory = !!(historyRes.messages && historyRes.messages.length > 0)
     if (hasHistory) {
@@ -1807,73 +1807,73 @@ async function initStockAssistantThread() {
       }))
     }
 
-    // 自动关联报告（不阻塞主流程）
+    // Automatically correlate reports (without blocking the main process)
     void autoLinkReports(thread)
     stockAssistantThreadReady.value = true
 
-    // 仅当首次进入（无历史消息）时，检查报告时效性并主动提醒用户
+    // Only when entering for the first time (no historical messages), check the report timeliness and proactively remind the user
     if (!hasHistory) {
       checkStaleReportsAndRemind()
     }
   } catch (e) {
-    console.warn('初始化股票助手主题失败', e)
-    // 失败时降级：仍然允许用户发消息，conversation_id 为空走默认主题
+    console.warn('Failed to initialize stock assistant theme', e)
+    // Downgrade on failure: users are still allowed to send messages, conversation_id is empty and the default topic is used
   }
 }
 
-/** 检查报告时效性，若有过期报告则主动推一条 bot 消息提醒用户重新分析 */
+/** Check the timeliness of the report. If there is an expired report, proactively push a bot message to remind the user to re-analyze it. */
 function checkStaleReportsAndRemind() {
   const scope = buildStockScopeContext()
   const staleItems: string[] = []
 
   const stockReport = scope.reports?.stock_report
   if (stockReport?.is_stale) {
-    staleItems.push(`单股分析报告（${stockReport.completed_at || '未知时间'} 生成，已过期约 ${stockReport.stale_hours} 小时）`)
+    staleItems.push(`Single stock analysis report (${stockReport.completed_at || 'unknown time'} Generated, expired approx. ${stockReport.stale_hours} hours)`)
   }
 
   const positionReport = scope.reports?.position_report
   if (positionReport?.is_stale) {
-    staleItems.push(`持仓分析报告（${positionReport.completed_at || '未知时间'} 生成，已过期约 ${positionReport.stale_hours} 小时）`)
+    staleItems.push(`Position analysis report (${positionReport.completed_at || 'unknown time'} Generated, expired approx. ${positionReport.stale_hours} hours)`)
   }
 
   const reviewData = scope.review_summary
   if (reviewData?.is_stale) {
-    staleItems.push(`交易复盘报告（${reviewData.completed_at || '未知时间'} 生成，已过期约 ${reviewData.stale_hours} 小时）`)
+    staleItems.push(`Transaction review report (${reviewData.completed_at || 'unknown time'} Generated, expired approx. ${reviewData.stale_hours} hours)`)
   }
 
   if (staleItems.length === 0) return
 
   const reminder = [
-    `⚠️ 检测到以下报告已过期（超过 ${STALE_THRESHOLD_HOURS} 小时），我不会基于旧报告给出结论：`,
+    `⚠️ The following reports have been detected as expired (more than ${STALE_THRESHOLD_HOURS} hours), I won t draw conclusions based on old reports:`,
     '',
     ...staleItems.map(s => `• ${s}`),
     '',
-    '如果你希望我基于最新数据解读，请点击对应模块的「重新分析」按钮；或在下方回复「重新分析」，我会引导你发起。'
+    'If you want me to interpret based on the latest data, please click the Reanalyze button of the corresponding module; or reply Reanalyze below, and I will guide you to initiate it.'
   ].join('\n')
 
   assistantMessages.value.push({ role: 'bot', content: reminder })
 }
 
-/** 自动关联单股分析报告、持仓分析报告、交易复盘报告到主题 */
+/** Automatically associate single stock analysis reports, position analysis reports, and transaction review reports to topics */
 async function autoLinkReports(thread: AssistantThreadItem) {
   const threadId = thread.thread_id
   const existingKeys = new Set(
     (thread.report_refs || []).map(r => `${r.ref_type}:${r.report_key}`),
   )
 
-  // 关联单股分析报告
+  // Related single stock analysis report
   if (lastTaskInfo.value?.task_id) {
     const key = `stock_report:${lastTaskInfo.value.task_id}`
     if (!existingKeys.has(key)) {
       try {
         await assistantApi.attachThreadReport(threadId, 'stock_report', lastTaskInfo.value.task_id)
       } catch (e) {
-        console.warn('关联单股分析报告失败', e)
+        console.warn('Related single stock analysis report failed', e)
       }
     }
   }
 
-  // 关联持仓分析报告（需要先搜索 candidates 拿到 analysis_id）
+  // Related position analysis report (you need to search candidates first to get analysis_id)
   if (positionSummary.has) {
     try {
       const candidates = await assistantApi.getThreadReportCandidates(
@@ -1892,24 +1892,24 @@ async function autoLinkReports(thread: AssistantThreadItem) {
         }
       }
     } catch (e) {
-      console.warn('关联持仓分析报告失败', e)
+      console.warn('Related position analysis report failed', e)
     }
   }
 
-  // 关联交易复盘报告（task_id 即 review_id，直接用 task_id 作为 report_key）
+  // Related transaction review report (task_id is review_id, use task_id directly as report_key)
   if (reviewSummary.has && reviewSummary.taskId) {
     const key = `review_report:${reviewSummary.taskId}`
     if (!existingKeys.has(key)) {
       try {
         await assistantApi.attachThreadReport(threadId, 'review_report', reviewSummary.taskId)
       } catch (e) {
-        console.warn('关联交易复盘报告失败', e)
+        console.warn('Related transaction review report failed', e)
       }
     }
   }
 }
 
-/** 构建股票上下文（通过 user_context.stock_scope 注入到后端 system prompt） */
+/** Build the stock context (injected into the backend system prompt via user_context.stock_scope) */
 function buildStockScopeContext() {
   const now = Date.now()
   const parseTime = (s: string) => (s ? new Date(s).getTime() : 0)
@@ -1928,7 +1928,7 @@ function buildStockScopeContext() {
 
   if (lastTaskInfo.value?.task_id) {
     const ts = parseTime(lastTaskInfo.value.completed_at || lastTaskInfo.value.created_at || '')
-    // 注入报告目录而非截断摘要正文，LLM 通过 get_report_detail(task_id, module_key) 按需获取完整内容
+    // Inject report table of contents instead of truncating summary body, LLM passes get_report_detail(task_id, module_key) Get full content on demand
     const existingKeys = Object.keys(lastAnalysis.value?.reports || {})
     scope.reports.stock_report = {
       task_id: lastTaskInfo.value.task_id,
@@ -1941,7 +1941,7 @@ function buildStockScopeContext() {
 
   if (positionSummary.has && positionSummary.taskId) {
     const ts = parseTime(positionSummary.completedAt)
-    // 持仓报告不注入正文，LLM 通过 get_position_analysis(code, market) 获取完整内容
+    // No text is injected into the position report, LLM passes get_position_analysis(code, market) Get full content
     scope.reports.position_report = {
       analysis_id: positionSummary.taskId,
       completed_at: positionSummary.completedAt,
@@ -1951,11 +1951,11 @@ function buildStockScopeContext() {
 
   if (reviewSummary.has) {
     const ts = parseTime(reviewSummary.completedAt)
-    // 复盘报告不注入正文，LLM 通过 get_trade_review_detail(review_id) 获取完整内容
-    // 注意：后端 task_id 即 review_id（见 trade_review_service.py:1908 注释）
+    // No text is injected into the review report, LLM passes get_trade_review_detail(review_id) Get full content
+    // Note: backend task_id is review_id (see trade_review_service.py:1908 Note)
     scope.review_summary = {
       task_id: reviewSummary.taskId,
-      review_id: reviewSummary.taskId,  // task_id 即 review_id
+      review_id: reviewSummary.taskId,  // task_id That is review_id
       completed_at: reviewSummary.completedAt,
       ...calcStale(ts),
       trade_count: reviewSummary.tradeCount ?? undefined,
@@ -1972,7 +1972,7 @@ function buildStockScopeContext() {
   return scope
 }
 
-// 处理助手发送问题（流式 LLM 对话，对接现有智能助手模块）
+// Handle assistant sending issues (streaming LLM conversations, docking with existing smart assistant modules)
 async function handleAssistantAsk(prompt: string) {
   if (!prompt.trim() || assistantLoading.value) return
 
@@ -1981,14 +1981,14 @@ async function handleAssistantAsk(prompt: string) {
 
   assistantLoading.value = true
 
-  // 占位一条空的 bot 消息，用于流式追加
+  // Place an empty bot message for streaming append
   const botMsgIdx = assistantMessages.value.push({ role: 'bot', content: '' }) - 1
   let firstTokenReceived = false
 
   stockAssistantStreamController.value = assistantApi.chatStream(
     prompt,
     conversationId,
-    undefined, // model，使用系统默认
+    undefined, // model, Use system default
     undefined, // model_config_id
     {
       onToken(content: string) {
@@ -1998,14 +1998,14 @@ async function handleAssistantAsk(prompt: string) {
       onDone(data) {
         assistantLoading.value = false
         stockAssistantStreamController.value = null
-        // 若服务端返回了 conversation_id（首次创建主题），更新本地
+        // If the server returns conversation_id (the topic is created for the first time), update the local
         if (data.conversation_id && !stockAssistantThreadId.value) {
           stockAssistantThreadId.value = data.conversation_id
         }
-        // 若回复为空（罕见），给一个友好提示
+        // If the reply is empty (rare), give a friendly reminder
         if (!assistantMessages.value[botMsgIdx].content.trim()) {
           assistantMessages.value[botMsgIdx].content =
-            '抱歉，我暂时无法回答这个问题。请稍后重试。'
+            'Sorry, I can t answer this question right now. Please try again later.'
         }
       },
       onError(msg: string) {
@@ -2013,15 +2013,15 @@ async function handleAssistantAsk(prompt: string) {
         stockAssistantStreamController.value = null
         if (!firstTokenReceived) {
           assistantMessages.value[botMsgIdx].content =
-            `抱歉，处理您的请求时出错：${msg}\n\n你可以稍后重试，或前往「智能助手」主页面继续对话。`
+            `Sorry, an error occurred while processing your request:${msg}\n\n You can try again later, or go to the Smart Assistant home page to continue the conversation.`
         } else {
           assistantMessages.value[botMsgIdx].content +=
-            `\n\n---\n⚠️ 响应中断：${msg}`
+            `\n\n---\n⚠️ Response to interruption:${msg}`
         }
       },
     },
     {
-      // extraPayload: 通过 user_context 注入股票上下文
+      // extraPayload: Inject stock context via user_context
       assistant_role: 'general',
       user_context: {
         stock_scope: stockScope,
@@ -2030,7 +2030,7 @@ async function handleAssistantAsk(prompt: string) {
   )
 }
 
-// 历史记录导航
+// History navigation
 function goToAnalysisHistory() {
   router.push({ path: '/tasks/unified', query: { type: 'stock_analysis', symbol: code.value } })
 }
@@ -2047,20 +2047,20 @@ function goToApiGuide() {
   router.push({ name: 'StockDataApiGuide', query: { code: code.value } })
 }
 
-// 分析历史记录数量（简化：基于已有报告推断）
+// Analyze the number of historical records (simplified: inferred based on existing reports)
 const analysisHistoryCount = computed(() => {
-  // 实际可从后端获取，这里先用 lastAnalysis 是否存在作为提示
+  // It can actually be obtained from the backend. Here we first use whether lastAnalysis exists as a prompt.
   return lastAnalysis.value ? 1 : 0
 })
 
-// 持仓分析历史数量
+// Position analysis historical quantity
 const positionHistoryCount = computed(() => {
   return positionSummary.has ? 1 : 0
 })
 
-// K线周期切换
+// K Line cycle switching
 function handlePeriodChange(p: string) {
-  // 仅更新 period，由 watch(period) 自动触发 fetchKline，避免重复请求
+  // Only update period, by watch(period) Automatically trigger fetchKline to avoid repeated requests
   period.value = p
 }
 
@@ -2071,11 +2071,11 @@ function handlePeriodChange(p: string) {
   display: flex; flex-direction: column; gap: 16px;
 }
 
-/* ════════ 新版详情页布局 ════════ */
+/* ════════ New version of details page layout ════════ */
 .stock-detail-redesign {
   display: flex;
   flex-direction: column;
-  gap: 0; /* 子组件自带 margin-bottom */
+  gap: 0; /* Subcomponent comes with margin-bottom */
   padding: 0;
   max-width: 1400px;
   margin: 0 auto;
@@ -2095,7 +2095,7 @@ function handlePeriodChange(p: string) {
   }
 }
 
-/* 复盘详情对话框样式（保留） */
+/* Review details dialog box style (reserved) */
 .review-detail-content {
   .section {
     margin-bottom: 16px;
@@ -2247,7 +2247,7 @@ function handlePeriodChange(p: string) {
   .actions { flex-wrap: wrap; }
 }
 
-/* 报告相关样式 */
+/* Report related styles */
 .reports-section {
   margin-top: 8px;
 }
@@ -2290,7 +2290,7 @@ function handlePeriodChange(p: string) {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* 报告对话框样式 */
+/* Report dialog style */
 .reports-dialog :deep(.el-dialog__body) {
   padding: 0;
 }
@@ -2383,7 +2383,7 @@ function handlePeriodChange(p: string) {
   gap: 16px;
 }
 
-/* 分析时间元信息 */
+/* Analyze time metainformation */
 .analysis-meta {
   display: flex;
   align-items: center;
@@ -2405,7 +2405,7 @@ function handlePeriodChange(p: string) {
   font-size: 14px;
 }
 
-/* 同步状态提示 */
+/* Sync status prompt */
 .sync-status {
   display: flex;
   align-items: center;
@@ -2432,7 +2432,7 @@ function handlePeriodChange(p: string) {
 }
 
 // ============================================================================
-// 持仓分析摘要卡片
+// Position Analysis Summary Card
 // ============================================================================
 .position-analysis-card {
   margin-top: 16px;
@@ -2562,7 +2562,7 @@ function handlePeriodChange(p: string) {
 }
 
 // ============================================================================
-// 交易复盘摘要卡片
+// Transaction review summary card
 // ============================================================================
 .trade-review-card {
   margin-top: 16px;
@@ -2651,7 +2651,7 @@ function handlePeriodChange(p: string) {
 }
 
 // ============================================================================
-// 复盘详情弹窗
+// Review details pop-up window
 // ============================================================================
 .detail-loading {
   display: flex;
@@ -2719,7 +2719,7 @@ function handlePeriodChange(p: string) {
   color: var(--el-color-danger) !important;
 }
 
-// 复盘详情完整样式
+// Complete review details
 .review-detail-content {
   .section {
     margin-bottom: 20px;
@@ -2796,7 +2796,7 @@ function handlePeriodChange(p: string) {
 }
 
 // ============================================================================
-// 持仓信息卡片
+// Position information card
 // ============================================================================
 .position-card {
   margin-bottom: 16px;

@@ -7,7 +7,7 @@
         @click="activeTab = 'position'"
       >
         <span>💼</span>
-        <span>持仓分析</span>
+        <span>Position analysis</span>
         <span v-if="positionSummary.has" class="tab-badge" :class="positionBadgeClass">
           {{ positionBadgeText }}
         </span>
@@ -18,27 +18,27 @@
         @click="activeTab = 'review'"
       >
         <span>📈</span>
-        <span>交易复盘</span>
+        <span>Transaction review</span>
         <span v-if="reviewSummary.has" class="tab-badge" :class="reviewBadgeClass">
           {{ reviewBadgeText }}
         </span>
       </div>
       <div class="tab-actions">
-        <!-- 持仓历史按钮 -->
+        <!-- Position history button -->
         <button
           v-show="activeTab === 'position'"
           class="history-btn"
           @click="$emit('viewPositionHistory')"
         >
-          📜 持仓历史
+          📜 Position history
           <span v-if="(positionHistoryCount ?? 0) > 0" class="history-count">{{ positionHistoryCount }}</span>
         </button>
-        <!-- 复盘历史下拉 -->
+        <!-- Review history drop-down -->
         <el-select
           v-show="activeTab === 'review' && reviewHistory.items.length > 1"
           :model-value="reviewHistory.selectedIndex"
           size="small"
-          placeholder="选择历史复盘"
+          placeholder="Select historical review"
           style="width: 160px"
           @change="(idx: number) => $emit('selectReviewItem', idx)"
         >
@@ -54,75 +54,75 @@
           class="history-btn"
           @click="$emit('viewReviewHistory')"
         >
-          📜 复盘历史
+          📜 Review history
           <span v-if="reviewHistory.total > 0" class="history-count">{{ reviewHistory.total }}</span>
         </button>
       </div>
     </div>
 
-    <!-- 持仓分析内容 -->
+    <!-- Position analysis content -->
     <div class="tab-content" :class="{ active: activeTab === 'position' }">
       <div v-if="!positionSummary.has && !positionData.real.has && !positionData.paper.has" class="empty-state">
-        <el-empty description="暂无持仓分析记录">
-          <el-button type="primary" @click="$emit('goPositionAnalysis')">发起持仓分析</el-button>
+        <el-empty description="There is currently no position analysis record">
+          <el-button type="primary" @click="$emit('goPositionAnalysis')">Initiate position analysis</el-button>
         </el-empty>
       </div>
       <div v-else>
-        <!-- 持仓快照摘要 -->
+        <!-- Position Snapshot Summary -->
         <div v-if="positionSummary.snapshot" class="summary-row">
           <div class="summary-item">
-            <div class="label">成本价</div>
+            <div class="label">cost price</div>
             <div class="value">¥{{ fmtPrice(positionSummary.snapshot.cost_price) }}</div>
           </div>
           <div class="summary-item">
-            <div class="label">现价</div>
+            <div class="label">Current price</div>
             <div class="value">¥{{ fmtPrice(positionSummary.snapshot.current_price) }}</div>
           </div>
           <div class="summary-item">
-            <div class="label">浮动盈亏</div>
+            <div class="label">floating profit and loss</div>
             <div class="value" :class="pnlClass(positionSummary.snapshot.unrealized_pnl)">
               {{ formatPnl(positionSummary.snapshot.unrealized_pnl, positionSummary.snapshot.unrealized_pnl_pct) }}
             </div>
           </div>
           <div class="summary-item">
-            <div class="label">持有天数</div>
-            <div class="value">{{ positionSummary.snapshot.holding_days || '-' }} 天</div>
+            <div class="label">Holding days</div>
+            <div class="value">{{ positionSummary.snapshot.holding_days || '-' }} day</div>
           </div>
           <div class="summary-item">
-            <div class="label">仓位占比</div>
+            <div class="label">Position proportion</div>
             <div class="value">{{ formatPercent(positionSummary.snapshot.position_pct) }}</div>
           </div>
         </div>
 
-        <!-- 研究结论（合规：不展示操作建议/信心度，仅保留研究性结论） -->
+        <!-- Research conclusions (compliance: do not display operational recommendations/confidence, only retain research conclusions) -->
         <div v-if="positionSummary.conclusion || positionSummary.keyPoints?.length" class="ai-advice">
-          <div class="advice-label">研究结论</div>
+          <div class="advice-label">Research conclusion</div>
           <div v-if="positionSummary.conclusion" class="advice-conclusion">
             <el-icon class="advice-icon"><InfoFilled /></el-icon>
             <span>{{ positionSummary.conclusion }}</span>
           </div>
           <div v-if="positionSummary.keyPoints?.length" class="advice-keypoints">
-            <div class="keypoints-title">⚠ 关键风险点</div>
+            <div class="keypoints-title">⚠ key risk points</div>
             <ul class="keypoints-list">
               <li v-for="(point, idx) in positionSummary.keyPoints.slice(0, 3)" :key="idx">{{ point }}</li>
             </ul>
           </div>
           <div v-if="positionSummary.completedAt" class="advice-time">
-            分析时间：{{ formatAnalysisTime(positionSummary.completedAt) }}
+            Analysis time:{{ formatAnalysisTime(positionSummary.completedAt) }}
             <span v-if="positionRelativeTime" class="relative-time">{{ positionRelativeTime }}</span>
             <button
               v-if="positionStale"
               class="stale-btn"
               @click="$emit('goPositionAnalysis')"
             >
-              🔄 数据已过期，重新分析
+              🔄 Data has expired, re-analyze
             </button>
           </div>
         </div>
 
-        <!-- 实盘/模拟持仓信息 -->
+        <!-- Real offer/simulated position information -->
         <div v-if="positionData.real.has || positionData.paper.has" class="position-info">
-          <!-- 二级标签：实盘 / 模拟（仅同时存在两个类型时显示） -->
+          <!-- Secondary label: real disk/simulation (only displayed when both types exist at the same time) -->
           <div
             v-if="positionData.real.has && positionData.paper.has"
             class="position-type-tabs"
@@ -132,32 +132,32 @@
               :class="{ active: activePositionTab === 'real' }"
               @click="activePositionTab = 'real'"
             >
-              <el-tag type="danger" size="small">实盘</el-tag>
+              <el-tag type="danger" size="small">firm offer</el-tag>
             </div>
             <div
               class="position-type-tab"
               :class="{ active: activePositionTab === 'paper' }"
               @click="activePositionTab = 'paper'"
             >
-              <el-tag type="warning" size="small">模拟</el-tag>
+              <el-tag type="warning" size="small">Simulation</el-tag>
             </div>
           </div>
 
-          <!-- 实盘持仓 -->
+          <!-- Firm position -->
           <div
             v-if="positionData.real.has && activePositionTab === 'real'"
             class="position-section"
           >
             <div v-if="!(positionData.real.has && positionData.paper.has)" class="position-section-title">
-              <el-tag type="danger" size="small">实盘</el-tag>
+              <el-tag type="danger" size="small">firm offer</el-tag>
             </div>
             <div class="position-grid">
-              <div class="pos-item"><span class="pos-label">持仓数量</span><b class="pos-value">{{ positionData.real.quantity }} 股</b></div>
-              <div class="pos-item"><span class="pos-label">成本价</span><b class="pos-value">¥{{ fmtPrice(positionData.real.cost_price) }}</b></div>
-              <div class="pos-item"><span class="pos-label">现价</span><b class="pos-value">¥{{ fmtPrice(positionData.real.current_price) }}</b></div>
-              <div class="pos-item"><span class="pos-label">市值</span><b class="pos-value">¥{{ fmtPrice(positionData.real.market_value) }}</b></div>
+              <div class="pos-item"><span class="pos-label">Position quantity</span><b class="pos-value">{{ positionData.real.quantity }} shares</b></div>
+              <div class="pos-item"><span class="pos-label">cost price</span><b class="pos-value">¥{{ fmtPrice(positionData.real.cost_price) }}</b></div>
+              <div class="pos-item"><span class="pos-label">Current price</span><b class="pos-value">¥{{ fmtPrice(positionData.real.current_price) }}</b></div>
+              <div class="pos-item"><span class="pos-label">Market value</span><b class="pos-value">¥{{ fmtPrice(positionData.real.market_value) }}</b></div>
               <div class="pos-item">
-                <span class="pos-label">浮动盈亏</span>
+                <span class="pos-label">floating profit and loss</span>
                 <b class="pos-value" :class="positionData.real.unrealized_pnl >= 0 ? 'positive' : 'negative'">
                   {{ formatPnl(positionData.real.unrealized_pnl, positionData.real.unrealized_pnl_pct) }}
                 </b>
@@ -165,21 +165,21 @@
             </div>
           </div>
 
-          <!-- 模拟持仓 -->
+          <!-- Simulated position -->
           <div
             v-if="positionData.paper.has && activePositionTab === 'paper'"
             class="position-section"
           >
             <div v-if="!(positionData.real.has && positionData.paper.has)" class="position-section-title">
-              <el-tag type="warning" size="small">模拟</el-tag>
+              <el-tag type="warning" size="small">Simulation</el-tag>
             </div>
             <div class="position-grid">
-              <div class="pos-item"><span class="pos-label">持仓数量</span><b class="pos-value">{{ positionData.paper.quantity }} 股</b></div>
-              <div class="pos-item"><span class="pos-label">成本价</span><b class="pos-value">¥{{ fmtPrice(positionData.paper.cost_price) }}</b></div>
-              <div class="pos-item"><span class="pos-label">现价</span><b class="pos-value">¥{{ fmtPrice(positionData.paper.current_price) }}</b></div>
-              <div class="pos-item"><span class="pos-label">市值</span><b class="pos-value">¥{{ fmtPrice(positionData.paper.market_value) }}</b></div>
+              <div class="pos-item"><span class="pos-label">Position quantity</span><b class="pos-value">{{ positionData.paper.quantity }} shares</b></div>
+              <div class="pos-item"><span class="pos-label">cost price</span><b class="pos-value">¥{{ fmtPrice(positionData.paper.cost_price) }}</b></div>
+              <div class="pos-item"><span class="pos-label">Current price</span><b class="pos-value">¥{{ fmtPrice(positionData.paper.current_price) }}</b></div>
+              <div class="pos-item"><span class="pos-label">Market value</span><b class="pos-value">¥{{ fmtPrice(positionData.paper.market_value) }}</b></div>
               <div class="pos-item">
-                <span class="pos-label">浮动盈亏</span>
+                <span class="pos-label">floating profit and loss</span>
                 <b class="pos-value" :class="positionData.paper.unrealized_pnl >= 0 ? 'positive' : 'negative'">
                   {{ formatPnl(positionData.paper.unrealized_pnl, positionData.paper.unrealized_pnl_pct) }}
                 </b>
@@ -190,39 +190,39 @@
 
         <div class="tab-footer">
           <el-button text size="small" @click="$emit('goPositionAnalysis')">
-            <el-icon><Plus /></el-icon> 重新分析
+            <el-icon><Plus /></el-icon> Reanalyze
           </el-button>
           <el-button text size="small" @click="$emit('viewPositionTaskDetail')">
-            <el-icon><View /></el-icon> 查看详情
+            <el-icon><View /></el-icon> View details
           </el-button>
         </div>
 
         <div class="disclaimer">
-          本分析基于公开信息和持仓数据生成，仅供研究参考，不构成任何交易建议。
+          This analysis is based on public information and position data and is for research reference only and does not constitute any trading advice.
         </div>
       </div>
     </div>
 
-    <!-- 交易复盘内容 -->
+    <!-- Transaction review content -->
     <div class="tab-content" :class="{ active: activeTab === 'review' }">
       <div v-if="!reviewSummary.has" class="empty-state">
-        <el-empty description="暂无交易复盘记录">
-          <el-button type="primary" @click="$emit('goTradeReview')">发起交易复盘</el-button>
+        <el-empty description="No transaction review record yet">
+          <el-button type="primary" @click="$emit('goTradeReview')">Initiate transaction review</el-button>
         </el-empty>
       </div>
       <div v-else>
-        <!-- 复盘摘要 -->
+        <!-- Review summary -->
         <div class="summary-row">
           <div class="summary-item">
-            <div class="label">交易次数</div>
-            <div class="value">{{ reviewSummary.tradeCount || '-' }} 次</div>
+            <div class="label">Number of transactions</div>
+            <div class="value">{{ reviewSummary.tradeCount || '-' }} times</div>
           </div>
           <div class="summary-item" v-if="reviewSummary.riskLevel">
-            <div class="label">风险等级</div>
+            <div class="label">risk level</div>
             <div class="value">{{ reviewSummary.riskLevel }}</div>
           </div>
           <div class="summary-item">
-            <div class="label">完成时间</div>
+            <div class="label">completion time</div>
             <div class="value">
               {{ formatAnalysisTime(reviewSummary.completedAt) }}
               <span v-if="reviewRelativeTime" class="relative-time">{{ reviewRelativeTime }}</span>
@@ -230,43 +230,43 @@
           </div>
         </div>
 
-        <!-- 数据过期提示：超过 1 天显示重新复盘按钮 -->
+        <!-- Data expiration prompt: Display the replay button if it exceeds 1 day -->
         <div v-if="reviewStale" class="stale-banner">
-          <span>⚠ 本次复盘距今较久，市场环境可能已变化</span>
+          <span>⚠ This review is a long time ago, and the market environment may have changed.</span>
           <button class="stale-btn" @click="$emit('goTradeReview')">
-            🔄 重新复盘
+            🔄 Review again
           </button>
         </div>
 
-        <!-- 复盘结论 -->
+        <!-- Review conclusion -->
         <div v-if="reviewSummary.summary" class="sub-section">
           <div class="sub-section-title">
             <el-icon><Document /></el-icon>
-            <span>复盘结论</span>
+            <span>Review conclusion</span>
           </div>
           <div class="sub-section-content markdown-body" v-html="renderMarkdown(reviewSummary.summary)"></div>
         </div>
 
-        <!-- 研究观察（合规：原"操作建议"改为研究性表述） -->
+        <!-- Research Observation (Compliance: Original"Operation suggestions"Changed to research statement) -->
         <div v-if="reviewSummary.recommendation" class="sub-section">
           <div class="sub-section-title">
             <el-icon><Opportunity /></el-icon>
-            <span>研究观察</span>
+            <span>research observation</span>
           </div>
           <div class="sub-section-content markdown-body" v-html="renderMarkdown(reviewSummary.recommendation)"></div>
         </div>
 
         <div class="tab-footer">
           <el-button text size="small" @click="$emit('goTradeReview')">
-            <el-icon><Plus /></el-icon> 重新复盘
+            <el-icon><Plus /></el-icon> Review again
           </el-button>
           <el-button text size="small" @click="$emit('viewReviewTaskDetail')">
-            <el-icon><View /></el-icon> 查看详情
+            <el-icon><View /></el-icon> View details
           </el-button>
         </div>
 
         <div class="disclaimer">
-          本复盘基于历史交易记录生成，用于回顾决策过程，不构成对未来交易的建议。
+          This review is generated based on historical transaction records and is used to review the decision-making process and does not constitute a recommendation for future transactions.
         </div>
       </div>
     </div>
@@ -352,15 +352,15 @@ defineEmits<{
 
 const activeTab = ref<'position' | 'review'>('position')
 
-// 持仓分析内部二级标签：实盘 / 模拟（默认优先显示实盘）
+// Internal secondary tag of position analysis: real offer/simulation (real offer is displayed first by default)
 const activePositionTab = ref<'real' | 'paper'>('real')
 
 const positionBadgeText = computed(() => {
   const snap = props.positionSummary.snapshot
   const pct = snap?.unrealized_pnl_pct
-  if (!snap || pct === undefined || !Number.isFinite(pct)) return '已分析'
-  if (pct > 0) return `浮盈 ${pct.toFixed(2)}%`
-  return `浮亏 ${Math.abs(pct).toFixed(2)}%`
+  if (!snap || pct === undefined || !Number.isFinite(pct)) return 'Analyzed'
+  if (pct > 0) return `floating profit ${pct.toFixed(2)}%`
+  return `floating loss ${Math.abs(pct).toFixed(2)}%`
 })
 
 const positionBadgeClass = computed(() => {
@@ -371,15 +371,15 @@ const positionBadgeClass = computed(() => {
 })
 
 const reviewBadgeText = computed(() => {
-  if (props.reviewSummary.tradeCount) return `${props.reviewSummary.tradeCount} 次`
-  return '已复盘'
+  if (props.reviewSummary.tradeCount) return `${props.reviewSummary.tradeCount} times`
+  return 'Reviewed'
 })
 
 const reviewBadgeClass = computed(() => 'badge-info')
 
-// ════════ 数据新鲜度判断 ════════
+// ════════ Data freshness judgment ════════
 
-/** 将时间字符串转为距今天数（小数），无效返回 null */
+/** Convert the time string to the number of days since today (decimal), return if invalid null */
 function daysSince(dateStr: string | null | undefined): number | null {
   if (!dateStr) return null
   const d = new Date(dateStr)
@@ -387,24 +387,24 @@ function daysSince(dateStr: string | null | undefined): number | null {
   return (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24)
 }
 
-/** 天数转相对时间文本 */
+/** Convert days to relative time text */
 function daysToRelative(days: number | null): string {
   if (days === null || days < 0) return ''
-  if (days < 1 / 24) return '刚刚'
-  if (days < 1) return `${Math.floor(days * 24)}小时前`
-  if (days < 30) return `${Math.floor(days)}天前`
-  if (days < 365) return `${Math.floor(days / 30)}个月前`
-  return `${Math.floor(days / 365)}年前`
+  if (days < 1 / 24) return 'just now'
+  if (days < 1) return `${Math.floor(days * 24)}hours ago`
+  if (days < 30) return `${Math.floor(days)}days ago`
+  if (days < 365) return `${Math.floor(days / 30)}months ago`
+  return `${Math.floor(days / 365)}years ago`
 }
 
-// 持仓分析数据新鲜度
+// Position analysis data freshness
 const positionRelativeTime = computed(() => daysToRelative(daysSince(props.positionSummary.completedAt)))
 const positionStale = computed(() => {
   const d = daysSince(props.positionSummary.completedAt)
   return d !== null && d > 1
 })
 
-// 交易复盘数据新鲜度
+// Transaction review data freshness
 const reviewRelativeTime = computed(() => daysToRelative(daysSince(props.reviewSummary.completedAt)))
 const reviewStale = computed(() => {
   const d = daysSince(props.reviewSummary.completedAt)

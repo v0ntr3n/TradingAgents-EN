@@ -1,6 +1,6 @@
 """
-使用统计服务
-管理模型使用记录和成本统计
+Usage statistics service
+Manage model usage records and cost statistics
 """
 
 import logging
@@ -18,7 +18,7 @@ class UsageStatisticsService:
     """使用统计服务"""
     
     def __init__(self):
-        # 使用 tradingagents 的集合名称
+        # Using the collection name of tradingagents
         self.collection_name = "token_usage"
     
     async def add_usage_record(self, record: UsageRecord) -> bool:
@@ -49,7 +49,7 @@ class UsageStatisticsService:
             db = get_mongo_db()
             collection = db[self.collection_name]
             
-            # 构建查询条件
+            # Build query conditions
             query = {}
             if provider:
                 query["provider"] = provider
@@ -62,7 +62,7 @@ class UsageStatisticsService:
                 if end_date:
                     query["timestamp"]["$lte"] = end_date.isoformat()
             
-            # 查询记录
+            # Query records
             cursor = collection.find(query).sort("timestamp", -1).limit(limit)
             records = []
             
@@ -87,11 +87,11 @@ class UsageStatisticsService:
             db = get_mongo_db()
             collection = db[self.collection_name]
             
-            # 计算时间范围
+            # Calculation time range
             end_date = datetime.now()
             start_date = end_date - timedelta(days=days)
             
-            # 构建查询条件
+            # Build query conditions
             query = {
                 "timestamp": {
                     "$gte": start_date.isoformat(),
@@ -103,17 +103,17 @@ class UsageStatisticsService:
             if model_name:
                 query["model_name"] = model_name
             
-            # 获取所有记录
+            # Get all records
             cursor = collection.find(query)
             records = []
             async for doc in cursor:
                 records.append(doc)
             
-            # 统计数据
+            # Statistics
             stats = UsageStatistics()
             stats.total_requests = len(records)
 
-            # 按货币统计成本
+            # Cost by currency
             cost_by_currency = defaultdict(float)
 
             by_provider = defaultdict(lambda: {
@@ -142,13 +142,13 @@ class UsageStatisticsService:
                 cost = record.get("cost", 0.0)
                 currency = record.get("currency", "CNY")
 
-                # 总计
+                # total
                 stats.total_input_tokens += record.get("input_tokens", 0)
                 stats.total_output_tokens += record.get("output_tokens", 0)
-                stats.total_cost += cost  # 保留向后兼容
+                stats.total_cost += cost  # Retain backward compatibility
                 cost_by_currency[currency] += cost
 
-                # 按供应商统计
+                # Statistics by supplier
                 provider_key = record.get("provider", "unknown")
                 by_provider[provider_key]["requests"] += 1
                 by_provider[provider_key]["input_tokens"] += record.get("input_tokens", 0)
@@ -156,7 +156,7 @@ class UsageStatisticsService:
                 by_provider[provider_key]["cost"] += cost
                 by_provider[provider_key]["cost_by_currency"][currency] += cost
 
-                # 按模型统计
+                # Statistics by model
                 model_key = f"{record.get('provider', 'unknown')}/{record.get('model_name', 'unknown')}"
                 by_model[model_key]["requests"] += 1
                 by_model[model_key]["input_tokens"] += record.get("input_tokens", 0)
@@ -164,7 +164,7 @@ class UsageStatisticsService:
                 by_model[model_key]["cost"] += cost
                 by_model[model_key]["cost_by_currency"][currency] += cost
 
-                # 按日期统计
+                # Statistics by date
                 timestamp = record.get("timestamp", "")
                 if timestamp:
                     date_key = timestamp[:10]  # YYYY-MM-DD
@@ -174,7 +174,7 @@ class UsageStatisticsService:
                     by_date[date_key]["cost"] += cost
                     by_date[date_key]["cost_by_currency"][currency] += cost
 
-            # 转换 defaultdict 为普通 dict（包括嵌套的 cost_by_currency）
+            # Convert defaultdict to plain dict (including nested cost_by_currency)
             stats.cost_by_currency = dict(cost_by_currency)
             stats.by_provider = {k: {**v, "cost_by_currency": dict(v["cost_by_currency"])} for k, v in by_provider.items()}
             stats.by_model = {k: {**v, "cost_by_currency": dict(v["cost_by_currency"])} for k, v in by_model.items()}
@@ -216,10 +216,10 @@ class UsageStatisticsService:
             db = get_mongo_db()
             collection = db[self.collection_name]
             
-            # 计算截止日期
+            # Calculate deadline
             cutoff_date = datetime.now() - timedelta(days=days)
             
-            # 删除旧记录
+            # Delete old records
             result = await collection.delete_many({
                 "timestamp": {"$lt": cutoff_date.isoformat()}
             })
@@ -233,66 +233,66 @@ class UsageStatisticsService:
 
     async def record_llm_usage(
         self,
-        response,  # LLMResponse 或 langchain AIMessage
+        response,  # LLMResponse or langchain AIMessage
         session_id: str,
         analysis_type: str,
         stock_code: Optional[str] = None
     ) -> bool:
         """
-        记录 LLM 调用的 token 使用情况（通用方法）
+        Record token usage for LLM calls (general method)
         
-        兼容两种 LLM 响应对象：
-        - UnifiedLLMClient 的 LLMResponse：response.usage（Dict: prompt_tokens/completion_tokens/total_tokens）
-        - LangChain 的 AIMessage：response.usage_metadata（Dict: input_tokens/output_tokens/token_usage）
+        Compatible with two LLM response objects:
+        - UnifiedLLMClient LLMResponse:response.usage(Dict: prompt_tokens/completion_tokens/total_tokens) 
+        - LangChain AIMessage: response.usage_metadata(Dict: input_tokens/output_tokens/token_usage) 
         
         Args:
-            response: LLM 响应对象
-            session_id: 会话ID
-            analysis_type: 功能类型
-            stock_code: 股票代码（可选）
+            response: LLM response object
+            session_id: session ID
+            analysis_type: Function type
+            stock_code: Stock code (optional)
         
         Returns:
-            bool: 是否记录成功
+            bool: Whether the recording is successful
         """
         try:
             if not response:
-                logger.debug(f"LLM 响应为空，跳过记录: {analysis_type}")
+                logger.debug(f"LLM Response is empty, skipping records: {analysis_type}")
                 return False
             
-            # 兼容 LLMResponse（UnifiedLLMClient）和 AIMessage（LangChain）
+            # Compatible with LLMResponse (UnifiedLLMClient) and AIMessage (LangChain)
             usage = None
             provider = "unknown"
             model_name = "unknown"
             
             if hasattr(response, 'usage') and response.usage:
-                # UnifiedLLMClient 的 LLMResponse
+                # UnifiedLLMClient of LLMResponse
                 usage = response.usage
                 provider = response.provider.value if response.provider else "unknown"
                 model_name = response.model or "unknown"
             elif hasattr(response, 'usage_metadata') and response.usage_metadata:
-                # LangChain 的 AIMessage
+                # LangChain of AIMessage
                 usage = response.usage_metadata
-                # AIMessage 没有 provider 字段，尝试从 response_metadata 获取
+                # AIMessage No provider field, try to get from response_metadata
                 meta = getattr(response, 'response_metadata', {})
                 model_name = meta.get('model_name', '') or meta.get('model', '') or "unknown"
             
             if not usage:
-                logger.debug(f"LLM 响应无 usage 信息，跳过记录: {analysis_type}")
+                logger.debug(f"LLM Response without usage information, skip recording: {analysis_type}")
                 return False
             
-            # 统一提取 token 数（兼容两种格式）
+            # Unified extraction of token numbers (compatible with both formats)
             input_tokens = usage.get("prompt_tokens", 0) or usage.get("input_tokens", 0)
             output_tokens = usage.get("completion_tokens", 0) or usage.get("output_tokens", 0)
             
             if input_tokens == 0 and output_tokens == 0:
-                logger.debug(f"Token 数为 0，跳过记录: {analysis_type}")
+                logger.debug(f"Token If the number is 0, the record will be skipped.: {analysis_type}")
                 return False
             
-            # 获取模型价格配置
+            # Get model price configuration
             from app.services.config_service import config_service
             config = await config_service.get_system_config()
             
-            # 查找对应的 LLM 配置
+            # Find the corresponding LLM configuration
             llm_config = None
             if config and config.llm_configs:
                 for cfg in config.llm_configs:
@@ -300,7 +300,7 @@ class UsageStatisticsService:
                         llm_config = cfg
                         break
             
-            # 计算成本
+            # Calculate cost
             cost = 0.0
             currency = "CNY"
             if llm_config:
@@ -309,7 +309,7 @@ class UsageStatisticsService:
                 cost = (input_tokens / 1000 * input_price) + (output_tokens / 1000 * output_price)
                 currency = llm_config.currency or "CNY"
             
-            # 创建使用记录
+            # Create usage record
             usage_record = UsageRecord(
                 timestamp=datetime.now().isoformat(),
                 provider=provider,
@@ -323,7 +323,7 @@ class UsageStatisticsService:
                 stock_code=stock_code
             )
             
-            # 保存到数据库
+            # Save to database
             success = await self.add_usage_record(usage_record)
             
             if success:
@@ -331,10 +331,10 @@ class UsageStatisticsService:
             
             return success
         except Exception as e:
-            logger.error(f"❌ 记录 LLM token 使用失败: {e}")
+            logger.error(f"❌ Log LLM token usage failure: {e}")
             return False
 
 
-# 创建全局实例
+# Create a global instance
 usage_statistics_service = UsageStatisticsService()
 

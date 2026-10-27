@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试修复后的筛选功能
+Test the fixed filtering functionality
 """
 
 import asyncio
@@ -10,36 +10,36 @@ import requests
 import json
 from dotenv import load_dotenv
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def test_screening_api():
-    """测试筛选API"""
-    print("🧪 测试修复后的筛选功能...")
+    """test screening API"""
+    print("🧪 Test the fixed filtering functionality...")
     
     base_url = "http://localhost:8000"
     
     try:
-        # 1. 登录获取token
-        print("🔐 登录中...")
+        # 1. Log in to get token
+        print("🔐 Logging in...")
         login_response = requests.post(f"{base_url}/api/auth/login", json={
             "username": "admin",
             "password": "admin123"
         }, timeout=10)
         
         if login_response.status_code != 200:
-            print(f"❌ 登录失败: {login_response.status_code}")
+            print(f"❌ Login failed: {login_response.status_code}")
             return False
         
         login_data = login_response.json()
         token = login_data["data"]["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
-        print("✅ 登录成功")
+        print("✅ Login successful")
         
-        # 2. 测试筛选API
-        print("\n📊 测试筛选API...")
+        # 2. test screening API
+        print("\n📊 test screening API...")
         
-        # 模拟前端发送的筛选请求
+        # Simulate filtering requests sent by the front end
         screening_request = {
             "market": "CN",
             "conditions": {
@@ -48,7 +48,7 @@ def test_screening_api():
                     {
                         "field": "market_cap",
                         "op": "between", 
-                        "value": [1000000, 50000000]  # 100亿到5000亿（万元）
+                        "value": [1000000, 50000000]  # 100 billion to 500 billion (ten thousand yuan)
                     }
                 ]
             },
@@ -62,9 +62,9 @@ def test_screening_api():
             "offset": 0
         }
         
-        print(f"📋 筛选条件: {json.dumps(screening_request, indent=2, ensure_ascii=False)}")
+        print(f"📋 Filter criteria: {json.dumps(screening_request, indent=2, ensure_ascii=False)}")
         
-        # 发送筛选请求
+        # Send filtering request
         screening_response = requests.post(
             f"{base_url}/api/screening/run",
             json=screening_request,
@@ -73,25 +73,25 @@ def test_screening_api():
         )
         
         if screening_response.status_code != 200:
-            print(f"❌ 筛选失败: {screening_response.status_code}")
-            print(f"响应内容: {screening_response.text}")
+            print(f"❌ Filtering failed: {screening_response.status_code}")
+            print(f"Response content: {screening_response.text}")
             return False
         
         screening_data = screening_response.json()
-        print(f"✅ 筛选成功!")
-        print(f"📊 结果统计:")
-        print(f"  - 总数量: {screening_data.get('total', 0)}")
-        print(f"  - 返回数量: {len(screening_data.get('items', []))}")
+        print(f"✅ Screening successful!")
+        print(f"📊 Result statistics:")
+        print(f"  - total quantity: {screening_data.get('total', 0)}")
+        print(f"  - Return quantity: {len(screening_data.get('items', []))}")
         
-        # 显示前5个结果
+        # Show first 5 results
         items = screening_data.get('items', [])
         if items:
-            print(f"📋 前5个结果:")
+            print(f"📋 Top 5 results:")
             for i, item in enumerate(items[:5], 1):
-                print(f"  {i}. {item.get('code', 'N/A')} - 市值: {item.get('total_mv', 'N/A')}亿")
+                print(f"  {i}. {item.get('code', 'N/A')} - Market value: {item.get('total_mv', 'N/A')}billion")
         
-        # 3. 测试更复杂的筛选条件
-        print("\n🔧 测试复杂筛选条件...")
+        # 3. Test more complex filters
+        print("\n🔧 Test complex filters...")
         
         complex_request = {
             "market": "CN",
@@ -101,7 +101,7 @@ def test_screening_api():
                     {
                         "field": "market_cap",
                         "op": "between",
-                        "value": [500000, 20000000]  # 50亿到2000亿
+                        "value": [500000, 20000000]  # 50 billion to 200 billion
                     }
                 ]
             },
@@ -124,18 +124,18 @@ def test_screening_api():
         
         if complex_response.status_code == 200:
             complex_data = complex_response.json()
-            print(f"✅ 复杂筛选成功!")
-            print(f"📊 结果统计:")
-            print(f"  - 总数量: {complex_data.get('total', 0)}")
-            print(f"  - 返回数量: {len(complex_data.get('items', []))}")
+            print(f"✅ Complex screening successful!")
+            print(f"📊 Result statistics:")
+            print(f"  - total quantity: {complex_data.get('total', 0)}")
+            print(f"  - Return quantity: {len(complex_data.get('items', []))}")
         else:
-            print(f"❌ 复杂筛选失败: {complex_response.status_code}")
+            print(f"❌ Complex filter failed: {complex_response.status_code}")
         
-        print("\n🎉 筛选功能测试完成!")
+        print("\n🎉 Filter function test completed!")
         return True
         
     except Exception as e:
-        print(f"❌ 测试异常: {e}")
+        print(f"❌ Test exception: {e}")
         return False
 
 if __name__ == "__main__":

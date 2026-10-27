@@ -1,28 +1,28 @@
 <template>
   <div class="scheduler-management">
-    <!-- 页面标题和统计信息 -->
+    <!-- Page title and statistics -->
     <el-card class="header-card" shadow="never">
       <div class="header-content">
         <div class="title-section">
           <h2>
             <el-icon><Timer /></el-icon>
-            定时任务管理
+            Scheduled task management
           </h2>
-          <p class="subtitle">管理系统中的所有定时任务，支持暂停、恢复和手动触发</p>
+          <p class="subtitle">Manage all scheduled tasks in the system, supporting pause, resume and manual triggering</p>
         </div>
         
         <div class="stats-section" v-if="stats">
-          <el-statistic title="总任务数" :value="stats.total_jobs">
+          <el-statistic title="Total number of tasks" :value="stats.total_jobs">
             <template #prefix>
               <el-icon><List /></el-icon>
             </template>
           </el-statistic>
-          <el-statistic title="运行中" :value="stats.running_jobs">
+          <el-statistic title="Running" :value="stats.running_jobs">
             <template #prefix>
               <el-icon color="#67C23A"><VideoPlay /></el-icon>
             </template>
           </el-statistic>
-          <el-statistic title="已暂停" :value="stats.paused_jobs">
+          <el-statistic title="Suspended" :value="stats.paused_jobs">
             <template #prefix>
               <el-icon color="#E6A23C"><VideoPause /></el-icon>
             </template>
@@ -31,18 +31,18 @@
       </div>
       
       <div class="actions">
-        <el-button @click="loadJobs" :loading="loading" :icon="Refresh">刷新</el-button>
-        <el-button @click="showHistoryDialog" :icon="Document">执行历史</el-button>
+        <el-button @click="loadJobs" :loading="loading" :icon="Refresh">Refresh</el-button>
+        <el-button @click="showHistoryDialog" :icon="Document">execution history</el-button>
       </div>
     </el-card>
 
-    <!-- 搜索和筛选 -->
+    <!-- Search and filter -->
     <el-card class="filter-card" shadow="never">
       <el-form :inline="true" class="filter-form">
-        <el-form-item label="任务名称">
+        <el-form-item label="Task name">
           <el-input
             v-model="searchKeyword"
-            placeholder="搜索任务名称"
+            placeholder="Search task name"
             clearable
             :prefix-icon="Search"
             style="width: 240px"
@@ -51,44 +51,44 @@
           />
         </el-form-item>
 
-        <el-form-item label="数据源">
+        <el-form-item label="data source">
           <el-select
             v-model="filterDataSource"
-            placeholder="全部数据源"
+            placeholder="All data sources"
             clearable
             style="width: 180px"
             @change="handleSearch"
           >
-            <el-option label="全部数据源" value="" />
+            <el-option label="All data sources" value="" />
             <el-option label="Tushare" value="Tushare" />
             <el-option label="AKShare" value="AKShare" />
             <el-option label="BaoStock" value="BaoStock" />
-            <el-option label="多数据源" value="多数据源" />
-            <el-option label="其他" value="其他" />
+            <el-option label="Multiple data sources" value="Multiple data sources" />
+            <el-option label="Others" value="Others" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="状态">
+        <el-form-item label="Status">
           <el-select
             v-model="filterStatus"
-            placeholder="全部状态"
+            placeholder="All status"
             clearable
             style="width: 150px"
             @change="handleSearch"
           >
-            <el-option label="全部状态" value="" />
-            <el-option label="运行中" value="running" />
-            <el-option label="已暂停" value="paused" />
+            <el-option label="All status" value="" />
+            <el-option label="Running" value="running" />
+            <el-option label="Suspended" value="paused" />
           </el-select>
         </el-form-item>
 
         <el-form-item>
-          <el-button :icon="Refresh" @click="handleReset">重置</el-button>
+          <el-button :icon="Refresh" @click="handleReset">reset</el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
-    <!-- 任务列表 -->
+    <!-- task list -->
     <el-card class="table-card" shadow="never">
       <el-table
         :data="filteredJobs"
@@ -97,58 +97,58 @@
         style="width: 100%"
         :default-sort="{ prop: 'paused', order: 'ascending' }"
       >
-        <el-table-column prop="name" label="任务名称" min-width="200" sortable>
+        <el-table-column prop="name" label="Task name" min-width="200" sortable>
           <template #default="{ row }">
             <div class="job-name">
               <div class="job-name-main">
                 <el-tag :type="row.paused ? 'warning' : 'success'" size="small">
-                  {{ row.paused ? '已暂停' : '运行中' }}
+                  {{ row.paused ? 'Suspended' : 'Running' }}
                 </el-tag>
                 <el-tag v-if="isJobRunning(row)" type="danger" size="small">
-                  执行中
+                  Executing
                 </el-tag>
                 <span class="name-text">{{ row.name }}</span>
               </div>
               <div v-if="isJobRunning(row)" class="job-running-summary">
-                <span v-if="getJobRunningProgress(row) !== null">进度 {{ getJobRunningProgress(row) }}%</span>
-                <span v-if="getJobRunningStartedAt(row)">开始于 {{ formatDateTime(getJobRunningStartedAt(row)!) }}</span>
+                <span v-if="getJobRunningProgress(row) !== null">Progress {{ getJobRunningProgress(row) }}%</span>
+                <span v-if="getJobRunningStartedAt(row)">Started with {{ formatDateTime(getJobRunningStartedAt(row)!) }}</span>
               </div>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="display_name" label="触发器名称" min-width="150">
+        <el-table-column prop="display_name" label="Trigger name" min-width="150">
           <template #default="{ row }">
             <el-text v-if="row.display_name" size="small">{{ row.display_name }}</el-text>
             <el-text v-else type="info" size="small">-</el-text>
           </template>
         </el-table-column>
 
-        <el-table-column prop="trigger" label="触发器" min-width="180">
+        <el-table-column prop="trigger" label="trigger" min-width="180">
           <template #default="{ row }">
             <el-text size="small" type="info">{{ formatTrigger(row.trigger) }}</el-text>
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="备注" min-width="200" show-overflow-tooltip>
+        <el-table-column prop="description" label="Remarks" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <el-text v-if="row.description" size="small">{{ row.description }}</el-text>
             <el-text v-else type="info" size="small">-</el-text>
           </template>
         </el-table-column>
 
-        <el-table-column prop="next_run_time" label="下次执行时间" min-width="180" sortable>
+        <el-table-column prop="next_run_time" label="Next execution time" min-width="180" sortable>
           <template #default="{ row }">
             <div v-if="row.next_run_time">
               <el-text size="small">{{ formatDateTime(row.next_run_time) }}</el-text>
               <br />
               <el-text size="small" type="info">{{ formatRelativeTime(row.next_run_time) }}</el-text>
             </div>
-            <el-text v-else type="warning" size="small">已暂停</el-text>
+            <el-text v-else type="warning" size="small">Suspended</el-text>
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="340" fixed="right">
+        <el-table-column label="Operation" width="340" fixed="right">
           <template #default="{ row }">
             <el-button-group>
               <el-button
@@ -156,7 +156,7 @@
                 :icon="Edit"
                 @click="showEditDialog(row)"
               >
-                编辑
+                Edit
               </el-button>
               <el-button
                 v-if="!row.paused"
@@ -166,7 +166,7 @@
                 @click="handlePause(row)"
                 :loading="actionLoading[row.id]"
               >
-                暂停
+                pause
               </el-button>
               <el-button
                 v-else
@@ -176,7 +176,7 @@
                 @click="handleResume(row)"
                 :loading="actionLoading[row.id]"
               >
-                恢复
+                restore
               </el-button>
               <el-button
                 size="small"
@@ -186,14 +186,14 @@
                 :loading="actionLoading[row.id]"
                 :disabled="isJobRunning(row)"
               >
-                立即执行
+                Execute immediately
               </el-button>
               <el-button
                 size="small"
                 :icon="View"
                 @click="showJobDetail(row)"
               >
-                详情
+                Details
               </el-button>
             </el-button-group>
           </template>
@@ -201,41 +201,41 @@
       </el-table>
     </el-card>
 
-    <!-- 编辑任务元数据对话框 -->
+    <!-- Edit task metadata dialog box -->
     <el-dialog
       v-model="editDialogVisible"
-      title="编辑任务信息"
+      title="Edit task information"
       width="600px"
       :close-on-click-modal="false"
     >
       <el-form v-if="editingJob" :model="editForm" label-width="120px">
-        <el-form-item label="任务ID">
+        <el-form-item label="Task ID">
           <el-text>{{ editingJob.id }}</el-text>
         </el-form-item>
-        <el-form-item label="任务名称">
+        <el-form-item label="Task name">
           <el-text>{{ editingJob.name }}</el-text>
         </el-form-item>
-        <el-form-item label="执行时间" v-if="editForm.supports_cron">
+        <el-form-item label="Execution time" v-if="editForm.supports_cron">
           <div class="schedule-picker">
             <div class="schedule-row">
-              <el-select v-model="editForm.frequency" placeholder="选择频率" style="width: 140px;" @change="updateCronFromUI">
-                <el-option label="每天" value="daily" />
-                <el-option label="工作日" value="weekdays" />
-                <el-option label="周末" value="weekend" />
-                <el-option label="每周一" value="monday" />
-                <el-option label="每周五" value="friday" />
+              <el-select v-model="editForm.frequency" placeholder="Select frequency" style="width: 140px;" @change="updateCronFromUI">
+                <el-option label="every day" value="daily" />
+                <el-option label="working day" value="weekdays" />
+                <el-option label="weekend" value="weekend" />
+                <el-option label="Every Monday" value="monday" />
+                <el-option label="every friday" value="friday" />
               </el-select>
-              <span class="schedule-sep">的</span>
+              <span class="schedule-sep">of</span>
               <el-time-select
                 v-model="editForm.time"
                 :start="'05:00'"
                 :step="'00:30'"
                 :end="'23:30'"
-                placeholder="选择时间"
+                placeholder="Select time"
                 style="width: 120px;"
                 @change="updateCronFromUI"
               />
-              <span class="schedule-sep">执行</span>
+              <span class="schedule-sep">execute</span>
             </div>
             <div class="schedule-preview">
               <el-tag type="info" size="small">
@@ -245,42 +245,42 @@
             </div>
             <div class="schedule-advanced">
               <el-link type="info" :underline="false" @click="editForm.showAdvanced = !editForm.showAdvanced">
-                {{ editForm.showAdvanced ? '收起高级选项' : '高级选项（CRON表达式）' }}
+                {{ editForm.showAdvanced ? 'Collapse advanced options' : 'Advanced options (CRON expressions)' }}
                 <el-icon><ArrowDown v-if="!editForm.showAdvanced" /><ArrowUp v-else /></el-icon>
               </el-link>
             </div>
             <div v-if="editForm.showAdvanced" class="schedule-cron">
               <el-input
                 v-model="editForm.cron_expression"
-                placeholder="CRON表达式，如: 0 8 * * 1-5"
+                placeholder="CRON Expressions such as: 0 8 * * 1-5"
                 @change="updateUIFromCron"
               >
                 <template #prepend>CRON</template>
               </el-input>
               <div class="cron-help">
-                格式：分 时 日 月 周 | 例：<code>0 8 * * 1-5</code> = 工作日8:00
+                Format: minute hour day month week | Example:<code>0 8 * * 1-5</code> = working day 8:00
               </div>
             </div>
           </div>
         </el-form-item>
-        <el-form-item label="执行时间" v-if="!editForm.supports_cron">
-          <el-text type="warning">此任务使用间隔触发器，不支持修改执行时间</el-text>
+        <el-form-item label="Execution time" v-if="!editForm.supports_cron">
+          <el-text type="warning">This task uses interval triggers and does not support modifying the execution time.</el-text>
         </el-form-item>
-        <el-form-item label="触发器名称">
+        <el-form-item label="Trigger name">
           <el-input
             v-model="editForm.display_name"
-            placeholder="请输入触发器名称（可选）"
+            placeholder="Please enter a trigger name (optional)"
             clearable
             maxlength="50"
             show-word-limit
           />
         </el-form-item>
-        <el-form-item label="备注">
+        <el-form-item label="Remarks">
           <el-input
             v-model="editForm.description"
             type="textarea"
             :rows="4"
-            placeholder="请输入备注信息（可选）"
+            placeholder="Please enter remark information (optional)"
             clearable
             maxlength="200"
             show-word-limit
@@ -289,57 +289,57 @@
       </el-form>
 
       <template #footer>
-        <el-button @click="editDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveMetadata" :loading="saveLoading">保存</el-button>
+        <el-button @click="editDialogVisible = false">Cancel</el-button>
+        <el-button type="primary" @click="handleSaveMetadata" :loading="saveLoading">save</el-button>
       </template>
     </el-dialog>
 
-    <!-- 任务详情对话框 -->
+    <!-- Task details dialog -->
     <el-dialog
       v-model="detailDialogVisible"
-      title="任务详情"
+      title="Mission details"
       width="700px"
       :close-on-click-modal="false"
     >
       <el-descriptions v-if="currentJob" :column="1" border>
-        <el-descriptions-item label="任务ID">{{ currentJob.id }}</el-descriptions-item>
-        <el-descriptions-item label="任务名称">{{ currentJob.name }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
+        <el-descriptions-item label="Task ID">{{ currentJob.id }}</el-descriptions-item>
+        <el-descriptions-item label="Task name">{{ currentJob.name }}</el-descriptions-item>
+        <el-descriptions-item label="Status">
           <el-tag :type="currentJob.paused ? 'warning' : 'success'">
-            {{ currentJob.paused ? '已暂停' : '运行中' }}
+            {{ currentJob.paused ? 'Suspended' : 'Running' }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="触发器">{{ currentJob.trigger }}</el-descriptions-item>
-        <el-descriptions-item label="下次执行时间">
-          {{ currentJob.next_run_time ? formatDateTime(currentJob.next_run_time) : '已暂停' }}
+        <el-descriptions-item label="trigger">{{ currentJob.trigger }}</el-descriptions-item>
+        <el-descriptions-item label="Next execution time">
+          {{ currentJob.next_run_time ? formatDateTime(currentJob.next_run_time) : 'Suspended' }}
         </el-descriptions-item>
-        <el-descriptions-item label="执行函数" v-if="currentJob.func">
+        <el-descriptions-item label="Execute function" v-if="currentJob.func">
           <el-text size="small" type="info">{{ currentJob.func }}</el-text>
         </el-descriptions-item>
-        <el-descriptions-item label="参数" v-if="currentJob.kwargs">
+        <el-descriptions-item label="parameters" v-if="currentJob.kwargs">
           <pre class="code-block">{{ JSON.stringify(currentJob.kwargs, null, 2) }}</pre>
         </el-descriptions-item>
       </el-descriptions>
 
       <template #footer>
-        <el-button @click="detailDialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="showJobHistory(currentJob!)">查看执行历史</el-button>
+        <el-button @click="detailDialogVisible = false">close</el-button>
+        <el-button type="primary" @click="showJobHistory(currentJob!)">View execution history</el-button>
       </template>
     </el-dialog>
 
-    <!-- 执行历史对话框 -->
+    <!-- Execution History Dialog -->
     <el-dialog
       v-model="historyDialogVisible"
-      title="执行历史"
+      title="execution history"
       width="1200px"
       :close-on-click-modal="false"
     >
       <el-tabs v-model="activeHistoryTab" @tab-change="handleHistoryTabChange">
-        <!-- 手动操作历史 -->
-        <el-tab-pane label="手动操作历史" name="manual">
+        <!-- Manual operation history -->
+        <el-tab-pane label="Manual operation history" name="manual">
           <el-table :data="historyList" v-loading="historyLoading" stripe max-height="500">
-            <el-table-column prop="job_name" label="任务名称" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="status" label="状态" width="100">
+            <el-table-column prop="job_name" label="Task name" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="status" label="Status" width="100">
               <template #default="{ row }">
                 <el-tag
                   :type="row.status === 'success' ? 'success' : row.status === 'failed' ? 'danger' : row.status === 'partial' ? 'warning' : row.status === 'running' ? 'info' : 'warning'"
@@ -349,7 +349,7 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="progress" label="进度" width="150">
+            <el-table-column prop="progress" label="Progress" width="150">
               <template #default="{ row }">
                 <div v-if="row.status === 'running' && row.progress !== undefined">
                   <el-progress :percentage="row.progress" :stroke-width="6" />
@@ -361,7 +361,7 @@
                 <el-text v-else type="info" size="small">-</el-text>
               </template>
             </el-table-column>
-            <el-table-column prop="progress_message" label="当前操作" min-width="180" show-overflow-tooltip>
+            <el-table-column prop="progress_message" label="current operation" min-width="180" show-overflow-tooltip>
               <template #default="{ row }">
                 <el-text v-if="row.progress_message" size="small">
                   {{ row.progress_message }}
@@ -372,22 +372,22 @@
                 <el-text v-else type="info" size="small">-</el-text>
               </template>
             </el-table-column>
-            <el-table-column prop="timestamp" label="执行时长" width="120">
+            <el-table-column prop="timestamp" label="Execution time" width="120">
               <template #default="{ row }">
                 <span v-if="row.execution_time !== undefined && row.execution_time !== null">
-                  {{ row.execution_time.toFixed(2) }}秒
+                  {{ row.execution_time.toFixed(2) }}seconds
                 </span>
                 <span v-else>
                   {{ calculateExecutionDurationFromTimes(row) }}
                 </span>
               </template>
             </el-table-column>
-            <el-table-column prop="estimated_time" label="剩余时间" width="180">
+            <el-table-column prop="estimated_time" label="remaining time" width="180">
               <template #default="{ row }">
                 {{ calculateEstimatedCompletionTime(row) }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="280" fixed="right">
+            <el-table-column label="Operation" width="280" fixed="right">
               <template #default="{ row }">
                 <el-button
                   v-if="row.error_message || row.status === 'running'"
@@ -396,9 +396,9 @@
                   size="small"
                   @click="showExecutionDetail(row)"
                 >
-                  详情
+                  Details
                 </el-button>
-                <!-- 🔥 继续执行按钮：仅对挂起状态的任务显示 -->
+                <!-- 🔥 Continue button: only displayed for pending tasks -->
                 <el-button
                   v-if="row.status === 'suspended'"
                   link
@@ -407,9 +407,9 @@
                   :loading="actionLoading[`resume_${row.execution_id || row._id}`]"
                   @click="handleResumeSuspendedExecution(row)"
                 >
-                  继续执行
+                  Continue execution
                 </el-button>
-                <!-- 🔥 重试失败项按钮：仅对历史数据同步任务显示 -->
+                <!-- 🔥 Retry failed items button: only displayed for historical data synchronization tasks -->
                 <el-button
                   v-if="isHistoricalSyncJob(row.job_id) && (row.status === 'failed' || row.status === 'partial' || (row.status === 'success' && row.errors && row.errors.length > 0))"
                   link
@@ -418,7 +418,7 @@
                   :loading="actionLoading[`retry_${row.execution_id || row._id}`]"
                   @click="handleRetryFailedSymbols(row)"
                 >
-                  重试失败项
+                  Retry failed items
                 </el-button>
                 <el-button
                   v-if="row.status === 'running' || row.status === 'suspended'"
@@ -427,7 +427,7 @@
                   size="small"
                   @click="handleCancelExecution(row)"
                 >
-                  终止
+                  terminate
                 </el-button>
                 <el-button
                   v-if="row.status === 'running' || row.status === 'suspended'"
@@ -436,7 +436,7 @@
                   size="small"
                   @click="handleMarkFailed(row)"
                 >
-                  标记失败
+                  Marking failed
                 </el-button>
                 <el-button
                   v-if="row.status !== 'running'"
@@ -445,7 +445,7 @@
                   size="small"
                   @click="handleDeleteExecution(row)"
                 >
-                  删除
+                  Delete
                 </el-button>
               </template>
             </el-table-column>
@@ -462,33 +462,33 @@
           />
         </el-tab-pane>
 
-        <!-- 自动执行监控 -->
-        <el-tab-pane label="自动执行监控" name="execution">
-          <!-- 筛选条件 -->
+        <!-- Automate monitoring -->
+        <el-tab-pane label="Automate monitoring" name="execution">
+          <!-- Filter criteria -->
           <el-form :inline="true" style="margin-bottom: 16px">
-            <el-form-item label="状态">
+            <el-form-item label="Status">
               <el-select
                 v-model="executionStatusFilter"
-                placeholder="全部状态"
+                placeholder="All status"
                 clearable
                 style="width: 150px"
                 @change="loadExecutions"
               >
-                <el-option label="全部状态" value="" />
-                <el-option label="执行中" value="running" />
-                <el-option label="成功" value="success" />
-                <el-option label="失败" value="failed" />
-                <el-option label="错过" value="missed" />
+                <el-option label="All status" value="" />
+                <el-option label="Executing" value="running" />
+                <el-option label="success" value="success" />
+                <el-option label="failed" value="failed" />
+                <el-option label="miss" value="missed" />
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button :icon="Refresh" @click="loadExecutions">刷新</el-button>
+              <el-button :icon="Refresh" @click="loadExecutions">Refresh</el-button>
             </el-form-item>
           </el-form>
 
           <el-table :data="executionList" v-loading="executionLoading" stripe max-height="500">
-            <el-table-column prop="job_name" label="任务名称" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="status" label="状态" width="100">
+            <el-table-column prop="job_name" label="Task name" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="status" label="Status" width="100">
               <template #default="{ row }">
                 <el-tag
                   :type="row.status === 'success' ? 'success' : row.status === 'failed' ? 'danger' : row.status === 'partial' ? 'warning' : row.status === 'running' ? 'info' : 'warning'"
@@ -498,7 +498,7 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="progress" label="进度" width="150">
+            <el-table-column prop="progress" label="Progress" width="150">
               <template #default="{ row }">
                 <div v-if="row.status === 'running' && row.progress !== undefined">
                   <el-progress :percentage="row.progress" :stroke-width="6" />
@@ -510,7 +510,7 @@
                 <el-text v-else type="info" size="small">-</el-text>
               </template>
             </el-table-column>
-            <el-table-column prop="progress_message" label="当前操作" min-width="180" show-overflow-tooltip>
+            <el-table-column prop="progress_message" label="current operation" min-width="180" show-overflow-tooltip>
               <template #default="{ row }">
                 <el-text v-if="row.progress_message" size="small">
                   {{ row.progress_message }}
@@ -521,27 +521,27 @@
                 <el-text v-else type="info" size="small">-</el-text>
               </template>
             </el-table-column>
-            <el-table-column prop="execution_time" label="执行时长" width="120">
+            <el-table-column prop="execution_time" label="Execution time" width="120">
               <template #default="{ row }">
                 <span v-if="row.execution_time !== undefined && row.execution_time !== null">
-                  {{ row.execution_time.toFixed(2) }}秒
+                  {{ row.execution_time.toFixed(2) }}seconds
                 </span>
                 <span v-else>
                   {{ calculateExecutionDurationFromTimes(row) }}
                 </span>
               </template>
             </el-table-column>
-            <el-table-column prop="scheduled_time" label="计划开始时间" width="180">
+            <el-table-column prop="scheduled_time" label="Planned start time" width="180">
               <template #default="{ row }">
                 {{ formatDateTime(row.scheduled_time) }}
               </template>
             </el-table-column>
-            <el-table-column prop="estimated_time" label="剩余时间" width="180">
+            <el-table-column prop="estimated_time" label="remaining time" width="180">
               <template #default="{ row }">
                 {{ calculateEstimatedCompletionTime(row) }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="280" fixed="right">
+            <el-table-column label="Operation" width="280" fixed="right">
               <template #default="{ row }">
                 <el-button
                   v-if="row.error_message || row.status === 'running'"
@@ -550,9 +550,9 @@
                   size="small"
                   @click="showExecutionDetail(row)"
                 >
-                  详情
+                  Details
                 </el-button>
-                <!-- 🔥 重试失败项按钮：仅对历史数据同步任务显示 -->
+                <!-- 🔥 Retry failed items button: only displayed for historical data synchronization tasks -->
                 <el-button
                   v-if="isHistoricalSyncJob(row.job_id) && (row.status === 'failed' || row.status === 'partial' || (row.status === 'success' && row.errors && row.errors.length > 0))"
                   link
@@ -561,7 +561,7 @@
                   :loading="actionLoading[`retry_${row.execution_id || row._id}`]"
                   @click="handleRetryFailedSymbols(row)"
                 >
-                  重试失败项
+                  Retry failed items
                 </el-button>
                 <el-button
                   v-if="row.status === 'running' || row.status === 'suspended'"
@@ -570,7 +570,7 @@
                   size="small"
                   @click="handleCancelExecution(row)"
                 >
-                  终止
+                  terminate
                 </el-button>
                 <el-button
                   v-if="row.status === 'running' || row.status === 'suspended'"
@@ -579,7 +579,7 @@
                   size="small"
                   @click="handleMarkFailed(row)"
                 >
-                  标记失败
+                  Marking failed
                 </el-button>
                 <el-button
                   v-if="row.status !== 'running'"
@@ -588,7 +588,7 @@
                   size="small"
                   @click="handleDeleteExecution(row)"
                 >
-                  删除
+                  Delete
                 </el-button>
               </template>
             </el-table-column>
@@ -607,59 +607,59 @@
       </el-tabs>
 
       <template #footer>
-        <el-button @click="historyDialogVisible = false">关闭</el-button>
+        <el-button @click="historyDialogVisible = false">close</el-button>
       </template>
     </el-dialog>
 
-    <!-- 执行详情对话框 -->
+    <!-- Execution details dialog -->
     <el-dialog
       v-model="executionDetailDialogVisible"
-      title="执行详情"
+      title="Execution details"
       width="800px"
       :close-on-click-modal="false"
     >
       <el-descriptions v-if="currentExecution" :column="1" border>
-        <el-descriptions-item label="任务名称">
+        <el-descriptions-item label="Task name">
           {{ currentExecution.job_name }}
         </el-descriptions-item>
-        <el-descriptions-item label="任务ID">
+        <el-descriptions-item label="Task ID">
           {{ currentExecution.job_id }}
         </el-descriptions-item>
-        <el-descriptions-item label="状态">
+        <el-descriptions-item label="Status">
           <el-tag
             :type="currentExecution.status === 'success' ? 'success' : currentExecution.status === 'failed' ? 'danger' : currentExecution.status === 'partial' ? 'warning' : currentExecution.status === 'running' ? 'info' : 'warning'"
           >
             {{ formatExecutionStatus(currentExecution.status) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="进度" v-if="currentExecution.status === 'running' && currentExecution.progress !== undefined">
+        <el-descriptions-item label="Progress" v-if="currentExecution.status === 'running' && currentExecution.progress !== undefined">
           <el-progress :percentage="currentExecution.progress" :stroke-width="8" />
           <div v-if="currentExecution.processed_items && currentExecution.total_items" style="margin-top: 8px">
-            <el-text size="small">已处理: {{ currentExecution.processed_items }} / {{ currentExecution.total_items }}</el-text>
+            <el-text size="small">Processed: {{ currentExecution.processed_items }} / {{ currentExecution.total_items }}</el-text>
           </div>
         </el-descriptions-item>
-        <el-descriptions-item label="当前操作" v-if="currentExecution.progress_message || currentExecution.current_item">
+        <el-descriptions-item label="current operation" v-if="currentExecution.progress_message || currentExecution.current_item">
           <el-text>{{ currentExecution.progress_message || currentExecution.current_item }}</el-text>
         </el-descriptions-item>
-        <el-descriptions-item label="计划开始时间">
+        <el-descriptions-item label="Planned start time">
           {{ formatDateTime(currentExecution.scheduled_time) }}
         </el-descriptions-item>
-        <el-descriptions-item label="更新时间">
+        <el-descriptions-item label="Update time">
           {{ formatDateTime(currentExecution.updated_at || currentExecution.timestamp) }}
         </el-descriptions-item>
-        <el-descriptions-item label="执行时长">
+        <el-descriptions-item label="Execution time">
           {{ calculateExecutionDuration(currentExecution) }}
         </el-descriptions-item>
-        <el-descriptions-item label="错误信息" v-if="currentExecution.error_message">
+        <el-descriptions-item label="error message" v-if="currentExecution.error_message">
           <el-text type="danger">{{ currentExecution.error_message }}</el-text>
         </el-descriptions-item>
-        <el-descriptions-item label="错误堆栈" v-if="currentExecution.traceback">
+        <el-descriptions-item label="error stack" v-if="currentExecution.traceback">
           <pre style="max-height: 300px; overflow-y: auto; background: #f5f5f5; padding: 12px; border-radius: 4px;">{{ currentExecution.traceback }}</pre>
         </el-descriptions-item>
       </el-descriptions>
 
       <template #footer>
-        <el-button @click="executionDetailDialogVisible = false">关闭</el-button>
+        <el-button @click="executionDetailDialogVisible = false">close</el-button>
       </template>
     </el-dialog>
   </div>
@@ -705,18 +705,18 @@ import {
 } from '@/api/scheduler'
 import { formatDateTime, formatRelativeTime } from '@/utils/datetime'
 
-// 数据
+// data
 const loading = ref(false)
 const jobs = ref<Job[]>([])
 const stats = ref<SchedulerStats | null>(null)
 const actionLoading = reactive<Record<string, boolean>>({})
 
-// 搜索和筛选
+// Search and filter
 const searchKeyword = ref('')
 const filterDataSource = ref('')
 const filterStatus = ref('')
 
-// 编辑任务元数据
+// Edit task metadata
 const editDialogVisible = ref(false)
 const editingJob = ref<Job | null>(null)
 const editForm = reactive({
@@ -725,18 +725,18 @@ const editForm = reactive({
   cron_expression: '',
   original_cron: '',
   supports_cron: false,
-  // 友好的时间选择器
+  // Friendly time picker
   frequency: 'weekdays' as 'daily' | 'weekdays' | 'weekend' | 'monday' | 'friday',
   time: '08:00',
   showAdvanced: false
 })
 const saveLoading = ref(false)
 
-// 任务详情
+// Mission details
 const detailDialogVisible = ref(false)
 const currentJob = ref<Job | null>(null)
 
-// 执行历史
+// execution history
 const historyDialogVisible = ref(false)
 const historyLoading = ref(false)
 const historyList = ref<JobHistory[]>([])
@@ -746,7 +746,7 @@ const historyPageSize = ref(20)
 const currentHistoryJobId = ref<string | null>(null)
 const activeHistoryTab = ref<TabPaneName>('manual')
 
-// 任务执行监控
+// Task execution monitoring
 const executionLoading = ref(false)
 const executionList = ref<JobExecution[]>([])
 const executionTotal = ref(0)
@@ -756,11 +756,11 @@ const executionStatusFilter = ref('')
 const executionDetailDialogVisible = ref(false)
 const currentExecution = ref<JobExecution | null>(null)
 
-// 计算属性
+// Computed properties
 const filteredJobs = computed(() => {
   let result = [...jobs.value]
 
-  // 按任务名称搜索
+  // Search by task name
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
     result = result.filter(job =>
@@ -771,22 +771,22 @@ const filteredJobs = computed(() => {
     )
   }
 
-  // 按数据源筛选
+  // Filter by data source
   if (filterDataSource.value) {
-    if (filterDataSource.value === '其他') {
-      // 其他：不包含 Tushare、AKShare、BaoStock、多数据源
+    if (filterDataSource.value === 'Others') {
+      // Others: Does not include Tushare, AKShare, BaoStock, multiple data sources
       result = result.filter(job =>
         !job.name.includes('Tushare') &&
         !job.name.includes('AKShare') &&
         !job.name.includes('BaoStock') &&
-        !job.name.includes('多数据源')
+        !job.name.includes('Multiple data sources')
       )
     } else {
       result = result.filter(job => job.name.includes(filterDataSource.value))
     }
   }
 
-  // 按状态筛选
+  // Filter by status
   if (filterStatus.value) {
     if (filterStatus.value === 'running') {
       result = result.filter(job => !job.paused)
@@ -795,13 +795,13 @@ const filteredJobs = computed(() => {
     }
   }
 
-  // 默认排序：运行中的任务优先（paused=false 排在前面）
+  // Default sorting: running tasks first (paused=false first in line)
   result.sort((a, b) => {
-    // 先按状态排序（运行中优先）
+    // Sort by status first (running first)
     if (a.paused !== b.paused) {
       return a.paused ? 1 : -1
     }
-    // 状态相同时按名称排序
+    // Sort by name when status is the same
     return a.name.localeCompare(b.name, 'zh-CN')
   })
 
@@ -815,17 +815,17 @@ const isJobRunning = (job: Job): boolean => {
 const getRunningJobHint = (job: Job): string => {
   const runningExecution = job.running_execution
   if (!runningExecution) {
-    return '该任务已有未完成的执行实例，请等待当前任务完成'
+    return 'This task already has unfinished execution instances, please wait for the current task to be completed.'
   }
 
   const progress = runningExecution.progress ?? 0
   const startedAt = runningExecution.started_at
-  const parts = [`该任务正在执行中`]
+  const parts = [`The task is being executed`]
   if (progress > 0) {
-    parts.push(`当前进度 ${progress}%`)
+    parts.push(`Current progress ${progress}%`)
   }
   if (startedAt) {
-    parts.push(`开始于 ${formatDateTime(startedAt)}`)
+    parts.push(`Started with ${formatDateTime(startedAt)}`)
   }
   return parts.join('，')
 }
@@ -842,16 +842,16 @@ const getJobRunningStartedAt = (job: Job): string | null => {
   return job.running_execution?.started_at || null
 }
 
-// 方法
+// method
 const loadJobs = async () => {
   loading.value = true
   try {
     const [jobsRes, statsRes] = await Promise.all([getJobs(), getSchedulerStats()])
-    // ApiClient.get 返回 ApiResponse<T>，其中 data 字段就是我们需要的数据
+    // ApiClient.get Return ApiResponse<T>, The data field is the data we need
     jobs.value = Array.isArray(jobsRes.data) ? jobsRes.data : []
     stats.value = statsRes.data || null
   } catch (error: any) {
-    ElMessage.error(error.message || '加载任务列表失败')
+    ElMessage.error(error.message || 'Failed to load task list')
     jobs.value = []
     stats.value = null
   } finally {
@@ -859,14 +859,14 @@ const loadJobs = async () => {
   }
 }
 
-// 从触发器字符串中提取CRON表达式
+// Extract CRON expression from trigger string
 const extractCronFromTrigger = (trigger: string): string => {
-  // 格式: cron[month='*', day='*', day_of_week='1-5', hour='9', minute='30']
+  // Format: cron[month='*', day='*', day_of_week='1-5', hour='9', minute='30']
   if (!trigger || !trigger.includes('cron[')) {
     return ''
   }
 
-  // 提取各个字段
+  // Extract individual fields
   const monthMatch = trigger.match(/month='([^']*)'/)
   const dayMatch = trigger.match(/day='([^']*)'/)
   const dayOfWeekMatch = trigger.match(/day_of_week='([^']*)'/)
@@ -877,7 +877,7 @@ const extractCronFromTrigger = (trigger: string): string => {
     return ''
   }
 
-  // 构建CRON表达式: 分 时 日 月 周
+  // Building CRON expressions: minutes hours days months weeks
   const minute = minuteMatch[1] || '*'
   const hour = hourMatch[1] || '*'
   const day = dayMatch ? dayMatch[1] : '*'
@@ -887,19 +887,19 @@ const extractCronFromTrigger = (trigger: string): string => {
   return `${minute} ${hour} ${day} ${month} ${dayOfWeek}`
 }
 
-// 从CRON表达式解析出频率和时间
+// Parse frequency and time from CRON expression
 const parseCronToUI = (cron: string) => {
   const parts = cron.split(' ')
   if (parts.length !== 5) return
 
   const [minute, hour, , , dayOfWeek] = parts
 
-  // 解析时间
+  // parsing time
   const hourNum = parseInt(hour) || 8
   const minuteNum = parseInt(minute) || 0
   editForm.time = `${hourNum.toString().padStart(2, '0')}:${minuteNum.toString().padStart(2, '0')}`
 
-  // 解析频率
+  // Analyze frequency
   if (dayOfWeek === '*') {
     editForm.frequency = 'daily'
   } else if (dayOfWeek === '1-5') {
@@ -911,11 +911,11 @@ const parseCronToUI = (cron: string) => {
   } else if (dayOfWeek === '5') {
     editForm.frequency = 'friday'
   } else {
-    editForm.frequency = 'weekdays' // 默认
+    editForm.frequency = 'weekdays' // Default
   }
 }
 
-// 从UI选择生成CRON表达式
+// Generate CRON expression from UI selection
 const updateCronFromUI = () => {
   const [hour, minute] = editForm.time.split(':')
   let dayOfWeek = '*'
@@ -941,21 +941,21 @@ const updateCronFromUI = () => {
   editForm.cron_expression = `${parseInt(minute)} ${parseInt(hour)} * * ${dayOfWeek}`
 }
 
-// 从CRON表达式更新UI（高级模式下用户直接修改CRON时）
+// Update UI from CRON expression (when user directly modifies CRON in advanced mode)
 const updateUIFromCron = () => {
   parseCronToUI(editForm.cron_expression)
 }
 
-// 格式化调度描述
+// Format schedule description
 const formatScheduleDescription = (frequency: string, time: string) => {
   const freqMap: Record<string, string> = {
-    daily: '每天',
-    weekdays: '工作日（周一至周五）',
-    weekend: '周末（周六、周日）',
-    monday: '每周一',
-    friday: '每周五'
+    daily: 'every day',
+    weekdays: 'Working days (Monday to Friday)',
+    weekend: 'Weekends (Saturday, Sunday)',
+    monday: 'Every Monday',
+    friday: 'every friday'
   }
-  return `${freqMap[frequency] || frequency} ${time} 执行`
+  return `${freqMap[frequency] || frequency} ${time} execute`
 }
 
 const showEditDialog = (job: Job) => {
@@ -964,7 +964,7 @@ const showEditDialog = (job: Job) => {
   editForm.description = job.description || ''
   editForm.showAdvanced = false
 
-  // 判断是否支持CRON（cron触发器）
+  // Determine whether CRON (cron trigger) is supported
   const isCronTrigger = Boolean(job.trigger?.includes('cron['))
   editForm.supports_cron = isCronTrigger
 
@@ -972,7 +972,7 @@ const showEditDialog = (job: Job) => {
     const cronExpr = extractCronFromTrigger(job.trigger ?? '')
     editForm.cron_expression = cronExpr
     editForm.original_cron = cronExpr
-    // 解析CRON到UI选择器
+    // Parse CRON to UI selector
     parseCronToUI(cronExpr)
   } else {
     editForm.cron_expression = ''
@@ -990,25 +990,25 @@ const handleSaveMetadata = async () => {
   try {
     saveLoading.value = true
 
-    // 如果CRON表达式有修改，先调用reschedule API
+    // If the CRON expression is modified, call it first reschedule API
     if (editForm.supports_cron && editForm.cron_expression !== editForm.original_cron) {
       if (!editForm.cron_expression.trim()) {
-        ElMessage.error('CRON表达式不能为空')
+        ElMessage.error('CRON Expression cannot be empty')
         return
       }
       await rescheduleJob(editingJob.value.id, editForm.cron_expression.trim())
     }
 
-    // 更新元数据
+    // Update metadata
     await updateJobMetadata(editingJob.value.id, {
       display_name: editForm.display_name || undefined,
       description: editForm.description || undefined
     })
-    ElMessage.success('任务信息已更新')
+    ElMessage.success('Mission information has been updated')
     editDialogVisible.value = false
     await loadJobs()
   } catch (error: any) {
-    ElMessage.error(error.message || '更新任务信息失败')
+    ElMessage.error(error.message || 'Failed to update task information')
   } finally {
     saveLoading.value = false
   }
@@ -1017,27 +1017,27 @@ const handleSaveMetadata = async () => {
 const showJobDetail = async (job: Job) => {
   try {
     const res = await getJobDetail(job.id)
-    // request.get 已经返回了 response.data
+    // request.get Already returned response.data
     currentJob.value = res.data || null
     detailDialogVisible.value = true
   } catch (error: any) {
-    ElMessage.error(error.message || '获取任务详情失败')
+    ElMessage.error(error.message || 'Failed to get task details')
   }
 }
 
 const handlePause = async (job: Job) => {
   try {
-    await ElMessageBox.confirm(`确定要暂停任务"${job.name}"吗？`, '确认暂停', {
+    await ElMessageBox.confirm(`Confirm to pause the task"${job.name}"?`, 'Confirm pause', {
       type: 'warning'
     })
 
     actionLoading[job.id] = true
     await pauseJob(job.id)
-    ElMessage.success('任务已暂停')
+    ElMessage.success('Task is paused')
     await loadJobs()
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '暂停任务失败')
+      ElMessage.error(error.message || 'Failed to suspend task')
     }
   } finally {
     actionLoading[job.id] = false
@@ -1048,10 +1048,10 @@ const handleResume = async (job: Job) => {
   try {
     actionLoading[job.id] = true
     await resumeJob(job.id)
-    ElMessage.success('任务已恢复')
+    ElMessage.success('Task has been resumed')
     await loadJobs()
   } catch (error: any) {
-    ElMessage.error(error.message || '恢复任务失败')
+    ElMessage.error(error.message || 'Recovery task failed')
   } finally {
     actionLoading[job.id] = false
   }
@@ -1065,8 +1065,8 @@ const handleTrigger = async (job: Job) => {
     }
 
     await ElMessageBox.confirm(
-      `确定要立即执行任务"${job.name}"吗？任务将在后台执行。`,
-      '确认执行',
+      `Confirm that you want to perform the task now"${job.name}"? The task will be executed in the background.`,
+      'Confirm execution',
       {
         type: 'warning'
       }
@@ -1076,57 +1076,57 @@ const handleTrigger = async (job: Job) => {
     
     try {
       await triggerJob(job.id)
-      ElMessage.success('任务已触发执行')
+      ElMessage.success('Task execution has been triggered')
       await loadJobs()
       
-      // 🔥 2秒后再次刷新任务列表，确保状态已更新
+      // 🔥 2 Refresh the task list again after seconds to ensure the status has been updated
       setTimeout(async () => {
         await loadJobs()
       }, 2000)
     } catch (error: any) {
-      // 🔥 处理 409 错误（任务正在运行，需要用户确认是否强制执行）
+      // 🔥 Handling 409 errors (the task is running and requires user confirmation whether to force execution)
       if (error.response?.status === 409) {
         const errorDetail = error.response?.data?.detail || {}
-        const message = errorDetail.message || '任务已有实例正在运行中'
-        const suggestion = errorDetail.suggestion || '是否强制执行？强制执行将跳过并发检查，可能导致重复执行。'
+        const message = errorDetail.message || 'An instance of the task is already running'
+        const suggestion = errorDetail.suggestion || 'Is it enforceable? Forcing execution will skip concurrency checks, potentially causing duplicate executions.'
         const runningProgress = errorDetail.running_progress || 0
         const runningStartTime = errorDetail.running_start_time
         
         try {
           await ElMessageBox.confirm(
-            `${message}\n\n${runningProgress > 0 ? `当前进度: ${runningProgress}%\n` : ''}${runningStartTime ? `开始时间: ${new Date(runningStartTime).toLocaleString()}\n\n` : ''}${suggestion}`,
-            '任务正在运行',
+            `${message}\n\n${runningProgress > 0 ? `Current progress: ${runningProgress}%\n` : ''}${runningStartTime ? `start time: ${new Date(runningStartTime).toLocaleString()}\n\n` : ''}${suggestion}`,
+            'Task is running',
             {
-              confirmButtonText: '强制执行',
-              cancelButtonText: '取消',
+              confirmButtonText: 'enforce',
+              cancelButtonText: 'Cancel',
               type: 'warning',
               distinguishCancelAndClose: true
             }
           )
           
-          // 用户确认强制执行，传递 force=true
+          // User confirmation enforces, passing force=true
           await triggerJob(job.id, { force: true })
-          ElMessage.success('任务已强制执行')
+          ElMessage.success('Task has been enforced')
           await loadJobs()
           
-          // 🔥 2秒后再次刷新任务列表，确保状态已更新
+          // 🔥 2 Refresh the task list again after seconds to ensure the status has been updated
           setTimeout(async () => {
             await loadJobs()
           }, 2000)
         } catch (confirmError: any) {
-          // 用户取消或关闭对话框，不执行任何操作
+          // User cancels or closes the dialog box without performing any action
           if (confirmError !== 'cancel' && confirmError !== 'close') {
-            ElMessage.error('强制执行失败: ' + (confirmError.message || '未知错误'))
+            ElMessage.error('Force execution failed: ' + (confirmError.message || 'unknown error'))
           }
         }
       } else {
-        // 其他错误
+        // Other errors
         throw error
       }
     }
   } catch (error: any) {
     if (error !== 'cancel' && error !== 'close') {
-      ElMessage.error(error.message || '触发任务失败')
+      ElMessage.error(error.message || 'Failed to trigger task')
     }
   } finally {
     actionLoading[job.id] = false
@@ -1155,7 +1155,7 @@ const loadHistory = async () => {
     const params: any = {
       limit: historyPageSize.value,
       offset: (historyPage.value - 1) * historyPageSize.value,
-      is_manual: true  // 只显示手动触发的执行记录
+      is_manual: true  // Only display manually triggered execution records
     }
 
     if (currentHistoryJobId.value) {
@@ -1166,12 +1166,12 @@ const loadHistory = async () => {
       ? await getSingleJobExecutions(currentHistoryJobId.value, params)
       : await getJobExecutions(params)
 
-    // 直接使用执行记录，不需要转换格式
+    // Use execution records directly without format conversion
     const executions = Array.isArray(res.data?.items) ? res.data.items : []
     historyList.value = executions
     historyTotal.value = res.data?.total || 0
   } catch (error: any) {
-    ElMessage.error(error.message || '加载执行历史失败')
+    ElMessage.error(error.message || 'Failed to load execution history')
     historyList.value = []
     historyTotal.value = 0
   } finally {
@@ -1192,20 +1192,20 @@ const handleHistoryTabChange = (tabName: TabPaneName) => {
     historyPage.value = 1
     loadHistory()
   }
-  // 两个标签页都启动自动刷新
+  // Auto-refresh is enabled for both tabs
   startAutoRefresh()
 }
 
-// 自动刷新定时器
+// Auto refresh timer
 let autoRefreshTimer: number | null = null
 
 const startAutoRefresh = () => {
-  // 清除旧的定时器
+  // Clear old timers
   stopAutoRefresh()
 
-  // 每5秒刷新一次
+  // Refresh every 5 seconds
   autoRefreshTimer = window.setInterval(() => {
-    // 根据当前标签页刷新对应的数据
+    // Refresh the corresponding data according to the current tab page
     if (historyDialogVisible.value) {
       if (activeHistoryTab.value === 'execution') {
         loadExecutions()
@@ -1223,7 +1223,7 @@ const stopAutoRefresh = () => {
   }
 }
 
-// 监听对话框关闭，停止自动刷新
+// The listening dialog box is closed and automatic refresh is stopped.
 watch(historyDialogVisible, (newVal) => {
   if (!newVal) {
     stopAutoRefresh()
@@ -1236,7 +1236,7 @@ const loadExecutions = async () => {
     const params: any = {
       limit: executionPageSize.value,
       offset: (executionPage.value - 1) * executionPageSize.value,
-      is_manual: false  // 只显示自动触发的执行记录
+      is_manual: false  // Only display automatically triggered execution records
     }
 
     if (currentHistoryJobId.value) {
@@ -1254,7 +1254,7 @@ const loadExecutions = async () => {
     executionList.value = Array.isArray(res.data?.items) ? res.data.items : []
     executionTotal.value = res.data?.total || 0
   } catch (error: any) {
-    ElMessage.error(error.message || '加载执行历史失败')
+    ElMessage.error(error.message || 'Failed to load execution history')
     executionList.value = []
     executionTotal.value = 0
   } finally {
@@ -1274,27 +1274,27 @@ const showExecutionDetail = (execution: JobExecution) => {
 
 const formatExecutionStatus = (status: string) => {
   const statusMap: Record<string, string> = {
-    running: '执行中',
-    success: '成功',
-    failed: '失败',
-    partial: '部分成功',  // 🔥 新增：部分成功状态
-    missed: '错过',
-    suspended: '挂起',
-    cancelled: '已取消'
+    running: 'Executing',
+    success: 'success',
+    failed: 'failed',
+    partial: 'Partially successful',  // 🔥 New: Partial success status
+    missed: 'miss',
+    suspended: 'hang',
+    cancelled: 'Canceled'
   }
   return statusMap[status] || status
 }
 
-// 计算执行时长（更新时间 - 计划开始时间）
+// Calculate execution time (update time - planned start time)
 const calculateExecutionDuration = (execution: JobExecution | null): string => {
   if (!execution) return '-'
   
-  // 如果有 execution_time 字段，直接使用
+  // If there is an execution_time field, use it directly
   if (execution.execution_time !== undefined && execution.execution_time !== null) {
-    return `${execution.execution_time.toFixed(2)}秒`
+    return `${execution.execution_time.toFixed(2)}seconds`
   }
   
-  // 否则计算：更新时间 - 计划开始时间
+  // Otherwise calculate: update time - scheduled start time
   const scheduledTime = execution.scheduled_time
   const updateTime = execution.updated_at || execution.timestamp
   
@@ -1303,11 +1303,11 @@ const calculateExecutionDuration = (execution: JobExecution | null): string => {
   }
   
   try {
-    // 处理时间字符串，确保有时区信息
+    // Process time strings to ensure there is zone information
     let scheduledStr = String(scheduledTime).trim()
     let updateStr = String(updateTime).trim()
     
-    // 如果没有时区信息，添加 +08:00（后端存储为 UTC+8）
+    // If there is no time zone information, add +08:00 (The backend is stored as UTC+8) 
     if (scheduledStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/) && 
         !scheduledStr.endsWith('Z') && 
         !scheduledStr.includes('+') && 
@@ -1329,49 +1329,49 @@ const calculateExecutionDuration = (execution: JobExecution | null): string => {
       return '-'
     }
     
-    // 计算时间差（秒）
+    // Calculate time difference (seconds)
     const diffSeconds = (updateDate.getTime() - scheduledDate.getTime()) / 1000
     
     if (diffSeconds < 0) {
       return '-'
     }
     
-    // 格式化显示
+    // Formatted display
     if (diffSeconds < 60) {
-      return `${diffSeconds.toFixed(2)}秒`
+      return `${diffSeconds.toFixed(2)}seconds`
     } else if (diffSeconds < 3600) {
       const minutes = Math.floor(diffSeconds / 60)
       const seconds = diffSeconds % 60
-      return `${minutes}分${seconds.toFixed(0)}秒`
+      return `${minutes}points${seconds.toFixed(0)}seconds`
     } else {
       const hours = Math.floor(diffSeconds / 3600)
       const minutes = Math.floor((diffSeconds % 3600) / 60)
       const seconds = diffSeconds % 60
-      return `${hours}小时${minutes}分${seconds.toFixed(0)}秒`
+      return `${hours}hours${minutes}points${seconds.toFixed(0)}seconds`
     }
   } catch (e) {
-    console.error('计算执行时长失败:', e)
+    console.error('Failed to calculate execution time:', e)
     return '-'
   }
 }
 
-// 计算执行时长（更新时间 - 开始时间）
+// Calculate execution time (update time - start time)
 const calculateExecutionDurationFromTimes = (row: JobExecution): string => {
   try {
-    // 开始时间：优先使用 timestamp（创建时间），如果没有则使用 scheduled_time（计划开始时间）
+    // Start time: timestamp (creation time) is used first, if not, scheduled_time (scheduled start time) is used
     const startTime = row.timestamp || row.scheduled_time
-    // 结束时间：使用 updated_at（更新时间），如果没有则使用当前时间（对于运行中的任务）
+    // End time: Use updated_at (updated time), if not then use the current time (for running tasks)
     const endTime = row.updated_at || (row.status === 'running' ? new Date().toISOString() : null)
     
     if (!startTime || !endTime) {
       return '-'
     }
     
-    // 处理时间字符串，确保有时区信息
+    // Process time strings to ensure there is zone information
     let startStr = String(startTime).trim()
     let endStr = String(endTime).trim()
     
-    // 如果没有时区信息，添加 +08:00（后端存储为 UTC+8）
+    // If there is no time zone information, add +08:00 (The backend is stored as UTC+8) 
     if (startStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/) && 
         !startStr.endsWith('Z') && 
         !startStr.includes('+') && 
@@ -1393,58 +1393,58 @@ const calculateExecutionDurationFromTimes = (row: JobExecution): string => {
       return '-'
     }
     
-    // 计算时间差（秒）
+    // Calculate time difference (seconds)
     const diffSeconds = (endDate.getTime() - startDate.getTime()) / 1000
     
     if (diffSeconds < 0) {
       return '-'
     }
     
-    // 格式化显示
+    // Formatted display
     if (diffSeconds < 60) {
-      return `${diffSeconds.toFixed(2)}秒`
+      return `${diffSeconds.toFixed(2)}seconds`
     } else if (diffSeconds < 3600) {
       const minutes = Math.floor(diffSeconds / 60)
       const seconds = diffSeconds % 60
-      return `${minutes}分${seconds.toFixed(0)}秒`
+      return `${minutes}points${seconds.toFixed(0)}seconds`
     } else {
       const hours = Math.floor(diffSeconds / 3600)
       const minutes = Math.floor((diffSeconds % 3600) / 60)
       const seconds = diffSeconds % 60
-      return `${hours}小时${minutes}分${seconds.toFixed(0)}秒`
+      return `${hours}hours${minutes}points${seconds.toFixed(0)}seconds`
     }
   } catch (e) {
-    console.error('计算执行时长失败:', e)
+    console.error('Failed to calculate execution time:', e)
     return '-'
   }
 }
 
-// 计算预计完成时间或剩余时间
+// Calculate estimated completion time or remaining time
 const calculateEstimatedCompletionTime = (row: JobExecution): string => {
   try {
-    // 如果任务已完成或失败，不显示预计完成时间
+    // If the task is completed or failed, the estimated completion time is not displayed
     if (row.status !== 'running') {
       return '-'
     }
     
-    // 如果没有进度信息，无法计算
+    // Cannot be calculated without progress information
     if (row.progress === undefined || row.progress === null || row.progress <= 0) {
-      return '计算中...'
+      return 'Calculating...'
     }
     
-    // 计算已花时间（秒）
+    // Calculate elapsed time (seconds)
     const startTime = row.timestamp || row.scheduled_time
     const endTime = row.updated_at || new Date().toISOString()
     
     if (!startTime || !endTime) {
-      return '计算中...'
+      return 'Calculating...'
     }
     
-    // 处理时间字符串，确保有时区信息
+    // Process time strings to ensure there is zone information
     let startStr = String(startTime).trim()
     let endStr = String(endTime).trim()
     
-    // 如果没有时区信息，添加 +08:00（后端存储为 UTC+8）
+    // If there is no time zone information, add +08:00 (The backend is stored as UTC+8) 
     if (startStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/) && 
         !startStr.endsWith('Z') && 
         !startStr.includes('+') && 
@@ -1463,60 +1463,60 @@ const calculateEstimatedCompletionTime = (row: JobExecution): string => {
     const endDate = new Date(endStr)
     
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      return '计算中...'
+      return 'Calculating...'
     }
     
-    // 计算已花时间（秒）
+    // Calculate elapsed time (seconds)
     const elapsedSeconds = (endDate.getTime() - startDate.getTime()) / 1000
     
     if (elapsedSeconds <= 0) {
-      return '计算中...'
+      return 'Calculating...'
     }
     
-    // 进度百分比（0-100）
+    // Progress percentage (0-100)
     const progressPercent = row.progress / 100
     
-    // 如果进度已经是100%，说明已完成
+    // If the progress is already 100%, it means it is completed
     if (progressPercent >= 1) {
-      return '即将完成'
+      return 'Almost done'
     }
     
-    // 如果进度为0或接近0，无法准确计算
+    // If the progress is 0 or close to 0, it cannot be accurately calculated
     if (progressPercent <= 0) {
-      return '计算中...'
+      return 'Calculating...'
     }
     
-    // 计算预计总时间：已花时间 / 进度百分比
-    // 例如：已花100秒，进度50%，预计总时间 = 100 / 0.5 = 200秒
+    // Calculate estimated total time: elapsed time / progress percentage
+    // For example: 100 seconds have been spent, 50% progress, estimated total time = 100 / 0.5 = 200 seconds
     const estimatedTotalSeconds = elapsedSeconds / progressPercent
     
-    // 计算剩余时间：预计总时间 - 已花时间
+    // Calculate remaining time: Estimated total time - elapsed time
     const remainingSeconds = estimatedTotalSeconds - elapsedSeconds
     
     if (remainingSeconds <= 0) {
-      return '即将完成'
+      return 'Almost done'
     }
     
-    // 格式化剩余时间显示
+    // Format remaining time display
     if (remainingSeconds < 60) {
-      return `剩余 ${remainingSeconds.toFixed(0)}秒`
+      return `Remaining ${remainingSeconds.toFixed(0)}seconds`
     } else if (remainingSeconds < 3600) {
       const minutes = Math.floor(remainingSeconds / 60)
       const seconds = Math.floor(remainingSeconds % 60)
-      return `剩余 ${minutes}分${seconds}秒`
+      return `Remaining ${minutes}points${seconds}seconds`
     } else {
       const hours = Math.floor(remainingSeconds / 3600)
       const minutes = Math.floor((remainingSeconds % 3600) / 60)
-      return `剩余 ${hours}小时${minutes}分`
+      return `Remaining ${hours}hours${minutes}points`
     }
   } catch (e) {
-    console.error('计算预计完成时间失败:', e)
-    return '计算中...'
+    console.error('Calculating estimated completion time failed:', e)
+    return 'Calculating...'
   }
 }
 
 const formatTrigger = (trigger: string) => {
-  // 简化触发器显示
+  // Simplified trigger display
   if (trigger.includes('cron')) {
     return trigger.replace(/cron\[|\]/g, '')
   }
@@ -1527,7 +1527,7 @@ const formatTrigger = (trigger: string) => {
 }
 
 const handleSearch = () => {
-  // 搜索和筛选会自动通过 computed 属性生效
+  // Searching and filtering are automatically enabled via the computed attribute
 }
 
 const handleReset = () => {
@@ -1536,33 +1536,33 @@ const handleReset = () => {
   filterStatus.value = ''
 }
 
-// 取消/终止任务执行
+// Cancel/terminate task execution
 const handleCancelExecution = async (execution: any) => {
   try {
     await ElMessageBox.confirm(
-      '确定要终止这个任务吗？任务将在下次检查时停止执行。',
-      '确认终止',
+      'Are you sure you want to terminate this task? The task will stop executing on the next check.',
+      'Confirm termination',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
 
     await cancelExecution(execution._id)
-    ElMessage.success('已设置取消标记，任务将在下次检查时停止')
+    ElMessage.success('Cancellation flag set, task will be stopped on next check')
 
-    // 🔥 立即刷新列表
+    // 🔥 Refresh list now
     if (activeHistoryTab.value === 'execution') {
       await loadExecutions()
     } else {
       await loadHistory()
     }
     
-    // 🔥 刷新任务列表
+    // 🔥 Refresh task list
     await loadJobs()
     
-    // 🔥 2秒后再次刷新，确保状态已更新为终止
+    // 🔥 2 Refresh again after seconds to ensure the status has been updated to terminated
     setTimeout(async () => {
       if (activeHistoryTab.value === 'execution') {
         await loadExecutions()
@@ -1573,29 +1573,29 @@ const handleCancelExecution = async (execution: any) => {
     }, 2000)
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '终止任务失败')
+      ElMessage.error(error.message || 'Failed to terminate task')
     }
   }
 }
 
-// 标记执行记录为失败
+// Mark execution record as failed
 const handleMarkFailed = async (execution: any) => {
   try {
     const { value: reason } = await ElMessageBox.prompt(
-      '请输入失败原因（可选）',
-      '标记为失败',
+      'Please enter the reason for failure (optional)',
+      'Mark as failed',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        inputPlaceholder: '例如：进程已手动终止',
-        inputValue: '进程已手动终止'
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
+        inputPlaceholder: 'For example: the process has been terminated manually',
+        inputValue: 'Process has been terminated manually'
       }
     )
 
-    await markExecutionFailed(execution._id, reason || '用户手动标记为失败')
-    ElMessage.success('已标记为失败状态')
+    await markExecutionFailed(execution._id, reason || 'User manually marks as failed')
+    ElMessage.success('Marked as failed')
 
-    // 刷新列表
+    // Refresh list
     if (activeHistoryTab.value === 'execution') {
       await loadExecutions()
     } else {
@@ -1603,28 +1603,28 @@ const handleMarkFailed = async (execution: any) => {
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '标记失败')
+      ElMessage.error(error.message || 'Marking failed')
     }
   }
 }
 
-// 删除执行记录
+// Delete execution record
 const handleDeleteExecution = async (execution: any) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除这条执行记录吗？此操作不可恢复。`,
-      '确认删除',
+      `Are you sure you want to delete this execution record? This operation is irreversible.`,
+      'Confirm deletion',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
 
     await deleteExecution(execution._id)
-    ElMessage.success('执行记录已删除')
+    ElMessage.success('Execution record deleted')
 
-    // 刷新列表
+    // Refresh list
     if (activeHistoryTab.value === 'execution') {
       await loadExecutions()
     } else {
@@ -1632,12 +1632,12 @@ const handleDeleteExecution = async (execution: any) => {
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '删除失败')
+      ElMessage.error(error.message || 'Delete failed')
     }
   }
 }
 
-// 🔥 判断是否为历史数据同步任务
+// 🔥 Determine whether it is a historical data synchronization task
 const isHistoricalSyncJob = (jobId: string | undefined): boolean => {
   if (!jobId) return false
   return jobId === 'tushare_historical_sync' ||
@@ -1645,28 +1645,28 @@ const isHistoricalSyncJob = (jobId: string | undefined): boolean => {
          jobId === 'baostock_historical_sync'
 }
 
-// 🔥 恢复挂起的任务执行
+// 🔥 Resume suspended task execution
 const handleResumeSuspendedExecution = async (row: JobExecution) => {
   const executionId = row.execution_id || row._id
   if (!executionId) {
-    ElMessage.error('执行记录ID不存在')
+    ElMessage.error('Execution record ID does not exist')
     return
   }
 
   try {
-    // 确认操作
+    // Confirm action
     await ElMessageBox.confirm(
-      '确定要继续执行这个挂起的任务吗？\n\n' +
-      '• 任务将从上次中断的位置继续执行\n' +
-      `• 当前进度: ${row.progress || 0}%\n` +
+      'Are you sure you want to continue executing this pending task?\n\n' +
+      '• The task will resume execution where it left off\n' +
+      `• Current progress: ${row.progress || 0}%\n` +
       (row.processed_items && row.total_items
-        ? `• 已处理: ${row.processed_items}/${row.total_items}\n`
+        ? `• Processed: ${row.processed_items}/${row.total_items}\n`
         : '') +
-      '• 继续执行后将无法撤销',
-      '确认继续执行',
+      '• Once executed, it cannot be undone.',
+      'Confirm to continue execution',
       {
-        confirmButtonText: '继续执行',
-        cancelButtonText: '取消',
+        confirmButtonText: 'Continue execution',
+        cancelButtonText: 'Cancel',
         type: 'info'
       }
     )
@@ -1674,9 +1674,9 @@ const handleResumeSuspendedExecution = async (row: JobExecution) => {
     actionLoading[`resume_${executionId}`] = true
 
     await resumeSuspendedExecution(executionId)
-    ElMessage.success('任务已恢复执行，将从上次进度位置继续')
+    ElMessage.success('The task has resumed execution and will continue from the last progress position')
 
-    // 刷新列表
+    // Refresh list
     if (activeHistoryTab.value === 'execution') {
       await loadExecutions()
     } else {
@@ -1684,32 +1684,32 @@ const handleResumeSuspendedExecution = async (row: JobExecution) => {
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '恢复任务失败')
+      ElMessage.error(error.message || 'Recovery task failed')
     }
   } finally {
     actionLoading[`resume_${executionId}`] = false
   }
 }
 
-// 🔥 重试失败的股票
+// 🔥 Retry failed stocks
 const handleRetryFailedSymbols = async (execution: any) => {
   const executionId = execution.execution_id || execution._id
   if (!executionId) {
-    ElMessage.error('执行记录ID不存在')
+    ElMessage.error('Execution record ID does not exist')
     return
   }
 
   try {
-    // 确认操作
+    // Confirm action
     await ElMessageBox.confirm(
-      '确定要重试失败的股票吗？\n\n' +
-      '• 只重试可重试的错误（网络错误、API超时等）\n' +
-      '• 跳过无数据的错误（股票不存在、日期范围不合理等）\n' +
-      '• 重试将创建一个新的任务执行',
-      '确认重试失败项',
+      'Are you sure you want to retry the failed stock?\n\n' +
+      '• Only retry retryable errors (network errors, API timeouts, etc.)\n' +
+      '• Skip errors with no data (stock does not exist, date range is unreasonable, etc.)\n' +
+      '• Retrying will create a new task execution',
+      'Confirm retry failed items',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'info'
       }
     )
@@ -1721,30 +1721,30 @@ const handleRetryFailedSymbols = async (execution: any) => {
     if (res.success) {
       const data = res.data
       ElMessage.success(
-        `重试完成：成功 ${data.success_count}/${data.total_retried} 只股票，` +
-        `失败 ${data.error_count} 只，` +
-        `无数据 ${data.no_data_count} 只（已跳过）`
+        `Retry completed: Success ${data.success_count}/${data.total_retried} only stocks,` +
+        `failed ${data.error_count} only,` +
+        `No data ${data.no_data_count} Only (skipped)`
       )
       
-      // 刷新列表
+      // Refresh list
       if (activeHistoryTab.value === 'execution') {
         await loadExecutions()
       } else {
         await loadHistory()
       }
     } else {
-      ElMessage.error(res.message || '重试失败')
+      ElMessage.error(res.message || 'Retry failed')
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      ElMessage.error(error.message || '重试失败项失败')
+      ElMessage.error(error.message || 'Retry failed item failed')
     }
   } finally {
     actionLoading[`retry_${executionId}`] = false
   }
 }
 
-// 生命周期
+// life cycle
 onMounted(() => {
   loadJobs()
 })

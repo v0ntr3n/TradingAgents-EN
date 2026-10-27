@@ -1,75 +1,75 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-测试 QMT download_financial_data2 方法（带回调的批量下载）
+Testing the QMT download_financial_data2 method (batch download with callback)
 """
 import sys
 import os
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 try:
     import xtquant.xtdata as xtdata
 except ImportError:
-    print("❌ xtquant 未安装")
+    print("❌ xtquant Not installed")
     sys.exit(1)
 
 def on_progress(data):
-    """下载进度回调函数"""
+    """Download progress callback function"""
     total = data.get('total', 0)
     finished = data.get('finished', 0)
     stockcode = data.get('stockcode', '')
     message = data.get('message', '')
     
-    # 计算进度百分比
+    # Calculate progress percentage
     if total > 0:
         percent = (finished / total) * 100
-        print(f"  📥 进度: {finished}/{total} ({percent:.1f}%) - {stockcode} {message}")
+        print(f"  📥 Progress: {finished}/{total} ({percent:.1f}%) - {stockcode} {message}")
     else:
         print(f"  📥 {stockcode} {message}")
 
 def test_download_financial_data2():
-    """测试 download_financial_data2 方法"""
+    """Test the download_financial_data2 method"""
     print("=" * 60)
-    print("🔍 测试 QMT download_financial_data2 方法")
+    print("🔍 Testing the QMT download_financial_data2 method")
     print("=" * 60)
     
-    # 测试股票列表（少量股票以加快测试）
+    # Test stock list (small number of stocks to speed up testing)
     stock_list = [
-        "000001.SZ",  # 平安银行
-        "600000.SH",  # 浦发银行
-        "000002.SZ",  # 万科A
+        "000001.SZ",  # Ping An Bank
+        "600000.SH",  # Shanghai Pudong Development Bank
+        "000002.SZ",  # Vanke A
     ]
     
-    # 只下载主要指标（减少下载时间）
+    # Download only main indicators (reduce download time)
     table_list = [
-        'Pershareindex',  # 每股指标（主要指标）
-        'Income',         # 利润表
+        'Pershareindex',  # Per Share Indicators (Main Indicators)
+        'Income',         # income statement
     ]
     
-    print(f"\n📊 测试股票: {', '.join(stock_list)}")
-    print(f"📋 报表类型: {', '.join(table_list)}")
-    print(f"⏰ 时间范围: 2023-01-01 至 2024-12-31")
+    print(f"\n📊 test stocks: {', '.join(stock_list)}")
+    print(f"📋 Report type: {', '.join(table_list)}")
+    print(f"⏰ time range: 2023-01-01 to 2024-12-31")
     
-    # 使用 download_financial_data2 下载
-    print(f"\n⏬ 开始下载财务数据...")
-    print(f"💡 提示: 这可能需要一些时间，请耐心等待...\n")
+    # Download using download_financial_data2
+    print(f"\n⏬ Start downloading financial data...")
+    print(f"💡 Tips: This may take some time, please be patient...\n")
     
     try:
         xtdata.download_financial_data2(
             stock_list=stock_list,
             table_list=table_list,
-            start_time='20230101',  # 起始时间（按披露日期）
-            end_time='20241231',    # 结束时间（按披露日期）
-            callback=on_progress    # 进度回调
+            start_time='20230101',  # Starting time (by disclosure date)
+            end_time='20241231',    # End time (by disclosure date)
+            callback=on_progress    # Progress callback
         )
         
-        print(f"\n✅ 下载完成！")
+        print(f"\n✅ Download completed!")
         
-        # 验证下载的数据
-        print(f"\n📥 验证下载的数据...")
+        # Verify downloaded data
+        print(f"\n📥 Verify downloaded data...")
         for stock_code in stock_list:
             print(f"\n  📊 {stock_code}:")
             
@@ -78,7 +78,7 @@ def test_download_financial_data2():
                 table_list=table_list,
                 start_time='20230101',
                 end_time='20241231',
-                report_type='announce_time'  # 按披露日期筛选
+                report_type='announce_time'  # Filter by disclosure date
             )
             
             if financial_data and stock_code in financial_data:
@@ -86,27 +86,27 @@ def test_download_financial_data2():
                 
                 for table_name, table_data in stock_data.items():
                     if table_data is not None and not table_data.empty:
-                        print(f"    ✅ {table_name}: {len(table_data)} 条记录")
+                        print(f"    ✅ {table_name}: {len(table_data)} records")
                         
-                        # 显示最新一期
+                        # Show latest issue
                         if len(table_data) > 0:
                             latest = table_data.iloc[0]
                             
                             if table_name == 'Pershareindex':
-                                print(f"       最新: {latest.get('m_timetag', 'N/A')} "
+                                print(f"       Latest: {latest.get('m_timetag', 'N/A')} "
                                       f"EPS={latest.get('s_fa_eps_basic', 'N/A')} "
                                       f"BPS={latest.get('s_fa_bps', 'N/A')}")
                             elif table_name == 'Income':
-                                print(f"       最新: {latest.get('m_timetag', 'N/A')} "
-                                      f"营收={latest.get('revenue_inc', 'N/A')} "
-                                      f"净利={latest.get('net_profit_incl_min_int_inc', 'N/A')}")
+                                print(f"       Latest: {latest.get('m_timetag', 'N/A')} "
+                                      f"Revenue={latest.get('revenue_inc', 'N/A')} "
+                                      f"net profit={latest.get('net_profit_incl_min_int_inc', 'N/A')}")
                     else:
-                        print(f"    ❌ {table_name}: 无数据")
+                        print(f"    ❌ {table_name}: No data")
             else:
-                print(f"    ❌ 未获取到数据")
+                print(f"    ❌ No data obtained")
         
     except Exception as e:
-        print(f"\n❌ 下载失败: {e}")
+        print(f"\n❌ Download failed: {e}")
         import traceback
         traceback.print_exc()
 

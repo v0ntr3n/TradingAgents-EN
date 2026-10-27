@@ -1,7 +1,7 @@
 """
-股票关注列表定时分析任务
+Stock watch list scheduled analysis tasks
 
-定时分析用户股票关注列表列表中的股票，复用现有的分析服务。
+Regularly analyze the stocks in the user s stock watch list and reuse existing analysis services.
 """
 
 import asyncio
@@ -19,12 +19,12 @@ from app.utils.compliance import GENERIC_RESEARCH_RECOMMENDATION, build_research
 
 logger = logging.getLogger("app.worker.watchlist_analysis")
 
-# 全局状态
+# global state
 _is_running = False
 
 
 def _build_scheduled_email_attachments(results: List[Dict[str, Any]], analysis_time: str) -> List[tuple]:
-    """为定时分析完成邮件构建附件。"""
+    """Build attachments for scheduled analysis completion emails."""
     if not results:
         return []
 
@@ -43,7 +43,7 @@ def _build_scheduled_email_attachments(results: List[Dict[str, Any]], analysis_t
         success = item.get("success", False)
         research_overview = build_research_summary({}, item.get("summary") or "")
         confidence_score = item.get("confidence_score") or 0
-        risk_level = item.get("risk_level") or "中等"
+        risk_level = item.get("risk_level") or "medium"
         summary = (item.get("summary") or "").strip()
         key_points = item.get("key_points") or []
 
@@ -84,7 +84,7 @@ def _build_scheduled_email_attachments(results: List[Dict[str, Any]], analysis_t
 
 
 def _format_completed_task_result(task_id: str, task_doc: Dict[str, Any]) -> Dict[str, Any]:
-    """将任务结果统一转换为邮件所需格式。"""
+    """Convert task results into the required format for emails."""
     result = task_doc.get("result") or {}
     task_params = task_doc.get("task_params") or {}
     stock_code = task_params.get("stock_code") or task_params.get("symbol") or result.get("stock_code") or result.get("stock_symbol") or ""
@@ -96,14 +96,14 @@ def _format_completed_task_result(task_id: str, task_doc: Dict[str, Any]) -> Dic
         "summary": result.get("summary", ""),
         "recommendation": GENERIC_RESEARCH_RECOMMENDATION,
         "confidence_score": result.get("confidence_score", 0),
-        "risk_level": result.get("risk_level", "中等"),
+        "risk_level": result.get("risk_level", "medium"),
         "key_points": result.get("key_points", []),
         "success": task_doc.get("status") == "completed",
     }
 
 
 async def _wait_for_task_results(task_ids: List[str], timeout_seconds: int = 3600, poll_interval: int = 15) -> List[Dict[str, Any]]:
-    """等待批次任务结束，并收集可用于邮件汇总的结果。"""
+    """Wait for the batch task to complete and collect results that can be used for mail aggregation."""
     if not task_ids:
         return []
 
@@ -133,7 +133,7 @@ async def _wait_for_task_results(task_ids: List[str], timeout_seconds: int = 360
             await asyncio.sleep(poll_interval)
 
     if pending_ids:
-        logger.warning(f"⚠️ 定时分析邮件等待超时，仍有 {len(pending_ids)} 个任务未完成")
+        logger.warning(f"⚠️ The scheduled mail analysis waits for timeout, and there are still {len(pending_ids)} tasks not completed")
 
     return [completed_results[task_id] for task_id in task_ids if task_id in completed_results]
 
@@ -144,7 +144,7 @@ async def _send_scheduled_completion_email_when_ready(
     total: int,
     analysis_time: str,
 ) -> None:
-    """等待任务结束后发送带附件的定时分析完成邮件。"""
+    """After waiting for the task to complete, send a scheduled analysis completion email with attachments."""
     try:
         results = await _wait_for_task_results(task_ids)
         success = sum(1 for item in results if item.get("success"))
@@ -160,31 +160,31 @@ async def _send_scheduled_completion_email_when_ready(
             send_email_notification=True,
         )
     except Exception as exc:
-        logger.warning(f"⚠️ 发送定时分析完成邮件失败: {exc}", exc_info=True)
+        logger.warning(f"⚠️ Failed to send scheduled analysis completion email: {exc}", exc_info=True)
 
 
 async def get_watchlist_stocks() -> List[Dict[str, Any]]:
-    """获取所有有效用户的股票关注列表列表
+    """Get the list of stock watchlists for all valid users
 
-    只返回在 users 集合中存在的用户的股票关注列表，过滤掉历史遗留的垃圾数据。
+    Only the stock watch lists of users that exist in the users collection are returned, and junk data left over from history is filtered out.
 
     Returns:
-        包含 user_id 和 stocks 的字典列表
+        List of dictionaries containing user_id and stocks
     """
     from bson import ObjectId
 
     db = get_mongo_db()
 
-    # 第一步：获取所有有效用户的 ID
+    # Step one: Get all valid users' ID
     users_cursor = db.users.find({}, {"_id": 1})
     valid_user_ids = set()
     async for user in users_cursor:
         user_id_str = str(user["_id"])
         valid_user_ids.add(user_id_str)
 
-    logger.info(f"📊 数据库中共有 {len(valid_user_ids)} 个有效用户")
+    logger.info(f"📊 There are total in the database {len(valid_user_ids)} valid users")
 
-    # 第二步：从 user_favorites 集合查询有股票关注列表的记录
+    # Step 2: Query records with stock watch lists from the user_favorites collection
     cursor = db.user_favorites.find(
         {"favorites": {"$exists": True, "$ne": []}}
     )
@@ -196,26 +196,26 @@ async def get_watchlist_stocks() -> List[Dict[str, Any]]:
         user_id = doc.get("user_id", "unknown")
         favorites = doc.get("favorites", [])
 
-        # 检查该 user_id 是否在有效用户列表中
+        # Check if the user_id is in the list of valid users
         if user_id not in valid_user_ids:
-            logger.warning(f"⚠️ 跳过无效用户的股票关注列表: {user_id} (用户不存在于 users 集合)")
+            logger.warning(f"⚠️ Skip the stock watchlist of invalid users: {user_id} (User does not exist in users collection)")
             skipped_count += 1
             continue
 
         if favorites:
-            logger.info(f"📋 找到有效用户 {user_id} 的 {len(favorites)} 只股票关注列表")
+            logger.info(f"📋 Find valid user {user_id} of {len(favorites)} Only stock watch list")
             result.append({
                 "user_id": user_id,
                 "stocks": favorites
             })
 
     if skipped_count > 0:
-        logger.info(f"🗑️ 已跳过 {skipped_count} 条历史遗留的垃圾数据")
+        logger.info(f"🗑️ skipped {skipped_count} pieces of junk data left over from history")
 
     if not result:
-        logger.info("📭 没有找到任何有效用户的股票关注列表数据")
+        logger.info("📭 No stock watchlist data found for any valid user")
     else:
-        logger.info(f"✅ 共找到 {len(result)} 个有效用户有股票关注列表")
+        logger.info(f"✅ Found in total {len(result)} valid users have stock watchlists")
 
     return result
 
@@ -229,22 +229,22 @@ async def analyze_user_watchlist_batch(
     deep_analysis_model: str = "qwen-max"
 ) -> Dict[str, Any]:
     """
-    批量分析用户的股票关注列表（并发执行）- 使用 v2.0 引擎
+    Batch analysis of user s stock watchlist (concurrent execution) - using v2.0 engine
 
-    参考批量分析API的实现方式：
-    1. 先为所有股票创建任务（使用 v2.0 统一任务引擎）
-    2. 然后使用 asyncio.create_task 并发执行所有任务
+    Refer to the implementation of the batch analysis API:
+    1. Create tasks for all stocks first (using v2.0 unified task engine)
+    2. Then use asyncio.create_task to execute all tasks concurrently
 
     Args:
-        user_id: 用户ID
-        stocks: 股票关注列表列表
-        analysis_date: 分析日期
-        analysis_depth: 分析深度 (1-5)
-        quick_analysis_model: 快速分析模型
-        deep_analysis_model: 深度分析模型
+        user_id: User ID
+        stocks: Stock Watchlist List
+        analysis_date: Analysis date
+        analysis_depth: Analysis depth (1-5)
+        quick_analysis_model: Quickly analyze models
+        deep_analysis_model: Deep analysis model
 
     Returns:
-        包含任务ID列表和统计信息的字典
+        A dictionary containing a list of task IDs and statistics
     """
     from app.services.task_analysis_service import get_task_analysis_service
     from app.models.analysis import AnalysisTaskType
@@ -252,15 +252,15 @@ async def analyze_user_watchlist_batch(
 
     task_service = get_task_analysis_service()
 
-    # 将数字深度转换为中文描述
+    # Convert numeric depth to Chinese description
     depth_mapping = {
-        1: "快速",
-        2: "基础",
-        3: "标准",
-        4: "深度",
-        5: "全面"
+        1: "fast",
+        2: "Basics",
+        3: "Standard",
+        4: "Depth",
+        5: "Comprehensive"
     }
-    research_depth = depth_mapping.get(analysis_depth, "标准")
+    research_depth = depth_mapping.get(analysis_depth, "Standard")
 
     task_ids = []
     task_mapping = []
@@ -268,14 +268,14 @@ async def analyze_user_watchlist_batch(
     submitted_count = 0
     failed_count = 0
 
-    # 第一步：为所有股票创建任务（使用 v2.0 引擎）
-    logger.info(f"  📝 [v2.0引擎] 开始创建 {len(stocks)} 个分析任务...")
+    # Step 1: Create tasks for all stocks (using v2.0 engine)
+    logger.info(f"  📝 [v2.0 engine] Start creating {len(stocks)} analysis tasks...")
     for idx, stock in enumerate(stocks, 1):
         stock_code = stock.get("stock_code")
         stock_name = stock.get("stock_name", stock_code)
 
         try:
-            # 🔥 根据代码识别证券类型：ETF 走 ETF 工作流，股票走股票工作流
+            # 🔥 Identify security types based on ticker: ETFs follow the ETF workflow, stocks follow the stock workflow
             from tradingagents.utils.stock_utils import StockUtils, StockMarket, SecurityType
 
             sec_type = StockUtils.identify_security_type(stock_code)
@@ -288,15 +288,15 @@ async def analyze_user_watchlist_batch(
             }
             market_type = market_type_mapping.get(market, "cn")
 
-            # ETF 使用 ETF 分析流程
+            # ETF Using the ETF Analysis Process
             if sec_type == SecurityType.FUND:
                 task_type = AnalysisTaskType.ETF_ANALYSIS
-                logger.info(f"    📊 {stock_code} 识别为 ETF，使用 ETF 分析流程")
+                logger.info(f"    📊 {stock_code} Identify as an ETF, use the ETF analysis process")
             else:
                 task_type = AnalysisTaskType.STOCK_ANALYSIS
-                logger.info(f"    📊 股票 {stock_code} 识别为市场: {market_type}")
+                logger.info(f"    📊 stocks {stock_code} identified as market: {market_type}")
 
-            # 准备任务参数
+            # Prepare task parameters
             task_params = {
                 "symbol": stock_code,
                 "stock_code": stock_code,
@@ -307,12 +307,12 @@ async def analyze_user_watchlist_batch(
                 "deep_analysis_model": deep_analysis_model
             }
 
-            # 使用 v2.0 统一任务引擎创建任务
+            # Create tasks using v2.0 Unified Task Engine
             task = await task_service.create_task(
                 user_id=PyObjectId(user_id),
                 task_type=task_type,
                 task_params=task_params,
-                engine_type="auto",  # 自动选择引擎
+                engine_type="auto",  # Automatic engine selection
                 preference_type="neutral"
             )
 
@@ -326,10 +326,10 @@ async def analyze_user_watchlist_batch(
                 "task": task
             })
 
-            logger.info(f"    ✅ [{idx}/{len(stocks)}] 已创建任务: {task_id} - {stock_code} {stock_name}")
+            logger.info(f"    ✅ [{idx}/{len(stocks)}] Task created: {task_id} - {stock_code} {stock_name}")
 
         except Exception as e:
-            logger.error(f"    ❌ [{idx}/{len(stocks)}] 创建任务失败: {stock_code} {stock_name}, 错误: {e}")
+            logger.error(f"    ❌ [{idx}/{len(stocks)}] Failed to create task: {stock_code} {stock_name}, Error: {e}")
             task_mapping.append({
                 "stock_code": stock_code,
                 "stock_name": stock_name,
@@ -337,16 +337,16 @@ async def analyze_user_watchlist_batch(
                 "error": str(e)
             })
 
-    logger.info(f"  ✅ 任务创建完成: 成功 {len(task_ids)}/{len(stocks)}")
+    logger.info(f"  ✅ Task creation completed: success {len(task_ids)}/{len(stocks)}")
 
-    # 第二步：将任务提交到队列，由 Worker 统一管理并发
+    # Step 2: Submit the task to the queue, and the Worker will uniformly manage concurrency
     if task_ids:
-        logger.info(f"  🚀 [v2.0引擎] 开始提交 {len(task_ids)} 个分析任务到队列...")
+        logger.info(f"  🚀 [v2.0 engine] Start submitting {len(task_ids)} analysis tasks to queue...")
         
         from app.services.queue_service import get_queue_service
         queue_service = get_queue_service()
         
-        # 生成批次ID（用于定时分析批次）
+        # Generate batch ID (for scheduled batch analysis)
         batch_id = str(uuid.uuid4())
         
         for item in task_mapping:
@@ -354,41 +354,41 @@ async def analyze_user_watchlist_batch(
                 task_id = item["task_id"]
                 stock_code = item["stock_code"]
                 
-                # 准备队列参数
+                # Prepare queue parameters
                 queue_params = {
                     "task_id": task_id,
                     "symbol": stock_code,
                     "stock_code": stock_code,
                     "user_id": user_id,
                     "batch_id": batch_id,
-                    "engine": "v2",  # v2 引擎
+                    "engine": "v2",  # v2 engine
                     "analysis_date": analysis_date,
-                    "research_depth": depth_mapping.get(analysis_depth, "标准"),
+                    "research_depth": depth_mapping.get(analysis_depth, "Standard"),
                     "quick_analysis_model": quick_analysis_model,
                     "deep_analysis_model": deep_analysis_model
                 }
                 
                 try:
-                    # 提交任务到队列（会自动检查并发限制）
+                    # Submit tasks to the queue (will automatically check concurrency limits)
                     await queue_service.enqueue_task(
                         user_id=user_id,
                         symbol=stock_code,
                         params=queue_params,
                         batch_id=batch_id,
-                        task_id=task_id  # 使用已创建的任务ID
+                        task_id=task_id  # Use an already created task ID
                     )
                     submitted_count += 1
                     submitted_task_ids.append(task_id)
-                    logger.info(f"    ✅ [v2.0引擎] 任务已入队: {task_id} - {stock_code}")
+                    logger.info(f"    ✅ [v2.0 engine] The task has been queued: {task_id} - {stock_code}")
                 except ValueError as e:
-                    # 并发限制错误
+                    # Concurrency limit error
                     failed_count += 1
-                    logger.warning(f"    ⚠️ [v2.0引擎] 任务入队失败（并发限制）: {task_id} - {stock_code}, 错误: {e}")
+                    logger.warning(f"    ⚠️ [v2.0 engine] Task enqueue failed (concurrency limit): {task_id} - {stock_code}, Error: {e}")
                 except Exception as e:
                     failed_count += 1
-                    logger.error(f"    ❌ [v2.0引擎] 任务入队失败: {task_id} - {stock_code}, 错误: {e}", exc_info=True)
+                    logger.error(f"    ❌ [v2.0 engine] Task enqueue failed: {task_id} - {stock_code}, Error: {e}", exc_info=True)
         
-        logger.info(f"  ✅ 已提交 {submitted_count} 个任务到队列，失败 {failed_count} 个")
+        logger.info(f"  ✅ Submitted {submitted_count} Tasks were queued and failed. {failed_count} a")
 
     return {
         "total": len(stocks),
@@ -409,7 +409,7 @@ async def send_completion_notification(
     send_in_app_notification: bool = True,
     send_email_notification: bool = True,
 ):
-    """发送分析完成通知"""
+    """Send analysis completion notification"""
     notifications_service = NotificationsService()
     has_detailed_results = bool(results)
     analysis_time = analysis_time or datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -417,20 +417,20 @@ async def send_completion_notification(
     if has_detailed_results:
         if success > 0:
             severity = "success" if failed == 0 else "warning"
-            title = "股票关注列表定时分析完成"
-            content = f"已完成 {success}/{total} 只股票的分析"
+            title = "Stock watch list scheduled analysis completed"
+            content = f"Completed {success}/{total} Stock analysis"
             if failed > 0:
-                content += f"，{failed} 只分析失败"
+                content += f", {failed} Only analysis failed"
         else:
             severity = "error"
-            title = "股票关注列表定时分析失败"
-            content = f"全部 {total} 只股票分析失败"
+            title = "Stock watch list scheduled analysis failed"
+            content = f"All {total} Only stock analysis failed"
     else:
         severity = "info" if success > 0 else "error"
-        title = "股票关注列表定时分析已启动"
-        content = f"已提交 {success}/{total} 只股票的分析任务"
+        title = "Stock watch list scheduled analysis has started"
+        content = f"Submitted {success}/{total} Stock analysis tasks"
         if failed > 0:
-            content += f"，{failed} 只提交失败"
+            content += f", {failed} Only submission failed"
 
     notification = NotificationCreate(
         user_id=user_id,
@@ -460,11 +460,11 @@ async def send_completion_notification(
     if send_in_app_notification:
         try:
             await notifications_service.create_and_publish(notification)
-            logger.info(f"📬 已发送分析通知给用户 {user_id}")
+            logger.info(f"📬 Analysis notification sent to user {user_id}")
         except Exception as e:
-            logger.error(f"❌ 发送通知失败: {e}")
+            logger.error(f"❌ Failed to send notification: {e}")
 
-    # 发送邮件通知（如果用户启用了邮件通知）
+    # Send email notifications (if the user has enabled email notifications)
     if not send_email_notification or not has_detailed_results:
         return
 
@@ -473,7 +473,7 @@ async def send_completion_notification(
         from app.models.email import EmailType
         email_service = get_email_service()
 
-        # 统计推荐结果
+        # Statistical recommendation results
         buy_count = 0
         hold_count = 0
         sell_count = 0
@@ -482,10 +482,10 @@ async def send_completion_notification(
 
         await email_service.send_analysis_email(
             user_id=user_id,
-            email_type=EmailType.SCHEDULED_ANALYSIS,  # 🔥 修复：使用枚举而不是字符串
+            email_type=EmailType.SCHEDULED_ANALYSIS,  # 🔥 Fix: use enum instead of string
             template_name="scheduled_report",
             template_data={
-                "task_name": "股票关注列表定时分析",
+                "task_name": "Stock watch list timing analysis",
                 "analysis_date": analysis_time,
                 "total_count": total,
                 "success_count": success,
@@ -493,28 +493,28 @@ async def send_completion_notification(
                 "buy_count": buy_count,
                 "hold_count": hold_count,
                 "sell_count": sell_count,
-                "stocks": results[:10],  # 只发送前10只股票的详情
+                "stocks": results[:10],  # Only send details of the first 10 stocks
                 "detail_url": "/analysis/history"
             },
             reference_id=f"scheduled_{datetime.now().strftime('%Y%m%d%H%M%S')}",
             attachments=attachments,
         )
-        logger.info(f"📧 已尝试发送定时分析完成邮件给用户 {user_id}")
+        logger.info(f"📧 An attempt has been made to send a scheduled analysis completion email to the user. {user_id}")
     except Exception as email_err:
-        logger.warning(f"⚠️ 发送邮件通知失败(忽略): {email_err}")
+        logger.warning(f"⚠️ Failed to send email notification(ignore): {email_err}")
 
 
 async def run_watchlist_analysis():
     """
-    定时分析股票关注列表任务 - 主入口
+    Regular analysis of stock watch list tasks - Main entrance
 
-    由 APScheduler 定时触发调用。
-    遍历所有有股票关注列表的用户，为每个用户分析其股票关注列表。
+    Called periodically by APScheduler.
+    Iterate through all users who have stock watch lists and analyze their stock watch lists for each user.
     """
     global _is_running
 
     if _is_running:
-        logger.warning("⚠️ 股票关注列表定时分析任务正在运行中，跳过本次执行")
+        logger.warning("⚠️ The stock watch list scheduled analysis task is running, skip this execution")
         return
 
     _is_running = True
@@ -522,8 +522,8 @@ async def run_watchlist_analysis():
     analysis_date = start_time.strftime("%Y-%m-%d")
 
     logger.info("=" * 60)
-    logger.info("🚀 开始执行股票关注列表定时分析任务")
-    logger.info(f"   分析日期: {analysis_date}")
+    logger.info("🚀 Start executing stock watch list scheduled analysis tasks")
+    logger.info(f"   Analysis date: {analysis_date}")
     logger.info("=" * 60)
 
     total_stocks = 0
@@ -531,33 +531,33 @@ async def run_watchlist_analysis():
     total_failed = 0
 
     try:
-        # 🔥 获取系统默认模型配置（从数据库）
+        # 🔥 Get system default model configuration (from database)
         system_default_models = await get_system_default_models()
         default_quick_model = system_default_models.get("quick_analysis_model", "qwen-plus")
         default_deep_model = system_default_models.get("deep_analysis_model", "qwen-max")
         
-        logger.info(f"📋 系统默认模型配置: 快速={default_quick_model}, 深度={default_deep_model}")
+        logger.info(f"📋 System default model configuration: fast={default_quick_model}, Depth={default_deep_model}")
         
-        # 获取所有用户的股票关注列表列表
+        # Get a list of all users' stock watchlists
         watchlist_data = await get_watchlist_stocks()
 
         if not watchlist_data:
-            logger.info("📭 没有找到任何用户的股票关注列表，任务结束")
+            logger.info("📭 No user s stock watchlist found, task ended")
             return
 
-        logger.info(f"📊 共 {len(watchlist_data)} 个用户有股票关注列表")
+        logger.info(f"📊 total {len(watchlist_data)} Users have stock watchlists")
 
-        # 遍历每个用户
+        # Iterate through each user
         for user_idx, user_data in enumerate(watchlist_data, 1):
             user_id = user_data["user_id"]
             stocks = user_data["stocks"]
             user_total = len(stocks)
 
             logger.info("-" * 40)
-            logger.info(f"👤 [{user_idx}/{len(watchlist_data)}] 用户: {user_id}")
-            logger.info(f"📊 待分析股票数: {user_total}")
+            logger.info(f"👤 [{user_idx}/{len(watchlist_data)}] User: {user_id}")
+            logger.info(f"📊 Number of stocks to be analyzed: {user_total}")
 
-            # 使用批量分析方法（并发执行），使用系统默认模型
+            # Use the batch analysis method (concurrent execution) and use the system default model
             batch_result = await analyze_user_watchlist_batch(
                 user_id=user_id,
                 stocks=stocks,
@@ -569,14 +569,14 @@ async def run_watchlist_analysis():
             user_success = batch_result["created"]
             user_failed = batch_result["failed"]
 
-            # 累计统计
+            # Cumulative statistics
             total_stocks += user_total
             total_success += user_success
             total_failed += user_failed
 
-            # 发送通知给该用户
-            # 注意：由于是并发执行，这里发送通知时任务可能还在执行中
-            # 可以考虑在所有任务完成后再发送通知，或者在通知中说明"已启动分析"
+            # Send notification to this user
+            # Note: Due to concurrent execution, the task may still be executing when the notification is sent here.
+            # Consider waiting until all tasks are completed before sending the notification, or stating this in the notification"Analysis started"
             await send_completion_notification(
                 user_id=user_id,
                 total=user_total,
@@ -598,35 +598,35 @@ async def run_watchlist_analysis():
                     )
                 )
 
-            logger.info(f"  ✅ 用户 {user_id} 批量分析已启动: 成功创建 {user_success} 个任务, 失败 {user_failed} 个")
+            logger.info(f"  ✅ User {user_id} Batch analysis started: Created successfully {user_success} tasks, failed {user_failed} a")
 
-        # 计算总耗时
+        # Calculate total time
         elapsed = (datetime.now() - start_time).total_seconds()
 
         logger.info("=" * 60)
-        logger.info("✅ 股票关注列表定时分析任务全部完成")
-        logger.info(f"   用户数: {len(watchlist_data)}")
-        logger.info(f"   总分析股票数: {total_stocks}")
-        logger.info(f"   总成功: {total_success}, 总失败: {total_failed}")
-        logger.info(f"   总耗时: {elapsed:.2f} 秒")
+        logger.info("✅ Stock watch list scheduled analysis tasks are all completed")
+        logger.info(f"   Number of users: {len(watchlist_data)}")
+        logger.info(f"   Total number of stocks analyzed: {total_stocks}")
+        logger.info(f"   total success: {total_success}, total failure: {total_failed}")
+        logger.info(f"   Total time spent: {elapsed:.2f} seconds")
         logger.info("=" * 60)
 
     except Exception as e:
-        logger.error(f"❌ 股票关注列表定时分析任务执行失败: {e}", exc_info=True)
+        logger.error(f"❌ Stock watch list scheduled analysis task execution failed: {e}", exc_info=True)
     finally:
         _is_running = False
 
 
 async def get_system_default_models() -> Dict[str, str]:
     """
-    从数据库获取系统默认的分析模型配置
+    Obtain the system default analysis model configuration from the database
     
     Returns:
-        包含 quick_analysis_model 和 deep_analysis_model 的字典
+        Dictionary containing quick_analysis_model and deep_analysis_model
     """
     try:
         db = get_mongo_db()
-        # 获取活动的系统配置
+        # Get active system configuration
         system_config = await db.system_configs.find_one(
             {"is_active": True},
             sort=[("version", -1)]
@@ -639,9 +639,9 @@ async def get_system_default_models() -> Dict[str, str]:
                 "deep_analysis_model": system_settings.get("deep_analysis_model", "qwen-max")
             }
     except Exception as e:
-        logger.warning(f"⚠️ 获取系统默认模型配置失败: {e}，使用代码默认值")
+        logger.warning(f"⚠️ Failed to obtain system default model configuration: {e}, Use code defaults")
     
-    # 如果获取失败，返回代码默认值
+    # If the acquisition fails, return code default value
     return {
         "quick_analysis_model": "qwen-plus",
         "deep_analysis_model": "qwen-max"
@@ -657,18 +657,18 @@ async def _execute_general_workflow_slot(
     db,
 ):
     """
-    执行通用研究工作流时间段任务
+    Execute common research workflow time period tasks
 
-    当时间段配置了 workflow_id 时调用此函数，使用 workflow_params 中的
-    analysis_target 和 custom_params 作为工作流输入。
+    This function is called when the time period is configured with workflow_id, using the workflow_params in
+    analysis_target and custom_params as workflow inputs.
 
     Args:
-        config_id: 配置ID
-        user_id: 用户ID
-        slot: 时间段配置
-        workflow_id: 工作流ID
-        config: 完整配置文档
-        db: MongoDB 数据库句柄
+        config_id: Configuration ID
+        user_id: User ID
+        slot: Time period configuration
+        workflow_id: Workflow ID
+        config: Complete configuration documentation
+        db: MongoDB Database handle
     """
     from app.services.task_analysis_service import get_task_analysis_service
     from app.models.analysis import AnalysisTaskType
@@ -677,33 +677,33 @@ async def _execute_general_workflow_slot(
     from bson import ObjectId
     import asyncio
 
-    logger.info(f"📋 通用研究流程执行参数:")
+    logger.info(f"📋 Common research process execution parameters:")
     workflow_params = slot.get("workflow_params") or {}
     analysis_target = workflow_params.get("analysis_target", "") or ""
     custom_params = workflow_params.get("custom_params") or {}
 
-    logger.info(f"   分析目标: {analysis_target}")
-    logger.info(f"   自定义参数: {custom_params}")
+    logger.info(f"   Analyze goals: {analysis_target}")
+    logger.info(f"   Custom parameters: {custom_params}")
 
     if not analysis_target:
-        logger.warning(f"⚠️ 未配置分析目标，跳过执行")
-        # 记录失败历史
+        logger.warning(f"⚠️ Analysis target not configured, execution skipped")
+        # Record failure history
         try:
             history_doc = {
                 "config_id": config_id,
-                "config_name": config.get("name", "未命名"),
-                "time_slot_name": slot.get("name", "未命名"),
+                "config_name": config.get("name", "Unnamed"),
+                "time_slot_name": slot.get("name", "Unnamed"),
                 "created_at": now_tz(),
                 "status": "failed",
                 "total_count": 0,
                 "success_count": 0,
                 "failed_count": 0,
                 "task_ids": [],
-                "result_summary": "未配置分析目标"
+                "result_summary": "No analysis target configured"
             }
             await db.scheduled_analysis_history.insert_one(history_doc)
         except Exception as e:
-            logger.error(f"❌ 记录失败历史失败: {e}")
+            logger.error(f"❌ Record failure history failure: {e}")
         return
 
     total_success = 0
@@ -714,7 +714,7 @@ async def _execute_general_workflow_slot(
         task_service = get_task_analysis_service()
         analysis_date = datetime.now().strftime("%Y-%m-%d")
 
-        # 🆕 查询工作流的 input_config，用于补充默认参数
+        # 🆕 Query the input_config of the workflow to supplement the default parameters
         from app.core.database import get_mongo_db
         db = get_mongo_db()
         wf_doc = await db.workflows.find_one(
@@ -723,16 +723,16 @@ async def _execute_general_workflow_slot(
         )
         input_config = wf_doc.get("input_config") if wf_doc else None
 
-        # 构建任务参数：分析目标作为 ticker，合并 custom_params
+        # Build task parameters: analysis target as ticker, merge custom_params
         task_params = {
             "symbol": analysis_target,
             "stock_code": analysis_target,
             "analysis_date": analysis_date,
-            "task_category": "general",  # 🆕 标记为通用研究任务
-            **custom_params,  # 合并自定义参数
+            "task_category": "general",  # 🆕 Marked as a general research task
+            **custom_params,  # Merge custom parameters
         }
 
-        # 🆕 根据 input_config.fields 的 default 值补充缺失参数
+        # 🆕 Supplement missing parameters based on the default value of input_config.fields
         if input_config and isinstance(input_config, dict):
             fields = input_config.get("fields", [])
             for field in fields:
@@ -742,18 +742,18 @@ async def _execute_general_workflow_slot(
                     if default_val is not None:
                         task_params[fname] = default_val
 
-        # 通用兜底参数
-        task_params.setdefault("research_depth", "标准")
+        # General parameters
+        task_params.setdefault("research_depth", "Standard")
         task_params.setdefault("market_type", "cn")
 
-        # 获取用户风险偏好
+        # Obtain user risk preference
         try:
             from app.routers.analysis import get_user_risk_preference
             preference_type = await get_user_risk_preference(user_id)
         except Exception:
             preference_type = "default"
 
-        logger.info(f"🚀 创建通用研究任务: workflow_id={workflow_id}, target={analysis_target}")
+        logger.info(f"🚀 Create a general research task: workflow_id={workflow_id}, target={analysis_target}")
 
         task = await task_service.create_task(
             user_id=PyObjectId(user_id),
@@ -764,29 +764,29 @@ async def _execute_general_workflow_slot(
             workflow_id=workflow_id,
         )
 
-        # 异步执行任务
+        # Execute tasks asynchronously
         asyncio.create_task(task_service.execute_task(task))
 
         all_task_ids.append(task.task_id)
         total_success += 1
-        logger.info(f"✅ 通用研究任务已创建: task_id={task.task_id}")
+        logger.info(f"✅ Generic research task created: task_id={task.task_id}")
 
     except Exception as e:
         total_failed += 1
-        logger.error(f"❌ 创建通用研究任务失败: {e}", exc_info=True)
+        logger.error(f"❌ Failed to create universal research task: {e}", exc_info=True)
 
-    # 更新配置的最后运行时间
+    # Update configuration last run time
     await db.scheduled_analysis_configs.update_one(
         {"_id": ObjectId(config_id)},
         {"$set": {"last_run_at": now_tz()}}
     )
 
-    # 记录执行历史
+    # Record execution history
     try:
         history_doc = {
             "config_id": config_id,
-            "config_name": config.get("name", "未命名"),
-            "time_slot_name": slot.get("name", "未命名"),
+            "config_name": config.get("name", "Unnamed"),
+            "time_slot_name": slot.get("name", "Unnamed"),
             "created_at": now_tz(),
             "status": "success" if total_failed == 0 else ("failed" if total_success == 0 else "partial"),
             "total_count": total_success + total_failed,
@@ -797,37 +797,37 @@ async def _execute_general_workflow_slot(
         }
         await db.scheduled_analysis_history.insert_one(history_doc)
     except Exception as e:
-        logger.error(f"❌ 记录执行历史失败: {e}")
+        logger.error(f"❌ Recording execution history failed: {e}")
 
     logger.info("=" * 70)
-    logger.info(f"✅ 通用研究流程时间段任务完成")
-    logger.info(f"   成功启动: {total_success} 个任务")
-    logger.info(f"   失败: {total_failed} 个")
+    logger.info(f"✅ The general research process time period task is completed")
+    logger.info(f"   Successfully started: {total_success} tasks")
+    logger.info(f"   failed: {total_failed} a")
     logger.info("=" * 70)
 
 
 async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: int):
     """
-    执行定时分析时间段任务 - 新版（支持分组和自定义参数）
+    Execute scheduled analysis time period tasks - new version (supports grouping and custom parameters)
 
     Args:
-        config_id: 配置ID
-        user_id: 用户ID
-        slot_index: 时间段索引
+        config_id: Configuration ID
+        user_id: User ID
+        slot_index: time period index
     """
     logger.info("=" * 70)
-    logger.info(f"🚀 开始执行定时分析时间段任务")
-    logger.info(f"   配置ID: {config_id}")
-    logger.info(f"   用户ID: {user_id}")
-    logger.info(f"   时间段索引: {slot_index}")
+    logger.info(f"🚀 Start executing scheduled analysis time period tasks")
+    logger.info(f"   Configuration ID: {config_id}")
+    logger.info(f"   User ID: {user_id}")
+    logger.info(f"   time period index: {slot_index}")
     logger.info("=" * 70)
 
     try:
-        # 🔥 获取系统默认模型配置（从数据库）
+        # 🔥 Get system default model configuration (from database)
         system_default_models = await get_system_default_models()
-        logger.info(f"📋 系统默认模型配置: 快速={system_default_models.get('quick_analysis_model', 'qwen-plus')}, 深度={system_default_models.get('deep_analysis_model', 'qwen-max')}")
+        logger.info(f"📋 System default model configuration: fast={system_default_models.get('quick_analysis_model', 'qwen-plus')}, Depth={system_default_models.get('deep_analysis_model', 'qwen-max')}")
         
-        # 获取配置
+        # Get configuration
         from bson import ObjectId
         config = await get_mongo_db().scheduled_analysis_configs.find_one({
             "_id": ObjectId(config_id),
@@ -835,30 +835,30 @@ async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: 
         })
 
         if not config:
-            logger.error(f"❌ 配置不存在: {config_id}")
+            logger.error(f"❌ Configuration does not exist: {config_id}")
             return
 
         if not config.get("enabled"):
-            logger.warning(f"⚠️ 配置已禁用: {config_id}")
+            logger.warning(f"⚠️ Configuration is disabled: {config_id}")
             return
 
         time_slots = config.get("time_slots", [])
         if slot_index >= len(time_slots):
-            logger.error(f"❌ 时间段索引超出范围: {slot_index}")
+            logger.error(f"❌ Time period index out of range: {slot_index}")
             return
 
         slot = time_slots[slot_index]
         if not slot.get("enabled", True):
-            logger.warning(f"⚠️ 时间段已禁用: {slot.get('name')}")
+            logger.warning(f"⚠️ Time period disabled: {slot.get('name')}")
             return
 
-        logger.info(f"📅 时间段: {slot.get('name')}")
-        logger.info(f"📋 分组数量: {len(slot.get('group_ids', []))}")
+        logger.info(f"📅 time period: {slot.get('name')}")
+        logger.info(f"📋 Number of groups: {len(slot.get('group_ids', []))}")
 
-        # 🆕 分支：若配置了通用研究流程，则调用工作流执行（跳过分组股票分析）
+        # 🆕 Branch: If a general research process is configured, workflow execution is called (skipping grouped stock analysis)
         workflow_id = slot.get("workflow_id")
         if workflow_id:
-            logger.info(f"🎯 检测到通用研究流程配置: workflow_id={workflow_id}")
+            logger.info(f"🎯 Generic research process configuration detected: workflow_id={workflow_id}")
             await _execute_general_workflow_slot(
                 config_id=config_id,
                 user_id=user_id,
@@ -869,19 +869,19 @@ async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: 
             )
             return
 
-        # 获取要分析的分组ID列表
+        # Get a list of group IDs to analyze
         group_ids = slot.get("group_ids", [])
         
-        # 如果没有指定分组，尝试使用配置的默认分组
+        # If no grouping is specified, try to use the configured default grouping
         if not group_ids:
             group_ids = config.get("default_group_ids", [])
             
-        # 如果仍然没有指定分组，则跳过
+        # If still no grouping specified, skip
         if not group_ids:
-            logger.warning(f"⚠️ 时间段未配置分组: {slot.get('name')}")
+            logger.warning(f"⚠️ No grouping is configured for the time period: {slot.get('name')}")
             return
 
-        # 获取分组信息
+        # Get group information
         db = get_mongo_db()
         groups = []
         for group_id in group_ids:
@@ -894,49 +894,49 @@ async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: 
                 if group:
                     groups.append(group)
             except Exception as e:
-                logger.error(f"❌ 获取分组失败: {group_id} - {e}")
+                logger.error(f"❌ Failed to get group: {group_id} - {e}")
 
         if not groups:
-            logger.warning(f"⚠️ 没有找到有效的分组")
+            logger.warning(f"⚠️ No valid group found")
             return
 
-        logger.info(f"✅ 找到 {len(groups)} 个有效分组")
+        logger.info(f"✅ found {len(groups)} valid groups")
 
-        # 统计
+        # statistics
         total_stocks = 0
         total_success = 0
         total_failed = 0
         all_task_ids = []
 
-        # 为每个分组执行分析
+        # Perform analysis for each grouping
         for group in groups:
-            group_name = group.get("name", "未命名")
+            group_name = group.get("name", "Unnamed")
             stock_codes = group.get("stock_codes", [])
 
             if not stock_codes:
-                logger.info(f"  📁 分组 [{group_name}] 没有股票，跳过")
+                logger.info(f"  📁 Group [{group_name}] No stocks, skip")
                 continue
 
-            logger.info(f"  📁 分组 [{group_name}]: {len(stock_codes)} 只股票")
+            logger.info(f"  📁 Group [{group_name}]: {len(stock_codes)} only stocks")
 
-            # 确定分析参数（优先级：时间段 > 分组 > 配置默认值）
+            # Determine analysis parameters (priority: time period > Group > configuration default value)
             analysis_depth = (
                 slot.get("analysis_depth") or
                 group.get("analysis_depth") or
                 config.get("default_analysis_depth", 3)
             )
-            # 🔥 确定分析模型：直接使用系统默认值（前端界面没有配置这些字段的地方）
+            # 🔥 Determine the analysis model: use the system default values directly (there is no place to configure these fields in the front-end interface)
             quick_model = system_default_models.get("quick_analysis_model", "qwen-plus")
             deep_model = system_default_models.get("deep_analysis_model", "qwen-max")
 
-            logger.info(f"     分析深度: {analysis_depth}")
-            logger.info(f"     快速模型: {quick_model} (系统默认值)")
-            logger.info(f"     深度模型: {deep_model} (系统默认值)")
+            logger.info(f"     Analysis depth: {analysis_depth}")
+            logger.info(f"     quick model: {quick_model} (system default)")
+            logger.info(f"     deep model: {deep_model} (system default)")
 
-            # 构建股票列表
+            # Build a stock list
             stocks = [{"stock_code": code} for code in stock_codes]
 
-            # 执行批量分析
+            # Perform batch analysis
             batch_result = await analyze_user_watchlist_batch(
                 user_id=user_id,
                 stocks=stocks,
@@ -956,9 +956,9 @@ async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: 
             if batch_result.get("task_ids"):
                 all_task_ids.extend(batch_result["task_ids"])
 
-            logger.info(f"     ✅ 成功: {group_success}, 失败: {group_failed}")
+            logger.info(f"     ✅ success: {group_success}, failed: {group_failed}")
 
-        # 发送通知
+        # Send notification
         await send_completion_notification(
             user_id=user_id,
             total=total_stocks,
@@ -980,19 +980,19 @@ async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: 
                 )
             )
 
-        # 更新配置的最后运行时间
+        # Update configuration last run time
         from app.utils.timezone import now_tz
         await db.scheduled_analysis_configs.update_one(
             {"_id": ObjectId(config_id)},
             {"$set": {"last_run_at": now_tz()}}
         )
         
-        # 记录执行历史
+        # Record execution history
         try:
             history_doc = {
                 "config_id": config_id,
-                "config_name": config.get("name", "未命名"),
-                "time_slot_name": slot.get("name", "未命名"),
+                "config_name": config.get("name", "Unnamed"),
+                "time_slot_name": slot.get("name", "Unnamed"),
                 "created_at": now_tz(),
                 "status": "success" if total_failed == 0 else ("failed" if total_success == 0 else "partial"),
                 "total_count": total_stocks,
@@ -1003,47 +1003,47 @@ async def run_scheduled_analysis_slot(config_id: str, user_id: str, slot_index: 
             }
             await db.scheduled_analysis_history.insert_one(history_doc)
         except Exception as e:
-            logger.error(f"❌ 记录执行历史失败: {e}")
+            logger.error(f"❌ Recording execution history failed: {e}")
 
         logger.info("=" * 70)
-        logger.info(f"✅ 定时分析时间段任务完成")
-        logger.info(f"   总股票数: {total_stocks}")
-        logger.info(f"   成功启动: {total_success} 个分析任务")
-        logger.info(f"   失败: {total_failed} 个")
+        logger.info(f"✅ Scheduled analysis time period task completed")
+        logger.info(f"   Total number of shares: {total_stocks}")
+        logger.info(f"   Successfully started: {total_success} analysis tasks")
+        logger.info(f"   failed: {total_failed} a")
         logger.info("=" * 70)
 
     except Exception as e:
-        logger.error(f"❌ 定时分析时间段任务执行失败: {e}", exc_info=True)
+        logger.error(f"❌ Scheduled analysis time period task execution failed: {e}", exc_info=True)
 
-        # 记录失败历史，确保前端能看到执行失败记录
+        # Record failure history to ensure that the front end can see execution failure records
         try:
             from app.utils.timezone import now_tz
             from bson import ObjectId
             db = get_mongo_db()
             history_doc = {
                 "config_id": config_id,
-                "config_name": "未知",
-                "time_slot_name": "未知",
+                "config_name": "unknown",
+                "time_slot_name": "unknown",
                 "created_at": now_tz(),
                 "status": "failed",
                 "total_count": 0,
                 "success_count": 0,
                 "failed_count": 0,
                 "task_ids": [],
-                "result_summary": f"执行异常: {str(e)[:200]}"
+                "result_summary": f"Execution exception: {str(e)[:200]}"
             }
-            # 尝试获取配置名称
+            # Try to get the configuration name
             try:
                 config = await db.scheduled_analysis_configs.find_one({"_id": ObjectId(config_id)})
                 if config:
-                    history_doc["config_name"] = config.get("name", "未知")
+                    history_doc["config_name"] = config.get("name", "unknown")
                     time_slots = config.get("time_slots", [])
                     if slot_index < len(time_slots):
-                        history_doc["time_slot_name"] = time_slots[slot_index].get("name", "未知")
+                        history_doc["time_slot_name"] = time_slots[slot_index].get("name", "unknown")
             except Exception:
                 pass
 
             await db.scheduled_analysis_history.insert_one(history_doc)
         except Exception as hist_err:
-            logger.error(f"❌ 记录失败历史也失败: {hist_err}")
+            logger.error(f"❌ Recording failure history also failed: {hist_err}")
 

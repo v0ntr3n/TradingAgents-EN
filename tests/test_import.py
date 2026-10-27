@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
 """
-测试模块导入
+Test module import
 """
 
 try:
-    print("🔄 测试基础模块导入...")
+    print("🔄 Test basic module import...")
     
-    # 测试基础模块
+    # Test basic modules
     from webapi.core.config import settings
-    print("✅ 配置模块导入成功")
+    print("✅ Configuration module imported successfully")
     
     from webapi.models.user import User
-    print("✅ 用户模型导入成功")
+    print("✅ User model imported successfully")
     
     from webapi.services.analysis_service import get_analysis_service
-    print("✅ 分析服务导入成功")
+    print("✅ Analysis service imported successfully")
     
-    print("🎉 所有模块导入成功！")
+    print("🎉 All modules are imported successfully!")
     
 except Exception as e:
-    print(f"❌ 导入失败: {e}")
+    print(f"❌ Import failed: {e}")
     import traceback
     traceback.print_exc()

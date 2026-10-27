@@ -1,5 +1,5 @@
 ## Description: <br>
-iFinD投研-金融资讯搜索 helps an agent semantically search market-wide financial news, public sentiment, market updates, industry activity, and company news through the iFinD/Repilot service. <br>
+iFinD Investment Research-Financial Information Search helps an agent semantically search market-wide financial news, public sentiment, market updates, industry activity, and company news through the iFinD/Repilot service. <br>
 
 This skill is ready for commercial/non-commercial use. <br>
 

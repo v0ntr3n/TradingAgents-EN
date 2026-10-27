@@ -1,6 +1,6 @@
-"""多因子选股工具。
+"""Multi-factor stock picking tool.
 
-根据用户指定的因子条件（PE、ROE、资产负债率等）对 A 股全市场进行筛选和评分。
+Screen and score the entire A-share market based on user-specified factor conditions (PE, ROE, asset-liability ratio, etc.).
 """
 
 import json
@@ -14,11 +14,11 @@ from core.tools.base import register_tool
 
 logger = logging.getLogger(__name__)
 
-# 候选池上限（按总市值取前 N 只作为筛选候选）
+# The upper limit of the candidate pool (the top N based on total market value are only used as screening candidates)
 MAX_CANDIDATES = 500
 DEFAULT_LIMIT = 30
 
-# 支持的因子及其在数据中的字段名
+# Supported factors and their field names in the data
 SUPPORTED_FACTORS = {
     "pe_ttm": {"label": "市盈率(TTM)", "source": "basic_info", "fields": ["pe_ttm", "pe"]},
     "pb": {"label": "市净率", "source": "basic_info", "fields": ["pb", "pb_mrq"]},
@@ -34,7 +34,7 @@ SUPPORTED_FACTORS = {
 
 
 def _get_db():
-    """获取同步 MongoDB 连接。"""
+    """Get a synchronous MongoDB connection."""
     from app.core.database import get_mongo_db_sync
 
     return get_mongo_db_sync()
@@ -64,7 +64,7 @@ def _safe_float(value: Any) -> Optional[float]:
 
 
 def _get_field(record: Dict[str, Any], *field_names: str) -> Optional[float]:
-    """从记录中按优先级尝试获取字段值。"""
+    """Attempts to get field values from records in order of priority."""
     for field_name in field_names:
         value = _safe_float(record.get(field_name))
         if value is not None:
@@ -73,15 +73,15 @@ def _get_field(record: Dict[str, Any], *field_names: str) -> Optional[float]:
 
 
 def _parse_criteria(criteria_json: str) -> Tuple[Dict[str, Dict[str, float]], List[str]]:
-    """解析筛选条件 JSON，返回 (条件字典, 警告列表)。"""
+    """Parse filter condition JSON and return (conditional dictionary, warning list). """
     warnings: List[str] = []
     try:
         raw = json.loads(criteria_json)
     except json.JSONDecodeError as exc:
-        raise ValueError(f"条件 JSON 解析失败: {exc}")
+        raise ValueError(f"Conditional JSON parsing failed: {exc}")
 
     if not isinstance(raw, dict):
-        raise ValueError("条件必须为 JSON 对象，如 {\"pe_ttm\": {\"min\": 0, \"max\": 20}}")
+        raise ValueError("The condition must be a JSON object, such as {\"pe_ttm\": {\"min\": 0, \"max\": 20}}")
 
     parsed: Dict[str, Dict[str, float]] = {}
     for factor_key, constraints in raw.items():
@@ -106,7 +106,7 @@ def _parse_criteria(criteria_json: str) -> Tuple[Dict[str, Dict[str, float]], Li
 
 
 def _fetch_candidate_universe() -> List[Dict[str, Any]]:
-    """从 stock_basic_info 获取候选股票池（取市值前 N 且 PE>0）。"""
+    """Get the candidate stock pool from stock_basic_info (take the top N by market capitalization and PE>0) . """
     db = _get_db()
     col = db["stock_basic_info"]
 
@@ -134,14 +134,14 @@ def _fetch_candidate_universe() -> List[Dict[str, Any]]:
 
 
 def _enrich_with_financials(stocks: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-    """为每只股票补充最近的财务指标（ROE、资产负债率等）。"""
+    """Supplement the most recent financial metrics (ROE, debt-to-asset ratio, etc.) for each stock."""
     enriched: Dict[str, Dict[str, Any]] = {}
     for stock in stocks:
         symbol = str(stock.get("symbol") or "").strip().zfill(6)
         if not symbol:
             continue
 
-        # 从 basic_info 已有的字段复制
+        # Copy from existing fields in basic_info
         enriched[symbol] = {
             "symbol": symbol,
             "name": stock.get("name", ""),
@@ -152,7 +152,7 @@ def _enrich_with_financials(stocks: List[Dict[str, Any]]) -> Dict[str, Dict[str,
             "total_mv": _safe_float(stock.get("total_mv")),
         }
 
-        # 获取财务周期数据补充 ROE、资产负债率等
+        # Obtain financial cycle data to supplement ROE, asset-liability ratio, etc.
         try:
             periods = get_stock_financial_periods(symbol, limit=1)
             if periods and isinstance(periods, list) and len(periods) > 0:
@@ -182,7 +182,7 @@ def _enrich_with_financials(stocks: List[Dict[str, Any]]) -> Dict[str, Dict[str,
                     enriched[symbol]["current_ratio"] = current_ratio
 
         except Exception:
-            pass  # 财务数据缺失不阻塞筛选
+            pass  # Missing financial data does not block screening
 
     return enriched
 
@@ -191,7 +191,7 @@ def _get_factor_value(
     stock: Dict[str, Any],
     factor_key: str,
 ) -> Optional[float]:
-    """从股票数据中获取指定因子的值。"""
+    """Gets the value of the specified factor from stock data."""
     factor_def = SUPPORTED_FACTORS.get(factor_key)
     if not factor_def:
         return None
@@ -199,7 +199,7 @@ def _get_factor_value(
 
 
 def _normalize_score(value: float, min_val: float, max_val: float) -> float:
-    """将值归一化到 0-100 分。"""
+    """Values are normalized to a scale of 0-100."""
     if max_val <= min_val:
         return 50.0
     clipped = max(min_val, min(max_val, value))
@@ -210,10 +210,10 @@ def _score_stock(
     stock: Dict[str, Any],
     criteria: Dict[str, Dict[str, float]],
 ) -> Tuple[float, Dict[str, Any], List[str]]:
-    """对单只股票打分。
+    """Score individual stocks.
 
     Returns:
-        (总分, 各因子得分和指标, 警告列表)
+        (total score, Scores and indicators for each factor, warning list)
     """
     all_warnings: List[str] = []
     factor_scores: Dict[str, Any] = {}
@@ -231,7 +231,7 @@ def _score_stock(
 
         factor_scores[factor_key] = {"value": round(value, 4)}
 
-        # 检查是否满足条件
+        # Check if conditions are met
         passed = True
         min_val = constraints.get("min")
         max_val = constraints.get("max")
@@ -247,7 +247,7 @@ def _score_stock(
             factor_scores[factor_key]["score"] = 0
             continue
 
-        # 计算归一化得分
+        # Calculate normalized score
         norm_min = min_val if min_val is not None else 0.0
         norm_max = max_val if max_val is not None else value * 2.0
         if min_val is None and max_val is not None:
@@ -269,12 +269,12 @@ def _score_stock(
     tool_id="get_multi_factor_screening",
     name="多因子选股",
     description=(
-        "根据用户指定的多因子条件从 A 股全市场筛选股票，并对每只股票进行评分。"
-        "支持的因子：pe_ttm（市盈率）、pb（市净率）、ps_ttm（市销率）、"
-        "total_mv（总市值）、roe（净资产收益率）、roa（总资产收益率）、"
-        "debt_to_assets（资产负债率）、gross_margin（毛利率）、"
-        "netprofit_margin（净利率）、current_ratio（流动比率）。"
-        "条件格式为 JSON，如 {\"pe_ttm\": {\"min\": 0, \"max\": 20}, \"roe\": {\"min\": 15}}。"
+        "Screen stocks from the entire A-share market based on user-specified multi-factor conditions and score each stock."
+        "Supported factors: pe_ttm (price-to-earnings ratio), pb (price-to-book ratio), ps_ttm (price-to-sales ratio),"
+        "total_mv (total market capitalization), roe (return on net assets), roa (return on total assets),"
+        "debt_to_assets (Asset-liability ratio), gross_margin (gross profit margin),"
+        "netprofit_margin (net interest rate), current_ratio (current ratio)."
+        "The conditional format is JSON, such as {\"pe_ttm\": {\"min\": 0, \"max\": 20}, \"roe\": {\"min\": 15}}. "
     ),
     category="fundamentals",
     is_online=False,
@@ -285,17 +285,17 @@ def _score_stock(
     output_shape="structured_json",
     preferred_for=["多因子条件选股", "全市场批量筛选", "因子评分排序"],
     when_to_use=(
-        "当需要根据多个基本面因子条件从全市场筛选股票时使用。"
-        "例如：PE<20 且 ROE>15% 且 资产负债率<50%。"
-        "候选池按总市值取前 500 只。"
+        "Use it when you need to screen stocks from the entire market based on multiple fundamental factors."
+        "For example:PE<20 and ROE>15% And the debt-to-asset ratio<50%. "
+        "The candidate pool selects the top 500 stocks based on total market capitalization."
     ),
     when_not_to_use=(
-        "不适合查询单只股票的详细基本面因子（请用 get_fundamental_factor_snapshot_tool）；"
-        "不适合技术指标选股或 K 线形态筛选。"
+        "Not suitable for querying the detailed fundamental factors of a single stock (please use get_fundamental_factor_snapshot_tool);"
+        "Not suitable for technical indicator stock selection or K-line pattern screening."
     ),
     returns=(
-        "返回 JSON 字符串，包含 criteria_applied（应用的条件）、total_screened（候选总数）、"
-        "passed（通过数）、results（排名列表，含各因子得分和总分）、data_quality（数据说明）。"
+        "Returns a JSON string, including criteria_applied (applied conditions), total_screened (total number of candidates),"
+        "passed (Number of passes), results (ranking list, including each factor score and total score), data_quality (data description)."
     ),
     example=(
         'get_multi_factor_screening(criteria=\'{"pe_ttm": {"min": 0, "max": 20}, '
@@ -308,30 +308,30 @@ def _score_stock(
     ],
 )
 def get_multi_factor_screening(
-    criteria: Annotated[str, "因子条件 JSON 字符串，例如 '{\"pe_ttm\": {\"min\": 0, \"max\": 20}, \"roe\": {\"min\": 15}}'"],
-    sort_by: Annotated[str, "排序字段：score（总分）、pe_ttm、pb、roe、total_mv，默认 score"] = "score",
-    limit: Annotated[int, "返回前 N 只股票，默认 30"] = DEFAULT_LIMIT,
+    criteria: Annotated[str, "Factor condition JSON string, e.g. '{\"pe_ttm\": {\"min\": 0, \"max\": 20}, \"roe\": {\"min\": 15}}'"],
+    sort_by: Annotated[str, "Sorting fields: score (total score), pe_ttm, pb, roe, total_mv, default score"] = "score",
+    limit: Annotated[int, "Returns the top N stocks, default 30"] = DEFAULT_LIMIT,
 ) -> str:
-    """多因子选股工具。
+    """Multi-factor stock picking tool.
 
-    从 A 股全市场（按总市值取前 500 只作为候选池）筛选满足多因子条件的股票，
-    并计算综合评分。
+    Screen the stocks that meet the multi-factor conditions from the entire A-share market (the top 500 stocks based on total market value are taken as the candidate pool),
+    and calculate the overall score.
 
     Args:
-        criteria: 因子条件 JSON
-        sort_by: 排序字段
-        limit: 返回数量
+        criteria: factor conditions JSON
+        sort_by: sort field
+        limit: Return quantity
 
     Returns:
-        JSON 字符串格式的筛选结果
+        JSON Filter results in string format
     """
     try:
         limit = max(1, min(int(limit), 100))
 
-        # 1. 解析条件
+        # 1. parsing conditions
         parsed_criteria, parse_warnings = _parse_criteria(criteria)
 
-        # 2. 获取候选池
+        # 2. Get candidate pool
         raw_candidates = _fetch_candidate_universe()
         total_candidates = len(raw_candidates)
 
@@ -339,16 +339,16 @@ def get_multi_factor_screening(
             return json.dumps(
                 {
                     "status": "error",
-                    "message": "未从 stock_basic_info 获取到有效的候选股票",
+                    "message": "No valid candidate stocks were obtained from stock_basic_info",
                 },
                 ensure_ascii=False,
                 default=str,
             )
 
-        # 3. 补充财务数据
+        # 3. Supplementary financial data
         enriched = _enrich_with_financials(raw_candidates)
 
-        # 4. 评分和筛选
+        # 4. Rating and filtering
         scored_results: List[Dict[str, Any]] = []
         all_warnings: List[str] = list(parse_warnings)
 
@@ -356,7 +356,7 @@ def get_multi_factor_screening(
             total_score, factor_scores, stock_warnings = _score_stock(stock_data, parsed_criteria)
             all_warnings.extend(stock_warnings)
 
-            # 检查是否所有条件都满足（硬筛选）
+            # Check if all conditions are met (hard filtering)
             all_passed = all(
                 fs.get("passed", False) for fs in factor_scores.values()
             )
@@ -367,7 +367,7 @@ def get_multi_factor_screening(
                     "pb": stock_data.get("pb"),
                     "total_mv": stock_data.get("total_mv"),
                 }
-                # 补充财务指标
+                # Supplementary financial indicators
                 for fin_key in ("roe", "roa", "debt_to_assets", "gross_margin", "netprofit_margin", "current_ratio"):
                     if fin_key in stock_data:
                         metrics[fin_key] = stock_data[fin_key]
@@ -381,10 +381,10 @@ def get_multi_factor_screening(
                     "metrics": {k: round(v, 4) if isinstance(v, float) else v for k, v in metrics.items() if v is not None},
                 })
 
-        # 5. 排序
+        # 5. sort
         reverse = True
         if sort_by in ("pe_ttm",):
-            reverse = False  # 估值越低越好
+            reverse = False  # The lower the valuation, the better
 
         if sort_by == "score":
             scored_results.sort(key=lambda x: x["score"], reverse=True)
@@ -411,7 +411,7 @@ def get_multi_factor_screening(
 
         top_results = scored_results[:limit]
 
-        # 6. 构建输出
+        # 6. Build output
         ranked_results = []
         for rank, item in enumerate(top_results, 1):
             ranked_results.append({
@@ -437,10 +437,10 @@ def get_multi_factor_screening(
             "data_quality": {
                 "candidates_examined": total_candidates,
                 "financial_data_enriched": len(enriched),
-                "warnings": all_warnings[:20],  # 截断过长警告
+                "warnings": all_warnings[:20],  # Truncate too long warning
                 "note": (
-                    "候选池为按总市值排序的前 500 只 A 股（pe_ttm>0 且 total_mv>0）。"
-                    "ROE、资产负债率等财务指标从最近一期财务报告获取，可能因数据同步延迟而不完整。"
+                    "The candidate pool is the top 500 A-shares sorted by total market capitalization (pe_ttm>0 and total_mv>0) . "
+                    "ROE, Financial indicators such as asset-liability ratio are obtained from the latest financial report, which may be incomplete due to data synchronization delays."
                 ),
             },
         }

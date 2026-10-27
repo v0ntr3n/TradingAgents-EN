@@ -1,19 +1,19 @@
 """
-脚本型 Skill 执行器
+Scripted Skill Executor
 
-负责执行本地脚本型 Skill（从 ClawHub 安装的 Skill 包）。
+Responsible for executing local scripted Skills (Skill packages installed from ClawHub).
 
-核心功能：
-1. {baseDir} 变量替换 - 将 Skill 包目录路径注入脚本执行环境
-2. 脚本执行 - 通过子进程执行 scripts/*.py
-3. 凭证注入 - 将配置的环境变量注入子进程（阶段 2 实现）
+Core functions:
+1. {baseDir} Variable substitution - Inject the Skill package directory path into the script execution environment
+2. Script execution - execution via subprocess scripts/*.py
+3. Credential injection - Inject configured environment variables into the child process (Phase 2 implementation)
 
-执行流程：
-    1. 从 MongoDB doc 中获取 skill_dir 和 script_path
-    2. 设置 baseDir 环境变量为 skill_dir
-    3. 注入凭证环境变量（如有）
-    4. 执行 scripts/*.py，传入参数
-    5. 捕获 stdout/stderr，返回结果
+Execution process:
+    1. Get skill_dir and script_path
+    2. Set the baseDir environment variable to skill_dir
+    3. Inject credentials environment variables (if any)
+    4. execute scripts/*.py, Pass in parameters
+    5. Capture stdout/stderr and return the result
 """
 
 import json
@@ -29,15 +29,15 @@ logger = logging.getLogger(__name__)
 
 
 class ScriptSkillExecutor:
-    """脚本型 Skill 执行器
+    """Scripted Skill Executor
 
-    用于执行从 ClawHub 安装的本地 Skill 包中的 Python 脚本。
-    支持 {baseDir} 变量替换和凭证注入。
+    Used to execute Python scripts from local Skill packages installed from ClawHub.
+    support {baseDir} Variable substitution and credential injection.
     """
 
-    # 默认执行超时（秒）
+    # Default execution timeout (seconds)
     DEFAULT_TIMEOUT = 60
-    # {baseDir} 变量名（OpenClaw 标准）
+    # {baseDir} Variable name (OpenClaw standard)
     BASE_DIR_VAR = "baseDir"
 
     @staticmethod
@@ -49,17 +49,17 @@ class ScriptSkillExecutor:
         timeout: int = DEFAULT_TIMEOUT,
         python_executable: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """以命令行参数方式执行 Skill 脚本
+        """Execute Skill script with command line parameters
 
-        适用于期望命令行参数的脚本（如 fetch_data.py "查询内容" --start-date ...）。
+        Suitable for scripts that expect command line arguments (such as fetch_data.py "Query content" --start-date ...) . 
 
         Args:
-            skill_dir: Skill 包目录绝对路径
-            script_path: 脚本相对路径（如 "scripts/fetch_data.py"）
-            args: 命令行参数列表（如 ["美联储利率政策", "--start-date", "2025-01-01T00:00:00"]）
-            credentials: 凭证环境变量
-            timeout: 超时秒数
-            python_executable: Python 解释器
+            skill_dir: Skill Package directory absolute path
+            script_path: Script relative paths (e.g. "scripts/fetch_data.py") 
+            args: A list of command line arguments (e.g. ["Federal Reserve Interest Rate Policy", "--start-date", "2025-01-01T00:00:00"]) 
+            credentials: Credential environment variables
+            timeout: Timeout seconds
+            python_executable: Python interpreter
 
         Returns:
             {success, result, stdout, stderr, error, execution_time_ms, exit_code}
@@ -72,11 +72,11 @@ class ScriptSkillExecutor:
         if not full_script_path.exists():
             return {
                 "success": False, "result": None, "stdout": "", "stderr": "",
-                "error": f"脚本文件不存在: {full_script_path}",
+                "error": f"Script file does not exist: {full_script_path}",
                 "execution_time_ms": int((time.time() - start) * 1000), "exit_code": -1,
             }
 
-        # 构建环境变量
+        # Build environment variables
         env = os.environ.copy()
         env[ScriptSkillExecutor.BASE_DIR_VAR] = str(skill_dir_path)
         if credentials:
@@ -84,8 +84,8 @@ class ScriptSkillExecutor:
                 if value is not None:
                     env[key] = str(value)
 
-        # 构建命令：python script.py arg1 arg2 ...
-        # 默认使用当前 Python 解释器（确保与项目使用同一 venv 的依赖）
+        # Build command:python script.py arg1 arg2 ...
+        # Use the current Python interpreter by default (make sure to use the same venv dependency as the project)
         if not python_executable:
             python_executable = sys.executable or "python"
         cmd = [python_executable, str(full_script_path)]
@@ -93,7 +93,7 @@ class ScriptSkillExecutor:
             cmd.extend(args)
 
         logger.info(
-            f"🔧 CLI 执行: {' '.join(cmd)} (cwd={skill_dir_path.name}, timeout={timeout}s)"
+            f"🔧 CLI execute: {' '.join(cmd)} (cwd={skill_dir_path.name}, timeout={timeout}s)"
         )
 
         try:
@@ -122,8 +122,8 @@ class ScriptSkillExecutor:
                     "exit_code": 0,
                 }
             else:
-                # 把 stderr 和 stdout 都带上，方便诊断
-                error_msg = (result.stderr or "").strip() or (result.stdout or "").strip() or f"退出码: {result.returncode}"
+                # Bring both stderr and stdout for easy diagnosis
+                error_msg = (result.stderr or "").strip() or (result.stdout or "").strip() or f"exit code: {result.returncode}"
                 return {
                     "success": False,
                     "result": None,
@@ -137,11 +137,11 @@ class ScriptSkillExecutor:
         except subprocess.TimeoutExpired:
             return {
                 "success": False, "result": None, "stdout": "", "stderr": "",
-                "error": f"执行超时（{timeout}秒）",
+                "error": f"Execution timeout ({timeout}seconds)",
                 "execution_time_ms": int((time.time() - start) * 1000), "exit_code": -1,
             }
         except Exception as e:
-            logger.error(f"❌ CLI 执行异常: {e}", exc_info=True)
+            logger.error(f"❌ CLI Execution exception: {e}", exc_info=True)
             return {
                 "success": False, "result": None, "stdout": "", "stderr": "",
                 "error": str(e),
@@ -157,21 +157,21 @@ class ScriptSkillExecutor:
         timeout: int = DEFAULT_TIMEOUT,
         python_executable: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """执行 Skill 脚本
+        """Execute skill script
 
         Args:
-            skill_dir: Skill 包目录绝对路径（用于 {baseDir} 替换）
-            script_path: 脚本相对路径（如 "scripts/fetch_data.py"）
-            args: 传递给脚本的参数（通过 stdin 传入 JSON）
-            credentials: 凭证环境变量（阶段 2 实现，当前可选）
-            timeout: 超时秒数
-            python_executable: Python 解释器路径
+            skill_dir: Skill Package directory absolute path (for {baseDir} replacement)
+            script_path: Script relative paths (e.g. "scripts/fetch_data.py") 
+            args: Parameters passed to the script (JSON via stdin)
+            credentials: Credentials environment variables (Phase 2 implementation, currently optional)
+            timeout: Timeout seconds
+            python_executable: Python interpreter path
 
         Returns:
             {
                 "success": bool,
-                "result": Any,  # stdout 解析结果
-                "stdout": str,  # 原始 stdout
+                "result": Any,  # stdout Parse results
+                "stdout": str,  # original stdout
                 "stderr": str,
                 "error": Optional[str],
                 "execution_time_ms": int,
@@ -180,7 +180,7 @@ class ScriptSkillExecutor:
         """
         start = time.time()
 
-        # 构建脚本完整路径
+        # Build script full path
         skill_dir_path = Path(skill_dir).resolve()
         full_script_path = skill_dir_path / script_path
 
@@ -190,33 +190,33 @@ class ScriptSkillExecutor:
                 "result": None,
                 "stdout": "",
                 "stderr": "",
-                "error": f"脚本文件不存在: {full_script_path}",
+                "error": f"Script file does not exist: {full_script_path}",
                 "execution_time_ms": int((time.time() - start) * 1000),
                 "exit_code": -1,
             }
 
-        # 构建环境变量
+        # Build environment variables
         env = os.environ.copy()
-        # {baseDir} 替换：将 Skill 包目录路径注入环境变量
+        # {baseDir} Replacement: Inject the Skill package directory path into the environment variable
         env[ScriptSkillExecutor.BASE_DIR_VAR] = str(skill_dir_path)
-        # 凭证注入（阶段 2 实现，当前可选）
+        # Credential injection (Phase 2 implementation, currently optional)
         if credentials:
             for key, value in credentials.items():
                 if value is not None:
                     env[key] = str(value)
 
-        # 构建命令
-        # 默认使用当前 Python 解释器（确保与项目使用同一 venv 的依赖）
+        # Build command
+        # Use the current Python interpreter by default (make sure to use the same venv dependency as the project)
         if not python_executable:
             python_executable = sys.executable or "python"
         cmd = [python_executable, str(full_script_path)]
 
-        # 准备输入参数（通过 stdin 传入 JSON）
+        # Prepare input parameters (pass in JSON via stdin)
         input_data = json.dumps(args, ensure_ascii=False) if args else ""
 
         try:
             logger.info(
-                f"🔧 执行脚本型 Skill: {cmd[0]} {full_script_path.name} "
+                f"🔧 Execute script type Skill: {cmd[0]} {full_script_path.name} "
                 f"(skill_dir={skill_dir_path.name}, timeout={timeout}s)"
             )
 
@@ -235,7 +235,7 @@ class ScriptSkillExecutor:
             execution_time_ms = int((time.time() - start) * 1000)
 
             if result.returncode == 0:
-                # 尝试解析 stdout 为 JSON
+                # Try parsing stdout as JSON
                 parsed_result = ScriptSkillExecutor._parse_output(result.stdout)
                 return {
                     "success": True,
@@ -252,20 +252,20 @@ class ScriptSkillExecutor:
                     "result": None,
                     "stdout": result.stdout,
                     "stderr": result.stderr,
-                    "error": result.stderr or f"脚本退出码: {result.returncode}",
+                    "error": result.stderr or f"Script exit code: {result.returncode}",
                     "execution_time_ms": execution_time_ms,
                     "exit_code": result.returncode,
                 }
 
         except subprocess.TimeoutExpired:
             execution_time_ms = int((time.time() - start) * 1000)
-            logger.warning(f"⏰ 脚本执行超时（{timeout}s）: {full_script_path}")
+            logger.warning(f"⏰ Script execution timeout ({timeout}s) : {full_script_path}")
             return {
                 "success": False,
                 "result": None,
                 "stdout": "",
                 "stderr": "",
-                "error": f"执行超时（{timeout}秒）",
+                "error": f"Execution timeout ({timeout}seconds)",
                 "execution_time_ms": execution_time_ms,
                 "exit_code": -1,
             }
@@ -276,13 +276,13 @@ class ScriptSkillExecutor:
                 "result": None,
                 "stdout": "",
                 "stderr": "",
-                "error": f"Python 解释器不存在: {python_executable} ({e})",
+                "error": f"Python Interpreter does not exist: {python_executable} ({e})",
                 "execution_time_ms": execution_time_ms,
                 "exit_code": -1,
             }
         except Exception as e:
             execution_time_ms = int((time.time() - start) * 1000)
-            logger.error(f"❌ 脚本执行异常: {e}", exc_info=True)
+            logger.error(f"❌ Script execution exception: {e}", exc_info=True)
             return {
                 "success": False,
                 "result": None,
@@ -295,25 +295,25 @@ class ScriptSkillExecutor:
 
     @staticmethod
     def replace_base_dir(text: str, skill_dir: str) -> str:
-        """替换文本中的 Skill 包目录变量
+        """Replace Skill package directory variable in text
 
-        OpenClaw Skill 标准中，脚本和指令使用以下变量引用 Skill 包根目录：
-        - {baseDir} - OpenClaw 官方标准变量
-        - ${baseDir} - Shell 风格变量
-        - <skill_dir> - 部分 ClawHub Skill 使用的变量（如 ifind-repilot）
+        OpenClaw Skill In the standard, scripts and directives reference the Skill package root using the following variables:
+        - {baseDir} - OpenClaw official standard variables
+        - ${baseDir} - Shell style variables
+        - <skill_dir> - Variables used by some ClawHub Skills (such as ifind-repilot)
 
-        此函数将所有这些变量替换为实际的 skill_dir 路径。
+        This function replaces all these variables with the actual skill_dir path.
 
         Args:
-            text: 包含变量的文本
-            skill_dir: Skill 包目录绝对路径
+            text: text containing variables
+            skill_dir: Skill Package directory absolute path
 
         Returns:
-            替换后的文本
+            Replaced text
         """
         if not text:
             return text
-        # 统一路径分隔符（Windows 兼容）
+        # Unified path separator (Windows compatible)
         normalized_dir = skill_dir.replace("\\", "/")
         return (
             text
@@ -324,28 +324,28 @@ class ScriptSkillExecutor:
 
     @staticmethod
     def prepare_script_args(skill_doc: Dict[str, Any], call_args: Dict[str, Any]) -> Dict[str, Any]:
-        """准备脚本调用参数
+        """Prepare script call parameters
 
-        从 Skill doc 中提取 skill_dir 和 script_path，
-        并对参数值进行 {baseDir} 替换。
+        Extract skill_dir and script_path from Skill doc,
+        and perform parameter values {baseDir} Replace.
 
         Args:
-            skill_doc: MongoDB 中的 Skill 文档
-            call_args: 调用参数
+            skill_doc: MongoDB Skill documentation in
+            call_args: Call parameters
 
         Returns:
             {
                 "skill_dir": str,
                 "script_path": str,
-                "args": Dict (已替换 {baseDir}),
-                "credentials": Dict (从 doc 提取，阶段 2 实现)
+                "args": Dict (replaced {baseDir}),
+                "credentials": Dict (Extracted from doc, stage 2 implementation)
             }
         """
         skill_dir = skill_doc.get("skill_dir", "")
         impl = skill_doc.get("implementation") or {}
         script_path = impl.get("script_path", "")
 
-        # 对参数值进行 {baseDir} 替换
+        # Perform on parameter values {baseDir} replace
         prepared_args = {}
         for key, value in call_args.items():
             if isinstance(value, str):
@@ -357,33 +357,33 @@ class ScriptSkillExecutor:
             "skill_dir": skill_dir,
             "script_path": script_path,
             "args": prepared_args,
-            "credentials": {},  # 阶段 2 实现：从 skill_credentials 集合加载
+            "credentials": {},  # Phase 2 implementation: loading from skill_credentials collection
         }
 
     @staticmethod
     def _parse_output(stdout: str) -> Any:
-        """解析脚本输出
+        """Parse script output
 
-        优先尝试解析为 JSON，失败则返回原始字符串。
+        First try to parse to JSON, if failed, return the original string.
 
         Args:
-            stdout: 脚本标准输出
+            stdout: Script stdout
 
         Returns:
-            解析后的结果（dict/list/str）
+            Parsed result (dict/list/str)
         """
         if not stdout:
             return None
 
         stdout_stripped = stdout.strip()
 
-        # 尝试直接解析为 JSON
+        # Try parsing directly as JSON
         try:
             return json.loads(stdout_stripped)
         except (json.JSONDecodeError, ValueError):
             pass
 
-        # 尝试从输出中提取 JSON 块（可能在 markdown 代码块中）
+        # Try to extract a JSON chunk from the output (possibly in a markdown code chunk)
         import re
         json_block_match = re.search(r"```(?:json)?\s*\n(.*?)\n```", stdout_stripped, re.DOTALL)
         if json_block_match:
@@ -392,7 +392,7 @@ class ScriptSkillExecutor:
             except (json.JSONDecodeError, ValueError):
                 pass
 
-        # 尝试查找 __SANDBOX_OUTPUT_START__ / __SANDBOX_OUTPUT_END__ 标记
+        # Try looking for the __SANDBOX_OUTPUT_START__ / __SANDBOX_OUTPUT_END__ tags
         sandbox_match = re.search(
             r"__SANDBOX_OUTPUT_START__\s*(.*?)\s*__SANDBOX_OUTPUT_END__",
             stdout_stripped,
@@ -404,7 +404,7 @@ class ScriptSkillExecutor:
             except (json.JSONDecodeError, ValueError):
                 return sandbox_match.group(1).strip()
 
-        # 返回原始字符串（截断过长的输出）
+        # Return the original string (truncated output that is too long)
         if len(stdout_stripped) > 5000:
             return stdout_stripped[:5000] + "...(truncated)"
         return stdout_stripped

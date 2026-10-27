@@ -83,7 +83,7 @@ def test_project_access_supports_financial_period_schema_inspection(monkeypatch)
         "stock_financial_periods": [
             {
                 "symbol": "600519",
-                "name": "贵州茅台",
+                "name": "Kweichow Moutai",
                 "report_period": "20241231",
                 "ann_date": "20250328",
                 "source": "tushare",
@@ -91,7 +91,7 @@ def test_project_access_supports_financial_period_schema_inspection(monkeypatch)
             },
             {
                 "symbol": "600519",
-                "name": "贵州茅台",
+                "name": "Kweichow Moutai",
                 "report_period": "20240930",
                 "ann_date": "20241025",
                 "source": "tushare",
@@ -120,21 +120,21 @@ def test_inspect_symbol_documents_orders_a_share_financial_periods_by_latest_per
         "stock_financial_periods": [
             {
                 "symbol": "600519",
-                "name": "贵州茅台",
+                "name": "Kweichow Moutai",
                 "report_period": "20240930",
                 "ann_date": "20241025",
                 "source": "tushare",
             },
             {
                 "symbol": "600519",
-                "name": "贵州茅台",
+                "name": "Kweichow Moutai",
                 "report_period": "20241231",
                 "ann_date": "20250328",
                 "source": "tushare",
             },
             {
                 "symbol": "600519",
-                "name": "贵州茅台",
+                "name": "Kweichow Moutai",
                 "report_period": "20241231",
                 "ann_date": "20250320",
                 "source": "tushare",

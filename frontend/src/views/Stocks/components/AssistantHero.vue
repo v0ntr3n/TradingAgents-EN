@@ -4,14 +4,14 @@
       <div class="assistant-hero-header">
         <div class="assistant-avatar">🤖</div>
         <div>
-          <div class="assistant-hero-title">智能研究助手</div>
+          <div class="assistant-hero-title">Intelligent research assistant</div>
           <div class="assistant-hero-subtitle">
-            正在解读：{{ code }} {{ stockName || '-' }} · {{ loadedText }}
+            Interpreting:{{ code }} {{ stockName || '-' }} · {{ loadedText }}
           </div>
         </div>
       </div>
       <div class="assistant-hero-prompt">
-        我已整合该股票的 <strong>单股分析</strong>、<strong>持仓分析</strong>、<strong>交易复盘</strong>、<strong>基本面</strong> 和 <strong>K线走势</strong>，可以为你全景解读。点击右侧任一问题开始研究：
+        I have integrated the stock s <strong>single stock analysis</strong>, <strong>Position analysis</strong>, <strong>Transaction review</strong>, <strong>Fundamentals</strong> and <strong>K Line trend</strong>, Can give you a panoramic interpretation. Click on any question on the right to start researching:
       </div>
     </div>
     <div class="assistant-quick-grid">
@@ -47,19 +47,19 @@ defineEmits<{
 
 const loadedText = computed(() => {
   const loaded: string[] = []
-  if (props.hasKline) loaded.push('K线')
-  if (props.hasAnalysis) loaded.push('单股分析')
-  if (props.hasPosition) loaded.push('持仓')
-  if (props.hasReview) loaded.push('复盘')
-  if (props.hasFundamentals) loaded.push('基本面')
-  return loaded.length ? `已加载 ${loaded.join('·')}` : '正在加载数据'
+  if (props.hasKline) loaded.push('K line')
+  if (props.hasAnalysis) loaded.push('single stock analysis')
+  if (props.hasPosition) loaded.push('Position')
+  if (props.hasReview) loaded.push('Review')
+  if (props.hasFundamentals) loaded.push('Fundamentals')
+  return loaded.length ? `Loaded ${loaded.join('·')}` : 'Loading data'
 })
 
 const quickQuestions = [
-  { key: 'overview', icon: '🔗', label: '全景解读', prompt: '帮我全景分析这只股票，从分析结果、持仓、复盘整体怎么看？' },
-  { key: 'conclusion', icon: '📋', label: '分析结论', prompt: '最近一次单股分析的核心结论是什么？' },
-  { key: 'position', icon: '💼', label: '持仓视角', prompt: '结合我的持仓和复盘，下一步重点跟踪什么？' },
-  { key: 'risk', icon: '⚠️', label: '风险评估', prompt: '当前估值和基本面是否匹配？有哪些风险？' },
+  { key: 'overview', icon: '🔗', label: 'Panoramic interpretation', prompt: 'Help me analyze this stock in a panoramic manner. What do you think of the analysis results, positions, and review as a whole?' },
+  { key: 'conclusion', icon: '📋', label: 'Analysis conclusion', prompt: 'What is the core conclusion of the latest single stock analysis?' },
+  { key: 'position', icon: '💼', label: 'Position perspective', prompt: 'Combining my positions and review, what should I focus on tracking next?' },
+  { key: 'risk', icon: '⚠️', label: 'risk assessment', prompt: 'Do current valuations and fundamentals match? What are the risks?' },
 ]
 </script>
 

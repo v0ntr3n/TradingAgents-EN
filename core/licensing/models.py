@@ -1,5 +1,5 @@
 """
-授权相关数据模型
+Authorization related data model
 """
 
 from enum import Enum
@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 class LicenseTier(str, Enum):
-    """许可证级别"""
+    """License level"""
     FREE = "free"
     BASIC = "basic"
     PRO = "pro"
@@ -17,34 +17,34 @@ class LicenseTier(str, Enum):
 
 
 class LicenseFeatures(BaseModel):
-    """许可证功能定义"""
+    """License function definition"""
     
-    # 智能体限制
-    max_analysts: int = 4          # 最大分析师数量
-    max_researchers: int = 2       # 最大研究员数量
-    allow_custom_agents: bool = False  # 允许自定义智能体
+    # Agent limitations
+    max_analysts: int = 4          # Maximum number of analysts
+    max_researchers: int = 2       # Maximum number of researchers
+    allow_custom_agents: bool = False  # Allow custom agents
     
-    # 工作流限制
-    max_workflows: int = 3         # 最大保存工作流数
-    max_nodes_per_workflow: int = 10  # 每个工作流最大节点数
-    allow_workflow_export: bool = False  # 允许导出工作流
+    # Workflow restrictions
+    max_workflows: int = 3         # Maximum number of saved workflows
+    max_nodes_per_workflow: int = 10  # Maximum number of nodes per workflow
+    allow_workflow_export: bool = False  # Allow export workflow
     
-    # 高级功能
-    allow_sector_analyst: bool = False   # 行业分析师
-    allow_index_analyst: bool = False    # 大盘分析师
-    allow_parallel_execution: bool = False  # 并行执行
-    allow_memory_persistence: bool = False  # 记忆持久化
+    # Advanced features
+    allow_sector_analyst: bool = False   # Industry Analyst
+    allow_index_analyst: bool = False    # Market Analyst
+    allow_parallel_execution: bool = False  # Parallel execution
+    allow_memory_persistence: bool = False  # memory persistence
     
-    # API 限制
-    daily_api_calls: int = 100     # 每日 API 调用限制
-    max_concurrent_executions: int = 1  # 最大并发执行数
+    # API Limit
+    daily_api_calls: int = 100     # Daily API call limit
+    max_concurrent_executions: int = 1  # Maximum number of concurrent executions
     
-    # 支持
+    # support
     priority_support: bool = False
     custom_branding: bool = False
 
 
-# 预定义的功能配置
+# Predefined function configuration
 TIER_FEATURES = {
     LicenseTier.FREE: LicenseFeatures(
         max_analysts=4,
@@ -64,7 +64,7 @@ TIER_FEATURES = {
         max_concurrent_executions=2,
     ),
     LicenseTier.PRO: LicenseFeatures(
-        max_analysts=6,  # 包含 sector_analyst, index_analyst
+        max_analysts=6,  # contains sector_analyst, index_analyst
         max_researchers=2,
         allow_custom_agents=True,
         max_workflows=50,
@@ -98,24 +98,24 @@ TIER_FEATURES = {
 
 
 class License(BaseModel):
-    """许可证"""
+    """license"""
     
-    id: str                        # 许可证 ID
-    tier: LicenseTier              # 级别
+    id: str                        # license ID
+    tier: LicenseTier              # level
     
-    # 用户信息
+    # User information
     user_id: Optional[str] = None
     user_email: Optional[str] = None
     organization: Optional[str] = None
     
-    # 有效期
+    # Validity period
     issued_at: datetime = Field(default_factory=datetime.now)
     expires_at: Optional[datetime] = None
     
-    # 功能
+    # Function
     features: LicenseFeatures = Field(default_factory=LicenseFeatures)
     
-    # 状态
+    # Status
     is_active: bool = True
     
     class Config:
@@ -123,7 +123,7 @@ class License(BaseModel):
     
     @classmethod
     def create_free(cls) -> "License":
-        """创建免费许可证"""
+        """Create a free license"""
         return cls(
             id="free",
             tier=LicenseTier.FREE,
@@ -132,7 +132,7 @@ class License(BaseModel):
     
     @classmethod
     def create_for_tier(cls, tier: LicenseTier, **kwargs) -> "License":
-        """为指定级别创建许可证"""
+        """Create a license for a specified level"""
         import uuid
         return cls(
             id=str(uuid.uuid4()),
@@ -143,13 +143,13 @@ class License(BaseModel):
     
     @property
     def is_expired(self) -> bool:
-        """是否已过期"""
+        """Has it expired?"""
         if self.expires_at is None:
             return False
         return datetime.now() > self.expires_at
     
     @property
     def is_valid(self) -> bool:
-        """是否有效"""
+        """Is it valid?"""
         return self.is_active and not self.is_expired
 

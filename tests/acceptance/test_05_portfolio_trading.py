@@ -1,75 +1,75 @@
 """
-持仓与交易计划 API 验收测试
+Position and Trading Plan API Acceptance Testing
 
-覆盖:
-- GET  /api/portfolio/positions     持仓列表
-- GET  /api/paper/positions         模拟交易持仓
-- GET  /api/v1/trading-systems      交易计划列表
-- POST /api/v1/trading-systems      创建交易计划
-- GET  /api/review/periodic/history 交易复盘历史
-- POST /api/review/periodic         触发周期性复盘
+Cover:
+- GET  /api/portfolio/positions     Position list
+- GET  /api/paper/positions         Simulated trading positions
+- GET  /api/v1/trading-systems      Trading plan list
+- POST /api/v1/trading-systems      Create a trading plan
+- GET  /api/review/periodic/history Transaction review history
+- POST /api/review/periodic         Trigger periodic review
 """
 import pytest
 
 
 class TestPortfolio:
-    """持仓管理测试。"""
+    """Position management testing."""
 
     def test_get_portfolio_positions(self, api_client):
-        """获取持仓列表。"""
+        """Get the list of positions."""
         resp = api_client.get("/api/portfolio/positions")
-        assert resp.status_code == 200, f"获取持仓列表失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain position list: {resp.text}"
 
     def test_get_portfolio_statistics(self, api_client):
-        """获取持仓统计。"""
+        """Get position statistics."""
         resp = api_client.get("/api/portfolio/statistics")
-        assert resp.status_code == 200, f"获取持仓统计失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain position statistics: {resp.text}"
 
     def test_get_portfolio_account(self, api_client):
-        """获取账户信息。"""
+        """Get account information."""
         resp = api_client.get("/api/portfolio/account")
-        assert resp.status_code == 200, f"获取账户信息失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain account information: {resp.text}"
 
 
 class TestPaperTrading:
-    """模拟交易测试。"""
+    """Simulated trading test."""
 
     def test_get_paper_positions(self, api_client):
-        """获取模拟交易持仓。"""
+        """Get simulated trading positions."""
         resp = api_client.get("/api/paper/positions")
-        assert resp.status_code == 200, f"获取模拟交易持仓失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain simulated trading position: {resp.text}"
 
     def test_get_paper_account(self, api_client):
-        """获取模拟交易账户。"""
+        """Get a demo trading account."""
         resp = api_client.get("/api/paper/account")
-        assert resp.status_code == 200, f"获取模拟交易账户失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain demo trading account: {resp.text}"
 
 
 class TestTradingSystem:
-    """交易计划测试。"""
+    """Trading plan testing."""
 
     def test_get_trading_systems(self, api_client):
-        """获取交易计划列表。"""
+        """Get a list of trading plans."""
         resp = api_client.get("/api/v1/trading-systems")
-        assert resp.status_code == 200, f"获取交易计划列表失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to get trading plan list: {resp.text}"
 
     def test_get_active_trading_system(self, api_client):
-        """获取活跃交易计划。"""
+        """Get an active trading plan."""
         resp = api_client.get("/api/v1/trading-systems/active")
-        assert resp.status_code in (200, 404), f"获取活跃交易计划异常: {resp.status_code}"
+        assert resp.status_code in (200, 404), f"Get active trading plan exception: {resp.status_code}"
 
     def test_create_trading_system(self, api_client):
-        """创建交易计划。"""
+        """Create a trading plan."""
         resp = api_client.post("/api/v1/trading-systems", json={
-            "name": "验收测试交易计划",
-            "description": "自动化测试创建的交易计划",
+            "name": "Acceptance test trading plan",
+            "description": "Automated testing of trading plans created",
             "stocks": [],
             "rules": {
                 "stop_loss": {"type": "percentage", "value": 5},
                 "take_profit": {"type": "percentage", "value": 10},
             },
         })
-        assert resp.status_code in (200, 201, 400, 422), f"创建交易计划异常: {resp.status_code} {resp.text}"
+        assert resp.status_code in (200, 201, 400, 422), f"Create trading plan exception: {resp.status_code} {resp.text}"
         if resp.status_code in (200, 201):
             data = resp.json()
             data_field = data.get("data", data) if isinstance(data, dict) else data
@@ -79,21 +79,21 @@ class TestTradingSystem:
 
 
 class TestTradeReview:
-    """交易复盘测试。"""
+    """Transaction review testing."""
 
     def test_get_periodic_reviews(self, api_client):
-        """获取周期性复盘历史。"""
+        """Get periodic review history."""
         resp = api_client.get("/api/review/periodic/history")
-        assert resp.status_code == 200, f"获取周期性复盘历史失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain periodic review history: {resp.text}"
 
     def test_get_review_statistics(self, api_client):
-        """获取复盘统计。"""
+        """Get review statistics."""
         resp = api_client.get("/api/review/statistics")
-        assert resp.status_code == 200, f"获取复盘统计失败: {resp.text}"
+        assert resp.status_code == 200, f"Failed to obtain review statistics: {resp.text}"
 
     def test_trigger_periodic_review(self, api_client):
-        """触发周期性复盘。"""
+        """Trigger periodic review."""
         resp = api_client.post("/api/review/periodic", json={
             "review_type": "weekly",
         })
-        assert resp.status_code in (200, 201, 400, 422), f"触发复盘异常: {resp.status_code} {resp.text}"
+        assert resp.status_code in (200, 201, 400, 422), f"Trigger review exception: {resp.status_code} {resp.text}"

@@ -1,9 +1,9 @@
-"""智能助手流式对话持久化兜底回归测试。
+"""Intelligent assistant streaming dialogue persistence comprehensive regression testing.
 
-历史 Bug：stream_chat_with_assistant 只在回复完整收集后才保存会话，
-超时/异常/客户端中途断开时用户提问直接丢失——刷新页面后提问消失，
-既丢上下文也无从排查。修复后无论哪条失败路径，用户消息与错误说明
-都必须落库。
+Historical bug: stream_chat_with_assistant only saves the conversation after a complete collection of replies,
+Timeout/Exception/When the client is disconnected midway, user questions are lost directly.——The question disappears after refreshing the page.
+The context is lost and there is no way to investigate. After repair, no matter which path fails, user message and error description
+All must be stored.
 """
 
 import asyncio
@@ -17,7 +17,7 @@ def _sse(event: str, data: dict) -> str:
 
 
 class _Recorder:
-    """记录 save_assistant_message 调用参数。"""
+    """Log save_assistant_message call parameters."""
 
     def __init__(self):
         self.saved = []
@@ -32,7 +32,7 @@ class _Recorder:
 
 
 def _install_common_stubs(monkeypatch, fake_service_cls, recorder):
-    """替换 stream_chat_with_assistant 的全部外部依赖。"""
+    """Replace all external dependencies of stream_chat_with_assistant."""
 
     async def _none(*args, **kwargs):
         return None
@@ -75,32 +75,32 @@ def _make_service_cls(events):
 
 
 def test_stream_error_event_persists_user_message_with_error_note(monkeypatch):
-    """内层超时/异常发 error 事件：用户提问 + 错误说明必须落库，done 带 error 标记。"""
+    """Inner layer timeout/exception error event: user questions + The error description must be stored in the library, and done with the error mark."""
     recorder = _Recorder()
     events = [
-        _sse("error", {"message": "处理超时（已超过 180 秒），请尝试更简短的问题。"}),
+        _sse("error", {"message": "Processing timed out (more than 180 seconds passed), please try a shorter question."}),
         _sse("done", {"tools_used": [], "data_refs": [], "error": True}),
     ]
     _install_common_stubs(monkeypatch, _make_service_cls(events), recorder)
 
     items = _collect(service.stream_chat_with_assistant(
         db=object(),
-        user_message="帮我查一下问界各车型最近半年的销量变化情况。",
+        user_message="Please help me check the sales changes of various models in the industry in the past six months.",
         user_id="u1",
         conversation_id=None,
     ))
 
-    assert recorder.saved, "失败路径也必须保存用户提问"
+    assert recorder.saved, "The failed path must also save user questions"
     saved = recorder.saved[0]
-    assert "问界" in saved["user_content"]
-    assert "处理超时" in saved["assistant_content"]
-    # error 事件透传给前端，done 事件带 error 标记
-    assert any(item.startswith("event: error\n") and "处理超时" in item for item in items)
+    assert "Ask the world" in saved["user_content"]
+    assert "Processing timeout" in saved["assistant_content"]
+    # error Events are transparently transmitted to the front end, and the done event is marked with an error
+    assert any(item.startswith("event: error\n") and "Processing timeout" in item for item in items)
     assert any(item.startswith("event: done\n") and '"error": true' in item for item in items)
 
 
 def test_stream_client_disconnect_persists_partial_reply(monkeypatch):
-    """客户端中途断开（aclose）：已收集的部分回复与用户提问必须落库。"""
+    """The client is disconnected midway (aclose): Some of the collected replies and user questions must be dropped into the database."""
     recorder = _Recorder()
 
     class _FakeService:
@@ -108,60 +108,60 @@ def test_stream_client_disconnect_persists_partial_reply(monkeypatch):
             pass
 
         async def chat_stream(self, *args, **kwargs):
-            yield _sse("token", {"content": "部分回复"})
-            # 第二个事件尚未被外层收集时客户端断开
-            yield _sse("token", {"content": "不会被收到"})
+            yield _sse("token", {"content": "Partial reply"})
+            # The client disconnects when the second event has not yet been collected by the outer layer
+            yield _sse("token", {"content": "will not be received"})
 
     _install_common_stubs(monkeypatch, _FakeService, recorder)
 
     async def _run():
         gen = service.stream_chat_with_assistant(
             db=object(),
-            user_message="生成一个预估测试的excel表格吧。",
+            user_message="Generate an excel sheet of estimated testing.",
             user_id="u1",
             conversation_id=None,
         )
         first = await gen.__anext__()
-        await gen.aclose()  # 模拟前端断开/超时 abort
+        await gen.aclose()  # Simulate frontend disconnect/timeout abort
         return first
 
     first = asyncio.run(_run())
 
-    assert "部分回复" in first
-    assert recorder.saved, "客户端中途断开也必须保存已收集内容"
+    assert "Partial reply" in first
+    assert recorder.saved, "The collected content must be saved even if the client is disconnected midway."
     saved = recorder.saved[0]
     assert "excel" in saved["user_content"]
-    assert "部分回复" in saved["assistant_content"]
-    assert "不会被收到" not in saved["assistant_content"]
+    assert "Partial reply" in saved["assistant_content"]
+    assert "will not be received" not in saved["assistant_content"]
 
 
 def test_stream_success_persists_once(monkeypatch):
-    """正常完成：只保存一次，且保存完整回复。"""
+    """Normal completion: only save once and save the complete reply."""
     recorder = _Recorder()
     events = [
-        _sse("token", {"content": "正常回复"}),
+        _sse("token", {"content": "Normal reply"}),
         _sse("done", {"tools_used": ["t1"], "data_refs": []}),
     ]
     _install_common_stubs(monkeypatch, _make_service_cls(events), recorder)
 
     items = _collect(service.stream_chat_with_assistant(
         db=object(),
-        user_message="正常问题",
+        user_message="Normal question",
         user_id="u1",
         conversation_id=None,
     ))
 
     assert len(recorder.saved) == 1
     saved = recorder.saved[0]
-    assert saved["user_content"] == "正常问题"
-    assert saved["assistant_content"] == "正常回复"
+    assert saved["user_content"] == "Normal question"
+    assert saved["assistant_content"] == "Normal reply"
     assert saved["tools_used"] == ["t1"]
-    # 正常路径 done 不带 error 标记
+    # Normal path done without error flag
     assert not any(item.startswith("event: done\n") and '"error": true' in item for item in items)
 
 
 def test_stream_outer_exception_sends_error_event_and_persists(monkeypatch):
-    """内层生成器抛异常：外层发 error 事件（而非伪装成回复文本），并保存部分回复+错误说明。"""
+    """The inner generator throws an exception: the outer layer sends an error event (rather than disguising it as a reply text) and saves part of the reply+Error description."""
     recorder = _Recorder()
 
     class _BrokenService:
@@ -176,35 +176,35 @@ def test_stream_outer_exception_sends_error_event_and_persists(monkeypatch):
 
     items = _collect(service.stream_chat_with_assistant(
         db=object(),
-        user_message="问一下",
+        user_message="Ask",
         user_id="u1",
         conversation_id=None,
     ))
 
-    assert recorder.saved, "外层异常也必须保存会话"
+    assert recorder.saved, "The outer exception must also save the session"
     saved = recorder.saved[0]
-    assert saved["user_content"] == "问一下"
+    assert saved["user_content"] == "Ask"
     assert "partial" in saved["assistant_content"]
     assert "boom" in saved["assistant_content"]
-    # 前端收到明确的 error 事件
+    # The frontend receives an explicit error event
     assert any(item.startswith("event: error\n") and "boom" in item for item in items)
     assert any(item.startswith("event: done\n") and '"error": true' in item for item in items)
 
 
 def test_stream_no_reply_no_error_persists_placeholder(monkeypatch):
-    """既无回复也无错误（极端场景）：用户提问仍落库，assistant 内容为明确占位。"""
+    """There is neither reply nor error (extreme scenario): the user s question is still dropped, and the assistant content is a clear placeholder."""
     recorder = _Recorder()
     events = [_sse("done", {"tools_used": [], "data_refs": []})]
     _install_common_stubs(monkeypatch, _make_service_cls(events), recorder)
 
     _collect(service.stream_chat_with_assistant(
         db=object(),
-        user_message="空回复问题",
+        user_message="Empty reply question",
         user_id="u1",
         conversation_id=None,
     ))
 
     assert recorder.saved
     saved = recorder.saved[0]
-    assert saved["user_content"] == "空回复问题"
-    assert "未收到任何内容" in saved["assistant_content"]
+    assert saved["user_content"] == "Empty reply question"
+    assert "Nothing received" in saved["assistant_content"]

@@ -1,8 +1,8 @@
 """
-报告查询类工具
+Report query tools
 
-提供分析报告的搜索、详情查看和最新报告获取功能。
-查询范围限定为当前用户的报告。
+Provides functions for searching analysis reports, viewing details, and obtaining the latest reports.
+The query scope is limited to the current user s reports.
 """
 
 import json
@@ -17,7 +17,7 @@ from core.tools.context import get_current_assistant_thread_id, require_current_
 
 logger = logging.getLogger(__name__)
 
-# ── 日期范围快捷方式 ──
+# ── Date range shortcut ──
 _DATE_SHORTCUTS = {
     "today": 0,
     "yesterday": 1,
@@ -28,7 +28,7 @@ _DATE_SHORTCUTS = {
 
 
 def _resolve_date_range(date_range: Optional[str]):
-    """将自然语言日期范围转为 (start, end) datetime。"""
+    """Convert natural language date range to (start, end) datetime. """
     if not date_range:
         return None, None
     key = date_range.strip().lower().replace(" ", "_")
@@ -37,7 +37,7 @@ def _resolve_date_range(date_range: Optional[str]):
         end = datetime.now()
         start = end - timedelta(days=days)
         return start, end
-    # 尝试解析 YYYY-MM-DD ~ YYYY-MM-DD
+    # try to parse YYYY-MM-DD ~ YYYY-MM-DD
     if "~" in date_range:
         parts = date_range.split("~")
         try:
@@ -51,7 +51,7 @@ def _resolve_date_range(date_range: Optional[str]):
 @register_tool(
     tool_id="search_reports",
     name="搜索分析报告",
-    description="在数据库中检索用户已有的历史分析报告，支持按股票代码、关键词、日期范围筛选。返回报告摘要列表（标题、股票、日期、结论），不含完整正文。",
+    description="Search the user s existing historical analysis reports in the database, and support filtering by stock code, keywords, and date range. Returns a list of report summaries (title, stock, date, conclusion) without full text.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -61,16 +61,16 @@ def _resolve_date_range(date_range: Optional[str]):
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["report_search", "report_history_query", "analysis_report_filtering", "stock_report_lookup", "report_summary_viewing"],
-    returns="返回文本格式的报告摘要列表，包含任务ID、股票代码、日期和结论摘要。",
-    when_to_use="当用户想搜索、查找或筛选历史分析报告时使用，支持按股票代码、关键词或日期范围筛选。",
+    returns="Returns a list of report summaries in text format, containing task ID, ticker, date, and conclusion summary.",
+    when_to_use="Used when users want to search, find or filter historical analysis reports, supporting filtering by stock code, keywords or date range.",
 )
 async def search_reports(
-    symbol: Annotated[Optional[str], "股票代码筛选，如 600519"] = None,
-    keyword: Annotated[Optional[str], "搜索关键词，匹配报告内容"] = None,
-    date_range: Annotated[Optional[str], "日期范围: today / last_week / last_month 或 YYYY-MM-DD~YYYY-MM-DD"] = None,
-    limit: Annotated[int, "返回数量上限，默认5"] = 5,
+    symbol: Annotated[Optional[str], "Stock code screening, such as 600519"] = None,
+    keyword: Annotated[Optional[str], "Search keywords to match report content"] = None,
+    date_range: Annotated[Optional[str], "date range: today / last_week / last_month or YYYY-MM-DD~YYYY-MM-DD"] = None,
+    limit: Annotated[int, "Returns the upper limit of quantity, default 5"] = 5,
 ) -> str:
-    """搜索分析报告列表，返回精简摘要（标题、股票、日期、结论），不含完整内容。"""
+    """Searching the list of analysis reports returns a condensed summary (title, stock, date, conclusion) without full content."""
     try:
         from bson import ObjectId
         from app.core.database import get_mongo_db
@@ -113,10 +113,10 @@ async def search_reports(
             results.append(f"  [{doc['task_id'][:8]}] {sym} | {date_str} | {brief}")
 
         if not results:
-            return "未找到符合条件的分析报告。"
-        return f"📊 找到 {len(results)} 条报告：\n" + "\n".join(results) + "\n\n💡 使用「查看报告详情」获取完整内容。"
+            return "No matching analysis reports were found."
+        return f"📊 找到 {len(results)} 条报告：\n" + "\n".join(results) + "\n\n💡 Use View Report Details to get the complete content."
     except Exception as e:
-        logger.exception("[search_reports] 查询报告失败: %s", e)
+        logger.exception("[search_reports] Query report failed: %s", e)
         return f"查询报告时出错: {str(e)}"
 
 
@@ -124,7 +124,7 @@ async def search_reports(
 @register_tool(
     tool_id="get_report_detail",
     name="查看报告详情",
-    description="根据任务ID获取分析报告内容。支持两种模式：1) 不传 module_key 返回顶层摘要（研究结论倾向、关键要点、摘要）；2) 传 module_key 返回指定子模块的完整正文内容（如 market_report/fundamentals_report/news_report/sentiment_report/trader_investment_plan/research_team_decision/risk_management_decision/final_trade_decision 等）。推荐根据用户问题按需获取指定模块，避免一次拉取过多内容。",
+    description="Get the analysis report content based on the task ID. Two modes are supported:1) If module_key is not passed, the top-level summary (research conclusion tendency, key points, summary) will be returned;2) Passing module_key returns the complete text content of the specified submodule (such as market_report/fundamentals_report/news_report/sentiment_report/trader_investment_plan/research_team_decision/risk_management_decision/final_trade_decision, etc.). It is recommended to obtain specified modules on demand based on user issues to avoid pulling too much content at once.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -134,14 +134,14 @@ async def search_reports(
     tool_role_hint="primary",
     output_shape="report",
     preferred_for=["report_detail_viewing", "full_report_reading", "report_content_retrieval", "analysis_report_detail", "report_module_reading"],
-    returns="返回格式化 Markdown 报告。不传 module_key 时返回顶层摘要；传 module_key 时返回指定模块完整正文。",
-    when_to_use="当用户想查看分析报告内容时使用。简单问题（如整体结论）不传 module_key；具体维度问题（如技术面/基本面/新闻）传对应 module_key 获取完整内容。",
+    returns="Returns a formatted Markdown report. If module_key is not passed, the top-level summary is returned; if module_key is passed, the complete text of the specified module is returned.",
+    when_to_use="Used when the user wants to view the content of the analysis report. Simple questions (such as overall conclusions) do not pass module_key; specific dimensional questions (such as technical aspects/fundamentals/news) pass the corresponding module_key to obtain the complete content.",
 )
 async def get_report_detail(
     task_id: Annotated[str, "分析任务ID"],
-    module_key: Annotated[Optional[str], "指定子模块key获取完整正文。可选值：market_report(市场技术分析)/fundamentals_report(基本面研究)/news_report(新闻研究)/sentiment_report(情绪分析)/trader_investment_plan(研究整合意见)/research_team_decision(研究团队结论)/risk_management_decision(风险审阅结论)/final_trade_decision(综合研究结论)/index_report(大盘环境)/sector_report(行业板块)。不传则返回顶层摘要"] = None,
+    module_key: Annotated[Optional[str], "Specify the submodule key to obtain the complete text. Optional values:market_report(Market technical analysis)/fundamentals_report(fundamental research)/news_report(Journalism Research)/sentiment_report(sentiment analysis)/trader_investment_plan(Research and integrate opinions)/research_team_decision(Research team conclusion)/risk_management_decision(Risk review conclusion)/final_trade_decision(Comprehensive research conclusion)/index_report(Market environment)/sector_report(Industry sector). If not passed, the top-level summary will be returned."] = None,
 ) -> str:
-    """获取指定分析任务的报告内容。传 module_key 返回该模块完整正文，不传返回顶层摘要。"""
+    """Get the report content of the specified analysis task. Passing module_key returns the complete text of the module, otherwise it returns the top-level summary."""
     try:
         from app.core.database import get_mongo_db
         from app.services.task_analysis_service import get_task_analysis_service
@@ -153,14 +153,14 @@ async def get_report_detail(
         if not task:
             return f"❌ 未找到任务: {task_id}"
         if task.status != "completed":
-            return f"⏳ 任务尚未完成（当前状态: {task.status}，进度: {task.progress}%）"
+            return f"⏳ The task has not yet been completed (current status: {task.status}, Progress: {task.progress}%) "
         if not task.result:
-            return "⚠️ 任务已完成但未生成报告数据。"
+            return "⚠️ The task was completed but no report data was generated."
 
         r = task.result
         sym = task.task_params.get("symbol", "未知")
 
-        # ── 模块模式：返回指定子模块完整正文 ──
+        # ── Module mode: Return the complete text of the specified submodule ──
         if module_key:
             module_key_clean = module_key.strip()
             reports_dict = r.get("reports") or {}
@@ -171,11 +171,11 @@ async def get_report_detail(
                 available = ", ".join(reports_dict.keys())
                 return (
                     f"⚠️ 未找到模块 `{module_key_clean}`。\n"
-                    f"该报告包含以下可用模块：{available}\n"
-                    f"请从上述模块中选择一个重新调用。"
+                    f"The report contains the following modules available:{available}\n"
+                    f"Please choose one of the above modules to call again."
                 )
             label = _ANALYST_LABELS.get(module_key_clean, module_key_clean)
-            # 兼容 content 为字典的情况（如 final_trade_decision 可能是结构化数据）
+            # Compatible when content is a dictionary (for example, final_trade_decision may be structured data)
             if isinstance(content, dict):
                 content_text = content.get("content") or content.get("report") or content.get("text") or content.get("markdown") or ""
                 if not content_text:
@@ -184,7 +184,7 @@ async def get_report_detail(
                 content_text = str(content)
             return f"# {label}\n\n{content_text}"
 
-        # ── 顶层摘要模式：返回报告整体摘要 ──
+        # ── Top-level summary mode: Returns the overall summary of the report ──
         lines = [f"# 📈 {sym} 分析报告"]
         if r.get("recommendation"):
             lines.append(f"\n## 研究结论倾向\n{r['recommendation']}")
@@ -198,7 +198,7 @@ async def get_report_detail(
         if r.get("summary"):
             lines.append(f"\n## 摘要\n{r['summary']}")
 
-        # 列出可用子模块，引导 LLM 按需获取完整内容
+        # Lists available submodules, directing LLM to get full content on demand
         reports_dict = r.get("reports") or {}
         if isinstance(reports_dict, dict) and reports_dict:
             available_lines = []
@@ -206,7 +206,7 @@ async def get_report_detail(
                 label = _ANALYST_LABELS.get(k, k)
                 available_lines.append(f"  • {k}（{label}）")
             lines.append("\n## 可用子模块")
-            lines.append("如需查看某个模块的完整内容，再次调用本工具并传入 module_key 参数：")
+            lines.append("To view the complete content of a module, call this tool again and pass in the module_key parameter:")
             lines.extend(available_lines)
 
         db = get_mongo_db()
@@ -230,36 +230,36 @@ async def get_report_detail(
         lines.append(f"\n---\n_任务ID: {task.task_id} | 耗时: {task.execution_time:.1f}s_")
         return "\n".join(lines)
     except Exception as e:
-        logger.exception("[get_report_detail] 获取报告详情失败: %s", e)
+        logger.exception("[get_report_detail] Failed to get report details: %s", e)
         return f"获取报告详情时出错: {str(e)}"
 
 
 
-# ── 各分析师角色中文标签 ──
-# 涵盖单股分析报告 reports 字典中可能出现的所有子模块
+# ── Chinese labels for each analyst role ──
+# Covers all submodules that may appear in the reports dictionary of single stock analysis reports
 _ANALYST_LABELS = {
-    # 核心决策类
+    # core decision-making
     "final_trade_decision":   "综合研究结论",
     "research_team_decision": "研究团队结论",
     "risk_management_decision": "风险审阅结论",
     "trader_investment_plan": "研究整合意见",
     "investment_plan":        "投资计划",
-    # 研究员辩论类
+    # Researcher Debate Class
     "bull_researcher":        "乐观情景论证",
     "bear_researcher":        "审慎情景论证",
     "neutral_analyst":        "基准情景评估",
     "risky_analyst":          "高弹性情景评估",
     "safe_analyst":           "防御情景评估",
-    # 个股分析模块
+    # Individual stock analysis module
     "fundamentals_report":    "基本面研究",
     "market_report":          "市场技术分析",
     "news_report":            "新闻研究",
     "sentiment_report":       "情绪分析",
     "chip_report":            "筹码分布分析",
-    # 宏观分析模块
+    # Macro analysis module
     "index_report":           "大盘环境研究",
     "sector_report":          "行业板块研究",
-    # 持仓分析模块（部分报告可能复用）
+    # Position analysis module (some reports may be reused)
     "company_overview":       "公司概况",
     "financial_analysis":     "财务分析",
     "technical_analysis":     "技术分析",
@@ -268,7 +268,7 @@ _ANALYST_LABELS = {
     "valuation_analysis":     "估值分析",
     "investment_recommendation": "研究结论摘要",
 }
-# 按重要性排序，优先展示核心决策
+# Sort by importance and prioritize core decisions
 _REPORT_PRIORITY = [
     "final_trade_decision",
     "research_team_decision",
@@ -282,15 +282,15 @@ _REPORT_PRIORITY = [
     "investment_plan",
     "trader_investment_plan",
 ]
-_MAX_TOTAL_CHARS = 6000   # 工具返回上限，控制 LLM 上下文
-_EXCERPT_CHARS = 500      # 每个分析师报告的摘录字数
+_MAX_TOTAL_CHARS = 6000   # Tool returns cap, controls LLM context
+_EXCERPT_CHARS = 500      # Word count of excerpts per analyst report
 
 
 @tool
 @register_tool(
     tool_id="get_latest_report",
     name="获取最新报告",
-    description="读取指定股票最近一次已完成的分析报告摘要（各分析师核心结论+最终研究结论）。不会创建新任务。symbol 为空时返回用户最近一份报告。",
+    description="Read the summary of the latest completed analysis report for the specified stock (core conclusions of each analyst)+final research conclusion). No new tasks will be created. When symbol is empty, the user s most recent report is returned.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -300,13 +300,13 @@ _EXCERPT_CHARS = 500      # 每个分析师报告的摘录字数
     tool_role_hint="primary",
     output_shape="report",
     preferred_for=["latest_report_viewing", "recent_report_query", "stock_analysis_summary", "analyst_report_summary"],
-    returns="返回格式化文本报告，包含投资观点、价格区间、决策依据、关键要点和各分析师摘录。",
-    when_to_use="当用户想快速查看某只股票最近一次已完成的分析报告摘要时使用，不会创建新任务。",
+    returns="Returns a formatted text report containing investment views, price range, decision rationale, key takeaways and individual analyst excerpts.",
+    when_to_use="Used when the user wants to quickly view a summary of the latest completed analysis report for a certain stock. No new task will be created.",
 )
 async def get_latest_report(
-    symbol: Annotated[str, "股票代码，如 600519。若用户未指定可传空字符串，则返回最近一次任意股票的报告"],
+    symbol: Annotated[str, "Stock code, such as 600519. If the user does not specify an empty string, the latest report for any stock will be returned."],
 ) -> str:
-    """读取某只股票最近一次已完成的分析报告摘要，不创建新任务。symbol 为空时返回用户最新一份报告。"""
+    """Read the summary of the latest completed analysis report for a certain stock without creating a new task. When symbol is empty, the user s latest report is returned."""
     try:
         from bson import ObjectId
         from app.core.database import get_mongo_db
@@ -315,7 +315,7 @@ async def get_latest_report(
         user_id = require_current_user_id()
         db = get_mongo_db()
 
-        # ── 构造查询：symbol 为空时不限制股票代码 ──
+        # ── Construct query: No limit on stock code when symbol is empty ──
         query: dict = {"user_id": ObjectId(user_id), "status": "completed"}
         sym_clean = (symbol or "").strip()
         if sym_clean:
@@ -326,7 +326,7 @@ async def get_latest_report(
             hint = f"{sym_clean} 的" if sym_clean else "任何"
             return (
                 f"未找到{hint}分析报告。"
-                f"{'你可以使用「触发股票分析」来发起分析。' if sym_clean else '请先触发一次股票分析。'}"
+                f"{'You can use Trigger Stock Analysis to initiate analysis.' if sym_clean else 'Please trigger a stock analysis first.'}"
             )
 
         r = doc.get("result") or {}
@@ -335,7 +335,7 @@ async def get_latest_report(
         date_str = created.strftime("%Y-%m-%d %H:%M") if hasattr(created, "strftime") else (str(created)[:16] if created else "未知")
         task_id = doc.get("task_id", "")
 
-        # ── 第一部分：结构化摘要（必选） ──
+        # ── Part One: Structured Summary (required) ──
         lines: list[str] = [f"📈 {actual_symbol} 分析报告（{date_str}）"]
 
         decision = r.get("decision") or {}
@@ -388,14 +388,14 @@ async def get_latest_report(
             },
         )
 
-        # ── 第二部分：各分析师摘录（按优先级，受总字数限制） ──
+        # ── Part 2: Excerpts by analysts (by priority, subject to total word limit) ──
         reports: dict = r.get("reports") or {}
         if reports:
-            lines.append("\n─── 各分析师摘录 ───")
+            lines.append("\n─── Excerpts from various analysts ───")
             current_len = sum(len(l) for l in lines)
             for key in _REPORT_PRIORITY:
                 if current_len >= _MAX_TOTAL_CHARS:
-                    lines.append("（更多内容已省略，可用「查看报告详情」获取完整版）")
+                    lines.append(" (More content has been omitted, you can use View Report Details to get the full version)")
                     break
                 text = reports.get(key)
                 if not text or not isinstance(text, str) or len(text.strip()) < 20:
@@ -408,10 +408,10 @@ async def get_latest_report(
                 lines.append(snippet)
                 current_len += len(snippet)
 
-        lines.append(f"\n─\n任务ID: {task_id[:12]}…")
+        lines.append(f"\n─\n Task ID: {task_id[:12]}…")
         return "\n".join(lines)
     except Exception as e:
-        logger.exception("[get_latest_report] 获取最新报告失败: %s", e)
+        logger.exception("[get_latest_report] Failed to get latest report: %s", e)
         return f"获取最新报告时出错: {str(e)}"
 
 
@@ -419,7 +419,7 @@ async def get_latest_report(
 @register_tool(
     tool_id="search_attachable_reports",
     name="搜索可关联旧报告",
-    description="搜索当前主题下可手动关联的旧报告。适合用户说‘把宁德时代旧报告挂到当前主题前，先查一下有哪些旧报告可选’。",
+    description="Search for old reports under the current topic that can be manually linked. Suitable for users to say Before linking old CATL reports to the current topic, first check what old reports are available. . ",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -429,15 +429,15 @@ async def get_latest_report(
     tool_role_hint="specialized",
     output_shape="text",
     preferred_for=["attachable_report_search", "report_attachment_query", "topic_report_linking_prep"],
-    returns="返回文本列表，包含可关联旧报告的标题、股票代码、创建时间和报告标识。",
-    when_to_use="当用户想把某只股票的旧报告关联到当前主题前，需要先查看有哪些可选报告时使用。",
+    returns="Returns a text list containing the title, ticker, creation time, and report ID of the old report that can be associated.",
+    when_to_use="This is used when the user wants to see what optional reports are available before linking an old report on a certain stock to the current topic.",
 )
 async def search_attachable_reports(
-    keyword: Annotated[Optional[str], "股票代码、公司名或报告关键词，如 宁德时代 / 比亚迪 / 300750"] = None,
-    report_type: Annotated[str, "报告类型：stock_report 单股报告；position_report 持仓报告"] = "stock_report",
-    limit: Annotated[int, "返回数量上限，默认 5"] = 5,
+    keyword: Annotated[Optional[str], "Stock code, company name or report keywords, such as CATL/BYD / 300750"] = None,
+    report_type: Annotated[str, "Report type: stock_report single stock report; position_report position report"] = "stock_report",
+    limit: Annotated[int, "Returns the upper limit of quantity, default 5"] = 5,
 ) -> str:
-    """搜索当前主题可关联的旧报告。"""
+    """Searches for old reports that can be associated with the current topic."""
     try:
         from app.core.database import get_mongo_db
         from app.services.intelligent_assistant_service import search_assistant_attachable_reports
@@ -445,7 +445,7 @@ async def search_attachable_reports(
         user_id = require_current_user_id()
         thread_id = get_current_assistant_thread_id()
         if not thread_id:
-            return "当前没有选中的研究主题，无法搜索可关联报告。"
+            return "There is currently no selected research topic to search for related reports."
 
         db = get_mongo_db()
         items = await search_assistant_attachable_reports(
@@ -471,10 +471,10 @@ async def search_attachable_reports(
                 created_text = str(created_at)[:16] if created_at else "未知时间"
             report_key = item.get("report_key") or ""
             lines.append(f"- {title} | {symbol} | {created_text} | key={report_key}")
-        lines.append("如需直接挂到当前主题，可继续说：把这份旧报告关联到当前主题。")
+        lines.append("If you want to link directly to the current topic, you can continue to say: Link this old report to the current topic.")
         return "\n".join(lines)
     except Exception as e:
-        logger.exception("[search_attachable_reports] 搜索可关联旧报告失败: %s", e)
+        logger.exception("[search_attachable_reports] Search for relatable old reports failed: %s", e)
         return f"搜索可关联旧报告时出错: {str(e)}"
 
 
@@ -482,7 +482,7 @@ async def search_attachable_reports(
 @register_tool(
     tool_id="attach_existing_report_to_current_topic",
     name="关联旧报告到当前主题",
-    description="把用户历史上已经生成过的旧报告直接挂到当前研究主题。适合用户说‘把宁德时代旧报告关联到当前主题’。默认关联最新匹配的一份。",
+    description="Directly link old reports that have been generated by the user to the current research topic. Suitable for users to say Relate old CATL reports to current topics . The latest matching copy is associated by default.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -492,14 +492,14 @@ async def search_attachable_reports(
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["report_attachment", "topic_report_linking", "historical_report_binding", "report_to_topic_association"],
-    returns="返回文本消息，包含关联结果和报告标识。",
-    when_to_use="当用户要求把某只股票的历史旧报告直接挂到当前研究主题时使用。",
+    returns="Returns a text message containing correlation results and report identification.",
+    when_to_use="It is used when the user requests to directly link the historical reports of a certain stock to the current research topic.",
 )
 async def attach_existing_report_to_current_topic(
-    keyword: Annotated[str, "股票代码、公司名或报告关键词，如 宁德时代 / 比亚迪 / 300750"],
-    report_type: Annotated[str, "报告类型：stock_report 单股报告；position_report 持仓报告"] = "stock_report",
+    keyword: Annotated[str, "Stock code, company name or report keywords, such as CATL/BYD / 300750"],
+    report_type: Annotated[str, "Report type: stock_report single stock report; position_report position report"] = "stock_report",
 ) -> str:
-    """根据关键词将最新匹配的旧报告挂到当前主题。"""
+    """Hang the latest matching old reports to the current topic based on keywords."""
     try:
         from app.core.database import get_mongo_db
         from app.services.intelligent_assistant_service import (
@@ -510,11 +510,11 @@ async def attach_existing_report_to_current_topic(
         user_id = require_current_user_id()
         thread_id = get_current_assistant_thread_id()
         if not thread_id:
-            return "当前没有选中的研究主题，无法关联旧报告。"
+            return "There is currently no research topic selected and old reports cannot be associated."
 
         keyword_clean = (keyword or "").strip()
         if not keyword_clean:
-            return "请提供股票代码、公司名或报告关键词，例如：宁德时代、比亚迪、300750。"
+            return "Please provide stock code, company name or report keywords, for example: CATL, BYD, 300750."
 
         db = get_mongo_db()
         matches = await search_assistant_attachable_reports(
@@ -546,5 +546,5 @@ async def attach_existing_report_to_current_topic(
             extra = f"\n另外还找到 {len(matches) - 1} 条相近历史报告，如需可继续指定日期或让我继续关联。"
         return f"已将旧报告《{title}》关联到当前主题。\n报告标识: {report_key}{extra}"
     except Exception as e:
-        logger.exception("[attach_existing_report_to_current_topic] 关联旧报告失败: %s", e)
+        logger.exception("[attach_existing_report_to_current_topic] Failed to associate old reports: %s", e)
         return f"关联旧报告时出错: {str(e)}"

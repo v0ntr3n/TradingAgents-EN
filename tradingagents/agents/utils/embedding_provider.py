@@ -1,10 +1,10 @@
 # tradingagents/agents/utils/embedding_provider.py
 """
-Embedding 服务提供者
+Embedding service provider
 
-从数据库配置中获取支持 embedding 的厂商列表，并按优先级尝试使用可用的服务。
+Get the list of vendors that support embedding from the database configuration and try to use the available services in order of priority.
 
-支持的厂商（通过 supported_features 包含 "embedding" 判断）：
+Supported vendors (included via supported_features "embedding" Judgment):
 - openai: text-embedding-3-small
 - google: text-embedding-004
 - dashscope: text-embedding-v3
@@ -21,45 +21,45 @@ logger = logging.getLogger("agents.utils.embedding")
 
 @dataclass
 class EmbeddingProviderConfig:
-    """Embedding 提供者配置"""
+    """Embedding Provider configuration"""
     name: str
     display_name: str
     api_key: str
     base_url: str
     model: str
     is_active: bool
-    priority: int = 0  # 优先级，数字越小优先级越高
+    priority: int = 0  # Priority, the smaller the number, the higher the priority
 
 
-# 默认的 embedding 模型映射
+# Default embedding model mapping
 DEFAULT_EMBEDDING_MODELS = {
     "openai": "text-embedding-3-small",
     "google": "text-embedding-004",
     "dashscope": "text-embedding-v3",
     "siliconflow": "BAAI/bge-large-zh-v1.5",
-    "alibaba": "text-embedding-v3",  # 阿里百练别名
+    "alibaba": "text-embedding-v3",  # Ali Bailian alias
 }
 
-# 提供者优先级（数字越小优先级越高）
+# Provider priority (the lower the number, the higher the priority)
 PROVIDER_PRIORITY = {
-    "dashscope": 1,      # 阿里百练优先（国内访问快）
-    "siliconflow": 2,    # 硅基流动次之
+    "dashscope": 1,      # Alibaba Bailian is given priority (domestic access is fast)
+    "siliconflow": 2,    # Silicon-based flow comes second
     "google": 3,         # Google
-    "openai": 4,         # OpenAI（可能需要翻墙）
+    "openai": 4,         # OpenAI (May need to circumvent the wall)
 }
 
 
 class EmbeddingProviderManager:
     """
-    Embedding 提供者管理器
+    Embedding provider manager
     
-    负责从数据库获取支持 embedding 的厂商配置，并提供按优先级尝试的能力
+    Responsible for obtaining vendor configurations that support embedding from the database and providing the ability to try based on priority
     """
     
     _instance = None
     _providers_cache: Optional[List[EmbeddingProviderConfig]] = None
     _cache_timestamp: float = 0
-    _cache_ttl: float = 300  # 缓存 5 分钟
+    _cache_ttl: float = 300  # Cache for 5 minutes
     
     def __new__(cls):
         if cls._instance is None:
@@ -70,67 +70,67 @@ class EmbeddingProviderManager:
         self._initialized = getattr(self, '_initialized', False)
         if not self._initialized:
             self._initialized = True
-            logger.info("🔧 [EmbeddingProviderManager] 初始化完成")
+            logger.info("🔧 [EmbeddingProviderManager] Initialization completed")
     
     def get_available_providers(self, force_refresh: bool = False) -> List[EmbeddingProviderConfig]:
         """
-        获取可用的 embedding 提供者列表（按优先级排序）
+        Get a list of available embedding providers (sorted by priority)
         
         Args:
-            force_refresh: 是否强制刷新缓存
+            force_refresh: Whether to force cache refresh
             
         Returns:
-            按优先级排序的提供者配置列表
+            Provider configuration list sorted by priority
         """
         import time
         current_time = time.time()
         
-        # 检查缓存是否有效
+        # Check if cache is valid
         if (not force_refresh and 
             self._providers_cache is not None and 
             current_time - self._cache_timestamp < self._cache_ttl):
             return self._providers_cache
         
-        # 从数据库获取配置
+        # Get configuration from database
         providers = self._fetch_providers_from_db()
         
-        # 更新缓存
+        # Update cache
         self._providers_cache = providers
         self._cache_timestamp = current_time
         
         return providers
     
     def _fetch_providers_from_db(self) -> List[EmbeddingProviderConfig]:
-        """从数据库获取支持 embedding 的提供者"""
+        """Get providers that support embedding from the database"""
         providers = []
 
-        # 优先检查专用 Embedding 环境变量（EMBEDDING_API_KEY + EMBEDDING_API_BASE + EMBEDDING_MODEL）
+        # Prioritize checking the private Embedding environment variables (EMBEDDING_API_KEY + EMBEDDING_API_BASE + EMBEDDING_MODEL) 
         dedicated = self._get_dedicated_embedding_provider()
         if dedicated:
             providers.append(dedicated)
 
         try:
-            # 尝试从 MongoDB 获取
+            # Try to get from MongoDB
             from pymongo import MongoClient
             
-            # 获取 MongoDB 连接字符串
+            # Get MongoDB connection string
             mongo_uri = os.getenv('MONGODB_CONNECTION_STRING', 'mongodb://localhost:27017')
             db_name = os.getenv('MONGODB_DATABASE_NAME', 'tradingagents')
             
             client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
             db = client[db_name]
             
-            # 查询支持 embedding 的活跃厂商
+            # Query active vendors that support embedding
             cursor = db.llm_providers.find({
                 "is_active": True,
                 "supported_features": "embedding"
             })
             
             for doc in cursor:
-                # 检查是否有有效的 API Key
+                # Check if there is a valid API Key
                 api_key = doc.get('api_key')
                 if not api_key or api_key.startswith('your_') or api_key == 'placeholder':
-                    # 尝试从环境变量获取
+                    # Try to get from environment variables
                     api_key = self._get_env_api_key(doc.get('name', ''))
                 
                 if not api_key:
@@ -152,25 +152,25 @@ class EmbeddingProviderManager:
             client.close()
             
         except Exception as e:
-            logger.warning(f"⚠️ 从数据库获取 embedding 提供者失败: {e}")
+            logger.warning(f"⚠️ Failed to get embedding provider from database: {e}")
         
-        # 如果数据库没有配置，尝试从环境变量获取
+        # If the database is not configured, try to get it from environment variables
         if not providers:
             providers = self._get_providers_from_env()
         
-        # 按优先级排序
+        # Sort by priority
         providers.sort(key=lambda x: x.priority)
 
-        logger.info(f"📋 [EmbeddingProviderManager] 可用的 embedding 提供者: {[p.name for p in providers]}")
+        logger.info(f"📋 [EmbeddingProviderManager] Available embedding providers: {[p.name for p in providers]}")
         return providers
 
     def _get_dedicated_embedding_provider(self) -> Optional[EmbeddingProviderConfig]:
-        """检查专用 Embedding 环境变量（EMBEDDING_API_KEY + EMBEDDING_API_BASE + EMBEDDING_MODEL）
+        """Check the private Embedding environment variable (EMBEDDING_API_KEY + EMBEDDING_API_BASE + EMBEDDING_MODEL) 
         
-        如果设置了 EMBEDDING_API_KEY，则返回一个专用的 embedding 提供者配置。
-        EMBEDDING_API_BASE 和 EMBEDDING_MODEL 留空时回退到 OPENAI_API_BASE / OPENAI_API_KEY。
+        If EMBEDDING_API_KEY is set, returns a private embedding provider configuration.
+        EMBEDDING_API_BASE Fallback to OPENAI_API_BASE / OPENAI_API_KEY when EMBEDDING_MODEL and EMBEDDING_MODEL are left blank.
         """
-        # 优先取 EMBEDDING_API_KEY，留空则回退到 OPENAI_API_KEY
+        # Take EMBEDDING_API_KEY first, leave it blank and fall back to OPENAI_API_KEY
         api_key = os.getenv("EMBEDDING_API_KEY", "").strip()
         if not api_key:
             api_key = os.getenv("OPENAI_API_KEY", "").strip()
@@ -185,7 +185,7 @@ class EmbeddingProviderManager:
         if not model:
             model = "text-embedding-3-small"
 
-        logger.info(f"✅ 使用专用 Embedding 配置: base={base_url[:30]}, model={model}")
+        logger.info(f"✅ Use a dedicated Embedding configuration: base={base_url[:30]}, model={model}")
         return EmbeddingProviderConfig(
             name="embedding_dedicated",
             display_name="Embedding (Dedicated)",
@@ -193,19 +193,19 @@ class EmbeddingProviderManager:
             base_url=base_url,
             model=model,
             is_active=True,
-            priority=0  # 最高优先级
+            priority=0  # highest priority
         )
 
     def _get_providers_from_env(self) -> List[EmbeddingProviderConfig]:
-        """从环境变量获取 embedding 提供者配置"""
+        """Get embedding provider configuration from environment variables"""
         providers = []
 
-        # 优先检查专用 Embedding 环境变量
+        # Prioritize checking of private Embedding environment variables
         dedicated = self._get_dedicated_embedding_provider()
         if dedicated:
             providers.append(dedicated)
 
-        # 检查各个厂商的环境变量
+        # Check the environment variables of each manufacturer
         env_mappings = [
             ("dashscope", "DASHSCOPE_API_KEY", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
             ("openai", "OPENAI_API_KEY", "https://api.openai.com/v1"),
@@ -230,7 +230,7 @@ class EmbeddingProviderManager:
         return providers
 
     def _get_env_api_key(self, provider_name: str) -> Optional[str]:
-        """根据厂商名称获取环境变量中的 API Key"""
+        """Get the environment variables based on the manufacturer name API Key"""
         env_var_mapping = {
             "openai": "OPENAI_API_KEY",
             "google": "GOOGLE_API_KEY",
@@ -249,29 +249,29 @@ class EmbeddingProviderManager:
 
     def get_embedding(self, text: str, preferred_provider: Optional[str] = None) -> Tuple[Optional[List[float]], str]:
         """
-        获取文本的 embedding 向量
+        Get the embedding vector of the text
 
-        按优先级尝试各个提供者，直到成功或全部失败
+        Try each provider in order of priority until success or all fail
 
         Args:
-            text: 要获取 embedding 的文本
-            preferred_provider: 首选的提供者名称（可选）
+            text: To get the text of embedding
+            preferred_provider: Preferred provider name (optional)
 
         Returns:
-            (embedding_vector, provider_name) 或 (None, error_message)
+            (embedding_vector, provider_name) or (None, error_message)
         """
         providers = self.get_available_providers()
 
         if not providers:
-            logger.warning("⚠️ 没有可用的 embedding 提供者")
+            logger.warning("⚠️ No embedding provider available")
             return None, "no_provider_available"
 
-        # 如果指定了首选提供者，将其放到最前面
+        # If a preferred provider is specified, put it first
         if preferred_provider:
             providers = sorted(providers,
                              key=lambda x: (0 if x.name == preferred_provider else 1, x.priority))
 
-        # 按优先级尝试各个提供者
+        # Try each provider by priority
         for provider in providers:
             try:
                 embedding = self._call_provider(provider, text)
@@ -279,13 +279,13 @@ class EmbeddingProviderManager:
                     logger.info(f"✅ 使用 {provider.display_name} 获取 embedding 成功")
                     return embedding, provider.name
             except Exception as e:
-                logger.warning(f"⚠️ {provider.display_name} 获取 embedding 失败: {e}")
+                logger.warning(f"⚠️ {provider.display_name} Failed to get embedding: {e}")
                 continue
 
         return None, "all_providers_failed"
 
     def _call_provider(self, provider: EmbeddingProviderConfig, text: str) -> Optional[List[float]]:
-        """调用指定提供者获取 embedding"""
+        """Call the specified provider to obtain embedding"""
 
         if provider.name in ("dashscope", "alibaba"):
             return self._call_dashscope(provider, text)
@@ -296,11 +296,11 @@ class EmbeddingProviderManager:
         elif provider.name == "siliconflow":
             return self._call_siliconflow(provider, text)
         else:
-            # 默认尝试 OpenAI 兼容接口
+            # Try OpenAI compatible interface by default
             return self._call_openai_compatible(provider, text)
 
     def _call_dashscope(self, provider: EmbeddingProviderConfig, text: str) -> Optional[List[float]]:
-        """调用阿里百练 embedding API"""
+        """Call Ali Bailian embedding API"""
         try:
             import dashscope
             from dashscope import TextEmbedding
@@ -315,19 +315,19 @@ class EmbeddingProviderManager:
             if response.status_code == 200:
                 return response.output['embeddings'][0]['embedding']
             else:
-                logger.warning(f"DashScope API 错误: {response.code} - {response.message}")
+                logger.warning(f"DashScope API Error: {response.code} - {response.message}")
                 return None
 
         except Exception as e:
-            logger.warning(f"DashScope 调用失败: {e}")
+            logger.warning(f"DashScope call failed: {e}")
             raise
 
     def _call_openai(self, provider: EmbeddingProviderConfig, text: str) -> Optional[List[float]]:
-        """调用 OpenAI embedding API"""
+        """call OpenAI embedding API"""
         return self._call_openai_compatible(provider, text)
 
     def _call_openai_compatible(self, provider: EmbeddingProviderConfig, text: str) -> Optional[List[float]]:
-        """调用 OpenAI 兼容的 embedding API"""
+        """Call OpenAI compatible embedding API"""
         try:
             from openai import OpenAI
 
@@ -345,11 +345,11 @@ class EmbeddingProviderManager:
             return response.data[0].embedding
 
         except Exception as e:
-            logger.warning(f"OpenAI 兼容 API 调用失败: {e}")
+            logger.warning(f"OpenAI Compatible API call failed: {e}")
             raise
 
     def _call_google(self, provider: EmbeddingProviderConfig, text: str) -> Optional[List[float]]:
-        """调用 Google embedding API"""
+        """call Google embedding API"""
         try:
             import google.generativeai as genai
 
@@ -363,20 +363,20 @@ class EmbeddingProviderManager:
             return result['embedding']
 
         except Exception as e:
-            logger.warning(f"Google API 调用失败: {e}")
+            logger.warning(f"Google API call failed: {e}")
             raise
 
     def _call_siliconflow(self, provider: EmbeddingProviderConfig, text: str) -> Optional[List[float]]:
-        """调用硅基流动 embedding API (OpenAI 兼容)"""
+        """Call Silicone Flow embedding API (OpenAI Compatible)"""
         return self._call_openai_compatible(provider, text)
 
 
-# 全局单例
+# Global singleton
 _embedding_manager: Optional[EmbeddingProviderManager] = None
 
 
 def get_embedding_manager() -> EmbeddingProviderManager:
-    """获取 Embedding 管理器单例"""
+    """Get the Embedding manager singleton"""
     global _embedding_manager
     if _embedding_manager is None:
         _embedding_manager = EmbeddingProviderManager()
@@ -385,16 +385,16 @@ def get_embedding_manager() -> EmbeddingProviderManager:
 
 def get_embedding_with_fallback(text: str, preferred_provider: Optional[str] = None) -> Tuple[Optional[List[float]], str]:
     """
-    获取文本的 embedding（带自动降级）
+    Get the embedding of text (with automatic degradation)
 
-    便捷函数，自动处理降级逻辑
+    Convenience function to automatically handle downgrade logic
 
     Args:
-        text: 要获取 embedding 的文本
-        preferred_provider: 首选的提供者名称
+        text: To get the text of embedding
+        preferred_provider: Preferred provider name
 
     Returns:
-        (embedding_vector, provider_name) 或 (None, error_message)
+        (embedding_vector, provider_name) or (None, error_message)
     """
     manager = get_embedding_manager()
     return manager.get_embedding(text, preferred_provider)

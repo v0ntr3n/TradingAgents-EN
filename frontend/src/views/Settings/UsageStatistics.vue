@@ -5,37 +5,37 @@
         <div class="card-header">
           <span class="title">
             <el-icon><DataAnalysis /></el-icon>
-            使用统计与计费
+            Usage statistics and billing
           </span>
           <div class="header-actions">
             <el-select v-model="selectedDays" @change="loadData" style="width: 120px; margin-right: 10px;">
-              <el-option label="最近7天" :value="7" />
-              <el-option label="最近30天" :value="30" />
-              <el-option label="最近90天" :value="90" />
+              <el-option label="Last 7 days" :value="7" />
+              <el-option label="Last 30 days" :value="30" />
+              <el-option label="Last 90 days" :value="90" />
             </el-select>
-            <el-button type="primary" :icon="Refresh" @click="loadData">刷新</el-button>
+            <el-button type="primary" :icon="Refresh" @click="loadData">Refresh</el-button>
           </div>
         </div>
       </template>
 
-      <!-- 统计概览 -->
+      <!-- Statistical overview -->
       <el-row :gutter="20" class="stats-overview">
         <el-col :span="6">
-          <el-statistic title="总请求数" :value="statistics.total_requests">
+          <el-statistic title="Total requests" :value="statistics.total_requests">
             <template #prefix>
               <el-icon><Document /></el-icon>
             </template>
           </el-statistic>
         </el-col>
         <el-col :span="6">
-          <el-statistic title="总输入 Token" :value="statistics.total_input_tokens">
+          <el-statistic title="total input Token" :value="statistics.total_input_tokens">
             <template #prefix>
               <el-icon><Upload /></el-icon>
             </template>
           </el-statistic>
         </el-col>
         <el-col :span="6">
-          <el-statistic title="总输出 Token" :value="statistics.total_output_tokens">
+          <el-statistic title="total output Token" :value="statistics.total_output_tokens">
             <template #prefix>
               <el-icon><Download /></el-icon>
             </template>
@@ -45,7 +45,7 @@
           <div class="cost-statistic">
             <div class="cost-label">
               <el-icon><Money /></el-icon>
-              <span>总成本</span>
+              <span>total cost</span>
             </div>
             <div class="cost-values">
               <div v-for="(cost, currency) in statistics.cost_by_currency" :key="currency" class="cost-item">
@@ -54,7 +54,7 @@
               </div>
               <div v-if="Object.keys(statistics.cost_by_currency || {}).length === 0" class="cost-item">
                 <span class="cost-amount">0.0000</span>
-                <span class="cost-currency">元</span>
+                <span class="cost-currency">Yuan</span>
               </div>
             </div>
           </div>
@@ -62,12 +62,12 @@
       </el-row>
     </el-card>
 
-    <!-- 图表区域 -->
+    <!-- chart area -->
     <el-row :gutter="20" style="margin-top: 20px;">
       <el-col :span="12">
         <el-card>
           <template #header>
-            <span>按供应商统计</span>
+            <span>Statistics by supplier</span>
           </template>
           <div ref="providerChartRef" style="height: 300px;"></div>
         </el-card>
@@ -75,7 +75,7 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <span>按模型统计</span>
+            <span>Statistics by model</span>
           </template>
           <div ref="modelChartRef" style="height: 300px;"></div>
         </el-card>
@@ -86,41 +86,41 @@
       <el-col :span="24">
         <el-card>
           <template #header>
-            <span>每日成本趋势</span>
+            <span>daily cost trend</span>
           </template>
           <div ref="dailyChartRef" style="height: 300px;"></div>
         </el-card>
       </el-col>
     </el-row>
 
-    <!-- 使用记录表格 -->
+    <!-- Use record form -->
     <el-card style="margin-top: 20px;">
       <template #header>
         <div class="card-header">
-          <span>使用记录</span>
+          <span>Usage records</span>
           <el-button type="danger" size="small" @click="handleDeleteOldRecords">
-            清理旧记录
+            Clean up old records
           </el-button>
         </div>
       </template>
 
       <el-table :data="records" style="width: 100%" v-loading="loading">
-        <el-table-column prop="timestamp" label="时间" width="180">
+        <el-table-column prop="timestamp" label="time" width="180">
           <template #default="{ row }">
             {{ formatTimestamp(row.timestamp) }}
           </template>
         </el-table-column>
-        <el-table-column prop="provider" label="供应商" width="120" />
-        <el-table-column prop="model_name" label="模型" width="180" />
-        <el-table-column prop="input_tokens" label="输入 Token" width="120" align="right" />
-        <el-table-column prop="output_tokens" label="输出 Token" width="120" align="right" />
-        <el-table-column prop="cost" label="成本" width="140" align="right">
+        <el-table-column prop="provider" label="supplier" width="120" />
+        <el-table-column prop="model_name" label="model" width="180" />
+        <el-table-column prop="input_tokens" label="input Token" width="120" align="right" />
+        <el-table-column prop="output_tokens" label="output Token" width="120" align="right" />
+        <el-table-column prop="cost" label="cost" width="140" align="right">
           <template #default="{ row }">
             {{ row.cost.toFixed(4) }} {{ getCurrencySymbol(row.currency || 'CNY') }}
           </template>
         </el-table-column>
-        <el-table-column prop="analysis_type" label="分析类型" width="150" />
-        <el-table-column prop="session_id" label="会话ID" show-overflow-tooltip />
+        <el-table-column prop="analysis_type" label="Analysis type" width="150" />
+        <el-table-column prop="session_id" label="session ID" show-overflow-tooltip />
       </el-table>
 
       <el-pagination
@@ -150,7 +150,7 @@ import {
   type UsageStatistics
 } from '@/api/usage'
 
-// 数据
+// data
 const selectedDays = ref(7)
 const loading = ref(false)
 const statistics = ref<UsageStatistics>({
@@ -168,25 +168,25 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const totalRecords = ref(0)
 
-// 图表引用
+// Chart reference
 const providerChartRef = ref<HTMLElement>()
 const modelChartRef = ref<HTMLElement>()
 const dailyChartRef = ref<HTMLElement>()
 
-// 图表实例
+// Chart example
 let providerChart: echarts.ECharts | null = null
 let modelChart: echarts.ECharts | null = null
 let dailyChart: echarts.ECharts | null = null
 
-// 格式化时间戳
+// Format timestamp
 const formatTimestamp = (timestamp: string) => {
   return new Date(timestamp).toLocaleString('zh-CN')
 }
 
-// 获取货币符号
+// Get currency symbol
 const getCurrencySymbol = (currency: string) => {
   const symbols: Record<string, string> = {
-    'CNY': '元',
+    'CNY': 'Yuan',
     'USD': '$',
     'EUR': '€',
     'GBP': '£',
@@ -195,7 +195,7 @@ const getCurrencySymbol = (currency: string) => {
   return symbols[currency] || currency
 }
 
-// 加载统计数据
+// Load statistics
 const loadStatistics = async () => {
   try {
     const res = await getUsageStatistics({ days: selectedDays.value })
@@ -205,12 +205,12 @@ const loadStatistics = async () => {
       renderCharts()
     }
   } catch (error) {
-    console.error('加载统计数据失败:', error)
-    ElMessage.error('加载统计数据失败')
+    console.error('Failed to load statistics:', error)
+    ElMessage.error('Failed to load statistics')
   }
 }
 
-// 加载使用记录
+// Load usage records
 const loadRecords = async () => {
   try {
     loading.value = true
@@ -222,26 +222,26 @@ const loadRecords = async () => {
       totalRecords.value = res.data.total
     }
   } catch (error) {
-    console.error('加载使用记录失败:', error)
-    ElMessage.error('加载使用记录失败')
+    console.error('Failed to load usage records:', error)
+    ElMessage.error('Failed to load usage records')
   } finally {
     loading.value = false
   }
 }
 
-// 加载所有数据
+// Load all data
 const loadData = async () => {
   await Promise.all([loadStatistics(), loadRecords()])
 }
 
-// 渲染图表
+// Render chart
 const renderCharts = () => {
   renderProviderChart()
   renderModelChart()
   renderDailyChart()
 }
 
-// 渲染供应商图表
+// Render supplier chart
 const renderProviderChart = () => {
   if (!providerChartRef.value) return
 
@@ -265,7 +265,7 @@ const renderProviderChart = () => {
     },
     series: [
       {
-        name: '成本',
+        name: 'cost',
         type: 'pie',
         radius: '50%',
         data,
@@ -283,7 +283,7 @@ const renderProviderChart = () => {
   providerChart.setOption(option)
 }
 
-// 渲染模型图表
+// Render model diagram
 const renderModelChart = () => {
   if (!modelChartRef.value) return
 
@@ -297,7 +297,7 @@ const renderModelChart = () => {
       value: value.cost
     }))
     .sort((a, b) => b.value - a.value)
-    .slice(0, 10) // 只显示前10个
+    .slice(0, 10) // Only show the first 10
 
   const option = {
     tooltip: {
@@ -316,7 +316,7 @@ const renderModelChart = () => {
     },
     yAxis: {
       type: 'value',
-      name: '成本(元)'
+      name: 'cost(Yuan)'
     },
     series: [
       {
@@ -332,7 +332,7 @@ const renderModelChart = () => {
   modelChart.setOption(option)
 }
 
-// 渲染每日成本图表
+// Render daily cost chart
 const renderDailyChart = () => {
   if (!dailyChartRef.value) return
 
@@ -353,7 +353,7 @@ const renderDailyChart = () => {
     },
     yAxis: {
       type: 'value',
-      name: '成本(元)'
+      name: 'cost(Yuan)'
     },
     series: [
       {
@@ -373,33 +373,33 @@ const renderDailyChart = () => {
   dailyChart.setOption(option)
 }
 
-// 删除旧记录
+// Delete old records
 const handleDeleteOldRecords = async () => {
   try {
     await ElMessageBox.confirm(
-      '确定要删除90天前的旧记录吗？此操作不可恢复。',
-      '警告',
+      'Are you sure you want to delete old records from 90 days ago? This operation is irreversible.',
+      'warning',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
 
     const res = await deleteOldRecords(90)
     if (res.data?.success) {
-      ElMessage.success(`已删除 ${res.data.deleted_count} 条旧记录`)
+      ElMessage.success(`Deleted ${res.data.deleted_count} old records`)
       loadData()
     }
   } catch (error: any) {
     if (error !== 'cancel') {
-      console.error('删除旧记录失败:', error)
-      ElMessage.error('删除旧记录失败')
+      console.error('Failed to delete old records:', error)
+      ElMessage.error('Failed to delete old records')
     }
   }
 }
 
-// 组件挂载
+// Component mounting
 onMounted(() => {
   loadData()
 })

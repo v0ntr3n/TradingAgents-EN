@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-数据库配置管理模块
-统一管理MongoDB和Redis的连接配置
+Database configuration management module
+Unified management of MongoDB and Redis connection configurations
 """
 
 import os
@@ -10,15 +10,15 @@ from .mongodb_utils import build_mongodb_connection_string, get_mongodb_database
 
 
 class DatabaseConfig:
-    """数据库配置管理类"""
+    """Database configuration management class"""
 
     @staticmethod
     def get_mongodb_config() -> Dict[str, Any]:
         """
-        获取MongoDB配置
+        Get MongoDB configuration
 
         Returns:
-            Dict[str, Any]: MongoDB配置字典
+            Dict[str, Any]: MongoDB Configuration dictionary
         """
         return {
             'connection_string': build_mongodb_connection_string(),
@@ -29,15 +29,15 @@ class DatabaseConfig:
     @staticmethod
     def get_redis_config() -> Dict[str, Any]:
         """
-        获取Redis配置
+        Get Redis configuration
         
         Returns:
-            Dict[str, Any]: Redis配置字典
+            Dict[str, Any]: Redis Configuration dictionary
             
         Raises:
-            ValueError: 当必要的配置未设置时
+            ValueError: When necessary configuration is not set
         """
-        # 优先使用连接字符串
+        # Prefer connection strings
         connection_string = os.getenv('REDIS_CONNECTION_STRING')
         if connection_string:
             return {
@@ -45,15 +45,15 @@ class DatabaseConfig:
                 'database': int(os.getenv('REDIS_DATABASE', 0))
             }
         
-        # 使用分离的配置参数
+        # Use separate configuration parameters
         host = os.getenv('REDIS_HOST')
         port = os.getenv('REDIS_PORT')
         
         if not host or not port:
             raise ValueError(
-                "Redis连接配置未完整设置。请设置以下环境变量之一：\n"
+                "Redis The connection configuration is not fully set up. Please set one of the following environment variables:\n"
                 "1. REDIS_CONNECTION_STRING=redis://localhost:6379/0\n"
-                "2. REDIS_HOST + REDIS_PORT (例如: REDIS_HOST=localhost, REDIS_PORT=6379)"
+                "2. REDIS_HOST + REDIS_PORT (For example: REDIS_HOST=localhost, REDIS_PORT=6379)"
             )
         
         return {
@@ -66,10 +66,10 @@ class DatabaseConfig:
     @staticmethod
     def validate_config() -> Dict[str, bool]:
         """
-        验证数据库配置是否完整
+        Verify database configuration is complete
         
         Returns:
-            Dict[str, bool]: 验证结果
+            Dict[str, bool]: Verification results
         """
         result = {
             'mongodb_valid': False,
@@ -93,18 +93,18 @@ class DatabaseConfig:
     @staticmethod
     def get_config_status() -> str:
         """
-        获取配置状态的友好描述
+        Get a friendly description of configuration status
         
         Returns:
-            str: 配置状态描述
+            str: Configuration status description
         """
         validation = DatabaseConfig.validate_config()
         
         if validation['mongodb_valid'] and validation['redis_valid']:
-            return "✅ 所有数据库配置正常"
+            return "✅ All database configurations are normal"
         elif validation['mongodb_valid']:
-            return "⚠️ MongoDB配置正常，Redis配置缺失"
+            return "⚠️ MongoDB The configuration is normal, but the Redis configuration is missing."
         elif validation['redis_valid']:
-            return "⚠️ Redis配置正常，MongoDB配置缺失"
+            return "⚠️ Redis Configuration is normal, MongoDB configuration is missing"
         else:
-            return "❌ 数据库配置缺失，请检查环境变量"
+            return "❌ Database configuration is missing, please check environment variables"

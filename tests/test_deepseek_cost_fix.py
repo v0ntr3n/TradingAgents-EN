@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-验证DeepSeek成本计算修复
+Verify DeepSeek cost calculation fix
 """
 
 import os
@@ -8,51 +8,51 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# 加载环境变量
+# Load environment variables
 load_dotenv()
 
 def test_deepseek_cost_calculation():
-    """测试DeepSeek成本计算"""
-    print("🧪 测试DeepSeek成本计算修复")
+    """Testing DeepSeek Cost Calculation"""
+    print("🧪 Testing DeepSeek costing fixes")
     print("=" * 50)
     
     deepseek_key = os.getenv("DEEPSEEK_API_KEY")
     if not deepseek_key:
-        print("⚠️ 未找到DEEPSEEK_API_KEY，跳过测试")
+        print("⚠️ DEEPSEEK_API_KEY not found, test skipped")
         return False
     
     try:
         from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
         from tradingagents.config.config_manager import config_manager
         
-        # 获取初始统计
+        # Get initial statistics
         initial_stats = config_manager.get_usage_statistics(1)
         initial_cost = initial_stats.get("total_cost", 0)
         
-        print(f"📊 初始成本: ¥{initial_cost:.6f}")
+        print(f"📊 initial cost: ¥{initial_cost:.6f}")
         
-        # 创建DeepSeek实例
+        # Create DeepSeek instance
         llm = ChatDeepSeek(
             model="deepseek-chat",
             temperature=0.1,
             max_tokens=100
         )
         
-        # 测试多次调用
+        # Test multiple calls
         test_cases = [
-            "什么是股票？",
-            "请简单解释市盈率的含义。",
-            "分析一下投资风险。"
+            "What are stocks?",
+            "Please briefly explain the meaning of P/E ratio.",
+            "Analyze the investment risks."
         ]
         
         total_expected_cost = 0
         
         for i, prompt in enumerate(test_cases, 1):
-            print(f"\n🔍 测试 {i}: {prompt}")
+            print(f"\n🔍 test {i}: {prompt}")
             
             response = llm.invoke(
                 prompt,
@@ -60,62 +60,62 @@ def test_deepseek_cost_calculation():
                 analysis_type="cost_test"
             )
             
-            print(f"   响应长度: {len(response.content)}")
+            print(f"   response length: {len(response.content)}")
         
-        # 等待统计更新
+        # Waiting for statistics update
         import time
         time.sleep(1)
         
-        # 检查最终统计
+        # Check final statistics
         final_stats = config_manager.get_usage_statistics(1)
         final_cost = final_stats.get("total_cost", 0)
         
         cost_increase = final_cost - initial_cost
         
-        print(f"\n📊 最终统计:")
-        print(f"   初始成本: ¥{initial_cost:.6f}")
-        print(f"   最终成本: ¥{final_cost:.6f}")
-        print(f"   成本增加: ¥{cost_increase:.6f}")
+        print(f"\n📊 final tally:")
+        print(f"   initial cost: ¥{initial_cost:.6f}")
+        print(f"   final cost: ¥{final_cost:.6f}")
+        print(f"   cost increase: ¥{cost_increase:.6f}")
         
-        # 检查DeepSeek统计
+        # Check DeepSeek Statistics
         provider_stats = final_stats.get("provider_stats", {})
         deepseek_stats = provider_stats.get("deepseek", {})
         
         if deepseek_stats:
-            print(f"   DeepSeek成本: ¥{deepseek_stats.get('cost', 0):.6f}")
-            print(f"   DeepSeek请求: {deepseek_stats.get('requests', 0)}")
+            print(f"   DeepSeek cost: ¥{deepseek_stats.get('cost', 0):.6f}")
+            print(f"   DeepSeek Request: {deepseek_stats.get('requests', 0)}")
             print(f"   DeepSeek Token: {deepseek_stats.get('tokens', 0)}")
         
-        # 验证成本是否合理
+        # Verify that costs are reasonable
         if cost_increase > 0:
-            print(f"\n✅ 成本计算修复成功！")
-            print(f"   每次调用平均成本: ¥{cost_increase/len(test_cases):.6f}")
+            print(f"\n✅ Cost calculation repair successful!")
+            print(f"   average cost per call: ¥{cost_increase/len(test_cases):.6f}")
             return True
         else:
-            print(f"\n❌ 成本计算仍有问题")
+            print(f"\n❌ Cost calculations still have problems")
             return False
             
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_cost_precision():
-    """测试成本精度显示"""
-    print("\n🔍 测试成本精度显示")
+    """Test cost accuracy display"""
+    print("\n🔍 Test cost accuracy display")
     print("-" * 30)
     
     from tradingagents.config.config_manager import ConfigManager
     
     config_manager = ConfigManager()
     
-    # 测试小额成本计算
+    # Test small cost calculations
     test_cases = [
-        (10, 5),    # 很小的token数
-        (100, 50),  # 小的token数
-        (1000, 500), # 中等token数
-        (2000, 1000) # 较大token数
+        (10, 5),    # Very small number of tokens
+        (100, 50),  # Small number of tokens
+        (1000, 500), # Medium number of tokens
+        (2000, 1000) # Larger number of tokens
     ]
     
     for input_tokens, output_tokens in test_cases:
@@ -123,15 +123,15 @@ def test_cost_precision():
         print(f"   {input_tokens:4d}+{output_tokens:4d} tokens = ¥{cost:.6f}")
 
 def main():
-    """主函数"""
+    """main function"""
     success1 = test_deepseek_cost_calculation()
     test_cost_precision()
     
     print("\n" + "=" * 50)
     if success1:
-        print("🎉 DeepSeek成本计算修复验证成功！")
+        print("🎉 DeepSeek Cost calculation repair verification successful!")
     else:
-        print("❌ DeepSeek成本计算仍需修复")
+        print("❌ DeepSeek Costing still needs fixing")
     
     return success1
 

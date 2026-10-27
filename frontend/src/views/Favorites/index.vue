@@ -3,20 +3,20 @@
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><Star /></el-icon>
-        股票关注列表
+        Stock Watchlist
       </h1>
       <p class="page-description">
-        管理您关注的股票
+        Manage the stocks you care about
       </p>
     </div>
 
-    <!-- 操作栏 -->
+    <!-- Action bar -->
     <el-card class="action-card" shadow="never">
       <el-row :gutter="16" align="middle" style="margin-bottom: 16px;">
         <el-col :span="8">
           <el-input
             v-model="searchKeyword"
-            placeholder="搜索股票代码或名称"
+            placeholder="Search for a stock symbol or name"
             clearable
           >
             <template #prefix>
@@ -26,31 +26,31 @@
         </el-col>
 
         <el-col :span="4">
-          <el-select v-model="selectedMarket" placeholder="市场" clearable>
-            <el-option label="A股" value="A股" />
+          <el-select v-model="selectedMarket" placeholder="market" clearable>
+            <el-option label="A shares" value="A shares" />
           </el-select>
         </el-col>
 
         <el-col :span="4">
-          <el-select v-model="selectedBoard" placeholder="板块" clearable>
-            <el-option label="主板" value="主板" />
-            <el-option label="创业板" value="创业板" />
-            <el-option label="科创板" value="科创板" />
-            <el-option label="北交所" value="北交所" />
+          <el-select v-model="selectedBoard" placeholder="plate" clearable>
+            <el-option label="motherboard" value="motherboard" />
+            <el-option label="GEM" value="GEM" />
+            <el-option label="Science and Technology Innovation Board" value="Science and Technology Innovation Board" />
+            <el-option label="Beijing Exchange" value="Beijing Exchange" />
             <el-option label="ETF" value="ETF" />
           </el-select>
         </el-col>
 
         <el-col :span="4">
-          <el-select v-model="selectedExchange" placeholder="交易所" clearable>
-            <el-option label="上海证券交易所" value="上海证券交易所" />
-            <el-option label="深圳证券交易所" value="深圳证券交易所" />
-            <el-option label="北京证券交易所" value="北京证券交易所" />
+          <el-select v-model="selectedExchange" placeholder="exchange" clearable>
+            <el-option label="Shanghai Stock Exchange" value="Shanghai Stock Exchange" />
+            <el-option label="Shenzhen Stock Exchange" value="Shenzhen Stock Exchange" />
+            <el-option label="Beijing Stock Exchange" value="Beijing Stock Exchange" />
           </el-select>
         </el-col>
 
         <el-col :span="4">
-          <el-select v-model="selectedTag" placeholder="标签" clearable>
+          <el-select v-model="selectedTag" placeholder="label" clearable>
             <el-option
               v-for="tag in userTags"
               :key="tag"
@@ -66,9 +66,9 @@
           <div class="action-buttons">
             <el-button @click="refreshData">
               <el-icon><Refresh /></el-icon>
-              刷新
+              Refresh
             </el-button>
-            <!-- 只有有A股股票关注列表时才显示同步实时行情按钮 -->
+            <!-- The synchronize real-time quotes button is only displayed when there is an A-share stock watch list. -->
             <el-button
               v-if="hasAStocks"
               type="success"
@@ -76,29 +76,29 @@
               :loading="syncRealtimeLoading"
             >
               <el-icon><Refresh /></el-icon>
-              同步实时行情
+              Synchronize real-time quotes
             </el-button>
-            <!-- 批量同步按钮始终显示 -->
+            <!-- Batch sync button always shows -->
             <el-button
               type="primary"
               @click="showBatchSyncDialog"
             >
               <el-icon><Download /></el-icon>
-              批量同步数据
+              Batch sync data
             </el-button>
             <el-button @click="openTagManager">
-              标签管理
+              tag management
             </el-button>
             <el-button type="primary" @click="showAddDialog">
               <el-icon><Plus /></el-icon>
-              添加
+              add
             </el-button>
           </div>
         </el-col>
       </el-row>
     </el-card>
 
-    <!-- 股票关注列表列表 -->
+    <!-- Stock Watchlist List -->
     <el-card class="favorites-list-card" shadow="never">
       <el-table
         :data="filteredFavorites"
@@ -107,7 +107,7 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="stock_code" label="股票代码" width="120">
+        <el-table-column prop="stock_code" label="Stock code" width="120">
           <template #default="{ row }">
             <el-link type="primary" @click="viewStockDetail(row)">
               {{ row.stock_code }}
@@ -115,31 +115,31 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="stock_name" label="股票名称" width="150" />
-        <el-table-column prop="market" label="市场" width="80">
+        <el-table-column prop="stock_name" label="Stock name" width="150" />
+        <el-table-column prop="market" label="market" width="80">
           <template #default="{ row }">
-            {{ row.market || 'A股' }}
+            {{ row.market || 'A shares' }}
           </template>
         </el-table-column>
-        <el-table-column prop="board" label="板块" width="100">
+        <el-table-column prop="board" label="plate" width="100">
           <template #default="{ row }">
             {{ row.board || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="exchange" label="交易所" width="140">
+        <el-table-column prop="exchange" label="exchange" width="140">
           <template #default="{ row }">
             {{ row.exchange || '-' }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="current_price" label="当前价格" width="100">
+        <el-table-column prop="current_price" label="current price" width="100">
           <template #default="{ row }">
             <span v-if="row.current_price !== null && row.current_price !== undefined">¥{{ formatPrice(row.current_price) }}</span>
             <span v-else>-</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="change_percent" label="涨跌幅" width="100">
+        <el-table-column prop="change_percent" label="Increase or decrease" width="100">
           <template #default="{ row }">
             <span
               v-if="row.change_percent !== null && row.change_percent !== undefined"
@@ -151,7 +151,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="tags" label="标签" width="150">
+        <el-table-column prop="tags" label="label" width="150">
           <template #default="{ row }">
             <el-tag
               v-for="tag in row.tags"
@@ -166,37 +166,37 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="added_at" label="添加时间" width="120">
+        <el-table-column prop="added_at" label="Add time" width="120">
           <template #default="{ row }">
             {{ formatDate(row.added_at) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="Operation" width="260" fixed="right">
           <template #default="{ row }">
             <el-button
               type="text"
               size="small"
               @click="editFavorite(row)"
             >
-              编辑
+              Edit
             </el-button>
-            <!-- 只有A股显示同步按钮 -->
+            <!-- Only A shares display the synchronization button -->
             <el-button
-              v-if="row.market === 'A股'"
+              v-if="row.market === 'A shares'"
               type="text"
               size="small"
               @click="showSingleSyncDialog(row)"
               style="color: #409EFF;"
             >
-              同步
+              sync
             </el-button>
             <el-button
               type="text"
               size="small"
               @click="analyzeFavorite(row)"
             >
-              分析
+              analysis
             </el-button>
             <el-button
               type="text"
@@ -204,40 +204,40 @@
               @click="removeFavorite(row)"
               style="color: #f56c6c;"
             >
-              移除
+              Remove
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 空状态 -->
+      <!-- Empty state -->
       <div v-if="!loading && favorites.length === 0" class="empty-state">
-        <el-empty description="暂无股票关注列表">
+        <el-empty description="There is no stock watch list yet">
           <el-button type="primary" @click="showAddDialog">
-            添加第一只股票关注列表
+            Add first stock to watchlist
           </el-button>
         </el-empty>
       </div>
     </el-card>
 
-    <!-- 添加到研究列表对话框 -->
+    <!-- Add to study list dialog -->
     <el-dialog
       v-model="addDialogVisible"
-      title="添加到研究列表"
+      title="Add to study list"
       width="500px"
     >
       <el-form :model="addForm" :rules="addRules" ref="addFormRef" label-width="100px">
-        <el-form-item label="市场类型" prop="market">
+        <el-form-item label="market type" prop="market">
           <el-select v-model="addForm.market" @change="handleMarketChange">
-            <el-option label="A股" value="A股" />
+            <el-option label="A shares" value="A shares" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="股票代码" prop="stock_code">
+        <el-form-item label="Stock code" prop="stock_code">
           <el-autocomplete
             v-model="addForm.stock_code"
             :fetch-suggestions="searchStocks"
-            placeholder="输入股票代码或名称搜索，如：000001 或 平安银行"
+            placeholder="Enter stock code or name to search, such as: 000001 or Ping An Bank"
             clearable
             class="w-full"
             value-key="code"
@@ -253,21 +253,21 @@
             </template>
           </el-autocomplete>
           <div style="font-size: 12px; color: #909399; margin-top: 4px;">
-            支持股票代码或名称搜索，选择后自动填充
+            Supports stock code or name search and automatically fills in after selection
           </div>
         </el-form-item>
 
-        <el-form-item label="股票名称" prop="stock_name">
-          <el-input v-model="addForm.stock_name" placeholder="股票名称" />
+        <el-form-item label="Stock name" prop="stock_name">
+          <el-input v-model="addForm.stock_name" placeholder="Stock name" />
         </el-form-item>
 
-        <el-form-item label="标签">
+        <el-form-item label="label">
           <el-select
             v-model="addForm.tags"
             multiple
             filterable
             allow-create
-            placeholder="选择或创建标签"
+            placeholder="Select or create a label"
           >
             <el-option v-for="tag in userTags" :key="tag" :label="tag" :value="tag">
               <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
@@ -278,36 +278,36 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="备注">
+        <el-form-item label="Remarks">
           <el-input
             v-model="addForm.notes"
             type="textarea"
             :rows="2"
-            placeholder="可选：添加备注信息"
+            placeholder="Optional: add notes"
           />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="addDialogVisible = false">取消</el-button>
+        <el-button @click="addDialogVisible = false">Cancel</el-button>
         <el-button type="primary" @click="handleAddFavorite" :loading="addLoading">
-          添加
+          add
         </el-button>
       </template>
     </el-dialog>
-    <!-- 编辑股票关注列表对话框 -->
+    <!-- Edit Stock Watchlist Dialog Box -->
     <el-dialog
       v-model="editDialogVisible"
-      title="编辑股票关注列表"
+      title="Edit a stock watchlist"
       width="520px"
     >
       <el-form :model="editForm" ref="editFormRef" label-width="100px">
-        <el-form-item label="股票">
+        <el-form-item label="stocks">
           <div>{{ editForm.stock_code }}｜{{ editForm.stock_name }}（{{ editForm.market }}）</div>
         </el-form-item>
 
-        <el-form-item label="标签">
-          <el-select v-model="editForm.tags" multiple filterable allow-create placeholder="选择或创建标签">
+        <el-form-item label="label">
+          <el-select v-model="editForm.tags" multiple filterable allow-create placeholder="Select or create a label">
             <el-option v-for="tag in userTags" :key="tag" :label="tag" :value="tag">
               <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
                 <span>{{ tag }}</span>
@@ -317,24 +317,24 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="备注">
-          <el-input v-model="editForm.notes" type="textarea" :rows="2" placeholder="可选：添加备注信息" />
+        <el-form-item label="Remarks">
+          <el-input v-model="editForm.notes" type="textarea" :rows="2" placeholder="Optional: add notes" />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="editDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="editLoading" @click="handleUpdateFavorite">保存</el-button>
+        <el-button @click="editDialogVisible = false">Cancel</el-button>
+        <el-button type="primary" :loading="editLoading" @click="handleUpdateFavorite">save</el-button>
       </template>
     </el-dialog>
 
-    <!-- 标签管理对话框 -->
-    <el-dialog v-model="tagDialogVisible" title="标签管理" width="560px">
+    <!-- Tag management dialog -->
+    <el-dialog v-model="tagDialogVisible" title="tag management" width="560px">
       <el-table :data="tagList" v-loading="tagLoading" size="small" style="width: 100%; margin-bottom: 12px;">
-        <el-table-column label="名称" min-width="220">
+        <el-table-column label="Name" min-width="220">
           <template #default="{ row }">
             <template v-if="row._editing">
-              <el-input v-model="row._name" placeholder="标签名称" size="small" />
+              <el-input v-model="row._name" placeholder="Tag name" size="small" />
             </template>
             <template v-else>
               <el-tag :color="row.color" effect="dark" style="margin-right:6px"></el-tag>
@@ -342,10 +342,10 @@
             </template>
           </template>
         </el-table-column>
-        <el-table-column label="颜色" width="140">
+        <el-table-column label="color" width="140">
           <template #default="{ row }">
             <template v-if="row._editing">
-              <el-select v-model="row._color" placeholder="选择颜色" size="small" style="width: 200px">
+              <el-select v-model="row._color" placeholder="Choose color" size="small" style="width: 200px">
                 <el-option v-for="c in COLOR_PALETTE" :key="c" :label="c" :value="c">
                   <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
                     <span>{{ c }}</span>
@@ -362,7 +362,7 @@
             </template>
           </template>
         </el-table-column>
-        <el-table-column label="排序" width="100" align="center">
+        <el-table-column label="sort" width="100" align="center">
           <template #default="{ row }">
             <template v-if="row._editing">
               <el-input v-model.number="row._sort" type="number" size="small" />
@@ -372,23 +372,23 @@
             </template>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="Operation" width="160" fixed="right">
           <template #default="{ row }">
             <template v-if="row._editing">
-              <el-button type="text" size="small" @click="saveTag(row)">保存</el-button>
-              <el-button type="text" size="small" @click="cancelEditTag(row)">取消</el-button>
+              <el-button type="text" size="small" @click="saveTag(row)">save</el-button>
+              <el-button type="text" size="small" @click="cancelEditTag(row)">Cancel</el-button>
             </template>
             <template v-else>
-              <el-button type="text" size="small" @click="editTag(row)">编辑</el-button>
-              <el-button type="text" size="small" style="color:#f56c6c" @click="deleteTag(row)">删除</el-button>
+              <el-button type="text" size="small" @click="editTag(row)">Edit</el-button>
+              <el-button type="text" size="small" style="color:#f56c6c" @click="deleteTag(row)">Delete</el-button>
             </template>
           </template>
         </el-table-column>
       </el-table>
 
       <div style="display:flex; gap:8px; align-items:center;">
-        <el-input v-model="newTag.name" placeholder="新标签名" style="flex:1" />
-        <el-select v-model="newTag.color" placeholder="选择颜色" style="width:200px">
+        <el-input v-model="newTag.name" placeholder="New tag name" style="flex:1" />
+        <el-select v-model="newTag.color" placeholder="Choose color" style="width:200px">
           <el-option v-for="c in COLOR_PALETTE" :key="c" :label="c" :value="c">
             <span :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }">
               <span>{{ c }}</span>
@@ -397,19 +397,19 @@
           </el-option>
         </el-select>
         <span class="color-dot-preview" :style="{ background: newTag.color }"></span>
-        <el-input v-model.number="newTag.sort_order" type="number" placeholder="排序" style="width:120px" />
-        <el-button type="primary" @click="createTag" :loading="tagLoading">新增</el-button>
+        <el-input v-model.number="newTag.sort_order" type="number" placeholder="sort" style="width:120px" />
+        <el-button type="primary" @click="createTag" :loading="tagLoading">New</el-button>
       </div>
 
       <template #footer>
-        <el-button @click="tagDialogVisible=false">关闭</el-button>
+        <el-button @click="tagDialogVisible=false">close</el-button>
       </template>
     </el-dialog>
 
-    <!-- 批量同步对话框 -->
+    <!-- Batch sync dialog box -->
     <el-dialog
       v-model="batchSyncDialogVisible"
-      title="批量同步股票数据"
+      title="Batch sync stock data"
       width="500px"
     >
       <el-alert
@@ -418,32 +418,32 @@
         style="margin-bottom: 16px;"
       >
         <template v-if="syncAllStocks">
-          将同步研究列表中所有 <strong>{{ favorites.filter(item => item.market === 'A股').length }}</strong> 只A股股票
+          will synchronize all studies in the list <strong>{{ favorites.filter(item => item.market === 'A shares').length }}</strong> Only A-share stocks
         </template>
         <template v-else>
-          已选择 <strong>{{ selectedStocks.length }}</strong> 只股票
+          Selected <strong>{{ selectedStocks.length }}</strong> only stocks
         </template>
       </el-alert>
 
       <el-form :model="batchSyncForm" label-width="120px">
-        <el-form-item label="同步内容">
+        <el-form-item label="Sync content">
           <el-checkbox-group v-model="batchSyncForm.syncTypes">
-            <el-checkbox label="historical">历史行情数据</el-checkbox>
-            <el-checkbox label="financial">财务数据</el-checkbox>
-            <el-checkbox label="basic">基础数据</el-checkbox>
+            <el-checkbox label="historical">Historical market data</el-checkbox>
+            <el-checkbox label="financial">financial data</el-checkbox>
+            <el-checkbox label="basic">Basic data</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
-        <el-form-item label="数据源">
+        <el-form-item label="data source">
           <el-radio-group v-model="batchSyncForm.dataSource">
             <el-radio label="tushare" :disabled="!availableSyncSources.tushare">Tushare</el-radio>
             <el-radio label="akshare" :disabled="!availableSyncSources.akshare">AKShare</el-radio>
             <el-radio v-if="!isJdyunMode()" label="qmt" :disabled="!availableSyncSources.qmt">QMT</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="历史数据天数" v-if="batchSyncForm.syncTypes.includes('historical')">
+        <el-form-item label="Historical data days" v-if="batchSyncForm.syncTypes.includes('historical')">
           <el-input-number v-model="batchSyncForm.days" :min="1" :max="3650" />
           <span style="margin-left: 10px; color: #909399; font-size: 12px;">
-            (最多3650天，约10年)
+            (Up to 3650 days, about 10 years)
           </span>
         </el-form-item>
       </el-form>
@@ -453,57 +453,57 @@
         :closable="false"
         style="margin-top: 16px;"
       >
-        批量同步可能需要较长时间，请耐心等待
+        Batch synchronization may take a long time, please be patient.
       </el-alert>
 
       <template #footer>
-        <el-button @click="batchSyncDialogVisible = false; syncAllStocks = false">取消</el-button>
+        <el-button @click="batchSyncDialogVisible = false; syncAllStocks = false">Cancel</el-button>
         <el-button type="primary" @click="handleBatchSync" :loading="batchSyncLoading">
-          开始同步
+          Start syncing
         </el-button>
       </template>
     </el-dialog>
 
-    <!-- 单个股票同步对话框 -->
+    <!-- Single stock synchronization dialog box -->
     <el-dialog
       v-model="singleSyncDialogVisible"
-      title="同步股票数据"
+      title="Sync stock data"
       width="500px"
     >
       <el-form :model="singleSyncForm" label-width="120px">
-        <el-form-item label="股票代码">
+        <el-form-item label="Stock code">
           <el-input v-model="currentSyncStock.stock_code" disabled />
         </el-form-item>
-        <el-form-item label="股票名称">
+        <el-form-item label="Stock name">
           <el-input v-model="currentSyncStock.stock_name" disabled />
         </el-form-item>
-        <el-form-item label="同步内容">
+        <el-form-item label="Sync content">
           <el-checkbox-group v-model="singleSyncForm.syncTypes">
-            <el-checkbox label="realtime">实时行情</el-checkbox>
-            <el-checkbox label="historical">历史行情数据</el-checkbox>
-            <el-checkbox label="financial">财务数据</el-checkbox>
-            <el-checkbox label="basic">基础数据</el-checkbox>
+            <el-checkbox label="realtime">Real-time quotes</el-checkbox>
+            <el-checkbox label="historical">Historical market data</el-checkbox>
+            <el-checkbox label="financial">financial data</el-checkbox>
+            <el-checkbox label="basic">Basic data</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
-        <el-form-item label="数据源">
+        <el-form-item label="data source">
           <el-radio-group v-model="singleSyncForm.dataSource">
             <el-radio label="tushare" :disabled="!availableSyncSources.tushare">Tushare</el-radio>
             <el-radio label="akshare" :disabled="!availableSyncSources.akshare">AKShare</el-radio>
             <el-radio v-if="!isJdyunMode()" label="qmt" :disabled="!availableSyncSources.qmt">QMT</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="历史数据天数" v-if="singleSyncForm.syncTypes.includes('historical')">
+        <el-form-item label="Historical data days" v-if="singleSyncForm.syncTypes.includes('historical')">
           <el-input-number v-model="singleSyncForm.days" :min="1" :max="3650" />
           <span style="margin-left: 10px; color: #909399; font-size: 12px;">
-            (最多3650天，约10年)
+            (Up to 3650 days, about 10 years)
           </span>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="singleSyncDialogVisible = false">取消</el-button>
+        <el-button @click="singleSyncDialogVisible = false">Cancel</el-button>
         <el-button type="primary" @click="handleSingleSync" :loading="singleSyncLoading">
-          开始同步
+          Start syncing
         </el-button>
       </template>
     </el-dialog>
@@ -540,7 +540,7 @@ import type { FavoriteItem, FavoritesRealtimeSyncTaskStatus } from '@/api/favori
 import { useAuthStore } from '@/stores/auth'
 
 
-// 颜色可选项（20种预设颜色）
+// Color options (20 preset colors)
 const COLOR_PALETTE = [
   '#409EFF', '#1677FF', '#2F88FF', '#52C41A', '#67C23A',
   '#13C2C2', '#FA8C16', '#E6A23C', '#F56C6C', '#EB2F96',
@@ -553,7 +553,7 @@ const STOCK_SYNC_POLL_INTERVAL_MS = 2000
 const STOCK_SYNC_POLL_MAX_ATTEMPTS = 300
 let favoritesViewDisposed = false
 
-// 响应式数据
+// Responsive data
 const loading = ref(false)
 const favorites = ref<FavoriteItem[]>([])
 const userTags = ref<string[]>([])
@@ -566,13 +566,13 @@ const selectedMarket = ref('')
 const selectedBoard = ref('')
 const selectedExchange = ref('')
 
-// 批量选择
+// Bulk selection
 const selectedStocks = ref<FavoriteItem[]>([])
 
-// 批量同步对话框
+// Batch sync dialog box
 const batchSyncDialogVisible = ref(false)
 const batchSyncLoading = ref(false)
-const syncAllStocks = ref(false)  // 标记是否同步所有A股股票
+const syncAllStocks = ref(false)  // Mark whether to synchronize all A-share stocks
 const availableSyncSources = ref<Record<ManualSyncDataSource, boolean>>({
   tushare: true,
   akshare: true,
@@ -584,7 +584,7 @@ const batchSyncForm = ref({
   days: 365
 })
 
-// 单个股票同步对话框
+// Single stock synchronization dialog box
 const singleSyncDialogVisible = ref(false)
 const singleSyncLoading = ref(false)
 const currentSyncStock = ref({
@@ -592,7 +592,7 @@ const currentSyncStock = ref({
   stock_name: ''
 })
 const singleSyncForm = ref({
-  syncTypes: ['realtime'],  // 默认只选中实时行情（最常用）
+  syncTypes: ['realtime'],  // By default, only real-time quotes are selected (most commonly used)
   dataSource: 'tushare' as ManualSyncDataSource,
   days: 365
 })
@@ -603,53 +603,53 @@ const loadPreferredAvailableSyncSource = async (): Promise<ManualSyncDataSource 
     availableSyncSources.value = sourceState.availableSources
     return sourceState.preferredSource
   } catch (error) {
-    console.warn('加载可用同步数据源失败，保留当前默认值', error)
+    console.warn('Failed to load available sync data sources, retaining current defaults', error)
     return null
   }
 }
 
-// 添加对话框
+// Add dialog
 const addDialogVisible = ref(false)
 const addLoading = ref(false)
 const addFormRef = ref()
 const addForm = ref({
   stock_code: '',
   stock_name: '',
-  market: 'A股',
+  market: 'A shares',
   tags: [],
   notes: ''
 })
 
 const addRules = {
   market: [
-    { required: true, message: '请选择市场类型', trigger: 'change' }
+    { required: true, message: 'Please select market type', trigger: 'change' }
   ],
   stock_code: [
-    { required: true, message: '请选择或输入股票代码', trigger: 'blur' }
+    { required: true, message: 'Please select or enter a stock code', trigger: 'blur' }
   ],
   stock_name: [
-    { required: true, message: '请输入股票名称', trigger: 'blur' }
+    { required: true, message: 'Please enter the stock name', trigger: 'blur' }
   ]
 }
 
-// 编辑对话框
+// Edit dialog
 const editDialogVisible = ref(false)
 const editLoading = ref(false)
 const editFormRef = ref()
 const editForm = ref({
   stock_code: '',
   stock_name: '',
-  market: 'A股',
+  market: 'A shares',
   tags: [] as string[],
   notes: ''
 })
 
 
-// 计算属性
+// Computed properties
 const filteredFavorites = computed<FavoriteItem[]>(() => {
   let result: FavoriteItem[] = favorites.value
 
-  // 关键词搜索
+  // keyword search
   if (searchKeyword.value) {
     const keyword = searchKeyword.value.toLowerCase()
     result = result.filter((item: FavoriteItem) =>
@@ -658,28 +658,28 @@ const filteredFavorites = computed<FavoriteItem[]>(() => {
     )
   }
 
-  // 市场筛选
+  // Market screening
   if (selectedMarket.value) {
     result = result.filter((item: FavoriteItem) =>
       item.market === selectedMarket.value
     )
   }
 
-  // 板块筛选
+  // Section filtering
   if (selectedBoard.value) {
     result = result.filter((item: FavoriteItem) =>
       item.board === selectedBoard.value
     )
   }
 
-  // 交易所筛选
+  // Exchange filter
   if (selectedExchange.value) {
     result = result.filter((item: FavoriteItem) =>
       item.exchange === selectedExchange.value
     )
   }
 
-  // 标签筛选
+  // Tag filter
   if (selectedTag.value) {
     result = result.filter((item: FavoriteItem) =>
       (item.tags || []).includes(selectedTag.value)
@@ -689,31 +689,31 @@ const filteredFavorites = computed<FavoriteItem[]>(() => {
   return result
 })
 
-// 判断是否有A股股票关注列表
+// Determine whether there is an A-share stock watch list
 const hasAStocks = computed(() => {
-  return favorites.value.some(item => item.market === 'A股')
+  return favorites.value.some(item => item.market === 'A shares')
 })
 
-// 方法
+// method
 const loadFavorites = async () => {
   loading.value = true
   try {
     const res = await favoritesApi.list()
     favorites.value = ((res as any)?.data || []) as FavoriteItem[]
   } catch (error: any) {
-    console.error('加载股票关注列表失败:', error)
-    ElMessage.error(error.message || '加载股票关注列表失败')
+    console.error('Failed to load stock watchlist:', error)
+    ElMessage.error(error.message || 'Failed to load stock watchlist')
   } finally {
     loading.value = false
   }
 }
 
-// 同步实时行情
+// Synchronize real-time quotes
 const syncRealtimeLoading = ref(false)
 const waitForFavoritesRealtimeTask = async (taskId: string): Promise<FavoritesRealtimeSyncTaskStatus> => {
   for (let attempt = 0; attempt < STOCK_SYNC_POLL_MAX_ATTEMPTS; attempt += 1) {
     if (favoritesViewDisposed) {
-      throw new Error('页面已离开，停止等待同步结果')
+      throw new Error('The page has been left, stop waiting for synchronization results')
     }
 
     const res = await favoritesApi.getRealtimeSyncTaskStatus(taskId)
@@ -724,7 +724,7 @@ const waitForFavoritesRealtimeTask = async (taskId: string): Promise<FavoritesRe
     await sleep(STOCK_SYNC_POLL_INTERVAL_MS)
   }
 
-  throw new Error('股票关注列表实时行情同步超时，请稍后刷新列表查看结果')
+  throw new Error('The real-time market synchronization of the stock watch list has timed out. Please refresh the list later to view the results.')
 }
 
 const monitorFavoritesRealtimeTask = async (taskId: string) => {
@@ -732,7 +732,7 @@ const monitorFavoritesRealtimeTask = async (taskId: string) => {
     const task = await waitForFavoritesRealtimeTask(taskId)
     if (favoritesViewDisposed) return
 
-    const message = task.result?.message || task.error || task.message || '股票关注列表实时行情同步失败'
+    const message = task.result?.message || task.error || task.message || 'Stock watch list real-time quotation synchronization failed'
     if (task.status === 'success') {
       ElMessage.success(message)
     } else if (task.status === 'success_with_errors') {
@@ -743,15 +743,15 @@ const monitorFavoritesRealtimeTask = async (taskId: string) => {
 
     await loadFavorites()
   } catch (error: any) {
-    if (!favoritesViewDisposed && error?.message !== '页面已离开，停止等待同步结果') {
-      ElMessage.error(error?.message || '股票关注列表实时行情结果查询失败，请稍后刷新列表查看')
+    if (!favoritesViewDisposed && error?.message !== 'The page has been left, stop waiting for synchronization results') {
+      ElMessage.error(error?.message || 'Failed to query the real-time market results of the stock watch list, please refresh the list later to view')
     }
   }
 }
 
 const syncAllRealtime = async () => {
   if (favorites.value.length === 0) {
-    ElMessage.warning('没有股票关注列表需要同步')
+    ElMessage.warning('No stock watchlists to sync')
     return
   }
 
@@ -762,14 +762,14 @@ const syncAllRealtime = async () => {
     const res = await favoritesApi.syncRealtime(realtimeSource)
 
     if ((res as any)?.success) {
-      ElMessage.success('股票关注列表实时行情同步任务已提交，后台执行中')
+      ElMessage.success('The real-time market synchronization task of the stock watch list has been submitted and is being executed in the background.')
       void monitorFavoritesRealtimeTask(res.data.task_id)
     } else {
-      ElMessage.error((res as any)?.message || '同步失败')
+      ElMessage.error((res as any)?.message || 'Sync failed')
     }
   } catch (error: any) {
-    console.error('同步实时行情失败:', error)
-    ElMessage.error(error.message || '同步失败，请稍后重试')
+    console.error('Failed to synchronize real-time quotes:', error)
+    ElMessage.error(error.message || 'Synchronization failed, please try again later')
   } finally {
     syncRealtimeLoading.value = false
   }
@@ -790,13 +790,13 @@ const loadUserTags = async () => {
       tagColorMap.value = {}
     }
   } catch (error) {
-    console.error('加载标签失败:', error)
+    console.error('Failed to load tags:', error)
     userTags.value = []
     tagColorMap.value = {}
   }
 }
 
-// 标签管理对话框 - 脚本
+// Tag Management Dialog - Script
 const tagDialogVisible = ref(false)
 const tagLoading = ref(false)
 const tagList = ref<any[]>([])
@@ -808,7 +808,7 @@ const loadTagList = async () => {
     const res = await tagsApi.list()
     tagList.value = (res as any)?.data || []
   } catch (e) {
-    console.error('加载标签列表失败:', e)
+    console.error('Failed to load tag list:', e)
   } finally {
     tagLoading.value = false
   }
@@ -821,19 +821,19 @@ const openTagManager = async () => {
 
 const createTag = async () => {
   if (!newTag.value.name || !newTag.value.name.trim()) {
-    ElMessage.warning('请输入标签名')
+    ElMessage.warning('Please enter a tag name')
     return
   }
   tagLoading.value = true
   try {
     await tagsApi.create({ ...newTag.value })
-    ElMessage.success('创建成功')
+    ElMessage.success('Created successfully')
     newTag.value = { name: '', color: '#409EFF', sort_order: 0 }
     await loadTagList()
     await loadUserTags()
   } catch (e: any) {
-    console.error('创建标签失败:', e)
-    ElMessage.error(e?.message || '创建失败')
+    console.error('Failed to create label:', e)
+    ElMessage.error(e?.message || 'Creation failed')
   } finally {
     tagLoading.value = false
   }
@@ -858,13 +858,13 @@ const saveTag = async (row: any) => {
       color: row._color ?? row.color,
       sort_order: row._sort ?? row.sort_order,
     })
-    ElMessage.success('保存成功')
+    ElMessage.success('Saved successfully')
     row._editing = false
     await loadTagList()
     await loadUserTags()
   } catch (e: any) {
-    console.error('保存标签失败:', e)
-    ElMessage.error(e?.message || '保存失败')
+    console.error('Failed to save label:', e)
+    ElMessage.error(e?.message || 'Save failed')
   } finally {
     tagLoading.value = false
   }
@@ -872,18 +872,18 @@ const saveTag = async (row: any) => {
 
 const deleteTag = async (row: any) => {
   try {
-    await ElMessageBox.confirm(`确定删除标签 ${row.name} 吗？`, '删除标签', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(`Confirm to delete tag ${row.name} ?`, 'Delete tag', {
+      confirmButtonText: 'OK',
+      cancelButtonText: 'Cancel',
       type: 'warning'
     })
     tagLoading.value = true
     await tagsApi.remove(row.id)
-    ElMessage.success('已删除')
+    ElMessage.success('Deleted')
     await loadTagList()
     await loadUserTags()
   } catch (e) {
-    // 用户取消或失败
+    // User canceled or failed
   } finally {
     tagLoading.value = false
   }
@@ -900,33 +900,33 @@ const showAddDialog = () => {
   addForm.value = {
     stock_code: '',
     stock_name: '',
-    market: 'A股',
+    market: 'A shares',
     tags: [],
     notes: ''
   }
   addDialogVisible.value = true
 }
 
-// 市场类型切换时清空股票代码和名称
+// Clear stock code and name when switching market types
 const handleMarketChange = () => {
   addForm.value.stock_code = ''
   addForm.value.stock_name = ''
-  // 清除验证错误
+  // Clear validation errors
   if (addFormRef.value) {
     addFormRef.value.clearValidate(['stock_code', 'stock_name'])
   }
 }
 
-// 搜索股票（支持代码和名称）
-// 注意：不能声明为 async——el-autocomplete 的 fetch-suggestions 要求同步返回
-// void 的函数签名，async 函数返回 Promise<void> 会触发 vue-tsc 类型错误
+// Search for stocks (symbol and name supported)
+// Note: cannot be declared as async——el-autocomplete The fetch-suggestions require synchronous returns
+// void The function signature of async function returns Promise<void> Will trigger vue-tsc type error
 const searchStocks = (queryString: string, cb: (results: any[]) => void) => {
   const q = queryString?.trim()
   if (!q || q.length < 1) {
     cb([])
     return
   }
-  // 正确路径是 /api/markets/CN/stocks/search
+  // The correct path is /api/markets/CN/stocks/search
   request
     .get(`/api/markets/CN/stocks/search`, { params: { q, limit: 20 } })
     .then((res: any) => {
@@ -938,15 +938,15 @@ const searchStocks = (queryString: string, cb: (results: any[]) => void) => {
       })))
     })
     .catch((err: any) => {
-      console.error('搜索失败:', err)
+      console.error('Search failed:', err)
       cb([])
     })
 }
 
-// 选择搜索结果后自动填充
+// Autocomplete after selecting search results
 const handleStockSelect = (item: any) => {
-  console.log('选中项:', item)
-  // el-autocomplete 会自动把 item.value 填到 v-model，只需填 name
+  console.log('Selected items:', item)
+  // el-autocomplete Item.value will be automatically filled in to v-model, just fill in name
   addForm.value.stock_name = item.name
   addFormRef.value?.clearValidate()
 }
@@ -958,24 +958,24 @@ const fetchStockInfo = async () => {
     const symbol = addForm.value.stock_code.trim()
     const market = addForm.value.market
 
-    if (market === 'A股') {
-      // 从后台获取股票基础信息
+    if (market === 'A shares') {
+      // Get basic stock information from the backend
       const res = await ApiClient.get(`/api/stock-data/basic-info/${symbol}`)
 
       if ((res as any)?.success && (res as any)?.data) {
         const stockInfo = (res as any).data
-        // 自动填充股票名称
+        // Autofill stock names
         if (stockInfo.name) {
           addForm.value.stock_name = stockInfo.name
-          ElMessage.success(`已自动填充股票名称: ${stockInfo.name}`)
+          ElMessage.success(`Stock name auto-populated: ${stockInfo.name}`)
         }
       } else {
-        ElMessage.warning('未找到该股票信息，请手动输入股票名称')
+        ElMessage.warning('The stock information was not found, please enter the stock name manually')
       }
     }
   } catch (error: any) {
-    console.error('获取股票信息失败:', error)
-    ElMessage.warning('获取股票信息失败，请手动输入股票名称')
+    console.error('Failed to obtain stock information:', error)
+    ElMessage.warning('Failed to obtain stock information, please enter the stock name manually')
   }
 }
 
@@ -985,13 +985,13 @@ const handleAddFavorite = async () => {
     addLoading.value = true
     const payload = { ...addForm.value }
     const res = await favoritesApi.add(payload as any)
-    if ((res as any)?.success === false) throw new Error((res as any)?.message || '添加失败')
-    ElMessage.success('添加成功')
+    if ((res as any)?.success === false) throw new Error((res as any)?.message || 'Add failed')
+    ElMessage.success('Added successfully')
     addDialogVisible.value = false
     await loadFavorites()
   } catch (error: any) {
-    console.error('添加到研究列表失败:', error)
-    ElMessage.error(error.message || '添加失败')
+    console.error('Add to study list failed:', error)
+    ElMessage.error(error.message || 'Add failed')
   } finally {
     addLoading.value = false
   }
@@ -1005,13 +1005,13 @@ const handleUpdateFavorite = async () => {
       notes: editForm.value.notes
     }
     const res = await favoritesApi.update(editForm.value.stock_code, payload as any)
-    if ((res as any)?.success === false) throw new Error((res as any)?.message || '更新失败')
-    ElMessage.success('保存成功')
+    if ((res as any)?.success === false) throw new Error((res as any)?.message || 'Update failed')
+    ElMessage.success('Saved successfully')
     editDialogVisible.value = false
     await loadFavorites()
   } catch (error: any) {
-    console.error('更新股票关注列表失败:', error)
-    ElMessage.error(error.message || '保存失败')
+    console.error('Failed to update stock watchlist:', error)
+    ElMessage.error(error.message || 'Save failed')
   } finally {
     editLoading.value = false
   }
@@ -1022,7 +1022,7 @@ const editFavorite = (row: any) => {
   editForm.value = {
     stock_code: row.stock_code || row.symbol || '',
     stock_name: row.stock_name,
-    market: row.market || 'A股',
+    market: row.market || 'A shares',
     tags: Array.isArray(row.tags) ? [...row.tags] : [],
     notes: row.notes || ''
   }
@@ -1032,27 +1032,27 @@ const editFavorite = (row: any) => {
 const analyzeFavorite = (row: any) => {
   router.push({
     name: 'SingleAnalysis',
-    query: { stock: row.stock_code, market: normalizeMarketForAnalysis(row.market || 'A股') }
+    query: { stock: row.stock_code, market: normalizeMarketForAnalysis(row.market || 'A shares') }
   })
 }
 
 const removeFavorite = async (row: any) => {
   try {
     await ElMessageBox.confirm(
-      `确定要从股票关注列表中移除 ${row.stock_name} 吗？`,
-      '确认移除',
+      `Confirm to remove from stock watchlist ${row.stock_name} ?`,
+      'Confirm removal',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
     const res = await favoritesApi.remove(row.stock_code)
-    if ((res as any)?.success === false) throw new Error((res as any)?.message || '移除失败')
-    ElMessage.success('移除成功')
+    if ((res as any)?.success === false) throw new Error((res as any)?.message || 'Removal failed')
+    ElMessage.success('Removed successfully')
     await loadFavorites()
   } catch (e) {
-    // 用户取消或失败
+    // User canceled or failed
   }
 }
 
@@ -1063,12 +1063,12 @@ const viewStockDetail = (row: any) => {
   })
 }
 
-// 处理表格选择变化
+// Handle table selection changes
 const handleSelectionChange = (selection: FavoriteItem[]) => {
   selectedStocks.value = selection
 }
 
-// 显示单个股票同步对话框
+// Show single stock synchronization dialog box
 const showSingleSyncDialog = (row: FavoriteItem) => {
   currentSyncStock.value = {
     stock_code: row.stock_code || row.symbol || '',
@@ -1092,22 +1092,22 @@ const isTerminalStockSyncStatus = (status?: string): boolean => {
 const buildSingleSyncTaskMessage = (task: StockSyncTaskStatus, symbol: string): string => {
   const result = task.result as SingleStockSyncResponse | null | undefined
   if (!result) {
-    return task.error || task.message || `股票 ${symbol} 同步失败`
+    return task.error || task.message || `stocks ${symbol} Sync failed`
   }
 
-  const parts = [`股票 ${symbol} 数据同步完成`]
+  const parts = [`stocks ${symbol} Data synchronization completed`]
 
   if (result.realtime_sync) {
-    parts.push(result.realtime_sync.success ? '实时行情同步成功' : `实时行情同步失败: ${result.realtime_sync.error || '未知错误'}`)
+    parts.push(result.realtime_sync.success ? 'Real-time market synchronization successful' : `Real-time market synchronization failed: ${result.realtime_sync.error || 'unknown error'}`)
   }
   if (result.historical_sync) {
-    parts.push(result.historical_sync.success ? `历史数据 ${result.historical_sync.records || 0} 条` : `历史数据同步失败: ${result.historical_sync.error || '未知错误'}`)
+    parts.push(result.historical_sync.success ? `historical data ${result.historical_sync.records || 0} Article` : `Historical data synchronization failed: ${result.historical_sync.error || 'unknown error'}`)
   }
   if (result.financial_sync) {
-    parts.push(result.financial_sync.success ? '财务数据同步成功' : `财务数据同步失败: ${result.financial_sync.error || '未知错误'}`)
+    parts.push(result.financial_sync.success ? 'Financial data synchronization successful' : `Financial data synchronization failed: ${result.financial_sync.error || 'unknown error'}`)
   }
   if (result.basic_sync) {
-    parts.push(result.basic_sync.success ? '基础数据同步成功' : `基础数据同步失败: ${result.basic_sync.error || '未知错误'}`)
+    parts.push(result.basic_sync.success ? 'Basic data synchronization successful' : `Basic data synchronization failed: ${result.basic_sync.error || 'unknown error'}`)
   }
 
   return parts.join('；')
@@ -1116,19 +1116,19 @@ const buildSingleSyncTaskMessage = (task: StockSyncTaskStatus, symbol: string): 
 const buildBatchSyncTaskMessage = (task: StockSyncTaskStatus, symbols: string[]): string => {
   const result = task.result as BatchStockSyncResponse | null | undefined
   if (!result) {
-    return task.error || task.message || '批量同步失败'
+    return task.error || task.message || 'Batch sync failed'
   }
 
-  const parts = [`批量同步完成（共 ${symbols.length} 只股票）`]
+  const parts = [`Batch synchronization completed (total ${symbols.length} only stocks)`]
 
   if (result.historical_sync) {
-    parts.push(`历史数据 ${result.historical_sync.success_count}/${result.historical_sync.success_count + result.historical_sync.error_count} 成功，共 ${result.historical_sync.total_records} 条`)
+    parts.push(`historical data ${result.historical_sync.success_count}/${result.historical_sync.success_count + result.historical_sync.error_count} Success, total ${result.historical_sync.total_records} Article`)
   }
   if (result.financial_sync) {
-    parts.push(`财务数据 ${result.financial_sync.success_count}/${result.financial_sync.total_symbols} 成功`)
+    parts.push(`financial data ${result.financial_sync.success_count}/${result.financial_sync.total_symbols} success`)
   }
   if (result.basic_sync) {
-    parts.push(`基础数据 ${result.basic_sync.success_count}/${result.basic_sync.total_symbols} 成功`)
+    parts.push(`Basic data ${result.basic_sync.success_count}/${result.basic_sync.total_symbols} success`)
   }
 
   return parts.join('；')
@@ -1137,7 +1137,7 @@ const buildBatchSyncTaskMessage = (task: StockSyncTaskStatus, symbols: string[])
 const waitForStockSyncTask = async (taskId: string): Promise<StockSyncTaskStatus> => {
   for (let attempt = 0; attempt < STOCK_SYNC_POLL_MAX_ATTEMPTS; attempt += 1) {
     if (favoritesViewDisposed) {
-      throw new Error('页面已离开，停止等待同步结果')
+      throw new Error('The page has been left, stop waiting for synchronization results')
     }
 
     const res = await stockSyncApi.getTaskStatus(taskId)
@@ -1148,7 +1148,7 @@ const waitForStockSyncTask = async (taskId: string): Promise<StockSyncTaskStatus
     await sleep(STOCK_SYNC_POLL_INTERVAL_MS)
   }
 
-  throw new Error('同步任务执行超时，请稍后刷新列表查看结果')
+  throw new Error('The synchronization task execution timed out, please refresh the list later to view the results.')
 }
 
 const monitorSingleSyncTask = async (taskId: string, symbol: string) => {
@@ -1167,8 +1167,8 @@ const monitorSingleSyncTask = async (taskId: string, symbol: string) => {
 
     await loadFavorites()
   } catch (error: any) {
-    if (!favoritesViewDisposed && error?.message !== '页面已离开，停止等待同步结果') {
-      ElMessage.error(error?.message || '同步结果查询失败，请稍后刷新列表查看')
+    if (!favoritesViewDisposed && error?.message !== 'The page has been left, stop waiting for synchronization results') {
+      ElMessage.error(error?.message || 'Synchronization result query failed, please refresh the list later to view')
     }
   }
 }
@@ -1189,15 +1189,15 @@ const monitorBatchSyncTask = async (taskId: string, symbols: string[]) => {
 
     await loadFavorites()
   } catch (error: any) {
-    if (!favoritesViewDisposed && error?.message !== '页面已离开，停止等待同步结果') {
-      ElMessage.error(error?.message || '批量同步结果查询失败，请稍后刷新列表查看')
+    if (!favoritesViewDisposed && error?.message !== 'The page has been left, stop waiting for synchronization results') {
+      ElMessage.error(error?.message || 'Batch synchronization result query failed, please refresh the list later to view')
     }
   }
 }
-// 执行单个股票同步
+// Perform a single stock sync
 const handleSingleSync = async () => {
   if (singleSyncForm.value.syncTypes.length === 0) {
-    ElMessage.warning('请至少选择一种同步内容')
+    ElMessage.warning('Please select at least one sync content')
     return
   }
 
@@ -1213,21 +1213,21 @@ const handleSingleSync = async () => {
     })
 
     if (res.success) {
-      ElMessage.success(`股票 ${currentSyncStock.value.stock_code} 同步任务已提交，后台执行中`)
+      ElMessage.success(`stocks ${currentSyncStock.value.stock_code} The synchronization task has been submitted and is being executed in the background`)
       singleSyncDialogVisible.value = false
       void monitorSingleSyncTask(res.data.task_id, currentSyncStock.value.stock_code)
     } else {
-      ElMessage.error(res.message || '同步失败')
+      ElMessage.error(res.message || 'Sync failed')
     }
   } catch (error: any) {
-    console.error('同步失败:', error)
-    ElMessage.error(error.message || '同步失败，请稍后重试')
+    console.error('Sync failed:', error)
+    ElMessage.error(error.message || 'Synchronization failed, please try again later')
   } finally {
     singleSyncLoading.value = false
   }
 }
 
-// 显示批量同步对话框
+// Show batch sync dialog box
 const showBatchSyncDialog = async () => {
   const applyPreferredSource = async () => {
     const preferredSource = await loadPreferredAvailableSyncSource()
@@ -1237,61 +1237,61 @@ const showBatchSyncDialog = async () => {
   }
 
   if (selectedStocks.value.length === 0) {
-    // 提示用户选择股票或全部同步
+    // Prompt user to select stocks or sync all
     try {
       await ElMessageBox.confirm(
-        '请先选择要同步的股票，或者选择"全部同步"来同步研究列表中所有A股股票。',
-        '提示',
+        'Please select the stocks you want to sync first, or select"sync all"To simultaneously research all A-share stocks in the list.',
+        'Tips',
         {
-          confirmButtonText: '全部同步',
-          cancelButtonText: '取消',
+          confirmButtonText: 'sync all',
+          cancelButtonText: 'Cancel',
           type: 'info',
           distinguishCancelAndClose: true
         }
       )
-      // 用户选择"全部同步"：同步研究列表中所有A股股票
-      const aStocks = favorites.value.filter(item => item.market === 'A股')
+      // User selection"sync all": Simultaneously research all A-share stocks in the list
+      const aStocks = favorites.value.filter(item => item.market === 'A shares')
       if (aStocks.length === 0) {
-        ElMessage.warning('研究列表中没有A股股票可以同步')
+        ElMessage.warning('There are no A-share stocks in the research list that can be synchronized')
         return
       }
-      syncAllStocks.value = true  // 标记为全部同步
+      syncAllStocks.value = true  // Mark as sync all
       await applyPreferredSource()
       batchSyncDialogVisible.value = true
     } catch (action: any) {
-      // 用户选择"取消"，不做任何操作
+      // User selection"Cancel", Do nothing
       if (action === 'cancel') {
         return
       }
     }
   } else {
-    syncAllStocks.value = false  // 标记为选中同步
+    syncAllStocks.value = false  // Mark as checked for sync
     await applyPreferredSource()
     batchSyncDialogVisible.value = true
   }
 }
 
-// 执行批量同步
+// Perform batch synchronization
 const handleBatchSync = async () => {
   if (batchSyncForm.value.syncTypes.length === 0) {
-    ElMessage.warning('请至少选择一种同步内容')
+    ElMessage.warning('Please select at least one sync content')
     return
   }
 
-  // 根据 syncAllStocks 标记决定同步哪些股票
+  // Determine which stocks to sync based on syncAllStocks flag
   let symbols: string[]
   if (syncAllStocks.value) {
-    // 全部同步：使用所有A股股票
-    const aStocks = favorites.value.filter(item => item.market === 'A股')
+    // Synchronize all: use all A-share stocks
+    const aStocks = favorites.value.filter(item => item.market === 'A shares')
     if (aStocks.length === 0) {
-      ElMessage.warning('没有A股股票可以同步')
+      ElMessage.warning('No A-share stocks can be synchronized')
       return
     }
     symbols = aStocks.map(stock => stock.stock_code || stock.symbol || '').filter((symbol): symbol is string => Boolean(symbol))
   } else {
-    // 选中同步：使用选中的股票
+    // Selected Sync: Use selected stocks
     if (selectedStocks.value.length === 0) {
-      ElMessage.warning('请先选择要同步的股票')
+      ElMessage.warning('Please select the stocks to be synchronized first')
       return
     }
     symbols = selectedStocks.value.map(stock => stock.stock_code || stock.symbol || '').filter((symbol): symbol is string => Boolean(symbol))
@@ -1309,16 +1309,16 @@ const handleBatchSync = async () => {
     })
 
     if (res.success) {
-      ElMessage.success(`批量同步任务已提交（共 ${symbols.length} 只股票），后台执行中`)
+      ElMessage.success(`Batch synchronization tasks have been submitted (a total of ${symbols.length} only stocks), executing in the background`)
       batchSyncDialogVisible.value = false
-      syncAllStocks.value = false  // 重置全部同步标记
+      syncAllStocks.value = false  // Reset all sync flags
       void monitorBatchSyncTask(res.data.task_id, symbols)
     } else {
-      ElMessage.error(res.message || '批量同步失败')
+      ElMessage.error(res.message || 'Batch sync failed')
     }
   } catch (error: any) {
-    console.error('批量同步失败:', error)
-    ElMessage.error(error.message || '批量同步失败，请稍后重试')
+    console.error('Batch sync failed:', error)
+    ElMessage.error(error.message || 'Batch synchronization failed, please try again later')
   } finally {
     batchSyncLoading.value = false
   }
@@ -1347,7 +1347,7 @@ const formatDate = (dateStr: string) => {
   return new Date(dateStr).toLocaleDateString('zh-CN')
 }
 
-// 生命周期
+// life cycle
 onMounted(() => {
   const auth = useAuthStore()
   if (auth.isAuthenticated) {
@@ -1392,7 +1392,7 @@ onUnmounted(() => {
     }
   }
 
-  /* 颜色选项样式 */
+  /* Color option style */
   .color-dot {
     display: inline-block;
     width: 12px;

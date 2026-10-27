@@ -1,5 +1,5 @@
 """
-Agent工具函数模块
+Agent Tool function module
 """
 
 from .weight_calculator import (

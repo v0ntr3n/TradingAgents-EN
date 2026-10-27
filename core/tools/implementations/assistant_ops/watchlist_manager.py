@@ -1,8 +1,8 @@
 """
-股票关注列表管理类工具
+Stock watch list management tools
 
-提供股票关注列表分组的查询、添加股票和移除股票功能。
-用户身份通过 core.tools.context 获取。
+Provides functions for querying, adding stocks, and removing stocks grouped by stock watchlists.
+User identity is obtained through core.tools.context.
 """
 
 import logging
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 @register_tool(
     tool_id="list_watchlist_groups",
     name="查看股票关注列表分组",
-    description="列出用户的股票关注列表分组，显示分组名称、股票数量和股票代码预览。注意：这是分组视图，不等于完整的股票关注列表本体，也不等于定时分析配置。",
+    description="Lists the user s stock watchlist groups, showing the group name, stock number, and stock symbol preview. Note: This is a grouped view, which is not equal to the complete stock watch list itself, nor is it equal to the scheduled analysis configuration.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -30,11 +30,11 @@ logger = logging.getLogger(__name__)
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["查看股票关注列表分组", "股票关注列表列表", "分组查询", "股票池查看"],
-    when_to_use="当用户想查看自己的股票关注列表分组列表、了解每个分组包含哪些股票时使用。",
-    returns="返回文本格式的股票关注列表分组列表，每条含分组ID、名称、股票数量和股票代码预览。",
+    when_to_use="Used when users want to view their own stock watch list group list and understand which stocks are included in each group.",
+    returns="Returns a grouped list of stock watchlists in text format, each containing group ID, name, stock number and stock code preview.",
 )
 async def list_watchlist_groups() -> str:
-    """列出当前用户的股票关注列表分组及每组股票数量。"""
+    """Lists the current user s stock watch list groups and the number of stocks in each group."""
     from app.core.database import get_mongo_db
 
     user_id = require_current_user_id()
@@ -54,20 +54,20 @@ async def list_watchlist_groups() -> str:
         groups.append(f"  {active} [{gid[:8]}] {name}（{len(stocks)}只）: {preview}")
 
     if not groups:
-        return "📂 暂无股票关注列表分组。你可以让我帮你创建一个。\n\n提示：分组只是组织方式；若要查看完整股票关注列表，请使用“查看股票关注列表”。"
+        return "📂 There is currently no stock watch list grouping. You can ask me to create one for you.\n\n Tip: Grouping is just a way of organizing; to see the full stock watchlist, use View stock watchlist . "
     return (
         f"📂 共 {len(groups)} 个股票关注列表分组：\n"
         + "\n".join(groups)
-        + "\n\n说明：以上是你的股票关注列表分组视图，不等于完整股票关注列表，也不等于定时分析配置。"
-        + "若要查看完整关注股票，请调用“查看股票关注列表”；若要查看自动分析计划，请调用“查看定时分析配置”。"
+        + "\n\n Note: The above is the group view of your stock watch list, which is not equal to the complete stock watch list, nor is it equal to the scheduled analysis configuration."
+        + "To see the full list of stocks to watch, call View stock watchlist ; To view the automated analysis schedule, call View scheduled analysis configuration . "
     )
 
 
 @tool
 @register_tool(
     tool_id="add_stock_to_watchlist",
-    name="添加股票到股票关注列表分组",
-    description="将一只或多只股票添加到指定名称的股票关注列表分组。分组不存在时自动创建新分组。注意：这只是分组管理，不代表会自动进入定时分析。",
+    name="Add a stock to a stock watchlist group",
+    description="Adds one or more stocks to the specified named Stock Watchlist group. Automatically create a new group if the group does not exist. Note: This is only group management and does not mean that it will automatically enter scheduled analysis.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -77,14 +77,14 @@ async def list_watchlist_groups() -> str:
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["添加股票关注列表", "加入股票分组", "股票关注列表管理", "新建股票分组"],
-    when_to_use="当用户想把一只或多只股票添加到股票关注列表分组、或需要新建分组并加入股票时使用。",
-    returns="返回文本消息，提示新增股票数量、分组当前股票总数；新建分组时返回分组创建结果。",
+    when_to_use="This is used when the user wants to add one or more stocks to a stock watch list group, or needs to create a new group and add stocks.",
+    returns="Returns a text message, prompting the number of new stocks and the total number of current stocks in the group; when creating a new group, returns the group creation result.",
 )
 async def add_stock_to_watchlist(
-    group_name: Annotated[str, "股票关注列表分组名称，如「科技股」"],
-    symbols: Annotated[str, "要添加的股票代码，逗号分隔，如 000001,600519"],
+    group_name: Annotated[str, "Stock watch list group name, such as Technology stocks "],
+    symbols: Annotated[str, "Stock codes to add, separated by commas, such as 000001,600519"],
 ) -> str:
-    """将一只或多只股票添加到指定名称的股票关注列表分组。分组不存在时自动创建。"""
+    """Adds one or more stocks to the specified named Stock Watchlist group. The group is automatically created if it does not exist."""
     from app.core.database import get_mongo_db
     from app.utils.timezone import now_tz
 
@@ -93,13 +93,13 @@ async def add_stock_to_watchlist(
 
     symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
     if not symbol_list:
-        return "❌ 请提供至少一个股票代码。"
+        return "❌ Please provide at least one ticker symbol."
 
-    # 按名称查找分组
+    # Find groups by name
     group = await db.watchlist_groups.find_one({"user_id": user_id, "name": group_name})
 
     if group:
-        # 已有分组，添加股票（去重）
+        # Already grouped, add stocks (remove duplicates)
         current = set(group.get("stock_codes", []))
         new_codes = set(symbol_list) - current
         if not new_codes:
@@ -111,11 +111,11 @@ async def add_stock_to_watchlist(
         )
         return (
             f"✅ 已添加 {len(new_codes)} 只股票到「{group_name}」\n"
-            f"- 新增: {', '.join(sorted(new_codes))}\n"
-            f"- 分组当前共 {len(updated)} 只股票"
+            f"- New: {', '.join(sorted(new_codes))}\n"
+            f"- The group currently has a total of {len(updated)} only stocks"
         )
     else:
-        # 自动创建分组
+        # Automatically create groups
         max_sort_doc = await db.watchlist_groups.find_one(
             {"user_id": user_id}, sort=[("sort_order", -1)]
         )
@@ -140,15 +140,15 @@ async def add_stock_to_watchlist(
         await db.watchlist_groups.insert_one(new_doc)
         return (
             f"✅ 已自动创建分组「{group_name}」并添加 {len(symbol_list)} 只股票\n"
-            f"- 股票: {', '.join(symbol_list)}"
+            f"- stocks: {', '.join(symbol_list)}"
         )
 
 
 @tool
 @register_tool(
     tool_id="remove_stock_from_watchlist",
-    name="从股票关注列表分组移除股票",
-    description="从指定名称的股票关注列表分组中移除一只或多只股票。不会删除分组本身，也不会影响已有定时分析配置。",
+    name="Remove a stock from a stock watchlist group",
+    description="Removes one or more stocks from the specified stock watchlist grouping. The group itself will not be deleted, nor will existing scheduled analysis configurations be affected.",
     category="assistant_ops",
     is_online=True,
     auto_register=True,
@@ -158,14 +158,14 @@ async def add_stock_to_watchlist(
     tool_role_hint="primary",
     output_shape="text",
     preferred_for=["移除股票关注列表", "删除股票分组中的股票", "股票关注列表管理", "清理股票池"],
-    when_to_use="当用户想从股票关注列表分组中移除一只或多只股票、清理不再关注的股票时使用。",
-    returns="返回文本消息，提示移除股票数量和分组剩余股票数量。",
+    when_to_use="Used when the user wants to remove one or more stocks from the stock watch list group and clear out stocks that are no longer followed.",
+    returns="Returns a text message indicating the number of shares to remove and the number of shares remaining in the group.",
 )
 async def remove_stock_from_watchlist(
     group_name: Annotated[str, "股票关注列表分组名称"],
-    symbols: Annotated[str, "要移除的股票代码，逗号分隔"],
+    symbols: Annotated[str, "Stock symbols to remove, comma separated"],
 ) -> str:
-    """从指定名称的股票关注列表分组中移除一只或多只股票。"""
+    """Removes one or more stocks from the specified stock watchlist grouping."""
     from app.core.database import get_mongo_db
     from app.utils.timezone import now_tz
 
@@ -174,7 +174,7 @@ async def remove_stock_from_watchlist(
 
     symbol_list = [s.strip() for s in symbols.split(",") if s.strip()]
     if not symbol_list:
-        return "❌ 请提供至少一个股票代码。"
+        return "❌ Please provide at least one ticker symbol."
 
     group = await db.watchlist_groups.find_one({"user_id": user_id, "name": group_name})
     if not group:
@@ -192,7 +192,7 @@ async def remove_stock_from_watchlist(
     )
     return (
         f"✅ 已从「{group_name}」移除 {len(to_remove)} 只股票\n"
-        f"- 移除: {', '.join(sorted(to_remove))}\n"
-        f"- 分组剩余 {len(remaining)} 只股票"
+        f"- Remove: {', '.join(sorted(to_remove))}\n"
+        f"- Group remaining {len(remaining)} only stocks"
     )
 

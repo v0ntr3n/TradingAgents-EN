@@ -1,24 +1,24 @@
-# Docker环境专用日志配置 - 完整修复版
-# 解决KeyError: 'file'错误
+# Docker Environment-specific log configuration - full fix
+# solve KeyError: 'file'Error
 
 [logging]
 level = "INFO"
 
 [logging.format]
-# 必须包含所有格式配置
+# All format configurations must be included
 console = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
 file = "%(asctime)s | %(name)-20s | %(levelname)-8s | %(module)s:%(funcName)s:%(lineno)d | %(message)s"
 structured = "json"
 
 [logging.handlers]
 
-# 控制台输出
+# console output
 [logging.handlers.console]
 enabled = true
 colored = false
 level = "INFO"
 
-# 文件输出 - 完整配置
+# File output - full configuration
 [logging.handlers.file]
 enabled = true
 level = "DEBUG"
@@ -26,7 +26,7 @@ max_size = "100MB"
 backup_count = 5
 directory = "/app/logs"
 
-# 主日志文件（tradingagents.log）
+# Main log file (tradingagents.log)
 [logging.handlers.main]
 enabled = true
 level = "INFO"
@@ -34,7 +34,7 @@ max_size = "100MB"
 backup_count = 5
 filename = "/app/logs/tradingagents.log"
 
-# WebAPI日志文件
+# WebAPI log file
 [logging.handlers.webapi]
 enabled = true
 level = "DEBUG"
@@ -42,7 +42,7 @@ max_size = "100MB"
 backup_count = 5
 filename = "/app/logs/webapi.log"
 
-# Worker日志文件
+# Worker log file
 [logging.handlers.worker]
 enabled = true
 level = "DEBUG"
@@ -50,7 +50,7 @@ max_size = "100MB"
 backup_count = 5
 filename = "/app/logs/worker.log"
 
-# 错误日志文件
+# error log file
 [logging.handlers.error]
 enabled = true
 level = "WARNING"
@@ -58,7 +58,7 @@ max_size = "100MB"
 backup_count = 5
 filename = "/app/logs/error.log"
 
-# 结构化日志
+# Structured log
 [logging.handlers.structured]
 enabled = true
 level = "INFO"
@@ -101,11 +101,11 @@ level = "WARNING"
 [logging.loggers.pandas]
 level = "WARNING"
 
-# Docker配置 - 修复版
+# Docker Configuration - Fixed version
 [logging.docker]
 enabled = true
-stdout_only = false  # 同时输出到文件和stdout
-disable_file_logging = false  # 启用文件日志
+stdout_only = false  # Simultaneously output to file and stdout
+disable_file_logging = false  # Enable file logging
 
 [logging.development]
 enabled = false

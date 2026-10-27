@@ -1,4 +1,4 @@
-"""结构化金融 schema 对象模型。"""
+"""Structured finance schema object model."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 @dataclass(frozen=True)
 class FinancialSchemaObject:
-    """单个金融 schema 对象。"""
+    """A single financial schema object."""
 
     id: str
     object_type: str
@@ -29,7 +29,7 @@ class FinancialSchemaObject:
 
 @dataclass(frozen=True)
 class BundleManifest:
-    """bundle 描述文件。"""
+    """bundle Description file."""
 
     bundle_id: str
     name: str
@@ -43,7 +43,7 @@ class BundleManifest:
 
 @dataclass(frozen=True)
 class LoadedFinancialSchemaBundle:
-    """已加载的金融 schema bundle。"""
+    """The loaded financial schema bundle."""
 
     manifest: BundleManifest
     objects_by_id: Dict[str, FinancialSchemaObject]

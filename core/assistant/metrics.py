@@ -1,18 +1,18 @@
-"""智能助手质量架构（A11）—— 质量埋点（阶段 4，S9）。
+"""Intelligent Assistant Quality Architecture (A11)—— Quality buried point (stage 4, S9).
 
-每次助手对话回合向 ``assistant_quality_events`` 集合写入一条事件，覆盖：
-- 路由命中：route_id / route_priority / route_type / passthrough；
-- 质量防线：gate 通过与否、失败检查项、是否降级为 fallback_evidence、
-  主路径自动纠错重试信号（unsourced/untraced/fabricated 等）；
-- 输出形态：streaming、回复长度、data_refs / evidence 数量、耗时、错误。
+Each assistant conversation turn direction ``assistant_quality_events`` The collection writes an event, covering:
+- Route hit: route_id/route_priority/route_type/passthrough;
+- Quality defense line: gate passing or not, failed check items, whether to be downgraded to fallback_evidence,
+  Main path automatic error correction retry signal (unsourced/untraced/fabricated, etc.);
+- Output form: streaming, reply length, number of data_refs/evidence, time consumption, errors.
 
-设计约束：
-- **绝不影响主链路**：落库为 fire-and-forget（create_task），任何异常只记
-  debug 日志，不向上抛；
-- 仅做离线统计的原始事件留存（不设 TTL），聚合/看板属后续工作（D6：
-  先拿真实失败分布，再决定是否投入 LLM 意图分类/裁判）。
+Design constraints:
+- **Never affect the main link**: The library is fire-and-forget (create_task), any exceptions will only be recorded
+  debug Log, do not throw upward;
+- Only the original events for offline statistics are retained (no TTL is set), and aggregation/kanban is a follow-up work (D6:
+  Get the true failure distribution first before deciding whether to invest in LLM intent classification/referencing).
 
-本模块不 import service；db 以参数传入（service 持有连接）。
+This module does not import service; db is passed in as a parameter (service holds the connection).
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class AssistantQualityMetrics:
-    """质量事件落库器（进程内单例）。"""
+    """Quality event dropper (in-process singleton)."""
 
     COLLECTION = "assistant_quality_events"
 
@@ -33,7 +33,7 @@ class AssistantQualityMetrics:
         self._indexes_ready = False
 
     async def create_indexes(self, db=None) -> None:
-        """初始化集合索引（应用启动时调用；失败不影响启动）。"""
+        """Initialize the collection index (called when the application starts; failure does not affect startup)."""
         if db is None:
             from app.core.database import get_mongo_db
             db = get_mongo_db()
@@ -44,19 +44,19 @@ class AssistantQualityMetrics:
         self._indexes_ready = True
 
     def record(self, db=None, **fields: Any) -> None:
-        """记录一条质量事件（fire-and-forget，永不抛异常）。
+        """Record a quality event (fire-and-forget, never throw exception).
 
-        调用方在事件循环内；若当前无运行中的 loop（如单测同步上下文），
-        静默放弃——埋点不可阻断也不可拖慢主链路。
+        The caller is within the event loop; if there is currently no running loop (such as a single test synchronization context),
+        give up silently——Hiding points cannot block or slow down the main link.
         """
         try:
             import asyncio
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            logger.debug("[质量埋点] 无运行中事件循环，丢弃事件: %s", fields.get("route_id"))
+            logger.debug("[Quality issues] No running event loop, discard events: %s", fields.get("route_id"))
             return
         if db is None:
-            logger.debug("[质量埋点] 无 db 句柄，丢弃事件: %s", fields.get("route_id"))
+            logger.debug("[Quality issues] No db handle, event discarded: %s", fields.get("route_id"))
             return
         event = {"created_at": datetime.now(timezone.utc), **fields}
         loop.create_task(self._insert(db, event))
@@ -66,11 +66,11 @@ class AssistantQualityMetrics:
             if not self._indexes_ready:
                 await self.create_indexes(db)
             await db[self.COLLECTION].insert_one(event)
-        except Exception as exc:  # 埋点失败绝不影响对话
-            logger.debug("[质量埋点] 落库失败（忽略）: %s", exc)
+        except Exception as exc:  # Failure to bury the point will never affect the dialogue
+            logger.debug("[Quality issues] Failed to drop into library (ignored): %s", exc)
 
     async def recent(self, db=None, limit: int = 50) -> list:
-        """读取最近事件（排障/离线统计辅助）。"""
+        """Read recent events (troubleshooting/offline statistics assistance)."""
         if db is None:
             from app.core.database import get_mongo_db
             db = get_mongo_db()
@@ -78,5 +78,5 @@ class AssistantQualityMetrics:
         return [doc async for doc in cursor]
 
 
-# 模块级单例（service 两个适配器共用）
+# Module-level singleton (service shared by two adapters)
 quality_metrics = AssistantQualityMetrics()

@@ -1,12 +1,12 @@
 """
-迁移脚本基类
+Migration script base class
 
-每个迁移脚本需要继承此基类，或者直接定义模块级别的常量和函数。
+Each migration script needs to inherit this base class, or directly define module-level constants and functions.
 
-方式一（推荐，简单）：模块级别定义
+Method 1 (recommended, simple): module level definition
     # migrations/v2_0_1.py
     VERSION = "2.0.1"
-    DESCRIPTION = "添加 xxx 字段"
+    DESCRIPTION = "Add xxx field"
     
     async def upgrade(db):
         await db.some_collection.update_many(...)
@@ -14,10 +14,10 @@
     async def downgrade(db):
         await db.some_collection.update_many(...)
 
-方式二：类继承
+Method 2: Class inheritance
     class Migration(BaseMigration):
         VERSION = "2.0.1"
-        DESCRIPTION = "添加 xxx 字段"
+        DESCRIPTION = "Add xxx field"
         
         async def upgrade(self, db):
             ...
@@ -27,7 +27,7 @@ from abc import ABC, abstractmethod
 
 
 class BaseMigration(ABC):
-    """迁移脚本基类（可选使用）"""
+    """Migration script base class (optional use)"""
     
     VERSION: str = ""
     DESCRIPTION: str = ""
@@ -35,25 +35,25 @@ class BaseMigration(ABC):
     @abstractmethod
     async def upgrade(self, db):
         """
-        正向迁移 - 应用数据库变更
+        Forward migration - applying database changes
         
         Args:
-            db: AsyncIOMotorDatabase 实例
+            db: AsyncIOMotorDatabase Example
             
-        注意事项：
-        - 必须是幂等的（重复执行不会出错）
-        - 使用 $exists 检查字段是否已存在
-        - 使用 find_one 检查数据是否已插入
-        - 创建索引时使用 create_index（已存在会自动跳过）
+        Things to note:
+        - Must be idempotent (repeated execution will not cause errors)
+        - Use $exists Check if field already exists
+        - Use find_one to check if the data has been inserted
+        - Use create_index when creating an index (it will be automatically skipped if it already exists)
         """
         raise NotImplementedError
     
     async def downgrade(self, db):
         """
-        回滚迁移 - 撤销数据库变更（可选实现）
+        Rollback migration - undo database changes (optional implementation)
         
         Args:
-            db: AsyncIOMotorDatabase 实例
+            db: AsyncIOMotorDatabase Example
         """
         raise NotImplementedError(
             f"Migration {self.VERSION} does not support downgrade"

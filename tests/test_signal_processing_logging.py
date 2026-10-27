@@ -1,121 +1,121 @@
 #!/usr/bin/env python3
 """
-测试信号处理模块的日志记录修复
+Logging fix for test signal handling module
 """
 
 import os
 import sys
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 def test_signal_processing_logging():
-    """测试信号处理模块的日志记录"""
-    print("\n📊 测试信号处理模块日志记录")
+    """Test logging of signal processing modules"""
+    print("\n📊 Test signal processing module logging")
     print("=" * 80)
     
     try:
-        # 设置日志级别
+        # Set log level
         from tradingagents.utils.logging_init import get_logger
         logger = get_logger("default")
         logger.setLevel("INFO")
         
-        print("🔧 创建信号处理器...")
+        print("🔧 Create signal handler...")
         
-        # 导入信号处理器
+        # Import signal handler
         from tradingagents.graph.signal_processing import SignalProcessor
         
         processor = SignalProcessor()
-        print("✅ 信号处理器创建完成")
+        print("✅ The signal processor is created")
         
-        # 测试不同的股票代码
+        # Test different stock symbols
         test_cases = [
-            ("000858", "五 粮 液"),
-            ("002027", "分众传媒"),
-            ("0700.HK", "腾讯控股"),
+            ("000858", "Wuliangye"),
+            ("002027", "focus media"),
+            ("0700.HK", "Tencent Holdings"),
         ]
         
         for stock_symbol, company_name in test_cases:
-            print(f"\n📊 测试股票: {stock_symbol} ({company_name})")
+            print(f"\n📊 test stocks: {stock_symbol} ({company_name})")
             print("-" * 60)
             
-            # 创建模拟的交易信号
+            # Create simulated trading signals
             mock_signal = f"""
-# {company_name}({stock_symbol})投资分析报告
+# {company_name}({stock_symbol})Investment analysis report
 
-## 📊 基本面分析
-- 股票代码: {stock_symbol}
-- 公司名称: {company_name}
-- 投资建议: 买入
-- 目标价格: 100.00
-- 风险评级: 中等
+## 📊 fundamental analysis
+- Stock code: {stock_symbol}
+- Company name: {company_name}
+- investment advice: buy
+- target price: 100.00
+- risk rating: medium
 
-## 📈 技术面分析
-- 趋势: 上涨
-- 支撑位: 90.00
-- 阻力位: 110.00
+## 📈 Technical analysis
+- Trend: rise
+- support level: 90.00
+- resistance level: 110.00
 
-## 💰 最终决策
-基于综合分析，建议买入{company_name}({stock_symbol})。
+## 💰 final decision
+Based on comprehensive analysis, it is recommended to buy{company_name}({stock_symbol}). 
 """
             
-            print(f"🔍 [测试] 调用信号处理器...")
-            print(f"   股票代码: {stock_symbol}")
-            print(f"   信号长度: {len(mock_signal)} 字符")
+            print(f"🔍 [test] Call signal handler...")
+            print(f"   Stock code: {stock_symbol}")
+            print(f"   Signal length: {len(mock_signal)} character")
             
             try:
-                # 调用信号处理器（这里应该会触发日志记录）
+                # Call the signal handler (logging should be triggered here)
                 result = processor.process_signal(mock_signal, stock_symbol)
                 
-                print(f"✅ 信号处理完成")
-                print(f"   返回结果类型: {type(result)}")
+                print(f"✅ Signal processing completed")
+                print(f"   Return result type: {type(result)}")
                 
                 if isinstance(result, dict):
-                    print(f"   结果键: {list(result.keys())}")
+                    print(f"   result key: {list(result.keys())}")
                     
-                    # 检查是否包含股票代码
+                    # Check if stock code is included
                     if 'stock_symbol' in result:
-                        print(f"   提取的股票代码: {result['stock_symbol']}")
+                        print(f"   Extracted stock code: {result['stock_symbol']}")
                     
-                    # 检查投资建议
+                    # Check investment advice
                     if 'investment_decision' in result:
                         decision = result['investment_decision']
-                        print(f"   投资决策: {decision}")
+                        print(f"   investment decision: {decision}")
                     
-                    # 检查目标价格
+                    # Check target price
                     if 'target_price' in result:
                         price = result['target_price']
-                        print(f"   目标价格: {price}")
+                        print(f"   target price: {price}")
                 
             except Exception as e:
-                print(f"❌ 信号处理失败: {e}")
+                print(f"❌ Signal processing failed: {e}")
                 import traceback
                 traceback.print_exc()
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def test_logging_extraction():
-    """测试日志装饰器的股票代码提取"""
-    print("\n🔍 测试日志装饰器股票代码提取")
+    """Testing ticker extraction for log decorator"""
+    print("\n🔍 Test log decorator stock symbol extraction")
     print("=" * 80)
     
     try:
-        # 模拟信号处理模块的调用
+        # Analog signal processing module calls
         from tradingagents.utils.tool_logging import log_graph_module
         
-        # 创建一个测试函数来验证日志装饰器
+        # Create a test function to verify the logging decorator
         @log_graph_module("signal_processing")
         def mock_process_signal(self, full_signal: str, stock_symbol: str = None) -> dict:
-            """模拟信号处理函数"""
-            print(f"🔍 [模拟函数] 接收到的参数:")
-            print(f"   full_signal 长度: {len(full_signal) if full_signal else 0}")
+            """Analog signal processing functions"""
+            print(f"🔍 [mock function] parameters received:")
+            print(f"   full_signal length: {len(full_signal) if full_signal else 0}")
             print(f"   stock_symbol: {stock_symbol}")
             
             return {
@@ -123,95 +123,95 @@ def test_logging_extraction():
                 'processed': True
             }
         
-        # 创建模拟的self对象
+        # Create a mocked self object
         class MockProcessor:
             pass
         
         mock_self = MockProcessor()
         
-        # 测试不同的调用方式
+        # Test different calling methods
         test_cases = [
-            ("000858", "位置参数调用"),
-            ("002027", "关键字参数调用"),
-            ("0700.HK", "混合参数调用"),
+            ("000858", "Positional parameter call"),
+            ("002027", "keyword argument call"),
+            ("0700.HK", "Mixed parameter call"),
         ]
         
         for stock_symbol, call_type in test_cases:
-            print(f"\n📊 测试: {stock_symbol} ({call_type})")
+            print(f"\n📊 test: {stock_symbol} ({call_type})")
             print("-" * 40)
             
-            mock_signal = f"测试信号 for {stock_symbol}"
+            mock_signal = f"test signal for {stock_symbol}"
             
             try:
-                if call_type == "位置参数调用":
-                    # 位置参数调用：mock_process_signal(self, full_signal, stock_symbol)
+                if call_type == "Positional parameter call":
+                    # Positional parameter call:mock_process_signal(self, full_signal, stock_symbol)
                     result = mock_process_signal(mock_self, mock_signal, stock_symbol)
-                elif call_type == "关键字参数调用":
-                    # 关键字参数调用
+                elif call_type == "keyword argument call":
+                    # keyword argument call
                     result = mock_process_signal(mock_self, mock_signal, stock_symbol=stock_symbol)
                 else:
-                    # 混合调用
+                    # Mixed call
                     result = mock_process_signal(mock_self, full_signal=mock_signal, stock_symbol=stock_symbol)
                 
-                print(f"✅ 调用成功: {result}")
+                print(f"✅ Call successful: {result}")
                 
             except Exception as e:
-                print(f"❌ 调用失败: {e}")
+                print(f"❌ call failed: {e}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
-    """主测试函数"""
-    print("🚀 开始测试信号处理日志记录修复")
+    """Main test function"""
+    print("🚀 Start testing signal handling logging fix")
     print("=" * 100)
     
     results = []
     
-    # 测试1: 日志装饰器股票代码提取
+    # test 1: Log decorator stock symbol extraction
     results.append(test_logging_extraction())
     
-    # 测试2: 信号处理模块日志记录
+    # test 2: Signal processing module logging
     results.append(test_signal_processing_logging())
     
-    # 总结结果
+    # Summary results
     print("\n" + "=" * 100)
-    print("📋 测试结果总结")
+    print("📋 Summary of test results")
     print("=" * 100)
     
     passed = sum(results)
     total = len(results)
     
     test_names = [
-        "日志装饰器股票代码提取",
-        "信号处理模块日志记录"
+        "Log decorator stock symbol extraction",
+        "Signal processing module logging"
     ]
     
     for i, (name, result) in enumerate(zip(test_names, results)):
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{i+1}. {name}: {status}")
     
-    print(f"\n📊 总体结果: {passed}/{total} 测试通过")
+    print(f"\n📊 Overall results: {passed}/{total} Test passed")
     
     if passed == total:
-        print("🎉 所有测试通过！信号处理日志记录修复成功")
-        print("\n📋 修复效果:")
-        print("1. ✅ 正确提取信号处理模块的股票代码")
-        print("2. ✅ 日志显示准确的股票信息")
-        print("3. ✅ 避免显示 'unknown' 股票代码")
-        print("4. ✅ 支持多种参数调用方式")
+        print("🎉 All tests passed! Signal processing logging repair successful")
+        print("\n📋 Repair effect:")
+        print("1. ✅ Correctly extract the stock symbol of the signal processing module")
+        print("2. ✅ Logs display accurate stock information")
+        print("3. ✅ avoid showing 'unknown' Stock code")
+        print("4. ✅ Supports multiple parameter calling methods")
         
-        print("\n🔧 解决的问题:")
-        print("- ❌ 信号处理模块日志显示股票代码为 'unknown'")
-        print("- ❌ 日志装饰器无法正确解析信号处理模块的参数")
-        print("- ❌ 股票代码提取逻辑不适配信号处理模块")
+        print("\n🔧 Problem solved:")
+        print("- ❌ The signal processing module log shows that the stock code is 'unknown'")
+        print("- ❌ Log decorator does not correctly parse parameters of signal handling module")
+        print("- ❌ The stock code extraction logic is not suitable for the signal processing module")
     else:
-        print("⚠️ 部分测试失败，需要进一步优化")
+        print("⚠️ Some tests failed and need further optimization")
     
     return passed == total
 

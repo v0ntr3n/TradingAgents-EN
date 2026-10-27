@@ -1,7 +1,7 @@
 """
-大盘/指数分析工具函数
+Market/index analysis tool function
 
-提供指数走势分析、市场宽度分析、市场环境评估等功能
+Provides functions such as index trend analysis, market breadth analysis, and market environment assessment.
 """
 
 import asyncio
@@ -21,21 +21,21 @@ MARGIN_BSE_AVAILABLE_SINCE = "20211115"
 
 
 def _clean_date_string(date_str: str) -> str:
-    """清理日期字符串，去掉可能的时间部分"""
+    """Clean date string, remove possible time part"""
     if not date_str:
         return date_str
     return date_str.split()[0] if ' ' in date_str else date_str
 
 
 def _format_compact_trade_date(trade_date: str) -> str:
-    """将 YYYYMMDD 格式转为 YYYY-MM-DD。"""
+    """Convert YYYYMMDD format to YYYY-MM-DD."""
     if not trade_date or len(trade_date) != 8 or not trade_date.isdigit():
         return trade_date
     return f"{trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:8]}"
 
 
 def _get_required_margin_exchanges(trade_date: str) -> List[str]:
-    """根据日期返回两融汇总应覆盖的交易所集合。"""
+    """Returns the set of exchanges that should be covered by the two financial summaries based on date."""
     exchanges = list(MARGIN_CORE_EXCHANGES)
     if trade_date and trade_date >= MARGIN_BSE_AVAILABLE_SINCE:
         exchanges.append("BSE")
@@ -43,7 +43,7 @@ def _get_required_margin_exchanges(trade_date: str) -> List[str]:
 
 
 def _get_margin_exchange_coverage(day_data: pd.DataFrame, trade_date: str) -> Dict[str, Any]:
-    """评估指定交易日的两融汇总是否覆盖所需交易所。"""
+    """Evaluate whether the two financial summaries on the specified trading day cover the required exchanges."""
     required_exchanges = _get_required_margin_exchanges(trade_date)
 
     if day_data is None or day_data.empty:
@@ -81,7 +81,7 @@ def _get_margin_exchange_coverage(day_data: pd.DataFrame, trade_date: str) -> Di
         "missing_exchange_column": False,
     }
 
-# 缓存管理器
+# cache manager
 _cache = None
 
 def _get_cache():
@@ -91,12 +91,12 @@ def _get_cache():
         try:
             from tradingagents.dataflows.cache import get_cache
             _cache = get_cache()
-            logger.info("✅ 指数分析工具已启用缓存")
+            logger.info("✅ Index Analysis Tool has caching enabled")
         except Exception as e:
             logger.warning(f"⚠️ 缓存系统不可用: {e}")
     return _cache
 
-# 主要指数代码
+# Major Index Code
 MAIN_INDICES = {
     '000001.SH': '上证指数',
     '399001.SZ': '深证成指',
@@ -107,61 +107,61 @@ MAIN_INDICES = {
 
 
 def _get_tushare_provider():
-    """延迟导入获取 Tushare Provider"""
+    """Delayed import acquisition Tushare Provider"""
     from tradingagents.dataflows.providers.china.tushare import get_tushare_provider
     return get_tushare_provider()
 
 
 async def _get_latest_trade_date(trade_date: str) -> str:
     """
-    获取最新可用的交易日期
+    Get the latest available transaction date
 
-    一次性获取最近8天的数据，取最后一条有效交易日
+    Obtain the data of the last 8 days at one time, and take the last valid transaction date
 
     Args:
-        trade_date: 原始交易日期 (YYYY-MM-DD 或 YYYYMMDD)
+        trade_date: original transaction date (YYYY-MM-DD or YYYYMMDD)
 
     Returns:
-        最新可用的交易日期 (YYYYMMDD格式)
+        Latest available transaction date (YYYYMMDD Format)
     """
     provider = _get_tushare_provider()
-    # 清理日期字符串，去掉可能的时间部分
+    # Clean date string, remove possible time part
     trade_date_clean = _clean_date_string(trade_date).replace('-', '')
     stable_trade_date = apply_stable_data_cutoff(trade_date_clean)
     if stable_trade_date != trade_date_clean:
-        logger.info(f"🕖 {trade_date} 尚未达到稳定数据时点，按业务口径先回退到 {stable_trade_date}")
+        logger.info(f"🕖 {trade_date} If the stable data point has not yet been reached, fall back to {stable_trade_date}")
         trade_date_clean = stable_trade_date
 
     try:
-        # 计算8天前的日期
+        # Calculate date 8 days ago
         end_date = datetime.strptime(trade_date_clean, '%Y%m%d')
         start_date = end_date - timedelta(days=8)
         start_date_str = start_date.strftime('%Y%m%d')
 
-        # 一次性获取最近8天的上证指数数据
+        # Get the Shanghai Composite Index data for the last 8 days at one time
         df = await provider.get_index_daily(
             ts_code='000001.SH',
             start_date=start_date_str,
             end_date=trade_date_clean,
-            use_cache=False  # 不使用缓存，确保获取最新数据
+            use_cache=False  # No caching is used to ensure the latest data is obtained
         )
 
         if df is not None and not df.empty:
-            # 按日期排序，取最后一条（最新的交易日）
+            # Sort by date, take the last item (latest trading day)
             df = df.sort_values('trade_date', ascending=False)
             latest_trade_date = str(df.iloc[0]['trade_date'])
 
             logger.debug(f"🔍 获取到 {len(df)} 个交易日，最新: {latest_trade_date}, 请求: {trade_date_clean}")
 
             if latest_trade_date != trade_date_clean:
-                logger.info(f"📅 {trade_date} 无数据，使用最近交易日 {latest_trade_date}")
+                logger.info(f"📅 {trade_date} No data, use the latest trading day {latest_trade_date}")
             else:
                 logger.debug(f"✅ {trade_date} 是有效交易日")
 
             return latest_trade_date
 
-        # 如果都没有找到，返回原始日期
-        logger.warning(f"⚠️ 无法找到有效交易日，使用原始日期 {trade_date_clean}")
+        # If neither is found, return the original date
+        logger.warning(f"⚠️ Unable to find valid trading day, use original date {trade_date_clean}")
         return trade_date_clean
 
     except Exception as e:
@@ -174,14 +174,14 @@ async def get_index_trend(
     lookback_days: int = 60
 ) -> str:
     """
-    分析主要指数走势
+    Analyze major index trends
     
     Args:
-        trade_date: 交易日期
-        lookback_days: 回看天数
+        trade_date: transaction date
+        lookback_days: Number of days to look back
     
     Returns:
-        指数走势分析报告
+        Index trend analysis report
     """
     provider = _get_tushare_provider()
     
@@ -189,7 +189,7 @@ async def get_index_trend(
         actual_trade_date = await _get_latest_trade_date(trade_date)
         actual_trade_date_formatted = f"{actual_trade_date[:4]}-{actual_trade_date[4:6]}-{actual_trade_date[6:8]}"
 
-        # 计算日期范围
+        # Calculate date range
         end_date = datetime.strptime(actual_trade_date, '%Y%m%d')
         start_date = end_date - timedelta(days=lookback_days + 30)
         start_date_str = start_date.strftime('%Y%m%d')
@@ -211,7 +211,7 @@ async def get_index_trend(
                 + build_stable_data_cutoff_note(
                     _clean_date_string(trade_date),
                     actual_trade_date_formatted,
-                    subject="大盘分析所需的当日收盘后日频数据",
+                    subject="Daily frequency data after the close of the day required for market analysis",
                 ),
             )
             report_lines.insert(5, "")
@@ -227,28 +227,28 @@ async def get_index_trend(
                 report_lines.append(f"  {index_name}: 暂无数据")
                 continue
             
-            # 按日期排序
+            # Sort by date
             daily_df = daily_df.sort_values('trade_date')
             
             if len(daily_df) < 5:
                 report_lines.append(f"  {index_name}: 数据不足")
                 continue
             
-            # 计算指标
+            # Calculate indicators
             latest = daily_df.iloc[-1]
             today_pct = latest.get('pct_chg', 0)
             close_price = latest.get('close', 0)
             
-            # 5日/20日/60日涨跌幅
+            # 5 Daily/20th/60th day increase and decrease
             pct_5d = ((close_price / daily_df.iloc[-5]['close']) - 1) * 100 if len(daily_df) >= 5 else 0
             pct_20d = ((close_price / daily_df.iloc[-20]['close']) - 1) * 100 if len(daily_df) >= 20 else 0
             
-            # 均线位置
+            # moving average position
             ma5 = daily_df['close'].tail(5).mean()
             ma20 = daily_df['close'].tail(20).mean() if len(daily_df) >= 20 else ma5
             ma60 = daily_df['close'].tail(60).mean() if len(daily_df) >= 60 else ma20
             
-            # 趋势判断
+            # Trend judgment
             if close_price > ma5 > ma20 > ma60:
                 trend = "📈 多头排列"
             elif close_price < ma5 < ma20 < ma60:
@@ -263,7 +263,7 @@ async def get_index_trend(
             )
             report_lines.append(
                 f"      今日: {today_pct:+.2f}% | 5日: {pct_5d:+.2f}% | "
-                f"20日: {pct_20d:+.2f}% | {trend}"
+                f"20 day: {pct_20d:+.2f}% | {trend}"
             )
         
         return "\n".join(report_lines)
@@ -275,18 +275,18 @@ async def get_index_trend(
 
 async def get_market_breadth(trade_date: str) -> str:
     """
-    分析市场宽度（涨跌家数、涨停跌停等）
+    Analyze market width (number of rising and falling stocks, daily limit and lower limit, etc.)
 
     Args:
-        trade_date: 交易日期
+        trade_date: transaction date
 
     Returns:
-        市场宽度分析报告
+        Market Breadth Analysis Report
     """
     provider = _get_tushare_provider()
 
     try:
-        # 获取最新可用的交易日
+        # Get the latest available trading day
         trade_date_clean = await _get_latest_trade_date(trade_date)
         trade_date_formatted = f"{trade_date_clean[:4]}-{trade_date_clean[4:6]}-{trade_date_clean[6:8]}"
 
@@ -298,26 +298,26 @@ async def get_market_breadth(trade_date: str) -> str:
             "",
         ]
 
-        # 使用 daily_info API 获取市场整体统计
+        # Use the daily_info API to get overall market statistics
         daily_info = await provider.get_daily_info(trade_date=trade_date_clean)
 
         if daily_info is not None and not daily_info.empty:
-            # 提取上海和深圳市场的数据
+            # Extract data from Shanghai and Shenzhen markets
             sh_market = daily_info[daily_info['ts_code'] == 'SH_MARKET']
             sz_market = daily_info[daily_info['ts_code'] == 'SZ_MARKET']
 
-            # 成交统计
+            # Transaction statistics
             sh_amount = float(sh_market['amount'].iloc[0]) if len(sh_market) > 0 and 'amount' in sh_market.columns else 0
             sz_amount = float(sz_market['amount'].iloc[0]) if len(sz_market) > 0 and 'amount' in sz_market.columns else 0
             total_amount = sh_amount + sz_amount
 
-            # 成交量（处理 NaN 值）
+            # Volume (handles NaN values)
             import pandas as pd
             sh_vol = float(sh_market['vol'].iloc[0]) if len(sh_market) > 0 and 'vol' in sh_market.columns and pd.notna(sh_market['vol'].iloc[0]) else 0
             sz_vol = float(sz_market['vol'].iloc[0]) if len(sz_market) > 0 and 'vol' in sz_market.columns and pd.notna(sz_market['vol'].iloc[0]) else 0
             total_vol = sh_vol + sz_vol
 
-            # 上市公司数量
+            # Number of listed companies
             sh_count = int(sh_market['com_count'].iloc[0]) if len(sh_market) > 0 and 'com_count' in sh_market.columns else 0
             sz_count = int(sz_market['com_count'].iloc[0]) if len(sz_market) > 0 and 'com_count' in sz_market.columns else 0
             total_count = sh_count + sz_count
@@ -330,8 +330,8 @@ async def get_market_breadth(trade_date: str) -> str:
             report_lines.append("")
             report_lines.append("【成交统计】")
             report_lines.append(f"  • 总成交额: {total_amount:.2f} 亿元")
-            report_lines.append(f"    - 上海市场: {sh_amount:.2f} 亿元 ({sh_amount/total_amount*100:.1f}%)" if total_amount > 0 else "    - 上海市场: 0.00 亿元")
-            report_lines.append(f"    - 深圳市场: {sz_amount:.2f} 亿元 ({sz_amount/total_amount*100:.1f}%)" if total_amount > 0 else "    - 深圳市场: 0.00 亿元")
+            report_lines.append(f"    - 上海市场: {sh_amount:.2f} 亿元 ({sh_amount/total_amount*100:.1f}%)" if total_amount > 0 else "    - Shanghai market: 0.00 billion")
+            report_lines.append(f"    - 深圳市场: {sz_amount:.2f} 亿元 ({sz_amount/total_amount*100:.1f}%)" if total_amount > 0 else "    - Shenzhen market: 0.00 billion")
             if total_vol > 0:
                 report_lines.append(f"  • 总成交量: {total_vol:.2f} 亿股")
 
@@ -339,11 +339,11 @@ async def get_market_breadth(trade_date: str) -> str:
                 avg_amount_per_stock = total_amount / total_count if total_count > 0 else 0
                 report_lines.append(f"  • 平均每家上市公司成交额: {avg_amount_per_stock:.2f} 亿元")
         else:
-            # 方案2: 使用 daily_basic API 获取市场整体数据
+            # Plan 2: Get overall market data using daily_basic API
             daily_basic = await provider.get_daily_basic(trade_date=trade_date_clean)
 
             if daily_basic is not None and not daily_basic.empty:
-                # 统计市值数据
+                # Statistical market capitalization data
                 total_mv = daily_basic['total_mv'].sum() / 100000000 if 'total_mv' in daily_basic.columns else 0
                 avg_turnover = daily_basic['turnover_rate'].mean() if 'turnover_rate' in daily_basic.columns else 0
                 stock_count = len(daily_basic)
@@ -353,7 +353,7 @@ async def get_market_breadth(trade_date: str) -> str:
                 report_lines.append(f"  • 总市值: {total_mv:.2f} 万亿")
                 report_lines.append(f"  • 平均换手率: {avg_turnover:.2f}%")
             else:
-                report_lines.append("⚠️ 暂无市场统计数据（可能需要更高的 Tushare 积分）")
+                report_lines.append("⚠️ No market statistics yet (higher Tushare points may be required)")
 
         return "\n".join(report_lines)
 
@@ -364,13 +364,13 @@ async def get_market_breadth(trade_date: str) -> str:
 
 async def get_market_environment(trade_date: str) -> str:
     """
-    评估市场环境（波动、换手、规模等）
+    Assess market environment (volatility, change of hands, size, etc.)
 
     Args:
-        trade_date: 交易日期
+        trade_date: transaction date
 
     Returns:
-        市场环境评估报告
+        Market environment assessment report
     """
     provider = _get_tushare_provider()
 
@@ -392,7 +392,7 @@ async def get_market_environment(trade_date: str) -> str:
             report_lines.append(f"说明: 输入日期 {trade_date} 无可用数据，已切换到最近交易日 {trade_date_display}")
             report_lines.append("")
 
-        # 获取主要指数快照
+        # Get a snapshot of major indices
         for index_code, index_name in list(MAIN_INDICES.items())[:3]:
             basic_df = await provider.get_index_dailybasic(
                 ts_code=index_code,
@@ -412,11 +412,11 @@ async def get_market_environment(trade_date: str) -> str:
             report_lines.append(f"      换手率: {turnover}%")
             report_lines.append(f"      总市值: {total_mv_wan_yi:.2f} 万亿")
 
-        # 波动率快照
+        # Volatility Snapshot
         report_lines.append("")
         report_lines.append("【波动率】")
 
-        # 获取上证指数近期数据计算波动率
+        # Get recent data of Shanghai Composite Index to calculate volatility
         daily_df = await provider.get_index_daily(
             ts_code='000001.SH',
             start_date=(datetime.strptime(trade_date_clean, '%Y%m%d') - timedelta(days=30)).strftime('%Y%m%d'),
@@ -424,9 +424,9 @@ async def get_market_environment(trade_date: str) -> str:
         )
 
         if daily_df is not None and len(daily_df) >= 20:
-            # 计算20日波动率
+            # Calculate 20-day volatility
             returns = daily_df['pct_chg'].dropna()
-            volatility = returns.std() * (252 ** 0.5)  # 年化波动率
+            volatility = returns.std() * (252 ** 0.5)  # annualized volatility
             report_lines.append(f"  • 20日年化波动率: {volatility:.2f}%")
 
         return "\n".join(report_lines)
@@ -438,13 +438,13 @@ async def get_market_environment(trade_date: str) -> str:
 
 async def identify_market_cycle(trade_date: str) -> str:
     """
-    识别市场周期（牛市/熊市/震荡市）
+    Identify market cycles (bull/bear/concussive markets)
 
     Args:
-        trade_date: 交易日期
+        trade_date: transaction date
 
     Returns:
-        市场周期判断报告
+        Market cycle judgment report
     """
     provider = _get_tushare_provider()
 
@@ -452,9 +452,9 @@ async def identify_market_cycle(trade_date: str) -> str:
         actual_trade_date = await _get_latest_trade_date(trade_date)
         actual_trade_date_formatted = f"{actual_trade_date[:4]}-{actual_trade_date[4:6]}-{actual_trade_date[6:8]}"
         end_date = datetime.strptime(actual_trade_date, '%Y%m%d')
-        start_date = end_date - timedelta(days=365)  # 一年数据
+        start_date = end_date - timedelta(days=365)  # One year data
 
-        # 获取上证指数数据
+        # Get Shanghai Composite Index data
         daily_df = await provider.get_index_daily(
             ts_code='000001.SH',
             start_date=start_date.strftime('%Y%m%d'),
@@ -472,7 +472,7 @@ async def identify_market_cycle(trade_date: str) -> str:
             report_lines.append(f"说明: 输入日期 {trade_date} 无可用数据，已切换到最近交易日 {actual_trade_date_formatted}")
 
         if daily_df is None or len(daily_df) < 60:
-            report_lines.append("⚠️ 数据不足，无法判断市场周期")
+            report_lines.append("⚠️ Insufficient data to determine market cycles")
             return "\n".join(report_lines)
 
         daily_df = daily_df.sort_values('trade_date')
@@ -482,26 +482,26 @@ async def identify_market_cycle(trade_date: str) -> str:
         ma120 = daily_df['close'].tail(120).mean() if len(daily_df) >= 120 else ma60
         ma250 = daily_df['close'].tail(250).mean() if len(daily_df) >= 250 else ma120
 
-        # 计算年内高低点
+        # Calculate high and low points for the year
         year_high = daily_df['high'].max()
         year_low = daily_df['low'].min()
         position = (current_close - year_low) / (year_high - year_low) * 100 if year_high != year_low else 50
 
-        # 周期判断
+        # Cycle judgment
         if current_close > ma60 > ma120 > ma250:
             cycle = "价格位于多头排列区间 🐂"
         elif current_close < ma60 < ma120 < ma250:
             cycle = "价格位于空头排列区间 🐻"
         elif current_close > ma60 and current_close > ma120:
-            cycle = "价格位于短中期均线上方区间 📈"
+            cycle = "The price is above the short- and medium-term moving averages 📈"
         elif current_close < ma60 and current_close < ma120:
-            cycle = "价格位于短中期均线下方区间 📉"
+            cycle = "The price is below the short- and medium-term moving average 📉"
         else:
             cycle = "价格处于均线交错区间 📊"
 
         report_lines.append(f"  🎯 规则识别区间: {cycle}")
         report_lines.append(f"  📍 年内位置: {position:.1f}% (0%=年内低点, 100%=年内高点)")
-        report_lines.append("  ℹ️ 该结果为基于均线关系与年内位置的规则识别，不代表趋势确认。")
+        report_lines.append("  ℹ️ This result is a rule identification based on the relationship between the moving average and the position within the year, and does not represent trend confirmation.")
         report_lines.append("")
         report_lines.append("【均线系统】")
         report_lines.append(f"  • 当前价格: {current_close:.2f}")
@@ -518,24 +518,24 @@ async def identify_market_cycle(trade_date: str) -> str:
 
 async def analyze_index(trade_date: str) -> str:
     """
-    综合大盘分析（IndexAnalyst 主入口）
+    Comprehensive market analysis (IndexAnalyst main entrance)
 
-    整合指数走势、市场宽度、市场环境、市场周期四个维度的分析
+    Integrate analysis from the four dimensions of index trend, market breadth, market environment, and market cycle
 
     Args:
-        trade_date: 交易日期
+        trade_date: transaction date
 
     Returns:
-        综合大盘分析报告
+        Comprehensive market analysis report
     """
     try:
-        # 首先获取最新可用的交易日
+        # First get the latest available trading day
         actual_trade_date = await _get_latest_trade_date(trade_date)
         actual_trade_date_formatted = f"{actual_trade_date[:4]}-{actual_trade_date[4:6]}-{actual_trade_date[6:8]}"
 
         logger.info(f"📊 大盘分析使用交易日: {actual_trade_date_formatted}")
 
-        # 并行获取四个分析结果
+        # Obtain four analysis results in parallel
         trend_task = get_index_trend(actual_trade_date_formatted)
         breadth_task = get_market_breadth(actual_trade_date_formatted)
         env_task = get_market_environment(actual_trade_date_formatted)
@@ -545,7 +545,7 @@ async def analyze_index(trade_date: str) -> str:
             trend_task, breadth_task, env_task, cycle_task
         )
 
-        # 组合报告
+        # Portfolio Report
         full_report = [
             "=" * 60,
             "🌐 大盘分析师综合报告",
@@ -563,7 +563,7 @@ async def analyze_index(trade_date: str) -> str:
         stable_note = build_stable_data_cutoff_note(
             _clean_date_string(trade_date),
             actual_trade_date_formatted,
-            subject="大盘分析所需的当日收盘后日频数据",
+            subject="Daily frequency data after the close of the day required for market analysis",
         )
         if stable_note:
             full_report.insert(4, f"说明: {stable_note}")
@@ -576,45 +576,45 @@ async def analyze_index(trade_date: str) -> str:
         return f"❌ 综合大盘分析失败: {e}"
 
 
-# ==================== 同步包装函数 ====================
+# ==================== Synchronous wrapper function ====================
 
 def analyze_index_sync(trade_date: str) -> str:
-    """analyze_index 的同步版本"""
+    """analyze_index synchronized version of"""
     return asyncio.run(analyze_index(trade_date))
 
 
 def get_index_trend_sync(trade_date: str, lookback_days: int = 60) -> str:
-    """get_index_trend 的同步版本"""
+    """get_index_trend synchronized version of"""
     return asyncio.run(get_index_trend(trade_date, lookback_days))
 
 
 def get_market_breadth_sync(trade_date: str) -> str:
-    """get_market_breadth 的同步版本"""
+    """get_market_breadth synchronized version of"""
     return asyncio.run(get_market_breadth(trade_date))
 
 
 def get_market_environment_sync(trade_date: str) -> str:
-    """get_market_environment 的同步版本"""
+    """get_market_environment synchronized version of"""
     return asyncio.run(get_market_environment(trade_date))
 
 
 def identify_market_cycle_sync(trade_date: str) -> str:
-    """identify_market_cycle 的同步版本"""
+    """identify_market_cycle synchronized version of"""
     return asyncio.run(identify_market_cycle(trade_date))
 
 
-# ==================== 新增大盘分析工具 ====================
+# ==================== Added market analysis tools ====================
 
 async def get_north_flow(trade_date: str, lookback_days: int = 10) -> str:
     """
-    获取北向资金流向分析
+    Get northbound capital flow analysis
 
     Args:
-        trade_date: 交易日期 (YYYY-MM-DD)
-        lookback_days: 回看天数
+        trade_date: transaction date (YYYY-MM-DD)
+        lookback_days: Number of days to look back
 
     Returns:
-        北向资金流向分析报告
+        Northbound capital flow analysis report
     """
     provider = _get_tushare_provider()
 
@@ -642,37 +642,37 @@ async def get_north_flow(trade_date: str, lookback_days: int = 10) -> str:
             report_lines.append("")
 
         if df is None or df.empty:
-            report_lines.append("⚠️ 暂无北向资金数据（可能需要更高的 Tushare 积分）")
+            report_lines.append("⚠️ No northbound funding data (may require higher Tushare points)")
             return "\n".join(report_lines)
 
-        # 按日期排序
+        # Sort by date
         df = df.sort_values('trade_date', ascending=False)
 
-        # 🔑 确保数值列为数值类型（根据 Tushare 文档，这些字段应该是 float）
-        # 参考文档：https://tushare.pro/document/2?doc_id=47
-        # Tushare 返回的数据格式：hgt/sgt/north_money 都是 float 类型（百万元）
+        # 🔑 Make sure the numeric columns are of numeric type (according to Tushare documentation, these fields should be float)
+        # Reference documentation:https://tushare.pro/document/2?doc_id=47
+        # Tushare Returned data format: hgt/sgt/north_money are all float type (millions of yuan)
         numeric_cols = ['hgt', 'sgt', 'ggt_ss', 'ggt_sz', 'north_money', 'south_money']
         for col in numeric_cols:
             if col in df.columns:
-                # 先尝试直接转换为数值类型
+                # First try converting directly to a numeric type
                 try:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
                 except Exception:
-                    # 如果直接转换失败，先清理格式错误
-                    # 处理可能的格式错误：如果包含多个小数点或数字被错误连接
-                    # 例如 "182490.64238444.93" -> 提取第一个有效数字 "182490.64"
+                    # If the direct conversion fails, clean up the format errors first
+                    # Handle possible format errors: if multiple decimal points are included or numbers are incorrectly concatenated
+                    # For example "182490.64238444.93" -> Extract the first significant digit "182490.64"
                     def clean_numeric_value(val):
                         if pd.isna(val):
                             return 0.0
                         val_str = str(val).strip()
-                        # 移除逗号和空格
+                        # Remove commas and spaces
                         val_str = val_str.replace(',', '').replace(' ', '')
-                        # 如果包含多个小数点，提取第一个完整的数字
-                        # 匹配模式：可选负号 + 数字 + 小数点 + 数字（第一个完整数字）
+                        # If it contains multiple decimal points, extract the first complete number
+                        # Match pattern: optional minus sign + numbers + decimal point + Number (first complete number)
                         match = re.match(r'(-?\d+\.\d{1,2})', val_str)
                         if match:
                             return float(match.group(1))
-                        # 如果没有小数点，尝试匹配整数
+                        # If there is no decimal point, try to match an integer
                         match = re.match(r'(-?\d+)', val_str)
                         if match:
                             return float(match.group(1))
@@ -681,34 +681,34 @@ async def get_north_flow(trade_date: str, lookback_days: int = 10) -> str:
                     df[col] = df[col].apply(clean_numeric_value)
                     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         
-        # 重新计算 north_money 和 south_money（确保使用清理后的数值）
+        # Recalculate north_money and south_money (make sure to use the sanitized values)
         if 'hgt' in df.columns and 'sgt' in df.columns:
             df['north_money'] = df['hgt'].fillna(0) + df['sgt'].fillna(0)
         if 'ggt_ss' in df.columns and 'ggt_sz' in df.columns:
             df['south_money'] = df['ggt_ss'].fillna(0) + df['ggt_sz'].fillna(0)
 
-        # 最新一天数据
+        # Latest day's data
         latest = df.iloc[0]
         
-        # 🔑 安全转换函数：从 DataFrame 中安全提取数值
+        # 🔑 Safe conversion functions: Safely extract numeric values from a DataFrame
         def safe_float(value, default=0.0):
-            """安全转换为浮点数，处理可能的格式错误"""
+            """Safe conversion to floating point, handling possible format errors"""
             if value is None or pd.isna(value):
                 return default
             try:
-                # 如果已经是数值类型，直接返回
+                # If it is already a numeric type, return it directly
                 if isinstance(value, (int, float)):
                     return float(value)
-                # 如果是 pandas Series，取第一个值
+                # If it is a pandas Series, take the first value
                 if isinstance(value, pd.Series):
                     value = value.iloc[0] if len(value) > 0 else default
                     if pd.isna(value):
                         return default
                     return float(value)
-                # 如果是字符串，清理后转换
+                # If it is a string, clean it and convert it
                 if isinstance(value, str):
                     value = value.strip()
-                    # 处理格式错误：移除多余的小数部分（如 "182490.64238444.93" -> "182490.64"）
+                    # Handle format errors: remove extra decimal parts (e.g. "182490.64238444.93" -> "182490.64") 
                     value = re.sub(r'(\d+\.\d+)\.\d+', r'\1', value)
                     value = value.replace(',', '').replace(' ', '')
                 return float(value)
@@ -716,7 +716,7 @@ async def get_north_flow(trade_date: str, lookback_days: int = 10) -> str:
                 logger.warning(f"⚠️ 无法转换数值: {value} (类型: {type(value)}), 错误: {e}, 使用默认值 {default}")
                 return default
         
-        # 🔑 使用 .iloc[0] 确保获取单个值，而不是 Series
+        # 🔑 Use .iloc[0] Make sure to get a single value instead of Series
         hgt = safe_float(latest['hgt'] if 'hgt' in latest.index else 0)
         sgt = safe_float(latest['sgt'] if 'sgt' in latest.index else 0)
         north_money = safe_float(latest['north_money'] if 'north_money' in latest.index else 0)
@@ -727,9 +727,9 @@ async def get_north_flow(trade_date: str, lookback_days: int = 10) -> str:
         flow_text = "净流入" if north_money > 0 else "净流出"
         report_lines.append(f"  • 北向合计: {abs(north_money)/10000:.2f} 亿元 ({flow_text})")
 
-        # 近N日统计
+        # Statistics for the past N days
         if len(df) >= 5:
-            # 🔑 直接使用清理后的数值列（已经是 float 类型）
+            # 🔑 Use the cleaned numeric column directly (already of float type)
             recent_5 = df.head(5)['north_money'].sum()
             report_lines.append("")
             report_lines.append("【近期趋势】")
@@ -739,11 +739,11 @@ async def get_north_flow(trade_date: str, lookback_days: int = 10) -> str:
                 recent_10 = df.head(10)['north_money'].sum()
                 report_lines.append(f"  • 近10日累计: {recent_10/10000:.2f} 亿元")
 
-            # 连续流入/流出天数
+            # Number of consecutive inflow/outflow days
             consecutive = 0
             direction = "流入" if north_money > 0 else "流出"
             for _, row in df.iterrows():
-                # 🔑 直接使用清理后的数值（已经是 float 类型）
+                # 🔑 Use the cleaned value directly (already of float type)
                 row_north_money = float(row['north_money']) if pd.notna(row['north_money']) else 0.0
                 if (direction == "流入" and row_north_money > 0) or \
                    (direction == "流出" and row_north_money < 0):
@@ -762,14 +762,14 @@ async def get_north_flow(trade_date: str, lookback_days: int = 10) -> str:
 
 async def get_margin_trading(trade_date: str, lookback_days: int = 10) -> str:
     """
-    获取两融余额分析
+    Obtain analysis of the balance of financing and financing
 
     Args:
-        trade_date: 交易日期 (YYYY-MM-DD)
-        lookback_days: 回看天数
+        trade_date: transaction date (YYYY-MM-DD)
+        lookback_days: Number of days to look back
 
     Returns:
-        两融余额分析报告
+        Financial balance analysis report
     """
     provider = _get_tushare_provider()
 
@@ -797,10 +797,10 @@ async def get_margin_trading(trade_date: str, lookback_days: int = 10) -> str:
             report_lines.append("")
 
         if df is None or df.empty:
-            report_lines.append("⚠️ 暂无两融数据（可能需要更高的 Tushare 积分）")
+            report_lines.append("⚠️ There is currently no two-fusion data (higher Tushare points may be required)")
             return "\n".join(report_lines)
 
-        # 按日期排序，并校验请求交易日是否有完整的交易所覆盖
+        # Sort by date and verify whether the requested trading day has complete transaction coverage
         df = df.copy()
         df['trade_date'] = df['trade_date'].astype(str)
         df = df.sort_values('trade_date', ascending=False)
@@ -809,14 +809,14 @@ async def get_margin_trading(trade_date: str, lookback_days: int = 10) -> str:
 
         if latest_data.empty:
             report_lines.append("【数据完整性】")
-            report_lines.append("  • 数据状态: 请求交易日无记录")
+            report_lines.append("  • Data status: Request no record on transaction day")
             report_lines.append(f"  • 请求交易日: {actual_trade_date_formatted}")
             report_lines.append(f"  • 接口最新返回日期: {_format_compact_trade_date(latest_date)}")
             report_lines.append("")
             report_lines.append("【使用限制】")
-            report_lines.append("  • 当前未获取到请求交易日的两融数据")
-            report_lines.append("  • 不应据此判断两融余额水平、单日变化或杠杆资金方向")
-            report_lines.append("  • 可等待 Tushare 更新当日数据后再做两融分析")
+            report_lines.append("  • The two financial data for the requested trading day are currently not available.")
+            report_lines.append("  • This should not be used to judge the balance level, single-day changes or the direction of leveraged funds.")
+            report_lines.append("  • You can wait for Tushare to update the data of the day before doing the two-fusion analysis.")
             return "\n".join(report_lines)
 
         coverage = _get_margin_exchange_coverage(latest_data, actual_trade_date)
@@ -829,17 +829,17 @@ async def get_margin_trading(trade_date: str, lookback_days: int = 10) -> str:
             report_lines.append(f"  • 已返回交易所: {present_exchanges}")
             report_lines.append(f"  • 缺失交易所: {missing_exchanges}")
             if coverage['missing_exchange_column']:
-                report_lines.append("  • 接口未返回 exchange_id 字段，无法确认交易所覆盖范围")
+                report_lines.append("  • The interface does not return the exchange_id field and the exchange coverage cannot be confirmed.")
             report_lines.append("")
             report_lines.append("【使用限制】")
-            report_lines.append("  • 当前数据仅覆盖部分交易所，不代表 A 股全市场两融口径")
-            report_lines.append("  • 不应据此判断两融余额水平、单日变化或杠杆资金方向")
-            report_lines.append("  • 后续分析应明确标注数据缺失，不要将其外推为异常波动或杠杆变化")
+            report_lines.append("  • The current data only covers some exchanges and does not represent the coverage of the entire A-share market.")
+            report_lines.append("  • This should not be used to judge the balance level, single-day changes or the direction of leveraged funds.")
+            report_lines.append("  • Subsequent analysis should clearly label missing data and do not extrapolate it to abnormal fluctuations or leverage changes.")
             return "\n".join(report_lines)
 
-        # 汇总数据
-        rzye = latest_data['rzye'].sum() / 100000000  # 融资余额（亿元）
-        rqye = latest_data['rqye'].sum() / 100000000  # 融券余额（亿元）
+        # Aggregate data
+        rzye = latest_data['rzye'].sum() / 100000000  # Financing balance (100 million yuan)
+        rqye = latest_data['rqye'].sum() / 100000000  # Securities lending balance (100 million yuan)
         rzrqye = latest_data['rzrqye'].sum() / 100000000 if 'rzrqye' in latest_data.columns else rzye + rqye
 
         report_lines.append("【今日两融余额】")
@@ -849,7 +849,7 @@ async def get_margin_trading(trade_date: str, lookback_days: int = 10) -> str:
 
         anomaly_messages = []
 
-        # 计算变化
+        # Calculate changes
         unique_dates = df['trade_date'].unique()
         if len(unique_dates) >= 2:
             prev_date = unique_dates[1]
@@ -857,13 +857,13 @@ async def get_margin_trading(trade_date: str, lookback_days: int = 10) -> str:
             prev_rzye = prev_data['rzye'].sum() / 100000000
             change = rzye - prev_rzye
             if abs(change) > max(rzye * 0.15, 1500):
-                anomaly_messages.append("单日融资变化与当前余额相比波动过大")
+                anomaly_messages.append("Single-day financing changes fluctuate too much compared to current balance")
             else:
                 change_icon = "🔴" if change > 0 else "🟢"
                 change_text = "增加" if change > 0 else "减少"
                 report_lines.append(f"  • 融资变化: {change_icon} {abs(change):.2f} 亿元 ({change_text})")
 
-        # 近期趋势
+        # recent trends
         if len(unique_dates) >= 5:
             first_date_data = df[df['trade_date'] == unique_dates[-1]]
             first_rzye = first_date_data['rzye'].sum() / 100000000
@@ -880,12 +880,12 @@ async def get_margin_trading(trade_date: str, lookback_days: int = 10) -> str:
             report_lines.append("【字段一致性检查】")
             for message in anomaly_messages:
                 report_lines.append(f"  • ⚠️ {message}")
-            report_lines.append("  • 变化字段可能存在口径差异或异常值，暂不据此延伸解读杠杆方向")
+            report_lines.append("  • There may be caliber differences or outliers in the change field, and we will not extend the interpretation of the leverage direction based on this for the time being.")
 
         if anomaly_messages:
             report_lines.append("")
             report_lines.append("【使用限制】")
-            report_lines.append("  • 当前仅可引用余额数值，不应依据异常变化字段判断资金方向")
+            report_lines.append("  • Currently, only the balance value can be quoted, and the direction of funds should not be judged based on the abnormal change field.")
 
         return "\n".join(report_lines)
 
@@ -896,20 +896,20 @@ async def get_margin_trading(trade_date: str, lookback_days: int = 10) -> str:
 
 async def get_limit_stats(trade_date: str) -> str:
     """
-    获取涨跌停统计和涨跌家数分析
+    Obtain price limit statistics and analysis of the number of companies rising and falling
 
     Args:
-        trade_date: 交易日期 (YYYY-MM-DD)
+        trade_date: transaction date (YYYY-MM-DD)
 
     Returns:
-        涨跌停和涨跌家数分析报告
+        Analysis report on price limit and number of companies rising and falling
     """
     provider = _get_tushare_provider()
 
     try:
         trade_date_clean = trade_date.replace('-', '')
 
-        # 获取最新可用交易日
+        # Get the latest available trading day
         actual_date = await _get_latest_trade_date(trade_date)
         actual_date_formatted = f"{actual_date[:4]}-{actual_date[4:6]}-{actual_date[6:8]}"
 
@@ -921,7 +921,7 @@ async def get_limit_stats(trade_date: str) -> str:
             "",
         ]
 
-        # 获取涨跌家数统计
+        # Get statistics on the number of stocks rising and falling
         stats = await provider.get_daily_stats(actual_date)
 
         if stats:
@@ -938,22 +938,22 @@ async def get_limit_stats(trade_date: str) -> str:
             report_lines.append(f"  • 跌幅>5%: {stats['down_gt5']} 家")
             report_lines.append(f"  • 跌幅3-5%: {stats['down_3_5']} 家")
 
-            # 涨跌幅分布信号
+            # Price distribution signal
             profit_stocks = stats['up_gt5'] + stats['up_3_5']
             loss_stocks = stats['down_gt5'] + stats['down_3_5']
             if profit_stocks > loss_stocks * 2:
-                effect = "涨幅居前个股数量明显多于跌幅居前个股 💰"
+                effect = "The number of stocks with the largest increase was significantly greater than the number of stocks with the largest decrease. 💰"
             elif profit_stocks > loss_stocks:
-                effect = "涨幅居前个股数量多于跌幅居前个股 📊"
+                effect = "The number of top gainers is greater than the number of top losers. 📊"
             elif loss_stocks > profit_stocks * 2:
-                effect = "跌幅居前个股数量明显多于涨幅居前个股 ⚠️"
+                effect = "The number of stocks with the top decliners is significantly more than the stocks with the top gainers. ⚠️"
             else:
-                effect = "涨跌幅居前个股数量接近 📉"
+                effect = "The number of stocks with the largest increase or decrease is close to 📉"
             report_lines.append(f"  • {effect}")
         else:
             report_lines.append("⚠️ 暂无涨跌家数数据")
 
-        # 尝试获取涨跌停详情
+        # Try to get the price limit details
         limit_df = await provider.get_limit_list(actual_date)
         if limit_df is not None and not limit_df.empty:
             limit_up_df = limit_df[limit_df['limit'] == 'U']
@@ -962,7 +962,7 @@ async def get_limit_stats(trade_date: str) -> str:
 
             if not limit_up_df.empty:
                 detail_lines.append(f"  • 涨停: {len(limit_up_df)} 家")
-                # 连板统计
+                # Connected board statistics
                 if 'up_stat' in limit_up_df.columns:
                     multi_board = limit_up_df[limit_up_df['up_stat'].str.contains('2|3|4|5|6|7|8|9', na=False)]
                     if len(multi_board) > 0:
@@ -978,7 +978,7 @@ async def get_limit_stats(trade_date: str) -> str:
         else:
             report_lines.append("")
             report_lines.append("【涨跌停统计】")
-            report_lines.append("  • 涨跌停明细名单暂不可用，无法确认当日涨停/跌停家数")
+            report_lines.append("  • The detailed list of daily limit and price limit is temporarily unavailable, and the number of companies with daily limit and price limit cannot be confirmed.")
 
         return "\n".join(report_lines)
 
@@ -989,14 +989,14 @@ async def get_limit_stats(trade_date: str) -> str:
 
 async def get_index_technical(trade_date: str, lookback_days: int = 60) -> str:
     """
-    获取指数技术指标分析（MACD, RSI, KDJ）
+    Get Index Technical Indicator Analysis (MACD, RSI, KDJ) 
 
     Args:
-        trade_date: 交易日期 (YYYY-MM-DD)
-        lookback_days: 回看天数
+        trade_date: transaction date (YYYY-MM-DD)
+        lookback_days: Number of days to look back
 
     Returns:
-        指数技术指标分析报告
+        Index Technical Indicator Analysis Report
     """
     provider = _get_tushare_provider()
 
@@ -1018,7 +1018,7 @@ async def get_index_technical(trade_date: str, lookback_days: int = 60) -> str:
             report_lines.append(f"说明: 输入日期 {trade_date} 无可用数据，已切换到最近交易日 {actual_trade_date_formatted}")
             report_lines.append("")
 
-        # 分析上证指数的技术指标
+        # Analyze the technical indicators of the Shanghai Composite Index
         index_code = '000001.SH'
         index_name = '上证指数'
 
@@ -1029,12 +1029,12 @@ async def get_index_technical(trade_date: str, lookback_days: int = 60) -> str:
         )
 
         if df is None or len(df) < 30:
-            report_lines.append("⚠️ 数据不足，无法计算技术指标")
+            report_lines.append("⚠️ Insufficient data to calculate technical indicators")
             return "\n".join(report_lines)
 
         df = df.sort_values('trade_date').reset_index(drop=True)
 
-        # 计算技术指标
+        # Calculate technical indicators
         close = df['close']
 
         # MACD
@@ -1059,7 +1059,7 @@ async def get_index_technical(trade_date: str, lookback_days: int = 60) -> str:
         d = k.ewm(com=2, adjust=False).mean()
         j = 3 * k - 2 * d
 
-        # 获取最新值
+        # Get the latest value
         latest_dif = dif.iloc[-1]
         latest_dea = dea.iloc[-1]
         latest_macd = macd.iloc[-1]
@@ -1071,7 +1071,7 @@ async def get_index_technical(trade_date: str, lookback_days: int = 60) -> str:
         report_lines.append(f"【{index_name} 技术指标】")
         report_lines.append("")
 
-        # MACD 分析
+        # MACD analysis
         report_lines.append("📊 MACD 指标:")
         report_lines.append(f"  • DIF: {latest_dif:.2f}")
         report_lines.append(f"  • DEA: {latest_dea:.2f}")
@@ -1080,36 +1080,36 @@ async def get_index_technical(trade_date: str, lookback_days: int = 60) -> str:
         macd_signal = ""
         if latest_dif > latest_dea:
             if latest_dif > 0:
-                macd_signal = "DIF高于DEA，且位于零轴上方 📈"
+                macd_signal = "DIF Higher than DEA and above the zero axis 📈"
             else:
-                macd_signal = "DIF高于DEA，但仍位于零轴下方 🔄"
+                macd_signal = "DIF Higher than DEA, but still below the zero axis 🔄"
         else:
             if latest_dif < 0:
-                macd_signal = "DIF低于DEA，且位于零轴下方 📉"
+                macd_signal = "DIF Below DEA and below the zero axis 📉"
             else:
-                macd_signal = "DIF低于DEA，但仍位于零轴上方 ⚠️"
+                macd_signal = "DIF Below DEA, but still above the zero axis ⚠️"
         report_lines.append(f"  • 信号: {macd_signal}")
 
-        # RSI 分析
+        # RSI analysis
         report_lines.append("")
         report_lines.append("📊 RSI 指标:")
         report_lines.append(f"  • RSI(14): {latest_rsi:.2f}")
 
         if latest_rsi > 80:
-            rsi_signal = "处于80以上区间，数值偏高 🔴"
+            rsi_signal = "In the range above 80, the value is on the high side 🔴"
         elif latest_rsi > 70:
-            rsi_signal = "处于70-80区间，接近高位 📈"
+            rsi_signal = "In the 70-80 range, close to high 📈"
         elif latest_rsi > 50:
-            rsi_signal = "处于50-70区间，位于强弱分界线上方 📊"
+            rsi_signal = "It is in the 50-70 range, above the dividing line between strength and weakness. 📊"
         elif latest_rsi > 30:
-            rsi_signal = "处于30-50区间，位于强弱分界线下方 📉"
+            rsi_signal = "In the 30-50 range, below the strength and weakness dividing line 📉"
         elif latest_rsi > 20:
-            rsi_signal = "处于20-30区间，接近低位 📉"
+            rsi_signal = "In the 20-30 range, close to low 📉"
         else:
-            rsi_signal = "处于20以下区间，数值偏低 🟢"
+            rsi_signal = "In the range below 20, the value is low 🟢"
         report_lines.append(f"  • 信号: {rsi_signal}")
 
-        # KDJ 分析
+        # KDJ analysis
         report_lines.append("")
         report_lines.append("📊 KDJ 指标:")
         report_lines.append(f"  • K: {latest_k:.2f}")
@@ -1117,16 +1117,16 @@ async def get_index_technical(trade_date: str, lookback_days: int = 60) -> str:
         report_lines.append(f"  • J: {latest_j:.2f}")
 
         if latest_k > latest_d and latest_j > 80:
-            kdj_signal = "K高于D，J值处于80以上区间 ⚠️"
+            kdj_signal = "K Higher than D, the J value is in the range above 80 ⚠️"
         elif latest_k > latest_d:
-            kdj_signal = "K高于D，短线排列偏上 📈"
+            kdj_signal = "K Higher than D, the short-term arrangement is upward 📈"
         elif latest_k < latest_d and latest_j < 20:
-            kdj_signal = "K低于D，J值处于20以下区间 🔄"
+            kdj_signal = "K Below D, the J value is in the range below 20 🔄"
         else:
-            kdj_signal = "K低于D，短线排列偏下 📉"
+            kdj_signal = "K Below D, the short-term arrangement is lower 📉"
         report_lines.append(f"  • 信号: {kdj_signal}")
 
-        # 规则标签汇总
+        # Rule label summary
         report_lines.append("")
         report_lines.append("【指标规则标签】")
         upper_signals = 0
@@ -1149,32 +1149,32 @@ async def get_index_technical(trade_date: str, lookback_days: int = 60) -> str:
 
         report_lines.append(f"  • 偏上规则标签数量: {upper_signals}/3")
         report_lines.append(f"  • 偏下规则标签数量: {lower_signals}/3")
-        report_lines.append("  • 说明: 以上标签仅描述指标当前规则位置，不等同于市场结论")
+        report_lines.append("  • Description: The above labels only describe the current rule position of the indicator and are not equivalent to market conclusions.")
 
         return "\n".join(report_lines)
 
     except Exception as e:
         logger.error(f"指数技术指标分析失败: {e}")
-        return f"❌ 指数技术指标分析失败: {e}"
+        return f"❌ Index technical indicator analysis failed: {e}"
 
 
-# 同步包装函数
+# Synchronous wrapper function
 def get_north_flow_sync(trade_date: str, lookback_days: int = 10) -> str:
-    """get_north_flow 的同步版本"""
+    """get_north_flow synchronized version of"""
     return asyncio.run(get_north_flow(trade_date, lookback_days))
 
 
 def get_margin_trading_sync(trade_date: str, lookback_days: int = 10) -> str:
-    """get_margin_trading 的同步版本"""
+    """get_margin_trading synchronized version of"""
     return asyncio.run(get_margin_trading(trade_date, lookback_days))
 
 
 def get_limit_stats_sync(trade_date: str) -> str:
-    """get_limit_stats 的同步版本"""
+    """get_limit_stats synchronized version of"""
     return asyncio.run(get_limit_stats(trade_date))
 
 
 def get_index_technical_sync(trade_date: str, lookback_days: int = 60) -> str:
-    """get_index_technical 的同步版本"""
+    """get_index_technical synchronized version of"""
     return asyncio.run(get_index_technical(trade_date, lookback_days))
 

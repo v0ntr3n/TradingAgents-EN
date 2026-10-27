@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-测试修复后的分析功能
+Test the repaired analysis functionality
 """
 
 import requests
@@ -9,25 +9,25 @@ import json
 from pathlib import Path
 
 def test_fixed_analysis():
-    """测试修复后的分析功能"""
-    print("🔍 测试修复后的分析功能")
+    """Test the repaired analysis functionality"""
+    print("🔍 Test the repaired analysis functionality")
     print("=" * 60)
 
-    # API基础URL
+    # API Basics URL
     base_url = "http://localhost:8000"
 
     try:
-        # 1. 检查API健康状态
-        print("1. 检查API健康状态...")
+        # 1. Check API health status
+        print("1. Check API health status...")
         response = requests.get(f"{base_url}/api/health", timeout=5)
         if response.status_code == 200:
-            print("✅ API服务正常运行")
+            print("✅ API Service is running normally")
         else:
-            print(f"❌ API服务异常: {response.status_code}")
+            print(f"❌ API Service exception: {response.status_code}")
             return False
 
-        # 2. 登录获取token
-        print("\n2. 登录获取token...")
+        # 2. Log in to get token
+        print("\n2. Log in to get token...")
         login_data = {
             "username": "admin",
             "password": "admin123"
@@ -41,21 +41,21 @@ def test_fixed_analysis():
         if login_response.status_code == 200:
             login_result = login_response.json()
             access_token = login_result["data"]["access_token"]
-            print("✅ 登录成功，获取到token")
+            print("✅ Log in successfully and get token")
         else:
-            print(f"❌ 登录失败: {login_response.status_code}")
-            print(f"   响应: {login_response.text}")
+            print(f"❌ Login failed: {login_response.status_code}")
+            print(f"   response: {login_response.text}")
             return False
         
-        # 3. 提交分析请求
-        print("\n3. 提交分析请求...")
+        # 3. Submit an analysis request
+        print("\n3. Submit an analysis request...")
         analysis_request = {
-            "stock_code": "000001",  # 使用不同的股票代码测试
+            "stock_code": "000001",  # Test with different tickers
             "parameters": {
-                "market_type": "A股",
+                "market_type": "A shares",
                 "analysis_date": "2025-08-20",
-                "research_depth": "快速",
-                "selected_analysts": ["market"],  # 只使用市场分析师进行快速测试
+                "research_depth": "fast",
+                "selected_analysts": ["market"],  # Use only market analysts for quick testing
                 "include_sentiment": False,
                 "include_risk": False,
                 "language": "zh-CN",
@@ -64,7 +64,7 @@ def test_fixed_analysis():
             }
         }
 
-        # 使用获取到的token
+        # Use the obtained token
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {access_token}"
@@ -79,15 +79,15 @@ def test_fixed_analysis():
         if response.status_code == 200:
             result = response.json()
             task_id = result.get("task_id")
-            print(f"✅ 分析任务已提交: {task_id}")
+            print(f"✅ Analysis task has been submitted: {task_id}")
         else:
-            print(f"❌ 提交分析请求失败: {response.status_code}")
-            print(f"   响应: {response.text}")
+            print(f"❌ Failed to submit analysis request: {response.status_code}")
+            print(f"   response: {response.text}")
             return False
         
-        # 4. 监控任务状态
-        print(f"\n4. 监控任务状态...")
-        max_wait_time = 300  # 最多等待5分钟
+        # 4. Monitor task status
+        print(f"\n4. Monitor task status...")
+        max_wait_time = 300  # Wait up to 5 minutes
         start_time = time.time()
 
         while time.time() - start_time < max_wait_time:
@@ -102,55 +102,55 @@ def test_fixed_analysis():
                 progress = status_data.get("progress", 0)
                 message = status_data.get("message", "")
 
-                print(f"   状态: {status}, 进度: {progress}%, 消息: {message}")
+                print(f"   Status: {status}, Progress: {progress}%, news: {message}")
 
                 if status == "completed":
-                    print("✅ 分析任务完成!")
+                    print("✅ Analysis task completed!")
 
-                    # 5. 检查文件保存（应该使用正确的股票代码）
-                    print(f"\n5. 检查文件保存...")
+                    # 5. Check file save (should use correct ticker)
+                    print(f"\n5. Check file save...")
                     
-                    # 检查data目录（应该是000001而不是UNKNOWN）
+                    # Check the data directory (should be 000001 not UNKNOWN)
                     data_dir = Path("data/analysis_results/000001/2025-08-20")
                     if data_dir.exists():
-                        print(f"✅ 分析结果目录存在: {data_dir}")
+                        print(f"✅ Analysis results directory exists: {data_dir}")
                         
-                        # 检查reports目录
+                        # Check the reports directory
                         reports_dir = data_dir / "reports"
                         if reports_dir.exists():
                             report_files = list(reports_dir.glob("*.md"))
                             if report_files:
-                                print(f"✅ 找到 {len(report_files)} 个报告文件:")
+                                print(f"✅ found {len(report_files)} report files:")
                                 for file in report_files:
                                     print(f"   - {file.name}")
                                     
-                                # 检查市场分析报告内容
+                                # Check the market analysis report content
                                 market_report = reports_dir / "market_report.md"
                                 if market_report.exists():
                                     with open(market_report, 'r', encoding='utf-8') as f:
                                         content = f.read()
                                         if len(content) > 100:
-                                            print(f"✅ 市场分析报告有内容 (长度: {len(content)})")
-                                            # 检查是否包含正确的股票代码
+                                            print(f"✅ The market analysis report has content (length: {len(content)})")
+                                            # Check if the correct stock symbol is included
                                             if "000001" in content:
-                                                print(f"✅ 报告包含正确的股票代码: 000001")
+                                                print(f"✅ Report contains correct ticker symbol: 000001")
                                             else:
-                                                print(f"⚠️ 报告中未找到股票代码000001")
+                                                print(f"⚠️ Stock symbol not found in report 000001")
                                         else:
-                                            print(f"⚠️ 市场分析报告内容过短")
+                                            print(f"⚠️ Market analysis report content is too short")
                             else:
-                                print(f"⚠️ reports目录存在但没有报告文件")
+                                print(f"⚠️ reports Directory exists but no report files")
                         else:
-                            print(f"❌ reports目录不存在")
+                            print(f"❌ reports Directory does not exist")
                     else:
-                        print(f"❌ 分析结果目录不存在: {data_dir}")
-                        # 检查是否还是保存到UNKNOWN目录
+                        print(f"❌ The analysis results directory does not exist: {data_dir}")
+                        # Check whether it is still saved to the UNKNOWN directory
                         unknown_dir = Path("data/analysis_results/UNKNOWN/2025-08-20")
                         if unknown_dir.exists():
-                            print(f"⚠️ 文件保存到了UNKNOWN目录，股票代码传递有问题")
+                            print(f"⚠️ The file was saved to the UNKNOWN directory, and there was a problem with the stock code transfer.")
                     
-                    # 6. 获取分析结果
-                    print(f"\n6. 获取分析结果...")
+                    # 6. Get analysis results
+                    print(f"\n6. Get analysis results...")
                     result_response = requests.get(
                         f"{base_url}/api/analysis/tasks/{task_id}/result",
                         headers=headers
@@ -158,37 +158,37 @@ def test_fixed_analysis():
                     
                     if result_response.status_code == 200:
                         result_data = result_response.json()
-                        print(f"✅ 成功获取分析结果")
-                        print(f"   股票代码: {result_data.get('stock_code')}")
-                        print(f"   股票符号: {result_data.get('stock_symbol')}")
-                        print(f"   分析日期: {result_data.get('analysis_date')}")
+                        print(f"✅ Successfully obtained analysis results")
+                        print(f"   Stock code: {result_data.get('stock_code')}")
+                        print(f"   stock symbol: {result_data.get('stock_symbol')}")
+                        print(f"   Analysis date: {result_data.get('analysis_date')}")
                         
                         return True
                     else:
-                        print(f"❌ 获取分析结果失败: {result_response.status_code}")
+                        print(f"❌ Failed to obtain analysis results: {result_response.status_code}")
                         return False
                         
                 elif status == "failed":
-                    print(f"❌ 分析任务失败: {message}")
+                    print(f"❌ Analysis task failed: {message}")
                     return False
                     
             else:
-                print(f"❌ 查询任务状态失败: {status_response.status_code}")
+                print(f"❌ Failed to query task status: {status_response.status_code}")
                 return False
             
-            # 等待5秒后再次查询
+            # Query again after waiting 5 seconds
             time.sleep(5)
         
-        print(f"⏰ 任务执行超时 (超过{max_wait_time}秒)")
+        print(f"⏰ Task execution timeout (exceed{max_wait_time}seconds)")
         return False
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         return False
 
 if __name__ == "__main__":
     success = test_fixed_analysis()
     if success:
-        print("\n🎉 修复后的分析功能测试成功!")
+        print("\n🎉 The repaired analysis function was successfully tested!")
     else:
-        print("\n💥 修复后的分析功能测试失败!")
+        print("\n💥 Fixed analysis function test fails!")

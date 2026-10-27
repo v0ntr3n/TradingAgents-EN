@@ -1,128 +1,128 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-验证统一新闻工具集成效果的最终测试
+Final test to verify unified news tool integration
 """
 
 import os
 import sys
 from datetime import datetime
 
-# 添加项目根目录到路径
+# Add project root directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def test_final_integration():
-    """最终集成测试"""
+    """final integration test"""
     
-    print("🎯 统一新闻工具集成效果验证")
+    print("🎯 Verification of unified news tool integration effect")
     print("=" * 60)
     
     try:
-        # 1. 测试统一新闻工具本身
-        print("📦 第一步：测试统一新闻工具...")
+        # 1. Test the unified news tool itself
+        print("📦 Step One: Test Unified News Tools...")
         from tradingagents.tools.unified_news_tool import create_unified_news_tool
         
-        # 创建模拟工具包
+        # Create a simulation toolkit
         class MockToolkit:
             def get_realtime_stock_news(self, params):
                 stock_code = params.get("stock_code", "unknown")
                 return f"""
-【发布时间】2025-07-28 18:00:00
-【新闻标题】{stock_code}公司发布重要公告，业绩超预期增长
-【文章来源】东方财富网
+ [Release time]2025-07-28 18:00:00
+ [News headline]{stock_code}The company issued an important announcement and its performance exceeded expectations.
+ [Source of article] Oriental Fortune Network
 
-【新闻内容】
-1. 公司Q2季度营收同比增长25%，净利润增长30%
-2. 新产品线获得重大突破，市场前景广阔
-3. 管理层对下半年业绩表示乐观
-4. 分析师上调目标价至50元
+ [News content]
+1. The company s Q2 quarter revenue increased by 25% year-on-year, and net profit increased 30%
+2. The new product line has achieved major breakthroughs and has broad market prospects.
+3. Management expresses optimism about second half results
+4. Analysts raise target price to 50 yuan
 """
             
             def get_google_news(self, params):
                 query = params.get("query", "unknown")
-                return f"Google新闻搜索结果 - {query}: 相关财经新闻内容，包含重要市场信息"
+                return f"Google News search results - {query}: Relevant financial news content, including important market information"
             
             def get_global_news_openai(self, params):
                 query = params.get("query", "unknown")
-                return f"OpenAI全球新闻 - {query}: 国际财经新闻内容，包含详细分析"
+                return f"OpenAI global news - {query}: International financial news content, including detailed analysis"
         
         toolkit = MockToolkit()
         unified_tool = create_unified_news_tool(toolkit)
         
-        # 测试不同类型股票
+        # Test different types of stocks
         test_cases = [
-            {"code": "000001", "type": "A股", "name": "平安银行"},
-            {"code": "00700", "type": "港股", "name": "腾讯控股"},
-            {"code": "AAPL", "type": "美股", "name": "苹果公司"}
+            {"code": "000001", "type": "A shares", "name": "Ping An Bank"},
+            {"code": "00700", "type": "Hong Kong stocks", "name": "Tencent Holdings"},
+            {"code": "AAPL", "type": "US stocks", "name": "apple inc."}
         ]
         
         for case in test_cases:
-            print(f"\n🔍 测试 {case['type']}: {case['code']} ({case['name']})")
+            print(f"\n🔍 test {case['type']}: {case['code']} ({case['name']})")
             result = unified_tool({
                 "stock_code": case["code"],
                 "max_news": 10
             })
             
             if result and len(result) > 100:
-                print(f"  ✅ 成功获取新闻 ({len(result)} 字符)")
-                # 检查是否包含预期内容
+                print(f"  ✅ Successfully obtained news ({len(result)} character)")
+                # Check if expected content is included
                 if case["code"] in result:
-                    print(f"  ✅ 包含股票代码")
-                if "新闻数据来源" in result:
-                    print(f"  ✅ 包含数据来源信息")
+                    print(f"  ✅ Contains ticker symbol")
+                if "News data source" in result:
+                    print(f"  ✅ Contains data source information")
             else:
-                print(f"  ❌ 获取失败")
+                print(f"  ❌ Failed to obtain")
         
-        print(f"\n✅ 统一新闻工具测试完成")
+        print(f"\n✅ Unified news tool testing completed")
         
-        # 2. 测试新闻分析师的工具加载
-        print(f"\n📰 第二步：测试新闻分析师工具加载...")
+        # 2. Testing tool loading for news analysts
+        print(f"\n📰 Step Two: Test News Analyst Tool Loading...")
         from tradingagents.agents.analysts.news_analyst import create_news_analyst
         
-        # 检查新闻分析师是否正确导入了统一新闻工具
-        print(f"  ✅ 新闻分析师模块导入成功")
+        # Check if the news analyst has imported the unified news tool correctly
+        print(f"  ✅ News analyst module imported successfully")
         
-        # 3. 验证工具集成
-        print(f"\n🔧 第三步：验证工具集成...")
+        # 3. Verification tool integration
+        print(f"\n🔧 Step Three: Verify Tool Integration...")
         
-        # 检查新闻分析师文件中的统一新闻工具导入
+        # Check Unified News Tools import in News Analyst files
         with open("tradingagents/agents/analysts/news_analyst.py", "r", encoding="utf-8") as f:
             content = f.read()
             
         checks = [
-            ("统一新闻工具导入", "from tradingagents.tools.unified_news_tool import create_unified_news_tool"),
-            ("统一工具创建", "unified_news_tool = create_unified_news_tool(toolkit)"),
-            ("工具名称设置", "unified_news_tool.name = \"get_stock_news_unified\""),
-            ("系统提示词更新", "get_stock_news_unified"),
-            ("补救机制更新", "unified_news_tool")
+            ("Unified news tool import", "from tradingagents.tools.unified_news_tool import create_unified_news_tool"),
+            ("Unified tool creation", "unified_news_tool = create_unified_news_tool(toolkit)"),
+            ("Tool name setting", "unified_news_tool.name = \"get_stock_news_unified\""),
+            ("System prompt word update", "get_stock_news_unified"),
+            ("Remediation mechanism update", "unified_news_tool")
         ]
         
         for check_name, check_pattern in checks:
             if check_pattern in content:
-                print(f"  ✅ {check_name}: 已正确集成")
+                print(f"  ✅ {check_name}: Correctly integrated")
             else:
-                print(f"  ❌ {check_name}: 未找到")
+                print(f"  ❌ {check_name}: not found")
         
-        # 4. 总结
-        print(f"\n🎉 集成验证总结")
+        # 4. Summary
+        print(f"\n🎉 Integrated verification summary")
         print("=" * 60)
-        print("✅ 统一新闻工具创建成功")
-        print("✅ 支持A股、港股、美股自动识别")
-        print("✅ 新闻分析师已集成统一工具")
-        print("✅ 系统提示词已更新")
-        print("✅ 补救机制已优化")
+        print("✅ Unified news tool created successfully")
+        print("✅ Supports automatic identification of A shares, Hong Kong stocks, and US stocks")
+        print("✅ News analysts have integrated unified tools")
+        print("✅ System prompt words have been updated")
+        print("✅ The remediation mechanism has been optimized")
         
-        print(f"\n🚀 主要改进效果：")
-        print("1. 大模型只需调用一个工具 get_stock_news_unified")
-        print("2. 自动识别股票类型并选择最佳新闻源")
-        print("3. 简化了工具调用逻辑，提高成功率")
-        print("4. 统一了新闻格式，便于分析")
-        print("5. 减少了补救机制的复杂度")
+        print(f"\n🚀 Main improvements:")
+        print("1. Large models require only one tool call get_stock_news_unified")
+        print("2. Automatically identify stock types and select the best news source")
+        print("3. Simplified tool calling logic and improved success rate")
+        print("4. Unified news format for easy analysis")
+        print("5. Reduced complexity of remediation mechanisms")
         
-        print(f"\n✨ 集成测试完成！统一新闻工具已成功集成到新闻分析师中。")
+        print(f"\n✨ Integration testing completed! Unified News Tools have been successfully integrated into News Analysts.")
         
     except Exception as e:
-        print(f"❌ 测试过程中出现错误: {e}")
+        print(f"❌ An error occurred during testing: {e}")
         import traceback
         traceback.print_exc()
 

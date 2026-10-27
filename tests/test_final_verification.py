@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-最终验证脚本：测试优化后的数据深度级别是否产生不同详细程度的基本面分析报告
+Final verification script: Test whether the optimized data depth level produces fundamental analysis reports with different levels of detail
 """
 
 import sys
@@ -12,22 +12,22 @@ from tradingagents.agents.utils.agent_utils import Toolkit
 import time
 
 def test_analysis_depth_differences():
-    """测试不同深度级别产生的报告差异"""
+    """Test reporting differences produced by different depth levels"""
     print("=" * 80)
-    print("最终验证：测试不同深度级别的基本面分析报告差异")
+    print("Final verification: Testing the differences in fundamental analysis reporting at different depth levels")
     print("=" * 80)
     
-    stock_code = '300750'  # 宁德时代
+    stock_code = '300750'  # Ningde era
     
-    # 测试三个深度级别
+    # Test three depth levels
     depth_levels = [1, 3, 5]
     results = {}
     
     for depth in depth_levels:
-        print(f"\n🔍 测试深度级别 {depth}...")
+        print(f"\n🔍 Test depth level {depth}...")
         
         try:
-            # 调用基本面分析
+            # Call fundamental analysis
             result = Toolkit.get_stock_fundamentals_unified(
                 ticker=stock_code,
                 start_date="2024-10-10",
@@ -35,25 +35,25 @@ def test_analysis_depth_differences():
                 curr_date="2024-10-11"
             )
             
-            # 分析结果
+            # Analyze results
             lines = result.split('\n')
             char_count = len(result)
             
-            # 检查报告类型标识
-            report_type = "未知"
-            if "(基础版)" in result:
-                report_type = "基础版"
-            elif "(全面版)" in result:
-                report_type = "全面版"
+            # Check report type identifier
+            report_type = "unknown"
+            if "(Basic version)" in result:
+                report_type = "Basic version"
+            elif "(full version)" in result:
+                report_type = "full version"
             else:
-                report_type = "标准版"
+                report_type = "Standard Edition"
             
-            # 统计关键指标数量
-            pe_mentions = result.count("市盈率")
-            pb_mentions = result.count("市净率")
-            roe_mentions = result.count("净资产收益率")
-            industry_mentions = result.count("行业")
-            investment_mentions = result.count("投资")
+            # Count the number of key indicators
+            pe_mentions = result.count("P/E ratio")
+            pb_mentions = result.count("price to book ratio")
+            roe_mentions = result.count("ROE")
+            industry_mentions = result.count("Industry")
+            investment_mentions = result.count("investment")
             
             results[depth] = {
                 'lines': len(lines),
@@ -67,34 +67,34 @@ def test_analysis_depth_differences():
                 'content': result[:500] + "..." if len(result) > 500 else result
             }
             
-            print(f"   ✅ 报告类型: {report_type}")
-            print(f"   ✅ 数据行数: {len(lines)}")
-            print(f"   ✅ 字符数量: {char_count}")
-            print(f"   ✅ 关键指标提及: PE({pe_mentions}) PB({pb_mentions}) ROE({roe_mentions})")
+            print(f"   ✅ report type: {report_type}")
+            print(f"   ✅ Number of data rows: {len(lines)}")
+            print(f"   ✅ Number of characters: {char_count}")
+            print(f"   ✅ Key Indicators Mentioned: PE({pe_mentions}) PB({pb_mentions}) ROE({roe_mentions})")
             
         except Exception as e:
-            print(f"   ❌ 错误: {e}")
+            print(f"   ❌ Error: {e}")
             results[depth] = {'error': str(e)}
         
-        time.sleep(1)  # 避免请求过快
+        time.sleep(1)  # Avoid requesting too quickly
     
-    # 分析结果差异
+    # Analyze the difference in results
     print("\n" + "=" * 80)
-    print("报告差异分析")
+    print("Report gap analysis")
     print("=" * 80)
     
-    print("\n📊 各级别报告对比:")
+    print("\n📊 Comparison of reports at each level:")
     for depth in depth_levels:
         if 'error' not in results[depth]:
             r = results[depth]
-            print(f"   级别 {depth}: {r['type']} - {r['lines']}行, {r['chars']}字符")
+            print(f"   level {depth}: {r['type']} - {r['lines']}OK, {r['chars']}character")
         else:
-            print(f"   级别 {depth}: 错误 - {results[depth]['error']}")
+            print(f"   level {depth}: Error - {results[depth]['error']}")
     
-    # 验证差异化效果
-    print("\n🎯 差异化验证:")
+    # Verify the differential effect
+    print("\n🎯 Differentiated verification:")
     
-    # 检查是否有不同的报告类型
+    # Check if there are different report types
     types = set()
     valid_results = []
     for depth in depth_levels:
@@ -103,37 +103,37 @@ def test_analysis_depth_differences():
             valid_results.append((depth, results[depth]))
     
     if len(types) > 1:
-        print("   ✅ 成功：不同深度级别产生了不同类型的报告")
+        print("   ✅ Success: Different depth levels produced different types of reports")
         for report_type in types:
             depths = [d for d, r in valid_results if r['type'] == report_type]
-            print(f"      - {report_type}: 深度级别 {depths}")
+            print(f"      - {report_type}: depth level {depths}")
     else:
-        print("   ⚠️  警告：所有深度级别产生了相同类型的报告")
+        print("   ⚠️  Warning: All depth levels produced the same type of report")
     
-    # 检查内容长度差异
+    # Check content length differences
     if len(valid_results) >= 2:
         min_chars = min(r['chars'] for _, r in valid_results)
         max_chars = max(r['chars'] for _, r in valid_results)
         char_ratio = max_chars / min_chars if min_chars > 0 else 1
         
-        print(f"   📈 内容长度差异: {char_ratio:.1f}倍 ({min_chars} -> {max_chars} 字符)")
+        print(f"   📈 content length difference: {char_ratio:.1f}times ({min_chars} -> {max_chars} character)")
         
         if char_ratio >= 1.5:
-            print("   ✅ 优秀：深度级别间有显著的内容差异")
+            print("   ✅ Excellent: Significant content differences between depth levels")
         elif char_ratio >= 1.2:
-            print("   ✅ 良好：深度级别间有适度的内容差异")
+            print("   ✅ Good: Moderate content differences between depth levels")
         else:
-            print("   ⚠️  一般：深度级别间内容差异较小")
+            print("   ⚠️  Average: Small content differences between depth levels")
     
-    # 显示示例内容
-    print("\n📝 报告内容示例:")
-    for depth in [1, 5]:  # 只显示最低和最高级别
+    # Show sample content
+    print("\n📝 Example of report content:")
+    for depth in [1, 5]:  # Show only the lowest and highest levels
         if depth in results and 'error' not in results[depth]:
-            print(f"\n--- 深度级别 {depth} ({results[depth]['type']}) ---")
+            print(f"\n--- depth level {depth} ({results[depth]['type']}) ---")
             print(results[depth]['content'])
     
     print("\n" + "=" * 80)
-    print("最终验证完成")
+    print("Final verification completed")
     print("=" * 80)
 
 if __name__ == "__main__":

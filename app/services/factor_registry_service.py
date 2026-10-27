@@ -252,7 +252,7 @@ class FactorRegistryService:
     def build_screening_fields_markdown(self, public_only: bool = False) -> str:
         items = self.list_screening_registry_items(public_only=public_only)
         if not items:
-            return "- 当前没有可用的筛选字段"
+            return "- There are currently no filter fields available"
 
         sorted_items = sorted(
             items,
@@ -300,11 +300,11 @@ class FactorRegistryService:
         remaining_text = f" 等 {len(field_names)} 个字段" if remaining > 0 else " 等字段"
 
         return (
-            "按多个财务、交易和技术指标批量筛选 A 股股票。"
-            "条件以 JSON 数组形式传入，每个条件包含 field、operator、value 三个字段。"
-            f"支持的筛选字段基于 factor registry 动态生成，当前包含 {preview}{remaining_text if preview else ''}。"
-            "支持的操作符：> < >= <= == != between in not_in contains。"
-            "返回符合条件的股票列表，包含代码、名称、行业、估值、盈利质量、现金流、偿债能力、股息率和技术指标等信息。"
+            "Bulk screen A-share stocks by multiple financial, trading and technical indicators."
+            "The conditions are passed in as a JSON array, and each condition contains three fields: field, operator, and value."
+            f"Supported filter fields are dynamically generated based on factor registry and currently include {preview}{remaining_text if preview else ''}. "
+            "Supported operators:> < >= <= == != between in not_in contains. "
+            "Returns a list of eligible stocks, including information such as code, name, industry, valuation, earnings quality, cash flow, solvency, dividend yield and technical indicators."
         )
 
 

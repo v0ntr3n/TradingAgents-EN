@@ -13,36 +13,36 @@ def test_fundamentals_analyst_v2_templates_are_research_mode() -> None:
         item for item in templates
         if item.get("agent_name") == "fundamentals_analyst_v2"
         and item.get("template_name") in {
-            "基本面分析师 v2.0 - 激进型",
-            "基本面分析师 v2.0 - 中性型",
-            "基本面分析师 v2.0 - 保守型",
+            "Fundamental Analyst v2.0 - Aggressive",
+            "Fundamental Analyst v2.0 - Neutral",
+            "Fundamental Analyst v2.0 - Conservative",
         }
     ]
 
     assert len(target_templates) == 3
 
     required_phrases = [
-        "核心观察",
-        "财务与经营信号",
-        "估值背景",
-        "估值溢价",
-        "总结",
+        "core observation",
+        "Financial and operating signals",
+        "Valuation background",
+        "valuation premium",
+        "Summary",
         "get_financial_statements",
         "get_cash_flow_statement",
         "get_peer_comparison",
-        "工具结果未提供",
-        "报告期累计口径",
-        "单季度推导",
-        "行业特征",
-        "不适用",
-        "历史财务、历史估值区间和已披露经营数据",
-        "当前股价、涨跌幅、成交量、当前总市值",
-        "快照日期",
-        "不得写成“截至分析日期”或用分析日期替代估值日期",
-        "不能只改日期不解释原因",
-        "核心观察` 第一条或 `## 估值背景` 开头",
-        "当前尚无分析日对应的稳定收盘后日频数据，因此本次历史估值分位与同行估值按前一可用交易日口径分析",
-        "不得直接结束报告",
+        "Tool results not provided",
+        "Cumulative caliber during the reporting period",
+        "Single quarter derivation",
+        "Industry characteristics",
+        "Not applicable",
+        "Historical financials, historical valuation ranges and disclosed operating data",
+        "Current stock price, rise and fall, trading volume, current total market capitalization",
+        "snapshot date",
+        "must not be written as As of analysis date Or replace the valuation date with the analysis date",
+        "You can t just change the date without explaining the reason",
+        "core observation` Article 1 or `## Valuation background` Beginning",
+        "There is currently no stable post-closing daily frequency data corresponding to the analysis day, so the historical valuation quantiles and peer valuations are analyzed based on the previous available trading day.",
+        "Do not end the report directly",
     ]
 
     for template in target_templates:
@@ -52,56 +52,56 @@ def test_fundamentals_analyst_v2_templates_are_research_mode() -> None:
         user_prompt = str(content.get("user_prompt", ""))
         analysis_requirements = str(content.get("analysis_requirements", ""))
 
-        assert "价格分析区间" not in output_format
-        assert "合理价位区间" not in output_format
-        assert "上涨空间" not in output_format
-        assert "下行空间" not in output_format
-        assert "仓位建议" not in output_format
-        assert "风险敞口建议" not in output_format
-        assert "建议" not in output_format
+        assert "price analysis range" not in output_format
+        assert "Reasonable price range" not in output_format
+        assert "Room for upside" not in output_format
+        assert "Downside" not in output_format
+        assert "Position recommendations" not in output_format
+        assert "Risk exposure recommendations" not in output_format
+        assert "Suggestions" not in output_format
 
-        assert "不得输出交易建议" in user_prompt
-        assert "目标价" in user_prompt
-        assert "不得使用 LLM 自身知识补数据" in user_prompt
-        assert "不得把当前股价、当前总市值写进公司概况、核心观察或总结" in user_prompt
-        assert "就必须同时注明该指标对应的快照日期" in user_prompt
-        assert "不得写成“截至分析日期”或用分析日期替代估值日期" in user_prompt
-        assert "不能只改日期不解释原因" in user_prompt
-        assert "核心观察` 第一条或 `## 估值背景` 开头" in user_prompt
-        assert "当前尚无分析日对应的稳定收盘后日频数据，因此本次历史估值分位与同行估值按前一可用交易日口径分析" in user_prompt
-        assert "可以写：" in user_prompt
-        assert "不得写：" in user_prompt
-        assert "不必单列“待验证问题”" in user_prompt
-        assert "不要求机械覆盖所有通用财务指标" in user_prompt
-        assert "在生成正文前必须先拿到 get_stock_fundamentals_unified、get_financial_statements 和 get_cash_flow_statement 的结果" in user_prompt
-        assert "Q2/Q3/Q4 不是单季度值" in combined_text
+        assert "No trading advice may be output" in user_prompt
+        assert "target price" in user_prompt
+        assert "Do not use LLM s own knowledge to supplement data" in user_prompt
+        assert "The current stock price and current total market capitalization are not allowed to be included in the company profile, core observations or summary." in user_prompt
+        assert "You must also indicate the snapshot date corresponding to the indicator." in user_prompt
+        assert "must not be written as As of analysis date Or replace the valuation date with the analysis date" in user_prompt
+        assert "You can t just change the date without explaining the reason" in user_prompt
+        assert "core observation` Article 1 or `## Valuation background` Beginning" in user_prompt
+        assert "There is currently no stable post-closing daily frequency data corresponding to the analysis day, so the historical valuation quantiles and peer valuations are analyzed based on the previous available trading day." in user_prompt
+        assert "You can write:" in user_prompt
+        assert "Do not write:" in user_prompt
+        assert "No need to list separately Questions to be verified " in user_prompt
+        assert "Does not require mechanical coverage of all common financial indicators" in user_prompt
+        assert "The results of get_stock_fundamentals_unified, get_financial_statements and get_cash_flow_statement must be obtained before generating the text." in user_prompt
+        assert "Q2/Q3/Q4 Not a single quarter value" in combined_text
         assert (
-            "优先使用这些字段分析季度变化" in combined_text
-            or "优先使用该字段描述季度变化" in combined_text
+            "Prioritize using these fields to analyze quarterly changes" in combined_text
+            or "Prefer using this field to describe quarterly changes" in combined_text
         )
-        assert "安全边际" in user_prompt
-        assert "景气拐点" in user_prompt
-        assert "不得输出" in analysis_requirements
-        assert "交易动作" in analysis_requirements
-        assert "表达方式示例" in analysis_requirements
-        assert "不必单列“待验证问题”" in analysis_requirements
-        assert "不要把其缺失直接写成风险或数据缺口" in analysis_requirements
-        assert "必须先获得整体基本面、最近季度财报明细和最近季度现金流量表" in analysis_requirements
-        assert "也不要把这些字段写进 `## 公司概况`、`## 核心观察`、`## 估值背景` 或 `## 总结`" in analysis_requirements
-        assert "就必须同时注明该指标对应的快照日期" in analysis_requirements
-        assert "不得写成“截至分析日期”或用分析日期替代估值日期" in analysis_requirements
-        assert "不能只改日期不解释原因" in analysis_requirements
-        assert "核心观察` 第一条或 `## 估值背景` 开头" in analysis_requirements
-        assert "当前尚无分析日对应的稳定收盘后日频数据，因此本次历史估值分位与同行估值按前一可用交易日口径分析" in analysis_requirements
+        assert "margin of safety" in user_prompt
+        assert "Economic turning point" in user_prompt
+        assert "No output allowed" in analysis_requirements
+        assert "trading action" in analysis_requirements
+        assert "Examples of expressions" in analysis_requirements
+        assert "No need to list separately Questions to be verified " in analysis_requirements
+        assert "Do not write its absence directly as a risk or data gap" in analysis_requirements
+        assert "Must first obtain overall fundamentals, most recent quarter financial report details and most recent quarterly cash flow statement" in analysis_requirements
+        assert "Also do not write these fields into `## Company Profile`, `## core observation`, `## Valuation background` or `## Summary`" in analysis_requirements
+        assert "You must also indicate the snapshot date corresponding to the indicator." in analysis_requirements
+        assert "must not be written as As of analysis date Or replace the valuation date with the analysis date" in analysis_requirements
+        assert "You can t just change the date without explaining the reason" in analysis_requirements
+        assert "core observation` Article 1 or `## Valuation background` Beginning" in analysis_requirements
+        assert "There is currently no stable post-closing daily frequency data corresponding to the analysis day, so the historical valuation quantiles and peer valuations are analyzed based on the previous available trading day." in analysis_requirements
         assert (
-            "不得把 Q1-Q4 直接相加" in analysis_requirements
-            or "或把 Q1-Q4 直接相加" in analysis_requirements
+            "Do not add Q1-Q4 directly" in analysis_requirements
+            or "Or add Q1-Q4 directly" in analysis_requirements
         )
-        assert "单季度推导" in combined_text
-        assert "安全边际" in analysis_requirements
-        assert "景气拐点" in analysis_requirements
-        assert "禁止在报告中添加任何署名信息" in combined_text
-        assert "禁止生成任何虚假的人名、作者信息或署名" in combined_text
+        assert "Single quarter derivation" in combined_text
+        assert "margin of safety" in analysis_requirements
+        assert "Economic turning point" in analysis_requirements
+        assert "Do not add any attribution information to the report" in combined_text
+        assert "Prohibiting any false names, authorships or attributions" in combined_text
 
         for phrase in required_phrases:
             assert phrase in combined_text
@@ -113,5 +113,5 @@ def test_fundamentals_analyst_v2_default_tools_include_peer_comparison() -> None
 
     assert "default_tools=[\"get_stock_fundamentals_unified\", \"get_financial_statements\", \"get_cash_flow_statement\", \"get_peer_comparison\"]" in adapter_source
     assert "max_tool_calls=4" in adapter_source
-    # config.py 中保留较保守的默认工具列表，运行时以 adapter 文件中的 metadata 为准
+    # config.py A more conservative default tool list is retained in the file, and the metadata in the adapter file shall prevail when running.
     assert "fundamentals_analyst_v2" in config_source

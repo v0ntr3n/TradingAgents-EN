@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-财务数据API路由
-提供财务数据查询和同步管理接口
+Financial Data API Routing
+Provide financial data query and synchronization management interface
 """
 import logging
 from typing import Dict, Any, List, Optional
@@ -17,60 +17,60 @@ from app.core.response import ok
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/financial-data", tags=["财务数据"])
+router = APIRouter(prefix="/api/financial-data", tags=["financial data"])
 
 
-# ==================== 请求模型 ====================
+# ==================== request model ====================
 
 class FinancialSyncRequest(BaseModel):
-    """财务数据同步请求"""
-    symbols: Optional[List[str]] = Field(None, description="股票代码列表，为空则同步所有股票")
+    """Financial data synchronization request"""
+    symbols: Optional[List[str]] = Field(None, description="Stock code list, if empty, all stocks will be synchronized.")
     data_sources: Optional[List[str]] = Field(
         ["tushare", "akshare", "baostock"], 
-        description="数据源列表"
+        description="Data source list"
     )
     report_types: Optional[List[str]] = Field(
         ["quarterly"], 
-        description="报告类型列表 (quarterly/annual)"
+        description="List of report types (quarterly/annual)"
     )
-    batch_size: int = Field(50, description="批处理大小", ge=1, le=200)
-    delay_seconds: float = Field(1.0, description="API调用延迟秒数", ge=0.1, le=10.0)
+    batch_size: int = Field(50, description="batch size", ge=1, le=200)
+    delay_seconds: float = Field(1.0, description="API Call delay seconds", ge=0.1, le=10.0)
 
 
 class SingleStockSyncRequest(BaseModel):
-    """单股票财务数据同步请求"""
-    symbol: str = Field(..., description="股票代码")
+    """Single stock financial data synchronization request"""
+    symbol: str = Field(..., description="Stock code")
     data_sources: Optional[List[str]] = Field(
         ["tushare", "akshare", "baostock"],
-        description="数据源列表"
+        description="Data source list"
     )
 
 
 class FinancialDataBatchRequest(BaseModel):
-    """批量保存财务数据请求"""
-    symbol: str = Field(..., description="股票代码")
-    financial_data: List[Dict[str, Any]] = Field(..., description="财务数据列表")
-    overwrite: bool = Field(False, description="是否覆盖已存在的数据")
+    """Batch save financial data requests"""
+    symbol: str = Field(..., description="Stock code")
+    financial_data: List[Dict[str, Any]] = Field(..., description="Financial data list")
+    overwrite: bool = Field(False, description="Whether to overwrite existing data")
 
 
-# ==================== API端点 ====================
+# ==================== API endpoint ====================
 
-@router.get("/query/{symbol}", summary="查询股票财务数据")
+@router.get("/query/{symbol}", summary="Query stock financial data")
 async def query_financial_data(
     symbol: str,
-    report_period: Optional[str] = Query(None, description="报告期筛选 (YYYYMMDD)"),
-    data_source: Optional[str] = Query(None, description="数据源筛选"),
-    report_type: Optional[str] = Query(None, description="报告类型筛选"),
-    limit: Optional[int] = Query(10, description="限制返回数量", ge=1, le=100)
+    report_period: Optional[str] = Query(None, description="Reporting period screening (YYYYMMDD)"),
+    data_source: Optional[str] = Query(None, description="Data source filtering"),
+    report_type: Optional[str] = Query(None, description="Report type filter"),
+    limit: Optional[int] = Query(10, description="Limit the number of returns", ge=1, le=100)
 ) -> dict:
     """
-    查询股票财务数据
+    Query stock financial data
     
-    - **symbol**: 股票代码 (必填)
-    - **report_period**: 报告期筛选，格式YYYYMMDD
-    - **data_source**: 数据源筛选 (tushare/akshare/baostock)
-    - **report_type**: 报告类型筛选 (quarterly/annual)
-    - **limit**: 限制返回数量，默认10条
+    - **symbol**: Stock code (Required)
+    - **report_period**: Report period screening, format YYYYMMDD
+    - **data_source**: Data source filtering (tushare/akshare/baostock)
+    - **report_type**: Report type filter (quarterly/annual)
+    - **limit**: Limit the number of returns, default is 10
     """
     try:
         service = await get_financial_data_service()
@@ -88,24 +88,24 @@ async def query_financial_data(
                 "count": len(results),
                 "financial_data": results
             },
-            message=f"查询到 {len(results)} 条财务数据"
+            message=f"Found {len(results)} financial data"
         )
         
     except Exception as e:
-        logger.error(f"❌ 查询财务数据失败 {symbol}: {e}")
-        raise HTTPException(status_code=500, detail=f"查询财务数据失败: {str(e)}")
+        logger.error(f"❌ Failed to query financial data {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to query financial data: {str(e)}")
 
 
-@router.get("/latest/{symbol}", summary="获取最新财务数据")
+@router.get("/latest/{symbol}", summary="Get the latest financial data")
 async def get_latest_financial_data(
     symbol: str,
-    data_source: Optional[str] = Query(None, description="数据源筛选")
+    data_source: Optional[str] = Query(None, description="Data source filtering")
 ) -> dict:
     """
-    获取股票最新财务数据
+    Get the latest financial data for a stock
     
-    - **symbol**: 股票代码 (必填)
-    - **data_source**: 数据源筛选 (tushare/akshare/baostock)
+    - **symbol**: Stock code (Required)
+    - **data_source**: Data source filtering (tushare/akshare/baostock)
     """
     try:
         service = await get_financial_data_service()
@@ -117,27 +117,27 @@ async def get_latest_financial_data(
         
         if result:
             return ok(data=result,
-                message="获取最新财务数据成功"
+                message="Obtain the latest financial data successfully"
             )
         else:
             return ok(success=False, data=None,
-                message="未找到财务数据"
+                message="No financial data found"
             )
         
     except Exception as e:
-        logger.error(f"❌ 获取最新财务数据失败 {symbol}: {e}")
-        raise HTTPException(status_code=500, detail=f"获取最新财务数据失败: {str(e)}")
+        logger.error(f"❌ Failed to get latest financial data {symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get latest financial data: {str(e)}")
 
 
-@router.get("/statistics", summary="获取财务数据统计")
+@router.get("/statistics", summary="Get financial statistics")
 async def get_financial_statistics() -> dict:
     """
-    获取财务数据统计信息
+    Get financial data statistics
     
-    返回各数据源的财务数据统计，包括：
-    - 总记录数
-    - 总股票数
-    - 按数据源和报告类型分组的统计
+    Returns financial data statistics from each data source, including:
+    - Total number of records
+    - Total number of shares
+    - Statistics grouped by data source and report type
     """
     try:
         service = await get_financial_data_service()
@@ -145,32 +145,32 @@ async def get_financial_statistics() -> dict:
         stats = await service.get_financial_statistics()
         
         return ok(data=stats,
-            message="获取财务数据统计成功"
+            message="Obtain financial data statistics successfully"
         )
         
     except Exception as e:
-        logger.error(f"❌ 获取财务数据统计失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取财务数据统计失败: {str(e)}")
+        logger.error(f"❌ Failed to obtain financial data statistics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to obtain financial data statistics: {str(e)}")
 
 
-@router.post("/sync/start", summary="启动财务数据同步")
+@router.post("/sync/start", summary="Start financial data synchronization")
 async def start_financial_sync(
     request: FinancialSyncRequest,
     background_tasks: BackgroundTasks
 ) -> dict:
     """
-    启动财务数据同步任务
+    Start financial data synchronization task
     
-    支持配置：
-    - 股票代码列表（为空则同步所有股票）
-    - 数据源选择
-    - 报告类型选择
-    - 批处理大小和延迟设置
+    Supported configurations:
+    - Stock code list (if empty, all stocks will be synchronized)
+    - Data source selection
+    - Report type selection
+    - Batch size and delay settings
     """
     try:
         service = await get_financial_sync_service()
         
-        # 在后台执行同步任务
+        # Perform synchronization tasks in the background
         background_tasks.add_task(
             _execute_financial_sync,
             service,
@@ -181,23 +181,23 @@ async def start_financial_sync(
                 "task_started": True,
                 "config": request.dict()
             },
-            message="财务数据同步任务已启动"
+            message="Financial data synchronization task has been started"
         )
         
     except Exception as e:
-        logger.error(f"❌ 启动财务数据同步失败: {e}")
-        raise HTTPException(status_code=500, detail=f"启动财务数据同步失败: {str(e)}")
+        logger.error(f"❌ Failed to start financial data synchronization: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to start financial data synchronization: {str(e)}")
 
 
-@router.post("/sync/single", summary="同步单只股票财务数据")
+@router.post("/sync/single", summary="Synchronize financial data of a single stock")
 async def sync_single_stock_financial(
     request: SingleStockSyncRequest
 ) -> dict:
     """
-    同步单只股票的财务数据
+    Synchronize financial data for individual stocks
     
-    - **symbol**: 股票代码 (必填)
-    - **data_sources**: 数据源列表，默认使用所有数据源
+    - **symbol**: Stock code (Required)
+    - **data_sources**: Data source list, all data sources are used by default
     """
     try:
         service = await get_financial_sync_service()
@@ -218,20 +218,20 @@ async def sync_single_stock_financial(
                 "success_count": success_count,
                 "total_count": total_count
             },
-            message=f"单股票财务数据同步完成: {success_count}/{total_count} 成功"
+            message=f"Single stock financial data synchronization completed: {success_count}/{total_count} success"
         )
         
     except Exception as e:
-        logger.error(f"❌ 单股票财务数据同步失败 {request.symbol}: {e}")
-        raise HTTPException(status_code=500, detail=f"单股票财务数据同步失败: {str(e)}")
+        logger.error(f"❌ Single stock financial data synchronization failed {request.symbol}: {e}")
+        raise HTTPException(status_code=500, detail=f"Single stock financial data synchronization failed: {str(e)}")
 
 
-@router.get("/sync/statistics", summary="获取同步统计信息")
+@router.get("/sync/statistics", summary="Get sync statistics")
 async def get_sync_statistics() -> dict:
     """
-    获取财务数据同步统计信息
+    Get financial data synchronization statistics
     
-    返回各数据源的同步统计，包括记录数、股票数等
+    Returns the synchronization statistics of each data source, including the number of records, number of stocks, etc.
     """
     try:
         service = await get_financial_sync_service()
@@ -239,27 +239,27 @@ async def get_sync_statistics() -> dict:
         stats = await service.get_sync_statistics()
         
         return ok(data=stats,
-            message="获取同步统计信息成功"
+            message="Obtain synchronization statistics successfully"
         )
         
     except Exception as e:
-        logger.error(f"❌ 获取同步统计信息失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取同步统计信息失败: {str(e)}")
+        logger.error(f"❌ Failed to obtain synchronization statistics: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to obtain synchronization statistics: {str(e)}")
 
 
-@router.get("/health", summary="财务数据服务健康检查")
+@router.get("/health", summary="Financial Data Services Health Check")
 async def health_check() -> dict:
     """
-    财务数据服务健康检查
+    Financial Data Services Health Check
     
-    检查服务状态和数据库连接
+    Check service status and database connection
     """
     try:
-        # 检查服务初始化状态
+        # Check service initialization status
         service = await get_financial_data_service()
         sync_service = await get_financial_sync_service()
         
-        # 简单的数据库连接测试
+        # Simple database connection test
         stats = await service.get_financial_statistics()
         
         return ok(data={
@@ -268,30 +268,30 @@ async def health_check() -> dict:
                 "total_records": stats.get("total_records", 0),
                 "total_symbols": stats.get("total_symbols", 0)
             },
-            message="财务数据服务运行正常"
+            message="The financial data service is running normally"
         )
         
     except Exception as e:
-        logger.error(f"❌ 财务数据服务健康检查失败: {e}")
+        logger.error(f"❌ Financial Data Service health check failed: {e}")
         return ok(success=False, data={
                 "service_status": "unhealthy",
                 "error": str(e)
             },
-            message="财务数据服务异常"
+            message="Financial data service exception"
         )
 
 
-# ==================== 后台任务 ====================
+# ==================== Background tasks ====================
 
 async def _execute_financial_sync(
     service: Any,
     request: FinancialSyncRequest
 ):
-    """执行财务数据同步后台任务"""
+    """Perform financial data synchronization background tasks"""
     try:
-        logger.info(f"🚀 开始执行财务数据同步任务: {request.dict()}")
+        logger.info(f"🚀 Start the financial data synchronization task: {request.dict()}")
         
-        # 生成任务ID（如果请求中有task_id则使用，否则生成新的）
+        # Generate task ID (use if task_id is present in the request, otherwise generate a new one)
         import uuid
         task_id = getattr(request, 'task_id', None) or f"financial_sync_{uuid.uuid4().hex[:8]}"
         
@@ -301,22 +301,22 @@ async def _execute_financial_sync(
             report_types=request.report_types,
             batch_size=request.batch_size,
             delay_seconds=request.delay_seconds,
-            job_id=task_id  # 🔥 添加job_id用于进度跟踪
+            job_id=task_id  # 🔥 Add job_id for progress tracking
         )
         
-        # 统计总体结果
+        # Statistics overall results
         total_success = sum(stats.success_count for stats in results.values())
         total_symbols = sum(stats.total_symbols for stats in results.values())
         
-        logger.info(f"✅ 财务数据同步任务完成: {total_success}/{total_symbols} 成功")
+        logger.info(f"✅ Financial data synchronization task completed: {total_success}/{total_symbols} success")
         
-        # 这里可以添加通知逻辑，比如发送邮件或消息
+        # Here you can add notification logic, such as sending emails or messages
         
     except Exception as e:
-        logger.error(f"❌ 财务数据同步任务执行失败: {e}")
+        logger.error(f"❌ Financial data synchronization task execution failed: {e}")
 
 
-# ==================== 批量导入接口 ====================
+# ==================== Batch import interface ====================
 
 @router.post("/save", response_model=dict, dependencies=[Depends(require_pro)])
 async def save_financial_data_batch(
@@ -324,27 +324,27 @@ async def save_financial_data_batch(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    批量保存财务数据（优化版）[PRO]
+    Save financial data in batches (optimized version)[PRO]
 
-    允许用户通过 API 批量导入财务数据
+    Allow users to bulk import financial data via API
 
-    **权限要求**: 此功能为高级学员专属，需要 PRO 授权
+    **Permission requirements**: This function is exclusive to advanced students and requires PRO authorization
 
-    性能优化：
-    - 使用批量查询减少数据库往返
-    - 使用 bulk_write 批量操作
-    - 数据验证前置
+    Performance optimization:
+    - Reduce database round-trips using batch queries
+    - Use bulk_write bulk operations
+    - Data validation prerequisite
 
     Args:
-        request: 批量保存请求，包含股票代码、财务数据列表和数据源标识
+        request: Bulk save request with ticker, financial data list, and data source identifier
 
     Returns:
         dict: {
-            "saved": 成功保存数量,
-            "updated": 更新数量,
-            "skipped": 跳过数量,
-            "failed": 失败数量,
-            "errors": 错误列表
+            "saved": Number of successful saves,
+            "updated": Update quantity,
+            "skipped": skip quantity,
+            "failed": Number of failures,
+            "errors": error list
         }
     """
     try:
@@ -354,36 +354,36 @@ async def save_financial_data_batch(
         db = get_mongo_db()
         collection = db.stock_financial_data
 
-        # 数据验证和预处理
+        # Data validation and preprocessing
         valid_data = []
         errors = []
         failed_count = 0
 
         for idx, fin_data in enumerate(request.financial_data):
             try:
-                # 验证必需字段
+                # Validate required fields
                 if "report_period" not in fin_data:
                     errors.append({
                         "index": idx,
-                        "error": "缺少必需字段: report_period"
+                        "error": "Missing required field: report_period"
                     })
                     failed_count += 1
                     continue
 
-                # 验证 report_period 格式（YYYYMMDD）
+                # Verify report_period format (YYYYMMDD)
                 report_period = fin_data["report_period"]
                 if not (isinstance(report_period, str) and report_period.isdigit() and len(report_period) == 8):
                     errors.append({
                         "index": idx,
                         "report_period": report_period,
-                        "error": "report_period 必须是8位数字（YYYYMMDD格式）"
+                        "error": "report_period Must be an 8-digit number (YYYYMMDD format)"
                     })
                     failed_count += 1
                     continue
 
-                # 添加股票代码和元数据（固定使用 local 作为本地数据标识）
+                # Add stock code and metadata (fixed use of local as local data identifier)
                 fin_data["symbol"] = request.symbol
-                fin_data["code"] = request.symbol  # 兼容旧字段
+                fin_data["code"] = request.symbol  # Compatible with old fields
                 fin_data["data_source"] = "local"
                 fin_data["updated_at"] = datetime.utcnow()
 
@@ -393,7 +393,7 @@ async def save_financial_data_batch(
                 errors.append({
                     "index": idx,
                     "report_period": fin_data.get("report_period", "unknown"),
-                    "error": f"数据验证失败: {str(e)}"
+                    "error": f"Data validation failed: {str(e)}"
                 })
                 failed_count += 1
 
@@ -407,10 +407,10 @@ async def save_financial_data_batch(
                     "total": len(request.financial_data),
                     "errors": errors[:10]
                 },
-                message="所有数据验证失败"
+                message="All data validation failed"
             )
 
-        # 批量查询已存在的数据
+        # Query existing data in batches
         report_periods = [data["report_period"] for _, data in valid_data]
         existing_docs = await collection.find({
             "symbol": request.symbol,
@@ -420,7 +420,7 @@ async def save_financial_data_batch(
 
         existing_periods = {doc["report_period"]: doc for doc in existing_docs}
 
-        # 准备批量操作
+        # Prepare for batch operations
         bulk_operations = []
         saved_count = 0
         updated_count = 0
@@ -431,7 +431,7 @@ async def save_financial_data_batch(
 
             if report_period in existing_periods:
                 if request.overwrite:
-                    # 批量更新
+                    # Batch update
                     fin_data["created_at"] = existing_periods[report_period].get("created_at", datetime.utcnow())
                     bulk_operations.append(
                         UpdateOne(
@@ -445,23 +445,23 @@ async def save_financial_data_batch(
                     )
                     updated_count += 1
                 else:
-                    # 跳过已存在的数据
+                    # Skip existing data
                     skipped_count += 1
             else:
-                # 批量插入
+                # Batch insert
                 fin_data["created_at"] = datetime.utcnow()
                 bulk_operations.append(InsertOne(fin_data))
                 saved_count += 1
 
-        # 执行批量操作
+        # Perform batch operations
         if bulk_operations:
             try:
                 result = await collection.bulk_write(bulk_operations, ordered=False)
-                logger.info(f"✅ 批量操作完成: 插入{result.inserted_count}, 更新{result.modified_count}")
+                logger.info(f"✅ Batch operation completed: Insert{result.inserted_count}, update{result.modified_count}")
             except Exception as e:
-                logger.error(f"❌ 批量操作失败: {e}")
-                # 如果批量操作失败，回退到逐条插入
-                logger.warning("⚠️ 回退到逐条操作模式")
+                logger.error(f"❌ Batch operation failed: {e}")
+                # If the batch operation fails, fall back to inserting items one by one.
+                logger.warning("⚠️ Return to item-by-item operation mode")
                 saved_count = 0
                 updated_count = 0
 
@@ -496,14 +496,14 @@ async def save_financial_data_batch(
                 "skipped": skipped_count,
                 "failed": failed_count,
                 "total": len(request.financial_data),
-                "errors": errors[:10]  # 只返回前10个错误
+                "errors": errors[:10]  # Only return the first 10 errors
             },
-            message=f"批量保存完成: 成功{saved_count}, 更新{updated_count}, 跳过{skipped_count}, 失败{failed_count}"
+            message=f"Batch saving completed: success{saved_count}, update{updated_count}, skip{skipped_count}, failed{failed_count}"
         )
 
     except Exception as e:
-        logger.error(f"❌ 批量保存财务数据失败: {e}")
+        logger.error(f"❌ Failed to save financial data in batches: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"批量保存财务数据失败: {str(e)}"
+            detail=f"Failed to save financial data in batches: {str(e)}"
         )

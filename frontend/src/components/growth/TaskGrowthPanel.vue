@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-if="growthPanelEnabled" class="growth-panel">
     <el-collapse v-model="activeCollapse" class="growth-collapse">
       <el-collapse-item name="growth">
@@ -6,15 +6,15 @@
           <div class="collapse-title">
             <el-icon><Collection /></el-icon>
             <span>{{ title }}</span>
-            <el-tag type="info" size="small" class="collapse-tag">记忆 {{ growthSummary.memory_items_count }}</el-tag>
-            <el-tag type="warning" size="small" class="collapse-tag">建议 {{ growthSummary.suggestions_count }}</el-tag>
+            <el-tag type="info" size="small" class="collapse-tag">memory {{ growthSummary.memory_items_count }}</el-tag>
+            <el-tag type="warning" size="small" class="collapse-tag">Suggestions {{ growthSummary.suggestions_count }}</el-tag>
           </div>
         </template>
 
         <div class="growth-panel-body">
           <div class="growth-toolbar">
             <el-button v-if="taskId" size="small" @click.stop="refreshGrowthContext" :loading="growthLoading">
-              刷新提炼项
+              Refresh extraction items
             </el-button>
           </div>
 
@@ -22,7 +22,7 @@
             <template #default>
               <template v-if="taskId">
                 <el-tabs class="growth-tabs">
-            <el-tab-pane :label="`成长记忆 (${growthMemories.length})`" name="memories">
+            <el-tab-pane :label="`Growing memory (${growthMemories.length})`" name="memories">
               <div v-if="growthMemories.length" class="growth-list">
                 <div v-for="item in growthMemories" :key="item.memory_id" class="growth-item">
                   <div class="growth-item-header">
@@ -35,12 +35,12 @@
                         <el-tag size="small" effect="plain">
                           {{ GrowthMemoryScopeNames[item.scope] || item.scope }}
                         </el-tag>
-                        <el-tag size="small" effect="plain">置信度 {{ formatConfidence(item.confidence) }}</el-tag>
+                        <el-tag size="small" effect="plain">Confidence {{ formatConfidence(item.confidence) }}</el-tag>
                       </div>
                     </div>
                     <div v-if="item.status === GrowthMemoryStatus.PENDING" class="growth-actions">
-                      <el-button size="small" type="primary" @click="handleApproveMemory(item.memory_id)">批准</el-button>
-                      <el-button size="small" @click="handleRejectMemory(item.memory_id)">拒绝</el-button>
+                      <el-button size="small" type="primary" @click="handleApproveMemory(item.memory_id)">approve</el-button>
+                      <el-button size="small" @click="handleRejectMemory(item.memory_id)">reject</el-button>
                     </div>
                   </div>
                   <p v-if="item.summary" class="growth-summary-text">{{ item.summary }}</p>
@@ -55,22 +55,22 @@
                     </div>
                   </div>
                   <el-collapse>
-                    <el-collapse-item title="查看完整内容" :name="item.memory_id">
+                    <el-collapse-item title="View full content" :name="item.memory_id">
                       <div class="growth-content markdown-body" v-html="renderMarkdown(getFormattedMemoryContent(item).displayText)"></div>
                     </el-collapse-item>
                   </el-collapse>
                   <div v-if="item.evidence_refs?.length" class="growth-evidence">
-                    <span class="growth-meta-label">证据来源：</span>
+                    <span class="growth-meta-label">Source of evidence:</span>
                     <el-tag v-for="ref in item.evidence_refs" :key="`${ref.type}-${ref.id}`" size="small" effect="plain">
                       {{ ref.label || ref.type }}: {{ ref.id }}
                     </el-tag>
                   </div>
                 </div>
               </div>
-              <el-empty v-else description="当前任务还没有成长记忆" />
+              <el-empty v-else description="There is no growth memory for the current task" />
             </el-tab-pane>
 
-            <el-tab-pane :label="`成长建议 (${growthSuggestions.length})`" name="suggestions">
+            <el-tab-pane :label="`Growth advice (${growthSuggestions.length})`" name="suggestions">
               <div v-if="growthSuggestions.length" class="growth-list">
                 <div v-for="item in growthSuggestions" :key="item.suggestion_id" class="growth-item suggestion-item">
                   <div class="growth-item-header">
@@ -81,16 +81,16 @@
                           {{ GrowthSuggestionStatusNames[item.status] || item.status }}
                         </el-tag>
                         <el-tag size="small" effect="plain">{{ getSuggestionTypeLabel(item.suggestion_type) }}</el-tag>
-                        <el-tag size="small" effect="plain">置信度 {{ formatConfidence(item.confidence) }}</el-tag>
+                        <el-tag size="small" effect="plain">Confidence {{ formatConfidence(item.confidence) }}</el-tag>
                       </div>
                     </div>
                     <div v-if="item.status === GrowthSuggestionStatus.PENDING" class="growth-actions">
-                      <el-button size="small" type="primary" @click="handleAcceptSuggestion(item.suggestion_id)">接受</el-button>
-                      <el-button size="small" @click="handleDismissSuggestion(item.suggestion_id)">忽略</el-button>
+                      <el-button size="small" type="primary" @click="handleAcceptSuggestion(item.suggestion_id)">accept</el-button>
+                      <el-button size="small" @click="handleDismissSuggestion(item.suggestion_id)">ignore</el-button>
                     </div>
                     <div v-else-if="item.activation_result?.session_id" class="growth-actions">
                       <el-button size="small" type="success" plain @click="openWorkflowOptimization(item)">
-                        打开优化会话
+                        Open an optimization session
                       </el-button>
                     </div>
                   </div>
@@ -106,23 +106,23 @@
                     </div>
                   </div>
                   <el-collapse v-if="item.suggested_action">
-                    <el-collapse-item title="查看建议动作" :name="item.suggestion_id">
+                    <el-collapse-item title="View suggested actions" :name="item.suggestion_id">
                       <pre class="json-content">{{ getFormattedSuggestionAction(item).displayText }}</pre>
                     </el-collapse-item>
                   </el-collapse>
                   <div v-if="item.source_refs?.length" class="growth-evidence">
-                    <span class="growth-meta-label">来源：</span>
+                    <span class="growth-meta-label">Source:</span>
                     <el-tag v-for="ref in item.source_refs" :key="`${ref.type}-${ref.id}`" size="small" effect="plain">
                       {{ ref.label || ref.type }}: {{ ref.id }}
                     </el-tag>
                   </div>
                 </div>
               </div>
-              <el-empty v-else description="当前任务还没有成长建议" />
+              <el-empty v-else description="There are no growth suggestions for the current task" />
             </el-tab-pane>
           </el-tabs>
               </template>
-              <el-empty v-else description="当前页面没有关联任务，无法加载成长上下文" />
+              <el-empty v-else description="The current page has no associated tasks and cannot load the growth context." />
             </template>
           </el-skeleton>
         </div>
@@ -138,7 +138,7 @@ import { ElMessage } from 'element-plus'
 import { Collection } from '@element-plus/icons-vue'
 import { renderMarkdown as safeMarkdown } from '@/utils/markdown'
 
-// marked 配置已由 @/utils/markdown 统一管理
+// marked The configuration has been @/utils/markdown Unified management
 const renderMarkdown = (content: string): string => {
   if (!content?.trim()) return ''
   try {
@@ -184,7 +184,7 @@ const props = withDefaults(defineProps<{
   initialContext?: TaskGrowthContextPayload | null
   closeOnNavigate?: boolean
 }>(), {
-  title: '经验提炼',
+  title: 'Experience refinement',
   initialContext: null,
   closeOnNavigate: false
 })
@@ -196,7 +196,7 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const growthPanelEnabled = false
-const activeCollapse = ref<string[]>([])  // 默认折叠（空数组 = 无展开项）
+const activeCollapse = ref<string[]>([])  // default fold(empty array = No expansion items)
 const growthLoading = ref(false)
 const growthContext = ref<TaskGrowthContextPayload | null>(props.initialContext)
 
@@ -208,54 +208,54 @@ const growthSummary = computed(() => ({
 }))
 
 const FIELD_LABELS: Record<string, string> = {
-  action: '操作倾向',
-  analysis_view: '分析结论',
-  confidence: '置信度',
-  risk_level: '风险等级',
-  risk_score: '风险评分',
-  target_price: '目标价',
-  price_analysis_range: '价格区间',
-  stop_loss_price: '止损位',
-  take_profit_price: '止盈位',
-  reasoning: '核心理由',
-  conclusion: '结论',
-  summary: '摘要'
+  action: 'Operation tendency',
+  analysis_view: 'Analysis conclusion',
+  confidence: 'Confidence',
+  risk_level: 'risk level',
+  risk_score: 'risk score',
+  target_price: 'target price',
+  price_analysis_range: 'price range',
+  stop_loss_price: 'Stop loss level',
+  take_profit_price: 'Take profit level',
+  reasoning: 'core rationale',
+  conclusion: 'Conclusion',
+  summary: 'Summary'
 }
 
 const SUGGESTION_TYPE_LABELS: Record<string, string> = {
-  memory_promotion: '记忆提升建议',
-  research_asset_promotion: '研究资产沉淀',
-  workflow_optimization: '工作流优化',
-  watch_rule_suggestion: '后续跟踪规则'
+  memory_promotion: 'Memory improvement suggestions',
+  research_asset_promotion: 'Research asset accumulation',
+  workflow_optimization: 'Workflow optimization',
+  watch_rule_suggestion: 'Follow-up rules'
 }
 
 const ACTION_TARGET_LABELS: Record<string, string> = {
-  object_tracking: '对象跟踪',
-  workflow_generation: '工作流优化',
-  research_asset: '研究资产'
+  object_tracking: 'object tracking',
+  workflow_generation: 'Workflow optimization',
+  research_asset: 'research assets'
 }
 
 const ACTION_MODE_LABELS: Record<string, string> = {
-  follow_up_focus: '建立跟踪重点',
-  follow_up_field: '补充字段跟踪',
-  start_session: '发起优化会话',
-  promote_growth_asset: '沉淀为研究资产'
+  follow_up_focus: 'Establish tracking focus',
+  follow_up_field: 'Supplemental field tracking',
+  start_session: 'Start an optimization session',
+  promote_growth_asset: 'Precipitated into research assets'
 }
 
 const safeParseJson = (value: string): Record<string, any> | null => {
   if (!value) return null
-  // 直接尝试 JSON.parse
+  // Try it directly JSON.parse
   try {
     const parsed = JSON.parse(value)
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null
   } catch {
     // ignore
   }
-  // 尝试将 Python 风格单引号转为双引号
+  // Try converting Python-style single quotes to double quotes
   try {
-    // 将外层单引号键值对转为双引号（简单启发式）
+    // Convert outer single-quote key-value pairs to double quotes (simple heuristic)
     const fixed = value
-      .replace(/'/g, '"')                     // 所有单引号→双引号
+      .replace(/'/g, '"')                     // All single quotes→double quotes
       .replace(/None/g, 'null')               // Python None→null
       .replace(/True/g, 'true')               // Python True→true
       .replace(/False/g, 'false')             // Python False→false
@@ -267,17 +267,17 @@ const safeParseJson = (value: string): Record<string, any> | null => {
 }
 
 /**
- * 从 content 字符串中提取可用的 JSON 对象。
- * 支持：
- *  - 标准 JSON
- *  - markdown ```json ... ``` 代码块（可嵌套在外层字典值中）
- *  - Python repr 格式的字典（单引号）
- *  - 外层 {'key': '```json\n{...}```'} 嵌套结构
+ * Extract available JSON objects from the content string.
+ * Support:
+ *  - Standard JSON
+ *  - markdown ```json ... ``` Code blocks (can be nested within outer dictionary values)
+ *  - Python repr Dictionary of formats (single quotes)
+ *  - Outer layer {'key': '```json\n{...}```'} Nested structure
  */
 const extractJsonLikeObject = (content: string): Record<string, any> | null => {
   if (!content) return null
 
-  // 1. 尝试从 markdown 代码块提取（可能有多个，取最深层包含完整 JSON 的那个）
+  // 1. Try to extract from the markdown code block (there may be multiple, take the deepest one that contains the complete JSON)
   const fencedRegex = /```(?:json)?\s*([\s\S]*?)```/gi
   let fencedMatch: RegExpExecArray | null
   while ((fencedMatch = fencedRegex.exec(content)) !== null) {
@@ -286,14 +286,14 @@ const extractJsonLikeObject = (content: string): Record<string, any> | null => {
     if (parsed) return parsed
   }
 
-  // 2. 尝试提取 {...} 区间
+  // 2. Try to extract {...} interval
   const firstBrace = content.indexOf('{')
   const lastBrace = content.lastIndexOf('}')
   if (firstBrace >= 0 && lastBrace > firstBrace) {
     const slice = content.slice(firstBrace, lastBrace + 1).trim()
     const parsed = safeParseJson(slice)
     if (parsed) {
-      // 如果解析结果只有一个 key，且其 value 是字符串包含 JSON，递归提取
+      // If the parsing result has only one key and its value is a string containing JSON, recursively extract
       const keys = Object.keys(parsed)
       if (keys.length === 1 && typeof parsed[keys[0]] === 'string') {
         const inner = extractJsonLikeObject(parsed[keys[0]])
@@ -317,26 +317,26 @@ const formatMetricValue = (key: string, value: unknown): string => {
 }
 
 /**
- * 清理原始 content 文本，去除代码块标记、Python dict 包装等，使其可读。
+ * Clean the original content text, removing code block tags, Python dict wrappers, etc. to make it readable.
  */
 const cleanGrowthText = (content: string): string => {
   if (!content) return ''
 
   let text = content
 
-  // 去除外层 Python dict wrapper: {'some_key': '...'}
+  // Remove outer layer Python dict wrapper: {'some_key': '...'}
   const outerDictMatch = text.match(/^\s*\{['"]\w+['"]\s*:\s*['"]([\s\S]*)['"]\s*\}\s*$/)
   if (outerDictMatch) {
     text = outerDictMatch[1]
   }
 
-  // 去除 markdown 代码块标记
+  // Remove markdown code block tags
   text = text.replace(/```json\s*/gi, '').replace(/```/g, '')
 
-  // 去除转义换行
+  // Remove escaped newlines
   text = text.replace(/\\n/g, '\n').replace(/\\t/g, '  ')
 
-  // 尝试格式化内嵌 JSON
+  // Try formatting the inline JSON
   const braceStart = text.indexOf('{')
   const braceEnd = text.lastIndexOf('}')
   if (braceStart >= 0 && braceEnd > braceStart) {
@@ -349,7 +349,7 @@ const cleanGrowthText = (content: string): string => {
     }
   }
 
-  // 最终清理
+  // final cleanup
   text = text.replace(/\r/g, '').trim()
   return text
 }
@@ -385,7 +385,7 @@ const getFormattedMemoryContent = (item: GrowthMemoryItem): FormattedGrowthConte
 
   if (!highlights.length && sourceField && item.summary) {
     highlights.push({
-      label: '提炼结果',
+      label: 'Refined results',
       value: item.summary
     })
   }
@@ -398,7 +398,7 @@ const getFormattedMemoryContent = (item: GrowthMemoryItem): FormattedGrowthConte
 
   return {
     highlights,
-    displayText: displayText || item.summary || '暂无内容'
+    displayText: displayText || item.summary || 'No content yet'
   }
 }
 
@@ -410,34 +410,34 @@ const getFormattedSuggestionAction = (item: GrowthSuggestion): FormattedSuggesti
   const highlights: GrowthHighlight[] = []
 
   if (target) {
-    highlights.push({ label: '目标', value: ACTION_TARGET_LABELS[target] || target })
+    highlights.push({ label: 'target', value: ACTION_TARGET_LABELS[target] || target })
   }
   if (mode) {
-    highlights.push({ label: '动作', value: ACTION_MODE_LABELS[mode] || mode })
+    highlights.push({ label: 'action', value: ACTION_MODE_LABELS[mode] || mode })
   }
 
   if (target === 'object_tracking') {
-    if (payload.symbol) highlights.push({ label: '跟踪标的', value: String(payload.symbol) })
+    if (payload.symbol) highlights.push({ label: 'tracking target', value: String(payload.symbol) })
     if (Array.isArray(payload.focus_points) && payload.focus_points.length) {
-      highlights.push({ label: '跟踪重点', value: payload.focus_points.join('；') })
+      highlights.push({ label: 'Keep track of key points', value: payload.focus_points.join('; ') })
     }
-    if (payload.source_field) highlights.push({ label: '来源字段', value: String(payload.source_field) })
-    if (payload.focus_summary) highlights.push({ label: '跟踪说明', value: String(payload.focus_summary) })
-    if (payload.decision_action) highlights.push({ label: '关联决策', value: String(payload.decision_action) })
-    if (payload.agent_name) highlights.push({ label: '来源代理', value: String(payload.agent_name) })
+    if (payload.source_field) highlights.push({ label: 'Source field', value: String(payload.source_field) })
+    if (payload.focus_summary) highlights.push({ label: 'Tracking instructions', value: String(payload.focus_summary) })
+    if (payload.decision_action) highlights.push({ label: 'Relevant decision-making', value: String(payload.decision_action) })
+    if (payload.agent_name) highlights.push({ label: 'source agent', value: String(payload.agent_name) })
   }
 
   if (target === 'workflow_generation') {
-    if (payload.workflow_id) highlights.push({ label: '工作流', value: String(payload.workflow_id) })
-    if (payload.description) highlights.push({ label: '优化说明', value: String(payload.description) })
-    if (payload.source_field) highlights.push({ label: '关注字段', value: String(payload.source_field) })
+    if (payload.workflow_id) highlights.push({ label: 'Workflow', value: String(payload.workflow_id) })
+    if (payload.description) highlights.push({ label: 'Optimization instructions', value: String(payload.description) })
+    if (payload.source_field) highlights.push({ label: 'Focus on fields', value: String(payload.source_field) })
   }
 
   if (target === 'research_asset') {
-    if (payload.object_key) highlights.push({ label: '沉淀对象', value: String(payload.object_key) })
-    if (payload.source_field) highlights.push({ label: '来源字段', value: String(payload.source_field) })
-    if (payload.workflow_id) highlights.push({ label: '关联工作流', value: String(payload.workflow_id) })
-    if (payload.agent_name) highlights.push({ label: '来源代理', value: String(payload.agent_name) })
+    if (payload.object_key) highlights.push({ label: 'Precipitation object', value: String(payload.object_key) })
+    if (payload.source_field) highlights.push({ label: 'Source field', value: String(payload.source_field) })
+    if (payload.workflow_id) highlights.push({ label: 'Associated workflows', value: String(payload.workflow_id) })
+    if (payload.agent_name) highlights.push({ label: 'source agent', value: String(payload.agent_name) })
   }
 
   const displayText = highlights.length
@@ -446,7 +446,7 @@ const getFormattedSuggestionAction = (item: GrowthSuggestion): FormattedSuggesti
 
   return {
     highlights,
-    displayText: displayText || '暂无建议动作'
+    displayText: displayText || 'No suggested actions yet'
   }
 }
 
@@ -473,8 +473,8 @@ const refreshGrowthContext = async () => {
       emit('updated', growthContext.value)
       return
     }
-    console.error('[TaskGrowthPanel] 获取成长上下文失败:', error)
-    ElMessage.error(error?.message || '获取成长上下文失败')
+    console.error('[TaskGrowthPanel] Failed to get growth context:', error)
+    ElMessage.error(error?.message || 'Failed to get growth context')
   } finally {
     growthLoading.value = false
   }
@@ -483,20 +483,20 @@ const refreshGrowthContext = async () => {
 const handleApproveMemory = async (memoryId: string) => {
   try {
     await approveGrowthMemory(memoryId)
-    ElMessage.success('已批准成长记忆')
+    ElMessage.success('Approved for growing memory')
     await refreshGrowthContext()
   } catch (error: any) {
-    ElMessage.error(error?.message || '批准成长记忆失败')
+    ElMessage.error(error?.message || 'Failed to approve growing memory')
   }
 }
 
 const handleRejectMemory = async (memoryId: string) => {
   try {
     await rejectGrowthMemory(memoryId)
-    ElMessage.success('已拒绝成长记忆')
+    ElMessage.success('Rejected growth memory')
     await refreshGrowthContext()
   } catch (error: any) {
-    ElMessage.error(error?.message || '拒绝成长记忆失败')
+    ElMessage.error(error?.message || 'Refuse to grow memory failure')
   }
 }
 
@@ -504,24 +504,24 @@ const handleAcceptSuggestion = async (suggestionId: string) => {
   try {
     const res = await acceptGrowthSuggestion(suggestionId)
     const acceptedSuggestion = (res as any)?.data?.data || (res as any)?.data || null
-    ElMessage.success('已接受成长建议')
+    ElMessage.success('Growth suggestions accepted')
     await refreshGrowthContext()
 
     if (acceptedSuggestion?.activation_result?.session_id) {
       openWorkflowOptimization(acceptedSuggestion)
     }
   } catch (error: any) {
-    ElMessage.error(error?.message || '接受成长建议失败')
+    ElMessage.error(error?.message || 'Failure to accept growth advice')
   }
 }
 
 const handleDismissSuggestion = async (suggestionId: string) => {
   try {
     await dismissGrowthSuggestion(suggestionId)
-    ElMessage.success('已忽略成长建议')
+    ElMessage.success('Growth suggestions ignored')
     await refreshGrowthContext()
   } catch (error: any) {
-    ElMessage.error(error?.message || '忽略成长建议失败')
+    ElMessage.error(error?.message || 'Ignoring Growth Advice Failure')
   }
 }
 
@@ -545,14 +545,14 @@ const suggestionStatusTagType = (status: string) => {
 }
 
 const getSuggestionTypeLabel = (suggestionType?: string) => {
-  if (!suggestionType) return '成长建议'
+  if (!suggestionType) return 'Growth advice'
   return SUGGESTION_TYPE_LABELS[suggestionType] || suggestionType
 }
 
 const openWorkflowOptimization = (suggestion: GrowthSuggestion) => {
   const sessionId = suggestion.activation_result?.session_id
   if (!sessionId) {
-    ElMessage.warning('当前建议还没有可打开的优化会话')
+    ElMessage.warning('There are no optimization sessions open for the current recommendation')
     return
   }
 

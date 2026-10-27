@@ -1,53 +1,53 @@
 <template>
     <el-dialog
     v-model="visible"
-    :title="props.source === 'paper' ? '模拟交易复盘' : '持仓操作复盘'"
+    :title="props.source === 'paper' ? 'Simulated trading review' : 'Review of position operations'"
     width="600px"
     :close-on-click-modal="false"
   >
     <div v-if="positionData" class="position-info">
       <el-descriptions :column="2" border size="small">
-        <el-descriptions-item label="股票代码">{{ positionData.code }}</el-descriptions-item>
-        <el-descriptions-item label="股票名称">{{ positionData.name }}</el-descriptions-item>
-        <el-descriptions-item label="市场">
+        <el-descriptions-item label="Stock code">{{ positionData.code }}</el-descriptions-item>
+        <el-descriptions-item label="Stock name">{{ positionData.name }}</el-descriptions-item>
+        <el-descriptions-item label="market">
           <el-tag size="small">{{ positionData.market }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="复盘类型">
+        <el-descriptions-item label="Review type">
           <el-tag size="small" :type="positionData.type === 'current' ? 'primary' : 'success'">
-            {{ positionData.type === 'current' ? '当前持仓' : '历史持仓' }}
+            {{ positionData.type === 'current' ? 'Current position' : 'Historical positions' }}
           </el-tag>
         </el-descriptions-item>
         <template v-if="positionData.type === 'current'">
-          <el-descriptions-item label="持仓数量">{{ positionData.quantity }}</el-descriptions-item>
-          <el-descriptions-item label="成本价">{{ positionData.cost_price?.toFixed(2) }}</el-descriptions-item>
-          <el-descriptions-item label="浮动盈亏" :span="2">
+          <el-descriptions-item label="Position quantity">{{ positionData.quantity }}</el-descriptions-item>
+          <el-descriptions-item label="cost price">{{ positionData.cost_price?.toFixed(2) }}</el-descriptions-item>
+          <el-descriptions-item label="floating profit and loss" :span="2">
             <span :class="(positionData.unrealized_pnl || 0) >= 0 ? 'positive' : 'negative'">
               {{ formatPnl(positionData.unrealized_pnl) }}
             </span>
           </el-descriptions-item>
         </template>
         <template v-else>
-          <el-descriptions-item label="已实现盈亏">
+          <el-descriptions-item label="Realized profit and loss">
             <span :class="(positionData.realized_pnl || 0) >= 0 ? 'positive' : 'negative'">
               {{ formatPnl(positionData.realized_pnl) }}
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="持有天数">{{ positionData.hold_days }} 天</el-descriptions-item>
+          <el-descriptions-item label="Holding days">{{ positionData.hold_days }} day</el-descriptions-item>
         </template>
       </el-descriptions>
     </div>
 
-    <el-divider content-position="left">复盘分析内容</el-divider>
+    <el-divider content-position="left">Review analysis content</el-divider>
 
     <el-form :model="form" label-width="100px">
-      <!-- 流程选择 -->
-      <el-form-item v-if="workflowsSorted.length > 0" label="分析流程">
+      <!-- Process selection -->
+      <el-form-item v-if="workflowsSorted.length > 0" label="Analysis process">
         <div style="display: flex; align-items: center; width: 100%">
           <el-select
             v-model="selectedWorkflowId"
             size="small"
             style="flex: 1"
-            placeholder="选择分析流程"
+            placeholder="Select analysis process"
           >
             <el-option
               v-for="workflow in workflowsSorted"
@@ -56,23 +56,23 @@
               :value="workflow.id"
             />
           </el-select>
-          <el-tooltip content="选择不同的分析流程，系统会使用该流程对应的智能体和步骤进行分析" placement="top">
+          <el-tooltip content="Select different analysis processes, and the system will use the agents and steps corresponding to the process for analysis." placement="top">
             <el-icon style="margin-left: 8px; color: #909399; cursor: help"><InfoFilled /></el-icon>
           </el-tooltip>
         </div>
       </el-form-item>
-      <!-- 🆕 移除分析版本选择，统一使用工作流分析 -->
-      <el-form-item label="复盘分析内容">
+      <!-- 🆕 Remove analysis version selection and use workflow analysis uniformly -->
+      <el-form-item label="Review analysis content">
         <el-alert type="info" :closable="false" show-icon>
           <template #title>
-            使用多维度工作流引擎进行深度分析，预计需要1-3分钟完成
+            Use the multi-dimensional workflow engine to conduct in-depth analysis, which is expected to take 1-3 minutes to complete.
           </template>
         </el-alert>
       </el-form-item>
-      <el-form-item v-if="canUseTradingPlanCheck" label="关联交易计划">
+      <el-form-item v-if="canUseTradingPlanCheck" label="Related party transaction plan">
         <el-select
           v-model="form.trading_system_id"
-          placeholder="选择交易计划（可选）"
+          placeholder="Choose a trading plan (optional)"
           clearable
           :loading="loadingTradingSystems"
           style="width: 100%"
@@ -86,43 +86,43 @@
             <div style="display: flex; justify-content: space-between; align-items: center">
               <span>{{ system.name }}</span>
               <div style="display: flex; gap: 4px; align-items: center">
-                <el-tag v-if="system.is_active" size="small" type="success">默认</el-tag>
+                <el-tag v-if="system.is_active" size="small" type="success">Default</el-tag>
                 <el-tag size="small" type="info">{{ getStyleLabel(system.style) }}</el-tag>
               </div>
             </div>
           </el-option>
         </el-select>
-        <div class="form-tip">选择后将按照交易计划规则进行执行一致性检查</div>
+        <div class="form-tip">After selection, execution consistency check will be carried out according to the trading plan rules.</div>
       </el-form-item>
-      <el-form-item v-else label="执行一致性检查">
-        <div class="form-tip">高级学员可关联交易计划，对复盘结果进行执行一致性检查。</div>
+      <el-form-item v-else label="Perform consistency check">
+        <div class="form-tip">Advanced students can associate trading plans and conduct consistency checks on review results.</div>
       </el-form-item>
-      <el-form-item label="分析维度">
+      <el-form-item label="Analysis Dimensions">
         <div class="dimensions-list">
           <div class="dimension-item">
-            <el-tag type="info" size="large">时机</el-tag>
-            <span class="dimension-desc">分析买入和卖出的时机选择是否合理</span>
+            <el-tag type="info" size="large">timing</el-tag>
+            <span class="dimension-desc">Analyze whether the timing of buying and selling is reasonable</span>
           </div>
           <div class="dimension-item">
-            <el-tag type="info" size="large">仓位</el-tag>
-            <span class="dimension-desc">评估仓位管理的合理性和风险控制</span>
+            <el-tag type="info" size="large">position</el-tag>
+            <span class="dimension-desc">Evaluate the rationality and risk control of position management</span>
           </div>
           <div class="dimension-item">
-            <el-tag type="info" size="large">情绪</el-tag>
-            <span class="dimension-desc">分析操作决策中的情绪因素和纪律执行</span>
+            <el-tag type="info" size="large">emotions</el-tag>
+            <span class="dimension-desc">Analyze emotional factors and discipline execution in operational decisions</span>
           </div>
           <div class="dimension-item">
-            <el-tag type="info" size="large">归因</el-tag>
-            <span class="dimension-desc">分析收益来源，区分是能力还是运气</span>
+            <el-tag type="info" size="large">attribution</el-tag>
+            <span class="dimension-desc">Analyze the source of income and distinguish whether it is ability or luck</span>
           </div>
         </div>
       </el-form-item>
     </el-form>
 
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">Cancel</el-button>
       <el-button type="primary" :loading="submitting" @click="handleSubmit">
-        开始复盘
+        Start review
       </el-button>
     </template>
   </el-dialog>
@@ -154,7 +154,7 @@ interface PositionData {
 const props = defineProps<{
   modelValue: boolean
   positionData: PositionData | null
-  source?: 'paper' | 'real'  // 数据源: paper(模拟交易) 或 real(用户持仓)
+  source?: 'paper' | 'real'  // data source: paper(simulated trading) or real(User positions)
   workflowId?: string
 }>()
 
@@ -171,15 +171,15 @@ const licenseStore = useLicenseStore()
 const canUseTradingPlanCheck = computed(() => licenseStore.hasFeature('trading_plan_check'))
 
 const form = ref({
-  // 🆕 移除 analysis_version，统一使用工作流分析
-  // 🆕 移除 dimensions，改为固定维度：时机、仓位、情绪、归因
-  // 🆕 移除 notes，后端未使用此字段
+  // 🆕 Remove analysis_version and use workflow analysis uniformly
+  // 🆕 Remove dimensions and replace them with fixed dimensions: timing, position, sentiment, attribution
+  // 🆕 Remove notes, this field is not used by the backend
   trading_system_id: ''
 })
 
 const submitting = ref(false)
 
-// 流程选择
+// Process selection
 const workflows = ref<WorkflowSummary[]>([])
 const selectedWorkflowId = ref<string>('')
 
@@ -207,7 +207,7 @@ const workflowsSorted = computed(() => {
   return arr
 })
 
-// 加载可用工作流
+// Load available workflows
 const loadWorkflows = async () => {
   try {
     const data = await workflowApi.listAll()
@@ -218,15 +218,15 @@ const loadWorkflows = async () => {
       selectedWorkflowId.value = defaultWf ? defaultWf.id : targetWorkflows[0].id
     }
   } catch (e) {
-    console.error('加载工作流列表失败:', e)
+    console.error('Failed to load workflow list:', e)
   }
 }
 
-// 交易计划相关
+// Trading plan related
 const tradingSystems = ref<TradingSystem[]>([])
 const loadingTradingSystems = ref(false)
 
-// 加载交易计划列表
+// Load trading plan list
 const loadTradingSystems = async () => {
   if (!canUseTradingPlanCheck.value) {
     tradingSystems.value = []
@@ -239,13 +239,13 @@ const loadTradingSystems = async () => {
     const res = await tradingSystemApi.getTradingSystems()
     tradingSystems.value = res.data?.systems || []
     
-    // 🔥 自动选中默认交易计划（is_active: true）
+    // 🔥 The default trading plan is automatically selected (is_active: true) 
     const activeSystem = tradingSystems.value.find(system => system.is_active)
     if (activeSystem && activeSystem.id) {
       form.value.trading_system_id = activeSystem.id
     }
   } catch (e: any) {
-    console.error('加载交易计划列表失败:', e)
+    console.error('Failed to load trading plan list:', e)
   } finally {
     loadingTradingSystems.value = false
   }
@@ -253,18 +253,18 @@ const loadTradingSystems = async () => {
 
 watch(visible, async (val) => {
   if (!val) {
-    // 关闭对话框时重置表单
+    // Reset form when closing dialog box
     form.value = {
-      // 🆕 移除 analysis_version、dimensions 和 notes
+      // 🆕 Remove analysis_version, dimensions, and notes
       trading_system_id: ''
     }
   } else {
     if (!licenseStore.licenseInfo) {
       await licenseStore.verifyLicense()
     }
-    // 打开对话框时，重新加载交易计划列表并自动选中默认计划
+    // When opening the dialog box, the list of trading plans is reloaded and the default plan is automatically selected
     await loadTradingSystems()
-    // 加载工作流列表
+    // Load workflow list
     await loadWorkflows()
   }
 })
@@ -277,9 +277,9 @@ const formatPnl = (val?: number) => {
 
 const getStyleLabel = (style: string) => {
   const labels: Record<string, string> = {
-    short_term: '短线',
-    medium_term: '中线',
-    long_term: '长线'
+    short_term: 'short term',
+    medium_term: 'center line',
+    long_term: 'long term'
   }
   return labels[style] || style
 }
@@ -365,58 +365,58 @@ const selectTradesForPositionCycle = (trades: TradeRecord[], positionData: Posit
 
 const handleSubmit = async () => {
   if (!props.positionData) {
-    ElMessage.error('持仓数据不存在')
+    ElMessage.error('Position data does not exist')
     return
   }
 
   try {
     submitting.value = true
 
-    const source = props.source || 'real'  // 默认用户持仓
+    const source = props.source || 'real'  // Default user position
     
-    // 1. 获取该股票的所有交易记录
+    // 1. Get all transaction records for this stock
     const tradesRes = await reviewApi.getTradesByCode(props.positionData.code, source)
     const trades = tradesRes.data?.trades || []
 
     if (trades.length === 0) {
-      ElMessage.warning('该股票暂无可分析的交易记录')
+      ElMessage.warning('There is currently no analyzable transaction record for this stock.')
       return
     }
 
     const reviewTrades = selectTradesForPositionCycle(trades, props.positionData, source)
 
     if (reviewTrades.length === 0) {
-      ElMessage.warning('未找到与当前持仓周期对应的交易记录')
+      ElMessage.warning('No transaction record corresponding to the current position period was found.')
       return
     }
 
-    // 2. 获取当前持仓周期的交易ID列表
+    // 2. Get the transaction ID list of the current position period
     const tradeIds = reviewTrades.map(t => t.trade_id)
 
-    // 3. 创建复盘分析（统一使用工作流分析）
+    // 3. Create review analysis (unified use of workflow analysis)
     const reviewRes = await reviewApi.createTradeReview({
       trade_ids: tradeIds,
       review_type: 'complete_trade',
       code: props.positionData.code,
-      source: source,  // 使用传入的数据源
+      source: source,  // Use the passed in data source
       trading_system_id: canUseTradingPlanCheck.value ? (form.value.trading_system_id || undefined) : undefined,
       workflow_id: selectedWorkflowId.value || undefined,
-      use_workflow: true  // 🆕 统一使用工作流分析
+      use_workflow: true  // 🆕 Unified use of workflow analytics
     })
 
     if (reviewRes.data) {
-      console.log('[PositionReviewDialog] 复盘创建成功，reviewId:', reviewRes.data.review_id)
-      // 先触发 success 事件，让父组件打开详情页面
+      console.log('[PositionReviewDialog] The review was created successfully.reviewId:', reviewRes.data.review_id)
+      // First trigger the success event and let the parent component open the details page
       emit('success', reviewRes.data.review_id)
-      console.log('[PositionReviewDialog] 已触发 success 事件')
-      // 延迟关闭对话框，确保详情页面先打开
+      console.log('[PositionReviewDialog] success event triggered')
+      // Delay the closing of the dialog box to ensure that the details page is opened first
       setTimeout(() => {
         visible.value = false
-        console.log('[PositionReviewDialog] 对话框已关闭')
+        console.log('[PositionReviewDialog] Dialog closed')
       }, 200)
     }
   } catch (e: any) {
-    ElMessage.error(e.message || '复盘失败')
+    ElMessage.error(e.message || 'Review failed')
   } finally {
     submitting.value = false
   }
@@ -427,8 +427,8 @@ const handleSubmit = async () => {
 .position-info {
   margin-bottom: 16px;
 }
-.positive { color: #f56c6c; }  // 中国习惯：红色表示盈利（正数）
-.negative { color: #67c23a; }  // 中国习惯：绿色表示亏损（负数）
+.positive { color: #f56c6c; }  // Chinese custom: red indicates profit (positive number)
+.negative { color: #67c23a; }  // Chinese custom: green indicates loss (negative number)
 .form-tip {
   font-size: 12px;
   color: #909399;

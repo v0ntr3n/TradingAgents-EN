@@ -1,7 +1,7 @@
 """
-邮件通知Agent
+Email notification Agent
 
-根据条件发送邮件通知
+Send email notification based on conditions
 """
 
 import logging
@@ -17,19 +17,19 @@ logger = logging.getLogger(__name__)
 @register_agent
 class EmailNotifierAgent(PostProcessorAgent):
     """
-    邮件通知Agent
+    Email notification Agent
     
-    功能：
-    - 发送分析完成通知邮件
-    - 支持模板渲染
-    - 支持附件
-    - 可选使用LLM生成邮件摘要
+    Function:
+    - Send analysis completion notification email
+    - Support template rendering
+    - Support accessories
+    - Optionally use LLM to generate email digests
     """
     
     metadata = AgentMetadata(
         id="email_notifier",
-        name="邮件通知器",
-        description="根据条件发送邮件通知",
+        name="Email Notifier",
+        description="Send email notification based on conditions",
         category=AgentCategory.POST_PROCESSOR,
         version="1.0.0",
         license_tier=LicenseTier.FREE,
@@ -46,46 +46,46 @@ class EmailNotifierAgent(PostProcessorAgent):
         **kwargs
     ):
         """
-        初始化邮件通知Agent
+        Initialize email notification Agent
         
         Args:
-            config: Agent配置
-            operations: 操作配置列表，格式：
+            config: Agent Configuration
+            operations: Operation configuration list, format:
                 [
                     {
                         "type": "send_email",
                         "template": "analysis_complete",
                         "to": "{user.email}",
-                        "subject": "{ticker} 分析完成",
+                        "subject": "{ticker} Analysis completed",
                         "use_llm_summary": true,
                         "attachments": [...]
                     }
                 ]
-            conditions: 执行条件列表
-            **kwargs: 其他参数
+            conditions: Execution condition list
+            **kwargs: Other parameters
         """
         super().__init__(config=config, operations=operations, conditions=conditions, **kwargs)
         
-        # 初始化邮件服务（延迟加载）
+        # Initialize mail service (lazy loading)
         self._email_service = None
     
     def _execute_operation(self, operation: OperationConfig, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行邮件发送操作
+        Perform mail sending operation
         
         Args:
-            operation: 操作配置
-            state: 工作流状态
+            operation: Operational configuration
+            state: Workflow status
             
         Returns:
-            操作执行结果
+            Operation execution result
         """
         operation_type = operation.get("type")
         
         if operation_type == "send_email":
             return self._send_email(operation, state)
         else:
-            logger.warning(f"未知的操作类型: {operation_type}")
+            logger.warning(f"Unknown operation type: {operation_type}")
             return {
                 "success": False,
                 "operation_type": operation_type,
@@ -94,34 +94,34 @@ class EmailNotifierAgent(PostProcessorAgent):
     
     def _send_email(self, operation: OperationConfig, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        发送邮件
+        Send email
         
         Args:
-            operation: 操作配置
-            state: 工作流状态
+            operation: Operational configuration
+            state: Workflow status
             
         Returns:
-            操作结果
+            Operation result
         """
         try:
-            # 获取邮件服务
+            # Get mail service
             email_service = self._get_email_service()
             
-            # 准备邮件数据
+            # Prepare email data
             to_email = self._render_template(operation.get("to", ""), state)
             subject = self._render_template(operation.get("subject", ""), state)
             template_name = operation.get("template", "analysis_complete")
             use_llm_summary = operation.get("use_llm_summary", False)
             
-            # 准备模板数据
+            # Prepare template data
             template_data = self._prepare_template_data(state, use_llm_summary)
             
-            # 准备附件
+            # Prepare attachments
             attachments = self._prepare_attachments(operation.get("attachments", []), state)
             
-            # 发送邮件（这里需要集成实际的邮件服务）
-            # 暂时返回模拟结果
-            logger.info(f"准备发送邮件到: {to_email}, 主题: {subject}")
+            # Send email (actual email service needs to be integrated here)
+            # Temporarily return simulation results
+            logger.info(f"Prepare to send email to: {to_email}, Topic: {subject}")
             
             return {
                 "success": True,
@@ -129,11 +129,11 @@ class EmailNotifierAgent(PostProcessorAgent):
                 "to": to_email,
                 "subject": subject,
                 "template": template_name,
-                "email_id": "mock_email_id"  # 实际应该是邮件服务返回的ID
+                "email_id": "mock_email_id"  # It should actually be returned by the mail service ID
             }
             
         except Exception as e:
-            logger.error(f"发送邮件失败: {e}", exc_info=True)
+            logger.error(f"Failed to send email: {e}", exc_info=True)
             return {
                 "success": False,
                 "operation_type": "send_email",
@@ -141,9 +141,9 @@ class EmailNotifierAgent(PostProcessorAgent):
             }
     
     def _get_email_service(self):
-        """获取邮件服务实例"""
+        """Get mail service instance"""
         if self._email_service is None:
-            # 延迟导入，避免循环依赖
+            # Delay import to avoid circular dependencies
             try:
                 from app.services.email_service import EmailService
                 self._email_service = EmailService()
@@ -154,16 +154,16 @@ class EmailNotifierAgent(PostProcessorAgent):
     
     def _render_template(self, template: str, state: Dict[str, Any]) -> str:
         """
-        渲染模板字符串
+        Render template string
 
         Args:
-            template: 模板字符串，如 "{ticker} 分析完成"
-            state: 工作流状态
+            template: Template string, such as "{ticker} Analysis completed"
+            state: Workflow status
 
         Returns:
-            渲染后的字符串
+            Rendered string
         """
-        # 提取常用变量
+        # Extract commonly used variables
         variables = {
             "ticker": state.get("ticker", ""),
             "date": state.get("analysis_date", ""),
@@ -171,23 +171,23 @@ class EmailNotifierAgent(PostProcessorAgent):
             "confidence": self._get_nested_value(state, "investment_plan.confidence_score", ""),
         }
 
-        # 渲染模板
+        # render template
         try:
             return template.format(**variables)
         except KeyError as e:
-            logger.warning(f"模板变量缺失: {e}")
+            logger.warning(f"Template variable missing: {e}")
             return template
 
     def _prepare_template_data(self, state: Dict[str, Any], use_llm_summary: bool = False) -> Dict[str, Any]:
         """
-        准备邮件模板数据
+        Prepare email template data
 
         Args:
-            state: 工作流状态
-            use_llm_summary: 是否使用LLM生成摘要
+            state: Workflow status
+            use_llm_summary: Whether to use LLM to generate summaries
 
         Returns:
-            模板数据字典
+            template data dictionary
         """
         template_data = {
             "ticker": state.get("ticker"),
@@ -201,7 +201,7 @@ class EmailNotifierAgent(PostProcessorAgent):
             }
         }
 
-        # 如果需要LLM摘要
+        # If LLM summary is required
         if use_llm_summary and self._llm:
             summary = self._generate_llm_summary(state)
             template_data["llm_summary"] = summary
@@ -210,40 +210,40 @@ class EmailNotifierAgent(PostProcessorAgent):
 
     def _generate_llm_summary(self, state: Dict[str, Any]) -> str:
         """
-        使用LLM生成邮件摘要
+        Use LLM to generate email digests
 
         Args:
-            state: 工作流状态
+            state: Workflow status
 
         Returns:
-            摘要文本
+            summary text
         """
         try:
             from langchain_core.messages import HumanMessage
 
-            # 构建提示词
-            prompt = f"""请用3句话总结以下股票分析报告的核心观点：
+            # Build prompt words
+            prompt = f"""Please use 3 sentences to summarize the core points of the following stock analysis report:
 
-股票代码：{state.get('ticker')}
-研究摘要：{self._get_nested_value(state, 'investment_plan.recommendation')}
-置信度：{self._get_nested_value(state, 'investment_plan.confidence_score')}
+Stock code:{state.get('ticker')}
+Research summary:{self._get_nested_value(state, 'investment_plan.recommendation')}
+Confidence:{self._get_nested_value(state, 'investment_plan.confidence_score')}
 
-请简洁明了地总结关键信息。"""
+Please summarize key information succinctly and clearly."""
 
-            # 调用LLM
+            # call LLM
             response = self._llm.invoke([HumanMessage(content=prompt)])
             return response.content
 
         except Exception as e:
-            logger.error(f"生成LLM摘要失败: {e}")
-            return "摘要生成失败"
+            logger.error(f"Failed to generate LLM summary: {e}")
+            return "Summary generation failed"
 
     def _prepare_attachments(self, attachments_config: List[Dict], state: Dict[str, Any]) -> List[tuple]:
         """
-        准备邮件附件
+        Prepare email attachments
 
         Args:
-            attachments_config: 附件配置列表，格式：
+            attachments_config: Attachment configuration list, format:
                 [
                     {
                         "type": "pdf",
@@ -251,10 +251,10 @@ class EmailNotifierAgent(PostProcessorAgent):
                         "filename": "report.pdf"
                     }
                 ]
-            state: 工作流状态
+            state: Workflow status
 
         Returns:
-            附件列表，格式：[(filename, content, content_type), ...]
+            Attachment list, format:[(filename, content, content_type), ...]
         """
         attachments = []
 
@@ -264,21 +264,21 @@ class EmailNotifierAgent(PostProcessorAgent):
                 source = config.get("source")
                 filename = config.get("filename", f"attachment.{attachment_type}")
 
-                # 从state获取附件内容
+                # Get attachment content from state
                 content = self._get_nested_value(state, source)
 
                 if content:
-                    # 确定content_type
+                    # OK content_type
                     content_type = self._get_content_type(attachment_type)
                     attachments.append((filename, content, content_type))
 
             except Exception as e:
-                logger.error(f"准备附件失败: {e}")
+                logger.error(f"Failed to prepare attachment: {e}")
 
         return attachments
 
     def _get_content_type(self, file_type: str) -> str:
-        """获取文件的content_type"""
+        """Get the file content_type"""
         content_types = {
             "pdf": "application/pdf",
             "json": "application/json",

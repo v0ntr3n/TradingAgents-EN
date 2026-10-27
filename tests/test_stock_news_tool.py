@@ -14,7 +14,7 @@ def _patch_a_share_market(monkeypatch):
                 "is_china": True,
                 "is_hk": False,
                 "is_us": False,
-                "market_name": "中国A股",
+                "market_name": "China A shares",
             }
 
     monkeypatch.setattr(stock_utils_module, "StockUtils", FakeStockUtils)
@@ -35,21 +35,21 @@ def test_a_share_tool_prefers_akshare_live_when_database_is_empty(monkeypatch):
             "used_sources": [],
         },
     )
-    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "平安银行")
+    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "Ping An Bank")
     tushare_calls = {"count": 0}
 
     def fake_fetch_tushare(*args, **kwargs):
         tushare_calls["count"] += 1
         return [
             {
-                "title": "平安银行发布年度业绩快报",
-                "summary": "业绩与分红安排同步披露。",
+                "title": "Ping An Bank releases annual performance report",
+                "summary": "Performance and dividend arrangements are disclosed simultaneously.",
                 "publish_time": datetime(2026, 4, 12, 9, 30),
-                "source": "新浪财经",
+                "source": "Sina Finance",
                 "category": "company_announcement",
                 "sentiment": "positive",
                 "importance": "high",
-                "keywords": ["业绩", "分红"],
+                "keywords": ["performance", "dividend"],
                 "data_source": "tushare",
             }
         ]
@@ -62,14 +62,14 @@ def test_a_share_tool_prefers_akshare_live_when_database_is_empty(monkeypatch):
         akshare_calls["count"] += 1
         return [
             {
-                "title": "平安银行发布年度业绩快报",
-                "summary": "业绩与分红安排同步披露。",
+                "title": "Ping An Bank releases annual performance report",
+                "summary": "Performance and dividend arrangements are disclosed simultaneously.",
                 "publish_time": datetime(2026, 4, 12, 9, 30),
-                "source": "东方财富",
+                "source": "Oriental Fortune",
                 "category": "company_announcement",
                 "sentiment": "positive",
                 "importance": "high",
-                "keywords": ["业绩", "分红"],
+                "keywords": ["performance", "dividend"],
                 "data_source": "akshare",
             }
         ]
@@ -78,10 +78,10 @@ def test_a_share_tool_prefers_akshare_live_when_database_is_empty(monkeypatch):
 
     result = module.get_stock_news_unified.invoke({"ticker": "000001", "curr_date": "2026-04-13"})
 
-    assert "## AKShare东方财富新闻（实时）" in result
-    assert "平安银行发布年度业绩快报" in result
-    assert "类别: 公司公告 | 情绪: 偏积极 | 重要性: 高" in result
-    assert "Tushare多源新闻（实时）" not in result
+    assert "## AKShare Oriental Fortune News (real time)" in result
+    assert "Ping An Bank releases annual performance report" in result
+    assert "Category: company announcement | emotions: Positive side | importance: high" in result
+    assert "Tushare Multi-source news (real time)" not in result
     assert akshare_calls["count"] == 1
     assert tushare_calls["count"] == 0
 
@@ -103,16 +103,16 @@ def test_fetch_akshare_news_live_filters_outdated_items(monkeypatch):
         "_run_async_in_thread",
         lambda coroutine_factory, timeout=30.0: [
             {
-                "title": "窗口内新闻",
-                "summary": "分析日期窗口内的新闻。",
+                "title": "News in the window",
+                "summary": "Analyze news within a date window.",
                 "publish_time": datetime(2026, 4, 12, 10, 0),
-                "source": "东方财富",
+                "source": "Oriental Fortune",
             },
             {
-                "title": "窗口外旧新闻",
-                "summary": "明显早于分析日期窗口。",
+                "title": "Old news outside the window",
+                "summary": "Significantly earlier than the analysis date window.",
                 "publish_time": datetime(2026, 3, 20, 10, 0),
-                "source": "东方财富",
+                "source": "Oriental Fortune",
             },
         ],
     )
@@ -124,7 +124,7 @@ def test_fetch_akshare_news_live_filters_outdated_items(monkeypatch):
         limit=20,
     )
 
-    assert [item["title"] for item in news] == ["窗口内新闻"]
+    assert [item["title"] for item in news] == ["News in the window"]
 
 
 def test_fetch_tushare_news_live_matches_company_name_without_symbol(monkeypatch):
@@ -147,20 +147,20 @@ def test_fetch_tushare_news_live_matches_company_name_without_symbol(monkeypatch
         def _process_tushare_news(self, news_df, source, symbol=None, limit=10):
             return [
                 {
-                    "title": "平安银行发布年报",
-                    "summary": "只出现公司名，不出现股票代码。",
+                    "title": "Ping An Bank releases annual report",
+                    "summary": "Only the company name appears, not the stock code.",
                     "publish_time": datetime(2026, 4, 12, 8, 0),
-                    "source": "新浪财经",
+                    "source": "Sina Finance",
                     "category": "company_announcement",
                     "sentiment": "positive",
                     "importance": "high",
                     "data_source": "tushare",
                 },
                 {
-                    "title": "无关公司新闻",
-                    "summary": "与目标公司无关。",
+                    "title": "Unrelated company news",
+                    "summary": "It has nothing to do with the target company.",
                     "publish_time": datetime(2026, 4, 12, 9, 0),
-                    "source": "新浪财经",
+                    "source": "Sina Finance",
                     "category": "other",
                     "sentiment": "neutral",
                     "importance": "low",
@@ -173,23 +173,23 @@ def test_fetch_tushare_news_live_matches_company_name_without_symbol(monkeypatch
 
     news = module._fetch_tushare_news_live(
         symbol="000001",
-        company_name="平安银行",
+        company_name="Ping An Bank",
         start_date=datetime(2026, 4, 7, 0, 0),
         end_date=datetime(2026, 4, 13, 23, 59, 59),
         limit=20,
     )
 
-    assert [item["title"] for item in news] == ["平安银行发布年报"]
+    assert [item["title"] for item in news] == ["Ping An Bank releases annual report"]
 
 
 def test_company_aliases_expand_full_width_share_class_suffix():
     from core.tools.implementations.news import stock_news as module
 
-    aliases = module._get_company_aliases("万科Ａ")
+    aliases = module._get_company_aliases("Vanke Ａ")
 
-    assert "万科Ａ" in aliases
-    assert "万科A" in aliases
-    assert "万科" in aliases
+    assert "Vanke Ａ" in aliases
+    assert "Vanke A" in aliases
+    assert "Vanke" in aliases
 
 
 def test_fetch_tushare_news_live_scans_full_feed_for_extended_alias_matches(monkeypatch):
@@ -200,8 +200,8 @@ def test_fetch_tushare_news_live_scans_full_feed_for_extended_alias_matches(monk
         [
             {
                 "datetime": "2026-04-12 09:00:00",
-                "title": f"无关市场快讯 {index}",
-                "content": "与目标公司无关。",
+                "title": f"Unrelated market news {index}",
+                "content": "It has nothing to do with the target company.",
                 "channels": "market",
             }
             for index in range(500)
@@ -209,8 +209,8 @@ def test_fetch_tushare_news_live_scans_full_feed_for_extended_alias_matches(monk
         + [
             {
                 "datetime": "2026-04-12 18:00:00",
-                "title": "王石发文辟谣被抓：一切安好，造谣者交给法律",
-                "content": "4月12日，网传万科创始人王石被抓消息引发网友热议。傍晚，王石发文辟谣。",
+                "title": "Wang Shi issued an article to refute the rumors and was arrested: Everything is fine, the rumormongers will be handed over to the law",
+                "content": "4 On March 12, news spread online that Vanke founder Wang Shi had been arrested, sparking heated discussions among netizens. In the evening, Wang Shi issued an article to refute the rumors.",
                 "channels": "company",
             }
         ]
@@ -235,7 +235,7 @@ def test_fetch_tushare_news_live_scans_full_feed_for_extended_alias_matches(monk
                         "summary": str(row.get("content", ""))[:200],
                         "content": str(row.get("content", "")),
                         "publish_time": datetime.fromisoformat(str(row.get("datetime"))),
-                        "source": "华尔街见闻",
+                        "source": "Wall Street Insights",
                         "category": "other",
                         "importance": "medium",
                         "data_source": "tushare",
@@ -248,13 +248,13 @@ def test_fetch_tushare_news_live_scans_full_feed_for_extended_alias_matches(monk
 
     news = module._fetch_tushare_news_live(
         symbol="000002",
-        company_name="万科Ａ",
+        company_name="Vanke Ａ",
         start_date=datetime(2026, 4, 7, 0, 0),
         end_date=datetime(2026, 4, 13, 23, 59, 59),
         limit=20,
     )
 
-    assert [item["title"] for item in news] == ["王石发文辟谣被抓：一切安好，造谣者交给法律"]
+    assert [item["title"] for item in news] == ["Wang Shi issued an article to refute the rumors and was arrested: Everything is fine, the rumormongers will be handed over to the law"]
 
 
 def test_relevance_ranking_prefers_direct_company_event_over_macro_mention():
@@ -263,30 +263,30 @@ def test_relevance_ranking_prefers_direct_company_event_over_macro_mention():
     ranked_news = module._rank_a_share_news_items(
         [
             {
-                "title": "下周资本市场大事提醒：国家统计局将公布一系列重磅数据 宁德时代、贵州茅台等发布财报",
-                "summary": "【下周资本市场大事提醒：国家统计局将公布一系列重磅数据 宁德时代、贵州茅台等发布财报】 1、4月16日，国家统计局将发布一季度国民经济运行数据。",
+                "title": "Reminder of important events in the capital market next week: The National Bureau of Statistics will release a series of blockbuster data. CATL, Kweichow Moutai, etc. will release financial reports.",
+                "summary": " [Reminder of important events in the capital market next week: The National Bureau of Statistics will release a series of blockbuster data. Ningde Times, Kweichow Moutai, etc. will release financial reports] 1. On April 16, the National Bureau of Statistics will release first-quarter national economic performance data.",
                 "publish_time": datetime(2026, 4, 12, 22, 0),
-                "source": "财联社",
+                "source": "Financial Associated Press",
                 "category": "company_announcement",
                 "importance": "high",
                 "data_source": "tushare",
             },
             {
-                "title": "茅台非标产品代售落地：已有门店执行，首批代售产品已陆续发货",
-                "summary": "更直接的公司经营事件。",
+                "title": "Moutai s non-standard product sales have been implemented: stores have implemented it, and the first batch of products have been shipped.",
+                "summary": "More direct company business events.",
                 "publish_time": datetime(2026, 4, 8, 16, 30),
-                "source": "红星资本局",
+                "source": "Red Star Capital Bureau",
                 "category": "general",
                 "importance": "medium",
                 "data_source": "akshare",
             },
         ],
         symbol="600519",
-        company_name="贵州茅台",
+        company_name="Kweichow Moutai",
         limit=20,
     )
 
-    assert ranked_news[0]["title"] == "茅台非标产品代售落地：已有门店执行，首批代售产品已陆续发货"
+    assert ranked_news[0]["title"] == "Moutai s non-standard product sales have been implemented: stores have implemented it, and the first batch of products have been shipped."
     assert ranked_news[0]["relevance_score"] > ranked_news[1]["relevance_score"]
 
 
@@ -296,21 +296,21 @@ def test_relevance_ranking_keeps_body_only_clarification_news_above_zero():
     ranked_news = module._rank_a_share_news_items(
         [
             {
-                "title": "王石发文辟谣被抓：一切安好，造谣者交给法律",
-                "summary": "4月12日，网传万科创始人王石被抓消息引发网友热议。傍晚，王石发文辟谣。",
+                "title": "Wang Shi issued an article to refute the rumors and was arrested: Everything is fine, the rumormongers will be handed over to the law",
+                "summary": "4 On March 12, news spread online that Vanke founder Wang Shi had been arrested, sparking heated discussions among netizens. In the evening, Wang Shi issued an article to refute the rumors.",
                 "publish_time": datetime(2026, 4, 12, 18, 0),
-                "source": "华尔街见闻",
+                "source": "Wall Street Insights",
                 "category": "other",
                 "importance": "medium",
                 "data_source": "tushare",
             }
         ],
         symbol="000002",
-        company_name="万科Ａ",
+        company_name="Vanke Ａ",
         limit=20,
     )
 
-    assert [item["title"] for item in ranked_news] == ["王石发文辟谣被抓：一切安好，造谣者交给法律"]
+    assert [item["title"] for item in ranked_news] == ["Wang Shi issued an article to refute the rumors and was arrested: Everything is fine, the rumormongers will be handed over to the law"]
     assert ranked_news[0]["relevance_score"] > 0
 
 
@@ -320,30 +320,30 @@ def test_relevance_ranking_prefers_title_company_anchor_over_body_only_mention()
     ranked_news = module._rank_a_share_news_items(
         [
             {
-                "title": "股票回购：两年万亿强信心 千亿注销增回报",
-                "summary": "行业龙头积极开展回购注销。2026年4月2日，贵州茅台（600519.SH）披露《关于回购股份实施进展的公告》显示，截至",
+                "title": "Stock repurchase: strong confidence in two years of trillions, cancellation of hundreds of billions to increase returns",
+                "summary": "Industry leaders actively carry out buybacks and cancellations. On April 2, 2026, Kweichow Moutai (600519.SH) disclosed the Announcement on the Implementation Progress of Share Repurchases , which showed that as of",
                 "publish_time": datetime(2026, 4, 11, 2, 15),
-                "source": "中国经营网",
+                "source": "China Business Network",
                 "category": "company_announcement",
                 "importance": "high",
                 "data_source": "akshare",
             },
             {
-                "title": "茅台非标产品代售落地：已有门店执行，首批代售产品已陆续发货",
-                "summary": "更直接的公司经营事件。",
+                "title": "Moutai s non-standard product sales have been implemented: stores have implemented it, and the first batch of products have been shipped.",
+                "summary": "More direct company business events.",
                 "publish_time": datetime(2026, 4, 8, 16, 30),
-                "source": "红星资本局",
+                "source": "Red Star Capital Bureau",
                 "category": "general",
                 "importance": "medium",
                 "data_source": "akshare",
             },
         ],
         symbol="600519",
-        company_name="贵州茅台",
+        company_name="Kweichow Moutai",
         limit=20,
     )
 
-    assert ranked_news[0]["title"] == "茅台非标产品代售落地：已有门店执行，首批代售产品已陆续发货"
+    assert ranked_news[0]["title"] == "Moutai s non-standard product sales have been implemented: stores have implemented it, and the first batch of products have been shipped."
     assert ranked_news[0]["relevance_score"] > ranked_news[1]["relevance_score"]
 
 
@@ -362,17 +362,17 @@ def test_a_share_tool_uses_akshare_live_even_when_tushare_is_configured(monkeypa
             "used_sources": [],
         },
     )
-    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "贵州茅台")
+    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "Kweichow Moutai")
     tushare_calls = {"count": 0}
 
     def fake_fetch_tushare(*args, **kwargs):
         tushare_calls["count"] += 1
         return [
             {
-                "title": "下周资本市场大事提醒：国家统计局将公布一系列重磅数据 宁德时代、贵州茅台等发布财报",
-                "summary": "【下周资本市场大事提醒：国家统计局将公布一系列重磅数据 宁德时代、贵州茅台等发布财报】 1、4月16日，国家统计局将发布一季度国民经济运行数据。",
+                "title": "Reminder of important events in the capital market next week: The National Bureau of Statistics will release a series of blockbuster data. CATL, Kweichow Moutai, etc. will release financial reports.",
+                "summary": " [Reminder of important events in the capital market next week: The National Bureau of Statistics will release a series of blockbuster data. Ningde Times, Kweichow Moutai, etc. will release financial reports] 1. On April 16, the National Bureau of Statistics will release first-quarter national economic performance data.",
                 "publish_time": datetime(2026, 4, 12, 22, 0),
-                "source": "财联社",
+                "source": "Financial Associated Press",
                 "category": "company_announcement",
                 "importance": "high",
                 "data_source": "tushare",
@@ -385,10 +385,10 @@ def test_a_share_tool_uses_akshare_live_even_when_tushare_is_configured(monkeypa
         "_fetch_akshare_news_live",
         lambda symbol, start_date, end_date, limit=20: [
             {
-                "title": "茅台非标产品代售落地：已有门店执行，首批代售产品已陆续发货",
-                "summary": "更直接的公司经营事件。",
+                "title": "Moutai s non-standard product sales have been implemented: stores have implemented it, and the first batch of products have been shipped.",
+                "summary": "More direct company business events.",
                 "publish_time": datetime(2026, 4, 8, 16, 30),
-                "source": "红星资本局",
+                "source": "Red Star Capital Bureau",
                 "category": "general",
                 "importance": "medium",
                 "data_source": "akshare",
@@ -398,9 +398,9 @@ def test_a_share_tool_uses_akshare_live_even_when_tushare_is_configured(monkeypa
 
     result = module.get_stock_news_unified.invoke({"ticker": "600519", "curr_date": "2026-04-13"})
 
-    assert "## AKShare东方财富新闻（实时）" in result
-    assert "茅台非标产品代售落地" in result
-    assert "## Tushare多源新闻（实时）" not in result
+    assert "## AKShare Oriental Fortune News (real time)" in result
+    assert "Moutai s non-standard product sales agency launched" in result
+    assert "## Tushare Multi-source news (real time)" not in result
     assert tushare_calls["count"] == 0
 
 
@@ -419,7 +419,7 @@ def test_a_share_tool_logs_only_akshare_live_selection(monkeypatch, caplog):
             "used_sources": [],
         },
     )
-    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "万科A")
+    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "Vanke A")
     tushare_calls = {"count": 0}
 
     def fake_fetch_tushare(*args, **kwargs):
@@ -432,10 +432,10 @@ def test_a_share_tool_logs_only_akshare_live_selection(monkeypatch, caplog):
         "_fetch_akshare_news_live",
         lambda symbol, start_date, end_date, limit=20: [
             {
-                "title": "万科A披露一季度销售数据",
-                "summary": "销售与回款情况更新。",
+                "title": "Vanke A discloses first quarter sales data",
+                "summary": "Sales and payment collection updates.",
                 "publish_time": datetime(2026, 4, 12, 10, 0),
-                "source": "东方财富",
+                "source": "Oriental Fortune",
                 "category": "company_announcement",
                 "importance": "high",
                 "data_source": "akshare",
@@ -446,9 +446,9 @@ def test_a_share_tool_logs_only_akshare_live_selection(monkeypatch, caplog):
     with caplog.at_level(logging.INFO):
         result = module.get_stock_news_unified.invoke({"ticker": "000002", "curr_date": "2026-04-13"})
 
-    assert "开始尝试实时新闻源: akshare" in caplog.text
-    assert "## AKShare东方财富新闻（实时）" in result
-    assert "开始尝试实时新闻源: tushare" not in caplog.text
+    assert "Start trying real-time news feeds: akshare" in caplog.text
+    assert "## AKShare Oriental Fortune News (real time)" in result
+    assert "Start trying real-time news feeds: tushare" not in caplog.text
     assert tushare_calls["count"] == 0
 
 
@@ -464,15 +464,15 @@ def test_database_news_output_includes_structured_fields(monkeypatch):
         lambda symbol, start_date, end_date, limit=20: {
             "news": [
                 {
-                    "title": "平安银行披露季度报告",
-                    "summary": "营收和利润表现平稳。",
+                    "title": "Ping An Bank discloses quarterly report",
+                    "summary": "Revenue and profit performance were stable.",
                     "publish_time": datetime(2026, 4, 11, 18, 0),
                     "url": "https://example.com/news/1",
-                    "source": "上证公告",
+                    "source": "Shanghai Stock Exchange Announcement",
                     "category": "company_announcement",
                     "sentiment": "positive",
                     "importance": "high",
-                    "keywords": ["季报", "营收"],
+                    "keywords": ["quarterly report", "Revenue"],
                     "data_source": "tushare",
                 }
             ],
@@ -483,13 +483,13 @@ def test_database_news_output_includes_structured_fields(monkeypatch):
 
     result = module.get_stock_news_unified.invoke({"ticker": "000001", "curr_date": "2026-04-13"})
 
-    assert "## 数据库缓存" in result
-    assert "**说明**: 命中来源: Tushare（数据库缓存）" in result
-    assert "摘要: 营收和利润表现平稳。" in result
-    assert "类别: 公司公告 | 情绪: 偏积极 | 重要性: 高" in result
-    assert "关键词: 季报, 营收" in result
-    assert "当前分析优先级: local > akshare" in result
-    assert "Tushare 新闻源当前仅用于同步入库，不参与实时新闻分析调用。" in result
+    assert "## Database cache" in result
+    assert "**Description**: hit source: Tushare (database cache)" in result
+    assert "Summary: Revenue and profit performance were stable." in result
+    assert "Category: company announcement | emotions: Positive side | importance: high" in result
+    assert "keywords: quarterly report, Revenue" in result
+    assert "Current analysis priority: local > akshare" in result
+    assert "Tushare The news source is currently only used for synchronous storage and does not participate in real-time news analysis calls." in result
 
 
 def test_headlines_tool_deduplicates_titles_and_merges_sources(monkeypatch):
@@ -507,34 +507,34 @@ def test_headlines_tool_deduplicates_titles_and_merges_sources(monkeypatch):
             "used_sources": [],
         },
     )
-    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "贵州茅台")
+    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "Kweichow Moutai")
     monkeypatch.setattr(
         module,
         "_fetch_akshare_news_live",
         lambda symbol, start_date, end_date, limit=20: [
             {
-                "title": "茅台非标产品代售落地：已有门店执行，首批代售产品已陆续发货",
-                "summary": "财联社版本摘要。",
+                "title": "Moutai s non-standard product sales have been implemented: stores have implemented it, and the first batch of products have been shipped.",
+                "summary": "Summary of the CFA version.",
                 "publish_time": datetime(2026, 4, 8, 16, 32),
-                "source": "财联社",
+                "source": "Financial Associated Press",
                 "category": "company_announcement",
                 "importance": "high",
                 "data_source": "akshare",
             },
             {
-                "title": "茅台非标产品代售落地：已有门店执行，首批代售产品已陆续发货",
-                "summary": "AKShare版本摘要。",
+                "title": "Moutai s non-standard product sales have been implemented: stores have implemented it, and the first batch of products have been shipped.",
+                "summary": "AKShare Version summary.",
                 "publish_time": datetime(2026, 4, 8, 16, 30),
-                "source": "红星资本局",
+                "source": "Red Star Capital Bureau",
                 "category": "general",
                 "importance": "medium",
                 "data_source": "akshare",
             },
             {
-                "title": "股票回购：两年万亿强信心 千亿注销增回报",
-                "summary": "行业龙头积极开展回购注销。",
+                "title": "Stock repurchase: strong confidence in two years of trillions, cancellation of hundreds of billions to increase returns",
+                "summary": "Industry leaders actively carry out buybacks and cancellations.",
                 "publish_time": datetime(2026, 4, 11, 2, 15),
-                "source": "中国经营网",
+                "source": "China Business Network",
                 "category": "company_announcement",
                 "importance": "high",
                 "data_source": "akshare",
@@ -546,9 +546,9 @@ def test_headlines_tool_deduplicates_titles_and_merges_sources(monkeypatch):
         {"ticker": "600519", "curr_date": "2026-04-13", "limit": 10}
     )
 
-    assert result.count("茅台非标产品代售落地：已有门店执行，首批代售产品已陆续发货") == 1
-    assert "来源: 财联社 / 红星资本局" in result
-    assert "去重合并: 已合并 2 条同标题新闻" in result
+    assert result.count("Moutai s non-standard product sales have been implemented: stores have implemented it, and the first batch of products have been shipped.") == 1
+    assert "Source: Financial Associated Press / Red Star Capital Bureau" in result
+    assert "Remove duplicates and merge: 2 news items with the same title have been merged" in result
     assert "news_id:" in result
     assert "get_stock_news_details_unified" in result
 
@@ -568,17 +568,17 @@ def test_details_tool_returns_selected_news_by_news_id(monkeypatch):
             "used_sources": [],
         },
     )
-    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "贵州茅台")
+    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "Kweichow Moutai")
     monkeypatch.setattr(
         module,
         "_fetch_akshare_news_live",
         lambda symbol, start_date, end_date, limit=20: [
             {
-                "title": "茅台非标产品代售落地：已有门店执行，首批代售产品已陆续发货",
-                "summary": "更直接的公司经营事件。",
-                "content": "3月贵州茅台向经销商征求合作意向，首批代售产品已陆续发货。",
+                "title": "Moutai s non-standard product sales have been implemented: stores have implemented it, and the first batch of products have been shipped.",
+                "summary": "More direct company business events.",
+                "content": "3 In May, Kweichow Moutai solicited cooperation intentions from dealers, and the first batch of consignment products have been shipped.",
                 "publish_time": datetime(2026, 4, 8, 16, 30),
-                "source": "红星资本局",
+                "source": "Red Star Capital Bureau",
                 "category": "general",
                 "importance": "medium",
                 "data_source": "akshare",
@@ -595,9 +595,9 @@ def test_details_tool_returns_selected_news_by_news_id(monkeypatch):
     )
 
     assert f"[news_id: {news_id}]" in result
-    assert "茅台非标产品代售落地" in result
-    assert "正文要点: 3月贵州茅台向经销商征求合作意向" in result
-    assert "链接: https://example.com/news/maotai-detail" in result
+    assert "Moutai s non-standard product sales agency launched" in result
+    assert "Main points of the text: 3 Kweichow Moutai solicits cooperation intentions from dealers in January" in result
+    assert "link: https://example.com/news/maotai-detail" in result
 
 
 def test_headlines_tool_deprioritizes_macro_reminder_detail_recommendation(monkeypatch):
@@ -615,16 +615,16 @@ def test_headlines_tool_deprioritizes_macro_reminder_detail_recommendation(monke
             "used_sources": [],
         },
     )
-    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "贵州茅台")
+    monkeypatch.setattr(module, "_get_company_name", lambda symbol: "Kweichow Moutai")
     monkeypatch.setattr(
         module,
         "_fetch_akshare_news_live",
         lambda symbol, start_date, end_date, limit=20: [
             {
-                "title": "下周资本市场大事提醒：国家统计局将公布一系列重磅数据 宁德时代、贵州茅台等发布财报",
-                "summary": "宏观与多家公司日历提醒。",
+                "title": "Reminder of important events in the capital market next week: The National Bureau of Statistics will release a series of blockbuster data. CATL, Kweichow Moutai, etc. will release financial reports.",
+                "summary": "Macro calendar reminders with multiple companies.",
                 "publish_time": datetime(2026, 4, 12, 22, 0),
-                "source": "财联社",
+                "source": "Financial Associated Press",
                 "category": "company_announcement",
                 "importance": "high",
                 "data_source": "akshare",
@@ -636,4 +636,4 @@ def test_headlines_tool_deprioritizes_macro_reminder_detail_recommendation(monke
         {"ticker": "600519", "curr_date": "2026-04-13", "limit": 10}
     )
 
-    assert "明细建议: 可暂不展开（更像宏观提醒或多公司枚举新闻）" in result
+    assert "Detailed suggestions: Can not be expanded temporarily (more like macro reminder or multi-company enumeration news)" in result

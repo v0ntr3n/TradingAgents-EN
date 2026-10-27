@@ -1,4 +1,4 @@
-"""允许通过 python -m migrations status/run/history 调用"""
+"""Allow calls via python -m migrations status/run/history"""
 from migrations.cli import main
 
 main()

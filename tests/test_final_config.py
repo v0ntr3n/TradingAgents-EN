@@ -1,93 +1,93 @@
 #!/usr/bin/env python3
 """
-测试最终的.env配置系统
-验证启用开关是否正常工作
+Test the final .env configuration system
+Verify that the enable switch is working properly
 """
 
 import os
 
 def test_final_config():
-    """测试最终配置"""
-    print("🔧 测试最终的.env配置系统")
+    """Test final configuration"""
+    print("🔧 Test the final .env configuration system")
     print("=" * 40)
     
-    # 1. 检查.env文件
-    print("\n📁 检查.env文件...")
+    # 1. Check .env file
+    print("\n📁 Check .env file...")
     if os.path.exists('.env'):
-        print("✅ .env文件存在")
+        print("✅ .env File exists")
     else:
-        print("❌ .env文件不存在")
+        print("❌ .env File does not exist")
         return False
     
-    # 2. 读取启用开关
-    print("\n🔧 检查启用开关...")
+    # 2. Read enable switch
+    print("\n🔧 Check enable switch...")
     mongodb_enabled = os.getenv("MONGODB_ENABLED", "false").lower() == "true"
     redis_enabled = os.getenv("REDIS_ENABLED", "false").lower() == "true"
     
     print(f"MONGODB_ENABLED: {os.getenv('MONGODB_ENABLED', 'false')} -> {mongodb_enabled}")
     print(f"REDIS_ENABLED: {os.getenv('REDIS_ENABLED', 'false')} -> {redis_enabled}")
     
-    # 3. 显示配置信息
-    print("\n📊 数据库配置:")
+    # 3. Show configuration information
+    print("\n📊 Database configuration:")
     
     if mongodb_enabled:
-        print("MongoDB: ✅ 启用")
+        print("MongoDB: ✅ enable")
         print(f"  Host: {os.getenv('MONGODB_HOST', 'localhost')}")
         print(f"  Port: {os.getenv('MONGODB_PORT', '27017')}")
         print(f"  Database: {os.getenv('MONGODB_DATABASE', 'tradingagents')}")
     else:
-        print("MongoDB: ❌ 禁用")
+        print("MongoDB: ❌ Disable")
     
     if redis_enabled:
-        print("Redis: ✅ 启用")
+        print("Redis: ✅ enable")
         print(f"  Host: {os.getenv('REDIS_HOST', 'localhost')}")
         print(f"  Port: {os.getenv('REDIS_PORT', '6379')}")
         print(f"  DB: {os.getenv('REDIS_DB', '0')}")
     else:
-        print("Redis: ❌ 禁用")
+        print("Redis: ❌ Disable")
     
-    # 4. 测试数据库管理器
-    print("\n🔧 测试数据库管理器...")
+    # 4. Test database manager
+    print("\n🔧 Test database manager...")
     try:
         from tradingagents.config.database_manager import get_database_manager
         
         db_manager = get_database_manager()
-        print("✅ 数据库管理器创建成功")
+        print("✅ Database manager created successfully")
         
-        # 获取状态报告
+        # Get status report
         status = db_manager.get_status_report()
         
-        print("📊 检测结果:")
-        print(f"  数据库可用: {'✅ 是' if status['database_available'] else '❌ 否'}")
+        print("📊 Test results:")
+        print(f"  Database available: {'✅ Yes' if status['database_available'] else '❌ No'}")
         
         mongodb_info = status['mongodb']
-        print(f"  MongoDB: {'✅ 可用' if mongodb_info['available'] else '❌ 不可用'}")
+        print(f"  MongoDB: {'✅ Available' if mongodb_info['available'] else '❌ Not available'}")
         
         redis_info = status['redis']
-        print(f"  Redis: {'✅ 可用' if redis_info['available'] else '❌ 不可用'}")
+        print(f"  Redis: {'✅ Available' if redis_info['available'] else '❌ Not available'}")
         
-        print(f"  缓存后端: {status['cache_backend']}")
+        print(f"  Caching backend: {status['cache_backend']}")
         
     except Exception as e:
-        print(f"❌ 数据库管理器测试失败: {e}")
+        print(f"❌ Database manager test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
     
-    # 5. 测试缓存系统
-    print("\n💾 测试缓存系统...")
+    # 5. Test caching system
+    print("\n💾 Test caching system...")
     try:
         from tradingagents.dataflows.integrated_cache import get_cache
         
         cache = get_cache()
-        print("✅ 缓存系统创建成功")
+        print("✅ Cache system created successfully")
         
-        # 获取性能模式
+        # Get performance mode
         performance_mode = cache.get_performance_mode()
-        print(f"  性能模式: {performance_mode}")
+        print(f"  Performance mode: {performance_mode}")
         
-        # 测试基本功能
-        test_data = "测试数据 - 最终配置"
+        # Test basic functionality
+        test_data = "Test data - final configuration"
         cache_key = cache.save_stock_data(
             symbol="TEST_FINAL",
             data=test_data,
@@ -95,57 +95,57 @@ def test_final_config():
             end_date="2024-12-31",
             data_source="final_test"
         )
-        print(f"✅ 数据保存成功: {cache_key}")
+        print(f"✅ Data saved successfully: {cache_key}")
         
-        # 加载数据
+        # Load data
         loaded_data = cache.load_stock_data(cache_key)
         if loaded_data == test_data:
-            print("✅ 数据加载成功")
+            print("✅ Data loaded successfully")
         else:
-            print("❌ 数据加载失败")
+            print("❌ Data loading failed")
             return False
         
     except Exception as e:
-        print(f"❌ 缓存系统测试失败: {e}")
+        print(f"❌ Cache system test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
     
-    # 6. 总结
-    print("\n📊 配置总结:")
-    print("✅ 使用.env文件进行配置")
-    print("✅ 通过MONGODB_ENABLED和REDIS_ENABLED控制启用状态")
-    print("✅ 默认情况下数据库都是禁用的")
-    print("✅ 系统使用文件缓存，性能良好")
-    print("✅ 可以通过修改.env文件启用数据库")
+    # 6. Summary
+    print("\n📊 Configuration summary:")
+    print("✅ Configure using .env files")
+    print("✅ Control the enablement status through MONGODB_ENABLED and REDIS_ENABLED")
+    print("✅ Databases are disabled by default")
+    print("✅ The system uses file caching and has good performance")
+    print("✅ The database can be enabled by modifying the .env file")
     
-    print("\n💡 使用说明:")
-    print("1. 默认配置：MONGODB_ENABLED=false, REDIS_ENABLED=false")
-    print("2. 启用MongoDB：将MONGODB_ENABLED设置为true")
-    print("3. 启用Redis：将REDIS_ENABLED设置为true")
-    print("4. 系统会自动检测并使用启用的数据库")
-    print("5. 如果数据库不可用，自动降级到文件缓存")
+    print("\n💡 Instructions for use:")
+    print("1. Default configuration:MONGODB_ENABLED=false, REDIS_ENABLED=false")
+    print("2. Enable MongoDB: Set MONGODB_ENABLED to true")
+    print("3. Enable Redis: Set REDIS_ENABLED to true")
+    print("4. The system automatically detects and uses enabled databases")
+    print("5. Automatically downgrade to file cache if database becomes unavailable")
     
     return True
 
 def main():
-    """主函数"""
+    """main function"""
     try:
         success = test_final_config()
         
         if success:
-            print("\n🎉 最终配置测试完成!")
-            print("\n🎯 系统特性:")
-            print("✅ 简化配置：只需要.env文件")
-            print("✅ 明确控制：通过启用开关控制数据库")
-            print("✅ 默认安全：默认不启用数据库")
-            print("✅ 智能降级：数据库不可用时自动使用文件缓存")
-            print("✅ 性能优化：有数据库时自动使用高性能模式")
+            print("\n🎉 Final configuration test completed!")
+            print("\n🎯 System characteristics:")
+            print("✅ Simplified configuration: only .env file required")
+            print("✅ Explicit control: control the database by enabling switches")
+            print("✅ Default security: database is not enabled by default")
+            print("✅ Smart downgrade: automatically uses file cache when database is unavailable")
+            print("✅ Performance optimization: automatically use high-performance mode when there is a database")
         
         return success
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         import traceback
         traceback.print_exc()
         return False

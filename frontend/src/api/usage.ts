@@ -1,5 +1,5 @@
 /**
- * 使用统计 API
+ * usage statistics API
  */
 
 import request, { ApiClient } from './request'
@@ -30,7 +30,7 @@ export interface UsageStatistics {
 }
 
 /**
- * 获取使用记录
+ * Get usage records
  */
 export function getUsageRecords(params?: {
   provider?: string
@@ -46,7 +46,7 @@ export function getUsageRecords(params?: {
 }
 
 /**
- * 获取使用统计
+ * Get usage statistics
  */
 export function getUsageStatistics(params?: {
   days?: number
@@ -60,7 +60,7 @@ export function getUsageStatistics(params?: {
 }
 
 /**
- * 按供应商统计成本
+ * Cost statistics by supplier
  */
 export function getCostByProvider(days: number = 7) {
   return request({
@@ -71,7 +71,7 @@ export function getCostByProvider(days: number = 7) {
 }
 
 /**
- * 按模型统计成本
+ * Cost statistics by model
  */
 export function getCostByModel(days: number = 7) {
   return request({
@@ -82,7 +82,7 @@ export function getCostByModel(days: number = 7) {
 }
 
 /**
- * 每日成本统计
+ * Daily cost statistics
  */
 export function getDailyCost(days: number = 7) {
   return request({
@@ -93,7 +93,7 @@ export function getDailyCost(days: number = 7) {
 }
 
 /**
- * 删除旧记录
+ * Delete old records
  */
 export function deleteOldRecords(days: number = 90) {
   return request({

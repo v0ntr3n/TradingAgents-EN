@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-性能对比测试：验证优化前后基本面分析数据获取的性能差异
-对比数据传输量、处理时间等关键指标
+Performance comparison test: Verify the performance difference in fundamental analysis data acquisition before and after optimization
+Compare key indicators such as data transfer volume and processing time
 """
 
 import sys
@@ -13,42 +13,42 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from datetime import datetime, timedelta
 
 def simulate_old_strategy():
-    """模拟优化前的数据获取策略（7-30天历史数据）"""
-    print("🔄 模拟优化前策略：获取7-30天历史数据...")
+    """Data acquisition strategy before simulation optimization (7-30 days of historical data)"""
+    print("🔄 Simulate pre-optimization strategy: obtain 7-30 days of historical data...")
     
     ticker = "000001"
     results = {}
     
-    # 模拟不同数据深度的历史数据获取
+    # Simulate historical data acquisition with different data depths
     test_cases = [
-        ("basic", 7, "基础分析 - 7天数据"),
-        ("standard", 14, "标准分析 - 14天数据"), 
-        ("full", 21, "完整分析 - 21天数据"),
-        ("detailed", 28, "详细分析 - 28天数据"),
-        ("comprehensive", 30, "全面分析 - 30天数据")
+        ("basic", 7, "Fundamental Analysis - 7 days of data"),
+        ("standard", 14, "Standard Analysis - 14 days of data"), 
+        ("full", 21, "Full analysis - 21 days of data"),
+        ("detailed", 28, "Detailed analysis - 28 days of data"),
+        ("comprehensive", 30, "Comprehensive analysis – 30 days of data")
     ]
     
     for depth_name, days_back, description in test_cases:
         print(f"\n📊 {description}")
         
-        # 计算日期范围
+        # Calculate date range
         end_date = datetime.now().strftime('%Y-%m-%d')
         start_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
         
         start_time = time.time()
         
         try:
-            # 获取历史价格数据
+            # Get historical price data
             from tradingagents.dataflows.interface import get_china_stock_data_unified
             stock_data = get_china_stock_data_unified(ticker, start_date, end_date)
             
-            # 获取基本面数据
+            # Get fundamental data
             from tradingagents.dataflows.optimized_china_data import OptimizedChinaDataProvider
             analyzer = OptimizedChinaDataProvider()
             fundamentals_data = analyzer._generate_fundamentals_report(ticker, stock_data)
             
-            # 合并数据
-            combined_data = f"## A股价格数据\n{stock_data}\n\n## A股基本面数据\n{fundamentals_data}"
+            # Merge data
+            combined_data = f"## A stock price data\n{stock_data}\n\n## A Stock fundamental data\n{fundamentals_data}"
             
             end_time = time.time()
             processing_time = end_time - start_time
@@ -63,8 +63,8 @@ def simulate_old_strategy():
                 'description': description
             }
             
-            print(f"   ✅ 数据长度: {len(combined_data):,} 字符")
-            print(f"   ⏱️ 处理时间: {processing_time:.2f}秒")
+            print(f"   ✅ Data length: {len(combined_data):,} character")
+            print(f"   ⏱️ processing time: {processing_time:.2f}seconds")
             
         except Exception as e:
             results[depth_name] = {
@@ -77,20 +77,20 @@ def simulate_old_strategy():
                 'description': description,
                 'error': str(e)
             }
-            print(f"   ❌ 获取失败: {e}")
+            print(f"   ❌ Failed to obtain: {e}")
     
     return results
 
 def test_new_strategy():
-    """测试优化后的数据获取策略（只获取最近2天价格+基本面数据）"""
-    print("\n🚀 测试优化后策略：只获取最近2天价格+基本面数据...")
+    """Test the optimized data acquisition strategy (only obtain the prices of the last 2 days+fundamental data)"""
+    print("\n🚀 Test the optimized strategy: only get the prices of the last 2 days+fundamental data...")
     
     ticker = "000001"
     
     start_time = time.time()
     
     try:
-        # 1. 获取最新股价信息（只需要最近1-2天的数据）
+        # 1. Get the latest stock price information (only the last 1-2 days of data are required)
         curr_date = datetime.now().strftime('%Y-%m-%d')
         recent_end_date = curr_date
         recent_start_date = (datetime.strptime(curr_date, '%Y-%m-%d') - timedelta(days=2)).strftime('%Y-%m-%d')
@@ -98,13 +98,13 @@ def test_new_strategy():
         from tradingagents.dataflows.interface import get_china_stock_data_unified
         current_price_data = get_china_stock_data_unified(ticker, recent_start_date, recent_end_date)
         
-        # 2. 获取基本面财务数据
+        # 2. Get fundamental financial data
         from tradingagents.dataflows.optimized_china_data import OptimizedChinaDataProvider
         analyzer = OptimizedChinaDataProvider()
         fundamentals_data = analyzer._generate_fundamentals_report(ticker, current_price_data)
         
-        # 3. 合并结果
-        combined_data = f"## A股当前价格信息\n{current_price_data}\n\n## A股基本面财务数据\n{fundamentals_data}"
+        # 3. Merge results
+        combined_data = f"## A Stock current price information\n{current_price_data}\n\n## A Stock Fundamentals Financial Data\n{fundamentals_data}"
         
         end_time = time.time()
         processing_time = end_time - start_time
@@ -116,11 +116,11 @@ def test_new_strategy():
             'fundamentals_length': len(fundamentals_data) if fundamentals_data else 0,
             'processing_time': processing_time,
             'days_requested': 2,
-            'description': "优化策略 - 2天价格数据+基本面数据"
+            'description': "Optimization Strategy – 2 Days Price Data+fundamental data"
         }
         
-        print(f"   ✅ 数据长度: {len(combined_data):,} 字符")
-        print(f"   ⏱️ 处理时间: {processing_time:.2f}秒")
+        print(f"   ✅ Data length: {len(combined_data):,} character")
+        print(f"   ⏱️ processing time: {processing_time:.2f}seconds")
         
         return result
         
@@ -132,62 +132,62 @@ def test_new_strategy():
             'fundamentals_length': 0,
             'processing_time': 0,
             'days_requested': 2,
-            'description': "优化策略 - 2天价格数据+基本面数据",
+            'description': "Optimization Strategy – 2 Days Price Data+fundamental data",
             'error': str(e)
         }
 
 def compare_performance():
-    """对比优化前后的性能差异"""
+    """Compare the performance difference before and after optimization"""
     print("=" * 80)
-    print("📊 基本面分析数据获取策略性能对比测试")
+    print("📊 Fundamental analysis data acquisition strategy performance comparison test")
     print("=" * 80)
     
-    # 测试优化前策略
+    # Test pre-optimization strategies
     old_results = simulate_old_strategy()
     
-    # 测试优化后策略
+    # Test the optimized strategy
     new_result = test_new_strategy()
     
-    # 性能对比分析
+    # Performance comparison analysis
     print("\n" + "=" * 80)
-    print("📈 性能对比分析")
+    print("📈 Performance comparison analysis")
     print("=" * 80)
     
     if new_result['success']:
-        print(f"\n🚀 优化后策略性能:")
-        print(f"   - 数据长度: {new_result['data_length']:,} 字符")
-        print(f"   - 处理时间: {new_result['processing_time']:.2f}秒")
-        print(f"   - 请求天数: {new_result['days_requested']}天")
+        print(f"\n🚀 Optimized strategy performance:")
+        print(f"   - Data length: {new_result['data_length']:,} character")
+        print(f"   - processing time: {new_result['processing_time']:.2f}seconds")
+        print(f"   - Request days: {new_result['days_requested']}day")
         
-        print(f"\n📊 与优化前各级别对比:")
+        print(f"\n📊 Comparison with each level before optimization:")
         
         successful_old = {k: v for k, v in old_results.items() if v['success']}
         
         if successful_old:
-            # 数据量对比
+            # Data volume comparison
             old_data_lengths = [v['data_length'] for v in successful_old.values()]
             avg_old_length = sum(old_data_lengths) / len(old_data_lengths)
             max_old_length = max(old_data_lengths)
             min_old_length = min(old_data_lengths)
             
-            print(f"\n📏 数据传输量对比:")
-            print(f"   - 优化前平均: {avg_old_length:,.0f} 字符")
-            print(f"   - 优化前范围: {min_old_length:,} - {max_old_length:,} 字符")
-            print(f"   - 优化后: {new_result['data_length']:,} 字符")
-            print(f"   - 数据减少: {(avg_old_length - new_result['data_length'])/avg_old_length*100:.1f}%")
+            print(f"\n📏 Data transfer volume comparison:")
+            print(f"   - Average before optimization: {avg_old_length:,.0f} character")
+            print(f"   - Range before optimization: {min_old_length:,} - {max_old_length:,} character")
+            print(f"   - After optimization: {new_result['data_length']:,} character")
+            print(f"   - data reduction: {(avg_old_length - new_result['data_length'])/avg_old_length*100:.1f}%")
             
-            # 处理时间对比
+            # Processing time comparison
             old_times = [v['processing_time'] for v in successful_old.values()]
             avg_old_time = sum(old_times) / len(old_times)
             
-            print(f"\n⏱️ 处理时间对比:")
-            print(f"   - 优化前平均: {avg_old_time:.2f}秒")
-            print(f"   - 优化后: {new_result['processing_time']:.2f}秒")
-            print(f"   - 时间节省: {(avg_old_time - new_result['processing_time'])/avg_old_time*100:.1f}%")
+            print(f"\n⏱️ Processing time comparison:")
+            print(f"   - Average before optimization: {avg_old_time:.2f}seconds")
+            print(f"   - After optimization: {new_result['processing_time']:.2f}seconds")
+            print(f"   - time saving: {(avg_old_time - new_result['processing_time'])/avg_old_time*100:.1f}%")
             
-            # 详细对比表
-            print(f"\n📋 详细对比表:")
-            print(f"{'策略':<25} | {'天数':<4} | {'数据量(字符)':<12} | {'时间(秒)':<8} | {'状态'}")
+            # Detailed comparison table
+            print(f"\n📋 Detailed comparison table:")
+            print(f"{'Strategy':<25} | {'days':<4} | {'Data volume(character)':<12} | {'time(seconds)':<8} | {'Status'}")
             print("-" * 70)
             
             for depth, result in old_results.items():
@@ -199,20 +199,20 @@ def compare_performance():
             print("-" * 70)
             data_len = f"{new_result['data_length']:,}"
             proc_time = f"{new_result['processing_time']:.2f}"
-            print(f"{'优化后策略':<25} | {new_result['days_requested']:<4} | {data_len:<12} | {proc_time:<8} | ✅")
+            print(f"{'Optimized strategy':<25} | {new_result['days_requested']:<4} | {data_len:<12} | {proc_time:<8} | ✅")
             
-            # 优化效果总结
-            print(f"\n💡 优化效果总结:")
-            print(f"   ✅ 数据传输量平均减少 {(avg_old_length - new_result['data_length'])/avg_old_length*100:.1f}%")
-            print(f"   ✅ 处理时间平均节省 {(avg_old_time - new_result['processing_time'])/avg_old_time*100:.1f}%")
-            print(f"   ✅ 保持基本面分析所需的核心信息完整性")
-            print(f"   ✅ 提高了数据获取的针对性和效率")
-            print(f"   ✅ 减少了不必要的历史价格数据传输")
+            # Summary of optimization effects
+            print(f"\n💡 Summary of optimization effects:")
+            print(f"   ✅ Average reduction in data transfer volume {(avg_old_length - new_result['data_length'])/avg_old_length*100:.1f}%")
+            print(f"   ✅ Average processing time savings {(avg_old_time - new_result['processing_time'])/avg_old_time*100:.1f}%")
+            print(f"   ✅ Maintain the integrity of the core information required for fundamental analysis")
+            print(f"   ✅ Improved pertinence and efficiency of data acquisition")
+            print(f"   ✅ Reduces unnecessary transmission of historical price data")
         
     else:
-        print(f"❌ 优化后策略测试失败: {new_result.get('error', '未知错误')}")
+        print(f"❌ Strategy test failed after optimization: {new_result.get('error', 'unknown error')}")
     
-    print(f"\n🎉 性能对比测试完成！")
+    print(f"\n🎉 Performance comparison test completed!")
 
 if __name__ == "__main__":
     compare_performance()

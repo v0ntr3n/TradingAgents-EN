@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>股票详情 - 重新设计 v2</title>
+  <title>Stock Details - Redesigned v2</title>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -38,7 +38,7 @@
     }
     .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
-    /* ════════ 顶部：股票概览 + 操作入口 ════════ */
+    /* ════════ Top: Stock Overview + Operation entrance ════════ */
     .stock-header {
       display: grid;
       grid-template-columns: 1fr auto;
@@ -88,7 +88,7 @@
     .quick-metric-item .label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 2px; }
     .quick-metric-item .value { font-size: 14px; font-weight: 600; }
 
-    /* 操作入口 */
+    /* Operation entrance */
     .action-entry {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -128,7 +128,7 @@
     .action-btn .desc { font-size: 11px; color: var(--text-tertiary); }
     .action-btn-primary .desc { color: rgba(255,255,255,0.8); }
 
-    /* ════════ 智能助手主入口（紧接顶部，突出显示） ════════ */
+    /* ════════ Smart Assistant main entrance (immediately at the top, highlighted) ════════ */
     .assistant-hero {
       background: linear-gradient(135deg, #6b5ce7 0%, #8b5cf6 50%, #a855f7 100%);
       border-radius: 12px;
@@ -210,7 +210,7 @@
       transform: translateY(-1px);
     }
 
-    /* ════════ 研究路径 ════════ */
+    /* ════════ research path ════════ */
     .research-flow {
       background: var(--bg-card);
       border-radius: 12px;
@@ -292,7 +292,7 @@
     .flow-step-desc { font-size: 10px; color: var(--text-secondary); }
     .flow-arrow { flex-shrink: 0; width: 20px; text-align: center; color: var(--text-tertiary); font-size: 16px; }
 
-    /* ════════ 通用卡片 ════════ */
+    /* ════════ General card ════════ */
     .card {
       background: var(--bg-card);
       border-radius: 12px;
@@ -309,7 +309,7 @@
     }
     .card-body { padding: 16px 20px; }
 
-    /* ════════ K线 + 指标 ════════ */
+    /* ════════ K line + indicator ════════ */
     .main-grid {
       display: grid;
       grid-template-columns: 2fr 1fr;
@@ -336,7 +336,7 @@
     .period-tab.active { background: var(--primary); color: #fff; }
     .period-tab:not(.active):hover { background: var(--primary-bg); color: var(--primary); }
 
-    /* K线图例 */
+    /* K line legend */
     .kline-legend {
       display: flex;
       gap: 16px;
@@ -400,7 +400,7 @@
     .metric-bar { height: 3px; background: var(--border-light); border-radius: 2px; margin-top: 6px; overflow: hidden; }
     .metric-bar-fill { height: 100%; border-radius: 2px; }
 
-    /* ════════ 单股分析结果 ════════ */
+    /* ════════ Single stock analysis results ════════ */
     .analysis-result-card { margin-bottom: 16px; }
     .analysis-result-summary {
       padding: 14px;
@@ -464,7 +464,7 @@
       color: var(--text-tertiary);
     }
 
-    /* 折叠展开 */
+    /* Collapse and expand */
     .collapse-toggle {
       display: inline-flex;
       align-items: center;
@@ -486,7 +486,7 @@
     .collapsible { overflow: hidden; transition: max-height 0.4s ease; }
     .collapsible.collapsed { max-height: 0 !important; }
 
-    /* 回到顶部 */
+    /* back to top */
     .back-to-top {
       position: fixed;
       bottom: 30px;
@@ -513,7 +513,7 @@
     }
     .back-to-top:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(107, 92, 231, 0.45); }
 
-    /* ════════ 标签页（持仓/复盘合并） ════════ */
+    /* ════════ Tab page (position/review merge) ════════ */
     .tabs-card { margin-bottom: 16px; }
     .tabs {
       display: flex;
@@ -547,7 +547,7 @@
     .tab-content { display: none; padding: 16px 20px; }
     .tab-content.active { display: block; }
 
-    /* 历史记录按钮 */
+    /* History button */
     .history-btn {
       display: inline-flex;
       align-items: center;
@@ -625,7 +625,7 @@
       border-left: 3px solid var(--primary);
     }
 
-    /* ════════ 智能助手对话区 ════════ */
+    /* ════════ Intelligent assistant dialogue area ════════ */
     .assistant-chat-section {
       background: var(--bg-card);
       border-radius: 12px;
@@ -727,7 +727,7 @@
     }
     .chat-send-btn:hover { opacity: 0.9; }
 
-    /* ════════ 基本面 + 新闻 ════════ */
+    /* ════════ Fundamentals + News ════════ */
     .bottom-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -792,134 +792,134 @@
 <body>
   <div class="container">
 
-    <!-- ════════ 1. 顶部：股票概览 + 操作入口 ════════ -->
+    <!-- ════════ 1. Top: Stock Overview + Operation entrance ════════ -->
     <div class="stock-header">
       <div class="stock-card">
         <div class="stock-name-row">
           <span class="stock-code">300750</span>
-          <span class="stock-name">宁德时代</span>
-          <span class="market-tag">创业板</span>
+          <span class="stock-name">Ningde era</span>
+          <span class="market-tag">GEM</span>
         </div>
         <div class="price-row">
           <span class="current-price">383.01</span>
           <span class="price-change">-11.99 (-3.03%)</span>
-          <span class="price-meta">2026-07-24 15:00 收盘</span>
+          <span class="price-meta">2026-07-24 15:00 close</span>
         </div>
         <div class="quick-metrics">
-          <div class="quick-metric-item"><div class="label">今开</div><div class="value">394.00</div></div>
-          <div class="quick-metric-item"><div class="label">最高</div><div class="value">396.80</div></div>
-          <div class="quick-metric-item"><div class="label">最低</div><div class="value">381.50</div></div>
-          <div class="quick-metric-item"><div class="label">成交量</div><div class="value">18.6万手</div></div>
+          <div class="quick-metric-item"><div class="label">Open today</div><div class="value">394.00</div></div>
+          <div class="quick-metric-item"><div class="label">highest</div><div class="value">396.80</div></div>
+          <div class="quick-metric-item"><div class="label">lowest</div><div class="value">381.50</div></div>
+          <div class="quick-metric-item"><div class="label">Volume</div><div class="value">18.6 Thousands of hands</div></div>
         </div>
       </div>
 
-      <!-- 操作入口 -->
+      <!-- Operation entrance -->
       <div class="action-entry">
-        <button class="action-btn action-btn-primary" onclick="alert('发起单股研究')">
+        <button class="action-btn action-btn-primary" onclick="alert('Initiate single stock research')">
           <span class="icon">🔬</span>
-          <span class="title">发起研究</span>
-          <span class="desc">AI 多智能体深度分析</span>
+          <span class="title">initiate research</span>
+          <span class="desc">AI Multi-agent deep analysis</span>
         </button>
-        <button class="action-btn" onclick="alert('查看持仓')">
+        <button class="action-btn" onclick="alert('View positions')">
           <span class="icon">💼</span>
-          <span class="title">持仓分析</span>
-          <span class="desc">查看持仓研究详情</span>
+          <span class="title">Position analysis</span>
+          <span class="desc">View position research details</span>
         </button>
-        <button class="action-btn" onclick="alert('同步数据')">
+        <button class="action-btn" onclick="alert('Sync data')">
           <span class="icon">🔄</span>
-          <span class="title">同步数据</span>
-          <span class="desc">更新行情/财务数据</span>
+          <span class="title">Sync data</span>
+          <span class="desc">Update market/financial data</span>
         </button>
-        <button class="action-btn" onclick="alert('模拟交易')">
+        <button class="action-btn" onclick="alert('simulated trading')">
           <span class="icon">📊</span>
-          <span class="title">模拟交易</span>
-          <span class="desc">进入模拟交易系统</span>
+          <span class="title">simulated trading</span>
+          <span class="desc">Enter the simulated trading system</span>
         </button>
-        <button class="action-btn" onclick="alert('加入自选')">
+        <button class="action-btn" onclick="alert('Add to your choice')">
           <span class="icon">⭐</span>
-          <span class="title">加入自选</span>
-          <span class="desc">添加到关注列表</span>
+          <span class="title">Add to your choice</span>
+          <span class="desc">Add to watchlist</span>
         </button>
       </div>
     </div>
 
-    <!-- ════════ 2. 智能助手主入口（紧接顶部，突出显示） ════════ -->
+    <!-- ════════ 2. Smart Assistant main entrance (immediately at the top, highlighted) ════════ -->
     <div class="assistant-hero">
       <div class="assistant-hero-left">
         <div class="assistant-hero-header">
           <div class="assistant-avatar">🤖</div>
           <div>
-            <div class="assistant-hero-title">智能研究助手</div>
-            <div class="assistant-hero-subtitle">正在解读：300750 宁德时代 · 已加载全部研究数据</div>
+            <div class="assistant-hero-title">Intelligent research assistant</div>
+            <div class="assistant-hero-subtitle">Currently reading: 300750 CATL · All research data loaded</div>
           </div>
         </div>
         <div class="assistant-hero-prompt">
-          我已整合该股票的 <strong>单股分析</strong>、<strong>持仓分析</strong>、<strong>交易复盘</strong>、<strong>基本面</strong> 和 <strong>K线走势</strong>，可以为你全景解读。点击右侧任一问题开始研究：
+          I have integrated the stock s <strong>single stock analysis</strong>, <strong>Position analysis</strong>, <strong>Transaction review</strong>, <strong>Fundamentals</strong> and <strong>K Line trend</strong>, Can give you a panoramic interpretation. Click on any question on the right to start researching:
         </div>
       </div>
       <div class="assistant-quick-grid">
-        <button class="assistant-quick-btn" onclick="scrollToChat('帮我全景分析这只股票，从分析结果、持仓、复盘整体怎么看？')">
-          <span>🔗</span> 全景解读
+        <button class="assistant-quick-btn" onclick="scrollToChat('Help me analyze this stock in a panoramic manner. What do you think of the analysis results, positions, and review as a whole?')">
+          <span>🔗</span> Panoramic interpretation
         </button>
-        <button class="assistant-quick-btn" onclick="scrollToChat('最近一次单股分析的核心结论是什么？')">
-          <span>📋</span> 分析结论
+        <button class="assistant-quick-btn" onclick="scrollToChat('What is the core conclusion of the latest single stock analysis?')">
+          <span>📋</span> Analysis conclusion
         </button>
-        <button class="assistant-quick-btn" onclick="scrollToChat('结合我的持仓和复盘，下一步重点跟踪什么？')">
-          <span>💼</span> 持仓视角
+        <button class="assistant-quick-btn" onclick="scrollToChat('Combining my positions and review, what should I focus on tracking next?')">
+          <span>💼</span> Position perspective
         </button>
-        <button class="assistant-quick-btn" onclick="scrollToChat('当前估值和基本面是否匹配？有哪些风险？')">
-          <span>⚠️</span> 风险评估
+        <button class="assistant-quick-btn" onclick="scrollToChat('Do current valuations and fundamentals match? What are the risks?')">
+          <span>⚠️</span> risk assessment
         </button>
       </div>
     </div>
 
-    <!-- ════════ 3. 研究路径 ════════ -->
+    <!-- ════════ 3. research path ════════ -->
     <div class="research-flow">
       <div class="section-header">
-        <div class="section-title">研究路径 <span class="badge">5 步</span></div>
+        <div class="section-title">research path <span class="badge">5 step</span></div>
       </div>
       <div class="flow-steps">
         <div class="flow-step done" onclick="document.getElementById('kline-section').scrollIntoView({behavior:'smooth'})">
-          <div class="flow-step-header"><div class="flow-step-num">1</div><span class="flow-step-status status-done">已完成</span></div>
-          <div class="flow-step-title">行情走势</div>
-          <div class="flow-step-desc">K线 + 核心指标</div>
+          <div class="flow-step-header"><div class="flow-step-num">1</div><span class="flow-step-status status-done">Completed</span></div>
+          <div class="flow-step-title">Market trend</div>
+          <div class="flow-step-desc">K line + core indicators</div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step done" onclick="document.getElementById('analysis-result-section').scrollIntoView({behavior:'smooth'})">
-          <div class="flow-step-header"><div class="flow-step-num">2</div><span class="flow-step-status status-done">已完成</span></div>
-          <div class="flow-step-title">单股分析</div>
-          <div class="flow-step-desc">AI 研究报告</div>
+          <div class="flow-step-header"><div class="flow-step-num">2</div><span class="flow-step-status status-done">Completed</span></div>
+          <div class="flow-step-title">single stock analysis</div>
+          <div class="flow-step-desc">AI research report</div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step done" onclick="document.getElementById('position-review-section').scrollIntoView({behavior:'smooth'})">
-          <div class="flow-step-header"><div class="flow-step-num">3</div><span class="flow-step-status status-done">已完成</span></div>
-          <div class="flow-step-title">持仓与复盘</div>
-          <div class="flow-step-desc">持仓状态 + 交易回顾</div>
+          <div class="flow-step-header"><div class="flow-step-num">3</div><span class="flow-step-status status-done">Completed</span></div>
+          <div class="flow-step-title">Position holding and review</div>
+          <div class="flow-step-desc">Position status + Transaction Review</div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step done" onclick="document.getElementById('bottom-section').scrollIntoView({behavior:'smooth'})">
-          <div class="flow-step-header"><div class="flow-step-num">4</div><span class="flow-step-status status-done">已完成</span></div>
-          <div class="flow-step-title">基本面</div>
-          <div class="flow-step-desc">财务数据 + 新闻</div>
+          <div class="flow-step-header"><div class="flow-step-num">4</div><span class="flow-step-status status-done">Completed</span></div>
+          <div class="flow-step-title">Fundamentals</div>
+          <div class="flow-step-desc">financial data + News</div>
         </div>
         <div class="flow-arrow">→</div>
         <div class="flow-step active" onclick="scrollToChat()">
-          <div class="flow-step-header"><div class="flow-step-num">5</div><span class="flow-step-status status-active">进行中</span></div>
-          <div class="flow-step-title">智能助手解读</div>
-          <div class="flow-step-desc">全景涵盖以上所有模块</div>
+          <div class="flow-step-header"><div class="flow-step-num">5</div><span class="flow-step-status status-active">In progress</span></div>
+          <div class="flow-step-title">Intelligent Assistant Interpretation</div>
+          <div class="flow-step-desc">Panorama covers all the above modules</div>
         </div>
       </div>
     </div>
 
-    <!-- ════════ 4. K线 + 指标卡片 ════════ -->
+    <!-- ════════ 4. K line + indicator card ════════ -->
     <div class="main-grid" id="kline-section">
       <div class="card">
         <div class="card-header">
-          <div class="section-title">行情走势</div>
+          <div class="section-title">Market trend</div>
           <div class="period-tabs">
-            <div class="period-tab active" onclick="updateKline('day', this)">日K</div>
-            <div class="period-tab" onclick="updateKline('week', this)">周K</div>
-            <div class="period-tab" onclick="updateKline('month', this)">月K</div>
+            <div class="period-tab active" onclick="updateKline('day', this)">day K</div>
+            <div class="period-tab" onclick="updateKline('week', this)">week K</div>
+            <div class="period-tab" onclick="updateKline('month', this)">month K</div>
           </div>
         </div>
         <div class="card-body">
@@ -927,18 +927,18 @@
           <div class="kline-legend">
             <div class="kline-legend-item"><span class="kline-legend-dot ma5"></span> MA5</div>
             <div class="kline-legend-item"><span class="kline-legend-dot ma20"></span> MA20</div>
-            <div class="kline-legend-item"><span class="kline-legend-dot vol"></span> 成交量</div>
-            <span style="margin-left:auto">数据源：mongodb · 最近：2026-07-24</span>
+            <div class="kline-legend-item"><span class="kline-legend-dot vol"></span> Volume</div>
+            <span style="margin-left:auto">Data source:mongodb · Recently:2026-07-24</span>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header"><div class="section-title">核心指标</div></div>
+        <div class="card-header"><div class="section-title">core indicators</div></div>
         <div class="card-body">
           <div class="metrics-grid">
             <div class="metric-card">
-              <div class="metric-card-header"><span class="metric-name">估值</span><span class="metric-status status-mid">中性</span></div>
+              <div class="metric-card-header"><span class="metric-name">Valuation</span><span class="metric-status status-mid">Neutral</span></div>
               <div class="metric-values">
                 <div class="metric-value-item"><div class="metric-value-label">PE(TTM)</div><div class="metric-value-number">22.44</div></div>
                 <div class="metric-value-item"><div class="metric-value-label">PB</div><div class="metric-value-number">4.96</div></div>
@@ -946,26 +946,26 @@
               <div class="metric-bar"><div class="metric-bar-fill" style="width:60%;background:var(--warning)"></div></div>
             </div>
             <div class="metric-card">
-              <div class="metric-card-header"><span class="metric-name">盈利能力</span></div>
+              <div class="metric-card-header"><span class="metric-name">Profitability</span></div>
               <div class="metric-values">
                 <div class="metric-value-item"><div class="metric-value-label">ROE</div><div class="metric-value-number">5.97%</div></div>
-                <div class="metric-value-item"><div class="metric-value-label">毛利率</div><div class="metric-value-number">22.12%</div></div>
+                <div class="metric-value-item"><div class="metric-value-label">Gross profit margin</div><div class="metric-value-number">22.12%</div></div>
               </div>
               <div class="metric-bar"><div class="metric-bar-fill" style="width:75%;background:var(--info)"></div></div>
             </div>
             <div class="metric-card">
-              <div class="metric-card-header"><span class="metric-name">财务健康</span></div>
+              <div class="metric-card-header"><span class="metric-name">financial health</span></div>
               <div class="metric-values">
-                <div class="metric-value-item"><div class="metric-value-label">负债率</div><div class="metric-value-number">62.32%</div></div>
-                <div class="metric-value-item"><div class="metric-value-label">流动比率</div><div class="metric-value-number">1.60</div></div>
+                <div class="metric-value-item"><div class="metric-value-label">Debt ratio</div><div class="metric-value-number">62.32%</div></div>
+                <div class="metric-value-item"><div class="metric-value-label">current ratio</div><div class="metric-value-number">1.60</div></div>
               </div>
               <div class="metric-bar"><div class="metric-bar-fill" style="width:50%;background:var(--warning)"></div></div>
             </div>
             <div class="metric-card">
-              <div class="metric-card-header"><span class="metric-name">经营规模</span></div>
+              <div class="metric-card-header"><span class="metric-name">Business scale</span></div>
               <div class="metric-values">
-                <div class="metric-value-item"><div class="metric-value-label">营收</div><div class="metric-value-number">203.51亿</div></div>
-                <div class="metric-value-item"><div class="metric-value-label">净利润</div><div class="metric-value-number">42.28亿</div></div>
+                <div class="metric-value-item"><div class="metric-value-label">Revenue</div><div class="metric-value-number">203.51 billion</div></div>
+                <div class="metric-value-item"><div class="metric-value-label">net profit</div><div class="metric-value-number">42.28 billion</div></div>
               </div>
               <div class="metric-bar"><div class="metric-bar-fill" style="width:70%;background:var(--info)"></div></div>
             </div>
@@ -974,248 +974,248 @@
       </div>
     </div>
 
-    <!-- ════════ 5. 单股分析结果 ════════ -->
+    <!-- ════════ 5. Single stock analysis results ════════ -->
     <div class="card analysis-result-card" id="analysis-result-section">
       <div class="card-header">
-        <div class="section-title">📋 单股分析结果 <span class="badge">深度研究</span></div>
+        <div class="section-title">📋 Single stock analysis results <span class="badge">in-depth research</span></div>
         <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:12px;color:var(--text-tertiary)">2026-07-22 完成 · 研究深度：4级</span>
-          <button class="history-btn" onclick="alert('查看单股分析历史记录（共 5 次）')">📜 历史记录 <span class="history-count">5</span></button>
+          <span style="font-size:12px;color:var(--text-tertiary)">2026-07-22 Complete · Research Depth: Level 4</span>
+          <button class="history-btn" onclick="alert('View single stock analysis history (5 times in total)')">📜 History <span class="history-count">5</span></button>
         </div>
       </div>
       <div class="card-body">
         <div class="analysis-result-summary">
-          <div class="label">研究结论</div>
+          <div class="label">Research conclusion</div>
           <div class="conclusion">
-            宁德时代作为全球动力电池龙头，受益于电动车渗透率提升和储能市场爆发，长期成长逻辑清晰。当前估值处于历史中枢，短期受原材料价格波动及市场竞争加剧影响，股价有所回调。后续研究应重点关注二季度产能利用率、原材料价格走势及海外市场订单变化。
+            As the global leader in power batteries, CATL has benefited from the increasing penetration rate of electric vehicles and the explosion of the energy storage market, and its long-term growth logic is clear. The current valuation is at the historical center. In the short term, affected by raw material price fluctuations and intensifying market competition, the stock price has corrected. Follow-up research should focus on capacity utilization, raw material price trends and changes in overseas market orders in the second quarter.
           </div>
         </div>
 
         <div class="analysis-meta">
-          <div class="analysis-meta-item"><div class="label">研究团队</div><div class="value">市场+基本面+新闻+社交</div></div>
-          <div class="analysis-meta-item"><div class="label">分析时长</div><div class="value">12分38秒</div></div>
-          <div class="analysis-meta-item"><div class="label">信心度</div><div class="value" style="color:var(--primary)">中等偏上</div></div>
-          <div class="analysis-meta-item"><div class="label">数据截止</div><div class="value">2026-07-22</div></div>
-          <button class="collapse-toggle" onclick="toggleCollapse('analysis-detail', this)">展开详情 <span class="arrow">▼</span></button>
+          <div class="analysis-meta-item"><div class="label">research team</div><div class="value">market+Fundamentals+News+social</div></div>
+          <div class="analysis-meta-item"><div class="label">Analysis duration</div><div class="value">12 minutes 38 seconds</div></div>
+          <div class="analysis-meta-item"><div class="label">Confidence</div><div class="value" style="color:var(--primary)">Above average</div></div>
+          <div class="analysis-meta-item"><div class="label">data cutoff</div><div class="value">2026-07-22</div></div>
+          <button class="collapse-toggle" onclick="toggleCollapse('analysis-detail', this)">Expand details <span class="arrow">▼</span></button>
         </div>
 
         <div class="collapsible" id="analysis-detail" style="max-height:0">
         <div class="analysis-sections">
           <div class="analysis-section">
-            <div class="analysis-section-title"><span>📈</span> 市场面分析</div>
+            <div class="analysis-section-title"><span>📈</span> Market analysis</div>
             <div class="analysis-section-content">
-              股价近期从 420 元回落至 380 元附近，短期处于调整通道。成交量有所萎缩，显示市场情绪偏谨慎。技术面看，370 元附近存在支撑，400 元附近存在压力。
+              The stock price has recently dropped from 420 yuan to around 380 yuan, and is in a short-term adjustment channel. Trading volume has shrunk, indicating that market sentiment is cautious. From a technical perspective, there is support near 370 yuan and pressure near 400 yuan.
             </div>
           </div>
           <div class="analysis-section">
-            <div class="analysis-section-title"><span>💰</span> 基本面分析</div>
+            <div class="analysis-section-title"><span>💰</span> fundamental analysis</div>
             <div class="analysis-section-content">
-              一季度营收同比增长 12%，归母净利润增长 18%。动力电池全球市占率继续领先，储能业务增速较快。毛利率 22.12%，ROE 5.97%，盈利能力较强。
+              Revenue in the first quarter increased by 12% year-on-year, and net profit attributable to shareholders increased by 18%. The global market share of power batteries continues to lead, and the energy storage business is growing rapidly. Gross profit margin is 22.12%, ROE is 5.97%, and profitability is strong.
             </div>
           </div>
           <div class="analysis-section warning">
-            <div class="analysis-section-title"><span>📰</span> 新闻面分析</div>
+            <div class="analysis-section-title"><span>📰</span> News analysis</div>
             <div class="analysis-section-content">
-              近期新闻以利好为主：与海外车企签署长期供货协议、半年度业绩预告归母净利润同比增长 20%-30%、装机量市占率继续稳居全球第一。
+              Recent news is mainly positive: it has signed long-term supply agreements with overseas car companies, its semi-annual performance forecast shows that net profit attributable to the parent company increased by 20%-30% year-on-year, and its installed capacity market share continues to rank first in the world.
             </div>
           </div>
           <div class="analysis-section danger">
-            <div class="analysis-section-title"><span>⚠️</span> 风险因素</div>
+            <div class="analysis-section-title"><span>⚠️</span> risk factors</div>
             <div class="analysis-section-content">
-              主要风险：原材料价格反弹压缩毛利率、海外贸易政策变化、二线电池厂价格战加剧、新能源车销量增速放缓导致需求预期下修。
+              Major risks: A rebound in raw material prices compresses gross profit margins, changes in overseas trade policies, intensified price wars among second-tier battery manufacturers, and slowdown in new energy vehicle sales growth, leading to downward revisions to demand expectations.
             </div>
           </div>
         </div>
         </div>
 
         <div class="disclaimer">
-          本分析由 AI 多智能体系统基于公开信息生成，仅供研究参考，不构成任何交易建议。
+          This analysis is generated by an AI multi-agent system based on public information and is for research reference only and does not constitute any trading advice.
         </div>
       </div>
     </div>
 
-    <!-- ════════ 6. 持仓分析 + 交易复盘（标签页切换） ════════ -->
+    <!-- ════════ 6. Position analysis + Transaction review (tab switching) ════════ -->
     <div class="card tabs-card" id="position-review-section">
       <div class="tabs">
         <div class="tab active" onclick="switchTab('position', this)">
-          💼 持仓分析 <span class="tab-badge">浮亏 3.03%</span>
+          💼 Position analysis <span class="tab-badge">floating loss 3.03%</span>
         </div>
         <div class="tab" onclick="switchTab('review', this)">
-          📈 交易复盘 <span class="tab-badge">+12.5%</span>
+          📈 Transaction review <span class="tab-badge">+12.5%</span>
         </div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px">
-          <button class="history-btn" onclick="alert('查看持仓分析历史记录（共 3 次）')" id="position-history-btn">📜 持仓历史 <span class="history-count">3</span></button>
-          <button class="history-btn" onclick="alert('查看交易复盘历史记录（共 2 次）')" id="review-history-btn" style="display:none">📜 复盘历史 <span class="history-count">2</span></button>
+          <button class="history-btn" onclick="alert('View position analysis history (3 times in total)')" id="position-history-btn">📜 Position history <span class="history-count">3</span></button>
+          <button class="history-btn" onclick="alert('View transaction review history (2 times in total)')" id="review-history-btn" style="display:none">📜 Review history <span class="history-count">2</span></button>
         </div>
       </div>
 
-      <!-- 持仓分析 -->
+      <!-- Position analysis -->
       <div class="tab-content active" id="tab-position">
         <div class="summary-row">
-          <div class="summary-item"><div class="label">成本价</div><div class="value">¥395.00</div></div>
-          <div class="summary-item"><div class="label">现价</div><div class="value">¥383.01</div></div>
-          <div class="summary-item"><div class="label">浮动盈亏</div><div class="value danger">-¥3,036 (-3.03%)</div></div>
-          <div class="summary-item"><div class="label">持有天数</div><div class="value">25 天</div></div>
+          <div class="summary-item"><div class="label">cost price</div><div class="value">¥395.00</div></div>
+          <div class="summary-item"><div class="label">Current price</div><div class="value">¥383.01</div></div>
+          <div class="summary-item"><div class="label">floating profit and loss</div><div class="value danger">-¥3,036 (-3.03%)</div></div>
+          <div class="summary-item"><div class="label">Holding days</div><div class="value">25 day</div></div>
         </div>
 
         <div class="sub-section">
-          <div class="sub-section-title"><span>★</span> 当前状态</div>
+          <div class="sub-section-title"><span>★</span> Current status</div>
           <ul class="sub-section-list">
-            <li>持有25天浮亏3.03%，尚未经历财报验证</li>
-            <li>持仓处于浮亏但基本面尚未恶化的状态</li>
+            <li>The floating loss was 3.03% after 25 days of holding, and has not yet been verified by financial reports.</li>
+            <li>The position is at a floating loss but the fundamentals have not deteriorated yet</li>
           </ul>
         </div>
 
         <div class="sub-section">
           <div class="sub-section-title">
-            <span>●</span> 核心依据
+            <span>●</span> core basis
             <button class="collapse-toggle collapsed" onclick="toggleCollapse('pos-core', this)"><span class="arrow">▼</span></button>
           </div>
           <div class="collapsible collapsed" id="pos-core" style="max-height:200px">
           <ul class="sub-section-list">
-            <li>全球动力电池装机量市占率继续保持领先</li>
-            <li>二季度营收增速预计维持在15%-20%区间</li>
-            <li>储能业务订单增速加快，成为第二增长曲线</li>
+            <li>Global power battery installed capacity market share continues to lead</li>
+            <li>Revenue growth in the second quarter is expected to remain in the 15%-20% range</li>
+            <li>The growth rate of energy storage business orders has accelerated, becoming the second growth curve</li>
           </ul>
           </div>
         </div>
 
         <div class="sub-section">
           <div class="sub-section-title">
-            <span>👁</span> 后续观察点
+            <span>👁</span> Follow-up observation points
             <button class="collapse-toggle collapsed" onclick="toggleCollapse('pos-follow', this)"><span class="arrow">▼</span></button>
           </div>
           <div class="collapsible collapsed" id="pos-follow" style="max-height:200px">
           <ul class="sub-section-list">
-            <li>公司是否在近期公告中明确下半年产能利用率目标</li>
-            <li>最新月度装机量数据是否连续两月环比改善</li>
+            <li>Has the company clarified its capacity utilization target for the second half of the year in recent announcements?</li>
+            <li>Has the latest monthly installed capacity data improved month-on-month for two consecutive months?</li>
           </ul>
           </div>
         </div>
 
         <div class="disclaimer">
-          本分析基于公开信息和持仓数据生成，仅供研究参考，不构成任何交易建议。
+          This analysis is based on public information and position data and is for research reference only and does not constitute any trading advice.
         </div>
       </div>
 
-      <!-- 交易复盘 -->
+      <!-- Transaction review -->
       <div class="tab-content" id="tab-review">
         <div class="summary-row">
-          <div class="summary-item"><div class="label">交易次数</div><div class="value">3 次</div></div>
-          <div class="summary-item"><div class="label">总收益率</div><div class="value info">+12.5%</div></div>
-          <div class="summary-item"><div class="label">持仓天数</div><div class="value">45 天</div></div>
-          <div class="summary-item"><div class="label">胜率</div><div class="value">66.7%</div></div>
+          <div class="summary-item"><div class="label">Number of transactions</div><div class="value">3 times</div></div>
+          <div class="summary-item"><div class="label">total return</div><div class="value info">+12.5%</div></div>
+          <div class="summary-item"><div class="label">Position holding days</div><div class="value">45 day</div></div>
+          <div class="summary-item"><div class="label">winning rate</div><div class="value">66.7%</div></div>
         </div>
 
         <div class="sub-section">
-          <div class="sub-section-title"><span>📝</span> 复盘结论</div>
+          <div class="sub-section-title"><span>📝</span> Review conclusion</div>
           <div class="sub-section-content">
-            本阶段交易整体把握了宁德时代一季度业绩超预期的主线，但在 4 月中旬市场回调时过早止盈，错失了后续一段涨幅。买入时点选择较好，基本面对判断支撑充分；卖出时受短期波动影响较大，对中期逻辑的坚持不足。
+            The transaction at this stage overall grasped the main line of CATL s first-quarter performance exceeding expectations, but it cut profits prematurely when the market corrected in mid-April, missing out on subsequent gains. The timing of buying is well chosen, and the fundamentals support the judgment well; the selling is greatly affected by short-term fluctuations, and the mid-term logic is insufficiently adhered to.
           </div>
         </div>
 
         <div class="sub-section">
           <div class="sub-section-title">
-            <span>✅</span> 做得好的 / <span>⚠️</span> 暴露的问题
+            <span>✅</span> well done / <span>⚠️</span> exposed issues
             <button class="collapse-toggle collapsed" onclick="toggleCollapse('rev-problems', this)"><span class="arrow">▼</span></button>
           </div>
           <div class="collapsible collapsed" id="rev-problems" style="max-height:200px">
           <ul class="sub-section-list">
-            <li><strong>好的：</strong>买入前充分验证了业绩预告和装机量数据，仓位控制合理</li>
-            <li><strong>问题：</strong>对中期产业趋势信心不足，卖出决策缺乏负面信息支撑</li>
+            <li><strong>OK:</strong>Before buying, the performance forecast and installed capacity data were fully verified, and the position control was reasonable.</li>
+            <li><strong>Question:</strong>Lack of confidence in mid-term industry trends, and lack of negative information support for selling decisions</li>
           </ul>
           </div>
         </div>
 
         <div class="sub-section">
           <div class="sub-section-title">
-            <span>🎯</span> 后续改进重点
+            <span>🎯</span> Key points for subsequent improvements
             <button class="collapse-toggle collapsed" onclick="toggleCollapse('rev-improve', this)"><span class="arrow">▼</span></button>
           </div>
           <div class="collapsible collapsed" id="rev-improve" style="max-height:200px">
           <ul class="sub-section-list">
-            <li>建立买入/卖出决策清单，明确核心假设和推翻条件</li>
-            <li>区分短期波动和中期逻辑变化，减少情绪化交易</li>
+            <li>Establish a buy/sell decision list and clarify core assumptions and overturning conditions</li>
+            <li>Distinguish between short-term fluctuations and medium-term logical changes to reduce emotional trading</li>
           </ul>
           </div>
         </div>
 
         <div class="disclaimer">
-          本复盘基于历史交易记录生成，用于回顾决策过程，不构成对未来交易的建议。
+          This review is generated based on historical transaction records and is used to review the decision-making process and does not constitute a recommendation for future transactions.
         </div>
       </div>
     </div>
 
-    <!-- ════════ 7. 智能助手对话区 ════════ -->
+    <!-- ════════ 7. Intelligent assistant dialogue area ════════ -->
     <div class="assistant-chat-section" id="assistant-chat">
       <div class="assistant-chat-header">
         <div class="assistant-chat-title">
           <span>🤖</span>
-          <span>智能研究助手 · 全景解读</span>
+          <span>Intelligent research assistant · Panoramic interpretation</span>
         </div>
-        <span style="font-size:12px;color:rgba(255,255,255,0.85)">已加载：分析 · 持仓 · 复盘 · 基本面</span>
+        <span style="font-size:12px;color:rgba(255,255,255,0.85)">Loaded: Analysis · Position · Review · Fundamentals</span>
       </div>
       <div class="chat-messages" id="chat-messages">
         <div class="chat-message bot">
           <div class="chat-avatar">🤖</div>
           <div class="chat-bubble">
-            你好！我已经读取了 <strong>300750 宁德时代</strong> 的全部研究数据：<br>
-            • 单股分析结果（市场+基本面+新闻+风险）<br>
-            • 持仓分析（成本 395.00，浮亏 3.03%）<br>
-            • 交易复盘（3 次交易，总收益 +12.5%）<br>
-            • 基本面数据（PE 22.44，ROE 5.97%）<br><br>
-            你可以问我任何关于这只股票的问题，我会结合以上数据为你全景解读。
+            Hello! I have read <strong>300750 Ningde era</strong> All research data for:<br>
+            • Single stock analysis results (market+Fundamentals+News+risk)<br>
+            • Position analysis (cost 395.00, floating loss 3.03%)<br>
+            • Transaction review (3 transactions, total return +12.5%) <br>
+            • Fundamental data (PE 22.44, ROE 5.97%)<br><br>
+            You can ask me any questions about this stock and I will give you a comprehensive interpretation based on the above data.
           </div>
         </div>
       </div>
       <div class="chat-input-area">
-        <textarea id="chat-input" class="chat-input" rows="1" placeholder="输入问题，例如：结合分析和持仓，我下一步应该重点跟踪什么？"></textarea>
-        <button class="chat-send-btn" onclick="sendChatMessage()">发送</button>
+        <textarea id="chat-input" class="chat-input" rows="1" placeholder="Enter a question, such as: Combining analysis and holdings, what should I focus on tracking next?"></textarea>
+        <button class="chat-send-btn" onclick="sendChatMessage()">send</button>
       </div>
     </div>
 
-    <!-- ════════ 8. 基本面 + 新闻 ════════ -->
+    <!-- ════════ 8. Fundamentals + News ════════ -->
     <div class="bottom-grid" id="bottom-section">
       <div class="card">
-        <div class="card-header"><div class="section-title">基本面数据</div></div>
+        <div class="card-header"><div class="section-title">fundamental data</div></div>
         <div class="card-body">
           <div class="snapshot-grid">
-            <div class="snapshot-item"><span class="snapshot-label">行业</span><span class="snapshot-value">电气设备</span></div>
-            <div class="snapshot-item"><span class="snapshot-label">板块</span><span class="snapshot-value">创业板</span></div>
-            <div class="snapshot-item"><span class="snapshot-label">总市值</span><span class="snapshot-value">1.77万亿</span></div>
+            <div class="snapshot-item"><span class="snapshot-label">Industry</span><span class="snapshot-value">electrical equipment</span></div>
+            <div class="snapshot-item"><span class="snapshot-label">plate</span><span class="snapshot-value">GEM</span></div>
+            <div class="snapshot-item"><span class="snapshot-label">Total market capitalization</span><span class="snapshot-value">1.77 trillions</span></div>
             <div class="snapshot-item"><span class="snapshot-label">PE(TTM)</span><span class="snapshot-value">22.44</span></div>
-            <div class="snapshot-item"><span class="snapshot-label">PB(市净率)</span><span class="snapshot-value">4.96</span></div>
+            <div class="snapshot-item"><span class="snapshot-label">PB(price to book ratio)</span><span class="snapshot-value">4.96</span></div>
             <div class="snapshot-item"><span class="snapshot-label">ROE</span><span class="snapshot-value">5.97%</span></div>
-            <div class="snapshot-item"><span class="snapshot-label">负债率</span><span class="snapshot-value">62.32%</span></div>
-            <div class="snapshot-item"><span class="snapshot-label">股息率</span><span class="snapshot-value">2.08%</span></div>
+            <div class="snapshot-item"><span class="snapshot-label">Debt ratio</span><span class="snapshot-value">62.32%</span></div>
+            <div class="snapshot-item"><span class="snapshot-label">dividend yield</span><span class="snapshot-value">2.08%</span></div>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header"><div class="section-title">近期新闻与公告</div></div>
+        <div class="card-header"><div class="section-title">Recent News and Announcements</div></div>
         <div class="card-body">
           <div class="news-list">
             <div class="news-item">
               <div class="news-header">
-                <div class="news-title"><span class="news-tag tag-news">新闻</span>宁德时代与某海外车企签署长期供货协议</div>
+                <div class="news-title"><span class="news-tag tag-news">News</span>CATL signed a long-term supply agreement with an overseas car company</div>
                 <div class="news-time">07-23</div>
               </div>
-              <div class="news-source">证券时报 · 14:22</div>
+              <div class="news-source">Securities Times · 14:22</div>
             </div>
             <div class="news-item">
               <div class="news-header">
-                <div class="news-title"><span class="news-tag tag-announcement">公告</span>2026年半年度业绩预告：归母净利润同比增长 20%-30%</div>
+                <div class="news-title"><span class="news-tag tag-announcement">Announcement</span>2026 Half-year performance forecast: net profit attributable to parent company increased year-on-year 20%-30%</div>
                 <div class="news-time">07-22</div>
               </div>
-              <div class="news-source">公司公告 · 18:00</div>
+              <div class="news-source">company announcement · 18:00</div>
             </div>
             <div class="news-item">
               <div class="news-header">
-                <div class="news-title"><span class="news-tag tag-news">新闻</span>动力电池装机量数据公布，宁德时代市占率继续稳居全球第一</div>
+                <div class="news-title"><span class="news-tag tag-news">News</span>Power battery installed capacity data released, CATL s market share continues to rank first in the world</div>
                 <div class="news-time">07-20</div>
               </div>
-              <div class="news-source">第一财经 · 09:15</div>
+              <div class="news-source">China Business News · 09:15</div>
             </div>
           </div>
         </div>
@@ -1224,11 +1224,11 @@
 
   </div>
 
-  <!-- 回到顶部 -->
+  <!-- back to top -->
   <button class="back-to-top" id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
   <script>
-    // ════════ K线图（含 MA5/MA20 + 成交量） ════════
+    // ════════ K Line drawing (including MA5/MA20 + trading volume) ════════
     const kChart = echarts.init(document.getElementById('kline-chart'));
 
     function calcMA(data, period) {
@@ -1282,7 +1282,7 @@
           formatter: function(params) {
             const p = params[0];
             if (!p) return '';
-            return p.name + '<br/>开：' + p.data[1] + ' 收：' + p.data[2] + '<br/>低：' + p.data[3] + ' 高：' + p.data[4] + '<br/>成交量：' + (p.data[5]||0).toLocaleString() + '手';
+            return p.name + '<br/>Open:' + p.data[1] + ' Receive:' + p.data[2] + '<br/>Low:' + p.data[3] + ' High:' + p.data[4] + '<br/>Volume:' + (p.data[5]||0).toLocaleString() + 'hand';
           }
         },
         xAxis: [
@@ -1319,7 +1319,7 @@
             axisLine: { show: false },
             axisTick: { show: false },
             splitLine: { show: false },
-            axisLabel: { color: '#94a3b8', fontSize: 10, formatter: function(v) { return (v/10000).toFixed(0) + '万'; } }
+            axisLabel: { color: '#94a3b8', fontSize: 10, formatter: function(v) { return (v/10000).toFixed(0) + 'million'; } }
           }
         ],
         dataZoom: [
@@ -1329,7 +1329,7 @@
         series: [
           {
             type: 'candlestick',
-            name: 'K线',
+            name: 'K line',
             xAxisIndex: 0,
             yAxisIndex: 0,
             data: d.data,
@@ -1362,7 +1362,7 @@
           },
           {
             type: 'bar',
-            name: '成交量',
+            name: 'Volume',
             xAxisIndex: 1,
             yAxisIndex: 1,
             data: volumes,
@@ -1386,13 +1386,13 @@
     kChart.setOption(getKlineOption('day'));
     window.addEventListener('resize', function() { kChart.resize(); });
 
-    // 标签页切换
+    // Tab switching
     function switchTab(name, el) {
       document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
       el.classList.add('active');
       document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
       document.getElementById('tab-' + name).classList.add('active');
-      // 切换历史记录按钮
+      // Toggle history button
       var posBtn = document.getElementById('position-history-btn');
       var revBtn = document.getElementById('review-history-btn');
       if (name === 'position') {
@@ -1404,7 +1404,7 @@
       }
     }
 
-    // 智能助手对话
+    // Smart assistant conversation
     function scrollToChat(question) {
       document.getElementById('assistant-chat').scrollIntoView({ behavior: 'smooth' });
       if (question) {
@@ -1416,7 +1416,7 @@
       var messages = document.getElementById('chat-messages');
       var div = document.createElement('div');
       div.className = 'chat-message ' + type;
-      var avatar = type === 'bot' ? '🤖' : '我';
+      var avatar = type === 'bot' ? '🤖' : 'me';
       div.innerHTML = '<div class="chat-avatar">' + avatar + '</div><div class="chat-bubble">' + text + '</div>';
       messages.appendChild(div);
       messages.scrollTop = messages.scrollHeight;
@@ -1432,37 +1432,37 @@
 
       setTimeout(function() {
         var reply = '';
-        if (message.indexOf('全景') >= 0 || message.indexOf('整体') >= 0) {
-          reply = '我来为你全景解读 <strong>300750 宁德时代</strong>：<br><br>' +
-            '<strong>1. 单股分析</strong>：AI 研究结论为长期成长逻辑清晰，短期受原材料价格波动影响回调，信心度中等偏上。<br><br>' +
-            '<strong>2. 持仓状态</strong>：成本 395 元，浮亏 3.03%，持有 25 天。基本面尚未恶化，但价格未反映经营实质改善。<br><br>' +
-            '<strong>3. 交易复盘</strong>：上次交易总收益 +12.5%，但存在"对中期逻辑信心不足"的问题。本次持仓需避免重蹈覆辙。<br><br>' +
-            '<strong>4. 基本面</strong>：PE 22.44 处于合理中枢，ROE 5.97%，营收增速 +12%、利润增速 +18%。<br><br>' +
-            '<strong>综合判断</strong>：当前处于"基本面稳健 + 短期价格回调"阶段。后续重点跟踪二季度财报和产能利用率，避免情绪化决策。<br><br>' +
-            '<em style="color:#94a3b8;font-size:12px">以上分析仅供研究参考，不构成任何交易建议。</em>';
-        } else if (message.indexOf('分析') >= 0 && message.indexOf('结论') >= 0) {
-          reply = '最近一次单股分析（2026-07-22，深度4级）的核心结论：<br><br>' +
-            '<strong>研究判断</strong>：长期成长逻辑清晰，短期受原材料价格波动及市场竞争加剧影响回调。当前估值处于历史中枢。<br><br>' +
-            '<strong>市场面</strong>：370 元附近有支撑，400 元附近有压力，成交量萎缩显示情绪偏谨慎。<br><br>' +
-            '<strong>基本面</strong>：一季度营收 +12%、净利润 +18%，市占率继续领先。<br><br>' +
-            '<strong>风险</strong>：原材料价格反弹、海外贸易政策、二线厂价格战。<br><br>' +
-            '<em style="color:#94a3b8;font-size:12px">以上分析仅供研究参考，不构成任何交易建议。</em>';
-        } else if (message.indexOf('持仓') >= 0 || message.indexOf('跟踪') >= 0) {
-          reply = '结合你的持仓（成本 395，浮亏 3.03%）和上次复盘的教训，建议重点跟踪：<br><br>' +
-            '<strong>短期</strong>：二季度业绩预告落地情况、370 元价格支撑。<br>' +
-            '<strong>中期</strong>：产能利用率目标、海外大单签约进度。<br>' +
-            '<strong>风险信号</strong>：原材料价格反弹、海外贸易政策变化。<br><br>' +
-            '<strong>提示：</strong>从上次复盘看，你容易在短期波动时情绪化操作。建议问自己——当前是否有新的负面信息出现？如果没有，避免重复上次的情绪化操作。<br><br>' +
-            '<em style="color:#94a3b8;font-size:12px">以上分析仅供研究参考，不构成任何交易建议。</em>';
-        } else if (message.indexOf('风险') >= 0 || message.indexOf('估值') >= 0) {
-          reply = '当前估值与基本面匹配度分析：<br><br>' +
-            '<strong>估值</strong>：PE 22.44（近5年60%分位），PB 4.96（高于行业中位数），处于合理中枢偏上。<br><br>' +
-            '<strong>基本面支撑</strong>：营收 +12%、利润 +18%，ROE 5.97%，但需二季度增速验证。<br><br>' +
-            '<strong>主要风险</strong>：原材料价格反弹、海外贸易政策、价格战、需求预期下修。<br><br>' +
-            '<em style="color:#94a3b8;font-size:12px">以上分析仅供研究参考，不构成任何交易建议。</em>';
+        if (message.indexOf('Panorama') >= 0 || message.indexOf('Whole') >= 0) {
+          reply = 'Let me give you a panoramic interpretation <strong>300750 Ningde era</strong>: <br><br>' +
+            '<strong>1. single stock analysis</strong>: AI The research conclusion is that the long-term growth logic is clear, and the short-term correction is affected by fluctuations in raw material prices, and the confidence level is medium to high.<br><br>' +
+            '<strong>2. Position status</strong>: The cost is 395 yuan, the floating loss is 3.03%, and it is held for 25 days. Fundamentals have not deteriorated yet, but prices do not reflect improved operating substance.<br><br>' +
+            '<strong>3. Transaction review</strong>: Total profit from last transaction +12.5%, but exists"Lack of confidence in mid-term logic"problem. This position needs to be avoided to avoid repeating the same mistakes.<br><br>' +
+            '<strong>4. Fundamentals</strong>: PE 22.44 In the reasonable center, ROE 5.97%, revenue growth rate +12%, Profit growth +18%. <br><br>' +
+            '<strong>Comprehensive judgment</strong>: Currently in"Fundamentals are solid + short term price correction"stage. The follow-up focus will be on tracking the second quarter financial report and capacity utilization to avoid emotional decision-making.<br><br>' +
+            '<em style="color:#94a3b8;font-size:12px">The above analysis is for research reference only and does not constitute any trading advice.</em>';
+        } else if (message.indexOf('analysis') >= 0 && message.indexOf('Conclusion') >= 0) {
+          reply = 'The core conclusion of the latest single stock analysis (2026-07-22, depth level 4):<br><br>' +
+            '<strong>research judgment</strong>: The long-term growth logic is clear, but the short-term correction is affected by raw material price fluctuations and intensifying market competition. Current valuations are at a historical center.<br><br>' +
+            '<strong>Market aspect</strong>: 370 There is support near 400 yuan and pressure near 400 yuan. The shrinking trading volume shows that the sentiment is cautious.<br><br>' +
+            '<strong>Fundamentals</strong>: First quarter revenue +12%, net profit +18%, Market share continues to lead.<br><br>' +
+            '<strong>risk</strong>: Rebounding raw material prices, overseas trade policies, and second-tier factory price wars.<br><br>' +
+            '<em style="color:#94a3b8;font-size:12px">The above analysis is for research reference only and does not constitute any trading advice.</em>';
+        } else if (message.indexOf('Position') >= 0 || message.indexOf('Track') >= 0) {
+          reply = 'Combining your position (cost 395, floating loss 3.03%) and the lessons learned from the last review, it is recommended to focus on tracking:<br><br>' +
+            '<strong>short term</strong>: The implementation of the second quarter performance forecast and price support of 370 yuan.<br>' +
+            '<strong>medium term</strong>: Capacity utilization target, overseas large order signing progress.<br>' +
+            '<strong>risk signal</strong>: Raw material prices rebounded and overseas trade policies changed.<br><br>' +
+            '<strong>Tips:</strong>Judging from the last review, it is easy for you to operate emotionally during short-term fluctuations. It is recommended to ask yourself——Is there any new negative information currently emerging? If not, avoid repeating the last emotional action.<br><br>' +
+            '<em style="color:#94a3b8;font-size:12px">The above analysis is for research reference only and does not constitute any trading advice.</em>';
+        } else if (message.indexOf('risk') >= 0 || message.indexOf('Valuation') >= 0) {
+          reply = 'Analysis of the matching between current valuation and fundamentals:<br><br>' +
+            '<strong>Valuation</strong>: PE 22.44 (60% percentile in the past five years), PB 4.96 (higher than the industry median), which is above the reasonable center.<br><br>' +
+            '<strong>fundamental support</strong>: Revenue +12%, profit +18%, ROE 5.97%, But it needs to be verified by the growth rate in the second quarter.<br><br>' +
+            '<strong>Main risks</strong>: Raw material prices rebounded, overseas trade policies, price wars, and demand expectations were revised downwards.<br><br>' +
+            '<em style="color:#94a3b8;font-size:12px">The above analysis is for research reference only and does not constitute any trading advice.</em>';
         } else {
-          reply = '收到。基于已加载的 <strong>300750 宁德时代</strong> 研究数据，我可以从单股分析、持仓、复盘、基本面等角度解读。请尝试上方的快捷问题，或直接提问。<br><br>' +
-            '<em style="color:#94a3b8;font-size:12px">以上分析仅供研究参考，不构成任何交易建议。</em>';
+          reply = 'received. based on loaded <strong>300750 Ningde era</strong> When studying data, I can interpret it from the perspectives of single stock analysis, position holdings, review, and fundamentals. Try the quick questions above, or ask directly.<br><br>' +
+            '<em style="color:#94a3b8;font-size:12px">The above analysis is for research reference only and does not constitute any trading advice.</em>';
         }
         addChatMessage(reply, 'bot');
       }, 800);
@@ -1475,7 +1475,7 @@
       }
     });
 
-    // ════════ 折叠展开 ════════
+    // ════════ Collapse and expand ════════
     function toggleCollapse(id, btn) {
       var el = document.getElementById(id);
       if (!el) return;
@@ -1484,16 +1484,16 @@
         el.classList.remove('collapsed');
         el.style.maxHeight = el.scrollHeight + 'px';
         btn.classList.remove('collapsed');
-        btn.childNodes[0].textContent = btn.childNodes[0].textContent === '展开详情' ? '收起详情' : '收起';
+        btn.childNodes[0].textContent = btn.childNodes[0].textContent === 'Expand details' ? 'Collapse details' : 'close';
       } else {
         el.classList.add('collapsed');
         el.style.maxHeight = '0';
         btn.classList.add('collapsed');
-        btn.childNodes[0].textContent = btn.childNodes[0].textContent === '收起详情' ? '展开详情' : '展开';
+        btn.childNodes[0].textContent = btn.childNodes[0].textContent === 'Collapse details' ? 'Expand details' : 'Expand';
       }
     }
 
-    // ════════ 研究路径：滚动时高亮当前步骤 ════════
+    // ════════ Research Path: Highlight current step while scrolling ════════
     (function() {
       var flowSteps = document.querySelectorAll('.flow-step');
       var sectionIds = ['kline-section', 'analysis-result-section', 'position-review-section', 'bottom-section', 'assistant-chat'];
@@ -1504,7 +1504,7 @@
         var scrollY = window.scrollY;
         var currentIndex = 0;
 
-        // 高亮当前步骤
+        // Highlight current step
         for (var i = sectionIds.length - 1; i >= 0; i--) {
           var el = document.getElementById(sectionIds[i]);
           if (el && el.getBoundingClientRect().top <= 200) {
@@ -1518,12 +1518,12 @@
           if (idx === currentIndex) step.classList.add('active');
         });
 
-        // 研究路径 sticky 阴影
+        // Research path sticky shadow
         if (flowEl) {
           flowEl.classList.toggle('stuck', scrollY > 10);
         }
 
-        // 回到顶部按钮
+        // back to top button
         if (backToTop) {
           backToTop.classList.toggle('visible', scrollY > 600);
         }

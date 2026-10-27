@@ -1,5 +1,5 @@
 """
-研究报告管理 API 路由
+Research Report Management API Routing
 """
 import os
 from datetime import datetime, timedelta
@@ -18,7 +18,7 @@ logger = logging.getLogger("webapi")
 
 ETF_CODE_PREFIXES = ("50", "51", "52", "56", "58", "15", "16", "18")
 
-# 股票名称缓存
+# Stock name cache
 _stock_name_cache = {}
 _DISPLAY_SANITIZED_MODULE_KEYS = {
     "bull_researcher",
@@ -51,8 +51,8 @@ def _is_invalid_stock_name(stock_code: str, stock_name: Optional[str]) -> bool:
     generic_names = {
         code_str,
         stock_code,
-        f"股票{code_str}",
-        f"股票{stock_code}",
+        f"stocks{code_str}",
+        f"stocks{stock_code}",
         f"ETF{code_str}",
         f"ETF{stock_code}",
     }
@@ -60,17 +60,17 @@ def _is_invalid_stock_name(stock_code: str, stock_name: Optional[str]) -> bool:
 
 def get_stock_name(stock_code: str) -> str:
     """
-    获取股票名称
-    优先级：缓存 -> MongoDB（按数据源优先级） -> 默认返回股票代码
+    Get stock name
+    Priority: Cache -> MongoDB (By data source priority) -> Returns stock code by default
     """
     global _stock_name_cache
 
-    # 检查缓存
+    # Check cache
     if stock_code in _stock_name_cache:
         return _stock_name_cache[stock_code]
 
     try:
-        # 从 MongoDB 获取股票名称
+        # Get stock names from MongoDB
         from ..core.database import get_mongo_db_sync
         from ..core.unified_config import UnifiedConfigManager
 
@@ -88,11 +88,11 @@ def get_stock_name(stock_code: str) -> str:
                     _stock_name_cache[stock_code] = etf_name
                     return etf_name
 
-        # 🔥 按数据源优先级查询
+        # 🔥 Query by data source priority
         config = UnifiedConfigManager()
         data_source_configs = config.get_data_source_configs()
 
-        # 提取启用的数据源，按优先级排序
+        # Extract enabled data sources, sorted by priority
         enabled_sources = [
             ds.type.lower() for ds in data_source_configs
             if ds.enabled and ds.type.lower() in ['tushare', 'akshare', 'baostock']
@@ -101,39 +101,39 @@ def get_stock_name(stock_code: str) -> str:
         if not enabled_sources:
             enabled_sources = ['tushare', 'akshare', 'baostock']
 
-        # 按数据源优先级查询
+        # Query by data source priority
         stock_info = None
         for data_source in enabled_sources:
             stock_info = db.stock_basic_info.find_one(
                 {"$or": [{"symbol": code6}, {"code": code6}], "source": data_source}
             )
             if stock_info:
-                logger.debug(f"✅ 使用数据源 {data_source} 获取股票名称 {code6}")
+                logger.debug(f"✅ Use data sources {data_source} Get stock name {code6}")
                 break
 
-        # 如果所有数据源都没有，尝试不带 source 条件查询（兼容旧数据）
+        # If all data sources are not available, try querying without source conditions (compatible with old data)
         if not stock_info:
             stock_info = db.stock_basic_info.find_one(
                 {"$or": [{"symbol": code6}, {"code": code6}]}
             )
             if stock_info:
-                logger.warning(f"⚠️ 使用旧数据（无 source 字段）获取股票名称 {code6}")
+                logger.warning(f"⚠️ Get stock name using old data (no source field) {code6}")
 
         if stock_info and stock_info.get("name"):
             stock_name = stock_info["name"]
             _stock_name_cache[stock_code] = stock_name
             return stock_name
 
-        # 如果没有找到，返回股票代码
+        # If not found, returns the stock code
         _stock_name_cache[stock_code] = stock_code
         return stock_code
 
     except Exception as e:
-        logger.warning(f"⚠️ 获取股票名称失败 {stock_code}: {e}")
+        logger.warning(f"⚠️ Failed to get stock name {stock_code}: {e}")
         return stock_code
 
 
-# 统一构建报告查询：支持 _id(ObjectId) / analysis_id / task_id 三种
+# Unified build report query: supported _id(ObjectId) / analysis_id / task_id three kinds
 def _build_report_query(report_id: str) -> Dict[str, Any]:
     ors = [
         {"analysis_id": report_id},
@@ -148,7 +148,7 @@ def _build_report_query(report_id: str) -> Dict[str, Any]:
 
 
 def _rebuild_report_modules(raw_result: Dict[str, Any], existing_reports: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """从任务原始结果中尽可能还原完整报告模块。"""
+    """Restore the complete reporting module from the original results of the task whenever possible."""
     rebuilt_reports: Dict[str, Any] = {}
     from app.utils.compliance import sanitize_display_report_text
 
@@ -184,14 +184,14 @@ def _rebuild_report_modules(raw_result: Dict[str, Any], existing_reports: Option
             if extracted_from_state:
                 rebuilt_reports.update(extracted_from_state)
     except Exception as e:
-        logger.warning(f"⚠️ 还原完整报告模块失败: {e}")
+        logger.warning(f"⚠️ Restoring full reporting module failed: {e}")
 
     return rebuilt_reports
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 class ReportFilter(BaseModel):
-    """报告筛选参数"""
+    """Report filter parameters"""
     search_keyword: Optional[str] = None
     market_filter: Optional[str] = None
     start_date: Optional[str] = None
@@ -200,7 +200,7 @@ class ReportFilter(BaseModel):
     report_type: Optional[str] = None
 
 class ReportListResponse(BaseModel):
-    """报告列表响应"""
+    """Report list response"""
     reports: List[Dict[str, Any]]
     total: int
     page: int
@@ -208,25 +208,25 @@ class ReportListResponse(BaseModel):
 
 @router.get("/list", response_model=Dict[str, Any])
 async def get_reports_list(
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    search_keyword: Optional[str] = Query(None, description="搜索关键词"),
-    market_filter: Optional[str] = Query(None, description="市场筛选（A股/港股/美股）"),
-    start_date: Optional[str] = Query(None, description="开始日期"),
-    end_date: Optional[str] = Query(None, description="结束日期"),
-    stock_code: Optional[str] = Query(None, description="股票代码"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Quantity per page"),
+    search_keyword: Optional[str] = Query(None, description="Search keywords"),
+    market_filter: Optional[str] = Query(None, description="Market screening (A shares/Hong Kong stocks/US stocks)"),
+    start_date: Optional[str] = Query(None, description="start date"),
+    end_date: Optional[str] = Query(None, description="end date"),
+    stock_code: Optional[str] = Query(None, description="Stock code"),
     user: dict = Depends(get_current_user)
 ):
-    """获取研究报告列表"""
+    """Get a list of research reports"""
     try:
-        logger.info(f"🔍 获取报告列表: 用户={user['id']}, 页码={page}, 每页={page_size}, 市场={market_filter}")
+        logger.info(f"🔍 Get report list: User={user['id']}, Page number={page}, per page={page_size}, market={market_filter}")
 
         db = get_mongo_db()
 
-        # 构建查询条件
+        # Build query conditions
         query = {}
 
-        # 搜索关键词
+        # Search keywords
         if search_keyword:
             query["$or"] = [
                 {"stock_symbol": {"$regex": search_keyword, "$options": "i"}},
@@ -234,15 +234,15 @@ async def get_reports_list(
                 {"summary": {"$regex": search_keyword, "$options": "i"}}
             ]
 
-        # 市场筛选
+        # Market screening
         if market_filter:
             query["market_type"] = market_filter
 
-        # 股票代码筛选
+        # Stock code filter
         if stock_code:
             query["stock_symbol"] = stock_code
 
-        # 日期范围筛选
+        # Date range filter
         if start_date or end_date:
             date_query = {}
             if start_date:
@@ -251,64 +251,64 @@ async def get_reports_list(
                 date_query["$lte"] = end_date
             query["analysis_date"] = date_query
 
-        logger.info(f"📊 查询条件: {query}")
+        logger.info(f"📊 Query conditions: {query}")
 
-        # 计算总数
+        # Calculate the total
         total = await db.analysis_reports.count_documents(query)
 
-        # 分页查询
+        # Page query
         skip = (page - 1) * page_size
         cursor = db.analysis_reports.find(query).sort("created_at", -1).skip(skip).limit(page_size)
 
         reports = []
         async for doc in cursor:
-            # 转换为前端需要的格式
+            # Convert to the format required by the front end
             stock_code = doc.get("stock_symbol", "")
-            # 🔥 优先使用MongoDB中保存的股票名称，如果没有则查询
+            # 🔥 Prioritize using the stock name saved in MongoDB, if not, query
             stock_name = doc.get("stock_name")
             if _is_invalid_stock_name(stock_code, stock_name):
                 stock_name = get_stock_name(stock_code)
 
-            # 🔥 获取市场类型，如果没有则根据股票代码推断
+            # 🔥 Gets the market type, or infers it from the ticker if not available
             market_type = doc.get("market_type")
             if not market_type:
                 from tradingagents.utils.stock_utils import StockUtils
                 market_info = StockUtils.get_market_info(stock_code)
                 market_type_map = {
-                    "china_a": "A股",
-                    "hong_kong": "港股",
-                    "us": "美股",
-                    "unknown": "A股"
+                    "china_a": "A shares",
+                    "hong_kong": "Hong Kong stocks",
+                    "us": "US stocks",
+                    "unknown": "A shares"
                 }
-                market_type = market_type_map.get(market_info.get("market", "unknown"), "A股")
+                market_type = market_type_map.get(market_info.get("market", "unknown"), "A shares")
 
-            # 获取创建时间（数据库中是 UTC 时间，需要转换为 UTC+8）
+            # Get the creation time (it is UTC time in the database and needs to be converted to UTC+8) 
             created_at = doc.get("created_at", datetime.utcnow())
-            created_at_tz = to_config_tz(created_at)  # 转换为 UTC+8 并添加时区信息
+            created_at_tz = to_config_tz(created_at)  # Convert to UTC+8 and add time zone information
 
             report = {
                 "id": str(doc["_id"]),
                 "analysis_id": doc.get("analysis_id", ""),
-                "title": f"{stock_name}({stock_code}) 研究报告",
+                "title": f"{stock_name}({stock_code}) research report",
                 "stock_code": stock_code,
                 "stock_name": stock_name,
-                "market_type": market_type,  # 🔥 添加市场类型字段
-                "model_info": doc.get("model_info", "Unknown"),  # 🔥 添加模型信息字段
-                "type": "single",  # 目前主要是单股研究
-                "format": "markdown",  # 主要格式
+                "market_type": market_type,  # 🔥 Add market type field
+                "model_info": doc.get("model_info", "Unknown"),  # 🔥 Add model information fields
+                "type": "single",  # At present, it is mainly single-stock research
+                "format": "markdown",  # Main format
                 "status": doc.get("status", "completed"),
                 "created_at": created_at_tz.isoformat() if created_at_tz else str(created_at),
                 "analysis_date": doc.get("analysis_date", ""),
                 "analysts": doc.get("analysts", []),
                 "research_depth": doc.get("research_depth", 1),
                 "summary": doc.get("summary", ""),
-                "file_size": len(str(doc.get("reports", {}))),  # 估算大小
+                "file_size": len(str(doc.get("reports", {}))),  # Estimate size
                 "source": doc.get("source", "unknown"),
                 "task_id": doc.get("task_id", "")
             }
             reports.append(report)
 
-        logger.info(f"✅ 查询完成: 总数={total}, 返回={len(reports)}")
+        logger.info(f"✅ Query completed: total={total}, Return={len(reports)}")
 
         return {
             "success": True,
@@ -318,68 +318,68 @@ async def get_reports_list(
                 "page": page,
                 "page_size": page_size
             },
-            "message": "报告列表获取成功"
+            "message": "Report list obtained successfully"
         }
 
     except Exception as e:
-        logger.error(f"❌ 获取报告列表失败: {e}")
+        logger.error(f"❌ Failed to get report list: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{report_id}/detail")
 async def get_report_detail(
     report_id: str,
-    include_state: bool = Query(False, description="是否包含完整工作流状态（调试用）"),
-    include_detailed: bool = Query(False, description="是否包含详细分析数据（调试用）"),
+    include_state: bool = Query(False, description="Whether to include the complete workflow status (for debugging)"),
+    include_detailed: bool = Query(False, description="Whether to include detailed analysis data (for debugging)"),
     user: dict = Depends(get_current_user)
 ):
-    """获取报告详情
+    """Get report details
     
-    默认只返回必要字段（reports, decision, summary等），不包含 state 和 detailed_analysis。
-    如需完整数据，可通过查询参数 include_state=true&include_detailed=true 获取。
+    By default, only necessary fields are returned (reports, decision, summary etc.), excluding state and detailed_analysis.
+    For complete data, query parameters include_state=true&include_detailed=true Get.
     """
     try:
-        logger.info(f"🔍 获取报告详情: {report_id}")
+        logger.info(f"🔍 Get report details: {report_id}")
 
         db = get_mongo_db()
 
-        # 支持 ObjectId / analysis_id / task_id
+        # support ObjectId / analysis_id / task_id
         query = _build_report_query(report_id)
         doc = await db.analysis_reports.find_one(query)
 
         if not doc:
-            # 兜底：从 unified_analysis_tasks 或 analysis_tasks.result 中还原报告详情
-            logger.info(f"⚠️ 未在analysis_reports找到，尝试从任务中心还原: {report_id}")
+            # Bottom line: Restore report details from unified_analysis_tasks or analysis_tasks.result
+            logger.info(f"⚠️ Not found in analysis_reports, try restoring from task center: {report_id}")
             
-            # 首先尝试从 unified_analysis_tasks 查询（新任务中心）
+            # First try querying from unified_analysis_tasks (new task center)
             from bson import ObjectId
             tasks_doc = None
             
-            # 尝试查询 unified_analysis_tasks（需要 user_id，但这里先尝试不限制用户）
+            # Try to query unified_analysis_tasks (requires user_id, but try not to restrict users here)
             try:
-                # 先尝试通过 task_id 查询
+                # First try to query by task_id
                 tasks_doc = await db.unified_analysis_tasks.find_one(
                     {"task_id": report_id},
                     {"result": 1, "task_id": 1, "task_type": 1, "task_params": 1, "created_at": 1, "completed_at": 1, "status": 1}
                 )
             except Exception as e:
-                logger.warning(f"⚠️ 查询 unified_analysis_tasks 失败: {e}")
+                logger.warning(f"⚠️ Query for unified_analysis_tasks failed: {e}")
             
-            # 如果 unified_analysis_tasks 中没找到，尝试从 analysis_tasks 查询（旧系统）
+            # If not found in unified_analysis_tasks, try querying from analysis_tasks (old system)
             if not tasks_doc:
-                logger.info(f"⚠️ unified_analysis_tasks 中未找到，尝试从 analysis_tasks 查询: {report_id}")
+                logger.info(f"⚠️ unified_analysis_tasks Not found in, try querying from analysis_tasks: {report_id}")
                 tasks_doc = await db.analysis_tasks.find_one(
                     {"$or": [{"task_id": report_id}, {"result.analysis_id": report_id}]},
                     {"result": 1, "task_id": 1, "stock_code": 1, "created_at": 1, "completed_at": 1}
                 )
             
             if not tasks_doc or not tasks_doc.get("result"):
-                raise HTTPException(status_code=404, detail="报告不存在")
+                raise HTTPException(status_code=404, detail="Report does not exist")
 
             r = tasks_doc["result"] or {}
             created_at = tasks_doc.get("created_at")
             updated_at = tasks_doc.get("completed_at") or created_at
 
-            # 转换时区：数据库中是 UTC 时间，转换为 UTC+8
+            # Convert time zone: The UTC time in the database is converted to UTC+8
             created_at_tz = to_config_tz(created_at)
             updated_at_tz = to_config_tz(updated_at)
 
@@ -388,7 +388,7 @@ async def get_report_detail(
                     return x.isoformat()
                 return x or ""
 
-            # 从 result 或 task_params 中提取股票代码
+            # Extract stock symbol from result or task_params
             task_params = tasks_doc.get("task_params", {})
             stock_symbol = (
                 r.get("stock_symbol") or 
@@ -409,8 +409,8 @@ async def get_report_detail(
                 "id": tasks_doc.get("task_id", report_id),
                 "analysis_id": r.get("analysis_id", ""),
                 "stock_symbol": stock_symbol,
-                "stock_name": stock_name,  # 🔥 添加股票名称字段
-                "model_info": r.get("model_info", "Unknown"),  # 🔥 添加模型信息字段
+                "stock_name": stock_name,  # 🔥 Add stock name field
+                "model_info": r.get("model_info", "Unknown"),  # 🔥 Add model information fields
                 "analysis_date": r.get("analysis_date", ""),
                 "status": r.get("status", "completed"),
                 "created_at": to_iso(created_at_tz),
@@ -418,39 +418,39 @@ async def get_report_detail(
                 "analysts": r.get("analysts", []),
                 "research_depth": r.get("research_depth", 1),
                 "summary": r.get("summary", ""),
-                "reports": cleaned_reports,  # 🔥 使用清理后的 reports
+                "reports": cleaned_reports,  # 🔥 Use the cleaned reports
                 "source": "unified_analysis_tasks" if tasks_doc.get("task_type") else "analysis_tasks",
                 "task_id": tasks_doc.get("task_id", report_id),
                 "recommendation": r.get("recommendation", ""),
                 "confidence_score": r.get("confidence_score", 0.0),
-                "risk_level": r.get("risk_level", "中等"),
+                "risk_level": r.get("risk_level", "medium"),
                 "key_points": r.get("key_points", []),
                 "execution_time": r.get("execution_time", 0),
                 "tokens_used": r.get("tokens_used", 0),
-                "decision": r.get("decision", {}),  # 🔥 添加 decision 字段
+                "decision": r.get("decision", {}),  # 🔥 Add decision field
                 "task_type": tasks_doc.get("task_type", "")
             }
 
             if r.get("report_manifest"):
                 report["report_manifest"] = r.get("report_manifest")
             
-            # 🔥 可选字段：根据查询参数决定是否包含
+            # 🔥 Optional fields: decide whether to include them based on query parameters
             if include_state:
                 report["state"] = r.get("state", {})
             if include_detailed:
                 report["detailed_analysis"] = r.get("detailed_analysis", {})
         else:
-            # 转换为详细格式（analysis_reports 命中）
+            # Convert to verbose format (analysis_reports hit)
             stock_symbol = doc.get("stock_symbol", "")
             stock_name = doc.get("stock_name")
             if _is_invalid_stock_name(stock_symbol, stock_name):
                 stock_name = get_stock_name(stock_symbol)
 
-            # 获取时间（数据库中是 UTC 时间，需要转换为 UTC+8）
+            # Get the time (it is UTC time in the database and needs to be converted to UTC+8) 
             created_at = doc.get("created_at", datetime.utcnow())
             updated_at = doc.get("updated_at", datetime.utcnow())
 
-            # 转换时区：数据库中是 UTC 时间，转换为 UTC+8
+            # Convert time zone: The UTC time in the database is converted to UTC+8
             created_at_tz = to_config_tz(created_at)
             updated_at_tz = to_config_tz(updated_at)
 
@@ -461,8 +461,8 @@ async def get_report_detail(
                 "id": str(doc["_id"]),
                 "analysis_id": doc.get("analysis_id", ""),
                 "stock_symbol": stock_symbol,
-                "stock_name": stock_name,  # 🔥 添加股票名称字段
-                "model_info": doc.get("model_info", "Unknown"),  # 🔥 添加模型信息字段
+                "stock_name": stock_name,  # 🔥 Add stock name field
+                "model_info": doc.get("model_info", "Unknown"),  # 🔥 Add model information fields
                 "analysis_date": doc.get("analysis_date", ""),
                 "status": doc.get("status", "completed"),
                 "created_at": created_at_tz.isoformat() if created_at_tz else str(created_at),
@@ -470,16 +470,16 @@ async def get_report_detail(
                 "analysts": doc.get("analysts", []),
                 "research_depth": doc.get("research_depth", 1),
                 "summary": doc.get("summary", ""),
-                "reports": cleaned_reports,  # 🔥 使用清理后的 reports
+                "reports": cleaned_reports,  # 🔥 Use the cleaned reports
                 "source": doc.get("source", "unknown"),
                 "task_id": doc.get("task_id", ""),
                 "recommendation": doc.get("recommendation", ""),
                 "confidence_score": doc.get("confidence_score", 0.0),
-                "risk_level": doc.get("risk_level", "中等"),
+                "risk_level": doc.get("risk_level", "medium"),
                 "key_points": doc.get("key_points", []),
                 "execution_time": doc.get("execution_time", 0),
                 "tokens_used": doc.get("tokens_used", 0),
-                "decision": doc.get("decision", {}),  # 🔥 添加 decision 字段用于格式化
+                "decision": doc.get("decision", {}),  # 🔥 Add decision field for formatting
                 "task_type": doc.get("task_type", "")
             }
 
@@ -514,18 +514,18 @@ async def get_report_detail(
                 if include_detailed:
                     report["detailed_analysis"] = result.get("detailed_analysis", {})
 
-            logger.info("📊 [REPORT] 保留报告原始内容返回，跳过读取时压缩")
+            logger.info("📊 [REPORT] Keep report original content returned, skip compression on read")
 
         return {
             "success": True,
             "data": report,
-            "message": "报告详情获取成功"
+            "message": "Report details obtained successfully"
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ 获取报告详情失败: {e}")
+        logger.error(f"❌ Failed to get report details: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{report_id}/content/{module}")
@@ -534,23 +534,23 @@ async def get_report_module_content(
     module: str,
     user: dict = Depends(get_current_user)
 ):
-    """获取报告特定模块的内容"""
+    """Get the contents of a specific module of the report"""
     try:
-        logger.info(f"🔍 获取报告模块内容: {report_id}/{module}")
+        logger.info(f"🔍 Get report module content: {report_id}/{module}")
 
         db = get_mongo_db()
 
-        # 查询报告（支持多种ID）
+        # Query report (supports multiple IDs)
         query = _build_report_query(report_id)
         doc = await db.analysis_reports.find_one(query)
 
         if not doc:
-            raise HTTPException(status_code=404, detail="报告不存在")
+            raise HTTPException(status_code=404, detail="Report does not exist")
 
         reports = doc.get("reports", {})
 
         if module not in reports:
-            raise HTTPException(status_code=404, detail=f"模块 {module} 不存在")
+            raise HTTPException(status_code=404, detail=f"module {module} does not exist")
 
         content = reports[module]
 
@@ -561,13 +561,13 @@ async def get_report_module_content(
                 "content": content,
                 "content_type": "markdown" if isinstance(content, str) else "json"
             },
-            "message": "模块内容获取成功"
+            "message": "Module content obtained successfully"
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ 获取报告模块内容失败: {e}")
+        logger.error(f"❌ Failed to get report module content: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{report_id}")
@@ -575,32 +575,32 @@ async def delete_report(
     report_id: str,
     user: dict = Depends(get_current_user)
 ):
-    """删除报告"""
+    """Delete report"""
     try:
-        logger.info(f"🗑️ 删除报告: {report_id}")
+        logger.info(f"🗑️ Delete report: {report_id}")
 
         db = get_mongo_db()
 
-        # 查询报告（支持多种ID）
+        # Query report (supports multiple IDs)
         query = _build_report_query(report_id)
         result = await db.analysis_reports.delete_one(query)
 
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="报告不存在")
+            raise HTTPException(status_code=404, detail="Report does not exist")
 
-        logger.info(f"✅ 报告删除成功: {report_id}")
+        logger.info(f"✅ Report successful deletion: {report_id}")
 
         return {
             "success": True,
-            "message": "报告删除成功"
+            "message": "Report successful deletion"
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ 删除报告失败: {e}")
+        logger.error(f"❌ Delete report failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 导出下载端点（Pro 专属，export_reports 门控）已拆分至 reports_export.py
-# 见 docs/05-design/v3.0/v3.6.0-community-edition-separation-plan.md §5.2
+# The export download endpoint (Pro exclusive, export_reports gated) has been split into reports_export.py
+# see docs/05-design/v3.0/v3.6.0-community-edition-separation-plan.md §5.2

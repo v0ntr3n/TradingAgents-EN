@@ -1,11 +1,11 @@
 import time
 import json
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
-# 导入模板客户端
+# Import template client
 from tradingagents.utils.template_client import get_agent_prompt
 from tradingagents.agents.utils.compliance_prompting import apply_compliance_guardrails, build_research_only_closing
 
@@ -15,10 +15,10 @@ def create_risk_manager(llm, memory):
 
         company_name = state.get("company_of_interest", "")
 
-        # 使用 .get() 安全访问辩论状态
+        # Use .get() Secure access to debate status
         risk_debate_state = state.get("risk_debate_state", {})
         history = risk_debate_state.get("history", "")
-        # 使用 .get() 安全访问，支持用户只选择部分分析师的情况
+        # Use .get() Secure access, supporting the situation where users only select some analysts
         market_research_report = state.get("market_report", "")
         news_report = state.get("news_report", "")
         fundamentals_report = state.get("fundamentals_report", "")
@@ -27,20 +27,20 @@ def create_risk_manager(llm, memory):
 
         curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}"
 
-        # 安全检查：确保memory不为None
+        # Security check: Make sure memory is not None
         if memory is not None:
             past_memories = memory.get_memories(curr_situation, n_matches=2)
         else:
-            logger.warning(f"⚠️ [DEBUG] memory为None，跳过历史记忆检索")
+            logger.warning(f"⚠️ [DEBUG] memory If None, skip historical memory retrieval.")
             past_memories = []
 
         past_memory_str = ""
         for i, rec in enumerate(past_memories, 1):
             past_memory_str += rec["recommendation"] + "\n\n"
 
-        # 🆕 使用模板系统获取提示词
+        # 🆕 Use template system to get prompt words
         try:
-            # 准备模板变量
+            # Prepare template variables
             template_variables = {
                 "ticker": state.get("company_of_interest", ""),
                 "company_name": state.get("company_of_interest", ""),
@@ -62,9 +62,9 @@ def create_risk_manager(llm, memory):
                 context=None
             )
             if tpl_info:
-                logger.info(f"📚 [模板选择] source={tpl_info.get('source')} id={tpl_info.get('template_id')} version={tpl_info.get('version')} agent=managers/risk_manager")
+                logger.info(f"📚 [Template selection] source={tpl_info.get('source')} id={tpl_info.get('template_id')} version={tpl_info.get('version')} agent=managers/risk_manager")
 
-            # 从模板系统获取提示词
+            # Get prompt words from template system
             system_prompt = get_agent_prompt(
                 agent_type="managers",
                 agent_name="risk_manager",
@@ -74,120 +74,120 @@ def create_risk_manager(llm, memory):
             )
 
             system_prompt = apply_compliance_guardrails(system_prompt, "risk_manager")
-            logger.info(f"✅ [风险经理] 成功从模板系统获取提示词 (长度: {len(system_prompt)})")
+            logger.info(f"✅ [risk manager] Successfully obtained the prompt word from the template system (length: {len(system_prompt)})")
 
         except Exception as e:
-            logger.error(f"❌ [风险经理] 从模板系统获取提示词失败: {e}")
-            # 降级：使用硬编码提示词
-            system_prompt = """作为风险管理委员会主席和辩论主持人，您的目标是评估三位风险分析师的辩论，并形成风险治理视角的研究意见。
+            logger.error(f"❌ [risk manager] Failed to obtain prompt word from template system: {e}")
+            # Downgrade: Use hardcoded prompt words
+            system_prompt = """As chair of the Risk Management Committee and debate moderator, your goal is to evaluate the debates of three risk analysts and formulate research opinions from a risk governance perspective.
 
-总结关键论点，提供详细推理，并根据分析师的见解调整交易员计划。
+Summarize key arguments, provide detailed reasoning, and adjust trader plans based on analyst insights.
 
-从过去的错误中学习，确保每个决策都能带来更好的结果。
+Learn from past mistakes to ensure every decision leads to better results.
 
-请用中文撰写所有分析内容。"""
+Please write all analysis content in Chinese."""
             system_prompt = apply_compliance_guardrails(system_prompt, "risk_manager")
-            logger.warning(f"⚠️ [风险经理] 使用降级提示词 (长度: {len(system_prompt)})")
+            logger.warning(f"⚠️ [risk manager] Use demotion prompts (length: {len(system_prompt)})")
 
-        # 构建完整提示词
+        # Build a complete prompt word
         prompt = f"""{system_prompt}
 
-交易员的原始计划：
+Trader s original plan:
 {trader_plan}
 
-过去的反思和经验教训：
+Past reflections and lessons learned:
 {past_memory_str}
 
-分析师辩论历史：
+Analyst Debate History:
 {history}
 
-{build_research_only_closing(["请基于以上信息输出风险汇总、主要争议、约束条件、信息缺口和后续观察点。"])}"""
+{build_research_only_closing(["Please output the risk summary, main disputes, constraints, information gaps and follow-up observation points based on the above information."])}"""
 
-        # 📊 统计 prompt 大小
+        # 📊 Statistics prompt size
         prompt_length = len(prompt)
-        # 粗略估算 token 数量（中文约 1.5-2 字符/token，英文约 4 字符/token）
-        estimated_tokens = int(prompt_length / 1.8)  # 保守估计
+        # Rough estimate of the number of tokens (about 1.5-2 characters/token for Chinese, about 4 characters/token for English)
+        estimated_tokens = int(prompt_length / 1.8)  # conservative estimate
 
-        logger.info(f"📊 [Risk Manager] Prompt 统计:")
-        logger.info(f"   - 辩论历史长度: {len(history)} 字符")
-        logger.info(f"   - 交易员计划长度: {len(trader_plan)} 字符")
-        logger.info(f"   - 历史记忆长度: {len(past_memory_str)} 字符")
-        logger.info(f"   - 总 Prompt 长度: {prompt_length} 字符")
-        logger.info(f"   - 估算输入 Token: ~{estimated_tokens} tokens")
+        logger.info(f"📊 [Risk Manager] Prompt statistics:")
+        logger.info(f"   - Debate history length: {len(history)} character")
+        logger.info(f"   - Trader plan length: {len(trader_plan)} character")
+        logger.info(f"   - historical memory length: {len(past_memory_str)} character")
+        logger.info(f"   - Total prompt length: {prompt_length} character")
+        logger.info(f"   - Estimate input Token: ~{estimated_tokens} tokens")
 
-        # 增强的LLM调用，包含错误处理和重试机制
+        # Enhanced LLM calling, including error handling and retry mechanism
         max_retries = 3
         retry_count = 0
         response_content = ""
 
         while retry_count < max_retries:
             try:
-                logger.info(f"🔄 [Risk Manager] 调用LLM生成交易决策 (尝试 {retry_count + 1}/{max_retries})")
+                logger.info(f"🔄 [Risk Manager] Call LLM to generate trading decisions (try {retry_count + 1}/{max_retries})")
 
-                # ⏱️ 记录开始时间
+                # ⏱️ Recording start time
                 start_time = time.time()
 
                 response = llm.invoke(prompt)
 
-                # ⏱️ 记录结束时间
+                # ⏱️ Record end time
                 elapsed_time = time.time() - start_time
                 
                 if response and hasattr(response, 'content') and response.content:
                     response_content = response.content.strip()
 
-                    # 📊 统计响应信息
+                    # 📊 Statistical response information
                     response_length = len(response_content)
                     estimated_output_tokens = int(response_length / 1.8)
 
-                    # 尝试获取实际的 token 使用情况（如果 LLM 返回了）
+                    # Try to get actual token usage (if LLM returned)
                     usage_info = ""
                     if hasattr(response, 'response_metadata') and response.response_metadata:
                         metadata = response.response_metadata
                         if 'token_usage' in metadata:
                             token_usage = metadata['token_usage']
-                            usage_info = f", 实际Token: 输入={token_usage.get('prompt_tokens', 'N/A')} 输出={token_usage.get('completion_tokens', 'N/A')} 总计={token_usage.get('total_tokens', 'N/A')}"
+                            usage_info = f", actual Token: input={token_usage.get('prompt_tokens', 'N/A')} output={token_usage.get('completion_tokens', 'N/A')} total={token_usage.get('total_tokens', 'N/A')}"
 
-                    logger.info(f"⏱️ [Risk Manager] LLM调用耗时: {elapsed_time:.2f}秒")
-                    logger.info(f"📊 [Risk Manager] 响应统计: {response_length} 字符, 估算~{estimated_output_tokens} tokens{usage_info}")
+                    logger.info(f"⏱️ [Risk Manager] LLM The call takes time: {elapsed_time:.2f}seconds")
+                    logger.info(f"📊 [Risk Manager] response statistics: {response_length} character, Estimate~{estimated_output_tokens} tokens{usage_info}")
 
-                    if len(response_content) > 10:  # 确保响应有实质内容
-                        logger.info(f"✅ [Risk Manager] LLM调用成功")
+                    if len(response_content) > 10:  # Make sure responses have substance
+                        logger.info(f"✅ [Risk Manager] LLM Call successful")
                         break
                     else:
-                        logger.warning(f"⚠️ [Risk Manager] LLM响应内容过短: {len(response_content)} 字符")
+                        logger.warning(f"⚠️ [Risk Manager] LLM Response content is too short: {len(response_content)} character")
                         response_content = ""
                 else:
-                    logger.warning(f"⚠️ [Risk Manager] LLM响应为空或无效")
+                    logger.warning(f"⚠️ [Risk Manager] LLM Response is empty or invalid")
                     response_content = ""
 
             except Exception as e:
                 elapsed_time = time.time() - start_time
-                logger.error(f"❌ [Risk Manager] LLM调用失败 (尝试 {retry_count + 1}): {str(e)}")
-                logger.error(f"⏱️ [Risk Manager] 失败前耗时: {elapsed_time:.2f}秒")
+                logger.error(f"❌ [Risk Manager] LLM call failed (try {retry_count + 1}): {str(e)}")
+                logger.error(f"⏱️ [Risk Manager] Time taken before failure: {elapsed_time:.2f}seconds")
                 response_content = ""
             
             retry_count += 1
             if retry_count < max_retries and not response_content:
-                logger.info(f"🔄 [Risk Manager] 等待2秒后重试...")
+                logger.info(f"🔄 [Risk Manager] Wait 2 seconds and try again...")
                 time.sleep(2)
         
-        # 如果所有重试都失败，生成默认决策
+        # If all retries fail, generate a default decision
         if not response_content:
-            logger.error(f"❌ [Risk Manager] 所有LLM调用尝试失败，使用默认决策")
-            response_content = f"""**风险汇总**
+            logger.error(f"❌ [Risk Manager] All LLM call attempts fail, using default decision")
+            response_content = f"""**Risk summary**
 
-由于技术原因无法生成详细分析，当前仅保留对 {company_name} 的风险观察。
+Detailed analysis cannot be generated for technical reasons and currently only the {company_name} risk observation.
 
-**主要争议**
-1. 市场信息不足，暂时无法确认关键分歧的方向。
-2. 现有公开信息不足以支持更细化的研究结论。
+**main controversy**
+1. There is insufficient market information and it is temporarily impossible to confirm the direction of key differences.
+2. The available public information is insufficient to support more detailed research conclusions.
 
-**后续观察点**
-- 持续跟踪市场动态和公司基本面变化
-- 补充财务与经营数据后再进行复核
-- 关注重大公告、行业变化与宏观环境扰动
+**Follow-up observation points**
+- Continue to track market dynamics and changes in company fundamentals
+- Supplement financial and operating data before reviewing
+- Pay attention to major announcements, industry changes and macro-environmental disturbances
 
-注意：此为系统默认研究观察，不构成任何交易建议。"""
+Note: This is the system s default research observation and does not constitute any trading advice."""
 
         new_risk_debate_state = {
             "judge_decision": response_content,
@@ -202,11 +202,11 @@ def create_risk_manager(llm, memory):
             "count": risk_debate_state.get("count", 0),
         }
 
-        logger.info(f"📋 [Risk Manager] 最终决策生成完成，内容长度: {len(response_content)} 字符")
+        logger.info(f"📋 [Risk Manager] Final decision generation is completed, content length: {len(response_content)} character")
 
         return {
             "risk_debate_state": new_risk_debate_state,
-            "final_trade_decision": response_content,  # ✅ 恢复：输出 final_trade_decision
+            "final_trade_decision": response_content,  # ✅ recovery: output final_trade_decision
         }
 
     return risk_manager_node

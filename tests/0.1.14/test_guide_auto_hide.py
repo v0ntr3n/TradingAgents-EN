@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """
-测试使用指南自动隐藏功能
-验证在开始分析时使用指南会自动隐藏
+Test the automatic hiding function of the user guide
+Verify that the usage guide is automatically hidden when starting an analysis
 """
 
 import sys
 from pathlib import Path
 
-# 添加项目根目录到路径
+# Add project root directory to path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 def test_guide_auto_hide_logic():
-    """测试使用指南自动隐藏逻辑"""
-    print("📖 测试使用指南自动隐藏功能")
+    """Test usage guide automatically hides logic"""
+    print("📖 Test the automatic hiding function of the user guide")
     print("=" * 60)
     
-    # 模拟session state
+    # Simulation session state
     class MockSessionState:
         def __init__(self):
             self.data = {}
@@ -35,8 +35,8 @@ def test_guide_auto_hide_logic():
     
     session_state = MockSessionState()
     
-    # 测试场景1: 初始状态 - 应该显示使用指南
-    print("\n📋 场景1: 初始状态")
+    # test scenario 1: Initial state - Usage guide should be displayed
+    print("\n📋 scene 1: initial state")
     print("-" * 40)
     
     analysis_running = session_state.get('analysis_running', False)
@@ -46,20 +46,20 @@ def test_guide_auto_hide_logic():
     print(f"   analysis_running: {analysis_running}")
     print(f"   analysis_results: {analysis_results}")
     print(f"   default_show_guide: {default_show_guide}")
-    print(f"   ✅ 初始状态应该显示使用指南: {default_show_guide}")
+    print(f"   ✅ The initial state should show the usage guide: {default_show_guide}")
     
-    # 测试场景2: 开始分析 - 应该隐藏使用指南
-    print("\n📋 场景2: 开始分析")
+    # test scenario 2: Start analysis - usage guide should be hidden
+    print("\n📋 scene 2: Start analysis")
     print("-" * 40)
     
-    # 模拟开始分析
+    # Simulation starts analysis
     session_state['analysis_running'] = True
     session_state['analysis_results'] = None
     
-    # 自动隐藏使用指南（除非用户明确设置要显示）
+    # Automatically hide the usage guide (unless the user explicitly sets it to be shown)
     if not session_state.get('user_set_guide_preference', False):
         session_state['show_guide_preference'] = False
-        print("   📖 开始分析，自动隐藏使用指南")
+        print("   📖 Start analysis and automatically hide the user guide")
     
     analysis_running = session_state.get('analysis_running', False)
     analysis_results = session_state.get('analysis_results')
@@ -70,14 +70,14 @@ def test_guide_auto_hide_logic():
     print(f"   analysis_results: {analysis_results}")
     print(f"   default_show_guide: {default_show_guide}")
     print(f"   show_guide_preference: {show_guide_preference}")
-    print(f"   ✅ 开始分析后应该隐藏使用指南: {not show_guide_preference}")
+    print(f"   ✅ The usage guide should be hidden after starting the analysis: {not show_guide_preference}")
     
-    # 测试场景3: 分析完成有结果 - 应该保持隐藏
-    print("\n📋 场景3: 分析完成有结果")
+    # test scenario 3: Analysis completed with results - should remain hidden
+    print("\n📋 scene 3: Analysis completed with results")
     print("-" * 40)
     
     session_state['analysis_running'] = False
-    session_state['analysis_results'] = {"stock_symbol": "AAPL", "analysis": "测试结果"}
+    session_state['analysis_results'] = {"stock_symbol": "AAPL", "analysis": "Test results"}
     
     analysis_running = session_state.get('analysis_running', False)
     analysis_results = session_state.get('analysis_results')
@@ -88,70 +88,70 @@ def test_guide_auto_hide_logic():
     print(f"   analysis_results: {bool(analysis_results)}")
     print(f"   default_show_guide: {default_show_guide}")
     print(f"   show_guide_preference: {show_guide_preference}")
-    print(f"   ✅ 有分析结果时应该保持隐藏: {not show_guide_preference}")
+    print(f"   ✅ Analysis results should remain hidden when available: {not show_guide_preference}")
     
-    # 测试场景4: 用户手动设置显示 - 应该尊重用户选择
-    print("\n📋 场景4: 用户手动设置显示")
+    # test scenario 4: User manually sets display - user choice should be respected
+    print("\n📋 scene 4: Display manually set by user")
     print("-" * 40)
     
-    # 模拟用户手动设置要显示使用指南
+    # Simulate user manual settings to display usage guide
     session_state['user_set_guide_preference'] = True
     session_state['show_guide_preference'] = True
     
-    # 再次开始分析
+    # Start analysis again
     session_state['analysis_running'] = True
     session_state['analysis_results'] = None
     
-    # 这次不应该自动隐藏，因为用户明确设置了
+    # It shouldn't be automatically hidden this time because the user explicitly set it
     if not session_state.get('user_set_guide_preference', False):
         session_state['show_guide_preference'] = False
-        print("   📖 自动隐藏使用指南")
+        print("   📖 Autohide User Guide")
     else:
-        print("   👤 用户已手动设置，保持用户选择")
+        print("   👤 User has set it manually, keep user selection")
     
     show_guide_preference = session_state.get('show_guide_preference', False)
     print(f"   user_set_guide_preference: {session_state.get('user_set_guide_preference')}")
     print(f"   show_guide_preference: {show_guide_preference}")
-    print(f"   ✅ 用户手动设置后应该尊重用户选择: {show_guide_preference}")
+    print(f"   ✅ User choices should be respected after manual settings: {show_guide_preference}")
     
-    print("\n💡 测试总结:")
-    print("   1. ✅ 初始状态默认显示使用指南")
-    print("   2. ✅ 开始分析时自动隐藏使用指南")
-    print("   3. ✅ 有分析结果时保持隐藏状态")
-    print("   4. ✅ 用户手动设置后尊重用户选择")
+    print("\n💡 Test summary:")
+    print("   1. ✅ The user guide is displayed by default in the initial state.")
+    print("   2. ✅ Automatically hide usage guide when starting analysis")
+    print("   3. ✅ Stay hidden when analysis results are available")
+    print("   4. ✅ Respect user choice after manual setting by user")
     
     return True
 
 def test_ui_behavior():
-    """测试UI行为逻辑"""
-    print("\n🎨 测试UI行为逻辑")
+    """Test UI behavior logic"""
+    print("\n🎨 Test UI behavior logic")
     print("=" * 60)
     
-    # 模拟不同的布局场景
+    # Simulate different layout scenarios
     scenarios = [
         {
-            "name": "初始访问",
+            "name": "initial access",
             "analysis_running": False,
             "analysis_results": None,
             "user_set_preference": False,
             "expected_show_guide": True
         },
         {
-            "name": "开始分析",
+            "name": "Start analysis",
             "analysis_running": True,
             "analysis_results": None,
             "user_set_preference": False,
             "expected_show_guide": False
         },
         {
-            "name": "分析完成",
+            "name": "Analysis completed",
             "analysis_running": False,
             "analysis_results": {"data": "test"},
             "user_set_preference": False,
             "expected_show_guide": False
         },
         {
-            "name": "用户强制显示",
+            "name": "User forced display",
             "analysis_running": True,
             "analysis_results": {"data": "test"},
             "user_set_preference": True,
@@ -161,50 +161,50 @@ def test_ui_behavior():
     ]
     
     for i, scenario in enumerate(scenarios, 1):
-        print(f"\n📋 场景{i}: {scenario['name']}")
+        print(f"\n📋 scene{i}: {scenario['name']}")
         print("-" * 40)
         
-        # 计算默认值
+        # Calculate default value
         default_show_guide = not (scenario['analysis_running'] or scenario['analysis_results'] is not None)
         
-        # 计算实际显示值
+        # Calculate the actual displayed value
         if scenario['user_set_preference']:
             actual_show_guide = scenario.get('user_preference_value', True)
         else:
             actual_show_guide = default_show_guide
-            # 如果开始分析且用户没有设置，则隐藏
+            # Hide if analysis is started and user has not set
             if scenario['analysis_running'] and not scenario['user_set_preference']:
                 actual_show_guide = False
         
-        print(f"   分析运行中: {scenario['analysis_running']}")
-        print(f"   有分析结果: {bool(scenario['analysis_results'])}")
-        print(f"   用户设置偏好: {scenario['user_set_preference']}")
-        print(f"   默认显示指南: {default_show_guide}")
-        print(f"   实际显示指南: {actual_show_guide}")
-        print(f"   预期显示指南: {scenario['expected_show_guide']}")
+        print(f"   Analysis is running: {scenario['analysis_running']}")
+        print(f"   There are analysis results: {bool(scenario['analysis_results'])}")
+        print(f"   User settings preferences: {scenario['user_set_preference']}")
+        print(f"   Default display guide: {default_show_guide}")
+        print(f"   Actual display guide: {actual_show_guide}")
+        print(f"   Expected Display Guidelines: {scenario['expected_show_guide']}")
         
         if actual_show_guide == scenario['expected_show_guide']:
-            print(f"   ✅ 测试通过")
+            print(f"   ✅ Test passed")
         else:
-            print(f"   ❌ 测试失败")
+            print(f"   ❌ test failed")
     
     return True
 
 if __name__ == "__main__":
-    print("🧪 使用指南自动隐藏功能测试")
+    print("🧪 Usage Guide Automatically Hide Functional Tests")
     print("=" * 70)
     
     try:
         test_guide_auto_hide_logic()
         test_ui_behavior()
         
-        print("\n🎉 所有测试完成！")
-        print("💡 功能说明:")
-        print("   - 初次访问时显示使用指南，帮助用户了解操作")
-        print("   - 点击开始分析后自动隐藏使用指南，节省屏幕空间")
-        print("   - 用户可以手动控制使用指南的显示/隐藏")
-        print("   - 系统会记住用户的偏好设置")
+        print("\n🎉 All tests completed!")
+        print("💡 Function description:")
+        print("   - Display the user guide on first visit to help users understand the operation")
+        print("   - After clicking to start analysis, the user guide will be automatically hidden to save screen space.")
+        print("   - Users can manually control the display/hide of the user guide")
+        print("   - User preferences are remembered")
         
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ test failed: {e}")
         sys.exit(1)

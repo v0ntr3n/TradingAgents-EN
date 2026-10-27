@@ -1,104 +1,104 @@
 #!/usr/bin/env python3
 """
-测试市净率（PB）计算修复
-验证单位转换是否正确
+Test Price to Book (PB) calculation fix
+Verify unit conversion is correct
 """
 
 def test_pb_calculation_units():
     """
-    测试 PB 计算的单位转换
+    Test unit conversion for PB calculations
 
-    场景：某股票
-    - 总市值：100 亿元 = 1000000 万元
-    - 股东权益：50 亿元 = 5000000000 元
-    - 预期 PB = 100 / 50 = 2.0 倍
+    Scenario: a certain stock
+    - Total market value: 10 billion yuan = 1000000 Ten thousand yuan
+    - Shareholders equity: 5 billion yuan = 5000000000 Yuan
+    - expected PB = 100 / 50 = 2.0 times
 
-    单位转换：
-    - 1 亿元 = 10000 万元 = 100000000 元
-    - money_cap (万元) / total_equity (元) 需要转换
-    - 转换后：money_cap (万元) * 10000 / total_equity (元)
+    Unit conversion:
+    - 1 billion = 10000 Ten thousand yuan = 100000000 Yuan
+    - money_cap (Ten thousand yuan) / total_equity (Yuan) Need to convert
+    - After conversion:money_cap (Ten thousand yuan) * 10000 / total_equity (Yuan)
     """
 
-    # 数据库中的数据
-    money_cap = 1000000  # 万元 = 100 亿元
-    total_equity = 5000000000  # 元 = 50 亿元
+    # data in database
+    money_cap = 1000000  # Ten thousand yuan = 100 billion
+    total_equity = 5000000000  # Yuan = 50 billion
 
-    # 错误的计算方式（原代码）
+    # Wrong calculation method (original code)
     pb_wrong = money_cap / total_equity
-    print(f"❌ 错误计算: {money_cap} / {total_equity} = {pb_wrong}")
-    print(f"   这个值太小了，相差10000倍！")
+    print(f"❌ miscalculation: {money_cap} / {total_equity} = {pb_wrong}")
+    print(f"   This value is too small, the difference is 10,000 times!")
 
-    # 正确的计算方式（修复后）
-    # money_cap 是万元，total_equity 是元
-    # 1 万元 = 10000 元，所以 money_cap * 10000 = 元
+    # Correct way to calculate (after fix)
+    # money_cap is ten thousand yuan, total_equity is yuan
+    # 1 Ten thousand yuan = 10000 Yuan, so money_cap * 10000 = Yuan
     pb_correct = (money_cap * 10000) / total_equity
-    print(f"\n✅ 正确计算: ({money_cap} * 10000) / {total_equity} = {pb_correct}")
-    print(f"   预期值: 2.0 倍")
+    print(f"\n✅ Calculate correctly: ({money_cap} * 10000) / {total_equity} = {pb_correct}")
+    print(f"   expected value: 2.0 times")
 
-    assert abs(pb_correct - 2.0) < 0.01, f"PB 计算错误，期望 2.0，得到 {pb_correct}"
-    print("\n✅ 测试通过！")
+    assert abs(pb_correct - 2.0) < 0.01, f"PB Calculation error, expecting 2.0, got {pb_correct}"
+    print("\n✅ Test passed!")
 
 
 def test_pb_calculation_with_real_example():
     """
-    使用真实数据测试
+    Test with real data
 
-    平安银行（000001）示例：
-    - 总市值：2500 亿元 = 25000000 万元
-    - 股东权益：280 亿元 = 28000000000 元
-    - 预期 PB ≈ 2500 / 280 ≈ 8.93 倍
+    Example of Ping An Bank (000001):
+    - Total market value: 250 billion yuan = 25000000 Ten thousand yuan
+    - Shareholders equity: 28 billion yuan = 28000000000 Yuan
+    - expected PB ≈ 2500 / 280 ≈ 8.93 times
     """
 
-    money_cap = 25000000  # 万元 = 2500 亿元
-    total_equity = 28000000000  # 元 = 280 亿元
+    money_cap = 25000000  # Ten thousand yuan = 2500 billion
+    total_equity = 28000000000  # Yuan = 280 billion
 
-    # 正确的计算
+    # correct calculation
     pb_correct = (money_cap * 10000) / total_equity
-    expected_pb = 2500 / 280  # 用亿元计算验证
+    expected_pb = 2500 / 280  # Calculate and verify with 100 million yuan
 
-    print("\n平安银行示例：")
-    print(f"  总市值: {money_cap} 万元 = {money_cap / 10000} 亿元")
-    print(f"  股东权益: {total_equity} 元 = {total_equity / 100000000} 亿元")
-    print(f"  计算 PB: {pb_correct:.2f} 倍")
-    print(f"  验证 PB: {expected_pb:.2f} 倍")
+    print("\n Example of Ping An Bank:")
+    print(f"  Total market capitalization: {money_cap} Ten thousand yuan = {money_cap / 10000} billion")
+    print(f"  Shareholders equity: {total_equity} Yuan = {total_equity / 100000000} billion")
+    print(f"  Calculate PB: {pb_correct:.2f} times")
+    print(f"  Verify PB: {expected_pb:.2f} times")
 
-    assert abs(pb_correct - expected_pb) < 0.01, "PB 计算不匹配"
-    print("✅ 测试通过！")
+    assert abs(pb_correct - expected_pb) < 0.01, "PB Computational mismatch"
+    print("✅ Test passed!")
 
 
 def test_pb_calculation_formula_equivalence():
     """
-    验证不同的计算公式是否等价
+    Verify whether different calculation formulas are equivalent
     """
     
-    money_cap_wan = 1000  # 万元
-    total_equity_yuan = 5000000000  # 元
+    money_cap_wan = 1000  # Ten thousand yuan
+    total_equity_yuan = 5000000000  # Yuan
     
-    # 方案1：都转换为亿元
+    # Option 1: Convert everything into 100 million yuan
     money_cap_yi = money_cap_wan / 10000
     total_equity_yi = total_equity_yuan / 100000000
     pb1 = money_cap_yi / total_equity_yi
     
-    # 方案2：都转换为万元
+    # Option 2: Convert everything into 10,000 yuan
     total_equity_wan = total_equity_yuan / 10000
     pb2 = money_cap_wan / total_equity_wan
     
-    # 方案3：都转换为元
+    # Option 3: Convert everything to yuan
     money_cap_yuan = money_cap_wan * 10000
     pb3 = money_cap_yuan / total_equity_yuan
     
-    print(f"\n公式等价性验证：")
-    print(f"  方案1（亿元）: {pb1:.2f}")
-    print(f"  方案2（万元）: {pb2:.2f}")
-    print(f"  方案3（元）: {pb3:.2f}")
+    print(f"\n Formula equivalence verification:")
+    print(f"  Option 1 (100 million yuan): {pb1:.2f}")
+    print(f"  Option 2 (10,000 yuan): {pb2:.2f}")
+    print(f"  Option 3 (yuan): {pb3:.2f}")
     
-    assert pb1 == pb2 == pb3, "公式不等价"
-    print(f"✅ 所有公式等价！")
+    assert pb1 == pb2 == pb3, "The formulas are not equivalent"
+    print(f"✅ All formulas are equivalent!")
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("市净率（PB）计算修复验证")
+    print("Price to Book Ratio (PB) Calculation Repair Verification")
     print("=" * 60)
     
     test_pb_calculation_units()
@@ -106,6 +106,6 @@ if __name__ == "__main__":
     test_pb_calculation_formula_equivalence()
     
     print("\n" + "=" * 60)
-    print("✅ 所有测试通过！")
+    print("✅ All tests passed!")
     print("=" * 60)
 

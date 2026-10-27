@@ -1,7 +1,7 @@
 """
-复盘总结师智能体
+Review summary expert agent
 
-综合所有分析维度，生成完整复盘报告和改进建议
+Comprehensive all analysis dimensions to generate a complete review report and improvement suggestions
 """
 
 import logging
@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 @register_agent
 class ReviewManagerAgent(BaseAgent):
     """
-    复盘总结师智能体
+    Review summary expert agent
     
-    综合所有分析结果，包括:
-    - 整合时机、仓位、情绪、归因分析
-    - 给出总体评分
-    - 识别优点和不足
-    - 提出改进建议
+    Combining all analysis results, including:
+    - Integrate timing, position, sentiment, and attribution analysis
+    - Give an overall rating
+    - Identify strengths and weaknesses
+    - Make suggestions for improvements
     """
     
     metadata = BUILTIN_AGENTS["review_manager"]
@@ -33,69 +33,69 @@ class ReviewManagerAgent(BaseAgent):
         self._llm = None
     
     def set_dependencies(self, llm: Any, toolkit: Any = None) -> "ReviewManagerAgent":
-        """设置依赖项"""
+        """Set dependencies"""
         self._llm = llm
         return self
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        执行复盘总结
+        Execute review summary
         
         Args:
-            state: 包含以下键的状态字典:
-                - trade_info: 交易信息
-                - timing_analysis: 时机分析结果
-                - position_analysis: 仓位分析结果
-                - emotion_analysis: 情绪分析结果
-                - attribution_analysis: 归因分析结果
+            state: A status dictionary containing the following keys:
+                - trade_info: transaction information
+                - timing_analysis: Timing analysis results
+                - position_analysis: Position analysis results
+                - emotion_analysis: Sentiment analysis results
+                - attribution_analysis: Attribution analysis results
                 
         Returns:
-            更新后的状态，包含:
-                - review_summary: 复盘总结报告
-                - overall_score: 总体评分
-                - strengths: 优点列表
-                - weaknesses: 不足列表
-                - suggestions: 改进建议列表
+            The updated status includes:
+                - review_summary: Review summary report
+                - overall_score: Overall rating
+                - strengths: Advantage list
+                - weaknesses: Deficiency list
+                - suggestions: Improvement suggestions list
         """
         trade_info = state.get("trade_info", {})
-        timing_analysis = state.get("timing_analysis", "无时机分析")
-        position_analysis = state.get("position_analysis", "无仓位分析")
-        emotion_analysis = state.get("emotion_analysis", "无情绪分析")
-        attribution_analysis = state.get("attribution_analysis", "无归因分析")
+        timing_analysis = state.get("timing_analysis", "No opportunity analysis")
+        position_analysis = state.get("position_analysis", "No position analysis")
+        emotion_analysis = state.get("emotion_analysis", "No sentiment analysis")
+        attribution_analysis = state.get("attribution_analysis", "No attribution analysis")
 
-        logger.info(f"📝 [复盘总结师] 开始生成复盘报告...")
-        logger.info(f"   📋 股票: {trade_info.get('code', 'N/A')}")
-        logger.info(f"   📊 已收集分析:")
-        logger.info(f"      - 时机分析: {len(timing_analysis)}字符")
-        logger.info(f"      - 仓位分析: {len(position_analysis)}字符")
-        logger.info(f"      - 情绪分析: {len(emotion_analysis)}字符")
-        logger.info(f"      - 归因分析: {len(attribution_analysis)}字符")
+        logger.info(f"📝 [Review summary expert] Start generating review report...")
+        logger.info(f"   📋 stocks: {trade_info.get('code', 'N/A')}")
+        logger.info(f"   📊 Analysis collected:")
+        logger.info(f"      - Timing analysis: {len(timing_analysis)}character")
+        logger.info(f"      - Position analysis: {len(position_analysis)}character")
+        logger.info(f"      - sentiment analysis: {len(emotion_analysis)}character")
+        logger.info(f"      - attribution analysis: {len(attribution_analysis)}character")
 
-        # 构建提示词（支持用户偏好）
+        # Build prompt words (support user preferences)
         user_id = state.get("user_id")
         preference_id = state.get("preference_id", "neutral")
         prompt = self._build_prompt(
             trade_info, timing_analysis, position_analysis,
             emotion_analysis, attribution_analysis, user_id, preference_id
         )
-        logger.info(f"   📝 提示词长度: {len(prompt)} 字符")
+        logger.info(f"   📝 Prompt word length: {len(prompt)} character")
 
         if self._llm:
             try:
-                logger.info(f"   🤖 调用 LLM 生成总结...")
+                logger.info(f"   🤖 Call LLM to generate a summary...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
-                logger.info(f"   ✅ LLM 返回成功，响应长度: {len(analysis)} 字符")
+                logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
             except Exception as e:
-                logger.error(f"   ❌ [复盘总结师] LLM调用失败: {e}")
-                analysis = f"复盘总结失败: {str(e)}"
+                logger.error(f"   ❌ [Review summary expert] LLM call failed: {e}")
+                analysis = f"Review summary failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM未配置")
-            analysis = "LLM未配置，无法进行复盘总结"
+            logger.warning(f"   ⚠️ LLM Not configured")
+            analysis = "LLM Not configured, review summary cannot be performed"
 
-        logger.info(f"📝 [复盘总结师] ✅ 报告生成完成")
+        logger.info(f"📝 [Review summary expert] ✅ Report generation completed")
 
-        # 只返回新增的字段
+        # Only return new fields
         return {
             "review_summary": analysis,
         }
@@ -110,12 +110,12 @@ class ReviewManagerAgent(BaseAgent):
         user_id: str = None,
         preference_id: str = "neutral"
     ) -> str:
-        """构建复盘总结提示词"""
+        """Construct review summary prompt words"""
 
-        # 准备模板变量
+        # Prepare template variables
         template_variables = {
             "ticker": trade_info.get('code', 'N/A'),
-            "trade_period": f"{trade_info.get('holding_period', 0)}天",
+            "trade_period": f"{trade_info.get('holding_period', 0)}day",
             "total_return": trade_info.get('return_rate', 0),
             "total_pnl": trade_info.get('pnl', 0),
             "timing_analysis": timing_analysis,
@@ -124,29 +124,29 @@ class ReviewManagerAgent(BaseAgent):
             "attribution_analysis": attribution_analysis
         }
 
-        # 硬编码的降级提示词
-        fallback_prompt = f"""你是一位资深的交易复盘专家。请综合以下各维度分析，生成完整的复盘报告:
+        # Hardcoded downgrade prompt word
+        fallback_prompt = f"""You are a senior transaction review expert. Please comprehensively analyze the following dimensions to generate a complete review report:
 
-## 交易概况
-- 股票: {trade_info.get('code', 'N/A')} {trade_info.get('name', '')}
-- 持仓周期: {trade_info.get('holding_period', 0)}天
-- 实际收益率: {trade_info.get('return_rate', 0):.2%}
-- 实际盈亏: {trade_info.get('pnl', 0):.2f}元
+## Transaction Overview
+- stocks: {trade_info.get('code', 'N/A')} {trade_info.get('name', '')}
+- Position period: {trade_info.get('holding_period', 0)}day
+- real rate of return: {trade_info.get('return_rate', 0):.2%}
+- Actual profit and loss: {trade_info.get('pnl', 0):.2f}Yuan
 
-## 时机分析
+## Timing analysis
 {timing_analysis}
 
-## 仓位分析
+## Position analysis
 {position_analysis}
 
-## 情绪分析
+## sentiment analysis
 {emotion_analysis}
 
-## 归因分析
+## attribution analysis
 {attribution_analysis}
 
-## 输出要求
-请生成一份结构化的复盘报告，**必须以JSON格式输出**：
+## Output requirements
+Please generate a structured review report,**Must be output in JSON format**: 
 
 ```json
 {{
@@ -154,33 +154,33 @@ class ReviewManagerAgent(BaseAgent):
   "timing_score": 80,
   "position_score": 70,
   "discipline_score": 75,
-  "summary": "2-3句话概括这笔交易的整体表现",
+  "summary": "2-3 Summarize the overall performance of this transaction in one sentence",
   "strengths": [
-    "做得好的地方1",
-    "做得好的地方2",
-    "做得好的地方3"
+    "Things done well 1",
+    "Things done well 2",
+    "Things done well 3"
   ],
   "weaknesses": [
-    "需要改进的地方1",
-    "需要改进的地方2",
-    "需要改进的地方3"
+    "areas for improvement 1",
+    "areas for improvement 2",
+    "areas for improvement 3"
   ],
   "suggestions": [
-    "具体可执行的改进建议1",
-    "具体可执行的改进建议2",
-    "具体可执行的改进建议3"
+    "Specific and actionable improvement suggestions 1",
+    "Specific and actionable improvement suggestions 2",
+    "Specific and actionable improvement suggestions 3"
   ],
-  "lesson": "本次交易的关键教训"
+  "lesson": "Key lessons from this transaction"
 }}
 ```
 
-评分说明:
-- overall_score: 总分 (1-100)
-- timing_score: 时机选择评分 (1-100)
-- position_score: 仓位管理评分 (1-100)
-- discipline_score: 纪律执行评分 (1-100)
+Scoring instructions:
+- overall_score: total score (1-100)
+- timing_score: timing score (1-100)
+- position_score: Position management score (1-100)
+- discipline_score: Discipline enforcement score (1-100)
 
-请确保输出是有效的JSON格式，用```json和```包裹。"""
+Please make sure the output is in valid JSON format, use```json and```package."""
 
         prompt = self._get_prompt_from_template(
             agent_type="reviewers_v2",
@@ -190,8 +190,8 @@ class ReviewManagerAgent(BaseAgent):
             fallback_prompt=fallback_prompt
         )
         if prompt:
-            logger.info(f"✅ [复盘总结师] 成功从模板系统获取提示词 (长度: {len(prompt)})")
+            logger.info(f"✅ [Review summary expert] Successfully obtained the prompt word from the template system (length: {len(prompt)})")
             return prompt
-        logger.warning(f"⚠️ [复盘总结师] 模板系统未返回提示词，使用降级提示词")
+        logger.warning(f"⚠️ [Review summary expert] The template system did not return the prompt word, use the downgrade prompt word")
         return fallback_prompt
 

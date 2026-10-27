@@ -1,15 +1,15 @@
 """
-统一 LLM 客户端模块
+Unified LLM client module
 
-提供统一的 LLM 调用接口，支持多种后端：
-- OpenAI 兼容 API (DeepSeek, 通义千问, 智谱AI, 硅基流动等)
+Provides a unified LLM calling interface and supports multiple backends:
+- OpenAI Compatible API (DeepSeek, Tongyi Qianwen, Wisdom spectrum AI, Silicon based flow etc.)
 - Google Generative AI
 - Anthropic Claude
 
-主要组件:
-- UnifiedLLMClient: 统一客户端入口
-- LLMConfig: 配置模型
-- ToolCallNormalizer: 工具调用标准化
+Main components:
+- UnifiedLLMClient: Unified client portal
+- LLMConfig: Configure model
+- ToolCallNormalizer: Tool call standardization
 """
 
 from .models import LLMConfig, LLMResponse, Message, ToolCall, ToolResult

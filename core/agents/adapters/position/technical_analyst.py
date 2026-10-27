@@ -1,7 +1,7 @@
 """
-技术面分析师智能体
+Technical Analyst Agent
 
-分析K线走势、技术指标、支撑阻力位，评估技术面状态
+Analyze K-line trends, technical indicators, support and resistance levels, and evaluate technical status
 """
 
 import logging
@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 @register_agent
 class TechnicalAnalystAgent(BaseAgent):
     """
-    技术面分析师智能体
+    Technical Analyst Agent
     
-    分析持仓股票的技术面，包括:
-    - K线形态和趋势
-    - 技术指标状态
-    - 支撑阻力位分析
-    - 短期走势预判
+    Analyze the technical aspects of stock holdings, including:
+    - K Line patterns and trends
+    - Technical indicator status
+    - Support and resistance level analysis
+    - Short-term trend prediction
     """
     
     metadata = BUILTIN_AGENTS["pa_technical"]
@@ -33,43 +33,43 @@ class TechnicalAnalystAgent(BaseAgent):
         self._llm = None
     
     def set_dependencies(self, llm: Any, toolkit: Any = None) -> "TechnicalAnalystAgent":
-        """设置依赖项"""
+        """Set dependencies"""
         self._llm = llm
         return self
     
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """执行技术面分析"""
-        logger.info(f"📈 [技术面分析师] 开始分析...")
+        """Perform technical analysis"""
+        logger.info(f"📈 [technical analyst] Start analysis...")
 
         position_info = state.get("position_info", {})
         market_data = state.get("market_data", {})
 
-        logger.info(f"   📋 股票: {position_info.get('code', 'N/A')}")
+        logger.info(f"   📋 stocks: {position_info.get('code', 'N/A')}")
 
         user_id = state.get("user_id")
         preference_id = state.get("preference_id", "neutral")
         prompt = self._build_prompt(position_info, market_data, user_id, preference_id)
-        logger.info(f"   📝 提示词长度: {len(prompt)} 字符")
+        logger.info(f"   📝 Prompt word length: {len(prompt)} character")
 
         if self._llm:
             try:
-                logger.info(f"   🤖 调用 LLM 分析...")
+                logger.info(f"   🤖 Call LLM analysis...")
                 response = self._llm.invoke(prompt)
                 analysis = response.content if hasattr(response, 'content') else str(response)
-                logger.info(f"   ✅ LLM 返回成功，响应长度: {len(analysis)} 字符")
+                logger.info(f"   ✅ LLM Return success, response length: {len(analysis)} character")
             except Exception as e:
-                logger.error(f"   ❌ LLM调用失败: {e}")
-                analysis = f"技术面分析失败: {str(e)}"
+                logger.error(f"   ❌ LLM call failed: {e}")
+                analysis = f"Technical analysis failed: {str(e)}"
         else:
-            logger.warning(f"   ⚠️ LLM未配置")
-            analysis = "LLM未配置，无法进行技术面分析"
+            logger.warning(f"   ⚠️ LLM Not configured")
+            analysis = "LLM Not configured, technical analysis cannot be performed"
 
-        logger.info(f"📈 [技术面分析师] ✅ 分析完成")
+        logger.info(f"📈 [technical analyst] ✅ Analysis completed")
         return {"technical_analysis": analysis}
     
     def _build_prompt(self, position_info: Dict, market_data: Dict, 
                       user_id: str = None, preference_id: str = "neutral") -> str:
-        """构建技术面分析提示词"""
+        """Construct technical analysis prompt words"""
         template_variables = {
             "code": position_info.get("code", "N/A"),
             "name": position_info.get("name", "N/A"),
@@ -77,33 +77,33 @@ class TechnicalAnalystAgent(BaseAgent):
             "cost_price": position_info.get("cost_price", 0),
             "quantity": position_info.get("quantity", 0),
             "unrealized_pnl_pct": position_info.get("unrealized_pnl_pct", 0),
-            "kline_summary": market_data.get("summary", "无K线数据"),
-            "technical_indicators": market_data.get("technical_indicators", "无技术指标数据"),
+            "kline_summary": market_data.get("summary", "No K line data"),
+            "technical_indicators": market_data.get("technical_indicators", "No technical indicator data"),
         }
 
-        fallback_prompt = f"""你是一位专业的技术面分析师。请分析以下持仓股票的技术面:
+        fallback_prompt = f"""You are a professional technical analyst. Please analyze the technical aspects of the following stocks::
 
-## 持仓信息
-- 股票代码: {position_info.get('code', 'N/A')}
-- 股票名称: {position_info.get('name', 'N/A')}
-- 成本价: {position_info.get('cost_price', 0):.2f}
-- 现价: {position_info.get('current_price', 0):.2f}
-- 浮动盈亏: {position_info.get('unrealized_pnl_pct', 0):.2%}
+## Position information
+- Stock code: {position_info.get('code', 'N/A')}
+- Stock name: {position_info.get('name', 'N/A')}
+- cost price: {position_info.get('cost_price', 0):.2f}
+- Current price: {position_info.get('current_price', 0):.2f}
+- floating profit and loss: {position_info.get('unrealized_pnl_pct', 0):.2%}
 
-## 市场数据
-{market_data.get('summary', '无K线数据')}
+## market data
+{market_data.get('summary', 'No K line data')}
 
-## 技术指标
-{market_data.get('technical_indicators', '无技术指标数据')}
+## Technical indicators
+{market_data.get('technical_indicators', 'No technical indicator data')}
 
-## 分析要求
-1. **趋势判断**: 当前处于上升/下降/震荡趋势
-2. **支撑阻力**: 关键支撑位和阻力位
-3. **技术指标**: MACD/KDJ/RSI等指标状态
-4. **短期预判**: 未来3-5天可能走势
-5. **技术评分**: 1-10分的技术面评分
+## Analysis requirements
+1. **Trend judgment**: Currently in an upward/downward/oscillating trend
+2. **support resistance**: Key support and resistance levels
+3. **Technical indicators**: MACD/KDJ/RSI Waiting for indicator status
+4. **short term prediction**: Possible trends in the next 3-5 days
+5. **Technical rating**: 1-10 technical score
 
-请用简洁专业的语言回答。"""
+Please answer in concise and professional language."""
 
         prompt = self._get_prompt_from_template(
             agent_type="position_analysis",
@@ -113,8 +113,8 @@ class TechnicalAnalystAgent(BaseAgent):
             fallback_prompt=fallback_prompt
         )
         if prompt:
-            logger.info(f"✅ [技术面分析师] 成功从模板系统获取提示词")
+            logger.info(f"✅ [technical analyst] Successfully obtained the prompt word from the template system")
             return prompt
-        logger.warning(f"⚠️ [技术面分析师] 模板系统未返回提示词，使用降级提示词")
+        logger.warning(f"⚠️ [technical analyst] The template system did not return the prompt word, use the downgrade prompt word")
         return fallback_prompt
 

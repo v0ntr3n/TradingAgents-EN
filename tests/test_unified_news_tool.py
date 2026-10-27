@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试统一新闻工具集成效果
+Test the integration effect of unified news tools
 """
 
 import os
 import sys
 from datetime import datetime
 
-# 添加项目根目录到路径
+# Add project root directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tradingagents.agents.analysts.news_analyst import create_news_analyst
@@ -16,44 +16,44 @@ from tradingagents.agents.utils.agent_utils import Toolkit
 from tradingagents.llm_adapters.deepseek_adapter import ChatDeepSeek
 
 def test_unified_news_tool():
-    """测试统一新闻工具的集成效果"""
+    """Test the integration of unified news tools"""
     
-    print("🚀 开始测试统一新闻工具集成...")
+    print("🚀 Start testing the unified news tools integration...")
     
-    # 测试股票列表 - 包含A股、港股、美股
+    # Test stock list - including A shares, Hong Kong stocks, and US stocks
     test_stocks = [
-        ("000001", "平安银行 - A股"),
-        ("00700", "腾讯控股 - 港股"), 
-        ("AAPL", "苹果公司 - 美股")
+        ("000001", "Ping An Bank - A Shares"),
+        ("00700", "Tencent Holdings - Hong Kong Stocks"), 
+        ("AAPL", "Apple - US Stocks")
     ]
     
     try:
-        # 初始化工具包
-        print("📦 初始化工具包...")
+        # Initialization kit
+        print("📦 Initialization kit...")
         from tradingagents.default_config import DEFAULT_CONFIG
         config = DEFAULT_CONFIG.copy()
         config["online_tools"] = True
         toolkit = Toolkit(config=config)
         
-        # 创建LLM实例（使用DeepSeek）
-        print("🤖 创建LLM实例...")
+        # Create LLM instance (using DeepSeek)
+        print("🤖 Create LLM instance...")
         llm = ChatDeepSeek(
             model="deepseek-chat",
             temperature=0.1
         )
         
-        # 创建新闻分析师
-        print("📰 创建新闻分析师...")
+        # Create a news analyst
+        print("📰 Create a news analyst...")
         news_analyst = create_news_analyst(llm, toolkit)
         
-        # 测试每个股票
+        # Test every stock
         for stock_code, description in test_stocks:
             print(f"\n{'='*60}")
-            print(f"🔍 测试股票: {stock_code} ({description})")
+            print(f"🔍 test stocks: {stock_code} ({description})")
             print(f"{'='*60}")
             
             try:
-                # 调用新闻分析师
+                # Call a news analyst
                 result = news_analyst({
                     "messages": [],
                     "company_of_interest": stock_code,
@@ -61,40 +61,40 @@ def test_unified_news_tool():
                     "session_id": f"test_{stock_code}"
                 })
                 
-                # 检查结果
+                # Check results
                 if result and "messages" in result and len(result["messages"]) > 0:
                     final_message = result["messages"][-1]
                     if hasattr(final_message, 'content'):
                         report = final_message.content
-                        print(f"✅ 成功获取新闻分析报告")
-                        print(f"📊 报告长度: {len(report)} 字符")
+                        print(f"✅ Successfully obtained news analysis report")
+                        print(f"📊 Report length: {len(report)} character")
                         
-                        # 显示报告摘要
+                        # Show report summary
                         if len(report) > 200:
-                            print(f"📝 报告摘要: {report[:200]}...")
+                            print(f"📝 Report Summary: {report[:200]}...")
                         else:
-                            print(f"📝 完整报告: {report}")
+                            print(f"📝 full report: {report}")
                             
-                        # 检查是否包含真实新闻特征
-                        news_indicators = ['发布时间', '新闻标题', '文章来源', '东方财富', '财联社', '证券时报']
+                        # Check if real news features are included
+                        news_indicators = ['Release time', 'News headline', 'Article source', 'Oriental Fortune', 'Financial Associated Press', 'Securities Times']
                         has_real_news = any(indicator in report for indicator in news_indicators)
-                        print(f"🔍 包含真实新闻特征: {'是' if has_real_news else '否'}")
+                        print(f"🔍 Contains real news features: {'Yes' if has_real_news else 'No'}")
                     else:
-                        print("❌ 消息内容为空")
+                        print("❌ The message content is empty")
                 else:
-                    print("❌ 未获取到新闻分析报告")
+                    print("❌ News analysis report not obtained")
                     
             except Exception as e:
-                print(f"❌ 测试股票 {stock_code} 时出错: {e}")
+                print(f"❌ test stocks {stock_code} error: {e}")
                 import traceback
                 traceback.print_exc()
                 
         print(f"\n{'='*60}")
-        print("🎉 统一新闻工具测试完成!")
+        print("🎉 Unified news tool testing completed!")
         print(f"{'='*60}")
         
     except Exception as e:
-        print(f"❌ 测试过程中出现错误: {e}")
+        print(f"❌ An error occurred during testing: {e}")
         import traceback
         traceback.print_exc()
 

@@ -1,13 +1,13 @@
 """
-MCP Server 认证模块
+MCP Server Authentication module
 
-实现 API Key → user_id 映射：
-1. 客户端在 MCP 连接时携带 Bearer Token（即 API Key）
-2. TokenVerifier 从 system_configs 集合查找匹配的 mcp_api_keys
-3. 验证通过后，将 mapped_user_id 写入 AccessToken.client_id
-4. MCP 工具通过 Context.client_id 获取当前用户 ID
+realize API Key → user_id Mapping:
+1. The client carries Bearer Token (API Key) when connecting to MCP
+2. TokenVerifier Find matching from system_configs collection mcp_api_keys
+3. After the verification is passed, write mapped_user_id into AccessToken.client_id
+4. MCP The tool obtains the current user through Context.client_id ID
 
-数据库结构（system_configs 集合）:
+Database structure (system_configs collection):
 {
     "config_key": "mcp_auth",
     "category": "mcp",
@@ -15,7 +15,7 @@ MCP Server 认证模块
         {
             "key": "sk-mcp-xxxx",
             "user_id": "60f1a2b3c4d5e6f7a8b9c0d1",
-            "name": "我的 Claude Desktop",
+            "name": "mine Claude Desktop",
             "daily_quota": 50,
             "enabled": true
         }
@@ -33,52 +33,52 @@ logger = logging.getLogger(__name__)
 
 
 class MCPApiKeyVerifier:
-    """基于 API Key 的 MCP 认证器
+    """API Key-Based MCP Authenticator
 
-    从 MongoDB system_configs 集合验证 API Key，
-    并将关联的 user_id 映射到 AccessToken.client_id。
+    Verify API Key from MongoDB system_configs collection,
+    And maps the associated user_id to AccessToken.client_id.
     """
 
     def __init__(self, required_scopes: list[str] | None = None):
         self.required_scopes = required_scopes or ["mcp:tools"]
         self._config_cache: Optional[dict] = None
         self._cache_time: Optional[datetime] = None
-        self._cache_ttl_seconds = 300  # 5 分钟缓存
+        self._cache_ttl_seconds = 300  # 5 minutes cache
 
     async def verify_token(self, token: str) -> AccessToken | None:
-        """验证 Bearer Token（API Key），返回 AccessToken 或 None
+        """Verify Bearer Token (API Key), return AccessToken or None
 
         Args:
-            token: 客户端传入的 Bearer Token
+            token: Incoming from client Bearer Token
 
         Returns:
-            AccessToken（client_id 为映射的 user_id）或 None（验证失败）
+            AccessToken (client_id is the mapped user_id) or None (validation failed)
         """
         if not token:
-            logger.warning("🔒 MCP 认证失败: 空 token")
+            logger.warning("🔒 MCP Authentication failed: empty token")
             return None
 
         key_entry = await self._find_api_key(token)
         if not key_entry:
-            logger.warning("🔒 MCP 认证失败: 无效的 API Key")
+            logger.warning("🔒 MCP Authentication failed: Invalid API Key")
             return None
 
         if not key_entry.get("enabled", True):
-            logger.warning(f"🔒 MCP 认证失败: API Key 已禁用 ({key_entry.get('name', 'unknown')})")
+            logger.warning(f"🔒 MCP Authentication failed: API Key Disabled ({key_entry.get('name', 'unknown')})")
             return None
 
-        # 检查每日配额
+        # Check daily quota
         user_id = key_entry["user_id"]
         daily_quota = key_entry.get("daily_quota", 0)
         if daily_quota > 0:
             within_quota = await self._check_daily_quota(user_id, daily_quota)
             if not within_quota:
-                logger.warning(f"🔒 MCP 配额超限: user={user_id}, quota={daily_quota}")
+                logger.warning(f"🔒 MCP Quota exceeded: user={user_id}, quota={daily_quota}")
                 return None
 
-        logger.info(f"✅ MCP 认证成功: user={user_id}, name={key_entry.get('name', 'N/A')}")
+        logger.info(f"✅ MCP Authentication successful: user={user_id}, name={key_entry.get('name', 'N/A')}")
 
-        # 将 user_id 放入 client_id，工具通过 ctx.client_id 获取
+        # Put user_id into client_id, the tool obtains it through ctx.client_id
         return AccessToken(
             token=token,
             client_id=user_id,
@@ -86,7 +86,7 @@ class MCPApiKeyVerifier:
         )
 
     async def _find_api_key(self, token: str) -> Optional[dict]:
-        """从数据库查找匹配的 API Key 配置"""
+        """Find matching API Key configuration from database"""
         config = await self._get_mcp_config()
         if not config:
             return None
@@ -98,10 +98,10 @@ class MCPApiKeyVerifier:
         return None
 
     async def _get_mcp_config(self) -> Optional[dict]:
-        """获取 MCP 认证配置（带缓存）"""
+        """Get MCP authentication configuration (with cache)"""
         now = datetime.now(timezone.utc)
 
-        # 检查缓存
+        # Check cache
         if (
             self._config_cache is not None
             and self._cache_time is not None
@@ -119,11 +119,11 @@ class MCPApiKeyVerifier:
             self._cache_time = now
             return config
         except Exception as e:
-            logger.error(f"❌ 读取 MCP 认证配置失败: {e}")
-            return self._config_cache  # 降级使用旧缓存
+            logger.error(f"❌ Failed to read MCP authentication configuration: {e}")
+            return self._config_cache  # Downgrade to use old cache
 
     async def _check_daily_quota(self, user_id: str, daily_quota: int) -> bool:
-        """检查用户今日 MCP 分析次数是否在配额内"""
+        """Check whether the user s MCP analysis times today are within the quota"""
         try:
             from bson import ObjectId
             from app.core.database import get_mongo_db
@@ -132,8 +132,8 @@ class MCPApiKeyVerifier:
             today_start = datetime.now(timezone.utc).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
-            # user_id 在数据库中存储为 ObjectId，需要转换
-            # 通过 task_params._mcp_source 标记来源（analyze_stock 创建时写入）
+            # user_id Stored as ObjectId in database, needs to be converted
+            # Mark the source via task_params._mcp_source (written when analyze_stock is created)
             count = await db.unified_analysis_tasks.count_documents({
                 "user_id": ObjectId(user_id),
                 "created_at": {"$gte": today_start},
@@ -141,10 +141,10 @@ class MCPApiKeyVerifier:
             })
             return count < daily_quota
         except Exception as e:
-            logger.error(f"❌ 检查配额失败: {e}")
-            return True  # 出错时放行，避免阻断服务
+            logger.error(f"❌ Quota check failed: {e}")
+            return True  # Release when errors occur to avoid blocking service
 
 
-# ── 模块级便捷实例 ──
+# ── Module-level convenience examples ──
 mcp_auth = MCPApiKeyVerifier()
 

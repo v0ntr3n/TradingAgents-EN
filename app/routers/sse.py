@@ -34,25 +34,25 @@ async def task_progress_generator(task_id: str, user_id: str):
             heartbeat_every = int(getattr(settings, "SSE_HEARTBEAT_INTERVAL_SECONDS", 10))
             max_idle_seconds = int(getattr(settings, "SSE_TASK_MAX_IDLE_SECONDS", 300))
 
-        # 🔥 修复：创建 PubSub 连接
+        # 🔥 Fix: Create PubSub connection
         pubsub = r.pubsub()
-        logger.info(f"📡 [SSE-Task] 创建 PubSub 连接: task={task_id}, user={user_id}")
+        logger.info(f"📡 [SSE-Task] Create a PubSub connection: task={task_id}, user={user_id}")
 
-        # 🔥 修复：订阅频道（可能失败，需要确保 pubsub 被清理）
+        # 🔥 Fix: Subscribe to channel (may fail, need to make sure pubsub is cleaned)
         try:
             await pubsub.subscribe(channel)
-            logger.info(f"✅ [SSE-Task] 订阅频道成功: {channel}")
+            logger.info(f"✅ [SSE-Task] Subscription to channel successful: {channel}")
             # Send initial connection confirmation
-            yield f"event: connected\ndata: {{\"task_id\": \"{task_id}\", \"message\": \"已连接进度流\"}}\n\n"
+            yield f"event: connected\ndata: {{\"task_id\": \"{task_id}\", \"message\": \"Progress stream connected\"}}\n\n"
         except Exception as subscribe_error:
-            # 🔥 订阅失败时立即清理 pubsub 连接
-            logger.error(f"❌ [SSE-Task] 订阅频道失败: {subscribe_error}")
+            # 🔥 Immediately clean up pubsub connections when subscription fails
+            logger.error(f"❌ [SSE-Task] Failed to subscribe to channel: {subscribe_error}")
             try:
                 await pubsub.close()
-                logger.info(f"🧹 [SSE-Task] 订阅失败后已关闭 PubSub 连接")
+                logger.info(f"🧹 [SSE-Task] PubSub connection closed after subscription failed")
             except Exception as close_error:
-                logger.error(f"❌ [SSE-Task] 关闭 PubSub 连接失败: {close_error}")
-            # 重新抛出异常，让外层 except 处理
+                logger.error(f"❌ [SSE-Task] Failed to close PubSub connection: {close_error}")
+            # Rethrow the exception and let the outer except handle it
             raise
 
         # Listen for progress updates
@@ -84,30 +84,30 @@ async def task_progress_generator(task_id: str, user_id: str):
 
     except Exception as e:
         logger.exception(f"SSE error for task {task_id}: {e}")
-        yield f"event: error\ndata: {{\"error\": \"连接异常: {str(e)}\"}}\n\n"
+        yield f"event: error\ndata: {{\"error\": \"Connection abnormality: {str(e)}\"}}\n\n"
     finally:
-        # 🔥 修复：确保在所有情况下都释放连接
+        # 🔥 Fix: Ensure connections are released in all cases
         if pubsub:
-            logger.info(f"🧹 [SSE-Task] 清理 PubSub 连接: task={task_id}")
+            logger.info(f"🧹 [SSE-Task] Clean up PubSub connections: task={task_id}")
 
-            # 分步骤关闭，确保即使 unsubscribe 失败也能关闭连接
+            # Stepped shutdown to ensure the connection is closed even if unsubscribe fails
             try:
                 await pubsub.unsubscribe(channel)
-                logger.debug(f"✅ [SSE-Task] 已取消订阅频道: {channel}")
+                logger.debug(f"✅ [SSE-Task] Channel unsubscribed: {channel}")
             except Exception as e:
-                logger.warning(f"⚠️ [SSE-Task] 取消订阅失败（将继续关闭连接）: {e}")
+                logger.warning(f"⚠️ [SSE-Task] Unsubscription failed (will continue to close the connection): {e}")
 
             try:
                 await pubsub.close()
-                logger.info(f"✅ [SSE-Task] PubSub 连接已关闭: task={task_id}")
+                logger.info(f"✅ [SSE-Task] PubSub connection closed: task={task_id}")
             except Exception as e:
-                logger.error(f"❌ [SSE-Task] 关闭 PubSub 连接失败: {e}", exc_info=True)
-                # 即使关闭失败，也尝试重置连接
+                logger.error(f"❌ [SSE-Task] Failed to close PubSub connection: {e}", exc_info=True)
+                # Try to reset connection even if shutdown fails
                 try:
                     await pubsub.reset()
-                    logger.info(f"🔄 [SSE-Task] PubSub 连接已重置: task={task_id}")
+                    logger.info(f"🔄 [SSE-Task] PubSub Connection reset: task={task_id}")
                 except Exception as reset_error:
-                    logger.error(f"❌ [SSE-Task] 重置 PubSub 连接也失败: {reset_error}")
+                    logger.error(f"❌ [SSE-Task] Resetting the PubSub connection also failed: {reset_error}")
 
 
 async def batch_progress_generator(batch_id: str, user_id: str):
@@ -126,7 +126,7 @@ async def batch_progress_generator(batch_id: str, user_id: str):
             batch_max_idle_seconds = int(getattr(settings, "SSE_BATCH_MAX_IDLE_SECONDS", 600))
 
         # Send initial connection confirmation
-        yield f"event: connected\ndata: {{\"batch_id\": \"{batch_id}\", \"message\": \"已连接批次进度流\"}}\n\n"
+        yield f"event: connected\ndata: {{\"batch_id\": \"{batch_id}\", \"message\": \"Batch progress flow connected\"}}\n\n"
 
         idle_elapsed = 0.0
 
@@ -135,18 +135,18 @@ async def batch_progress_generator(batch_id: str, user_id: str):
                 # Get current batch status
                 batch_data = await svc.get_batch(batch_id)
                 if not batch_data:
-                    yield f"event: error\ndata: {{\"error\": \"批次不存在\"}}\n\n"
+                    yield f"event: error\ndata: {{\"error\": \"Batch does not exist\"}}\n\n"
                     break
 
                 # Check if batch belongs to user
                 if batch_data.get("user") != user_id:
-                    yield f"event: error\ndata: {{\"error\": \"无权限访问此批次\"}}\n\n"
+                    yield f"event: error\ndata: {{\"error\": \"No permission to access this batch\"}}\n\n"
                     break
 
                 # Calculate batch progress based on task statuses
                 task_ids = batch_data.get("tasks", [])
                 if not task_ids:
-                    yield f"event: progress\ndata: {{\"batch_id\": \"{batch_id}\", \"message\": \"批次无任务\", \"progress\": 0}}\n\n"
+                    yield f"event: progress\ndata: {{\"batch_id\": \"{batch_id}\", \"message\": \"No tasks in batch\", \"progress\": 0}}\n\n"
                     await asyncio.sleep(batch_poll_interval)
                     idle_elapsed += batch_poll_interval
                     continue
@@ -174,19 +174,19 @@ async def batch_progress_generator(batch_id: str, user_id: str):
                 if finished_tasks == total_tasks:
                     if failed_count == 0:
                         batch_status = "completed"
-                        message = f"批次完成: {completed_count}/{total_tasks} 成功"
+                        message = f"Batch completed: {completed_count}/{total_tasks} success"
                     elif completed_count == 0:
                         batch_status = "failed"
-                        message = f"批次失败: {failed_count}/{total_tasks} 失败"
+                        message = f"Batch failed: {failed_count}/{total_tasks} failed"
                     else:
                         batch_status = "partial"
-                        message = f"批次部分成功: {completed_count} 成功, {failed_count} 失败"
+                        message = f"Batch partially successful: {completed_count} success, {failed_count} failed"
                 elif processing_count > 0 or finished_tasks < total_tasks:
                     batch_status = "processing"
-                    message = f"批次处理中: {finished_tasks}/{total_tasks} 已完成, {processing_count} 处理中"
+                    message = f"Batch processing: {finished_tasks}/{total_tasks} Completed, {processing_count} Processing"
                 else:
                     batch_status = "queued"
-                    message = f"批次排队中: {total_tasks} 任务待处理"
+                    message = f"Batch in queue: {total_tasks} Task pending"
 
                 progress_data = {
                     "batch_id": batch_id,
@@ -213,12 +213,12 @@ async def batch_progress_generator(batch_id: str, user_id: str):
 
             except Exception as e:
                 logger.exception(f"Batch progress error: {e}")
-                yield f"event: error\ndata: {{\"error\": \"获取批次状态失败: {str(e)}\"}}\n\n"
+                yield f"event: error\ndata: {{\"error\": \"Failed to get batch status: {str(e)}\"}}\n\n"
                 break
 
     except Exception as e:
         logger.exception(f"SSE batch error for {batch_id}: {e}")
-        yield f"event: error\ndata: {{\"error\": \"连接异常: {str(e)}\"}}\n\n"
+        yield f"event: error\ndata: {{\"error\": \"Connection abnormality: {str(e)}\"}}\n\n"
 
 
 @router.get("/tasks/{task_id}")

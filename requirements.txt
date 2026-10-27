@@ -1,6 +1,6 @@
-# 注意：此文件已弃用，请使用 pyproject.toml
-# 推荐安装方式：pip install -e .
-# 或使用 uv：uv pip install -e .
+# NOTE: This file is deprecated, please use pyproject.toml
+# Recommended installation method:pip install -e .
+# Or use uv:uv pip install -e .
 
 typing-extensions
 openai>=1.0.0,<2.0.0
@@ -23,41 +23,41 @@ baostock
 finnhub-python
 parsel
 requests
-curl-cffi>=0.6.0  # 模拟真实浏览器TLS指纹，绕过反爬虫检测
+curl-cffi>=0.6.0  # Simulate real browser TLS fingerprints and bypass anti-crawler detection
 tqdm
 pytz
 redis
 rich
 questionary
 langchain_anthropic
-langchain-google-genai>=2.1.12  # 修复 client_options 未定义错误
-google-generativeai>=0.8.3  # Google Gemini SDK (修复包名错误)
+langchain-google-genai>=2.1.12  # Fix client_options undefined error
+google-generativeai>=0.8.3  # Google Gemini SDK (Fix package name error)
 dashscope
 psutil
 pystray>=0.19.0
 Pillow>=10.0.0
-pymongo  # MongoDB数据库支持，用于Token使用记录存储
-motor>=3.3.0  # 异步MongoDB驱动，用于FastAPI后端
-markdown>=3.4.0  # Markdown处理，用于报告生成
-mem0ai>=1.0.7  # mem0 统一记忆层 SDK
-pypandoc>=1.11  # 文档格式转换，用于导出报告功能
-python-docx>=0.8.11  # Word文档处理，用于修复文本方向
-pdfkit>=1.0.0  # PDF生成工具，需要wkhtmltopdf（外部工具）
-weasyprint>=62.0  # PDF生成工具（纯Python，推荐，无需外部工具）
-python-dotenv>=1.0.0  # 环境变量管理，用于.env文件解析
-fastapi>=0.104.0  # FastAPI框架，用于后端API
-uvicorn[standard]>=0.24.0  # ASGI服务器，用于运行FastAPI
-pydantic>=2.0.0  # 数据验证，FastAPI依赖
-pydantic-settings>=2.0.0  # 设置管理，用于配置加载
-python-multipart>=0.0.6  # 文件上传支持
-PyJWT>=2.0.0  # JWT令牌处理
-bcrypt>=4.0.0  # 密码加密
-itsdangerous>=2.0.0  # Session 签名（SessionMiddleware 需要）
-apscheduler>=3.10.0  # 任务调度器，用于定时任务
-aiofiles>=0.8.0  # 异步文件操作
-httpx>=0.24.0  # 异步HTTP客户端
-sse-starlette>=1.0.0  # Server-Sent Events支持
+pymongo  # MongoDB Database support for Token usage record storage
+motor>=3.3.0  # Asynchronous MongoDB driver for FastAPI backend
+markdown>=3.4.0  # Markdown Processing, for report generation
+mem0ai>=1.0.7  # mem0 unified memory layer SDK
+pypandoc>=1.11  # Document format conversion for export report function
+python-docx>=0.8.11  # Word Document processing for fixing text orientation
+pdfkit>=1.0.0  # PDF Generation tool, requires wkhtmltopdf (external tool)
+weasyprint>=62.0  # PDF Build tools (pure Python, recommended, no external tools required)
+python-dotenv>=1.0.0  # Environment variable management for .env file parsing
+fastapi>=0.104.0  # FastAPI Framework, for backend API
+uvicorn[standard]>=0.24.0  # ASGI server to run FastAPI
+pydantic>=2.0.0  # Data validation, FastAPI dependency
+pydantic-settings>=2.0.0  # Settings management for configuration loading
+python-multipart>=0.0.6  # File upload support
+PyJWT>=2.0.0  # JWT Token handling
+bcrypt>=4.0.0  # Password encryption
+itsdangerous>=2.0.0  # Session Signature (required by SessionMiddleware)
+apscheduler>=3.10.0  # Task scheduler for scheduled tasks
+aiofiles>=0.8.0  # Asynchronous file operations
+httpx>=0.24.0  # Asynchronous HTTP client
+sse-starlette>=1.0.0  # Server-Sent Events support
 mcp>=1.12.0  # MCP/FastMCP Python SDK
-jinja2>=3.0.0  # 模板引擎（邮件模板需要）
-concurrent-log-handler>=0.9.24  # Windows 友好的日志轮转处理器
-toml>=0.10.2  # TOML 配置文件解析（logging_manager 需要）
+jinja2>=3.0.0  # Template engine (required for email templates)
+concurrent-log-handler>=0.9.24  # Windows Friendly log rotation handler
+toml>=0.10.2  # TOML Configuration file parsing (required by logging_manager)

@@ -1,8 +1,8 @@
 """
-ToolMetadata → OpenAI Function Calling 格式转换器
+ToolMetadata → OpenAI Function Calling format converter
 
-将 ToolMetadata 转换为 OpenAI 兼容的工具定义，供 LLM Function Calling 使用。
-与 SkillConverter 对齐，确保工具描述与 Skill 元数据一致。
+Convert ToolMetadata into OpenAI compatible tool definitions for use by LLM Function Calling.
+Align with SkillConverter to ensure tool descriptions are consistent with Skill metadata.
 """
 
 import re
@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 from .config import ToolMetadata, ToolParameter
 
-# JSON Schema 类型映射
+# JSON Schema type mapping
 _TYPE_MAP = {
     "string": "string",
     "str": "string",
@@ -26,17 +26,17 @@ _TYPE_MAP = {
     "dict": "object",
 }
 
-# OpenAI 工具名合法字符正则：^[a-zA-Z0-9_-]+$
+# OpenAI Legal character rules for tool names:^[a-zA-Z0-9_-]+$
 _OPENAI_NAME_PATTERN = re.compile(r"[^a-zA-Z0-9_-]")
 
 
 def sanitize_function_name(name: str) -> str:
-    """将任意字符串清理成符合 OpenAI 工具名规范的字符串
+    """Clean any string into a string that conforms to the OpenAI tool name specification
 
-    - 把非法字符（中文、空格、括号、点等）替换为下划线
-    - 合并多余的连续下划线
-    - 去掉首尾下划线
-    - 如果清理后为空，返回 'tool'
+    - Replace illegal characters (Chinese, spaces, brackets, dots, etc.) with underscores
+    - Merge redundant consecutive underscores
+    - Remove leading and trailing underscores
+    - If it is empty after cleaning, return 'tool'
     """
     if not name:
         return "tool"
@@ -47,13 +47,13 @@ def sanitize_function_name(name: str) -> str:
 
 def tool_metadata_to_openai(tool: ToolMetadata) -> Dict[str, Any]:
     """
-    将 ToolMetadata 转换为 OpenAI Function Calling 工具定义格式
+    Convert ToolMetadata to OpenAI Function Calling tool definition format
 
     Args:
-        tool: 工具元数据
+        tool: Tool metadata
 
     Returns:
-        OpenAI 格式的工具定义:
+        OpenAI Format tool definition:
         {
             "type": "function",
             "function": {
@@ -63,14 +63,14 @@ def tool_metadata_to_openai(tool: ToolMetadata) -> Dict[str, Any]:
             }
         }
     """
-    # 构建描述：合并 description + when_to_use（与 SkillConverter 对齐）
+    # Build Description: Merge description + when_to_use (Aligned with SkillConverter)
     description = tool.description
     if tool.when_to_use:
         description += f"\n\n何时使用: {tool.when_to_use}"
     if tool.when_not_to_use:
         description += f"\n\n不宜使用: {tool.when_not_to_use}"
 
-    # 构建参数的 JSON Schema
+    # build parameters JSON Schema
     properties: Dict[str, Any] = {}
     required: List[str] = []
 
@@ -92,7 +92,7 @@ def tool_metadata_to_openai(tool: ToolMetadata) -> Dict[str, Any]:
     return {
         "type": "function",
         "function": {
-            "name": sanitize_function_name(tool.id),  # OpenAI 要求 ^[a-zA-Z0-9_-]+$
+            "name": sanitize_function_name(tool.id),  # OpenAI request ^[a-zA-Z0-9_-]+$
             "description": description,
             "parameters": {
                 "type": "object",
@@ -105,9 +105,9 @@ def tool_metadata_to_openai(tool: ToolMetadata) -> Dict[str, Any]:
 
 def tool_metadata_list_to_openai(tools: List[ToolMetadata]) -> List[Dict[str, Any]]:
     """
-    批量将 ToolMetadata 转换为 OpenAI 工具定义列表
+    Batch convert ToolMetadata to OpenAI tool definition list
 
-    仅转换 fc_enabled=True 的工具（无参数工具也支持）
+    Convert only fc_enabled=True Tools (parameterless tools are also supported)
     """
     result = []
     for tool in tools:

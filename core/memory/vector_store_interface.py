@@ -1,9 +1,9 @@
 """
-向量数据库统一接口
+Vector database unified interface
 
-支持多种向量数据库后端：
-- ChromaDB (默认，但有线程安全问题)
-- Qdrant (推荐，线程安全)
+Supports multiple vector database backends:
+- ChromaDB (Default, but has thread safety issues)
+- Qdrant (Recommended, thread safe)
 """
 
 from abc import ABC, abstractmethod
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class VectorStoreInterface(ABC):
-    """向量数据库统一接口"""
+    """Vector database unified interface"""
 
     @abstractmethod
     def add(
@@ -25,16 +25,16 @@ class VectorStoreInterface(ABC):
         ids: List[str]
     ) -> bool:
         """
-        添加文档到向量数据库
+        Add document to vector database
 
         Args:
-            documents: 文档内容列表
-            embeddings: 向量列表
-            metadatas: 元数据列表
-            ids: 文档 ID 列表
+            documents: Document content list
+            embeddings: vector list
+            metadatas: metadata list
+            ids: Document ID list
 
         Returns:
-            是否成功
+            Is it successful?
         """
         pass
 
@@ -46,15 +46,15 @@ class VectorStoreInterface(ABC):
         where: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        查询相似文档
+        Query similar documents
 
         Args:
-            query_embeddings: 查询向量列表
-            n_results: 返回结果数量
-            where: 元数据过滤条件
+            query_embeddings: Query vector list
+            n_results: Number of results returned
+            where: Metadata filters
 
         Returns:
-            查询结果字典，格式：
+            Query result dictionary, format:
             {
                 'documents': [[doc1, doc2, ...]],
                 'metadatas': [[meta1, meta2, ...]],
@@ -66,43 +66,43 @@ class VectorStoreInterface(ABC):
     @abstractmethod
     def count(self) -> int:
         """
-        获取文档数量
+        Get the number of documents
 
         Returns:
-            文档数量
+            Number of documents
         """
         pass
 
     @abstractmethod
     def delete_collection(self) -> bool:
         """
-        删除集合
+        Delete collection
 
         Returns:
-            是否成功
+            Is it successful?
         """
         pass
 
     @abstractmethod
     def delete_ids(self, ids: List[str]) -> bool:
         """
-        按文档 ID 删除集合中的部分文档
+        Delete some documents in a collection by document ID
 
         Args:
-            ids: 文档 ID 列表
+            ids: Document ID list
 
         Returns:
-            是否成功
+            Is it successful?
         """
         pass
 
     @abstractmethod
     def get_backend_name(self) -> str:
         """
-        获取后端名称
+        Get backend name
 
         Returns:
-            后端名称（chromadb, qdrant 等）
+            backend name (chromadb, qdrant etc.)
         """
         pass
 

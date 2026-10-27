@@ -1,11 +1,11 @@
 
 /**
- * 股票分析API
+ * stock analysis API
  */
 
 import { request, type ApiResponse } from './request'
 
-// 分析相关类型定义
+// Analyze related type definitions
 export interface AnalysisRequest {
   market_type: string
   stock_symbol: string
@@ -19,13 +19,13 @@ export interface AnalysisRequest {
   llm_model?: string
 }
 
-// 分析引擎类型（与后端 AnalysisEngine 枚举保持一致）
+// Analysis engine type (consistent with the backend AnalysisEngine enumeration)
 export type AnalysisEngineType = 'legacy' | 'unified' | 'v2'
 
-// 后端期望的请求格式
+// The request format expected by the backend
 export interface SingleAnalysisRequest {
-  symbol?: string  // 主字段：6位股票代码
-  stock_code?: string  // 兼容字段（已废弃）
+  symbol?: string  // Main field: 6-digit stock code
+  stock_code?: string  // Compatible fields (deprecated)
   parameters?: {
     market_type?: string
     analysis_date?: string
@@ -68,22 +68,22 @@ export interface AnalysisStep {
 
 export interface AnalysisResult {
   analysis_id: string
-  symbol?: string  // 主字段：6位股票代码
-  stock_symbol: string  // 兼容字段
-  stock_code?: string  // 兼容字段（已废弃）
+  symbol?: string  // Main field: 6-digit stock code
+  stock_symbol: string  // Compatible fields
+  stock_code?: string  // Compatible fields (deprecated)
   stock_name: string
   market_type: string
   analysis_date: string
   analysis_type: string
 
-  // 基础数据
+  // Basic data
   current_price: number
   price_change: number
   price_change_percent: number
   volume: number
   market_cap?: number
 
-  // 分析结果
+  // Analyze results
   summary: string
   technical_analysis: string
   fundamental_analysis: string
@@ -92,13 +92,13 @@ export interface AnalysisResult {
   recommendation: string
   risk_assessment: string
 
-  // 评分
+  // Rating
   technical_score: number
   fundamental_score: number
   sentiment_score: number
   overall_score: number
 
-  // 元数据
+  // metadata
   data_sources: string[]
   llm_provider: string
   llm_model: string
@@ -121,51 +121,51 @@ export interface AnalysisHistory {
   analyses: AnalysisResult[]
 }
 
-// 股票分析API
+// stock analysis API
 export const analysisApi = {
-  // 开始分析
+  // Start analysis
   startAnalysis(analysisRequest: AnalysisRequest): Promise<{ analysis_id: string; message: string }> {
     return request.post('/api/analysis/single', analysisRequest)
   },
 
-  // 开始单股研究（使用后端期望的格式）
+  // Start a single stock study (using the format expected by the backend)
   startSingleAnalysis(analysisRequest: SingleAnalysisRequest): Promise<ApiResponse<any>> {
     return request.post('/api/analysis/single', analysisRequest)
   },
 
-  // 分析前预检：检查数据源配置、基础数据同步状态
+  // Pre-analysis: Check data source configuration and basic data synchronization status
   precheck(symbol?: string): Promise<ApiResponse<any>> {
     const params = symbol ? { symbol } : {}
     return request.get('/api/analysis/precheck', { params })
   },
 
-  // 获取任务状态
+  // Get task status
   getTaskStatus(taskId: string): Promise<ApiResponse<any>> {
     return request.get(`/api/analysis/tasks/${taskId}/status`)
   },
 
-  // 获取分析进度
+  // Get analysis progress
   getProgress(analysisId: string): Promise<AnalysisProgress> {
     return request.get(`/api/analysis/${analysisId}/progress`)
   },
 
-  // 获取分析结果
+  // Get analysis results
   getResult(analysisId: string): Promise<AnalysisResult> {
     return request.get(`/api/analysis/${analysisId}/result`)
   },
 
-  // 停止分析
+  // Stop analysis
   stopAnalysis(analysisId: string): Promise<{ message: string }> {
     return request.post(`/api/analysis/${analysisId}/stop`, {})
   },
 
-  // 获取分析历史（用户维度）
+  // Get analysis history (user dimension)
   getHistory(params?: {
     page?: number
     page_size?: number
     market_type?: string
-    symbol?: string  // 主字段：股票代码
-    stock_code?: string  // 兼容字段（已废弃）
+    symbol?: string  // Main field: Stock code
+    stock_code?: string  // Compatible fields (deprecated)
     start_date?: string
     end_date?: string
     status?: string
@@ -173,12 +173,12 @@ export const analysisApi = {
     return request.get('/api/analysis/user/history', { params })
   },
 
-  // 删除分析结果
+  // Delete analysis results
   deleteAnalysis(analysisId: string): Promise<{ message: string }> {
     return request.delete(`/api/analysis/${analysisId}`)
   },
 
-  // 导出分析结果
+  // Export analysis results
   exportAnalysis(analysisId: string, format: 'pdf' | 'excel' | 'json' = 'pdf'): Promise<Blob> {
     return request.get(`/api/analysis/${analysisId}/export`, {
       params: { format },
@@ -186,62 +186,62 @@ export const analysisApi = {
     })
   },
 
-  // 批量分析（方案A：与单股一致的进程内执行）
+  // Batch Analysis (Option A: In-Process Execution Consistent with Single Stocks)
   startBatchAnalysis(batchRequest: {
     title: string
     description?: string
-    symbols?: string[]  // 主字段：股票代码列表
-    stock_codes?: string[]  // 兼容字段（已废弃）
+    symbols?: string[]  // Main field: List of stock codes
+    stock_codes?: string[]  // Compatible fields (deprecated)
     parameters?: SingleAnalysisRequest['parameters']
   }): Promise<ApiResponse<{ batch_id: string; total_tasks: number; task_ids: string[]; mapping?: any[]; status: string }>>{
     return request.post('/api/analysis/batch', batchRequest)
   },
 
-  // 获取批次详情（兼容原有队列接口，若后续需要）
+  // Get batch details (compatible with the original queue interface, if needed later)
   getBatch(batchId: string): Promise<any> {
     return request.get(`/api/analysis/batches/${batchId}`)
   },
 
-  // 获取任务详情（兼容原有队列接口，若后续需要）
+  // Get task details (compatible with the original queue interface, if needed later)
   getTaskDetails(taskId: string): Promise<any> {
     return request.get(`/api/analysis/tasks/${taskId}/details`)
   },
 
-  // 获取任务列表（新版 simple service）
+  // Get task list (new version simple service)
   getTaskList(params?: { status?: string; limit?: number; offset?: number }): Promise<any>{
     return request.get('/api/analysis/tasks', { params })
   },
 
-  // 获取任务结果（新版 simple service）
+  // Get task results (new version of simple service)
   getTaskResult(taskId: string): Promise<any>{
     return request.get(`/api/analysis/tasks/${taskId}/result`)
   },
 
-  // 标记任务为失败
+  // Mark task as failed
   markTaskAsFailed(taskId: string): Promise<{ success: boolean; message: string }> {
     return request.post(`/api/analysis/tasks/${taskId}/mark-failed`, {})
   },
 
-  // 删除任务
+  // Delete task
   deleteTask(taskId: string): Promise<{ success: boolean; message: string }> {
     return request.delete(`/api/analysis/tasks/${taskId}`)
   },
 
-  // 重新创建失败的任务
+  // Recreate failed tasks
   retryTask(taskId: string): Promise<ApiResponse<{ task_id: string; message: string }>> {
     return request.post(`/api/analysis/tasks/${taskId}/retry`)
   },
 
-  // 分享分析结果
+  // Share analysis results
   shareAnalysis(analysisId: string, options: {
-    expires_in?: number // 过期时间（秒）
-    password?: string   // 访问密码
-    public?: boolean    // 是否公开
+    expires_in?: number // Expiration time (seconds)
+    password?: string   // access password
+    public?: boolean    // Is it public?
   }): Promise<{ share_url: string; share_code: string }> {
     return request.post(`/api/analysis/${analysisId}/share`, options)
   },
 
-  // 获取股票基础信息
+  // Get basic stock information
   getStockInfo(symbol: string, market: string): Promise<{
     symbol: string
     name: string
@@ -260,7 +260,7 @@ export const analysisApi = {
     })
   },
 
-  // 搜索股票
+  // Search stocks
   searchStocks(query: string, market?: string): Promise<Array<{
     symbol: string
     name: string
@@ -272,7 +272,7 @@ export const analysisApi = {
     })
   },
 
-  // 获取热门股票
+  // Get popular stocks
   getPopularStocks(market?: string, limit: number = 10): Promise<Array<{
     symbol: string
     name: string
@@ -287,7 +287,7 @@ export const analysisApi = {
     })
   },
 
-  // 获取分析统计
+  // Get analysis statistics
   getAnalysisStats(params?: {
     start_date?: string
     end_date?: string
@@ -317,9 +317,9 @@ export const analysisApi = {
   }
 }
 
-// 分析相关的常量
+// Analyze related constants
 export const MARKET_TYPES = {
-  CN: 'A股'
+  CN: 'A shares'
 } as const
 
 export const ANALYSIS_TYPES = {
@@ -331,31 +331,31 @@ export const ANALYSIS_TYPES = {
 } as const
 
 /**
- * 数据源常量
+ * Data source constants
  *
- * 注意：这些常量与后端 DataSourceType 枚举保持同步
- * 添加新数据源时，请先在后端 tradingagents/constants/data_sources.py 中注册
+ * NOTE: These constants are kept in sync with the backend DataSourceType enumeration
+ * When adding a new data source, please first register it in the backend tradingagents/constants/data_sources.py
  */
 export const DATA_SOURCES = {
-  // 缓存数据源
+  // cache data source
   MONGODB: 'mongodb',
 
-  // 中国市场数据源
+  // China market data source
   TUSHARE: 'tushare',
   AKSHARE: 'akshare',
   BAOSTOCK: 'baostock',
 
-  // 专业数据源
+  // Professional data source
   WIND: 'wind',
   CHOICE: 'choice',
 
-  // 其他数据源
+  // Other data sources
   QUANDL: 'quandl',
   LOCAL_FILE: 'local_file',
   CUSTOM: 'custom'
 } as const
 
-// 分析状态常量
+// Analyze status constants
 export const ANALYSIS_STATUS = {
   PENDING: 'pending',
   RUNNING: 'running',
@@ -363,7 +363,7 @@ export const ANALYSIS_STATUS = {
   FAILED: 'failed'
 } as const
 
-// 步骤状态常量
+// step status constants
 export const STEP_STATUS = {
   PENDING: 'pending',
   ACTIVE: 'active',
@@ -371,46 +371,46 @@ export const STEP_STATUS = {
   ERROR: 'error'
 } as const
 
-// 验证函数
+// Verification function
 export const validateAnalysisRequest = (request: Partial<AnalysisRequest>): string[] => {
   const errors: string[] = []
 
-  if (!request.market_type) errors.push('请选择市场类型')
-  if (!request.stock_symbol) errors.push('请输入股票代码')
-  if (!request.analysis_date) errors.push('请选择分析日期')
-  if (!request.analysis_type) errors.push('请选择分析类型')
+  if (!request.market_type) errors.push('Please select market type')
+  if (!request.stock_symbol) errors.push('Please enter stock code')
+  if (!request.analysis_date) errors.push('Please select analysis date')
+  if (!request.analysis_type) errors.push('Please select analysis type')
   if (!request.data_sources || request.data_sources.length === 0) {
-    errors.push('请至少选择一个数据源')
+    errors.push('Please select at least one data source')
   }
 
-  // 验证股票代码格式
+  // Validate ticker format
   if (request.stock_symbol) {
     const symbol = request.stock_symbol.trim().toUpperCase()
     if (!/^\d{6}$/.test(symbol)) {
-      errors.push('A股代码格式不正确，应为6位数字')
+      errors.push('A The stock code format is incorrect, it should be 6 digits')
     }
   }
 
   return errors
 }
 
-// 格式化函数
+// format function
 export const formatAnalysisType = (type: string): string => {
   const typeMap: Record<string, string> = {
-    basic: '基础分析',
-    deep: '深度分析',
-    technical: '技术分析',
-    news: '新闻分析',
-    comprehensive: '综合分析'
+    basic: 'Fundamental analysis',
+    deep: 'In-depth analysis',
+    technical: 'technical analysis',
+    news: 'news analysis',
+    comprehensive: 'comprehensive analysis'
   }
   return typeMap[type] ?? type
 }
 
 export const formatMarketType = (market: string): string => {
   const marketMap: Record<string, string> = {
-    '美股': '🇺🇸 美股',
-    'A股': '🇨🇳 A股',
-    '港股': '🇭🇰 港股'
+    'US stocks': '🇺🇸 US stocks',
+    'A shares': '🇨🇳 A shares',
+    'Hong Kong stocks': '🇭🇰 Hong Kong stocks'
   }
   return marketMap[market] ?? market
 }
@@ -424,7 +424,7 @@ export const formatDataSource = (source: string): string => {
 }
 
 /**
- * 获取分析历史记录（当前用户）
+ * Get analysis history (current user)
  */
 export const getAnalysisHistory = async (params: {
   page?: number
@@ -436,7 +436,7 @@ export const getAnalysisHistory = async (params: {
 }
 
 /**
- * 获取所有任务列表（不限用户）
+ * Get all task lists (not limited to users)
  */
 export const getAllTasks = async (params: {
   limit?: number
@@ -455,13 +455,13 @@ export const getAllTasks = async (params: {
   })
 }
 
-// 工具函数
+// Utility function
 export const getStockExamples = (): string[] => {
   return ['000001', '600519', '000002', '600036', '000858', '002415', '300059', '688981']
 }
 
 export const getStockPlaceholder = (): string => {
-  return '输入A股代码，如 000001, 600519'
+  return 'Enter the A-share code, such as 000001, 600519'
 }
 
 

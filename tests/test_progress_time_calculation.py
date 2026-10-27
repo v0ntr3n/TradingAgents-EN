@@ -1,11 +1,11 @@
 """
-测试进度时间计算逻辑
-验证修复后的时间计算是否正确
+Test progress time calculation logic
+Verify that post-fix time calculations are correct
 """
 import sys
 from pathlib import Path
 
-# 添加项目根目录到 Python 路径
+# Add project root directory to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -15,8 +15,8 @@ from app.services.memory_state_manager import TaskState, TaskStatus
 
 
 def test_progress_time_calculation_basic():
-    """测试基本的时间计算逻辑 - 使用预估总时长"""
-    # 创建一个任务，预估总时长5分钟，已运行5秒，进度1%
+    """Test basic time calculation logic - use estimated total time"""
+    # Create a task, estimated total time is 5 minutes, has been running for 5 seconds, progress 1%
     task = TaskState(
         task_id="test_task_1",
         user_id="test_user",
@@ -24,31 +24,31 @@ def test_progress_time_calculation_basic():
         status=TaskStatus.RUNNING,
         progress=1,  # 1%
         start_time=datetime.now() - timedelta(seconds=5),
-        estimated_duration=300  # 预估5分钟
+        estimated_duration=300  # Estimated 5 minutes
     )
 
     data = task.to_dict()
 
-    # 验证时间计算
-    assert data['elapsed_time'] == pytest.approx(5, abs=0.5), "已用时间应该约为5秒"
+    # Verification time calculation
+    assert data['elapsed_time'] == pytest.approx(5, abs=0.5), "The elapsed time should be about 5 seconds"
 
-    # 预计总时长 = 预估值（固定）= 300秒（5分钟）
-    assert data['estimated_total_time'] == 300, "预计总时长应该为预估的300秒（5分钟）"
+    # Estimated total duration = Estimated value (fixed)= 300 seconds (5 minutes)
+    assert data['estimated_total_time'] == 300, "The estimated total duration should be the estimated 300 seconds (5 minutes)"
 
-    # 预计剩余 = 预估总时长 - 已用时间 = 300 - 5 = 295秒
+    # Estimated remaining = Estimated total time - elapsed time = 300 - 5 = 295 seconds
     expected_remaining = 300 - 5
     assert data['remaining_time'] == pytest.approx(expected_remaining, abs=1), \
-        f"预计剩余应该约为{expected_remaining}秒（{expected_remaining/60:.1f}分钟）"
+        f"It is expected that the remaining should be approximately{expected_remaining}seconds ({expected_remaining/60:.1f}minutes)"
 
-    print(f"✅ 测试通过：")
-    print(f"   已用时间: {data['elapsed_time']:.1f}秒")
-    print(f"   预计总时长: {data['estimated_total_time']:.1f}秒 ({data['estimated_total_time']/60:.1f}分钟)")
-    print(f"   预计剩余: {data['remaining_time']:.1f}秒 ({data['remaining_time']/60:.1f}分钟)")
+    print(f"✅ Test passed:")
+    print(f"   elapsed time: {data['elapsed_time']:.1f}seconds")
+    print(f"   Estimated total duration: {data['estimated_total_time']:.1f}seconds ({data['estimated_total_time']/60:.1f}minutes)")
+    print(f"   Estimated remaining: {data['remaining_time']:.1f}seconds ({data['remaining_time']/60:.1f}minutes)")
 
 
 def test_progress_time_calculation_10_percent():
-    """测试10%进度的时间计算"""
-    # 创建一个任务，预估总时长5分钟，已运行30秒，进度10%
+    """Time calculation for testing 10% progress"""
+    # Create a task with an estimated total duration of 5 minutes and has been running for 30 seconds. Progress 10%
     task = TaskState(
         task_id="test_task_2",
         user_id="test_user",
@@ -56,31 +56,31 @@ def test_progress_time_calculation_10_percent():
         status=TaskStatus.RUNNING,
         progress=10,  # 10%
         start_time=datetime.now() - timedelta(seconds=30),
-        estimated_duration=300  # 预估5分钟
+        estimated_duration=300  # Estimated 5 minutes
     )
 
     data = task.to_dict()
 
-    # 验证时间计算
-    assert data['elapsed_time'] == pytest.approx(30, abs=0.5), "已用时间应该约为30秒"
+    # Verification time calculation
+    assert data['elapsed_time'] == pytest.approx(30, abs=0.5), "The elapsed time should be approximately 30 seconds"
 
-    # 预计总时长 = 预估值（固定）= 300秒（5分钟）
-    assert data['estimated_total_time'] == 300, "预计总时长应该为预估的300秒（5分钟）"
+    # Estimated total duration = Estimated value (fixed)= 300 seconds (5 minutes)
+    assert data['estimated_total_time'] == 300, "The estimated total duration should be the estimated 300 seconds (5 minutes)"
 
-    # 预计剩余 = 预估总时长 - 已用时间 = 300 - 30 = 270秒（4.5分钟）
+    # Estimated remaining = Estimated total time - elapsed time = 300 - 30 = 270 seconds (4.5 minutes)
     expected_remaining = 300 - 30
     assert data['remaining_time'] == pytest.approx(expected_remaining, abs=1), \
-        f"预计剩余应该约为{expected_remaining}秒（{expected_remaining/60:.1f}分钟）"
+        f"It is expected that the remaining should be approximately{expected_remaining}seconds ({expected_remaining/60:.1f}minutes)"
 
-    print(f"✅ 测试通过：")
-    print(f"   已用时间: {data['elapsed_time']:.1f}秒")
-    print(f"   预计总时长: {data['estimated_total_time']:.1f}秒 ({data['estimated_total_time']/60:.1f}分钟)")
-    print(f"   预计剩余: {data['remaining_time']:.1f}秒 ({data['remaining_time']/60:.1f}分钟)")
+    print(f"✅ Test passed:")
+    print(f"   elapsed time: {data['elapsed_time']:.1f}seconds")
+    print(f"   Estimated total duration: {data['estimated_total_time']:.1f}seconds ({data['estimated_total_time']/60:.1f}minutes)")
+    print(f"   Estimated remaining: {data['remaining_time']:.1f}seconds ({data['remaining_time']/60:.1f}minutes)")
 
 
 def test_progress_time_calculation_50_percent():
-    """测试50%进度的时间计算"""
-    # 创建一个任务，预估总时长5分钟，已运行150秒，进度50%
+    """Time calculation for testing 50% progress"""
+    # Create a task with an estimated total duration of 5 minutes and has been running for 150 seconds. Progress 50%
     task = TaskState(
         task_id="test_task_3",
         user_id="test_user",
@@ -88,31 +88,31 @@ def test_progress_time_calculation_50_percent():
         status=TaskStatus.RUNNING,
         progress=50,  # 50%
         start_time=datetime.now() - timedelta(seconds=150),
-        estimated_duration=300  # 预估5分钟
+        estimated_duration=300  # Estimated 5 minutes
     )
 
     data = task.to_dict()
 
-    # 验证时间计算
-    assert data['elapsed_time'] == pytest.approx(150, abs=0.5), "已用时间应该约为150秒"
+    # Verification time calculation
+    assert data['elapsed_time'] == pytest.approx(150, abs=0.5), "The elapsed time should be approximately 150 seconds"
 
-    # 预计总时长 = 预估值（固定）= 300秒（5分钟）
-    assert data['estimated_total_time'] == 300, "预计总时长应该为预估的300秒（5分钟）"
+    # Estimated total duration = Estimated value (fixed)= 300 seconds (5 minutes)
+    assert data['estimated_total_time'] == 300, "The estimated total duration should be the estimated 300 seconds (5 minutes)"
 
-    # 预计剩余 = 预估总时长 - 已用时间 = 300 - 150 = 150秒（2.5分钟）
+    # Estimated remaining = Estimated total time - elapsed time = 300 - 150 = 150 seconds (2.5 minutes)
     expected_remaining = 300 - 150
     assert data['remaining_time'] == pytest.approx(expected_remaining, abs=1), \
-        f"预计剩余应该约为{expected_remaining}秒（{expected_remaining/60:.1f}分钟）"
+        f"It is expected that the remaining should be approximately{expected_remaining}seconds ({expected_remaining/60:.1f}minutes)"
 
-    print(f"✅ 测试通过：")
-    print(f"   已用时间: {data['elapsed_time']:.1f}秒")
-    print(f"   预计总时长: {data['estimated_total_time']:.1f}秒 ({data['estimated_total_time']/60:.1f}分钟)")
-    print(f"   预计剩余: {data['remaining_time']:.1f}秒 ({data['remaining_time']/60:.1f}分钟)")
+    print(f"✅ Test passed:")
+    print(f"   elapsed time: {data['elapsed_time']:.1f}seconds")
+    print(f"   Estimated total duration: {data['estimated_total_time']:.1f}seconds ({data['estimated_total_time']/60:.1f}minutes)")
+    print(f"   Estimated remaining: {data['remaining_time']:.1f}seconds ({data['remaining_time']/60:.1f}minutes)")
 
 
 def test_progress_time_calculation_zero_progress():
-    """测试0%进度的时间计算（使用默认预估）"""
-    # 创建一个任务，已运行5秒，进度0%
+    """Time calculation for testing 0% progress (using default estimate)"""
+    # Create a task, has been running for 5 seconds, progress 0%
     task = TaskState(
         task_id="test_task_4",
         user_id="test_user",
@@ -124,24 +124,24 @@ def test_progress_time_calculation_zero_progress():
 
     data = task.to_dict()
 
-    # 验证时间计算
-    assert data['elapsed_time'] == pytest.approx(5, abs=0.5), "已用时间应该约为5秒"
+    # Verification time calculation
+    assert data['elapsed_time'] == pytest.approx(5, abs=0.5), "The elapsed time should be about 5 seconds"
 
-    # 进度为0时，使用默认预估时间（5分钟）
-    assert data['estimated_total_time'] == 300, "预计总时长应该为默认的300秒（5分钟）"
-    # 预计剩余 = 预估总时长 - 已用时间 = 300 - 5 = 295秒
+    # When the progress is 0, the default estimated time (5 minutes) is used
+    assert data['estimated_total_time'] == 300, "The estimated total duration should be the default 300 seconds (5 minutes)"
+    # Estimated remaining = Estimated total time - elapsed time = 300 - 5 = 295 seconds
     expected_remaining = 300 - 5
     assert data['remaining_time'] == pytest.approx(expected_remaining, abs=1), \
-        f"预计剩余应该约为{expected_remaining}秒（{expected_remaining/60:.1f}分钟）"
+        f"It is expected that the remaining should be approximately{expected_remaining}seconds ({expected_remaining/60:.1f}minutes)"
 
-    print(f"✅ 测试通过：")
-    print(f"   已用时间: {data['elapsed_time']:.1f}秒")
-    print(f"   预计总时长: {data['estimated_total_time']:.1f}秒 ({data['estimated_total_time']/60:.1f}分钟)")
-    print(f"   预计剩余: {data['remaining_time']:.1f}秒 ({data['remaining_time']/60:.1f}分钟)")
+    print(f"✅ Test passed:")
+    print(f"   elapsed time: {data['elapsed_time']:.1f}seconds")
+    print(f"   Estimated total duration: {data['estimated_total_time']:.1f}seconds ({data['estimated_total_time']/60:.1f}minutes)")
+    print(f"   Estimated remaining: {data['remaining_time']:.1f}seconds ({data['remaining_time']/60:.1f}minutes)")
 
 
 def test_progress_time_calculation_completed():
-    """测试100%进度的时间计算"""
+    """Calculation of time to test 100% progress"""
     start_time = datetime.now() - timedelta(seconds=300)
     end_time = datetime.now()
     
@@ -158,43 +158,43 @@ def test_progress_time_calculation_completed():
     
     data = task.to_dict()
     
-    # 验证时间计算
-    assert data['elapsed_time'] == 300, "已用时间应该为300秒"
-    assert data['estimated_total_time'] == 300, "预计总时长应该等于已用时间"
-    assert data['remaining_time'] == 0, "预计剩余应该为0"
+    # Verification time calculation
+    assert data['elapsed_time'] == 300, "The elapsed time should be 300 seconds"
+    assert data['estimated_total_time'] == 300, "Estimated total time should equal elapsed time"
+    assert data['remaining_time'] == 0, "The expected remainder should be 0"
     
-    print(f"✅ 测试通过：")
-    print(f"   已用时间: {data['elapsed_time']:.1f}秒")
-    print(f"   预计总时长: {data['estimated_total_time']:.1f}秒 ({data['estimated_total_time']/60:.1f}分钟)")
-    print(f"   预计剩余: {data['remaining_time']:.1f}秒")
+    print(f"✅ Test passed:")
+    print(f"   elapsed time: {data['elapsed_time']:.1f}seconds")
+    print(f"   Estimated total duration: {data['estimated_total_time']:.1f}seconds ({data['estimated_total_time']/60:.1f}minutes)")
+    print(f"   Estimated remaining: {data['remaining_time']:.1f}seconds")
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("测试进度时间计算逻辑")
+    print("Test progress time calculation logic")
     print("=" * 60)
     
-    print("\n1. 测试1%进度（已运行5秒）")
+    print("\n1. Test 1% progress (running for 5 seconds)")
     print("-" * 60)
     test_progress_time_calculation_basic()
     
-    print("\n2. 测试10%进度（已运行30秒）")
+    print("\n2. Test 10% progress (running for 30 seconds)")
     print("-" * 60)
     test_progress_time_calculation_10_percent()
     
-    print("\n3. 测试50%进度（已运行150秒）")
+    print("\n3. Test 50% progress (running for 150 seconds)")
     print("-" * 60)
     test_progress_time_calculation_50_percent()
     
-    print("\n4. 测试0%进度（已运行5秒）")
+    print("\n4. Test 0% progress (running for 5 seconds)")
     print("-" * 60)
     test_progress_time_calculation_zero_progress()
     
-    print("\n5. 测试100%进度（已完成）")
+    print("\n5. Test 100% progress (completed)")
     print("-" * 60)
     test_progress_time_calculation_completed()
     
     print("\n" + "=" * 60)
-    print("✅ 所有测试通过！")
+    print("✅ All tests passed!")
     print("=" * 60)
 

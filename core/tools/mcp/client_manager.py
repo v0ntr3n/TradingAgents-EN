@@ -1,9 +1,9 @@
 """
-MCP 客户端管理器
+MCP client manager
 
-在后台线程中运行独立的 asyncio 事件循环，
-提供同步接口供工具注册表和 Agent 调用。
-支持 SSE、Streamable HTTP、stdio 三种传输方式。
+Run a separate asyncio event loop in a background thread,
+Provides a synchronization interface for tool registry and Agent calls.
+Supports three transmission methods: SSE, Streamable HTTP, and stdio.
 """
 
 import asyncio
@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 class MCPClientManager:
     """
-    MCP 客户端管理器（单例）
+    MCP Client Manager (singleton)
 
-    维护一个后台 asyncio 循环，所有 MCP 异步操作在此循环中执行，
-    并通过 _run_sync() 暴露为同步接口。
+    Maintain a background asyncio loop in which all MCP asynchronous operations are performed,
+    and pass _run_sync() Exposed as a synchronous interface.
     """
 
     _instance: Optional["MCPClientManager"] = None
@@ -45,24 +45,24 @@ class MCPClientManager:
         )
         self._thread.start()
         self._initialized = True
-        logger.info("✅ MCPClientManager 初始化完成（后台事件循环已启动）")
+        logger.info("✅ MCPClientManager Initialization completed (background event loop started)")
 
     # ------------------------------------------------------------------
-    # 内部：同步执行异步协程
+    # Internal: execute asynchronous coroutines synchronously
     # ------------------------------------------------------------------
 
     def _run_sync(self, coro, timeout: int = 30) -> Any:
-        """在后台事件循环中同步执行协程"""
+        """Synchronously execute coroutines in the background event loop"""
         future = asyncio.run_coroutine_threadsafe(coro, self._loop)
         return future.result(timeout=timeout)
 
     # ------------------------------------------------------------------
-    # 内部：按传输类型建立连接并执行操作
+    # Internal: Establish connection and perform operations by transport type
     # ------------------------------------------------------------------
 
     async def _with_session(self, config: Dict, action):
         """
-        根据 config 建立 MCP 会话，执行 action(session)，返回结果。
+        Establish an MCP session according to config and execute action(session), Return results.
         action: async callable(session) -> Any
         """
         transport_type = config.get("transport_type", "sse")
@@ -102,15 +102,15 @@ class MCPClientManager:
                     return await action(session)
 
         else:
-            raise ValueError(f"不支持的 MCP 传输类型: {transport_type}")
+            raise ValueError(f"Unsupported MCP transport type: {transport_type}")
 
     # ------------------------------------------------------------------
-    # 公开 API：工具发现
+    # Public API: Tool Discovery
     # ------------------------------------------------------------------
 
     def discover_tools(self, config: Dict, timeout: int = 30) -> List[Dict]:
         """
-        连接 MCP 服务器并返回可用工具列表。
+        Connects to the MCP server and returns a list of available tools.
 
         Returns:
             List of tool dicts with keys: name, description, inputSchema
@@ -137,7 +137,7 @@ class MCPClientManager:
         return self._run_sync(self._with_session(config, _action), timeout=timeout)
 
     # ------------------------------------------------------------------
-    # 公开 API：工具调用
+    # Public API: tool calls
     # ------------------------------------------------------------------
 
     def call_tool(
@@ -148,14 +148,14 @@ class MCPClientManager:
         timeout: int = 60,
     ) -> str:
         """
-        连接 MCP 服务器并调用指定工具。
+        Connect to the MCP server and call the specified tool.
 
         Returns:
-            工具返回结果（字符串形式）
+            The tool returns the result (in string form)
         """
         async def _action(session):
             result = await session.call_tool(tool_name, arguments=arguments)
-            # 将 content list 拼成字符串
+            # Concatenate the content list into a string
             parts = []
             for c in result.content:
                 if hasattr(c, "text"):
@@ -167,11 +167,11 @@ class MCPClientManager:
         return self._run_sync(self._with_session(config, _action), timeout=timeout)
 
     # ------------------------------------------------------------------
-    # 公开 API：测试连接
+    # Public API: Test connection
     # ------------------------------------------------------------------
 
     def test_connection(self, config: Dict, timeout: int = 15) -> Dict:
-        """测试 MCP 服务器连接，返回 {success, tool_count, error}"""
+        """Test MCP server connection, return {success, tool_count, error}"""
         try:
             tools = self.discover_tools(config, timeout=timeout)
             return {"success": True, "tool_count": len(tools), "error": None}
@@ -180,14 +180,14 @@ class MCPClientManager:
 
 
 # ------------------------------------------------------------------
-# 全局单例获取函数
+# Global singleton get function
 # ------------------------------------------------------------------
 
 _manager: Optional[MCPClientManager] = None
 
 
 def get_mcp_client_manager() -> MCPClientManager:
-    """获取 MCPClientManager 全局单例"""
+    """Get the MCPClientManager global singleton"""
     global _manager
     if _manager is None:
         _manager = MCPClientManager()

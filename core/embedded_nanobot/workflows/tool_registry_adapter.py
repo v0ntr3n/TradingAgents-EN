@@ -1,7 +1,7 @@
-"""适配器：让 core.tools.registry 提供 Nanobot ToolRegistry 的接口。
+"""Adapter: Let core.tools.registry provide the interface to Nanobot ToolRegistry.
 
-LangGraph 节点（agent_builder_nodes.py）需要 tool_registry.get(name).to_schema()
-和 tool_registry.execute(name, params) 接口。本适配器包装 core.tools.registry 提供相同接口。
+LangGraph Nodes (agent_builder_nodes.py) requires tool_registry.get(name).to_schema()
+and tool_registry.execute(name, params) interface. This adapter wraps core.tools.registry to provide the same interface.
 """
 from __future__ import annotations
 
@@ -13,27 +13,27 @@ logger = logging.getLogger(__name__)
 
 
 class _ToolMetadataWrapper:
-    """包装 ToolMetadata，提供 to_schema() 和 func 属性。"""
+    """Wrapper ToolMetadata, provides to_schema() and func attributes."""
 
     def __init__(self, metadata: Any, executor: Any = None):
         self._metadata = metadata
-        self._executor = executor  # StandardToolRegistryAdapter 引用，用于执行工具
+        self._executor = executor  # StandardToolRegistryAdapter Reference, used to execute the tool
         self.name = metadata.id
 
-    # func 属性供 agent_builder_nodes.py 的 _run_node_llm_fc 使用，
-    # 它在 wrapper 上查找 func/execute/run/handler 属性来执行工具。
+    # func Properties used by _run_node_llm_fc of agent_builder_nodes.py,
+    # It looks for the func/execute/run/handler attribute on the wrapper to execute the tool.
     @property
     def func(self):
         if not self._executor:
             return None
-        # 返回一个 async callable，签名为(**kwargs) -> str
+        # Returns an async callable with signature(**kwargs) -> str
         async def _execute(**kwargs):
             return await self._executor.execute(self.name, kwargs)
         return _execute
 
     def to_schema(self) -> dict[str, Any]:
         raw_params = self._metadata.parameters
-        # 必须转成 OpenAI Function Calling 要求的 JSON Schema 对象格式：
+        # Must be converted into the JSON Schema object format required by OpenAI Function Calling:
         # {"type": "object", "properties": {...}, "required": [...]}
         if raw_params:
             properties = {}
@@ -56,7 +56,7 @@ class _ToolMetadataWrapper:
             params_payload = {"type": "object", "properties": properties}
             if required:
                 params_payload["required"] = required
-            # 也保留原始数组格式给可能直接遍历参数的旧代码
+            # Also retains the original array format for older code that may directly iterate over the parameters
             params_payload["__raw_params__"] = [
                 dict(name=name, **prop) for name, prop in properties.items()
             ]
@@ -70,7 +70,7 @@ class _ToolMetadataWrapper:
 
 
 class StandardToolRegistryAdapter:
-    """适配器：core.tools.registry → ToolRegistry 接口。"""
+    """Adapter:core.tools.registry → ToolRegistry interface."""
 
     def __init__(self):
         from core.tools import get_tool_registry
@@ -93,8 +93,8 @@ class StandardToolRegistryAdapter:
             available = ", ".join(self._metadata_map.keys())
             return f"Error: Tool '{name}' not found. Available: {available}"
         try:
-            # core.tools.registry 注册的函数可能是同步（def）或异步（async def），
-            # 先调用，若返回 coroutine 再 await，兼容两种情况。
+            # core.tools.registry Registered functions may be synchronous (def) or asynchronous (async def),
+            # Call it first, if it returns coroutine and then await, it is compatible with both situations.
             result = func(**params)
             if inspect.isawaitable(result):
                 result = await result

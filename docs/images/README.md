@@ -1,99 +1,99 @@
-# Web界面截图目录
+# Web Interface screenshot directory
 
-此目录用于存放TradingAgents-CN Web界面的截图文件。
+This directory is used to store screenshot files of the TradingAgents-CN web interface.
 
-## 📸 需要的截图文件
+## 📸 Required screenshot files
 
-为了完善README.md中的Web界面展示，请添加以下截图：
+In order to improve the web interface display in README.md, please add the following screenshot:
 
-### 🏠 主界面截图
-- **文件名**: `web-interface-main.png`
-- **内容**: 主分析配置界面
-- **要求**: 
-  - 显示股票代码输入框
-  - 显示市场选择（美股/A股/港股）
-  - 显示研究深度选择（1-5级）
-  - 显示智能体选择选项
-  - 显示"开始分析"按钮
+### 🏠 Screenshot of main interface
+- **file name**: `web-interface-main.png`
+- **content**: Main analysis configuration interface
+- **request**: 
+  - Show stock code input box
+  - Display market selection (US stocks/A shares/Hong Kong stocks)
+  - Display research depth selection (level 1-5)
+  - Show agent selection options
+  - show"Start analysis"button
 
-### 📊 实时分析进度截图
-- **文件名**: `web-interface-progress.png`
-- **内容**: 分析进行中的进度显示
-- **要求**:
-  - 显示进度条和百分比
-  - 显示当前分析步骤
-  - 显示预计剩余时间
-  - 显示已完成的分析阶段
+### 📊 Real-time analysis progress screenshots
+- **file name**: `web-interface-progress.png`
+- **content**: Progress display of analysis in progress
+- **request**:
+  - Show progress bar and percentage
+  - Show current analysis step
+  - Show estimated remaining time
+  - Show completed analysis stages
 
-### 📈 分析结果展示截图
-- **文件名**: `web-interface-results.png`
-- **内容**: 完整的分析结果页面
-- **要求**:
-  - 显示研究结论倾向（乐观/审慎/中性）
-  - 显示置信度和风险评分
-  - 显示详细分析报告
-  - 显示导出按钮
+### 📈 Screenshot of analysis results display
+- **file name**: `web-interface-results.png`
+- **content**: Complete analysis results page
+- **request**:
+  - Shows the tendency of research conclusions (optimistic/cautious/neutral)
+  - Show confidence and risk scores
+  - Show detailed analysis report
+  - Show export button
 
-### ⚙️ 模型配置管理截图
-- **文件名**: `web-interface-models.png`
-- **内容**: 侧边栏的模型配置界面
-- **要求**:
-  - 显示LLM提供商选择
-  - 显示模型选择下拉框
-  - 显示快速选择按钮
-  - 显示API密钥配置状态
+### ⚙️ Screenshot of model configuration management
+- **file name**: `web-interface-models.png`
+- **content**: Model configuration interface in the sidebar
+- **request**:
+  - Show LLM provider selections
+  - Show model selection drop-down box
+  - Show quick select button
+  - Show API key configuration status
 
-## 📋 截图规范
+## 📋 Screenshot specifications
 
-### 🖼️ 技术要求
-- **格式**: PNG格式（推荐）
-- **分辨率**: 至少1920x1080
-- **质量**: 高清，文字清晰可读
-- **大小**: 单个文件不超过2MB
+### 🖼️ Technical requirements
+- **Format**: PNG Format (recommended)
+- **resolution**: at least 1920x1080
+- **quality**: HD, text is clear and readable
+- **size**: A single file does not exceed 2MB
 
-### 🎨 内容要求
-- **界面完整**: 显示完整的功能区域
-- **数据真实**: 使用真实的股票代码和分析结果
-- **状态清晰**: 确保界面状态清晰可见
-- **无敏感信息**: 不包含真实的API密钥
+### 🎨 Content requirements
+- **Complete interface**: Show full functional area
+- **Data is real**: Use real stock symbols and analysis results
+- **clear status**: Ensure interface status is clearly visible
+- **No sensitive information**: Does not contain real API key
 
-### 📱 建议的截图场景
-1. **主界面**: 输入"AAPL"或"000001"，选择标准分析
-2. **进度界面**: 分析进行到50%左右的状态
-3. **结果界面**: 完整的分析报告，包含图表
-4. **配置界面**: 显示多个LLM提供商和模型选项
+### 📱 Suggested screenshot scenarios
+1. **Main interface**: input"AAPL"or"000001", Selection criteria analysis
+2. **Progress interface**: The analysis reaches about 50% state
+3. **Result interface**: Full analysis report including charts and graphs
+4. **Configuration interface**: Display multiple LLM providers and model options
 
-## 🚀 如何获取截图
+## 🚀 How to get screenshots
 
-### 方法1: 启动Web应用
+### method 1: Start web application
 ```bash
-# 启动Web界面
+# Start the web interface
 python start_web.py
 
-# 访问 http://localhost:8501
-# 进行股票分析并截图
+# visit http://localhost:8501
+# Conduct stock analysis and take screenshots
 ```
 
-### 方法2: Docker环境
+### method 2: Docker environment
 ```bash
-# 启动Docker服务
+# Start the Docker service
 docker-compose up -d
 
-# 访问 http://localhost:8501
-# 进行分析并截图
+# visit http://localhost:8501
+# Analyze and take screenshots
 ```
 
-## 📝 添加截图后的操作
+## 📝 What to do after adding a screenshot
 
-1. 将截图文件放入此目录
-2. 确保文件名与README.md中引用的名称一致
-3. 检查图片是否正常显示
-4. 提交到Git仓库
+1. Place the screenshot file into this directory
+2. Make sure the file name matches the name referenced in README.md
+3. Check whether the picture is displayed normally
+4. Submit to Git repository
 
-## 🔄 更新说明
+## 🔄 Update instructions
 
-当Web界面有重大更新时，请及时更新对应的截图，确保文档与实际界面保持一致。
+When there are major updates to the web interface, please update the corresponding screenshots in a timely manner to ensure that the document is consistent with the actual interface.
 
 ---
 
-**注意**: 此目录中的截图将在README.md中展示，代表项目的专业形象，请确保截图质量和内容的专业性。
+**Note**: The screenshots in this directory will be displayed in README.md to represent the professional image of the project. Please ensure the quality of the screenshots and the professionalism of the content.

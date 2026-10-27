@@ -8,44 +8,44 @@
         
         <div class="error-info">
           <h1 class="error-code">404</h1>
-          <h2 class="error-title">页面不存在</h2>
+          <h2 class="error-title">Page does not exist</h2>
           <p class="error-description">
-            抱歉，您访问的页面不存在或已被移除。
-            请检查URL是否正确，或返回首页继续浏览。
+            Sorry, the page you visited does not exist or has been removed.
+            Please check whether the URL is correct, or return to the homepage to continue browsing.
           </p>
           
           <div class="error-actions">
             <el-button type="primary" size="large" @click="goHome">
               <el-icon><HomeFilled /></el-icon>
-              返回首页
+              Return to home page
             </el-button>
             <el-button size="large" @click="goBack">
               <el-icon><ArrowLeft /></el-icon>
-              返回上页
+              Return to previous page
             </el-button>
           </div>
         </div>
       </div>
       
-      <!-- 推荐链接 -->
+      <!-- Recommended link -->
       <div class="suggestions">
-        <h3>您可能想要访问：</h3>
+        <h3>You may want to visit:</h3>
         <div class="suggestion-links">
           <el-link type="primary" @click="$router.push('/dashboard')">
             <el-icon><House /></el-icon>
-            仪表板
+            Dashboard
           </el-link>
           <el-link type="primary" @click="$router.push('/analysis/single')">
             <el-icon><TrendCharts /></el-icon>
-            单股研究
+            single stock research
           </el-link>
           <el-link type="primary" @click="$router.push('/screening')">
             <el-icon><Search /></el-icon>
-            股票筛选
+            stock screen
           </el-link>
           <el-link type="primary" @click="$router.push('/queue')">
             <el-icon><Document /></el-icon>
-            队列管理
+            Queue management
           </el-link>
         </div>
       </div>
@@ -184,7 +184,7 @@ const goBack = () => {
   }
 }
 
-// 响应式设计
+// Responsive design
 @media (max-width: 768px) {
   .error-404 {
     .error-content {

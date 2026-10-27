@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-财务数据同步服务
-统一管理三数据源的财务数据同步
+Financial data synchronization service
+Unified management of financial data synchronization from three data sources
 """
 import asyncio
 import logging
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FinancialSyncStats:
-    """财务数据同步统计"""
+    """Financial data synchronization statistics"""
     total_symbols: int = 0
     success_count: int = 0
     error_count: int = 0
@@ -34,7 +34,7 @@ class FinancialSyncStats:
     errors: List[Dict[str, Any]] = field(default_factory=list)
     
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
+        """Convert to dictionary"""
         return {
             "total_symbols": self.total_symbols,
             "success_count": self.success_count,
@@ -44,12 +44,12 @@ class FinancialSyncStats:
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "duration": self.duration,
             "success_rate": round(self.success_count / max(self.total_symbols, 1) * 100, 2),
-            "errors": self.errors[:10]  # 只返回前10个错误
+            "errors": self.errors[:10]  # Only return the first 10 errors
         }
 
 
 class FinancialDataSyncService:
-    """财务数据同步服务"""
+    """Financial data synchronization service"""
     
     def __init__(self):
         self.db = None
@@ -57,22 +57,22 @@ class FinancialDataSyncService:
         self.providers = {}
         
     async def initialize(self):
-        """初始化服务"""
+        """Initialize service"""
         try:
             self.db = get_mongo_db()
             self.financial_service = await get_financial_data_service()
             
-            # 初始化数据源提供者
+            # Initialize data source provider
             self.providers = {
                 "tushare": get_tushare_provider(),
                 "akshare": get_akshare_provider(),
                 "baostock": get_baostock_provider()
             }
             
-            logger.info("✅ 财务数据同步服务初始化成功")
+            logger.info("✅ Financial data synchronization service initialization successful")
             
         except Exception as e:
-            logger.error(f"❌ 财务数据同步服务初始化失败: {e}")
+            logger.error(f"❌ Financial data synchronization service initialization failed: {e}")
             raise
     
     async def sync_financial_data(
@@ -83,49 +83,49 @@ class FinancialDataSyncService:
         batch_size: int = 50,
         delay_seconds: float = 1.0,
         job_id: str = None,
-        rate_limit_per_minute: int = 80,  # 🔥 速率限制：每分钟最大调用次数
-        _resume_from_index: int = None  # 🔥 恢复执行：从哪个位置继续（已处理的股票数量）
+        rate_limit_per_minute: int = 80,  # 🔥 Rate Limit: Maximum number of calls per minute
+        _resume_from_index: int = None  # 🔥 Resume execution: from which position to continue (number of stocks processed)
     ) -> Dict[str, FinancialSyncStats]:
         """
-        同步财务数据（使用线程池）
+        Synchronize financial data (using thread pool)
         
         Args:
-            symbols: 股票代码列表，None表示同步所有股票
-            data_sources: 数据源列表 ["tushare", "akshare", "baostock"]
-            report_types: 报告类型列表 ["quarterly", "annual"]
-            batch_size: 批处理大小（已废弃，保留兼容性）
-            delay_seconds: API调用延迟（已废弃，保留兼容性）
-            job_id: 任务ID，用于进度跟踪
+            symbols: Stock code list, None means synchronize all stocks
+            data_sources: Data source list ["tushare", "akshare", "baostock"]
+            report_types: List of report types ["quarterly", "annual"]
+            batch_size: Batch size (deprecated for compatibility)
+            delay_seconds: API Call deferral (deprecated, retaining compatibility)
+            job_id: Task ID, used for progress tracking
             
         Returns:
-            各数据源的同步统计结果
+            Synchronized statistical results of each data source
         """
         if self.db is None:
             await self.initialize()
         
-        # 默认参数
+        # Default parameters
         if data_sources is None:
             data_sources = ["tushare", "akshare", "baostock"]
         if report_types is None:
             report_types = ["quarterly", "annual"]
         
-        logger.info(f"🔄 开始财务数据同步（线程池模式）: 数据源={data_sources}, 报告类型过滤={report_types}")
+        logger.info(f"🔄 Start financial data synchronization (thread pool mode): data source={data_sources}, Report type filter={report_types}")
         
-        # 获取股票列表
+        # Get a list of stocks
         if symbols is None:
             symbols = await self._get_stock_symbols()
         
         if not symbols:
-            logger.warning("⚠️ 没有找到要同步的股票")
+            logger.warning("⚠️ No stocks found to sync")
             return {}
         
-        logger.info(f"📊 准备同步 {len(symbols)} 只股票的财务数据")
+        logger.info(f"📊 Prepare to sync {len(symbols)} Financial data for only stocks")
         
-        # 为每个数据源执行同步
+        # Perform synchronization for each data source
         results = {}
         
-        # 🔥 使用统一的线程池服务并行处理每个数据源
-        # 不同数据源可以并行执行（因为它们使用不同的API，互不影响）
+        # 🔥 Process each data source in parallel using a unified thread pool service
+        # Different data sources can be executed in parallel (because they use different APIs and do not affect each other)
         from app.worker.unified_thread_pool_sync_service import get_unified_thread_pool_sync_service
         
         unified_service = await get_unified_thread_pool_sync_service()
@@ -133,18 +133,18 @@ class FinancialDataSyncService:
         tasks = []
         for data_source in data_sources:
             if data_source not in self.providers:
-                logger.warning(f"⚠️ 不支持的数据源: {data_source}")
+                logger.warning(f"⚠️ Unsupported data source: {data_source}")
                 continue
             
-            # 🔥 创建并发任务：使用统一线程池服务执行每个数据源的同步
-            # 🔥 使用原始job_id，而不是修改后的job_id，这样进度更新会更新到正确的执行记录
+            # 🔥 Create concurrent tasks: Use the unified thread pool service to perform synchronization of each data source
+            # 🔥 Use the original job_id instead of the modified job_id so that progress updates will be updated to the correct execution record
             data_source_job_id = job_id if job_id else f"financial_{data_source}"
             
-            # 🔥 创建包装方法，将数据源作为闭包变量（使用默认参数确保正确捕获）
+            # 🔥 Create wrapper method with data source as closure variable (use default parameters to ensure proper capture)
             def create_sync_wrapper(ds, syms, rpts, jid, rate_limit):
-                """创建包装方法，确保正确捕获变量"""
+                """Create wrapper methods to ensure variables are captured correctly"""
                 async def sync_data_source_wrapper(**kwargs):
-                    """包装方法，用于统一线程池服务调用"""
+                    """Wrapper method for unifying thread pool service calls"""
                     return await self._sync_source_financial_data_serial_async(
                         data_source=ds,
                         symbols=syms,
@@ -159,7 +159,7 @@ class FinancialDataSyncService:
                 data_source, symbols, report_types, data_source_job_id, rate_limit_per_minute
             )
             
-            # 🔥 使用统一线程池服务执行
+            # 🔥 Execute using unified thread pool service
             task = unified_service.execute_sync_method(
                 sync_method=sync_data_source_wrapper,
                 method_kwargs={},
@@ -169,21 +169,21 @@ class FinancialDataSyncService:
             )
             tasks.append((data_source, task))
         
-        # 并行执行所有数据源的同步任务
+        # Execute synchronization tasks for all data sources in parallel
         if tasks:
-            logger.info(f"🚀 开始并行同步 {len(tasks)} 个数据源的财务数据: {[ds for ds, _ in tasks]}")
+            logger.info(f"🚀 Start parallel synchronization {len(tasks)} financial data from data sources: {[ds for ds, _ in tasks]}")
             
-            # 使用 asyncio.gather 并行执行
+            # Parallel execution using asyncio.gather
             task_results = await asyncio.gather(
                 *[task for _, task in tasks],
                 return_exceptions=True
             )
             
-            # 处理结果
+            # Processing results
             for i, ((data_source, _), task_result) in enumerate(zip(tasks, task_results)):
                 if isinstance(task_result, Exception):
-                    logger.error(f"❌ {data_source} 财务数据同步失败: {task_result}", exc_info=True)
-                    # 创建失败的统计信息
+                    logger.error(f"❌ {data_source} Financial data synchronization failed: {task_result}", exc_info=True)
+                    # Creation of statistics failed
                     failed_stats = FinancialSyncStats()
                     failed_stats.total_symbols = len(symbols) if symbols else 0
                     failed_stats.error_count = failed_stats.total_symbols
@@ -193,25 +193,25 @@ class FinancialDataSyncService:
                     })
                     results[data_source] = failed_stats
                 elif not task_result.success:
-                    # 统一服务返回失败结果
-                    logger.error(f"❌ {data_source} 财务数据同步失败: {task_result.error}")
+                    # Unified service returns failure result
+                    logger.error(f"❌ {data_source} Financial data synchronization failed: {task_result.error}")
                     failed_stats = FinancialSyncStats()
                     failed_stats.total_symbols = len(symbols) if symbols else 0
                     failed_stats.error_count = failed_stats.total_symbols
                     failed_stats.errors.append({
-                        "error": task_result.error or "未知错误",
+                        "error": task_result.error or "unknown error",
                         "data_source": data_source
                     })
                     results[data_source] = failed_stats
                 else:
-                    # 成功
+                    # success
                     result = task_result.result
                     results[data_source] = result
-                    logger.info(f"✅ {data_source} 财务数据同步完成: "
-                               f"成功 {result.success_count}/{result.total_symbols} "
+                    logger.info(f"✅ {data_source} Financial data synchronization completed: "
+                               f"success {result.success_count}/{result.total_symbols} "
                                f"({result.success_count/max(result.total_symbols,1)*100:.1f}%)")
         else:
-            logger.warning("⚠️ 没有可用的数据源进行财务数据同步")
+            logger.warning("⚠️ No data source available for financial data synchronization")
         
         return results
     
@@ -222,91 +222,91 @@ class FinancialDataSyncService:
         report_types: List[str],
         job_id: str,
         rate_limit_per_minute: int,
-        resume_from_index: int = None  # 🔥 恢复执行：从哪个位置继续
+        resume_from_index: int = None  # 🔥 Resume execution: where to continue from
     ) -> FinancialSyncStats:
         """
-        串行同步单个数据源的财务数据（异步版本，在线程池的线程中运行）
+        Serial synchronization of financial data from a single data source (asynchronous version, runs in a thread of the thread pool)
         """
         provider = self.providers[data_source]
         
-        # 检查数据源可用性
+        # Check data source availability
         if not provider.is_available():
-            logger.warning(f"⚠️ {data_source} 数据源不可用")
+            logger.warning(f"⚠️ {data_source} Data source is not available")
             stats = FinancialSyncStats()
             stats.total_symbols = len(symbols)
             stats.skipped_count = len(symbols)
             return stats
         
-        # 计算延迟时间（确保不超过速率限制）
-        # 例如：80次/分钟 = 60/80 = 0.75秒/次
+        # Calculate latency (make sure you don't exceed the rate limit)
+        # For example: 80 times/minute = 60/80 = 0.75 seconds/times
         delay_between_calls = 60.0 / rate_limit_per_minute if rate_limit_per_minute > 0 else 0.5
         
-        # 🔥 保存原始股票总数（用于进度计算）
+        # 🔥 Save the original stock total (used for progress calculations)
         original_total_symbols = len(symbols)
         
-        # 🔥 如果指定了恢复位置，跳过已处理的股票
+        # 🔥 If a restore location is specified, skip processed stocks
         start_index = resume_from_index if resume_from_index is not None and resume_from_index > 0 else 0
         if start_index > 0:
-            logger.info(f"🔄 [{data_source}] 恢复执行：从第 {start_index} 个股票开始（已处理 {start_index}/{original_total_symbols}）")
-            # 跳过已处理的股票
+            logger.info(f"🔄 [{data_source}] Resume execution: from section {start_index} stocks start (processed {start_index}/{original_total_symbols}) ")
+            # Skip processed stocks
             symbols = symbols[start_index:]
             if not symbols:
-                logger.warning(f"⚠️ [{data_source}] 所有股票已处理完成，无需继续同步")
+                logger.warning(f"⚠️ [{data_source}] All stocks have been processed, no need to continue synchronization")
                 stats = FinancialSyncStats()
                 stats.total_symbols = original_total_symbols
                 stats.success_count = start_index
                 return stats
         
-        logger.info(f"🔧 [{data_source}] 串行同步配置: 剩余股票数={len(symbols)}, 总股票数={original_total_symbols}, "
-                   f"速率限制={rate_limit_per_minute}次/分钟, "
-                   f"延迟={delay_between_calls:.2f}秒/请求, "
-                   f"起始位置={start_index}")
+        logger.info(f"🔧 [{data_source}] Serial sync configuration: Number of shares remaining={len(symbols)}, Total number of shares={original_total_symbols}, "
+                   f"rate limit={rate_limit_per_minute}times/minute, "
+                   f"delay={delay_between_calls:.2f}seconds/request, "
+                   f"starting position={start_index}")
         
-        # 初始化统计信息
+        # Initialize statistics
         stats = FinancialSyncStats()
-        stats.total_symbols = original_total_symbols  # 🔥 总股票数（包括已处理的）
+        stats.total_symbols = original_total_symbols  # 🔥 Total number of shares (including processed)
         stats.start_time = datetime.now(timezone.utc)
         
-        # 🔥 在线程池的线程中创建新的服务实例（避免事件循环冲突）
-        # 使用当前线程的事件循环创建独立的异步数据库连接
+        # 🔥 Create a new service instance in a thread in the thread pool (to avoid event loop conflicts)
+        # Create an independent asynchronous database connection using the current thread's event loop
         from app.services.financial_data_service import FinancialDataService
 
         mongo_client, mongo_db = create_isolated_async_mongo_binding()
         
-        # 创建新的服务实例，使用当前线程事件循环的数据库连接
+        # Create a new service instance, using the database connection of the current thread's event loop
         financial_service = FinancialDataService()
         financial_service.db = mongo_db
         
-        # 确保索引存在（异步方式，在当前线程的事件循环中执行）
+        # Make sure the index exists (asynchronously, executed in the event loop of the current thread)
         try:
             collection = financial_service.db[financial_service.collection_name]
-            # 创建索引（异步操作）
+            # Create index (asynchronous operation)
             await collection.create_indexes([
-                # 复合唯一索引
+                # Composite unique index
                 [("symbol", 1), ("report_period", 1), ("data_source", 1)],
-                # 其他索引
+                # Other indexes
                 [("symbol", 1)],
                 [("report_period", -1)],
                 [("data_source", 1)]
             ])
         except Exception as e:
-            logger.debug(f"索引创建检查: {e}")  # 索引可能已存在，忽略错误
+            logger.debug(f"Index creation check: {e}")  # Index may already exist, ignore error
         
-        # 串行处理每个股票
-        processed_count = start_index  # 🔥 从恢复位置开始计数
+        # Process each stock serially
+        processed_count = start_index  # 🔥 Count from recovery position
         try:
             for i, symbol in enumerate(symbols):
-                # 🔥 检查任务是否应该停止（通过查询数据库）
+                # 🔥 Check if the task should be stopped (by querying the database)
                 try:
-                    # 🔥 检查任务是否被取消（在每次循环开始时检查）
+                    # 🔥 Check if the task was canceled (checked at the beginning of each loop)
                     should_stop = await self._should_stop_sync(job_id)
                     if should_stop:
-                        logger.warning(f"🛑 [{data_source}] 检测到取消请求，任务已取消，停止同步 (job_id={job_id})")
-                        # 更新进度为当前进度
+                        logger.warning(f"🛑 [{data_source}] Cancellation request detected, task canceled, sync stopped (job_id={job_id})")
+                        # Update progress to current progress
                         try:
                             from app.services.scheduler_service import update_job_progress, TaskCancelledException
-                            # 🔥 计算进度时需要考虑已处理的股票数（恢复执行时）
-                            total_items = stats.total_symbols  # 使用总股票数（包括已处理的）
+                            # 🔥 The number of stocks processed needs to be taken into account when calculating progress (when execution is resumed)
+                            total_items = stats.total_symbols  # Use the total number of shares (including those processed)
                             progress_int = int((processed_count / total_items) * 100) if total_items > 0 else 0
                             progress_int = min(progress_int, 100)
                             await update_job_progress(
@@ -315,33 +315,33 @@ class FinancialDataSyncService:
                                 current_item=f"[{data_source}] {symbol}",
                                 total_items=total_items,
                                 processed_items=processed_count,
-                                message=f"[{data_source}] 任务已被用户取消"
+                                message=f"[{data_source}] The task has been canceled by the user"
                             )
                         except TaskCancelledException:
-                            # 如果update_job_progress也检测到取消，直接退出
-                            logger.warning(f"🛑 [{data_source}] update_job_progress也检测到取消请求，立即停止")
+                            # If update_job_progress also detects cancellation, exit directly
+                            logger.warning(f"🛑 [{data_source}] update_job_progress Cancellation request also detected, stop immediately")
                             break
                         except Exception as e:
-                            logger.warning(f"⚠️ 更新进度失败: {e}")
+                            logger.warning(f"⚠️ Update progress failed: {e}")
                         break
 
-                    # 🔥 速率限制：在调用API之前等待（等待期间也检查取消）
+                    # 🔥 Rate limiting: wait before calling API (cancellation is also checked during wait)
                     if delay_between_calls > 0:
-                        # 分段等待，每0.5秒检查一次取消状态
+                        # Wait in segments, checking cancellation status every 0.5 seconds
                         wait_time = 0
                         check_interval = 0.5
                         while wait_time < delay_between_calls:
                             await asyncio.sleep(min(check_interval, delay_between_calls - wait_time))
                             wait_time += check_interval
-                            # 检查取消状态
+                            # Check cancellation status
                             should_stop = await self._should_stop_sync(job_id)
                             if should_stop:
-                                logger.warning(f"🛑 [{data_source}] 在等待期间检测到取消请求，停止同步 (job_id={job_id})")
-                                # 更新进度并退出循环
+                                logger.warning(f"🛑 [{data_source}] Cancellation request detected while waiting, sync stopped (job_id={job_id})")
+                                # Update progress and exit the loop
                                 try:
                                     from app.services.scheduler_service import update_job_progress
-                                    # 🔥 计算进度时需要考虑已处理的股票数（恢复执行时）
-                                    total_items = stats.total_symbols  # 使用总股票数（包括已处理的）
+                                    # 🔥 The number of stocks processed needs to be taken into account when calculating progress (when execution is resumed)
+                                    total_items = stats.total_symbols  # Use the total number of shares (including those processed)
                                     progress_int = int((processed_count / total_items) * 100) if total_items > 0 else 0
                                     progress_int = min(progress_int, 100)
                                     await update_job_progress(
@@ -350,19 +350,19 @@ class FinancialDataSyncService:
                                         current_item=f"[{data_source}] {symbol}",
                                         total_items=total_items,
                                         processed_items=processed_count,
-                                        message=f"[{data_source}] 任务已被用户取消"
+                                        message=f"[{data_source}] The task has been canceled by the user"
                                     )
                                 except Exception as e:
-                                    logger.warning(f"⚠️ 更新进度失败: {e}")
+                                    logger.warning(f"⚠️ Update progress failed: {e}")
                                 break
 
-                    # 🔥 在同步股票数据之前，再次检查取消标记（防止在同步过程中收到取消请求）
+                    # 🔥 Before syncing stock data, check again for cancellation flag (prevents receiving cancellation request during sync)
                     should_stop = await self._should_stop_sync(job_id)
                     if should_stop:
-                        logger.warning(f"🛑 [{data_source}] 在同步前检测到取消请求，停止同步 (job_id={job_id})")
+                        logger.warning(f"🛑 [{data_source}] Cancellation request detected before sync, sync stopped (job_id={job_id})")
                         break
 
-                    # 同步单只股票的财务数据
+                    # Synchronize financial data for individual stocks
                     success = await self._sync_symbol_financial_data_async(
                         symbol=symbol,
                         data_source=data_source,
@@ -378,86 +378,86 @@ class FinancialDataSyncService:
 
                     processed_count += 1
 
-                    # 🔥 在同步完成后，再次检查取消标记
+                    # 🔥 After the sync is complete, check again for the cancellation flag
                     should_stop = await self._should_stop_sync(job_id)
                     if should_stop:
-                        logger.warning(f"🛑 [{data_source}] 在同步后检测到取消请求，停止同步 (job_id={job_id})")
+                        logger.warning(f"🛑 [{data_source}] Cancellation request detected after sync, sync stopped (job_id={job_id})")
                         break
 
-                    # 🔥 每处理1个股票或完成时更新一次进度（更频繁的更新）
-                    # 计算进度百分比：确保即使进度很小也能正确显示（至少显示1%）
-                    # 🔥 计算进度时需要考虑已处理的股票数（恢复执行时）
-                    total_items = stats.total_symbols  # 使用总股票数（包括已处理的）
+                    # 🔥 Update progress every time 1 stock is processed or completed (more frequent updates)
+                    # Calculate progress percentage: ensure that even small progress is displayed correctly (at least 1% is displayed)
+                    # 🔥 The number of stocks processed needs to be taken into account when calculating progress (when execution is resumed)
+                    total_items = stats.total_symbols  # Use the total number of shares (including those processed)
                     if total_items > 0:
                         progress_float = (processed_count / total_items) * 100
-                        # 🔥 如果进度大于0但小于1%，至少显示1%，避免显示0%
+                        # 🔥 If the progress is greater than 0 but less than 1%, display at least 1% to avoid displaying 0%
                         if progress_float > 0 and progress_float < 1:
                             progress_int = 1
                         else:
                             progress_int = int(round(progress_float))
-                        # 确保不超过100%
+                        # Make sure not to exceed 100%
                         progress_int = min(progress_int, 100)
                     else:
                         progress_int = 0
 
-                    # update_job_progress 是独立的异步函数
+                    # update_job_progress is an independent asynchronous function
                     try:
                         from app.services.scheduler_service import update_job_progress, TaskCancelledException
-                        # 🔥 记录进度更新调用（用于调试）
-                        logger.debug(f"📊 [{data_source}] 准备更新进度: job_id={job_id}, progress={progress_int}%, "
+                        # 🔥 Logging progress update calls (for debugging)
+                        logger.debug(f"📊 [{data_source}] Prepare to update progress: job_id={job_id}, progress={progress_int}%, "
                                    f"processed={processed_count}/{total_items}, current_item={symbol}")
 
                         await update_job_progress(
                             job_id=job_id,
-                            progress=progress_int,  # 使用整数百分比
-                            current_item=f"[{data_source}] {symbol}",  # 🔥 在current_item中标注数据源
-                            total_items=total_items,  # 🔥 使用总股票数（包括已处理的）
+                            progress=progress_int,  # Use whole number percentages
+                            current_item=f"[{data_source}] {symbol}",  # 🔥 Mark the data source in current_item
+                            total_items=total_items,  # 🔥 Use the total number of shares (including those processed)
                             processed_items=processed_count,
-                            message=f"[{data_source}] 正在同步: {symbol} ({processed_count}/{total_items})"  # 🔥 在消息中标注数据源和总股票数
+                            message=f"[{data_source}] Synchronizing: {symbol} ({processed_count}/{total_items})"  # 🔥 Mark the data source and total number of stocks in the message
                         )
 
-                        # 🔥 每10个股票记录一次详细日志，避免日志过多
+                        # 🔥 Record detailed logs every 10 stocks to avoid excessive logs
                         if processed_count % 10 == 0 or (i + 1) == len(symbols):
-                            logger.info(f"📊 [{data_source}] 进度更新成功: {processed_count}/{total_items} "
-                                       f"({progress_int}%), 成功={stats.success_count}, 跳过={stats.skipped_count}")
+                            logger.info(f"📊 [{data_source}] Progress updated successfully: {processed_count}/{total_items} "
+                                       f"({progress_int}%), success={stats.success_count}, skip={stats.skipped_count}")
                     except TaskCancelledException as cancel_error:
-                        # 🔥 如果收到取消请求，立即停止任务
-                        logger.warning(f"🛑 [{data_source}] 收到取消请求（通过update_job_progress），停止同步: {cancel_error}")
-                        # 🔥 设置一个标志，确保循环退出
+                        # 🔥 If a cancellation request is received, stop the task immediately
+                        logger.warning(f"🛑 [{data_source}] Received cancellation request (via update_job_progress), stopped synchronization: {cancel_error}")
+                        # 🔥 Set a flag to ensure the loop exits
                         should_stop = True
-                        # 🔥 立即跳出循环
+                        # 🔥 Break out of the loop immediately
                         break
                     except Exception as progress_error:
-                        # 🔥 检查是否是取消相关的异常（可能是其他形式的取消异常）
+                        # 🔥 Check if it is a cancellation related exception (maybe other forms of cancellation exception)
                         error_msg = str(progress_error)
                         error_type = type(progress_error).__name__
-                        logger.warning(f"🔍 [{data_source}] 进度更新异常类型: {error_type}, 消息: {error_msg}")
+                        logger.warning(f"🔍 [{data_source}] Progress update exception type: {error_type}, news: {error_msg}")
 
                         error_lower = error_msg.lower()
-                        if "取消" in error_lower or "cancel" in error_lower or "cancelled" in error_lower or "TaskCancelledException" in error_type:
-                            logger.warning(f"🛑 [{data_source}] 进度更新时检测到取消相关异常，停止同步: {progress_error}")
+                        if "Cancel" in error_lower or "cancel" in error_lower or "cancelled" in error_lower or "TaskCancelledException" in error_type:
+                            logger.warning(f"🛑 [{data_source}] A cancellation-related exception was detected during progress update and synchronization was stopped.: {progress_error}")
                             break
-                        # 🔥 进度更新失败不应该影响主流程，但需要记录日志
-                        logger.error(f"❌ [{data_source}] 进度更新失败: job_id={job_id}, error={progress_error}", exc_info=True)
-                        # 每10个股票记录一次错误，避免日志过多
+                        # 🔥 Failure in progress update should not affect the main process, but needs to be logged
+                        logger.error(f"❌ [{data_source}] Progress update failed: job_id={job_id}, error={progress_error}", exc_info=True)
+                        # Log errors every 10 stocks to avoid excessive logs
                         if processed_count % 10 == 0:
-                            logger.warning(f"⚠️ [{data_source}] 进度更新失败，但继续执行: {progress_error}")
+                            logger.warning(f"⚠️ [{data_source}] Progress update fails, but execution continues: {progress_error}")
 
                 except Exception as e:
-                    # 🔥 检查是否是取消相关的异常
+                    # 🔥 Check if it is a cancellation related exception
                     error_msg = str(e)
                     error_type = type(e).__name__
                     error_lower = error_msg.lower()
 
-                    # 🔥 检查是否是TaskCancelledException或其子类
+                    # 🔥 Check if it is TaskCancelledException or its subclass
                     from app.services.scheduler_service import TaskCancelledException
                     if isinstance(e, TaskCancelledException):
-                        logger.warning(f"🛑 [{data_source}] 检测到TaskCancelledException，停止同步: {error_msg}")
+                        logger.warning(f"🛑 [{data_source}] TaskCancelledException detected, synchronization stopped: {error_msg}")
                         break
 
-                    # 🔥 检查异常类型名称或消息中是否包含取消相关关键词
-                    if "取消" in error_lower or "cancel" in error_lower or "cancelled" in error_lower or "TaskCancelledException" in error_type:
-                        logger.warning(f"🛑 [{data_source}] 检测到取消相关异常，停止同步: 类型={error_type}, 消息={error_msg}")
+                    # 🔥 Check whether the exception type name or message contains cancellation-related keywords
+                    if "Cancel" in error_lower or "cancel" in error_lower or "cancelled" in error_lower or "TaskCancelledException" in error_type:
+                        logger.warning(f"🛑 [{data_source}] Cancellation related exception detected, synchronization stopped: Type={error_type}, news={error_msg}")
                         break
 
                     stats.error_count += 1
@@ -466,45 +466,45 @@ class FinancialDataSyncService:
                         "error": error_msg,
                         "data_source": data_source
                     })
-                    logger.error(f"❌ [{data_source}] {symbol} 财务数据同步失败: {error_msg}")
+                    logger.error(f"❌ [{data_source}] {symbol} Financial data synchronization failed: {error_msg}")
                     processed_count += 1
         finally:
             try:
                 mongo_client.close()
             except Exception as close_error:
-                logger.warning(f"⚠️ [{data_source}] 关闭线程内 MongoDB 客户端失败: {close_error}")
+                logger.warning(f"⚠️ [{data_source}] Failed to close in-thread MongoDB client: {close_error}")
         
-        # 🔥 检查任务是否因为取消而停止
+        # 🔥 Check if the task is stopped due to cancellation
         was_cancelled = False
         try:
             should_stop = await self._should_stop_sync(job_id)
             if should_stop:
                 was_cancelled = True
-                logger.warning(f"🛑 [{data_source}] 任务因取消而停止，将更新状态为cancelled (job_id={job_id})")
+                logger.warning(f"🛑 [{data_source}] The task is stopped due to cancellation and the status will be updated to cancelled (job_id={job_id})")
         except Exception as e:
-            logger.warning(f"⚠️ [{data_source}] 检查取消状态失败: {e}")
+            logger.warning(f"⚠️ [{data_source}] Checking cancellation status failed: {e}")
         
-        # 完成统计
+        # Complete statistics
         stats.end_time = datetime.now(timezone.utc)
         stats.duration = (stats.end_time - stats.start_time).total_seconds()
         
-        # 🔥 如果任务被取消，更新状态为cancelled
+        # 🔥 If the task is canceled, the updated status is cancelled
         if was_cancelled:
             try:
-                # 使用同步方式更新状态（因为在线程池的线程中，事件循环可能已关闭）
+                # Use a synchronous way to update the state (because in the thread pool thread, the event loop may be closed)
                 from pymongo import MongoClient
                 from app.core.config import settings
                 sync_client = MongoClient(settings.MONGO_URI)
                 sync_db = sync_client[settings.MONGODB_DATABASE]
                 try:
-                    # 提取原始job_id
+                    # Extract original job_id
                     original_job_id = job_id
                     for ds in ["tushare", "akshare", "baostock"]:
                         if job_id.endswith(f"_{ds}"):
                             original_job_id = job_id[:-len(f"_{ds}")]
                             break
                     
-                    # 更新所有相关的执行记录为cancelled状态
+                    # Update all related execution records to canceled status
                     update_result = sync_db.scheduler_executions.update_many(
                         {
                             "job_id": {"$regex": f"^{original_job_id}(_|$)"},
@@ -513,14 +513,14 @@ class FinancialDataSyncService:
                         {
                             "$set": {
                                 "status": "cancelled",
-                                "error_message": f"[{data_source}] 任务已被用户取消",
+                                "error_message": f"[{data_source}] The task has been canceled by the user",
                                 "updated_at": datetime.now(timezone.utc).replace(tzinfo=None)
                             }
                         }
                     )
-                    logger.info(f"✅ [{data_source}] 已更新 {update_result.modified_count} 个执行记录状态为cancelled (job_id={job_id})")
+                    logger.info(f"✅ [{data_source}] updated {update_result.modified_count} The execution record status is cancelled (job_id={job_id})")
                     
-                    # 🔥 同时更新Redis缓存中的状态
+                    # 🔥 Also update the status in the Redis cache
                     try:
                         from app.core.redis_client import RedisKeys
                         from app.core.database import get_redis_sync_client
@@ -528,52 +528,52 @@ class FinancialDataSyncService:
                         redis_sync_client = get_redis_sync_client()
                         if redis_sync_client:
                             progress_key = RedisKeys.SCHEDULER_JOB_PROGRESS.format(job_id=original_job_id)
-                            # 获取当前进度数据
+                            # Get current progress data
                             progress_data_str = redis_sync_client.get(progress_key)
                             if progress_data_str:
                                 progress_data = json.loads(progress_data_str)
                                 progress_data["status"] = "cancelled"
-                                progress_data["message"] = f"[{data_source}] 任务已被用户取消"
+                                progress_data["message"] = f"[{data_source}] The task has been canceled by the user"
                                 redis_sync_client.setex(
                                     progress_key,
-                                    86400,  # 24小时过期
+                                    86400,  # 24 hour expires
                                     json.dumps(progress_data, ensure_ascii=False)
                                 )
-                                logger.info(f"✅ [{data_source}] 已更新Redis缓存状态为cancelled")
+                                logger.info(f"✅ [{data_source}] The updated Redis cache status is cancelled")
                     except Exception as redis_error:
-                        logger.warning(f"⚠️ [{data_source}] 更新Redis缓存失败: {redis_error}")
+                        logger.warning(f"⚠️ [{data_source}] Failed to update Redis cache: {redis_error}")
                 finally:
                     sync_client.close()
             except Exception as e:
-                logger.error(f"❌ [{data_source}] 更新任务状态为cancelled失败: {e}", exc_info=True)
+                logger.error(f"❌ [{data_source}] Failed to update task status to canceled: {e}", exc_info=True)
         
-        logger.info(f"✅ [{data_source}] 财务数据同步完成: "
-                   f"成功={stats.success_count}, 失败={stats.error_count}, "
-                   f"跳过={stats.skipped_count}, 耗时={stats.duration:.2f}秒, "
-                   f"取消={was_cancelled}")
+        logger.info(f"✅ [{data_source}] Financial data synchronization completed: "
+                   f"success={stats.success_count}, failed={stats.error_count}, "
+                   f"skip={stats.skipped_count}, Time consuming={stats.duration:.2f}seconds, "
+                   f"Cancel={was_cancelled}")
         
         return stats
     
     async def _should_stop_sync(self, job_id: str) -> bool:
         """
-        检查任务是否应该停止
+        Check if the task should be stopped
         
         Args:
-            job_id: 任务ID（可能是修改后的job_id，如 tushare_financial_sync_tushare）
+            job_id: Task ID (may be a modified job_id, such as tushare_financial_sync_tushare)
             
         Returns:
-            如果任务应该停止，返回True
+            If the task should be stopped, return True
         """
         try:
-            # 🔥 提取原始job_id（如果job_id是 tushare_financial_sync_tushare，则原始是 tushare_financial_sync）
-            # 检查job_id是否以数据源名称结尾（tushare、akshare、baostock）
+            # 🔥 Extract the original job_id (if the job_id is tushare_financial_sync_tushare, the original is tushare_financial_sync)
+            # Check if job_id ends with data source name (tushare, akshare, baostock)
             original_job_id = job_id
             for data_source in ["tushare", "akshare", "baostock"]:
                 if job_id.endswith(f"_{data_source}"):
                     original_job_id = job_id[:-len(f"_{data_source}")]
                     break
             
-            # 🔥 使用同步的 MongoDB 客户端查询（避免事件循环冲突）
+            # 🔥 Use synchronous MongoDB client queries (to avoid event loop conflicts)
             from pymongo import MongoClient
             from app.core.config import settings
             
@@ -581,24 +581,24 @@ class FinancialDataSyncService:
                 sync_client = MongoClient(settings.MONGO_URI)
                 sync_db = sync_client[settings.MONGODB_DATABASE]
                 try:
-                    # 🔥 只查询当前正在运行的任务（running状态），不查询suspended状态的旧记录
-                    # 因为suspended记录可能是之前被取消的旧任务，不应该影响新任务
+                    # 🔥 Only query the currently running tasks (running status), do not query old records in suspended status
+                    # Because the suspended record may be an old task that was canceled before, it should not affect the new task
                     query = {
                         "job_id": {"$regex": f"^{original_job_id}(_|$)"},
-                        "status": "running"  # 🔥 只查询running状态，忽略suspended状态
+                        "status": "running"  # 🔥 Only query the running status and ignore the suspended status
                     }
                     execution = sync_db.scheduler_executions.find_one(
                         query,
                         sort=[("started_at", -1)]
                     )
                     
-                    # 🔥 如果找到了执行记录，检查是否是当前任务的执行记录
-                    # 通过检查时间戳，如果执行记录是最近1分钟内创建的，才认为是当前任务
+                    # 🔥 If an execution record is found, check whether it is the execution record of the current task.
+                    # By checking the timestamp, if the execution record was created within the last minute, it is considered to be the current task.
                     if execution:
                         from datetime import datetime, timedelta
                         execution_time = execution.get("started_at") or execution.get("timestamp") or execution.get("scheduled_time")
                         if execution_time:
-                            # 如果是datetime对象，直接比较；如果是字符串，需要转换
+                            # If it is a datetime object, compare directly; if it is a string, it needs to be converted
                             if isinstance(execution_time, str):
                                 try:
                                     execution_time = datetime.fromisoformat(execution_time.replace('Z', '+00:00'))
@@ -607,25 +607,25 @@ class FinancialDataSyncService:
                             
                             if execution_time:
                                 time_diff = (datetime.now() - execution_time.replace(tzinfo=None)).total_seconds()
-                                # 如果执行记录超过5分钟，认为是旧任务，不检查取消标记
-                                if time_diff > 300:  # 5分钟
-                                    logger.debug(f"🔍 执行记录太旧（{time_diff:.0f}秒前），忽略取消标记检查")
+                                # If the execution record exceeds 5 minutes, it is considered an old task and the cancellation mark is not checked.
+                                if time_diff > 300:  # 5 minutes
+                                    logger.debug(f"🔍 The execution record is too old ({time_diff:.0f}seconds ago), ignoring unmark checks")
                                     return None
                     
                     return execution
                 finally:
                     sync_client.close()
             
-            # 🔥 使用当前事件循环执行同步查询
+            # 🔥 Execute synchronous query using current event loop
             try:
                 loop = asyncio.get_event_loop()
                 if not loop.is_closed():
                     execution = await loop.run_in_executor(None, query_execution)
                 else:
-                    # 如果事件循环已关闭，直接使用同步查询
+                    # If the event loop is closed, use synchronous query directly
                     execution = query_execution()
             except RuntimeError:
-                # 没有事件循环，直接使用同步查询
+                # No event loop, use synchronous query directly
                 execution = query_execution()
             
             if execution:
@@ -634,42 +634,42 @@ class FinancialDataSyncService:
                 cancel_requested = execution.get("cancel_requested", False)
                 execution_status = execution.get("status", "")
                 
-                # 🔥 只在检测到取消或异常状态时才输出INFO级别日志，正常检查使用DEBUG级别
+                # 🔥 INFO level logs are only output when cancellation or exception status is detected, and DEBUG level is used for normal checks.
                 if cancel_requested or execution_status in ["failed", "cancelled"]:
-                    logger.info(f"🔍 检查任务状态: job_id={job_id}, original_job_id={original_job_id}, "
-                               f"找到记录: execution_id={execution_id}, execution_job_id={execution_job_id}, "
+                    logger.info(f"🔍 Check task status: job_id={job_id}, original_job_id={original_job_id}, "
+                               f"record found: execution_id={execution_id}, execution_job_id={execution_job_id}, "
                                f"cancel_requested={cancel_requested}, status={execution_status}")
                 else:
-                    # 正常检查时使用DEBUG级别，减少日志输出
-                    logger.debug(f"🔍 检查任务状态: job_id={job_id}, original_job_id={original_job_id}, "
-                               f"找到记录: execution_id={execution_id}, execution_job_id={execution_job_id}, "
+                    # Use DEBUG level during normal inspection to reduce log output
+                    logger.debug(f"🔍 Check task status: job_id={job_id}, original_job_id={original_job_id}, "
+                               f"record found: execution_id={execution_id}, execution_job_id={execution_job_id}, "
                                f"cancel_requested={cancel_requested}, status={execution_status}")
                 
-                # 检查是否被取消
+                # Check if canceled
                 if cancel_requested:
-                    logger.warning(f"🛑 检测到取消请求: job_id={job_id}, original_job_id={original_job_id}, "
+                    logger.warning(f"🛑 Cancellation request detected: job_id={job_id}, original_job_id={original_job_id}, "
                                  f"execution_id={execution_id}, execution_job_id={execution_job_id}")
                     return True
                 
-                # 检查状态是否为失败或已取消
+                # Check if status is failed or canceled
                 if execution_status in ["failed", "cancelled"]:
-                    logger.warning(f"🛑 检测到任务状态为 {execution_status}: job_id={job_id}, "
+                    logger.warning(f"🛑 The detected task status is {execution_status}: job_id={job_id}, "
                                  f"original_job_id={original_job_id}, execution_job_id={execution_job_id}")
                     return True
             else:
-                # 🔥 如果没有找到执行记录，记录日志
-                logger.debug(f"⚠️ 未找到执行记录: job_id={job_id}, original_job_id={original_job_id}")
+                # 🔥 If no execution record is found, log
+                logger.debug(f"⚠️ Execution record not found: job_id={job_id}, original_job_id={original_job_id}")
             
             return False
         except RuntimeError as e:
-            # 🔥 捕获事件循环相关的错误
+            # 🔥 Catching event loop related errors
             if "shutdown" in str(e).lower() or "closed" in str(e).lower():
-                logger.warning(f"⚠️ 事件循环已关闭，跳过任务状态检查: {job_id}")
+                logger.warning(f"⚠️ Event loop closed, task status check skipped: {job_id}")
                 return False
-            logger.error(f"❌ 检查任务状态失败: {e}")
+            logger.error(f"❌ Checking task status failed: {e}")
             return False
         except Exception as e:
-            logger.error(f"❌ 检查任务状态失败: {e}")
+            logger.error(f"❌ Checking task status failed: {e}")
             return False
     
     async def _sync_symbol_financial_data_async(
@@ -681,24 +681,24 @@ class FinancialDataSyncService:
         financial_service: Any
     ) -> bool:
         """
-        同步单只股票的财务数据（异步版本）
+        Synchronize financial data for a single stock (asynchronous version)
         """
         try:
-            # 🔥 检查事件循环是否已关闭
+            # 🔥 Check if the event loop has been closed
             try:
                 loop = asyncio.get_running_loop()
                 if loop.is_closed():
-                    logger.warning(f"⚠️ {symbol} 事件循环已关闭，无法获取财务数据 ({data_source})")
+                    logger.warning(f"⚠️ {symbol} Event loop is closed, unable to get financial data ({data_source})")
                     return False
             except RuntimeError:
-                logger.warning(f"⚠️ {symbol} 无法获取事件循环，可能已关闭 ({data_source})")
+                logger.warning(f"⚠️ {symbol} Unable to obtain event loop, may be closed ({data_source})")
                 return False
             
-            # 获取财务数据
+            # Get financial data
             financial_data = await provider.get_financial_data(symbol)
             
             if not financial_data:
-                logger.debug(f"⚠️ {symbol} 无财务数据 ({data_source})")
+                logger.debug(f"⚠️ {symbol} No financial data ({data_source})")
                 return False
             
             saved_count = 0
@@ -709,23 +709,23 @@ class FinancialDataSyncService:
                     data_source=data_source,
                 )
             except RuntimeError as e:
-                # 🔥 捕获事件循环关闭错误
+                # 🔥 Catching event loop shutdown errors
                 if "shutdown" in str(e).lower() or "closed" in str(e).lower():
-                    logger.warning(f"⚠️ {symbol} 保存财务数据时事件循环已关闭 ({data_source}): {e}")
+                    logger.warning(f"⚠️ {symbol} Event loop closed while saving financial data ({data_source}): {e}")
                     return False
                 raise
             
             return saved_count > 0
             
         except RuntimeError as e:
-            # 🔥 捕获事件循环相关的错误
+            # 🔥 Catching event loop related errors
             if "shutdown" in str(e).lower() or "closed" in str(e).lower():
-                logger.warning(f"⚠️ {symbol} 财务数据同步时事件循环已关闭 ({data_source}): {e}")
+                logger.warning(f"⚠️ {symbol} Event loop closed while synchronizing financial data ({data_source}): {e}")
                 return False
-            logger.error(f"❌ {symbol} 财务数据同步异常 ({data_source}): {e}")
+            logger.error(f"❌ {symbol} Financial data synchronization exception ({data_source}): {e}")
             raise
         except Exception as e:
-            logger.error(f"❌ {symbol} 财务数据同步异常 ({data_source}): {e}")
+            logger.error(f"❌ {symbol} Financial data synchronization exception ({data_source}): {e}")
             raise
     
     async def _sync_source_financial_data(
@@ -736,28 +736,28 @@ class FinancialDataSyncService:
         batch_size: int,
         delay_seconds: float
     ) -> FinancialSyncStats:
-        """同步单个数据源的财务数据"""
+        """Synchronize financial data from a single data source"""
         stats = FinancialSyncStats()
         stats.total_symbols = len(symbols)
         stats.start_time = datetime.now(timezone.utc)
         
         provider = self.providers[data_source]
         
-        # 检查数据源可用性
+        # Check data source availability
         if not provider.is_available():
-            logger.warning(f"⚠️ {data_source} 数据源不可用")
+            logger.warning(f"⚠️ {data_source} Data source is not available")
             stats.skipped_count = len(symbols)
             stats.end_time = datetime.now(timezone.utc)
             return stats
         
-        # 批量处理股票
+        # Process stocks in batches
         for i in range(0, len(symbols), batch_size):
             batch_symbols = symbols[i:i + batch_size]
             
-            logger.info(f"📈 {data_source} 处理批次 {i//batch_size + 1}: "
-                       f"{len(batch_symbols)} 只股票")
+            logger.info(f"📈 {data_source} process batch {i//batch_size + 1}: "
+                       f"{len(batch_symbols)} only stocks")
             
-            # 并发处理批次内的股票
+            # Concurrent processing of stocks within batches
             tasks = []
             for symbol in batch_symbols:
                 task = self._sync_symbol_financial_data(
@@ -768,10 +768,10 @@ class FinancialDataSyncService:
                 )
                 tasks.append(task)
             
-            # 执行并发任务
+            # Execute concurrent tasks
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
             
-            # 统计批次结果
+            # Statistics batch results
             for j, result in enumerate(batch_results):
                 symbol = batch_symbols[j]
                 
@@ -783,15 +783,15 @@ class FinancialDataSyncService:
                         "error": str(result),
                         "timestamp": datetime.now(timezone.utc).isoformat()
                     })
-                    logger.error(f"❌ {symbol} 财务数据同步失败 ({data_source}): {result}")
+                    logger.error(f"❌ {symbol} Financial data synchronization failed ({data_source}): {result}")
                 elif result:
                     stats.success_count += 1
-                    logger.debug(f"✅ {symbol} 财务数据同步成功 ({data_source})")
+                    logger.debug(f"✅ {symbol} Financial data synchronization successful ({data_source})")
                 else:
                     stats.skipped_count += 1
-                    logger.debug(f"⏭️ {symbol} 财务数据跳过 ({data_source})")
+                    logger.debug(f"⏭️ {symbol} Financial data skipped ({data_source})")
             
-            # API限流延迟
+            # API Current limiting delay
             if i + batch_size < len(symbols):
                 await asyncio.sleep(delay_seconds)
         
@@ -807,13 +807,13 @@ class FinancialDataSyncService:
         provider: Any,
         report_types: List[str]
     ) -> bool:
-        """同步单只股票的财务数据"""
+        """Synchronize financial data for individual stocks"""
         try:
-            # 获取财务数据
+            # Get financial data
             financial_data = await provider.get_financial_data(symbol)
             
             if not financial_data:
-                logger.debug(f"⚠️ {symbol} 无财务数据 ({data_source})")
+                logger.debug(f"⚠️ {symbol} No financial data ({data_source})")
                 return False
             
             saved_count = await self.financial_service.save_financial_data(
@@ -825,27 +825,27 @@ class FinancialDataSyncService:
             return saved_count > 0
             
         except Exception as e:
-            logger.error(f"❌ {symbol} 财务数据同步异常 ({data_source}): {e}")
+            logger.error(f"❌ {symbol} Financial data synchronization exception ({data_source}): {e}")
             raise
     
     async def _get_stock_symbols(self) -> List[str]:
-        """获取股票代码列表（去重）"""
+        """Get a list of stock symbols (remove duplicates)"""
         try:
-            # 🔥 使用聚合查询去重，确保每个股票代码只计算一次
-            # 因为同一个股票可能来自多个数据源（tushare、akshare、baostock），会有重复记录
+            # 🔥 Use aggregate queries to deduplicate, ensuring each stock symbol is only counted once
+            # Because the same stock may come from multiple data sources (tushare, akshare, baostock), there will be duplicate records
             pipeline = [
                 {
                     "$match": {
                         "$or": [
-                            {"market_info.market": "CN"},  # 新数据结构
-                            {"category": "stock_cn"},      # 旧数据结构
-                            {"market": {"$in": ["主板", "创业板", "科创板", "北交所"]}}  # 按市场类型
+                            {"market_info.market": "CN"},  # new data structure
+                            {"category": "stock_cn"},      # old data structure
+                            {"market": {"$in": ["motherboard", "GEM", "Science and Technology Innovation Board", "Beijing Exchange"]}}  # By market type
                         ]
                     }
                 },
                 {
                     "$group": {
-                        "_id": "$code"  # 按股票代码分组去重
+                        "_id": "$code"  # Group by stock code to remove duplicates
                     }
                 },
                 {
@@ -857,16 +857,16 @@ class FinancialDataSyncService:
             ]
             cursor = self.db.stock_basic_info.aggregate(pipeline)
             symbols = [doc["code"] async for doc in cursor]
-            logger.info(f"📋 从 stock_basic_info 获取到 {len(symbols)} 只唯一股票代码（已去重）")
+            logger.info(f"📋 Obtained from stock_basic_info {len(symbols)} Only unique stock codes (duplication removed)")
 
             return symbols
 
         except Exception as e:
-            logger.error(f"❌ 获取股票代码列表失败: {e}")
+            logger.error(f"❌ Failed to get list of stock symbols: {e}")
             return []
     
     async def get_sync_statistics(self) -> Dict[str, Any]:
-        """获取同步统计信息"""
+        """Get sync statistics"""
         try:
             if self.financial_service is None:
                 await self.initialize()
@@ -874,7 +874,7 @@ class FinancialDataSyncService:
             return await self.financial_service.get_financial_statistics()
             
         except Exception as e:
-            logger.error(f"❌ 获取同步统计失败: {e}")
+            logger.error(f"❌ Failed to obtain synchronization statistics: {e}")
             return {}
     
     async def sync_single_stock(
@@ -882,7 +882,7 @@ class FinancialDataSyncService:
         symbol: str,
         data_sources: List[str] = None
     ) -> Dict[str, bool]:
-        """同步单只股票的财务数据"""
+        """Synchronize financial data for individual stocks"""
         if self.db is None:
             await self.initialize()
         
@@ -913,18 +913,18 @@ class FinancialDataSyncService:
                 results[data_source] = result
                 
             except Exception as e:
-                logger.error(f"❌ {symbol} 单股票财务数据同步失败 ({data_source}): {e}")
+                logger.error(f"❌ {symbol} Single stock financial data synchronization failed ({data_source}): {e}")
                 results[data_source] = False
         
         return results
 
 
-# 全局服务实例
+# Global service instance
 _financial_sync_service = None
 
 
 async def get_financial_sync_service() -> FinancialDataSyncService:
-    """获取财务数据同步服务实例"""
+    """Obtain financial data synchronization service instance"""
     global _financial_sync_service
     if _financial_sync_service is None:
         _financial_sync_service = FinancialDataSyncService()

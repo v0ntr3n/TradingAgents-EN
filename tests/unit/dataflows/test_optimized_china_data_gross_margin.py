@@ -1,4 +1,4 @@
-"""统一基本面工具毛利率解析测试。"""
+"""Unified fundamental tool gross profit margin analysis test."""
 
 from tradingagents.dataflows.optimized_china_data import OptimizedChinaDataProvider
 

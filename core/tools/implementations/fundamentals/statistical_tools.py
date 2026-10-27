@@ -1,12 +1,12 @@
-"""统计工具集。
+"""Statistical toolset.
 
-提供 6 个金融统计工具：
-1. get_correlation_matrix - 相关性矩阵
-2. get_cointegration_test - 协整检验
-3. get_rolling_regression - 滚动回归
-4. get_normality_test - 正态性检验
-5. get_stationarity_test - 平稳性检验
-6. get_garch_volatility - GARCH 波动率建模
+Provides 6 financial statistics tools:
+1. get_correlation_matrix - correlation matrix
+2. get_cointegration_test - cointegration test
+3. get_rolling_regression - rolling regression
+4. get_normality_test - Normality test
+5. get_stationarity_test - Stationarity test
+6. get_garch_volatility - GARCH Volatility modeling
 """
 
 import datetime
@@ -24,7 +24,7 @@ from core.tools.base import register_tool
 logger = logging.getLogger(__name__)
 
 
-# ─── 辅助函数 ──────────────────────────────────────────────────
+# ─── Helper function ──────────────────────────────────────────────────
 
 
 def _to_float(value: Any) -> Optional[float]:
@@ -50,7 +50,7 @@ def _to_float(value: Any) -> Optional[float]:
 
 
 def _dash_date(date_str: str) -> str:
-    """标准化日期为 YYYY-MM-DD。"""
+    """Normalized dates are YYYY-MM-DD."""
     cleaned = "".join(ch for ch in date_str if ch.isdigit())[:8]
     if len(cleaned) == 8:
         return f"{cleaned[:4]}-{cleaned[4:6]}-{cleaned[6:]}"
@@ -59,20 +59,20 @@ def _dash_date(date_str: str) -> str:
 
 def _try_get_benchmark_quotes(benchmark_symbol: str, start_date_obj: datetime.date,
                                 end_date_obj: datetime.date, lookback_days: int) -> Any:
-    """获取基准指数行情，DB 无数据时用 AKShare 兜底。"""
+    """Get benchmark index quotes, use AKShare to get the bottom line when DB has no data."""
     quotes = get_stock_daily_quotes(
         benchmark_symbol, start_date=start_date_obj.isoformat(), end_date=end_date_obj.isoformat(),
         period="daily", limit=lookback_days + 60,
     )
     if quotes:
         return quotes
-    # AKShare 兜底
+    # AKShare Keep everything in mind
     if benchmark_symbol in ("000300", "399300", "sh000300"):
         try:
             import akshare as ak
             import pandas as pd
             df = ak.stock_zh_index_daily(symbol="sh000300")
-            # date 列是 datetime.date 类型，用 date 对象直接比较
+            # date The column is of datetime.date type, and is compared directly with date objects.
             sd = start_date_obj if isinstance(start_date_obj, datetime.date) else start_date_obj
             ed = end_date_obj if isinstance(end_date_obj, datetime.date) else end_date_obj
             df = df[df["date"] >= sd]
@@ -94,7 +94,7 @@ def _try_get_benchmark_quotes(benchmark_symbol: str, start_date_obj: datetime.da
 
 
 def _compute_daily_returns(quotes: List[Dict[str, Any]]) -> List[float]:
-    """从日线记录列表计算每日收益率。"""
+    """Calculate daily returns from daily record list."""
     closes = []
     for q in quotes:
         c = _to_float(q.get("close"))
@@ -109,9 +109,9 @@ def _compute_daily_returns(quotes: List[Dict[str, Any]]) -> List[float]:
 
 
 def _fetch_quotes(symbol: str, lookback_days: int) -> List[Dict[str, Any]]:
-    """获取最近 N 天的日线数据。"""
+    """Get the daily data for the last N days."""
     end = datetime.date.today()
-    start = end - datetime.timedelta(days=lookback_days + 30)  # 多取一些确保有足够数据
+    start = end - datetime.timedelta(days=lookback_days + 30)  # Get more to make sure you have enough data
     return get_stock_daily_quotes(
         symbol,
         start_date=start.isoformat(),
@@ -122,7 +122,7 @@ def _fetch_quotes(symbol: str, lookback_days: int) -> List[Dict[str, Any]]:
 
 
 def _safe_autocorr(series: List[float], lag: int = 1) -> Optional[float]:
-    """计算一阶自相关系数。"""
+    """Calculate the first-order autocorrelation coefficient."""
     if len(series) < lag + 2:
         return None
     arr = np.array(series)
@@ -132,10 +132,10 @@ def _safe_autocorr(series: List[float], lag: int = 1) -> Optional[float]:
 
 
 def _adf_test_simple(series: List[float]) -> Tuple[float, float]:
-    """简易 ADF 检验。
+    """Simple ADF inspection.
 
-    对残差序列回归 Δε_t = ρ × ε_{t-1}，检验 ρ 是否显著为负。
-    使用 scipy.stats 的临界值（如果可用）。
+    Regression of residual series Δε_t = ρ × ε_{t-1}, Inspect ρ Whether it is significantly negative.
+    Use critical values from scipy.stats if available.
 
     Returns:
         (adf_statistic, p_value_simplified)
@@ -161,14 +161,14 @@ def _adf_test_simple(series: List[float]) -> Tuple[float, float]:
 
     adf_stat = beta / se_beta
 
-    # 用 scipy 查临界值
+    # Use scipy to check critical values
     try:
         from scipy import stats
-        # ADF 临界值约 -3.43 (1%), -2.86 (5%), -2.57 (10%) - 样本量约 500
-        # 使用近似 t 分布估算 p 值
+        # ADF critical value approx. -3.43 (1%), -2.86 (5%), -2.57 (10%) - Sample size approx. 500
+        # Estimate p-value using approximate t-distribution
         p_value = 2.0 * stats.t.cdf(adf_stat, df=len(residuals) - 1)
     except ImportError:
-        # 手动估算
+        # Manual estimation
         if adf_stat < -3.43:
             p_value = 0.01
         elif adf_stat < -2.86:
@@ -182,7 +182,7 @@ def _adf_test_simple(series: List[float]) -> Tuple[float, float]:
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 1: 相关性矩阵
+# Tool 1: correlation matrix
 # ────────────────────────────────────────────────────────────────
 
 
@@ -191,9 +191,9 @@ def _adf_test_simple(series: List[float]) -> Tuple[float, float]:
     tool_id="get_correlation_matrix",
     name="相关性矩阵",
     description=(
-        "计算多只股票之间的收益率相关系数矩阵。"
-        "支持 Pearson、Spearman、Kendall 三种方法。"
-        "自动找出高相关（|r|>0.7）的股票对。"
+        "Calculate the return correlation coefficient matrix between multiple stocks."
+        "Supports three methods: Pearson, Spearman, and Kendall."
+        "Automatically find high correlations (|r|>0.7) of stock pairs."
     ),
     category="fundamentals",
     is_online=False,
@@ -204,16 +204,16 @@ def _adf_test_simple(series: List[float]) -> Tuple[float, float]:
     output_shape="structured_json",
     preferred_for=["多股票相关性分析", "组合分散化评估", "风险对冲配对识别"],
     when_to_use=(
-        "当需要分析多只股票之间的价格联动关系、构建低相关投资组合、"
-        "或寻找对冲配对时使用。适合量化分析和风险管理场景。"
+        "When it is necessary to analyze the price linkage relationship between multiple stocks and construct a low-correlation investment portfolio,"
+        "Or use when looking for hedging pairs. Suitable for quantitative analysis and risk management scenarios."
     ),
     when_not_to_use=(
-        "不适合单股票分析；不适合因果分析（相关性不等于因果性）；"
-        "数据不足时（< 20 个交易日）结果不可靠。"
+        "Not suitable for single stock analysis; not suitable for causal analysis (correlation does not equal causation);"
+        "When there is insufficient data (< 20 trading days) results are unreliable."
     ),
     returns=(
-        "返回 JSON 字符串，包含 symbols、method、bars_used、"
-        "correlation_matrix（行列表格式）、top_correlated_pairs（|r|>0.7 的高相关对）。"
+        "Returns a JSON string containing symbols, methods, bars_used,"
+        "correlation_matrix (row list format), top_correlated_pairs (|r|>0.7 of high correlation pairs)."
     ),
     example="get_correlation_matrix(symbols='600519,000001,300750')",
     related_tools=[
@@ -222,37 +222,37 @@ def _adf_test_simple(series: List[float]) -> Tuple[float, float]:
     ],
 )
 def get_correlation_matrix(
-    symbols: Annotated[str, "多个股票代码，用逗号分隔，如 '600519,000001,300750'"],
-    lookback_days: Annotated[int, "回溯天数，默认 252（约 1 个交易日年）"] = 252,
-    method: Annotated[str, "相关系数方法：pearson / spearman / kendall，默认 pearson"] = "pearson",
+    symbols: Annotated[str, "Multiple stock codes, separated by commas, such as '600519,000001,300750'"],
+    lookback_days: Annotated[int, "Number of days to look back, default 252 (approximately 1 trading day year)"] = 252,
+    method: Annotated[str, "Correlation coefficient method: pearson/spearman/kendall, default pearson"] = "pearson",
 ) -> str:
-    """计算多只股票的收益率相关性矩阵。
+    """Calculate the return correlation matrix for multiple stocks.
 
     Args:
-        symbols: 多个股票代码，用逗号分隔（如 "600519,000001,300750"）
-        lookback_days: 回溯天数（自动截断到 20-1000），默认 252
-        method: 相关系数方法: "pearson" / "spearman" / "kendall"，默认 "pearson"
+        symbols: Multiple stock symbols, separated by commas (e.g. "600519,000001,300750") 
+        lookback_days: Number of days to look back (automatically truncated to 20-1000), default 252
+        method: correlation coefficient method: "pearson" / "spearman" / "kendall", Default "pearson"
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbols: list[str] 实际使用的股票代码列表
-            method: 实际使用的方法
-            bars_used: 对齐后使用的收益率样本数
-            correlation_matrix: list[dict] 相关性矩阵，元素结构——
-                — symbol: 股票代码
-                — values: list[float] 与各股票的相关系数
-            top_correlated_pairs: list[dict] 相关系数绝对值 > 0.7 的股票对（最多20个），元素结构——
-                — stock_a: 股票 A
-                — stock_b: 股票 B
-                — correlation: 相关系数
-                — strength: 强度: "强正相关" | "强负相关"
-            data_quality: dict 数据质量——
-                — requested_symbols: 请求的股票列表
-                — valid_symbols: 有效股票数
-                — returns_per_stock: 每只股票的收益率数
-                — note: 说明
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbols: list[str] List of actual stock symbols used
+            method: actual method used
+            bars_used: Number of return samples used after alignment
+            correlation_matrix: list[dict] Correlation matrix, element structure——
+                — symbol: Stock code
+                — values: list[float] Correlation coefficient with each stock
+            top_correlated_pairs: list[dict] Correlation coefficient absolute value > 0.7 Stock pairs (up to 20), element structure——
+                — stock_a: stocks A
+                — stock_b: stocks B
+                — correlation: Correlation coefficient
+                — strength: intensity: "strong positive correlation" | "strong negative correlation"
+            data_quality: dict Data quality——
+                — requested_symbols: Requested stock list
+                — valid_symbols: Valid number of shares
+                — returns_per_stock: The rate of return for each stock
+                — note: Description
+            message: Error message (only status="error" exist)
     """
     try:
         lookback_days = max(20, min(int(lookback_days), 1000))
@@ -266,7 +266,7 @@ def get_correlation_matrix(
         method_map = {"pearson": "pearson", "spearman": "spearman", "kendall": "kendall"}
         corr_method = method_map.get(method, "pearson")
 
-        # 获取每只股票的日线和收益率
+        # Get the daily line and return of each stock
         end = datetime.date.today()
         start = end - datetime.timedelta(days=lookback_days + 30)
 
@@ -301,17 +301,17 @@ def get_correlation_matrix(
 
         if len(returns_by_symbol) < 2:
             return json.dumps(
-                {"status": "error", "message": "至少需要 2 只有足够行情数据的股票"},
+                {"status": "error", "message": "At least 2 stocks with sufficient market data are required"},
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 对齐到相同长度
+        # Align to same length
         aligned_symbols = list(returns_by_symbol.keys())
         aligned_returns: Dict[str, List[float]] = {}
         for sym in aligned_symbols:
             aligned_returns[sym] = returns_by_symbol[sym][-min_bars:]
 
-        # 构建矩阵
+        # Build matrix
         n = len(aligned_symbols)
         matrix = [[0.0] * n for _ in range(n)]
         top_pairs = []
@@ -361,14 +361,14 @@ def get_correlation_matrix(
                 "requested_symbols": sym_list,
                 "valid_symbols": len(aligned_symbols),
                 "returns_per_stock": min_bars,
-                "note": "收益率基于日收盘价计算。Spearman/Kendall 需 scipy 支持。",
+                "note": "Yield is calculated based on daily closing price. Spearman/Kendall requires scipy support.",
             },
         }
 
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("相关性矩阵计算失败: %s", exc, exc_info=True)
+        logger.error("Correlation matrix calculation failed: %s", exc, exc_info=True)
         return json.dumps(
             {"status": "error", "message": str(exc)},
             ensure_ascii=False, indent=2, default=str,
@@ -376,7 +376,7 @@ def get_correlation_matrix(
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 2: 协整检验
+# Tool 2: cointegration test
 # ────────────────────────────────────────────────────────────────
 
 
@@ -385,9 +385,9 @@ def get_correlation_matrix(
     tool_id="get_cointegration_test",
     name="协整检验",
     description=(
-        "对两只股票进行协整检验。"
-        "使用 OLS 回归 y = α + β × x + ε，对残差进行 ADF 平稳性检验，"
-        "判断是否存在协整关系，并计算均值回归半衰期。"
+        "Conduct a cointegration test on two stocks."
+        "Using OLS regression y = α + β × x + ε, Perform an ADF stationarity test on the residuals,"
+        "Determine whether there is a cointegration relationship and calculate the mean reversion half-life."
     ),
     category="fundamentals",
     is_online=False,
@@ -398,16 +398,16 @@ def get_correlation_matrix(
     output_shape="structured_json",
     preferred_for=["配对交易策略研究", "均值回归分析", "统计套利机会识别"],
     when_to_use=(
-        "当需要判断两只股票是否存在长期均衡关系、为配对交易策略做准备、"
-        "或评估价差序列的均值回归特性时使用。"
+        "When it is necessary to judge whether there is a long-term equilibrium relationship between two stocks and prepare for a pair trading strategy,"
+        "Or used when evaluating the mean reversion properties of a spread series."
     ),
     when_not_to_use=(
-        "不适合单股票分析；至少需要约 60 个交易日数据才有统计意义；"
-        "不适合因果关系检验。"
+        "Not suitable for single stock analysis; at least about 60 trading days of data are required to be statistically significant;"
+        "Not suitable for causality testing."
     ),
     returns=(
-        "返回 JSON 字符串，包含 beta、alpha、hedge_ratio、adf_statistic、"
-        "p_value、is_cointegrated、half_life、spread_series（最近 10 期）。"
+        "Returns a JSON string containing beta, alpha, hedge_ratio, adf_statistic,"
+        "p_value, is_cointegrated, half_life, spread_series (the last 10 issues)."
     ),
     example="get_cointegration_test(symbol_x='600519', symbol_y='000858')",
     related_tools=[
@@ -416,36 +416,36 @@ def get_correlation_matrix(
     ],
 )
 def get_cointegration_test(
-    symbol_x: Annotated[str, "第一只股票代码，如 600519"],
-    symbol_y: Annotated[str, "第二只股票代码，如 000858"],
-    lookback_days: Annotated[int, "回溯天数，默认 504（约 2 年）"] = 504,
+    symbol_x: Annotated[str, "The first stock code, such as 600519"],
+    symbol_y: Annotated[str, "The second stock code, such as 000858"],
+    lookback_days: Annotated[int, "Number of days to look back, default 504 (about 2 years)"] = 504,
 ) -> str:
-    """对两只股票进行协整检验。
+    """Conduct a cointegration test on two stocks.
 
     Args:
-        symbol_x: 第一只股票代码（如 "600519"）
-        symbol_y: 第二只股票代码（如 "000858"）
-        lookback_days: 回溯天数（自动截断到 60-2000），默认 504
+        symbol_x: The first stock code (such as "600519") 
+        symbol_y: The second stock code (e.g. "000858") 
+        lookback_days: Number of days to look back (automatically truncated to 60-2000), default 504
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbol_x: 第一只股票代码
-            symbol_y: 第二只股票代码
-            alpha: OLS 回归截距
-            beta: OLS 回归斜率（对冲比率）
-            hedge_ratio: 对冲比率（= beta）
-            adf_statistic: ADF 检验统计量
-            p_value: ADF 检验 p 值
-            is_cointegrated: 是否协整（p<0.05）
-            half_life_days: 均值回归半衰期（天，无法计算时为 None）
-            current_z_score: 当前价差 Z-Score
-            spread_series: list[dict] 最近10期价差序列，元素结构——
-                — date: 日期
-                — spread: 价差
-            bars_used: 共同交易日数
-            interpretation: 解读文本
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbol_x: First stock code
+            symbol_y: Second stock code
+            alpha: OLS regression intercept
+            beta: OLS Regression slope (hedge ratio)
+            hedge_ratio: Hedge Ratio (= beta) 
+            adf_statistic: ADF test statistic
+            p_value: ADF Test p-value
+            is_cointegrated: Whether it is cointegrated (p<0.05) 
+            half_life_days: Mean reversion half-life (days, None if cannot be calculated)
+            current_z_score: current spread Z-Score
+            spread_series: list[dict] Price difference sequence of the last 10 periods, element structure——
+                — date: Date
+                — spread: spread
+            bars_used: Common trading days
+            interpretation: interpret text
+            message: Error message (only status="error" exist)
     """
     try:
         lookback_days = max(60, min(int(lookback_days), 2000))
@@ -468,7 +468,7 @@ def get_cointegration_test(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 按 trade_date 对齐
+        # Align by trade_date
         prices_x: Dict[str, float] = {}
         prices_y: Dict[str, float] = {}
         for q in quotes_x:
@@ -499,20 +499,20 @@ def get_cointegration_test(
         beta = float(beta_vec[1])
         residuals = py - (alpha + beta * px)
 
-        hedge_ratio = beta  # 对冲比率 = β
+        hedge_ratio = beta  # Hedge ratio = β
 
-        # ADF 检验残差
+        # ADF Test residuals
         adf_stat, p_value = _adf_test_simple(residuals.tolist())
         is_cointegrated = p_value < 0.05
 
-        # 半衰期
+        # half life
         half_life: Optional[float] = None
         rho = _safe_autocorr(residuals.tolist(), lag=1)
         if rho is not None and 0 < rho < 1:
             half_life = round(-math.log(2) / math.log(rho), 2)
 
-        # 价差序列（最近 10 期）
-        spread = py - beta * px  # 价差 = y - β × x
+        # Spread series (last 10 periods)
+        spread = py - beta * px  # spread = y - β × x
         spread_series = [
             {"date": common_dates[i], "spread": round(float(spread[i]), 4)}
             for i in range(max(0, len(spread) - 10), len(spread))
@@ -537,8 +537,8 @@ def get_cointegration_test(
             "spread_series": spread_series,
             "bars_used": len(common_dates),
             "interpretation": (
-                "残差序列平稳（p<0.05），存在协整关系" if is_cointegrated
-                else "残差序列非平稳，不存在协整关系"
+                "The residual series is stationary (p<0.05) , There is a cointegration relationship" if is_cointegrated
+                else "The residual sequence is non-stationary and there is no cointegration relationship."
             ),
         }
 
@@ -553,7 +553,7 @@ def get_cointegration_test(
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 3: 滚动回归
+# Tool 3: rolling regression
 # ────────────────────────────────────────────────────────────────
 
 
@@ -562,8 +562,8 @@ def get_cointegration_test(
     tool_id="get_rolling_regression",
     name="滚动回归",
     description=(
-        "对股票相对于基准指数（默认沪深300）的收益率进行滚动 OLS 回归，"
-        "计算滚动 Beta、Alpha 和 R²。可用于分析 Beta 稳定性。"
+        "Perform a rolling OLS regression on the stock s return relative to the benchmark index (default CSI 300),"
+        "Calculate rolling beta, alpha, and R². Can be used to analyze beta stability."
     ),
     category="fundamentals",
     is_online=False,
@@ -574,14 +574,14 @@ def get_cointegration_test(
     output_shape="structured_json",
     preferred_for=["Beta 稳定性分析", "因子暴露时变性研究", "风险模型验证"],
     when_to_use=(
-        "当需要分析股票 Beta 是否随时间变化、评估滚动 Alpha 趋势、"
-        "或检查相对于基准的风险暴露稳定性时使用。"
+        "When you need to analyze whether a stock s beta changes over time, evaluate rolling alpha trends,"
+        "or used when checking the stability of risk exposures relative to a baseline."
     ),
     when_not_to_use=(
-        "不适合单期静态 Beta 计算；数据不足（< window+20 个交易日）无法计算。"
+        "Not suitable for single-period static beta calculation; insufficient data (< window+20 trading days) cannot be calculated."
     ),
     returns=(
-        "返回 JSON 字符串，包含 rolling_beta（最近 20 期）、rolling_alpha、"
+        "Returns a JSON string, including rolling_beta (last 20 periods), rolling_alpha,"
         "rolling_r_squared、latest_beta、beta_stability。"
     ),
     example="get_rolling_regression(symbol='600519', benchmark_symbol='000300')",
@@ -591,37 +591,37 @@ def get_cointegration_test(
     ],
 )
 def get_rolling_regression(
-    symbol: Annotated[str, "股票代码，如 600519"],
-    benchmark_symbol: Annotated[str, "基准指数代码，默认 000300（沪深 300）"] = "000300",
-    lookback_days: Annotated[int, "总回溯天数，默认 504（约 2 年）"] = 504,
-    window: Annotated[int, "滚动窗口大小（交易日数），默认 60"] = 60,
+    symbol: Annotated[str, "Stock code, such as 600519"],
+    benchmark_symbol: Annotated[str, "Benchmark index code, default 000300 (CSI 300)"] = "000300",
+    lookback_days: Annotated[int, "Total number of days to look back, default 504 (about 2 years)"] = 504,
+    window: Annotated[int, "Rolling window size (number of trading days), default 60"] = 60,
 ) -> str:
-    """对个股相对基准指数进行滚动回归。
+    """Perform a rolling regression of individual stocks relative to a benchmark index.
 
     Args:
-        symbol: 股票代码（如 "600519"）
-        benchmark_symbol: 基准指数代码，默认 "000300"（沪深300）
-        lookback_days: 总回溯天数（自动截断到 100-2000），默认 504
-        window: 滚动窗口大小（交易日数，自动截断到 20 至 lookback_days/2），默认 60
+        symbol: Stock code (e.g. "600519") 
+        benchmark_symbol: Benchmark index code, default "000300" (CSI 300)
+        lookback_days: Total lookback days (automatically truncated to 100-2000), default 504
+        window: Rolling window size (number of trading days, automatically truncated to 20 to lookback_days/2), default 60
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbol: 股票代码
-            benchmark: 基准指数代码
-            window_days: 滚动窗口大小
-            total_bars: 收益率总数
-            rolling_windows_computed: 计算出的滚动窗口数
-            latest_beta: 最新 Beta 值
-            latest_alpha: 最新 Alpha 值
-            latest_r_squared: 最新 R² 值
-            beta_stability: Beta 稳定性（标准差）
-            beta_stability_interpretation: Beta 稳定性解读: "稳定" | "中等波动" | "高度波动"
-            rolling_series: list[dict] 最近20个滚动回归结果，元素结构——
-                — beta: Beta 值
-                — alpha: Alpha 值
-                — r_squared: R² 值
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbol: Stock code
+            benchmark: Benchmark index code
+            window_days: rolling window size
+            total_bars: total yield
+            rolling_windows_computed: Calculated number of rolling windows
+            latest_beta: Latest Beta Value
+            latest_alpha: Latest Alpha value
+            latest_r_squared: Latest R² value
+            beta_stability: Beta Stability (standard deviation)
+            beta_stability_interpretation: Beta Interpretation of stability: "stable" | "medium volatility" | "Highly volatile"
+            rolling_series: list[dict] The last 20 rolling regression results, element structure——
+                — beta: Beta value
+                — alpha: Alpha value
+                — r_squared: R² value
+            message: Error message (only status="error" exist)
     """
     try:
         lookback_days = max(100, min(int(lookback_days), 2000))
@@ -635,7 +635,7 @@ def get_rolling_regression(
             period="daily", limit=lookback_days + 60,
         )
 
-        # 基准指数：000300 用 AKShare 兜底
+        # Benchmark Index: 000300 Use AKShare to save money
         quotes_bm = _try_get_benchmark_quotes(benchmark_symbol, start, end, lookback_days)
 
         if not quotes_stock or not quotes_bm:
@@ -644,7 +644,7 @@ def get_rolling_regression(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 按日期对齐收盘价
+        # Align closing price by date
         prices_s: Dict[str, float] = {}
         prices_b: Dict[str, float] = {}
         for q in quotes_stock:
@@ -668,11 +668,11 @@ def get_rolling_regression(
         ps_arr = np.array([prices_s[d] for d in common_dates], dtype=float)
         pb_arr = np.array([prices_b[d] for d in common_dates], dtype=float)
 
-        # 收益率
+        # Yield
         ret_s = (ps_arr[1:] - ps_arr[:-1]) / ps_arr[:-1]
         ret_b = (pb_arr[1:] - pb_arr[:-1]) / pb_arr[:-1]
 
-        # 滚动回归
+        # rolling regression
         rolling_beta = []
         rolling_alpha = []
         rolling_r2 = []
@@ -707,7 +707,7 @@ def get_rolling_regression(
         latest_beta = rolling_beta[-1]
         beta_std = float(np.std(rolling_beta)) if len(rolling_beta) > 1 else 0.0
 
-        # 最近 20 个滚动值
+        # Last 20 rolling values
         n_latest = min(20, len(rolling_beta))
         rolling_series = [
             {
@@ -747,7 +747,7 @@ def get_rolling_regression(
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 4: 正态性检验
+# Tool 4: Normality test
 # ────────────────────────────────────────────────────────────────
 
 
@@ -756,8 +756,8 @@ def get_rolling_regression(
     tool_id="get_normality_test",
     name="正态性检验",
     description=(
-        "对股票日收益率进行 Jarque-Bera 正态性检验。"
-        "计算偏度、峰度，判断收益率分布是否服从正态分布。"
+        "Perform Jarque-Bera normality test on stock daily returns."
+        "Calculate the skewness and kurtosis to determine whether the return distribution obeys the normal distribution."
     ),
     category="fundamentals",
     is_online=False,
@@ -768,14 +768,14 @@ def get_rolling_regression(
     output_shape="structured_json",
     preferred_for=["收益率分布分析", "风险管理假设检验", "金融计量研究"],
     when_to_use=(
-        "当需要检验股票收益率是否服从正态分布（许多风险模型的假设前提）、"
-        "或分析收益率分布的偏度和峰度特征时使用。"
+        "When it is necessary to test whether stock returns follow a normal distribution (an assumption of many risk models),"
+        "Or used when analyzing the skewness and kurtosis characteristics of return distribution."
     ),
     when_not_to_use=(
-        "不适合单一日收益率计算；数据不足（< 30 个交易日）结果不可靠。"
+        "Not suitable for single-day return calculation; insufficient data (< 30 trading days) results are unreliable."
     ),
     returns=(
-        "返回 JSON 字符串，包含 jb_stat、p_value、is_normal、"
+        "Returns a JSON string, including jb_stat, p_value, is_normal,"
         "skewness、kurtosis、interpretation。"
     ),
     example="get_normality_test(symbol='600519')",
@@ -785,28 +785,28 @@ def get_rolling_regression(
     ],
 )
 def get_normality_test(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    lookback_days: Annotated[int, "回溯天数，默认 252（约 1 年）"] = 252,
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    lookback_days: Annotated[int, "Number of days to look back, default 252 (about 1 year)"] = 252,
 ) -> str:
-    """对股票日收益率进行 Jarque-Bera 正态性检验。
+    """Perform Jarque-Bera normality test on stock daily returns.
 
     Args:
-        symbol: A 股股票代码（如 "600519"）
-        lookback_days: 回溯天数（自动截断到 30-1000），默认 252
+        symbol: A stock code (such as "600519") 
+        lookback_days: Number of days to look back (automatically truncated to 30-1000), default 252
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbol: 股票代码
-            jb_statistic: Jarque-Bera 统计量
-            p_value: p 值
-            is_normal: 是否服从正态分布（p>0.05）
-            skewness: 偏度
-            kurtosis: 峰度
-            excess_kurtosis: 超额峰度（kurtosis - 3）
-            samples_used: 样本数
-            interpretation: 解读文本
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbol: Stock code
+            jb_statistic: Jarque-Bera Statistics
+            p_value: p value
+            is_normal: Whether it obeys the normal distribution (p>0.05) 
+            skewness: Skewness
+            kurtosis: kurtosis
+            excess_kurtosis: Excess kurtosis (kurtosis - 3)
+            samples_used: Number of samples
+            interpretation: interpret text
+            message: Error message (only status="error" exist)
     """
     try:
         lookback_days = max(30, min(int(lookback_days), 1000))
@@ -830,25 +830,25 @@ def get_normality_test(
         skewness = float(np.mean((ret_arr - np.mean(ret_arr)) ** 3) / (np.std(ret_arr) ** 3 + 1e-10))
         kurtosis = float(np.mean((ret_arr - np.mean(ret_arr)) ** 4) / (np.std(ret_arr) ** 4 + 1e-10))
 
-        # Jarque-Bera 检验
+        # Jarque-Bera Inspect
         try:
             from scipy import stats
             jb_stat, p_value = stats.jarque_bera(ret_arr)
         except ImportError:
-            # 手动计算
+            # Manual calculation
             jb_stat = n / 6.0 * (skewness ** 2 + (kurtosis - 3) ** 2 / 4.0)
             from scipy.stats import chi2
             p_value = 1.0 - chi2.cdf(jb_stat, df=2)
 
         is_normal = p_value > 0.05
 
-        # 解读
+        # Interpretation
         if abs(skewness) < 0.5:
             skew_desc = "接近对称"
         elif skewness > 0:
-            skew_desc = "右偏（正偏），正收益极端值较多"
+            skew_desc = "Right skew (positive skew), there are more extreme values of positive returns"
         else:
-            skew_desc = "左偏（负偏），负收益极端值较多"
+            skew_desc = "Left skewed (negatively skewed), with more extreme values of negative returns"
 
         if abs(kurtosis - 3) < 0.5:
             kurt_desc = "接近正态峰度"
@@ -868,7 +868,7 @@ def get_normality_test(
             "samples_used": n,
             "interpretation": (
                 f"收益率分布{'服从' if is_normal else '不服从'}正态分布 (p={'%.4f' % p_value})。"
-                f" 偏度: {skew_desc}。峰度: {kurt_desc}。"
+                f" Skewness: {skew_desc}. kurtosis: {kurt_desc}. "
             ),
         }
 
@@ -883,7 +883,7 @@ def get_normality_test(
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 5: 平稳性检验
+# Tool 5: Stationarity test
 # ────────────────────────────────────────────────────────────────
 
 
@@ -892,8 +892,8 @@ def get_normality_test(
     tool_id="get_stationarity_test",
     name="平稳性检验",
     description=(
-        "对股票价格序列进行 ADF（Augmented Dickey-Fuller）平稳性检验。"
-        "判断价格序列是否具有单位根（非平稳）。"
+        "Perform ADF (Augmented Dickey-Fuller) stationarity test on stock price series."
+        "Determine whether the price series has a unit root (non-stationary)."
     ),
     category="fundamentals",
     is_online=False,
@@ -904,16 +904,16 @@ def get_normality_test(
     output_shape="structured_json",
     preferred_for=["时间序列平稳性判断", "单位根检验", "建模前提验证"],
     when_to_use=(
-        "当需要判断股票价格序列是否平稳（许多时间序列模型的前提假设）、"
-        "或检验单位根存在性时使用。"
+        "When it is necessary to determine whether the stock price series is stationary (the premise assumption of many time series models),"
+        "Or used when testing the existence of a unit root."
     ),
     when_not_to_use=(
-        "不适合收益率序列（收益率通常已平稳）；"
-        "数据不足（< 30 个交易日）结果不可靠。"
+        "Not suitable for return series (returns are usually stationary);"
+        "Insufficient data (< 30 trading days) results are unreliable."
     ),
     returns=(
-        "返回 JSON 字符串，包含 adf_statistic、p_value、is_stationary、"
-        "critical_values、test_type 和 interpretation。"
+        "Returns a JSON string containing adf_statistic, p_value, is_stationary,"
+        "critical_values, test_type and interpretation."
     ),
     example="get_stationarity_test(symbol='600519')",
     related_tools=[
@@ -922,33 +922,33 @@ def get_normality_test(
     ],
 )
 def get_stationarity_test(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    lookback_days: Annotated[int, "回溯天数，默认 252（约 1 年）"] = 252,
-    price_type: Annotated[str, "价格类型：close（收盘价）/ adjusted（后复权），默认 close"] = "close",
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    lookback_days: Annotated[int, "Number of days to look back, default 252 (about 1 year)"] = 252,
+    price_type: Annotated[str, "Price type: close/adjusted, default close"] = "close",
 ) -> str:
-    """对股票价格序列进行 ADF 平稳性检验。
+    """Perform ADF stationarity test on stock price series.
 
     Args:
-        symbol: A 股股票代码（如 "600519"）
-        lookback_days: 回溯天数（自动截断到 30-2000），默认 252
-        price_type: 价格类型: "close"（收盘价）或 "adjusted"（后复权），默认 "close"
+        symbol: A stock code (such as "600519") 
+        lookback_days: Number of days to look back (automatically truncated to 30-2000), default 252
+        price_type: price type: "close" (closing price) or "adjusted" (rights after restoration), default "close"
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbol: 股票代码
-            price_type: 价格类型
-            adf_statistic: ADF 检验统计量
-            p_value: p 值
-            is_stationary: 是否平稳（p<0.05）
-            critical_values: dict 临界值——
-                — "1%": 1% 临界值
-                — "5%": 5% 临界值
-                — "10%": 10% 临界值
-            test_type: 检验类型说明
-            samples_used: 样本数
-            interpretation: 解读文本
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbol: Stock code
+            price_type: price type
+            adf_statistic: ADF test statistic
+            p_value: p value
+            is_stationary: Is it stable (p<0.05) 
+            critical_values: dict critical value——
+                — "1%": 1% critical value
+                — "5%": 5% critical value
+                — "10%": 10% critical value
+            test_type: Inspection type description
+            samples_used: Number of samples
+            interpretation: interpret text
+            message: Error message (only status="error" exist)
     """
     try:
         lookback_days = max(30, min(int(lookback_days), 2000))
@@ -960,7 +960,7 @@ def get_stationarity_test(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # 根据 price_type 选择价格字段
+        # Select price field based on price_type
         if price_type == "adjusted":
             fields = ["adj_close", "adj_close", "close"]
         else:
@@ -982,13 +982,13 @@ def get_stationarity_test(
                 ensure_ascii=False, indent=2, default=str,
             )
 
-        # ADF 检验
+        # ADF Inspect
         adf_stat, p_value = _adf_test_simple(prices)
         test_type = "ADF (Augmented Dickey-Fuller, simplified)"
 
         is_stationary = p_value < 0.05
 
-        # 临界值
+        # critical value
         critical_values = {
             "1%": -3.43,
             "5%": -2.86,
@@ -1006,8 +1006,8 @@ def get_stationarity_test(
             "samples_used": len(prices),
             "interpretation": (
                 f"价格序列{'平稳（拒绝单位根假设）' if is_stationary else '非平稳（无法拒绝单位根假设）'}。"
-                f" ADF 统计量 = {adf_stat:.4f}，p 值 = {p_value:.4f}。"
-                f" {'注意：股票价格通常非平稳，差分或取对数后可能平稳。' if not is_stationary else ''}"
+                f" ADF Statistics = {adf_stat:.4f}, p value = {p_value:.4f}. "
+                f" {'Note: Stock prices are usually non-stationary and may be stationary after differences or logarithms.' if not is_stationary else ''}"
             ),
         }
 
@@ -1022,7 +1022,7 @@ def get_stationarity_test(
 
 
 # ────────────────────────────────────────────────────────────────
-# Tool 6: GARCH 波动率（EWMA 简化版）
+# Tool 6: GARCH Volatility (EWMA simplified version)
 # ────────────────────────────────────────────────────────────────
 
 
@@ -1031,9 +1031,9 @@ def get_stationarity_test(
     tool_id="get_garch_volatility",
     name="EWMA 条件波动率",
     description=(
-        "使用 EWMA（指数加权移动平均）模型估计股票的条件波动率。"
-        "采用 RiskMetrics 标准衰减因子 λ=0.94。"
-        "比较当前波动率与长期历史波动率。"
+        "Estimate the conditional volatility of a stock using the EWMA (exponentially weighted moving average) model."
+        "Using RiskMetrics standard attenuation factors λ=0.94. "
+        "Compare current volatility to long-term historical volatility."
     ),
     category="fundamentals",
     is_online=False,
@@ -1044,16 +1044,16 @@ def get_stationarity_test(
     output_shape="structured_json",
     preferred_for=["条件波动率估计", "风险度量（VaR 输入）", "波动率趋势分析"],
     when_to_use=(
-        "当需要估计股票当前的条件波动率水平、比较不同时期的波动率变化、"
-        "或为风险管理模型提供波动率输入时使用。"
+        "When it is necessary to estimate the current conditional volatility level of a stock and compare volatility changes in different periods,"
+        "Or used when providing volatility inputs to risk management models."
     ),
     when_not_to_use=(
-        "不适合直接预测未来波动率（EWMA 是简化方法）；"
-        "数据不足（< 60 个交易日）结果不可靠。"
+        "Not suitable for directly predicting future volatility (EWMA is a simplified method);"
+        "Insufficient data (< 60 trading days) results are unreliable."
     ),
     returns=(
-        "返回 JSON 字符串，包含 current_volatility（年化）、long_term_vol、"
-        "vol_ratio、volatility_series（最近 20 期）、method_note。"
+        "Returns a JSON string containing current_volatility (annualized), long_term_vol,"
+        "vol_ratio, volatility_series (The last 20 issues), method_note."
     ),
     example="get_garch_volatility(symbol='600519')",
     related_tools=[
@@ -1062,35 +1062,35 @@ def get_stationarity_test(
     ],
 )
 def get_garch_volatility(
-    symbol: Annotated[str, "A 股股票代码，如 600519"],
-    lookback_days: Annotated[int, "回溯天数，默认 504（约 2 年）"] = 504,
-    p: Annotated[int, "GARCH 滞后阶数 p，默认 1（在 EWMA 模式下固定为 EWMA）"] = 1,
-    q: Annotated[int, "ARCH 滞后阶数 q，默认 1（在 EWMA 模式下固定为 EWMA）"] = 1,
+    symbol: Annotated[str, "A stock stock code, such as 600519"],
+    lookback_days: Annotated[int, "Number of days to look back, default 504 (about 2 years)"] = 504,
+    p: Annotated[int, "GARCH Lag order p, default 1 (fixed to EWMA in EWMA mode)"] = 1,
+    q: Annotated[int, "ARCH Lag order q, default 1 (fixed to EWMA in EWMA mode)"] = 1,
 ) -> str:
-    """使用 EWMA（RiskMetrics 标准）估计条件波动率。
+    """Conditional volatility is estimated using EWMA (RiskMetrics standard).
 
     Args:
-        symbol: A 股股票代码（如 "600519"）
-        lookback_days: 回溯天数（自动截断到 60-2000），默认 504
-        p: GARCH 滞后阶数 p（当前实现固定为 EWMA，参数保留），默认 1
-        q: ARCH 滞后阶数 q（当前实现固定为 EWMA，参数保留），默认 1
+        symbol: A stock code (such as "600519") 
+        lookback_days: Number of days to look back (automatically truncated to 60-2000), default 504
+        p: GARCH Lag order p (current implementation is fixed to EWMA, parameters are retained), default 1
+        q: ARCH Lag order q (current implementation is fixed to EWMA, parameters are retained), default 1
 
     Returns:
-        str: JSON 字符串，字段说明——
-            status: 状态（仅在异常时为 "error"）
-            symbol: 股票代码
-            model: 模型标识（固定为 "EWMA (RiskMetrics, λ=0.94)"）
-            current_volatility: 当前条件波动率（年化）
-            long_term_historical_volatility: 长期历史波动率（年化）
-            volatility_ratio: 当前/长期 波动率比值
-            volatility_regime: 波动率状态: "高波动（当前 > 长期 × 1.2）" | "低波动（当前 < 长期 × 0.8）" | "正常波动"
-            volatility_series: list[dict] 最近20期波动率序列，元素结构——
-                — date: 日期
-                — daily_volatility: 日波动率
-                — annualized_volatility: 年化波动率
-            method_note: 方法说明
-            bars_used: 使用的收益率样本数
-            message: 错误信息（仅 status="error" 时存在）
+        str: JSON String, field description——
+            status: status (only in case of exception) "error") 
+            symbol: Stock code
+            model: Model ID (fixed to "EWMA (RiskMetrics, λ=0.94)") 
+            current_volatility: Current Conditions Volatility (Annualized)
+            long_term_historical_volatility: Long-term historical volatility (annualized)
+            volatility_ratio: Current/Long-Term Volatility Ratio
+            volatility_regime: volatility status: "High volatility (currently > long term × 1.2) " | "Low volatility (currently < long term × 0.8) " | "normal fluctuations"
+            volatility_series: list[dict] Volatility series of the last 20 periods, element structure——
+                — date: Date
+                — daily_volatility: daily volatility
+                — annualized_volatility: annualized volatility
+            method_note: Method description
+            bars_used: Number of return samples used
+            message: Error message (only status="error" exist)
     """
     try:
         lookback_days = max(60, min(int(lookback_days), 2000))
@@ -1112,11 +1112,11 @@ def get_garch_volatility(
         ret_arr = np.array(returns)
 
         # EWMA: σ²_t = λ × σ²_{t-1} + (1-λ) × r²_{t-1}
-        lam = 0.94  # RiskMetrics 标准
+        lam = 0.94  # RiskMetrics Standard
         n = len(ret_arr)
         sigma2 = np.zeros(n)
 
-        # 初始化：使用前 10 个收益率的方差
+        # Initialization: Use variance of first 10 returns
         sigma2[0] = np.var(ret_arr[:10]) if n >= 10 else np.var(ret_arr)
 
         for t in range(1, n):
@@ -1124,12 +1124,12 @@ def get_garch_volatility(
 
         sigma = np.sqrt(sigma2)
 
-        # 年化（假设 252 个交易日）
+        # Annualized (assuming 252 trading days)
         annual_factor = math.sqrt(252)
         current_vol = float(sigma[-1] * annual_factor)
         long_term_vol = float(np.std(ret_arr) * annual_factor)
 
-        # 波动率序列（最近 20 期）
+        # Volatility series (last 20 periods)
         vol_series = [
             {
                 "date": str(quotes[min(i + 1, len(quotes) - 1)].get("trade_date", "")),
@@ -1148,15 +1148,15 @@ def get_garch_volatility(
             "long_term_historical_volatility": round(long_term_vol, 4),
             "volatility_ratio": round(vol_ratio, 4),
             "volatility_regime": (
-                "高波动（当前 > 长期 × 1.2）" if vol_ratio > 1.2
-                else "低波动（当前 < 长期 × 0.8）" if vol_ratio < 0.8
+                "High volatility (currently > long term × 1.2) " if vol_ratio > 1.2
+                else "Low volatility (currently < long term × 0.8) " if vol_ratio < 0.8
                 else "正常波动"
             ),
             "volatility_series": vol_series,
             "method_note": (
-                "使用 RiskMetrics EWMA 模型（λ=0.94）估计条件波动率。"
-                "年化因子 = sqrt(252)。"
-                "完整 GARCH(p,q) 需要非线性优化求解，此处以 EWMA 作为简化替代。"
+                "Using the RiskMetrics EWMA model (λ=0.94) Estimate conditional volatility."
+                "annualization factor = sqrt(252). "
+                "complete GARCH(p,q) A nonlinear optimization solution is required, and EWMA is used here as a simplified alternative."
             ),
             "bars_used": n,
         }
@@ -1164,7 +1164,7 @@ def get_garch_volatility(
         return json.dumps(payload, ensure_ascii=False, indent=2, default=str)
 
     except Exception as exc:
-        logger.error("GARCH 波动率建模失败: %s", exc, exc_info=True)
+        logger.error("GARCH Volatility modeling failed: %s", exc, exc_info=True)
         return json.dumps(
             {"status": "error", "message": str(exc)},
             ensure_ascii=False, indent=2, default=str,

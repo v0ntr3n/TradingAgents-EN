@@ -1,7 +1,7 @@
 <template>
   <div class="header-actions">
-    <!-- 主题切换 -->
-    <el-tooltip content="切换主题" placement="bottom">
+    <!-- theme switching -->
+    <el-tooltip content="switch theme" placement="bottom">
       <el-button type="text" @click="toggleTheme" class="action-btn">
         <el-icon>
           <Sunny v-if="appStore.isDarkTheme" />
@@ -10,15 +10,15 @@
       </el-button>
     </el-tooltip>
 
-    <!-- 全屏切换 -->
-    <el-tooltip content="全屏" placement="bottom">
+    <!-- Full screen switch -->
+    <el-tooltip content="full screen" placement="bottom">
       <el-button type="text" @click="toggleFullscreen" class="action-btn">
         <el-icon><FullScreen /></el-icon>
       </el-button>
     </el-tooltip>
 
-    <!-- 通知 -->
-    <el-tooltip content="通知" placement="bottom">
+    <!-- Notification -->
+    <el-tooltip content="Notification" placement="bottom">
       <el-badge :value="unreadCount" :hidden="unreadCount === 0">
         <el-button type="text" @click="openDrawer" class="action-btn">
           <el-icon><Bell /></el-icon>
@@ -26,21 +26,21 @@
       </el-badge>
     </el-tooltip>
 
-    <!-- 帮助 -->
-    <el-tooltip content="帮助" placement="bottom">
+    <!-- help -->
+    <el-tooltip content="help" placement="bottom">
       <el-button type="text" @click="showHelp" class="action-btn">
         <el-icon><QuestionFilled /></el-icon>
       </el-button>
     </el-tooltip>
 
-    <!-- 通知抽屉（方案B） -->
-    <el-drawer v-model="drawerVisible" direction="rtl" size="360px" :with-header="true" title="消息中心">
+    <!-- Notification drawer (Option B) -->
+    <el-drawer v-model="drawerVisible" direction="rtl" size="360px" :with-header="true" title="Message center">
       <div class="notif-toolbar">
-        <el-segmented v-model="filter" :options="[{label: '全部', value: 'all'}, {label: '未读', value: 'unread'}]" size="small" />
-        <el-button size="small" text type="primary" @click="onMarkAllRead" :disabled="unreadCount===0">全部已读</el-button>
+        <el-segmented v-model="filter" :options="[{label: 'All', value: 'all'}, {label: 'unread', value: 'unread'}]" size="small" />
+        <el-button size="small" text type="primary" @click="onMarkAllRead" :disabled="unreadCount===0">All read</el-button>
       </div>
       <el-scrollbar max-height="calc(100vh - 160px)">
-        <el-empty v-if="items.length===0" description="暂无通知" />
+        <el-empty v-if="items.length===0" description="No notification yet" />
         <div v-else class="notif-list">
           <div v-for="n in items" :key="n.id" class="notif-item" :class="{unread: n.status==='unread'}">
             <div class="row">
@@ -50,8 +50,8 @@
             <div class="title" @click="go(n)">{{ n.title }}</div>
             <div class="content" v-if="n.content">{{ n.content }}</div>
             <div class="ops">
-              <el-button size="small" text type="primary" @click="go(n)" :disabled="!n.link">查看</el-button>
-              <el-button size="small" text @click="onMarkRead(n)" v-if="n.status==='unread'">标记已读</el-button>
+              <el-button size="small" text type="primary" @click="go(n)" :disabled="!n.link">View</el-button>
+              <el-button size="small" text @click="onMarkRead(n)" v-if="n.status==='unread'">Mark as read</el-button>
             </div>
           </div>
         </div>
@@ -98,14 +98,14 @@ function openDrawer() {
 }
 function onMarkRead(n: any) { notifStore.markRead(n.id) }
 function onMarkAllRead() { notifStore.markAllRead() }
-function typeLabel(t: string) { return t === 'analysis' ? '分析' : t === 'alert' ? '预警' : '系统' }
+function typeLabel(t: string) { return t === 'analysis' ? 'analysis' : t === 'alert' ? 'early warning' : 'system' }
 function tagType(t: string) { return t === 'analysis' ? 'success' : t === 'alert' ? 'warning' : 'info' }
 function toLocal(iso: string) { try { return new Date(iso).toLocaleString() } catch { return iso } }
 function go(n: any) { if (n.link) window.open(n.link, '_blank') }
 
 onMounted(() => {
   notifStore.refreshUnreadCount()
-  // 🔥 建立 WebSocket 连接（优先），失败自动降级到 SSE
+  // 🔥 Establish WebSocket connection (priority), failure will automatically degrade to SSE
   notifStore.connect()
 
   timerCount = setInterval(() => notifStore.refreshUnreadCount(), 30000)
@@ -120,7 +120,7 @@ onMounted(() => {
   }, { immediate: true })
   watch(filter, () => { if (drawerVisible.value) notifStore.loadList(filter.value) })
 
-  // token 变化时重连
+  // token Reconnect on change
   watch(() => authStore.token, (nextToken, previousToken) => {
     if (!nextToken) {
       notifStore.disconnect()
@@ -135,7 +135,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (timerCount) clearInterval(timerCount)
   if (timerList) clearInterval(timerList)
-  // 🔥 断开所有连接（WebSocket 和 SSE）
+  // 🔥 Disconnect all connections (WebSocket and SSE)
   notifStore.disconnect()
 })
 
@@ -162,7 +162,7 @@ function showHelp() {
   }
 }
 
-/* 通知抽屉样式 */
+/* Notification drawer style */
 .notif-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .notif-list { display: flex; flex-direction: column; gap: 12px; }
 .notif-item { padding: 10px 8px; border-radius: 8px; border: 1px solid var(--el-border-color-lighter); }

@@ -1,6 +1,6 @@
 """
-股票数据API路由 - 基于扩展数据模型
-提供标准化的股票数据访问接口
+Stock Data API Routing - Based on Extended Data Model
+Provide standardized stock data access interface
 """
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -21,24 +21,24 @@ from app.models import (
 )
 from app.core.response import ok
 
-router = APIRouter(prefix="/api/stock-data", tags=["股票数据"])
+router = APIRouter(prefix="/api/stock-data", tags=["stock data"])
 
 
-# ==================== 批量导入请求模型 ====================
+# ==================== Batch import request model ====================
 
 class StockBasicInfoBatchRequest(BaseModel):
-    """批量保存股票基本信息请求"""
-    stocks: List[Dict[str, Any]] = Field(..., description="股票基本信息列表")
-    overwrite: bool = Field(False, description="是否覆盖已存在的数据")
+    """Save basic stock information requests in batches"""
+    stocks: List[Dict[str, Any]] = Field(..., description="List of basic stock information")
+    overwrite: bool = Field(False, description="Whether to overwrite existing data")
 
 
 class MarketQuotesBatchRequest(BaseModel):
-    """批量保存实时行情请求"""
-    quotes: List[Dict[str, Any]] = Field(..., description="行情数据列表")
-    overwrite: bool = Field(True, description="是否覆盖已存在的数据（行情默认覆盖）")
+    """Save real-time quotation requests in batches"""
+    quotes: List[Dict[str, Any]] = Field(..., description="Market data list")
+    overwrite: bool = Field(True, description="Whether to overwrite existing data (the market overwrites it by default)")
 
 
-# ==================== 查询接口 ====================
+# ==================== Query interface ====================
 
 @router.get("/basic-info/{symbol}", response_model=StockBasicInfoResponse)
 async def get_stock_basic_info(
@@ -46,13 +46,13 @@ async def get_stock_basic_info(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取股票基础信息
+    Get basic stock information
 
     Args:
-        symbol: 股票代码 (支持6位A股代码)
+        symbol: Stock code (Supports 6-digit A-share code)
 
     Returns:
-        StockBasicInfoResponse: 包含扩展字段的股票基础信息
+        StockBasicInfoResponse: Basic stock information including extended fields
     """
     try:
         service = get_stock_data_service()
@@ -61,19 +61,19 @@ async def get_stock_basic_info(
         if not stock_info:
             return StockBasicInfoResponse(
                 success=False,
-                message=f"未找到股票代码 {symbol} 的基础信息"
+                message=f"Stock symbol not found {symbol} basic information"
             )
 
         return StockBasicInfoResponse(
             success=True,
             data=stock_info,
-            message="获取成功"
+            message="get success"
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取股票基础信息失败: {str(e)}"
+            detail=f"Failed to obtain basic stock information: {str(e)}"
         )
 
 
@@ -83,13 +83,13 @@ async def get_market_quotes(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取实时行情数据
+    Get real-time market data
 
     Args:
-        symbol: 股票代码 (支持6位A股代码)
+        symbol: Stock code (Supports 6-digit A-share code)
 
     Returns:
-        MarketQuotesResponse: 包含扩展字段的实时行情数据
+        MarketQuotesResponse: Real-time market data including extended fields
     """
     try:
         service = get_stock_data_service()
@@ -98,41 +98,41 @@ async def get_market_quotes(
         if not quotes:
             return MarketQuotesResponse(
                 success=False,
-                message=f"未找到股票代码 {symbol} 的行情数据"
+                message=f"Stock symbol not found {symbol} market data"
             )
 
         return MarketQuotesResponse(
             success=True,
             data=quotes,
-            message="获取成功"
+            message="get success"
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取实时行情失败: {str(e)}"
+            detail=f"Failed to obtain real-time quotes: {str(e)}"
         )
 
 
 @router.get("/list", response_model=StockListResponse)
 async def get_stock_list(
-    market: Optional[str] = Query(None, description="市场筛选"),
-    industry: Optional[str] = Query(None, description="行业筛选"),
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页大小"),
+    market: Optional[str] = Query(None, description="Market screening"),
+    industry: Optional[str] = Query(None, description="Industry screening"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="page size"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取股票列表
+    Get a list of stocks
     
     Args:
-        market: 市场筛选 (可选)
-        industry: 行业筛选 (可选)
-        page: 页码 (从1开始)
-        page_size: 每页大小 (1-100)
+        market: Market screening (Optional)
+        industry: Industry screening (Optional)
+        page: Page number (Start from 1)
+        page_size: page size (1-100)
         
     Returns:
-        StockListResponse: 股票列表数据
+        StockListResponse: Stock list data
     """
     try:
         service = get_stock_data_service()
@@ -143,7 +143,7 @@ async def get_stock_list(
             page_size=page_size
         )
         
-        # 计算总数 (简化实现，实际应该单独查询)
+        # Calculate the total (Simplify the implementation, in fact it should be queried separately)
         total = len(stock_list)
         
         return StockListResponse(
@@ -152,13 +152,13 @@ async def get_stock_list(
             total=total,
             page=page,
             page_size=page_size,
-            message="获取成功"
+            message="get success"
         )
         
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取股票列表失败: {str(e)}"
+            detail=f"Failed to get stock list: {str(e)}"
         )
 
 
@@ -168,18 +168,18 @@ async def get_combined_stock_data(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取股票综合数据 (基础信息 + 实时行情)
+    Get comprehensive stock data (Basic information + Real-time quotes)
 
     Args:
-        symbol: 股票代码
+        symbol: Stock code
 
     Returns:
-        dict: 包含基础信息和实时行情的综合数据
+        dict: Comprehensive data including basic information and real-time market conditions
     """
     try:
         service = get_stock_data_service()
 
-        # 并行获取基础信息和行情数据
+        # Obtain basic information and market data in parallel
         import asyncio
         basic_info_task = service.get_stock_basic_info(symbol)
         quotes_task = service.get_market_quotes(symbol)
@@ -190,7 +190,7 @@ async def get_combined_stock_data(
             return_exceptions=True
         )
 
-        # 处理异常
+        # Handle exceptions
         if isinstance(basic_info, Exception):
             basic_info = None
         if isinstance(quotes, Exception):
@@ -199,7 +199,7 @@ async def get_combined_stock_data(
         if not basic_info and not quotes:
             return {
                 "success": False,
-                "message": f"未找到股票代码 {symbol} 的任何数据"
+                "message": f"Stock symbol not found {symbol} any data of"
             }
 
         return {
@@ -210,31 +210,31 @@ async def get_combined_stock_data(
                 "symbol": symbol,
                 "timestamp": quotes.updated_at if quotes else None
             },
-            "message": "获取成功"
+            "message": "get success"
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取股票综合数据失败: {str(e)}"
+            detail=f"Failed to obtain comprehensive stock data: {str(e)}"
         )
 
 
 @router.get("/search")
 async def search_stocks(
-    keyword: str = Query(..., min_length=1, description="搜索关键词"),
-    limit: int = Query(10, ge=1, le=50, description="返回数量限制"),
+    keyword: str = Query(..., min_length=1, description="Search keywords"),
+    limit: int = Query(10, ge=1, le=50, description="Return quantity limit"),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    搜索股票
+    Search stocks
     
     Args:
-        keyword: 搜索关键词 (股票代码或名称)
-        limit: 返回数量限制
+        keyword: Search keywords (Stock code or name)
+        limit: Return quantity limit
         
     Returns:
-        dict: 搜索结果
+        dict: Search results
     """
     try:
         from app.core.database import get_mongo_db
@@ -243,23 +243,23 @@ async def search_stocks(
         db = get_mongo_db()
         collection = db.stock_basic_info
 
-        # 🔥 使用统一的数据源优先级管理函数
+        # 🔥 Use unified data source priority management functions
         preferred_source = await get_preferred_data_source_async(market_category="a_shares")
 
-        # 构建搜索条件
+        # Build search criteria
         search_conditions = []
 
-        # 如果是6位数字，按代码精确匹配
+        # If it is a 6-digit number, match it exactly according to the code
         if keyword.isdigit() and len(keyword) == 6:
             search_conditions.append({"symbol": keyword})
         else:
-            # 按名称模糊匹配
+            # Fuzzy match by name
             search_conditions.append({"name": {"$regex": keyword, "$options": "i"}})
-            # 如果包含数字，也尝试代码匹配
+            # Also attempts code matching if numbers are included
             if any(c.isdigit() for c in keyword):
                 search_conditions.append({"symbol": {"$regex": keyword}})
 
-        # 🔥 添加数据源筛选：只查询优先级最高的数据源
+        # 🔥 Add data source filtering: only query the data source with the highest priority
         query = {
             "$and": [
                 {"$or": search_conditions},
@@ -267,12 +267,12 @@ async def search_stocks(
             ]
         }
 
-        # 执行搜索
+        # Perform a search
         cursor = collection.find(query, {"_id": 0}).limit(limit)
 
         results = await cursor.to_list(length=limit)
 
-        # 数据标准化
+        # Data normalization
         service = get_stock_data_service()
         standardized_results = []
         for doc in results:
@@ -284,14 +284,14 @@ async def search_stocks(
             "data": standardized_results,
             "total": len(standardized_results),
             "keyword": keyword,
-            "source": preferred_source,  # 🔥 返回数据来源
-            "message": "搜索完成"
+            "source": preferred_source,  # 🔥 Return data source
+            "message": "Search completed"
         }
         
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"搜索股票失败: {str(e)}"
+            detail=f"Stock search failed: {str(e)}"
         )
 
 
@@ -300,10 +300,10 @@ async def get_market_summary(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取市场概览
+    Get a market overview
 
     Returns:
-        dict: 各市场的股票数量统计
+        dict: Statistics on the number of stocks in each market
     """
     try:
         from app.core.database import get_mongo_db
@@ -311,7 +311,7 @@ async def get_market_summary(
         db = get_mongo_db()
         collection = db.stock_basic_info
 
-        # 统计各市场股票数量
+        # Count the number of stocks in each market
         pipeline = [
             {
                 "$group": {
@@ -327,7 +327,7 @@ async def get_market_summary(
         cursor = collection.aggregate(pipeline)
         market_stats = await cursor.to_list(length=None)
 
-        # 总数统计
+        # Total statistics
         total_count = await collection.count_documents({})
 
         return {
@@ -335,16 +335,16 @@ async def get_market_summary(
             "data": {
                 "total_stocks": total_count,
                 "market_breakdown": market_stats,
-                "supported_markets": ["CN"],  # 当前支持的市场
-                "last_updated": None  # 可以从数据中获取最新更新时间
+                "supported_markets": ["CN"],  # Currently supported markets
+                "last_updated": None  # The latest update time can be obtained from the data
             },
-            "message": "获取成功"
+            "message": "get success"
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取市场概览失败: {str(e)}"
+            detail=f"Failed to get market overview: {str(e)}"
         )
 
 
@@ -353,7 +353,7 @@ async def get_quotes_sync_status(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    获取实时行情同步状态
+    Get real-time market synchronization status
 
     Returns:
         dict: {
@@ -368,7 +368,7 @@ async def get_quotes_sync_status(
                 "records_count": 5440,
                 "error_message": None
             },
-            "message": "获取成功"
+            "message": "get success"
         }
     """
     try:
@@ -380,17 +380,17 @@ async def get_quotes_sync_status(
         return {
             "success": True,
             "data": status_data,
-            "message": "获取成功"
+            "message": "get success"
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取同步状态失败: {str(e)}"
+            detail=f"Failed to get sync status: {str(e)}"
         )
 
 
-# ==================== 批量导入接口 ====================
+# ==================== Batch import interface ====================
 
 @router.post("/save-basic-info", response_model=dict, dependencies=[Depends(require_pro)])
 async def save_basic_info_batch(
@@ -398,27 +398,27 @@ async def save_basic_info_batch(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    批量保存股票基本信息（优化版）[PRO]
+    Save basic stock information in batches (optimized version)[PRO]
 
-    允许用户通过 API 批量导入股票基本信息数据
+    Allow users to import basic stock information data in batches through API
 
-    **权限要求**: 此功能为高级学员专属，需要 PRO 授权
+    **Permission requirements**: This function is exclusive to advanced students and requires PRO authorization
 
-    性能优化：
-    - 使用批量查询减少数据库往返
-    - 使用 bulk_write 批量操作
-    - 数据验证前置
+    Performance optimization:
+    - Reduce database round-trips using batch queries
+    - Use bulk_write bulk operations
+    - Data validation prerequisite
 
     Args:
-        request: 批量保存请求，包含股票列表和数据源标识
+        request: Batch save request with stock list and data source ID
 
     Returns:
         dict: {
-            "saved": 成功保存数量,
-            "updated": 更新数量,
-            "skipped": 跳过数量,
-            "failed": 失败数量,
-            "errors": 错误列表
+            "saved": Number of successful saves,
+            "updated": Update quantity,
+            "skipped": skip quantity,
+            "failed": Number of failures,
+            "errors": error list
         }
     """
     try:
@@ -431,39 +431,39 @@ async def save_basic_info_batch(
         db = get_mongo_db()
         collection = db.stock_basic_info
 
-        # 数据验证和预处理
+        # Data validation and preprocessing
         valid_stocks = []
         errors = []
         failed_count = 0
 
         for idx, stock_data in enumerate(request.stocks):
             try:
-                # ==================== 1. 验证必填字段 ====================
+                # ==================== 1. Validate required fields ====================
                 if "symbol" not in stock_data or "name" not in stock_data:
                     errors.append({
                         "index": idx,
-                        "error": "缺少必需字段: symbol 或 name"
+                        "error": "Missing required field: symbol or name"
                     })
                     failed_count += 1
                     continue
 
-                # 验证 symbol 格式（6位数字）
+                # Verify symbol format (6 digits)
                 symbol = stock_data["symbol"]
                 if not (isinstance(symbol, str) and symbol.isdigit() and len(symbol) == 6):
                     errors.append({
                         "index": idx,
                         "symbol": symbol,
-                        "error": "symbol 必须是6位数字"
+                        "error": "symbol Must be 6 digits"
                     })
                     failed_count += 1
                     continue
 
-                # ==================== 2. 验证核心业务字段（必须有值） ====================
-                # 这些字段是做分析的基础，必须提供
+                # ==================== 2. Validate core business fields (must have values) ====================
+                # These fields are the basis for analysis and must be provided
                 required_fields = {
-                    "area": "所在地区",
-                    "industry": "所属行业",
-                    "list_date": "上市日期"
+                    "area": "area",
+                    "industry": "Industry",
+                    "list_date": "Listing date"
                 }
 
                 missing_fields = []
@@ -475,74 +475,74 @@ async def save_basic_info_batch(
                     errors.append({
                         "index": idx,
                         "symbol": symbol,
-                        "error": f"缺少核心业务字段: {', '.join(missing_fields)}"
+                        "error": f"Missing core business fields: {', '.join(missing_fields)}"
                     })
                     failed_count += 1
                     continue
 
-                # ==================== 3. 验证财务数据字段（至少提供一组） ====================
-                # 市值数据组
+                # ==================== 3. Validate financial data fields (provide at least one set) ====================
+                # Market capitalization data group
                 has_market_cap = ("total_mv" in stock_data and stock_data["total_mv"]) or \
                                 ("circ_mv" in stock_data and stock_data["circ_mv"])
 
-                # 财务比率组
+                # financial ratio group
                 has_financial_ratios = any(
                     field in stock_data and stock_data[field]
                     for field in ["pe", "pb", "ps", "pe_ttm", "pb_mrq", "ps_ttm", "roe"]
                 )
 
-                # 股本数据组
+                # Equity data group
                 has_share_capital = ("total_share" in stock_data and stock_data["total_share"]) or \
                                    ("float_share" in stock_data and stock_data["float_share"])
 
-                # 至少要有一组财务数据
+                # There must be at least one set of financial data
                 if not (has_market_cap or has_financial_ratios or has_share_capital):
                     errors.append({
                         "index": idx,
                         "symbol": symbol,
-                        "error": "缺少财务数据：必须至少提供市值(total_mv/circ_mv)、财务比率(pe/pb/ps等)或股本(total_share/float_share)中的一组数据"
+                        "error": "Missing financial data: Must provide at least market capitalization(total_mv/circ_mv), financial ratios(pe/pb/ps Wait)or share capital(total_share/float_share)a set of data in"
                     })
                     failed_count += 1
                     continue
 
-                # ==================== 4. 标准化字段处理 ====================
-                # 确保 code 和 symbol 字段都存在
+                # ==================== 4. Standardized field handling ====================
+                # Make sure both code and symbol fields exist
                 if "code" not in stock_data:
                     stock_data["code"] = symbol
-                stock_data["symbol"] = symbol  # 标准化字段
+                stock_data["symbol"] = symbol  # Standardized fields
 
-                # 生成 full_symbol（如果没有提供）
+                # Generate full_symbol if not provided
                 if "full_symbol" not in stock_data:
-                    # 根据代码前缀判断交易所
-                    if symbol.startswith(('6', '5')):  # 上海
+                    # Determine the exchange based on the code prefix
+                    if symbol.startswith(('6', '5')):  # Shanghai
                         stock_data["full_symbol"] = f"{symbol}.SH"
-                    elif symbol.startswith(('0', '3', '2')):  # 深圳
+                    elif symbol.startswith(('0', '3', '2')):  # Shenzhen
                         stock_data["full_symbol"] = f"{symbol}.SZ"
-                    elif symbol.startswith('8'):  # 北京
+                    elif symbol.startswith('8'):  # Beijing
                         stock_data["full_symbol"] = f"{symbol}.BJ"
                     else:
                         stock_data["full_symbol"] = symbol
 
-                # 确保 sse（交易所）字段存在
+                # Make sure the sse (exchange) field exists
                 if "sse" not in stock_data:
                     if symbol.startswith(('6', '5')):
-                        stock_data["sse"] = "上海证券交易所"
+                        stock_data["sse"] = "Shanghai Stock Exchange"
                     elif symbol.startswith(('0', '3', '2')):
-                        stock_data["sse"] = "深圳证券交易所"
+                        stock_data["sse"] = "Shenzhen Stock Exchange"
                     elif symbol.startswith('8'):
-                        stock_data["sse"] = "北京证券交易所"
+                        stock_data["sse"] = "Beijing Stock Exchange"
                     else:
-                        stock_data["sse"] = "未知"
+                        stock_data["sse"] = "unknown"
 
-                # 确保 sec（分类）字段存在
+                # Make sure the sec (classification) field exists
                 if "sec" not in stock_data:
                     stock_data["sec"] = "stock_cn"
 
-                # 确保 category（类别）字段存在
+                # Make sure the category field exists
                 if "category" not in stock_data:
                     stock_data["category"] = "stock_cn"
 
-                # 添加元数据（固定使用 local 作为本地数据标识）
+                # Add metadata (fixed use local as local data identifier)
                 stock_data["source"] = "local"
                 stock_data["updated_at"] = datetime.utcnow()
 
@@ -552,7 +552,7 @@ async def save_basic_info_batch(
                 errors.append({
                     "index": idx,
                     "symbol": stock_data.get("symbol", "unknown"),
-                    "error": f"数据验证失败: {str(e)}"
+                    "error": f"Data validation failed: {str(e)}"
                 })
                 failed_count += 1
 
@@ -566,10 +566,10 @@ async def save_basic_info_batch(
                     "total": len(request.stocks),
                     "errors": errors[:10]
                 },
-                message="所有数据验证失败"
+                message="All data validation failed"
             )
 
-        # 批量查询已存在的数据
+        # Query existing data in batches
         symbols = [stock["symbol"] for _, stock in valid_stocks]
         existing_docs = await collection.find({
             "symbol": {"$in": symbols},
@@ -578,7 +578,7 @@ async def save_basic_info_batch(
 
         existing_symbols = {doc["symbol"]: doc for doc in existing_docs}
 
-        # 准备批量操作
+        # Prepare for batch operations
         bulk_operations = []
         saved_count = 0
         updated_count = 0
@@ -589,7 +589,7 @@ async def save_basic_info_batch(
 
             if symbol in existing_symbols:
                 if request.overwrite:
-                    # 批量更新
+                    # Batch update
                     stock_data["created_at"] = existing_symbols[symbol].get("created_at", datetime.utcnow())
                     bulk_operations.append(
                         UpdateOne(
@@ -599,23 +599,23 @@ async def save_basic_info_batch(
                     )
                     updated_count += 1
                 else:
-                    # 跳过已存在的数据
+                    # Skip existing data
                     skipped_count += 1
             else:
-                # 批量插入
+                # Batch insert
                 stock_data["created_at"] = datetime.utcnow()
                 bulk_operations.append(InsertOne(stock_data))
                 saved_count += 1
 
-        # 执行批量操作
+        # Perform batch operations
         if bulk_operations:
             try:
                 result = await collection.bulk_write(bulk_operations, ordered=False)
-                logger.info(f"✅ 批量操作完成: 插入{result.inserted_count}, 更新{result.modified_count}")
+                logger.info(f"✅ Batch operation completed: Insert{result.inserted_count}, update{result.modified_count}")
             except Exception as e:
-                logger.error(f"❌ 批量操作失败: {e}")
-                # 如果批量操作失败，回退到逐条插入
-                logger.warning("⚠️ 回退到逐条操作模式")
+                logger.error(f"❌ Batch operation failed: {e}")
+                # If the batch operation fails, fall back to inserting items one by one.
+                logger.warning("⚠️ Return to item-by-item operation mode")
                 saved_count = 0
                 updated_count = 0
 
@@ -646,15 +646,15 @@ async def save_basic_info_batch(
                 "skipped": skipped_count,
                 "failed": failed_count,
                 "total": len(request.stocks),
-                "errors": errors[:10]  # 只返回前10个错误
+                "errors": errors[:10]  # Only return the first 10 errors
             },
-            message=f"批量保存完成: 成功{saved_count}, 更新{updated_count}, 跳过{skipped_count}, 失败{failed_count}"
+            message=f"Batch saving completed: success{saved_count}, update{updated_count}, skip{skipped_count}, failed{failed_count}"
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"批量保存股票基本信息失败: {str(e)}"
+            detail=f"Failed to save basic stock information in batches: {str(e)}"
         )
 
 
@@ -664,26 +664,26 @@ async def save_quotes_batch(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    批量保存实时行情数据（优化版）[PRO]
+    Save real-time market data in batches (optimized version)[PRO]
 
-    允许用户通过 API 批量导入实时行情数据
+    Allow users to import real-time market data in batches through API
 
-    **权限要求**: 此功能为高级学员专属，需要 PRO 授权
+    **Permission requirements**: This function is exclusive to advanced students and requires PRO authorization
 
-    性能优化：
-    - 使用批量查询减少数据库往返
-    - 使用 bulk_write 批量操作
-    - 数据验证前置
+    Performance optimization:
+    - Reduce database round-trips using batch queries
+    - Use bulk_write bulk operations
+    - Data validation prerequisite
 
     Args:
-        request: 批量保存请求，包含行情列表和数据源标识
+        request: Batch save request, including market list and data source identifier
 
     Returns:
         dict: {
-            "saved": 成功保存数量,
-            "updated": 更新数量,
-            "failed": 失败数量,
-            "errors": 错误列表
+            "saved": Number of successful saves,
+            "updated": Update quantity,
+            "failed": Number of failures,
+            "errors": error list
         }
     """
     try:
@@ -696,34 +696,34 @@ async def save_quotes_batch(
         db = get_mongo_db()
         collection = db.market_quotes
 
-        # 数据验证和预处理
+        # Data validation and preprocessing
         valid_quotes = []
         errors = []
         failed_count = 0
 
         for idx, quote_data in enumerate(request.quotes):
             try:
-                # 验证必需字段
+                # Validate required fields
                 if "symbol" not in quote_data:
                     errors.append({
                         "index": idx,
-                        "error": "缺少必需字段: symbol"
+                        "error": "Missing required field: symbol"
                     })
                     failed_count += 1
                     continue
 
-                # 验证 symbol 格式（6位数字）
+                # Verify symbol format (6 digits)
                 symbol = quote_data["symbol"]
                 if not (isinstance(symbol, str) and symbol.isdigit() and len(symbol) == 6):
                     errors.append({
                         "index": idx,
                         "symbol": symbol,
-                        "error": "symbol 必须是6位数字"
+                        "error": "symbol Must be 6 digits"
                     })
                     failed_count += 1
                     continue
 
-                # 添加元数据（固定使用 local 作为本地数据标识）
+                # Add metadata (fixed use local as local data identifier)
                 quote_data["data_source"] = "local"
                 quote_data["updated_at"] = datetime.utcnow()
 
@@ -733,7 +733,7 @@ async def save_quotes_batch(
                 errors.append({
                     "index": idx,
                     "symbol": quote_data.get("symbol", "unknown"),
-                    "error": f"数据验证失败: {str(e)}"
+                    "error": f"Data validation failed: {str(e)}"
                 })
                 failed_count += 1
 
@@ -746,10 +746,10 @@ async def save_quotes_batch(
                     "total": len(request.quotes),
                     "errors": errors[:10]
                 },
-                message="所有数据验证失败"
+                message="All data validation failed"
             )
 
-        # 批量查询已存在的数据
+        # Query existing data in batches
         symbols = [quote["symbol"] for _, quote in valid_quotes]
         existing_docs = await collection.find({
             "symbol": {"$in": symbols}
@@ -757,7 +757,7 @@ async def save_quotes_batch(
 
         existing_symbols = {doc["symbol"] for doc in existing_docs}
 
-        # 准备批量操作
+        # Prepare for batch operations
         bulk_operations = []
         saved_count = 0
         updated_count = 0
@@ -766,7 +766,7 @@ async def save_quotes_batch(
             symbol = quote_data["symbol"]
 
             if symbol in existing_symbols:
-                # 批量更新
+                # Batch update
                 bulk_operations.append(
                     UpdateOne(
                         {"symbol": symbol},
@@ -775,20 +775,20 @@ async def save_quotes_batch(
                 )
                 updated_count += 1
             else:
-                # 批量插入
+                # Batch insert
                 quote_data["created_at"] = datetime.utcnow()
                 bulk_operations.append(InsertOne(quote_data))
                 saved_count += 1
 
-        # 执行批量操作
+        # Perform batch operations
         if bulk_operations:
             try:
                 result = await collection.bulk_write(bulk_operations, ordered=False)
-                logger.info(f"✅ 批量操作完成: 插入{result.inserted_count}, 更新{result.modified_count}")
+                logger.info(f"✅ Batch operation completed: Insert{result.inserted_count}, update{result.modified_count}")
             except Exception as e:
-                logger.error(f"❌ 批量操作失败: {e}")
-                # 如果批量操作失败，回退到逐条插入
-                logger.warning("⚠️ 回退到逐条操作模式")
+                logger.error(f"❌ Batch operation failed: {e}")
+                # If the batch operation fails, fall back to inserting items one by one.
+                logger.warning("⚠️ Return to item-by-item operation mode")
                 saved_count = 0
                 updated_count = 0
 
@@ -818,34 +818,34 @@ async def save_quotes_batch(
                 "updated": updated_count,
                 "failed": failed_count,
                 "total": len(request.quotes),
-                "errors": errors[:10]  # 只返回前10个错误
+                "errors": errors[:10]  # Only return the first 10 errors
             },
-            message=f"批量保存完成: 新增{saved_count}, 更新{updated_count}, 失败{failed_count}"
+            message=f"Batch saving completed: New{saved_count}, update{updated_count}, failed{failed_count}"
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"批量保存实时行情失败: {str(e)}"
+            detail=f"Failed to save real-time quotes in batches: {str(e)}"
         )
 
 
-# ==================== API 指南接口 ====================
+# ==================== API Guide interface ====================
 
 @router.get("/api-guide-content")
 async def get_api_guide_content():
-    """获取股票数据批量导入 API 指南的 Markdown 原始内容（用于前端渲染）"""
+    """Get the Markdown raw content of the Stock Data Bulk Import API Guide (for front-end rendering)"""
     from fastapi.responses import Response
     from pathlib import Path
 
     try:
-        # 读取 Markdown 文件
+        # Read Markdown files
         guide_path = Path("docs/03-development/api/stock-data-import.md")
 
         if not guide_path.exists():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="API 指南文件不存在"
+                detail="API Guide file does not exist"
             )
 
         with open(guide_path, "r", encoding="utf-8") as f:
@@ -861,13 +861,13 @@ async def get_api_guide_content():
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"读取 API 指南内容失败: {str(e)}"
+            detail=f"Failed to read API guide content: {str(e)}"
         )
 
 
 @router.get("/download-test-program")
 async def download_test_program():
-    """下载股票数据批量导入测试程序"""
+    """Download stock data batch import test program"""
     from fastapi.responses import FileResponse
     from pathlib import Path
 
@@ -883,7 +883,7 @@ async def download_test_program():
         if not test_program_path:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="测试程序文件不存在"
+                detail="Test program file does not exist"
             )
 
         return FileResponse(
@@ -897,5 +897,5 @@ async def download_test_program():
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"下载测试程序失败: {str(e)}"
+            detail=f"Download test program failed: {str(e)}"
         )

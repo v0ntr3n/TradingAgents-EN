@@ -16,8 +16,8 @@ def test_all_export_templates_include_standard_prompt_footer() -> None:
 
         checked += 1
         system_prompt = str(content.get("system_prompt") or "")
-        assert "请使用中文，基于真实数据进行分析。" in system_prompt
-        assert "本分析报告仅供参考，不构成投资建议。" in system_prompt
+        assert "Please use Chinese and conduct analysis based on real data." in system_prompt
+        assert "This analysis report is for reference only and does not constitute investment advice." in system_prompt
 
     assert checked > 0
 
@@ -33,7 +33,7 @@ def test_all_export_templates_have_single_disclaimer_block() -> None:
 
         checked += 1
         system_prompt = str(content.get("system_prompt") or "")
-        assert system_prompt.count("**免责声明**") == 1
-        assert system_prompt.count("本分析报告仅供参考，不构成投资建议。") == 1
+        assert system_prompt.count("**Disclaimer**") == 1
+        assert system_prompt.count("This analysis report is for reference only and does not constitute investment advice.") == 1
 
     assert checked > 0

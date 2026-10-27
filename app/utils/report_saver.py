@@ -1,7 +1,7 @@
 """
-报告保存工具模块
+Report saving tool module
 
-提供统一的报告保存逻辑，供单股分析和工作流执行共用
+Provides unified report saving logic for single stock analysis and workflow execution.
 """
 
 import logging
@@ -14,17 +14,17 @@ logger = logging.getLogger(__name__)
 
 def extract_reports_from_state(state: Any) -> Dict[str, str]:
     """
-    从分析状态中提取所有报告
+    Pull all reports from analysis status
     
     Args:
-        state: 分析状态对象（可以是 AgentState 对象或字典）
+        state: Analysis state object (can be an AgentState object or dictionary)
         
     Returns:
-        报告字典，键为报告字段名，值为报告内容
+        Report dictionary, the key is the report field name, the value is the report content
     """
     reports = {}
     
-    # 定义所有可能的报告字段（优先从引擎产出的 structured_reports 读取）
+    # Define all possible report fields (preferred from structured_reports output by the engine)
     report_fields = []
     if isinstance(state, dict):
         structured_reports = state.get('structured_reports', {})
@@ -34,7 +34,7 @@ def extract_reports_from_state(state: Any) -> Dict[str, str]:
                 if isinstance(entry, dict) and entry.get("success") and entry.get("content")
             ]
     if not report_fields:
-        # 回退：旧版硬编码列表
+        # Fallback: Legacy hardcoded lists
         report_fields = [
             'index_report',
             'sector_report',
@@ -48,7 +48,7 @@ def extract_reports_from_state(state: Any) -> Dict[str, str]:
             'final_trade_decision'
         ]
     
-    # 从state中提取报告内容
+    # Extract report content from state
     for field in report_fields:
         value = ""
         if hasattr(state, field):
@@ -59,7 +59,7 @@ def extract_reports_from_state(state: Any) -> Dict[str, str]:
         if isinstance(value, str) and len(value.strip()) > 10:
             reports[field] = value.strip()
     
-    # 处理研究团队辩论状态报告
+    # Handle research team debate status report
     debate_state = None
     if hasattr(state, 'investment_debate_state'):
         debate_state = getattr(state, 'investment_debate_state', None)
@@ -67,24 +67,24 @@ def extract_reports_from_state(state: Any) -> Dict[str, str]:
         debate_state = state.get('investment_debate_state')
     
     if debate_state:
-        # 提取多头研究员历史
+        # Extract long researcher history
         bull_content = _extract_field(debate_state, 'bull_history')
         if bull_content and len(bull_content.strip()) > 10:
             reports['bull_researcher'] = bull_content.strip()
         
-        # 提取空头研究员历史
+        # Extract short researcher history
         bear_content = _extract_field(debate_state, 'bear_history')
         if bear_content and len(bear_content.strip()) > 10:
             reports['bear_researcher'] = bear_content.strip()
         
-        # 提取研究经理分析
+        # Extract Research Manager Analysis
         decision_content = _extract_field(debate_state, 'judge_decision')
         if not decision_content:
             decision_content = str(debate_state) if debate_state else ""
         if decision_content and len(decision_content.strip()) > 10:
             reports['research_team_decision'] = decision_content.strip()
     
-    # 处理风险管理团队辩论状态报告
+    # Handle risk management team debate status report
     risk_state = None
     if hasattr(state, 'risk_debate_state'):
         risk_state = getattr(state, 'risk_debate_state', None)
@@ -92,42 +92,42 @@ def extract_reports_from_state(state: Any) -> Dict[str, str]:
         risk_state = state.get('risk_debate_state')
     
     if risk_state:
-        # 提取激进分析师历史
+        # Extract activist analyst history
         risky_content = _extract_field(risk_state, 'risky_history')
         if risky_content and len(risky_content.strip()) > 10:
             reports['risky_analyst'] = risky_content.strip()
         
-        # 提取保守分析师历史
+        # Extract conservative analyst history
         safe_content = _extract_field(risk_state, 'safe_history')
         if safe_content and len(safe_content.strip()) > 10:
             reports['safe_analyst'] = safe_content.strip()
         
-        # 提取中性分析师历史
+        # Extract neutral analyst history
         neutral_content = _extract_field(risk_state, 'neutral_history')
         if neutral_content and len(neutral_content.strip()) > 10:
             reports['neutral_analyst'] = neutral_content.strip()
         
-        # 提取风险评估师决策
+        # Extract risk assessor decisions
         risk_decision = _extract_field(risk_state, 'judge_decision')
         if not risk_decision:
             risk_decision = str(risk_state) if risk_state else ""
         if risk_decision and len(risk_decision.strip()) > 10:
             reports['risk_management_decision'] = risk_decision.strip()
     
-    logger.info(f"📊 从state中提取到 {len(reports)} 个报告: {list(reports.keys())}")
+    logger.info(f"📊 Extracted from state {len(reports)} reports: {list(reports.keys())}")
     return reports
 
 
 def _extract_field(obj: Any, field_name: str) -> str:
     """
-    从对象中提取字段值
+    Extract field value from object
     
     Args:
-        obj: 对象（可以是类实例或字典）
-        field_name: 字段名
+        obj: Object (can be a class instance or dictionary)
+        field_name: Field name
         
     Returns:
-        字段值（字符串）
+        field value (string)
     """
     if hasattr(obj, field_name):
         return getattr(obj, field_name, "")
@@ -153,7 +153,7 @@ async def save_analysis_report(
     execution_time: float = 0.0,
     tokens_used: int = 0,
     analysts: list = None,
-    research_depth: str = "标准",
+    research_depth: str = "Standard",
     analysis_date: Optional[str] = None,
     source: str = "api",
     engine: str = "v2",
@@ -162,37 +162,37 @@ async def save_analysis_report(
     task_type: Optional[str] = None
 ) -> str:
     """
-    保存分析报告到 analysis_reports 集合（统一方法）
+    Save analysis reports to the analysis_reports collection (unified method)
     
     Args:
-        db: MongoDB 数据库连接
-        stock_symbol: 股票代码
-        stock_name: 股票名称
-        market_type: 市场类型（A股/港股/美股）
-        model_info: 模型信息
-        reports: 报告字典（会清理重复字段）
-        decision: 决策字典
-        recommendation: 研究结论
-        confidence_score: 置信度
-        risk_level: 风险等级
-        ... (其他参数)
+        db: MongoDB Database connection
+        stock_symbol: Stock code
+        stock_name: Stock name
+        market_type: Market type (A shares/Hong Kong stocks/US stocks)
+        model_info: Model information
+        reports: Report dictionary (duplicate fields will be cleaned)
+        decision: decision dictionary
+        recommendation: Research conclusion
+        confidence_score: Confidence
+        risk_level: risk level
+        ... (Other parameters)
         
     Returns:
-        analysis_id: 分析报告ID
+        analysis_id: analysis report ID
     """
-    # 🔥 生成分析ID - 使用 UTC 时间保持与老版本一致
+    # 🔥 Generate analysis ID - use UTC time to keep consistent with old versions
     timestamp = datetime.utcnow()
     analysis_id = f"{stock_symbol}_{timestamp.strftime('%Y%m%d_%H%M%S')}"
     
-    # 🔥 清理 reports 中的重复字段（避免保存重复数据）
+    # 🔥 Clean up duplicate fields in reports (avoid saving duplicate data)
     cleaned_reports = {}
     if isinstance(reports, dict):
         for key, value in reports.items():
-            # 跳过 structured_reports（如果存在，避免重复）
+            # Skip structured_reports (if present to avoid duplication)
             if key != "structured_reports":
                 cleaned_reports[key] = value
     
-    # 构建文档（与单股分析和工作流执行完全一致）
+    # Build documentation (completely consistent with single-strand analysis and workflow execution)
     document = {
         "analysis_id": analysis_id,
         "stock_symbol": stock_symbol,
@@ -207,22 +207,22 @@ async def save_analysis_report(
         "engine": engine,
         "task_type": task_type,
 
-        # 分析结果摘要
-        "summary": summary or "研究完成",
+        # Summary of analysis results
+        "summary": summary or "Research completed",
         "analysts": analysts or [],
         "research_depth": research_depth,
 
-        # 报告内容（使用清理后的 reports，避免重复数据）
+        # Report content (use cleaned reports to avoid duplicate data)
         "reports": cleaned_reports,
 
-        # 🔥 关键字段：decision
+        # 🔥 Key fields:decision
         "decision": decision,
 
-        # 元数据
+        # metadata
         "created_at": timestamp,
         "updated_at": timestamp,
 
-        # API特有字段
+        # API Unique fields
         "task_id": task_id,
         "recommendation": recommendation,
         "confidence_score": confidence_score,
@@ -231,21 +231,21 @@ async def save_analysis_report(
         "execution_time": execution_time,
         "tokens_used": tokens_used,
 
-        # 🆕 性能指标数据
+        # 🆕 Performance index data
         "performance_metrics": performance_metrics or {}
     }
 
-    # 如果有 user_id，添加到文档
+    # If user_id exists, add to document
     if user_id:
         document["user_id"] = user_id
 
-    # 保存到 MongoDB
+    # save to MongoDB
     result = await db.analysis_reports.insert_one(document)
 
     if result.inserted_id:
-        logger.info(f"✅ 分析报告已保存到MongoDB: {analysis_id}, 共 {len(reports)} 个报告模块")
+        logger.info(f"✅ Analysis report has been saved to MongoDB: {analysis_id}, total {len(reports)} reporting modules")
     else:
-        logger.error("❌ MongoDB插入失败")
+        logger.error("❌ MongoDB Insertion failed")
 
     return analysis_id
 

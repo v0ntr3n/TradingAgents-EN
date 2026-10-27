@@ -2,25 +2,25 @@
   <div class="network-status" v-if="showStatus">
     <el-alert
       v-if="!appStore.isOnline"
-      title="网络连接已断开"
+      title="Network connection has been lost"
       type="warning"
       :closable="false"
       show-icon
     >
       <template #default>
-        <span>请检查您的网络连接</span>
+        <span>Please check your network connection</span>
       </template>
     </el-alert>
     
     <el-alert
       v-else-if="!appStore.apiConnected"
-      title="后端服务连接失败"
+      title="Backend service connection failed"
       type="error"
       :closable="false"
       show-icon
     >
       <template #default>
-        <span>无法连接到后端服务，请检查服务是否正常运行</span>
+        <span>Unable to connect to backend service, please check if the service is running properly</span>
         <el-button 
           type="primary" 
           size="small" 
@@ -28,7 +28,7 @@
           :loading="retrying"
           style="margin-left: 10px;"
         >
-          重试连接
+          Retry connection
         </el-button>
       </template>
     </el-alert>
@@ -42,31 +42,31 @@ import { useAppStore } from '@/stores/app'
 const appStore = useAppStore()
 const retrying = ref(false)
 
-// 只在有网络问题时显示状态
+// Only show status if there is a network problem
 const showStatus = computed(() => {
   return !appStore.isOnline || !appStore.apiConnected
 })
 
-// 重试连接
+// Retry connection
 const retryConnection = async () => {
   retrying.value = true
   try {
     await appStore.checkApiConnection()
     if (appStore.apiConnected) {
-      console.log('✅ API连接恢复')
+      console.log('✅ API Connection restored')
     }
   } catch (error) {
-    console.error('❌ 重试连接失败:', error)
+    console.error('❌ Retry connection failed:', error)
   } finally {
     retrying.value = false
   }
 }
 
-// 定期检查API连接状态
+// Regularly check API connection status
 let checkInterval: number | null = null
 
 onMounted(() => {
-  // 每30秒检查一次API连接状态
+  // Check API connection status every 30 seconds
   checkInterval = window.setInterval(() => {
     if (appStore.isOnline && !appStore.apiConnected) {
       appStore.checkApiConnection()

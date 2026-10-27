@@ -3,63 +3,63 @@
     <div class="page-header">
       <h1 class="page-title">
         <el-icon><List /></el-icon>
-        任务中心
+        mission center
       </h1>
-      <p class="page-description">统一查看并管理分析任务：进行中 / 已完成 / 失败</p>
+      <p class="page-description">Unified view and management of analysis tasks: in progress/completed/failed</p>
     </div>
 
     <el-card class="tabs-card" shadow="never">
       <el-tabs v-model="activeTab" @tab-click="onTabChange">
-        <el-tab-pane label="进行中" name="running" />
-        <el-tab-pane label="已完成" name="completed" />
-        <el-tab-pane label="失败" name="failed" />
-        <el-tab-pane label="全部" name="all" />
+        <el-tab-pane label="In progress" name="running" />
+        <el-tab-pane label="Completed" name="completed" />
+        <el-tab-pane label="failed" name="failed" />
+        <el-tab-pane label="All" name="all" />
       </el-tabs>
     </el-card>
 
-    <!-- 筛选表单 -->
+    <!-- filter form -->
     <el-card class="filter-card" shadow="never">
       <el-form :inline="true" @submit.prevent>
-        <el-form-item label="时间范围">
-          <el-date-picker v-model="filters.dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" format="YYYY-MM-DD" value-format="YYYY-MM-DD" style="width: 260px" />
+        <el-form-item label="time range">
+          <el-date-picker v-model="filters.dateRange" type="daterange" range-separator="to" start-placeholder="start date" end-placeholder="end date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" style="width: 260px" />
         </el-form-item>
-        <el-form-item label="市场">
-          <el-select v-model="filters.market" clearable placeholder="全部" style="width: 120px">
-            <el-option label="全部" value="" />
-            <el-option label="A股" value="A股" />
+        <el-form-item label="market">
+          <el-select v-model="filters.market" clearable placeholder="All" style="width: 120px">
+            <el-option label="All" value="" />
+            <el-option label="A shares" value="A shares" />
           </el-select>
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="filters.status" clearable placeholder="全部" style="width: 120px">
-            <el-option label="全部" value="" />
-            <el-option label="进行中" value="processing" />
-            <el-option label="已完成" value="completed" />
-            <el-option label="失败" value="failed" />
+        <el-form-item label="Status">
+          <el-select v-model="filters.status" clearable placeholder="All" style="width: 120px">
+            <el-option label="All" value="" />
+            <el-option label="In progress" value="processing" />
+            <el-option label="Completed" value="completed" />
+            <el-option label="failed" value="failed" />
           </el-select>
         </el-form-item>
-        <el-form-item label="股票">
-          <el-input v-model="filters.stock" placeholder="代码或名称" style="width: 160px" />
+        <el-form-item label="stocks">
+          <el-input v-model="filters.stock" placeholder="code or name" style="width: 160px" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="applyFilters" :loading="loading">查询</el-button>
-          <el-button @click="resetFilters">重置</el-button>
+          <el-button type="primary" @click="applyFilters" :loading="loading">Query</el-button>
+          <el-button @click="resetFilters">reset</el-button>
         </el-form-item>
       </el-form>
     </el-card>
 
-    <!-- 统计卡片 -->
+    <!-- Statistics cards -->
     <el-row :gutter="16" style="margin-top: 12px">
       <el-col :span="6">
-        <el-card shadow="never"><div class="stat"><div class="value">{{ stats.total }}</div><div class="label">总任务</div></div></el-card>
+        <el-card shadow="never"><div class="stat"><div class="value">{{ stats.total }}</div><div class="label">general task</div></div></el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never"><div class="stat"><div class="value">{{ stats.completed }}</div><div class="label">已完成</div></div></el-card>
+        <el-card shadow="never"><div class="stat"><div class="value">{{ stats.completed }}</div><div class="label">Completed</div></div></el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never"><div class="stat"><div class="value">{{ stats.failed }}</div><div class="label">失败</div></div></el-card>
+        <el-card shadow="never"><div class="stat"><div class="value">{{ stats.failed }}</div><div class="label">failed</div></div></el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never"><div class="stat"><div class="value">{{ stats.uniqueStocks }}</div><div class="label">股票数</div></div></el-card>
+        <el-card shadow="never"><div class="stat"><div class="value">{{ stats.uniqueStocks }}</div><div class="label">Number of shares</div></div></el-card>
       </el-col>
     </el-row>
 
@@ -67,48 +67,48 @@
     <el-card class="list-card" shadow="never">
       <div class="list-header">
         <div class="left">
-          <el-input v-model="keyword" placeholder="搜索股票代码/名称" clearable style="width: 220px" />
+          <el-input v-model="keyword" placeholder="Search ticker/name" clearable style="width: 220px" />
           <el-button @click="refreshList" :loading="loading">
             <el-icon><Refresh /></el-icon>
-            刷新
+            Refresh
           </el-button>
         </div>
         <div class="right">
           <el-button @click="exportSelected" :disabled="selectedRows.length===0">
             <el-icon><Download /></el-icon>
-            导出所选
+            Export selected
           </el-button>
         </div>
       </div>
 
       <el-table :data="filteredList" v-loading="loading" style="width: 100%" @selection-change="onSelectionChange">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="task_id" label="任务ID" width="220" />
-        <el-table-column prop="stock_code" label="股票代码" width="120" />
-        <el-table-column prop="stock_name" label="股票名称" width="150" />
-        <el-table-column label="状态" width="110">
+        <el-table-column prop="task_id" label="Task ID" width="220" />
+        <el-table-column prop="stock_code" label="Stock code" width="120" />
+        <el-table-column prop="stock_name" label="Stock name" width="150" />
+        <el-table-column label="Status" width="110">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="progress" label="进度" width="120">
+        <el-table-column prop="progress" label="Progress" width="120">
           <template #default="{ row }">
             <el-progress :percentage="row.progress || 0" :status="row.status==='failed'?'exception':(row.status==='completed'?'success':undefined)"/>
           </template>
         </el-table-column>
-        <el-table-column prop="start_time" label="开始时间" width="180">
+        <el-table-column prop="start_time" label="start time" width="180">
           <template #default="{ row }">
             {{ formatTime(row.start_time || row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="350" fixed="right">
+        <el-table-column label="Operation" width="350" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="row.status==='completed'" type="text" size="small" @click="openResult(row)">查看结果</el-button>
-            <el-button v-if="row.status==='completed'" type="text" size="small" @click="openReport(row)">报告详情</el-button>
-            <el-button v-if="row.status==='failed'" type="text" size="small" @click="showErrorDetail(row)">查看错误</el-button>
-            <el-button v-if="row.status==='failed'" type="text" size="small" @click="retryTask(row)">重试</el-button>
-            <el-button v-if="row.status==='processing' || row.status==='running' || row.status==='pending'" type="text" size="small" @click="markAsFailed(row)">标记失败</el-button>
-            <el-button type="text" size="small" @click="deleteTask(row)" style="color: #f56c6c;">删除</el-button>
+            <el-button v-if="row.status==='completed'" type="text" size="small" @click="openResult(row)">View results</el-button>
+            <el-button v-if="row.status==='completed'" type="text" size="small" @click="openReport(row)">Report details</el-button>
+            <el-button v-if="row.status==='failed'" type="text" size="small" @click="showErrorDetail(row)">View errors</el-button>
+            <el-button v-if="row.status==='failed'" type="text" size="small" @click="retryTask(row)">Try again</el-button>
+            <el-button v-if="row.status==='processing' || row.status==='running' || row.status==='pending'" type="text" size="small" @click="markAsFailed(row)">Marking failed</el-button>
+            <el-button type="text" size="small" @click="deleteTask(row)" style="color: #f56c6c;">Delete</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -126,7 +126,7 @@
       </div>
     </el-card>
 
-    <!-- 结果弹窗组件化 -->
+    <!-- Result pop-up window componentization -->
     <TaskResultDialog
       v-model="resultVisible"
       :result="currentResult"
@@ -135,7 +135,7 @@
     />
 
 
-    <!-- 报告详情弹窗组件化（预留） -->
+    <!-- Report details pop-up window componentized (reserved) -->
     <TaskReportDialog v-model="reportVisible" :sections="reportSections" @close="reportVisible=false" />
 
   </div>
@@ -163,29 +163,29 @@ const pageSize = ref(20)
 const total = ref(0)
 const list = ref<any[]>([])
 const selectedRows = ref<any[]>([])
-// 筛选与统计
+// Screening and Statistics
 const filters = ref<{ dateRange: string[]; market: string; status: string; stock: string }>({
   dateRange: [], market: '', status: '', stock: ''
 })
 const stats = ref({ total: 0, completed: 0, failed: 0, uniqueStocks: 0 })
 
 
-// WebSocket 连接管理
+// WebSocket Connection management
 let wsConnections: Map<string, ManagedWebSocket> = new Map()
 let timer: any = null
 
 const setupPolling = () => {
   clearInterval(timer)
-  // 定期刷新列表（每 5 秒）
+  // Refresh the list periodically (every 5 seconds)
   if (activeTab.value === 'running') {
     timer = setInterval(() => loadList(), 5000)
   }
 }
 
-// 连接 WebSocket 获取任务进度
+// Connect to WebSocket to get task progress
 const connectTaskWebSocket = (taskId: string) => {
   if (wsConnections.has(taskId)) {
-    return // 已连接
+    return // Connected
   }
 
   try {
@@ -194,42 +194,42 @@ const connectTaskWebSocket = (taskId: string) => {
       maxReconnectAttempts: 5,
       heartbeatInterval: 0,
       onOpen: () => {
-        console.log(`✅ WebSocket 连接成功: ${taskId}`)
+        console.log(`✅ WebSocket Connection successful: ${taskId}`)
       },
       onMessage: (message) => {
         if (message.type === 'progress_update') {
-          // 更新列表中的任务进度
+          // Update task progress in list
           const taskIndex = list.value.findIndex(t => t.task_id === taskId)
           if (taskIndex >= 0) {
             list.value[taskIndex].progress = message.progress
             list.value[taskIndex].status = message.status
             list.value[taskIndex].message = message.message
-            console.log(`📊 更新任务进度: ${taskId} -> ${message.progress}%`)
+            console.log(`📊 Update task progress: ${taskId} -> ${message.progress}%`)
           }
         }
       },
       onError: (error) => {
-        console.error(`❌ WebSocket 错误: ${taskId}`, error)
+        console.error(`❌ WebSocket Error: ${taskId}`, error)
       },
       onClose: () => {
-        console.log(`🔌 WebSocket 断开: ${taskId}`)
+        console.log(`🔌 WebSocket Disconnect: ${taskId}`)
         wsConnections.delete(taskId)
       },
     })
 
     wsConnections.set(taskId, ws)
   } catch (e) {
-    console.error('WebSocket 连接失败:', e)
+    console.error('WebSocket Connection failed:', e)
   }
 }
 
-// 断开所有 WebSocket 连接
+// Disconnect all WebSocket connections
 const disconnectAllWebSockets = () => {
   wsConnections.forEach((ws) => {
     try {
       ws.close()
     } catch (e) {
-      console.error('关闭 WebSocket 失败:', e)
+      console.error('Failed to close WebSocket:', e)
     }
   })
   wsConnections.clear()
@@ -244,7 +244,7 @@ const statusParam = computed(() => {
 const loadList = async () => {
   loading.value = true
   try {
-    // 根据筛选与标签页构造参数
+    // Construct parameters based on filters and tabs
     const params: any = {
       page: currentPage.value,
       page_size: pageSize.value,
@@ -261,11 +261,11 @@ const loadList = async () => {
     const body = (res as any)?.data?.data || (res as any)?.data || {}
     let tasks = body.tasks || body.analyses || []
 
-    // 当无筛选条件且历史接口为空时，兜底用任务列表接口（保证能看到数据）
+    // When there are no filtering conditions and the history interface is empty, the task list interface is used (to ensure that the data can be seen)
     const noExtraFilters = !filters.value.market && !filters.value.stock && (!filters.value.dateRange || filters.value.dateRange.length === 0)
     if (tasks.length === 0 && noExtraFilters) {
       try {
-        // 不传 limit 参数，让后端返回所有记录
+        // Do not pass the limit parameter and let the backend return all records
         const res2 = await analysisApi.getTaskList({
           status: statusParam.value,
           offset: (currentPage.value - 1) * pageSize.value
@@ -273,13 +273,13 @@ const loadList = async () => {
         const body2 = (res2 as any)?.data?.data || {}
         const allTasks = body2.tasks || []
 
-        // 在前端进行分页
+        // Pagination on the frontend
         const startIdx = (currentPage.value - 1) * pageSize.value
         const endIdx = startIdx + pageSize.value
         tasks = allTasks.slice(startIdx, endIdx)
         total.value = allTasks.length
       } catch (error) {
-        console.debug('[TaskCenter] 回退任务列表加载失败:', error)
+        console.debug('[TaskCenter] Failed to load rollback task list:', error)
       }
     } else {
       total.value = body.total ?? tasks.length
@@ -287,30 +287,30 @@ const loadList = async () => {
 
     list.value = tasks
 
-    // 为运行中的任务连接 WebSocket
+    // Connect to running tasks WebSocket
     tasks.forEach((task: any) => {
       if (task.status === 'processing' || task.status === 'running' || task.status === 'pending') {
         connectTaskWebSocket(task.task_id)
       }
     })
 
-    // 统计
+    // statistics
     const completed = tasks.filter((x:any) => x.status === 'completed').length
     const failed = tasks.filter((x:any) => x.status === 'failed').length
     const uniqueStocks = new Set(tasks.map((x:any) => x.stock_code || x.stock_symbol)).size
     stats.value = { total: tasks.length, completed, failed, uniqueStocks }
   } catch (e:any) {
-    ElMessage.error(e?.message || '加载失败')
+    ElMessage.error(e?.message || 'Loading failed')
   } finally {
     loading.value = false
   }
 }
 
-// 查询/重置
+// Query/Reset
 const applyFilters = () => { currentPage.value = 1; loadList() }
 const resetFilters = () => { filters.value = { dateRange: [], market: '', status: '', stock: '' }; currentPage.value = 1; loadList() }
 
-// 报告弹窗状态
+// Report popup status
 const reportVisible = ref(false)
 const reportSections = ref<Array<{ key?: string; title: string; content: any }>>([])
 
@@ -326,7 +326,7 @@ const filteredList = computed(() => {
 const handleSizeChange = (size:number) => { pageSize.value = size; currentPage.value = 1; loadList() }
 const handleCurrentChange = (page:number) => { currentPage.value = page; loadList() }
 const onTabChange = () => {
-  // 使用 nextTick 确保 activeTab 的值已经更新
+  // Use nextTick to ensure that the value of activeTab has been updated
   nextTick(() => {
     currentPage.value = 1
     loadList()
@@ -336,7 +336,7 @@ const onTabChange = () => {
 const refreshList = () => loadList()
 const onSelectionChange = (rows:any[]) => { selectedRows.value = rows }
 
-// 结果与报告
+// Results and reports
 const resultVisible = ref(false)
 const currentResult = ref<any>(null)
 const currentRow = ref<any>(null)
@@ -350,25 +350,25 @@ const openResult = async (row:any) => {
     currentResult.value = body
     resultVisible.value = true
   } catch (e:any) {
-    ElMessage.error('获取结果失败')
+    ElMessage.error('Failed to get results')
   }
 }
 
 const openReport = (row:any) => {
   const id = row?.task_id || row?.analysis_id || row?.id
   if (!id) {
-    ElMessage.warning('未找到报告ID')
+    ElMessage.warning('Report not found ID')
     return
   }
   router.push({ name: 'ReportDetail', params: { id } })
 }
 
-// 重新创建失败的任务
+// Recreate failed tasks
 const retryTask = async (row: any) => {
   try {
     const taskId = row.task_id || row.analysis_id || row.id
     if (!taskId) {
-      ElMessage.error('任务ID不存在')
+      ElMessage.error('Task ID does not exist')
       return
     }
 
@@ -378,127 +378,127 @@ const retryTask = async (row: any) => {
     const body = (res as any)?.data || res
     
     if (body.success) {
-      ElMessage.success(`任务已重新创建，新任务ID: ${body.task_id}`)
-      // 刷新列表
+      ElMessage.success(`Task has been recreated, new task ID: ${body.task_id}`)
+      // Refresh list
       await loadList()
       
-      // 可选：自动切换到"进行中"标签页
+      // Optional: Automatically switch to"In progress"tab page
       if (activeTab.value === 'failed') {
         activeTab.value = 'running'
         await loadList()
       }
     } else {
-      ElMessage.error(body.message || '重新创建任务失败')
+      ElMessage.error(body.message || 'Failed to recreate task')
     }
   } catch (e: any) {
-    ElMessage.error(e?.response?.data?.detail || e?.message || '重新创建任务失败')
+    ElMessage.error(e?.response?.data?.detail || e?.message || 'Failed to recreate task')
   } finally {
     loading.value = false
   }
 }
 
-// 显示错误详情
+// Show error details
 const showErrorDetail = async (row: any) => {
   try {
     const taskId = row.task_id || row.analysis_id || row.id
     if (!taskId) {
-      ElMessage.error('任务ID不存在')
+      ElMessage.error('Task ID does not exist')
       return
     }
 
-    // 获取任务详情
+    // Get task details
     const res = await analysisApi.getTaskStatus(taskId)
     const task = (res as any)?.data?.data || row
 
-    const errorMessage = task.error_message || task.message || '未知错误'
+    const errorMessage = task.error_message || task.message || 'unknown error'
 
-    // 使用 ElMessageBox 显示错误详情
+    // Use ElMessageBox to display error details
     await ElMessageBox.alert(
       errorMessage,
-      '错误详情',
+      'Error details',
       {
-        confirmButtonText: '确定',
+        confirmButtonText: 'OK',
         type: 'error',
         dangerouslyUseHTMLString: true,
         customStyle: {
           width: '600px'
         },
-        // 使用 HTML 格式化显示，保留换行
+        // Format display using HTML, preserving line breaks
         message: errorMessage.replace(/\n/g, '<br>')
       }
     )
   } catch (e: any) {
     if (e !== 'cancel' && e !== 'close') {
-      ElMessage.error(e?.message || '获取错误详情失败')
+      ElMessage.error(e?.message || 'Failed to get error details')
     }
   }
 }
 
-// 标记任务为失败
+// Mark task as failed
 const markAsFailed = async (row: any) => {
   try {
     await ElMessageBox.confirm(
-      `确定要将任务 "${row.stock_name || row.stock_code}" 标记为失败吗？`,
-      '确认操作',
+      `Confirm the task "${row.stock_name || row.stock_code}" Mark as failed?`,
+      'Confirm action',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'warning'
       }
     )
 
     const taskId = row.task_id || row.analysis_id || row.id
     if (!taskId) {
-      ElMessage.error('任务ID不存在')
+      ElMessage.error('Task ID does not exist')
       return
     }
 
     loading.value = true
     await analysisApi.markTaskAsFailed(taskId)
-    ElMessage.success('任务已标记为失败')
+    ElMessage.success('Task marked as failed')
     await loadList()
   } catch (e: any) {
     if (e !== 'cancel') {
-      ElMessage.error(e?.message || '标记失败')
+      ElMessage.error(e?.message || 'Marking failed')
     }
   } finally {
     loading.value = false
   }
 }
 
-// 删除任务
+// Delete task
 const deleteTask = async (row: any) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除任务 "${row.stock_name || row.stock_code}" 吗？此操作不可恢复！`,
-      '确认删除',
+      `Confirm you want to delete the task "${row.stock_name || row.stock_code}" ? This operation is irreversible!`,
+      'Confirm deletion',
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
         type: 'error'
       }
     )
 
     const taskId = row.task_id || row.analysis_id || row.id
     if (!taskId) {
-      ElMessage.error('任务ID不存在')
+      ElMessage.error('Task ID does not exist')
       return
     }
 
     loading.value = true
     await analysisApi.deleteTask(taskId)
-    ElMessage.success('任务已删除')
+    ElMessage.success('Task deleted')
     await loadList()
   } catch (e: any) {
     if (e !== 'cancel') {
-      ElMessage.error(e?.message || '删除失败')
+      ElMessage.error(e?.message || 'Delete failed')
     }
   } finally {
     loading.value = false
   }
 }
 
-// 导出所选任务
+// Export selected tasks
 const exportSelected = () => {
   try {
     const data = JSON.stringify(selectedRows.value, null, 2)
@@ -511,14 +511,14 @@ const exportSelected = () => {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    ElMessage.success('导出成功')
+    ElMessage.success('Export successful')
   } catch {
-    ElMessage.error('导出失败')
+    ElMessage.error('Export failed')
   }
 }
 
 onMounted(() => {
-  // 根据路由 query 初始化标签页
+  // Initialize tab page based on route query
   const tab = String((route.query as any)?.tab || '').toLowerCase()
   const validTabs = ['running', 'completed', 'failed', 'all']
   if (validTabs.includes(tab)) {
@@ -527,7 +527,7 @@ onMounted(() => {
   loadList(); setupPolling()
 })
 
-// 监听路由 query 的 tab 变化，动态切换标签页
+// Monitor the tab changes of routing query and dynamically switch tabs
 watch(() => (route.query as any)?.tab, (newVal) => {
   const tab = String(newVal || '').toLowerCase()
   const validTabs = ['running', 'completed', 'failed', 'all']
@@ -551,7 +551,7 @@ const getStatusType = (status:string): 'success' | 'info' | 'warning' | 'danger'
 }
 import { formatDateTime } from '@/utils/datetime'
 
-const getStatusText = (status:string) => ({ pending:'等待中', processing:'处理中', completed:'已完成', failed:'失败', cancelled:'已取消' } as any)[status] || status
+const getStatusText = (status:string) => ({ pending:'Waiting', processing:'Processing', completed:'Completed', failed:'failed', cancelled:'Canceled' } as any)[status] || status
 const formatTime = (t:string) => t ? formatDateTime(t) : '-'
 </script>
 

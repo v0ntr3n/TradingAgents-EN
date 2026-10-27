@@ -16,7 +16,7 @@ def test_screening_tool_returns_hard_no_match_message(monkeypatch):
 
     result = asyncio.run(tool_module._run_screening([], 20, "total_mv", "desc"))
 
-    assert result == "未找到符合条件的股票。当前没有适合该筛选要求的标的，不要推荐其它不符合条件的股票。"
+    assert result == "No matching stocks found. There is currently no target that meets the screening requirements. Do not recommend other stocks that do not meet the conditions."
 
 
 def test_system_prompt_forbids_recommending_other_stocks_on_empty_screening():
@@ -26,17 +26,17 @@ def test_system_prompt_forbids_recommending_other_stocks_on_empty_screening():
     prompt = _get_system_prompt()
     confirmation_prompt = IntelligentScreeningService(db=object())._get_system_prompt("confirmation", "")
     screening_prompt = IntelligentScreeningService(db=object())._get_system_prompt("result", "")
-    planning_prompt = IntelligentScreeningService(db=object())._get_system_prompt("planning", "工具清单")
+    planning_prompt = IntelligentScreeningService(db=object())._get_system_prompt("planning", "Tool list")
 
-    assert "未找到符合条件的股票" in prompt
-    assert "严禁为了“给点参考”而推荐其它不符合筛选条件的股票" in prompt
-    assert "如果用户使用“低估值”“低PE”“低PB”这类模糊估值描述" in confirmation_prompt
-    assert "PE 相关口径要区分 `pe`（PE）和 `pe_ttm`（PE(TTM)）" in confirmation_prompt
-    assert "PB 相关口径要区分 `pb`（PB）和 `pb_mrq`（PB(MRQ)）" in confirmation_prompt
-    assert "默认最多执行 **两轮数据工具调用**" in screening_prompt
-    assert "一旦已有足够数据生成最终推荐，**立即停止继续调用工具**" in screening_prompt
-    assert "不要只写笼统的“PE/PB”" in planning_prompt
-    assert '使用 `pe_ttm`（PE(TTM)）<= 15' in planning_prompt
+    assert "No matching stocks found" in prompt
+    assert "strictly prohibited for Give some reference And recommend other stocks that do not meet the screening conditions" in prompt
+    assert "If the user uses low valuation  low PE  low PB Such vague valuation descriptions" in confirmation_prompt
+    assert "PE Relevant calibers should be distinguished `pe` (PE) and `pe_ttm` (PE(TTM)) " in confirmation_prompt
+    assert "PB Relevant calibers should be distinguished `pb` (PB) and `pb_mrq` (PB(MRQ)) " in confirmation_prompt
+    assert "The default is to execute at most **Two rounds of data tool calls**" in screening_prompt
+    assert "Once enough data is available to generate final recommendations,**Stop calling tools immediately**" in screening_prompt
+    assert "Don t just write in general terms PE/PB " in planning_prompt
+    assert 'Use `pe_ttm` (PE(TTM)) <= 15' in planning_prompt
     assert 'order_by_field: "pb_mrq"' in planning_prompt
 
 
@@ -49,8 +49,8 @@ def test_screening_tool_compresses_large_candidate_output(monkeypatch):
             for index in range(12):
                 items.append({
                     "code": f"6000{index:02d}",
-                    "name": f"样本股{index}",
-                    "industry": "银行",
+                    "name": f"Sample stocks{index}",
+                    "industry": "bank",
                     "dividend_yield": 4.2 + index * 0.1,
                     "pe": 8.5 + index,
                     "pb": 0.9 + index * 0.05,
@@ -72,11 +72,11 @@ def test_screening_tool_compresses_large_candidate_output(monkeypatch):
 
     result = asyncio.run(tool_module._run_screening([], 20, "dividend_yield", "desc"))
 
-    assert "共找到 12 只符合条件的股票，以下展示前 8 只核心候选" in result
-    assert "候选代码列表（按当前排序，共 12 只）" in result
+    assert "A total of 12 stocks that meet the criteria were found. The top 8 core candidates are shown below." in result
+    assert "Candidate code list (currently sorted, 12 in total)" in result
     assert "600011" in result
-    assert "其余 4 只候选已省略详细展开" in result
-    assert "毛利率=" not in result
+    assert "Detailed expansion of the remaining 4 candidates has been omitted." in result
+    assert "Gross profit margin=" not in result
 
 
 def test_screening_tool_uses_pe_ttm_display_when_condition_targets_pe_ttm(monkeypatch):
@@ -87,8 +87,8 @@ def test_screening_tool_uses_pe_ttm_display_when_condition_targets_pe_ttm(monkey
             return [
                 {
                     "code": "002818",
-                    "name": "富森美",
-                    "industry": "商业贸易",
+                    "name": "Fusenmei",
+                    "industry": "commercial trade",
                     "dividend_yield": 8.6164,
                     "pe": 16.2629,
                     "pe_ttm": 11.3633,
@@ -128,8 +128,8 @@ def test_screening_tool_uses_pb_mrq_display_when_condition_targets_pb_mrq(monkey
             return [
                 {
                     "code": "600519",
-                    "name": "贵州茅台",
-                    "industry": "食品饮料",
+                    "name": "Kweichow Moutai",
+                    "industry": "food and beverage",
                     "dividend_yield": 3.15,
                     "pe": 22.8,
                     "pb": 8.4,
@@ -182,13 +182,13 @@ def test_batch_profit_consistency_compresses_large_output():
 
     result = tool_module._format_results(codes, results_map, years=3, threshold_cv=0.3)
 
-    assert "📊 汇总：稳定 7 只 | 不稳定 3 只 | 无数据 2 只" in result
-    assert "稳定样例：" in result
-    assert "不稳定样例：" in result
-    assert "... 其余 2 只已省略详细展开" in result
-    assert "✅ 稳定股票代码：600000, 600001, 600002" in result
-    assert "❌ 不稳定股票代码：600007, 600008, 600009" in result
-    assert "⚪ 无数据股票代码：600010, 600011" in result
+    assert "📊 Summary: 7 stable | Unstable 3 | No data 2 only" in result
+    assert "Stable example:" in result
+    assert "Unstable example:" in result
+    assert "... Detailed expansion of the remaining 2 has been omitted." in result
+    assert "✅ Stable stock code:600000, 600001, 600002" in result
+    assert "❌ Unstable stock code:600007, 600008, 600009" in result
+    assert "⚪ No data stock code:600010, 600011" in result
 
 
 def test_batch_profit_consistency_uses_period_collection_pipeline(monkeypatch):
@@ -238,8 +238,8 @@ def test_batch_profit_consistency_uses_period_collection_pipeline(monkeypatch):
 
     result = asyncio.run(tool_module._async_check(["600600"], years=3, threshold_cv=0.3))
 
-    assert "600600：稳定" in result
-    assert "近3年ROE(2025 / 2024 / 2023): 15.4% / 15.4% / 16.1%" in result
+    assert "600600: stable" in result
+    assert "last 3 years ROE(2025 / 2024 / 2023): 15.4% / 15.4% / 16.1%" in result
     assert period_collection.last_pipeline is not None
     first_group_stage = next(
         stage["$group"]
@@ -268,9 +268,9 @@ def test_batch_profit_consistency_treats_insufficient_years_as_no_data():
         threshold_cv=0.3,
     )
 
-    assert "📊 汇总：稳定 1 只 | 不稳定 0 只 | 无数据 1 只" in result
-    assert "⚪ 无数据股票代码：600600" in result
-    assert "600600：稳定" not in result
+    assert "📊 Summary: stable 1 | Unstable 0 | No data 1" in result
+    assert "⚪ No data stock code:600600" in result
+    assert "600600: stable" not in result
 
 
 def test_init_database_skips_reinitialization_when_bindings_are_healthy(monkeypatch):

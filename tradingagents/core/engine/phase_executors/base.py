@@ -1,8 +1,8 @@
 # tradingagents/core/engine/phase_executors/base.py
 """
-阶段执行器基类
+stage executor base class
 
-定义阶段执行的标准接口和通用功能
+Define standard interfaces and common functions for phase execution
 """
 
 from abc import ABC, abstractmethod
@@ -21,9 +21,9 @@ logger = get_logger("default")
 @dataclass
 class PhaseContext:
     """
-    阶段执行上下文
+    stage execution context
     
-    封装阶段执行所需的所有依赖
+    All dependencies required for encapsulation phase execution
     """
     analysis_context: AnalysisContext
     data_manager: DataAccessManager
@@ -31,44 +31,44 @@ class PhaseContext:
     config: Dict[str, Any] = field(default_factory=dict)
     
     def get_ticker(self) -> str:
-        """获取股票代码"""
+        """Get stock code"""
         return self.analysis_context.get(DataLayer.CONTEXT, "ticker") or ""
     
     def get_trade_date(self) -> str:
-        """获取交易日期"""
+        """Get transaction date"""
         return self.analysis_context.get(DataLayer.CONTEXT, "trade_date") or ""
     
     def get_market_type(self) -> str:
-        """获取市场类型"""
+        """Get market type"""
         return self.analysis_context.get(DataLayer.CONTEXT, "market_type") or "cn"
 
 
 class PhaseExecutor(ABC):
     """
-    阶段执行器基类
+    stage executor base class
     
-    所有阶段执行器都需要继承此类并实现 execute 方法
+    All stage executors need to inherit this class and implement the execute method
     
-    用法:
+    Usage:
         class DataCollectionPhase(PhaseExecutor):
             def execute(self, context, data_manager):
-                # 执行数据收集
+                # Perform data collection
                 return {"collected": True}
     """
     
-    # 阶段名称（子类应覆盖）
+    # Stage name (subclasses should override)
     phase_name: str = "base"
     
-    # 阶段需要的契约列表（子类可覆盖）
+    # List of contracts required by the stage (can be overridden by subclasses)
     required_contracts: List[AgentDataContract] = []
     
     def __init__(self, llm_provider: Any = None, config: Optional[Dict[str, Any]] = None):
         """
-        初始化阶段执行器
+        Initialization phase executor
         
         Args:
-            llm_provider: LLM 提供者实例
-            config: 阶段配置
+            llm_provider: LLM provider instance
+            config: stage configuration
         """
         self.llm_provider = llm_provider
         self.config = config or {}
@@ -80,14 +80,14 @@ class PhaseExecutor(ABC):
         data_manager: DataAccessManager
     ) -> Dict[str, Any]:
         """
-        执行阶段
+        Execution phase
         
         Args:
-            context: 分析上下文
-            data_manager: 数据访问管理器
+            context: Analyze context
+            data_manager: Data Access Manager
             
         Returns:
-            阶段输出字典
+            stage output dictionary
         """
         pass
     
@@ -97,16 +97,16 @@ class PhaseExecutor(ABC):
         data_manager: DataAccessManager
     ) -> bool:
         """
-        验证阶段输入
+        Validation phase input
         
-        检查所有必需的输入数据是否存在
+        Check if all required input data exists
         
         Args:
-            context: 分析上下文
-            data_manager: 数据访问管理器
+            context: Analyze context
+            data_manager: Data Access Manager
             
         Returns:
-            验证是否通过
+            Verification passed
         """
         for contract in self.required_contracts:
             for access in contract.inputs:
@@ -115,7 +115,7 @@ class PhaseExecutor(ABC):
                         value = context.get(access.layer, field_name)
                         if value is None:
                             logger.warning(
-                                f"⚠️ [{self.phase_name}] 缺少必需输入: "
+                                f"⚠️ [{self.phase_name}] Missing required input: "
                                 f"{access.layer.value}.{field_name}"
                             )
                             return False
@@ -126,7 +126,7 @@ class PhaseExecutor(ABC):
         context: AnalysisContext,
         data_manager: DataAccessManager
     ) -> PhaseContext:
-        """创建阶段上下文"""
+        """Create stage context"""
         return PhaseContext(
             analysis_context=context,
             data_manager=data_manager,
@@ -135,11 +135,11 @@ class PhaseExecutor(ABC):
         )
     
     def log_start(self) -> None:
-        """记录阶段开始"""
-        logger.info(f"▶️ [{self.phase_name}] 阶段开始执行")
+        """Recording phase begins"""
+        logger.info(f"▶️ [{self.phase_name}] stage starts execution")
     
     def log_end(self, outputs: Dict[str, Any]) -> None:
-        """记录阶段结束"""
+        """End of recording phase"""
         output_keys = list(outputs.keys()) if outputs else []
-        logger.info(f"✅ [{self.phase_name}] 阶段执行完成, 输出: {output_keys}")
+        logger.info(f"✅ [{self.phase_name}] Stage execution completed, output: {output_keys}")
 

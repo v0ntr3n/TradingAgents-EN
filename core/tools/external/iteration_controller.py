@@ -1,18 +1,18 @@
 """
-迭代控制器 — Agent 驱动的 Skill 生成管线
+iteration controller — Agent Driven Skill Generation Pipeline
 
-借鉴 OpenClaw Agent Loop 思想：LLM 主导迭代过程，可以看到完整的执行上下文
-（sandbox stdout/stderr/output），在每轮失败后先做反思分析再定向修复。
+Drawing on the idea of OpenClaw Agent Loop: LLM leads the iterative process and you can see the complete execution context
+ (sandbox stdout/stderr/output) , After each round of failure, do a reflective analysis and then make targeted repairs.
 
-管线流程：
+Pipeline process:
   CodeGenerator → StaticValidator → SandboxRunner → OutputEvaluator
-                                                      ↓ (PASS后)
-                                                  边缘测试验证
+                                                      ↓ (PASS after)
+                                                  Edge test verification
 
-迭代决策：
-  PASS  — 评分 >= 8.0 且边缘测试通过
-  RETRY — 评分不足、沙箱失败或边缘测试失败，且未超轮次上限
-  FAIL  — 超过 10 轮仍未通过，并附带每轮失败原因
+Iterative decision making:
+  PASS  — Rating >= 8.0 And the edge test passes
+  RETRY — Insufficient score, sandbox failure or edge test failure, and the round limit has not been exceeded
+  FAIL  — Failure to pass after more than 10 rounds, with reasons for failure in each round
 """
 
 import json
@@ -48,18 +48,18 @@ logger = logging.getLogger(__name__)
 
 MAX_ITERATIONS = 10
 PASS_THRESHOLD = 8.5
-# 连续相同失败检测阈值：连续 N 轮业务验收失败项完全一致则判定为不可恢复
-# 由 5 调整为 3：更早触发熔断，避免在不可恢复的失败上浪费迭代预算
+# Continuous identical failure detection threshold: If the failure items of N consecutive rounds of business acceptance are completely consistent, it will be determined as unrecoverable.
+# Adjusted from 5 to 3: trigger circuit breakers earlier to avoid wasting iteration budget on unrecoverable failures
 _STALE_FAILURE_THRESHOLD = 3
 
-# 快照落盘根目录（与 SkillGenerationService 保持一致）
+# Snapshot root directory (consistent with SkillGenerationService)
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _SNAPSHOT_DIR = _PROJECT_ROOT / "data" / "code" / "skill"
 
 
 @dataclass
 class PipelineToolResult:
-    """Agentic Loop 中单轮 pipeline_tool 的结构化结果。"""
+    """Agentic Loop Structured results of a single round of pipeline_tool."""
 
     status: str = "fail"  # pass / fail / blocked
     round_number: int = 1
@@ -92,7 +92,7 @@ class PipelineToolResult:
 
 
 class _AgenticPipelineAbort(Exception):
-    """pipeline_tool 内部遇到不可恢复失败时用于中断单轮执行。"""
+    """pipeline_tool Used internally to interrupt a single round of execution when an unrecoverable failure is encountered."""
 
     def __init__(self, result: PipelineToolResult):
         self.result = result
@@ -101,10 +101,10 @@ class _AgenticPipelineAbort(Exception):
 
 class IterationController:
     """
-    迭代控制器
+    iteration controller
 
-    编排 CodeGenerator → StaticValidator → SandboxRunner → OutputEvaluator
-    的完整管线，在每轮失败时插入 LLM 反思步骤，最多 10 轮自动重试。
+    Arrange CodeGenerator → StaticValidator → SandboxRunner → OutputEvaluator
+    A complete pipeline that inserts an LLM reflection step on each failed round with automatic retries for up to 10 rounds.
     """
 
     def __init__(
@@ -160,20 +160,20 @@ class IterationController:
         iteration_mode: str = "repair",
     ) -> PipelineResult:
         """
-        执行完整的生成管线
+        Execute the complete build pipeline
 
         Args:
-            spec: Skill 规格书（已确认）
-            initial_feedback: 初始反馈（优化场景使用）
-            initial_code: 初始代码（优化场景使用）
-            progress_callback: 进度回调 (stage, message, iteration, progress)
-            fact_report: 预构建的侦察报告（侦察前置模式），为 None 时内部自动执行侦察
-            codegen_timeout: 代码生成单次 LLM 调用超时（秒），None 用默认值
-            thinking_callback: 思考过程回调 on_thinking(kind, text)，透传给代码生成器实时展示
-            iteration_mode: "repair"=失败后定向修复；"upgrade"=在已验证旧版本上最小改动升级
+            spec: Skill Specification (confirmed)
+            initial_feedback: Initial feedback (optimizing scenario usage)
+            initial_code: Initial code (optimized for scenario use)
+            progress_callback: Progress callback (stage, message, iteration, progress)
+            fact_report: Pre-built reconnaissance report (reconnaissance pre-mode), when None, reconnaissance is automatically performed internally
+            codegen_timeout: Code generation single LLM call timeout (seconds), None uses the default value
+            thinking_callback: thought process callback on_thinking(kind, text), Transparently transmitted to code generator for real-time display
+            iteration_mode: "repair"=Directed repair after failure;"upgrade"=Upgrade with minimal changes to the proven old version
 
         Returns:
-            PipelineResult: 管线最终结果
+            PipelineResult: pipeline final result
         """
         start_time = time.time()
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -186,24 +186,24 @@ class IterationController:
                 try:
                     progress_callback(stage, message, it, prog, extra)
                 except Exception as e:
-                    logger.warning(f"progress_callback 异常: {e}")
+                    logger.warning(f"progress_callback Abnormal: {e}")
 
         if fact_report is not None:
-            # 侦察前置模式：复用上游已完成的侦察报告
+            # Reconnaissance pre-mode: reuse the reconnaissance report completed by the upstream
             logger.info(
-                "🧭 复用上游侦察报告 | strategy=%s | helpers=%d | checks=%d",
+                "🧭 Reuse upstream reconnaissance reports | strategy=%s | helpers=%d | checks=%d",
                 fact_report.recommended_strategy or "(none)",
                 len(fact_report.available_helpers),
                 len(fact_report.validation_checks),
             )
             self._persist_fact_report(spec.tool_id, run_id, fact_report)
         else:
-            # 内部侦察模式（向后兼容）
+            # Internal recon mode (backwards compatible)
             try:
                 _report("reconnaissance", "正在整理实现事实...", 0, 0.03)
                 fact_report = self._reconnaissance.analyze(spec)
                 logger.info(
-                    "🧭 前置侦察完成 | strategy=%s | helpers=%d | checks=%d",
+                    "🧭 Preliminary reconnaissance completed | strategy=%s | helpers=%d | checks=%d",
                     fact_report.recommended_strategy or "(none)",
                     len(fact_report.available_helpers),
                     len(fact_report.validation_checks),
@@ -211,24 +211,24 @@ class IterationController:
                 self._persist_fact_report(spec.tool_id, run_id, fact_report)
 
                 for idx, update in enumerate(self._build_reconnaissance_updates(fact_report), start=1):
-                    logger.info("🧭 侦察摘要[%d]: %s", idx, update)
+                    logger.info("🧭 Reconnaissance summary[%d]: %s", idx, update)
                     _report("reconnaissance", update, 0, min(0.03 + idx * 0.01, 0.08))
                 _report("reconnaissance", "实现事实整理完成", 0, 0.08)
             except Exception as e:
-                logger.warning(f"⚠️ 前置侦察失败，继续使用原有生成流程: {e}")
-                _report("reconnaissance", "实现事实整理失败，降级为原流程", 0, 0.08)
+                logger.warning(f"⚠️ Pre-reconnaissance failed, continue to use the original generation process: {e}")
+                _report("reconnaissance", "Failed to implement fact sorting and downgraded to original process", 0, 0.08)
 
         for round_num in range(1, self._max_iterations + 1):
             logger.info(
                 f"\n{'='*60}\n"
-                f"🔄 Skill 生成管线 — 第 {round_num}/{self._max_iterations} 轮 | tool_id={spec.tool_id}\n"
+                f"🔄 Skill Build pipeline — No. {round_num}/{self._max_iterations} wheel | tool_id={spec.tool_id}\n"
                 f"{'='*60}"
             )
             _report("iteration", f"第 {round_num}/{self._max_iterations} 轮", round_num, 0)
 
             iteration = IterationRound(round_number=round_num)
 
-            # ===== 阶段 1: 代码生成 =====
+            # ===== stage 1: code generation =====
             _report("code_generation", "正在生成代码...", round_num, 0.1)
             try:
                 generated = self._generator.generate(
@@ -238,17 +238,17 @@ class IterationController:
                     fact_report=fact_report,
                     timeout_seconds=codegen_timeout,
                     on_thinking=thinking_callback,
-                    # 仅首轮（基于父版本代码）用升级文案；后续轮是在修新代码的问题
+                    # Only the first round (based on the parent version code) uses upgrade copy; subsequent rounds are to fix problems with the new code
                     iteration_mode=("upgrade" if iteration_mode == "upgrade" and round_num == 1 else "repair"),
                 )
                 iteration.generated_code = generated
-                # 详细日志：代码摘要
+                # Detailed log: code summary
                 code_lines = generated.code.split("\n") if generated.code else []
                 logger.info(
                     f"✅ [第{round_num}轮] 代码生成完成\n"
-                    f"   ⏱️  耗时: {generated.generation_time}s\n"
-                    f"   📏 代码行数: {len(code_lines)}\n"
-                    f"   📝 代码前5行:\n"
+                    f"   ⏱️  Time consuming: {generated.generation_time}s\n"
+                    f"   📏 Lines of code: {len(code_lines)}\n"
+                    f"   📝 The first 5 lines of code:\n"
                     + "\n".join(f"      | {line}" for line in code_lines[:5])
                     + (f"\n      | ... (共 {len(code_lines)} 行)" if len(code_lines) > 5 else "")
                 )
@@ -284,7 +284,7 @@ class IterationController:
                 self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
                 break
 
-            # ===== 阶段 2: 静态验证 =====
+            # ===== stage 2: Static verification =====
             _report("static_validation", "正在语法检查...", round_num, 0.25)
             validation = self._validator.validate(generated, spec)
             iteration.validation = validation
@@ -313,7 +313,7 @@ class IterationController:
                 iteration.feedback = feedback
                 iterations.append(iteration)
                 self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                _report("static_validation", "静态验证失败，重试中...", round_num, 0.3)
+                _report("static_validation", "Static verification failed, retrying...", round_num, 0.3)
                 logger.warning(
                     f"⚠️ [第{round_num}轮] 静态验证失败:\n"
                     + "\n".join(f"   ❌ {err}" for err in validation.errors[:5])
@@ -323,7 +323,7 @@ class IterationController:
             logger.info(f"✅ [第{round_num}轮] 静态验证通过")
             _report("static_validation", "语法检查通过", round_num, 0.35)
 
-            # ===== 阶段 3: 沙箱执行 =====
+            # ===== stage 3: sandbox execution =====
             _report("sandbox_execution", "正在沙箱执行...", round_num, 0.4)
             sandbox = self._runner.run(generated.code, spec)
             iteration.sandbox = sandbox
@@ -347,8 +347,8 @@ class IterationController:
                 _report("reflection", "正在分析失败原因...", round_num, 0.5)
                 logger.warning(
                     f"⚠️ [第{round_num}轮] 沙箱执行失败:\n"
-                    f"   错误: {sandbox.error or '未知错误'}\n"
-                    f"   stderr: {(sandbox.stderr or '(空)')[:500]}"
+                    f"   Error: {sandbox.error or 'unknown error'}\n"
+                    f"   stderr: {(sandbox.stderr or '(empty)')[:500]}"
                 )
                 reflection = self._reflect_on_failure(
                     spec=spec,
@@ -364,9 +364,9 @@ class IterationController:
                 iteration.reflection = reflection
                 logger.info(
                     f"🔍 [第{round_num}轮] 反思结果:\n"
-                    f"   根因: {reflection.root_cause}\n"
-                    f"   修复计划: {reflection.fix_plan}\n"
-                    f"   置信度: {reflection.confidence}"
+                    f"   root cause: {reflection.root_cause}\n"
+                    f"   Repair plan: {reflection.fix_plan}\n"
+                    f"   Confidence: {reflection.confidence}"
                 )
 
                 feedback = self._build_rich_feedback(
@@ -380,13 +380,13 @@ class IterationController:
                     reflection=reflection,
                 )
                 previous_code = generated.code
-                # ---- 提前退出：反思建议放弃 ----
+                # ---- Early exit: Reflection suggests giving up ----
                 if not reflection.should_retry:
                     iteration.decision = "FAIL"
                     iteration.feedback = feedback
                     iterations.append(iteration)
                     self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                    _report("sandbox_execution", "反思判定不可修复，提前终止", round_num, 0.55)
+                    _report("sandbox_execution", "After reflection, it was determined that it was irreparable and terminated early.", round_num, 0.55)
                     logger.warning(
                         f"🛑 [第{round_num}轮] 反思建议放弃 (should_retry=False): {reflection.root_cause}"
                     )
@@ -395,10 +395,10 @@ class IterationController:
                 iteration.feedback = feedback
                 iterations.append(iteration)
                 self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                _report("sandbox_execution", "沙箱执行失败，反思后重试中...", round_num, 0.55)
+                _report("sandbox_execution", "Sandbox execution failed, trying again after reflection...", round_num, 0.55)
                 continue
 
-            # 详细日志：沙箱执行结果
+            # Detailed log: sandbox execution results
             output_preview = ""
             if sandbox.output is not None:
                 try:
@@ -407,13 +407,13 @@ class IterationController:
                     output_preview = str(sandbox.output)[:500]
             logger.info(
                 f"✅ [第{round_num}轮] 沙箱执行成功\n"
-                f"   ⏱️  耗时: {sandbox.execution_time}s\n"
-                f"   📤 返回值预览: {output_preview or '(空)'}\n"
-                f"   📺 stdout: {(sandbox.stdout or '(空)')[:300]}"
+                f"   ⏱️  Time consuming: {sandbox.execution_time}s\n"
+                f"   📤 Return value preview: {output_preview or '(empty)'}\n"
+                f"   📺 stdout: {(sandbox.stdout or '(empty)')[:300]}"
             )
             _report("sandbox_execution", f"沙箱执行成功 ({sandbox.execution_time}s)", round_num, 0.6)
 
-            # ===== 阶段 4: 业务验收（结构检查，零 LLM 成本） =====
+            # ===== stage 4: Business acceptance (structural inspection, zero LLM cost) =====
             business_verification = self._business_verifiers.resolve(spec).verify(
                 sandbox,
                 spec,
@@ -436,19 +436,19 @@ class IterationController:
             )
             logger.info(
                 f"🧪 [第{round_num}轮] 业务验收:\n"
-                f"   通过: {business_verification.passed}\n"
-                f"   业务分: {business_verification.business_score}\n"
-                f"   失败项: {len(business_verification.failures)}"
+                f"   Pass: {business_verification.passed}\n"
+                f"   Business points: {business_verification.business_score}\n"
+                f"   failed items: {len(business_verification.failures)}"
             )
 
             if not business_verification.passed:
-                # 业务验收不通过，收集错误反馈
-                _report("output_evaluation", "业务验收未通过，正在分析...", round_num, 0.58)
+                # If the business acceptance fails, collect error feedback
+                _report("output_evaluation", "The business acceptance has not passed and is being analyzed....", round_num, 0.58)
                 failure_messages = []
                 failure_messages.extend(self._build_business_errors(business_verification))
                 extra_context_parts = [self._build_business_reflection_context(business_verification)]
 
-                # 【新增】财经专家判断：如果沙箱输出包含 no_data，判断是否业务合理 + 推荐换股
+                #  [New] Financial expert judgment: If the sandbox output contains no_data, judge whether the business is reasonable + Recommended share exchange
                 expert_advice = self._check_no_data_and_advise(
                     spec, sandbox.output, fact_report
                 )
@@ -478,18 +478,18 @@ class IterationController:
                     output=sandbox.output,
                     reflection=reflection,
                 )
-                # 把专家建议追加到 feedback
+                # Add expert advice to feedback
                 if expert_advice:
                     feedback = f"{feedback}\n\n{expert_advice}"
                 iteration.decision = "RETRY"
                 iteration.feedback = feedback
                 iterations.append(iteration)
                 self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                _report("output_evaluation", "业务验收失败，反思后重试中...", round_num, 0.7)
+                _report("output_evaluation", "Business acceptance failed, trying again after reflection...", round_num, 0.7)
                 continue
 
-            # ===== 阶段 5: 黑盒验证 — 标准函数参考对比 =====
-            _report("reference_comparison", "正在对比标准函数输出...", round_num, 0.65)
+            # ===== stage 5: Black box verification — Standard function reference comparison =====
+            _report("reference_comparison", "Comparing standard function output...", round_num, 0.65)
             ref_comparison_failures = self._compare_with_reference_helpers(
                 sandbox, spec, fact_report
             )
@@ -498,11 +498,11 @@ class IterationController:
                     f"⚠️ [第{round_num}轮] 🔴 黑盒验证失败: 输出值不符合标准函数参考\n"
                     + "\n".join(f"   ❌ {f}" for f in ref_comparison_failures[:5])
                 )
-                _report("reflection", "黑盒验证失败（值不正确），跳过白盒代码审查，正在分析...", round_num, 0.68)
+                _report("reflection", "Black box validation failed (incorrect value), white box code review skipped, analysis in progress...", round_num, 0.68)
                 reflection = self._reflect_on_failure(
                     spec=spec,
                     code=generated.code,
-                    stage="黑盒验证（标准函数参考对比）",
+                    stage="Black box verification (standard function reference comparison)",
                     error="\n".join(ref_comparison_failures),
                     stdout=sandbox.stdout,
                     stderr="",
@@ -512,7 +512,7 @@ class IterationController:
             )
                 iteration.reflection = reflection
                 feedback = self._build_rich_feedback(
-                    stage="黑盒验证（标准函数参考对比）",
+                    stage="Black box verification (standard function reference comparison)",
                     errors=ref_comparison_failures,
                     code=generated.code,
                     spec=spec,
@@ -524,13 +524,13 @@ class IterationController:
                 iteration.feedback = feedback
                 iterations.append(iteration)
                 self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                _report("reference_comparison", "黑盒验证失败，反思后重试中...", round_num, 0.72)
+                _report("reference_comparison", "Black box verification failed, trying again after reflection...", round_num, 0.72)
                 continue
 
-            _report("reference_comparison", "黑盒验证通过，输出值与标准函数一致", round_num, 0.7)
+            _report("reference_comparison", "The black box verification is passed and the output value is consistent with the standard function.", round_num, 0.7)
 
-            # ===== 阶段 6: 白盒评估 — Judge LLM 代码审查 =====
-            _report("output_evaluation", "正在白盒代码质量评估...", round_num, 0.75)
+            # ===== stage 6: white box evaluation — Judge LLM code review =====
+            _report("output_evaluation", "White box code quality assessment in progress...", round_num, 0.75)
             eval_score = self._evaluator.evaluate(sandbox, spec, generated.code, fact_report=fact_report)
             iteration.eval_score = eval_score
             self._persist_stage_artifact(
@@ -545,16 +545,16 @@ class IterationController:
             )
             logger.info(
                 f"📊 [第{round_num}轮] 评估得分:\n"
-                f"   总分: {eval_score.total}/10 (阈值: {PASS_THRESHOLD})\n"
-                f"   可执行性: {eval_score.executability} | 真实性: {eval_score.authenticity}\n"
-                f"   完整性: {eval_score.completeness} | 相关性: {eval_score.relevance}\n"
-                f"   格式质量: {eval_score.format_quality}"
+                f"   total score: {eval_score.total}/10 (threshold: {PASS_THRESHOLD})\n"
+                f"   Enforceability: {eval_score.executability} | authenticity: {eval_score.authenticity}\n"
+                f"   integrity: {eval_score.completeness} | Relevance: {eval_score.relevance}\n"
+                f"   Format quality: {eval_score.format_quality}"
             )
-            # 评估结果实时透出：前端在评估完成的瞬间即可看到各维度分数与评语
+            # The evaluation results are revealed in real time: the front-end can see the scores and comments of each dimension the moment the evaluation is completed.
             _eval_passed = eval_score.total >= PASS_THRESHOLD
             _report(
                 "output_evaluation",
-                f"质量评估完成：{eval_score.total}/10（{'达标' if _eval_passed else '未达标'}）",
+                f"Quality assessment completed:{eval_score.total}/10 ({'Meet the standard' if _eval_passed else 'Not up to standard'}) ",
                 round_num,
                 0.77,
                 extra=self._build_eval_result_extra(eval_score, round_num),
@@ -591,11 +591,11 @@ class IterationController:
                 iteration.feedback = feedback
                 iterations.append(iteration)
                 self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                _report("output_evaluation", "白盒评审未通过，反思后重试中...", round_num, 0.82)
+                _report("output_evaluation", "The white box review failed, and we are trying again after reflection....", round_num, 0.82)
                 continue
 
-                # ===== 阶段 5: 边缘测试验证 =====
-                _report("edge_testing", "正在执行边缘测试验证...", round_num, 0.8)
+                # ===== stage 5: Edge test verification =====
+                _report("edge_testing", "Performing edge test verification...", round_num, 0.8)
                 edge_failures = self._run_edge_tests(generated.code, spec)
 
                 if edge_failures:
@@ -603,7 +603,7 @@ class IterationController:
                         f"⚠️ [第{round_num}轮] 边缘测试发现 {len(edge_failures)} 个问题:\n"
                         + "\n".join(f"   ❌ {f}" for f in edge_failures[:5])
                     )
-                    _report("reflection", "边缘测试失败，正在分析...", round_num, 0.85)
+                    _report("reflection", "Edge test failed, analyzing...", round_num, 0.85)
                     reflection = self._reflect_on_failure(
                         spec=spec,
                         code=generated.code,
@@ -631,24 +631,24 @@ class IterationController:
                     iteration.feedback = feedback
                     iterations.append(iteration)
                     self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                    _report("edge_testing", "边缘测试失败，反思后重试中...", round_num, 0.9)
+                    _report("edge_testing", "Edge test failed, retrying after reflection...", round_num, 0.9)
                     continue
 
-                # 全部通过
+                # All passed
                 iteration.decision = "PASS"
                 iterations.append(iteration)
                 self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                _report("output_evaluation", f"评估通过，总分: {eval_score.total}", round_num, 1.0)
+                _report("output_evaluation", f"Assessment passed, total score: {eval_score.total}", round_num, 1.0)
                 total_time = round(time.time() - start_time, 2)
                 logger.info(
                     f"\n{'='*60}\n"
-                    f"🎉 Skill 生成成功！\n"
+                    f"🎉 Skill Generated successfully!\n"
                     f"   tool_id: {spec.tool_id}\n"
-                    f"   总分: {eval_score.total}/10\n"
-                    f"   业务验收: 通过\n"
-                    f"   迭代轮数: {round_num}\n"
-                    f"   总耗时: {total_time}s\n"
-                    f"   代码行数: {len(generated.code.split(chr(10)))}\n"
+                    f"   total score: {eval_score.total}/10\n"
+                    f"   Business acceptance: Pass\n"
+                    f"   Number of iteration rounds: {round_num}\n"
+                    f"   Total time spent: {total_time}s\n"
+                    f"   Lines of code: {len(generated.code.split(chr(10)))}\n"
                     f"{'='*60}"
                 )
                 return PipelineResult(
@@ -675,9 +675,9 @@ class IterationController:
                     if eval_score.total < PASS_THRESHOLD and business_verification.passed
                     else "业务验收未通过"
                     if eval_score.total >= PASS_THRESHOLD and not business_verification.passed
-                    else f"评分不足且业务验收未通过 ({eval_score.total}/10)"
+                    else f"Insufficient ratings and failed business acceptance ({eval_score.total}/10)"
                 )
-                _report("reflection", f"{reason}，正在分析...", round_num, 0.75)
+                _report("reflection", f"{reason}, Analyzing...", round_num, 0.75)
                 reflection = self._reflect_on_failure(
                     spec=spec,
                     code=generated.code,
@@ -693,9 +693,9 @@ class IterationController:
                 iteration.reflection = reflection
                 logger.info(
                     f"🔍 [第{round_num}轮] 反思结果:\n"
-                    f"   根因: {reflection.root_cause}\n"
-                    f"   修复计划: {reflection.fix_plan}\n"
-                    f"   置信度: {reflection.confidence}"
+                    f"   root cause: {reflection.root_cause}\n"
+                    f"   Repair plan: {reflection.fix_plan}\n"
+                    f"   Confidence: {reflection.confidence}"
                 )
 
                 feedback = self._build_rich_feedback(
@@ -710,25 +710,25 @@ class IterationController:
                 )
                 previous_code = generated.code
 
-                # ---- 提前退出：反思建议放弃 ----
+                # ---- Early exit: Reflection suggests giving up ----
                 if not reflection.should_retry:
                     iteration.decision = "FAIL"
                     iteration.feedback = feedback
                     iterations.append(iteration)
                     self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                    _report("output_evaluation", "反思判定不可修复，提前终止", round_num, 0.8)
+                    _report("output_evaluation", "After reflection, it was determined that it was irreparable and terminated early.", round_num, 0.8)
                     logger.warning(
                         f"🛑 [第{round_num}轮] 反思建议放弃 (should_retry=False): {reflection.root_cause}"
                     )
                     break
 
-                # ---- 提前退出：连续相同失败检测 ----
+                # ---- Early exit: Continuous same failure detection ----
                 if self._detect_stale_failures(iterations):
                     iteration.decision = "FAIL"
-                    iteration.feedback = feedback + "\n\n[系统] 连续多轮业务验收失败项完全相同，判定为数据源不可用，提前终止。"
+                    iteration.feedback = feedback + "\n\n[system] If the failed items in multiple rounds of business acceptance are exactly the same, it is determined that the data source is unavailable and terminated early."
                     iterations.append(iteration)
                     self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                    _report("output_evaluation", "连续相同失败，数据不可用，提前终止", round_num, 0.8)
+                    _report("output_evaluation", "Continuous identical failures, data unavailable, early termination", round_num, 0.8)
                     logger.warning(
                         f"🛑 [第{round_num}轮] 连续 {_STALE_FAILURE_THRESHOLD} 轮相同业务验收失败，判定为不可恢复"
                     )
@@ -738,19 +738,19 @@ class IterationController:
                 iteration.feedback = feedback
                 iterations.append(iteration)
                 self._persist_round_snapshot(spec.tool_id, run_id, round_num, iteration, fact_report)
-                _report("output_evaluation", f"{reason}，反思后重试中...", round_num, 0.8)
+                _report("output_evaluation", f"{reason}, Trying again after reflection...", round_num, 0.8)
                 logger.warning(f"⚠️ [第{round_num}轮] {reason}，进入下一轮")
 
         failure_summary = self._build_failure_summary(iterations)
         total_time = round(time.time() - start_time, 2)
         logger.error(
             f"\n{'='*60}\n"
-            f"❌ Skill 生成失败 — {self._max_iterations} 轮迭代后仍未通过\n"
+            f"❌ Skill Build failed — {self._max_iterations} Still not passed after rounds of iterations\n"
             f"   tool_id: {spec.tool_id}\n"
-            f"   总耗时: {total_time}s\n"
+            f"   Total time spent: {total_time}s\n"
             f"{'='*60}"
         )
-        # v3.6.0 项6 路径A：失败后写入 skill_iteration_alerts 集合，等待人工决策
+        # v3.6.0 Item 6 Path A: Write to the skill_iteration_alerts collection after failure and wait for manual decision-making
         self._write_iteration_alert(
             spec=spec,
             run_id=run_id,
@@ -768,39 +768,39 @@ class IterationController:
             error=failure_summary,
         )
 
-    # ==================== 提前退出检测 ====================
+    # ==================== Exit detection early ====================
 
     @staticmethod
     def _detect_stale_failures(iterations: List[IterationRound]) -> bool:
         """
-        检测连续 N 轮业务验收的失败项是否完全相同。
-        如果是，说明失败原因是外部数据不可用，继续迭代不会改善。
+        Check whether the failed items in N consecutive rounds of business acceptance are exactly the same.
+        If so, the reason for the failure is that external data is unavailable, and continued iteration will not improve it.
         """
         if len(iterations) < _STALE_FAILURE_THRESHOLD:
             return False
 
         recent = iterations[-_STALE_FAILURE_THRESHOLD:]
 
-        # 提取每轮的失败 rule_id 集合
+        # Extract the failed rule_id collection of each round
         failure_sets: List[frozenset] = []
         for it in recent:
             if it.business_verification and not it.business_verification.passed:
                 rule_ids = frozenset(f.rule_id for f in it.business_verification.failures)
                 failure_sets.append(rule_ids)
             else:
-                return False  # 有一轮通过了或没有业务验收，不算连续
+                return False  # If one round passes or there is no business acceptance, it is not considered consecutive.
 
         if len(failure_sets) < _STALE_FAILURE_THRESHOLD:
             return False
 
-        # 所有集合相同
+        # All sets are the same
         return len(set(failure_sets)) == 1
 
-    # ==================== 即时落盘 ====================
+    # ==================== Instant order placement ====================
 
     @staticmethod
     def _get_snapshot_dir(tool_id: str, run_id: str) -> Path:
-        """获取当前运行批次的快照目录: data/code/skill/{tool_id}/{run_id}/"""
+        """Get the snapshot directory of the currently running batch: data/code/skill/{tool_id}/{run_id}/"""
         d = _SNAPSHOT_DIR / tool_id / run_id
         d.mkdir(parents=True, exist_ok=True)
         return d
@@ -811,7 +811,7 @@ class IterationController:
         run_id: str,
         fact_report: ImplementationFactReport,
     ) -> Optional[Path]:
-        """侦察完成后立即落盘 fact_report.json。"""
+        """Place fact_report.json immediately after the reconnaissance is completed."""
         try:
             d = IterationController._get_snapshot_dir(tool_id, run_id)
             path = d / "fact_report.json"
@@ -820,10 +820,10 @@ class IterationController:
                 json.dumps(data, ensure_ascii=False, indent=2, default=str),
                 encoding="utf-8",
             )
-            logger.info("📝 侦察报告已落盘: %s", path)
+            logger.info("📝 The reconnaissance report has been placed: %s", path)
             return path
         except Exception as exc:
-            logger.warning("⚠️ 侦察报告落盘失败: %s", exc)
+            logger.warning("⚠️ Reconnaissance report placement failed: %s", exc)
             return None
 
     @staticmethod
@@ -833,9 +833,9 @@ class IterationController:
         user_prompt: str,
         fact_report: Optional[ImplementationFactReport],
     ) -> None:
-        """将 agentic 模式的完整 system/user prompt 写入日志文件，方便排查 LLM 未调用推荐 helper 的问题。
+        """Write the complete system/user prompt in agentic mode to the log file to facilitate troubleshooting the problem of LLM not calling the recommended helper.
 
-        日志文件位置：logs/codegen_prompts/agentic_<tool_id>_<timestamp>.log
+        Log file location:logs/codegen_prompts/agentic_<tool_id>_<timestamp>.log
         """
         try:
             from datetime import datetime
@@ -845,8 +845,8 @@ class IterationController:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_tool_id = re.sub(r"[^\w\-]", "_", spec.tool_id or "unknown")
 
-            # 构建 helper 摘要
-            helper_summary = "（无 fact_report）"
+            # Build helper summary
+            helper_summary = " (no fact_report)"
             if fact_report:
                 if fact_report.available_helpers:
                     helper_lines = []
@@ -857,7 +857,7 @@ class IterationController:
                         )
                     helper_summary = f"共 {len(fact_report.available_helpers)} 个:\n" + "\n".join(helper_lines)
                 else:
-                    helper_summary = "available_helpers 为空"
+                    helper_summary = "available_helpers is empty"
 
             content = (
                 f"{'=' * 80}\n"
@@ -867,21 +867,21 @@ class IterationController:
                 f"# timestamp: {timestamp}\n"
                 f"# spec.display_name: {spec.display_name}\n"
                 f"# spec.description: {spec.description[:200] if spec.description else ''}\n"
-                f"# system_prompt 长度: {len(system_prompt)} 字符\n"
-                f"# user_prompt 长度: {len(user_prompt)} 字符\n"
+                f"# system_prompt length: {len(system_prompt)} character\n"
+                f"# user_prompt length: {len(user_prompt)} character\n"
                 f"\n"
                 f"{'─' * 80}\n"
-                f"## 侦察层推荐的 available_helpers\n"
+                f"## Recommended by the reconnaissance layer available_helpers\n"
                 f"{'─' * 80}\n"
                 f"{helper_summary}\n"
                 f"\n"
                 f"{'─' * 80}\n"
-                f"## Agentic System Prompt（完整）\n"
+                f"## Agentic System Prompt (complete)\n"
                 f"{'─' * 80}\n"
                 f"{system_prompt}\n"
                 f"\n"
                 f"{'─' * 80}\n"
-                f"## Agentic User Prompt（完整）\n"
+                f"## Agentic User Prompt (complete)\n"
                 f"{'─' * 80}\n"
                 f"{user_prompt}\n"
             )
@@ -894,11 +894,11 @@ class IterationController:
 
             logger.info(
                 f"[AgenticSkill] Prompt dump 已写入: {latest_path} "
-                f"(system={len(system_prompt)}字符, user={len(user_prompt)}字符, "
-                f"helpers={len(fact_report.available_helpers) if fact_report else 0}个)"
+                f"(system={len(system_prompt)}character, user={len(user_prompt)}character, "
+                f"helpers={len(fact_report.available_helpers) if fact_report else 0}a)"
             )
         except Exception as exc:
-            logger.warning(f"[AgenticSkill] 写入 prompt dump 日志失败: {exc}", exc_info=True)
+            logger.warning(f"[AgenticSkill] Failed to write prompt dump log: {exc}", exc_info=True)
 
     @staticmethod
     def _persist_round_snapshot(
@@ -908,7 +908,7 @@ class IterationController:
         iteration: IterationRound,
         fact_report: Optional[ImplementationFactReport] = None,
     ) -> Optional[Path]:
-        """每轮迭代结束后立即落盘该轮完整快照（含代码、评分、反思等）。"""
+        """After each iteration, a complete snapshot of the round (including code, ratings, reflections, etc.) will be released immediately."""
         try:
             d = IterationController._get_snapshot_dir(tool_id, run_id)
             snapshot: Dict[str, Any] = {
@@ -916,7 +916,7 @@ class IterationController:
                 "decision": iteration.decision,
                 "feedback_excerpt": (iteration.feedback or "")[:2000],
             }
-            # 生成的代码
+            # generated code
             if iteration.generated_code:
                 g = iteration.generated_code
                 snapshot["generated_code"] = {
@@ -924,18 +924,18 @@ class IterationController:
                     "generation_time": g.generation_time,
                     "metadata": g.metadata,
                 }
-                # 同时保存完整代码文件
+                # Save the complete code file at the same time
                 code_path = d / f"round_{round_num:02d}.py"
                 code_path.write_text(
                     (g.code or "") + "\n", encoding="utf-8"
                 )
-            # 静态验证
+            # Static verification
             if iteration.validation:
                 snapshot["validation"] = {
                     "passed": iteration.validation.passed,
                     "errors": iteration.validation.errors[:10],
                 }
-            # 沙箱执行
+            # sandbox execution
             if iteration.sandbox:
                 sb = iteration.sandbox
                 snapshot["sandbox"] = {
@@ -945,10 +945,10 @@ class IterationController:
                     "stdout_excerpt": (sb.stdout or "")[:500],
                     "output_excerpt": str(sb.output)[:1000] if sb.output else None,
                 }
-            # 评估得分
+            # Assessment score
             if iteration.eval_score:
                 snapshot["eval_score"] = iteration.eval_score.model_dump()
-            # 业务验收
+            # Business acceptance
             if iteration.business_verification:
                 bv = iteration.business_verification
                 snapshot["business_verification"] = {
@@ -956,7 +956,7 @@ class IterationController:
                     "business_score": bv.business_score,
                     "failures": bv.failures[:10],
                 }
-            # 反思
+            # Reflection
             if iteration.reflection:
                 r = iteration.reflection
                 snapshot["reflection"] = {
@@ -965,7 +965,7 @@ class IterationController:
                     "should_retry": r.should_retry,
                     "confidence": r.confidence,
                 }
-            # 附带当轮的侦察报告引用（置信度+策略摘要即可）
+            # Comes with a quote from the current round's scouting report (confidence+A summary of the strategy will suffice)
             if fact_report:
                 snapshot["fact_report_summary"] = {
                     "confidence": fact_report.confidence,
@@ -979,10 +979,10 @@ class IterationController:
                 json.dumps(snapshot, ensure_ascii=False, indent=2, default=str),
                 encoding="utf-8",
             )
-            logger.info("📝 第%d轮快照已落盘: %s", round_num, path)
+            logger.info("📝 The %d round of snapshots has been released: %s", round_num, path)
             return path
         except Exception as exc:
-            logger.warning("⚠️ 第%d轮快照落盘失败: %s", round_num, exc)
+            logger.warning("⚠️ The %d round of snapshot failed to be downloaded to disk: %s", round_num, exc)
             return None
 
     @staticmethod
@@ -994,7 +994,7 @@ class IterationController:
         payload: Dict[str, Any],
         code: str = "",
     ) -> Optional[Path]:
-        """阶段一完成就立即落盘，便于定位卡在哪一步。"""
+        """Place the order immediately as soon as the stage is completed, making it easier to locate which step you are stuck on."""
         try:
             d = IterationController._get_snapshot_dir(tool_id, run_id)
             stage_payload = {
@@ -1018,17 +1018,17 @@ class IterationController:
             if code:
                 code_path = d / f"round_{round_num:02d}.py"
                 code_path.write_text((code or "") + ("" if code.endswith("\n") else "\n"), encoding="utf-8")
-            logger.info("📝 阶段结果已落盘: %s", path)
+            logger.info("📝 Stage results have been settled: %s", path)
             return path
         except Exception as exc:
-            logger.warning("⚠️ 阶段结果落盘失败(stage=%s, round=%s): %s", stage, round_num, exc)
+            logger.warning("⚠️ Stage result placement failed(stage=%s, round=%s): %s", stage, round_num, exc)
             return None
 
     @staticmethod
     def _build_reconnaissance_updates(fact_report: ImplementationFactReport) -> List[str]:
         updates: List[str] = []
         if fact_report.recommended_strategy:
-            updates.append(f"侦察策略：{fact_report.recommended_strategy}")
+            updates.append(f"Scouting strategy:{fact_report.recommended_strategy}")
 
         collections = [
             item.source
@@ -1037,27 +1037,27 @@ class IterationController:
         ]
         if collections:
             unique_collections = list(dict.fromkeys(collections))[:3]
-            updates.append(f"命中本地集合：{'、'.join(unique_collections)}")
+            updates.append(f"Hit local collection:{', '.join(unique_collections)}")
 
         if fact_report.available_helpers:
             helper_names = [f"{item.module}.{item.name}" for item in fact_report.available_helpers[:3]]
-            updates.append(f"推荐 helper：{'；'.join(helper_names)}")
+            updates.append(f"Recommended helpers:{'; '.join(helper_names)}")
 
         if fact_report.sample_fields:
             sample_parts: List[str] = []
             for collection, fields in list(fact_report.sample_fields.items())[:2]:
                 sample_parts.append(f"{collection}: {', '.join(fields[:6])}")
             if sample_parts:
-                updates.append(f"样本字段：{'；'.join(sample_parts)}")
+                updates.append(f"Sample fields:{'; '.join(sample_parts)}")
 
         if fact_report.runtime_gaps:
             gap_parts = [item.reason for item in fact_report.runtime_gaps[:2] if item.reason]
             if gap_parts:
-                updates.append(f"侦察提示：{'；'.join(gap_parts)}")
+                updates.append(f"Scouting Tips:{'; '.join(gap_parts)}")
 
         if fact_report.validation_checks:
             check_parts = [check.field or check.name for check in fact_report.validation_checks[:4]]
-            updates.append(f"动态验收字段：{'、'.join(check_parts)}")
+            updates.append(f"Dynamic acceptance fields:{', '.join(check_parts)}")
 
         return updates[:6]
 
@@ -1066,7 +1066,7 @@ class IterationController:
         import asyncio
         return await asyncio.get_event_loop().run_in_executor(None, self.run, spec)
 
-    # ==================== 失败告警（v3.6.0 项6 路径A） ====================
+    # ==================== Failure alarm (v3.6.0 item 6 path A) ====================
 
     def _write_iteration_alert(
         self,
@@ -1079,17 +1079,17 @@ class IterationController:
         engine: str = "legacy_pipeline",
         extra_metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """迭代失败后写入 skill_iteration_alerts 集合，供前端展示并等待人工决策。
+        """After the iteration fails, it is written to the skill_iteration_alerts collection for display by the front end and waiting for manual decision-making.
 
-        v3.6.0 项6 路径A：原本迭代失败后直接放弃，用户只能查看日志；
-        现在写入 MongoDB 集合，前端可展示失败原因，用户可选择：
-        - 手动调整 spec 后重新生成
-        - 直接放弃
-        - 标记为已解决（不再提示）
+        v3.6.0 Item 6 Path A: The original iteration failed and gave up directly, and the user could only view the log;
+        Now writing to the MongoDB collection, the front end can display the failure reason and the user can choose:
+        - Manually adjust spec and regenerate
+        - Give up directly
+        - Mark as solved (no more prompts)
 
-        失败处理策略：
-        - MongoDB 不可用 → 只记日志，不阻塞返回
-        - 写入异常 → 只记日志，不阻塞返回
+        Failure handling strategy:
+        - MongoDB Not available → Only log, no blocking return
+        - write exception → Only log, no blocking return
         """
         try:
             from app.core.database import get_mongo_db_sync
@@ -1097,10 +1097,10 @@ class IterationController:
 
             db = get_mongo_db_sync()
             if db is None:
-                logger.warning("[IterationAlert] db 句柄为空，跳过写入告警")
+                logger.warning("[IterationAlert] db The handle is empty and the write alarm is skipped.")
                 return
 
-            # 从 spec.metadata 提取关联上下文（session_id / user_id 等）
+            # Extract associated context (session_id / user_id etc.) from spec.metadata
             spec_metadata = getattr(spec, "metadata", None) or {}
             if not isinstance(spec_metadata, dict):
                 spec_metadata = {}
@@ -1110,7 +1110,7 @@ class IterationController:
             workshop_session_id = str(spec_metadata.get("workshop_session_id") or "")
             agent_spec_id = str(spec_metadata.get("agent_spec_id") or "")
 
-            # 收集每轮失败摘要（最多 5 轮，避免文档过大）
+            # Collect failure summaries for each round (up to 5 rounds to avoid overly large documents)
             round_summaries = []
             for it in iterations[-5:]:
                 round_summaries.append({
@@ -1149,7 +1149,7 @@ class IterationController:
                 upsert=True,
             )
             logger.info(
-                "[IterationAlert] 已写入告警 alert_id=%s tool_id=%s rounds=%d matched=%d modified=%d upserted=%s",
+                "[IterationAlert] Alarm written alert_id=%s tool_id=%s rounds=%d matched=%d modified=%d upserted=%s",
                 alert_doc["alert_id"],
                 spec.tool_id,
                 len(iterations),
@@ -1158,7 +1158,7 @@ class IterationController:
                 result.upserted_id is not None,
             )
         except Exception as exc:
-            logger.warning("[IterationAlert] 写入告警失败（不阻塞主流程）: %s", exc)
+            logger.warning("[IterationAlert] Failed to write alarm (does not block the main process): %s", exc)
 
     # ==================== Agentic Loop / pipeline_tool ====================
 
@@ -1173,13 +1173,13 @@ class IterationController:
         thinking_callback: Optional[Callable[[str, str], None]] = None,
         iteration_mode: str = "repair",
     ) -> PipelineResult:
-        """SkillGeneration 专用 Agent Loop。
+        """SkillGeneration Dedicated Agent Loop.
 
-        外层 LLM 可以在每轮 pipeline_tool 前后调用常驻查询/探针工具；pipeline_tool
-        只执行单轮候选生成与质控，不在内部做多轮重试。
+        The outer LLM can call the resident query/probe tool before and after each round of pipeline_tool;pipeline_tool
+        Only a single round of candidate generation and quality control is performed, and multiple rounds of retries are not performed internally.
 
-        iteration_mode: "repair"=失败后定向修复；"upgrade"=在已验证旧版本
-        （initial_code）上做最小改动升级，首轮代码生成携带升级基线与指令。
+        iteration_mode: "repair"=Directed repair after failure;"upgrade"=Verified in old version
+         (initial_code) Make minimal changes to the upgrade, and the first round of code generation carries the upgrade baseline and instructions.
         """
         start_time = time.time()
         run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -1187,7 +1187,7 @@ class IterationController:
         feedback = initial_feedback
         previous_code = initial_code
         verified_facts: List[str] = []
-        # 从侦察报告中继承已验证事实，避免 Agentic LLM 重复探索
+        # Inherit verified facts from reconnaissance reports to avoid repeated exploration by Agentic LLM
         if fact_report:
             for h in (fact_report.available_helpers or [])[:10]:
                 sig = (h.signature or "").strip()
@@ -1214,7 +1214,7 @@ class IterationController:
                 try:
                     progress_callback(stage, message, it, prog, extra)
                 except Exception as e:
-                    logger.warning("progress_callback 异常: %s", e)
+                    logger.warning("progress_callback Abnormal: %s", e)
 
         if fact_report is None:
             try:
@@ -1222,7 +1222,7 @@ class IterationController:
                 fact_report = self._reconnaissance.analyze(spec)
                 self._persist_fact_report(spec.tool_id, run_id, fact_report)
             except Exception as exc:
-                logger.warning("⚠️ Agentic 前置侦察失败，继续运行: %s", exc)
+                logger.warning("⚠️ Agentic Pre-reconnaissance failed, continue running: %s", exc)
         elif fact_report is not None:
             self._persist_fact_report(spec.tool_id, run_id, fact_report)
 
@@ -1260,7 +1260,7 @@ class IterationController:
             parent_code=(initial_code if iteration_mode == "upgrade" else ""),
         )
 
-        # 将完整的 agentic prompt 写入日志文件，方便排查 LLM 未调用推荐 helper 的问题
+        # Write the complete agentic prompt to the log file to facilitate troubleshooting the problem that LLM does not call the recommended helper
         self._dump_agentic_prompt_to_logfile(spec, agentic_system_prompt, agentic_user_prompt, fact_report)
 
         messages: List[Message] = [
@@ -1271,7 +1271,7 @@ class IterationController:
         final_result: Optional[PipelineToolResult] = None
         failure_result: Optional[PipelineToolResult] = None
         stale_failure_counts: Dict[str, int] = {}
-        # 探索节奏跟踪：避免 LLM 浪费步数在重复探索上
+        # Exploration rhythm tracking: avoid LLM wasting steps on repeated exploration
         consecutive_explore_steps = 0
         total_explore_steps = 0
         _MAX_CONSECUTIVE_EXPLORE = 2
@@ -1299,7 +1299,7 @@ class IterationController:
                     tool_choice="auto",
                 )
             except Exception as exc:
-                logger.warning("Agentic Loop LLM 调用失败，降级为单轮 pipeline_tool: %s", exc)
+                logger.warning("Agentic Loop LLM The call fails and is downgraded to a single round pipeline_tool: %s", exc)
                 tools["pipeline_tool"]()
                 failure_result = self._last_agentic_pipeline_result
                 if failure_result and failure_result.iteration:
@@ -1308,7 +1308,7 @@ class IterationController:
 
             if response.has_tool_calls:
                 tool_names = [str(call.name or "") for call in response.tool_calls]
-                # 判断本步是否调用了 pipeline_tool
+                # Determine whether this step is called pipeline_tool
                 step_called_pipeline = any(name == "pipeline_tool" for name in tool_names)
                 logger.info(
                     "🤖 [AgenticSkill] step=%s tool_calls=%s pipeline=%s tool_id=%s",
@@ -1363,21 +1363,21 @@ class IterationController:
                                 messages.append(Message(
                                     role="user",
                                     content=(
-                                        "上一轮 pipeline_tool 失败摘要如下，请基于它决定下一步："
-                                        "需要查真实数据就调用 run_readonly_query，需要探测接口就调用 probe_interface，"
-                                        "需要诊断脚本就调用 run_diagnostic_script，信息足够后再调用 pipeline_tool。\n"
+                                        "The summary of the previous round of pipeline_tool failures is as follows. Please decide the next step based on it:"
+                                        "If you need to check real data, call run_readonly_query. If you need to detect the interface, call probe_interface."
+                                        "If you need a diagnostic script, call run_diagnostic_script, and then call pipeline_tool when the information is sufficient.\n"
                                         f"{latest.failure_summary}"
                                     ),
                                 ))
-                                # 静态验证是纯确定性检查（无环境噪声）：同一签名连续 2 次
-                                # 即说明 LLM 修不动，通常是规格级错误（如参数名不可实现），
-                                # 早熔断省一轮 2-4 分钟的代码生成
+                                # Static verification is a purely deterministic check (no ambient noise): the same signature 2 times in a row
+                                # This means that LLM cannot be repaired, which is usually a specification-level error (such as an unrealizable parameter name).
+                                # Early circuit breaker saves 2-4 minutes of code generation
                                 is_static_sig = signature.startswith("静态验证失败")
                                 effective_threshold = 2 if is_static_sig else _STALE_FAILURE_THRESHOLD
                                 if stale_failure_counts[signature] >= effective_threshold:
                                     blocked_hint = (
-                                        "该错误为确定性校验失败且两轮重试未变，"
-                                        "大概率是规格问题而非代码问题——请检查 SkillSpec 的参数定义是否可实现。"
+                                        "This error is a deterministic verification failure and has not changed after two rounds of retries."
+                                        "Most likely it s a specification issue rather than a code issue——Please check if the SkillSpec s parameter definitions are implementable."
                                         if is_static_sig
                                         else ""
                                     )
@@ -1405,16 +1405,16 @@ class IterationController:
                     break
                 if failure_result and (failure_result.status == "blocked" or not failure_result.should_retry):
                     break
-                # 探索节奏统计：若本步未调用 pipeline_tool，记为探索步
+                # Exploration rhythm statistics: If pipeline_tool is not called in this step, it is recorded as an exploration step.
                 if not step_called_pipeline:
                     consecutive_explore_steps += 1
                     total_explore_steps += 1
                     if consecutive_explore_steps >= _MAX_CONSECUTIVE_EXPLORE or total_explore_steps >= _MAX_TOTAL_EXPLORE:
-                        # 注入强制提醒，推动 LLM 下一步直接调用 pipeline_tool
+                        # Inject mandatory reminders to push LLM to call the next step directly pipeline_tool
                         reminder = (
                             f"⚠️ 你已连续探索 {consecutive_explore_steps} 步（累计 {total_explore_steps} 步），"
-                            f"超过探索预算。下一步必须直接调用 pipeline_tool 生成代码，"
-                            f"不要再调用 run_readonly_query / probe_interface / run_diagnostic_script / describe_runtime_helper 等探索工具。"
+                            f"Exploration budget exceeded. The next step must be to directly call pipeline_tool to generate code."
+                            f"Stop calling exploration tools such as run_readonly_query / probe_interface / run_diagnostic_script / describe_runtime_helper."
                         )
                         messages.append(Message(role="user", content=reminder))
                         logger.warning(
@@ -1422,7 +1422,7 @@ class IterationController:
                             spec.tool_id, step, consecutive_explore_steps, total_explore_steps,
                         )
                 else:
-                    # 调用过 pipeline_tool，重置连续计数
+                    # Pipeline_tool has been called to reset the continuous count
                     consecutive_explore_steps = 0
                 continue
 
@@ -1430,7 +1430,7 @@ class IterationController:
             if content:
                 messages.append(Message(role="assistant", content=content))
             if not iterations:
-                logger.info("Agentic Loop 未调用 pipeline_tool，强制执行一轮受治理生成。")
+                logger.info("Agentic Loop pipeline_tool was not called, forcing a round of governed builds.")
                 tools["pipeline_tool"]()
                 failure_result = self._last_agentic_pipeline_result
                 if failure_result and failure_result.iteration:
@@ -1439,17 +1439,17 @@ class IterationController:
                     final_result = failure_result
             break
 
-        # 兜底：如果 LLM 用尽所有步骤仍未通过（无论是否调用过 pipeline_tool），强制再执行一轮
+        # Bottom line: If LLM has exhausted all steps and still fails (regardless of whether pipeline_tool has been called), another round of execution will be forced.
         if not final_result:
             last_round = iterations[-1] if iterations else None
             last_feedback = last_round.feedback if last_round else ""
             logger.warning(
-                "🤖 [AgenticSkill] LLM 用尽 %s 步仍未通过，强制再执行一轮 pipeline_tool tool_id=%s last_feedback=%s",
+                "🤖 [AgenticSkill] LLM After exhausting %s steps and still not passing, another round is forced. pipeline_tool tool_id=%s last_feedback=%s",
                 self._max_iterations,
                 spec.tool_id,
                 (last_feedback[:80] + "...") if last_feedback else "(none)",
             )
-            # 把最后一轮的失败反馈写入 agentic_state，让 pipeline_tool 定向修复
+            # Write the last round of failure feedback to agentic_state and let pipeline_tool perform directed repairs.
             if last_feedback:
                 agentic_state["feedback"] = last_feedback
             tools["pipeline_tool"]()
@@ -1461,7 +1461,7 @@ class IterationController:
 
         total_time = round(time.time() - start_time, 2)
         if final_result:
-            _report("output_evaluation", "Agentic Skill 生成通过", final_result.round_number, 1.0)
+            _report("output_evaluation", "Agentic Skill Generate via", final_result.round_number, 1.0)
             logger.info(
                 "🤖 [AgenticSkill] success tool_id=%s rounds=%s total_time=%.2fs trace_events=%s verified_facts=%s",
                 spec.tool_id,
@@ -1485,7 +1485,7 @@ class IterationController:
                 total_time=total_time,
             )
 
-        error = self._build_failure_summary(iterations) if iterations else "Agentic Skill 生成未产生有效候选代码"
+        error = self._build_failure_summary(iterations) if iterations else "Agentic Skill Generate no valid candidate code"
         if failure_result and failure_result.failure_summary:
             error = failure_result.failure_summary + "\n\n" + error
         logger.warning(
@@ -1497,7 +1497,7 @@ class IterationController:
             len(verified_facts),
             error[:500],
         )
-        # v3.6.0 项6 路径A：失败后写入 skill_iteration_alerts 集合，等待人工决策
+        # v3.6.0 Item 6 Path A: Write to the skill_iteration_alerts collection after failure and wait for manual decision-making
         self._write_iteration_alert(
             spec=spec,
             run_id=run_id,
@@ -1613,10 +1613,10 @@ class IterationController:
         )
 
         def run_diagnostic_script(script: str) -> str:
-            """在构建期沙箱中执行诊断脚本，用于确认真实字段、接口返回形状和数据覆盖率。
-            脚本内可直接 import core.skill_runtime.data_access / core.skill_runtime.project_access 验证返回形状；
-            也可调用 hermes_tools.run_readonly_query / hermes_tools.probe_interface 等侦察函数（仅诊断用）。
-            最终 Skill 代码不得依赖 hermes_tools，只能使用 core.skill_runtime.* 公开 API。"""
+            """Execute diagnostic scripts in the build-time sandbox to confirm real fields, interface return shapes, and data coverage.
+            You can directly import core.skill_runtime.data_access / core.skill_runtime.project_access in the script to verify the returned shape;
+            Reconnaissance functions such as hermes_tools.run_readonly_query / hermes_tools.probe_interface can also be called (for diagnostic purposes only).
+            The final Skill code must not rely on hermes_tools and can only use core.skill_runtime.* Public API."""
             logger.info(
                 "🤖 [AgenticSkill] diagnostic_script tool_id=%s script_chars=%s",
                 spec.tool_id,
@@ -1634,12 +1634,12 @@ class IterationController:
             return json.dumps(payload, ensure_ascii=False, default=str)
 
         def pipeline_tool() -> str:
-            """执行一轮受治理的候选 Skill 生成与质控。
-            单轮包含：代码生成、静态校验、沙箱执行、Judge 评分、业务验收和边缘测试。
-            不会在工具内部自动进入下一轮；下一步由 Agent Loop 决定。"""
+            """Perform a round of governed candidate skill generation and quality control.
+            A single round includes: code generation, static verification, sandbox execution, Judge scoring, business acceptance and edge testing.
+            There is no automatic progression to the next loop within the tool; the next step is determined by the Agent Loop."""
             round_num = len(iterations) + 1
-            # 仅首轮（基于父版本代码）用升级文案；首轮之后 previous_code 已换成
-            # 本轮新生成的代码，属于失败修复语义
+            # Only the first round (based on the parent version code) uses the upgrade copy; after the first round, previous_code has been replaced by
+            # The newly generated code in this round belongs to failure repair semantics
             round_mode = "upgrade" if iteration_mode == "upgrade" and round_num == 1 else "repair"
             result = self._run_pipeline_tool_once(
                 spec=spec,
@@ -1680,83 +1680,83 @@ class IterationController:
 
     @staticmethod
     def _build_agentic_system_prompt(spec: Optional[SkillSpec] = None) -> str:
-        """Agent Loop 协调者 system prompt，按需求类型分流。
+        """Agent Loop Coordinator system prompt, split according to demand type.
 
-        external_api（外部接口集成，如懂车帝）：去掉本地 helper 复用/数据源标签/
-        股票代码预检等本地数据假设，替换为外部接口防御规则。
+        external_api (External interface integration, such as understanding Chedi): remove the local helper reuse/data source tag/
+        Local data assumptions such as stock code preflight are replaced with external interface defense rules.
         """
         from .requirement_analyzer import classify_requirement_mode
 
         mode = classify_requirement_mode(spec) if spec is not None else "local_data"
         if mode == "external_api":
-            return """你是 SkillGeneration 专用 Agent Loop，不是普通聊天助手。
-目标：生成一个可注册的 Python Skill，并通过平台硬性质控。
+            return """You are a SkillGeneration-specific Agent Loop, not an ordinary chat assistant.
+Goal: Generate a registrable Python Skill and pass the platform s hard quality control.
 
-本需求为外部接口集成：数据来自外部 API（与本地股票数据库无关），不要建议查询本地股票集合或使用本地股票数据 helper。
+This requirement is for external interface integration: the data comes from an external API (not related to the local stock database). It is not recommended to query the local stock collection or use the local stock data helper.
 
-你可以调用工具：
-- pipeline_tool：执行一轮受治理的候选代码生成与质控（代码生成→静态校验→沙箱执行→评分）。这是核心工具，必须调用。
-- run_readonly_query：查询真实样本文档，确认字段和覆盖率（仅在 pipeline_tool 失败后需要核实字段时使用）。
-- probe_interface：真实调用已登记 helper，确认返回形状（仅在 pipeline_tool 失败后需要确认接口形状时使用）。
-- run_diagnostic_script：执行构建期诊断脚本，脚本内可直接 import core.skill_runtime.* 或 core.tools.implementations.* 来验证返回形状。
-- list_external_data_sources：列出系统已登记的外部数据源目录。
-- inspect_collection_schema / inspect_symbol_sample / check_field_coverage / describe_runtime_helper / list_runtime_functions：结构探测工具。
+You can call the tool:
+- pipeline_tool: Perform a round of governed candidate code generation and quality control (code generation→Static verification→sandbox execution→rating). This is the core tool and must be called.
+- run_readonly_query: Query real sample documents to confirm fields and coverage (only used when fields need to be verified after pipeline_tool fails).
+- probe_interface: The actual call has registered helper to confirm the return shape (only used when the interface shape needs to be confirmed after pipeline_tool fails).
+- run_diagnostic_script: Execute the build-time diagnostic script, which can be directly import core.skill_runtime.* or core.tools.implementations.* to verify the returned shape.
+- list_external_data_sources: List the external data source directories registered in the system.
+- inspect_collection_schema / inspect_symbol_sample / check_field_coverage / describe_runtime_helper / list_runtime_functions: Structural exploration tools.
 
-关键规则（按优先级）：
-1. 侦察报告（fact_report）已经为你准备好了，包含接口事实、推荐策略和验证检查。请直接调用 pipeline_tool 生成代码，不要重复侦察。
-2. pipeline_tool 是核心工具。第一轮请直接调用 pipeline_tool，不要先做任何探索。
-3. 只有当 pipeline_tool 返回 failure_summary 且失败原因明确是"字段名错误""接口返回形状不匹配""数据源不可用"时，才使用 probe_interface / run_diagnostic_script 等工具针对性核实，然后再次调用 pipeline_tool。
-4. 最终 Skill 代码必须是独立可运行的同步纯 Python 函数（禁止 async def / await）；
-   允许使用 requests 等标准 HTTP 库直接调用外部接口，不要导入 core.skill_runtime 本地数据模块。
-   禁止依赖 hermes_tools、RPC stub、构建期诊断工具、agent_builder/assistant_ops/skill_builder 等流程类工具。
-5. 接口字段以实际响应为准：字段映射必须来自侦察报告确认的响应结构，禁止臆造字段名或路径。
-6. 不要跳过 pipeline_tool；只有 pipeline_tool pass 才算成功。
-7. 如果确认外部接口无法提供目标能力（限流/鉴权/字段缺失），应停止重试并说明阻塞原因。
-8. 最多 10 步。每步要么调用 pipeline_tool，要么做针对性核实，不要无目的探索。
-9. **探索节奏约束**：连续探索步数（非 pipeline_tool 调用）不得超过 2 步；累计探索步数不得超过 4 步。每 3 步内至少调用 1 次 pipeline_tool。
-10. 🛡️ 外部接口错误预防（生成的代码必须遵循，避免边缘测试失败）：
-   - 参数防御：必填参数缺失或格式非法时立即返回 {"status": "error", "error_code": "invalid_param", "message": ...}，不发起网络请求。
-   - HTTP 调用必须设置超时（timeout=10 左右）并 try-except 包裹；限流时短暂退避，不要在循环里逐条打接口。
-   - 数据为空时优雅返回：{"status": "success", "data": [], "message": "未找到xxx数据"}，绝不可伪造数据。
-   - 返回值一致性：无论成功失败，返回 dict 必须包含 status 字段（"success"/"error"）。
-   - 异常兜底：主函数体用 try-except 包裹，捕获异常后返回结构化错误响应，不要抛出未捕获异常。
-   - 边缘测试会传入非法参数值，代码必须在 5 秒内返回错误响应，不能超时。"""
+Key rules (in order of priority):
+1. Reconnaissance reports (fact_reports) are already prepared for you, containing interface facts, recommended strategies, and validation checks. Please call pipeline_tool directly to generate code and do not repeat reconnaissance.
+2. pipeline_tool It is the core tool. Please call pipeline_tool directly in the first round without doing any exploration first.
+3. Only when pipeline_tool returns failure_summary and the failure reason is clearly"Field name error""The interface return shape does not match""Data source is not available"Only then use probe_interface / run_diagnostic_script and other tools for targeted verification, and then call pipeline_tool again.
+4. The final Skill code must be an independently runnable synchronous pure Python function (async def / await is prohibited);
+   Allow using standard HTTP libraries such as requests to directly call external interfaces, and do not import the core.skill_runtime local data module.
+   It is prohibited to rely on process tools such as hermes_tools, RPC stub, build-time diagnostic tools, agent_builder/assistant_ops/skill_builder, etc.
+5. The interface fields are subject to the actual response: field mapping must come from the response structure confirmed by the reconnaissance report, and inventing field names or paths is prohibited.
+6. Don t skip pipeline_tool; only pipeline_tool pass counts as success.
+7. If it is confirmed that the external interface cannot provide the target capability (current limitation/authentication/field missing), stop retrying and explain the reason for the blocking.
+8. Maximum of 10 steps. Either call pipeline_tool at each step, or do targeted verification instead of aimless exploration.
+9. **Explore rhythm constraints**: The number of continuous exploration steps (non-pipeline_tool call) must not exceed 2 steps; the cumulative number of exploration steps must not exceed 4 steps. Pipeline_tool is called at least once every 3 steps.
+10. 🛡️ External interface error prevention (generated code must follow to avoid edge test failures):
+   - Parameter defense: Return immediately when required parameters are missing or illegal in format {"status": "error", "error_code": "invalid_param", "message": ...}, No network request is initiated.
+   - HTTP The call must set a timeout (timeout=10 left and right) and wrap it with try-except; temporarily back off when the current is limited, and do not open interfaces one by one in a loop.
+   - Return gracefully when the data is empty:{"status": "success", "data": [], "message": "No xxx data found"}, Never falsify data.
+   - Return value consistency: Regardless of success or failure, the returned dict must contain the status field ("success"/"error") . 
+   - Exception coverage: The main function body is wrapped with try-except, and a structured error response is returned after catching the exception. Do not throw uncaught exceptions.
+   - Edge testing will pass in illegal parameter values, and the code must return an error response within 5 seconds without timeout."""
 
-        return """你是 SkillGeneration 专用 Agent Loop，不是普通聊天助手。
-目标：生成一个可注册的 Python Skill，并通过平台硬性质控。
+        return """You are a SkillGeneration-specific Agent Loop, not an ordinary chat assistant.
+Goal: Generate a registrable Python Skill and pass the platform s hard quality control.
 
-你可以调用工具：
-- pipeline_tool：执行一轮受治理的候选代码生成与质控（代码生成→静态校验→沙箱执行→评分）。这是核心工具，必须调用。
-- run_readonly_query：查询真实样本文档，确认字段和覆盖率（仅在 pipeline_tool 失败后需要核实字段时使用）。
-- probe_interface：真实调用已登记 helper，确认返回形状（仅在 pipeline_tool 失败后需要确认接口形状时使用）。
-- run_diagnostic_script：执行构建期诊断脚本，脚本内可直接 import core.skill_runtime.* 或 core.tools.implementations.* 来验证返回形状。
-- list_analysis_tools：列出所有可复用的分析类工具（fundamentals/market/technical/portfolio/risk 等 180+ 个）及其完整导入路径。生成的 Skill 代码可直接 from <module_path> import <function_name> 调用这些工具。
-- inspect_collection_schema / inspect_symbol_sample / check_field_coverage / describe_runtime_helper / list_runtime_functions：结构探测工具。
+You can call the tool:
+- pipeline_tool: Perform a round of governed candidate code generation and quality control (code generation→Static verification→sandbox execution→rating). This is the core tool and must be called.
+- run_readonly_query: Query real sample documents to confirm fields and coverage (only used when fields need to be verified after pipeline_tool fails).
+- probe_interface: The actual call has registered helper to confirm the return shape (only used when the interface shape needs to be confirmed after pipeline_tool fails).
+- run_diagnostic_script: Execute the build-time diagnostic script, which can be directly import core.skill_runtime.* or core.tools.implementations.* to verify the returned shape.
+- list_analysis_tools: List all reusable analysis tools (fundamentals/market/technical/portfolio/risk, etc. 180+ ) and its complete import path. The generated Skill code can be directly from <module_path> import <function_name> Call these tools.
+- inspect_collection_schema / inspect_symbol_sample / check_field_coverage / describe_runtime_helper / list_runtime_functions: Structural exploration tools.
 
-关键规则（按优先级）：
-1. 侦察报告（fact_report）已经为你准备好了，包含可用 helper、推荐策略和验证检查。请直接调用 pipeline_tool 生成代码，不要重复侦察。
-2. pipeline_tool 是核心工具。第一轮请直接调用 pipeline_tool，不要先做任何探索。
-3. 只有当 pipeline_tool 返回 failure_summary 且失败原因明确是"字段名错误""接口返回形状不匹配""数据源不可用"时，才使用 run_readonly_query / probe_interface / run_diagnostic_script 等工具针对性核实，然后再次调用 pipeline_tool。
-4. 最终 Skill 代码允许导入以下模块：
-   - core.skill_runtime.data_access / core.skill_runtime.project_access / core.skill_runtime.standard_financial_apis（标准数据访问）
-   - core.tools.implementations.fundamentals / market / technical / portfolio / risk / news / social / trade_review / legacy_bridge（180+ 个分析工具，与 agent 工坊共享）
-   禁止依赖 hermes_tools、RPC stub、构建期诊断工具、agent_builder/assistant_ops/skill_builder 等流程类工具。
-5. 必须复用已有工具：如果 fact_report.available_helpers 中已有完成目标能力的工具，必须直接 import 调用，禁止自行实现等价的数据获取逻辑。
-6. **数据源标签使用规则**（根据 available_helpers 中每个 helper 的 data_source_handling 标签决策）：
-   - `self_contained`：helper 已自包含数据源调用，直接调用即可，不要再额外调用外部数据源补数据
-   - `local_only`：helper 只查本地 MongoDB，若返回为空或数据不足，需在 skill 中补充外部数据源调用（如 tushare/akshare/finnhub）或 core.skill_runtime.external_sources
-   - `partial`：helper 仅覆盖部分需求，需结合其它 helper 或补充数据源/计算逻辑一起使用
-7. 不要跳过 pipeline_tool；只有 pipeline_tool pass 才算成功。
-8. 如果确认数据源无法提供目标能力，应停止重试并说明阻塞原因。
-9. 最多 10 步。每步要么调用 pipeline_tool，要么做针对性核实，不要无目的探索。
-10. **探索节奏约束**：连续探索步数（非 pipeline_tool 调用）不得超过 2 步；累计探索步数不得超过 4 步。每 3 步内至少调用 1 次 pipeline_tool。若 fact_report 已给出 helper 签名，直接调用 pipeline_tool，不要先 probe_interface 验证。
-11. 🛡️ 通用错误预防（生成的代码必须遵循，避免边缘测试失败）：
-   - 股票代码预检：函数开头用 get_stock_basic_info(symbol) 验证，不存在时立即返回 {"status": "error", "error_code": "symbol_not_found", "message": ..., "symbol": symbol}，不要继续后续查询。
-   - 数据为空时优雅返回：关键数据查询结果为空时返回结构化错误响应，不要让后续计算崩溃。
-   - 除零保护：所有比率计算用安全除法（denominator 为 0 或接近 0 时返回 None）。
-   - 异常兜底：主函数体用 try-except 包裹，捕获异常后返回结构化错误响应，不要抛出未捕获异常。
-   - 返回值一致性：无论成功失败，返回 dict 必须包含 status 字段（"success"/"error"）和 symbol 字段。
-   - 边缘测试会传入不存在的股票代码，代码必须在 5 秒内返回错误响应，不能超时。"""
+Key rules (in order of priority):
+1. The recon report (fact_report) is already prepared for you, including available helpers, recommended strategies and validation checks. Please call pipeline_tool directly to generate code and do not repeat reconnaissance.
+2. pipeline_tool It is the core tool. Please call pipeline_tool directly in the first round without doing any exploration first.
+3. Only when pipeline_tool returns failure_summary and the failure reason is clearly"Field name error""The interface return shape does not match""Data source is not available"Only then use tools such as run_readonly_query / probe_interface / run_diagnostic_script to verify specifically, and then call pipeline_tool again.
+4. The final Skill code allows the following modules to be imported:
+   - core.skill_runtime.data_access / core.skill_runtime.project_access / core.skill_runtime.standard_financial_apis (Standard data access)
+   - core.tools.implementations.fundamentals / market / technical / portfolio / risk / news / social / trade_review / legacy_bridge (180+ analysis tool, shared with the agent workshop)
+   It is prohibited to rely on process tools such as hermes_tools, RPC stub, build-time diagnostic tools, agent_builder/assistant_ops/skill_builder, etc.
+5. Existing tools must be reused: If there is a tool in fact_report.available_helpers that completes the target capability, it must be directly imported and called, and it is prohibited to implement equivalent data acquisition logic by yourself.
+6. **Data source label usage rules** (Decision based on data_source_handling tag of each helper in available_helpers):
+   - `self_contained`: helper The self-contained data source has been called. Just call it directly. Do not call additional external data sources to supplement the data.
+   - `local_only`: helper Only check the local MongoDB. If the return is empty or there is insufficient data, you need to supplement the external data source call in the skill (such as tushare/akshare/finnhub) or core.skill_runtime.external_sources
+   - `partial`: helper Only covers part of the requirements and needs to be used in conjunction with other helpers or supplementary data sources/calculation logic
+7. Don t skip pipeline_tool; only pipeline_tool pass counts as success.
+8. If it is confirmed that the data source cannot provide the target capability, the retry should be stopped and the reason for the blocking should be explained.
+9. Maximum of 10 steps. Either call pipeline_tool at each step, or do targeted verification instead of aimless exploration.
+10. **Explore rhythm constraints**: The number of continuous exploration steps (non-pipeline_tool call) must not exceed 2 steps; the cumulative number of exploration steps must not exceed 4 steps. Pipeline_tool is called at least once every 3 steps. If fact_report has given a helper signature, call pipeline_tool directly without verifying with probe_interface first.
+11. 🛡️ General error prevention (generated code must follow to avoid edge test failures):
+   - Stock code preflight: used at the beginning of the function get_stock_basic_info(symbol) Verify, return immediately if it does not exist {"status": "error", "error_code": "symbol_not_found", "message": ..., "symbol": symbol}, Do not proceed with follow-up inquiries.
+   - Return gracefully when the data is empty: Return a structured error response when the key data query result is empty, so that subsequent calculations do not crash.
+   - Division-by-zero protection: Use safe division for all ratio calculations (returns None when denominator is 0 or close to 0).
+   - Exception coverage: The main function body is wrapped with try-except, and a structured error response is returned after catching the exception. Do not throw uncaught exceptions.
+   - Return value consistency: Regardless of success or failure, the returned dict must contain the status field ("success"/"error") and symbol fields.
+   - The edge test is passed in a stock symbol that does not exist, and the code must return an error response within 5 seconds without timeout."""
 
     @staticmethod
     def _extract_known_context_from_spec(spec: SkillSpec) -> Dict[str, List[str]]:
@@ -1776,26 +1776,26 @@ class IterationController:
         known_context: Optional[Dict[str, List[str]]] = None,
         parent_code: str = "",
     ) -> str:
-        # 只提取关键摘要，避免注入完整 fact_report JSON（过大且不聚焦）
+        # Extract only key summaries, avoid injecting full fact_report JSON (too large and unfocused)
         recon_digest = ""
         if fact_report:
             parts = []
-            # 1. 推荐策略（1 行）
+            # 1. Recommended strategy (1 line)
             if fact_report.recommended_strategy:
                 parts.append(f"【推荐策略】\n{fact_report.recommended_strategy}")
-            # 2. 已验证的可用 helper（名称 + 模块 + 签名 + 数据源标签，每项 1-2 行）
+            # 2. Authenticated available helper(name + module + signature + Data source labels, 1-2 lines per item)
             if fact_report.available_helpers:
                 helper_lines = []
-                for h in fact_report.available_helpers[:15]:  # 最多 15 个
-                    sig = (h.signature or "")[:120]  # 签名截断
+                for h in fact_report.available_helpers[:15]:  # Up to 15
+                    sig = (h.signature or "")[:120]  # Signature truncation
                     ds = h.data_source_handling or "self_contained"
                     helper_lines.append(f"- {h.name} | {h.module} | {sig} | 数据源:{ds}")
                 parts.append(
-                    "【已验证可用 helper（无需重复探索）】\n"
-                    + "  数据源标签: self_contained=自包含(直接调用); local_only=仅本地MongoDB(可能需补充外部数据源); partial=部分覆盖\n"
+                    " [Verified helper is available (no need to repeat exploration)] \n"
+                    + "  Data source tag: self_contained=self contained(call directly); local_only=local only MongoDB(May need to supplement external data sources); partial=partial coverage\n"
                     + "\n".join(helper_lines)
                 )
-            # 3. 已验证事实（每项 1 行，最多 12 条）
+            # 3. Verified facts (1 line each, maximum 12)
             if fact_report.schema_facts:
                 fact_lines = []
                 for f in fact_report.schema_facts[:12]:
@@ -1804,7 +1804,7 @@ class IterationController:
                         fact_lines.append(f"- {desc[:150]}")
                 if fact_lines:
                     parts.append("【已验证字段事实】\n" + "\n".join(fact_lines))
-            # 4. 禁止路径（每项 1 行，最多 5 条）
+            # 4. Forbidden paths (1 line each, maximum 5)
             if fact_report.blocked_paths:
                 blocked_lines = [f"- {p.path}: {p.reason}" for p in fact_report.blocked_paths[:5]]
                 parts.append("【禁止路径】\n" + "\n".join(blocked_lines))
@@ -1814,32 +1814,32 @@ class IterationController:
         known_failures = "\n".join(f"- {item}" for item in list(known_context.get("known_failure_summaries") or [])[:5])
         known_facts = "\n".join(f"- {item}" for item in list(known_context.get("known_verified_facts") or [])[:12])
 
-        # 接口预检实测事实（external_api 模式）：与 codegen user prompt 共用同一区块，
-        # 协调者据此写反馈——不会给出「把被忽略的业务过滤参数拼进 URL」这类错误指导
+        # Interface preflight measured facts (external_api mode): shares the same block with codegen user prompt,
+        # The coordinator writes feedback accordingly——Wrong guidance such as "Spelling ignored business filtering parameters into the URL" will not be given.
         from .interface_preflight import build_preflight_facts_text
 
         preflight_block = build_preflight_facts_text(
             (getattr(spec, "metadata", None) or {}).get("interface_preflight")
         )
 
-        # 版本升级场景：父版本是已验证基线，协调者必须规划「最小改动」而非从零重做
+        # Version upgrade scenario: The parent version is a verified baseline, and the coordinator must plan "minimal changes" instead of redoing it from scratch
         upgrade_block = ""
         if parent_code:
             from .code_generator import CodeGenerator
 
             parent_snippet = CodeGenerator._format_previous_code_for_prompt(parent_code)
             upgrade_block = f"""
-【⬆️ 版本升级任务 — 这是对已有 Skill 的升级，不是从零生成】
+ [⬆️ Version upgrade tasks — This is an upgrade to an existing Skill, not generated from scratch]
 
-当前版本代码（已通过验证，是本次升级的基线）：
+Current version code (has been verified and is the baseline for this upgrade):
 ```python
 {parent_snippet}
 ```
 
-升级规划要求：
-- 先识别新规格与当前版本的差异点（加字段/加参数/调整过滤等），只让 pipeline_tool 改动差异相关代码
-- 当前版本的请求构造、分页、重试、响应解析、本地过滤、字段映射等已验证逻辑必须保留，严禁指示 pipeline_tool 重写
-- 若首轮候选把已验证逻辑改坏，后续反馈中明确要求回退到基线实现
+Upgrade planning requirements:
+- First identify the differences between the new specifications and the current version (add fields/add parameters/adjust filtering, etc.), and only let pipeline_tool change the difference-related code
+- The current version of request construction, paging, retry, response parsing, local filtering, field mapping and other verified logic must be retained, and it is strictly prohibited to instruct pipeline_tool to rewrite
+- If the first-round candidate changes the verified logic, follow-up feedback will clearly require a return to the baseline implementation.
 """
         return f"""请完成以下 Skill 生成任务。
 
@@ -1959,7 +1959,7 @@ class IterationController:
                     validation.errors[:5],
                 )
                 iteration.decision = "RETRY"
-                summary = "静态验证失败：" + "；".join(validation.errors[:5])
+                summary = "Static validation failed:" + "；".join(validation.errors[:5])
                 iteration.feedback = self._build_rich_feedback(stage="静态验证", errors=validation.errors, code=generated.code, spec=spec)
                 return _finish("fail", summary)
 
@@ -2035,20 +2035,20 @@ class IterationController:
                 },
                 code=generated.code,
             )
-            # 评估结果实时透出（含业务验收是否通过）
+            # The evaluation results are disclosed in real time (including whether the business acceptance is passed)
             _eval_extra = self._build_eval_result_extra(eval_score, round_num)
             _eval_extra["eval_result"]["business_passed"] = business_verification.passed
             _eval_passed = eval_score.total >= PASS_THRESHOLD
             _report(
                 "output_evaluation",
-                f"质量评估完成：{eval_score.total}/10（{'达标' if _eval_passed else '未达标'}）",
+                f"Quality assessment completed:{eval_score.total}/10 ({'Meet the standard' if _eval_passed else 'Not up to standard'}) ",
                 0.77,
                 extra=_eval_extra,
             )
 
             if self._is_systemic_business_verifier_failure(business_verification):
                 iteration.decision = "FAIL"
-                summary = "系统级业务验收规则配置错误，当前失败并非代码实现缺陷。"
+                summary = "The system-level business acceptance rules are configured incorrectly, and the current failure is not a code implementation defect."
                 iteration.feedback = summary
                 return _finish("blocked", summary, should_retry=False)
 
@@ -2060,7 +2060,7 @@ class IterationController:
                     eval_score.total,
                     business_verification.passed,
                 )
-                _report("edge_testing", "正在执行边缘测试验证...", 0.8)
+                _report("edge_testing", "Performing edge test verification...", 0.8)
                 edge_failures = self._run_edge_tests(generated.code, spec)
                 if edge_failures:
                     reflection = self._reflect_on_failure(
@@ -2088,7 +2088,7 @@ class IterationController:
                     return _finish("fail", self._build_agentic_failure_summary(iteration), should_retry=reflection.should_retry)
 
                 iteration.decision = "PASS"
-                result = _finish("pass", "pipeline_tool 单轮质控通过", should_retry=False)
+                result = _finish("pass", "pipeline_tool Passed single round of quality control", should_retry=False)
                 logger.info(
                     "🔁 [pipeline_tool] pass tool_id=%s round=%s code_path=%s snapshot=%s",
                     spec.tool_id,
@@ -2145,22 +2145,22 @@ class IterationController:
                 should_retry=reflection.should_retry,
             )
         except Exception as exc:
-            logger.error("pipeline_tool 单轮执行异常: %s", exc, exc_info=True)
-            # 异常（尤其是代码生成超时）必须显式上报到进度流，
-            # 否则前端停留在“正在生成代码...”看不到失败原因
+            logger.error("pipeline_tool Single round execution exception: %s", exc, exc_info=True)
+            # Exceptions (especially code generation timeouts) must be reported explicitly to the progress stream,
+            # Otherwise the front end stays at"Generating code..."Can't see the reason for failure
             exc_text = str(exc)
             is_timeout = "timed out" in exc_text.lower() or "timeout" in exc_text.lower()
             if is_timeout:
                 _report(
                     "error",
                     f"第 {round_num} 轮代码生成超时（{codegen_timeout or CODEGEN_LLM_TIMEOUT_SECONDS}s）: {exc_text}。"
-                    "可在生成失败后调大超时时长重新提交。",
+                    "You can increase the timeout period and resubmit after the generation fails.",
                     0.95,
                 )
             else:
                 _report("error", f"第 {round_num} 轮执行异常: {exc_text}", 0.95)
             iteration.decision = "FAIL"
-            iteration.feedback = f"pipeline_tool 执行异常: {exc}"
+            iteration.feedback = f"pipeline_tool Execution exception: {exc}"
             return _finish("blocked", iteration.feedback, should_retry=False)
 
     @staticmethod
@@ -2178,26 +2178,26 @@ class IterationController:
     def _build_agentic_failure_summary(iteration: IterationRound) -> str:
         parts: List[str] = [f"第 {iteration.round_number} 轮失败"]
         if iteration.validation and not iteration.validation.passed:
-            parts.append("静态验证失败：" + "；".join(iteration.validation.errors[:5]))
+            parts.append("Static validation failed:" + "；".join(iteration.validation.errors[:5]))
         if iteration.sandbox and not iteration.sandbox.success:
-            parts.append(f"沙箱执行失败：{iteration.sandbox.error or '未知错误'}")
+            parts.append(f"Sandbox execution failed:{iteration.sandbox.error or 'unknown error'}")
             if iteration.sandbox.stdout:
-                parts.append("stdout 摘要：" + IterationController._summarize_text(iteration.sandbox.stdout, max_chars=1000))
+                parts.append("stdout Summary:" + IterationController._summarize_text(iteration.sandbox.stdout, max_chars=1000))
             if iteration.sandbox.stderr:
-                parts.append("stderr 摘要：" + IterationController._summarize_text(iteration.sandbox.stderr, max_chars=1000))
+                parts.append("stderr Summary:" + IterationController._summarize_text(iteration.sandbox.stderr, max_chars=1000))
         if iteration.eval_score:
-            parts.append(f"评分：total={iteration.eval_score.total}/10")
+            parts.append(f"Rating:total={iteration.eval_score.total}/10")
         if iteration.business_verification and not iteration.business_verification.passed:
             failures = [failure.message for failure in iteration.business_verification.failures[:5]]
             if failures:
-                parts.append("业务验收失败：" + "；".join(failures))
+                parts.append("Business acceptance failed:" + "；".join(failures))
         if iteration.reflection:
-            parts.append(f"根因：{iteration.reflection.root_cause}")
+            parts.append(f"Root cause:{iteration.reflection.root_cause}")
             if iteration.reflection.fix_plan:
-                parts.append("修复计划：" + "；".join(iteration.reflection.fix_plan[:5]))
+                parts.append("Repair plan:" + "；".join(iteration.reflection.fix_plan[:5]))
         return "\n".join(parts)
 
-    # ==================== 反思机制 ====================
+    # ==================== reflective mechanism ====================
 
     def _reflect_on_failure(
         self,
@@ -2213,11 +2213,11 @@ class IterationController:
         fact_report: Optional[ImplementationFactReport] = None,
         sandbox_success: bool = False,
     ) -> ReflectionResult:
-        """LLM 反思 — agentic 模式，LLM 按需获取证据分析根因并制定修复计划"""
+        """LLM Reflection — agentic mode, LLM obtains evidence on demand to analyze root causes and develop remediation plans"""
 
-        # ── 构建工具函数（闭包）──
+        # ── Build utility functions (closures)──
         def get_error_info() -> str:
-            """获取失败信息（阶段、错误消息、stderr）"""
+            """Get failure information (stage, error message, stderr)"""
             import json as _json
             info = {
                 "stage": stage,
@@ -2228,7 +2228,7 @@ class IterationController:
             return _json.dumps(info, ensure_ascii=False)
 
         def get_sandbox_logs(lines: int = 30) -> str:
-            """获取沙箱运行日志的最后 N 行"""
+            """Get the last N lines of the sandbox run log"""
             if not stdout:
                 return "（无日志）"
             log_lines = stdout.strip().split("\n")
@@ -2239,7 +2239,7 @@ class IterationController:
             return "\n".join(log_lines[-lines:])
 
         def get_output() -> str:
-            """获取 Skill 输出结果"""
+            """Get Skill output results"""
             if output is None:
                 return "（无输出）"
             try:
@@ -2258,7 +2258,7 @@ class IterationController:
             return "\n".join(code_lines[start_line - 1 : end_line])
 
         def get_helper_signatures() -> str:
-            """获取已确认可用的 helper 函数签名"""
+            """Get the confirmed available helper function signature"""
             if not fact_report or not fact_report.available_helpers:
                 return "（无 helper）"
             lines = []
@@ -2276,23 +2276,23 @@ class IterationController:
             "get_helper_signatures": get_helper_signatures,
         }
 
-        # ── 引导式 system prompt（告诉 LLM 诊断流程，而不是随机探索）──
+        # ── Guided system prompt (tells LLM to diagnose the process instead of random exploration)──
         system_prompt = (
-            f"你是资深 Python 开发者。按以下流程逐步诊断 Skill 工具问题：\n\n"
-            f"Skill 功能：{spec.description}\n"
-            f"失败阶段：{stage}\n"
-            f"沙箱执行状态：success={sandbox_success}\n\n"
-            f"诊断流程（严格按顺序，每步只调用一个工具）：\n"
-            f"  第1步: get_error_info → 了解失败类型（异常/数据矛盾/评分低）\n"
-            f"  第2步: get_sandbox_logs(lines=40) + get_output → 看日志和输出\n"
-            f"  第3步（可选）: get_code_section → 仅在前两步不足以定位根因时使用\n"
-            f"  第4步: 立即输出 verdict\n\n"
-            f"关键规则：\n"
-            f"1. sandbox_success=true → 函数必然存在，根因是字段映射/业务逻辑\n"
-            f"2. 代码调用 helper ≠ 需要换函数\n"
-            f"3. 工具总调用次数 ≤4 次，超过后必须输出 verdict\n\n"
+            f"You are an experienced Python developer. Follow this step-by-step process to diagnose Skill tool issues:\n\n"
+            f"Skill Function:{spec.description}\n"
+            f"Failure stage:{stage}\n"
+            f"Sandbox execution status:success={sandbox_success}\n\n"
+            f"Diagnosis process (strictly in sequence, only one tool is called for each step):\n"
+            f"  Step 1: get_error_info → Understand the type of failure (exception/inconsistent data/low score)\n"
+            f"  Step 2: get_sandbox_logs(lines=40) + get_output → View logs and output\n"
+            f"  Step 3 (optional): get_code_section → Only used when the first two steps are not sufficient to locate the root cause\n"
+            f"  Step 4: output immediately verdict\n\n"
+            f"Key rules:\n"
+            f"1. sandbox_success=true → The function must exist, the root cause is field mapping/business logic\n"
+            f"2. code call helper ≠ Need to change function\n"
+            f"3. Total number of tool calls ≤4 times, it must be output after exceeding verdict\n\n"
             f"<verdict>\n"
-            f'{{"root_cause": "具体根因（哪行代码/哪个字段）", "fix_plan": ["步骤1", "步骤2"], '
+            f'{{"root_cause": "Specific root cause (which line of code/which field)", "fix_plan": ["steps 1", "steps 2"], '
             f'"should_retry": true/false, "confidence": 0.0-1.0}}\n'
             f"</verdict>"
         )
@@ -2301,14 +2301,14 @@ class IterationController:
             client = self._get_client()
             logger.info(
                 f"\n{'─'*50}\n"
-                f"📤 [Reflection] Agentic LLM 启动 | tool_id={spec.tool_id}\n"
+                f"📤 [Reflection] Agentic LLM start | tool_id={spec.tool_id}\n"
                 f"{'─'*50}"
             )
 
-            # 用线程超时包装 LLM 调用
+            # Wrapping LLM calls with thread timeouts
             import threading
-            # agentic 反思含最多 5 轮工具调用往返，配合深度推理模型需要充足时间；
-            # 此前 120s 屡屡超时，且超时被误判为"不可修复"直接终止迭代
+            # agentic Reflection involves up to 5 round-trips of tool calls, and requires sufficient time to work with the deep inference model;
+            # The previous 120s repeatedly timed out, and the timeout was misjudged as"Not repairable"Terminate iteration directly
             REFLECTION_LLM_TIMEOUT = 300
             response_holder: Dict[str, Any] = {"raw": None, "error": None}
 
@@ -2325,7 +2325,7 @@ class IterationController:
                         Message(role="system", content=system_prompt),
                         Message(
                             role="user",
-                            content="请按上述诊断流程逐步分析。先调用 get_error_info 开始。",
+                            content="Please follow the above diagnostic process step by step analysis. Start by calling get_error_info.",
                         ),
                     ]
                     resp = client.chat(
@@ -2346,10 +2346,10 @@ class IterationController:
 
             if thread.is_alive():
                 logger.warning(
-                    f"⚠️ [Reflection] LLM 调用超时（{REFLECTION_LLM_TIMEOUT}s），跳过反思 | tool_id={spec.tool_id}"
+                    f"⚠️ [Reflection] LLM call timeout({REFLECTION_LLM_TIMEOUT}s) , skip reflection | tool_id={spec.tool_id}"
                 )
-                # 反思超时属于基础设施问题，不是"不可修复"的业务判定：
-                # 回退为继续重试（无定向修复计划），不得因反思超时直接终止迭代
+                # Reflection timeouts are an infrastructure issue, not"Not repairable"Business judgment:
+                # The fallback is to continue retrying (no directed repair plan), and the iteration must not be terminated directly due to reflection timeout.
                 return ReflectionResult(
                     root_cause=f"反思 LLM 调用超时（{REFLECTION_LLM_TIMEOUT}s），已跳过反思分析，回退为普通重试",
                     fix_plan=[],
@@ -2358,7 +2358,7 @@ class IterationController:
                 )
 
             if response_holder["error"]:
-                logger.warning(f"⚠️ [Reflection] LLM 调用失败: {response_holder['error']}")
+                logger.warning(f"⚠️ [Reflection] LLM call failed: {response_holder['error']}")
                 return ReflectionResult(
                     root_cause=f"反思 LLM 调用失败: {response_holder['error']}",
                     fix_plan=[],
@@ -2368,14 +2368,14 @@ class IterationController:
             raw = response_holder["raw"] or ""
             logger.info(
                 f"\n{'─'*50}\n"
-                f"📥 [Reflection] LLM 输出 ({len(raw)} 字符)\n"
+                f"📥 [Reflection] LLM output ({len(raw)} character)\n"
                 f"{'─'*50}\n"
                 f"{raw}\n"
                 f"{'─'*50}"
             )
 
             import re
-            # 优先从 <verdict> 标签中提取 JSON
+            # Prioritize from <verdict> Extract from tags JSON
             verdict_match = re.search(r"<verdict>\s*(.*?)\s*</verdict>", raw, re.DOTALL)
             if verdict_match:
                 json_str = verdict_match.group(1).strip()
@@ -2392,7 +2392,7 @@ class IterationController:
                     confidence=float(data.get("confidence", 0.5)),
                 )
         except Exception as e:
-            logger.warning(f"LLM 反思分析失败，使用默认反馈: {e}")
+            logger.warning(f"LLM Reflection analysis fails, using default feedback: {e}")
 
         return ReflectionResult(
             root_cause=f"{stage}阶段失败: {error[:200]}",
@@ -2401,7 +2401,7 @@ class IterationController:
             confidence=0.3,
         )
 
-    # ==================== 财经专家判断 ====================
+    # ==================== Financial expert judgment ====================
 
     def _check_no_data_and_advise(
         self,
@@ -2409,14 +2409,14 @@ class IterationController:
         sandbox_output: Any,
         fact_report: Optional[ImplementationFactReport] = None,
     ) -> str:
-        """检查沙箱输出是否包含 no_data，如果是则调用财经专家判断合理性 + 推荐换股。
+        """Check whether the sandbox output contains no_data, and if so, call financial experts to judge the rationality. + Share exchange is recommended.
 
-        返回专家建议文本（用于注入 feedback 和 extra_context），无 no_data 则返回空字符串。
+        Returns expert advice text (used for injecting feedback and extra_context), or an empty string without no_data.
         """
         if not sandbox_output or not isinstance(sandbox_output, dict):
             return ""
 
-        # 检测沙箱输出中是否有 no_data / 无数据 信号
+        # Detect if there is no_data / no data signal in sandbox output
         output_status = str(sandbox_output.get("status", "")).lower()
         has_no_data_signal = (
             output_status in ("no_data", "no_news", "no_pledge", "error")
@@ -2427,7 +2427,7 @@ class IterationController:
         if not has_no_data_signal:
             return ""
 
-        # 检查是否所有数值字段都为 null（另一种 no_data 信号）
+        # Check if all numeric fields are null (another no_data signal)
         if output_status == "success":
             profile = sandbox_output.get("profile", {})
             if isinstance(profile, dict):
@@ -2441,7 +2441,7 @@ class IterationController:
         if not has_no_data_signal:
             return ""
 
-        # 提取测试股票信息
+        # Extract test stock information
         test_symbol = (
             spec.test_input.get("symbol")
             or spec.test_input.get("code")
@@ -2451,16 +2451,16 @@ class IterationController:
         if not test_symbol:
             return ""
 
-        # 如果 fact_report 已经有专家判断（侦察层做的），直接复用
+        # If fact_report already has expert judgment (made by the reconnaissance layer), reuse it directly
         if fact_report and fact_report.notes:
             expert_notes = [
                 n for n in fact_report.notes
                 if "专家判断" in n or "推荐测试股票" in n or "建议换股" in n
             ]
             if expert_notes:
-                return "【财经专家判断（来自侦察层）】\n" + "\n".join(expert_notes)
+                return " [Financial expert judgment (from the reconnaissance layer)]\n" + "\n".join(expert_notes)
 
-        # 调用财经专家判断
+        # Call on financial experts to judge
         try:
             from .financial_expert_advisor import get_financial_expert_advisor
 
@@ -2470,7 +2470,7 @@ class IterationController:
                 model=self._model,
             )
 
-            # 获取股票基础信息
+            # Get basic stock information
             stock_name = ""
             industry = ""
             try:
@@ -2482,7 +2482,7 @@ class IterationController:
             except Exception:
                 pass
 
-            # 推断数据类型
+            # Infer data type
             data_type = "所需数据"
             helper_name = ""
             if fact_report and fact_report.available_helpers:
@@ -2497,7 +2497,7 @@ class IterationController:
                 elif "valuation" in name_lower:
                     data_type = "估值数据"
 
-            # helper 的 warnings（从 sandbox_output 提取）
+            # helper warnings (extracted from sandbox_output)
             helper_warnings = []
             if isinstance(sandbox_output.get("data_source_note"), str):
                 helper_warnings.append(sandbox_output.get("data_source_note"))
@@ -2516,7 +2516,7 @@ class IterationController:
             )
 
             logger.info(
-                f"🧠 [财经专家] no_data 判断: is_rational={judgment.is_rational}, "
+                f"🧠 [financial expert] no_data judge: is_rational={judgment.is_rational}, "
                 f"confidence={judgment.confidence:.2f}, stock={test_symbol}"
             )
             return judgment.to_feedback_text()
@@ -2526,13 +2526,13 @@ class IterationController:
             return ""
 
     def _get_client_safe(self):
-        """安全获取 LLM 客户端，失败返回 None"""
+        """Obtain the LLM client safely and return if failed None"""
         try:
             return self._get_client()
         except Exception:
             return None
 
-    # ==================== 标准函数参考对比 ====================
+    # ==================== Standard function reference comparison ====================
 
     def _compare_with_reference_helpers(
         self,
@@ -2541,23 +2541,23 @@ class IterationController:
         fact_report: Optional[ImplementationFactReport] = None,
     ) -> List[str]:
         """
-        当侦察层推荐了可复用的标准 helper 时，运行这些 helper 并与 Skill 输出对比。
+        When the recon layer recommends reusable standard helpers, run these helpers and compare with the Skill output.
 
-        如果 Skill 输出与标准 helper 输出差异过大（如关键数值字段不一致），
-        说明 Skill 代码没有正确复用/实现功能，应返回 RETRY。
+        If the Skill output is too different from the standard helper output (for example, the key value field is inconsistent),
+        Description The Skill code is not reused/implemented correctly and should return RETRY.
         """
         failures: List[str] = []
         if not fact_report or not fact_report.available_helpers:
             return failures
 
-        # 获取测试股票代码
+        # Get test ticker
         test_symbol = spec.test_input.get("symbol") or spec.test_input.get("code") or ""
         if not test_symbol:
             return failures
 
-        for helper in fact_report.available_helpers[:3]:  # 最多比较 3 个 helpers
+        for helper in fact_report.available_helpers[:3]:  # Compare up to 3 helpers
             try:
-                # 动态导入并执行标准函数
+                # Dynamically import and execute standard functions
                 reference_result = self._run_reference_helper(
                     helper.module or "", helper.name or "", test_symbol, spec.test_input
                 )
@@ -2566,7 +2566,7 @@ class IterationController:
 
                 skill_output = sandbox_result.output
 
-                # 提取关键数值字段进行对比
+                # Extract key numerical fields for comparison
                 diffs = self._compare_outputs(helper.name or "", reference_result, skill_output)
                 if diffs:
                     failures.extend(diffs)
@@ -2587,13 +2587,13 @@ class IterationController:
         symbol: str,
         test_input: Dict[str, Any],
     ) -> Optional[Dict[str, Any]]:
-        """动态导入并执行标准 helper 函数"""
+        """Dynamically import and execute standard helper functions"""
         try:
-            # module 已经是完整路径（如 core.skill_runtime.standard_financial_apis）
-            # 直接使用，不要重复拼接
+            # module Already a full path (such as core.skill_runtime.standard_financial_apis)
+            # Use directly, do not repeat splicing
             func = None
             candidate_modules = [module]
-            # 如果 module 不是以 core. 开头，补充候选路径
+            # If module does not start with core., supplement the candidate path
             if not module.startswith("core."):
                 candidate_modules.append(f"core.skill_runtime.{module}")
                 candidate_modules.append(f"core.tools.implementations.fundamentals.{module}")
@@ -2611,7 +2611,7 @@ class IterationController:
                 logger.warning(f"⚠️ [参考对比] 函数 {function_name} 在 {module} 中未找到")
                 return None
 
-            # 调用标准函数
+            # Call standard functions
             result = func(symbol=symbol)
             if isinstance(result, str):
                 import json
@@ -2630,7 +2630,7 @@ class IterationController:
         """比较两个输出的关键差异"""
         diffs: List[str] = []
 
-        # 递归提取数值字段
+        # Extract numeric fields recursively
         def _extract_numeric(obj: Any, prefix: str = "") -> Dict[str, float]:
             values: Dict[str, float] = {}
             if isinstance(obj, dict):
@@ -2648,12 +2648,12 @@ class IterationController:
         if not ref_values:
             return diffs
 
-        # 找到共同的字段进行比较
+        # Find common fields to compare
         common_fields = set(ref_values.keys()) & set(skill_values.keys())
         if not common_fields:
             diffs.append(
                 f"[{helper_name}] 标准函数返回 {len(ref_values)} 个数值字段，"
-                f"但 Skill 输出中找不到任何匹配字段，可能是字段命名不一致"
+                f"But no matching fields were found in the Skill output, possibly due to inconsistent field naming."
             )
             return diffs
 
@@ -2661,46 +2661,46 @@ class IterationController:
             ref_val = ref_values[field]
             skill_val = skill_values[field]
 
-            # 两个都是 0：全部通过（可能是真正的 0 值）
+            # Both are 0: all pass (probably a true 0 value)
             if ref_val == 0.0 and skill_val == 0.0:
                 continue
 
-            # Reference 有值但 Skill 为 0：严重问题
+            # Reference Value but Skill is 0: Serious problem
             if ref_val != 0.0 and skill_val == 0.0:
                 diffs.append(
                     f"[{helper_name}] 字段 {field}: 标准函数={ref_val}, Skill=0 "
-                    f"(数据获取或计算逻辑有误，不应为 0)"
+                    f"(The data acquisition or calculation logic is incorrect and should not be 0)"
                 )
                 continue
 
-            # Reference 为 0 但 Skill 有值：可能正常（Skill 提供了额外数据）
+            # Reference is 0 but Skill has a value: probably OK (Skill provides additional data)
             if ref_val == 0.0 and skill_val != 0.0:
                 continue
 
-            # 两者都有值，比较差异比例
+            # Both have values, compare the difference ratio
             if ref_val != 0.0:
                 ratio = abs(skill_val - ref_val) / abs(ref_val)
-                if ratio > 0.5:  # 差异超过 50%
+                if ratio > 0.5:  # difference exceeds 50%
                     diffs.append(
                         f"[{helper_name}] 字段 {field}: 标准函数={ref_val:.4f}, "
-                        f"Skill={skill_val:.4f} (差异 {ratio:.0%})"
+                        f"Skill={skill_val:.4f} (difference {ratio:.0%})"
                     )
 
         return diffs
 
-    # ==================== 边缘测试 ====================
+    # ==================== Edge testing ====================
 
     def _run_edge_tests(self, code: str, spec: SkillSpec) -> List[str]:
         """
-        在主测试通过后，运行额外的边缘测试场景：
-        1. 空/无效参数测试 — 函数不应崩溃
-        2. LLM 生成的测试用例 — 检查是否有 mock 数据
+        After the main test passes, run additional edge test scenarios:
+        1. Empty/invalid parameter testing — The function should not crash
+        2. LLM Generated test cases — Check if there is mock data
 
-        边缘测试使用更短的超时（10s），强制执行“无效输入 5 秒内返回错误响应”的规则。
+        Edge tests use a shorter timeout (10s), enforcing Invalid input returns an error response within 5 seconds. rules.
         """
         failures: List[str] = []
 
-        # 边缘测试使用独立的短超时 runner，强制代码对无效输入快速失败
+        # Edge tests use separate runners with short timeouts, forcing code to fail quickly on invalid input
         edge_runner = self._get_edge_test_runner()
 
         edge_inputs = self._generate_edge_inputs(spec)
@@ -2708,12 +2708,12 @@ class IterationController:
             try:
                 result = edge_runner.run(code, spec, test_input=test_input)
                 if not result.success:
-                    # 沙箱执行崩溃或超时都算失败
+                    # Sandbox execution crashes or times out are considered failures.
                     err_msg = result.error or "未知"
                     if "超时" in err_msg or "timeout" in err_msg.lower():
                         failures.append(
                             f"边缘测试「{label}」超时：代码未在 10s 内对无效输入返回响应，"
-                            f"必须在函数开头做股票代码预检并快速返回错误。详情: {err_msg}"
+                            f"Stock symbol preflight must be done at the beginning of the function and errors returned quickly. Details: {err_msg}"
                         )
                     else:
                         failures.append(f"边缘测试「{label}」执行崩溃: {err_msg}")
@@ -2727,15 +2727,15 @@ class IterationController:
         return failures
 
     def _get_edge_test_runner(self):
-        """获取边缘测试专用 runner（短超时）。"""
-        # 懒加载并缓存，避免每次边缘测试都创建新实例
+        """Get a dedicated runner for edge testing (short timeout)."""
+        # Lazy loading and caching to avoid creating new instances for every edge test
         if getattr(self, "_edge_runner", None) is None:
             self._edge_runner = SandboxRunner(timeout=10)
         return self._edge_runner
 
     @staticmethod
     def _generate_edge_inputs(spec: SkillSpec) -> List[tuple]:
-        """根据 spec 参数定义生成边缘测试输入"""
+        """Generate edge test input according to spec parameter definition"""
         edges: List[tuple] = []
 
         has_symbol = any(
@@ -2765,12 +2765,12 @@ class IterationController:
         lower = output_str.lower()
         return any(ind.lower() in lower for ind in mock_indicators)
 
-    # ==================== 失败报告 ====================
+    # ==================== failure report ====================
 
     @staticmethod
     def _build_failure_summary(iterations: List[IterationRound]) -> str:
         """
-        汇总所有迭代轮次的失败原因，生成结构化的失败报告。
+        Summarize the failure reasons of all iteration rounds and generate a structured failure report.
         """
         parts = [f"经过 {len(iterations)} 轮迭代仍未达到质量标准（≥{PASS_THRESHOLD}/10 分）。各轮失败原因如下：\n"]
 
@@ -2789,11 +2789,11 @@ class IterationController:
             if it.eval_score:
                 parts.append(
                     f"  评分: 总分={it.eval_score.total}, "
-                    f"可执行性={it.eval_score.executability}, "
-                    f"真实性={it.eval_score.authenticity}, "
-                    f"完整性={it.eval_score.completeness}, "
-                    f"相关性={it.eval_score.relevance}, "
-                    f"格式={it.eval_score.format_quality}"
+                    f"Enforceability={it.eval_score.executability}, "
+                    f"authenticity={it.eval_score.authenticity}, "
+                    f"integrity={it.eval_score.completeness}, "
+                    f"Relevance={it.eval_score.relevance}, "
+                    f"Format={it.eval_score.format_quality}"
                 )
                 weak = []
                 if it.eval_score.executability < 8.0:
@@ -2811,7 +2811,7 @@ class IterationController:
 
             if it.business_verification:
                 parts.append(
-                    f"  业务验收: passed={it.business_verification.passed}, "
+                    f"  Business acceptance: passed={it.business_verification.passed}, "
                     f"business_score={it.business_verification.business_score}"
                 )
                 if it.business_verification.failures:
@@ -2867,7 +2867,7 @@ class IterationController:
         head_lines: int = 140,
         tail_lines: int = 100,
     ) -> str:
-        """为反思阶段优先保留完整代码，超长时再保留首尾关键片段。"""
+        """Prioritize retaining the complete code for the reflection phase, and retain the first and last key fragments if it is too long."""
         if not code:
             return ""
 
@@ -2890,13 +2890,13 @@ class IterationController:
         keep_each_side = max((max_chars - 32) // 2, 1000)
         return (
             combined[:keep_each_side]
-            + "\n# ... (中间省略) ...\n"
+            + "\n# ... (Omit the middle) ...\n"
             + combined[-keep_each_side:]
         )
 
     @staticmethod
     def _build_eval_reflection_context(score) -> str:
-        """把评估分项显式传给反思模型，避免它只看到总分不足。"""
+        """Explicitly pass the assessment scores to the reflection model to avoid it only seeing a deficient total score."""
         lines = [
             f"- 总分: {score.total}/10（阈值: {PASS_THRESHOLD}）",
             f"- 可执行性: {score.executability}/10",
@@ -2923,7 +2923,7 @@ class IterationController:
 
         return "\n".join(lines)
 
-    # ==================== 反馈构建 ====================
+    # ==================== feedback build ====================
 
     @staticmethod
     def _summarize_text(
@@ -2931,9 +2931,9 @@ class IterationController:
         *,
         max_chars: int,
         head_chars: Optional[int] = None,
-        separator: str = "\n... (中间省略) ...\n",
+        separator: str = "\n... (Omit the middle) ...\n",
     ) -> str:
-        """长文本默认保留首尾，避免执行尾部异常信息被截断。"""
+        """By default, the beginning and end of long text are retained to avoid truncation of exception information at the end of execution."""
         if text is None:
             return ""
 
@@ -2964,9 +2964,9 @@ class IterationController:
         reflection: Optional[ReflectionResult] = None,
     ) -> str:
         """
-        构建丰富的反馈上下文 — 包含完整的执行信息和 LLM 反思分析。
+        Build rich feedback context — Contains complete execution information and LLM reflection analysis.
         """
-        parts = [f"【{stage}失败 — 第 N 轮迭代反馈】"]
+        parts = [f" [{stage}failed — Nth round of iteration feedback]"]
 
         parts.append("\n## 错误详情")
         for e in errors[:8]:
@@ -2978,12 +2978,12 @@ class IterationController:
                 max_chars=2200,
                 head_chars=1200,
             )
-            parts.append(f"\n## 标准输出 (stdout 摘要)\n{stdout_excerpt}")
+            parts.append(f"\n## standard output (stdout Summary)\n{stdout_excerpt}")
 
-            # 提取 helper 返回结构信息（关键：告诉代码生成器 helper 实际返回哪些字段）
+            # Extract helper return structure information (key: tell the code generator which fields the helper actually returns)
             helper_return_keys = IterationController._extract_helper_return_keys(stdout)
             if helper_return_keys:
-                parts.append(f"\n## Helper 实际返回字段（🚨 代码必须匹配这些字段名）\n{helper_return_keys}")
+                parts.append(f"\n## Helper actual return field (🚨 The code must match these field names)\n{helper_return_keys}")
 
         if stderr:
             stderr_excerpt = IterationController._summarize_text(
@@ -2991,7 +2991,7 @@ class IterationController:
                 max_chars=2200,
                 head_chars=1200,
             )
-            parts.append(f"\n## 标准错误 (stderr 摘要)\n{stderr_excerpt}")
+            parts.append(f"\n## standard error (stderr Summary)\n{stderr_excerpt}")
 
         if output is not None:
             try:
@@ -3016,18 +3016,18 @@ class IterationController:
                     parts.append(f"  {i}. {step}")
 
         parts.append("\n## 修复要求")
-        parts.append("请根据以上完整的执行上下文，定向修复代码中的问题。")
-        parts.append("优先解决导致失败的根因，不要重新设计整体架构。")
-        parts.append("保留已经正确工作的部分，只修改有问题的代码。")
-        parts.append("⚠️ 优先修复数据获取和业务逻辑问题，不要仅仅调整 status 字段值来规避验收。")
+        parts.append("Please fix the problems in the code in a targeted manner based on the complete execution context above.")
+        parts.append("Prioritize addressing the root causes of failure rather than redesigning the entire architecture.")
+        parts.append("Keep the parts that already work correctly and only modify the problematic code.")
+        parts.append("⚠️ Prioritize fixing data acquisition and business logic issues, do not just adjust the status field value to avoid acceptance.")
 
         return "\n".join(parts)
 
     @staticmethod
     def _build_eval_result_extra(score, round_num: int) -> Dict[str, Any]:
-        """构造质量评估实时事件数据（供前端在评估完成瞬间展示）。"""
+        """Construct real-time event data for quality assessment (for front-end display at the moment the assessment is completed)."""
         data = score.model_dump()
-        # total 是 @property，model_dump 不包含，需显式带出
+        # total Yes @property, model_dump Not included, needs to be brought out explicitly
         data["total"] = score.total
         data["round"] = round_num
         data["passed"] = score.total >= PASS_THRESHOLD
@@ -3051,13 +3051,13 @@ class IterationController:
 
     @staticmethod
     def _build_feedback(stage: str, errors: list) -> str:
-        """旧版简单反馈（保留兼容性）"""
+        """Simple feedback for older versions (compatibility preserved)"""
         error_lines = "\n".join(f"  - {e}" for e in errors[:5])
         return f"【{stage}失败】\n{error_lines}"
 
     @staticmethod
     def _build_eval_feedback(score) -> str:
-        """旧版评分反馈（保留兼容性）"""
+        """Old version rating feedback (compatibility preserved)"""
         parts = []
         if score.executability < 7.0:
             parts.append(f"可执行性不足 ({score.executability}/10)")
@@ -3074,14 +3074,14 @@ class IterationController:
 
     @staticmethod
     def _extract_helper_return_keys(stdout: str) -> str:
-        """从沙箱 stdout 提取 helper 函数的返回结构（字段名），帮助代码生成器正确映射"""
+        """Extract the return structure (field names) of the helper function from the sandbox stdout to help the code generator map it correctly"""
         import re
-        # 匹配 "📊 xxx 返回结构: ['field1', 'field2', ...]" 或 "returned keys: ['field1', ...]"
-        pattern = re.compile(r"(?:返回结构|returned keys|返回键).*?\[([^\]]+)\]", re.IGNORECASE)
+        # match "📊 xxx Return structure: ['field1', 'field2', ...]" or "returned keys: ['field1', ...]"
+        pattern = re.compile(r"(?:Return structure|returned keys|return key).*?\[([^\]]+)\]", re.IGNORECASE)
         matches = pattern.findall(stdout)
         if not matches:
-            # 也尝试匹配纯 "keys: ['...']" 格式
-            pattern2 = re.compile(r"(?:keys|字段)[：:]\s*\[([^\]]+)\]", re.IGNORECASE)
+            # Also try matching pure "keys: ['...']" Format
+            pattern2 = re.compile(r"(?:keys|Field)[: :]\s*\[([^\]]+)\]", re.IGNORECASE)
             matches = pattern2.findall(stdout)
 
         if not matches:
@@ -3091,13 +3091,13 @@ class IterationController:
         seen_keys = set()
         for m in matches:
             keys_str = m.strip()
-            # 解析 key 列表
+            # Parse key list
             keys = [k.strip().strip("'\"") for k in keys_str.split(",") if k.strip().strip("'\"")]
-            key_sig = ", ".join(keys[:12])  # 最多 12 个字段
+            key_sig = ", ".join(keys[:12])  # Up to 12 fields
             if key_sig and key_sig not in seen_keys:
                 seen_keys.add(key_sig)
                 lines.append(f"  [{key_sig}]")
 
         if not lines:
             return ""
-        return "\n".join(lines[:5])  # 最多 5 个 helper 的返回结构
+        return "\n".join(lines[:5])  # Return structure for up to 5 helpers

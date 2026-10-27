@@ -1,10 +1,10 @@
 from core.agents.analyst import AnalystAgent
 from core.agents.base import GENERIC_REPORT_FALLBACK
 """
-市场分析师Agent v2.0
+market analyst Agent v2.0
 
-基于AnalystAgent基类实现的市场分析师
-使用配置驱动的方式，支持动态工具绑定
+Market analyst implemented based on AnalystAgent base class
+Use configuration-driven approach to support dynamic tool binding
 """
 
 import logging
@@ -19,78 +19,78 @@ from ..registry import register_agent
 logger = logging.getLogger(__name__)
 
 _MARKET_REPORT_SANITIZE_RULES = [
-    (r"价格区间", "波动范围"),
-    (r"支撑位", "支撑关系"),
-    (r"阻力位", "压力关系"),
-    (r"关键价位", "关键价格关系"),
-    (r"风险控制位", "风险观察位置"),
-    (r"价格分析区间", "历史波动区间"),
-    (r"尚未站上\s*(MA\d+)", r"仍低于\1"),
-    (r"尚未突破\s*(MA\d+)", r"仍低于\1"),
-    (r"重新站上\s*(MA\d+)", r"回到\1上方"),
-    (r"站上\s*(MA\d+)", r"高于\1"),
-    (r"尚未站稳于\s*(MA\d+)(?:之上|上方)?", r"仍低于\1"),
-    (r"未能有效站稳于其上方", "与该均线的关系仍待改善"),
-    (r"未能有效站稳于\s*(MA\d+)(?:之上|上方)?", r"与\1的关系仍待改善"),
-    (r"站稳\s*(MA\d+)", r"高于\1"),
-    (r"站稳于\s*(MA\d+)(?:之上|上方)?", r"高于\1"),
-    (r"站稳信号", "关系改善信号"),
-    (r"能否实现有效站稳", "短期均线关系是否改善"),
-    (r"尚未形成有效突破(?:信号|支撑)", "上破依据仍不足"),
-    (r"未形成有效突破信号", "上破依据仍不足"),
-    (r"未形成有效突破支撑", "上破依据仍不足"),
-    (r"未形成有效突破", "上破依据仍不足"),
-    (r"有效突破", "明确上破"),
-    (r"强势突破", "明显上破"),
-    (r"对关键短期均线的突破", "对关键短期均线关系的改善"),
-    (r"对短期均线上方的确认", "与短期均线关系改善的确认"),
-    (r"上行突破动力", "进一步走强依据"),
-    (r"未突破布林带上轨", "仍低于布林带上轨"),
-    (r"突破布林带上轨", "高于布林带上轨"),
-    (r"持续运行于", "位于"),
-    (r"柱状图是否(?:出现)?持续放大或收缩", "动能一致性是否增强或减弱"),
-    (r"柱状图是否(?:出现)?持续放大", "动能一致性是否增强"),
-    (r"MACD柱状图若继续持续放大", "MACD动能若进一步增强"),
-    (r"持续放大", "进一步增强"),
-    (r"持续收缩", "进一步减弱"),
-    (r"未能维持站稳", "关系仍待改善"),
-    (r"上行空间受限", "短期弹性受限"),
-    (r"上行空间支撑", "偏积极支撑"),
-    (r"上行支撑力", "偏积极支撑"),
-    (r"上行空间", "进一步抬升弹性"),
-    (r"较前期有所收窄，表明短期波动趋于收敛", "显示短期波动集中在当前区间内"),
-    (r"向上排列趋势", "偏强排列"),
-    (r"未形成明确上升趋势", "后续是否形成明确上行方向仍待验证"),
-    (r"增强了市场信心", "为研究判断提供了一定技术支撑"),
+    (r"price range", "Fluctuation range"),
+    (r"support level", "supporting relationship"),
+    (r"resistance level", "stress relationship"),
+    (r"key price", "key price relationships"),
+    (r"risk control position", "risk observation location"),
+    (r"price analysis range", "historical fluctuation range"),
+    (r"Not on site yet\s*(MA\d+)", r"still below\1"),
+    (r"Not yet broken through\s*(MA\d+)", r"still below\1"),
+    (r"Stand again\s*(MA\d+)", r"return to\1 above"),
+    (r"stand on\s*(MA\d+)", r"higher than\1"),
+    (r"not yet established in\s*(MA\d+)(?:above|above)?", r"still below\1"),
+    (r"Failure to effectively stand on top of it", "The relationship with this moving average still needs to be improved"),
+    (r"failed to effectively stand firm on\s*(MA\d+)(?:above|above)?", r"with\1 relations still need to be improved"),
+    (r"stand firm\s*(MA\d+)", r"higher than\1"),
+    (r"stand firm on\s*(MA\d+)(?:above|above)?", r"higher than\1"),
+    (r"Stand firm signal", "Signs of relationship improvement"),
+    (r"Whether it is possible to achieve effective standing", "Is the short-term moving average relationship improving?"),
+    (r"No effective breakthrough has yet been made(?:signal|support)", "There is still insufficient basis for an upward break"),
+    (r"No effective breakthrough signal has been formed", "There is still insufficient basis for an upward break"),
+    (r"No effective breakthrough support has been formed", "There is still insufficient basis for an upward break"),
+    (r"No effective breakthrough has been formed", "There is still insufficient basis for an upward break"),
+    (r"Effective breakthrough", "clear break"),
+    (r"Strong breakthrough", "Obvious break"),
+    (r"A breakout of key short-term moving averages", "Improvements to key short-term moving average relationships"),
+    (r"Confirmation above short-term moving average", "Confirmation of improved relationship with short-term moving averages"),
+    (r"Upward breakout momentum", "Basis for further strengthening"),
+    (r"Has not broken through the Bollinger Band track", "Still below the Bollinger Band track"),
+    (r"Breaking through the Bollinger Band track", "Above the Bollinger Band track"),
+    (r"Continuously running on", "located in"),
+    (r"Is the histogram(?:appear)?Continuously enlarge or shrink", "Whether kinetic energy consistency increases or decreases"),
+    (r"Is the histogram(?:appear)?Keep zooming in", "Is the consistency of kinetic energy enhanced?"),
+    (r"MACD If the histogram continues to zoom in", "MACD If kinetic energy further increases"),
+    (r"Keep zooming in", "further enhance"),
+    (r"continued contraction", "weaken further"),
+    (r"Unable to maintain firm footing", "Relations still need to be improved"),
+    (r"Upside is limited", "Limited short-term flexibility"),
+    (r"Upside support", "Positive support"),
+    (r"Upward support", "Positive support"),
+    (r"Upside", "Further improve flexibility"),
+    (r"It has narrowed compared with the previous period, indicating that short-term fluctuations tend to converge.", "Shows that short-term fluctuations are concentrated within the current range"),
+    (r"Sort trends upwards", "strong-biased arrangement"),
+    (r"No clear upward trend has formed", "Whether a clear upward direction will form in the future remains to be verified."),
+    (r"Enhanced market confidence", "Provide certain technical support for research and judgment"),
 ]
 
-# 尝试导入工具函数
+# Try importing utility functions
 try:
     from tradingagents.utils.stock_utils import StockUtils
 except ImportError:
-    logger.warning("无法导入StockUtils，部分功能可能不可用")
+    logger.warning("Unable to import StockUtils, some functions may not be available")
     StockUtils = None
 
-# 不再需要直接导入 get_agent_prompt，使用基类的 _get_prompt_from_template 方法
+# It is no longer necessary to import get_agent_prompt directly, use the _get_prompt_from_template method of the base class
 
 
 @register_agent
 class MarketAnalystV2(AnalystAgent):
     """
-    市场分析师 v2.0
+    market analyst v2.0
 
-    功能：
-    - 分析股票的价格走势
-    - 分析技术指标
-    - 分析成交量
-    - 生成市场分析报告
+    Function:
+    - Analyze stock price trends
+    - Analyze technical indicators
+    - Analyze trading volume
+    - Generate market analysis report
 
-    工作流程：
-    1. 调用工具获取价格数据、技术指标、成交量数据
-    2. 使用LLM分析数据
-    3. 生成市场分析报告
+    Workflow:
+    1. Call tools to obtain price data, technical indicators, and trading volume data
+    2. Analyze data using LLM
+    3. Generate market analysis report
 
-    示例:
+    Example:
         from langchain_openai import ChatOpenAI
         from core.agents import create_agent_with_dynamic_tools
 
@@ -103,11 +103,11 @@ class MarketAnalystV2(AnalystAgent):
         })
     """
 
-    # Agent元数据
+    # Agent metadata
     metadata = AgentMetadata(
         id="market_analyst_v2",
-        name="市场分析师 v2.0",
-        description="分析股票的价格走势、技术指标和成交量，生成市场分析报告",
+        name="market analyst v2.0",
+        description="Analyze stock price trends, technical indicators and trading volume, and generate market analysis reports",
         category=AgentCategory.ANALYST,
         version="2.0.0",
         license_tier=LicenseTier.FREE,
@@ -115,32 +115,32 @@ class MarketAnalystV2(AnalystAgent):
             "get_stock_market_data_unified"
         ],
         inputs=[
-            AgentInput(name="ticker", type="string", description="股票代码"),
-            AgentInput(name="analysis_date", type="string", description="分析日期"),
+            AgentInput(name="ticker", type="string", description="Stock code"),
+            AgentInput(name="analysis_date", type="string", description="Analysis date"),
         ],
         outputs=[
-            AgentOutput(name="market_report", type="string", description="市场分析报告"),
+            AgentOutput(name="market_report", type="string", description="Market analysis report"),
         ],
         requires_tools=True,
         output_field="market_report",
-        report_label="【市场分析 v2】",
+        report_label=" [Market Analysis v2]",
         workflow_stage="analyst",
     )
 
-    # 分析师类型
+    # Analyst type
     analyst_type = "market"
 
-    # 输出字段名
+    # Output field name
     output_field = "market_report"
 
     def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """
-        覆盖执行逻辑以支持模板调试与提示词覆盖
+        Override execution logic to support template debugging and prompt word coverage
         """
         try:
             ticker, analysis_date = self._extract_common_params(state)
 
-            market_type = state.get("market_type", "A股")
+            market_type = state.get("market_type", "A shares")
             context = state.get("context")
             overrides = state.get("prompt_overrides") or {}
             system_override = overrides.get("system")
@@ -152,16 +152,16 @@ class MarketAnalystV2(AnalystAgent):
 
             system_prompt = system_override
             if not system_prompt:
-                # 🔑 从 state 中提取必要的变量（系统变量应该在工作流创建时已经准备好）
+                # 🔑 Extract necessary variables from state (system variables should be prepared when the workflow is created)
                 template_variables = {}
                 
-                # 基础变量
+                # base variables
                 if "ticker" in state:
                     template_variables["ticker"] = state["ticker"]
                 else:
                     template_variables["ticker"] = ticker
                 
-                # 日期相关
+                # Date related
                 if "analysis_date" in state or "trade_date" in state:
                     analysis_date = state.get("analysis_date") or state.get("trade_date")
                     if analysis_date:
@@ -175,25 +175,25 @@ class MarketAnalystV2(AnalystAgent):
                     template_variables["analysis_date"] = analysis_date
                     template_variables["start_date"] = state.get("start_date", current_date)
                 
-                # 公司信息（从 state 中获取，工作流引擎应该已经准备好）
+                # Company information (obtained from state, the workflow engine should be ready)
                 template_variables["company_name"] = state.get("company_name", "")
                 template_variables["market_name"] = state.get("market_name", market_type)
-                template_variables["currency_name"] = state.get("currency_name", "人民币")
+                template_variables["currency_name"] = state.get("currency_name", "RMB")
                 template_variables["currency_symbol"] = state.get("currency_symbol", "¥")
                 template_variables["tool_names"] = ", ".join([t.name for t in self._langchain_tools]) if self._langchain_tools else ""
                 
                 system_prompt = self._get_prompt_from_template(
                     agent_type="analysts_v2",
                     agent_name="market_analyst_v2",
-                    variables=template_variables,  # 传递必要的变量
-                    state=state,  # 🔑 传递 state，基类会自动提取系统变量
+                    variables=template_variables,  # Pass necessary variables
+                    state=state,  # 🔑 Pass state and the base class will automatically extract system variables
                     context=context,
                     fallback_prompt=None,
-                    prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+                    prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
                 )
 
             if not system_prompt:
-                # 🔑 传递 state 给 _build_system_prompt，以便从 state 中提取变量完善模板
+                # 🔑 Pass state to _build_system_prompt to extract variables from state to complete the template
                 system_prompt = self._build_system_prompt(market_type, context=context, state=state)
 
             user_prompt = user_override
@@ -207,8 +207,8 @@ class MarketAnalystV2(AnalystAgent):
                 HumanMessage(content=user_prompt)
             ]
 
-            logger.info(f"系统提示词: {system_prompt}")
-            logger.info(f"用户提示词: {user_prompt}")            
+            logger.info(f"System prompt word: {system_prompt}")
+            logger.info(f"User prompt words: {user_prompt}")            
 
             if self._llm:
                 if self._langchain_tools:
@@ -222,39 +222,39 @@ class MarketAnalystV2(AnalystAgent):
             report = self._sanitize_report(report)
 
             result = {self.output_field: report}
-            # 🆕 附带工具调用摘要
+            # 🆕 Comes with tool call summary
             tool_summary = self._format_tool_call_summary()
             if tool_summary:
                 result["tool_call_summaries"] = {self.analyst_type: tool_summary}
             return result
 
         except Exception as e:
-            logger.error(f"[{self.agent_id}] 执行失败: {e}", exc_info=True)
+            logger.error(f"[{self.agent_id}] Execution failed: {e}", exc_info=True)
             return {self.output_field: GENERIC_REPORT_FALLBACK}
 
     def _build_system_prompt(self, market_type: str = None, context=None, state: Dict[str, Any] = None) -> str:
         """
-        构建系统提示词（参考 fundamentals_analyst_v2 的实现）
+        Build system prompt words (refer to the implementation of fundamentals_analyst_v2)
 
         Args:
-            market_type: 市场类型（A股/港股/美股）（保留以兼容基类）
-            context: AgentContext 对象（用于调试模式）
-            state: 工作流状态（用于提取模板变量）
+            market_type: Market type (A shares/Hong Kong stocks/US stocks) (reserved to be compatible with the base class)
+            context: AgentContext Object (for debug mode)
+            state: Workflow status (used to extract template variables)
             
         Returns:
-            系统提示词
+            System prompt word
         """
-        logger.info("🔍 [MarketAnalystV2] 开始构建系统提示词")
+        logger.info("🔍 [MarketAnalystV2] Start building system prompt words")
         
         if state is None:
             state = {}
         
-        # 从 state 中提取必要的变量（如果系统提示词模板需要）
-        # 注意：虽然系统提示词通常不需要变量，但某些模板可能需要 ticker、current_date 等
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
+        # Extract the necessary variables from state (if required by the system prompt word template)
+        # Note: Although system prompt words usually do not require variables, some templates may require ticker, current_date, etc.
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
         template_variables = {}
         
-        # 如果 state 中有 ticker 和 analysis_date，提取它们（系统提示词模板可能需要）
+        # If there are ticker and analysis_date in state, extract them (the system prompt word template may be required)
         if "ticker" in state:
             template_variables["ticker"] = state["ticker"]
         if "company_name" in state:
@@ -262,7 +262,7 @@ class MarketAnalystV2(AnalystAgent):
         if "analysis_date" in state or "trade_date" in state:
             analysis_date = state.get("analysis_date") or state.get("trade_date")
             if analysis_date:
-                # 确保日期格式正确
+                # Make sure the date is in the correct format
                 if isinstance(analysis_date, str) and len(analysis_date) > 10:
                     analysis_date = analysis_date.split()[0]
                 template_variables["current_date"] = analysis_date
@@ -276,42 +276,42 @@ class MarketAnalystV2(AnalystAgent):
         if self._langchain_tools:
             template_variables["tool_names"] = ", ".join([t.name for t in self._langchain_tools])
         
-        # 使用基类的通用方法从模板系统获取提示词（参考 research_manager_v2）
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
+        # Use the base class's general method to obtain prompt words from the template system (refer to research_manager_v2)
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
         prompt = self._get_prompt_from_template(
             agent_type="analysts_v2",
             agent_name="market_analyst_v2",
-            variables=template_variables,  # 传递必要的变量
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=context or state.get("context"),  # 优先使用传入的 context，否则从 state 获取
+            variables=template_variables,  # Pass necessary variables
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=context or state.get("context"),  # Priority is given to using the incoming context, otherwise it is obtained from state
             fallback_prompt=None,
-            prompt_type="system"  # 🔑 关键：明确指定获取系统提示词
+            prompt_type="system"  # 🔑 Key: Explicitly specify the acquisition system prompt word
         )
 
         if prompt:
             return prompt
 
-        # 默认提示词
-        return f"""你是一位专业的{market_type}市场分析师，擅长技术分析。
+        # Default prompt word
+        return f"""you are a professional{market_type}Market analyst, good at technical analysis.
 
-你的职责：
-1. 分析股票的价格走势（涨跌幅、趋势方向）
-2. 分析技术指标（MA、MACD、RSI、KDJ等）
-3. 分析成交量（放量、缩量、量价关系）
-4. 综合判断市场情绪和趋势
+Your responsibilities:
+1. Analyze stock price trends (increases and decreases, trend direction)
+2. Analyze technical indicators (MA, MACD, RSI, KDJ, etc.)
+3. Analyze trading volume (increasing volume, shrinking volume, volume-price relationship)
+4. Comprehensively judge market sentiment and trends
 
-分析要求：
-- 客观、专业、基于数据
-- 指出关键的技术信号
-- 给出明确的趋势判断
-- 使用中文输出
+Analysis requirements:
+- Objective, professional and data-based
+- Point out key technical signals
+- Give clear trend judgments
+- Use Chinese output
 
-输出格式：
-请以结构化的方式输出分析报告，包括：
-- 价格走势分析
-- 技术指标分析
-- 成交量分析
-- 综合判断
+Output format:
+Please output the analysis report in a structured manner, including:
+- Price trend analysis
+- Technical indicator analysis
+- Volume analysis
+- Comprehensive judgment
 """
 
     def _build_user_prompt(
@@ -321,39 +321,39 @@ class MarketAnalystV2(AnalystAgent):
         state: Dict[str, Any]
     ) -> str:
         """
-        构建用户提示词（参考 research_manager_v2 和 fundamentals_analyst_v2 的实现）
+        Construct user prompt words (refer to the implementation of research_manager_v2 and fundamentals_analyst_v2)
 
         Args:
-            ticker: 股票代码
-            analysis_date: 分析日期
-            state: 工作流状态（用于提取模板变量）
+            ticker: Stock code
+            analysis_date: Analysis date
+            state: Workflow status (used to extract template variables)
 
         Returns:
-            用户提示词
+            User prompt words
         """
-        logger.info("🔍 [MarketAnalystV2] 开始构建用户提示词")
-        logger.info(f"📊 股票代码: {ticker}")
-        logger.info(f"📅 分析日期: {analysis_date}")
+        logger.info("🔍 [MarketAnalystV2] Start building user prompt words")
+        logger.info(f"📊 Stock code: {ticker}")
+        logger.info(f"📅 Analysis date: {analysis_date}")
         
         if state is None:
             state = {}
         
-        # 获取公司名称和市场信息
-        market_name = "中国A股"
+        # Get company name and market information
+        market_name = "China A shares"
         company_name = str(
             state.get("company_name")
             or state.get("stock_name")
             or state.get("name")
             or ""
         )
-        currency_name = "人民币"
+        currency_name = "RMB"
         currency_symbol = "¥"
         
         if StockUtils and ticker:
             try:
                 market_info = StockUtils.get_market_info(ticker)
-                market_name = market_info.get('market_name', "中国A股")
-                currency_name = market_info.get('currency_name', "人民币")
+                market_name = market_info.get('market_name', "China A shares")
+                currency_name = market_info.get('currency_name', "RMB")
                 currency_symbol = market_info.get('currency_symbol', "¥")
                 market_company_name = str(market_info.get("company_name") or "").strip()
                 lookup_company_name = ""
@@ -363,107 +363,107 @@ class MarketAnalystV2(AnalystAgent):
                 if market_company_name:
                     company_name = market_company_name
                 elif lookup_company_name and (not company_name or company_name == ticker or company_name.isdigit()):
-                    # company_name 为空、等于 ticker 代码或纯数字时，均应使用 DB 查到的真实名称
+                    # company_name When it is empty, equal to ticker code or pure number, the real name found by DB should be used.
                     company_name = lookup_company_name
             except Exception as e:
-                logger.warning(f"获取市场信息失败: {e}")
+                logger.warning(f"Failed to obtain market information: {e}")
 
         if not company_name:
             company_name = ticker
         if not market_name:
-            market_name = "未知市场"
+            market_name = "unknown market"
         
-        # 准备模板变量（参考 research_manager_v2 的实现）
+        # Prepare template variables (refer to the implementation of research_manager_v2)
         template_variables = {
             "ticker": ticker,
             "company_name": company_name,
             "market_name": market_name,
             "analysis_date": analysis_date,
             "current_date": analysis_date,
-            "start_date": "",  # 可以计算1年前的日期
+            "start_date": "",  # Can calculate the date 1 year ago
             "currency_name": currency_name,
             "currency_symbol": currency_symbol,
             "tool_names": ", ".join([t.name for t in self._langchain_tools]) if self._langchain_tools else ""
         }
         
-        # 使用基类的通用方法获取用户提示词（参考 research_manager_v2）
-        # 基类会自动从 state 中提取系统变量（如 current_price、industry 等）
-        # 🔑 注意：工具返回的数据会通过 ToolMessage 传递，不需要在 user_prompt 中检查
+        # Use the general method of the base class to obtain user prompt words (refer to research_manager_v2)
+        # The base class will automatically extract system variables (such as current_price, industry, etc.) from state
+        # 🔑 Note: The data returned by the tool will be passed through ToolMessage and does not need to be checked in user_prompt
         prompt = self._get_prompt_from_template(
             agent_type="analysts_v2",
             agent_name="market_analyst_v2",
             variables=template_variables,
-            state=state,  # 🔑 传递 state，基类会自动提取系统变量
-            context=state.get("context"),  # 从 state 中获取 context
+            state=state,  # 🔑 Pass state and the base class will automatically extract system variables
+            context=state.get("context"),  # Get from state context
             fallback_prompt=None,
-            prompt_type="user"  # 🔑 明确指定获取用户提示词
+            prompt_type="user"  # 🔑 Explicitly specify the user prompt word to obtain
         )
         
         if prompt:
-            logger.info(f"✅ 从模板系统获取市场分析师 v2.0 用户提示词 (长度: {len(prompt)})")
-            logger.info(f"📝 用户提示词前500字符:\n{prompt[:500]}...")
+            logger.info(f"✅ Obtain market analyst v2.0 user prompt words from the template system (length: {len(prompt)})")
+            logger.info(f"📝 The first 500 characters of the user prompt word:\n{prompt[:500]}...")
             return prompt
         
-        # 降级：使用默认提示词（不再检查 tool_data，因为工具数据会通过 ToolMessage 传递）
-        logger.warning("⚠️ 未从模板系统获取到用户提示词，使用默认提示词")
-        return f"""请分析 {company_name}（{ticker}）在 {analysis_date} 的市场表现：
+        # Downgrade: Use default prompt word (tool_data is no longer checked as tool data is passed via ToolMessage)
+        logger.warning("⚠️ The user prompt word is not obtained from the template system, and the default prompt word is used.")
+        return f"""Please analyze {company_name} ({ticker}) in {analysis_date} market performance:
 
-股票代码：{ticker}
-公司名称：{company_name}
-分析日期：{analysis_date}
-市场类型：{market_name}
+Stock code:{ticker}
+Company name:{company_name}
+Analysis date:{analysis_date}
+Market type:{market_name}
 
-请调用工具获取市场数据，然后生成详细的市场分析报告。"""
+Please call the tool to obtain market data and then generate a detailed market analysis report."""
 
     def _build_analysis_prompt(self, ticker: str) -> str:
-        """构建工具调用后的专业分析提示词。"""
-        return f"""基于获取的数据，请生成 {ticker} 的专业市场结构研究报告，包括：
+        """Professional analysis prompt words after the build tool is called."""
+        return f"""Based on the obtained data, please generate {ticker} Professional market structure research reports, including:
 
-1. 股票基本信息
-2. 技术指标分析
-    - 移动平均线（MA）分析
-    - MACD指标分析
-    - RSI相对强弱指标
-    - 布林带（BOLL）分析
-3. 价格趋势分析
-    - 短期趋势（5-10个交易日）
-    - 中期趋势（20-60个交易日）
-    - 成交量分析
-4. 综合评估
-5. 对整体研究结论的影响
-6. 后续观察点
+1. Basic stock information
+2. Technical indicator analysis
+    - Moving Average (MA) Analysis
+    - MACD Indicator analysis
+    - RSI relative strength indicator
+    - Bollinger Bands (BOLL) analysis
+3. Price trend analysis
+    - Short term trend (5-10 trading days)
+    - Medium-term trend (20-60 trading days)
+    - Volume analysis
+4. comprehensive assessment
+5. Impact on overall research conclusions
+6. Follow-up observation points
 
-如果工具返回的实际数据日期不同于分析日期，必须在正文中明确写出实际数据日期。
-股票基本信息中的实际数据日期只能引用工具明确返回的“实际数据日期”或“最新有效日线日期”；如果分析日期是今天但工具显示最新有效日线仍为更早日期，禁止把分析日期直接写成实际数据日期。
-如果某项价格、指标或成交字段缺失，请直接写“工具结果未提供”或“该维度仍待验证”，不要自行补全。
-如果短期与中期信号冲突，必须明确写出冲突点以及为什么不能下更强结论。
-股票基本信息部分要写明公司名称、股票代码、所属市场、实际数据日期、当前价格、涨跌幅和成交量。
-技术指标分析部分要尽量完整覆盖 MA、MACD、RSI、BOLL 中工具已返回的内容，不要只写笼统总结。
-价格趋势分析部分要覆盖短期趋势、中期趋势和成交量分析，保留最近5日高低点、均价或价格重心变化等事实数据。
-如果工具只提供当前值、最近5日统计或单次快照，不得写“持续放大”“继续扩大”“连续多个交易日”“始终运行于”“站稳”“有效突破”“跌破失守”等需要更长时序验证的措辞。
-均线排列关系与均线斜率方向要分开表述；若没有更长历史序列，不要把“MA20 高于 MA60”直接写成“MA60 向上运行”或“中期趋势已扭转”。
-若工具结果中已包含“均线方向结论（工具端确定性计算）”，必须直接引用该结论，不要自行二次计算MA斜率或拐头。
-若工具结果中包含“MACHINE_READABLE_MA_CONCLUSIONS”字段块，应优先按该字段块直接引用 MA5/MA10/MA20/MA60 的方向与拐头结论，不要自行从原始价格再推导。
-若工具结果中包含“MACHINE_READABLE_MACD_CONCLUSIONS”字段块，应优先引用其中的 `macd.cross_signal`、`macd.dif_dea_relation`、`macd.hist_trend`，不要自行判断金叉/死叉。
-凡是写到价格、均线或最近5日高低点的大小规律，必须先按工具给出的真实数值核对；后续文字必须与表格和数值一致。若无法确保完整排序正确，就只写逐项高于/低于关系，不要强行写链式排列。
-不得写出与真实数值相反的比较式；例如 MA20 高于 MA60 时，不能写成“MA60 高于 MA20”。
-只有工具明确提供价格与指标拐点对应关系或直接识别结果时，才可使用“背离”一词；否则改写为“信号分化”或“尚未形成一致验证”。
-可以写最近5日历史高低点形成的历史波动区间，但不得写未来价格分析区间、关键触发区间或执行阈值。
-如果工具只给出最近5日最高价、最低价、均价或当前价格与均线位置，只能写“最高价为”“触及”“位于”“高于/低于”“接近”等事实，不得改写成“短暂突破”“重新站稳”“持续运行于”等确认式措辞。
-若工具未直接返回逐日穿越或阈值验证事实，不要写“曾一度突破MA5”“未能维持站稳”“有效站稳关键短期均线”等过程化表述；改写为当前价格与均线的相对关系及仍待验证事项。
-只要描述价格与均线、布林带或历史区间的相对关系，优先使用“高于/低于”“位于”“接近”“处于区间中上部”“关系仍待改善”等表述，不要使用“站上”“站稳”“强势突破”“有效突破”“持续运行于”“持续放大”“上行空间”这类阈值或空间化措辞。
-允许引用真实数值做事实说明，但不要把数值写成投资评级、目标价、价格分析区间、支撑阻力位、关键执行位、风险控制位或交易触发条件。
-请使用研究口径解释趋势、结构、动能和量价关系，不要把“突破、跌破、站稳、失守、回踩确认、放量突破”写成执行方案。
-`综合评估` 只归纳技术状态、主要强弱信号和冲突点，不要逐段重复前文指标解释；`对整体研究结论的影响` 只说明这些信号如何强化、削弱或中性影响整体研究，避免重复复述整套指标。
-后续观察点不要写成“是否站稳于MA5之上”“是否持续运行于MA10与MA20之上”“若价格创新高则背离”等阈值句式；改写为关系是否改善、量价是否继续一致、指标同步性是否增强或减弱等可复核方向。
-即便是否定句，也不要写“未形成有效突破”“未站稳于MA5之上”“MACD柱状图未持续放大”；改写为“上破证据仍不足”“价格与MA5关系仍待改善”“MACD当前为正值但延续性仍待验证”。
-正文与后续观察点都不要写“尚未站稳于MA5之上”“未能有效站稳关键短期均线”“能否实现有效站稳”“柱状图是否出现持续放大”；改写为“价格低于MA5，短期均线关系仍待改善”“MACD当前为正值，但动能一致性仍待验证”。
-若价格位于布林带中上部或高于部分均线，只能说明当前位置关系，不要写成“具备一定上行空间”“上方仍有空间”或其他空间判断。
-输出前必须做一次逐词自检：最终报告中不得出现“站上”“站稳”“有效突破”“强势突破”“持续运行于”“持续放大”“突破布林带上轨”“上行空间”这些原词；若出现，必须全部改写后再输出。
-在工具结果充分时，报告应保持足够展开，正常情况下不少于800字。
+If the actual data date returned by the tool differs from the analysis date, the actual data date must be clearly stated in the text.
+The actual data dates in the stock basic information can only refer to those explicitly returned by the tool. actual data date or Latest effective daily date ; If the analysis date is today but the tool shows that the latest valid daily line is still an earlier date, it is prohibited to write the analysis date directly as the actual data date.
+If a price, indicator or transaction field is missing, please write directly Tool results not provided or This dimension still needs to be verified , Don t complete it yourself.
+If short-term and medium-term signals conflict, the point of conflict must be clearly written and why a stronger conclusion cannot be drawn.
+The basic stock information part must state the company name, stock code, market, actual data date, current price, increase or decrease, and trading volume.
+The technical indicator analysis part should try to fully cover the content returned by the tools in MA, MACD, RSI, and BOLL. Do not just write a general summary.
+The price trend analysis part should cover short-term trends, medium-term trends and trading volume analysis, and retain factual data such as high and low points, average prices or changes in price center of the last 5 days.
+If the tool only provides current values, statistics for the last 5 days, or a single snapshot, you must not write Keep zooming in  continue to expand  Multiple consecutive trading days  always run on  stand firm  Effective breakthrough  Fall below Wait for wording that requires longer timing verification.
+The moving average arrangement relationship and the moving average slope direction should be expressed separately; if there is no longer historical sequence, do not MA20 higher than MA60 written directly as MA60 run upward or The medium-term trend has reversed . 
+If the tool results include Moving average direction conclusion (deterministic calculation on tool end) , This conclusion must be quoted directly, and do not calculate the MA slope or turning head twice by yourself.
+If tool results include MACHINE_READABLE_MA_CONCLUSIONS For field blocks, priority should be given to directly quoting the direction and turning conclusions of MA5/MA10/MA20/MA60 according to this field block, and do not deduce it from the original price.
+If tool results include MACHINE_READABLE_MACD_CONCLUSIONS Field blocks, which should be referenced first `macd.cross_signal`, `macd.dif_dea_relation`, `macd.hist_trend`, Don t judge the golden cross/dead cross by yourself.
+Anyone who writes about prices, moving averages or the size patterns of high and low points in the last 5 days must first check them against the real values given by the tool; subsequent text must be consistent with the table and values. If you cannot ensure that the complete sorting is correct, just write the item-by-item above/below relationship, and do not force a chain arrangement.
+Comparative formulas that are opposite to the real values must not be written; for example, when MA20 is higher than MA60, it cannot be written as MA60 higher than MA20 . 
+It can only be used if the tool clearly provides the corresponding relationship between price and indicator turning points or directly identifies the results. departure one word; otherwise rewrite as signal differentiation or No consensus has been verified yet . 
+You can write the historical fluctuation range formed by the historical highs and lows of the last 5 days, but you are not allowed to write the future price analysis range, key trigger range or execution threshold.
+If the tool only provides the highest price, lowest price, average price or current price and moving average position in the last 5 days, you can only write The highest price is  touch  located in  above/below  close and other facts, shall not be rewritten as brief breakthrough  regain a foothold  Continuously running on Confirmatory wording.
+If the tool does not directly return daily crossing or threshold verification facts, do not write once had a breakthrough MA5  Unable to maintain firm footing  Effectively stabilize key short-term moving averages and other procedural expressions; rewritten as the relative relationship between the current price and the moving average and matters that still need to be verified.
+As long as the relative relationship between price and moving averages, Bollinger Bands or historical ranges is described, it is preferred to use above/below  located in  close  In the upper middle of the range  Relations still need to be improved and other expressions, do not use stand on  stand firm  Strong breakthrough  Effective breakthrough  Continuously running on  Keep zooming in  Upside This kind of threshold or spatialized wording.
+It is allowed to quote real numerical values for factual explanations, but do not write the numerical values as investment ratings, target prices, price analysis ranges, support and resistance levels, key execution levels, risk control levels or trading trigger conditions.
+Please use research methods to explain trends, structures, momentum and volume-price relationships, and do not Breakthrough, fall below, stand firm, fall, step back to confirm, heavy volume breakthrough Write an execution plan.
+`comprehensive assessment` Only summarize the technical status, main strong and weak signals and conflict points, do not repeat the previous indicator explanations paragraph by paragraph;`Impact on overall research conclusions` Simply describe how these signals strengthen, weaken, or neutralize the overall study and avoid restating the entire set of indicators.
+Do not write follow-up observation points as Is it standing firmly above MA5?  Whether it continues to operate above MA10 and MA20  Divergence if price reaches new highs Wait for the threshold sentence; rewrite it as a reviewable direction such as whether the relationship is improved, whether the volume and price continue to be consistent, whether the synchronization of indicators is enhanced or weakened, etc.
+Even if it is a negative sentence, do not write it No effective breakthrough has been formed  Not firmly above MA5  MACD The histogram does not continue to zoom in ; rewritten as There is still insufficient evidence to break through  The relationship between price and MA5 still needs to be improved  MACD Currently positive but continuity remains to be verified . 
+Do not write the main text or subsequent observation points. Not yet firmly above MA5  Failure to effectively stabilize key short-term moving averages  Whether it is possible to achieve effective standing  Does the histogram appear to be continuously enlarged? ; rewritten as Price is below MA5, short-term moving average relationship still needs to be improved  MACD Currently positive, but momentum consistency remains to be verified . 
+If the price is in the middle and upper part of the Bollinger Bands or higher than some moving averages, it can only explain the current position relationship, do not write There is some room for upside  There s still room above or other spatial judgments.
+A word-by-word self-check must be done before output: it must not appear in the final report stand on  stand firm  Effective breakthrough  Strong breakthrough  Continuously running on  Keep zooming in  Breaking through the Bollinger Band track  Upside If these original words appear, they must all be rewritten before outputting.
+When the tool results are sufficient, the report should be kept sufficiently expanded, normally no less than 800 words.
 
-不要输出交易建议、目标价、价格区间、仓位或执行计划。
-不得添加任何署名、作者、分析师、日期或声明信息。"""
+Do not output trading recommendations, price targets, price ranges, positions, or execution plans.
+No byline, author, analyst, date or claim information may be added."""
 
     def _sanitize_report(self, report: str) -> str:
         if not isinstance(report, str) or not report:
@@ -474,37 +474,37 @@ class MarketAnalystV2(AnalystAgent):
             sanitized = re.sub(pattern, replacement, sanitized)
 
         if sanitized != report:
-            logger.info("[market_analyst_v2] 已对报告执行合规净化")
+            logger.info("[market_analyst_v2] Report has been sanitized for compliance")
 
         return sanitized
 
     def _get_company_name(self, ticker: str, market_info: dict) -> str:
         """
-        获取公司名称
+        Get company name
 
         Args:
-            ticker: 股票代码
-            market_info: 市场信息
+            ticker: Stock code
+            market_info: market information
 
         Returns:
-            公司名称
+            Company name
         """
         try:
             if market_info['is_china']:
                 from tradingagents.dataflows.interface import get_china_stock_info_unified
                 stock_info = get_china_stock_info_unified(ticker)
-                if stock_info and "股票名称:" in stock_info:
-                    return stock_info.split("股票名称:")[1].split("\n")[0].strip()
+                if stock_info and "Stock name:" in stock_info:
+                    return stock_info.split("Stock name:")[1].split("\n")[0].strip()
             elif market_info['is_hk']:
                 from tradingagents.dataflows.providers.hk.improved_hk import get_hk_company_name_improved
                 return get_hk_company_name_improved(ticker)
             elif market_info['is_us']:
                 us_stock_names = {
-                    'AAPL': '苹果公司', 'TSLA': '特斯拉', 'NVDA': '英伟达',
-                    'MSFT': '微软', 'GOOGL': '谷歌', 'AMZN': '亚马逊',
+                    'AAPL': 'apple inc.', 'TSLA': 'Tesla', 'NVDA': 'NVIDIA',
+                    'MSFT': 'Microsoft', 'GOOGL': 'Google', 'AMZN': 'Amazon',
                 }
-                return us_stock_names.get(ticker.upper(), f"美股{ticker}")
+                return us_stock_names.get(ticker.upper(), f"US stocks{ticker}")
         except Exception as e:
-            logger.warning(f"获取公司名称失败: {e}")
+            logger.warning(f"Failed to get company name: {e}")
 
-        return f"股票{ticker}"
+        return f"stocks{ticker}"

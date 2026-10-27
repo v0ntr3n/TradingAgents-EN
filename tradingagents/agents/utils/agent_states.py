@@ -6,7 +6,7 @@ from tradingagents.agents import *
 from langgraph.prebuilt import ToolNode
 from langgraph.graph import END, StateGraph, START, MessagesState
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 
@@ -57,7 +57,7 @@ class AgentState(MessagesState):
 
     sender: Annotated[str, "Agent that sent this message"]
 
-    # research step - 现有分析师报告
+    # research step - Current analyst reports
     market_report: Annotated[str, "Report from the Market Analyst"]
     sentiment_report: Annotated[str, "Report from the Social Media Analyst"]
     news_report: Annotated[
@@ -65,11 +65,11 @@ class AgentState(MessagesState):
     ]
     fundamentals_report: Annotated[str, "Report from the Fundamentals Researcher"]
 
-    # 🆕 新增：宏观分析报告
-    sector_report: Annotated[str, "Report from the Sector/Industry Analyst (行业/板块分析报告)"]
-    index_report: Annotated[str, "Report from the Index/Market Analyst (大盘/指数分析报告)"]
+    # 🆕 New: Macro analysis report
+    sector_report: Annotated[str, "Report from the Sector/Industry Analyst (Industry/sector analysis report)"]
+    index_report: Annotated[str, "Report from the Index/Market Analyst (Market/index analysis report)"]
 
-    # 🔧 死循环修复: 工具调用计数器
+    # 🔧 Infinite loop repair: Tool call counter
     market_tool_call_count: Annotated[int, "Market analyst tool call counter"]
     news_tool_call_count: Annotated[int, "News analyst tool call counter"]
     sentiment_tool_call_count: Annotated[int, "Social media analyst tool call counter"]

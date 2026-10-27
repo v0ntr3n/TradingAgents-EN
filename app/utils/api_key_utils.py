@@ -1,7 +1,7 @@
 """
-API Key 处理工具函数
+API Key Processing utility functions
 
-提供统一的 API Key 验证、缩略、环境变量读取等功能
+Provides unified API Key verification, abbreviation, environment variable reading and other functions
 """
 
 import os
@@ -10,43 +10,43 @@ from typing import Optional
 
 def is_valid_api_key(api_key: Optional[str]) -> bool:
     """
-    判断 API Key 是否有效
+    Determine whether the API Key is valid
     
-    有效的 API Key 必须满足：
-    1. 不能为空
-    2. 长度必须 >= 5
-    3. 不能是占位符（前缀：your_, your-）
-    4. 不能是占位符（后缀：_here, -here）
-    5. 不能是截断的密钥（包含 '...'）
+    A valid API Key must satisfy:
+    1. cannot be empty
+    2. The length must be >= 5
+    3. Cannot be a placeholder (prefix:your_, your-) 
+    4. Cannot be a placeholder (suffix:_here, -here) 
+    5. Cannot be a truncated key (containing '...') 
     
     Args:
-        api_key: 要验证的 API Key
+        api_key: To be verified API Key
         
     Returns:
-        bool: 是否有效
+        bool: Is it valid?
     """
     if not api_key:
         return False
     
     api_key = api_key.strip()
     
-    # 1. 不能为空
+    # 1. cannot be empty
     if not api_key:
         return False
     
-    # 2. 长度必须 >= 5
+    # 2. The length must be >= 5
     if len(api_key) < 5:
         return False
     
-    # 3. 不能是占位符（前缀）
+    # 3. Cannot be a placeholder (prefix)
     if api_key.startswith('your_') or api_key.startswith('your-'):
         return False
     
-    # 4. 不能是占位符（后缀）
+    # 4. Cannot be a placeholder (suffix)
     if api_key.endswith('_here') or api_key.endswith('-here'):
         return False
     
-    # 5. 不能是截断的密钥（包含 '...'）
+    # 5. Cannot be a truncated key (containing '...') 
     if '...' in api_key:
         return False
     
@@ -55,17 +55,17 @@ def is_valid_api_key(api_key: Optional[str]) -> bool:
 
 def truncate_api_key(api_key: Optional[str]) -> Optional[str]:
     """
-    缩略 API Key，显示前6位和后6位
+    Abbreviated API Key, showing the first 6 digits and the last 6 digits
     
-    示例：
-        输入：'d1el869r01qghj41hahgd1el869r01qghj41hai0'
-        输出：'d1el86...j41hai0'
+    Example:
+        Input:'d1el869r01qghj41hahgd1el869r01qghj41hai0'
+        Output:'d1el86...j41hai0'
     
     Args:
-        api_key: 要缩略的 API Key
+        api_key: To be abbreviated API Key
         
     Returns:
-        str: 缩略后的 API Key，如果输入为空或长度 <= 12 则返回原值
+        str: Abbreviated API Key, if input is empty or length <= 12 then return the original value
     """
     if not api_key or len(api_key) <= 12:
         return api_key
@@ -75,15 +75,15 @@ def truncate_api_key(api_key: Optional[str]) -> Optional[str]:
 
 def get_env_api_key_for_provider(provider_name: str) -> Optional[str]:
     """
-    从环境变量获取大模型厂家的 API Key
+    Obtain the large model manufacturer s information from environment variables API Key
     
-    环境变量名格式：{PROVIDER_NAME}_API_KEY
+    Environment variable name format:{PROVIDER_NAME}_API_KEY
     
     Args:
-        provider_name: 厂家名称（如 'deepseek', 'dashscope'）
+        provider_name: Manufacturer name (such as 'deepseek', 'dashscope') 
         
     Returns:
-        str: 环境变量中的 API Key，如果不存在或无效则返回 None
+        str: API Key in environment variables, returned if it does not exist or is invalid None
     """
     env_key_name = f"{provider_name.upper()}_API_KEY"
     env_key = os.getenv(env_key_name)
@@ -96,9 +96,9 @@ def get_env_api_key_for_provider(provider_name: str) -> Optional[str]:
 
 def get_env_api_key_for_datasource(ds_type: str) -> Optional[str]:
     """
-    从环境变量获取数据源的 API Key
+    Get the data source from environment variables API Key
     
-    数据源类型到环境变量名的映射：
+    Mapping of data source types to environment variable names:
     - tushare → TUSHARE_TOKEN
     - finnhub → FINNHUB_API_KEY
     - polygon → POLYGON_API_KEY
@@ -107,12 +107,12 @@ def get_env_api_key_for_datasource(ds_type: str) -> Optional[str]:
     - alphavantage → ALPHAVANTAGE_API_KEY
     
     Args:
-        ds_type: 数据源类型（如 'tushare', 'finnhub'）
+        ds_type: Data source type (e.g. 'tushare', 'finnhub') 
         
     Returns:
-        str: 环境变量中的 API Key，如果不存在或无效则返回 None
+        str: API Key in environment variables, returned if it does not exist or is invalid None
     """
-    # 数据源类型到环境变量名的映射
+    # Mapping of data source types to environment variable names
     env_key_map = {
         "tushare": "TUSHARE_TOKEN",
         "qmt": "QMT_TOKEN",
@@ -137,28 +137,28 @@ def get_env_api_key_for_datasource(ds_type: str) -> Optional[str]:
 
 def should_skip_api_key_update(api_key: Optional[str]) -> bool:
     """
-    判断是否应该跳过 API Key 的更新
+    Determine whether API Key update should be skipped
 
-    以下情况应该跳过更新（保留原值）：
-    1. API Key 是截断的密钥（包含 '...'）
-    2. API Key 是占位符（your_*, your-*）
+    Updates should be skipped (original values retained) in the following cases:
+    1. API Key is the truncated key (containing '...') 
+    2. API Key is a placeholder (your_*, your-*) 
 
     Args:
-        api_key: 要检查的 API Key
+        api_key: To be checked API Key
 
     Returns:
-        bool: 是否应该跳过更新
+        bool: Should updates be skipped?
     """
     if not api_key:
         return False
 
     api_key = api_key.strip()
 
-    # 1. 截断的密钥（包含 '...'）
+    # 1. Truncated key (contains '...') 
     if '...' in api_key:
         return True
 
-    # 2. 占位符
+    # 2. placeholder
     if api_key.startswith('your_') or api_key.startswith('your-'):
         return True
 
@@ -167,22 +167,22 @@ def should_skip_api_key_update(api_key: Optional[str]) -> bool:
 
 def has_valid_api_key(llm_config, providers_dict: Optional[dict] = None) -> bool:
     """
-    判断 LLM 配置是否有有效的 API Key
+    Determine whether the LLM configuration has a valid API Key
 
-    检查顺序（与 /api/config/llm/providers 接口逻辑一致）：
-    1. 检查是否是本地模型（ollama、localai），本地模型不需要 API Key
-    2. 检查模型配置中的 api_key
-    3. 检查厂家配置中的 api_key（如果提供了 providers_dict）
-    4. 检查环境变量中的 api_key
+    Checking sequence (consistent with /api/config/llm/providers interface logic):
+    1. Check whether it is a local model (ollama, localai), local models are not required API Key
+    2. Check the model configuration for api_key
+    3. Check api_key in manufacturer configuration (if providers_dict is provided)
+    4. Check the environment variables for api_key
 
     Args:
-        llm_config: LLM 配置对象（LLMConfig 或字典）
-        providers_dict: 厂家配置字典 {provider_name: LLMProvider}，可选
+        llm_config: LLM Configuration object (LLMConfig or dictionary)
+        providers_dict: Manufacturer configuration dictionary {provider_name: LLMProvider}, Optional
 
     Returns:
-        bool: 是否有有效的 API Key（与 has_api_key 字段逻辑一致）
+        bool: Whether there is a valid API Key (logically consistent with the has_api_key field)
     """
-    # 获取 provider 和 api_key
+    # Get provider and api_key
     if hasattr(llm_config, 'provider'):
         provider = llm_config.provider
         model_api_key = llm_config.api_key
@@ -190,19 +190,19 @@ def has_valid_api_key(llm_config, providers_dict: Optional[dict] = None) -> bool
         provider = llm_config.get('provider', '')
         model_api_key = llm_config.get('api_key', '')
 
-    # 🔥 本地模型不需要 API Key
+    # 🔥 Not required for local models API Key
     local_models = ["ollama", "localai"]
     if provider.lower() in local_models:
         return True
 
-    # 1. 检查模型配置中的 api_key
+    # 1. Check the model configuration for api_key
     if is_valid_api_key(model_api_key):
         return True
 
-    # 2. 检查厂家配置中的 api_key（优先使用数据库配置）
+    # 2. Check the api_key in the manufacturer configuration (use database configuration first)
     if providers_dict and provider in providers_dict:
         provider_obj = providers_dict[provider]
-        # 🔥 检查厂家是否是本地模型
+        # 🔥 Check if the manufacturer is a local model
         provider_name = provider_obj.name if hasattr(provider_obj, 'name') else provider_obj.get('name', '')
         if provider_name.lower() in local_models:
             return True
@@ -211,7 +211,7 @@ def has_valid_api_key(llm_config, providers_dict: Optional[dict] = None) -> bool
         if is_valid_api_key(provider_api_key):
             return True
 
-    # 3. 检查环境变量中的 api_key（与 /api/config/llm/providers 逻辑一致）
+    # 3. Check the api_key in the environment variable (logically consistent with /api/config/llm/providers)
     env_api_key = get_env_api_key_for_provider(provider)
     if env_api_key:
         return True

@@ -1,6 +1,6 @@
 """
-股票数据模型 - 基于现有集合扩展
-采用方案B: 在现有集合基础上扩展字段，保持向后兼容
+Stock data model - extension based on existing collection
+Adoption plan B: Extend fields based on existing collections to maintain backward compatibility
 """
 from datetime import datetime, date
 from typing import Optional, Dict, Any, List, Literal
@@ -9,7 +9,7 @@ from bson import ObjectId
 
 
 def to_str_id(v: Any) -> str:
-    """ObjectId转字符串工具函数"""
+    """ObjectId Convert string tool function"""
     try:
         if isinstance(v, ObjectId):
             return str(v)
@@ -18,129 +18,129 @@ def to_str_id(v: Any) -> str:
         return ""
 
 
-# 枚举类型定义
-MarketType = Literal["CN", "HK", "US"]  # 市场类型
-ExchangeType = Literal["SZSE", "SSE", "SEHK", "NYSE", "NASDAQ"]  # 交易所
-StockStatus = Literal["L", "D", "P"]  # 上市状态: L-上市 D-退市 P-暂停
-CurrencyType = Literal["CNY", "HKD", "USD"]  # 货币类型
+# Enumeration type definition
+MarketType = Literal["CN", "HK", "US"]  # market type
+ExchangeType = Literal["SZSE", "SSE", "SEHK", "NYSE", "NASDAQ"]  # exchange
+StockStatus = Literal["L", "D", "P"]  # Listing status: L-Listing D-Delisting P-Suspension
+CurrencyType = Literal["CNY", "HKD", "USD"]  # currency type
 
 
 class MarketInfo(BaseModel):
-    """市场信息结构 - 新增字段"""
-    market: MarketType = Field(..., description="市场标识")
-    exchange: ExchangeType = Field(..., description="交易所代码")
-    exchange_name: str = Field(..., description="交易所名称")
-    currency: CurrencyType = Field(..., description="交易货币")
-    timezone: str = Field(..., description="时区")
-    trading_hours: Optional[Dict[str, Any]] = Field(None, description="交易时间")
+    """Market information structure - new fields"""
+    market: MarketType = Field(..., description="market identification")
+    exchange: ExchangeType = Field(..., description="Exchange code")
+    exchange_name: str = Field(..., description="Exchange name")
+    currency: CurrencyType = Field(..., description="trading currency")
+    timezone: str = Field(..., description="time zone")
+    trading_hours: Optional[Dict[str, Any]] = Field(None, description="trading hours")
 
 
 class TechnicalIndicators(BaseModel):
-    """技术指标结构 - 分类扩展设计"""
-    # 趋势指标
-    trend: Optional[Dict[str, float]] = Field(None, description="趋势指标")
-    # 震荡指标  
-    oscillator: Optional[Dict[str, float]] = Field(None, description="震荡指标")
-    # 通道指标
-    channel: Optional[Dict[str, float]] = Field(None, description="通道指标")
-    # 成交量指标
-    volume: Optional[Dict[str, float]] = Field(None, description="成交量指标")
-    # 波动率指标
-    volatility: Optional[Dict[str, float]] = Field(None, description="波动率指标")
-    # 自定义指标
-    custom: Optional[Dict[str, Any]] = Field(None, description="自定义指标")
+    """Technical indicator structure - classification expansion design"""
+    # trend indicator
+    trend: Optional[Dict[str, float]] = Field(None, description="trend indicator")
+    # Oscillator  
+    oscillator: Optional[Dict[str, float]] = Field(None, description="Oscillator")
+    # channel indicator
+    channel: Optional[Dict[str, float]] = Field(None, description="channel indicator")
+    # volume indicator
+    volume: Optional[Dict[str, float]] = Field(None, description="volume indicator")
+    # volatility indicator
+    volatility: Optional[Dict[str, float]] = Field(None, description="volatility indicator")
+    # Custom indicators
+    custom: Optional[Dict[str, Any]] = Field(None, description="Custom indicators")
 
 
 class StockBasicInfoExtended(BaseModel):
     """
-    股票基础信息扩展模型 - 基于现有 stock_basic_info 集合
-    统一使用 symbol 作为主要股票代码字段
+    Stock basic information extension model - based on the existing stock_basic_info collection
+    Uniformly use symbol as the main stock code field
     """
-    # === 标准化字段 (主要字段) ===
-    symbol: str = Field(..., description="6位股票代码", pattern=r"^\d{6}$")
-    full_symbol: str = Field(..., description="完整标准化代码(如 000001.SZ)")
-    name: str = Field(..., description="股票名称")
+    # === Standardized fields (Main fields) ===
+    symbol: str = Field(..., description="6 stock code", pattern=r"^\d{6}$")
+    full_symbol: str = Field(..., description="Complete standardized code(Such as 000001.SZ)")
+    name: str = Field(..., description="Stock name")
 
-    # === 兼容字段 (保持向后兼容) ===
-    code: Optional[str] = Field(None, description="6位股票代码(已废弃,使用symbol)")
+    # === Compatible fields (Stay backwards compatible) ===
+    code: Optional[str] = Field(None, description="6 stock code(Deprecated,Use symbol)")
 
-    # === 基础信息字段 ===
-    area: Optional[str] = Field(None, description="所在地区")
-    industry: Optional[str] = Field(None, description="行业")
-    market: Optional[str] = Field(None, description="交易所名称")
-    list_date: Optional[str] = Field(None, description="上市日期")
-    sse: Optional[str] = Field(None, description="板块")
-    sec: Optional[str] = Field(None, description="所属板块")
-    source: Optional[str] = Field(None, description="数据来源")
-    updated_at: Optional[datetime] = Field(None, description="更新时间")
+    # === Basic information fields ===
+    area: Optional[str] = Field(None, description="area")
+    industry: Optional[str] = Field(None, description="Industry")
+    market: Optional[str] = Field(None, description="Exchange name")
+    list_date: Optional[str] = Field(None, description="Listing date")
+    sse: Optional[str] = Field(None, description="plate")
+    sec: Optional[str] = Field(None, description="Sector")
+    source: Optional[str] = Field(None, description="Data source")
+    updated_at: Optional[datetime] = Field(None, description="Update time")
 
-    # 市值字段
-    total_mv: Optional[float] = Field(None, description="总市值(亿元)")
-    circ_mv: Optional[float] = Field(None, description="流通市值(亿元)")
+    # market cap field
+    total_mv: Optional[float] = Field(None, description="Total market capitalization(billion)")
+    circ_mv: Optional[float] = Field(None, description="Circulation market value(billion)")
 
-    # 财务指标
-    pe: Optional[float] = Field(None, description="市盈率")
-    pb: Optional[float] = Field(None, description="市净率")
-    pe_ttm: Optional[float] = Field(None, description="滚动市盈率")
-    pb_mrq: Optional[float] = Field(None, description="最新市净率")
-    roe: Optional[float] = Field(None, description="净资产收益率")
+    # financial indicators
+    pe: Optional[float] = Field(None, description="P/E ratio")
+    pb: Optional[float] = Field(None, description="price to book ratio")
+    pe_ttm: Optional[float] = Field(None, description="rolling price to earnings ratio")
+    pb_mrq: Optional[float] = Field(None, description="Latest price-to-book ratio")
+    roe: Optional[float] = Field(None, description="ROE")
 
-    # 交易指标
-    turnover_rate: Optional[float] = Field(None, description="换手率%")
-    volume_ratio: Optional[float] = Field(None, description="量比")
+    # trading indicators
+    turnover_rate: Optional[float] = Field(None, description="turnover rate%")
+    volume_ratio: Optional[float] = Field(None, description="Quantity ratio")
 
-    # === 扩展字段 ===
-    name_en: Optional[str] = Field(None, description="英文名称")
+    # === extension fields ===
+    name_en: Optional[str] = Field(None, description="English name")
     
-    # 新增市场信息
-    market_info: Optional[MarketInfo] = Field(None, description="市场信息")
+    # Add market information
+    market_info: Optional[MarketInfo] = Field(None, description="market information")
     
-    # 新增标准化字段
-    board: Optional[str] = Field(None, description="板块标准化")
-    industry_code: Optional[str] = Field(None, description="行业代码")
-    sector: Optional[str] = Field(None, description="所属板块标准化（GICS行业）")
-    delist_date: Optional[str] = Field(None, description="退市日期")
-    status: Optional[StockStatus] = Field(None, description="上市状态")
-    is_hs: Optional[bool] = Field(None, description="是否沪深港通标的")
+    # Add new standardized fields
+    board: Optional[str] = Field(None, description="Sector standardization")
+    industry_code: Optional[str] = Field(None, description="Industry code")
+    sector: Optional[str] = Field(None, description="Standardization of the sector (GICS industry)")
+    delist_date: Optional[str] = Field(None, description="Delisting date")
+    status: Optional[StockStatus] = Field(None, description="Listing status")
+    is_hs: Optional[bool] = Field(None, description="Is it subject to Shanghai-Shenzhen-Hong Kong Stock Connect?")
 
-    # 新增股本信息
-    total_shares: Optional[float] = Field(None, description="总股本")
-    float_shares: Optional[float] = Field(None, description="流通股本")
+    # Add equity information
+    total_shares: Optional[float] = Field(None, description="total share capital")
+    float_shares: Optional[float] = Field(None, description="circulating capital")
 
-    # 港股特有字段
-    lot_size: Optional[int] = Field(None, description="每手股数（港股特有）")
+    # Hong Kong stocks specific fields
+    lot_size: Optional[int] = Field(None, description="Number of shares per lot (specific to Hong Kong stocks)")
 
-    # 货币字段
-    currency: Optional[CurrencyType] = Field(None, description="交易货币")
+    # currency field
+    currency: Optional[CurrencyType] = Field(None, description="trading currency")
     
-    # 版本控制
-    data_version: Optional[int] = Field(None, description="数据版本")
+    # version control
+    data_version: Optional[int] = Field(None, description="Data version")
     
     class Config:
-        # 允许额外字段，保持向后兼容
+        # Allow extra fields to maintain backward compatibility
         extra = "allow"
-        # 示例数据
+        # Sample data
         json_schema_extra = {
             "example": {
-                # 标准化字段
+                # Standardized fields
                 "symbol": "000001",
                 "full_symbol": "000001.SZ",
-                "name": "平安银行",
+                "name": "Ping An Bank",
 
-                # 基础信息
-                "area": "深圳",
-                "industry": "银行",
-                "market": "深圳证券交易所",
-                "sse": "主板",
+                # Basic information
+                "area": "Shenzhen",
+                "industry": "bank",
+                "market": "Shenzhen Stock Exchange",
+                "sse": "motherboard",
                 "total_mv": 2500.0,
                 "pe": 5.2,
                 "pb": 0.8,
 
-                # 扩展字段
+                # extension fields
                 "market_info": {
                     "market": "CN",
                     "exchange": "SZSE",
-                    "exchange_name": "深圳证券交易所",
+                    "exchange_name": "Shenzhen Stock Exchange",
                     "currency": "CNY",
                     "timezone": "Asia/Shanghai"
                 },
@@ -152,58 +152,58 @@ class StockBasicInfoExtended(BaseModel):
 
 class MarketQuotesExtended(BaseModel):
     """
-    实时行情扩展模型 - 基于现有 market_quotes 集合
-    统一使用 symbol 作为主要股票代码字段
+    Real-time quotation extension model - based on the existing market_quotes collection
+    Uniformly use symbol as the main stock code field
     """
-    # === 标准化字段 (主要字段) ===
-    symbol: str = Field(..., description="6位股票代码", pattern=r"^\d{6}$")
-    full_symbol: Optional[str] = Field(None, description="完整标准化代码")
-    market: Optional[MarketType] = Field(None, description="市场标识")
+    # === Standardized fields (Main fields) ===
+    symbol: str = Field(..., description="6 stock code", pattern=r"^\d{6}$")
+    full_symbol: Optional[str] = Field(None, description="Complete standardized code")
+    market: Optional[MarketType] = Field(None, description="market identification")
 
-    # === 兼容字段 (保持向后兼容) ===
-    code: Optional[str] = Field(None, description="6位股票代码(已废弃,使用symbol)")
+    # === Compatible fields (Stay backwards compatible) ===
+    code: Optional[str] = Field(None, description="6 stock code(Deprecated,Use symbol)")
 
-    # === 行情字段 ===
-    close: Optional[float] = Field(None, description="收盘价")
-    pct_chg: Optional[float] = Field(None, description="涨跌幅%")
-    amount: Optional[float] = Field(None, description="成交额")
-    open: Optional[float] = Field(None, description="开盘价")
-    high: Optional[float] = Field(None, description="最高价")
-    low: Optional[float] = Field(None, description="最低价")
-    pre_close: Optional[float] = Field(None, description="前收盘价")
-    trade_date: Optional[str] = Field(None, description="交易日期")
-    updated_at: Optional[datetime] = Field(None, description="更新时间")
+    # === Quote field ===
+    close: Optional[float] = Field(None, description="closing price")
+    pct_chg: Optional[float] = Field(None, description="Increase or decrease%")
+    amount: Optional[float] = Field(None, description="Turnover")
+    open: Optional[float] = Field(None, description="opening price")
+    high: Optional[float] = Field(None, description="highest price")
+    low: Optional[float] = Field(None, description="lowest price")
+    pre_close: Optional[float] = Field(None, description="previous closing price")
+    trade_date: Optional[str] = Field(None, description="transaction date")
+    updated_at: Optional[datetime] = Field(None, description="Update time")
     
-    # 新增行情字段
-    current_price: Optional[float] = Field(None, description="当前价格(与close相同)")
-    change: Optional[float] = Field(None, description="涨跌额")
-    volume: Optional[float] = Field(None, description="成交量")
-    turnover_rate: Optional[float] = Field(None, description="换手率")
-    volume_ratio: Optional[float] = Field(None, description="量比")
+    # Added quotation field
+    current_price: Optional[float] = Field(None, description="current price(Same as close)")
+    change: Optional[float] = Field(None, description="Changes")
+    volume: Optional[float] = Field(None, description="Volume")
+    turnover_rate: Optional[float] = Field(None, description="turnover rate")
+    volume_ratio: Optional[float] = Field(None, description="Quantity ratio")
     
-    # 五档行情
-    bid_prices: Optional[List[float]] = Field(None, description="买1-5价")
-    bid_volumes: Optional[List[float]] = Field(None, description="买1-5量")
-    ask_prices: Optional[List[float]] = Field(None, description="卖1-5价")
-    ask_volumes: Optional[List[float]] = Field(None, description="卖1-5量")
+    # Five levels of market conditions
+    bid_prices: Optional[List[float]] = Field(None, description="Buy price 1-5")
+    bid_volumes: Optional[List[float]] = Field(None, description="Buy 1-5 quantities")
+    ask_prices: Optional[List[float]] = Field(None, description="Sell 1-5 price")
+    ask_volumes: Optional[List[float]] = Field(None, description="Sell 1-5 quantities")
     
-    # 时间戳
-    timestamp: Optional[datetime] = Field(None, description="行情时间戳")
+    # Timestamp
+    timestamp: Optional[datetime] = Field(None, description="Quote timestamp")
     
-    # 数据源和版本
-    data_source: Optional[str] = Field(None, description="数据来源")
-    data_version: Optional[int] = Field(None, description="数据版本")
+    # Data source and version
+    data_source: Optional[str] = Field(None, description="Data source")
+    data_version: Optional[int] = Field(None, description="Data version")
     
     class Config:
         extra = "allow"
         json_schema_extra = {
             "example": {
-                # 标准化字段
+                # Standardized fields
                 "symbol": "000001",
                 "full_symbol": "000001.SZ",
                 "market": "CN",
 
-                # 行情字段
+                # Quote field
                 "close": 12.65,
                 "pct_chg": 1.61,
                 "amount": 1580000000,
@@ -212,7 +212,7 @@ class MarketQuotesExtended(BaseModel):
                 "low": 12.30,
                 "trade_date": "2024-01-15",
 
-                # 扩展字段
+                # extension fields
                 "current_price": 12.65,
                 "change": 0.20,
                 "volume": 125000000
@@ -220,23 +220,23 @@ class MarketQuotesExtended(BaseModel):
         }
 
 
-# 数据库操作相关的响应模型
+# Response model related to database operations
 class StockBasicInfoResponse(BaseModel):
-    """股票基础信息API响应模型"""
+    """Stock basic information API response model"""
     success: bool = True
     data: Optional[StockBasicInfoExtended] = None
     message: str = ""
 
 
 class MarketQuotesResponse(BaseModel):
-    """实时行情API响应模型"""
+    """Real-time market API response model"""
     success: bool = True
     data: Optional[MarketQuotesExtended] = None
     message: str = ""
 
 
 class StockListResponse(BaseModel):
-    """股票列表API响应模型"""
+    """Stock List API response model"""
     success: bool = True
     data: Optional[List[StockBasicInfoExtended]] = None
     total: int = 0

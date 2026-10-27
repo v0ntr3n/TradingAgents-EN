@@ -1,13 +1,13 @@
 """
-SKILL.md 解析器
+SKILL.md parser
 
-解析 Agent Skills 标准格式的 SKILL.md 文件：
-- YAML frontmatter（--- 分隔的元数据）
-- Markdown body（自然语言指令）
+Parse the SKILL.md file in the Agent Skills standard format:
+- YAML frontmatter (--- delimited metadata)
+- Markdown body (natural language instructions)
 
-支持：
-1. 标准 Agent Skills 格式（仅 name + description）
-2. 扩展格式（增加 parameters, returns, implementation 等）
+Support:
+1. Standard Agent Skills format (only name + description) 
+2. Extended format (increase parameters, returns, implementation etc.)
 """
 
 import logging
@@ -32,22 +32,22 @@ logger = logging.getLogger(__name__)
 
 
 class SkillParser:
-    """SKILL.md 文件解析器"""
+    """SKILL.md file parser"""
 
     @staticmethod
     def parse_file(file_path: str) -> SkillMetadata:
         """
-        解析 SKILL.md 文件
+        Parse the SKILL.md file
         
         Args:
-            file_path: SKILL.md 文件路径
+            file_path: SKILL.md file path
             
         Returns:
-            SkillMetadata 对象
+            SkillMetadata object
         """
         path = Path(file_path)
         if not path.exists():
-            raise FileNotFoundError(f"SKILL.md 文件不存在: {file_path}")
+            raise FileNotFoundError(f"SKILL.md File does not exist: {file_path}")
 
         content = path.read_text(encoding="utf-8")
         skill = SkillParser.parse_content(content)
@@ -57,41 +57,41 @@ class SkillParser:
     @staticmethod
     def parse_content(content: str) -> SkillMetadata:
         """
-        解析 SKILL.md 内容字符串
+        Parse SKILL.md content string
         
         Args:
-            content: SKILL.md 文件内容
+            content: SKILL.md File content
             
         Returns:
-            SkillMetadata 对象
+            SkillMetadata object
         """
         frontmatter, body = SkillParser._split_frontmatter(content)
 
         if not frontmatter:
-            raise ValueError("SKILL.md 必须包含 YAML frontmatter（用 --- 分隔）")
+            raise ValueError("SKILL.md Must contain YAML frontmatter (separated by ---)")
 
-        # 解析 YAML frontmatter
+        # parse YAML frontmatter
         try:
             metadata = yaml.safe_load(frontmatter)
         except yaml.YAMLError as e:
-            raise ValueError(f"YAML frontmatter 解析失败: {e}")
+            raise ValueError(f"YAML frontmatter Parsing failed: {e}")
 
         if not isinstance(metadata, dict):
-            raise ValueError("YAML frontmatter 必须是一个字典")
+            raise ValueError("YAML frontmatter Must be a dictionary")
 
-        # 必填字段校验
+        # Required field verification
         if "name" not in metadata:
-            raise ValueError("SKILL.md 必须包含 'name' 字段")
+            raise ValueError("SKILL.md must contain 'name' Field")
         if "description" not in metadata:
-            raise ValueError("SKILL.md 必须包含 'description' 字段")
+            raise ValueError("SKILL.md must contain 'description' Field")
 
-        # 构建 SkillMetadata
+        # build SkillMetadata
         return SkillParser._build_skill_metadata(metadata, body.strip())
 
     @staticmethod
     def _split_frontmatter(content: str) -> Tuple[Optional[str], str]:
-        """分离 YAML frontmatter 和 Markdown body"""
-        # 匹配 --- 开头和结尾的 frontmatter
+        """Separate YAML frontmatter and Markdown body"""
+        # Match --- the beginning and end of frontmatter
         pattern = r"^---\s*\n(.*?)\n---\s*\n?(.*)"
         match = re.match(pattern, content.strip(), re.DOTALL)
 
@@ -102,48 +102,48 @@ class SkillParser:
 
     @staticmethod
     def _build_skill_metadata(metadata: Dict[str, Any], body: str) -> SkillMetadata:
-        """从解析结果构建 SkillMetadata"""
-        # 基本字段
+        """Build from parsed results SkillMetadata"""
+        # Basic fields
         skill_data = {
             "name": metadata["name"],
             "description": metadata["description"],
             "instructions": body,
         }
 
-        # Agent Skills 可选字段
+        # Agent Skills optional fields
         if "allowed-tools" in metadata or "allowed_tools" in metadata:
             skill_data["allowed_tools"] = metadata.get("allowed-tools") or metadata.get("allowed_tools")
 
-        # 扩展元数据字段
+        # Extended metadata fields
         for field in ("version", "author", "category", "tags", "icon", "color"):
             if field in metadata:
                 skill_data[field] = metadata[field]
 
-        # Function Calling 扩展字段
+        # Function Calling extension fields
         if "when_to_use" in metadata:
             skill_data["when_to_use"] = metadata["when_to_use"]
 
         if "examples" in metadata:
             skill_data["examples"] = metadata["examples"]
 
-        # 参数定义
+        # Parameter definition
         if "parameters" in metadata and isinstance(metadata["parameters"], list):
             skill_data["parameters"] = [
                 SkillParameter(**p) if isinstance(p, dict) else p
                 for p in metadata["parameters"]
             ]
 
-        # 返回值定义
+        # Return value definition
         if "returns" in metadata and isinstance(metadata["returns"], dict):
             skill_data["returns"] = SkillReturns(**metadata["returns"])
 
-        # 执行实现
+        # Implementation
         if "implementation" in metadata and isinstance(metadata["implementation"], dict):
             skill_data["implementation"] = SkillParser._parse_implementation(
                 metadata["implementation"]
             )
 
-        # 状态字段
+        # status field
         for field in ("enabled", "fc_enabled"):
             if field in metadata:
                 skill_data[field] = metadata[field]
@@ -152,7 +152,7 @@ class SkillParser:
 
     @staticmethod
     def _parse_implementation(impl_data: Dict[str, Any]) -> Optional[SkillImplementation]:
-        """解析执行实现配置"""
+        """Parse execution implementation configuration"""
         impl_type = impl_data.get("type", "").lower()
 
         if impl_type == "python":
@@ -162,6 +162,6 @@ class SkillParser:
         elif impl_type == "mcp":
             return McpImplementation(**impl_data)
         else:
-            logger.warning(f"未知的执行协议类型: {impl_type}，跳过 implementation")
+            logger.warning(f"Unknown execution protocol type: {impl_type}, skip implementation")
             return None
 

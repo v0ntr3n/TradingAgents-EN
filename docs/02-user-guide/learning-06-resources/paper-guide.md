@@ -1,322 +1,322 @@
-# TradingAgents论文解读
+# TradingAgents Paper interpretation
 
-**分类**: 源项目与论文
-**难度**: 进阶
-**阅读时间**: 20分钟
-**更新日期**: 2025-11-15
+**Classification**: Source projects and papers
+**difficulty**: Advanced
+**reading time**: 20 minutes
+**Update date**: 2025-11-15
 
 ---
 
-## 📋 论文信息
+## 📋 Paper information
 
-**标题**: TradingAgents: 多智能体大语言模型金融交易框架
+**Title**: TradingAgents: Multi-agent large language model financial transaction framework
 
-**作者**: Yijia Xiao¹'³, Edward Sun¹'³, Di Luo¹'², Wei Wang¹'³
+**Author**: Yijia Xiao¹'³, Edward Sun¹'³, Di Luo¹'², Wei Wang¹'³
 
-¹ 加州大学洛杉矶分校 (UCLA)  
-² 麻省理工学院 (MIT)  
+¹ UCLA (UCLA)  
+² MIT (MIT)  
 ³ Tauric Research
 
-**资源**:
-- 📄 [英文原版 PDF](/research-papers/TradingAgents_paper.pdf)
-- 📄 [中文翻译版](../../paper/TradingAgents_论文中文版.md)
-- 💻 [项目地址](https://github.com/TauricResearch/TradingAgents)
+**Resources**:
+- 📄 [English original PDF](/research-papers/TradingAgents_paper.pdf)
+- 📄 [Chinese translation version](../../paper/TradingAgents_Chinese version of the paper.md)
+- 💻 [Project address](https://github.com/TauricResearch/TradingAgents)
 
 ---
 
-## 🎯 论文核心内容
+## 🎯 The core content of the paper
 
-### 研究背景
+### Research background
 
-**问题**：
-- 金融分析需要处理大量复杂信息
-- 传统方法难以综合多维度数据
-- 单一AI模型存在局限性
+**question**: 
+- Financial analysis requires processing large amounts of complex information
+- Traditional methods are difficult to synthesize multi-dimensional data
+- There are limitations to a single AI model
 
-**解决方案**：
-- 利用大语言模型的推理能力
-- 采用多智能体协作机制
-- 通过辩论提高分析质量
-
----
-
-## 🏗️ 核心架构
-
-### 整体架构
-
-![系统架构示意图](/assets/schema.png)
-
-### 智能体架构
-
-TradingAgents-CN 采用专业化的多智能体架构，每个智能体都有明确的职责和专业领域：
-
-- **分析师团队 (Analysts)**：
-  - **基本面分析师**：分析公司财务和基本面数据
-  - **技术分析师**：分析技术指标和价格趋势
-  - **新闻分析师**：分析新闻事件和宏观因素
-  - **社交媒体分析师**：分析社交媒体情绪
-
-![分析师团队](/assets/analyst.png)
-
-- **研究员团队 (Researchers)**：
-  - **乐观情景研究员**：从乐观角度评估研究证据
-  - **审慎情景研究员**：从悲观角度评估投资风险
-
-![研究员团队](/assets/researcher.png)
-
-- **研究整合 (Trader)**：
-  - **研究整合员**：综合各方分析，生成用户版研究简报
-
-![研究整合员](/assets/trader.png)
-
-- **风险管理团队 (Risk Management)**：
-  - **风险评估智能体**：评估投资风险，提供风险审阅结论
-
-![风险管理](/assets/risk.png)
-
-### 数据流架构
-
-TradingAgents-CN 的数据流架构设计用于高效地获取、处理和分发金融数据：
-
-- **外部数据源**：
-  - **FinnHub API**：实时金融数据
-  - **Yahoo Finance**：历史价格数据
-  - **Reddit API**：社交媒体数据
-  - **Google News**：新闻数据
-  - **自定义数据源**：扩展接口
-- **数据处理流程**：
-  1. **数据获取层**：从各数据源获取原始数据
-  2. **数据处理层**：统一接口、处理、验证和转换数据
-  3. **缓存层**：Redis缓存、本地缓存、内存缓存
-  4. **数据分发层**：将处理后的数据分发给各智能体
-
-### 2. 辩论机制
-
-**核心创新**：让多个AI从不同角度辩论
-
-**辩论流程**：
-```
-第1轮：各方提出初始观点
-   ↓
-第2轮：互相反驳和论证
-   ↓
-第3轮：综合和达成共识
-   ↓
-最终研究结论
-```
-
-**实验结果**：
-- 单智能体准确率：~70%
-- 多智能体协作：~85%
-- 多智能体辩论：~90%
-
-### 3. 工具系统
-
-**设计原则**：
-- 模块化：每个工具独立
-- 可扩展：易于添加新工具
-- 标准化：统一的接口
-
-**工具类型**：
-```
-数据工具
-├── 市场数据获取
-├── 财务数据查询
-└── 新闻信息抓取
-
-分析工具
-├── 技术指标计算
-├── 基本面分析
-└── 情感分析
-
-决策工具
-├── 风险评估
-├── 投资组合优化
-└── 回测验证
-```
+**solution**: 
+- Harnessing the reasoning power of large language models
+- Adopt multi-agent collaboration mechanism
+- Improving the quality of analysis through debate
 
 ---
 
-## 🔬 实验验证
+## 🏗️ core architecture
 
-### 实验1：单股分析准确性
+### overall architecture
 
-**测试集**：100只美股
-**评估指标**：分析质量、推荐准确性
+![System architecture diagram](/assets/schema.png)
 
-**结果**：
+### agent architecture
 
-| 方法 | 分析质量 | 推荐准确性 |
+TradingAgents-CN Adopting a professional multi-agent architecture, each agent has clear responsibilities and areas of expertise:
+
+- **Analyst Team (Analysts)**: 
+  - **fundamental analyst**: Analyze company financial and fundamental data
+  - **technical analyst**: Analyze technical indicators and price trends
+  - **news analyst**: Analyze news events and macro factors
+  - **social media analyst**: Analyze social media sentiment
+
+![Analyst Team](/assets/analyst.png)
+
+- **Research team (Researchers)**: 
+  - **Optimistic Scenario Researcher**: Evaluating research evidence from an optimistic perspective
+  - **Prudential Scenario Researcher**: Assessing investment risks from a pessimistic perspective
+
+![Research team](/assets/researcher.png)
+
+- **research integration (Trader)**: 
+  - **research integrator**: Comprehensive analysis from all parties to generate a user version of the research briefing
+
+![research integrator](/assets/trader.png)
+
+- **risk management team (Risk Management)**: 
+  - **risk assessment agent**: Assess investment risks and provide risk review conclusions
+
+![risk management](/assets/risk.png)
+
+### data flow architecture
+
+TradingAgents-CN The data flow architecture is designed to efficiently acquire, process and distribute financial data:
+
+- **external data source**: 
+  - **FinnHub API**: real-time financial data
+  - **Yahoo Finance**: historical price data
+  - **Reddit API**: social media data
+  - **Google News**: news data
+  - **Custom data source**: Extended interface
+- **Data processing flow**: 
+  1. **data acquisition layer**: Get raw data from various data sources
+  2. **data processing layer**: Unified interface, process, validate and transform data
+  3. **caching layer**: Redis Cache, local cache, memory cache
+  4. **data distribution layer**: Distribute the processed data to each agent
+
+### 2. debate mechanism
+
+**core innovation**: Let multiple AIs debate from different angles
+
+**debate process**: 
+```
+Round 1: Each party presents initial views
+   ↓
+Round 2: Mutual refutation and argumentation
+   ↓
+Round 3: Synthesis and Consensus
+   ↓
+final research conclusion
+```
+
+**Experimental results**: 
+- Single agent accuracy:~70%
+- Multi-agent collaboration:~85%
+- Multi-agent debate:~90%
+
+### 3. Tool system
+
+**design principles**: 
+- Modular: each tool is independent
+- Extensible: easy to add new tools
+- Standardization: unified interface
+
+**Tool type**: 
+```
+data tools
+├── Market data acquisition
+├── Financial data query
+└── News information capture
+
+Analysis tools
+├── Technical indicator calculation
+├── fundamental analysis
+└── sentiment analysis
+
+Decision-making tools
+├── risk assessment
+├── Portfolio Optimization
+└── Backtest verification
+```
+
+---
+
+## 🔬 Experimental verification
+
+### Experiment 1: Single Strand Analysis Accuracy
+
+**test set**: 100 Only US stocks
+**Evaluation indicators**: Analysis quality, recommendation accuracy
+
+**result**: 
+
+| method | Analytical quality | Recommended accuracy |
 |------|---------|-----------|
-| 传统方法 | 6.5/10 | 65% |
-| 单智能体 | 7.2/10 | 70% |
-| 多智能体协作 | 8.5/10 | 85% |
-| 多智能体辩论 | 9.0/10 | 90% |
+| traditional method | 6.5/10 | 65% |
+| single agent | 7.2/10 | 70% |
+| Multi-agent collaboration | 8.5/10 | 85% |
+| multi-agent debate | 9.0/10 | 90% |
 
-### 实验2：投资组合表现
+### Experiment 2: Portfolio Performance
 
-**测试期**：2023年1月-12月
-**初始资金**：$100,000
+**testing period**: 2023 January-December
+**Initial capital**: $100,000
 
-**结果**：
+**result**: 
 
-| 策略 | 年化收益 | 最大回撤 | 夏普比率 |
+| Strategy | annualized income | maximum drawdown | Sharpe ratio |
 |------|---------|---------|---------|
-| 基准（S&P 500） | 15.2% | -12.5% | 1.2 |
-| 单智能体 | 18.5% | -15.2% | 1.3 |
-| 多智能体辩论 | 24.8% | -11.8% | 1.8 |
+| benchmark (S&P 500)  | 15.2% | -12.5% | 1.2 |
+| single agent | 18.5% | -15.2% | 1.3 |
+| multi-agent debate | 24.8% | -11.8% | 1.8 |
 
-**结论**：多智能体辩论机制显著提升了投资表现。
-
----
-
-## 💡 关键创新点
-
-### 1. 角色专业化
-
-**传统方式**：
-```
-一个AI处理所有任务
-→ 样样通，样样松
-```
-
-**TradingAgents方式**：
-```
-每个AI专注特定角色
-→ 术业有专攻
-→ 分析更专业
-```
-
-### 2. 辩论机制
-
-**创新点**：
-- 不同观点的碰撞
-- 互相质疑和论证
-- 减少偏见和错误
-
-**类比**：
-```
-就像法庭辩论：
-- 原告律师（乐观派）
-- 被告律师（谨慎派）
-- 法官（综合决策）
-→ 更公正的判决
-```
-
-### 3. 工具生态
-
-**设计理念**：
-```
-不是把所有功能塞进AI
-而是给AI提供工具
-让AI学会使用工具
-```
-
-**优势**：
-- 更准确（使用专业工具）
-- 更可靠（工具经过验证）
-- 更灵活（易于扩展）
+**Conclusion**: The multi-agent debate mechanism significantly improves investment performance.
 
 ---
 
-## 🌟 论文贡献
+## 💡 Key innovation points
 
-### 学术贡献
+### 1. role specialization
 
-1. **理论框架**
-   - 提出了金融领域的多智能体协作框架
-   - 证明了辩论机制的有效性
+**traditional way**: 
+```
+One AI handles all tasks
+→ Everything is accessible, everything is loose
+```
 
-2. **实验验证**
-   - 大规模实验证明方法的优越性
-   - 提供了可复现的实验结果
+**TradingAgents way**: 
+```
+Each AI focuses on a specific role
+→ Specialize in the field
+→ Analysis is more professional
+```
 
-3. **开源平台**
-   - 提供完整的开源实现
-   - 降低研究和应用门槛
+### 2. debate mechanism
 
-### 实践价值
+**Innovation point**: 
+- A collision of different perspectives
+- Question and argue each other
+- Reduce bias and errors
 
-1. **可用性**
-   - 不只是理论，有实际可用的系统
-   - 开箱即用的工具
+**analogy**: 
+```
+Just like a court argument:
+- Plaintiff's lawyer (optimist)
+- Defendant's lawyer (cautious)
+- Judge (comprehensive decision-making)
+→ a fairer verdict
+```
 
-2. **可扩展性**
-   - 模块化设计
-   - 易于定制和扩展
+### 3. Tool Ecology
 
-3. **社区驱动**
-   - 开源社区的力量
-   - 持续改进和创新
+**design concept**: 
+```
+It's not about cramming all the functions into AI
+Rather, it provides tools for AI
+Let AI learn to use tools
+```
+
+**Advantages**: 
+- More accurate (using professional tools)
+- More reliable (proven tools)
+- More flexible (easy to extend)
 
 ---
 
-## 📊 与其他方法对比
+## 🌟 Paper contribution
 
-### vs 传统量化策略
+### academic contribution
 
-| 维度 | 传统量化 | TradingAgents |
+1. **Theoretical framework**
+   - Proposed a multi-agent collaboration framework in the financial field
+   - Proved the effectiveness of the debate mechanism
+
+2. **Experimental verification**
+   - Large-scale experiments demonstrate the superiority of the method
+   - Provides reproducible experimental results
+
+3. **Open source platform**
+   - Provides a complete open source implementation
+   - Lower the threshold for research and application
+
+### practical value
+
+1. **Availability**
+   - Not just theory, there are actually usable systems
+   - Out-of-the-box tools
+
+2. **Scalability**
+   - Modular design
+   - Easy to customize and extend
+
+3. **community driven**
+   - The power of open source communities
+   - Continuous improvement and innovation
+
+---
+
+## 📊 Compare with other methods
+
+### vs traditional quantitative strategies
+
+| Dimensions | traditional quantification | TradingAgents |
 |------|---------|----------|
-| 灵活性 | ❌ 固定规则 | ✅ 自适应 |
-| 可解释性 | ⚠️ 黑盒 | ✅ 可解释 |
-| 数据处理 | ⚠️ 结构化数据 | ✅ 多模态数据 |
-| 更新成本 | ❌ 需要重新训练 | ✅ 提示词调整 |
+| Flexibility | ❌ Fixed rules | ✅ Adaptive |
+| Interpretability | ⚠️ black box | ✅ explainable |
+| Data processing | ⚠️ structured data | ✅ multimodal data |
+| Update cost | ❌ Need to retrain | ✅ Prompt word adjustment |
 
-### vs 单一LLM
+### vs single LLM
 
-| 维度 | 单一LLM | TradingAgents |
+| Dimensions | single LLM | TradingAgents |
 |------|---------|----------|
-| 分析深度 | ⚠️ 有限 | ✅ 深入 |
-| 多角度 | ❌ 单一视角 | ✅ 多角度 |
-| 准确性 | ⚠️ 70% | ✅ 90% |
-| 风险控制 | ⚠️ 较弱 | ✅ 强 |
+| Analysis depth | ⚠️ limited | ✅ go deep |
+| multiple angles | ❌ single perspective | ✅ multiple angles |
+| Accuracy | ⚠️ 70% | ✅ 90% |
+| Risk control | ⚠️ weaker | ✅ Strong |
 
 ---
 
-## 🔮 未来方向
+## 🔮 future direction
 
-论文提出的未来研究方向：
+Future research directions proposed by the paper:
 
-### 1. 更多智能体角色
-
-```
-当前：Researcher, Analyst, Manager
-未来：
-├── Risk Manager (风险管理)
-├── Compliance Officer (合规官)
-├── Market Maker (做市商)
-└── Sentiment Analyst (情绪分析师)
-```
-
-### 2. 更强的推理能力
-
-- 多步推理
-- 因果推理
-- 反事实推理
-
-### 3. 更好的人机协作
-
-- 人类专家参与辩论
-- 交互式分析
-- 可视化决策过程
-
-### 4. 更广的应用场景
+### 1. More agent roles
 
 ```
-当前：股票分析
-未来：
-├── 期货交易
-├── 期权策略
-├── 加密货币
-├── 外汇交易
-└── 固定收益
+Current:Researcher, Analyst, Manager
+Future:
+├── Risk Manager (risk management)
+├── Compliance Officer (Compliance officer)
+├── Market Maker (market maker)
+└── Sentiment Analyst (sentiment analyst)
+```
+
+### 2. Stronger reasoning skills
+
+- multi-step reasoning
+- causal reasoning
+- counterfactual reasoning
+
+### 3. Better human-machine collaboration
+
+- Human experts join the debate
+- interactive analysis
+- Visualize the decision-making process
+
+### 4. Wider application scenarios
+
+```
+Current: Stock Analysis
+Future:
+├── Futures trading
+├── Options strategy
+├── cryptocurrency
+├── Forex trading
+└── fixed income
 ```
 
 ---
 
-## 📚 延伸阅读
+## 📚 Further reading
 
-### 相关论文
+### Related papers
 
 1. **Multi-Agent Systems**
    - "Communicative Agents for Software Development" (ChatDev)
@@ -333,57 +333,57 @@ TradingAgents-CN 的数据流架构设计用于高效地获取、处理和分发
 
 ---
 
-## 💭 个人思考
+## 💭 personal reflections
 
-### 论文的价值
+### The value of the paper
 
-**学术价值**：
-- 提出了创新的框架
-- 提供了实验验证
-- 推动了领域发展
+**academic value**: 
+- Proposed an innovative framework
+- Experimental verification provided
+- Promoted the development of the field
 
-**实践价值**：
-- 可直接应用
-- 开源降低门槛
-- 社区驱动创新
+**practical value**: 
+- Can be applied directly
+- Open source lowers barriers to entry
+- Community driven innovation
 
-### 局限性
+### limitations
 
-**当前局限**：
-1. 依赖LLM质量
-2. API成本较高
-3. 实时性有限
-4. 需要人工验证
+**current limitations**: 
+1. Rely on LLM quality
+2. API higher cost
+3. Limited real-time
+4. Requires manual verification
 
-**改进方向**：
-1. 优化提示词
-2. 混合使用模型
-3. 缓存优化
-4. 人机协作
-
----
-
-## 🎓 总结
-
-### 核心要点
-
-1. **多智能体协作**是提高AI分析质量的有效方法
-2. **辩论机制**能显著减少偏见和错误
-3. **工具系统**让AI更准确可靠
-4. **开源平台**降低了应用门槛
-
-### 启发
-
-> "一个人可以走得很快，但一群人可以走得更远"
-
-这句话完美诠释了TradingAgents的理念：
-- 不是追求单个AI的极致
-- 而是通过协作达到更好的效果
+**Directions for improvement**: 
+1. Optimization prompt words
+2. mixed use model
+3. Cache optimization
+4. Human-machine collaboration
 
 ---
 
-**推荐阅读顺序**：
-1. 📄 先读[论文中文版](../../paper/TradingAgents_论文中文版.md)
-2. 📖 再看[多智能体系统](../04-analysis-principles/multi-agent-system.md)
-3. 🚀 最后[快速开始](../07-tutorials/getting-started.md)实践
+## 🎓 Summary
+
+### core points
+
+1. **Multi-agent collaboration**Is an effective way to improve the quality of AI analysis
+2. **debate mechanism**Can significantly reduce bias and errors
+3. **Tool system**Make AI more accurate and reliable
+4. **Open source platform**Lowers the application threshold
+
+### Inspire
+
+> "A person can go fast, but a group of people can go further"
+
+This sentence perfectly explains the philosophy of TradingAgents:
+- It's not about pursuing the ultimate in individual AI
+- But to achieve better results through collaboration
+
+---
+
+**Recommended reading order**: 
+1. 📄 Read first[Chinese version of the paper](../../paper/TradingAgents_Chinese version of the paper.md)
+2. 📖 Look again[multi-agent system](../04-analysis-principles/multi-agent-system.md)
+3. 🚀 finally[quick start](../07-tutorials/getting-started.md)practice
 

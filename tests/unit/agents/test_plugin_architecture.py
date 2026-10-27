@@ -1,17 +1,17 @@
 """
-测试 Agent 插件架构
+Test Agent plug-in architecture
 
-验证 AnalystRegistry 和 ReportAggregator 的功能
+Verify functionality of AnalystRegistry and ReportAggregator
 """
 
 import pytest
 
 
 class TestAnalystRegistry:
-    """测试分析师注册表"""
+    """Test Analyst Registration Form"""
     
     def test_registry_singleton(self):
-        """测试注册表单例模式"""
+        """Test the registration form singleton pattern"""
         from core.agents.analyst_registry import get_analyst_registry
         
         registry1 = get_analyst_registry()
@@ -20,12 +20,12 @@ class TestAnalystRegistry:
         assert registry1 is registry2
     
     def test_builtin_analysts_loaded(self):
-        """测试内置分析师元数据已加载"""
+        """Test built-in analyst metadata loaded"""
         from core.agents.analyst_registry import get_analyst_registry
         
         registry = get_analyst_registry()
         
-        # 检查内置分析师
+        # Check the built-in analysts
         assert "market_analyst" in registry.list_all()
         assert "news_analyst" in registry.list_all()
         assert "social_analyst" in registry.list_all()
@@ -34,44 +34,44 @@ class TestAnalystRegistry:
         assert "index_analyst" in registry.list_all()
     
     def test_extension_analysts_registered(self):
-        """测试扩展分析师已注册"""
-        # 触发模块加载（这会自动注册扩展分析师）
+        """Test Extension Analyst Registered"""
+        # Trigger module loading (this automatically registers extension analysts)
         from core.agents.adapters import SectorAnalystAgent, IndexAnalystAgent
         from core.agents.analyst_registry import get_analyst_registry
         
         registry = get_analyst_registry()
         
-        # 检查扩展分析师是否已注册实现
+        # Check if the extension analyst has registered the implementation
         assert registry.is_registered("sector_analyst")
         assert registry.is_registered("index_analyst")
     
     def test_get_analyst_metadata(self):
-        """测试获取分析师元数据"""
+        """Test getting analyst metadata"""
         from core.agents.analyst_registry import get_analyst_registry
         
         registry = get_analyst_registry()
         
-        # 获取板块分析师元数据
+        # Get sector analyst metadata
         sector_meta = registry.get_analyst_metadata("sector_analyst")
         assert sector_meta is not None
         assert sector_meta.output_field == "sector_report"
         assert sector_meta.requires_tools == False
         
-        # 获取大盘分析师元数据
+        # Get broad market analyst metadata
         index_meta = registry.get_analyst_metadata("index_analyst")
         assert index_meta is not None
         assert index_meta.output_field == "index_report"
         assert index_meta.requires_tools == False
     
     def test_get_output_fields(self):
-        """测试获取所有输出字段"""
+        """Test to get all output fields"""
         from core.agents.analyst_registry import get_analyst_registry
         
         registry = get_analyst_registry()
         
         output_fields = registry.get_output_fields()
         
-        # 检查输出字段映射
+        # Check output field mapping
         assert "sector_analyst" in output_fields
         assert output_fields["sector_analyst"] == "sector_report"
         assert "index_analyst" in output_fields
@@ -79,78 +79,78 @@ class TestAnalystRegistry:
 
 
 class TestReportAggregator:
-    """测试报告聚合器"""
+    """Test report aggregator"""
     
     def test_aggregate_reports(self):
-        """测试聚合报告"""
+        """Test aggregation reporting"""
         from core.utils.report_aggregator import get_all_reports
         
-        # 模拟 state
+        # Simulation state
         state = {
-            "market_report": "市场分析报告内容",
-            "sentiment_report": "情绪分析报告内容",
-            "news_report": "新闻分析报告内容",
-            "fundamentals_report": "基本面分析报告内容",
-            "sector_report": "板块分析报告内容",
-            "index_report": "大盘分析报告内容",
+            "market_report": "Market analysis report content",
+            "sentiment_report": "Sentiment analysis report content",
+            "news_report": "News analysis report content",
+            "fundamentals_report": "Fundamental analysis report content",
+            "sector_report": "Sector analysis report content",
+            "index_report": "Market analysis report content",
         }
         
         reports = get_all_reports(state)
         
-        # 检查报告数量
+        # Number of inspection reports
         assert len(reports) == 6
         
-        # 检查报告内容
-        assert reports.get("sector_report") == "板块分析报告内容"
-        assert reports.get("index_report") == "大盘分析报告内容"
+        # Check report content
+        assert reports.get("sector_report") == "Sector analysis report content"
+        assert reports.get("index_report") == "Market analysis report content"
     
     def test_to_text(self):
-        """测试转换为文本"""
+        """test convert to text"""
         from core.utils.report_aggregator import get_all_reports
         
         state = {
-            "index_report": "大盘报告",
-            "sector_report": "板块报告",
-            "market_report": "市场报告",
+            "index_report": "Market report",
+            "sector_report": "Sector report",
+            "market_report": "market report",
         }
         
         reports = get_all_reports(state)
         text = reports.to_text()
         
-        # 检查文本包含所有报告
-        assert "大盘报告" in text
-        assert "板块报告" in text
-        assert "市场报告" in text
+        # Check text contains all reports
+        assert "Market report" in text
+        assert "Sector report" in text
+        assert "market report" in text
     
     def test_empty_reports(self):
-        """测试空报告处理"""
+        """Test empty report handling"""
         from core.utils.report_aggregator import get_all_reports
         
         state = {}
         
         reports = get_all_reports(state)
         
-        # 空状态应返回空报告
+        # Empty status should return an empty report
         assert len(reports) == 0
         assert reports.to_text() == ""
 
 
 class TestPluginArchitectureIntegration:
-    """测试插件架构集成"""
+    """Test plug-in architecture integration"""
     
     def test_extension_analyst_in_workflow(self):
-        """测试扩展分析师可被工作流加载"""
-        # 触发模块加载
+        """Test extension analysts can be loaded by workflows"""
+        # Trigger module loading
         from core.agents.adapters import SectorAnalystAgent, IndexAnalystAgent
         from core.agents.analyst_registry import get_analyst_registry
         
         registry = get_analyst_registry()
         
-        # 获取板块分析师类
+        # Get sector analyst class
         sector_class = registry.get_analyst_class("sector_analyst")
         assert sector_class is SectorAnalystAgent
         
-        # 获取大盘分析师类
+        # Get the broad market analyst category
         index_class = registry.get_analyst_class("index_analyst")
         assert index_class is IndexAnalystAgent
 

@@ -35,14 +35,14 @@ async def test_process_basic_info_batch_updates_fresh_record_when_mapping_can_fi
     akshare_sync_service.db.stock_basic_info.find_one = AsyncMock(return_value={
         "code": "000001",
         "source": "akshare",
-        "industry": "未知",
+        "industry": "unknown",
         "updated_at": datetime.utcnow(),
     })
     akshare_sync_service.db.stock_basic_info.update_one = AsyncMock(return_value=Mock(modified_count=1, upserted_id=None))
 
-    with patch('app.services.official_industry_service.fetch_industry_mapping', new_callable=AsyncMock, return_value={"000001": "银行"}):
+    with patch('app.services.official_industry_service.fetch_industry_mapping', new_callable=AsyncMock, return_value={"000001": "bank"}):
         result = await akshare_sync_service._process_basic_info_batch([
-            {"code": "000001", "name": "平安银行"}
+            {"code": "000001", "name": "Ping An Bank"}
         ], force_update=False)
 
     assert result["success_count"] == 1
@@ -50,7 +50,7 @@ async def test_process_basic_info_batch_updates_fresh_record_when_mapping_can_fi
     update_filter = akshare_sync_service.db.stock_basic_info.update_one.await_args.args[0]
     update_payload = akshare_sync_service.db.stock_basic_info.update_one.await_args.args[1]["$set"]
     assert update_filter == {"code": "000001", "source": "akshare"}
-    assert update_payload["industry"] == "银行"
+    assert update_payload["industry"] == "bank"
     assert update_payload["industry_source"] == "system_industry_mapping"
 
 
@@ -59,14 +59,14 @@ async def test_process_basic_info_batch_skips_fresh_record_when_mapping_already_
     akshare_sync_service.db.stock_basic_info.find_one = AsyncMock(return_value={
         "code": "000001",
         "source": "akshare",
-        "industry": "银行",
+        "industry": "bank",
         "updated_at": datetime.utcnow(),
     })
     akshare_sync_service.db.stock_basic_info.update_one = AsyncMock(return_value=Mock(modified_count=0, upserted_id=None))
 
-    with patch('app.services.official_industry_service.fetch_industry_mapping', new_callable=AsyncMock, return_value={"000001": "银行"}):
+    with patch('app.services.official_industry_service.fetch_industry_mapping', new_callable=AsyncMock, return_value={"000001": "bank"}):
         result = await akshare_sync_service._process_basic_info_batch([
-            {"code": "000001", "name": "平安银行"}
+            {"code": "000001", "name": "Ping An Bank"}
         ], force_update=False)
 
     assert result["success_count"] == 0

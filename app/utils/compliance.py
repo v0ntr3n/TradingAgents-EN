@@ -1,6 +1,6 @@
-"""合规输出工具。
+"""Compliance output tool.
 
-统一收口分析结果中的交易建议型字段，保留研究辅助所需的摘要、风险因素和公开信息观察。
+Unify transaction recommendation fields in closing analysis results, retaining summaries, risk factors, and public information observations required for research assistance.
 """
 
 from __future__ import annotations
@@ -18,22 +18,22 @@ SAFE_REPORT_KEYS = (
     "news_report",
 )
 
-GENERIC_RESEARCH_RECOMMENDATION = "请参考详细研究报告，重点关注基本面变化、市场环境与风险因素。"
-GENERIC_POSITION_RECOMMENDATION = "该持仓研究仅提供研究观察与风险提示，请结合自身策略独立判断。"
-GENERIC_REVIEW_SUMMARY = "本次复盘仅保留复盘结论、纪律问题与研究改进方向，不提供未来交易动作建议。"
+GENERIC_RESEARCH_RECOMMENDATION = "Please refer to the detailed research report, focusing on fundamental changes, market environment and risk factors."
+GENERIC_POSITION_RECOMMENDATION = "This position research only provides research observations and risk tips. Please make independent judgments based on your own strategies."
+GENERIC_REVIEW_SUMMARY = "This review only retains the review conclusions, disciplinary issues and research and improvement directions, and does not provide suggestions for future trading actions."
 GENERIC_REVIEW_IMPROVEMENTS = (
-    "完善交易前证据核验与记录，避免临盘依据不足。",
-    "将交易计划触发条件整理为可验证清单，提升执行一致性。",
-    "复盘时重点检查纪律执行、风险暴露与研究盲区。",
+    "Improve pre-transaction evidence verification and recording to avoid insufficient basis for pre-transaction transactions.",
+    "Organize the triggering conditions of the trading plan into a verifiable list to improve execution consistency.",
+    "During the review, the focus will be on discipline enforcement, risk exposure and research blind spots.",
 )
 
 _ACTIONABLE_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
-        r"买入|卖出|持有|加仓|减仓|清仓|建仓|平仓|调仓",
-        r"止损|止盈|仓位|目标价|目标价格|目标区间|价格分析区间|参考价格",
-        r"目标位|目标点位|支撑位|阻力位|压力位|配置建议|防御性配置|进攻性配置|安全边际|板块机会",
-        r"投资建议|交易建议|操作建议|一键模拟下单|下单|模拟交易",
+        r"buy|sell|hold|Add to position|Reduce positions|Clearance|Open a position|Close position|Adjust positions",
+        r"stop loss|Take profit|position|target price|target price|target range|price analysis range|reference price",
+        r"Target position|target point|support level|resistance level|pressure level|Configuration recommendations|defensive configuration|offensive configuration|margin of safety|Sector opportunities",
+        r"investment advice|trading advice|Operation suggestions|Simulate an order with one click|Place an order|simulated trading",
         r"BUY|SELL|HOLD|STRONG_BUY|STRONG_SELL",
         r"target_price|stop_loss|take_profit|position_ratio|suggested_quantity|suggested_amount",
     )
@@ -41,150 +41,150 @@ _ACTIONABLE_PATTERNS = [
 _REVIEW_EXECUTION_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
-        r"(建议|可以|可考虑|应当|应该|需要|宜|不宜).{0,12}(买入|卖出|继续持有|持有|加仓|减仓|补仓|清仓|建仓|平仓|调仓)",
-        r"(下次|后续|未来).{0,16}(买入|卖出|继续持有|持有|加仓|减仓|补仓|清仓|建仓|平仓|调仓|止损|止盈)",
-        r"继续持有|逢低买入|逢高卖出|分批买入|分批卖出",
-        r"止损价|止盈价|目标价|目标价格|目标区间|参考价|参考价格",
-        r"(跌破|突破|回调到|反弹到|跌到|涨到|回到).{0,12}(买入|卖出|加仓|减仓|止损|止盈)",
-        r"仓位.{0,8}(\d+%|百分之|\d+成|控制在|提升到|降到|上调到|下调到)",
+        r"(Suggestions|OK|Can be considered|should|should|need|appropriate|Not suitable).{0,12}(buy|sell|continue to hold|hold|Add to position|Reduce positions|cover position|Clearance|Open a position|Close position|Adjust positions)",
+        r"(next time|Follow-up|future).{0,16}(buy|sell|continue to hold|hold|Add to position|Reduce positions|cover position|Clearance|Open a position|Close position|Adjust positions|stop loss|Take profit)",
+        r"continue to hold|buy on dips|sell on rallies|Buy in batches|Sell in batches",
+        r"Stop loss price|Take profit price|target price|target price|target range|reference price|reference price",
+        r"(fell below|breakthrough|call back to|rebound to|fall to|rise to|return to).{0,12}(buy|sell|Add to position|Reduce positions|stop loss|Take profit)",
+        r"position.{0,8}(\d+%|percent|\d+into|controlled in|promoted to|down to|raised to|Adjusted down to)",
         r"\b(BUY|SELL|HOLD|STRONG_BUY|STRONG_SELL)\b",
-        r"一键模拟下单|下单|模拟交易",
+        r"Simulate an order with one click|Place an order|simulated trading",
     )
 ]
 _POSITION_TRIGGER_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
-        r"(?:技术面|基本面|风险|综合)?评分\s*[:：]?\s*\d+(?:\.\d+)?\s*分",
-        r"连续.{0,8}(?:日|天|周).{0,10}(站稳|收盘站稳|放量|缩量|突破|跌破)",
-        r"右侧介入|左侧介入|介入依据|入场依据|退出依据|交易触发|反弹动能",
-        r"\bMA\d+\b|\bRSI\d*\b|\bMACD\b|\bKDJ\b|布林(?:中轨|上轨|下轨)?",
-        r"支撑带|支撑位|阻力位|压力位|放量|缩量|站稳|突破|跌破",
+        r"(?:technical aspect|Fundamentals|risk|Comprehensive)?Rating\s*[:: ]?\s*\d+(?:\.\d+)?\s*points",
+        r"continuous.{0,8}(?:day|day|week).{0,10}(stand firm|Stand firm at the close|Increase the volume|shrink|breakthrough|fell below)",
+        r"Right intervention|left intervention|Basis for intervention|Admission basis|Exit basis|Transaction trigger|rebound kinetic energy",
+        r"\bMA\d+\b|\bRSI\d*\b|\bMACD\b|\bKDJ\b|Brin(?:middle track|On track|Lower track)?",
+        r"support strap|support level|resistance level|pressure level|Increase the volume|shrink|stand firm|breakthrough|fell below",
     )
 ]
 _POSITION_LABEL_ONLY_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
-        r"^(研究结论|核心依据|研究判断|风险提示|观察重点|补充视角|研究观察|风险评估|催化与改善条件)$",
+        r"^(Research conclusion|core basis|research judgment|Risk warning|Observation points|Supplementary perspective|research observation|risk assessment|Catalysis and improving conditions)$",
     )
 ]
 _POSITION_PLAIN_LANGUAGE_REPLACEMENTS = (
-    ("技术面高度安全", "短期走势没有明显转弱"),
-    ("中性偏强状态", "当前状态偏稳，但还需要继续验证"),
-    ("技术结构临界守稳", "短期没有继续恶化"),
-    ("基本面坚实但估值结构分化", "公司经营基础尚可，但市场对估值修复仍有分歧"),
-    ("中性观察阶段", "暂时只能继续观察"),
-    ("价格紧贴中期支撑", "股价目前仍在阶段性低位附近"),
-    ("尚未出现趋势反转信号", "还没有看到明确修复信号"),
-    ("亦未触发系统性恶化条件", "也没有出现明确恶化证据"),
-    ("成本价显著高于现价", "当前价格仍明显低于持仓成本"),
-    ("成本价深埋于所有关键均线之下", "当前价格明显高于持仓成本"),
-    ("财务指标稳健，盈利质量优异", "经营和财务表现整体稳定"),
-    ("经营现金流持续高倍覆盖净利润", "现金流表现较稳"),
-    ("财务安全边际坚实", "财务缓冲仍然较稳"),
-    ("成长逻辑待验证", "后续增长是否延续仍待验证"),
-    ("ROE阶段性回落", "盈利效率阶段性回落"),
-    ("毛利率数据缺失", "利润率数据还不完整"),
-    ("高PB估值", "当前估值水平"),
-    ("壁垒溢价", "竞争优势溢价"),
-    ("增长溢价", "增长预期溢价"),
-    ("估值中枢抬升", "市场愿意给出更高估值"),
-    ("第二曲线", "新业务增长"),
-    ("客户定点公告", "新增客户和项目进展公告"),
-    ("议价能力", "定价能力"),
-    ("修复需时间与多重条件配合", "后续修复通常需要时间，也需要多方面条件一起改善"),
+    ("Technically highly secure", "The short-term trend has not weakened significantly"),
+    ("Neutral to strong state", "The current status is relatively stable, but further verification is needed."),
+    ("Technical structure is critically stable", "There is no further deterioration in the short term"),
+    ("Solid fundamentals but differentiated valuation structure", "The company s operating foundation is acceptable, but the market is still divided on valuation restoration"),
+    ("neutral observation stage", "For the time being, we can only continue to observe"),
+    ("Prices cling to medium-term support", "The stock price is still near a periodic low"),
+    ("No trend reversal signal has occurred yet", "No clear signal of repair has been seen yet"),
+    ("Nor did it trigger conditions for systemic deterioration.", "There is no clear evidence of deterioration"),
+    ("The cost price is significantly higher than the current price", "The current price is still significantly lower than the holding cost"),
+    ("Cost price is buried deep below all key moving averages", "The current price is significantly higher than the holding cost"),
+    ("Stable financial indicators and excellent earnings quality", "Overall operational and financial performance is stable"),
+    ("Operating cash flow continues to cover net profit at a high multiple", "Cash flow performance is relatively stable"),
+    ("Solid margin of financial safety", "Financial buffers remain solid"),
+    ("Growth logic needs to be verified", "Whether subsequent growth will continue remains to be verified."),
+    ("ROE staged decline", "Profit efficiency drops in stages"),
+    ("Gross profit margin data is missing", "Margin data is incomplete"),
+    ("High PB valuation", "current valuation level"),
+    ("barrier premium", "competitive advantage premium"),
+    ("growth premium", "growth expected premium"),
+    ("Valuation center rises", "The market is willing to give a higher valuation"),
+    ("second curve", "new business growth"),
+    ("Customer designated announcement", "Announcement of new customers and project progress"),
+    ("bargaining power", "pricing power"),
+    ("Repair requires time and multiple conditions.", "Subsequent repairs usually take time and require improvements in many aspects."),
 )
 _POSITION_GENERIC_ITEM_PATTERNS = [
     re.compile(pattern)
     for pattern in (
-        r"当前判断主要基于已披露经营信息与风险信号整理",
-        r"当前结论主要基于已披露信息",
-        r"请重点关注",
-        r"请持续跟踪",
-        r"后续重点观察",
+        r"The current judgment is mainly based on the disclosure of operating information and risk signals.",
+        r"Current conclusions are primarily based on disclosed information",
+        r"Please focus on",
+        r"Please keep following",
+        r"Follow-up key observations",
     )
 ]
 _POSITION_APPENDIX_SECTION_ORDER = (
-    ("technical_analysis", "技术面分析"),
-    ("fundamental_analysis", "基本面分析"),
-    ("risk_analysis", "风险评估"),
+    ("technical_analysis", "Technical analysis"),
+    ("fundamental_analysis", "fundamental analysis"),
+    ("risk_analysis", "risk assessment"),
 )
 _POSITION_APPENDIX_TITLE_TO_KEY = {
     title: key for key, title in _POSITION_APPENDIX_SECTION_ORDER
 }
-_POSITION_APPENDIX_HEADING_PATTERN = re.compile(r"^【(技术面分析|基本面分析|风险评估)】$")
+_POSITION_APPENDIX_HEADING_PATTERN = re.compile(r"^ [(Technical analysis|fundamental analysis|risk assessment)] $")
 _JSON_FIELD_PATTERN = re.compile(r'^[\[\]{}":,0-9._%\-\s]+$')
 _SENTENCE_SPLIT_PATTERN = re.compile(r"[\n。！？；]+")
 _LOW_SIGNAL_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
-        r"^股票基本信息$",
-        r"^公司名称[:：]",
-        r"^股票代码[:：]",
-        r"^所属市场[:：]",
-        r"^当前价格[:：]",
-        r"^涨跌幅[:：]",
-        r"^分析日期[:：]",
-        r"^数据来源[:：]",
-        r"^基本信息[:：]",
-        r"^财务数据[:：]$",
-        r"^一、公司概况$",
-        r"^二、财务数据分析$",
-        r"^三、",
-        r"^四、",
-        r"分析报告",
+        r"^Basic stock information$",
+        r"^Company name[:: ]",
+        r"^Stock code[:: ]",
+        r"^Market[:: ]",
+        r"^current price[:: ]",
+        r"^Increase or decrease[:: ]",
+        r"^Analysis date[:: ]",
+        r"^Data source[:: ]",
+        r"^Basic information[:: ]",
+        r"^financial data[:: ]$",
+        r"^1. Company Profile$",
+        r"^2. Financial data analysis$",
+        r"^Three.",
+        r"^Four.",
+        r"analysis report",
     )
 ]
 _DISPLAY_REPORT_RISK_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
-        r"目标价|目标价格|价格区间|关键价位|关键价格|关键验证位|观察区间|参考价|参考价格|风险控制参考",
-        r"支撑位|阻力位|突破|跌破|站稳|失守|止损|止盈|仓位|风险敞口|持仓周期",
-        r"上涨空间|下跌空间|上行空间|下行空间|收益空间|收益预期|最大收益|潜在收益|回撤|最大可能损失",
-        r"风险收益比|期望收益|安全边际|配置价值|逆向投资机会|买入信号|卖出信号|入场|退出条件|操作策略",
-        r"增持观点|减持观点|建仓|平仓|调仓|重仓|轻仓|分批买入|分批卖出|看涨价位|看跌价位",
-        r"(?:¥|￥|\$)\s*\d|\d+(?:\.\d+)?\s*(?:元|美元|港元)",
+        r"target price|target price|price range|key price|key price|key verification bit|Observation interval|reference price|reference price|Risk Control Reference",
+        r"support level|resistance level|breakthrough|fell below|stand firm|fall|stop loss|Take profit|position|risk exposure|Position period",
+        r"Room for upside|Downside|Upside|Downside|Profit space|Earnings expectations|maximum benefit|Potential earnings|retracement|maximum possible loss",
+        r"Risk-benefit ratio|expected return|margin of safety|configuration value|Contrarian investment opportunities|buy signal|sell signal|Admission|Exit conditions|Operational strategy",
+        r"Overweight view|Underweight view|Open a position|Close position|Adjust positions|Heavy warehouse|Qingcang|Buy in batches|Sell in batches|bullish price|bearish price",
+        r"(?:¥|￥|\$)\s*\d|\d+(?:\.\d+)?\s*(?:Yuan|US dollars|Hong Kong dollar)",
     )
 ]
 _INFERENTIAL_EVIDENCE_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
     for pattern in (
-        r"推断|推测|推定|估算|测算|估计|假设|假定|猜测|臆测|疑似",
-        r"可能|或将|有望|预计|倾向于|大概率|或许|或可",
-        r"待验证|需验证|尚待验证|仍待验证|不可验证|难以验证",
+        r"inference|Speculate|Presumption|Estimate|Calculate|estimate|hypothesis|Assume|Guess|conjecture|suspected",
+        r"possible|or will|hopefully|expected|tend to|High probability|maybe|Maybe",
+        r"To be verified|Need to verify|yet to be verified|Still to be verified|Not verifiable|Difficult to verify",
     )
 ]
 
 _DISPLAY_TITLE_REPLACEMENTS = [
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?新闻分析师研究报告$', re.IGNORECASE), '新闻研究'),
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?新闻研究报告$', re.IGNORECASE), '新闻研究'),
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?社交媒体分析师研究报告$', re.IGNORECASE), '情绪研究'),
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?社交分析师研究报告$', re.IGNORECASE), '情绪研究'),
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?情绪分析师研究报告$', re.IGNORECASE), '情绪研究'),
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?板块分析师研究观察报告$', re.IGNORECASE), '行业板块研究'),
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?行业分析师研究观察报告$', re.IGNORECASE), '行业板块研究'),
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?行业板块研究观察报告$', re.IGNORECASE), '行业板块研究'),
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?大盘分析师研究观察报告$', re.IGNORECASE), '大盘环境研究'),
-    (re.compile(r'^(?P<prefix>#{1,6}\s*)?大盘环境研究观察报告$', re.IGNORECASE), '大盘环境研究'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?News Analyst Research Report$', re.IGNORECASE), 'Journalism Research'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?news research report$', re.IGNORECASE), 'Journalism Research'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?Social Media Analyst Research Report$', re.IGNORECASE), 'emotion research'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?Social Analyst Research Report$', re.IGNORECASE), 'emotion research'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?Sentiment Analyst Research Report$', re.IGNORECASE), 'emotion research'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?Sector Analyst Research Observation Report$', re.IGNORECASE), 'Industry sector research'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?Industry Analyst Research Observation Report$', re.IGNORECASE), 'Industry sector research'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?Industry sector research observation report$', re.IGNORECASE), 'Industry sector research'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?Market Analyst Research Observation Report$', re.IGNORECASE), 'market environment research'),
+    (re.compile(r'^(?P<prefix>#{1,6}\s*)?Market Environment Research Observation Report$', re.IGNORECASE), 'market environment research'),
 ]
 
 _DISPLAY_PHRASE_REPLACEMENTS = (
-    ('买入逻辑', '研究逻辑'),
-    ('投资机会', '研究线索'),
-    ('配置型投资者', '研究型用户'),
-    ('配置价值', '研究跟踪价值'),
-    ('安全边际', '风险缓冲'),
-    ('具备一定吸引力', '值得继续跟踪'),
-    ('价值修复的起点', '估值与预期修复的早期信号'),
+    ('buy logic', 'research logic'),
+    ('investment opportunities', 'research leads'),
+    ('allocation investor', 'research users'),
+    ('configuration value', 'Research tracking value'),
+    ('margin of safety', 'risk buffer'),
+    ('have certain appeal', 'Worth continuing to follow'),
+    ('The starting point of value restoration', 'Early signs of valuation and expected repairs'),
 )
 
-RESEARCH_ONLY_DISCLAIMER = "本报告仅供研究参考，不构成个股推荐、投资建议或操作依据。请结合公开信息披露与自身研究独立判断。"
+RESEARCH_ONLY_DISCLAIMER = "This report is for research reference only and does not constitute individual stock recommendation, investment advice or operation basis. Please make independent judgments based on public information disclosure and your own research."
 _LEGACY_DISCLAIMER_BLOCK_PATTERN = re.compile(
-    r"(?is)(?:\*\*)?免责声明(?:\*\*)?[：:]\s*"
-    r"(?:本(?:分析)?报告仅供参考，不构成投资建议。.*?独立做出投资决策。"
-    r"|请结合自身情况独立判断。投资有风险，决策需谨慎。必要时请咨询专业顾问。)"
+    r"(?is)(?:\*\*)?Disclaimer(?:\*\*)?[: :]\s*"
+    r"(?:Ben(?:analysis)?The report is for reference only and does not constitute investment advice..*?Make investment decisions independently."
+    r"|Please make independent judgment based on your own situation. Investment is risky and decisions need to be made with caution. Please consult professional advisors if necessary.)"
 )
 _LEGACY_DISCLAIMER_LINE_PATTERN = re.compile(
-    r"(?is)请结合自身情况独立判断。投资有风险，决策需谨慎。必要时请咨询专业顾问。"
+    r"(?is)Please make independent judgment based on your own situation. Investment is risky and decisions need to be made with caution. Please consult professional advisors if necessary."
 )
 _TOOL_CALL_ARTIFACT_PATTERNS = [
     re.compile(pattern, re.IGNORECASE)
@@ -198,13 +198,13 @@ _TOOL_CALL_ARTIFACT_PATTERNS = [
 _STABLE_DATA_REQUEST_DATE_PATTERNS = [
     re.compile(pattern)
     for pattern in (
-        r"当前尚无分析日[（(](\d{4}-\d{2}-\d{2})[）)]对应的稳定收盘后日频数据",
-        r"当前尚无\s*(\d{4}-\d{2}-\d{2})\s*对应的稳定收盘后日频数据",
-        r"当前尚无\s*(\d{4}-\d{2}-\d{2})\s*的[^。\n]*稳定收盘后日频数据",
+        r"There are currently no analysis days[ ((](\d{4}-\d{2}-\d{2})[) )]Corresponding stable post-closing daily frequency data",
+        r"None currently\s*(\d{4}-\d{2}-\d{2})\s*Corresponding stable post-closing daily frequency data",
+        r"None currently\s*(\d{4}-\d{2}-\d{2})\s*of[^. \n]*Daily frequency data after stable closing",
     )
 ]
 _STABLE_DATA_SNAPSHOT_LINE_PATTERN = re.compile(
-    r"所有估值指标快照日期统一为\s*(?:\*\*)?(\d{4}-\d{2}-\d{2})(?:\*\*)?[。.]?"
+    r"The snapshot date of all valuation indicators is unified to\s*(?:\*\*)?(\d{4}-\d{2}-\d{2})(?:\*\*)?[. .]?"
 )
 
 
@@ -277,7 +277,7 @@ def _normalize_display_line(line: str) -> str:
 
 def _normalize_research_disclaimer(text: str) -> str:
     normalized = _LEGACY_DISCLAIMER_BLOCK_PATTERN.sub(
-        f"**免责声明**：{RESEARCH_ONLY_DISCLAIMER}",
+        f"**Disclaimer**: {RESEARCH_ONLY_DISCLAIMER}",
         text,
     )
     normalized = _LEGACY_DISCLAIMER_LINE_PATTERN.sub(RESEARCH_ONLY_DISCLAIMER, normalized)
@@ -322,7 +322,7 @@ def _normalize_stable_data_snapshot_conflicts(text: str) -> str:
     def _replace_snapshot_line(match: re.Match[str]) -> str:
         snapshot_date = match.group(1)
         if snapshot_date == requested_date:
-            return "所有估值指标快照日期应以工具返回的最近可用交易日为准，当前正文日期口径仍待验证。"
+            return "The snapshot date of all valuation indicators should be based on the latest available trading day returned by the tool, and the current text date caliber still needs to be verified."
         return match.group(0)
 
     return _STABLE_DATA_SNAPSHOT_LINE_PATTERN.sub(_replace_snapshot_line, text)
@@ -359,7 +359,7 @@ def _fragment_score(text: str) -> int:
     score = min(len(normalized), 160)
     if is_low_signal_text(normalized):
         score -= 120
-    if any(keyword in normalized for keyword in ("风险", "盈利", "增长", "压力", "竞争", "估值", "资产", "负债", "催化", "行业", "宏观", "需求", "收入", "利润")):
+    if any(keyword in normalized for keyword in ("risk", "Profit", "growth", "pressure", "competition", "Valuation", "assets", "Liabilities", "catalysis", "Industry", "Macro", "demand", "income", "profit")):
         score += 60
     if normalized.startswith("-"):
         score -= 10
@@ -521,18 +521,18 @@ def _simplify_position_user_language(text: str) -> str:
         normalized = normalized.replace(old, new)
 
     normalized = re.sub(
-        r"短期未达目标(?:也)?未触(?:及)?止损",
-        "短期表现未达到预期，但当前还没出现进一步恶化信号",
+        r"Missing short-term goals(?:also)?untouched(?:and)?stop loss",
+        "Short-term performance fell short of expectations, but there are currently no signs of further deterioration.",
         normalized,
     )
-    normalized = re.sub(r"未达目标", "表现未达到预期", normalized)
-    normalized = re.sub(r"未触(?:及)?止损", "还没出现进一步恶化信号", normalized)
+    normalized = re.sub(r"Missed target", "Performance fell short of expectations", normalized)
+    normalized = re.sub(r"untouched(?:and)?stop loss", "There are no signs of further deterioration yet", normalized)
 
     normalized = re.sub(r"\s+", " ", normalized)
-    normalized = normalized.replace("现阶段短期没有继续恶化、", "现阶段更合适的结论是继续观察：短期没有继续恶化，")
-    normalized = normalized.replace("仍有分歧的暂时只能继续观察", "仍有分歧，目前暂时只能继续观察")
-    normalized = normalized.replace("；价格", "；股价")
-    normalized = normalized.replace("当前持仓处于", "现阶段")
+    normalized = normalized.replace("At this stage, there is no further deterioration in the short term,", "A more appropriate conclusion at this stage is to continue to observe: there will be no further deterioration in the short term;")
+    normalized = normalized.replace("If there are still differences, we can only continue to observe for the time being.", "There are still differences, and we can only continue to observe for the time being.")
+    normalized = normalized.replace("; price", "; stock price")
+    normalized = normalized.replace("The current position is at", "At this stage")
     normalized = normalized.replace("；-", "；")
     normalized = normalized.replace("- ", "")
     return normalized.strip(" ；，。")
@@ -576,7 +576,7 @@ def _clip_position_user_text(text: str, max_len: int) -> str:
     else:
         clipped = window[:max_len]
 
-    clipped = re.sub(r"(?:将|让|获|并|但|且|及|与|或|则|需|待|可)+$", "", clipped)
+    clipped = re.sub(r"(?:will|let|get|and|But|and|and|with|or|rule|Need|Wait|Yes)+$", "", clipped)
     return clipped.strip(" ；，。:-")
 
 
@@ -586,7 +586,7 @@ def _looks_truncated_position_text(text: str) -> bool:
         return False
     if re.search(r"[；，,:：\-/]$", normalized):
         return True
-    return bool(re.search(r"(?:将|让|获|并|但|且|及|与|或|则|需|待|可)$", normalized))
+    return bool(re.search(r"(?:will|let|get|and|But|and|and|with|or|rule|Need|Wait|Yes)$", normalized))
 
 
 def _is_low_signal_position_item(text: str) -> bool:
@@ -616,16 +616,16 @@ def _build_position_conclusion(*sources: Any) -> str:
     for source in sources:
         normalized = _clip_position_user_text(_simplify_position_user_language(source), 72)
         if normalized and not _looks_truncated_position_text(normalized) and (
-            "继续观察" in normalized
-            or "表现未达到预期" in normalized
-            or "进一步恶化信号" in normalized
+            "Continue to observe" in normalized
+            or "Performance fell short of expectations" in normalized
+            or "further worsening the signal" in normalized
         ):
             return normalized
 
     clauses = _build_position_candidate_items(*sources, limit=2, max_len=32)
     if clauses:
         return _clip_position_user_text("；".join(clauses), 72)
-    return "现阶段更适合继续观察，重点确认原始研究逻辑是否仍然成立"
+    return "At this stage, it is more suitable to continue to observe and focus on confirming whether the original research logic still holds."
 
 
 def _build_position_user_action_reason(
@@ -657,26 +657,26 @@ def _build_position_user_action_reason(
     if unrealized_pnl_pct is not None:
         abs_loss = abs(unrealized_pnl_pct)
         if unrealized_pnl_pct <= -30:
-            snapshot_context_parts.append(f"当前这笔持仓浮亏约{abs_loss:.2f}%，已经处于较深浮亏区间。")
+            snapshot_context_parts.append(f"The current floating loss of this position is about{abs_loss:.2f}%, It is already in a deep floating loss range.")
         elif unrealized_pnl_pct <= -15:
-            snapshot_context_parts.append(f"当前这笔持仓浮亏约{abs_loss:.2f}%，已经明显偏离原始成本区间。")
+            snapshot_context_parts.append(f"The current floating loss of this position is about{abs_loss:.2f}%, It has deviated significantly from the original cost range.")
         elif unrealized_pnl_pct < 0:
-            snapshot_context_parts.append(f"当前这笔持仓浮亏约{abs_loss:.2f}%，仍处于成本下方运行。")
+            snapshot_context_parts.append(f"The current floating loss of this position is about{abs_loss:.2f}%, Still operating below costs.")
         elif unrealized_pnl_pct > 0:
-            snapshot_context_parts.append(f"当前这笔持仓浮盈约{unrealized_pnl_pct:.2f}%，但后续判断仍需关注证据是否延续。")
+            snapshot_context_parts.append(f"The current floating profit of this position is about{unrealized_pnl_pct:.2f}%, However, subsequent judgments still need to pay attention to whether the evidence continues.")
 
     if cost_price is not None and current_price is not None:
-        snapshot_context_parts.append(f"成本价约¥{cost_price:.2f}，当前价约¥{current_price:.2f}。")
+        snapshot_context_parts.append(f"Approximate cost price¥{cost_price:.2f}, Current price¥{current_price:.2f}. ")
 
     if holding_days is not None and holding_days >= 60:
-        snapshot_context_parts.append(f"持有时间约{holding_days}天，后续更应优先确认经营与风险是否改善，而不是依赖短线技术信号。")
+        snapshot_context_parts.append(f"Holding time approx.{holding_days}Days later, priority should be given to confirming whether operations and risks have improved, rather than relying on short-term technical signals.")
 
     opening_parts = list(snapshot_context_parts)
 
     if cleaned_observation:
         opening_parts.append(cleaned_observation)
     else:
-        opening_parts.append("现阶段更适合把重点放在确认研究逻辑是否仍然成立，而不是把短期价格波动直接理解为修复开始。")
+        opening_parts.append("At this stage, it is more appropriate to focus on confirming whether the research logic still holds, rather than directly interpreting short-term price fluctuations as the beginning of repair.")
 
     raw_position_context = _clip_position_user_text(
         _simplify_position_user_language(raw_user_view.get("position_context", "")),
@@ -701,7 +701,7 @@ def _build_position_user_action_reason(
         neutral_advice.get("core_judgment"),
         limit=3,
         max_len=38,
-    ) or ["当前判断仍要继续核对经营表现、风险变化和后续披露。"]
+    ) or ["Current judgments still need to continue to check operating performance, risk changes and subsequent disclosures."]
     key_points = _normalize_position_list_items(
         raw_user_view.get("key_points") or analysis_summary.get("key_points") or neutral_advice.get("reasoning"),
         fallback=key_points_fallback,
@@ -711,7 +711,7 @@ def _build_position_user_action_reason(
         cleaned_risk,
         limit=3,
         max_len=42,
-    ) or ["请优先关注行业变化、公司公告和持仓波动是否继续恶化。"]
+    ) or ["Please prioritize whether industry changes, company announcements, and position fluctuations continue to worsen."]
     risk_focus = _normalize_position_list_items(
         raw_user_view.get("risk_focus") or cleaned_risk,
         fallback=risk_focus_fallback,
@@ -723,32 +723,32 @@ def _build_position_user_action_reason(
         cleaned_opportunity,
         limit=3,
         max_len=42,
-    ) or ["后续重点观察经营质量、估值变化和能够改变当前判断的公开催化。"]
+    ) or ["The follow-up focus will be on operating quality, valuation changes and public catalysts that can change current judgments."]
     watch_items = _normalize_position_list_items(
         raw_user_view.get("watch_items") or specific_plan.get("observation_factors") or neutral_advice.get("analysis_points") or cleaned_opportunity,
         fallback=watch_items_fallback,
     )
     uncertainty_note = _clip_position_user_text(
         _simplify_position_user_language(raw_user_view.get("uncertainty_note", ""))
-        or "当前结论主要基于已披露信息，后续仍需结合财报、公告和行业变化继续验证。",
+        or "The current conclusion is mainly based on disclosed information and needs to be verified in the future based on financial reports, announcements and industry changes.",
         72,
     )
 
     detailed_sections = [
-        "### 当前状态",
+        "### Current status",
         f"- {position_context}",
         f"- {conclusion}",
         "",
-        "### 核心依据",
+        "### core basis",
         *[f"- {item}" for item in key_points],
         "",
-        "### 风险提示",
+        "### Risk warning",
         *[f"- {item}" for item in risk_focus],
         "",
-        "### 后续观察点",
+        "### Follow-up observation points",
         *[f"- {item}" for item in watch_items],
         "",
-        "### 不确定性说明",
+        "### uncertainty statement",
         f"- {uncertainty_note[:180]}",
     ]
     user_view = {
@@ -953,9 +953,9 @@ def sanitize_display_report_text(text: Any, fallback: str = "") -> str:
                 cleaned_lines.append("")
             continue
 
-        if "免责声明" in normalized or normalized == RESEARCH_ONLY_DISCLAIMER:
+        if "Disclaimer" in normalized or normalized == RESEARCH_ONLY_DISCLAIMER:
             cleaned_lines.append(line)
-            # 免责声明正文整块保留：跳过可操作内容过滤，直到下一个 markdown 标题
+            # Disclaimer text is retained in its entirety: actionable content filtering is skipped until the next markdown header
             in_disclaimer_block = True
             continue
 
@@ -1102,7 +1102,7 @@ def build_research_summary(reports: Dict[str, str], fallback_summary: str = "") 
     if summary_parts:
         return "；".join(summary_parts)[:800]
 
-    return "本次结果已按研究辅助模式输出，请重点关注基础数据、风险因素与后续披露信息。"
+    return "This result has been output in research-assisted mode. Please focus on basic data, risk factors and subsequent disclosure information."
 
 
 def build_key_points(reports: Dict[str, str], key_points: Any, summary: str) -> List[str]:
@@ -1144,20 +1144,20 @@ def sanitize_analysis_payload(result_data: Dict[str, Any]) -> Dict[str, Any]:
         action = decision.get("analysis_view") or decision.get("action")
         if isinstance(action, str) and action.strip():
             action_mapping = {
-                "BUY": "乐观",
-                "SELL": "审慎",
-                "HOLD": "中性",
-                "buy": "乐观",
-                "sell": "审慎",
-                "hold": "中性",
-                "买入": "乐观",
-                "卖出": "审慎",
-                "持有": "中性",
-                "看涨": "乐观",
-                "看跌": "审慎",
-                "乐观": "乐观",
-                "审慎": "审慎",
-                "中性": "中性",
+                "BUY": "optimistic",
+                "SELL": "Prudence",
+                "HOLD": "Neutral",
+                "buy": "optimistic",
+                "sell": "Prudence",
+                "hold": "Neutral",
+                "buy": "optimistic",
+                "sell": "Prudence",
+                "hold": "Neutral",
+                "bullish": "optimistic",
+                "Bearish": "Prudence",
+                "optimistic": "optimistic",
+                "Prudence": "Prudence",
+                "Neutral": "Neutral",
             }
             normalized_action = action_mapping.get(action.strip(), action.strip())
             sanitized_decision["action"] = normalized_action
@@ -1191,10 +1191,10 @@ def sanitize_analysis_payload(result_data: Dict[str, Any]) -> Dict[str, Any]:
 
     recommendation_parts: List[str] = []
     if normalized_action:
-        recommendation_parts.append(f"研究判断：{normalized_action}")
+        recommendation_parts.append(f"Research judgment:{normalized_action}")
     if summary:
         recommendation_parts.append(summary[:120])
-    recommendation_parts.append("请结合详细报告继续关注证据变化、风险因素与后续披露。")
+    recommendation_parts.append("Please continue to pay attention to changes in evidence, risk factors and subsequent disclosures in conjunction with the detailed report.")
     sanitized["recommendation"] = "；".join(part for part in recommendation_parts if part)[:240] or GENERIC_RESEARCH_RECOMMENDATION
 
     return sanitized
@@ -1212,21 +1212,21 @@ def sanitize_position_analysis_payload(
     action_reason, user_detailed_analysis, user_view = _build_position_user_action_reason(sanitized, position_snapshot)
     summary = action_reason or sanitize_position_text_block(
         sanitized.get("summary") or sanitized.get("action_reason") or sanitized.get("detailed_analysis"),
-        fallback="该持仓研究已转换为研究观察，请结合自身策略独立判断。",
+        fallback="This position research has been converted into research observation, please make independent judgment based on your own strategy.",
     )
 
     sanitized["action"] = "hold"
-    sanitized["action_reason"] = action_reason or "当前仅保留研究结论、风险提示与观察重点，不提供执行性交易建议。"
+    sanitized["action_reason"] = action_reason or "Currently, only research conclusions, risk warnings and observation points are retained, and no execution trading suggestions are provided."
     sanitized["price_targets"] = {}
     sanitized["suggested_quantity"] = None
     sanitized["suggested_amount"] = None
     sanitized["risk_assessment"] = sanitize_text_block(
         sanitized.get("risk_assessment"),
-        fallback="请重点关注持仓波动、行业变化和公告风险。",
+        fallback="Please focus on position fluctuations, industry changes and announcement risks.",
     )
     sanitized["opportunity_assessment"] = sanitize_text_block(
         sanitized.get("opportunity_assessment"),
-        fallback="请持续跟踪经营质量、估值变化和潜在催化事件。",
+        fallback="Please continue to track operating quality, valuation changes and potential catalytic events.",
     )
     sanitized["detailed_analysis"] = user_detailed_analysis
     sanitized["user_view"] = user_view
@@ -1258,19 +1258,19 @@ def sanitize_trade_review_payload(result_data: Dict[str, Any]) -> Dict[str, Any]
     )
     sanitized["timing_analysis"] = sanitize_review_detail_block(
         sanitized.get("timing_analysis"),
-        fallback="请重点复盘入场与退出依据是否充分，而非给出新的买卖指令。",
+        fallback="Please focus on reviewing whether the basis for entry and exit is sufficient, rather than giving new trading instructions.",
     )
     sanitized["position_analysis"] = sanitize_review_detail_block(
         sanitized.get("position_analysis"),
-        fallback="请重点复盘仓位管理依据与风险暴露，不提供具体仓位调整方案。",
+        fallback="Please focus on reviewing the basis for position management and risk exposure, and do not provide specific position adjustment plans.",
     )
     sanitized["emotion_analysis"] = sanitize_review_detail_block(
         sanitized.get("emotion_analysis"),
-        fallback="请重点复盘情绪控制与纪律执行问题。",
+        fallback="Please focus on reviewing the issues of emotional control and discipline enforcement.",
     )
     sanitized["attribution_analysis"] = sanitize_review_detail_block(
         sanitized.get("attribution_analysis"),
-        fallback="请重点复盘收益与亏损来源的证据归因。",
+        fallback="Please focus on reviewing the evidence attribution of the sources of gains and losses.",
     )
     sanitized["plan_adherence"] = sanitize_review_text_block(sanitized.get("plan_adherence"))
     sanitized["plan_deviation"] = sanitize_review_text_block(sanitized.get("plan_deviation"))
@@ -1292,7 +1292,7 @@ def sanitize_periodic_review_payload(result_data: Dict[str, Any]) -> Dict[str, A
     )
     sanitized["trading_style"] = sanitize_review_text_block(
         sanitized.get("trading_style"),
-        fallback="请从风格稳定性、纪律执行与研究准备充分性角度进行阶段性复盘。",
+        fallback="Please conduct a phased review from the perspective of style stability, discipline execution and research preparation adequacy.",
     )
     sanitized["common_mistakes"] = sanitize_review_points(sanitized.get("common_mistakes"))
     sanitized["improvement_areas"] = sanitize_review_points(

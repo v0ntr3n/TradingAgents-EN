@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-简化版数据源测试程序
-快速测试主要数据源的可用性
+Simplified version of data source testing program
+Quickly test the availability of primary data sources
 """
 
 import sys
@@ -9,93 +9,93 @@ import os
 import time
 from datetime import datetime
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
 def test_china_data_source():
-    """测试中国股票数据源"""
-    print("🇨🇳 测试中国股票数据源")
+    """Test China Stock Data Source"""
+    print("🇨🇳 Test China Stock Data Source")
     print("-" * 40)
     
     try:
-        # 测试数据源管理器
+        # Test data source manager
         from tradingagents.dataflows.data_source_manager import DataSourceManager
         
         manager = DataSourceManager()
-        print(f"✅ 数据源管理器初始化成功")
-        print(f"   当前数据源: {manager.current_source.value}")
-        print(f"   可用数据源: {[s.value for s in manager.available_sources]}")
+        print(f"✅ Data source manager initialized successfully")
+        print(f"   Current data source: {manager.current_source.value}")
+        print(f"   Available data sources: {[s.value for s in manager.available_sources]}")
         
-        # 测试获取数据
-        print(f"\n📊 测试获取平安银行(000001)数据...")
+        # Test to get data
+        print(f"\n📊 Test to obtain Ping An Bank(000001)data...")
         start_time = time.time()
         result = manager.get_stock_data("000001", "2025-07-01", "2025-07-12")
         end_time = time.time()
         
         if result and "❌" not in result:
-            print(f"✅ 数据获取成功 ({end_time - start_time:.2f}s)")
-            print(f"   数据长度: {len(result)} 字符")
-            print(f"   数据预览: {result[:100]}...")
+            print(f"✅ Data acquisition successful ({end_time - start_time:.2f}s)")
+            print(f"   Data length: {len(result)} character")
+            print(f"   Data preview: {result[:100]}...")
             return True
         else:
-            print(f"❌ 数据获取失败: {result[:100]}...")
+            print(f"❌ Data acquisition failed: {result[:100]}...")
             return False
             
     except Exception as e:
-        print(f"❌ 中国股票数据源测试失败: {e}")
+        print(f"❌ China stock data source test failed: {e}")
         return False
 
 def test_us_data_source():
-    """测试美股数据源"""
-    print("\n🇺🇸 测试美股数据源")
+    """Test US stock data source"""
+    print("\n🇺🇸 Test US stock data source")
     print("-" * 40)
     
     try:
-        # 测试优化版本
+        # Test optimized version
         from tradingagents.dataflows.optimized_us_data import get_us_stock_data_cached
         
-        print(f"📊 测试获取苹果(AAPL)数据...")
+        print(f"📊 Test to get apples(AAPL)data...")
         start_time = time.time()
         result = get_us_stock_data_cached("AAPL", "2025-07-01", "2025-07-12", force_refresh=True)
         end_time = time.time()
         
         if result and "❌" not in result:
-            print(f"✅ 数据获取成功 ({end_time - start_time:.2f}s)")
-            print(f"   数据长度: {len(result)} 字符")
+            print(f"✅ Data acquisition successful ({end_time - start_time:.2f}s)")
+            print(f"   Data length: {len(result)} character")
             
-            # 检查数据源
+            # Check data source
             if "FINNHUB" in result.upper() or "finnhub" in result:
-                print(f"   🎯 使用了FinnHub数据源")
+                print(f"   🎯 Used FinnHub data source")
             elif "Yahoo Finance" in result or "yfinance" in result:
-                print(f"   ⚠️ 使用了Yahoo Finance备用数据源")
+                print(f"   ⚠️ Used Yahoo Finance alternative data source")
             
-            print(f"   数据预览: {result[:100]}...")
+            print(f"   Data preview: {result[:100]}...")
             return True
         else:
-            print(f"❌ 数据获取失败: {result[:100]}...")
+            print(f"❌ Data acquisition failed: {result[:100]}...")
             return False
             
     except Exception as e:
-        print(f"❌ 美股数据源测试失败: {e}")
+        print(f"❌ US stock data source test failed: {e}")
         return False
 
 def test_cache_system():
-    """测试缓存系统"""
-    print("\n🗄️ 测试缓存系统")
+    """Test caching system"""
+    print("\n🗄️ Test caching system")
     print("-" * 40)
     
     try:
         from tradingagents.dataflows.cache_manager import get_cache
         
         cache = get_cache()
-        print(f"✅ 缓存管理器初始化成功")
-        print(f"   缓存类型: {type(cache).__name__}")
+        print(f"✅ Cache manager initialization successful")
+        print(f"   cache type: {type(cache).__name__}")
         
-        # 测试缓存操作
-        test_data = f"测试数据_{datetime.now().strftime('%H%M%S')}"
+        # Test caching operations
+        test_data = f"test data_{datetime.now().strftime('%H%M%S')}"
         
-        # 保存测试数据
+        # Save test data
         cache_key = cache.save_stock_data(
             symbol="TEST001",
             data=test_data,
@@ -104,24 +104,24 @@ def test_cache_system():
             data_source="test"
         )
         
-        # 加载测试数据
+        # Load test data
         loaded_data = cache.load_stock_data(cache_key)
         
         if loaded_data == test_data:
-            print(f"✅ 缓存读写测试成功")
-            print(f"   缓存键: {cache_key}")
+            print(f"✅ Cache read and write test successful")
+            print(f"   cache key: {cache_key}")
             return True
         else:
-            print(f"❌ 缓存数据不匹配")
+            print(f"❌ Cache data does not match")
             return False
             
     except Exception as e:
-        print(f"❌ 缓存系统测试失败: {e}")
+        print(f"❌ Cache system test failed: {e}")
         return False
 
 def test_api_keys():
-    """测试API密钥配置"""
-    print("\n🔑 测试API密钥配置")
+    """Test API key configuration"""
+    print("\n🔑 Test API key configuration")
     print("-" * 40)
     
     api_keys = {
@@ -136,73 +136,73 @@ def test_api_keys():
     
     for key_name, key_value in api_keys.items():
         if key_value:
-            print(f"✅ {key_name}: 已配置")
+            print(f"✅ {key_name}: configured")
             configured_count += 1
         else:
-            print(f"❌ {key_name}: 未配置")
+            print(f"❌ {key_name}: Not configured")
     
-    print(f"\n📊 API密钥配置率: {configured_count}/{total_count} ({configured_count/total_count*100:.1f}%)")
+    print(f"\n📊 API Key configuration rate: {configured_count}/{total_count} ({configured_count/total_count*100:.1f}%)")
     
-    return configured_count >= 2  # 至少需要2个API密钥
+    return configured_count >= 2  # At least 2 API keys are required
 
 def main():
-    """主测试函数"""
-    print("🧪 数据源简化测试程序")
+    """Main test function"""
+    print("🧪 Data sources simplify testing procedures")
     print("=" * 50)
-    print(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Test time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     results = []
     
-    # 1. 测试API密钥配置
+    # 1. Test API key configuration
     api_result = test_api_keys()
-    results.append(('API密钥配置', api_result))
+    results.append(('API Key configuration', api_result))
     
-    # 2. 测试缓存系统
+    # 2. Test caching system
     cache_result = test_cache_system()
-    results.append(('缓存系统', cache_result))
+    results.append(('caching system', cache_result))
     
-    # 3. 测试中国股票数据源
+    # 3. Test China Stock Data Source
     china_result = test_china_data_source()
-    results.append(('中国股票数据源', china_result))
+    results.append(('China stock data source', china_result))
     
-    # 4. 测试美股数据源
+    # 4. Test US stock data source
     us_result = test_us_data_source()
-    results.append(('美股数据源', us_result))
+    results.append(('US stock data source', us_result))
     
-    # 统计结果
+    # Statistical results
     passed = sum(1 for _, result in results if result)
     total = len(results)
     success_rate = (passed / total * 100) if total > 0 else 0
     
-    print(f"\n📊 测试结果汇总")
+    print(f"\n📊 Summary of test results")
     print("=" * 50)
     
     for test_name, result in results:
-        status = "✅ 通过" if result else "❌ 失败"
+        status = "✅ Pass" if result else "❌ failed"
         print(f"{test_name}: {status}")
     
-    print(f"\n📈 总体结果:")
-    print(f"   通过: {passed}/{total}")
-    print(f"   成功率: {success_rate:.1f}%")
+    print(f"\n📈 Overall results:")
+    print(f"   Pass: {passed}/{total}")
+    print(f"   success rate: {success_rate:.1f}%")
     
     if success_rate >= 75:
-        print(f"\n🎉 数据源系统运行良好！")
-        print(f"✅ 主要功能正常")
-        print(f"✅ 可以开始使用系统")
+        print(f"\n🎉 The data source system is working great!")
+        print(f"✅ Main functions are normal")
+        print(f"✅ You can start using the system")
     else:
-        print(f"\n⚠️ 数据源系统需要优化")
-        print(f"❌ 请检查失败的组件")
-        print(f"❌ 参考错误信息进行修复")
+        print(f"\n⚠️ Data source system needs to be optimized")
+        print(f"❌ Please check the failed component")
+        print(f"❌ Refer to the error message for repairs")
     
-    print(f"\n💡 建议:")
+    print(f"\n💡 Suggestions:")
     if not api_result:
-        print("- 配置更多API密钥以提高数据源可用性")
+        print("- Configure more API keys to increase data source availability")
     if not cache_result:
-        print("- 检查缓存系统配置和权限")
+        print("- Check cache system configuration and permissions")
     if not china_result:
-        print("- 检查Tushare Token或AKShare安装")
+        print("- Check Tushare Token or AKShare installation")
     if not us_result:
-        print("- 检查FinnHub API Key或网络连接")
+        print("- Check FinnHub API Key or network connection")
     
     return success_rate >= 75
 
@@ -212,13 +212,13 @@ if __name__ == "__main__":
         
         print(f"\n{'='*50}")
         if success:
-            print("🎯 测试完成！可以运行完整分析流程。")
-            print("   下一步: python -m cli.main")
+            print("🎯 Test completed! The complete analysis process can be run.")
+            print("   Next step: python -m cli.main")
         else:
-            print("🔧 需要修复配置后再次测试。")
-            print("   重新测试: python tests/test_data_sources_simple.py")
+            print("🔧 Need to fix the configuration and test again.")
+            print("   Retest: python tests/test_data_sources_simple.py")
             
     except Exception as e:
-        print(f"❌ 测试程序异常: {e}")
+        print(f"❌ Test program exception: {e}")
         import traceback
         traceback.print_exc()

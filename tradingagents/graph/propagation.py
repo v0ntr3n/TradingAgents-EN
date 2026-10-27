@@ -2,7 +2,7 @@
 
 from typing import Dict, Any
 
-# 导入统一日志系统
+# Import unified log system
 from tradingagents.utils.logging_init import get_logger
 logger = get_logger("default")
 from tradingagents.agents.utils.agent_states import (
@@ -25,9 +25,9 @@ class Propagator:
         """Create the initial state for the agent graph."""
         from langchain_core.messages import HumanMessage
 
-        # 🔥 修复：创建明确的分析请求消息，而不是只传递股票代码
-        # 这样可以确保所有LLM（包括DeepSeek）都能理解任务
-        analysis_request = f"请对股票 {company_name} 进行全面分析，交易日期为 {trade_date}。"
+        # 🔥 Fix: Create explicit analysis request message instead of just passing ticker
+        # This ensures that all LLMs (including DeepSeek) understand the task
+        analysis_request = f"Please check the stock {company_name} For a comprehensive analysis, the transaction date is {trade_date}. "
 
         return {
             "messages": [HumanMessage(content=analysis_request)],
@@ -59,8 +59,8 @@ class Propagator:
             use_progress_callback: If True, use 'updates' mode for node-level progress tracking.
                                   If False, use 'values' mode for complete state updates.
         """
-        # 使用 'updates' 模式可以获取节点级别的更新，用于进度跟踪
-        # 使用 'values' 模式可以获取完整的状态更新
+        # Use 'updates' Schemas can get node-level updates for progress tracking
+        # Use 'values' Mode can get complete status updates
         stream_mode = "updates" if use_progress_callback else "values"
 
         return {
